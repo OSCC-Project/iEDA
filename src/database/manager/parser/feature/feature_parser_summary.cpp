@@ -44,6 +44,7 @@
 #include "PLAPI.hh"
 #include "CTSAPI.hh"
 #include "TimingEngine.hh"
+#include "Evaluator.hh"
 #include "feature_parser.h"
 #include "flow_config.h"
 #include "idm.h"
@@ -74,6 +75,7 @@ bool FeatureParser::buildReportSummary(std::string json_path)
   root["Pins"] = buildSummaryPins();
 
   // root["Place"] = buildSummaryPL(json_path);
+  // root["CTS"] = buildSummaryCTS();
 
   file_stream << std::setw(4) << root;
 
@@ -574,12 +576,33 @@ json FeatureParser::buildSummaryPL(std::string json_path)
 json FeatureParser::buildSummaryCTS()
 {
   // get CTS data
+  json summary_cts;
 
+  CTSAPIInst.initEvalInfo();
+  summary_cts["design_area"] = dmInst->dieAreaUm();
+  summary_cts["design_utilization"] = dmInst->dieUtilization();
+
+  summary_cts["clock_buffer"] = CTSAPIInst.getInsertCellNum();
+  summary_cts["clock_buffer_area"] = CTSAPIInst.getInsertCellArea();
+  summary_cts["clock_nets"] = _design->get_net_list()->get_num_clock();
+  auto path_info = CTSAPIInst.getPathInfos();
+  int max_path = path_info[0].max_depth;
+  int min_path = path_info[0].min_depth;
+
+  for(auto path : path_info){
+    max_path = std::max(max_path, path.max_depth);
+    min_path = std::min(min_path, path.min_depth);
+  }
+  auto max_level_of_clock_tree = max_path;
+
+  summary_cts["clock_path_min_buffer"] = min_path;
+  summary_cts["clock_path_max_buffer"] = max_path;
+  summary_cts["max_level_of_clock_tree"] = max_level_of_clock_tree;
+  summary_cts["max_clock_wirelength"] = CTSAPIInst.getMaxClockNetWL();
+  summary_cts["total_clock_wirelength"] = CTSAPIInst.getTotalClockNetWL();
+  // CTSAPIInst.startDbSta();
   auto _timing_engine = ista::TimingEngine::getOrCreateTimingEngine();
-
-
   // 可能有多个clk_name，每一个时钟都需要报告tns、wns、freq
-  std::map<std::string, vector<double>> clk_sta_eval;
   auto clk_list = _timing_engine->getClockList();
   std::ranges::for_each(clk_list, [&](ista::StaClock* clk){
     auto clk_name = clk->get_clock_name();
@@ -588,16 +611,14 @@ json FeatureParser::buildSummaryCTS()
     auto hold_tns = _timing_engine->reportTNS(clk_name, AnalysisMode::kMin);
     auto hold_wns = _timing_engine->reportWNS(clk_name, AnalysisMode::kMin);
     auto suggest_freq = 1000.0 / (clk->getPeriodNs() - setup_wns);
-    
+    summary_cts[clk_name]["setup_tns"] = setup_tns;
+    summary_cts[clk_name]["setup_wns"] = setup_wns;
+    summary_cts[clk_name]["hold_tns"] = hold_tns;
+    summary_cts[clk_name]["hold_wns"] = hold_wns;
+    summary_cts[clk_name]["suggest_freq"] = suggest_freq;
   });
 
-  auto design_area = dmInst->dieAreaUm();
-  auto design_utilization = dmInst->dieUtilization();
-  auto clock_nets = _design->get_net_list()->get_num_clock();
-  
-  // auto setup_tns = _timing_engine->reportTNS();
-
-  return json();
+  return summary_cts;
 }
 
 }  // namespace idb
