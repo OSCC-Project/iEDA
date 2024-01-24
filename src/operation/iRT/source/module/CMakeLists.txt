@@ -19,5 +19,4 @@ target_link_libraries(irt_module
         irt_pin_accessor
         irt_resource_allocator
         irt_track_assigner
-        irt_violation_repairer
 )

@@ -1,11 +1,10 @@
-add_subdirectory(engine_init_def)
-add_subdirectory(engine_init_rt)
+add_library(idrc_engine_init_rt
 
-add_library(idrc_engine_init
-engine_init.cpp
+engine_init_rt.cpp
+
 )
 
-target_link_libraries(idrc_engine_init
+target_link_libraries(idrc_engine_init_rt
     PUBLIC
     idm
     idb
@@ -13,15 +12,11 @@ target_link_libraries(idrc_engine_init
     idrc_pro_tech_rules
     idrc_engine_manager    
     solver_geometry_boost
-    idrc_engine_init_def
-    idrc_engine_init_rt
 )
 
-target_include_directories(idrc_engine_init
+target_include_directories(idrc_engine_init_rt
     PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMAKE_CURRENT_SOURCE_DIR}/engine_init_rt
-    ${CMAKE_CURRENT_SOURCE_DIR}/engine_init_def
     ${HOME_DATABASE}/interaction/RT_DRC
 )
 
