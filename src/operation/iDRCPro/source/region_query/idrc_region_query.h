@@ -42,6 +42,8 @@ class DrcRegionQuery
 
   void addEdge(std::pair<DrcBasicPoint*, DrcBasicPoint*> edge)
   {
+    // TODO: region query
+    return;
     _polygon_edge_rtree.insert(std::make_pair(ieda_solver::BgSegment(ieda_solver::BgPoint(edge.first->get_x(), edge.first->get_y()),
                                                                      ieda_solver::BgPoint(edge.second->get_x(), edge.second->get_y())),
                                               edge));

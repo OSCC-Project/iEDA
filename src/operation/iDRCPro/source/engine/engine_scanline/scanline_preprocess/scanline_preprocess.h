@@ -71,6 +71,7 @@ class ScanlinePreprocess
   std::vector<ScanlinePoint*> _scanline_points_horizontal;
 
   int _polygon_count = 0;
+  int _side_count = 0;
 
   template <typename T>
   void deleteVectorElements(T& v);

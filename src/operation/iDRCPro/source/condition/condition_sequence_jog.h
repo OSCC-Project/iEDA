@@ -34,28 +34,37 @@ class ConditionSequenceJog : public ConditionSequence
   }
   ~ConditionSequenceJog() override {}
 
-  ConditionSequence::State apply(ConditionSequence::SequenceType sequence, std::vector<DrcBasicPoint*> points, State state) override
+  void applySequence(State& state, ConditionSequence::SequenceType sequence) override
   {
     switch (state) {
       case ConditionSequence::State::kNone:
         if (sequence & _trigger_sequence) {
-          return ConditionSequence::State::kTrigger;
+          state = ConditionSequence::State::kTrigger;
+          return;
+        } else {
+          state = ConditionSequence::State::kFail;
+          return;
         }
         break;
       case ConditionSequence::State::kTrigger:
         if (sequence & _middle_sequence) {
-          // TODO: check within
-          return ConditionSequence::State::kRecording;
+          state = ConditionSequence::State::kRecording;
+          return;
+        } else {
+          state = ConditionSequence::State::kFail;
+          return;
         }
         break;
       case ConditionSequence::State::kRecording:
         if (sequence & _success_sequence) {
-          return ConditionSequence::State::kSuccess;
+          state = ConditionSequence::State::kSuccess;
+          return;
         } else if (sequence & _middle_sequence) {
-          // TODO: check within
-          return ConditionSequence::State::kRecording;
+          state = ConditionSequence::State::kRecording;
+          return;
         } else {
-          return ConditionSequence::State::kFail;
+          state = ConditionSequence::State::kFail;
+          return;
         }
         break;
       case ConditionSequence::State::kSuccess:
@@ -65,8 +74,12 @@ class ConditionSequenceJog : public ConditionSequence
       default:
         break;
     }
+  }
 
-    return state;
+  void applyValue(State& state, SequenceType condition_sequence_enum, std::vector<DrcBasicPoint*> points) override
+  {
+    // TODO: calculate within and compare it to _filter_value, if fail change state to kFail
+    // TODO: use sequence type to deside points to calculate within
   }
 
  private:

@@ -37,54 +37,94 @@ namespace idrc {
  * matrix index indicates the checking order,
  *
  */
-
 class DrcConditionManager
 {
  public:
-  DrcConditionManager(DrcViolationManager* violation_manager) : _violation_manager(violation_manager) {}
+  DrcConditionManager(DrcViolationManager* violation_manager) : _violation_manager(violation_manager)
+  {
+    _record_new = new ConditionRecord(nullptr);
+  }
   ~DrcConditionManager() {}
 
-  void deliverSequence(idb::IdbLayer* layer, uint64_t recognize_code, ConditionSequence::SequenceType sequence,
-                       std::vector<DrcBasicPoint*>& points)
+  bool isSequenceNeedDeliver(idb::IdbLayer* layer, uint64_t recognize_code, ConditionSequence::SequenceType sequence)
   {
+    if (sequence == ConditionSequence::SequenceType::kNone) {
+      return false;
+    }
+
+    bool need_deliver = false;
+
     // refresh condition record
-    auto record_list = _condition_recording_map[layer][recognize_code];
-    for (auto record_it = record_list.begin(); record_it != record_list.end(); ++record_it) {
+    auto& record_list = _condition_recording_map[layer][recognize_code];
+    auto record_it = record_list.begin();
+    while (record_it != record_list.end()) {
       auto record = *record_it;
-      if (refreshConditionRecord(record, sequence, points)) {
-        record_list.erase(record_it);
+      auto state = record->transferState(sequence);
+      if (state == ConditionSequence::State::kFail) {
+        record_it = record_list.erase(record_it);
         delete record;
+      } else {
+        need_deliver = true;
+        ++record_it;
       }
     }
 
     // create new condition records
-    auto& condition_list = DrcTechRuleInst->get_condition_routing_layers(layer)[sequence];
+    auto& condition_list = DrcTechRuleInst->get_condition_trigger(layer, sequence);
     for (auto* condition : condition_list) {
-      auto record = new ConditionRecord(condition);
-      if (refreshConditionRecord(record, sequence, points)) {
+      _record_new->clear();
+      _record_new->set_condition(condition);
+      auto state = _record_new->transferState(sequence);
+      switch (state) {
+        case ConditionSequence::State::kTrigger:
+        case ConditionSequence::State::kRecording:
+        case ConditionSequence::State::kSuccess:
+          record_list.push_back(_record_new);
+          need_deliver = true;
+          _record_new = new ConditionRecord(nullptr);
+          break;
+        default:
+          break;
+      }
+    }
+
+    // if recognize code is not found, erase it
+    if (record_list.empty()) {
+      _condition_recording_map[layer].erase(recognize_code);
+    }
+
+    return need_deliver;
+  }
+
+  void recordRegion(idb::IdbLayer* layer, uint64_t recognize_code, ConditionSequence::SequenceType sequence,
+                    std::vector<DrcBasicPoint*>& points)
+  {
+    auto record_list = _condition_recording_map[layer][recognize_code];
+    auto record_it = record_list.begin();
+    while (record_it != record_list.end()) {
+      auto record = *record_it;
+      auto state = record->record(sequence, points);
+      if (state == ConditionSequence::State::kSuccess) {
+        record_it = record_list.erase(record_it);
         delete record;
       } else {
-        record_list.push_back(record);
+        ++record_it;
       }
+    }
+
+    // if recognize code is not found, erase it
+    if (record_list.empty()) {
+      _condition_recording_map[layer].erase(recognize_code);
     }
   }
 
  private:
+  uint64_t debug_code = 0;
   DrcViolationManager* _violation_manager;
 
-  std::map<idb::IdbLayer*, std::map<uint64_t, std::list<ConditionRecord*>>> _condition_recording_map;  // TODO: use object pool
+  std::map<idb::IdbLayer*, std::map<uint64_t, std::list<ConditionRecord*>>> _condition_recording_map;
 
-  bool refreshConditionRecord(ConditionRecord* record, ConditionSequence::SequenceType sequence, std::vector<DrcBasicPoint*>& points)
-  {
-    auto state = record->record(sequence, points);
-    switch (state) {
-      case ConditionSequence::State::kFail:
-      case ConditionSequence::State::kSuccess:
-        return true;
-      default:
-        return false;
-    }
-  }
+  ConditionRecord* _record_new = nullptr;  // TODO: use object pool
 };
 
 }  // namespace idrc

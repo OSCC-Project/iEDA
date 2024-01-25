@@ -72,14 +72,14 @@ void DrcRuleBuilder::buildJogConditions(idb::IdbLayer* layer, idb::IdbLayerRouti
   for (auto& sequence : trigger_sequence_list) {
     trigger_sequence |= sequence;
   }
-  ConditionSequenceJog* sequence = new ConditionSequenceJog(within, trigger_sequence, ConditionSequence::kSEW_WES,
+  ConditionSequenceJog* sequence = new ConditionSequenceJog(within, trigger_sequence, ConditionSequence::kWSEW_WESW,
                                                             ConditionSequence::kESE | ConditionSequence::kESW_WSE);
   ConditionDetailJog* detail = new ConditionDetailJog(idb_rule_jog.get());
 
   Condition* condition = new Condition(sequence, detail);
 
   for (auto& sequence : trigger_sequence_list) {
-    DrcTechRuleInst->get_condition_routing_layers(layer)[sequence].emplace_back(condition);
+    DrcTechRuleInst->get_condition_trigger(layer, sequence).emplace_back(condition);
   }
 }
 

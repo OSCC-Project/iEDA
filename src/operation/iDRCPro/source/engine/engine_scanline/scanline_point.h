@@ -23,8 +23,8 @@ namespace idrc {
 class ScanlinePoint
 {
  public:
-  ScanlinePoint(DrcBasicPoint* point, bool is_forward, bool is_start, ScanlinePoint* pair = nullptr)
-      : _point(point), _is_forward(is_forward), _is_new(true), _is_start(is_start), _pair(pair)
+  ScanlinePoint(DrcBasicPoint* point, int side_id, bool is_forward, bool is_start, ScanlinePoint* pair = nullptr)
+      : _point(point), _side_id(side_id), _is_forward(is_forward), _is_new(true), _is_start(is_start), _pair(pair)
   {
   }
 
@@ -39,6 +39,7 @@ class ScanlinePoint
   int get_x() { return _point->get_x(); }
   int get_y() { return _point->get_y(); }
   int get_id() { return _point->get_id(); }
+  int get_side_id() { return _side_id; }
 
   // setter
   void set_point(DrcBasicPoint* point) { _point = point; }
@@ -60,7 +61,7 @@ class ScanlinePoint
 
  private:
   DrcBasicPoint* _point;
-  // TODO: 边沿 id
+  int _side_id;
 
   bool _is_forward;
   bool _is_new;

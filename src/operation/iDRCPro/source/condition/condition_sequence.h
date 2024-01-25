@@ -43,7 +43,8 @@ class ConditionSequence
     kNES_SEN = 16,
     kNEN = 32,
     kESW_WSE = 64,
-    kESE = 128
+    kESE = 128,
+    kWSEW_WESW = 256
   };
 
   enum class State
@@ -58,7 +59,9 @@ class ConditionSequence
   ConditionSequence(int filter_value, uint64_t trigger_sequence) : _filter_value(filter_value), _trigger_sequence(trigger_sequence) {}
   virtual ~ConditionSequence() {}
 
-  virtual State apply(SequenceType condition_sequence_enum, std::vector<DrcBasicPoint*> points, State state) = 0;
+  virtual void applySequence(State& state, SequenceType condition_sequence_enum) = 0;
+
+  virtual void applyValue(State& state, SequenceType condition_sequence_enum, std::vector<DrcBasicPoint*> points) = 0;
 
   bool match(SequenceType condition_sequence) { return _trigger_sequence & condition_sequence; }
 

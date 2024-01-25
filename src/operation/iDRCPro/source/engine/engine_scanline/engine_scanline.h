@@ -110,7 +110,8 @@ class DrcEngineScanline
   //                                   ScanlinePoint* point_backward);
   // void fillResultToBasicPoint(ScanlineStatus& status, DrcBasicPoint* basepoint_forward, DrcBasicPoint* basepoint_backward,
   //                             ScanlineDataType result_type);
-  bool tryCreateNonEndpoint(ScanlineStatus& status, ScanlinePoint* point);
+  // bool tryCreateNonEndpoint(ScanlineStatus& status, ScanlinePoint* point);
+  uint64_t hash2SideIds(int id1, int id2);
   void processScanlineStatus(ScanlineStatus& status);
   void removeEndingPoints(ScanlineStatus& status);
 };

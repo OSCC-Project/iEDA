@@ -67,6 +67,10 @@ void ScanlinePreprocess::addPolygon(std::vector<ieda_solver::GtlPoint>& polygon_
   auto endpoint2 = endpoints.begin() + 1;
   ScanlinePoint* prev_segment_end = nullptr;
   ScanlinePoint* polygon_start = nullptr;
+  DrcDirection direction_vertical = DrcDirection::kNone;
+  DrcDirection direction_horizontal = DrcDirection::kNone;
+  int side_id_vertical = 0;
+  int side_id_horizontal = 0;
   for (; endpoint1 != endpoints.end(); ++endpoint1, ++endpoint2) {
     if (endpoint2 == endpoints.end()) {
       endpoint2 = endpoints.begin();
@@ -83,15 +87,17 @@ void ScanlinePreprocess::addPolygon(std::vector<ieda_solver::GtlPoint>& polygon_
     if ((*endpoint1)->get_x() == (*endpoint2)->get_x()) {
       // vertical
       bool is_forward_edge = (*endpoint1)->get_y() > (*endpoint2)->get_y();
-      starting_point = new ScanlinePoint(*endpoint1, is_forward_edge, !is_forward_edge);
-      ending_point = new ScanlinePoint(*endpoint2, is_forward_edge, is_forward_edge);
+      side_id_vertical = (*endpoint1)->direction(*endpoint2) == direction_vertical ? side_id_vertical : ++_side_count;
+      starting_point = new ScanlinePoint(*endpoint1, side_id_vertical, is_forward_edge, !is_forward_edge);
+      ending_point = new ScanlinePoint(*endpoint2, side_id_vertical, is_forward_edge, is_forward_edge);
       _scanline_points_vertical.emplace_back(starting_point);
       _scanline_points_vertical.emplace_back(ending_point);
     } else if ((*endpoint1)->get_y() == (*endpoint2)->get_y()) {
       // horizontal
       bool is_forward_edge = (*endpoint1)->get_x() < (*endpoint2)->get_x();
-      starting_point = new ScanlinePoint(*endpoint1, is_forward_edge, is_forward_edge);
-      ending_point = new ScanlinePoint(*endpoint2, is_forward_edge, !is_forward_edge);
+      side_id_horizontal = (*endpoint1)->direction(*endpoint2) == direction_horizontal ? side_id_horizontal : ++_side_count;
+      starting_point = new ScanlinePoint(*endpoint1, side_id_horizontal, is_forward_edge, is_forward_edge);
+      ending_point = new ScanlinePoint(*endpoint2, side_id_horizontal, is_forward_edge, !is_forward_edge);
       _scanline_points_horizontal.emplace_back(starting_point);
       _scanline_points_horizontal.emplace_back(ending_point);
     } else {

@@ -19,6 +19,7 @@
 #include "engine_geometry_creator.h"
 #include "engine_scanline.h"
 #include "geometry_boost.h"
+#include "idm.h"
 #include "idrc_engine_manager.h"
 
 namespace idrc {
@@ -86,7 +87,7 @@ bool DrcEngineManager::addRect(int llx, int lly, int urx, int ury, idb::IdbLayer
 
 void DrcEngineManager::dataPreprocess()
 {
-#ifdef DEBUG_IDRC_ENGINE_INIT
+#ifdef DEBUG_IDRC_ENGINE
   ieda::Stats stats;
   std::cout << "idrc : begin init scanline database" << std::endl;
 #endif
@@ -118,7 +119,7 @@ void DrcEngineManager::dataPreprocess()
     // std::cout << "idrc : layer id = " << layer->get_id() << " polygon points total number = " << point_number << std::endl;
   }
 
-#ifdef DEBUG_IDRC_ENGINE_INIT
+#ifdef DEBUG_IDRC_ENGINE
   std::cout << "idrc : end init scanline database, "
             << " runtime = " << stats.elapsedRunTime() << " memory = " << stats.memoryDelta() << std::endl;
 #endif

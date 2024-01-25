@@ -8,6 +8,7 @@ target_link_libraries(idrc_engine_manager
     solver_geometry_boost
     idrc_engine_scanline
     idrc_pro_data
+    idm
 )
 
 target_include_directories(idrc_engine_manager

@@ -9,6 +9,7 @@ target_link_libraries(idrc_engine_scanline
     idrc_engine_scanline_preprocess
     idrc_pro_data
     idrc_condition_manager
+    idrc_pro_util
 )
 
 target_include_directories(idrc_engine_scanline

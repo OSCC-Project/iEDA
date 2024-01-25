@@ -18,6 +18,7 @@
 
 #include <stdint.h>
 
+#include "IdbLayer.h"
 #include "condition.h"
 #include "idm.h"
 
@@ -35,7 +36,8 @@ class TechRules
     return _instance;
   }
 
-  enum TechType : uint64_t {
+  enum TechType : uint64_t
+  {
     kNone = 0,
     kIntersection = 1,
     kSelf = 2
@@ -50,14 +52,25 @@ class TechRules
   // getter
   std::map<ConditionSequence::SequenceType, std::vector<Condition*>>& get_condition_routing_layers(idb::IdbLayer* layer)
   {
-    return _condition_routing_layers[layer];
+    return _condition_routing_layers[layer->get_id()];
+  }
+
+  std::vector<Condition*>& get_condition_trigger(idb::IdbLayer* layer, ConditionSequence::SequenceType sequence)
+  {
+    if (_condition_routing_layers.find(layer->get_id()) == _condition_routing_layers.end()) {
+      std::cout << "idrc : Error layer not found " << layer->get_id() << std::endl;
+    }
+    if (_condition_routing_layers[layer->get_id()].find(sequence) == _condition_routing_layers[layer->get_id()].end()) {
+      std::cout << "idrc : Error condition not found in layer " << (int) layer->get_id() << " sequence " << sequence << std::endl;
+    }
+    return _condition_routing_layers[layer->get_id()][sequence];
   }
 
  private:
   static TechRules* _instance;
   bool _b_inited = false;
 
-  std::map<idb::IdbLayer*, std::map<ConditionSequence::SequenceType, std::vector<Condition*>>> _condition_routing_layers;
+  std::map<int, std::map<ConditionSequence::SequenceType, std::vector<Condition*>>> _condition_routing_layers;
 
   TechRules() {}
   ~TechRules();

@@ -96,9 +96,6 @@ std::map<ViolationEnumType, std::vector<DrcViolation*>> DrcApi::check(std::vecto
 #endif
   drc_manager.check();
 
-  if (check_type == DrcCheckerType::kDef) {
-    drc_manager.checkSelf();
-  }
 #ifdef DEBUG_IDRC_API
   if (check_type == DrcCheckerType::kDef) {
     std::cout << "idrc : check"

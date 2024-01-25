@@ -19,6 +19,26 @@
 
 #include "condition_manager.h"
 #include "idrc_data.h"
+#include "idrc_util.h"
+
+namespace std {
+template <typename T>
+inline void hash_combine(std::size_t& seed, T const& v)
+{
+  seed ^= hash<T>()(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+}
+template <typename U, typename V>
+struct hash<std::pair<U, V>>
+{
+  size_t operator()(std::pair<U, V> const& tt) const
+  {
+    size_t seed = 0;
+    hash_combine(seed, tt.first);
+    hash_combine(seed, tt.second);
+    return seed;
+  }
+};
+}  // namespace std
 
 namespace idrc {
 
@@ -57,7 +77,8 @@ void DrcEngineScanline::scan(ScanlineTravelDirection direction)
 
 /// @brief add all points with same travel direction coordinate to scanline status
 /// @param status scanline status
-void DrcEngineScanline::addCurrentBucketToScanline(ScanlineStatus& status)  // TODO: deal with overlap
+// TODO: deal with overlap, one direction is enough
+void DrcEngineScanline::addCurrentBucketToScanline(ScanlineStatus& status)
 {
   // mark old points in scanline status
   for (auto* point : status.status_points) {
@@ -119,154 +140,49 @@ void DrcEngineScanline::addCurrentBucketToScanline(ScanlineStatus& status)  // T
   }
 }
 
-/// @brief determine the type of current segment
+/// @brief determine segment type while scanline process
 /// @param status scanline status
-/// @param activate_polygons active polygons in current bucket
-/// @param point_forward segment endpoint with bigger orthogonal coordinate
-/// @param point_backward segment endpoint with smaller orthogonal coordinate
-/// @return type of current segment
-// ScanlineDataType DrcEngineScanline::judgeSegmentType(ScanlineStatus& status, std::map<int, ScanlinePoint*>& activate_polygons,
-//                                                      ScanlinePoint* point_forward, ScanlinePoint* point_backward)
-// {
-//   ScanlineDataType result_type = ScanlineDataType::kNone;
-//   if (activate_polygons.size() >= 2
-//       || (!activate_polygons.empty() && point_forward->get_id() != point_backward->get_id()
-//           && status.get_orthogonal_coord(point_forward->get_point()) == status.get_orthogonal_coord(point_backward->get_point()))) {
-//     result_type += ScanlineDataType::kOverlap;
-//   }
-//   for (auto& activate_polygon : activate_polygons) {
-//     if (status.isEndpointInCurrentBucket(activate_polygon.second) && activate_polygon.second->get_orthogonal_point()->get_is_start()) {
-//       result_type += ScanlineDataType::kEdge;
-//       result_type += ScanlineDataType::kWidth;
-//     }
-//   }
-//   if ((status.isEndpointInCurrentBucket(point_forward) && !point_forward->get_orthogonal_point()->get_is_start())
-//       || (status.isEndpointInCurrentBucket(point_backward) && point_backward->get_orthogonal_point()->get_is_start())) {
-//     result_type += ScanlineDataType::kEdge;
-//     result_type += ScanlineDataType::kWidth;
-//   }
-//   if (!activate_polygons.empty()
-//       && ((!point_forward->get_is_forward() && !point_backward->get_is_forward())
-//           || (point_forward->get_is_forward() && point_backward->get_is_forward()))
-//       && point_forward->get_id() != point_backward->get_id()) {
-//     result_type += ScanlineDataType::kInterSpacing;
-//   }
-//   if (!activate_polygons.empty() && point_forward->get_is_forward() && !point_backward->get_is_forward()) {
-//     result_type += ScanlineDataType::kWidth;
-//   }
-//   if ((!point_forward->get_is_forward() && point_backward->get_is_forward())
-//       || (point_forward->get_point()->get_id() != point_backward->get_point()->get_id())) {
-//     result_type += ScanlineDataType::kSpacing;
-//   }
-//   return result_type;
-// }
-
+/// @param point_forward forward point of current segment
+/// @param point_backward backward point of current segment
+/// @return segment type
 ScanlineSegmentType DrcEngineScanline::judgeSegmentType(ScanlineStatus& status, ScanlinePoint* point_forward, ScanlinePoint* point_backward)
 {
   ScanlineSegmentType result_type = ScanlineSegmentType::kNone;
   // TODO: judge segment type
+  if (point_forward->get_point()->is_endpoint() && point_backward->get_point()->is_endpoint()
+      && !point_forward->get_orthogonal_point()->get_is_start() && point_backward->get_orthogonal_point()->get_is_start()) {
+    result_type = ScanlineSegmentType::kEdge;
+  } else if (!point_forward->get_is_forward() && point_backward->get_is_forward()) {
+    result_type = ScanlineSegmentType::kSpacing;
+  } else if (point_forward->get_is_forward() && !point_backward->get_is_forward()) {
+    result_type = ScanlineSegmentType::kWidth;
+  }
   return result_type;
 }
 
-/// @brief create neighbour for two basic points and fill result to basic point
-/// @param status scanline status
-/// @param basepoint_forward basepoint with bigger orthogonal coordinate
-/// @param basepoint_backward basepoint with smaller orthogonal coordinate
-/// @param result_type type of current segment
-// void DrcEngineScanline::fillResultToBasicPoint(ScanlineStatus& status, DrcBasicPoint* basepoint_forward, DrcBasicPoint*
-// basepoint_backward,
-//                                                ScanlineDataType result_type)
-// {
-//   DrcDirection direction_forward;
-//   DrcDirection direction_backward;
-
-//   switch (status.direction) {
-//     case ScanlineTravelDirection::kHorizontal:
-//       direction_forward = DrcDirection::kDown;
-//       direction_backward = DrcDirection::kUp;
-//       break;
-//     case ScanlineTravelDirection::kVertical:
-//       direction_forward = DrcDirection::kLeft;
-//       direction_backward = DrcDirection::kRight;
-//       break;
-//   }
-
-//   auto* neighbour_forward = basepoint_forward->get_neighbour(direction_forward);
-//   auto* neighbour_backward = basepoint_backward->get_neighbour(direction_backward);
-
-//   if (neighbour_forward && neighbour_backward) {
-//     neighbour_forward->add_type(result_type);
-//     neighbour_backward->add_type(result_type);
-//   } else {
-//     neighbour_forward = new ScanlineNeighbour(result_type, basepoint_backward);
-//     neighbour_backward = new ScanlineNeighbour(result_type, basepoint_forward);
-
-//     basepoint_forward->set_neighbour(direction_forward, neighbour_forward);
-//     basepoint_backward->set_neighbour(direction_backward, neighbour_backward);
-//   }
-// }
-
-/// @brief create new non-endpoint if scanline shifted into an bucket with other traver direction coordinate
-/// @param status scanline status
-/// @param point current point possibliy has coordinate different from scanline coordinate
-/// @return whether create new non-endpoint
-bool DrcEngineScanline::tryCreateNonEndpoint(ScanlineStatus& status, ScanlinePoint* point)
+/// @brief hash two side ids to one
+/// @param id1 one side id
+/// @param id2 another side id
+/// @return hashed side id
+uint64_t DrcEngineScanline::hash2SideIds(int id1, int id2)
 {
-  if (!status.isPointInCurrentBucket(point)) {
-    int x = point->get_x();
-    int y = point->get_y();
-    DrcBasicPoint* first_point = nullptr;
-    DrcBasicPoint* second_point = nullptr;
-
-    switch (status.direction) {
-      case ScanlineTravelDirection::kHorizontal:
-        x = status.current_bucket_coord;
-        if (point->get_is_forward()) {
-          first_point = point->get_point();
-          second_point = point->get_point()->get_next();
-        } else {
-          first_point = point->get_point()->get_prev();
-          second_point = point->get_point();
-        }
-        break;
-      case ScanlineTravelDirection::kVertical:
-        y = status.current_bucket_coord;
-        if (!point->get_is_forward()) {
-          first_point = point->get_point();
-          second_point = point->get_point()->get_next();
-        } else {
-          first_point = point->get_point()->get_prev();
-          second_point = point->get_point();
-        }
-        break;
-      default:
-        break;
-    }
-
-    DrcBasicPoint* new_point
-        = new DrcBasicPoint(x, y, point->get_id(), point->get_point()->get_polygon_id(), false, first_point, second_point);
-    first_point->set_next(new_point);
-    second_point->set_prev(new_point);
-
-    _preprocess->addBasicPoint(new_point);
-    point->set_point(new_point);
-    point->add_created_point(new_point);
-
-    return true;
-  }
-  return false;
+  std::hash<std::pair<int, int>> hasher;
+  return hasher(std::make_pair(id1, id2));
 }
 
 /// @brief scanline status updated, process current status
 /// @param status scanline status
 void DrcEngineScanline::processScanlineStatus(ScanlineStatus& status)
 {
-  std::deque<DrcBasicPoint*> activate_points{nullptr, nullptr, nullptr};
-  std::deque<ScanlineSegmentType> activate_types{ScanlineSegmentType::kNone, ScanlineSegmentType::kNone, ScanlineSegmentType::kNone};
+  std::deque<ScanlinePoint*> activate_points{nullptr, nullptr, nullptr};
+  std::deque<ScanlineSegmentType> activate_types{ScanlineSegmentType::kNone, ScanlineSegmentType::kNone, ScanlineSegmentType::kNone,
+                                                 ScanlineSegmentType::kNone};
   auto scanline_status_it = status.insert_begin;
+  if (scanline_status_it != status.status_points.end()) {
+    activate_points.push_back(*scanline_status_it);
+  }
   while (scanline_status_it != status.insert_end) {
     ScanlinePoint* point_backward = *scanline_status_it;
-    activate_points.push_back(point_backward->get_point());
     if (++scanline_status_it != status.insert_end) {
       ScanlinePoint* point_forward = *scanline_status_it;
 
@@ -276,7 +192,7 @@ void DrcEngineScanline::processScanlineStatus(ScanlineStatus& status)
       // refresh active segments
       activate_points.pop_front();
       activate_types.pop_front();
-      activate_points.push_back(point_forward->get_point());
+      activate_points.push_back(point_forward);
       activate_types.push_back(type);
 
       // skip both old points
@@ -286,97 +202,49 @@ void DrcEngineScanline::processScanlineStatus(ScanlineStatus& status)
 
       // make sequence, make edge ids hash
       ConditionSequence::SequenceType sequence = ConditionSequence::SequenceType::kNone;
-      bool has_spacing = false;
-      // TODO: use activate types to determine sequence
-      // TODO: use activate types to determine if there is a spacing
-
-      uint64_t recognize_code = 0;
-      if (has_spacing) {
-        // TODO: get edge ids in both side point of spacing
-        // TODO: use two edge ids to calculate hash, witch is recognize code
+      // TODO: use activate types to determine sequence refactor
+      if ((activate_types[0] == ScanlineSegmentType::kWidth && activate_types[1] == ScanlineSegmentType::kSpacing
+           && activate_types[2] == ScanlineSegmentType::kEdge && activate_types[3] == ScanlineSegmentType::kWidth)
+          || (activate_types[0] == ScanlineSegmentType::kWidth && activate_types[1] == ScanlineSegmentType::kEdge
+              && activate_types[2] == ScanlineSegmentType::kSpacing && activate_types[3] == ScanlineSegmentType::kWidth)) {
+        sequence = ConditionSequence::SequenceType::kWSEW_WESW;
+      } else if (activate_types[1] == ScanlineSegmentType::kEdge && activate_types[2] == ScanlineSegmentType::kSpacing
+                 && activate_types[3] == ScanlineSegmentType::kEdge) {
+        sequence = ConditionSequence::SequenceType::kESE;
+      } else if ((activate_types[1] == ScanlineSegmentType::kEdge && activate_types[2] == ScanlineSegmentType::kSpacing
+                  && activate_types[3] == ScanlineSegmentType::kWidth)
+                 || (activate_types[1] == ScanlineSegmentType::kWidth && activate_types[2] == ScanlineSegmentType::kSpacing
+                     && activate_types[3] == ScanlineSegmentType::kEdge)) {
+        sequence = ConditionSequence::SequenceType::kESW_WSE;
+      } else if ((activate_types[1] == ScanlineSegmentType::kSpacing && activate_types[2] == ScanlineSegmentType::kEdge
+                  && activate_types[3] == ScanlineSegmentType::kWidth)
+                 || (activate_types[1] == ScanlineSegmentType::kWidth && activate_types[2] == ScanlineSegmentType::kEdge
+                     && activate_types[3] == ScanlineSegmentType::kSpacing)) {
+        sequence = ConditionSequence::SequenceType::kSEW_WES;
       }
 
-      auto point_list = std::vector<DrcBasicPoint*>{activate_points.begin(), activate_points.end()};
+      uint64_t recognize_code = 0;
+      for (int i = 1; i < (int) activate_types.size(); ++i) {
+        if (activate_types[i] == ScanlineSegmentType::kSpacing) {
+          auto gtl_pts_1 = DrcUtil::getPolygonPoints(activate_points[i - 1]->get_point());
+          auto gtl_pts_2 = DrcUtil::getPolygonPoints(activate_points[i]->get_point());
+          recognize_code = hash2SideIds(activate_points[i - 1]->get_side_id(), activate_points[i]->get_side_id());
+          break;
+        }
+      }
 
       // put sequence to condition manager
-      _condition_manager->deliverSequence(_preprocess->get_layer(), recognize_code, sequence, point_list);
+      if (_condition_manager->isSequenceNeedDeliver(_preprocess->get_layer(), recognize_code, sequence)) {
+        std::vector<DrcBasicPoint*> point_list(activate_points.size(), nullptr);
+        for (int i = 0; i < (int) activate_points.size(); ++i) {
+          point_list[i] = activate_points[i] ? activate_points[i]->get_point() : nullptr;
+        }
+
+        _condition_manager->recordRegion(_preprocess->get_layer(), recognize_code, sequence, point_list);
+      }
     }
   }
   // TODO: 处理边缘情况，即插入点在最边缘时应多处理一段，保证处理到边缘的 NEN 或者其他情况
-
-  // std::map<int, ScanlinePoint*> activate_id_set;
-
-  // // auto scanline_status_it = status.insert_begin;
-  // // while (scanline_status_it != status.insert_end) {
-  // //   ScanlinePoint* point_backward = *scanline_status_it;
-  // //   if (++scanline_status_it != status.insert_end) {
-  // // TODO: 像上面注释一样局部处理扫描线状态，目前局部处理会出现激活条件太远导致 overlap 不触发
-  // auto scanline_status_it = status.status_points.begin();
-  // while (scanline_status_it != status.status_points.end()) {
-  //   ScanlinePoint* point_backward = *scanline_status_it;
-  //   if (++scanline_status_it != status.status_points.end()) {
-  //     ScanlinePoint* point_forward = *scanline_status_it;
-
-  //     // refresh active polygon set
-  //     bool is_ortho_start = point_backward->get_orthogonal_point()->get_is_start();
-  //     bool is_forward = point_backward->get_is_forward();
-  //     if (!is_forward || (is_ortho_start && status.isEndpointInCurrentBucket(point_backward))) {
-  //       activate_id_set[point_backward->get_point()->get_id()] = point_backward;
-  //     } else {
-  //       activate_id_set.erase(point_backward->get_point()->get_id());
-  //     }
-
-  //     // bool is_near_new_points = false;
-  //     // auto near_prev_it = std::prev(scanline_status_it);
-  //     // auto near_next_it = scanline_status_it;
-  //     // if (near_prev_it != status.status_points.begin() && --near_prev_it != status.status_points.begin()) {
-  //     //   is_near_new_points = (*near_prev_it)->get_is_new();
-  //     // }
-  //     // if (++near_next_it != status.status_points.end()) {
-  //     //   is_near_new_points = (*near_next_it)->get_is_new();
-  //     // }
-
-  //     bool at_least_one_new = point_forward->get_is_new() || point_backward->get_is_new();
-  //     ScanlineDataType segment_type = judgeSegmentType(status, activate_id_set, point_forward, point_backward);
-
-  //     if (segment_type.hasType(ScanlineDataType::kEdge) /*|| is_near_new_points*/ || at_least_one_new) {
-  //       tryCreateNonEndpoint(status, point_forward);
-  //       tryCreateNonEndpoint(status, point_backward);
-  //       fillResultToBasicPoint(status, point_forward->get_point(), point_backward->get_point(), segment_type);
-
-  //       // TODO: 重构连接功能，舍弃 ScanlinePoint 里面的 non endpoint 存储
-  //       if (segment_type.hasType(ScanlineDataType::kOverlap)) {
-  //         auto connect_overlap = [](DrcDirection dir, DrcBasicPoint* point1, DrcBasicPoint* point2) {
-  //           auto point2_neighbour = point2->get_neighbour(dir);
-  //           if (!point1->get_neighbour(dir) && point2_neighbour && point2_neighbour->is_overlap()) {
-  //             auto neighbour = new ScanlineNeighbour(point2_neighbour->get_type(), point2_neighbour->get_point());
-  //             point1->set_neighbour(dir, neighbour);
-  //           }
-  //         };
-
-  //         std::vector<DrcDirection> directions{DrcDirection::kUp, DrcDirection::kDown, DrcDirection::kLeft, DrcDirection::kRight};
-  //         for (auto& activate_polygon : activate_id_set) {
-  //           if (status.isEndpointInCurrentBucket(activate_polygon.second)) {
-  //             auto same_position_point_forward
-  //                 = activate_polygon.second->get_orthogonal_point()->get_created_point(point_forward->get_point());
-  //             auto same_position_point_backward
-  //                 = activate_polygon.second->get_orthogonal_point()->get_created_point(point_backward->get_point());
-  //             for (auto dir : directions) {
-  //               if (same_position_point_forward) {
-  //                 connect_overlap(dir, point_forward->get_point(), same_position_point_forward);
-  //                 connect_overlap(dir, same_position_point_forward, point_forward->get_point());
-  //               }
-  //               if (same_position_point_backward) {
-  //                 connect_overlap(dir, point_backward->get_point(), same_position_point_backward);
-  //                 connect_overlap(dir, same_position_point_backward, point_backward->get_point());
-  //               }
-  //             }
-  //           }
-  //         }
-  //       }
-  //     }
-  //   }
-  // }
 }
 
 /// @brief remove ending points

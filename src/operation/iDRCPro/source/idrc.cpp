@@ -69,7 +69,7 @@ void DrcManager::engineStart(DrcCheckerType checker_type)
  */
 bool DrcManager::buildCondition()
 {
-  _engine->get_engine_manager()->filterData();
+  _engine->get_engine_manager()->filterData();  // TODO: self violation and intersection violation
   return true;
 }
 
