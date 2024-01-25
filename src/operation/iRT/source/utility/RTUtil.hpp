@@ -2319,12 +2319,10 @@ class RTUtil
                                                            const std::vector<PlanarRect>& rect_list, bool is_open)
   {
     std::vector<PlanarRect> result_list;
-
     if (!is_open) {
-      // 先保存master_list中的特殊矩形
+      // 先保存master_list中的特殊矩形(点 线)
       for (const PlanarRect& master : master_list) {
         if (master.get_lb_x() == master.get_rt_x() || master.get_lb_y() == master.get_rt_y()) {
-          // 特殊矩形
           result_list.push_back(master);
         }
       }
@@ -2408,9 +2406,105 @@ class RTUtil
     for (PlanarRect& rect : getRTRectListByBGMultiPointDBL(top_multipoint)) {
       result_list.push_back(rect);
     }
+    if (!is_open) {
+      std::vector<PlanarRect> special_rect_list;
+      std::vector<PlanarRect> result_list_temp;
+      result_list_temp.reserve(result_list.size());
+      for (PlanarRect& result_rect : result_list) {
+        if (result_rect.get_lb_x() == result_rect.get_rt_x() || result_rect.get_lb_y() == result_rect.get_rt_y()) {
+          special_rect_list.push_back(result_rect);
+        } else {
+          result_list_temp.push_back(result_rect);
+        }
+      }
+      result_list = std::move(result_list_temp);
+      // 对结果中的特殊矩形进行切割
+      for (PlanarRect& cutting_special_rect : getCuttingSpecialRectList(special_rect_list, rect_list)) {
+        result_list.push_back(cutting_special_rect);
+      }
+    }
     // rect去重
     std::sort(result_list.begin(), result_list.end(), CmpPlanarRectByXASC());
     result_list.erase(std::unique(result_list.begin(), result_list.end()), result_list.end());
+    return result_list;
+  }
+
+  static std::vector<PlanarRect> getCuttingSpecialRectList(const std::vector<PlanarRect>& special_rect_list,
+                                                           const std::vector<PlanarRect>& rect_list)
+  {
+    std::vector<PlanarRect> result_list;
+    for (const PlanarRect& special_rect : special_rect_list) {
+      if (special_rect.get_lb() == special_rect.get_rt()) {
+        /**
+         * 对于点矩形, 在其中一个rect内(不包含边界)则被删除
+         */
+        PlanarCoord point = special_rect.get_lb();
+        bool exist_inside = false;
+        for (const PlanarRect& rect : rect_list) {
+          if (rect.get_lb_x() < point.get_x() && point.get_x() < rect.get_rt_x() && rect.get_lb_y() < point.get_y()
+              && point.get_y() < rect.get_rt_y()) {
+            exist_inside = true;
+            break;
+          }
+        }
+        if (!exist_inside) {
+          result_list.push_back(special_rect);
+        }
+      } else {
+        /**
+         * 对于线矩形, overlap面积不为0的进行cut
+         * segment_list内要保证 first < second
+         */
+        std::vector<Segment<PlanarCoord>> segment_list = {{special_rect.get_lb(), special_rect.get_rt()}};
+        for (const PlanarRect& rect : rect_list) {
+          irt_int rect_lb_x = rect.get_lb_x();
+          irt_int rect_rt_x = rect.get_rt_x();
+          irt_int rect_lb_y = rect.get_lb_y();
+          irt_int rect_rt_y = rect.get_rt_y();
+
+          std::vector<Segment<PlanarCoord>> segment_list_temp;
+          for (Segment<PlanarCoord>& segment : segment_list) {
+            if (isHorizontal(segment.get_first(), segment.get_second())) {
+              irt_int seg_first_x = segment.get_first().get_x();
+              irt_int seg_second_x = segment.get_second().get_x();
+              irt_int seg_y = segment.get_first().get_y();
+              if (rect_lb_y < seg_y && seg_y < rect_rt_y && seg_first_x < rect_rt_x && rect_lb_x < seg_second_x) {
+                if (seg_first_x < rect_lb_x) {
+                  // 提出左突出
+                  segment_list_temp.emplace_back(segment.get_first(), PlanarCoord(rect_lb_x, seg_y));
+                }
+                if (rect_rt_x < seg_second_x) {
+                  // 提出右突出的
+                  segment_list_temp.emplace_back(PlanarCoord(rect_rt_x, seg_y), segment.get_second());
+                }
+              } else {
+                segment_list_temp.push_back(segment);
+              }
+            } else {
+              irt_int seg_first_y = segment.get_first().get_y();
+              irt_int seg_second_y = segment.get_second().get_y();
+              irt_int seg_x = segment.get_first().get_x();
+              if (rect_lb_x < seg_x && seg_x < rect_rt_x && seg_first_y < rect_rt_y && rect_lb_y < seg_second_y) {
+                if (seg_first_y < rect_lb_y) {
+                  // 提出下突出
+                  segment_list_temp.emplace_back(segment.get_first(), PlanarCoord(seg_x, rect_lb_y));
+                }
+                if (rect_rt_y < seg_second_y) {
+                  // 提出上突出的
+                  segment_list_temp.emplace_back(PlanarCoord(seg_x, rect_rt_y), segment.get_second());
+                }
+              } else {
+                segment_list_temp.push_back(segment);
+              }
+            }
+          }
+          segment_list = segment_list_temp;
+        }
+        for (Segment<PlanarCoord>& segment : segment_list) {
+          result_list.emplace_back(segment.get_first(), segment.get_second());
+        }
+      }
+    }
     return result_list;
   }
 

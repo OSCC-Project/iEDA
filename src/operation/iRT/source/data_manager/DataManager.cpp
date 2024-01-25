@@ -53,6 +53,7 @@ void DataManager::destroyInst()
 void DataManager::input(std::map<std::string, std::any>& config_map, idb::IdbBuilder* idb_builder)
 {
   Monitor monitor;
+  LOG_INST.info(Loc::current(), "Begin inputting...");
 
   wrapConfig(config_map);
   wrapDatabase(idb_builder);
@@ -61,35 +62,38 @@ void DataManager::input(std::map<std::string, std::any>& config_map, idb::IdbBui
   printConfig();
   printDatabase();
 
-  LOG_INST.info(Loc::current(), "The data manager input completed!", monitor.getStatsInfo());
+  LOG_INST.info(Loc::current(), "End input!", monitor.getStatsInfo());
 }
 
 void DataManager::output(idb::IdbBuilder* idb_builder)
 {
   Monitor monitor;
+  LOG_INST.info(Loc::current(), "Begin outputting...");
 
   outputGCellGrid(idb_builder);
   outputNetList(idb_builder);
 
-  LOG_INST.info(Loc::current(), "The data manager output completed!", monitor.getStatsInfo());
+  LOG_INST.info(Loc::current(), "End output!", monitor.getStatsInfo());
 }
 
 void DataManager::save(Stage stage)
 {
   Monitor monitor;
+  LOG_INST.info(Loc::current(), "Begin saving...");
 
   saveStageResult(stage);
 
-  LOG_INST.info(Loc::current(), "The data manager save completed!", monitor.getStatsInfo());
+  LOG_INST.info(Loc::current(), "End save!", monitor.getStatsInfo());
 }
 
 void DataManager::load(Stage stage)
 {
   Monitor monitor;
+  LOG_INST.info(Loc::current(), "Begin loading...");
 
   loadStageResult(stage);
 
-  LOG_INST.info(Loc::current(), "The data manager load completed!", monitor.getStatsInfo());
+  LOG_INST.info(Loc::current(), "End load!", monitor.getStatsInfo());
 }
 
 #if 1  // 更新GCellMap
@@ -454,7 +458,6 @@ void DataManager::wrapConfig(std::map<std::string, std::any>& config_map)
   _config.top_routing_layer = RTUtil::getConfigValue<std::string>(config_map, "-top_routing_layer", "");
   _config.gcell_pitch_size = RTUtil::getConfigValue<irt_int>(config_map, "-gcell_pitch_size", 15);
   _config.enable_idrc_interface = RTUtil::getConfigValue<irt_int>(config_map, "-enable_idrc_interface", 1);
-  _config.enable_output_gds_files = RTUtil::getConfigValue<irt_int>(config_map, "-enable_output_gds_files", 0);
   _config.supply_utilization_rate = RTUtil::getConfigValue<double>(config_map, "-supply_utilization_rate", 1);
   _config.pa_max_iter_num = RTUtil::getConfigValue<irt_int>(config_map, "-pa_max_iter_num", 1);
   _config.ra_initial_penalty = RTUtil::getConfigValue<double>(config_map, "-ra_initial_penalty", 100);
@@ -1797,8 +1800,6 @@ void DataManager::printConfig()
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.gcell_pitch_size);
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "enable_idrc_interface");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.enable_idrc_interface);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "enable_output_gds_files");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.enable_output_gds_files);
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "supply_utilization_rate");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.supply_utilization_rate);
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "pa_max_iter_num");

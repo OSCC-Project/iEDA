@@ -38,8 +38,6 @@ TclInitRT::TclInitRT(const char* cmd_name) : TclCmd(cmd_name)
   _config_list.push_back(std::make_pair("-gcell_pitch_size", ValueType::kInt));
   // irt_int enable_idrc_interface;       // optional
   _config_list.push_back(std::make_pair("-enable_idrc_interface", ValueType::kInt));
-  // irt_int enable_output_gds_files;       // optional
-  _config_list.push_back(std::make_pair("-enable_output_gds_files", ValueType::kInt));
   // double supply_utilization_rate;        // optional
   _config_list.push_back(std::make_pair("-supply_utilization_rate", ValueType::kDouble));
   // irt_int pa_max_iter_num;               // optional

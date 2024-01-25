@@ -51,11 +51,7 @@ void TrackAssigner::destroyInst()
 
 void TrackAssigner::assign(std::vector<Net>& net_list)
 {
-  Monitor monitor;
-
   assignNetList(net_list);
-
-  LOG_INST.info(Loc::current(), "The ", GetStageName()(Stage::kTrackAssigner), " completed!", monitor.getStatsInfo());
 }
 
 // private
@@ -1141,7 +1137,6 @@ std::map<TANode*, std::set<Orientation>> TrackAssigner::getRoutingNodeOrientatio
 
 void TrackAssigner::plotTAPanel(TAPanel& ta_panel, irt_int curr_task_idx, std::string flag)
 {
-#if 1
   ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
   std::vector<std::vector<ViaMaster>>& layer_via_master_list = DM_INST.getDatabase().get_layer_via_master_list();
@@ -1204,13 +1199,13 @@ void TrackAssigner::plotTAPanel(TAPanel& ta_panel, irt_int curr_task_idx, std::s
       GPBoundary gp_boundary;
       switch (ta_node.get_state()) {
         case TANodeState::kNone:
-          gp_boundary.set_data_type(static_cast<irt_int>(GPGraphType::kNone));
+          gp_boundary.set_data_type(static_cast<irt_int>(GPDataType::kNone));
           break;
         case TANodeState::kOpen:
-          gp_boundary.set_data_type(static_cast<irt_int>(GPGraphType::kOpen));
+          gp_boundary.set_data_type(static_cast<irt_int>(GPDataType::kOpen));
           break;
         case TANodeState::kClose:
-          gp_boundary.set_data_type(static_cast<irt_int>(GPGraphType::kClose));
+          gp_boundary.set_data_type(static_cast<irt_int>(GPDataType::kClose));
           break;
         default:
           LOG_INST.error(Loc::current(), "The type is error!");
@@ -1223,7 +1218,7 @@ void TrackAssigner::plotTAPanel(TAPanel& ta_panel, irt_int curr_task_idx, std::s
       y -= y_reduced_span;
       GPText gp_text_node_real_coord;
       gp_text_node_real_coord.set_coord(real_rect.get_lb_x(), y);
-      gp_text_node_real_coord.set_text_type(static_cast<irt_int>(GPGraphType::kInfo));
+      gp_text_node_real_coord.set_text_type(static_cast<irt_int>(GPDataType::kInfo));
       gp_text_node_real_coord.set_message(
           RTUtil::getString("(", ta_node.get_x(), " , ", ta_node.get_y(), " , ", ta_node.get_layer_idx(), ")"));
       gp_text_node_real_coord.set_layer_idx(GP_INST.getGDSIdxByRouting(ta_node.get_layer_idx()));
@@ -1233,7 +1228,7 @@ void TrackAssigner::plotTAPanel(TAPanel& ta_panel, irt_int curr_task_idx, std::s
       y -= y_reduced_span;
       GPText gp_text_node_grid_coord;
       gp_text_node_grid_coord.set_coord(real_rect.get_lb_x(), y);
-      gp_text_node_grid_coord.set_text_type(static_cast<irt_int>(GPGraphType::kInfo));
+      gp_text_node_grid_coord.set_text_type(static_cast<irt_int>(GPDataType::kInfo));
       gp_text_node_grid_coord.set_message(RTUtil::getString("(", grid_x, " , ", grid_y, " , ", ta_node.get_layer_idx(), ")"));
       gp_text_node_grid_coord.set_layer_idx(GP_INST.getGDSIdxByRouting(ta_node.get_layer_idx()));
       gp_text_node_grid_coord.set_presentation(GPTextPresentation::kLeftMiddle);
@@ -1242,7 +1237,7 @@ void TrackAssigner::plotTAPanel(TAPanel& ta_panel, irt_int curr_task_idx, std::s
       y -= y_reduced_span;
       GPText gp_text_direction_set;
       gp_text_direction_set.set_coord(real_rect.get_lb_x(), y);
-      gp_text_direction_set.set_text_type(static_cast<irt_int>(GPGraphType::kInfo));
+      gp_text_direction_set.set_text_type(static_cast<irt_int>(GPDataType::kInfo));
       gp_text_direction_set.set_message("direction_set: ");
       gp_text_direction_set.set_layer_idx(GP_INST.getGDSIdxByRouting(ta_node.get_layer_idx()));
       gp_text_direction_set.set_presentation(GPTextPresentation::kLeftMiddle);
@@ -1252,7 +1247,7 @@ void TrackAssigner::plotTAPanel(TAPanel& ta_panel, irt_int curr_task_idx, std::s
         y -= y_reduced_span;
         GPText gp_text_direction_set_info;
         gp_text_direction_set_info.set_coord(real_rect.get_lb_x(), y);
-        gp_text_direction_set_info.set_text_type(static_cast<irt_int>(GPGraphType::kInfo));
+        gp_text_direction_set_info.set_text_type(static_cast<irt_int>(GPDataType::kInfo));
         std::string direction_set_info_message = "--";
         for (Direction direction : ta_node.get_direction_set()) {
           direction_set_info_message += RTUtil::getString("(", GetDirectionName()(direction), ")");
@@ -1310,7 +1305,7 @@ void TrackAssigner::plotTAPanel(TAPanel& ta_panel, irt_int curr_task_idx, std::s
         }
         gp_path.set_layer_idx(GP_INST.getGDSIdxByRouting(ta_node.get_layer_idx()));
         gp_path.set_width(width);
-        gp_path.set_data_type(static_cast<irt_int>(GPGraphType::kNeighbor));
+        gp_path.set_data_type(static_cast<irt_int>(GPDataType::kNeighbor));
         neighbor_map_struct.push(gp_path);
       }
     }
@@ -1327,14 +1322,14 @@ void TrackAssigner::plotTAPanel(TAPanel& ta_panel, irt_int curr_task_idx, std::s
 
   for (irt_int x : x_list) {
     GPPath gp_path;
-    gp_path.set_data_type(static_cast<irt_int>(GPGraphType::kTrackAxis));
+    gp_path.set_data_type(static_cast<irt_int>(GPDataType::kAxis));
     gp_path.set_segment(x, real_lb.get_y(), x, real_rt.get_y());
     gp_path.set_layer_idx(GP_INST.getGDSIdxByRouting(ta_panel.get_panel_rect().get_layer_idx()));
     panel_track_axis_struct.push(gp_path);
   }
   for (irt_int y : y_list) {
     GPPath gp_path;
-    gp_path.set_data_type(static_cast<irt_int>(GPGraphType::kTrackAxis));
+    gp_path.set_data_type(static_cast<irt_int>(GPDataType::kAxis));
     gp_path.set_segment(real_lb.get_x(), y, real_rt.get_x(), y);
     gp_path.set_layer_idx(GP_INST.getGDSIdxByRouting(ta_panel.get_panel_rect().get_layer_idx()));
     panel_track_axis_struct.push(gp_path);
@@ -1345,7 +1340,7 @@ void TrackAssigner::plotTAPanel(TAPanel& ta_panel, irt_int curr_task_idx, std::s
     GPStruct fixed_rect_struct(RTUtil::getString("fixed_rect(net_", net_idx, ")"));
     for (EXTLayerRect* rect : rect_set) {
       GPBoundary gp_boundary;
-      gp_boundary.set_data_type(static_cast<irt_int>(GPGraphType::kNetShape));
+      gp_boundary.set_data_type(static_cast<irt_int>(GPDataType::kShape));
       gp_boundary.set_rect(rect->get_real_rect());
       gp_boundary.set_layer_idx(GP_INST.getGDSIdxByRouting(ta_panel.get_panel_rect().get_layer_idx()));
       fixed_rect_struct.push(gp_boundary);
@@ -1358,7 +1353,7 @@ void TrackAssigner::plotTAPanel(TAPanel& ta_panel, irt_int curr_task_idx, std::s
     EXTLayerRect& violation_shape = violation.get_violation_shape();
 
     GPBoundary gp_boundary;
-    gp_boundary.set_data_type(static_cast<irt_int>(GPGraphType::kBlockage));
+    gp_boundary.set_data_type(static_cast<irt_int>(GPDataType::kViolation));
     gp_boundary.set_rect(violation_shape.get_real_rect());
     if (violation.get_is_routing()) {
       gp_boundary.set_layer_idx(GP_INST.getGDSIdxByRouting(violation_shape.get_layer_idx()));
@@ -1377,7 +1372,7 @@ void TrackAssigner::plotTAPanel(TAPanel& ta_panel, irt_int curr_task_idx, std::s
       for (TAGroup& ta_group : ta_task->get_ta_group_list()) {
         for (LayerCoord& coord : ta_group.get_coord_list()) {
           GPBoundary gp_boundary;
-          gp_boundary.set_data_type(static_cast<irt_int>(GPGraphType::kKey));
+          gp_boundary.set_data_type(static_cast<irt_int>(GPDataType::kKey));
           gp_boundary.set_rect(RTUtil::getEnlargedRect(coord, width));
           gp_boundary.set_layer_idx(GP_INST.getGDSIdxByRouting(coord.get_layer_idx()));
           task_struct.push(gp_boundary);
@@ -1401,7 +1396,7 @@ void TrackAssigner::plotTAPanel(TAPanel& ta_panel, irt_int curr_task_idx, std::s
 
       if (first_layer_idx == second_layer_idx) {
         GPBoundary gp_boundary;
-        gp_boundary.set_data_type(static_cast<irt_int>(GPGraphType::kPath));
+        gp_boundary.set_data_type(static_cast<irt_int>(GPDataType::kPath));
         gp_boundary.set_rect(RTUtil::getEnlargedRect(first_coord, second_coord, half_width));
         gp_boundary.set_layer_idx(GP_INST.getGDSIdxByRouting(first_layer_idx));
         task_struct.push(gp_boundary);
@@ -1415,7 +1410,7 @@ void TrackAssigner::plotTAPanel(TAPanel& ta_panel, irt_int curr_task_idx, std::s
           GPBoundary above_boundary;
           above_boundary.set_rect(offset_above_enclosure);
           above_boundary.set_layer_idx(GP_INST.getGDSIdxByRouting(above_enclosure.get_layer_idx()));
-          above_boundary.set_data_type(static_cast<irt_int>(GPGraphType::kPath));
+          above_boundary.set_data_type(static_cast<irt_int>(GPDataType::kPath));
           task_struct.push(above_boundary);
 
           LayerRect& below_enclosure = via_master.get_below_enclosure();
@@ -1423,7 +1418,7 @@ void TrackAssigner::plotTAPanel(TAPanel& ta_panel, irt_int curr_task_idx, std::s
           GPBoundary below_boundary;
           below_boundary.set_rect(offset_below_enclosure);
           below_boundary.set_layer_idx(GP_INST.getGDSIdxByRouting(below_enclosure.get_layer_idx()));
-          below_boundary.set_data_type(static_cast<irt_int>(GPGraphType::kPath));
+          below_boundary.set_data_type(static_cast<irt_int>(GPDataType::kPath));
           task_struct.push(below_boundary);
 
           for (PlanarRect& cut_shape : via_master.get_cut_shape_list()) {
@@ -1431,7 +1426,7 @@ void TrackAssigner::plotTAPanel(TAPanel& ta_panel, irt_int curr_task_idx, std::s
             GPBoundary cut_boundary;
             cut_boundary.set_rect(offset_cut_shape);
             cut_boundary.set_layer_idx(GP_INST.getGDSIdxByCut(via_master.get_cut_layer_idx()));
-            cut_boundary.set_data_type(static_cast<irt_int>(GPGraphType::kPath));
+            cut_boundary.set_data_type(static_cast<irt_int>(GPDataType::kPath));
             task_struct.push(cut_boundary);
           }
         }
@@ -1441,8 +1436,7 @@ void TrackAssigner::plotTAPanel(TAPanel& ta_panel, irt_int curr_task_idx, std::s
   }
   std::string gds_file_path = RTUtil::getString(ta_temp_directory_path, flag, "_ta_panel_", ta_panel.get_ta_panel_id().get_layer_idx(), "_",
                                                 ta_panel.get_ta_panel_id().get_panel_idx(), ".gds");
-  GP_INST.plot(gp_gds, gds_file_path, false, false);
-#endif
+  GP_INST.plot(gp_gds, gds_file_path);
 }
 
 #endif

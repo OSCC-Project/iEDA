@@ -20,67 +20,59 @@
 
 namespace irt {
 
-enum class GPLayoutType
+enum class GPDataType
 {
   kNone,
-  kText,
-  kPinShape,
-  kProtectedAccessPoint,
+  kOpen,
+  kClose,
+  kInfo,
+  kNeighbor,
+  kKey,
+  kPath,
+  kShape,
   kAccessPoint,
-  kGuide,
-  kPreferTrack,
-  kNonpreferTrack,
-  kWire,
-  kEnclosure,
-  kCut,
-  kPatch,
-  kBlockage
+  kAxis,
+  kViolation
 };
 
-struct GetGPLayoutTypeName
+struct GetGPDataTypeName
 {
-  std::string operator()(const GPLayoutType& data_type) const
+  std::string operator()(const GPDataType& data_type) const
   {
     std::string data_type_name;
     switch (data_type) {
-      case GPLayoutType::kNone:
+      case GPDataType::kNone:
         data_type_name = "none";
         break;
-      case GPLayoutType::kText:
-        data_type_name = "text";
+      case GPDataType::kOpen:
+        data_type_name = "open";
         break;
-      case GPLayoutType::kPinShape:
-        data_type_name = "pin_shape";
+      case GPDataType::kClose:
+        data_type_name = "close";
         break;
-      case GPLayoutType::kProtectedAccessPoint:
-        data_type_name = "protected_access_point";
+      case GPDataType::kInfo:
+        data_type_name = "info";
         break;
-      case GPLayoutType::kAccessPoint:
+      case GPDataType::kNeighbor:
+        data_type_name = "neighbor";
+        break;
+      case GPDataType::kKey:
+        data_type_name = "key";
+        break;
+      case GPDataType::kPath:
+        data_type_name = "path";
+        break;
+      case GPDataType::kShape:
+        data_type_name = "shape";
+        break;
+      case GPDataType::kAccessPoint:
         data_type_name = "access_point";
         break;
-      case GPLayoutType::kGuide:
-        data_type_name = "guide";
+      case GPDataType::kAxis:
+        data_type_name = "axis";
         break;
-      case GPLayoutType::kPreferTrack:
-        data_type_name = "prefer_track";
-        break;
-      case GPLayoutType::kNonpreferTrack:
-        data_type_name = "nonprefer_track";
-        break;
-      case GPLayoutType::kWire:
-        data_type_name = "wire";
-        break;
-      case GPLayoutType::kEnclosure:
-        data_type_name = "enclosure";
-        break;
-      case GPLayoutType::kCut:
-        data_type_name = "cut";
-        break;
-      case GPLayoutType::kPatch:
-        data_type_name = "patch";
-        break;
-      case GPLayoutType::kBlockage:
-        data_type_name = "blockage";
+      case GPDataType::kViolation:
+        data_type_name = "violation";
         break;
       default:
         LOG_INST.error(Loc::current(), "Unrecognized type!");

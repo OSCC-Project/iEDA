@@ -50,11 +50,7 @@ void ResourceAllocator::destroyInst()
 
 void ResourceAllocator::allocate(std::vector<Net>& net_list)
 {
-  Monitor monitor;
-
   allocateNetList(net_list);
-
-  LOG_INST.info(Loc::current(), "The ", GetStageName()(Stage::kResourceAllocator), " completed!", monitor.getStatsInfo());
 }
 
 // private

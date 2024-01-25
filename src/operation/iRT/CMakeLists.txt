@@ -5,8 +5,8 @@ message(STATUS "############## RT: START CMAKE ##############")
 
 set(CMAKE_CXX_STANDARD 20)
 
-ADD_COMPILE_OPTIONS("-fsanitize=address")
-LINK_LIBRARIES("-fsanitize=address")
+# ADD_COMPILE_OPTIONS("-fsanitize=address")
+# LINK_LIBRARIES("-fsanitize=address")
 
 ############################ debug api ############################
 
@@ -21,7 +21,7 @@ LINK_LIBRARIES("-fsanitize=address")
 # set(DEBUG_IRT_PIN_ACCESSOR ON)
 # set(DEBUG_IRT_REGION_QUERY ON)
 # set(DEBUG_IRT_RESOURCE_ALLOCATOR ON) 
-set(DEBUG_IRT_TRACK_ASSIGNER ON) 
+# set(DEBUG_IRT_TRACK_ASSIGNER ON) 
 
 ############################ debug source solver ############################
 

@@ -25,7 +25,6 @@
 #include "GlobalRouter.hpp"
 #include "Monitor.hpp"
 #include "PinAccessor.hpp"
-#include "RegionQuery.hpp"
 #include "ResourceAllocator.hpp"
 #include "Stage.hpp"
 #include "TimingEval.hpp"
@@ -127,9 +126,6 @@ void RTAPI::runRT(std::vector<Tool> tool_list)
         break;
       default:
         break;
-    }
-    if (DM_INST.getConfig().enable_output_gds_files == 1) {
-      GP_INST.plot(net_list, stage_list[stage_idx], true, false);
     }
     DM_INST.save(stage_list[stage_idx]);
     stage_idx++;

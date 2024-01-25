@@ -35,7 +35,6 @@ class Config
   std::string top_routing_layer;     // optional
   irt_int gcell_pitch_size;          // optional
   irt_int enable_idrc_interface;     // optional
-  irt_int enable_output_gds_files;   // optional
   double supply_utilization_rate;    // optional
   irt_int pa_max_iter_num;           // optional
   double ra_initial_penalty;         // optional

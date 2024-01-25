@@ -54,7 +54,6 @@ void GlobalRouter::route(std::vector<Net>& net_list)
 
   routeNetList(net_list);
 
-  LOG_INST.info(Loc::current(), "The ", GetStageName()(Stage::kGlobalRouter), " completed!", monitor.getStatsInfo());
 }
 
 // private
@@ -1757,13 +1756,13 @@ void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
         GPBoundary gp_boundary;
         switch (gr_node.get_state()) {
           case GRNodeState::kNone:
-            gp_boundary.set_data_type(static_cast<irt_int>(GPGraphType::kNone));
+            gp_boundary.set_data_type(static_cast<irt_int>(GPDataType::kNone));
             break;
           case GRNodeState::kOpen:
-            gp_boundary.set_data_type(static_cast<irt_int>(GPGraphType::kOpen));
+            gp_boundary.set_data_type(static_cast<irt_int>(GPDataType::kOpen));
             break;
           case GRNodeState::kClose:
-            gp_boundary.set_data_type(static_cast<irt_int>(GPGraphType::kClose));
+            gp_boundary.set_data_type(static_cast<irt_int>(GPDataType::kClose));
             break;
           default:
             LOG_INST.error(Loc::current(), "The type is error!");
@@ -1776,7 +1775,7 @@ void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
         y -= y_reduced_span;
         GPText gp_text_node_coord;
         gp_text_node_coord.set_coord(real_rect.get_lb_x(), y);
-        gp_text_node_coord.set_text_type(static_cast<irt_int>(GPGraphType::kInfo));
+        gp_text_node_coord.set_text_type(static_cast<irt_int>(GPDataType::kInfo));
         gp_text_node_coord.set_message(RTUtil::getString("(", grid_x, " , ", grid_y, " , ", gr_node.get_layer_idx(), ")"));
         gp_text_node_coord.set_layer_idx(GP_INST.getGDSIdxByRouting(gr_node.get_layer_idx()));
         gp_text_node_coord.set_presentation(GPTextPresentation::kLeftMiddle);
@@ -1785,7 +1784,7 @@ void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
         y -= y_reduced_span;
         GPText gp_text_cross_wire_demand;
         gp_text_cross_wire_demand.set_coord(real_rect.get_lb_x(), y);
-        gp_text_cross_wire_demand.set_text_type(static_cast<irt_int>(GPGraphType::kInfo));
+        gp_text_cross_wire_demand.set_text_type(static_cast<irt_int>(GPDataType::kInfo));
         gp_text_cross_wire_demand.set_message(RTUtil::getString("cross_wire_demand: ", gr_node.get_cross_wire_demand()));
         gp_text_cross_wire_demand.set_layer_idx(GP_INST.getGDSIdxByRouting(gr_node.get_layer_idx()));
         gp_text_cross_wire_demand.set_presentation(GPTextPresentation::kLeftMiddle);
@@ -1794,7 +1793,7 @@ void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
         y -= y_reduced_span;
         GPText gp_text_local_wire_demand;
         gp_text_local_wire_demand.set_coord(real_rect.get_lb_x(), y);
-        gp_text_local_wire_demand.set_text_type(static_cast<irt_int>(GPGraphType::kInfo));
+        gp_text_local_wire_demand.set_text_type(static_cast<irt_int>(GPDataType::kInfo));
         gp_text_local_wire_demand.set_message(RTUtil::getString("local_wire_demand: ", gr_node.get_local_wire_demand()));
         gp_text_local_wire_demand.set_layer_idx(GP_INST.getGDSIdxByRouting(gr_node.get_layer_idx()));
         gp_text_local_wire_demand.set_presentation(GPTextPresentation::kLeftMiddle);
@@ -1803,7 +1802,7 @@ void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
         y -= y_reduced_span;
         GPText gp_text_whole_via_demand;
         gp_text_whole_via_demand.set_coord(real_rect.get_lb_x(), y);
-        gp_text_whole_via_demand.set_text_type(static_cast<irt_int>(GPGraphType::kInfo));
+        gp_text_whole_via_demand.set_text_type(static_cast<irt_int>(GPDataType::kInfo));
         gp_text_whole_via_demand.set_message(RTUtil::getString("whole_via_demand: ", gr_node.get_whole_via_demand()));
         gp_text_whole_via_demand.set_layer_idx(GP_INST.getGDSIdxByRouting(gr_node.get_layer_idx()));
         gp_text_whole_via_demand.set_presentation(GPTextPresentation::kLeftMiddle);
@@ -1812,7 +1811,7 @@ void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
         y -= y_reduced_span;
         GPText gp_text_net_via_demand_map;
         gp_text_net_via_demand_map.set_coord(real_rect.get_lb_x(), y);
-        gp_text_net_via_demand_map.set_text_type(static_cast<irt_int>(GPGraphType::kInfo));
+        gp_text_net_via_demand_map.set_text_type(static_cast<irt_int>(GPDataType::kInfo));
         gp_text_net_via_demand_map.set_message("net_via_demand_map: ");
         gp_text_net_via_demand_map.set_layer_idx(GP_INST.getGDSIdxByRouting(gr_node.get_layer_idx()));
         gp_text_net_via_demand_map.set_presentation(GPTextPresentation::kLeftMiddle);
@@ -1822,7 +1821,7 @@ void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
           y -= y_reduced_span;
           GPText gp_text_net_via_demand_map_info;
           gp_text_net_via_demand_map_info.set_coord(real_rect.get_lb_x(), y);
-          gp_text_net_via_demand_map_info.set_text_type(static_cast<irt_int>(GPGraphType::kInfo));
+          gp_text_net_via_demand_map_info.set_text_type(static_cast<irt_int>(GPDataType::kInfo));
           std::string net_via_demand_map_message = "--";
           for (auto& [net_idx, via_demand] : gr_node.get_net_via_demand_map()) {
             net_via_demand_map_message += RTUtil::getString("(", net_idx, ")(", via_demand, ")");
@@ -1836,7 +1835,7 @@ void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
         y -= y_reduced_span;
         GPText gp_text_whole_access_demand;
         gp_text_whole_access_demand.set_coord(real_rect.get_lb_x(), y);
-        gp_text_whole_access_demand.set_text_type(static_cast<irt_int>(GPGraphType::kInfo));
+        gp_text_whole_access_demand.set_text_type(static_cast<irt_int>(GPDataType::kInfo));
         gp_text_whole_access_demand.set_message(RTUtil::getString("whole_access_demand: ", gr_node.get_whole_access_demand()));
         gp_text_whole_access_demand.set_layer_idx(GP_INST.getGDSIdxByRouting(gr_node.get_layer_idx()));
         gp_text_whole_access_demand.set_presentation(GPTextPresentation::kLeftMiddle);
@@ -1845,7 +1844,7 @@ void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
         y -= y_reduced_span;
         GPText gp_text_net_orien_access_demand_map;
         gp_text_net_orien_access_demand_map.set_coord(real_rect.get_lb_x(), y);
-        gp_text_net_orien_access_demand_map.set_text_type(static_cast<irt_int>(GPGraphType::kInfo));
+        gp_text_net_orien_access_demand_map.set_text_type(static_cast<irt_int>(GPDataType::kInfo));
         gp_text_net_orien_access_demand_map.set_message("net_orien_access_demand_map: ");
         gp_text_net_orien_access_demand_map.set_layer_idx(GP_INST.getGDSIdxByRouting(gr_node.get_layer_idx()));
         gp_text_net_orien_access_demand_map.set_presentation(GPTextPresentation::kLeftMiddle);
@@ -1855,7 +1854,7 @@ void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
           y -= y_reduced_span;
           GPText gp_text_net_orien_access_demand_map_info;
           gp_text_net_orien_access_demand_map_info.set_coord(real_rect.get_lb_x(), y);
-          gp_text_net_orien_access_demand_map_info.set_text_type(static_cast<irt_int>(GPGraphType::kInfo));
+          gp_text_net_orien_access_demand_map_info.set_text_type(static_cast<irt_int>(GPDataType::kInfo));
           std::string net_orien_access_demand_map_message = "--";
           for (auto& [net_idx, orien_wire_demand_map] : gr_node.get_net_orien_access_demand_map()) {
             net_orien_access_demand_map_message += RTUtil::getString("(", net_idx, ")");
@@ -1872,7 +1871,7 @@ void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
         y -= y_reduced_span;
         GPText gp_text_orien_access_supply_map;
         gp_text_orien_access_supply_map.set_coord(real_rect.get_lb_x(), y);
-        gp_text_orien_access_supply_map.set_text_type(static_cast<irt_int>(GPGraphType::kInfo));
+        gp_text_orien_access_supply_map.set_text_type(static_cast<irt_int>(GPDataType::kInfo));
         gp_text_orien_access_supply_map.set_message("orien_access_supply_map: ");
         gp_text_orien_access_supply_map.set_layer_idx(GP_INST.getGDSIdxByRouting(gr_node.get_layer_idx()));
         gp_text_orien_access_supply_map.set_presentation(GPTextPresentation::kLeftMiddle);
@@ -1882,7 +1881,7 @@ void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
           y -= y_reduced_span;
           GPText gp_text_orien_access_supply_map_info;
           gp_text_orien_access_supply_map_info.set_coord(real_rect.get_lb_x(), y);
-          gp_text_orien_access_supply_map_info.set_text_type(static_cast<irt_int>(GPGraphType::kInfo));
+          gp_text_orien_access_supply_map_info.set_text_type(static_cast<irt_int>(GPDataType::kInfo));
           std::string orien_access_supply_map_message = "--";
           for (auto& [orientation, access_supply] : gr_node.get_orien_access_supply_map()) {
             orien_access_supply_map_message += RTUtil::getString("(", GetOrientationName()(orientation), ":", access_supply, ")");
@@ -1896,7 +1895,7 @@ void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
         y -= y_reduced_span;
         GPText gp_text_orien_access_demand_map;
         gp_text_orien_access_demand_map.set_coord(real_rect.get_lb_x(), y);
-        gp_text_orien_access_demand_map.set_text_type(static_cast<irt_int>(GPGraphType::kInfo));
+        gp_text_orien_access_demand_map.set_text_type(static_cast<irt_int>(GPDataType::kInfo));
         gp_text_orien_access_demand_map.set_message("orien_access_demand_map: ");
         gp_text_orien_access_demand_map.set_layer_idx(GP_INST.getGDSIdxByRouting(gr_node.get_layer_idx()));
         gp_text_orien_access_demand_map.set_presentation(GPTextPresentation::kLeftMiddle);
@@ -1906,7 +1905,7 @@ void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
           y -= y_reduced_span;
           GPText gp_text_orien_access_demand_map_info;
           gp_text_orien_access_demand_map_info.set_coord(real_rect.get_lb_x(), y);
-          gp_text_orien_access_demand_map_info.set_text_type(static_cast<irt_int>(GPGraphType::kInfo));
+          gp_text_orien_access_demand_map_info.set_text_type(static_cast<irt_int>(GPDataType::kInfo));
           std::string orien_access_demand_map_message = "--";
           for (auto& [orientation, access_demand] : gr_node.get_orien_access_demand_map()) {
             orien_access_demand_map_message += RTUtil::getString("(", GetOrientationName()(orientation), ":", access_demand, ")");
@@ -1920,7 +1919,7 @@ void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
         y -= y_reduced_span;
         GPText gp_text_resource_supply;
         gp_text_resource_supply.set_coord(real_rect.get_lb_x(), y);
-        gp_text_resource_supply.set_text_type(static_cast<irt_int>(GPGraphType::kInfo));
+        gp_text_resource_supply.set_text_type(static_cast<irt_int>(GPDataType::kInfo));
         gp_text_resource_supply.set_message(RTUtil::getString("resource_supply: ", gr_node.get_resource_supply()));
         gp_text_resource_supply.set_layer_idx(GP_INST.getGDSIdxByRouting(gr_node.get_layer_idx()));
         gp_text_resource_supply.set_presentation(GPTextPresentation::kLeftMiddle);
@@ -1929,7 +1928,7 @@ void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
         y -= y_reduced_span;
         GPText gp_text_resource_demand;
         gp_text_resource_demand.set_coord(real_rect.get_lb_x(), y);
-        gp_text_resource_demand.set_text_type(static_cast<irt_int>(GPGraphType::kInfo));
+        gp_text_resource_demand.set_text_type(static_cast<irt_int>(GPDataType::kInfo));
         gp_text_resource_demand.set_message(RTUtil::getString("resource_demand: ", gr_node.get_resource_demand()));
         gp_text_resource_demand.set_layer_idx(GP_INST.getGDSIdxByRouting(gr_node.get_layer_idx()));
         gp_text_resource_demand.set_presentation(GPTextPresentation::kLeftMiddle);
@@ -1938,7 +1937,7 @@ void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
         y -= y_reduced_span;
         GPText gp_text_passed_net_set;
         gp_text_passed_net_set.set_coord(real_rect.get_lb_x(), y);
-        gp_text_passed_net_set.set_text_type(static_cast<irt_int>(GPGraphType::kInfo));
+        gp_text_passed_net_set.set_text_type(static_cast<irt_int>(GPDataType::kInfo));
         gp_text_passed_net_set.set_message("passed_net_set: ");
         gp_text_passed_net_set.set_layer_idx(GP_INST.getGDSIdxByRouting(gr_node.get_layer_idx()));
         gp_text_passed_net_set.set_presentation(GPTextPresentation::kLeftMiddle);
@@ -1948,7 +1947,7 @@ void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
           y -= y_reduced_span;
           GPText gp_text_passed_net_set_info;
           gp_text_passed_net_set_info.set_coord(real_rect.get_lb_x(), y);
-          gp_text_passed_net_set_info.set_text_type(static_cast<irt_int>(GPGraphType::kInfo));
+          gp_text_passed_net_set_info.set_text_type(static_cast<irt_int>(GPDataType::kInfo));
           std::string passed_net_set_info_message = "--";
           for (irt_int net_idx : gr_node.get_passed_net_set()) {
             passed_net_set_info_message += RTUtil::getString("(", net_idx, ")");
@@ -1962,7 +1961,7 @@ void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
         y -= y_reduced_span;
         GPText gp_text_direction_set;
         gp_text_direction_set.set_coord(real_rect.get_lb_x(), y);
-        gp_text_direction_set.set_text_type(static_cast<irt_int>(GPGraphType::kInfo));
+        gp_text_direction_set.set_text_type(static_cast<irt_int>(GPDataType::kInfo));
         gp_text_direction_set.set_message("direction_set: ");
         gp_text_direction_set.set_layer_idx(GP_INST.getGDSIdxByRouting(gr_node.get_layer_idx()));
         gp_text_direction_set.set_presentation(GPTextPresentation::kLeftMiddle);
@@ -1972,7 +1971,7 @@ void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
           y -= y_reduced_span;
           GPText gp_text_direction_set_info;
           gp_text_direction_set_info.set_coord(real_rect.get_lb_x(), y);
-          gp_text_direction_set_info.set_text_type(static_cast<irt_int>(GPGraphType::kInfo));
+          gp_text_direction_set_info.set_text_type(static_cast<irt_int>(GPDataType::kInfo));
           std::string direction_set_info_message = "--";
           for (Direction direction : gr_node.get_direction_set()) {
             direction_set_info_message += RTUtil::getString("(", GetDirectionName()(direction), ")");
@@ -2031,7 +2030,7 @@ void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
           }
           gp_path.set_layer_idx(GP_INST.getGDSIdxByRouting(gr_node.get_layer_idx()));
           gp_path.set_width(width);
-          gp_path.set_data_type(static_cast<irt_int>(GPGraphType::kNeighbor));
+          gp_path.set_data_type(static_cast<irt_int>(GPDataType::kNeighbor));
           neighbor_map_struct.push(gp_path);
         }
       }
@@ -2040,9 +2039,9 @@ void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
   gp_gds.addStruct(neighbor_map_struct);
 
   // source_region_query_map
-  // std::vector<std::pair<GRSourceType, GPGraphType>> source_graph_pair_list = {{GRSourceType::kBlockage, GPGraphType::kBlockage},
-  //                                                                             {GRSourceType::kNetShape, GPGraphType::kNetShape},
-  //                                                                             {GRSourceType::kReservedVia, GPGraphType::kReservedVia}};
+  // std::vector<std::pair<GRSourceType, GPDataType>> source_graph_pair_list = {{GRSourceType::kBlockage, GPDataType::kBlockage},
+  //                                                                             {GRSourceType::kNetShape, GPDataType::kNetShape},
+  //                                                                             {GRSourceType::kReservedVia, GPDataType::kReservedVia}};
   // std::vector<GridMap<GRNode>>& layer_node_map = gr_model.get_layer_node_map();
   // for (irt_int layer_idx = 0; layer_idx < static_cast<irt_int>(layer_node_map.size()); layer_idx++) {
   //   GridMap<GRNode>& node_map = layer_node_map[layer_idx];
@@ -2076,7 +2075,7 @@ void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
         PlanarRect real_rect = RTUtil::getRealRectByGCell(coord.get_planar_coord(), gcell_axis);
 
         GPBoundary gp_boundary;
-        gp_boundary.set_data_type(static_cast<irt_int>(GPGraphType::kKey));
+        gp_boundary.set_data_type(static_cast<irt_int>(GPDataType::kKey));
         gp_boundary.set_rect(real_rect);
         gp_boundary.set_layer_idx(GP_INST.getGDSIdxByRouting(coord.get_layer_idx()));
         net_struct.push(gp_boundary);
@@ -2098,7 +2097,7 @@ void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
 
       if (first_layer_idx == second_layer_idx) {
         GPBoundary gp_boundary;
-        gp_boundary.set_data_type(static_cast<irt_int>(GPGraphType::kPath));
+        gp_boundary.set_data_type(static_cast<irt_int>(GPDataType::kPath));
         gp_boundary.set_rect(RTUtil::getRealRectByGCell(first_coord, second_coord, gcell_axis));
         gp_boundary.set_layer_idx(GP_INST.getGDSIdxByRouting(first_layer_idx));
         net_struct.push(gp_boundary);
@@ -2106,7 +2105,7 @@ void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
         RTUtil::swapByASC(first_layer_idx, second_layer_idx);
         for (irt_int layer_idx = first_layer_idx; layer_idx <= second_layer_idx; layer_idx++) {
           GPBoundary gp_boundary;
-          gp_boundary.set_data_type(static_cast<irt_int>(GPGraphType::kPath));
+          gp_boundary.set_data_type(static_cast<irt_int>(GPDataType::kPath));
           gp_boundary.set_rect(RTUtil::getRealRectByGCell(first_coord, gcell_axis));
           gp_boundary.set_layer_idx(GP_INST.getGDSIdxByRouting(layer_idx));
           net_struct.push(gp_boundary);
@@ -2115,7 +2114,7 @@ void GlobalRouter::plotGRModel(GRModel& gr_model, irt_int curr_net_idx)
     }
     gp_gds.addStruct(net_struct);
   }
-  GP_INST.plot(gp_gds, gr_temp_directory_path + "gr_model.gds", false, false);
+  GP_INST.plot(gp_gds, gr_temp_directory_path + "gr_model.gds");
 }
 
 #endif
