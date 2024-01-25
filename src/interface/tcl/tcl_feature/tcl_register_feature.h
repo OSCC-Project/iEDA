@@ -37,6 +37,8 @@ int registerCmdFeature()
   registerTclCmd(CmdFeatureGenerateInstances, "feature_instances");
   registerTclCmd(CmdFeatureGenerateNets, "feature_nets");
 
+  registerTclCmd(CmdFeatureSummary, "feature_summary");
+
   return EXIT_SUCCESS;
 }
 
