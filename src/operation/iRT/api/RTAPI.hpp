@@ -49,6 +49,7 @@ class RTAPI
 
   // RT
   void initRT(std::map<std::string, std::any> config_map);
+  void runRT();
   void runRT(std::vector<Tool> tool_list);
   Stage convertToStage(Tool tool);
   void destroyRT();

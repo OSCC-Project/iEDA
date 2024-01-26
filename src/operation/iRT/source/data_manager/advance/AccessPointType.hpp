@@ -28,8 +28,8 @@ enum class AccessPointType
   kNone,
   kPrefTrackGrid,
   kCurrTrackGrid,
-  kOnTrack,
-  kOnShape
+  kTrackCenter,
+  kShapeCenter
 };
 
 struct GetAccessPointTypeName
@@ -47,11 +47,11 @@ struct GetAccessPointTypeName
               case AccessPointType::kCurrTrackGrid:
         access_point_name = "curr_track_grid";
         break;
-      case AccessPointType::kOnTrack:
-        access_point_name = "on_track";
+      case AccessPointType::kTrackCenter:
+        access_point_name = "track_center";
         break;
-      case AccessPointType::kOnShape:
-        access_point_name = "on_shape";
+      case AccessPointType::kShapeCenter:
+        access_point_name = "shape_center";
         break;
       default:
         LOG_INST.error(Loc::current(), "Unrecognized type!");

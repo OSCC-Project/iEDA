@@ -143,7 +143,6 @@ class DataManager
   void transPinList(Net& net);
   void makePinList(Net& net);
   void checkPinList(Net& net);
-  void buildDrivingPin(Net& net);
   void buildGCellMap();
   void updateHelper();
 #endif
@@ -156,13 +155,6 @@ class DataManager
 #if 1  // output
   void outputGCellGrid(idb::IdbBuilder* idb_builder);
   void outputNetList(idb::IdbBuilder* idb_builder);
-  // PhysicalNode makeWirePhysicalNode(irt_int net_idx, Segment<LayerCoord>* segment);
-  // PhysicalNode makeViaPhysicalNode(irt_int net_idx, Segment<LayerCoord>* segment);
-  // PhysicalNode makePatchPhysicalNode(irt_int net_idx, EXTLayerRect* patch);
-  // void convertToIDBNet(idb::IdbBuilder* idb_builder, std::vector<PhysicalNode>& phy_node_list, idb::IdbNet* idb_net);
-  // void getIDBWire(idb::IdbLayers* idb_layer_list, WireNode& wire_node, idb::IdbRegularWireSegment* idb_segment);
-  // void getIDBVia(idb::IdbVias* lef_via_list, idb::IdbVias* def_via_list, ViaNode& via_node, idb::IdbRegularWireSegment* idb_segment);
-  // void convertToIDBPatch(idb::IdbLayers* idb_layer_list, PatchNode& patch_node, idb::IdbRegularWireSegment* idb_segment);
 #endif
 
 #if 1  // save & load

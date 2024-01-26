@@ -20,7 +20,6 @@
 #include "ConnectType.hpp"
 #include "GridMap.hpp"
 #include "Guide.hpp"
-#include "GuideSegNode.hpp"
 #include "MTree.hpp"
 #include "PhysicalNode.hpp"
 #include "Pin.hpp"
@@ -38,7 +37,6 @@ class Net
   ConnectType get_connect_type() const { return _connect_type; }
   // PinAccessor
   std::vector<Pin>& get_pin_list() { return _pin_list; }
-  Pin& get_driving_pin() { return _driving_pin; }
   BoundingBox& get_bounding_box() { return _bounding_box; }
   // ResourceAllocator
   GridMap<double>& get_ra_cost_map() { return _ra_cost_map; }
@@ -53,7 +51,6 @@ class Net
   void set_connect_type(const ConnectType& connect_type) { _connect_type = connect_type; }
   // PinAccessor
   void set_pin_list(const std::vector<Pin>& pin_list) { _pin_list = pin_list; }
-  void set_driving_pin(const Pin& driving_pin) { _driving_pin = driving_pin; }
   void set_bounding_box(const BoundingBox& bounding_box) { _bounding_box = bounding_box; }
   // ResourceAllocator
   void set_ra_cost_map(const GridMap<double>& ra_cost_map) { _ra_cost_map = ra_cost_map; }
@@ -68,7 +65,6 @@ class Net
   ConnectType _connect_type = ConnectType::kNone;
   // PinAccessor
   std::vector<Pin> _pin_list;
-  Pin _driving_pin;
   BoundingBox _bounding_box;
   // ResourceAllocator
   GridMap<double> _ra_cost_map;

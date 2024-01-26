@@ -51,19 +51,19 @@ void TrackAssigner::destroyInst()
 
 void TrackAssigner::assign(std::vector<Net>& net_list)
 {
-  assignNetList(net_list);
+  Monitor monitor;
+  LOG_INST.info(Loc::current(), "Begin assigning...");
+
+  TAModel ta_model = initTAModel(net_list);
+  iterativeTAModel(ta_model);
+  updateTAModel(ta_model);
+
+  LOG_INST.info(Loc::current(), "End assign", monitor.getStatsInfo());
 }
 
 // private
 
 TrackAssigner* TrackAssigner::_ta_instance = nullptr;
-
-void TrackAssigner::assignNetList(std::vector<Net>& net_list)
-{
-  TAModel ta_model = initTAModel(net_list);
-  addAccessPointToGCellMap(ta_model);
-  iterativeTAModel(ta_model);
-}
 
 TAModel TrackAssigner::initTAModel(std::vector<Net>& net_list)
 {
@@ -95,17 +95,6 @@ TANet TrackAssigner::convertToTANet(Net& net)
   return ta_net;
 }
 
-void TrackAssigner::addAccessPointToGCellMap(TAModel& ta_model)
-{
-  std::vector<TANet>& ta_net_list = ta_model.get_ta_net_list();
-
-  for (TANet& ta_net : ta_net_list) {
-    for (TAPin& ta_pin : ta_net.get_ta_pin_list()) {
-      DM_INST.updateAccessPointToGCellMap(ChangeType::kAdd, ta_net.get_net_idx(), &ta_pin.get_protected_access_point());
-    }
-  }
-}
-
 void TrackAssigner::iterativeTAModel(TAModel& ta_model)
 {
   irt_int cost_unit = 128;
@@ -119,7 +108,6 @@ void TrackAssigner::iterativeTAModel(TAModel& ta_model)
     ta_model.set_curr_ta_parameter(ta_parameter_list[i]);
     initTAPanelMap(ta_model);
     initTATaskList(ta_model);
-    buildPanelSchedule(ta_model);
     assignTAPanelMap(ta_model);
     LOG_INST.info(Loc::current(), "****** End Model Iteration(", (i + 1), "/", ta_parameter_list.size(), ")", iter_monitor.getStatsInfo(),
                   " ******");
@@ -279,34 +267,13 @@ void TrackAssigner::buildBoundingBox(TATask* ta_task)
   ta_task->set_bounding_box(RTUtil::getBoundingBox(coord_list));
 }
 
-void TrackAssigner::buildPanelSchedule(TAModel& ta_model)
-{
-  std::vector<std::vector<TAPanel>>& layer_panel_list = ta_model.get_layer_panel_list();
-
-  std::vector<std::vector<TAPanelId>> ta_panel_id_list_list;
-  ta_panel_id_list_list.resize(2);
-  for (irt_int layer_idx = 0; layer_idx < static_cast<irt_int>(layer_panel_list.size()); layer_idx++) {
-    for (irt_int i = 0; i < static_cast<irt_int>(layer_panel_list[layer_idx].size()); i++) {
-      if (i % 2 == 0) {
-        ta_panel_id_list_list[0].emplace_back(layer_idx, i);
-      } else {
-        ta_panel_id_list_list[1].emplace_back(layer_idx, i);
-      }
-    }
-  }
-  ta_model.set_ta_panel_id_list_list(ta_panel_id_list_list);
-}
-
 void TrackAssigner::assignTAPanelMap(TAModel& ta_model)
 {
-  std::vector<std::vector<TAPanel>>& layer_panel_list = ta_model.get_layer_panel_list();
-
   size_t total_panel_num = 0;
-  for (std::vector<TAPanelId>& ta_panel_id_list : ta_model.get_ta_panel_id_list_list()) {
+  for (std::vector<TAPanel>& ta_panel_list : ta_model.get_layer_panel_list()) {
     Monitor stage_monitor;
     // #pragma omp parallel for
-    for (TAPanelId& ta_panel_id : ta_panel_id_list) {
-      TAPanel& ta_panel = layer_panel_list[ta_panel_id.get_layer_idx()][ta_panel_id.get_panel_idx()];
+    for (TAPanel& ta_panel : ta_panel_list) {
       if (ta_panel.get_ta_task_list().empty()) {
         continue;
       }
@@ -319,10 +286,9 @@ void TrackAssigner::assignTAPanelMap(TAModel& ta_model)
       // plotTAPanel(ta_panel, -1, "pre");
       routeTAPanel(ta_panel);
       // plotTAPanel(ta_panel, -1, "post");
-      updateTATaskToGcellMap(ta_panel);
       freeTAPanel(ta_panel);
     }
-    total_panel_num += ta_panel_id_list.size();
+    total_panel_num += ta_panel_list.size();
 
     LOG_INST.info(Loc::current(), "Assigned ", total_panel_num, " panels with 0 violations.", stage_monitor.getStatsInfo());
   }
@@ -1036,23 +1002,35 @@ std::vector<TATask*> TrackAssigner::getTaskScheduleByViolation(TAPanel& ta_panel
   return ta_task_list;
 }
 
-void TrackAssigner::updateTATaskToGcellMap(TAPanel& ta_panel)
-{
-  for (TATask* ta_task : ta_panel.get_ta_task_list()) {
-    for (Segment<LayerCoord>& routing_segment : ta_task->get_routing_segment_list()) {
-      DM_INST.updateNetResultToGCellMap(ChangeType::kAdd, ta_task->get_net_idx(), new Segment<LayerCoord>(routing_segment));
-    }
-  }
-}
-
 void TrackAssigner::freeTAPanel(TAPanel& ta_panel)
 {
-  for (TATask* ta_task : ta_panel.get_ta_task_list()) {
-    delete ta_task;
-    ta_task = nullptr;
-  }
-  ta_panel.get_ta_task_list().clear();
   ta_panel.get_ta_node_map().free();
+}
+
+void TrackAssigner::updateTAModel(TAModel& ta_model)
+{
+  // 更新到顶层
+  std::vector<TANet>& ta_net_list = ta_model.get_ta_net_list();
+  for (std::vector<TAPanel>& ta_panel_list : ta_model.get_layer_panel_list()) {
+    for (TAPanel& ta_panel : ta_panel_list) {
+      for (TATask* ta_task : ta_panel.get_ta_task_list()) {
+        std::vector<Segment<LayerCoord>>& ta_result_list = ta_net_list[ta_task->get_net_idx()].get_origin_net()->get_ta_result_list();
+        for (Segment<LayerCoord>& routing_segment : ta_task->get_routing_segment_list()) {
+          ta_result_list.push_back(routing_segment);
+        }
+      }
+    }
+  }
+  // 更新到gcell_map
+  for (std::vector<TAPanel>& ta_panel_list : ta_model.get_layer_panel_list()) {
+    for (TAPanel& ta_panel : ta_panel_list) {
+      for (TATask* ta_task : ta_panel.get_ta_task_list()) {
+        for (Segment<LayerCoord>& routing_segment : ta_task->get_routing_segment_list()) {
+          DM_INST.updateNetResultToGCellMap(ChangeType::kAdd, ta_task->get_net_idx(), new Segment<LayerCoord>(routing_segment));
+        }
+      }
+    }
+  }
 }
 
 #if 1  // update env

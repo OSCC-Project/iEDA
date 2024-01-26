@@ -32,6 +32,7 @@ int registerCmdRT()
 
   registerTclCmd(TclDestroyRT, "destroy_rt");
   registerTclCmd(TclInitRT, "init_rt");
+  registerTclCmd(TclRunNewRT, "run_new_rt");
   registerTclCmd(TclRunRT, "run_rt");
   return EXIT_SUCCESS;
 }

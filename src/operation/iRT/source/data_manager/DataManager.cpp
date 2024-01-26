@@ -895,7 +895,11 @@ void DataManager::wrapDrivingPin(Net& net, idb::IdbNet* idb_net)
   if (!idb_driving_pin->is_io_pin()) {
     driving_pin_name = RTUtil::getString(idb_driving_pin->get_instance()->get_name(), ":", driving_pin_name);
   }
-  net.get_driving_pin().set_pin_name(driving_pin_name);
+  for (Pin& pin : net.get_pin_list()) {
+    if (pin.get_pin_name() == driving_pin_name) {
+      pin.set_is_driving(true);
+    }
+  }
 }
 
 void DataManager::updateHelper(idb::IdbBuilder* idb_builder)
@@ -1602,7 +1606,6 @@ void DataManager::buildNetList()
     Net& net = net_list[net_idx];
     net.set_net_idx(static_cast<irt_int>(net_idx));
     buildPinList(net);
-    buildDrivingPin(net);
   }
 }
 
@@ -1671,20 +1674,6 @@ void DataManager::checkPinList(Net& net)
       }
     }
   }
-}
-
-void DataManager::buildDrivingPin(Net& net)
-{
-  std::vector<Pin>& pin_list = net.get_pin_list();
-  for (size_t i = 0; i < pin_list.size(); i++) {
-    Pin& pin = pin_list[i];
-    if (net.get_driving_pin().get_pin_name() != pin.get_pin_name()) {
-      continue;
-    }
-    net.set_driving_pin(pin);
-    return;
-  }
-  LOG_INST.error(Loc::current(), "Unable to find a driving pin!");
 }
 
 void DataManager::buildGCellMap()
@@ -2081,154 +2070,6 @@ void DataManager::outputNetList(idb::IdbBuilder* idb_builder)
     }
   }
 }
-
-// PhysicalNode DataManager::makeWirePhysicalNode(irt_int net_idx, Segment<LayerCoord>* segment)
-// {
-//   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
-
-//   LayerCoord& first_coord = segment->get_first();
-//   LayerCoord& second_coord = segment->get_second();
-//   irt_int layer_idx = first_coord.get_layer_idx();
-
-//   if (RTUtil::isOblique(first_coord, second_coord)) {
-//     LOG_INST.error(Loc::current(), "The wire physical_node is oblique!");
-//   }
-//   if (routing_layer_list.back().get_layer_idx() < layer_idx || layer_idx < routing_layer_list.front().get_layer_idx()) {
-//     LOG_INST.error(Loc::current(), "The wire layer_idx is illegal!");
-//   }
-//   PhysicalNode physical_node;
-//   WireNode& wire_node = physical_node.getNode<WireNode>();
-//   wire_node.set_net_idx(net_idx);
-//   wire_node.set_layer_idx(layer_idx);
-//   wire_node.set_first(first_coord);
-//   wire_node.set_second(second_coord);
-//   wire_node.set_wire_width(routing_layer_list[layer_idx].get_min_width());
-//   return physical_node;
-// }
-
-// PhysicalNode DataManager::makeViaPhysicalNode(irt_int net_idx, Segment<LayerCoord>* segment)
-// {
-//   std::vector<std::vector<ViaMaster>>& layer_via_master_list = DM_INST.getDatabase().get_layer_via_master_list();
-
-//   LayerCoord& first_coord = segment->get_first();
-//   LayerCoord& second_coord = segment->get_second();
-//   irt_int below_layer_idx = std::min(first_coord.get_layer_idx(), second_coord.get_layer_idx());
-
-//   if (below_layer_idx < 0 || below_layer_idx >= static_cast<irt_int>(layer_via_master_list.size())) {
-//     LOG_INST.error(Loc::current(), "The via below_layer_idx is illegal!");
-//   }
-//   PhysicalNode physical_node;
-//   ViaNode& via_node = physical_node.getNode<ViaNode>();
-//   via_node.set_net_idx(net_idx);
-//   via_node.set_coord(first_coord);
-//   via_node.set_via_master_idx(layer_via_master_list[below_layer_idx].front().get_via_master_idx());
-//   return physical_node;
-// }
-
-// PhysicalNode DataManager::makePatchPhysicalNode(irt_int net_idx, EXTLayerRect* patch)
-// {
-//   PhysicalNode physical_node;
-//   PatchNode& patch_node = physical_node.getNode<PatchNode>();
-//   patch_node.set_net_idx(net_idx);
-//   patch_node.set_rect(patch->get_real_rect());
-//   patch_node.set_layer_idx(patch->get_layer_idx());
-//   return physical_node;
-// }
-
-// void DataManager::convertToIDBNet(idb::IdbBuilder* idb_builder, std::vector<PhysicalNode>& phy_node_list, idb::IdbNet* idb_net)
-// {
-//   idb::IdbLayers* idb_layer_list = idb_builder->get_def_service()->get_layout()->get_layers();
-
-//   idb::IdbVias* lef_via_list = idb_builder->get_lef_service()->get_layout()->get_via_list();
-//   idb::IdbVias* def_via_list = idb_builder->get_def_service()->get_design()->get_via_list();
-
-//   idb_net->clear_wire_list();
-//   idb::IdbRegularWireList* idb_wire_list = idb_net->get_wire_list();
-//   if (idb_wire_list == nullptr) {
-//     LOG_INST.error(Loc::current(), "The idb wire list is empty!");
-//   }
-//   idb::IdbRegularWire* idb_wire = idb_wire_list->add_wire();
-//   idb_wire->set_wire_state(idb::IdbWiringStatement::kRouted);
-
-//   irt_int print_new = false;
-//   for (PhysicalNode& physical_node : phy_node_list) {
-//     idb::IdbRegularWireSegment* idb_segment = idb_wire->add_segment();
-//     if (physical_node.isType<WireNode>()) {
-//       getIDBWire(idb_layer_list, physical_node.getNode<WireNode>(), idb_segment);
-//     } else if (physical_node.isType<ViaNode>()) {
-//       getIDBVia(lef_via_list, def_via_list, physical_node.getNode<ViaNode>(), idb_segment);
-//     } else if (physical_node.isType<PatchNode>()) {
-//       convertToIDBPatch(idb_layer_list, physical_node.getNode<PatchNode>(), idb_segment);
-//     } else {
-//       LOG_INST.error(Loc::current(), "The physical_node is incorrect type!");
-//     }
-//     if (print_new == false) {
-//       idb_segment->set_layer_as_new();
-//       print_new = true;
-//     }
-//   }
-// }
-
-// void DataManager::getIDBWire(idb::IdbLayers* idb_layer_list, WireNode& wire_node, idb::IdbRegularWireSegment* idb_segment)
-// {
-//   std::vector<RoutingLayer>& routing_layer_list = _database.get_routing_layer_list();
-
-//   std::string layer_name = routing_layer_list[wire_node.get_layer_idx()].get_layer_name();
-//   idb::IdbLayer* idb_layer = idb_layer_list->find_layer(layer_name);
-//   if (idb_layer == nullptr) {
-//     LOG_INST.error(Loc::current(), "Can not find idb layer ", layer_name);
-//   }
-//   PlanarCoord& first_coord = wire_node.get_first();
-//   PlanarCoord& second_coord = wire_node.get_second();
-//   if (RTUtil::isOblique(first_coord, second_coord)) {
-//     LOG_INST.error(Loc::current(), "The wire is oblique!");
-//   }
-//   idb_segment->set_layer(idb_layer);
-//   idb_segment->add_point(first_coord.get_x(), first_coord.get_y());
-//   idb_segment->add_point(second_coord.get_x(), second_coord.get_y());
-// }
-
-// void DataManager::getIDBVia(idb::IdbVias* lef_via_list, idb::IdbVias* def_via_list, ViaNode& via_node,
-//                             idb::IdbRegularWireSegment* idb_segment)
-// {
-//   std::vector<std::vector<ViaMaster>>& layer_via_master_list = _database.get_layer_via_master_list();
-
-//   ViaMasterIdx& via_master_idx = via_node.get_via_master_idx();
-//   std::string via_name = layer_via_master_list[via_master_idx.get_below_layer_idx()][via_master_idx.get_via_idx()].get_via_name();
-//   idb::IdbVia* idb_via = lef_via_list->find_via(via_name);
-//   if (idb_via == nullptr) {
-//     idb_via = def_via_list->find_via(via_name);
-//   }
-//   if (idb_via == nullptr) {
-//     LOG_INST.error(Loc::current(), "Can not find idb via ", via_name, "!");
-//   }
-//   idb::IdbLayer* idb_layer_top = idb_via->get_instance()->get_top_layer_shape()->get_layer();
-//   if (idb_layer_top == nullptr) {
-//     LOG_INST.error(Loc::current(), "Can not find layer from idb via ", via_name, "!");
-//   }
-//   idb_segment->set_layer(idb_layer_top);
-//   idb_segment->set_is_via(true);
-//   idb_segment->add_point(via_node.get_x(), via_node.get_y());
-//   idb::IdbVia* idb_via_new = idb_segment->copy_via(idb_via);
-//   idb_via_new->set_coordinate(via_node.get_x(), via_node.get_y());
-// }
-
-// void DataManager::convertToIDBPatch(idb::IdbLayers* idb_layer_list, PatchNode& patch_node, idb::IdbRegularWireSegment* idb_segment)
-// {
-//   std::vector<RoutingLayer>& routing_layer_list = _database.get_routing_layer_list();
-
-//   std::string layer_name = routing_layer_list[patch_node.get_layer_idx()].get_layer_name();
-//   idb::IdbLayer* idb_layer = idb_layer_list->find_layer(layer_name);
-//   if (idb_layer == nullptr) {
-//     LOG_INST.error(Loc::current(), "Can not find idb layer ", layer_name);
-//   }
-//   idb_segment->set_layer(idb_layer);
-//   idb_segment->set_is_rect(true);
-//   PlanarCoord base_coord(patch_node.get_lb_x(), patch_node.get_lb_y());
-//   idb_segment->add_point(base_coord.get_x(), base_coord.get_y());
-//   idb_segment->set_delta_rect(patch_node.get_lb_x() - base_coord.get_x(), patch_node.get_lb_y() - base_coord.get_y(),
-//                               patch_node.get_rt_x() - base_coord.get_x(), patch_node.get_rt_y() - base_coord.get_y());
-// }
 
 #endif
 

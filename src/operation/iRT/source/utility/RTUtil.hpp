@@ -2436,13 +2436,13 @@ class RTUtil
     for (const PlanarRect& special_rect : special_rect_list) {
       if (special_rect.get_lb() == special_rect.get_rt()) {
         /**
-         * 对于点矩形, 在其中一个rect内(不包含边界)则被删除
+         * 对于点矩形, 在其中一个rect内(包含边界)则被删除
          */
         PlanarCoord point = special_rect.get_lb();
         bool exist_inside = false;
         for (const PlanarRect& rect : rect_list) {
-          if (rect.get_lb_x() < point.get_x() && point.get_x() < rect.get_rt_x() && rect.get_lb_y() < point.get_y()
-              && point.get_y() < rect.get_rt_y()) {
+          if (rect.get_lb_x() <= point.get_x() && point.get_x() <= rect.get_rt_x() && rect.get_lb_y() <= point.get_y()
+              && point.get_y() <= rect.get_rt_y()) {
             exist_inside = true;
             break;
           }
@@ -2452,7 +2452,7 @@ class RTUtil
         }
       } else {
         /**
-         * 对于线矩形, overlap面积不为0的进行cut
+         * 对于线矩形, overlap长度不为0则cut
          * segment_list内要保证 first < second
          */
         std::vector<Segment<PlanarCoord>> segment_list = {{special_rect.get_lb(), special_rect.get_rt()}};
@@ -2468,7 +2468,7 @@ class RTUtil
               irt_int seg_first_x = segment.get_first().get_x();
               irt_int seg_second_x = segment.get_second().get_x();
               irt_int seg_y = segment.get_first().get_y();
-              if (rect_lb_y < seg_y && seg_y < rect_rt_y && seg_first_x < rect_rt_x && rect_lb_x < seg_second_x) {
+              if (rect_lb_y <= seg_y && seg_y <= rect_rt_y && seg_first_x < rect_rt_x && rect_lb_x < seg_second_x) {
                 if (seg_first_x < rect_lb_x) {
                   // 提出左突出
                   segment_list_temp.emplace_back(segment.get_first(), PlanarCoord(rect_lb_x, seg_y));
@@ -2484,7 +2484,7 @@ class RTUtil
               irt_int seg_first_y = segment.get_first().get_y();
               irt_int seg_second_y = segment.get_second().get_y();
               irt_int seg_x = segment.get_first().get_x();
-              if (rect_lb_x < seg_x && seg_x < rect_rt_x && seg_first_y < rect_rt_y && rect_lb_y < seg_second_y) {
+              if (rect_lb_x <= seg_x && seg_x <= rect_rt_x && seg_first_y < rect_rt_y && rect_lb_y < seg_second_y) {
                 if (seg_first_y < rect_lb_y) {
                   // 提出下突出
                   segment_list_temp.emplace_back(segment.get_first(), PlanarCoord(seg_x, rect_lb_y));
@@ -2648,6 +2648,46 @@ class RTUtil
     std::sort(result_list.begin(), result_list.end(), CmpPlanarRectByXASC());
     result_list.erase(std::unique(result_list.begin(), result_list.end()), result_list.end());
 
+    return result_list;
+  }
+
+#endif
+
+#if 1  // merge
+
+  static std::vector<PlanarRect> mergeRectListByBoost(const std::vector<PlanarRect>& master_list, Direction direction)
+  {
+    // 先保存master_list中的特殊矩形
+    std::vector<PlanarRect> special_rect_list;
+    for (const PlanarRect& master : master_list) {
+      if (master.get_lb_x() == master.get_rt_x() || master.get_lb_y() == master.get_rt_y()) {
+        // 特殊矩形
+        special_rect_list.push_back(master);
+      }
+    }
+    // 对常规矩形做merge
+    std::vector<PlanarRect> regular_rect_list;
+    gtl::polygon_90_set_data<int> master_poly;
+    for (const PlanarRect& master : master_list) {
+      master_poly += gtl::rectangle_data<int>(master.get_lb_x(), master.get_lb_y(), master.get_rt_x(), master.get_rt_y());
+    }
+    std::vector<gtl::rectangle_data<int>> gtl_rect_list;
+    if (direction == Direction::kHorizontal) {
+      gtl::get_rectangles(gtl_rect_list, master_poly, gtl::HORIZONTAL);
+    } else if (direction == Direction::kVertical) {
+      gtl::get_rectangles(gtl_rect_list, master_poly, gtl::VERTICAL);
+    }
+    for (gtl::rectangle_data<int>& gtl_rect : gtl_rect_list) {
+      regular_rect_list.emplace_back(gtl::xl(gtl_rect), gtl::yl(gtl_rect), gtl::xh(gtl_rect), gtl::yh(gtl_rect));
+    }
+    std::vector<PlanarRect> result_list;
+    // 将常规矩形减去特殊矩形
+    for (PlanarRect& recult_rect : getCuttingSpecialRectList(special_rect_list, regular_rect_list)) {
+      result_list.push_back(recult_rect);
+    }
+    for (PlanarRect& recult_rect : regular_rect_list) {
+      result_list.push_back(recult_rect);
+    }
     return result_list;
   }
 

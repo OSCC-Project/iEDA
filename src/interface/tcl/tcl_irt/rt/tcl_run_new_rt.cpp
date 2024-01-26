@@ -14,34 +14,39 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-#pragma once
+#include <set>
 
-#include "Guide.hpp"
-#include "LayerRect.hpp"
-#include "MTree.hpp"
-#include "PhysicalNode.hpp"
-#include "Segment.hpp"
+#include "RTAPI.hpp"
+#include "flow_config.h"
+#include "tcl_rt.h"
+#include "tcl_util.h"
+#include "usage/usage.hh"
 
-namespace irt {
+namespace tcl {
 
-class GuideSegNode : public Segment<Guide>
+TclRunNewRT::TclRunNewRT(const char* cmd_name) : TclCmd(cmd_name)
 {
- public:
-  GuideSegNode() = default;
-  ~GuideSegNode() = default;
-  // getter
-  std::set<irt_int>& get_pin_idx_set() { return _pin_idx_set; }
-  MTree<LayerCoord>& get_routing_tree() { return _routing_tree; }
-  // setter
-  void set_pin_idx_set(const std::set<irt_int>& pin_idx_set) { _pin_idx_set = pin_idx_set; }
-  void set_routing_tree(const MTree<LayerCoord>& routing_tree) { _routing_tree = routing_tree; }
-  // function
-  bool isTAGuide() { return get_first().get_grid_coord() != get_second().get_grid_coord(); }
-  bool isDRGuide() { return !isTAGuide(); }
+  _config_list.push_back(std::make_pair("-flow", ValueType::kStringList));
+  TclUtil::addOption(this, _config_list);
+}
 
- private:
-  std::set<irt_int> _pin_idx_set;
-  MTree<LayerCoord> _routing_tree;
-};
+unsigned TclRunNewRT::exec()
+{
+  if (!check()) {
+    return 0;
+  }
 
-}  // namespace irt
+  iplf::flowConfigInst->set_status_stage("iRT - Routing");
+  ieda::Stats stats;
+
+  std::map<std::string, std::any> config_map = TclUtil::getConfigMap(this, _config_list);
+
+  RTAPI_INST.runRT();
+
+  iplf::flowConfigInst->add_status_runtime(stats.elapsedRunTime());
+  iplf::flowConfigInst->set_status_memmory(stats.memoryDelta());
+
+  return 1;
+}
+
+}  // namespace tcl

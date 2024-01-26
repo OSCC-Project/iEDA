@@ -76,10 +76,45 @@ void RTAPI::initRT(std::map<std::string, std::any> config_map)
   GDSPlotter::initInst();
 }
 
+void RTAPI::runRT()
+{
+  std::vector<Net>& net_list = DM_INST.getDatabase().get_net_list();
+
+  PinAccessor::initInst();
+  PA_INST.access(net_list);
+  PinAccessor::destroyInst();
+
+  // SupplyAnalyzer::initInst();
+  // SA_INST.analysis(net_list);
+  // SupplyAnalyzer::destroyInst();
+
+  // ResourceAllocator::initInst();
+  // RA_INST.allocate(net_list);
+  // ResourceAllocator::destroyInst();
+
+  // PlanarRouter::initInst();
+  // PR_INST.route(net_list);
+  // PlanarRouter::destroyInst();
+
+  // SpatialRouter::initInst();
+  // SR_INST.route(net_list);
+  // SpatialRouter::destroyInst();
+
+  // TrackAssigner::initInst();
+  // TA_INST.assign(net_list);
+  // TrackAssigner::destroyInst();
+
+  // DetailedRouter::initInst();
+  // DR_INST.route(net_list);
+  // DetailedRouter::destroyInst();
+
+  LOG_INST.info(Loc::current(), "welcome to new RT!");
+  LOG_INST.info(Loc::current(), "welcome to new RT!");
+  LOG_INST.info(Loc::current(), "welcome to new RT!");
+}
+
 void RTAPI::runRT(std::vector<Tool> tool_list)
 {
-  Monitor monitor;
-
   std::set<Stage> stage_set;
   for (Tool tool : tool_list) {
     stage_set.insert(convertToStage(tool));
@@ -130,8 +165,6 @@ void RTAPI::runRT(std::vector<Tool> tool_list)
     DM_INST.save(stage_list[stage_idx]);
     stage_idx++;
   }
-
-  LOG_INST.info(Loc::current(), "The RT completed!", monitor.getStatsInfo());
 }
 
 Stage RTAPI::convertToStage(Tool tool)

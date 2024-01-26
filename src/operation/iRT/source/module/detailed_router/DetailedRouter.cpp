@@ -65,7 +65,6 @@ DetailedRouter* DetailedRouter::_dr_instance = nullptr;
 void DetailedRouter::routeNetList(std::vector<Net>& net_list)
 {
   DRModel dr_model = initDRModel(net_list);
-  addTAResultToGCellMap(dr_model);
   iterativeDRModel(dr_model);
 }
 
@@ -97,17 +96,6 @@ DRNet DetailedRouter::convertToDRNet(Net& net)
   }
   dr_net.set_ta_result_list(net.get_ta_result_list());
   return dr_net;
-}
-
-void DetailedRouter::addTAResultToGCellMap(DRModel& dr_model)
-{
-  std::vector<DRNet>& dr_net_list = dr_model.get_dr_net_list();
-
-  for (DRNet& dr_net : dr_net_list) {
-    for (Segment<LayerCoord>& segment : dr_net.get_ta_result_list()) {
-      DM_INST.updateNetResultToGCellMap(ChangeType::kAdd, dr_net.get_net_idx(), new Segment<LayerCoord>(segment));
-    }
-  }
 }
 
 void DetailedRouter::iterativeDRModel(DRModel& dr_model)

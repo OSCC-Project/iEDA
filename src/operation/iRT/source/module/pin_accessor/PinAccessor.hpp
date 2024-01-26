@@ -48,7 +48,6 @@ class PinAccessor
   PinAccessor& operator=(const PinAccessor& other) = delete;
   PinAccessor& operator=(PinAccessor&& other) = delete;
   // function
-  void accessNetList(std::vector<Net>& net_list);
   PAModel initPAModel(std::vector<Net>& net_list);
   std::vector<PANet> convertToPANetList(std::vector<Net>& net_list);
   PANet convertToPANet(Net& net);
@@ -58,14 +57,11 @@ class PinAccessor
   std::vector<PlanarRect> getPlanarLegalRectList(PAModel& pa_model, irt_int pa_net_idx, std::vector<EXTLayerRect>& pin_shape_list);
   std::vector<AccessPoint> getAccessPointListByPrefTrackGrid(std::vector<LayerRect>& legal_shape_list);
   std::vector<AccessPoint> getAccessPointListByCurrTrackGrid(std::vector<LayerRect>& legal_shape_list);
-  std::vector<AccessPoint> getAccessPointListByOnTrack(std::vector<LayerRect>& legal_shape_list);
-  std::vector<AccessPoint> getAccessPointListByOnShape(std::vector<LayerRect>& legal_shape_list);
-  void mergeAccessPointList(PANet& pa_net);
+  std::vector<AccessPoint> getAccessPointListByTrackCenter(std::vector<LayerRect>& legal_shape_list);
+  std::vector<AccessPoint> getAccessPointListByShapeCenter(std::vector<LayerRect>& legal_shape_list);
   void updateBoundingBox(PANet& pa_net);
   void updateAccessGrid(PANet& pa_net);
-#if 1  // update
-  void update(PAModel& pa_model);
-#endif
+  void updatePAModel(PAModel& pa_model);
 
 #if 1  // plot pa_model
   void plotPAModel(PAModel& pa_model, std::string flag);

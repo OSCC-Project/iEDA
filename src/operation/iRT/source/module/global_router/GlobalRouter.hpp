@@ -116,9 +116,6 @@ class GlobalRouter
   double getEstimateViaCost(GRModel& gr_model, GRNode* start_node, GRNode* end_node);
   void processGRModel(GRModel& gr_model);
   void buildRoutingResult(GRNet& gr_net);
-  GuideSegNode convertToGuideSegNode(LayerCoord& coord, std::map<LayerCoord, std::set<irt_int>, CmpLayerCoordByXASC>& key_coord_pin_map);
-  void buildDRGuideNode(TNode<GuideSegNode>* parent_node, TNode<GuideSegNode>* child_node);
-  void buildTAGuideNode(TNode<GuideSegNode>* parent_node, TNode<GuideSegNode>* child_node);
   bool stopGRModel(GRModel& gr_model);
 #endif
 

@@ -152,7 +152,7 @@ void ResourceAllocator::initRANetDemand(RAModel& ra_model)
 
     std::vector<PlanarCoord> coord_list;
     for (RAPin& ra_pin : ra_pin_list) {
-      coord_list.push_back(ra_pin.get_protected_access_point().getGridLayerCoord());
+      coord_list.push_back(ra_pin.get_access_point_list().front().getGridLayerCoord());
     }
     std::sort(coord_list.begin(), coord_list.end(), CmpPlanarCoordByXASC());
     coord_list.erase(std::unique(coord_list.begin(), coord_list.end()), coord_list.end());
@@ -583,7 +583,7 @@ void ResourceAllocator::processRAModel(RAModel& ra_model)
     GridMap<double> cost_map = getCostMap(allocation_map, lower_cost);
     normalizeCostMap(cost_map, lower_cost);
     for (RAPin& ra_pin : ra_net.get_ra_pin_list()) {
-      LayerCoord grid_coord = ra_pin.get_protected_access_point().getGridLayerCoord();
+      LayerCoord grid_coord = ra_pin.get_access_point_list().front().getGridLayerCoord();
       cost_map[grid_coord.get_x() - grid_lb_x][grid_coord.get_y() - grid_lb_y] = lower_cost;
     }
     ra_net.set_ra_cost_map(cost_map);

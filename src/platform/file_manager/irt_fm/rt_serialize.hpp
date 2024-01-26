@@ -29,7 +29,7 @@ void save(Archive& ar, irt::Net& net, const unsigned int version)
   auto connect_type = net.get_connect_type();
 
   auto& pin_list = net.get_pin_list();
-  iplf::Archive(ar, net_idx, net.get_net_name(), connect_type, pin_list, net.get_driving_pin(), net.get_bounding_box());
+  iplf::Archive(ar, net_idx, net.get_net_name(), connect_type, pin_list,  net.get_bounding_box());
   iplf::Archive(ar, net.get_gr_result_tree(), net.get_ta_result_list());
 }
 
@@ -39,7 +39,7 @@ void load(Archive& ar, irt::Net& net, const unsigned int version)
   int32_t net_idx;
   irt::ConnectType connect_type = net.get_connect_type();
   std::string net_name;
-  iplf::Archive(ar, net_idx, net_name, connect_type, net.get_pin_list(), net.get_driving_pin(), net.get_bounding_box());
+  iplf::Archive(ar, net_idx, net_name, connect_type, net.get_pin_list(),  net.get_bounding_box());
   iplf::Archive(ar, net.get_gr_result_tree(), net.get_ta_result_list());
   net.set_connect_type(connect_type);
   net.set_net_idx(net_idx);
@@ -51,15 +51,13 @@ void load(Archive& ar, irt::Net& net, const unsigned int version)
 template <typename Archive>
 void save(Archive& ar, irt::Pin& pin, const unsigned int version)
 {
-  iplf::Archive(ar, pin.get_pin_name(), pin.get_routing_shape_list(), pin.get_cut_shape_list(), pin.get_access_point_list(),
-                pin.get_protected_access_point());
+  iplf::Archive(ar, pin.get_pin_name(), pin.get_routing_shape_list(), pin.get_cut_shape_list(), pin.get_access_point_list());
 }
 
 template <typename Archive>
 void load(Archive& ar, irt::Pin& pin, const unsigned int version)
 {
-  iplf::Archive(ar, pin.get_pin_name(), pin.get_routing_shape_list(), pin.get_cut_shape_list(), pin.get_access_point_list(),
-                pin.get_protected_access_point());
+  iplf::Archive(ar, pin.get_pin_name(), pin.get_routing_shape_list(), pin.get_cut_shape_list(), pin.get_access_point_list());
 }
 
 // ----------------------------------------------------------------------------
@@ -247,15 +245,6 @@ void serialize(Archive& ar, irt::Segment<T>& segment, const unsigned int version
 {
   ar & segment.get_first();
   ar & segment.get_second();
-}
-
-// ----------------------------------------------------------------------------
-// Serialize functions for irt::GuideSegNode
-// ----------------------------------------------------------------------------
-template <typename Archive>
-void serialize(Archive& ar, irt::GuideSegNode& guide_seg_node, const unsigned int version)
-{
-  iplf::Archive(ar, guide_seg_node.get_first(), guide_seg_node.get_second(), guide_seg_node.get_pin_idx_set(), guide_seg_node.get_routing_tree());
 }
 
 enum class NodeType : int

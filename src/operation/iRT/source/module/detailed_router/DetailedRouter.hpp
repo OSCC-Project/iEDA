@@ -56,7 +56,6 @@ class DetailedRouter
   DRModel initDRModel(std::vector<Net>& net_list);
   std::vector<DRNet> convertToDRNetList(std::vector<Net>& net_list);
   DRNet convertToDRNet(Net& net);
-  void addTAResultToGCellMap(DRModel& dr_model);
   void iterativeDRModel(DRModel& dr_model);
   void printParameter(DRParameter& dr_parameter);
   void initDRBoxMap(DRModel& dr_model);

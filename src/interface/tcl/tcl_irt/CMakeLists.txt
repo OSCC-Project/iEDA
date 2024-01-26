@@ -3,6 +3,7 @@ add_library(tcl_irt
     ${HOME_INTERFACE}/tcl/tcl_irt/other/tcl_run_other.cpp
     ${HOME_INTERFACE}/tcl/tcl_irt/rt/tcl_destroy_rt.cpp
     ${HOME_INTERFACE}/tcl/tcl_irt/rt/tcl_init_rt.cpp
+    ${HOME_INTERFACE}/tcl/tcl_irt/rt/tcl_run_new_rt.cpp
     ${HOME_INTERFACE}/tcl/tcl_irt/rt/tcl_run_rt.cpp
 )
 
