@@ -1019,6 +1019,18 @@ impl VerilogModule {
         }
         None
     }
+
+    pub fn find_inst_stmt(&self, inst_name: &str, cell_name: &str) -> Option<VerilogInst> {
+        for module_stmt in &self.module_stmts {
+            if module_stmt.is_module_inst_stmt() {
+                let inst_stmt = module_stmt.as_any().downcast_ref::<VerilogInst>().unwrap();
+                if inst_stmt.get_inst_name().contains(inst_name) && inst_stmt.get_cell_name().eq(cell_name) {
+                    return Some(inst_stmt.clone());
+                }
+            }
+        }
+        None
+    }
 }
 
 impl VerilogVirtualBaseStmt for VerilogModule {
