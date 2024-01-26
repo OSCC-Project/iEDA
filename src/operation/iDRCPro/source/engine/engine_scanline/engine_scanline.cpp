@@ -216,11 +216,6 @@ void DrcEngineScanline::processScanlineStatus(ScanlineStatus& status)
                  || (activate_types[1] == ScanlineSegmentType::kWidth && activate_types[2] == ScanlineSegmentType::kSpacing
                      && activate_types[3] == ScanlineSegmentType::kEdge)) {
         sequence = ConditionSequence::SequenceType::kESW_WSE;
-      } else if ((activate_types[1] == ScanlineSegmentType::kSpacing && activate_types[2] == ScanlineSegmentType::kEdge
-                  && activate_types[3] == ScanlineSegmentType::kWidth)
-                 || (activate_types[1] == ScanlineSegmentType::kWidth && activate_types[2] == ScanlineSegmentType::kEdge
-                     && activate_types[3] == ScanlineSegmentType::kSpacing)) {
-        sequence = ConditionSequence::SequenceType::kSEW_WES;
       }
 
       uint64_t recognize_code = 0;

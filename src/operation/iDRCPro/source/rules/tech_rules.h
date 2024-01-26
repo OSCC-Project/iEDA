@@ -57,12 +57,12 @@ class TechRules
 
   std::vector<Condition*>& get_condition_trigger(idb::IdbLayer* layer, ConditionSequence::SequenceType sequence)
   {
-    if (_condition_routing_layers.find(layer->get_id()) == _condition_routing_layers.end()) {
-      std::cout << "idrc : Error layer not found " << layer->get_id() << std::endl;
-    }
-    if (_condition_routing_layers[layer->get_id()].find(sequence) == _condition_routing_layers[layer->get_id()].end()) {
-      std::cout << "idrc : Error condition not found in layer " << (int) layer->get_id() << " sequence " << sequence << std::endl;
-    }
+    // if (_condition_routing_layers.find(layer->get_id()) == _condition_routing_layers.end()) {
+    //   std::cout << "idrc : Error layer not found " << layer->get_id() << std::endl;
+    // }
+    // if (_condition_routing_layers[layer->get_id()].find(sequence) == _condition_routing_layers[layer->get_id()].end()) {
+    //   std::cout << "idrc : Error condition not found in layer " << (int) layer->get_id() << " sequence " << sequence << std::endl;
+    // }
     return _condition_routing_layers[layer->get_id()][sequence];
   }
 

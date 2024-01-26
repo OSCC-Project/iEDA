@@ -72,6 +72,7 @@ class ConditionSequenceJog : public ConditionSequence
       case ConditionSequence::State::kFail:
         break;
       default:
+        std::cout << "idrc : Error state " << (int) state << std::endl;
         break;
     }
   }

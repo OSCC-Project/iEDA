@@ -48,6 +48,8 @@ class ConditionRecord
 
   void set_condition(Condition* condition) { _condition = condition; }
 
+  Condition* get_condition() { return _condition; }
+
   void clear()
   {
     _condition = nullptr;

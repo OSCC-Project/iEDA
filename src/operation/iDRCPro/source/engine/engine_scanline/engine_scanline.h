@@ -30,7 +30,10 @@ enum class ScanlineSegmentType
   kSpacing,
   kInterSpacing,
   kWidth
-};
+};  // TODO: 开始边：两个点都是起始点、结束边：两个点都是结束点、转折边：一个点是起始点，一个点是结束点
+// TODO: 两个线段就可以判断分发
+// TODO: 自身 spacing、相互 spacing
+// TODO: 全端点 spacing、半端点 spacing
 
 struct ScanlineStatus
 {

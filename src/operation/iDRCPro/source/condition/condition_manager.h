@@ -40,11 +40,20 @@ namespace idrc {
 class DrcConditionManager
 {
  public:
-  DrcConditionManager(DrcViolationManager* violation_manager) : _violation_manager(violation_manager)
+  DrcConditionManager(DrcViolationManager* violation_manager) : _violation_manager(violation_manager) {}
+  ~DrcConditionManager()
   {
-    _record_new = new ConditionRecord(nullptr);
+    for (auto& [layer, record_map] : _condition_recording_map) {
+      for (auto& [recognize_code, record_list] : record_map) {
+        for (auto& record : record_list) {
+          delete record;
+        }
+      }
+    }
+    for (auto& record : _record_pool) {
+      delete record;
+    }
   }
-  ~DrcConditionManager() {}
 
   bool isSequenceNeedDeliver(idb::IdbLayer* layer, uint64_t recognize_code, ConditionSequence::SequenceType sequence)
   {
@@ -62,7 +71,8 @@ class DrcConditionManager
       auto state = record->transferState(sequence);
       if (state == ConditionSequence::State::kFail) {
         record_it = record_list.erase(record_it);
-        delete record;
+        _record_pool.push_back(record);
+        record->clear();
       } else {
         need_deliver = true;
         ++record_it;
@@ -72,18 +82,29 @@ class DrcConditionManager
     // create new condition records
     auto& condition_list = DrcTechRuleInst->get_condition_trigger(layer, sequence);
     for (auto* condition : condition_list) {
-      _record_new->clear();
-      _record_new->set_condition(condition);
-      auto state = _record_new->transferState(sequence);
+      // create or use record pool
+      ConditionRecord* record = nullptr;
+      if (_record_pool.empty()) {
+        record = new ConditionRecord(condition);
+      } else {
+        record = _record_pool.front();
+        record->set_condition(condition);
+      }
+
+      // add record to list
+      auto state = record->transferState(sequence);
       switch (state) {
         case ConditionSequence::State::kTrigger:
         case ConditionSequence::State::kRecording:
         case ConditionSequence::State::kSuccess:
-          record_list.push_back(_record_new);
+          if (!_record_pool.empty() && _record_pool.front() == record) {
+            _record_pool.pop_front();
+          }
+          record_list.push_back(record);
           need_deliver = true;
-          _record_new = new ConditionRecord(nullptr);
           break;
         default:
+          record->clear();
           break;
       }
     }
@@ -99,14 +120,15 @@ class DrcConditionManager
   void recordRegion(idb::IdbLayer* layer, uint64_t recognize_code, ConditionSequence::SequenceType sequence,
                     std::vector<DrcBasicPoint*>& points)
   {
-    auto record_list = _condition_recording_map[layer][recognize_code];
+    auto& record_list = _condition_recording_map[layer][recognize_code];
     auto record_it = record_list.begin();
     while (record_it != record_list.end()) {
       auto record = *record_it;
       auto state = record->record(sequence, points);
       if (state == ConditionSequence::State::kSuccess) {
         record_it = record_list.erase(record_it);
-        delete record;
+        _record_pool.push_back(record);
+        record->clear();
       } else {
         ++record_it;
       }
@@ -123,8 +145,7 @@ class DrcConditionManager
   DrcViolationManager* _violation_manager;
 
   std::map<idb::IdbLayer*, std::map<uint64_t, std::list<ConditionRecord*>>> _condition_recording_map;
-
-  ConditionRecord* _record_new = nullptr;  // TODO: use object pool
+  std::deque<ConditionRecord*> _record_pool;
 };
 
 }  // namespace idrc
