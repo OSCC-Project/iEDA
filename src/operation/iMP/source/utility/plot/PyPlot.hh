@@ -57,7 +57,7 @@ class PyPlot
     _rects[_rects.size() - 1].edgecolor = "black";
     _rects[_rects.size() - 1].facecolor = "blue";
   }
-  void addRectangle(T lx, T ly, T dx, T dy, T angle = 0) { _rects.emplace_back(lx, ly, dx, dy, angle); }
+  void addRectangle(T lx, T ly, T dx, T dy, T angle = 0) { _rects.push_back({lx, ly, dx, dy, angle}); }
   void addFlyLine(T x1, T y1, T x2, T y2, T x3, T y3, T x4, T y4)
   {
     PlotFlyLine<T> flyline;

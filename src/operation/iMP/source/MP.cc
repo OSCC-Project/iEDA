@@ -16,6 +16,7 @@
 // ***************************************************************************************
 #include "MP.hh"
 #include "BlkClustering.hh"
+#include "Logger.hpp"
 namespace imp {
 
 void MP::runMP()
