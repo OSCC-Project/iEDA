@@ -39,21 +39,11 @@ namespace idrc {
  */
 class DrcConditionManager
 {
+  using ConditionRecordPtr = std::shared_ptr<ConditionRecord>;
+
  public:
   DrcConditionManager(DrcViolationManager* violation_manager) : _violation_manager(violation_manager) {}
-  ~DrcConditionManager()
-  {
-    for (auto& [layer, record_map] : _condition_recording_map) {
-      for (auto& [recognize_code, record_list] : record_map) {
-        for (auto& record : record_list) {
-          delete record;
-        }
-      }
-    }
-    for (auto& record : _record_pool) {
-      delete record;
-    }
-  }
+  ~DrcConditionManager() {}
 
   bool isSequenceNeedDeliver(idb::IdbLayer* layer, uint64_t recognize_code, ConditionSequence::SequenceType sequence)
   {
@@ -83,9 +73,9 @@ class DrcConditionManager
     auto& condition_list = DrcTechRuleInst->get_condition_trigger(layer, sequence);
     for (auto* condition : condition_list) {
       // create or use record pool
-      ConditionRecord* record = nullptr;
+      ConditionRecordPtr record = nullptr;
       if (_record_pool.empty()) {
-        record = new ConditionRecord(condition);
+        record = std::make_shared<ConditionRecord>(condition);
       } else {
         record = _record_pool.front();
         record->set_condition(condition);
@@ -144,8 +134,8 @@ class DrcConditionManager
   uint64_t debug_code = 0;
   DrcViolationManager* _violation_manager;
 
-  std::map<idb::IdbLayer*, std::map<uint64_t, std::list<ConditionRecord*>>> _condition_recording_map;
-  std::deque<ConditionRecord*> _record_pool;
+  std::map<idb::IdbLayer*, std::map<uint64_t, std::list<ConditionRecordPtr>>> _condition_recording_map;
+  std::deque<ConditionRecordPtr> _record_pool;
 };
 
 }  // namespace idrc
