@@ -23,22 +23,59 @@ namespace imp {
 
 std::vector<std::pair<int32_t, int32_t>> get_packing_shapes(std::vector<ShapeCurve<int32_t>>& sub_shape_curves)
 {
-  // packing vertically
-  int32_t total_width = 0;
-  int32_t max_height = 0;
+  // for testing, packing vertically
+  // int32_t total_width = 0;
+  // int32_t max_height = 0;
+  double area = 0;
   for (const auto& shape_curve : sub_shape_curves) {
-    total_width += shape_curve.get_width();
-    max_height = std::max(max_height, shape_curve.get_height());
+    area += shape_curve.get_area();
   }
-  return {{total_width, max_height}};
+  int32_t width = std::sqrt(1.2 * area);
+  return {{width, width}};
 }
+
+class HierPlacer
+{
+ public:
+  explicit HierPlacer(Block& root_cluster) : _root_cluster(root_cluster) {}
+  ~HierPlacer() = default;
+  void place(std::function<void(Block&)> place_solver)
+  {
+    _root_cluster.init_cell_area();                            // init stdcell-area && macro-area
+    _root_cluster.coarse_shaping(get_packing_shapes);          // init discrete-shapes bottom-up (coarse-shaping, only considers macros)
+    auto place_op = [place_solver](imp::Block& blk) -> void {  // place hier-cluster top-down
+      if (!blk.isBlock() || !(blk.is_macro_cluster() || blk.is_mixed_cluster())) {
+        return;  // only place cluster with macros..
+      }
+      // fine-shaping at current level before placement
+      blk.clipChildrenShapes();      // clip discrete-shapes larger than parent-clusters bounding-box
+      blk.addChildrenStdcellArea();  // add stdcell area
+      place_solver(blk);
+      //
+    };
+    // parallel_preorder_op(place_op);
+    _root_cluster.preorder_op(place_op);
+  }
+
+ private:
+  Block& _root_cluster;
+};
 
 void MP::runMP()
 {
   BlkClustering clustering{5, 20};
   root().parallel_preorder_op(clustering);
-  root().init_cell_area();
-  root().coarse_shaping(get_packing_shapes);
+  // root().init_cell_area();
+  // root().coarse_shaping(get_packing_shapes);
+  // root().hierPlace([](Block& blk) {
+  //   // for (auto&& i : blk.netlist().vRange()) {
+  //   //   auto sub_obj = i.property();
+
+  //   // }
+  // });
+
+  auto placer = HierPlacer(root());
+  placer.place([](Block& blk) { std::cout << "pretend to place..." << std::endl; });
 }
 
 }  // namespace imp

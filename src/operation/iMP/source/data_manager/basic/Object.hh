@@ -60,6 +60,7 @@ class Object
   const Object& parent() const;
   void set_parent(std::shared_ptr<Object> parent);
 
+  void set_shape_curve(const ShapeCurve<int32_t>& shape_curve) { _shape_curve = shape_curve; }
   void set_shape_curve(const geo::box<int32_t>& box)
   {
     // only set a box shape (no changeable shape curve)

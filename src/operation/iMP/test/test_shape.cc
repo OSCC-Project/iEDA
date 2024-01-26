@@ -6,6 +6,40 @@
 
 #include "../source/data_manager/basic/ShapeCurve.hh"
 
+/*  openroad default params
+    set max_num_macro 0
+    set min_num_macro 0
+    set max_num_inst  0
+    set min_num_inst  0
+    set tolerance     0.1
+    set max_num_level 2
+    set coarsening_ratio  10.0
+    set num_bundled_ios   3
+    set large_net_threshold 50
+    set signature_net_threshold 50
+    set halo_width   0.0
+    set halo_height  0.0
+    set fence_lx     0.0
+    set fence_ly     0.0
+    set fence_ux     100000000.0
+    set fence_uy     100000000.0
+
+    set area_weight  0.1
+    set outline_weight 100.0
+    set wirelength_weight 100.0
+    set guidance_weight 10.0
+    set fence_weight   10.0
+    set boundary_weight 50.0
+    set notch_weight    10.0
+    set macro_blockage_weight 10.0
+    set pin_access_th   0.00
+    set target_util 0.25
+    set target_dead_space 0.05
+    set min_ar  0.33
+    set snap_layer -1
+    set bus_planning_flag false
+*/
+
 void p(int64_t num1, int64_t num2)
 {
   std::cout << num1 << " " << num2 << std::endl;
@@ -71,6 +105,14 @@ int main(int argc, char* argv[])
   std::cout << "resize:----------------------------  " << std::endl;
   s1.resizeRandomly(distribution, gen);
   print_shapes(s1);
+
+  s1.clip(220, 220);
+  std::cout << "clip 220, 220: ---------------------" << std::endl;
+  print_shapes(s1);
+
+  // s1.clip(100, 150);  // error, no valid shapes left
+  // std::cout << "clip 100, 150: ---------------------" << std::endl;
+  // print_shapes(s1);
 
   s1.setShapes(discrete_shapes, 0, false);
   print_shapes(s1);
