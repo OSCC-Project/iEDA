@@ -594,16 +594,20 @@ unsigned StaApplySdc::processClockUncertainty(
     FOREACH_DELAY_DATA(end_vertex, delay_data) {
       // set uncertainty.
       auto analysis_mode = delay_data->get_delay_type();
-      auto* seq_data = ista->getSeqData(end_vertex, delay_data);
+      auto seq_data_vec = ista->getSeqData(end_vertex, delay_data);
       if (analysis_mode == AnalysisMode::kMax) {
         if (uncertainty->isSetup()) {
           double uncertainty_value = uncertainty->getUncertaintyValueFs();
-          seq_data->set_uncertainty(uncertainty_value);
+          for (auto* seq_data : seq_data_vec) {
+            seq_data->set_uncertainty(uncertainty_value);
+          }
         }
       } else {
         if (uncertainty->isHold()) {
           double uncertainty_value = uncertainty->getUncertaintyValueFs();
-          seq_data->set_uncertainty(uncertainty_value);
+          for (auto* seq_data : seq_data_vec) {
+            seq_data->set_uncertainty(uncertainty_value);
+          }
         }
       }
     }

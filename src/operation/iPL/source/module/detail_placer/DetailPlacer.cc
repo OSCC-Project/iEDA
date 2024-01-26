@@ -30,8 +30,11 @@ namespace ipl {
 DetailPlacer::DetailPlacer(Config* pl_config, PlacerDB* placer_db)
 {
   initDPConfig(pl_config);
+  _config.set_grid_cnt_x(pl_config->get_nes_config().get_bin_cnt_x());
+  _config.set_grid_cnt_y(pl_config->get_nes_config().get_bin_cnt_y());
+
   initDPDatabase(placer_db);
-  _operator.initDPOperator(&_database);
+  _operator.initDPOperator(&_database, &_config);
 }
 
 DetailPlacer::~DetailPlacer()
@@ -548,6 +551,8 @@ void DetailPlacer::runDetailPlace()
     ++shift_iter;
   } while (improve_ratio > threshold && shift_iter < 10);
 
+  notifyPLPlaceDensity();
+
   _database._design->writeBackToPL(_database._shift_x, _database._shift_y);
   _database._placer_db->updateTopoManager();
   _database._placer_db->updateGridManager();
@@ -555,6 +560,12 @@ void DetailPlacer::runDetailPlace()
   double time_delta = dp_status.elapsedRunTime();
   LOG_INFO << "Detail Plaement Total Time Elapsed: " << time_delta << "s";
   LOG_INFO << "-----------------Finish Detail Placement-----------------";
+}
+
+void DetailPlacer::notifyPLPlaceDensity()
+{
+ auto* grid_manager = _operator.get_grid_manager();
+ PlacerDBInst.place_density[2] = grid_manager->obtainAvgGridDensity(); 
 }
 
 int64_t DetailPlacer::calTotalHPWL()

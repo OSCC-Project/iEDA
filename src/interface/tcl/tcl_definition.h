@@ -32,6 +32,7 @@ namespace tcl {
 #define TCL_OUTPUT_PATH "-output"
 #define TCL_VERILOG_TOP "-top"
 #define TCL_MAX_NUM "-max_num"
+#define TCL_WORK_DIR "-work_dir"
 
 const char* const EMPTY_STR = "";
 

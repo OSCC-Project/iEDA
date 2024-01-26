@@ -64,7 +64,8 @@ void Solver::init()
     } else {
       // inst->set_cell_master(TimingPropagator::getMinSizeCell());
       // _top_pins.push_back(load_pin);
-      inst->set_cell_master(cts_inst->get_cell_master());
+      auto cell_exist = CTSAPIInst.cellLibExist(cts_inst->get_cell_master());
+      inst->set_cell_master(cell_exist ? cts_inst->get_cell_master() : TimingPropagator::getMinSizeCell());
       _sink_pins.push_back(load_pin);  // TBD for mux pin
     }
   });
@@ -214,7 +215,8 @@ Assign Solver::get_level_assign(const int& level) const
 }
 std::vector<Inst*> Solver::assignApply(const std::vector<Inst*>& insts, const Assign& assign)
 {
-  LOG_INFO << "Level: " << _level << " Bounding HPWL: " << BalanceClustering::calcHPWL(insts) << std::endl;
+  LOG_INFO << "| Level: " << _level << " | Bounding HPWL: " << BalanceClustering::calcHPWL(insts) << " um | Inst Num: " << insts.size()
+           << " |";
   // pre-processing
   auto max_net_len = assign.max_net_len;
   auto max_fanout = assign.max_fanout;
@@ -526,7 +528,7 @@ void Solver::writeNetPy(Pin* root, const std::string& save_name) const
   LOG_INFO << "Writing net to python file...";
   // write the cluster to python file
   auto* config = CTSAPIInst.get_config();
-  auto path = config->get_sta_workspace();
+  auto path = config->get_work_dir();
   std::ofstream ofs(path + "/" + save_name + ".py");
   ofs << "import matplotlib.pyplot as plt" << std::endl;
   ofs << "fig = plt.figure(figsize=(8,6), dpi=300)" << std::endl;
@@ -563,7 +565,7 @@ void Solver::levelReport() const
   using Inst_Func = std::function<double(const Inst*)>;
   auto gen_level_rpt = [&](const CtsReportType& rpt_type, const std::string& rpt_tittle, const std::string& file_name,
                            Inst_Func get_val_func, Inst_Func vio_func = nullptr) {
-    auto dir = CTSAPIInst.get_config()->get_sta_workspace() + "/level_log";
+    auto dir = CTSAPIInst.get_config()->get_work_dir() + "/level_log";
     if (!std::filesystem::exists(dir)) {
       std::filesystem::create_directories(dir);
     }

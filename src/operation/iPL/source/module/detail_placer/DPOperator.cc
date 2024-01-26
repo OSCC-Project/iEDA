@@ -30,9 +30,10 @@ DPOperator::~DPOperator()
   delete _grid_manager;
 }
 
-void DPOperator::initDPOperator(DPDatabase* database)
+void DPOperator::initDPOperator(DPDatabase* database, DPConfig* config)
 {
   _database = database;
+  _config = config;
   initTopoManager();
   initGridManager();
 }
@@ -385,9 +386,9 @@ void DPOperator::initTopoManager()
 }
 
 void DPOperator::initGridManager()
-{
-  _grid_manager = new GridManager(Rectangle<int32_t>(0, 0, _database->get_layout()->get_max_x(), _database->get_layout()->get_max_y()), 128,
-                                  128, 0.8, 1);
+{  
+  _grid_manager = new GridManager(Rectangle<int32_t>(0, 0, _database->get_layout()->get_max_x(), _database->get_layout()->get_max_y()), _config->get_grid_cnt_x(),
+                                  _config->get_grid_cnt_y(), 0.8, 1);
   initGridManagerFixedArea();
 }
 

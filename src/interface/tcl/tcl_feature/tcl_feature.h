@@ -77,4 +77,18 @@ class CmdFeatureGenerateNets : public TclCmd
   // private data
 };
 
+class CmdFeatureSummary : public TclCmd
+{
+ public:
+  explicit CmdFeatureSummary(const char* cmd_name);
+  ~CmdFeatureSummary() override = default;
+
+  unsigned check() override;
+  unsigned exec() override;
+
+ private:
+  // private function
+  // private data
+};
+
 }  // namespace tcl

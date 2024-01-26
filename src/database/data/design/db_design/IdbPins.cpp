@@ -501,11 +501,29 @@ uint32_t IdbPins::get_net_pin_num()
   return num;
 }
 
-IdbPin* IdbPins::find_pin(string pin_name)
+IdbPin* IdbPins::find_pin(IdbPin* pin)
+{
+  for (IdbPin* pin_iter : _pin_list) {
+    if (pin_iter->get_pin_name() == pin->get_pin_name() && pin->get_instance() == pin_iter->get_instance()) {
+      return pin;
+    }
+  }
+
+  return nullptr;
+}
+
+IdbPin* IdbPins::find_pin(string pin_name, std::string instance_name)
 {
   for (IdbPin* pin : _pin_list) {
     if (pin->get_pin_name() == pin_name) {
-      return pin;
+      if (instance_name == "") {
+        return pin;
+      } else {
+        auto* instance = pin->get_instance();
+        if (instance != nullptr && instance->get_name() == instance_name) {
+          return pin;
+        }
+      }
     }
   }
 
@@ -595,11 +613,17 @@ IdbPin* IdbPins::find_pin_by_coordinate_list(vector<IdbCoordinate<int32_t>*>& co
 
 IdbPin* IdbPins::add_pin_list(IdbPin* pin)
 {
-  IdbPin* pPin = pin;
-  if (pPin == nullptr) {
+  IdbPin* pPin = nullptr;
+  if (pin == nullptr) {
     pPin = new IdbPin();
+    _pin_list.emplace_back(pPin);
+  } else {
+    pPin = find_pin(pin);
+    if (nullptr == pPin) {
+      _pin_list.emplace_back(pin);
+      pPin = pin;
+    }
   }
-  _pin_list.emplace_back(pPin);
 
   return pPin;
 }

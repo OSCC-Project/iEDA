@@ -75,6 +75,8 @@ class DetailPlacer
 
   void clearClusterInfo();
   void alignInstanceOrient();
+
+  void notifyPLPlaceDensity();
 };
 }  // namespace ipl
 

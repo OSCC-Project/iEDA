@@ -41,7 +41,7 @@ class DPOperator
   TopologyManager* get_topo_manager() const { return _topo_manager; }
   GridManager* get_grid_manager() const { return _grid_manager; }
 
-  void initDPOperator(DPDatabase* database);
+  void initDPOperator(DPDatabase* database, DPConfig* config);
   void updateTopoManager();
   void updateGridManager();
 
@@ -67,6 +67,7 @@ class DPOperator
 
  private:
   DPDatabase* _database;
+  DPConfig* _config;
   TopologyManager* _topo_manager;
   GridManager* _grid_manager;
 

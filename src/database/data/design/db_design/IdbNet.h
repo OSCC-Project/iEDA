@@ -148,7 +148,7 @@ class IdbNet : public IdbObject
   // operator
   void clear_wire_list();
   bool checkConnection();
-  int32_t wireLength();
+  uint64_t wireLength();
 
  private:
   std::string _net_name;

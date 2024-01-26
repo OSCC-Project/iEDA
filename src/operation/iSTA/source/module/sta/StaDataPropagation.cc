@@ -49,9 +49,17 @@ unsigned StaBwdPropagation::createEndData(StaVertex* the_vertex) {
     // auto analysis_mode = delay_data->get_delay_type();
     // auto trans_type = delay_data->get_trans_type();
 
-    auto* seq_data = ista->getSeqData(the_vertex, delay_data);
-    if (seq_data) {
+    auto seq_data_vec = ista->getSeqData(the_vertex, delay_data);
+    if (!seq_data_vec.empty()) {
+      std::sort(seq_data_vec.begin(), seq_data_vec.end(),
+                [](auto* lhs, auto* rhs) {
+                  return lhs->getSlack() < rhs->getSlack();
+                });
+      auto* seq_data = seq_data_vec.front();
       auto slack = seq_data->getSlack();
+      LOG_INFO_IF_EVERY_N(slack < 0, 10)
+          << "the endpoint vertex " << the_vertex->getName()
+          << " has negative slack";
       auto arrive_time = delay_data->get_arrive_time();
       auto req_time = (delay_data->get_delay_type() == AnalysisMode::kMax)
                           ? arrive_time + slack

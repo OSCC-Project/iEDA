@@ -27,7 +27,7 @@ size_t Block::level() const
   return !_parent.lock() ? 1 : 1 + std::static_pointer_cast<Block, Object>(_parent.lock())->level();
 }
 
-bool Block::is_leaf()
+bool Block::is_leaf() const
 {
   return !_netlist || _netlist->empty();
 }

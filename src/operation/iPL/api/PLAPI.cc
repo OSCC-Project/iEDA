@@ -76,13 +76,20 @@ void PLAPI::destoryInst()
 
 PLAPI::~PLAPI()
 {
+  delete _external_api;
+  delete _reporter;
 }
 
 void PLAPI::initAPI(std::string pl_json_path, idb::IdbBuilder* idb_builder)
 {
   char config[] = "info_ipl_glog";
   char* argv[] = {config};
-  Log::init(argv);
+
+  std::string home_path = "./result/pl/log/";
+  // std::string design_name = idb_builder->get_def_service()->get_design()->get_design_name();
+  // std::string home_path = "./evaluation_task/benchmark/" + design_name + "/pl_reports/";
+
+  Log::init(argv,home_path);
   IDBWrapper* idb_wrapper = new IDBWrapper(idb_builder);
   PlacerDBInst.initPlacerDB(pl_json_path, idb_wrapper);
 
@@ -109,7 +116,14 @@ void PLAPI::initAPI(std::string pl_json_path, idb::IdbBuilder* idb_builder)
       LOG_INFO << "Try to apply to start iSTA";
       // apply to start sta
       this->initSTA();
+
+      // tmp for evalution.
+      // std::string design_name = PlacerDBInst.get_design()->get_design_name();
+      // std::string sta_path = "./evaluation_task/benchmark/" + design_name + "/sta_reports/sta";
+      // this->modifySTAOutputDir(sta_path);
+
       this->updateSTATiming();
+      this->initTimingEval();
     }
 
     updateSequentialProperty();
@@ -118,6 +132,10 @@ void PLAPI::initAPI(std::string pl_json_path, idb::IdbBuilder* idb_builder)
     PlacerDBInst.printInstanceInfo();
     PlacerDBInst.printNetInfo();
   }
+
+  // create external_api and reporter ptr
+  _external_api = new ExternalAPI();
+  _reporter = new PLReporter(_external_api);
 
   Log::end();
 }
@@ -132,47 +150,47 @@ void PLAPI::runIncrementalFlow()
 /*****************************Timing-driven Placement: Start*****************************/
 void PLAPI::initTimingEval()
 {
-  _external_api.initTimingEval(PlacerDBInst.get_layout()->get_database_unit());
+  _external_api->initTimingEval(PlacerDBInst.get_layout()->get_database_unit());
 }
 
 double PLAPI::obtainPinEarlySlack(std::string pin_name)
 {
-  return _external_api.obtainPinEarlySlack(pin_name);
+  return _external_api->obtainPinEarlySlack(pin_name);
 }
 
 double PLAPI::obtainPinLateSlack(std::string pin_name)
 {
-  return _external_api.obtainPinLateSlack(pin_name);
+  return _external_api->obtainPinLateSlack(pin_name);
 }
 
 double PLAPI::obtainPinEarlyArrivalTime(std::string pin_name)
 {
-  return _external_api.obtainPinEarlyArrivalTime(pin_name);
+  return _external_api->obtainPinEarlyArrivalTime(pin_name);
 }
 
 double PLAPI::obtainPinLateArrivalTime(std::string pin_name)
 {
-  return _external_api.obtainPinLateArrivalTime(pin_name);
+  return _external_api->obtainPinLateArrivalTime(pin_name);
 }
 
 double PLAPI::obtainPinEarlyRequiredTime(std::string pin_name)
 {
-  return _external_api.obtainPinEarlyRequiredTime(pin_name);
+  return _external_api->obtainPinEarlyRequiredTime(pin_name);
 }
 
 double PLAPI::obtainPinLateRequiredTime(std::string pin_name)
 {
-  return _external_api.obtainPinLateRequiredTime(pin_name);
+  return _external_api->obtainPinLateRequiredTime(pin_name);
 }
 
 double PLAPI::obtainWNS(const char* clock_name, ista::AnalysisMode mode)
 {
-  return _external_api.obtainWNS(clock_name, mode);
+  return _external_api->obtainWNS(clock_name, mode);
 }
 
 double PLAPI::obtainTNS(const char* clock_name, ista::AnalysisMode mode)
 {
-  return _external_api.obtainTNS(clock_name, mode);
+  return _external_api->obtainTNS(clock_name, mode);
 }
 
 void PLAPI::updateTiming()
@@ -248,18 +266,18 @@ void PLAPI::updateTiming()
     }
     timing_net_list.push_back(timing_net);
   }
-  _external_api.updateEvalTiming(timing_net_list);
+  _external_api->updateEvalTiming(timing_net_list);
 }
 
 void PLAPI::updateTimingInstMovement(std::map<std::string, std::vector<std::pair<Point<int32_t>, Point<int32_t>>>> influenced_net_map,
                                      std::vector<std::string> moved_inst_list)
 {
-  _external_api.updateTimingInstMovement(influenced_net_map, moved_inst_list);
+  _external_api->updateTimingInstMovement(influenced_net_map, moved_inst_list);
 }
 
 void PLAPI::destroyTimingEval()
 {
-  _external_api.destroyTimingEval();
+  _external_api->destroyTimingEval();
 }
 /*****************************Timing-driven Placement: END*****************************/
 
@@ -268,6 +286,11 @@ void PLAPI::runFlow()
   // runMP();
   runGP();
   printHPWLInfo();
+  if(isSTAStarted()){
+    notifyPLWLInfo(0);
+    notifyPLCongestionInfo(0);
+    notifyPLTimingInfo(0);
+  }
 
   if (PlacerDBInst.get_placer_config()->get_buffer_config().isMaxLengthOpt()) {
     std::cout << std::endl;
@@ -278,10 +301,20 @@ void PLAPI::runFlow()
   std::cout << std::endl;
   runLG();
   printHPWLInfo();
+  if(isSTAStarted()){
+    notifyPLWLInfo(1);
+    notifyPLCongestionInfo(1);
+    notifyPLTimingInfo(1);
+  }
 
   std::cout << std::endl;
   runDP();
   printHPWLInfo();
+  if(isSTAStarted()){
+    notifyPLWLInfo(2);
+    notifyPLCongestionInfo(2);
+    notifyPLTimingInfo(2);
+  }
 
   std::cout << std::endl;
 
@@ -296,13 +329,24 @@ void PLAPI::runFlow()
   std::cout << std::endl;
   LOG_INFO << "Log has been writed to dir: ./result/pl/log/";
 
+  if(isSTAStarted()){
+    notifySTAUpdateTimingRuntime();
+    _reporter->reportEDAEvaluation();
+  }
+
+  if(isSTAStarted()){
+    _external_api->destroyTimingEval();
+  }
+
   writeBackSourceDataBase();
 }
 
 void PLAPI::insertLayoutFiller()
 {
+  notifyPLOriginInfo();
   MapFiller(&PlacerDBInst, PlacerDBInst.get_placer_config()).mapFillerCell();
   PlacerDBInst.updateGridManager();
+  _reporter->reportEDAFillerEvaluation();
   reportPLInfo();
   reportLayoutWhiteInfo();
   writeBackSourceDataBase();
@@ -371,28 +415,87 @@ void PLAPI::runDP()
   }
 }
 
+void PLAPI::notifyPLWLInfo(int stage)
+{
+  HPWirelength hpwl(PlacerDBInst.get_topo_manager());
+  SteinerWirelength stwl(PlacerDBInst.get_topo_manager());
+  stwl.updateAllNetWorkPointPair();
+
+  PlacerDBInst.PL_HPWL[stage] = hpwl.obtainTotalWirelength();
+  PlacerDBInst.PL_STWL[stage] = stwl.obtainTotalWirelength();
+}
+
+void PLAPI::notifyPLCongestionInfo(int stage)
+{
+  // special operator
+  _external_api->destroyCongEval();
+
+  this->writeBackSourceDataBase();
+  
+  std::vector<float> gr_congestion = this->evalGRCong(); // return <ACE, TOF, MOF, egr-Wirelength>
+  PlacerDBInst.congestion[stage] = gr_congestion[1];
+  PlacerDBInst.PL_GRWL[stage] = gr_congestion[3];
+
+  int32_t grid_cnt_x = PlacerDBInst.get_placer_config()->get_nes_config().get_bin_cnt_x();
+  int32_t grid_cnt_y = PlacerDBInst.get_placer_config()->get_nes_config().get_bin_cnt_y();
+  std::vector<float> pin_dens = this->obtainPinDens(grid_cnt_x, grid_cnt_y); // return <average, peak> , average = sum / bin_cnt, peak = max / average
+  PlacerDBInst.pin_density[stage] = pin_dens[1];
+
+  // special operator
+  _external_api->initTimingEval(PlacerDBInst.get_layout()->get_database_unit());
+}
+
+void PLAPI::notifyPLTimingInfo(int stage)
+{
+  this->updateTiming();
+  std::string clock_name = obtainClockNameList().at(0);
+  float tns = obtainTNS(clock_name.c_str(), ista::AnalysisMode::kMax);
+  float wns = obtainWNS(clock_name.c_str(), ista::AnalysisMode::kMax);
+
+  PlacerDBInst.tns[stage] = tns;
+  PlacerDBInst.wns[stage] = wns;
+
+  float suggest_freq = 1000.0 / (_external_api->obtainTargetClockPeriodNS(clock_name) - wns);
+  PlacerDBInst.suggest_freq[stage] = suggest_freq;
+}
+
+void PLAPI::notifySTAUpdateTimingRuntime(){
+  ieda::Stats sta_status;
+  _external_api->updateSTATiming();
+  double time_delta = sta_status.elapsedRunTime();
+  PlacerDBInst.sta_update_time = time_delta;
+}
+
+void PLAPI::notifyPLOriginInfo(){
+  PlacerDBInst.init_inst_cnt = PlacerDBInst.get_design()->get_instance_list().size();
+}
+
+void PLAPI::modifySTAOutputDir(std::string path){
+  _external_api->modifySTAOutputDir(path);
+}
+
 void PLAPI::initSTA()
 {
-  _external_api.initSTA();
+  _external_api->initSTA();
 }
 void PLAPI::updateSTATiming()
 {
-  _external_api.updateSTATiming();
+  _external_api->updateSTATiming();
 }
 
 bool PLAPI::isClockNet(std::string net_name)
 {
-  return _external_api.isClockNet(net_name);
+  return _external_api->isClockNet(net_name);
 }
 
 bool PLAPI::isSequentialCell(std::string inst_name)
 {
-  return _external_api.isSequentialCell(inst_name);
+  return _external_api->isSequentialCell(inst_name);
 }
 
 bool PLAPI::isBufferCell(std::string cell_name)
 {
-  return _external_api.isBufferCell(cell_name);
+  return _external_api->isBufferCell(cell_name);
 }
 
 void PLAPI::updateSequentialProperty()
@@ -454,7 +557,7 @@ void PLAPI::updateSequentialProperty()
 
 std::vector<std::string> PLAPI::obtainClockNameList()
 {
-  return _external_api.obtainClockNameList();
+  return _external_api->obtainClockNameList();
 }
 
 void PLAPI::runBufferInsertion()
@@ -476,7 +579,7 @@ void PLAPI::updatePlacerDB(std::vector<std::string> inst_list)
 bool PLAPI::insertSignalBuffer(std::pair<std::string, std::string> source_sink_net, std::vector<std::string> sink_pin_list,
                                std::pair<std::string, std::string> master_inst_buffer, std::pair<int, int> buffer_center_loc)
 {
-  return _external_api.insertSignalBuffer(source_sink_net, sink_pin_list, master_inst_buffer, buffer_center_loc);
+  return _external_api->insertSignalBuffer(source_sink_net, sink_pin_list, master_inst_buffer, buffer_center_loc);
 }
 
 void PLAPI::writeBackSourceDataBase()
@@ -529,7 +632,7 @@ bool PLAPI::checkLegality()
 
 bool PLAPI::isSTAStarted()
 {
-  return _external_api.isSTAStarted();
+  return _external_api->isSTAStarted();
 }
 
 bool PLAPI::isPlacerDBStarted()
@@ -541,6 +644,131 @@ bool PLAPI::isAbucasLGStarted()
 {
   // return AbacusLegalizerInst.isInitialized();
   return LegalizerInst.isInitialized();
+}
+
+// ugly: special case for timing
+void PLAPI::reportPLInfo()
+{
+  LOG_INFO << "-----------------Start iPL Report Generation-----------------";
+
+  ieda::Stats report_status;
+
+  std::string output_dir = "./result/pl/report/";
+
+  // std::string design_name = PlacerDBInst.get_design()->get_design_name();
+  // std::string output_dir = "./evaluation_task/benchmark/" + design_name + "/pl_reports/";
+
+  std::string summary_file = "summary_report.txt";
+  std::ofstream summary_stream;
+  summary_stream.open(output_dir + summary_file);
+  if (!summary_stream.good()) {
+    LOG_WARNING << "Cannot open file for summary report !";
+  }
+  summary_stream << "Generate the report at " << ieda::Time::getNowWallTime() << std::endl;
+
+  // report base info
+  reportPLBaseInfo(summary_stream);
+
+  // report violation info
+  reportViolationInfo(summary_stream);
+
+  // report wirelength info
+  reportWLInfo(summary_stream);
+
+  // report density info
+  reportBinDensity(summary_stream);
+
+  // report timing info
+  if (PlacerDBInst.get_placer_config()->isTimingAwareMode()) {
+    reportTimingInfo(summary_stream);
+  }
+
+  // report congestion
+  // reportCongestionInfo(summary_stream);
+
+  summary_stream.close();
+
+  double time_delta = report_status.elapsedRunTime();
+
+  LOG_INFO << "Report Generation Total Time Elapsed: " << time_delta << "s";
+  LOG_INFO << "-----------------Finish Report Generation-----------------";
+}
+
+void PLAPI::reportTopoInfo()
+{
+  _reporter->reportTopoInfo();
+}
+
+void PLAPI::reportWLInfo(std::ofstream& feed){
+  _reporter->reportWLInfo(feed);
+}
+
+void PLAPI::reportSTWLInfo(std::ofstream& feed){
+  _reporter->reportSTWLInfo(feed);
+}
+
+void PLAPI::reportHPWLInfo(std::ofstream& feed){
+  _reporter->reportHPWLInfo(feed);
+}
+
+void PLAPI::reportLongNetInfo(std::ofstream& feed){
+  _reporter->reportLongNetInfo(feed);
+}
+
+void PLAPI::reportViolationInfo(std::ofstream& feed){
+  _reporter->reportViolationInfo(feed);
+}
+
+void PLAPI::reportBinDensity(std::ofstream& feed){
+  _reporter->reportBinDensity(feed);
+}
+
+int32_t PLAPI::reportOverlapInfo(std::ofstream& feed){
+  return _reporter->reportOverlapInfo(feed);
+}
+
+void PLAPI::reportLayoutWhiteInfo(){
+  _reporter->reportLayoutWhiteInfo();
+}
+
+void PLAPI::reportTimingInfo(std::ofstream& feed){
+  if(this->isSTAStarted()){
+    // this->initTimingEval();
+    this->updateTiming();
+    _reporter->reportTimingInfo(feed);
+  }
+}
+
+void PLAPI::reportCongestionInfo(std::ofstream& feed){
+  _reporter->reportCongestionInfo(feed);
+}
+
+void PLAPI::reportPLBaseInfo(std::ofstream& feed){
+  _reporter->reportPLBaseInfo(feed);
+}
+
+void PLAPI::printHPWLInfo(){
+  _reporter->printHPWLInfo();
+}
+
+void PLAPI::saveNetPinInfoForDebug(std::string path){
+  _reporter->saveNetPinInfoForDebug(path);
+}
+
+void PLAPI::savePinListInfoForDebug(std::string path){
+  _reporter->savePinListInfoForDebug(path);
+}
+
+void PLAPI::plotConnectionForDebug(std::vector<std::string> net_name_list, std::string path){
+  _reporter->plotConnectionForDebug(net_name_list, path);
+}
+
+void PLAPI::plotModuleListForDebug(std::vector<std::string> module_prefix_list, std::string path){
+  _reporter->plotModuleListForDebug(module_prefix_list, path);
+}
+
+void PLAPI::plotModuleStateForDebug(std::vector<std::string> special_inst_list, std::string path){
+  _reporter->plotModuleStateForDebug(special_inst_list, path);
 }
 
 /*****************************Congestion-driven Placement: START*****************************/
@@ -559,7 +787,7 @@ void PLAPI::runRoutabilityGP()
  */
 std::vector<float> PLAPI::evalGRCong()
 {
-  return _external_api.evalGRCong();
+  return _external_api->evalGRCong();
 }
 
 /**
@@ -568,7 +796,7 @@ std::vector<float> PLAPI::evalGRCong()
  */
 std::vector<float> PLAPI::getUseCapRatioList()
 {
-  return _external_api.getUseCapRatioList();
+  return _external_api->getUseCapRatioList();
 }
 
 /**
@@ -578,22 +806,22 @@ std::vector<float> PLAPI::getUseCapRatioList()
  */
 void PLAPI::plotCongMap(const std::string& plot_path, const std::string& output_file_name)
 {
-  _external_api.plotCongMap(plot_path, output_file_name);
+  _external_api->plotCongMap(plot_path, output_file_name);
 }
 
 void PLAPI::destroyCongEval()
 {
-  _external_api.destroyCongEval();
+  _external_api->destroyCongEval();
 }
 
-std::vector<float> PLAPI::obtainPinDens()
+std::vector<float> PLAPI::obtainPinDens(int32_t grid_cnt_x, int32_t grid_cnt_y)
 {
-  return _external_api.obtainPinDens();
+  return _external_api->obtainPinDens(grid_cnt_x, grid_cnt_y);
 }
 
 std::vector<float> PLAPI::obtainNetCong(std::string rudy_type)
 {
-  return _external_api.obtainNetCong(rudy_type);
+  return _external_api->obtainNetCong(rudy_type);
 }
 /*****************************Congestion-driven Placement: END*****************************/
 

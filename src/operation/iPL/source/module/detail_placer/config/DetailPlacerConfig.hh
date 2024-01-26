@@ -45,16 +45,24 @@ public:
     int32_t get_thread_num() const { return _thread_num;}
     int32_t get_max_displacement() const { return _max_displacement;}
     int32_t get_global_padding() const { return _global_padding;}
+    int32_t get_grid_cnt_x() const { return _grid_cnt_x;}
+    int32_t get_grid_cnt_y() const { return _grid_cnt_y;}
 
     // setter
     void set_thread_num(int32_t num_thread) { _thread_num = num_thread;}
     void set_max_displacement(int32_t max_displacement) { _max_displacement = max_displacement;}
     void set_global_padding(int32_t padding) { _global_padding = padding;}
+    void set_grid_cnt_x(int32_t grid_cnt_x) { _grid_cnt_x = grid_cnt_x;}
+    void set_grid_cnt_y(int32_t grid_cnt_y) { _grid_cnt_y = grid_cnt_y;}
 
 private:
     int32_t _thread_num;
     int32_t _max_displacement;
     int32_t _global_padding;
+
+    // tmp keep the same as global placement
+    int32_t _grid_cnt_x;
+    int32_t _grid_cnt_y;
 };
 
 }

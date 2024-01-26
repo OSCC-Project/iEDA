@@ -62,13 +62,13 @@ class Cell
 
   CELL_TYPE get_cell_type() const { return _cell_type; }
 
-  bool isLogic() { return _cell_type == CELL_TYPE::kLogic; }
-  bool isFlipflop() { return _cell_type == CELL_TYPE::kFlipflop; }
-  bool isClockBuffer() { return _cell_type == CELL_TYPE::kClockBuffer; }
-  bool isLogicBuffer() { return _cell_type == CELL_TYPE::kLogicBuffer; }
-  bool isMacro() { return _cell_type == CELL_TYPE::kMacro; }
-  bool isIOCell() { return _cell_type == CELL_TYPE::kIOCell; }
-  bool isPhysicalFiller() { return _cell_type == CELL_TYPE::kPhysicalFiller; }
+  bool isLogic() const { return _cell_type == CELL_TYPE::kLogic; }
+  bool isFlipflop() const { return _cell_type == CELL_TYPE::kFlipflop; }
+  bool isClockBuffer() const { return _cell_type == CELL_TYPE::kClockBuffer; }
+  bool isLogicBuffer() const { return _cell_type == CELL_TYPE::kLogicBuffer; }
+  bool isMacro() const { return _cell_type == CELL_TYPE::kMacro; }
+  bool isIOCell() const { return _cell_type == CELL_TYPE::kIOCell; }
+  bool isPhysicalFiller() const { return _cell_type == CELL_TYPE::kPhysicalFiller; }
 
   // setter.
   void set_type(CELL_TYPE cell_type) { _cell_type = cell_type; }

@@ -41,10 +41,12 @@ using ieda::Time;
 using SkewConstraintsMap = std::map<std::pair<std::string, std::string>, std::pair<double, double>>;
 
 template <typename T>
-concept StringAble = requires(const T& t) {
+concept StringAble = requires(const T& t)
+{
   {
     std::to_string(t)
-  } -> std::convertible_to<std::string>;
+  }
+  ->std::convertible_to<std::string>;
 };
 
 class CTSAPI
@@ -57,9 +59,18 @@ class CTSAPI
   void writeDB();
   void writeGDS();
   void report(const std::string& save_dir);
+
+  // Eval Flow API
+  void initEvalInfo();
+  size_t getInsertCellNum() const;
+  double getInsertCellArea() const;
+  std::vector<PathInfo> getPathInfos() const;
+  double getMaxClockNetWL() const;
+  double getTotalClockNetWL() const;
+
   // flow API
   void resetAPI();
-  void init(const std::string& config_file);
+  void init(const std::string& config_file, const std::string& work_dir="");
   void readData();
   void routing();
   void evaluate();
@@ -83,6 +94,8 @@ class CTSAPI
   void refresh();
   icts::CtsPin* findDriverPin(icts::CtsNet* net);
   std::map<std::string, double> elmoreDelay(const icts::EvalNet& eval_net);
+  bool cellLibExist(const std::string& cell_master, const std::string& query_field = "cell_rise", const std::string& from_port = "",
+                    const std::string& to_port = "");
   std::vector<std::vector<double>> queryCellLibIndex(const std::string& cell_master, const std::string& query_field,
                                                      const std::string& from_port = "", const std::string& to_port = "");
   std::vector<double> queryCellLibValue(const std::string& cell_master, const std::string& query_field, const std::string& from_port = "",
@@ -118,14 +131,16 @@ class CTSAPI
   icts::Inst* genBstSaltTree(const std::string& net_name, const std::vector<icts::Pin*>& loads, const std::optional<double>& skew_bound,
                              const std::optional<icts::Point>& guide_loc, const TopoType& topo_type);
   icts::Inst* genCBSTree(const std::string& net_name, const std::vector<icts::Pin*>& loads, const std::optional<double>& skew_bound,
-                          const std::optional<icts::Point>& guide_loc, const TopoType& topo_type);
+                         const std::optional<icts::Point>& guide_loc, const TopoType& topo_type);
   // evaluate
   bool isTop(const std::string& net_name) const;
   void buildRCTree(const std::vector<icts::EvalNet>& eval_nets);
   void buildRCTree(const icts::EvalNet& eval_net);
   void buildPinPortsRCTree(const icts::EvalNet& eval_net);
   void resetRCTree(const std::string& net_name);
-
+  void utilizationLog() const;
+  void latencySkewLog() const;
+  void slackLog() const;
   // log
   void checkFile(const std::string& dir, const std::string& file_name, const std::string& suffix = ".rpt") const;
 
@@ -148,6 +163,14 @@ class CTSAPI
   {
     (*_log_ofs) << toString(args...) << std::endl;
   }
+
+  void logTime() const;
+
+  void logLine() const;
+
+  void logTitle(const std::string& title) const;
+
+  void logEnd() const;
 
   // function
   std::vector<std::string> splitString(std::string str, const char split);
