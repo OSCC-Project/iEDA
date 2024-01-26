@@ -29,8 +29,8 @@ namespace idrc {
 class DrcBasicPoint
 {
  public:
-  DrcBasicPoint(int x, int y, int id, int polygon_id, bool is_endpoint = true, DrcBasicPoint* prev = nullptr, DrcBasicPoint* next = nullptr)
-      : _x(x), _y(y), _id(id), _polygon_id(polygon_id), _is_endpoint(is_endpoint), _prev(prev), _next(next)
+  DrcBasicPoint(int x, int y, int net_id, int polygon_id, DrcBasicPoint* prev = nullptr, DrcBasicPoint* next = nullptr)
+      : _x(x), _y(y), _net_id(net_id), _polygon_id(polygon_id), _prev(prev), _next(next)
   {
   }
 
@@ -39,42 +39,15 @@ class DrcBasicPoint
   // getter
   int get_x() { return _x; }
   int get_y() { return _y; }
-  int get_id() { return _id; }
-
+  int get_net_id() { return _net_id; }
   int get_polygon_id() { return _polygon_id; }
 
   DrcBasicPoint* get_prev() { return _prev; }
   DrcBasicPoint* get_next() { return _next; }
 
   // setter
-  void set_x(int x) { _x = x; }
-  void set_y(int y) { _y = y; }
-  void set_id(int id) { _id = id; }
-
   void set_prev(DrcBasicPoint* prev) { _prev = prev; }
   void set_next(DrcBasicPoint* next) { _next = next; }
-
-  void set_is_endpoint(bool is_endpoint) { _is_endpoint = is_endpoint; }
-  /// true = is a end point
-  bool is_endpoint() { return _is_endpoint; }
-
-  DrcBasicPoint* nextEndpoint()
-  {
-    DrcBasicPoint* next = _next;
-    while (next && !next->is_endpoint()) {
-      next = next->get_next();
-    }
-    return next;
-  }
-
-  DrcBasicPoint* prevEndpoint()
-  {
-    DrcBasicPoint* prev = _prev;
-    while (prev && !prev->is_endpoint()) {
-      prev = prev->get_prev();
-    }
-    return prev;
-  }
 
   int distance(DrcBasicPoint* p) { return std::abs(_x - p->get_x()) + std::abs(_y - p->get_y()); }
 
@@ -91,13 +64,9 @@ class DrcBasicPoint
  private:
   int _x;
   int _y;
-  int _id;
 
+  int _net_id;
   int _polygon_id;
-
-  bool _is_endpoint;
-
-  uint64_t _states = 0;
 
   DrcBasicPoint* _prev = nullptr;
   DrcBasicPoint* _next = nullptr;

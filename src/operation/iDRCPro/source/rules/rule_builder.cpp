@@ -67,13 +67,15 @@ void DrcRuleBuilder::buildJogConditions(idb::IdbLayer* layer, idb::IdbLayerRouti
   }
 
   // create condition
-  std::vector<ConditionSequence::SequenceType> trigger_sequence_list{ConditionSequence::kESE, ConditionSequence::kESW_WSE};
+  std::vector<ConditionSequence::SequenceType> trigger_sequence_list{ConditionSequence::kSE_MS_W, ConditionSequence::kSE_MS_SE,
+                                                                     ConditionSequence::kSE_MS_TE};
   uint64_t trigger_sequence = 0;
   for (auto& sequence : trigger_sequence_list) {
     trigger_sequence |= sequence;
   }
-  ConditionSequenceJog* sequence = new ConditionSequenceJog(within, trigger_sequence, ConditionSequence::kWSEW_WESW,
-                                                            ConditionSequence::kESE | ConditionSequence::kESW_WSE);
+  ConditionSequenceJog* sequence
+      = new ConditionSequenceJog(within, trigger_sequence, ConditionSequence::kTE_MS_W | ConditionSequence::kTE_MS_TE,
+                                 ConditionSequence::kEE_MS_W | ConditionSequence::kEE_MS_EE | ConditionSequence::kEE_MS_TE);
   ConditionDetailJog* detail = new ConditionDetailJog(idb_rule_jog.get());
 
   Condition* condition = new Condition(sequence, detail);

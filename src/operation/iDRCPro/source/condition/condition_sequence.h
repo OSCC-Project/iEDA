@@ -28,23 +28,27 @@ class ConditionSequence
 {
  public:
   /*
-    W - Width
-    E - Edge
-    N - None
-    S - Spacing
+    SE : Starting Edge
+    TE : Turning Edge
+    EE : Ending Edge
+    MS : Mutual Spacing
+    SS : Self Spacing
+    W : Width
   */
   enum SequenceType : uint64_t
   {
     kNone = 0,
-    kWEW = 1,
-    kNEW_WEN = 2,
-    kSEW_WES = 4,
-    kSES = 8,
-    kNES_SEN = 16,
-    kNEN = 32,
-    kESW_WSE = 64,
-    kESE = 128,
-    kWSEW_WESW = 256
+    kSE = 1,
+    kTE = 2,
+    kEE = 4,
+    kSE_MS_W = 8,
+    kSE_MS_SE = 16,
+    kSE_MS_TE = 32,
+    kTE_MS_W = 64,
+    kTE_MS_TE = 128,
+    kEE_MS_W = 256,
+    kEE_MS_EE = 512,
+    kEE_MS_TE = 1024
   };
 
   enum class State

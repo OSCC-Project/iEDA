@@ -26,14 +26,13 @@ enum class ScanlineSegmentType
 {
   kNone,
   kOverlap,
-  kEdge,
-  kSpacing,
-  kInterSpacing,
+  kStartingEdge,
+  kTurningEdge,
+  kEndingEdge,
+  kSlefSpacing,
+  kMutualSpacing,
   kWidth
-};  // TODO: 开始边：两个点都是起始点、结束边：两个点都是结束点、转折边：一个点是起始点，一个点是结束点
-// TODO: 两个线段就可以判断分发
-// TODO: 自身 spacing、相互 spacing
-// TODO: 全端点 spacing、半端点 spacing
+};
 
 struct ScanlineStatus
 {
@@ -81,9 +80,6 @@ struct ScanlineStatus
     }
     return it;
   }
-
-  bool isPointInCurrentBucket(ScanlinePoint* point) { return get_travel_direction_coord(point->get_point()) == current_bucket_coord; }
-  bool isEndpointInCurrentBucket(ScanlinePoint* point) { return point->get_point()->is_endpoint() && isPointInCurrentBucket(point); }
 };
 
 class DrcEngineScanline
@@ -108,12 +104,6 @@ class DrcEngineScanline
   void scan(ScanlineTravelDirection direction);
   void addCurrentBucketToScanline(ScanlineStatus& status);
   ScanlineSegmentType judgeSegmentType(ScanlineStatus& status, ScanlinePoint* point_forward, ScanlinePoint* point_backward);
-  // ScanlineDataType judgeSegmentType(ScanlineStatus& status, std::map<int, ScanlinePoint*>& activate_polygons, ScanlinePoint*
-  // point_forward,
-  //                                   ScanlinePoint* point_backward);
-  // void fillResultToBasicPoint(ScanlineStatus& status, DrcBasicPoint* basepoint_forward, DrcBasicPoint* basepoint_backward,
-  //                             ScanlineDataType result_type);
-  // bool tryCreateNonEndpoint(ScanlineStatus& status, ScanlinePoint* point);
   uint64_t hash2SideIds(int id1, int id2);
   void processScanlineStatus(ScanlineStatus& status);
   void removeEndingPoints(ScanlineStatus& status);

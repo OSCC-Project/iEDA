@@ -17,6 +17,8 @@
 
 #include "scanline_preprocess.h"
 
+#include "idrc_util.h"
+
 namespace idrc {
 
 template <typename T>
@@ -55,75 +57,19 @@ void ScanlinePreprocess::addData(std::vector<std::vector<ieda_solver::GtlPoint>>
 /// @param net_id polygon net_id
 void ScanlinePreprocess::addPolygon(std::vector<ieda_solver::GtlPoint>& polygon_points, int net_id)
 {
-  std::vector<DrcBasicPoint*> endpoints;
-  endpoints.reserve(polygon_points.size());
-  int current_polygon_id = ++_polygon_count;
-  for (auto& vertex : polygon_points) {
-    DrcBasicPoint* new_basic_pt = new DrcBasicPoint(vertex.x(), vertex.y(), net_id, current_polygon_id);
-    endpoints.emplace_back(new_basic_pt);
-  }
-
-  auto endpoint1 = endpoints.begin();
-  auto endpoint2 = endpoints.begin() + 1;
-  ScanlinePoint* prev_segment_end = nullptr;
-  ScanlinePoint* polygon_start = nullptr;
-  DrcDirection direction_vertical = DrcDirection::kNone;
-  DrcDirection direction_horizontal = DrcDirection::kNone;
-  int side_id_vertical = 0;
-  int side_id_horizontal = 0;
-  for (; endpoint1 != endpoints.end(); ++endpoint1, ++endpoint2) {
-    if (endpoint2 == endpoints.end()) {
-      endpoint2 = endpoints.begin();
-    }
-
-    (*endpoint1)->set_next(*endpoint2);
-    (*endpoint2)->set_prev(*endpoint1);
-
-    _data_manager->get_region_query()->addEdge(std::make_pair((*endpoint1), (*endpoint2)));
-
-    // create scanline points
-    ScanlinePoint* starting_point = nullptr;
-    ScanlinePoint* ending_point = nullptr;
-    if ((*endpoint1)->get_x() == (*endpoint2)->get_x()) {
-      // vertical
-      bool is_forward_edge = (*endpoint1)->get_y() > (*endpoint2)->get_y();
-      side_id_vertical = (*endpoint1)->direction(*endpoint2) == direction_vertical ? side_id_vertical : ++_side_count;
-      starting_point = new ScanlinePoint(*endpoint1, side_id_vertical, is_forward_edge, !is_forward_edge);
-      ending_point = new ScanlinePoint(*endpoint2, side_id_vertical, is_forward_edge, is_forward_edge);
-      _scanline_points_vertical.emplace_back(starting_point);
-      _scanline_points_vertical.emplace_back(ending_point);
-    } else if ((*endpoint1)->get_y() == (*endpoint2)->get_y()) {
-      // horizontal
-      bool is_forward_edge = (*endpoint1)->get_x() < (*endpoint2)->get_x();
-      side_id_horizontal = (*endpoint1)->direction(*endpoint2) == direction_horizontal ? side_id_horizontal : ++_side_count;
-      starting_point = new ScanlinePoint(*endpoint1, side_id_horizontal, is_forward_edge, is_forward_edge);
-      ending_point = new ScanlinePoint(*endpoint2, side_id_horizontal, is_forward_edge, !is_forward_edge);
-      _scanline_points_horizontal.emplace_back(starting_point);
-      _scanline_points_horizontal.emplace_back(ending_point);
-    } else {
-      std::cout << "scanline error: polygon is not horizontal or vertical" << std::endl;
-    }
-    starting_point->set_pair(ending_point);
-    ending_point->set_pair(starting_point);
-
-    // match points in both horizontal and vertical
-    if (prev_segment_end != nullptr) {
-      starting_point->set_orthogonal_point(prev_segment_end);
-      prev_segment_end->set_orthogonal_point(starting_point);
-    } else {
-      polygon_start = starting_point;
-    }
-
-    if (endpoint2 == endpoints.begin()) {
-      polygon_start->set_orthogonal_point(ending_point);
-      ending_point->set_orthogonal_point(polygon_start);
-    }
-
-    prev_segment_end = ending_point;
-  }
-
-  /// save data
-  std::copy(endpoints.begin(), endpoints.end(), std::back_inserter(_basic_points));
+  auto start_points = createPolygonEndpoints(polygon_points, net_id);
+  createScanlinePoints(
+      start_points.first,
+      [](DrcBasicPoint* p1, DrcBasicPoint* p2) {
+        return p1->get_x() > p2->get_x() ? std::make_pair(false, false) : std::make_pair(true, true);
+      },
+      _scanline_points_horizontal);
+  createScanlinePoints(
+      start_points.second,
+      [](DrcBasicPoint* p1, DrcBasicPoint* p2) {
+        return p1->get_y() > p2->get_y() ? std::make_pair(true, false) : std::make_pair(false, true);
+      },
+      _scanline_points_vertical);
 }
 
 /// @brief sort scanline points in both horizontal and vertical direction
@@ -131,6 +77,77 @@ void ScanlinePreprocess::sortEndpoints()
 {
   std::sort(_scanline_points_horizontal.begin(), _scanline_points_horizontal.end(), CompareScanlinePointByX());
   std::sort(_scanline_points_vertical.begin(), _scanline_points_vertical.end(), CompareScanlinePointByY());
+}
+
+std::pair<DrcBasicPoint*, DrcBasicPoint*> ScanlinePreprocess::createPolygonEndpoints(std::vector<ieda_solver::GtlPoint>& polygon_points,
+                                                                                     int net_id)
+{
+  // _basic_points.reserve(_basic_points.size() + polygon_points.size());
+  ComparePointByX<DrcBasicPoint> compare_by_x;
+  ComparePointByY<DrcBasicPoint> compare_by_y;
+
+  DrcBasicPoint* left_bottom_pt = nullptr;
+  DrcBasicPoint* bottom_left_pt = nullptr;
+  DrcBasicPoint* prev_point = nullptr;
+  DrcBasicPoint* first_point = nullptr;
+  int current_polygon_id = ++_polygon_count;
+  for (auto& vertex : polygon_points) {
+    DrcBasicPoint* new_basic_pt = new DrcBasicPoint(vertex.x(), vertex.y(), net_id, current_polygon_id);
+    _basic_points.emplace_back(new_basic_pt);
+
+    // find start point
+    if (left_bottom_pt == nullptr) {
+      left_bottom_pt = new_basic_pt;
+    } else {
+      if (!left_bottom_pt || compare_by_x(new_basic_pt, left_bottom_pt)) {
+        left_bottom_pt = new_basic_pt;
+      }
+      if (!bottom_left_pt || compare_by_y(new_basic_pt, bottom_left_pt)) {
+        bottom_left_pt = new_basic_pt;
+      }
+    }
+
+    // link points
+    if (prev_point != nullptr) {
+      prev_point->set_next(new_basic_pt);
+      new_basic_pt->set_prev(prev_point);
+    } else {
+      first_point = new_basic_pt;
+    }
+
+    prev_point = new_basic_pt;
+  }
+  first_point->set_prev(prev_point);
+  prev_point->set_next(first_point);
+
+  return std::make_pair(left_bottom_pt, bottom_left_pt);
+}
+
+void ScanlinePreprocess::createScanlinePoints(DrcBasicPoint* start_point,
+                                              std::function<std::pair<bool, bool>(DrcBasicPoint*, DrcBasicPoint*)> compare,
+                                              std::vector<ScanlinePoint*>& scanline_points)
+{
+  auto* endpoint1 = start_point;
+  auto* endpoint2 = endpoint1->get_next();
+  int side_id = ++_side_count;
+  bool side_state = !compare(endpoint1, endpoint2).first;
+
+  do {
+    auto edge_state = compare(endpoint1, endpoint2);
+    if (edge_state.first != side_state) {
+      side_id = ++_side_count;
+      side_state = edge_state.first;
+    }
+    ScanlinePoint* starting_point = new ScanlinePoint(endpoint1, side_id, edge_state.first, edge_state.second);
+    ScanlinePoint* ending_point = new ScanlinePoint(endpoint2, side_id, !edge_state.first, !edge_state.second);
+    scanline_points.emplace_back(starting_point);
+    scanline_points.emplace_back(ending_point);
+    starting_point->set_pair(ending_point);
+    ending_point->set_pair(starting_point);
+
+    endpoint1 = endpoint2->get_next();
+    endpoint2 = endpoint1->get_next();
+  } while (endpoint1 != start_point);
 }
 
 }  // namespace idrc

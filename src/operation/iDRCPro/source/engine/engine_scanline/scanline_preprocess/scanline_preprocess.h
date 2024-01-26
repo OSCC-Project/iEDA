@@ -75,6 +75,10 @@ class ScanlinePreprocess
 
   template <typename T>
   void deleteVectorElements(T& v);
+
+  std::pair<DrcBasicPoint*, DrcBasicPoint*> createPolygonEndpoints(std::vector<ieda_solver::GtlPoint>& polygon_points, int net_id);
+  void createScanlinePoints(DrcBasicPoint* start_point, std::function<std::pair<bool, bool>(DrcBasicPoint*, DrcBasicPoint*)> compare,
+                            std::vector<ScanlinePoint*>& scanline_points);
 };
 
 }  // namespace idrc

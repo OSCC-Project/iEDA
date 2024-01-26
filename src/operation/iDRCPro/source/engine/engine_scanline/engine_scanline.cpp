@@ -148,12 +148,22 @@ void DrcEngineScanline::addCurrentBucketToScanline(ScanlineStatus& status)
 ScanlineSegmentType DrcEngineScanline::judgeSegmentType(ScanlineStatus& status, ScanlinePoint* point_forward, ScanlinePoint* point_backward)
 {
   ScanlineSegmentType result_type = ScanlineSegmentType::kNone;
-  // TODO: judge segment type
-  if (point_forward->get_point()->is_endpoint() && point_backward->get_point()->is_endpoint()
-      && !point_forward->get_orthogonal_point()->get_is_start() && point_backward->get_orthogonal_point()->get_is_start()) {
-    result_type = ScanlineSegmentType::kEdge;
+  if (point_forward->get_is_new() && point_backward->get_is_new()
+      && (point_forward->get_point()->get_next() == point_backward->get_point()
+          || point_backward->get_point()->get_next() == point_forward->get_point())) {
+    if (point_forward->get_is_start() && point_backward->get_is_start()) {
+      result_type = ScanlineSegmentType::kStartingEdge;
+    } else if (!point_forward->get_is_start() && !point_backward->get_is_start()) {
+      result_type = ScanlineSegmentType::kEndingEdge;
+    } else {
+      result_type = ScanlineSegmentType::kTurningEdge;
+    }
   } else if (!point_forward->get_is_forward() && point_backward->get_is_forward()) {
-    result_type = ScanlineSegmentType::kSpacing;
+    if (point_forward->get_id() != point_backward->get_id()) {
+      result_type = ScanlineSegmentType::kMutualSpacing;
+    } else {
+      result_type = ScanlineSegmentType::kSlefSpacing;
+    }
   } else if (point_forward->get_is_forward() && !point_backward->get_is_forward()) {
     result_type = ScanlineSegmentType::kWidth;
   }
@@ -175,12 +185,12 @@ uint64_t DrcEngineScanline::hash2SideIds(int id1, int id2)
 void DrcEngineScanline::processScanlineStatus(ScanlineStatus& status)
 {
   std::deque<ScanlinePoint*> activate_points{nullptr, nullptr, nullptr};
-  std::deque<ScanlineSegmentType> activate_types{ScanlineSegmentType::kNone, ScanlineSegmentType::kNone, ScanlineSegmentType::kNone,
-                                                 ScanlineSegmentType::kNone};
+  std::deque<ScanlineSegmentType> activate_types{ScanlineSegmentType::kNone, ScanlineSegmentType::kNone, ScanlineSegmentType::kNone};
   auto scanline_status_it = status.insert_begin;
   if (scanline_status_it != status.status_points.end()) {
     activate_points.push_back(*scanline_status_it);
   }
+
   while (scanline_status_it != status.insert_end) {
     ScanlinePoint* point_backward = *scanline_status_it;
     if (++scanline_status_it != status.insert_end) {
@@ -200,31 +210,59 @@ void DrcEngineScanline::processScanlineStatus(ScanlineStatus& status)
         continue;
       }
 
-      // make sequence, make edge ids hash
       ConditionSequence::SequenceType sequence = ConditionSequence::SequenceType::kNone;
-      // TODO: use activate types to determine sequence refactor
-      if ((activate_types[0] == ScanlineSegmentType::kWidth && activate_types[1] == ScanlineSegmentType::kSpacing
-           && activate_types[2] == ScanlineSegmentType::kEdge && activate_types[3] == ScanlineSegmentType::kWidth)
-          || (activate_types[0] == ScanlineSegmentType::kWidth && activate_types[1] == ScanlineSegmentType::kEdge
-              && activate_types[2] == ScanlineSegmentType::kSpacing && activate_types[3] == ScanlineSegmentType::kWidth)) {
-        sequence = ConditionSequence::SequenceType::kWSEW_WESW;
-      } else if (activate_types[1] == ScanlineSegmentType::kEdge && activate_types[2] == ScanlineSegmentType::kSpacing
-                 && activate_types[3] == ScanlineSegmentType::kEdge) {
-        sequence = ConditionSequence::SequenceType::kESE;
-      } else if ((activate_types[1] == ScanlineSegmentType::kEdge && activate_types[2] == ScanlineSegmentType::kSpacing
-                  && activate_types[3] == ScanlineSegmentType::kWidth)
-                 || (activate_types[1] == ScanlineSegmentType::kWidth && activate_types[2] == ScanlineSegmentType::kSpacing
-                     && activate_types[3] == ScanlineSegmentType::kEdge)) {
-        sequence = ConditionSequence::SequenceType::kESW_WSE;
+      uint64_t recognize_code = 0;
+
+      // deliver single edge
+      bool is_deliver_single_edge = false;
+      if (activate_types[2] == ScanlineSegmentType::kStartingEdge) {
+        is_deliver_single_edge = true;
+        sequence = ConditionSequence::SequenceType::kSE;
+      } else if (activate_types[2] == ScanlineSegmentType::kEndingEdge) {
+        is_deliver_single_edge = true;
+        sequence = ConditionSequence::SequenceType::kEE;
+      } else if (activate_types[2] == ScanlineSegmentType::kTurningEdge) {
+        is_deliver_single_edge = true;
+        sequence = ConditionSequence::SequenceType::kTE;
       }
 
-      uint64_t recognize_code = 0;
-      for (int i = 1; i < (int) activate_types.size(); ++i) {
-        if (activate_types[i] == ScanlineSegmentType::kSpacing) {
-          auto gtl_pts_1 = DrcUtil::getPolygonPoints(activate_points[i - 1]->get_point());
-          auto gtl_pts_2 = DrcUtil::getPolygonPoints(activate_points[i]->get_point());
-          recognize_code = hash2SideIds(activate_points[i - 1]->get_side_id(), activate_points[i]->get_side_id());
-          break;
+      if (is_deliver_single_edge) {
+        recognize_code = hash2SideIds(point_forward->get_side_id(), point_backward->get_side_id());
+        if (_condition_manager->isSequenceNeedDeliver(_preprocess->get_layer(), recognize_code, sequence)) {
+          std::vector<DrcBasicPoint*> point_list(2, nullptr);
+          for (int i = 1; i < 3; ++i) {
+            point_list[i - 1] = activate_points[i] ? activate_points[i]->get_point() : nullptr;
+          }
+
+          _condition_manager->recordRegion(_preprocess->get_layer(), recognize_code, sequence, point_list);
+        }
+      }
+
+      // deliver spacing
+      if (activate_types[1] == ScanlineSegmentType::kMutualSpacing) {
+        recognize_code = hash2SideIds(activate_points[1]->get_side_id(), activate_points[2]->get_side_id());
+
+        if ((activate_types[0] == ScanlineSegmentType::kStartingEdge && activate_types[2] == ScanlineSegmentType::kWidth)
+            || (activate_types[0] == ScanlineSegmentType::kWidth && activate_types[2] == ScanlineSegmentType::kStartingEdge)) {
+          sequence = ConditionSequence::SequenceType::kSE_MS_W;
+        } else if (activate_types[0] == ScanlineSegmentType::kStartingEdge && activate_types[2] == ScanlineSegmentType::kStartingEdge) {
+          sequence = ConditionSequence::SequenceType::kSE_MS_SE;
+        } else if ((activate_types[0] == ScanlineSegmentType::kStartingEdge && activate_types[2] == ScanlineSegmentType::kTurningEdge)
+                   || (activate_types[0] == ScanlineSegmentType::kTurningEdge && activate_types[2] == ScanlineSegmentType::kStartingEdge)) {
+          sequence = ConditionSequence::SequenceType::kSE_MS_TE;
+        } else if ((activate_types[0] == ScanlineSegmentType::kTurningEdge && activate_types[2] == ScanlineSegmentType::kWidth)
+                   || (activate_types[0] == ScanlineSegmentType::kWidth && activate_types[2] == ScanlineSegmentType::kTurningEdge)) {
+          sequence = ConditionSequence::SequenceType::kTE_MS_W;
+        } else if (activate_types[0] == ScanlineSegmentType::kTurningEdge && activate_types[2] == ScanlineSegmentType::kTurningEdge) {
+          sequence = ConditionSequence::SequenceType::kTE_MS_TE;
+        } else if ((activate_types[0] == ScanlineSegmentType::kEndingEdge && activate_types[2] == ScanlineSegmentType::kWidth)
+                   || (activate_types[0] == ScanlineSegmentType::kWidth && activate_types[2] == ScanlineSegmentType::kEndingEdge)) {
+          sequence = ConditionSequence::SequenceType::kEE_MS_W;
+        } else if (activate_types[0] == ScanlineSegmentType::kEndingEdge && activate_types[2] == ScanlineSegmentType::kEndingEdge) {
+          sequence = ConditionSequence::SequenceType::kEE_MS_EE;
+        } else if ((activate_types[0] == ScanlineSegmentType::kEndingEdge && activate_types[2] == ScanlineSegmentType::kTurningEdge)
+                   || (activate_types[0] == ScanlineSegmentType::kTurningEdge && activate_types[2] == ScanlineSegmentType::kEndingEdge)) {
+          sequence = ConditionSequence::SequenceType::kEE_MS_TE;
         }
       }
 
@@ -239,7 +277,6 @@ void DrcEngineScanline::processScanlineStatus(ScanlineStatus& status)
       }
     }
   }
-  // TODO: 处理边缘情况，即插入点在最边缘时应多处理一段，保证处理到边缘的 NEN 或者其他情况
 }
 
 /// @brief remove ending points
