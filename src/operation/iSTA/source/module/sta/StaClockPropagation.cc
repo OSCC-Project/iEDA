@@ -267,26 +267,41 @@ void StaClockPropagation::updateSdcGeneratedClock() {
     if (the_clock->isGenerateClock() &&
         (dynamic_cast<SdcGenerateCLock*>(the_clock.get())
              ->isNeedUpdateSourceClock())) {
-      auto source_pins =
-          dynamic_cast<SdcGenerateCLock*>(the_clock.get())->get_source_pins();
-      int divide_by_value =
-          dynamic_cast<SdcGenerateCLock*>(the_clock.get())->get_divide_by();
+      auto* the_generated_clock =
+          dynamic_cast<SdcGenerateCLock*>(the_clock.get());
+      auto source_pins = the_generated_clock->get_source_pins();
+      int divide_by_value = the_generated_clock->get_divide_by();
       LOG_FATAL_IF(source_pins.size() != 1);
       StaClock* source_clock = nullptr;
       for (auto* source_pin : source_pins) {
         auto the_vertex = ista->findVertex(source_pin);
         LOG_FATAL_IF(!the_vertex) << "The vertex is not exist.";
         source_clock = the_vertex->getPropClock();
-        dynamic_cast<SdcGenerateCLock*>(the_clock.get())
-            ->set_source_name(source_clock->get_clock_name());
+        LOG_FATAL_IF(!source_clock)
+            << "The generated clock " << the_generated_clock->get_clock_name()
+            << " source clock not found";
+        the_generated_clock->set_source_name(source_clock->get_clock_name());
       }
 
-      the_clock->set_period(source_clock->get_period() * divide_by_value);
+      the_generated_clock->set_period(source_clock->get_period() *
+                                      divide_by_value);
       auto& wave_form = source_clock->get_wave_form();
-      SdcClock::SdcWaveform edges;
+      ieda::Vector<double> edges;
       for (auto& wave_edge : wave_form.get_wave_edges()) {
         edges.push_back(divide_by_value * wave_edge);
       }
+
+      if (the_generated_clock->isWaveformInv()) {
+        size_t i = 0;
+        double time_after_rising = edges[1] - edges[0];
+        // invert by shift backward
+        for (; i < edges.size() - 1; ++i) {
+          edges[i] = edges[1 + i];
+        }
+        // add first time (time_after_rising) to last
+        edges[i] += time_after_rising;
+      }
+
       the_clock->set_edges(std::move(edges));
     }
   }

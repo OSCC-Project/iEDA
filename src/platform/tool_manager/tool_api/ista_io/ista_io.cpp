@@ -273,65 +273,72 @@ namespace iplf {
     return true;
   }
 
-  void StaIO::buildNetGraph()
-  {
-    auto* timing_engine = ista::TimingEngine::getOrCreateTimingEngine();
-    timing_engine->initRcTree();
-    ista::Netlist* sta_netlist = timing_engine->get_netlist();
+void StaIO::buildNetGraph()
+{
+  // auto* timing_engine = ista::TimingEngine::getOrCreateTimingEngine();
+  // timing_engine->initRcTree();
+  // ista::Netlist* sta_netlist = timing_engine->get_netlist();
 
-    auto* idb_design = dmInst->get_idb_design();
-    auto* idb_layout = dmInst->get_idb_layout();
-    auto* idb_nets = idb_design->get_net_list();
+  // auto* idb_design = dmInst->get_idb_design();
+  // auto* idb_layout = dmInst->get_idb_layout();
+  // auto* idb_nets = idb_design->get_net_list();
 
-    for (auto* idb_net : idb_nets->get_net_list()) {
-      ista::Net* ista_net = sta_netlist->findNet(idb_net->get_net_name().c_str());
+  // for (auto* idb_net : idb_nets->get_net_list()) {
+  //   ista::Net* ista_net = sta_netlist->findNet(idb_net->get_net_name().c_str());
 
-      /// build pin
-      auto* idb_io_pin = idb_net->get_io_pin();
-      if (idb_io_pin != nullptr) {
-      }
+  //   /// build pin
+  //   auto* idb_io_pin = idb_net->get_io_pin();
+  //   if (idb_io_pin != nullptr) {
+  //   }
 
-      auto* idb_inst_pins = idb_net->get_instance_pin_list();
-      if (idb_inst_pins != nullptr) {
-      }
+  //   auto* idb_inst_pins = idb_net->get_instance_pin_list();
+  //   if (idb_inst_pins != nullptr) {
+  //   }
 
-      /// build wire
-      auto* idb_wires = idb_net->get_wire_list();
-      for (auto* idb_wires : idb_wires->get_wire_list()) {
-        for (auto* idb_segment : idb_wires->get_segment_list()) {
-          /// build segment
-          ista::RctNode* rct_node = nullptr;
-        }
-      }
-    }
-  }
-  /**
-   * @brief get all the clock net name list for this design
-   *
-   * @return std::vector<std::string>
-   */
-  std::vector<std::string> StaIO::getClockNetNameList()
-  {
-    auto* timing_engine = ista::TimingEngine::getOrCreateTimingEngine();
-    std::vector<std::string> clock_net_name_list = timing_engine->getClockNetNameList();
+  //   /// build wire
+  //   auto* idb_wires = idb_net->get_wire_list();
+  //   for (auto* idb_wires : idb_wires->get_wire_list()) {
+  //     for (auto* idb_segment : idb_wires->get_segment_list()) {
+  //       /// build segment
+  //       ista::RctNode* rct_node = nullptr;
+  //     }
+  //   }
+  // }
+}
+/**
+ * @brief get all the clock net name list for this design
+ *
+ * @return std::vector<std::string>
+ */
+std::vector<std::string> StaIO::getClockNetNameList()
+{
+  auto* timing_engine = ista::TimingEngine::getOrCreateTimingEngine();
+  std::vector<std::string> clock_net_name_list = timing_engine->getClockNetNameList();
 
     return clock_net_name_list;
   }
 
-  /**
-   * @brief get all the clock name list for this design
-   *
-   * @return std::vector<std::string>
-   */
-  std::vector<std::string> StaIO::getClockNameList()
-  {
-    std::vector<std::string> clock_name_list;
-    auto* timing_engine = ista::TimingEngine::getOrCreateTimingEngine();
-    for (auto* sta_clock : timing_engine->getClockList()) {
-      clock_name_list.push_back(sta_clock->get_clock_name());
-    }
-    return clock_name_list;
+/**
+ * @brief get all the clock name list for this design
+ *
+ * @return std::vector<std::string>
+ */
+std::vector<std::string> StaIO::getClockNameList()
+{
+  std::vector<std::string> clock_name_list;
+  auto* timing_engine = ista::TimingEngine::getOrCreateTimingEngine();
+  for (auto* sta_clock : timing_engine->getClockList()) {
+    clock_name_list.push_back(sta_clock->get_clock_name());
   }
+  return clock_name_list;
+}
+
+double StaIO::getPeriodNS(std::string clock_name){
+  auto* timing_engine = ista::TimingEngine::getOrCreateTimingEngine();
+  // tmp fix
+  auto* clock = timing_engine->getClockList().at(0);
+  return clock->getPeriodNs();
+}
 
   /**
    * @brief get the cell type of the cell.
@@ -452,6 +459,21 @@ namespace iplf {
     auto* timing_engine = ista::TimingEngine::getOrCreateTimingEngine();
 
     float pin_cap = timing_engine->reportInstPinCapacitance(inst_pin_name.c_str());
+    return pin_cap;
+  }
+
+  float StaIO::obtainPinCap(std::string inst_pin_name){
+    float pin_cap = -1.0f;
+    auto* timing_engine = ista::TimingEngine::getOrCreateTimingEngine();
+    auto* design_netlist = timing_engine->get_netlist();
+    auto [instance_name, pin_name] = Str::splitTwoPart(inst_pin_name.c_str(), "/:");
+    if(!pin_name.empty()){
+      // instance pin
+      pin_cap = timing_engine->reportInstPinCapacitance(inst_pin_name.c_str());
+    }else{
+      auto* port = design_netlist->findPort(inst_pin_name.c_str());
+      pin_cap = port->cap();
+    }
     return pin_cap;
   }
 

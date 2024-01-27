@@ -253,7 +253,8 @@ void VerilogWriter::writeWire()
     }
 
     bus_processed.insert(net_bus_name);
-
+    // remove all "\" in net_bus_name
+    net_bus_name.erase(std::remove(net_bus_name.begin(), net_bus_name.end(), '\\'), net_bus_name.end());
     auto net_bus = _idb_design.get_bus_list()->findBus(net_bus_name);
     assert(net_bus);
     int bus_left = net_bus->get().get_left();

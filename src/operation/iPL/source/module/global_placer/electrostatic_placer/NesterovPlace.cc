@@ -47,7 +47,7 @@ namespace ipl {
 
 #define PRINT_LONG_NET 0
 #define PRINT_COORDI 0
-#define PLOT_IMAGE 0
+#define PLOT_IMAGE 1
 #define RECORD_ITER_INFO 0
 #define PRINT_DENSITY_MAP 0
 
@@ -77,11 +77,20 @@ namespace ipl {
 
     initGridManager();
     initTopologyManager();
+    notifyPLBinSize();
     initHPWLEvaluator();
     initWAWLGradientEvaluator();
-    if(_nes_config.isOptTiming()){
+    if (_nes_config.isOptTiming()) {
       initTimingAnnotation();
     }
+  }
+
+  void NesterovPlace::notifyPLBinSize() {
+    int32_t bin_size_x = _nes_database->_grid_manager->get_grid_size_x();
+    int32_t bin_size_y = _nes_database->_grid_manager->get_grid_size_y();
+
+    PlacerDBInst.bin_size_x = bin_size_x;
+    PlacerDBInst.bin_size_y = bin_size_y;
   }
 
   void NesterovPlace::wrapNesInstanceList()
@@ -276,7 +285,9 @@ namespace ipl {
     this->initGroups();
     this->initArcs();
 
-    topo_manager->updateALLNodeTopoId();
+    if (_nes_config.isOptTiming()) {
+      topo_manager->updateALLNodeTopoId();
+    }
   }
 
   void NesterovPlace::initNodes()
@@ -366,25 +377,29 @@ namespace ipl {
       auto* pl_inst = pair.second;
       // set group type.
       auto* cell_master = pl_inst->get_cell_master();
-      if (cell_master->isFlipflop()) {
-        group->set_group_type(GROUP_TYPE::kFlipflop);
-      }
-      else if (cell_master->isClockBuffer()) {
-        group->set_group_type(GROUP_TYPE::kClockBuffer);
-      }
-      else if (cell_master->isLogicBuffer()) {
-        group->set_group_type(GROUP_TYPE::kLogicBuffer);
-      }
-      else if (cell_master->isMacro()) {
-        group->set_group_type(GROUP_TYPE::kMacro);
-      }
-      else if (cell_master->isIOCell()) {
-        group->set_group_type(GROUP_TYPE::kIOCell);
-      }
-      else if (cell_master->isLogic()) {
-        group->set_group_type(GROUP_TYPE::kLogic);
-      }
-      else {
+      if (cell_master) {
+        if (cell_master->isFlipflop()) {
+          group->set_group_type(GROUP_TYPE::kFlipflop);
+        }
+        else if (cell_master->isClockBuffer()) {
+          group->set_group_type(GROUP_TYPE::kClockBuffer);
+        }
+        else if (cell_master->isLogicBuffer()) {
+          group->set_group_type(GROUP_TYPE::kLogicBuffer);
+        }
+        else if (cell_master->isMacro()) {
+          group->set_group_type(GROUP_TYPE::kMacro);
+        }
+        else if (cell_master->isIOCell()) {
+          group->set_group_type(GROUP_TYPE::kIOCell);
+        }
+        else if (cell_master->isLogic()) {
+          group->set_group_type(GROUP_TYPE::kLogic);
+        }
+        else {
+          group->set_group_type(GROUP_TYPE::kNone);
+        }
+      }else{
         group->set_group_type(GROUP_TYPE::kNone);
       }
 
@@ -421,11 +436,11 @@ namespace ipl {
     topo_manager->sortArcList();
   }
 
-  void NesterovPlace::generatePortOutNetArc(Node* node){
+  void NesterovPlace::generatePortOutNetArc(Node* node) {
     auto* topo_manager = _nes_database->_topology_manager;
     auto* network = node->get_network();
-    if(network){
-      for(auto* sink_node : network->get_receiver_list()){
+    if (network) {
+      for (auto* sink_node : network->get_receiver_list()) {
         Arc* net_arc = new Arc(node, sink_node);
         net_arc->set_arc_type(ARC_TYPE::kNetArc);
         node->add_output_arc(net_arc);
@@ -457,7 +472,7 @@ namespace ipl {
       auto input_list = group->obtainInputNodes();
       for (auto* input_node : input_list) {
         NetWork* input_net = input_node->get_network();
-        if(input_net->get_network_type() != NETWORK_TYPE::kClock && group->get_group_type() == GROUP_TYPE::kFlipflop){
+        if (input_net->get_network_type() != NETWORK_TYPE::kClock && group->get_group_type() == GROUP_TYPE::kFlipflop) {
           continue;
         }
 
@@ -470,15 +485,15 @@ namespace ipl {
     }
   }
 
-  void NesterovPlace::initHPWLEvaluator(){
+  void NesterovPlace::initHPWLEvaluator() {
     _nes_database->_wirelength = new HPWirelength(_nes_database->_topology_manager);
   }
 
-  void NesterovPlace::initWAWLGradientEvaluator(){
+  void NesterovPlace::initWAWLGradientEvaluator() {
     _nes_database->_wirelength_gradient = new WAWirelengthGradient(_nes_database->_topology_manager);
   }
 
-  void NesterovPlace::initTimingAnnotation(){
+  void NesterovPlace::initTimingAnnotation() {
     _nes_database->_timing_annotation = new TimingAnnotation(_nes_database->_topology_manager);
   }
 
@@ -1397,7 +1412,7 @@ namespace ipl {
           --cur_opt_overflow_step;
           LOG_INFO << "[NesterovSolve] update netweight for timing improvement.";
         }
-              }
+      }
 
       updateWirelengthCoef(sum_overflow);
       // dynamic adjustment for better convergence with large designs
@@ -1511,8 +1526,24 @@ namespace ipl {
       exit(1);
     }
 
+    notifyPLOverflowInfo(sum_overflow);
+    notifyPLPlaceDensity();
+
     // update PlacerDB.
     writeBackPlacerDB();
+  }
+
+  void NesterovPlace::notifyPLOverflowInfo(float final_overflow) {
+    PlacerDBInst.gp_overflow = final_overflow;
+
+    std::vector<Grid*> grid_list;
+    _nes_database->_grid_manager->obtainOverflowIllegalGridList(grid_list);
+    PlacerDBInst.gp_overflow_number = grid_list.size();
+  }
+
+  void NesterovPlace::notifyPLPlaceDensity() {
+    auto* grid_manager = _nes_database->_grid_manager;
+    PlacerDBInst.place_density[0] = grid_manager->obtainAvgGridDensity();
   }
 
   void NesterovPlace::plotInstImage(std::string file_name)
@@ -2114,7 +2145,7 @@ namespace ipl {
   }
 
   void NesterovPlace::updateTimingNetWeight()
-  { 
+  {
     float cita = 0.2;
 
     auto* topo_manager = _nes_database->_topology_manager;
@@ -2123,17 +2154,18 @@ namespace ipl {
     std::vector<float> prev_miu_list;
     prev_miu_list.resize(nNet_list.size());
     float prev_max_centrality = timing_annotation->get_max_centrality();
-    for(size_t i=0; i< nNet_list.size(); i++){
-      if(Utility().isFloatApproximatelyZero(prev_max_centrality)){
+    for (size_t i = 0; i < nNet_list.size(); i++) {
+      if (Utility().isFloatApproximatelyZero(prev_max_centrality)) {
         prev_miu_list[i] = 0.0f;
         continue;
       }
 
       auto* n_net = nNet_list[i];
       auto* network = topo_manager->findNetworkById(n_net->get_net_id());
-      if(n_net->isDontCare()){
-         prev_miu_list[i] = 0.0f;
-      }else{
+      if (n_net->isDontCare()) {
+        prev_miu_list[i] = 0.0f;
+      }
+      else {
         prev_miu_list[i] = timing_annotation->get_network_centrality(network) / prev_max_centrality;
       }
     }
@@ -2142,20 +2174,21 @@ namespace ipl {
     timing_annotation->updateCriticalityAndCentralityFull();
 
     float cur_max_centrality = timing_annotation->get_max_centrality();
-    for(size_t i=0; i< nNet_list.size(); i++){
-      if(Utility().isFloatApproximatelyZero(cur_max_centrality)){
+    for (size_t i = 0; i < nNet_list.size(); i++) {
+      if (Utility().isFloatApproximatelyZero(cur_max_centrality)) {
         break;
       }
 
       auto* n_net = nNet_list[i];
       auto* network = topo_manager->findNetworkById(n_net->get_net_id());
-      if(n_net->isDontCare()){
+      if (n_net->isDontCare()) {
         //
-      }else{
-       float cur_miu = timing_annotation->get_network_centrality(network) / cur_max_centrality; 
-       float delta_weight = cita * prev_miu_list[i] + (1 - cita) * cur_miu;
-       float cur_netweight = n_net->get_weight() + delta_weight;
-       n_net->set_weight(cur_netweight);
+      }
+      else {
+        float cur_miu = timing_annotation->get_network_centrality(network) / cur_max_centrality;
+        float delta_weight = cita * prev_miu_list[i] + (1 - cita) * cur_miu;
+        float cur_netweight = n_net->get_weight() + delta_weight;
+        n_net->set_weight(cur_netweight);
       }
     }
   }

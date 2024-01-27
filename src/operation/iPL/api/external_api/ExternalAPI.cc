@@ -29,6 +29,10 @@ bool ExternalAPI::isSTAStarted()
   return staInst->isInitSTA();
 }
 
+void ExternalAPI::modifySTAOutputDir(std::string path){
+  staInst->setStaWorkDirectory(path);
+}
+
 void ExternalAPI::initSTA()
 {
   staInst->initSTA();
@@ -121,6 +125,10 @@ double ExternalAPI::obtainTNS(const char* clock_name, ista::AnalysisMode mode)
   return eval::EvalAPI::getInst().reportTNS(clock_name, mode);
 }
 
+double ExternalAPI::obtainTargetClockPeriodNS(std::string clock_name){
+  return staInst->getPeriodNS(clock_name);
+}
+
 void ExternalAPI::updateEvalTiming(const std::vector<eval::TimingNet*>& timing_net_list)
 {
   EvalInst.updateTiming(timing_net_list);
@@ -130,8 +138,8 @@ void ExternalAPI::updateEvalTiming(const std::vector<eval::TimingNet*>& timing_n
   EvalInst.updateTiming(timing_net_list,name_list,propagation_level);
 }
 
-float ExternalAPI::obtainInstPinCap(std::string inst_pin_name){
-  return staInst->obtainInstPinCap(inst_pin_name);
+float ExternalAPI::obtainPinCap(std::string inst_pin_name){
+  return staInst->obtainPinCap(inst_pin_name);
 }
 
 float ExternalAPI::obtainAvgWireResUnitLengthUm(){
@@ -158,12 +166,25 @@ void ExternalAPI::destroyTimingEval()
 std::vector<float> ExternalAPI::evalGRCong()
 {
   eval::EvalAPI& eval_api = eval::EvalAPI::initInst();
-
   std::vector<float> gr_congestion;
   gr_congestion = eval_api.evalGRCong();
 
+  eval::EvalAPI::destroyInst();
+
   return gr_congestion;
 }
+
+int64_t ExternalAPI::evalEGRWL()
+{
+  eval::EvalAPI& eval_api = eval::EvalAPI::initInst();
+
+  int64_t egr_wl = static_cast<int64_t>(eval_api.evalEGRWL());
+
+  eval::EvalAPI::destroyInst();
+
+  return egr_wl;
+}
+
 
 /**
  * @brief compute each gcellgrid routing demand/resource, and return a 2D route util map
@@ -194,9 +215,27 @@ void ExternalAPI::destroyCongEval()
   eval::EvalAPI::destroyInst();
 }
 
-std::vector<float> ExternalAPI::obtainPinDens()
+std::vector<float> ExternalAPI::obtainPinDens(int32_t grid_cnt_x, int32_t grid_cnt_y)
 {
-  return eval::EvalAPI::getInst().evalPinDens();
+  eval::EvalAPI& eval_api = eval::EvalAPI::initInst();
+  int32_t bin_cnt_x = grid_cnt_x;
+  int32_t bin_cnt_y = grid_cnt_y;
+  eval_api.initCongDataFromIDB(bin_cnt_x, bin_cnt_y);
+
+  std::vector<float> pin_num_list = eval_api.evalPinDens();
+
+  std::vector<float> result;
+
+  float sum = std::accumulate(pin_num_list.begin(), pin_num_list.end(), 0.0);
+  float average = sum / pin_num_list.size();
+  result.push_back(average);
+
+  auto max_element_ptr = std::max_element(pin_num_list.begin(), pin_num_list.end());
+
+  result.push_back((*max_element_ptr) / average );
+
+  eval::EvalAPI::destroyInst();
+  return result;
 }
 
 std::vector<float> ExternalAPI::obtainNetCong(std::string rudy_type)

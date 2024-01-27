@@ -2,7 +2,7 @@
     "PL": {
         "is_max_length_opt": 0,
         "max_length_constraint": 1000000,
-        "is_timing_aware_mode": 0,
+        "is_timing_aware_mode": 1,
         "ignore_net_degree": 100,
         "num_threads": 1,
         "GP": {

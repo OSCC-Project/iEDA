@@ -62,8 +62,9 @@ void CtsDBWrapper::read()
     }
 
     /// add io pin
-    if (idb_net->get_io_pin() != nullptr) {
-      auto* pin = idbToCts(idb_net->get_io_pin());
+    auto* io_pins = idb_net->get_io_pins();
+    for (auto* io_pin : io_pins->get_pin_list()) {
+      auto* pin = idbToCts(io_pin);
       design->addPin(pin);
     }
 
@@ -241,8 +242,9 @@ CtsNet* CtsDBWrapper::idbToCts(IdbNet* idb_net)
       inst->addPin(pin);
     }
 
-    if (idb_net->get_io_pin() != nullptr) {
-      auto* pin = idbToCts(idb_net->get_io_pin());
+    auto* io_pins = idb_net->get_io_pins();
+    for (auto* io_pin : io_pins->get_pin_list()) {
+      auto* pin = idbToCts(io_pin);
       net->addPin(pin);
 
       /// make a virtual instance
@@ -250,11 +252,11 @@ CtsNet* CtsDBWrapper::idbToCts(IdbNet* idb_net)
       IdbInstance* idb_inst_new = new IdbInstance();
       IdbCellMasterList* cell_master_list = _idb_layout->get_cell_master_list();
       IdbCellMaster* cell_master_new = cell_master_list->set_cell_master(pin->get_pin_name());
-      cell_master_new->set_height(idb_net->get_io_pin()->get_bounding_box()->get_height());
-      cell_master_new->set_width(idb_net->get_io_pin()->get_bounding_box()->get_width());
+      cell_master_new->set_height(io_pin->get_bounding_box()->get_height());
+      cell_master_new->set_width(io_pin->get_bounding_box()->get_width());
 
       idb_inst_new->set_cell_master(cell_master_new);
-      idb_inst_new->set_coodinate(*idb_net->get_io_pin()->get_average_coordinate(), false);
+      idb_inst_new->set_coodinate(*(io_pin->get_average_coordinate()), false);
       idb_inst_new->set_name(pin->get_pin_name());
       auto* inst = idbToCts(idb_inst_new, true);
       inst->addPin(pin);

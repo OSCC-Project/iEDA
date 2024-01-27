@@ -152,6 +152,10 @@ class NesterovPlace
                                  std::vector<Point<float>>& wirelength_grads, std::vector<Point<float>>& density_grads);
   void updatePenaltyGradientPre2(std::vector<NesInstance*>& nInst_list, std::vector<Point<float>>& sum_grads,
                                  std::vector<Point<float>>& wirelength_grads, std::vector<Point<float>>& density_grads);
+  
+  void notifyPLBinSize();
+  void notifyPLOverflowInfo(float final_overflow);
+  void notifyPLPlaceDensity();
 };
 inline NesterovPlace::NesterovPlace(Config* config, PlacerDB* placer_db) : _nes_database(nullptr)
 {

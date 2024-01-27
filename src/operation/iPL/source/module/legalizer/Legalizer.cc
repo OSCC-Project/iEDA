@@ -443,6 +443,9 @@ bool Legalizer::runLegalize()
   if (is_succeed) {
     alignInstanceOrient();
     LOG_INFO << "Total Movement: " << calTotalMovement();
+
+    this->notifyPLMovementInfo();
+
     writebackPlacerDB();
     _target_inst_list.clear();
   }
@@ -461,6 +464,8 @@ bool Legalizer::runIncrLegalize()
 {
   LOG_INFO << "-----------------Start Incrmental Legalization-----------------";
   ieda::Stats incr_lg_status;
+
+  _mode = LG_MODE::kIncremental; // tmp for incremental placement
 
   bool is_succeed = true;
   if (!_method->isInitialized()) {
@@ -485,7 +490,7 @@ bool Legalizer::runIncrLegalize()
   }
 
   PlacerDBInst.updateTopoManager();
-  PlacerDBInst.updateGridManager();
+  // PlacerDBInst.updateGridManager();
 
   double time_delta = incr_lg_status.elapsedRunTime();
   LOG_INFO << "Incrmental Legalization Total Time Elapsed: " << time_delta << "s";
@@ -494,12 +499,15 @@ bool Legalizer::runIncrLegalize()
   return is_succeed;
 }
 
-bool Legalizer::runRollback(){
-  bool is_succeed = _method->runRollback();
+bool Legalizer::runRollback(bool clear_but_not_rollback){
+  bool is_succeed = _method->runRollback(clear_but_not_rollback);
   if(is_succeed){
     alignInstanceOrient();
     writebackPlacerDB();
   }
+  PlacerDBInst.updateTopoManager();
+
+  return is_succeed;
 }
 
 void Legalizer::alignInstanceOrient()
@@ -525,6 +533,23 @@ int64_t Legalizer::calTotalMovement()
     sum_movement += std::abs(pair.first->get_coordi().get_y() - (pair.second->get_coordi().get_y() - _database._shift_y));
   }
   return sum_movement;
+}
+
+int64_t Legalizer::calMaxMovement()
+{
+  int64_t max_movement = 0;
+  for(auto pair : _database._instance_map){
+    int64_t cur_movement = std::abs(pair.first->get_coordi().get_x() - (pair.second->get_coordi().get_x() - _database._shift_x))
+                    + std::abs(pair.first->get_coordi().get_y() - (pair.second->get_coordi().get_y() - _database._shift_y));
+    cur_movement > max_movement ? max_movement = cur_movement : cur_movement;
+  }
+  return max_movement;
+}
+
+void Legalizer::notifyPLMovementInfo()
+{
+  PlacerDBInst.lg_total_movement = calTotalMovement();
+  PlacerDBInst.lg_max_movement = calMaxMovement();
 }
 
 void Legalizer::writebackPlacerDB()
@@ -558,6 +583,7 @@ void Legalizer::destoryInst()
 {
   if (_s_lg_instance) {
     delete _s_lg_instance;
+    _s_lg_instance = nullptr;
   }
 }
 

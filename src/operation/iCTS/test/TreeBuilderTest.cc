@@ -141,7 +141,7 @@ TEST_F(TreeBuilderTest, RegressionTreeBuilderTest)
       suffix.pop_back();
     }
 
-    auto dir = CTSAPIInst.get_config()->get_sta_workspace() + "/file/" + suffix;
+    auto dir = CTSAPIInst.get_config()->get_work_dir() + "/file/" + suffix;
     auto method_list = {TreeBuilder::funcName(TreeBuilder::fluteTree), TreeBuilder::funcName(TreeBuilder::shallowLightTree),
                         TreeBuilder::funcName(TreeBuilder::boundSkewTree), TreeBuilder::funcName(TreeBuilder::bstSaltTree),
                         TreeBuilder::funcName(TreeBuilder::cbsTree)};
@@ -174,7 +174,7 @@ TEST_F(TreeBuilderTest, LowBoundEstimationTest)
       suffix.pop_back();
     }
 
-    auto dir = CTSAPIInst.get_config()->get_sta_workspace() + "/file/" + suffix;
+    auto dir = CTSAPIInst.get_config()->get_work_dir() + "/file/" + suffix;
 
     tree_builder.runEstimationTest(env_info, case_num, skew_bound, dir, suffix);
   });
@@ -186,7 +186,7 @@ TEST_F(TreeBuilderTest, IterativeFixSkewTest)
                               "/home/liweiguo/project/iEDA/scripts/salsa20/iEDA_config/cts_default_config.json");
   // std::vector<double> skew_bound_list = {0.08, 0.01, 0.005};
   std::vector<double> skew_bound_list = {0.005};
-  size_t case_num = 1000;
+  size_t case_num = 10000;
   // design DB unit is 2000
   std::ranges::for_each(skew_bound_list, [&](const double& skew_bound) {
     EnvInfo env_info{0, 150000, 0, 150000, 10, 40, 0.005, 0.01, skew_bound / 100, skew_bound / 10};
@@ -196,7 +196,7 @@ TEST_F(TreeBuilderTest, IterativeFixSkewTest)
       suffix.pop_back();
     }
 
-    auto dir = CTSAPIInst.get_config()->get_sta_workspace() + "/file/" + suffix;
+    auto dir = CTSAPIInst.get_config()->get_work_dir() + "/file/" + suffix;
 
     tree_builder.runIterativeFixSkewTest(env_info, case_num, skew_bound, dir, suffix);
   });

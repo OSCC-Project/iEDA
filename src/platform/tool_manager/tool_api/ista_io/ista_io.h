@@ -72,6 +72,7 @@ class StaIO
                     std::pair<std::string, std::string>& master_inst_buffer, std::pair<int, int> buffer_center_loc,
                     idb::IdbConnectType connect_type);
   float obtainInstPinCap(std::string inst_pin_name);
+  float obtainPinCap(std::string inst_pin_name);
   float obtainAvgWireResUnitLengthUm();
   float obtainAvgWireCapUnitLengthUm();
   float obtainInstOutPinRes(std::string cell_name, std::string port_name);
@@ -83,6 +84,7 @@ class StaIO
   bool runSpef(std::string path = "");
   bool reportTiming();
   void buildNetGraph();
+  double getPeriodNS(std::string clock_name);
 
  private:
   static StaIO* _instance;

@@ -54,7 +54,7 @@ bool LGCustomization::runIncrLegalization()
   return true;
 }
 
-bool LGCustomization::runRollback()
+bool LGCustomization::runRollback(bool clear_but_not_rollback)
 {
   return true;
 }

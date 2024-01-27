@@ -477,6 +477,9 @@ void TimingEval::updateEstimateDelay(const std::vector<TimingNet*>& timing_net_l
   for (auto& eval_net : _timing_net_list) {
     ista::Net* ista_net = netlist->findNet(eval_net->get_name().c_str());
 
+    // reset rc info in timing graph
+    _timing_engine->get_ista()->resetRcNet(ista_net);
+
     std::vector<std::pair<TimingPin*, TimingPin*>> pin_pair_list = eval_net->get_pin_pair_list();
 
     for (auto pin_pair : pin_pair_list) {
@@ -521,6 +524,10 @@ void TimingEval::updateEstimateDelay(const std::vector<TimingNet*>& timing_net_l
           = dynamic_cast<ista::TimingIDBAdapter*>(_timing_engine->get_db_adapter())->getCapacitance(1, wire_length / 1.0 / _unit, width);
       double res
           = dynamic_cast<ista::TimingIDBAdapter*>(_timing_engine->get_db_adapter())->getResistance(1, wire_length / 1.0 / _unit, width);
+      
+      // // tmp for test
+      // double cap = (wire_length / 1.0 / _unit) * 1.6e-16;
+      // double res = (wire_length / 1.0 / _unit) * 2.535;
 
       _timing_engine->makeResistor(ista_net, first_node, second_node, res);
       _timing_engine->incrCap(first_node, cap / 2);
@@ -529,12 +536,14 @@ void TimingEval::updateEstimateDelay(const std::vector<TimingNet*>& timing_net_l
     _timing_engine->updateRCTreeInfo(ista_net);
   }
 
-  for (auto& name : name_list) {
-    _timing_engine->moveInstance(name.c_str(), propagation_level);
-  }
+  // for (auto& name : name_list) {
+  //   _timing_engine->moveInstance(name.c_str(), propagation_level);
+  // }
 
-  _timing_engine->incrUpdateTiming();
-  _timing_engine->reportTiming();
+  // _timing_engine->incrUpdateTiming();
+
+  _timing_engine->updateTiming();
+  // _timing_engine->reportTiming();
 }
 
 void TimingEval::initTimingEngine(int32_t unit)

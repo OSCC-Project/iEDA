@@ -47,7 +47,7 @@ class CtsIO
   /// getter
 
   /// io
-  bool runCTS(std::string config = "");
+  bool runCTS(std::string config = "", std::string work_dir = "");
   bool reportCTS(std::string path = "");
   // bool initTopo(std::string config = "");
 

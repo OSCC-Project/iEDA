@@ -111,6 +111,7 @@ void AbacusCluster::appendInstList(std::vector<ipl::LGInstance*> inst_list){
   for(auto* inst : inst_list){
     this->appendInst(inst);
   }
+  _inst_list = inst_list;
 }
 
 void AbacusCluster::updateAbacusInfo()

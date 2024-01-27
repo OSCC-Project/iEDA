@@ -44,7 +44,7 @@ class LGCustomization : public LGMethodInterface
   void specifyTargetInstList(std::vector<ipl::LGInstance*>& target_inst_list) override;
   bool runLegalization() override;
   bool runIncrLegalization() override;
-  bool runRollback() override;
+  bool runRollback(bool clear_but_not_rollback) override;
 
  private:
 };

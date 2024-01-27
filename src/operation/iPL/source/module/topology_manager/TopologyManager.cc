@@ -29,6 +29,7 @@
 #include <cmath>
 #include <queue>
 #include <tuple>
+#include <set>
 
 #include "Log.hh"
 
@@ -224,6 +225,7 @@ void TopologyManager::updateTopoId(Node* node)
 
       node->set_topo_id((lower + left_1) / 2);
 
+
       std::queue<std::tuple<Node*, int32_t>> open;
       for (auto* successor_arc : node->get_output_arc_list()) {
         auto* successor = successor_arc->get_to_node();
@@ -232,10 +234,18 @@ void TopologyManager::updateTopoId(Node* node)
         }
       }
 
+      int64_t open_size = 0;
+      std::set<Node*> is_visited;
+
       while (!open.empty()) {
         auto* current = std::get<0>(open.front());
         int32_t generator_order = std::get<1>(open.front());
         open.pop();
+
+        if(is_visited.find(current) != is_visited.end()){
+          continue;
+        }
+        is_visited.emplace(current);
 
         if (current == node) {
           // loop detected.
@@ -258,6 +268,7 @@ void TopologyManager::updateTopoId(Node* node)
         for (auto* successor_arc : current->get_output_arc_list()) {
           auto* successor = successor_arc->get_to_node();
           if (successor->get_topo_id() <= order) {
+            open_size++;
             open.push(std::make_tuple(successor, order));
           }
         }
@@ -268,8 +279,13 @@ void TopologyManager::updateTopoId(Node* node)
 
 void TopologyManager::updateALLNodeTopoId()
 {
+  int64_t node_cnt = 0;
   for (auto* node : _node_list) {
     updateTopoId(node);
+    node_cnt++;
+    if(node_cnt % 100000 == 0){
+      LOG_WARNING << "Finish update node count: " << node_cnt;
+    }
   }
 }
 

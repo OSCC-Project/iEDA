@@ -36,6 +36,7 @@ class ExternalAPI
 
   /*****************************Timing Interface: START*****************************/
   bool isSTAStarted();
+  void modifySTAOutputDir(std::string path);
   void initSTA();
   void initEval();
   void updateSTATiming();
@@ -56,9 +57,10 @@ class ExternalAPI
   double obtainPinLateRequiredTime(std::string pin_name);
   double obtainWNS(const char* clock_name, ista::AnalysisMode mode);
   double obtainTNS(const char* clock_name, ista::AnalysisMode mode);
+  double obtainTargetClockPeriodNS(std::string clock_name);
   void updateEvalTiming(const std::vector<eval::TimingNet*>& timing_net_list);
   void updateEvalTiming(const std::vector<eval::TimingNet*>& timing_net_list, const std::vector<std::string>& name_list, const int& propagation_level);
-  float obtainInstPinCap(std::string inst_pin_name);
+  float obtainPinCap(std::string inst_pin_name);
   float obtainAvgWireResUnitLengthUm();
   float obtainAvgWireCapUnitLengthUm();
   float obtainInstOutPinRes(std::string cell_name, std::string port_name);
@@ -67,9 +69,11 @@ class ExternalAPI
 
   /*****************************Routing Interface: START*****************************/
   void runRoutabilityGP();
-  std::vector<float> obtainPinDens();
+  std::vector<float> obtainPinDens(int32_t grid_cnt_x, int32_t grid_cnt_y);
   std::vector<float> obtainNetCong(std::string rudy_type);
   std::vector<float> evalGRCong();
+  int64_t evalEGRWL();
+
   std::vector<float> getUseCapRatioList();
   void plotCongMap(const std::string& plot_path, const std::string& output_file_name);
   void destroyCongEval();

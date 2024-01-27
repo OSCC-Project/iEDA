@@ -148,5 +148,8 @@ void CongBin::clear_net_list(){
   _net_list.clear();
 }
 
+void CongBin::clear_inst_list(){
+  _inst_list.clear();
+}
 
 }  // namespace eval

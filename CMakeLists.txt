@@ -28,6 +28,7 @@ endif()
 
 option(BUILD_PYTHON "If ON, build python interface." OFF)
 if(BUILD_PYTHON)
+    set(BUILD_STATIC_LIB OFF)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
 endif()
 option(BUILD_GUI "If ON, build GUI." OFF)
@@ -42,7 +43,7 @@ set(FORT_ENABLE_TESTING OFF CACHE INTERNAL "") # Disable building tests and exam
 # SET(CMAKE_CXX_FLAGS "$ENV{CXXFLAGS} -fPIC")
 set(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -Wall")
 set(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -O0 -Wall -g2 -ggdb")
-# set(CMAKE_BUILD_TYPE "Release")
+set(CMAKE_BUILD_TYPE "Release")
 # set(CMAKE_BUILD_TYPE "Debug")
 #set(BUILD_SHARED_LIBS ON)
 

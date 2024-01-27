@@ -62,6 +62,7 @@ namespace ipl {
     auto* idb_builder = dmInst->get_idb_builder();
 
     iPLAPIInst.initAPI(pl_json_file, idb_builder);
+    iPLAPIInst.runLG();
     iPLAPIInst.runPostGP();
 
     iPLAPIInst.destoryInst();

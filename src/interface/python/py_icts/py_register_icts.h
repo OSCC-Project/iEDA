@@ -23,7 +23,7 @@
 namespace python_interface {
 namespace py = pybind11;
 void register_icts(pybind11::module& m) {
-  m.def("run_cts", ctsAutoRun, py::arg("cts_config"));
+  m.def("run_cts", ctsAutoRun, py::arg("cts_config"), py::arg("cts_work_dir"));
   m.def("cts_report", ctsReport, py::arg("path"));
 }
 

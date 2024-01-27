@@ -91,6 +91,7 @@ class TimingAnnotation
   std::vector<Group*> obtainLateViolatedGroupListByTopoOrder();
 
  private:
+  int32_t _unit;
   TopologyManager* _topology_manager;
   SteinerWirelength* _steiner_wirelength;
 
@@ -107,7 +108,7 @@ class TimingAnnotation
   void updateCriticalityAndCentrality(NetWork* network);
   std::string extractLastName(std::string input);
 };
-inline TimingAnnotation::TimingAnnotation(TopologyManager* topology_manager) : _topology_manager(topology_manager), _steiner_wirelength(nullptr), _max_centrality(0.0f)
+inline TimingAnnotation::TimingAnnotation(TopologyManager* topology_manager) : _unit(1), _topology_manager(topology_manager), _steiner_wirelength(nullptr), _max_centrality(0.0f)
 {
   init();
 }

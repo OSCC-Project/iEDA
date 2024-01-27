@@ -44,6 +44,7 @@ namespace ipl {
   {
     if (_s_placer_db_instance) {
       delete _s_placer_db_instance;
+      _s_placer_db_instance = nullptr;
     }
   }
 
@@ -55,15 +56,19 @@ namespace ipl {
   {
     if (_config) {
       delete _config;
+      _config = nullptr;
     }
     if (_db_wrapper) {
       delete _db_wrapper;
+      _db_wrapper = nullptr;
     }
     if (_topo_manager) {
       delete _topo_manager;
+      _topo_manager = nullptr;
     }
     if (_grid_manager) {
       delete _grid_manager;
+      _grid_manager = nullptr;
     }
   }
 
@@ -101,8 +106,6 @@ namespace ipl {
     this->initNetworks(pl_design);
     this->initGroups(pl_design);
     this->initArcs();
-
-    // _topo_manager->updateALLNodeTopoId();
   }
 
   void PlacerDB::initNodes(Design* pl_design) {
@@ -175,27 +178,33 @@ namespace ipl {
 
       // set group type.
       auto* cell_master = inst->get_cell_master();
-      if (cell_master->isFlipflop()) {
-        group->set_group_type(GROUP_TYPE::kFlipflop);
-      }
-      else if (cell_master->isClockBuffer()) {
-        group->set_group_type(GROUP_TYPE::kClockBuffer);
-      }
-      else if (cell_master->isLogicBuffer()) {
-        group->set_group_type(GROUP_TYPE::kLogicBuffer);
-      }
-      else if (cell_master->isMacro()) {
-        group->set_group_type(GROUP_TYPE::kMacro);
-      }
-      else if (cell_master->isIOCell()) {
-        group->set_group_type(GROUP_TYPE::kIOCell);
-      }
-      else if (cell_master->isLogic()) {
-        group->set_group_type(GROUP_TYPE::kLogic);
+      if (cell_master) {
+        if (cell_master->isFlipflop()) {
+          group->set_group_type(GROUP_TYPE::kFlipflop);
+        }
+        else if (cell_master->isClockBuffer()) {
+          group->set_group_type(GROUP_TYPE::kClockBuffer);
+        }
+        else if (cell_master->isLogicBuffer()) {
+          group->set_group_type(GROUP_TYPE::kLogicBuffer);
+        }
+        else if (cell_master->isMacro()) {
+          group->set_group_type(GROUP_TYPE::kMacro);
+        }
+        else if (cell_master->isIOCell()) {
+          group->set_group_type(GROUP_TYPE::kIOCell);
+        }
+        else if (cell_master->isLogic()) {
+          group->set_group_type(GROUP_TYPE::kLogic);
+        }
+        else {
+          group->set_group_type(GROUP_TYPE::kNone);
+        }
       }
       else {
         group->set_group_type(GROUP_TYPE::kNone);
       }
+
 
       for (auto* pin : inst->get_pins()) {
         Node* node = _topo_manager->findNodeById(pin->get_pin_id());
@@ -216,9 +225,10 @@ namespace ipl {
         }
       }
       else {
-        if(node->get_node_type() == NODE_TYPE::kInput){
+        if (node->get_node_type() == NODE_TYPE::kInput) {
           this->generateNetArc(node);
-        }else if(node->get_node_type() == NODE_TYPE::kOutput){
+        }
+        else if (node->get_node_type() == NODE_TYPE::kOutput) {
           this->generateGroupArc(node);
         }
       }
@@ -239,17 +249,17 @@ namespace ipl {
     }
   }
 
-  void PlacerDB::generateGroupArc(Node* node){
+  void PlacerDB::generateGroupArc(Node* node) {
     auto* group = node->get_group();
-    if(group){
+    if (group) {
       auto input_list = group->obtainInputNodes();
-      for(auto* input_node : input_list){
+      for (auto* input_node : input_list) {
         NetWork* input_net = input_node->get_network();
-        if(input_net->get_network_type() != NETWORK_TYPE::kClock && group->get_group_type() == GROUP_TYPE::kFlipflop){
+        if (input_net->get_network_type() != NETWORK_TYPE::kClock && group->get_group_type() == GROUP_TYPE::kFlipflop) {
           continue;
         }
 
-        Arc* group_arc = new Arc(input_node,node);
+        Arc* group_arc = new Arc(input_node, node);
         group_arc->set_arc_type(ARC_TYPE::kGroupArc);
         input_node->add_output_arc(group_arc);
         node->add_input_arc(group_arc);

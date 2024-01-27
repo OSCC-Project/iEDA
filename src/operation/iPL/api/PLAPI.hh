@@ -27,6 +27,7 @@
 #define IPL_API_H
 
 #include "external_api/ExternalAPI.hh"
+#include "report/PLReporter.hh"
 
 namespace ipl {
 
@@ -61,6 +62,8 @@ class PLAPI
                                                                 std::pair<int32_t, int32_t> site_range);
   bool checkLegality();
 
+  PLReporter* get_reporter() { return _reporter;}
+
   void reportPLInfo();
   void reportTopoInfo();
   void reportWLInfo(std::ofstream& feed);
@@ -75,6 +78,12 @@ class PLAPI
   void reportCongestionInfo(std::ofstream& feed);
   void reportPLBaseInfo(std::ofstream& feed);
 
+  void notifyPLWLInfo(int stage); // for indicator record: 0-GP, 1-LG, 2-DP
+  void notifyPLTimingInfo(int stage);
+  void notifySTAUpdateTimingRuntime();
+  void notifyPLCongestionInfo(int stage);
+  void notifyPLOriginInfo();
+
   bool isSTAStarted();
   bool isPlacerDBStarted();
   bool isAbucasLGStarted();
@@ -84,12 +93,14 @@ class PLAPI
   // The following interfaces are only for iPL internal calls !
 
   void printHPWLInfo();
+  void printTimingInfo();
   void saveNetPinInfoForDebug(std::string path);
   void savePinListInfoForDebug(std::string path);
   void plotConnectionForDebug(std::vector<std::string> net_name_list, std::string path);
   void plotModuleListForDebug(std::vector<std::string> module_prefix_list, std::string path);
   void plotModuleStateForDebug(std::vector<std::string> special_inst_list, std::string path);
 
+  void modifySTAOutputDir(std::string path);
   void initSTA();
   void initEval();
   void updateSTATiming();
@@ -121,7 +132,7 @@ class PLAPI
   void updateTimingInstMovement(TopologyManager* topo_manager,
                                 std::map<int32_t, std::vector<std::pair<Point<int32_t>, Point<int32_t>>>> net_id_to_points_map,
                                 std::vector<std::string> moved_inst_list);
-  float obtainInstPinCap(std::string inst_pin_name);
+  float obtainPinCap(std::string inst_pin_name);
   float obtainAvgWireResUnitLengthUm();
   float obtainAvgWireCapUnitLengthUm();
   float obtainInstOutPinRes(std::string cell_name, std::string port_name);
@@ -133,7 +144,7 @@ class PLAPI
 
   /*****************************Congestion-driven Placement: START*****************************/
   void runRoutabilityGP();
-  std::vector<float> obtainPinDens();
+  std::vector<float> obtainPinDens(int32_t grid_cnt_x, int32_t grid_cnt_y);
   std::vector<float> obtainNetCong(std::string rudy_type);
   std::vector<float> evalGRCong();
   std::vector<float> getUseCapRatioList();
@@ -143,7 +154,8 @@ class PLAPI
 
  private:
   static PLAPI* _s_ipl_api_instance;
-  ExternalAPI _external_api;
+  ExternalAPI* _external_api;
+  PLReporter* _reporter;
 
   PLAPI() = default;
   PLAPI(const PLAPI&) = delete;

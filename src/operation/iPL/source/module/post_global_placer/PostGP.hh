@@ -68,7 +68,7 @@ class PostGP
   std::vector<Point<int32_t>> obtainCandidateLocations(Instance* inst, Point<int32_t> anchor_point);
 
   bool runIncrLGAndUpdateTiming(Instance* inst, int32_t x, int32_t y);
-  bool runRollback(Instance* inst);
+  bool runRollback(Instance* inst, bool clear_but_not_rollback);
 
   // bool runIncrLG(std::vector<Instance*> target_inst_list);
   // bool rollBackToBestLocation(Instance* inst);

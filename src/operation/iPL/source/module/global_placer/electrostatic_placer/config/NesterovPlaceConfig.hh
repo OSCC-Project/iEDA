@@ -113,7 +113,7 @@ class NesterovPlaceConfig
   int32_t _max_net_wirelength;
 
   // about timing.
-  bool _is_opt_timing = 0;
+  bool _is_opt_timing = 1;
 
   // about opt target overflow list
   std::vector<float> _opt_overflow_list;

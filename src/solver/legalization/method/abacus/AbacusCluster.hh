@@ -103,7 +103,14 @@ class AbacusCluster
   void set_belong_interval(ipl::LGInterval* seg) { _belong_segment = seg; }
   void set_min_x(int32_t min_x) { _min_x = min_x; }
   void set_front_cluster(std::string cluster) { _front_cluster = cluster; }
-  void set_back_cluster(std::string cluster) { _back_cluster = cluster; }
+  void set_back_cluster(std::string cluster) {
+    // debug
+    if(this->get_name() == "dpath/a_lt_b/_168_" && cluster == "dpath/a_mux/_219_"){
+      int a = 0;
+    }
+    _back_cluster = cluster; 
+  }
+
 
   // function
   void clearAbacusInfo();
