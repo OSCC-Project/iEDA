@@ -31,6 +31,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include "zlib.h"
 
 #include <iostream>
 #include <string>
@@ -58,6 +59,13 @@ enum class DefWriteType
   kGlobalRouting,
   kDetailRouting,
   kMax
+};
+
+// 需要存为其它形式，可以添加其它枚举类型
+enum class SaveFormat
+{
+  kDef,
+  kgzip
 };
 
 class DefWrite
@@ -117,6 +125,10 @@ class DefWrite
   clock_t _end_time;
 
   FILE* file_write;
+  gzFile file_write_gz;
   DefWriteType _type;
+
+  SaveFormat font;
+  void writestr(FILE* file_write_default, const char * strdata, ...);
 };
 }  // namespace idb

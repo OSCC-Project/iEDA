@@ -2,12 +2,12 @@
 #include <iostream>
 #include <random>
 
+#include "CairoPlot.hh"
 #include "Evaluator.hh"
 #include "Hpwl.hh"
 #include "Operator.hh"
 #include "SeqPair.hh"
 #include "SimulateAnneal.hh"
-
 struct RotateStatus
 {
   bool is_rotate = false;
@@ -26,7 +26,7 @@ int main()
 {
   auto bench_begin = std::chrono::high_resolution_clock::now();
 
-  size_t N = 300;
+  size_t N = 100;
   size_t E = 2000;
   size_t min_degree = 2;
   int32_t mean_blk_area = 100;
@@ -82,7 +82,6 @@ int main()
 
   // Decoder products must contain .x, .y .width .height properties.
   Coordinate coor{.x = inital_lx, .y = inital_ly};
-
 
   auto bench_end = std::chrono::high_resolution_clock::now();
   std::cout << "Random Bench time: " << std::chrono::duration<double>(bench_end - bench_begin).count() << "s\n";
@@ -142,5 +141,17 @@ int main()
   auto sa_end = std::chrono::high_resolution_clock::now();
   std::chrono::duration<double> sa_elapsed = std::chrono::duration<double>(sa_end - sa_start);
   std::cout << "SA time: " << sa_elapsed.count() << "s\n";
+
+  pack(sp, coor);
+
+  CairoPlot plot(std::max(outline_width, coor.width) * 1.2, std::max(outline_height, coor.height) * 1.2);
+
+  // plot.add_rectangle(outline_lx,outline_ly,outline_width,outline_height)
+  for (size_t i = 0; i < N; i++) {
+    plot.add_rectangle(coor.x[i], coor.y[i], get_blk_width(i, sp.properties[i]), get_blk_height(i, sp.properties[i]), blue);
+  }
+  plot.save_as_png("SP_SAPlace_example.png");
+  plot.save_as_pdf("SP_SAPlace_example.pdf");
+
   return 0;
 }
