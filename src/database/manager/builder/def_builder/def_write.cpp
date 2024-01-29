@@ -44,7 +44,7 @@ namespace idb {
 DefWrite::DefWrite(IdbDefService* def_service, DefWriteType type)
 {
   _def_service = def_service;
-  file_write = nullptr;
+  _file_write = nullptr;
   _type = type;
 }
 
@@ -55,19 +55,18 @@ DefWrite::~DefWrite()
 bool DefWrite::initFile(const char* file)
 {
   // 创建一个压缩格式的句柄
-  if(ieda::Str::contain(file, ".gz")){
-    font = SaveFormat::kgzip;
-    file_write_gz = gzopen(file, "w");
-    
-    if (file_write_gz == nullptr) {
+  if (ieda::Str::contain(file, ".gz")) {
+    _font = SaveFormat::kGzip;
+    _file_write_gz = gzopen(file, "w");
+
+    if (_file_write_gz == nullptr) {
       std::cout << "Open gz file failed..." << std::endl;
       return false;
     }
-  }
-  else{
-    font = SaveFormat::kDef;
-    file_write = fopen(file, "w+");
-    if (file_write == nullptr) {
+  } else {
+    _font = SaveFormat::kDef;
+    _file_write = fopen(file, "w+");
+    if (_file_write == nullptr) {
       std::cout << "Open def file failed..." << std::endl;
       return false;
     }
@@ -79,34 +78,32 @@ bool DefWrite::initFile(const char* file)
 bool DefWrite::closeFile()
 {
   bool result;
-  switch (font)
-  {
-    case SaveFormat::kgzip:
-      result = gzclose(file_write_gz);
-      file_write_gz = nullptr;
+  switch (_font) {
+    case SaveFormat::kGzip:
+      result = gzclose(_file_write_gz);
+      _file_write_gz = nullptr;
       break;
 
     case SaveFormat::kDef:
     default:
-      result = fclose(file_write);
-      file_write = nullptr;
+      result = fclose(_file_write);
+      _file_write = nullptr;
       break;
   }
   return result;
 }
 
 // 需要存为其它文件形式，可以添加case，写入对应的方法
-void DefWrite::writestr(FILE* file_write_default, const char* strdata, ...)
+void DefWrite::writestr(const char* strdata, ...)
 {
   va_list args;
   va_start(args, strdata);
-  switch (font)
-  {
+  switch (_font) {
     case SaveFormat::kDef:
-      vfprintf(file_write_default, strdata, args);
+      vfprintf(_file_write, strdata, args);
       break;
-    case SaveFormat::kgzip:
-      gzvprintf(file_write_gz, strdata, args);
+    case SaveFormat::kGzip:
+      gzvprintf(_file_write_gz, strdata, args);
       break;
   }
   va_end(args);
@@ -186,7 +183,7 @@ bool DefWrite::writeDbSynthesis()
 
 int32_t DefWrite::write_end()
 {
-  writestr(file_write, "END DESIGN\n");
+  writestr("END DESIGN\n");
   return kDbSuccess;
 }
 
@@ -195,7 +192,7 @@ int32_t DefWrite::write_version()
   IdbDesign* design = _def_service->get_design();
   /// support version 5.8
   string version = design->get_version().empty() ? "5.8" : design->get_version();
-  writestr(file_write, "VERSION %s ;\n", version.c_str());
+  writestr("VERSION %s ;\n", version.c_str());
 
   std::cout << "Write VERSION success..." << std::endl;
   return kDbSuccess;
@@ -205,7 +202,7 @@ int32_t DefWrite::write_design()
 {
   IdbDesign* design = _def_service->get_design();
   string design_name = design->get_design_name();
-  writestr(file_write, "DESIGN %s ;\n", design_name.c_str());
+  writestr("DESIGN %s ;\n", design_name.c_str());
 
   std::cout << "Write DESIGN name success..." << std::endl;
   return kDbSuccess;
@@ -228,7 +225,7 @@ int32_t DefWrite::write_units()
 
     return kDbFail;
   }
-  writestr(file_write, "UNITS DISTANCE MICRONS %u ;\n", def_microns);
+  writestr("UNITS DISTANCE MICRONS %u ;\n", def_microns);
   std::cout << "Write UNITS success..." << std::endl;
   return kDbSuccess;
 }
@@ -243,13 +240,13 @@ int32_t DefWrite::write_die()
     return kDbFail;
   }
 
-  writestr(file_write, "DIEAREA ");
+  writestr("DIEAREA ");
 
   for (IdbCoordinate<int32_t>* point : die->get_points()) {
-    writestr(file_write, "( %d %d ) ", point->get_x(), point->get_y());
+    writestr("( %d %d ) ", point->get_x(), point->get_y());
   }
 
-  writestr(file_write, ";\n");
+  writestr(";\n");
 
   std::cout << "Write DIE success..." << std::endl;
   return kDbSuccess;
@@ -267,16 +264,16 @@ int32_t DefWrite::write_track_grid()
   for (IdbTrackGrid* track : track_grid_list->get_track_grid_list()) {
     string direction = IdbEnum::GetInstance()->get_layer_property()->get_track_direction_name(track->get_track()->get_direction());
 
-    writestr(file_write, "TRACKS %s %d DO %d STEP %d ", direction.c_str(), track->get_track()->get_start(), track->get_track_num(),
-            track->get_track()->get_pitch());
+    writestr("TRACKS %s %d DO %d STEP %d ", direction.c_str(), track->get_track()->get_start(), track->get_track_num(),
+             track->get_track()->get_pitch());
 
-    writestr(file_write, "LAYER ");
+    writestr("LAYER ");
 
     for (IdbLayer* layer : track->get_layer_list()) {
-      writestr(file_write, "%s ", layer->get_name().c_str());
+      writestr("%s ", layer->get_name().c_str());
     }
 
-    writestr(file_write, ";\n \n");
+    writestr(";\n \n");
   }
 
   std::cout << "Write Track Grid success..." << std::endl;
@@ -297,7 +294,7 @@ int32_t DefWrite::write_via()
     return kDbFail;
   }
 
-  writestr(file_write, "VIAS %ld ;\n", via_list->get_num_via());
+  writestr("VIAS %ld ;\n", via_list->get_num_via());
 
   for (IdbVia* via : via_list->get_via_list()) {
     IdbViaMaster* via_master = via->get_instance();
@@ -305,25 +302,25 @@ int32_t DefWrite::write_via()
     if (via_master->is_generate()) {
       IdbViaMasterGenerate* master_generate = via_master->get_master_generate();
 
-      writestr(file_write,
-              "- %s + VIARULE %s + CUTSIZE %d %d + LAYERS %s %s %s + CUTSPACING %d %d + ENCLOSURE %d %d %d %d "
-              " + ROWCOL %d %d \n",
-              via->get_name().c_str(), master_generate->get_rule_name().c_str(), master_generate->get_cut_size_x(),
-              master_generate->get_cut_size_y(), master_generate->get_layer_bottom()->get_name().c_str(),
-              master_generate->get_layer_cut()->get_name().c_str(), master_generate->get_layer_top()->get_name().c_str(),
-              master_generate->get_cut_spcing_x(), master_generate->get_cut_spcing_y(), master_generate->get_enclosure_bottom_x(),
-              master_generate->get_enclosure_bottom_y(), master_generate->get_enclosure_top_x(), master_generate->get_enclosure_top_y(),
-              master_generate->get_cut_rows(), master_generate->get_cut_cols());
+      writestr(
+          "- %s + VIARULE %s + CUTSIZE %d %d + LAYERS %s %s %s + CUTSPACING %d %d + ENCLOSURE %d %d %d %d "
+          " + ROWCOL %d %d \n",
+          via->get_name().c_str(), master_generate->get_rule_name().c_str(), master_generate->get_cut_size_x(),
+          master_generate->get_cut_size_y(), master_generate->get_layer_bottom()->get_name().c_str(),
+          master_generate->get_layer_cut()->get_name().c_str(), master_generate->get_layer_top()->get_name().c_str(),
+          master_generate->get_cut_spcing_x(), master_generate->get_cut_spcing_y(), master_generate->get_enclosure_bottom_x(),
+          master_generate->get_enclosure_bottom_y(), master_generate->get_enclosure_top_x(), master_generate->get_enclosure_top_y(),
+          master_generate->get_cut_rows(), master_generate->get_cut_cols());
 
       if (nullptr != master_generate->get_patttern()) {
-        writestr(file_write, " + PATTERN %s \n", master_generate->get_patttern()->get_pattern_string().c_str());
+        writestr(" + PATTERN %s \n", master_generate->get_patttern()->get_pattern_string().c_str());
       }
 
-      writestr(file_write, " ;\n");
+      writestr(" ;\n");
     }
   }
 
-  writestr(file_write, "END VIAS\n \n");
+  writestr("END VIAS\n \n");
 
   std::cout << "Write VIAS success..." << std::endl;
 
@@ -342,12 +339,12 @@ int32_t DefWrite::write_row()
   for (IdbRow* row : rows->get_row_list()) {
     IdbSite* site = row->get_site();
     string site_orient = IdbEnum::GetInstance()->get_site_property()->get_orient_name(site->get_orient());
-    writestr(file_write, "ROW %s %s %d %d %s DO %d BY %d STEP %d %d ;\n", row->get_name().c_str(), row->get_site()->get_name().c_str(),
-            row->get_original_coordinate()->get_x(), row->get_original_coordinate()->get_y(), site_orient.c_str(), row->get_row_num_x(),
-            row->get_row_num_y(), row->get_step_x(), row->get_step_y());
+    writestr("ROW %s %s %d %d %s DO %d BY %d STEP %d %d ;\n", row->get_name().c_str(), row->get_site()->get_name().c_str(),
+             row->get_original_coordinate()->get_x(), row->get_original_coordinate()->get_y(), site_orient.c_str(), row->get_row_num_x(),
+             row->get_row_num_y(), row->get_step_x(), row->get_step_y());
   }
 
-  writestr(file_write, " \n");
+  writestr(" \n");
 
   std::cout << "Write ROWS success..." << std::endl;
   return kDbSuccess;
@@ -367,7 +364,7 @@ int32_t DefWrite::write_component()
     return kDbFail;
   }
 
-  writestr(file_write, "COMPONENTS %d ;\n", instance_list->get_num());
+  writestr("COMPONENTS %d ;\n", instance_list->get_num());
 
   for (IdbInstance* instance : instance_list->get_instance_list()) {
     string type = instance->get_type() != IdbInstanceType::kNone
@@ -377,32 +374,31 @@ int32_t DefWrite::write_component()
     string orient = IdbEnum::GetInstance()->get_site_property()->get_orient_name(instance->get_orient());
 
     if (instance->has_placed()) {
-      writestr(file_write, "    - %s %s %s + %s ( %d %d ) %s \n", instance->get_name().c_str(),
-              instance->get_cell_master()->get_name().c_str(), type.c_str(), status.c_str(), instance->get_coordinate()->get_x(),
-              instance->get_coordinate()->get_y(), orient.c_str());
+      writestr("    - %s %s %s + %s ( %d %d ) %s \n", instance->get_name().c_str(), instance->get_cell_master()->get_name().c_str(),
+               type.c_str(), status.c_str(), instance->get_coordinate()->get_x(), instance->get_coordinate()->get_y(), orient.c_str());
     } else {
-      writestr(file_write, "    - %s %s %s \n", instance->get_name().c_str(), instance->get_cell_master()->get_name().c_str(), type.c_str());
+      writestr("    - %s %s %s \n", instance->get_name().c_str(), instance->get_cell_master()->get_name().c_str(), type.c_str());
     }
 
     /// halo
     auto halo = instance->get_halo();
     if (halo != nullptr) {
       std::string str_soft = halo->is_soft() ? " [SOFT] " : " ";
-      writestr(file_write, "      + HALO%s%d %d %d %d\n", str_soft.c_str(), halo->get_extend_lef(), halo->get_extend_bottom(),
-              halo->get_extend_right(), halo->get_extend_top());
+      writestr("      + HALO%s%d %d %d %d\n", str_soft.c_str(), halo->get_extend_lef(), halo->get_extend_bottom(), halo->get_extend_right(),
+               halo->get_extend_top());
     }
 
     /// routed halo
     auto route_halo = instance->get_route_halo();
     if (route_halo != nullptr) {
-      writestr(file_write, "      + ROUTEHALO %d %s %s\n", route_halo->get_route_distance(),
-              route_halo->get_layer_bottom()->get_name().c_str(), route_halo->get_layer_top()->get_name().c_str());
+      writestr("      + ROUTEHALO %d %s %s\n", route_halo->get_route_distance(), route_halo->get_layer_bottom()->get_name().c_str(),
+               route_halo->get_layer_top()->get_name().c_str());
     }
 
-    writestr(file_write, "      ;\n");
+    writestr("      ;\n");
   }
 
-  writestr(file_write, "END COMPONENTS\n \n");
+  writestr("END COMPONENTS\n \n");
 
   std::cout << "Write COMPONENTS success..." << std::endl;
   return kDbSuccess;
@@ -417,39 +413,38 @@ int32_t DefWrite::write_pin()
     return kDbFail;
   }
 
-  writestr(file_write, "PINS %d ;\n", pin_list->get_pin_num());
+  writestr("PINS %d ;\n", pin_list->get_pin_num());
 
   for (IdbPin* pin : pin_list->get_pin_list()) {
     string direction = IdbEnum::GetInstance()->get_connect_property()->get_direction_name(pin->get_term()->get_direction());
     string use = IdbEnum::GetInstance()->get_connect_property()->get_type_name(pin->get_term()->get_type());
     string is_special = pin->is_special_net_pin() || pin->get_term()->is_special_net() ? "+ SPECIAL " : "";
 
-    writestr(file_write, " - %s + NET %s %s+ DIRECTION %s", pin->get_pin_name().c_str(), pin->get_net_name().c_str(), is_special.c_str(),
-            direction.c_str());
+    writestr(" - %s + NET %s %s+ DIRECTION %s", pin->get_pin_name().c_str(), pin->get_net_name().c_str(), is_special.c_str(),
+             direction.c_str());
 
     if (use.empty()) {
-      writestr(file_write, "  \n");
+      writestr("  \n");
     } else {
-      writestr(file_write, "  + USE %s\n", use.c_str());
+      writestr("  + USE %s\n", use.c_str());
     }
 
     if (pin->get_term()->is_port_exist() || pin->is_special_net_pin()) {
       for (IdbPort* port : pin->get_term()->get_port_list()) {
-        writestr(file_write, "  + PORT\n");
+        writestr("  + PORT\n");
 
         string status = IdbEnum::GetInstance()->get_instance_property()->get_status_str(port->get_placement_status());
         string orient = IdbEnum::GetInstance()->get_site_property()->get_orient_name(port->get_orient());
         for (IdbLayerShape* layer_shape : port->get_layer_shape()) {
-          writestr(file_write, "   + LAYER %s ", layer_shape->get_layer()->get_name().c_str());
+          writestr("   + LAYER %s ", layer_shape->get_layer()->get_name().c_str());
           for (IdbRect* rect : layer_shape->get_rect_list()) {
-            writestr(file_write, "( %d %d ) ( %d %d ) ", rect->get_low_x(), rect->get_low_y(), rect->get_high_x(), rect->get_high_y());
+            writestr("( %d %d ) ( %d %d ) ", rect->get_low_x(), rect->get_low_y(), rect->get_high_x(), rect->get_high_y());
           }
 
           if (port->is_placed()) {
-            writestr(file_write, "+ %s ( %d %d ) %s", status.c_str(), port->get_coordinate()->get_x(), port->get_coordinate()->get_y(),
-                    orient.c_str());
+            writestr("+ %s ( %d %d ) %s", status.c_str(), port->get_coordinate()->get_x(), port->get_coordinate()->get_y(), orient.c_str());
           }
-          writestr(file_write, "\n");
+          writestr("\n");
         }
       }
     } else {
@@ -457,24 +452,23 @@ int32_t DefWrite::write_pin()
       string orient = IdbEnum::GetInstance()->get_site_property()->get_orient_name(pin->get_orient());
       for (IdbPort* port : pin->get_term()->get_port_list()) {
         for (IdbLayerShape* layer_shape : port->get_layer_shape()) {
-          writestr(file_write, " + LAYER %s ", layer_shape->get_layer()->get_name().c_str());
+          writestr(" + LAYER %s ", layer_shape->get_layer()->get_name().c_str());
           for (IdbRect* rect : layer_shape->get_rect_list()) {
-            writestr(file_write, "( %d %d ) ( %d %d ) ", rect->get_low_x(), rect->get_low_y(), rect->get_high_x(), rect->get_high_y());
+            writestr("( %d %d ) ( %d %d ) ", rect->get_low_x(), rect->get_low_y(), rect->get_high_x(), rect->get_high_y());
           }
 
           if (pin->get_term()->is_placed()) {
-            writestr(file_write, "+ %s ( %d %d ) %s", status.c_str(), pin->get_location()->get_x(), pin->get_location()->get_y(),
-                    orient.c_str());
+            writestr("+ %s ( %d %d ) %s", status.c_str(), pin->get_location()->get_x(), pin->get_location()->get_y(), orient.c_str());
           }
         }
       }
-      writestr(file_write, "\n");
+      writestr("\n");
     }
 
-    writestr(file_write, ";\n");
+    writestr(";\n");
   }
 
-  writestr(file_write, "END PINS\n \n");
+  writestr("END PINS\n \n");
 
   cout << "Write PINS success..." << endl;
 
@@ -495,51 +489,51 @@ int32_t DefWrite::write_blockage()
     return kDbFail;
   }
 
-  writestr(file_write, "BLOCKAGES %d ;\n", blockage_list->get_num());
+  writestr("BLOCKAGES %d ;\n", blockage_list->get_num());
 
   for (IdbBlockage* blockage : blockage_list->get_blockage_list()) {
     if (blockage->get_type() == IdbBlockage::IdbBlockageType::kRoutingBlockage) {
       IdbRoutingBlockage* routing_blockage = dynamic_cast<IdbRoutingBlockage*>(blockage);
 
-      writestr(file_write, "    - LAYER %s ", routing_blockage->get_layer_name().c_str());
+      writestr("    - LAYER %s ", routing_blockage->get_layer_name().c_str());
 
       if (routing_blockage->is_pushdown() == true) {
-        writestr(file_write, "+ PUSHDOWN ");
+        writestr("+ PUSHDOWN ");
       }
 
       if (routing_blockage->is_except_pgnet() == true) {
-        writestr(file_write, "+ EXCEPTPGNET ");
+        writestr("+ EXCEPTPGNET ");
       }
 
       if (routing_blockage->get_instance() != nullptr) {
-        writestr(file_write, "+ COMPONENT %s ", routing_blockage->get_instance_name().c_str());
+        writestr("+ COMPONENT %s ", routing_blockage->get_instance_name().c_str());
       }
 
       for (IdbRect* rect : routing_blockage->get_rect_list()) {
-        writestr(file_write, "RECT ( %d %d ) ( %d %d ) ", rect->get_low_x(), rect->get_low_y(), rect->get_high_x(), rect->get_high_y());
+        writestr("RECT ( %d %d ) ( %d %d ) ", rect->get_low_x(), rect->get_low_y(), rect->get_high_x(), rect->get_high_y());
       }
     } else if (blockage->get_type() == IdbBlockage::IdbBlockageType::kPlacementBlockage) {
       IdbPlacementBlockage* placement_blockage = dynamic_cast<IdbPlacementBlockage*>(blockage);
 
-      writestr(file_write, "    - PLACEMENT ");
+      writestr("    - PLACEMENT ");
 
       if (placement_blockage->is_pushdown() == true) {
-        writestr(file_write, "+ PUSHDOWN ");
+        writestr("+ PUSHDOWN ");
       }
 
       if (placement_blockage->get_instance() != nullptr) {
-        writestr(file_write, "+ COMPONENT %s ", placement_blockage->get_instance_name().c_str());
+        writestr("+ COMPONENT %s ", placement_blockage->get_instance_name().c_str());
       }
 
       for (IdbRect* rect : placement_blockage->get_rect_list()) {
-        writestr(file_write, "RECT ( %d %d ) ( %d %d ) ", rect->get_low_x(), rect->get_low_y(), rect->get_high_x(), rect->get_high_y());
+        writestr("RECT ( %d %d ) ( %d %d ) ", rect->get_low_x(), rect->get_low_y(), rect->get_high_x(), rect->get_high_y());
       }
     }
 
-    writestr(file_write, ";\n");
+    writestr(";\n");
   }
 
-  writestr(file_write, "END BLOCKAGES\n \n");
+  writestr("END BLOCKAGES\n \n");
 
   std::cout << "Write BLOCKAGE success..." << std::endl;
   return kDbSuccess;
@@ -558,17 +552,15 @@ int32_t DefWrite::write_specialnet_wire_segment_points(IdbSpecialWireSegment* se
   }
 
   if (segment->get_point_start()->get_x() == segment->get_point_second()->get_x()) {
-    writestr(file_write, " %s%s %d %s ( %d %d ) ( * %d )\n", wire_new_str.c_str(), segment->get_layer()->get_name().c_str(),
-            segment->get_route_width(), shape.c_str(), segment->get_point_start()->get_x(), segment->get_point_start()->get_y(),
-            segment->get_point_second()->get_y());
+    writestr(" %s%s %d %s ( %d %d ) ( * %d )\n", wire_new_str.c_str(), segment->get_layer()->get_name().c_str(), segment->get_route_width(),
+             shape.c_str(), segment->get_point_start()->get_x(), segment->get_point_start()->get_y(), segment->get_point_second()->get_y());
   } else if (segment->get_point_start()->get_y() == segment->get_point_second()->get_y()) {
-    writestr(file_write, " %s%s %d %s ( %d %d ) ( %d * )\n", wire_new_str.c_str(), segment->get_layer()->get_name().c_str(),
-            segment->get_route_width(), shape.c_str(), segment->get_point_start()->get_x(), segment->get_point_start()->get_y(),
-            segment->get_point_second()->get_x());
+    writestr(" %s%s %d %s ( %d %d ) ( %d * )\n", wire_new_str.c_str(), segment->get_layer()->get_name().c_str(), segment->get_route_width(),
+             shape.c_str(), segment->get_point_start()->get_x(), segment->get_point_start()->get_y(), segment->get_point_second()->get_x());
   } else {
-    writestr(file_write, " %s%s %d %s ( %d %d ) ( %d %d )\n", wire_new_str.c_str(), segment->get_layer()->get_name().c_str(),
-            segment->get_route_width(), shape.c_str(), segment->get_point_start()->get_x(), segment->get_point_start()->get_y(),
-            segment->get_point_second()->get_x(), segment->get_point_second()->get_y());
+    writestr(" %s%s %d %s ( %d %d ) ( %d %d )\n", wire_new_str.c_str(), segment->get_layer()->get_name().c_str(),
+             segment->get_route_width(), shape.c_str(), segment->get_point_start()->get_x(), segment->get_point_start()->get_y(),
+             segment->get_point_second()->get_x(), segment->get_point_second()->get_y());
   }
   return kDbSuccess;
 }
@@ -587,22 +579,22 @@ int32_t DefWrite::write_specialnet_wire_segment_via(IdbSpecialWireSegment* segme
 
   if (segment->get_point_list().size() == _POINT_MAX_) {
     if (segment->get_point_start()->get_x() == segment->get_point_second()->get_x()) {
-      writestr(file_write, " %s%s %d %s ( %d %d ) ( * %d ) %s\n", wire_new_str.c_str(), segment->get_layer()->get_name().c_str(),
-              segment->get_route_width(), shape.c_str(), segment->get_point_start()->get_x(), segment->get_point_start()->get_y(),
-              segment->get_point_second()->get_y(), segment->get_via()->get_name().c_str());
+      writestr(" %s%s %d %s ( %d %d ) ( * %d ) %s\n", wire_new_str.c_str(), segment->get_layer()->get_name().c_str(),
+               segment->get_route_width(), shape.c_str(), segment->get_point_start()->get_x(), segment->get_point_start()->get_y(),
+               segment->get_point_second()->get_y(), segment->get_via()->get_name().c_str());
     } else if (segment->get_point_start()->get_y() == segment->get_point_second()->get_y()) {
-      writestr(file_write, " %s%s %d %s ( %d %d ) ( %d * ) %s\n", wire_new_str.c_str(), segment->get_layer()->get_name().c_str(),
-              segment->get_route_width(), shape.c_str(), segment->get_point_start()->get_x(), segment->get_point_start()->get_y(),
-              segment->get_point_second()->get_x(), segment->get_via()->get_name().c_str());
+      writestr(" %s%s %d %s ( %d %d ) ( %d * ) %s\n", wire_new_str.c_str(), segment->get_layer()->get_name().c_str(),
+               segment->get_route_width(), shape.c_str(), segment->get_point_start()->get_x(), segment->get_point_start()->get_y(),
+               segment->get_point_second()->get_x(), segment->get_via()->get_name().c_str());
     } else {
-      writestr(file_write, " %s%s %d %s ( %d %d ) ( %d %d ) %s\n", wire_new_str.c_str(), segment->get_layer()->get_name().c_str(),
-              segment->get_route_width(), shape.c_str(), segment->get_point_start()->get_x(), segment->get_point_start()->get_y(),
-              segment->get_point_second()->get_x(), segment->get_point_second()->get_y(), segment->get_via()->get_name().c_str());
+      writestr(" %s%s %d %s ( %d %d ) ( %d %d ) %s\n", wire_new_str.c_str(), segment->get_layer()->get_name().c_str(),
+               segment->get_route_width(), shape.c_str(), segment->get_point_start()->get_x(), segment->get_point_start()->get_y(),
+               segment->get_point_second()->get_x(), segment->get_point_second()->get_y(), segment->get_via()->get_name().c_str());
     }
   } else {
-    writestr(file_write, " %s%s %d %s ( %d %d ) %s\n", wire_new_str.c_str(), segment->get_layer()->get_name().c_str(),
-            segment->get_route_width(), shape.c_str(), segment->get_point_start()->get_x(), segment->get_point_start()->get_y(),
-            segment->get_via()->get_name().c_str());
+    writestr(" %s%s %d %s ( %d %d ) %s\n", wire_new_str.c_str(), segment->get_layer()->get_name().c_str(), segment->get_route_width(),
+             shape.c_str(), segment->get_point_start()->get_x(), segment->get_point_start()->get_y(),
+             segment->get_via()->get_name().c_str());
   }
 
   return kDbSuccess;
@@ -620,9 +612,9 @@ int32_t DefWrite::write_specialnet_wire_segment_rect(IdbSpecialWireSegment* segm
     shape = "+ SHAPE " + IdbEnum::GetInstance()->get_connect_property()->get_wire_shape_name(segment->get_shape_type());
   }
 
-  writestr(file_write, " %s%s + RECT %s ( %d %d ) ( %d %d ) \n", wire_new_str.c_str(), shape.c_str(),
-          segment->get_layer()->get_name().c_str(), segment->get_delta_rect()->get_low_x(), segment->get_delta_rect()->get_low_y(),
-          segment->get_delta_rect()->get_high_x(), segment->get_delta_rect()->get_high_x());
+  writestr(" %s%s + RECT %s ( %d %d ) ( %d %d ) \n", wire_new_str.c_str(), shape.c_str(), segment->get_layer()->get_name().c_str(),
+           segment->get_delta_rect()->get_low_x(), segment->get_delta_rect()->get_low_y(), segment->get_delta_rect()->get_high_x(),
+           segment->get_delta_rect()->get_high_x());
 
   return kDbSuccess;
 }
@@ -671,38 +663,38 @@ int32_t DefWrite::write_special_net()
     return kDbFail;
   }
 
-  writestr(file_write, "SPECIALNETS %ld ;\n", special_net_list->get_num());
+  writestr("SPECIALNETS %ld ;\n", special_net_list->get_num());
 
   for (IdbSpecialNet* special_net : special_net_list->get_net_list()) {
-    writestr(file_write, "- %s ", special_net->get_net_name().c_str());
+    writestr("- %s ", special_net->get_net_name().c_str());
 
     if (special_net->get_pin_string_list().size() > 0) {
       for (string pin_string : special_net->get_pin_string_list()) {
-        writestr(file_write, "( * %s ) ", pin_string.c_str());
+        writestr("( * %s ) ", pin_string.c_str());
       }
     } else {
       for (IdbPin* pin_io : special_net->get_io_pin_list()->get_pin_list()) {
-        writestr(file_write, "( PIN %s ) ", pin_io->get_pin_name().c_str());
+        writestr("( PIN %s ) ", pin_io->get_pin_name().c_str());
       }
 
       for (IdbPin* pin_instance : special_net->get_instance_pin_list()->get_pin_list()) {
-        writestr(file_write, "( %s %s ) ", pin_instance->get_instance()->get_name().c_str(), pin_instance->get_pin_name().c_str());
+        writestr("( %s %s ) ", pin_instance->get_instance()->get_name().c_str(), pin_instance->get_pin_name().c_str());
       }
     }
 
-    writestr(file_write, "\n");
+    writestr("\n");
 
     string connect_str = IdbEnum::GetInstance()->get_connect_property()->get_type_name(special_net->get_connect_type());
-    writestr(file_write, "  + USE %s \n", connect_str.c_str());
+    writestr("  + USE %s \n", connect_str.c_str());
 
     for (IdbSpecialWire* wire : special_net->get_wire_list()->get_wire_list()) {
       write_specialnet_wire(wire);
     }
 
-    writestr(file_write, " ;\n");
+    writestr(" ;\n");
   }
 
-  writestr(file_write, "END SPECIALNETS\n \n");
+  writestr("END SPECIALNETS\n \n");
 
   std::cout << "Write SPECIALNETS success..." << std::endl;
 
@@ -723,27 +715,27 @@ int32_t DefWrite::write_net()
     return kDbFail;
   }
 
-  writestr(file_write, "NETS %ld ;\n", net_list->get_num());
+  writestr("NETS %ld ;\n", net_list->get_num());
 
   for (IdbNet* net : net_list->get_net_list()) {
     // std::string net_name = net->get_net_name();
     // std::string net_name_new = ieda::Str::addBackslash(net_name);
-    writestr(file_write, "- %s", net->get_net_name().c_str());
+    writestr("- %s", net->get_net_name().c_str());
 
     auto* io_pins = net->get_io_pins();
     for (auto* io_pin : io_pins->get_pin_list()) {
-      writestr(file_write, " ( PIN %s )", io_pin->get_pin_name().c_str());
+      writestr(" ( PIN %s )", io_pin->get_pin_name().c_str());
     }
 
     for (IdbPin* instance : net->get_instance_pin_list()->get_pin_list()) {
-      writestr(file_write, " ( %s %s )", instance->get_instance()->get_name().c_str(), instance->get_pin_name().c_str());
+      writestr(" ( %s %s )", instance->get_instance()->get_name().c_str(), instance->get_pin_name().c_str());
     }
 
-    writestr(file_write, "\n");
+    writestr("\n");
 
     if (IdbConnectType::kNone < net->get_connect_type() && IdbConnectType::kMax > net->get_connect_type()) {
       string use = IdbEnum::GetInstance()->get_connect_property()->get_type_name(net->get_connect_type());
-      writestr(file_write, "  + USE %s \n", use.c_str());
+      writestr("  + USE %s \n", use.c_str());
     } else {
     }
 
@@ -753,10 +745,10 @@ int32_t DefWrite::write_net()
       }
     }
 
-    writestr(file_write, " ;\n");
+    writestr(" ;\n");
   }
 
-  writestr(file_write, "END NETS\n \n");
+  writestr("END NETS\n \n");
 
   std::cout << "Write NETS success..." << std::endl;
   return kDbSuccess;
@@ -809,15 +801,15 @@ int32_t DefWrite::write_net_wire_segment_points(IdbRegularWireSegment* segment, 
   const char* virtual_str = is_virtual ? "VIRTUAL " : "";
 
   if (segment->get_point_start()->get_x() == segment->get_point_second()->get_x()) {
-    writestr(file_write, "%s %s ( %d %d ) %s( * %d )\n", wire_new_str.c_str(), segment->get_layer()->get_name().c_str(),
-            segment->get_point_start()->get_x(), segment->get_point_start()->get_y(), virtual_str, segment->get_point_second()->get_y());
+    writestr("%s %s ( %d %d ) %s( * %d )\n", wire_new_str.c_str(), segment->get_layer()->get_name().c_str(),
+             segment->get_point_start()->get_x(), segment->get_point_start()->get_y(), virtual_str, segment->get_point_second()->get_y());
   } else if (segment->get_point_start()->get_y() == segment->get_point_second()->get_y()) {
-    writestr(file_write, "%s %s ( %d %d ) %s( %d * )\n", wire_new_str.c_str(), segment->get_layer()->get_name().c_str(),
-            segment->get_point_start()->get_x(), segment->get_point_start()->get_y(), virtual_str, segment->get_point_second()->get_x());
+    writestr("%s %s ( %d %d ) %s( %d * )\n", wire_new_str.c_str(), segment->get_layer()->get_name().c_str(),
+             segment->get_point_start()->get_x(), segment->get_point_start()->get_y(), virtual_str, segment->get_point_second()->get_x());
   } else {
-    writestr(file_write, "%s %s ( %d %d ) %s( %d %d )\n", wire_new_str.c_str(), segment->get_layer()->get_name().c_str(),
-            segment->get_point_start()->get_x(), segment->get_point_start()->get_y(), virtual_str, segment->get_point_second()->get_x(),
-            segment->get_point_second()->get_y());
+    writestr("%s %s ( %d %d ) %s( %d %d )\n", wire_new_str.c_str(), segment->get_layer()->get_name().c_str(),
+             segment->get_point_start()->get_x(), segment->get_point_start()->get_y(), virtual_str, segment->get_point_second()->get_x(),
+             segment->get_point_second()->get_y());
   }
   return kDbSuccess;
 }
@@ -831,22 +823,21 @@ int32_t DefWrite::write_net_wire_segment_via(IdbRegularWireSegment* segment, str
 
   if (segment->get_point_list().size() == _POINT_MAX_) {
     if (segment->get_point_start()->get_x() == segment->get_point_second()->get_x()) {
-      writestr(file_write, "%s %s ( %d %d ) ( * %d ) %s\n", wire_new_str.c_str(), segment->get_layer()->get_name().c_str(),
-              segment->get_point_start()->get_x(), segment->get_point_start()->get_y(), segment->get_point_second()->get_y(),
-              segment->get_via_list().at(_POINT_START_)->get_name().c_str());
+      writestr("%s %s ( %d %d ) ( * %d ) %s\n", wire_new_str.c_str(), segment->get_layer()->get_name().c_str(),
+               segment->get_point_start()->get_x(), segment->get_point_start()->get_y(), segment->get_point_second()->get_y(),
+               segment->get_via_list().at(_POINT_START_)->get_name().c_str());
     } else if (segment->get_point_start()->get_y() == segment->get_point_second()->get_y()) {
-      writestr(file_write, "%s %s ( %d %d ) ( %d * ) %s\n", wire_new_str.c_str(), segment->get_layer()->get_name().c_str(),
-              segment->get_point_start()->get_x(), segment->get_point_start()->get_y(), segment->get_point_second()->get_x(),
-              segment->get_via_list().at(_POINT_START_)->get_name().c_str());
+      writestr("%s %s ( %d %d ) ( %d * ) %s\n", wire_new_str.c_str(), segment->get_layer()->get_name().c_str(),
+               segment->get_point_start()->get_x(), segment->get_point_start()->get_y(), segment->get_point_second()->get_x(),
+               segment->get_via_list().at(_POINT_START_)->get_name().c_str());
     } else {
-      writestr(file_write, "%s %s ( %d %d ) ( %d %d ) %s\n", wire_new_str.c_str(), segment->get_layer()->get_name().c_str(),
-              segment->get_point_start()->get_x(), segment->get_point_start()->get_y(), segment->get_point_second()->get_x(),
-              segment->get_point_second()->get_y(), segment->get_via_list().at(0)->get_name().c_str());
+      writestr("%s %s ( %d %d ) ( %d %d ) %s\n", wire_new_str.c_str(), segment->get_layer()->get_name().c_str(),
+               segment->get_point_start()->get_x(), segment->get_point_start()->get_y(), segment->get_point_second()->get_x(),
+               segment->get_point_second()->get_y(), segment->get_via_list().at(0)->get_name().c_str());
     }
   } else {
-    writestr(file_write, "%s %s ( %d %d ) %s\n", wire_new_str.c_str(), segment->get_layer()->get_name().c_str(),
-            segment->get_point_start()->get_x(), segment->get_point_start()->get_y(),
-            segment->get_via_list().at(_POINT_START_)->get_name().c_str());
+    writestr("%s %s ( %d %d ) %s\n", wire_new_str.c_str(), segment->get_layer()->get_name().c_str(), segment->get_point_start()->get_x(),
+             segment->get_point_start()->get_y(), segment->get_via_list().at(_POINT_START_)->get_name().c_str());
   }
 
   return kDbSuccess;
@@ -859,9 +850,9 @@ int32_t DefWrite::write_net_wire_segment_rect(IdbRegularWireSegment* segment, st
     return kDbFail;
   }
 
-  writestr(file_write, "%s %s ( %d %d ) RECT ( %d %d %d %d ) \n", wire_new_str.c_str(), segment->get_layer()->get_name().c_str(),
-          segment->get_point_start()->get_x(), segment->get_point_start()->get_y(), segment->get_delta_rect()->get_low_x(),
-          segment->get_delta_rect()->get_low_y(), segment->get_delta_rect()->get_high_x(), segment->get_delta_rect()->get_high_y());
+  writestr("%s %s ( %d %d ) RECT ( %d %d %d %d ) \n", wire_new_str.c_str(), segment->get_layer()->get_name().c_str(),
+           segment->get_point_start()->get_x(), segment->get_point_start()->get_y(), segment->get_delta_rect()->get_low_x(),
+           segment->get_delta_rect()->get_low_y(), segment->get_delta_rect()->get_high_x(), segment->get_delta_rect()->get_high_y());
 
   return kDbSuccess;
 }
@@ -885,13 +876,13 @@ int32_t DefWrite::write_gcell_grid()
     return kDbFail;
   }
 
-  //   writestr(file_write, "GCELLGRID\n");
+  //   writestr( "GCELLGRID\n");
 
   for (IdbGCellGrid* gcell_grid : gcell_grid_list->get_gcell_grid_list()) {
     string direction_str = gcell_grid->get_direction() == IdbTrackDirection::kDirectionX ? "X" : "Y";
 
-    writestr(file_write, "GCELLGRID %s %d DO %d STEP %d ;\n", direction_str.c_str(), gcell_grid->get_start(), gcell_grid->get_num(),
-            gcell_grid->get_space());
+    writestr("GCELLGRID %s %d DO %d STEP %d ;\n", direction_str.c_str(), gcell_grid->get_start(), gcell_grid->get_num(),
+             gcell_grid->get_space());
   }
 
   cout << "Write GCELLGRID success..." << endl;
@@ -911,19 +902,19 @@ int32_t DefWrite::write_region()
     return kDbFail;
   }
 
-  writestr(file_write, "REGIONS %d ;\n", region_list->get_num());
+  writestr("REGIONS %d ;\n", region_list->get_num());
 
   for (IdbRegion* region : region_list->get_region_list()) {
-    writestr(file_write, "    - %s ", region->get_name().c_str());
+    writestr("    - %s ", region->get_name().c_str());
 
     for (IdbRect* rect : region->get_boundary()) {
-      writestr(file_write, "( %d %d ) ( %d %d ) ", rect->get_low_x(), rect->get_low_y(), rect->get_high_x(), rect->get_high_y());
+      writestr("( %d %d ) ( %d %d ) ", rect->get_low_x(), rect->get_low_y(), rect->get_high_x(), rect->get_high_y());
     }
 
     string type = IdbEnum::GetInstance()->get_region_property()->get_name(region->get_type());
-    writestr(file_write, "+ TYPE %s ", type.c_str());
+    writestr("+ TYPE %s ", type.c_str());
 
-    writestr(file_write, ";\n");
+    writestr(";\n");
   }
 
   cout << "Write REGIONS success..." << endl;
@@ -944,19 +935,19 @@ int32_t DefWrite::write_slot()
     return kDbFail;
   }
 
-  writestr(file_write, "SLOTS %d ;\n", slot_list->get_num());
+  writestr("SLOTS %d ;\n", slot_list->get_num());
 
   for (IdbSlot* slot : slot_list->get_slot_list()) {
-    writestr(file_write, "    - LAYER %s ", slot->get_layer_name().c_str());
+    writestr("    - LAYER %s ", slot->get_layer_name().c_str());
 
     for (IdbRect* rect : slot->get_rect_list()) {
-      writestr(file_write, "RECT ( %d %d ) ( %d %d ) ", rect->get_low_x(), rect->get_low_y(), rect->get_high_x(), rect->get_high_y());
+      writestr("RECT ( %d %d ) ( %d %d ) ", rect->get_low_x(), rect->get_low_y(), rect->get_high_x(), rect->get_high_y());
     }
 
-    writestr(file_write, ";\n");
+    writestr(";\n");
   }
 
-  writestr(file_write, "END SLOTS\n");
+  writestr("END SLOTS\n");
 
   cout << "Write SLOTS success..." << endl;
   return kDbSuccess;
@@ -976,21 +967,21 @@ int32_t DefWrite::write_group()
     return kDbFail;
   }
 
-  writestr(file_write, "GROUPS %d ;\n", group_list->get_num());
+  writestr("GROUPS %d ;\n", group_list->get_num());
 
   for (IdbGroup* group : group_list->get_group_list()) {
-    writestr(file_write, "    - %s ", group->get_group_name().c_str());
+    writestr("    - %s ", group->get_group_name().c_str());
 
     for (IdbInstance* instance : group->get_instance_list()->get_instance_list()) {
-      writestr(file_write, "%s ", instance->get_name().c_str());
+      writestr("%s ", instance->get_name().c_str());
     }
 
-    writestr(file_write, "+ REGION %s ", group->get_region()->get_name().c_str());
+    writestr("+ REGION %s ", group->get_region()->get_name().c_str());
 
-    writestr(file_write, ";\n");
+    writestr(";\n");
   }
 
-  writestr(file_write, "END GROUPS\n");
+  writestr("END GROUPS\n");
 
   cout << "Write GROUPS success..." << endl;
   return kDbSuccess;
@@ -1010,24 +1001,24 @@ int32_t DefWrite::write_fill()
     return kDbFail;
   }
 
-  writestr(file_write, "FILLS %d ;\n", fill_list->get_num_fill());
+  writestr("FILLS %d ;\n", fill_list->get_num_fill());
 
   for (IdbFill* fill : fill_list->get_fill_list()) {
-    writestr(file_write, "    - LAYER %s ", fill->get_layer()->get_layer()->get_name().c_str());
+    writestr("    - LAYER %s ", fill->get_layer()->get_layer()->get_name().c_str());
 
     for (IdbRect* rect : fill->get_layer()->get_rect_list()) {
-      writestr(file_write, "RECT ( %d %d ) ( %d %d ) ", rect->get_low_x(), rect->get_low_y(), rect->get_high_x(), rect->get_high_y());
+      writestr("RECT ( %d %d ) ( %d %d ) ", rect->get_low_x(), rect->get_low_y(), rect->get_high_x(), rect->get_high_y());
     }
 
-    writestr(file_write, ";\n");
+    writestr(";\n");
 
-    writestr(file_write, "    - VIA %s ", fill->get_via()->get_via()->get_name().c_str());
+    writestr("    - VIA %s ", fill->get_via()->get_via()->get_name().c_str());
 
     for (IdbCoordinate<int32_t>* point : fill->get_via()->get_coordinate_list()) {
-      writestr(file_write, "( %d %d ) ", point->get_x(), point->get_y());
+      writestr("( %d %d ) ", point->get_x(), point->get_y());
     }
 
-    writestr(file_write, ";\n");
+    writestr(";\n");
   }
 
   cout << "Write FILLS success..." << endl;
