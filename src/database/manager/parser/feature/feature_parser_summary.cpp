@@ -621,4 +621,17 @@ json FeatureParser::buildSummaryCTS()
   return summary_cts;
 }
 
+json FeatureParser::buildSummaryTO()
+{
+
+  return json();
+}
+
+json FeatureParser::buildSummarySTA()
+{
+  
+  return json();
+}
+
+
 }  // namespace idb
