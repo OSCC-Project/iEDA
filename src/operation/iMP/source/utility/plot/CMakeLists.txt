@@ -1,5 +1,6 @@
 add_library(imp-plot
     ${IMP_UTILITY}/plot/PyPlot.cc
+    ${IMP_UTILITY}/plot/CairoPlot.cc
 )
 
 find_package(PkgConfig REQUIRED)
