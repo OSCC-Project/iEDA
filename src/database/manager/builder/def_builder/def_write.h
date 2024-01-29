@@ -31,13 +31,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include "zlib.h"
 
 #include <iostream>
 #include <string>
 #include <vector>
 
 #include "../def_service/def_service.h"
+#include "zlib.h"
 
 namespace idb {
 
@@ -65,7 +65,7 @@ enum class DefWriteType
 enum class SaveFormat
 {
   kDef,
-  kgzip
+  kGzip
 };
 
 class DefWrite
@@ -124,11 +124,11 @@ class DefWrite
   clock_t _start_time;
   clock_t _end_time;
 
-  FILE* file_write;
-  gzFile file_write_gz;
+  FILE* _file_write;
+  gzFile _file_write_gz;
   DefWriteType _type;
 
-  SaveFormat font;
-  void writestr(FILE* file_write_default, const char * strdata, ...);
+  SaveFormat _font;
+  void writestr(const char* strdata, ...);
 };
 }  // namespace idb
