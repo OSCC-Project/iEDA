@@ -34,11 +34,14 @@ else()
     endif()
 endif()
 
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+add_definitions(-DRELEASE_MOD)
+endif()
+
 add_subdirectory(${IMP_API})
 add_subdirectory(${IMP_EXTERNAL_LIBS})
 add_subdirectory(${IMP_SOURCE})
 add_subdirectory(${IMP_TEST})
-add_subdirectory(${IMP_OPS})
 
 message(STATUS "MP: Done")
 

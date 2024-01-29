@@ -206,12 +206,13 @@ void RTAPI::runEGR(std::map<std::string, std::any> config_map)
 
 // EVAL
 
-eval::TileGrid* RTAPI::getCongestonMap(std::map<std::string, std::any> config_map)
+eval::TileGrid* RTAPI::getCongestonMap(std::map<std::string, std::any> config_map, double& wirelength)
 {
   Monitor egr_monitor;
 
   EarlyGlobalRouter::initInst(config_map, dmInst->get_idb_builder());
   EGR_INST.route();
+  wirelength = EGR_INST.getDataManager().getEGRStat().get_total_wire_length();
 
   eval::TileGrid* eval_tile_grid = new eval::TileGrid();
   irt_int cell_width = EGR_INST.getDataManager().getConfig().cell_width;

@@ -75,12 +75,18 @@ void CTSAPI::destroyInst()
 void CTSAPI::runCTS()
 {
   ieda::Stats stats;
+  CTSAPIInst.logTime();
   readData();
   routing();
   evaluate();
-  LOG_INFO << "Flow memory usage " << stats.memoryDelta() << "MB";
-  LOG_INFO << "Flow elapsed time " << stats.elapsedRunTime() << "s";
   writeGDS();
+  LOG_INFO << "**Flow memory usage " << stats.memoryDelta() << "MB";
+  LOG_INFO << "**Flow elapsed time " << stats.elapsedRunTime() << "s";
+
+  CTSAPIInst.logTitle("Summary of iCTS Flow");
+  CTSAPIInst.saveToLog("**Flow memory usage: ", stats.memoryDelta(), "MB");
+  CTSAPIInst.saveToLog("**Flow elapsed time: ", stats.elapsedRunTime(), "s");
+  CTSAPIInst.logEnd();
   // writeDB();
 }
 
@@ -108,6 +114,52 @@ void CTSAPI::report(const std::string& save_dir)
     _evaluator->evaluate();
   }
   _evaluator->statistics(save_dir);
+  _timing_engine->destroyTimingEngine();
+}
+
+void CTSAPI::initEvalInfo()
+{
+  if (_evaluator == nullptr) {
+    _evaluator = new Evaluator();
+    _evaluator->init();
+    _evaluator->evaluate();
+  }
+  _evaluator->calcInfo();
+}
+
+size_t CTSAPI::getInsertCellNum() const
+{
+  auto cell_dist_map = _evaluator->get_cell_dist();
+  size_t insert_num = 0;
+  for (auto& [cell_master, cell_dist] : cell_dist_map) {
+    insert_num += cell_dist;
+  }
+  return insert_num;
+}
+
+double CTSAPI::getInsertCellArea() const
+{
+  auto cell_stats = _evaluator->get_cell_stats();
+  double insert_area = 0.0;
+  for (auto& [cell_master, cell_stat] : cell_stats) {
+    insert_area += cell_stat.total_area;
+  }
+  return insert_area;
+}
+
+std::vector<PathInfo> CTSAPI::getPathInfos() const
+{
+  return _evaluator->get_path_infos();
+}
+
+double CTSAPI::getMaxClockNetWL() const
+{
+  return _evaluator->get_max_net_len();
+}
+
+double CTSAPI::getTotalClockNetWL() const
+{
+  return _evaluator->get_total_wire_len();
 }
 
 // flow API
@@ -124,12 +176,26 @@ void CTSAPI::resetAPI()
   _timing_engine = nullptr;
 }
 
-void CTSAPI::init(const std::string& config_file)
+void CTSAPI::init(const std::string& config_file, const std::string& work_dir)
 {
   resetAPI();
   _config = new CtsConfig();
   JsonParser::getInstance().parse(config_file, _config);
-
+  if (!work_dir.empty()) {
+    _config->set_work_dir(work_dir);
+    auto log_file_path = std::filesystem::path(work_dir).append("cts.log");
+    auto gds_file_path = std::filesystem::path(work_dir).append("cts.gds");
+    auto def_path = std::filesystem::path(work_dir).append("output");
+    _config->set_log_file(log_file_path.string());
+    _config->set_gds_file(gds_file_path.string());
+    _config->set_output_def_path(def_path.string());
+    if (!std::filesystem::exists(work_dir)) {
+      std::filesystem::create_directory(work_dir);
+    }
+    if (!std::filesystem::exists(def_path)) {
+      std::filesystem::create_directory(def_path);
+    }
+  }
   _design = new CtsDesign();
   if (dmInst->get_idb_builder()) {
     _db_wrapper = new CtsDBWrapper(dmInst->get_idb_builder());
@@ -155,6 +221,8 @@ void CTSAPI::init(const std::string& config_file)
 
 void CTSAPI::readData()
 {
+  CTSAPIInst.logTitle("Read Data");
+  ieda::Stats stats;
   if (_config->is_use_netlist()) {
     auto& net_list = _config->get_clock_netlist();
     for (auto& net : net_list) {
@@ -165,21 +233,29 @@ void CTSAPI::readData()
   }
 
   _db_wrapper->read();
+  CTSAPIInst.saveToLog("**Read Data memory usage ", stats.memoryDelta(), "MB");
+  CTSAPIInst.saveToLog("**Read Data elapsed time ", stats.elapsedRunTime(), "s");
+  CTSAPIInst.logEnd();
 }
 
 void CTSAPI::routing()
 {
+  CTSAPIInst.logTitle("Start CTS Routing");
   ieda::Stats stats;
   Router router;
   router.init();
   router.build();
   router.update();
-  LOG_INFO << "Routing memory usage " << stats.memoryDelta() << "MB";
-  LOG_INFO << "Routing elapsed time " << stats.elapsedRunTime() << "s";
+  LOG_INFO << "**Routing memory usage " << stats.memoryDelta() << "MB";
+  LOG_INFO << "**Routing elapsed time " << stats.elapsedRunTime() << "s";
+  CTSAPIInst.saveToLog("**Routing memory usage ", stats.memoryDelta(), "MB");
+  CTSAPIInst.saveToLog("**Routing elapsed time ", stats.elapsedRunTime(), "s");
+  CTSAPIInst.logEnd();
 }
 
 void CTSAPI::evaluate()
 {
+  CTSAPIInst.logTitle("Start CTS Evaluate");
   ieda::Stats stats;
   if (_timing_engine == nullptr) {
     startDbSta();
@@ -190,8 +266,11 @@ void CTSAPI::evaluate()
   _evaluator->evaluate();
   // _evaluator->plotPath("u0_soc_top/u0_sdram_axi/u_core/sample_data0_q_reg_0_");
 
-  LOG_INFO << "Evaluate memory usage " << stats.memoryDelta() << "MB";
-  LOG_INFO << "Evaluate elapsed time " << stats.elapsedRunTime() << "s";
+  LOG_INFO << "**Evaluate memory usage " << stats.memoryDelta() << "MB";
+  LOG_INFO << "**Evaluate elapsed time " << stats.elapsedRunTime() << "s";
+  CTSAPIInst.saveToLog("**Evaluate memory usage ", stats.memoryDelta(), "MB");
+  CTSAPIInst.saveToLog("**Evaluate elapsed time ", stats.elapsedRunTime(), "s");
+  CTSAPIInst.logEnd();
 }
 
 // iSTA
@@ -301,8 +380,8 @@ void CTSAPI::readClockNetNames() const
         continue;
       }
       _design->addClockNetName(sta_clock->get_clock_name(), sta_net->get_name());
-      LOG_INFO << "Clock: " << sta_clock->get_clock_name() << " have net: " << sta_net->get_name();
-      CTSAPIInst.saveToLog("Clock: ", sta_clock->get_clock_name(), " have net: ", sta_net->get_name());
+      LOG_INFO << "Clock [" << sta_clock->get_clock_name() << "] have net \"" << sta_net->get_name() << "\"";
+      CTSAPIInst.saveToLog("Clock [", sta_clock->get_clock_name(), "] have net \"", sta_net->get_name(), "\"");
     }
   }
 }
@@ -329,7 +408,9 @@ void CTSAPI::convertDBToTimingEngine()
 
 void CTSAPI::reportTiming() const
 {
+  ieda::Stats stats;
   _timing_engine->updateTiming();
+  CTSAPIInst.saveToLog("iSTA update timing elapsed time: ", stats.elapsedRunTime(), "s");
   _timing_engine->reportTiming({}, true, true);
 }
 
@@ -367,6 +448,31 @@ std::map<std::string, double> CTSAPI::elmoreDelay(const icts::EvalNet& eval_net)
   }
   db_adapter->removeNet(sta_net);
   return delay_map;
+}
+
+bool CTSAPI::cellLibExist(const std::string& cell_master, const std::string& query_field, const std::string& from_port,
+                          const std::string& to_port)
+{
+  std::vector<std::vector<double>> index_list;
+  ista::LibertyTable::TableType table_type;
+  if (query_field == "cell_rise") {
+    table_type = ista::LibertyTable::TableType::kCellRise;
+  } else if (query_field == "cell_fall") {
+    table_type = ista::LibertyTable::TableType::kCellFall;
+  } else if (query_field == "rise_transition") {
+    table_type = ista::LibertyTable::TableType::kRiseTransition;
+  } else if (query_field == "fall_transition") {
+    table_type = ista::LibertyTable::TableType::kFallTransition;
+  } else {
+    LOG_FATAL << "buffer lib query field not supported";
+  }
+  ista::LibertyTable* table = nullptr;
+  if (from_port.empty() && to_port.empty()) {
+    table = _timing_engine->getCellLibertyTable(cell_master.c_str(), table_type);
+  } else {
+    table = _timing_engine->getCellLibertyTable(cell_master.c_str(), from_port.c_str(), to_port.c_str(), table_type);
+  }
+  return table != nullptr;
 }
 
 std::vector<std::vector<double>> CTSAPI::queryCellLibIndex(const std::string& cell_master, const std::string& query_field,
@@ -765,6 +871,102 @@ void CTSAPI::resetRCTree(const std::string& net_name)
   _timing_engine->resetRcTree(sta_net);
 }
 
+void CTSAPI::utilizationLog() const
+{
+  CTSAPIInst.logTitle("Summary of Utilization");
+  auto* idb_design = dmInst->get_idb_design();
+  auto* idb_layout = dmInst->get_idb_layout();
+  int dbu = idb_design->get_units()->get_micron_dbu() < 0 ? idb_layout->get_units()->get_micron_dbu()
+                                                          : idb_design->get_units()->get_micron_dbu();
+  auto* idb_die = idb_layout->get_die();
+  auto die_width = ((double) idb_die->get_width()) / dbu;
+  auto die_height = ((double) idb_die->get_height()) / dbu;
+
+  auto idb_core_box = idb_layout->get_core()->get_bounding_box();
+  auto core_width = ((double) idb_core_box->get_width()) / dbu;
+  auto core_height = ((double) idb_core_box->get_height()) / dbu;
+  CTSAPIInst.saveToLog("DIE Area ( um^2 ): ", ieda::Str::printf("%f = %03f * %03f", die_width * die_height, die_width, die_height));
+  CTSAPIInst.saveToLog("DIE Usage: ", dmInst->dieUtilization() * 100, "%");
+  CTSAPIInst.saveToLog("CORE Area ( um^2 ): ", ieda::Str::printf("%f = %03f * %03f", core_width * core_height, core_width, core_height));
+  CTSAPIInst.saveToLog("CORE Usage: ", dmInst->coreUtilization() * 100, "%");
+  CTSAPIInst.logEnd();
+}
+
+void CTSAPI::latencySkewLog() const
+{
+  CTSAPIInst.logTitle("Summary of Latency & Skew");
+
+  auto fix_point_str = [](double data) { return std::string(ieda::Str::printf("%.3f", data)); };
+  std::vector<std::pair<std::string, ista::AnalysisMode>> mode_list
+      = {{"Setup", ista::AnalysisMode::kMax}, {"Hold", ista::AnalysisMode::kMin}};
+  for (const auto& [clk, seq_path_group] : _timing_engine->get_ista()->get_clock_groups()) {
+    CTSAPIInst.saveToLog("Clock: ", clk->get_clock_name());
+    for (auto& [mode_str, mode] : mode_list) {
+      auto cmp_mode = mode;
+      auto cmp = [&](ista::StaPathData* left, ista::StaPathData* right) -> bool {
+        int left_skew = left->getSkew();
+        int right_skew = right->getSkew();
+        return cmp_mode == ista::AnalysisMode::kMax ? (left_skew > right_skew) : (left_skew < right_skew);
+      };
+      CTSAPIInst.saveToLog("\t[", mode_str, " Mode]");
+      std::priority_queue<ista::StaPathData*, std::vector<ista::StaPathData*>, decltype(cmp)> seq_data_queue(cmp);
+
+      ista::StaPathEnd* path_end;
+      ista::StaPathData* path_data;
+      FOREACH_PATH_GROUP_END(seq_path_group.get(), path_end)
+      FOREACH_PATH_END_DATA(path_end, mode, path_data) { seq_data_queue.push(path_data); }
+      auto* worst_seq_data = seq_data_queue.top();
+      auto* launch_clock_data = worst_seq_data->get_launch_clock_data();
+      auto* capture_clock_data = worst_seq_data->get_capture_clock_data();
+
+      auto* launch_clock_vertex = launch_clock_data->get_own_vertex();
+      auto* capture_clock_vertex = capture_clock_data->get_own_vertex();
+
+      CTSAPIInst.saveToLog("\t\tLaunch Latency: ", fix_point_str(FS_TO_NS(launch_clock_data->get_arrive_time())), " From ",
+                           launch_clock_vertex->getNameWithCellName());
+      CTSAPIInst.saveToLog("\t\tCapture Latency: ", fix_point_str(FS_TO_NS(capture_clock_data->get_arrive_time())), " From ",
+                           capture_clock_vertex->getNameWithCellName());
+      CTSAPIInst.saveToLog("\t\tMax Skew: ", fix_point_str(FS_TO_NS(worst_seq_data->getSkew())));
+      // calc avg skew
+      int total_skew = 0;
+      unsigned n_worst = 10;
+      unsigned i = 0;
+      while (!seq_data_queue.empty() && i < n_worst) {
+        auto* seq_path_data = dynamic_cast<ista::StaSeqPathData*>(seq_data_queue.top());
+        total_skew += seq_path_data->getSkew();
+        seq_data_queue.pop();
+        i++;
+      }
+      auto total_skew_ns = FS_TO_NS(total_skew);
+      auto avg_skew = total_skew_ns / (double) n_worst;
+      CTSAPIInst.saveToLog("\t\tAvg Skew: ", avg_skew, " (worst 10)");
+    }
+  }
+  CTSAPIInst.logEnd();
+}
+
+void CTSAPI::slackLog() const
+{
+  auto fix_point_str = [](double data) { return std::string(ieda::Str::printf("%.3f", data)); };
+  CTSAPIInst.logTitle("Summary of WNS & TNS");
+  auto clk_list = _timing_engine->getClockList();
+  std::ranges::for_each(clk_list, [&](ista::StaClock* clk) {
+    auto clk_name = clk->get_clock_name();
+    auto setup_tns = _timing_engine->reportTNS(clk_name, AnalysisMode::kMax);
+    auto setup_wns = _timing_engine->reportWNS(clk_name, AnalysisMode::kMax);
+    auto hold_tns = _timing_engine->reportTNS(clk_name, AnalysisMode::kMin);
+    auto hold_wns = _timing_engine->reportWNS(clk_name, AnalysisMode::kMin);
+    auto suggest_freq = 1000.0 / (clk->getPeriodNs() - setup_wns);
+    CTSAPIInst.saveToLog("Clk name: ", clk_name);
+    CTSAPIInst.saveToLog("\tSetup (Max) WNS: ", fix_point_str(setup_wns), " (ns)");
+    CTSAPIInst.saveToLog("\tSetup (Max) TNS: ", fix_point_str(setup_tns), " (ns)");
+    CTSAPIInst.saveToLog("\tHold (Min) WNS: ", fix_point_str(hold_wns), " (ns)");
+    CTSAPIInst.saveToLog("\tHold (Min) TNS: ", fix_point_str(hold_tns), " (ns)");
+    CTSAPIInst.saveToLog("\tSuggest Freq: ", fix_point_str(suggest_freq), " (MHz)");
+  });
+  CTSAPIInst.logEnd();
+}
+
 // log
 void CTSAPI::checkFile(const std::string& dir, const std::string& file_name, const std::string& suffix) const
 {
@@ -780,6 +982,34 @@ void CTSAPI::checkFile(const std::string& dir, const std::string& file_name, con
   if (std::filesystem::exists(origin_file_name)) {
     std::filesystem::copy_file(origin_file_name, copy_design_work_space);
   }
+}
+
+void CTSAPI::logTime() const
+{
+  std::string time_str = ieda::Time::getNowWallTime();
+  std::string str = ieda::Str::printf("Generate the report at %s", time_str.c_str());
+  CTSAPIInst.saveToLog(str);
+  CTSAPIInst.saveToLog("");
+}
+
+void CTSAPI::logLine() const
+{
+  CTSAPIInst.saveToLog("-------------------------------------------------------------------");
+}
+
+void CTSAPI::logTitle(const std::string& title) const
+{
+  std::string time_str = ieda::Time::getNowWallTime();
+  std::string str = ieda::Str::printf("[%s] -- Start Time : %s", title.c_str(), time_str.c_str());
+  CTSAPIInst.logLine();
+  CTSAPIInst.saveToLog(str);
+  CTSAPIInst.logLine();
+}
+
+void CTSAPI::logEnd() const
+{
+  CTSAPIInst.logLine();
+  CTSAPIInst.saveToLog("\n");
 }
 
 // function
@@ -833,13 +1063,16 @@ icts::ModelBase* CTSAPI::fitPyModel(const std::vector<std::vector<double>>& x, c
 // private STA
 void CTSAPI::readSTAFile()
 {
-  const char* sta_workspace = _config->get_sta_workspace().c_str();
+  auto sta_work_dir = std::filesystem::path(_config->get_work_dir()).append("sta").string();
+  if (!std::filesystem::exists(sta_work_dir)) {
+    std::filesystem::create_directories(sta_work_dir);
+  }
   std::vector<const char*> lib_paths;
   for (auto& lib_path : DBCONFIG.get_lib_paths()) {
     lib_paths.push_back(lib_path.c_str());
   }
   _timing_engine->set_num_threads(80);
-  _timing_engine->set_design_work_space(sta_workspace);
+  _timing_engine->set_design_work_space(sta_work_dir.c_str());
   _timing_engine->readLiberty(lib_paths);
   convertDBToTimingEngine();
 

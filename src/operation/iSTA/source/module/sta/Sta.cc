@@ -1769,17 +1769,22 @@ unsigned Sta::reportFromThroughTo(const char *rpt_file_name,
  * @param delay_data
  * @return StaSeqPathData*
  */
-StaSeqPathData *Sta::getSeqData(StaVertex *vertex, StaData *delay_data) {
+std::vector<StaSeqPathData *> Sta::getSeqData(StaVertex *vertex,
+                                              StaData *delay_data) {
+  std::vector<StaSeqPathData *> seq_data_vec;
   for (const auto &[clk, seq_path_group] : _clock_groups) {
     StaPathEnd *path_end = seq_path_group->findPathEndData(vertex);
     if (path_end) {
       StaPathData *path_data =
           path_end->findPathData(dynamic_cast<StaPathDelayData *>(delay_data));
-      return dynamic_cast<StaSeqPathData *>(path_data);
+      if (path_data) {
+        auto *seq_data = dynamic_cast<StaSeqPathData *>(path_data);
+        seq_data_vec.emplace_back(seq_data);
+      }
     }
   }
 
-  return nullptr;
+  return seq_data_vec;
 }
 
 /**
@@ -1816,7 +1821,7 @@ double Sta::getWNS(const char *clock_name, AnalysisMode mode) {
       break;
     }
   }
-  return WNS < 0 ? WNS : 0;
+  return WNS;
 }
 
 /**

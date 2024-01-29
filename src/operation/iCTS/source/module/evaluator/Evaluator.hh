@@ -29,7 +29,28 @@
 #include "GDSPloter.hh"
 
 namespace icts {
-using std::vector;
+
+struct CellStatsProperty
+{
+  int total_num;
+  double total_area;
+  double total_cap;
+};
+
+struct TreeNode
+{
+  std::string name;
+  int depth;
+  TreeNode* parent;
+  std::vector<TreeNode*> children;
+};
+
+struct PathInfo
+{
+  std::string root_name;
+  int min_depth;
+  int max_depth;
+};
 
 class Evaluator
 {
@@ -41,18 +62,49 @@ class Evaluator
   void init();
   void evaluate();
 
-  void statistics(const std::string& save_dir) const;
+  void statistics(const std::string& save_dir);
 
   void plotPath(const string& inst, const string& file = "debug.gds") const;
   void plotNet(const string& net_name, const string& file = "debug.gds") const;
 
+  void calcInfo();
+  std::map<std::string, int> get_cell_dist() const { return _cell_dist_map; }
+  std::map<std::string, CellStatsProperty> get_cell_stats() const { return _cell_stats_map; }
+  std::vector<PathInfo> get_path_infos() const { return _path_infos; }
+  double get_max_net_len() const { return _max_net_len; }
+  double get_total_wire_len() const { return _total_wire_len; }
+
  private:
+  void calcWL();
+  void calcCellDist();
+  void calcCellStats();
+  void calcNetLevel();
+  void calcPathBufStats();
+
   void printLog();
   void transferData();
   void initLevel() const;
   void recursiveSetLevel(CtsNet* net) const;
+  void pathLevelLog() const;
 
-  vector<EvalNet> _eval_nets;
+  bool _have_calc = false;
+
+  double _top_wire_len = 0.0;
+  double _trunk_wire_len = 0.0;
+  double _leaf_wire_len = 0.0;
+  double _total_wire_len = 0.0;
+  double _max_net_len = 0.0;
+  double _hpwl_top_wire_len = 0.0;
+  double _hpwl_trunk_wire_len = 0.0;
+  double _hpwl_leaf_wire_len = 0.0;
+  double _hpwl_total_wire_len = 0.0;
+  double _hpwl_max_net_len = 0.0;
+  std::map<std::string, int> _cell_dist_map;
+  std::map<std::string, CellStatsProperty> _cell_stats_map;
+  std::map<int, int> _net_level_map;
+  std::vector<PathInfo> _path_infos;
+
+  std::vector<EvalNet> _eval_nets;
   const int _default_size = 100;
 };
 

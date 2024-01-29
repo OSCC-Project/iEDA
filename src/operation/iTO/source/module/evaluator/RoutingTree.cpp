@@ -185,6 +185,7 @@ RoutingTree *makeRoutingTree(Net *net, TimingDBAdapter *db_adapter,
     // tree->updateBranch();
     delete[] x;
     delete[] y;
+    // cout << tree;
     return tree;
   }
   delete tree;
@@ -287,6 +288,16 @@ void printTree(Node *root) {
   if (root->get_next_sibling()) {
     printTree(root->get_next_sibling());
   }
+}
+
+void RoutingTree::Print(std::ostream& os) const
+{
+  os << "Tree ";
+  os << "#pins=" << _pins.size() << endl;
+
+
+  _root->PrintRecursive(os);
+
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////
 

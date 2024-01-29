@@ -46,11 +46,21 @@ uint64_t DataManager::dieArea()
   return die->get_area();
 }
 
+double DataManager::dieAreaUm()
+{
+  int dbu = _design->get_units()->get_micron_dbu() < 0 ? _layout->get_units()->get_micron_dbu() : _design->get_units()->get_micron_dbu();
+  auto* idb_die = _layout->get_die();
+  auto die_width = ((double) idb_die->get_width()) / dbu;
+  auto die_height = ((double) idb_die->get_height()) / dbu;
+
+  return die_width * die_height;
+}
+
 float DataManager::dieUtilization()
 {
   uint64_t inst_area = netlistInstArea() + timingInstArea();
 
-  float utilization = ((double) inst_area) / dieArea();
+  float utilization = ((double) inst_area) / dieAreaUm();
 
   return utilization;
 }
@@ -62,11 +72,21 @@ uint64_t DataManager::coreArea()
   return core->get_bounding_box()->get_area();
 }
 
+double DataManager::coreAreaUm()
+{
+  int dbu = _design->get_units()->get_micron_dbu() < 0 ? _layout->get_units()->get_micron_dbu() : _design->get_units()->get_micron_dbu();
+  auto idb_core_box = _layout->get_core()->get_bounding_box();
+  auto core_width = ((double) idb_core_box->get_width()) / dbu;
+  auto core_height = ((double) idb_core_box->get_height()) / dbu;
+
+  return core_width * core_height;
+}
+
 float DataManager::coreUtilization()
 {
   uint64_t inst_area = netlistInstArea() + timingInstArea();
 
-  float utilization = ((double) inst_area) / coreArea();
+  float utilization = ((double) inst_area) / coreAreaUm();
 
   return utilization;
 }

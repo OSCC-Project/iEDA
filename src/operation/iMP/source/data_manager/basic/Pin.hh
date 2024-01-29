@@ -30,12 +30,9 @@
 #include <string>
 #include <vector>
 
-#include "Point.hh"
+#include "Geometry.hh"
 
 namespace imp {
-
-class Instance;
-class Net;
 
 enum class PIN_TYPE
 {
@@ -66,13 +63,7 @@ class Pin
   Pin& operator=(Pin&&) = delete;
 
   // getter.
-  int32_t get_pin_id() const { return _pin_id; }
   std::string get_name() const { return _name; }
-  Net* get_net() const { return _net; }
-  Instance* get_instance() const { return _instance; }
-
-  Point<int32_t> get_offset_coordi() const { return _offset_coordi; }
-  Point<int32_t> get_center_coordi() const { return _center_coordi; }
 
   bool isIOPort() const { return _pin_type == PIN_TYPE::kIOPort; }
   bool isIOInput() const { return (_pin_type == PIN_TYPE::kIOPort) && (_pin_io_type == PIN_IO_TYPE::kInput); }
@@ -87,43 +78,26 @@ class Pin
   bool isFakePin() const { return _pin_type == PIN_TYPE::kFakePin; }
 
   // setter.
-  void set_pin_id(int32_t id) { _pin_id = id; }
-  void set_net(Net* net) { _net = net; }
-  void set_instance(Instance* inst) { _instance = inst; }
 
-  void set_offset_coordi(int32_t x, int32_t y)
-  {
-    _offset_coordi.set_x(x);
-    _offset_coordi.set_y(y);
-  }
-  void set_offset_coordi(Point<int32_t> offset) { _offset_coordi = std::move(offset); }
-  void set_center_coordi(int32_t x, int32_t y)
-  {
-    _center_coordi.set_x(x);
-    _center_coordi.set_y(y);
-  }
-  void set_center_coordi(Point<int32_t> center) { _center_coordi = std::move(center); }
+  void set_coordi(int32_t x, int32_t y) { _coordi.set<0>(x); _coordi.set<1>(y);}
+
+  void set_offset(int32_t x, int32_t y) { _offset.set<0>(x); _offset.set<1>(y);}
 
   void set_pin_type(PIN_TYPE type) { _pin_type = type; }
   void set_pin_io_type(PIN_IO_TYPE type) { _pin_io_type = type; }
 
  private:
-  int32_t _pin_id;
-  /* _name format as "instace name" + separator(e.g. ":","/") + "port name"  */
   std::string _name;
-  Net* _net;
-  Instance* _instance;
 
-  /* (0,0) for io port ; offset is relative to instance center */
-  Point<int32_t> _offset_coordi;
-  Point<int32_t> _center_coordi;
+  /* (0,0) for io port ; offset is relative to instance min corner */
+  geo::point<int32_t> _offset;
+  geo::point<int32_t> _coordi;
 
   PIN_TYPE _pin_type;
   PIN_IO_TYPE _pin_io_type;
 };
 
-inline Pin::Pin(std::string name)
-    : _name(std::move(name)), _net(nullptr), _instance(nullptr), _pin_type(PIN_TYPE::kNone), _pin_io_type(PIN_IO_TYPE::kNone)
+inline Pin::Pin(std::string name) : _name(std::move(name)), _pin_type(PIN_TYPE::kNone), _pin_io_type(PIN_IO_TYPE::kNone)
 {
 }
 

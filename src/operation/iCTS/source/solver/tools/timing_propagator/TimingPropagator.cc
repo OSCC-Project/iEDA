@@ -122,6 +122,7 @@ void TimingPropagator::resetNet(Net* net)
     pin->set_children({});
     pin->set_slew_in(0);
     pin->set_cap_load(0);
+    pin->set_required_snake(0);
     pin->set_net(nullptr);
     updatePinCap(pin);
     initLoadPinDelay(pin);

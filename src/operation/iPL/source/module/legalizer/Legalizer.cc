@@ -427,6 +427,9 @@ bool Legalizer::runLegalize()
   if (is_succeed) {
     alignInstanceOrient();
     LOG_INFO << "Total Movement: " << calTotalMovement();
+
+    this->notifyPLMovementInfo();
+
     writebackPlacerDB();
     _target_inst_list.clear();
   }
@@ -501,6 +504,23 @@ int64_t Legalizer::calTotalMovement()
     sum_movement += std::abs(pair.first->get_coordi().get_y() - (pair.second->get_coordi().get_y() - _database._shift_y));
   }
   return sum_movement;
+}
+
+int64_t Legalizer::calMaxMovement()
+{
+  int64_t max_movement = 0;
+  for(auto pair : _database._instance_map){
+    int64_t cur_movement = std::abs(pair.first->get_coordi().get_x() - (pair.second->get_coordi().get_x() - _database._shift_x))
+                    + std::abs(pair.first->get_coordi().get_y() - (pair.second->get_coordi().get_y() - _database._shift_y));
+    cur_movement > max_movement ? max_movement = cur_movement : cur_movement;
+  }
+  return max_movement;
+}
+
+void Legalizer::notifyPLMovementInfo()
+{
+  PlacerDBInst.lg_total_movement = calTotalMovement();
+  PlacerDBInst.lg_max_movement = calMaxMovement();
 }
 
 void Legalizer::writebackPlacerDB()

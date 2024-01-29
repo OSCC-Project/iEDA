@@ -70,5 +70,19 @@ class FeatureParser
  private:
   IdbLayout* _layout = nullptr;
   IdbDesign* _design = nullptr;
+
+  json buildSummaryInfo();
+  json buildSummaryLayout();
+  json buildSummaryStatis();
+  json buildSummaryInstances();
+  json buildSummaryLayers();
+  json buildSummaryNets();
+  json buildSummaryPdn();
+  json buildSummaryPins();
+  json buildSummaryPL(std::string json_path);
+  json buildSummaryCTS();
+  json buildSummaryTO();
+  json buildSummarySTA();
+
 };
 }  // namespace idb

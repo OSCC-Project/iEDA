@@ -79,6 +79,7 @@ class StaIO
   bool runSpef(std::string path = "");
   bool reportTiming();
   void buildNetGraph();
+  double getPeriodNS(std::string clock_name);
 
  private:
   static StaIO* _instance;

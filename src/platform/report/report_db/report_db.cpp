@@ -141,21 +141,25 @@ std::shared_ptr<ieda::ReportTable> ReportDB::createSummaryInstances()
   auto tbl = std::make_shared<ieda::ReportTable>("Summary - Instance", header_list, static_cast<int>(ReportDBType::kSummaryInstance));
 
   auto idb_design = dmInst->get_idb_design();
+  auto idb_layout = dmInst->get_idb_layout();
   auto inst_list = idb_design->get_instance_list();
+
+  int dbu = idb_design->get_units()->get_micron_dbu() < 0 ? idb_layout->get_units()->get_micron_dbu()
+                                                          : idb_design->get_units()->get_micron_dbu();
 
   int num_max = idb_design->get_instance_list()->get_num();
   int num_netlist = idb_design->get_instance_list()->get_num(IdbInstanceType::kNetlist);
   int num_dist = idb_design->get_instance_list()->get_num(IdbInstanceType::kDist);
   int num_timing = idb_design->get_instance_list()->get_num(IdbInstanceType::kTiming);
 
-  uint64_t area_max = dmInst->instanceArea(IdbInstanceType::kMax);
+  double area_max = dmInst->instanceArea(IdbInstanceType::kMax);
   *tbl << "All Instances" << num_max << (double) (1) << area_max << (double) (1) << TABLE_ENDLINE;
 
   *tbl << TABLE_SKIP << TABLE_SKIP << TABLE_SKIP << TABLE_SKIP << TABLE_ENDLINE;
 
-  uint64_t area_netlist = dmInst->netlistInstArea();
-  uint64_t area_dist = dmInst->distInstArea();
-  uint64_t area_timing = dmInst->timingInstArea();
+  double area_netlist = dmInst->netlistInstArea();
+  double area_dist = dmInst->distInstArea();
+  double area_timing = dmInst->timingInstArea();
   *tbl << "Netlist" << num_netlist << ((double) num_netlist) / num_max << area_netlist << ((double) area_netlist) / area_max
        << TABLE_ENDLINE;
   *tbl << "Physical" << num_dist << ((double) num_dist) / num_max << area_dist << ((double) area_dist) / area_max << TABLE_ENDLINE;
@@ -171,13 +175,13 @@ std::shared_ptr<ieda::ReportTable> ReportDB::createSummaryInstances()
   int num_cover = inst_list->get_num_cover();
   int num_ring = inst_list->get_num_ring();
 
-  uint64_t area_core = inst_list->get_area_core();
-  uint64_t area_core_logic = inst_list->get_area_core_logic();
-  uint64_t area_pad = inst_list->get_area_pad();
-  uint64_t area_block = inst_list->get_area_block();
-  uint64_t area_endcap = inst_list->get_area_endcap();
-  uint64_t area_cover = inst_list->get_area_cover();
-  uint64_t area_ring = inst_list->get_area_ring();
+  double area_core = ((double) inst_list->get_area_core()) / dbu / dbu;
+  double area_core_logic = ((double) inst_list->get_area_core_logic()) / dbu / dbu;
+  double area_pad = ((double) inst_list->get_area_pad()) / dbu / dbu;
+  double area_block = ((double) inst_list->get_area_block()) / dbu / dbu;
+  double area_endcap = ((double) inst_list->get_area_endcap()) / dbu / dbu;
+  double area_cover = ((double) inst_list->get_area_cover()) / dbu / dbu;
+  double area_ring = ((double) inst_list->get_area_ring()) / dbu / dbu;
   *tbl << "Core" << num_core << ((double) num_core) / num_max << area_core << ((double) area_core) / area_max << TABLE_ENDLINE;
   *tbl << "Core - logic" << num_core_logic << ((double) num_core_logic) / num_max << area_core_logic
        << ((double) area_core_logic) / area_max << TABLE_ENDLINE;
@@ -224,6 +228,7 @@ std::shared_ptr<ieda::ReportTable> ReportDB::createSummaryLayers()
 {
   std::vector<std::string> header_list = {"Layer",
                                           "Net - Wire Length",
+                                          "Net - Wire Length Ratio",
                                           "Net - Wire Number",
                                           "Net - Via Number",
                                           "Net - Patch Number",
@@ -310,12 +315,14 @@ std::shared_ptr<ieda::ReportTable> ReportDB::createSummaryLayers()
     }
   }
 
+  uint64_t nets_len_all = dmInst->allNetLength();
   int layer_num = idb_layout->get_layers()->get_layers().size();
   for (int i = 0; i < layer_num; i++) {
     auto net_value = layer_net_value_list[i];
     auto special_net_value = layer_specialnet_value_list[i];
-    *tbl << net_value.layer_name << net_value.wire_len << net_value.wire_num << net_value.via_num << net_value.patch_num
-         << special_net_value.wire_len << special_net_value.wire_num << special_net_value.via_num << TABLE_ENDLINE;
+    *tbl << net_value.layer_name << net_value.wire_len << ((double) net_value.wire_len) / nets_len_all << net_value.wire_num
+         << net_value.via_num << net_value.patch_num << special_net_value.wire_len << special_net_value.wire_num
+         << special_net_value.via_num << TABLE_ENDLINE;
   }
   return tbl;
 }

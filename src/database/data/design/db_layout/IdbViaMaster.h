@@ -119,16 +119,7 @@ class IdbViaMasterRulePattern
   void parse_pattern(size_t row, size_t col);
   void parse_pattern_array(vector<pair<string, string>>& pattern_array);
   void parse_pattern_row_value(size_t row_index, string value);
-  bool is_repeat(string value)
-  {
-    if (value.empty() || value.length() < repeat_char_len) {
-      return false;
-    }
-
-    return value.at(0) == repeat_flag ? true : false;
-  }
-  void parse_pattern_row_repeat_value(int row_index, string value);
-  void parse_pattern_row_nonrepeate_value(int row_index, string value);
+  bool save_pattern_value(char value, int row_index, int& col_index);
 
   int hexString2Int(string hex_string);
   int8_t getBitVaule(int8_t& value, int32_t index);

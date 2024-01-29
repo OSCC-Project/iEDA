@@ -46,43 +46,6 @@ void JsonParser::parse(const string& json_file, CtsConfig* config) const
   ifs >> json;
 
   {
-    if (COMUtil::getData(json,
-                         {
-                             "file_path",
-                             "sta_work_dir",
-                         })
-        != nullptr) {
-      auto path = resolvePath(COMUtil::getData(json, {"file_path", "sta_work_dir"}));
-      config->set_sta_workspace(path);
-    }
-    if (COMUtil::getData(json,
-                         {
-                             "file_path",
-                             "output_def_path",
-                         })
-        != nullptr) {
-      auto path = resolvePath(COMUtil::getData(json, {"file_path", "output_def_path"}));
-      config->set_output_def_path(path);
-    }
-    if (COMUtil::getData(json,
-                         {
-                             "file_path",
-                             "log_file",
-                         })
-        != nullptr) {
-      auto path = resolvePath(COMUtil::getData(json, {"file_path", "log_file"}));
-      config->set_log_file(path);
-    }
-    if (COMUtil::getData(json,
-                         {
-                             "file_path",
-                             "gds_file",
-                         })
-        != nullptr) {
-      auto path = resolvePath(COMUtil::getData(json, {"file_path", "gds_file"}));
-      config->set_gds_file(path);
-    }
-
     if (COMUtil::getData(json, {"router_type"}) != nullptr) {
       config->set_router_type(COMUtil::getData(json, {"router_type"}));
     }
