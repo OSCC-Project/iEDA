@@ -16,34 +16,48 @@
 // ***************************************************************************************
 #pragma once
 
+#include "ChangeType.hpp"
 #include "Config.hpp"
 #include "DataManager.hpp"
 #include "Database.hpp"
+#include "IRModel.hpp"
+#include "RTU.hpp"
+#include "flute3/flute.h"
 
 namespace irt {
 
-#define GR_INST (irt::GlobalRouter::getInst())
+#define IR_INST (irt::InitialRouter::getInst())
 
-class GlobalRouter
+class InitialRouter
 {
  public:
   static void initInst();
-  static GlobalRouter& getInst();
+  static InitialRouter& getInst();
   static void destroyInst();
   // function
   void route(std::vector<Net>& net_list);
 
  private:
   // self
-  static GlobalRouter* _gr_instance;
+  static InitialRouter* _ir_instance;
 
-  GlobalRouter()= default;
-  GlobalRouter(const GlobalRouter& other) = delete;
-  GlobalRouter(GlobalRouter&& other) = delete;
-  ~GlobalRouter() = default;
-  GlobalRouter& operator=(const GlobalRouter& other) = delete;
-  GlobalRouter& operator=(GlobalRouter&& other) = delete;
+  InitialRouter() { Flute::readLUT(); }
+  InitialRouter(const InitialRouter& other) = delete;
+  InitialRouter(InitialRouter&& other) = delete;
+  ~InitialRouter() = default;
+  InitialRouter& operator=(const InitialRouter& other) = delete;
+  InitialRouter& operator=(InitialRouter&& other) = delete;
   // function
+  IRModel initIRModel(std::vector<Net>& net_list);
+  std::vector<IRNet> convertToIRNetList(std::vector<Net>& net_list);
+  IRNet convertToIRNet(Net& net);
+  void setIRParameter(IRModel& ir_model);
+  void initLayerNodeMap(IRModel& ir_model);
+  void buildIRNodeNeighbor(IRModel& ir_model);
+  void buildAccessSupply(IRModel& ir_model);
+  void checkIRModel(IRModel& ir_model);
+  void routeIRModel(IRModel& ir_model);
+  void updateIRModel(IRModel& ir_model);
 };
 
 }  // namespace irt

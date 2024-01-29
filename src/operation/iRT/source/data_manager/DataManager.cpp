@@ -456,19 +456,6 @@ void DataManager::wrapConfig(std::map<std::string, std::any>& config_map)
   _config.thread_number = RTUtil::getConfigValue<irt_int>(config_map, "-thread_number", 8);
   _config.bottom_routing_layer = RTUtil::getConfigValue<std::string>(config_map, "-bottom_routing_layer", "");
   _config.top_routing_layer = RTUtil::getConfigValue<std::string>(config_map, "-top_routing_layer", "");
-  _config.gcell_pitch_size = RTUtil::getConfigValue<irt_int>(config_map, "-gcell_pitch_size", 15);
-  _config.enable_idrc_interface = RTUtil::getConfigValue<irt_int>(config_map, "-enable_idrc_interface", 1);
-  _config.supply_utilization_rate = RTUtil::getConfigValue<double>(config_map, "-supply_utilization_rate", 1);
-  _config.pa_max_iter_num = RTUtil::getConfigValue<irt_int>(config_map, "-pa_max_iter_num", 1);
-  _config.ra_initial_penalty = RTUtil::getConfigValue<double>(config_map, "-ra_initial_penalty", 100);
-  _config.ra_penalty_drop_rate = RTUtil::getConfigValue<double>(config_map, "-ra_penalty_drop_rate", 0.8);
-  _config.ra_outer_max_iter_num = RTUtil::getConfigValue<irt_int>(config_map, "-ra_outer_max_iter_num", 10);
-  _config.ra_inner_max_iter_num = RTUtil::getConfigValue<irt_int>(config_map, "-ra_inner_max_iter_num", 10);
-  _config.gr_prefer_wire_unit = RTUtil::getConfigValue<double>(config_map, "-gr_prefer_wire_unit", 1);
-  _config.gr_via_unit = RTUtil::getConfigValue<double>(config_map, "-gr_via_unit", 1);
-  _config.gr_corner_unit = RTUtil::getConfigValue<double>(config_map, "-gr_corner_unit", 1);
-  _config.gr_history_cost_unit = RTUtil::getConfigValue<double>(config_map, "-gr_history_cost_unit", 20);
-  _config.gr_max_iter_num = RTUtil::getConfigValue<irt_int>(config_map, "-gr_max_iter_num", 1);
   _config.ta_prefer_wire_unit = RTUtil::getConfigValue<double>(config_map, "-ta_prefer_wire_unit", 1);
   _config.ta_nonprefer_wire_unit = RTUtil::getConfigValue<double>(config_map, "-ta_nonprefer_wire_unit", 2);
   _config.ta_corner_unit = RTUtil::getConfigValue<double>(config_map, "-ta_corner_unit", 1);
@@ -1012,6 +999,8 @@ void DataManager::buildConfig()
   _config.gp_temp_directory_path = _config.temp_directory_path + "gds_plotter/";
   // **********   GlobalRouter    ********** //
   _config.gr_temp_directory_path = _config.temp_directory_path + "global_router/";
+    // **********   InitialRouter    ********** //
+  _config.ir_temp_directory_path = _config.temp_directory_path + "initial_router/";
   // **********   PinAccessor     ********** //
   _config.pa_temp_directory_path = _config.temp_directory_path + "pin_accessor/";
   // ********     SupplyAnalyzer    ******** //
@@ -1030,6 +1019,8 @@ void DataManager::buildConfig()
   RTUtil::createDir(_config.gp_temp_directory_path);
   // **********   GlobalRouter    ********** //
   RTUtil::createDir(_config.gr_temp_directory_path);
+    // **********   InitialRouter    ********** //
+  RTUtil::createDir(_config.ir_temp_directory_path);
   // **********   PinAccessor     ********** //
   RTUtil::createDir(_config.pa_temp_directory_path);
   // **********   SupplyAnalyzer     ********** //
@@ -1736,32 +1727,6 @@ void DataManager::printConfig()
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.bottom_routing_layer);
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "top_routing_layer");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.top_routing_layer);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "gcell_pitch_size");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.gcell_pitch_size);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "enable_idrc_interface");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.enable_idrc_interface);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "supply_utilization_rate");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.supply_utilization_rate);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "pa_max_iter_num");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.pa_max_iter_num);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "ra_initial_penalty");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.ra_initial_penalty);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "ra_penalty_drop_rate");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.ra_penalty_drop_rate);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "ra_outer_max_iter_num");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.ra_outer_max_iter_num);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "ra_inner_max_iter_num");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.ra_inner_max_iter_num);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "gr_prefer_wire_unit");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.gr_prefer_wire_unit);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "gr_via_unit");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.gr_via_unit);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "gr_corner_unit");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.gr_corner_unit);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "gr_history_cost_unit");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.gr_history_cost_unit);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "gr_max_iter_num");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.gr_max_iter_num);
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "ta_prefer_wire_unit");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.ta_prefer_wire_unit);
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "ta_nonprefer_wire_unit");
@@ -1816,6 +1781,10 @@ void DataManager::printConfig()
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "GlobalRouter");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), "gr_temp_directory_path");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(3), _config.gr_temp_directory_path);
+  // **********   InitialRouter    ********** //
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "InitialRouter");
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), "ir_temp_directory_path");
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(3), _config.ir_temp_directory_path);
   // **********   PinAccessor     ********** //
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "PinAccessor");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), "pa_temp_directory_path");

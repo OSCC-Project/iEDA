@@ -16,23 +16,43 @@
 // ***************************************************************************************
 #pragma once
 
+#include "ConnectType.hpp"
+#include "DRBox.hpp"
+#include "DRPin.hpp"
+#include "GridMap.hpp"
+#include "Guide.hpp"
+#include "MTree.hpp"
+#include "Net.hpp"
+#include "PhysicalNode.hpp"
 #include "Pin.hpp"
+#include "TNode.hpp"
 
 namespace irt {
 
-class PAPin : public Pin
+class IRParameter
 {
  public:
-  PAPin() = default;
-  explicit PAPin(const Pin& pin) : Pin(pin) {}
-  ~PAPin() = default;
+  IRParameter() = default;
+  IRParameter(irt_int prefer_wire_unit, irt_int via_unit, irt_int corner_unit)
+  {
+    _prefer_wire_unit = prefer_wire_unit;
+    _via_unit = via_unit;
+    _corner_unit = corner_unit;
+  }
+  ~IRParameter() = default;
   // getter
-
+  irt_int get_prefer_wire_unit() const { return _prefer_wire_unit; }
+  irt_int get_via_unit() const { return _via_unit; }
+  irt_int get_corner_unit() const { return _corner_unit; }
   // setter
-
-  // function
+  void set_prefer_wire_unit(const irt_int prefer_wire_unit) { _prefer_wire_unit = prefer_wire_unit; }
+  void set_via_unit(const irt_int via_unit) { _via_unit = via_unit; }
+  void set_corner_unit(const irt_int corner_unit) { _corner_unit = corner_unit; }
 
  private:
+  double _prefer_wire_unit = 1;
+  double _via_unit = 1;
+  double _corner_unit = 1;
 };
 
 }  // namespace irt

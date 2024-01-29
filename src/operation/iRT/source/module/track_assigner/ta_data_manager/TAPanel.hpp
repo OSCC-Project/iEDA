@@ -36,7 +36,7 @@ class TAPanel
   // getter
   EXTLayerRect& get_panel_rect() { return _panel_rect; }
   TAPanelId& get_ta_panel_id() { return _ta_panel_id; }
-  TAParameter* get_curr_ta_parameter() { return _curr_ta_parameter; }
+  TAParameter* get_ta_parameter() { return _ta_parameter; }
   std::vector<TATask*>& get_ta_task_list() { return _ta_task_list; }
   std::map<irt_int, std::set<EXTLayerRect*>>& get_net_fixed_rect_map() { return _net_fixed_rect_map; }
   std::vector<Violation>& get_violation_list() { return _violation_list; }
@@ -45,7 +45,7 @@ class TAPanel
   // setter
   void set_panel_rect(const EXTLayerRect& panel_rect) { _panel_rect = panel_rect; }
   void set_ta_panel_id(const TAPanelId& ta_panel_id) { _ta_panel_id = ta_panel_id; }
-  void set_curr_ta_parameter(TAParameter* curr_ta_parameter) { _curr_ta_parameter = curr_ta_parameter; }
+  void set_ta_parameter(TAParameter* ta_parameter) { _ta_parameter = ta_parameter; }
   void set_ta_task_list(const std::vector<TATask*>& ta_task_list) { _ta_task_list = ta_task_list; }
   void set_net_fixed_rect_map(const std::map<irt_int, std::set<EXTLayerRect*>>& net_fixed_rect_map)
   {
@@ -95,7 +95,7 @@ class TAPanel
  private:
   EXTLayerRect _panel_rect;
   TAPanelId _ta_panel_id;
-  TAParameter* _curr_ta_parameter = nullptr;
+  TAParameter* _ta_parameter = nullptr;
   std::vector<TATask*> _ta_task_list;
   std::map<irt_int, std::set<EXTLayerRect*>> _net_fixed_rect_map;
   std::vector<Violation> _violation_list;

@@ -20,19 +20,19 @@
 
 namespace irt {
 
-class GRNodeId
+class IRNodeId
 {
  public:
-  GRNodeId() = default;
-  GRNodeId(const irt_int x, const irt_int y, const irt_int layer_idx)
+  IRNodeId() = default;
+  IRNodeId(const irt_int x, const irt_int y, const irt_int layer_idx)
   {
     _x = x;
     _y = y;
     _layer_idx = layer_idx;
   }
-  ~GRNodeId() = default;
-  bool operator==(const GRNodeId& other) { return this->_x == other._x && this->_y == other._y && this->_layer_idx == other._layer_idx; }
-  bool operator!=(const GRNodeId& other) { return !((*this) == other); }
+  ~IRNodeId() = default;
+  bool operator==(const IRNodeId& other) { return this->_x == other._x && this->_y == other._y && this->_layer_idx == other._layer_idx; }
+  bool operator!=(const IRNodeId& other) { return !((*this) == other); }
   // getter
   irt_int get_x() const { return _x; }
   irt_int get_y() const { return _y; }
@@ -49,9 +49,9 @@ class GRNodeId
   irt_int _layer_idx = -1;
 };
 
-struct CmpGRNodeId
+struct CmpIRNodeId
 {
-  bool operator()(const GRNodeId& a, const GRNodeId& b) const
+  bool operator()(const IRNodeId& a, const IRNodeId& b) const
   {
     if (a.get_x() != b.get_x()) {
       return a.get_x() < b.get_x();

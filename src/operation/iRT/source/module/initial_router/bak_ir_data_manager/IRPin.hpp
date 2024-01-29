@@ -23,12 +23,12 @@
 
 namespace irt {
 
-class GRPin : public Pin
+class IRPin : public Pin
 {
  public:
-  GRPin() = default;
-  explicit GRPin(const Pin& pin) : Pin(pin) {}
-  ~GRPin() = default;
+  IRPin() = default;
+  explicit IRPin(const Pin& pin) : Pin(pin) {}
+  ~IRPin() = default;
   // getter
 
   // setter

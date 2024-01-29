@@ -26,6 +26,7 @@
 #include "Monitor.hpp"
 #include "PinAccessor.hpp"
 #include "SupplyAnalyzer.hpp"
+#include "InitialRouter.hpp"
 #include "TimingEval.hpp"
 #include "TrackAssigner.hpp"
 #include "builder.h"
@@ -87,13 +88,13 @@ void RTAPI::runRT()
   SA_INST.analyze(net_list);
   SupplyAnalyzer::destroyInst();
 
-  // InitialRouting::initInst();
-  // IR_INST.route(net_list);
-  // InitialRouting::destroyInst();
+  InitialRouter::initInst();
+  IR_INST.route(net_list);
+  InitialRouter::destroyInst();
 
-  // GlobalRouter::initInst();
-  // GR_INST.route(net_list);
-  // GlobalRouter::destroyInst();
+  GlobalRouter::initInst();
+  GR_INST.route(net_list);
+  GlobalRouter::destroyInst();
 
   // TrackAssigner::initInst();
   // TA_INST.assign(net_list);

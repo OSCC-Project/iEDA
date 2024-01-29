@@ -16,34 +16,26 @@
 // ***************************************************************************************
 #pragma once
 
-#include "Config.hpp"
-#include "DataManager.hpp"
-#include "Database.hpp"
+#include "AccessPoint.hpp"
+#include "EXTLayerRect.hpp"
+#include "PlanarCoord.hpp"
+#include "RTU.hpp"
 
 namespace irt {
 
-#define GR_INST (irt::GlobalRouter::getInst())
-
-class GlobalRouter
+class IRPin : public Pin
 {
  public:
-  static void initInst();
-  static GlobalRouter& getInst();
-  static void destroyInst();
+  IRPin() = default;
+  explicit IRPin(const Pin& pin) : Pin(pin) {}
+  ~IRPin() = default;
+  // getter
+
+  // setter
+
   // function
-  void route(std::vector<Net>& net_list);
 
  private:
-  // self
-  static GlobalRouter* _gr_instance;
-
-  GlobalRouter()= default;
-  GlobalRouter(const GlobalRouter& other) = delete;
-  GlobalRouter(GlobalRouter&& other) = delete;
-  ~GlobalRouter() = default;
-  GlobalRouter& operator=(const GlobalRouter& other) = delete;
-  GlobalRouter& operator=(GlobalRouter&& other) = delete;
-  // function
 };
 
 }  // namespace irt

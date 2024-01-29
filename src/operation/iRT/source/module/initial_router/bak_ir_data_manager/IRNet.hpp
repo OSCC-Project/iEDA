@@ -16,64 +16,55 @@
 // ***************************************************************************************
 #pragma once
 
-#include "BoundingBox.hpp"
-#include "ConnectType.hpp"
-#include "GridMap.hpp"
-#include "Guide.hpp"
+#include "IRNetPriority.hpp"
+#include "IRPin.hpp"
+#include "LayerCoord.hpp"
 #include "MTree.hpp"
-#include "PhysicalNode.hpp"
-#include "Pin.hpp"
+#include "Net.hpp"
+#include "RoutingState.hpp"
 
 namespace irt {
 
-class Net
+class IRNet
 {
  public:
-  Net() = default;
-  ~Net() = default;
-  // getter
-  irt_int get_net_idx() const { return _net_idx; }
-  std::string& get_net_name() { return _net_name; }
-  ConnectType get_connect_type() const { return _connect_type; }
-  // PinAccessor
-  std::vector<Pin>& get_pin_list() { return _pin_list; }
-  BoundingBox& get_bounding_box() { return _bounding_box; }
-  // InitialRouter
-  MTree<Guide>& get_ir_result_tree() { return _ir_result_tree; }
-    // GlobalRouter
-  MTree<Guide>& get_gr_result_tree() { return _gr_result_tree; }
-  // TrackAssigner
-  std::vector<Segment<LayerCoord>>& get_ta_result_list() { return _ta_result_list; }
+  IRNet() = default;
+  ~IRNet() = default;
 
+  // getter
+  Net* get_origin_net() { return _origin_net; }
+  irt_int get_net_idx() const { return _net_idx; }
+  ConnectType get_connect_type() const { return _connect_type; }
+  std::vector<IRPin>& get_ir_pin_list() { return _ir_pin_list; }
+  IRPin& get_ir_driving_pin() { return _ir_driving_pin; }
+  BoundingBox& get_bounding_box() { return _bounding_box; }
+  GridMap<double>& get_ra_cost_map() { return _ra_cost_map; }
+  RoutingState get_routing_state() const { return _routing_state; }
+  MTree<LayerCoord>& get_routing_tree() { return _routing_tree; }
+  MTree<Guide>& get_ir_result_tree() { return _ir_result_tree; }
   // setter
+  void set_origin_net(Net* origin_net) { _origin_net = origin_net; }
   void set_net_idx(const irt_int net_idx) { _net_idx = net_idx; }
-  void set_net_name(const std::string& net_name) { _net_name = net_name; }
   void set_connect_type(const ConnectType& connect_type) { _connect_type = connect_type; }
-  // PinAccessor
-  void set_pin_list(const std::vector<Pin>& pin_list) { _pin_list = pin_list; }
+  void set_ir_pin_list(std::vector<IRPin>& ir_pin_list) { _ir_pin_list = ir_pin_list; }
+  void set_ir_driving_pin(const IRPin& ir_driving_pin) { _ir_driving_pin = ir_driving_pin; }
   void set_bounding_box(const BoundingBox& bounding_box) { _bounding_box = bounding_box; }
-    // InitialRouter
+  void set_ra_cost_map(const GridMap<double>& ra_cost_map) { _ra_cost_map = ra_cost_map; }
+  void set_routing_state(const RoutingState& routing_state) { _routing_state = routing_state; }
+  void set_routing_tree(const MTree<LayerCoord>& routing_tree) { _routing_tree = routing_tree; }
   void set_ir_result_tree(const MTree<Guide>& ir_result_tree) { _ir_result_tree = ir_result_tree; }
-  // GlobalRouter
-  void set_gr_result_tree(const MTree<Guide>& gr_result_tree) { _gr_result_tree = gr_result_tree; }
-  // TrackAssigner
-  void set_ta_result_list(const std::vector<Segment<LayerCoord>>& ta_result_list) { _ta_result_list = ta_result_list; }
 
  private:
+  Net* _origin_net = nullptr;
   irt_int _net_idx = -1;
-  std::string _net_name;
   ConnectType _connect_type = ConnectType::kNone;
-  // PinAccessor
-  std::vector<Pin> _pin_list;
+  std::vector<IRPin> _ir_pin_list;
+  IRPin _ir_driving_pin;
   BoundingBox _bounding_box;
-    // InitialRouter
+  GridMap<double> _ra_cost_map;
+  RoutingState _routing_state = RoutingState::kNone;
+  MTree<LayerCoord> _routing_tree;
   MTree<Guide> _ir_result_tree;
-  // GlobalRouter
-  MTree<Guide> _gr_result_tree;
-  // TrackAssigner
-  std::vector<Segment<LayerCoord>> _ta_result_list;
-  // DetailedRouter
-  
 };
 
 }  // namespace irt

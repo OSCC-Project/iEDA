@@ -16,34 +16,32 @@
 // ***************************************************************************************
 #pragma once
 
-#include "Config.hpp"
-#include "DataManager.hpp"
-#include "Database.hpp"
-
 namespace irt {
 
-#define GR_INST (irt::GlobalRouter::getInst())
-
-class GlobalRouter
+class IRParameter
 {
  public:
-  static void initInst();
-  static GlobalRouter& getInst();
-  static void destroyInst();
-  // function
-  void route(std::vector<Net>& net_list);
+  IRParameter() = default;
+  IRParameter(double prefer_wire_unit, double via_unit, double corner_unit)
+  {
+    _prefer_wire_unit = prefer_wire_unit;
+    _via_unit = via_unit;
+    _corner_unit = corner_unit;
+  }
+  ~IRParameter() = default;
+  // getter
+  double get_prefer_wire_unit() const { return _prefer_wire_unit; }
+  double get_via_unit() const { return _via_unit; }
+  double get_corner_unit() const { return _corner_unit; }
+  // setter
+  void set_prefer_wire_unit(const double prefer_wire_unit) { _prefer_wire_unit = prefer_wire_unit; }
+  void set_via_unit(const double via_unit) { _via_unit = via_unit; }
+  void set_corner_unit(const double corner_unit) { _corner_unit = corner_unit; }
 
  private:
-  // self
-  static GlobalRouter* _gr_instance;
-
-  GlobalRouter()= default;
-  GlobalRouter(const GlobalRouter& other) = delete;
-  GlobalRouter(GlobalRouter&& other) = delete;
-  ~GlobalRouter() = default;
-  GlobalRouter& operator=(const GlobalRouter& other) = delete;
-  GlobalRouter& operator=(GlobalRouter&& other) = delete;
-  // function
+  double _prefer_wire_unit = 0;
+  double _via_unit = 0;
+  double _corner_unit = 0;
 };
 
 }  // namespace irt

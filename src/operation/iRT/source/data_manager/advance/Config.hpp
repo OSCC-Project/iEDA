@@ -32,19 +32,6 @@ class Config
   irt_int thread_number;             // optional
   std::string bottom_routing_layer;  // optional
   std::string top_routing_layer;     // optional
-  irt_int gcell_pitch_size;          // optional
-  irt_int enable_idrc_interface;     // optional
-  double supply_utilization_rate;    // optional
-  irt_int pa_max_iter_num;           // optional
-  double ra_initial_penalty;         // optional
-  double ra_penalty_drop_rate;       // optional
-  irt_int ra_outer_max_iter_num;     // optional
-  irt_int ra_inner_max_iter_num;     // optional
-  double gr_prefer_wire_unit;        // optional
-  double gr_via_unit;                // optional
-  double gr_corner_unit;             // optional
-  double gr_history_cost_unit;       // optional
-  irt_int gr_max_iter_num;           // optional
   double ta_prefer_wire_unit;        // optional
   double ta_nonprefer_wire_unit;     // optional
   double ta_corner_unit;             // optional
@@ -73,6 +60,8 @@ class Config
   std::string gp_temp_directory_path;  // building
   // **********   GlobalRouter    ********** //
   std::string gr_temp_directory_path;  // building
+    // **********   InitialRouter    ********** //
+  std::string ir_temp_directory_path;  // building
   // **********   PinAccessor     ********** //
   std::string pa_temp_directory_path;  // building
   // ********     SupplyAnalyzer    ******** //

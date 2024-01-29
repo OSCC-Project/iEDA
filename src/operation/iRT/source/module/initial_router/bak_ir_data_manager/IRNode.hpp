@@ -16,13 +16,13 @@
 // ***************************************************************************************
 #pragma once
 
-#include "GRNodeId.hpp"
+#include "IRNodeId.hpp"
 #include "LayerCoord.hpp"
 
 namespace irt {
 
 #if 1  // astar
-enum class GRNodeState
+enum class IRNodeState
 {
   kNone = 0,
   kOpen = 1,
@@ -30,15 +30,15 @@ enum class GRNodeState
 };
 #endif
 
-class GRNode : public LayerCoord
+class IRNode : public LayerCoord
 {
  public:
-  GRNode() = default;
-  ~GRNode() = default;
+  IRNode() = default;
+  ~IRNode() = default;
   // getter
-  GRNodeId& get_gr_node_id() { return _gr_node_id; }
+  IRNodeId& get_ir_node_id() { return _ir_node_id; }
   PlanarRect& get_base_region() { return _base_region; }
-  std::map<Orientation, GRNode*>& get_neighbor_ptr_map() { return _neighbor_ptr_map; }
+  std::map<Orientation, IRNode*>& get_neighbor_ptr_map() { return _neighbor_ptr_map; }
   // gcell 布线消耗
   irt_int get_cross_wire_demand() const { return _cross_wire_demand; }
   irt_int get_local_wire_demand() const { return _local_wire_demand; }
@@ -58,9 +58,9 @@ class GRNode : public LayerCoord
   // gcell 经过的线网
   std::set<irt_int>& get_passed_net_set() { return _passed_net_set; }
   // setter
-  void set_gr_node_id(const GRNodeId& gr_node_id) { _gr_node_id = gr_node_id; }
+  void set_ir_node_id(const IRNodeId& ir_node_id) { _ir_node_id = ir_node_id; }
   void set_base_region(const PlanarRect& base_region) { _base_region = base_region; }
-  void set_neighbor_ptr_map(const std::map<Orientation, GRNode*>& neighbor_ptr_map) { _neighbor_ptr_map = neighbor_ptr_map; }
+  void set_neighbor_ptr_map(const std::map<Orientation, IRNode*>& neighbor_ptr_map) { _neighbor_ptr_map = neighbor_ptr_map; }
   // gcell 布线消耗
   void set_cross_wire_demand(const irt_int cross_wire_demand) { _cross_wire_demand = cross_wire_demand; }
   void set_local_wire_demand(const irt_int local_wire_demand) { _local_wire_demand = local_wire_demand; }
@@ -92,9 +92,9 @@ class GRNode : public LayerCoord
   // gcell 经过的线网
   void set_passed_net_set(const std::set<irt_int>& passed_net_set) { _passed_net_set = passed_net_set; }
   // function
-  GRNode* getNeighborNode(Orientation orientation)
+  IRNode* getNeighborNode(Orientation orientation)
   {
-    GRNode* neighbor_node = nullptr;
+    IRNode* neighbor_node = nullptr;
     if (RTUtil::exist(_neighbor_ptr_map, orientation)) {
       neighbor_node = _neighbor_ptr_map[orientation];
     }
@@ -211,25 +211,25 @@ class GRNode : public LayerCoord
   std::set<Direction>& get_direction_set() { return _direction_set; }
   void set_direction_set(std::set<Direction>& direction_set) { _direction_set = direction_set; }
   // single path
-  GRNodeState& get_state() { return _state; }
-  GRNode* get_parent_node() const { return _parent_node; }
+  IRNodeState& get_state() { return _state; }
+  IRNode* get_parent_node() const { return _parent_node; }
   double get_known_cost() const { return _known_cost; }
   double get_estimated_cost() const { return _estimated_cost; }
-  void set_state(GRNodeState state) { _state = state; }
-  void set_parent_node(GRNode* parent_node) { _parent_node = parent_node; }
+  void set_state(IRNodeState state) { _state = state; }
+  void set_parent_node(IRNode* parent_node) { _parent_node = parent_node; }
   void set_known_cost(const double known_cost) { _known_cost = known_cost; }
   void set_estimated_cost(const double estimated_cost) { _estimated_cost = estimated_cost; }
   // function
-  bool isNone() { return _state == GRNodeState::kNone; }
-  bool isOpen() { return _state == GRNodeState::kOpen; }
-  bool isClose() { return _state == GRNodeState::kClose; }
+  bool isNone() { return _state == IRNodeState::kNone; }
+  bool isOpen() { return _state == IRNodeState::kOpen; }
+  bool isClose() { return _state == IRNodeState::kClose; }
   double getTotalCost() { return (_known_cost + _estimated_cost); }
 #endif
 
  private:
-  GRNodeId _gr_node_id;
+  IRNodeId _ir_node_id;
   PlanarRect _base_region;
-  std::map<Orientation, GRNode*> _neighbor_ptr_map;
+  std::map<Orientation, IRNode*> _neighbor_ptr_map;
   /**
    * gcell 布线消耗
    *
@@ -281,17 +281,17 @@ class GRNode : public LayerCoord
   // single net
   std::set<Direction> _direction_set;
   // single path
-  GRNodeState _state = GRNodeState::kNone;
-  GRNode* _parent_node = nullptr;
+  IRNodeState _state = IRNodeState::kNone;
+  IRNode* _parent_node = nullptr;
   double _known_cost = 0.0;  // include curr
   double _estimated_cost = 0.0;
 #endif
 };
 
 #if 1  // astar
-struct CmpGRNodeCost
+struct CmpIRNodeCost
 {
-  bool operator()(GRNode* a, GRNode* b)
+  bool operator()(IRNode* a, IRNode* b)
   {
     if (RTUtil::equalDoubleByError(a->getTotalCost(), b->getTotalCost(), DBL_ERROR)) {
       if (RTUtil::equalDoubleByError(a->get_estimated_cost(), b->get_estimated_cost(), DBL_ERROR)) {

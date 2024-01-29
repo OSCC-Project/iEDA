@@ -171,8 +171,8 @@ void DetailedRouter::iterativeDRModel(DRModel& dr_model)
   for (size_t i = 0; i < dr_parameter_list.size(); i++) {
     Monitor iter_monitor;
     LOG_INST.info(Loc::current(), "****** Start Model Iteration(", (i + 1), "/", dr_parameter_list.size(), ") ******");
+    dr_model.set_dr_parameter(dr_parameter_list[i]);
     printParameter(dr_parameter_list[i]);
-    dr_model.set_curr_dr_parameter(dr_parameter_list[i]);
     initDRBoxMap(dr_model);
     splitNetResult(dr_model);
     buildBoxSchedule(dr_model);
@@ -205,9 +205,9 @@ void DetailedRouter::initDRBoxMap(DRModel& dr_model)
     y_gcell_num += y_grid.get_step_num();
   }
 
-  DRParameter& curr_dr_parameter = dr_model.get_curr_dr_parameter();
-  irt_int size = curr_dr_parameter.get_size();
-  irt_int offset = curr_dr_parameter.get_offset();
+  DRParameter& dr_parameter = dr_model.get_dr_parameter();
+  irt_int size = dr_parameter.get_size();
+  irt_int offset = dr_parameter.get_offset();
   irt_int x_box_num = std::ceil((x_gcell_num - offset) / 1.0 / size);
   irt_int y_box_num = std::ceil((y_gcell_num - offset) / 1.0 / size);
 
@@ -236,7 +236,7 @@ void DetailedRouter::initDRBoxMap(DRModel& dr_model)
       dr_box_id.set_x(x);
       dr_box_id.set_y(y);
       dr_box.set_dr_box_id(dr_box_id);
-      dr_box.set_curr_dr_parameter(&curr_dr_parameter);
+      dr_box.set_dr_parameter(&dr_parameter);
     }
   }
 }
@@ -832,7 +832,7 @@ void DetailedRouter::routeDRBox(DRBox& dr_box)
 
 std::vector<DRTask*> DetailedRouter::initTaskSchedule(DRBox& dr_box)
 {
-  bool complete_ripup = dr_box.get_curr_dr_parameter()->get_complete_ripup();
+  bool complete_ripup = dr_box.get_dr_parameter()->get_complete_ripup();
 
   std::vector<DRTask*> dr_task_list;
   if (complete_ripup) {
@@ -1078,6 +1078,7 @@ void DetailedRouter::resetStartAndEnd(DRBox& dr_box)
   DRNode* path_head_node = dr_box.get_path_head_node();
   irt_int end_node_comb_idx = dr_box.get_end_node_comb_idx();
 
+  // 对于抵达的终点pin，只保留到达的node
   end_node_list_list[end_node_comb_idx].clear();
   end_node_list_list[end_node_comb_idx].push_back(path_head_node);
 
@@ -1208,9 +1209,9 @@ double DetailedRouter::getKnowCost(DRBox& dr_box, DRNode* start_node, DRNode* en
 
 double DetailedRouter::getNodeCost(DRBox& dr_box, DRNode* curr_node, Orientation orientation)
 {
-  irt_int fixed_rect_cost = dr_box.get_curr_dr_parameter()->get_fixed_rect_cost();
-  irt_int routed_rect_cost = dr_box.get_curr_dr_parameter()->get_routed_rect_cost();
-  irt_int violation_cost = dr_box.get_curr_dr_parameter()->get_violation_cost();
+  irt_int fixed_rect_cost = dr_box.get_dr_parameter()->get_fixed_rect_cost();
+  irt_int routed_rect_cost = dr_box.get_dr_parameter()->get_routed_rect_cost();
+  irt_int violation_cost = dr_box.get_dr_parameter()->get_violation_cost();
 
   double cost = 0;
   cost += curr_node->getFixedRectCost(dr_box.get_curr_net_idx(), orientation, fixed_rect_cost);

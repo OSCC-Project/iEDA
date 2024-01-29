@@ -104,8 +104,8 @@ void TrackAssigner::iterativeTAModel(TAModel& ta_model)
   for (size_t i = 0; i < ta_parameter_list.size(); i++) {
     Monitor iter_monitor;
     LOG_INST.info(Loc::current(), "****** Start Model Iteration(", (i + 1), "/", ta_parameter_list.size(), ") ******");
+    ta_model.set_ta_parameter(ta_parameter_list[i]);
     printParameter(ta_parameter_list[i]);
-    ta_model.set_curr_ta_parameter(ta_parameter_list[i]);
     initTAPanelMap(ta_model);
     initTATaskList(ta_model);
     assignTAPanelMap(ta_model);
@@ -127,7 +127,7 @@ void TrackAssigner::initTAPanelMap(TAModel& ta_model)
   Die& die = DM_INST.getDatabase().get_die();
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
 
-  TAParameter& curr_ta_parameter = ta_model.get_curr_ta_parameter();
+  TAParameter& ta_parameter = ta_model.get_ta_parameter();
   std::vector<std::vector<TAPanel>>& layer_panel_list = ta_model.get_layer_panel_list();
   for (RoutingLayer& routing_layer : routing_layer_list) {
     std::vector<TAPanel> ta_panel_list;
@@ -145,7 +145,7 @@ void TrackAssigner::initTAPanelMap(TAModel& ta_model)
           ta_panel_id.set_layer_idx(routing_layer.get_layer_idx());
           ta_panel_id.set_panel_idx(static_cast<irt_int>(ta_panel_list.size()));
           ta_panel.set_ta_panel_id(ta_panel_id);
-          ta_panel.set_curr_ta_parameter(&curr_ta_parameter);
+          ta_panel.set_ta_parameter(&ta_parameter);
           ta_panel_list.push_back(ta_panel);
         }
       }
@@ -163,7 +163,7 @@ void TrackAssigner::initTAPanelMap(TAModel& ta_model)
           ta_panel_id.set_layer_idx(routing_layer.get_layer_idx());
           ta_panel_id.set_panel_idx(static_cast<irt_int>(ta_panel_list.size()));
           ta_panel.set_ta_panel_id(ta_panel_id);
-          ta_panel.set_curr_ta_parameter(&curr_ta_parameter);
+          ta_panel.set_ta_parameter(&ta_parameter);
           ta_panel_list.push_back(ta_panel);
         }
       }
@@ -682,6 +682,7 @@ void TrackAssigner::resetStartAndEnd(TAPanel& ta_panel)
   TANode* path_head_node = ta_panel.get_path_head_node();
   irt_int end_node_comb_idx = ta_panel.get_end_node_comb_idx();
 
+  // 对于抵达的终点pin，只保留到达的node
   end_node_list_list[end_node_comb_idx].clear();
   end_node_list_list[end_node_comb_idx].push_back(path_head_node);
 
@@ -812,9 +813,9 @@ double TrackAssigner::getKnowCost(TAPanel& ta_panel, TANode* start_node, TANode*
 
 double TrackAssigner::getNodeCost(TAPanel& ta_panel, TANode* curr_node, Orientation orientation)
 {
-  irt_int fixed_rect_cost = ta_panel.get_curr_ta_parameter()->get_fixed_rect_cost();
-  irt_int routed_rect_cost = ta_panel.get_curr_ta_parameter()->get_routed_rect_cost();
-  irt_int violation_cost = ta_panel.get_curr_ta_parameter()->get_violation_cost();
+  irt_int fixed_rect_cost = ta_panel.get_ta_parameter()->get_fixed_rect_cost();
+  irt_int routed_rect_cost = ta_panel.get_ta_parameter()->get_routed_rect_cost();
+  irt_int violation_cost = ta_panel.get_ta_parameter()->get_violation_cost();
 
   double cost = 0;
   cost += curr_node->getFixedRectCost(ta_panel.get_curr_net_idx(), orientation, fixed_rect_cost);

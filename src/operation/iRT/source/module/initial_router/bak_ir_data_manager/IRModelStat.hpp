@@ -20,11 +20,11 @@
 
 namespace irt {
 
-class GRModelStat
+class IRModelStat
 {
  public:
-  GRModelStat() = default;
-  ~GRModelStat() = default;
+  IRModelStat() = default;
+  ~IRModelStat() = default;
   // getter
   std::map<irt_int, double>& get_routing_wire_length_map() { return _routing_wire_length_map; }
   std::map<irt_int, irt_int>& get_cut_via_number_map() { return _cut_via_number_map; }

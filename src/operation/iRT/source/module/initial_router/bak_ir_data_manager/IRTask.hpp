@@ -16,23 +16,23 @@
 // ***************************************************************************************
 #pragma once
 
-#include "GRNode.hpp"
+#include "IRGroup.hpp"
 
 namespace irt {
 
-class GRGroup
+class IRTask
 {
  public:
-  GRGroup() = default;
-  ~GRGroup() = default;
+  IRTask() = default;
+  ~IRTask() = default;
   // getter
-  std::vector<GRNode*>& get_gr_node_list() { return _gr_node_list; }
+  std::vector<IRGroup>& get_ir_group_list() { return _ir_group_list; }
   // setter
-  void set_gr_node_list(const std::vector<GRNode*>& gr_node_list) { _gr_node_list = gr_node_list; }
+  void set_ir_group_list(const std::vector<IRGroup>& ir_group_list) { _ir_group_list = ir_group_list; }
   // function
 
  private:
-  std::vector<GRNode*> _gr_node_list;
+  std::vector<IRGroup> _ir_group_list;
 };
 
 }  // namespace irt
