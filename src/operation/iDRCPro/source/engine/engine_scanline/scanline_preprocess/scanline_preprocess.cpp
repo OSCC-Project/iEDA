@@ -139,7 +139,7 @@ void ScanlinePreprocess::createScanlinePoints(DrcBasicPoint* start_point,
       side_state = edge_state.first;
     }
     ScanlinePoint* starting_point = new ScanlinePoint(endpoint1, side_id, edge_state.first, edge_state.second);
-    ScanlinePoint* ending_point = new ScanlinePoint(endpoint2, side_id, !edge_state.first, !edge_state.second);
+    ScanlinePoint* ending_point = new ScanlinePoint(endpoint2, side_id, edge_state.first, !edge_state.second);
     scanline_points.emplace_back(starting_point);
     scanline_points.emplace_back(ending_point);
     starting_point->set_pair(ending_point);

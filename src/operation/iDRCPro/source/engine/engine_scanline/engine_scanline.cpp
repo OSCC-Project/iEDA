@@ -177,6 +177,7 @@ ScanlineSegmentType DrcEngineScanline::judgeSegmentType(ScanlineStatus& status, 
 uint64_t DrcEngineScanline::hash2SideIds(int id1, int id2)
 {
   std::hash<std::pair<int, int>> hasher;
+  // TODO: 碰撞
   return hasher(std::make_pair(id1, id2));
 }
 
@@ -205,11 +206,6 @@ void DrcEngineScanline::processScanlineStatus(ScanlineStatus& status)
       activate_points.push_back(point_forward);
       activate_types.push_back(type);
 
-      // skip both old points
-      if (!point_forward->get_is_new() && !point_backward->get_is_new()) {
-        continue;
-      }
-
       ConditionSequence::SequenceType sequence = ConditionSequence::SequenceType::kNone;
       uint64_t recognize_code = 0;
 
@@ -229,10 +225,7 @@ void DrcEngineScanline::processScanlineStatus(ScanlineStatus& status)
       if (is_deliver_single_edge) {
         recognize_code = hash2SideIds(point_forward->get_side_id(), point_backward->get_side_id());
         if (_condition_manager->isSequenceNeedDeliver(_preprocess->get_layer(), recognize_code, sequence)) {
-          std::vector<DrcBasicPoint*> point_list(2, nullptr);
-          for (int i = 1; i < 3; ++i) {
-            point_list[i - 1] = activate_points[i] ? activate_points[i]->get_point() : nullptr;
-          }
+          std::vector<DrcBasicPoint*> point_list{point_forward->get_point(), point_backward->get_point()};
 
           _condition_manager->recordRegion(_preprocess->get_layer(), recognize_code, sequence, point_list);
         }
