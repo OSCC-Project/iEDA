@@ -491,6 +491,7 @@ void DataManager::wrapDatabase(idb::IdbBuilder* idb_builder)
 {
   wrapMicronDBU(idb_builder);
   wrapDie(idb_builder);
+  wrapRow(idb_builder);
   wrapLayerList(idb_builder);
   wrapLayerViaMasterList(idb_builder);
   wrapBlockageList(idb_builder);
@@ -510,6 +511,20 @@ void DataManager::wrapDie(idb::IdbBuilder* idb_builder)
   EXTPlanarRect& die_box = _database.get_die();
   die_box.set_real_lb(die->get_llx(), die->get_lly());
   die_box.set_real_rt(die->get_urx(), die->get_ury());
+}
+
+void DataManager::wrapRow(idb::IdbBuilder* idb_builder)
+{
+  irt_int start_x = INT_MAX;
+  irt_int start_y = INT_MAX;
+  for (idb::IdbRow* idb_row : idb_builder->get_def_service()->get_layout()->get_rows()->get_row_list()) {
+    start_x = std::min(start_x, idb_row->get_original_coordinate()->get_x());
+    start_y = std::min(start_y, idb_row->get_original_coordinate()->get_y());
+  }
+  Row& row = _database.get_row();
+  row.set_start_x(start_x);
+  row.set_start_y(start_y);
+  row.set_height(idb_builder->get_def_service()->get_layout()->get_rows()->get_row_height());
 }
 
 void DataManager::wrapLayerList(idb::IdbBuilder* idb_builder)
@@ -749,12 +764,8 @@ void DataManager::wrapNetList(idb::IdbBuilder* idb_builder)
   std::vector<idb::IdbNet*> idb_net_list = idb_builder->get_def_service()->get_design()->get_net_list()->get_net_list();
 
   // bound setting
-  size_t lower_bound_value = 0;
-  // size_t upper_bound_value = 500;
-  size_t upper_bound_value = idb_net_list.size();
-  size_t number = 0;
   for (idb::IdbNet* idb_net : idb_net_list) {
-    if (lower_bound_value <= number && number <= upper_bound_value && !checkSkipping(idb_net)) {
+    if (!checkSkipping(idb_net)) {
       Net net;
       net.set_net_name(idb_net->get_net_name());
       net.set_connect_type(getRTConnectTypeByDB(idb_net->get_connect_type()));
@@ -762,7 +773,6 @@ void DataManager::wrapNetList(idb::IdbBuilder* idb_builder)
       processEmptyShapePin(net);
       wrapDrivingPin(net, idb_net);
       net_list.push_back(std::move(net));
-      number++;
     }
   }
 }
@@ -1006,6 +1016,8 @@ void DataManager::buildConfig()
   _config.pa_temp_directory_path = _config.temp_directory_path + "pin_accessor/";
   // ********   ResourceAllocator   ******** //
   _config.ra_temp_directory_path = _config.temp_directory_path + "resource_allocator/";
+  // ********     SupplyAnalyzer    ******** //
+  _config.sa_temp_directory_path = _config.temp_directory_path + "supply_analyzer/";
   // **********   TrackAssigner   ********** //
   _config.ta_temp_directory_path = _config.temp_directory_path + "track_assigner/";
   /////////////////////////////////////////////
@@ -1024,6 +1036,8 @@ void DataManager::buildConfig()
   RTUtil::createDir(_config.pa_temp_directory_path);
   // **********   ResourceAllocator     ********** //
   RTUtil::createDir(_config.ra_temp_directory_path);
+  // **********   SupplyAnalyzer     ********** //
+  RTUtil::createDir(_config.sa_temp_directory_path);
   // **********   TrackAssigner   ********** //
   RTUtil::createDir(_config.ta_temp_directory_path);
   /////////////////////////////////////////////
@@ -1051,17 +1065,14 @@ void DataManager::makeGCellAxis()
 {
   ScaleAxis& gcell_axis = _database.get_gcell_axis();
 
-  irt_int proposed_interval = getProposedInterval();
-  std::vector<irt_int> x_gcell_scale_list = makeGCellScaleList(Direction::kVertical, proposed_interval);
-  gcell_axis.set_x_grid_list(makeGCellGridList(x_gcell_scale_list));
-  std::vector<irt_int> y_gcell_scale_list = makeGCellScaleList(Direction::kHorizontal, proposed_interval);
-  gcell_axis.set_y_grid_list(makeGCellGridList(y_gcell_scale_list));
+  irt_int recommended_pitch = getRecommendedPitch();
+  gcell_axis.set_x_grid_list(makeGCellGridList(Direction::kVertical, recommended_pitch));
+  gcell_axis.set_y_grid_list(makeGCellGridList(Direction::kHorizontal, recommended_pitch));
 }
 
-irt_int DataManager::getProposedInterval()
+irt_int DataManager::getRecommendedPitch()
 {
   std::vector<RoutingLayer>& routing_layer_list = _database.get_routing_layer_list();
-  irt_int gcell_pitch_size = _config.gcell_pitch_size;
 
   std::map<irt_int, irt_int> pitch_count_map;
   for (RoutingLayer& routing_layer : routing_layer_list) {
@@ -1069,81 +1080,59 @@ irt_int DataManager::getProposedInterval()
       pitch_count_map[track_grid.get_step_length()]++;
     }
   }
-  irt_int ref_pitch = -1;
+  irt_int recommended_pitch = -1;
   irt_int max_count = INT32_MIN;
   for (auto [pitch, count] : pitch_count_map) {
     if (count > max_count) {
       max_count = count;
-      ref_pitch = pitch;
+      recommended_pitch = pitch;
     }
   }
-  if (ref_pitch == -1) {
-    LOG_INST.error(Loc::current(), "The ref_pitch is -1!");
+  if (max_count == 1) {
+    irt_int min_pitch = INT_MAX;
+    for (auto [pitch, count] : pitch_count_map) {
+      min_pitch = std::min(min_pitch, pitch);
+    }
+    recommended_pitch = min_pitch;
   }
-  return (gcell_pitch_size * ref_pitch);
+  if (recommended_pitch == -1) {
+    LOG_INST.error(Loc::current(), "The recommended_pitch is -1!");
+  }
+  return recommended_pitch;
 }
 
-std::vector<irt_int> DataManager::makeGCellScaleList(Direction direction, irt_int proposed_gcell_interval)
+std::vector<ScaleGrid> DataManager::makeGCellGridList(Direction direction, irt_int recommended_pitch)
 {
   Die& die = _database.get_die();
-  std::vector<RoutingLayer>& routing_layer_list = _database.get_routing_layer_list();
-  irt_int bottom_routing_layer_idx = _config.bottom_routing_layer_idx;
-  irt_int top_routing_layer_idx = _config.top_routing_layer_idx;
+  Row& row = _database.get_row();
 
-  irt_int start_gcell_scale = (direction == Direction::kVertical ? die.get_real_lb_x() : die.get_real_lb_y());
-  irt_int end_gcell_scale = (direction == Direction::kVertical ? die.get_real_rt_x() : die.get_real_rt_y());
+  irt_int die_start_scale = (direction == Direction::kVertical ? die.get_real_lb_x() : die.get_real_lb_y());
+  irt_int die_end_scale = (direction == Direction::kVertical ? die.get_real_rt_x() : die.get_real_rt_y());
+  irt_int row_mid_scale = (direction == Direction::kVertical ? row.get_start_x() : row.get_start_y());
+  // 为了防止与track重合，减去一个recommended_pitch的一半
+  row_mid_scale -= (recommended_pitch / 2);
+  irt_int step_length = row.get_height();
 
-  std::set<irt_int> base_layer_idx_set;
-  std::map<irt_int, std::set<irt_int>> scale_layer_map;
-  for (RoutingLayer& routing_layer : routing_layer_list) {
-    if (routing_layer.get_layer_idx() < bottom_routing_layer_idx || top_routing_layer_idx < routing_layer.get_layer_idx()) {
-      continue;
-    }
-    base_layer_idx_set.insert(routing_layer.get_layer_idx());
+  std::vector<irt_int> gcell_scale_list;
+  gcell_scale_list.push_back(die_start_scale);
+  for (irt_int gcell_scale = row_mid_scale; gcell_scale >= die_start_scale; gcell_scale -= step_length) {
+    gcell_scale_list.push_back(gcell_scale);
+  }
+  for (irt_int gcell_scale = row_mid_scale; gcell_scale <= die_end_scale; gcell_scale += step_length) {
+    gcell_scale_list.push_back(gcell_scale);
+  }
+  gcell_scale_list.push_back(die_end_scale);
 
-    std::vector<ScaleGrid> track_grid_list;
-    if (direction == Direction::kVertical) {
-      track_grid_list = routing_layer.getXTrackGridList();
-    } else {
-      track_grid_list = routing_layer.getYTrackGridList();
-    }
-    for (ScaleGrid& track_grid : track_grid_list) {
-      irt_int track_scale = track_grid.get_start_line();
-      irt_int step_num = track_grid.get_step_num();
-      while (step_num--) {
-        if (track_scale > end_gcell_scale) {
-          break;
-        }
-        scale_layer_map[track_scale].insert(routing_layer.get_layer_idx());
-        track_scale += track_grid.get_step_length();
-      }
+  std::sort(gcell_scale_list.begin(), gcell_scale_list.end());
+  // 删除小于step_length的
+  for (irt_int i = 2; i < static_cast<irt_int>(gcell_scale_list.size()); i++) {
+    if (std::abs(gcell_scale_list[i - 2] - gcell_scale_list[i - 1]) < step_length
+        || std::abs(gcell_scale_list[i - 1] - gcell_scale_list[i]) < step_length) {
+      gcell_scale_list[i - 1] = gcell_scale_list[i - 2];
     }
   }
-  std::vector<irt_int> gcell_scale_list = {start_gcell_scale};
-  std::set<irt_int> curr_layer_idx_set;
-  auto iter = scale_layer_map.begin();
-  while (true) {
-    irt_int track_scale = iter->first;
-    curr_layer_idx_set.insert(iter->second.begin(), iter->second.end());
-    iter++;
-    if (iter == scale_layer_map.end()) {
-      if (base_layer_idx_set != curr_layer_idx_set) {
-        gcell_scale_list.pop_back();
-      }
-      gcell_scale_list.push_back(end_gcell_scale);
-      break;
-    }
-    if (track_scale - gcell_scale_list.back() < proposed_gcell_interval) {
-      continue;
-    }
-    if (base_layer_idx_set != curr_layer_idx_set) {
-      // 若没有包含全层track就继续
-      continue;
-    }
-    curr_layer_idx_set.clear();
-    gcell_scale_list.push_back((track_scale + iter->first) / 2);
-  }
-  return gcell_scale_list;
+  gcell_scale_list.erase(std::unique(gcell_scale_list.begin(), gcell_scale_list.end()), gcell_scale_list.end());
+  return makeGCellGridList(gcell_scale_list);
 }
 
 std::vector<ScaleGrid> DataManager::makeGCellGridList(std::vector<irt_int>& gcell_scale_list)
@@ -1541,31 +1530,13 @@ void DataManager::makeBlockageList()
   std::vector<Blockage>& routing_blockage_list = _database.get_routing_blockage_list();
   std::vector<Blockage>& cut_blockage_list = _database.get_cut_blockage_list();
 
-  std::set<LayerRect, CmpLayerRectByXASC> routing_blockage_rect_set;
   for (Blockage& routing_blockage : routing_blockage_list) {
     routing_blockage.set_real_rect(RTUtil::getRegularRect(routing_blockage.get_real_rect(), die.get_real_rect()));
-    routing_blockage_rect_set.insert(LayerRect(routing_blockage.get_real_rect(), routing_blockage.get_layer_idx()));
-  }
-  routing_blockage_list.clear();
-  for (const LayerRect& routing_blockage_rect : routing_blockage_rect_set) {
-    Blockage routing_blockage;
-    routing_blockage.set_real_rect(routing_blockage_rect);
     routing_blockage.set_grid_rect(RTUtil::getClosedGCellGridRect(routing_blockage.get_real_rect(), gcell_axis));
-    routing_blockage.set_layer_idx(routing_blockage_rect.get_layer_idx());
-    routing_blockage_list.push_back(routing_blockage);
   }
-  std::set<LayerRect, CmpLayerRectByXASC> cut_blockage_rect_set;
   for (Blockage& cut_blockage : cut_blockage_list) {
     cut_blockage.set_real_rect(RTUtil::getRegularRect(cut_blockage.get_real_rect(), die.get_real_rect()));
-    cut_blockage_rect_set.insert(LayerRect(cut_blockage.get_real_rect(), cut_blockage.get_layer_idx()));
-  }
-  cut_blockage_list.clear();
-  for (const LayerRect& cut_blockage_rect : cut_blockage_rect_set) {
-    Blockage cut_blockage;
-    cut_blockage.set_real_rect(cut_blockage_rect);
     cut_blockage.set_grid_rect(RTUtil::getClosedGCellGridRect(cut_blockage.get_real_rect(), gcell_axis));
-    cut_blockage.set_layer_idx(cut_blockage_rect.get_layer_idx());
-    cut_blockage_list.push_back(cut_blockage);
   }
 }
 
@@ -1687,34 +1658,18 @@ void DataManager::buildGCellMap()
   gcell_map.init(die.getXSize(), die.getYSize());
 
   for (Blockage& routing_blockage : routing_blockage_list) {
-    for (irt_int x = routing_blockage.get_grid_lb_x(); x <= routing_blockage.get_grid_rt_x(); x++) {
-      for (irt_int y = routing_blockage.get_grid_lb_y(); y <= routing_blockage.get_grid_rt_y(); y++) {
-        updateFixedRectToGCellMap(ChangeType::kAdd, -1, &routing_blockage, true);
-      }
-    }
+    updateFixedRectToGCellMap(ChangeType::kAdd, -1, &routing_blockage, true);
   }
   for (Blockage& cut_blockage : cut_blockage_list) {
-    for (irt_int x = cut_blockage.get_grid_lb_x(); x <= cut_blockage.get_grid_rt_x(); x++) {
-      for (irt_int y = cut_blockage.get_grid_lb_y(); y <= cut_blockage.get_grid_rt_y(); y++) {
-        updateFixedRectToGCellMap(ChangeType::kAdd, -1, &cut_blockage, false);
-      }
-    }
+    updateFixedRectToGCellMap(ChangeType::kAdd, -1, &cut_blockage, false);
   }
   for (Net& net : net_list) {
     for (Pin& pin : net.get_pin_list()) {
       for (EXTLayerRect& routing_shape : pin.get_routing_shape_list()) {
-        for (irt_int x = routing_shape.get_grid_lb_x(); x <= routing_shape.get_grid_rt_x(); x++) {
-          for (irt_int y = routing_shape.get_grid_lb_y(); y <= routing_shape.get_grid_rt_y(); y++) {
-            updateFixedRectToGCellMap(ChangeType::kAdd, net.get_net_idx(), &routing_shape, true);
-          }
-        }
+        updateFixedRectToGCellMap(ChangeType::kAdd, net.get_net_idx(), &routing_shape, true);
       }
       for (EXTLayerRect& cut_shape : pin.get_cut_shape_list()) {
-        for (irt_int x = cut_shape.get_grid_lb_x(); x <= cut_shape.get_grid_rt_x(); x++) {
-          for (irt_int y = cut_shape.get_grid_lb_y(); y <= cut_shape.get_grid_rt_y(); y++) {
-            updateFixedRectToGCellMap(ChangeType::kAdd, net.get_net_idx(), &cut_shape, false);
-          }
-        }
+        updateFixedRectToGCellMap(ChangeType::kAdd, net.get_net_idx(), &cut_shape, false);
       }
     }
   }
@@ -1873,6 +1828,10 @@ void DataManager::printConfig()
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "ResourceAllocator");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), "ra_temp_directory_path");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(3), _config.ra_temp_directory_path);
+  // **********   SupplyAnalyzer   ********** //
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "SupplyAnalyzer");
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), "sa_temp_directory_path");
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(3), _config.sa_temp_directory_path);
   // **********   TrackAssigner   ********** //
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "TrackAssigner");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), "ta_temp_directory_path");

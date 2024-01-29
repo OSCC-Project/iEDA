@@ -16,24 +16,28 @@
 // ***************************************************************************************
 #pragma once
 
-#include "PAGCellId.hpp"
-#include "SpaceRegion.hpp"
+#include "RTU.hpp"
 
 namespace irt {
 
-class PAGCell : public SpaceRegion
+class Row
 {
  public:
-  PAGCell() = default;
-  ~PAGCell() = default;
+  Row() = default;
+  ~Row() = default;
   // getter
-  PAGCellId& get_pa_gcell_id() { return _pa_gcell_id; }
+  irt_int get_start_x() const { return _start_x; }
+  irt_int get_start_y() const { return _start_y; }
+  irt_int get_height() const { return _height; }
   // setter
-  void set_pa_gcell_id(const PAGCellId& pa_gcell_id) { _pa_gcell_id = pa_gcell_id; }
+  void set_start_x(const irt_int start_x) { _start_x = start_x; }
+  void set_start_y(const irt_int start_y) { _start_y = start_y; }
+  void set_height(const irt_int height) { _height = height; }
   // function
-
  private:
-  PAGCellId _pa_gcell_id;
+  irt_int _start_x = -1;
+  irt_int _start_y = -1;
+  irt_int _height = -1;
 };
 
 }  // namespace irt

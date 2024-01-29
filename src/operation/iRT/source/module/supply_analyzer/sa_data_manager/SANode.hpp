@@ -16,29 +16,34 @@
 // ***************************************************************************************
 #pragma once
 
-#include "PlanarRect.hpp"
+#include "AccessPoint.hpp"
+#include "EXTLayerRect.hpp"
+#include "LayerRect.hpp"
 
 namespace irt {
 
-class SpaceRegion
+class SANode
 {
  public:
-  SpaceRegion() = default;
-  ~SpaceRegion() = default;
+  SANode() = default;
+  ~SANode() = default;
   // getter
-  PlanarRect& get_base_region() { return _base_region; }
-  irt_int get_top_layer_idx() const { return _top_layer_idx; }
-  irt_int get_bottom_layer_idx() const { return _bottom_layer_idx; }
+  PlanarRect& get_shape() { return _shape; }
+  std::map<irt_int, std::set<EXTLayerRect*>>& get_net_fixed_rect_map() { return _net_fixed_rect_map; }
+  std::map<Orientation, irt_int>& get_orien_supply_map() { return _orien_supply_map; }
   // setter
-  void set_base_region(const PlanarRect& base_region) { _base_region = base_region; }
-  void set_top_layer_idx(const irt_int top_layer_idx) { _top_layer_idx = top_layer_idx; }
-  void set_bottom_layer_idx(const irt_int bottom_layer_idx) { _bottom_layer_idx = bottom_layer_idx; }
+  void set_shape(const PlanarRect& shape) { _shape = shape; }
+  void set_net_fixed_rect_map(const std::map<irt_int, std::set<EXTLayerRect*>>& net_fixed_rect_map)
+  {
+    _net_fixed_rect_map = net_fixed_rect_map;
+  }
+  void set_orien_supply_map(const std::map<Orientation, irt_int>& orien_supply_map) { _orien_supply_map = orien_supply_map; }
   // function
 
  private:
-  PlanarRect _base_region;
-  irt_int _top_layer_idx = -1;
-  irt_int _bottom_layer_idx = -1;
+  PlanarRect _shape;
+  std::map<irt_int, std::set<EXTLayerRect*>> _net_fixed_rect_map;
+  std::map<Orientation, irt_int> _orien_supply_map;
 };
 
 }  // namespace irt

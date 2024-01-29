@@ -1901,11 +1901,11 @@ std::map<DRNode*, std::set<Orientation>> DetailedRouter::getRoutingNodeOrientati
 
   // 膨胀size为 min_spacing + half_width
   irt_int enlarged_size = routing_layer.getMinSpacing(net_shape.get_rect()) + (routing_layer.get_min_width() / 2);
-  PlanarRect searched_rect = RTUtil::getEnlargedRect(net_shape.get_rect(), enlarged_size);
+  PlanarRect enlarged_rect = RTUtil::getEnlargedRect(net_shape.get_rect(), enlarged_size);
 
   std::map<DRNode*, std::set<Orientation>> node_orientation_map;
-  if (RTUtil::existNodeGrid(searched_rect, dr_box.get_box_track_axis())) {
-    PlanarRect grid_rect = RTUtil::getNodeGridRect(searched_rect, dr_box.get_box_track_axis());
+  if (RTUtil::existNodeGrid(enlarged_rect, dr_box.get_box_track_axis())) {
+    PlanarRect grid_rect = RTUtil::getNodeGridRect(enlarged_rect, dr_box.get_box_track_axis());
     for (irt_int grid_x = grid_rect.get_lb_x(); grid_x <= grid_rect.get_rt_x(); grid_x++) {
       for (irt_int grid_y = grid_rect.get_lb_y(); grid_y <= grid_rect.get_rt_y(); grid_y++) {
         DRNode& node = dr_box.get_layer_node_map()[net_shape.get_layer_idx()][grid_x][grid_y];
@@ -1941,11 +1941,11 @@ std::map<DRNode*, std::set<Orientation>> DetailedRouter::getCutNodeOrientationMa
   irt_int enlarge_x_size = cut_spacing + cut_shape.getXSpan() / 2;
   irt_int enlarge_y_size = cut_spacing + cut_shape.getYSpan() / 2;
 
-  PlanarRect searched_rect = RTUtil::getEnlargedRect(net_shape.get_rect(), enlarge_x_size, enlarge_y_size, enlarge_x_size, enlarge_y_size);
+  PlanarRect enlarged_rect = RTUtil::getEnlargedRect(net_shape.get_rect(), enlarge_x_size, enlarge_y_size, enlarge_x_size, enlarge_y_size);
 
   std::map<DRNode*, std::set<Orientation>> node_orientation_map;
-  if (RTUtil::existNodeGrid(searched_rect, dr_box.get_box_track_axis())) {
-    PlanarRect grid_rect = RTUtil::getNodeGridRect(searched_rect, dr_box.get_box_track_axis());
+  if (RTUtil::existNodeGrid(enlarged_rect, dr_box.get_box_track_axis())) {
+    PlanarRect grid_rect = RTUtil::getNodeGridRect(enlarged_rect, dr_box.get_box_track_axis());
     for (irt_int grid_x = grid_rect.get_lb_x(); grid_x <= grid_rect.get_rt_x(); grid_x++) {
       for (irt_int grid_y = grid_rect.get_lb_y(); grid_y <= grid_rect.get_rt_y(); grid_y++) {
         node_orientation_map[&dr_box.get_layer_node_map()[bottom_routing_layer_idx][grid_x][grid_y]].insert(Orientation::kUp);

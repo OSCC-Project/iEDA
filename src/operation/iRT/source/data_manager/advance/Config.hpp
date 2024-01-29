@@ -78,6 +78,8 @@ class Config
   std::string pa_temp_directory_path;  // building
   // ********   ResourceAllocator   ******** //
   std::string ra_temp_directory_path;  // building
+  // ********     SupplyAnalyzer    ******** //
+  std::string sa_temp_directory_path;  // building
   // **********   TrackAssigner   ********** //
   std::string ta_temp_directory_path;  // building
   /////////////////////////////////////////////

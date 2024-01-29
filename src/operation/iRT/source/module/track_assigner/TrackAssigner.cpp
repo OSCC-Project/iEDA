@@ -1091,11 +1091,11 @@ std::map<TANode*, std::set<Orientation>> TrackAssigner::getRoutingNodeOrientatio
 
   // 膨胀size为 min_spacing + 1/2 * width
   irt_int enlarged_size = routing_layer.getMinSpacing(net_shape.get_rect()) + (routing_layer.get_min_width() / 2);
-  PlanarRect searched_rect = RTUtil::getEnlargedRect(net_shape.get_rect(), enlarged_size);
+  PlanarRect enlarged_rect = RTUtil::getEnlargedRect(net_shape.get_rect(), enlarged_size);
 
   std::map<TANode*, std::set<Orientation>> node_orientation_map;
-  if (RTUtil::existNodeGrid(searched_rect, ta_panel.get_panel_track_axis())) {
-    PlanarRect grid_rect = RTUtil::getNodeGridRect(searched_rect, ta_panel.get_panel_track_axis());
+  if (RTUtil::existNodeGrid(enlarged_rect, ta_panel.get_panel_track_axis())) {
+    PlanarRect grid_rect = RTUtil::getNodeGridRect(enlarged_rect, ta_panel.get_panel_track_axis());
     for (irt_int grid_x = grid_rect.get_lb_x(); grid_x <= grid_rect.get_rt_x(); grid_x++) {
       for (irt_int grid_y = grid_rect.get_lb_y(); grid_y <= grid_rect.get_rt_y(); grid_y++) {
         TANode& node = ta_panel.get_ta_node_map()[grid_x][grid_y];

@@ -26,6 +26,7 @@
 #include "Monitor.hpp"
 #include "PinAccessor.hpp"
 #include "ResourceAllocator.hpp"
+#include "SupplyAnalyzer.hpp"
 #include "Stage.hpp"
 #include "TimingEval.hpp"
 #include "TrackAssigner.hpp"
@@ -84,9 +85,9 @@ void RTAPI::runRT()
   PA_INST.access(net_list);
   PinAccessor::destroyInst();
 
-  // SupplyAnalyzer::initInst();
-  // SA_INST.analysis(net_list);
-  // SupplyAnalyzer::destroyInst();
+  SupplyAnalyzer::initInst();
+  SA_INST.analyze(net_list);
+  SupplyAnalyzer::destroyInst();
 
   // ResourceAllocator::initInst();
   // RA_INST.allocate(net_list);

@@ -54,13 +54,13 @@ void PinAccessor::access(std::vector<Net>& net_list)
 {
   Monitor monitor;
   LOG_INST.info(Loc::current(), "Begin accessing...");
-
   PAModel pa_model = initPAModel(net_list);
-  accessPANetList(pa_model);
+  initAccessPointList(pa_model);
+  buildAccessPointList(pa_model);
   updatePAModel(pa_model);
-  // plotPAModel(pa_model, "post");
-
   LOG_INST.info(Loc::current(), "End access", monitor.getStatsInfo());
+
+  // plotPAModel(pa_model, "post");
 }
 
 // private
@@ -69,23 +69,8 @@ PinAccessor* PinAccessor::_pa_instance = nullptr;
 
 PAModel PinAccessor::initPAModel(std::vector<Net>& net_list)
 {
-  ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
-  Die& die = DM_INST.getDatabase().get_die();
-  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
-
   PAModel pa_model;
-  GridMap<PAGCell>& pa_gcell_map = pa_model.get_pa_gcell_map();
-  pa_gcell_map.init(die.getXSize(), die.getYSize());
-  for (irt_int x = 0; x < die.getXSize(); x++) {
-    for (irt_int y = 0; y < die.getYSize(); y++) {
-      PAGCell& pa_gcell = pa_gcell_map[x][y];
-      pa_gcell.set_base_region(RTUtil::getRealRectByGCell(x, y, gcell_axis));
-      pa_gcell.set_top_layer_idx(routing_layer_list.back().get_layer_idx());
-      pa_gcell.set_bottom_layer_idx(routing_layer_list.front().get_layer_idx());
-    }
-  }
   pa_model.set_pa_net_list(convertToPANetList(net_list));
-
   return pa_model;
 }
 
@@ -112,34 +97,27 @@ PANet PinAccessor::convertToPANet(Net& net)
   return pa_net;
 }
 
-void PinAccessor::accessPANetList(PAModel& pa_model)
+void PinAccessor::initAccessPointList(PAModel& pa_model)
 {
 #pragma omp parallel for
   for (PANet& pa_net : pa_model.get_pa_net_list()) {
-    makeAccessPointList(pa_model, pa_net);
-    updateBoundingBox(pa_net);
-    updateAccessGrid(pa_net);
-  }
-}
-
-void PinAccessor::makeAccessPointList(PAModel& pa_model, PANet& pa_net)
-{
-  for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
-    std::vector<AccessPoint>& access_point_list = pa_pin.get_access_point_list();
-    std::vector<LayerRect> legal_shape_list = getLegalShapeList(pa_model, pa_net.get_net_idx(), pa_pin);
-    for (auto getAccessPointList : {std::bind(&PinAccessor::getAccessPointListByPrefTrackGrid, this, std::placeholders::_1),
-                                    std::bind(&PinAccessor::getAccessPointListByCurrTrackGrid, this, std::placeholders::_1),
-                                    std::bind(&PinAccessor::getAccessPointListByTrackCenter, this, std::placeholders::_1),
-                                    std::bind(&PinAccessor::getAccessPointListByShapeCenter, this, std::placeholders::_1)}) {
-      for (AccessPoint& access_point : getAccessPointList(legal_shape_list)) {
-        access_point_list.push_back(access_point);
+    for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
+      std::vector<AccessPoint>& access_point_list = pa_pin.get_access_point_list();
+      std::vector<LayerRect> legal_shape_list = getLegalShapeList(pa_model, pa_net.get_net_idx(), pa_pin);
+      for (auto getAccessPointList : {std::bind(&PinAccessor::getAccessPointListByPrefTrackGrid, this, std::placeholders::_1),
+                                      std::bind(&PinAccessor::getAccessPointListByCurrTrackGrid, this, std::placeholders::_1),
+                                      std::bind(&PinAccessor::getAccessPointListByTrackCenter, this, std::placeholders::_1),
+                                      std::bind(&PinAccessor::getAccessPointListByShapeCenter, this, std::placeholders::_1)}) {
+        for (AccessPoint& access_point : getAccessPointList(legal_shape_list)) {
+          access_point_list.push_back(access_point);
+        }
+        if (!access_point_list.empty()) {
+          break;
+        }
       }
-      if (!access_point_list.empty()) {
-        break;
+      if (access_point_list.empty()) {
+        LOG_INST.error(Loc::current(), "No access point was generated!");
       }
-    }
-    if (access_point_list.empty()) {
-      LOG_INST.error(Loc::current(), "No access point was generated!");
     }
   }
 }
@@ -384,29 +362,25 @@ std::vector<AccessPoint> PinAccessor::getAccessPointListByShapeCenter(std::vecto
   return access_point_list;
 }
 
-void PinAccessor::updateBoundingBox(PANet& pa_net)
+void PinAccessor::buildAccessPointList(PAModel& pa_model)
 {
   ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
 
-  std::vector<PlanarCoord> coord_list;
-  for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
-    for (AccessPoint& access_point : pa_pin.get_access_point_list()) {
-      coord_list.push_back(access_point.get_real_coord());
+#pragma omp parallel for
+  for (PANet& pa_net : pa_model.get_pa_net_list()) {
+    std::vector<PlanarCoord> coord_list;
+    for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
+      for (AccessPoint& access_point : pa_pin.get_access_point_list()) {
+        coord_list.push_back(access_point.get_real_coord());
+      }
     }
-  }
-  BoundingBox& bounding_box = pa_net.get_bounding_box();
-  bounding_box.set_real_rect(RTUtil::getBoundingBox(coord_list));
-  bounding_box.set_grid_rect(RTUtil::getOpenGCellGridRect(bounding_box.get_real_rect(), gcell_axis));
-}
-
-void PinAccessor::updateAccessGrid(PANet& pa_net)
-{
-  ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
-  BoundingBox& bounding_box = pa_net.get_bounding_box();
-
-  for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
-    for (AccessPoint& access_point : pa_pin.get_access_point_list()) {
-      access_point.set_grid_coord(RTUtil::getGCellGridCoordByBBox(access_point.get_real_coord(), gcell_axis, bounding_box));
+    BoundingBox& bounding_box = pa_net.get_bounding_box();
+    bounding_box.set_real_rect(RTUtil::getBoundingBox(coord_list));
+    bounding_box.set_grid_rect(RTUtil::getOpenGCellGridRect(bounding_box.get_real_rect(), gcell_axis));
+    for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
+      for (AccessPoint& access_point : pa_pin.get_access_point_list()) {
+        access_point.set_grid_coord(RTUtil::getGCellGridCoordByBBox(access_point.get_real_coord(), gcell_axis, bounding_box));
+      }
     }
   }
 }

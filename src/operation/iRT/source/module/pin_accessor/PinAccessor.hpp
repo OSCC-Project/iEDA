@@ -21,8 +21,6 @@
 #include "Database.hpp"
 #include "Net.hpp"
 #include "PAModel.hpp"
-#include "PANode.hpp"
-#include "ViolatedGroup.hpp"
 
 namespace irt {
 
@@ -51,16 +49,14 @@ class PinAccessor
   PAModel initPAModel(std::vector<Net>& net_list);
   std::vector<PANet> convertToPANetList(std::vector<Net>& net_list);
   PANet convertToPANet(Net& net);
-  void accessPANetList(PAModel& pa_model);
-  void makeAccessPointList(PAModel& pa_model, PANet& pa_net);
+  void initAccessPointList(PAModel& pa_model);
   std::vector<LayerRect> getLegalShapeList(PAModel& pa_model, irt_int pa_net_idx, PAPin& pa_pin);
   std::vector<PlanarRect> getPlanarLegalRectList(PAModel& pa_model, irt_int pa_net_idx, std::vector<EXTLayerRect>& pin_shape_list);
   std::vector<AccessPoint> getAccessPointListByPrefTrackGrid(std::vector<LayerRect>& legal_shape_list);
   std::vector<AccessPoint> getAccessPointListByCurrTrackGrid(std::vector<LayerRect>& legal_shape_list);
   std::vector<AccessPoint> getAccessPointListByTrackCenter(std::vector<LayerRect>& legal_shape_list);
   std::vector<AccessPoint> getAccessPointListByShapeCenter(std::vector<LayerRect>& legal_shape_list);
-  void updateBoundingBox(PANet& pa_net);
-  void updateAccessGrid(PANet& pa_net);
+  void buildAccessPointList(PAModel& pa_model);
   void updatePAModel(PAModel& pa_model);
 
 #if 1  // plot pa_model

@@ -91,6 +91,7 @@ class DataManager
   void wrapDatabase(idb::IdbBuilder* idb_builder);
   void wrapMicronDBU(idb::IdbBuilder* idb_builder);
   void wrapDie(idb::IdbBuilder* idb_builder);
+  void wrapRow(idb::IdbBuilder* idb_builder);
   void wrapLayerList(idb::IdbBuilder* idb_builder);
   void wrapTrackAxis(RoutingLayer& routing_layer, idb::IdbLayerRouting* idb_layer);
   void wrapSpacingTable(RoutingLayer& routing_layer, idb::IdbLayerRouting* idb_layer);
@@ -115,8 +116,8 @@ class DataManager
   void buildDatabase();
   void buildGCellAxis();
   void makeGCellAxis();
-  irt_int getProposedInterval();
-  std::vector<irt_int> makeGCellScaleList(Direction direction, irt_int proposed_gcell_interval);
+  irt_int getRecommendedPitch();
+  std::vector<ScaleGrid> makeGCellGridList(Direction direction, irt_int recommended_pitch);
   std::vector<ScaleGrid> makeGCellGridList(std::vector<irt_int>& gcell_scale_list);
   void checkGCellAxis();
   void buildDie();

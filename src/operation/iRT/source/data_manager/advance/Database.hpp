@@ -23,6 +23,7 @@
 #include "Helper.hpp"
 #include "Net.hpp"
 #include "RoutingLayer.hpp"
+#include "Row.hpp"
 #include "ViaMaster.hpp"
 
 namespace irt {
@@ -36,6 +37,7 @@ class Database
   irt_int get_micron_dbu() const { return _micron_dbu; }
   ScaleAxis& get_gcell_axis() { return _gcell_axis; }
   Die& get_die() { return _die; }
+  Row& get_row() { return _row; }
   std::vector<RoutingLayer>& get_routing_layer_list() { return _routing_layer_list; }
   std::vector<CutLayer>& get_cut_layer_list() { return _cut_layer_list; }
   std::vector<std::vector<ViaMaster>>& get_layer_via_master_list() { return _layer_via_master_list; }
@@ -51,6 +53,7 @@ class Database
   irt_int _micron_dbu = -1;
   ScaleAxis _gcell_axis;
   Die _die;
+  Row _row;
   std::vector<RoutingLayer> _routing_layer_list;
   std::vector<CutLayer> _cut_layer_list;
   std::vector<std::vector<ViaMaster>> _layer_via_master_list;

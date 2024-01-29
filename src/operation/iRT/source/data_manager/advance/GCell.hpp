@@ -17,8 +17,6 @@
 #pragma once
 
 #include "AccessPoint.hpp"
-#include "GCellId.hpp"
-#include "GlobalSupply.hpp"
 #include "Violation.hpp"
 
 namespace irt {
@@ -29,28 +27,48 @@ class GCell
   GCell() = default;
   ~GCell() = default;
   // getter
-  GCellId& get_gcell_id() { return _gcell_id; }
   std::map<bool, std::map<irt_int, std::map<irt_int, std::set<EXTLayerRect*>>>>& get_type_layer_net_fixed_rect_map()
   {
     return _type_layer_net_fixed_rect_map;
   }
   std::map<irt_int, std::set<AccessPoint*>>& get_net_access_point_map() { return _net_access_point_map; }
-  std::map<irt_int, GlobalSupply*>& get_routing_global_supply_map() { return _routing_global_supply_map; }
+  std::map<irt_int, std::map<Orientation, irt_int>>& get_routing_orien_supply_map() { return _routing_orien_supply_map; }
   std::map<irt_int, std::set<Segment<LayerCoord>*>>& get_net_result_map() { return _net_result_map; }
   std::set<Violation*>& get_violation_set() { return _violation_set; }
   std::map<irt_int, std::set<EXTLayerRect*>>& get_net_patch_map() { return _net_patch_map; }
   // setter
-  void set_gcell_id(const GCellId& gcell_id) { _gcell_id = gcell_id; }
+  void set_type_layer_net_fixed_rect_map(
+      const std::map<bool, std::map<irt_int, std::map<irt_int, std::set<EXTLayerRect*>>>>& type_layer_net_fixed_rect_map)
+  {
+    _type_layer_net_fixed_rect_map = type_layer_net_fixed_rect_map;
+  }
+  void set_net_access_point_map(const std::map<irt_int, std::set<AccessPoint*>>& net_access_point_map)
+  {
+    _net_access_point_map = net_access_point_map;
+  }
+  void set_routing_orien_supply_map(const std::map<irt_int, std::map<Orientation, irt_int>>& routing_orien_supply_map)
+  {
+    _routing_orien_supply_map = routing_orien_supply_map;
+  }
+  void set_net_result_map(const std::map<irt_int, std::set<Segment<LayerCoord>*>>& net_result_map) { _net_result_map = net_result_map; }
+  void set_violation_set(const std::set<Violation*>& violation_set) { _violation_set = violation_set; }
+  void set_net_patch_map(const std::map<irt_int, std::set<EXTLayerRect*>>& net_patch_map) { _net_patch_map = net_patch_map; }
   // function
+  irt_int getSupply(irt_int layer_idx, Orientation orientation)
+  {
+    irt_int origin_supply = _routing_orien_supply_map[layer_idx][orientation];
+    return std::max(0, origin_supply - _deducted_supply);
+  }
 
  private:
-  GCellId _gcell_id;
   // blockage & pin_shape 如果是routing则true，cut则false
   std::map<bool, std::map<irt_int, std::map<irt_int, std::set<EXTLayerRect*>>>> _type_layer_net_fixed_rect_map;
   // access point 只有routing层有
   std::map<irt_int, std::set<AccessPoint*>> _net_access_point_map;
   // global supply 只有routing层有
-  std::map<irt_int, GlobalSupply*> _routing_global_supply_map;
+  std::map<irt_int, std::map<Orientation, irt_int>> _routing_orien_supply_map;
+  // 每层每个方向上扣除的supply根数，相比于比率更准确
+  irt_int _deducted_supply = 0;
   // routing result
   std::map<irt_int, std::set<Segment<LayerCoord>*>> _net_result_map;
   // violation region
