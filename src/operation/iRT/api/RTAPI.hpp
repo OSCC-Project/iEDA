@@ -32,15 +32,6 @@ namespace irt {
 
 #define RTAPI_INST (irt::RTAPI::getInst())
 
-enum class Tool
-{
-  kDetailedRouter,
-  kGlobalRouter,
-  kPinAccessor,
-  kResourceAllocator,
-  kTrackAssigner
-};
-
 class RTAPI
 {
  public:
@@ -50,8 +41,6 @@ class RTAPI
   // RT
   void initRT(std::map<std::string, std::any> config_map);
   void runRT();
-  void runRT(std::vector<Tool> tool_list);
-  Stage convertToStage(Tool tool);
   void destroyRT();
 
   // EGR

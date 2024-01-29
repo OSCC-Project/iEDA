@@ -24,7 +24,6 @@
 #include "GPLYPLayer.hpp"
 #include "GPPath.hpp"
 #include "GPStruct.hpp"
-#include "Stage.hpp"
 #include "GPDataType.hpp"
 
 namespace irt {

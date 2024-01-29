@@ -17,7 +17,6 @@
 #pragma once
 
 #include "RTU.hpp"
-#include "Stage.hpp"
 
 namespace irt {
 
@@ -76,8 +75,6 @@ class Config
   std::string gr_temp_directory_path;  // building
   // **********   PinAccessor     ********** //
   std::string pa_temp_directory_path;  // building
-  // ********   ResourceAllocator   ******** //
-  std::string ra_temp_directory_path;  // building
   // ********     SupplyAnalyzer    ******** //
   std::string sa_temp_directory_path;  // building
   // **********   TrackAssigner   ********** //

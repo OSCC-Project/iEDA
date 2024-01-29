@@ -41,29 +41,7 @@ unsigned TclRunRT::exec()
 
   std::map<std::string, std::any> config_map = TclUtil::getConfigMap(this, _config_list);
 
-  std::vector<irt::Tool> tool_list;
-  if (config_map.find("-flow") == config_map.end()) {
-    tool_list.push_back(irt::Tool::kPinAccessor);
-    tool_list.push_back(irt::Tool::kResourceAllocator);
-    tool_list.push_back(irt::Tool::kGlobalRouter);
-    tool_list.push_back(irt::Tool::kTrackAssigner);
-    tool_list.push_back(irt::Tool::kDetailedRouter);
-  } else {
-    for (std::string tool_name : std::any_cast<std::vector<std::string>>(config_map["-flow"])) {
-      if (tool_name == "pa") {
-        tool_list.push_back(irt::Tool::kPinAccessor);
-      } else if (tool_name == "ra") {
-        tool_list.push_back(irt::Tool::kResourceAllocator);
-      } else if (tool_name == "gr") {
-        tool_list.push_back(irt::Tool::kGlobalRouter);
-      } else if (tool_name == "ta") {
-        tool_list.push_back(irt::Tool::kTrackAssigner);
-      } else if (tool_name == "dr") {
-        tool_list.push_back(irt::Tool::kDetailedRouter);
-      }
-    }
-  }
-  RTAPI_INST.runRT(tool_list);
+  RTAPI_INST.runRT();
 
   iplf::flowConfigInst->add_status_runtime(stats.elapsedRunTime());
   iplf::flowConfigInst->set_status_memmory(stats.memoryDelta());

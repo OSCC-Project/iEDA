@@ -38,8 +38,6 @@ class Net
   // PinAccessor
   std::vector<Pin>& get_pin_list() { return _pin_list; }
   BoundingBox& get_bounding_box() { return _bounding_box; }
-  // ResourceAllocator
-  GridMap<double>& get_ra_cost_map() { return _ra_cost_map; }
   // GlobalRouter
   MTree<Guide>& get_gr_result_tree() { return _gr_result_tree; }
   // TrackAssigner
@@ -52,8 +50,6 @@ class Net
   // PinAccessor
   void set_pin_list(const std::vector<Pin>& pin_list) { _pin_list = pin_list; }
   void set_bounding_box(const BoundingBox& bounding_box) { _bounding_box = bounding_box; }
-  // ResourceAllocator
-  void set_ra_cost_map(const GridMap<double>& ra_cost_map) { _ra_cost_map = ra_cost_map; }
   // GlobalRouter
   void set_gr_result_tree(const MTree<Guide>& gr_result_tree) { _gr_result_tree = gr_result_tree; }
   // TrackAssigner
@@ -66,8 +62,6 @@ class Net
   // PinAccessor
   std::vector<Pin> _pin_list;
   BoundingBox _bounding_box;
-  // ResourceAllocator
-  GridMap<double> _ra_cost_map;
   // GlobalRouter
   MTree<Guide> _gr_result_tree;
   // TrackAssigner

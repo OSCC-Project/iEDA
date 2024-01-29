@@ -25,9 +25,7 @@
 #include "GlobalRouter.hpp"
 #include "Monitor.hpp"
 #include "PinAccessor.hpp"
-#include "ResourceAllocator.hpp"
 #include "SupplyAnalyzer.hpp"
-#include "Stage.hpp"
 #include "TimingEval.hpp"
 #include "TrackAssigner.hpp"
 #include "builder.h"
@@ -89,17 +87,13 @@ void RTAPI::runRT()
   SA_INST.analyze(net_list);
   SupplyAnalyzer::destroyInst();
 
-  // ResourceAllocator::initInst();
-  // RA_INST.allocate(net_list);
-  // ResourceAllocator::destroyInst();
+  // InitialRouting::initInst();
+  // IR_INST.route(net_list);
+  // InitialRouting::destroyInst();
 
-  // PlanarRouter::initInst();
-  // PR_INST.route(net_list);
-  // PlanarRouter::destroyInst();
-
-  // SpatialRouter::initInst();
-  // SR_INST.route(net_list);
-  // SpatialRouter::destroyInst();
+  // GlobalRouter::initInst();
+  // GR_INST.route(net_list);
+  // GlobalRouter::destroyInst();
 
   // TrackAssigner::initInst();
   // TA_INST.assign(net_list);
@@ -112,83 +106,6 @@ void RTAPI::runRT()
   LOG_INST.info(Loc::current(), "welcome to new RT!");
   LOG_INST.info(Loc::current(), "welcome to new RT!");
   LOG_INST.info(Loc::current(), "welcome to new RT!");
-}
-
-void RTAPI::runRT(std::vector<Tool> tool_list)
-{
-  std::set<Stage> stage_set;
-  for (Tool tool : tool_list) {
-    stage_set.insert(convertToStage(tool));
-  }
-  std::vector<Stage> stage_list
-      = {Stage::kNone,           Stage::kPinAccessor, Stage::kResourceAllocator, Stage::kGlobalRouter, Stage::kTrackAssigner,
-         Stage::kDetailedRouter, Stage::kNone};
-  irt_int stage_idx = 1;
-  while (!RTUtil::exist(stage_set, stage_list[stage_idx])) {
-    stage_idx++;
-  }
-  if (stage_list[stage_idx - 1] != Stage::kNone) {
-    DM_INST.load(stage_list[stage_idx - 1]);
-  }
-
-  std::vector<Net>& net_list = DM_INST.getDatabase().get_net_list();
-
-  while (RTUtil::exist(stage_set, stage_list[stage_idx])) {
-    switch (stage_list[stage_idx]) {
-      case Stage::kPinAccessor:
-        PinAccessor::initInst();
-        PA_INST.access(net_list);
-        PinAccessor::destroyInst();
-        break;
-      case Stage::kResourceAllocator:
-        // ResourceAllocator::initInst();
-        // RA_INST.allocate(net_list);
-        // ResourceAllocator::destroyInst();
-        break;
-      case Stage::kGlobalRouter:
-        GlobalRouter::initInst();
-        GR_INST.route(net_list);
-        GlobalRouter::destroyInst();
-        break;
-      case Stage::kTrackAssigner:
-        TrackAssigner::initInst();
-        TA_INST.assign(net_list);
-        TrackAssigner::destroyInst();
-        break;
-      case Stage::kDetailedRouter:
-        DetailedRouter::initInst();
-        DR_INST.route(net_list);
-        DetailedRouter::destroyInst();
-        break;
-      default:
-        break;
-    }
-    DM_INST.save(stage_list[stage_idx]);
-    stage_idx++;
-  }
-}
-
-Stage RTAPI::convertToStage(Tool tool)
-{
-  Stage stage = Stage::kNone;
-  switch (tool) {
-    case Tool::kPinAccessor:
-      stage = Stage::kPinAccessor;
-      break;
-    case Tool::kResourceAllocator:
-      stage = Stage::kResourceAllocator;
-      break;
-    case Tool::kGlobalRouter:
-      stage = Stage::kGlobalRouter;
-      break;
-    case Tool::kTrackAssigner:
-      stage = Stage::kTrackAssigner;
-      break;
-    case Tool::kDetailedRouter:
-      stage = Stage::kDetailedRouter;
-      break;
-  }
-  return stage;
 }
 
 void RTAPI::destroyRT()

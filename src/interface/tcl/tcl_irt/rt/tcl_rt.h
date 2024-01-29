@@ -45,20 +45,6 @@ class TclInitRT : public TclCmd
   std::vector<std::pair<std::string, ValueType>> _config_list;
 };
 
-class TclRunNewRT : public TclCmd
-{
- public:
-  explicit TclRunNewRT(const char* cmd_name);
-  ~TclRunNewRT() override = default;
-
-  unsigned check() override { return 1; };
-
-  unsigned exec() override;
-
- private:
-  std::vector<std::pair<std::string, ValueType>> _config_list;
-};
-
 class TclRunRT : public TclCmd
 {
  public:

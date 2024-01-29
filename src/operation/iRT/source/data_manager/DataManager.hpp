@@ -38,8 +38,8 @@ class DataManager
   // function
   void input(std::map<std::string, std::any>& config_map, idb::IdbBuilder* idb_builder);
   void output(idb::IdbBuilder* idb_builder);
-  void save(Stage stage);
-  void load(Stage stage);
+  // void save(Stage stage);
+  // void load(Stage stage);
 
 #if 1  // 有关GCellMap操作
   void updateFixedRectToGCellMap(ChangeType change_type, irt_int net_idx, EXTLayerRect* ext_layer_rect, bool is_routing);
@@ -158,7 +158,7 @@ class DataManager
   void outputNetList(idb::IdbBuilder* idb_builder);
 #endif
 
-#if 1  // save & load
+#if 0  // save & load
   void saveStageResult(Stage stage);
   std::tuple<std::string, std::string, std::set<std::string>, std::string> getHeadInfo(const std::string& stage);
   void loadStageResult(Stage stage);

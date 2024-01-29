@@ -131,7 +131,7 @@ GRNet GlobalRouter::convertToGRNet(Net& net)
   }
   // gr_net.set_gr_driving_pin(GRPin(net.get_driving_pin()));
   gr_net.set_bounding_box(net.get_bounding_box());
-  gr_net.set_ra_cost_map(net.get_ra_cost_map());
+  // gr_net.set_ra_cost_map(net.get_ra_cost_map());
   return gr_net;
 }
 

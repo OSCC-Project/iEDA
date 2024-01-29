@@ -76,25 +76,25 @@ void DataManager::output(idb::IdbBuilder* idb_builder)
   LOG_INST.info(Loc::current(), "End output!", monitor.getStatsInfo());
 }
 
-void DataManager::save(Stage stage)
-{
-  Monitor monitor;
-  LOG_INST.info(Loc::current(), "Begin saving...");
+// void DataManager::save(Stage stage)
+// {
+//   Monitor monitor;
+//   LOG_INST.info(Loc::current(), "Begin saving...");
 
-  saveStageResult(stage);
+//   saveStageResult(stage);
 
-  LOG_INST.info(Loc::current(), "End save!", monitor.getStatsInfo());
-}
+//   LOG_INST.info(Loc::current(), "End save!", monitor.getStatsInfo());
+// }
 
-void DataManager::load(Stage stage)
-{
-  Monitor monitor;
-  LOG_INST.info(Loc::current(), "Begin loading...");
+// void DataManager::load(Stage stage)
+// {
+//   Monitor monitor;
+//   LOG_INST.info(Loc::current(), "Begin loading...");
 
-  loadStageResult(stage);
+//   loadStageResult(stage);
 
-  LOG_INST.info(Loc::current(), "End load!", monitor.getStatsInfo());
-}
+//   LOG_INST.info(Loc::current(), "End load!", monitor.getStatsInfo());
+// }
 
 #if 1  // 更新GCellMap
 
@@ -1014,8 +1014,6 @@ void DataManager::buildConfig()
   _config.gr_temp_directory_path = _config.temp_directory_path + "global_router/";
   // **********   PinAccessor     ********** //
   _config.pa_temp_directory_path = _config.temp_directory_path + "pin_accessor/";
-  // ********   ResourceAllocator   ******** //
-  _config.ra_temp_directory_path = _config.temp_directory_path + "resource_allocator/";
   // ********     SupplyAnalyzer    ******** //
   _config.sa_temp_directory_path = _config.temp_directory_path + "supply_analyzer/";
   // **********   TrackAssigner   ********** //
@@ -1034,8 +1032,6 @@ void DataManager::buildConfig()
   RTUtil::createDir(_config.gr_temp_directory_path);
   // **********   PinAccessor     ********** //
   RTUtil::createDir(_config.pa_temp_directory_path);
-  // **********   ResourceAllocator     ********** //
-  RTUtil::createDir(_config.ra_temp_directory_path);
   // **********   SupplyAnalyzer     ********** //
   RTUtil::createDir(_config.sa_temp_directory_path);
   // **********   TrackAssigner   ********** //
@@ -1824,10 +1820,6 @@ void DataManager::printConfig()
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "PinAccessor");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), "pa_temp_directory_path");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(3), _config.pa_temp_directory_path);
-  // **********   ResourceAllocator   ********** //
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "ResourceAllocator");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), "ra_temp_directory_path");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(3), _config.ra_temp_directory_path);
   // **********   SupplyAnalyzer   ********** //
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "SupplyAnalyzer");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), "sa_temp_directory_path");
@@ -2032,7 +2024,7 @@ void DataManager::outputNetList(idb::IdbBuilder* idb_builder)
 
 #endif
 
-#if 1  // save & load
+#if 0  // save & load
 
 void DataManager::saveStageResult(Stage stage)
 {
