@@ -69,6 +69,55 @@ class Node {
   Point get_location() { return _pt; }
 
   bool operator==(const Node n2) { return this->_pt == n2._pt; }
+    int get_child_num() const {
+    return get_children().size();
+  }
+
+  vector<Node*> get_children() const {
+    vector<Node*> children;
+    if (!_first_child) {
+      return children;
+    }
+    children.push_back(_first_child);
+    auto first_child = get_first_child();
+    while (first_child->get_next_sibling()) {
+      first_child = first_child->get_next_sibling();
+      children.push_back(first_child);
+    }
+    return children;
+  }
+
+  void PrintRecursive(std::ostream& os) const {
+    vector<bool> prefix;  // prefix indicates whether an ancestor is a last child or not
+    PrintRecursiveHelp(os, prefix);
+  }
+
+  void PrintSingle(std::ostream& os) const {
+    int child_num = get_child_num();
+    os << "Node " << _id << ": " << _pt << ", " << child_num << " children";
+  }
+
+  void PrintRecursiveHelp(std::ostream &os, vector<bool> &prefix) const {
+    for (auto pre : prefix)
+      os << (pre ? "  |" : "   ");
+    if (!prefix.empty())
+      os << "-> ";
+    PrintSingle(os);
+    os << endl;
+    auto children = get_children();
+    if (children.size() > 0) {
+      prefix.push_back(true);
+      for (size_t i = 0; i < children.size() - 1; ++i) {
+        if (children[i])
+          children[i]->PrintRecursiveHelp(os, prefix);
+        else
+          os << "<null>" << endl;
+      }
+      prefix.back() = false;
+      children.back()->PrintRecursiveHelp(os, prefix);
+      prefix.pop_back();
+    }
+  }
 
  private:
   int   _neighbor = -1;
@@ -131,6 +180,11 @@ class RoutingTree {
   //   cluster_tree::BinaryTreeNode<cluster_tree::Point<int> *>* BTNode);
 
   static int _null_pt;
+  void Print(std::ostream& os = cout) const;
+  friend std::ostream& operator<<(std::ostream& os, const RoutingTree* tree) {
+    tree->Print(os);
+    return os;
+  }
 
  private:
   void insertTree(Node *father, Node *child);

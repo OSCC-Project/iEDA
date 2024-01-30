@@ -29,6 +29,10 @@ bool ExternalAPI::isSTAStarted()
   return staInst->isInitSTA();
 }
 
+void ExternalAPI::modifySTAOutputDir(std::string path){
+  staInst->setStaWorkDirectory(path);
+}
+
 void ExternalAPI::initSTA()
 {
   staInst->initSTA();
@@ -140,12 +144,12 @@ void ExternalAPI::destroyTimingEval()
  */
 std::vector<float> ExternalAPI::evalGRCong()
 {
-  // eval::EvalAPI& eval_api = eval::EvalAPI::initInst();
-  eval::EvalAPI& eval_api = EvalInst;
+  eval::EvalAPI& eval_api = eval::EvalAPI::initInst();
+  // eval::EvalAPI& eval_api = EvalInst;
   std::vector<float> gr_congestion;
   gr_congestion = eval_api.evalGRCong();
 
-  // eval::EvalAPI::destroyInst();
+  eval::EvalAPI::destroyInst();
 
   return gr_congestion;
 }
@@ -193,8 +197,7 @@ void ExternalAPI::destroyCongEval()
 
 std::vector<float> ExternalAPI::obtainPinDens(int32_t grid_cnt_x, int32_t grid_cnt_y)
 {
-  // eval::EvalAPI& eval_api = eval::EvalAPI::initInst();
-  eval::EvalAPI& eval_api = EvalInst;
+  eval::EvalAPI& eval_api = eval::EvalAPI::initInst();
   int32_t bin_cnt_x = grid_cnt_x;
   int32_t bin_cnt_y = grid_cnt_y;
 

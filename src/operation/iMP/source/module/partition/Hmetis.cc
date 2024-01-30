@@ -24,13 +24,11 @@
 
 #include "Logger.hpp"
 namespace imp {
-inline const std::string HMetis::khmetis_binary_path= HMETIS_BINARY;
-std::vector<size_t> HMetis::operator()(const std::vector<size_t>& eptr, const std::vector<size_t>& eind, size_t nparts,
-                                 const std::vector<int>& vwgts, const std::vector<int>& hewgts)
+inline const std::string HMetis::khmetis_binary_path = HMETIS_BINARY;
+std::vector<size_t> HMetis::operator()(const std::string name, const std::vector<size_t>& eptr, const std::vector<size_t>& eind,
+                                       size_t nparts, const std::vector<int>& vwgts, const std::vector<int>& hewgts)
 {
-  std::ostringstream oss;
-  oss << std::this_thread::get_id();
-  std::string hgraph_file_name{oss.str() + ".hgr"}; //using thread id for thread safe.
+  std::string hgraph_file_name{name + ".hgr"};  // using unique name for thread safe.
   std::ofstream hgraph_file(hgraph_file_name);
 
   size_t num_hedges = eptr.size() - 1;
@@ -82,12 +80,14 @@ std::vector<size_t> HMetis::operator()(const std::vector<size_t>& eptr, const st
 
   command += " -seed=" + std::to_string(seed);
   command += " -dbglvl=" + std::to_string(dbglvl);
-  INFO("Starting hmetis partition ...");
-  INFO(command);
+
+  std::string report_file = name + ".hmetis.rpt";
+  command += " > " + report_file;
+  INFO("Using hmetis to partition ", name, "...");
   int status = system(command.c_str());
 
   if (-1 != status && WIFEXITED(status) && 0 == WEXITSTATUS(status)) {
-    INFO("hmetis partition succeed..");
+    INFO(name, " is partitioned successfully.");
   } else {
     ERROR("hmetis partition fail, system return ", status);
     return {};
@@ -102,9 +102,11 @@ std::vector<size_t> HMetis::operator()(const std::vector<size_t>& eptr, const st
     parts[i] = part_id;
   }
   result_file.close();
-
+#ifdef RELEASE_MOD
   std::filesystem::remove(hgraph_file_name);
   std::filesystem::remove(solution_file);
+  std::filesystem::remove(report_file);
+#endif
   return parts;
 }
 }  // namespace imp

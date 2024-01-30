@@ -84,7 +84,12 @@ void PLAPI::initAPI(std::string pl_json_path, idb::IdbBuilder* idb_builder)
 {
   char config[] = "info_ipl_glog";
   char* argv[] = {config};
-  Log::init(argv);
+
+  std::string home_path = "./result/pl/log/";
+  // std::string design_name = idb_builder->get_def_service()->get_design()->get_design_name();
+  // std::string home_path = "./evaluation_task/benchmark/" + design_name + "/pl_reports/";
+
+  Log::init(argv,home_path);
   IDBWrapper* idb_wrapper = new IDBWrapper(idb_builder);
   PlacerDBInst.initPlacerDB(pl_json_path, idb_wrapper);
 
@@ -111,6 +116,12 @@ void PLAPI::initAPI(std::string pl_json_path, idb::IdbBuilder* idb_builder)
       LOG_INFO << "Try to apply to start iSTA";
       // apply to start sta
       this->initSTA();
+
+      // tmp for evalution.
+      // std::string design_name = PlacerDBInst.get_design()->get_design_name();
+      // std::string sta_path = "./evaluation_task/benchmark/" + design_name + "/sta_reports/sta";
+      // this->modifySTAOutputDir(sta_path);
+
       this->updateSTATiming();
       this->initTimingEval();
     }
@@ -332,8 +343,10 @@ void PLAPI::runFlow()
 
 void PLAPI::insertLayoutFiller()
 {
+  notifyPLOriginInfo();
   MapFiller(&PlacerDBInst, PlacerDBInst.get_placer_config()).mapFillerCell();
   PlacerDBInst.updateGridManager();
+  _reporter->reportEDAFillerEvaluation();
   reportPLInfo();
   reportLayoutWhiteInfo();
   writeBackSourceDataBase();
@@ -419,6 +432,9 @@ void PLAPI::notifyPLWLInfo(int stage)
 
 void PLAPI::notifyPLCongestionInfo(int stage)
 {
+  // special operator
+  _external_api->destroyCongEval();
+
   this->writeBackSourceDataBase();
   
   std::vector<float> gr_congestion = this->evalGRCong(); // return <ACE, TOF, MOF, egr-Wirelength>
@@ -429,6 +445,9 @@ void PLAPI::notifyPLCongestionInfo(int stage)
   int32_t grid_cnt_y = PlacerDBInst.get_placer_config()->get_nes_config().get_bin_cnt_y();
   std::vector<float> pin_dens = this->obtainPinDens(grid_cnt_x, grid_cnt_y); // return <average, peak> , average = sum / bin_cnt, peak = max / average
   PlacerDBInst.pin_density[stage] = pin_dens[1];
+
+  // special operator
+  _external_api->initTimingEval(PlacerDBInst.get_layout()->get_database_unit());
 }
 
 void PLAPI::notifyPLTimingInfo(int stage)
@@ -450,6 +469,14 @@ void PLAPI::notifySTAUpdateTimingRuntime(){
   _external_api->updateSTATiming();
   double time_delta = sta_status.elapsedRunTime();
   PlacerDBInst.sta_update_time = time_delta;
+}
+
+void PLAPI::notifyPLOriginInfo(){
+  PlacerDBInst.init_inst_cnt = PlacerDBInst.get_design()->get_instance_list().size();
+}
+
+void PLAPI::modifySTAOutputDir(std::string path){
+  _external_api->modifySTAOutputDir(path);
 }
 
 void PLAPI::initSTA()
@@ -632,6 +659,9 @@ void PLAPI::reportPLInfo()
   ieda::Stats report_status;
 
   std::string output_dir = "./result/pl/report/";
+
+  // std::string design_name = PlacerDBInst.get_design()->get_design_name();
+  // std::string output_dir = "./evaluation_task/benchmark/" + design_name + "/pl_reports/";
 
   std::string summary_file = "summary_report.txt";
   std::ofstream summary_stream;

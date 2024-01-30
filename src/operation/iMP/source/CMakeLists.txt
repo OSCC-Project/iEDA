@@ -16,6 +16,7 @@ target_link_libraries(imp_source
     PUBLIC
     imp-datamanager
     imp-operator
+    imp-logger
 )
 
 target_include_directories(imp_source

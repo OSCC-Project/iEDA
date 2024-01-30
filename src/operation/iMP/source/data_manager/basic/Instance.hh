@@ -47,7 +47,12 @@ class Instance final : public Object
   virtual geo::box<int32_t> boundingbox() const override { return Object::transform(_cell->get_shape()); }
 
   // setter
-  void set_cell_master(std::shared_ptr<Cell> cell) { _cell = cell; }
+  void set_cell_master(std::shared_ptr<Cell> cell)
+  {
+    _cell = cell;
+    _init_cell_area();
+    _init_shape_curve();
+  }
   void set_type(INSTANCE_TYPE type) { _type = type; }
   void set_state(INSTANCE_STATE state) { _state = state; }
   void set_extend_left(int32_t value) { _extend_left = value; }
@@ -58,6 +63,8 @@ class Instance final : public Object
   void set_extend(int32_t, int32_t, int32_t, int32_t);
 
   // getter
+  double get_area() const { return double(geo::width(_cell->get_shape())) * geo::height(_cell->get_shape()); }
+  const Cell& get_cell_master() const { return *_cell; }
   const int32_t get_extend_left() const { return _extend_left; }
   const int32_t get_extend_right() const { return _extend_right; }
   const int32_t get_extend_top() const { return _extend_top; }
@@ -78,11 +85,24 @@ class Instance final : public Object
   INSTANCE_TYPE _type;
   INSTANCE_STATE _state;
   std::shared_ptr<Cell> _cell;
+  void _init_cell_area()
+  {
+    double area = get_area();
+    // set _macro_area && stdcell area at intializing
+    if (_cell->isMacro()) {
+      _macro_area = area;
+    } else {
+      _stdcell_area = area;
+    }
+  }
+  void _init_shape_curve() { set_shape_curve(_cell->get_shape()); }
 };
 
 inline Instance::Instance(std::string name, std::shared_ptr<Cell> cell, std::shared_ptr<Object> parent)
     : Object::Object(name, parent), _cell(cell)
 {
+  _init_cell_area();
+  _init_shape_curve();
 }
 inline void Instance::set_extend(int32_t left, int32_t right, int32_t bottom, int32_t top)
 {

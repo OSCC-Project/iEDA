@@ -36,6 +36,7 @@ class ExternalAPI
 
   /*****************************Timing Interface: START*****************************/
   bool isSTAStarted();
+  void modifySTAOutputDir(std::string path);
   void initSTA();
   void updateSTATiming();
   std::vector<std::string> obtainClockNameList();

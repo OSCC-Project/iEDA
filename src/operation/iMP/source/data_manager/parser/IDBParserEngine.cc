@@ -108,7 +108,7 @@ void IDBParser::initNetlist()
   _idb_layout = idb_def_service->get_layout();
   _idb_design = idb_def_service->get_design();
   _design = std::make_shared<Block>(_idb_design->get_design_name(), std::make_shared<Netlist>(transform(_idb_layout)));
-  _design->set_shape(_design->netlist().property()->get_die_shape());
+  _design->set_shape_curve(_design->netlist().property()->get_die_shape());
   initRows();
   initCells();
 
@@ -125,6 +125,9 @@ void IDBParser::initNetlist()
 
   // Init nets
   for (auto* idb_net : _idb_design->get_net_list()->get_net_list()) {
+    if (idb_net->is_clock() || idb_net->is_pdn() || idb_net->is_power() || idb_net->is_ground() || idb_net->get_pin_number() > 300) {
+      continue;
+    }
     std::vector<std::shared_ptr<Pin>> pins;
     std::vector<size_t> inst_pos;
     for (auto* idb_pin : idb_net->get_instance_pin_list()->get_pin_list()) {
@@ -142,7 +145,9 @@ void IDBParser::initNetlist()
         inst_pos.push_back(pos);
       }
     }
-    add_net(_design->netlist(), inst_pos, pins, transform(idb_net));
+    if (!pins.empty()) {
+      add_net(_design->netlist(), inst_pos, pins, transform(idb_net));
+    }
   }
 }
 

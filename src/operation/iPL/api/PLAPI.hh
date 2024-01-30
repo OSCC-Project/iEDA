@@ -81,6 +81,7 @@ class PLAPI
   void notifyPLTimingInfo(int stage);
   void notifySTAUpdateTimingRuntime();
   void notifyPLCongestionInfo(int stage);
+  void notifyPLOriginInfo();
 
   bool isSTAStarted();
   bool isPlacerDBStarted();
@@ -97,6 +98,7 @@ class PLAPI
   void plotModuleListForDebug(std::vector<std::string> module_prefix_list, std::string path);
   void plotModuleStateForDebug(std::vector<std::string> special_inst_list, std::string path);
 
+  void modifySTAOutputDir(std::string path);
   void initSTA();
   void updateSTATiming();
   std::vector<std::string> obtainClockNameList();

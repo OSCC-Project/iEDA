@@ -62,7 +62,7 @@ bool PlacerIO::runPlacement(std::string config)
   flowConfigInst->add_status_runtime(stats.elapsedRunTime());
   flowConfigInst->set_status_memmory(stats.memoryDelta());
 
-  destroyPlacer();
+  // destroyPlacer();
 
   return true;
 }

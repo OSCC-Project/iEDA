@@ -97,66 +97,46 @@ void IdbViaMasterRulePattern::parse_pattern_row_value(size_t row_index, string v
     return;
   }
 
-  /// if first charactor is 'R', using repeat value to fill the array
-  if (is_repeat(value)) {
-    parse_pattern_row_repeat_value(row_index, value);
-  } else {
-    parse_pattern_row_nonrepeate_value(row_index, value);
-  }
-}
-/**
- * @Brief : if first charactor is 'R', parse the value in row_index
- * @param  row_index
- * @param  value
- */
-void IdbViaMasterRulePattern::parse_pattern_row_repeat_value(int row_index, string value)
-{
-  char repeat_value_char = value.back();
-  int8_t repeat_value = hexString2Int(string(1, repeat_value_char));
-
-  size_t col_index = 0;
-  while (col_index < _col_num) {
-    _pattern_state[row_index][col_index] = getBitVaule(repeat_value, 3);
-    _pattern_state[row_index][col_index + 1] = getBitVaule(repeat_value, 2);
-    _pattern_state[row_index][col_index + 2] = getBitVaule(repeat_value, 1);
-    _pattern_state[row_index][col_index + 3] = getBitVaule(repeat_value, 0);
-
-    col_index += repeat_unit_len;
-  }
-}
-/**
- * @Brief : parse normal value for pattern array in row index
- * @param  row_index
- * @param  value
- */
-void IdbViaMasterRulePattern::parse_pattern_row_nonrepeate_value(int row_index, string value)
-{
-  size_t col_index = 0;
-  size_t str_index = 0;
+  int col_index = 0;
+  int str_index = 0;
   bool b_result = true;
-  while (col_index < _col_num) {
-    if (b_result) {
-      while (str_index < value.length()) {
-        /// each charactor size = 4, so set each charactor value to pattern state array in space 4
-        char repeat_value_char = value.at(str_index);
-        int8_t char_value = hexString2Int(string(1, repeat_value_char));
+  while (b_result && str_index < value.length()) {
+    char char_value = value.at(str_index);
+    /// repeat value
+    if (repeat_flag == char_value) {
+      /// get number
+      str_index++;
+      char char_number = value.at(str_index);
+      int repeat_num = hexString2Int(string(1, char_number));
 
-        /// get bit value from high to low
-        b_result &= set_pattern_value(row_index, col_index++, getBitVaule(char_value, 3));
-        b_result &= set_pattern_value(row_index, col_index++, getBitVaule(char_value, 2));
-        b_result &= set_pattern_value(row_index, col_index++, getBitVaule(char_value, 1));
-        b_result &= set_pattern_value(row_index, col_index++, getBitVaule(char_value, 0));
-
-        if (!b_result) {
-          break;
-        }
-
-        str_index++;
+      /// get value
+      str_index++;
+      char repeat_value = value.at(str_index);
+      for (int i = 0; i < repeat_num; i++) {
+        b_result &= save_pattern_value(repeat_value, row_index, col_index);
       }
+
+      str_index++;
     } else {
-      set_pattern_value(row_index, col_index++, 0);
+      b_result &= save_pattern_value(char_value, row_index, col_index);
+      str_index++;
     }
   }
+
+  int a = 0;
+}
+
+bool IdbViaMasterRulePattern::save_pattern_value(char value, int row_index, int& col_index)
+{
+  bool b_result = true;
+
+  int8_t bits_value = hexString2Int(string(1, value));
+  b_result &= set_pattern_value(row_index, col_index++, getBitVaule(bits_value, 3));
+  b_result &= set_pattern_value(row_index, col_index++, getBitVaule(bits_value, 2));
+  b_result &= set_pattern_value(row_index, col_index++, getBitVaule(bits_value, 1));
+  b_result &= set_pattern_value(row_index, col_index++, getBitVaule(bits_value, 0));
+
+  return b_result;
 }
 
 /**

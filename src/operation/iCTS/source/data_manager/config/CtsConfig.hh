@@ -91,7 +91,7 @@ class CtsConfig
   const double& get_global_latency_opt_ratio() const { return _global_latency_opt_ratio; }
   const double& get_local_latency_opt_ratio() const { return _local_latency_opt_ratio; }
   // file
-  const std::string& get_sta_workspace() const { return _sta_workspace; }
+  const std::string& get_work_dir() const { return _work_dir; }
   const std::string& get_output_def_path() const { return _output_def_path; }
   const std::string& get_log_file() const { return _log_file; }
   const std::string& get_gds_file() const { return _gds_file; }
@@ -133,7 +133,7 @@ class CtsConfig
   void set_local_latency_opt_ratio(const double& local_latency_opt_ratio) { _local_latency_opt_ratio = local_latency_opt_ratio; }
 
   // file
-  void set_sta_workspace(const std::string& sta_workspace) { _sta_workspace = sta_workspace; }
+  void set_work_dir(const std::string& work_dir) { _work_dir = work_dir; }
   void set_output_def_path(const std::string& output_def_path) { _output_def_path = output_def_path; }
   void set_log_file(const std::string& file) { _log_file = file; }
   void set_gds_file(const std::string& file) { _gds_file = file; }
@@ -245,10 +245,10 @@ class CtsConfig
   double _local_latency_opt_ratio = 0.4;
 
   // file
-  std::string _sta_workspace = "./result/cts";
-  std::string _output_def_path = "./result/cts";
+  std::string _work_dir = "./result/cts";
+  std::string _output_def_path = "./result/cts/output";
   std::string _log_file = "./result/cts/cts.log";
-  std::string _gds_file = "./result/cts/cts.gds";
+  std::string _gds_file = "./result/cts/output/cts.gds";
 
   std::string _use_netlist = "OFF";
   std::vector<std::pair<std::string, std::string>> _net_list;

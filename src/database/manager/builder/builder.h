@@ -43,8 +43,8 @@
 #include "def_read.h"
 #include "def_service.h"
 #include "def_write.h"
-#include "json_write.h"
 #include "gds_write.h"
+#include "json_write.h"
 #include "lef_read.h"
 #include "lef_service.h"
 #include "verilog_read.h"
@@ -78,7 +78,7 @@ class IdbBuilder
   bool saveDef(string file, DefWriteType type = DefWriteType::kChip);
   void saveVerilog(std::string verilog_file_name, std::set<std::string>& exclude_cell_names);
   bool saveGDSII(string file);
-  bool saveJSON(string file,string options);
+  bool saveJSON(string file, string options);
 
   // Write layout
   void saveLayout(string folder);
@@ -128,6 +128,8 @@ class IdbBuilder
   IdbDefService* _def_service = nullptr;
   IdbLefService* _lef_service = nullptr;
   //   std::shared_ptr<IdbDataService> _data_service;
+
+  void checkNetPins();
 };
 
 }  // namespace idb

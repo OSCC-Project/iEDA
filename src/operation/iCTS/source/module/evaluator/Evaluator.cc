@@ -35,6 +35,181 @@ void Evaluator::init()
   transferData();
 }
 
+void Evaluator::calcInfo()
+{
+  if (_have_calc) {
+    return;
+  }
+  // wirelength distribution
+  calcWL();
+
+  // depth statistics(level, num) need to build tree
+  // TBD
+
+  // lib cell distribution(Name, Type, Inst Count, Inst Area)
+  calcCellDist();
+
+  // cell stats(Cell type, Count, Area, Capacitance)
+  calcCellStats();
+
+  // net level distribution(Level, Num)
+  calcNetLevel();
+
+  // path info
+  calcPathBufStats();
+
+  _have_calc = true;
+}
+
+void Evaluator::calcWL()
+{
+  for (const auto& eval_net : _eval_nets) {
+    auto* design = CTSAPIInst.get_design();
+    // wire length
+    auto* net = design->findSolverNet(eval_net.get_name());
+    if (!net) {
+      continue;
+    }
+    auto* driver_pin = net->get_driver_pin();
+    double net_len = driver_pin->get_sub_len();
+
+    double hpwl_net_len = eval_net.getHPWL();
+    auto type = eval_net.netType();
+    switch (type) {
+      case NetType::kTop:
+        _top_wire_len += net_len;
+        _hpwl_top_wire_len += hpwl_net_len;
+        break;
+      case NetType::kTrunk:
+        _trunk_wire_len += net_len;
+        _hpwl_trunk_wire_len += hpwl_net_len;
+        break;
+      case NetType::kLeaf:
+        _leaf_wire_len += net_len;
+        _hpwl_leaf_wire_len += hpwl_net_len;
+        break;
+      default:
+        break;
+    }
+    _total_wire_len += net_len;
+    _hpwl_total_wire_len += hpwl_net_len;
+    _max_net_len = std::max(_max_net_len, net_len);
+    _hpwl_max_net_len = std::max(_hpwl_max_net_len, hpwl_net_len);
+  }
+}
+
+void Evaluator::calcCellDist()
+{
+  for (const auto& eval_net : _eval_nets) {
+    auto* design = CTSAPIInst.get_design();
+    // wire length
+    auto* net = design->findSolverNet(eval_net.get_name());
+    if (!net) {
+      continue;
+    }
+
+    if (eval_net.is_newly()) {
+      // cell count
+      auto cell_master = eval_net.get_driver()->get_cell_master();
+      if (_cell_dist_map.count(cell_master) == 0) {
+        _cell_dist_map[cell_master] = 1;
+      } else {
+        _cell_dist_map[cell_master]++;
+      }
+    }
+  }
+}
+
+void Evaluator::calcCellStats()
+{
+  for (auto [cell_master, count] : _cell_dist_map) {
+    auto cell_type = CTSAPIInst.getCellType(cell_master);
+    auto cell_area = CTSAPIInst.getCellArea(cell_master);
+    auto cell_cap = CTSAPIInst.getCellCap(cell_master);
+    if (_cell_stats_map.count(cell_type) == 0) {
+      _cell_stats_map[cell_type] = {count, cell_area * count, cell_cap * count};
+    } else {
+      _cell_stats_map[cell_type].total_num += count;
+      _cell_stats_map[cell_type].total_area += cell_area * count;
+      _cell_stats_map[cell_type].total_cap += cell_cap * count;
+    }
+  }
+}
+
+void Evaluator::calcNetLevel()
+{
+  for (auto eval_net : _eval_nets) {
+    if (!eval_net.is_newly()) {
+      continue;
+    }
+    auto* driver = eval_net.get_driver();
+    if (_net_level_map.count(driver->get_level()) == 0) {
+      _net_level_map[driver->get_level()] = 1;
+    } else {
+      _net_level_map[driver->get_level()]++;
+    }
+  }
+}
+
+void Evaluator::calcPathBufStats()
+{
+  _path_infos.clear();
+  std::unordered_map<std::string, TreeNode*> name_to_node;
+  auto gen_node = [&](CtsInstance* inst) {
+    if (name_to_node.count(inst->get_name()) == 0) {
+      name_to_node[inst->get_name()] = new TreeNode{inst->get_name(), 0, {}};
+    }
+    return name_to_node[inst->get_name()];
+  };
+
+  auto* design = CTSAPIInst.get_design();
+  auto& clk_nets = design->get_nets();
+  for (auto clk_net : clk_nets) {
+    auto* driver = clk_net->get_driver_inst();
+    auto* driver_node = gen_node(driver);
+    auto loads = clk_net->get_load_insts();
+    for (auto load : loads) {
+      auto* load_node = gen_node(load);
+      driver_node->children.emplace_back(load_node);
+      load_node->parent = driver_node;
+    }
+  }
+  // find root
+  std::vector<TreeNode*> roots;
+  for (auto [_, node] : name_to_node) {
+    if (node->parent == nullptr) {
+      node->depth = 0;
+      roots.emplace_back(node);
+    }
+  }
+  // set depth
+  std::function<void(TreeNode*)> set_depth = [&](TreeNode* node) {
+    for (auto child : node->children) {
+      child->depth = node->depth + 1;
+      set_depth(child);
+    }
+  };
+  std::ranges::for_each(roots, set_depth);
+  std::ranges::for_each(roots, [&](TreeNode* root) {
+    // find min and max depth of leaf
+    int min_depth = std::numeric_limits<int>::max();
+    int max_depth = 0;
+    std::function<void(TreeNode*)> find_depth = [&](TreeNode* node) {
+      if (node->children.empty()) {
+        min_depth = std::min(min_depth, node->depth);
+        max_depth = std::max(max_depth, node->depth);
+      } else {
+        for (auto child : node->children) {
+          find_depth(child);
+        }
+      }
+    };
+    find_depth(root);
+    auto path_info = PathInfo{root->name, max_depth == 0 ? 0 : min_depth, max_depth};
+    _path_infos.emplace_back(path_info);
+  });
+}
+
 void Evaluator::printLog()
 {
   LOG_INFO << "\033[1;31m";
@@ -99,6 +274,18 @@ void Evaluator::recursiveSetLevel(CtsNet* net) const
   driver->set_level(max_level + 1);
 }
 
+void Evaluator::pathLevelLog() const
+{
+  CTSAPIInst.logTitle("Summary of Path Level");
+
+  std::ranges::for_each(_path_infos, [](PathInfo info) {
+    CTSAPIInst.saveToLog("Root: ", info.root_name);
+    CTSAPIInst.saveToLog("\tClock Path Min num of Buffers: ", info.min_depth);
+    CTSAPIInst.saveToLog("\tClock Path Max num of Buffers: ", info.max_depth);
+  });
+  CTSAPIInst.logEnd();
+}
+
 void Evaluator::evaluate()
 {
   CTSAPIInst.refresh();
@@ -108,78 +295,30 @@ void Evaluator::evaluate()
   CTSAPIInst.reportTiming();
 }
 
-void Evaluator::statistics(const std::string& save_dir) const
+void Evaluator::statistics(const std::string& save_dir)
 {
+  if (!_have_calc) {
+    calcInfo();
+  }
+
   auto* config = CTSAPIInst.get_config();
-  auto dir = (save_dir == "" ? config->get_sta_workspace() : save_dir) + "/statistics";
+  auto dir = (save_dir == "" ? config->get_work_dir() : save_dir) + "/statistics";
   // wirelength statistics(type: total, top, trunk, leaf, total certer dist,
   // max)
   auto wl_rpt = CtsReportTable::createReportTable("Wire length stats", CtsReportType::kWireLength);
+
+  (*wl_rpt) << "Top" << Str::printf("%.3f", _top_wire_len) << TABLE_ENDLINE;
+  (*wl_rpt) << "Trunk" << Str::printf("%.3f", _trunk_wire_len) << TABLE_ENDLINE;
+  (*wl_rpt) << "Leaf" << Str::printf("%.3f", _leaf_wire_len) << TABLE_ENDLINE;
+  (*wl_rpt) << "Total" << Str::printf("%.3f", _total_wire_len) << TABLE_ENDLINE;
+  (*wl_rpt) << "Max net length" << Str::printf("%.3f", _max_net_len) << TABLE_ENDLINE;
+
   auto hpwl_wl_rpt = CtsReportTable::createReportTable("HPWL Wire length stats", CtsReportType::kHpWireLength);
-  std::map<std::string, int> cell_count_map;
-  double top_wire_len = 0.0;
-  double trunk_wire_len = 0.0;
-  double leaf_wire_len = 0.0;
-  double total_wire_len = 0.0;
-  double max_net_len = 0.0;
-  double hpwl_top_wire_len = 0.0;
-  double hpwl_trunk_wire_len = 0.0;
-  double hpwl_leaf_wire_len = 0.0;
-  double hpwl_total_wire_len = 0.0;
-  double hpwl_max_net_len = 0.0;
-  for (const auto& eval_net : _eval_nets) {
-    auto* design = CTSAPIInst.get_design();
-    // wire length
-    auto* net = design->findSolverNet(eval_net.get_name());
-    if (!net) {
-      continue;
-    }
-    auto* driver_pin = net->get_driver_pin();
-    double net_len = driver_pin->get_sub_len();
-
-    double hpwl_net_len = eval_net.getHPWL();
-    auto type = eval_net.netType();
-    switch (type) {
-      case NetType::kTop:
-        top_wire_len += net_len;
-        hpwl_top_wire_len += hpwl_net_len;
-        break;
-      case NetType::kTrunk:
-        trunk_wire_len += net_len;
-        hpwl_trunk_wire_len += hpwl_net_len;
-        break;
-      case NetType::kLeaf:
-        leaf_wire_len += net_len;
-        hpwl_leaf_wire_len += hpwl_net_len;
-        break;
-      default:
-        break;
-    }
-    total_wire_len += net_len;
-    hpwl_total_wire_len += hpwl_net_len;
-    max_net_len = std::max(max_net_len, net_len);
-    hpwl_max_net_len = std::max(hpwl_max_net_len, hpwl_net_len);
-    if (eval_net.is_newly()) {
-      // cell count
-      auto cell_master = eval_net.get_driver()->get_cell_master();
-      if (cell_count_map.count(cell_master) == 0) {
-        cell_count_map[cell_master] = 1;
-      } else {
-        cell_count_map[cell_master]++;
-      }
-    }
-  }
-  (*wl_rpt) << "Top" << Str::printf("%.3f", top_wire_len) << TABLE_ENDLINE;
-  (*wl_rpt) << "Trunk" << Str::printf("%.3f", trunk_wire_len) << TABLE_ENDLINE;
-  (*wl_rpt) << "Leaf" << Str::printf("%.3f", leaf_wire_len) << TABLE_ENDLINE;
-  (*wl_rpt) << "Total" << Str::printf("%.3f", total_wire_len) << TABLE_ENDLINE;
-  (*wl_rpt) << "Max net length" << Str::printf("%.3f", max_net_len) << TABLE_ENDLINE;
-
-  (*hpwl_wl_rpt) << "Top" << Str::printf("%.3f", hpwl_top_wire_len) << TABLE_ENDLINE;
-  (*hpwl_wl_rpt) << "Trunk" << Str::printf("%.3f", hpwl_trunk_wire_len) << TABLE_ENDLINE;
-  (*hpwl_wl_rpt) << "Leaf" << Str::printf("%.3f", hpwl_leaf_wire_len) << TABLE_ENDLINE;
-  (*hpwl_wl_rpt) << "Total" << Str::printf("%.3f", hpwl_total_wire_len) << TABLE_ENDLINE;
-  (*hpwl_wl_rpt) << "Max net length" << Str::printf("%.3f", hpwl_max_net_len) << TABLE_ENDLINE;
+  (*hpwl_wl_rpt) << "Top" << Str::printf("%.3f", _hpwl_top_wire_len) << TABLE_ENDLINE;
+  (*hpwl_wl_rpt) << "Trunk" << Str::printf("%.3f", _hpwl_trunk_wire_len) << TABLE_ENDLINE;
+  (*hpwl_wl_rpt) << "Leaf" << Str::printf("%.3f", _hpwl_leaf_wire_len) << TABLE_ENDLINE;
+  (*hpwl_wl_rpt) << "Total" << Str::printf("%.3f", _hpwl_total_wire_len) << TABLE_ENDLINE;
+  (*hpwl_wl_rpt) << "Max net length" << Str::printf("%.3f", _hpwl_max_net_len) << TABLE_ENDLINE;
 
   auto wl_save_path = dir + "/wire_length.rpt";
   CTSAPIInst.checkFile(dir, "wire_length");
@@ -187,31 +326,13 @@ void Evaluator::statistics(const std::string& save_dir) const
   wl_save_file << "Generate the report at " << Time::getNowWallTime() << std::endl;
   wl_save_file << wl_rpt->c_str() << "\n\n";
   wl_save_file << hpwl_wl_rpt->c_str();
+
   // depth statistics(level, num) need to build tree
   // TBD
 
   // cell stats(Cell type, Count, Area, Capacitance)
   auto cell_stats_rpt = CtsReportTable::createReportTable("Cell stats", CtsReportType::kCellStatus);
-  struct CellStatsProperty
-  {
-    int total_num;
-    double total_area;
-    double total_cap;
-  };
-  std::map<std::string, CellStatsProperty> cell_property_map;
-  for (auto [cell_master, count] : cell_count_map) {
-    auto cell_type = CTSAPIInst.getCellType(cell_master);
-    auto cell_area = CTSAPIInst.getCellArea(cell_master);
-    auto cell_cap = CTSAPIInst.getCellCap(cell_master);
-    if (cell_property_map.count(cell_type) == 0) {
-      cell_property_map[cell_type] = {count, cell_area * count, cell_cap * count};
-    } else {
-      cell_property_map[cell_type].total_num += count;
-      cell_property_map[cell_type].total_area += cell_area * count;
-      cell_property_map[cell_type].total_cap += cell_cap * count;
-    }
-  }
-  for (auto [type, cell_property] : cell_property_map) {
+  for (auto [type, cell_property] : _cell_stats_map) {
     (*cell_stats_rpt) << type << cell_property.total_num << cell_property.total_area << cell_property.total_cap << TABLE_ENDLINE;
   }
   auto cell_stats_save_path = dir + "/cell_stats.rpt";
@@ -222,7 +343,7 @@ void Evaluator::statistics(const std::string& save_dir) const
 
   // lib cell distribution(Name, Type, Inst Count, Inst Area)
   auto lib_cell_dist_rpt = CtsReportTable::createReportTable("Library cell distribution", CtsReportType::kLibCellDist);
-  for (auto [cell_master, count] : cell_count_map) {
+  for (auto [cell_master, count] : _cell_dist_map) {
     (*lib_cell_dist_rpt) << cell_master << CTSAPIInst.getCellType(cell_master) << count << count * CTSAPIInst.getCellArea(cell_master)
                          << TABLE_ENDLINE;
   }
@@ -234,23 +355,11 @@ void Evaluator::statistics(const std::string& save_dir) const
 
   // net level distribution(Level, Num)
   auto net_level_rpt = CtsReportTable::createReportTable("Net level distribution", CtsReportType::kNetLevel);
-  std::map<int, int> net_level_map;
   int all_num = 0;
-  for (auto eval_net : _eval_nets) {
-    if (!eval_net.is_newly()) {
-      continue;
-    }
-    auto* driver = eval_net.get_driver();
-    if (net_level_map.count(driver->get_level()) == 0) {
-      net_level_map[driver->get_level()] = 1;
-    } else {
-      net_level_map[driver->get_level()]++;
-    }
-  }
-  for (auto [_, num] : net_level_map) {
+  for (auto [_, num] : _net_level_map) {
     all_num += num;
   }
-  for (auto [level, num] : net_level_map) {
+  for (auto [level, num] : _net_level_map) {
     (*net_level_rpt) << level << num << 1.0 * num / all_num << TABLE_ENDLINE;
   }
   auto net_level_save_path = dir + "/net_level.rpt";
@@ -260,44 +369,29 @@ void Evaluator::statistics(const std::string& save_dir) const
   net_level_save_file << net_level_rpt->c_str();
 
   // evaluate design
-  CTSAPIInst.saveToLog("\n\n############Evaluate design INFO############");
-
   CTSAPIInst.latencySkewLog();
   CTSAPIInst.utilizationLog();
 
-  CTSAPIInst.saveToLog("\n\n##Buffering (net) Log##\n");
-  for (auto [type, cell_property] : cell_property_map) {
-    CTSAPIInst.saveToLog("Cell type: ", type, ", Count: ", cell_property.total_num, ", Area: ", cell_property.total_area,
-                         ", Capacitance: ", cell_property.total_cap);
+  CTSAPIInst.logTitle("Summary of Buffering (net)");
+  CTSAPIInst.saveToLog("--Cell Stats--");
+  CTSAPIInst.saveToLog(cell_stats_rpt->c_str());
+  if (_cell_stats_map.empty()) {
+    CTSAPIInst.saveToLog("#No buffer is used#");
   }
-  if (cell_property_map.empty()) {
-    CTSAPIInst.saveToLog("[No buffer is used]");
-  }
-  int min_level = std::numeric_limits<int>::max();
-  int max_level = 0;
-  std::ranges::for_each(_eval_nets, [&](const EvalNet& eval_net) {
-    auto net_type = eval_net.netType();
-    if (net_type == NetType::kLeaf) {
-      auto level = eval_net.get_driver()->get_level();
-      min_level = std::min(level, min_level);
-      max_level = std::max(level, max_level);
-    }
-  });
-  CTSAPIInst.saveToLog("Clock Path Min num of Buffers: ", max_level == 0 ? 0 : min_level);
-  CTSAPIInst.saveToLog("Clock Path Max num of Buffers: ", max_level);
-  CTSAPIInst.saveToLog("Max Clock Wirelength: ", max_net_len);
-  CTSAPIInst.saveToLog("Total Clock Wirelength: ", total_wire_len);
+  CTSAPIInst.saveToLog("--Wirelength Stats--");
+  CTSAPIInst.saveToLog(wl_rpt->c_str());
+  CTSAPIInst.logEnd();
+
+  pathLevelLog();
 
   CTSAPIInst.slackLog();
-
-  CTSAPIInst.saveToLog("\n############Evaluate design Done############");
 }
 
 void Evaluator::plotPath(const string& inst_name, const string& file) const
 {
   auto* config = CTSAPIInst.get_config();
   auto* db_wrapper = CTSAPIInst.get_db_wrapper();
-  auto path = config->get_sta_workspace() + "/" + file;
+  auto path = config->get_work_dir() + "/" + file;
   auto ofs = std::fstream(path, std::ios::out | std::ios::trunc);
 
   CtsInstance* path_inst = nullptr;
@@ -366,7 +460,7 @@ void Evaluator::plotNet(const string& net_name, const string& file) const
 
   auto* config = CTSAPIInst.get_config();
   auto* db_wrapper = CTSAPIInst.get_db_wrapper();
-  auto path = config->get_sta_workspace() + "/" + file;
+  auto path = config->get_work_dir() + "/" + file;
   auto ofs = std::fstream(path, std::ios::out | std::ios::trunc);
 
   GDSPloter::head(ofs);

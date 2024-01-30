@@ -59,9 +59,18 @@ class CTSAPI
   void writeDB();
   void writeGDS();
   void report(const std::string& save_dir);
+
+  // Eval Flow API
+  void initEvalInfo();
+  size_t getInsertCellNum() const;
+  double getInsertCellArea() const;
+  std::vector<PathInfo> getPathInfos() const;
+  double getMaxClockNetWL() const;
+  double getTotalClockNetWL() const;
+
   // flow API
   void resetAPI();
-  void init(const std::string& config_file);
+  void init(const std::string& config_file, const std::string& work_dir="");
   void readData();
   void routing();
   void evaluate();
@@ -85,6 +94,8 @@ class CTSAPI
   void refresh();
   icts::CtsPin* findDriverPin(icts::CtsNet* net);
   std::map<std::string, double> elmoreDelay(const icts::EvalNet& eval_net);
+  bool cellLibExist(const std::string& cell_master, const std::string& query_field = "cell_rise", const std::string& from_port = "",
+                    const std::string& to_port = "");
   std::vector<std::vector<double>> queryCellLibIndex(const std::string& cell_master, const std::string& query_field,
                                                      const std::string& from_port = "", const std::string& to_port = "");
   std::vector<double> queryCellLibValue(const std::string& cell_master, const std::string& query_field, const std::string& from_port = "",
@@ -152,6 +163,14 @@ class CTSAPI
   {
     (*_log_ofs) << toString(args...) << std::endl;
   }
+
+  void logTime() const;
+
+  void logLine() const;
+
+  void logTitle(const std::string& title) const;
+
+  void logEnd() const;
 
   // function
   std::vector<std::string> splitString(std::string str, const char split);

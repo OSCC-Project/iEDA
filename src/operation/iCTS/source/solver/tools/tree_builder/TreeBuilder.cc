@@ -1045,7 +1045,7 @@ void TreeBuilder::updateId(Node* root)
 void TreeBuilder::printGraphviz(Node* root, const std::string& name)
 {
   auto* config = CTSAPIInst.get_config();
-  auto dir = config->get_sta_workspace() + "/file";
+  auto dir = config->get_work_dir() + "/file";
   if (!std::filesystem::exists(dir)) {
     std::filesystem::create_directories(dir);
   }
@@ -1084,7 +1084,7 @@ void TreeBuilder::printGraphviz(Node* root, const std::string& name)
 void TreeBuilder::writePy(Node* root, const std::string& name)
 {
   auto* config = CTSAPIInst.get_config();
-  auto dir = config->get_sta_workspace() + "/file";
+  auto dir = config->get_work_dir() + "/file";
   if (!std::filesystem::exists(dir)) {
     std::filesystem::create_directories(dir);
   }
@@ -1131,7 +1131,7 @@ void TreeBuilder::writePy(Node* root, const std::string& name)
 void TreeBuilder::writeInstInfo(Node* root, const std::string& name)
 {
   auto* config = CTSAPIInst.get_config();
-  auto dir = config->get_sta_workspace() + "/file";
+  auto dir = config->get_work_dir() + "/file";
   if (!std::filesystem::exists(dir)) {
     std::filesystem::create_directories(dir);
   }

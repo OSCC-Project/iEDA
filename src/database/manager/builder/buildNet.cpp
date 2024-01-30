@@ -20,9 +20,24 @@ namespace idb {
 
 void IdbBuilder::buildNet()
 {
+  checkNetPins();
+
   for (IdbNet* net : _def_service->get_design()->get_net_list()->get_net_list()) {
     buildNetFeatureCoord(net);
     buildPinFeatureCoord(net);
+  }
+}
+
+void IdbBuilder::checkNetPins()
+{
+  for (IdbNet* net : _def_service->get_design()->get_net_list()->get_net_list()) {
+    if (net->get_instance_pin_list() != nullptr) {
+      net->get_instance_pin_list()->checkPins();
+    }
+
+    if (net->get_io_pins() != nullptr) {
+      net->get_io_pins()->checkPins();
+    }
   }
 }
 

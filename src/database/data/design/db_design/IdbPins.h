@@ -141,7 +141,8 @@ class IdbPins
   std::vector<IdbPin*>& get_pin_list() { return _pin_list; }
   const uint32_t get_pin_num() { return _pin_list.size(); }
   uint32_t get_net_pin_num();
-  IdbPin* find_pin(std::string pin_name);
+  IdbPin* find_pin(IdbPin* pin);
+  IdbPin* find_pin(std::string pin_name, std::string instance_name = "");
   IdbPin* find_pin_by_term(std::string term_name);
   std::pair<IdbPin*, IdbRect*> find_pin_by_coordinate(IdbCoordinate<int32_t>* coordinate, IdbLayer* layer = nullptr);
   IdbPin* find_pin_by_coordinate_list(vector<IdbCoordinate<int32_t>*>& coordinate_list, IdbLayer* layer);
@@ -154,6 +155,7 @@ class IdbPins
   // Operate
   void remove_pin(IdbPin* pin_remove);
   int32_t getIOPortWidth();
+  void checkPins();
 
  private:
   std::vector<IdbPin*> _pin_list;

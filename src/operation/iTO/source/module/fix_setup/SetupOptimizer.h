@@ -47,6 +47,7 @@ class SetupOptimizer {
   void initBufferCell();
 
   void optimizeSetup(StaSeqPathData *worst_path, Slack path_slack);
+  void optimizeSetup(StaVertex *vertex, Slack path_slack);
 
   void buffering(Pin *pin);
 
@@ -83,6 +84,14 @@ class SetupOptimizer {
   void setLocation(Instance *inst, int x, int y);
 
   StaSeqPathData *worstRequiredPath();
+
+  bool netConnectToPort(Net *net);
+
+  Slack getWorstSlack(StaVertex *vertex, AnalysisMode mode);
+  VertexSet getEndPoints();
+  void      findEndpointsWithSetupViolation(VertexSet end_points, Slack slack_margin,
+                                            // return values
+                                            VertexSeq &setup_violations);
 
   // data
   DbInterface     *_db_interface;

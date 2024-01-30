@@ -122,4 +122,39 @@ unsigned CmdFeatureGenerateNets::exec()
   return 1;
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/**
+ * feature_summary -path "xxxx.json"
+ */
+CmdFeatureSummary::CmdFeatureSummary(const char* cmd_name) : TclCmd(cmd_name)
+{
+  auto* path_option = new TclStringOption(TCL_PATH, 1, nullptr);
+  addOption(path_option);
+}
+
+unsigned CmdFeatureSummary::check()
+{
+  TclOption* path_option = getOptionOrArg(TCL_PATH);
+  LOG_FATAL_IF(!path_option);
+  return 1;
+}
+
+unsigned CmdFeatureSummary::exec()
+{
+  if (!check()) {
+    return 0;
+  }
+
+  TclOption* option = getOptionOrArg(TCL_PATH);
+  auto path = option->getStringVal();
+
+  iplf::FeatureManager feature_parser(dmInst->get_idb_layout(), dmInst->get_idb_design());
+
+  feature_parser.save_reportSummary(path);
+
+  return 1;
+}
+
 }  // namespace tcl

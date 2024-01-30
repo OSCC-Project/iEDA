@@ -16,14 +16,3 @@ target_include_directories(imp-datamanager
         ${IMP_BASIC}
         ${IMP_PARSER}
 )
-# add_library(imp-datamanager
-#     ${IMP_DATAMANAGER}/FloorplanDB.cc
-# )
-
-# target_link_libraries(imp-datamanager
-#     PUBLIC
-#     imp-parser
-#     # imp-basic
-#     # imp-structure
-#     # imp-logger
-# )

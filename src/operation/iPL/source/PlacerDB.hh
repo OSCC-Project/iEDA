@@ -107,6 +107,7 @@ class PlacerDB
   int64_t lg_total_movement = 0;
   int64_t lg_max_movement = 0;
   float sta_update_time = 0.0f;
+  int32_t init_inst_cnt = 0;
 
  private:
   static PlacerDB* _s_placer_db_instance;

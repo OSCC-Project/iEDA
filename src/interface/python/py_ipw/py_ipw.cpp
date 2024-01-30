@@ -20,12 +20,12 @@
 #include "sta/Sta.hh"
 
 namespace python_interface {
-bool readVcd(std::string vcd_file, std::string top_instance_name)
+bool readRustVCD(const char* vcd_path, const char* top_instance_name)
 {
   ista::Sta* ista = ista::Sta::getOrCreateSta();
   ipower::Power* ipower = ipower::Power::getOrCreatePower(&(ista->get_graph()));
 
-  return ipower->readRustVCD(vcd_file.c_str(), top_instance_name.c_str());
+  return ipower->readRustVCD(vcd_path, top_instance_name);
 }
 
 unsigned reportPower()
