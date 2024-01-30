@@ -60,7 +60,6 @@ class ConditionSequenceJog : public ConditionSequence
           state = ConditionSequence::State::kSuccess;
           return;
         } else if (sequence & _middle_sequence) {
-          state = ConditionSequence::State::kRecording;
           return;
         } else {
           state = ConditionSequence::State::kFail;
@@ -77,10 +76,12 @@ class ConditionSequenceJog : public ConditionSequence
     }
   }
 
-  void applyValue(State& state, SequenceType condition_sequence_enum, std::vector<DrcBasicPoint*> points) override
+  void applyValue(State& state, int& value, SequenceType condition_sequence_enum, std::vector<DrcBasicPoint*>& points) override
   {
-    // TODO: calculate within and compare it to _filter_value, if fail change state to kFail
-    // TODO: use sequence type to deside points to calculate within
+    // if (points[1]->distance(points[2]) >= _filter_value) {
+    //   state = ConditionSequence::State::kRecordingFinished;
+    // }
+    // TODO: use filter value
   }
 
  private:

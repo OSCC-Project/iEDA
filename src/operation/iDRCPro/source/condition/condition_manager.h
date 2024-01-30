@@ -115,7 +115,7 @@ class DrcConditionManager
     while (record_it != record_list.end()) {
       auto record = *record_it;
       auto state = record->record(sequence, points);
-      if (state == ConditionSequence::State::kSuccess) {
+      if (state == ConditionSequence::State::kSuccess || state == ConditionSequence::State::kFail) {
         record_it = record_list.erase(record_it);
         _record_pool.push_back(record);
         record->clear();
@@ -131,7 +131,6 @@ class DrcConditionManager
   }
 
  private:
-  uint64_t debug_code = 0;
   DrcViolationManager* _violation_manager;
 
   std::map<idb::IdbLayer*, std::map<uint64_t, std::list<ConditionRecordPtr>>> _condition_recording_map;

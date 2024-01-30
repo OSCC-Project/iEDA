@@ -31,6 +31,7 @@ class DrcRuleBuilder
  private:
   void initRoutingLayerRules();
   void buildJogConditions(idb::IdbLayer* layer, idb::IdbLayerRouting* idb_routing_layer);
+  void buildSpacingTableConditions(idb::IdbLayer* layer, idb::IdbLayerRouting* idb_routing_layer);
   void initCutLayerRules();
 };
 

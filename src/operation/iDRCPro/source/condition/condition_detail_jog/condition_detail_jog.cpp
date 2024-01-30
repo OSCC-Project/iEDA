@@ -37,6 +37,9 @@ bool ConditionDetailJog::apply(std::vector<std::pair<ConditionSequence::Sequence
       polygons.emplace_back(gtl_pts.begin(), gtl_pts.end());
     }
   }
+  if (check_region[0].second[1]->get_y() == check_region[0].second[2]->get_y()) {
+    int a = 0;
+  }
 
   // std::vector<ieda_solver::GtlPoint> spacing_up_points;
   // std::vector<ieda_solver::GtlPoint> spacing_down_points;

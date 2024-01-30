@@ -80,46 +80,28 @@ void DrcEngineScanline::scan(ScanlineTravelDirection direction)
 // TODO: deal with overlap, one direction is enough
 void DrcEngineScanline::addCurrentBucketToScanline(ScanlineStatus& status)
 {
-  // mark old points in scanline status
-  for (auto* point : status.status_points) {
-    point->set_is_new(false);
-  }
+  status.prepareNewBucket();
 
   // add new points to scanline status
-  auto bucket_end = status.bucketEnd();
+  auto bucket_end = status.nextBucketEnd();
   auto scanline_status_it = status.status_points.begin();
-  status.insert_begin = scanline_status_it;
-  status.insert_end = scanline_status_it;
   bool is_first_insert = true;
   for (; status.endpoints_it != bucket_end; ++status.endpoints_it) {
     ScanlinePoint* current_point = *status.endpoints_it;
-    int current_point_coord = status.get_orthogonal_coord((current_point)->get_point());
+
     if (current_point->get_is_start()) {
       // find correct position to insert
-      while (scanline_status_it != status.status_points.end()
-             && status.get_orthogonal_coord((*scanline_status_it)->get_point()) < current_point_coord) {
+      while (scanline_status_it != status.status_points.end() && (*status.compare_scanline_point)(*scanline_status_it, current_point)) {
         ++scanline_status_it;
       }
-      while (scanline_status_it != status.status_points.end()
-             && status.get_orthogonal_coord((*scanline_status_it)->get_point()) == current_point_coord
-             && (*scanline_status_it)->get_is_forward() > current_point->get_is_forward()) {
-        ++scanline_status_it;
-      }
-      while (scanline_status_it != status.status_points.end()
-             && status.get_orthogonal_coord((*scanline_status_it)->get_point()) == current_point_coord
-             && (*scanline_status_it)->get_is_forward() == current_point->get_is_forward()
-             && (*scanline_status_it)->get_id() < current_point->get_id()) {
-        ++scanline_status_it;
-      }
-      status.status_points.insert(scanline_status_it, current_point);
+      scanline_status_it = status.status_points.insert(scanline_status_it, current_point);
     } else {
-      // change point to ending endpoint in scanline status
-      while (scanline_status_it != status.status_points.begin()
-             && status.get_orthogonal_coord((*scanline_status_it)->get_point()) == current_point_coord) {
-        --scanline_status_it;
-      }  // TODO: 归并不应该往前找，排序没有统一吗
+      // point is ending point, replace pair starting point in scanline status
       auto* current_pair_point = current_point->get_pair();
       scanline_status_it = std::find(scanline_status_it, status.status_points.end(), current_pair_point);
+      if (scanline_status_it == status.status_points.end()) {
+        int a = 0;
+      }
       *scanline_status_it = current_point;
     }
 

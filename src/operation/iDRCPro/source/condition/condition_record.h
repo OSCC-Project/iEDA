@@ -31,11 +31,11 @@ class ConditionRecord
 
   ConditionSequence::State record(ConditionSequence::SequenceType sequence, std::vector<DrcBasicPoint*> points)
   {
+    _condition->get_sequence()->applyValue(_state, _value, sequence, points);
     _region_record.push_back(std::make_pair(sequence, points));
+
     if (_state == ConditionSequence::State::kSuccess) {
       _condition->get_detail()->apply(_region_record);  // TODO: use thread pool
-    } else if (_state == ConditionSequence::State::kTrigger || _state == ConditionSequence::State::kRecording) {
-      _condition->get_sequence()->applyValue(_state, sequence, points);
     }
     return _state;
   }
@@ -61,7 +61,7 @@ class ConditionRecord
   Condition* _condition;
 
   ConditionSequence::State _state = ConditionSequence::State::kNone;
-
+  int _value = 0;
   std::vector<std::pair<ConditionSequence::SequenceType, std::vector<DrcBasicPoint*>>> _region_record;
 };
 }  // namespace idrc
