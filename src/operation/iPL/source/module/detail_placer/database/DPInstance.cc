@@ -96,4 +96,14 @@ void DPInstance::updatePinsCoordi()
   }
 }
 
+int64_t DPInstance::computeDisplacement() const
+{
+  const int64_t pos_x = get_shape().get_ll_x();
+  const int64_t pos_y = get_shape().get_ll_y();
+  const int64_t init_x = get_origin_shape().get_ll_x();
+  const int64_t init_y = get_origin_shape().get_ll_y();
+  return std::abs(pos_x - init_x) + std::abs(pos_y - init_y);
+}
+
+
 }  // namespace ipl

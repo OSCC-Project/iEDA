@@ -396,6 +396,11 @@ void PLAPI::runDP()
 
   DetailPlacer detail_place(PlacerDBInst.get_placer_config(), &PlacerDBInst);
   detail_place.runDetailPlace();
+  
+  // run networkflow to spread cell 
+  // Input: after global placement. Output: low density distribution result with overlap.
+  // Legalization is further needed.
+  // detail_place.runDetailPlaceNFS();
 
   if (!checkLegality()) {
     LOG_WARNING << "DP result is not legal";
@@ -752,13 +757,19 @@ void PLAPI::runRoutabilityGP()
 }
 
 /**
- * @brief run GR based on dmInst data, evaluate 3D congestion, and return <ACE,TOF,MOF> vector
+ * @brief run GR based on dmInst data, evaluate 3D congestion, and return <ACE,TOF,MOF,wirelength> vector
  * @return std::vector<float>
  */
 std::vector<float> PLAPI::evalGRCong()
 {
   return _external_api->evalGRCong();
 }
+
+int64_t PLAPI::evalEGRWL()
+{
+  return _external_api->evalEGRWL();
+}
+
 
 /**
  * @brief compute each gcellgrid routing demand/resource, and return a 2D route util map

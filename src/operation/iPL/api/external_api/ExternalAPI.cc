@@ -197,6 +197,7 @@ std::vector<float> ExternalAPI::obtainPinDens(int32_t grid_cnt_x, int32_t grid_c
   eval::EvalAPI& eval_api = EvalInst;
   int32_t bin_cnt_x = grid_cnt_x;
   int32_t bin_cnt_y = grid_cnt_y;
+
   eval_api.initCongDataFromIDB(bin_cnt_x, bin_cnt_y);
 
   std::vector<float> pin_num_list = eval_api.evalPinDens();
@@ -211,7 +212,7 @@ std::vector<float> ExternalAPI::obtainPinDens(int32_t grid_cnt_x, int32_t grid_c
 
   result.push_back((*max_element_ptr) / average );
 
-  // eval::EvalAPI::destroyInst();
+  eval::EvalAPI::destroyInst();
   return result;
 }
 
