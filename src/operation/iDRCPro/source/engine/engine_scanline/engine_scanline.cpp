@@ -99,9 +99,6 @@ void DrcEngineScanline::addCurrentBucketToScanline(ScanlineStatus& status)
       // point is ending point, replace pair starting point in scanline status
       auto* current_pair_point = current_point->get_pair();
       scanline_status_it = std::find(scanline_status_it, status.status_points.end(), current_pair_point);
-      if (scanline_status_it == status.status_points.end()) {
-        int a = 0;
-      }
       *scanline_status_it = current_point;
     }
 
@@ -117,7 +114,7 @@ void DrcEngineScanline::addCurrentBucketToScanline(ScanlineStatus& status)
 
   // mark range end
   status.insert_end = scanline_status_it;
-  for (int i = 0; i < 2 && status.insert_end != status.status_points.end(); ++i) {
+  for (int i = 0; i < 3 && status.insert_end != status.status_points.end(); ++i) {
     ++status.insert_end;
   }
 }
@@ -209,7 +206,8 @@ void DrcEngineScanline::processScanlineStatus(ScanlineStatus& status)
         if (_condition_manager->isSequenceNeedDeliver(_preprocess->get_layer(), recognize_code, sequence)) {
           std::vector<DrcBasicPoint*> point_list{point_forward->get_point(), point_backward->get_point()};
 
-          _condition_manager->recordRegion(_preprocess->get_layer(), recognize_code, sequence, point_list);
+          _condition_manager->recordRegion(_preprocess->get_layer(), recognize_code, sequence, point_list, status.current_bucket_coord,
+                                           status.direction == ScanlineTravelDirection::kHorizontal);
         }
       }
 
@@ -248,7 +246,8 @@ void DrcEngineScanline::processScanlineStatus(ScanlineStatus& status)
           point_list[i] = activate_points[i] ? activate_points[i]->get_point() : nullptr;
         }
 
-        _condition_manager->recordRegion(_preprocess->get_layer(), recognize_code, sequence, point_list);
+        _condition_manager->recordRegion(_preprocess->get_layer(), recognize_code, sequence, point_list, status.current_bucket_coord,
+                                         status.direction == ScanlineTravelDirection::kHorizontal);
       }
     }
   }

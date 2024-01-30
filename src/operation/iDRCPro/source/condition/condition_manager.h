@@ -108,7 +108,7 @@ class DrcConditionManager
   }
 
   void recordRegion(idb::IdbLayer* layer, uint64_t recognize_code, ConditionSequence::SequenceType sequence,
-                    std::vector<DrcBasicPoint*>& points)
+                    std::vector<DrcBasicPoint*>& points, int bucket_coord, bool is_points_vertical)
   {
     auto& record_list = _condition_recording_map[layer][recognize_code];
     auto record_it = record_list.begin();
