@@ -141,7 +141,7 @@ unsigned CmdFeatureSummary::check()
   TclOption* path_option = getOptionOrArg(TCL_PATH);
   TclOption* step_option = getOptionOrArg(TCL_STEP);
   LOG_FATAL_IF(!path_option);
-  LOG_FATAL_IF(!step_option);
+  //   LOG_FATAL_IF(!step_option);
   return 1;
 }
 
@@ -154,8 +154,11 @@ unsigned CmdFeatureSummary::exec()
   TclOption* option = getOptionOrArg(TCL_PATH);
   auto path = option->getStringVal();
 
+  std::string step = "";
   TclOption* step_option = getOptionOrArg(TCL_STEP);
-  auto step = step_option->getStringVal();
+  if (step_option->getStringVal() != nullptr) {
+    step = step_option->getStringVal();
+  }
 
   iplf::FeatureManager feature_parser(dmInst->get_idb_layout(), dmInst->get_idb_design());
 
