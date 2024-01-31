@@ -80,7 +80,7 @@ class FeatureParser
   json buildSummaryPdn();
   json buildSummaryPins();
 
-  json flowSummary(std::string step);
+  json flowSummary(std::string step = "");
   json buildSummaryPL(std::string json_path);
   json buildSummaryCTS();
   json buildSummaryTO();

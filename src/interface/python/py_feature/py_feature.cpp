@@ -41,7 +41,7 @@ bool feature_nets(const std::string& path)
   return feature_parser.save_nets(path);
 }
 
-bool feature_reportSummary(const std::string& path, const std::string& step)
+bool feature_summary(const std::string& path, const std::string& step)
 {
   iplf::FeatureManager feature_parser(dmInst->get_idb_layout(), dmInst->get_idb_design());
 
