@@ -18,14 +18,30 @@
 
 #include <vector>
 
-#include "drc_basic_point.h"
-#include "idrc_engine.h"
+#include "boost_definition.h"
+
+namespace std {
+template <typename T>
+inline void hash_combine(std::size_t& seed, T const& v)
+{
+  seed ^= hash<T>()(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+}
+}  // namespace std
 
 namespace idrc {
 
 class DrcUtil
 {
  public:
+  // 获得两个整数的哈希
+  static size_t hash(int x, int y)
+  {
+    size_t seed = 0;
+    std::hash_combine(seed, x);
+    std::hash_combine(seed, y);
+    return seed;
+  }
+
   // 叉乘
   template <typename T>
   static int crossProduct(T& first_coord, T& second_coord, T& third_coord)
@@ -49,7 +65,8 @@ class DrcUtil
   }
 
   // 获得 polygon 的所有点，按顺时针组织
-  static std::vector<ieda_solver::GtlPoint> getPolygonPoints(DrcBasicPoint* point)
+  template <typename T>
+  static std::vector<ieda_solver::GtlPoint> getPolygonPoints(T* point)
   {
     std::vector<ieda_solver::GtlPoint> point_list{{point->get_x(), point->get_y()}};
     auto* iter_pt = point->get_next();
@@ -62,72 +79,73 @@ class DrcUtil
     return point_list;
   }
 
-  // 方向取反
-  static DrcDirection oppositeDirection(DrcDirection direction)
-  {
-    switch (direction) {
-      case DrcDirection::kUp:
-        return DrcDirection::kDown;
-      case DrcDirection::kDown:
-        return DrcDirection::kUp;
-      case DrcDirection::kLeft:
-        return DrcDirection::kRight;
-      case DrcDirection::kRight:
-        return DrcDirection::kLeft;
-      default:
-        return DrcDirection::kNone;
-    }
-  }
+  // // 方向取反
+  // static DrcDirection oppositeDirection(DrcDirection direction)
+  // {
+  //   switch (direction) {
+  //     case DrcDirection::kUp:
+  //       return DrcDirection::kDown;
+  //     case DrcDirection::kDown:
+  //       return DrcDirection::kUp;
+  //     case DrcDirection::kLeft:
+  //       return DrcDirection::kRight;
+  //     case DrcDirection::kRight:
+  //       return DrcDirection::kLeft;
+  //     default:
+  //       return DrcDirection::kNone;
+  //   }
+  // }
 
-  // 线段左边为多边形外部
-  static DrcDirection outsidePolygonDirection(DrcBasicPoint* point_prev, DrcBasicPoint* point_next)
-  {
-    DrcDirection direction = point_prev->direction(point_next);
-    switch (direction) {
-      case DrcDirection::kUp:
-        return DrcDirection::kLeft;
-      case DrcDirection::kDown:
-        return DrcDirection::kRight;
-      case DrcDirection::kLeft:
-        return DrcDirection::kDown;
-      case DrcDirection::kRight:
-        return DrcDirection::kUp;
-      default:
-        return DrcDirection::kNone;
-    }
-  }
+  // // 线段左边为多边形外部
+  // template <typename T>
+  // static DrcDirection outsidePolygonDirection(T* point_prev, T* point_next)
+  // {
+  //   DrcDirection direction = point_prev->direction(point_next);
+  //   switch (direction) {
+  //     case DrcDirection::kUp:
+  //       return DrcDirection::kLeft;
+  //     case DrcDirection::kDown:
+  //       return DrcDirection::kRight;
+  //     case DrcDirection::kLeft:
+  //       return DrcDirection::kDown;
+  //     case DrcDirection::kRight:
+  //       return DrcDirection::kUp;
+  //     default:
+  //       return DrcDirection::kNone;
+  //   }
+  // }
 
-  // 获得正交方向
-  static std::pair<DrcDirection, DrcDirection> orthogonalDirections(DrcDirection direction)
-  {
-    switch (direction) {
-      case DrcDirection::kUp:
-      case DrcDirection::kDown:
-        return std::make_pair(DrcDirection::kLeft, DrcDirection::kRight);
-      case DrcDirection::kLeft:
-      case DrcDirection::kRight:
-        return std::make_pair(DrcDirection::kUp, DrcDirection::kDown);
-      default:
-        return std::make_pair(DrcDirection::kNone, DrcDirection::kNone);
-    }
-  }
+  // // 获得正交方向
+  // static std::pair<DrcDirection, DrcDirection> orthogonalDirections(DrcDirection direction)
+  // {
+  //   switch (direction) {
+  //     case DrcDirection::kUp:
+  //     case DrcDirection::kDown:
+  //       return std::make_pair(DrcDirection::kLeft, DrcDirection::kRight);
+  //     case DrcDirection::kLeft:
+  //     case DrcDirection::kRight:
+  //       return std::make_pair(DrcDirection::kUp, DrcDirection::kDown);
+  //     default:
+  //       return std::make_pair(DrcDirection::kNone, DrcDirection::kNone);
+  //   }
+  // }
 
-  // 获得向某方向行走特定距离的坐标
-  static std::pair<int, int> transformPoint(int x, int y, DrcDirection direction, int distance)
-  {
-    switch (direction) {
-      case DrcDirection::kUp:
-        return std::make_pair(x, y + distance);
-      case DrcDirection::kDown:
-        return std::make_pair(x, y - distance);
-      case DrcDirection::kLeft:
-        return std::make_pair(x - distance, y);
-      case DrcDirection::kRight:
-        return std::make_pair(x + distance, y);
-      default:
-        return std::make_pair(x, y);
-    }
-  }
+  // // 获得向某方向行走特定距离的坐标
+  // static std::pair<int, int> transformPoint(int x, int y, DrcDirection direction, int distance)
+  // {
+  //   switch (direction) {
+  //     case DrcDirection::kUp:
+  //       return std::make_pair(x, y + distance);
+  //     case DrcDirection::kDown:
+  //       return std::make_pair(x, y - distance);
+  //     case DrcDirection::kLeft:
+  //       return std::make_pair(x - distance, y);
+  //     case DrcDirection::kRight:
+  //       return std::make_pair(x + distance, y);
+  //     default:
+  //       return std::make_pair(x, y);
+  //   }
+  // }
 
  private:
 };

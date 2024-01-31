@@ -21,6 +21,7 @@
 namespace idrc {
 
 class DrcConditionManager;
+class DrcEngineManager;
 
 enum class ScanlineSegmentType
 {
@@ -100,10 +101,10 @@ struct ScanlineStatus
 class DrcEngineScanline
 {
  public:
-  DrcEngineScanline(idb::IdbLayer* layer, DrcDataManager* data_manager, DrcConditionManager* condition_manager)
-      : _data_manager(data_manager), _condition_manager(condition_manager)
+  DrcEngineScanline(idb::IdbLayer* layer, DrcEngineManager* engine_manager, DrcConditionManager* condition_manager)
+      : _engine_manager(engine_manager), _condition_manager(condition_manager)
   {
-    _preprocess = new ScanlinePreprocess(layer, data_manager);
+    _preprocess = new ScanlinePreprocess(layer);
   }
   ~DrcEngineScanline();
 
@@ -113,7 +114,7 @@ class DrcEngineScanline
 
  private:
   ScanlinePreprocess* _preprocess;
-  DrcDataManager* _data_manager;
+  DrcEngineManager* _engine_manager;
   DrcConditionManager* _condition_manager;
 
   void scan(ScanlineTravelDirection direction);

@@ -23,14 +23,15 @@
 #include <vector>
 
 #include "idrc_data.h"
+#include "idrc_util.h"
 
 namespace idrc {
 
 class DrcBasicPoint
 {
  public:
-  DrcBasicPoint(int x, int y, int net_id, int polygon_id, DrcBasicPoint* prev = nullptr, DrcBasicPoint* next = nullptr)
-      : _x(x), _y(y), _net_id(net_id), _polygon_id(polygon_id), _prev(prev), _next(next)
+  DrcBasicPoint(int x, int y, int net_id, int net_polygon_id, DrcBasicPoint* prev = nullptr, DrcBasicPoint* next = nullptr)
+      : _x(x), _y(y), _net_id(net_id), _net_polygon_id(net_polygon_id), _prev(prev), _next(next)
   {
   }
 
@@ -40,7 +41,8 @@ class DrcBasicPoint
   int get_x() { return _x; }
   int get_y() { return _y; }
   int get_net_id() { return _net_id; }
-  int get_polygon_id() { return _polygon_id; }
+  int get_net_polygon_id() { return _net_polygon_id; }
+  int get_polygon_id() { return DrcUtil::hash(_net_id, _net_polygon_id); }
 
   DrcBasicPoint* get_prev() { return _prev; }
   DrcBasicPoint* get_next() { return _next; }
@@ -66,7 +68,7 @@ class DrcBasicPoint
   int _y;
 
   int _net_id;
-  int _polygon_id;
+  int _net_polygon_id;
 
   DrcBasicPoint* _prev = nullptr;
   DrcBasicPoint* _next = nullptr;

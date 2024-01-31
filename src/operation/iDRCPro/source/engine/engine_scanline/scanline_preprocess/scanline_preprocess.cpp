@@ -47,17 +47,17 @@ ScanlinePreprocess::~ScanlinePreprocess()
  */
 void ScanlinePreprocess::addData(std::vector<std::vector<ieda_solver::GtlPoint>>& polygons_points, int net_id)
 {
-  for (auto& polygon_points : polygons_points) {
-    addPolygon(polygon_points, net_id);
+  for (int i = 0; i < polygons_points.size(); ++i) {
+    addPolygon(polygons_points[i], net_id, i);
   }
 }
 
 /// @brief add boost polygon to scanline data manager
 /// @param polygon_points polygon endpoints clockwise
 /// @param net_id polygon net_id
-void ScanlinePreprocess::addPolygon(std::vector<ieda_solver::GtlPoint>& polygon_points, int net_id)
+void ScanlinePreprocess::addPolygon(std::vector<ieda_solver::GtlPoint>& polygon_points, int net_id, int net_polygon_id)
 {
-  auto start_points = createPolygonEndpoints(polygon_points, net_id);
+  auto start_points = createPolygonEndpoints(polygon_points, net_id, net_polygon_id);
   createScanlinePoints(
       start_points.first,
       [](DrcBasicPoint* p1, DrcBasicPoint* p2) {
@@ -80,7 +80,7 @@ void ScanlinePreprocess::sortEndpoints()
 }
 
 std::pair<DrcBasicPoint*, DrcBasicPoint*> ScanlinePreprocess::createPolygonEndpoints(std::vector<ieda_solver::GtlPoint>& polygon_points,
-                                                                                     int net_id)
+                                                                                     int net_id, int net_polygon_id)
 {
   // _basic_points.reserve(_basic_points.size() + polygon_points.size());
   ComparePointByX<DrcBasicPoint> compare_by_x;
@@ -90,9 +90,8 @@ std::pair<DrcBasicPoint*, DrcBasicPoint*> ScanlinePreprocess::createPolygonEndpo
   DrcBasicPoint* bottom_left_pt = nullptr;
   DrcBasicPoint* prev_point = nullptr;
   DrcBasicPoint* first_point = nullptr;
-  int current_polygon_id = ++_polygon_count;
   for (auto& vertex : polygon_points) {
-    DrcBasicPoint* new_basic_pt = new DrcBasicPoint(vertex.x(), vertex.y(), net_id, current_polygon_id);
+    DrcBasicPoint* new_basic_pt = new DrcBasicPoint(vertex.x(), vertex.y(), net_id, net_polygon_id);
     _basic_points.emplace_back(new_basic_pt);
 
     // find start point

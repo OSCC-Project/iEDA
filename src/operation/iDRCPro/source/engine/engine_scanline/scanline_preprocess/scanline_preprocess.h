@@ -37,13 +37,13 @@ namespace idrc {
 class ScanlinePreprocess
 {
  public:
-  ScanlinePreprocess(idb::IdbLayer* layer, DrcDataManager* data_manager) : _layer(layer), _data_manager(data_manager) {}
+  ScanlinePreprocess(idb::IdbLayer* layer) : _layer(layer) {}
   ~ScanlinePreprocess();
 
   idb::IdbLayer* get_layer() { return _layer; }
 
   void addData(std::vector<std::vector<ieda_solver::GtlPoint>>& polygons_points, int net_id);
-  void addPolygon(std::vector<ieda_solver::GtlPoint>& polygon_points, int net_id);
+  void addPolygon(std::vector<ieda_solver::GtlPoint>& polygon_points, int net_id, int net_polygon_id);
   void sortEndpoints();
 
   // getter
@@ -64,7 +64,6 @@ class ScanlinePreprocess
 
  private:
   idb::IdbLayer* _layer = nullptr;
-  DrcDataManager* _data_manager = nullptr;
 
   std::vector<DrcBasicPoint*> _basic_points;
   std::vector<ScanlinePoint*> _scanline_points_vertical;
@@ -76,7 +75,8 @@ class ScanlinePreprocess
   template <typename T>
   void deleteVectorElements(T& v);
 
-  std::pair<DrcBasicPoint*, DrcBasicPoint*> createPolygonEndpoints(std::vector<ieda_solver::GtlPoint>& polygon_points, int net_id);
+  std::pair<DrcBasicPoint*, DrcBasicPoint*> createPolygonEndpoints(std::vector<ieda_solver::GtlPoint>& polygon_points, int net_id,
+                                                                   int net_polygon_id);
   void createScanlinePoints(DrcBasicPoint* start_point, std::function<std::pair<bool, bool>(DrcBasicPoint*, DrcBasicPoint*)> compare,
                             std::vector<ScanlinePoint*>& scanline_points);
 };

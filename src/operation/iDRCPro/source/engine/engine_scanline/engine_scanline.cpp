@@ -18,27 +18,10 @@
 #include "engine_scanline.h"
 
 #include "condition_manager.h"
+#include "geometry_boost.h"
 #include "idrc_data.h"
+#include "idrc_engine_manager.h"
 #include "idrc_util.h"
-
-namespace std {
-template <typename T>
-inline void hash_combine(std::size_t& seed, T const& v)
-{
-  seed ^= hash<T>()(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-}
-template <typename U, typename V>
-struct hash<std::pair<U, V>>
-{
-  size_t operator()(std::pair<U, V> const& tt) const
-  {
-    size_t seed = 0;
-    hash_combine(seed, tt.first);
-    hash_combine(seed, tt.second);
-    return seed;
-  }
-};
-}  // namespace std
 
 namespace idrc {
 
@@ -83,17 +66,25 @@ void DrcEngineScanline::addCurrentBucketToScanline(ScanlineStatus& status)
   status.prepareNewBucket();
 
   ScanlinePoint* current_activate_point = nullptr;
-  auto record_overlap = [&current_activate_point](ScanlinePoint* point) {
+
+  auto get_polygon = [&](ScanlinePoint* point) -> ieda_solver::GtlPolygon& {
+    auto* geometry_engine
+        = _engine_manager->get_layout(_preprocess->get_layer())->get_sub_layout(point->get_point()->get_net_id())->get_engine();
+    auto* boost_engine = static_cast<ieda_solver::GeometryBoost*>(geometry_engine);
+    auto& polygons = boost_engine->get_polygon_list();
+    auto& polygon = polygons[point->get_point()->get_net_polygon_id()];
+    return polygon;
+  };
+
+  auto record_overlap = [&](ScanlinePoint* point) {
     if (!current_activate_point && !point->get_is_forward()) {
       current_activate_point = point;
     } else if (current_activate_point && (point)->get_is_forward() && current_activate_point->get_id() == point->get_id()) {
       current_activate_point = nullptr;
     } else if (current_activate_point && current_activate_point->get_id() != point->get_id()) {
       // TODO: overlap
-      // auto gtl_pts_1 = DrcUtil::getPolygonPoints(current_activate_point->get_point());
-      // auto gtl_pts_2 = DrcUtil::getPolygonPoints(point->get_point());
-      // auto polygon_1 = ieda_solver::GtlPolygon(gtl_pts_1.begin(), gtl_pts_1.end());
-      // auto polygon_2 = ieda_solver::GtlPolygon(gtl_pts_2.begin(), gtl_pts_2.end());
+      // auto& polygon_1 = get_polygon(current_activate_point);
+      // auto& polygon_2 = get_polygon(point);
       // std::vector<ieda_solver::GtlPolygon> overlap_list;
       // ieda_solver::GtlPolygonSet intersection = polygon_1 & polygon_2;
       // intersection.get(overlap_list);
@@ -178,9 +169,8 @@ ScanlineSegmentType DrcEngineScanline::judgeSegmentType(ScanlineStatus& status, 
 /// @return hashed side id
 uint64_t DrcEngineScanline::hash2SideIds(int id1, int id2)
 {
-  std::hash<std::pair<int, int>> hasher;
   // TODO: 碰撞
-  return hasher(std::make_pair(id1, id2));
+  return DrcUtil::hash(id1, id2);
 }
 
 /// @brief combine sequence to one enum
