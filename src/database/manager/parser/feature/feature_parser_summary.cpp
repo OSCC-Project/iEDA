@@ -45,6 +45,9 @@
 #include "CTSAPI.hh"
 #include "TimingEngine.hh"
 #include "Evaluator.hh"
+#include "DrcAPI.hpp"
+#include "EvalAPI.hpp"
+#include "report_evaluator.h"
 #include "feature_parser.h"
 #include "flow_config.h"
 #include "idm.h"
@@ -53,7 +56,7 @@
 
 namespace idb {
 
-bool FeatureParser::buildReportSummary(std::string json_path)
+bool FeatureParser::buildReportSummary(std::string json_path, std::string step)
 {
   std::ofstream& file_stream = ieda::getOutputFileStream(json_path);
   json root;
@@ -74,8 +77,12 @@ bool FeatureParser::buildReportSummary(std::string json_path)
 
   root["Pins"] = buildSummaryPins();
 
+
   // root["Place"] = buildSummaryPL(json_path);
   // root["CTS"] = buildSummaryCTS();
+  // root["DRC"] = buildSummaryDRC();
+  // root["TO"] = buildSummaryTO();
+  root[step] = flowSummary(step);
 
   file_stream << std::setw(4) << root;
 
@@ -489,15 +496,36 @@ json FeatureParser::buildSummaryPins()
   return summary_pin;
 }
 
-json FeatureParser::buildSummaryPL(std::string json_path)
+json FeatureParser::flowSummary(std::string step)
+{
+  using SummaryBuilder = std::function<json()>;
+  auto stepToBuilder = std::unordered_map<std::string, SummaryBuilder>{
+    {"place", [this, step]() { return buildSummaryPL(step); }},
+    {"legalization", [this, step]() { return buildSummaryPL(step); }},
+    {"CTS", [this]() { return buildSummaryCTS(); }},
+    // 还未完成实现
+    {"optDrv", [this]() { return buildSummaryTO(); }},
+    {"optHold", [this]() { return buildSummaryTO(); }},
+    {"optSetup", [this]() { return buildSummaryTO(); }}
+  };
+
+  return stepToBuilder[step]();
+  // if (auto it = stepToBuilder.find(step); it != stepToBuilder.end()) {
+  //     return it->second();
+  // } else {
+  //     return json();
+  // }
+}
+
+json FeatureParser::buildSummaryPL(std::string step)
 {
 
-  std::string path = json_path;
-  // get step
-  size_t lastSlash = path.find_last_of('/');
-  size_t lastfirstUnderline = path.find_first_of('_', lastSlash + 1);
-  size_t lastsecondUnderline = path.find_first_of('_', lastfirstUnderline + 1);
-  std::string step = path.substr(lastfirstUnderline + 1, lastsecondUnderline - lastfirstUnderline - 1);
+  // std::string path = json_path;
+  // // get step
+  // size_t lastSlash = path.find_last_of('/');
+  // size_t lastfirstUnderline = path.find_first_of('_', lastSlash + 1);
+  // size_t lastsecondUnderline = path.find_first_of('_', lastfirstUnderline + 1);
+  // std::string step = path.substr(lastfirstUnderline + 1, lastsecondUnderline - lastfirstUnderline - 1);
 
   // 按照step获取index
   // int index_step = [&step]()->int{
@@ -623,14 +651,68 @@ json FeatureParser::buildSummaryCTS()
 
 json FeatureParser::buildSummaryTO()
 {
+  json summary_to;
 
-  return json();
+#if 1
+  // instances, nets, total_pins, core_area, utilization
+  // 这些指标在summary里都有
+  summary_to["instances"] = _design->get_instance_list()->get_num();
+  summary_to["nets"] = _design->get_net_list()->get_num();
+  // summary_to["total_pins"] = 
+  summary_to["core_area"] = dmInst->coreAreaUm();
+  summary_to["utilization"] = dmInst->coreUtilization();
+#endif
+
+  // TODO
+  // max_fanout, min_slew_slack, min_cap_slack
+  
+  
+  // HPWL, STWL, Global_routing_WL, congestion
+  auto& nets = dmInst->get_idb_design()->get_net_list()->get_net_list();
+  auto wl_nets = iplf::EvalWrapper::parallelWrap<eval::WLNet>(nets, iplf::EvalWrapper::wrapWLNet);
+  summary_to["HPWL"] = EvalInst.evalTotalWL("kHPWL", wl_nets);
+  summary_to["STWL"] = EvalInst.evalTotalWL("kFlute", wl_nets);
+  // auto Global_routing_WL = 
+  // auto congestion = 
+
+  // setup: initial_tns, optimized_tns, delta_tns, initial_wns, optimized_wns, delta_wns
+  auto _timing_engine = ista::TimingEngine::getOrCreateTimingEngine();
+  auto clk_list = _timing_engine->getClockList();
+  std::ranges::for_each(clk_list, [&](ista::StaClock* clk){
+    auto clk_name = clk->get_clock_name();
+    auto setup_tns = _timing_engine->reportTNS(clk_name, AnalysisMode::kMax);
+    auto setup_wns = _timing_engine->reportWNS(clk_name, AnalysisMode::kMax);
+    auto hold_tns = _timing_engine->reportTNS(clk_name, AnalysisMode::kMin);
+    auto hold_wns = _timing_engine->reportWNS(clk_name, AnalysisMode::kMin);
+    auto suggest_freq = 1000.0 / (clk->getPeriodNs() - setup_wns);
+    summary_to[clk_name]["optimized_setup_tns"] = setup_tns;
+    summary_to[clk_name]["optimized_setup_wns"] = setup_wns;
+    summary_to[clk_name]["optimized_hold_tns"] = hold_tns;
+    summary_to[clk_name]["optimized_hold_wns"] = hold_wns;
+    summary_to[clk_name]["optimized_suggest_freq"] = suggest_freq;
+  });
+  // hold: initial_tns, optimized_tns, delta_tns, initial_wns, optimized_wns, delta_wns
+
+  return summary_to;
 }
 
 json FeatureParser::buildSummarySTA()
 {
   
   return json();
+}
+
+json FeatureParser::buildSummaryDRC()
+{
+  json summary_drc;
+  
+  auto drc_map = idrc::DrcAPIInst.getCheckResult();
+  // summary_drc["short_nums"] = drc_map
+  for(auto& [key, value] : drc_map){
+    summary_drc[key] = value;
+  }
+
+  return summary_drc;
 }
 
 

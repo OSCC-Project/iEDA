@@ -41,11 +41,11 @@ bool feature_nets(const std::string& path)
   return feature_parser.save_nets(path);
 }
 
-bool feature_reportSummary(const std::string& path)
+bool feature_reportSummary(const std::string& path, const std::string& step)
 {
   iplf::FeatureManager feature_parser(dmInst->get_idb_layout(), dmInst->get_idb_design());
 
-  return feature_parser.save_reportSummary(path);
+  return feature_parser.save_reportSummary(path, step);
 }
 
 }  // namespace python_interface
