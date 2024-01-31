@@ -41,11 +41,13 @@ struct ScanlineStatus
   std::vector<ScanlinePoint*>::iterator endpoints_it;
   std::vector<ScanlinePoint*>::iterator endpoints_end;
 
+  std::unique_ptr<CompareScanlinePoint> compare_scanline_point = nullptr;
+
   int current_bucket_coord = 0;
 
   std::list<ScanlinePoint*> status_points;
-  std::list<ScanlinePoint*>::iterator insert_begin = status_points.end();
-  std::list<ScanlinePoint*>::iterator insert_end = status_points.end();
+  std::list<ScanlinePoint*>::iterator insert_begin = status_points.begin();
+  std::list<ScanlinePoint*>::iterator insert_end = status_points.begin();
 
   std::function<int(DrcBasicPoint*)> get_travel_direction_coord;  // TODO: 模板 lambda
   std::function<int(DrcBasicPoint*)> get_orthogonal_coord;
@@ -54,12 +56,14 @@ struct ScanlineStatus
   {
     switch (direction) {
       case ScanlineTravelDirection::kHorizontal:
+        compare_scanline_point = std::make_unique<CompareScanlinePointHorizontal>();
         get_travel_direction_coord = []<typename T>(T* point) { return point->get_x(); };
         get_orthogonal_coord = []<typename T>(T* point) { return point->get_y(); };
         endpoints_it = preprocess->get_scanline_points_horizontal().begin();
         endpoints_end = preprocess->get_scanline_points_horizontal().end();
         break;
       case ScanlineTravelDirection::kVertical:
+        compare_scanline_point = std::make_unique<CompareScanlinePointVertical>();
         get_travel_direction_coord = []<typename T>(T* point) { return point->get_y(); };
         get_orthogonal_coord = []<typename T>(T* point) { return point->get_x(); };
         endpoints_it = preprocess->get_scanline_points_vertical().begin();
@@ -71,7 +75,7 @@ struct ScanlineStatus
     }
   }
 
-  std::vector<ScanlinePoint*>::iterator bucketEnd()
+  std::vector<ScanlinePoint*>::iterator nextBucketEnd()
   {
     current_bucket_coord = get_travel_direction_coord((*endpoints_it)->get_point());
     auto it = endpoints_it;
@@ -79,6 +83,17 @@ struct ScanlineStatus
     while ((++it) != endpoints_end && get_travel_direction_coord((*it)->get_point()) == starting_coord) {
     }
     return it;
+  }
+
+  void prepareNewBucket()
+  {
+    // mark old points in scanline status
+    for (auto* point : status_points) {
+      point->set_is_new(false);
+    }
+
+    insert_begin = status_points.begin();
+    insert_end = status_points.begin();
   }
 };
 
@@ -105,6 +120,8 @@ class DrcEngineScanline
   void addCurrentBucketToScanline(ScanlineStatus& status);
   ScanlineSegmentType judgeSegmentType(ScanlineStatus& status, ScanlinePoint* point_forward, ScanlinePoint* point_backward);
   uint64_t hash2SideIds(int id1, int id2);
+  template <typename T>
+  void combineSequence(T& sequence, std::deque<ScanlineSegmentType>& segment_types);
   void processScanlineStatus(ScanlineStatus& status);
   void removeEndingPoints(ScanlineStatus& status);
 };

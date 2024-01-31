@@ -65,7 +65,7 @@ class ConditionSequence
 
   virtual void applySequence(State& state, SequenceType condition_sequence_enum) = 0;
 
-  virtual void applyValue(State& state, SequenceType condition_sequence_enum, std::vector<DrcBasicPoint*> points) = 0;
+  virtual void applyValue(State& state, int& value, SequenceType condition_sequence_enum, std::vector<DrcBasicPoint*>& points) = 0;
 
   bool match(SequenceType condition_sequence) { return _trigger_sequence & condition_sequence; }
 

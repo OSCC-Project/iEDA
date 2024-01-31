@@ -37,6 +37,25 @@ bool ConditionDetailJog::apply(std::vector<std::pair<ConditionSequence::Sequence
       polygons.emplace_back(gtl_pts.begin(), gtl_pts.end());
     }
   }
+  if (check_region[0].second[1]->get_y() == check_region[0].second[2]->get_y()) {
+    int a = 0;
+  }
+
+  // std::vector<ieda_solver::GtlPoint> spacing_up_points;
+  // std::vector<ieda_solver::GtlPoint> spacing_down_points;
+  // for (auto& line : check_region) {
+  //   if (spacing_up_points.empty() || line.second[2]->get_x() != spacing_up_points.back().x()
+  //       || line.second[2]->get_y() != spacing_up_points.back().y()) {
+  //     spacing_up_points.emplace_back(line.second[2]->get_x(), line.second[2]->get_y());
+  //   }
+  //   if (spacing_down_points.empty() || line.second[1]->get_x() != spacing_down_points.back().x()
+  //       || line.second[1]->get_y() != spacing_down_points.back().y()) {
+  //     spacing_down_points.emplace_back(line.second[1]->get_x(), line.second[1]->get_y());
+  //   }
+  // }
+  // std::reverse(spacing_down_points.begin(), spacing_down_points.end());
+  // spacing_up_points.insert(spacing_up_points.end(), spacing_down_points.begin(), spacing_down_points.end());
+  // auto spacing_region = ieda_solver::GtlPolygon(spacing_up_points.begin(), spacing_up_points.end());
 
   return false;
 }

@@ -47,6 +47,7 @@ void DrcRuleBuilder::initRoutingLayerRules()
     idb::IdbLayerRouting* idb_routing_layer = dynamic_cast<idb::IdbLayerRouting*>(idb_layer);
 
     buildJogConditions(idb_layer, idb_routing_layer);
+    buildSpacingTableConditions(idb_layer, idb_routing_layer);
   }
 }
 
@@ -82,6 +83,53 @@ void DrcRuleBuilder::buildJogConditions(idb::IdbLayer* layer, idb::IdbLayerRouti
 
   for (auto& sequence : trigger_sequence_list) {
     DrcTechRuleInst->get_condition_trigger(layer, sequence).emplace_back(condition);
+  }
+}
+
+void DrcRuleBuilder::buildSpacingTableConditions(idb::IdbLayer* layer, idb::IdbLayerRouting* idb_routing_layer)
+{
+  auto idb_rule_spacing_table = idb_routing_layer->get_spacing_table();
+  if (idb_rule_spacing_table == nullptr) {
+    return;
+  }
+
+  // find max spacing
+  int max_spacing = 0;
+  if (idb_rule_spacing_table->is_parallel()) {
+    /// get prl table
+    auto idb_table_prl = idb_rule_spacing_table->get_parallel();
+
+    auto& idb_width_list = idb_table_prl->get_width_list();
+    auto& prl_length_list = idb_table_prl->get_parallel_length_list();
+    auto& idb_spacing_array = idb_table_prl->get_spacing_table();
+    for (size_t i = 0; i < idb_spacing_array.size(); ++i) {
+      for (size_t j = 0; j < idb_spacing_array[i].size(); ++j) {
+        /// get spacing
+        int spacing = idb_spacing_array[i][j];
+
+        if (spacing > max_spacing) {
+          max_spacing = spacing;
+        }
+      }
+    }
+
+    // // create condition
+    // std::vector<ConditionSequence::SequenceType> trigger_sequence_list{
+    //     ConditionSequence::kSE_MS_W, ConditionSequence::kSE_MS_SE, ConditionSequence::kSE_MS_TE};
+    // uint64_t trigger_sequence = 0;
+    // for (auto& sequence : trigger_sequence_list) {
+    //   trigger_sequence |= sequence;
+    // }
+    // ConditionSequenceJog* sequence
+    //     = new ConditionSequenceJog(within, trigger_sequence, ConditionSequence::kTE_MS_W | ConditionSequence::kTE_MS_TE,
+    //                                ConditionSequence::kEE_MS_W | ConditionSequence::kEE_MS_EE | ConditionSequence::kEE_MS_TE);
+    // ConditionDetailJog* detail = new ConditionDetailJog(idb_rule_spacing_table.get());
+
+    // Condition* condition = new Condition(sequence, detail);
+
+    // for (auto& sequence : trigger_sequence_list) {
+    //   DrcTechRuleInst->get_condition_trigger(layer, sequence).emplace_back(condition);
+    // }
   }
 }
 

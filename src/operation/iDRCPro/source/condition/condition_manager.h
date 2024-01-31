@@ -108,14 +108,14 @@ class DrcConditionManager
   }
 
   void recordRegion(idb::IdbLayer* layer, uint64_t recognize_code, ConditionSequence::SequenceType sequence,
-                    std::vector<DrcBasicPoint*>& points)
+                    std::vector<DrcBasicPoint*>& points, int bucket_coord, bool is_points_vertical)
   {
     auto& record_list = _condition_recording_map[layer][recognize_code];
     auto record_it = record_list.begin();
     while (record_it != record_list.end()) {
       auto record = *record_it;
       auto state = record->record(sequence, points);
-      if (state == ConditionSequence::State::kSuccess) {
+      if (state == ConditionSequence::State::kSuccess || state == ConditionSequence::State::kFail) {
         record_it = record_list.erase(record_it);
         _record_pool.push_back(record);
         record->clear();
@@ -131,7 +131,6 @@ class DrcConditionManager
   }
 
  private:
-  uint64_t debug_code = 0;
   DrcViolationManager* _violation_manager;
 
   std::map<idb::IdbLayer*, std::map<uint64_t, std::list<ConditionRecordPtr>>> _condition_recording_map;
