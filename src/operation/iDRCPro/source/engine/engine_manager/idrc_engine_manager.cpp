@@ -97,11 +97,11 @@ void DrcEngineManager::dataPreprocess()
   for (auto& [layer, engine_layout] : layouts) {
     /// scanline engine for one layer
     auto* scanline_engine = get_engine_scanline(layer, LayoutType::kRouting);
-    auto* scanline_dm = scanline_engine->get_preprocess();
+    auto* scanline_preprocess = scanline_engine->get_preprocess();
 
     // reserve capacity for basic points
     uint64_t point_number = engine_layout->pointCount();
-    scanline_dm->reserveSpace(point_number);
+    scanline_preprocess->reserveSpace(point_number);
 
     // create scanline points
     for (auto [net_id, sub_layout] : engine_layout->get_sub_layouts()) {
@@ -110,11 +110,11 @@ void DrcEngineManager::dataPreprocess()
       auto boost_pt_list_pair = boost_engine->get_boost_polygons_points();
 
       /// add data to scanline engine
-      scanline_dm->addData(boost_pt_list_pair.second, net_id);  /// boost_pt_list_pair : second value is polygon points
+      scanline_preprocess->addData(boost_pt_list_pair.second, net_id);  /// boost_pt_list_pair : second value is polygon points
     }
 
     /// sort point list in scanline data manager
-    scanline_dm->sortEndpoints();
+    scanline_preprocess->sortEndpoints();
 
     // std::cout << "idrc : layer id = " << layer->get_id() << " polygon points total number = " << point_number << std::endl;
   }

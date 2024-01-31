@@ -30,8 +30,10 @@ class DrcEngine
   DrcEngine(DrcDataManager* data_manager, DrcConditionManager* condition_manager);
   ~DrcEngine();
 
-  DrcEngineManager* get_engine_manager() { return _engine_manager; }
+  // DrcEngineManager* get_engine_manager() { return _engine_manager; }
   void initEngine(DrcCheckerType checker_type = DrcCheckerType::kRT);
+  void operateEngine();
+  void checkEngine();
 
  private:
   DrcDataManager* _data_manager = nullptr;

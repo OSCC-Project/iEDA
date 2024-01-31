@@ -40,9 +40,9 @@ class DrcManager
   DrcEngine* get_engine() { return _engine; }
 
   void init(std::string config = "");
-  void engineStart(DrcCheckerType checker_type = DrcCheckerType::kRT);
-  bool buildCondition();
-  void check();
+  void dataInit(DrcCheckerType checker_type = DrcCheckerType::kRT);
+  void dataOperate();
+  void dataCheck();
 
  private:
   DrcDataManager* _data_manager;

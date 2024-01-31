@@ -59,7 +59,7 @@ void DrcManager::init(std::string config)
 {
 }
 
-void DrcManager::engineStart(DrcCheckerType checker_type)
+void DrcManager::dataInit(DrcCheckerType checker_type)
 {
   _engine->initEngine(checker_type);
 }
@@ -67,15 +67,14 @@ void DrcManager::engineStart(DrcCheckerType checker_type)
  * return true : has conditon to check
  * return false : not condition need to check
  */
-bool DrcManager::buildCondition()
+void DrcManager::dataOperate()
 {
-  _engine->get_engine_manager()->filterData();  // TODO: self violation and intersection violation
-  return true;
+  _engine->operateEngine();  // TODO: self violation and intersection violation
 }
 
-void DrcManager::check()
+void DrcManager::dataCheck()
 {
-  _engine->get_engine_manager()->get_engine_check()->check();
+  _engine->checkEngine();
 }
 
 }  // namespace idrc
