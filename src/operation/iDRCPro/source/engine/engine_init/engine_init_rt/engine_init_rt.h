@@ -35,7 +35,7 @@ class DrcEngineInitRT : DrcEngineInit
   DrcEngineInitRT(DrcEngineManager* engine_manager, DrcDataManager* data_manager) : DrcEngineInit(engine_manager, data_manager) {}
   ~DrcEngineInitRT() {}
 
-  void init();
+  void init() override;
 
  private:
 };

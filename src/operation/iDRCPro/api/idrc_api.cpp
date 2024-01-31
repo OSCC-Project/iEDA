@@ -71,7 +71,7 @@ std::map<ViolationEnumType, std::vector<DrcViolation*>> DrcApi::check(std::vecto
 #ifdef DEBUG_IDRC_API
   ieda::Stats stats_engine;
 #endif
-  drc_manager.engineStart(check_type);
+  drc_manager.dataInit(check_type);
 #ifdef DEBUG_IDRC_API
   if (check_type == DrcCheckerType::kDef) {
     std::cout << "idrc : engine start"
@@ -82,7 +82,7 @@ std::map<ViolationEnumType, std::vector<DrcViolation*>> DrcApi::check(std::vecto
 #ifdef DEBUG_IDRC_API
   ieda::Stats stats_build_condition;
 #endif
-  drc_manager.buildCondition();
+  drc_manager.dataOperate();
 #ifdef DEBUG_IDRC_API
   if (check_type == DrcCheckerType::kDef) {
     std::cout << "idrc : build condition"
@@ -94,7 +94,7 @@ std::map<ViolationEnumType, std::vector<DrcViolation*>> DrcApi::check(std::vecto
 #ifdef DEBUG_IDRC_API
   ieda::Stats stats_check;
 #endif
-  drc_manager.check();
+  drc_manager.dataCheck();
 
 #ifdef DEBUG_IDRC_API
   if (check_type == DrcCheckerType::kDef) {

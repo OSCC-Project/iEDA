@@ -50,7 +50,7 @@ class DrcEngineInitDef : DrcEngineInit
   DrcEngineInitDef(DrcEngineManager* engine_manager) : DrcEngineInit(engine_manager) {}
   ~DrcEngineInitDef() {}
 
-  void init();
+  void init() override;
 
  private:
   void initDataFromIOPins();

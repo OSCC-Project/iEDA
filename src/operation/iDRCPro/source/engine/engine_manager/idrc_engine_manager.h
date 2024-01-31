@@ -74,8 +74,7 @@ class DrcEngineManager
    *  _scanline : scanline matrix
    */
   std::map<LayoutType, std::map<idb::IdbLayer*, DrcEngineScanline*>> _scanline_matrix;
-  DrcEngineCheck* _engine_check;
-
+  DrcEngineCheck* _engine_check = nullptr;
   void dataPreprocess();
 };
 

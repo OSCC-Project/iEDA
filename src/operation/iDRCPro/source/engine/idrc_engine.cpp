@@ -59,6 +59,7 @@ void DrcEngine::initEngine(DrcCheckerType checker_type)
       break;
   }
 }
+
 /**
  * init engine data from RT data
  */
@@ -74,6 +75,16 @@ void DrcEngine::initEngineDef()
 {
   DrcEngineInitDef init_def(_engine_manager);
   init_def.init();
+}
+
+void DrcEngine::operateEngine()
+{
+  _engine_manager->filterData();
+}
+
+void DrcEngine::checkEngine()
+{
+  _engine_manager->get_engine_check()->check();
 }
 
 }  // namespace idrc
