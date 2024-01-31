@@ -120,6 +120,8 @@ class DrcEngineScanline
   void addCurrentBucketToScanline(ScanlineStatus& status);
   ScanlineSegmentType judgeSegmentType(ScanlineStatus& status, ScanlinePoint* point_forward, ScanlinePoint* point_backward);
   uint64_t hash2SideIds(int id1, int id2);
+  template <typename T>
+  void combineSequence(T& sequence, std::deque<ScanlineSegmentType>& segment_types);
   void processScanlineStatus(ScanlineStatus& status);
   void removeEndingPoints(ScanlineStatus& status);
 };
