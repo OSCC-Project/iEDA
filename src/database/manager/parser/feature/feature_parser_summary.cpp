@@ -47,6 +47,7 @@
 #include "PLAPI.hh"
 #include "PlacerDB.hh"
 #include "TimingEngine.hh"
+#include "ToApi.hpp"
 #include "feature_parser.h"
 #include "flow_config.h"
 #include "idm.h"
@@ -504,10 +505,9 @@ json FeatureParser::flowSummary(std::string step)
   auto stepToBuilder = std::unordered_map<std::string, SummaryBuilder>{{"place", [this, step]() { return buildSummaryPL(step); }},
                                                                        {"legalization", [this, step]() { return buildSummaryPL(step); }},
                                                                        {"CTS", [this]() { return buildSummaryCTS(); }},
-                                                                       // 还未完成实现
-                                                                       {"optDrv", [this]() { return buildSummaryTO(); }},
-                                                                       {"optHold", [this]() { return buildSummaryTO(); }},
-                                                                       {"optSetup", [this]() { return buildSummaryTO(); }}};
+                                                                       {"optDrv", [this, step]() { return buildSummaryTO(step); }},
+                                                                       {"optHold", [this, step]() { return buildSummaryTO(step); }},
+                                                                       {"optSetup", [this, step]() { return buildSummaryTO(step); }}};
 
   return stepToBuilder[step]();
 }
@@ -648,7 +648,7 @@ json FeatureParser::buildSummaryCTS()
   return summary_cts;
 }
 
-json FeatureParser::buildSummaryTO()
+json FeatureParser::buildSummaryTO(std::string step)
 {
   json summary_to;
 
@@ -662,9 +662,6 @@ json FeatureParser::buildSummaryTO()
   summary_to["utilization"] = dmInst->coreUtilization();
 #endif
 
-  // TODO
-  // max_fanout, min_slew_slack, min_cap_slack
-
   // HPWL, STWL, Global_routing_WL, congestion
   auto& nets = dmInst->get_idb_design()->get_net_list()->get_net_list();
   auto wl_nets = iplf::EvalWrapper::parallelWrap<eval::WLNet>(nets, iplf::EvalWrapper::wrapWLNet);
@@ -673,23 +670,42 @@ json FeatureParser::buildSummaryTO()
   // auto Global_routing_WL =
   // auto congestion =
 
-  // setup: initial_tns, optimized_tns, delta_tns, initial_wns, optimized_wns, delta_wns
+  // max_fanout, min_slew_slack, min_cap_slack
+
+
+  // before: 初始值，tns，wns，freq
+  json summary_subto;
+  auto to_eval_data = ToApiInst.getEvalData();
+  for(auto eval_data : to_eval_data){
+    auto clk_name = eval_data.name;
+    summary_subto[clk_name]["initial_tns"] = eval_data.initial_tns;
+    summary_subto[clk_name]["initial_wns"] = eval_data.initial_wns;
+    summary_subto[clk_name]["initial_suggest_freq"] = eval_data.initial_freq;
+  }
+
+  // after: 优化后的值
   auto _timing_engine = ista::TimingEngine::getOrCreateTimingEngine();
   auto clk_list = _timing_engine->getClockList();
+
   std::ranges::for_each(clk_list, [&](ista::StaClock* clk) {
     auto clk_name = clk->get_clock_name();
-    auto setup_tns = _timing_engine->reportTNS(clk_name, AnalysisMode::kMax);
-    auto setup_wns = _timing_engine->reportWNS(clk_name, AnalysisMode::kMax);
-    auto hold_tns = _timing_engine->reportTNS(clk_name, AnalysisMode::kMin);
-    auto hold_wns = _timing_engine->reportWNS(clk_name, AnalysisMode::kMin);
-    auto suggest_freq = 1000.0 / (clk->getPeriodNs() - setup_wns);
-    summary_to[clk_name]["optimized_setup_tns"] = setup_tns;
-    summary_to[clk_name]["optimized_setup_wns"] = setup_wns;
-    summary_to[clk_name]["optimized_hold_tns"] = hold_tns;
-    summary_to[clk_name]["optimized_hold_wns"] = hold_wns;
-    summary_to[clk_name]["optimized_suggest_freq"] = suggest_freq;
+    auto drv_tns = _timing_engine->reportTNS(clk_name, AnalysisMode::kMax);
+    auto drv_wns = _timing_engine->reportWNS(clk_name, AnalysisMode::kMax);
+    auto suggest_freq = 1000.0 / (clk->getPeriodNs() - drv_wns);
+    summary_subto[clk_name]["optimized_tns"] = drv_tns;
+    summary_subto[clk_name]["optimized_wns"] = drv_wns;
+    summary_subto[clk_name]["optimized_suggest_freq"] = suggest_freq;
   });
-  // hold: initial_tns, optimized_tns, delta_tns, initial_wns, optimized_wns, delta_wns
+
+  // delta: 迭代的值，优化后的值减去初始值
+  for(auto eval_data : to_eval_data){
+    auto clk_name = eval_data.name;
+    summary_subto[clk_name]["delta_tns"] = static_cast<double>(summary_subto[clk_name]["optimized_tns"]) - static_cast<double>(summary_subto[clk_name]["initial_tns"]);
+    summary_subto[clk_name]["delta_wns"] = static_cast<double>(summary_subto[clk_name]["optimized_wns"]) - static_cast<double>(summary_subto[clk_name]["initial_wns"]);
+    summary_subto[clk_name]["delta_suggest_freq"] = static_cast<double>(summary_subto[clk_name]["optimized_suggest_freq"]) - static_cast<double>(summary_subto[clk_name]["initial_suggest_freq"]);
+  }
+
+  summary_to[step] = summary_subto;
 
   return summary_to;
 }

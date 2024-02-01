@@ -43,6 +43,7 @@ void HoldOptimizer::optimizeHold() {
 
   _timing_engine->updateTiming();
   _timing_engine->reportTiming();
+  _db_interface->set_eval_data();
 
   reportWNSAndTNS();
 
