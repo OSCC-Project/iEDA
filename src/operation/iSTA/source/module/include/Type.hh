@@ -57,6 +57,10 @@ static constexpr std::initializer_list<std::pair<AnalysisMode, TransType>>
                      {AnalysisMode::kMin, TransType::kRise},
                      {AnalysisMode::kMin, TransType::kFall}};
 
+static constexpr std::initializer_list<AnalysisMode> g_split_mode = {
+  AnalysisMode::kMax, AnalysisMode::kMin
+};
+
 enum class ModeTransIndex : int {
   kMaxRise = 0,
   kMaxFall = 1,
@@ -67,6 +71,7 @@ enum class ModeTransIndex : int {
 using ModeTransPair = std::pair<AnalysisMode, TransType>;
 
 #define FOREACH_MODE_TRANS(mode, trans) for (auto [mode, trans] : g_split_trans)
+#define FOREACH_MODE(mode) for (auto mode : g_split_mode)
 
 #define NS_TO_FS(delay) ((delay) * static_cast<int64_t>(g_ns2fs))
 #define FS_TO_NS(delay) ((delay) / static_cast<double>(g_ns2fs))

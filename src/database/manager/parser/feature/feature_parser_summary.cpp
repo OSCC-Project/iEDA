@@ -696,7 +696,44 @@ json FeatureParser::buildSummaryTO()
 
 json FeatureParser::buildSummarySTA()
 {
-  return json();
+  json summary_sta;
+  auto timing_engine = ista::TimingEngine::getOrCreateTimingEngine();
+  auto* ista = timing_engine->get_ista();
+  auto& all_clocks = ista->get_clocks();
+
+  // iterate the clock group of all the clocks.
+  for (unsigned id = 1; auto& clock_group : all_clocks) {
+    json::value_type path_group;
+    path_group["timing_path_group"]["id"] = id++;
+    std::string group_name = clock_group->get_clock_name();
+    path_group["timing_path_group"]["name"] = group_name;
+    double wns = ista->getWNS(group_name.c_str(), ista::AnalysisMode::kMax);
+    double tns = ista->getTNS(group_name.c_str(), ista::AnalysisMode::kMax);
+    path_group["timing_path_group"]["WNS"] = wns;
+    path_group["timing_path_group"]["TNS"] = tns;
+    path_group["timing_path_group"]["NVP"] = 0;  // TBD for negative violated points.
+    double freq = 1000.0 / (clock_group->getPeriodNs() - wns);
+    path_group["timing_path_group"]["FREQ"] = freq;
+    double hold_wns = ista->getWNS(group_name.c_str(), ista::AnalysisMode::kMin);
+    double hold_tns = ista->getTNS(group_name.c_str(), ista::AnalysisMode::kMin);
+    path_group["timing_path_group"]["hold_WNS"] = wns;
+    path_group["timing_path_group"]["hold_TNS"] = tns;
+    path_group["timing_path_group"]["hold_NVP"] = 0;  // TBD for hold negative violated points.
+
+    FOREACH_MODE(mode)
+    {
+      json::value_type analysis_mode;
+      analysis_mode["analysis_mode"] = (mode == AnalysisMode::kMax) ? "max_delay/setup" : "min_delay/hold";
+      analysis_mode["levels_of_logic"] = 0;       // TBD
+      analysis_mode["critical_path_length"] = 0;  // TBD
+      analysis_mode["critical_path_slack"] = (mode == AnalysisMode::kMax) ? wns : hold_wns;
+      analysis_mode["total_negative_slack"] = (mode == AnalysisMode::kMax) ? tns : hold_tns;
+      path_group["analysis_mode_infos"].push_back(analysis_mode);
+    }
+    summary_sta.push_back(path_group);
+  }
+
+  return summary_sta;
 }
 
 json FeatureParser::buildSummaryDRC()
