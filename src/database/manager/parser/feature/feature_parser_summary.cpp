@@ -728,7 +728,7 @@ json FeatureParser::buildSummarySTA()
       analysis_mode["critical_path_length"] = 0;  // TBD
       analysis_mode["critical_path_slack"] = (mode == AnalysisMode::kMax) ? wns : hold_wns;
       analysis_mode["total_negative_slack"] = (mode == AnalysisMode::kMax) ? tns : hold_tns;
-      path_group["analysis_mode_infos"].push_back(analysis_mode);
+      path_group["timing_path_group"]["analysis_mode_infos"].push_back(analysis_mode);
     }
     summary_sta.push_back(path_group);
   }
