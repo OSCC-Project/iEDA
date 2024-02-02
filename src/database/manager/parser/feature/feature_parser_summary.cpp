@@ -507,34 +507,15 @@ json FeatureParser::flowSummary(std::string step)
                                                                        {"CTS", [this]() { return buildSummaryCTS(); }},
                                                                        {"optDrv", [this, step]() { return buildSummaryTO(step); }},
                                                                        {"optHold", [this, step]() { return buildSummaryTO(step); }},
-                                                                       {"optSetup", [this, step]() { return buildSummaryTO(step); }}};
+                                                                       {"optSetup", [this, step]() { return buildSummaryTO(step); }},
+                                                                       {"sta", [this]() { return buildSummarySTA(); }},
+                                                                       {"drc", [this]() { return buildSummaryDRC(); }}};
 
   return stepToBuilder[step]();
 }
 
 json FeatureParser::buildSummaryPL(std::string step)
 {
-  // std::string path = json_path;
-  // // get step
-  // size_t lastSlash = path.find_last_of('/');
-  // size_t lastfirstUnderline = path.find_first_of('_', lastSlash + 1);
-  // size_t lastsecondUnderline = path.find_first_of('_', lastfirstUnderline + 1);
-  // std::string step = path.substr(lastfirstUnderline + 1, lastsecondUnderline - lastfirstUnderline - 1);
-
-  // 按照step获取index
-  // int index_step = [&step]()->int{
-  //   if(step == "place") return 0;
-  //   else if(step == "dplace") return 1;
-  //   return 2;
-  // }();
-
-  int index_step;
-  if (step == "place")
-    index_step = 0;
-  else if (step == "dplace")
-    index_step = 1;
-  else
-    index_step = 2;
 
   json summary_pl;
   // 1:全局布局、详细布局、合法化都需要存储的数据参数，需要根据step存储不同的值
@@ -548,19 +529,29 @@ json FeatureParser::buildSummaryPL(std::string step)
   auto wns = PlacerDBInst.wns;
   auto suggest_freq = PlacerDBInst.suggest_freq;
 
-  summary_pl["place_density"] = place_density[index_step];
-  summary_pl["pin_density"] = pin_density[index_step];
-  summary_pl["HPWL"] = HPWL[index_step];
-  summary_pl["STWL"] = STWL[index_step];
-  summary_pl["global_routing_WL"] = GRWL[index_step];
-  summary_pl["congestion"] = congestion[index_step];
-  summary_pl["tns"] = tns[index_step];
-  summary_pl["wns"] = wns[index_step];
-  summary_pl["suggest_freq"] = suggest_freq[index_step];
+  // 2:全局布局、详细布局需要存储的数据参数
+  if(step == "place"){
+    summary_pl["gplace"]["place_density"] = place_density[0];
+    summary_pl["gplace"]["pin_density"] = pin_density[0];
+    summary_pl["gplace"]["HPWL"] = HPWL[0];
+    summary_pl["gplace"]["STWL"] = STWL[0];
+    summary_pl["gplace"]["global_routing_WL"] = GRWL[0];
+    summary_pl["gplace"]["congestion"] = congestion[0];
+    summary_pl["gplace"]["tns"] = tns[0];
+    summary_pl["gplace"]["wns"] = wns[0];
+    summary_pl["gplace"]["suggest_freq"] = suggest_freq[0];
 
-// 2:全局布局、详细布局需要存储的数据参数
-#if 1
-  if (index_step != 2) {
+    
+    summary_pl["dplace"]["place_density"] = place_density[1];
+    summary_pl["dplace"]["pin_density"] = pin_density[1];
+    summary_pl["dplace"]["HPWL"] = HPWL[1];
+    summary_pl["dplace"]["STWL"] = STWL[1];
+    summary_pl["dplace"]["global_routing_WL"] = GRWL[1];
+    summary_pl["dplace"]["congestion"] = congestion[1];
+    summary_pl["dplace"]["tns"] = tns[1];
+    summary_pl["dplace"]["wns"] = wns[1];
+    summary_pl["dplace"]["suggest_freq"] = suggest_freq[1];
+
     auto* pl_design = PlacerDBInst.get_design();
     summary_pl["instance"] = pl_design->get_instances_range();
     int fix_inst_cnt = 0;
@@ -582,14 +573,21 @@ json FeatureParser::buildSummaryPL(std::string step)
     summary_pl["overflow_number"] = PlacerDBInst.gp_overflow_number;
     summary_pl["overflow"] = PlacerDBInst.gp_overflow;
   }
-#endif
-
   // 3:合法化需要存储的数据参数
-  if (index_step == 2) {
+  else if(step == "legalization"){
+    summary_pl["legalization"]["place_density"] = place_density[2];
+    summary_pl["legalization"]["pin_density"] = pin_density[2];
+    summary_pl["legalization"]["HPWL"] = HPWL[2];
+    summary_pl["legalization"]["STWL"] = STWL[2];
+    summary_pl["legalization"]["global_routing_WL"] = GRWL[2];
+    summary_pl["legalization"]["congestion"] = congestion[2];
+    summary_pl["legalization"]["tns"] = tns[2];
+    summary_pl["legalization"]["wns"] = wns[2];
+    summary_pl["legalization"]["suggest_freq"] = suggest_freq[2];
+
     summary_pl["total_movement"] = PlacerDBInst.lg_total_movement;
     summary_pl["max_movement"] = PlacerDBInst.lg_max_movement;
   }
-
   // std::ofstream& file_stream = ieda::getOutputFileStream(json_path);
   // file_stream << std::setw(4) << summary_pl;
 
@@ -705,7 +703,7 @@ json FeatureParser::buildSummaryTO(std::string step)
     summary_subto[clk_name]["delta_suggest_freq"] = static_cast<double>(summary_subto[clk_name]["optimized_suggest_freq"]) - static_cast<double>(summary_subto[clk_name]["initial_suggest_freq"]);
   }
 
-  summary_to[step] = summary_subto;
+  summary_to["sta"] = summary_subto;
 
   return summary_to;
 }
