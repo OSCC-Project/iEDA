@@ -61,13 +61,13 @@ class DRBox
   // function
 #if 1  // astar
   // single task
-  const irt_int get_curr_net_idx() const { return _curr_net_idx; }
+  DRTask* get_curr_dr_task() { return _curr_dr_task; }
   std::vector<std::vector<DRNode*>>& get_start_node_list_list() { return _start_node_list_list; }
   std::vector<std::vector<DRNode*>>& get_end_node_list_list() { return _end_node_list_list; }
   std::vector<DRNode*>& get_path_node_list() { return _path_node_list; }
   std::vector<DRNode*>& get_single_task_visited_node_list() { return _single_task_visited_node_list; }
   std::vector<Segment<LayerCoord>>& get_routing_segment_list() { return _routing_segment_list; }
-  void set_curr_net_idx(const irt_int curr_net_idx) { _curr_net_idx = curr_net_idx; }
+  void set_curr_dr_task(DRTask* curr_dr_task) { _curr_dr_task = curr_dr_task; }
   void set_start_node_list_list(const std::vector<std::vector<DRNode*>>& start_node_list_list)
   {
     _start_node_list_list = start_node_list_list;
@@ -107,7 +107,7 @@ class DRBox
   std::vector<GridMap<DRNode>> _layer_node_map;
 #if 1  // astar
   // single task
-  irt_int _curr_net_idx = -1;
+  DRTask* _curr_dr_task = nullptr;
   std::vector<std::vector<DRNode*>> _start_node_list_list;
   std::vector<std::vector<DRNode*>> _end_node_list_list;
   std::vector<DRNode*> _path_node_list;

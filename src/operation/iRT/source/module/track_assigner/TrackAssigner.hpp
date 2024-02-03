@@ -51,12 +51,12 @@ class TrackAssigner
   TAModel initTAModel(std::vector<Net>& net_list);
   std::vector<TANet> convertToTANetList(std::vector<Net>& net_list);
   TANet convertToTANet(Net& net);
-  void iterativeTAModel(TAModel& ta_model);
-  void printParameter(TAParameter& ta_parameter);
+  void setTAParameter(TAModel& ta_model);
   void initTAPanelMap(TAModel& ta_model);
   void initTATaskList(TAModel& ta_model);
   std::map<TAPanelId, std::vector<TATask*>, CmpTAPanelId> getPanelTaskMap(TANet& ta_net);
   void buildBoundingBox(TATask* dr_task);
+  void buildPanelSchedule(TAModel& ta_model);
   void assignTAPanelMap(TAModel& ta_model);
   void buildFixedRectList(TAPanel& ta_panel);
   void buildPanelTrackAxis(TAPanel& ta_panel);
@@ -80,8 +80,8 @@ class TrackAssigner
   std::vector<Segment<LayerCoord>> getRoutingSegmentListByNode(TANode* node);
   void updateDirectionSet(TAPanel& ta_panel);
   void resetStartAndEnd(TAPanel& ta_panel);
-  void updateTaskResult(TAPanel& ta_panel, TATask* ta_task);
-  std::vector<Segment<LayerCoord>> getRoutingSegmentList(TAPanel& ta_panel, TATask* ta_task);
+  void updateTaskResult(TAPanel& ta_panel);
+  std::vector<Segment<LayerCoord>> getRoutingSegmentList(TAPanel& ta_panel);
   void resetSingleTask(TAPanel& ta_panel);
   void pushToOpenList(TAPanel& ta_panel, TANode* curr_node);
   TANode* popFromOpenList(TAPanel& ta_panel);
@@ -98,8 +98,8 @@ class TrackAssigner
   void updateViolationList(TAPanel& ta_panel);
   std::vector<Violation> getViolationListByIDRC(TAPanel& ta_panel);
   std::vector<TATask*> getTaskScheduleByViolation(TAPanel& ta_panel);
+  void updateTATaskToGcellMap(TAPanel& ta_panel);
   void freeTAPanel(TAPanel& ta_panel);
-  void updateTAModel(TAModel& ta_model);
 #if 1  // update env
   void updateFixedRectToGraph(TAPanel& ta_panel, ChangeType change_type, irt_int net_idx, EXTLayerRect* fixed_rect, bool is_routing);
   void updateNetResultToGraph(TAPanel& ta_panel, ChangeType change_type, irt_int net_idx, Segment<LayerCoord>& segment);

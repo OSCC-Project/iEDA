@@ -510,7 +510,7 @@ void EGRDataManager::buildEGRStrategy()
   } else {
     _egr_config.egr_strategy = EGRStrategy::kGradul;
     _egr_config.strategy = "gradual";
-    LOG_INST.info(Loc::current(), "Optional strategys are 'topo' and 'gradual', use default strategy:gradual.");
+    LOG_INST.info(Loc::current(), "Optional strategys are 'topo' and 'gradual', use default strategy:gradual");
   }
 }
 

@@ -40,18 +40,12 @@ class IRNode : public LayerCoord
   ~IRNode() = default;
   // getter
   std::map<Orientation, IRNode*>& get_neighbor_node_map() { return _neighbor_node_map; }
-  std::map<Orientation, irt_int>& get_orien_access_supply_map() { return _orien_access_supply_map; }
-  std::map<Orientation, irt_int>& get_orien_access_demand_map() { return _orien_access_demand_map; }
+  std::map<Orientation, irt_int>& get_orien_supply_map() { return _orien_supply_map; }
+  std::map<Orientation, irt_int>& get_orien_demand_map() { return _orien_demand_map; }
   // setter
   void set_neighbor_node_map(const std::map<Orientation, IRNode*>& neighbor_node_map) { _neighbor_node_map = neighbor_node_map; }
-  void set_orien_access_supply_map(const std::map<Orientation, irt_int>& orien_access_supply_map)
-  {
-    _orien_access_supply_map = orien_access_supply_map;
-  }
-  void set_orien_access_demand_map(const std::map<Orientation, irt_int>& orien_access_demand_map)
-  {
-    _orien_access_demand_map = orien_access_demand_map;
-  }
+  void set_orien_supply_map(const std::map<Orientation, irt_int>& orien_supply_map) { _orien_supply_map = orien_supply_map; }
+  void set_orien_demand_map(const std::map<Orientation, irt_int>& orien_demand_map) { _orien_demand_map = orien_demand_map; }
   // function
   IRNode* getNeighborNode(Orientation orientation)
   {
@@ -62,19 +56,19 @@ class IRNode : public LayerCoord
     return neighbor_node;
   }
 
-  double getCost(irt_int net_idx, Orientation orientation)
+  double getCost(Orientation orientation)
   {
     double cost = 0;
     if (orientation != Orientation::kUp && orientation != Orientation::kDown) {
-      irt_int node_access_demand = 0;
-      if (RTUtil::exist(_orien_access_demand_map, orientation)) {
-        node_access_demand = _orien_access_demand_map[orientation];
+      irt_int node_demand = 0;
+      if (RTUtil::exist(_orien_demand_map, orientation)) {
+        node_demand = _orien_demand_map[orientation];
       }
-      irt_int node_access_supply = 0;
-      if (RTUtil::exist(_orien_access_supply_map, orientation)) {
-        node_access_supply = _orien_access_supply_map[orientation];
+      irt_int node_supply = 0;
+      if (RTUtil::exist(_orien_supply_map, orientation)) {
+        node_supply = _orien_supply_map[orientation];
       }
-      cost += calcCost(node_access_demand, node_access_supply);
+      cost += calcCost(node_demand, node_supply);
     }
     return cost;
   }
@@ -90,7 +84,7 @@ class IRNode : public LayerCoord
     }
     return cost;
   }
-  void updateDemand(irt_int net_idx, std::set<Orientation> orien_set, ChangeType change_type)
+  void updateDemand(std::set<Orientation> orien_set, ChangeType change_type)
   {
     std::set<Orientation> access_orien_set;
     for (const Orientation& orien : orien_set) {
@@ -99,7 +93,7 @@ class IRNode : public LayerCoord
       }
     }
     for (Orientation access_orien : access_orien_set) {
-      _orien_access_demand_map[access_orien] += (change_type == ChangeType::kAdd ? 1 : -1);
+      _orien_demand_map[access_orien] += (change_type == ChangeType::kAdd ? 1 : -1);
     }
   }
 #if 1  // astar
@@ -124,8 +118,8 @@ class IRNode : public LayerCoord
 
  private:
   std::map<Orientation, IRNode*> _neighbor_node_map;
-  std::map<Orientation, irt_int> _orien_access_supply_map;
-  std::map<Orientation, irt_int> _orien_access_demand_map;
+  std::map<Orientation, irt_int> _orien_supply_map;
+  std::map<Orientation, irt_int> _orien_demand_map;
 #if 1  // astar
   // single task
   std::set<Direction> _direction_set;

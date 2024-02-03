@@ -16,9 +16,10 @@
 // ***************************************************************************************
 #pragma once
 
-#include "IRNode.hpp"
 #include "IRNet.hpp"
+#include "IRNode.hpp"
 #include "IRParameter.hpp"
+#include "IRTask.hpp"
 #include "PriorityQueue.hpp"
 
 namespace irt {
@@ -32,20 +33,22 @@ class IRModel
   std::vector<IRNet>& get_ir_net_list() { return _ir_net_list; }
   IRParameter& get_ir_parameter() { return _ir_parameter; }
   std::vector<GridMap<IRNode>>& get_layer_node_map() { return _layer_node_map; }
+  std::vector<irt_int>& get_ir_net_idx_list() { return _ir_net_idx_list; }
   // setter
   void set_ir_net_list(const std::vector<IRNet>& ir_net_list) { _ir_net_list = ir_net_list; }
   void set_ir_parameter(const IRParameter& ir_parameter) { _ir_parameter = ir_parameter; }
   void set_layer_node_map(const std::vector<GridMap<IRNode>>& layer_node_map) { _layer_node_map = layer_node_map; }
+  void set_ir_net_idx_list(const std::vector<irt_int>& ir_net_idx_list) { _ir_net_idx_list = ir_net_idx_list; }
   // function
 #if 1  // astar
   // single task
-  const irt_int get_curr_net_idx() const { return _curr_net_idx; }
+  IRTask* get_curr_ir_task() { return _curr_ir_task; }
   std::vector<std::vector<IRNode*>>& get_start_node_list_list() { return _start_node_list_list; }
   std::vector<std::vector<IRNode*>>& get_end_node_list_list() { return _end_node_list_list; }
   std::vector<IRNode*>& get_path_node_list() { return _path_node_list; }
   std::vector<IRNode*>& get_single_task_visited_node_list() { return _single_task_visited_node_list; }
   std::vector<Segment<LayerCoord>>& get_routing_segment_list() { return _routing_segment_list; }
-  void set_curr_net_idx(const irt_int curr_net_idx) { _curr_net_idx = curr_net_idx; }
+  void set_curr_ir_task(IRTask* curr_ir_task) { _curr_ir_task = curr_ir_task; }
   void set_start_node_list_list(const std::vector<std::vector<IRNode*>>& start_node_list_list)
   {
     _start_node_list_list = start_node_list_list;
@@ -76,11 +79,12 @@ class IRModel
 
  private:
   std::vector<IRNet> _ir_net_list;
-  IRParameter _ir_parameter ;
+  IRParameter _ir_parameter;
   std::vector<GridMap<IRNode>> _layer_node_map;
+  std::vector<irt_int> _ir_net_idx_list;
 #if 1  // astar
   // single task
-  irt_int _curr_net_idx = -1;
+  IRTask* _curr_ir_task = nullptr;
   std::vector<std::vector<IRNode*>> _start_node_list_list;
   std::vector<std::vector<IRNode*>> _end_node_list_list;
   std::vector<IRNode*> _path_node_list;

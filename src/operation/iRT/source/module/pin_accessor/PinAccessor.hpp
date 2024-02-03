@@ -50,7 +50,7 @@ class PinAccessor
   std::vector<PANet> convertToPANetList(std::vector<Net>& net_list);
   PANet convertToPANet(Net& net);
   void initAccessPointList(PAModel& pa_model);
-  std::vector<LayerRect> getLegalShapeList(PAModel& pa_model, irt_int pa_net_idx, PAPin& pa_pin);
+  std::vector<LayerRect> getLegalShapeList(PAModel& pa_model, irt_int pa_net_idx, PAPin* pa_pin);
   std::vector<PlanarRect> getPlanarLegalRectList(PAModel& pa_model, irt_int pa_net_idx, std::vector<EXTLayerRect>& pin_shape_list);
   std::vector<AccessPoint> getAccessPointListByPrefTrackGrid(std::vector<LayerRect>& legal_shape_list);
   std::vector<AccessPoint> getAccessPointListByCurrTrackGrid(std::vector<LayerRect>& legal_shape_list);

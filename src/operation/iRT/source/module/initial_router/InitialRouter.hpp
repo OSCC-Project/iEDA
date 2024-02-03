@@ -52,12 +52,61 @@ class InitialRouter
   std::vector<IRNet> convertToIRNetList(std::vector<Net>& net_list);
   IRNet convertToIRNet(Net& net);
   void setIRParameter(IRModel& ir_model);
+  void makeGridCoordList(IRModel& ir_model);
   void initLayerNodeMap(IRModel& ir_model);
   void buildIRNodeNeighbor(IRModel& ir_model);
-  void buildAccessSupply(IRModel& ir_model);
+  void buildOrienSupply(IRModel& ir_model);
   void checkIRModel(IRModel& ir_model);
+  void sortIRModel(IRModel& ir_model);
+  bool sortByMultiLevel(IRModel& ir_model, irt_int net_idx1, irt_int net_idx2);
+  SortStatus sortByClockPriority(IRNet& net1, IRNet& net2);
+  SortStatus sortByRoutingAreaASC(IRNet& net1, IRNet& net2);
+  SortStatus sortByLengthWidthRatioDESC(IRNet& net1, IRNet& net2);
+  SortStatus sortByPinNumDESC(IRNet& net1, IRNet& net2);
   void routeIRModel(IRModel& ir_model);
+  void routeIRNet(IRModel& ir_model, IRNet& ir_net);
+  void makeIRTaskList(IRModel& ir_model, IRNet& ir_net, std::vector<IRTask>& ir_task_list,
+                      std::vector<Segment<LayerCoord>>& routing_segment_list);
+  std::vector<Segment<PlanarCoord>> getPlanarTopoListByFlute(std::vector<PlanarCoord>& planar_coord_list);
+  void routeIRTask(IRModel& ir_model, IRTask* ir_task);
+  void initSingleTask(IRModel& ir_model, IRTask* ir_task);
+  bool isConnectedAllEnd(IRModel& ir_model);
+  void routeSinglePath(IRModel& ir_model);
+  void initPathHead(IRModel& ir_model);
+  bool searchEnded(IRModel& ir_model);
+  void expandSearching(IRModel& ir_model);
+  void resetPathHead(IRModel& ir_model);
+  bool isRoutingFailed(IRModel& ir_model);
+  void resetSinglePath(IRModel& ir_model);
+  void updatePathResult(IRModel& ir_model);
+  std::vector<Segment<LayerCoord>> getRoutingSegmentListByNode(IRNode* node);
+  void updateDirectionSet(IRModel& ir_model);
+  void resetStartAndEnd(IRModel& ir_model);
+  void updateTaskResult(IRModel& ir_model);
+  std::vector<Segment<LayerCoord>> getRoutingSegmentList(IRModel& ir_model);
+  void resetSingleTask(IRModel& ir_model);
+  void pushToOpenList(IRModel& ir_model, IRNode* curr_node);
+  IRNode* popFromOpenList(IRModel& ir_model);
+  double getKnowCost(IRModel& ir_model, IRNode* start_node, IRNode* end_node);
+  double getNodeCost(IRModel& ir_model, IRNode* curr_node, Orientation orientation);
+  double getKnowWireCost(IRModel& ir_model, IRNode* start_node, IRNode* end_node);
+  double getKnowCornerCost(IRModel& ir_model, IRNode* start_node, IRNode* end_node);
+  double getKnowViaCost(IRModel& ir_model, IRNode* start_node, IRNode* end_node);
+  double getEstimateCostToEnd(IRModel& ir_model, IRNode* curr_node);
+  double getEstimateCost(IRModel& ir_model, IRNode* start_node, IRNode* end_node);
+  double getEstimateWireCost(IRModel& ir_model, IRNode* start_node, IRNode* end_node);
+  double getEstimateCornerCost(IRModel& ir_model, IRNode* start_node, IRNode* end_node);
+  double getEstimateViaCost(IRModel& ir_model, IRNode* start_node, IRNode* end_node);
+  MTree<LayerCoord> getCoordTree(IRNet& ir_net, std::vector<Segment<LayerCoord>>& routing_segment_list);
+  void updateDemand(IRModel& ir_model, IRNet& ir_net, MTree<LayerCoord>& coord_tree);
   void updateIRModel(IRModel& ir_model);
+  void outputGuide(IRModel& ir_model);
+
+#if 1  // plot ir_model
+  void plotResourceMap(IRModel& ir_model);
+  void writePYScript();
+  void writeResourceCSV(IRModel& ir_model);
+#endif
 };
 
 }  // namespace irt

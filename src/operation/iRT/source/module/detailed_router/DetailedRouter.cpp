@@ -55,18 +55,16 @@ void DetailedRouter::destroyInst()
 
 void DetailedRouter::route(std::vector<Net>& net_list)
 {
-  routeNetList(net_list);
+  Monitor monitor;
+  LOG_INST.info(Loc::current(), "Begin routing...");
+  DRModel dr_model = initDRModel(net_list);
+  iterativeDRModel(dr_model);
+  LOG_INST.info(Loc::current(), "End route", monitor.getStatsInfo());
 }
 
 // private
 
 DetailedRouter* DetailedRouter::_dr_instance = nullptr;
-
-void DetailedRouter::routeNetList(std::vector<Net>& net_list)
-{
-  DRModel dr_model = initDRModel(net_list);
-  iterativeDRModel(dr_model);
-}
 
 DRModel DetailedRouter::initDRModel(std::vector<Net>& net_list)
 {
@@ -94,14 +92,12 @@ DRNet DetailedRouter::convertToDRNet(Net& net)
   for (Pin& pin : net.get_pin_list()) {
     dr_net.get_dr_pin_list().push_back(DRPin(pin));
   }
-  dr_net.set_ta_result_list(net.get_ta_result_list());
   return dr_net;
 }
 
 void DetailedRouter::iterativeDRModel(DRModel& dr_model)
 {
   irt_int cost_unit = 128;
-
   std::vector<DRParameter> dr_parameter_list = {// init
                                                 /* 1 */ {6, 0, cost_unit, cost_unit, cost_unit, true},
                                                 /* 2 */ {6, -2, cost_unit, cost_unit, cost_unit, true},
@@ -109,70 +105,10 @@ void DetailedRouter::iterativeDRModel(DRModel& dr_model)
                                                 /* 4 */ {6, 0, 2 * cost_unit, cost_unit, 2 * cost_unit, false},
                                                 /* 5 */ {6, -2, 2 * cost_unit, cost_unit, 2 * cost_unit, false},
                                                 /* 6 */ {6, -4, 2 * cost_unit, cost_unit, 2 * cost_unit, false}};
-
-  // std::vector<DRParameter> dr_parameter_list = {// init
-  //                                               {6, 0, routed_rect_cost, routed_rect_cost, routed_rect_cost, true},
-  //                                               {6, -2, routed_rect_cost, routed_rect_cost, routed_rect_cost, true},
-  //                                               {6, -4, routed_rect_cost, routed_rect_cost, routed_rect_cost, true},
-  //                                               {6, 0, 2 * routed_rect_cost, routed_rect_cost, 2 * routed_rect_cost, false},
-  //                                               {6, -2, 2 * routed_rect_cost, routed_rect_cost, 2 * routed_rect_cost, false},
-  //                                               {6, -4, 2 * routed_rect_cost, routed_rect_cost, 2 * routed_rect_cost, false},
-  //                                               // init
-  //                                               {4, -2, routed_rect_cost, routed_rect_cost, routed_rect_cost, true},
-  //                                               {6, 0, 4 * routed_rect_cost, routed_rect_cost, 4 * routed_rect_cost, false},
-  //                                               {6, -2, 4 * routed_rect_cost, routed_rect_cost, 4 * routed_rect_cost, false},
-  //                                               {6, -4, 4 * routed_rect_cost, routed_rect_cost, 4 * routed_rect_cost, false},
-  //                                               // init
-  //                                               {2, -1, routed_rect_cost, routed_rect_cost, routed_rect_cost, true},
-  //                                               {6, 0, 8 * routed_rect_cost, routed_rect_cost, 8 * routed_rect_cost, false},
-  //                                               {6, -2, 8 * routed_rect_cost, routed_rect_cost, 8 * routed_rect_cost, false},
-  //                                               {6, -4, 8 * routed_rect_cost, routed_rect_cost, 8 * routed_rect_cost, false}};
-
-  // std::vector<DRParameter> dr_parameter_list = {// init
-  //                                               {6, 0, routed_rect_cost, routed_rect_cost, routed_rect_cost, true},
-  //                                               {6, -2, routed_rect_cost, routed_rect_cost, routed_rect_cost, true},
-  //                                               {6, -4, routed_rect_cost, routed_rect_cost, routed_rect_cost, true},
-  //                                               {6, 0, 4 * routed_rect_cost, 2 * routed_rect_cost, 4 * routed_rect_cost, false},
-  //                                               {6, -1, 4 * routed_rect_cost, 2 * routed_rect_cost, 4 * routed_rect_cost, false},
-  //                                               {6, -2, 4 * routed_rect_cost, 2 * routed_rect_cost, 4 * routed_rect_cost, false},
-  //                                               {6, -3, 4 * routed_rect_cost, 2 * routed_rect_cost, 4 * routed_rect_cost, false},
-  //                                               {6, -4, 4 * routed_rect_cost, 2 * routed_rect_cost, 4 * routed_rect_cost, false},
-  //                                               {6, -5, 4 * routed_rect_cost, 2 * routed_rect_cost, 4 * routed_rect_cost, false},
-  //                                               {6, 0, 4 * routed_rect_cost, 4 * routed_rect_cost, 4 * routed_rect_cost, false},
-  //                                               {6, -1, 4 * routed_rect_cost, 4 * routed_rect_cost, 4 * routed_rect_cost, false},
-  //                                               {6, -2, 4 * routed_rect_cost, 4 * routed_rect_cost, 4 * routed_rect_cost, false},
-  //                                               {6, -3, 4 * routed_rect_cost, 4 * routed_rect_cost, 4 * routed_rect_cost, false},
-  //                                               {6, -4, 4 * routed_rect_cost, 4 * routed_rect_cost, 4 * routed_rect_cost, false},
-  //                                               {6, -5, 4 * routed_rect_cost, 4 * routed_rect_cost, 4 * routed_rect_cost, false},
-  //                                               // init
-  //                                               {6, -4, 4 * routed_rect_cost, routed_rect_cost, 4 * routed_rect_cost, true},
-  //                                               {6, 0, 4 * routed_rect_cost, 4 * routed_rect_cost, 4 * routed_rect_cost, false},
-  //                                               {6, -1, 4 * routed_rect_cost, 4 * routed_rect_cost, 4 * routed_rect_cost, false},
-  //                                               {6, -2, 4 * routed_rect_cost, 4 * routed_rect_cost, 4 * routed_rect_cost, false},
-  //                                               {6, -3, 4 * routed_rect_cost, 4 * routed_rect_cost, 4 * routed_rect_cost, false},
-  //                                               {6, -4, 4 * routed_rect_cost, 4 * routed_rect_cost, 4 * routed_rect_cost, false},
-  //                                               {6, -5, 4 * routed_rect_cost, 4 * routed_rect_cost, 4 * routed_rect_cost, false},
-  //                                               // init
-  //                                               {4, -2, 4 * routed_rect_cost, routed_rect_cost, 4 * routed_rect_cost, true},
-  //                                               {6, 0, 8 * routed_rect_cost, 8 * routed_rect_cost, 8 * routed_rect_cost, false},
-  //                                               {6, -1, 8 * routed_rect_cost, 8 * routed_rect_cost, 8 * routed_rect_cost, false},
-  //                                               {6, -2, 8 * routed_rect_cost, 8 * routed_rect_cost, 8 * routed_rect_cost, false},
-  //                                               {6, -3, 8 * routed_rect_cost, 8 * routed_rect_cost, 8 * routed_rect_cost, false},
-  //                                               {6, -4, 8 * routed_rect_cost, 8 * routed_rect_cost, 8 * routed_rect_cost, false},
-  //                                               {6, -5, 8 * routed_rect_cost, 8 * routed_rect_cost, 8 * routed_rect_cost, false},
-  //                                               // init
-  //                                               {2, -1, 4 * routed_rect_cost, routed_rect_cost, 4 * routed_rect_cost, true},
-  //                                               {6, 0, 16 * routed_rect_cost, 16 * routed_rect_cost, 16 * routed_rect_cost, false},
-  //                                               {6, -1, 16 * routed_rect_cost, 16 * routed_rect_cost, 16 * routed_rect_cost, false},
-  //                                               {6, -2, 16 * routed_rect_cost, 16 * routed_rect_cost, 16 * routed_rect_cost, false},
-  //                                               {6, -3, 16 * routed_rect_cost, 16 * routed_rect_cost, 16 * routed_rect_cost, false},
-  //                                               {6, -4, 16 * routed_rect_cost, 16 * routed_rect_cost, 16 * routed_rect_cost, false},
-  //                                               {6, -5, 16 * routed_rect_cost, 16 * routed_rect_cost, 16 * routed_rect_cost, false}};
   for (size_t i = 0; i < dr_parameter_list.size(); i++) {
     Monitor iter_monitor;
     LOG_INST.info(Loc::current(), "****** Start Model Iteration(", (i + 1), "/", dr_parameter_list.size(), ") ******");
-    dr_model.set_dr_parameter(dr_parameter_list[i]);
-    printParameter(dr_parameter_list[i]);
+    setDRParameter(dr_model, dr_parameter_list[i]);
     initDRBoxMap(dr_model);
     splitNetResult(dr_model);
     buildBoxSchedule(dr_model);
@@ -182,14 +118,19 @@ void DetailedRouter::iterativeDRModel(DRModel& dr_model)
   }
 }
 
-void DetailedRouter::printParameter(DRParameter& dr_parameter)
+void DetailedRouter::setDRParameter(DRModel& dr_model, DRParameter& dr_parameter)
 {
-  LOG_INST.info(Loc::current(), "size : ", dr_parameter.get_size());
-  LOG_INST.info(Loc::current(), "offset : ", dr_parameter.get_offset());
+  LOG_INST.info(Loc::current(), "prefer_wire_unit : ", dr_parameter.get_prefer_wire_unit());
+  LOG_INST.info(Loc::current(), "nonprefer_wire_unit : ", dr_parameter.get_nonprefer_wire_unit());
+  LOG_INST.info(Loc::current(), "via_unit : ", dr_parameter.get_via_unit());
+  LOG_INST.info(Loc::current(), "corner_unit : ", dr_parameter.get_corner_unit());
+  LOG_INST.info(Loc::current(), "size  : ", dr_parameter.get_size());
+  LOG_INST.info(Loc::current(), "offset  : ", dr_parameter.get_offset());
   LOG_INST.info(Loc::current(), "fixed_rect_cost : ", dr_parameter.get_fixed_rect_cost());
   LOG_INST.info(Loc::current(), "routed_rect_cost : ", dr_parameter.get_routed_rect_cost());
   LOG_INST.info(Loc::current(), "violation_cost : ", dr_parameter.get_violation_cost());
   LOG_INST.info(Loc::current(), "complete_ripup : ", dr_parameter.get_complete_ripup());
+  dr_model.set_dr_parameter(dr_parameter);
 }
 
 void DetailedRouter::initDRBoxMap(DRModel& dr_model)
@@ -341,6 +282,11 @@ void DetailedRouter::routeDRBoxMap(DRModel& dr_model)
 
   size_t total_box_num = 0;
   for (std::vector<DRBoxId>& dr_box_id_list : dr_model.get_dr_box_id_list_list()) {
+    total_box_num += dr_box_id_list.size();
+  }
+
+  size_t routed_box_num = 0;
+  for (std::vector<DRBoxId>& dr_box_id_list : dr_model.get_dr_box_id_list_list()) {
     Monitor stage_monitor;
 #pragma omp parallel for
     for (DRBoxId& dr_box_id : dr_box_id_list) {
@@ -363,9 +309,9 @@ void DetailedRouter::routeDRBoxMap(DRModel& dr_model)
       updateViolationToGcellMap(dr_box);
       freeDRBox(dr_box);
     }
-    total_box_num += dr_box_id_list.size();
+    routed_box_num += dr_box_id_list.size();
 
-    LOG_INST.info(Loc::current(), "Routed ", total_box_num, " boxes with ", getViolationNum(), " violations.",
+    LOG_INST.info(Loc::current(), "Routed ", routed_box_num, "/", total_box_num, " boxes with ", getViolationNum(), " violations",
                   stage_monitor.getStatsInfo());
   }
 }
@@ -685,29 +631,29 @@ void DetailedRouter::buildDRNodeNeighbor(DRBox& dr_box)
     if (layer_idx < bottom_routing_layer_idx || top_routing_layer_idx < layer_idx) {
       continue;
     }
-    GridMap<DRNode>& node_map = layer_node_map[layer_idx];
-    for (irt_int x = 0; x < node_map.get_x_size(); x++) {
-      for (irt_int y = 0; y < node_map.get_y_size(); y++) {
-        DRNode& node = node_map[x][y];
-        if (!node.get_is_valid()) {
+    GridMap<DRNode>& dr_node_map = layer_node_map[layer_idx];
+    for (irt_int x = 0; x < dr_node_map.get_x_size(); x++) {
+      for (irt_int y = 0; y < dr_node_map.get_y_size(); y++) {
+        DRNode& dr_node = dr_node_map[x][y];
+        if (!dr_node.get_is_valid()) {
           continue;
         }
-        for (irt_int east_x = x + 1; east_x < node_map.get_x_size(); east_x++) {
-          DRNode& east_node = node_map[east_x][y];
+        for (irt_int east_x = x + 1; east_x < dr_node_map.get_x_size(); east_x++) {
+          DRNode& east_node = dr_node_map[east_x][y];
           if (!east_node.get_is_valid()) {
             continue;
           }
-          node.get_neighbor_node_map()[Orientation::kEast] = &east_node;
-          east_node.get_neighbor_node_map()[Orientation::kWest] = &node;
+          dr_node.get_neighbor_node_map()[Orientation::kEast] = &east_node;
+          east_node.get_neighbor_node_map()[Orientation::kWest] = &dr_node;
           break;
         }
-        for (irt_int north_y = y + 1; north_y < node_map.get_y_size(); north_y++) {
-          DRNode& north_node = node_map[x][north_y];
+        for (irt_int north_y = y + 1; north_y < dr_node_map.get_y_size(); north_y++) {
+          DRNode& north_node = dr_node_map[x][north_y];
           if (!north_node.get_is_valid()) {
             continue;
           }
-          node.get_neighbor_node_map()[Orientation::kNorth] = &north_node;
-          north_node.get_neighbor_node_map()[Orientation::kSouth] = &node;
+          dr_node.get_neighbor_node_map()[Orientation::kNorth] = &north_node;
+          north_node.get_neighbor_node_map()[Orientation::kSouth] = &dr_node;
           break;
         }
         if (layer_idx + 1 > top_routing_layer_idx) {
@@ -717,8 +663,8 @@ void DetailedRouter::buildDRNodeNeighbor(DRBox& dr_box)
         if (!above_node.get_is_valid()) {
           continue;
         }
-        node.get_neighbor_node_map()[Orientation::kUp] = &above_node;
-        above_node.get_neighbor_node_map()[Orientation::kDown] = &node;
+        dr_node.get_neighbor_node_map()[Orientation::kUp] = &above_node;
+        above_node.get_neighbor_node_map()[Orientation::kDown] = &dr_node;
       }
     }
   }
@@ -759,11 +705,11 @@ void DetailedRouter::checkDRBox(DRBox& dr_box)
 
   std::vector<GridMap<DRNode>>& layer_node_map = dr_box.get_layer_node_map();
   for (GridMap<DRNode>& dr_node_map : layer_node_map) {
-    for (irt_int x_idx = 0; x_idx < dr_node_map.get_x_size(); x_idx++) {
-      for (irt_int y_idx = 0; y_idx < dr_node_map.get_y_size(); y_idx++) {
-        DRNode& dr_node = dr_node_map[x_idx][y_idx];
+    for (irt_int x = 0; x < dr_node_map.get_x_size(); x++) {
+      for (irt_int y = 0; y < dr_node_map.get_y_size(); y++) {
+        DRNode& dr_node = dr_node_map[x][y];
         if (!RTUtil::isInside(dr_box.get_box_rect().get_real_rect(), dr_node.get_planar_coord())) {
-          LOG_INST.error(Loc::current(), "The dr node is out of box!");
+          LOG_INST.error(Loc::current(), "The dr_node is out of box!");
         }
         for (auto& [orien, neighbor] : dr_node.get_neighbor_node_map()) {
           Orientation opposite_orien = RTUtil::getOppositeOrientation(orien);
@@ -876,7 +822,7 @@ void DetailedRouter::routeDRTask(DRBox& dr_box, DRTask* dr_task)
     resetStartAndEnd(dr_box);
     resetSinglePath(dr_box);
   }
-  updateTaskResult(dr_box, dr_task);
+  updateTaskResult(dr_box);
   resetSingleTask(dr_box);
 }
 
@@ -886,7 +832,7 @@ void DetailedRouter::initSingleTask(DRBox& dr_box, DRTask* dr_task)
   std::vector<GridMap<DRNode>>& layer_node_map = dr_box.get_layer_node_map();
 
   // single task
-  dr_box.set_curr_net_idx(dr_task->get_net_idx());
+  dr_box.set_curr_dr_task(dr_task);
   {
     std::vector<std::vector<DRNode*>> node_list_list;
     std::vector<DRGroup>& dr_group_list = dr_task->get_dr_group_list();
@@ -1103,26 +1049,29 @@ void DetailedRouter::resetStartAndEnd(DRBox& dr_box)
   end_node_list_list.erase(end_node_list_list.begin() + end_node_comb_idx);
 }
 
-void DetailedRouter::updateTaskResult(DRBox& dr_box, DRTask* dr_task)
+void DetailedRouter::updateTaskResult(DRBox& dr_box)
 {
-  std::vector<Segment<LayerCoord>> new_routing_segment_list = getRoutingSegmentList(dr_box, dr_task);
+  std::vector<Segment<LayerCoord>> new_routing_segment_list = getRoutingSegmentList(dr_box);
 
+  DRTask* curr_dr_task = dr_box.get_curr_dr_task();
   // 原结果从graph删除
-  for (Segment<LayerCoord>& routing_segment : dr_task->get_routing_segment_list()) {
-    updateNetResultToGraph(dr_box, ChangeType::kDel, dr_task->get_net_idx(), routing_segment);
+  for (Segment<LayerCoord>& routing_segment : curr_dr_task->get_routing_segment_list()) {
+    updateNetResultToGraph(dr_box, ChangeType::kDel, curr_dr_task->get_net_idx(), routing_segment);
   }
-  dr_task->set_routing_segment_list(new_routing_segment_list);
+  curr_dr_task->set_routing_segment_list(new_routing_segment_list);
   // 新结果添加到graph
-  for (Segment<LayerCoord>& routing_segment : dr_task->get_routing_segment_list()) {
-    updateNetResultToGraph(dr_box, ChangeType::kAdd, dr_task->get_net_idx(), routing_segment);
+  for (Segment<LayerCoord>& routing_segment : curr_dr_task->get_routing_segment_list()) {
+    updateNetResultToGraph(dr_box, ChangeType::kAdd, curr_dr_task->get_net_idx(), routing_segment);
   }
 }
 
-std::vector<Segment<LayerCoord>> DetailedRouter::getRoutingSegmentList(DRBox& dr_box, DRTask* dr_task)
+std::vector<Segment<LayerCoord>> DetailedRouter::getRoutingSegmentList(DRBox& dr_box)
 {
+  DRTask* curr_dr_task = dr_box.get_curr_dr_task();
+
   std::vector<LayerCoord> driving_grid_coord_list;
   std::map<LayerCoord, std::set<irt_int>, CmpLayerCoordByXASC> key_coord_pin_map;
-  std::vector<DRGroup>& dr_group_list = dr_task->get_dr_group_list();
+  std::vector<DRGroup>& dr_group_list = curr_dr_task->get_dr_group_list();
   for (size_t i = 0; i < dr_group_list.size(); i++) {
     for (auto& [coord, direction_set] : dr_group_list[i].get_coord_direction_map()) {
       driving_grid_coord_list.push_back(coord);
@@ -1141,7 +1090,7 @@ std::vector<Segment<LayerCoord>> DetailedRouter::getRoutingSegmentList(DRBox& dr
 
 void DetailedRouter::resetSingleTask(DRBox& dr_box)
 {
-  dr_box.set_curr_net_idx(-1);
+  dr_box.set_curr_dr_task(nullptr);
   dr_box.get_start_node_list_list().clear();
   dr_box.get_end_node_list_list().clear();
   dr_box.get_path_node_list().clear();
@@ -1209,13 +1158,15 @@ double DetailedRouter::getKnowCost(DRBox& dr_box, DRNode* start_node, DRNode* en
 
 double DetailedRouter::getNodeCost(DRBox& dr_box, DRNode* curr_node, Orientation orientation)
 {
-  irt_int fixed_rect_cost = dr_box.get_dr_parameter()->get_fixed_rect_cost();
-  irt_int routed_rect_cost = dr_box.get_dr_parameter()->get_routed_rect_cost();
-  irt_int violation_cost = dr_box.get_dr_parameter()->get_violation_cost();
+  double fixed_rect_cost = dr_box.get_dr_parameter()->get_fixed_rect_cost();
+  double routed_rect_cost = dr_box.get_dr_parameter()->get_routed_rect_cost();
+  double violation_cost = dr_box.get_dr_parameter()->get_violation_cost();
+
+  irt_int net_idx = dr_box.get_curr_dr_task()->get_net_idx();
 
   double cost = 0;
-  cost += curr_node->getFixedRectCost(dr_box.get_curr_net_idx(), orientation, fixed_rect_cost);
-  cost += curr_node->getRoutedRectCost(dr_box.get_curr_net_idx(), orientation, routed_rect_cost);
+  cost += curr_node->getFixedRectCost(net_idx, orientation, fixed_rect_cost);
+  cost += curr_node->getRoutedRectCost(net_idx, orientation, routed_rect_cost);
   cost += curr_node->getViolationCost(orientation, violation_cost);
   return cost;
 }
@@ -1223,8 +1174,8 @@ double DetailedRouter::getNodeCost(DRBox& dr_box, DRNode* curr_node, Orientation
 double DetailedRouter::getKnowWireCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node)
 {
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
-  double dr_prefer_wire_unit = DM_INST.getConfig().dr_prefer_wire_unit;
-  double dr_nonprefer_wire_unit = DM_INST.getConfig().dr_nonprefer_wire_unit;
+  double prefer_wire_unit = dr_box.get_dr_parameter()->get_prefer_wire_unit();
+  double nonprefer_wire_unit = dr_box.get_dr_parameter()->get_nonprefer_wire_unit();
 
   double wire_cost = 0;
   if (start_node->get_layer_idx() == end_node->get_layer_idx()) {
@@ -1232,9 +1183,9 @@ double DetailedRouter::getKnowWireCost(DRBox& dr_box, DRNode* start_node, DRNode
 
     RoutingLayer& routing_layer = routing_layer_list[start_node->get_layer_idx()];
     if (routing_layer.get_prefer_direction() == RTUtil::getDirection(*start_node, *end_node)) {
-      wire_cost *= dr_prefer_wire_unit;
+      wire_cost *= prefer_wire_unit;
     } else {
-      wire_cost *= dr_nonprefer_wire_unit;
+      wire_cost *= nonprefer_wire_unit;
     }
   }
   return wire_cost;
@@ -1242,7 +1193,7 @@ double DetailedRouter::getKnowWireCost(DRBox& dr_box, DRNode* start_node, DRNode
 
 double DetailedRouter::getKnowCornerCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node)
 {
-  double dr_corner_unit = DM_INST.getConfig().dr_corner_unit;
+  double corner_unit = dr_box.get_dr_parameter()->get_corner_unit();
 
   double corner_cost = 0;
   if (start_node->get_layer_idx() == end_node->get_layer_idx()) {
@@ -1261,7 +1212,7 @@ double DetailedRouter::getKnowCornerCost(DRBox& dr_box, DRNode* start_node, DRNo
     direction_set.insert(RTUtil::getDirection(*start_node, *end_node));
 
     if (direction_set.size() == 2) {
-      corner_cost += dr_corner_unit;
+      corner_cost += corner_unit;
     } else if (direction_set.size() == 2) {
       LOG_INST.error(Loc::current(), "Direction set is error!");
     }
@@ -1271,9 +1222,8 @@ double DetailedRouter::getKnowCornerCost(DRBox& dr_box, DRNode* start_node, DRNo
 
 double DetailedRouter::getKnowViaCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node)
 {
-  double dr_via_unit = DM_INST.getConfig().dr_via_unit;
-
-  double via_cost = (dr_via_unit * std::abs(start_node->get_layer_idx() - end_node->get_layer_idx()));
+  double via_unit = dr_box.get_dr_parameter()->get_via_unit();
+  double via_cost = (via_unit * std::abs(start_node->get_layer_idx() - end_node->get_layer_idx()));
   return via_cost;
 }
 
@@ -1306,22 +1256,22 @@ double DetailedRouter::getEstimateCost(DRBox& dr_box, DRNode* start_node, DRNode
 
 double DetailedRouter::getEstimateWireCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node)
 {
-  double dr_prefer_wire_unit = DM_INST.getConfig().dr_prefer_wire_unit;
+  double prefer_wire_unit = dr_box.get_dr_parameter()->get_prefer_wire_unit();
 
   double wire_cost = 0;
   wire_cost += RTUtil::getManhattanDistance(start_node->get_planar_coord(), end_node->get_planar_coord());
-  wire_cost *= dr_prefer_wire_unit;
+  wire_cost *= prefer_wire_unit;
   return wire_cost;
 }
 
 double DetailedRouter::getEstimateCornerCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node)
 {
-  double dr_corner_unit = DM_INST.getConfig().dr_corner_unit;
+  double corner_unit = dr_box.get_dr_parameter()->get_corner_unit();
 
   double corner_cost = 0;
   if (start_node->get_layer_idx() == end_node->get_layer_idx()) {
     if (RTUtil::isOblique(*start_node, *end_node)) {
-      corner_cost += dr_corner_unit;
+      corner_cost += corner_unit;
     }
   }
   return corner_cost;
@@ -1329,9 +1279,8 @@ double DetailedRouter::getEstimateCornerCost(DRBox& dr_box, DRNode* start_node, 
 
 double DetailedRouter::getEstimateViaCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node)
 {
-  double dr_via_unit = DM_INST.getConfig().dr_via_unit;
-
-  double via_cost = (dr_via_unit * std::abs(start_node->get_layer_idx() - end_node->get_layer_idx()));
+  double via_unit = dr_box.get_dr_parameter()->get_via_unit();
+  double via_cost = (via_unit * std::abs(start_node->get_layer_idx() - end_node->get_layer_idx()));
   return via_cost;
 }
 
@@ -1428,7 +1377,7 @@ LayerRect DetailedRouter::getNotchPatch(irt_int layer_idx, std::vector<PlanarCoo
    */
 
   if (task_point_list.size() < 4) {
-    LOG_INST.error(Loc::current(), "insufficient points to detect a notch.");
+    LOG_INST.error(Loc::current(), "insufficient points to detect a notch");
     return {};
   }
 
@@ -1559,7 +1508,7 @@ std::vector<LayerRect> DetailedRouter::getNotchPatchList(irt_int layer_idx, std:
    */
 
   if (task_point_list.size() < 4) {
-    LOG_INST.error(Loc::current(), "insufficient points to detect a notch.");
+    LOG_INST.error(Loc::current(), "insufficient points to detect a notch");
     return {};
   }
 

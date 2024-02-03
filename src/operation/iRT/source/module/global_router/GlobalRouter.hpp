@@ -37,7 +37,7 @@ class GlobalRouter
   // self
   static GlobalRouter* _gr_instance;
 
-  GlobalRouter()= default;
+  GlobalRouter() = default;
   GlobalRouter(const GlobalRouter& other) = delete;
   GlobalRouter(GlobalRouter&& other) = delete;
   ~GlobalRouter() = default;

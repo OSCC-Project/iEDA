@@ -16,8 +16,8 @@
 // ***************************************************************************************
 #pragma once
 
-#include "Net.hpp"
 #include "IRPin.hpp"
+#include "Net.hpp"
 
 namespace irt {
 
@@ -32,12 +32,18 @@ class IRNet
   ConnectType get_connect_type() const { return _connect_type; }
   std::vector<IRPin>& get_ir_pin_list() { return _ir_pin_list; }
   BoundingBox& get_bounding_box() { return _bounding_box; }
+  LayerCoord& get_driving_grid_coord() { return _driving_grid_coord; }
+  std::vector<LayerCoord>& get_grid_coord_list() { return _grid_coord_list; }
+  MTree<Guide>& get_ir_result_tree() { return _ir_result_tree; }
   // setter
   void set_origin_net(Net* origin_net) { _origin_net = origin_net; }
   void set_net_idx(const irt_int net_idx) { _net_idx = net_idx; }
   void set_connect_type(const ConnectType& connect_type) { _connect_type = connect_type; }
   void set_ir_pin_list(const std::vector<IRPin>& ir_pin_list) { _ir_pin_list = ir_pin_list; }
   void set_bounding_box(const BoundingBox& bounding_box) { _bounding_box = bounding_box; }
+  void set_driving_grid_coord(const LayerCoord& driving_grid_coord) { _driving_grid_coord = driving_grid_coord; }
+  void set_grid_coord_list(const std::vector<LayerCoord>& grid_coord_list) { _grid_coord_list = grid_coord_list; }
+  void set_ir_result_tree(const MTree<Guide>& ir_result_tree) { _ir_result_tree = ir_result_tree; }
   // function
 
  private:
@@ -46,6 +52,9 @@ class IRNet
   ConnectType _connect_type = ConnectType::kNone;
   std::vector<IRPin> _ir_pin_list;
   BoundingBox _bounding_box;
+  LayerCoord _driving_grid_coord;
+  std::vector<LayerCoord> _grid_coord_list;
+  MTree<Guide> _ir_result_tree;
 };
 
 }  // namespace irt

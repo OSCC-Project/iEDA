@@ -44,7 +44,7 @@ struct GetAccessPointTypeName
       case AccessPointType::kPrefTrackGrid:
         access_point_name = "pref_track_grid";
         break;
-              case AccessPointType::kCurrTrackGrid:
+      case AccessPointType::kCurrTrackGrid:
         access_point_name = "curr_track_grid";
         break;
       case AccessPointType::kTrackCenter:

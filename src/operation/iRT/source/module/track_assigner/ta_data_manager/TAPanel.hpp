@@ -23,8 +23,8 @@
 #include "ScaleAxis.hpp"
 #include "TANode.hpp"
 #include "TAPanelId.hpp"
-#include "TATask.hpp"
 #include "TAParameter.hpp"
+#include "TATask.hpp"
 
 namespace irt {
 
@@ -57,13 +57,13 @@ class TAPanel
   // function
 #if 1  // astar
   // single task
-  const irt_int get_curr_net_idx() const { return _curr_net_idx; }
+  TATask* get_curr_ta_task() { return _curr_ta_task; }
   std::vector<std::vector<TANode*>>& get_start_node_list_list() { return _start_node_list_list; }
   std::vector<std::vector<TANode*>>& get_end_node_list_list() { return _end_node_list_list; }
   std::vector<TANode*>& get_path_node_list() { return _path_node_list; }
   std::vector<TANode*>& get_single_task_visited_node_list() { return _single_task_visited_node_list; }
   std::vector<Segment<LayerCoord>>& get_routing_segment_list() { return _routing_segment_list; }
-  void set_curr_net_idx(const irt_int curr_net_idx) { _curr_net_idx = curr_net_idx; }
+  void set_curr_ta_task(TATask* curr_ta_task) { _curr_ta_task = curr_ta_task; }
   void set_start_node_list_list(const std::vector<std::vector<TANode*>>& start_node_list_list)
   {
     _start_node_list_list = start_node_list_list;
@@ -103,7 +103,7 @@ class TAPanel
   GridMap<TANode> _ta_node_map;
 #if 1  // astar
   // single task
-  irt_int _curr_net_idx = -1;
+  TATask* _curr_ta_task = nullptr;
   std::vector<std::vector<TANode*>> _start_node_list_list;
   std::vector<std::vector<TANode*>> _end_node_list_list;
   std::vector<TANode*> _path_node_list;

@@ -20,11 +20,11 @@
 #include "DataManager.hpp"
 #include "Database.hpp"
 #include "GPBoundary.hpp"
+#include "GPDataType.hpp"
 #include "GPGDS.hpp"
 #include "GPLYPLayer.hpp"
 #include "GPPath.hpp"
 #include "GPStruct.hpp"
-#include "GPDataType.hpp"
 
 namespace irt {
 

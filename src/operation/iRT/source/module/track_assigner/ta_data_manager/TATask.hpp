@@ -59,6 +59,7 @@ class TATask
   irt_int _task_idx = -1;
   ConnectType _connect_type = ConnectType::kNone;
   std::vector<TAGroup> _ta_group_list;
+
   PlanarRect _bounding_box;
   irt_int _routed_times = 0;
   std::vector<Segment<LayerCoord>> _routing_segment_list;

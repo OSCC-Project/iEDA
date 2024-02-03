@@ -18,8 +18,8 @@
 
 #include "DRBoxId.hpp"
 #include "DRNet.hpp"
-#include "GridMap.hpp"
 #include "DRParameter.hpp"
+#include "GridMap.hpp"
 
 namespace irt {
 

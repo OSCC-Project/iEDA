@@ -32,21 +32,6 @@ class Config
   irt_int thread_number;             // optional
   std::string bottom_routing_layer;  // optional
   std::string top_routing_layer;     // optional
-  double ta_prefer_wire_unit;        // optional
-  double ta_nonprefer_wire_unit;     // optional
-  double ta_corner_unit;             // optional
-  double ta_pin_distance_unit;       // optional
-  double ta_group_distance_unit;     // optional
-  double ta_blockage_unit;           // optional
-  double ta_net_shape_unit;          // optional
-  double ta_reserved_via_unit;       // optional
-  double ta_history_cost_unit;       // optional
-  irt_int ta_model_max_iter_num;     // optional
-  irt_int ta_panel_max_iter_num;     // optional
-  double dr_prefer_wire_unit;        // optional
-  double dr_nonprefer_wire_unit;     // optional
-  double dr_via_unit;                // optional
-  double dr_corner_unit;             // optional
   /////////////////////////////////////////////
   // **********        RT         ********** //
   std::string log_file_path;         // building
@@ -60,7 +45,7 @@ class Config
   std::string gp_temp_directory_path;  // building
   // **********   GlobalRouter    ********** //
   std::string gr_temp_directory_path;  // building
-    // **********   InitialRouter    ********** //
+                                       // **********   InitialRouter    ********** //
   std::string ir_temp_directory_path;  // building
   // **********   PinAccessor     ********** //
   std::string pa_temp_directory_path;  // building

@@ -99,35 +99,39 @@ PANet PinAccessor::convertToPANet(Net& net)
 
 void PinAccessor::initAccessPointList(PAModel& pa_model)
 {
-#pragma omp parallel for
+  std::vector<std::pair<irt_int, PAPin*>> net_pin_pair_list;
   for (PANet& pa_net : pa_model.get_pa_net_list()) {
     for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
-      std::vector<AccessPoint>& access_point_list = pa_pin.get_access_point_list();
-      std::vector<LayerRect> legal_shape_list = getLegalShapeList(pa_model, pa_net.get_net_idx(), pa_pin);
-      for (auto getAccessPointList : {std::bind(&PinAccessor::getAccessPointListByPrefTrackGrid, this, std::placeholders::_1),
-                                      std::bind(&PinAccessor::getAccessPointListByCurrTrackGrid, this, std::placeholders::_1),
-                                      std::bind(&PinAccessor::getAccessPointListByTrackCenter, this, std::placeholders::_1),
-                                      std::bind(&PinAccessor::getAccessPointListByShapeCenter, this, std::placeholders::_1)}) {
-        for (AccessPoint& access_point : getAccessPointList(legal_shape_list)) {
-          access_point_list.push_back(access_point);
-        }
-        if (!access_point_list.empty()) {
-          break;
-        }
+      net_pin_pair_list.emplace_back(pa_net.get_net_idx(), &pa_pin);
+    }
+  }
+#pragma omp parallel for
+  for (std::pair<irt_int, PAPin*>& net_pin_pair : net_pin_pair_list) {
+    std::vector<AccessPoint>& access_point_list = net_pin_pair.second->get_access_point_list();
+    std::vector<LayerRect> legal_shape_list = getLegalShapeList(pa_model, net_pin_pair.first, net_pin_pair.second);
+    for (auto getAccessPointList : {std::bind(&PinAccessor::getAccessPointListByPrefTrackGrid, this, std::placeholders::_1),
+                                    std::bind(&PinAccessor::getAccessPointListByCurrTrackGrid, this, std::placeholders::_1),
+                                    std::bind(&PinAccessor::getAccessPointListByTrackCenter, this, std::placeholders::_1),
+                                    std::bind(&PinAccessor::getAccessPointListByShapeCenter, this, std::placeholders::_1)}) {
+      for (AccessPoint& access_point : getAccessPointList(legal_shape_list)) {
+        access_point_list.push_back(access_point);
       }
-      if (access_point_list.empty()) {
-        LOG_INST.error(Loc::current(), "No access point was generated!");
+      if (!access_point_list.empty()) {
+        break;
       }
+    }
+    if (access_point_list.empty()) {
+      LOG_INST.error(Loc::current(), "No access point was generated!");
     }
   }
 }
 
-std::vector<LayerRect> PinAccessor::getLegalShapeList(PAModel& pa_model, irt_int pa_net_idx, PAPin& pa_pin)
+std::vector<LayerRect> PinAccessor::getLegalShapeList(PAModel& pa_model, irt_int pa_net_idx, PAPin* pa_pin)
 {
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
 
   std::map<irt_int, std::vector<EXTLayerRect>> layer_pin_shape_list;
-  for (EXTLayerRect& routing_shape : pa_pin.get_routing_shape_list()) {
+  for (EXTLayerRect& routing_shape : pa_pin->get_routing_shape_list()) {
     layer_pin_shape_list[routing_shape.get_layer_idx()].emplace_back(routing_shape);
   }
   std::vector<LayerRect> legal_rect_list;
@@ -146,8 +150,8 @@ std::vector<LayerRect> PinAccessor::getLegalShapeList(PAModel& pa_model, irt_int
   if (!legal_rect_list.empty()) {
     return legal_rect_list;
   }
-  LOG_INST.warn(Loc::current(), "The pin ", pa_pin.get_pin_name(), " without legal shape!");
-  for (EXTLayerRect& routing_shape : pa_pin.get_routing_shape_list()) {
+  LOG_INST.warn(Loc::current(), "The pin ", pa_pin->get_pin_name(), " without legal shape!");
+  for (EXTLayerRect& routing_shape : pa_pin->get_routing_shape_list()) {
     legal_rect_list.emplace_back(routing_shape.getRealLayerRect());
   }
   return legal_rect_list;

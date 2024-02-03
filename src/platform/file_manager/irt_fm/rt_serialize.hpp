@@ -29,8 +29,8 @@ void save(Archive& ar, irt::Net& net, const unsigned int version)
   auto connect_type = net.get_connect_type();
 
   auto& pin_list = net.get_pin_list();
-  iplf::Archive(ar, net_idx, net.get_net_name(), connect_type, pin_list,  net.get_bounding_box());
-  iplf::Archive(ar, net.get_gr_result_tree(), net.get_ta_result_list());
+  iplf::Archive(ar, net_idx, net.get_net_name(), connect_type, pin_list, net.get_bounding_box());
+  iplf::Archive(ar, net.get_ir_result_tree(), net.get_gr_result_tree());
 }
 
 template <typename Archive>
@@ -39,8 +39,8 @@ void load(Archive& ar, irt::Net& net, const unsigned int version)
   int32_t net_idx;
   irt::ConnectType connect_type = net.get_connect_type();
   std::string net_name;
-  iplf::Archive(ar, net_idx, net_name, connect_type, net.get_pin_list(),  net.get_bounding_box());
-  iplf::Archive(ar, net.get_gr_result_tree(), net.get_ta_result_list());
+  iplf::Archive(ar, net_idx, net_name, connect_type, net.get_pin_list(), net.get_bounding_box());
+  iplf::Archive(ar, net.get_ir_result_tree(), net.get_gr_result_tree());
   net.set_connect_type(connect_type);
   net.set_net_idx(net_idx);
 }

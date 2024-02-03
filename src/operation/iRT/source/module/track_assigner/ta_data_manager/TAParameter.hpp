@@ -16,43 +16,44 @@
 // ***************************************************************************************
 #pragma once
 
-#include "ConnectType.hpp"
-#include "DRBox.hpp"
-#include "DRPin.hpp"
-#include "GridMap.hpp"
-#include "Guide.hpp"
-#include "MTree.hpp"
-#include "Net.hpp"
-#include "PhysicalNode.hpp"
-#include "Pin.hpp"
-#include "TNode.hpp"
-
 namespace irt {
 
 class TAParameter
 {
  public:
   TAParameter() = default;
-  TAParameter(irt_int fixed_rect_cost, irt_int routed_rect_cost, irt_int violation_cost)
+  TAParameter(double fixed_rect_cost, double routed_rect_cost, double violation_cost)
   {
+    _prefer_wire_unit = 1;
+    _nonprefer_wire_unit = 2;
+    _corner_unit = 1;
     _fixed_rect_cost = fixed_rect_cost;
     _routed_rect_cost = routed_rect_cost;
     _violation_cost = violation_cost;
   }
   ~TAParameter() = default;
   // getter
-  irt_int get_fixed_rect_cost() const { return _fixed_rect_cost; }
-  irt_int get_routed_rect_cost() const { return _routed_rect_cost; }
-  irt_int get_violation_cost() const { return _violation_cost; }
+  double get_prefer_wire_unit() const { return _prefer_wire_unit; }
+  double get_nonprefer_wire_unit() const { return _nonprefer_wire_unit; }
+  double get_corner_unit() const { return _corner_unit; }
+  double get_fixed_rect_cost() const { return _fixed_rect_cost; }
+  double get_routed_rect_cost() const { return _routed_rect_cost; }
+  double get_violation_cost() const { return _violation_cost; }
   // setter
-  void set_fixed_rect_cost(const irt_int fixed_rect_cost) { _fixed_rect_cost = fixed_rect_cost; }
-  void set_routed_rect_cost(const irt_int routed_rect_cost) { _routed_rect_cost = routed_rect_cost; }
-  void set_violation_cost(const irt_int violation_cost) { _violation_cost = violation_cost; }
+  void set_prefer_wire_unit(const double prefer_wire_unit) { _prefer_wire_unit = prefer_wire_unit; }
+  void set_nonprefer_wire_unit(const double nonprefer_wire_unit) { _nonprefer_wire_unit = nonprefer_wire_unit; }
+  void set_corner_unit(const double corner_unit) { _corner_unit = corner_unit; }
+  void set_fixed_rect_cost(const double fixed_rect_cost) { _fixed_rect_cost = fixed_rect_cost; }
+  void set_routed_rect_cost(const double routed_rect_cost) { _routed_rect_cost = routed_rect_cost; }
+  void set_violation_cost(const double violation_cost) { _violation_cost = violation_cost; }
 
  private:
-  irt_int _fixed_rect_cost = 0;
-  irt_int _routed_rect_cost = 0;
-  irt_int _violation_cost = 0;
+  double _prefer_wire_unit = 0;
+  double _nonprefer_wire_unit = 0;
+  double _corner_unit = 0;
+  double _fixed_rect_cost = 0;
+  double _routed_rect_cost = 0;
+  double _violation_cost = 0;
 };
 
 }  // namespace irt

@@ -52,12 +52,11 @@ class DetailedRouter
   DetailedRouter& operator=(const DetailedRouter& other) = delete;
   DetailedRouter& operator=(DetailedRouter&& other) = delete;
   // function
-  void routeNetList(std::vector<Net>& net_list);
   DRModel initDRModel(std::vector<Net>& net_list);
   std::vector<DRNet> convertToDRNetList(std::vector<Net>& net_list);
   DRNet convertToDRNet(Net& net);
   void iterativeDRModel(DRModel& dr_model);
-  void printParameter(DRParameter& dr_parameter);
+  void setDRParameter(DRModel& dr_model, DRParameter& dr_parameter);
   void initDRBoxMap(DRModel& dr_model);
   void splitNetResult(DRModel& dr_model);
   void splitNetResult(DRBox& dr_box);
@@ -93,8 +92,8 @@ class DetailedRouter
   std::vector<Segment<LayerCoord>> getRoutingSegmentListByNode(DRNode* node);
   void updateDirectionSet(DRBox& dr_box);
   void resetStartAndEnd(DRBox& dr_box);
-  void updateTaskResult(DRBox& dr_box, DRTask* dr_task);
-  std::vector<Segment<LayerCoord>> getRoutingSegmentList(DRBox& dr_box, DRTask* dr_task);
+  void updateTaskResult(DRBox& dr_box);
+  std::vector<Segment<LayerCoord>> getRoutingSegmentList(DRBox& dr_box);
   void resetSingleTask(DRBox& dr_box);
   void pushToOpenList(DRBox& dr_box, DRNode* curr_node);
   DRNode* popFromOpenList(DRBox& dr_box);
@@ -133,7 +132,6 @@ class DetailedRouter
 #if 1  // plot dr_box
   void plotDRBox(DRBox& dr_box, irt_int curr_task_idx, std::string flag);
 #endif
-
 };
 
 }  // namespace irt

@@ -81,20 +81,23 @@ void SupplyAnalyzer::buildLayerNodeMap(SAModel& sa_model)
 
   std::vector<GridMap<SANode>>& layer_node_map = sa_model.get_layer_node_map();
   layer_node_map.resize(routing_layer_list.size());
-  for (GridMap<SANode>& sa_node_map : layer_node_map) {
+
+  for (size_t layer_idx = 0; layer_idx < layer_node_map.size(); layer_idx++) {
+    GridMap<SANode>& sa_node_map = layer_node_map[layer_idx];
     sa_node_map.init(gcell_map.get_x_size(), gcell_map.get_y_size());
+
     for (irt_int x = 0; x < sa_node_map.get_x_size(); x++) {
       for (irt_int y = 0; y < sa_node_map.get_y_size(); y++) {
-        sa_node_map[x][y].set_shape(RTUtil::getRealRectByGCell(x, y, gcell_axis));
-      }
-    }
-  }
-
-  for (irt_int x = 0; x < gcell_map.get_x_size(); x++) {
-    for (irt_int y = 0; y < gcell_map.get_y_size(); y++) {
-      auto& routing_net_fixed_rect_map = gcell_map[x][y].get_type_layer_net_fixed_rect_map()[true];
-      for (auto& [layer_idx, net_fixed_rect_map] : routing_net_fixed_rect_map) {
-        layer_node_map[layer_idx][x][y].set_net_fixed_rect_map(net_fixed_rect_map);
+        SANode& sa_node = sa_node_map[x][y];
+        sa_node.set_shape(RTUtil::getRealRectByGCell(x, y, gcell_axis));
+        sa_node.set_net_fixed_rect_map(gcell_map[x][y].get_type_layer_net_fixed_rect_map()[true][layer_idx]);
+        if (routing_layer_list[layer_idx].isPreferH()) {
+          sa_node.get_orien_supply_map()[Orientation::kEast] = 0;
+          sa_node.get_orien_supply_map()[Orientation::kWest] = 0;
+        } else {
+          sa_node.get_orien_supply_map()[Orientation::kSouth] = 0;
+          sa_node.get_orien_supply_map()[Orientation::kNorth] = 0;
+        }
       }
     }
   }
@@ -107,35 +110,24 @@ void SupplyAnalyzer::buildSupplySchedule(SAModel& sa_model)
   std::vector<GridMap<SANode>>& layer_node_map = sa_model.get_layer_node_map();
 
   std::vector<std::vector<std::pair<LayerCoord, LayerCoord>>> grid_pair_list_list;
+  // 仅需要分为两批
   grid_pair_list_list.resize(2);
   for (size_t layer_idx = 0; layer_idx < layer_node_map.size(); layer_idx++) {
     RoutingLayer& routing_layer = routing_layer_list[layer_idx];
     GridMap<SANode>& node_map = layer_node_map[layer_idx];
     if (routing_layer.isPreferH()) {
       for (irt_int y = 0; y < node_map.get_y_size(); y++) {
-        for (irt_int begin_x : {1, 2}) {
+        for (irt_int begin_x = 1; begin_x <= 2; begin_x++) {
           for (irt_int x = begin_x; x < node_map.get_x_size(); x += 2) {
-            LayerCoord first_grid_coord(x - 1, y, layer_idx);
-            LayerCoord second_grid_coord(x, y, layer_idx);
-            if (x % 2 == 0) {
-              grid_pair_list_list.front().emplace_back(first_grid_coord, second_grid_coord);
-            } else {
-              grid_pair_list_list.back().emplace_back(first_grid_coord, second_grid_coord);
-            }
+            grid_pair_list_list[x % 2].emplace_back(LayerCoord(x - 1, y, layer_idx), LayerCoord(x, y, layer_idx));
           }
         }
       }
     } else {
       for (irt_int x = 0; x < node_map.get_x_size(); x++) {
-        for (irt_int begin_y : {1, 2}) {
+        for (irt_int begin_y = 1; begin_y <= 2; begin_y++) {
           for (irt_int y = begin_y; y < node_map.get_y_size(); y += 2) {
-            LayerCoord first_grid_coord(x, y - 1, layer_idx);
-            LayerCoord second_grid_coord(x, y, layer_idx);
-            if (y % 2 == 0) {
-              grid_pair_list_list.front().emplace_back(first_grid_coord, second_grid_coord);
-            } else {
-              grid_pair_list_list.back().emplace_back(first_grid_coord, second_grid_coord);
-            }
+            grid_pair_list_list[y % 2].emplace_back(LayerCoord(x, y - 1, layer_idx), LayerCoord(x, y, layer_idx));
           }
         }
       }
@@ -148,7 +140,14 @@ void SupplyAnalyzer::analyzeSupply(SAModel& sa_model)
 {
   std::vector<GridMap<SANode>>& layer_node_map = sa_model.get_layer_node_map();
 
+  size_t total_pair_num = 0;
   for (std::vector<std::pair<LayerCoord, LayerCoord>>& grid_pair_list : sa_model.get_grid_pair_list_list()) {
+    total_pair_num += grid_pair_list.size();
+  }
+
+  size_t analyzed_pair_num = 0;
+  for (std::vector<std::pair<LayerCoord, LayerCoord>>& grid_pair_list : sa_model.get_grid_pair_list_list()) {
+    Monitor stage_monitor;
 #pragma omp parallel for
     for (std::pair<LayerCoord, LayerCoord>& grid_pair : grid_pair_list) {
       LayerCoord first_coord = grid_pair.first;
@@ -170,6 +169,8 @@ void SupplyAnalyzer::analyzeSupply(SAModel& sa_model)
         }
       }
     }
+    analyzed_pair_num += grid_pair_list.size();
+    LOG_INST.info(Loc::current(), "Analyzed ", analyzed_pair_num, "/", total_pair_num, " grid pairs", stage_monitor.getStatsInfo());
   }
 }
 
@@ -220,6 +221,18 @@ bool SupplyAnalyzer::isAccess(LayerRect& wire, SANode& first_node, SANode& secon
 
 void SupplyAnalyzer::updateSAModel(SAModel& sa_model)
 {
+  GridMap<GCell>& gcell_map = DM_INST.getDatabase().get_gcell_map();
+
+  std::vector<GridMap<SANode>>& layer_node_map = sa_model.get_layer_node_map();
+
+  for (size_t layer_idx = 0; layer_idx < layer_node_map.size(); layer_idx++) {
+    GridMap<SANode>& sa_node_map = layer_node_map[layer_idx];
+    for (irt_int x = 0; x < sa_node_map.get_x_size(); x++) {
+      for (irt_int y = 0; y < sa_node_map.get_y_size(); y++) {
+        gcell_map[x][y].get_routing_orien_supply_map()[layer_idx] = sa_node_map[x][y].get_orien_supply_map();
+      }
+    }
+  }
 }
 
 #if 1  // plot sa_model

@@ -68,7 +68,7 @@ class DRNode : public LayerCoord
     }
     return neighbor_node;
   }
-  double getFixedRectCost(irt_int net_idx, Orientation orientation, irt_int fixed_rect_cost)
+  double getFixedRectCost(irt_int net_idx, Orientation orientation, double fixed_rect_cost)
   {
     irt_int fixed_rect_num = 0;
     if (RTUtil::exist(_orien_fixed_rect_map, orientation)) {
@@ -85,7 +85,7 @@ class DRNode : public LayerCoord
     cost = (fixed_rect_num * fixed_rect_cost);
     return cost;
   }
-  double getRoutedRectCost(irt_int net_idx, Orientation orientation, irt_int routed_rect_cost)
+  double getRoutedRectCost(irt_int net_idx, Orientation orientation, double routed_rect_cost)
   {
     irt_int routed_rect_num = 0;
     if (RTUtil::exist(_orien_routed_rect_map, orientation)) {
@@ -102,7 +102,7 @@ class DRNode : public LayerCoord
     cost = (routed_rect_num * routed_rect_cost);
     return cost;
   }
-  double getViolationCost(Orientation orientation, irt_int violation_cost)
+  double getViolationCost(Orientation orientation, double violation_cost)
   {
     irt_int violation_num = 0;
     if (RTUtil::exist(_orien_violation_number_map, orientation)) {
