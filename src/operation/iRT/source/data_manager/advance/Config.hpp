@@ -28,7 +28,6 @@ class Config
   /////////////////////////////////////////////
   // **********        RT         ********** //
   std::string temp_directory_path;   // required
-  irt_int log_level;                 // optional
   irt_int thread_number;             // optional
   std::string bottom_routing_layer;  // optional
   std::string top_routing_layer;     // optional
@@ -37,15 +36,11 @@ class Config
   std::string log_file_path;         // building
   irt_int bottom_routing_layer_idx;  // building
   irt_int top_routing_layer_idx;     // building
-  // **********    DataManager    ********** //
-  std::string dm_temp_directory_path;  // building
   // **********  DetailedRouter   ********** //
   std::string dr_temp_directory_path;  // building
-  // **********    GDSPlotter     ********** //
-  std::string gp_temp_directory_path;  // building
   // **********   GlobalRouter    ********** //
   std::string gr_temp_directory_path;  // building
-                                       // **********   InitialRouter    ********** //
+  // **********   InitialRouter   ********** //
   std::string ir_temp_directory_path;  // building
   // **********   PinAccessor     ********** //
   std::string pa_temp_directory_path;  // building

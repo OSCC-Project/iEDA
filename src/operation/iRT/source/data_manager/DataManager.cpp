@@ -452,7 +452,6 @@ void DataManager::wrapConfig(std::map<std::string, std::any>& config_map)
 {
   /////////////////////////////////////////////
   _config.temp_directory_path = RTUtil::getConfigValue<std::string>(config_map, "-temp_directory_path", "./rt_temp_directory");
-  _config.log_level = RTUtil::getConfigValue<irt_int>(config_map, "-log_level", 0);
   _config.thread_number = RTUtil::getConfigValue<irt_int>(config_map, "-thread_number", 8);
   _config.bottom_routing_layer = RTUtil::getConfigValue<std::string>(config_map, "-bottom_routing_layer", "");
   _config.top_routing_layer = RTUtil::getConfigValue<std::string>(config_map, "-top_routing_layer", "");
@@ -970,12 +969,8 @@ void DataManager::buildConfig()
   if (_config.bottom_routing_layer_idx >= _config.top_routing_layer_idx) {
     LOG_INST.error(Loc::current(), "The routing layer should be at least two layers!");
   }
-  // **********    DataManager    ********** //
-  _config.dm_temp_directory_path = _config.temp_directory_path + "data_manager/";
   // **********  DetailedRouter   ********** //
   _config.dr_temp_directory_path = _config.temp_directory_path + "detailed_router/";
-  // **********    GDSPlotter     ********** //
-  _config.gp_temp_directory_path = _config.temp_directory_path + "gds_plotter/";
   // **********   GlobalRouter    ********** //
   _config.gr_temp_directory_path = _config.temp_directory_path + "global_router/";
   // **********   InitialRouter    ********** //
@@ -990,12 +985,8 @@ void DataManager::buildConfig()
   // **********        RT         ********** //
   RTUtil::createDir(_config.temp_directory_path);
   RTUtil::createDirByFile(_config.log_file_path);
-  // **********    DataManager    ********** //
-  RTUtil::createDir(_config.dm_temp_directory_path);
   // **********  DetailedRouter   ********** //
   RTUtil::createDir(_config.dr_temp_directory_path);
-  // **********    GDSPlotter     ********** //
-  RTUtil::createDir(_config.gp_temp_directory_path);
   // **********   GlobalRouter    ********** //
   RTUtil::createDir(_config.gr_temp_directory_path);
   // **********   InitialRouter    ********** //
@@ -1691,15 +1682,12 @@ void DataManager::updateHelper()
 void DataManager::printConfig()
 {
   omp_set_num_threads(std::max(_config.thread_number, 1));
-  LOG_INST.setLogLevel(_config.log_level);
   LOG_INST.openLogFileStream(_config.log_file_path);
   /////////////////////////////////////////////
   // **********        RT         ********** //
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(0), "RT_CONFIG_INPUT");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "temp_directory_path");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.temp_directory_path);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "log_level");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.log_level);
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "thread_number");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.thread_number);
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "bottom_routing_layer");
@@ -1714,18 +1702,10 @@ void DataManager::printConfig()
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.bottom_routing_layer_idx);
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "top_routing_layer_idx");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.top_routing_layer_idx);
-  // **********    DataManager    ********** //
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "DataManager");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), "dm_temp_directory_path");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(3), _config.dm_temp_directory_path);
   // **********  DetailedRouter   ********** //
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "DetailedRouter");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), "dr_temp_directory_path");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(3), _config.dr_temp_directory_path);
-  // **********    GDSPlotter     ********** //
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "GDSPlotter");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), "gp_temp_directory_path");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(3), _config.gp_temp_directory_path);
   // **********   GlobalRouter    ********** //
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "GlobalRouter");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), "gr_temp_directory_path");
@@ -1747,7 +1727,6 @@ void DataManager::printConfig()
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), "ta_temp_directory_path");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(3), _config.ta_temp_directory_path);
   /////////////////////////////////////////////
-  sleep(2);
 }
 
 void DataManager::printDatabase()
@@ -1855,8 +1834,6 @@ void DataManager::printDatabase()
     LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), head_info, pin_num, " pins: ", net_num, "(",
                   RTUtil::getPercentage(net_num, net_list.size()), "%)");
   }
-  // ******************** //
-  sleep(2);
   ////////////////////////////////////////////////
 }
 

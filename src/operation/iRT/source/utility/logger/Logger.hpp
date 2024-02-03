@@ -34,8 +34,6 @@ class Logger
   static Logger& getInst();
   static void destroyInst();
   // function
-  irt_int getLogLevel() const { return _log_level; }
-  void setLogLevel(const irt_int log_level) { _log_level = log_level; }
   void openLogFileStream(const std::string& log_file_path);
   void closeLogFileStream();
   void printLogFilePath();
@@ -43,18 +41,12 @@ class Logger
   template <typename T, typename... Args>
   void info(Loc location, const T& value, const Args&... args)
   {
-    if (_log_level > 0) {
-      return;
-    }
     printLog(LogLevel::kInfo, location, value, args...);
   }
 
   template <typename T, typename... Args>
   void warn(Loc location, const T& value, const Args&... args)
   {
-    if (_log_level > 1) {
-      return;
-    }
     printLog(LogLevel::kWarn, location, value, args...);
   }
 
@@ -70,7 +62,6 @@ class Logger
   // self
   static Logger* _log_instance;
   // config & database
-  irt_int _log_level = 0;
   std::string _log_file_path;
   std::ofstream* _log_file = nullptr;
   size_t _temp_storage_size = 1024;
