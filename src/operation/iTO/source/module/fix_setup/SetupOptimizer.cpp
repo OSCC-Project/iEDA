@@ -64,6 +64,7 @@ void SetupOptimizer::optimizeSetup() {
   _parasitics_estimator->estimateAllNetParasitics();
   _timing_engine->updateTiming();
   _timing_engine->reportTiming();
+  _db_interface->set_eval_data();
 
   initBufferCell();
   LOG_ERROR_IF(_buf_cells.empty()) << "Can not found specified buffers.\n";
