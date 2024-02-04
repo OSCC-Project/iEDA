@@ -338,50 +338,6 @@ std::vector<NetShape> DataManager::getNetShapeList(irt_int net_idx, LayerCoord& 
   return drc_shape_list;
 }
 
-std::vector<NetShape> DataManager::getNetShapeList(irt_int net_idx, MTree<PhysicalNode>& physical_node_tree)
-{
-  std::vector<NetShape> drc_shape_list;
-  for (TNode<PhysicalNode>* physical_node_node : RTUtil::getNodeList(physical_node_tree)) {
-    for (NetShape& drc_shape : getNetShapeList(net_idx, physical_node_node->value())) {
-      drc_shape_list.push_back(drc_shape);
-    }
-  }
-  return drc_shape_list;
-}
-
-std::vector<NetShape> DataManager::getNetShapeList(irt_int net_idx, PhysicalNode& physical_node)
-{
-  std::vector<std::vector<ViaMaster>>& layer_via_master_list = DM_INST.getDatabase().get_layer_via_master_list();
-
-  std::vector<NetShape> drc_shape_list;
-  if (physical_node.isType<WireNode>()) {
-    WireNode& wire_node = physical_node.getNode<WireNode>();
-    PlanarRect wire_rect = RTUtil::getEnlargedRect(wire_node.get_first(), wire_node.get_second(), wire_node.get_wire_width() / 2);
-    drc_shape_list.emplace_back(net_idx, LayerRect(wire_rect, wire_node.get_layer_idx()), true);
-  } else if (physical_node.isType<ViaNode>()) {
-    ViaNode& via_node = physical_node.getNode<ViaNode>();
-    ViaMasterIdx& via_master_idx = via_node.get_via_master_idx();
-    ViaMaster& via_master = layer_via_master_list[via_master_idx.get_below_layer_idx()][via_master_idx.get_via_idx()];
-
-    LayerRect& above_enclosure = via_master.get_above_enclosure();
-    LayerRect offset_above_enclosure(RTUtil::getOffsetRect(above_enclosure, via_node), above_enclosure.get_layer_idx());
-    drc_shape_list.emplace_back(net_idx, offset_above_enclosure, true);
-
-    LayerRect& below_enclosure = via_master.get_below_enclosure();
-    LayerRect offset_below_enclosure(RTUtil::getOffsetRect(below_enclosure, via_node), below_enclosure.get_layer_idx());
-    drc_shape_list.emplace_back(net_idx, offset_below_enclosure, true);
-
-    for (PlanarRect& cut_shape : via_master.get_cut_shape_list()) {
-      LayerRect offset_cut_shape(RTUtil::getOffsetRect(cut_shape, via_node), via_master.get_cut_layer_idx());
-      drc_shape_list.emplace_back(net_idx, offset_cut_shape, false);
-    }
-  } else if (physical_node.isType<PatchNode>()) {
-    PatchNode& patch_node = physical_node.getNode<PatchNode>();
-    drc_shape_list.emplace_back(net_idx, patch_node, true);
-  }
-  return drc_shape_list;
-}
-
 #endif
 
 #if 1  // 获得IdbSegment

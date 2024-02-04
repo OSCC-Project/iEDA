@@ -399,16 +399,11 @@ void PinAccessor::updatePAModel(PAModel& pa_model)
         LOG_INST.error(Loc::current(), "The pin idx is not equal!");
       }
       origin_pin.set_access_point_list(pa_pin.get_access_point_list());
-    }
-    pa_net.get_origin_net()->set_bounding_box(pa_net.get_bounding_box());
-  }
-  // 更新到gcell_map
-  for (PANet& pa_net : pa_model.get_pa_net_list()) {
-    for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
-      for (AccessPoint& access_point : pa_pin.get_access_point_list()) {
+      for (AccessPoint& access_point : origin_pin.get_access_point_list()) {
         DM_INST.updateAccessPointToGCellMap(ChangeType::kAdd, pa_net.get_net_idx(), &access_point);
       }
     }
+    pa_net.get_origin_net()->set_bounding_box(pa_net.get_bounding_box());
   }
 }
 

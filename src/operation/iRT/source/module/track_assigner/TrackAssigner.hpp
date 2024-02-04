@@ -96,7 +96,7 @@ class TrackAssigner
   double getEstimateCornerCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node);
   double getEstimateViaCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node);
   void updateViolationList(TAPanel& ta_panel);
-  std::vector<Violation> getViolationListByIDRC(TAPanel& ta_panel);
+  std::vector<Violation> getViolationList(TAPanel& ta_panel);
   std::vector<TATask*> getTaskScheduleByViolation(TAPanel& ta_panel);
   void updateTATaskToGcellMap(TAPanel& ta_panel);
   void freeTAPanel(TAPanel& ta_panel);

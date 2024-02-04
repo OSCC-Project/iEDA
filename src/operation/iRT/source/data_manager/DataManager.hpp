@@ -23,7 +23,6 @@
 #include "Logger.hpp"
 #include "NetShape.hpp"
 #include "SortStatus.hpp"
-#include "SourceType.hpp"
 
 namespace irt {
 
@@ -59,8 +58,6 @@ class DataManager
   std::vector<NetShape> getNetShapeList(irt_int net_idx, Segment<LayerCoord>& segment);
   std::vector<NetShape> getNetShapeList(irt_int net_idx, MTree<LayerCoord>& coord_tree);
   std::vector<NetShape> getNetShapeList(irt_int net_idx, LayerCoord& first_coord, LayerCoord& second_coord);
-  std::vector<NetShape> getNetShapeList(irt_int net_idx, MTree<PhysicalNode>& physical_node_tree);
-  std::vector<NetShape> getNetShapeList(irt_int net_idx, PhysicalNode& physical_node);
 #endif
 
 #if 1  // 获得IdbWireSegment

@@ -102,7 +102,6 @@ void TrackAssigner::setTAParameter(TAModel& ta_model)
 
   TAParameter ta_parameter(cost_unit, cost_unit, cost_unit);
   LOG_INST.info(Loc::current(), "prefer_wire_unit : ", ta_parameter.get_prefer_wire_unit());
-  LOG_INST.info(Loc::current(), "nonprefer_wire_unit : ", ta_parameter.get_nonprefer_wire_unit());
   LOG_INST.info(Loc::current(), "corner_unit : ", ta_parameter.get_corner_unit());
   LOG_INST.info(Loc::current(), "fixed_rect_cost : ", ta_parameter.get_fixed_rect_cost());
   LOG_INST.info(Loc::current(), "routed_rect_cost : ", ta_parameter.get_routed_rect_cost());
@@ -852,7 +851,6 @@ double TrackAssigner::getKnowWireCost(TAPanel& ta_panel, TANode* start_node, TAN
 {
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
   double prefer_wire_unit = ta_panel.get_ta_parameter()->get_prefer_wire_unit();
-  double nonprefer_wire_unit = ta_panel.get_ta_parameter()->get_nonprefer_wire_unit();
 
   double wire_cost = 0;
   if (start_node->get_layer_idx() == end_node->get_layer_idx()) {
@@ -861,8 +859,6 @@ double TrackAssigner::getKnowWireCost(TAPanel& ta_panel, TANode* start_node, TAN
     RoutingLayer& routing_layer = routing_layer_list[start_node->get_layer_idx()];
     if (routing_layer.get_prefer_direction() == RTUtil::getDirection(*start_node, *end_node)) {
       wire_cost *= prefer_wire_unit;
-    } else {
-      wire_cost *= nonprefer_wire_unit;
     }
   }
   return wire_cost;
@@ -959,7 +955,7 @@ double TrackAssigner::getEstimateViaCost(TAPanel& ta_panel, TANode* start_node, 
 
 void TrackAssigner::updateViolationList(TAPanel& ta_panel)
 {
-  std::vector<Violation> new_violation_list = getViolationListByIDRC(ta_panel);
+  std::vector<Violation> new_violation_list = getViolationList(ta_panel);
 
   // 原结果从graph删除
   for (Violation& violation : ta_panel.get_violation_list()) {
@@ -972,38 +968,28 @@ void TrackAssigner::updateViolationList(TAPanel& ta_panel)
   }
 }
 
-std::vector<Violation> TrackAssigner::getViolationListByIDRC(TAPanel& ta_panel)
+std::vector<Violation> TrackAssigner::getViolationList(TAPanel& ta_panel)
 {
-  // std::vector<idb::IdbLayerShape*> env_shape_list;
-  // std::map<int32_t, std::vector<idb::IdbLayerShape*>> net_pin_shape_map;
-  // for (auto& [is_routing, layer_net_fixed_rect_map] : ta_panel.get_type_layer_net_fixed_rect_map()) {
-  //   for (auto& [layer_idx, net_fixed_rect_map] : layer_net_fixed_rect_map) {
-  //     for (auto& [net_idx, fixed_rect_set] : net_fixed_rect_map) {
-  //       if (net_idx == -1) {
-  //         for (auto& fixed_rect : fixed_rect_set) {
-  //           env_shape_list.push_back(DM_INST.getIDBLayerShapeByFixedRect(fixed_rect, is_routing));
-  //         }
-  //       } else {
-  //         for (auto& fixed_rect : fixed_rect_set) {
-  //           net_pin_shape_map[net_idx].push_back(DM_INST.getIDBLayerShapeByFixedRect(fixed_rect, is_routing));
-  //         }
-  //       }
-  //     }
-  //   }
-  // }
-  // std::map<irt_int, std::vector<idb::IdbRegularWireSegment*>> net_result_map;
-  // for (TATask* ta_task : ta_panel.get_ta_task_list()) {
-  //   for (Segment<LayerCoord>& routing_segment : ta_task->get_routing_segment_list()) {
-  //     net_result_map[ta_task->get_net_idx()].push_back(DM_INST.getIDBSegmentByNetResult(ta_task->get_net_idx(), routing_segment));
-  //   }
-  //   for (EXTLayerRect& patch : ta_task->get_patch_list()) {
-  //     net_result_map[ta_task->get_net_idx()].push_back(DM_INST.getIDBSegmentByNetPatch(ta_task->get_net_idx(), patch));
-  //   }
-  // }
-  // return RTAPI_INST.getViolationList(env_shape_list, net_pin_shape_map, net_result_map);
-
-  std::vector<Violation> new_violation_list;
-  return new_violation_list;
+  std::vector<idb::IdbLayerShape*> env_shape_list;
+  std::map<int32_t, std::vector<idb::IdbLayerShape*>> net_pin_shape_map;
+  for (auto& [net_idx, fixed_rect_set] : ta_panel.get_net_fixed_rect_map()) {
+    if (net_idx == -1) {
+      for (auto& fixed_rect : fixed_rect_set) {
+        env_shape_list.push_back(DM_INST.getIDBLayerShapeByFixedRect(fixed_rect, true));
+      }
+    } else {
+      for (auto& fixed_rect : fixed_rect_set) {
+        net_pin_shape_map[net_idx].push_back(DM_INST.getIDBLayerShapeByFixedRect(fixed_rect, true));
+      }
+    }
+  }
+  std::map<irt_int, std::vector<idb::IdbRegularWireSegment*>> net_result_map;
+  for (TATask* ta_task : ta_panel.get_ta_task_list()) {
+    for (Segment<LayerCoord>& routing_segment : ta_task->get_routing_segment_list()) {
+      net_result_map[ta_task->get_net_idx()].push_back(DM_INST.getIDBSegmentByNetResult(ta_task->get_net_idx(), routing_segment));
+    }
+  }
+  return RTAPI_INST.getViolationList(env_shape_list, net_pin_shape_map, net_result_map);
 }
 
 std::vector<TATask*> TrackAssigner::getTaskScheduleByViolation(TAPanel& ta_panel)

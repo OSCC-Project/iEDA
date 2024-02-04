@@ -97,14 +97,33 @@ DRNet DetailedRouter::convertToDRNet(Net& net)
 
 void DetailedRouter::iterativeDRModel(DRModel& dr_model)
 {
-  irt_int cost_unit = 128;
-  std::vector<DRParameter> dr_parameter_list = {// init
-                                                /* 1 */ {6, 0, cost_unit, cost_unit, cost_unit, true},
-                                                /* 2 */ {6, -2, cost_unit, cost_unit, cost_unit, true},
-                                                /* 3 */ {6, -4, cost_unit, cost_unit, cost_unit, true},
-                                                /* 4 */ {6, 0, 2 * cost_unit, cost_unit, 2 * cost_unit, false},
-                                                /* 5 */ {6, -2, 2 * cost_unit, cost_unit, 2 * cost_unit, false},
-                                                /* 6 */ {6, -4, 2 * cost_unit, cost_unit, 2 * cost_unit, false}};
+  irt_int cost_unit = 4;
+  std::vector<DRParameter> dr_parameter_list = {
+      {6, 0, cost_unit, cost_unit, 4 * cost_unit, true},
+      {6, -1, cost_unit, cost_unit, 4 * cost_unit, true},
+      {6, -2, cost_unit, cost_unit, 4 * cost_unit, true},
+      {6, -3, cost_unit, cost_unit, 4 * cost_unit, true},
+      {6, -4, cost_unit, cost_unit, 4 * cost_unit, true},
+      {6, -5, cost_unit, cost_unit, 4 * cost_unit, true},
+      {6, 0, 8 * cost_unit, 4 * cost_unit, 4 * cost_unit, false},
+      {6, -1, 8 * cost_unit, 4 * cost_unit, 4 * cost_unit, false},
+      {6, -2, 8 * cost_unit, 4 * cost_unit, 4 * cost_unit, false},
+      {6, -3, 8 * cost_unit, 4 * cost_unit, 4 * cost_unit, false},
+      {6, -4, 8 * cost_unit, 4 * cost_unit, 4 * cost_unit, false},
+      {6, -5, 8 * cost_unit, 4 * cost_unit, 4 * cost_unit, false},
+      // {6, 0, 16 * cost_unit, 8 * cost_unit, 8 * cost_unit, false},
+      // {6, -1, 16 * cost_unit, 8 * cost_unit, 8 * cost_unit, false},
+      // {6, -2, 16 * cost_unit, 8 * cost_unit, 8 * cost_unit, false},
+      // {6, -3, 16 * cost_unit, 8 * cost_unit, 8 * cost_unit, false},
+      // {6, -4, 16 * cost_unit, 8 * cost_unit, 8 * cost_unit, false},
+      // {6, -5, 16 * cost_unit, 8 * cost_unit, 8 * cost_unit, false},
+      // {6, 0, 32 * cost_unit, 16 * cost_unit, 16 * cost_unit, false},
+      // {6, -1, 32 * cost_unit, 16 * cost_unit, 16 * cost_unit, false},
+      // {6, -2, 32 * cost_unit, 16 * cost_unit, 16 * cost_unit, false},
+      // {6, -3, 32 * cost_unit, 16 * cost_unit, 16 * cost_unit, false},
+      // {6, -4, 32 * cost_unit, 16 * cost_unit, 16 * cost_unit, false},
+      // {6, -5, 32 * cost_unit, 16 * cost_unit, 16 * cost_unit, false},
+  };
   for (size_t i = 0; i < dr_parameter_list.size(); i++) {
     Monitor iter_monitor;
     LOG_INST.info(Loc::current(), "****** Start Model Iteration(", (i + 1), "/", dr_parameter_list.size(), ") ******");
@@ -124,8 +143,8 @@ void DetailedRouter::setDRParameter(DRModel& dr_model, DRParameter& dr_parameter
   LOG_INST.info(Loc::current(), "nonprefer_wire_unit : ", dr_parameter.get_nonprefer_wire_unit());
   LOG_INST.info(Loc::current(), "via_unit : ", dr_parameter.get_via_unit());
   LOG_INST.info(Loc::current(), "corner_unit : ", dr_parameter.get_corner_unit());
-  LOG_INST.info(Loc::current(), "size  : ", dr_parameter.get_size());
-  LOG_INST.info(Loc::current(), "offset  : ", dr_parameter.get_offset());
+  LOG_INST.info(Loc::current(), "size : ", dr_parameter.get_size());
+  LOG_INST.info(Loc::current(), "offset : ", dr_parameter.get_offset());
   LOG_INST.info(Loc::current(), "fixed_rect_cost : ", dr_parameter.get_fixed_rect_cost());
   LOG_INST.info(Loc::current(), "routed_rect_cost : ", dr_parameter.get_routed_rect_cost());
   LOG_INST.info(Loc::current(), "violation_cost : ", dr_parameter.get_violation_cost());
@@ -304,9 +323,11 @@ void DetailedRouter::routeDRBoxMap(DRModel& dr_model)
       buildDRNodeNeighbor(dr_box);
       buildOrienNetMap(dr_box);
       checkDRBox(dr_box);
+      // plotDRBox(dr_box, -1, "pre");
       routeDRBox(dr_box);
       updateDRTaskToGcellMap(dr_box);
       updateViolationToGcellMap(dr_box);
+      // plotDRBox(dr_box, -1, "post");
       freeDRBox(dr_box);
     }
     routed_box_num += dr_box_id_list.size();
@@ -749,7 +770,6 @@ void DetailedRouter::checkDRBox(DRBox& dr_box)
         PlanarCoord grid_coord = RTUtil::getTrackGridCoord(coord, dr_box.get_box_track_axis());
         DRNode& dr_node = layer_node_map[layer_idx][grid_coord.get_x()][grid_coord.get_y()];
         if (dr_node.get_neighbor_node_map().empty()) {
-          plotDRBox(dr_box, -1, "pre");
           LOG_INST.error(Loc::current(), "The neighbor of group coord (", coord.get_x(), ",", coord.get_y(), ",", layer_idx,
                          ") is empty in box(", dr_box_id.get_x(), ",", dr_box_id.get_y(), ")");
         }
@@ -1302,377 +1322,12 @@ void DetailedRouter::applyPatch(DRBox& dr_box, DRTask* dr_task)
 std::vector<EXTLayerRect> DetailedRouter::getPatchList(DRBox& dr_box, DRTask* dr_task)
 {
   std::vector<EXTLayerRect> patch_list;
-  // for (EXTLayerRect& notch_patch : getNotchPatchList(dr_box, dr_task)) {
-  //   patch_list.push_back(notch_patch);
-  // }
-  // for (EXTLayerRect& min_area_patch : getMinAreaPatchList(dr_box, dr_task)) {
-  //   patch_list.push_back(min_area_patch);
-  // }
   return patch_list;
 }
-
-#if 0
-
-std::vector<EXTLayerRect> DetailedRouter::getNotchPatchList(DRBox& dr_box, DRTask* dr_task)
-{
-  std::vector<EXTLayerRect> notch_patch_list;
-
-  std::map<irt_int, GTLPolySetInt> layer_polygon_set_map;
-  {
-    // pin_shape
-    for (VRPin& vr_pin : vr_net.get_vr_pin_list()) {
-      for (const EXTLayerRect& routing_shape : vr_pin.get_routing_shape_list()) {
-        LayerRect shape_real_rect(routing_shape.get_real_rect(), routing_shape.get_layer_idx());
-        layer_polygon_set_map[shape_real_rect.get_layer_idx()] += RTUtil::convertToGTLRectInt(shape_real_rect);
-      }
-    }
-    // vr_result_tree
-    for (DRCShape& drc_shape : getDRCShapeList(vr_net.get_net_idx(), vr_net.get_vr_result_tree())) {
-      if (!drc_shape.get_is_routing()) {
-        continue;
-      }
-      LayerRect& layer_rect = drc_shape.get_layer_rect();
-      layer_polygon_set_map[layer_rect.get_layer_idx()] += RTUtil::convertToGTLRectInt(layer_rect);
-    }
-  }
-  for (auto& [layer_idx, polygon_set] : layer_polygon_set_map) {
-    std::vector<GTLPolyInt> polygon_list;
-    polygon_set.get_polygons(polygon_list);
-    for (GTLPolyInt& polygon : polygon_list) {
-      std::vector<GTLPointInt> gtl_point_list(polygon.begin(), polygon.end());
-      // 构建点集
-      std::vector<PlanarCoord> origin_point_list;
-      for (GTLPointInt& gtl_point : gtl_point_list) {
-        origin_point_list.emplace_back(gtl_point.x(), gtl_point.y());
-      }
-      // 构建任务
-      std::vector<std::vector<PlanarCoord>> task_point_list_list;
-      for (size_t i = 0; i < origin_point_list.size(); i++) {
-        std::vector<PlanarCoord> task_point_list;
-        for (size_t j = 0; j < 4; j++) {
-          task_point_list.push_back(origin_point_list[(i + j) % origin_point_list.size()]);
-        }
-        task_point_list_list.push_back(task_point_list);
-      }
-      for (std::vector<PlanarCoord>& task_point_list : task_point_list_list) {
-        LayerRect getNotchPatch(layer_idx, task_point_list);
-
-        EXTLayerRect notch_patch;
-        notch_patch.set_real_rect(getNotchPatch(layer_idx, task_point_list));
-        notch_patch for (LayerRect& patch : getNotchPatch(layer_idx, task_point_list))
-        {
-          candidate_patch_list.push_back(patch);
-        }
-      }
-    }
-  }
-  return notch_patch_list;
-}
-
-LayerRect DetailedRouter::getNotchPatch(irt_int layer_idx, std::vector<PlanarCoord>& task_point_list)
-{
-  /**
-   * task_point_list 顺时针
-   * notch spacing数据是从这里来 _layer_notch_spacing_length_map
-   */
-
-  if (task_point_list.size() < 4) {
-    LOG_INST.error(Loc::current(), "insufficient points to detect a notch");
-    return {};
-  }
-
-  double notch_length;
-  double notch_space;
-
-  //   double notch_length = _layer_notch_spacing_length_map[layer_idx].first;
-  // double notch_space = _layer_notch_spacing_length_map[layer_idx].second;
-
-  std::array<irt_int, 3> length_list;
-  for (irt_int i = 0; i < 3; i++) {
-    length_list[i] = RTUtil::getManhattanDistance(task_point_list[i], task_point_list[i + 1]);
-  }
-
-  if (length_list[0] < notch_length || length_list[2] < notch_length) {
-    if (layer_idx >= 2 || (layer_idx < 2 && (length_list[0] >= notch_length || length_list[2] >= notch_length))) {
-      if (length_list[1] <= notch_space) {
-        if (RTUtil::isConcaveCorner(task_point_list[0], task_point_list[1], task_point_list[2])
-            && RTUtil::isConcaveCorner(task_point_list[1], task_point_list[2], task_point_list[3])) {
-          irt_int offset = 0;
-          if (length_list[0] > length_list[2]) {
-            // use point 123
-            offset = 1;
-          }
-          irt_int lb_x
-              = std::min({task_point_list[0 + offset].get_x(), task_point_list[1 + offset].get_x(), task_point_list[2 + offset].get_x()});
-          irt_int lb_y
-              = std::min({task_point_list[0 + offset].get_y(), task_point_list[1 + offset].get_y(), task_point_list[2 + offset].get_y()});
-          irt_int rt_x
-              = std::max({task_point_list[0 + offset].get_x(), task_point_list[1 + offset].get_x(), task_point_list[2 + offset].get_x()});
-          irt_int rt_y
-              = std::max({task_point_list[0 + offset].get_y(), task_point_list[1 + offset].get_y(), task_point_list[2 + offset].get_y()});
-
-          PlanarCoord lb_coord(lb_x, lb_y);
-          PlanarCoord rt_coord(rt_x, rt_y);
-
-          return LayerRect(lb_coord, rt_coord, layer_idx);
-        }
-      }
-    }
-  }
-}
-
-std::vector<EXTLayerRect> DetailedRouter::getMinAreaPatchList(DRBox& dr_box, DRTask* dr_task)
-{
-  std::vector<EXTLayerRect> min_area_patch_list;
-
-  return min_area_patch_list;
-}
-
-void DetailedRouter::repairNotch(VRModel& vr_model, VRNet& vr_net)
-{
-  std::map<irt_int, GTLPolySetInt> layer_polygon_set_map;
-  {
-    // pin_shape
-    for (VRPin& vr_pin : vr_net.get_vr_pin_list()) {
-      for (const EXTLayerRect& routing_shape : vr_pin.get_routing_shape_list()) {
-        LayerRect shape_real_rect(routing_shape.get_real_rect(), routing_shape.get_layer_idx());
-        layer_polygon_set_map[shape_real_rect.get_layer_idx()] += RTUtil::convertToGTLRectInt(shape_real_rect);
-      }
-    }
-    // vr_result_tree
-    for (DRCShape& drc_shape : getDRCShapeList(vr_net.get_net_idx(), vr_net.get_vr_result_tree())) {
-      if (!drc_shape.get_is_routing()) {
-        continue;
-      }
-      LayerRect& layer_rect = drc_shape.get_layer_rect();
-      layer_polygon_set_map[layer_rect.get_layer_idx()] += RTUtil::convertToGTLRectInt(layer_rect);
-    }
-  }
-  std::vector<LayerRect> candidate_patch_list;
-  for (auto& [layer_idx, polygon_set] : layer_polygon_set_map) {
-    std::vector<GTLPolyInt> polygon_list;
-    polygon_set.get_polygons(polygon_list);
-    for (GTLPolyInt& polygon : polygon_list) {
-      std::vector<GTLPointInt> gtl_point_list(polygon.begin(), polygon.end());
-      // 构建点集
-      std::vector<PlanarCoord> origin_point_list;
-      for (GTLPointInt& gtl_point : gtl_point_list) {
-        origin_point_list.emplace_back(gtl_point.x(), gtl_point.y());
-      }
-      // 构建任务
-      std::vector<std::vector<PlanarCoord>> task_point_list_list;
-      for (size_t i = 0; i < origin_point_list.size(); i++) {
-        std::vector<PlanarCoord> task_point_list;
-        for (size_t j = 0; j < 4; j++) {
-          task_point_list.push_back(origin_point_list[(i + j) % origin_point_list.size()]);
-        }
-        task_point_list_list.push_back(task_point_list);
-      }
-      for (std::vector<PlanarCoord>& task_point_list : task_point_list_list) {
-        for (LayerRect& patch : getNotchPatchList(layer_idx, task_point_list)) {
-          candidate_patch_list.push_back(patch);
-        }
-      }
-    }
-  }
-  std::vector<LayerRect> patch_list;
-  for (LayerRect& candidate_patch : candidate_patch_list) {
-    DRCShape drc_shape(vr_net.get_net_idx(), candidate_patch, true);
-    if (!hasVREnvViolation(vr_model, VRSourceType::kBlockage, {DRCCheckType::kSpacing}, drc_shape)
-        && !hasVREnvViolation(vr_model, VRSourceType::kNetShape, {DRCCheckType::kSpacing}, drc_shape)) {
-      patch_list.push_back(candidate_patch);
-    }
-  }
-  for (LayerRect& patch : patch_list) {
-    TNode<PhysicalNode>* root_node = vr_net.get_vr_result_tree().get_root();
-
-    PhysicalNode physical_node;
-    PatchNode& patch_node = physical_node.getNode<PatchNode>();
-    patch_node.set_net_idx(vr_net.get_net_idx());
-    patch_node.set_rect(patch);
-    patch_node.set_layer_idx(patch.get_layer_idx());
-
-    root_node->addChild(new TNode<PhysicalNode>(physical_node));
-
-    for (DRCShape& drc_shape : DC_INST.getDRCShapeList(vr_net.get_net_idx(), physical_node)) {
-      updateRectToUnit(vr_model, ChangeType::kAdd, VRSourceType::kNetShape, drc_shape);
-    }
-  }
-}
-
-std::vector<LayerRect> DetailedRouter::getNotchPatchList(irt_int layer_idx, std::vector<PlanarCoord>& task_point_list)
-{
-  /**
-   * task_point_list 顺时针
-   * notch spacing数据是从这里来 _layer_notch_spacing_length_map
-   */
-
-  if (task_point_list.size() < 4) {
-    LOG_INST.error(Loc::current(), "insufficient points to detect a notch");
-    return {};
-  }
-
-  std::vector<LayerRect> patch_list;
-
-  double notch_length = _layer_notch_spacing_length_map[layer_idx].first;
-  double notch_space = _layer_notch_spacing_length_map[layer_idx].second;
-
-  std::array<irt_int, 3> length_list;
-  for (irt_int i = 0; i < 3; i++) {
-    length_list[i] = RTUtil::getManhattanDistance(task_point_list[i], task_point_list[i + 1]);
-  }
-
-  if (length_list[0] < notch_length || length_list[2] < notch_length) {
-    if (layer_idx >= 2 || (layer_idx < 2 && (length_list[0] >= notch_length || length_list[2] >= notch_length))) {
-      if (length_list[1] <= notch_space) {
-        if (RTUtil::isConcaveCorner(task_point_list[0], task_point_list[1], task_point_list[2])
-            && RTUtil::isConcaveCorner(task_point_list[1], task_point_list[2], task_point_list[3])) {
-          irt_int offset = 0;
-          if (length_list[0] > length_list[2]) {
-            // use point 123
-            offset = 1;
-          }
-          irt_int lb_x
-              = std::min({task_point_list[0 + offset].get_x(), task_point_list[1 + offset].get_x(), task_point_list[2 + offset].get_x()});
-          irt_int lb_y
-              = std::min({task_point_list[0 + offset].get_y(), task_point_list[1 + offset].get_y(), task_point_list[2 + offset].get_y()});
-          irt_int rt_x
-              = std::max({task_point_list[0 + offset].get_x(), task_point_list[1 + offset].get_x(), task_point_list[2 + offset].get_x()});
-          irt_int rt_y
-              = std::max({task_point_list[0 + offset].get_y(), task_point_list[1 + offset].get_y(), task_point_list[2 + offset].get_y()});
-
-          PlanarCoord lb_coord(lb_x, lb_y);
-          PlanarCoord rt_coord(rt_x, rt_y);
-
-          patch_list.emplace_back(lb_coord, rt_coord, layer_idx);
-        }
-      }
-    }
-  }
-
-  return patch_list;
-}
-
-void ViolationRepairer::repairMinArea(VRModel& vr_model, VRNet& vr_net)
-{
-  Die& die = DM_INST.getDatabase().get_die();
-  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
-
-  std::map<irt_int, GTLPolySetInt> layer_polygon_set_map;
-  {
-    // pin_shape
-    for (VRPin& vr_pin : vr_net.get_vr_pin_list()) {
-      for (EXTLayerRect& routing_shape : vr_pin.get_routing_shape_list()) {
-        LayerRect shape_real_rect = routing_shape.getRealLayerRect();
-        layer_polygon_set_map[shape_real_rect.get_layer_idx()] += RTUtil::convertToGTLRectInt(shape_real_rect);
-      }
-    }
-    // vr_result_tree
-    for (DRCShape& drc_shape : getDRCShapeList(vr_net.get_net_idx(), vr_net.get_vr_result_tree())) {
-      if (!drc_shape.get_is_routing()) {
-        continue;
-      }
-      LayerRect& layer_rect = drc_shape.get_layer_rect();
-      layer_polygon_set_map[layer_rect.get_layer_idx()] += RTUtil::convertToGTLRectInt(layer_rect);
-    }
-  }
-  std::map<LayerRect, irt_int, CmpLayerRectByXASC> violation_rect_added_area_map;
-  for (auto& [layer_idx, polygon_set] : layer_polygon_set_map) {
-    irt_int layer_min_area = routing_layer_list[layer_idx].get_min_area();
-    std::vector<GTLPolyInt> polygon_list;
-    polygon_set.get_polygons(polygon_list);
-    for (GTLPolyInt& polygon : polygon_list) {
-      if (gtl::area(polygon) >= layer_min_area) {
-        continue;
-      }
-      // 取polygon中最大的矩形进行膨胀
-      PlanarRect max_violation_rect;
-      std::vector<GTLRectInt> gtl_rect_list;
-      gtl::get_max_rectangles(gtl_rect_list, polygon);
-      for (GTLRectInt& gtl_rect : gtl_rect_list) {
-        if (max_violation_rect.getArea() < gtl::area(gtl_rect)) {
-          max_violation_rect = RTUtil::convertToPlanarRect(gtl_rect);
-        }
-      }
-      irt_int added_area = layer_min_area - gtl::area(polygon);
-      violation_rect_added_area_map[LayerRect(max_violation_rect, layer_idx)] = added_area;
-    }
-  }
-  std::vector<LayerRect> patch_list;
-  for (auto& [violation_rect, added_area] : violation_rect_added_area_map) {
-    irt_int layer_idx = violation_rect.get_layer_idx();
-    std::vector<LayerRect> h_candidate_patch_list;
-    {
-      irt_int h_enlarged_offset = static_cast<irt_int>(std::ceil(added_area / 1.0 / violation_rect.getYSpan()));
-      for (irt_int lb_offset = 0; lb_offset <= h_enlarged_offset; lb_offset++) {
-        PlanarRect enlarged_rect
-            = RTUtil::getEnlargedRect(violation_rect, lb_offset, 0, h_enlarged_offset - lb_offset, 0, die.get_real_rect());
-        if (lb_offset == 0 || lb_offset == h_enlarged_offset) {
-          std::vector<PlanarRect> split_rect_list = RTUtil::getSplitRectList(enlarged_rect, violation_rect, Direction::kHorizontal);
-          if (split_rect_list.size() != 1) {
-            LOG_INST.error(Loc::current(), "The size of split_rect_list is not equal 1!");
-          }
-          enlarged_rect = split_rect_list.front();
-        }
-        h_candidate_patch_list.emplace_back(enlarged_rect, layer_idx);
-      }
-    }
-    std::vector<LayerRect> v_candidate_patch_list;
-    {
-      irt_int v_enlarged_offset = static_cast<irt_int>(std::ceil(added_area / 1.0 / violation_rect.getXSpan()));
-      for (irt_int lb_offset = 0; lb_offset <= v_enlarged_offset; lb_offset++) {
-        PlanarRect enlarged_rect
-            = RTUtil::getEnlargedRect(violation_rect, 0, lb_offset, 0, v_enlarged_offset - lb_offset, die.get_real_rect());
-        if (lb_offset == 0 || lb_offset == v_enlarged_offset) {
-          std::vector<PlanarRect> split_rect_list = RTUtil::getSplitRectList(enlarged_rect, violation_rect, Direction::kVertical);
-          if (split_rect_list.size() != 1) {
-            LOG_INST.error(Loc::current(), "The size of split_rect_list is not equal 1!");
-          }
-          enlarged_rect = split_rect_list.front();
-        }
-        v_candidate_patch_list.emplace_back(enlarged_rect, layer_idx);
-      }
-    }
-    std::vector<LayerRect> candidate_patch_list;
-    if (routing_layer_list[layer_idx].isPreferH()) {
-      candidate_patch_list.insert(candidate_patch_list.end(), h_candidate_patch_list.begin(), h_candidate_patch_list.end());
-      candidate_patch_list.insert(candidate_patch_list.end(), v_candidate_patch_list.begin(), v_candidate_patch_list.end());
-    } else {
-      candidate_patch_list.insert(candidate_patch_list.end(), v_candidate_patch_list.begin(), v_candidate_patch_list.end());
-      candidate_patch_list.insert(candidate_patch_list.end(), h_candidate_patch_list.begin(), h_candidate_patch_list.end());
-    }
-    bool has_patch = false;
-    for (LayerRect& candidate_patch : candidate_patch_list) {
-      DRCShape drc_shape(vr_net.get_net_idx(), candidate_patch, true);
-      if (!hasVREnvViolation(vr_model, VRSourceType::kBlockage, {DRCCheckType::kSpacing}, drc_shape)
-          && !hasVREnvViolation(vr_model, VRSourceType::kNetShape, {DRCCheckType::kSpacing}, drc_shape)) {
-        patch_list.push_back(candidate_patch);
-        has_patch = true;
-        break;
-      }
-    }
-    if (!has_patch) {
-      LOG_INST.warn(Loc::current(), "There is no legal patch for min area violation!");
-    }
-  }
-  for (LayerRect& patch : patch_list) {
-    TNode<PhysicalNode>* root_node = vr_net.get_vr_result_tree().get_root();
-
-    PhysicalNode physical_node;
-    PatchNode& patch_node = physical_node.getNode<PatchNode>();
-    patch_node.set_net_idx(vr_net.get_net_idx());
-    patch_node.set_rect(patch);
-    patch_node.set_layer_idx(patch.get_layer_idx());
-
-    root_node->addChild(new TNode<PhysicalNode>(physical_node));
-  }
-}
-
-#endif
 
 void DetailedRouter::updateViolationList(DRBox& dr_box)
 {
-  std::vector<Violation> new_violation_list = getViolationListByIDRC(dr_box);
+  std::vector<Violation> new_violation_list = getViolationList(dr_box);
 
   // 原结果从graph删除
   for (Violation& violation : dr_box.get_violation_list()) {
@@ -1685,7 +1340,7 @@ void DetailedRouter::updateViolationList(DRBox& dr_box)
   }
 }
 
-std::vector<Violation> DetailedRouter::getViolationListByIDRC(DRBox& dr_box)
+std::vector<Violation> DetailedRouter::getViolationList(DRBox& dr_box)
 {
   std::vector<idb::IdbLayerShape*> env_shape_list;
   std::map<int32_t, std::vector<idb::IdbLayerShape*>> net_pin_shape_map;

@@ -100,13 +100,9 @@ void RTAPI::runRT()
   TA_INST.assign(net_list);
   TrackAssigner::destroyInst();
 
-  // DetailedRouter::initInst();
-  // DR_INST.route(net_list);
-  // DetailedRouter::destroyInst();
-
-  LOG_INST.info(Loc::current(), "welcome to new RT!");
-  LOG_INST.info(Loc::current(), "welcome to new RT!");
-  LOG_INST.info(Loc::current(), "welcome to new RT!");
+  DetailedRouter::initInst();
+  DR_INST.route(net_list);
+  DetailedRouter::destroyInst();
 }
 
 void RTAPI::destroyRT()

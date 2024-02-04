@@ -86,14 +86,10 @@ class IRNode : public LayerCoord
   }
   void updateDemand(std::set<Orientation> orien_set, ChangeType change_type)
   {
-    std::set<Orientation> access_orien_set;
     for (const Orientation& orien : orien_set) {
       if (orien == Orientation::kEast || orien == Orientation::kWest || orien == Orientation::kSouth || orien == Orientation::kNorth) {
-        access_orien_set.insert(orien);
+        _orien_demand_map[orien] += (change_type == ChangeType::kAdd ? 1 : -1);
       }
-    }
-    for (Orientation access_orien : access_orien_set) {
-      _orien_demand_map[access_orien] += (change_type == ChangeType::kAdd ? 1 : -1);
     }
   }
 #if 1  // astar

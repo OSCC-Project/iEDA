@@ -20,7 +20,6 @@
 #include "DRGroup.hpp"
 #include "LayerCoord.hpp"
 #include "LayerRect.hpp"
-#include "RoutingState.hpp"
 #include "SortStatus.hpp"
 
 namespace irt {
@@ -71,12 +70,10 @@ struct CmpDRTask
   bool operator()(const DRTask* a, const DRTask* b) const
   {
     SortStatus sort_status = SortStatus::kEqual;
-
     // 时钟线网优先
     if (sort_status == SortStatus::kEqual) {
       ConnectType a_connect_type = a->get_connect_type();
       ConnectType b_connect_type = b->get_connect_type();
-
       if (a_connect_type == ConnectType::kClock && b_connect_type != ConnectType::kClock) {
         sort_status = SortStatus::kTrue;
       } else if (a_connect_type != ConnectType::kClock && b_connect_type == ConnectType::kClock) {
@@ -85,37 +82,34 @@ struct CmpDRTask
         sort_status = SortStatus::kEqual;
       }
     }
-
     // BoundingBox 大小升序
-    // if (sort_status == SortStatus::kEqual) {
-    //   double a_routing_area = a->get_bounding_box().getArea();
-    //   double b_routing_area = b->get_bounding_box().getArea();
-
-    //   if (a_routing_area < b_routing_area) {
-    //     sort_status = SortStatus::kTrue;
-    //   } else if (a_routing_area == b_routing_area) {
-    //     sort_status = SortStatus::kEqual;
-    //   } else {
-    //     sort_status = SortStatus::kFalse;
-    //   }
-    // }
-
-    // // PinNum 降序
-    // if (sort_status == SortStatus::kEqual) {
-    //   irt_int a_pin_num = static_cast<irt_int>(a->get_dr_group_list().size());
-    //   irt_int b_pin_num = static_cast<irt_int>(b->get_dr_group_list().size());
-
-    //   if (a_pin_num > b_pin_num) {
-    //     sort_status = SortStatus::kTrue;
-    //   } else if (a_pin_num == b_pin_num) {
-    //     sort_status = SortStatus::kEqual;
-    //   } else {
-    //     sort_status = SortStatus::kFalse;
-    //   }
-    // }
-
+    if (sort_status == SortStatus::kEqual) {
+      double a_routing_area = a->get_bounding_box().getArea();
+      double b_routing_area = b->get_bounding_box().getArea();
+      if (a_routing_area < b_routing_area) {
+        sort_status = SortStatus::kTrue;
+      } else if (a_routing_area == b_routing_area) {
+        sort_status = SortStatus::kEqual;
+      } else {
+        sort_status = SortStatus::kFalse;
+      }
+    }
+    // PinNum 降序
+    if (sort_status == SortStatus::kEqual) {
+      irt_int a_pin_num = static_cast<irt_int>(a->get_dr_group_list().size());
+      irt_int b_pin_num = static_cast<irt_int>(b->get_dr_group_list().size());
+      if (a_pin_num > b_pin_num) {
+        sort_status = SortStatus::kTrue;
+      } else if (a_pin_num == b_pin_num) {
+        sort_status = SortStatus::kEqual;
+      } else {
+        sort_status = SortStatus::kFalse;
+      }
+    }
     if (sort_status == SortStatus::kTrue) {
       return true;
+    } else if (sort_status == SortStatus::kFalse) {
+      return false;
     }
     return false;
   }

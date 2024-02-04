@@ -31,7 +31,6 @@
 #include "ScaleGrid.hpp"
 #include "Segment.hpp"
 #include "ViaMaster.hpp"
-#include "ViaNode.hpp"
 #include "json.hpp"
 
 namespace irt {

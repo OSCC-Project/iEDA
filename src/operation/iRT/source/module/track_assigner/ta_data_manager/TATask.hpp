@@ -19,7 +19,6 @@
 #include "GuideSeg.hpp"
 #include "LayerCoord.hpp"
 #include "LayerRect.hpp"
-#include "RoutingState.hpp"
 #include "TAGroup.hpp"
 
 namespace irt {
@@ -59,7 +58,6 @@ class TATask
   irt_int _task_idx = -1;
   ConnectType _connect_type = ConnectType::kNone;
   std::vector<TAGroup> _ta_group_list;
-
   PlanarRect _bounding_box;
   irt_int _routed_times = 0;
   std::vector<Segment<LayerCoord>> _routing_segment_list;
@@ -70,12 +68,10 @@ struct CmpTATask
   bool operator()(const TATask* a, const TATask* b) const
   {
     SortStatus sort_status = SortStatus::kEqual;
-
     // 时钟线网优先
     if (sort_status == SortStatus::kEqual) {
       ConnectType a_connect_type = a->get_connect_type();
       ConnectType b_connect_type = b->get_connect_type();
-
       if (a_connect_type == ConnectType::kClock && b_connect_type != ConnectType::kClock) {
         sort_status = SortStatus::kTrue;
       } else if (a_connect_type != ConnectType::kClock && b_connect_type == ConnectType::kClock) {
@@ -84,23 +80,22 @@ struct CmpTATask
         sort_status = SortStatus::kEqual;
       }
     }
-
     // BoundingBox 大小降序
-    // if (sort_status == SortStatus::kEqual) {
-    //   double a_routing_area = a->get_bounding_box().getArea();
-    //   double b_routing_area = b->get_bounding_box().getArea();
-
-    //   if (a_routing_area > b_routing_area) {
-    //     sort_status = SortStatus::kTrue;
-    //   } else if (a_routing_area == b_routing_area) {
-    //     sort_status = SortStatus::kEqual;
-    //   } else {
-    //     sort_status = SortStatus::kFalse;
-    //   }
-    // }
-
+    if (sort_status == SortStatus::kEqual) {
+      double a_routing_area = a->get_bounding_box().getArea();
+      double b_routing_area = b->get_bounding_box().getArea();
+      if (a_routing_area > b_routing_area) {
+        sort_status = SortStatus::kTrue;
+      } else if (a_routing_area == b_routing_area) {
+        sort_status = SortStatus::kEqual;
+      } else {
+        sort_status = SortStatus::kFalse;
+      }
+    }
     if (sort_status == SortStatus::kTrue) {
       return true;
+    } else if (sort_status == SortStatus::kFalse) {
+      return false;
     }
     return false;
   }

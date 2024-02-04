@@ -20,8 +20,6 @@
 
 - pin_accessor: 对所有pin分配access点，在port上找到可以接入的点
 
-- resource_allocator: 将布线资源的分配建模为二次规划问题，通过梯度下降迭代，在布线前给线网分配资源
-
 - early_global_router: 早期全局布线器，快速预估拥塞、线长与通孔等布线指标
 
 - global_router: 全局布线器，以GCell为单位，在三维网格上进行全局布线

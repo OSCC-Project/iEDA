@@ -21,7 +21,6 @@
 #include "GridMap.hpp"
 #include "Guide.hpp"
 #include "MTree.hpp"
-#include "PhysicalNode.hpp"
 #include "Pin.hpp"
 
 namespace irt {

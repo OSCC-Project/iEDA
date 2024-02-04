@@ -113,7 +113,7 @@ class DetailedRouter
   LayerRect getNotchPatch(irt_int layer_idx, std::vector<PlanarCoord>& task_point_list);
   std::vector<EXTLayerRect> getMinAreaPatchList(DRBox& dr_box, DRTask* dr_task);
   void updateViolationList(DRBox& dr_box);
-  std::vector<Violation> getViolationListByIDRC(DRBox& dr_box);
+  std::vector<Violation> getViolationList(DRBox& dr_box);
   void updateDRTaskToGcellMap(DRBox& dr_box);
   void updateViolationToGcellMap(DRBox& dr_box);
   void freeDRBox(DRBox& dr_box);

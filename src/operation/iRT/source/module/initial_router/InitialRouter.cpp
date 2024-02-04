@@ -107,7 +107,6 @@ void InitialRouter::setIRParameter(IRModel& ir_model)
   IRParameter ir_parameter;
   LOG_INST.info(Loc::current(), "topo_spilt_length : ", ir_parameter.get_topo_spilt_length());
   LOG_INST.info(Loc::current(), "prefer_wire_unit : ", ir_parameter.get_prefer_wire_unit());
-  LOG_INST.info(Loc::current(), "nonprefer_wire_unit : ", ir_parameter.get_nonprefer_wire_unit());
   LOG_INST.info(Loc::current(), "via_unit : ", ir_parameter.get_via_unit());
   LOG_INST.info(Loc::current(), "corner_unit : ", ir_parameter.get_corner_unit());
   ir_model.set_ir_parameter(ir_parameter);
@@ -897,7 +896,6 @@ double InitialRouter::getKnowWireCost(IRModel& ir_model, IRNode* start_node, IRN
 {
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
   double prefer_wire_unit = ir_model.get_ir_parameter().get_prefer_wire_unit();
-  double nonprefer_wire_unit = ir_model.get_ir_parameter().get_nonprefer_wire_unit();
 
   double wire_cost = 0;
   if (start_node->get_layer_idx() == end_node->get_layer_idx()) {
@@ -906,8 +904,6 @@ double InitialRouter::getKnowWireCost(IRModel& ir_model, IRNode* start_node, IRN
     RoutingLayer& routing_layer = routing_layer_list[start_node->get_layer_idx()];
     if (routing_layer.get_prefer_direction() == RTUtil::getDirection(*start_node, *end_node)) {
       wire_cost *= prefer_wire_unit;
-    } else {
-      wire_cost *= nonprefer_wire_unit;
     }
   }
   return wire_cost;
