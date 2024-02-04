@@ -56,7 +56,7 @@ struct Hpwl
     if (_weight.empty())
       _weight.resize(eptr.size() - 1, 1);
     std::vector<size_t> degree(eptr.size() - 1);
-    for (size_t i = 0; i < eptr.size(); i++) {
+    for (size_t i = 0; i < degree.size(); i++) {
       degree[i] = _eptr[i + 1] - _eptr[i];
     }
     _sequence.resize(_eptr.size() - 1);
