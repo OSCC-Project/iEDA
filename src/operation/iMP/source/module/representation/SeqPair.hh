@@ -264,4 +264,22 @@ struct NegInsert
   }
 };
 
+struct Resize
+{
+  template <typename Property, typename RandGenerator>
+  void operator()(SeqPair<Property>& sp, RandGenerator& gen)
+  {
+    std::uniform_int_distribution<size_t> get_random_index(0, sp.size - 1);
+    size_t try_times = 20;
+    bool success_flag;
+    for (size_t i = 0; i < try_times; ++i) {
+      size_t idx = get_random_index(gen);
+      success_flag = sp.properties[idx].resize(gen);
+      if (success_flag == true) {
+        break;
+      }
+    }
+  }
+};
+
 }  // namespace imp
