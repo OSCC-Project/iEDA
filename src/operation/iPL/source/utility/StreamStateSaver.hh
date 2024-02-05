@@ -14,34 +14,44 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-#include "feature_manager.h"
 
-#include "feature_parser.h"
+#ifndef A5B2ED52_23D4_4BA4_9A6C_D5D5C0623D52
+#define A5B2ED52_23D4_4BA4_9A6C_D5D5C0623D52
 
-namespace iplf {
 
-bool FeatureManager::save_layout(std::string path)
-{
-  FeatureParser feature_parser(_idb_layout, _idb_design);
-  return feature_parser.buildLayout(path);
-}
+#include <iostream>
 
-bool FeatureManager::save_instances(std::string path)
-{
-  FeatureParser feature_parser(_idb_layout, _idb_design);
-  return feature_parser.buildInstances(path);
-}
+// Inpired by Boost. 
 
-bool FeatureManager::save_nets(std::string path)
-{
-  FeatureParser feature_parser(_idb_layout, _idb_design);
-  return feature_parser.buildNets(path);
-}
+// Helper class to store output stream configuration (flags, precision, width)
+// and restore them. Automatically restore the configuration and this class
+// is destructred.
 
-bool FeatureManager::save_reportSummary(std::string path, std::string step)
-{
-  FeatureParser feature_parser(_idb_layout, _idb_design);
-  return feature_parser.buildReportSummary(path, step);
-}
+class StreamStateSaver {
+private:
+	std::ostream &out;
+	std::ios_base::fmtflags	flags;
+	std::streamsize precision;
+	std::streamsize width;
+	
+public:
+	
+	StreamStateSaver(std::ostream &out) : out(out) {
+		flags = out.flags();
+		precision = out.precision();
+		width = out.width();
+	} 
+	
+	~StreamStateSaver() {
+		restore();
+	} 
+	
+	void restore() {
+		out.flags(flags);
+		out.precision(precision);
+		out.width(width);		
+	} 
+	
+}; 
 
-}  // namespace iplf
+#endif /* A5B2ED52_23D4_4BA4_9A6C_D5D5C0623D52 */

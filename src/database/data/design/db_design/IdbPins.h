@@ -155,6 +155,7 @@ class IdbPins
   // Operate
   void remove_pin(IdbPin* pin_remove);
   int32_t getIOPortWidth();
+  void checkPins();
 
  private:
   std::vector<IdbPin*> _pin_list;

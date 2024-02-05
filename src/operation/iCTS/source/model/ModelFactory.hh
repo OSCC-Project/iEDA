@@ -29,12 +29,19 @@
 #include "python/PyToolBase.hh"
 namespace icts {
 
-enum class FitType { kLinear, kCatBoost, kXgBoost };
+enum class FitType
+{
+  kLinear,
+  kCatBoost,
+  kXgBoost
+};
 
-class ModelBase : public PyToolBase {
+class ModelBase : public PyToolBase
+{
  public:
 #ifdef PY_MODEL
-  ModelBase(PyObject* model) {
+  ModelBase(PyObject* model)
+  {
     PyToolBase();
     _model = model;
   }
@@ -56,13 +63,18 @@ class ModelBase : public PyToolBase {
 #endif
 };
 
-class ModelFactory : public PyToolBase {
+class ModelFactory : public PyToolBase
+{
  public:
-  std::vector<double> solvePolynomialRealRoots(
-      const std::vector<double>& coeffs) const;
+  std::vector<double> solvePolynomialRealRoots(const std::vector<double>& coeffs) const;
 
-  std::vector<double> cppLinearModel(const std::vector<std::vector<double>>& x,
-                                     const std::vector<double>& y) const;
+  std::vector<double> cppLinearModel(const std::vector<std::vector<double>>& x, const std::vector<double>& y) const;
+
+  double criticalBufWireLen(const double& alpha, const double& beta, const double& gamma, const double& r, const double& c,
+                            const double& cap_pin);
+  std::pair<double, double> criticalSteinerWireLen(const double& alpha, const double& beta, const double& gamma, const double& r,
+                                                   const double& c, const double& cap_pin, const double& cap_load,
+                                                   const size_t& step = 100);
 #ifdef PY_MODEL
   /**
    * @brief Python interface for timing model
@@ -70,8 +82,7 @@ class ModelFactory : public PyToolBase {
    * @param X (m x n)
    * @param y (n)
    */
-  ModelBase* pyFit(const std::vector<std::vector<double>>& X,
-                   const std::vector<double>& y, const FitType& fit_type) const;
+  ModelBase* pyFit(const std::vector<std::vector<double>>& X, const std::vector<double>& y, const FitType& fit_type) const;
 
   ModelBase* pyLoad(const std::string& model_path) const;
 #endif

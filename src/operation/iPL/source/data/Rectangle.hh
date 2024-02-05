@@ -75,34 +75,19 @@ class Rectangle
   bool operator==(const Rectangle& other) { return (_lower_left == other._lower_left && _upper_right == other._upper_right); }
   bool operator!=(const Rectangle& other) { return !((*this) == other); }
 
-  Rectangle get_intersetion(const Rectangle& rect){
-    T lx = 0;
-    T ly = 0;
-    T ux = 0;
-    T uy = 0;
+  Rectangle get_intersetion(const Rectangle& rect) const{
+    T lx = std::max(this->get_ll_x(), rect.get_ll_x());
+    T ly = std::max(this->get_ll_y(), rect.get_ll_y());
+    T ux = std::min(this->get_ur_x(), rect.get_ur_x());
+    T uy = std::min(this->get_ur_y(), rect.get_ur_y());
 
-    if(rect.get_ll_x() < this->get_ur_x()){
-      lx = rect.get_ll_x();
-      ux = this->get_ur_x();
+    if (lx < ux && ly < uy) {
+      Rectangle intersection_rect(lx, ly, ux, uy);
+      return intersection_rect;
+    } else {
+      // Return an invalid rectangle or a special value
+      return Rectangle(0,0,0,0);
     }
-
-    if(this->get_ll_x() < rect.get_ur_x()){
-      lx = this->get_ll_x();
-      ux = rect.get_ur_x();
-    }
-
-    if(rect.get_ll_y() < this->get_ur_y()){
-      ly = rect.get_ll_y();
-      uy = this->get_ur_y();
-    }
-
-    if(this->get_ll_y() < rect.get_ur_y()){
-      ly = this->get_ll_y();
-      uy = rect.get_ur_y();
-    }
-
-    Rectangle interset_rect(lx,ly,ux,uy);
-    return interset_rect;
   }
 
   // getter.
@@ -143,8 +128,8 @@ class Rectangle
   }
 
   // function.
-  T get_width();
-  T get_height();
+  T get_width() const;
+  T get_height() const;
   T get_half_perimeter();
   T get_perimeter();
   T get_area();
@@ -165,13 +150,13 @@ inline Point<T> Rectangle<T>::get_center() const
 }
 
 template <typename T>
-inline T Rectangle<T>::get_width()
+inline T Rectangle<T>::get_width() const
 {
   return this->get_ur_x() - this->get_ll_x();
 }
 
 template <typename T>
-inline T Rectangle<T>::get_height()
+inline T Rectangle<T>::get_height() const
 {
   return this->get_ur_y() - this->get_ll_y();
 }

@@ -14,34 +14,10 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-#include "feature_manager.h"
 
-#include "feature_parser.h"
+#include "DPNode.hh"
 
-namespace iplf {
-
-bool FeatureManager::save_layout(std::string path)
+namespace ipl
 {
-  FeatureParser feature_parser(_idb_layout, _idb_design);
-  return feature_parser.buildLayout(path);
-}
-
-bool FeatureManager::save_instances(std::string path)
-{
-  FeatureParser feature_parser(_idb_layout, _idb_design);
-  return feature_parser.buildInstances(path);
-}
-
-bool FeatureManager::save_nets(std::string path)
-{
-  FeatureParser feature_parser(_idb_layout, _idb_design);
-  return feature_parser.buildNets(path);
-}
-
-bool FeatureManager::save_reportSummary(std::string path, std::string step)
-{
-  FeatureParser feature_parser(_idb_layout, _idb_design);
-  return feature_parser.buildReportSummary(path, step);
-}
-
-}  // namespace iplf
+    
+} // namespace ipl

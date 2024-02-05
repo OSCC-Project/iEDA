@@ -131,13 +131,17 @@ unsigned CmdFeatureGenerateNets::exec()
 CmdFeatureSummary::CmdFeatureSummary(const char* cmd_name) : TclCmd(cmd_name)
 {
   auto* path_option = new TclStringOption(TCL_PATH, 1, nullptr);
+  auto* step_option = new TclStringOption(TCL_STEP, 1, nullptr);
   addOption(path_option);
+  addOption(step_option);
 }
 
 unsigned CmdFeatureSummary::check()
 {
   TclOption* path_option = getOptionOrArg(TCL_PATH);
+  TclOption* step_option = getOptionOrArg(TCL_STEP);
   LOG_FATAL_IF(!path_option);
+  //   LOG_FATAL_IF(!step_option);
   return 1;
 }
 
@@ -150,9 +154,15 @@ unsigned CmdFeatureSummary::exec()
   TclOption* option = getOptionOrArg(TCL_PATH);
   auto path = option->getStringVal();
 
+  std::string step = "";
+  TclOption* step_option = getOptionOrArg(TCL_STEP);
+  if (step_option->getStringVal() != nullptr) {
+    step = step_option->getStringVal();
+  }
+
   iplf::FeatureManager feature_parser(dmInst->get_idb_layout(), dmInst->get_idb_design());
 
-  feature_parser.save_reportSummary(path);
+  feature_parser.save_reportSummary(path, step);
 
   return 1;
 }

@@ -44,6 +44,7 @@ class DPOperator
   void initDPOperator(DPDatabase* database, DPConfig* config);
   void updateTopoManager();
   void updateGridManager();
+  void initPlaceableArea();
 
   std::pair<int32_t, int32_t> obtainOptimalXCoordiLine(DPInstance* inst);
   std::pair<int32_t, int32_t> obtainOptimalYCoordiLine(DPInstance* inst);

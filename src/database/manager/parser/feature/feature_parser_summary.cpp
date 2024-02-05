@@ -31,6 +31,10 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+#include "CTSAPI.hh"
+#include "DrcAPI.hpp"
+#include "EvalAPI.hpp"
+#include "Evaluator.hh"
 #include "IdbCore.h"
 #include "IdbDesign.h"
 #include "IdbDie.h"
@@ -40,20 +44,20 @@
 #include "IdbNet.h"
 #include "IdbRow.h"
 #include "IdbTrackGrid.h"
-#include "PlacerDB.hh"
 #include "PLAPI.hh"
-#include "CTSAPI.hh"
+#include "PlacerDB.hh"
 #include "TimingEngine.hh"
-#include "Evaluator.hh"
+#include "ToApi.hpp"
 #include "feature_parser.h"
 #include "flow_config.h"
 #include "idm.h"
 #include "iomanip"
 #include "json_parser.h"
+#include "report_evaluator.h"
 
 namespace idb {
 
-bool FeatureParser::buildReportSummary(std::string json_path)
+bool FeatureParser::buildReportSummary(std::string json_path, std::string step)
 {
   std::ofstream& file_stream = ieda::getOutputFileStream(json_path);
   json root;
@@ -76,6 +80,10 @@ bool FeatureParser::buildReportSummary(std::string json_path)
 
   // root["Place"] = buildSummaryPL(json_path);
   // root["CTS"] = buildSummaryCTS();
+  // root["DRC"] = buildSummaryDRC();
+  // root["TO"] = buildSummaryTO();
+  if (!step.empty())
+    root[step] = flowSummary(step);
 
   file_stream << std::setw(4) << root;
 
@@ -488,29 +496,27 @@ json FeatureParser::buildSummaryPins()
 
   return summary_pin;
 }
+/**
+ * if step = "", only save idb summary
+ */
+json FeatureParser::flowSummary(std::string step)
+{
+  using SummaryBuilder = std::function<json()>;
+  auto stepToBuilder = std::unordered_map<std::string, SummaryBuilder>{{"place", [this, step]() { return buildSummaryPL(step); }},
+                                                                       {"legalization", [this, step]() { return buildSummaryPL(step); }},
+                                                                       {"CTS", [this]() { return buildSummaryCTS(); }},
+                                                                       {"optDrv", [this, step]() { return buildSummaryTO(step); }},
+                                                                       {"optHold", [this, step]() { return buildSummaryTO(step); }},
+                                                                       {"optSetup", [this, step]() { return buildSummaryTO(step); }},
+                                                                       {"sta", [this]() { return buildSummarySTA(); }},
+                                                                       {"drc", [this]() { return buildSummaryDRC(); }}};
 
-json FeatureParser::buildSummaryPL(std::string json_path)
+  return stepToBuilder[step]();
+}
+
+json FeatureParser::buildSummaryPL(std::string step)
 {
 
-  std::string path = json_path;
-  // get step
-  size_t lastSlash = path.find_last_of('/');
-  size_t lastfirstUnderline = path.find_first_of('_', lastSlash + 1);
-  size_t lastsecondUnderline = path.find_first_of('_', lastfirstUnderline + 1);
-  std::string step = path.substr(lastfirstUnderline + 1, lastsecondUnderline - lastfirstUnderline - 1);
-
-  // 按照step获取index
-  // int index_step = [&step]()->int{
-  //   if(step == "place") return 0;
-  //   else if(step == "dplace") return 1;
-  //   return 2;
-  // }();
-
-  int index_step;
-  if(step == "place")index_step = 0;
-  else if(step == "dplace")index_step = 1;
-  else index_step = 2;
-  
   json summary_pl;
   // 1:全局布局、详细布局、合法化都需要存储的数据参数，需要根据step存储不同的值
   auto place_density = PlacerDBInst.place_density;
@@ -522,25 +528,35 @@ json FeatureParser::buildSummaryPL(std::string json_path)
   auto tns = PlacerDBInst.tns;
   auto wns = PlacerDBInst.wns;
   auto suggest_freq = PlacerDBInst.suggest_freq;
-  
-  summary_pl["place_density"] = place_density[index_step];
-  summary_pl["pin_density"] = pin_density[index_step];
-  summary_pl["HPWL"] = HPWL[index_step];
-  summary_pl["STWL"] = STWL[index_step];
-  summary_pl["global_routing_WL"] = GRWL[index_step];
-  summary_pl["congestion"] = congestion[index_step];
-  summary_pl["tns"] = tns[index_step];
-  summary_pl["wns"] = wns[index_step];
-  summary_pl["suggest_freq"] = suggest_freq[index_step];
 
   // 2:全局布局、详细布局需要存储的数据参数
-  #if 1
-  if(index_step != 2){
+  if(step == "place"){
+    summary_pl["gplace"]["place_density"] = place_density[0];
+    summary_pl["gplace"]["pin_density"] = pin_density[0];
+    summary_pl["gplace"]["HPWL"] = HPWL[0];
+    summary_pl["gplace"]["STWL"] = STWL[0];
+    summary_pl["gplace"]["global_routing_WL"] = GRWL[0];
+    summary_pl["gplace"]["congestion"] = congestion[0];
+    summary_pl["gplace"]["tns"] = tns[0];
+    summary_pl["gplace"]["wns"] = wns[0];
+    summary_pl["gplace"]["suggest_freq"] = suggest_freq[0];
+
+    
+    summary_pl["dplace"]["place_density"] = place_density[1];
+    summary_pl["dplace"]["pin_density"] = pin_density[1];
+    summary_pl["dplace"]["HPWL"] = HPWL[1];
+    summary_pl["dplace"]["STWL"] = STWL[1];
+    summary_pl["dplace"]["global_routing_WL"] = GRWL[1];
+    summary_pl["dplace"]["congestion"] = congestion[1];
+    summary_pl["dplace"]["tns"] = tns[1];
+    summary_pl["dplace"]["wns"] = wns[1];
+    summary_pl["dplace"]["suggest_freq"] = suggest_freq[1];
+
     auto* pl_design = PlacerDBInst.get_design();
     summary_pl["instance"] = pl_design->get_instances_range();
     int fix_inst_cnt = 0;
-    for(auto* inst : pl_design->get_instance_list()){
-      if(inst->isFixed()){
+    for (auto* inst : pl_design->get_instance_list()) {
+      if (inst->isFixed()) {
         fix_inst_cnt++;
       }
     }
@@ -548,21 +564,30 @@ json FeatureParser::buildSummaryPL(std::string json_path)
     summary_pl["fix_instances"] = fix_inst_cnt;
     summary_pl["nets"] = pl_design->get_nets_range();
     summary_pl["total_pins"] = pl_design->get_pins_range();
-    summary_pl["core_area"] = std::to_string(PlacerDBInst.get_layout()->get_core_shape().get_width()) + " * " + std::to_string(PlacerDBInst.get_layout()->get_core_shape().get_height());
+    summary_pl["core_area"] = std::to_string(PlacerDBInst.get_layout()->get_core_shape().get_width()) + " * "
+                              + std::to_string(PlacerDBInst.get_layout()->get_core_shape().get_height());
 
-    summary_pl["bin_number"] = PlacerDBInst.get_placer_config()->get_nes_config().get_bin_cnt_x() * PlacerDBInst.get_placer_config()->get_nes_config().get_bin_cnt_y();
+    summary_pl["bin_number"] = PlacerDBInst.get_placer_config()->get_nes_config().get_bin_cnt_x()
+                               * PlacerDBInst.get_placer_config()->get_nes_config().get_bin_cnt_y();
     summary_pl["bin_size"] = std::to_string(PlacerDBInst.bin_size_x) + " * " + std::to_string(PlacerDBInst.bin_size_y);
     summary_pl["overflow_number"] = PlacerDBInst.gp_overflow_number;
     summary_pl["overflow"] = PlacerDBInst.gp_overflow;
   }
-  #endif
-
   // 3:合法化需要存储的数据参数
-  if(index_step == 2){
+  else if(step == "legalization"){
+    summary_pl["legalization"]["place_density"] = place_density[2];
+    summary_pl["legalization"]["pin_density"] = pin_density[2];
+    summary_pl["legalization"]["HPWL"] = HPWL[2];
+    summary_pl["legalization"]["STWL"] = STWL[2];
+    summary_pl["legalization"]["global_routing_WL"] = GRWL[2];
+    summary_pl["legalization"]["congestion"] = congestion[2];
+    summary_pl["legalization"]["tns"] = tns[2];
+    summary_pl["legalization"]["wns"] = wns[2];
+    summary_pl["legalization"]["suggest_freq"] = suggest_freq[2];
+
     summary_pl["total_movement"] = PlacerDBInst.lg_total_movement;
     summary_pl["max_movement"] = PlacerDBInst.lg_max_movement;
   }
-  
   // std::ofstream& file_stream = ieda::getOutputFileStream(json_path);
   // file_stream << std::setw(4) << summary_pl;
 
@@ -589,7 +614,7 @@ json FeatureParser::buildSummaryCTS()
   int max_path = path_info[0].max_depth;
   int min_path = path_info[0].min_depth;
 
-  for(auto path : path_info){
+  for (auto path : path_info) {
     max_path = std::max(max_path, path.max_depth);
     min_path = std::min(min_path, path.min_depth);
   }
@@ -604,7 +629,7 @@ json FeatureParser::buildSummaryCTS()
   auto _timing_engine = ista::TimingEngine::getOrCreateTimingEngine();
   // 可能有多个clk_name，每一个时钟都需要报告tns、wns、freq
   auto clk_list = _timing_engine->getClockList();
-  std::ranges::for_each(clk_list, [&](ista::StaClock* clk){
+  std::ranges::for_each(clk_list, [&](ista::StaClock* clk) {
     auto clk_name = clk->get_clock_name();
     auto setup_tns = _timing_engine->reportTNS(clk_name, AnalysisMode::kMax);
     auto setup_wns = _timing_engine->reportWNS(clk_name, AnalysisMode::kMax);
@@ -619,6 +644,123 @@ json FeatureParser::buildSummaryCTS()
   });
 
   return summary_cts;
+}
+
+json FeatureParser::buildSummaryTO(std::string step)
+{
+  json summary_to;
+
+#if 1
+  // instances, nets, total_pins, core_area, utilization
+  // 这些指标在summary里都有
+  summary_to["instances"] = _design->get_instance_list()->get_num();
+  summary_to["nets"] = _design->get_net_list()->get_num();
+  // summary_to["total_pins"] =
+  summary_to["core_area"] = dmInst->coreAreaUm();
+  summary_to["utilization"] = dmInst->coreUtilization();
+#endif
+
+  // HPWL, STWL, Global_routing_WL, congestion
+  auto& nets = dmInst->get_idb_design()->get_net_list()->get_net_list();
+  auto wl_nets = iplf::EvalWrapper::parallelWrap<eval::WLNet>(nets, iplf::EvalWrapper::wrapWLNet);
+  summary_to["HPWL"] = EvalInst.evalTotalWL("kHPWL", wl_nets);
+  summary_to["STWL"] = EvalInst.evalTotalWL("kFlute", wl_nets);
+  // auto Global_routing_WL =
+  // auto congestion =
+
+  // max_fanout, min_slew_slack, min_cap_slack
+
+
+  // before: 初始值，tns，wns，freq
+  json summary_subto;
+  auto to_eval_data = ToApiInst.getEvalData();
+  for(auto eval_data : to_eval_data){
+    auto clk_name = eval_data.name;
+    summary_subto[clk_name]["initial_tns"] = eval_data.initial_tns;
+    summary_subto[clk_name]["initial_wns"] = eval_data.initial_wns;
+    summary_subto[clk_name]["initial_suggest_freq"] = eval_data.initial_freq;
+  }
+
+  // after: 优化后的值
+  auto _timing_engine = ista::TimingEngine::getOrCreateTimingEngine();
+  auto clk_list = _timing_engine->getClockList();
+
+  std::ranges::for_each(clk_list, [&](ista::StaClock* clk) {
+    auto clk_name = clk->get_clock_name();
+    auto drv_tns = _timing_engine->reportTNS(clk_name, AnalysisMode::kMax);
+    auto drv_wns = _timing_engine->reportWNS(clk_name, AnalysisMode::kMax);
+    auto suggest_freq = 1000.0 / (clk->getPeriodNs() - drv_wns);
+    summary_subto[clk_name]["optimized_tns"] = drv_tns;
+    summary_subto[clk_name]["optimized_wns"] = drv_wns;
+    summary_subto[clk_name]["optimized_suggest_freq"] = suggest_freq;
+  });
+
+  // delta: 迭代的值，优化后的值减去初始值
+  for(auto eval_data : to_eval_data){
+    auto clk_name = eval_data.name;
+    summary_subto[clk_name]["delta_tns"] = static_cast<double>(summary_subto[clk_name]["optimized_tns"]) - static_cast<double>(summary_subto[clk_name]["initial_tns"]);
+    summary_subto[clk_name]["delta_wns"] = static_cast<double>(summary_subto[clk_name]["optimized_wns"]) - static_cast<double>(summary_subto[clk_name]["initial_wns"]);
+    summary_subto[clk_name]["delta_suggest_freq"] = static_cast<double>(summary_subto[clk_name]["optimized_suggest_freq"]) - static_cast<double>(summary_subto[clk_name]["initial_suggest_freq"]);
+  }
+
+  summary_to["sta"] = summary_subto;
+
+  return summary_to;
+}
+
+json FeatureParser::buildSummarySTA()
+{
+  json summary_sta;
+  auto timing_engine = ista::TimingEngine::getOrCreateTimingEngine();
+  auto* ista = timing_engine->get_ista();
+  auto& all_clocks = ista->get_clocks();
+
+  // iterate the clock group of all the clocks.
+  for (unsigned id = 1; auto& clock_group : all_clocks) {
+    json::value_type path_group;
+    path_group["timing_path_group"]["id"] = id++;
+    std::string group_name = clock_group->get_clock_name();
+    path_group["timing_path_group"]["name"] = group_name;
+    double wns = ista->getWNS(group_name.c_str(), ista::AnalysisMode::kMax);
+    double tns = ista->getTNS(group_name.c_str(), ista::AnalysisMode::kMax);
+    path_group["timing_path_group"]["WNS"] = wns;
+    path_group["timing_path_group"]["TNS"] = tns;
+    path_group["timing_path_group"]["NVP"] = 0;  // TBD for negative violated points.
+    double freq = 1000.0 / (clock_group->getPeriodNs() - wns);
+    path_group["timing_path_group"]["FREQ"] = freq;
+    double hold_wns = ista->getWNS(group_name.c_str(), ista::AnalysisMode::kMin);
+    double hold_tns = ista->getTNS(group_name.c_str(), ista::AnalysisMode::kMin);
+    path_group["timing_path_group"]["hold_WNS"] = wns;
+    path_group["timing_path_group"]["hold_TNS"] = tns;
+    path_group["timing_path_group"]["hold_NVP"] = 0;  // TBD for hold negative violated points.
+
+    FOREACH_MODE(mode)
+    {
+      json::value_type analysis_mode;
+      analysis_mode["analysis_mode"] = (mode == AnalysisMode::kMax) ? "max_delay/setup" : "min_delay/hold";
+      analysis_mode["levels_of_logic"] = 0;       // TBD
+      analysis_mode["critical_path_length"] = 0;  // TBD
+      analysis_mode["critical_path_slack"] = (mode == AnalysisMode::kMax) ? wns : hold_wns;
+      analysis_mode["total_negative_slack"] = (mode == AnalysisMode::kMax) ? tns : hold_tns;
+      path_group["timing_path_group"]["analysis_mode_infos"].push_back(analysis_mode);
+    }
+    summary_sta.push_back(path_group);
+  }
+
+  return summary_sta;
+}
+
+json FeatureParser::buildSummaryDRC()
+{
+  json summary_drc;
+
+  auto drc_map = idrc::DrcAPIInst.getCheckResult();
+  // summary_drc["short_nums"] = drc_map
+  for (auto& [key, value] : drc_map) {
+    summary_drc[key] = value;
+  }
+
+  return summary_drc;
 }
 
 }  // namespace idb

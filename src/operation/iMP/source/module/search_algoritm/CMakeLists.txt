@@ -9,6 +9,7 @@ target_link_libraries(iMP-example-sa
    imp-representation
    imp-search-alg
    imp-formula
+   imp-plot
    )
 # target_include_directories(iMP-sp-test
 # )
