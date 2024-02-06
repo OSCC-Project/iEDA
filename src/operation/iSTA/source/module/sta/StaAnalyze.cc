@@ -1,16 +1,16 @@
 // ***************************************************************************************
 // Copyright (c) 2023-2025 Peng Cheng Laboratory
-// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of Sciences
-// Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
+// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of
+// Sciences Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
 //
 // iEDA is licensed under Mulan PSL v2.
-// You can use this software according to the terms and conditions of the Mulan PSL v2.
-// You may obtain a copy of Mulan PSL v2 at:
+// You can use this software according to the terms and conditions of the Mulan
+// PSL v2. You may obtain a copy of Mulan PSL v2 at:
 // http://license.coscl.org.cn/MulanPSL2
 //
-// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
-// EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
-// MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY
+// KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+// NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
@@ -100,11 +100,12 @@ StaClockPair StaAnalyze::analyzeClockRelation(
   auto launch_trans_type = launch_clock_data->get_clock_wave_type();
   auto capture_trans_type = capture_clock_data->get_clock_wave_type();
 
-  size_t init_launch_edge_index = (launch_trans_type == TransType::kRise) ? 0 : 1;
+  size_t init_launch_edge_index =
+      (launch_trans_type == TransType::kRise) ? 0 : 1;
   size_t init_capture_edge_index =
-      (capture_trans_type == TransType::kRise)
-          ? (capture_edges[0] == 0) ? 2 : 0
-          : (launch_trans_type == TransType::kFall) ? 3 : 1;
+      (capture_trans_type == TransType::kRise) ? (capture_edges[0] == 0) ? 2 : 0
+      : (launch_trans_type == TransType::kFall) ? 3
+                                                : 1;
 
   while ((((init_capture_edge_index + 2) < capture_edges.size()) &&
           launch_edges[init_launch_edge_index] >=
@@ -378,39 +379,62 @@ unsigned StaAnalyze::analyzePortSetupHold(StaVertex* port_vertex,
         }
       }
 
-      auto& capture_clock_vertexes = capture_clock->get_clock_vertexes();
-      auto* capture_clock_vertex = *(capture_clock_vertexes.begin());
-
-      StaClockData* capture_clock_data = nullptr;
-
       auto constrain_value = NS_TO_FS(output_delay->get_delay_value());
       if (analysis_mode == AnalysisMode::kMin) {
-        // for output delay, we need minus output delay value in hold analysis.
+        // for output delay, we need minus output delay value in hold
+        // analysis.
         constrain_value = -constrain_value;
       }
 
-      // add the data to path group.
-      Sta* ista = getSta();
-      StaData* capture_clock_vertex_clock_data;
-      FOREACH_CLOCK_DATA(capture_clock_vertex,
-                         capture_clock_vertex_clock_data) {
-        capture_clock_data =
-            dynamic_cast<StaClockData*>(capture_clock_vertex_clock_data);
+      auto& capture_clock_vertexes = capture_clock->get_clock_vertexes();
 
-        if ((capture_clock_data->get_trans_type() == clock_trans_type) &&
-            (capture_analysis_mode == capture_clock_data->get_delay_type()) &&
-            (capture_clock_data->get_prop_clock() == capture_clock)) {
-          auto clock_pair =
-              analyzeClockRelation(launch_clock_data, capture_clock_data);
+      if (!capture_clock_vertexes.empty()) {
+        auto* capture_clock_vertex = *(capture_clock_vertexes.begin());
 
-          auto* port_seq_data = new StaPortSeqPathData(
-              dynamic_cast<StaPathDelayData*>(delay_data), launch_clock_data,
-              capture_clock_data, std::move(clock_pair), std::nullopt,
-              constrain_value,
-              dynamic_cast<Port*>(port_vertex->get_design_obj()));
+        StaClockData* capture_clock_data = nullptr;
 
-          ista->insertPathData(capture_clock, port_vertex, port_seq_data);
+        // add the data to path group.
+        Sta* ista = getSta();
+        StaData* capture_clock_vertex_clock_data;
+        FOREACH_CLOCK_DATA(capture_clock_vertex,
+                           capture_clock_vertex_clock_data) {
+          capture_clock_data =
+              dynamic_cast<StaClockData*>(capture_clock_vertex_clock_data);
+
+          if ((capture_clock_data->get_trans_type() == clock_trans_type) &&
+              (capture_analysis_mode == capture_clock_data->get_delay_type()) &&
+              (capture_clock_data->get_prop_clock() == capture_clock)) {
+            auto clock_pair =
+                analyzeClockRelation(launch_clock_data, capture_clock_data);
+
+            auto* port_seq_data = new StaPortSeqPathData(
+                dynamic_cast<StaPathDelayData*>(delay_data), launch_clock_data,
+                capture_clock_data, std::move(clock_pair), std::nullopt,
+                constrain_value,
+                dynamic_cast<Port*>(port_vertex->get_design_obj()));
+
+            ista->insertPathData(capture_clock, port_vertex, port_seq_data);
+          }
         }
+      } else {
+        // virtual clock
+
+        auto* capture_clock_data =
+            new StaClockData(capture_analysis_mode, clock_trans_type, 0,
+                             port_vertex, capture_clock);
+        capture_clock_data->set_clock_wave_type(clock_trans_type);
+        port_vertex->addData(capture_clock_data);
+
+        auto clock_pair =
+            analyzeClockRelation(launch_clock_data, capture_clock_data);
+
+        auto* port_seq_data = new StaPortSeqPathData(
+            dynamic_cast<StaPathDelayData*>(delay_data), launch_clock_data,
+            capture_clock_data, std::move(clock_pair), std::nullopt,
+            constrain_value,
+            dynamic_cast<Port*>(port_vertex->get_design_obj()));
+
+        ista->insertPathData(capture_clock, port_vertex, port_seq_data);
       }
     }
   }
