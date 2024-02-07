@@ -126,7 +126,7 @@ bool SAPlace(Block& cluster, float weight_wl, float weight_ol, float weight_area
       }
     } else {
       auto sub_inst = std::static_pointer_cast<Instance, Object>(sub_obj);
-      blk_shapes[v_pos] = NodeShape(sub_inst->get_cell_master().get_width(), sub_inst->get_cell_master().get_height());
+      blk_shapes[v_pos] = NodeShape(sub_inst->get_width(), sub_inst->get_height());
       if (sub_inst->isFixed()) {
         ignore[v_pos] = true;
         continue;

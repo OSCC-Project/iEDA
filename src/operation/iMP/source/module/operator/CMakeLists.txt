@@ -1,4 +1,4 @@
-add_library(imp-operator BlkClustering.cc HierPlacer.cc SAPlacer.cc)
+add_library(imp-operator BlkClustering.cc HierPlacer.cc SAPlacer.cc MacroAligner.cc)
 target_link_libraries(imp-operator
     PRIVATE
     imp-partition

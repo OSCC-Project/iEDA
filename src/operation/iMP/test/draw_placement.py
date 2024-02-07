@@ -24,8 +24,8 @@ def draw(input_file, output_dir):
         type = line[5]
         if type == 'macro':
             color = 'g'
-            # facecolor = color
-            facecolor = 'none'
+            facecolor = color
+            # facecolor = 'none'
         elif type == 'io':
             color =  'r'
             facecolor = color
@@ -65,3 +65,4 @@ if __name__ == "__main__":
     #     file_name = input_dir + file_name
     #     draw(file_name, output_dir)
     draw(input_dir + "placement_level1_200_0.txt", output_dir)
+    draw(input_dir + "placement_level1_200_0_aligned.txt", output_dir)

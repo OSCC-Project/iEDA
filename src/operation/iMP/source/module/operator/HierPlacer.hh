@@ -106,10 +106,6 @@ class SAHierPlacer : public HierPlacer
     preorder_out(blk, out);
   }
 
-  // void alignMacrosGlobal(Block& blk) {
-  //   std::vector<std::shared_ptr<imp::Instance>> macros = get_macros(blk);
-  //  }
-
  private:
   T _macro_halo;
   double _dbu;
@@ -254,7 +250,7 @@ class SAHierPlacer : public HierPlacer
       }
       if (blk.netlist().vSize() == 1) {  // single macro cluster, set its shape as child-shape
         auto macro = std::static_pointer_cast<Instance, Object>(blk.netlist().vertex_at(0).property());
-        // blk.set_shape_curve({{macro->get_cell_master().get_width(), macro->get_cell_master().get_height()}}, 0, true);
+        // blk.set_shape_curve({{macro->get_width(), macro->get_height()}}, 0, true);
         blk.set_shape_curve({{macro->get_halo_width(), macro->get_halo_height()}}, 0, true);  // use halo width & height
         return;
       }
@@ -270,7 +266,7 @@ class SAHierPlacer : public HierPlacer
           }
           // create discrete shape-curve for macro
           auto macro_shape_curve = ShapeCurve<T>();
-          // macro_shape_curve.setShapes({{sub_inst->get_cell_master().get_width(), sub_inst->get_cell_master().get_height()}}, 0, false);
+          // macro_shape_curve.setShapes({{sub_inst->get_width(), sub_inst->get_height()}}, 0, false);
           macro_shape_curve.setShapes({{sub_inst->get_halo_width(), sub_inst->get_halo_height()}}, 0, false);
           sub_shape_curves.push_back(std::move(macro_shape_curve));
         } else {
@@ -391,8 +387,8 @@ class SAHierPlacer : public HierPlacer
           continue;
         }
         // print macro & io info
-        out << inst->get_min_corner().x() << "," << inst->get_min_corner().y() << "," << inst->get_cell_master().get_width() << ","
-            << inst->get_cell_master().get_height() << "," << blk.get_name() << "," << type << std::endl;
+        out << inst->get_min_corner().x() << "," << inst->get_min_corner().y() << "," << inst->get_width() << "," << inst->get_height()
+            << "," << blk.get_name() << "," << type << std::endl;
       }
       if (!obj->isBlock())
         continue;
@@ -401,30 +397,7 @@ class SAHierPlacer : public HierPlacer
     }
   }
 
-  std::vector<std::shared_ptr<imp::Instance>> get_macros(Block& blk)
-  {
-    std::vector<std::shared_ptr<imp::Instance>> macros;
-    preorder_get_macros(blk, macros);
-    return macros;
-  }
-
-  void preorder_get_macros(Block& blk, std::vector<std::shared_ptr<imp::Instance>>& macros)
-  {
-    for (auto&& i : blk.netlist().vRange()) {
-      auto sub_obj = i.property();
-      if (sub_obj->isInstance()) {  // add direct instance child area
-        auto sub_inst = std::static_pointer_cast<Instance, Object>(sub_obj);
-        if (sub_inst->get_cell_master().isMacro()) {
-          macros.push_back(sub_inst);
-        }
-      } else {  // add block children's instance area
-        auto sub_block = std::static_pointer_cast<Block, Object>(sub_obj);
-        preorder_get_macros(*sub_block, macros);
-      }
-    }
-  }
-
-  std::pair<T, T> get_core_size()
+  std::pair<T, T> get_core_size() const
   {
     return std::make_pair(_root_cluster.get_shape_curve().get_width(), _root_cluster.get_shape_curve().get_height());
   }
