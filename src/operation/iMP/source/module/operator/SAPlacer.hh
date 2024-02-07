@@ -25,6 +25,7 @@ struct NodeShape
 {
   NodeShape() : width(0), height(0), _shape_curve(nullptr) {}
   NodeShape(T w, T h) : width(w), height(h), _shape_curve(nullptr) {}
+  NodeShape(const NodeShape& other) = default;
   explicit NodeShape(const ShapeCurve<T>* shape_curve)
   {
     // shape with shape-curve
@@ -62,7 +63,8 @@ struct Coordinate
 };
 
 template <typename T>
-bool SAPlace(Block& cluster, float weight_wl = 1.0, float weight_ol = 0.1, float weight_area = 0.1)
+bool SAPlace(Block& cluster, float weight_wl, float weight_ol, float weight_area, float weight_periphery, size_t max_iters = 500,
+             float cool_rate = 0.97, float init_temperature = 1000)
 {
   /**
    * @brief place given cluster based on SA method
@@ -94,15 +96,18 @@ bool SAPlace(Block& cluster, float weight_wl = 1.0, float weight_ol = 0.1, float
   size_t num_edges = cluster.netlist().heSize();
   std::vector<NodeShape<T>> blk_shapes(num_vertices);
   std::vector<bool> ignore(num_vertices, false);
-  std::vector<int32_t> initial_lx(num_vertices, 0);
-  std::vector<int32_t> initial_ly(num_vertices, 0);
+  std::vector<T> initial_lx(num_vertices, 0);
+  std::vector<T> initial_ly(num_vertices, 0);
+  std::vector<size_t> blk_macro_nums(num_vertices, 0);
+  std::vector<size_t> macro_blk_indices;  // indices of blocks which contains macros
+  size_t total_macro_num = cluster.get_macro_num();
 
   // place-outline is based on parent cluster's shape & location,  assume parent cluster's shape & location has been decided
   auto outline_min_corner = cluster.get_min_corner();
-  int32_t outline_lx = outline_min_corner.get<0>();
-  int32_t outline_ly = outline_min_corner.get<1>();
-  int32_t outline_width = cluster.get_shape_curve().get_width();
-  int32_t outline_height = cluster.get_shape_curve().get_height();
+  T outline_lx = outline_min_corner.x();
+  T outline_ly = outline_min_corner.y();
+  T outline_width = cluster.get_shape_curve().get_width();
+  T outline_height = cluster.get_shape_curve().get_height();
 
   for (auto v_iter = cluster.netlist().vbegin(); v_iter != cluster.netlist().vend(); ++v_iter) {
     auto sub_obj = (*v_iter).property();
@@ -115,6 +120,10 @@ bool SAPlace(Block& cluster, float weight_wl = 1.0, float weight_ol = 0.1, float
         ignore[v_pos] = true;
         continue;
       }
+      if (sub_block->is_macro_cluster()) {
+        macro_blk_indices.push_back(v_pos);
+        blk_macro_nums[v_pos] = sub_block->get_macro_num();
+      }
     } else {
       auto sub_inst = std::static_pointer_cast<Instance, Object>(sub_obj);
       blk_shapes[v_pos] = NodeShape(sub_inst->get_cell_master().get_width(), sub_inst->get_cell_master().get_height());
@@ -122,10 +131,14 @@ bool SAPlace(Block& cluster, float weight_wl = 1.0, float weight_ol = 0.1, float
         ignore[v_pos] = true;
         continue;
       }
+      if (sub_inst->get_cell_master().isMacro()) {
+        macro_blk_indices.push_back(v_pos);
+        blk_macro_nums[v_pos] = 1;
+      }
     }
     auto min_corner = sub_obj->get_min_corner();
-    initial_lx[v_pos] = min_corner.get<0>();
-    initial_ly[v_pos] = min_corner.get<1>();
+    initial_lx[v_pos] = min_corner.x();
+    initial_ly[v_pos] = min_corner.y();
   }
 
   auto&& [eptr, eind] = vectorize(cluster.netlist());
@@ -133,7 +146,7 @@ bool SAPlace(Block& cluster, float weight_wl = 1.0, float weight_ol = 0.1, float
   Coordinate packing_result{.x = initial_lx, .y = initial_ly};
 
   auto end = std::chrono::high_resolution_clock::now();
-  INFO("SAPlace data initialize time: ", std::chrono::duration<double>(end - start).count(), "s");
+  INFO("SAPlace data initialize time: ", std::chrono::duration<float>(end - start).count(), "s");
   int seed = 0;
   std::mt19937 gen(seed);
   SeqPair<NodeShape<T>> sp(blk_shapes, gen);
@@ -148,13 +161,32 @@ bool SAPlace(Block& cluster, float weight_wl = 1.0, float weight_ol = 0.1, float
 
   // only use outline && area cost
 
-  Hpwl<int32_t> hpwl(eptr, eind, {}, {}, {}, 1);
+  Hpwl<T> hpwl(eptr, eind, {}, {}, {}, 1);
   CostFunc wl = EvalWirelength(outline_width, outline_height, hpwl, net_weight);
   CostFunc ol = EvalOutline(outline_width, outline_height);
   CostFunc area = [&](const Coordinate& packing_result) {
     return (float) packing_result.width * (float) packing_result.height / (float) outline_width / (float) outline_height;
   };
-  Evaluator<SeqPair<NodeShape<T>>, Coordinate> eval(decoder, {weight_wl, weight_ol, weight_area}, {wl, ol, area});
+  CostFunc periphery = [outline_width, outline_height, outline_lx, outline_ly, total_macro_num, &blk_macro_nums, &macro_blk_indices,
+                        &sp](const Coordinate& packing_result) {
+    T min_dist = 0;
+    double periphery_cost = 0;
+    for (size_t id : macro_blk_indices) {
+      T dist_left = packing_result.x[id] - outline_lx;
+      T dist_bottom = packing_result.y[id] - outline_ly;
+      min_dist = std::min(dist_left, dist_bottom);
+      T dist_top = std::abs(outline_width - dist_left - sp.properties[id].width);
+      min_dist = std::min(min_dist, dist_top);
+      T dist_right = std::abs(outline_height - dist_bottom - sp.properties[id].height);
+      min_dist = std::min(min_dist, dist_right);
+      periphery_cost += double(min_dist) * blk_macro_nums[id];
+    }
+    periphery_cost /= total_macro_num;
+    return periphery_cost;
+  };
+
+  Evaluator<SeqPair<NodeShape<T>>, Coordinate> eval(decoder, {weight_wl, weight_ol, weight_area, weight_periphery},
+                                                    {wl, ol, area, periphery});
 
   PerturbFunc ps_op = PosSwap();
   PerturbFunc ns_op = NegSwap();
@@ -162,22 +194,21 @@ bool SAPlace(Block& cluster, float weight_wl = 1.0, float weight_ol = 0.1, float
   PerturbFunc pi_op = PosInsert();
   PerturbFunc ni_op = NegInsert();
   PerturbFunc rs_op = Resize();
-  PerturbFunc rotate_op = [](SeqPair<NodeShape<T>>& sp, std::mt19937& gen) {
-    std::uniform_int_distribution<size_t> get_ridx(0, sp.size - 1);
-    size_t id = get_ridx(gen);
-    sp.properties[id].is_rotate = !sp.properties[id].is_rotate;
-  };
 
   Perturb<SeqPair<NodeShape<T>>, void> perturb(seed, {0.2, 0.2, 0.2, 0.2, 0.2, 0.2}, {ps_op, ns_op, ds_op, pi_op, ni_op, rs_op});
 
   // intalize the norm cost and inital product
   eval.initalize(packing_result, sp, perturb, num_vertices * 15 / 10);
 
-  SimulateAnneal solve{.seed = seed, .num_perturb = num_vertices * 2, .cool_rate = 0.98, .inital_temperature = 1000};
+  SimulateAnneal solve{.seed = seed,
+                       .max_iters = max_iters,
+                       .num_perturb = num_vertices * 4,
+                       .cool_rate = cool_rate,
+                       .inital_temperature = init_temperature};
   auto sa_start = std::chrono::high_resolution_clock::now();
   sp = solve(sp, eval, perturb, [](auto&& x) { std::cout << x << std::endl; });
   auto sa_end = std::chrono::high_resolution_clock::now();
-  std::chrono::duration<double> sa_elapsed = std::chrono::duration<double>(sa_end - sa_start);
+  std::chrono::duration<float> sa_elapsed = std::chrono::duration<float>(sa_end - sa_start);
   INFO("SAPlace time: ", sa_elapsed.count(), "s");
 
   // get location
@@ -252,7 +283,7 @@ std::pair<T, T> calMacroTilings(const std::vector<ShapeCurve<T>>& sub_shape_curv
   Coordinate packing_result{.x = initial_lx, .y = initial_ly};
 
   auto bench_end = std::chrono::high_resolution_clock::now();
-  INFO("cal macro tiling initialize time: ", std::chrono::duration<double>(bench_end - bench_begin).count(), "s");
+  INFO("cal macro tiling initialize time: ", std::chrono::duration<float>(bench_end - bench_begin).count(), "s");
   int seed = 0;
   std::mt19937 gen(seed);
   SeqPair<Prop> sp(prop, gen);
@@ -288,7 +319,7 @@ std::pair<T, T> calMacroTilings(const std::vector<ShapeCurve<T>>& sub_shape_curv
   SimulateAnneal solve{.seed = seed, .num_perturb = num_vertices * 2, .cool_rate = 0.98, .inital_temperature = 1000};
   sp = solve(sp, eval, perturb, [](auto&& x) {});
   auto sa_end = std::chrono::high_resolution_clock::now();
-  std::chrono::duration<double> sa_elapsed = std::chrono::duration<double>(sa_end - sa_start);
+  std::chrono::duration<float> sa_elapsed = std::chrono::duration<float>(sa_end - sa_start);
 
   // update solution
   pack(sp, packing_result);

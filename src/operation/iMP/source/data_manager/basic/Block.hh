@@ -68,14 +68,16 @@ class Block : public Object, public std::enable_shared_from_this<Block>
   const ShapeCurve<int32_t>& get_shape_curve() const { return _shape_curve; }
   ShapeCurve<int32_t>& get_shape_curve() { return _shape_curve; }
   geo::box<int32_t> get_curr_shape() const { return geo::make_box(0, 0, _shape_curve.get_width(), _shape_curve.get_height()); }
-  void set_macro_area(double macro_area) { _macro_area = macro_area; }
-  void set_stdcell_area(double stdcell_area) { _stdcell_area = stdcell_area; }
-  void set_io_area(double io_area) { _io_area = io_area; }
+  void set_macro_num(size_t macro_num) { _macro_num = macro_num; }
+  void set_macro_area(float macro_area) { _macro_area = macro_area; }
+  void set_stdcell_area(float stdcell_area) { _stdcell_area = stdcell_area; }
+  void set_io_area(float io_area) { _io_area = io_area; }
   void set_fixed() { _is_fixed = true; }
   void set_unfixed() { _is_fixed = false; }
-  double get_macro_area() const { return _macro_area; }
-  double get_stdcell_area() const { return _stdcell_area; }
-  double get_io_area() const { return _io_area; }
+  size_t get_macro_num() const { return _macro_num; }
+  float get_macro_area() const { return _macro_area; }
+  float get_stdcell_area() const { return _stdcell_area; }
+  float get_io_area() const { return _io_area; }
   bool isFixed() const { return _is_fixed; }
   bool is_macro_cluster() { return _macro_area > 0 && _stdcell_area <= 0 && _io_area <= 0; }
   bool is_stdcell_cluster() { return _macro_area <= 0 && _stdcell_area > 0 && _io_area <= 0; }
@@ -103,9 +105,10 @@ class Block : public Object, public std::enable_shared_from_this<Block>
  private:
   // geo::box<int32_t> _shape;
   std::shared_ptr<Netlist> _netlist;
-  double _macro_area = 0;
-  double _stdcell_area = 0;
-  double _io_area = 0;
+  size_t _macro_num = 0;
+  float _macro_area = 0;
+  float _stdcell_area = 0;
+  float _io_area = 0;
   bool _is_fixed = false;
   ShapeCurve<int32_t> _shape_curve;  // containing stdcell area
 };

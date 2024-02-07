@@ -39,7 +39,7 @@ template <typename T>
 class ShapeCurve
 {
  public:
-  ShapeCurve(double min_ar = 0.33, double max_ar = 3)
+  ShapeCurve(float min_ar = 0.33, float max_ar = 3)
       : _type(ShapeType::NONE), _min_ar(min_ar), _max_ar(max_ar), _width(0), _height(0), _area(0)
   {
   }
@@ -61,12 +61,12 @@ class ShapeCurve
   void set_width(T width)
   {
     _width = width;
-    _area = double(_width) * _height;
+    _area = float(_width) * _height;
   }
   void set_height(T height)
   {
     _height = height;
-    _area = double(_width) * _height;
+    _area = float(_width) * _height;
   }
 
   // getter
@@ -76,10 +76,10 @@ class ShapeCurve
   bool isMixed() const { return _type == ShapeType::MIXED; }
   T get_width() const { return _width; }
   T get_height() const { return _height; }
-  double get_area() const { return _area; }
-  double get_min_ar() const { return _min_ar; }
-  double get_max_ar() const { return _max_ar; }
-  double get_ar() const { return calAr(_width, _height); }
+  float get_area() const { return _area; }
+  float get_min_ar() const { return _min_ar; }
+  float get_max_ar() const { return _max_ar; }
+  float get_ar() const { return calAr(_width, _height); }
   const std::vector<std::pair<T, T>>& get_width_list() const { return _width_list; }
   const std::vector<std::pair<T, T>>& get_height_list() const { return _height_list; }
 
@@ -120,7 +120,7 @@ class ShapeCurve
       return false;  // no other shapes to change
     }
     auto [width, height] = generateRandomShape(distribution, generator);
-    _area = double(width) * height;
+    _area = float(width) * height;
     return true;
   }
 
@@ -134,7 +134,7 @@ class ShapeCurve
     auto min_width = _width_list[idx].first;
     auto max_width = _width_list[idx].second;
     T width = min_width + distribution(generator) * (max_width - min_width);
-    double area = double(_width_list[idx].first) * _height_list[idx].first;
+    float area = float(_width_list[idx].first) * _height_list[idx].first;
     T height = area / width;
     return std::make_pair(width, height);
   }
@@ -145,14 +145,14 @@ class ShapeCurve
     if (isDiscrete()) {
       _width = _width_list[idx].first;
       _height = _height_list[idx].first;
-      _area = double(_width) * _height;
+      _area = float(_width) * _height;
     } else {
       _width = (_width_list[idx].first + _width_list[idx].second) / 2;
       _height = (_height_list[idx].first + _height_list[idx].second) / 2;
     }
   }
 
-  void add_continous_area(double continous_shape_area, bool ar_clip = true)
+  void add_continous_area(float continous_shape_area, bool ar_clip = true)
   {
     // used in fine-shaping
     if (!isDiscrete()) {
@@ -210,29 +210,25 @@ class ShapeCurve
 
  private:
   ShapeType _type;
-  double _min_ar;  // w / h
-  double _max_ar;  // w / h
+  float _min_ar;  // w / h
+  float _max_ar;  // w / h
   T _width;
   T _height;
-  double _area;  // uses (largest area of discrete_shapes) + (continous_shape_area)
+  float _area;  // uses (largest area of discrete_shapes) + (continous_shape_area)
   std::vector<std::pair<T, T>> _width_list;
   std::vector<std::pair<T, T>> _height_list;
 
-  // double _x_inflate;
-  // double _y_inflate;
   bool checkShapeAr(const T& width, const T& height) const
   {
-    double ar = calAr(width, height);
+    float ar = calAr(width, height);
     return ar >= _min_ar && ar <= _max_ar;
   }
-  double calAr(const T& width, const T& height) const { return double(width) / height; }
-  T calWidthByAr(double area, double Ar) { return std::sqrt(area * Ar); }
+  float calAr(const T& width, const T& height) const { return float(width) / height; }
+  T calWidthByAr(float area, float Ar) { return std::sqrt(area * Ar); }
   void setShapesDiscrete(std::vector<std::pair<T, T>> discrete_shapes, bool ar_clip)
   {
     // discrete_shapes is in ascending order by area
     // force_flag is used by macros, if force_flag == true, not use arr clip
-    // _width_list.clear();
-    // _height_list.clear();
     clearShape();
 
     if (discrete_shapes.empty()) {
@@ -240,7 +236,7 @@ class ShapeCurve
     }
     // sort area-increasing
     std::sort(discrete_shapes.begin(), discrete_shapes.end(), [](const std::pair<T, T>& x, const std::pair<T, T>& y) -> bool {
-      return double(x.first) * x.second < double(y.first) * y.second;
+      return float(x.first) * x.second < float(y.first) * y.second;
     });
     for (auto& [width, height] : discrete_shapes) {
       // discard odd shapes
@@ -260,7 +256,7 @@ class ShapeCurve
 
     _width = discrete_shapes[0].first;
     _height = discrete_shapes[0].second;
-    _area = double(discrete_shapes[0].first) * discrete_shapes[0].second;
+    _area = float(discrete_shapes[0].first) * discrete_shapes[0].second;
     _type = ShapeType::DISCRETE;
   }
 
@@ -286,15 +282,13 @@ class ShapeCurve
   void setShapesMixed(const std::vector<std::pair<T, T>>& discrete_shapes, float continuous_shapes_area, bool ar_clip = true)
   {
     T min_width, max_width;
-    // _width_list.clear();
-    // _height_list.clear();
     clearShape();
     auto iter = std::max_element(discrete_shapes.begin(), discrete_shapes.end(),
                                  [](const std::pair<T, T>& p1, const std::pair<T, T>& p2) -> bool {
-                                   return double(p1.first) * p1.second < double(p2.first) * p2.second;
+                                   return float(p1.first) * p1.second < float(p2.first) * p2.second;
                                  });
     // use the largest area of discrete_shapes
-    _area = double(iter->first) * iter->second + continuous_shapes_area;  // discrete-shape-area + continuous-shape-area
+    _area = float(iter->first) * iter->second + continuous_shapes_area;  // discrete-shape-area + continuous-shape-area
 
     std::vector<std::pair<T, T>> temp_width_list, temp_height_list;
     for (auto& [width, height] : discrete_shapes) {

@@ -54,10 +54,18 @@ class Instance final : public Object
   void set_extend_right(int32_t value) { _extend_right = value; }
   void set_extend_top(int32_t value) { _extend_top = value; }
   void set_extend_bottom(int32_t value) { _extend_bottom = value; }
-
   void set_extend(int32_t, int32_t, int32_t, int32_t);
+  void set_halo_min_corner(int32_t halo_lx, int32_t halo_ly) { set_min_corner(halo_lx + _extend_left, halo_ly + _extend_bottom); }
+  void set_halo_min_corner(const geo::point<int32_t>& point) { set_min_corner(point.x() + _extend_left, point.y() + _extend_bottom); }
 
-  // getter
+  int32_t get_halo_width() const { return _cell->get_width() + _extend_left + _extend_right; }
+  int32_t get_halo_height() const { return _cell->get_height() + _extend_bottom + _extend_top; }
+  geo::point<int32_t> get_halo_min_corner() const
+  {
+    auto min_corner = get_min_corner();
+    return geo::point<int32_t>(min_corner.x() - _extend_left, min_corner.y() - _extend_bottom);
+  }
+
   double get_area() const { return double(geo::width(_cell->get_shape())) * geo::height(_cell->get_shape()); }
   const Cell& get_cell_master() const { return *_cell; }
   const int32_t get_extend_left() const { return _extend_left; }
@@ -73,10 +81,10 @@ class Instance final : public Object
   bool isFixed() const { return _state == INSTANCE_STATE::kFixed; }
 
  private:
-  int32_t _extend_left;
-  int32_t _extend_right;
-  int32_t _extend_top;
-  int32_t _extend_bottom;
+  int32_t _extend_left = 0;
+  int32_t _extend_right = 0;
+  int32_t _extend_top = 0;
+  int32_t _extend_bottom = 0;
   INSTANCE_TYPE _type;
   INSTANCE_STATE _state;
   std::shared_ptr<Cell> _cell;

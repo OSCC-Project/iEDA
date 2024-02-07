@@ -54,8 +54,8 @@ class Object
   void set_orient(Orient orient) { _orient = orient; }
 
   std::string get_name() const { return _name; }
-  geo::point<int32_t> get_min_corner() { return _min_corner; }
-  Orient get_orient() { return _orient; }
+  geo::point<int32_t> get_min_corner() const { return _min_corner; }
+  Orient get_orient() const { return _orient; }
   Object& parent();
   const Object& parent() const;
   void set_parent(std::shared_ptr<Object> parent);

@@ -143,7 +143,7 @@ void IDBParser::initNetlist()
       inst_pos.push_back(pos);
       // }
     }
-    // To implement && test
+    
     if (idb_net->has_io_pins()) {
       for (auto* idb_pin : idb_net->get_io_pins()->get_pin_list()) {
         auto pin = transform(idb_pin);
@@ -153,11 +153,12 @@ void IDBParser::initNetlist()
         auto io = std::make_shared<Instance>(pin->get_name(), _cells["Pseudo_IO_Cell"], _design);
         io->set_type(INSTANCE_TYPE::kPseudo);
         io->set_state(INSTANCE_STATE::kFixed);
-
+        io->set_min_corner(idb_pin->get_location()->get_x(), idb_pin->get_location()->get_y());
         size_t pos = add_object(_design->netlist(), io);
         inst_pos.push_back(pos);
       }
     }
+
     if (!pins.empty()) {
       add_net(_design->netlist(), inst_pos, pins, transform(idb_net));
     }
