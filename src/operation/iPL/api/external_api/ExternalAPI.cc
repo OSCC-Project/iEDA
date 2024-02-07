@@ -145,6 +145,7 @@ void ExternalAPI::destroyTimingEval()
 std::vector<float> ExternalAPI::evalGRCong()
 {
   eval::EvalAPI& eval_api = eval::EvalAPI::initInst();
+  // eval::EvalAPI& eval_api = EvalInst;
   std::vector<float> gr_congestion;
   gr_congestion = eval_api.evalGRCong();
 
@@ -199,6 +200,7 @@ std::vector<float> ExternalAPI::obtainPinDens(int32_t grid_cnt_x, int32_t grid_c
   eval::EvalAPI& eval_api = eval::EvalAPI::initInst();
   int32_t bin_cnt_x = grid_cnt_x;
   int32_t bin_cnt_y = grid_cnt_y;
+
   eval_api.initCongDataFromIDB(bin_cnt_x, bin_cnt_y);
 
   std::vector<float> pin_num_list = eval_api.evalPinDens();

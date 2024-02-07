@@ -1,10 +1,5 @@
-add_library(imp-representation 
-           ${IMP_REPRESENTATION}/SeqPair.tpp
-           ${IMP_REPRESENTATION}/Evaluator.cc)
-target_link_libraries(imp-representation
-                      PUBLIC
-                      imp-netlist
-                      imp-plot)
+add_library(imp-representation INTERFACE
+          )
 target_include_directories(imp-representation
-                          PUBLIC 
+                          INTERFACE 
                            ${IMP_REPRESENTATION})   

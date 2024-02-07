@@ -1,6 +1,7 @@
 add_library(imp-basic 
             Netlist.cc
             Block.cc
+            ShapeCurve.cc
             )
 
 target_link_libraries(imp-basic

@@ -8,153 +8,278 @@
  * @copyright Copyright (c) 2023
  *
  */
-#ifndef IMP_SEQPAIR_H
-#define IMP_SEQPAIR_H
-#include <cstdint>
+#pragma once
+#include <concepts>
 #include <functional>
 #include <map>
 #include <random>
-#include <span>
-#include <tuple>
+#include <unordered_map>
 #include <vector>
-
-#include "Evaluator.hh"
 namespace imp {
 
-class NetList;
-
+template <typename Property>
 struct SeqPair
 {
-  SeqPair(const size_t sz);
-  SeqPair(const SeqPair& other);
+  template <typename RandGenerator>
+  SeqPair(const std::vector<Property>& properties, RandGenerator&);
+  SeqPair(const std::vector<Property>& properties);
   ~SeqPair() = default;
-  SeqPair& operator=(const SeqPair& other);
   size_t size{0};
   std::vector<size_t> pos{};
   std::vector<size_t> neg{};
+  std::vector<Property> properties{};
 };
-
-auto makeRandomSeqPair(size_t sz) -> SeqPair
+template <typename Property>
+template <typename RandGenerator>
+SeqPair<Property>::SeqPair(const std::vector<Property>& properties_t, RandGenerator& gen) : SeqPair(properties_t)
 {
-  SeqPair sp(sz);
-  std::random_device rd;
-  std::mt19937 gen(rd());
-  std::shuffle(std::begin(sp.pos), std::end(sp.pos), gen);
-  std::shuffle(std::begin(sp.neg), std::end(sp.neg), gen);
-  return sp;
+  // SeqPair::SeqPair(properties_t);
+  std::shuffle(std::begin(pos), std::end(pos), gen);
+  std::shuffle(std::begin(neg), std::end(neg), gen);
 }
 
-template <typename T>
-struct SpLocation
+template <typename Property>
+SeqPair<Property>::SeqPair(const std::vector<Property>& properties_t) : size(properties_t.size()), properties(properties_t)
 {
-  std::pair<T, T> operator()(const SeqPair&, const std::vector<T>& width, const std::vector<T>& height, std::vector<T>& x,
-                             std::vector<T>& y, bool is_left = true, bool is_bottom = true);
+  pos.resize(size);
+  neg.resize(size);
+  std::iota(pos.begin(), pos.end(), 0);
+  std::iota(neg.begin(), neg.end(), 0);
+}
+
+template <typename Property, typename Product>
+struct FastPackSP
+{
+  using T = decltype(Product::width);
+  using DimFunc = std::function<T(size_t id, const Property&)>;        // Function type of corresponding Width and Height
+  using IgnoreFunc = std::function<bool(size_t id, const Property&)>;  // Function type to determine whether to ignore
+  void operator()(const SeqPair<Property>& sp, Product& product)
+  {
+    auto [w, h] = this->operator()(sp, product.x, product.y);
+    product.width = w;
+    product.height = h;
+  }
+  std::pair<T, T> operator()(const SeqPair<Property>& sp, std::vector<T>& x, std::vector<T>& y, bool is_left = true, bool is_bottom = true);
+
+  FastPackSP(
+      T outline_lx, T outline_ly, DimFunc get_width_t, DimFunc get_height_t,
+      IgnoreFunc is_ignore_t = [](size_t, const Property&) { return false; })
+      : _outline_lx(outline_lx), _outline_ly(outline_ly), get_width(get_width_t), get_height(get_height_t), is_ignore(is_ignore_t)
+  {
+  }
 
  private:
   T find(size_t id);
   void remove(size_t id, T);
-  T pack(const std::vector<size_t>& pos, const std::vector<size_t>& neg, const std::vector<T>& weight, std::vector<T>& loc);
+  T pack(const std::vector<size_t>& pos, const std::vector<size_t>& neg, const std::vector<Property>& properties, const DimFunc& weight,
+         std::vector<T>& loc);
+  T _outline_lx;
+  T _outline_ly;
+  DimFunc get_width;
+  DimFunc get_height;
+  IgnoreFunc is_ignore;
   std::map<size_t, T> _bst;
-  std::vector<size_t> _reverse_pos{};
-  std::vector<size_t> _reverse_neg{};
-  std::vector<size_t> _match{};
+  std::vector<size_t> _reverse_pos;
+  std::vector<size_t> _reverse_neg;
+  std::vector<size_t> _match;
 };
 
-struct SpEvaluate
+template <typename Property, typename Product>
+inline std::pair<typename FastPackSP<Property, Product>::T, typename FastPackSP<Property, Product>::T>
+FastPackSP<Property, Product>::operator()(const SeqPair<Property>& sp, std::vector<T>& x, std::vector<T>& y, bool is_left, bool is_bottom)
 {
-  double operator()(const SeqPair&);
-
-  SpEvaluate(const NetList& netlist) : _netlist(netlist)
-  {
-    _pin_x_buffer.resize(_netlist.pin_x_off.size());
-    _pin_y_buffer.resize(_netlist.pin_x_off.size());
-    _lx_buffer = _netlist.lx;
-    _ly_buffer = _netlist.ly;
-    for (size_t i = 0; i < _netlist.pin2vertex.size(); i++) {
-      size_t j = _netlist.pin2vertex[i];
-      if (j >= _netlist.num_moveable) {
-        _pin_x_buffer[i] = _lx_buffer[j];
-        _pin_y_buffer[i] = _ly_buffer[j];
-      }
-    }
-    SeqPair sp(_netlist.num_moveable);
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    double sum_wl = 0;
-    for (size_t i = 0; i < 100; i++) {
-      std::shuffle(std::begin(sp.pos), std::end(sp.pos), gen);
-      std::shuffle(std::begin(sp.neg), std::end(sp.neg), gen);
-      packing(sp);
-      sum_wl += _wl;
-    }
-    _avg_wl = sum_wl / 100;
+  T outline_w{0};
+  T outline_h{0};
+  if (sp.size > _match.size()) {
+    _match.resize(sp.size);
+    _reverse_pos.resize(sp.size);
+    _reverse_neg.resize(sp.size);
   }
-  void packing(const SeqPair&);
+  std::unordered_map<size_t, std::pair<T, T>> mask_xy;
+  for (size_t i = 0; i < sp.size; i++) {
+    if (!is_ignore(i, sp.properties[i]))
+      continue;
+    mask_xy[i] = std::make_pair(x[i], y[i]);
+  }
 
-  const std::vector<double>& get_pin_x() { return _pin_x_buffer; }
-  const std::vector<double>& get_pin_y() { return _pin_y_buffer; }
-  const std::vector<int64_t>& get_lx() { return _lx_buffer; }
-  const std::vector<int64_t>& get_ly() { return _ly_buffer; }
-  double get_wl() { return _wl; }
-  double get_bound_dx() { return _bound_dx; }
-  double get_bound_dy() { return _bound_dy; }
+  std::fill(_match.begin(), _match.end(), 0);
+  if (is_left) {
+    outline_w = pack(sp.pos, sp.neg, sp.properties, get_width, x);
+  } else {
+    std::reverse_copy(std::begin(sp.pos), std::end(sp.pos), std::begin(_reverse_pos));
+    std::reverse_copy(std::begin(sp.neg), std::end(sp.neg), std::begin(_reverse_neg));
+    outline_w = pack(_reverse_pos, _reverse_neg, sp.properties, get_width, x);
+    for (size_t i = 0; i < sp.size; i++) {
+      x[i] = outline_w - x[i] - get_width(i, sp.properties[i]);
+    }
+  }
+  std::fill(_match.begin(), _match.end(), 0);
+  if (is_bottom) {
+    if (is_left)
+      std::reverse_copy(std::begin(sp.pos), std::end(sp.pos), std::begin(_reverse_pos));
+    outline_h = pack(_reverse_pos, sp.neg, sp.properties, get_height, y);
+  } else {
+    if (is_left)
+      std::reverse_copy(std::begin(sp.neg), std::end(sp.neg), std::begin(_reverse_neg));
+    outline_h = pack(sp.pos, _reverse_neg, sp.properties, get_height, y);
+    for (size_t i = 0; i < sp.size; i++) {
+      y[i] = outline_h - y[i] - get_height(i, sp.properties[i]);
+    }
+  }
+  for (size_t i = 0; i < sp.size; i++) {
+    if (is_ignore(i, sp.properties[i])) {
+      auto&& [xx, yy] = mask_xy[i];
+      x[i] = xx;
+      y[i] = yy;
+    } else {
+      x[i] += _outline_lx;
+      y[i] += _outline_ly;
+    }
+  }
 
- private:
-  SpLocation<int64_t> _get_locaton{};
-  std::vector<double> _pin_x_buffer{};
-  std::vector<double> _pin_y_buffer{};
-  std::vector<int64_t> _lx_buffer{};
-  std::vector<int64_t> _ly_buffer{};
-  double _wl{};
-  double _avg_wl{};
-  int64_t _bound_dx{};
-  int64_t _bound_dy{};
-  const NetList& _netlist{};
-};
-
-auto makeSeqPairEvalFn(const NetList& netlist) -> std::function<double(const SeqPair&)>
-{
-  return SpEvaluate(netlist);
+  return {outline_w, outline_h};
 }
 
-struct SpAction
+template <typename Property, typename Product>
+inline typename FastPackSP<Property, Product>::T FastPackSP<Property, Product>::find(size_t id)
 {
-  void operator()(SeqPair& sp);
-  SpAction(size_t size);
+  T loc{0};
+  auto iter = _bst.lower_bound(id);
+  if (iter != _bst.begin()) {
+    iter--;
+    loc = (*iter).second;
+  } else
+    loc = 0;
+  return loc;
+}
 
- private:
-  std::pair<size_t, size_t> index_pair()
-  {
-    size_t first = _random_index(_gen);
-    size_t second = _random_index(_gen);
-    while (first == second) {
-      second = _random_index(_gen);
+template <typename Property, typename Product>
+void FastPackSP<Property, Product>::remove(size_t id, T length)
+{
+  auto endIter = _bst.end();
+  auto iter = _bst.find(id);
+  auto nextIter = iter;
+  ++nextIter;
+  if (nextIter != _bst.end()) {
+    ++iter;
+    while (true) {
+      ++nextIter;
+      if ((*iter).second < length)
+        _bst.erase(iter);
+      if (nextIter == endIter)
+        break;
+      iter = nextIter;
     }
-    return std::make_pair(first, second);
   }
-  static void _pos_swap(SeqPair& sp, SpAction* action);
-  static void _neg_swap(SeqPair& sp, SpAction* action);
-  static void _double_swap(SeqPair& sp, SpAction* action);
-  static void _pos_insert(SeqPair& sp, SpAction* action);
-  static void _neg_insert(SeqPair& sp, SpAction* action);
+}
 
-  std::mt19937 _gen;
-  std::uniform_int_distribution<size_t> _random_index;
-  std::discrete_distribution<size_t> _random_probaility;
-  std::vector<std::function<void(SeqPair&, SpAction*)>> _actions;
+template <typename Property, typename Product>
+typename FastPackSP<Property, Product>::T FastPackSP<Property, Product>::pack(const std::vector<size_t>& pos,
+                                                                              const std::vector<size_t>& neg,
+                                                                              const std::vector<Property>& properties,
+                                                                              const DimFunc& weight, std::vector<T>& loc)
+{
+  _bst.clear();
+  _bst[0] = 0;
+  for (size_t i = 0; size_t id : neg) {
+    _match[id] = i++;
+  }
+  T t{0};
+  for (size_t id : pos) {
+    if (is_ignore(id, properties[id]))
+      continue;
+    size_t p = _match[id];
+    loc[id] = find(p);
+    t = loc[id] + weight(id, properties[id]);
+    _bst[p] = t;
+    remove(p, t);
+  }
+  T length = find(pos.size());
+  return length;
+}
+
+template <typename RandGenerator>
+std::pair<size_t, size_t> rand_index_pair(size_t idx_begin, size_t idx_end, RandGenerator& gen)
+{
+  std::uniform_int_distribution<size_t> get_random_index(idx_begin, idx_end);
+  size_t first = get_random_index(gen);
+  size_t second = get_random_index(gen);
+  while (first == second) {
+    second = get_random_index(gen);
+  }
+  return {first, second};
+}
+struct PosSwap
+{
+  template <typename Property, typename RandGenerator>
+  void operator()(SeqPair<Property>& sp, RandGenerator& gen)
+  {
+    auto [first, second] = rand_index_pair(0, sp.size - 1, gen);
+    std::swap(sp.pos[first], sp.pos[second]);
+  }
 };
 
-struct SpPlot
+struct NegSwap
 {
-  bool operator()(const SeqPair& sp, std::string filename);
-  SpPlot(const NetList& netlist, int64_t xlim, int64_t ylim) : _netlist(netlist), _xlim(xlim), _ylim(ylim) {}
+  template <typename Property, typename RandGenerator>
+  void operator()(SeqPair<Property>& sp, RandGenerator& gen)
+  {
+    auto [first, second] = rand_index_pair(0, sp.size - 1, gen);
+    std::swap(sp.neg[first], sp.neg[second]);
+  }
+};
 
- private:
-  const NetList& _netlist{};
-  int64_t _xlim;
-  int64_t _ylim;
+struct DoubleSwap
+{
+  template <typename Property, typename RandGenerator>
+  void operator()(SeqPair<Property>& sp, RandGenerator& gen)
+  {
+    auto [first1, second1] = rand_index_pair(0, sp.size - 1, gen);
+    std::swap(sp.pos[first1], sp.pos[second1]);
+    auto [first2, second2] = rand_index_pair(0, sp.size - 1, gen);
+    std::swap(sp.neg[first2], sp.neg[second2]);
+  }
+};
+struct PosInsert
+{
+  template <typename Property, typename RandGenerator>
+  void operator()(SeqPair<Property>& sp, RandGenerator& gen)
+  {
+    auto [first, second] = rand_index_pair(0, sp.size - 1, gen);
+    size_t val = sp.pos[first];
+    sp.pos.erase(std::begin(sp.pos) + first);
+    sp.pos.insert(std::begin(sp.pos) + second, val);
+  }
+};
+
+struct NegInsert
+{
+  template <typename Property, typename RandGenerator>
+  void operator()(SeqPair<Property>& sp, RandGenerator& gen)
+  {
+    auto [first, second] = rand_index_pair(0, sp.size - 1, gen);
+    size_t val = sp.neg[first];
+    sp.neg.erase(std::begin(sp.neg) + first);
+    sp.neg.insert(std::begin(sp.neg) + second, val);
+  }
+};
+
+struct Resize
+{
+  template <typename Property, typename RandGenerator>
+  void operator()(SeqPair<Property>& sp, RandGenerator& gen)
+  {
+    std::uniform_int_distribution<size_t> get_random_index(0, sp.size - 1);
+    size_t try_times = 20;
+    bool success_flag;
+    for (size_t i = 0; i < try_times; ++i) {
+      size_t idx = get_random_index(gen);
+      success_flag = sp.properties[idx].resize(gen);
+      if (success_flag == true) {
+        break;
+      }
+    }
+  }
 };
 
 }  // namespace imp
-#include "SeqPair.tpp"
-#endif

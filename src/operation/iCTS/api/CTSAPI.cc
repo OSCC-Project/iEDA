@@ -117,6 +117,51 @@ void CTSAPI::report(const std::string& save_dir)
   _timing_engine->destroyTimingEngine();
 }
 
+void CTSAPI::initEvalInfo()
+{
+  if (_evaluator == nullptr) {
+    _evaluator = new Evaluator();
+    _evaluator->init();
+    _evaluator->evaluate();
+  }
+  _evaluator->calcInfo();
+}
+
+size_t CTSAPI::getInsertCellNum() const
+{
+  auto cell_dist_map = _evaluator->get_cell_dist();
+  size_t insert_num = 0;
+  for (auto& [cell_master, cell_dist] : cell_dist_map) {
+    insert_num += cell_dist;
+  }
+  return insert_num;
+}
+
+double CTSAPI::getInsertCellArea() const
+{
+  auto cell_stats = _evaluator->get_cell_stats();
+  double insert_area = 0.0;
+  for (auto& [cell_master, cell_stat] : cell_stats) {
+    insert_area += cell_stat.total_area;
+  }
+  return insert_area;
+}
+
+std::vector<PathInfo> CTSAPI::getPathInfos() const
+{
+  return _evaluator->get_path_infos();
+}
+
+double CTSAPI::getMaxClockNetWL() const
+{
+  return _evaluator->get_max_net_len();
+}
+
+double CTSAPI::getTotalClockNetWL() const
+{
+  return _evaluator->get_total_wire_len();
+}
+
 // flow API
 void CTSAPI::resetAPI()
 {

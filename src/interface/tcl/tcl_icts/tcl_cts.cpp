@@ -49,11 +49,16 @@ unsigned CmdCTSAutoRun::exec()
 
   TclOption* dir_option = getOptionOrArg(TCL_WORK_DIR);
   auto dir_path = dir_option->getStringVal();
-
-  if (iplf::tmInst->autoRunCTS(config_path, dir_path)) {
-    std::cout << "iCTS run successfully." << std::endl;
+  bool is_ok = false;
+  if (dir_path == nullptr) {
+    is_ok = iplf::tmInst->autoRunCTS(config_path);
+  } else {
+    is_ok = iplf::tmInst->autoRunCTS(config_path, dir_path);
   }
 
+  LOG_FATAL_IF(!is_ok) << "iCTS run failed." << std::endl;
+
+  LOG_INFO << "iCTS run successfully." << std::endl;
   return 1;
 }
 

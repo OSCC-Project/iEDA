@@ -58,6 +58,8 @@ class Instance final : public Object
   void set_extend(int32_t, int32_t, int32_t, int32_t);
 
   // getter
+  double get_area() const { return double(geo::width(_cell->get_shape())) * geo::height(_cell->get_shape()); }
+  const Cell& get_cell_master() const { return *_cell; }
   const int32_t get_extend_left() const { return _extend_left; }
   const int32_t get_extend_right() const { return _extend_right; }
   const int32_t get_extend_top() const { return _extend_top; }

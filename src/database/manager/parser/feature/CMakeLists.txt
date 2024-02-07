@@ -21,4 +21,11 @@ target_link_libraries(feature_parser
         idb
         flow_config
         idm
+        ipl-source
+        ipl-api
+        icts_api
+        ista-engine
+        idrc_api
+        eval_api
+        ieda_report_evaluator
 )

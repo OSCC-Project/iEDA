@@ -386,11 +386,50 @@ void DPOperator::initTopoManager()
 }
 
 void DPOperator::initGridManager()
-{  
-  _grid_manager = new GridManager(Rectangle<int32_t>(0, 0, _database->get_layout()->get_max_x(), _database->get_layout()->get_max_y()), _config->get_grid_cnt_x(),
-                                  _config->get_grid_cnt_y(), 0.8, 1);
+{
+  if(_config->get_enable_networkflow()){
+    int beta = 9;
+    const int32_t length = static_cast<int32_t> (beta * _database->get_layout()->get_row_height());
+    int32_t bin_size_x = length;
+    int32_t bin_size_y = length;
+    int32_t num_cols = std::ceil(_database->get_layout()->get_max_x() / static_cast<float>(bin_size_x));
+    int32_t num_rows = std::ceil(_database->get_layout()->get_max_y() / static_cast<float>(bin_size_y));
+    _grid_manager = new GridManager(Rectangle<int32_t>(0, 0, _database->get_layout()->get_max_x(), _database->get_layout()->get_max_y()), 
+                                    num_cols, num_rows, bin_size_x, bin_size_y, 1.0, 1);
+    updateGridManager();
+    initPlaceableArea();
+
+  }else{
+    _grid_manager = new GridManager(Rectangle<int32_t>(0, 0, _database->get_layout()->get_max_x(), _database->get_layout()->get_max_y()), 128,
+                                    128, 1.0, 1);
+  }
   initGridManagerFixedArea();
 }
+
+
+void DPOperator::initPlaceableArea()
+{
+  auto layout = _database->get_layout();
+  Rectangle<int32_t> die_bound(0, 0, layout->get_max_x(), layout->get_max_y());
+
+	for (int32_t i = 0; i < layout->get_row_num(); i++) {
+		for (auto* row : layout->get_row_2d_list().at(i)) {
+      auto bound = row->get_bound();
+      Rectangle<int32_t> bounds32(static_cast<int32_t>(bound.get_ll_x()), 
+                                  static_cast<int32_t>(bound.get_ll_y()), 
+                                  static_cast<int32_t>(bound.get_ur_x()), 
+                                  static_cast<int32_t>(bound.get_ur_y()));
+      Rectangle<int32_t> row_overlap = die_bound.get_intersetion(bounds32);
+      std::vector<Grid*> overlap_grid_list;
+      _grid_manager->obtainOverlapGridList(overlap_grid_list, row_overlap);
+      for (auto* grid : overlap_grid_list) {
+        int64_t overlap_area = _grid_manager->obtainOverlapArea(grid, row_overlap);
+        grid->placeable_area += overlap_area;
+      }
+		}
+	}
+}
+
 
 void DPOperator::initGridManagerFixedArea()
 {
@@ -459,6 +498,7 @@ void DPOperator::updateTopoManager()
 void DPOperator::updateGridManager()
 {
   _grid_manager->clearAllOccupiedArea();
+  _grid_manager->clearAllOccupiedNodeNum();
 
   for (auto* inst : _database->get_design()->get_inst_list()) {
     if (inst->get_coordi().isUnLegal()) {
@@ -473,9 +513,8 @@ void DPOperator::updateGridManager()
     _grid_manager->obtainOverlapGridList(overlap_grid_list, inst_shape);
     for (auto* grid : overlap_grid_list) {
       int64_t overlap_area = _grid_manager->obtainOverlapArea(grid, inst_shape);
-
+      grid->num_node += 1;
       grid->occupied_area += overlap_area;
-      // grid->add_area(overlap_area);
     }
   }
 }

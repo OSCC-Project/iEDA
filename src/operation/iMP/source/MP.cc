@@ -15,13 +15,23 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 #include "MP.hh"
+
+#include <functional>
+
 #include "BlkClustering.hh"
+#include "HierPlacer.hh"
+#include "Logger.hpp"
+#include "SAPlacer.hh"
 namespace imp {
 
 void MP::runMP()
 {
-  BlkClustering clustering{5,20};
-  root().parallel_preorder_op(clustering);
+  // BlkClustering2 clustering{.l1_nparts = 10, .l2_n_parts = 20, .level_num = 1}; // two level place
+  BlkClustering2 clustering{.l1_nparts = 100, .level_num = 1};  // one level place
+  root().preorder_op(clustering);
+  auto placer = SAHierPlacer<int32_t>(root());
+  placer.hierPlace(true);
+  placer.writePlacement(root(), "/home/liuyuezuo/iEDA-master/build/output/placement.txt");
 }
 
 }  // namespace imp

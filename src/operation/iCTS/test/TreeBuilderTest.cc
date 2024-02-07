@@ -88,7 +88,11 @@ TEST_F(TreeBuilderTest, ParetoFrontTest)
   }
   auto pareto_front = BalanceClustering::paretoFront(points);
   // write to python file
-  std::ofstream ofs("./pareto_front.py");
+  auto dir = CTSAPIInst.get_config()->get_work_dir() + "/file/";
+  if (!std::filesystem::exists(dir)) {
+    std::filesystem::create_directories(dir);
+  }
+  std::ofstream ofs(dir + "pareto_front.py");
   ofs << "import matplotlib.pyplot as plt\n";
   ofs << "x = [";
   std::ranges::for_each(points, [&](const auto& point) { ofs << point.x() << ","; });
@@ -108,12 +112,66 @@ TEST_F(TreeBuilderTest, ParetoFrontTest)
   ofs.close();
 }
 
+TEST_F(TreeBuilderTest, CellLinearDelayModelTest)
+{
+  TreeBuilderAux tree_builder("/home/liweiguo/project/iEDA/scripts/salsa20/iEDA_config/db_default_config.json",
+                              "/home/liweiguo/project/iEDA/scripts/salsa20/iEDA_config/cts_default_config.json");
+  auto libs = CTSAPIInst.getAllBufferLibs();
+  auto* model_factory = new icts::ModelFactory();
+  auto cap_load = TimingPropagator::getMaxCap() * 0.25;
+  auto r = TimingPropagator::getUnitRes();
+  auto c = TimingPropagator::getUnitCap();
+  for (auto lib : libs) {
+    LOG_INFO << "Lib: " << lib->get_cell_master();
+    auto coeffs = lib->get_delay_coef();
+    auto cap_pin = lib->get_init_cap();
+    auto crit_buf_wl = model_factory->criticalBufWireLen(coeffs[2], coeffs[1], coeffs[0], r, c, cap_pin);
+    auto crit_est_wl = model_factory->criticalBufWireLen(coeffs[2], coeffs[1], coeffs[0], r, c, cap_load);
+    auto crit_pair = model_factory->criticalSteinerWireLen(coeffs[2], coeffs[1], coeffs[0], r, c, cap_pin, cap_load);
+    LOG_INFO << "Critical Buffer Wirelength: " << crit_buf_wl;
+    LOG_INFO << "Critical EstSteiner Wirelength: " << crit_est_wl;
+    LOG_INFO << "Critical Steiner Wirelength: " << crit_pair.first;
+    LOG_INFO << "Critical Steiner x: " << crit_pair.second;
+  }
+}
+
+TEST_F(TreeBuilderTest, CriticalWireLenTest)
+{
+  TreeBuilderAux tree_builder("/home/liweiguo/project/iEDA/scripts/salsa20/iEDA_config/db_default_config.json",
+                              "/home/liweiguo/project/iEDA/scripts/salsa20/iEDA_config/cts_default_config.json");
+  auto libs = CTSAPIInst.getAllBufferLibs();
+  auto dir = CTSAPIInst.get_config()->get_work_dir() + "/file/";
+  if (!std::filesystem::exists(dir)) {
+    std::filesystem::create_directories(dir);
+  }
+  for (auto lib : libs) {
+    LOG_INFO << "Lib: " << lib->get_cell_master();
+    std::ofstream ofs(dir + lib->get_cell_master() + ".csv");
+    ofs << "slew_in,cap_load,slew_out,delay\n";
+    auto index_list = lib->get_index_list();
+    auto slew_in_list = index_list.front();
+    auto cap_load_list = index_list.back();
+    auto slew_out_list = lib->get_slew_values();
+    auto delay_list = lib->get_delay_values();
+    for (size_t i = 0; i < slew_in_list.size(); ++i) {
+      for (size_t j = 0; j < cap_load_list.size(); ++j) {
+        ofs << slew_in_list[i] << "," << cap_load_list[j] << "," << slew_out_list[i * cap_load_list.size() + j] << ","
+            << delay_list[i * cap_load_list.size() + j] << "\n";
+      }
+    }
+    ofs.close();
+  }
+  LOG_INFO << "cell data write done";
+}
+
 TEST_F(TreeBuilderTest, LocalLegalizationTest)
 {
   auto* load1 = TreeBuilder::genBufInst("load1", Point(2606905, 3009850));
-  std::vector<Pin*> load_pins = {load1->get_load_pin()};
+  auto* load2 = TreeBuilder::genBufInst("load2", Point(2606905, 3009850));
+  std::vector<Pin*> load_pins = {load1->get_load_pin(), load2->get_load_pin()};
   TreeBuilder::localPlace(load_pins);
   LOG_INFO << "load1 location: " << load1->get_location();
+  LOG_INFO << "load2 location: " << load2->get_location();
 }
 
 TEST_F(TreeBuilderTest, FixedTreeBuilderTest)

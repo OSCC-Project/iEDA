@@ -21,6 +21,7 @@
 
 #include "Geometry.hh"
 #include "Orient.hh"
+#include "ShapeCurve.hh"
 namespace imp {
 enum class OBJ_TYPE
 {
@@ -37,6 +38,7 @@ class Object
   virtual geo::box<int32_t> boundingbox() const = 0;
   bool isBlock() { return object_type() == OBJ_TYPE::kBlock; }
   bool isInstance() { return object_type() == OBJ_TYPE::kInstance; }
+  bool isRoot() { return _parent.lock() ? false : true; }
   // virtual Polygon<int32_t> shape() const = 0
   template <typename Geometry>
   Geometry transform(const Geometry& shape) const

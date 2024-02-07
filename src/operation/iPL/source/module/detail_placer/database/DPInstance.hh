@@ -67,6 +67,7 @@ class DPInstance
   DPCell* get_master() const { return _master; }
   std::vector<DPPin*> get_pin_list() const { return _pin_list; }
   Rectangle<int32_t> get_shape() const { return _shape; }
+  Rectangle<int32_t> get_origin_shape() const { return _origin_shape; }
   Point<int32_t> get_coordi() const { return _shape.get_lower_left(); }
   Orient get_orient() const { return _orient; }
   DPINSTANCE_STATE get_state() const { return _state; }
@@ -80,6 +81,7 @@ class DPInstance
   void set_master(DPCell* master) { _master = master; }
   void add_pin(DPPin* pin) { _pin_list.push_back(pin); }
   void set_shape(Rectangle<int32_t> shape) { _shape = std::move(shape); }
+  void set_origin_shape(Rectangle<int32_t> shape) { _origin_shape = std::move(shape); }
   void set_orient(Orient orient) { _orient = std::move(orient); }
   void set_state(DPINSTANCE_STATE state) { _state = state; }
   void set_belong_region(DPRegion* region) { _belong_region = region; }
@@ -90,6 +92,7 @@ class DPInstance
   // function
   void updateCoordi(int32_t llx, int32_t lly);
   std::pair<int32_t, int32_t> calInstPinModifyOffest(DPPin* pin);
+  int64_t computeDisplacement() const;
 
  private:
   int32_t _dp_inst_id;
@@ -97,6 +100,7 @@ class DPInstance
   DPCell* _master;
   std::vector<DPPin*> _pin_list;
   Rectangle<int32_t> _shape;
+  Rectangle<int32_t> _origin_shape;
   Orient _orient;
   DPINSTANCE_STATE _state;
   DPRegion* _belong_region;
