@@ -95,7 +95,7 @@ bool DataManager::place_macro_loc_rand(std::string tcl_path)
   int lly = _layout->get_die()->get_bounding_box()->get_low_y();
   int urx = _layout->get_die()->get_bounding_box()->get_high_x();
   int ury = _layout->get_die()->get_bounding_box()->get_high_y();
-  double Avaliable_area = (double) (urx - llx) * (double) (ury - lly);
+  //double Avaliable_area = (double) (urx - llx) * (double) (ury - lly);
   // std::cout << " grid_width = " << grid_width << " grid_height = " << grid_height << std::endl;
   // std::cout << " llx = " << llx << " lly = " << lly << " urx = " << urx << " ury = " << ury << std::endl;
 
@@ -164,7 +164,7 @@ bool DataManager::place_macro_loc_rand(std::string tcl_path)
     }
 
     // 跟已有单元计算重叠
-    for (int j = 0; j < i; j++) {
+    for (size_t j = 0; j < i; j++) {
       int left_bound = static_cast<int>(std::ceil(
           ((Avaliable_macro[j].center_x - Avaliable_macro[j].width / 2 - Avaliable_macro[i].width / 2) - grid_width / 2) / grid_width));
       int right_bound = static_cast<int>(std::floor(
