@@ -47,7 +47,7 @@ CmdFeatureSummary::CmdFeatureSummary(const char* cmd_name) : TclCmd(cmd_name)
 unsigned CmdFeatureSummary::check()
 {
   TclOption* path_option = getOptionOrArg(TCL_PATH);
-  TclOption* step_option = getOptionOrArg(TCL_STEP);
+  //TclOption* step_option = getOptionOrArg(TCL_STEP);
   LOG_FATAL_IF(!path_option);
   //   LOG_FATAL_IF(!step_option);
   return 1;
