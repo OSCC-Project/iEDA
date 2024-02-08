@@ -6,8 +6,10 @@
 #include <set>
 
 #include "Block.hh"
+#include "Layout.hh"
 #include "Logger.hpp"
 #include "SAPlacer.hh"
+#include "thread"
 namespace imp {
 
 class HierPlacer
@@ -16,7 +18,7 @@ class HierPlacer
   explicit HierPlacer(Block& root_cluster) : _root_cluster(root_cluster) {}
   virtual void initialize(){};                // do some initilaize operations
   virtual void placeCluster(Block& blk) = 0;  // place a given cluster
-  void hierPlace(bool parallel = false)
+  void hierPlace(bool parallel = true)
   {
     initialize();
     auto place_op = [this](Block& blk) -> void {
@@ -40,52 +42,102 @@ template <typename T>
 class SAHierPlacer : public HierPlacer
 {
  public:
-  explicit SAHierPlacer(Block& root_cluster) : HierPlacer(root_cluster) {}
+  explicit SAHierPlacer(Block& root_cluster, float macro_halo_micron = 2.0, float dead_space_ratio = 0.5, float weight_wl = 1.0,
+                        float weight_ol = 0.05, float weight_area = 0.01, float weight_periphery = 0.05, float max_iters = 500,
+                        float cool_rate = 0.97, float init_temperature = 1000.0)
+      : HierPlacer(root_cluster),
+        _dead_space_ratio(dead_space_ratio),
+        _weight_wl(weight_wl),
+        _weight_ol(weight_ol),
+        _weight_area(weight_area),
+        _weight_periphery(weight_periphery),
+        _max_iters(max_iters),
+        _cool_rate(cool_rate),
+        _init_temperature(init_temperature)
+  {
+    _dbu = _root_cluster.netlist().property()->get_database_unit();
+    _macro_halo = _dbu * macro_halo_micron;
+  }
   ~SAHierPlacer() = default;
 
   void initialize() override
   {
-    init_cell_area();                            // init stdcell-area && macro-area
+    init_cell_area(_macro_halo);                 // init stdcell-area && macro-area
     coarse_shaping(generate_different_tilings);  // init discrete-shapes bottom-up (coarse-shaping, only considers macros)
   }
 
   void placeCluster(Block& blk)
   {
-    if (blk.isFixed() || blk.is_stdcell_cluster() || blk.is_io_cluster()) {
+    if (blk.netlist().vSize() == 0 || blk.isFixed() || blk.is_stdcell_cluster() || blk.is_io_cluster()) {
       return;  // only place cluster with macros..
     }
-    if (blk.netlist().vSize() <= 1) {
-      return;  // and single macro cluster needn't place (maybe or not)
+
+    // only one children nodes, place it at min_corner of parent cluster
+    if (blk.netlist().vSize() == 1) {
+      auto sub_obj = blk.netlist().vertex_at(0).property();
+      if (sub_obj->isBlock()) {
+        sub_obj->set_min_corner(blk.get_min_corner());
+      } else {
+        // place Instance's halo_min_corner at min_corner of parent cluster
+        std::static_pointer_cast<Instance, Object>(sub_obj)->set_halo_min_corner(blk.get_min_corner());
+      }
     }
-    clipChildrenShapes(blk);      // clip discrete-shapes larger than parent-clusters bounding-box
-    addChildrenStdcellArea(blk);  // add stdcell area
-    INFO("start placing cluster ", blk.get_name(), ", node_num: ", blk.netlist().vSize());
-    SAPlace<T>(blk);
+
+    else {
+      clipChildrenShapes(blk);                         // clip discrete-shapes larger than parent-clusters bounding-box
+      addChildrenStdcellArea(blk, _dead_space_ratio);  // add stdcell area
+      INFO("start placing cluster ", blk.get_name(), ", node_num: ", blk.netlist().vSize());
+      auto th = std::thread(SAPlace<T>, std::ref(blk), _weight_wl, _weight_ol, _weight_area, _weight_periphery, _max_iters, _cool_rate,
+                            _init_temperature);
+      th.join();
+      // SAPlace<T>(blk, _weight_wl, _weight_ol, _weight_area, _weight_periphery, _max_iters, _cool_rate, _init_temperature);
+    }
     blk.set_fixed();  // set placed cluster fixed
   }
 
   void writePlacement(Block& blk, std::string file_name)
   {
     std::ofstream out(file_name);
-    auto [core_width, core_height] = get_core_size();
-    out << core_width << "," << core_height << std::endl;
+    auto core = _root_cluster.netlist().property()->get_core_shape();
+    auto core_min_corner = core.min_corner();
+    auto core_max_corner = core.max_corner();
+    out << core_min_corner.x() << "," << core_min_corner.y() << "," << core_max_corner.x() - core_min_corner.x() << ","
+        << core_max_corner.y() - core_min_corner.y() << std::endl;
     preorder_out(blk, out);
   }
 
  private:
-  void init_cell_area()
+  T _macro_halo;
+  double _dbu;
+  float _dead_space_ratio;
+  float _weight_wl;
+  float _weight_ol;
+  float _weight_area;
+  float _weight_periphery;
+  size_t _max_iters;
+  float _cool_rate;
+  float _init_temperature;
+
+  void init_cell_area(T macro_halo)
   {
-    auto area_op = [](imp::Block& obj) -> void {
+    auto area_op = [macro_halo](imp::Block& obj) -> void {
       obj.set_macro_area(0.);
       obj.set_stdcell_area(0.);
 
-      double macro_area = 0, stdcell_area = 0, io_area = 0;
+      size_t macro_num = 0;
+      float macro_area = 0, stdcell_area = 0, io_area = 0;
       for (auto&& i : obj.netlist().vRange()) {
         auto sub_obj = i.property();
         if (sub_obj->isInstance()) {  // add direct instance child area
           auto sub_inst = std::static_pointer_cast<Instance, Object>(sub_obj);
           if (sub_inst->get_cell_master().isMacro()) {
+            macro_num++;
             macro_area += sub_inst->get_area();
+            // add halo for macros
+            sub_inst->set_extend_left(macro_halo);
+            sub_inst->set_extend_right(macro_halo);
+            sub_inst->set_extend_bottom(macro_halo);
+            sub_inst->set_extend_top(macro_halo);
           } else if (sub_inst->get_cell_master().isIOCell()) {
             io_area += 1;  // assume io-cluster has area 1
           } else {
@@ -93,22 +145,24 @@ class SAHierPlacer : public HierPlacer
           }
         } else {  // add block children's instance area
           auto sub_block = std::static_pointer_cast<Block, Object>(sub_obj);
+          macro_num += sub_block->get_macro_num();
           macro_area += sub_block->get_macro_area();
           stdcell_area += sub_block->get_stdcell_area();
           io_area += sub_block->get_io_area();
         }
       }
+      obj.set_macro_num(macro_num);
       obj.set_macro_area(macro_area);
       obj.set_stdcell_area(stdcell_area);
       obj.set_io_area(io_area);
 
       // set io-cluster's location and fix it.
       if (obj.is_io_cluster()) {
-        double mean_x = 0, mean_y = 0;
+        float mean_x = 0, mean_y = 0;
         for (auto&& i : obj.netlist().vRange()) {
           auto min_corner = i.property()->get_min_corner();
-          mean_x += min_corner.get<0>();
-          mean_y += min_corner.get<1>();
+          mean_x += min_corner.x();
+          mean_y += min_corner.y();
         }
         mean_x /= obj.netlist().vSize();
         mean_y /= obj.netlist().vSize();
@@ -140,8 +194,8 @@ class SAHierPlacer : public HierPlacer
     // auto [core_width, core_height] = get_core_size();
     std::vector<T> outline_width_list;
     std::vector<T> outline_height_list;
-    double width_unit = double(core_width) / num_runs;
-    double height_unit = double(core_height) / num_runs;
+    float width_unit = float(core_width) / num_runs;
+    float height_unit = float(core_height) / num_runs;
     for (size_t i = 1; i <= num_runs; ++i) {
       outline_width_list.emplace_back(core_width);
       outline_height_list.emplace_back(width_unit * i);  // vary outline-height
@@ -190,13 +244,14 @@ class SAHierPlacer : public HierPlacer
     auto coarse_shape_op = [get_packing_shapes, core_width, core_height](imp::Block& blk) -> void {
       // calculate current node's discrete_shape_curve based on children node's discrete shapes, only concerns macros
       // assume children node's shape has been calculated..
-
-      if (blk.isRoot() || blk.is_io_cluster() || blk.is_stdcell_cluster()) {  // root cluster's shape is core-size
+      if (blk.isRoot() || blk.is_io_cluster() || blk.is_stdcell_cluster() || blk.is_io_cluster()
+          || blk.isFixed()) {  // root cluster's shape is core-size
         return;
       }
       if (blk.netlist().vSize() == 1) {  // single macro cluster, set its shape as child-shape
         auto macro = std::static_pointer_cast<Instance, Object>(blk.netlist().vertex_at(0).property());
-        blk.set_shape_curve({{macro->get_cell_master().get_width(), macro->get_cell_master().get_height()}}, 0, true);
+        // blk.set_shape_curve({{macro->get_width(), macro->get_height()}}, 0, true);
+        blk.set_shape_curve({{macro->get_halo_width(), macro->get_halo_height()}}, 0, true);  // use halo width & height
         return;
       }
 
@@ -211,7 +266,8 @@ class SAHierPlacer : public HierPlacer
           }
           // create discrete shape-curve for macro
           auto macro_shape_curve = ShapeCurve<T>();
-          macro_shape_curve.setShapes({{sub_inst->get_cell_master().get_width(), sub_inst->get_cell_master().get_height()}}, 0, false);
+          // macro_shape_curve.setShapes({{sub_inst->get_width(), sub_inst->get_height()}}, 0, false);
+          macro_shape_curve.setShapes({{sub_inst->get_halo_width(), sub_inst->get_halo_height()}}, 0, false);
           sub_shape_curves.push_back(std::move(macro_shape_curve));
         } else {
           auto sub_block = std::static_pointer_cast<Block, Object>(sub_obj);
@@ -221,7 +277,7 @@ class SAHierPlacer : public HierPlacer
         }
       }
 
-      // update discrete-shape curve
+      // calculate possible tilings of children clusters & update discrete-shape curve
       auto possible_discrete_shapes = get_packing_shapes(sub_shape_curves, core_width, core_height, blk.get_name());
       blk.set_shape_curve(possible_discrete_shapes, 0, true);
       INFO(blk.get_name(), " clipped shape width: ", blk.get_shape_curve().get_width(), " height: ", blk.get_shape_curve().get_height(),
@@ -233,7 +289,6 @@ class SAHierPlacer : public HierPlacer
   static void clipChildrenShapes(Block& blk)
   {
     // remove child cluster's shapes larger than current-node's bounding-box,
-    // (not implemented) and add stdcell-area to update shape-curve, called only on current node, not recursively
     auto bound_width = blk.get_shape_curve().get_width();
     auto bound_height = blk.get_shape_curve().get_height();
     for (auto&& i : blk.netlist().vRange()) {
@@ -253,12 +308,12 @@ class SAHierPlacer : public HierPlacer
     }
   }
 
-  static void addChildrenStdcellArea(Block& blk)
+  static void addChildrenStdcellArea(Block& blk, float dead_space_ratio)
   {
-    double bound_area = blk.get_shape_curve().get_area();
-    double mixed_cluster_stdcell_area = 0;
-    double stdcell_cluster_area = 0;
-    double macro_area = 0;
+    float bound_area = blk.get_shape_curve().get_area();
+    float mixed_cluster_stdcell_area = 0;
+    float stdcell_cluster_area = 0;
+    float macro_area = 0;
 
     for (auto&& i : blk.netlist().vRange()) {
       auto sub_obj = i.property();
@@ -279,7 +334,7 @@ class SAHierPlacer : public HierPlacer
 
     // 假设每一层级，剩余空间的一半用来膨胀单元，一半用来留空。(先用mixed-cluster和 stdcell-cluster相同膨胀率)
     // 考虑mixed-cluster需要后续布局，让它膨胀率为stdcell 2倍吧)
-    double area_left = bound_area - macro_area - stdcell_cluster_area - mixed_cluster_stdcell_area;
+    float area_left = bound_area - macro_area - stdcell_cluster_area - mixed_cluster_stdcell_area;
     if (area_left < 0) {
       INFO("------- fine-shaping cluster ", blk.get_name(), "--------");
       INFO("bound_area: ", bound_area);
@@ -290,8 +345,9 @@ class SAHierPlacer : public HierPlacer
       INFO("area left: ", area_left);
       throw std::runtime_error("Error: Not enough area left...");
     }
-    double stdcell_inflate_ratio = area_left / (2 * mixed_cluster_stdcell_area + stdcell_cluster_area);
-    double mixed_cluster_stdcell_inflate_ratio = 2 * stdcell_inflate_ratio;
+    float inflate_area_for_stdcell = area_left * (1 - dead_space_ratio);
+    float stdcell_inflate_ratio = inflate_area_for_stdcell / (2 * mixed_cluster_stdcell_area + stdcell_cluster_area);
+    float mixed_cluster_stdcell_inflate_ratio = 2 * stdcell_inflate_ratio;
 
     for (auto&& i : blk.netlist().vRange()) {
       auto sub_obj = i.property();
@@ -302,34 +358,48 @@ class SAHierPlacer : public HierPlacer
       auto sub_block = std::static_pointer_cast<Block, Object>(sub_obj);
       if (sub_block->is_mixed_cluster()) {
         auto new_shape_curve = sub_block->get_shape_curve();
-        new_shape_curve.add_continous_area(mixed_cluster_stdcell_inflate_ratio * sub_block->get_stdcell_area());
+        new_shape_curve.add_continous_area((1 + mixed_cluster_stdcell_inflate_ratio) * sub_block->get_stdcell_area());
         sub_block->set_shape_curve(new_shape_curve);
       } else if (sub_block->is_stdcell_cluster()) {
-        sub_block->set_shape_curve(std::vector<std::pair<T, T>>(), stdcell_inflate_ratio * sub_block->get_stdcell_area());
+        sub_block->set_shape_curve(std::vector<std::pair<T, T>>(), (1 + stdcell_inflate_ratio) * sub_block->get_stdcell_area());
       }
     }
   }
 
-  std::pair<T, T> get_core_size()
-  {
-    return std::make_pair(_root_cluster.get_shape_curve().get_width(), _root_cluster.get_shape_curve().get_height());
-  }
-
   void preorder_out(Block& blk, std::ofstream& out)
   {
-    const auto& min_corner = blk.get_min_corner();
-    out << min_corner.get<0>() << "," << min_corner.get<1>() << "," << blk.get_shape_curve().get_width() << ","
-        << blk.get_shape_curve().get_height() << "," << blk.get_name() << std::endl;
+    out << blk.get_min_corner().x() << "," << blk.get_min_corner().y() << "," << blk.get_shape_curve().get_width() << ","
+        << blk.get_shape_curve().get_height() << "," << blk.get_name() << ","
+        << "cluster" << std::endl;
     if (blk.is_stdcell_cluster()) {
       return;
     }
     for (auto&& i : blk.netlist().vRange()) {
       auto obj = i.property();
+      if (obj->isInstance()) {
+        std::string type;
+        auto inst = std::static_pointer_cast<Instance, Object>(obj);
+        if (inst->get_cell_master().isMacro()) {
+          type = "macro";
+        } else if (inst->get_cell_master().isIOCell()) {
+          type = "io";
+        } else {
+          continue;
+        }
+        // print macro & io info
+        out << inst->get_min_corner().x() << "," << inst->get_min_corner().y() << "," << inst->get_width() << "," << inst->get_height()
+            << "," << blk.get_name() << "," << type << std::endl;
+      }
       if (!obj->isBlock())
         continue;
       auto sub_block = std::static_pointer_cast<Block, Object>(obj);
       preorder_out(*sub_block, out);
     }
+  }
+
+  std::pair<T, T> get_core_size() const
+  {
+    return std::make_pair(_root_cluster.get_shape_curve().get_width(), _root_cluster.get_shape_curve().get_height());
   }
 };
 
