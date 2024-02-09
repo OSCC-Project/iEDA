@@ -225,6 +225,11 @@ void VerilogWriter::writeWire()
       is_bus = std::nullopt;
     }
 
+    // bus of bus is not printed as bus
+    if (std::ranges::count(net_name, '[') > 1) {
+      is_bus = std::nullopt;
+    }
+
     if (is_bus) {
       continue;
     }
