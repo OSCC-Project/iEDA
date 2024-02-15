@@ -19,9 +19,9 @@ namespace imp {
 template <typename T>
 struct Hpwl
 {
-  T operator()(const T* lx, const T* ly) const
+  float operator()(const T* lx, const T* ly) const
   {
-    T sum{0};
+    float sum{0};
     int chunk_size = std::max(int(_eptr.size() / _num_threads / 16), 1);
 #pragma omp parallel for num_threads(_num_threads) schedule(dynamic, chunk_size) reduction(+ : sum)
     for (size_t i = 0; i < _eptr.size() - 1; i++) {
@@ -43,7 +43,7 @@ struct Hpwl
     return sum;
   }
 
-  T operator()(const std::vector<T>& lx, const std::vector<T>& ly) const { return this->operator()(lx.data(), ly.data()); }
+  float operator()(const std::vector<T>& lx, const std::vector<T>& ly) const { return this->operator()(lx.data(), ly.data()); }
 
   Hpwl(const std::vector<size_t>& eptr, const std::vector<size_t>& eind, const std::vector<T>& x_off = {}, const std::vector<T>& y_off = {},
        const std::vector<T>& weight = {}, int num_threads = 1)
@@ -56,7 +56,7 @@ struct Hpwl
     if (_weight.empty())
       _weight.resize(eptr.size() - 1, 1);
     std::vector<size_t> degree(eptr.size() - 1);
-    for (size_t i = 0; i < eptr.size(); i++) {
+    for (size_t i = 0; i < degree.size(); i++) {
       degree[i] = _eptr[i + 1] - _eptr[i];
     }
     _sequence.resize(_eptr.size() - 1);

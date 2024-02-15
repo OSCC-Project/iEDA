@@ -62,9 +62,9 @@ void print_shapes(const imp::ShapeCurve<int64_t>& curve)
   std::cout << std::endl;
   std::cout << "-----------------------------------------------" << std::endl;
   std::string type;
-  if (curve.is_discrete())
+  if (curve.isDiscrete())
     type = "discrete";
-  else if (curve.is_continous())
+  else if (curve.isContinous())
     type = "continous";
   else
     type = "mixed";

@@ -22,6 +22,8 @@
 #include <vector>
 
 #include "ids.hpp"
+#include "../source/io/DbInterface.h"
+#include "../iTO.h"
 
 namespace ito {
 
@@ -55,6 +57,7 @@ class ToApi {
   void topoIdToDesignObject(ito::Tree *topo, const int &id, ista::DesignObject *sta_pin);
   void topoSetDriverId(ito::Tree *topo, const int &id);
   void reportTiming();
+  std::vector<EvalData> getEvalData() { return _ito->get_db_interface()->eval_data(); }
 
  private:
   static ToApi *_to_api_instance;

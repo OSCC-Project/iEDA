@@ -613,16 +613,24 @@ IdbPin* IdbPins::find_pin_by_coordinate_list(vector<IdbCoordinate<int32_t>*>& co
 
 IdbPin* IdbPins::add_pin_list(IdbPin* pin)
 {
+  //   IdbPin* pPin = nullptr;
+  //   if (pin == nullptr) {
+  //     pPin = new IdbPin();
+  //     _pin_list.emplace_back(pPin);
+  //   } else {
+  //     pPin = find_pin(pin);
+  //     if (nullptr == pPin) {
+  //       _pin_list.emplace_back(pin);
+  //       pPin = pin;
+  //     }
+  //   }
   IdbPin* pPin = nullptr;
   if (pin == nullptr) {
     pPin = new IdbPin();
     _pin_list.emplace_back(pPin);
   } else {
-    pPin = find_pin(pin);
-    if (nullptr == pPin) {
-      _pin_list.emplace_back(pin);
-      pPin = pin;
-    }
+    _pin_list.emplace_back(pin);
+    pPin = pin;
   }
 
   return pPin;
@@ -630,14 +638,40 @@ IdbPin* IdbPins::add_pin_list(IdbPin* pin)
 
 IdbPin* IdbPins::add_pin_list(string pin_name)
 {
-  IdbPin* pPin = find_pin(pin_name);
-  if (pPin == nullptr) {
-    pPin = new IdbPin();
-    pPin->set_pin_name(pin_name);
-    _pin_list.emplace_back(pPin);
-  }
+  //   IdbPin* pPin = find_pin(pin_name);
+  //   if (pPin == nullptr) {
+  //     pPin = new IdbPin();
+  //     pPin->set_pin_name(pin_name);
+  //     _pin_list.emplace_back(pPin);
+  //   }
+  IdbPin* pPin = new IdbPin();
+  pPin->set_pin_name(pin_name);
+  _pin_list.emplace_back(pPin);
 
   return pPin;
+}
+/**
+ * check if same pin exist and remove it
+ */
+void IdbPins::checkPins()
+{
+  std::set<std::string> pin_name_set;
+  for (auto it = _pin_list.begin(); it != _pin_list.end();) {
+    int pin_num = pin_name_set.size();
+    auto pin = *it;
+    std::string name = pin->get_pin_name();
+    if (pin->get_instance() != nullptr) {
+      name = pin->get_instance()->get_name() + name;
+    }
+    pin_name_set.insert(name);
+    /// if has same instance+pin
+    if (pin_name_set.size() == pin_num) {
+      it = _pin_list.erase(it);
+      continue;
+    }
+
+    it++;
+  }
 }
 
 void IdbPins::reset()

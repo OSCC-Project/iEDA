@@ -212,7 +212,9 @@ class StaPathEnd {
       _min_timing_data;  //!< The min timing data such as hold analysis from the
                          //!< launch clock.
 
-  std::map<StaPathDelayData*, StaPathData*> _delay_data_to_path_data;
+  std::map<StaPathDelayData*, StaPathData*>
+      _delay_data_to_path_data;  //!< for speed up the delay data find the path
+                                 //!< data.
 
   FORBIDDEN_COPY(StaPathEnd);
 };

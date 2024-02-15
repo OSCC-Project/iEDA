@@ -26,7 +26,7 @@ def_init -path ./result/iRT_result.def
 #===========================================================
 ##   save def & verilog
 #===========================================================
-feature_summary -path ./result/feature/summary_irt.json
+feature_summary -path ./result/feature/summary_irt.json -step route
 
 #===========================================================
 ##   Exit 

@@ -1137,6 +1137,14 @@ void Sta::initSdcCmd() {
   LOG_FATAL_IF(!all_clocks);
   TclCmds::addTclCmd(std::move(all_clocks));
 
+  auto all_inputs = std::make_unique<CmdAllInputs>("all_inputs");
+  LOG_FATAL_IF(!all_inputs);
+  TclCmds::addTclCmd(std::move(all_inputs));
+
+  auto all_outputs = std::make_unique<CmdAllOutputs>("all_outputs");
+  LOG_FATAL_IF(!all_outputs);
+  TclCmds::addTclCmd(std::move(all_outputs));
+
   auto set_propagated_clock =
       std::make_unique<CmdSetPropagatedClock>("set_propagated_clock");
   LOG_FATAL_IF(!set_propagated_clock);

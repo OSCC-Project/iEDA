@@ -19,64 +19,34 @@
 #include <functional>
 
 #include "BlkClustering.hh"
+#include "HierPlacer.hh"
 #include "Logger.hpp"
+#include "MacroAligner.hh"
 namespace imp {
-
-std::vector<std::pair<int32_t, int32_t>> get_packing_shapes(std::vector<ShapeCurve<int32_t>>& sub_shape_curves)
-{
-  // for testing, packing vertically
-  // int32_t total_width = 0;
-  // int32_t max_height = 0;
-  double area = 0;
-  for (const auto& shape_curve : sub_shape_curves) {
-    area += shape_curve.get_area();
-  }
-  int32_t width = std::sqrt(1.2 * area);
-  return {{width, width}};
-}
-
-class HierPlacer
-{
- public:
-  explicit HierPlacer(Block& root_cluster) : _root_cluster(root_cluster) {}
-  ~HierPlacer() = default;
-  void place(std::function<void(Block&)> place_solver)
-  {
-    _root_cluster.init_cell_area();                            // init stdcell-area && macro-area
-    _root_cluster.coarse_shaping(get_packing_shapes);          // init discrete-shapes bottom-up (coarse-shaping, only considers macros)
-    auto place_op = [place_solver](imp::Block& blk) -> void {  // place hier-cluster top-down
-      if (!blk.isBlock() || !(blk.is_macro_cluster() || blk.is_mixed_cluster())) {
-        return;  // only place cluster with macros..
-      }
-      // fine-shaping at current level before placement
-      blk.clipChildrenShapes();      // clip discrete-shapes larger than parent-clusters bounding-box
-      blk.addChildrenStdcellArea();  // add stdcell area
-      place_solver(blk);
-      //
-    };
-    // parallel_preorder_op(place_op);
-    _root_cluster.preorder_op(place_op);
-  }
-
- private:
-  Block& _root_cluster;
-};
 
 void MP::runMP()
 {
-  BlkClustering clustering{5, 20};
+  float macro_halo_micron = 2.0;
+  float dead_space_ratio = 0.7;
+  float weight_wl = 1.0;
+  float weight_ol = 0.2;
+  float weight_area = 0.0;
+  float weight_periphery = 0.02;
+  float max_iters = 700;
+  float cool_rate = 0.96;
+  float init_temperature = 1000.0;
+  // BlkClustering2 clustering{.l1_nparts = 50, .l2_nparts = 20, .level_num = 2};  // two level place
+  BlkClustering2 clustering{.l1_nparts = 200, .level_num = 1};  // one level place
   root().parallel_preorder_op(clustering);
-  // root().init_cell_area();
-  // root().coarse_shaping(get_packing_shapes);
-  // root().hierPlace([](Block& blk) {
-  //   // for (auto&& i : blk.netlist().vRange()) {
-  //   //   auto sub_obj = i.property();
-
-  //   // }
-  // });
-
-  auto placer = HierPlacer(root());
-  placer.place([](Block& blk) { std::cout << "pretend to place..." << std::endl; });
+  auto placer = SAHierPlacer<int32_t>(root(), macro_halo_micron, dead_space_ratio, weight_wl, weight_ol, weight_area, weight_periphery,
+                                      max_iters, cool_rate, init_temperature);
+  placer.hierPlace(true);
+  std::string file_name = "/home/liuyuezuo/iEDA-master/build/output/placement_level" + std::to_string(clustering.level_num) + "_"
+                          + std::to_string(clustering.l1_nparts) + "_" + std::to_string(clustering.l2_nparts);
+  placer.writePlacement(root(), file_name + ".txt");
+  auto macro_aligner = MacroAligner<int32_t>();
+  macro_aligner.alignMacrosGlobal(root());
+  placer.writePlacement(root(), file_name + "_aligned" + ".txt");
 }
 
 }  // namespace imp

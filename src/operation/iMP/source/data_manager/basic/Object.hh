@@ -54,39 +54,15 @@ class Object
   void set_orient(Orient orient) { _orient = orient; }
 
   std::string get_name() const { return _name; }
-  geo::point<int32_t> get_min_corner() { return _min_corner; }
-  Orient get_orient() { return _orient; }
+  geo::point<int32_t> get_min_corner() const { return _min_corner; }
+  Orient get_orient() const { return _orient; }
   Object& parent();
   const Object& parent() const;
   void set_parent(std::shared_ptr<Object> parent);
 
-  void set_shape_curve(const ShapeCurve<int32_t>& shape_curve) { _shape_curve = shape_curve; }
-  void set_shape_curve(const geo::box<int32_t>& box)
-  {
-    // only set a box shape (no changeable shape curve)
-    set_shape_curve({{geo::width(box), geo::height(box)}}, 0, false);
-  }
-  void set_shape_curve(const std::vector<std::pair<int32_t, int32_t>>& discrete_shapes, float continuous_shapes_area, bool use_clip = true)
-  {
-    // set shape with shapeCurve
-    _shape_curve.setShapes(discrete_shapes, continuous_shapes_area, use_clip);
-  }
-  const ShapeCurve<int32_t>& get_shape_curve() const { return _shape_curve; }
-  geo::box<int32_t> get_curr_shape() const { return geo::make_box(0, 0, _shape_curve.get_width(), _shape_curve.get_height()); }
-  void set_macro_area(double macro_area) { _macro_area = macro_area; }
-  void set_stdcell_area(double stdcell_area) { _stdcell_area = stdcell_area; }
-  double get_macro_area() const { return _macro_area; }
-  double get_stdcell_area() const { return _stdcell_area; }
-  bool is_macro_cluster() { return _macro_area > 0 && _stdcell_area <= 0; }
-  bool is_stdcell_cluster() { return _macro_area <= 0 && _stdcell_area > 0; }
-  bool is_mixed_cluster() { return _macro_area > 0 && _stdcell_area > 0; }
-
  private:
   friend class Block;
   friend class Instance;
-  double _macro_area = 0;
-  double _stdcell_area = 0;
-  ShapeCurve<int32_t> _shape_curve;  // containing stdcell area
   geo::point<int32_t> _min_corner;
   Orient _orient;
   std::string _name;

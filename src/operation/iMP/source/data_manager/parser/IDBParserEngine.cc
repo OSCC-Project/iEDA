@@ -108,7 +108,9 @@ void IDBParser::initNetlist()
   _idb_layout = idb_def_service->get_layout();
   _idb_design = idb_def_service->get_design();
   _design = std::make_shared<Block>(_idb_design->get_design_name(), std::make_shared<Netlist>(transform(_idb_layout)));
-  _design->set_shape_curve(_design->netlist().property()->get_die_shape());
+  auto core_shape = _design->netlist().property()->get_core_shape();
+  _design->set_shape_curve(core_shape);
+  _design->set_min_corner(core_shape.min_corner());
   initRows();
   initCells();
 
@@ -124,6 +126,7 @@ void IDBParser::initNetlist()
   }
 
   // Init nets
+  size_t terminal_num = 0;
   for (auto* idb_net : _idb_design->get_net_list()->get_net_list()) {
     if (idb_net->is_clock() || idb_net->is_pdn() || idb_net->is_power() || idb_net->is_ground() || idb_net->get_pin_number() > 300) {
       continue;
@@ -133,18 +136,29 @@ void IDBParser::initNetlist()
     for (auto* idb_pin : idb_net->get_instance_pin_list()->get_pin_list()) {
       auto pin = transform(idb_pin);
       pins.push_back(pin);
-      if (!pin->isIOPort()) {
-        assert(_instances.contains(idb_pin->get_instance()->get_name()));
-        assert(name2pos.contains(idb_pin->get_instance()->get_name()));
-        size_t pos = name2pos.at(idb_pin->get_instance()->get_name());
-        inst_pos.push_back(pos);
-      } else {
-        auto io = std::make_shared<Instance>(pin->get_name());
+      // if (!pin->isIOPort()) {
+      assert(_instances.contains(idb_pin->get_instance()->get_name()));
+      assert(name2pos.contains(idb_pin->get_instance()->get_name()));
+      size_t pos = name2pos.at(idb_pin->get_instance()->get_name());
+      inst_pos.push_back(pos);
+      // }
+    }
+    
+    if (idb_net->has_io_pins()) {
+      for (auto* idb_pin : idb_net->get_io_pins()->get_pin_list()) {
+        auto pin = transform(idb_pin);
+        pins.push_back(pin);
+        terminal_num++;
+        // create Pseudo IO-Cell for IO-Pin, use Pin-name as Instance Name
+        auto io = std::make_shared<Instance>(pin->get_name(), _cells["Pseudo_IO_Cell"], _design);
         io->set_type(INSTANCE_TYPE::kPseudo);
+        io->set_state(INSTANCE_STATE::kFixed);
+        io->set_min_corner(idb_pin->get_location()->get_x(), idb_pin->get_location()->get_y());
         size_t pos = add_object(_design->netlist(), io);
         inst_pos.push_back(pos);
       }
     }
+
     if (!pins.empty()) {
       add_net(_design->netlist(), inst_pos, pins, transform(idb_net));
     }
@@ -195,6 +209,11 @@ void IDBParser::initCells()
     }
     _cells[idb_cell->get_name()] = cell_ptr;
   }
+  // create Pseudo cell-master for IO-Pin
+  auto io_cell_ptr = std::make_shared<Cell>("Pseudo_IO_Cell");
+  io_cell_ptr->set_shape(geo::make_box(0, 0, 0, 0));  // io-cell has no shape;
+  io_cell_ptr->set_type(CELL_TYPE::kIOCell);
+  _cells[io_cell_ptr->get_name()] = io_cell_ptr;
 }
 
 std::shared_ptr<Layout> IDBParser::transform(idb::IdbLayout* idb_layout)
@@ -255,8 +274,8 @@ std::shared_ptr<Instance> IDBParser::transform(idb::IdbInstance* idb_inst)
   // TODO : where is clock buffer?
   if (idb_inst->get_cell_master()->is_block()) {
     cell_ptr->set_type(CELL_TYPE::kMacro);
-  } else if (idb_inst->is_io_instance() || inst_ptr->isOutside()) {
-    cell_ptr->set_type(CELL_TYPE::kIOCell);
+    // } else if (idb_inst->is_io_instance() || inst_ptr->isOutside()) {
+    //   cell_ptr->set_type(CELL_TYPE::kIOCell);
   } else if (idb_inst->is_flip_flop()) {
     cell_ptr->set_type(CELL_TYPE::kFlipflop);
   } else if (idb_inst->get_type() == IdbInstanceType::kDist) {
