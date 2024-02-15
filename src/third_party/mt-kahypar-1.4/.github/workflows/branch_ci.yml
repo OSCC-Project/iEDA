@@ -1,0 +1,130 @@
+name: Mt-KaHyPar Fast CI
+
+on:
+  push:
+    branches-ignore:
+      - master
+
+jobs:
+  mt_kahypar_compiler_version_test:
+    name: Ubuntu Build
+    strategy:
+      matrix:
+        compiler: [ { os: ubuntu-22.04, cpp: g++-11, cc: gcc-11, install_cmd: g++-11 gcc-11 },
+                    { os: ubuntu-22.04, cpp: clang++, cc: clang, install_cmd: clang }  ]
+
+    runs-on: ${{ matrix.compiler.os }}
+    env:
+      BOOST_ROOT : "/usr/local/share/boost/1.72.0"
+      CI_ACTIVE : 1
+
+    steps:
+      - name: Checkout HEAD
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+
+      - name: Install Dependencies
+        run: |
+          sudo apt-get install libtbb-dev libboost-program-options-dev libhwloc-dev lcov gcovr ${{ matrix.compiler.install_cmd }}
+
+      - name: Install Mt-KaHyPar Test Suite
+        env:
+          CC: ${{ matrix.compiler.cc }}
+          CXX: ${{ matrix.compiler.cpp }}
+        run: |
+          git submodule update --init --recursive
+          rm -rf build
+          mkdir build
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=RELEASE -DKAHYPAR_CI_BUILD=ON -DKAHYPAR_ENABLE_SOED_METRIC=OFF -DKAHYPAR_ENABLE_STEINER_TREE_METRIC=OFF -DKAHYPAR_ENABLE_GRAPH_PARTITIONING_FEATURES=OFF -DKAHYPAR_ENABLE_HIGHEST_QUALITY_FEATURES=OFF -DKAHYPAR_ENABLE_LARGE_K_PARTITIONING_FEATURES=OFF
+          make -j2 MtKaHyPar
+
+  mt_kahypar_test_suite:
+    name: Test Suite
+    runs-on: ubuntu-20.04
+    env:
+      BOOST_ROOT : "/usr/local/share/boost/1.72.0"
+      CI_ACTIVE : 1
+
+    steps:
+      - name: Checkout HEAD
+        uses: actions/checkout@v3
+        with:
+         fetch-depth: 1
+
+      - name: Install Dependencies
+        run: |
+          sudo apt-get install libtbb-dev libhwloc-dev libboost-program-options-dev lcov gcovr
+
+      - name: Install Mt-KaHyPar Test Suite
+        run: |
+          git submodule update --init --recursive
+          rm -rf build
+          mkdir build
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=RELEASE -DKAHYPAR_USE_GCOV=ON -DKAHYPAR_CI_BUILD=ON -DKAHYPAR_ENABLE_SOED_METRIC=OFF -DKAHYPAR_ENABLE_STEINER_TREE_METRIC=OFF -DKAHYPAR_ENABLE_GRAPH_PARTITIONING_FEATURES=OFF -DKAHYPAR_ENABLE_HIGHEST_QUALITY_FEATURES=OFF -DKAHYPAR_ENABLE_LARGE_K_PARTITIONING_FEATURES=OFF
+          make -j2 mt_kahypar_tests;
+
+      - name: Run Mt-KaHyPar Tests
+        run: |
+          cd build
+          ./tests/mt_kahypar_tests
+
+  mt_kahypar_c_interface_tests:
+    name: C Interface Tests
+    runs-on: ubuntu-20.04
+    env:
+      BOOST_ROOT : "/usr/local/share/boost/1.72.0"
+      CI_ACTIVE : 1
+
+    steps:
+      - name: Checkout HEAD
+        uses: actions/checkout@v3
+        with:
+         fetch-depth: 1
+
+      - name: Install Dependencies
+        run: |
+          sudo apt-get install libtbb-dev libhwloc-dev libboost-program-options-dev lcov gcovr
+
+      - name: Run Mt-KaHyPar C Library Interface Tests
+        run: |
+          git submodule update --init --recursive
+          rm -rf build
+          mkdir build
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=RELEASE -DKAHYPAR_CI_BUILD=ON
+          make -j2 interface_test
+
+  mt_kahypar_python_interface_tests:
+    name: Python Interface Tests
+    runs-on: ubuntu-20.04
+    env:
+      BOOST_ROOT : "/usr/local/share/boost/1.72.0"
+      CI_ACTIVE : 1
+
+    steps:
+      - name: Checkout HEAD
+        uses: actions/checkout@v3
+        with:
+         fetch-depth: 1
+
+      - name: Install Dependencies
+        run: |
+          sudo apt-get install libtbb-dev libhwloc-dev libboost-program-options-dev lcov gcovr
+
+      - name: Build Mt-KaHyPar Python Interface
+        run: |
+          git submodule update --init --recursive
+          rm -rf build
+          mkdir build
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=RELEASE -DKAHYPAR_CI_BUILD=ON
+          make mtkahypar_python -j2
+
+      - name: Run Mt-KaHyPar Python Interface Tests
+        run: |
+          cd python/tests
+          cp ../../build/python/mtkahypar*.so mtkahypar.so
+          python3 test_mtkahypar.py -v

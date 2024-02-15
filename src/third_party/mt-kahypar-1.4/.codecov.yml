@@ -1,0 +1,35 @@
+coverage:
+  status:
+    project:
+      default:
+        target: 75%
+        threshold: null
+    patch:
+      default:
+        target: 0%
+ignore:
+  - "external_tools/kahypar/**/*"  # ignore KaHyPar
+  - "tests/**/*"
+  - "tools/*"
+  - "python/**/*"
+  - "mt-kahypar/definitions.h"
+  - "mt-kahypar/application/kahypar.cc"
+  - "mt-kahypar/io/command_line_options.h"
+  - "mt-kahypar/io/command_line_options.cpp"
+  - "mt-kahypar/io/partitioning_output.h"
+  - "mt-kahypar/io/partitioning_output.cpp"
+  - "mt-kahypar/partition/context.h"
+  - "mt-kahypar/partition/context.cpp"
+  - "mt-kahypar/partition/context_enum_classes.h"
+  - "mt-kahypar/partition/context_enum_classes.cpp"
+  - "mt-kahypar/partition/metrics.h"
+  - "mt-kahypar/partition/metrics.cpp"
+  - "mt-kahypar/partition/registries/register_policies.cpp"
+  - "mt-kahypar/partition/registries/register_coarsening_algorithms.cpp"
+  - "mt-kahypar/partition/registries/register_initial_partitioning_algorithms.h"
+  - "mt-kahypar/partition/registries/register_refinement_algorithms.cpp"
+  - "mt-kahypar/partition/coarsening/i_coarsener.h"
+  - "mt-kahypar/partition/initial_partitioning/i_initial_partitioner.h"
+  - "mt-kahypar/partition/refinement/i_refiner.h"
+  - "mt-kahypar/partition/refinement/do_nothing_refiner.h"
+  - "mt-kahypar/utils/*"
