@@ -33,6 +33,8 @@ if(BUILD_PYTHON)
 endif()
 option(BUILD_GUI "If ON, build GUI." OFF)
 
+add_subdirectory(src/third_party)
+
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_VERBOSE_MAKEFILE OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -66,7 +68,6 @@ if(BUILD_GUI)
     add_definitions(-DBUILD_GUI)
 endif()
 
-add_subdirectory(src/third_party)
 add_subdirectory(src/utility)
 add_subdirectory(src/apps)
 add_subdirectory(src/database)
