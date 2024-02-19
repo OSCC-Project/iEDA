@@ -38,14 +38,14 @@ void MP::runMP()
   // BlkClustering2 clustering{.l1_nparts = 50, .l2_nparts = 20, .level_num = 2};  // two level place
   BlkClustering2 clustering{.l1_nparts = 200, .level_num = 1};  // one level place
   root().parallel_preorder_op(clustering);
-  auto placer = SAHierPlacer<int32_t>(root(), macro_halo_micron, dead_space_ratio, weight_wl, weight_ol, weight_area, weight_periphery,
-                                      max_iters, cool_rate, init_temperature);
-  placer.hierPlace(true);
+  auto placer = SAHierPlacer<int32_t>(macro_halo_micron, dead_space_ratio, weight_wl, weight_ol, weight_area, weight_periphery, max_iters,
+                                      cool_rate, init_temperature);
+  placer(root());
   std::string file_name = "/home/liuyuezuo/iEDA-master/build/output/placement_level" + std::to_string(clustering.level_num) + "_"
                           + std::to_string(clustering.l1_nparts) + "_" + std::to_string(clustering.l2_nparts);
   placer.writePlacement(root(), file_name + ".txt");
   auto macro_aligner = MacroAligner<int32_t>();
-  macro_aligner.alignMacrosGlobal(root());
+  macro_aligner(root());
   placer.writePlacement(root(), file_name + "_aligned" + ".txt");
 }
 

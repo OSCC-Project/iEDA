@@ -12,40 +12,48 @@
 #include "thread"
 namespace imp {
 
-class HierPlacer
+struct HierPlacer
 {
  public:
-  explicit HierPlacer(Block& root_cluster) : _root_cluster(root_cluster) {}
-  virtual void initialize(){};                // do some initilaize operations
-  virtual void placeCluster(Block& blk) = 0;  // place a given cluster
-  void hierPlace(bool parallel = true)
+  explicit HierPlacer(bool parallel = true) : _parallel(parallel), _root_cluster(nullptr){};
+  void operator()(Block& root_cluster)
   {
+    _root_cluster = &root_cluster;
     initialize();
     auto place_op = [this](Block& blk) -> void {
       if (!blk.isFixed()) {
-        this->placeCluster(blk);
+        this->place(blk);
       }
     };
-    if (parallel) {
-      _root_cluster.parallel_preorder_op(place_op);
+    if (_parallel) {
+      get_root_cluster().parallel_preorder_op(place_op);
     } else {
-      _root_cluster.preorder_op(place_op);
+      get_root_cluster().preorder_op(place_op);
     }
   }
   ~HierPlacer() = default;
 
  protected:
-  Block& _root_cluster;
+  bool _parallel;
+
+  virtual void initialize(){};         // do some initilaize operations
+  virtual void place(Block& blk) = 0;  // place a given cluster
+  Block& get_root_cluster() { return *_root_cluster; }
+  const Block& get_root_cluster() const { return *_root_cluster; }
+
+ private:
+  Block* _root_cluster;
 };
 
 template <typename T>
-class SAHierPlacer : public HierPlacer
+struct SAHierPlacer : public HierPlacer
 {
  public:
-  explicit SAHierPlacer(Block& root_cluster, float macro_halo_micron = 2.0, float dead_space_ratio = 0.5, float weight_wl = 1.0,
-                        float weight_ol = 0.05, float weight_area = 0.01, float weight_periphery = 0.05, float max_iters = 500,
-                        float cool_rate = 0.97, float init_temperature = 1000.0)
-      : HierPlacer(root_cluster),
+  explicit SAHierPlacer(float macro_halo_micron = 2.0, float dead_space_ratio = 0.5, float weight_wl = 1.0, float weight_ol = 0.05,
+                        float weight_area = 0.0, float weight_periphery = 0.05, float max_iters = 500, float cool_rate = 0.97,
+                        float init_temperature = 1000.0)
+      : HierPlacer(false),
+        _macro_halo_micron(macro_halo_micron),
         _dead_space_ratio(dead_space_ratio),
         _weight_wl(weight_wl),
         _weight_ol(weight_ol),
@@ -55,18 +63,18 @@ class SAHierPlacer : public HierPlacer
         _cool_rate(cool_rate),
         _init_temperature(init_temperature)
   {
-    _dbu = _root_cluster.netlist().property()->get_database_unit();
-    _macro_halo = _dbu * macro_halo_micron;
   }
   ~SAHierPlacer() = default;
 
   void initialize() override
   {
+    _dbu = get_root_cluster().netlist().property()->get_database_unit();
+    _macro_halo = _dbu * _macro_halo_micron;
     init_cell_area(_macro_halo);                 // init stdcell-area && macro-area
     coarse_shaping(generate_different_tilings);  // init discrete-shapes bottom-up (coarse-shaping, only considers macros)
   }
 
-  void placeCluster(Block& blk)
+  void place(Block& blk) override
   {
     if (blk.netlist().vSize() == 0 || blk.isFixed() || blk.is_stdcell_cluster() || blk.is_io_cluster()) {
       return;  // only place cluster with macros..
@@ -87,8 +95,10 @@ class SAHierPlacer : public HierPlacer
       clipChildrenShapes(blk);                         // clip discrete-shapes larger than parent-clusters bounding-box
       addChildrenStdcellArea(blk, _dead_space_ratio);  // add stdcell area
       INFO("start placing cluster ", blk.get_name(), ", node_num: ", blk.netlist().vSize());
-      auto th = std::thread(SAPlace<T>, std::ref(blk), _weight_wl, _weight_ol, _weight_area, _weight_periphery, _max_iters, _cool_rate,
-                            _init_temperature);
+      auto th = std::thread(SAPlace<T>(_weight_wl, _weight_ol, _weight_area, _weight_periphery, _max_iters, _cool_rate, _init_temperature),
+                            std::ref(blk));
+      // auto th = std::thread(SAPlace<T>, std::ref(blk), _weight_wl, _weight_ol, _weight_area, _weight_periphery, _max_iters, _cool_rate,
+      //                       _init_temperature);
       th.join();
       // SAPlace<T>(blk, _weight_wl, _weight_ol, _weight_area, _weight_periphery, _max_iters, _cool_rate, _init_temperature);
     }
@@ -98,7 +108,7 @@ class SAHierPlacer : public HierPlacer
   void writePlacement(Block& blk, std::string file_name)
   {
     std::ofstream out(file_name);
-    auto core = _root_cluster.netlist().property()->get_core_shape();
+    auto core = get_root_cluster().netlist().property()->get_core_shape();
     auto core_min_corner = core.min_corner();
     auto core_max_corner = core.max_corner();
     out << core_min_corner.x() << "," << core_min_corner.y() << "," << core_max_corner.x() - core_min_corner.x() << ","
@@ -109,6 +119,7 @@ class SAHierPlacer : public HierPlacer
  private:
   T _macro_halo;
   double _dbu;
+  float _macro_halo_micron;
   float _dead_space_ratio;
   float _weight_wl;
   float _weight_ol;
@@ -173,9 +184,9 @@ class SAHierPlacer : public HierPlacer
       INFO(obj.get_name(), " macro_area: ", macro_area, " stdcell area: ", stdcell_area, " io_area: ", io_area);
       return;
     };
-    _root_cluster.postorder_op(area_op);
-    INFO("total macro area: ", _root_cluster.get_macro_area());
-    INFO("total stdcell area: ", _root_cluster.get_stdcell_area());
+    get_root_cluster().postorder_op(area_op);
+    INFO("total macro area: ", get_root_cluster().get_macro_area());
+    INFO("total stdcell area: ", get_root_cluster().get_stdcell_area());
   }
 
   static std::vector<std::pair<T, T>> generate_different_tilings(const std::vector<ShapeCurve<T>>& sub_shape_curves, T core_width,
@@ -283,7 +294,7 @@ class SAHierPlacer : public HierPlacer
       INFO(blk.get_name(), " clipped shape width: ", blk.get_shape_curve().get_width(), " height: ", blk.get_shape_curve().get_height(),
            " shape_curve_size: ", blk.get_shape_curve().get_width_list().size(), " area: ", blk.get_shape_curve().get_area());
     };
-    _root_cluster.postorder_op(coarse_shape_op);
+    get_root_cluster().postorder_op(coarse_shape_op);
   }
 
   static void clipChildrenShapes(Block& blk)
@@ -399,7 +410,7 @@ class SAHierPlacer : public HierPlacer
 
   std::pair<T, T> get_core_size() const
   {
-    return std::make_pair(_root_cluster.get_shape_curve().get_width(), _root_cluster.get_shape_curve().get_height());
+    return std::make_pair(get_root_cluster().get_shape_curve().get_width(), get_root_cluster().get_shape_curve().get_height());
   }
 };
 

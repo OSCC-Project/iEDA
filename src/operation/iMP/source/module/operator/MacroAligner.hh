@@ -9,12 +9,12 @@
 namespace imp {
 
 template <typename T>
-class MacroAligner
+struct MacroAligner
 {
  public:
   MacroAligner(float notch_v_ratio = 1.25, float notch_h_ratio = 1.25) : _notch_v_ratio(notch_v_ratio), _notch_h_ratio(notch_h_ratio) {}
   ~MacroAligner() = default;
-  void alignMacrosGlobal(Block& blk)
+  void operator()(Block& blk)
   {
     // macro alginment based on OpenRoad-mpl2
     std::vector<std::shared_ptr<imp::Instance>> macros = get_macros(blk);
@@ -302,6 +302,7 @@ class MacroAligner
       }
     }
   }
+
   bool isValidMove(size_t macro_id, const std::vector<std::shared_ptr<imp::Instance>>& macros, const imp::geo::box<T>& outline) const
   {
     const auto macro_lx = macros[macro_id]->get_halo_lx();

@@ -85,6 +85,34 @@ struct FastPackSP
 };
 
 template <typename Property, typename Product>
+struct FastPackSPWithShape : public FastPackSP<Property, Product>
+{
+  using T = decltype(Product::width);
+  using DimFunc = std::function<T(size_t id, const Property&)>;        // Function type of corresponding Width and Height
+  using IgnoreFunc = std::function<bool(size_t id, const Property&)>;  // Function type to determine whether to ignore
+  FastPackSPWithShape(
+      T outline_lx, T outline_ly, DimFunc get_width_t, DimFunc get_height_t,
+      IgnoreFunc is_ignore_t = [](size_t, const Property&) { return false; })
+      : FastPackSP<Property, Product>(outline_lx, outline_ly, get_width_t, get_height_t, is_ignore_t)
+  {
+  }
+  void operator()(const SeqPair<Property>& sp, Product& product)
+  {
+    FastPackSP<Property, Product>::operator()(sp, product);
+    if (product.dx.size() != sp.properties.size()) {
+      product.dx.resize(sp.properties.size());
+    }
+    if (product.dy.size() != sp.properties.size()) {
+      product.dy.resize(sp.properties.size());
+    }
+    for (size_t i = 0; i < sp.properties.size(); ++i) {
+      product.dx[i] = sp.properties[i].width;
+      product.dy[i] = sp.properties[i].height;
+    }
+  }
+};
+
+template <typename Property, typename Product>
 inline std::pair<typename FastPackSP<Property, Product>::T, typename FastPackSP<Property, Product>::T>
 FastPackSP<Property, Product>::operator()(const SeqPair<Property>& sp, std::vector<T>& x, std::vector<T>& y, bool is_left, bool is_bottom)
 {
