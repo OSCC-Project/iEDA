@@ -202,6 +202,7 @@ impl VerilogVirtualBaseID for VerilogSliceID {
 
     fn set_base_name(&mut self, id: &str) {
         self.id.set_base_name(id);
+        self.formatted_slice_id = format!("{}[{}:{}]", self.id.get_base_name(), self.range_from, self.range_to);
     }
 
     fn as_any(&self) -> &dyn std::any::Any {

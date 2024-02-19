@@ -505,9 +505,6 @@ fn process_port_connect(
     let net_base_name = net_expr_id.get_base_name();
     let mut range: Option<(i32, i32)> = None;
 
-    if cur_module.borrow().get_line_no() == 255069 {
-        println!("{:#?}", cur_module.borrow());
-    }
     if !verilog_data::VerilogModule::is_port(&cur_module.borrow(), net_base_name) {
         // for common name, should check whether bus, get range first.
         if !net_base_name.contains("/") && !net_expr_id.is_bus_index_id() && !net_expr_id.is_bus_slice_id() {
@@ -664,7 +661,9 @@ fn flatten_module(
             let inst_name = module_inst_stmt.get_inst_name();
             let cell_name = module_inst_stmt.get_cell_name();
 
-            if inst_name.contains("q_reg_0_") && cell_name == "DFCNQD1BWP40P140LVT" {
+            if inst_name.contains("u0_ysyx_210720/coretop/ysyx_210720_ICache/dataArrayWay0")
+                && cell_name == "TS5N28HPCPLVTA64X128M2FW"
+            {
                 println!("Debug");
             }
 
@@ -672,12 +671,6 @@ fn flatten_module(
             for port_connect in module_inst_stmt.get_port_connections() {
                 let net_expr_option = port_connect.get_net_expr();
                 let port_id = port_connect.get_port_id().get_base_name();
-                if port_id == "Q" {
-                    println!("Debug");
-                }
-                if port_id == "CP" {
-                    println!("Debug");
-                }
 
                 if let Some(net_expr) = net_expr_option {
                     if net_expr.is_id_expr() {
@@ -949,10 +942,10 @@ mod tests {
 
     #[test]
     fn test_parse_port_or_wire_id() {
-        let input_str = "rid_nic400_axi4_ps2_1_";
+        let input_str = "q\n        ";
         let parse_result = VerilogParser::parse(Rule::port_or_wire_id, input_str);
-
-        print_parse_result(parse_result);
+        println!("{:#?}", parse_result);
+        // print_parse_result(parse_result);
     }
 
     #[test]
@@ -1166,7 +1159,9 @@ mod tests {
                .Q(d_sync1_0_) );
          DFCNQD1BWP40P140LVT q_reg_0_ ( .D(d_sync1_0_), .CP(clk), .CDN(resetn), .Q(
                q[0]) );
-       endmodule"#;
+       endmodule
+       
+    "#;
         let parse_result = VerilogParser::parse(Rule::module_declaration, input_str);
         println!("{:#?}", parse_result);
         // print_parse_result(parse_result);
