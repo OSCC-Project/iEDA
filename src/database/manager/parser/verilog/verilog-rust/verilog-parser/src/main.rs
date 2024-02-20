@@ -19,9 +19,9 @@ fn main() {
         "u0_soc_top/u0_ysyx_210720/coretop/ysyx_210720_ICache/dataArrayWay0",
         "TS5N28HPCPLVTA64X128M2FW",
     );
-    if let Some(inst_stmt_value) = inst_stmt {
-        println!("{:#?}", inst_stmt_value);
-    }
+    // if let Some(inst_stmt_value) = inst_stmt {
+    //     println!("{:#?}", inst_stmt_value);
+    // }
 
     // println!("Number of verilog modules: {}", verilog_modules.len());
     let end_time = Instant::now();

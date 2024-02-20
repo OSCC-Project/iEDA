@@ -661,12 +661,6 @@ fn flatten_module(
             let inst_name = module_inst_stmt.get_inst_name();
             let cell_name = module_inst_stmt.get_cell_name();
 
-            if inst_name.contains("u0_ysyx_210720/coretop/ysyx_210720_ICache/dataArrayWay0")
-                && cell_name == "TS5N28HPCPLVTA64X128M2FW"
-            {
-                println!("Debug");
-            }
-
             let mut new_module_inst_connection: Vec<Box<verilog_data::VerilogPortRefPortConnect>> = Vec::new();
             for port_connect in module_inst_stmt.get_port_connections() {
                 let net_expr_option = port_connect.get_net_expr();
