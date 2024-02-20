@@ -67,10 +67,11 @@ struct Coordinate
 template <typename T>
 struct SAPlace
 {
-  SAPlace(float weight_wl, float weight_ol, float weight_area, float weight_periphery, size_t max_iters = 500, float cool_rate = 0.97,
+  SAPlace(float weight_wl, float weight_ol, float weight_ob, float weight_periphery, size_t max_iters = 500, float cool_rate = 0.97,
           float init_temperature = 1000)
       : _weight_wl(weight_wl),
-        _weight_area(weight_area),
+        _weight_ol(weight_ol),
+        _weight_ob(weight_ob),
         _weight_periphery(weight_periphery),
         _max_iters(max_iters),
         _cool_rate(cool_rate),
@@ -167,10 +168,10 @@ struct SAPlace
 
     // Hpwl<T> hpwl(eptr, eind, {}, {}, {}, 1);
     // CostFunc wl = EvalWirelength(outline_width, outline_height, hpwl, net_weight);
+    Hpwl2<T> hpwl(eptr, eind, net_weight, 4);
+    CostFunc wl = EvalWirelength2(outline_width, outline_height, hpwl, net_weight);  // EvalWirelength2 uses with Hpwl2
     CostFunc ol = EvalOutline(outline_width, outline_height);
-    CostFunc area = [&](const Coordinate& packing_result) {
-      return (float) packing_result.width * (float) packing_result.height / (float) outline_width / (float) outline_height;
-    };
+    CostFunc ob = EvalOutOfBound(outline_width, outline_height, outline_lx, outline_ly);
     CostFunc periphery = [outline_width, outline_height, outline_lx, outline_ly, total_macro_num, &blk_macro_nums,
                           &macro_blk_indices](const Coordinate& packing_result) {
       T min_dist = 0;
@@ -189,15 +190,17 @@ struct SAPlace
       return periphery_cost;
     };
 
-    auto max_wirelength = outline_width + outline_height;
-    auto total_netweight = std::accumulate(net_weight.begin(), net_weight.end(), 0);
-    Hpwl2<T> hpwl(eptr, eind, net_weight, 1);
-    CostFunc wl = [max_wirelength, total_netweight, &hpwl](const Coordinate& packing_result) {
-      return hpwl(packing_result.x, packing_result.y, packing_result.dx, packing_result.dy) / total_netweight / max_wirelength;
-    };
+    // auto max_wirelength = outline_width + outline_height;
+    // auto total_netweight = std::accumulate(net_weight.begin(), net_weight.end(), 0);
+    // Hpwl2<T> hpwl(eptr, eind, net_weight, 1);
+    // CostFunc wl = [max_wirelength, total_netweight, &hpwl](const Coordinate& packing_result) {
+    //   auto wl = hpwl(packing_result.x, packing_result.y, packing_result.dx, packing_result.dy) / total_netweight / max_wirelength;
+    //   // std::cout << "SAWirelength:" << wl << "\n";
+    //   return wl;
+    // };
 
-    Evaluator<SeqPair<NodeShape<T>>, Coordinate> eval(decoder, {_weight_wl, _weight_ol, _weight_area, _weight_periphery},
-                                                      {wl, ol, area, periphery});
+    Evaluator<SeqPair<NodeShape<T>>, Coordinate> eval(decoder, {_weight_wl, _weight_ol, _weight_ob, _weight_periphery},
+                                                      {wl, ol, ob, periphery});
 
     PerturbFunc ps_op = PosSwap();
     PerturbFunc ns_op = NegSwap();
@@ -250,7 +253,7 @@ struct SAPlace
  private:
   float _weight_wl;
   float _weight_ol;
-  float _weight_area;
+  float _weight_ob;
   float _weight_periphery;
   size_t _max_iters;
   float _cool_rate;

@@ -27,6 +27,21 @@ struct EvalWirelength
   Wirelength<T> total_wirelength;
 };
 
+template <template <typename> typename Wirelength, typename T>
+struct EvalWirelength2 : public EvalWirelength<Wirelength, T>
+{
+  template <typename Product>
+  float operator()(const Product& product)
+  {
+    return EvalWirelength<Wirelength, T>::total_wirelength(product.x, product.y, product.dx, product.dy)
+           / EvalWirelength<Wirelength, T>::total_netweight / EvalWirelength<Wirelength, T>::max_wirelength;
+  }
+  EvalWirelength2(float outline_width, float outline_height, const Wirelength<T>& wl, const std::vector<T>& net_weights)
+      : EvalWirelength<Wirelength, T>(outline_width, outline_height, wl, net_weights)
+  {
+  }
+};
+
 template <typename T>
 struct EvalOutline
 {
@@ -39,6 +54,39 @@ struct EvalOutline
   EvalOutline(T outlineWidth, T outlineHeight) : outline_width(outlineWidth), outline_height(outlineHeight) {}
   float outline_width;
   float outline_height;
+};
+
+template <typename T>
+struct EvalOutOfBound
+{
+  template <typename Product>
+  float operator()(const Product& product)
+  {
+    double out_of_bound_cost = 0;
+    const auto& dx = product.dx;
+    const auto& dy = product.dy;
+    const auto& lx = product.x;
+    const auto& ly = product.y;
+    const auto outline_ux = outline_lx + outline_height;
+    const auto outline_uy = outline_ly + outline_height;
+    for (size_t i = 0; i < product.dx.size(); ++i) {
+      if (lx[i] + dx[i] > outline_ux || ly[i] + dy[i] > outline_uy) {
+        out_of_bound_cost += (double(dx[i]) * dy[i]);
+      }
+    }
+    out_of_bound_cost = out_of_bound_cost / outline_width / outline_height;
+    // std::cout << "SAOUTOFBOUND:" << out_of_bound_cost << "\n";
+    return out_of_bound_cost;
+  }
+
+  EvalOutOfBound(T outlineWidth, T outlineHeight, T outlineLX, T outlineLY)
+      : outline_width(outlineWidth), outline_height(outlineHeight), outline_lx(outlineLX), outline_ly(outlineLY)
+  {
+  }
+  T outline_width;
+  T outline_height;
+  T outline_lx;
+  T outline_ly;
 };
 
 template <typename Code, typename Product>
@@ -83,6 +131,5 @@ struct Evaluator
   Product product;
   std::vector<float> cost_norm;
 };
-
 
 }  // namespace imp
