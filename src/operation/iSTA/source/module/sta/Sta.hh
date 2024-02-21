@@ -439,11 +439,13 @@ class Sta {
 
   StaSeqPathData* getWorstSeqData(AnalysisMode mode, TransType trans_type);
 
-  std::vector<std::pair<std::string, std::string>> getStartEndPairsOfTopNPaths(
-      int top_n, AnalysisMode mode, TransType trans_type);
-  std::vector<std::pair<std::string, std::string>>
-  getStartEndPairsOfTopNPercentPaths(double top_percentage, AnalysisMode mode,
-                                     TransType trans_type);
+  std::vector<std::tuple<std::string, std::string, double>>
+  getStartEndSlackPairsOfTopNPaths(int top_n, AnalysisMode mode,
+                                   TransType trans_type);
+  std::vector<std::tuple<std::string, std::string, double>>
+  getStartEndSlackPairsOfTopNPercentPaths(double top_percentage,
+                                          AnalysisMode mode,
+                                          TransType trans_type);
 
   std::priority_queue<StaSeqPathData*, std::vector<StaSeqPathData*>,
                       decltype(seq_data_cmp)>

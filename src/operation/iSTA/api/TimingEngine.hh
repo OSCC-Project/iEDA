@@ -153,15 +153,17 @@ class TimingEngine {
   }
   std::set<std::string> findStartOrEnd(const char *pin_name);
   std::map<std::string, std::string> getStartEndPairs();
-  std::vector<std::pair<std::string, std::string>> getStartEndPairsOfTopNPaths(
-      int top_n, AnalysisMode mode, TransType trans_type) {
-    return _ista->getStartEndPairsOfTopNPaths(top_n, mode, trans_type);
+  std::vector<std::tuple<std::string, std::string, double>>
+  getStartEndSlackPairsOfTopNPaths(int top_n, AnalysisMode mode,
+                                   TransType trans_type) {
+    return _ista->getStartEndSlackPairsOfTopNPaths(top_n, mode, trans_type);
   }
-  std::vector<std::pair<std::string, std::string>>
-  getStartEndPairsOfTopNPercentPaths(double top_percentage, AnalysisMode mode,
-                                     TransType trans_type) {
-    return _ista->getStartEndPairsOfTopNPercentPaths(top_percentage, mode,
-                                                     trans_type);
+  std::vector<std::tuple<std::string, std::string, double>>
+  getStartEndSlackPairsOfTopNPercentPaths(double top_percentage,
+                                          AnalysisMode mode,
+                                          TransType trans_type) {
+    return _ista->getStartEndSlackPairsOfTopNPercentPaths(top_percentage, mode,
+                                                          trans_type);
   }
   std::string findClockPinName(const char *inst_name);
 

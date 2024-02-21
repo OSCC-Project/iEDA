@@ -30,6 +30,7 @@
 #include <memory>
 #include <mutex>
 #include <ranges>
+#include <tuple>
 #include <utility>
 
 #include "StaAnalyze.hh"
@@ -2132,17 +2133,17 @@ StaSeqPathData *Sta::getWorstSeqData(AnalysisMode mode, TransType trans_type) {
 }
 
 /**
- * @brief obtain the start2end pairs of the top n voilated timing
+ * @brief obtain the start_end_slack tuples of the top n voilated timing
  * path(slack_n<slack_(n-1)<...<slack_1).
  *
  * @param top_n
  * @param mode
  * @param trans_type
- * @return std::vector<std::pair<std::string, std::string>>
+ * @return std::vector<std::tuple<std::string, std::string, double>>
  */
-std::vector<std::pair<std::string, std::string>>
-Sta::getStartEndPairsOfTopNPaths(int top_n, AnalysisMode mode,
-                                 TransType trans_type) {
+std::vector<std::tuple<std::string, std::string, double>>
+Sta::getStartEndSlackPairsOfTopNPaths(int top_n, AnalysisMode mode,
+                                      TransType trans_type) {
   auto cmp = [](StaPathData *left, StaPathData *right) -> bool {
     int left_slack = left->getSlack();
     int right_slack = right->getSlack();
@@ -2163,7 +2164,7 @@ Sta::getStartEndPairsOfTopNPaths(int top_n, AnalysisMode mode,
   }
 
   StaSeqPathData *seq_path_data = nullptr;
-  std::vector<std::pair<std::string, std::string>> start2end;
+  std::vector<std::tuple<std::string, std::string, double>> start_end_slacks;
   while (!seq_data_queue.empty() && top_n > 0) {
     seq_path_data = dynamic_cast<StaSeqPathData *>(seq_data_queue.top());
 
@@ -2172,28 +2173,31 @@ Sta::getStartEndPairsOfTopNPaths(int top_n, AnalysisMode mode,
           seq_path_data->getPathDelayData().top()->get_own_vertex()->getName();
       auto end_pin_name =
           seq_path_data->get_delay_data()->get_own_vertex()->getName();
-      start2end.push_back(std::make_pair(start_pin_name, end_pin_name));
+      double slack = seq_path_data->getSlackNs();
+      start_end_slacks.push_back(
+          std::make_tuple(start_pin_name, end_pin_name, slack));
+
       --top_n;
     }
     seq_data_queue.pop();
   }
 
-  return start2end;
+  return start_end_slacks;
 }
 
 /**
- * @brief obtain the start2end pairs of the top percentage voilated timing
- * path(slack_n<slack_(n-1)<...<slack_1).
+ * @brief obtain the start_end_slack tuples of the top percentage voilated
+ * timing path(slack_n<slack_(n-1)<...<slack_1).
  *
  * @param top_percentage
  * @param mode
  * @param trans_type
- * @return std::vector<std::pair<std::string, std::string>>
+ * @return std::vector<std::tuple<std::string, std::string, double>>
  */
-std::vector<std::pair<std::string, std::string>>
-Sta::getStartEndPairsOfTopNPercentPaths(double top_percentage,
-                                        AnalysisMode mode,
-                                        TransType trans_type) {
+std::vector<std::tuple<std::string, std::string, double>>
+Sta::getStartEndSlackPairsOfTopNPercentPaths(double top_percentage,
+                                             AnalysisMode mode,
+                                             TransType trans_type) {
   auto cmp = [](StaPathData *left, StaPathData *right) -> bool {
     int left_slack = left->getSlack();
     int right_slack = right->getSlack();
@@ -2214,7 +2218,7 @@ Sta::getStartEndPairsOfTopNPercentPaths(double top_percentage,
   }
 
   StaSeqPathData *seq_path_data = nullptr;
-  std::vector<std::pair<std::string, std::string>> start2end;
+  std::vector<std::tuple<std::string, std::string, double>> start_end_slacks;
   int top_n = seq_data_queue.size() * top_percentage;
   while (!seq_data_queue.empty() && top_n > 0) {
     seq_path_data = dynamic_cast<StaSeqPathData *>(seq_data_queue.top());
@@ -2224,13 +2228,15 @@ Sta::getStartEndPairsOfTopNPercentPaths(double top_percentage,
           seq_path_data->getPathDelayData().top()->get_own_vertex()->getName();
       auto end_pin_name =
           seq_path_data->get_delay_data()->get_own_vertex()->getName();
-      start2end.push_back(std::make_pair(start_pin_name, end_pin_name));
+      double slack = seq_path_data->getSlackNs();
+      start_end_slacks.push_back(
+          std::make_tuple(start_pin_name, end_pin_name, slack));
       --top_n;
     }
     seq_data_queue.pop();
   }
 
-  return start2end;
+  return start_end_slacks;
 }
 
 /**
