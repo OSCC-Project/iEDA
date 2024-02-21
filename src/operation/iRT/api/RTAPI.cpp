@@ -656,10 +656,10 @@ void RTAPI::reportDRTiming()
 
 // other
 
-void RTAPI::runOther()
+void RTAPI::clearDef()
 {
   idb::IdbBuilder* idb_builder = dmInst->get_idb_builder();
-
+  idb::IdbPins* idb_pin_list = idb_builder->get_def_service()->get_design()->get_io_pin_list();
   IdbNetList* idb_net_list = idb_builder->get_def_service()->get_design()->get_net_list();
 
   //////////////////////////////////////////
@@ -679,16 +679,6 @@ void RTAPI::runOther()
   }
   // 删除net内所有的virtual
   //////////////////////////////////////////
-}
-
-#if 0
-
-void RTAPI::runOther()
-{
-  idb::IdbBuilder* idb_builder = dmInst->get_idb_builder();
-
-  idb::IdbPins* idb_pin_list = idb_builder->get_def_service()->get_design()->get_io_pin_list();
-  IdbNetList* idb_net_list = idb_builder->get_def_service()->get_design()->get_net_list();
 
   //////////////////////////////////////////
   // 删除net内所有的wire
@@ -739,8 +729,6 @@ void RTAPI::runOther()
   // 删除虚空的io_pin
   //////////////////////////////////////////
 }
-
-#endif
 
 // private
 

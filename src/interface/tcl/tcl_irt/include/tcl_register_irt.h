@@ -16,27 +16,20 @@
 // ***************************************************************************************
 #pragma once
 
-#include "LayerRect.hpp"
+#include "tcl_rt.h"
 
-namespace irt {
+using namespace ieda;
 
-class PatchNode : public LayerRect
+namespace tcl {
 
+int registerCmdRT()
 {
- public:
-  PatchNode() = default;
-  PatchNode(const PatchNode& other) : LayerRect(other) { _net_idx = other._net_idx; }
-  ~PatchNode() = default;
-  // getter
-  irt_int get_net_idx() const { return _net_idx; }
+  registerTclCmd(TclClearDef, "clear_def");
+  registerTclCmd(TclRunEGR, "run_egr");
+  registerTclCmd(TclDestroyRT, "destroy_rt");
+  registerTclCmd(TclInitRT, "init_rt");
+  registerTclCmd(TclRunRT, "run_rt");
+  return EXIT_SUCCESS;
+}
 
-  // setter
-  void set_net_idx(const irt_int net_idx) { _net_idx = net_idx; }
-
-  // function
-
- private:
-  irt_int _net_idx = -1;
-};
-
-}  // namespace irt
+}  // namespace tcl

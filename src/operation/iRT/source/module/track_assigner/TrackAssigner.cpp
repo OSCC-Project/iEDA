@@ -103,9 +103,9 @@ void TrackAssigner::setTAParameter(TAModel& ta_model)
   TAParameter ta_parameter(cost_unit, cost_unit, cost_unit);
   LOG_INST.info(Loc::current(), "prefer_wire_unit : ", ta_parameter.get_prefer_wire_unit());
   LOG_INST.info(Loc::current(), "corner_unit : ", ta_parameter.get_corner_unit());
-  LOG_INST.info(Loc::current(), "fixed_rect_cost : ", ta_parameter.get_fixed_rect_cost());
-  LOG_INST.info(Loc::current(), "routed_rect_cost : ", ta_parameter.get_routed_rect_cost());
-  LOG_INST.info(Loc::current(), "violation_cost : ", ta_parameter.get_violation_cost());
+  LOG_INST.info(Loc::current(), "fixed_rect_unit : ", ta_parameter.get_fixed_rect_unit());
+  LOG_INST.info(Loc::current(), "routed_rect_unit : ", ta_parameter.get_routed_rect_unit());
+  LOG_INST.info(Loc::current(), "violation_unit : ", ta_parameter.get_violation_unit());
   ta_model.set_ta_parameter(ta_parameter);
 }
 
@@ -834,16 +834,16 @@ double TrackAssigner::getKnowCost(TAPanel& ta_panel, TANode* start_node, TANode*
 
 double TrackAssigner::getNodeCost(TAPanel& ta_panel, TANode* curr_node, Orientation orientation)
 {
-  double fixed_rect_cost = ta_panel.get_ta_parameter()->get_fixed_rect_cost();
-  double routed_rect_cost = ta_panel.get_ta_parameter()->get_routed_rect_cost();
-  double violation_cost = ta_panel.get_ta_parameter()->get_violation_cost();
+  double fixed_rect_unit = ta_panel.get_ta_parameter()->get_fixed_rect_unit();
+  double routed_rect_unit = ta_panel.get_ta_parameter()->get_routed_rect_unit();
+  double violation_unit = ta_panel.get_ta_parameter()->get_violation_unit();
 
   irt_int net_idx = ta_panel.get_curr_ta_task()->get_net_idx();
 
   double cost = 0;
-  cost += curr_node->getFixedRectCost(net_idx, orientation, fixed_rect_cost);
-  cost += curr_node->getRoutedRectCost(net_idx, orientation, routed_rect_cost);
-  cost += curr_node->getViolationCost(orientation, violation_cost);
+  cost += curr_node->getFixedRectCost(net_idx, orientation, fixed_rect_unit);
+  cost += curr_node->getRoutedRectCost(net_idx, orientation, routed_rect_unit);
+  cost += curr_node->getViolationCost(orientation, violation_unit);
   return cost;
 }
 

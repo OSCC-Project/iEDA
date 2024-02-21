@@ -100,17 +100,17 @@ void DetailedRouter::iterativeDRModel(DRModel& dr_model)
   irt_int cost_unit = 4;
   std::vector<DRParameter> dr_parameter_list = {
       {6, 0, cost_unit, cost_unit, 4 * cost_unit, true},
-      {6, -1, cost_unit, cost_unit, 4 * cost_unit, true},
-      {6, -2, cost_unit, cost_unit, 4 * cost_unit, true},
-      {6, -3, cost_unit, cost_unit, 4 * cost_unit, true},
-      {6, -4, cost_unit, cost_unit, 4 * cost_unit, true},
-      {6, -5, cost_unit, cost_unit, 4 * cost_unit, true},
-      {6, 0, 8 * cost_unit, 4 * cost_unit, 4 * cost_unit, false},
-      {6, -1, 8 * cost_unit, 4 * cost_unit, 4 * cost_unit, false},
-      {6, -2, 8 * cost_unit, 4 * cost_unit, 4 * cost_unit, false},
-      {6, -3, 8 * cost_unit, 4 * cost_unit, 4 * cost_unit, false},
-      {6, -4, 8 * cost_unit, 4 * cost_unit, 4 * cost_unit, false},
-      {6, -5, 8 * cost_unit, 4 * cost_unit, 4 * cost_unit, false},
+      // {6, -1, cost_unit, cost_unit, 4 * cost_unit, true},
+      // {6, -2, cost_unit, cost_unit, 4 * cost_unit, true},
+      // {6, -3, cost_unit, cost_unit, 4 * cost_unit, true},
+      // {6, -4, cost_unit, cost_unit, 4 * cost_unit, true},
+      // {6, -5, cost_unit, cost_unit, 4 * cost_unit, true},
+      // {6, 0, 8 * cost_unit, 4 * cost_unit, 4 * cost_unit, false},
+      // {6, -1, 8 * cost_unit, 4 * cost_unit, 4 * cost_unit, false},
+      // {6, -2, 8 * cost_unit, 4 * cost_unit, 4 * cost_unit, false},
+      // {6, -3, 8 * cost_unit, 4 * cost_unit, 4 * cost_unit, false},
+      // {6, -4, 8 * cost_unit, 4 * cost_unit, 4 * cost_unit, false},
+      // {6, -5, 8 * cost_unit, 4 * cost_unit, 4 * cost_unit, false},
       // {6, 0, 16 * cost_unit, 8 * cost_unit, 8 * cost_unit, false},
       // {6, -1, 16 * cost_unit, 8 * cost_unit, 8 * cost_unit, false},
       // {6, -2, 16 * cost_unit, 8 * cost_unit, 8 * cost_unit, false},
@@ -145,9 +145,9 @@ void DetailedRouter::setDRParameter(DRModel& dr_model, DRParameter& dr_parameter
   LOG_INST.info(Loc::current(), "corner_unit : ", dr_parameter.get_corner_unit());
   LOG_INST.info(Loc::current(), "size : ", dr_parameter.get_size());
   LOG_INST.info(Loc::current(), "offset : ", dr_parameter.get_offset());
-  LOG_INST.info(Loc::current(), "fixed_rect_cost : ", dr_parameter.get_fixed_rect_cost());
-  LOG_INST.info(Loc::current(), "routed_rect_cost : ", dr_parameter.get_routed_rect_cost());
-  LOG_INST.info(Loc::current(), "violation_cost : ", dr_parameter.get_violation_cost());
+  LOG_INST.info(Loc::current(), "fixed_rect_unit : ", dr_parameter.get_fixed_rect_unit());
+  LOG_INST.info(Loc::current(), "routed_rect_unit : ", dr_parameter.get_routed_rect_unit());
+  LOG_INST.info(Loc::current(), "violation_unit : ", dr_parameter.get_violation_unit());
   LOG_INST.info(Loc::current(), "complete_ripup : ", dr_parameter.get_complete_ripup());
   dr_model.set_dr_parameter(dr_parameter);
 }
@@ -1178,16 +1178,16 @@ double DetailedRouter::getKnowCost(DRBox& dr_box, DRNode* start_node, DRNode* en
 
 double DetailedRouter::getNodeCost(DRBox& dr_box, DRNode* curr_node, Orientation orientation)
 {
-  double fixed_rect_cost = dr_box.get_dr_parameter()->get_fixed_rect_cost();
-  double routed_rect_cost = dr_box.get_dr_parameter()->get_routed_rect_cost();
-  double violation_cost = dr_box.get_dr_parameter()->get_violation_cost();
+  double fixed_rect_unit = dr_box.get_dr_parameter()->get_fixed_rect_unit();
+  double routed_rect_unit = dr_box.get_dr_parameter()->get_routed_rect_unit();
+  double violation_unit = dr_box.get_dr_parameter()->get_violation_unit();
 
   irt_int net_idx = dr_box.get_curr_dr_task()->get_net_idx();
 
   double cost = 0;
-  cost += curr_node->getFixedRectCost(net_idx, orientation, fixed_rect_cost);
-  cost += curr_node->getRoutedRectCost(net_idx, orientation, routed_rect_cost);
-  cost += curr_node->getViolationCost(orientation, violation_cost);
+  cost += curr_node->getFixedRectCost(net_idx, orientation, fixed_rect_unit);
+  cost += curr_node->getRoutedRectCost(net_idx, orientation, routed_rect_unit);
+  cost += curr_node->getViolationCost(orientation, violation_unit);
   return cost;
 }
 

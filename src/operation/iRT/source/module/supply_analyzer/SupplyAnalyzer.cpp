@@ -60,7 +60,8 @@ void SupplyAnalyzer::analyze(std::vector<Net>& net_list)
   updateSAModel(sa_model);
   LOG_INST.info(Loc::current(), "End analyze", monitor.getStatsInfo());
 
-  // plotSAModel(sa_model, "post");
+  plotSAModel(sa_model);
+  plotSupplyMap(sa_model);
 }
 
 // private
@@ -237,7 +238,7 @@ void SupplyAnalyzer::updateSAModel(SAModel& sa_model)
 
 #if 1  // plot sa_model
 
-void SupplyAnalyzer::plotSAModel(SAModel& sa_model, std::string flag)
+void SupplyAnalyzer::plotSAModel(SAModel& sa_model)
 {
   ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
   Die& die = DM_INST.getDatabase().get_die();
@@ -346,8 +347,70 @@ void SupplyAnalyzer::plotSAModel(SAModel& sa_model, std::string flag)
   }
   gp_gds.addStruct(sa_node_map_struct);
 
-  std::string gds_file_path = RTUtil::getString(sa_temp_directory_path, flag, "_sa.gds");
+  std::string gds_file_path = RTUtil::getString(sa_temp_directory_path, "supply.gds");
   GP_INST.plot(gp_gds, gds_file_path);
+}
+
+void SupplyAnalyzer::plotSupplyMap(SAModel& sa_model)
+{
+  Monitor monitor;
+  LOG_INST.info(Loc::current(), "Begin plotting...");
+  writePYScript();
+  writeSupplyCSV(sa_model);
+  LOG_INST.info(Loc::current(), "End plot", monitor.getStatsInfo());
+}
+
+void SupplyAnalyzer::writePYScript()
+{
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+  std::string sa_temp_directory_path = DM_INST.getConfig().sa_temp_directory_path;
+
+  std::ofstream* python_file = RTUtil::getOutputFileStream(RTUtil::getString(sa_temp_directory_path, "plot.py"));
+  RTUtil::pushStream(python_file, "from concurrent.futures import ProcessPoolExecutor", "\n");
+  RTUtil::pushStream(python_file, "import numpy as np", "\n");
+  RTUtil::pushStream(python_file, "import matplotlib.pyplot as plt", "\n");
+  RTUtil::pushStream(python_file, "import seaborn as sns", "\n");
+  RTUtil::pushStream(python_file, "import pandas as pd", "\n");
+  RTUtil::pushStream(python_file, "from PIL import Image", "\n");
+  RTUtil::pushStream(python_file, "import os", "\n");
+  RTUtil::pushStream(python_file, "def process_map(layer):", "\n");
+  RTUtil::pushStream(python_file, "    plt.clf()", "\n");
+  RTUtil::pushStream(python_file, "    supply = sns.heatmap(np.array(pd.read_csv(f'{layer}_supply_map.csv')), cmap='hot_r')", "\n");
+  RTUtil::pushStream(python_file, "    supply.set_title(f'{layer}_supply_map')", "\n");
+  RTUtil::pushStream(python_file, "    supply.get_figure().savefig(f'{layer}_supply_map.png', dpi=300)", "\n");
+  RTUtil::pushStream(python_file, "layers = [");
+  for (RoutingLayer& routing_layer : routing_layer_list) {
+    RTUtil::pushStream(python_file, "'", routing_layer.get_layer_name(), "',");
+  }
+  RTUtil::pushStream(python_file, "]", "\n");
+  RTUtil::pushStream(python_file, "with ProcessPoolExecutor() as executor:", "\n");
+  RTUtil::pushStream(python_file, "    executor.map(process_map, layers)", "\n");
+  RTUtil::closeFileStream(python_file);
+}
+
+void SupplyAnalyzer::writeSupplyCSV(SAModel& sa_model)
+{
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+  std::string sa_temp_directory_path = DM_INST.getConfig().sa_temp_directory_path;
+
+  std::vector<GridMap<SANode>>& layer_node_map = sa_model.get_layer_node_map();
+
+  for (RoutingLayer& routing_layer : routing_layer_list) {
+    std::ofstream* supply_csv_file
+        = RTUtil::getOutputFileStream(RTUtil::getString(sa_temp_directory_path, routing_layer.get_layer_name(), "_supply_map.csv"));
+    GridMap<SANode>& sa_node_map = layer_node_map[routing_layer.get_layer_idx()];
+    for (irt_int y = sa_node_map.get_y_size() - 1; y >= 0; y--) {
+      for (irt_int x = 0; x < sa_node_map.get_x_size(); x++) {
+        irt_int total_supply = 0;
+        for (auto& [orien, supply] : sa_node_map[x][y].get_orien_supply_map()) {
+          total_supply += supply;
+        }
+        RTUtil::pushStream(supply_csv_file, total_supply, ",");
+      }
+      RTUtil::pushStream(supply_csv_file, "\n");
+    }
+    RTUtil::closeFileStream(supply_csv_file);
+  }
 }
 
 #endif

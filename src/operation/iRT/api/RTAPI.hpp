@@ -62,7 +62,7 @@ class RTAPI
   void reportDRTiming();
 
   // other
-  void runOther();
+  void clearDef();
 
  private:
   static RTAPI* _rt_api_instance;

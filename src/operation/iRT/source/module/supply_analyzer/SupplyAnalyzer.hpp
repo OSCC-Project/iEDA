@@ -55,7 +55,10 @@ class SupplyAnalyzer
   void updateSAModel(SAModel& sa_model);
 
 #if 1  // plot sa_model
-  void plotSAModel(SAModel& sa_model, std::string flag);
+  void plotSAModel(SAModel& sa_model);
+  void plotSupplyMap(SAModel& sa_model);
+  void writePYScript();
+  void writeSupplyCSV(SAModel& sa_model);
 #endif
 };
 

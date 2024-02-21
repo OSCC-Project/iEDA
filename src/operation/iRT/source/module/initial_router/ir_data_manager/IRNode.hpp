@@ -55,8 +55,7 @@ class IRNode : public LayerCoord
     }
     return neighbor_node;
   }
-
-  double getCost(Orientation orientation)
+  double getCongestionCost(Orientation orientation)
   {
     double cost = 0;
     if (orientation != Orientation::kUp && orientation != Orientation::kDown) {
@@ -68,7 +67,7 @@ class IRNode : public LayerCoord
       if (RTUtil::exist(_orien_supply_map, orientation)) {
         node_supply = _orien_supply_map[orientation];
       }
-      cost += calcCost(node_demand, node_supply);
+      cost += calcCost(node_demand + 1, node_supply);
     }
     return cost;
   }

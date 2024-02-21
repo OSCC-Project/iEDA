@@ -66,7 +66,7 @@ class TANode : public LayerCoord
     }
     return neighbor_node;
   }
-  double getFixedRectCost(irt_int net_idx, Orientation orientation, double fixed_rect_cost)
+  double getFixedRectCost(irt_int net_idx, Orientation orientation, double fixed_rect_unit)
   {
     irt_int fixed_rect_num = 0;
     if (RTUtil::exist(_orien_fixed_rect_map, orientation)) {
@@ -80,10 +80,10 @@ class TANode : public LayerCoord
       }
     }
     double cost = 0;
-    cost = (fixed_rect_num * fixed_rect_cost);
+    cost = (fixed_rect_num * fixed_rect_unit);
     return cost;
   }
-  double getRoutedRectCost(irt_int net_idx, Orientation orientation, double routed_rect_cost)
+  double getRoutedRectCost(irt_int net_idx, Orientation orientation, double routed_rect_unit)
   {
     irt_int routed_rect_num = 0;
     if (RTUtil::exist(_orien_routed_rect_map, orientation)) {
@@ -97,17 +97,17 @@ class TANode : public LayerCoord
       }
     }
     double cost = 0;
-    cost = (routed_rect_num * routed_rect_cost);
+    cost = (routed_rect_num * routed_rect_unit);
     return cost;
   }
-  double getViolationCost(Orientation orientation, double violation_cost)
+  double getViolationCost(Orientation orientation, double violation_unit)
   {
     irt_int violation_num = 0;
     if (RTUtil::exist(_orien_violation_number_map, orientation)) {
       violation_num = _orien_violation_number_map[orientation];
     }
     double cost = 0;
-    cost = (violation_num * violation_cost);
+    cost = (violation_num * violation_unit);
     return cost;
   }
 #if 1  // astar

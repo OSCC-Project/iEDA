@@ -32,7 +32,7 @@ class DRParameter
 {
  public:
   DRParameter() = default;
-  DRParameter(irt_int size, irt_int offset, irt_int fixed_rect_cost, irt_int routed_rect_cost, irt_int violation_cost, bool complete_ripup)
+  DRParameter(irt_int size, irt_int offset, irt_int fixed_rect_unit, irt_int routed_rect_unit, irt_int violation_unit, bool complete_ripup)
   {
     _prefer_wire_unit = 1;
     _nonprefer_wire_unit = 2;
@@ -40,9 +40,9 @@ class DRParameter
     _corner_unit = 1;
     _size = size;
     _offset = offset;
-    _fixed_rect_cost = fixed_rect_cost;
-    _routed_rect_cost = routed_rect_cost;
-    _violation_cost = violation_cost;
+    _fixed_rect_unit = fixed_rect_unit;
+    _routed_rect_unit = routed_rect_unit;
+    _violation_unit = violation_unit;
     _complete_ripup = complete_ripup;
   }
   ~DRParameter() = default;
@@ -53,9 +53,9 @@ class DRParameter
   double get_corner_unit() const { return _corner_unit; }
   irt_int get_size() const { return _size; }
   irt_int get_offset() const { return _offset; }
-  double get_fixed_rect_cost() const { return _fixed_rect_cost; }
-  double get_routed_rect_cost() const { return _routed_rect_cost; }
-  double get_violation_cost() const { return _violation_cost; }
+  double get_fixed_rect_unit() const { return _fixed_rect_unit; }
+  double get_routed_rect_unit() const { return _routed_rect_unit; }
+  double get_violation_unit() const { return _violation_unit; }
   bool get_complete_ripup() const { return _complete_ripup; }
   // setter
   void set_prefer_wire_unit(const double prefer_wire_unit) { _prefer_wire_unit = prefer_wire_unit; }
@@ -64,9 +64,9 @@ class DRParameter
   void set_corner_unit(const double corner_unit) { _corner_unit = corner_unit; }
   void set_size(const irt_int size) { _size = size; }
   void set_offset(const irt_int offset) { _offset = offset; }
-  void set_fixed_rect_cost(const double fixed_rect_cost) { _fixed_rect_cost = fixed_rect_cost; }
-  void set_routed_rect_cost(const double routed_rect_cost) { _routed_rect_cost = routed_rect_cost; }
-  void set_violation_cost(const double violation_cost) { _violation_cost = violation_cost; }
+  void set_fixed_rect_unit(const double fixed_rect_unit) { _fixed_rect_unit = fixed_rect_unit; }
+  void set_routed_rect_unit(const double routed_rect_unit) { _routed_rect_unit = routed_rect_unit; }
+  void set_violation_unit(const double violation_unit) { _violation_unit = violation_unit; }
   void set_complete_ripup(const bool complete_ripup) { _complete_ripup = complete_ripup; }
 
  private:
@@ -76,9 +76,9 @@ class DRParameter
   double _corner_unit = 0;
   irt_int _size = -1;
   irt_int _offset = -1;
-  double _fixed_rect_cost = 0;
-  double _routed_rect_cost = 0;
-  double _violation_cost = 0;
+  double _fixed_rect_unit = 0;
+  double _routed_rect_unit = 0;
+  double _violation_unit = 0;
   bool _complete_ripup = true;
 };
 

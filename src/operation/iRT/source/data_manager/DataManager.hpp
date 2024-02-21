@@ -22,6 +22,7 @@
 #include "Helper.hpp"
 #include "Logger.hpp"
 #include "NetShape.hpp"
+#include "Reporter.hpp"
 #include "SortStatus.hpp"
 
 namespace irt {
@@ -37,8 +38,6 @@ class DataManager
   // function
   void input(std::map<std::string, std::any>& config_map, idb::IdbBuilder* idb_builder);
   void output(idb::IdbBuilder* idb_builder);
-  // void save(Stage stage);
-  // void load(Stage stage);
 
 #if 1  // 有关GCellMap操作
   void updateFixedRectToGCellMap(ChangeType change_type, irt_int net_idx, EXTLayerRect* ext_layer_rect, bool is_routing);
@@ -69,6 +68,7 @@ class DataManager
   Config& getConfig() { return _config; }
   Database& getDatabase() { return _database; }
   Helper& getHelper() { return _helper; }
+  Reporter& getReporter() { return _reporter; }
 
  private:
   static DataManager* _dm_instance;
@@ -76,6 +76,7 @@ class DataManager
   Config _config;
   Database _database;
   Helper _helper;
+  Reporter _reporter;
 
   DataManager() = default;
   DataManager(const DataManager& other) = delete;
@@ -155,14 +156,10 @@ class DataManager
   void outputNetList(idb::IdbBuilder* idb_builder);
 #endif
 
-#if 0  // save & load
-  void saveStageResult(Stage stage);
-  std::tuple<std::string, std::string, std::set<std::string>, std::string> getHeadInfo(const std::string& stage);
-  void loadStageResult(Stage stage);
-#endif
-
+#if 1  // 获得IdbWireSegment
   idb::IdbRegularWireSegment* getIDBWire(irt_int net_idx, Segment<LayerCoord>& segment);
   idb::IdbRegularWireSegment* getIDBVia(irt_int net_idx, Segment<LayerCoord>& segment);
+#endif
 };
 
 }  // namespace irt

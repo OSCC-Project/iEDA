@@ -76,26 +76,6 @@ void DataManager::output(idb::IdbBuilder* idb_builder)
   LOG_INST.info(Loc::current(), "End output!", monitor.getStatsInfo());
 }
 
-// void DataManager::save(Stage stage)
-// {
-//   Monitor monitor;
-//   LOG_INST.info(Loc::current(), "Begin saving...");
-
-//   saveStageResult(stage);
-
-//   LOG_INST.info(Loc::current(), "End save!", monitor.getStatsInfo());
-// }
-
-// void DataManager::load(Stage stage)
-// {
-//   Monitor monitor;
-//   LOG_INST.info(Loc::current(), "Begin loading...");
-
-//   loadStageResult(stage);
-
-//   LOG_INST.info(Loc::current(), "End load!", monitor.getStatsInfo());
-// }
-
 #if 1  // 更新GCellMap
 
 void DataManager::updateFixedRectToGCellMap(ChangeType change_type, irt_int net_idx, EXTLayerRect* ext_layer_rect, bool is_routing)
@@ -1875,43 +1855,7 @@ void DataManager::outputNetList(idb::IdbBuilder* idb_builder)
 
 #endif
 
-#if 0  // save & load
-
-void DataManager::saveStageResult(Stage stage)
-{
-  Monitor monitor;
-  std::string current_stage = GetStageName()(stage);
-  std::string data_path = _config.dm_temp_directory_path + GetStageName()(stage) + ".dat";
-  iplf::RtPersister ps(data_path);
-  ps.saveWithHeader(getHeadInfo(current_stage), _database.get_net_list());
-  LOG_INST.info(Loc::current(), "The ", current_stage, " result has been saved in '", data_path, "'!", monitor.getStatsInfo());
-}
-
-std::tuple<std::string, std::string, std::set<std::string>, std::string> DataManager::getHeadInfo(const std::string& stage)
-{
-  std::string design_name = _helper.get_design_name();
-  std::vector<std::string>& lef_file_path_list = _helper.get_lef_file_path_list();
-  std::set<std::string> lef_list{lef_file_path_list.begin(), lef_file_path_list.end()};
-  std::string def_name = RTUtil::getFileName(_helper.get_def_file_path());
-
-  return make_tuple(stage, design_name, lef_list, def_name);
-}
-
-void DataManager::loadStageResult(Stage stage)
-{
-  Monitor monitor;
-
-  std::string current_stage = GetStageName()(stage);
-  std::string data_path = _config.dm_temp_directory_path + GetStageName()(stage) + ".dat";
-  iplf::RtPersister ps(data_path);
-  auto header = ps.loadHeader<decltype(getHeadInfo(current_stage))>();
-  // check header
-
-  ps.loadWithHeader(getHeadInfo(current_stage), _database.get_net_list());
-  LOG_INST.info(Loc::current(), "The ", current_stage, " result has been loaded from '", data_path, "'!", monitor.getStatsInfo());
-}
-
-#endif
+#if 1  // 获得IdbWireSegment
 
 idb::IdbRegularWireSegment* DataManager::getIDBWire(irt_int net_idx, Segment<LayerCoord>& segment)
 {
@@ -1970,5 +1914,7 @@ idb::IdbRegularWireSegment* DataManager::getIDBVia(irt_int net_idx, Segment<Laye
   idb_via_new->set_coordinate(first_coord.get_x(), first_coord.get_y());
   return idb_segment;
 }
+
+#endif
 
 }  // namespace irt

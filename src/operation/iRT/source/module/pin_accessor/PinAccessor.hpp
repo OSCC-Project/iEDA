@@ -60,7 +60,10 @@ class PinAccessor
   void updatePAModel(PAModel& pa_model);
 
 #if 1  // plot pa_model
-  void plotPAModel(PAModel& pa_model, std::string flag);
+  void plotPAModel(PAModel& pa_model);
+  void plotPinMap(PAModel& pa_model);
+  void writePYScript();
+  void writePinCSV(PAModel& pa_model);
 #endif
 };
 

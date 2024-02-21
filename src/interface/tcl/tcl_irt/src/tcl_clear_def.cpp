@@ -14,26 +14,25 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-#pragma once
-
-#include "tcl_egr.h"
-#include "tcl_other.h"
+#include "RTAPI.hpp"
+#include "tcl_util.h"
 #include "tcl_rt.h"
-
-using namespace ieda;
 
 namespace tcl {
 
-int registerCmdRT()
+TclClearDef::TclClearDef(const char* cmd_name) : TclCmd(cmd_name)
 {
-  registerTclCmd(TclRunEGR, "run_egr");
+}
 
-  registerTclCmd(TclRunOther, "run_other");
+unsigned TclClearDef::exec()
+{
+  if (!check()) {
+    return 0;
+  }
 
-  registerTclCmd(TclDestroyRT, "destroy_rt");
-  registerTclCmd(TclInitRT, "init_rt");
-  registerTclCmd(TclRunRT, "run_rt");
-  return EXIT_SUCCESS;
+  RTAPI_INST.clearDef();
+
+  return 1;
 }
 
 }  // namespace tcl

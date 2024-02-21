@@ -20,6 +20,20 @@
 
 namespace tcl {
 
+class TclClearDef : public TclCmd
+{
+ public:
+  explicit TclClearDef(const char* cmd_name);
+  ~TclClearDef() override = default;
+
+  unsigned check() override { return 1; };
+
+  unsigned exec() override;
+
+ private:
+  std::vector<std::pair<std::string, ValueType>> _config_list;
+};
+
 class TclDestroyRT : public TclCmd
 {
  public:
@@ -38,7 +52,21 @@ class TclInitRT : public TclCmd
   ~TclInitRT() override = default;
 
   unsigned check() override { return 1; };
-  
+
+  unsigned exec() override;
+
+ private:
+  std::vector<std::pair<std::string, ValueType>> _config_list;
+};
+
+class TclRunEGR : public TclCmd
+{
+ public:
+  explicit TclRunEGR(const char* cmd_name);
+  ~TclRunEGR() override = default;
+
+  unsigned check() override { return 1; };
+
   unsigned exec() override;
 
  private:
