@@ -2132,6 +2132,108 @@ StaSeqPathData *Sta::getWorstSeqData(AnalysisMode mode, TransType trans_type) {
 }
 
 /**
+ * @brief obtain the start2end pairs of the top n voilated timing
+ * path(slack_n<slack_(n-1)<...<slack_1).
+ *
+ * @param top_n
+ * @param mode
+ * @param trans_type
+ * @return std::vector<std::pair<std::string, std::string>>
+ */
+std::vector<std::pair<std::string, std::string>>
+Sta::getStartEndPairsOfTopNPaths(int top_n, AnalysisMode mode,
+                                 TransType trans_type) {
+  auto cmp = [](StaPathData *left, StaPathData *right) -> bool {
+    int left_slack = left->getSlack();
+    int right_slack = right->getSlack();
+    return left_slack > right_slack;
+  };
+
+  std::priority_queue<StaPathData *, std::vector<StaPathData *>, decltype(cmp)>
+      seq_data_queue(cmp);
+
+  for (const auto &[clk, seq_path_group] : _clock_groups) {
+    StaPathEnd *path_end;
+    StaPathData *path_data;
+    FOREACH_PATH_GROUP_END(seq_path_group.get(), path_end) {
+      FOREACH_PATH_END_DATA(path_end, mode, path_data) {
+        seq_data_queue.push(path_data);
+      }
+    }
+  }
+
+  StaSeqPathData *seq_path_data = nullptr;
+  std::vector<std::pair<std::string, std::string>> start2end;
+  while (!seq_data_queue.empty() && top_n > 0) {
+    seq_path_data = dynamic_cast<StaSeqPathData *>(seq_data_queue.top());
+
+    if (seq_path_data->get_delay_data()->get_trans_type() == trans_type) {
+      auto start_pin_name =
+          seq_path_data->getPathDelayData().top()->get_own_vertex()->getName();
+      auto end_pin_name =
+          seq_path_data->get_delay_data()->get_own_vertex()->getName();
+      start2end.push_back(std::make_pair(start_pin_name, end_pin_name));
+      --top_n;
+    }
+    seq_data_queue.pop();
+  }
+
+  return start2end;
+}
+
+/**
+ * @brief obtain the start2end pairs of the top percentage voilated timing
+ * path(slack_n<slack_(n-1)<...<slack_1).
+ *
+ * @param top_percentage
+ * @param mode
+ * @param trans_type
+ * @return std::vector<std::pair<std::string, std::string>>
+ */
+std::vector<std::pair<std::string, std::string>>
+Sta::getStartEndPairsOfTopNPercentPaths(double top_percentage,
+                                        AnalysisMode mode,
+                                        TransType trans_type) {
+  auto cmp = [](StaPathData *left, StaPathData *right) -> bool {
+    int left_slack = left->getSlack();
+    int right_slack = right->getSlack();
+    return left_slack > right_slack;
+  };
+
+  std::priority_queue<StaPathData *, std::vector<StaPathData *>, decltype(cmp)>
+      seq_data_queue(cmp);
+
+  for (const auto &[clk, seq_path_group] : _clock_groups) {
+    StaPathEnd *path_end;
+    StaPathData *path_data;
+    FOREACH_PATH_GROUP_END(seq_path_group.get(), path_end) {
+      FOREACH_PATH_END_DATA(path_end, mode, path_data) {
+        seq_data_queue.push(path_data);
+      }
+    }
+  }
+
+  StaSeqPathData *seq_path_data = nullptr;
+  std::vector<std::pair<std::string, std::string>> start2end;
+  int top_n = seq_data_queue.size() * top_percentage;
+  while (!seq_data_queue.empty() && top_n > 0) {
+    seq_path_data = dynamic_cast<StaSeqPathData *>(seq_data_queue.top());
+
+    if (seq_path_data->get_delay_data()->get_trans_type() == trans_type) {
+      auto start_pin_name =
+          seq_path_data->getPathDelayData().top()->get_own_vertex()->getName();
+      auto end_pin_name =
+          seq_path_data->get_delay_data()->get_own_vertex()->getName();
+      start2end.push_back(std::make_pair(start_pin_name, end_pin_name));
+      --top_n;
+    }
+    seq_data_queue.pop();
+  }
+
+  return start2end;
+}
+
+/**
  * @brief Get the violated StaSeqPathDatas of the two specified sinks that form
  * the timing path.
  *
