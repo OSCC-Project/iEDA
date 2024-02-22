@@ -175,10 +175,11 @@ void ToolManager::estimateDelay(std::vector<eval::TimingNet*> timing_net_list, c
 /// iPL
 bool ToolManager::autoRunPlacer(std::string config)
 {
-  plInst->initPlacer(config);
-  bool flag = plInst->runPlacement();
-  plInst->destroyPlacer();
-  return flag;
+  //   plInst->initPlacer(config);
+  //   bool flag = plInst->runPlacement(config);
+  //   plInst->destroyPlacer();
+  return plInst->runPlacement(config);
+  ;
 }
 bool ToolManager::runPlacerFiller(std::string config)
 {
@@ -191,7 +192,7 @@ bool ToolManager::runPlacerIncrementalFlow(std::string config)
 bool ToolManager::runPlacerIncrementalLegalization()
 {
   bool flag = plInst->runIncrementalLegalization();
-  plInst->destroyPlacer();
+  //   plInst->destroyPlacer();
   return flag;
 }
 
@@ -240,9 +241,9 @@ bool ToolManager::RunTOSetup(std::string config)
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// iCTS
-bool ToolManager::autoRunCTS(std::string config)
+bool ToolManager::autoRunCTS(std::string config, std::string work_dir)
 {
-  return ctsInst->runCTS(config);
+  return ctsInst->runCTS(config, work_dir);
 }
 
 bool ToolManager::reportCTS(std::string path)

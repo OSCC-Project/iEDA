@@ -1,0 +1,4 @@
+[submodule "src/third_party/mt-kahypar"]
+	url  = https://gitee.com/fuxinghuang/mt-kahypar
+	path = src/third_party/mt-kahypar
+

@@ -324,7 +324,7 @@ bool EGRDataManager::checkSkipping(idb::IdbNet* idb_net)
   }
   // check the connection form io_cell PAD to io_pin
   bool has_io_pin = false;
-  if (idb_net->get_io_pin() != nullptr) {
+  if (idb_net->has_io_pins()) {
     has_io_pin = true;
   }
   bool has_io_cell = false;
@@ -356,8 +356,8 @@ void EGRDataManager::wrapPinList(EGRNet& egr_net, idb::IdbNet* idb_net)
     egr_pin_list.push_back(std::move(egr_pin));
   }
   // io pin list
-  if (idb_net->get_io_pin() != nullptr) {
-    idb::IdbPin* io_pin = idb_net->get_io_pin();
+  auto* io_pins = idb_net->get_io_pins();
+  for (auto* io_pin : io_pins->get_pin_list()) {
     EGRPin egr_pin;
     egr_pin.set_pin_name(io_pin->get_pin_name());
     wrapPinShapeList(egr_pin, io_pin);

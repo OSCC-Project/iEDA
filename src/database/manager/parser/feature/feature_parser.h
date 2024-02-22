@@ -65,10 +65,27 @@ class FeatureParser
   bool buildInstances(std::string json_path);
   bool buildNets(std::string json_path);
   // report
-  bool buildReportSummary(std::string json_path);
+  bool buildReportSummary(std::string json_path, std::string step);
 
  private:
   IdbLayout* _layout = nullptr;
   IdbDesign* _design = nullptr;
+
+  json buildSummaryInfo();
+  json buildSummaryLayout();
+  json buildSummaryStatis();
+  json buildSummaryInstances();
+  json buildSummaryLayers();
+  json buildSummaryNets();
+  json buildSummaryPdn();
+  json buildSummaryPins();
+
+  json flowSummary(std::string step = "");
+  json buildSummaryPL(std::string json_path);
+  json buildSummaryCTS();
+  json buildSummaryTO(std::string step = "");
+  json buildSummarySTA();
+  json buildSummaryDRC();
+
 };
 }  // namespace idb

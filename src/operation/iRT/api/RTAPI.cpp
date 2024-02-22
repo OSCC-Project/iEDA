@@ -139,12 +139,13 @@ void RTAPI::runEGR(std::map<std::string, std::any> config_map)
 
 // EVAL
 
-eval::TileGrid* RTAPI::getCongestonMap(std::map<std::string, std::any> config_map)
+eval::TileGrid* RTAPI::getCongestonMap(std::map<std::string, std::any> config_map, double& wirelength)
 {
   Monitor egr_monitor;
 
   EarlyGlobalRouter::initInst(config_map, dmInst->get_idb_builder());
   EGR_INST.route();
+  wirelength = EGR_INST.getDataManager().getEGRStat().get_total_wire_length();
 
   eval::TileGrid* eval_tile_grid = new eval::TileGrid();
   irt_int cell_width = EGR_INST.getDataManager().getConfig().cell_width;
@@ -693,7 +694,7 @@ void RTAPI::clearDef()
   std::vector<std::string> remove_net_list;
   for (idb::IdbNet* idb_net : idb_net_list->get_net_list()) {
     bool has_io_pin = false;
-    if (idb_net->get_io_pin() != nullptr) {
+    if (idb_net->get_io_pins() != nullptr) {
       has_io_pin = true;
     }
     bool has_io_cell = false;

@@ -69,7 +69,7 @@ class PlacerIO
   /// io
   void initPlacer(std::string config);
   void destroyPlacer();
-  bool runPlacement();
+  bool runPlacement(std::string config);
   bool runIncrementalLegalization();
   bool runIncrementalLegalization(std::vector<std::string>& changed_inst_list);
   bool runFillerInsertion(std::string config);

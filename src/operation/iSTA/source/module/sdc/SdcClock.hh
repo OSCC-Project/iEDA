@@ -89,10 +89,11 @@ class SdcGenerateCLock : public SdcClock {
   void set_source_name(const char* source_name) { _source_name = source_name; }
   const char* get_source_name() const { return _source_name.c_str(); }
 
-  void set_is_need_update_source_clock() {
-    _is_need_update_source_clock = true;
-  }
-  bool isNeedUpdateSourceClock() { return _is_need_update_source_clock; }
+  void set_is_need_update_source_clock() { _is_need_update_source_clock = 1; }
+  bool isNeedUpdateSourceClock() const { return _is_need_update_source_clock; }
+
+  void set_is_waveform_inv() { _is_waveform_inv = 1; }
+  bool isWaveformInv() const { return _is_waveform_inv; }
 
   void set_source_pins(std::set<DesignObject*> source_pins) {
     _source_pins = std::move(source_pins);
@@ -106,9 +107,12 @@ class SdcGenerateCLock : public SdcClock {
   std::string _source_name;
 
   // need update source clock later after clock propagation.
-  bool _is_need_update_source_clock = false;
+  unsigned _is_need_update_source_clock : 1 = 0;
+  unsigned _is_waveform_inv : 1 = 0;
+  unsigned _reserved : 30 = 0;
+
   std::set<DesignObject*> _source_pins;
-  int _divide_by;
+  int _divide_by = 1;
 };
 
 /**

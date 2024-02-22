@@ -336,6 +336,32 @@ class CmdAllClocks : public TclCmd {
 };
 
 /**
+ * @brief all_inputs, get all inputs.
+ *
+ */
+class CmdAllInputs : public TclCmd {
+ public:
+  explicit CmdAllInputs(const char* cmd_name);
+  ~CmdAllInputs() override = default;
+
+  unsigned check() override;
+  unsigned exec() override;
+};
+
+/**
+ * @brief all_outputs, get all outputs.
+ *
+ */
+class CmdAllOutputs : public TclCmd {
+ public:
+  explicit CmdAllOutputs(const char* cmd_name);
+  ~CmdAllOutputs() override = default;
+
+  unsigned check() override;
+  unsigned exec() override;
+};
+
+/**
  * @brief set_clock_groups, set clock relationship.
  *
  */

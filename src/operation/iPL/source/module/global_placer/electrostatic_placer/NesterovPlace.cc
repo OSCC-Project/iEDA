@@ -77,6 +77,15 @@ void NesterovPlace::initNesDatabase(PlacerDB* placer_db)
 
   initGridManager();
   initTopologyManager();
+  notifyPLBinSize();
+}
+
+void NesterovPlace::notifyPLBinSize(){
+  int32_t bin_size_x = _nes_database->_grid_manager->get_grid_size_x();
+  int32_t bin_size_y = _nes_database->_grid_manager->get_grid_size_y();
+
+  PlacerDBInst.bin_size_x = bin_size_x;
+  PlacerDBInst.bin_size_y = bin_size_y;
 }
 
 void NesterovPlace::wrapNesInstanceList()
@@ -1330,8 +1339,24 @@ void NesterovPlace::NesterovSolve(std::vector<NesInstance*>& inst_list)
     exit(1);
   }
 
+  notifyPLOverflowInfo(sum_overflow);
+  notifyPLPlaceDensity();
+
   // update PlacerDB.
   writeBackPlacerDB();
+}
+
+void NesterovPlace::notifyPLOverflowInfo(float final_overflow){
+  PlacerDBInst.gp_overflow = final_overflow;
+  
+  std::vector<Grid*> grid_list;
+  _nes_database->_grid_manager->obtainOverflowIllegalGridList(grid_list);
+  PlacerDBInst.gp_overflow_number = grid_list.size();
+}
+
+void NesterovPlace::notifyPLPlaceDensity(){
+  auto* grid_manager = _nes_database->_grid_manager;
+  PlacerDBInst.place_density[0] = grid_manager->obtainAvgGridDensity();
 }
 
 void NesterovPlace::plotInstImage(std::string file_name)

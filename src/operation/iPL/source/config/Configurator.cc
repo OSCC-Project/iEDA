@@ -93,6 +93,7 @@ void Config::initConfigByJson(nlohmann::json json)
   // Detail Placer
   int32_t dp_max_displacement = getDataByJson(json, {"PL", "DP", "max_displacement"});
   int32_t dp_global_padding = getDataByJson(json, {"PL", "DP", "global_right_padding"});
+  int32_t dp_enable_networkflow = getDataByJson(json, {"PL", "DP", "enable_networkflow"});
 
   // Filler
   std::vector<std::vector<std::string>> filler_group_list;
@@ -183,6 +184,7 @@ void Config::initConfigByJson(nlohmann::json json)
   _dp_config.set_thread_num(num_threads);
   _dp_config.set_max_displacement(dp_max_displacement);
   _dp_config.set_global_padding(dp_global_padding);
+  _dp_config.set_enable_networkflow(dp_enable_networkflow);
 
   // Filler
   _filler_config.set_thread_num(num_threads);

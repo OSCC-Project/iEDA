@@ -1,16 +1,16 @@
 // ***************************************************************************************
 // Copyright (c) 2023-2025 Peng Cheng Laboratory
-// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of Sciences
-// Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
+// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of
+// Sciences Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
 //
 // iEDA is licensed under Mulan PSL v2.
-// You can use this software according to the terms and conditions of the Mulan PSL v2.
-// You may obtain a copy of Mulan PSL v2 at:
+// You can use this software according to the terms and conditions of the Mulan
+// PSL v2. You may obtain a copy of Mulan PSL v2 at:
 // http://license.coscl.org.cn/MulanPSL2
 //
-// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
-// EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
-// MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY
+// KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+// NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
@@ -113,6 +113,7 @@ class StaSeqPathData : public StaPathData {
   virtual unsigned isStaClockGatePathData() { return 0; }
   StaClock* get_capture_clock() { return _capture_clock; }
   int64_t getArriveTime() override;
+  std::pair<int64_t, int64_t> getCellAndNetDelayOfArriveTime();
   int64_t getRequireTime() override;
   [[nodiscard]] auto get_cppr() const { return _cppr; }
   [[nodiscard]] int get_constrain_value() const { return _constrain_value; }
@@ -211,7 +212,9 @@ class StaPathEnd {
       _min_timing_data;  //!< The min timing data such as hold analysis from the
                          //!< launch clock.
 
-  std::map<StaPathDelayData*, StaPathData*> _delay_data_to_path_data;
+  std::map<StaPathDelayData*, StaPathData*>
+      _delay_data_to_path_data;  //!< for speed up the delay data find the path
+                                 //!< data.
 
   FORBIDDEN_COPY(StaPathEnd);
 };

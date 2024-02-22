@@ -119,24 +119,6 @@ class NetList
   std::vector<int64_t> pin_y_off;  // A column-wise pin list, indicating the offset of each pin in the y-direction.
 };
 
-template <typename Numeric, typename Type, typename Transform>
-struct Block
-{
-  Numeric lx;
-  Numeric ly;
-  Numeric dx;
-  Numeric dy;
-  Type type;
-  Transform tf;
-};
-
-template <typename Numeric>
-struct Pin2
-{
-  Numeric x_off;
-  Numeric y_off;
-};
-
 }  // namespace imp
 
 #endif

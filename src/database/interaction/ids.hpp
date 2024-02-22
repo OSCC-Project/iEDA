@@ -25,6 +25,7 @@ class Str;
 class Time;
 }  // namespace ieda
 namespace icts {
+struct PathInfo;
 enum class LayerPattern;
 class Node;
 class Pin;

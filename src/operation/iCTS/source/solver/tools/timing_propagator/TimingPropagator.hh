@@ -502,7 +502,7 @@ class TimingPropagator
 
  private:
   static double _unit_cap;  // pf
-  static double _unit_res;  // ohm
+  static double _unit_res;  // kilo-ohm
   static double _unit_h_cap;
   static double _unit_h_res;
   static double _unit_v_cap;

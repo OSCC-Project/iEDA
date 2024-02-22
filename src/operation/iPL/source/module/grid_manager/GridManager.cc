@@ -121,6 +121,16 @@ void GridManager::clearAllOccupiedArea()
   }
 }
 
+void GridManager::clearAllOccupiedNodeNum()
+{
+#pragma omp parallel for num_threads(_thread_num)
+  for (int32_t i = 0; i < _grid_cnt_y; i++) {
+    for (int32_t j = 0; j < _grid_cnt_x; j++) {
+      _grid_2d_list[i][j].num_node = 0;
+    }
+  }
+}
+
 void GridManager::clearRUDY()
 {
 #pragma omp parallel for num_threads(_thread_num)
@@ -408,6 +418,27 @@ int64_t GridManager::obtainOverlapArea(Grid* grid, const Rectangle<int32_t>& rec
   }
 }
 
+Rectangle<int32_t> GridManager::obtainOverlapRect(Grid* grid, const Rectangle<int32_t>& rect)
+{
+  auto& grid_shape = grid->shape;
+
+  int32_t overlap_rect_lx = std::max(grid_shape.get_ll_x(), rect.get_ll_x());
+  int32_t overlap_rect_ly = std::max(grid_shape.get_ll_y(), rect.get_ll_y());
+  int32_t overlap_rect_ux = std::min(grid_shape.get_ur_x(), rect.get_ur_x());
+  int32_t overlap_rect_uy = std::min(grid_shape.get_ur_y(), rect.get_ur_y());
+
+  if (overlap_rect_lx >= overlap_rect_ux || overlap_rect_ly >= overlap_rect_uy) {
+    int32_t fake_rect_lx = (overlap_rect_lx + overlap_rect_ux) / 2;
+    int32_t fake_rect_ly = (overlap_rect_ly + overlap_rect_uy) / 2;
+    Rectangle rect(fake_rect_lx, fake_rect_ly, fake_rect_lx, fake_rect_ly);
+    return rect;
+  } else {
+    Rectangle rect(overlap_rect_lx,overlap_rect_ly,overlap_rect_ux,overlap_rect_uy);
+    return rect;
+  }
+}
+
+
 int64_t GridManager::obtainTotalOverflowArea()
 {
   int64_t total_overflow_area = 0;
@@ -434,10 +465,26 @@ float GridManager::obtainPeakGridDensity()
   return peak_density;
 }
 
+float GridManager::obtainAvgGridDensity(){
+  float sum_density = 0.0f;
+
+  for (int32_t i = 0; i < _grid_cnt_y; i++) {
+    for (int32_t j = 0; j < _grid_cnt_x; j++) {
+      float density = _grid_2d_list[i][j].obtainGridDensity();
+      sum_density += density;
+    }
+  }
+
+  int64_t grid_cnt = _grid_cnt_x * _grid_cnt_y;
+  return (sum_density / grid_cnt);
+}
+
 void GridManager::init()
 {
-  _grid_size_x = std::ceil(static_cast<float>(_shape.get_width()) / _grid_cnt_x);
-  _grid_size_y = std::ceil(static_cast<float>(_shape.get_height()) / _grid_cnt_y);
+  if (_grid_size_x == -1 && _grid_size_y == -1){
+    _grid_size_x = std::ceil(static_cast<float>(_shape.get_width()) / _grid_cnt_x);
+    _grid_size_y = std::ceil(static_cast<float>(_shape.get_height()) / _grid_cnt_y);
+  }
 
   _grid_2d_list.resize(_grid_cnt_y);
   for (int32_t i = 0; i < _grid_cnt_y; i++) {

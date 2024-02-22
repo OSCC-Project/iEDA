@@ -54,13 +54,13 @@ void SignalHandle(const char* data, int size)
  * @param {char*} argv, The gflag config from main function.
  * @return {*}
  */
-void Log::init(char* argv[])
+void Log::init(char* argv[], std::string home_path)
 {
   /*init google logging.*/
   google::InitGoogleLogging(argv[0]);
 
   /*config the log path.*/
-  std::string home = "./result/pl/log/";
+  std::string home = home_path;
 
   makeSureDirectoryExist(home);
 

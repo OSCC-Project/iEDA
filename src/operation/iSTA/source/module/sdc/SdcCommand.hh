@@ -48,6 +48,8 @@ class SdcCommandObj {
   virtual unsigned isTimingDRC() { return 0; }
   virtual unsigned isSdcCollection() { return 0; }
   virtual unsigned isAllClock() { return 0; }
+  virtual unsigned isAllInputPorts() { return 0; }
+  virtual unsigned isAllOutputPorts() { return 0; }
 
  private:
   const char* _file_name = nullptr;  //!< the sdc file name.

@@ -34,6 +34,9 @@
 #include <string.h>
 #include <time.h>
 
+#include <boost/geometry.hpp>
+#include <boost/geometry/geometries/adapted/boost_polygon.hpp>
+#include <boost/polygon/polygon.hpp>
 #include <iostream>
 #include <memory>
 #include <string>
@@ -43,6 +46,12 @@
 #include "lef/lefrReader.hpp"
 #include "property_parser/cutlayer_parser.h"
 #include "property_parser/property_parser.h"
+namespace gtl = boost::polygon;
+typedef gtl::point_data<int32_t> GtlPoint;
+typedef gtl::rectangle_data<int32_t> GtlRect;
+typedef gtl::polygon_with_holes_data<int32_t> PolygonWithHoles;
+typedef gtl::polygon_90_data<int32_t> GtlPolygon90;
+typedef gtl::polygon_90_set_data<int32_t> GtlPolygon90Set;
 
 namespace idb {
 
@@ -59,6 +68,12 @@ class LefRead
   IdbLefService* get_service() { return _lef_service; }
   bool createDb(const char* file);
   bool createTechDb();
+
+ private:
+  string _file_name;
+  IdbLefService* _lef_service;
+  //!---tbd--------
+  IdbCellMaster* _this_cell_master;
 
   // callback
   static int manufacturingCB(lefrCallbackType_e c, double lef_num, lefiUserData data);
@@ -101,12 +116,7 @@ class LefRead
   /// operator
   int32_t transAreaDB(double value) { return _lef_service->get_layout()->transAreaDB(value); }
   int32_t transUnitDB(double value) { return _lef_service->get_layout()->transUnitDB(value); }
-
- private:
-  string _file_name;
-  IdbLefService* _lef_service;
-  //!---tbd--------
-  IdbCellMaster* _this_cell_master;
+  std::vector<GtlRect> polygonToRects(lefiGeomPolygon* polygon);
 };
 }  // namespace idb
 

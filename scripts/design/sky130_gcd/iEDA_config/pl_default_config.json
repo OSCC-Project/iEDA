@@ -39,7 +39,8 @@
         },
         "DP": {
             "max_displacement": 1000000,
-            "global_right_padding": 0
+            "global_right_padding": 0,
+            "enable_networkflow" : 0
         },
         "Filler": {
             "first_iter": [
