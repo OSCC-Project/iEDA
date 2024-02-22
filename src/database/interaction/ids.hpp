@@ -65,6 +65,8 @@ namespace idb {
 class IdbPin;
 class IdbInstance;
 class IdbNet;
+class IdbRegularWireSegment;
+class IdbLayerShape;
 }  // namespace idb
 
 namespace ito {
@@ -92,6 +94,7 @@ class MTree;
 class Net;
 class AccessPoint;
 class GRNode;
+class Violation;
 
 }  // namespace irt
 
@@ -115,7 +118,7 @@ struct Segment
   std::string second_layer_name;
 };
 
-enum class PHYNodeType
+enum class PhysicalNodeType
 {
   kNone = 0,
   kWire = 1,
@@ -138,9 +141,9 @@ struct Via
   int y;
 };
 
-struct PHYNode
+struct PhysicalNode
 {
-  PHYNodeType type;
+  PhysicalNodeType type;
   Wire wire;
   Via via;
 };

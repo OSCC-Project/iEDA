@@ -16,10 +16,12 @@
 // ***************************************************************************************
 #include "idrc_io.h"
 
+#include "DRCViolationType.h"
 #include "DrcAPI.hpp"
 #include "builder.h"
 #include "flow_config.h"
 #include "idm.h"
+#include "idrc_api.h"
 #include "report_manager.h"
 
 namespace iplf {
@@ -37,8 +39,16 @@ bool DrcIO::runDRC(std::string config, std::string report_path)
   flowConfigInst->set_status_stage("iDRC - Design Rule Check");
   ieda::Stats stats;
 
-  auto result_drc = idrc::DrcAPIInst.getCheckResult();
-  auto result_connectivity = checkConnnectivity();
+  // auto result_drc = idrc::DrcAPIInst.getCheckResult();
+  // auto result_connectivity = checkConnnectivity();
+  _detail_drc.clear();
+  auto result_drc_detail = getDetailCheckResult();
+  std::map<std::string, int> result_drc;
+  std::tuple<bool, std::vector<std::string>, std::vector<std::string>, int> result_connectivity;
+
+  for (auto [rule_name, drc_list] : result_drc_detail) {
+    result_drc.insert(std::make_pair(rule_name, drc_list.size()));
+  }
 
   flowConfigInst->add_status_runtime(stats.elapsedRunTime());
   flowConfigInst->set_status_memmory(stats.memoryDelta());
@@ -53,18 +63,34 @@ std::tuple<bool, std::vector<std::string>, std::vector<std::string>, int> DrcIO:
   return dmInst->isAllNetConnected();
 }
 
-std::map<std::string, std::vector<idrc::DrcViolationSpot*>> DrcIO::getDetailCheckResult(std::string path)
+std::map<std::string, std::vector<idrc::DrcViolation*>> DrcIO::getDetailCheckResult(std::string path)
 {
-  _detail_drc.clear();
+  // _detail_drc.clear();
+  if (!_detail_drc.empty()) {
+    return _detail_drc;
+  }
 
   if (path.empty()) {
-    _detail_drc = idrc::DrcAPIInst.getDetailCheckResult();
+    // _detail_drc = idrc::DrcAPIInst.getDetailCheckResult();
+    get_def_drc();
   } else {
     /// get drc detail data from file
     readDrcFromFile(path);
   }
 
   return _detail_drc;
+}
+
+void DrcIO::get_def_drc()
+{
+  idrc::DrcApi drc_api;
+  drc_api.init();
+  auto violations = drc_api.checkDef();
+  for (auto [type, violation_list] : violations) {
+    std::string name = idrc::GetViolationTypeName()(type);
+
+    _detail_drc.insert(std::make_pair(name, violation_list));
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -92,7 +118,7 @@ bool DrcIO::readDrcFromFile(std::string path)
 
 bool DrcIO::saveDrcToFile(std::string path)
 {
-  _detail_drc.clear();
+  // _detail_drc.clear();
 
   if (path.empty()) {
     return false;

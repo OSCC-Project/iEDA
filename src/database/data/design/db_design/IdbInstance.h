@@ -224,7 +224,6 @@ class IdbInstanceList
   }
 
   // setter
-  void set_number(uint32_t number) { _num = number; }
   IdbInstance* add_instance(IdbInstance* instance = nullptr);
   IdbInstance* add_instance(string name);
   bool remove_instance(string name);
@@ -247,7 +246,7 @@ class IdbInstanceList
   }
 
  private:
-  uint32_t _num;
+  uint64_t _mutex_index = 0;
   std::vector<IdbInstance*> _instance_list;
   std::unordered_map<string, IdbInstance*> _instance_map;
 };

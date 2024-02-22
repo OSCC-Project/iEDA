@@ -35,24 +35,24 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-class GuiPinLayerShape {
+class GuiLayerShape {
  public:
-  GuiPinLayerShape(int32_t z_order, QColor color, GuiSpeedupItemType type, GuiSpeedupItem* parent = nullptr) {
+  GuiLayerShape(int32_t z_order, QColor color, GuiSpeedupItemType type, GuiSpeedupItem* parent = nullptr) {
     _z_order   = z_order;
     _pin_shape = new GuiSpeedupWire(color, z_order, parent, type);
     _pin_shape->set_as_port();
   }
 
-  GuiPinLayerShape(int32_t z_order, GuiSpeedupWire* pin_shape) {
+  GuiLayerShape(int32_t z_order, GuiSpeedupWire* pin_shape) {
     _z_order   = z_order;
     _pin_shape = pin_shape;
   }
 
-  GuiPinLayerShape(const GuiPinLayerShape& other)            = default;
-  GuiPinLayerShape(GuiPinLayerShape&& other)                 = default;
-  GuiPinLayerShape& operator=(const GuiPinLayerShape& other) = default;
-  GuiPinLayerShape& operator=(GuiPinLayerShape&& other)      = default;
-  ~GuiPinLayerShape() {
+  GuiLayerShape(const GuiLayerShape& other) = default;
+  GuiLayerShape(GuiLayerShape&& other)      = default;
+  GuiLayerShape& operator=(const GuiLayerShape& other) = default;
+  GuiLayerShape& operator=(GuiLayerShape&& other) = default;
+  ~GuiLayerShape() {
     _z_order = 0;
     if (_pin_shape != nullptr) {
       delete _pin_shape;
@@ -99,7 +99,8 @@ class GuiSpeedupInstance : public GuiSpeedupItem {
   /// getter
   //   virtual int32_t get_points_number() { }
   int32_t get_pin_number() { return _pin_list.size(); }
-  std::vector<GuiPinLayerShape*>& get_pin_layer_shape_list() { return _pin_layer_shape_list; }
+  std::vector<GuiLayerShape*>& get_pin_layer_shape_list() { return _pin_layer_shape_list; }
+  std::vector<GuiLayerShape*>& get_obs_layer_shape_list() { return _obs_layer_shape_list; }
 
   /// setter
   void add_pin(qreal x_pos, qreal y_pos, qreal width) {
@@ -111,21 +112,34 @@ class GuiSpeedupInstance : public GuiSpeedupItem {
   }
 
   /// only one pin shape item in one layer
-  GuiSpeedupWire* add_pin_shape(QColor color, int32_t z_order) {
-    GuiSpeedupWire* pin_shape_find = findPinShape(z_order);
-    if (pin_shape_find != nullptr) {
-      return pin_shape_find;
+  GuiSpeedupWire* add_shape(QColor color, int32_t z_order, bool b_obs = false) {
+    if (b_obs == false) {
+      GuiSpeedupWire* pin_shape_find = findShape(z_order);
+      if (pin_shape_find != nullptr) {
+        return pin_shape_find;
+      }
+
+      GuiLayerShape* pin_shape = new GuiLayerShape(z_order, color, get_type(), this);
+      _pin_layer_shape_list.emplace_back(pin_shape);
+
+      return pin_shape->get_pin_shape();
+    } else {
+      GuiSpeedupWire* obs_shape_find = findShape(z_order, true);
+      if (obs_shape_find != nullptr) {
+        return obs_shape_find;
+      }
+
+      GuiLayerShape* obs_shape = new GuiLayerShape(z_order, color, get_type(), this);
+      _obs_layer_shape_list.emplace_back(obs_shape);
+
+      return obs_shape->get_pin_shape();
     }
-
-    GuiPinLayerShape* pin_shape = new GuiPinLayerShape(z_order, color, get_type(), this);
-    _pin_layer_shape_list.emplace_back(pin_shape);
-
-    return pin_shape->get_pin_shape();
   }
 
   /// operator
-  GuiSpeedupWire* findPinShape(int32_t z_order) {
-    for (auto pin_shape : _pin_layer_shape_list) {
+  GuiSpeedupWire* findShape(int32_t z_order, bool b_obs = false) {
+    auto& shape_list = b_obs ? _obs_layer_shape_list : _pin_layer_shape_list;
+    for (auto pin_shape : shape_list) {
       if (pin_shape->get_z_order() == z_order) {
         return pin_shape->get_pin_shape();
       }
@@ -134,10 +148,18 @@ class GuiSpeedupInstance : public GuiSpeedupItem {
     return nullptr;
   }
 
-  void addPinShapeToScene(GuiGraphicsScene* scene) {
-    for (auto& pin_shape : _pin_layer_shape_list) {
-      if (pin_shape->get_pin_shape() != nullptr) {
-        scene->addItem(pin_shape->get_pin_shape());
+  void addPinShapeToScene(GuiGraphicsScene* scene, bool b_obs = false) {
+    if (b_obs == false) {
+      for (auto& pin_shape : _pin_layer_shape_list) {
+        if (pin_shape->get_pin_shape() != nullptr) {
+          scene->addItem(pin_shape->get_pin_shape());
+        }
+      }
+    } else {
+      for (auto& obs_shape : _obs_layer_shape_list) {
+        if (obs_shape->get_pin_shape() != nullptr) {
+          scene->addItem(obs_shape->get_pin_shape());
+        }
       }
     }
   }
@@ -154,6 +176,8 @@ class GuiSpeedupInstance : public GuiSpeedupItem {
 
     _pin_layer_shape_list.clear();
 
+    _obs_layer_shape_list.clear();
+
     GuiSpeedupItem::clear();
   }
 
@@ -165,7 +189,8 @@ class GuiSpeedupInstance : public GuiSpeedupItem {
 
  private:
   std::vector<QRectF> _pin_list;
-  std::vector<GuiPinLayerShape*> _pin_layer_shape_list;
+  std::vector<GuiLayerShape*> _pin_layer_shape_list;
+  std::vector<GuiLayerShape*> _obs_layer_shape_list;
   QPen _pen;
   QBrush _brush;
 };

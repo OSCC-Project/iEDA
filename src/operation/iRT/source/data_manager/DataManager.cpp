@@ -16,7 +16,6 @@
 // ***************************************************************************************
 #include "DataManager.hpp"
 
-#include "DRCChecker.hpp"
 #include "RTAPI.hpp"
 #include "RTU.hpp"
 #include "RTUtil.hpp"
@@ -54,6 +53,7 @@ void DataManager::destroyInst()
 void DataManager::input(std::map<std::string, std::any>& config_map, idb::IdbBuilder* idb_builder)
 {
   Monitor monitor;
+  LOG_INST.info(Loc::current(), "Begin inputting...");
 
   wrapConfig(config_map);
   wrapDatabase(idb_builder);
@@ -61,87 +61,337 @@ void DataManager::input(std::map<std::string, std::any>& config_map, idb::IdbBui
   buildDatabase();
   printConfig();
   printDatabase();
+  writePYScript();
 
-  LOG_INST.info(Loc::current(), "The data manager input completed!", monitor.getStatsInfo());
+  LOG_INST.info(Loc::current(), "End input!", monitor.getStatsInfo());
 }
 
 void DataManager::output(idb::IdbBuilder* idb_builder)
 {
   Monitor monitor;
+  LOG_INST.info(Loc::current(), "Begin outputting...");
 
   outputGCellGrid(idb_builder);
   outputNetList(idb_builder);
 
-  LOG_INST.info(Loc::current(), "The data manager output completed!", monitor.getStatsInfo());
+  LOG_INST.info(Loc::current(), "End output!", monitor.getStatsInfo());
 }
 
-void DataManager::save(Stage stage)
+#if 1  // 更新GCellMap
+
+void DataManager::updateFixedRectToGCellMap(ChangeType change_type, irt_int net_idx, EXTLayerRect* ext_layer_rect, bool is_routing)
 {
-  Monitor monitor;
+  GridMap<GCell>& gcell_map = _database.get_gcell_map();
 
-  saveStageResult(stage);
-
-  LOG_INST.info(Loc::current(), "The data manager save completed!", monitor.getStatsInfo());
+  for (irt_int x = ext_layer_rect->get_grid_lb_x(); x <= ext_layer_rect->get_grid_rt_x(); x++) {
+    for (irt_int y = ext_layer_rect->get_grid_lb_y(); y <= ext_layer_rect->get_grid_rt_y(); y++) {
+      auto& net_fixed_rect_map = gcell_map[x][y].get_type_layer_net_fixed_rect_map()[is_routing][ext_layer_rect->get_layer_idx()];
+      if (change_type == ChangeType::kAdd) {
+        net_fixed_rect_map[net_idx].insert(ext_layer_rect);
+      } else {
+        net_fixed_rect_map[net_idx].erase(ext_layer_rect);
+        if (net_fixed_rect_map[net_idx].empty()) {
+          net_fixed_rect_map.erase(net_idx);
+        }
+      }
+    }
+  }
 }
 
-void DataManager::load(Stage stage)
+void DataManager::updateAccessPointToGCellMap(ChangeType change_type, irt_int net_idx, AccessPoint* access_point)
 {
-  Monitor monitor;
+  GridMap<GCell>& gcell_map = _database.get_gcell_map();
 
-  loadStageResult(stage);
-
-  LOG_INST.info(Loc::current(), "The data manager load completed!", monitor.getStatsInfo());
+  auto& net_access_point_map = gcell_map[access_point->get_grid_x()][access_point->get_grid_y()].get_net_access_point_map();
+  if (change_type == ChangeType::kAdd) {
+    net_access_point_map[net_idx].insert(access_point);
+  } else {
+    net_access_point_map[net_idx].erase(access_point);
+    if (net_access_point_map[net_idx].empty()) {
+      net_access_point_map.erase(net_idx);
+    }
+  }
 }
+
+void DataManager::updateNetResultToGCellMap(ChangeType change_type, irt_int net_idx, Segment<LayerCoord>* segment)
+{
+  ScaleAxis& gcell_axis = _database.get_gcell_axis();
+  GridMap<GCell>& gcell_map = _database.get_gcell_map();
+
+  PlanarRect grid_rect = RTUtil::getClosedGCellGridRect(*segment, gcell_axis);
+
+  for (irt_int x = grid_rect.get_lb_x(); x <= grid_rect.get_rt_x(); x++) {
+    for (irt_int y = grid_rect.get_lb_y(); y <= grid_rect.get_rt_y(); y++) {
+      auto& net_result_map = gcell_map[x][y].get_net_result_map();
+      if (change_type == ChangeType::kAdd) {
+        net_result_map[net_idx].insert(segment);
+      } else {
+        net_result_map[net_idx].erase(segment);
+        if (net_result_map[net_idx].empty()) {
+          net_result_map.erase(net_idx);
+        }
+      }
+    }
+  }
+}
+
+void DataManager::updatePatchToGCellMap(ChangeType change_type, irt_int net_idx, EXTLayerRect* ext_layer_rect)
+{
+  GridMap<GCell>& gcell_map = _database.get_gcell_map();
+
+  for (irt_int x = ext_layer_rect->get_grid_lb_x(); x <= ext_layer_rect->get_grid_rt_x(); x++) {
+    for (irt_int y = ext_layer_rect->get_grid_lb_y(); y <= ext_layer_rect->get_grid_rt_y(); y++) {
+      auto& net_patch_map = gcell_map[x][y].get_net_patch_map();
+      if (change_type == ChangeType::kAdd) {
+        net_patch_map[net_idx].insert(ext_layer_rect);
+      } else {
+        net_patch_map[net_idx].erase(ext_layer_rect);
+        if (net_patch_map[net_idx].empty()) {
+          net_patch_map.erase(net_idx);
+        }
+      }
+    }
+  }
+}
+
+void DataManager::updateViolationToGCellMap(ChangeType change_type, Violation* violation)
+{
+  GridMap<GCell>& gcell_map = _database.get_gcell_map();
+
+  PlanarRect& grid_rect = violation->get_violation_shape().get_grid_rect();
+
+  for (irt_int x = grid_rect.get_lb_x(); x <= grid_rect.get_rt_x(); x++) {
+    for (irt_int y = grid_rect.get_lb_y(); y <= grid_rect.get_rt_y(); y++) {
+      GCell& gcell = gcell_map[x][y];
+      if (change_type == ChangeType::kAdd) {
+        gcell.get_violation_set().insert(violation);
+      } else {
+        gcell.get_violation_set().erase(violation);
+      }
+    }
+  }
+}
+
+std::map<bool, std::map<irt_int, std::map<irt_int, std::set<EXTLayerRect*>>>> DataManager::getTypeLayerNetFixedRectMap(
+    EXTPlanarRect& region)
+{
+  GridMap<GCell>& gcell_map = _database.get_gcell_map();
+
+  std::map<bool, std::map<irt_int, std::map<irt_int, std::set<EXTLayerRect*>>>> type_layer_net_fixed_rect_map;
+  for (irt_int x = region.get_grid_lb_x(); x <= region.get_grid_rt_x(); x++) {
+    for (irt_int y = region.get_grid_lb_y(); y <= region.get_grid_rt_y(); y++) {
+      for (auto& [is_routing, layer_net_fixed_rect_map] : gcell_map[x][y].get_type_layer_net_fixed_rect_map()) {
+        for (auto& [layer_idx, net_fixed_rect_map] : layer_net_fixed_rect_map) {
+          for (auto& [net_idx, fixed_rect_set] : net_fixed_rect_map) {
+            type_layer_net_fixed_rect_map[is_routing][layer_idx][net_idx].insert(fixed_rect_set.begin(), fixed_rect_set.end());
+          }
+        }
+      }
+    }
+  }
+  return type_layer_net_fixed_rect_map;
+}
+
+std::map<irt_int, std::set<AccessPoint*>> DataManager::getNetAccessPointMap(EXTPlanarRect& region)
+{
+  GridMap<GCell>& gcell_map = _database.get_gcell_map();
+
+  std::map<irt_int, std::set<AccessPoint*>> net_access_point_map;
+  for (irt_int x = region.get_grid_lb_x(); x <= region.get_grid_rt_x(); x++) {
+    for (irt_int y = region.get_grid_lb_y(); y <= region.get_grid_rt_y(); y++) {
+      for (auto& [net_idx, access_point_set] : gcell_map[x][y].get_net_access_point_map()) {
+        net_access_point_map[net_idx].insert(access_point_set.begin(), access_point_set.end());
+      }
+    }
+  }
+  return net_access_point_map;
+}
+
+std::map<irt_int, std::set<Segment<LayerCoord>*>> DataManager::getNetResultMap(EXTPlanarRect& region)
+{
+  GridMap<GCell>& gcell_map = _database.get_gcell_map();
+
+  std::map<irt_int, std::set<Segment<LayerCoord>*>> net_result_map;
+  for (irt_int x = region.get_grid_lb_x(); x <= region.get_grid_rt_x(); x++) {
+    for (irt_int y = region.get_grid_lb_y(); y <= region.get_grid_rt_y(); y++) {
+      for (auto& [net_idx, result_set] : gcell_map[x][y].get_net_result_map()) {
+        net_result_map[net_idx].insert(result_set.begin(), result_set.end());
+      }
+    }
+  }
+  return net_result_map;
+}
+
+std::map<irt_int, std::set<EXTLayerRect*>> DataManager::getNetPatchMap(EXTPlanarRect& region)
+{
+  GridMap<GCell>& gcell_map = _database.get_gcell_map();
+
+  std::map<irt_int, std::set<EXTLayerRect*>> net_patch_map;
+  for (irt_int x = region.get_grid_lb_x(); x <= region.get_grid_rt_x(); x++) {
+    for (irt_int y = region.get_grid_lb_y(); y <= region.get_grid_rt_y(); y++) {
+      for (auto& [net_idx, patch_set] : gcell_map[x][y].get_net_patch_map()) {
+        net_patch_map[net_idx].insert(patch_set.begin(), patch_set.end());
+      }
+    }
+  }
+  return net_patch_map;
+}
+
+std::set<Violation*> DataManager::getViolationSet(EXTPlanarRect& region)
+{
+  GridMap<GCell>& gcell_map = _database.get_gcell_map();
+
+  std::set<Violation*> violation_set;
+  for (irt_int x = region.get_grid_lb_x(); x <= region.get_grid_rt_x(); x++) {
+    for (irt_int y = region.get_grid_lb_y(); y <= region.get_grid_rt_y(); y++) {
+      violation_set.insert(gcell_map[x][y].get_violation_set().begin(), gcell_map[x][y].get_violation_set().end());
+    }
+  }
+  return violation_set;
+}
+
+#endif
+
+#if 1  // 获得NetShapeList
+
+std::vector<NetShape> DataManager::getNetShapeList(irt_int net_idx, std::vector<Segment<LayerCoord>>& segment_list)
+{
+  std::vector<NetShape> drc_shape_list;
+  for (Segment<LayerCoord>& segment : segment_list) {
+    for (NetShape& drc_shape : getNetShapeList(net_idx, segment)) {
+      drc_shape_list.push_back(drc_shape);
+    }
+  }
+  return drc_shape_list;
+}
+
+std::vector<NetShape> DataManager::getNetShapeList(irt_int net_idx, Segment<LayerCoord>& segment)
+{
+  std::vector<NetShape> drc_shape_list;
+  for (NetShape& drc_shape : getNetShapeList(net_idx, segment.get_first(), segment.get_second())) {
+    drc_shape_list.push_back(drc_shape);
+  }
+  return drc_shape_list;
+}
+
+std::vector<NetShape> DataManager::getNetShapeList(irt_int net_idx, MTree<LayerCoord>& coord_tree)
+{
+  std::vector<NetShape> drc_shape_list;
+  for (Segment<TNode<LayerCoord>*>& coord_segment : RTUtil::getSegListByTree(coord_tree)) {
+    for (NetShape& drc_shape : getNetShapeList(net_idx, coord_segment.get_first()->value(), coord_segment.get_second()->value())) {
+      drc_shape_list.push_back(drc_shape);
+    }
+  }
+  return drc_shape_list;
+}
+
+std::vector<NetShape> DataManager::getNetShapeList(irt_int net_idx, LayerCoord& first_coord, LayerCoord& second_coord)
+{
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+  std::vector<std::vector<ViaMaster>>& layer_via_master_list = DM_INST.getDatabase().get_layer_via_master_list();
+
+  std::vector<NetShape> drc_shape_list;
+  irt_int first_layer_idx = first_coord.get_layer_idx();
+  irt_int second_layer_idx = second_coord.get_layer_idx();
+  if (first_layer_idx != second_layer_idx) {
+    RTUtil::swapByASC(first_layer_idx, second_layer_idx);
+    for (irt_int layer_idx = first_layer_idx; layer_idx < second_layer_idx; layer_idx++) {
+      ViaMaster& via_master = layer_via_master_list[layer_idx].front();
+
+      LayerRect& above_enclosure = via_master.get_above_enclosure();
+      LayerRect offset_above_enclosure(RTUtil::getOffsetRect(above_enclosure, first_coord), above_enclosure.get_layer_idx());
+      drc_shape_list.emplace_back(net_idx, offset_above_enclosure, true);
+
+      LayerRect& below_enclosure = via_master.get_below_enclosure();
+      LayerRect offset_below_enclosure(RTUtil::getOffsetRect(below_enclosure, first_coord), below_enclosure.get_layer_idx());
+      drc_shape_list.emplace_back(net_idx, offset_below_enclosure, true);
+
+      for (PlanarRect& cut_shape : via_master.get_cut_shape_list()) {
+        LayerRect offset_cut_shape(RTUtil::getOffsetRect(cut_shape, first_coord), via_master.get_cut_layer_idx());
+        drc_shape_list.emplace_back(net_idx, offset_cut_shape, false);
+      }
+    }
+  } else {
+    irt_int half_width = routing_layer_list[first_layer_idx].get_min_width() / 2;
+    LayerRect wire_rect(RTUtil::getEnlargedRect(first_coord, second_coord, half_width), first_layer_idx);
+    drc_shape_list.emplace_back(net_idx, wire_rect, true);
+  }
+  return drc_shape_list;
+}
+
+#endif
+
+#if 1  // 获得IdbSegment
+
+idb::IdbLayerShape* DataManager::getIDBLayerShapeByFixedRect(EXTLayerRect* fixed_rect, bool is_routing)
+{
+  std::vector<RoutingLayer>& routing_layer_list = _database.get_routing_layer_list();
+  std::vector<CutLayer>& cut_layer_list = _database.get_cut_layer_list();
+  idb::IdbLayers* idb_layer_list = _helper.get_idb_builder()->get_def_service()->get_layout()->get_layers();
+
+  std::string layer_name;
+  if (is_routing) {
+    layer_name = routing_layer_list[fixed_rect->get_layer_idx()].get_layer_name();
+  } else {
+    layer_name = cut_layer_list[fixed_rect->get_layer_idx()].get_layer_name();
+  }
+  idb::IdbLayer* idb_layer = idb_layer_list->find_layer(layer_name);
+  if (idb_layer == nullptr) {
+    LOG_INST.error(Loc::current(), "Can not find idb layer ", layer_name);
+  }
+  PlanarRect& real_rect = fixed_rect->get_real_rect();
+
+  idb::IdbLayerShape* idb_shape = new idb::IdbLayerShape();
+  idb_shape->set_type_rect();
+  idb_shape->add_rect(real_rect.get_lb_x(), real_rect.get_lb_y(), real_rect.get_rt_x(), real_rect.get_rt_y());
+  idb_shape->set_layer(idb_layer);
+  return idb_shape;
+}
+
+idb::IdbRegularWireSegment* DataManager::getIDBSegmentByNetResult(irt_int net_idx, Segment<LayerCoord>& segment)
+{
+  if (segment.get_first().get_layer_idx() == segment.get_second().get_layer_idx()) {
+    return getIDBWire(net_idx, segment);
+  } else {
+    return getIDBVia(net_idx, segment);
+  }
+}
+
+idb::IdbRegularWireSegment* DataManager::getIDBSegmentByNetPatch(irt_int net_idx, EXTLayerRect& ext_layer_rect)
+{
+  std::vector<RoutingLayer>& routing_layer_list = _database.get_routing_layer_list();
+  idb::IdbLayers* idb_layer_list = _helper.get_idb_builder()->get_def_service()->get_layout()->get_layers();
+
+  std::string layer_name = routing_layer_list[ext_layer_rect.get_layer_idx()].get_layer_name();
+  idb::IdbLayer* idb_layer = idb_layer_list->find_layer(layer_name);
+  if (idb_layer == nullptr) {
+    LOG_INST.error(Loc::current(), "Can not find idb layer ", layer_name);
+  }
+  PlanarRect& real_rect = ext_layer_rect.get_real_rect();
+
+  idb::IdbRegularWireSegment* idb_segment = new idb::IdbRegularWireSegment();
+  idb_segment->set_layer(idb_layer);
+  idb_segment->set_is_rect(true);
+  idb_segment->add_point(real_rect.get_lb_x(), real_rect.get_lb_y());
+  idb_segment->set_delta_rect(0, 0, real_rect.get_rt_x() - real_rect.get_lb_x(), real_rect.get_rt_y() - real_rect.get_lb_y());
+  return idb_segment;
+}
+
+#endif
 
 // private
 
 DataManager* DataManager::_dm_instance = nullptr;
 
-#if 1  // wrap
+#if 1  // input
 
 void DataManager::wrapConfig(std::map<std::string, std::any>& config_map)
 {
   /////////////////////////////////////////////
   _config.temp_directory_path = RTUtil::getConfigValue<std::string>(config_map, "-temp_directory_path", "./rt_temp_directory");
-  _config.log_level = RTUtil::getConfigValue<irt_int>(config_map, "-log_level", 0);
   _config.thread_number = RTUtil::getConfigValue<irt_int>(config_map, "-thread_number", 8);
   _config.bottom_routing_layer = RTUtil::getConfigValue<std::string>(config_map, "-bottom_routing_layer", "");
   _config.top_routing_layer = RTUtil::getConfigValue<std::string>(config_map, "-top_routing_layer", "");
-  _config.gcell_pitch_size = RTUtil::getConfigValue<irt_int>(config_map, "-gcell_pitch_size", 15);
-  _config.enable_output_gds_files = RTUtil::getConfigValue<irt_int>(config_map, "-enable_output_gds_files", 0);
-  _config.supply_utilization_rate = RTUtil::getConfigValue<double>(config_map, "-supply_utilization_rate", 1);
-  _config.pa_max_iter_num = RTUtil::getConfigValue<irt_int>(config_map, "-pa_max_iter_num", 1);
-  _config.ra_initial_penalty = RTUtil::getConfigValue<double>(config_map, "-ra_initial_penalty", 100);
-  _config.ra_penalty_drop_rate = RTUtil::getConfigValue<double>(config_map, "-ra_penalty_drop_rate", 0.8);
-  _config.ra_outer_max_iter_num = RTUtil::getConfigValue<irt_int>(config_map, "-ra_outer_max_iter_num", 10);
-  _config.ra_inner_max_iter_num = RTUtil::getConfigValue<irt_int>(config_map, "-ra_inner_max_iter_num", 10);
-  _config.gr_prefer_wire_unit = RTUtil::getConfigValue<double>(config_map, "-gr_prefer_wire_unit", 1);
-  _config.gr_via_unit = RTUtil::getConfigValue<double>(config_map, "-gr_via_unit", 1);
-  _config.gr_corner_unit = RTUtil::getConfigValue<double>(config_map, "-gr_corner_unit", 1);
-  _config.gr_history_cost_unit = RTUtil::getConfigValue<double>(config_map, "-gr_history_cost_unit", 20);
-  _config.gr_max_iter_num = RTUtil::getConfigValue<irt_int>(config_map, "-gr_max_iter_num", 5);
-  _config.ta_prefer_wire_unit = RTUtil::getConfigValue<double>(config_map, "-ta_prefer_wire_unit", 1);
-  _config.ta_nonprefer_wire_unit = RTUtil::getConfigValue<double>(config_map, "-ta_nonprefer_wire_unit", 2);
-  _config.ta_corner_unit = RTUtil::getConfigValue<double>(config_map, "-ta_corner_unit", 1);
-  _config.ta_pin_distance_unit = RTUtil::getConfigValue<double>(config_map, "-ta_pin_distance_unit", 1);
-  _config.ta_group_distance_unit = RTUtil::getConfigValue<double>(config_map, "-ta_group_distance_unit", 0.5);
-  _config.ta_blockage_unit = RTUtil::getConfigValue<double>(config_map, "-ta_blockage_unit", 2048);
-  _config.ta_net_shape_unit = RTUtil::getConfigValue<double>(config_map, "-ta_net_shape_unit", 128);
-  _config.ta_reserved_via_unit = RTUtil::getConfigValue<double>(config_map, "-ta_reserved_via_unit", 32);
-  _config.ta_history_cost_unit = RTUtil::getConfigValue<double>(config_map, "-ta_history_cost_unit", 4);
-  _config.ta_model_max_iter_num = RTUtil::getConfigValue<irt_int>(config_map, "-ta_model_max_iter_num", 1);
-  _config.ta_panel_max_iter_num = RTUtil::getConfigValue<irt_int>(config_map, "-ta_panel_max_iter_num", 5);
-  _config.dr_prefer_wire_unit = RTUtil::getConfigValue<double>(config_map, "-dr_prefer_wire_unit", 1);
-  _config.dr_nonprefer_wire_unit = RTUtil::getConfigValue<double>(config_map, "-dr_nonprefer_wire_unit", 2);
-  _config.dr_via_unit = RTUtil::getConfigValue<double>(config_map, "-dr_via_unit", 1);
-  _config.dr_corner_unit = RTUtil::getConfigValue<double>(config_map, "-dr_corner_unit", 1);
-  _config.dr_blockage_unit = RTUtil::getConfigValue<double>(config_map, "-dr_blockage_unit", 2048);
-  _config.dr_net_shape_unit = RTUtil::getConfigValue<double>(config_map, "-dr_net_shape_unit", 128);
-  _config.dr_reserved_via_unit = RTUtil::getConfigValue<double>(config_map, "-dr_reserved_via_unit", 32);
-  _config.dr_history_cost_unit = RTUtil::getConfigValue<double>(config_map, "-dr_history_cost_unit", 4);
-  _config.dr_model_max_iter_num = RTUtil::getConfigValue<irt_int>(config_map, "-dr_model_max_iter_num", 1);
-  _config.dr_box_max_iter_num = RTUtil::getConfigValue<irt_int>(config_map, "-dr_box_max_iter_num", 5);
-  _config.vr_max_iter_num = RTUtil::getConfigValue<irt_int>(config_map, "-vr_max_iter_num", 1);
   /////////////////////////////////////////////
 }
 
@@ -149,6 +399,7 @@ void DataManager::wrapDatabase(idb::IdbBuilder* idb_builder)
 {
   wrapMicronDBU(idb_builder);
   wrapDie(idb_builder);
+  wrapRow(idb_builder);
   wrapLayerList(idb_builder);
   wrapLayerViaMasterList(idb_builder);
   wrapBlockageList(idb_builder);
@@ -168,6 +419,20 @@ void DataManager::wrapDie(idb::IdbBuilder* idb_builder)
   EXTPlanarRect& die_box = _database.get_die();
   die_box.set_real_lb(die->get_llx(), die->get_lly());
   die_box.set_real_rt(die->get_urx(), die->get_ury());
+}
+
+void DataManager::wrapRow(idb::IdbBuilder* idb_builder)
+{
+  irt_int start_x = INT_MAX;
+  irt_int start_y = INT_MAX;
+  for (idb::IdbRow* idb_row : idb_builder->get_def_service()->get_layout()->get_rows()->get_row_list()) {
+    start_x = std::min(start_x, idb_row->get_original_coordinate()->get_x());
+    start_y = std::min(start_y, idb_row->get_original_coordinate()->get_y());
+  }
+  Row& row = _database.get_row();
+  row.set_start_x(start_x);
+  row.set_start_y(start_y);
+  row.set_height(idb_builder->get_def_service()->get_layout()->get_rows()->get_row_height());
 }
 
 void DataManager::wrapLayerList(idb::IdbBuilder* idb_builder)
@@ -195,6 +460,7 @@ void DataManager::wrapLayerList(idb::IdbBuilder* idb_builder)
       cut_layer.set_layer_idx(idb_cut_layer->get_id());
       cut_layer.set_layer_order(idb_cut_layer->get_order());
       cut_layer.set_layer_name(idb_cut_layer->get_name());
+      cut_layer.set_spacing(0);
       cut_layer_list.push_back(std::move(cut_layer));
     }
   }
@@ -308,7 +574,7 @@ void DataManager::wrapArtificialBlockage(idb::IdbBuilder* idb_builder)
   // Artificial
   idb::IdbBlockageList* idb_blockage_list = idb_builder->get_def_service()->get_design()->get_blockage_list();
   if (!idb_blockage_list->get_blockage_list().empty()) {
-    LOG_INST.warning(Loc::current(), "The artificial blockage will be ignored!");
+    LOG_INST.warn(Loc::current(), "The artificial blockage will be ignored!");
   }
 }
 
@@ -406,12 +672,8 @@ void DataManager::wrapNetList(idb::IdbBuilder* idb_builder)
   std::vector<idb::IdbNet*> idb_net_list = idb_builder->get_def_service()->get_design()->get_net_list()->get_net_list();
 
   // bound setting
-  size_t lower_bound_value = 0;
-  // size_t upper_bound_value = 500;
-  size_t upper_bound_value = idb_net_list.size();
-  size_t number = 0;
   for (idb::IdbNet* idb_net : idb_net_list) {
-    if (lower_bound_value <= number && number <= upper_bound_value && !checkSkipping(idb_net)) {
+    if (!checkSkipping(idb_net)) {
       Net net;
       net.set_net_name(idb_net->get_net_name());
       net.set_connect_type(getRTConnectTypeByDB(idb_net->get_connect_type()));
@@ -419,7 +681,6 @@ void DataManager::wrapNetList(idb::IdbBuilder* idb_builder)
       processEmptyShapePin(net);
       wrapDrivingPin(net, idb_net);
       net_list.push_back(std::move(net));
-      number++;
     }
   }
 }
@@ -427,17 +688,15 @@ void DataManager::wrapNetList(idb::IdbBuilder* idb_builder)
 bool DataManager::checkSkipping(idb::IdbNet* idb_net)
 {
   std::string net_name = idb_net->get_net_name();
-
   // check pin number
   size_t pin_num = idb_net->get_instance_pin_list()->get_pin_num();
   if (pin_num <= 1) {
     LOG_INST.info(Loc::current(), "The net '", net_name, "' has ", pin_num, " pin! skipping...");
     return true;
   } else if (pin_num >= 500) {
-    LOG_INST.warning(Loc::current(), "The ultra large net: ", net_name, " has ", pin_num, " pins!");
+    LOG_INST.warn(Loc::current(), "The ultra large net: ", net_name, " has ", pin_num, " pins!");
     sleep(2);
   }
-
   // check the connection form io_cell PAD to io_pin
   bool has_io_pin = false;
   if (idb_net->has_io_pins()) {
@@ -454,15 +713,10 @@ bool DataManager::checkSkipping(idb::IdbNet* idb_net)
     LOG_INST.info(Loc::current(), "The net '", net_name, "' connects PAD and io_pin! skipping...");
     return true;
   }
-
   // check connect_type
-  if (idb_net->get_connect_type() == idb::IdbConnectType::kNone) {
+  if (idb_net->get_connect_type() != idb::IdbConnectType::kClock && idb_net->get_connect_type() != idb::IdbConnectType::kSignal) {
     idb_net->set_connect_type(idb::IdbConnectType::kSignal);
   }
-  if (idb_net->get_connect_type() == idb::IdbConnectType::kNone) {
-    LOG_INST.warning(Loc::current(), "The connect type of net '", net_name, "' is none!");
-  }
-
   return false;
 }
 
@@ -519,6 +773,7 @@ void DataManager::processEmptyShapePin(Net& net)
   for (size_t i = 0; i < pin_list.size(); i++) {
     Pin& pin = pin_list[i];
     if (pin.get_routing_shape_list().empty()) {
+      LOG_INST.warn(Loc::current(), "The pin '", pin.get_pin_name(), "' routing_shape_list is empty!");
       empty_pin_idx_list.push_back(i);
     }
   }
@@ -545,35 +800,40 @@ void DataManager::wrapDrivingPin(Net& net, idb::IdbNet* idb_net)
 {
   idb::IdbPin* idb_driving_pin = idb_net->get_driving_pin();
   if (idb_driving_pin == nullptr) {
-    LOG_INST.warning(Loc::current(), "The net '", net.get_net_name(), "' without driving pin!");
+    LOG_INST.warn(Loc::current(), "The net '", net.get_net_name(), "' driver not found, using the first pin as the driver!");
     idb_driving_pin = idb_net->get_instance_pin_list()->get_pin_list().front();
   }
   std::string driving_pin_name = idb_driving_pin->get_pin_name();
   if (!idb_driving_pin->is_io_pin()) {
     driving_pin_name = RTUtil::getString(idb_driving_pin->get_instance()->get_name(), ":", driving_pin_name);
   }
-  net.get_driving_pin().set_pin_name(driving_pin_name);
+  for (Pin& pin : net.get_pin_list()) {
+    if (pin.get_pin_name() == driving_pin_name) {
+      pin.set_is_driving(true);
+    }
+  }
 }
 
 void DataManager::updateHelper(idb::IdbBuilder* idb_builder)
 {
+  _helper.set_idb_builder(idb_builder);
   _helper.set_design_name(idb_builder->get_def_service()->get_design()->get_design_name());
   _helper.set_lef_file_path_list(idb_builder->get_lef_service()->get_lef_files());
   _helper.set_def_file_path(idb_builder->get_def_service()->get_def_file());
 
-  std::map<irt_int, irt_int>& routing_layer_idx_db_to_rt_map = _helper.get_routing_layer_idx_db_to_rt_map();
-  std::map<irt_int, irt_int>& cut_layer_idx_db_to_rt_map = _helper.get_cut_layer_idx_db_to_rt_map();
+  std::map<irt_int, irt_int>& routing_idb_layer_id_to_idx_map = _helper.get_routing_idb_layer_id_to_idx_map();
+  std::map<irt_int, irt_int>& cut_idb_layer_id_to_idx_map = _helper.get_cut_idb_layer_id_to_idx_map();
   std::map<std::string, irt_int>& routing_layer_name_to_idx_map = _helper.get_routing_layer_name_to_idx_map();
   std::map<std::string, irt_int>& cut_layer_name_to_idx_map = _helper.get_cut_layer_name_to_idx_map();
 
   std::vector<RoutingLayer>& routing_layer_list = _database.get_routing_layer_list();
   for (size_t i = 0; i < routing_layer_list.size(); i++) {
-    routing_layer_idx_db_to_rt_map[routing_layer_list[i].get_layer_idx()] = static_cast<irt_int>(i);
+    routing_idb_layer_id_to_idx_map[routing_layer_list[i].get_layer_idx()] = static_cast<irt_int>(i);
     routing_layer_name_to_idx_map[routing_layer_list[i].get_layer_name()] = static_cast<irt_int>(i);
   }
   std::vector<CutLayer>& cut_layer_list = _database.get_cut_layer_list();
   for (size_t i = 0; i < cut_layer_list.size(); i++) {
-    cut_layer_idx_db_to_rt_map[cut_layer_list[i].get_layer_idx()] = static_cast<irt_int>(i);
+    cut_idb_layer_id_to_idx_map[cut_layer_list[i].get_layer_idx()] = static_cast<irt_int>(i);
     cut_layer_name_to_idx_map[cut_layer_list[i].get_layer_name()] = static_cast<irt_int>(i);
   }
 }
@@ -624,10 +884,6 @@ ConnectType DataManager::getRTConnectTypeByDB(idb::IdbConnectType idb_connect_ty
   return connect_type;
 }
 
-#endif
-
-#if 1  // build
-
 void DataManager::buildConfig()
 {
   /////////////////////////////////////////////
@@ -646,46 +902,34 @@ void DataManager::buildConfig()
   if (_config.bottom_routing_layer_idx >= _config.top_routing_layer_idx) {
     LOG_INST.error(Loc::current(), "The routing layer should be at least two layers!");
   }
-  // **********    DataManager    ********** //
-  _config.dm_temp_directory_path = _config.temp_directory_path + "data_manager/";
-  // **********  DetailedRouter   ********** //
-  _config.dr_temp_directory_path = _config.temp_directory_path + "detailed_router/";
-  // **********    GDSPlotter     ********** //
-  _config.gp_temp_directory_path = _config.temp_directory_path + "gds_plotter/";
-  // **********   GlobalRouter    ********** //
-  _config.gr_temp_directory_path = _config.temp_directory_path + "global_router/";
   // **********   PinAccessor     ********** //
   _config.pa_temp_directory_path = _config.temp_directory_path + "pin_accessor/";
-  // ********   ResourceAllocator   ******** //
-  _config.ra_temp_directory_path = _config.temp_directory_path + "resource_allocator/";
+  // ********     SupplyAnalyzer    ******** //
+  _config.sa_temp_directory_path = _config.temp_directory_path + "supply_analyzer/";
+  // **********   InitialRouter    ********** //
+  _config.ir_temp_directory_path = _config.temp_directory_path + "initial_router/";
+  // **********   GlobalRouter    ********** //
+  _config.gr_temp_directory_path = _config.temp_directory_path + "global_router/";
   // **********   TrackAssigner   ********** //
   _config.ta_temp_directory_path = _config.temp_directory_path + "track_assigner/";
-  // **********  UniversalRouter  ********** //
-  _config.ur_temp_directory_path = _config.temp_directory_path + "universal_router/";
-  // ********** ViolationRepairer ********** //
-  _config.vr_temp_directory_path = _config.temp_directory_path + "violation_repairer/";
+  // **********  DetailedRouter   ********** //
+  _config.dr_temp_directory_path = _config.temp_directory_path + "detailed_router/";
   /////////////////////////////////////////////
   // **********        RT         ********** //
   RTUtil::createDir(_config.temp_directory_path);
   RTUtil::createDirByFile(_config.log_file_path);
-  // **********    DataManager    ********** //
-  RTUtil::createDir(_config.dm_temp_directory_path);
-  // **********  DetailedRouter   ********** //
-  RTUtil::createDir(_config.dr_temp_directory_path);
-  // **********    GDSPlotter     ********** //
-  RTUtil::createDir(_config.gp_temp_directory_path);
-  // **********   GlobalRouter    ********** //
-  RTUtil::createDir(_config.gr_temp_directory_path);
   // **********   PinAccessor     ********** //
   RTUtil::createDir(_config.pa_temp_directory_path);
-  // **********   ResourceAllocator     ********** //
-  RTUtil::createDir(_config.ra_temp_directory_path);
+  // **********   SupplyAnalyzer     ********** //
+  RTUtil::createDir(_config.sa_temp_directory_path);
+  // **********   InitialRouter    ********** //
+  RTUtil::createDir(_config.ir_temp_directory_path);
+  // **********   GlobalRouter    ********** //
+  RTUtil::createDir(_config.gr_temp_directory_path);
   // **********   TrackAssigner   ********** //
   RTUtil::createDir(_config.ta_temp_directory_path);
-  // **********  UniversalRouter  ********** //
-  RTUtil::createDir(_config.ur_temp_directory_path);
-  // ********** ViolationRepairer ********** //
-  RTUtil::createDir(_config.vr_temp_directory_path);
+  // **********  DetailedRouter   ********** //
+  RTUtil::createDir(_config.dr_temp_directory_path);
   /////////////////////////////////////////////
 }
 
@@ -697,7 +941,7 @@ void DataManager::buildDatabase()
   buildLayerViaMasterList();
   buildBlockageList();
   buildNetList();
-  cutBlockageList();
+  buildGCellMap();
   updateHelper();
 }
 
@@ -711,17 +955,14 @@ void DataManager::makeGCellAxis()
 {
   ScaleAxis& gcell_axis = _database.get_gcell_axis();
 
-  irt_int proposed_interval = getProposedInterval();
-  std::vector<irt_int> x_gcell_scale_list = makeGCellScaleList(Direction::kVertical, proposed_interval);
-  gcell_axis.set_x_grid_list(makeGCellGridList(x_gcell_scale_list));
-  std::vector<irt_int> y_gcell_scale_list = makeGCellScaleList(Direction::kHorizontal, proposed_interval);
-  gcell_axis.set_y_grid_list(makeGCellGridList(y_gcell_scale_list));
+  irt_int recommended_pitch = getRecommendedPitch();
+  gcell_axis.set_x_grid_list(makeGCellGridList(Direction::kVertical, recommended_pitch));
+  gcell_axis.set_y_grid_list(makeGCellGridList(Direction::kHorizontal, recommended_pitch));
 }
 
-irt_int DataManager::getProposedInterval()
+irt_int DataManager::getRecommendedPitch()
 {
   std::vector<RoutingLayer>& routing_layer_list = _database.get_routing_layer_list();
-  irt_int gcell_pitch_size = _config.gcell_pitch_size;
 
   std::map<irt_int, irt_int> pitch_count_map;
   for (RoutingLayer& routing_layer : routing_layer_list) {
@@ -729,81 +970,59 @@ irt_int DataManager::getProposedInterval()
       pitch_count_map[track_grid.get_step_length()]++;
     }
   }
-  irt_int ref_pitch = -1;
+  irt_int recommended_pitch = -1;
   irt_int max_count = INT32_MIN;
   for (auto [pitch, count] : pitch_count_map) {
     if (count > max_count) {
       max_count = count;
-      ref_pitch = pitch;
+      recommended_pitch = pitch;
     }
   }
-  if (ref_pitch == -1) {
-    LOG_INST.error(Loc::current(), "The ref_pitch is -1!");
+  if (max_count == 1) {
+    irt_int min_pitch = INT_MAX;
+    for (auto [pitch, count] : pitch_count_map) {
+      min_pitch = std::min(min_pitch, pitch);
+    }
+    recommended_pitch = min_pitch;
   }
-  return (gcell_pitch_size * ref_pitch);
+  if (recommended_pitch == -1) {
+    LOG_INST.error(Loc::current(), "The recommended_pitch is -1!");
+  }
+  return recommended_pitch;
 }
 
-std::vector<irt_int> DataManager::makeGCellScaleList(Direction direction, irt_int proposed_gcell_interval)
+std::vector<ScaleGrid> DataManager::makeGCellGridList(Direction direction, irt_int recommended_pitch)
 {
   Die& die = _database.get_die();
-  std::vector<RoutingLayer>& routing_layer_list = _database.get_routing_layer_list();
-  irt_int bottom_routing_layer_idx = _config.bottom_routing_layer_idx;
-  irt_int top_routing_layer_idx = _config.top_routing_layer_idx;
+  Row& row = _database.get_row();
 
-  irt_int start_gcell_scale = (direction == Direction::kVertical ? die.get_real_lb_x() : die.get_real_lb_y());
-  irt_int end_gcell_scale = (direction == Direction::kVertical ? die.get_real_rt_x() : die.get_real_rt_y());
+  irt_int die_start_scale = (direction == Direction::kVertical ? die.get_real_lb_x() : die.get_real_lb_y());
+  irt_int die_end_scale = (direction == Direction::kVertical ? die.get_real_rt_x() : die.get_real_rt_y());
+  irt_int row_mid_scale = (direction == Direction::kVertical ? row.get_start_x() : row.get_start_y());
+  // 为了防止与track重合，减去一个recommended_pitch的一半
+  row_mid_scale -= (recommended_pitch / 2);
+  irt_int step_length = row.get_height();
 
-  std::set<irt_int> base_layer_idx_set;
-  std::map<irt_int, std::set<irt_int>> scale_layer_map;
-  for (RoutingLayer& routing_layer : routing_layer_list) {
-    if (routing_layer.get_layer_idx() < bottom_routing_layer_idx || top_routing_layer_idx < routing_layer.get_layer_idx()) {
-      continue;
-    }
-    base_layer_idx_set.insert(routing_layer.get_layer_idx());
+  std::vector<irt_int> gcell_scale_list;
+  gcell_scale_list.push_back(die_start_scale);
+  for (irt_int gcell_scale = row_mid_scale; gcell_scale >= die_start_scale; gcell_scale -= step_length) {
+    gcell_scale_list.push_back(gcell_scale);
+  }
+  for (irt_int gcell_scale = row_mid_scale; gcell_scale <= die_end_scale; gcell_scale += step_length) {
+    gcell_scale_list.push_back(gcell_scale);
+  }
+  gcell_scale_list.push_back(die_end_scale);
 
-    std::vector<ScaleGrid> track_grid_list;
-    if (direction == Direction::kVertical) {
-      track_grid_list = routing_layer.getXTrackGridList();
-    } else {
-      track_grid_list = routing_layer.getYTrackGridList();
-    }
-    for (ScaleGrid& track_grid : track_grid_list) {
-      irt_int track_scale = track_grid.get_start_line();
-      irt_int step_num = track_grid.get_step_num();
-      while (step_num--) {
-        if (track_scale > end_gcell_scale) {
-          break;
-        }
-        scale_layer_map[track_scale].insert(routing_layer.get_layer_idx());
-        track_scale += track_grid.get_step_length();
-      }
+  std::sort(gcell_scale_list.begin(), gcell_scale_list.end());
+  // 删除小于step_length的
+  for (irt_int i = 2; i < static_cast<irt_int>(gcell_scale_list.size()); i++) {
+    if (std::abs(gcell_scale_list[i - 2] - gcell_scale_list[i - 1]) < step_length
+        || std::abs(gcell_scale_list[i - 1] - gcell_scale_list[i]) < step_length) {
+      gcell_scale_list[i - 1] = gcell_scale_list[i - 2];
     }
   }
-  std::vector<irt_int> gcell_scale_list = {start_gcell_scale};
-  std::set<irt_int> curr_layer_idx_set;
-  auto iter = scale_layer_map.begin();
-  while (true) {
-    irt_int track_scale = iter->first;
-    curr_layer_idx_set.insert(iter->second.begin(), iter->second.end());
-    iter++;
-    if (iter == scale_layer_map.end()) {
-      if (base_layer_idx_set != curr_layer_idx_set) {
-        gcell_scale_list.pop_back();
-      }
-      gcell_scale_list.push_back(end_gcell_scale);
-      break;
-    }
-    if (track_scale - gcell_scale_list.back() < proposed_gcell_interval) {
-      continue;
-    }
-    if (base_layer_idx_set != curr_layer_idx_set) {
-      // 若没有包含全层track就继续
-      continue;
-    }
-    curr_layer_idx_set.clear();
-    gcell_scale_list.push_back((track_scale + iter->first) / 2);
-  }
-  return gcell_scale_list;
+  gcell_scale_list.erase(std::unique(gcell_scale_list.begin(), gcell_scale_list.end()), gcell_scale_list.end());
+  return makeGCellGridList(gcell_scale_list);
 }
 
 std::vector<ScaleGrid> DataManager::makeGCellGridList(std::vector<irt_int>& gcell_scale_list)
@@ -884,7 +1103,7 @@ void DataManager::makeDie()
 {
   Die& die = _database.get_die();
   ScaleAxis& gcell_axis = _database.get_gcell_axis();
-  die.set_grid_rect(RTUtil::getOpenGridRect(die.get_real_rect(), gcell_axis));
+  die.set_grid_rect(RTUtil::getOpenGCellGridRect(die.get_real_rect(), gcell_axis));
 }
 
 void DataManager::checkDie()
@@ -911,10 +1130,10 @@ void DataManager::buildLayerList()
 void DataManager::transLayerList()
 {
   for (RoutingLayer& routing_layer : _database.get_routing_layer_list()) {
-    routing_layer.set_layer_idx(_helper.wrapIDBRoutingLayerIdxToRT(routing_layer.get_layer_idx()));
+    routing_layer.set_layer_idx(_helper.getRoutingLayerIdxByIDBLayerId(routing_layer.get_layer_idx()));
   }
   for (CutLayer& cut_layer_list : _database.get_cut_layer_list()) {
-    cut_layer_list.set_layer_idx(_helper.wrapIDBCutLayerIdxToRT(cut_layer_list.get_layer_idx()));
+    cut_layer_list.set_layer_idx(_helper.getCutLayerIdxByIDBLayerId(cut_layer_list.get_layer_idx()));
   }
 }
 
@@ -1000,12 +1219,12 @@ void DataManager::transLayerViaMasterList()
     for (ViaMaster& via_master : via_master_list) {
       // above
       LayerRect& above_enclosure = via_master.get_above_enclosure();
-      above_enclosure.set_layer_idx(_helper.wrapIDBRoutingLayerIdxToRT(above_enclosure.get_layer_idx()));
+      above_enclosure.set_layer_idx(_helper.getRoutingLayerIdxByIDBLayerId(above_enclosure.get_layer_idx()));
       // below
       LayerRect& below_enclosure = via_master.get_below_enclosure();
-      below_enclosure.set_layer_idx(_helper.wrapIDBRoutingLayerIdxToRT(below_enclosure.get_layer_idx()));
+      below_enclosure.set_layer_idx(_helper.getRoutingLayerIdxByIDBLayerId(below_enclosure.get_layer_idx()));
       // cut
-      via_master.set_cut_layer_idx(_helper.wrapIDBCutLayerIdxToRT(via_master.get_cut_layer_idx()));
+      via_master.set_cut_layer_idx(_helper.getCutLayerIdxByIDBLayerId(via_master.get_cut_layer_idx()));
     }
   }
 }
@@ -1187,10 +1406,10 @@ void DataManager::transBlockageList()
   std::vector<Blockage>& cut_blockage_list = _database.get_cut_blockage_list();
 
   for (Blockage& blockage : routing_blockage_list) {
-    blockage.set_layer_idx(_helper.wrapIDBRoutingLayerIdxToRT(blockage.get_layer_idx()));
+    blockage.set_layer_idx(_helper.getRoutingLayerIdxByIDBLayerId(blockage.get_layer_idx()));
   }
   for (Blockage& blockage : cut_blockage_list) {
-    blockage.set_layer_idx(_helper.wrapIDBCutLayerIdxToRT(blockage.get_layer_idx()));
+    blockage.set_layer_idx(_helper.getCutLayerIdxByIDBLayerId(blockage.get_layer_idx()));
   }
 }
 
@@ -1201,31 +1420,13 @@ void DataManager::makeBlockageList()
   std::vector<Blockage>& routing_blockage_list = _database.get_routing_blockage_list();
   std::vector<Blockage>& cut_blockage_list = _database.get_cut_blockage_list();
 
-  std::set<LayerRect, CmpLayerRectByXASC> routing_blockage_rect_set;
   for (Blockage& routing_blockage : routing_blockage_list) {
     routing_blockage.set_real_rect(RTUtil::getRegularRect(routing_blockage.get_real_rect(), die.get_real_rect()));
-    routing_blockage_rect_set.insert(LayerRect(routing_blockage.get_real_rect(), routing_blockage.get_layer_idx()));
+    routing_blockage.set_grid_rect(RTUtil::getClosedGCellGridRect(routing_blockage.get_real_rect(), gcell_axis));
   }
-  routing_blockage_list.clear();
-  for (const LayerRect& routing_blockage_rect : routing_blockage_rect_set) {
-    Blockage routing_blockage;
-    routing_blockage.set_real_rect(routing_blockage_rect);
-    routing_blockage.set_grid_rect(RTUtil::getClosedGridRect(routing_blockage.get_real_rect(), gcell_axis));
-    routing_blockage.set_layer_idx(routing_blockage_rect.get_layer_idx());
-    routing_blockage_list.push_back(routing_blockage);
-  }
-  std::set<LayerRect, CmpLayerRectByXASC> cut_blockage_rect_set;
   for (Blockage& cut_blockage : cut_blockage_list) {
     cut_blockage.set_real_rect(RTUtil::getRegularRect(cut_blockage.get_real_rect(), die.get_real_rect()));
-    cut_blockage_rect_set.insert(LayerRect(cut_blockage.get_real_rect(), cut_blockage.get_layer_idx()));
-  }
-  cut_blockage_list.clear();
-  for (const LayerRect& cut_blockage_rect : cut_blockage_rect_set) {
-    Blockage cut_blockage;
-    cut_blockage.set_real_rect(cut_blockage_rect);
-    cut_blockage.set_grid_rect(RTUtil::getClosedGridRect(cut_blockage.get_real_rect(), gcell_axis));
-    cut_blockage.set_layer_idx(cut_blockage_rect.get_layer_idx());
-    cut_blockage_list.push_back(cut_blockage);
+    cut_blockage.set_grid_rect(RTUtil::getClosedGCellGridRect(cut_blockage.get_real_rect(), gcell_axis));
   }
 }
 
@@ -1266,25 +1467,11 @@ void DataManager::buildNetList()
     Net& net = net_list[net_idx];
     net.set_net_idx(static_cast<irt_int>(net_idx));
     buildPinList(net);
-    buildDrivingPin(net);
-  }
-}
-
-void processPinList(Net& net)
-{
-  std::vector<Pin>& pin_list = net.get_pin_list();
-  for (size_t i = 0; i < pin_list.size(); i++) {
-    Pin& pin = pin_list[i];
-    if (!pin.get_routing_shape_list().empty()) {
-      continue;
-    }
-    pin.set_routing_shape_list(pin_list.front().get_routing_shape_list());
   }
 }
 
 void DataManager::buildPinList(Net& net)
 {
-  processPinList(net);
   transPinList(net);
   makePinList(net);
   checkPinList(net);
@@ -1294,10 +1481,10 @@ void DataManager::transPinList(Net& net)
 {
   for (Pin& pin : net.get_pin_list()) {
     for (EXTLayerRect& routing_shape : pin.get_routing_shape_list()) {
-      routing_shape.set_layer_idx(_helper.wrapIDBRoutingLayerIdxToRT(routing_shape.get_layer_idx()));
+      routing_shape.set_layer_idx(_helper.getRoutingLayerIdxByIDBLayerId(routing_shape.get_layer_idx()));
     }
     for (EXTLayerRect& cut_shape : pin.get_cut_shape_list()) {
-      cut_shape.set_layer_idx(_helper.wrapIDBCutLayerIdxToRT(cut_shape.get_layer_idx()));
+      cut_shape.set_layer_idx(_helper.getCutLayerIdxByIDBLayerId(cut_shape.get_layer_idx()));
     }
   }
 }
@@ -1313,11 +1500,11 @@ void DataManager::makePinList(Net& net)
     pin.set_pin_idx(static_cast<irt_int>(pin_idx));
     for (EXTLayerRect& routing_shape : pin.get_routing_shape_list()) {
       routing_shape.set_real_rect(RTUtil::getRegularRect(routing_shape.get_real_rect(), die.get_real_rect()));
-      routing_shape.set_grid_rect(RTUtil::getClosedGridRect(routing_shape.get_real_rect(), gcell_axis));
+      routing_shape.set_grid_rect(RTUtil::getClosedGCellGridRect(routing_shape.get_real_rect(), gcell_axis));
     }
     for (EXTLayerRect& cut_shape : pin.get_cut_shape_list()) {
       cut_shape.set_real_rect(RTUtil::getRegularRect(cut_shape.get_real_rect(), die.get_real_rect()));
-      cut_shape.set_grid_rect(RTUtil::getClosedGridRect(cut_shape.get_real_rect(), gcell_axis));
+      cut_shape.set_grid_rect(RTUtil::getClosedGCellGridRect(cut_shape.get_real_rect(), gcell_axis));
     }
   }
 }
@@ -1350,125 +1537,32 @@ void DataManager::checkPinList(Net& net)
   }
 }
 
-void DataManager::buildDrivingPin(Net& net)
+void DataManager::buildGCellMap()
 {
-  std::vector<Pin>& pin_list = net.get_pin_list();
-  for (size_t i = 0; i < pin_list.size(); i++) {
-    Pin& pin = pin_list[i];
-    if (net.get_driving_pin().get_pin_name() != pin.get_pin_name()) {
-      continue;
-    }
-    net.set_driving_pin(pin);
-    return;
-  }
-  LOG_INST.error(Loc::current(), "Unable to find a driving pin!");
-}
-
-void DataManager::cutBlockageList()
-{
-  ScaleAxis& gcell_axis = _database.get_gcell_axis();
-  std::vector<RoutingLayer>& routing_layer_list = _database.get_routing_layer_list();
+  Die& die = _database.get_die();
   std::vector<Blockage>& routing_blockage_list = _database.get_routing_blockage_list();
-
-  Monitor monitor;
-  LOG_INST.info(Loc::current(), "Start cutting ", routing_blockage_list.size(), " blockages...");
-
-  std::map<LayerRect, std::set<LayerRect, CmpLayerRectByXASC>, CmpLayerRectByXASC> blockage_rect_enlarge_net_rect_map;
-  for (auto& [grid_coord, net_rect_map] : makeGridNetRectMap()) {
-    RoutingLayer& routing_layer = routing_layer_list[grid_coord.get_layer_idx()];
-    for (LayerRect& blockage_rect : net_rect_map[-1]) {
-      std::set<LayerRect, CmpLayerRectByXASC>& enlarge_net_rect_set = blockage_rect_enlarge_net_rect_map[blockage_rect];
-      for (auto& [net_idx, net_rect_list] : net_rect_map) {
-        if (net_idx == -1) {
-          continue;
-        }
-        for (LayerRect& net_rect : net_rect_list) {
-          if (blockage_rect.get_layer_idx() != net_rect.get_layer_idx()) {
-            continue;
-          }
-          if (RTUtil::isInside(blockage_rect, net_rect) || RTUtil::isInside(net_rect, blockage_rect)) {
-            irt_int enlarged_size = routing_layer.get_min_width() + routing_layer.getMinSpacing(net_rect);
-            PlanarRect enlarged_rect = RTUtil::getEnlargedRect(net_rect, enlarged_size);
-            enlarge_net_rect_set.insert(LayerRect(enlarged_rect, net_rect.get_layer_idx()));
-          }
-        }
-      }
-    }
-  }
-  for (auto& [blockage_rect, enlarge_net_rect_set] : blockage_rect_enlarge_net_rect_map) {
-    for (const LayerRect& enlarge_net_rect : enlarge_net_rect_set) {
-      if (blockage_rect.get_layer_idx() != enlarge_net_rect.get_layer_idx()) {
-        LOG_INST.info(Loc::current(), "The blockage_rect layer_idx is not equal enlarge_net_rect layer_idx!");
-      }
-    }
-  }
-  routing_blockage_list.clear();
-  for (auto& [blockage_rect, enlarge_net_rect_set] : blockage_rect_enlarge_net_rect_map) {
-    if (enlarge_net_rect_set.empty()) {
-      Blockage routing_blockage;
-      routing_blockage.set_real_rect(blockage_rect);
-      routing_blockage.set_grid_rect(RTUtil::getClosedGridRect(routing_blockage.get_real_rect(), gcell_axis));
-      routing_blockage.set_layer_idx(blockage_rect.get_layer_idx());
-      routing_blockage_list.push_back(routing_blockage);
-    } else {
-      std::vector<PlanarRect> planar_enlarge_net_rect_list;
-      planar_enlarge_net_rect_list.reserve(enlarge_net_rect_set.size());
-      for (const LayerRect& enlarge_net_rect : enlarge_net_rect_set) {
-        planar_enlarge_net_rect_list.push_back(enlarge_net_rect.get_rect());
-      }
-      for (PlanarRect& cutting_rect : RTUtil::getOpenCuttingRectListByBoost(blockage_rect, planar_enlarge_net_rect_list)) {
-        Blockage routing_blockage;
-        routing_blockage.set_real_rect(cutting_rect);
-        routing_blockage.set_grid_rect(RTUtil::getClosedGridRect(routing_blockage.get_real_rect(), gcell_axis));
-        routing_blockage.set_layer_idx(blockage_rect.get_layer_idx());
-        routing_blockage_list.push_back(routing_blockage);
-      }
-    }
-  }
-  LOG_INST.info(Loc::current(), "End cutting ", routing_blockage_list.size(), " blockages", monitor.getStatsInfo());
-}
-
-std::map<LayerCoord, std::map<irt_int, std::vector<LayerRect>>, CmpLayerCoordByXASC> DataManager::makeGridNetRectMap()
-{
-  ScaleAxis& gcell_axis = _database.get_gcell_axis();
-  EXTPlanarRect& die = _database.get_die();
-  std::vector<Blockage>& routing_blockage_list = _database.get_routing_blockage_list();
+  std::vector<Blockage>& cut_blockage_list = _database.get_cut_blockage_list();
   std::vector<Net>& net_list = _database.get_net_list();
 
-  std::map<LayerCoord, std::map<irt_int, std::vector<LayerRect>>, CmpLayerCoordByXASC> grid_net_rect_map;
+  GridMap<GCell>& gcell_map = _database.get_gcell_map();
+  gcell_map.init(die.getXSize(), die.getYSize());
 
   for (Blockage& routing_blockage : routing_blockage_list) {
-    LayerRect blockage_real_rect(routing_blockage.get_real_rect(), routing_blockage.get_layer_idx());
-    for (const LayerRect& max_scope_real_rect : DC_INST.getMaxScope(DRCRect(-1, blockage_real_rect, true))) {
-      LayerRect max_scope_regular_rect = RTUtil::getRegularRect(max_scope_real_rect, die.get_real_rect());
-      PlanarRect max_scope_grid_rect = RTUtil::getClosedGridRect(max_scope_regular_rect, gcell_axis);
-      for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
-        for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
-          grid_net_rect_map[LayerCoord(x, y, routing_blockage.get_layer_idx())][-1].push_back(blockage_real_rect);
-        }
-      }
-    }
+    updateFixedRectToGCellMap(ChangeType::kAdd, -1, &routing_blockage, true);
+  }
+  for (Blockage& cut_blockage : cut_blockage_list) {
+    updateFixedRectToGCellMap(ChangeType::kAdd, -1, &cut_blockage, false);
   }
   for (Net& net : net_list) {
     for (Pin& pin : net.get_pin_list()) {
       for (EXTLayerRect& routing_shape : pin.get_routing_shape_list()) {
-        LayerRect shape_real_rect(routing_shape.get_real_rect(), routing_shape.get_layer_idx());
-        for (const LayerRect& max_scope_real_rect : DC_INST.getMaxScope(DRCRect(net.get_net_idx(), shape_real_rect, true))) {
-          LayerRect max_scope_regular_rect = RTUtil::getRegularRect(max_scope_real_rect, die.get_real_rect());
-          PlanarRect max_scope_grid_rect = RTUtil::getClosedGridRect(max_scope_regular_rect, gcell_axis);
-          for (irt_int x = max_scope_grid_rect.get_lb_x(); x <= max_scope_grid_rect.get_rt_x(); x++) {
-            for (irt_int y = max_scope_grid_rect.get_lb_y(); y <= max_scope_grid_rect.get_rt_y(); y++) {
-              LayerCoord grid_coord(x, y, routing_shape.get_layer_idx());
-              if (RTUtil::exist(grid_net_rect_map, grid_coord)) {
-                grid_net_rect_map[grid_coord][net.get_net_idx()].push_back(shape_real_rect);
-              }
-            }
-          }
-        }
+        updateFixedRectToGCellMap(ChangeType::kAdd, net.get_net_idx(), &routing_shape, true);
+      }
+      for (EXTLayerRect& cut_shape : pin.get_cut_shape_list()) {
+        updateFixedRectToGCellMap(ChangeType::kAdd, net.get_net_idx(), &cut_shape, false);
       }
     }
   }
-  return grid_net_rect_map;
 }
 
 void DataManager::updateHelper()
@@ -1495,7 +1589,7 @@ void DataManager::updateHelper()
     layer_idx_pair_list.push_back(type_layer_idx_pair);
   }
 
-  for (size_t i = 0; i < layer_idx_pair_list.size(); i++) {
+  for (irt_int i = 0; i < static_cast<irt_int>(layer_idx_pair_list.size()); i++) {
     bool is_cut = layer_idx_pair_list[i].first;
     irt_int cut_layer_idx = layer_idx_pair_list[i].second;
     if (!is_cut) {
@@ -1505,7 +1599,7 @@ void DataManager::updateHelper()
     if (i - 1 >= 0 && layer_idx_pair_list[i - 1].first == false) {
       adj_routing_layer_idx_list.push_back(layer_idx_pair_list[i - 1].second);
     }
-    if (i + 1 < layer_idx_pair_list.size() && layer_idx_pair_list[i + 1].first == false) {
+    if (i + 1 < static_cast<irt_int>(layer_idx_pair_list.size()) && layer_idx_pair_list[i + 1].first == false) {
       adj_routing_layer_idx_list.push_back(layer_idx_pair_list[i + 1].second);
     }
     if (!adj_routing_layer_idx_list.empty()) {
@@ -1514,98 +1608,21 @@ void DataManager::updateHelper()
   }
 }
 
-#endif
-
-#if 1  // print
-
 void DataManager::printConfig()
 {
   omp_set_num_threads(std::max(_config.thread_number, 1));
-  LOG_INST.setLogLevel(_config.log_level);
   LOG_INST.openLogFileStream(_config.log_file_path);
   /////////////////////////////////////////////
   // **********        RT         ********** //
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(0), "RT_CONFIG_INPUT");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "temp_directory_path");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.temp_directory_path);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "log_level");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.log_level);
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "thread_number");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.thread_number);
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "bottom_routing_layer");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.bottom_routing_layer);
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "top_routing_layer");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.top_routing_layer);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "gcell_pitch_size");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.gcell_pitch_size);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "enable_output_gds_files");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.enable_output_gds_files);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "supply_utilization_rate");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.supply_utilization_rate);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "pa_max_iter_num");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.pa_max_iter_num);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "ra_initial_penalty");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.ra_initial_penalty);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "ra_penalty_drop_rate");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.ra_penalty_drop_rate);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "ra_outer_max_iter_num");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.ra_outer_max_iter_num);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "ra_inner_max_iter_num");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.ra_inner_max_iter_num);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "gr_prefer_wire_unit");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.gr_prefer_wire_unit);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "gr_via_unit");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.gr_via_unit);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "gr_corner_unit");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.gr_corner_unit);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "gr_history_cost_unit");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.gr_history_cost_unit);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "gr_max_iter_num");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.gr_max_iter_num);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "ta_prefer_wire_unit");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.ta_prefer_wire_unit);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "ta_nonprefer_wire_unit");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.ta_nonprefer_wire_unit);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "ta_corner_unit");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.ta_corner_unit);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "ta_pin_distance_unit");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.ta_pin_distance_unit);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "ta_group_distance_unit");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.ta_group_distance_unit);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "ta_blockage_unit");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.ta_blockage_unit);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "ta_net_shape_unit");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.ta_net_shape_unit);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "ta_reserved_via_unit");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.ta_reserved_via_unit);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "ta_history_cost_unit");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.ta_history_cost_unit);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "ta_model_max_iter_num");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.ta_model_max_iter_num);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "ta_panel_max_iter_num");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.ta_panel_max_iter_num);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "dr_prefer_wire_unit");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.dr_prefer_wire_unit);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "dr_nonprefer_wire_unit");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.dr_nonprefer_wire_unit);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "dr_via_unit");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.dr_via_unit);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "dr_corner_unit");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.dr_corner_unit);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "dr_blockage_unit");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.dr_blockage_unit);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "dr_net_shape_unit");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.dr_net_shape_unit);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "dr_reserved_via_unit");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.dr_reserved_via_unit);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "dr_history_cost_unit");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.dr_history_cost_unit);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "dr_model_max_iter_num");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.dr_model_max_iter_num);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "dr_box_max_iter_num");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.dr_box_max_iter_num);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "vr_max_iter_num");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.vr_max_iter_num);
   // **********        RT         ********** //
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(0), "RT_CONFIG_BUILD");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "log_file_path");
@@ -1614,44 +1631,31 @@ void DataManager::printConfig()
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.bottom_routing_layer_idx);
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "top_routing_layer_idx");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.top_routing_layer_idx);
-  // **********    DataManager    ********** //
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "DataManager");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), "dm_temp_directory_path");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(3), _config.dm_temp_directory_path);
-  // **********  DetailedRouter   ********** //
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "DetailedRouter");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), "dr_temp_directory_path");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(3), _config.dr_temp_directory_path);
-  // **********    GDSPlotter     ********** //
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "GDSPlotter");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), "gp_temp_directory_path");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(3), _config.gp_temp_directory_path);
-  // **********   GlobalRouter    ********** //
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "GlobalRouter");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), "gr_temp_directory_path");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(3), _config.gr_temp_directory_path);
   // **********   PinAccessor     ********** //
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "PinAccessor");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), "pa_temp_directory_path");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(3), _config.pa_temp_directory_path);
-  // **********   ResourceAllocator   ********** //
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "ResourceAllocator");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), "ra_temp_directory_path");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(3), _config.ra_temp_directory_path);
+  // **********   SupplyAnalyzer   ********** //
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "SupplyAnalyzer");
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), "sa_temp_directory_path");
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(3), _config.sa_temp_directory_path);
+  // **********   InitialRouter    ********** //
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "InitialRouter");
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), "ir_temp_directory_path");
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(3), _config.ir_temp_directory_path);
+  // **********   GlobalRouter    ********** //
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "GlobalRouter");
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), "gr_temp_directory_path");
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(3), _config.gr_temp_directory_path);
   // **********   TrackAssigner   ********** //
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "TrackAssigner");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), "ta_temp_directory_path");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(3), _config.ta_temp_directory_path);
-  // **********  UniversalRouter  ********** //
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "UniversalRouter");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), "ur_temp_directory_path");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(3), _config.ur_temp_directory_path);
-  // ********** ViolationRepairer ********** //
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "ViolationRepairer");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), "vr_temp_directory_path");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(3), _config.vr_temp_directory_path);
+  // **********  DetailedRouter   ********** //
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "DetailedRouter");
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), "dr_temp_directory_path");
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(3), _config.dr_temp_directory_path);
   /////////////////////////////////////////////
-  sleep(2);
 }
 
 void DataManager::printDatabase()
@@ -1759,9 +1763,38 @@ void DataManager::printDatabase()
     LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), head_info, pin_num, " pins: ", net_num, "(",
                   RTUtil::getPercentage(net_num, net_list.size()), "%)");
   }
-  // ******************** //
-  sleep(2);
   ////////////////////////////////////////////////
+}
+
+void DataManager::writePYScript()
+{
+  std::string temp_directory_path = DM_INST.getConfig().temp_directory_path;
+
+  std::ofstream* python_file = RTUtil::getOutputFileStream(RTUtil::getString(temp_directory_path, "plot.py"));
+  RTUtil::pushStream(python_file, "import os", "\n");
+  RTUtil::pushStream(python_file, "import pandas as pd", "\n");
+  RTUtil::pushStream(python_file, "import matplotlib.pyplot as plt", "\n");
+  RTUtil::pushStream(python_file, "import seaborn as sns", "\n");
+  RTUtil::pushStream(python_file, "import numpy as np", "\n");
+  RTUtil::pushStream(python_file, "from multiprocessing import Pool", "\n");
+  RTUtil::pushStream(python_file, "directory = os.getcwd()", "\n");
+  RTUtil::pushStream(python_file, "output_dir = os.path.join(directory, 'output_png')", "\n");
+  RTUtil::pushStream(python_file, "os.makedirs(output_dir, exist_ok=True)", "\n");
+  RTUtil::pushStream(python_file, "def process_csv(filename):", "\n");
+  RTUtil::pushStream(
+      python_file,
+      "    output_name = os.path.basename(os.path.dirname(filename)) + \"_\" + os.path.splitext(os.path.basename(filename))[0]", "\n");
+  RTUtil::pushStream(python_file, "    plt.figure()  ", "\n");
+  RTUtil::pushStream(python_file, "    temp = sns.heatmap(np.array(pd.read_csv(filename)), cmap='hot_r')", "\n");
+  RTUtil::pushStream(python_file, "    temp.set_title(output_name)", "\n");
+  RTUtil::pushStream(python_file, "    plt.savefig(os.path.join(output_dir, output_name + \".png\"), dpi=300, bbox_inches='tight')", "\n");
+  RTUtil::pushStream(python_file, "    plt.close()  ", "\n");
+  RTUtil::pushStream(
+      python_file,
+      "csv_files = [os.path.join(root, file) for root, _, files in os.walk(directory) for file in files if file.endswith(\".csv\")]", "\n");
+  RTUtil::pushStream(python_file, "with Pool() as pool:", "\n");
+  RTUtil::pushStream(python_file, "    pool.map(process_csv, csv_files)", "\n");
+  RTUtil::closeFileStream(python_file);
 }
 
 #endif
@@ -1795,89 +1828,97 @@ void DataManager::outputGCellGrid(idb::IdbBuilder* idb_builder)
 
 void DataManager::outputNetList(idb::IdbBuilder* idb_builder)
 {
+  GridMap<GCell>& gcell_map = _database.get_gcell_map();
   std::vector<Net>& net_list = _database.get_net_list();
+
+  std::map<irt_int, std::vector<idb::IdbRegularWireSegment*>> net_idb_segment_map;
+  for (irt_int x = 0; x < gcell_map.get_x_size(); x++) {
+    for (irt_int y = 0; y < gcell_map.get_y_size(); y++) {
+      for (auto& [net_idx, segment_set] : gcell_map[x][y].get_net_result_map()) {
+        for (Segment<LayerCoord>* segment : segment_set) {
+          net_idb_segment_map[net_idx].push_back(getIDBSegmentByNetResult(net_idx, *segment));
+        }
+      }
+      for (auto& [net_idx, patch_set] : gcell_map[x][y].get_net_patch_map()) {
+        for (EXTLayerRect* patch : patch_set) {
+          net_idb_segment_map[net_idx].push_back(getIDBSegmentByNetPatch(net_idx, *patch));
+        }
+      }
+    }
+  }
 
   idb::IdbNetList* idb_net_list = idb_builder->get_def_service()->get_design()->get_net_list();
   if (idb_net_list == nullptr) {
     LOG_INST.error(Loc::current(), "The idb net list is empty!");
   }
-
-  for (size_t i = 0; i < net_list.size(); i++) {
-    Net& net = net_list[i];
-    std::string net_name = net.get_net_name();
+  for (auto& [net_idx, idb_segment_list] : net_idb_segment_map) {
+    std::string net_name = net_list[net_idx].get_net_name();
     idb::IdbNet* idb_net = idb_net_list->find_net(net_name);
     if (idb_net == nullptr) {
       LOG_INST.info(Loc::current(), "The idb net named ", net_name, " cannot be found!");
       continue;
     }
-    convertToIDBNet(idb_builder, net, idb_net);
-  }
-}
-
-void DataManager::convertToIDBNet(idb::IdbBuilder* idb_builder, Net& net, idb::IdbNet* idb_net)
-{
-  idb::IdbLayers* idb_layer_list = idb_builder->get_def_service()->get_layout()->get_layers();
-
-  idb::IdbVias* lef_via_list = idb_builder->get_lef_service()->get_layout()->get_via_list();
-  idb::IdbVias* def_via_list = idb_builder->get_def_service()->get_design()->get_via_list();
-
-  idb_net->clear_wire_list();
-  idb::IdbRegularWireList* idb_wire_list = idb_net->get_wire_list();
-  if (idb_wire_list == nullptr) {
-    LOG_INST.error(Loc::current(), "The idb wire list is empty!");
-  }
-  idb::IdbRegularWire* idb_wire = idb_wire_list->add_wire();
-  idb_wire->set_wire_state(idb::IdbWiringStatement::kRouted);
-
-  irt_int print_new = false;
-  for (TNode<PHYNode>* phy_node_node : RTUtil::getNodeList(net.get_vr_result_tree())) {
-    PHYNode& phy_node = phy_node_node->value();
-    if (phy_node.isType<PinNode>()) {
-      continue;
+    idb_net->clear_wire_list();
+    idb::IdbRegularWireList* idb_wire_list = idb_net->get_wire_list();
+    if (idb_wire_list == nullptr) {
+      LOG_INST.error(Loc::current(), "The idb wire list is empty!");
     }
-    idb::IdbRegularWireSegment* idb_segment = idb_wire->add_segment();
-    if (phy_node.isType<WireNode>()) {
-      convertToIDBWire(idb_layer_list, phy_node.getNode<WireNode>(), idb_segment);
-    } else if (phy_node.isType<ViaNode>()) {
-      convertToIDBVia(lef_via_list, def_via_list, phy_node.getNode<ViaNode>(), idb_segment);
-    } else if (phy_node.isType<PatchNode>()) {
-      convertToIDBPatch(idb_layer_list, phy_node.getNode<PatchNode>(), idb_segment);
-    } else {
-      LOG_INST.error(Loc::current(), "The phy node is incorrect type!");
-    }
-    if (print_new == false) {
-      idb_segment->set_layer_as_new();
-      print_new = true;
+    idb::IdbRegularWire* idb_wire = idb_wire_list->add_wire();
+    idb_wire->set_wire_state(idb::IdbWiringStatement::kRouted);
+
+    irt_int print_new = false;
+    for (idb::IdbRegularWireSegment* idb_segment : idb_segment_list) {
+      idb_wire->add_segment(idb_segment);
+      if (print_new == false) {
+        idb_segment->set_layer_as_new();
+        print_new = true;
+      }
     }
   }
 }
 
-void DataManager::convertToIDBWire(idb::IdbLayers* idb_layer_list, WireNode& wire_node, idb::IdbRegularWireSegment* idb_segment)
+#endif
+
+#if 1  // 获得IdbWireSegment
+
+idb::IdbRegularWireSegment* DataManager::getIDBWire(irt_int net_idx, Segment<LayerCoord>& segment)
 {
   std::vector<RoutingLayer>& routing_layer_list = _database.get_routing_layer_list();
+  idb::IdbLayers* idb_layer_list = _helper.get_idb_builder()->get_def_service()->get_layout()->get_layers();
 
-  std::string layer_name = routing_layer_list[wire_node.get_layer_idx()].get_layer_name();
+  LayerCoord& first_coord = segment.get_first();
+  LayerCoord& second_coord = segment.get_second();
+  irt_int layer_idx = first_coord.get_layer_idx();
+
+  if (RTUtil::isOblique(first_coord, second_coord)) {
+    LOG_INST.error(Loc::current(), "The wire is oblique!");
+  }
+  std::string layer_name = routing_layer_list[layer_idx].get_layer_name();
   idb::IdbLayer* idb_layer = idb_layer_list->find_layer(layer_name);
   if (idb_layer == nullptr) {
     LOG_INST.error(Loc::current(), "Can not find idb layer ", layer_name);
   }
-  PlanarCoord& first_coord = wire_node.get_first();
-  PlanarCoord& second_coord = wire_node.get_second();
-  if (RTUtil::isOblique(first_coord, second_coord)) {
-    LOG_INST.error(Loc::current(), "The wire is oblique!");
-  }
+  idb::IdbRegularWireSegment* idb_segment = new idb::IdbRegularWireSegment();
   idb_segment->set_layer(idb_layer);
   idb_segment->add_point(first_coord.get_x(), first_coord.get_y());
   idb_segment->add_point(second_coord.get_x(), second_coord.get_y());
+  return idb_segment;
 }
 
-void DataManager::convertToIDBVia(idb::IdbVias* lef_via_list, idb::IdbVias* def_via_list, ViaNode& via_node,
-                                  idb::IdbRegularWireSegment* idb_segment)
+idb::IdbRegularWireSegment* DataManager::getIDBVia(irt_int net_idx, Segment<LayerCoord>& segment)
 {
   std::vector<std::vector<ViaMaster>>& layer_via_master_list = _database.get_layer_via_master_list();
+  idb::IdbVias* lef_via_list = _helper.get_idb_builder()->get_lef_service()->get_layout()->get_via_list();
+  idb::IdbVias* def_via_list = _helper.get_idb_builder()->get_def_service()->get_design()->get_via_list();
 
-  ViaMasterIdx& via_master_idx = via_node.get_via_master_idx();
-  std::string via_name = layer_via_master_list[via_master_idx.get_below_layer_idx()][via_master_idx.get_via_idx()].get_via_name();
+  LayerCoord& first_coord = segment.get_first();
+  LayerCoord& second_coord = segment.get_second();
+  irt_int below_layer_idx = std::min(first_coord.get_layer_idx(), second_coord.get_layer_idx());
+
+  if (below_layer_idx < 0 || below_layer_idx >= static_cast<irt_int>(layer_via_master_list.size())) {
+    LOG_INST.error(Loc::current(), "The via below_layer_idx is illegal!");
+  }
+  std::string via_name = layer_via_master_list[below_layer_idx].front().get_via_name();
   idb::IdbVia* idb_via = lef_via_list->find_via(via_name);
   if (idb_via == nullptr) {
     idb_via = def_via_list->find_via(via_name);
@@ -1889,66 +1930,13 @@ void DataManager::convertToIDBVia(idb::IdbVias* lef_via_list, idb::IdbVias* def_
   if (idb_layer_top == nullptr) {
     LOG_INST.error(Loc::current(), "Can not find layer from idb via ", via_name, "!");
   }
+  idb::IdbRegularWireSegment* idb_segment = new idb::IdbRegularWireSegment();
   idb_segment->set_layer(idb_layer_top);
   idb_segment->set_is_via(true);
-  idb_segment->add_point(via_node.get_x(), via_node.get_y());
+  idb_segment->add_point(first_coord.get_x(), first_coord.get_y());
   idb::IdbVia* idb_via_new = idb_segment->copy_via(idb_via);
-  idb_via_new->set_coordinate(via_node.get_x(), via_node.get_y());
-}
-
-void DataManager::convertToIDBPatch(idb::IdbLayers* idb_layer_list, PatchNode& patch_node, idb::IdbRegularWireSegment* idb_segment)
-{
-  std::vector<RoutingLayer>& routing_layer_list = _database.get_routing_layer_list();
-
-  std::string layer_name = routing_layer_list[patch_node.get_layer_idx()].get_layer_name();
-  idb::IdbLayer* idb_layer = idb_layer_list->find_layer(layer_name);
-  if (idb_layer == nullptr) {
-    LOG_INST.error(Loc::current(), "Can not find idb layer ", layer_name);
-  }
-  idb_segment->set_layer(idb_layer);
-  idb_segment->set_is_rect(true);
-  PlanarCoord base_coord(patch_node.get_lb_x(), patch_node.get_lb_y());
-  idb_segment->add_point(base_coord.get_x(), base_coord.get_y());
-  idb_segment->set_delta_rect(patch_node.get_lb_x() - base_coord.get_x(), patch_node.get_lb_y() - base_coord.get_y(),
-                              patch_node.get_rt_x() - base_coord.get_x(), patch_node.get_rt_y() - base_coord.get_y());
-}
-
-#endif
-
-#if 1  // save & load
-
-void DataManager::saveStageResult(Stage stage)
-{
-  Monitor monitor;
-  std::string current_stage = GetStageName()(stage);
-  std::string data_path = _config.dm_temp_directory_path + GetStageName()(stage) + ".dat";
-  iplf::RtPersister ps(data_path);
-  ps.saveWithHeader(getHeadInfo(current_stage), _database.get_net_list());
-  LOG_INST.info(Loc::current(), "The ", current_stage, " result has been saved in '", data_path, "'!", monitor.getStatsInfo());
-}
-
-std::tuple<std::string, std::string, std::set<std::string>, std::string> DataManager::getHeadInfo(const std::string& stage)
-{
-  std::string design_name = _helper.get_design_name();
-  std::vector<std::string>& lef_file_path_list = _helper.get_lef_file_path_list();
-  std::set<std::string> lef_list{lef_file_path_list.begin(), lef_file_path_list.end()};
-  std::string def_name = RTUtil::getFileName(_helper.get_def_file_path());
-
-  return make_tuple(stage, design_name, lef_list, def_name);
-}
-
-void DataManager::loadStageResult(Stage stage)
-{
-  Monitor monitor;
-
-  std::string current_stage = GetStageName()(stage);
-  std::string data_path = _config.dm_temp_directory_path + GetStageName()(stage) + ".dat";
-  iplf::RtPersister ps(data_path);
-  auto header = ps.loadHeader<decltype(getHeadInfo(current_stage))>();
-  // check header
-
-  ps.loadWithHeader(getHeadInfo(current_stage), _database.get_net_list());
-  LOG_INST.info(Loc::current(), "The ", current_stage, " result has been loaded from '", data_path, "'!", monitor.getStatsInfo());
+  idb_via_new->set_coordinate(first_coord.get_x(), first_coord.get_y());
+  return idb_segment;
 }
 
 #endif

@@ -33,7 +33,7 @@ if(BUILD_PYTHON)
 endif()
 option(BUILD_GUI "If ON, build GUI." OFF)
 
-add_subdirectory(src/third_party/mt-kahypar)
+# add_subdirectory(src/third_party/mt-kahypar)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_VERBOSE_MAKEFILE OFF)

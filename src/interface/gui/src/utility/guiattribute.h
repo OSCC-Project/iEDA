@@ -58,7 +58,9 @@ class GuiAttribute {
   }
 
   /// getter
-  QColor getLayerColor(std::string layer);
+  QColor getLayerColor(std::string layer, double ration = 1);
+  QColor getLayerColorLight(std::string layer);
+  QColor getLayerColorDark(std::string layer);
   QColor getLayerColor(int32_t z_oder);
 
   /// operator

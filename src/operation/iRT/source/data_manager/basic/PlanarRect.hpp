@@ -69,6 +69,7 @@ class PlanarRect
   inline double getArea() const;
   inline std::vector<Segment<PlanarCoord>> getEdgeList() const;
   inline PlanarCoord getMidPoint() const;
+  inline bool isIncorrected() const;
 
  private:
   PlanarCoord _lb;
@@ -151,6 +152,15 @@ inline std::vector<Segment<PlanarCoord>> PlanarRect::getEdgeList() const
 inline PlanarCoord PlanarRect::getMidPoint() const
 {
   return PlanarCoord((get_lb_x() + get_rt_x()) / 2, (get_lb_y() + get_rt_y()) / 2);
+}
+
+inline bool PlanarRect::isIncorrected() const
+{
+  if (_lb.get_x() > _rt.get_x() || _lb.get_y() > _rt.get_y()) {
+    return true;
+  } else {
+    return false;
+  }
 }
 
 struct CmpPlanarRectByXASC

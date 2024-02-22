@@ -16,10 +16,7 @@
 // ***************************************************************************************
 #pragma once
 
-#include "AccessPoint.hpp"
-#include "EXTLayerRect.hpp"
-#include "PlanarCoord.hpp"
-#include "RTU.hpp"
+#include "Pin.hpp"
 
 namespace irt {
 
@@ -30,13 +27,12 @@ class PAPin : public Pin
   explicit PAPin(const Pin& pin) : Pin(pin) {}
   ~PAPin() = default;
   // getter
-  std::vector<AccessPoint>& get_protected_point_list() { return _protected_point_list; }
+
   // setter
-  void set_protected_point_list(const std::vector<AccessPoint>& protected_point_list) { _protected_point_list = protected_point_list; }
+
   // function
 
  private:
-  std::vector<AccessPoint> _protected_point_list;
 };
 
 }  // namespace irt

@@ -60,6 +60,10 @@ class GridMap
       return _data_array[i];
     }
 
+    U& front() { return operator[](0); }
+
+    U& back() { return operator[](_y_size - 1); }
+
    private:
     irt_int _y_size = 0;
     U* _data_array = nullptr;
@@ -74,6 +78,11 @@ class GridMap
     }
     return Proxy<T>(_y_size, _data_map[i]);
   }
+
+  Proxy<T> front() { return operator[](0); }
+
+  Proxy<T> back() { return operator[](_x_size - 1); }
+
   // getter
   irt_int get_x_size() const { return _x_size; }
   irt_int get_y_size() const { return _y_size; }

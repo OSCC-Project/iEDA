@@ -136,7 +136,7 @@ class RTUtil
   using BGMultiPolyDBL = bg::model::multi_polygon<BGPolyDBL>;
 
  public:
-#if 1  // plot
+#if 1  // exhibit
 
   static void plotGDS(std::string gds_name, std::vector<PlanarRect>& rect_list)
   {
@@ -355,6 +355,12 @@ class RTUtil
 
 #if 1  // cutting
 
+  static std::vector<PlanarRect> getOpenCuttingRectListByBoost(const PlanarRect& master, const std::vector<PlanarRect>& rect_list)
+  {
+    std::vector<PlanarRect> master_list{master};
+    return getCuttingRectListByBoost(master_list, rect_list, true);
+  }
+
   static std::vector<PlanarRect> getOpenCuttingRectListByBoost(const std::vector<PlanarRect>& master_list,
                                                                const std::vector<PlanarRect>& rect_list)
   {
@@ -401,16 +407,22 @@ class RTUtil
       // 计算(A - D)和(A - E)和(A - F)
       std::vector<BGMultiPolyDBL> diff_mutilpoly_list;
       {
-        for (BGPolyDBL& rect_poly : rect_poly_list) {
-          // 计算(A - D)
+        if (rect_poly_list.empty()) {
           BGMultiPolyDBL diff_mutilpoly;
-          bg::difference(master_poly, rect_poly, diff_mutilpoly);
-          if (diff_mutilpoly.empty()) {
-            // 当(A - D)为空，后续(A - D) ∩ (A - E) ∩ (A - F)结果为空，直接跳过
-            diff_mutilpoly_list.clear();
-            break;
-          } else {
-            diff_mutilpoly_list.push_back(diff_mutilpoly);
+          diff_mutilpoly.push_back(master_poly);
+          diff_mutilpoly_list.push_back(diff_mutilpoly);
+        } else {
+          for (BGPolyDBL& rect_poly : rect_poly_list) {
+            // 计算(A - D)
+            BGMultiPolyDBL diff_mutilpoly;
+            bg::difference(master_poly, rect_poly, diff_mutilpoly);
+            if (diff_mutilpoly.empty()) {
+              // 当(A - D)为空，后续(A - D) ∩ (A - E) ∩ (A - F)结果为空，直接跳过
+              diff_mutilpoly_list.clear();
+              break;
+            } else {
+              diff_mutilpoly_list.push_back(diff_mutilpoly);
+            }
           }
         }
       }
@@ -532,26 +544,15 @@ class RTUtil
 
 #if 1  // reduce
 
-  static void addOffset(PlanarCoord& coord, irt_int x_offset, irt_int y_offset)
-  {
-    coord.set_x(coord.get_x() + x_offset);
-    coord.set_y(coord.get_y() + y_offset);
-  }
-
-  static void addOffset(PlanarCoord& coord, PlanarCoord& offset_coord) { addOffset(coord, offset_coord.get_x(), offset_coord.get_y()); }
-
-  static void minusOffset(PlanarCoord& coord, irt_int x_offset, irt_int y_offset)
-  {
-    coord.set_x((coord.get_x() - x_offset) < 0 ? 0 : (coord.get_x() - x_offset));
-    coord.set_y((coord.get_y() - y_offset) < 0 ? 0 : (coord.get_y() - y_offset));
-  }
-
-  static void minusOffset(PlanarCoord& coord, PlanarCoord& offset_coord) { minusOffset(coord, offset_coord.get_x(), offset_coord.get_y()); }
-
   static std::vector<PlanarRect> getOpenReducedRectListByBoost(const std::vector<PlanarRect>& master_list, int lb_x_add_offset,
                                                                int lb_y_add_offset, int rt_x_minus_offset, int rt_y_minus_offset)
   {
     return getReducedRectListByBoost(master_list, lb_x_add_offset, lb_y_add_offset, rt_x_minus_offset, rt_y_minus_offset, true);
+  }
+
+  static std::vector<PlanarRect> getClosedReducedRectListByBoost(const std::vector<PlanarRect>& master_list, int reduced_offset)
+  {
+    return getReducedRectListByBoost(master_list, reduced_offset, reduced_offset, reduced_offset, reduced_offset, false);
   }
 
   static std::vector<PlanarRect> getClosedReducedRectListByBoost(const std::vector<PlanarRect>& master_list, int lb_x_add_offset,
@@ -584,9 +585,15 @@ class RTUtil
         PlanarCoord& rt = candidate_rect.get_rt();
         addOffset(lb, lb_x_add_offset, lb_y_add_offset);
         minusOffset(rt, rt_x_minus_offset, rt_y_minus_offset);
-        if (lb.get_x() == rt.get_x() || lb.get_y() == rt.get_y()) {
-          result_list.push_back(candidate_rect);
+        // 去除不是矩形的
+        if (candidate_rect.isIncorrected()) {
+          continue;
         }
+        // 去除面积不为0的
+        if (candidate_rect.getArea() > 0) {
+          continue;
+        }
+        result_list.push_back(candidate_rect);
       }
     }
     // 获得常规收缩的矩形
@@ -704,7 +711,6 @@ class RTUtil
 
     return rect_list;
   }
-
 };
 
 int main()
@@ -719,84 +725,106 @@ int main()
     master_list_list.push_back(master_list);
 
     std::vector<PlanarRect> rect_list;
+    rect_list_list.push_back(rect_list);
+  }
+
+  {
+    std::vector<PlanarRect> master_list;
+    master_list_list.push_back(master_list);
+
+    std::vector<PlanarRect> rect_list;
     rect_list.emplace_back(0 * factor, 0 * factor, 3 * factor, 4 * factor);
     rect_list.emplace_back(0 * factor, 4 * factor, 3 * factor, 7 * factor);
     rect_list.emplace_back(3 * factor, 0 * factor, 6 * factor, 7 * factor);
     rect_list_list.push_back(rect_list);
   }
 
-  {
-    std::vector<PlanarRect> master_list;
-    master_list.emplace_back(2 * factor, 1 * factor, 5 * factor, 6 * factor);
-    master_list_list.push_back(master_list);
+  // {
+  //   std::vector<PlanarRect> master_list;
+  //   master_list.emplace_back(2 * factor, 1 * factor, 5 * factor, 6 * factor);
+  //   master_list_list.push_back(master_list);
 
-    std::vector<PlanarRect> rect_list;
-    rect_list.emplace_back(1 * factor, 0 * factor, 3 * factor, 4 * factor);
-    rect_list.emplace_back(3 * factor, 0 * factor, 4 * factor, 3 * factor);
-    rect_list.emplace_back(4 * factor, 2 * factor, 7 * factor, 3 * factor);
-    rect_list.emplace_back(1 * factor, 4 * factor, 2 * factor, 7 * factor);
-    rect_list.emplace_back(2 * factor, 4 * factor, 5 * factor, 5 * factor);
-    rect_list.emplace_back(2 * factor, 5 * factor, 6 * factor, 7 * factor);
-    rect_list_list.push_back(rect_list);
-  }
+  //   std::vector<PlanarRect> rect_list;
+  //   rect_list.emplace_back(0 * factor, 0 * factor, 3 * factor, 4 * factor);
+  //   rect_list.emplace_back(0 * factor, 4 * factor, 3 * factor, 7 * factor);
+  //   rect_list.emplace_back(3 * factor, 0 * factor, 6 * factor, 7 * factor);
+  //   rect_list_list.push_back(rect_list);
+  // }
 
-  {
-    std::vector<PlanarRect> master_list;
-    master_list.emplace_back(1 * factor, 4 * factor, 5 * factor, 5 * factor);
-    master_list.emplace_back(2 * factor, 0 * factor, 3 * factor, 7 * factor);
-    master_list.emplace_back(3 * factor, 0 * factor, 4 * factor, 5 * factor);
-    master_list.emplace_back(6 * factor, 0 * factor, 7 * factor, 7 * factor);
-    master_list.emplace_back(5 * factor, 1 * factor, 7 * factor, 2 * factor);
-    master_list.emplace_back(6 * factor, 4 * factor, 8 * factor, 5 * factor);
-    master_list_list.push_back(master_list);
+  // {
+  //   std::vector<PlanarRect> master_list;
+  //   master_list.emplace_back(2 * factor, 1 * factor, 5 * factor, 6 * factor);
+  //   master_list_list.push_back(master_list);
 
-    std::vector<PlanarRect> rect_list;
-    rect_list.emplace_back(1 * factor, 3 * factor, 3 * factor, 6 * factor);
-    rect_list.emplace_back(3 * factor, 4 * factor, 4 * factor, 6 * factor);
-    rect_list.emplace_back(0 * factor, 1 * factor, 5 * factor, 2 * factor);
-    rect_list.emplace_back(4 * factor, 1 * factor, 5 * factor, 3 * factor);
-    rect_list.emplace_back(4 * factor, 6 * factor, 7 * factor, 7 * factor);
-    rect_list.emplace_back(6 * factor, 1 * factor, 8 * factor, 6 * factor);
-    rect_list_list.push_back(rect_list);
-  }
+  //   std::vector<PlanarRect> rect_list;
+  //   rect_list.emplace_back(1 * factor, 0 * factor, 3 * factor, 4 * factor);
+  //   rect_list.emplace_back(3 * factor, 0 * factor, 4 * factor, 3 * factor);
+  //   rect_list.emplace_back(4 * factor, 2 * factor, 7 * factor, 3 * factor);
+  //   rect_list.emplace_back(1 * factor, 4 * factor, 2 * factor, 7 * factor);
+  //   rect_list.emplace_back(2 * factor, 4 * factor, 5 * factor, 5 * factor);
+  //   rect_list.emplace_back(2 * factor, 5 * factor, 6 * factor, 7 * factor);
+  //   rect_list_list.push_back(rect_list);
+  // }
 
-  {
-    std::vector<PlanarRect> master_list;
-    master_list.emplace_back(1 * factor, 5 * factor, 5 * factor, 5 * factor);
-    master_list.emplace_back(5 * factor, 5 * factor, 5 * factor, 5 * factor);
-    master_list.emplace_back(50 * factor, 50 * factor, 50 * factor, 50 * factor);
-    master_list_list.push_back(master_list);
+  // {
+  //   std::vector<PlanarRect> master_list;
+  //   master_list.emplace_back(1 * factor, 4 * factor, 5 * factor, 5 * factor);
+  //   master_list.emplace_back(2 * factor, 0 * factor, 3 * factor, 7 * factor);
+  //   master_list.emplace_back(3 * factor, 0 * factor, 4 * factor, 5 * factor);
+  //   master_list.emplace_back(6 * factor, 0 * factor, 7 * factor, 7 * factor);
+  //   master_list.emplace_back(5 * factor, 1 * factor, 7 * factor, 2 * factor);
+  //   master_list.emplace_back(6 * factor, 4 * factor, 8 * factor, 5 * factor);
+  //   master_list_list.push_back(master_list);
 
-    std::vector<PlanarRect> rect_list;
-    rect_list.emplace_back(1 * factor, 3 * factor, 3 * factor, 6 * factor);
-    rect_list_list.push_back(rect_list);
-  }
+  //   std::vector<PlanarRect> rect_list;
+  //   rect_list.emplace_back(1 * factor, 3 * factor, 3 * factor, 6 * factor);
+  //   rect_list.emplace_back(3 * factor, 4 * factor, 4 * factor, 6 * factor);
+  //   rect_list.emplace_back(0 * factor, 1 * factor, 5 * factor, 2 * factor);
+  //   rect_list.emplace_back(4 * factor, 1 * factor, 5 * factor, 3 * factor);
+  //   rect_list.emplace_back(4 * factor, 6 * factor, 7 * factor, 7 * factor);
+  //   rect_list.emplace_back(6 * factor, 1 * factor, 8 * factor, 6 * factor);
+  //   rect_list_list.push_back(rect_list);
+  // }
 
-  for (std::vector<PlanarRect>& master_list : master_list_list) {
-    for (std::vector<PlanarRect>& rect_list : rect_list_list) {
-      RTUtil::plotGDS("1master_list", master_list);
-      RTUtil::plotGDS("2rect_list", rect_list);
+  // {
+  //   std::vector<PlanarRect> master_list;
+  //   master_list.emplace_back(1 * factor, 5 * factor, 5 * factor, 5 * factor);
+  //   master_list.emplace_back(5 * factor, 5 * factor, 5 * factor, 5 * factor);
+  //   master_list.emplace_back(50 * factor, 50 * factor, 50 * factor, 50 * factor);
+  //   master_list_list.push_back(master_list);
 
-      std::vector<PlanarRect> OpenCuttingRectListByBoost = RTUtil::getOpenCuttingRectListByBoost(master_list, rect_list);
-      RTUtil::plotGDS("3OpenCuttingRectListByBoost", OpenCuttingRectListByBoost);
-      std::vector<PlanarRect> ClosedCuttingRectListByBoost = RTUtil::getClosedCuttingRectListByBoost(master_list, rect_list);
-      RTUtil::plotGDS("4ClosedCuttingRectListByBoost", ClosedCuttingRectListByBoost);
+  //   std::vector<PlanarRect> rect_list;
+  //   rect_list.emplace_back(1 * factor, 3 * factor, 3 * factor, 6 * factor);
+  //   rect_list_list.push_back(rect_list);
+  // }
 
-      std::vector<PlanarRect> OpenOverlapRectListByBoost = RTUtil::getOpenOverlapRectListByBoost(master_list, rect_list);
-      RTUtil::plotGDS("5OpenOverlapRectListByBoost", OpenOverlapRectListByBoost);
-      std::vector<PlanarRect> ClosedOverlapRectListByBoost = RTUtil::getClosedOverlapRectListByBoost(master_list, rect_list);
-      RTUtil::plotGDS("6ClosedOverlapRectListByBoost", ClosedOverlapRectListByBoost);
+  for (size_t i = 0; i < master_list_list.size(); i++) {
+    std::vector<PlanarRect>& master_list = master_list_list[i];
+    std::vector<PlanarRect>& rect_list = rect_list_list[i];
 
-      std::vector<PlanarRect> master_OpenReducedRectListByBoost = RTUtil::getOpenReducedRectListByBoost(master_list, 5, 5, 5, 5);
-      RTUtil::plotGDS("7master_OpenReducedRectListByBoost", master_OpenReducedRectListByBoost);
-      std::vector<PlanarRect> master_ClosedReducedRectListByBoost = RTUtil::getClosedReducedRectListByBoost(master_list, 5, 5, 5, 5);
-      RTUtil::plotGDS("8master_ClosedReducedRectListByBoost", master_ClosedReducedRectListByBoost);
+    RTUtil::plotGDS("1master_list", master_list);
+    RTUtil::plotGDS("2rect_list", rect_list);
 
-      std::vector<PlanarRect> rect_OpenReducedRectListByBoost = RTUtil::getOpenReducedRectListByBoost(rect_list, 5, 5, 5, 5);
-      RTUtil::plotGDS("9rect_OpenReducedRectListByBoost", rect_OpenReducedRectListByBoost);
-      std::vector<PlanarRect> rect_ClosedReducedRectListByBoost = RTUtil::getClosedReducedRectListByBoost(rect_list, 5, 5, 5, 5);
-      RTUtil::plotGDS("91rect_ClosedReducedRectListByBoost", rect_ClosedReducedRectListByBoost);
-    }
+    std::vector<PlanarRect> OpenCuttingRectListByBoost = RTUtil::getOpenCuttingRectListByBoost(master_list, rect_list);
+    RTUtil::plotGDS("3OpenCuttingRectListByBoost", OpenCuttingRectListByBoost);
+    std::vector<PlanarRect> ClosedCuttingRectListByBoost = RTUtil::getClosedCuttingRectListByBoost(master_list, rect_list);
+    RTUtil::plotGDS("4ClosedCuttingRectListByBoost", ClosedCuttingRectListByBoost);
+
+    // std::vector<PlanarRect> OpenOverlapRectListByBoost = RTUtil::getOpenOverlapRectListByBoost(master_list, rect_list);
+    // RTUtil::plotGDS("5OpenOverlapRectListByBoost", OpenOverlapRectListByBoost);
+    // std::vector<PlanarRect> ClosedOverlapRectListByBoost = RTUtil::getClosedOverlapRectListByBoost(master_list, rect_list);
+    // RTUtil::plotGDS("6ClosedOverlapRectListByBoost", ClosedOverlapRectListByBoost);
+
+    // std::vector<PlanarRect> master_OpenReducedRectListByBoost = RTUtil::getOpenReducedRectListByBoost(master_list, 5, 5, 5, 5);
+    // RTUtil::plotGDS("7master_OpenReducedRectListByBoost", master_OpenReducedRectListByBoost);
+    // std::vector<PlanarRect> master_ClosedReducedRectListByBoost = RTUtil::getClosedReducedRectListByBoost(master_list, 5, 5, 5, 5);
+    // RTUtil::plotGDS("8master_ClosedReducedRectListByBoost", master_ClosedReducedRectListByBoost);
+
+    // std::vector<PlanarRect> rect_OpenReducedRectListByBoost = RTUtil::getOpenReducedRectListByBoost(rect_list, 5, 5, 5, 5);
+    // RTUtil::plotGDS("9rect_OpenReducedRectListByBoost", rect_OpenReducedRectListByBoost);
+    // std::vector<PlanarRect> rect_ClosedReducedRectListByBoost = RTUtil::getClosedReducedRectListByBoost(rect_list, 5, 5, 5, 5);
+    // RTUtil::plotGDS("91rect_ClosedReducedRectListByBoost", rect_ClosedReducedRectListByBoost);
+    int a = 0;
   }
 
   return 0;

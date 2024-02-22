@@ -16,15 +16,9 @@
 // ***************************************************************************************
 #pragma once
 
-#include "ChangeType.hpp"
 #include "Config.hpp"
-#include "DRCChecker.hpp"
-#include "DRCRect.hpp"
 #include "DataManager.hpp"
 #include "Database.hpp"
-#include "GRModel.hpp"
-#include "RTU.hpp"
-#include "flute3/flute.h"
 
 namespace irt {
 
@@ -43,111 +37,13 @@ class GlobalRouter
   // self
   static GlobalRouter* _gr_instance;
 
-  GlobalRouter() { Flute::readLUT(); }
+  GlobalRouter() = default;
   GlobalRouter(const GlobalRouter& other) = delete;
   GlobalRouter(GlobalRouter&& other) = delete;
   ~GlobalRouter() = default;
   GlobalRouter& operator=(const GlobalRouter& other) = delete;
   GlobalRouter& operator=(GlobalRouter&& other) = delete;
   // function
-  void routeNetList(std::vector<Net>& net_list);
-
-#if 1  // init
-  GRModel init(std::vector<Net>& net_list);
-  GRModel initGRModel(std::vector<Net>& net_list);
-  std::vector<GRNet> convertToGRNetList(std::vector<Net>& net_list);
-  GRNet convertToGRNet(Net& net);
-  void buildGRModel(GRModel& gr_model);
-  void buildNeighborMap(GRModel& gr_model);
-  void updateBlockageMap(GRModel& gr_model);
-  void addRectToEnv(GRModel& gr_model, GRSourceType gr_source_type, DRCRect drc_rect);
-  void updateNetShapeMap(GRModel& gr_model);
-  void updateWholeDemand(GRModel& gr_model);
-  void updateNetDemandMap(GRModel& gr_model);
-  void updateNodeResourceSupply(GRModel& gr_model);
-  std::vector<PlanarRect> getCrossingWireList(PlanarRect& base_rect, RoutingLayer& routing_layer);
-  void updateNodeAccessSupply(GRModel& gr_model);
-  bool isAccess(GRNode& pre_node, GRNode& curr_node, PlanarRect& wire);
-  void makeRoutingState(GRModel& gr_model);
-  void checkGRModel(GRModel& gr_model);
-  void writePYScript();
-#endif
-
-#if 1  // iterative
-  void iterative(GRModel& gr_model);
-  void resetGRModel(GRModel& gr_model);
-  void sortGRModel(GRModel& gr_model);
-  bool sortByMultiLevel(GRModel& gr_model, irt_int net_idx1, irt_int net_idx2);
-  SortStatus sortByClockPriority(GRNet& net1, GRNet& net2);
-  SortStatus sortByRoutingAreaASC(GRNet& net1, GRNet& net2);
-  SortStatus sortByLengthWidthRatioDESC(GRNet& net1, GRNet& net2);
-  SortStatus sortByPinNumDESC(GRNet& net1, GRNet& net2);
-  void resortGRModel(GRModel& gr_model);
-  void addHistoryCost(GRModel& gr_model);
-  void ripupGRModel(GRModel& gr_model);
-  void routeGRModel(GRModel& gr_model);
-  void routeGRNet(GRModel& gr_model, GRNet& gr_net);
-  void outputGRDataset(GRModel& gr_model, GRNet& gr_net);
-  void initSingleNet(GRModel& gr_model, GRNet& gr_net);
-  std::vector<Segment<PlanarCoord>> getPlanarTopoListByFlute(std::vector<PlanarCoord>& planar_coord_list);
-  void initSingleTask(GRModel& gr_model, GRTask& gr_task);
-  bool isConnectedAllEnd(GRModel& gr_model);
-  void routeSinglePath(GRModel& gr_model);
-  void initPathHead(GRModel& gr_model);
-  bool searchEnded(GRModel& gr_model);
-  void expandSearching(GRModel& gr_model);
-  void resetPathHead(GRModel& gr_model);
-  bool isRoutingFailed(GRModel& gr_model);
-  void resetSinglePath(GRModel& gr_model);
-  void updatePathResult(GRModel& gr_model);
-  void updateDirectionSet(GRModel& gr_model);
-  void resetStartAndEnd(GRModel& gr_model);
-  void resetSingleTask(GRModel& gr_model);
-  void updateNetResult(GRModel& gr_model, GRNet& gr_net);
-  void updateDemand(GRModel& gr_model, GRNet& gr_net, ChangeType change_type);
-  void updateRoutingTree(GRModel& gr_model, GRNet& gr_net);
-  void resetSingleNet(GRModel& gr_model);
-  void pushToOpenList(GRModel& gr_model, GRNode* curr_node);
-  GRNode* popFromOpenList(GRModel& gr_model);
-  double getKnowCost(GRModel& gr_model, GRNode* start_node, GRNode* end_node);
-  double getNodeCost(GRModel& gr_model, GRNode* curr_node, Orientation orientation);
-  double getKnowWireCost(GRModel& gr_model, GRNode* start_node, GRNode* end_node);
-  double getKnowCornerCost(GRModel& gr_model, GRNode* start_node, GRNode* end_node);
-  double getKnowViaCost(GRModel& gr_model, GRNode* start_node, GRNode* end_node);
-  double getEstimateCostToEnd(GRModel& gr_model, GRNode* curr_node);
-  double getEstimateCost(GRModel& gr_model, GRNode* start_node, GRNode* end_node);
-  double getEstimateWireCost(GRModel& gr_model, GRNode* start_node, GRNode* end_node);
-  double getEstimateCornerCost(GRModel& gr_model, GRNode* start_node, GRNode* end_node);
-  double getEstimateViaCost(GRModel& gr_model, GRNode* start_node, GRNode* end_node);
-  void processGRModel(GRModel& gr_model);
-  void buildRoutingResult(GRNet& gr_net);
-  RTNode convertToRTNode(LayerCoord& coord, std::map<LayerCoord, std::set<irt_int>, CmpLayerCoordByXASC>& key_coord_pin_map);
-  void buildDRNode(TNode<RTNode>* parent_node, TNode<RTNode>* child_node);
-  void buildTANode(TNode<RTNode>* parent_node, TNode<RTNode>* child_node);
-  void countGRModel(GRModel& gr_model);
-  void reportGRModel(GRModel& gr_model);
-  bool stopGRModel(GRModel& gr_model);
-#endif
-
-#if 1  // update
-  void update(GRModel& gr_model);
-#endif
-
-#if 1  // plot gr_model
-  void outputCongestionMap(GRModel& gr_model);
-  void plotGRModel(GRModel& gr_model, irt_int curr_net_idx = -1);
-#endif
-
-#if 1  // valid drc
-  bool hasViolation(GRModel& gr_model, GRSourceType gr_source_type, const std::vector<DRCCheckType>& check_type_list,
-                    const DRCRect& drc_rect);
-  bool hasViolation(GRModel& gr_model, GRSourceType gr_source_type, const std::vector<DRCCheckType>& check_type_list,
-                    const std::vector<DRCRect>& drc_rect_list);
-  std::map<std::string, std::vector<ViolationInfo>> getGRViolationInfo(GRNode& gr_node, GRSourceType gr_source_type,
-                                                                       const std::vector<DRCCheckType>& check_type_list,
-                                                                       const std::vector<DRCRect>& drc_rect_list);
-  void removeInvalidGRViolationInfo(GRNode& gr_node, std::map<std::string, std::vector<ViolationInfo>>& drc_violation_map);
-#endif
 };
 
 }  // namespace irt

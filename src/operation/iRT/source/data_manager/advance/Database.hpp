@@ -19,9 +19,11 @@
 #include "Blockage.hpp"
 #include "CutLayer.hpp"
 #include "Die.hpp"
+#include "GCell.hpp"
 #include "Helper.hpp"
 #include "Net.hpp"
 #include "RoutingLayer.hpp"
+#include "Row.hpp"
 #include "ViaMaster.hpp"
 
 namespace irt {
@@ -35,12 +37,14 @@ class Database
   irt_int get_micron_dbu() const { return _micron_dbu; }
   ScaleAxis& get_gcell_axis() { return _gcell_axis; }
   Die& get_die() { return _die; }
+  Row& get_row() { return _row; }
   std::vector<RoutingLayer>& get_routing_layer_list() { return _routing_layer_list; }
   std::vector<CutLayer>& get_cut_layer_list() { return _cut_layer_list; }
   std::vector<std::vector<ViaMaster>>& get_layer_via_master_list() { return _layer_via_master_list; }
   std::vector<Blockage>& get_routing_blockage_list() { return _routing_blockage_list; }
   std::vector<Blockage>& get_cut_blockage_list() { return _cut_blockage_list; }
   std::vector<Net>& get_net_list() { return _net_list; }
+  GridMap<GCell>& get_gcell_map() { return _gcell_map; }
   // setter
   void set_micron_dbu(const irt_int micron_dbu) { _micron_dbu = micron_dbu; }
   // function
@@ -49,12 +53,14 @@ class Database
   irt_int _micron_dbu = -1;
   ScaleAxis _gcell_axis;
   Die _die;
+  Row _row;
   std::vector<RoutingLayer> _routing_layer_list;
   std::vector<CutLayer> _cut_layer_list;
   std::vector<std::vector<ViaMaster>> _layer_via_master_list;
   std::vector<Blockage> _routing_blockage_list;
   std::vector<Blockage> _cut_blockage_list;
   std::vector<Net> _net_list;
+  GridMap<GCell> _gcell_map;
 };
 
 }  // namespace irt

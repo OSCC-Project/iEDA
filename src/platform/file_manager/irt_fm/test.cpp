@@ -254,16 +254,16 @@ TEST_F(SerializeTest, RTNode)
   irt::RTNode rtnode;
   irt::Guide guide1(irt::PlanarRect{rnd(), rnd(), rnd(), rnd()}, rnd());
   irt::Guide guide2(irt::PlanarRect{rnd(), rnd(), rnd(), rnd()}, rnd());
-  rtnode.set_first_guide(guide1);
-  rtnode.set_second_guide(guide2);
+  rtnode.set_first(guide1);
+  rtnode.set_second(guide2);
   oar << rtnode;
 
   irt::RTNode deserialized;
 
   iar >> deserialized;
 
-  EXPECT_EQ(rtnode.get_first_guide(), deserialized.get_first_guide());
-  EXPECT_EQ(rtnode.get_second_guide(), deserialized.get_second_guide());
+  EXPECT_EQ(rtnode.get_first(), deserialized.get_first());
+  EXPECT_EQ(rtnode.get_second(), deserialized.get_second());
 
   // check if operator== is ok
   guide2.set_lb_x(guide1.get_lb_x() + 1);

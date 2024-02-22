@@ -34,8 +34,6 @@ class Logger
   static Logger& getInst();
   static void destroyInst();
   // function
-  irt_int getLogLevel() const { return _log_level; }
-  void setLogLevel(const irt_int log_level) { _log_level = log_level; }
   void openLogFileStream(const std::string& log_file_path);
   void closeLogFileStream();
   void printLogFilePath();
@@ -43,19 +41,13 @@ class Logger
   template <typename T, typename... Args>
   void info(Loc location, const T& value, const Args&... args)
   {
-    if (_log_level > 0) {
-      return;
-    }
     printLog(LogLevel::kInfo, location, value, args...);
   }
 
   template <typename T, typename... Args>
-  void warning(Loc location, const T& value, const Args&... args)
+  void warn(Loc location, const T& value, const Args&... args)
   {
-    if (_log_level > 1) {
-      return;
-    }
-    printLog(LogLevel::kWarning, location, value, args...);
+    printLog(LogLevel::kWarn, location, value, args...);
   }
 
   template <typename T, typename... Args>
@@ -70,7 +62,6 @@ class Logger
   // self
   static Logger* _log_instance;
   // config & database
-  irt_int _log_level = 0;
   std::string _log_file_path;
   std::ofstream* _log_file = nullptr;
   size_t _temp_storage_size = 1024;
@@ -94,9 +85,9 @@ class Logger
         log_color_start = "\033[1;34m";
         log_level_char = "Info";
         break;
-      case LogLevel::kWarning:
+      case LogLevel::kWarn:
         log_color_start = "\033[1;33m";
-        log_level_char = "Warning";
+        log_level_char = "Warn";
         break;
       case LogLevel::kError:
         log_color_start = "\033[1;31m";
@@ -104,7 +95,7 @@ class Logger
         break;
       default:
         log_color_start = "\033[1;32m";
-        log_level_char = "Info";
+        log_level_char = "None";
         break;
     }
     const char* log_color_end = "\033[0m";

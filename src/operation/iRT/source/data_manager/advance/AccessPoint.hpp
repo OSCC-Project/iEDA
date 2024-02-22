@@ -37,17 +37,14 @@ class AccessPoint : public EXTLayerCoord
   ~AccessPoint() = default;
   // getter
   AccessPointType get_type() const { return _type; }
-  std::set<Orientation>& get_access_orien_set() { return _access_orien_set; }
   // setter
   void set_type(const AccessPointType& type) { _type = type; }
-  void set_access_orien_set(const std::set<Orientation>& access_orien_set) { _access_orien_set = access_orien_set; }
   // function
   LayerCoord getGridLayerCoord() { return LayerCoord(get_grid_coord(), get_layer_idx()); }
   LayerCoord getRealLayerCoord() { return LayerCoord(get_real_coord(), get_layer_idx()); }
 
  private:
   AccessPointType _type = AccessPointType::kNone;
-  std::set<Orientation> _access_orien_set;
 };
 
 }  // namespace irt

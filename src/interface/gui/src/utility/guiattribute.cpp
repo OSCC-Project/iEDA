@@ -122,18 +122,22 @@ void GuiAttribute::updateColorByLayers(std::vector<std::string> layer_list) {
   }
 }
 
-QColor GuiAttribute::getLayerColor(std::string layer) {
+QColor GuiAttribute::getLayerColor(std::string layer, double ration) {
   std::transform(layer.begin(), layer.end(), layer.begin(), ::toupper);
 
   /// find default
   auto it = std::find_if(_default_color_list.begin(), _default_color_list.end(),
                          [layer](auto item) { return layer == item.first; });
   if (it != _default_color_list.end()) {
-    return it->second;
+    return QColor(it->second.red() * ration, it->second.green() * ration, it->second.blue() * ration);
   }
 
   return QColor(100, 100, 100);
 }
+
+QColor GuiAttribute::getLayerColorDark(std::string layer) { return getLayerColor(layer, 0.3); }
+
+QColor GuiAttribute::getLayerColorLight(std::string layer) { return getLayerColor(layer, 0.6); }
 
 QColor GuiAttribute::getLayerColor(int32_t z_oder) {
   return z_oder >= 0 && z_oder < _color_list.size() ? _color_list[z_oder] : QColor(100, 100, 100);
