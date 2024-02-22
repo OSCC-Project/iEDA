@@ -55,11 +55,7 @@
 #include <utility>
 #include <variant>
 
-#include "../../../database/interaction/RT_DRC/BaseRegion.hpp"
-#include "../../../database/interaction/RT_DRC/BaseShape.hpp"
-#include "../../../database/interaction/RT_DRC/BaseViolationInfo.hpp"
 #include "../../../database/interaction/RT_DRC/Boost.hpp"
-#include "../../../database/interaction/RT_DRC/DRCCheckType.hpp"
 #include "libfort/fort.hpp"
 #include "omp.h"
 

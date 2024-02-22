@@ -22,10 +22,6 @@
 #include <string>
 #include <vector>
 
-#include "../../../database/interaction/RT_DRC/BaseRegion.hpp"
-#include "../../../database/interaction/RT_DRC/BaseShape.hpp"
-#include "../../../database/interaction/RT_DRC/BaseViolationInfo.hpp"
-#include "../../../database/interaction/RT_DRC/DRCCheckType.hpp"
 #include "../../../database/interaction/ids.hpp"
 
 namespace irt {
