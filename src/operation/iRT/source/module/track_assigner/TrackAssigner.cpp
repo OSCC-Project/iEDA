@@ -1429,10 +1429,10 @@ void TrackAssigner::plotTAPanel(TAPanel& ta_panel, irt_int curr_task_idx, std::s
 void TrackAssigner::writeTAModel(TAModel& ta_model)
 {
   Monitor monitor;
-  LOG_INST.info(Loc::current(), "Begin writing...");
+  LOG_INST.info(Loc::current(), "Begin reporting...");
   writeNetCSV(ta_model);
   writeViolationCSV(ta_model);
-  LOG_INST.info(Loc::current(), "End write", monitor.getStatsInfo());
+  LOG_INST.info(Loc::current(), "End report", monitor.getStatsInfo());
 }
 
 void TrackAssigner::writeNetCSV(TAModel& ta_model)

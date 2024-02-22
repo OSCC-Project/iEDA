@@ -43,13 +43,13 @@ class DataManager
   void updateFixedRectToGCellMap(ChangeType change_type, irt_int net_idx, EXTLayerRect* ext_layer_rect, bool is_routing);
   void updateAccessPointToGCellMap(ChangeType change_type, irt_int net_idx, AccessPoint* access_point);
   void updateNetResultToGCellMap(ChangeType change_type, irt_int net_idx, Segment<LayerCoord>* segment);
-  void updateViolationToGCellMap(ChangeType change_type, Violation* violation);
   void updatePatchToGCellMap(ChangeType change_type, irt_int net_idx, EXTLayerRect* ext_layer_rect);
+  void updateViolationToGCellMap(ChangeType change_type, Violation* violation);
   std::map<bool, std::map<irt_int, std::map<irt_int, std::set<EXTLayerRect*>>>> getTypeLayerNetFixedRectMap(EXTPlanarRect& region);
   std::map<irt_int, std::set<AccessPoint*>> getNetAccessPointMap(EXTPlanarRect& region);
   std::map<irt_int, std::set<Segment<LayerCoord>*>> getNetResultMap(EXTPlanarRect& region);
-  std::set<Violation*> getViolationSet(EXTPlanarRect& region);
   std::map<irt_int, std::set<EXTLayerRect*>> getNetPatchMap(EXTPlanarRect& region);
+  std::set<Violation*> getViolationSet(EXTPlanarRect& region);
 #endif
 
 #if 1  // 获得NetShapeList

@@ -61,7 +61,8 @@ class PinAccessor
 
 #if 1  // exhibit 
   void plotPAModel(PAModel& pa_model);
-  void writePAModel(PAModel& pa_model);
+  void reportPAModel(PAModel& pa_model);
+  void reportSummary(PAModel& pa_model);
   void writePinCSV(PAModel& pa_model);
 #endif
 };

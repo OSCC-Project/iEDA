@@ -56,7 +56,8 @@ class SupplyAnalyzer
 
 #if 1  // exhibit 
   void plotSAModel(SAModel& sa_model);
-  void writeSAModel(SAModel& sa_model);
+  void reportSAModel(SAModel& sa_model);
+  void reportSummary(SAModel& sa_model);
   void writeSupplyCSV(SAModel& sa_model);
 #endif
 };

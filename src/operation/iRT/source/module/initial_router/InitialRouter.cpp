@@ -1134,10 +1134,10 @@ void InitialRouter::outputGuide(IRModel& ir_model)
 void InitialRouter::writeIRModel(IRModel& ir_model)
 {
   Monitor monitor;
-  LOG_INST.info(Loc::current(), "Begin writing...");
+  LOG_INST.info(Loc::current(), "Begin reporting...");
   writeDemandCSV(ir_model);
   writeOverflowCSV(ir_model);
-  LOG_INST.info(Loc::current(), "End write", monitor.getStatsInfo());
+  LOG_INST.info(Loc::current(), "End report", monitor.getStatsInfo());
 }
 
 void InitialRouter::writeDemandCSV(IRModel& ir_model)

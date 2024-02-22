@@ -61,7 +61,7 @@ void PinAccessor::access(std::vector<Net>& net_list)
   LOG_INST.info(Loc::current(), "End access", monitor.getStatsInfo());
 
   plotPAModel(pa_model);
-  writePAModel(pa_model);
+  reportPAModel(pa_model);
 }
 
 // private
@@ -489,12 +489,41 @@ void PinAccessor::plotPAModel(PAModel& pa_model)
   GP_INST.plot(gp_gds, gds_file_path);
 }
 
-void PinAccessor::writePAModel(PAModel& pa_model)
+void PinAccessor::reportPAModel(PAModel& pa_model)
 {
   Monitor monitor;
-  LOG_INST.info(Loc::current(), "Begin writing...");
+  LOG_INST.info(Loc::current(), "Begin reporting...");
+  reportSummary(pa_model);
   writePinCSV(pa_model);
-  LOG_INST.info(Loc::current(), "End write", monitor.getStatsInfo());
+  LOG_INST.info(Loc::current(), "End report", monitor.getStatsInfo());
+}
+
+void PinAccessor::reportSummary(PAModel& pa_model)
+{
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+  std::map<irt_int, irt_int>& pa_routing_access_point_map = DM_INST.getReporter().pa_routing_access_point_map;
+  std::map<AccessPointType, irt_int>& pa_type_access_point_map = DM_INST.getReporter().pa_type_access_point_map;
+  irt_int& pa_total_access_point_num = DM_INST.getReporter().pa_total_access_point_num;
+
+  for (RoutingLayer& routing_layer : routing_layer_list) {
+    pa_routing_access_point_map[routing_layer.get_layer_idx()] = 0;
+  }
+  pa_type_access_point_map = {{AccessPointType::kNone, 0},
+                              {AccessPointType::kPrefTrackGrid, 0},
+                              {AccessPointType::kCurrTrackGrid, 0},
+                              {AccessPointType::kTrackCenter, 0},
+                              {AccessPointType::kShapeCenter, 0}};
+  pa_total_access_point_num = 0;
+
+  for (PANet& pa_net : pa_model.get_pa_net_list()) {
+    for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
+      for (AccessPoint& access_point : pa_pin.get_access_point_list()) {
+        pa_routing_access_point_map[access_point.get_layer_idx()]++;
+        pa_type_access_point_map[access_point.get_type()]++;
+        pa_total_access_point_num++;
+      }
+    }
+  }
 }
 
 void PinAccessor::writePinCSV(PAModel& pa_model)

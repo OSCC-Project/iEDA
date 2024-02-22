@@ -61,7 +61,7 @@ void SupplyAnalyzer::analyze(std::vector<Net>& net_list)
   LOG_INST.info(Loc::current(), "End analyze", monitor.getStatsInfo());
 
   plotSAModel(sa_model);
-  writeSAModel(sa_model);
+  reportSAModel(sa_model);
 }
 
 // private
@@ -351,12 +351,38 @@ void SupplyAnalyzer::plotSAModel(SAModel& sa_model)
   GP_INST.plot(gp_gds, gds_file_path);
 }
 
-void SupplyAnalyzer::writeSAModel(SAModel& sa_model)
+void SupplyAnalyzer::reportSAModel(SAModel& sa_model)
 {
   Monitor monitor;
-  LOG_INST.info(Loc::current(), "Begin writing...");
+  LOG_INST.info(Loc::current(), "Begin reporting...");
+  reportSummary(sa_model);
   writeSupplyCSV(sa_model);
-  LOG_INST.info(Loc::current(), "End write", monitor.getStatsInfo());
+  LOG_INST.info(Loc::current(), "End report", monitor.getStatsInfo());
+}
+
+void SupplyAnalyzer::reportSummary(SAModel& sa_model)
+{
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+  std::map<irt_int, irt_int>& sa_routing_supply_map = DM_INST.getReporter().sa_routing_supply_map;
+  irt_int& sa_total_supply_num = DM_INST.getReporter().sa_total_supply_num;
+
+  for (RoutingLayer& routing_layer : routing_layer_list) {
+    sa_routing_supply_map[routing_layer.get_layer_idx()] = 0;
+  }
+  sa_total_supply_num = 0;
+
+  std::vector<GridMap<SANode>>& layer_node_map = sa_model.get_layer_node_map();
+  for (size_t layer_idx = 0; layer_idx < layer_node_map.size(); layer_idx++) {
+    GridMap<SANode>& sa_node_map = layer_node_map[layer_idx];
+    for (irt_int grid_x = 0; grid_x < sa_node_map.get_x_size(); grid_x++) {
+      for (irt_int grid_y = 0; grid_y < sa_node_map.get_y_size(); grid_y++) {
+        for (auto& [orien, supply] : sa_node_map[grid_x][grid_y].get_orien_supply_map()) {
+          sa_routing_supply_map[layer_idx] += supply;
+          sa_total_supply_num += supply;
+        }
+      }
+    }
+  }
 }
 
 void SupplyAnalyzer::writeSupplyCSV(SAModel& sa_model)

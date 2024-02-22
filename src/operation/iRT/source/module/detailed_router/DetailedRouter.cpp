@@ -1891,10 +1891,10 @@ void DetailedRouter::plotDRBox(DRBox& dr_box, irt_int curr_task_idx, std::string
 void DetailedRouter::writeDRModel(DRModel& dr_model, size_t iter)
 {
   Monitor monitor;
-  LOG_INST.info(Loc::current(), "Begin writing...");
+  LOG_INST.info(Loc::current(), "Begin reporting...");
   writeNetCSV(dr_model, iter);
   writeViolationCSV(dr_model, iter);
-  LOG_INST.info(Loc::current(), "End write", monitor.getStatsInfo());
+  LOG_INST.info(Loc::current(), "End report", monitor.getStatsInfo());
 }
 
 void DetailedRouter::writeNetCSV(DRModel& dr_model, size_t iter)

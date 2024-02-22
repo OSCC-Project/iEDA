@@ -135,24 +135,6 @@ void DataManager::updateNetResultToGCellMap(ChangeType change_type, irt_int net_
   }
 }
 
-void DataManager::updateViolationToGCellMap(ChangeType change_type, Violation* violation)
-{
-  GridMap<GCell>& gcell_map = _database.get_gcell_map();
-
-  PlanarRect& grid_rect = violation->get_violation_shape().get_grid_rect();
-
-  for (irt_int x = grid_rect.get_lb_x(); x <= grid_rect.get_rt_x(); x++) {
-    for (irt_int y = grid_rect.get_lb_y(); y <= grid_rect.get_rt_y(); y++) {
-      GCell& gcell = gcell_map[x][y];
-      if (change_type == ChangeType::kAdd) {
-        gcell.get_violation_set().insert(violation);
-      } else {
-        gcell.get_violation_set().erase(violation);
-      }
-    }
-  }
-}
-
 void DataManager::updatePatchToGCellMap(ChangeType change_type, irt_int net_idx, EXTLayerRect* ext_layer_rect)
 {
   GridMap<GCell>& gcell_map = _database.get_gcell_map();
@@ -167,6 +149,24 @@ void DataManager::updatePatchToGCellMap(ChangeType change_type, irt_int net_idx,
         if (net_patch_map[net_idx].empty()) {
           net_patch_map.erase(net_idx);
         }
+      }
+    }
+  }
+}
+
+void DataManager::updateViolationToGCellMap(ChangeType change_type, Violation* violation)
+{
+  GridMap<GCell>& gcell_map = _database.get_gcell_map();
+
+  PlanarRect& grid_rect = violation->get_violation_shape().get_grid_rect();
+
+  for (irt_int x = grid_rect.get_lb_x(); x <= grid_rect.get_rt_x(); x++) {
+    for (irt_int y = grid_rect.get_lb_y(); y <= grid_rect.get_rt_y(); y++) {
+      GCell& gcell = gcell_map[x][y];
+      if (change_type == ChangeType::kAdd) {
+        gcell.get_violation_set().insert(violation);
+      } else {
+        gcell.get_violation_set().erase(violation);
       }
     }
   }
@@ -222,19 +222,6 @@ std::map<irt_int, std::set<Segment<LayerCoord>*>> DataManager::getNetResultMap(E
   return net_result_map;
 }
 
-std::set<Violation*> DataManager::getViolationSet(EXTPlanarRect& region)
-{
-  GridMap<GCell>& gcell_map = _database.get_gcell_map();
-
-  std::set<Violation*> violation_set;
-  for (irt_int x = region.get_grid_lb_x(); x <= region.get_grid_rt_x(); x++) {
-    for (irt_int y = region.get_grid_lb_y(); y <= region.get_grid_rt_y(); y++) {
-      violation_set.insert(gcell_map[x][y].get_violation_set().begin(), gcell_map[x][y].get_violation_set().end());
-    }
-  }
-  return violation_set;
-}
-
 std::map<irt_int, std::set<EXTLayerRect*>> DataManager::getNetPatchMap(EXTPlanarRect& region)
 {
   GridMap<GCell>& gcell_map = _database.get_gcell_map();
@@ -248,6 +235,19 @@ std::map<irt_int, std::set<EXTLayerRect*>> DataManager::getNetPatchMap(EXTPlanar
     }
   }
   return net_patch_map;
+}
+
+std::set<Violation*> DataManager::getViolationSet(EXTPlanarRect& region)
+{
+  GridMap<GCell>& gcell_map = _database.get_gcell_map();
+
+  std::set<Violation*> violation_set;
+  for (irt_int x = region.get_grid_lb_x(); x <= region.get_grid_rt_x(); x++) {
+    for (irt_int y = region.get_grid_lb_y(); y <= region.get_grid_rt_y(); y++) {
+      violation_set.insert(gcell_map[x][y].get_violation_set().begin(), gcell_map[x][y].get_violation_set().end());
+    }
+  }
+  return violation_set;
 }
 
 #endif
@@ -902,34 +902,34 @@ void DataManager::buildConfig()
   if (_config.bottom_routing_layer_idx >= _config.top_routing_layer_idx) {
     LOG_INST.error(Loc::current(), "The routing layer should be at least two layers!");
   }
-  // **********  DetailedRouter   ********** //
-  _config.dr_temp_directory_path = _config.temp_directory_path + "detailed_router/";
-  // **********   GlobalRouter    ********** //
-  _config.gr_temp_directory_path = _config.temp_directory_path + "global_router/";
-  // **********   InitialRouter    ********** //
-  _config.ir_temp_directory_path = _config.temp_directory_path + "initial_router/";
   // **********   PinAccessor     ********** //
   _config.pa_temp_directory_path = _config.temp_directory_path + "pin_accessor/";
   // ********     SupplyAnalyzer    ******** //
   _config.sa_temp_directory_path = _config.temp_directory_path + "supply_analyzer/";
+  // **********   InitialRouter    ********** //
+  _config.ir_temp_directory_path = _config.temp_directory_path + "initial_router/";
+  // **********   GlobalRouter    ********** //
+  _config.gr_temp_directory_path = _config.temp_directory_path + "global_router/";
   // **********   TrackAssigner   ********** //
   _config.ta_temp_directory_path = _config.temp_directory_path + "track_assigner/";
+  // **********  DetailedRouter   ********** //
+  _config.dr_temp_directory_path = _config.temp_directory_path + "detailed_router/";
   /////////////////////////////////////////////
   // **********        RT         ********** //
   RTUtil::createDir(_config.temp_directory_path);
   RTUtil::createDirByFile(_config.log_file_path);
-  // **********  DetailedRouter   ********** //
-  RTUtil::createDir(_config.dr_temp_directory_path);
-  // **********   GlobalRouter    ********** //
-  RTUtil::createDir(_config.gr_temp_directory_path);
-  // **********   InitialRouter    ********** //
-  RTUtil::createDir(_config.ir_temp_directory_path);
   // **********   PinAccessor     ********** //
   RTUtil::createDir(_config.pa_temp_directory_path);
   // **********   SupplyAnalyzer     ********** //
   RTUtil::createDir(_config.sa_temp_directory_path);
+  // **********   InitialRouter    ********** //
+  RTUtil::createDir(_config.ir_temp_directory_path);
+  // **********   GlobalRouter    ********** //
+  RTUtil::createDir(_config.gr_temp_directory_path);
   // **********   TrackAssigner   ********** //
   RTUtil::createDir(_config.ta_temp_directory_path);
+  // **********  DetailedRouter   ********** //
+  RTUtil::createDir(_config.dr_temp_directory_path);
   /////////////////////////////////////////////
 }
 
@@ -1631,18 +1631,6 @@ void DataManager::printConfig()
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.bottom_routing_layer_idx);
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "top_routing_layer_idx");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.top_routing_layer_idx);
-  // **********  DetailedRouter   ********** //
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "DetailedRouter");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), "dr_temp_directory_path");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(3), _config.dr_temp_directory_path);
-  // **********   GlobalRouter    ********** //
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "GlobalRouter");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), "gr_temp_directory_path");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(3), _config.gr_temp_directory_path);
-  // **********   InitialRouter    ********** //
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "InitialRouter");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), "ir_temp_directory_path");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(3), _config.ir_temp_directory_path);
   // **********   PinAccessor     ********** //
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "PinAccessor");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), "pa_temp_directory_path");
@@ -1651,10 +1639,22 @@ void DataManager::printConfig()
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "SupplyAnalyzer");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), "sa_temp_directory_path");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(3), _config.sa_temp_directory_path);
+  // **********   InitialRouter    ********** //
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "InitialRouter");
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), "ir_temp_directory_path");
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(3), _config.ir_temp_directory_path);
+  // **********   GlobalRouter    ********** //
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "GlobalRouter");
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), "gr_temp_directory_path");
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(3), _config.gr_temp_directory_path);
   // **********   TrackAssigner   ********** //
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "TrackAssigner");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), "ta_temp_directory_path");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(3), _config.ta_temp_directory_path);
+  // **********  DetailedRouter   ********** //
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "DetailedRouter");
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), "dr_temp_directory_path");
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(3), _config.dr_temp_directory_path);
   /////////////////////////////////////////////
 }
 
@@ -1771,7 +1771,6 @@ void DataManager::writePYScript()
   std::string temp_directory_path = DM_INST.getConfig().temp_directory_path;
 
   std::ofstream* python_file = RTUtil::getOutputFileStream(RTUtil::getString(temp_directory_path, "plot.py"));
-
   RTUtil::pushStream(python_file, "import os", "\n");
   RTUtil::pushStream(python_file, "import pandas as pd", "\n");
   RTUtil::pushStream(python_file, "import matplotlib.pyplot as plt", "\n");

@@ -26,19 +26,40 @@ class Reporter
   Reporter() = default;
   ~Reporter() = default;
   /////////////////////////////////////////////
-  // 
-
-  // ir
-  std::map<std::string, irt_int> ir_routing_supply_map;
-  std::map<std::string, irt_int> ir_routing_demand_map;
-  std::map<std::string, double> ir_routing_wire_length_map;
-  std::map<std::string, irt_int> ir_cut_via_num_map;
-  std::map<std::string, std::vector<double>> ir_net_timing_map;
-  // gr
-  // dr
-  std::map<std::string, std::vector<double>> dr_routing_wire_length_map;
-  std::map<std::string, std::vector<double>> dr_cut_via_num_map;
-  std::map<std::string, std::vector<double>> dr_net_timing_map;
+  // **********   RT     ********** //
+  // **********   PinAccessor     ********** //
+  std::map<irt_int, irt_int> pa_routing_access_point_map;
+  std::map<AccessPointType, irt_int> pa_type_access_point_map;
+  irt_int pa_total_access_point_num = 0;
+  // ********     SupplyAnalyzer    ******** //
+  std::map<irt_int, irt_int> sa_routing_supply_map;
+  irt_int sa_total_supply_num = 0;
+  // **********   InitialRouter    ********** //
+  std::map<irt_int, irt_int> ir_routing_demand_map;
+  irt_int ir_total_demand_num = 0;
+  std::map<irt_int, irt_int> ir_routing_overflow_map;
+  irt_int ir_total_overflow_num = 0;
+  std::map<irt_int, double> ir_routing_wire_length_map;
+  double ir_total_wire_length = 0;
+  std::map<irt_int, irt_int> ir_cut_via_num_map;
+  irt_int ir_total_via_num = 0;
+  std::unordered_map<std::string, std::vector<double>> ir_timing;
+  // **********   GlobalRouter    ********** //
+  // **********   TrackAssigner   ********** //
+  std::map<irt_int, double> ta_routing_wire_length_map;
+  double ta_total_wire_length = 0;
+  std::map<irt_int, irt_int> ta_routing_violation_map;
+  irt_int ta_total_violation_num = 0;
+  // **********  DetailedRouter   ********** //
+  std::map<irt_int, double> dr_routing_wire_length_map;
+  double dr_total_wire_length = 0;
+  std::map<irt_int, irt_int> dr_cut_via_num_map;
+  irt_int dr_total_via_num = 0;
+  std::map<irt_int, double> dr_routing_patch_map;
+  double dr_total_patch = 0;
+  std::map<irt_int, irt_int> dr_routing_violation_map;
+  irt_int dr_total_violation_num = 0;
+  std::unordered_map<std::string, std::vector<double>> dr_timing;
   /////////////////////////////////////////////
 };
 
