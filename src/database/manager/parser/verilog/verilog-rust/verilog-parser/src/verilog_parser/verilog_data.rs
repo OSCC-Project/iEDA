@@ -224,6 +224,10 @@ pub trait VerilogVirtualBaseNetExpr: Debug + VerilogVirtualBaseNetExprClone {
         panic!("This is unknown value.");
     }
 
+    fn get_line_no(&self) -> usize {
+        panic!("This is unknown value.");
+    }
+
     fn as_any(&self) -> &dyn std::any::Any;
 }
 
@@ -291,6 +295,9 @@ impl VerilogVirtualBaseNetExpr for VerilogNetIDExpr {
     fn get_verilog_id(&self) -> &Box<dyn VerilogVirtualBaseID> {
         &self.verilog_id
     }
+    fn get_line_no(&self) -> usize {
+        self.net_expr.get_line_no()
+    }
     fn as_any(&self) -> &dyn std::any::Any {
         self
     }
@@ -330,6 +337,10 @@ impl VerilogVirtualBaseNetExpr for VerilogNetConcatExpr {
         &self.verilog_id_concat.first().unwrap().get_verilog_id()
     }
 
+    fn get_line_no(&self) -> usize {
+        self.net_expr.get_line_no()
+    }
+
     fn as_any(&self) -> &dyn std::any::Any {
         self
     }
@@ -361,6 +372,9 @@ impl VerilogVirtualBaseNetExpr for VerilogConstantExpr {
     }
     fn get_verilog_id(&self) -> &Box<dyn VerilogVirtualBaseID> {
         &self.verilog_id
+    }
+    fn get_line_no(&self) -> usize {
+        self.net_expr.get_line_no()
     }
     fn as_any(&self) -> &dyn std::any::Any {
         self
