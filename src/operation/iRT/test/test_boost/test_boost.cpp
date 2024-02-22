@@ -136,7 +136,7 @@ class RTUtil
   using BGMultiPolyDBL = bg::model::multi_polygon<BGPolyDBL>;
 
  public:
-#if 1  // plot
+#if 1  // exhibit
 
   static void plotGDS(std::string gds_name, std::vector<PlanarRect>& rect_list)
   {

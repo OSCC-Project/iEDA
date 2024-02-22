@@ -129,8 +129,11 @@ class DetailedRouter
   void updateViolationToGraph(DRBox& dr_box, ChangeType change_type, Violation& violation);
 #endif
 
-#if 1  // plot dr_box
+#if 1  // exhibit
   void plotDRBox(DRBox& dr_box, irt_int curr_task_idx, std::string flag);
+  void writeDRModel(DRModel& dr_model, size_t iter);
+  void writeNetCSV(DRModel& dr_model, size_t iter);
+  void writeViolationCSV(DRModel& dr_model, size_t iter);
 #endif
 };
 

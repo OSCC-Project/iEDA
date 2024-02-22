@@ -102,10 +102,10 @@ class InitialRouter
   void updateIRModel(IRModel& ir_model);
   void outputGuide(IRModel& ir_model);
 
-#if 1  // plot ir_model
-  void plotResourceMap(IRModel& ir_model);
-  void writePYScript();
-  void writeResourceCSV(IRModel& ir_model);
+#if 1  // exhibit 
+  void writeIRModel(IRModel& ir_model);
+  void writeDemandCSV(IRModel& ir_model);
+  void writeOverflowCSV(IRModel& ir_model);
 #endif
 };
 

@@ -54,10 +54,9 @@ class SupplyAnalyzer
   bool isAccess(LayerRect& wire, SANode& first_node, SANode& second_node);
   void updateSAModel(SAModel& sa_model);
 
-#if 1  // plot sa_model
+#if 1  // exhibit 
   void plotSAModel(SAModel& sa_model);
-  void plotSupplyMap(SAModel& sa_model);
-  void writePYScript();
+  void writeSAModel(SAModel& sa_model);
   void writeSupplyCSV(SAModel& sa_model);
 #endif
 };

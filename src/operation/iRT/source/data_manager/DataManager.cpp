@@ -61,6 +61,7 @@ void DataManager::input(std::map<std::string, std::any>& config_map, idb::IdbBui
   buildDatabase();
   printConfig();
   printDatabase();
+  writePYScript();
 
   LOG_INST.info(Loc::current(), "End input!", monitor.getStatsInfo());
 }
@@ -382,7 +383,7 @@ idb::IdbRegularWireSegment* DataManager::getIDBSegmentByNetPatch(irt_int net_idx
 
 DataManager* DataManager::_dm_instance = nullptr;
 
-#if 1  // wrap
+#if 1  // input
 
 void DataManager::wrapConfig(std::map<std::string, std::any>& config_map)
 {
@@ -882,10 +883,6 @@ ConnectType DataManager::getRTConnectTypeByDB(idb::IdbConnectType idb_connect_ty
   }
   return connect_type;
 }
-
-#endif
-
-#if 1  // build
 
 void DataManager::buildConfig()
 {
@@ -1611,10 +1608,6 @@ void DataManager::updateHelper()
   }
 }
 
-#endif
-
-#if 1  // print
-
 void DataManager::printConfig()
 {
   omp_set_num_threads(std::max(_config.thread_number, 1));
@@ -1771,6 +1764,38 @@ void DataManager::printDatabase()
                   RTUtil::getPercentage(net_num, net_list.size()), "%)");
   }
   ////////////////////////////////////////////////
+}
+
+void DataManager::writePYScript()
+{
+  std::string temp_directory_path = DM_INST.getConfig().temp_directory_path;
+
+  std::ofstream* python_file = RTUtil::getOutputFileStream(RTUtil::getString(temp_directory_path, "plot.py"));
+
+  RTUtil::pushStream(python_file, "import os", "\n");
+  RTUtil::pushStream(python_file, "import pandas as pd", "\n");
+  RTUtil::pushStream(python_file, "import matplotlib.pyplot as plt", "\n");
+  RTUtil::pushStream(python_file, "import seaborn as sns", "\n");
+  RTUtil::pushStream(python_file, "import numpy as np", "\n");
+  RTUtil::pushStream(python_file, "from multiprocessing import Pool", "\n");
+  RTUtil::pushStream(python_file, "directory = os.getcwd()", "\n");
+  RTUtil::pushStream(python_file, "output_dir = os.path.join(directory, 'output_png')", "\n");
+  RTUtil::pushStream(python_file, "os.makedirs(output_dir, exist_ok=True)", "\n");
+  RTUtil::pushStream(python_file, "def process_csv(filename):", "\n");
+  RTUtil::pushStream(
+      python_file,
+      "    output_name = os.path.basename(os.path.dirname(filename)) + \"_\" + os.path.splitext(os.path.basename(filename))[0]", "\n");
+  RTUtil::pushStream(python_file, "    plt.figure()  ", "\n");
+  RTUtil::pushStream(python_file, "    temp = sns.heatmap(np.array(pd.read_csv(filename)), cmap='hot_r')", "\n");
+  RTUtil::pushStream(python_file, "    temp.set_title(output_name)", "\n");
+  RTUtil::pushStream(python_file, "    plt.savefig(os.path.join(output_dir, output_name + \".png\"), dpi=300, bbox_inches='tight')", "\n");
+  RTUtil::pushStream(python_file, "    plt.close()  ", "\n");
+  RTUtil::pushStream(
+      python_file,
+      "csv_files = [os.path.join(root, file) for root, _, files in os.walk(directory) for file in files if file.endswith(\".csv\")]", "\n");
+  RTUtil::pushStream(python_file, "with Pool() as pool:", "\n");
+  RTUtil::pushStream(python_file, "    pool.map(process_csv, csv_files)", "\n");
+  RTUtil::closeFileStream(python_file);
 }
 
 #endif

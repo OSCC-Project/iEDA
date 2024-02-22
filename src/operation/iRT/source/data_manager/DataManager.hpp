@@ -84,7 +84,8 @@ class DataManager
   ~DataManager() = default;
   DataManager& operator=(const DataManager& other) = delete;
   DataManager& operator=(DataManager&& other) = delete;
-#if 1  // wrap
+
+#if 1  // input
   void wrapConfig(std::map<std::string, std::any>& config_map);
   void wrapDatabase(idb::IdbBuilder* idb_builder);
   void wrapMicronDBU(idb::IdbBuilder* idb_builder);
@@ -107,9 +108,6 @@ class DataManager
   void updateHelper(idb::IdbBuilder* idb_builder);
   Direction getRTDirectionByDB(idb::IdbLayerDirection idb_direction);
   ConnectType getRTConnectTypeByDB(idb::IdbConnectType idb_connect_type);
-#endif
-
-#if 1  // build
   void buildConfig();
   void buildDatabase();
   void buildGCellAxis();
@@ -144,11 +142,9 @@ class DataManager
   void checkPinList(Net& net);
   void buildGCellMap();
   void updateHelper();
-#endif
-
-#if 1  // print
   void printConfig();
   void printDatabase();
+  void writePYScript();
 #endif
 
 #if 1  // output

@@ -15,7 +15,7 @@ using GTLRectInt = gtl::rectangle_data<irt_int>;
 using GTLPolyInt = gtl::polygon_90_data<irt_int>;
 using GTLPolySetInt = gtl::polygon_90_set_data<irt_int>;
 
-#if 1  // plot
+#if 1  // exhibit
 
 void plotGDS(std::string gds_name, std::vector<GTLRectInt>& rect_list)
 {

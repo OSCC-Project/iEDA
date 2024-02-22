@@ -60,6 +60,8 @@ void TrackAssigner::assign(std::vector<Net>& net_list)
   buildPanelSchedule(ta_model);
   assignTAPanelMap(ta_model);
   LOG_INST.info(Loc::current(), "End assign", monitor.getStatsInfo());
+
+  writeTAModel(ta_model);
 }
 
 // private
@@ -301,6 +303,7 @@ void TrackAssigner::assignTAPanelMap(TAModel& ta_model)
       // plotTAPanel(ta_panel, -1, "pre");
       routeTAPanel(ta_panel);
       updateTATaskToGcellMap(ta_panel);
+      updateViolationToGcellMap(ta_panel);
       // plotTAPanel(ta_panel, -1, "post");
       freeTAPanel(ta_panel);
     }
@@ -1022,6 +1025,13 @@ void TrackAssigner::updateTATaskToGcellMap(TAPanel& ta_panel)
   }
 }
 
+void TrackAssigner::updateViolationToGcellMap(TAPanel& ta_panel)
+{
+  for (Violation& violation : ta_panel.get_violation_list()) {
+    DM_INST.updateViolationToGCellMap(ChangeType::kAdd, new Violation(violation));
+  }
+}
+
 void TrackAssigner::freeTAPanel(TAPanel& ta_panel)
 {
   for (TATask* ta_task : ta_panel.get_ta_task_list()) {
@@ -1110,7 +1120,7 @@ std::map<TANode*, std::set<Orientation>> TrackAssigner::getRoutingNodeOrientatio
 
 #endif
 
-#if 1  // plot ta_panel
+#if 1  // exhibit
 
 void TrackAssigner::plotTAPanel(TAPanel& ta_panel, irt_int curr_task_idx, std::string flag)
 {
@@ -1414,6 +1424,97 @@ void TrackAssigner::plotTAPanel(TAPanel& ta_panel, irt_int curr_task_idx, std::s
   std::string gds_file_path = RTUtil::getString(ta_temp_directory_path, flag, "_ta_panel_", ta_panel.get_ta_panel_id().get_layer_idx(), "_",
                                                 ta_panel.get_ta_panel_id().get_panel_idx(), ".gds");
   GP_INST.plot(gp_gds, gds_file_path);
+}
+
+void TrackAssigner::writeTAModel(TAModel& ta_model)
+{
+  Monitor monitor;
+  LOG_INST.info(Loc::current(), "Begin writing...");
+  writeNetCSV(ta_model);
+  writeViolationCSV(ta_model);
+  LOG_INST.info(Loc::current(), "End write", monitor.getStatsInfo());
+}
+
+void TrackAssigner::writeNetCSV(TAModel& ta_model)
+{
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+  std::string ta_temp_directory_path = DM_INST.getConfig().ta_temp_directory_path;
+  GridMap<GCell>& gcell_map = DM_INST.getDatabase().get_gcell_map();
+
+  std::vector<GridMap<irt_int>> layer_net_map;
+  layer_net_map.resize(routing_layer_list.size());
+  for (GridMap<irt_int>& net_map : layer_net_map) {
+    net_map.init(gcell_map.get_x_size(), gcell_map.get_y_size());
+  }
+  for (irt_int x = 0; x < gcell_map.get_x_size(); x++) {
+    for (irt_int y = 0; y < gcell_map.get_y_size(); y++) {
+      std::map<irt_int, std::set<irt_int>> net_layer_map;
+      for (auto& [net_idx, segment_set] : gcell_map[x][y].get_net_result_map()) {
+        for (Segment<LayerCoord>* segment : segment_set) {
+          irt_int first_layer_idx = segment->get_first().get_layer_idx();
+          irt_int second_layer_idx = segment->get_second().get_layer_idx();
+          RTUtil::swapByASC(first_layer_idx, second_layer_idx);
+          for (irt_int layer_idx = first_layer_idx; layer_idx <= second_layer_idx; layer_idx++) {
+            net_layer_map[net_idx].insert(layer_idx);
+          }
+        }
+      }
+      for (auto& [net_idx, patch_set] : gcell_map[x][y].get_net_patch_map()) {
+        for (EXTLayerRect* patch : patch_set) {
+          net_layer_map[net_idx].insert(patch->get_layer_idx());
+        }
+      }
+      for (auto& [net_idx, layer_set] : net_layer_map) {
+        for (irt_int layer_idx : layer_set) {
+          layer_net_map[layer_idx][x][y]++;
+        }
+      }
+    }
+  }
+  for (RoutingLayer& routing_layer : routing_layer_list) {
+    std::ofstream* net_csv_file
+        = RTUtil::getOutputFileStream(RTUtil::getString(ta_temp_directory_path, "net_map_", routing_layer.get_layer_name(), ".csv"));
+    GridMap<irt_int>& net_map = layer_net_map[routing_layer.get_layer_idx()];
+    for (irt_int y = net_map.get_y_size() - 1; y >= 0; y--) {
+      for (irt_int x = 0; x < net_map.get_x_size(); x++) {
+        RTUtil::pushStream(net_csv_file, net_map[x][y], ",");
+      }
+      RTUtil::pushStream(net_csv_file, "\n");
+    }
+    RTUtil::closeFileStream(net_csv_file);
+  }
+}
+
+void TrackAssigner::writeViolationCSV(TAModel& ta_model)
+{
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+  std::string ta_temp_directory_path = DM_INST.getConfig().ta_temp_directory_path;
+  GridMap<GCell>& gcell_map = DM_INST.getDatabase().get_gcell_map();
+
+  std::vector<GridMap<irt_int>> layer_violation_map;
+  layer_violation_map.resize(routing_layer_list.size());
+  for (GridMap<irt_int>& violation_map : layer_violation_map) {
+    violation_map.init(gcell_map.get_x_size(), gcell_map.get_y_size());
+  }
+  for (irt_int x = 0; x < gcell_map.get_x_size(); x++) {
+    for (irt_int y = 0; y < gcell_map.get_y_size(); y++) {
+      for (Violation* violation : gcell_map[x][y].get_violation_set()) {
+        layer_violation_map[violation->get_violation_shape().get_layer_idx()][x][y]++;
+      }
+    }
+  }
+  for (RoutingLayer& routing_layer : routing_layer_list) {
+    std::ofstream* violation_csv_file
+        = RTUtil::getOutputFileStream(RTUtil::getString(ta_temp_directory_path, "violation_map_", routing_layer.get_layer_name(), ".csv"));
+    GridMap<irt_int>& violation_map = layer_violation_map[routing_layer.get_layer_idx()];
+    for (irt_int y = violation_map.get_y_size() - 1; y >= 0; y--) {
+      for (irt_int x = 0; x < violation_map.get_x_size(); x++) {
+        RTUtil::pushStream(violation_csv_file, violation_map[x][y], ",");
+      }
+      RTUtil::pushStream(violation_csv_file, "\n");
+    }
+    RTUtil::closeFileStream(violation_csv_file);
+  }
 }
 
 #endif

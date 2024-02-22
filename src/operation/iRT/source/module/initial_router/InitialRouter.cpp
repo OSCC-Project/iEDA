@@ -65,7 +65,7 @@ void InitialRouter::route(std::vector<Net>& net_list)
   outputGuide(ir_model);
   LOG_INST.info(Loc::current(), "End route", monitor.getStatsInfo());
 
-  plotResourceMap(ir_model);
+  writeIRModel(ir_model);
 }
 
 // private
@@ -1129,63 +1129,18 @@ void InitialRouter::outputGuide(IRModel& ir_model)
   RTUtil::closeFileStream(guide_file_stream);
 }
 
-#if 1  // plot ir_model
+#if 1  // exhibit
 
-void InitialRouter::plotResourceMap(IRModel& ir_model)
+void InitialRouter::writeIRModel(IRModel& ir_model)
 {
-  writePYScript();
-  writeResourceCSV(ir_model);
+  Monitor monitor;
+  LOG_INST.info(Loc::current(), "Begin writing...");
+  writeDemandCSV(ir_model);
+  writeOverflowCSV(ir_model);
+  LOG_INST.info(Loc::current(), "End write", monitor.getStatsInfo());
 }
 
-void InitialRouter::writePYScript()
-{
-  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
-  std::string ir_temp_directory_path = DM_INST.getConfig().ir_temp_directory_path;
-
-  std::ofstream* python_file = RTUtil::getOutputFileStream(RTUtil::getString(ir_temp_directory_path, "plot.py"));
-  RTUtil::pushStream(python_file, "from concurrent.futures import ProcessPoolExecutor", "\n");
-  RTUtil::pushStream(python_file, "import numpy as np", "\n");
-  RTUtil::pushStream(python_file, "import matplotlib.pyplot as plt", "\n");
-  RTUtil::pushStream(python_file, "import seaborn as sns", "\n");
-  RTUtil::pushStream(python_file, "import pandas as pd", "\n");
-  RTUtil::pushStream(python_file, "from PIL import Image", "\n");
-  RTUtil::pushStream(python_file, "import os", "\n");
-  RTUtil::pushStream(python_file, "def process_map(layer):", "\n");
-  RTUtil::pushStream(python_file, "    plt.clf()", "\n");
-  RTUtil::pushStream(python_file, "    supply = sns.heatmap(np.array(pd.read_csv(f'{layer}_supply_map.csv')), cmap='hot_r')", "\n");
-  RTUtil::pushStream(python_file, "    supply.set_title(f'{layer}_supply_map')", "\n");
-  RTUtil::pushStream(python_file, "    supply.get_figure().savefig(f'{layer}_supply_map.png', dpi=300)", "\n");
-  RTUtil::pushStream(python_file, "    plt.clf()", "\n");
-  RTUtil::pushStream(python_file, "    demand = sns.heatmap(np.array(pd.read_csv(f'{layer}_demand_map.csv')), cmap='hot_r')", "\n");
-  RTUtil::pushStream(python_file, "    demand.set_title(f'{layer}_demand_map')", "\n");
-  RTUtil::pushStream(python_file, "    demand.get_figure().savefig(f'{layer}_demand_map.png', dpi=300)", "\n");
-  RTUtil::pushStream(python_file, "    plt.clf()", "\n");
-  RTUtil::pushStream(python_file, "    overflow = sns.heatmap(np.array(pd.read_csv(f'{layer}_overflow_map.csv')), cmap='hot_r')", "\n");
-  RTUtil::pushStream(python_file, "    overflow.set_title(f'{layer}_overflow_map')", "\n");
-  RTUtil::pushStream(python_file, "    overflow.get_figure().savefig(f'{layer}_overflow_map.png', dpi=300)", "\n");
-  RTUtil::pushStream(python_file, "    image1 = Image.open(f'{layer}_supply_map.png')", "\n");
-  RTUtil::pushStream(python_file, "    image2 = Image.open(f'{layer}_demand_map.png')", "\n");
-  RTUtil::pushStream(python_file, "    image3 = Image.open(f'{layer}_overflow_map.png')", "\n");
-  RTUtil::pushStream(python_file, "    width, height = image1.size", "\n");
-  RTUtil::pushStream(python_file, "    new_image = Image.new('RGB', (width * 3, height))", "\n");
-  RTUtil::pushStream(python_file, "    new_image.paste(image1, (0, 0))", "\n");
-  RTUtil::pushStream(python_file, "    new_image.paste(image2, (width, 0))", "\n");
-  RTUtil::pushStream(python_file, "    new_image.paste(image3, (width * 2, 0))", "\n");
-  RTUtil::pushStream(python_file, "    new_image.save(f'{layer}_map.png')", "\n");
-  RTUtil::pushStream(python_file, "    os.remove(f'{layer}_supply_map.png')", "\n");
-  RTUtil::pushStream(python_file, "    os.remove(f'{layer}_demand_map.png')", "\n");
-  RTUtil::pushStream(python_file, "    os.remove(f'{layer}_overflow_map.png')", "\n");
-  RTUtil::pushStream(python_file, "layers = [");
-  for (RoutingLayer& routing_layer : routing_layer_list) {
-    RTUtil::pushStream(python_file, "'", routing_layer.get_layer_name(), "',");
-  }
-  RTUtil::pushStream(python_file, "]", "\n");
-  RTUtil::pushStream(python_file, "with ProcessPoolExecutor() as executor:", "\n");
-  RTUtil::pushStream(python_file, "    executor.map(process_map, layers)", "\n");
-  RTUtil::closeFileStream(python_file);
-}
-
-void InitialRouter::writeResourceCSV(IRModel& ir_model)
+void InitialRouter::writeDemandCSV(IRModel& ir_model)
 {
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
   std::string ir_temp_directory_path = DM_INST.getConfig().ir_temp_directory_path;
@@ -1193,12 +1148,41 @@ void InitialRouter::writeResourceCSV(IRModel& ir_model)
   std::vector<GridMap<IRNode>>& layer_node_map = ir_model.get_layer_node_map();
 
   for (RoutingLayer& routing_layer : routing_layer_list) {
-    std::ofstream* supply_csv_file
-        = RTUtil::getOutputFileStream(RTUtil::getString(ir_temp_directory_path, routing_layer.get_layer_name(), "_supply_map.csv"));
     std::ofstream* demand_csv_file
-        = RTUtil::getOutputFileStream(RTUtil::getString(ir_temp_directory_path, routing_layer.get_layer_name(), "_demand_map.csv"));
+        = RTUtil::getOutputFileStream(RTUtil::getString(ir_temp_directory_path, "demand_map_", routing_layer.get_layer_name(), ".csv"));
+
+    GridMap<IRNode>& ir_node_map = layer_node_map[routing_layer.get_layer_idx()];
+    for (irt_int y = ir_node_map.get_y_size() - 1; y >= 0; y--) {
+      for (irt_int x = 0; x < ir_node_map.get_x_size(); x++) {
+        std::map<Orientation, irt_int>& orien_demand_map = ir_node_map[x][y].get_orien_demand_map();
+        if (routing_layer.isPreferH()) {
+          irt_int east_demand = orien_demand_map[Orientation::kEast];
+          irt_int west_demand = orien_demand_map[Orientation::kWest];
+
+          RTUtil::pushStream(demand_csv_file, east_demand + west_demand, ",");
+        } else {
+          irt_int south_demand = orien_demand_map[Orientation::kSouth];
+          irt_int north_demand = orien_demand_map[Orientation::kNorth];
+
+          RTUtil::pushStream(demand_csv_file, south_demand + north_demand, ",");
+        }
+      }
+      RTUtil::pushStream(demand_csv_file, "\n");
+    }
+    RTUtil::closeFileStream(demand_csv_file);
+  }
+}
+
+void InitialRouter::writeOverflowCSV(IRModel& ir_model)
+{
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+  std::string ir_temp_directory_path = DM_INST.getConfig().ir_temp_directory_path;
+
+  std::vector<GridMap<IRNode>>& layer_node_map = ir_model.get_layer_node_map();
+
+  for (RoutingLayer& routing_layer : routing_layer_list) {
     std::ofstream* overflow_csv_file
-        = RTUtil::getOutputFileStream(RTUtil::getString(ir_temp_directory_path, routing_layer.get_layer_name(), "_overflow_map.csv"));
+        = RTUtil::getOutputFileStream(RTUtil::getString(ir_temp_directory_path, "overflow_map_", routing_layer.get_layer_name(), ".csv"));
 
     GridMap<IRNode>& ir_node_map = layer_node_map[routing_layer.get_layer_idx()];
     for (irt_int y = ir_node_map.get_y_size() - 1; y >= 0; y--) {
@@ -1211,8 +1195,6 @@ void InitialRouter::writeResourceCSV(IRModel& ir_model)
           irt_int east_demand = orien_demand_map[Orientation::kEast];
           irt_int west_demand = orien_demand_map[Orientation::kWest];
 
-          RTUtil::pushStream(supply_csv_file, east_supply + west_supply, ",");
-          RTUtil::pushStream(demand_csv_file, east_demand + west_demand, ",");
           RTUtil::pushStream(overflow_csv_file, std::max(0, east_demand - east_supply) + std::max(0, west_demand - west_supply), ",");
         } else {
           irt_int south_supply = orien_supply_map[Orientation::kSouth];
@@ -1220,17 +1202,11 @@ void InitialRouter::writeResourceCSV(IRModel& ir_model)
           irt_int south_demand = orien_demand_map[Orientation::kSouth];
           irt_int north_demand = orien_demand_map[Orientation::kNorth];
 
-          RTUtil::pushStream(supply_csv_file, south_supply + north_supply, ",");
-          RTUtil::pushStream(demand_csv_file, south_demand + north_demand, ",");
           RTUtil::pushStream(overflow_csv_file, std::max(0, south_demand - south_supply) + std::max(0, north_demand - north_supply), ",");
         }
       }
-      RTUtil::pushStream(supply_csv_file, "\n");
-      RTUtil::pushStream(demand_csv_file, "\n");
       RTUtil::pushStream(overflow_csv_file, "\n");
     }
-    RTUtil::closeFileStream(supply_csv_file);
-    RTUtil::closeFileStream(demand_csv_file);
     RTUtil::closeFileStream(overflow_csv_file);
   }
 }

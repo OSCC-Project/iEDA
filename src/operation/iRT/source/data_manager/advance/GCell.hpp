@@ -54,11 +54,6 @@ class GCell
   void set_violation_set(const std::set<Violation*>& violation_set) { _violation_set = violation_set; }
   void set_net_patch_map(const std::map<irt_int, std::set<EXTLayerRect*>>& net_patch_map) { _net_patch_map = net_patch_map; }
   // function
-  irt_int getSupply(irt_int layer_idx, Orientation orientation)
-  {
-    irt_int origin_supply = _routing_orien_supply_map[layer_idx][orientation];
-    return std::max(0, origin_supply - _deducted_supply);
-  }
 
  private:
   // blockage & pin_shape 如果是routing则true，cut则false
@@ -67,8 +62,6 @@ class GCell
   std::map<irt_int, std::set<AccessPoint*>> _net_access_point_map;
   // global supply 只有routing层有
   std::map<irt_int, std::map<Orientation, irt_int>> _routing_orien_supply_map;
-  // 每层每个方向上扣除的supply根数，相比于比率更准确
-  irt_int _deducted_supply = 0;
   // routing result
   std::map<irt_int, std::set<Segment<LayerCoord>*>> _net_result_map;
   // violation region

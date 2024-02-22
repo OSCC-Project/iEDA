@@ -59,10 +59,9 @@ class PinAccessor
   void buildAccessPointList(PAModel& pa_model);
   void updatePAModel(PAModel& pa_model);
 
-#if 1  // plot pa_model
+#if 1  // exhibit 
   void plotPAModel(PAModel& pa_model);
-  void plotPinMap(PAModel& pa_model);
-  void writePYScript();
+  void writePAModel(PAModel& pa_model);
   void writePinCSV(PAModel& pa_model);
 #endif
 };

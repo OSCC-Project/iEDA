@@ -22,7 +22,7 @@ iterativeDRModel:迭代DRModel
             updateViolationList:首先通过idrc得到Violation存到Box下面，然后Violation结果从graph中删除，再加入新的结果
             getTaskScheduleByViolation:通过Violation得到新的布线调度
         updateDRTaskToGcellMap:将布线结果和patch加入gcell_map,不需要将之前的结果删除
-        updateViolationToGcellMap:将Violation和patch加入gcell_map,不需要将之前的结果删除
+        updateViolationToGcellMap:将violation加入gcell_map,不需要将之前的结果删除
         freeDRBox:析构
 
 
