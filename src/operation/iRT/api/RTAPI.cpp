@@ -718,4 +718,20 @@ void RTAPI::clearDef()
   // 删除虚空的io_pin
   std::vector<idb::IdbPin*> remove_pin_list;
   for (idb::IdbPin* io_pin : idb_pin_list->get_pin_list()) {
-    if (io_pin->get_port_box_lis
+    if (io_pin->get_port_box_list().empty()) {
+      std::cout << io_pin->get_pin_name() << std::endl;
+      remove_pin_list.push_back(io_pin);
+    }
+  }
+  for (idb::IdbPin* io_pin : remove_pin_list) {
+    idb_pin_list->remove_pin(io_pin);
+  }
+  // 删除虚空的io_pin
+  //////////////////////////////////////////
+}
+
+// private
+
+RTAPI* RTAPI::_rt_api_instance = nullptr;
+
+}  // namespace irt
