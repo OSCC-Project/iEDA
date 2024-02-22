@@ -16,48 +16,56 @@
 // ***************************************************************************************
 #pragma once
 
-#include <map>
 #include <string>
 
-#define DrcViolationTypeInst idrc::ViolationEnum::getInst()
 namespace idrc {
 
 enum class ViolationEnumType
 {
   kNone,
-  kViolationArea,
-  kViolationAreaEnclosed,
-  kViolationShort,
-  kViolationMinSpacing,
-  kViolationPRL,
-  kViolationJogToJog,
-  kViolationEOL,
-  kViolationWidth,
-  kViolationMinStep,
-  kViolationNotch,
-  kViolationConnectivity,
+  kArea,
+  kAreaEnclosed,
+  kShort,
+  kDefaultSpacing,
+  kPRLSpacing,
+  kJogToJog,
+  kEOL,
+  kWidth,
+  kMinStep,
+  kNotch,
+  kConnectivity,
   kMax
 };
 
-class ViolationEnum
+struct GetViolationTypeName
 {
- public:
-  static ViolationEnum* getInst()
+  std::string operator()(const ViolationEnumType& type) const
   {
-    if (_instance == nullptr) {
-      _instance = new ViolationEnum();
+    switch (type) {
+      case ViolationEnumType::kArea:
+        return "Area";
+      case ViolationEnumType::kAreaEnclosed:
+        return "Encolsed Area";
+      case ViolationEnumType::kShort:
+        return "Metal Short";
+      case ViolationEnumType::kDefaultSpacing:
+        return "Default Spacing";
+      case ViolationEnumType::kPRLSpacing:
+        return "PRL Spacing";
+      case ViolationEnumType::kJogToJog:
+        return "JogToJog Spacing";
+      case ViolationEnumType::kEOL:
+        return "EndOfLine Spacing";
+      case ViolationEnumType::kWidth:
+        return "Wire Width";
+      case ViolationEnumType::kMinStep:
+        return "Min Step";
+      case ViolationEnumType::kNotch:
+        return "Notch Spacing";
+      default:
+        return "None";
     }
-    return _instance;
   }
-
-  std::string get_type_name(ViolationEnumType type) { return _violation_types[type]; }
-
- private:
-  static ViolationEnum* _instance;
-  std::map<ViolationEnumType, std::string> _violation_types;
-
-  ViolationEnum();
-  ~ViolationEnum() = default;
 };
 
 }  // namespace idrc

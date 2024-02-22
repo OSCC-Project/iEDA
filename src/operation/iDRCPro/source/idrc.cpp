@@ -95,9 +95,9 @@ void DrcManager::check()
 
   connectivity.checkFastMode();
 
-  DrcRuleConditionEOL condition_eol(_condition_manager, _engine);
+  // DrcRuleConditionEOL condition_eol(_condition_manager, _engine);
 
-  condition_eol.checkFastMode();
+  // condition_eol.checkFastMode();
 
   // DrcRuleConditionJog condition_jog(_condition_manager, _engine);
 

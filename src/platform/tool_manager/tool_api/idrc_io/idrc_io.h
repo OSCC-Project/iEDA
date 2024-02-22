@@ -21,8 +21,8 @@
 #include <string>
 #include <vector>
 
-#include "DrcViolationSpot.h"
 #include "file_drc.h"
+#include "idrc_violation.h"
 
 namespace iplf {
 
@@ -40,7 +40,7 @@ class DrcIO
 
   /// getter
   int32_t get_buffer_size();
-  std::map<std::string, std::vector<idrc::DrcViolationSpot*>>& get_detail_drc() { return _detail_drc; }
+  std::map<std::string, std::vector<idrc::DrcViolation*>>& get_detail_drc() { return _detail_drc; }
 
   /// io
   bool runDRC(std::string config = "", std::string report_path = "");
@@ -48,12 +48,12 @@ class DrcIO
   bool readDrcFromFile(std::string path = "");
   bool saveDrcToFile(std::string path);
 
-  std::map<std::string, std::vector<idrc::DrcViolationSpot*>> getDetailCheckResult(std::string path = "");
+  std::map<std::string, std::vector<idrc::DrcViolation*>> getDetailCheckResult(std::string path = "");
 
  private:
   static DrcIO* _instance;
 
-  std::map<std::string, std::vector<idrc::DrcViolationSpot*>> _detail_drc;
+  std::map<std::string, std::vector<idrc::DrcViolation*>> _detail_drc;
   void get_def_drc();
 
   DrcIO() {}

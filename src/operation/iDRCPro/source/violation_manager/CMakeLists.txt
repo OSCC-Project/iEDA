@@ -1,7 +1,6 @@
 add_library(idrc_pro_violation
     idrc_violation_manager.cpp
     idrc_violation.cpp
-    idrc_violation_enum.cpp
 )
 
 target_link_libraries(idrc_pro_violation

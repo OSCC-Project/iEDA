@@ -20,14 +20,8 @@
 #include <string>
 #include <vector>
 
-#include "BaseRegion.hpp"
-#include "BaseShape.hpp"
-#include "BaseViolationInfo.hpp"
-#include "DRCCheckType.hpp"
+#include "DRCViolationType.h"
 #include "idrc_violation.h"
-#include "idrc_violation_enum.h"
-
-using namespace irt;
 
 namespace idb {
 class IdbRegularWireSegment;

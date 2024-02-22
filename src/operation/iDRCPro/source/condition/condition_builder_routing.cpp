@@ -17,10 +17,10 @@
 
 #include <cmath>
 
+#include "DRCViolationType.h"
 #include "condition_builder.h"
 #include "drc_basic_point.h"
 #include "idrc_violation.h"
-#include "idrc_violation_enum.h"
 #include "idrc_violation_manager.h"
 #include "tech_rules.h"
 

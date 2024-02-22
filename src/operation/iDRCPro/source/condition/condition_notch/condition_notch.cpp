@@ -17,10 +17,10 @@
 
 #include "condition_notch.h"
 
+#include "DRCViolationType.h"
 #include "condition.h"
 #include "idrc_util.h"
 #include "idrc_violation.h"
-#include "idrc_violation_enum.h"
 #include "idrc_violation_manager.h"
 #include "rule_condition_edge.h"
 #include "rule_enum.h"
@@ -139,8 +139,8 @@ bool DrcRuleConditionNotch::checkNotch(DrcBasicPoint* point_prev, DrcBasicPoint*
         auto polygon_1 = ieda_solver::GtlPolygon(gtl_pts_1.begin(), gtl_pts_1.end());
 #endif
 
-        DrcViolationRect* violation_rect = new DrcViolationRect(layer, net_ids, llx, lly, urx, ury);
-        auto violation_type = ViolationEnumType::kViolationNotch;
+        auto violation_type = ViolationEnumType::kNotch;
+        DrcViolationRect* violation_rect = new DrcViolationRect(layer, net_ids, violation_type, llx, lly, urx, ury);
         auto* violation_manager = _condition_manager->get_violation_manager();
         auto& violation_list = violation_manager->get_violation_list(violation_type);
         violation_list.emplace_back(static_cast<DrcViolation*>(violation_rect));
@@ -163,8 +163,8 @@ bool DrcRuleConditionNotch::checkNotch(DrcBasicPoint* point_prev, DrcBasicPoint*
         auto polygon_1 = ieda_solver::GtlPolygon(gtl_pts_1.begin(), gtl_pts_1.end());
 #endif
 
-        DrcViolationRect* violation_rect = new DrcViolationRect(layer, net_ids, llx, lly, urx, ury);
-        auto violation_type = ViolationEnumType::kViolationNotch;
+        auto violation_type = ViolationEnumType::kNotch;
+        DrcViolationRect* violation_rect = new DrcViolationRect(layer, net_ids, violation_type, llx, lly, urx, ury);
         auto* violation_manager = _condition_manager->get_violation_manager();
         auto& violation_list = violation_manager->get_violation_list(violation_type);
         violation_list.emplace_back(static_cast<DrcViolation*>(violation_rect));

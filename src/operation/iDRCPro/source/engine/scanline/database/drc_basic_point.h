@@ -60,8 +60,8 @@ class DrcBasicPoint
   };
 
  public:
-  DrcBasicPoint(int x, int y, int id, bool is_endpoint = true, DrcBasicPoint* prev = nullptr, DrcBasicPoint* next = nullptr)
-      : _x(x), _y(y), _id(id), _prev(prev), _next(next)
+  DrcBasicPoint(int x, int y, int id, int polygon_id, bool is_endpoint = true, DrcBasicPoint* prev = nullptr, DrcBasicPoint* next = nullptr)
+      : _x(x), _y(y), _id(id), _polygon_id(polygon_id), _prev(prev), _next(next)
   {
     set_is_endpoint(is_endpoint);
   }
@@ -93,6 +93,8 @@ class DrcBasicPoint
   int get_x() { return _x; }
   int get_y() { return _y; }
   int get_id() { return _id; }
+
+  int get_polygon_id() { return _polygon_id; }
 
   DrcBasicPoint* get_prev() { return _prev; }
   DrcBasicPoint* get_next() { return _next; }
@@ -210,6 +212,8 @@ class DrcBasicPoint
   int _x;
   int _y;
   int _id;
+
+  int _polygon_id;
 
   uint64_t _states = 0;
 

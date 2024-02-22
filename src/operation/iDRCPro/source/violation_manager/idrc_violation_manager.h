@@ -20,12 +20,9 @@
 #include <string>
 #include <vector>
 
-#include "BaseRegion.hpp"
-#include "BaseShape.hpp"
-#include "BaseViolationInfo.hpp"
+#include "DRCViolationType.h"
 #include "boost_definition.h"
 #include "idrc_violation.h"
-#include "idrc_violation_enum.h"
 
 namespace idrc {
 // class DrcViolation;
@@ -36,7 +33,6 @@ class DrcViolationManager
   DrcViolationManager();
   ~DrcViolationManager();
 
-  std::map<std::string, std::vector<irt::BaseViolationInfo>> get_rt_violation_map();
   std::map<ViolationEnumType, std::vector<DrcViolation*>> get_violation_map() { return std::move(_violation_list); }
 
   std::vector<DrcViolation*>& get_violation_list(ViolationEnumType type)

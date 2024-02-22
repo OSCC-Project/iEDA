@@ -17,10 +17,10 @@
 
 #include "condition_area.h"
 
+#include "DRCViolationType.h"
 #include "condition.h"
 #include "geometry_boost.h"
 #include "idrc_violation.h"
-#include "idrc_violation_enum.h"
 #include "idrc_violation_manager.h"
 #include "rule_condition_area.h"
 #include "rule_enum.h"
@@ -112,8 +112,8 @@ bool DrcRuleConditionArea::checkMinArea()
               std::set<int> net_ids{net_id};
 
               // create violation
-              DrcViolationRect* violation_rect = new DrcViolationRect(layer, net_ids, llx, lly, urx, ury);
-              auto violation_type = ViolationEnumType::kViolationArea;
+              auto violation_type = ViolationEnumType::kArea;
+              DrcViolationRect* violation_rect = new DrcViolationRect(layer, net_ids, violation_type, llx, lly, urx, ury);
               auto* violation_manager = _condition_manager->get_violation_manager();
               auto& violation_list = violation_manager->get_violation_list(violation_type);
               violation_list.emplace_back(static_cast<DrcViolation*>(violation_rect));

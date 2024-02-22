@@ -16,8 +16,6 @@
 // ***************************************************************************************
 #include "idrc_dm.h"
 
-#include "BaseRegion.hpp"
-
 namespace idrc {
 
 DrcDataManager::DrcDataManager()

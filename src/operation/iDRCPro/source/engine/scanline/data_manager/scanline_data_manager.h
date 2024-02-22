@@ -99,31 +99,30 @@ class ScanlineDataManager
   // }
 
   // setter
-  void addBasicPoint(DrcBasicPoint* point)
-  {
-    _basic_points.push_back(point);
-    _basic_points_rtree.insert(std::make_pair(ieda_solver::BgPoint(point->get_x(), point->get_y()), point));
-  };
+  void addBasicPoint(DrcBasicPoint* point) { _basic_points.push_back(point); };
 
-  std::vector<DrcBasicPoint*> getBasicPointsInRect(int llx, int lly, int urx, int ury)
+  std::vector<std::pair<DrcBasicPoint*, DrcBasicPoint*>> getEdgesInRect(int llx, int lly, int urx, int ury)
   {
-    std::vector<DrcBasicPoint*> points;
-    std::vector<std::pair<ieda_solver::BgPoint, DrcBasicPoint*>> result;
+    std::vector<std::pair<DrcBasicPoint*, DrcBasicPoint*>> segments;
+    std::vector<std::pair<ieda_solver::BgSegment, std::pair<DrcBasicPoint*, DrcBasicPoint*>>> result;
     ieda_solver::BgRect rect(ieda_solver::BgPoint(llx, lly), ieda_solver::BgPoint(urx, ury));
-    _basic_points_rtree.query(bg::index::intersects(rect), std::back_inserter(result));
+    _polygon_edge_rtree.query(bg::index::intersects(rect), std::back_inserter(result));
     for (auto& pair : result) {
-      points.emplace_back(pair.second);
+      segments.emplace_back(pair.second);
     }
-    return points;
+    return segments;
   }
 
  private:
   idb::IdbLayer* _layer = nullptr;
 
-  bg::index::rtree<std::pair<ieda_solver::BgPoint, DrcBasicPoint*>, bg::index::quadratic<16>> _basic_points_rtree;
+  bg::index::rtree<std::pair<ieda_solver::BgSegment, std::pair<DrcBasicPoint*, DrcBasicPoint*>>, bg::index::quadratic<16>>
+      _polygon_edge_rtree;
   std::vector<DrcBasicPoint*> _basic_points;
   std::vector<ScanlinePoint*> _scanline_points_vertical;
   std::vector<ScanlinePoint*> _scanline_points_horizontal;
+
+  int _polygon_count = 0;
 
   template <typename T>
   void deleteVectorElements(T& v);

@@ -9,7 +9,6 @@ target_include_directories(tool_api_idrc
 
 target_link_libraries(tool_api_idrc
     PUBLIC 
-        idrc_api
         idrc_pro_api
     PRIVATE
         flow_config

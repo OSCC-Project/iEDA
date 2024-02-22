@@ -61,9 +61,8 @@ void ScanlineDataManager::addPolygon(std::vector<ieda_solver::GtlPoint>& polygon
   std::vector<DrcBasicPoint*> endpoints;
   endpoints.reserve(polygon_points.size());
   for (auto& vertex : polygon_points) {
-    DrcBasicPoint* new_basic_pt = new DrcBasicPoint(vertex.x(), vertex.y(), net_id);
+    DrcBasicPoint* new_basic_pt = new DrcBasicPoint(vertex.x(), vertex.y(), net_id, ++_polygon_count);
     endpoints.emplace_back(new_basic_pt);
-    _basic_points_rtree.insert(std::make_pair(ieda_solver::BgPoint(new_basic_pt->get_x(), new_basic_pt->get_y()), new_basic_pt));
     if (left_bottom_pt == nullptr) {
       left_bottom_pt = new_basic_pt;
     } else {
@@ -86,6 +85,10 @@ void ScanlineDataManager::addPolygon(std::vector<ieda_solver::GtlPoint>& polygon
 
     (*endpoint1)->set_next(*endpoint2);
     (*endpoint2)->set_prev(*endpoint1);
+
+    _polygon_edge_rtree.insert(std::make_pair(ieda_solver::BgSegment(ieda_solver::BgPoint((*endpoint1)->get_x(), (*endpoint1)->get_y()),
+                                                                     ieda_solver::BgPoint((*endpoint2)->get_x(), (*endpoint2)->get_y())),
+                                              std::make_pair((*endpoint1), (*endpoint2))));
 
     // create scanline points
     ScanlinePoint* starting_point = nullptr;

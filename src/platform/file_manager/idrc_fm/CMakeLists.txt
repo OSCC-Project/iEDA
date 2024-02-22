@@ -2,7 +2,7 @@ add_library(file_manager_drc
     file_drc.cpp
 )
 
-target_link_libraries(file_manager_drc file_manager_base idrc_db)
+target_link_libraries(file_manager_drc file_manager_base idrc_pro_violation idm)
 
 target_include_directories(file_manager_drc
     PUBLIC
