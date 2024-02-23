@@ -18,6 +18,8 @@
 
 #include <stdint.h>
 
+#include <optional>
+
 #include "IdbLayer.h"
 #include "condition.h"
 #include "idm.h"
@@ -50,27 +52,26 @@ class TechRules
   void init();
 
   // getter
-  std::map<ConditionSequence::SequenceType, std::vector<Condition*>>& get_condition_routing_layers(idb::IdbLayer* layer)
+  std::map<int, std::vector<Condition*>>& get_condition_routing_layers(idb::IdbLayer* layer)
   {
     return _condition_routing_layers[layer->get_id()];
   }
 
-  std::vector<Condition*>& get_condition_trigger(idb::IdbLayer* layer, ConditionSequence::SequenceType sequence)
+  std::optional<std::vector<Condition*>*> get_condition_with_width(idb::IdbLayer* layer, int width)
   {
-    // if (_condition_routing_layers.find(layer->get_id()) == _condition_routing_layers.end()) {
-    //   std::cout << "idrc : Error layer not found " << layer->get_id() << std::endl;
-    // }
-    // if (_condition_routing_layers[layer->get_id()].find(sequence) == _condition_routing_layers[layer->get_id()].end()) {
-    //   std::cout << "idrc : Error condition not found in layer " << (int) layer->get_id() << " sequence " << sequence << std::endl;
-    // }
-    return _condition_routing_layers[layer->get_id()][sequence];
+    for (auto& width_condition_map : _condition_routing_layers[layer->get_id()]) {
+      if (width_condition_map.first < width) {
+        return &width_condition_map.second;
+      }
+    }
+    return std::nullopt;
   }
 
  private:
   static TechRules* _instance;
   bool _b_inited = false;
 
-  std::map<int, std::map<ConditionSequence::SequenceType, std::vector<Condition*>>> _condition_routing_layers;
+  std::map<int, std::map<int, std::vector<Condition*>>> _condition_routing_layers;  // int: layer id, int: width
 
   TechRules() {}
   ~TechRules();

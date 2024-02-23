@@ -58,15 +58,9 @@ void DrcEngineScanline::scan(ScanlineTravelDirection direction)
   }
 }
 
-/// @brief add all points with same travel direction coordinate to scanline status
-/// @param status scanline status
 // TODO: deal with overlap, one direction is enough
-void DrcEngineScanline::addCurrentBucketToScanline(ScanlineStatus& status)
+ScanlinePoint* DrcEngineScanline::recordOverlap(ScanlinePoint* point, ScanlinePoint* current_activate_point)
 {
-  status.prepareNewBucket();
-
-  ScanlinePoint* current_activate_point = nullptr;
-
   auto get_polygon = [&](ScanlinePoint* point) -> ieda_solver::GtlPolygon& {
     auto* geometry_engine
         = _engine_manager->get_layout(_preprocess->get_layer())->get_sub_layout(point->get_point()->get_net_id())->get_engine();
@@ -76,33 +70,41 @@ void DrcEngineScanline::addCurrentBucketToScanline(ScanlineStatus& status)
     return polygon;
   };
 
-  auto record_overlap = [&](ScanlinePoint* point) {
-    if (!current_activate_point && !point->get_is_forward()) {
-      current_activate_point = point;
-    } else if (current_activate_point && (point)->get_is_forward() && current_activate_point->get_id() == point->get_id()) {
-      current_activate_point = nullptr;
-    } else if (current_activate_point && current_activate_point->get_id() != point->get_id()) {
-      // TODO: overlap
-      // auto& polygon_1 = get_polygon(current_activate_point);
-      // auto& polygon_2 = get_polygon(point);
-      // std::vector<ieda_solver::GtlPolygon> overlap_list;
-      // ieda_solver::GtlPolygonSet intersection = polygon_1 & polygon_2;
-      // intersection.get(overlap_list);
-      // int a = 0;
-    }
-  };
+  if (!current_activate_point && !point->get_is_forward()) {
+    current_activate_point = point;
+  } else if (current_activate_point && (point)->get_is_forward() && current_activate_point->get_id() == point->get_id()) {
+    current_activate_point = nullptr;
+  } else if (current_activate_point && current_activate_point->get_id() != point->get_id()) {
+    // TODO: overlap
+    // auto& polygon_1 = get_polygon(current_activate_point);
+    // auto& polygon_2 = get_polygon(point);
+    // std::vector<ieda_solver::GtlPolygon> overlap_list;
+    // ieda_solver::GtlPolygonSet intersection = polygon_1 & polygon_2;
+    // intersection.get(overlap_list);
+    // int a = 0;
+  }
+  return current_activate_point;
+}
+
+/// @brief add all points with same travel direction coordinate to scanline status
+/// @param status scanline status
+void DrcEngineScanline::addCurrentBucketToScanline(ScanlineStatus& status)
+{
+  status.prepareNewBucket();
 
   // add new points to scanline status
   auto bucket_end = status.nextBucketEnd();
   auto scanline_status_it = status.status_points.begin();
   bool is_first_insert = true;
+  ScanlinePoint* current_activate_point = nullptr;
+
   for (; status.endpoints_it != bucket_end; ++status.endpoints_it) {
     ScanlinePoint* current_point = *status.endpoints_it;
 
     if (current_point->get_is_start()) {
       // find correct position to insert
       while (scanline_status_it != status.status_points.end() && (*status.compare_scanline_point)(*scanline_status_it, current_point)) {
-        record_overlap(*scanline_status_it);
+        current_activate_point = recordOverlap(*scanline_status_it, current_activate_point);
         ++scanline_status_it;
       }
       scanline_status_it = status.status_points.insert(scanline_status_it, current_point);
@@ -110,7 +112,7 @@ void DrcEngineScanline::addCurrentBucketToScanline(ScanlineStatus& status)
       // point is ending point, replace pair starting point in scanline status
       auto* current_pair_point = current_point->get_pair();
       while (scanline_status_it != status.status_points.end() && *scanline_status_it != current_pair_point) {
-        record_overlap(*scanline_status_it);
+        current_activate_point = recordOverlap(*scanline_status_it, current_activate_point);
         ++scanline_status_it;
       }
       *scanline_status_it = current_point;
@@ -138,29 +140,39 @@ void DrcEngineScanline::addCurrentBucketToScanline(ScanlineStatus& status)
 /// @param point_forward forward point of current segment
 /// @param point_backward backward point of current segment
 /// @return segment type
-ScanlineSegmentType DrcEngineScanline::judgeSegmentType(ScanlineStatus& status, ScanlinePoint* point_forward, ScanlinePoint* point_backward)
+DrcSegmentType DrcEngineScanline::judgeSegmentType(ScanlineStatus& status, ScanlinePoint* point_forward, ScanlinePoint* point_backward)
 {
-  ScanlineSegmentType result_type = ScanlineSegmentType::kNone;
   if (point_forward->get_is_new() && point_backward->get_is_new()
       && (point_forward->get_point()->get_next() == point_backward->get_point()
           || point_backward->get_point()->get_next() == point_forward->get_point())) {
-    if (point_forward->get_is_start() && point_backward->get_is_start()) {
-      result_type = ScanlineSegmentType::kStartingEdge;
-    } else if (!point_forward->get_is_start() && !point_backward->get_is_start()) {
-      result_type = ScanlineSegmentType::kEndingEdge;
+    if (point_forward->get_is_start() && point_backward->get_is_start() && point_forward->get_is_forward()
+        && !point_backward->get_is_forward()) {
+      return DrcSegmentType::kConvexStartEdge;
+    } else if (point_forward->get_is_start() && point_backward->get_is_start() && !point_forward->get_is_forward()
+               && point_backward->get_is_forward()) {
+      return DrcSegmentType::kConcaveStartEdge;
+    } else if (!point_forward->get_is_start() && !point_backward->get_is_start() && point_forward->get_is_forward()
+               && !point_backward->get_is_forward()) {
+      return DrcSegmentType::kConvexEndEdge;
+    } else if (!point_forward->get_is_start() && !point_backward->get_is_start() && !point_forward->get_is_forward()
+               && point_backward->get_is_forward()) {
+      return DrcSegmentType::kConcaveEndEdge;
+    } else if ((point_forward->get_is_forward() && point_forward->get_is_start())
+               || (!point_forward->get_is_forward() && !point_forward->get_is_start())) {
+      return DrcSegmentType::kTurnOutEdge;
     } else {
-      result_type = ScanlineSegmentType::kTurningEdge;
+      return DrcSegmentType::kTurnInEdge;
     }
   } else if (!point_forward->get_is_forward() && point_backward->get_is_forward()) {
     if (point_forward->get_id() != point_backward->get_id()) {
-      result_type = ScanlineSegmentType::kMutualSpacing;
+      return DrcSegmentType::kMutualSpacing;
     } else {
-      result_type = ScanlineSegmentType::kSlefSpacing;
+      return DrcSegmentType::kSlefSpacing;
     }
   } else if (point_forward->get_is_forward() && !point_backward->get_is_forward()) {
-    result_type = ScanlineSegmentType::kWidth;
+    return DrcSegmentType::kWidth;
   }
-  return result_type;
+  return DrcSegmentType::kNone;
 }
 
 /// @brief hash two side ids to one
@@ -177,45 +189,45 @@ uint64_t DrcEngineScanline::hash2SideIds(int id1, int id2)
 /// @tparam T
 /// @param sequence
 /// @param segment_types
-template <typename T>
-inline void DrcEngineScanline::combineSequence(T& sequence, std::deque<ScanlineSegmentType>& segment_types)
-{
-  if (segment_types[1] == ScanlineSegmentType::kMutualSpacing) {
-    if ((segment_types[0] == ScanlineSegmentType::kStartingEdge && segment_types[2] == ScanlineSegmentType::kWidth)
-        || (segment_types[0] == ScanlineSegmentType::kWidth && segment_types[2] == ScanlineSegmentType::kStartingEdge)) {
-      sequence = ConditionSequence::SequenceType::kSE_MS_W;
-    } else if (segment_types[0] == ScanlineSegmentType::kStartingEdge && segment_types[2] == ScanlineSegmentType::kStartingEdge) {
-      sequence = ConditionSequence::SequenceType::kSE_MS_SE;
-    } else if ((segment_types[0] == ScanlineSegmentType::kStartingEdge && segment_types[2] == ScanlineSegmentType::kTurningEdge)
-               || (segment_types[0] == ScanlineSegmentType::kTurningEdge && segment_types[2] == ScanlineSegmentType::kStartingEdge)) {
-      sequence = ConditionSequence::SequenceType::kSE_MS_TE;
-    } else if ((segment_types[0] == ScanlineSegmentType::kTurningEdge && segment_types[2] == ScanlineSegmentType::kWidth)
-               || (segment_types[0] == ScanlineSegmentType::kWidth && segment_types[2] == ScanlineSegmentType::kTurningEdge)) {
-      sequence = ConditionSequence::SequenceType::kTE_MS_W;
-    } else if (segment_types[0] == ScanlineSegmentType::kTurningEdge && segment_types[2] == ScanlineSegmentType::kTurningEdge) {
-      sequence = ConditionSequence::SequenceType::kTE_MS_TE;
-    } else if ((segment_types[0] == ScanlineSegmentType::kEndingEdge && segment_types[2] == ScanlineSegmentType::kWidth)
-               || (segment_types[0] == ScanlineSegmentType::kWidth && segment_types[2] == ScanlineSegmentType::kEndingEdge)) {
-      sequence = ConditionSequence::SequenceType::kEE_MS_W;
-    } else if (segment_types[0] == ScanlineSegmentType::kEndingEdge && segment_types[2] == ScanlineSegmentType::kEndingEdge) {
-      sequence = ConditionSequence::SequenceType::kEE_MS_EE;
-    } else if ((segment_types[0] == ScanlineSegmentType::kEndingEdge && segment_types[2] == ScanlineSegmentType::kTurningEdge)
-               || (segment_types[0] == ScanlineSegmentType::kTurningEdge && segment_types[2] == ScanlineSegmentType::kEndingEdge)) {
-      sequence = ConditionSequence::SequenceType::kEE_MS_TE;
-    }
-  }
-}
+// template <typename T>
+// inline void DrcEngineScanline::combineSequence(T& sequence, std::deque<DrcSegmentType>& segment_types)
+// {
+//   if (segment_types[1] == DrcSegmentType::kMutualSpacing) {
+//     if ((segment_types[0] == DrcSegmentType::kStartingEdge && segment_types[2] == DrcSegmentType::kWidth)
+//         || (segment_types[0] == DrcSegmentType::kWidth && segment_types[2] == DrcSegmentType::kStartingEdge)) {
+//       sequence = ConditionSequence::SequenceType::kSE_MS_W;
+//     } else if (segment_types[0] == DrcSegmentType::kStartingEdge && segment_types[2] == DrcSegmentType::kStartingEdge) {
+//       sequence = ConditionSequence::SequenceType::kSE_MS_SE;
+//     } else if ((segment_types[0] == DrcSegmentType::kStartingEdge && segment_types[2] == DrcSegmentType::kTurningEdge)
+//                || (segment_types[0] == DrcSegmentType::kTurningEdge && segment_types[2] == DrcSegmentType::kStartingEdge)) {
+//       sequence = ConditionSequence::SequenceType::kSE_MS_TE;
+//     } else if ((segment_types[0] == DrcSegmentType::kTurningEdge && segment_types[2] == DrcSegmentType::kWidth)
+//                || (segment_types[0] == DrcSegmentType::kWidth && segment_types[2] == DrcSegmentType::kTurningEdge)) {
+//       sequence = ConditionSequence::SequenceType::kTE_MS_W;
+//     } else if (segment_types[0] == DrcSegmentType::kTurningEdge && segment_types[2] == DrcSegmentType::kTurningEdge) {
+//       sequence = ConditionSequence::SequenceType::kTE_MS_TE;
+//     } else if ((segment_types[0] == DrcSegmentType::kEndingEdge && segment_types[2] == DrcSegmentType::kWidth)
+//                || (segment_types[0] == DrcSegmentType::kWidth && segment_types[2] == DrcSegmentType::kEndingEdge)) {
+//       sequence = ConditionSequence::SequenceType::kEE_MS_W;
+//     } else if (segment_types[0] == DrcSegmentType::kEndingEdge && segment_types[2] == DrcSegmentType::kEndingEdge) {
+//       sequence = ConditionSequence::SequenceType::kEE_MS_EE;
+//     } else if ((segment_types[0] == DrcSegmentType::kEndingEdge && segment_types[2] == DrcSegmentType::kTurningEdge)
+//                || (segment_types[0] == DrcSegmentType::kTurningEdge && segment_types[2] == DrcSegmentType::kEndingEdge)) {
+//       sequence = ConditionSequence::SequenceType::kEE_MS_TE;
+//     }
+//   }
+// }
 
 /// @brief scanline status updated, process current status
 /// @param status scanline status
 void DrcEngineScanline::processScanlineStatus(ScanlineStatus& status)
 {
-  std::deque<ScanlinePoint*> activate_points{nullptr, nullptr, nullptr};
-  std::deque<ScanlineSegmentType> activate_types{ScanlineSegmentType::kNone, ScanlineSegmentType::kNone, ScanlineSegmentType::kNone};
+  // std::deque<ScanlinePoint*> activate_points;
+  // std::deque<DrcSegmentType> activate_types;
   auto scanline_status_it = status.insert_begin;
-  if (scanline_status_it != status.status_points.end()) {
-    activate_points.push_back(*scanline_status_it);
-  }
+  // if (scanline_status_it != status.status_points.end()) {
+  //   activate_points.push_back(*scanline_status_it);
+  // }
 
   while (scanline_status_it != status.insert_end) {
     ScanlinePoint* point_backward = *scanline_status_it;
@@ -225,55 +237,12 @@ void DrcEngineScanline::processScanlineStatus(ScanlineStatus& status)
       // get current segment type
       auto type = judgeSegmentType(status, point_forward, point_backward);
 
-      // refresh active segments
-      activate_points.pop_front();
-      activate_types.pop_front();
-      activate_points.push_back(point_forward);
-      activate_types.push_back(type);
-
-      ConditionSequence::SequenceType sequence = ConditionSequence::SequenceType::kNone;
-      uint64_t recognize_code = 0;
-
-      // deliver single edge
-      bool is_deliver_single_edge = false;
-      if (activate_types[2] == ScanlineSegmentType::kStartingEdge) {
-        is_deliver_single_edge = true;
-        sequence = ConditionSequence::SequenceType::kSE;
-      } else if (activate_types[2] == ScanlineSegmentType::kEndingEdge) {
-        is_deliver_single_edge = true;
-        sequence = ConditionSequence::SequenceType::kEE;
-      } else if (activate_types[2] == ScanlineSegmentType::kTurningEdge) {
-        is_deliver_single_edge = true;
-        sequence = ConditionSequence::SequenceType::kTE;
-      }
-
-      if (is_deliver_single_edge) {
-        recognize_code = hash2SideIds(point_forward->get_side_id(), point_backward->get_side_id());
-        if (_condition_manager->isSequenceNeedDeliver(_preprocess->get_layer(), recognize_code, sequence)) {
-          std::vector<DrcBasicPoint*> point_list{point_forward->get_point(), point_backward->get_point()};
-
-          _condition_manager->recordRegion(_preprocess->get_layer(), recognize_code, sequence, point_list, status.current_bucket_coord,
-                                           status.direction == ScanlineTravelDirection::kHorizontal);
-        }
-      }
-
-      // deliver spacing
-      if (activate_types[1] == ScanlineSegmentType::kMutualSpacing) {
-        recognize_code = hash2SideIds(activate_points[1]->get_side_id(), activate_points[2]->get_side_id());
-
-        combineSequence(sequence, activate_types);
-      }
-
-      // put sequence to condition manager
-      if (_condition_manager->isSequenceNeedDeliver(_preprocess->get_layer(), recognize_code, sequence)) {
-        std::vector<DrcBasicPoint*> point_list(activate_points.size(), nullptr);
-        for (int i = 0; i < (int) activate_points.size(); ++i) {
-          point_list[i] = activate_points[i] ? activate_points[i]->get_point() : nullptr;
-        }
-
-        _condition_manager->recordRegion(_preprocess->get_layer(), recognize_code, sequence, point_list, status.current_bucket_coord,
-                                         status.direction == ScanlineTravelDirection::kHorizontal);
-      }
+      // activate_types.push_back(type);
+      // activate_points.push_back(point_forward);
+      // if (type.isEdge()) {
+      //   _condition_manager->recordEdge(_preprocess->get_layer(), point_forward->get_id(), type, point_forward->get_point(),
+      //                                  point_backward->get_point());
+      // }
     }
   }
 }

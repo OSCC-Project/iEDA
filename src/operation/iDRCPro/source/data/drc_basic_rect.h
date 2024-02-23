@@ -16,28 +16,43 @@
 // ***************************************************************************************
 #pragma once
 
-#include <vector>
-
-#include "condition_sequence.h"
 #include "drc_basic_point.h"
+#include "idrc_data.h"
 
 namespace idrc {
 
-class CheckItem;
-
-class ConditionDetail
+class DrcBasicRect
 {
  public:
-  ConditionDetail() {}
-  virtual ~ConditionDetail() {}
+  DrcBasicRect() {}
+  DrcBasicRect(DrcCoordinate lb, DrcCoordinate ur) : _lb(lb), _ur(ur) {}
+  DrcBasicRect(int lb_x, int lb_y, int ur_x, int ur_y) : _lb(DrcCoordinate(lb_x, lb_y)), _ur(DrcCoordinate(ur_x, ur_y)) {}
+  ~DrcBasicRect() {}
 
-  // virtual CheckItem* createCheckItem() = 0;  // TODO: param
+  // getter
+  DrcCoordinate get_lb() { return _lb; }
+  DrcCoordinate get_ur() { return _ur; }
 
-  // virtual bool apply(std::vector<std::pair<ConditionSequence::SequenceType, std::vector<DrcBasicPoint*>>>& check_region) = 0;
+  // setter
+  void set_lb(DrcCoordinate lb) { _lb = lb; }
+  void set_ur(DrcCoordinate ur) { _ur = ur; }
 
-  // virtual bool apply(CheckItem* item) = 0;
+  void set_lb_x(int x) { _lb.set_x(x); }
+  void set_lb_y(int y) { _lb.set_y(y); }
+  void set_ur_x(int x) { _ur.set_x(x); }
+  void set_ur_y(int y) { _ur.set_y(y); }
+
+  void addPoint(DrcCoordinate p)
+  {
+    _lb.set_x(std::min(_lb.get_x(), p.get_x()));
+    _lb.set_y(std::min(_lb.get_y(), p.get_y()));
+    _ur.set_x(std::max(_ur.get_x(), p.get_x()));
+    _ur.set_y(std::max(_ur.get_y(), p.get_y()));
+  }
 
  private:
+  DrcCoordinate _lb;
+  DrcCoordinate _ur;
 };
 
 }  // namespace idrc

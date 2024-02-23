@@ -47,7 +47,7 @@ ScanlinePreprocess::~ScanlinePreprocess()
  */
 void ScanlinePreprocess::addData(std::vector<std::vector<ieda_solver::GtlPoint>>& polygons_points, int net_id)
 {
-  for (int i = 0; i < polygons_points.size(); ++i) {
+  for (size_t i = 0; i < polygons_points.size(); ++i) {
     addPolygon(polygons_points[i], net_id, i);
   }
 }

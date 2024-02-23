@@ -28,61 +28,61 @@ namespace idrc {
 class ConditionSequenceJog : public ConditionSequence
 {
  public:
-  ConditionSequenceJog(int filter_value, uint64_t trigger_sequence, uint64_t middle_sequence, uint64_t success_sequence)
-      : ConditionSequence(filter_value, trigger_sequence), _middle_sequence(middle_sequence), _success_sequence(success_sequence)
-  {
-  }
+  // ConditionSequenceJog(int filter_value, uint64_t trigger_sequence, uint64_t middle_sequence, uint64_t success_sequence)
+  //     : ConditionSequence(filter_value, trigger_sequence), _middle_sequence(middle_sequence), _success_sequence(success_sequence)
+  // {
+  // }
   ~ConditionSequenceJog() override {}
 
-  void applySequence(State& state, ConditionSequence::SequenceType sequence) override
-  {
-    switch (state) {
-      case ConditionSequence::State::kNone:
-        if (sequence & _trigger_sequence) {
-          state = ConditionSequence::State::kTrigger;
-          return;
-        } else {
-          state = ConditionSequence::State::kFail;
-          return;
-        }
-        break;
-      case ConditionSequence::State::kTrigger:
-        if (sequence & _middle_sequence) {
-          state = ConditionSequence::State::kRecording;
-          return;
-        } else {
-          state = ConditionSequence::State::kFail;
-          return;
-        }
-        break;
-      case ConditionSequence::State::kRecording:
-        if (sequence & _success_sequence) {
-          state = ConditionSequence::State::kSuccess;
-          return;
-        } else if (sequence & _middle_sequence) {
-          return;
-        } else {
-          state = ConditionSequence::State::kFail;
-          return;
-        }
-        break;
-      case ConditionSequence::State::kSuccess:
-        break;
-      case ConditionSequence::State::kFail:
-        break;
-      default:
-        std::cout << "idrc : Error state " << (int) state << std::endl;
-        break;
-    }
-  }
+  // void applySequence(State& state, ConditionSequence::SequenceType sequence) override
+  // {
+  //   switch (state) {
+  //     case ConditionSequence::State::kNone:
+  //       if (sequence & _trigger_sequence) {
+  //         state = ConditionSequence::State::kTrigger;
+  //         return;
+  //       } else {
+  //         state = ConditionSequence::State::kFail;
+  //         return;
+  //       }
+  //       break;
+  //     case ConditionSequence::State::kTrigger:
+  //       if (sequence & _middle_sequence) {
+  //         state = ConditionSequence::State::kRecording;
+  //         return;
+  //       } else {
+  //         state = ConditionSequence::State::kFail;
+  //         return;
+  //       }
+  //       break;
+  //     case ConditionSequence::State::kRecording:
+  //       if (sequence & _success_sequence) {
+  //         state = ConditionSequence::State::kSuccess;
+  //         return;
+  //       } else if (sequence & _middle_sequence) {
+  //         return;
+  //       } else {
+  //         state = ConditionSequence::State::kFail;
+  //         return;
+  //       }
+  //       break;
+  //     case ConditionSequence::State::kSuccess:
+  //       break;
+  //     case ConditionSequence::State::kFail:
+  //       break;
+  //     default:
+  //       std::cout << "idrc : Error state " << (int) state << std::endl;
+  //       break;
+  //   }
+  // }
 
-  void applyValue(State& state, int& value, SequenceType condition_sequence_enum, std::vector<DrcBasicPoint*>& points) override
-  {
-    // if (points[1]->distance(points[2]) >= _filter_value) {
-    //   state = ConditionSequence::State::kRecordingFinished;
-    // }
-    // TODO: use filter value
-  }
+  // void applyValue(State& state, int& value, SequenceType condition_sequence_enum, std::vector<DrcBasicPoint*>& points) override
+  // {
+  //   // if (points[1]->distance(points[2]) >= _filter_value) {
+  //   //   state = ConditionSequence::State::kRecordingFinished;
+  //   // }
+  //   // TODO: use filter value
+  // }
 
  private:
   uint64_t _middle_sequence;

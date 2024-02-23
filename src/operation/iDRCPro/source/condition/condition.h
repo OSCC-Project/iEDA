@@ -24,20 +24,22 @@ namespace idrc {
 class Condition
 {
  public:
-  Condition(ConditionSequence* sequence, ConditionDetail* detail) : _sequence(sequence), _detail(detail) {}
+  // Condition(ConditionSequence* sequence, ConditionDetail* detail) : _sequence(sequence), _detail(detail) {}
+  Condition(int value) : _value(value) {}
   ~Condition()
   {
-    delete _sequence;
-    delete _detail;
+    // delete _sequence;
+    // delete _detail;
   }
 
   // getter
-  ConditionSequence* get_sequence() { return _sequence; }
-  ConditionDetail* get_detail() { return _detail; }
+  // ConditionSequence* get_sequence() { return _sequence; }
+  // ConditionDetail* get_detail() { return _detail; }
 
  private:
-  ConditionSequence* _sequence;
-  ConditionDetail* _detail;
+  int _value;
+  // ConditionSequence* _sequence;
+  // ConditionDetail* _detail;
 };
 
 }  // namespace idrc

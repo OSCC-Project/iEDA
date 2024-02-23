@@ -79,6 +79,14 @@ class DrcUtil
     return point_list;
   }
 
+  // 获得 polygon
+  template <typename T>
+  static ieda_solver::GtlPolygon getPolygon(T* point)
+  {
+    auto point_list = getPolygonPoints(point);
+    return ieda_solver::GtlPolygon(point_list.begin(), point_list.end());
+  }
+
   // // 方向取反
   // static DrcDirection oppositeDirection(DrcDirection direction)
   // {

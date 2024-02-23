@@ -42,7 +42,7 @@ class ConditionDetailJog : public ConditionDetail
   ConditionDetailJog(idb::routinglayer::Lef58SpacingTableJogToJog* rule) : _jog_to_jog(rule) {}
   ~ConditionDetailJog() override {}
 
-  bool apply(std::vector<std::pair<ConditionSequence::SequenceType, std::vector<DrcBasicPoint*>>>& check_region) override;
+  // bool apply(std::vector<std::pair<ConditionSequence::SequenceType, std::vector<DrcBasicPoint*>>>& check_region) override;
 
   // bool apply(CheckItem* item) override;
 

@@ -16,24 +16,13 @@
 // ***************************************************************************************
 #pragma once
 
+#include "drc_basic_segment.h"
 #include "scanline_preprocess.h"
 
 namespace idrc {
 
 class DrcConditionManager;
 class DrcEngineManager;
-
-enum class ScanlineSegmentType
-{
-  kNone,
-  kOverlap,
-  kStartingEdge,
-  kTurningEdge,
-  kEndingEdge,
-  kSlefSpacing,
-  kMutualSpacing,
-  kWidth
-};
 
 struct ScanlineStatus
 {
@@ -118,11 +107,12 @@ class DrcEngineScanline
   DrcConditionManager* _condition_manager;
 
   void scan(ScanlineTravelDirection direction);
+  ScanlinePoint* recordOverlap(ScanlinePoint* point, ScanlinePoint* current_activate_point);
   void addCurrentBucketToScanline(ScanlineStatus& status);
-  ScanlineSegmentType judgeSegmentType(ScanlineStatus& status, ScanlinePoint* point_forward, ScanlinePoint* point_backward);
+  DrcSegmentType judgeSegmentType(ScanlineStatus& status, ScanlinePoint* point_forward, ScanlinePoint* point_backward);
   uint64_t hash2SideIds(int id1, int id2);
   template <typename T>
-  void combineSequence(T& sequence, std::deque<ScanlineSegmentType>& segment_types);
+  void combineSequence(T& sequence, std::deque<DrcSegmentType>& segment_types);
   void processScanlineStatus(ScanlineStatus& status);
   void removeEndingPoints(ScanlineStatus& status);
 };

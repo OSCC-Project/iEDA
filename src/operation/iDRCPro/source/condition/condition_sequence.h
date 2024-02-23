@@ -27,51 +27,51 @@ class DrcBasicPoint;
 class ConditionSequence
 {
  public:
-  /*
-    SE : Starting Edge
-    TE : Turning Edge
-    EE : Ending Edge
-    MS : Mutual Spacing
-    SS : Self Spacing
-    W : Width
-  */
-  enum SequenceType : uint64_t
-  {
-    kNone = 0,
-    kSE = 1,
-    kTE = 2,
-    kEE = 4,
-    kSE_MS_W = 8,
-    kSE_MS_SE = 16,
-    kSE_MS_TE = 32,
-    kTE_MS_W = 64,
-    kTE_MS_TE = 128,
-    kEE_MS_W = 256,
-    kEE_MS_EE = 512,
-    kEE_MS_TE = 1024
-  };
+  // /*
+  //   SE : Starting Edge
+  //   TE : Turning Edge
+  //   EE : Ending Edge
+  //   MS : Mutual Spacing
+  //   SS : Self Spacing
+  //   W : Width
+  // */
+  // enum SequenceType : uint64_t
+  // {
+  //   kNone = 0,
+  //   kSE = 1,
+  //   kTE = 2,
+  //   kEE = 4,
+  //   kSE_MS_W = 8,
+  //   kSE_MS_SE = 16,
+  //   kSE_MS_TE = 32,
+  //   kTE_MS_W = 64,
+  //   kTE_MS_TE = 128,
+  //   kEE_MS_W = 256,
+  //   kEE_MS_EE = 512,
+  //   kEE_MS_TE = 1024
+  // };
 
-  enum class State
-  {
-    kNone,
-    kTrigger,
-    kRecording,
-    kSuccess,
-    kFail
-  };
+  // enum class State
+  // {
+  //   kNone,
+  //   kTrigger,
+  //   kRecording,
+  //   kSuccess,
+  //   kFail
+  // };
 
-  ConditionSequence(int filter_value, uint64_t trigger_sequence) : _filter_value(filter_value), _trigger_sequence(trigger_sequence) {}
+  // ConditionSequence(int filter_value, uint64_t trigger_sequence) : _filter_value(filter_value), _trigger_sequence(trigger_sequence) {}
   virtual ~ConditionSequence() {}
 
-  virtual void applySequence(State& state, SequenceType condition_sequence_enum) = 0;
+  // virtual void applySequence(State& state, SequenceType condition_sequence_enum) = 0;
 
-  virtual void applyValue(State& state, int& value, SequenceType condition_sequence_enum, std::vector<DrcBasicPoint*>& points) = 0;
+  // virtual void applyValue(State& state, int& value, SequenceType condition_sequence_enum, std::vector<DrcBasicPoint*>& points) = 0;
 
-  bool match(SequenceType condition_sequence) { return _trigger_sequence & condition_sequence; }
+  // bool match(SequenceType condition_sequence) { return _trigger_sequence & condition_sequence; }
 
  protected:
   int _filter_value;
-  uint64_t _trigger_sequence;
+  // uint64_t _trigger_sequence;
 
  private:
 };
