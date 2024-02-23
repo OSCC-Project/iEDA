@@ -31,7 +31,7 @@ class TNode
   // setter
   void set_value(const T& v) { _v = v; }
   // function
-  irt_int getChildrenNum() { return static_cast<irt_int>(_child_list.size()); }
+  int32_t getChildrenNum() { return static_cast<int32_t>(_child_list.size()); }
   bool isLeafNode() { return getChildrenNum() == 0; }
 
   void addChild(TNode<T>* child) { _child_list.push_back(child); }

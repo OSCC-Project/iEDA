@@ -5,15 +5,15 @@
 #include <sstream>
 #include <vector>
 
-using irt_int = int32_t;
+using int32_t = int32_t;
 
 namespace gtl = boost::polygon;
 using namespace boost::polygon::operators;
 
-using GTLPointInt = gtl::point_data<irt_int>;
-using GTLRectInt = gtl::rectangle_data<irt_int>;
-using GTLPolyInt = gtl::polygon_90_data<irt_int>;
-using GTLPolySetInt = gtl::polygon_90_set_data<irt_int>;
+using GTLPointInt = gtl::point_data<int32_t>;
+using GTLRectInt = gtl::rectangle_data<int32_t>;
+using GTLPolyInt = gtl::polygon_90_data<int32_t>;
+using GTLPolySetInt = gtl::polygon_90_set_data<int32_t>;
 
 #if 1  // exhibit
 
@@ -36,10 +36,10 @@ void plotGDS(std::string gds_name, std::vector<GTLRectInt>& rect_list)
 
       gds_file << "BGNSTR" << std::endl;
       gds_file << "STRNAME rect_" << i << std::endl;
-      irt_int lb_x = gtl::xl(rect);
-      irt_int lb_y = gtl::yl(rect);
-      irt_int rt_x = gtl::xh(rect);
-      irt_int rt_y = gtl::yh(rect);
+      int32_t lb_x = gtl::xl(rect);
+      int32_t lb_y = gtl::yl(rect);
+      int32_t rt_x = gtl::xh(rect);
+      int32_t rt_y = gtl::yh(rect);
 
       gds_file << "BOUNDARY" << std::endl;
       gds_file << "LAYER " << 0 << std::endl;
@@ -128,7 +128,7 @@ std::vector<GTLRectInt> getOverlapRectListByBoost(std::vector<GTLRectInt>& maste
 
 int main()
 {
-  irt_int factor = 100000000;
+  int32_t factor = 100000000;
   std::vector<std::vector<GTLRectInt>> master_list_list;
   std::vector<std::vector<GTLRectInt>> rect_list_list;
 

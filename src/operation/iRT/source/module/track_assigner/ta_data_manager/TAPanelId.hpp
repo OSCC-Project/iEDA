@@ -16,7 +16,7 @@
 // ***************************************************************************************
 #pragma once
 
-#include "RTU.hpp"
+#include "RTHeader.hpp"
 
 namespace irt {
 
@@ -24,7 +24,7 @@ class TAPanelId
 {
  public:
   TAPanelId() = default;
-  TAPanelId(const irt_int layer_idx, const irt_int panel_idx)
+  TAPanelId(const int32_t layer_idx, const int32_t panel_idx)
   {
     _layer_idx = layer_idx;
     _panel_idx = panel_idx;
@@ -33,16 +33,16 @@ class TAPanelId
   bool operator==(const TAPanelId& other) { return this->_layer_idx == other._layer_idx && this->_panel_idx == other._panel_idx; }
   bool operator!=(const TAPanelId& other) { return !((*this) == other); }
   // getter
-  irt_int get_layer_idx() const { return _layer_idx; }
-  irt_int get_panel_idx() const { return _panel_idx; }
+  int32_t get_layer_idx() const { return _layer_idx; }
+  int32_t get_panel_idx() const { return _panel_idx; }
   // setter
-  void set_layer_idx(const irt_int layer_idx) { _layer_idx = layer_idx; }
-  void set_panel_idx(const irt_int panel_idx) { _panel_idx = panel_idx; }
+  void set_layer_idx(const int32_t layer_idx) { _layer_idx = layer_idx; }
+  void set_panel_idx(const int32_t panel_idx) { _panel_idx = panel_idx; }
   // function
 
  private:
-  irt_int _layer_idx = -1;
-  irt_int _panel_idx = -1;
+  int32_t _layer_idx = -1;
+  int32_t _panel_idx = -1;
 };
 
 struct CmpTAPanelId

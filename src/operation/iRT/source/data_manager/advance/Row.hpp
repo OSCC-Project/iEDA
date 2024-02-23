@@ -16,7 +16,7 @@
 // ***************************************************************************************
 #pragma once
 
-#include "RTU.hpp"
+#include "RTHeader.hpp"
 
 namespace irt {
 
@@ -26,18 +26,18 @@ class Row
   Row() = default;
   ~Row() = default;
   // getter
-  irt_int get_start_x() const { return _start_x; }
-  irt_int get_start_y() const { return _start_y; }
-  irt_int get_height() const { return _height; }
+  int32_t get_start_x() const { return _start_x; }
+  int32_t get_start_y() const { return _start_y; }
+  int32_t get_height() const { return _height; }
   // setter
-  void set_start_x(const irt_int start_x) { _start_x = start_x; }
-  void set_start_y(const irt_int start_y) { _start_y = start_y; }
-  void set_height(const irt_int height) { _height = height; }
+  void set_start_x(const int32_t start_x) { _start_x = start_x; }
+  void set_start_y(const int32_t start_y) { _start_y = start_y; }
+  void set_height(const int32_t height) { _height = height; }
   // function
  private:
-  irt_int _start_x = -1;
-  irt_int _start_y = -1;
-  irt_int _height = -1;
+  int32_t _start_x = -1;
+  int32_t _start_y = -1;
+  int32_t _height = -1;
 };
 
 }  // namespace irt

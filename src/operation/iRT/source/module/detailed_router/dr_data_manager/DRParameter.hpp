@@ -32,7 +32,7 @@ class DRParameter
 {
  public:
   DRParameter() = default;
-  DRParameter(irt_int size, irt_int offset, irt_int fixed_rect_unit, irt_int routed_rect_unit, irt_int violation_unit, bool complete_ripup)
+  DRParameter(int32_t size, int32_t offset, int32_t fixed_rect_unit, int32_t routed_rect_unit, int32_t violation_unit, bool complete_ripup)
   {
     _prefer_wire_unit = 1;
     _nonprefer_wire_unit = 2;
@@ -51,8 +51,8 @@ class DRParameter
   double get_nonprefer_wire_unit() const { return _nonprefer_wire_unit; }
   double get_via_unit() const { return _via_unit; }
   double get_corner_unit() const { return _corner_unit; }
-  irt_int get_size() const { return _size; }
-  irt_int get_offset() const { return _offset; }
+  int32_t get_size() const { return _size; }
+  int32_t get_offset() const { return _offset; }
   double get_fixed_rect_unit() const { return _fixed_rect_unit; }
   double get_routed_rect_unit() const { return _routed_rect_unit; }
   double get_violation_unit() const { return _violation_unit; }
@@ -62,8 +62,8 @@ class DRParameter
   void set_nonprefer_wire_unit(const double nonprefer_wire_unit) { _nonprefer_wire_unit = nonprefer_wire_unit; }
   void set_via_unit(const double via_unit) { _via_unit = via_unit; }
   void set_corner_unit(const double corner_unit) { _corner_unit = corner_unit; }
-  void set_size(const irt_int size) { _size = size; }
-  void set_offset(const irt_int offset) { _offset = offset; }
+  void set_size(const int32_t size) { _size = size; }
+  void set_offset(const int32_t offset) { _offset = offset; }
   void set_fixed_rect_unit(const double fixed_rect_unit) { _fixed_rect_unit = fixed_rect_unit; }
   void set_routed_rect_unit(const double routed_rect_unit) { _routed_rect_unit = routed_rect_unit; }
   void set_violation_unit(const double violation_unit) { _violation_unit = violation_unit; }
@@ -74,8 +74,8 @@ class DRParameter
   double _nonprefer_wire_unit = 0;
   double _via_unit = 0;
   double _corner_unit = 0;
-  irt_int _size = -1;
-  irt_int _offset = -1;
+  int32_t _size = -1;
+  int32_t _offset = -1;
   double _fixed_rect_unit = 0;
   double _routed_rect_unit = 0;
   double _violation_unit = 0;

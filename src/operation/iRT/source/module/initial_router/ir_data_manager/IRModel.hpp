@@ -33,12 +33,12 @@ class IRModel
   std::vector<IRNet>& get_ir_net_list() { return _ir_net_list; }
   IRParameter& get_ir_parameter() { return _ir_parameter; }
   std::vector<GridMap<IRNode>>& get_layer_node_map() { return _layer_node_map; }
-  std::vector<irt_int>& get_ir_net_idx_list() { return _ir_net_idx_list; }
+  std::vector<int32_t>& get_ir_net_idx_list() { return _ir_net_idx_list; }
   // setter
   void set_ir_net_list(const std::vector<IRNet>& ir_net_list) { _ir_net_list = ir_net_list; }
   void set_ir_parameter(const IRParameter& ir_parameter) { _ir_parameter = ir_parameter; }
   void set_layer_node_map(const std::vector<GridMap<IRNode>>& layer_node_map) { _layer_node_map = layer_node_map; }
-  void set_ir_net_idx_list(const std::vector<irt_int>& ir_net_idx_list) { _ir_net_idx_list = ir_net_idx_list; }
+  void set_ir_net_idx_list(const std::vector<int32_t>& ir_net_idx_list) { _ir_net_idx_list = ir_net_idx_list; }
   // function
 #if 1  // astar
   // single task
@@ -67,21 +67,21 @@ class IRModel
   PriorityQueue<IRNode*, std::vector<IRNode*>, CmpIRNodeCost>& get_open_queue() { return _open_queue; }
   std::vector<IRNode*>& get_single_path_visited_node_list() { return _single_path_visited_node_list; }
   IRNode* get_path_head_node() { return _path_head_node; }
-  irt_int get_end_node_comb_idx() const { return _end_node_comb_idx; }
+  int32_t get_end_node_comb_idx() const { return _end_node_comb_idx; }
   void set_open_queue(const PriorityQueue<IRNode*, std::vector<IRNode*>, CmpIRNodeCost>& open_queue) { _open_queue = open_queue; }
   void set_single_path_visited_node_list(const std::vector<IRNode*>& single_path_visited_node_list)
   {
     _single_path_visited_node_list = single_path_visited_node_list;
   }
   void set_path_head_node(IRNode* path_head_node) { _path_head_node = path_head_node; }
-  void set_end_node_comb_idx(const irt_int end_node_comb_idx) { _end_node_comb_idx = end_node_comb_idx; }
+  void set_end_node_comb_idx(const int32_t end_node_comb_idx) { _end_node_comb_idx = end_node_comb_idx; }
 #endif
 
  private:
   std::vector<IRNet> _ir_net_list;
   IRParameter _ir_parameter;
   std::vector<GridMap<IRNode>> _layer_node_map;
-  std::vector<irt_int> _ir_net_idx_list;
+  std::vector<int32_t> _ir_net_idx_list;
 #if 1  // astar
   // single task
   IRTask* _curr_ir_task = nullptr;
@@ -94,7 +94,7 @@ class IRModel
   PriorityQueue<IRNode*, std::vector<IRNode*>, CmpIRNodeCost> _open_queue;
   std::vector<IRNode*> _single_path_visited_node_list;
   IRNode* _path_head_node = nullptr;
-  irt_int _end_node_comb_idx = -1;
+  int32_t _end_node_comb_idx = -1;
 #endif
 };
 

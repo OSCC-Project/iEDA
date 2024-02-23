@@ -50,8 +50,8 @@ class PinAccessor
   std::vector<PANet> convertToPANetList(std::vector<Net>& net_list);
   PANet convertToPANet(Net& net);
   void initAccessPointList(PAModel& pa_model);
-  std::vector<LayerRect> getLegalShapeList(PAModel& pa_model, irt_int pa_net_idx, PAPin* pa_pin);
-  std::vector<PlanarRect> getPlanarLegalRectList(PAModel& pa_model, irt_int pa_net_idx, std::vector<EXTLayerRect>& pin_shape_list);
+  std::vector<LayerRect> getLegalShapeList(PAModel& pa_model, int32_t pa_net_idx, PAPin* pa_pin);
+  std::vector<PlanarRect> getPlanarLegalRectList(PAModel& pa_model, int32_t pa_net_idx, std::vector<EXTLayerRect>& pin_shape_list);
   std::vector<AccessPoint> getAccessPointListByPrefTrackGrid(std::vector<LayerRect>& legal_shape_list);
   std::vector<AccessPoint> getAccessPointListByCurrTrackGrid(std::vector<LayerRect>& legal_shape_list);
   std::vector<AccessPoint> getAccessPointListByTrackCenter(std::vector<LayerRect>& legal_shape_list);
@@ -59,7 +59,7 @@ class PinAccessor
   void buildAccessPointList(PAModel& pa_model);
   void updatePAModel(PAModel& pa_model);
 
-#if 1  // exhibit 
+#if 1  // exhibit
   void plotPAModel(PAModel& pa_model);
   void reportPAModel(PAModel& pa_model);
   void reportSummary(PAModel& pa_model);

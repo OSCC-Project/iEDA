@@ -16,7 +16,7 @@
 // ***************************************************************************************
 #pragma once
 
-#include "RTU.hpp"
+#include "RTHeader.hpp"
 
 namespace irt {
 
@@ -28,14 +28,14 @@ class Config
   /////////////////////////////////////////////
   // **********        RT         ********** //
   std::string temp_directory_path;   // required
-  irt_int thread_number;             // optional
+  int32_t thread_number;             // optional
   std::string bottom_routing_layer;  // optional
   std::string top_routing_layer;     // optional
   /////////////////////////////////////////////
   // **********        RT         ********** //
   std::string log_file_path;         // building
-  irt_int bottom_routing_layer_idx;  // building
-  irt_int top_routing_layer_idx;     // building
+  int32_t bottom_routing_layer_idx;  // building
+  int32_t top_routing_layer_idx;     // building
   // **********   PinAccessor     ********** //
   std::string pa_temp_directory_path;  // building
   // ********     SupplyAnalyzer    ******** //

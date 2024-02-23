@@ -50,11 +50,11 @@ class SupplyAnalyzer
   void buildLayerNodeMap(SAModel& sa_model);
   void buildSupplySchedule(SAModel& sa_model);
   void analyzeSupply(SAModel& sa_model);
-  std::vector<LayerRect> getCrossingWireList(irt_int layer_idx, SANode& first_node, SANode& second_node);
+  std::vector<LayerRect> getCrossingWireList(int32_t layer_idx, SANode& first_node, SANode& second_node);
   bool isAccess(LayerRect& wire, SANode& first_node, SANode& second_node);
   void updateSAModel(SAModel& sa_model);
 
-#if 1  // exhibit 
+#if 1  // exhibit
   void plotSAModel(SAModel& sa_model);
   void reportSAModel(SAModel& sa_model);
   void reportSummary(SAModel& sa_model);

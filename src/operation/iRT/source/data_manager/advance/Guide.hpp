@@ -17,7 +17,7 @@
 #pragma once
 
 #include "LayerRect.hpp"
-#include "RTU.hpp"
+#include "RTHeader.hpp"
 #include "RTUtil.hpp"
 
 namespace irt {

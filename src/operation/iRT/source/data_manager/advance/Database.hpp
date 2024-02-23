@@ -34,7 +34,7 @@ class Database
   Database() = default;
   ~Database() = default;
   // getter
-  irt_int get_micron_dbu() const { return _micron_dbu; }
+  int32_t get_micron_dbu() const { return _micron_dbu; }
   ScaleAxis& get_gcell_axis() { return _gcell_axis; }
   Die& get_die() { return _die; }
   Row& get_row() { return _row; }
@@ -46,11 +46,11 @@ class Database
   std::vector<Net>& get_net_list() { return _net_list; }
   GridMap<GCell>& get_gcell_map() { return _gcell_map; }
   // setter
-  void set_micron_dbu(const irt_int micron_dbu) { _micron_dbu = micron_dbu; }
+  void set_micron_dbu(const int32_t micron_dbu) { _micron_dbu = micron_dbu; }
   // function
 
  private:
-  irt_int _micron_dbu = -1;
+  int32_t _micron_dbu = -1;
   ScaleAxis _gcell_axis;
   Die _die;
   Row _row;

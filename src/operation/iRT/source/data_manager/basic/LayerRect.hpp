@@ -25,9 +25,9 @@ class LayerRect : public PlanarRect
 {
  public:
   LayerRect() = default;
-  LayerRect(const PlanarRect& rect_2d, const irt_int layer_idx = -1) : PlanarRect(rect_2d) { _layer_idx = layer_idx; }
-  LayerRect(const PlanarCoord& lb, const PlanarCoord& rt, const irt_int layer_idx = -1) : PlanarRect(lb, rt) { _layer_idx = layer_idx; }
-  LayerRect(const irt_int lb_x, const irt_int lb_y, const irt_int rt_x, const irt_int rt_y, const irt_int layer_idx = -1)
+  LayerRect(const PlanarRect& rect_2d, const int32_t layer_idx = -1) : PlanarRect(rect_2d) { _layer_idx = layer_idx; }
+  LayerRect(const PlanarCoord& lb, const PlanarCoord& rt, const int32_t layer_idx = -1) : PlanarRect(lb, rt) { _layer_idx = layer_idx; }
+  LayerRect(const int32_t lb_x, const int32_t lb_y, const int32_t rt_x, const int32_t rt_y, const int32_t layer_idx = -1)
       : PlanarRect(lb_x, lb_y, rt_x, rt_y)
   {
     _layer_idx = layer_idx;
@@ -38,7 +38,7 @@ class LayerRect : public PlanarRect
   bool operator!=(const LayerRect& other) const { return !((*this) == other); }
   // getter
   PlanarRect& get_rect() { return (*this); }
-  irt_int get_layer_idx() const { return _layer_idx; }
+  int32_t get_layer_idx() const { return _layer_idx; }
   // const getter
   const PlanarRect& get_rect() const { return (*this); }
   // setter
@@ -52,16 +52,16 @@ class LayerRect : public PlanarRect
     set_lb(lb);
     set_rt(rt);
   }
-  void set_rect(const irt_int lb_x, const irt_int lb_y, const irt_int rt_x, const irt_int rt_y)
+  void set_rect(const int32_t lb_x, const int32_t lb_y, const int32_t rt_x, const int32_t rt_y)
   {
     set_lb(lb_x, lb_y);
     set_rt(rt_x, rt_y);
   }
-  void set_layer_idx(const irt_int layer_idx) { _layer_idx = layer_idx; }
+  void set_layer_idx(const int32_t layer_idx) { _layer_idx = layer_idx; }
   // function
 
  private:
-  irt_int _layer_idx = -1;
+  int32_t _layer_idx = -1;
 };
 
 struct CmpLayerRectByXASC

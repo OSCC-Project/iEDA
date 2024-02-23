@@ -29,21 +29,21 @@ class SANode
   ~SANode() = default;
   // getter
   PlanarRect& get_shape() { return _shape; }
-  std::map<irt_int, std::set<EXTLayerRect*>>& get_net_fixed_rect_map() { return _net_fixed_rect_map; }
-  std::map<Orientation, irt_int>& get_orien_supply_map() { return _orien_supply_map; }
+  std::map<int32_t, std::set<EXTLayerRect*>>& get_net_fixed_rect_map() { return _net_fixed_rect_map; }
+  std::map<Orientation, int32_t>& get_orien_supply_map() { return _orien_supply_map; }
   // setter
   void set_shape(const PlanarRect& shape) { _shape = shape; }
-  void set_net_fixed_rect_map(const std::map<irt_int, std::set<EXTLayerRect*>>& net_fixed_rect_map)
+  void set_net_fixed_rect_map(const std::map<int32_t, std::set<EXTLayerRect*>>& net_fixed_rect_map)
   {
     _net_fixed_rect_map = net_fixed_rect_map;
   }
-  void set_orien_supply_map(const std::map<Orientation, irt_int>& orien_supply_map) { _orien_supply_map = orien_supply_map; }
+  void set_orien_supply_map(const std::map<Orientation, int32_t>& orien_supply_map) { _orien_supply_map = orien_supply_map; }
   // function
 
  private:
   PlanarRect _shape;
-  std::map<irt_int, std::set<EXTLayerRect*>> _net_fixed_rect_map;
-  std::map<Orientation, irt_int> _orien_supply_map;
+  std::map<int32_t, std::set<EXTLayerRect*>> _net_fixed_rect_map;
+  std::map<Orientation, int32_t> _orien_supply_map;
 };
 
 }  // namespace irt

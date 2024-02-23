@@ -18,6 +18,7 @@
 
 #include "GDSPlotter.hpp"
 #include "LayerCoord.hpp"
+#include "RTAPI.hpp"
 #include "TAPanel.hpp"
 
 namespace irt {
@@ -100,7 +101,7 @@ TANet TrackAssigner::convertToTANet(Net& net)
 
 void TrackAssigner::setTAParameter(TAModel& ta_model)
 {
-  irt_int cost_unit = 128;
+  int32_t cost_unit = 128;
 
   TAParameter ta_parameter(cost_unit, cost_unit, cost_unit);
   LOG_INST.info(Loc::current(), "prefer_wire_unit : ", ta_parameter.get_prefer_wire_unit());
@@ -123,7 +124,7 @@ void TrackAssigner::initTAPanelMap(TAModel& ta_model)
     std::vector<TAPanel> ta_panel_list;
     if (routing_layer.isPreferH()) {
       for (ScaleGrid& gcell_grid : gcell_axis.get_y_grid_list()) {
-        for (irt_int line = gcell_grid.get_start_line(); line < gcell_grid.get_end_line(); line += gcell_grid.get_step_length()) {
+        for (int32_t line = gcell_grid.get_start_line(); line < gcell_grid.get_end_line(); line += gcell_grid.get_step_length()) {
           TAPanel ta_panel;
           EXTLayerRect ta_panel_rect;
           ta_panel_rect.set_real_lb(die.get_real_lb_x(), line);
@@ -133,7 +134,7 @@ void TrackAssigner::initTAPanelMap(TAModel& ta_model)
           ta_panel.set_panel_rect(ta_panel_rect);
           TAPanelId ta_panel_id;
           ta_panel_id.set_layer_idx(routing_layer.get_layer_idx());
-          ta_panel_id.set_panel_idx(static_cast<irt_int>(ta_panel_list.size()));
+          ta_panel_id.set_panel_idx(static_cast<int32_t>(ta_panel_list.size()));
           ta_panel.set_ta_panel_id(ta_panel_id);
           ta_panel.set_ta_parameter(&ta_parameter);
           ta_panel_list.push_back(ta_panel);
@@ -141,7 +142,7 @@ void TrackAssigner::initTAPanelMap(TAModel& ta_model)
       }
     } else {
       for (ScaleGrid& gcell_grid : gcell_axis.get_x_grid_list()) {
-        for (irt_int line = gcell_grid.get_start_line(); line < gcell_grid.get_end_line(); line += gcell_grid.get_step_length()) {
+        for (int32_t line = gcell_grid.get_start_line(); line < gcell_grid.get_end_line(); line += gcell_grid.get_step_length()) {
           TAPanel ta_panel;
           EXTLayerRect ta_panel_rect;
           ta_panel_rect.set_real_lb(line, die.get_real_lb_y());
@@ -151,7 +152,7 @@ void TrackAssigner::initTAPanelMap(TAModel& ta_model)
           ta_panel.set_panel_rect(ta_panel_rect);
           TAPanelId ta_panel_id;
           ta_panel_id.set_layer_idx(routing_layer.get_layer_idx());
-          ta_panel_id.set_panel_idx(static_cast<irt_int>(ta_panel_list.size()));
+          ta_panel_id.set_panel_idx(static_cast<int32_t>(ta_panel_list.size()));
           ta_panel.set_ta_panel_id(ta_panel_id);
           ta_panel.set_ta_parameter(&ta_parameter);
           ta_panel_list.push_back(ta_panel);
@@ -172,7 +173,7 @@ void TrackAssigner::initTATaskList(TAModel& ta_model)
       std::vector<TATask*>& panel_task_list = ta_panel.get_ta_task_list();
       for (TATask* ta_task : net_task_list) {
         ta_task->set_net_idx(ta_net.get_net_idx());
-        ta_task->set_task_idx(static_cast<irt_int>(panel_task_list.size()));
+        ta_task->set_task_idx(static_cast<int32_t>(panel_task_list.size()));
         ta_task->set_connect_type(ta_net.get_connect_type());
         buildBoundingBox(ta_task);
         ta_task->set_routed_times(0);
@@ -198,7 +199,7 @@ std::map<TAPanelId, std::vector<TATask*>, CmpTAPanelId> TrackAssigner::getPanelT
     Guide rt_guide = segment.get_second()->value();
     PlanarCoord& lb_grid_coord = lb_guide.get_grid_coord().get_planar_coord();
     PlanarCoord& rt_grid_coord = rt_guide.get_grid_coord().get_planar_coord();
-    irt_int guide_layer_idx = lb_guide.get_layer_idx();
+    int32_t guide_layer_idx = lb_guide.get_layer_idx();
 
     if (lb_grid_coord == rt_grid_coord) {
       continue;
@@ -221,9 +222,9 @@ std::map<TAPanelId, std::vector<TATask*>, CmpTAPanelId> TrackAssigner::getPanelT
       RTUtil::swapByCMP(lb_guide, rt_guide, [](Guide& a, Guide& b) {
         return CmpPlanarCoordByXASC()(a.get_grid_coord().get_planar_coord(), b.get_grid_coord().get_planar_coord());
       });
-      irt_int lb_x = RTUtil::getClosedScaleList(lb_guide.get_lb_x(), lb_guide.get_rt_x(), x_track_grid_list).back();
-      irt_int rt_x = RTUtil::getClosedScaleList(rt_guide.get_lb_x(), rt_guide.get_rt_x(), x_track_grid_list).front();
-      for (irt_int y : RTUtil::getClosedScaleList(lb_guide.get_lb_y(), lb_guide.get_rt_y(), y_track_grid_list)) {
+      int32_t lb_x = RTUtil::getClosedScaleList(lb_guide.get_lb_x(), lb_guide.get_rt_x(), x_track_grid_list).back();
+      int32_t rt_x = RTUtil::getClosedScaleList(rt_guide.get_lb_x(), rt_guide.get_rt_x(), x_track_grid_list).front();
+      for (int32_t y : RTUtil::getClosedScaleList(lb_guide.get_lb_y(), lb_guide.get_rt_y(), y_track_grid_list)) {
         ta_group_list.front().get_coord_list().emplace_back(lb_x, y, guide_layer_idx);
         ta_group_list.back().get_coord_list().emplace_back(rt_x, y, guide_layer_idx);
       }
@@ -231,9 +232,9 @@ std::map<TAPanelId, std::vector<TATask*>, CmpTAPanelId> TrackAssigner::getPanelT
       RTUtil::swapByCMP(lb_guide, rt_guide, [](Guide& a, Guide& b) {
         return CmpPlanarCoordByYASC()(a.get_grid_coord().get_planar_coord(), b.get_grid_coord().get_planar_coord());
       });
-      irt_int lb_y = RTUtil::getClosedScaleList(lb_guide.get_lb_y(), lb_guide.get_rt_y(), y_track_grid_list).back();
-      irt_int rt_y = RTUtil::getClosedScaleList(rt_guide.get_lb_y(), rt_guide.get_rt_y(), y_track_grid_list).front();
-      for (irt_int x : RTUtil::getClosedScaleList(lb_guide.get_lb_x(), lb_guide.get_rt_x(), x_track_grid_list)) {
+      int32_t lb_y = RTUtil::getClosedScaleList(lb_guide.get_lb_y(), lb_guide.get_rt_y(), y_track_grid_list).back();
+      int32_t rt_y = RTUtil::getClosedScaleList(rt_guide.get_lb_y(), rt_guide.get_rt_y(), y_track_grid_list).front();
+      for (int32_t x : RTUtil::getClosedScaleList(lb_guide.get_lb_x(), lb_guide.get_rt_x(), x_track_grid_list)) {
         ta_group_list.front().get_coord_list().emplace_back(x, lb_y, guide_layer_idx);
         ta_group_list.back().get_coord_list().emplace_back(x, rt_y, guide_layer_idx);
       }
@@ -261,13 +262,13 @@ void TrackAssigner::buildPanelSchedule(TAModel& ta_model)
 {
   std::vector<std::vector<TAPanel>>& layer_panel_list = ta_model.get_layer_panel_list();
 
-  irt_int range = 2;
+  int32_t range = 2;
 
   std::vector<std::vector<TAPanelId>> ta_panel_id_list_list;
-  for (irt_int layer_idx = 0; layer_idx < static_cast<irt_int>(layer_panel_list.size()); layer_idx++) {
-    for (irt_int start_i = 0; start_i < range; start_i++) {
+  for (int32_t layer_idx = 0; layer_idx < static_cast<int32_t>(layer_panel_list.size()); layer_idx++) {
+    for (int32_t start_i = 0; start_i < range; start_i++) {
       std::vector<TAPanelId> ta_panel_id_list;
-      for (irt_int i = start_i; i < static_cast<irt_int>(layer_panel_list[layer_idx].size()); i += range) {
+      for (int32_t i = start_i; i < static_cast<int32_t>(layer_panel_list[layer_idx].size()); i += range) {
         ta_panel_id_list.emplace_back(layer_idx, i);
       }
       ta_panel_id_list_list.push_back(ta_panel_id_list);
@@ -326,8 +327,8 @@ void TrackAssigner::buildFixedRectList(TAPanel& ta_panel)
 
 void TrackAssigner::buildPanelTrackAxis(TAPanel& ta_panel)
 {
-  std::vector<irt_int> x_scale_list;
-  std::vector<irt_int> y_scale_list;
+  std::vector<int32_t> x_scale_list;
+  std::vector<int32_t> y_scale_list;
 
   for (TATask* ta_task : ta_panel.get_ta_task_list()) {
     for (TAGroup& ta_group : ta_task->get_ta_group_list()) {
@@ -352,8 +353,8 @@ void TrackAssigner::initTANodeMap(TAPanel& ta_panel)
   PlanarCoord& real_lb = ta_panel.get_panel_rect().get_real_lb();
   PlanarCoord& real_rt = ta_panel.get_panel_rect().get_real_rt();
   ScaleAxis& panel_track_axis = ta_panel.get_panel_track_axis();
-  std::vector<irt_int> x_list = RTUtil::getClosedScaleList(real_lb.get_x(), real_rt.get_x(), panel_track_axis.get_x_grid_list());
-  std::vector<irt_int> y_list = RTUtil::getClosedScaleList(real_lb.get_y(), real_rt.get_y(), panel_track_axis.get_y_grid_list());
+  std::vector<int32_t> x_list = RTUtil::getClosedScaleList(real_lb.get_x(), real_rt.get_x(), panel_track_axis.get_x_grid_list());
+  std::vector<int32_t> y_list = RTUtil::getClosedScaleList(real_lb.get_y(), real_rt.get_y(), panel_track_axis.get_y_grid_list());
 
   GridMap<TANode>& ta_node_map = ta_panel.get_ta_node_map();
   ta_node_map.init(x_list.size(), y_list.size());
@@ -372,8 +373,8 @@ void TrackAssigner::buildTANodeNeighbor(TAPanel& ta_panel)
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
 
   GridMap<TANode>& ta_node_map = ta_panel.get_ta_node_map();
-  for (irt_int x = 0; x < ta_node_map.get_x_size(); x++) {
-    for (irt_int y = 0; y < ta_node_map.get_y_size(); y++) {
+  for (int32_t x = 0; x < ta_node_map.get_x_size(); x++) {
+    for (int32_t y = 0; y < ta_node_map.get_y_size(); y++) {
       std::map<Orientation, TANode*>& neighbor_node_map = ta_node_map[x][y].get_neighbor_node_map();
       if (routing_layer_list[ta_panel.get_panel_rect().get_layer_idx()].isPreferH()) {
         if (x != 0) {
@@ -411,8 +412,8 @@ void TrackAssigner::checkTAPanel(TAPanel& ta_panel)
   }
 
   GridMap<TANode>& ta_node_map = ta_panel.get_ta_node_map();
-  for (irt_int x = 0; x < ta_node_map.get_x_size(); x++) {
-    for (irt_int y = 0; y < ta_node_map.get_y_size(); y++) {
+  for (int32_t x = 0; x < ta_node_map.get_x_size(); x++) {
+    for (int32_t y = 0; y < ta_node_map.get_y_size(); y++) {
       TANode& ta_node = ta_node_map[x][y];
       if (!RTUtil::isInside(ta_panel.get_panel_rect().get_real_rect(), ta_node.get_planar_coord())) {
         LOG_INST.error(Loc::current(), "The ta_node is out of panel!");
@@ -444,7 +445,7 @@ void TrackAssigner::checkTAPanel(TAPanel& ta_panel)
         LOG_INST.error(Loc::current(), "The coord_direction_map is empty!");
       }
       for (LayerCoord& coord : ta_group.get_coord_list()) {
-        irt_int layer_idx = coord.get_layer_idx();
+        int32_t layer_idx = coord.get_layer_idx();
         if (layer_idx != ta_panel.get_panel_rect().get_layer_idx()) {
           LOG_INST.error(Loc::current(), "The layer idx of group coord is illegal!");
         }
@@ -582,7 +583,7 @@ bool TrackAssigner::searchEnded(TAPanel& ta_panel)
   for (size_t i = 0; i < end_node_list_list.size(); i++) {
     for (TANode* end_node : end_node_list_list[i]) {
       if (path_head_node == end_node) {
-        ta_panel.set_end_node_comb_idx(static_cast<irt_int>(i));
+        ta_panel.set_end_node_comb_idx(static_cast<int32_t>(i));
         return true;
       }
     }
@@ -701,7 +702,7 @@ void TrackAssigner::resetStartAndEnd(TAPanel& ta_panel)
   std::vector<std::vector<TANode*>>& end_node_list_list = ta_panel.get_end_node_list_list();
   std::vector<TANode*>& path_node_list = ta_panel.get_path_node_list();
   TANode* path_head_node = ta_panel.get_path_head_node();
-  irt_int end_node_comb_idx = ta_panel.get_end_node_comb_idx();
+  int32_t end_node_comb_idx = ta_panel.get_end_node_comb_idx();
 
   // 对于抵达的终点pin，只保留到达的node
   end_node_list_list[end_node_comb_idx].clear();
@@ -749,12 +750,12 @@ std::vector<Segment<LayerCoord>> TrackAssigner::getRoutingSegmentList(TAPanel& t
   TATask* curr_ta_task = ta_panel.get_curr_ta_task();
 
   std::vector<LayerCoord> driving_grid_coord_list;
-  std::map<LayerCoord, std::set<irt_int>, CmpLayerCoordByXASC> key_coord_pin_map;
+  std::map<LayerCoord, std::set<int32_t>, CmpLayerCoordByXASC> key_coord_pin_map;
   std::vector<TAGroup>& ta_group_list = curr_ta_task->get_ta_group_list();
   for (size_t i = 0; i < ta_group_list.size(); i++) {
     for (LayerCoord& coord : ta_group_list[i].get_coord_list()) {
       driving_grid_coord_list.push_back(coord);
-      key_coord_pin_map[coord].insert(static_cast<irt_int>(i));
+      key_coord_pin_map[coord].insert(static_cast<int32_t>(i));
     }
   }
   // 构建 优化 检查 routing_segment_list
@@ -841,7 +842,7 @@ double TrackAssigner::getNodeCost(TAPanel& ta_panel, TANode* curr_node, Orientat
   double routed_rect_unit = ta_panel.get_ta_parameter()->get_routed_rect_unit();
   double violation_unit = ta_panel.get_ta_parameter()->get_violation_unit();
 
-  irt_int net_idx = ta_panel.get_curr_ta_task()->get_net_idx();
+  int32_t net_idx = ta_panel.get_curr_ta_task()->get_net_idx();
 
   double cost = 0;
   cost += curr_node->getFixedRectCost(net_idx, orientation, fixed_rect_unit);
@@ -986,7 +987,7 @@ std::vector<Violation> TrackAssigner::getViolationList(TAPanel& ta_panel)
       }
     }
   }
-  std::map<irt_int, std::vector<idb::IdbRegularWireSegment*>> net_result_map;
+  std::map<int32_t, std::vector<idb::IdbRegularWireSegment*>> net_result_map;
   for (TATask* ta_task : ta_panel.get_ta_task_list()) {
     for (Segment<LayerCoord>& routing_segment : ta_task->get_routing_segment_list()) {
       net_result_map[ta_task->get_net_idx()].push_back(DM_INST.getIDBSegmentByNetResult(ta_task->get_net_idx(), routing_segment));
@@ -997,9 +998,9 @@ std::vector<Violation> TrackAssigner::getViolationList(TAPanel& ta_panel)
 
 std::vector<TATask*> TrackAssigner::getTaskScheduleByViolation(TAPanel& ta_panel)
 {
-  std::set<irt_int> violation_net_set;
+  std::set<int32_t> violation_net_set;
   for (Violation& violation : ta_panel.get_violation_list()) {
-    for (irt_int violation_net : violation.get_violation_net_set()) {
+    for (int32_t violation_net : violation.get_violation_net_set()) {
       violation_net_set.insert(violation_net);
     }
   }
@@ -1044,7 +1045,7 @@ void TrackAssigner::freeTAPanel(TAPanel& ta_panel)
 
 #if 1  // update env
 
-void TrackAssigner::updateFixedRectToGraph(TAPanel& ta_panel, ChangeType change_type, irt_int net_idx, EXTLayerRect* fixed_rect,
+void TrackAssigner::updateFixedRectToGraph(TAPanel& ta_panel, ChangeType change_type, int32_t net_idx, EXTLayerRect* fixed_rect,
                                            bool is_routing)
 {
   NetShape net_shape(net_idx, fixed_rect->getRealLayerRect(), is_routing);
@@ -1059,7 +1060,7 @@ void TrackAssigner::updateFixedRectToGraph(TAPanel& ta_panel, ChangeType change_
   }
 }
 
-void TrackAssigner::updateNetResultToGraph(TAPanel& ta_panel, ChangeType change_type, irt_int net_idx, Segment<LayerCoord>& segment)
+void TrackAssigner::updateNetResultToGraph(TAPanel& ta_panel, ChangeType change_type, int32_t net_idx, Segment<LayerCoord>& segment)
 {
   for (NetShape& net_shape : DM_INST.getNetShapeList(net_idx, segment)) {
     for (auto& [ta_node, orientation_set] : getRoutingNodeOrientationMap(ta_panel, net_shape)) {
@@ -1099,14 +1100,14 @@ std::map<TANode*, std::set<Orientation>> TrackAssigner::getRoutingNodeOrientatio
   RoutingLayer& routing_layer = DM_INST.getDatabase().get_routing_layer_list()[net_shape.get_layer_idx()];
 
   // 膨胀size为 min_spacing + 1/2 * width
-  irt_int enlarged_size = routing_layer.getMinSpacing(net_shape.get_rect()) + (routing_layer.get_min_width() / 2);
+  int32_t enlarged_size = routing_layer.getMinSpacing(net_shape.get_rect()) + (routing_layer.get_min_width() / 2);
   PlanarRect enlarged_rect = RTUtil::getEnlargedRect(net_shape.get_rect(), enlarged_size);
 
   std::map<TANode*, std::set<Orientation>> node_orientation_map;
   if (RTUtil::existNodeGrid(enlarged_rect, ta_panel.get_panel_track_axis())) {
     PlanarRect grid_rect = RTUtil::getNodeGridRect(enlarged_rect, ta_panel.get_panel_track_axis());
-    for (irt_int grid_x = grid_rect.get_lb_x(); grid_x <= grid_rect.get_rt_x(); grid_x++) {
-      for (irt_int grid_y = grid_rect.get_lb_y(); grid_y <= grid_rect.get_rt_y(); grid_y++) {
+    for (int32_t grid_x = grid_rect.get_lb_x(); grid_x <= grid_rect.get_rt_x(); grid_x++) {
+      for (int32_t grid_y = grid_rect.get_lb_y(); grid_y <= grid_rect.get_rt_y(); grid_y++) {
         TANode& node = ta_panel.get_ta_node_map()[grid_x][grid_y];
         for (auto& [orientation, neigbor_ptr] : node.get_neighbor_node_map()) {
           node_orientation_map[&node].insert(orientation);
@@ -1122,7 +1123,7 @@ std::map<TANode*, std::set<Orientation>> TrackAssigner::getRoutingNodeOrientatio
 
 #if 1  // exhibit
 
-void TrackAssigner::plotTAPanel(TAPanel& ta_panel, irt_int curr_task_idx, std::string flag)
+void TrackAssigner::plotTAPanel(TAPanel& ta_panel, int32_t curr_task_idx, std::string flag)
 {
   ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
@@ -1131,7 +1132,7 @@ void TrackAssigner::plotTAPanel(TAPanel& ta_panel, irt_int curr_task_idx, std::s
 
   PlanarRect panel_rect = ta_panel.get_panel_rect().get_real_rect();
 
-  irt_int width = INT_MAX;
+  int32_t width = INT_MAX;
   for (ScaleGrid& x_grid : ta_panel.get_panel_track_axis().get_x_grid_list()) {
     width = std::min(width, x_grid.get_step_length());
   }
@@ -1153,18 +1154,18 @@ void TrackAssigner::plotTAPanel(TAPanel& ta_panel, irt_int curr_task_idx, std::s
 
   // gcell_axis
   GPStruct gcell_axis_struct("gcell_axis");
-  std::vector<irt_int> gcell_x_list
+  std::vector<int32_t> gcell_x_list
       = RTUtil::getClosedScaleList(panel_rect.get_lb_x(), panel_rect.get_rt_x(), gcell_axis.get_x_grid_list());
-  std::vector<irt_int> gcell_y_list
+  std::vector<int32_t> gcell_y_list
       = RTUtil::getClosedScaleList(panel_rect.get_lb_y(), panel_rect.get_rt_y(), gcell_axis.get_y_grid_list());
-  for (irt_int x : gcell_x_list) {
+  for (int32_t x : gcell_x_list) {
     GPPath gp_path;
     gp_path.set_layer_idx(0);
     gp_path.set_data_type(1);
     gp_path.set_segment(x, panel_rect.get_lb_y(), x, panel_rect.get_rt_y());
     gcell_axis_struct.push(gp_path);
   }
-  for (irt_int y : gcell_y_list) {
+  for (int32_t y : gcell_y_list) {
     GPPath gp_path;
     gp_path.set_layer_idx(0);
     gp_path.set_data_type(1);
@@ -1176,23 +1177,23 @@ void TrackAssigner::plotTAPanel(TAPanel& ta_panel, irt_int curr_task_idx, std::s
   GridMap<TANode>& ta_node_map = ta_panel.get_ta_node_map();
   // ta_node_map
   GPStruct ta_node_map_struct("ta_node_map");
-  for (irt_int grid_x = 0; grid_x < ta_node_map.get_x_size(); grid_x++) {
-    for (irt_int grid_y = 0; grid_y < ta_node_map.get_y_size(); grid_y++) {
+  for (int32_t grid_x = 0; grid_x < ta_node_map.get_x_size(); grid_x++) {
+    for (int32_t grid_y = 0; grid_y < ta_node_map.get_y_size(); grid_y++) {
       TANode& ta_node = ta_node_map[grid_x][grid_y];
       PlanarRect real_rect = RTUtil::getEnlargedRect(ta_node.get_planar_coord(), width);
-      irt_int y_reduced_span = std::max(1, real_rect.getYSpan() / 12);
-      irt_int y = real_rect.get_rt_y();
+      int32_t y_reduced_span = std::max(1, real_rect.getYSpan() / 12);
+      int32_t y = real_rect.get_rt_y();
 
       GPBoundary gp_boundary;
       switch (ta_node.get_state()) {
         case TANodeState::kNone:
-          gp_boundary.set_data_type(static_cast<irt_int>(GPDataType::kNone));
+          gp_boundary.set_data_type(static_cast<int32_t>(GPDataType::kNone));
           break;
         case TANodeState::kOpen:
-          gp_boundary.set_data_type(static_cast<irt_int>(GPDataType::kOpen));
+          gp_boundary.set_data_type(static_cast<int32_t>(GPDataType::kOpen));
           break;
         case TANodeState::kClose:
-          gp_boundary.set_data_type(static_cast<irt_int>(GPDataType::kClose));
+          gp_boundary.set_data_type(static_cast<int32_t>(GPDataType::kClose));
           break;
         default:
           LOG_INST.error(Loc::current(), "The type is error!");
@@ -1205,7 +1206,7 @@ void TrackAssigner::plotTAPanel(TAPanel& ta_panel, irt_int curr_task_idx, std::s
       y -= y_reduced_span;
       GPText gp_text_node_real_coord;
       gp_text_node_real_coord.set_coord(real_rect.get_lb_x(), y);
-      gp_text_node_real_coord.set_text_type(static_cast<irt_int>(GPDataType::kInfo));
+      gp_text_node_real_coord.set_text_type(static_cast<int32_t>(GPDataType::kInfo));
       gp_text_node_real_coord.set_message(
           RTUtil::getString("(", ta_node.get_x(), " , ", ta_node.get_y(), " , ", ta_node.get_layer_idx(), ")"));
       gp_text_node_real_coord.set_layer_idx(GP_INST.getGDSIdxByRouting(ta_node.get_layer_idx()));
@@ -1215,7 +1216,7 @@ void TrackAssigner::plotTAPanel(TAPanel& ta_panel, irt_int curr_task_idx, std::s
       y -= y_reduced_span;
       GPText gp_text_node_grid_coord;
       gp_text_node_grid_coord.set_coord(real_rect.get_lb_x(), y);
-      gp_text_node_grid_coord.set_text_type(static_cast<irt_int>(GPDataType::kInfo));
+      gp_text_node_grid_coord.set_text_type(static_cast<int32_t>(GPDataType::kInfo));
       gp_text_node_grid_coord.set_message(RTUtil::getString("(", grid_x, " , ", grid_y, " , ", ta_node.get_layer_idx(), ")"));
       gp_text_node_grid_coord.set_layer_idx(GP_INST.getGDSIdxByRouting(ta_node.get_layer_idx()));
       gp_text_node_grid_coord.set_presentation(GPTextPresentation::kLeftMiddle);
@@ -1224,7 +1225,7 @@ void TrackAssigner::plotTAPanel(TAPanel& ta_panel, irt_int curr_task_idx, std::s
       y -= y_reduced_span;
       GPText gp_text_direction_set;
       gp_text_direction_set.set_coord(real_rect.get_lb_x(), y);
-      gp_text_direction_set.set_text_type(static_cast<irt_int>(GPDataType::kInfo));
+      gp_text_direction_set.set_text_type(static_cast<int32_t>(GPDataType::kInfo));
       gp_text_direction_set.set_message("direction_set: ");
       gp_text_direction_set.set_layer_idx(GP_INST.getGDSIdxByRouting(ta_node.get_layer_idx()));
       gp_text_direction_set.set_presentation(GPTextPresentation::kLeftMiddle);
@@ -1234,7 +1235,7 @@ void TrackAssigner::plotTAPanel(TAPanel& ta_panel, irt_int curr_task_idx, std::s
         y -= y_reduced_span;
         GPText gp_text_direction_set_info;
         gp_text_direction_set_info.set_coord(real_rect.get_lb_x(), y);
-        gp_text_direction_set_info.set_text_type(static_cast<irt_int>(GPDataType::kInfo));
+        gp_text_direction_set_info.set_text_type(static_cast<int32_t>(GPDataType::kInfo));
         std::string direction_set_info_message = "--";
         for (Direction direction : ta_node.get_direction_set()) {
           direction_set_info_message += RTUtil::getString("(", GetDirectionName()(direction), ")");
@@ -1250,20 +1251,20 @@ void TrackAssigner::plotTAPanel(TAPanel& ta_panel, irt_int curr_task_idx, std::s
 
   // neighbor_map
   GPStruct neighbor_map_struct("neighbor_map");
-  for (irt_int grid_x = 0; grid_x < ta_node_map.get_x_size(); grid_x++) {
-    for (irt_int grid_y = 0; grid_y < ta_node_map.get_y_size(); grid_y++) {
+  for (int32_t grid_x = 0; grid_x < ta_node_map.get_x_size(); grid_x++) {
+    for (int32_t grid_y = 0; grid_y < ta_node_map.get_y_size(); grid_y++) {
       TANode& ta_node = ta_node_map[grid_x][grid_y];
       PlanarRect real_rect = RTUtil::getEnlargedRect(ta_node.get_planar_coord(), width);
 
-      irt_int lb_x = real_rect.get_lb_x();
-      irt_int lb_y = real_rect.get_lb_y();
-      irt_int rt_x = real_rect.get_rt_x();
-      irt_int rt_y = real_rect.get_rt_y();
-      irt_int mid_x = (lb_x + rt_x) / 2;
-      irt_int mid_y = (lb_y + rt_y) / 2;
-      irt_int x_reduced_span = (rt_x - lb_x) / 4;
-      irt_int y_reduced_span = (rt_y - lb_y) / 4;
-      irt_int width = std::min(x_reduced_span, y_reduced_span) / 2;
+      int32_t lb_x = real_rect.get_lb_x();
+      int32_t lb_y = real_rect.get_lb_y();
+      int32_t rt_x = real_rect.get_rt_x();
+      int32_t rt_y = real_rect.get_rt_y();
+      int32_t mid_x = (lb_x + rt_x) / 2;
+      int32_t mid_y = (lb_y + rt_y) / 2;
+      int32_t x_reduced_span = (rt_x - lb_x) / 4;
+      int32_t y_reduced_span = (rt_y - lb_y) / 4;
+      int32_t width = std::min(x_reduced_span, y_reduced_span) / 2;
 
       for (auto& [orientation, neighbor_node] : ta_node.get_neighbor_node_map()) {
         GPPath gp_path;
@@ -1292,7 +1293,7 @@ void TrackAssigner::plotTAPanel(TAPanel& ta_panel, irt_int curr_task_idx, std::s
         }
         gp_path.set_layer_idx(GP_INST.getGDSIdxByRouting(ta_node.get_layer_idx()));
         gp_path.set_width(width);
-        gp_path.set_data_type(static_cast<irt_int>(GPDataType::kNeighbor));
+        gp_path.set_data_type(static_cast<int32_t>(GPDataType::kNeighbor));
         neighbor_map_struct.push(gp_path);
       }
     }
@@ -1304,19 +1305,19 @@ void TrackAssigner::plotTAPanel(TAPanel& ta_panel, irt_int curr_task_idx, std::s
   PlanarCoord& real_lb = panel_rect.get_lb();
   PlanarCoord& real_rt = panel_rect.get_rt();
   ScaleAxis& panel_track_axis = ta_panel.get_panel_track_axis();
-  std::vector<irt_int> x_list = RTUtil::getClosedScaleList(real_lb.get_x(), real_rt.get_x(), panel_track_axis.get_x_grid_list());
-  std::vector<irt_int> y_list = RTUtil::getClosedScaleList(real_lb.get_y(), real_rt.get_y(), panel_track_axis.get_y_grid_list());
+  std::vector<int32_t> x_list = RTUtil::getClosedScaleList(real_lb.get_x(), real_rt.get_x(), panel_track_axis.get_x_grid_list());
+  std::vector<int32_t> y_list = RTUtil::getClosedScaleList(real_lb.get_y(), real_rt.get_y(), panel_track_axis.get_y_grid_list());
 
-  for (irt_int x : x_list) {
+  for (int32_t x : x_list) {
     GPPath gp_path;
-    gp_path.set_data_type(static_cast<irt_int>(GPDataType::kAxis));
+    gp_path.set_data_type(static_cast<int32_t>(GPDataType::kAxis));
     gp_path.set_segment(x, real_lb.get_y(), x, real_rt.get_y());
     gp_path.set_layer_idx(GP_INST.getGDSIdxByRouting(ta_panel.get_panel_rect().get_layer_idx()));
     panel_track_axis_struct.push(gp_path);
   }
-  for (irt_int y : y_list) {
+  for (int32_t y : y_list) {
     GPPath gp_path;
-    gp_path.set_data_type(static_cast<irt_int>(GPDataType::kAxis));
+    gp_path.set_data_type(static_cast<int32_t>(GPDataType::kAxis));
     gp_path.set_segment(real_lb.get_x(), y, real_rt.get_x(), y);
     gp_path.set_layer_idx(GP_INST.getGDSIdxByRouting(ta_panel.get_panel_rect().get_layer_idx()));
     panel_track_axis_struct.push(gp_path);
@@ -1327,7 +1328,7 @@ void TrackAssigner::plotTAPanel(TAPanel& ta_panel, irt_int curr_task_idx, std::s
     GPStruct fixed_rect_struct(RTUtil::getString("fixed_rect(net_", net_idx, ")"));
     for (EXTLayerRect* rect : rect_set) {
       GPBoundary gp_boundary;
-      gp_boundary.set_data_type(static_cast<irt_int>(GPDataType::kShape));
+      gp_boundary.set_data_type(static_cast<int32_t>(GPDataType::kShape));
       gp_boundary.set_rect(rect->get_real_rect());
       gp_boundary.set_layer_idx(GP_INST.getGDSIdxByRouting(ta_panel.get_panel_rect().get_layer_idx()));
       fixed_rect_struct.push(gp_boundary);
@@ -1340,7 +1341,7 @@ void TrackAssigner::plotTAPanel(TAPanel& ta_panel, irt_int curr_task_idx, std::s
     EXTLayerRect& violation_shape = violation.get_violation_shape();
 
     GPBoundary gp_boundary;
-    gp_boundary.set_data_type(static_cast<irt_int>(GPDataType::kViolation));
+    gp_boundary.set_data_type(static_cast<int32_t>(GPDataType::kViolation));
     gp_boundary.set_rect(violation_shape.get_real_rect());
     if (violation.get_is_routing()) {
       gp_boundary.set_layer_idx(GP_INST.getGDSIdxByRouting(violation_shape.get_layer_idx()));
@@ -1359,7 +1360,7 @@ void TrackAssigner::plotTAPanel(TAPanel& ta_panel, irt_int curr_task_idx, std::s
       for (TAGroup& ta_group : ta_task->get_ta_group_list()) {
         for (LayerCoord& coord : ta_group.get_coord_list()) {
           GPBoundary gp_boundary;
-          gp_boundary.set_data_type(static_cast<irt_int>(GPDataType::kKey));
+          gp_boundary.set_data_type(static_cast<int32_t>(GPDataType::kKey));
           gp_boundary.set_rect(RTUtil::getEnlargedRect(coord, width));
           gp_boundary.set_layer_idx(GP_INST.getGDSIdxByRouting(coord.get_layer_idx()));
           task_struct.push(gp_boundary);
@@ -1377,19 +1378,19 @@ void TrackAssigner::plotTAPanel(TAPanel& ta_panel, irt_int curr_task_idx, std::s
     for (Segment<LayerCoord>& segment : ta_task->get_routing_segment_list()) {
       LayerCoord first_coord = segment.get_first();
       LayerCoord second_coord = segment.get_second();
-      irt_int first_layer_idx = first_coord.get_layer_idx();
-      irt_int second_layer_idx = second_coord.get_layer_idx();
-      irt_int half_width = routing_layer_list[first_layer_idx].get_min_width() / 2;
+      int32_t first_layer_idx = first_coord.get_layer_idx();
+      int32_t second_layer_idx = second_coord.get_layer_idx();
+      int32_t half_width = routing_layer_list[first_layer_idx].get_min_width() / 2;
 
       if (first_layer_idx == second_layer_idx) {
         GPBoundary gp_boundary;
-        gp_boundary.set_data_type(static_cast<irt_int>(GPDataType::kPath));
+        gp_boundary.set_data_type(static_cast<int32_t>(GPDataType::kPath));
         gp_boundary.set_rect(RTUtil::getEnlargedRect(first_coord, second_coord, half_width));
         gp_boundary.set_layer_idx(GP_INST.getGDSIdxByRouting(first_layer_idx));
         task_struct.push(gp_boundary);
       } else {
         RTUtil::swapByASC(first_layer_idx, second_layer_idx);
-        for (irt_int layer_idx = first_layer_idx; layer_idx < second_layer_idx; layer_idx++) {
+        for (int32_t layer_idx = first_layer_idx; layer_idx < second_layer_idx; layer_idx++) {
           ViaMaster& via_master = layer_via_master_list[layer_idx].front();
 
           LayerRect& above_enclosure = via_master.get_above_enclosure();
@@ -1397,7 +1398,7 @@ void TrackAssigner::plotTAPanel(TAPanel& ta_panel, irt_int curr_task_idx, std::s
           GPBoundary above_boundary;
           above_boundary.set_rect(offset_above_enclosure);
           above_boundary.set_layer_idx(GP_INST.getGDSIdxByRouting(above_enclosure.get_layer_idx()));
-          above_boundary.set_data_type(static_cast<irt_int>(GPDataType::kPath));
+          above_boundary.set_data_type(static_cast<int32_t>(GPDataType::kPath));
           task_struct.push(above_boundary);
 
           LayerRect& below_enclosure = via_master.get_below_enclosure();
@@ -1405,7 +1406,7 @@ void TrackAssigner::plotTAPanel(TAPanel& ta_panel, irt_int curr_task_idx, std::s
           GPBoundary below_boundary;
           below_boundary.set_rect(offset_below_enclosure);
           below_boundary.set_layer_idx(GP_INST.getGDSIdxByRouting(below_enclosure.get_layer_idx()));
-          below_boundary.set_data_type(static_cast<irt_int>(GPDataType::kPath));
+          below_boundary.set_data_type(static_cast<int32_t>(GPDataType::kPath));
           task_struct.push(below_boundary);
 
           for (PlanarRect& cut_shape : via_master.get_cut_shape_list()) {
@@ -1413,7 +1414,7 @@ void TrackAssigner::plotTAPanel(TAPanel& ta_panel, irt_int curr_task_idx, std::s
             GPBoundary cut_boundary;
             cut_boundary.set_rect(offset_cut_shape);
             cut_boundary.set_layer_idx(GP_INST.getGDSIdxByCut(via_master.get_cut_layer_idx()));
-            cut_boundary.set_data_type(static_cast<irt_int>(GPDataType::kPath));
+            cut_boundary.set_data_type(static_cast<int32_t>(GPDataType::kPath));
             task_struct.push(cut_boundary);
           }
         }
@@ -1441,20 +1442,20 @@ void TrackAssigner::writeNetCSV(TAModel& ta_model)
   std::string ta_temp_directory_path = DM_INST.getConfig().ta_temp_directory_path;
   GridMap<GCell>& gcell_map = DM_INST.getDatabase().get_gcell_map();
 
-  std::vector<GridMap<irt_int>> layer_net_map;
+  std::vector<GridMap<int32_t>> layer_net_map;
   layer_net_map.resize(routing_layer_list.size());
-  for (GridMap<irt_int>& net_map : layer_net_map) {
+  for (GridMap<int32_t>& net_map : layer_net_map) {
     net_map.init(gcell_map.get_x_size(), gcell_map.get_y_size());
   }
-  for (irt_int x = 0; x < gcell_map.get_x_size(); x++) {
-    for (irt_int y = 0; y < gcell_map.get_y_size(); y++) {
-      std::map<irt_int, std::set<irt_int>> net_layer_map;
+  for (int32_t x = 0; x < gcell_map.get_x_size(); x++) {
+    for (int32_t y = 0; y < gcell_map.get_y_size(); y++) {
+      std::map<int32_t, std::set<int32_t>> net_layer_map;
       for (auto& [net_idx, segment_set] : gcell_map[x][y].get_net_result_map()) {
         for (Segment<LayerCoord>* segment : segment_set) {
-          irt_int first_layer_idx = segment->get_first().get_layer_idx();
-          irt_int second_layer_idx = segment->get_second().get_layer_idx();
+          int32_t first_layer_idx = segment->get_first().get_layer_idx();
+          int32_t second_layer_idx = segment->get_second().get_layer_idx();
           RTUtil::swapByASC(first_layer_idx, second_layer_idx);
-          for (irt_int layer_idx = first_layer_idx; layer_idx <= second_layer_idx; layer_idx++) {
+          for (int32_t layer_idx = first_layer_idx; layer_idx <= second_layer_idx; layer_idx++) {
             net_layer_map[net_idx].insert(layer_idx);
           }
         }
@@ -1465,7 +1466,7 @@ void TrackAssigner::writeNetCSV(TAModel& ta_model)
         }
       }
       for (auto& [net_idx, layer_set] : net_layer_map) {
-        for (irt_int layer_idx : layer_set) {
+        for (int32_t layer_idx : layer_set) {
           layer_net_map[layer_idx][x][y]++;
         }
       }
@@ -1474,9 +1475,9 @@ void TrackAssigner::writeNetCSV(TAModel& ta_model)
   for (RoutingLayer& routing_layer : routing_layer_list) {
     std::ofstream* net_csv_file
         = RTUtil::getOutputFileStream(RTUtil::getString(ta_temp_directory_path, "net_map_", routing_layer.get_layer_name(), ".csv"));
-    GridMap<irt_int>& net_map = layer_net_map[routing_layer.get_layer_idx()];
-    for (irt_int y = net_map.get_y_size() - 1; y >= 0; y--) {
-      for (irt_int x = 0; x < net_map.get_x_size(); x++) {
+    GridMap<int32_t>& net_map = layer_net_map[routing_layer.get_layer_idx()];
+    for (int32_t y = net_map.get_y_size() - 1; y >= 0; y--) {
+      for (int32_t x = 0; x < net_map.get_x_size(); x++) {
         RTUtil::pushStream(net_csv_file, net_map[x][y], ",");
       }
       RTUtil::pushStream(net_csv_file, "\n");
@@ -1491,13 +1492,13 @@ void TrackAssigner::writeViolationCSV(TAModel& ta_model)
   std::string ta_temp_directory_path = DM_INST.getConfig().ta_temp_directory_path;
   GridMap<GCell>& gcell_map = DM_INST.getDatabase().get_gcell_map();
 
-  std::vector<GridMap<irt_int>> layer_violation_map;
+  std::vector<GridMap<int32_t>> layer_violation_map;
   layer_violation_map.resize(routing_layer_list.size());
-  for (GridMap<irt_int>& violation_map : layer_violation_map) {
+  for (GridMap<int32_t>& violation_map : layer_violation_map) {
     violation_map.init(gcell_map.get_x_size(), gcell_map.get_y_size());
   }
-  for (irt_int x = 0; x < gcell_map.get_x_size(); x++) {
-    for (irt_int y = 0; y < gcell_map.get_y_size(); y++) {
+  for (int32_t x = 0; x < gcell_map.get_x_size(); x++) {
+    for (int32_t y = 0; y < gcell_map.get_y_size(); y++) {
       for (Violation* violation : gcell_map[x][y].get_violation_set()) {
         layer_violation_map[violation->get_violation_shape().get_layer_idx()][x][y]++;
       }
@@ -1506,9 +1507,9 @@ void TrackAssigner::writeViolationCSV(TAModel& ta_model)
   for (RoutingLayer& routing_layer : routing_layer_list) {
     std::ofstream* violation_csv_file
         = RTUtil::getOutputFileStream(RTUtil::getString(ta_temp_directory_path, "violation_map_", routing_layer.get_layer_name(), ".csv"));
-    GridMap<irt_int>& violation_map = layer_violation_map[routing_layer.get_layer_idx()];
-    for (irt_int y = violation_map.get_y_size() - 1; y >= 0; y--) {
-      for (irt_int x = 0; x < violation_map.get_x_size(); x++) {
+    GridMap<int32_t>& violation_map = layer_violation_map[routing_layer.get_layer_idx()];
+    for (int32_t y = violation_map.get_y_size() - 1; y >= 0; y--) {
+      for (int32_t x = 0; x < violation_map.get_x_size(); x++) {
         RTUtil::pushStream(violation_csv_file, violation_map[x][y], ",");
       }
       RTUtil::pushStream(violation_csv_file, "\n");

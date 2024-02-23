@@ -26,7 +26,7 @@
 #include "DataManager.hpp"
 #include "Database.hpp"
 #include "Net.hpp"
-#include "RTU.hpp"
+#include "RTHeader.hpp"
 
 namespace irt {
 
@@ -63,8 +63,8 @@ class DetailedRouter
   void buildBoxSchedule(DRModel& dr_model);
   void routeDRBoxMap(DRModel& dr_model);
   void initDRTaskList(DRModel& dr_model, DRBox& dr_box);
-  std::map<irt_int, std::set<LayerCoord, CmpLayerCoordByLayerASC>> getNetConnectPointMap(DRBox& dr_box);
-  std::map<irt_int, std::set<LayerCoord, CmpLayerCoordByLayerASC>> getNetBoundaryPointMap(DRBox& dr_box);
+  std::map<int32_t, std::set<LayerCoord, CmpLayerCoordByLayerASC>> getNetConnectPointMap(DRBox& dr_box);
+  std::map<int32_t, std::set<LayerCoord, CmpLayerCoordByLayerASC>> getNetBoundaryPointMap(DRBox& dr_box);
   void buildBoundingBox(DRTask* dr_task);
   void buildDRTaskList(DRBox& dr_box);
   void buildFixedRectList(DRBox& dr_box);
@@ -110,19 +110,19 @@ class DetailedRouter
   void applyPatch(DRBox& dr_box, DRTask* dr_task);
   std::vector<EXTLayerRect> getPatchList(DRBox& dr_box, DRTask* dr_task);
   std::vector<EXTLayerRect> getNotchPatchList(DRBox& dr_box, DRTask* dr_task);
-  LayerRect getNotchPatch(irt_int layer_idx, std::vector<PlanarCoord>& task_point_list);
+  LayerRect getNotchPatch(int32_t layer_idx, std::vector<PlanarCoord>& task_point_list);
   std::vector<EXTLayerRect> getMinAreaPatchList(DRBox& dr_box, DRTask* dr_task);
   void updateViolationList(DRBox& dr_box);
   std::vector<Violation> getViolationList(DRBox& dr_box);
   void updateDRTaskToGcellMap(DRBox& dr_box);
   void updateViolationToGcellMap(DRBox& dr_box);
   void freeDRBox(DRBox& dr_box);
-  irt_int getViolationNum();
+  int32_t getViolationNum();
 
 #if 1  // update env
-  void updateFixedRectToGraph(DRBox& dr_box, ChangeType change_type, irt_int net_idx, EXTLayerRect* fixed_rect, bool is_routing);
-  void updateNetResultToGraph(DRBox& dr_box, ChangeType change_type, irt_int net_idx, Segment<LayerCoord>& segment);
-  void updatePatchToGraph(DRBox& dr_box, ChangeType change_type, irt_int net_idx, EXTLayerRect& patch);
+  void updateFixedRectToGraph(DRBox& dr_box, ChangeType change_type, int32_t net_idx, EXTLayerRect* fixed_rect, bool is_routing);
+  void updateNetResultToGraph(DRBox& dr_box, ChangeType change_type, int32_t net_idx, Segment<LayerCoord>& segment);
+  void updatePatchToGraph(DRBox& dr_box, ChangeType change_type, int32_t net_idx, EXTLayerRect& patch);
   std::map<DRNode*, std::set<Orientation>> getNodeOrientationMap(DRBox& dr_box, NetShape& net_shape);
   std::map<DRNode*, std::set<Orientation>> getRoutingNodeOrientationMap(DRBox& dr_box, NetShape& net_shape);
   std::map<DRNode*, std::set<Orientation>> getCutNodeOrientationMap(DRBox& dr_box, NetShape& net_shape);
@@ -130,7 +130,7 @@ class DetailedRouter
 #endif
 
 #if 1  // exhibit
-  void plotDRBox(DRBox& dr_box, irt_int curr_task_idx, std::string flag);
+  void plotDRBox(DRBox& dr_box, int32_t curr_task_idx, std::string flag);
   void writeDRModel(DRModel& dr_model, size_t iter);
   void writeNetCSV(DRModel& dr_model, size_t iter);
   void writeViolationCSV(DRModel& dr_model, size_t iter);

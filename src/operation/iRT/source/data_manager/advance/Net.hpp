@@ -31,7 +31,7 @@ class Net
   Net() = default;
   ~Net() = default;
   // getter
-  irt_int get_net_idx() const { return _net_idx; }
+  int32_t get_net_idx() const { return _net_idx; }
   std::string& get_net_name() { return _net_name; }
   ConnectType get_connect_type() const { return _connect_type; }
   // PinAccessor
@@ -43,7 +43,7 @@ class Net
   MTree<Guide>& get_gr_result_tree() { return _gr_result_tree; }
 
   // setter
-  void set_net_idx(const irt_int net_idx) { _net_idx = net_idx; }
+  void set_net_idx(const int32_t net_idx) { _net_idx = net_idx; }
   void set_net_name(const std::string& net_name) { _net_name = net_name; }
   void set_connect_type(const ConnectType& connect_type) { _connect_type = connect_type; }
   // PinAccessor
@@ -55,7 +55,7 @@ class Net
   void set_gr_result_tree(const MTree<Guide>& gr_result_tree) { _gr_result_tree = gr_result_tree; }
 
  private:
-  irt_int _net_idx = -1;
+  int32_t _net_idx = -1;
   std::string _net_name;
   ConnectType _connect_type = ConnectType::kNone;
   // PinAccessor

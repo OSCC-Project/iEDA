@@ -19,7 +19,7 @@
 #include "AccessPoint.hpp"
 #include "EXTLayerRect.hpp"
 #include "PlanarCoord.hpp"
-#include "RTU.hpp"
+#include "RTHeader.hpp"
 
 namespace irt {
 
@@ -29,14 +29,14 @@ class Pin
   Pin() = default;
   ~Pin() = default;
   // getter
-  irt_int get_pin_idx() const { return _pin_idx; }
+  int32_t get_pin_idx() const { return _pin_idx; }
   std::string& get_pin_name() { return _pin_name; }
   std::vector<EXTLayerRect>& get_routing_shape_list() { return _routing_shape_list; }
   std::vector<EXTLayerRect>& get_cut_shape_list() { return _cut_shape_list; }
   bool get_is_driving() const { return _is_driving; }
   std::vector<AccessPoint>& get_access_point_list() { return _access_point_list; }
   // setter
-  void set_pin_idx(const irt_int pin_idx) { _pin_idx = pin_idx; }
+  void set_pin_idx(const int32_t pin_idx) { _pin_idx = pin_idx; }
   void set_pin_name(const std::string& pin_name) { _pin_name = pin_name; }
   void set_routing_shape_list(const std::vector<EXTLayerRect>& routing_shape_list) { _routing_shape_list = routing_shape_list; }
   void set_cut_shape_list(const std::vector<EXTLayerRect>& cut_shape_list) { _cut_shape_list = cut_shape_list; }
@@ -45,7 +45,7 @@ class Pin
   // function
 
  private:
-  irt_int _pin_idx = -1;
+  int32_t _pin_idx = -1;
   std::string _pin_name;
   std::vector<EXTLayerRect> _routing_shape_list;
   std::vector<EXTLayerRect> _cut_shape_list;

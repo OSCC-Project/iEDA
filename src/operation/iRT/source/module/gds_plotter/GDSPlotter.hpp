@@ -38,16 +38,16 @@ class GDSPlotter
   static void destroyInst();
   // function
   void plot(GPGDS& gp_gds, std::string gds_file_path);
-  irt_int getGDSIdxByRouting(irt_int layer_idx);
-  irt_int getGDSIdxByCut(irt_int below_layer_idx);
+  int32_t getGDSIdxByRouting(int32_t layer_idx);
+  int32_t getGDSIdxByCut(int32_t below_layer_idx);
 
  private:
   // self
   static GDSPlotter* _gp_instance;
-  std::map<irt_int, irt_int> _routing_layer_gds_map;
-  std::map<irt_int, irt_int> _cut_layer_gds_map;
-  std::map<irt_int, irt_int> _gds_routing_layer_map;
-  std::map<irt_int, irt_int> _gds_cut_layer_map;
+  std::map<int32_t, int32_t> _routing_layer_gds_map;
+  std::map<int32_t, int32_t> _cut_layer_gds_map;
+  std::map<int32_t, int32_t> _gds_routing_layer_map;
+  std::map<int32_t, int32_t> _gds_cut_layer_map;
 
   GDSPlotter() { init(); }
   GDSPlotter(const GDSPlotter& other) = delete;

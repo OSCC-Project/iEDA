@@ -29,23 +29,23 @@ class TATask
   TATask() = default;
   ~TATask() = default;
   // getter
-  irt_int get_net_idx() { return _net_idx; }
-  irt_int get_task_idx() { return _task_idx; }
+  int32_t get_net_idx() { return _net_idx; }
+  int32_t get_task_idx() { return _task_idx; }
   ConnectType& get_connect_type() { return _connect_type; }
   std::vector<TAGroup>& get_ta_group_list() { return _ta_group_list; }
   PlanarRect& get_bounding_box() { return _bounding_box; }
-  irt_int get_routed_times() const { return _routed_times; }
+  int32_t get_routed_times() const { return _routed_times; }
   std::vector<Segment<LayerCoord>>& get_routing_segment_list() { return _routing_segment_list; }
   // const getter
   const ConnectType& get_connect_type() const { return _connect_type; }
   const PlanarRect& get_bounding_box() const { return _bounding_box; }
   // setter
-  void set_net_idx(const irt_int net_idx) { _net_idx = net_idx; }
-  void set_task_idx(const irt_int task_idx) { _task_idx = task_idx; }
+  void set_net_idx(const int32_t net_idx) { _net_idx = net_idx; }
+  void set_task_idx(const int32_t task_idx) { _task_idx = task_idx; }
   void set_connect_type(const ConnectType& connect_type) { _connect_type = connect_type; }
   void set_ta_group_list(const std::vector<TAGroup>& ta_group_list) { _ta_group_list = ta_group_list; }
   void set_bounding_box(const PlanarRect& bounding_box) { _bounding_box = bounding_box; }
-  void set_routed_times(const irt_int routed_times) { _routed_times = routed_times; }
+  void set_routed_times(const int32_t routed_times) { _routed_times = routed_times; }
   void set_routing_segment_list(const std::vector<Segment<LayerCoord>>& routing_segment_list)
   {
     _routing_segment_list = routing_segment_list;
@@ -54,12 +54,12 @@ class TATask
   void addRoutedTimes() { ++_routed_times; }
 
  private:
-  irt_int _net_idx = -1;
-  irt_int _task_idx = -1;
+  int32_t _net_idx = -1;
+  int32_t _task_idx = -1;
   ConnectType _connect_type = ConnectType::kNone;
   std::vector<TAGroup> _ta_group_list;
   PlanarRect _bounding_box;
-  irt_int _routed_times = 0;
+  int32_t _routed_times = 0;
   std::vector<Segment<LayerCoord>> _routing_segment_list;
 };
 

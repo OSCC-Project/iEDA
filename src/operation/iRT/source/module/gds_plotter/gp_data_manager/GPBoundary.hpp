@@ -18,7 +18,7 @@
 
 #include "PlanarCoord.hpp"
 #include "PlanarRect.hpp"
-#include "RTU.hpp"
+#include "RTHeader.hpp"
 
 namespace irt {
 
@@ -26,21 +26,21 @@ class GPBoundary : public LayerRect
 {
  public:
   GPBoundary() = default;
-  GPBoundary(const LayerRect& rect, const irt_int data_type) : LayerRect(rect) { _data_type = data_type; }
-  GPBoundary(const PlanarRect& rect, const irt_int layer_idx, const irt_int data_type) : LayerRect(rect, layer_idx)
+  GPBoundary(const LayerRect& rect, const int32_t data_type) : LayerRect(rect) { _data_type = data_type; }
+  GPBoundary(const PlanarRect& rect, const int32_t layer_idx, const int32_t data_type) : LayerRect(rect, layer_idx)
   {
     _data_type = data_type;
   }
   ~GPBoundary() = default;
   // getter
-  irt_int get_data_type() const { return _data_type; }
+  int32_t get_data_type() const { return _data_type; }
   // setter
-  void set_data_type(const irt_int data_type) { _data_type = data_type; }
+  void set_data_type(const int32_t data_type) { _data_type = data_type; }
 
   // function
 
  private:
-  irt_int _data_type = 0;
+  int32_t _data_type = 0;
 };
 
 }  // namespace irt

@@ -20,7 +20,7 @@
 #include "EXTLayerCoord.hpp"
 #include "LayerCoord.hpp"
 #include "Orientation.hpp"
-#include "RTU.hpp"
+#include "RTHeader.hpp"
 
 namespace irt {
 
@@ -28,7 +28,7 @@ class AccessPoint : public EXTLayerCoord
 {
  public:
   AccessPoint() = default;
-  AccessPoint(irt_int real_x, irt_int real_y, irt_int layer_idx, AccessPointType type)
+  AccessPoint(int32_t real_x, int32_t real_y, int32_t layer_idx, AccessPointType type)
   {
     set_real_coord(real_x, real_y);
     set_layer_idx(layer_idx);

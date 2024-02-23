@@ -21,7 +21,7 @@
 #include "DataManager.hpp"
 #include "Database.hpp"
 #include "IRModel.hpp"
-#include "RTU.hpp"
+#include "RTHeader.hpp"
 #include "flute3/flute.h"
 
 namespace irt {
@@ -58,7 +58,7 @@ class InitialRouter
   void buildOrienSupply(IRModel& ir_model);
   void checkIRModel(IRModel& ir_model);
   void sortIRModel(IRModel& ir_model);
-  bool sortByMultiLevel(IRModel& ir_model, irt_int net_idx1, irt_int net_idx2);
+  bool sortByMultiLevel(IRModel& ir_model, int32_t net_idx1, int32_t net_idx2);
   SortStatus sortByClockPriority(IRNet& net1, IRNet& net2);
   SortStatus sortByRoutingAreaASC(IRNet& net1, IRNet& net2);
   SortStatus sortByLengthWidthRatioDESC(IRNet& net1, IRNet& net2);
@@ -102,8 +102,9 @@ class InitialRouter
   void updateIRModel(IRModel& ir_model);
   void outputGuide(IRModel& ir_model);
 
-#if 1  // exhibit 
-  void writeIRModel(IRModel& ir_model);
+#if 1  // exhibit
+  void reportIRModel(IRModel& ir_model);
+  void reportSummary(IRModel& ir_model);
   void writeDemandCSV(IRModel& ir_model);
   void writeOverflowCSV(IRModel& ir_model);
 #endif

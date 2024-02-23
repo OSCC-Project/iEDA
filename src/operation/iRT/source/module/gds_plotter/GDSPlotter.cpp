@@ -58,9 +58,9 @@ void GDSPlotter::plot(GPGDS& gp_gds, std::string gds_file_path)
   plotGDS(gp_gds, gds_file_path);
 }
 
-irt_int GDSPlotter::getGDSIdxByRouting(irt_int routing_layer_idx)
+int32_t GDSPlotter::getGDSIdxByRouting(int32_t routing_layer_idx)
 {
-  irt_int gds_layer_idx = 0;
+  int32_t gds_layer_idx = 0;
   if (RTUtil::exist(_routing_layer_gds_map, routing_layer_idx)) {
     gds_layer_idx = _routing_layer_gds_map[routing_layer_idx];
   } else {
@@ -69,9 +69,9 @@ irt_int GDSPlotter::getGDSIdxByRouting(irt_int routing_layer_idx)
   return gds_layer_idx;
 }
 
-irt_int GDSPlotter::getGDSIdxByCut(irt_int cut_layer_idx)
+int32_t GDSPlotter::getGDSIdxByCut(int32_t cut_layer_idx)
 {
-  irt_int gds_layer_idx = 0;
+  int32_t gds_layer_idx = 0;
   if (RTUtil::exist(_cut_layer_gds_map, cut_layer_idx)) {
     gds_layer_idx = _cut_layer_gds_map[cut_layer_idx];
   } else {
@@ -95,7 +95,7 @@ void GDSPlotter::buildGDSLayerMap()
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
   std::vector<CutLayer>& cut_layer_list = DM_INST.getDatabase().get_cut_layer_list();
 
-  std::map<irt_int, irt_int> order_gds_map;
+  std::map<int32_t, int32_t> order_gds_map;
   for (RoutingLayer& routing_layer : routing_layer_list) {
     order_gds_map[routing_layer.get_layer_order()] = -1;
   }
@@ -103,17 +103,17 @@ void GDSPlotter::buildGDSLayerMap()
     order_gds_map[cut_layer.get_layer_order()] = -1;
   }
   // 0为die 最后一个为GCell 中间为cut+routing
-  irt_int gds_layer_idx = 1;
+  int32_t gds_layer_idx = 1;
   for (auto it = order_gds_map.begin(); it != order_gds_map.end(); it++) {
     it->second = gds_layer_idx++;
   }
   for (RoutingLayer& routing_layer : routing_layer_list) {
-    irt_int gds_layer_idx = order_gds_map[routing_layer.get_layer_order()];
+    int32_t gds_layer_idx = order_gds_map[routing_layer.get_layer_order()];
     _routing_layer_gds_map[routing_layer.get_layer_idx()] = gds_layer_idx;
     _gds_routing_layer_map[gds_layer_idx] = routing_layer.get_layer_idx();
   }
   for (CutLayer& cut_layer : cut_layer_list) {
-    irt_int gds_layer_idx = order_gds_map[cut_layer.get_layer_order()];
+    int32_t gds_layer_idx = order_gds_map[cut_layer.get_layer_order()];
     _cut_layer_gds_map[cut_layer.get_layer_idx()] = gds_layer_idx;
     _gds_cut_layer_map[gds_layer_idx] = cut_layer.get_layer_idx();
   }
@@ -138,10 +138,10 @@ void GDSPlotter::buildGraphLypFile()
   std::map<GPDataType, bool> cut_data_type_visible_map = {{GPDataType::kPath, false}, {GPDataType::kShape, false}};
 
   // 0为base_region 最后一个为GCell 中间为cut+routing
-  irt_int gds_layer_size = 2 + static_cast<irt_int>(_gds_routing_layer_map.size() + _gds_cut_layer_map.size());
+  int32_t gds_layer_size = 2 + static_cast<int32_t>(_gds_routing_layer_map.size() + _gds_cut_layer_map.size());
 
   std::vector<GPLYPLayer> lyp_layer_list;
-  for (irt_int gds_layer_idx = 0; gds_layer_idx < gds_layer_size; gds_layer_idx++) {
+  for (int32_t gds_layer_idx = 0; gds_layer_idx < gds_layer_size; gds_layer_idx++) {
     std::string color = color_list[gds_layer_idx % color_list.size()];
     std::string pattern = pattern_list[gds_layer_idx % pattern_list.size()];
 
@@ -155,14 +155,14 @@ void GDSPlotter::buildGraphLypFile()
       for (auto& [routing_data_type, visible] : routing_data_type_visible_map) {
         lyp_layer_list.emplace_back(color, pattern, visible,
                                     RTUtil::getString(routing_layer_name, "_", GetGPDataTypeName()(routing_data_type)), gds_layer_idx,
-                                    static_cast<irt_int>(routing_data_type));
+                                    static_cast<int32_t>(routing_data_type));
       }
     } else if (RTUtil::exist(_gds_cut_layer_map, gds_layer_idx)) {
       // cut
       std::string cut_layer_name = cut_layer_list[_gds_cut_layer_map[gds_layer_idx]].get_layer_name();
       for (auto& [cut_data_type, visible] : cut_data_type_visible_map) {
         lyp_layer_list.emplace_back(color, pattern, visible, RTUtil::getString(cut_layer_name, "_", GetGPDataTypeName()(cut_data_type)),
-                                    gds_layer_idx, static_cast<irt_int>(cut_data_type));
+                                    gds_layer_idx, static_cast<int32_t>(cut_data_type));
       }
     }
   }
@@ -295,14 +295,14 @@ void GDSPlotter::plotStruct(std::ofstream* gds_file, GPStruct& gp_struct)
 
 void GDSPlotter::plotBoundary(std::ofstream* gds_file, GPBoundary& gp_boundary)
 {
-  irt_int lb_x = gp_boundary.get_lb_x();
-  irt_int lb_y = gp_boundary.get_lb_y();
-  irt_int rt_x = gp_boundary.get_rt_x();
-  irt_int rt_y = gp_boundary.get_rt_y();
+  int32_t lb_x = gp_boundary.get_lb_x();
+  int32_t lb_y = gp_boundary.get_lb_y();
+  int32_t rt_x = gp_boundary.get_rt_x();
+  int32_t rt_y = gp_boundary.get_rt_y();
 
   RTUtil::pushStream(gds_file, "BOUNDARY", "\n");
   RTUtil::pushStream(gds_file, "LAYER ", gp_boundary.get_layer_idx(), "\n");
-  RTUtil::pushStream(gds_file, "DATATYPE ", static_cast<irt_int>(gp_boundary.get_data_type()), "\n");
+  RTUtil::pushStream(gds_file, "DATATYPE ", static_cast<int32_t>(gp_boundary.get_data_type()), "\n");
   RTUtil::pushStream(gds_file, "XY", "\n");
   RTUtil::pushStream(gds_file, lb_x, " : ", lb_y, "\n");
   RTUtil::pushStream(gds_file, rt_x, " : ", lb_y, "\n");
@@ -315,14 +315,14 @@ void GDSPlotter::plotBoundary(std::ofstream* gds_file, GPBoundary& gp_boundary)
 void GDSPlotter::plotPath(std::ofstream* gds_file, GPPath& gp_path)
 {
   Segment<PlanarCoord>& segment = gp_path.get_segment();
-  irt_int first_x = segment.get_first().get_x();
-  irt_int first_y = segment.get_first().get_y();
-  irt_int second_x = segment.get_second().get_x();
-  irt_int second_y = segment.get_second().get_y();
+  int32_t first_x = segment.get_first().get_x();
+  int32_t first_y = segment.get_first().get_y();
+  int32_t second_x = segment.get_second().get_x();
+  int32_t second_y = segment.get_second().get_y();
 
   RTUtil::pushStream(gds_file, "PATH", "\n");
   RTUtil::pushStream(gds_file, "LAYER ", gp_path.get_layer_idx(), "\n");
-  RTUtil::pushStream(gds_file, "DATATYPE ", static_cast<irt_int>(gp_path.get_data_type()), "\n");
+  RTUtil::pushStream(gds_file, "DATATYPE ", static_cast<int32_t>(gp_path.get_data_type()), "\n");
   RTUtil::pushStream(gds_file, "WIDTH ", gp_path.get_width(), "\n");
   RTUtil::pushStream(gds_file, "XY", "\n");
   RTUtil::pushStream(gds_file, first_x, " : ", first_y, "\n");
@@ -333,13 +333,13 @@ void GDSPlotter::plotPath(std::ofstream* gds_file, GPPath& gp_path)
 void GDSPlotter::plotText(std::ofstream* gds_file, GPText& gp_text)
 {
   PlanarCoord& coord = gp_text.get_coord();
-  irt_int x = coord.get_x();
-  irt_int y = coord.get_y();
+  int32_t x = coord.get_x();
+  int32_t y = coord.get_y();
 
   RTUtil::pushStream(gds_file, "TEXT", "\n");
   RTUtil::pushStream(gds_file, "LAYER ", gp_text.get_layer_idx(), "\n");
   RTUtil::pushStream(gds_file, "TEXTTYPE ", gp_text.get_text_type(), "\n");
-  RTUtil::pushStream(gds_file, "PRESENTATION ", static_cast<irt_int>(gp_text.get_presentation()), "\n");
+  RTUtil::pushStream(gds_file, "PRESENTATION ", static_cast<int32_t>(gp_text.get_presentation()), "\n");
   RTUtil::pushStream(gds_file, "XY", "\n");
   RTUtil::pushStream(gds_file, x, " : ", y, "\n");
   RTUtil::pushStream(gds_file, "STRING ", gp_text.get_message(), "\n");

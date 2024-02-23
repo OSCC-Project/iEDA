@@ -102,14 +102,14 @@ class TrackAssigner
   void updateViolationToGcellMap(TAPanel& ta_panel);
   void freeTAPanel(TAPanel& ta_panel);
 #if 1  // update env
-  void updateFixedRectToGraph(TAPanel& ta_panel, ChangeType change_type, irt_int net_idx, EXTLayerRect* fixed_rect, bool is_routing);
-  void updateNetResultToGraph(TAPanel& ta_panel, ChangeType change_type, irt_int net_idx, Segment<LayerCoord>& segment);
+  void updateFixedRectToGraph(TAPanel& ta_panel, ChangeType change_type, int32_t net_idx, EXTLayerRect* fixed_rect, bool is_routing);
+  void updateNetResultToGraph(TAPanel& ta_panel, ChangeType change_type, int32_t net_idx, Segment<LayerCoord>& segment);
   void updateViolationToGraph(TAPanel& ta_panel, ChangeType change_type, Violation& violation);
   std::map<TANode*, std::set<Orientation>> getRoutingNodeOrientationMap(TAPanel& ta_panel, NetShape& net_shape);
 #endif
 
 #if 1  // exhibit
-  void plotTAPanel(TAPanel& ta_panel, irt_int curr_task_idx, std::string flag);
+  void plotTAPanel(TAPanel& ta_panel, int32_t curr_task_idx, std::string flag);
   void writeTAModel(TAModel& ta_model);
   void writeNetCSV(TAModel& ta_model);
   void writeViolationCSV(TAModel& ta_model);

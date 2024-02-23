@@ -19,7 +19,7 @@
 #include "Direction.hpp"
 #include "LayerCoord.hpp"
 #include "Orientation.hpp"
-#include "RTU.hpp"
+#include "RTHeader.hpp"
 #include "RTUtil.hpp"
 
 namespace irt {
@@ -40,12 +40,12 @@ class IRNode : public LayerCoord
   ~IRNode() = default;
   // getter
   std::map<Orientation, IRNode*>& get_neighbor_node_map() { return _neighbor_node_map; }
-  std::map<Orientation, irt_int>& get_orien_supply_map() { return _orien_supply_map; }
-  std::map<Orientation, irt_int>& get_orien_demand_map() { return _orien_demand_map; }
+  std::map<Orientation, int32_t>& get_orien_supply_map() { return _orien_supply_map; }
+  std::map<Orientation, int32_t>& get_orien_demand_map() { return _orien_demand_map; }
   // setter
   void set_neighbor_node_map(const std::map<Orientation, IRNode*>& neighbor_node_map) { _neighbor_node_map = neighbor_node_map; }
-  void set_orien_supply_map(const std::map<Orientation, irt_int>& orien_supply_map) { _orien_supply_map = orien_supply_map; }
-  void set_orien_demand_map(const std::map<Orientation, irt_int>& orien_demand_map) { _orien_demand_map = orien_demand_map; }
+  void set_orien_supply_map(const std::map<Orientation, int32_t>& orien_supply_map) { _orien_supply_map = orien_supply_map; }
+  void set_orien_demand_map(const std::map<Orientation, int32_t>& orien_demand_map) { _orien_demand_map = orien_demand_map; }
   // function
   IRNode* getNeighborNode(Orientation orientation)
   {
@@ -59,11 +59,11 @@ class IRNode : public LayerCoord
   {
     double cost = 0;
     if (orientation != Orientation::kUp && orientation != Orientation::kDown) {
-      irt_int node_demand = 0;
+      int32_t node_demand = 0;
       if (RTUtil::exist(_orien_demand_map, orientation)) {
         node_demand = _orien_demand_map[orientation];
       }
-      irt_int node_supply = 0;
+      int32_t node_supply = 0;
       if (RTUtil::exist(_orien_supply_map, orientation)) {
         node_supply = _orien_supply_map[orientation];
       }
@@ -113,8 +113,8 @@ class IRNode : public LayerCoord
 
  private:
   std::map<Orientation, IRNode*> _neighbor_node_map;
-  std::map<Orientation, irt_int> _orien_supply_map;
-  std::map<Orientation, irt_int> _orien_demand_map;
+  std::map<Orientation, int32_t> _orien_supply_map;
+  std::map<Orientation, int32_t> _orien_demand_map;
 #if 1  // astar
   // single task
   std::set<Direction> _direction_set;

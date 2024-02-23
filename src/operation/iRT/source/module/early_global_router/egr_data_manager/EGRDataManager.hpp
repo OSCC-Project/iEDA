@@ -93,8 +93,8 @@ class EGRDataManager
   void legalizeResourceMapDemand();
   void buildHVLayerIdxList();
   Direction getRTDirectionByDB(idb::IdbLayerDirection idb_direction);
-  irt_int getEGRRoutingLayerIndexByDB(irt_int db_layer_idx);
-  irt_int getEGRCutLayerIndexByDB(irt_int db_layer_idx);
+  int32_t getEGRRoutingLayerIndexByDB(int32_t db_layer_idx);
+  int32_t getEGRCutLayerIndexByDB(int32_t db_layer_idx);
   PlanarRect getGridRect(PlanarRect& real_rect);
   void printConfig();
   void printDatabase();

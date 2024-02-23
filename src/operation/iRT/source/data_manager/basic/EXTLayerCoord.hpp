@@ -26,13 +26,13 @@ class EXTLayerCoord : public EXTPlanarCoord
   EXTLayerCoord() = default;
   ~EXTLayerCoord() = default;
   // getter
-  irt_int get_layer_idx() const { return _layer_idx; }
+  int32_t get_layer_idx() const { return _layer_idx; }
   // setter
-  void set_layer_idx(const irt_int layer_idx) { _layer_idx = layer_idx; }
+  void set_layer_idx(const int32_t layer_idx) { _layer_idx = layer_idx; }
   // function
 
  private:
-  irt_int _layer_idx = -1;
+  int32_t _layer_idx = -1;
 };
 
 }  // namespace irt

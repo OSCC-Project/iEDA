@@ -40,29 +40,29 @@ class DataManager
   void output(idb::IdbBuilder* idb_builder);
 
 #if 1  // 有关GCellMap操作
-  void updateFixedRectToGCellMap(ChangeType change_type, irt_int net_idx, EXTLayerRect* ext_layer_rect, bool is_routing);
-  void updateAccessPointToGCellMap(ChangeType change_type, irt_int net_idx, AccessPoint* access_point);
-  void updateNetResultToGCellMap(ChangeType change_type, irt_int net_idx, Segment<LayerCoord>* segment);
-  void updatePatchToGCellMap(ChangeType change_type, irt_int net_idx, EXTLayerRect* ext_layer_rect);
+  void updateFixedRectToGCellMap(ChangeType change_type, int32_t net_idx, EXTLayerRect* ext_layer_rect, bool is_routing);
+  void updateAccessPointToGCellMap(ChangeType change_type, int32_t net_idx, AccessPoint* access_point);
+  void updateNetResultToGCellMap(ChangeType change_type, int32_t net_idx, Segment<LayerCoord>* segment);
+  void updatePatchToGCellMap(ChangeType change_type, int32_t net_idx, EXTLayerRect* ext_layer_rect);
   void updateViolationToGCellMap(ChangeType change_type, Violation* violation);
-  std::map<bool, std::map<irt_int, std::map<irt_int, std::set<EXTLayerRect*>>>> getTypeLayerNetFixedRectMap(EXTPlanarRect& region);
-  std::map<irt_int, std::set<AccessPoint*>> getNetAccessPointMap(EXTPlanarRect& region);
-  std::map<irt_int, std::set<Segment<LayerCoord>*>> getNetResultMap(EXTPlanarRect& region);
-  std::map<irt_int, std::set<EXTLayerRect*>> getNetPatchMap(EXTPlanarRect& region);
+  std::map<bool, std::map<int32_t, std::map<int32_t, std::set<EXTLayerRect*>>>> getTypeLayerNetFixedRectMap(EXTPlanarRect& region);
+  std::map<int32_t, std::set<AccessPoint*>> getNetAccessPointMap(EXTPlanarRect& region);
+  std::map<int32_t, std::set<Segment<LayerCoord>*>> getNetResultMap(EXTPlanarRect& region);
+  std::map<int32_t, std::set<EXTLayerRect*>> getNetPatchMap(EXTPlanarRect& region);
   std::set<Violation*> getViolationSet(EXTPlanarRect& region);
 #endif
 
 #if 1  // 获得NetShapeList
-  std::vector<NetShape> getNetShapeList(irt_int net_idx, std::vector<Segment<LayerCoord>>& segment_list);
-  std::vector<NetShape> getNetShapeList(irt_int net_idx, Segment<LayerCoord>& segment);
-  std::vector<NetShape> getNetShapeList(irt_int net_idx, MTree<LayerCoord>& coord_tree);
-  std::vector<NetShape> getNetShapeList(irt_int net_idx, LayerCoord& first_coord, LayerCoord& second_coord);
+  std::vector<NetShape> getNetShapeList(int32_t net_idx, std::vector<Segment<LayerCoord>>& segment_list);
+  std::vector<NetShape> getNetShapeList(int32_t net_idx, Segment<LayerCoord>& segment);
+  std::vector<NetShape> getNetShapeList(int32_t net_idx, MTree<LayerCoord>& coord_tree);
+  std::vector<NetShape> getNetShapeList(int32_t net_idx, LayerCoord& first_coord, LayerCoord& second_coord);
 #endif
 
 #if 1  // 获得IdbWireSegment
   idb::IdbLayerShape* getIDBLayerShapeByFixedRect(EXTLayerRect* fixed_rect, bool is_routing);
-  idb::IdbRegularWireSegment* getIDBSegmentByNetResult(irt_int net_idx, Segment<LayerCoord>& segment);
-  idb::IdbRegularWireSegment* getIDBSegmentByNetPatch(irt_int net_idx, EXTLayerRect& ext_layer_rect);
+  idb::IdbRegularWireSegment* getIDBSegmentByNetResult(int32_t net_idx, Segment<LayerCoord>& segment);
+  idb::IdbRegularWireSegment* getIDBSegmentByNetPatch(int32_t net_idx, EXTLayerRect& ext_layer_rect);
 #endif
 
   Config& getConfig() { return _config; }
@@ -103,7 +103,6 @@ class DataManager
   bool checkSkipping(idb::IdbNet* idb_net);
   void wrapPinList(Net& net, idb::IdbNet* idb_net);
   void wrapPinShapeList(Pin& pin, idb::IdbPin* idb_pin);
-  void processEmptyShapePin(Net& net);
   void wrapDrivingPin(Net& net, idb::IdbNet* idb_net);
   void updateHelper(idb::IdbBuilder* idb_builder);
   Direction getRTDirectionByDB(idb::IdbLayerDirection idb_direction);
@@ -112,9 +111,9 @@ class DataManager
   void buildDatabase();
   void buildGCellAxis();
   void makeGCellAxis();
-  irt_int getRecommendedPitch();
-  std::vector<ScaleGrid> makeGCellGridList(Direction direction, irt_int recommended_pitch);
-  std::vector<ScaleGrid> makeGCellGridList(std::vector<irt_int>& gcell_scale_list);
+  int32_t getRecommendedPitch();
+  std::vector<ScaleGrid> makeGCellGridList(Direction direction, int32_t recommended_pitch);
+  std::vector<ScaleGrid> makeGCellGridList(std::vector<int32_t>& gcell_scale_list);
   void checkGCellAxis();
   void buildDie();
   void makeDie();
@@ -153,8 +152,8 @@ class DataManager
 #endif
 
 #if 1  // 获得IdbWireSegment
-  idb::IdbRegularWireSegment* getIDBWire(irt_int net_idx, Segment<LayerCoord>& segment);
-  idb::IdbRegularWireSegment* getIDBVia(irt_int net_idx, Segment<LayerCoord>& segment);
+  idb::IdbRegularWireSegment* getIDBWire(int32_t net_idx, Segment<LayerCoord>& segment);
+  idb::IdbRegularWireSegment* getIDBVia(int32_t net_idx, Segment<LayerCoord>& segment);
 #endif
 };
 

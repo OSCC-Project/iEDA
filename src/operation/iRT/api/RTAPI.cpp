@@ -148,8 +148,8 @@ eval::TileGrid* RTAPI::getCongestonMap(std::map<std::string, std::any> config_ma
   wirelength = EGR_INST.getDataManager().getEGRStat().get_total_wire_length();
 
   eval::TileGrid* eval_tile_grid = new eval::TileGrid();
-  irt_int cell_width = EGR_INST.getDataManager().getConfig().cell_width;
-  irt_int cell_height = EGR_INST.getDataManager().getConfig().cell_height;
+  int32_t cell_width = EGR_INST.getDataManager().getConfig().cell_width;
+  int32_t cell_height = EGR_INST.getDataManager().getConfig().cell_height;
   Die& die = EGR_INST.getDataManager().getDatabase().get_die();
   std::vector<RoutingLayer>& routing_layer_list = EGR_INST.getDataManager().getDatabase().get_routing_layer_list();
   std::vector<GridMap<EGRNode>>& layer_resource_map = EGR_INST.getDataManager().getDatabase().get_layer_resource_map();
@@ -173,20 +173,20 @@ eval::TileGrid* RTAPI::getCongestonMap(std::map<std::string, std::any> config_ma
       for (int y = 0; y < resource_map.get_y_size(); y++) {
         EGRNode& egr_node = resource_map[x][y];
         eval::Tile* tile = new eval::Tile(x, y, egr_node.get_lb_x(), egr_node.get_lb_y(), egr_node.get_rt_x(), egr_node.get_rt_y(),
-                                          static_cast<irt_int>(layer_idx));
+                                          static_cast<int32_t>(layer_idx));
         tile->set_direction(routing_layer_list[layer_idx].get_prefer_direction() == Direction::kHorizontal);
 
-        tile->set_east_cap(static_cast<irt_int>(std::round(egr_node.get_east_supply())));
-        tile->set_north_cap(static_cast<irt_int>(std::round(egr_node.get_north_supply())));
-        tile->set_south_cap(static_cast<irt_int>(std::round(egr_node.get_south_supply())));
-        tile->set_west_cap(static_cast<irt_int>(std::round(egr_node.get_west_supply())));
-        tile->set_track_cap(static_cast<irt_int>(std::round(egr_node.get_track_supply())));
+        tile->set_east_cap(static_cast<int32_t>(std::round(egr_node.get_east_supply())));
+        tile->set_north_cap(static_cast<int32_t>(std::round(egr_node.get_north_supply())));
+        tile->set_south_cap(static_cast<int32_t>(std::round(egr_node.get_south_supply())));
+        tile->set_west_cap(static_cast<int32_t>(std::round(egr_node.get_west_supply())));
+        tile->set_track_cap(static_cast<int32_t>(std::round(egr_node.get_track_supply())));
 
-        tile->set_east_use(static_cast<irt_int>(std::round(egr_node.get_east_demand())));
-        tile->set_north_use(static_cast<irt_int>(std::round(egr_node.get_north_demand())));
-        tile->set_south_use(static_cast<irt_int>(std::round(egr_node.get_south_demand())));
-        tile->set_west_use(static_cast<irt_int>(std::round(egr_node.get_west_demand())));
-        tile->set_track_use(static_cast<irt_int>(std::round(egr_node.get_track_demand())));
+        tile->set_east_use(static_cast<int32_t>(std::round(egr_node.get_east_demand())));
+        tile->set_north_use(static_cast<int32_t>(std::round(egr_node.get_north_demand())));
+        tile->set_south_use(static_cast<int32_t>(std::round(egr_node.get_south_demand())));
+        tile->set_west_use(static_cast<int32_t>(std::round(egr_node.get_west_demand())));
+        tile->set_track_use(static_cast<int32_t>(std::round(egr_node.get_track_demand())));
 
         eval_tiles.push_back(tile);
       }
@@ -251,409 +251,415 @@ std::vector<Violation> RTAPI::getViolationList(std::vector<idb::IdbLayerShape*>&
 
 // STA
 
-void RTAPI::reportGRTiming()
+std::map<std::string, std::vector<double>> RTAPI::getTiming(std::map<int32_t, std::map<std::string, LayerCoord>> net_pin_coord_map,
+                                                            std::map<int32_t, std::vector<Segment<LayerCoord>>> net_segment_map)
 {
-  // #if 1  // 数据结构定义
-  //   struct RCPin
-  //   {
-  //     RCPin() = default;
-  //     RCPin(PlanarCoord coord, bool is_real_pin, std::string pin_name)
-  //     {
-  //       _coord = coord;
-  //       _is_real_pin = is_real_pin;
-  //       _pin_name = pin_name;
-  //     }
-  //     RCPin(PlanarCoord coord, bool is_real_pin, irt_int fake_pin_id)
-  //     {
-  //       _coord = coord;
-  //       _is_real_pin = is_real_pin;
-  //       _fake_pin_id = fake_pin_id;
-  //     }
-  //     ~RCPin() = default;
-
-  //     PlanarCoord _coord;
-  //     bool _is_real_pin = false;
-  //     std::string _pin_name;
-  //     irt_int _fake_pin_id;
-  //   };
-  //   auto getRCSegmentList = [](std::map<PlanarCoord, std::vector<std::string>, CmpPlanarCoordByXASC>& coord_real_pin_map,
-  //                              std::vector<Segment<PlanarCoord>>& routing_segment_list) {
-  //     std::vector<Segment<RCPin>> rc_segment_list;
-  //     // 生成线长为0的线段
-  //     for (auto& [coord, real_pin_list] : coord_real_pin_map) {
-  //       for (size_t i = 1; i < real_pin_list.size(); i++) {
-  //         RCPin first_rc_pin(coord, true, real_pin_list[i - 1]);
-  //         RCPin second_rc_pin(coord, true, real_pin_list[i]);
-  //         rc_segment_list.emplace_back(first_rc_pin, second_rc_pin);
-  //       }
-  //     }
-  //     // 构建coord_fake_pin_map
-  //     std::map<PlanarCoord, irt_int, CmpPlanarCoordByXASC> coord_fake_pin_map;
-  //     irt_int fake_id = 0;
-  //     for (Segment<PlanarCoord>& routing_segment : routing_segment_list) {
-  //       PlanarCoord& first_coord = routing_segment.get_first();
-  //       PlanarCoord& second_coord = routing_segment.get_second();
-
-  //       if (!RTUtil::exist(coord_real_pin_map, first_coord) && !RTUtil::exist(coord_fake_pin_map, first_coord)) {
-  //         coord_fake_pin_map[first_coord] = fake_id++;
-  //       }
-  //       if (!RTUtil::exist(coord_real_pin_map, second_coord) && !RTUtil::exist(coord_fake_pin_map, second_coord)) {
-  //         coord_fake_pin_map[second_coord] = fake_id++;
-  //       }
-  //     }
-  //     // 将routing_segment_list生成rc_segment_list
-  //     for (Segment<PlanarCoord>& routing_segment : routing_segment_list) {
-  //       PlanarCoord& first_coord = routing_segment.get_first();
-  //       PlanarCoord& second_coord = routing_segment.get_second();
-
-  //       RCPin first_rc_pin;
-  //       if (RTUtil::exist(coord_real_pin_map, first_coord)) {
-  //         first_rc_pin = RCPin(first_coord, true, coord_real_pin_map[first_coord].front());
-  //       } else if (RTUtil::exist(coord_fake_pin_map, first_coord)) {
-  //         first_rc_pin = RCPin(first_coord, false, coord_fake_pin_map[first_coord]);
-  //       } else {
-  //         LOG_INST.error(Loc::current(), "The coord is not exist!");
-  //       }
-  //       RCPin second_rc_pin;
-  //       if (RTUtil::exist(coord_real_pin_map, second_coord)) {
-  //         second_rc_pin = RCPin(second_coord, true, coord_real_pin_map[second_coord].front());
-  //       } else if (RTUtil::exist(coord_fake_pin_map, second_coord)) {
-  //         second_rc_pin = RCPin(second_coord, false, coord_fake_pin_map[second_coord]);
-  //       } else {
-  //         LOG_INST.error(Loc::current(), "The coord is not exist!");
-  //       }
-  //       rc_segment_list.emplace_back(first_rc_pin, second_rc_pin);
-  //     }
-  //     return rc_segment_list;
-  //   };
-  // #endif
-
-  // #if 1  // 生成net_coord_real_pin_map和net_segment_map
-  //   std::vector<Net>& net_list = DM_INST.getDatabase().get_net_list();
-
-  //   std::map<irt_int, std::map<PlanarCoord, std::vector<std::string>, CmpPlanarCoordByXASC>> net_key_coord_pin_map;
-  //   for (Net& net : net_list) {
-  //     for (Pin& pin : net.get_pin_list()) {
-  //       auto pin_name = pin.get_pin_name();
-  //       pin_name.erase(std::remove(pin_name.begin(), pin_name.end(), '\\'), pin_name.end());
-  //       net_key_coord_pin_map[net.get_net_idx()][pin.get_protected_access_point().getGridLayerCoord()].push_back(pin_name);
-  //     }
-  //   }
-
-  //   std::map<irt_int, std::vector<Segment<PlanarCoord>>> net_segment_map;
-  //   for (Net& net : net_list) {
-  //     for (auto seg_node : RTUtil::getSegListByTree(net.get_gr_result_tree())) {
-  //       net_segment_map[net.get_net_idx()].emplace_back(seg_node.get_first()->value().get_grid_coord().get_planar_coord(),
-  //                                                       seg_node.get_second()->value().get_grid_coord().get_planar_coord());
-  //     }
-  //   }
-  //   ///////////////////////////////////////去环
-  //   for (auto& [net_id, segment_list] : net_segment_map) {
-  //     // layer_segment_list
-  //     std::vector<Segment<LayerCoord>> layer_segment_list;
-  //     for (Segment<PlanarCoord>& segment : segment_list) {
-  //       layer_segment_list.emplace_back(segment.get_first(), segment.get_second());
-  //     }
-  //     // driving_grid_coord_list
-  //     // key_coord_pin_map
-  //     std::vector<Pin>& pin_list = net_list[net_id].get_pin_list();
-  //     std::vector<LayerCoord> driving_grid_coord_list;
-  //     std::map<LayerCoord, std::set<irt_int>, CmpLayerCoordByXASC> key_coord_pin_map;
-  //     for (size_t i = 0; i < pin_list.size(); i++) {
-  //       driving_grid_coord_list.push_back(pin_list[i].get_protected_access_point().get_grid_coord());
-  //       key_coord_pin_map[pin_list[i].get_protected_access_point().get_grid_coord()].insert(static_cast<irt_int>(i));
-  //     }
-  //     MTree<LayerCoord> coord_tree = RTUtil::getTreeByFullFlow(driving_grid_coord_list, layer_segment_list, key_coord_pin_map);
-
-  //     segment_list.clear();
-  //     for (auto& seg_node : RTUtil::getSegListByTree(coord_tree)) {
-  //       segment_list.emplace_back(seg_node.get_first()->value(), seg_node.get_second()->value());
-  //     }
-  //   }
-  // #endif
-
-  // #if 1  // 主流程
-  //   ista::TimingEngine* timing_engine = ista::TimingEngine::getOrCreateTimingEngine();
-  //   auto db_adapter = std::make_unique<ista::TimingIDBAdapter>(timing_engine->get_ista());
-  //   db_adapter->set_idb(DM_INST.getHelper().get_idb_builder());
-  //   db_adapter->convertDBToTimingNetlist();
-  //   timing_engine->set_db_adapter(std::move(db_adapter));
-  //   timing_engine->set_num_threads(40);
-  //   timing_engine->buildGraph();
-  //   timing_engine->initRcTree();
-
-  //   ista::Netlist* sta_netlist = timing_engine->get_netlist();
-  //   for (Net& net : DM_INST.getDatabase().get_net_list()) {
-  //     // coord_real_pin_map
-  //     std::map<PlanarCoord, std::vector<std::string>, CmpPlanarCoordByXASC> coord_real_pin_map =
-  //     net_key_coord_pin_map[net.get_net_idx()];
-  //     // routing_segment_list
-  //     std::vector<Segment<PlanarCoord>> routing_segment_list = net_segment_map[net.get_net_idx()];
-  //     // 构建RC-tree
-  //     auto net_name = net.get_net_name();
-  //     net_name.erase(std::remove(net_name.begin(), net_name.end(), '\\'), net_name.end());
-  //     ista::Net* ista_net = sta_netlist->findNet(net_name.c_str());
-  //     for (Segment<RCPin>& segment : getRCSegmentList(coord_real_pin_map, routing_segment_list)) {
-  //       auto getRctNode = [timing_engine, sta_netlist, ista_net](RCPin& rc_pin) {
-  //         ista::RctNode* rct_node = nullptr;
-  //         if (rc_pin._is_real_pin) {
-  //           ista::DesignObject* pin_port = nullptr;
-  //           auto pin_port_list = sta_netlist->findPin(rc_pin._pin_name.c_str(), false, false);
-  //           if (!pin_port_list.empty()) {
-  //             pin_port = pin_port_list.front();
-  //           } else {
-  //             pin_port = sta_netlist->findPort(rc_pin._pin_name.c_str());
-  //           }
-  //           rct_node = timing_engine->makeOrFindRCTreeNode(pin_port);
-  //         } else {
-  //           rct_node = timing_engine->makeOrFindRCTreeNode(ista_net, rc_pin._fake_pin_id);
-  //         }
-  //         return rct_node;
-  //       };
-  //       RCPin& first_rc_pin = segment.get_first();
-  //       RCPin& second_rc_pin = segment.get_second();
-
-  //       irt_int distance = RTUtil::getManhattanDistance(first_rc_pin._coord, second_rc_pin._coord);
-  //       int32_t unit = dmInst->get_idb_builder()->get_def_service()->get_design()->get_units()->get_micron_dbu();
-  //       std::optional<double> width = std::nullopt;
-  //       double cap = dynamic_cast<ista::TimingIDBAdapter*>(timing_engine->get_db_adapter())->getCapacitance(1, distance / 1.0 / unit,
-  //       width); double res = dynamic_cast<ista::TimingIDBAdapter*>(timing_engine->get_db_adapter())->getResistance(1, distance / 1.0 /
-  //       unit, width);
-
-  //       ista::RctNode* first_node = getRctNode(first_rc_pin);
-  //       ista::RctNode* second_node = getRctNode(second_rc_pin);
-  //       timing_engine->makeResistor(ista_net, first_node, second_node, res);
-  //       timing_engine->incrCap(first_node, cap / 2);
-  //       timing_engine->incrCap(second_node, cap / 2);
-  //     }
-  //     timing_engine->updateRCTreeInfo(ista_net);
-
-  //     // auto* rc_tree = timing_engine->get_ista()->getRcNet(ista_net)->rct();
-  //     // rc_tree->printGraphViz();
-  //   }
-  //   Monitor monitor;
-  //   timing_engine->updateTiming();
-  //   LOG_INST.info(Loc::current(), "[temp_report] gr sta updateTiming time : ", monitor.getStatsInfo());
-  //   timing_engine->reportTiming();
-
-  //   auto clk_list = timing_engine->getClockList();
-  //   std::ranges::for_each(clk_list, [&](ista::StaClock* clk) {
-  //     auto clk_name = clk->get_clock_name();
-  //     auto setup_tns = timing_engine->reportTNS(clk_name, AnalysisMode::kMax);
-  //     auto setup_wns = timing_engine->reportWNS(clk_name, AnalysisMode::kMax);
-  //     auto suggest_freq = 1000.0 / (clk->getPeriodNs() - setup_wns);
-
-  //     LOG_INST.info(Loc::current(), "[temp_report] gr tns : ", setup_tns);
-  //     LOG_INST.info(Loc::current(), "[temp_report] gr wns : ", setup_wns);
-  //     LOG_INST.info(Loc::current(), "[temp_report] gr suggest freq : ", suggest_freq);
-  //   });
-
-  // #endif
+  return {};
 }
 
-void RTAPI::reportDRTiming()
-{
-  // #if 1  // 数据结构定义
-  //   struct RCPin
-  //   {
-  //     RCPin() = default;
-  //     RCPin(PlanarCoord coord, bool is_real_pin, std::string pin_name)
-  //     {
-  //       _coord = coord;
-  //       _is_real_pin = is_real_pin;
-  //       _pin_name = pin_name;
-  //     }
-  //     RCPin(PlanarCoord coord, bool is_real_pin, irt_int fake_pin_id)
-  //     {
-  //       _coord = coord;
-  //       _is_real_pin = is_real_pin;
-  //       _fake_pin_id = fake_pin_id;
-  //     }
-  //     ~RCPin() = default;
+// void RTAPI::reportGRTiming()
+// {
+//   #if 1  // 数据结构定义
+//     struct RCPin
+//     {
+//       RCPin() = default;
+//       RCPin(PlanarCoord coord, bool is_real_pin, std::string pin_name)
+//       {
+//         _coord = coord;
+//         _is_real_pin = is_real_pin;
+//         _pin_name = pin_name;
+//       }
+//       RCPin(PlanarCoord coord, bool is_real_pin, int32_t fake_pin_id)
+//       {
+//         _coord = coord;
+//         _is_real_pin = is_real_pin;
+//         _fake_pin_id = fake_pin_id;
+//       }
+//       ~RCPin() = default;
 
-  //     PlanarCoord _coord;
-  //     bool _is_real_pin = false;
-  //     std::string _pin_name;
-  //     irt_int _fake_pin_id;
-  //   };
-  //   auto getRCSegmentList = [](std::map<PlanarCoord, std::vector<std::string>, CmpPlanarCoordByXASC>& coord_real_pin_map,
-  //                              std::vector<Segment<PlanarCoord>>& routing_segment_list) {
-  //     std::vector<Segment<RCPin>> rc_segment_list;
-  //     // 生成线长为0的线段
-  //     for (auto& [coord, real_pin_list] : coord_real_pin_map) {
-  //       for (size_t i = 1; i < real_pin_list.size(); i++) {
-  //         RCPin first_rc_pin(coord, true, real_pin_list[i - 1]);
-  //         RCPin second_rc_pin(coord, true, real_pin_list[i]);
-  //         rc_segment_list.emplace_back(first_rc_pin, second_rc_pin);
-  //       }
-  //     }
-  //     // 构建coord_fake_pin_map
-  //     std::map<PlanarCoord, irt_int, CmpPlanarCoordByXASC> coord_fake_pin_map;
-  //     irt_int fake_id = 0;
-  //     for (Segment<PlanarCoord>& routing_segment : routing_segment_list) {
-  //       PlanarCoord& first_coord = routing_segment.get_first();
-  //       PlanarCoord& second_coord = routing_segment.get_second();
+//       PlanarCoord _coord;
+//       bool _is_real_pin = false;
+//       std::string _pin_name;
+//       int32_t _fake_pin_id;
+//     };
+//     auto getRCSegmentList = [](std::map<PlanarCoord, std::vector<std::string>, CmpPlanarCoordByXASC>& coord_real_pin_map,
+//                                std::vector<Segment<PlanarCoord>>& routing_segment_list) {
+//       std::vector<Segment<RCPin>> rc_segment_list;
+//       // 生成线长为0的线段
+//       for (auto& [coord, real_pin_list] : coord_real_pin_map) {
+//         for (size_t i = 1; i < real_pin_list.size(); i++) {
+//           RCPin first_rc_pin(coord, true, real_pin_list[i - 1]);
+//           RCPin second_rc_pin(coord, true, real_pin_list[i]);
+//           rc_segment_list.emplace_back(first_rc_pin, second_rc_pin);
+//         }
+//       }
+//       // 构建coord_fake_pin_map
+//       std::map<PlanarCoord, int32_t, CmpPlanarCoordByXASC> coord_fake_pin_map;
+//       int32_t fake_id = 0;
+//       for (Segment<PlanarCoord>& routing_segment : routing_segment_list) {
+//         PlanarCoord& first_coord = routing_segment.get_first();
+//         PlanarCoord& second_coord = routing_segment.get_second();
 
-  //       if (!RTUtil::exist(coord_real_pin_map, first_coord) && !RTUtil::exist(coord_fake_pin_map, first_coord)) {
-  //         coord_fake_pin_map[first_coord] = fake_id++;
-  //       }
-  //       if (!RTUtil::exist(coord_real_pin_map, second_coord) && !RTUtil::exist(coord_fake_pin_map, second_coord)) {
-  //         coord_fake_pin_map[second_coord] = fake_id++;
-  //       }
-  //     }
-  //     // 将routing_segment_list生成rc_segment_list
-  //     for (Segment<PlanarCoord>& routing_segment : routing_segment_list) {
-  //       PlanarCoord& first_coord = routing_segment.get_first();
-  //       PlanarCoord& second_coord = routing_segment.get_second();
+//         if (!RTUtil::exist(coord_real_pin_map, first_coord) && !RTUtil::exist(coord_fake_pin_map, first_coord)) {
+//           coord_fake_pin_map[first_coord] = fake_id++;
+//         }
+//         if (!RTUtil::exist(coord_real_pin_map, second_coord) && !RTUtil::exist(coord_fake_pin_map, second_coord)) {
+//           coord_fake_pin_map[second_coord] = fake_id++;
+//         }
+//       }
+//       // 将routing_segment_list生成rc_segment_list
+//       for (Segment<PlanarCoord>& routing_segment : routing_segment_list) {
+//         PlanarCoord& first_coord = routing_segment.get_first();
+//         PlanarCoord& second_coord = routing_segment.get_second();
 
-  //       RCPin first_rc_pin;
-  //       if (RTUtil::exist(coord_real_pin_map, first_coord)) {
-  //         first_rc_pin = RCPin(first_coord, true, coord_real_pin_map[first_coord].front());
-  //       } else if (RTUtil::exist(coord_fake_pin_map, first_coord)) {
-  //         first_rc_pin = RCPin(first_coord, false, coord_fake_pin_map[first_coord]);
-  //       } else {
-  //         LOG_INST.error(Loc::current(), "The coord is not exist!");
-  //       }
-  //       RCPin second_rc_pin;
-  //       if (RTUtil::exist(coord_real_pin_map, second_coord)) {
-  //         second_rc_pin = RCPin(second_coord, true, coord_real_pin_map[second_coord].front());
-  //       } else if (RTUtil::exist(coord_fake_pin_map, second_coord)) {
-  //         second_rc_pin = RCPin(second_coord, false, coord_fake_pin_map[second_coord]);
-  //       } else {
-  //         LOG_INST.error(Loc::current(), "The coord is not exist!");
-  //       }
-  //       rc_segment_list.emplace_back(first_rc_pin, second_rc_pin);
-  //     }
-  //     return rc_segment_list;
-  //   };
-  // #endif
+//         RCPin first_rc_pin;
+//         if (RTUtil::exist(coord_real_pin_map, first_coord)) {
+//           first_rc_pin = RCPin(first_coord, true, coord_real_pin_map[first_coord].front());
+//         } else if (RTUtil::exist(coord_fake_pin_map, first_coord)) {
+//           first_rc_pin = RCPin(first_coord, false, coord_fake_pin_map[first_coord]);
+//         } else {
+//           LOG_INST.error(Loc::current(), "The coord is not exist!");
+//         }
+//         RCPin second_rc_pin;
+//         if (RTUtil::exist(coord_real_pin_map, second_coord)) {
+//           second_rc_pin = RCPin(second_coord, true, coord_real_pin_map[second_coord].front());
+//         } else if (RTUtil::exist(coord_fake_pin_map, second_coord)) {
+//           second_rc_pin = RCPin(second_coord, false, coord_fake_pin_map[second_coord]);
+//         } else {
+//           LOG_INST.error(Loc::current(), "The coord is not exist!");
+//         }
+//         rc_segment_list.emplace_back(first_rc_pin, second_rc_pin);
+//       }
+//       return rc_segment_list;
+//     };
+//   #endif
 
-  // #if 1  // 生成net_coord_real_pin_map和net_segment_map
-  //   std::vector<Net>& net_list = DM_INST.getDatabase().get_net_list();
-  //   GridMap<GCell>& gcell_map = DM_INST.getDatabase().get_gcell_map();
+//   #if 1  // 生成net_coord_real_pin_map和net_segment_map
+//     std::vector<Net>& net_list = DM_INST.getDatabase().get_net_list();
 
-  //   std::map<irt_int, std::map<PlanarCoord, std::vector<std::string>, CmpPlanarCoordByXASC>> net_key_coord_pin_map;
-  //   for (Net& net : net_list) {
-  //     for (Pin& pin : net.get_pin_list()) {
-  //       auto pin_name = pin.get_pin_name();
-  //       pin_name.erase(std::remove(pin_name.begin(), pin_name.end(), '\\'), pin_name.end());
-  //       net_key_coord_pin_map[net.get_net_idx()][pin.get_protected_access_point().getRealLayerCoord()].push_back(pin_name);
-  //     }
-  //   }
+//     std::map<int32_t, std::map<PlanarCoord, std::vector<std::string>, CmpPlanarCoordByXASC>> net_key_coord_pin_map;
+//     for (Net& net : net_list) {
+//       for (Pin& pin : net.get_pin_list()) {
+//         auto pin_name = pin.get_pin_name();
+//         pin_name.erase(std::remove(pin_name.begin(), pin_name.end(), '\\'), pin_name.end());
+//         net_key_coord_pin_map[net.get_net_idx()][pin.get_protected_access_point().getGridLayerCoord()].push_back(pin_name);
+//       }
+//     }
 
-  //   std::map<irt_int, std::vector<Segment<PlanarCoord>>> net_segment_map;
-  //   for (irt_int x = 0; x < gcell_map.get_x_size(); x++) {
-  //     for (irt_int y = 0; y < gcell_map.get_y_size(); y++) {
-  //       for (auto& [net_idx, segment_set] : gcell_map[x][y].get_net_result_map()) {
-  //         for (Segment<LayerCoord>* segment : segment_set) {
-  //           net_segment_map[net_idx].emplace_back(segment->get_first(), segment->get_second());
-  //         }
-  //       }
-  //     }
-  //   }
-  //   ///////////////////////////////////////去环
-  //   for (auto& [net_id, segment_list] : net_segment_map) {
-  //     // layer_segment_list
-  //     std::vector<Segment<LayerCoord>> layer_segment_list;
-  //     for (Segment<PlanarCoord>& segment : segment_list) {
-  //       layer_segment_list.emplace_back(segment.get_first(), segment.get_second());
-  //     }
-  //     // driving_grid_coord_list
-  //     // key_coord_pin_map
-  //     std::vector<Pin>& pin_list = net_list[net_id].get_pin_list();
-  //     std::vector<LayerCoord> driving_grid_coord_list;
-  //     std::map<LayerCoord, std::set<irt_int>, CmpLayerCoordByXASC> key_coord_pin_map;
-  //     for (size_t i = 0; i < pin_list.size(); i++) {
-  //       driving_grid_coord_list.push_back(pin_list[i].get_protected_access_point().get_real_coord());
-  //       key_coord_pin_map[pin_list[i].get_protected_access_point().get_real_coord()].insert(static_cast<irt_int>(i));
-  //     }
-  //     MTree<LayerCoord> coord_tree = RTUtil::getTreeByFullFlow(driving_grid_coord_list, layer_segment_list, key_coord_pin_map);
+//     std::map<int32_t, std::vector<Segment<PlanarCoord>>> net_segment_map;
+//     for (Net& net : net_list) {
+//       for (auto seg_node : RTUtil::getSegListByTree(net.get_gr_result_tree())) {
+//         net_segment_map[net.get_net_idx()].emplace_back(seg_node.get_first()->value().get_grid_coord().get_planar_coord(),
+//                                                         seg_node.get_second()->value().get_grid_coord().get_planar_coord());
+//       }
+//     }
+//     ///////////////////////////////////////去环
+//     for (auto& [net_id, segment_list] : net_segment_map) {
+//       // layer_segment_list
+//       std::vector<Segment<LayerCoord>> layer_segment_list;
+//       for (Segment<PlanarCoord>& segment : segment_list) {
+//         layer_segment_list.emplace_back(segment.get_first(), segment.get_second());
+//       }
+//       // driving_grid_coord_list
+//       // key_coord_pin_map
+//       std::vector<Pin>& pin_list = net_list[net_id].get_pin_list();
+//       std::vector<LayerCoord> driving_grid_coord_list;
+//       std::map<LayerCoord, std::set<int32_t>, CmpLayerCoordByXASC> key_coord_pin_map;
+//       for (size_t i = 0; i < pin_list.size(); i++) {
+//         driving_grid_coord_list.push_back(pin_list[i].get_protected_access_point().get_grid_coord());
+//         key_coord_pin_map[pin_list[i].get_protected_access_point().get_grid_coord()].insert(static_cast<int32_t>(i));
+//       }
+//       MTree<LayerCoord> coord_tree = RTUtil::getTreeByFullFlow(driving_grid_coord_list, layer_segment_list, key_coord_pin_map);
 
-  //     segment_list.clear();
-  //     for (auto& seg_node : RTUtil::getSegListByTree(coord_tree)) {
-  //       segment_list.emplace_back(seg_node.get_first()->value(), seg_node.get_second()->value());
-  //     }
-  //   }
-  // #endif
+//       segment_list.clear();
+//       for (auto& seg_node : RTUtil::getSegListByTree(coord_tree)) {
+//         segment_list.emplace_back(seg_node.get_first()->value(), seg_node.get_second()->value());
+//       }
+//     }
+//   #endif
 
-  // #if 1  // 主流程
-  //   ista::TimingEngine* timing_engine = ista::TimingEngine::getOrCreateTimingEngine();
-  //   auto db_adapter = std::make_unique<ista::TimingIDBAdapter>(timing_engine->get_ista());
-  //   db_adapter->set_idb(DM_INST.getHelper().get_idb_builder());
-  //   db_adapter->convertDBToTimingNetlist();
-  //   timing_engine->set_db_adapter(std::move(db_adapter));
-  //   timing_engine->set_num_threads(40);
-  //   timing_engine->buildGraph();
-  //   timing_engine->initRcTree();
+//   #if 1  // 主流程
+//     ista::TimingEngine* timing_engine = ista::TimingEngine::getOrCreateTimingEngine();
+//     auto db_adapter = std::make_unique<ista::TimingIDBAdapter>(timing_engine->get_ista());
+//     db_adapter->set_idb(DM_INST.getHelper().get_idb_builder());
+//     db_adapter->convertDBToTimingNetlist();
+//     timing_engine->set_db_adapter(std::move(db_adapter));
+//     timing_engine->set_num_threads(40);
+//     timing_engine->buildGraph();
+//     timing_engine->initRcTree();
 
-  //   ista::Netlist* sta_netlist = timing_engine->get_netlist();
-  //   for (Net& net : DM_INST.getDatabase().get_net_list()) {
-  //     // coord_real_pin_map
-  //     std::map<PlanarCoord, std::vector<std::string>, CmpPlanarCoordByXASC> coord_real_pin_map =
-  //     net_key_coord_pin_map[net.get_net_idx()];
-  //     // routing_segment_list
-  //     std::vector<Segment<PlanarCoord>> routing_segment_list = net_segment_map[net.get_net_idx()];
-  //     // 构建RC-tree
-  //     auto net_name = net.get_net_name();
-  //     net_name.erase(std::remove(net_name.begin(), net_name.end(), '\\'), net_name.end());
-  //     ista::Net* ista_net = sta_netlist->findNet(net_name.c_str());
-  //     for (Segment<RCPin>& segment : getRCSegmentList(coord_real_pin_map, routing_segment_list)) {
-  //       auto getRctNode = [timing_engine, sta_netlist, ista_net](RCPin& rc_pin) {
-  //         ista::RctNode* rct_node = nullptr;
-  //         if (rc_pin._is_real_pin) {
-  //           ista::DesignObject* pin_port = nullptr;
-  //           auto pin_port_list = sta_netlist->findPin(rc_pin._pin_name.c_str(), false, false);
-  //           if (!pin_port_list.empty()) {
-  //             pin_port = pin_port_list.front();
-  //           } else {
-  //             pin_port = sta_netlist->findPort(rc_pin._pin_name.c_str());
-  //           }
-  //           rct_node = timing_engine->makeOrFindRCTreeNode(pin_port);
-  //         } else {
-  //           rct_node = timing_engine->makeOrFindRCTreeNode(ista_net, rc_pin._fake_pin_id);
-  //         }
-  //         return rct_node;
-  //       };
-  //       RCPin& first_rc_pin = segment.get_first();
-  //       RCPin& second_rc_pin = segment.get_second();
+//     ista::Netlist* sta_netlist = timing_engine->get_netlist();
+//     for (Net& net : DM_INST.getDatabase().get_net_list()) {
+//       // coord_real_pin_map
+//       std::map<PlanarCoord, std::vector<std::string>, CmpPlanarCoordByXASC> coord_real_pin_map =
+//       net_key_coord_pin_map[net.get_net_idx()];
+//       // routing_segment_list
+//       std::vector<Segment<PlanarCoord>> routing_segment_list = net_segment_map[net.get_net_idx()];
+//       // 构建RC-tree
+//       auto net_name = net.get_net_name();
+//       net_name.erase(std::remove(net_name.begin(), net_name.end(), '\\'), net_name.end());
+//       ista::Net* ista_net = sta_netlist->findNet(net_name.c_str());
+//       for (Segment<RCPin>& segment : getRCSegmentList(coord_real_pin_map, routing_segment_list)) {
+//         auto getRctNode = [timing_engine, sta_netlist, ista_net](RCPin& rc_pin) {
+//           ista::RctNode* rct_node = nullptr;
+//           if (rc_pin._is_real_pin) {
+//             ista::DesignObject* pin_port = nullptr;
+//             auto pin_port_list = sta_netlist->findPin(rc_pin._pin_name.c_str(), false, false);
+//             if (!pin_port_list.empty()) {
+//               pin_port = pin_port_list.front();
+//             } else {
+//               pin_port = sta_netlist->findPort(rc_pin._pin_name.c_str());
+//             }
+//             rct_node = timing_engine->makeOrFindRCTreeNode(pin_port);
+//           } else {
+//             rct_node = timing_engine->makeOrFindRCTreeNode(ista_net, rc_pin._fake_pin_id);
+//           }
+//           return rct_node;
+//         };
+//         RCPin& first_rc_pin = segment.get_first();
+//         RCPin& second_rc_pin = segment.get_second();
 
-  //       irt_int distance = RTUtil::getManhattanDistance(first_rc_pin._coord, second_rc_pin._coord);
-  //       int32_t unit = dmInst->get_idb_builder()->get_def_service()->get_design()->get_units()->get_micron_dbu();
-  //       std::optional<double> width = std::nullopt;
-  //       double cap = dynamic_cast<ista::TimingIDBAdapter*>(timing_engine->get_db_adapter())->getCapacitance(1, distance / 1.0 / unit,
-  //       width); double res = dynamic_cast<ista::TimingIDBAdapter*>(timing_engine->get_db_adapter())->getResistance(1, distance / 1.0 /
-  //       unit, width);
+//         int32_t distance = RTUtil::getManhattanDistance(first_rc_pin._coord, second_rc_pin._coord);
+//         int32_t unit = dmInst->get_idb_builder()->get_def_service()->get_design()->get_units()->get_micron_dbu();
+//         std::optional<double> width = std::nullopt;
+//         double cap = dynamic_cast<ista::TimingIDBAdapter*>(timing_engine->get_db_adapter())->getCapacitance(1, distance / 1.0 / unit,
+//         width); double res = dynamic_cast<ista::TimingIDBAdapter*>(timing_engine->get_db_adapter())->getResistance(1, distance / 1.0 /
+//         unit, width);
 
-  //       ista::RctNode* first_node = getRctNode(first_rc_pin);
-  //       ista::RctNode* second_node = getRctNode(second_rc_pin);
-  //       timing_engine->makeResistor(ista_net, first_node, second_node, res);
-  //       timing_engine->incrCap(first_node, cap / 2);
-  //       timing_engine->incrCap(second_node, cap / 2);
-  //     }
-  //     timing_engine->updateRCTreeInfo(ista_net);
+//         ista::RctNode* first_node = getRctNode(first_rc_pin);
+//         ista::RctNode* second_node = getRctNode(second_rc_pin);
+//         timing_engine->makeResistor(ista_net, first_node, second_node, res);
+//         timing_engine->incrCap(first_node, cap / 2);
+//         timing_engine->incrCap(second_node, cap / 2);
+//       }
+//       timing_engine->updateRCTreeInfo(ista_net);
 
-  //     // auto* rc_tree = timing_engine->get_ista()->getRcNet(ista_net)->rct();
-  //     // rc_tree->printGraphViz();
-  //   }
-  //   Monitor monitor;
-  //   timing_engine->updateTiming();
-  //   LOG_INST.info(Loc::current(), "[temp_report] dr sta updateTiming time: ", monitor.getStatsInfo());
-  //   timing_engine->reportTiming();
+//       // auto* rc_tree = timing_engine->get_ista()->getRcNet(ista_net)->rct();
+//       // rc_tree->printGraphViz();
+//     }
+//     Monitor monitor;
+//     timing_engine->updateTiming();
+//     LOG_INST.info(Loc::current(), "[temp_report] gr sta updateTiming time : ", monitor.getStatsInfo());
+//     timing_engine->reportTiming();
 
-  //   auto clk_list = timing_engine->getClockList();
-  //   std::ranges::for_each(clk_list, [&](ista::StaClock* clk) {
-  //     auto clk_name = clk->get_clock_name();
-  //     auto setup_tns = timing_engine->reportTNS(clk_name, AnalysisMode::kMax);
-  //     auto setup_wns = timing_engine->reportWNS(clk_name, AnalysisMode::kMax);
-  //     auto suggest_freq = 1000.0 / (clk->getPeriodNs() - setup_wns);
+//     auto clk_list = timing_engine->getClockList();
+//     std::ranges::for_each(clk_list, [&](ista::StaClock* clk) {
+//       auto clk_name = clk->get_clock_name();
+//       auto setup_tns = timing_engine->reportTNS(clk_name, AnalysisMode::kMax);
+//       auto setup_wns = timing_engine->reportWNS(clk_name, AnalysisMode::kMax);
+//       auto suggest_freq = 1000.0 / (clk->getPeriodNs() - setup_wns);
 
-  //     LOG_INST.info(Loc::current(), "[temp_report] dr tns : ", setup_tns);
-  //     LOG_INST.info(Loc::current(), "[temp_report] dr wns : ", setup_wns);
-  //     LOG_INST.info(Loc::current(), "[temp_report] dr suggest freq : ", suggest_freq);
-  //   });
+//       LOG_INST.info(Loc::current(), "[temp_report] gr tns : ", setup_tns);
+//       LOG_INST.info(Loc::current(), "[temp_report] gr wns : ", setup_wns);
+//       LOG_INST.info(Loc::current(), "[temp_report] gr suggest freq : ", suggest_freq);
+//     });
 
-  // #endif
-}
+//   #endif
+// }
+
+// void RTAPI::reportDRTiming()
+// {
+//   #if 1  // 数据结构定义
+//     struct RCPin
+//     {
+//       RCPin() = default;
+//       RCPin(PlanarCoord coord, bool is_real_pin, std::string pin_name)
+//       {
+//         _coord = coord;
+//         _is_real_pin = is_real_pin;
+//         _pin_name = pin_name;
+//       }
+//       RCPin(PlanarCoord coord, bool is_real_pin, int32_t fake_pin_id)
+//       {
+//         _coord = coord;
+//         _is_real_pin = is_real_pin;
+//         _fake_pin_id = fake_pin_id;
+//       }
+//       ~RCPin() = default;
+
+//       PlanarCoord _coord;
+//       bool _is_real_pin = false;
+//       std::string _pin_name;
+//       int32_t _fake_pin_id;
+//     };
+//     auto getRCSegmentList = [](std::map<PlanarCoord, std::vector<std::string>, CmpPlanarCoordByXASC>& coord_real_pin_map,
+//                                std::vector<Segment<PlanarCoord>>& routing_segment_list) {
+//       std::vector<Segment<RCPin>> rc_segment_list;
+//       // 生成线长为0的线段
+//       for (auto& [coord, real_pin_list] : coord_real_pin_map) {
+//         for (size_t i = 1; i < real_pin_list.size(); i++) {
+//           RCPin first_rc_pin(coord, true, real_pin_list[i - 1]);
+//           RCPin second_rc_pin(coord, true, real_pin_list[i]);
+//           rc_segment_list.emplace_back(first_rc_pin, second_rc_pin);
+//         }
+//       }
+//       // 构建coord_fake_pin_map
+//       std::map<PlanarCoord, int32_t, CmpPlanarCoordByXASC> coord_fake_pin_map;
+//       int32_t fake_id = 0;
+//       for (Segment<PlanarCoord>& routing_segment : routing_segment_list) {
+//         PlanarCoord& first_coord = routing_segment.get_first();
+//         PlanarCoord& second_coord = routing_segment.get_second();
+
+//         if (!RTUtil::exist(coord_real_pin_map, first_coord) && !RTUtil::exist(coord_fake_pin_map, first_coord)) {
+//           coord_fake_pin_map[first_coord] = fake_id++;
+//         }
+//         if (!RTUtil::exist(coord_real_pin_map, second_coord) && !RTUtil::exist(coord_fake_pin_map, second_coord)) {
+//           coord_fake_pin_map[second_coord] = fake_id++;
+//         }
+//       }
+//       // 将routing_segment_list生成rc_segment_list
+//       for (Segment<PlanarCoord>& routing_segment : routing_segment_list) {
+//         PlanarCoord& first_coord = routing_segment.get_first();
+//         PlanarCoord& second_coord = routing_segment.get_second();
+
+//         RCPin first_rc_pin;
+//         if (RTUtil::exist(coord_real_pin_map, first_coord)) {
+//           first_rc_pin = RCPin(first_coord, true, coord_real_pin_map[first_coord].front());
+//         } else if (RTUtil::exist(coord_fake_pin_map, first_coord)) {
+//           first_rc_pin = RCPin(first_coord, false, coord_fake_pin_map[first_coord]);
+//         } else {
+//           LOG_INST.error(Loc::current(), "The coord is not exist!");
+//         }
+//         RCPin second_rc_pin;
+//         if (RTUtil::exist(coord_real_pin_map, second_coord)) {
+//           second_rc_pin = RCPin(second_coord, true, coord_real_pin_map[second_coord].front());
+//         } else if (RTUtil::exist(coord_fake_pin_map, second_coord)) {
+//           second_rc_pin = RCPin(second_coord, false, coord_fake_pin_map[second_coord]);
+//         } else {
+//           LOG_INST.error(Loc::current(), "The coord is not exist!");
+//         }
+//         rc_segment_list.emplace_back(first_rc_pin, second_rc_pin);
+//       }
+//       return rc_segment_list;
+//     };
+//   #endif
+
+//   #if 1  // 生成net_coord_real_pin_map和net_segment_map
+//     std::vector<Net>& net_list = DM_INST.getDatabase().get_net_list();
+//     GridMap<GCell>& gcell_map = DM_INST.getDatabase().get_gcell_map();
+
+//     std::map<int32_t, std::map<PlanarCoord, std::vector<std::string>, CmpPlanarCoordByXASC>> net_key_coord_pin_map;
+//     for (Net& net : net_list) {
+//       for (Pin& pin : net.get_pin_list()) {
+//         auto pin_name = pin.get_pin_name();
+//         pin_name.erase(std::remove(pin_name.begin(), pin_name.end(), '\\'), pin_name.end());
+//         net_key_coord_pin_map[net.get_net_idx()][pin.get_protected_access_point().getRealLayerCoord()].push_back(pin_name);
+//       }
+//     }
+
+//     std::map<int32_t, std::vector<Segment<PlanarCoord>>> net_segment_map;
+//     for (int32_t x = 0; x < gcell_map.get_x_size(); x++) {
+//       for (int32_t y = 0; y < gcell_map.get_y_size(); y++) {
+//         for (auto& [net_idx, segment_set] : gcell_map[x][y].get_net_result_map()) {
+//           for (Segment<LayerCoord>* segment : segment_set) {
+//             net_segment_map[net_idx].emplace_back(segment->get_first(), segment->get_second());
+//           }
+//         }
+//       }
+//     }
+//     ///////////////////////////////////////去环
+//     for (auto& [net_id, segment_list] : net_segment_map) {
+//       // layer_segment_list
+//       std::vector<Segment<LayerCoord>> layer_segment_list;
+//       for (Segment<PlanarCoord>& segment : segment_list) {
+//         layer_segment_list.emplace_back(segment.get_first(), segment.get_second());
+//       }
+//       // driving_grid_coord_list
+//       // key_coord_pin_map
+//       std::vector<Pin>& pin_list = net_list[net_id].get_pin_list();
+//       std::vector<LayerCoord> driving_grid_coord_list;
+//       std::map<LayerCoord, std::set<int32_t>, CmpLayerCoordByXASC> key_coord_pin_map;
+//       for (size_t i = 0; i < pin_list.size(); i++) {
+//         driving_grid_coord_list.push_back(pin_list[i].get_protected_access_point().get_real_coord());
+//         key_coord_pin_map[pin_list[i].get_protected_access_point().get_real_coord()].insert(static_cast<int32_t>(i));
+//       }
+//       MTree<LayerCoord> coord_tree = RTUtil::getTreeByFullFlow(driving_grid_coord_list, layer_segment_list, key_coord_pin_map);
+
+//       segment_list.clear();
+//       for (auto& seg_node : RTUtil::getSegListByTree(coord_tree)) {
+//         segment_list.emplace_back(seg_node.get_first()->value(), seg_node.get_second()->value());
+//       }
+//     }
+//   #endif
+
+//   #if 1  // 主流程
+//     ista::TimingEngine* timing_engine = ista::TimingEngine::getOrCreateTimingEngine();
+//     auto db_adapter = std::make_unique<ista::TimingIDBAdapter>(timing_engine->get_ista());
+//     db_adapter->set_idb(DM_INST.getHelper().get_idb_builder());
+//     db_adapter->convertDBToTimingNetlist();
+//     timing_engine->set_db_adapter(std::move(db_adapter));
+//     timing_engine->set_num_threads(40);
+//     timing_engine->buildGraph();
+//     timing_engine->initRcTree();
+
+//     ista::Netlist* sta_netlist = timing_engine->get_netlist();
+//     for (Net& net : DM_INST.getDatabase().get_net_list()) {
+//       // coord_real_pin_map
+//       std::map<PlanarCoord, std::vector<std::string>, CmpPlanarCoordByXASC> coord_real_pin_map =
+//       net_key_coord_pin_map[net.get_net_idx()];
+//       // routing_segment_list
+//       std::vector<Segment<PlanarCoord>> routing_segment_list = net_segment_map[net.get_net_idx()];
+//       // 构建RC-tree
+//       auto net_name = net.get_net_name();
+//       net_name.erase(std::remove(net_name.begin(), net_name.end(), '\\'), net_name.end());
+//       ista::Net* ista_net = sta_netlist->findNet(net_name.c_str());
+//       for (Segment<RCPin>& segment : getRCSegmentList(coord_real_pin_map, routing_segment_list)) {
+//         auto getRctNode = [timing_engine, sta_netlist, ista_net](RCPin& rc_pin) {
+//           ista::RctNode* rct_node = nullptr;
+//           if (rc_pin._is_real_pin) {
+//             ista::DesignObject* pin_port = nullptr;
+//             auto pin_port_list = sta_netlist->findPin(rc_pin._pin_name.c_str(), false, false);
+//             if (!pin_port_list.empty()) {
+//               pin_port = pin_port_list.front();
+//             } else {
+//               pin_port = sta_netlist->findPort(rc_pin._pin_name.c_str());
+//             }
+//             rct_node = timing_engine->makeOrFindRCTreeNode(pin_port);
+//           } else {
+//             rct_node = timing_engine->makeOrFindRCTreeNode(ista_net, rc_pin._fake_pin_id);
+//           }
+//           return rct_node;
+//         };
+//         RCPin& first_rc_pin = segment.get_first();
+//         RCPin& second_rc_pin = segment.get_second();
+
+//         int32_t distance = RTUtil::getManhattanDistance(first_rc_pin._coord, second_rc_pin._coord);
+//         int32_t unit = dmInst->get_idb_builder()->get_def_service()->get_design()->get_units()->get_micron_dbu();
+//         std::optional<double> width = std::nullopt;
+//         double cap = dynamic_cast<ista::TimingIDBAdapter*>(timing_engine->get_db_adapter())->getCapacitance(1, distance / 1.0 / unit,
+//         width); double res = dynamic_cast<ista::TimingIDBAdapter*>(timing_engine->get_db_adapter())->getResistance(1, distance / 1.0 /
+//         unit, width);
+
+//         ista::RctNode* first_node = getRctNode(first_rc_pin);
+//         ista::RctNode* second_node = getRctNode(second_rc_pin);
+//         timing_engine->makeResistor(ista_net, first_node, second_node, res);
+//         timing_engine->incrCap(first_node, cap / 2);
+//         timing_engine->incrCap(second_node, cap / 2);
+//       }
+//       timing_engine->updateRCTreeInfo(ista_net);
+
+//       // auto* rc_tree = timing_engine->get_ista()->getRcNet(ista_net)->rct();
+//       // rc_tree->printGraphViz();
+//     }
+//     Monitor monitor;
+//     timing_engine->updateTiming();
+//     LOG_INST.info(Loc::current(), "[temp_report] dr sta updateTiming time: ", monitor.getStatsInfo());
+//     timing_engine->reportTiming();
+
+//     auto clk_list = timing_engine->getClockList();
+//     std::ranges::for_each(clk_list, [&](ista::StaClock* clk) {
+//       auto clk_name = clk->get_clock_name();
+//       auto setup_tns = timing_engine->reportTNS(clk_name, AnalysisMode::kMax);
+//       auto setup_wns = timing_engine->reportWNS(clk_name, AnalysisMode::kMax);
+//       auto suggest_freq = 1000.0 / (clk->getPeriodNs() - setup_wns);
+
+//       LOG_INST.info(Loc::current(), "[temp_report] dr tns : ", setup_tns);
+//       LOG_INST.info(Loc::current(), "[temp_report] dr wns : ", setup_wns);
+//       LOG_INST.info(Loc::current(), "[temp_report] dr suggest freq : ", suggest_freq);
+//     });
+
+//   #endif
+// }
 
 // other
 

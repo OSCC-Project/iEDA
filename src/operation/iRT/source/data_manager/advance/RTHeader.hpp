@@ -59,13 +59,4 @@
 #include "libfort/fort.hpp"
 #include "omp.h"
 
-using irt_int = int32_t;
 #define DBL_ERROR 1E-5
-
-template <class... Fs>
-struct Overload : Fs...
-{
-  using Fs::operator()...;
-};
-template <class... Fs>
-Overload(Fs...) -> Overload<Fs...>;

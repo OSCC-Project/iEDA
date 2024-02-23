@@ -18,8 +18,7 @@
 
 #include "LayerRect.hpp"
 #include "PriorityQueue.hpp"
-#include "RTAPI.hpp"
-#include "RTU.hpp"
+#include "RTHeader.hpp"
 #include "ScaleAxis.hpp"
 #include "TANode.hpp"
 #include "TAPanelId.hpp"
@@ -38,7 +37,7 @@ class TAPanel
   TAPanelId& get_ta_panel_id() { return _ta_panel_id; }
   TAParameter* get_ta_parameter() { return _ta_parameter; }
   std::vector<TATask*>& get_ta_task_list() { return _ta_task_list; }
-  std::map<irt_int, std::set<EXTLayerRect*>>& get_net_fixed_rect_map() { return _net_fixed_rect_map; }
+  std::map<int32_t, std::set<EXTLayerRect*>>& get_net_fixed_rect_map() { return _net_fixed_rect_map; }
   std::vector<Violation>& get_violation_list() { return _violation_list; }
   ScaleAxis& get_panel_track_axis() { return _panel_track_axis; }
   GridMap<TANode>& get_ta_node_map() { return _ta_node_map; }
@@ -47,7 +46,7 @@ class TAPanel
   void set_ta_panel_id(const TAPanelId& ta_panel_id) { _ta_panel_id = ta_panel_id; }
   void set_ta_parameter(TAParameter* ta_parameter) { _ta_parameter = ta_parameter; }
   void set_ta_task_list(const std::vector<TATask*>& ta_task_list) { _ta_task_list = ta_task_list; }
-  void set_net_fixed_rect_map(const std::map<irt_int, std::set<EXTLayerRect*>>& net_fixed_rect_map)
+  void set_net_fixed_rect_map(const std::map<int32_t, std::set<EXTLayerRect*>>& net_fixed_rect_map)
   {
     _net_fixed_rect_map = net_fixed_rect_map;
   }
@@ -82,14 +81,14 @@ class TAPanel
   PriorityQueue<TANode*, std::vector<TANode*>, CmpTANodeCost>& get_open_queue() { return _open_queue; }
   std::vector<TANode*>& get_single_path_visited_node_list() { return _single_path_visited_node_list; }
   TANode* get_path_head_node() { return _path_head_node; }
-  irt_int get_end_node_comb_idx() const { return _end_node_comb_idx; }
+  int32_t get_end_node_comb_idx() const { return _end_node_comb_idx; }
   void set_open_queue(const PriorityQueue<TANode*, std::vector<TANode*>, CmpTANodeCost>& open_queue) { _open_queue = open_queue; }
   void set_single_path_visited_node_list(const std::vector<TANode*>& single_path_visited_node_list)
   {
     _single_path_visited_node_list = single_path_visited_node_list;
   }
   void set_path_head_node(TANode* path_head_node) { _path_head_node = path_head_node; }
-  void set_end_node_comb_idx(const irt_int end_node_comb_idx) { _end_node_comb_idx = end_node_comb_idx; }
+  void set_end_node_comb_idx(const int32_t end_node_comb_idx) { _end_node_comb_idx = end_node_comb_idx; }
 #endif
 
  private:
@@ -97,7 +96,7 @@ class TAPanel
   TAPanelId _ta_panel_id;
   TAParameter* _ta_parameter = nullptr;
   std::vector<TATask*> _ta_task_list;
-  std::map<irt_int, std::set<EXTLayerRect*>> _net_fixed_rect_map;
+  std::map<int32_t, std::set<EXTLayerRect*>> _net_fixed_rect_map;
   std::vector<Violation> _violation_list;
   ScaleAxis _panel_track_axis;
   GridMap<TANode> _ta_node_map;
@@ -113,7 +112,7 @@ class TAPanel
   PriorityQueue<TANode*, std::vector<TANode*>, CmpTANodeCost> _open_queue;
   std::vector<TANode*> _single_path_visited_node_list;
   TANode* _path_head_node = nullptr;
-  irt_int _end_node_comb_idx = -1;
+  int32_t _end_node_comb_idx = -1;
 #endif
 };
 
