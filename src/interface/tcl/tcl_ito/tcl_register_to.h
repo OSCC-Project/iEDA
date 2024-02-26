@@ -26,6 +26,7 @@
 #include "ScriptEngine.hh"
 #include "UserShell.hh"
 #include "tcl_ito.h"
+#include "tcl_toconfig.h"
 
 using namespace ieda;
 namespace tcl {
@@ -36,6 +37,7 @@ int registerCmdTO()
   registerTclCmd(CmdTORunDrv, "run_to_drv");
   registerTclCmd(CmdTORunHold, "run_to_hold");
   registerTclCmd(CmdTORunSetup, "run_to_setup");
+  registerTclCmd(CmdTOConfig, "to_config");
 
   return EXIT_SUCCESS;
 }
