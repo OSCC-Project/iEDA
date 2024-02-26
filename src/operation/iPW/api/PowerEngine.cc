@@ -29,7 +29,38 @@ PowerEngine* PowerEngine::_power_engine = nullptr;
 
 PowerEngine::PowerEngine() {
   _timing_engine = TimingEngine::getOrCreateTimingEngine();
-  _power = Power::getOrCreatePower(&(_timing_engine->get_ista()->get_graph()));
+  _ipower = Power::getOrCreatePower(&(_timing_engine->get_ista()->get_graph()));
+}
+
+PowerEngine::~PowerEngine() {
+  Power::destroyPower();
+  TimingEngine::destroyTimingEngine();
+}
+
+/**
+ * @brief create dataflow for macro placer.
+ * To create dataflow, firstly we build seq graph, the seq vertex is instance or
+ * port.
+ *
+ *
+ * @return unsigned
+ */
+unsigned PowerEngine::creatDataflow() {
+  // build timing graph.
+  if (!_timing_engine->isBuildGraph()) {
+    _timing_engine->buildGraph();
+  }
+
+  // build power graph & sequential graph.
+  if (!_ipower->isBuildGraph()) {
+    // build power graph.
+    _ipower->buildGraph();
+
+    // build seq graph
+    _ipower->buildSeqGraph();
+  }
+
+  return 1;
 }
 
 }  // namespace ipower

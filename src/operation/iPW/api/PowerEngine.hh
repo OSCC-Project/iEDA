@@ -25,8 +25,8 @@
 #pragma once
 
 #include "Power.hh"
-#include "api/TimingEngine.hh"
 #include "Type.hh"
+#include "api/TimingEngine.hh"
 
 namespace ipower {
 
@@ -39,16 +39,22 @@ class PowerEngine {
   static PowerEngine *getOrCreatePowerEngine();
   static void destroyPowerEngine();
 
+  [[nodiscard]] Power *get_power() const { return _ipower; }
+  [[nodiscard]] ista::TimingEngine *get_timing_engine() const {
+    return _timing_engine;
+  }
+
+  unsigned creatDataflow();
+
  private:
   PowerEngine();
   ~PowerEngine();
 
-  Power *_power;
-  ista::TimingEngine *_timing_engine;
+  Power *_ipower = nullptr;
+  ista::TimingEngine *_timing_engine = nullptr;
 
-  // Singleton timing engine.
+  // Singleton power engine.
   static PowerEngine *_power_engine;
-
   FORBIDDEN_COPY(PowerEngine);
 };
 
