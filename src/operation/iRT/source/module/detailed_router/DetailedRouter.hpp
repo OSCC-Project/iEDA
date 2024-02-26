@@ -131,9 +131,10 @@ class DetailedRouter
 
 #if 1  // exhibit
   void plotDRBox(DRBox& dr_box, int32_t curr_task_idx, std::string flag);
-  void writeDRModel(DRModel& dr_model, size_t iter);
-  void writeNetCSV(DRModel& dr_model, size_t iter);
-  void writeViolationCSV(DRModel& dr_model, size_t iter);
+  void reportDRModel(DRModel& dr_model, int32_t iter);
+  void reportSummary(DRModel& dr_model, int32_t iter);
+  void writeNetCSV(DRModel& dr_model, int32_t iter);
+  void writeViolationCSV(DRModel& dr_model, int32_t iter);
 #endif
 };
 

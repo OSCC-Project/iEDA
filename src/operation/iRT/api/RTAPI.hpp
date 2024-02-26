@@ -34,31 +34,30 @@ class RTAPI
   static RTAPI& getInst();
   static void destroyInst();
 
-  // RT
+#if 1  // 外部调用RT的API
+  // RT主要函数
   void initRT(std::map<std::string, std::any> config_map);
   void runRT();
   void destroyRT();
-
-  // EGR
-  void runEGR(std::map<std::string, std::any> config_map);
-
-  // EVAL
+  // 获取RT的Summary
+  Summary getSummary();
+  // 清理def
+  void clearDef();
+  // 拥塞驱动
   eval::TileGrid* getCongestonMap(std::map<std::string, std::any> config_map, double& wirelength);
   std::vector<double> getWireLengthAndViaNum(std::map<std::string, std::any> config_map);
+#endif
 
-  // DRC
-  // env_shape_list 存储 blockage obs pin_shape
-  // net_idb_segment_map 存储 wire via patch
+#if 1  // RT调用外部的API
+  // 调用iDRC 计算版图的DRC违例
   std::vector<Violation> getViolationList(std::vector<idb::IdbLayerShape*>& env_shape_list,
                                           std::map<int32_t, std::vector<idb::IdbLayerShape*>>& net_pin_shape_map,
                                           std::map<int32_t, std::vector<idb::IdbRegularWireSegment*>>& net_result_map);
-
-  // STA
-  std::map<std::string, std::vector<double>> getTiming(std::map<int32_t, std::map<std::string, LayerCoord>> net_pin_coord_map,
-                                                       std::map<int32_t, std::vector<Segment<LayerCoord>>> net_segment_map);
-
-  // other
-  void clearDef();
+  // 调用iSTA 计算时序
+  std::map<std::string, std::vector<double>> getTiming(
+      std::map<int32_t, std::map<LayerCoord, std::vector<std::string>, CmpLayerCoordByXASC>>& net_pin_coord_map,
+      std::map<int32_t, std::vector<Segment<LayerCoord>>>& net_segment_map);
+#endif
 
  private:
   static RTAPI* _rt_api_instance;

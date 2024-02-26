@@ -62,7 +62,7 @@ void TrackAssigner::assign(std::vector<Net>& net_list)
   assignTAPanelMap(ta_model);
   LOG_INST.info(Loc::current(), "End assign", monitor.getStatsInfo());
 
-  writeTAModel(ta_model);
+  reportTAModel(ta_model);
 }
 
 // private
@@ -1427,20 +1427,59 @@ void TrackAssigner::plotTAPanel(TAPanel& ta_panel, int32_t curr_task_idx, std::s
   GP_INST.plot(gp_gds, gds_file_path);
 }
 
-void TrackAssigner::writeTAModel(TAModel& ta_model)
+void TrackAssigner::reportTAModel(TAModel& ta_model)
 {
   Monitor monitor;
   LOG_INST.info(Loc::current(), "Begin reporting...");
+  reportSummary(ta_model);
   writeNetCSV(ta_model);
   writeViolationCSV(ta_model);
   LOG_INST.info(Loc::current(), "End report", monitor.getStatsInfo());
 }
 
+void TrackAssigner::reportSummary(TAModel& ta_model)
+{
+  int32_t micron_dbu = DM_INST.getDatabase().get_micron_dbu();
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+  GridMap<GCell>& gcell_map = DM_INST.getDatabase().get_gcell_map();
+  std::map<int32_t, double>& ta_routing_wire_length_map = DM_INST.getSummary().ta_summary.routing_wire_length_map;
+  double& ta_total_wire_length = DM_INST.getSummary().ta_summary.total_wire_length;
+  std::map<int32_t, int32_t>& ta_routing_violation_map = DM_INST.getSummary().ta_summary.routing_violation_map;
+  int32_t& ta_total_violation_num = DM_INST.getSummary().ta_summary.total_violation_num;
+
+  for (RoutingLayer& routing_layer : routing_layer_list) {
+    ta_routing_wire_length_map[routing_layer.get_layer_idx()] = 0;
+    ta_routing_violation_map[routing_layer.get_layer_idx()] = 0;
+  }
+  ta_total_wire_length = 0;
+  ta_total_violation_num = 0;
+
+  for (int32_t x = 0; x < gcell_map.get_x_size(); x++) {
+    for (int32_t y = 0; y < gcell_map.get_y_size(); y++) {
+      for (auto& [net_idx, segment_set] : gcell_map[x][y].get_net_result_map()) {
+        for (Segment<LayerCoord>* segment : segment_set) {
+          LayerCoord& first_coord = segment->get_first();
+          LayerCoord& second_coord = segment->get_second();
+          if (first_coord.get_layer_idx() == second_coord.get_layer_idx()) {
+            double wire_length = RTUtil::getManhattanDistance(first_coord, second_coord) / 1.0 / micron_dbu;
+            ta_routing_wire_length_map[first_coord.get_layer_idx()] += wire_length;
+            ta_total_wire_length += wire_length;
+          }
+        }
+      }
+      for (Violation* violation : gcell_map[x][y].get_violation_set()) {
+        ta_routing_violation_map[violation->get_violation_shape().get_layer_idx()]++;
+        ta_total_violation_num++;
+      }
+    }
+  }
+}
+
 void TrackAssigner::writeNetCSV(TAModel& ta_model)
 {
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
-  std::string ta_temp_directory_path = DM_INST.getConfig().ta_temp_directory_path;
   GridMap<GCell>& gcell_map = DM_INST.getDatabase().get_gcell_map();
+  std::string ta_temp_directory_path = DM_INST.getConfig().ta_temp_directory_path;
 
   std::vector<GridMap<int32_t>> layer_net_map;
   layer_net_map.resize(routing_layer_list.size());
@@ -1458,11 +1497,6 @@ void TrackAssigner::writeNetCSV(TAModel& ta_model)
           for (int32_t layer_idx = first_layer_idx; layer_idx <= second_layer_idx; layer_idx++) {
             net_layer_map[net_idx].insert(layer_idx);
           }
-        }
-      }
-      for (auto& [net_idx, patch_set] : gcell_map[x][y].get_net_patch_map()) {
-        for (EXTLayerRect* patch : patch_set) {
-          net_layer_map[net_idx].insert(patch->get_layer_idx());
         }
       }
       for (auto& [net_idx, layer_set] : net_layer_map) {

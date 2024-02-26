@@ -14,14 +14,14 @@ set(CMAKE_CXX_STANDARD 20)
 
 ############################ debug source module ############################
 
-# set(DEBUG_IRT_DETAILED_ROUTER ON)
 # set(DEBUG_IRT_EARLY_GLOBAL_ROUTER ON)
 # set(DEBUG_IRT_GDS_PLOTTER ON)
-# set(DEBUG_IRT_GLOBAL_ROUTER ON)
-# set(DEBUG_IRT_INITIAL_ROUTER ON)
 # set(DEBUG_IRT_PIN_ACCESSOR ON)
 # set(DEBUG_IRT_SUPPLY_ANALYZER ON) 
+# set(DEBUG_IRT_INITIAL_ROUTER ON)
+# set(DEBUG_IRT_GLOBAL_ROUTER ON)
 # set(DEBUG_IRT_TRACK_ASSIGNER ON) 
+# set(DEBUG_IRT_DETAILED_ROUTER ON)
 
 ############################ debug source data_manager ############################
 

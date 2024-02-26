@@ -83,9 +83,12 @@ namespace irt {
 
 class Violation;
 class LayerCoord;
-
+struct CmpLayerCoordByXASC;
+class Summary;
 template <typename T>
 class Segment;
+
+
 
 }  // namespace irt
 

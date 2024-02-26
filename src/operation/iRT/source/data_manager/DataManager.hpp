@@ -22,8 +22,8 @@
 #include "Helper.hpp"
 #include "Logger.hpp"
 #include "NetShape.hpp"
-#include "Reporter.hpp"
 #include "SortStatus.hpp"
+#include "Summary.hpp"
 
 namespace irt {
 
@@ -68,7 +68,7 @@ class DataManager
   Config& getConfig() { return _config; }
   Database& getDatabase() { return _database; }
   Helper& getHelper() { return _helper; }
-  Reporter& getReporter() { return _reporter; }
+  Summary& getSummary() { return _summary; }
 
  private:
   static DataManager* _dm_instance;
@@ -76,7 +76,7 @@ class DataManager
   Config _config;
   Database _database;
   Helper _helper;
-  Reporter _reporter;
+  Summary _summary;
 
   DataManager() = default;
   DataManager(const DataManager& other) = delete;
@@ -100,10 +100,11 @@ class DataManager
   void wrapInstanceBlockage(idb::IdbBuilder* idb_builder);
   void wrapSpecialNetBlockage(idb::IdbBuilder* idb_builder);
   void wrapNetList(idb::IdbBuilder* idb_builder);
-  bool checkSkipping(idb::IdbNet* idb_net);
+  bool preSkipping(idb::IdbNet* idb_net);
   void wrapPinList(Net& net, idb::IdbNet* idb_net);
   void wrapPinShapeList(Pin& pin, idb::IdbPin* idb_pin);
   void wrapDrivingPin(Net& net, idb::IdbNet* idb_net);
+  bool postSkipping(Net& net);
   void updateHelper(idb::IdbBuilder* idb_builder);
   Direction getRTDirectionByDB(idb::IdbLayerDirection idb_direction);
   ConnectType getRTConnectTypeByDB(idb::IdbConnectType idb_connect_type);
