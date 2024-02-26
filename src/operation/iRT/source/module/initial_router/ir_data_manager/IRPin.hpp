@@ -30,12 +30,13 @@ class IRPin : public Pin
   explicit IRPin(const Pin& pin) : Pin(pin) {}
   ~IRPin() = default;
   // getter
-
+  LayerCoord& get_grid_coord() { return _grid_coord; }
   // setter
-
+  void set_grid_coord(const LayerCoord& grid_coord) { _grid_coord = grid_coord; }
   // function
 
  private:
+   LayerCoord _grid_coord;
 };
 
 }  // namespace irt

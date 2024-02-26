@@ -110,7 +110,8 @@ class TrackAssigner
 
 #if 1  // exhibit
   void plotTAPanel(TAPanel& ta_panel, int32_t curr_task_idx, std::string flag);
-  void writeTAModel(TAModel& ta_model);
+  void reportTAModel(TAModel& ta_model);
+  void reportSummary(TAModel& ta_model);
   void writeNetCSV(TAModel& ta_model);
   void writeViolationCSV(TAModel& ta_model);
 #endif

@@ -501,9 +501,10 @@ void PinAccessor::reportPAModel(PAModel& pa_model)
 void PinAccessor::reportSummary(PAModel& pa_model)
 {
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
-  std::map<int32_t, int32_t>& pa_routing_access_point_map = DM_INST.getReporter().pa_routing_access_point_map;
-  std::map<AccessPointType, int32_t>& pa_type_access_point_map = DM_INST.getReporter().pa_type_access_point_map;
-  int32_t& pa_total_access_point_num = DM_INST.getReporter().pa_total_access_point_num;
+  GridMap<GCell>& gcell_map = DM_INST.getDatabase().get_gcell_map();
+  std::map<int32_t, int32_t>& pa_routing_access_point_map = DM_INST.getSummary().pa_summary.routing_access_point_map;
+  std::map<AccessPointType, int32_t>& pa_type_access_point_map = DM_INST.getSummary().pa_summary.type_access_point_map;
+  int32_t& pa_total_access_point_num = DM_INST.getSummary().pa_summary.total_access_point_num;
 
   for (RoutingLayer& routing_layer : routing_layer_list) {
     pa_routing_access_point_map[routing_layer.get_layer_idx()] = 0;
@@ -515,12 +516,14 @@ void PinAccessor::reportSummary(PAModel& pa_model)
                               {AccessPointType::kShapeCenter, 0}};
   pa_total_access_point_num = 0;
 
-  for (PANet& pa_net : pa_model.get_pa_net_list()) {
-    for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
-      for (AccessPoint& access_point : pa_pin.get_access_point_list()) {
-        pa_routing_access_point_map[access_point.get_layer_idx()]++;
-        pa_type_access_point_map[access_point.get_type()]++;
-        pa_total_access_point_num++;
+  for (int32_t x = 0; x < gcell_map.get_x_size(); x++) {
+    for (int32_t y = 0; y < gcell_map.get_y_size(); y++) {
+      for (auto& [net_idx, access_point_list] : gcell_map[x][y].get_net_access_point_map()) {
+        for (AccessPoint* access_point : access_point_list) {
+          pa_routing_access_point_map[access_point->get_layer_idx()]++;
+          pa_type_access_point_map[access_point->get_type()]++;
+          pa_total_access_point_num++;
+        }
       }
     }
   }
@@ -529,8 +532,8 @@ void PinAccessor::reportSummary(PAModel& pa_model)
 void PinAccessor::writePinCSV(PAModel& pa_model)
 {
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
-  std::string pa_temp_directory_path = DM_INST.getConfig().pa_temp_directory_path;
   GridMap<GCell>& gcell_map = DM_INST.getDatabase().get_gcell_map();
+  std::string pa_temp_directory_path = DM_INST.getConfig().pa_temp_directory_path;
 
   std::vector<GridMap<int32_t>> layer_pin_map;
   layer_pin_map.resize(routing_layer_list.size());

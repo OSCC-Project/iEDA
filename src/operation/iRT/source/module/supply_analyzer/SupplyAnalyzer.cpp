@@ -363,21 +363,20 @@ void SupplyAnalyzer::reportSAModel(SAModel& sa_model)
 void SupplyAnalyzer::reportSummary(SAModel& sa_model)
 {
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
-  std::map<int32_t, int32_t>& sa_routing_supply_map = DM_INST.getReporter().sa_routing_supply_map;
-  int32_t& sa_total_supply_num = DM_INST.getReporter().sa_total_supply_num;
+  GridMap<GCell>& gcell_map = DM_INST.getDatabase().get_gcell_map();
+  std::map<int32_t, int32_t>& sa_routing_supply_map = DM_INST.getSummary().sa_summary.routing_supply_map;
+  int32_t& sa_total_supply_num = DM_INST.getSummary().sa_summary.total_supply_num;
 
   for (RoutingLayer& routing_layer : routing_layer_list) {
     sa_routing_supply_map[routing_layer.get_layer_idx()] = 0;
   }
   sa_total_supply_num = 0;
 
-  std::vector<GridMap<SANode>>& layer_node_map = sa_model.get_layer_node_map();
-  for (size_t layer_idx = 0; layer_idx < layer_node_map.size(); layer_idx++) {
-    GridMap<SANode>& sa_node_map = layer_node_map[layer_idx];
-    for (int32_t grid_x = 0; grid_x < sa_node_map.get_x_size(); grid_x++) {
-      for (int32_t grid_y = 0; grid_y < sa_node_map.get_y_size(); grid_y++) {
-        for (auto& [orien, supply] : sa_node_map[grid_x][grid_y].get_orien_supply_map()) {
-          sa_routing_supply_map[layer_idx] += supply;
+  for (int32_t x = 0; x < gcell_map.get_x_size(); x++) {
+    for (int32_t y = 0; y < gcell_map.get_y_size(); y++) {
+      for (auto& [routing_layer_idx, orien_supply_map] : gcell_map[x][y].get_routing_orien_supply_map()) {
+        for (auto& [orien, supply] : orien_supply_map) {
+          sa_routing_supply_map[routing_layer_idx] += supply;
           sa_total_supply_num += supply;
         }
       }
@@ -388,8 +387,8 @@ void SupplyAnalyzer::reportSummary(SAModel& sa_model)
 void SupplyAnalyzer::writeSupplyCSV(SAModel& sa_model)
 {
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
-  std::string sa_temp_directory_path = DM_INST.getConfig().sa_temp_directory_path;
   GridMap<GCell>& gcell_map = DM_INST.getDatabase().get_gcell_map();
+  std::string sa_temp_directory_path = DM_INST.getConfig().sa_temp_directory_path;
 
   for (RoutingLayer& routing_layer : routing_layer_list) {
     std::ofstream* supply_csv_file

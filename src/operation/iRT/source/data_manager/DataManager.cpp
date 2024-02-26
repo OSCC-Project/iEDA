@@ -672,28 +672,23 @@ void DataManager::wrapNetList(idb::IdbBuilder* idb_builder)
   std::vector<idb::IdbNet*> idb_net_list = idb_builder->get_def_service()->get_design()->get_net_list()->get_net_list();
 
   for (idb::IdbNet* idb_net : idb_net_list) {
-    if (!checkSkipping(idb_net)) {
-      Net net;
-      net.set_net_name(idb_net->get_net_name());
-      net.set_connect_type(getRTConnectTypeByDB(idb_net->get_connect_type()));
-      wrapPinList(net, idb_net);
-      wrapDrivingPin(net, idb_net);
-      net_list.push_back(std::move(net));
+    if (preSkipping(idb_net)) {
+      continue;
     }
+    Net net;
+    net.set_net_name(idb_net->get_net_name());
+    net.set_connect_type(getRTConnectTypeByDB(idb_net->get_connect_type()));
+    wrapPinList(net, idb_net);
+    wrapDrivingPin(net, idb_net);
+    if (postSkipping(net)) {
+      continue;
+    }
+    net_list.push_back(std::move(net));
   }
 }
 
-bool DataManager::checkSkipping(idb::IdbNet* idb_net)
+bool DataManager::preSkipping(idb::IdbNet* idb_net)
 {
-  std::string net_name = idb_net->get_net_name();
-  // check pin number
-  size_t pin_num = idb_net->get_instance_pin_list()->get_pin_num();
-  if (pin_num <= 1) {
-    LOG_INST.info(Loc::current(), "The net '", net_name, "' has ", pin_num, " pin! skipping...");
-    return true;
-  } else if (pin_num >= 500) {
-    LOG_INST.warn(Loc::current(), "The ultra large net '", net_name, "' has ", pin_num, " pins!");
-  }
   // 特殊线网，有iocell，iocell的PAD与iopin重合，不需要布线
   bool has_io_pin = false;
   if (idb_net->has_io_pins() && idb_net->get_io_pins()->get_pin_num() == 1) {
@@ -705,7 +700,7 @@ bool DataManager::checkSkipping(idb::IdbNet* idb_net)
     has_io_cell = true;
   }
   if (has_io_pin && has_io_cell) {
-    LOG_INST.info(Loc::current(), "The net '", net_name, "' only connects PAD and io_pin! skipping...");
+    LOG_INST.info(Loc::current(), "The net '", idb_net->get_net_name(), "' only connects PAD and io_pin! skipping...");
     return true;
   }
   return false;
@@ -725,6 +720,9 @@ void DataManager::wrapPinList(Net& net, idb::IdbNet* idb_net)
     pin_list.push_back(std::move(pin));
   }
   for (auto* io_pin : idb_net->get_io_pins()->get_pin_list()) {
+    if (io_pin->get_term()->get_port_number() <= 0) {
+      continue;
+    }
     Pin pin;
     pin.set_pin_name(io_pin->get_pin_name());
     wrapPinShapeList(pin, io_pin);
@@ -768,6 +766,19 @@ void DataManager::wrapDrivingPin(Net& net, idb::IdbNet* idb_net)
       pin.set_is_driving(true);
     }
   }
+}
+
+bool DataManager::postSkipping(Net& net)
+{
+  size_t pin_num = net.get_pin_list().size();
+  if (pin_num <= 1) {
+    LOG_INST.info(Loc::current(), "The net '", net.get_net_name(), "' has ", pin_num, " pin! skipping...");
+    return true;
+  } else if (pin_num >= 500) {
+    LOG_INST.warn(Loc::current(), "The ultra large net: ", net.get_net_name(), " has ", pin_num, " pins!");
+    sleep(2);
+  }
+  return false;
 }
 
 void DataManager::updateHelper(idb::IdbBuilder* idb_builder)
