@@ -10,6 +10,7 @@ target_link_libraries(tcl_ito
         tcl
         shell-cmd
         str
+        tcl_util
 )
 
 target_include_directories(tcl_ito

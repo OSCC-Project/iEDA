@@ -15,27 +15,28 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 #pragma once
-/**
- * @File Name: tcl_register.h
- * @Brief :
- * @Author : Yell (12112088@qq.com)
- * @Version : 1.0
- * @Creat Date : 2022-04-15
- *
- */
-#include "ScriptEngine.hh"
-#include "UserShell.hh"
-#include "tcl_ino.h"
-#include "tcl_noconfig.h"
+#include <iostream>
+#include <string>
 
-using namespace ieda;
+#include "ScriptEngine.hh"
+#include "tcl_definition.h"
+#include "tcl_util.h"
+
+using ieda::TclCmd;
+
 namespace tcl {
 
-int registerCmdNO()
-{
-  registerTclCmd(CmdNORunFixFanout, "run_no_fixfanout");
-  registerTclCmd(CmdNOConfig, "no_config");
-  return EXIT_SUCCESS;
-}
+class CmdPLConfig : public TclCmd {
+  public:
+   explicit CmdPLConfig(const char* cmd_name);
+   ~CmdPLConfig() override = default;
+
+    unsigned check() override { return 1; };
+    unsigned exec() override;
+
+  private:
+   std::vector<std::pair<std::string, ValueType>> _config_list;
+  
+};
 
 }  // namespace tcl
