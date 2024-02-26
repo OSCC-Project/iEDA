@@ -320,7 +320,8 @@ std::vector<std::vector<Inst*>> BalanceClustering::slackClustering(const std::ve
   std::vector<std::vector<Inst*>> slack_clusters;
   std::ranges::for_each(clusters, [&](const std::vector<Inst*>& cluster) {
     auto est_net_length = estimateNetLength(cluster);
-    if (est_net_length < max_net_length) {
+    auto hpwl = calcHPWL(cluster);
+    if (hpwl < TimingPropagator::getMinLength() || est_net_length < max_net_length) {
       slack_clusters.push_back(cluster);
     } else {
       // reclustering
@@ -1067,7 +1068,7 @@ void BalanceClustering::writeClusterPy(const std::vector<std::vector<Inst*>>& cl
   LOG_INFO << "Writing clusters to python file...";
   // write the cluster to python file
   auto* config = CTSAPIInst.get_config();
-  auto path = config->get_sta_workspace() + "/file";
+  auto path = config->get_work_dir() + "/file";
   if (!std::filesystem::exists(path)) {
     std::filesystem::create_directories(path);
   }

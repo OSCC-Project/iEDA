@@ -422,7 +422,8 @@ class Sta {
   auto& get_report_tbl_details() { return _report_tbl_details; }
   auto& get_clock_trees() { return _clock_trees; }
 
-  StaSeqPathData* getSeqData(StaVertex* vertex, StaData* delay_data);
+  std::vector<StaSeqPathData*> getSeqData(StaVertex* vertex,
+                                          StaData* delay_data);
   double getWNS(const char* clock_name, AnalysisMode mode);
   double getTNS(const char* clock_name, AnalysisMode mode);
   double getLocalSkew(const char* clock_name, AnalysisMode mode,
@@ -438,6 +439,14 @@ class Sta {
                                   AnalysisMode mode, TransType trans_type);
 
   StaSeqPathData* getWorstSeqData(AnalysisMode mode, TransType trans_type);
+
+  std::vector<std::tuple<std::string, std::string, double>>
+  getStartEndSlackPairsOfTopNPaths(int top_n, AnalysisMode mode,
+                                   TransType trans_type);
+  std::vector<std::tuple<std::string, std::string, double>>
+  getStartEndSlackPairsOfTopNPercentPaths(double top_percentage,
+                                          AnalysisMode mode,
+                                          TransType trans_type);
 
   std::priority_queue<StaSeqPathData*, std::vector<StaSeqPathData*>,
                       decltype(seq_data_cmp)>

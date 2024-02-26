@@ -25,9 +25,9 @@
 #include <vector>
 
 #include "LogLevel.hpp"
+using Loc = std::experimental::source_location;
 namespace imp {
 
-using Loc = std::experimental::source_location;
 
 #define LOG_INST (imp::Logger::getInst())
 #define INFO(...) LOG_INST.info(Loc::current(), ##__VA_ARGS__)

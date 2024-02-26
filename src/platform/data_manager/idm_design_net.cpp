@@ -123,7 +123,7 @@ bool DataManager::setNetIO(string io_pin_name, string net_name)
     return false;
   }
 
-  net->set_io_pin(io_pin);
+  net->add_io_pin(io_pin);
 
   return true;
 }
@@ -199,7 +199,7 @@ vector<IdbNet*> DataManager::getIONetList()
   if (net_list_ptr != nullptr) {
     for (auto net : net_list_ptr->get_net_list()) {
       /// IO Pin Exist
-      if (net->get_io_pin() != nullptr) {
+      if (net->has_io_pins()) {
         net_list.emplace_back(net);
       }
     }

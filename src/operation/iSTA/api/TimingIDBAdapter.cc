@@ -463,7 +463,7 @@ Pin* TimingIDBAdapter::connect(Instance* inst, const char* port_name,
   for (auto dpin : dpin_list) {
     if (dpin->get_pin_name() == port_name) {
       if (dpin->is_io_pin()) {
-        dnet->set_io_pin(dpin);
+        dnet->add_io_pin(dpin);
         dpin->set_net(dnet);
       } else {
         dnet->add_instance_pin(dpin);
@@ -495,7 +495,7 @@ Port* TimingIDBAdapter::connect(Port* port, const char* port_name, Net* net) {
   IdbPin* dport = staToDb(port);
 
   if (dport->get_pin_name() == port_name) {
-    dnet->set_io_pin(dport);
+    dnet->add_io_pin(dport);
     dport->set_net(dnet);
     net->addPinPort(port);
   }
@@ -580,7 +580,7 @@ void TimingIDBAdapter::reconnectPin(Net* net, Pin* old_connect_pin,
     new_dpin->set_net(dnet);
 
     if (new_dpin->is_io_pin()) {
-      dnet->set_io_pin(new_dpin);
+      dnet->add_io_pin(new_dpin);
     } else {
       dnet->add_instance_pin(new_dpin);
     }
@@ -663,7 +663,7 @@ Net* TimingIDBAdapter::makeNet(const char* name,
       idb_pin->set_net(dnet);
     } else {
       auto* idb_pin = _idb_design->get_io_pin_list()->find_pin(sink_pin_name);
-      dnet->set_io_pin(idb_pin);
+      dnet->add_io_pin(idb_pin);
       idb_pin->set_net(dnet);
     }
   }
@@ -849,8 +849,8 @@ unsigned TimingIDBAdapter::convertDBToTimingNetlist() {
         }
       }
 
-      auto* io_pin = db_net->get_io_pin();
-      if (io_pin) {
+      auto* io_pins = db_net->get_io_pins();
+      for (auto* io_pin : io_pins->get_pin_list()) {
         std::string port_name = io_pin->get_term_name();
         if (auto* design_port = design_netlist.findPort(port_name.c_str());
             design_port) {
@@ -877,7 +877,8 @@ unsigned TimingIDBAdapter::convertDBToTimingNetlist() {
 }
 
 /**
- * @brief sta bus net do not contain \[\], need change [] to match idb net name.
+ * @brief sta bus net do not contain \[\], need change [] to match idb net
+ * name.
  *
  * @param sta_net_name
  * @return std::string

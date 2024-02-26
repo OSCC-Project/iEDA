@@ -33,7 +33,7 @@ const double& Inst::getCapOut() const
 
 void Inst::init()
 {
-  if (isBuffer()) {
+  if (isBuffer() || isNoneLib()) {
     _driver_pin = new Pin(this, _location, _name + "_driver", PinType::kDriver);
   }
   _load_pin = new Pin(this, _location, _name + "_load", PinType::kLoad);

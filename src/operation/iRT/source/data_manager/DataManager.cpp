@@ -440,7 +440,7 @@ bool DataManager::checkSkipping(idb::IdbNet* idb_net)
 
   // check the connection form io_cell PAD to io_pin
   bool has_io_pin = false;
-  if (idb_net->get_io_pin() != nullptr) {
+  if (idb_net->has_io_pins()) {
     has_io_pin = true;
   }
   bool has_io_cell = false;
@@ -482,8 +482,8 @@ void DataManager::wrapPinList(Net& net, idb::IdbNet* idb_net)
     pin_list.push_back(std::move(pin));
   }
   // io pin list
-  if (idb_net->get_io_pin() != nullptr) {
-    idb::IdbPin* io_pin = idb_net->get_io_pin();
+  auto* io_pins = idb_net->get_io_pins();
+  for (auto* io_pin : io_pins->get_pin_list()) {
     Pin pin;
     pin.set_pin_name(io_pin->get_pin_name());
     wrapPinShapeList(pin, io_pin);

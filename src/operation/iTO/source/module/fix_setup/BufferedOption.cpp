@@ -46,7 +46,7 @@ void BufferedOption::printBuffered(int level) {
 void BufferedOption::printTree(int level) {
   switch (_type) {
   case BufferedOptionType::kLoad: {
-    printf("%*s load %s (%d, %d) cap %f req %lf\n", level, "", _load_pin->get_name(),
+    printf("%*s load %s (%d, %d) cap %f req %lf\n", level, "", _load_pin->getFullName().c_str(),
            _location.get_x(), _location.get_y(), _cap, _req);
     break;
   }

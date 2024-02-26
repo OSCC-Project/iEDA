@@ -29,6 +29,11 @@ class Point {
 
   inline bool operator==(const Point &p) const { return (_x == p._x) && (_y == p._y); }
 
+  friend inline std::ostream& operator<<(std::ostream& os, const Point& pt) {
+    os << "(" << pt._x << ", " << pt._y << ")";
+    return os;
+  }
+
   int get_x() const { return _x; }
   int get_y() const { return _y; }
 

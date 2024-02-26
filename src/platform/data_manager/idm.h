@@ -86,15 +86,17 @@ class DataManager
   bool saveDef(string def_path);
   void saveVerilog(string verilog_path, std::set<std::string>&& exclude_cell_names = {});
   bool saveGDSII(string path);
-  bool saveJSON(string path,string options);
+  bool saveJSON(string path, string options);
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   /// iDB layout area operation
   void initDie(int ll_x, int ll_y, int ur_x, int ur_y);
   uint64_t dieArea();
+  double dieAreaUm();
   float dieUtilization();
   uint64_t coreArea();
+  double coreAreaUm();
   float coreUtilization();
 
   /// basic config
@@ -106,10 +108,10 @@ class DataManager
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   /// iDB design instance
-  uint64_t instanceArea(IdbInstanceType type = IdbInstanceType::kMax);
-  uint64_t distInstArea();
-  uint64_t netlistInstArea();
-  uint64_t timingInstArea();
+  double instanceArea(IdbInstanceType type = IdbInstanceType::kMax);
+  double distInstArea();
+  double netlistInstArea();
+  double timingInstArea();
   int32_t instancePinNum(string inst_name);
   IdbInstance* createInstance(string inst_name, string cell_master_name, int32_t coord_x = 0, int32_t coord_y = 0,
                               IdbOrient orient = IdbOrient::kN_R0, IdbInstanceType type = IdbInstanceType::kNetlist,

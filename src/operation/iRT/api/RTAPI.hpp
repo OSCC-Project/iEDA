@@ -54,7 +54,7 @@ class RTAPI
   void runEGR(std::map<std::string, std::any> config_map);
 
   // EVAL
-  eval::TileGrid* getCongestonMap(std::map<std::string, std::any> config_map);
+  eval::TileGrid* getCongestonMap(std::map<std::string, std::any> config_map, double& wirelength);
   std::vector<double> getWireLengthAndViaNum(std::map<std::string, std::any> config_map);
 
   // DRC

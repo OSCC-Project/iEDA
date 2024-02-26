@@ -152,6 +152,11 @@ void CongestionEval::initCongNetList()
 
 void CongestionEval::mapInst2Bin()
 {
+  // 清空bin 内的inst, 否则 每次调用会不断增加
+  for (auto& bin: _cong_grid->get_bin_list()){
+    bin->clear_inst_list();
+  }
+  
   for (auto& inst : _cong_inst_list) {
     if (inst->isNormalInst()) {
       std::pair<int, int> pair_x = _cong_grid->getMinMaxX(inst);

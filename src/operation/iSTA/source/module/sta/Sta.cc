@@ -30,6 +30,7 @@
 #include <memory>
 #include <mutex>
 #include <ranges>
+#include <tuple>
 #include <utility>
 
 #include "StaAnalyze.hh"
@@ -167,7 +168,7 @@ unsigned Sta::readDesign(const char *verilog_file) {
   return 1;
 }
 
-unsigned Sta::readDesignWithRustParser(const char *file_name) {}
+unsigned Sta::readDesignWithRustParser(const char *file_name) { return 1; }
 
 /**
  * @brief read the sdc file.
@@ -1138,6 +1139,14 @@ void Sta::initSdcCmd() {
   LOG_FATAL_IF(!all_clocks);
   TclCmds::addTclCmd(std::move(all_clocks));
 
+  auto all_inputs = std::make_unique<CmdAllInputs>("all_inputs");
+  LOG_FATAL_IF(!all_inputs);
+  TclCmds::addTclCmd(std::move(all_inputs));
+
+  auto all_outputs = std::make_unique<CmdAllOutputs>("all_outputs");
+  LOG_FATAL_IF(!all_outputs);
+  TclCmds::addTclCmd(std::move(all_outputs));
+
   auto set_propagated_clock =
       std::make_unique<CmdSetPropagatedClock>("set_propagated_clock");
   LOG_FATAL_IF(!set_propagated_clock);
@@ -1770,17 +1779,22 @@ unsigned Sta::reportFromThroughTo(const char *rpt_file_name,
  * @param delay_data
  * @return StaSeqPathData*
  */
-StaSeqPathData *Sta::getSeqData(StaVertex *vertex, StaData *delay_data) {
+std::vector<StaSeqPathData *> Sta::getSeqData(StaVertex *vertex,
+                                              StaData *delay_data) {
+  std::vector<StaSeqPathData *> seq_data_vec;
   for (const auto &[clk, seq_path_group] : _clock_groups) {
     StaPathEnd *path_end = seq_path_group->findPathEndData(vertex);
     if (path_end) {
       StaPathData *path_data =
           path_end->findPathData(dynamic_cast<StaPathDelayData *>(delay_data));
-      return dynamic_cast<StaSeqPathData *>(path_data);
+      if (path_data) {
+        auto *seq_data = dynamic_cast<StaSeqPathData *>(path_data);
+        seq_data_vec.emplace_back(seq_data);
+      }
     }
   }
 
-  return nullptr;
+  return seq_data_vec;
 }
 
 /**
@@ -1817,7 +1831,7 @@ double Sta::getWNS(const char *clock_name, AnalysisMode mode) {
       break;
     }
   }
-  return WNS < 0 ? WNS : 0;
+  return WNS;
 }
 
 /**
@@ -2117,6 +2131,113 @@ StaSeqPathData *Sta::getWorstSeqData(std::optional<StaVertex *> vertex,
  */
 StaSeqPathData *Sta::getWorstSeqData(AnalysisMode mode, TransType trans_type) {
   return getWorstSeqData(std::nullopt, mode, trans_type);
+}
+
+/**
+ * @brief obtain the start_end_slack tuples of the top n voilated timing
+ * path(slack_n<slack_(n-1)<...<slack_1).
+ *
+ * @param top_n
+ * @param mode
+ * @param trans_type
+ * @return std::vector<std::tuple<std::string, std::string, double>>
+ */
+std::vector<std::tuple<std::string, std::string, double>>
+Sta::getStartEndSlackPairsOfTopNPaths(int top_n, AnalysisMode mode,
+                                      TransType trans_type) {
+  auto cmp = [](StaPathData *left, StaPathData *right) -> bool {
+    int left_slack = left->getSlack();
+    int right_slack = right->getSlack();
+    return left_slack > right_slack;
+  };
+
+  std::priority_queue<StaPathData *, std::vector<StaPathData *>, decltype(cmp)>
+      seq_data_queue(cmp);
+
+  for (const auto &[clk, seq_path_group] : _clock_groups) {
+    StaPathEnd *path_end;
+    StaPathData *path_data;
+    FOREACH_PATH_GROUP_END(seq_path_group.get(), path_end) {
+      FOREACH_PATH_END_DATA(path_end, mode, path_data) {
+        seq_data_queue.push(path_data);
+      }
+    }
+  }
+
+  StaSeqPathData *seq_path_data = nullptr;
+  std::vector<std::tuple<std::string, std::string, double>> start_end_slacks;
+  while (!seq_data_queue.empty() && top_n > 0) {
+    seq_path_data = dynamic_cast<StaSeqPathData *>(seq_data_queue.top());
+
+    if (seq_path_data->get_delay_data()->get_trans_type() == trans_type) {
+      auto start_pin_name =
+          seq_path_data->getPathDelayData().top()->get_own_vertex()->getName();
+      auto end_pin_name =
+          seq_path_data->get_delay_data()->get_own_vertex()->getName();
+      double slack = seq_path_data->getSlackNs();
+      start_end_slacks.push_back(
+          std::make_tuple(start_pin_name, end_pin_name, slack));
+
+      --top_n;
+    }
+    seq_data_queue.pop();
+  }
+
+  return start_end_slacks;
+}
+
+/**
+ * @brief obtain the start_end_slack tuples of the top percentage voilated
+ * timing path(slack_n<slack_(n-1)<...<slack_1).
+ *
+ * @param top_percentage
+ * @param mode
+ * @param trans_type
+ * @return std::vector<std::tuple<std::string, std::string, double>>
+ */
+std::vector<std::tuple<std::string, std::string, double>>
+Sta::getStartEndSlackPairsOfTopNPercentPaths(double top_percentage,
+                                             AnalysisMode mode,
+                                             TransType trans_type) {
+  auto cmp = [](StaPathData *left, StaPathData *right) -> bool {
+    int left_slack = left->getSlack();
+    int right_slack = right->getSlack();
+    return left_slack > right_slack;
+  };
+
+  std::priority_queue<StaPathData *, std::vector<StaPathData *>, decltype(cmp)>
+      seq_data_queue(cmp);
+
+  for (const auto &[clk, seq_path_group] : _clock_groups) {
+    StaPathEnd *path_end;
+    StaPathData *path_data;
+    FOREACH_PATH_GROUP_END(seq_path_group.get(), path_end) {
+      FOREACH_PATH_END_DATA(path_end, mode, path_data) {
+        seq_data_queue.push(path_data);
+      }
+    }
+  }
+
+  StaSeqPathData *seq_path_data = nullptr;
+  std::vector<std::tuple<std::string, std::string, double>> start_end_slacks;
+  int top_n = seq_data_queue.size() * top_percentage;
+  while (!seq_data_queue.empty() && top_n > 0) {
+    seq_path_data = dynamic_cast<StaSeqPathData *>(seq_data_queue.top());
+
+    if (seq_path_data->get_delay_data()->get_trans_type() == trans_type) {
+      auto start_pin_name =
+          seq_path_data->getPathDelayData().top()->get_own_vertex()->getName();
+      auto end_pin_name =
+          seq_path_data->get_delay_data()->get_own_vertex()->getName();
+      double slack = seq_path_data->getSlackNs();
+      start_end_slacks.push_back(
+          std::make_tuple(start_pin_name, end_pin_name, slack));
+      --top_n;
+    }
+    seq_data_queue.pop();
+  }
+
+  return start_end_slacks;
 }
 
 /**

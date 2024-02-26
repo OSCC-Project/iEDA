@@ -105,6 +105,8 @@ idb::IdbBuilder *ToApi::initIDB() {
 }
 
 ista::TimingEngine *ToApi::initISTA(idb::IdbBuilder *idb) {
+  ista::TimingEngine::destroyTimingEngine();
+
   auto timing_engine = ista::TimingEngine::getOrCreateTimingEngine();
 
   ToConfig            *to_config = _ito->get_config();

@@ -145,7 +145,7 @@ void FixFanout::connect(IdbInstance *dinst, IdbPin *dpin, IdbNet *dnet) {
   for (auto dpin : dpin_list) {
     if (dpin->get_pin_name() == port_name) {
       if (dpin->is_io_pin()) {
-        dnet->set_io_pin(dpin);
+        dnet->add_io_pin(dpin);
         dpin->set_net(dnet);
       } else {
         dnet->add_instance_pin(dpin);
