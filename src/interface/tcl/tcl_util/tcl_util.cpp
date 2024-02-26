@@ -113,4 +113,51 @@ std::any TclUtil::getValue(TclCmd* tcl_ptr, std::string config_name, ValueType t
   return config_value;
 }
 
+bool TclUtil::alterJsonConfig(std::string json_path, std::map<std::string, std::any> config_map)
+{
+  ordered_json config;
+  if(json_path.empty()){
+    LOG_ERROR << "Failed: There is no json_path to be found.";
+    return 0;
+  }
+
+  // 从json_path先读入json
+  std::ifstream file(json_path);
+  if (!file.is_open()) {
+    LOG_ERROR << "Failed to open JSON file for reading.";
+    return 0;
+  }
+  file >> config;
+  file.close();
+
+  modifyJson(config, config_map);
+
+  // for (auto [key, value] : config_map) {
+  //   // 把参数列表中的第一个字符'-'删除
+  //   std::string sub_key = key.substr(1, key.size() - 1);
+  //   if (value.type() == typeid(std::string)) {
+  //     config[sub_key] = std::any_cast<std::string>(value);
+  //   } else if (value.type() == typeid(double)) {
+  //     config[sub_key] = std::any_cast<double>(value);
+  //   } else if (value.type() == typeid(int)) {
+  //     config[sub_key] = std::any_cast<int>(value);
+  //   } else if (value.type() == typeid(std::vector<int>)) {
+  //     config[sub_key] = std::any_cast<std::vector<int>>(value);
+  //   } else if (value.type() == typeid(std::vector<std::string>)) {
+  //     config[sub_key] = std::any_cast<std::vector<std::string>>(value);
+  //   }
+  // }
+
+  std::ofstream ofs(json_path);
+  if (!ofs.is_open()) {
+    LOG_ERROR << "Failed to open JSON file for writing.";
+    return 0;
+  }
+  ofs << std::setw(4) << config;
+  ofs.close();
+
+  return 1;
+  
+}
+
 }  // namespace tcl

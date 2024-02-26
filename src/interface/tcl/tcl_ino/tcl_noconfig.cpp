@@ -14,28 +14,37 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-#pragma once
-/**
- * @File Name: tcl_register.h
- * @Brief :
- * @Author : Yell (12112088@qq.com)
- * @Version : 1.0
- * @Creat Date : 2022-04-15
- *
- */
-#include "ScriptEngine.hh"
-#include "UserShell.hh"
-#include "tcl_ino.h"
-#include "tcl_noconfig.h"
+#include <any>
+#include <iomanip>
 
-using namespace ieda;
+#include "tcl_noconfig.h"
+#include "tcl_util.h"
+
 namespace tcl {
 
-int registerCmdNO()
+CmdNOConfig::CmdNOConfig(const char* cmd_name) : TclCmd(cmd_name)
 {
-  registerTclCmd(CmdNORunFixFanout, "run_no_fixfanout");
-  registerTclCmd(CmdNOConfig, "no_config");
-  return EXIT_SUCCESS;
+    // config_json_path string      required
+    _config_list.push_back(std::make_pair("-config_json_path", ValueType::kString));
+    // max_fanout int 
+    _config_list.push_back(std::make_pair("-max_fanout", ValueType::kInt));
+    // insert_buffer string
+    _config_list.push_back(std::make_pair("-insert_buffer", ValueType::kString));
+
+    TclUtil::addOption(this, _config_list);
+}
+
+unsigned CmdNOConfig::exec()
+{
+    std::map<std::string, std::any> config_map = TclUtil::getConfigMap(this, _config_list);
+    
+    if (config_map.empty()) {
+        return 0;
+    }
+    std::string config_json_path = std::any_cast<std::string>(config_map["-config_json_path"]);
+    config_map.erase("-config_json_path");
+    TclUtil::alterJsonConfig(config_json_path, config_map);
+    return 1;
 }
 
 }  // namespace tcl
