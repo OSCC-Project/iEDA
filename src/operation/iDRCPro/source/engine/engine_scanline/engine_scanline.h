@@ -90,7 +90,7 @@ struct ScanlineStatus
 class DrcEngineScanline
 {
  public:
-  DrcEngineScanline(idb::IdbLayer* layer, DrcEngineManager* engine_manager, DrcConditionManager* condition_manager)
+  DrcEngineScanline(std::string layer, DrcEngineManager* engine_manager, DrcConditionManager* condition_manager)
       : _engine_manager(engine_manager), _condition_manager(condition_manager)
   {
     _preprocess = new ScanlinePreprocess(layer);

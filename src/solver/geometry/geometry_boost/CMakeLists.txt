@@ -1,8 +1,5 @@
 add_library(solver_geometry_boost 
     geometry_boost.cpp
-    geometry_boost_area.cpp
-    geometry_boost_connectivity.cpp
-    geometry_boost_edge.cpp
 )
 
 target_link_libraries(solver_geometry_boost

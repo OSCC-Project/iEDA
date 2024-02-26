@@ -33,27 +33,31 @@ namespace idrc {
 class DrcEngineLayout
 {
  public:
-  DrcEngineLayout(idb::IdbLayer* id) { _id = id; }
+  DrcEngineLayout(std::string layer) : _layer(layer) { _layout = new DrcEngineSubLayout(0); }
   ~DrcEngineLayout();
 
   std::map<int, DrcEngineSubLayout*>& get_sub_layouts() { return _sub_layouts; }
   DrcEngineSubLayout* get_sub_layout(int net_id);
   ieda_solver::EngineGeometry* get_net_engine(int net_id);
+  DrcEngineSubLayout* get_layout() { return _layout; }
 
   uint64_t pointCount();
 
   bool addRect(int llx, int lly, int urx, int ury, int net_id);
 
+  void combineLayout();
+
  private:
   /**
-   * _id : layer id
+   * _layer : layer name
    */
-  idb::IdbLayer* _id = nullptr;
+  std::string _layer = nullptr;
   /**
    * int : net id, if equal to -1, sub layout is a kind of blockage
    * DrcEngineSubLayout* : sub layout ptr describe the net shapes
    */
   std::map<int, DrcEngineSubLayout*> _sub_layouts;
+  DrcEngineSubLayout* _layout;
 };
 
 }  // namespace idrc

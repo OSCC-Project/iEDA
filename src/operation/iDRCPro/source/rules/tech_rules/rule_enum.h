@@ -16,29 +16,27 @@
 // ***************************************************************************************
 #pragma once
 
-#include <list>
-#include <map>
-#include <string>
-#include <vector>
-
-#include "idrc_util.h"
-#include "idrc_violation_manager.h"
-#include "tech_rules.h"
-
-namespace idb {
-class IdbLayer;
-}
-
 namespace idrc {
 
-class DrcConditionManager
+enum class RuleType
 {
- public:
-  DrcConditionManager(DrcViolationManager* violation_manager) : _violation_manager(violation_manager) {}
-  ~DrcConditionManager() {}
-
- private:
-  DrcViolationManager* _violation_manager;
+  kNone,
+  kArea,
+  kAreaMin,
+  kAreaLef58,
+  kAreaEnclosed,
+  kConnectivity,
+  kSpacing,
+  kSpacingRange,
+  kWidth,
+  kWidthPRLTable,
+  kWidthJogToJog,
+  kEdge,
+  kEdgeMinStep,
+  kEdgeMinStepLef58,
+  kEdgeNotch,
+  kEdgeEOL,
+  kMax
 };
 
 }  // namespace idrc

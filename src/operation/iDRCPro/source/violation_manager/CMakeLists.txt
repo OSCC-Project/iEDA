@@ -6,6 +6,7 @@ add_library(idrc_pro_violation
 target_link_libraries(idrc_pro_violation
     PUBLIC
     solver_geometry_boost
+    idm
 )
 
 target_include_directories(idrc_pro_violation

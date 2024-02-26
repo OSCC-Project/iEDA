@@ -1,23 +1,17 @@
-add_subdirectory(condition_detail_jog)
-
 add_library(idrc_condition_manager
   condition_manager.cpp
 )
 
 target_link_libraries(idrc_condition_manager
     PUBLIC
-    idm
-    idb
-    idrc_engine_check
-    idrc_pro_violation
-    idrc_condition_detail_jog
     idrc_pro_util
+    idrc_pro_violation
+    idrc_pro_tech_rules
 )
 
 target_include_directories(idrc_condition_manager
     PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMAKE_CURRENT_SOURCE_DIR}/condition_detail_jog
 )
 
 if(DEBUG_IDRC_CONDITION)

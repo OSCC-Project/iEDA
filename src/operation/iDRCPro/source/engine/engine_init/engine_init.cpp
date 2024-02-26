@@ -34,7 +34,7 @@ namespace idrc {
  */
 void DrcEngineInit::initDataFromRect(idb::IdbRect* rect, LayoutType type, idb::IdbLayer* layer, int net_id)
 {
-  _engine_manager->addRect(rect->get_low_x(), rect->get_low_y(), rect->get_high_x(), rect->get_high_y(), layer, net_id, type);
+  _engine_manager->addRect(rect->get_low_x(), rect->get_low_y(), rect->get_high_x(), rect->get_high_y(), layer->get_name(), net_id, type);
 }
 
 /**
@@ -83,7 +83,7 @@ void DrcEngineInit::initDataFromPoints(idb::IdbCoordinate<int>* point_1, idb::Id
     ury = std::max(point_1->get_y(), point_2->get_y()) + extend_size;
   }
 
-  _engine_manager->addRect(llx, lly, urx, ury, layer, net_id, LayoutType::kRouting);
+  _engine_manager->addRect(llx, lly, urx, ury, layer->get_name(), net_id, LayoutType::kRouting);
 }
 
 /**

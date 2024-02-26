@@ -18,7 +18,6 @@
 
 #include <map>
 
-#include "engine_check.h"
 #include "engine_layout.h"
 #include "engine_scanline.h"
 #include "idrc_data.h"
@@ -40,21 +39,20 @@ class DrcEngineManager
   ~DrcEngineManager();
 
   /// data manager
-  std::map<idb::IdbLayer*, DrcEngineLayout*>& get_engine_layouts(LayoutType type = LayoutType::kRouting) { return _layouts[type]; }
-  DrcEngineLayout* get_layout(idb::IdbLayer* layer, LayoutType type = LayoutType::kRouting);
+  std::map<std::string, DrcEngineLayout*>& get_engine_layouts(LayoutType type = LayoutType::kRouting) { return _layouts[type]; }
+  DrcEngineLayout* get_layout(std::string layer, LayoutType type = LayoutType::kRouting);
 
   /// scanline manager
-  std::map<LayoutType, std::map<idb::IdbLayer*, DrcEngineScanline*>>& get_scanline_matrix() { return _scanline_matrix; }
-  std::map<idb::IdbLayer*, DrcEngineScanline*>& get_engine_scanlines(LayoutType type = LayoutType::kRouting)
-  {
-    return _scanline_matrix[type];
-  }
-  DrcEngineScanline* get_engine_scanline(idb::IdbLayer* layer, LayoutType type = LayoutType::kRouting);
+  std::map<LayoutType, std::map<std::string, DrcEngineScanline*>>& get_scanline_matrix() { return _scanline_matrix; }
+  std::map<std::string, DrcEngineScanline*>& get_engine_scanlines(LayoutType type = LayoutType::kRouting) { return _scanline_matrix[type]; }
+  DrcEngineScanline* get_engine_scanline(std::string layer, LayoutType type = LayoutType::kRouting);
 
-  DrcEngineCheck* get_engine_check() { return _engine_check; }
+  // DrcEngineCheck* get_engine_check() { return _engine_check; }
 
   /// operator
-  bool addRect(int llx, int lly, int urx, int ury, idb::IdbLayer* layer, int net_id = 0, LayoutType type = LayoutType::kRouting);
+  bool addRect(int llx, int lly, int urx, int ury, std::string layer, int net_id = 0, LayoutType type = LayoutType::kRouting);
+
+  void combineLayouts();
 
   void filterData();
 
@@ -66,15 +64,15 @@ class DrcEngineManager
    *  _layouts : describe all shapes for all nets in all layers
    * @param
    *  LayoutType : cut | routing
-   *  std::map<idb::IdbLayer*, DrcEngineLayout*> - idb::IdbLayer* : layer
-   *  std::map<idb::IdbLayer*, DrcEngineLayout*> - DrcEngineLayout : describe all shapes for all nets in all layers
+   *  std::map<std::string, DrcEngineLayout*> - std::string : layer
+   *  std::map<std::string, DrcEngineLayout*> - DrcEngineLayout : describe all shapes for all nets in all layers
    */
-  std::map<LayoutType, std::map<idb::IdbLayer*, DrcEngineLayout*>> _layouts;
+  std::map<LayoutType, std::map<std::string, DrcEngineLayout*>> _layouts;
   /**
    *  _scanline : scanline matrix
    */
-  std::map<LayoutType, std::map<idb::IdbLayer*, DrcEngineScanline*>> _scanline_matrix;
-  DrcEngineCheck* _engine_check = nullptr;
+  std::map<LayoutType, std::map<std::string, DrcEngineScanline*>> _scanline_matrix;
+  // DrcEngineCheck* _engine_check = nullptr;
   void dataPreprocess();
 };
 

@@ -14,31 +14,32 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-#pragma once
 
-#include <list>
-#include <map>
-#include <string>
-#include <vector>
-
-#include "idrc_util.h"
-#include "idrc_violation_manager.h"
-#include "tech_rules.h"
-
-namespace idb {
-class IdbLayer;
-}
+#include "rule_condition_width.h"
 
 namespace idrc {
-
-class DrcConditionManager
+/// @brief  check width & prl rules contains condition
+/// @param width
+/// @param prl_length
+/// @return true : match condition == has violation; false == no violation
+// bool ConditionRuleSpacingPRL::isMatchCondition(int width, int prl_length)
+// {
+//   return width > _width && prl_length > _prl_length;
+// }
+/// @brief check jot to jog rules contains condition
+/// @param value
+/// @return
+std::vector<idb::routinglayer::Lef58SpacingTableJogToJog::Width*> ConditionRuleJogToJog::findWidthRule(int wire_max_width)
 {
- public:
-  DrcConditionManager(DrcViolationManager* violation_manager) : _violation_manager(violation_manager) {}
-  ~DrcConditionManager() {}
+  std::vector<idb::routinglayer::Lef58SpacingTableJogToJog::Width*> width_list;
+  for (auto& width_class : _width_map) {
+    /// find the 1st larger witdh in the list
+    if (wire_max_width >= width_class.first) {
+      width_list.emplace_back(width_class.second);
+    }
+  }
 
- private:
-  DrcViolationManager* _violation_manager;
-};
+  return width_list;
+}
 
 }  // namespace idrc

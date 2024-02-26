@@ -19,6 +19,10 @@
 
 #include <vector>
 
+#include "geometry_polygon.h"
+#include "geometry_polygon_set.h"
+#include "geometry_rectangle.h"
+
 namespace ieda_solver {
 
 class EngineGeometry
@@ -37,12 +41,17 @@ class EngineGeometry
    * std::vector<std::pair<int, int>> : define point list
    * std::vector<std::vector<std::pair<int, int>>> : define polygon list
    */
-  virtual std::vector<std::vector<std::pair<int, int>>> get_polygons_points() = 0;
+  // virtual std::vector<std::vector<std::pair<int, int>>> get_polygons_points() = 0;
 
-  virtual bool checkMinArea(int64_t min_area) = 0;
-  virtual bool checkOverlap(EngineGeometry* geometry_cmp) = 0;
+  virtual void addGeometry(EngineGeometry* geometry) = 0;
 
- private:
+  virtual std::vector<GeometryPolygon>& getPolygons() = 0;
+  virtual std::vector<GeometryRect>& getOverlap() = 0;
+
+ protected:
+  GeometryPolygonSet _polyset;
+  std::vector<GeometryPolygon> _polygon_list;
+  std::vector<GeometryRect> _overlap_list;
 };
 
 }  // namespace ieda_solver

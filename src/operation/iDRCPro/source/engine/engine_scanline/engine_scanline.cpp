@@ -61,14 +61,14 @@ void DrcEngineScanline::scan(ScanlineTravelDirection direction)
 // TODO: deal with overlap, one direction is enough
 ScanlinePoint* DrcEngineScanline::recordOverlap(ScanlinePoint* point, ScanlinePoint* current_activate_point)
 {
-  auto get_polygon = [&](ScanlinePoint* point) -> ieda_solver::GtlPolygon& {
-    auto* geometry_engine
-        = _engine_manager->get_layout(_preprocess->get_layer())->get_sub_layout(point->get_point()->get_net_id())->get_engine();
-    auto* boost_engine = static_cast<ieda_solver::GeometryBoost*>(geometry_engine);
-    auto& polygons = boost_engine->get_polygon_list();
-    auto& polygon = polygons[point->get_point()->get_net_polygon_id()];
-    return polygon;
-  };
+  // auto get_polygon = [&](ScanlinePoint* point) -> ieda_solver::GtlPolygon& {
+  //   auto* geometry_engine
+  //       = _engine_manager->get_layout(_preprocess->get_layer())->get_sub_layout(point->get_point()->get_net_id())->get_engine();
+  //   auto* boost_engine = static_cast<ieda_solver::GeometryBoost*>(geometry_engine);
+  //   auto& polygons = boost_engine->get_polygon_list();
+  //   auto& polygon = polygons[point->get_point()->get_net_polygon_id()];
+  //   return polygon;
+  // };
 
   if (!current_activate_point && !point->get_is_forward()) {
     current_activate_point = point;

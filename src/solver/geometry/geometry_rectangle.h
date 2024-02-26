@@ -16,29 +16,10 @@
 // ***************************************************************************************
 #pragma once
 
-#include <list>
-#include <map>
-#include <string>
-#include <vector>
+#include "boost_definition.h"
 
-#include "idrc_util.h"
-#include "idrc_violation_manager.h"
-#include "tech_rules.h"
+namespace ieda_solver {
 
-namespace idb {
-class IdbLayer;
-}
+typedef GtlRect GeometryRect;
 
-namespace idrc {
-
-class DrcConditionManager
-{
- public:
-  DrcConditionManager(DrcViolationManager* violation_manager) : _violation_manager(violation_manager) {}
-  ~DrcConditionManager() {}
-
- private:
-  DrcViolationManager* _violation_manager;
-};
-
-}  // namespace idrc
+}  // namespace ieda_solver

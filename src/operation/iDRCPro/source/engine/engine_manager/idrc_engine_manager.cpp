@@ -21,17 +21,18 @@
 #include "geometry_boost.h"
 #include "idm.h"
 #include "idrc_engine_manager.h"
+#include "omp.h"
 
 namespace idrc {
 
 DrcEngineManager::DrcEngineManager(DrcDataManager* data_manager, DrcConditionManager* condition_manager)
     : _data_manager(data_manager), _condition_manager(condition_manager)
 {
-  _layouts = {{LayoutType::kRouting, std::map<idb::IdbLayer*, DrcEngineLayout*>{}},
-              {LayoutType::kCut, std::map<idb::IdbLayer*, DrcEngineLayout*>{}}};
-  _scanline_matrix = {{LayoutType::kRouting, std::map<idb::IdbLayer*, DrcEngineScanline*>{}},
-                      {LayoutType::kCut, std::map<idb::IdbLayer*, DrcEngineScanline*>{}}};
-  _engine_check = new DrcEngineCheck();
+  _layouts
+      = {{LayoutType::kRouting, std::map<std::string, DrcEngineLayout*>{}}, {LayoutType::kCut, std::map<std::string, DrcEngineLayout*>{}}};
+  _scanline_matrix = {{LayoutType::kRouting, std::map<std::string, DrcEngineScanline*>{}},
+                      {LayoutType::kCut, std::map<std::string, DrcEngineScanline*>{}}};
+  // _engine_check = new DrcEngineCheck();
 }
 
 DrcEngineManager::~DrcEngineManager()
@@ -61,7 +62,7 @@ DrcEngineManager::~DrcEngineManager()
 }
 
 // get or create layout engine for each layer
-DrcEngineLayout* DrcEngineManager::get_layout(idb::IdbLayer* layer, LayoutType type)
+DrcEngineLayout* DrcEngineManager::get_layout(std::string layer, LayoutType type)
 {
   auto& layouts = get_engine_layouts(type);
 
@@ -74,7 +75,7 @@ DrcEngineLayout* DrcEngineManager::get_layout(idb::IdbLayer* layer, LayoutType t
   return engine_layout;
 }
 // add rect to engine
-bool DrcEngineManager::addRect(int llx, int lly, int urx, int ury, idb::IdbLayer* layer, int net_id, LayoutType type)
+bool DrcEngineManager::addRect(int llx, int lly, int urx, int ury, std::string layer, int net_id, LayoutType type)
 {
   /// get layout by type & layer id
   auto engine_layout = get_layout(layer, type);
@@ -85,71 +86,101 @@ bool DrcEngineManager::addRect(int llx, int lly, int urx, int ury, idb::IdbLayer
   return engine_layout->addRect(llx, lly, urx, ury, net_id);
 }
 
+void DrcEngineManager::combineLayouts()
+{
+  for (auto& [layer, layout] : get_engine_layouts()) {
+    layout->combineLayout();
+  }
+}
+
 void DrcEngineManager::dataPreprocess()
 {
-#ifdef DEBUG_IDRC_ENGINE
-  ieda::Stats stats;
-  std::cout << "idrc : begin init scanline database" << std::endl;
-#endif
-  /// init scanline engine for routing layer
-  auto& layouts = get_engine_layouts(LayoutType::kRouting);
+  combineLayouts();
 
-  for (auto& [layer, engine_layout] : layouts) {
-    /// scanline engine for one layer
-    auto* scanline_engine = get_engine_scanline(layer, LayoutType::kRouting);
-    auto* scanline_preprocess = scanline_engine->get_preprocess();
-
-    // reserve capacity for basic points
-    uint64_t point_number = engine_layout->pointCount();
-    scanline_preprocess->reserveSpace(point_number);
-
-    // create scanline points
-    for (auto [net_id, sub_layout] : engine_layout->get_sub_layouts()) {
-      /// build engine data
-      auto* boost_engine = static_cast<ieda_solver::GeometryBoost*>(sub_layout->get_engine());
-      auto boost_pt_list_pair = boost_engine->get_boost_polygons_points();
-
-      /// add data to scanline engine
-      scanline_preprocess->addData(boost_pt_list_pair.second, net_id);  /// boost_pt_list_pair : second value is polygon points
-    }
-
-    /// sort point list in scanline data manager
-    scanline_preprocess->sortEndpoints();
-
-    // std::cout << "idrc : layer id = " << layer->get_id() << " polygon points total number = " << point_number << std::endl;
-  }
-
-#ifdef DEBUG_IDRC_ENGINE
-  std::cout << "idrc : end init scanline database, "
-            << " runtime = " << stats.elapsedRunTime() << " memory = " << stats.memoryDelta() << std::endl;
-#endif
+  // todo max rectangles
 }
 
 void DrcEngineManager::filterData()
 {
   dataPreprocess();
 
-#ifdef DEBUG_IDRC_ENGINE
-  ieda::Stats stats;
-
-  std::cout << "idrc : begin scanline" << std::endl;
-#endif
-  /// run scanline method for all routing layers
-  auto& layouts = get_engine_layouts(LayoutType::kRouting);
-  for (auto& [layer, engine_layout] : layouts) {
-    /// scanline engine for each layer
-    auto* scanline_engine = get_engine_scanline(layer, LayoutType::kRouting);
-    scanline_engine->doScanline();
+  // overlap
+  for (auto& [layer, layout] : get_engine_layouts()) {
+    auto& overlap = layout->get_layout()->get_engine()->getOverlap();
+    if (overlap.size() > 3) {
+      auto& polygons = layout->get_layout()->get_engine()->getPolygons();
+      int a = 0;
+    }
   }
 
-#ifdef DEBUG_IDRC_ENGINE
-  std::cout << "idrc : end scanline, "
-            << " runtime = " << stats.elapsedRunTime() << " memory = " << stats.memoryDelta() << std::endl;
-#endif
+  // todo
 }
 
+// void DrcEngineManager::dataPreprocess()
+// {
+// #ifdef DEBUG_IDRC_ENGINE
+//   ieda::Stats stats;
+//   std::cout << "idrc : begin init scanline database" << std::endl;
+// #endif
+//   /// init scanline engine for routing layer
+//   auto& layouts = get_engine_layouts(LayoutType::kRouting);
+
+//   for (auto& [layer, engine_layout] : layouts) {
+//     /// scanline engine for one layer
+//     auto* scanline_engine = get_engine_scanline(layer, LayoutType::kRouting);
+//     auto* scanline_preprocess = scanline_engine->get_preprocess();
+
+//     // reserve capacity for basic points
+//     uint64_t point_number = engine_layout->pointCount();
+//     scanline_preprocess->reserveSpace(point_number);
+
+//     // create scanline points
+//     for (auto [net_id, sub_layout] : engine_layout->get_sub_layouts()) {
+//       /// build engine data
+//       auto* boost_engine = static_cast<ieda_solver::GeometryBoost*>(sub_layout->get_engine());
+//       auto boost_pt_list_pair = boost_engine->get_boost_polygons_points();
+
+//       /// add data to scanline engine
+//       scanline_preprocess->addData(boost_pt_list_pair.second, net_id);  /// boost_pt_list_pair : second value is polygon points
+//     }
+
+//     /// sort point list in scanline data manager
+//     scanline_preprocess->sortEndpoints();
+
+//     // std::cout << "idrc : layer id = " << layer->get_id() << " polygon points total number = " << point_number << std::endl;
+//   }
+
+// #ifdef DEBUG_IDRC_ENGINE
+//   std::cout << "idrc : end init scanline database, "
+//             << " runtime = " << stats.elapsedRunTime() << " memory = " << stats.memoryDelta() << std::endl;
+// #endif
+// }
+
+// void DrcEngineManager::filterData()
+// {
+//   dataPreprocess();
+
+// #ifdef DEBUG_IDRC_ENGINE
+//   ieda::Stats stats;
+
+//   std::cout << "idrc : begin scanline" << std::endl;
+// #endif
+//   /// run scanline method for all routing layers
+//   auto& layouts = get_engine_layouts(LayoutType::kRouting);
+//   for (auto& [layer, engine_layout] : layouts) {
+//     /// scanline engine for each layer
+//     auto* scanline_engine = get_engine_scanline(layer, LayoutType::kRouting);
+//     scanline_engine->doScanline();
+//   }
+
+// #ifdef DEBUG_IDRC_ENGINE
+//   std::cout << "idrc : end scanline, "
+//             << " runtime = " << stats.elapsedRunTime() << " memory = " << stats.memoryDelta() << std::endl;
+// #endif
+// }
+
 // get or create scanline engine for each layer
-DrcEngineScanline* DrcEngineManager::get_engine_scanline(idb::IdbLayer* layer, LayoutType type)
+DrcEngineScanline* DrcEngineManager::get_engine_scanline(std::string layer, LayoutType type)
 {
   auto& scanline_engines = get_engine_scanlines(type);
 

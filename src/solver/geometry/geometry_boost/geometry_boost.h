@@ -20,6 +20,9 @@
 #include <vector>
 
 #include "../engine_geometry.h"
+#include "../geometry_polygon.h"
+#include "../geometry_polygon_set.h"
+#include "../geometry_rectangle.h"
 #include "boost_definition.h"
 
 namespace ieda_solver {
@@ -36,30 +39,17 @@ class GeometryBoost : public EngineGeometry
   GeometryBoost();
   ~GeometryBoost();
 
-  GtlPolygon90Set& get_polyset() { return _polyset; }
-  std::vector<GtlPolygon>& get_polygon_list();
+  GeometryPolygonSet& get_polyset() { return _polyset; }
   void addRect(int llx, int lly, int urx, int ury) override;
-  std::pair<uint64_t, std::vector<std::vector<GtlPoint>>> get_boost_polygons_points();
-  std::vector<std::vector<std::pair<int, int>>> get_polygons_points() override;
+  // std::pair<uint64_t, std::vector<std::vector<GtlPoint>>> get_boost_polygons_points();
+  // std::vector<std::vector<std::pair<int, int>>> get_polygons_points() override;
 
-  int area(GtlPolygon polygon) { return gtl::area(polygon); }
-  std::vector<int> envelope(GtlPolygon polygon)
-  {
-    GtlRect rect;
-    gtl::extents(rect, polygon);
-    return {gtl::xl(rect), gtl::yl(rect), gtl::xh(rect), gtl::yh(rect)};
-  }
+  void addGeometry(EngineGeometry* geometry) override;
 
-  bool checkMinArea(int64_t min_area) override;
-
-  bool checkOverlap(EngineGeometry* geometry_cmp) override;
+  std::vector<GeometryPolygon>& getPolygons() override;
+  std::vector<GeometryRect>& getOverlap() override;
 
  private:
-  GtlPolygon90Set _polyset;                             /// polygon set
-  std::vector<GtlPolygon> _polygon_list;                /// polygon list
-  std::vector<PolygonProperty> _polygon_property_list;  /// polygon property list
-
-  std::vector<GtlPolygon> getIntersects(GeometryBoost* geometry_cmp);
 };
 
 class PolygonProperty

@@ -14,31 +14,13 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-#pragma once
 
-#include <list>
-#include <map>
-#include <string>
-#include <vector>
+#include "rule_condition_spacing.h"
 
-#include "idrc_util.h"
-#include "idrc_violation_manager.h"
-#include "tech_rules.h"
+#include <algorithm>
 
-namespace idb {
-class IdbLayer;
-}
+#include "rule_basic.h"
 
 namespace idrc {
-
-class DrcConditionManager
-{
- public:
-  DrcConditionManager(DrcViolationManager* violation_manager) : _violation_manager(violation_manager) {}
-  ~DrcConditionManager() {}
-
- private:
-  DrcViolationManager* _violation_manager;
-};
 
 }  // namespace idrc

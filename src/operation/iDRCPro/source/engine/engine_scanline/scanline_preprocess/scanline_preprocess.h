@@ -37,10 +37,10 @@ namespace idrc {
 class ScanlinePreprocess
 {
  public:
-  ScanlinePreprocess(idb::IdbLayer* layer) : _layer(layer) {}
+  ScanlinePreprocess(std::string layer) : _layer(layer) {}
   ~ScanlinePreprocess();
 
-  idb::IdbLayer* get_layer() { return _layer; }
+  std::string get_layer() { return _layer; }
 
   void addData(std::vector<std::vector<ieda_solver::GtlPoint>>& polygons_points, int net_id);
   void addPolygon(std::vector<ieda_solver::GtlPoint>& polygon_points, int net_id, int net_polygon_id);
@@ -63,7 +63,7 @@ class ScanlinePreprocess
   void addBasicPoint(DrcBasicPoint* point) { _basic_points.push_back(point); };
 
  private:
-  idb::IdbLayer* _layer = nullptr;
+  std::string _layer = nullptr;
 
   std::vector<DrcBasicPoint*> _basic_points;
   std::vector<ScanlinePoint*> _scanline_points_vertical;

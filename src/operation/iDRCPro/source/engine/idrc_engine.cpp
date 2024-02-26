@@ -58,6 +58,7 @@ void DrcEngine::initEngine(DrcCheckerType checker_type)
     default:
       break;
   }
+  _engine_manager->combineLayouts();
 }
 
 /**
@@ -84,7 +85,7 @@ void DrcEngine::operateEngine()
 
 void DrcEngine::checkEngine()
 {
-  _engine_manager->get_engine_check()->check();
+  // _engine_manager->get_engine_check()->check();
 }
 
 }  // namespace idrc

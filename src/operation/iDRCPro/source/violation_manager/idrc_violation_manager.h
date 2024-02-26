@@ -17,11 +17,14 @@
 #pragma once
 
 #include <map>
+#include <set>
 #include <string>
 #include <vector>
 
 #include "DRCViolationType.h"
+#include "IdbLayer.h"
 #include "boost_definition.h"
+#include "idm.h"
 #include "idrc_violation.h"
 
 namespace idrc {
@@ -44,24 +47,17 @@ class DrcViolationManager
     return _violation_list[type];
   }
 
-  /// debug
-  std::vector<ieda_solver::GtlRect> get_boost_rects(idb::IdbLayer* layer)
+  void addViolation(int llx, int lly, int urx, int ury, ViolationEnumType type, std::set<int> net_id, std::string layer_name)
   {
-    std::vector<ieda_solver::GtlRect> boost_rects;
+    // todo
+    auto idb_design = dmInst->get_idb_design();
+    auto idb_layout = idb_design->get_layout();
 
-    for (auto& violation : _violation_list) {
-      for (auto& violation_shape : violation.second) {
-        if (violation_shape->get_layer() == layer) {
-          if (violation_shape->is_rect()) {
-            auto* rect = static_cast<DrcViolationRect*>(violation_shape);
-            ieda_solver::GtlRect boost_rect(rect->get_llx(), rect->get_lly(), rect->get_urx(), rect->get_ury());
-            boost_rects.emplace_back(boost_rect);
-          }
-        }
-      }
-    }
+    idb::IdbLayer* layer = idb_layout->get_layers()->find_layer(layer_name);
 
-    return boost_rects;
+    DrcViolationRect* violation_rect = new DrcViolationRect(layer, net_id, type, llx, lly, urx, ury);
+    auto& violation_list = get_violation_list(type);
+    violation_list.emplace_back(static_cast<DrcViolation*>(violation_rect));
   }
 
  private:

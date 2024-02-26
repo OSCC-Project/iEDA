@@ -21,7 +21,6 @@
 #include <vector>
 
 #include "check_item.h"
-#include "condition.h"
 
 namespace idrc {
 
@@ -31,12 +30,12 @@ class DrcEngineCheck
   DrcEngineCheck() {}
   ~DrcEngineCheck() {}
 
-  void addCheckItem(Condition* condition, CheckItem* check_item) { _check_list[condition].push_back(check_item); }
+  // void addCheckItem(Condition* condition, CheckItem* check_item) { _check_list[condition].push_back(check_item); }
 
   void check() { applyCondition(); }
 
  private:
-  std::map<Condition*, std::deque<CheckItem*>> _check_list;
+  // std::map<Condition*, std::deque<CheckItem*>> _check_list;
 
   void applyCondition()
   {

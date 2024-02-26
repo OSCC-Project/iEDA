@@ -16,29 +16,37 @@
 // ***************************************************************************************
 #pragma once
 
-#include <list>
 #include <map>
-#include <string>
-#include <vector>
+#include <set>
 
-#include "idrc_util.h"
-#include "idrc_violation_manager.h"
-#include "tech_rules.h"
-
-namespace idb {
-class IdbLayer;
-}
+#include "IdbLayer.h"
+#include "rule_basic.h"
+#include "rule_condition_map.h"
 
 namespace idrc {
 
-class DrcConditionManager
+class ConditionRuleSpacingRange : public ConditionRule
 {
  public:
-  DrcConditionManager(DrcViolationManager* violation_manager) : _violation_manager(violation_manager) {}
-  ~DrcConditionManager() {}
+  ConditionRuleSpacingRange(RuleType type, int spacing, idb::IdbLayerSpacing* spacing_range)
+      : ConditionRule(type, spacing), _spacing_range(spacing_range)
+  {
+  }
+  ~ConditionRuleSpacingRange() {}
+
+  idb::IdbLayerSpacing* get_spacing_range() { return _spacing_range; }
 
  private:
-  DrcViolationManager* _violation_manager;
+  idb::IdbLayerSpacing* _spacing_range;
+};
+
+class RulesMapSpacing : public RulesConditionMap
+{
+ public:
+  RulesMapSpacing(RuleType type) : RulesConditionMap(type) {}
+  ~RulesMapSpacing() {}
+
+ private:
 };
 
 }  // namespace idrc
