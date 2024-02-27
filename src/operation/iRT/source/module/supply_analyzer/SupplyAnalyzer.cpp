@@ -60,8 +60,8 @@ void SupplyAnalyzer::analyze(std::vector<Net>& net_list)
   updateSAModel(sa_model);
   LOG_INST.info(Loc::current(), "End analyze", monitor.getStatsInfo());
 
-  plotSAModel(sa_model);
-  reportSAModel(sa_model);
+  // plotSAModel(sa_model);
+  // reportSAModel(sa_model);
 }
 
 // private

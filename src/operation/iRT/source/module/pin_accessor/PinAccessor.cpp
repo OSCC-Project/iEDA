@@ -60,8 +60,8 @@ void PinAccessor::access(std::vector<Net>& net_list)
   updatePAModel(pa_model);
   LOG_INST.info(Loc::current(), "End access", monitor.getStatsInfo());
 
-  plotPAModel(pa_model);
-  reportPAModel(pa_model);
+  // plotPAModel(pa_model);
+  // reportPAModel(pa_model);
 }
 
 // private

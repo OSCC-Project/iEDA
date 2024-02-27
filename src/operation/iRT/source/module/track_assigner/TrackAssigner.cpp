@@ -62,7 +62,7 @@ void TrackAssigner::assign(std::vector<Net>& net_list)
   assignTAPanelMap(ta_model);
   LOG_INST.info(Loc::current(), "End assign", monitor.getStatsInfo());
 
-  reportTAModel(ta_model);
+  // reportTAModel(ta_model);
 }
 
 // private
@@ -1104,8 +1104,8 @@ std::map<TANode*, std::set<Orientation>> TrackAssigner::getRoutingNodeOrientatio
   PlanarRect enlarged_rect = RTUtil::getEnlargedRect(net_shape.get_rect(), enlarged_size);
 
   std::map<TANode*, std::set<Orientation>> node_orientation_map;
-  if (RTUtil::existNodeGrid(enlarged_rect, ta_panel.get_panel_track_axis())) {
-    PlanarRect grid_rect = RTUtil::getNodeGridRect(enlarged_rect, ta_panel.get_panel_track_axis());
+  if (RTUtil::existTrackGrid(enlarged_rect, ta_panel.get_panel_track_axis())) {
+    PlanarRect grid_rect = RTUtil::getTrackGridRect(enlarged_rect, ta_panel.get_panel_track_axis());
     for (int32_t grid_x = grid_rect.get_lb_x(); grid_x <= grid_rect.get_rt_x(); grid_x++) {
       for (int32_t grid_y = grid_rect.get_lb_y(); grid_y <= grid_rect.get_rt_y(); grid_y++) {
         TANode& node = ta_panel.get_ta_node_map()[grid_x][grid_y];
