@@ -24,6 +24,8 @@
  */
 #pragma once
 
+#include <map>
+
 #include "Power.hh"
 #include "Type.hh"
 #include "api/TimingEngine.hh"
@@ -36,6 +38,11 @@ namespace ipower {
  */
 class PowerEngine {
  public:
+  struct ClusterConnection {
+    std::size_t _dst_cluster_id;
+    unsigned _hop;
+  };
+
   static PowerEngine *getOrCreatePowerEngine();
   static void destroyPowerEngine();
 
@@ -44,7 +51,11 @@ class PowerEngine {
     return _timing_engine;
   }
 
+  // api for dataflow, first is create seq graph, second is get cluster
+  // connection for the max hop.
   unsigned creatDataflow();
+  std::map<std::size_t, std::vector<ClusterConnection>> buildConnectionMap(
+      std::vector<std::set<std::string_view>> clusters, unsigned max_hop);
 
  private:
   PowerEngine();
