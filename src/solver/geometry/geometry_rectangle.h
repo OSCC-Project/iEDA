@@ -20,6 +20,33 @@
 
 namespace ieda_solver {
 
+typedef gtl::direction_1d GeometryDirection1D;
+typedef gtl::orientation_2d GeometryOrientation;
+typedef gtl::interval_data<int> GeometryInterval;
+
+#define HORIZONTAL gtl::HORIZONTAL
+#define VERTICAL gtl::VERTICAL
+
 typedef GtlRect GeometryRect;
+
+#define getWireDirection(wire) gtl::guess_orientation(wire)
+
+#define getWireWidth(wire, dir) gtl::delta(wire, dir)
+
+inline std::array<GeometryRect, 2> getExpandRects(const GeometryRect& rect, int within, GeometryOrientation dir)
+{
+  auto interval_wire = rect.get(dir.get_perpendicular());
+  auto interval_within = rect.get(dir);
+  GeometryInterval interval_high(gtl::get(interval_within, gtl::HIGH), gtl::get(interval_within, gtl::HIGH) + within);
+  GeometryInterval interval_low(gtl::get(interval_within, gtl::LOW) - within, gtl::get(interval_within, gtl::LOW));
+  GeometryRect rect_high;
+  rect_high.set(dir, interval_high);
+  rect_high.set(dir.get_perpendicular(), interval_wire);
+  GeometryRect rect_low;
+  rect_low.set(dir, interval_low);
+  rect_low.set(dir.get_perpendicular(), interval_wire);
+
+  return {rect_high, rect_low};
+}
 
 }  // namespace ieda_solver

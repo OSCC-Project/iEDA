@@ -48,8 +48,10 @@ class GeometryBoost : public EngineGeometry
 
   std::vector<GeometryPolygon>& getPolygons() override;
   std::vector<GeometryRect>& getOverlap() override;
+  std::vector<GeometryRect>& getWires() override;
 
  private:
+  // GeometryPolygonSet _overlap_set;
 };
 
 class PolygonProperty

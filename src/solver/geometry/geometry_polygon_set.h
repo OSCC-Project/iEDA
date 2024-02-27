@@ -22,4 +22,10 @@ namespace ieda_solver {
 
 typedef GtlPolygon90Set GeometryPolygonSet;
 
+#define interact(polygon_set, rect) gtl::interact(polygon_set, rect)
+
+#define getRectangles(output, polygon_set, direction) gtl::get_rectangles(output, polygon_set, direction)
+
+#define envelope(rect, polygon_set) gtl::extents(rect, polygon_set)
+
 }  // namespace ieda_solver

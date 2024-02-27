@@ -91,6 +91,9 @@ void GeometryBoost::addGeometry(EngineGeometry* geometry)
   }
 
   boost_geometry->get_polyset().clean();
+
+  // _overlap_set += boost_geometry->get_polyset() & _polyset;
+
   _polyset += boost_geometry->get_polyset();
 }
 
@@ -108,8 +111,17 @@ std::vector<GeometryRect>& GeometryBoost::getOverlap()
     GtlPolygon90Set set(_polyset);
     set.self_intersect();
     set.get_rectangles(_overlap_list);
+    // _overlap_set.get(_overlap_list);
   }
   return _overlap_list;
+}
+
+std::vector<GeometryRect>& GeometryBoost::getWires()
+{
+  if (_wire_list.size() <= 0) {
+    gtl::get_max_rectangles(_wire_list, _polyset);
+  }
+  return _wire_list;
 }
 
 }  // namespace ieda_solver

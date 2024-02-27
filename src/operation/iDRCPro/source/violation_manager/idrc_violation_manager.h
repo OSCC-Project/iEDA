@@ -26,6 +26,7 @@
 #include "boost_definition.h"
 #include "idm.h"
 #include "idrc_violation.h"
+#include "tech_rules.h"
 
 namespace idrc {
 // class DrcViolation;
@@ -49,11 +50,7 @@ class DrcViolationManager
 
   void addViolation(int llx, int lly, int urx, int ury, ViolationEnumType type, std::set<int> net_id, std::string layer_name)
   {
-    // todo
-    auto idb_design = dmInst->get_idb_design();
-    auto idb_layout = idb_design->get_layout();
-
-    idb::IdbLayer* layer = idb_layout->get_layers()->find_layer(layer_name);
+    idb::IdbLayer* layer = DrcTechRuleInst->findLayer(layer_name);
 
     DrcViolationRect* violation_rect = new DrcViolationRect(layer, net_id, type, llx, lly, urx, ury);
     auto& violation_list = get_violation_list(type);

@@ -21,5 +21,6 @@
 namespace ieda_solver {
 
 typedef GtlPolygon90WithHoles GeometryPolygon;
+typedef GtlPolygonWithHoles GeometryViewPolygon;
 
 }  // namespace ieda_solver

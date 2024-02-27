@@ -41,7 +41,7 @@ typedef gtl::polygon_90_with_holes_data<CoordType> GtlPolygon90WithHoles;
 typedef gtl::polygon_90_set_data<CoordType> GtlPolygon90Set;
 typedef gtl::polygon_data<CoordType> GtlPolygon;
 typedef gtl::polygon_set_data<CoordType> GtlPolygonSet;
-typedef gtl::polygon_with_holes_data<CoordType> PolygonWithHoles;
+typedef gtl::polygon_with_holes_data<CoordType> GtlPolygonWithHoles;
 
 namespace bg = boost::geometry;
 typedef boost::geometry::model::d2::point_xy<CoordType> BgPoint;

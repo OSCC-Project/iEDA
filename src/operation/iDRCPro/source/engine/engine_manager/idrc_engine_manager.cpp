@@ -22,6 +22,8 @@
 #include "idm.h"
 #include "idrc_engine_manager.h"
 #include "omp.h"
+#include "rule_condition_width.h"
+#include "tech_rules.h"
 
 namespace idrc {
 
@@ -96,24 +98,119 @@ void DrcEngineManager::combineLayouts()
 void DrcEngineManager::dataPreprocess()
 {
   combineLayouts();
-
-  // todo max rectangles
 }
 
 void DrcEngineManager::filterData()
 {
   dataPreprocess();
 
-  // overlap
+  // TODO: put logic bellow into condition module
+  // TODO: multi-thread
   for (auto& [layer, layout] : get_engine_layouts()) {
+    // TODO: only for routing layers
+    auto& layer_polyset = layout->get_layout()->get_engine()->get_polyset();
+#ifdef DEBUG_IDRC_ENGINE
+    std::vector<ieda_solver::GeometryViewPolygon> polygons;
+    layer_polyset.get(polygons);
+#endif
+
+    // overlap
     auto& overlap = layout->get_layout()->get_engine()->getOverlap();
-    if (overlap.size() > 3) {
-      auto& polygons = layout->get_layout()->get_engine()->getPolygons();
+    if (overlap.size() > 0) {
+      // TODO: create scanline point data
       int a = 0;
     }
-  }
 
-  // todo
+    // min spacing
+    int min_spacing = DrcTechRuleInst->getMinSpacing(layer);
+    if (min_spacing > 0) {
+      auto set = layer_polyset;
+      gtl::grow_and(set, min_spacing / 2);
+
+#ifdef DEBUG_IDRC_ENGINE
+      std::vector<ieda_solver::GeometryViewPolygon> grow_polygons;
+      set.get(grow_polygons);
+      if (grow_polygons.size() > 0) {
+        int a = 0;
+      }
+#endif
+    }
+
+    // jog and prl
+    using WidthToPolygonSetMap = std::map<int, ieda_solver::GeometryPolygonSet>;
+    WidthToPolygonSetMap jog_cut_rect_map_horizontal;
+    WidthToPolygonSetMap jog_cut_rect_map_vertical;
+    WidthToPolygonSetMap jog_cut_region_map_horizontal;
+    WidthToPolygonSetMap jog_cut_region_map_vertical;
+    WidthToPolygonSetMap jog_wire_map_horizontal;
+    WidthToPolygonSetMap jog_wire_map_vertical;
+
+    WidthToPolygonSetMap prl_wire_map;
+
+    auto& wires = layout->get_layout()->get_engine()->getWires();
+    for (auto& wire : wires) {
+      // jog
+      auto wire_direction = ieda_solver::getWireDirection(wire);
+      auto width_direction = wire_direction.get_perpendicular();
+      int wire_width = ieda_solver::getWireWidth(wire, width_direction);
+
+      auto& jog_cut_rect_map = wire_direction == ieda_solver::HORIZONTAL ? jog_cut_rect_map_horizontal : jog_cut_rect_map_vertical;
+      auto& jog_cut_region_map = wire_direction == ieda_solver::HORIZONTAL ? jog_cut_region_map_horizontal : jog_cut_region_map_vertical;
+      auto& jog_wire_map = wire_direction == ieda_solver::HORIZONTAL ? jog_wire_map_horizontal : jog_wire_map_vertical;
+
+      auto rule_jog_to_jog = DrcTechRuleInst->getJogToJog(layer);
+      if (rule_jog_to_jog) {
+        for (auto& width_item : rule_jog_to_jog->get_width_list()) {
+          int rule_width = width_item.get_width();
+          if (wire_width > rule_width) {
+            // create big wire layer
+            jog_wire_map[rule_width] += wire;
+            // create within rects layer
+            auto expand_rects = ieda_solver::getExpandRects(wire, width_item.get_par_within(), width_direction);
+            for (auto& rect : expand_rects) {
+              jog_cut_rect_map[rule_width] += rect;
+              jog_cut_region_map[rule_width] += rect & layer_polyset;
+            }
+            break;
+          }
+        }
+      }
+    }
+
+    // jog
+    auto deal_with_jog = [&](ieda_solver::GeometryOrientation wire_direction, WidthToPolygonSetMap& jog_wire_map,
+                             WidthToPolygonSetMap& jog_cut_rect_map, WidthToPolygonSetMap& jog_cut_region_map) {
+      for (auto& [rule_width, jog_wires] : jog_wire_map) {
+        auto jogs_attach_wires = jog_cut_region_map[rule_width];
+        ieda_solver::interact(jogs_attach_wires, jog_wires);
+        auto wire_with_jogs = jog_wire_map[rule_width] + jogs_attach_wires;
+
+        auto jogs_opposite = jog_cut_region_map[rule_width] - jogs_attach_wires;
+
+        auto region_B = jog_cut_rect_map[rule_width] - jog_cut_region_map[rule_width];
+        std::vector<ieda_solver::GeometryRect> regions;
+        ieda_solver::getRectangles(regions, region_B, wire_direction.get_perpendicular());
+
+        ieda_solver::GeometryRect envelope_cut_rects;
+        ieda_solver::envelope(envelope_cut_rects, jog_cut_rect_map[rule_width]);
+        auto cut_rects_negative_regions = envelope_cut_rects - jog_cut_rect_map[rule_width];
+
+        for (auto& rect_region : regions) {
+          // TODO: get region a
+        }
+
+        int a = 0;
+      }
+    };
+    if (!jog_wire_map_horizontal.empty()) {
+      deal_with_jog(ieda_solver::HORIZONTAL, jog_wire_map_horizontal, jog_cut_rect_map_horizontal, jog_cut_region_map_horizontal);
+    }
+    if (!jog_wire_map_vertical.empty()) {
+      deal_with_jog(ieda_solver::VERTICAL, jog_wire_map_vertical, jog_cut_rect_map_vertical, jog_cut_region_map_vertical);
+    }
+
+    // TODO: rule check
+  }
 }
 
 // void DrcEngineManager::dataPreprocess()
