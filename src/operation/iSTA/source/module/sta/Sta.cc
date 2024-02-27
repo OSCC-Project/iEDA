@@ -2174,6 +2174,9 @@ Sta::getStartEndSlackPairsOfTopNPaths(int top_n, AnalysisMode mode,
       auto end_pin_name =
           seq_path_data->get_delay_data()->get_own_vertex()->getName();
       double slack = seq_path_data->getSlackNs();
+      if (slack >= 0) {
+        break;
+      }
       start_end_slacks.push_back(
           std::make_tuple(start_pin_name, end_pin_name, slack));
 
@@ -2229,6 +2232,9 @@ Sta::getStartEndSlackPairsOfTopNPercentPaths(double top_percentage,
       auto end_pin_name =
           seq_path_data->get_delay_data()->get_own_vertex()->getName();
       double slack = seq_path_data->getSlackNs();
+      if (slack >= 0) {
+        break;
+      }
       start_end_slacks.push_back(
           std::make_tuple(start_pin_name, end_pin_name, slack));
       --top_n;
