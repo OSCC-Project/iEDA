@@ -71,6 +71,7 @@ unsigned PowerEngine::creatDataflow() {
  * element is cluser id 0, second element is cluser id 1, and so on.
  * @param max_hop build connection not beyond max hop.
  * @return std::map<std::size_t, std::vector<PowerEngine::ClusterConnection>>
+ * the map key is src cluster id, value is dst cluster id and hop.
  */
 std::map<std::size_t, std::vector<PowerEngine::ClusterConnection>>
 PowerEngine::buildConnectionMap(
