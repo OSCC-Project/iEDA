@@ -1350,66 +1350,6 @@ class RTUtil
     return scale_list;
   }
 
-  /**
-   * 1、rect覆盖track grid，则返回grid_rect
-   * 2、rect只覆盖h/v的track时，延伸到相邻的track上
-   */
-  static bool existNodeGrid(PlanarRect& real_rect, ScaleAxis& track_axis)
-  {
-    PlanarRect grid_rect = getNodeGridRect(real_rect, track_axis);
-    return (grid_rect.get_lb_x() != -1 && grid_rect.get_lb_y() != -1 && grid_rect.get_rt_x() != -1 && grid_rect.get_rt_y() != -1);
-  }
-
-  static PlanarRect getNodeGridRect(PlanarRect& real_rect, ScaleAxis& track_axis)
-  {
-    PlanarRect grid_rect(-1, -1, -1, -1);
-    std::vector<int32_t> x_track_list = getTrackScaleList(track_axis.get_x_grid_list());
-    std::vector<int32_t> y_track_list = getTrackScaleList(track_axis.get_y_grid_list());
-    PlanarRect track_rect(x_track_list.front(), y_track_list.front(), x_track_list.back(), y_track_list.back());
-    if (!isClosedOverlap(track_rect, real_rect)) {
-      return grid_rect;
-    }
-    PlanarRect check_rect = getOverlap(track_rect, real_rect);
-
-    std::vector<int32_t> x_track_idx_list = getTrackIdxList(check_rect.get_lb_x(), check_rect.get_rt_x(), track_axis.get_x_grid_list());
-    std::vector<int32_t> y_track_idx_list = getTrackIdxList(check_rect.get_lb_y(), check_rect.get_rt_y(), track_axis.get_y_grid_list());
-    if (!x_track_idx_list.empty() && !y_track_idx_list.empty()) {
-      grid_rect.set_lb(x_track_idx_list.front(), y_track_idx_list.front());
-      grid_rect.set_rt(x_track_idx_list.back(), y_track_idx_list.back());
-    } else if (!x_track_idx_list.empty()) {
-      grid_rect.set_lb_x(x_track_idx_list.front());
-      grid_rect.set_rt_x(x_track_idx_list.back());
-
-      bool found_low_boundary = false;
-      for (size_t y_idx = 0; y_idx < y_track_list.size(); y_idx++) {
-        if (y_track_list[y_idx] > check_rect.get_lb_y() && !found_low_boundary) {
-          grid_rect.set_lb_y(y_idx - 1);
-          found_low_boundary = true;
-        }
-        if (y_track_list[y_idx] > check_rect.get_rt_y()) {
-          grid_rect.set_rt_y(y_idx);
-          break;
-        }
-      }
-    } else if (!y_track_idx_list.empty()) {
-      grid_rect.set_lb_y(y_track_idx_list.front());
-      grid_rect.set_rt_y(y_track_idx_list.back());
-
-      bool found_left_boundary = false;
-      for (size_t x_idx = 0; x_idx < x_track_list.size(); x_idx++) {
-        if (x_track_list[x_idx] > check_rect.get_lb_x() && !found_left_boundary) {
-          grid_rect.set_lb_x(x_idx - 1);
-          found_left_boundary = true;
-        }
-        if (x_track_list[x_idx] > check_rect.get_rt_x()) {
-          grid_rect.set_rt_x(x_idx);
-          break;
-        }
-      }
-    }
-    return grid_rect;
-  }
-
   // 计算刻度，包含边界
   static std::vector<int32_t> getClosedScaleList(int32_t begin_line, int32_t end_line, std::vector<ScaleGrid>& scale_grid_list)
   {

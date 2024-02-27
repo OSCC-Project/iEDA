@@ -66,7 +66,7 @@ void InitialRouter::route(std::vector<Net>& net_list)
   outputGuide(ir_model);
   LOG_INST.info(Loc::current(), "End route", monitor.getStatsInfo());
 
-  reportIRModel(ir_model);
+  // reportIRModel(ir_model);
 }
 
 // private

@@ -39,10 +39,10 @@ class RTAPI
   void initRT(std::map<std::string, std::any> config_map);
   void runRT();
   void destroyRT();
-  // 获取RT的Summary
-  Summary getSummary();
   // 清理def
   void clearDef();
+  // 获取RT的Summary
+  Summary getSummary();
   // 拥塞驱动
   eval::TileGrid* getCongestonMap(std::map<std::string, std::any> config_map, double& wirelength);
   std::vector<double> getWireLengthAndViaNum(std::map<std::string, std::any> config_map);

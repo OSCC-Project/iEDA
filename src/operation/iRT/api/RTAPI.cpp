@@ -123,11 +123,6 @@ void RTAPI::destroyRT()
   Logger::destroyInst();
 }
 
-Summary RTAPI::getSummary()
-{
-  return DM_INST.getSummary();
-}
-
 void RTAPI::clearDef()
 {
   idb::IdbBuilder* idb_builder = dmInst->get_idb_builder();
@@ -200,6 +195,11 @@ void RTAPI::clearDef()
   }
   // 删除虚空的io_pin
   //////////////////////////////////////////
+}
+
+Summary RTAPI::getSummary()
+{
+  return DM_INST.getSummary();
 }
 
 eval::TileGrid* RTAPI::getCongestonMap(std::map<std::string, std::any> config_map, double& wirelength)

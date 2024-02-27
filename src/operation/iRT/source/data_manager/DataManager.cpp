@@ -689,7 +689,9 @@ void DataManager::wrapNetList(idb::IdbBuilder* idb_builder)
 
 bool DataManager::preSkipping(idb::IdbNet* idb_net)
 {
-  // 特殊线网，有iocell，iocell的PAD与iopin重合，不需要布线
+  if (idb_net->get_instance_pin_list()->get_pin_num() <= 1) {
+    return true;
+  }
   bool has_io_pin = false;
   if (idb_net->has_io_pins() && idb_net->get_io_pins()->get_pin_num() == 1) {
     has_io_pin = true;
@@ -699,11 +701,7 @@ bool DataManager::preSkipping(idb::IdbNet* idb_net)
   if (instance_list.size() == 1 && instance_list.front()->get_cell_master()->is_pad()) {
     has_io_cell = true;
   }
-  if (has_io_pin && has_io_cell) {
-    LOG_INST.info(Loc::current(), "The net '", idb_net->get_net_name(), "' only connects PAD and io_pin! skipping...");
-    return true;
-  }
-  return false;
+  return (has_io_pin && has_io_cell);
 }
 
 void DataManager::wrapPinList(Net& net, idb::IdbNet* idb_net)
@@ -754,17 +752,21 @@ void DataManager::wrapDrivingPin(Net& net, idb::IdbNet* idb_net)
 {
   idb::IdbPin* idb_driving_pin = idb_net->get_driving_pin();
   if (idb_driving_pin == nullptr) {
-    LOG_INST.warn(Loc::current(), "The net '", net.get_net_name(), "' driver not found, using the first pin as the driver!");
     idb_driving_pin = idb_net->get_instance_pin_list()->get_pin_list().front();
   }
   std::string driving_pin_name = idb_driving_pin->get_pin_name();
   if (!idb_driving_pin->is_io_pin()) {
     driving_pin_name = RTUtil::getString(idb_driving_pin->get_instance()->get_name(), ":", driving_pin_name);
   }
+  bool has_driving = false;
   for (Pin& pin : net.get_pin_list()) {
     if (pin.get_pin_name() == driving_pin_name) {
       pin.set_is_driving(true);
+      has_driving = true;
     }
+  }
+  if (!has_driving) {
+    net.get_pin_list().front().set_is_driving(true);
   }
 }
 
