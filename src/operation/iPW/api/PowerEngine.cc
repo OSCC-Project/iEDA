@@ -41,6 +41,31 @@ PowerEngine::~PowerEngine() {
 }
 
 /**
+ * @brief Get the Or create power engine object.
+ *
+ * @return PowerEngine*
+ */
+PowerEngine* PowerEngine::getOrCreatePowerEngine() {
+  static std::mutex mt;
+  if (_power_engine == nullptr) {
+    std::lock_guard<std::mutex> lock(mt);
+    if (_power_engine == nullptr) {
+      _power_engine = new PowerEngine();
+    }
+  }
+  return _power_engine;
+}
+
+/**
+ * @brief Destory the power engine.
+ *
+ */
+void PowerEngine::destroyPowerEngine() {
+  delete _power_engine;
+  _power_engine = nullptr;
+}
+
+/**
  * @brief create dataflow for macro placer.
  * To create dataflow, we build seq graph, the seq vertex is instance or
  * port.
@@ -50,6 +75,7 @@ unsigned PowerEngine::creatDataflow() {
   // build timing graph.
   if (!_timing_engine->isBuildGraph()) {
     _timing_engine->buildGraph();
+    _timing_engine->updateTiming();
   }
 
   // build power graph & sequential graph.
@@ -84,35 +110,35 @@ PowerEngine::buildConnectionMap(
 
   // dfs cluster connecton from one seq vertex.
   std::function<void(std::size_t, PwrSeqVertex*, unsigned)>
-      dfs_from_src_seq_vertex =
-          [&cluster_connections, &dfs_from_src_seq_vertex](
-              std::size_t src_cluster_id, PwrSeqVertex* current_seq_vertex,
-              unsigned hop) {
-            if (hop == 0) {
-              return;
-            }
+      dfs_from_src_seq_vertex = [&cluster_connections, &dfs_from_src_seq_vertex,
+                                 max_hop](std::size_t src_cluster_id,
+                                          PwrSeqVertex* current_seq_vertex,
+                                          unsigned hop) {
+        if (hop == 0) {
+          return;
+        }
 
-            std::tuple<std::size_t, std::string_view, unsigned> one_connection;
-            auto& snk_arcs = current_seq_vertex->get_snk_arcs();
-            for (auto* snk_arc : snk_arcs) {
-              auto* snk_seq_vertex = snk_arc->get_snk();
-              auto snk_obj_name = snk_seq_vertex->get_obj_name();
+        std::tuple<std::size_t, std::string_view, unsigned> one_connection;
+        auto& src_arcs = current_seq_vertex->get_src_arcs();
+        for (auto* src_arc : src_arcs) {
+          auto* snk_seq_vertex = src_arc->get_snk();
+          auto snk_obj_name = snk_seq_vertex->get_obj_name();
 
-              auto one_connection =
-                  std::make_tuple(src_cluster_id, snk_obj_name, hop);
+          auto one_connection =
+              std::make_tuple(src_cluster_id, snk_obj_name, max_hop - hop + 1);
 
-              cluster_connections.push_back(one_connection);
-              dfs_from_src_seq_vertex(src_cluster_id, snk_seq_vertex, hop - 1);
-            }
-          };
+          cluster_connections.push_back(one_connection);
+          dfs_from_src_seq_vertex(src_cluster_id, snk_seq_vertex, hop - 1);
+        }
+      };
 
   // assume cluster id start from 0.
   for (std::size_t src_cluster_id = 0; auto& cluster_instances : clusters) {
-    for (auto& instance_name : cluster_instances) {
-      auto* the_instance = nl->findInstance(instance_name.data());
-      LOG_FATAL_IF(!the_instance)
-          << "the instance " << instance_name << " is not found";
-      auto* seq_vertex = seq_graph.getSeqVertex(the_instance);
+    for (auto& obj_name : cluster_instances) {
+      auto the_instance_or_port = nl->findObj(obj_name.data(), false, false);
+      LOG_FATAL_IF(the_instance_or_port.size() != 1)
+          << "the instance " << obj_name << " is not found";
+      auto* seq_vertex = seq_graph.getSeqVertex(the_instance_or_port.front());
 
       // not seq instance, skip.
       if (!seq_vertex) {
@@ -121,6 +147,7 @@ PowerEngine::buildConnectionMap(
 
       // dfs from src seq vertex.
       dfs_from_src_seq_vertex(src_cluster_id, seq_vertex, max_hop);
+      ++src_cluster_id;
     }
   }
 
