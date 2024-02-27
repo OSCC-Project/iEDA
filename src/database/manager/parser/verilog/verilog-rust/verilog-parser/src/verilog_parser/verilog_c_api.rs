@@ -82,6 +82,8 @@ pub extern "C" fn rust_is_id(c_verilog_virtual_base_id: *mut c_void) -> bool {
 #[repr(C)]
 pub struct RustVerilogIndexID {
     id: *mut c_char,
+    base_id: *mut c_char,
+    index: i32,
 }
 
 #[no_mangle]
@@ -92,7 +94,19 @@ pub extern "C" fn rust_convert_verilog_index_id(c_verilog_virtual_base_id: *mut 
         let rust_name = (*virtual_base_id).get_name();
         let name = string_to_c_char(rust_name);
 
-        let rust_verilog_index_id = RustVerilogIndexID { id: name };
+        let mut base_id = std::ptr::null_mut();
+        let mut index = 0;
+
+        if let Some(open_bracket_index) = rust_name.find('[') {
+            if let Some(close_bracket_index) = rust_name.find(']') {
+                if let Ok(idx) = rust_name[open_bracket_index + 1..close_bracket_index].parse::<i32>() {
+                    base_id = string_to_c_char(&rust_name[..open_bracket_index]);
+                    index = idx;
+                }
+            }
+        }
+
+        let rust_verilog_index_id = RustVerilogIndexID { id: name, base_id, index };
 
         let rust_verilog_index_id_pointer = Box::new(rust_verilog_index_id);
         let raw_pointer = Box::into_raw(rust_verilog_index_id_pointer);
