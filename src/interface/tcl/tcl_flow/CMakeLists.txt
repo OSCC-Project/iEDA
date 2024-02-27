@@ -11,6 +11,7 @@ target_link_libraries(tcl_flow
         shell-cmd
         str
         flow
+        tcl_util
 )
 
 target_include_directories(tcl_flow

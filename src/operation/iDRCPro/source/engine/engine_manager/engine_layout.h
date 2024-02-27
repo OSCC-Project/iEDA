@@ -1,0 +1,59 @@
+// ***************************************************************************************
+// Copyright (c) 2023-2025 Peng Cheng Laboratory
+// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of Sciences
+// Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
+//
+// iEDA is licensed under Mulan PSL v2.
+// You can use this software according to the terms and conditions of the Mulan PSL v2.
+// You may obtain a copy of Mulan PSL v2 at:
+// http://license.coscl.org.cn/MulanPSL2
+//
+// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
+// EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
+// MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+//
+// See the Mulan PSL v2 for more details.
+// ***************************************************************************************
+#pragma once
+#include <stdint.h>
+
+#include <map>
+
+#include "engine_geometry.h"
+#include "engine_sublayout.h"
+
+namespace idb {
+class IdbLayer;
+}  // namespace idb
+
+namespace idrc {
+/**
+ *  DrcEngineLayout definition : describe all shapes for all nets in one layer
+ */
+class DrcEngineLayout
+{
+ public:
+  DrcEngineLayout(idb::IdbLayer* id) { _id = id; }
+  ~DrcEngineLayout();
+
+  std::map<int, DrcEngineSubLayout*>& get_sub_layouts() { return _sub_layouts; }
+  DrcEngineSubLayout* get_sub_layout(int net_id);
+  ieda_solver::EngineGeometry* get_net_engine(int net_id);
+
+  uint64_t pointCount();
+
+  bool addRect(int llx, int lly, int urx, int ury, int net_id);
+
+ private:
+  /**
+   * _id : layer id
+   */
+  idb::IdbLayer* _id = nullptr;
+  /**
+   * int : net id, if equal to -1, sub layout is a kind of blockage
+   * DrcEngineSubLayout* : sub layout ptr describe the net shapes
+   */
+  std::map<int, DrcEngineSubLayout*> _sub_layouts;
+};
+
+}  // namespace idrc

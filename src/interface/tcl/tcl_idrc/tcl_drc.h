@@ -33,6 +33,7 @@
 
 #include "DrcAPI.hpp"
 #include "ScriptEngine.hh"
+#include "idrc_api.h"
 #include "tcl_definition.h"
 
 using ieda::TclCmd;
@@ -92,7 +93,10 @@ class TclInitDrcAPI : public TclCmd
     if (!check()) {
       return 0;
     }
-    idrc::DrcAPIInst.initDRC();
+    // idrc::DrcAPIInst.initDRC();
+    idrc::DrcApi drc_api;
+    drc_api.init();
+
     return 1;
   };
 
@@ -151,7 +155,9 @@ class TclDestroyDrcAPI : public TclCmd
     if (!check()) {
       return 0;
     }
-    DrcInst.destroyInst();
+
+    idrc::DrcApi drc_api;
+    drc_api.exit();
     return 1;
   };
 

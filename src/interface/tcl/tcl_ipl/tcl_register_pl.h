@@ -26,6 +26,7 @@
 #include "ScriptEngine.hh"
 #include "UserShell.hh"
 #include "tcl_ipl.h"
+#include "tcl_plconfig.h"
 
 using namespace ieda;
 namespace tcl {
@@ -45,6 +46,8 @@ int registerCmdPlacer()
   registerTclCmd(CmdPlacerRunGP, "placer_run_gp");
   registerTclCmd(CmdPlacerRunLG, "placer_run_lg");
   registerTclCmd(CmdPlacerRunDP, "placer_run_dp");
+
+  registerTclCmd(CmdPLConfig, "pl_config");
 
   return EXIT_SUCCESS;
 }

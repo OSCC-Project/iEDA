@@ -122,6 +122,7 @@ class IdbSpeedUpSetup : public DbSetup {
   void createInstancePad(IdbInstance* instance);
   void createInstanceBlock(IdbInstance* instance);
   void createInstanceCorePin(vector<IdbPin*>& pin_list, GuiSpeedupItem* item = nullptr);
+  void createInstanceCoreObs(vector<idb::IdbLayerShape*>& obs_list, GuiSpeedupItem* item = nullptr);
   void createInstanceMacroPin(vector<IdbPin*>& pin_list, GuiInstance* gui_instance);
   void createInstanceLayerShape(IdbLayerShape& layer_shape);
   ////special nets

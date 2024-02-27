@@ -28,60 +28,36 @@ namespace irt {
 
 #define RTAPI_INST (irt::RTAPI::getInst())
 
-enum class Tool
-{
-  kDetailedRouter,
-  kGlobalRouter,
-  kPinAccessor,
-  kResourceAllocator,
-  kTrackAssigner,
-  kViolationRepairer
-};
-
 class RTAPI
 {
  public:
   static RTAPI& getInst();
   static void destroyInst();
 
-  // RT
+#if 1  // 外部调用RT的API
+  // RT主要函数
   void initRT(std::map<std::string, std::any> config_map);
-  void runRT(std::vector<Tool> tool_list);
-  Stage convertToStage(Tool tool);
+  void runRT();
   void destroyRT();
-
-  // EGR
-  void runEGR(std::map<std::string, std::any> config_map);
-
-  // EVAL
+  // 获取RT的Summary
+  Summary getSummary();
+  // 清理def
+  void clearDef();
+  // 拥塞驱动
   eval::TileGrid* getCongestonMap(std::map<std::string, std::any> config_map, double& wirelength);
   std::vector<double> getWireLengthAndViaNum(std::map<std::string, std::any> config_map);
+#endif
 
-  // DRC
-  void* initRegionQuery();
-  void destroyRegionQuery(void* region_query);
-  void addEnvRectList(void* region_query, const ids::DRCRect& env_rect);
-  void addEnvRectList(void* region_query, const std::vector<ids::DRCRect>& env_rect_list);
-  void delEnvRectList(void* region_query, const ids::DRCRect& env_rect);
-  void delEnvRectList(void* region_query, const std::vector<ids::DRCRect>& env_rect_list);
-  bool hasViolation(void* region_query, const ids::DRCRect& drc_rect);
-  bool hasViolation(void* region_query, const std::vector<ids::DRCRect>& drc_rect_list);
-  std::map<std::string, int> getViolation(void* region_query);
-  std::map<std::string, int> getViolation(void* region_query, const std::vector<ids::DRCRect>& drc_rect_list);
-  std::vector<LayerRect> getMaxScope(const std::vector<ids::DRCRect>& drc_rect_list);
-  std::vector<LayerRect> getMinScope(const std::vector<ids::DRCRect>& drc_rect_list);
-  std::vector<LayerRect> getMaxScope(const ids::DRCRect& drc_rect);
-  std::vector<LayerRect> getMinScope(const ids::DRCRect& drc_rect);
-  LayerRect convertToLayerRect(ids::DRCRect ids_rect);
-  ids::DRCRect convertToIDSRect(int net_idx, LayerRect rt_rect, bool is_routing);
-  // void plotRegionQuery(void* region_query, const std::vector<ids::DRCRect>& drc_rect_list);
-
-  // CTS
-  std::vector<ids::PHYNode> getPHYNodeList(std::vector<ids::Segment> segment_list);
-
-  // STA
-  void reportGRTiming();
-  void reportDRTiming();
+#if 1  // RT调用外部的API
+  // 调用iDRC 计算版图的DRC违例
+  std::vector<Violation> getViolationList(std::vector<idb::IdbLayerShape*>& env_shape_list,
+                                          std::map<int32_t, std::vector<idb::IdbLayerShape*>>& net_pin_shape_map,
+                                          std::map<int32_t, std::vector<idb::IdbRegularWireSegment*>>& net_result_map);
+  // 调用iSTA 计算时序
+  std::map<std::string, std::vector<double>> getTiming(
+      std::map<int32_t, std::map<LayerCoord, std::vector<std::string>, CmpLayerCoordByXASC>>& net_pin_coord_map,
+      std::map<int32_t, std::vector<Segment<LayerCoord>>>& net_segment_map);
+#endif
 
  private:
   static RTAPI* _rt_api_instance;

@@ -22,15 +22,9 @@ namespace irt {
 
 enum class ConnectType
 {
-  kNone = 0,
-  kSignal = 1,
-  kPower = 2,
-  kGround = 3,
-  kClock = 4,
-  kAnalog = 5,
-  kReset = 6,
-  kScan = 7,
-  kTieoff = 8
+  kNone,
+  kSignal,
+  kClock
 };
 
 struct GetConnectTypeName
@@ -45,26 +39,8 @@ struct GetConnectTypeName
       case ConnectType::kSignal:
         connect_name = "signal";
         break;
-      case ConnectType::kPower:
-        connect_name = "power";
-        break;
-      case ConnectType::kGround:
-        connect_name = "ground";
-        break;
       case ConnectType::kClock:
         connect_name = "clock";
-        break;
-      case ConnectType::kAnalog:
-        connect_name = "analog";
-        break;
-      case ConnectType::kReset:
-        connect_name = "reset";
-        break;
-      case ConnectType::kScan:
-        connect_name = "scan";
-        break;
-      case ConnectType::kTieoff:
-        connect_name = "tieoff";
         break;
       default:
         LOG_INST.error(Loc::current(), "Unrecognized type!");

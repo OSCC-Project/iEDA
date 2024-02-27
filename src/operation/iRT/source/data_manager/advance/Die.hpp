@@ -16,11 +16,11 @@
 // ***************************************************************************************
 #pragma once
 
-#include "EXTLayerRect.hpp"
+#include "EXTPlanarRect.hpp"
 
 namespace irt {
 
-class Die : public EXTLayerRect
+class Die : public EXTPlanarRect
 {
  public:
   Die() = default;

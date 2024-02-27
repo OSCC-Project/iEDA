@@ -17,6 +17,7 @@
 #pragma once
 
 #include "EXTPlanarRect.hpp"
+#include "LayerRect.hpp"
 
 namespace irt {
 
@@ -26,13 +27,15 @@ class EXTLayerRect : public EXTPlanarRect
   EXTLayerRect() = default;
   ~EXTLayerRect() = default;
   // getter
-  irt_int get_layer_idx() const { return _layer_idx; }
+  int32_t get_layer_idx() const { return _layer_idx; }
   // setter
-  void set_layer_idx(const irt_int layer_idx) { _layer_idx = layer_idx; }
+  void set_layer_idx(const int32_t layer_idx) { _layer_idx = layer_idx; }
   // function
+  LayerRect getGridLayerRect() { return LayerRect(get_grid_rect(), get_layer_idx()); }
+  LayerRect getRealLayerRect() { return LayerRect(get_real_rect(), get_layer_idx()); }
 
  private:
-  irt_int _layer_idx = -1;
+  int32_t _layer_idx = -1;
 };
 
 }  // namespace irt

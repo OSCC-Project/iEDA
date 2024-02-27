@@ -26,6 +26,7 @@
 #include "ScriptEngine.hh"
 #include "UserShell.hh"
 #include "tcl_flow.h"
+#include "tcl_flowconfig.h"
 
 using namespace ieda;
 
@@ -35,6 +36,7 @@ int registerCmdFlow()
 {
   registerTclCmd(CmdFlowAutoRun, "flow_run");
   registerTclCmd(CmdFlowExit, "flow_exit");
+  registerTclCmd(CmdFlowConfig, "flow_config");
   return EXIT_SUCCESS;
 }
 

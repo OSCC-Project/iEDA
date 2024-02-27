@@ -516,7 +516,6 @@ json FeatureParser::flowSummary(std::string step)
 
 json FeatureParser::buildSummaryPL(std::string step)
 {
-
   json summary_pl;
   // 1:全局布局、详细布局、合法化都需要存储的数据参数，需要根据step存储不同的值
   auto place_density = PlacerDBInst.place_density;
@@ -530,7 +529,7 @@ json FeatureParser::buildSummaryPL(std::string step)
   auto suggest_freq = PlacerDBInst.suggest_freq;
 
   // 2:全局布局、详细布局需要存储的数据参数
-  if(step == "place"){
+  if (step == "place") {
     summary_pl["gplace"]["place_density"] = place_density[0];
     summary_pl["gplace"]["pin_density"] = pin_density[0];
     summary_pl["gplace"]["HPWL"] = HPWL[0];
@@ -541,7 +540,6 @@ json FeatureParser::buildSummaryPL(std::string step)
     summary_pl["gplace"]["wns"] = wns[0];
     summary_pl["gplace"]["suggest_freq"] = suggest_freq[0];
 
-    
     summary_pl["dplace"]["place_density"] = place_density[1];
     summary_pl["dplace"]["pin_density"] = pin_density[1];
     summary_pl["dplace"]["HPWL"] = HPWL[1];
@@ -574,7 +572,7 @@ json FeatureParser::buildSummaryPL(std::string step)
     summary_pl["overflow"] = PlacerDBInst.gp_overflow;
   }
   // 3:合法化需要存储的数据参数
-  else if(step == "legalization"){
+  else if (step == "legalization") {
     summary_pl["legalization"]["place_density"] = place_density[2];
     summary_pl["legalization"]["pin_density"] = pin_density[2];
     summary_pl["legalization"]["HPWL"] = HPWL[2];
@@ -670,11 +668,10 @@ json FeatureParser::buildSummaryTO(std::string step)
 
   // max_fanout, min_slew_slack, min_cap_slack
 
-
   // before: 初始值，tns，wns，freq
   json summary_subto;
   auto to_eval_data = ToApiInst.getEvalData();
-  for(auto eval_data : to_eval_data){
+  for (auto eval_data : to_eval_data) {
     auto clk_name = eval_data.name;
     summary_subto[clk_name]["initial_tns"] = eval_data.initial_tns;
     summary_subto[clk_name]["initial_wns"] = eval_data.initial_wns;
@@ -696,11 +693,14 @@ json FeatureParser::buildSummaryTO(std::string step)
   });
 
   // delta: 迭代的值，优化后的值减去初始值
-  for(auto eval_data : to_eval_data){
+  for (auto eval_data : to_eval_data) {
     auto clk_name = eval_data.name;
-    summary_subto[clk_name]["delta_tns"] = static_cast<double>(summary_subto[clk_name]["optimized_tns"]) - static_cast<double>(summary_subto[clk_name]["initial_tns"]);
-    summary_subto[clk_name]["delta_wns"] = static_cast<double>(summary_subto[clk_name]["optimized_wns"]) - static_cast<double>(summary_subto[clk_name]["initial_wns"]);
-    summary_subto[clk_name]["delta_suggest_freq"] = static_cast<double>(summary_subto[clk_name]["optimized_suggest_freq"]) - static_cast<double>(summary_subto[clk_name]["initial_suggest_freq"]);
+    summary_subto[clk_name]["delta_tns"]
+        = static_cast<double>(summary_subto[clk_name]["optimized_tns"]) - static_cast<double>(summary_subto[clk_name]["initial_tns"]);
+    summary_subto[clk_name]["delta_wns"]
+        = static_cast<double>(summary_subto[clk_name]["optimized_wns"]) - static_cast<double>(summary_subto[clk_name]["initial_wns"]);
+    summary_subto[clk_name]["delta_suggest_freq"] = static_cast<double>(summary_subto[clk_name]["optimized_suggest_freq"])
+                                                    - static_cast<double>(summary_subto[clk_name]["initial_suggest_freq"]);
   }
 
   summary_to["sta"] = summary_subto;

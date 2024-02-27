@@ -128,7 +128,6 @@ int32_t IdbSpecialNet::get_layer_width(string layer_name)
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 IdbSpecialNetList::IdbSpecialNetList()
 {
-  _num = 0;
 }
 
 IdbSpecialNetList::~IdbSpecialNetList()
@@ -142,7 +141,6 @@ IdbSpecialNetList::~IdbSpecialNetList()
 
   _net_list.clear();
   std::vector<IdbSpecialNet*>().swap(_net_list);
-  _num = 0;
 
   for (auto* edge : _edge_segment_list) {
     if (nullptr != edge) {
@@ -210,7 +208,7 @@ IdbSpecialNet* IdbSpecialNetList::find_net(string name)
 
 IdbSpecialNet* IdbSpecialNetList::find_net(size_t index)
 {
-  if (_num > index) {
+  if (_net_list.size() > index) {
     return _net_list.at(index);
   }
 
@@ -224,7 +222,6 @@ IdbSpecialNet* IdbSpecialNetList::add_net(IdbSpecialNet* net)
     pNet = new IdbSpecialNet();
   }
   _net_list.emplace_back(pNet);
-  _num++;
 
   return pNet;
 }
@@ -234,7 +231,6 @@ IdbSpecialNet* IdbSpecialNetList::add_net(string name)
   IdbSpecialNet* pNet = new IdbSpecialNet();
   pNet->set_net_name(name);
   _net_list.emplace_back(pNet);
-  _num++;
 
   return pNet;
 }

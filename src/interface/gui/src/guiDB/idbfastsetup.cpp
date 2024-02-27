@@ -345,8 +345,9 @@ void IdbSpeedUpSetup::createInstanceCorePin(vector<IdbPin*>& pin_list, GuiSpeedu
   int32_t pin_width = layer_routing != nullptr ? layer_routing->get_width() - 2 : _layout->get_rows()->get_row_height() / 20;
 
   for (IdbPin* pin : pin_list) {
-    if (pin->get_term()->is_pdn() || pin->get_net() == nullptr)
+    if (pin->get_term()->is_pdn() || pin->get_net() == nullptr) {
       continue;
+    }
 
     if (pin != nullptr && pin->get_term()->get_port_number() > 0) {
       if (pin->get_instance()->get_cell_master()->is_core()) {
@@ -360,10 +361,25 @@ void IdbSpeedUpSetup::createInstanceCorePin(vector<IdbPin*>& pin_list, GuiSpeedu
   }
 }
 
+void IdbSpeedUpSetup::createInstanceCoreObs(vector<idb::IdbLayerShape*>& obs_list, GuiSpeedupItem* item) {
+  if (item == nullptr) {
+    return;
+  }
+
+  GuiSpeedupInstance* instance_item = dynamic_cast<GuiSpeedupInstance*>(item);
+  for (idb::IdbLayerShape* layer_shape : obs_list) {
+    IdbLayer* layer = layer_shape->get_layer();
+    GuiSpeedupWire* obs_shape =
+        instance_item->add_shape(attributeInst->getLayerColorDark(layer->get_name()), layer->get_order(), true);
+    createLayerShape(*layer_shape, obs_shape);
+  }
+}
+
 void IdbSpeedUpSetup::createInstanceMacroPin(vector<IdbPin*>& pin_list, GuiInstance* gui_instance) {
   for (IdbPin* pin : pin_list) {
-    if (pin->get_term()->get_name() == "VDD" || pin->get_term()->get_name() == "VSS" || pin->get_net() == nullptr)
+    if (pin->get_term()->get_name() == "VDD" || pin->get_term()->get_name() == "VSS" || pin->get_net() == nullptr) {
       continue;
+    }
 
     if (pin != nullptr && pin->get_term()->get_port_number() > 0) {
       if (!pin->get_instance()->get_cell_master()->is_core()) {
@@ -389,7 +405,7 @@ void IdbSpeedUpSetup::createPinPortShape(vector<IdbPin*>& pin_list, GuiSpeedupIt
         for (IdbLayerShape* layer_shape : pin->get_port_box_list()) {
           IdbLayer* layer = layer_shape->get_layer();
           GuiSpeedupWire* pin_shape =
-              instance_item->add_pin_shape(attributeInst->getLayerColor(layer->get_name()), layer->get_order());
+              instance_item->add_shape(attributeInst->getLayerColorLight(layer->get_name()), layer->get_order());
           createLayerShape(*layer_shape, pin_shape);
         }
       }
@@ -444,6 +460,7 @@ void IdbSpeedUpSetup::createInstanceCore(IdbInstance* instance) {
     if (DbSetupType::kGlobalPlace != _type) {
       createInstanceCorePin(instance->get_pin_list()->get_pin_list(), item);
       createPinPortShape(instance->get_pin_list()->get_pin_list(), item);
+      createInstanceCoreObs(instance->get_obs_box_list(), item);
     }
   }
 }
