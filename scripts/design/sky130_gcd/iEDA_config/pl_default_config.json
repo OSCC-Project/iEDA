@@ -2,7 +2,7 @@
     "PL": {
         "is_max_length_opt": 0,
         "max_length_constraint": 1000000,
-        "is_timing_effort": 1,
+        "is_timing_effort": 0,
         "is_congestion_effort": 0,
         "ignore_net_degree": 100,
         "num_threads": 1,
