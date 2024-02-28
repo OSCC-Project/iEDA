@@ -16,7 +16,7 @@
 // ***************************************************************************************
 #pragma once
 
-#include "RTU.hpp"
+#include "RTHeader.hpp"
 
 namespace irt {
 
@@ -24,7 +24,7 @@ class DRBoxId
 {
  public:
   DRBoxId() = default;
-  DRBoxId(const irt_int x, const irt_int y)
+  DRBoxId(const int32_t x, const int32_t y)
   {
     _x = x;
     _y = y;
@@ -33,16 +33,16 @@ class DRBoxId
   bool operator==(const DRBoxId& other) { return this->_x == other._x && this->_y == other._y; }
   bool operator!=(const DRBoxId& other) { return !((*this) == other); }
   // getter
-  irt_int get_x() const { return _x; }
-  irt_int get_y() const { return _y; }
+  int32_t get_x() const { return _x; }
+  int32_t get_y() const { return _y; }
   // setter
-  void set_x(const irt_int x) { _x = x; }
-  void set_y(const irt_int y) { _y = y; }
+  void set_x(const int32_t x) { _x = x; }
+  void set_y(const int32_t y) { _y = y; }
   // function
 
  private:
-  irt_int _x = -1;
-  irt_int _y = -1;
+  int32_t _x = -1;
+  int32_t _y = -1;
 };
 
 struct CmpDRBoxId

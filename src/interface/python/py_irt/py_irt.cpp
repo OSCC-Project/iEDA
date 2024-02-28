@@ -20,6 +20,8 @@
 
 #include <iRT/api/RTAPI.hpp>
 #include <string>
+
+#include "flow_config.h"
 namespace python_interface {
 
 bool destroyRT()
@@ -30,8 +32,8 @@ bool destroyRT()
 
 bool runRT()
 {
-  RTAPI_INST.runRT({irt::Tool::kPinAccessor, irt::Tool::kResourceAllocator, irt::Tool::kGlobalRouter, irt::Tool::kTrackAssigner, \
-                    irt::Tool::kDetailedRouter, irt::Tool::kViolationRepairer});
+  RTAPI_INST.runRT({irt::Tool::kPinAccessor, irt::Tool::kResourceAllocator, irt::Tool::kGlobalRouter, irt::Tool::kTrackAssigner,
+                    irt::Tool::kDetailedRouter});
   return true;
 }
 
@@ -40,6 +42,8 @@ bool initConfigMapByJSON(const std::string& config, std::map<std::string, std::a
 
 bool initRT(std::string& config, std::map<std::string, std::string>& config_dict)
 {
+  iplf::flowConfigInst->set_status_stage("iRT - Routing");
+
   std::map<std::string, std::any> config_map;
 
   bool pass = false;

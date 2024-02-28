@@ -12,6 +12,7 @@ target_link_libraries(tcl_ipl
         tool_manager
         ipl-api
         tool_api_ipl
+        tcl_util
 )
 
 target_include_directories(tcl_ipl

@@ -22,7 +22,7 @@ enum class LogLevel
 {
   kNone = 0,
   kInfo = 1,
-  kWarning = 2,
+  kWarn = 2,
   kError = 3
 };
 

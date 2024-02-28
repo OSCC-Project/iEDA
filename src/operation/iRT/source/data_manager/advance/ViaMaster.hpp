@@ -26,16 +26,16 @@ class ViaMasterIdx
   ViaMasterIdx() = default;
   ~ViaMasterIdx() = default;
   // getter
-  irt_int get_below_layer_idx() const { return _below_layer_idx; }
-  irt_int get_via_idx() const { return _via_idx; }
+  int32_t get_below_layer_idx() const { return _below_layer_idx; }
+  int32_t get_via_idx() const { return _via_idx; }
   // setter
-  void set_below_layer_idx(const irt_int below_layer_idx) { _below_layer_idx = below_layer_idx; }
-  void set_via_idx(const irt_int via_idx) { _via_idx = via_idx; }
+  void set_below_layer_idx(const int32_t below_layer_idx) { _below_layer_idx = below_layer_idx; }
+  void set_via_idx(const int32_t via_idx) { _via_idx = via_idx; }
   // function
 
  private:
-  irt_int _below_layer_idx = -1;
-  irt_int _via_idx = -1;
+  int32_t _below_layer_idx = -1;
+  int32_t _via_idx = -1;
 };
 
 class ViaMaster
@@ -51,10 +51,10 @@ class ViaMaster
   LayerRect& get_below_enclosure() { return _below_enclosure; }
   Direction get_below_direction() const { return _below_direction; }
   std::vector<PlanarRect>& get_cut_shape_list() { return _cut_shape_list; }
-  irt_int get_cut_layer_idx() const { return _cut_layer_idx; }
+  int32_t get_cut_layer_idx() const { return _cut_layer_idx; }
   // setter
   void set_via_master_idx(const ViaMasterIdx& via_master_idx) { _via_master_idx = via_master_idx; }
-  void set_via_master_idx(const irt_int below_layer_idx, const irt_int via_idx)
+  void set_via_master_idx(const int32_t below_layer_idx, const int32_t via_idx)
   {
     _via_master_idx.set_below_layer_idx(below_layer_idx);
     _via_master_idx.set_via_idx(via_idx);
@@ -65,7 +65,7 @@ class ViaMaster
   void set_below_enclosure(const LayerRect& below_enclosure) { _below_enclosure = below_enclosure; }
   void set_below_direction(const Direction& below_direction) { _below_direction = below_direction; }
   void set_cut_shape_list(const std::vector<PlanarRect>& cut_shape_list) { _cut_shape_list = cut_shape_list; }
-  void set_cut_layer_idx(const irt_int cut_layer_idx) { _cut_layer_idx = cut_layer_idx; }
+  void set_cut_layer_idx(const int32_t cut_layer_idx) { _cut_layer_idx = cut_layer_idx; }
   // function
 
  private:
@@ -76,7 +76,7 @@ class ViaMaster
   LayerRect _below_enclosure;
   Direction _below_direction = Direction::kNone;
   std::vector<PlanarRect> _cut_shape_list;
-  irt_int _cut_layer_idx;
+  int32_t _cut_layer_idx;
 };
 
 }  // namespace irt

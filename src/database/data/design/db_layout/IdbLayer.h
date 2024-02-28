@@ -260,7 +260,7 @@ class IdbMinStep
     if (type == "INSIDECORNER") {
       set_type(Type::kINSIDECORNER);
     } else if (type == "OUTSIDECORNER") {
-      set_type(Type::kINSIDECORNER);
+      set_type(Type::kOUTSIDECORNER);
     } else if (type == "STEP") {
       set_type(Type::kSTEP);
     } else {
@@ -799,6 +799,7 @@ class IdbLayers
   {
     return _routing_layers.size() > 0 ? dynamic_cast<IdbLayerRouting*>(_routing_layers[0]) : nullptr;
   }
+  bool is_pr_layer(IdbLayer* layer) { return layer->get_order() >= get_bottom_routing_layer()->get_order(); }
   vector<IdbLayer*>& get_cut_layers() { return _cut_layers; }
   int32_t get_cut_layers_number() { return _cut_layers.size(); }
   const int32_t get_layers_num() { return _layers.size(); }

@@ -47,6 +47,7 @@ public:
     int32_t get_global_padding() const { return _global_padding;}
     int32_t get_grid_cnt_x() const { return _grid_cnt_x;}
     int32_t get_grid_cnt_y() const { return _grid_cnt_y;}
+    int32_t get_enable_networkflow() const { return _enable_networkflow;} 
 
     // setter
     void set_thread_num(int32_t num_thread) { _thread_num = num_thread;}
@@ -54,11 +55,13 @@ public:
     void set_global_padding(int32_t padding) { _global_padding = padding;}
     void set_grid_cnt_x(int32_t grid_cnt_x) { _grid_cnt_x = grid_cnt_x;}
     void set_grid_cnt_y(int32_t grid_cnt_y) { _grid_cnt_y = grid_cnt_y;}
+    void set_enable_networkflow(int32_t enable_networkflow) {_enable_networkflow = enable_networkflow;}
 
 private:
     int32_t _thread_num;
     int32_t _max_displacement;
     int32_t _global_padding;
+    int32_t _enable_networkflow;
 
     // tmp keep the same as global placement
     int32_t _grid_cnt_x;

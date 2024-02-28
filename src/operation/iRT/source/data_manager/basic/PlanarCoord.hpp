@@ -16,7 +16,7 @@
 // ***************************************************************************************
 #pragma once
 
-#include "RTU.hpp"
+#include "RTHeader.hpp"
 
 namespace irt {
 
@@ -24,7 +24,7 @@ class PlanarCoord
 {
  public:
   PlanarCoord() = default;
-  PlanarCoord(const irt_int x, const irt_int y)
+  PlanarCoord(const int32_t x, const int32_t y)
   {
     _x = x;
     _y = y;
@@ -33,12 +33,12 @@ class PlanarCoord
   bool operator==(const PlanarCoord& other) const { return (_x == other._x && _y == other._y); }
   bool operator!=(const PlanarCoord& other) const { return !((*this) == other); }
   // getter
-  irt_int get_x() const { return _x; }
-  irt_int get_y() const { return _y; }
+  int32_t get_x() const { return _x; }
+  int32_t get_y() const { return _y; }
   // setter
-  void set_x(const irt_int x) { _x = x; }
-  void set_y(const irt_int y) { _y = y; }
-  void set_coord(const irt_int x, const irt_int y)
+  void set_x(const int32_t x) { _x = x; }
+  void set_y(const int32_t y) { _y = y; }
+  void set_coord(const int32_t x, const int32_t y)
   {
     _x = x;
     _y = y;
@@ -46,8 +46,8 @@ class PlanarCoord
   void set_coord(const PlanarCoord& coord) { set_coord(coord.get_x(), coord.get_y()); }
   // function
  private:
-  irt_int _x = -1;
-  irt_int _y = -1;
+  int32_t _x = -1;
+  int32_t _y = -1;
 };
 
 struct CmpPlanarCoordByXASC

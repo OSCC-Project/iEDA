@@ -37,6 +37,7 @@
 #include <vector>
 
 #include "../def_service/def_service.h"
+#include "zlib.h"
 
 namespace idb {
 
@@ -58,6 +59,13 @@ enum class DefWriteType
   kGlobalRouting,
   kDetailRouting,
   kMax
+};
+
+// 需要存为其它形式，可以添加其它枚举类型
+enum class SaveFormat
+{
+  kDef,
+  kGzip
 };
 
 class DefWrite
@@ -116,7 +124,11 @@ class DefWrite
   clock_t _start_time;
   clock_t _end_time;
 
-  FILE* file_write;
+  FILE* _file_write;
+  gzFile _file_write_gz;
   DefWriteType _type;
+
+  SaveFormat _font;
+  void writestr(const char* strdata, ...);
 };
 }  // namespace idb

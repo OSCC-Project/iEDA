@@ -368,10 +368,10 @@ void IdbPin::set_port_layer_shape()
   if (is_io_pin()) {
     if (!_io_term->is_placed())
       return;
+    IdbOrientTransform db_transform(this->get_orient(), this->get_location(), 0, 0);
 
     if (_io_term->is_port_exist()) {
       for (IdbPort* port : _io_term->get_port_list()) {
-        IdbOrientTransform db_transform(port->get_orient(), port->get_coordinate(), 0, 0);
         for (IdbLayerShape* layer_shape : port->get_layer_shape()) {
           IdbLayerShape* layer_shape_transform = new IdbLayerShape();
           layer_shape_transform->set_layer(layer_shape->get_layer());
@@ -379,14 +379,12 @@ void IdbPin::set_port_layer_shape()
             IdbRect* rect_transform = new IdbRect(rect);
             rect_transform->moveByStep(port->get_coordinate()->get_x(), port->get_coordinate()->get_y());
             db_transform.transformRect(rect_transform);
-
             layer_shape_transform->add_rect(rect_transform);
           }
           _layer_shape_list.emplace_back(layer_shape_transform);
         }
       }
     } else {
-      IdbOrientTransform db_transform(this->get_orient(), this->get_location(), 0, 0);
       for (IdbPort* port : _io_term->get_port_list()) {
         for (IdbLayerShape* layer_shape : port->get_layer_shape()) {
           IdbLayerShape* layer_shape_transform = new IdbLayerShape();
@@ -395,7 +393,6 @@ void IdbPin::set_port_layer_shape()
             IdbRect* rect_transform = new IdbRect(rect);
             rect_transform->moveByStep(_location->get_x(), _location->get_y());
             db_transform.transformRect(rect_transform);
-
             layer_shape_transform->add_rect(rect_transform);
           }
           _layer_shape_list.emplace_back(layer_shape_transform);
@@ -413,7 +410,6 @@ void IdbPin::set_port_layer_shape()
           IdbRect* rect_transform = new IdbRect(rect);
           rect_transform->moveByStep(_instance->get_coordinate()->get_x(), _instance->get_coordinate()->get_y());
           db_transform.transformRect(rect_transform);
-
           layer_shape_transform->add_rect(rect_transform);
         }
         _layer_shape_list.emplace_back(layer_shape_transform);
@@ -501,11 +497,29 @@ uint32_t IdbPins::get_net_pin_num()
   return num;
 }
 
-IdbPin* IdbPins::find_pin(string pin_name)
+IdbPin* IdbPins::find_pin(IdbPin* pin)
+{
+  for (IdbPin* pin_iter : _pin_list) {
+    if (pin_iter->get_pin_name() == pin->get_pin_name() && pin->get_instance() == pin_iter->get_instance()) {
+      return pin;
+    }
+  }
+
+  return nullptr;
+}
+
+IdbPin* IdbPins::find_pin(string pin_name, std::string instance_name)
 {
   for (IdbPin* pin : _pin_list) {
     if (pin->get_pin_name() == pin_name) {
-      return pin;
+      if (instance_name == "") {
+        return pin;
+      } else {
+        auto* instance = pin->get_instance();
+        if (instance != nullptr && instance->get_name() == instance_name) {
+          return pin;
+        }
+      }
     }
   }
 
@@ -595,25 +609,65 @@ IdbPin* IdbPins::find_pin_by_coordinate_list(vector<IdbCoordinate<int32_t>*>& co
 
 IdbPin* IdbPins::add_pin_list(IdbPin* pin)
 {
-  IdbPin* pPin = pin;
-  if (pPin == nullptr) {
+  //   IdbPin* pPin = nullptr;
+  //   if (pin == nullptr) {
+  //     pPin = new IdbPin();
+  //     _pin_list.emplace_back(pPin);
+  //   } else {
+  //     pPin = find_pin(pin);
+  //     if (nullptr == pPin) {
+  //       _pin_list.emplace_back(pin);
+  //       pPin = pin;
+  //     }
+  //   }
+  IdbPin* pPin = nullptr;
+  if (pin == nullptr) {
     pPin = new IdbPin();
+    _pin_list.emplace_back(pPin);
+  } else {
+    _pin_list.emplace_back(pin);
+    pPin = pin;
   }
-  _pin_list.emplace_back(pPin);
 
   return pPin;
 }
 
 IdbPin* IdbPins::add_pin_list(string pin_name)
 {
-  IdbPin* pPin = find_pin(pin_name);
-  if (pPin == nullptr) {
-    pPin = new IdbPin();
-    pPin->set_pin_name(pin_name);
-    _pin_list.emplace_back(pPin);
-  }
+  //   IdbPin* pPin = find_pin(pin_name);
+  //   if (pPin == nullptr) {
+  //     pPin = new IdbPin();
+  //     pPin->set_pin_name(pin_name);
+  //     _pin_list.emplace_back(pPin);
+  //   }
+  IdbPin* pPin = new IdbPin();
+  pPin->set_pin_name(pin_name);
+  _pin_list.emplace_back(pPin);
 
   return pPin;
+}
+/**
+ * check if same pin exist and remove it
+ */
+void IdbPins::checkPins()
+{
+  std::set<std::string> pin_name_set;
+  for (auto it = _pin_list.begin(); it != _pin_list.end();) {
+    int pin_num = pin_name_set.size();
+    auto pin = *it;
+    std::string name = pin->get_pin_name();
+    if (pin->get_instance() != nullptr) {
+      name = pin->get_instance()->get_name() + name;
+    }
+    pin_name_set.insert(name);
+    /// if has same instance+pin
+    if (pin_name_set.size() == pin_num) {
+      it = _pin_list.erase(it);
+      continue;
+    }
+
+    it++;
+  }
 }
 
 void IdbPins::reset()

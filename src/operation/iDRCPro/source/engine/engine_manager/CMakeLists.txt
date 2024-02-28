@@ -1,0 +1,18 @@
+file(GLOB_RECURSE DRC_ENGINE_MANAGER "*.cpp")
+
+add_library(idrc_engine_manager ${DRC_ENGINE_MANAGER})
+
+target_link_libraries(idrc_engine_manager
+    PUBLIC
+    solver_geometry
+    solver_geometry_boost
+    idrc_engine_scanline
+    idrc_pro_data
+)
+
+target_include_directories(idrc_engine_manager
+    PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+# set(CMAKE_BUILD_TYPE "debug")

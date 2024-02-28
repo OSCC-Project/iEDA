@@ -38,12 +38,12 @@ void EGRDataManager::wrapConfig(std::map<std::string, std::any>& config_map)
 {
   _egr_config.temp_directory_path
       = RTUtil::getConfigValue<std::string>(config_map, "-temp_directory_path", "./result/rt/egr_temp_directory/");
-  _egr_config.thread_number = RTUtil::getConfigValue<irt_int>(config_map, "-thread_number", 8);
-  _egr_config.congestion_cell_x_pitch = RTUtil::getConfigValue<irt_int>(config_map, "-congestion_cell_x_pitch", 15);
-  _egr_config.congestion_cell_y_pitch = RTUtil::getConfigValue<irt_int>(config_map, "-congestion_cell_y_pitch", 15);
+  _egr_config.thread_number = RTUtil::getConfigValue<int32_t>(config_map, "-thread_number", 8);
+  _egr_config.congestion_cell_x_pitch = RTUtil::getConfigValue<int32_t>(config_map, "-congestion_cell_x_pitch", 15);
+  _egr_config.congestion_cell_y_pitch = RTUtil::getConfigValue<int32_t>(config_map, "-congestion_cell_y_pitch", 15);
   _egr_config.bottom_routing_layer = RTUtil::getConfigValue<std::string>(config_map, "-bottom_routing_layer", "");
   _egr_config.top_routing_layer = RTUtil::getConfigValue<std::string>(config_map, "-top_routing_layer", "");
-  _egr_config.accuracy = RTUtil::getConfigValue<irt_int>(config_map, "-accuracy", 2);
+  _egr_config.accuracy = RTUtil::getConfigValue<int32_t>(config_map, "-accuracy", 2);
   _egr_config.skip_net_name_list
       = RTUtil::getConfigValue<std::vector<std::string>>(config_map, "-skip_net_name_list", std::vector<std::string>());
   _egr_config.strategy = RTUtil::getConfigValue<std::string>(config_map, "-strategy", "gradual");
@@ -121,9 +121,9 @@ void EGRDataManager::wrapTrackAxis(RoutingLayer& routing_layer, idb::IdbLayerRou
     idb::IdbTrack* idb_track = idb_track_grid->get_track();
 
     ScaleGrid track_grid;
-    track_grid.set_start_line(static_cast<irt_int>(idb_track->get_start()));
-    track_grid.set_step_length(static_cast<irt_int>(idb_track->get_pitch()));
-    track_grid.set_step_num(static_cast<irt_int>(idb_track_grid->get_track_num()));
+    track_grid.set_start_line(static_cast<int32_t>(idb_track->get_start()));
+    track_grid.set_step_length(static_cast<int32_t>(idb_track->get_pitch()));
+    track_grid.set_step_num(static_cast<int32_t>(idb_track_grid->get_track_num()));
 
     if (idb_track->get_direction() == idb::IdbTrackDirection::kDirectionX) {
       track_axis.get_x_grid_list().push_back(track_grid);
@@ -198,12 +198,12 @@ void EGRDataManager::wrapArtificialBlockage(idb::IdbBuilder* idb_builder)
   // Artificial
   idb::IdbBlockageList* idb_blockage_list = idb_builder->get_def_service()->get_design()->get_blockage_list();
   if (!idb_blockage_list->get_blockage_list().empty()) {
-    LOG_INST.warning(Loc::current(), "The artificial blockage will be ignored!");
+    LOG_INST.warn(Loc::current(), "The artificial blockage will be ignored!");
   }
 
   // std::vector<Blockage>& routing_blockage_list = _database.get_routing_blockage_list();
 
-  // LOG_INST.warning(Loc::current(), "The artificial blockage will be ignored!");
+  // LOG_INST.warn(Loc::current(), "The artificial blockage will be ignored!");
 
   // // Artificial
   // idb::IdbBlockageList* idb_blockage_list = idb_builder->get_def_service()->get_design()->get_blockage_list();
@@ -304,6 +304,7 @@ void EGRDataManager::wrapNetList(idb::IdbBuilder* idb_builder)
       EGRNet egr_net;
       egr_net.set_net_name(idb_net->get_net_name());
       wrapPinList(egr_net, idb_net);
+      processEmptyShapePin(egr_net);
       wrapDrivingPin(egr_net, idb_net);
       egr_net_list.push_back(std::move(egr_net));
     }
@@ -355,8 +356,7 @@ void EGRDataManager::wrapPinList(EGRNet& egr_net, idb::IdbNet* idb_net)
     egr_pin_list.push_back(std::move(egr_pin));
   }
   // io pin list
-  auto* io_pins = idb_net->get_io_pins();
-  for (auto* io_pin : io_pins->get_pin_list()) {
+  for (auto* io_pin : idb_net->get_io_pins()->get_pin_list()) {
     EGRPin egr_pin;
     egr_pin.set_pin_name(io_pin->get_pin_name());
     wrapPinShapeList(egr_pin, io_pin);
@@ -381,6 +381,36 @@ void EGRDataManager::wrapPinShapeList(EGRPin& egr_pin, idb::IdbPin* idb_pin)
   }
 }
 
+void EGRDataManager::processEmptyShapePin(EGRNet& net)
+{
+  std::vector<EGRPin>& pin_list = net.get_pin_list();
+
+  std::vector<int32_t> empty_pin_idx_list;
+  for (size_t i = 0; i < pin_list.size(); i++) {
+    EGRPin& pin = pin_list[i];
+    if (pin.get_routing_shape_list().empty()) {
+      empty_pin_idx_list.push_back(i);
+    }
+  }
+
+  int32_t legal_pin_idx = -1;
+  for (size_t i = 0; i < pin_list.size(); i++) {
+    EGRPin& pin = pin_list[i];
+    if (!pin.get_routing_shape_list().empty()) {
+      legal_pin_idx = i;
+      break;
+    }
+  }
+
+  if (legal_pin_idx == -1) {
+    LOG_INST.error(Loc::current(), "There is no legal pin for net ", net.get_net_name());
+  }
+
+  for (size_t i = 0; i < empty_pin_idx_list.size(); i++) {
+    pin_list[empty_pin_idx_list[i]].set_routing_shape_list(pin_list[legal_pin_idx].get_routing_shape_list());
+  }
+}
+
 void EGRDataManager::wrapDrivingPin(EGRNet& egr_net, idb::IdbNet* idb_net)
 {
   idb::IdbPin* idb_driving_pin = idb_net->get_driving_pin();
@@ -397,20 +427,20 @@ void EGRDataManager::wrapDrivingPin(EGRNet& egr_net, idb::IdbNet* idb_net)
 void EGRDataManager::updateHelper(idb::IdbBuilder* idb_builder)
 {
   std::vector<RoutingLayer>& routing_layer_list = _egr_database.get_routing_layer_list();
-  std::map<irt_int, irt_int>& db_to_egr_cut_layer_idx_map = _egr_helper.get_db_to_egr_cut_layer_idx_map();
-  std::map<irt_int, irt_int>& db_to_egr_routing_layer_idx_map = _egr_helper.get_db_to_egr_routing_layer_idx_map();
-  std::map<std::string, irt_int>& cut_layer_name_idx_map = _egr_helper.get_cut_layer_name_idx_map();
-  std::map<std::string, irt_int>& routing_layer_name_idx_map = _egr_helper.get_routing_layer_name_idx_map();
+  std::map<int32_t, int32_t>& db_to_egr_cut_layer_idx_map = _egr_helper.get_db_to_egr_cut_layer_idx_map();
+  std::map<int32_t, int32_t>& db_to_egr_routing_layer_idx_map = _egr_helper.get_db_to_egr_routing_layer_idx_map();
+  std::map<std::string, int32_t>& cut_layer_name_idx_map = _egr_helper.get_cut_layer_name_idx_map();
+  std::map<std::string, int32_t>& routing_layer_name_idx_map = _egr_helper.get_routing_layer_name_idx_map();
 
   for (size_t i = 0; i < routing_layer_list.size(); ++i) {
-    db_to_egr_routing_layer_idx_map[routing_layer_list[i].get_layer_idx()] = static_cast<irt_int>(i);
-    routing_layer_name_idx_map[routing_layer_list[i].get_layer_name()] = static_cast<irt_int>(i);
+    db_to_egr_routing_layer_idx_map[routing_layer_list[i].get_layer_idx()] = static_cast<int32_t>(i);
+    routing_layer_name_idx_map[routing_layer_list[i].get_layer_name()] = static_cast<int32_t>(i);
   }
 
   std::vector<CutLayer>& cut_layer_list = _egr_database.get_cut_layer_list();
   for (size_t i = 0; i < cut_layer_list.size(); i++) {
-    db_to_egr_cut_layer_idx_map[cut_layer_list[i].get_layer_idx()] = static_cast<irt_int>(i);
-    cut_layer_name_idx_map[cut_layer_list[i].get_layer_name()] = static_cast<irt_int>(i);
+    db_to_egr_cut_layer_idx_map[cut_layer_list[i].get_layer_idx()] = static_cast<int32_t>(i);
+    cut_layer_name_idx_map[cut_layer_list[i].get_layer_name()] = static_cast<int32_t>(i);
   }
 }
 
@@ -431,14 +461,14 @@ void EGRDataManager::buildSkipNetNameSet()
 
 void EGRDataManager::buildCellSize()
 {
-  std::map<irt_int, irt_int> pitch_count_map;
+  std::map<int32_t, int32_t> pitch_count_map;
   for (RoutingLayer& routing_layer : _egr_database.get_routing_layer_list()) {
     for (ScaleGrid& track_grid : routing_layer.getPreferTrackGridList()) {
       pitch_count_map[track_grid.get_step_length()]++;
     }
   }
-  irt_int ref_pitch = -1;
-  irt_int max_count = INT32_MIN;
+  int32_t ref_pitch = -1;
+  int32_t max_count = INT32_MIN;
   for (auto [pitch, count] : pitch_count_map) {
     if (count > max_count) {
       max_count = count;
@@ -452,7 +482,7 @@ void EGRDataManager::buildCellSize()
 void EGRDataManager::buildBottomTopLayerIdx()
 {
   std::vector<RoutingLayer>& routing_layer_list = _egr_database.get_routing_layer_list();
-  std::map<std::string, irt_int>& routing_layer_name_idx_map = _egr_helper.get_routing_layer_name_idx_map();
+  std::map<std::string, int32_t>& routing_layer_name_idx_map = _egr_helper.get_routing_layer_name_idx_map();
   _egr_config.bottom_routing_layer_idx = 0;
   _egr_config.top_routing_layer_idx = routing_layer_list.back().get_layer_idx();
 
@@ -479,7 +509,7 @@ void EGRDataManager::buildEGRStrategy()
   } else {
     _egr_config.egr_strategy = EGRStrategy::kGradul;
     _egr_config.strategy = "gradual";
-    LOG_INST.info(Loc::current(), "Optional strategys are 'topo' and 'gradual', use default strategy:gradual.");
+    LOG_INST.info(Loc::current(), "Optional strategys are 'topo' and 'gradual', use default strategy:gradual");
   }
 }
 
@@ -537,7 +567,7 @@ void EGRDataManager::makeLayerViaMasterList()
 
   std::vector<ViaMaster> first_via_master_list;
   for (ViaMaster& via_master : layer_via_master_list.front()) {
-    irt_int below_layer_idx = via_master.get_below_enclosure().get_layer_idx();
+    int32_t below_layer_idx = via_master.get_below_enclosure().get_layer_idx();
     if (below_layer_idx == 0) {
       first_via_master_list.push_back(via_master);
     } else {
@@ -589,13 +619,13 @@ void EGRDataManager::makeLayerViaMasterList()
         return a_below.getWidth() < b_below.getWidth();
       }
       // 对称
-      irt_int a_above_center_diff = std::abs(a_above.get_lb_x() + a_above.get_rt_x());
-      irt_int b_above_center_diff = std::abs(b_above.get_lb_x() + b_above.get_rt_x());
+      int32_t a_above_center_diff = std::abs(a_above.get_lb_x() + a_above.get_rt_x());
+      int32_t b_above_center_diff = std::abs(b_above.get_lb_x() + b_above.get_rt_x());
       if (a_above_center_diff != b_above_center_diff) {
         return a_above_center_diff < b_above_center_diff;
       }
-      irt_int a_below_center_diff = std::abs(a_below.get_lb_x() + a_below.get_rt_x());
-      irt_int b_below_center_diff = std::abs(b_below.get_lb_x() + b_below.get_rt_x());
+      int32_t a_below_center_diff = std::abs(a_below.get_lb_x() + a_below.get_rt_x());
+      int32_t b_below_center_diff = std::abs(b_below.get_lb_x() + b_below.get_rt_x());
       if (a_below_center_diff != b_below_center_diff) {
         return a_below_center_diff < b_below_center_diff;
       }
@@ -621,12 +651,12 @@ void EGRDataManager::buildDie()
 void EGRDataManager::buildBlockageList()
 {
   std::vector<RoutingLayer>& routing_layer_list = _egr_database.get_routing_layer_list();
-  irt_int die_real_rt_x = _egr_database.get_die().get_real_rt_x();
-  irt_int die_real_rt_y = _egr_database.get_die().get_real_rt_y();
+  int32_t die_real_rt_x = _egr_database.get_die().get_real_rt_x();
+  int32_t die_real_rt_y = _egr_database.get_die().get_real_rt_y();
 
   for (Blockage& blockage : _egr_database.get_routing_blockage_list()) {
-    irt_int layer_idx = getEGRRoutingLayerIndexByDB(blockage.get_layer_idx());
-    irt_int half_wire_width = routing_layer_list[layer_idx].get_min_width() / 2;
+    int32_t layer_idx = getEGRRoutingLayerIndexByDB(blockage.get_layer_idx());
+    int32_t half_wire_width = routing_layer_list[layer_idx].get_min_width() / 2;
 
     blockage.set_real_rect(RTUtil::getEnlargedRect(blockage.get_real_rect(), half_wire_width));
     if (blockage.get_real_rt_x() > die_real_rt_x) {
@@ -640,41 +670,10 @@ void EGRDataManager::buildBlockageList()
   }
 }
 
-void processPinList(EGRNet& egr_net)
-{
-  std::vector<EGRPin>& pin_list = egr_net.get_pin_list();
-
-  std::vector<irt_int> empty_pin_idx_list;
-  for (size_t i = 0; i < pin_list.size(); i++) {
-    EGRPin& pin = pin_list[i];
-    if (pin.get_routing_shape_list().empty()) {
-      empty_pin_idx_list.push_back(i);
-    }
-  }
-
-  irt_int legal_pin_idx = -1;
-  for (size_t i = 0; i < pin_list.size(); i++) {
-    EGRPin& pin = pin_list[i];
-    if (!pin.get_routing_shape_list().empty()) {
-      legal_pin_idx = i;
-      break;
-    }
-  }
-
-  if (legal_pin_idx == -1) {
-    LOG_INST.error(Loc::current(), "There is no legal pin for net ", egr_net.get_net_name());
-  }
-
-  for (size_t i = 0; i < empty_pin_idx_list.size(); i++) {
-    pin_list[empty_pin_idx_list[i]].set_routing_shape_list(pin_list[legal_pin_idx].get_routing_shape_list());
-  }
-}
-
 void EGRDataManager::buildNetList()
 {
   std::vector<EGRNet>& egr_net_list = _egr_database.get_egr_net_list();
   for (EGRNet& egr_net : egr_net_list) {
-    processPinList(egr_net);
     buildPinList(egr_net);
     buildDrivingPin(egr_net);
   }
@@ -683,12 +682,12 @@ void EGRDataManager::buildNetList()
 void EGRDataManager::buildPinList(EGRNet& egr_net)
 {
   std::vector<EGRPin>& pin_list = egr_net.get_pin_list();
-  irt_int die_rt_x = _egr_database.get_die().get_real_rt_x();
-  irt_int die_rt_y = _egr_database.get_die().get_real_rt_y();
+  int32_t die_rt_x = _egr_database.get_die().get_real_rt_x();
+  int32_t die_rt_y = _egr_database.get_die().get_real_rt_y();
   for (size_t i = 0; i < pin_list.size(); i++) {
     EGRPin& egr_pin = pin_list[i];
 
-    egr_pin.set_pin_idx(static_cast<irt_int>(i));
+    egr_pin.set_pin_idx(static_cast<int32_t>(i));
     for (EXTLayerRect& routing_shape : egr_pin.get_routing_shape_list()) {
       routing_shape.set_layer_idx(getEGRRoutingLayerIndexByDB(routing_shape.get_layer_idx()));
       // checkPinShape
@@ -699,8 +698,8 @@ void EGRDataManager::buildPinList(EGRNet& egr_net)
       new_rect.set_rt_x(std::min(new_rect.get_rt_x(), die_rt_x));
       new_rect.set_rt_y(std::min(new_rect.get_rt_y(), die_rt_y));
       if (real_rect != new_rect) {
-        LOG_INST.warning(Loc::current(), "Pin:", egr_pin.get_pin_name(), "(", real_rect.get_lb_x(), ",", real_rect.get_lb_y(), ")---(",
-                         real_rect.get_rt_x(), ",", real_rect.get_rt_y(), ")", " is out of die");
+        LOG_INST.warn(Loc::current(), "Pin:", egr_pin.get_pin_name(), "(", real_rect.get_lb_x(), ",", real_rect.get_lb_y(), ")---(",
+                      real_rect.get_rt_x(), ",", real_rect.get_rt_y(), ")", " is out of die");
         real_rect = new_rect;
       }
 
@@ -748,16 +747,16 @@ void EGRDataManager::initLayerResourceMapSize()
     layer_resource_map.emplace_back(die.getXSize(), die.getYSize());
   }
   for (GridMap<EGRNode>& resource_map : layer_resource_map) {
-    for (irt_int x = 0; x < resource_map.get_x_size(); ++x) {
-      for (irt_int y = 0; y < resource_map.get_y_size(); ++y) {
+    for (int32_t x = 0; x < resource_map.get_x_size(); ++x) {
+      for (int32_t y = 0; y < resource_map.get_y_size(); ++y) {
         resource_map[x][y].set_lb(_egr_config.cell_width * x, _egr_config.cell_height * y);
         resource_map[x][y].set_rt(_egr_config.cell_width * (x + 1), _egr_config.cell_height * (y + 1));
       }
     }
-    for (irt_int x = 0; x < resource_map.get_x_size(); ++x) {
+    for (int32_t x = 0; x < resource_map.get_x_size(); ++x) {
       resource_map[x][resource_map.get_y_size() - 1].set_rt_y(die.get_real_rt_y());
     }
-    for (irt_int y = 0; y < resource_map.get_y_size(); ++y) {
+    for (int32_t y = 0; y < resource_map.get_y_size(); ++y) {
       resource_map[resource_map.get_x_size() - 1][y].set_rt_x(die.get_real_rt_x());
     }
   }
@@ -771,16 +770,16 @@ void EGRDataManager::addResourceMapSupply()
     GridMap<EGRNode>& resource_map = layer_resource_map[i];
 
     RoutingLayer& routing_layer = routing_layer_list[i];
-    irt_int track_start_line = routing_layer.getPreferTrackGridList().front().get_start_line();
-    irt_int track_pitch = routing_layer.getPreferTrackGridList().front().get_step_length();
+    int32_t track_start_line = routing_layer.getPreferTrackGridList().front().get_start_line();
+    int32_t track_pitch = routing_layer.getPreferTrackGridList().front().get_step_length();
 
-    for (irt_int x = 0; x < resource_map.get_x_size(); ++x) {
-      for (irt_int y = 0; y < resource_map.get_y_size(); ++y) {
+    for (int32_t x = 0; x < resource_map.get_x_size(); ++x) {
+      for (int32_t y = 0; y < resource_map.get_y_size(); ++y) {
         EGRNode& resource_node = resource_map[x][y];
         if (routing_layer.isPreferH()) {
           double end_track = std::ceil(std::max(0, resource_node.get_rt_y() - track_start_line) / 1.0 / track_pitch);
           double start_track = std::ceil(std::max(0, resource_node.get_lb_y() - track_start_line) / 1.0 / track_pitch);
-          irt_int track_num = static_cast<irt_int>(end_track - start_track);
+          int32_t track_num = static_cast<int32_t>(end_track - start_track);
 
           resource_node.addSupply(EGRResourceType::kWest, track_num);
           resource_node.addSupply(EGRResourceType::kEast, track_num);
@@ -788,7 +787,7 @@ void EGRDataManager::addResourceMapSupply()
         } else {
           double end_track = std::ceil(std::max(0, resource_node.get_rt_x() - track_start_line) / 1.0 / track_pitch);
           double start_track = std::ceil(std::max(0, resource_node.get_lb_x() - track_start_line) / 1.0 / track_pitch);
-          irt_int track_num = static_cast<irt_int>(end_track - start_track);
+          int32_t track_num = static_cast<int32_t>(end_track - start_track);
 
           resource_node.addSupply(EGRResourceType::kNorth, track_num);
           resource_node.addSupply(EGRResourceType::kSouth, track_num);
@@ -809,13 +808,13 @@ void EGRDataManager::addResourceMapDemand()
     GridMap<EGRNode>& resource_map = layer_resource_map[blockage.get_layer_idx()];
 
     PlanarRect& blockage_grid_rect = blockage.get_grid_rect();
-    for (irt_int x = blockage_grid_rect.get_lb_x(); x <= blockage_grid_rect.get_rt_x(); ++x) {
-      for (irt_int y = blockage_grid_rect.get_lb_y(); y <= blockage_grid_rect.get_rt_y(); ++y) {
+    for (int32_t x = blockage_grid_rect.get_lb_x(); x <= blockage_grid_rect.get_rt_x(); ++x) {
+      for (int32_t y = blockage_grid_rect.get_lb_y(); y <= blockage_grid_rect.get_rt_y(); ++y) {
         EGRNode& resource_node = resource_map[x][y];
-        irt_int real_lb_x = resource_node.get_lb_x();
-        irt_int real_lb_y = resource_node.get_lb_y();
-        irt_int real_rt_x = resource_node.get_rt_x();
-        irt_int real_rt_y = resource_node.get_rt_y();
+        int32_t real_lb_x = resource_node.get_lb_x();
+        int32_t real_lb_y = resource_node.get_lb_y();
+        int32_t real_rt_x = resource_node.get_rt_x();
+        int32_t real_rt_y = resource_node.get_rt_y();
 
         if (routing_layer.isPreferH()) {
           PlanarRect east_rect((real_lb_x + real_rt_x) / 2, real_lb_y, real_rt_x, real_rt_y);
@@ -851,8 +850,8 @@ void EGRDataManager::legalizeResourceMapDemand()
 
   for (size_t layer_idx = 0; layer_idx < layer_resource_map.size(); ++layer_idx) {
     GridMap<EGRNode>& resource_map = layer_resource_map[layer_idx];
-    for (irt_int x = 0; x < resource_map.get_x_size(); ++x) {
-      for (irt_int y = 0; y < resource_map.get_y_size(); ++y) {
+    for (int32_t x = 0; x < resource_map.get_x_size(); ++x) {
+      for (int32_t y = 0; y < resource_map.get_y_size(); ++y) {
         EGRNode& resource_node = resource_map[x][y];
         for (EGRResourceType resource_type :
              {EGRResourceType::kTrack, EGRResourceType::kNorth, EGRResourceType::kSouth, EGRResourceType::kWest, EGRResourceType::kEast}) {
@@ -869,13 +868,13 @@ void EGRDataManager::legalizeResourceMapDemand()
 void EGRDataManager::buildHVLayerIdxList()
 {
   std::vector<RoutingLayer>& routing_layer_list = _egr_database.get_routing_layer_list();
-  irt_int bottom_routing_layer_idx = _egr_config.bottom_routing_layer_idx;
-  irt_int top_routing_layer_idx = _egr_config.top_routing_layer_idx;
-  std::vector<irt_int>& h_layer_idx_list = _egr_database.get_h_layer_idx_list();
-  std::vector<irt_int>& v_layer_idx_list = _egr_database.get_v_layer_idx_list();
+  int32_t bottom_routing_layer_idx = _egr_config.bottom_routing_layer_idx;
+  int32_t top_routing_layer_idx = _egr_config.top_routing_layer_idx;
+  std::vector<int32_t>& h_layer_idx_list = _egr_database.get_h_layer_idx_list();
+  std::vector<int32_t>& v_layer_idx_list = _egr_database.get_v_layer_idx_list();
 
   for (RoutingLayer& routing_layer : routing_layer_list) {
-    irt_int layer_idx = routing_layer.get_layer_idx();
+    int32_t layer_idx = routing_layer.get_layer_idx();
     if (layer_idx < bottom_routing_layer_idx || top_routing_layer_idx < layer_idx) {
       continue;
     }
@@ -898,18 +897,18 @@ Direction EGRDataManager::getRTDirectionByDB(idb::IdbLayerDirection idb_directio
   }
 }
 
-irt_int EGRDataManager::getEGRRoutingLayerIndexByDB(irt_int db_layer_idx)
+int32_t EGRDataManager::getEGRRoutingLayerIndexByDB(int32_t db_layer_idx)
 {
-  std::map<irt_int, irt_int>& db_to_egr_routing_layer_idx_map = _egr_helper.get_db_to_egr_routing_layer_idx_map();
+  std::map<int32_t, int32_t>& db_to_egr_routing_layer_idx_map = _egr_helper.get_db_to_egr_routing_layer_idx_map();
   if (!RTUtil::exist(db_to_egr_routing_layer_idx_map, db_layer_idx)) {
     LOG_INST.error(Loc::current(), "db_layer_idx not exist!");
   }
   return db_to_egr_routing_layer_idx_map[db_layer_idx];
 }
 
-irt_int EGRDataManager::getEGRCutLayerIndexByDB(irt_int db_layer_idx)
+int32_t EGRDataManager::getEGRCutLayerIndexByDB(int32_t db_layer_idx)
 {
-  std::map<irt_int, irt_int>& db_to_egr_cut_layer_idx_map = _egr_helper.get_db_to_egr_cut_layer_idx_map();
+  std::map<int32_t, int32_t>& db_to_egr_cut_layer_idx_map = _egr_helper.get_db_to_egr_cut_layer_idx_map();
   if (!RTUtil::exist(db_to_egr_cut_layer_idx_map, db_layer_idx)) {
     LOG_INST.error(Loc::current(), "db_layer_idx not exist!");
   }
@@ -922,8 +921,8 @@ PlanarRect EGRDataManager::getGridRect(PlanarRect& real_rect)
   grid_rect.set_lb_x(real_rect.get_lb_x() / _egr_config.cell_width);
   grid_rect.set_lb_y(real_rect.get_lb_y() / _egr_config.cell_height);
 
-  irt_int rt_x = real_rect.get_rt_x() / _egr_config.cell_width;
-  irt_int rt_y = real_rect.get_rt_y() / _egr_config.cell_height;
+  int32_t rt_x = real_rect.get_rt_x() / _egr_config.cell_width;
+  int32_t rt_y = real_rect.get_rt_y() / _egr_config.cell_height;
   if (real_rect.get_rt_x() % _egr_config.cell_width == 0) {
     rt_x = std::max(0, rt_x - 1);
   }
@@ -1022,8 +1021,8 @@ void EGRDataManager::printDatabase()
   // ********** Layer Resource Map ********** //
   std::vector<GridMap<EGRNode>>& layer_resource_map = _egr_database.get_layer_resource_map();
   size_t resource_map_num = layer_resource_map.size();
-  irt_int x_size = layer_resource_map.front().get_x_size();
-  irt_int y_size = layer_resource_map.front().get_y_size();
+  int32_t x_size = layer_resource_map.front().get_x_size();
+  int32_t y_size = layer_resource_map.front().get_y_size();
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "resource_map_num");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), resource_map_num);
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "resource_map_x_size");

@@ -81,7 +81,7 @@ class Net
 
  private:
   std::string _name;
-  float _netweight;
+  float _netweight = 1.;
 
   NET_TYPE _net_type;
   NET_STATE _net_state;

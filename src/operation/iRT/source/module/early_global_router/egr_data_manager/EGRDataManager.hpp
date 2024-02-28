@@ -68,6 +68,7 @@ class EGRDataManager
   bool checkSkipping(idb::IdbNet* idb_net);
   void wrapPinList(EGRNet& egr_net, idb::IdbNet* idb_net);
   void wrapPinShapeList(EGRPin& egr_pin, idb::IdbPin* idb_pin);
+  void processEmptyShapePin(EGRNet& net);
   void wrapDrivingPin(EGRNet& egr_net, idb::IdbNet* idb_net);
   void updateHelper(idb::IdbBuilder* idb_builder);
   void buildConfig();
@@ -92,8 +93,8 @@ class EGRDataManager
   void legalizeResourceMapDemand();
   void buildHVLayerIdxList();
   Direction getRTDirectionByDB(idb::IdbLayerDirection idb_direction);
-  irt_int getEGRRoutingLayerIndexByDB(irt_int db_layer_idx);
-  irt_int getEGRCutLayerIndexByDB(irt_int db_layer_idx);
+  int32_t getEGRRoutingLayerIndexByDB(int32_t db_layer_idx);
+  int32_t getEGRCutLayerIndexByDB(int32_t db_layer_idx);
   PlanarRect getGridRect(PlanarRect& real_rect);
   void printConfig();
   void printDatabase();

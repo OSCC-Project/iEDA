@@ -493,17 +493,15 @@ unsigned StaReportPathDetail::operator()(StaSeqPathData* seq_path_data) {
       (*report_tbl) << end_vertex->getNameWithCellName() << TABLE_SKIP
                     << TABLE_SKIP << TABLE_SKIP << TABLE_SKIP << TABLE_SKIP
                     << TABLE_SKIP << TABLE_SKIP
-                    << Str::printf("%s%s",
-                                   fix_point_str(clock_path_arrive_time),
-                                   trans_type_str)
+                    << std::string(fix_point_str(clock_path_arrive_time)) +
+                           trans_type_str
                     << TABLE_ENDLINE;
     } else {
       (*report_tbl) << end_vertex->getNameWithCellName() << TABLE_SKIP
                     << TABLE_SKIP << TABLE_SKIP << TABLE_SKIP << TABLE_SKIP
                     << TABLE_SKIP
-                    << Str::printf("%s%s",
-                                   fix_point_str(clock_path_arrive_time),
-                                   trans_type_str)
+                    << std::string(fix_point_str(clock_path_arrive_time)) +
+                           trans_type_str
                     << TABLE_ENDLINE;
     }
 
@@ -593,17 +591,33 @@ unsigned StaReportPathDetail::operator()(StaSeqPathData* seq_path_data) {
       double cppr_value = FS_TO_NS(cppr.value());
       cppr_value =
           (AnalysisMode::kMax == delay_type) ? cppr_value : -cppr_value;
-      (*report_tbl)
-          << "clock reconvergence pessimism" << TABLE_SKIP << TABLE_SKIP
-          << TABLE_SKIP << TABLE_SKIP << TABLE_SKIP << fix_point_str(cppr_value)
-          << (AnalysisMode::kMax == delay_type
-                  ? fix_point_str(clock_path_arrive_time + constrain_value -
-                                  FS_TO_NS(uncertainty.value_or(0)) +
-                                  cppr_value)
-                  : fix_point_str(clock_path_arrive_time + constrain_value +
-                                  FS_TO_NS(uncertainty.value_or(0)) +
-                                  cppr_value))
-          << TABLE_ENDLINE;
+      if (is_derate) {
+        (*report_tbl)
+            << "clock reconvergence pessimism" << TABLE_SKIP << TABLE_SKIP
+            << TABLE_SKIP << TABLE_SKIP << TABLE_SKIP << TABLE_SKIP
+            << fix_point_str(cppr_value)
+            << (AnalysisMode::kMax == delay_type
+                    ? fix_point_str(clock_path_arrive_time + constrain_value -
+                                    FS_TO_NS(uncertainty.value_or(0)) +
+                                    cppr_value)
+                    : fix_point_str(clock_path_arrive_time + constrain_value +
+                                    FS_TO_NS(uncertainty.value_or(0)) +
+                                    cppr_value))
+            << TABLE_ENDLINE;
+      } else {
+        (*report_tbl)
+            << "clock reconvergence pessimism" << TABLE_SKIP << TABLE_SKIP
+            << TABLE_SKIP << TABLE_SKIP << TABLE_SKIP
+            << fix_point_str(cppr_value)
+            << (AnalysisMode::kMax == delay_type
+                    ? fix_point_str(clock_path_arrive_time + constrain_value -
+                                    FS_TO_NS(uncertainty.value_or(0)) +
+                                    cppr_value)
+                    : fix_point_str(clock_path_arrive_time + constrain_value +
+                                    FS_TO_NS(uncertainty.value_or(0)) +
+                                    cppr_value))
+            << TABLE_ENDLINE;
+      }
     }
 
     (*report_tbl) << TABLE_ENDLINE;

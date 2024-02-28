@@ -35,6 +35,7 @@
 #include "DPInterval.hh"
 #include "DPRegion.hh"
 #include "DPCell.hh"
+#include "DPBin.hh"
 
 namespace ipl {
 class DPLayout

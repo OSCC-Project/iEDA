@@ -1,4 +1,4 @@
-if(DEBUG_IRT_DETAILED_ROUTER)
+if(1)
     message(STATUS "RT: DEBUG_IRT_DETAILED_ROUTER")
     set(CMAKE_BUILD_TYPE "Debug")
 else()

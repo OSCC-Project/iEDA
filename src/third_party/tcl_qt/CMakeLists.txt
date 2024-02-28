@@ -2,6 +2,7 @@ set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
+set(CMAKE_PREFIX_PATH "/opt/Qt/5.15.2/gcc_64")
 find_package(Qt5 COMPONENTS Core REQUIRED)
 include_directories(${QT_INCLUDE})
 add_library(tcl_qt tcl_qt.cpp )

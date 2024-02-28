@@ -15,13 +15,38 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 #include "MP.hh"
+
+#include <functional>
+
 #include "BlkClustering.hh"
+#include "HierPlacer.hh"
+#include "Logger.hpp"
+#include "MacroAligner.hh"
 namespace imp {
 
 void MP::runMP()
 {
-  BlkClustering clustering{5,20};
+  float macro_halo_micron = 2.0;
+  float dead_space_ratio = 0.7;
+  float weight_wl = 1.0;
+  float weight_ol = 0.2;
+  float weight_area = 0.0;
+  float weight_periphery = 0.02;
+  float max_iters = 700;
+  float cool_rate = 0.96;
+  float init_temperature = 1000.0;
+  // BlkClustering2 clustering{.l1_nparts = 50, .l2_nparts = 20, .level_num = 2};  // two level place
+  BlkClustering2 clustering{.l1_nparts = 200, .level_num = 1};  // one level place
   root().parallel_preorder_op(clustering);
+  auto placer = SAHierPlacer<int32_t>(macro_halo_micron, dead_space_ratio, weight_wl, weight_ol, weight_area, weight_periphery, max_iters,
+                                      cool_rate, init_temperature);
+  placer(root());
+  std::string file_name = "/home/liuyuezuo/iEDA-master/build/output/placement_level" + std::to_string(clustering.level_num) + "_"
+                          + std::to_string(clustering.l1_nparts) + "_" + std::to_string(clustering.l2_nparts);
+  placer.writePlacement(root(), file_name + ".txt");
+  auto macro_aligner = MacroAligner<int32_t>();
+  macro_aligner(root());
+  placer.writePlacement(root(), file_name + "_aligned" + ".txt");
 }
 
 }  // namespace imp

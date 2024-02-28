@@ -16,6 +16,7 @@
 // ***************************************************************************************
 
 #include "GridManager.hh"
+#include <fstream>
 
 #include "omp.h"
 
@@ -120,6 +121,286 @@ void GridManager::clearAllOccupiedArea()
   }
 }
 
+void GridManager::clearAllOccupiedNodeNum()
+{
+#pragma omp parallel for num_threads(_thread_num)
+  for (int32_t i = 0; i < _grid_cnt_y; i++) {
+    for (int32_t j = 0; j < _grid_cnt_x; j++) {
+      _grid_2d_list[i][j].num_node = 0;
+    }
+  }
+}
+
+void GridManager::clearRUDY()
+{
+#pragma omp parallel for num_threads(_thread_num)
+  for (int32_t i = 0; i < _grid_cnt_y; i++) {
+    for (int32_t j = 0; j < _grid_cnt_x; j++) {
+      _grid_2d_list[i][j].h_cong = 0.0;
+      _grid_2d_list[i][j].v_cong = 0.0;
+    }
+  }  
+}
+
+void GridManager::initRouteCap(int32_t h_cap, int32_t v_cap)
+{
+#pragma omp parallel for num_threads(_thread_num)
+  for (int32_t i = 0; i < _grid_cnt_y; i++) {
+    for (int32_t j = 0; j < _grid_cnt_x; j++) {
+      _grid_2d_list[i][j].h_cap = h_cap;
+      _grid_2d_list[i][j].v_cap = v_cap;
+    }
+  }  
+}
+
+void GridManager::evalRouteUtil()
+{
+  _h_util_max = 0.0f;
+  _v_util_max = 0.0f;
+  _h_util_sum = 0.0f;
+  _v_util_sum = 0.0f;
+#pragma omp parallel for num_threads(_thread_num)
+  for (int32_t i = 0; i < _grid_cnt_y; i++) {
+    for (int32_t j = 0; j < _grid_cnt_x; j++) {
+      _grid_2d_list[i][j].h_util = _grid_2d_list[i][j].h_cong / _grid_2d_list[i][j].h_cap;
+      _grid_2d_list[i][j].v_util = _grid_2d_list[i][j].v_cong / _grid_2d_list[i][j].v_cap;
+            
+      #pragma omp critical
+      {
+          if (_grid_2d_list[i][j].h_util > _h_util_max) {
+              _h_util_max = _grid_2d_list[i][j].h_util;
+          }
+          
+          if (_grid_2d_list[i][j].v_util > _v_util_max) {
+              _v_util_max = _grid_2d_list[i][j].v_util;
+          }
+          _h_util_sum += _grid_2d_list[i][j].h_util;
+          _v_util_sum += _grid_2d_list[i][j].v_util;
+      }
+    }
+  }
+}
+
+void GridManager::blurRouteDemand()
+{
+  int height = _grid_cnt_y;
+  int width = _grid_cnt_x;
+  std::vector<std::vector<float>> paddedH(height + 2, std::vector<float>(width + 2, 0.0));
+  std::vector<std::vector<float>> paddedV(height + 2, std::vector<float>(width + 2, 0.0));
+
+#pragma omp parallel for num_threads(_thread_num)
+  for (int i = 0; i < height; i++) {
+      for (int j = 0; j < width; j++) {
+          paddedH[i + 1][j + 1] = _grid_2d_list[i][j].h_cong;
+          paddedV[i + 1][j + 1] = _grid_2d_list[i][j].v_cong;
+      }
+  }
+
+  int kernelSize = 3;
+  float h_sigma = 5;
+  float v_sigma = 5;
+  fastGaussianBlur(paddedH, h_sigma, kernelSize);
+  fastGaussianBlur(paddedV, v_sigma, kernelSize);
+
+#pragma omp parallel for num_threads(_thread_num)
+  for (int i = 0; i < height; i++) {
+      for (int j = 0; j < width; j++) {
+          _grid_2d_list[i][j].h_cong = paddedH[i+1][j+1];
+          _grid_2d_list[i][j].v_cong = paddedV[i+1][j+1];
+      }
+  }
+
+}
+
+void GridManager::fastGaussianBlur(std::vector<std::vector<float>>& image, float sigma, int kernelSize)
+{
+  int height = image.size();
+  int width = image[0].size();
+  int paddingSize = kernelSize / 2;
+
+  std::vector<std::vector<float>> blurredImage(height, std::vector<float>(width, 0.0));
+
+#pragma omp parallel for num_threads(_thread_num)
+  for (int i = 0; i < height; i++) {
+      for (int j = 0; j < width; j++) {
+          double sum = 0.0;
+          double weightSum = 0.0;
+          for (int k = -paddingSize; k <= paddingSize; k++) {
+              int y = i + k;
+              if (y >= 0 && y < height) {
+                  double weight = exp(-(k * k) / (2 * sigma * sigma));
+                  sum += image[y][j] * weight;
+                  weightSum += weight;
+              }
+          }
+          blurredImage[i][j] = sum / weightSum;
+      }
+  }
+  std::vector<std::vector<float>> tempImage(height, std::vector<float>(width, 0.0));
+
+#pragma omp parallel for num_threads(_thread_num)
+  for (int i = 0; i < height; i++) {
+      for (int j = 0; j < width; j++) {
+          double sum = 0.0;
+          double weightSum = 0.0;
+          for (int k = -paddingSize; k <= paddingSize; k++) {
+              int x = j + k;
+              if (x >= 0 && x < width) {
+                  double weight = exp(-(k * k) / (2 * sigma * sigma));
+                  sum += blurredImage[i][x] * weight;
+                  weightSum += weight;
+              }
+          }
+          tempImage[i][j] = sum / weightSum;
+      }
+  }
+
+#pragma omp parallel for num_threads(_thread_num)
+  for (int i = 0; i < height; i++) {
+      for (int j = 0; j < width; j++) {
+          image[i][j] = tempImage[i][j];
+      }
+  }
+}
+
+
+void GridManager::plotRouteCap()
+{
+  std::ofstream plot_h("h_cap.csv");
+  std::ofstream plot_v("v_cap.csv");
+  std::stringstream feed_h;
+  std::stringstream feed_v;
+  int32_t x_cnt = _grid_cnt_x;
+  int32_t y_cnt = _grid_cnt_y;
+
+  for (int i = 0; i < x_cnt; i++) {
+    if (i == x_cnt - 1) {
+      feed_h << "col_" << i;
+      feed_v << "col_" << i;
+    } else {
+      feed_h << "col_" << i << ",";
+      feed_v << "col_" << i << ",";
+    }
+  }
+  feed_h << std::endl;
+  feed_v << std::endl;
+
+  for (int i = y_cnt - 1; i >= 0; i--) {
+    for (int j = 0; j < x_cnt; j++) {
+      int h_cap = _grid_2d_list[i][j].h_cap;
+      int v_cap = _grid_2d_list[i][j].v_cap;
+      if (j == x_cnt - 1) {
+        feed_h << h_cap;
+        feed_v << v_cap;
+      } else {
+        feed_h << h_cap << ",";
+        feed_v << v_cap << ",";
+      }
+    }
+    feed_h << std::endl;
+    feed_v << std::endl;
+  }
+  
+  plot_h << feed_h.str();
+  plot_v << feed_v.str();
+  feed_h.clear();
+  plot_h.close();
+  feed_v.clear();
+  plot_v.close();
+}
+
+void GridManager::plotRouteDem()
+{
+  std::ofstream plot_h("h_dem.csv");
+  std::ofstream plot_v("v_dem.csv");
+  std::stringstream feed_h;
+  std::stringstream feed_v;
+  int32_t x_cnt = _grid_cnt_x;
+  int32_t y_cnt = _grid_cnt_y;
+
+  for (int i = 0; i < x_cnt; i++) {
+    if (i == x_cnt - 1) {
+      feed_h << "col_" << i;
+      feed_v << "col_" << i;
+    } else {
+      feed_h << "col_" << i << ",";
+      feed_v << "col_" << i << ",";
+    }
+  }
+  feed_h << std::endl;
+  feed_v << std::endl;
+
+  for (int i = y_cnt - 1; i >= 0; i--) {
+    for (int j = 0; j < x_cnt; j++) {
+      int h_cong = _grid_2d_list[i][j].h_cong;
+      int v_cong = _grid_2d_list[i][j].v_cong;
+      if (j == x_cnt - 1) {
+        feed_h << h_cong;
+        feed_v << v_cong;
+      } else {
+        feed_h << h_cong << ",";
+        feed_v << v_cong << ",";
+      }
+    }
+    feed_h << std::endl;
+    feed_v << std::endl;
+  }
+  
+  plot_h << feed_h.str();
+  plot_v << feed_v.str();
+  feed_h.clear();
+  plot_h.close();
+  feed_v.clear();
+  plot_v.close();
+}
+
+void GridManager::plotRouteUtil(int32_t iter_num)
+{
+  std::ofstream plot_h("h_util_"+std::to_string(iter_num)+".csv");
+  std::ofstream plot_v("v_util_"+std::to_string(iter_num)+".csv");
+  std::stringstream feed_h;
+  std::stringstream feed_v;
+  int32_t x_cnt = _grid_cnt_x;
+  int32_t y_cnt = _grid_cnt_y;
+
+  for (int i = 0; i < x_cnt; i++) {
+    if (i == x_cnt - 1) {
+      feed_h << "col_" << i;
+      feed_v << "col_" << i;
+    } else {
+      feed_h << "col_" << i << ",";
+      feed_v << "col_" << i << ",";
+    }
+  }
+  feed_h << std::endl;
+  feed_v << std::endl;
+
+  for (int i = y_cnt - 1; i >= 0; i--) {
+    for (int j = 0; j < x_cnt; j++) {
+      float h_cong = _grid_2d_list[i][j].h_util;
+      float v_cong = _grid_2d_list[i][j].v_util;
+      if (j == x_cnt - 1) {
+        feed_h << h_cong;
+        feed_v << v_cong;
+      } else {
+        feed_h << h_cong << ",";
+        feed_v << v_cong << ",";
+      }
+    }
+    feed_h << std::endl;
+    feed_v << std::endl;
+  }
+  
+  plot_h << feed_h.str();
+  plot_v << feed_v.str();
+  feed_h.clear();
+  plot_h.close();
+  feed_v.clear();
+  plot_v.close();
+}
+
+
+
 int64_t GridManager::obtainOverlapArea(Grid* grid, const Rectangle<int32_t>& rect)
 {
   auto& grid_shape = grid->shape;
@@ -136,6 +417,27 @@ int64_t GridManager::obtainOverlapArea(Grid* grid, const Rectangle<int32_t>& rec
     return (overlap_rect_ux - overlap_rect_lx) * (overlap_rect_uy - overlap_rect_ly);
   }
 }
+
+Rectangle<int32_t> GridManager::obtainOverlapRect(Grid* grid, const Rectangle<int32_t>& rect)
+{
+  auto& grid_shape = grid->shape;
+
+  int32_t overlap_rect_lx = std::max(grid_shape.get_ll_x(), rect.get_ll_x());
+  int32_t overlap_rect_ly = std::max(grid_shape.get_ll_y(), rect.get_ll_y());
+  int32_t overlap_rect_ux = std::min(grid_shape.get_ur_x(), rect.get_ur_x());
+  int32_t overlap_rect_uy = std::min(grid_shape.get_ur_y(), rect.get_ur_y());
+
+  if (overlap_rect_lx >= overlap_rect_ux || overlap_rect_ly >= overlap_rect_uy) {
+    int32_t fake_rect_lx = (overlap_rect_lx + overlap_rect_ux) / 2;
+    int32_t fake_rect_ly = (overlap_rect_ly + overlap_rect_uy) / 2;
+    Rectangle rect(fake_rect_lx, fake_rect_ly, fake_rect_lx, fake_rect_ly);
+    return rect;
+  } else {
+    Rectangle rect(overlap_rect_lx,overlap_rect_ly,overlap_rect_ux,overlap_rect_uy);
+    return rect;
+  }
+}
+
 
 int64_t GridManager::obtainTotalOverflowArea()
 {
@@ -179,8 +481,10 @@ float GridManager::obtainAvgGridDensity(){
 
 void GridManager::init()
 {
-  _grid_size_x = std::ceil(static_cast<float>(_shape.get_width()) / _grid_cnt_x);
-  _grid_size_y = std::ceil(static_cast<float>(_shape.get_height()) / _grid_cnt_y);
+  if (_grid_size_x == -1 && _grid_size_y == -1){
+    _grid_size_x = std::ceil(static_cast<float>(_shape.get_width()) / _grid_cnt_x);
+    _grid_size_y = std::ceil(static_cast<float>(_shape.get_height()) / _grid_cnt_y);
+  }
 
   _grid_2d_list.resize(_grid_cnt_y);
   for (int32_t i = 0; i < _grid_cnt_y; i++) {

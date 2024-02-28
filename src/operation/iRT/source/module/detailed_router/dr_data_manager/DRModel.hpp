@@ -17,8 +17,8 @@
 #pragma once
 
 #include "DRBoxId.hpp"
-#include "DRModelStat.hpp"
 #include "DRNet.hpp"
+#include "DRParameter.hpp"
 #include "GridMap.hpp"
 
 namespace irt {
@@ -29,24 +29,21 @@ class DRModel
   DRModel() = default;
   ~DRModel() = default;
   // getter
-  GridMap<DRBox>& get_dr_box_map() { return _dr_box_map; }
   std::vector<DRNet>& get_dr_net_list() { return _dr_net_list; }
+  DRParameter& get_dr_parameter() { return _dr_parameter; }
+  GridMap<DRBox>& get_dr_box_map() { return _dr_box_map; }
   std::vector<std::vector<DRBoxId>>& get_dr_box_id_list_list() { return _dr_box_id_list_list; }
-  DRModelStat& get_dr_model_stat() { return _dr_model_stat; }
-  irt_int get_curr_iter() { return _curr_iter; }
   // setter
-  void set_dr_box_map(const GridMap<DRBox>& dr_box_map) { _dr_box_map = dr_box_map; }
   void set_dr_net_list(const std::vector<DRNet>& dr_net_list) { _dr_net_list = dr_net_list; }
+  void set_dr_parameter(const DRParameter& dr_parameter) { _dr_parameter = dr_parameter; }
+  void set_dr_box_map(const GridMap<DRBox>& dr_box_map) { _dr_box_map = dr_box_map; }
   void set_dr_box_id_list_list(const std::vector<std::vector<DRBoxId>>& dr_box_id_list_list) { _dr_box_id_list_list = dr_box_id_list_list; }
-  void set_dr_model_stat(const DRModelStat& dr_model_stat) { _dr_model_stat = dr_model_stat; }
-  void set_curr_iter(const irt_int curr_iter) { _curr_iter = curr_iter; }
 
  private:
-  GridMap<DRBox> _dr_box_map;
   std::vector<DRNet> _dr_net_list;
+  DRParameter _dr_parameter;
+  GridMap<DRBox> _dr_box_map;
   std::vector<std::vector<DRBoxId>> _dr_box_id_list_list;
-  DRModelStat _dr_model_stat;
-  irt_int _curr_iter = -1;
 };
 
 }  // namespace irt

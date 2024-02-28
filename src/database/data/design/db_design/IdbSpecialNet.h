@@ -88,6 +88,16 @@ class IdbSpecialNet
   const string get_original_net_name() const { return _original_net_name; }
   const int32_t get_weight() const { return _weight; }
 
+  int32_t get_segment_num()
+  {
+    int number = 0;
+    for (auto* wire : _wire_list->get_wire_list()) {
+      number += wire->get_num();
+    }
+
+    return number;
+  }
+
   // bool is_vdd() { return 0 == _net_name.compare("VDD") ? true : false; }
   // bool is_vss() { return 0 == _net_name.compare("VSS") ? true : false; }
   bool is_vdd() { return _connect_type == IdbConnectType::kPower ? true : false; }
@@ -150,14 +160,23 @@ class IdbSpecialNetList
 
   // getter
   vector<IdbSpecialNet*>& get_net_list() { return _net_list; }
-  size_t get_num() { return _num; }
+  size_t get_num() { return _net_list.size(); }
   IdbSpecialNet* find_net(string name);
   IdbSpecialNet* find_net(size_t index);
   IdbSpecialNetEdgeSegmenArray* find_edge_segment_array_by_layer(IdbLayer* layer);
   size_t get_segment_array_num() { return _edge_segment_list.size(); }
+  uint64_t get_segment_num()
+  {
+    uint number = 0;
+
+    for (auto* net : _net_list) {
+      number += net->get_segment_num();
+    }
+
+    return number;
+  }
 
   // setter
-  void set_number(size_t number) { _num = number; }
   IdbSpecialNet* add_net(IdbSpecialNet* net = nullptr);
   IdbSpecialNet* add_net(string name);
   IdbSpecialNetEdgeSegmenArray* add_edge_segment_array_for_layer(IdbLayerRouting* layer);
@@ -176,7 +195,6 @@ class IdbSpecialNetList
   bool addPowerStripe(vector<IdbCoordinate<int32_t>*>& point_list, string net_name, string layer_name);
 
  private:
-  size_t _num;
   vector<IdbSpecialNet*> _net_list;
   vector<IdbSpecialNetEdgeSegmenArray*> _edge_segment_list;
 };

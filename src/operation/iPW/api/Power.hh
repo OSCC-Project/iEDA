@@ -59,6 +59,7 @@ class Power {
   auto& get_power_seq_graph() { return _power_seq_graph; }
 
   unsigned buildGraph();
+  unsigned isBuildGraph() { return _power_graph.numVertex() > 0; }
   unsigned readRustVCD(const char* vcd_path, const char* top_instance_name);
   unsigned dumpGraph();
   unsigned buildSeqGraph();

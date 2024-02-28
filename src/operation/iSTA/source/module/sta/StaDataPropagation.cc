@@ -480,7 +480,7 @@ unsigned StaFwdPropagation::operator()(StaArc* the_arc) {
       if (isIncremental()) {
         auto trans_type = delay_data->get_trans_type();
         trans_type = FLIP_TRANS(trans_type);
-        next_data2 = src_vertex->getPathDelayData(delay_data->get_delay_type(),
+        next_data2 = snk_vertex->getPathDelayData(delay_data->get_delay_type(),
                                                   trans_type, delay_data);
       }
 

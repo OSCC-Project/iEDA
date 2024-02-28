@@ -59,7 +59,7 @@ TimingEngine* TimingEngine::_timing_engine = nullptr;
 
 TimingEngine::TimingEngine() { _ista = Sta::getOrCreateSta(); }
 
-TimingEngine::~TimingEngine() = default;
+TimingEngine::~TimingEngine() { Sta::destroySta(); }
 
 /**
  * @brief Get the TimingEngine instance, if not, create one.
@@ -84,8 +84,6 @@ TimingEngine* TimingEngine::getOrCreateTimingEngine() {
 void TimingEngine::destroyTimingEngine() {
   delete _timing_engine;
   _timing_engine = nullptr;
-
-  Sta::destroySta();
 }
 
 /**

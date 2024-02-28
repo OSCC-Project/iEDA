@@ -21,9 +21,12 @@
 #include <iostream>
 #include <map>
 #include <string>
+#include <iomanip>
 
 #include "ScriptEngine.hh"
 #include "json.hpp"
+
+using ordered_json = nlohmann::ordered_json;
 
 namespace tcl {
 
@@ -62,8 +65,51 @@ class TclUtil : public TclCmd
   static void addOption(TclCmd* tcl_ptr, std::string config_name, ValueType type);
   static std::map<std::string, std::any> getConfigMap(TclCmd* tcl_ptr, std::vector<std::pair<std::string, ValueType>> config_list);
   static std::any getValue(TclCmd* tcl_ptr, std::string config_name, ValueType type);
+  static bool alterJsonConfig(std::string json_path, std::map<std::string, std::any> config_map);
 
  private:
+  static void modifyJson(ordered_json& j, const std::map<std::string, std::any>& config_map) {
+    for (auto& [key, value] : config_map) {
+      // 把参数列表中的第一个字符'-'删除
+      std::string sub_key = key.substr(1, key.size() - 1);
+      if (!modifyJsonValue(j, sub_key, value)) {
+        std::cerr << "The key is not found." << sub_key << std::endl;
+      }
+    }
+  }
+
+  static bool modifyJsonValue(ordered_json& j, const std::string& key, const std::any& value) {
+    bool modified = false;
+    for (auto& item : j.items()) {
+      if (item.key() == key) {
+        try {
+          if (value.type() == typeid(int)) {
+            item.value() = std::any_cast<int>(value);
+            modified = true;
+          }else if (value.type() == typeid(std::string)){
+            item.value() = std::any_cast<std::string>(value);
+            modified = true;
+          }else if (value.type() == typeid(double)){
+            item.value() = std::any_cast<double>(value);
+            modified = true;
+          }else if (value.type() == typeid(std::vector<int>)){
+            item.value() = std::any_cast<std::vector<int>>(value);
+            modified = true;
+          }else if (value.type() == typeid(std::vector<std::string>)){
+            item.value() = std::any_cast<std::vector<std::string>>(value);
+            modified = true;
+          }
+        } catch (const std::bad_any_cast& e) {
+            std::cerr << "Type trans error: " << e.what() << std::endl;
+        }
+        break;
+      } else if (item.value().is_object()) {
+        modified = modifyJsonValue(item.value(), key, value) || modified;
+      }
+    }
+    return modified;
+  }
+
   static std::vector<std::string> splitString(std::string a, char tok)
   {
     std::vector<std::string> result_list;

@@ -25,6 +25,7 @@ class Str;
 class Time;
 }  // namespace ieda
 namespace icts {
+struct PathInfo;
 enum class LayerPattern;
 class Node;
 class Pin;
@@ -64,6 +65,8 @@ namespace idb {
 class IdbPin;
 class IdbInstance;
 class IdbNet;
+class IdbRegularWireSegment;
+class IdbLayerShape;
 }  // namespace idb
 
 namespace ito {
@@ -78,19 +81,14 @@ class DrcRect;
 
 namespace irt {
 
-enum class Stage;
-class PlanarRect;
-class LayerRect;
-
+class Violation;
+class LayerCoord;
+struct CmpLayerCoordByXASC;
+class Summary;
 template <typename T>
 class Segment;
 
-template <typename T>
-class MTree;
 
-class Net;
-class AccessPoint;
-class GRNode;
 
 }  // namespace irt
 
@@ -114,7 +112,7 @@ struct Segment
   std::string second_layer_name;
 };
 
-enum class PHYNodeType
+enum class PhysicalNodeType
 {
   kNone = 0,
   kWire = 1,
@@ -137,9 +135,9 @@ struct Via
   int y;
 };
 
-struct PHYNode
+struct PhysicalNode
 {
-  PHYNodeType type;
+  PhysicalNodeType type;
   Wire wire;
   Via via;
 };

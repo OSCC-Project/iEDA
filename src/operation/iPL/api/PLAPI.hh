@@ -147,6 +147,7 @@ class PLAPI
   std::vector<float> obtainPinDens(int32_t grid_cnt_x, int32_t grid_cnt_y);
   std::vector<float> obtainNetCong(std::string rudy_type);
   std::vector<float> evalGRCong();
+  int64_t evalEGRWL();
   std::vector<float> getUseCapRatioList();
   void plotCongMap(const std::string& plot_path, const std::string& output_file_name);
   void destroyCongEval();

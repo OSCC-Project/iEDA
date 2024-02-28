@@ -284,7 +284,7 @@ namespace ipl {
     eval::TimingNet* timing_net = new eval::TimingNet();
     timing_net->set_name(network->get_name());
     std::map<Point<int32_t>, Node*, PointCMP> point_to_node;
-     std::map<Point<int32_t>, eval::TimingPin*, PointCMP> point_to_timing_pin;
+    std::map<Point<int32_t>, eval::TimingPin*, PointCMP> point_to_timing_pin;
     for (auto* node : network->get_node_list()) {
       const auto& node_loc = node->get_location();
       auto iter = point_to_node.find(node_loc);
@@ -388,9 +388,10 @@ namespace ipl {
     }
 
     std::cout << std::endl;
-    if(isSTAStarted()){
+    if (isSTAStarted()) {
       runPostGP();
-    }else{
+    }
+    else {
       runDP();
     }
     printHPWLInfo();
@@ -462,14 +463,6 @@ namespace ipl {
     return flag;
   }
 
-  bool PLAPI::runIncrLG()
-  {
-    PlacerDBInst.updateFromSourceDataBase();
-    LegalizerInst.updateInstanceList();
-    bool flag = LegalizerInst.runIncrLegalize();
-    return flag;
-  }
-
   bool PLAPI::runIncrLG(std::vector<std::string> inst_name_list)
   {
     auto* design = PlacerDBInst.get_design();
@@ -491,6 +484,14 @@ namespace ipl {
     post_gp.runIncrTimingPlace();
   }
 
+  bool PLAPI::runIncrLG()
+  {
+    PlacerDBInst.updateFromSourceDataBase();
+    LegalizerInst.updateInstanceList();
+    bool flag = LegalizerInst.runIncrLegalize();
+    return flag;
+  }
+
   void PLAPI::runDP()
   {
     bool legal_flag = checkLegality();
@@ -501,6 +502,11 @@ namespace ipl {
 
     DetailPlacer detail_place(PlacerDBInst.get_placer_config(), &PlacerDBInst);
     detail_place.runDetailPlace();
+
+    // run networkflow to spread cell 
+    // Input: after global placement. Output: low density distribution result with overlap.
+    // Legalization is further needed.
+    // detail_place.runDetailPlaceNFS();
 
     if (!checkLegality()) {
       LOG_WARNING << "DP result is not legal";
@@ -843,8 +849,8 @@ namespace ipl {
     _reporter->printHPWLInfo();
   }
 
-  void PLAPI::printTimingInfo(){
-    if(this->isSTAStarted()){
+  void PLAPI::printTimingInfo() {
+    if (this->isSTAStarted()) {
       this->updateTiming(PlacerDBInst.get_topo_manager());
       _reporter->printTimingInfo();
     }
@@ -895,6 +901,13 @@ namespace ipl {
   std::vector<float> PLAPI::getUseCapRatioList()
   {
     return _external_api->getUseCapRatioList();
+  }
+
+  /*****************************Congestion-driven Placement: END*****************************/
+
+  int64_t PLAPI::evalEGRWL()
+  {
+    return _external_api->evalEGRWL();
   }
 
   /**

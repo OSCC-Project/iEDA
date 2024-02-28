@@ -22,7 +22,7 @@ namespace imp {
 struct HMetis
 {
   // Function to execute hmetis
-  std::vector<size_t> operator()(const std::vector<size_t>& eptr, const std::vector<size_t>& eind, size_t nparts,
+  std::vector<size_t> operator()(const std::string name, const std::vector<size_t>& eptr, const std::vector<size_t>& eind, size_t nparts,
                                  const std::vector<int>& vwgt = {}, const std::vector<int>& hewgt = {});
 
   int seed{-1};
@@ -32,7 +32,7 @@ struct HMetis
   int rtype{0};
   int nvcycles{1};
   bool reconst{false};
-  int dbglvl{0};
+  int dbglvl{8};
   int ptype{0};
   int otype{0};
   int cmaxnet{50};

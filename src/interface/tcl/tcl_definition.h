@@ -33,6 +33,7 @@ namespace tcl {
 #define TCL_VERILOG_TOP "-top"
 #define TCL_MAX_NUM "-max_num"
 #define TCL_WORK_DIR "-work_dir"
+#define TCL_STEP "-step"
 
 const char* const EMPTY_STR = "";
 
