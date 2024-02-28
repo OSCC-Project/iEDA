@@ -246,6 +246,35 @@ namespace ipl {
     reportCurrentTiming();
   }
 
+  void TimingAnnotation::printTargetGroupTimingInfoForDebug(Group* group){
+    for(auto* node : group->get_node_list()){
+      LOG_INFO << "Node: " << node->get_name() << " --- " << "RT: " << this->get_node_late_required_time(node->get_node_id())
+        << " --- " << "AT: " << this->get_node_late_arrival_time(node->get_node_id())
+        << " --- " << "Slack: " << this->get_node_late_slack(node->get_node_id());      
+    }
+    reportCurrentTiming();
+  }
+
+  void TimingAnnotation::printTargetGroupSideTimingEffect(Group* group){
+    for(auto* node : group->get_node_list()){
+      LOG_INFO << "Target Node: " << node->get_name() << " --- " << "RT: " << this->get_node_late_required_time(node->get_node_id())
+        << " --- " << "AT: " << this->get_node_late_arrival_time(node->get_node_id())
+        << " --- " << "Slack: " << this->get_node_late_slack(node->get_node_id());        
+      auto* network = node->get_network();
+      if(network){
+        for(auto* network_sink_node : network->get_receiver_list()){
+          if(network_sink_node->get_group() == group){
+            continue;
+          }
+          LOG_INFO << "Side Node: " << network_sink_node->get_name() << " --- " << "RT: " << this->get_node_late_required_time(network_sink_node->get_node_id())
+            << " --- " << "AT: " << this->get_node_late_arrival_time(network_sink_node->get_node_id())
+            << " --- " << "Slack: " << this->get_node_late_slack(network_sink_node->get_node_id());
+        }
+      }
+    }
+    reportCurrentTiming();
+  }
+
   void TimingAnnotation::updateCriticalityAndCentralityFull()
   {
     // reset max centrality.

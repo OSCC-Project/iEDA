@@ -59,7 +59,7 @@ void PLAPI::reportPLInfo()
   reportBinDensity(summary_stream);
 
   // report timing info
-  if (PlacerDBInst.get_placer_config()->isTimingAwareMode()) {
+  if (PlacerDBInst.get_placer_config()->isTimingEffort()) {
     reportTimingInfo(summary_stream);
   }
 
@@ -790,7 +790,7 @@ void PLAPI::reportLongNetInfo(std::ofstream& feed)
     if (fabs(network->get_net_weight()) < 1e-7) {
       continue;
     }
-    if (PlacerDBInst.get_placer_config()->isTimingAwareMode()) {
+    if (PlacerDBInst.get_placer_config()->isTimingEffort()) {
       if (this->isClockNet(network->get_name())) {
         continue;
       }

@@ -249,7 +249,7 @@ void TopologyManager::updateTopoId(Node* node)
 
         if (current == node) {
           // loop detected.
-          LOG_WARNING << "Loop detected.";
+          // LOG_WARNING << "Loop detected.";
           continue;
         }
 

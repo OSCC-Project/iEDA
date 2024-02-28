@@ -447,7 +447,7 @@ unsigned StaFwdPropagation::operator()(StaArc* the_arc) {
       if (the_arc->isNegativeArc()) {
         trans_type = FLIP_TRANS(trans_type);
       }
-      next_data1 = src_vertex->getPathDelayData(delay_data->get_delay_type(),
+      next_data1 = snk_vertex->getPathDelayData(delay_data->get_delay_type(),
                                                 trans_type, delay_data);
     }
 

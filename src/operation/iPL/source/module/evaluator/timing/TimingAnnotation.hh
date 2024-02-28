@@ -83,6 +83,8 @@ class TimingAnnotation
   void reportCurrentTiming();
 
   void printALLTimingInfoForDebug();
+  void printTargetGroupTimingInfoForDebug(Group* group);
+  void printTargetGroupSideTimingEffect(Group* group);
 
   void updateCriticalityAndCentralityFull();
   void updateCriticalityAndCentralityIncremental(const std::vector<NetWork*>& network_list);

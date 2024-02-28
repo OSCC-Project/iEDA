@@ -113,7 +113,7 @@ namespace ipl {
     }
 
     // prepare sta for timing aware mode placement
-    if (PlacerDBInst.get_placer_config()->isTimingAwareMode()) {
+    if (PlacerDBInst.get_placer_config()->isTimingEffort()) {
       // sta has not been initialized
       if (!this->isSTAStarted()) {
         LOG_INFO << "Try to apply to start iSTA";
@@ -255,7 +255,7 @@ namespace ipl {
       timing_net_list.push_back(timing_net);
     }
 
-    _external_api->updateEvalTiming(timing_net_list, moved_inst_list, 2);
+    _external_api->updateEvalTiming(timing_net_list, moved_inst_list, 3);
   }
 
   float PLAPI::obtainPinCap(std::string inst_pin_name) {
@@ -284,7 +284,7 @@ namespace ipl {
     eval::TimingNet* timing_net = new eval::TimingNet();
     timing_net->set_name(network->get_name());
     std::map<Point<int32_t>, Node*, PointCMP> point_to_node;
-    std::map<Point<int32_t>, eval::TimingPin*, PointCMP> point_to_timing_pin;
+     std::map<Point<int32_t>, eval::TimingPin*, PointCMP> point_to_timing_pin;
     for (auto* node : network->get_node_list()) {
       const auto& node_loc = node->get_location();
       auto iter = point_to_node.find(node_loc);
@@ -362,15 +362,14 @@ namespace ipl {
   void PLAPI::runFlow()
   {
     // runMP();
-    printTimingInfo();
     runGP();
     printHPWLInfo();
     printTimingInfo();
-    // if (isSTAStarted()) {
-    //   notifyPLWLInfo(0);
-    //   notifyPLCongestionInfo(0);
-    //   notifyPLTimingInfo(0);
-    // }
+    if (isSTAStarted()) {
+      notifyPLWLInfo(0);
+      notifyPLCongestionInfo(0);
+      notifyPLTimingInfo(0);
+    }
 
     if (PlacerDBInst.get_placer_config()->get_buffer_config().isMaxLengthOpt()) {
       std::cout << std::endl;
@@ -382,28 +381,26 @@ namespace ipl {
     runLG();
     printHPWLInfo();
     printTimingInfo();
-    // if (isSTAStarted()) {
-    //   notifyPLWLInfo(1);
-    //   notifyPLCongestionInfo(1);
-    //   notifyPLTimingInfo(1);
-    // }
+    if (isSTAStarted()) {
+      notifyPLWLInfo(1);
+      notifyPLCongestionInfo(1);
+      notifyPLTimingInfo(1);
+    }
 
     std::cout << std::endl;
-    runDP();
+    if(isSTAStarted()){
+      runPostGP();
+    }else{
+      runDP();
+    }
     printHPWLInfo();
     printTimingInfo();
 
-    // if (isSTAStarted()) {
-    //   notifyPLWLInfo(2);
-    //   notifyPLCongestionInfo(2);
-    //   notifyPLTimingInfo(2);
-    // }
-
-    std::cout << std::endl;
-
-    runPostGP();
-    printHPWLInfo();
-    printTimingInfo();
+    if (isSTAStarted()) {
+      notifyPLWLInfo(2);
+      notifyPLCongestionInfo(2);
+      notifyPLTimingInfo(2);
+    }
 
     std::cout << std::endl;
 
@@ -418,10 +415,10 @@ namespace ipl {
     std::cout << std::endl;
     LOG_INFO << "Log has been writed to dir: ./result/pl/log/";
 
-    if (isSTAStarted()) {
-      notifySTAUpdateTimingRuntime();
-      _reporter->reportEDAEvaluation();
-    }
+    // if (isSTAStarted()) {
+    //   // notifySTAUpdateTimingRuntime();
+    //   _reporter->reportTDPEvaluation();
+    // }
 
     if (isSTAStarted()) {
       _external_api->destroyTimingEval();
@@ -774,7 +771,7 @@ namespace ipl {
     reportBinDensity(summary_stream);
 
     // report timing info
-    if (PlacerDBInst.get_placer_config()->isTimingAwareMode()) {
+    if (PlacerDBInst.get_placer_config()->isTimingEffort()) {
       reportTimingInfo(summary_stream);
     }
 

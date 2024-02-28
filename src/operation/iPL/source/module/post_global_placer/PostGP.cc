@@ -62,15 +62,18 @@ namespace ipl {
 
       _timing_annotation->updateCriticalityAndCentralityFull();
       runBufferBalancing();
+      _timing_annotation->updateSTATimingFull();
       _timing_annotation->updateCriticalityAndCentralityFull();
 
       runCellBalancing();
+      _timing_annotation->updateSTATimingFull();
       _timing_annotation->updateCriticalityAndCentralityFull();
 
       runLoadReduction();
+      _timing_annotation->updateSTATimingFull();
       _timing_annotation->updateCriticalityAndCentralityFull();
 
-      _timing_annotation->updateSTATimingFull();
+      // _timing_annotation->updateSTATimingFull();
       cur_tns = _timing_annotation->get_late_tns();
       
       bool flag_1 = cur_tns < prev_tns;
@@ -180,7 +183,6 @@ namespace ipl {
       return false;
     }
 
-    //   auto* group = _database._group_list[buffer->get_inst_id()];
     auto inpins = std::move(buffer->get_inpins());
     auto outpins = std::move(buffer->get_outpins());
 
@@ -208,9 +210,6 @@ namespace ipl {
     int32_t dbu = _database._placer_db->get_layout()->get_database_unit();
     C_w /= dbu;
     R_w /= dbu;
-
-    // float C_w = 0.16 / dbu;
-    // float R_w = 0.002535 / dbu;
 
     float R_0 = _timing_annotation->getOutNodeRes(driver_node);
     float R_1 = _timing_annotation->getOutNodeRes(out_node);
@@ -242,7 +241,7 @@ namespace ipl {
     this->runIncrLGAndUpdateTiming(buffer, px, py);
     float new_cost = this->calCurrentCost(buffer);
 
-    if (new_cost >= old_cost) {
+    if (new_cost > old_cost || Utility().isFloatPairApproximatelyEqual(new_cost, old_cost)) {
       // rollback
       bool rollback_flag = this->runRollback(buffer, false);
       if (!rollback_flag) {
@@ -264,7 +263,6 @@ namespace ipl {
       return false;
     }
 
-    //   auto* group = _database._group_list[buffer->get_inst_id()];
     auto inpins = std::move(inst->get_inpins());
     auto outpins = std::move(inst->get_outpins());
 
@@ -289,9 +287,6 @@ namespace ipl {
         int32_t dbu = _database._placer_db->get_layout()->get_database_unit();
         C_w /= dbu;
         R_w /= dbu;
-
-        // float C_w = 0.16 / dbu;
-        // float R_w = 0.002535 / dbu;
 
         Node* driver_node = _database._node_list[driver->get_pin_id()];
         Node* out_node = _database._node_list[outpin->get_pin_id()];
@@ -349,7 +344,7 @@ namespace ipl {
       this->runIncrLGAndUpdateTiming(inst, avg_px, avg_py);
       float new_cost = this->calCurrentCost(inst);
 
-      if (new_cost > old_cost) {
+      if (new_cost > old_cost || Utility().isFloatPairApproximatelyEqual(new_cost, old_cost)) {
         // rollback
         bool rollback_flag = this->runRollback(inst, false);
         if (!rollback_flag) {
@@ -409,16 +404,17 @@ namespace ipl {
       net_id_to_points_map.emplace(network->get_network_id(), point_pair_list);
     }
 
-    iPLAPIInst.updateTimingInstMovement(_database._topo_manager, net_id_to_points_map, std::vector<std::string>{inst->get_name()});
-  
+    // need to modify after, sta should support side cell update.
+    std::vector<std::string> front_insts_name = obtainFrontInstNameList(inst);
+
+    iPLAPIInst.updateTimingInstMovement(_database._topo_manager, net_id_to_points_map, front_insts_name);
+    // iPLAPIInst.updateTimingInstMovement(_database._topo_manager, net_id_to_points_map, std::vector<std::string>{inst->get_name()});
+
     return true;
   }
 
   bool PostGP::runRollback(Instance* inst, bool clear_but_not_rollback)
   {
-    if (inst->get_name() == "dpath/a_mux/_199_") {
-      int b = 0;
-    }
     bool flag = LegalizerInst.runRollback(clear_but_not_rollback);
 
     if (clear_but_not_rollback) {
@@ -438,9 +434,35 @@ namespace ipl {
       net_id_to_points_map.emplace(network->get_network_id(), point_pair_list);
     }
 
-    iPLAPIInst.updateTimingInstMovement(_database._topo_manager, net_id_to_points_map, std::vector<std::string>{inst->get_name()});
+    // need to modify after, sta should support side cell update.
+    std::vector<std::string> front_insts_name = obtainFrontInstNameList(inst);
+
+    iPLAPIInst.updateTimingInstMovement(_database._topo_manager, net_id_to_points_map, front_insts_name);
+    // iPLAPIInst.updateTimingInstMovement(_database._topo_manager, net_id_to_points_map, std::vector<std::string>{inst->get_name()});
 
     return flag;
+  }
+
+  std::vector<std::string> PostGP::obtainFrontInstNameList(Instance* inst){
+   std::vector<std::string> name_list;
+   std::vector<Pin*> input_pin = inst->get_inpins();
+   for(auto* pin : input_pin){
+    auto* pin_net = pin->get_net();
+    if(pin_net){
+      auto* driver = pin_net->get_driver_pin();
+      if(driver){
+        auto* front_inst = driver->get_instance();
+        if(front_inst){
+          name_list.push_back(front_inst->get_name());
+        }
+      }
+    }
+   }
+   if(name_list.empty()){
+    name_list.push_back(inst->get_name());
+   }
+   
+   return name_list;
   }
 
   void PostGP::runLoadReduction()
@@ -516,7 +538,7 @@ namespace ipl {
           this->runIncrLGAndUpdateTiming(sink_inst, driver_x, driver_y);
           float new_cost = this->calCurrentCost(sink_inst);
 
-          if (new_cost > old_cost) {
+          if (new_cost > old_cost || Utility().isFloatPairApproximatelyEqual(new_cost, old_cost)) {
             // rollback
             bool rollback_flag = this->runRollback(sink_inst, false);
             if (!rollback_flag) {
