@@ -696,9 +696,9 @@ bool RustVerilogRead::createDb(std::string file, std::string top_module_name)
   //   _verilog_read->printNetlist();
   // }
 
-  // build_pins();
-  // build_nets();
-  // build_components();
+  build_pins();
+  build_nets();
+  build_components();
 
   return true;
 }
@@ -1101,7 +1101,6 @@ int32_t RustVerilogRead::build_components()
         } else {
           cell_port_name = rust_convert_verilog_slice_id(cell_port_id)->id;
         }
-
         if (!net_expr) {
           continue;
         }
@@ -1124,6 +1123,8 @@ int32_t RustVerilogRead::build_components()
 
               if (idb_bus_pin) {
                 // the net should be net bus too, select bus index net.
+
+                // const char* net_name = net_expr->get_verilog_id()->getBaseName();
                 void* net_id;
                 if (rust_is_id_expr(net_expr)) {
                   net_id = const_cast<void*>(rust_convert_verilog_net_id_expr(net_expr)->verilog_id);
@@ -1139,14 +1140,14 @@ int32_t RustVerilogRead::build_components()
                   net_name = rust_convert_verilog_slice_id(net_id)->base_id;
                 }
 
-                // const char* net_name = net_expr->get_verilog_id()->getBaseName();
                 std::optional<int> net_bus_base_index;
-                if (rust_is_bus_slice_id(net_id)) {
-                  net_bus_base_index = rust_convert_verilog_slice_id(net_id)->range_base;
-                }
                 // if (net_expr->get_verilog_id()->isBusSliceID()) {
                 //   net_bus_base_index = dynamic_cast<VerilogSliceID*>(net_expr->get_verilog_id())->get_range_base();
                 // }
+                if (rust_is_bus_slice_id(net_id)) {
+                  net_bus_base_index = rust_convert_verilog_slice_id(net_id)->range_base;
+                }
+
                 std::string bus_net_name = std::string(net_name) + "[" + std::to_string(i + net_bus_base_index.value_or(0)) + "]";
                 add_pin(bus_net_name, idb_bus_pin);
                 bus_pins.emplace_back(idb_bus_pin);
@@ -1190,7 +1191,7 @@ int32_t RustVerilogRead::build_components()
           }
 
         } else {
-          // condition for net concat.
+          // condition for net concat(wire   [23:0] buf11_dout).
           auto* net_concat_expr = rust_convert_verilog_net_concat_expr(net_expr);
           std::vector<void*> verilog_id_concat_vec;
           flatten_concat_net_expr(net_concat_expr, verilog_id_concat_vec);
@@ -1237,7 +1238,21 @@ int32_t RustVerilogRead::build_components()
             }
 
             // create net bus and add net pin.
-            const char* net_name = verilog_id_net_expr->get_verilog_id()->getBaseName();
+            // const char* net_name = verilog_id_net_expr->get_verilog_id()->getBaseName();
+            void* net_expr_verilog_id;
+            if (rust_is_id_expr(verilog_id_net_expr)) {
+              net_expr_verilog_id = const_cast<void*>(rust_convert_verilog_net_id_expr(verilog_id_net_expr)->verilog_id);
+            } else if (rust_is_constant(verilog_id_net_expr)) {
+              net_expr_verilog_id = const_cast<void*>(rust_convert_verilog_constant_expr(verilog_id_net_expr)->verilog_id);
+            }
+            const char* net_name;
+            if (rust_is_id(net_expr_verilog_id)) {
+              net_name = rust_convert_verilog_id(net_expr_verilog_id)->id;
+            } else if (rust_is_bus_index_id(net_expr_verilog_id)) {
+              net_name = rust_convert_verilog_index_id(net_expr_verilog_id)->base_id;
+            } else {
+              net_name = rust_convert_verilog_slice_id(net_expr_verilog_id)->base_id;
+            }
             auto net_bus = idb_design->get_bus_list()->findBus(net_name);
 
             if (net_bus) {
@@ -1245,13 +1260,12 @@ int32_t RustVerilogRead::build_components()
               int bus_left = (*net_bus).get().get_left();
               int bus_right = (*net_bus).get().get_right();
 
-              auto* net_expr_verilog_id = verilog_id_net_expr->get_verilog_id();
-              if (net_expr_verilog_id->isBusIndexID()) {
-                bus_left = dynamic_cast<VerilogIndexID*>(net_expr_verilog_id)->get_index();
+              if (rust_is_bus_index_id(net_expr_verilog_id)) {
+                bus_left = rust_convert_verilog_index_id(net_expr_verilog_id)->index;
                 bus_right = bus_left;
-              } else if (net_expr_verilog_id->isBusSliceID()) {
-                bus_left = dynamic_cast<VerilogSliceID*>(net_expr_verilog_id)->get_range_max();
-                bus_right = dynamic_cast<VerilogSliceID*>(net_expr_verilog_id)->get_range_base();
+              } else if (rust_is_bus_slice_id(net_expr_verilog_id)) {
+                bus_left = rust_convert_verilog_slice_id(net_expr_verilog_id)->range_max;
+                bus_right = rust_convert_verilog_slice_id(net_expr_verilog_id)->range_base;
               }
 
               for (int j = bus_left; j >= bus_right; --j) {

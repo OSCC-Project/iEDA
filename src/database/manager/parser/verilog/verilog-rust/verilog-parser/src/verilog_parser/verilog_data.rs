@@ -304,7 +304,7 @@ impl VerilogVirtualBaseNetExpr for VerilogNetIDExpr {
 }
 
 #[derive(Debug, Clone)]
-/// such as { 2'b00, _0_ }
+/// such as { 2'b00, _0_ } or  wire   [23:0] buf11_dout in dcl.
 pub struct VerilogNetConcatExpr {
     net_expr: VerilogNetExpr,
     verilog_id_concat: Vec<Box<dyn VerilogVirtualBaseNetExpr>>,
