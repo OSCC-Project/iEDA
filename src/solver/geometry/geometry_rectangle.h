@@ -49,4 +49,11 @@ inline std::array<GeometryRect, 2> getExpandRects(const GeometryRect& rect, int 
   return {rect_high, rect_low};
 }
 
+#define bloat(rect, direction, value) gtl::bloat(rect, direction, value)
+#define shrink(rect, direction, value) gtl::shrink(rect, direction, value)
+
+#define manhattanDistance(rect1, rect2) gtl::manhattan_distance(rect1, rect2)
+
+#define oppositeRegion(rect1, rect2) gtl::generalized_intersect(rect1, rect2)
+
 }  // namespace ieda_solver

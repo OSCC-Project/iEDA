@@ -52,7 +52,7 @@ class DrcEngineManager
   /// operator
   bool addRect(int llx, int lly, int urx, int ury, std::string layer, int net_id = 0, LayoutType type = LayoutType::kRouting);
 
-  void combineLayouts();
+  void dataPreprocess();
 
   void filterData();
 
@@ -73,7 +73,6 @@ class DrcEngineManager
    */
   std::map<LayoutType, std::map<std::string, DrcEngineScanline*>> _scanline_matrix;
   // DrcEngineCheck* _engine_check = nullptr;
-  void dataPreprocess();
 };
 
 }  // namespace idrc

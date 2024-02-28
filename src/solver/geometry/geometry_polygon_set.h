@@ -25,6 +25,8 @@ typedef GtlPolygon90Set GeometryPolygonSet;
 #define interact(polygon_set, rect) gtl::interact(polygon_set, rect)
 
 #define getRectangles(output, polygon_set, direction) gtl::get_rectangles(output, polygon_set, direction)
+#define getMaxRectangles(output, polygon_set) gtl::get_max_rectangles(output, polygon_set)
+#define getPolygons(output, polygon_set) gtl::get_polygons(output, polygon_set)
 
 #define envelope(rect, polygon_set) gtl::extents(rect, polygon_set)
 

@@ -97,7 +97,7 @@ void GeometryBoost::addGeometry(EngineGeometry* geometry)
   _polyset += boost_geometry->get_polyset();
 }
 
-std::vector<GeometryPolygon>& GeometryBoost::getPolygons()
+std::vector<GeometryPolygon>& GeometryBoost::getLayoutPolygons()
 {
   if (_polygon_list.size() <= 0) {
     _polyset.get(_polygon_list);

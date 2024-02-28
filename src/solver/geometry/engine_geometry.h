@@ -47,7 +47,7 @@ class EngineGeometry
 
   GeometryPolygonSet& get_polyset() { return _polyset; }
 
-  virtual std::vector<GeometryPolygon>& getPolygons() = 0;
+  virtual std::vector<GeometryPolygon>& getLayoutPolygons() = 0;
   virtual std::vector<GeometryRect>& getOverlap() = 0;
   virtual std::vector<GeometryRect>& getWires() = 0;
 

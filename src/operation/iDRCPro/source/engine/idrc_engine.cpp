@@ -58,7 +58,6 @@ void DrcEngine::initEngine(DrcCheckerType checker_type)
     default:
       break;
   }
-  _engine_manager->combineLayouts();
 }
 
 /**
@@ -80,6 +79,7 @@ void DrcEngine::initEngineDef()
 
 void DrcEngine::operateEngine()
 {
+  _engine_manager->dataPreprocess();
   _engine_manager->filterData();
 }
 

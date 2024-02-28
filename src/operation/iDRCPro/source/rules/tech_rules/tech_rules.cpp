@@ -87,4 +87,14 @@ std::shared_ptr<idb::routinglayer::Lef58SpacingTableJogToJog> TechRules::getJogT
   return idb_routing_layer->get_lef58_spacingtable_jogtojog();
 }
 
+std::shared_ptr<idb::IdbLayerSpacingTable> TechRules::getSpacingTable(std::string layer_name)
+{
+  auto layer = findLayer(layer_name);
+  idb::IdbLayerRouting* idb_routing_layer = dynamic_cast<idb::IdbLayerRouting*>(layer);
+  if (!idb_routing_layer)
+    return nullptr;
+
+  return idb_routing_layer->get_spacing_table();
+}
+
 }  // namespace idrc

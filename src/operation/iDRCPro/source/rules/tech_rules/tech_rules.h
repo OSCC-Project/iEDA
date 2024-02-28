@@ -62,6 +62,8 @@ class TechRules
 
   std::shared_ptr<idb::routinglayer::Lef58SpacingTableJogToJog> getJogToJog(std::string layer_name);
 
+  std::shared_ptr<idb::IdbLayerSpacingTable> getSpacingTable(std::string layer_name);
+
   ///
 
  private:
