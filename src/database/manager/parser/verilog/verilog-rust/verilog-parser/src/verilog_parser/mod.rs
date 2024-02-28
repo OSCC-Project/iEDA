@@ -395,11 +395,14 @@ fn process_dcl(
     if let verilog_data::DclType::KWire = dcl_type {
         if !verilog_data::VerilogModule::is_port(&cur_module.borrow(), dcl_name) {
             let new_dcl_name = format!("{}/{}", inst_stmt.get_inst_name(), dcl_name);
-            let mut cloned_dcl_stmt: verilog_data::VerilogDcl = (**dcl_stmt).clone();
-            cloned_dcl_stmt.set_dcl_name(&new_dcl_name);
-            let new_dcl_stmt: Box<dyn verilog_data::VerilogVirtualBaseStmt> = Box::new(cloned_dcl_stmt);
+            let mut new_dcl_stmt: verilog_data::VerilogDcl = (**dcl_stmt).clone();
+            new_dcl_stmt.set_dcl_name(&new_dcl_name);
+            let mut verilog_dcl_vec: Vec<Box<verilog_data::VerilogDcl>> = Vec::new();
+            verilog_dcl_vec.push(Box::new(new_dcl_stmt));
+            let verilog_dcls = verilog_data::VerilogDcls::new((**dcl_stmt).get_stmt().get_line_no(), verilog_dcl_vec);
+            let new_dcls_stmt: Box<dyn verilog_data::VerilogVirtualBaseStmt> = Box::new(verilog_dcls);
             let mut parent_module_mut = parent_module.borrow_mut();
-            parent_module_mut.add_stmt(new_dcl_stmt);
+            parent_module_mut.add_stmt(new_dcls_stmt);
         }
     }
 }
