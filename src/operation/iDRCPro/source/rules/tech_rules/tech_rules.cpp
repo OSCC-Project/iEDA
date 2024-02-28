@@ -97,4 +97,14 @@ std::shared_ptr<idb::IdbLayerSpacingTable> TechRules::getSpacingTable(std::strin
   return idb_routing_layer->get_spacing_table();
 }
 
+std::vector<std::shared_ptr<idb::routinglayer::Lef58SpacingEol>> TechRules::getSpacingEolList(std::string layer_name)
+{
+  auto layer = findLayer(layer_name);
+  idb::IdbLayerRouting* idb_routing_layer = dynamic_cast<idb::IdbLayerRouting*>(layer);
+  if (!idb_routing_layer)
+    return {};
+
+  return idb_routing_layer->get_lef58_spacing_eol_list();
+}
+
 }  // namespace idrc

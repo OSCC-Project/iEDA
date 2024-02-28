@@ -19,6 +19,7 @@
 
 #include <vector>
 
+#include "geometry_point.h"
 #include "geometry_polygon.h"
 #include "geometry_polygon_set.h"
 #include "geometry_rectangle.h"

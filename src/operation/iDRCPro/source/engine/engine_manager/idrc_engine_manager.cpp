@@ -103,10 +103,6 @@ void DrcEngineManager::filterData()
     // TODO: only for routing layers
     auto& layer_polyset = layout->get_layout()->get_engine()->get_polyset();
 
-    int min_spacing = DrcTechRuleInst->getMinSpacing(layer);
-    auto rule_jog_to_jog = DrcTechRuleInst->getJogToJog(layer);
-    auto rule_spacing_table = DrcTechRuleInst->getSpacingTable(layer);
-
     // overlap
     auto& overlap = layout->get_layout()->get_engine()->getOverlap();
     if (overlap.size() > 0) {
@@ -120,6 +116,7 @@ void DrcEngineManager::filterData()
 #endif
 
     // min spacing
+    int min_spacing = DrcTechRuleInst->getMinSpacing(layer);
     if (min_spacing > 0) {
       auto violation_position_set = layer_polyset;
       int half_min_spacing = min_spacing / 2;
@@ -162,6 +159,9 @@ void DrcEngineManager::filterData()
     using WidthToPolygonSetMap = std::map<int, ieda_solver::GeometryPolygonSet>;
     WidthToPolygonSetMap jog_wire_map;
     WidthToPolygonSetMap prl_wire_map;
+
+    auto rule_jog_to_jog = DrcTechRuleInst->getJogToJog(layer);
+    auto rule_spacing_table = DrcTechRuleInst->getSpacingTable(layer);
 
     auto& wires = layout->get_layout()->get_engine()->getWires();
     for (auto& wire : wires) {
@@ -264,6 +264,7 @@ void DrcEngineManager::filterData()
                     }
                   }
                   for (size_t i = 1; i < region_a_rects.size(); ++i) {
+                    // TODO: distance
                     int distance = ieda_solver::manhattanDistance(region_a_rects[i], region_a_rects[i - 1]);
                     if (distance < rule_jog_to_jog_spacing) {
                       auto vio_rect = region_a_rects[i - 1];
@@ -316,16 +317,11 @@ void DrcEngineManager::filterData()
           std::vector<ieda_solver::GeometryRect> check_region_rects;
           ieda_solver::getMaxRectangles(check_region_rects, check_region);
 
-          check_region_rects.erase(std::remove_if(check_region_rects.begin(), check_region_rects.end(),
-                                                  [&](const ieda_solver::GeometryRect& rect) {
-                                                    return ieda_solver::getWireWidth(rect, direction.get_perpendicular()) <= required_prl;
-                                                  }),
-                                   check_region_rects.end());
-
           ieda_solver::GeometryPolygonSet violation_region_set;
           for (auto& rect : check_region_rects) {
             int length = ieda_solver::getWireWidth(rect, direction);
-            if (length <= expand_size) {
+            int prl = ieda_solver::getWireWidth(rect, direction.get_perpendicular());
+            if (prl > required_prl && length <= expand_size) {
               ieda_solver::bloat(rect, direction, expand_size - length);
               violation_region_set += rect;
             }
@@ -349,11 +345,105 @@ void DrcEngineManager::filterData()
     }
 
     // edge
+    auto rule_eol_list = DrcTechRuleInst->getSpacingEolList(layer);
+    int max_eol_width = 0;
+    for (auto& rule_eol : rule_eol_list) {
+      max_eol_width = std::max(max_eol_width, rule_eol->get_eol_width());
+    }
+    std::map<std::shared_ptr<idb::routinglayer::Lef58SpacingEol>, ieda_solver::GeometryPolygonSet> eol_check_regions;
+
+    // TODO: use two edge directions to judge corner type
+    auto is_convex = [](const ieda_solver::GeometryPoint& p1, const ieda_solver::GeometryPoint& p2, const ieda_solver::GeometryPoint& p3) {
+      return (p2.x() - p1.x()) * (p3.y() - p1.y()) - (p2.y() - p1.y()) * (p3.x() - p1.x()) > 0;
+    };
+
     auto& polygon_with_holes = layout->get_layout()->get_engine()->getLayoutPolygons();
     for (auto& polygon : polygon_with_holes) {
-      // TODO: deal with polygon outlines
+      if (polygon.size() < 4) {
+        continue;
+      }
+      // polygon outline
+      std::vector<bool> corner_convex_history(polygon.size());
+      std::vector<int> edge_length_history(polygon.size());
+      int corner_index = 0;
 
-      // TODO: deal with polygon holes
+      auto it_next = polygon.begin();
+      auto it_prev_prev = it_next++;
+      auto it_prev = it_next++;
+      auto it_current = it_next++;
+      corner_convex_history.back() = is_convex(*it_prev_prev, *it_prev, *it_current);
+      do {
+        // todo
+        int corner_last_index = (corner_index + corner_convex_history.size() - 1) % corner_convex_history.size();
+        int edge_length = ieda_solver::manhattanDistance(*it_current, *it_prev);
+        bool is_current_convex = is_convex(*it_prev, *it_current, *it_next);
+
+        edge_length_history[corner_index] = edge_length;
+        corner_convex_history[corner_index] = is_current_convex;
+
+        ieda_solver::GeometryOrientation edge_orientation
+            = (*it_prev).x() == (*it_current).x() ? ieda_solver::VERTICAL : ieda_solver::HORIZONTAL;
+        ieda_solver::GeometryDirection2D edge_direction
+            = edge_orientation == ieda_solver::VERTICAL ? ((*it_current).y() > (*it_prev).y() ? ieda_solver::NORTH : ieda_solver::SOUTH)
+                                                        : ((*it_current).x() > (*it_prev).x() ? ieda_solver::EAST : ieda_solver::WEST);
+
+        // eol
+        if (is_current_convex && corner_convex_history[corner_last_index] && edge_length < max_eol_width) {
+          for (auto& rule_eol : rule_eol_list) {
+            // TODO: key words
+            if (rule_eol->get_parallel_edge().has_value()) {
+              continue;
+            }
+
+            // eol spacing
+            int eol_spacing = rule_eol->get_eol_space();
+            int eol_within = rule_eol->get_eol_within().value_or(0);
+
+            // TODO: use orientation
+            ieda_solver::GeometryRect check_rect((*it_prev).x(), (*it_prev).y(), (*it_current).x(), (*it_current).y());
+            ieda_solver::bloat(check_rect, edge_direction.right(), eol_spacing);
+            ieda_solver::bloat(check_rect, edge_orientation, eol_within);
+            eol_check_regions[rule_eol] += check_rect;
+          }
+
+          int a = 0;
+        }
+
+        // TODO: notch, step, corner fill
+
+        // TODO: area
+
+        // next segment
+        ++corner_index;
+        it_prev_prev = it_prev;
+        it_prev = it_current;
+        it_current = it_next;
+        ++it_next;
+        if (it_next == polygon.end()) {
+          it_next = polygon.begin();
+        }
+      } while (it_prev_prev != polygon.begin());
+
+      // polygon holes
+      for (auto hole_it = polygon.begin_holes(); hole_it != polygon.end_holes(); ++hole_it) {
+        // TODO: refresh area
+        // TODO: min enclosed area
+      }
+    }
+
+    for (auto& rule_eol : rule_eol_list) {
+      auto& check_regions = eol_check_regions[rule_eol];
+      auto violation_wires = check_regions & layer_polyset;
+
+      // TODO: get violation regions
+      std::vector<ieda_solver::GeometryViewPolygon> check_polygons;
+      check_regions.get(check_polygons);
+      std::vector<ieda_solver::GeometryRect> violation_rects;
+      ieda_solver::getMaxRectangles(violation_rects, violation_wires);
+      if (!violation_rects.empty()) {
+        int a = 0;
+      }
+      int a = 0;
     }
 
     // TODO: rule check

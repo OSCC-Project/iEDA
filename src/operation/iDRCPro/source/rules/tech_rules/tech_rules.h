@@ -64,6 +64,8 @@ class TechRules
 
   std::shared_ptr<idb::IdbLayerSpacingTable> getSpacingTable(std::string layer_name);
 
+  std::vector<std::shared_ptr<idb::routinglayer::Lef58SpacingEol>> getSpacingEolList(std::string layer_name);
+
   ///
 
  private:

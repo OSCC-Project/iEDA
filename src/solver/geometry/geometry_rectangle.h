@@ -21,11 +21,16 @@
 namespace ieda_solver {
 
 typedef gtl::direction_1d GeometryDirection1D;
+typedef gtl::direction_2d GeometryDirection2D;
 typedef gtl::orientation_2d GeometryOrientation;
 typedef gtl::interval_data<int> GeometryInterval;
 
 #define HORIZONTAL gtl::HORIZONTAL
 #define VERTICAL gtl::VERTICAL
+#define WEST gtl::WEST
+#define EAST gtl::EAST
+#define NORTH gtl::NORTH
+#define SOUTH gtl::SOUTH
 
 typedef GtlRect GeometryRect;
 
