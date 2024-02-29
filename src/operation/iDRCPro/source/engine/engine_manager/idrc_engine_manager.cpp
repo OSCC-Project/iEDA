@@ -350,7 +350,9 @@ void DrcEngineManager::filterData()
     for (auto& rule_eol : rule_eol_list) {
       max_eol_width = std::max(max_eol_width, rule_eol->get_eol_width());
     }
-    std::map<std::shared_ptr<idb::routinglayer::Lef58SpacingEol>, ieda_solver::GeometryPolygonSet> eol_check_regions;
+    using EolRuleToRegionMap = std::map<std::shared_ptr<idb::routinglayer::Lef58SpacingEol>, ieda_solver::GeometryPolygonSet>;
+    EolRuleToRegionMap eol_check_regions;
+    EolRuleToRegionMap eol_par_space_regions;
 
     // TODO: use two edge directions to judge corner type
     auto is_convex = [](const ieda_solver::GeometryPoint& p1, const ieda_solver::GeometryPoint& p2, const ieda_solver::GeometryPoint& p3) {
@@ -372,10 +374,12 @@ void DrcEngineManager::filterData()
       auto it_prev = it_next++;
       auto it_current = it_next++;
       corner_convex_history.back() = is_convex(*it_prev_prev, *it_prev, *it_current);
+      edge_length_history.back() = ieda_solver::manhattanDistance(*it_prev_prev, *it_prev);
       do {
         // todo
         int corner_last_index = (corner_index + corner_convex_history.size() - 1) % corner_convex_history.size();
         int edge_length = ieda_solver::manhattanDistance(*it_current, *it_prev);
+        int edge_length_next = ieda_solver::manhattanDistance(*it_next, *it_current);
         bool is_current_convex = is_convex(*it_prev, *it_current, *it_next);
 
         edge_length_history[corner_index] = edge_length;
@@ -390,18 +394,70 @@ void DrcEngineManager::filterData()
         // eol
         if (is_current_convex && corner_convex_history[corner_last_index] && edge_length < max_eol_width) {
           for (auto& rule_eol : rule_eol_list) {
-            // TODO: key words
-            if (rule_eol->get_parallel_edge().has_value()) {
+            int eol_spacing = rule_eol->get_eol_space();
+            // mininum value is 1, to ensure detect parallel edge regions and check violation regions have overlap
+            int eol_within = std::max(rule_eol->get_eol_within().value_or(0), 1);
+
+            // key words
+            if (rule_eol->get_enclose_cut().has_value()) {
+              // TODO: enclose cut
               continue;
             }
 
-            // eol spacing
-            int eol_spacing = rule_eol->get_eol_space();
-            int eol_within = rule_eol->get_eol_within().value_or(0);
+            if (rule_eol->get_adj_edge_length().has_value()) {
+              auto rule_adj_edge_length = rule_eol->get_adj_edge_length().value();
+              int min_edge_length = rule_adj_edge_length.get_min_length().value_or(0);
+              if (edge_length_next < min_edge_length || edge_length_history[corner_last_index] < min_edge_length) {
+                continue;
+              }
+            }
 
-            // TODO: use orientation
+            if (rule_eol->get_end_to_end().has_value()) {
+              auto rule_end_to_end = rule_eol->get_end_to_end().value();
+              int rule_end_to_end_spacing = rule_end_to_end.get_end_to_end_space();
+              // TODO: end to end situation
+            }
+
+            if (rule_eol->get_parallel_edge().has_value()) {
+              auto rule_par_edge = rule_eol->get_parallel_edge().value();
+              int rule_par_spacing = rule_par_edge.get_par_space();
+              if (rule_par_edge.is_subtract_eol_width()) {
+                rule_par_spacing -= edge_length;
+              }
+              int rule_par_within = rule_par_edge.get_par_within();
+
+              ieda_solver::GeometryRect detect_rect_left((*it_current).x(), (*it_current).y(), (*it_current).x(), (*it_current).y());
+              ieda_solver::bloat(detect_rect_left, edge_direction, rule_par_spacing);
+              ieda_solver::shrink(detect_rect_left, edge_direction.backward(), 1);
+              ieda_solver::bloat(detect_rect_left, edge_direction.left(), rule_par_within);
+              ieda_solver::bloat(detect_rect_left, edge_direction.right(), eol_within);
+              eol_par_space_regions[rule_eol] += detect_rect_left;
+
+              ieda_solver::GeometryRect detect_rect_right((*it_prev).x(), (*it_prev).y(), (*it_prev).x(), (*it_prev).y());
+              ieda_solver::bloat(detect_rect_right, edge_direction.backward(), rule_par_spacing);
+              ieda_solver::shrink(detect_rect_right, edge_direction, 1);
+              ieda_solver::bloat(detect_rect_right, edge_direction.left(), rule_par_within);
+              ieda_solver::bloat(detect_rect_right, edge_direction.right(), eol_within);
+              eol_par_space_regions[rule_eol] += detect_rect_right;
+
+              if (rule_par_edge.is_two_edges()) {
+                ieda_solver::GeometryRect connect_rect((*it_prev).x(), (*it_prev).y(), (*it_current).x(), (*it_current).y());
+                ieda_solver::bloat(connect_rect, edge_direction.right(), 2);
+                ieda_solver::shrink(connect_rect, edge_direction.left(), 1);
+                ieda_solver::bloat(connect_rect, edge_orientation, 2);
+                eol_par_space_regions[rule_eol] += connect_rect;
+              }
+
+              if (rule_par_edge.is_same_metal()) {
+                // TODO: same metal
+                continue;
+              }
+            }
+
+            // eol spacing
             ieda_solver::GeometryRect check_rect((*it_prev).x(), (*it_prev).y(), (*it_current).x(), (*it_current).y());
-            ieda_solver::bloat(check_rect, edge_direction.right(), eol_spacing);
+            ieda_solver::bloat(check_rect, edge_direction.right(), eol_spacing - 1);
+            ieda_solver::shrink(check_rect, edge_direction.left(), 1);
             ieda_solver::bloat(check_rect, edge_orientation, eol_within);
             eol_check_regions[rule_eol] += check_rect;
           }
@@ -433,14 +489,24 @@ void DrcEngineManager::filterData()
 
     for (auto& rule_eol : rule_eol_list) {
       auto& check_regions = eol_check_regions[rule_eol];
-      auto violation_wires = check_regions & layer_polyset;
+
+      if (rule_eol->get_parallel_edge().has_value()) {
+        auto& par_space_regions = eol_par_space_regions[rule_eol];
+        ieda_solver::interact(par_space_regions, layer_polyset);
+        ieda_solver::interact(check_regions, par_space_regions);
+      }
+
+      ieda_solver::interact(check_regions, layer_polyset);
+      auto violation_regions = check_regions - layer_polyset;
 
       // TODO: get violation regions
+      std::vector<ieda_solver::GeometryViewPolygon> detect_polygons;
+      eol_par_space_regions[rule_eol].get(detect_polygons);
       std::vector<ieda_solver::GeometryViewPolygon> check_polygons;
       check_regions.get(check_polygons);
       std::vector<ieda_solver::GeometryRect> violation_rects;
-      ieda_solver::getMaxRectangles(violation_rects, violation_wires);
-      if (!violation_rects.empty()) {
+      ieda_solver::getMaxRectangles(violation_rects, violation_regions);
+      if (!violation_rects.empty() && rule_eol->get_parallel_edge().has_value()) {
         int a = 0;
       }
       int a = 0;
