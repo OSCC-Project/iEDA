@@ -15,36 +15,15 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 
-#pragma once
-
-#include <vector>
+#ifndef IPL_POST_GP_CONFIG_H
+#define IPL_POST_GP_CONFIG_H
 
 namespace ipl {
-class LGConfig;
-class LGDatabase;
-class LGInstance;
-}  // namespace ipl
 
-namespace ieda_solver {
-
-class LGMethodInterface
+class PostGPConfig
 {
- public:
-  LGMethodInterface() {}
-  virtual ~LGMethodInterface() {}
-
-  virtual void initDataRequirement(ipl::LGConfig* lg_config, ipl::LGDatabase* lg_database) = 0;
-  virtual bool isInitialized() = 0;
-  virtual bool runLegalization() = 0;
-
-  virtual void specifyTargetInstList(std::vector<ipl::LGInstance*>& target_inst_list) = 0;
-  virtual bool runIncrLegalization() = 0;
-  virtual bool runRollback(bool clear_but_not_rollback) = 0;
-
- protected:
-  ipl::LGDatabase* _database = nullptr;
-  ipl::LGConfig* _config = nullptr;
-  std::vector<ipl::LGInstance*> _target_inst_list;
 };
 
-}  // namespace ieda_solver
+}  // namespace ipl
+
+#endif

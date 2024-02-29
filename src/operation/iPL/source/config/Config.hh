@@ -35,6 +35,7 @@
 #include "LegalizerConfig.hh"
 #include "MacroPlacerConfig.hh"
 #include "NesterovPlaceConfig.hh"
+#include "PostGPConfig.hh"
 #include "json/json.hpp"
 
 namespace ipl {
@@ -66,9 +67,12 @@ class Config
   FillerConfig& get_filler_config() { return _filler_config; }
   // MacroPlacer config
   MacroPlacerConfig& get_mp_config() { return _mp_config; }
+  // PostGP config
+  PostGPConfig& get_post_gp_config() { return _post_gp_config; }
 
   int32_t get_ignore_net_degree() const { return _ignore_net_degree; }
-  bool isTimingAwareMode() const { return _is_timing_aware_mode; }
+  bool isTimingEffort() const { return _is_timing_effort; }
+  bool isCongestionEffort() const { return _is_congestion_effort; }
 
  private:
   // NesterovPlace config.
@@ -83,9 +87,10 @@ class Config
   FillerConfig _filler_config;
   // MacroPlacer config
   MacroPlacerConfig _mp_config;
-
+  PostGPConfig _post_gp_config;
   int32_t _ignore_net_degree;
-  bool _is_timing_aware_mode;
+  bool _is_timing_effort;
+  bool _is_congestion_effort;
 
   void setConfigFromJson(const std::string& json_file);
   void initConfig(const std::string& json_file);

@@ -29,8 +29,6 @@
 
 #include "TopologyManager.hh"
 #include "data/Point.hh"
-#include "GridManager.hh"
-
 
 namespace ipl {
 
@@ -47,8 +45,6 @@ class WirelengthGradient
   WirelengthGradient& operator=(WirelengthGradient&&) = delete;
 
   virtual void updateWirelengthForce(float coeff_x, float coeff_y, float min_force_bar, int32_t thread_num) = 0;
-  virtual void updateWirelengthForceDirect(float coeff_x, float coeff_y, float min_force_bar, int32_t thread_num, GridManager* grid_manager) = 0;
-
   virtual Point<float> obtainWirelengthGradient(int32_t inst_id, float coeff_x, float coeff_y) = 0;
 
   // Debug

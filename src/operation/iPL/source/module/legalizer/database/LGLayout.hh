@@ -71,6 +71,7 @@ class LGLayout
   // function
   LGRegion* find_region(std::string region_name);
   LGCell* find_cell(std::string cell_name);
+  LGInterval* find_interval(std::string interval_name);
 
  private:
   int32_t _row_num;

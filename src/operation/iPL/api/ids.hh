@@ -14,37 +14,60 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
+/*
+ * @Author: S.J Chen
+ * @Date: 2022-10-27 14:50:40
+ * @LastEditors: sjchanson 13560469332@163.com
+ * @LastEditTime: 2022-12-14 18:51:00
+ * @FilePath: /irefactor/src/operation/iPL/api/ids.hh
+ * @Description:
+ */
 
-#pragma once
+#ifndef IPL_IDS_H
+#define IPL_IDS_H
 
+#include <any>
+#include <map>
+#include <string>
 #include <vector>
 
+namespace ids {
+
+}
+
+namespace idb {
+
+class IdbBuilder;
+
+enum class IdbConnectType : uint8_t;
+}  // namespace idb
+
 namespace ipl {
-class LGConfig;
-class LGDatabase;
-class LGInstance;
+class NetWork;
+
+template <typename T>
+class Rectangle;
+
+template <typename T>
+class Point;
+
+class TopologyManager;
+
 }  // namespace ipl
 
-namespace ieda_solver {
+namespace eval {
+class EvalAPI;
+class TimingPin;
+class CongGrid;
+class CongInst;
+class TimingNet;
 
-class LGMethodInterface
-{
- public:
-  LGMethodInterface() {}
-  virtual ~LGMethodInterface() {}
+}  // namespace eval
 
-  virtual void initDataRequirement(ipl::LGConfig* lg_config, ipl::LGDatabase* lg_database) = 0;
-  virtual bool isInitialized() = 0;
-  virtual bool runLegalization() = 0;
+namespace ista {
 
-  virtual void specifyTargetInstList(std::vector<ipl::LGInstance*>& target_inst_list) = 0;
-  virtual bool runIncrLegalization() = 0;
-  virtual bool runRollback(bool clear_but_not_rollback) = 0;
+enum class AnalysisMode;
 
- protected:
-  ipl::LGDatabase* _database = nullptr;
-  ipl::LGConfig* _config = nullptr;
-  std::vector<ipl::LGInstance*> _target_inst_list;
-};
+}
 
-}  // namespace ieda_solver
+#endif  // SRC_OPERATION_IPL_API_IDS_HH_

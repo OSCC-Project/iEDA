@@ -43,6 +43,7 @@
 #include "TopologyManager.hh"
 #include "WAWirelengthGradient.hh"
 #include "nesterov/Nesterov.hh"
+#include "timing/TimingAnnotation.hh"
 
 namespace ipl {
 
@@ -79,6 +80,7 @@ class NesterovDatabase
 
   // wirelength.
   TopologyManager* _topology_manager;
+  TimingAnnotation* _timing_annotation;
   Wirelength* _wirelength;
   WirelengthGradient* _wirelength_gradient;
   float _wirelength_coef;
@@ -105,6 +107,7 @@ inline NesterovDatabase::NesterovDatabase()
       _nNets_range(0),
       _nPins_range(0),
       _topology_manager(nullptr),
+      _timing_annotation(nullptr),
       _wirelength(nullptr),
       _wirelength_gradient(nullptr),
       _wirelength_coef(0.0F),
@@ -125,6 +128,7 @@ inline NesterovDatabase::~NesterovDatabase()
   delete _wirelength_gradient;
   delete _wirelength;
   delete _topology_manager;
+  delete _timing_annotation;
 
   delete _density_gradient;
   delete _density;

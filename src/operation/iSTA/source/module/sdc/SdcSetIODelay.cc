@@ -34,6 +34,7 @@ SdcSetIODelay::SdcSetIODelay(const char* constrain_name, const char* clock_name,
       _max(1),
       _min(1),
       _clock_fall(0),
+      _add(0),
       _reserved(0),
       _clock_name(clock_name),
       _delay_value(delay_value) {}

@@ -38,6 +38,7 @@ class ExternalAPI
   bool isSTAStarted();
   void modifySTAOutputDir(std::string path);
   void initSTA();
+  void initEval();
   void updateSTATiming();
   std::vector<std::string> obtainClockNameList();
   bool isClockNet(std::string net_name);
@@ -58,8 +59,11 @@ class ExternalAPI
   double obtainTNS(const char* clock_name, ista::AnalysisMode mode);
   double obtainTargetClockPeriodNS(std::string clock_name);
   void updateEvalTiming(const std::vector<eval::TimingNet*>& timing_net_list);
-  void updateTimingInstMovement(std::map<std::string, std::vector<std::pair<Point<int32_t>, Point<int32_t>>>> influenced_net_map,
-                                std::vector<std::string> moved_inst_list);
+  void updateEvalTiming(const std::vector<eval::TimingNet*>& timing_net_list, const std::vector<std::string>& name_list, const int& propagation_level);
+  float obtainPinCap(std::string inst_pin_name);
+  float obtainAvgWireResUnitLengthUm();
+  float obtainAvgWireCapUnitLengthUm();
+  float obtainInstOutPinRes(std::string cell_name, std::string port_name);
   void destroyTimingEval();
   /*****************************Timing Interface: END*******************************/
 

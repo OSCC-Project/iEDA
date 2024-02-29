@@ -1,9 +1,9 @@
 # set
-set(iPL_electrostatic_placer 
+set(iPL_ELECTROSTATIC_PLACER 
     ${iPL_GP}/electrostatic_placer
 )
 
-add_subdirectory(${iPL_electrostatic_placer})
+add_subdirectory(${iPL_ELECTROSTATIC_PLACER})
 
 add_library(ipl-module-global_placer INTERFACE)
 

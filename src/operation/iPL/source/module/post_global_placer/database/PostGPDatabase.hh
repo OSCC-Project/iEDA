@@ -15,36 +15,39 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 
-#pragma once
+#ifndef IPL_POST_GP_DATABASE_H
+#define IPL_POST_GP_DATABASE_H
 
-#include <vector>
+#include "PlacerDB.hh"
 
 namespace ipl {
-class LGConfig;
-class LGDatabase;
-class LGInstance;
-}  // namespace ipl
 
-namespace ieda_solver {
-
-class LGMethodInterface
+class PostGPDatabase
 {
  public:
-  LGMethodInterface() {}
-  virtual ~LGMethodInterface() {}
+  PostGPDatabase(): _placer_db(nullptr), _topo_manager(nullptr) {}
+  PostGPDatabase(const PostGPDatabase&) = delete;
+  PostGPDatabase(PostGPDatabase&&) = delete;
+  ~PostGPDatabase() = default;
 
-  virtual void initDataRequirement(ipl::LGConfig* lg_config, ipl::LGDatabase* lg_database) = 0;
-  virtual bool isInitialized() = 0;
-  virtual bool runLegalization() = 0;
+  PostGPDatabase& operator=(const PostGPDatabase&) = default;
+  PostGPDatabase& operator=(PostGPDatabase&&) = default;
 
-  virtual void specifyTargetInstList(std::vector<ipl::LGInstance*>& target_inst_list) = 0;
-  virtual bool runIncrLegalization() = 0;
-  virtual bool runRollback(bool clear_but_not_rollback) = 0;
+ private:
+  PlacerDB* _placer_db;
+  TopologyManager* _topo_manager;
 
- protected:
-  ipl::LGDatabase* _database = nullptr;
-  ipl::LGConfig* _config = nullptr;
-  std::vector<ipl::LGInstance*> _target_inst_list;
+  std::vector<Instance*> _inst_list;
+  std::vector<Net*> _net_list;
+  std::vector<Pin*> _pin_list;
+
+  std::vector<Group*> _group_list;
+  std::vector<NetWork*> _network_list;
+  std::vector<Node*> _node_list;
+
+  friend class PostGP;
 };
 
-}  // namespace ieda_solver
+}  // namespace ipl
+
+#endif
