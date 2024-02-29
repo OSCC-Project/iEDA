@@ -1095,6 +1095,7 @@ void InitialRouter::updateIRModel(IRModel& ir_model)
 void InitialRouter::outputGuide(IRModel& ir_model)
 {
   Monitor monitor;
+  LOG_INST.info(Loc::current(), "Begin outputting...");
 
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
   std::string ir_temp_directory_path = DM_INST.getConfig().ir_temp_directory_path;
@@ -1129,6 +1130,8 @@ void InitialRouter::outputGuide(IRModel& ir_model)
     RTUtil::pushStream(guide_file_stream, ")\n");
   }
   RTUtil::closeFileStream(guide_file_stream);
+
+  LOG_INST.info(Loc::current(), "End output", monitor.getStatsInfo());
 }
 
 #if 1  // exhibit

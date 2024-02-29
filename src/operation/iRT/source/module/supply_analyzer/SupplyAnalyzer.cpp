@@ -189,11 +189,11 @@ std::vector<LayerRect> SupplyAnalyzer::getCrossingWireList(int32_t layer_idx, SA
 
   std::vector<LayerRect> wire_list;
   if (routing_layer.isPreferH()) {
-    for (int32_t y : RTUtil::getOpenScaleList(real_lb_y, real_rt_y, routing_layer.getYTrackGridList())) {
+    for (int32_t y : RTUtil::getScaleList(real_lb_y, real_rt_y, routing_layer.getYTrackGridList())) {
       wire_list.emplace_back(real_lb_x, y - half_width, real_rt_x, y + half_width, layer_idx);
     }
   } else {
-    for (int32_t x : RTUtil::getOpenScaleList(real_lb_x, real_rt_x, routing_layer.getXTrackGridList())) {
+    for (int32_t x : RTUtil::getScaleList(real_lb_x, real_rt_x, routing_layer.getXTrackGridList())) {
       wire_list.emplace_back(x - half_width, real_lb_y, x + half_width, real_rt_y, layer_idx);
     }
   }
@@ -251,8 +251,8 @@ void SupplyAnalyzer::plotSAModel(SAModel& sa_model)
   // track_axis_struct
   GPStruct track_axis_struct("track_axis_struct");
   for (RoutingLayer& routing_layer : routing_layer_list) {
-    std::vector<int32_t> x_list = RTUtil::getClosedScaleList(die.get_real_lb_x(), die.get_real_rt_x(), routing_layer.getXTrackGridList());
-    std::vector<int32_t> y_list = RTUtil::getClosedScaleList(die.get_real_lb_y(), die.get_real_rt_y(), routing_layer.getYTrackGridList());
+    std::vector<int32_t> x_list = RTUtil::getScaleList(die.get_real_lb_x(), die.get_real_rt_x(), routing_layer.getXTrackGridList());
+    std::vector<int32_t> y_list = RTUtil::getScaleList(die.get_real_lb_y(), die.get_real_rt_y(), routing_layer.getYTrackGridList());
     for (int32_t x : x_list) {
       GPPath gp_path;
       gp_path.set_data_type(static_cast<int32_t>(GPDataType::kAxis));
@@ -298,8 +298,8 @@ void SupplyAnalyzer::plotSAModel(SAModel& sa_model)
 
   // gcell_axis
   GPStruct gcell_axis_struct("gcell_axis");
-  std::vector<int32_t> gcell_x_list = RTUtil::getClosedScaleList(die.get_real_lb_x(), die.get_real_rt_x(), gcell_axis.get_x_grid_list());
-  std::vector<int32_t> gcell_y_list = RTUtil::getClosedScaleList(die.get_real_lb_y(), die.get_real_rt_y(), gcell_axis.get_y_grid_list());
+  std::vector<int32_t> gcell_x_list = RTUtil::getScaleList(die.get_real_lb_x(), die.get_real_rt_x(), gcell_axis.get_x_grid_list());
+  std::vector<int32_t> gcell_y_list = RTUtil::getScaleList(die.get_real_lb_y(), die.get_real_rt_y(), gcell_axis.get_y_grid_list());
   for (int32_t x : gcell_x_list) {
     GPPath gp_path;
     gp_path.set_layer_idx(0);
