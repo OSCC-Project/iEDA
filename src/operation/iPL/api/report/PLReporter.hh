@@ -29,6 +29,7 @@ class PLReporter
   void reportPLBaseInfo(std::ofstream& feed);
   
   void printHPWLInfo();
+  void printTimingInfo();
   void saveNetPinInfoForDebug(std::string path);
   void savePinListInfoForDebug(std::string path);
   void plotConnectionForDebug(std::vector<std::string> net_name_list, std::string path);
@@ -38,6 +39,7 @@ class PLReporter
   // tmp for iEDA Evaluation.
   void reportEDAEvaluation();
   void reportEDAFillerEvaluation();
+  void reportTDPEvaluation();
  
   ExternalAPI* _external_api;
 };

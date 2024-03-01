@@ -54,9 +54,11 @@ if(NOT DEFINED CMD_BUILD)
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
 endif()
 
+set(SANITIZER OFF)
 if(SANITIZER)
     add_compile_options("-fsanitize=address")
     link_libraries("-fsanitize=address")
+    message("address sanitizer load")
 endif()
 
 include(cmake/setting.cmake)

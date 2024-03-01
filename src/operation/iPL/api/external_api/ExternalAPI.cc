@@ -38,6 +38,12 @@ void ExternalAPI::initSTA()
   staInst->initSTA();
   staInst->buildGraph();
 }
+
+void ExternalAPI::initEval()
+{
+  EvalInst.initInst();
+}
+
 void ExternalAPI::updateSTATiming()
 {
   staInst->updateTiming();
@@ -128,9 +134,24 @@ void ExternalAPI::updateEvalTiming(const std::vector<eval::TimingNet*>& timing_n
   EvalInst.updateTiming(timing_net_list);
 }
 
-void ExternalAPI::updateTimingInstMovement(std::map<std::string, std::vector<std::pair<Point<int32_t>, Point<int32_t>>>> influenced_net_map,
-                                           std::vector<std::string> moved_inst_list)
-{
+void ExternalAPI::updateEvalTiming(const std::vector<eval::TimingNet*>& timing_net_list, const std::vector<std::string>& name_list, const int& propagation_level){
+  EvalInst.updateTiming(timing_net_list,name_list,propagation_level);
+}
+
+float ExternalAPI::obtainPinCap(std::string inst_pin_name){
+  return staInst->obtainPinCap(inst_pin_name);
+}
+
+float ExternalAPI::obtainAvgWireResUnitLengthUm(){
+  return staInst->obtainAvgWireResUnitLengthUm();
+}
+
+float ExternalAPI::obtainAvgWireCapUnitLengthUm(){
+  return staInst->obtainAvgWireCapUnitLengthUm();
+}
+
+float ExternalAPI::obtainInstOutPinRes(std::string cell_name, std::string port_name){
+  return staInst->obtainInstOutPinRes(cell_name, port_name);
 }
 
 void ExternalAPI::destroyTimingEval()

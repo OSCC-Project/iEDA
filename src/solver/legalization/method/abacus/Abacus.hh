@@ -18,6 +18,8 @@
 #pragma once
 
 #include <map>
+#include <unordered_map>
+#include <stack>
 
 #include "AbacusCluster.hh"
 #include "LGMethodInterface.hh"
@@ -31,10 +33,21 @@ class Rectangle;
 
 namespace ieda_solver {
 
+struct RollbackInfo
+{
+  RollbackInfo() : is_dirty(false) {}
+  ~RollbackInfo() = default;
+
+  bool is_dirty;
+  // for incremental legalization rollback
+  std::vector<AbacusCluster> origin_clusters;
+  std::vector<AbacusCluster> addition_clusters;
+};
+
 class Abacus : public LGMethodInterface
 {
  public:
-  Abacus() {}
+  Abacus() = default;
   Abacus(const Abacus&) = delete;
   Abacus(Abacus&&) = delete;
   ~Abacus();
@@ -47,24 +60,29 @@ class Abacus : public LGMethodInterface
   void specifyTargetInstList(std::vector<ipl::LGInstance*>& target_inst_list) override;
   bool runLegalization() override;
   bool runIncrLegalization() override;
+  bool runRollback(bool clear_but_not_rollback) override;
 
  private:
-  std::map<std::string, AbacusCluster*> _cluster_map;
+  std::unordered_map<std::string, AbacusCluster*> _cluster_map;
   std::vector<AbacusCluster*> _inst_belong_cluster;
   std::vector<AbacusCluster*> _interval_cluster_root;
   std::vector<int32_t> _interval_remain_length;
 
   int32_t _row_height = -1;
   int32_t _site_width = -1;
+  
+  std::stack<RollbackInfo> _rollback_stack;
 
   void pickAndSortMovableInstList(std::vector<ipl::LGInstance*>& movable_inst_list);
-  int32_t placeRow(ipl::LGInstance* inst, int32_t row_idx, bool is_trial);
+  int32_t placeRow(ipl::LGInstance* inst, int32_t row_idx, bool is_trial, bool is_record_cluster);
   int32_t searchNearestIntervalIndex(std::vector<ipl::LGInterval*>& segment_list, ipl::Rectangle<int32_t>& inst_shape);
   int32_t searchRemainSpaceSegIndex(std::vector<ipl::LGInterval*>& segment_list, ipl::Rectangle<int32_t>& inst_shape, int32_t origin_index);
   AbacusCluster arrangeInstIntoIntervalCluster(ipl::LGInstance* inst, ipl::LGInterval* interval);
-  void replaceClusterInfo(AbacusCluster& cluster);
+  void replaceClusterInfo(AbacusCluster& cluster, bool is_record_cluster);
   void arrangeClusterMinXCoordi(AbacusCluster& cluster);
   void legalizeCluster(AbacusCluster& cluster);
+  void mergeWithPreviousCluster(AbacusCluster& cluster, AbacusCluster prev_cluster);
+  void mergeWithNextCluster(AbacusCluster& cluster, AbacusCluster next_cluster);
   int32_t obtainFrontMaxX(AbacusCluster& cluster);
   int32_t obtainBackMinX(AbacusCluster& cluster);
 
@@ -76,6 +94,14 @@ class Abacus : public LGMethodInterface
   void deleteCluster(std::string name);
 
   void updateRemainLength(ipl::LGInterval* interval, int32_t delta);
+  void splitTargetInst(ipl::LGInstance* inst, RollbackInfo& rollback_info);
+  void deleteTargetIntervalClusters(ipl::LGInterval* interval, std::vector<AbacusCluster>& cluster_list);
+  void insertTargetIntervalClusters(ipl::LGInterval* interval, std::vector<AbacusCluster>& cluster_list);
+  void insertClusterChainIntoInterval(ipl::LGInterval* interval, std::vector<AbacusCluster*>& cluster_chain);
+  void reCalIntervalRemainLength(ipl::LGInterval* interval);
+  std::string obtainUniqueClusterName(std::string origin_name);
+
+  void debugIntervalRemainLength(std::string interval_name);
 };
 
 }  // namespace ieda_solver

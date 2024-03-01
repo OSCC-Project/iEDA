@@ -37,10 +37,10 @@ namespace ipl {
 class DBWrapper
 {
  public:
-  DBWrapper()                 = default;
+  DBWrapper() = default;
   DBWrapper(const DBWrapper&) = delete;
-  DBWrapper(DBWrapper&&)      = delete;
-  virtual ~DBWrapper()        = default;
+  DBWrapper(DBWrapper&&) = delete;
+  virtual ~DBWrapper() = default;
 
   DBWrapper& operator=(const DBWrapper&) = delete;
   DBWrapper& operator=(DBWrapper&&) = delete;
@@ -53,9 +53,9 @@ class DBWrapper
 
   // Function.
   virtual void writeDef(std::string file_name) = 0;
-  virtual void updateFromSourceDataBase()      = 0;
+  virtual void updateFromSourceDataBase() = 0;
   virtual void updateFromSourceDataBase(std::vector<std::string> inst_list) = 0;
-  virtual void writeBackSourceDatabase()       = 0;
+  virtual void writeBackSourceDatabase() = 0;
   virtual void initInstancesForFragmentedRow() = 0;
   virtual void saveVerilogForDebug(std::string path) = 0;
 };

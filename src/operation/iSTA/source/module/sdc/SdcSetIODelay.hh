@@ -41,22 +41,39 @@ class SdcSetIODelay : public SdcIOConstrain {
                 double delay_value);
   ~SdcSetIODelay() override = default;
 
+  SdcSetIODelay* copy() {
+    auto* copy_io_delay = new SdcSetIODelay(get_constrain_name(), get_clock_name(), get_delay_value());
+    copy_io_delay->set_rise(isRise());
+    copy_io_delay->set_fall(isFall());
+    copy_io_delay->set_max(isMax());
+    copy_io_delay->set_min(isMin());
+    if(isClockFall()) {
+      copy_io_delay->set_clock_fall();
+    }
+
+    std::set<DesignObject*> objs(_objs);
+    copy_io_delay->set_objs(std::move(objs));
+    return copy_io_delay;
+  }
   void set_rise(bool is_set) { _rise = is_set; }
   void set_fall(bool is_set) { _fall = is_set; }
   void set_max(bool is_set) { _max = is_set; }
   void set_min(bool is_set) { _min = is_set; }
   void set_clock_fall() { _clock_fall = 1; }
+  void set_add() { _add = 1; }
   unsigned isRise() const { return _rise; }
   unsigned isFall() const { return _fall; }
   unsigned isMax() const { return _max; }
   unsigned isMin() const { return _min; }
   unsigned isClockFall() const { return _clock_fall; }
+  unsigned isAdd() const { return _add; }
 
   void set_objs(std::set<DesignObject*>&& objs) { _objs = std::move(objs); }
   auto& get_objs() { return _objs; }
 
   const char* get_clock_name() { return _clock_name.c_str(); }
   double get_delay_value() const { return _delay_value; }
+  void set_delay_value(double delay_value) { _delay_value = delay_value; }
 
  private:
   unsigned _rise : 1;
@@ -64,7 +81,8 @@ class SdcSetIODelay : public SdcIOConstrain {
   unsigned _max : 1;
   unsigned _min : 1;
   unsigned _clock_fall : 1;
-  unsigned _reserved : 27;
+  unsigned _add : 1;
+  unsigned _reserved : 26;
 
   std::string _clock_name;
   double _delay_value;

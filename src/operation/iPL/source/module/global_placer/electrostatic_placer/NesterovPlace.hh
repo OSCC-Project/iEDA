@@ -73,7 +73,7 @@ class NesterovPlace
   void initQuadPenaltyCoeff();
   bool checkPlateau(int32_t window, float threshold);
   void entropyInjection(float shrink_factor, float noise_intensity);
-  bool checkDivergence(int32_t window, float threshold, bool is_routability = false);
+  bool checkDivergence(int32_t window, float threshold);
   bool checkLongTimeOverflowUnchanged(int32_t window, float threshold);
 
   void initNesConfig(Config* config);
@@ -91,8 +91,7 @@ class NesterovPlace
 
   void initNesterovPlace(std::vector<NesInstance*>& inst_list);
   void NesterovSolve(std::vector<NesInstance*>& inst_list);
-  void NesterovWeightedRDP(std::vector<NesInstance*>& inst_list);
-
+  void NesterovRoutablitySolve(std::vector<NesInstance*>& inst_list);
 
   std::vector<NesInstance*> obtianPlacableNesInstanceList();
 
@@ -103,6 +102,16 @@ class NesterovPlace
   void initGridFixedArea();
 
   void initTopologyManager();
+  void initNodes();
+  void initNetWorks();
+  void initGroups();
+  void initArcs();
+  void generatePortOutNetArc(Node* node);
+  void generateNetArc(Node* node);
+  void generateGroupArc(Node* node);
+  void initHPWLEvaluator();
+  void initWAWLGradientEvaluator();
+  void initTimingAnnotation();
   void updateTopologyManager();
 
   void initBaseWirelengthCoef();
@@ -122,7 +131,8 @@ class NesterovPlace
 
   void writeBackPlacerDB();
 
-  void updateNetWeight();
+  void updateMaxLengthNetWeight();
+  void updateTimingNetWeight();
 
   // DEBUG.
   void printAcrossLongNet(std::ofstream& file_stream, int32_t max_width, int32_t max_height);

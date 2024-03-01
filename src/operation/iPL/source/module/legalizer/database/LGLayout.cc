@@ -101,4 +101,17 @@ LGCell* LGLayout::find_cell(std::string cell_name){
     return cell;
 }
 
+LGInterval* LGLayout::find_interval(std::string interval_name){
+    std::string row_id_str, column_id_str;
+
+    size_t underscore_pos = interval_name.find('_');
+    row_id_str = interval_name.substr(0, underscore_pos);
+    column_id_str = interval_name.substr(underscore_pos + 1);
+
+    int row_id = std::stoi(row_id_str);
+    int column_id = std::stoi(column_id_str);
+
+    return _interval_2d_list[row_id][column_id];
+}
+
 }
