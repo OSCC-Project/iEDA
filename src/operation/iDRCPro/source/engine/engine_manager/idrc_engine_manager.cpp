@@ -366,40 +366,72 @@ void DrcEngineManager::filterData()
 
     auto is_convex = [](const ieda_solver::GeometryDirection2D& d1, const ieda_solver::GeometryDirection2D& d2) { return d1.left() == d2; };
 
+    auto area_calculator = [](long long& area_accumulated, const ieda_solver::GeometryPoint& p1, const ieda_solver::GeometryPoint& p2) {
+      area_accumulated += (long long) p1.x() * (long long) p2.y() - (long long) p1.y() * (long long) p2.x();
+    };
+
     auto& polygon_with_holes = layout->get_layout()->get_engine()->getLayoutPolygons();
     for (auto& polygon : polygon_with_holes) {
-      if (polygon.size() < 4) {
+      int polygon_point_number = polygon.size();
+      if (polygon_point_number < 4) {
         continue;
       }
+
       // polygon outline
-      std::vector<bool> corner_convex_history(polygon.size());
-      std::vector<int> edge_length_history(polygon.size());
+      std::vector<ieda_solver::GeometryPoint> polygon_outline(polygon_point_number);
+      std::vector<bool> corner_convex_history(polygon_point_number);
+      std::vector<int> edge_length_history(polygon_point_number);
+      std::vector<ieda_solver::GeometryOrientation> edge_orientation_history(polygon_point_number);
+      std::vector<ieda_solver::GeometryDirection2D> edge_direction_history(polygon_point_number);
       int corner_index = 0;
       long long polygon_area = 0;
-      std::vector<long long> hole_areas(polygon.size_holes(), 0);
 
       auto it_next = polygon.begin();
-      auto it_prev_prev = it_next++;
       auto it_prev = it_next++;
       auto it_current = it_next++;
-
-      corner_convex_history.back() = is_convex(get_edge_direction(*it_prev_prev, *it_prev), get_edge_direction(*it_prev, *it_current));
-      edge_length_history.back() = ieda_solver::manhattanDistance(*it_prev_prev, *it_prev);
-
       do {
-        int corner_last_index = (corner_index + corner_convex_history.size() - 1) % corner_convex_history.size();
         int edge_length = ieda_solver::manhattanDistance(*it_current, *it_prev);
-        int edge_length_next = ieda_solver::manhattanDistance(*it_next, *it_current);
         bool is_current_convex = is_convex(get_edge_direction(*it_prev, *it_current), get_edge_direction(*it_current, *it_next));
-
-        edge_length_history[corner_index] = edge_length;
-        corner_convex_history[corner_index] = is_current_convex;
-
         ieda_solver::GeometryOrientation edge_orientation = get_edge_orientation(*it_prev, *it_current);
         ieda_solver::GeometryDirection2D edge_direction = get_edge_direction(*it_prev, *it_current);
 
+        // record polygon outline
+        polygon_outline[corner_index] = *it_current;
+        edge_length_history[corner_index] = edge_length;
+        corner_convex_history[corner_index] = is_current_convex;
+        edge_orientation_history[corner_index] = edge_orientation;
+        edge_direction_history[corner_index] = edge_direction;
+
+        // refresh area
+        area_calculator(polygon_area, *it_prev, *it_current);
+
+        // next segment
+        ++corner_index;
+        it_prev = it_current;
+        it_current = it_next;
+        ++it_next;
+        if (it_next == polygon.end()) {
+          it_next = polygon.begin();
+        }
+      } while (it_prev != polygon.begin());
+
+      // polygon area
+      polygon_area = std::abs(polygon_area) / 2;
+
+      // deal with polygon outline
+      auto get_index_shifted = [&](int index, int shift) { return (index + shift + polygon_point_number) % polygon_point_number; };
+
+      for (int i = 0; i < polygon_point_number; ++i) {
+        auto point_index_prev = get_index_shifted(i, -1);
+        auto point_current = polygon_outline[i];
+        auto point_prev = polygon_outline[point_index_prev];
+        auto is_current_convex = corner_convex_history[i];
+        auto edge_length = edge_length_history[i];
+        auto edge_orientation = edge_orientation_history[i];
+        auto edge_direction = edge_direction_history[i];
+
         // eol
-        if (is_current_convex && corner_convex_history[corner_last_index] && edge_length < max_eol_width) {
+        if (is_current_convex && corner_convex_history[point_index_prev] && edge_length < max_eol_width) {
           for (auto& rule_eol : rule_eol_list) {
             if (edge_length >= rule_eol->get_eol_width()) {
               continue;
@@ -418,7 +450,8 @@ void DrcEngineManager::filterData()
             if (rule_eol->get_adj_edge_length().has_value()) {
               auto rule_adj_edge_length = rule_eol->get_adj_edge_length().value();
               int min_edge_length = rule_adj_edge_length.get_min_length().value_or(0);
-              if (edge_length_next < min_edge_length || edge_length_history[corner_last_index] < min_edge_length) {
+              if (edge_length_history[get_index_shifted(i, 1)] < min_edge_length
+                  || edge_length_history[point_index_prev] < min_edge_length) {
                 continue;
               }
             }
@@ -437,14 +470,14 @@ void DrcEngineManager::filterData()
               }
               int rule_par_within = rule_par_edge.get_par_within();
 
-              ieda_solver::GeometryRect detect_rect_left((*it_current).x(), (*it_current).y(), (*it_current).x(), (*it_current).y());
+              ieda_solver::GeometryRect detect_rect_left(point_current.x(), point_current.y(), point_current.x(), point_current.y());
               ieda_solver::bloat(detect_rect_left, edge_direction, rule_par_spacing - 1);
               ieda_solver::shrink(detect_rect_left, edge_direction.backward(), 1);
               ieda_solver::bloat(detect_rect_left, edge_direction.left(), rule_par_within);
               ieda_solver::bloat(detect_rect_left, edge_direction.right(), eol_within);
               eol_par_space_regions[rule_eol] += detect_rect_left;
 
-              ieda_solver::GeometryRect detect_rect_right((*it_prev).x(), (*it_prev).y(), (*it_prev).x(), (*it_prev).y());
+              ieda_solver::GeometryRect detect_rect_right(point_prev.x(), point_prev.y(), point_prev.x(), point_prev.y());
               ieda_solver::bloat(detect_rect_right, edge_direction.backward(), rule_par_spacing - 1);
               ieda_solver::shrink(detect_rect_right, edge_direction, 1);
               ieda_solver::bloat(detect_rect_right, edge_direction.left(), rule_par_within);
@@ -453,7 +486,7 @@ void DrcEngineManager::filterData()
 
               // TWOEDGES: connect detect region
               if (rule_par_edge.is_two_edges()) {
-                ieda_solver::GeometryRect connect_rect((*it_prev).x(), (*it_prev).y(), (*it_current).x(), (*it_current).y());
+                ieda_solver::GeometryRect connect_rect(point_prev.x(), point_prev.y(), point_current.x(), point_current.y());
                 ieda_solver::bloat(connect_rect, edge_direction.right(), 2);
                 ieda_solver::shrink(connect_rect, edge_direction.left(), 1);
                 ieda_solver::bloat(connect_rect, edge_orientation, 2);
@@ -473,7 +506,7 @@ void DrcEngineManager::filterData()
             }
 
             // eol spacing
-            ieda_solver::GeometryRect check_rect((*it_prev).x(), (*it_prev).y(), (*it_current).x(), (*it_current).y());
+            ieda_solver::GeometryRect check_rect(point_prev.x(), point_prev.y(), point_current.x(), point_current.y());
             ieda_solver::bloat(check_rect, edge_direction.right(), eol_spacing - 1);
             ieda_solver::shrink(check_rect, edge_direction.left(), 1);
             ieda_solver::bloat(check_rect, edge_orientation, eol_within);
@@ -484,32 +517,22 @@ void DrcEngineManager::filterData()
         }
 
         // TODO: notch, step, corner fill
-
-        // TODO: area
-
-        // next segment
-        ++corner_index;
-        it_prev_prev = it_prev;
-        it_prev = it_current;
-        it_current = it_next;
-        ++it_next;
-        if (it_next == polygon.end()) {
-          it_next = polygon.begin();
-        }
-      } while (it_prev_prev != polygon.begin());
+      }
 
       // polygon holes
+      // TODO: holes need to check edge?
       for (auto hole_it = polygon.begin_holes(); hole_it != polygon.end_holes(); ++hole_it) {
-        // TODO: refresh area
+        // TODO: polygon area subtract hole area
+
         // TODO: min enclosed area
       }
+
+      // TODO: check rules
     }
 
     for (auto& rule_eol : rule_eol_list) {
       auto& check_regions = eol_check_regions[rule_eol];
       auto data_to_check = layer_polyset;  // TODO: avoid copy when SAMEMETAL not exist
-
-      std::vector<ieda_solver::GeometryRect> remain_through_polygons;
 
       if (rule_eol->get_parallel_edge().has_value()) {
         auto& par_space_regions = eol_par_space_regions[rule_eol];
@@ -519,7 +542,6 @@ void DrcEngineManager::filterData()
           auto same_metal_through_overlaps_layer = same_metal_through_detect_regions & data_to_check;
           ieda_solver::GeometryPolygonSet remained_not_through_detect_regions
               = same_metal_through_detect_regions ^ same_metal_through_overlaps_layer;
-          remained_not_through_detect_regions.get(remain_through_polygons);
           ieda_solver::interact(par_space_regions, remained_not_through_detect_regions);
           ieda_solver::interact(data_to_check, par_space_regions);
         }
