@@ -22,7 +22,7 @@ namespace ieda_solver {
 
 typedef GtlPolygon90Set GeometryPolygonSet;
 
-#define interact(polygon_set, rect) gtl::interact(polygon_set, rect)
+#define interact(polygon_set1, polygon_set2) gtl::interact(polygon_set1, polygon_set2)
 
 #define getRectangles(output, polygon_set, direction) gtl::get_rectangles(output, polygon_set, direction)
 #define getMaxRectangles(output, polygon_set) gtl::get_max_rectangles(output, polygon_set)

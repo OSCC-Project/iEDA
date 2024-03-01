@@ -353,11 +353,18 @@ void DrcEngineManager::filterData()
     using EolRuleToRegionMap = std::map<std::shared_ptr<idb::routinglayer::Lef58SpacingEol>, ieda_solver::GeometryPolygonSet>;
     EolRuleToRegionMap eol_check_regions;
     EolRuleToRegionMap eol_par_space_regions;
+    EolRuleToRegionMap eol_same_metal_regions;
 
-    // TODO: use two edge directions to judge corner type
-    auto is_convex = [](const ieda_solver::GeometryPoint& p1, const ieda_solver::GeometryPoint& p2, const ieda_solver::GeometryPoint& p3) {
-      return (p2.x() - p1.x()) * (p3.y() - p1.y()) - (p2.y() - p1.y()) * (p3.x() - p1.x()) > 0;
+    auto get_edge_orientation = [](const ieda_solver::GeometryPoint& p1, const ieda_solver::GeometryPoint& p2) {
+      return p1.x() == p2.x() ? ieda_solver::VERTICAL : ieda_solver::HORIZONTAL;
     };
+
+    auto get_edge_direction = [](const ieda_solver::GeometryPoint& p1, const ieda_solver::GeometryPoint& p2) {
+      return p1.x() == p2.x() ? (p2.y() > p1.y() ? ieda_solver::NORTH : ieda_solver::SOUTH)
+                              : (p2.x() > p1.x() ? ieda_solver::EAST : ieda_solver::WEST);
+    };
+
+    auto is_convex = [](const ieda_solver::GeometryDirection2D& d1, const ieda_solver::GeometryDirection2D& d2) { return d1.left() == d2; };
 
     auto& polygon_with_holes = layout->get_layout()->get_engine()->getLayoutPolygons();
     for (auto& polygon : polygon_with_holes) {
@@ -368,32 +375,36 @@ void DrcEngineManager::filterData()
       std::vector<bool> corner_convex_history(polygon.size());
       std::vector<int> edge_length_history(polygon.size());
       int corner_index = 0;
+      long long polygon_area = 0;
+      std::vector<long long> hole_areas(polygon.size_holes(), 0);
 
       auto it_next = polygon.begin();
       auto it_prev_prev = it_next++;
       auto it_prev = it_next++;
       auto it_current = it_next++;
-      corner_convex_history.back() = is_convex(*it_prev_prev, *it_prev, *it_current);
+
+      corner_convex_history.back() = is_convex(get_edge_direction(*it_prev_prev, *it_prev), get_edge_direction(*it_prev, *it_current));
       edge_length_history.back() = ieda_solver::manhattanDistance(*it_prev_prev, *it_prev);
+
       do {
-        // todo
         int corner_last_index = (corner_index + corner_convex_history.size() - 1) % corner_convex_history.size();
         int edge_length = ieda_solver::manhattanDistance(*it_current, *it_prev);
         int edge_length_next = ieda_solver::manhattanDistance(*it_next, *it_current);
-        bool is_current_convex = is_convex(*it_prev, *it_current, *it_next);
+        bool is_current_convex = is_convex(get_edge_direction(*it_prev, *it_current), get_edge_direction(*it_current, *it_next));
 
         edge_length_history[corner_index] = edge_length;
         corner_convex_history[corner_index] = is_current_convex;
 
-        ieda_solver::GeometryOrientation edge_orientation
-            = (*it_prev).x() == (*it_current).x() ? ieda_solver::VERTICAL : ieda_solver::HORIZONTAL;
-        ieda_solver::GeometryDirection2D edge_direction
-            = edge_orientation == ieda_solver::VERTICAL ? ((*it_current).y() > (*it_prev).y() ? ieda_solver::NORTH : ieda_solver::SOUTH)
-                                                        : ((*it_current).x() > (*it_prev).x() ? ieda_solver::EAST : ieda_solver::WEST);
+        ieda_solver::GeometryOrientation edge_orientation = get_edge_orientation(*it_prev, *it_current);
+        ieda_solver::GeometryDirection2D edge_direction = get_edge_direction(*it_prev, *it_current);
 
         // eol
         if (is_current_convex && corner_convex_history[corner_last_index] && edge_length < max_eol_width) {
           for (auto& rule_eol : rule_eol_list) {
+            if (edge_length >= rule_eol->get_eol_width()) {
+              continue;
+            }
+
             int eol_spacing = rule_eol->get_eol_space();
             // mininum value is 1, to ensure detect parallel edge regions and check violation regions have overlap
             int eol_within = std::max(rule_eol->get_eol_within().value_or(0), 1);
@@ -427,19 +438,20 @@ void DrcEngineManager::filterData()
               int rule_par_within = rule_par_edge.get_par_within();
 
               ieda_solver::GeometryRect detect_rect_left((*it_current).x(), (*it_current).y(), (*it_current).x(), (*it_current).y());
-              ieda_solver::bloat(detect_rect_left, edge_direction, rule_par_spacing);
+              ieda_solver::bloat(detect_rect_left, edge_direction, rule_par_spacing - 1);
               ieda_solver::shrink(detect_rect_left, edge_direction.backward(), 1);
               ieda_solver::bloat(detect_rect_left, edge_direction.left(), rule_par_within);
               ieda_solver::bloat(detect_rect_left, edge_direction.right(), eol_within);
               eol_par_space_regions[rule_eol] += detect_rect_left;
 
               ieda_solver::GeometryRect detect_rect_right((*it_prev).x(), (*it_prev).y(), (*it_prev).x(), (*it_prev).y());
-              ieda_solver::bloat(detect_rect_right, edge_direction.backward(), rule_par_spacing);
+              ieda_solver::bloat(detect_rect_right, edge_direction.backward(), rule_par_spacing - 1);
               ieda_solver::shrink(detect_rect_right, edge_direction, 1);
               ieda_solver::bloat(detect_rect_right, edge_direction.left(), rule_par_within);
               ieda_solver::bloat(detect_rect_right, edge_direction.right(), eol_within);
               eol_par_space_regions[rule_eol] += detect_rect_right;
 
+              // TWOEDGES: connect detect region
               if (rule_par_edge.is_two_edges()) {
                 ieda_solver::GeometryRect connect_rect((*it_prev).x(), (*it_prev).y(), (*it_current).x(), (*it_current).y());
                 ieda_solver::bloat(connect_rect, edge_direction.right(), 2);
@@ -448,8 +460,14 @@ void DrcEngineManager::filterData()
                 eol_par_space_regions[rule_eol] += connect_rect;
               }
 
+              // SAMEMETAL:
               if (rule_par_edge.is_same_metal()) {
-                // TODO: same metal
+                ieda_solver::bloat(detect_rect_left, edge_direction, 1);
+                ieda_solver::bloat(detect_rect_right, edge_direction.backward(), 1);
+                ieda_solver::shrink(detect_rect_left, edge_direction.backward(), rule_par_spacing - 2);
+                ieda_solver::shrink(detect_rect_right, edge_direction, rule_par_spacing - 2);
+                eol_same_metal_regions[rule_eol] += detect_rect_left;
+                eol_same_metal_regions[rule_eol] += detect_rect_right;
                 continue;
               }
             }
@@ -489,24 +507,43 @@ void DrcEngineManager::filterData()
 
     for (auto& rule_eol : rule_eol_list) {
       auto& check_regions = eol_check_regions[rule_eol];
+      auto data_to_check = layer_polyset;  // TODO: avoid copy when SAMEMETAL not exist
+
+      std::vector<ieda_solver::GeometryRect> remain_through_polygons;
 
       if (rule_eol->get_parallel_edge().has_value()) {
         auto& par_space_regions = eol_par_space_regions[rule_eol];
-        ieda_solver::interact(par_space_regions, layer_polyset);
+
+        if (rule_eol->get_parallel_edge().value().is_same_metal()) {
+          auto& same_metal_through_detect_regions = eol_same_metal_regions[rule_eol];
+          auto same_metal_through_overlaps_layer = same_metal_through_detect_regions & data_to_check;
+          ieda_solver::GeometryPolygonSet remained_not_through_detect_regions
+              = same_metal_through_detect_regions ^ same_metal_through_overlaps_layer;
+          remained_not_through_detect_regions.get(remain_through_polygons);
+          ieda_solver::interact(par_space_regions, remained_not_through_detect_regions);
+          ieda_solver::interact(data_to_check, par_space_regions);
+        }
+
+        ieda_solver::interact(par_space_regions, data_to_check);
         ieda_solver::interact(check_regions, par_space_regions);
       }
 
-      ieda_solver::interact(check_regions, layer_polyset);
-      auto violation_regions = check_regions - layer_polyset;
+      ieda_solver::interact(check_regions, data_to_check);
+      auto violation_regions = check_regions - data_to_check;
 
       // TODO: get violation regions
+      std::vector<ieda_solver::GeometryViewPolygon> through_polygons;
+      eol_same_metal_regions[rule_eol].get(through_polygons);
       std::vector<ieda_solver::GeometryViewPolygon> detect_polygons;
       eol_par_space_regions[rule_eol].get(detect_polygons);
       std::vector<ieda_solver::GeometryViewPolygon> check_polygons;
       check_regions.get(check_polygons);
       std::vector<ieda_solver::GeometryRect> violation_rects;
       ieda_solver::getMaxRectangles(violation_rects, violation_regions);
-      if (!violation_rects.empty() && rule_eol->get_parallel_edge().has_value()) {
+      if (!violation_rects.empty()) {
+        int a = 0;
+      }
+      if (rule_eol->get_parallel_edge().has_value() && rule_eol->get_parallel_edge().value().is_same_metal()) {
         int a = 0;
       }
       int a = 0;
