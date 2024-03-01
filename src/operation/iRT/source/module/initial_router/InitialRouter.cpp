@@ -59,14 +59,16 @@ void InitialRouter::route(std::vector<Net>& net_list)
   initLayerNodeMap(ir_model);
   buildIRNodeNeighbor(ir_model);
   buildOrienSupply(ir_model);
-  checkIRModel(ir_model);
+  // debugCheckIRModel(ir_model);
   sortIRModel(ir_model);
   routeIRModel(ir_model);
   updateIRModel(ir_model);
-  outputGuide(ir_model);
+  // reportSummary(ir_model);
+  // writeDemandCSV(ir_model);
+  // writeOverflowCSV(ir_model);
   LOG_INST.info(Loc::current(), "End route", monitor.getStatsInfo());
 
-  // reportIRModel(ir_model);
+  // debugOutputGuide(ir_model);
 }
 
 // private
@@ -203,33 +205,6 @@ void InitialRouter::buildOrienSupply(IRModel& ir_model)
     for (int32_t x = 0; x < ir_node_map.get_x_size(); x++) {
       for (int32_t y = 0; y < ir_node_map.get_y_size(); y++) {
         ir_node_map[x][y].set_orien_supply_map(gcell_map[x][y].get_routing_orien_supply_map()[layer_idx]);
-      }
-    }
-  }
-}
-
-void InitialRouter::checkIRModel(IRModel& ir_model)
-{
-  std::vector<GridMap<IRNode>>& layer_node_map = ir_model.get_layer_node_map();
-  for (GridMap<IRNode>& ir_node_map : layer_node_map) {
-    for (int32_t x = 0; x < ir_node_map.get_x_size(); x++) {
-      for (int32_t y = 0; y < ir_node_map.get_y_size(); y++) {
-        IRNode& ir_node = ir_node_map[x][y];
-        for (auto& [orien, neighbor] : ir_node.get_neighbor_node_map()) {
-          Orientation opposite_orien = RTUtil::getOppositeOrientation(orien);
-          if (!RTUtil::exist(neighbor->get_neighbor_node_map(), opposite_orien)) {
-            LOG_INST.error(Loc::current(), "The ir_node neighbor is not bidirection!");
-          }
-          if (neighbor->get_neighbor_node_map()[opposite_orien] != &ir_node) {
-            LOG_INST.error(Loc::current(), "The ir_node neighbor is not bidirection!");
-          }
-          LayerCoord node_coord(ir_node.get_planar_coord(), ir_node.get_layer_idx());
-          LayerCoord neighbor_coord(neighbor->get_planar_coord(), neighbor->get_layer_idx());
-          if (RTUtil::getOrientation(node_coord, neighbor_coord) == orien) {
-            continue;
-          }
-          LOG_INST.error(Loc::current(), "The neighbor orien is different with real region!");
-        }
       }
     }
   }
@@ -1092,7 +1067,36 @@ void InitialRouter::updateIRModel(IRModel& ir_model)
   }
 }
 
-void InitialRouter::outputGuide(IRModel& ir_model)
+#if 1  // debug
+
+void InitialRouter::debugCheckIRModel(IRModel& ir_model)
+{
+  std::vector<GridMap<IRNode>>& layer_node_map = ir_model.get_layer_node_map();
+  for (GridMap<IRNode>& ir_node_map : layer_node_map) {
+    for (int32_t x = 0; x < ir_node_map.get_x_size(); x++) {
+      for (int32_t y = 0; y < ir_node_map.get_y_size(); y++) {
+        IRNode& ir_node = ir_node_map[x][y];
+        for (auto& [orien, neighbor] : ir_node.get_neighbor_node_map()) {
+          Orientation opposite_orien = RTUtil::getOppositeOrientation(orien);
+          if (!RTUtil::exist(neighbor->get_neighbor_node_map(), opposite_orien)) {
+            LOG_INST.error(Loc::current(), "The ir_node neighbor is not bidirection!");
+          }
+          if (neighbor->get_neighbor_node_map()[opposite_orien] != &ir_node) {
+            LOG_INST.error(Loc::current(), "The ir_node neighbor is not bidirection!");
+          }
+          LayerCoord node_coord(ir_node.get_planar_coord(), ir_node.get_layer_idx());
+          LayerCoord neighbor_coord(neighbor->get_planar_coord(), neighbor->get_layer_idx());
+          if (RTUtil::getOrientation(node_coord, neighbor_coord) == orien) {
+            continue;
+          }
+          LOG_INST.error(Loc::current(), "The neighbor orien is different with real region!");
+        }
+      }
+    }
+  }
+}
+
+void InitialRouter::debugOutputGuide(IRModel& ir_model)
 {
   Monitor monitor;
   LOG_INST.info(Loc::current(), "Begin outputting...");
@@ -1134,17 +1138,9 @@ void InitialRouter::outputGuide(IRModel& ir_model)
   LOG_INST.info(Loc::current(), "End output", monitor.getStatsInfo());
 }
 
-#if 1  // exhibit
+#endif
 
-void InitialRouter::reportIRModel(IRModel& ir_model)
-{
-  Monitor monitor;
-  LOG_INST.info(Loc::current(), "Begin reporting...");
-  reportSummary(ir_model);
-  writeDemandCSV(ir_model);
-  writeOverflowCSV(ir_model);
-  LOG_INST.info(Loc::current(), "End report", monitor.getStatsInfo());
-}
+#if 1  // exhibit
 
 void InitialRouter::reportSummary(IRModel& ir_model)
 {

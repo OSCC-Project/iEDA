@@ -133,9 +133,9 @@ void DetailedRouter::iterativeDRModel(DRModel& dr_model)
     splitNetResult(dr_model);
     buildBoxSchedule(dr_model);
     routeDRBoxMap(dr_model);
-
-    // reportDRModel(dr_model, (i + 1));
-
+    // reportSummary(dr_model, (i + 1));
+    // writeNetCSV(dr_model, (i + 1));
+    // writeViolationCSV(dr_model, (i + 1));
     LOG_INST.info(Loc::current(), "****** End Model Iteration(", (i + 1), "/", dr_parameter_list.size(), ")", iter_monitor.getStatsInfo(),
                   " ******");
   }
@@ -325,12 +325,11 @@ void DetailedRouter::routeDRBoxMap(DRModel& dr_model)
       initDRNodeValid(dr_box);
       buildDRNodeNeighbor(dr_box);
       buildOrienNetMap(dr_box);
-      checkDRBox(dr_box);
-      // plotDRBox(dr_box, -1, "pre");
+      // debugCheckDRBox(dr_box);
       routeDRBox(dr_box);
       updateDRTaskToGcellMap(dr_box);
       updateViolationToGcellMap(dr_box);
-      // plotDRBox(dr_box, -1, "post");
+      // debugPlotDRBox(dr_box, -1, "routed");
       freeDRBox(dr_box);
     }
     routed_box_num += dr_box_id_list.size();
@@ -719,73 +718,6 @@ void DetailedRouter::buildOrienNetMap(DRBox& dr_box)
   }
   for (Violation& violation : dr_box.get_violation_list()) {
     updateViolationToGraph(dr_box, ChangeType::kAdd, violation);
-  }
-}
-
-void DetailedRouter::checkDRBox(DRBox& dr_box)
-{
-  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
-
-  DRBoxId& dr_box_id = dr_box.get_dr_box_id();
-  if (dr_box_id.get_x() < 0 || dr_box_id.get_y() < 0) {
-    LOG_INST.error(Loc::current(), "The grid coord is illegal!");
-  }
-
-  std::vector<GridMap<DRNode>>& layer_node_map = dr_box.get_layer_node_map();
-  for (GridMap<DRNode>& dr_node_map : layer_node_map) {
-    for (int32_t x = 0; x < dr_node_map.get_x_size(); x++) {
-      for (int32_t y = 0; y < dr_node_map.get_y_size(); y++) {
-        DRNode& dr_node = dr_node_map[x][y];
-        if (!RTUtil::isInside(dr_box.get_box_rect().get_real_rect(), dr_node.get_planar_coord())) {
-          LOG_INST.error(Loc::current(), "The dr_node is out of box!");
-        }
-        for (auto& [orien, neighbor] : dr_node.get_neighbor_node_map()) {
-          Orientation opposite_orien = RTUtil::getOppositeOrientation(orien);
-          if (!RTUtil::exist(neighbor->get_neighbor_node_map(), opposite_orien)) {
-            LOG_INST.error(Loc::current(), "The dr_node neighbor is not bidirection!");
-          }
-          if (neighbor->get_neighbor_node_map()[opposite_orien] != &dr_node) {
-            LOG_INST.error(Loc::current(), "The dr_node neighbor is not bidirection!");
-          }
-          LayerCoord node_coord(dr_node.get_planar_coord(), dr_node.get_layer_idx());
-          LayerCoord neighbor_coord(neighbor->get_planar_coord(), neighbor->get_layer_idx());
-          if (RTUtil::getOrientation(node_coord, neighbor_coord) == orien) {
-            continue;
-          }
-          LOG_INST.error(Loc::current(), "The neighbor orien is different with real region!");
-        }
-      }
-    }
-  }
-
-  for (DRTask* dr_task : dr_box.get_dr_task_list()) {
-    if (dr_task->get_net_idx() < 0) {
-      LOG_INST.error(Loc::current(), "The idx of origin net is illegal!");
-    }
-    for (DRGroup& dr_group : dr_task->get_dr_group_list()) {
-      if (dr_group.get_coord_direction_map().empty()) {
-        LOG_INST.error(Loc::current(), "The coord_direction_map is empty!");
-      }
-      for (auto& [coord, direction_set] : dr_group.get_coord_direction_map()) {
-        int32_t layer_idx = coord.get_layer_idx();
-        if (routing_layer_list.back().get_layer_idx() < layer_idx || layer_idx < routing_layer_list.front().get_layer_idx()) {
-          LOG_INST.error(Loc::current(), "The layer idx of group coord is illegal!");
-        }
-        if (!RTUtil::existTrackGrid(coord, dr_box.get_box_track_axis())) {
-          LOG_INST.error(Loc::current(), "There is no grid coord for real coord(", coord.get_x(), ",", coord.get_y(), ")!");
-        }
-        PlanarCoord grid_coord = RTUtil::getTrackGrid(coord, dr_box.get_box_track_axis());
-        DRNode& dr_node = layer_node_map[layer_idx][grid_coord.get_x()][grid_coord.get_y()];
-        if (dr_node.get_neighbor_node_map().empty()) {
-          LOG_INST.error(Loc::current(), "The neighbor of group coord (", coord.get_x(), ",", coord.get_y(), ",", layer_idx,
-                         ") is empty in box(", dr_box_id.get_x(), ",", dr_box_id.get_y(), ")");
-        }
-        if (RTUtil::isInside(dr_box.get_box_rect().get_real_rect(), coord)) {
-          continue;
-        }
-        LOG_INST.error(Loc::current(), "The coord (", coord.get_x(), ",", coord.get_y(), ") is out of box!");
-      }
-    }
   }
 }
 
@@ -1570,9 +1502,77 @@ std::map<DRNode*, std::set<Orientation>> DetailedRouter::getCutNodeOrientationMa
 
 #endif
 
-#if 1  // exhibit
+#if 1  // debug
 
-void DetailedRouter::plotDRBox(DRBox& dr_box, int32_t curr_task_idx, std::string flag)
+void DetailedRouter::debugCheckDRBox(DRBox& dr_box)
+{
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+
+  DRBoxId& dr_box_id = dr_box.get_dr_box_id();
+  if (dr_box_id.get_x() < 0 || dr_box_id.get_y() < 0) {
+    LOG_INST.error(Loc::current(), "The grid coord is illegal!");
+  }
+
+  std::vector<GridMap<DRNode>>& layer_node_map = dr_box.get_layer_node_map();
+  for (GridMap<DRNode>& dr_node_map : layer_node_map) {
+    for (int32_t x = 0; x < dr_node_map.get_x_size(); x++) {
+      for (int32_t y = 0; y < dr_node_map.get_y_size(); y++) {
+        DRNode& dr_node = dr_node_map[x][y];
+        if (!RTUtil::isInside(dr_box.get_box_rect().get_real_rect(), dr_node.get_planar_coord())) {
+          LOG_INST.error(Loc::current(), "The dr_node is out of box!");
+        }
+        for (auto& [orien, neighbor] : dr_node.get_neighbor_node_map()) {
+          Orientation opposite_orien = RTUtil::getOppositeOrientation(orien);
+          if (!RTUtil::exist(neighbor->get_neighbor_node_map(), opposite_orien)) {
+            LOG_INST.error(Loc::current(), "The dr_node neighbor is not bidirection!");
+          }
+          if (neighbor->get_neighbor_node_map()[opposite_orien] != &dr_node) {
+            LOG_INST.error(Loc::current(), "The dr_node neighbor is not bidirection!");
+          }
+          LayerCoord node_coord(dr_node.get_planar_coord(), dr_node.get_layer_idx());
+          LayerCoord neighbor_coord(neighbor->get_planar_coord(), neighbor->get_layer_idx());
+          if (RTUtil::getOrientation(node_coord, neighbor_coord) == orien) {
+            continue;
+          }
+          LOG_INST.error(Loc::current(), "The neighbor orien is different with real region!");
+        }
+      }
+    }
+  }
+
+  for (DRTask* dr_task : dr_box.get_dr_task_list()) {
+    if (dr_task->get_net_idx() < 0) {
+      LOG_INST.error(Loc::current(), "The idx of origin net is illegal!");
+    }
+    for (DRGroup& dr_group : dr_task->get_dr_group_list()) {
+      if (dr_group.get_coord_direction_map().empty()) {
+        LOG_INST.error(Loc::current(), "The coord_direction_map is empty!");
+      }
+      for (auto& [coord, direction_set] : dr_group.get_coord_direction_map()) {
+        int32_t layer_idx = coord.get_layer_idx();
+        if (routing_layer_list.back().get_layer_idx() < layer_idx || layer_idx < routing_layer_list.front().get_layer_idx()) {
+          LOG_INST.error(Loc::current(), "The layer idx of group coord is illegal!");
+        }
+        if (!RTUtil::existTrackGrid(coord, dr_box.get_box_track_axis())) {
+          LOG_INST.error(Loc::current(), "There is no grid coord for real coord(", coord.get_x(), ",", coord.get_y(), ")!");
+        }
+        PlanarCoord grid_coord = RTUtil::getTrackGrid(coord, dr_box.get_box_track_axis());
+        DRNode& dr_node = layer_node_map[layer_idx][grid_coord.get_x()][grid_coord.get_y()];
+        if (dr_node.get_neighbor_node_map().empty()) {
+          // debugPlotDRBox(dr_box, -1, "check");
+          LOG_INST.error(Loc::current(), "The neighbor of group coord (", coord.get_x(), ",", coord.get_y(), ",", layer_idx,
+                         ") is empty in box(", dr_box_id.get_x(), ",", dr_box_id.get_y(), ")");
+        }
+        if (RTUtil::isInside(dr_box.get_box_rect().get_real_rect(), coord)) {
+          continue;
+        }
+        LOG_INST.error(Loc::current(), "The coord (", coord.get_x(), ",", coord.get_y(), ") is out of box!");
+      }
+    }
+  }
+}
+
+void DetailedRouter::debugPlotDRBox(DRBox& dr_box, int32_t curr_task_idx, std::string flag)
 {
   ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
@@ -1890,15 +1890,9 @@ void DetailedRouter::plotDRBox(DRBox& dr_box, int32_t curr_task_idx, std::string
   GP_INST.plot(gp_gds, gds_file_path);
 }
 
-void DetailedRouter::reportDRModel(DRModel& dr_model, int32_t iter)
-{
-  Monitor monitor;
-  LOG_INST.info(Loc::current(), "Begin reporting...");
-  reportSummary(dr_model, iter);
-  writeNetCSV(dr_model, iter);
-  writeViolationCSV(dr_model, iter);
-  LOG_INST.info(Loc::current(), "End report", monitor.getStatsInfo());
-}
+#endif
+
+#if 1  // exhibit
 
 void DetailedRouter::reportSummary(DRModel& dr_model, int32_t iter)
 {

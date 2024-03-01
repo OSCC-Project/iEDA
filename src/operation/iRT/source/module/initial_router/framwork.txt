@@ -4,7 +4,6 @@ makeGridCoordList:将所有pin的第一个ap点的grid坐标作为连接点
 initLayerNodeMap:初始化graph
 buildIRNodeNeighbor:构建graph的邻居
 buildOrienSupply:从supply_analyzer获取supply的access
-checkIRModel:检查graph的连接状态
 sortIRModel:对ir_net进行排序
 routeIRModel:
     routeIRNet:一个接一个的ir_net进行布线

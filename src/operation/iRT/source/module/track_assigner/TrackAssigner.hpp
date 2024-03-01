@@ -63,7 +63,6 @@ class TrackAssigner
   void initTANodeMap(TAPanel& ta_panel);
   void buildTANodeNeighbor(TAPanel& ta_panel);
   void buildOrienNetMap(TAPanel& ta_panel);
-  void checkTAPanel(TAPanel& ta_panel);
   void routeTAPanel(TAPanel& ta_panel);
   std::vector<TATask*> initTaskSchedule(TAPanel& ta_panel);
   void routeTATask(TAPanel& ta_panel, TATask* ta_task);
@@ -108,9 +107,13 @@ class TrackAssigner
   std::map<TANode*, std::set<Orientation>> getRoutingNodeOrientationMap(TAPanel& ta_panel, NetShape& net_shape);
 #endif
 
+#if 1  // debug
+  void debugCheckTAPanel(TAPanel& ta_panel);
+  void debugPlotTAPanel(TAPanel& ta_panel, int32_t curr_task_idx, std::string flag);
+#endif
+
+
 #if 1  // exhibit
-  void plotTAPanel(TAPanel& ta_panel, int32_t curr_task_idx, std::string flag);
-  void reportTAModel(TAModel& ta_model);
   void reportSummary(TAModel& ta_model);
   void writeNetCSV(TAModel& ta_model);
   void writeViolationCSV(TAModel& ta_model);

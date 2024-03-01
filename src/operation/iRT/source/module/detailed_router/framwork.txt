@@ -14,7 +14,6 @@ iterativeDRModel:迭代DRModel
         initDRNodeValid:初始化节点有效性
         buildDRNodeNeighbor:将有效节点连接
         buildOrienNetMap:构建Graph的cost，Fix_rect从Box中得到，segment+patch从DRTask下得到，Violation从DRBox下得到
-        checkDRBox:检查之前构建的信息是否有问题
         routeDRBox:
             initTaskSchedule:初始化task布线调度表
                 routeDRTask:给task布线，在此函数末尾，布线结果从graph中删除，再加入新的结果

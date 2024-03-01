@@ -58,10 +58,11 @@ void SupplyAnalyzer::analyze(std::vector<Net>& net_list)
   buildSupplySchedule(sa_model);
   analyzeSupply(sa_model);
   updateSAModel(sa_model);
+  // reportSummary(sa_model);
+  // writeSupplyCSV(sa_model);
   LOG_INST.info(Loc::current(), "End analyze", monitor.getStatsInfo());
 
-  // plotSAModel(sa_model);
-  // reportSAModel(sa_model);
+  // debugPlotSAModel(sa_model);
 }
 
 // private
@@ -236,9 +237,9 @@ void SupplyAnalyzer::updateSAModel(SAModel& sa_model)
   }
 }
 
-#if 1  // exhibit
+#if 1  // debug
 
-void SupplyAnalyzer::plotSAModel(SAModel& sa_model)
+void SupplyAnalyzer::debugPlotSAModel(SAModel& sa_model)
 {
   ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
   Die& die = DM_INST.getDatabase().get_die();
@@ -351,14 +352,9 @@ void SupplyAnalyzer::plotSAModel(SAModel& sa_model)
   GP_INST.plot(gp_gds, gds_file_path);
 }
 
-void SupplyAnalyzer::reportSAModel(SAModel& sa_model)
-{
-  Monitor monitor;
-  LOG_INST.info(Loc::current(), "Begin reporting...");
-  reportSummary(sa_model);
-  writeSupplyCSV(sa_model);
-  LOG_INST.info(Loc::current(), "End report", monitor.getStatsInfo());
-}
+#endif
+
+#if 1  // exhibit
 
 void SupplyAnalyzer::reportSummary(SAModel& sa_model)
 {

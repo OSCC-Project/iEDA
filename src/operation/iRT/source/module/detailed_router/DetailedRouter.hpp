@@ -74,7 +74,6 @@ class DetailedRouter
   void initDRNodeValid(DRBox& dr_box);
   void buildDRNodeNeighbor(DRBox& dr_box);
   void buildOrienNetMap(DRBox& dr_box);
-  void checkDRBox(DRBox& dr_box);
   void routeDRBox(DRBox& dr_box);
   std::vector<DRTask*> initTaskSchedule(DRBox& dr_box);
   std::vector<DRTask*> getTaskScheduleByViolation(DRBox& dr_box);
@@ -129,9 +128,12 @@ class DetailedRouter
   void updateViolationToGraph(DRBox& dr_box, ChangeType change_type, Violation& violation);
 #endif
 
+#if 1  // debug
+  void debugCheckDRBox(DRBox& dr_box);
+  void debugPlotDRBox(DRBox& dr_box, int32_t curr_task_idx, std::string flag);
+#endif
+
 #if 1  // exhibit
-  void plotDRBox(DRBox& dr_box, int32_t curr_task_idx, std::string flag);
-  void reportDRModel(DRModel& dr_model, int32_t iter);
   void reportSummary(DRModel& dr_model, int32_t iter);
   void writeNetCSV(DRModel& dr_model, int32_t iter);
   void writeViolationCSV(DRModel& dr_model, int32_t iter);

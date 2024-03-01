@@ -58,10 +58,11 @@ void PinAccessor::access(std::vector<Net>& net_list)
   initAccessPointList(pa_model);
   buildAccessPointList(pa_model);
   updatePAModel(pa_model);
+  // reportSummary(pa_model);
+  // writePinCSV(pa_model);
   LOG_INST.info(Loc::current(), "End access", monitor.getStatsInfo());
 
-  // plotPAModel(pa_model);
-  // reportPAModel(pa_model);
+  // debugPlotPAModel(pa_model);
 }
 
 // private
@@ -408,9 +409,9 @@ void PinAccessor::updatePAModel(PAModel& pa_model)
   }
 }
 
-#if 1  // exhibit
+#if 1  // debug
 
-void PinAccessor::plotPAModel(PAModel& pa_model)
+void PinAccessor::debugPlotPAModel(PAModel& pa_model)
 {
   Die& die = DM_INST.getDatabase().get_die();
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
@@ -489,14 +490,9 @@ void PinAccessor::plotPAModel(PAModel& pa_model)
   GP_INST.plot(gp_gds, gds_file_path);
 }
 
-void PinAccessor::reportPAModel(PAModel& pa_model)
-{
-  Monitor monitor;
-  LOG_INST.info(Loc::current(), "Begin reporting...");
-  reportSummary(pa_model);
-  writePinCSV(pa_model);
-  LOG_INST.info(Loc::current(), "End report", monitor.getStatsInfo());
-}
+#endif
+
+#if 1  // exhibit
 
 void PinAccessor::reportSummary(PAModel& pa_model)
 {

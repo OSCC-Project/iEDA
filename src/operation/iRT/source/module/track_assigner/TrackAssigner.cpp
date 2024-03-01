@@ -60,9 +60,10 @@ void TrackAssigner::assign(std::vector<Net>& net_list)
   initTATaskList(ta_model);
   buildPanelSchedule(ta_model);
   assignTAPanelMap(ta_model);
+  // reportSummary(ta_model);
+  // writeNetCSV(ta_model);
+  // writeViolationCSV(ta_model);
   LOG_INST.info(Loc::current(), "End assign", monitor.getStatsInfo());
-
-  // reportTAModel(ta_model);
 }
 
 // private
@@ -300,12 +301,11 @@ void TrackAssigner::assignTAPanelMap(TAModel& ta_model)
       initTANodeMap(ta_panel);
       buildTANodeNeighbor(ta_panel);
       buildOrienNetMap(ta_panel);
-      checkTAPanel(ta_panel);
-      // plotTAPanel(ta_panel, -1, "pre");
+      // debugCheckTAPanel(ta_panel);
       routeTAPanel(ta_panel);
       updateTATaskToGcellMap(ta_panel);
       updateViolationToGcellMap(ta_panel);
-      // plotTAPanel(ta_panel, -1, "post");
+      // debugPlotTAPanel(ta_panel, -1, "routed");
       freeTAPanel(ta_panel);
     }
     assigned_panel_num += ta_panel_id_list.size();
@@ -400,70 +400,6 @@ void TrackAssigner::buildOrienNetMap(TAPanel& ta_panel)
   for (auto& [net_idx, fixed_rect_set] : ta_panel.get_net_fixed_rect_map()) {
     for (auto& fixed_rect : fixed_rect_set) {
       updateFixedRectToGraph(ta_panel, ChangeType::kAdd, net_idx, fixed_rect, true);
-    }
-  }
-}
-
-void TrackAssigner::checkTAPanel(TAPanel& ta_panel)
-{
-  TAPanelId& ta_panel_id = ta_panel.get_ta_panel_id();
-  if (ta_panel.get_ta_panel_id().get_layer_idx() < 0 || ta_panel.get_ta_panel_id().get_panel_idx() < 0) {
-    LOG_INST.error(Loc::current(), "The ta_panel_id is error!");
-  }
-
-  GridMap<TANode>& ta_node_map = ta_panel.get_ta_node_map();
-  for (int32_t x = 0; x < ta_node_map.get_x_size(); x++) {
-    for (int32_t y = 0; y < ta_node_map.get_y_size(); y++) {
-      TANode& ta_node = ta_node_map[x][y];
-      if (!RTUtil::isInside(ta_panel.get_panel_rect().get_real_rect(), ta_node.get_planar_coord())) {
-        LOG_INST.error(Loc::current(), "The ta_node is out of panel!");
-      }
-      for (auto& [orien, neighbor] : ta_node.get_neighbor_node_map()) {
-        Orientation opposite_orien = RTUtil::getOppositeOrientation(orien);
-        if (!RTUtil::exist(neighbor->get_neighbor_node_map(), opposite_orien)) {
-          LOG_INST.error(Loc::current(), "The ta_node neighbor is not bidirection!");
-        }
-        if (neighbor->get_neighbor_node_map()[opposite_orien] != &ta_node) {
-          LOG_INST.error(Loc::current(), "The ta_node neighbor is not bidirection!");
-        }
-        LayerCoord node_coord(ta_node.get_planar_coord(), ta_node.get_layer_idx());
-        LayerCoord neighbor_coord(neighbor->get_planar_coord(), neighbor->get_layer_idx());
-        if (RTUtil::getOrientation(node_coord, neighbor_coord) == orien) {
-          continue;
-        }
-        LOG_INST.error(Loc::current(), "The neighbor orien is different with real region!");
-      }
-    }
-  }
-
-  for (TATask* ta_task : ta_panel.get_ta_task_list()) {
-    if (ta_task->get_net_idx() < 0) {
-      LOG_INST.error(Loc::current(), "The idx of origin net is illegal!");
-    }
-    for (TAGroup& ta_group : ta_task->get_ta_group_list()) {
-      if (ta_group.get_coord_list().empty()) {
-        LOG_INST.error(Loc::current(), "The coord_direction_map is empty!");
-      }
-      for (LayerCoord& coord : ta_group.get_coord_list()) {
-        int32_t layer_idx = coord.get_layer_idx();
-        if (layer_idx != ta_panel.get_panel_rect().get_layer_idx()) {
-          LOG_INST.error(Loc::current(), "The layer idx of group coord is illegal!");
-        }
-        if (!RTUtil::existTrackGrid(coord, ta_panel.get_panel_track_axis())) {
-          LOG_INST.error(Loc::current(), "There is no grid coord for real coord(", coord.get_x(), ",", coord.get_y(), ")!");
-        }
-        PlanarCoord grid_coord = RTUtil::getTrackGrid(coord, ta_panel.get_panel_track_axis());
-        TANode& ta_node = ta_node_map[grid_coord.get_x()][grid_coord.get_y()];
-        if (ta_node.get_neighbor_node_map().empty()) {
-          // plotTAPanel(ta_panel, -1, "pre");
-          LOG_INST.error(Loc::current(), "The neighbor of group coord (", coord.get_x(), ",", coord.get_y(), ",", layer_idx,
-                         ") is empty in panel(", ta_panel_id.get_layer_idx(), ",", ta_panel_id.get_panel_idx(), ")");
-        }
-        if (RTUtil::isInside(ta_panel.get_panel_rect().get_real_rect(), coord)) {
-          continue;
-        }
-        LOG_INST.error(Loc::current(), "The coord (", coord.get_x(), ",", coord.get_y(), ") is out of panel!");
-      }
     }
   }
 }
@@ -1009,7 +945,7 @@ std::vector<TATask*> TrackAssigner::getTaskScheduleByViolation(TAPanel& ta_panel
     if (!RTUtil::exist(violation_net_set, ta_task->get_net_idx())) {
       continue;
     }
-    if (ta_task->get_routed_times() > 0) {
+    if (ta_task->get_routed_times() > 1) {
       continue;
     }
     ta_task_list.push_back(ta_task);
@@ -1121,9 +1057,73 @@ std::map<TANode*, std::set<Orientation>> TrackAssigner::getRoutingNodeOrientatio
 
 #endif
 
-#if 1  // exhibit
+#if 1  // debug
 
-void TrackAssigner::plotTAPanel(TAPanel& ta_panel, int32_t curr_task_idx, std::string flag)
+void TrackAssigner::debugCheckTAPanel(TAPanel& ta_panel)
+{
+  TAPanelId& ta_panel_id = ta_panel.get_ta_panel_id();
+  if (ta_panel.get_ta_panel_id().get_layer_idx() < 0 || ta_panel.get_ta_panel_id().get_panel_idx() < 0) {
+    LOG_INST.error(Loc::current(), "The ta_panel_id is error!");
+  }
+
+  GridMap<TANode>& ta_node_map = ta_panel.get_ta_node_map();
+  for (int32_t x = 0; x < ta_node_map.get_x_size(); x++) {
+    for (int32_t y = 0; y < ta_node_map.get_y_size(); y++) {
+      TANode& ta_node = ta_node_map[x][y];
+      if (!RTUtil::isInside(ta_panel.get_panel_rect().get_real_rect(), ta_node.get_planar_coord())) {
+        LOG_INST.error(Loc::current(), "The ta_node is out of panel!");
+      }
+      for (auto& [orien, neighbor] : ta_node.get_neighbor_node_map()) {
+        Orientation opposite_orien = RTUtil::getOppositeOrientation(orien);
+        if (!RTUtil::exist(neighbor->get_neighbor_node_map(), opposite_orien)) {
+          LOG_INST.error(Loc::current(), "The ta_node neighbor is not bidirection!");
+        }
+        if (neighbor->get_neighbor_node_map()[opposite_orien] != &ta_node) {
+          LOG_INST.error(Loc::current(), "The ta_node neighbor is not bidirection!");
+        }
+        LayerCoord node_coord(ta_node.get_planar_coord(), ta_node.get_layer_idx());
+        LayerCoord neighbor_coord(neighbor->get_planar_coord(), neighbor->get_layer_idx());
+        if (RTUtil::getOrientation(node_coord, neighbor_coord) == orien) {
+          continue;
+        }
+        LOG_INST.error(Loc::current(), "The neighbor orien is different with real region!");
+      }
+    }
+  }
+
+  for (TATask* ta_task : ta_panel.get_ta_task_list()) {
+    if (ta_task->get_net_idx() < 0) {
+      LOG_INST.error(Loc::current(), "The idx of origin net is illegal!");
+    }
+    for (TAGroup& ta_group : ta_task->get_ta_group_list()) {
+      if (ta_group.get_coord_list().empty()) {
+        LOG_INST.error(Loc::current(), "The coord_direction_map is empty!");
+      }
+      for (LayerCoord& coord : ta_group.get_coord_list()) {
+        int32_t layer_idx = coord.get_layer_idx();
+        if (layer_idx != ta_panel.get_panel_rect().get_layer_idx()) {
+          LOG_INST.error(Loc::current(), "The layer idx of group coord is illegal!");
+        }
+        if (!RTUtil::existTrackGrid(coord, ta_panel.get_panel_track_axis())) {
+          LOG_INST.error(Loc::current(), "There is no grid coord for real coord(", coord.get_x(), ",", coord.get_y(), ")!");
+        }
+        PlanarCoord grid_coord = RTUtil::getTrackGrid(coord, ta_panel.get_panel_track_axis());
+        TANode& ta_node = ta_node_map[grid_coord.get_x()][grid_coord.get_y()];
+        if (ta_node.get_neighbor_node_map().empty()) {
+          // debugPlotTAPanel(ta_panel, -1, "check");
+          LOG_INST.error(Loc::current(), "The neighbor of group coord (", coord.get_x(), ",", coord.get_y(), ",", layer_idx,
+                         ") is empty in panel(", ta_panel_id.get_layer_idx(), ",", ta_panel_id.get_panel_idx(), ")");
+        }
+        if (RTUtil::isInside(ta_panel.get_panel_rect().get_real_rect(), coord)) {
+          continue;
+        }
+        LOG_INST.error(Loc::current(), "The coord (", coord.get_x(), ",", coord.get_y(), ") is out of panel!");
+      }
+    }
+  }
+}
+
+void TrackAssigner::debugPlotTAPanel(TAPanel& ta_panel, int32_t curr_task_idx, std::string flag)
 {
   ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
@@ -1425,15 +1425,9 @@ void TrackAssigner::plotTAPanel(TAPanel& ta_panel, int32_t curr_task_idx, std::s
   GP_INST.plot(gp_gds, gds_file_path);
 }
 
-void TrackAssigner::reportTAModel(TAModel& ta_model)
-{
-  Monitor monitor;
-  LOG_INST.info(Loc::current(), "Begin reporting...");
-  reportSummary(ta_model);
-  writeNetCSV(ta_model);
-  writeViolationCSV(ta_model);
-  LOG_INST.info(Loc::current(), "End report", monitor.getStatsInfo());
-}
+#endif
+
+#if 1  // exhibit
 
 void TrackAssigner::reportSummary(TAModel& ta_model)
 {
