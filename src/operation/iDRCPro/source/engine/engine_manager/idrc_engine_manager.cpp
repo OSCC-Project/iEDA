@@ -345,6 +345,11 @@ void DrcEngineManager::filterData()
     }
 
     // edge
+    auto rule_corner_fill = DrcTechRuleInst->getCornerFillSpacing(layer);
+    std::map<unsigned, std::vector<int>> rule_corner_fill_pattern{{0b1011, {-2, -2, -1, 0}}, {0b1101, {-1, 0, -1, -2}}};
+    unsigned rule_corner_fill_mask = 0b1111;
+    ieda_solver::GeometryPolygonSet corner_fill_check_regions;
+
     auto rule_eol_list = DrcTechRuleInst->getSpacingEolList(layer);
     int max_eol_width = 0;
     for (auto& rule_eol : rule_eol_list) {
@@ -420,7 +425,17 @@ void DrcEngineManager::filterData()
 
       // deal with polygon outline
       auto get_index_shifted = [&](int index, int shift) { return (index + shift + polygon_point_number) % polygon_point_number; };
+      auto create_corner_pattern = [&](int count, int index) {
+        unsigned pattern = 0;
+        for (int i = count - 1; i >= 0; --i) {
+          auto idx = get_index_shifted(index, -i);
+          pattern <<= 1;
+          pattern |= corner_convex_history[idx];
+        }
+        return pattern;
+      };
 
+      auto corner_pattern_4 = create_corner_pattern(4, polygon_point_number - 1);
       for (int i = 0; i < polygon_point_number; ++i) {
         auto point_index_prev = get_index_shifted(i, -1);
         auto point_current = polygon_outline[i];
@@ -516,7 +531,40 @@ void DrcEngineManager::filterData()
           int a = 0;
         }
 
-        // TODO: notch, step, corner fill
+        corner_pattern_4 = (corner_pattern_4 << 1) | is_current_convex;
+
+        // corner fill
+        if (rule_corner_fill) {
+          for (auto [pattern, offset] : rule_corner_fill_pattern) {
+            if ((corner_pattern_4 & rule_corner_fill_mask) == pattern) {
+              int rule_corner_fill_spacing = rule_corner_fill->get_spacing();
+              int rule_corner_fill_length1 = rule_corner_fill->get_edge_length1();
+              int rule_corner_fill_length2 = rule_corner_fill->get_edge_length2();
+              int rule_corner_fill_eol_width = rule_corner_fill->get_eol_width();
+
+              int corner_index = get_index_shifted(i, offset[0]);
+              int edge1_index = get_index_shifted(i, offset[1]);
+              int edge2_index = get_index_shifted(i, offset[2]);
+              int eol_index = get_index_shifted(i, offset[3]);
+
+              if (edge_length_history[edge1_index] < rule_corner_fill_length1 && edge_length_history[edge2_index] < rule_corner_fill_length2
+                  && edge_length_history[eol_index] < rule_corner_fill_eol_width) {
+                auto& corner_point = polygon_outline[corner_index];
+                ieda_solver::GeometryRect check_rect(corner_point.x(), corner_point.y(), corner_point.x(), corner_point.y());
+                ieda_solver::bloat(check_rect, edge_direction_history[edge1_index].right(),
+                                   edge_length_history[edge2_index] + rule_corner_fill_spacing);
+                ieda_solver::bloat(check_rect, edge_direction_history[edge2_index].right(),
+                                   edge_length_history[edge1_index] + rule_corner_fill_spacing);
+                corner_fill_check_regions += check_rect;
+                int a = 0;
+              }
+
+              break;
+            }
+          }
+        }
+
+        // TODO: notch, step
       }
 
       // polygon holes
@@ -571,7 +619,20 @@ void DrcEngineManager::filterData()
       int a = 0;
     }
 
-    // TODO: rule check
+    if (rule_corner_fill) {
+      ieda_solver::GeometryPolygonSet violation_wires = corner_fill_check_regions & layer_polyset;
+      ieda_solver::interact(corner_fill_check_regions, violation_wires);
+      ieda_solver::GeometryPolygonSet result_regions = corner_fill_check_regions - violation_wires;
+
+      // TODO: get violation regions
+      std::vector<ieda_solver::GeometryViewPolygon> corner_fill_result_polygons;
+      result_regions.get(corner_fill_result_polygons);
+      if (!corner_fill_result_polygons.empty()) {
+        int a = 0;
+      }
+    }
+
+    // TODO: other rule check
 
     int a = 0;
   }

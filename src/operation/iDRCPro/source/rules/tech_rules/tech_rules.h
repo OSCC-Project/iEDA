@@ -66,6 +66,8 @@ class TechRules
 
   std::vector<std::shared_ptr<idb::routinglayer::Lef58SpacingEol>> getSpacingEolList(std::string layer_name);
 
+  std::shared_ptr<routinglayer::Lef58CornerFillSpacing> getCornerFillSpacing(std::string layer_name);
+
   ///
 
  private:

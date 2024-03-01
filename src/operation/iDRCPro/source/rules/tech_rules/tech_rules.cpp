@@ -107,4 +107,14 @@ std::vector<std::shared_ptr<idb::routinglayer::Lef58SpacingEol>> TechRules::getS
   return idb_routing_layer->get_lef58_spacing_eol_list();
 }
 
+std::shared_ptr<routinglayer::Lef58CornerFillSpacing> TechRules::getCornerFillSpacing(std::string layer_name)
+{
+  auto layer = findLayer(layer_name);
+  idb::IdbLayerRouting* idb_routing_layer = dynamic_cast<idb::IdbLayerRouting*>(layer);
+  if (!idb_routing_layer)
+    return nullptr;
+
+  return idb_routing_layer->get_lef58_corner_fill_spacing();
+}
+
 }  // namespace idrc
