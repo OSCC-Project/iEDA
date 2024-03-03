@@ -225,6 +225,151 @@ void WAWirelengthGradient::updateWirelengthForce(float coeff_x, float coeff_y, f
   }
 }
 
+void WAWirelengthGradient::updateWirelengthForceDirect(float coeff_x, float coeff_y, float min_force_bar, int32_t thread_num, GridManager* grid_manager)
+{
+  float util_max = std::max(grid_manager->get_h_util_max(), grid_manager->get_v_util_max());
+  // LOG_INFO << "H_UTIL_MAX = " << grid_manager->get_h_util_max() << "; v_UTIL_MAX = " << grid_manager->get_v_util_max();
+  // LOG_INFO << "H_UTIL_SUM = " << grid_manager->get_h_util_sum() << "; v_UTIL_SUM = " << grid_manager->get_v_util_sum();
+
+  // NOLINTNEXTLINE
+  int32_t net_chunk_size = std::max(int(_topology_manager->get_network_list().size() / thread_num / 16), 1);
+#pragma omp parallel for num_threads(thread_num) schedule(dynamic, net_chunk_size)
+  for (auto* network : _topology_manager->get_network_list()) {
+    if (network->isIgnoreNetwork()) {
+      continue;
+    }
+
+    Rectangle<int32_t> shape = grid_manager->get_shape();
+    Rectangle<int32_t> network_shape = std::move(network->obtainNetWorkShape());
+    if (network_shape.get_ll_x() > network_shape.get_ur_x()){
+      continue;
+    }
+    if (network_shape.get_ur_x() > grid_manager->get_shape().get_ur_x()){
+      network_shape.set_upper_right(grid_manager->get_shape().get_ur_x(), network_shape.get_ur_y());
+    }
+    if (network_shape.get_ur_y() > grid_manager->get_shape().get_ur_y()){
+      network_shape.set_upper_right(network_shape.get_ur_x(), grid_manager->get_shape().get_ur_y());
+    }
+    if (network_shape.get_ll_x() < grid_manager->get_shape().get_ll_x()){
+      network_shape.set_lower_left(grid_manager->get_shape().get_ll_x(),network_shape.get_ll_y());
+    }
+    if (network_shape.get_ll_y() < grid_manager->get_shape().get_ll_y()){
+      network_shape.set_lower_left(network_shape.get_ll_x(), grid_manager->get_shape().get_ll_y());
+    }
+    auto utility = grid_manager->get_utility();
+
+    std::pair<int, int> y_range = utility.obtainMinMaxIdx(shape.get_ll_y(), grid_manager->get_grid_size_y(), network_shape.get_ll_y(), network_shape.get_ur_y());
+    std::pair<int, int> x_range = utility.obtainMinMaxIdx(shape.get_ll_x(), grid_manager->get_grid_size_x(), network_shape.get_ll_x(), network_shape.get_ur_x());
+
+    float bin_util_h_max = 0.0f;
+    float bin_util_v_max = 0.0f;
+    for (int i = y_range.first ; i < y_range.second ; i++){
+      for (int j = x_range.first ; j < x_range.second; j++){
+        auto bin = &grid_manager->get_grid_2d_list()[i][j];
+        bin_util_h_max = std::max(bin->h_util, bin_util_h_max);
+        bin_util_v_max = std::max(bin->v_util, bin_util_v_max);
+      }
+    }
+
+    float f_x = 0.f;
+    float f_y = 0.f;
+    f_x = bin_util_h_max / util_max;
+    f_y = bin_util_v_max / util_max;
+
+    double a = 1 + (f_x - f_y);
+    double b = 1 - (f_x - f_y) * 1.5;
+ 
+    float net_expminsum_x, net_expmaxsum_x, net_expminsum_y, net_expmaxsum_y;
+    float net_x_expminsum_x, net_x_expmaxsum_x, net_y_expminsum_y, net_y_expmaxsum_y;
+
+    net_expminsum_x = net_expmaxsum_x = net_expminsum_y = net_expmaxsum_y = 0.0f;
+    net_x_expminsum_x = net_x_expmaxsum_x = net_y_expminsum_y = net_y_expmaxsum_y = 0.0f;
+
+    for (auto* node : network->get_node_list()) {
+      Point<int32_t> node_loc = std::move(node->get_location());
+      float exp_min_x =  (network_shape.get_ll_x() - node_loc.get_x()) * coeff_x;
+      float exp_max_x =  (node_loc.get_x() - network_shape.get_ur_x()) * coeff_x;
+      float exp_min_y =  (network_shape.get_ll_y() - node_loc.get_y()) * coeff_y;
+      float exp_max_y =  (node_loc.get_y() - network_shape.get_ur_y()) * coeff_y;
+
+      // min x.
+      if (exp_min_x > min_force_bar) {
+        float pin_expmin_x = fastExp(exp_min_x);
+        net_expminsum_x += pin_expmin_x;
+        net_x_expminsum_x += node_loc.get_x() * pin_expmin_x;
+      }
+
+      // max x.
+      if (exp_max_x > min_force_bar) {
+        float pin_expmax_x = fastExp(exp_max_x);
+        net_expmaxsum_x += pin_expmax_x;
+        net_x_expmaxsum_x += node_loc.get_x() * pin_expmax_x;
+      }
+
+      // min y.
+      if (exp_min_y > min_force_bar) {
+        float pin_expmin_y = fastExp(exp_min_y);
+        net_expminsum_y += pin_expmin_y;
+        net_y_expminsum_y +=  node_loc.get_y() * pin_expmin_y;
+      }
+
+      // max y.
+      if (exp_max_y > min_force_bar) {
+        float pin_expmax_y = fastExp(exp_max_y);
+        net_expmaxsum_y += pin_expmax_y;
+        net_y_expmaxsum_y +=  node_loc.get_y() * pin_expmax_y;
+      }
+    }
+
+    for (auto* node : network->get_node_list()) {
+      Point<int32_t> node_loc = std::move(node->get_location());
+      float exp_min_x =  (network_shape.get_ll_x() - node_loc.get_x()) * coeff_x;
+      float exp_max_x =  (node_loc.get_x() - network_shape.get_ur_x()) * coeff_x;
+      float exp_min_y =  (network_shape.get_ll_y() - node_loc.get_y()) * coeff_y;
+      float exp_max_y =  (node_loc.get_y() - network_shape.get_ur_y()) * coeff_y;
+
+      float pin_grad_min_x, pin_grad_max_x, pin_grad_min_y, pin_grad_max_y;
+      pin_grad_min_x = pin_grad_max_x = pin_grad_min_y = pin_grad_max_y = 0.0f;
+
+      // min x.
+      if (exp_min_x > min_force_bar) {
+        float pin_expmin_x = fastExp(exp_min_x);
+        pin_grad_min_x
+            = (net_expminsum_x * (pin_expmin_x * (1.0 -  coeff_x * node_loc.get_x())) + coeff_x * pin_expmin_x * net_x_expminsum_x)
+              / (net_expminsum_x * net_expminsum_x);
+      }
+
+      // max x.
+      if (exp_max_x > min_force_bar) {
+        float pin_expmax_x = fastExp(exp_max_x);
+        pin_grad_max_x
+            = (net_expmaxsum_x * (pin_expmax_x * (1.0 + coeff_x * node_loc.get_x())) - coeff_x * pin_expmax_x * net_x_expmaxsum_x)
+              / (net_expmaxsum_x * net_expmaxsum_x);
+      }
+
+      // min y.
+      if (exp_min_y > min_force_bar) {
+        float pin_expmin_y = fastExp(exp_min_y);
+        pin_grad_min_y
+            = (net_expminsum_y * (pin_expmin_y * (1.0 - coeff_y * node_loc.get_y())) + coeff_y * pin_expmin_y * net_y_expminsum_y)
+              / (net_expminsum_y * net_expminsum_y);
+      }
+
+      // max y.
+      if (exp_max_y > min_force_bar) {
+        float pin_expmax_y = fastExp(exp_max_y);
+        pin_grad_max_y
+            = (net_expmaxsum_y * (pin_expmax_y * (1.0 +  coeff_y * node_loc.get_y())) - coeff_y * pin_expmax_y * net_y_expmaxsum_y)
+              / (net_expmaxsum_y * net_expmaxsum_y);
+      }
+
+      _pin_grad_x_list[node->get_node_id()] = a * (pin_grad_min_x - pin_grad_max_x);
+      _pin_grad_y_list[node->get_node_id()] = b * (pin_grad_min_y - pin_grad_max_y);
+    }
+  }
+}
+
+
 void WAWirelengthGradient::waWLAnalyzeForDebug(float coeff_x, float coeff_y)
 {
   std::ofstream file_stream;

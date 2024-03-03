@@ -51,7 +51,10 @@ class ConditionRuleSpacingPRL : public ConditionRule
 
   // void addSpacingItem(int width, int prl_length) { _spacing_items[width].insert(prl_length); }
 
-  bool isMatchCondition(int width, int prl_length);
+  bool isMatchCondition(int width, int prl_length)
+  {
+    return width > _width && prl_length > _prl_length;
+  }
 
   int get_width() { return _width; }
   int get_prl_length() { return _prl_length; }

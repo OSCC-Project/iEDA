@@ -123,6 +123,11 @@ class GridManager
   int32_t get_grid_size_x() const { return _grid_size_x; }
   int32_t get_grid_size_y() const { return _grid_size_y; }
   std::vector<std::vector<Grid>>& get_grid_2d_list() { return _grid_2d_list; }
+  Utility get_utility() const {return _utility;}
+  float get_h_util_max() const {return _h_util_max;}
+  float get_v_util_max() const {return _v_util_max;}
+  float get_h_util_sum() const {return _h_util_sum;}
+  float get_v_util_sum() const {return _v_util_sum;}
 
   // function.
   void obtainOverlapGridList(std::vector<Grid*>& grid_list, Rectangle<int32_t>& rect);
