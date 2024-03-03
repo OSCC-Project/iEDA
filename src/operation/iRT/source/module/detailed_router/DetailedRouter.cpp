@@ -133,9 +133,10 @@ void DetailedRouter::iterativeDRModel(DRModel& dr_model)
     splitNetResult(dr_model);
     buildBoxSchedule(dr_model);
     routeDRBoxMap(dr_model);
-    // reportSummary(dr_model, (i + 1));
-    // writeNetCSV(dr_model, (i + 1));
-    // writeViolationCSV(dr_model, (i + 1));
+    updateSummary(dr_model, (i + 1));
+    printSummary(dr_model, (i + 1));
+    writeNetCSV(dr_model, (i + 1));
+    writeViolationCSV(dr_model, (i + 1));
     LOG_INST.info(Loc::current(), "****** End Model Iteration(", (i + 1), "/", dr_parameter_list.size(), ")", iter_monitor.getStatsInfo(),
                   " ******");
   }
@@ -1341,16 +1342,9 @@ void DetailedRouter::freeDRBox(DRBox& dr_box)
 
 int32_t DetailedRouter::getViolationNum()
 {
-  GridMap<GCell>& gcell_map = DM_INST.getDatabase().get_gcell_map();
+  Die& die = DM_INST.getDatabase().get_die();
 
-  std::set<Violation*> violation_set;
-  for (int32_t x = 0; x < gcell_map.get_x_size(); x++) {
-    for (int32_t y = 0; y < gcell_map.get_y_size(); y++) {
-      GCell& gcell = gcell_map[x][y];
-      violation_set.insert(gcell.get_violation_set().begin(), gcell.get_violation_set().end());
-    }
-  }
-  return static_cast<int32_t>(violation_set.size());
+  return static_cast<int32_t>(DM_INST.getViolationSet(die).size());
 }
 
 #if 1  // update env
@@ -1577,7 +1571,7 @@ void DetailedRouter::debugPlotDRBox(DRBox& dr_box, int32_t curr_task_idx, std::s
   ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
   std::vector<std::vector<ViaMaster>>& layer_via_master_list = DM_INST.getDatabase().get_layer_via_master_list();
-  std::string dr_temp_directory_path = DM_INST.getConfig().dr_temp_directory_path;
+  std::string& dr_temp_directory_path = DM_INST.getConfig().dr_temp_directory_path;
 
   PlanarRect box_rect = dr_box.get_box_rect().get_real_rect();
 
@@ -1894,97 +1888,166 @@ void DetailedRouter::debugPlotDRBox(DRBox& dr_box, int32_t curr_task_idx, std::s
 
 #if 1  // exhibit
 
-void DetailedRouter::reportSummary(DRModel& dr_model, int32_t iter)
+void DetailedRouter::updateSummary(DRModel& dr_model, int32_t iter)
 {
   int32_t micron_dbu = DM_INST.getDatabase().get_micron_dbu();
+  Die& die = DM_INST.getDatabase().get_die();
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
   std::vector<CutLayer>& cut_layer_list = DM_INST.getDatabase().get_cut_layer_list();
   std::vector<std::vector<ViaMaster>>& layer_via_master_list = DM_INST.getDatabase().get_layer_via_master_list();
-  GridMap<GCell>& gcell_map = DM_INST.getDatabase().get_gcell_map();
-  std::map<int32_t, double>& dr_routing_wire_length_map = DM_INST.getSummary().iter_dr_summary_map[iter].routing_wire_length_map;
-  double& dr_total_wire_length = DM_INST.getSummary().iter_dr_summary_map[iter].total_wire_length;
-  std::map<int32_t, int32_t>& dr_cut_via_num_map = DM_INST.getSummary().iter_dr_summary_map[iter].cut_via_num_map;
-  int32_t& dr_total_via_num = DM_INST.getSummary().iter_dr_summary_map[iter].total_via_num;
-  std::map<int32_t, int32_t>& dr_routing_patch_num_map = DM_INST.getSummary().iter_dr_summary_map[iter].routing_patch_num_map;
-  int32_t& dr_total_patch_num = DM_INST.getSummary().iter_dr_summary_map[iter].total_patch_num;
-  std::map<int32_t, int32_t>& dr_routing_violation_num_map = DM_INST.getSummary().iter_dr_summary_map[iter].routing_violation_num_map;
-  int32_t& dr_total_violation_num = DM_INST.getSummary().iter_dr_summary_map[iter].total_violation_num;
-  // std::map<std::string, std::vector<double>>& dr_timing = DM_INST.getSummary().iter_dr_summary_map[iter].timing;
+  std::map<int32_t, double>& routing_wire_length_map = DM_INST.getSummary().iter_dr_summary_map[iter].routing_wire_length_map;
+  double& total_wire_length = DM_INST.getSummary().iter_dr_summary_map[iter].total_wire_length;
+  std::map<int32_t, int32_t>& cut_via_num_map = DM_INST.getSummary().iter_dr_summary_map[iter].cut_via_num_map;
+  int32_t& total_via_num = DM_INST.getSummary().iter_dr_summary_map[iter].total_via_num;
+  std::map<int32_t, int32_t>& routing_patch_num_map = DM_INST.getSummary().iter_dr_summary_map[iter].routing_patch_num_map;
+  int32_t& total_patch_num = DM_INST.getSummary().iter_dr_summary_map[iter].total_patch_num;
+  std::map<int32_t, int32_t>& routing_violation_num_map = DM_INST.getSummary().iter_dr_summary_map[iter].routing_violation_num_map;
+  int32_t& total_violation_num = DM_INST.getSummary().iter_dr_summary_map[iter].total_violation_num;
 
   for (RoutingLayer& routing_layer : routing_layer_list) {
-    dr_routing_wire_length_map[routing_layer.get_layer_idx()] = 0;
-    dr_routing_patch_num_map[routing_layer.get_layer_idx()] = 0;
-    dr_routing_violation_num_map[routing_layer.get_layer_idx()] = 0;
+    routing_wire_length_map[routing_layer.get_layer_idx()] = 0;
+    routing_patch_num_map[routing_layer.get_layer_idx()] = 0;
+    routing_violation_num_map[routing_layer.get_layer_idx()] = 0;
   }
-  dr_total_wire_length = 0;
-  dr_total_patch_num = 0;
-  dr_total_violation_num = 0;
+  total_wire_length = 0;
+  total_patch_num = 0;
+  total_violation_num = 0;
   for (CutLayer& cut_layer : cut_layer_list) {
-    dr_cut_via_num_map[cut_layer.get_layer_idx()] = 0;
+    cut_via_num_map[cut_layer.get_layer_idx()] = 0;
   }
-  dr_total_via_num = 0;
+  total_via_num = 0;
 
+  for (auto& [net_idx, segment_set] : DM_INST.getNetResultMap(die)) {
+    for (Segment<LayerCoord>* segment : segment_set) {
+      LayerCoord& first_coord = segment->get_first();
+      int32_t first_layer_idx = first_coord.get_layer_idx();
+      LayerCoord& second_coord = segment->get_second();
+      int32_t second_layer_idx = second_coord.get_layer_idx();
+
+      if (first_layer_idx == second_layer_idx) {
+        double wire_length = RTUtil::getManhattanDistance(first_coord, second_coord) / 1.0 / micron_dbu;
+        routing_wire_length_map[first_layer_idx] += wire_length;
+        total_wire_length += wire_length;
+      } else {
+        RTUtil::swapByASC(first_layer_idx, second_layer_idx);
+        for (int32_t layer_idx = first_layer_idx; layer_idx < second_layer_idx; layer_idx++) {
+          cut_via_num_map[layer_via_master_list[layer_idx].front().get_cut_layer_idx()]++;
+          total_via_num++;
+        }
+      }
+    }
+  }
+  for (auto& [net_idx, patch_set] : DM_INST.getNetPatchMap(die)) {
+    for (EXTLayerRect* patch : patch_set) {
+      routing_patch_num_map[patch->get_layer_idx()]++;
+      total_patch_num++;
+    }
+  }
+  for (Violation* violation : DM_INST.getViolationSet(die)) {
+    routing_violation_num_map[violation->get_violation_shape().get_layer_idx()]++;
+    total_violation_num++;
+  }
+#if 0
+  std::map<std::string, std::vector<double>>& timing = DM_INST.getSummary().iter_dr_summary_map[iter].timing;
+  std::map<int32_t, std::map<LayerCoord, std::vector<std::string>, CmpLayerCoordByXASC>> net_coord_real_pin_map;
+  std::map<int32_t, std::vector<Segment<LayerCoord>>> net_routing_segment_map;
+  for (DRNet& dr_net : dr_model.get_dr_net_list()) {
+    for (DRPin& dr_pin : dr_net.get_dr_pin_list()) {
+      for (AccessPoint& access_point : dr_pin.get_access_point_list()) {
+        net_coord_real_pin_map[dr_net.get_net_idx()][access_point.getRealLayerCoord()].push_back(dr_pin.get_pin_name());
+      }
+    }
+  }
   for (int32_t x = 0; x < gcell_map.get_x_size(); x++) {
     for (int32_t y = 0; y < gcell_map.get_y_size(); y++) {
       for (auto& [net_idx, segment_set] : gcell_map[x][y].get_net_result_map()) {
         for (Segment<LayerCoord>* segment : segment_set) {
-          LayerCoord& first_coord = segment->get_first();
-          int32_t first_layer_idx = first_coord.get_layer_idx();
-          LayerCoord& second_coord = segment->get_second();
-          int32_t second_layer_idx = second_coord.get_layer_idx();
-
-          if (first_layer_idx == second_layer_idx) {
-            double wire_length = RTUtil::getManhattanDistance(first_coord, second_coord) / 1.0 / micron_dbu;
-            dr_routing_wire_length_map[first_layer_idx] += wire_length;
-            dr_total_wire_length += wire_length;
-          } else {
-            RTUtil::swapByASC(first_layer_idx, second_layer_idx);
-            for (int32_t layer_idx = first_layer_idx; layer_idx < second_layer_idx; layer_idx++) {
-              dr_cut_via_num_map[layer_via_master_list[layer_idx].front().get_cut_layer_idx()]++;
-              dr_total_via_num++;
-            }
-          }
+          net_routing_segment_map[net_idx].emplace_back(segment->get_first(), segment->get_second());
         }
-      }
-      for (auto& [net_idx, patch_set] : gcell_map[x][y].get_net_patch_map()) {
-        for (EXTLayerRect* patch : patch_set) {
-          dr_routing_patch_num_map[patch->get_layer_idx()]++;
-          dr_total_patch_num++;
-        }
-      }
-      for (Violation* violation : gcell_map[x][y].get_violation_set()) {
-        dr_routing_violation_num_map[violation->get_violation_shape().get_layer_idx()]++;
-        dr_total_violation_num++;
       }
     }
   }
-  // std::map<int32_t, std::map<LayerCoord, std::vector<std::string>, CmpLayerCoordByXASC>> net_coord_real_pin_map;
-  // std::map<int32_t, std::vector<Segment<LayerCoord>>> net_routing_segment_map;
-  // for (DRNet& dr_net : dr_model.get_dr_net_list()) {
-  //   for (DRPin& dr_pin : dr_net.get_dr_pin_list()) {
-  //     for (AccessPoint& access_point : dr_pin.get_access_point_list()) {
-  //       net_coord_real_pin_map[dr_net.get_net_idx()][access_point.getRealLayerCoord()].push_back(dr_pin.get_pin_name());
-  //     }
-  //   }
-  // }
-  // for (int32_t x = 0; x < gcell_map.get_x_size(); x++) {
-  //   for (int32_t y = 0; y < gcell_map.get_y_size(); y++) {
-  //     for (auto& [net_idx, segment_set] : gcell_map[x][y].get_net_result_map()) {
-  //       for (Segment<LayerCoord>* segment : segment_set) {
-  //         net_routing_segment_map[net_idx].emplace_back(segment->get_first(), segment->get_second());
-  //       }
-  //     }
-  //   }
-  // }
-  // dr_timing = RTAPI_INST.getTiming(net_coord_real_pin_map, net_routing_segment_map);
+  timing = RTAPI_INST.getTiming(net_coord_real_pin_map, net_routing_segment_map);
+#endif
+}
+
+void DetailedRouter::printSummary(DRModel& dr_model, int32_t iter)
+{
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+  std::vector<CutLayer>& cut_layer_list = DM_INST.getDatabase().get_cut_layer_list();
+  std::map<int32_t, double>& routing_wire_length_map = DM_INST.getSummary().iter_dr_summary_map[iter].routing_wire_length_map;
+  double& total_wire_length = DM_INST.getSummary().iter_dr_summary_map[iter].total_wire_length;
+  std::map<int32_t, int32_t>& cut_via_num_map = DM_INST.getSummary().iter_dr_summary_map[iter].cut_via_num_map;
+  int32_t& total_via_num = DM_INST.getSummary().iter_dr_summary_map[iter].total_via_num;
+  std::map<int32_t, int32_t>& routing_patch_num_map = DM_INST.getSummary().iter_dr_summary_map[iter].routing_patch_num_map;
+  int32_t& total_patch_num = DM_INST.getSummary().iter_dr_summary_map[iter].total_patch_num;
+  std::map<int32_t, int32_t>& routing_violation_num_map = DM_INST.getSummary().iter_dr_summary_map[iter].routing_violation_num_map;
+  int32_t& total_violation_num = DM_INST.getSummary().iter_dr_summary_map[iter].total_violation_num;
+
+  fort::char_table routing_wire_length_map_table;
+  {
+    routing_wire_length_map_table << fort::header << "routing_layer"
+                                  << "wire_length"
+                                  << "proportion" << fort::endr;
+    for (RoutingLayer& routing_layer : routing_layer_list) {
+      routing_wire_length_map_table << routing_layer.get_layer_name() << routing_wire_length_map[routing_layer.get_layer_idx()]
+                                    << RTUtil::getPercentage(routing_wire_length_map[routing_layer.get_layer_idx()], total_wire_length)
+                                    << fort::endr;
+    }
+    routing_wire_length_map_table << fort::header << "Total" << total_wire_length
+                                  << RTUtil::getPercentage(total_wire_length, total_wire_length) << fort::endr;
+  }
+  fort::char_table cut_via_num_map_table;
+  {
+    cut_via_num_map_table << fort::header << "cut_layer"
+                          << "via_num"
+                          << "proportion" << fort::endr;
+    for (CutLayer& cut_layer : cut_layer_list) {
+      cut_via_num_map_table << cut_layer.get_layer_name() << cut_via_num_map[cut_layer.get_layer_idx()]
+                            << RTUtil::getPercentage(cut_via_num_map[cut_layer.get_layer_idx()], total_via_num) << fort::endr;
+    }
+    cut_via_num_map_table << fort::header << "Total" << total_via_num << RTUtil::getPercentage(total_via_num, total_via_num) << fort::endr;
+  }
+  fort::char_table routing_patch_num_map_table;
+  {
+    routing_patch_num_map_table << fort::header << "routing_layer"
+                                << "patch_num"
+                                << "proportion" << fort::endr;
+    for (RoutingLayer& routing_layer : routing_layer_list) {
+      routing_patch_num_map_table << routing_layer.get_layer_name() << routing_patch_num_map[routing_layer.get_layer_idx()]
+                                  << RTUtil::getPercentage(routing_patch_num_map[routing_layer.get_layer_idx()], total_patch_num)
+                                  << fort::endr;
+    }
+    routing_patch_num_map_table << fort::header << "Total" << total_patch_num << RTUtil::getPercentage(total_patch_num, total_patch_num)
+                                << fort::endr;
+  }
+  fort::char_table routing_violation_num_map_table;
+  {
+    routing_violation_num_map_table << fort::header << "routing_layer"
+                                    << "violation_num"
+                                    << "proportion" << fort::endr;
+    for (RoutingLayer& routing_layer : routing_layer_list) {
+      routing_violation_num_map_table << routing_layer.get_layer_name() << routing_violation_num_map[routing_layer.get_layer_idx()]
+                                      << RTUtil::getPercentage(routing_violation_num_map[routing_layer.get_layer_idx()],
+                                                               total_violation_num)
+                                      << fort::endr;
+    }
+    routing_violation_num_map_table << fort::header << "Total" << total_violation_num
+                                    << RTUtil::getPercentage(total_violation_num, total_violation_num) << fort::endr;
+  }
+  RTUtil::printTableList(
+      {routing_wire_length_map_table, cut_via_num_map_table, routing_patch_num_map_table, routing_violation_num_map_table});
 }
 
 void DetailedRouter::writeNetCSV(DRModel& dr_model, int32_t iter)
 {
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
-  std::string dr_temp_directory_path = DM_INST.getConfig().dr_temp_directory_path;
   GridMap<GCell>& gcell_map = DM_INST.getDatabase().get_gcell_map();
-
+  std::string& dr_temp_directory_path = DM_INST.getConfig().dr_temp_directory_path;
+  int32_t output_csv = DM_INST.getConfig().output_csv;
+  if (!output_csv) {
+    return;
+  }
   std::vector<GridMap<int32_t>> layer_net_map;
   layer_net_map.resize(routing_layer_list.size());
   for (GridMap<int32_t>& net_map : layer_net_map) {
@@ -2032,9 +2095,12 @@ void DetailedRouter::writeNetCSV(DRModel& dr_model, int32_t iter)
 void DetailedRouter::writeViolationCSV(DRModel& dr_model, int32_t iter)
 {
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
-  std::string dr_temp_directory_path = DM_INST.getConfig().dr_temp_directory_path;
   GridMap<GCell>& gcell_map = DM_INST.getDatabase().get_gcell_map();
-
+  std::string& dr_temp_directory_path = DM_INST.getConfig().dr_temp_directory_path;
+  int32_t output_csv = DM_INST.getConfig().output_csv;
+  if (!output_csv) {
+    return;
+  }
   std::vector<GridMap<int32_t>> layer_violation_map;
   layer_violation_map.resize(routing_layer_list.size());
   for (GridMap<int32_t>& violation_map : layer_violation_map) {

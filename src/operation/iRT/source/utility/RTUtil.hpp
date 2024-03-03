@@ -2005,6 +2005,35 @@ class RTUtil
     coord.set_y((coord.get_y() - y_offset) < 0 ? 0 : (coord.get_y() - y_offset));
   }
 
+  static void printTableList(const std::vector<fort::char_table>& table_list)
+  {
+    std::vector<std::vector<std::string>> print_table_list;
+    for (const fort::char_table& table : table_list) {
+      print_table_list.push_back(RTUtil::splitString(table.to_string(), '\n'));
+    }
+
+    int max_size = INT_MIN;
+    for (std::vector<std::string>& table : print_table_list) {
+      max_size = std::max(max_size, static_cast<int32_t>(table.size()));
+    }
+    for (std::vector<std::string>& table : print_table_list) {
+      for (int32_t i = table.size(); i < max_size; i++) {
+        std::string table_str;
+        table_str.append(table.front().length(), ' ');
+        table.push_back(table_str);
+      }
+    }
+
+    for (int32_t i = 0; i < max_size; i++) {
+      std::string table_str;
+      for (std::vector<std::string>& table : print_table_list) {
+        table_str += table[i];
+        table_str += " ";
+      }
+      LOG_INST.info(Loc::current(), table_str);
+    }
+  }
+
 #endif
 
 #if 1  // boost数据结构工具函数
@@ -2988,9 +3017,9 @@ class RTUtil
   }
 
   template <typename T>
-  static double getPercentage(T a, T b)
+  static std::string getPercentage(T a, T b)
   {
-    return getRatio(a, b) * 100.0;
+    return getString(getRatio(a, b) * 100.0, "%");
   }
 
   static std::ifstream* getInputFileStream(std::string file_path) { return getFileStream<std::ifstream>(file_path); }
@@ -3088,7 +3117,7 @@ class RTUtil
   {
     std::string all = "";
     for (int32_t i = 0; i < tab_num; i++) {
-      all += "    ";
+      all += "  ";
     }
     return all;
   }

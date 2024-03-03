@@ -105,9 +105,9 @@ class InitialRouter
   void debugOutputGuide(IRModel& ir_model);
 #endif
 
-
 #if 1  // exhibit
-  void reportSummary(IRModel& ir_model);
+  void updateSummary(IRModel& ir_model);
+  void printSummary(IRModel& ir_model);
   void writeDemandCSV(IRModel& ir_model);
   void writeOverflowCSV(IRModel& ir_model);
 #endif

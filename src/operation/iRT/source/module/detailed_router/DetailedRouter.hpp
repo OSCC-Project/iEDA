@@ -134,7 +134,8 @@ class DetailedRouter
 #endif
 
 #if 1  // exhibit
-  void reportSummary(DRModel& dr_model, int32_t iter);
+  void updateSummary(DRModel& dr_model, int32_t iter);
+  void printSummary(DRModel& dr_model, int32_t iter);
   void writeNetCSV(DRModel& dr_model, int32_t iter);
   void writeViolationCSV(DRModel& dr_model, int32_t iter);
 #endif

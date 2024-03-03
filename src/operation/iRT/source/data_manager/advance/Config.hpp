@@ -31,6 +31,7 @@ class Config
   int32_t thread_number;             // optional
   std::string bottom_routing_layer;  // optional
   std::string top_routing_layer;     // optional
+  int32_t output_csv;     // optional
   /////////////////////////////////////////////
   // **********        RT         ********** //
   std::string log_file_path;         // building
