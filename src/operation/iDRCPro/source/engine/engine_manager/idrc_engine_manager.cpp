@@ -395,6 +395,10 @@ void DrcEngineManager::filterData()
     }
     std::vector<ieda_solver::GeometryRect> step_violation_rects;
 
+    // enclosed area
+    int rule_min_enclosed_area = DrcTechRuleInst->getMinEnclosedArea(layer);
+    std::vector<ieda_solver::GeometryRect> enclosed_area_violations;
+
     auto get_edge_orientation = [](const ieda_solver::GeometryPoint& p1, const ieda_solver::GeometryPoint& p2) {
       return p1.x() == p2.x() ? ieda_solver::VERTICAL : ieda_solver::HORIZONTAL;
     };
@@ -698,27 +702,34 @@ void DrcEngineManager::filterData()
       // polygon holes
       // TODO: holes need to check edge?
       for (auto hole_it = polygon.begin_holes(); hole_it != polygon.end_holes(); ++hole_it) {
-        // long long hole_area = 0;
-        // auto hole_pt_it_next = hole_it->begin();
-        // auto hole_pt_it_prev = hole_pt_it_next++;
-        // auto hole_pt_it_current = hole_pt_it_next++;
-        // do {
-        //   // refresh area
-        //   area_calculator(hole_area, *hole_pt_it_prev, *hole_pt_it_current);
+        long long hole_area = 0;
+        auto hole_pt_it_next = hole_it->begin();
+        auto hole_pt_it_prev = hole_pt_it_next++;
+        auto hole_pt_it_current = hole_pt_it_next++;
+        do {
+          // refresh area
+          area_calculator(hole_area, *hole_pt_it_prev, *hole_pt_it_current);
 
-        //   // next segment
-        //   hole_pt_it_prev = hole_pt_it_current;
-        //   hole_pt_it_current = hole_pt_it_next;
-        //   ++hole_pt_it_next;
-        //   if (hole_pt_it_next == polygon.end_holes()) {
-        //     hole_pt_it_next = polygon.begin_holes();
-        //   }
-        // } while (hole_pt_it_prev != hole_it->begin());
+          // next segment
+          hole_pt_it_prev = hole_pt_it_current;
+          hole_pt_it_current = hole_pt_it_next;
+          ++hole_pt_it_next;
+          if (hole_pt_it_next == hole_it->end()) {
+            hole_pt_it_next = hole_it->begin();
+          }
+        } while (hole_pt_it_prev != hole_it->begin());
 
-        // hole_area = std::abs(hole_area) / 2;
-        // polygon_area -= hole_area;
+        hole_area = std::abs(hole_area) / 2;
+        polygon_area -= hole_area;
 
-        // TODO: min enclosed area
+        // min enclosed area
+        if (hole_area < rule_min_enclosed_area) {
+          ieda_solver::GeometryPolygon hole_polygon;
+          hole_polygon.set(hole_it->begin(), hole_it->end());
+          ieda_solver::GeometryRect violation_rect;
+          ieda_solver::envelope(violation_rect, hole_polygon);
+          enclosed_area_violations.push_back(violation_rect);
+        }
       }
 
       // TODO: check rules
@@ -808,6 +819,11 @@ void DrcEngineManager::filterData()
       if (!step_violation_rects.empty()) {
         int a = 0;
       }
+    }
+
+    // min enclosed area
+    if (!enclosed_area_violations.empty()) {
+      int a = 0;
     }
 
     // TODO: other rule check
