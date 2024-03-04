@@ -651,13 +651,13 @@ void DrcEngineManager::filterData()
           } else if (edge_length < rule_step_length) {
             int rule_max_edges = rule_step->get_max_edges();
             for (int i = 1; i < polygon_point_number; ++i) {
+              ++count_step_checked_edges;
               if (edge_length_history[get_index_shifted(point_current_index, i)] >= rule_step_length) {
                 break;
               }
-              ++count_step_checked_edges;
             }
-            if (count_step_checked_edges >= rule_max_edges) {
-              for (int i = 0; i < count_step_checked_edges + 1; ++i) {
+            if (count_step_checked_edges > rule_max_edges) {
+              for (int i = 0; i < count_step_checked_edges; ++i) {
                 int edge_point1_idx = get_index_shifted(point_current_index, i - 1);
                 int edge_point2_idx = get_index_shifted(point_current_index, i);
                 ieda_solver::GeometryRect violation_rect(polygon_outline[edge_point1_idx].x(), polygon_outline[edge_point1_idx].y(),
@@ -669,6 +669,30 @@ void DrcEngineManager::filterData()
         }
 
         // TODO: lef58 step
+        if (edge_length < max_rule_lef58_step_length) {
+          for (int i = 0; i < rule_lef58_step_list.size(); ++i) {
+            if ((corner_pattern_4 & rule_lef58_step_mask_list[i]) == rule_lef58_step_pattern_list[i]) {
+              // todo: what MAXEDGES mean here?
+              auto rule_lef58_step = rule_lef58_step_list[i];
+              int rule_edge_length = rule_lef58_step->get_min_step_length();
+              if (rule_lef58_step->get_min_adjacent_length().has_value()) {
+                auto rule_adjacent_length = rule_lef58_step->get_min_adjacent_length().value();
+                int rule_min_adjacent_length = rule_adjacent_length.get_min_adj_length();
+                if ((edge_length_history[point_current_index] < rule_edge_length
+                     && edge_length_history[point_index_prev] < rule_min_adjacent_length)
+                    || (edge_length_history[point_current_index] < rule_edge_length
+                        && edge_length_history[point_index_prev] < rule_min_adjacent_length)) {
+                  int point_prev_prev_idx = get_index_shifted(point_current_index, -2);
+                  ieda_solver::GeometryRect violation_rect(polygon_outline[point_prev_prev_idx].x(),
+                                                           polygon_outline[point_prev_prev_idx].y(), point_current.x(), point_current.y());
+                  step_violation_rects.push_back(violation_rect);
+                }
+              } else {
+                // todo
+              }
+            }
+          }
+        }
       }
 
       // polygon holes
