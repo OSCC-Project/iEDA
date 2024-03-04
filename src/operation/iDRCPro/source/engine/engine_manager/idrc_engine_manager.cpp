@@ -349,17 +349,14 @@ void DrcEngineManager::filterData()
     }
 
     // edge
-    auto rule_corner_fill = DrcTechRuleInst->getCornerFillSpacing(layer);
-    std::map<unsigned, std::vector<int>> rule_corner_fill_pattern{{0b1011, {-2, -2, -1, 0}}, {0b1101, {-1, 0, -1, -2}}};
-    unsigned rule_corner_fill_mask = 0b1111;
-    ieda_solver::GeometryPolygonSet corner_fill_check_regions;
 
+    // eol
     auto rule_eol_list = DrcTechRuleInst->getSpacingEolList(layer);
     unsigned rule_eol_pattern = 0b11;
     unsigned rule_eol_mask = 0b11;
-    int max_eol_width = 0;
+    int max_rule_eol_width = 0;
     for (auto& rule_eol : rule_eol_list) {
-      max_eol_width = std::max(max_eol_width, rule_eol->get_eol_width());
+      max_rule_eol_width = std::max(max_rule_eol_width, rule_eol->get_eol_width());
     }
     using EolRuleToRegionMap = std::map<std::shared_ptr<idb::routinglayer::Lef58SpacingEol>, ieda_solver::GeometryPolygonSet>;
     EolRuleToRegionMap eol_check_regions;
@@ -367,12 +364,36 @@ void DrcEngineManager::filterData()
     EolRuleToRegionMap eol_same_metal_regions;
     EolRuleToRegionMap eol_end_to_end_regions;
 
+    // corner fill
+    auto rule_corner_fill = DrcTechRuleInst->getCornerFillSpacing(layer);
+    std::map<unsigned, std::vector<int>> rule_corner_fill_pattern{{0b1011, {-2, -2, -1, 0}}, {0b1101, {-1, 0, -1, -2}}};
+    unsigned rule_corner_fill_mask = 0b1111;
+    ieda_solver::GeometryPolygonSet corner_fill_check_regions;
+
+    // notch
     auto rule_notch = DrcTechRuleInst->getSpacingNotchlength(layer);
     unsigned rule_notch_pattern = 0b00;
     unsigned rule_notch_mask = 0b11;
     int rule_notch_spacing = rule_notch ? rule_notch->get_min_spacing() : 0;
     ieda_solver::GeometryPolygonSet notch_width_detect_regions;
     ieda_solver::GeometryPolygonSet notch_spacing_check_regions;
+
+    // step
+    auto rule_step = DrcTechRuleInst->getMinStep(layer);
+    auto rule_lef58_step_list = DrcTechRuleInst->getLef58MinStep(layer);
+    int rule_step_length = rule_step ? rule_step->get_min_step_length() : 0;
+    int max_rule_lef58_step_length = 0;
+    std::vector<unsigned> rule_lef58_step_pattern_list(rule_lef58_step_list.size(), 0);
+    std::vector<unsigned> rule_lef58_step_mask_list(rule_lef58_step_list.size(), 0);
+    for (int i = 0; i < rule_lef58_step_list.size(); ++i) {
+      auto& rule_lef58_step = rule_lef58_step_list[i];
+      max_rule_lef58_step_length = std::max(max_rule_lef58_step_length, rule_lef58_step->get_min_step_length());
+      if (rule_lef58_step->get_min_adjacent_length().has_value() && rule_lef58_step->get_min_adjacent_length().value().is_convex_corner()) {
+        rule_lef58_step_mask_list[i] = 0b111;
+        rule_lef58_step_pattern_list[i] = 0b010;
+      }
+    }
+    std::vector<ieda_solver::GeometryRect> step_violation_rects;
 
     auto get_edge_orientation = [](const ieda_solver::GeometryPoint& p1, const ieda_solver::GeometryPoint& p2) {
       return p1.x() == p2.x() ? ieda_solver::VERTICAL : ieda_solver::HORIZONTAL;
@@ -450,19 +471,21 @@ void DrcEngineManager::filterData()
       };
 
       auto corner_pattern_4 = create_corner_pattern(4, polygon_point_number - 1);
-      for (int i = 0; i < polygon_point_number; ++i) {
-        auto point_index_prev = get_index_shifted(i, -1);
-        auto point_current = polygon_outline[i];
+      int count_step_checked_edges = 0;
+
+      for (int point_current_index = 0; point_current_index < polygon_point_number; ++point_current_index) {
+        auto point_index_prev = get_index_shifted(point_current_index, -1);
+        auto point_current = polygon_outline[point_current_index];
         auto point_prev = polygon_outline[point_index_prev];
-        auto is_current_convex = corner_convex_history[i];
-        auto edge_length = edge_length_history[i];
-        auto edge_orientation = edge_orientation_history[i];
-        auto edge_direction = edge_direction_history[i];
+        auto is_current_convex = corner_convex_history[point_current_index];
+        auto edge_length = edge_length_history[point_current_index];
+        auto edge_orientation = edge_orientation_history[point_current_index];
+        auto edge_direction = edge_direction_history[point_current_index];
 
         corner_pattern_4 = (corner_pattern_4 << 1) | is_current_convex;
 
         // eol
-        if ((corner_pattern_4 & rule_eol_mask) == rule_eol_pattern && edge_length < max_eol_width) {
+        if ((corner_pattern_4 & rule_eol_mask) == rule_eol_pattern && edge_length < max_rule_eol_width) {
           for (auto& rule_eol : rule_eol_list) {
             if (edge_length >= rule_eol->get_eol_width()) {
               continue;
@@ -481,7 +504,7 @@ void DrcEngineManager::filterData()
             if (rule_eol->get_adj_edge_length().has_value()) {
               auto rule_adj_edge_length = rule_eol->get_adj_edge_length().value();
               int min_edge_length = rule_adj_edge_length.get_min_length().value_or(0);
-              if (edge_length_history[get_index_shifted(i, 1)] < min_edge_length
+              if (edge_length_history[get_index_shifted(point_current_index, 1)] < min_edge_length
                   || edge_length_history[point_index_prev] < min_edge_length) {
                 continue;
               }
@@ -562,10 +585,10 @@ void DrcEngineManager::filterData()
               int rule_corner_fill_length2 = rule_corner_fill->get_edge_length2();
               int rule_corner_fill_eol_width = rule_corner_fill->get_eol_width();
 
-              int corner_index = get_index_shifted(i, offset[0]);
-              int edge1_index = get_index_shifted(i, offset[1]);
-              int edge2_index = get_index_shifted(i, offset[2]);
-              int eol_index = get_index_shifted(i, offset[3]);
+              int corner_index = get_index_shifted(point_current_index, offset[0]);
+              int edge1_index = get_index_shifted(point_current_index, offset[1]);
+              int edge2_index = get_index_shifted(point_current_index, offset[2]);
+              int eol_index = get_index_shifted(point_current_index, offset[3]);
 
               if (edge_length_history[edge1_index] < rule_corner_fill_length1 && edge_length_history[edge2_index] < rule_corner_fill_length2
                   && edge_length_history[eol_index] < rule_corner_fill_eol_width) {
@@ -587,15 +610,16 @@ void DrcEngineManager::filterData()
         // notch
         if (rule_notch) {
           if ((corner_pattern_4 & rule_notch_mask) == rule_notch_pattern && edge_length <= rule_notch_spacing) {
-            int notch_side1_idx = get_index_shifted(i, 1);
-            int notch_side2_idx = get_index_shifted(i, -1);
+            int notch_side1_idx = get_index_shifted(point_current_index, 1);
+            int notch_side2_idx = get_index_shifted(point_current_index, -1);
             int rule_notch_length = rule_notch->get_min_notch_length();
             bool is_violation = false;
             int notch_length = 0;
             if (rule_notch->get_concave_ends_side_of_notch_width().has_value()) {
-              if ((!corner_convex_history[get_index_shifted(i, 1)] && edge_length_history[notch_side1_idx] < rule_notch_length
-                   && edge_length_history[notch_side2_idx] >= rule_notch_length)
-                  || (!corner_convex_history[get_index_shifted(i, -2)] && edge_length_history[notch_side2_idx] < rule_notch_length
+              if ((!corner_convex_history[get_index_shifted(point_current_index, 1)]
+                   && edge_length_history[notch_side1_idx] < rule_notch_length && edge_length_history[notch_side2_idx] >= rule_notch_length)
+                  || (!corner_convex_history[get_index_shifted(point_current_index, -2)]
+                      && edge_length_history[notch_side2_idx] < rule_notch_length
                       && edge_length_history[notch_side1_idx] >= rule_notch_length)) {
                 is_violation = true;
                 // TODO: both side should be smaller than notch width
@@ -620,7 +644,31 @@ void DrcEngineManager::filterData()
           }
         }
 
-        // TODO: step
+        // step
+        if (rule_step) {
+          if (count_step_checked_edges) {
+            --count_step_checked_edges;
+          } else if (edge_length < rule_step_length) {
+            int rule_max_edges = rule_step->get_max_edges();
+            for (int i = 1; i < polygon_point_number; ++i) {
+              if (edge_length_history[get_index_shifted(point_current_index, i)] >= rule_step_length) {
+                break;
+              }
+              ++count_step_checked_edges;
+            }
+            if (count_step_checked_edges >= rule_max_edges) {
+              for (int i = 0; i < count_step_checked_edges + 1; ++i) {
+                int edge_point1_idx = get_index_shifted(point_current_index, i - 1);
+                int edge_point2_idx = get_index_shifted(point_current_index, i);
+                ieda_solver::GeometryRect violation_rect(polygon_outline[edge_point1_idx].x(), polygon_outline[edge_point1_idx].y(),
+                                                         polygon_outline[edge_point2_idx].x(), polygon_outline[edge_point2_idx].y());
+                step_violation_rects.push_back(violation_rect);
+              }
+            }
+          }
+        }
+
+        // TODO: lef58 step
       }
 
       // polygon holes
@@ -727,6 +775,13 @@ void DrcEngineManager::filterData()
         int a = 0;
       }
       if (!notch_detect_regions.empty()) {
+        int a = 0;
+      }
+    }
+
+    // step
+    if (rule_step) {
+      if (!step_violation_rects.empty()) {
         int a = 0;
       }
     }

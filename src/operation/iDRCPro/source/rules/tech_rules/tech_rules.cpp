@@ -39,26 +39,25 @@ void TechRules::destroyInst()
 
 int TechRules::getMinArea(std::string layer_name)
 {
-  auto layer = findLayer(layer_name);
-  idb::IdbLayerRouting* idb_routing_layer = dynamic_cast<idb::IdbLayerRouting*>(layer);
+  auto idb_routing_layer = findRoutingLayer(layer_name);
   if (!idb_routing_layer)
     return -1;
 
   return idb_routing_layer->get_area();
 }
 
-std::vector<std::shared_ptr<idb::routinglayer::Lef58Area>>& TechRules::getLef58AreaList(std::string layer_name)
+std::vector<std::shared_ptr<idb::routinglayer::Lef58Area>> TechRules::getLef58AreaList(std::string layer_name)
 {
-  auto layer = findLayer(layer_name);
-  idb::IdbLayerRouting* idb_routing_layer = dynamic_cast<idb::IdbLayerRouting*>(layer);
+  auto idb_routing_layer = findRoutingLayer(layer_name);
+  if (!idb_routing_layer)
+    return {};
 
   return idb_routing_layer->get_lef58_area();
 }
 
 int TechRules::getMinEnclosedArea(std::string layer_name)
 {
-  auto layer = findLayer(layer_name);
-  idb::IdbLayerRouting* idb_routing_layer = dynamic_cast<idb::IdbLayerRouting*>(layer);
+  auto idb_routing_layer = findRoutingLayer(layer_name);
   if (!idb_routing_layer)
     return -1;
 
@@ -69,8 +68,7 @@ int TechRules::getMinEnclosedArea(std::string layer_name)
 
 int TechRules::getMinSpacing(std::string layer_name, int width)
 {
-  auto layer = findLayer(layer_name);
-  idb::IdbLayerRouting* idb_routing_layer = dynamic_cast<idb::IdbLayerRouting*>(layer);
+  auto idb_routing_layer = findRoutingLayer(layer_name);
   if (!idb_routing_layer)
     return -1;
 
@@ -79,8 +77,7 @@ int TechRules::getMinSpacing(std::string layer_name, int width)
 
 std::shared_ptr<idb::routinglayer::Lef58SpacingTableJogToJog> TechRules::getJogToJog(std::string layer_name)
 {
-  auto layer = findLayer(layer_name);
-  idb::IdbLayerRouting* idb_routing_layer = dynamic_cast<idb::IdbLayerRouting*>(layer);
+  auto idb_routing_layer = findRoutingLayer(layer_name);
   if (!idb_routing_layer)
     return nullptr;
 
@@ -89,8 +86,7 @@ std::shared_ptr<idb::routinglayer::Lef58SpacingTableJogToJog> TechRules::getJogT
 
 std::shared_ptr<idb::IdbLayerSpacingTable> TechRules::getSpacingTable(std::string layer_name)
 {
-  auto layer = findLayer(layer_name);
-  idb::IdbLayerRouting* idb_routing_layer = dynamic_cast<idb::IdbLayerRouting*>(layer);
+  auto idb_routing_layer = findRoutingLayer(layer_name);
   if (!idb_routing_layer)
     return nullptr;
 
@@ -99,8 +95,7 @@ std::shared_ptr<idb::IdbLayerSpacingTable> TechRules::getSpacingTable(std::strin
 
 std::vector<std::shared_ptr<idb::routinglayer::Lef58SpacingEol>> TechRules::getSpacingEolList(std::string layer_name)
 {
-  auto layer = findLayer(layer_name);
-  idb::IdbLayerRouting* idb_routing_layer = dynamic_cast<idb::IdbLayerRouting*>(layer);
+  auto idb_routing_layer = findRoutingLayer(layer_name);
   if (!idb_routing_layer)
     return {};
 
@@ -109,8 +104,7 @@ std::vector<std::shared_ptr<idb::routinglayer::Lef58SpacingEol>> TechRules::getS
 
 std::shared_ptr<routinglayer::Lef58CornerFillSpacing> TechRules::getCornerFillSpacing(std::string layer_name)
 {
-  auto layer = findLayer(layer_name);
-  idb::IdbLayerRouting* idb_routing_layer = dynamic_cast<idb::IdbLayerRouting*>(layer);
+  auto idb_routing_layer = findRoutingLayer(layer_name);
   if (!idb_routing_layer)
     return nullptr;
 
@@ -119,12 +113,29 @@ std::shared_ptr<routinglayer::Lef58CornerFillSpacing> TechRules::getCornerFillSp
 
 std::shared_ptr<routinglayer::Lef58SpacingNotchlength> TechRules::getSpacingNotchlength(std::string layer_name)
 {
-  auto layer = findLayer(layer_name);
-  idb::IdbLayerRouting* idb_routing_layer = dynamic_cast<idb::IdbLayerRouting*>(layer);
+  auto idb_routing_layer = findRoutingLayer(layer_name);
   if (!idb_routing_layer)
     return nullptr;
 
   return idb_routing_layer->get_lef58_spacing_notchlength();
+}
+
+std::shared_ptr<IdbMinStep> TechRules::getMinStep(std::string layer_name)
+{
+  auto idb_routing_layer = findRoutingLayer(layer_name);
+  if (!idb_routing_layer)
+    return nullptr;
+
+  return idb_routing_layer->get_min_step();
+}
+
+std::vector<std::shared_ptr<routinglayer::Lef58MinStep>> TechRules::getLef58MinStep(std::string layer_name)
+{
+  auto idb_routing_layer = findRoutingLayer(layer_name);
+  if (!idb_routing_layer)
+    return {};
+
+  return idb_routing_layer->get_lef58_min_step();
 }
 
 }  // namespace idrc
