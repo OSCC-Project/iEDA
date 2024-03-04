@@ -58,8 +58,9 @@ void PinAccessor::access(std::vector<Net>& net_list)
   initAccessPointList(pa_model);
   buildAccessPointList(pa_model);
   updatePAModel(pa_model);
-  // reportSummary(pa_model);
-  // writePinCSV(pa_model);
+  updateSummary(pa_model);
+  printSummary(pa_model);
+  writePinCSV(pa_model);
   LOG_INST.info(Loc::current(), "End access", monitor.getStatsInfo());
 
   // debugPlotPAModel(pa_model);
@@ -416,7 +417,7 @@ void PinAccessor::debugPlotPAModel(PAModel& pa_model)
   Die& die = DM_INST.getDatabase().get_die();
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
   GridMap<GCell>& gcell_map = DM_INST.getDatabase().get_gcell_map();
-  std::string pa_temp_directory_path = DM_INST.getConfig().pa_temp_directory_path;
+  std::string& pa_temp_directory_path = DM_INST.getConfig().pa_temp_directory_path;
 
   GPGDS gp_gds;
 
@@ -494,43 +495,78 @@ void PinAccessor::debugPlotPAModel(PAModel& pa_model)
 
 #if 1  // exhibit
 
-void PinAccessor::reportSummary(PAModel& pa_model)
+void PinAccessor::updateSummary(PAModel& pa_model)
 {
+  Die& die = DM_INST.getDatabase().get_die();
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
-  GridMap<GCell>& gcell_map = DM_INST.getDatabase().get_gcell_map();
-  std::map<int32_t, int32_t>& pa_routing_access_point_map = DM_INST.getSummary().pa_summary.routing_access_point_map;
-  std::map<AccessPointType, int32_t>& pa_type_access_point_map = DM_INST.getSummary().pa_summary.type_access_point_map;
-  int32_t& pa_total_access_point_num = DM_INST.getSummary().pa_summary.total_access_point_num;
+  std::map<int32_t, int32_t>& routing_access_point_num_map = DM_INST.getSummary().pa_summary.routing_access_point_num_map;
+  std::map<AccessPointType, int32_t>& type_access_point_num_map = DM_INST.getSummary().pa_summary.type_access_point_num_map;
+  int32_t& total_access_point_num = DM_INST.getSummary().pa_summary.total_access_point_num;
 
   for (RoutingLayer& routing_layer : routing_layer_list) {
-    pa_routing_access_point_map[routing_layer.get_layer_idx()] = 0;
+    routing_access_point_num_map[routing_layer.get_layer_idx()] = 0;
   }
-  pa_type_access_point_map = {{AccessPointType::kNone, 0},
-                              {AccessPointType::kPrefTrackGrid, 0},
-                              {AccessPointType::kCurrTrackGrid, 0},
-                              {AccessPointType::kTrackCenter, 0},
-                              {AccessPointType::kShapeCenter, 0}};
-  pa_total_access_point_num = 0;
+  type_access_point_num_map = {{AccessPointType::kNone, 0},
+                               {AccessPointType::kPrefTrackGrid, 0},
+                               {AccessPointType::kCurrTrackGrid, 0},
+                               {AccessPointType::kTrackCenter, 0},
+                               {AccessPointType::kShapeCenter, 0}};
+  total_access_point_num = 0;
 
-  for (int32_t x = 0; x < gcell_map.get_x_size(); x++) {
-    for (int32_t y = 0; y < gcell_map.get_y_size(); y++) {
-      for (auto& [net_idx, access_point_list] : gcell_map[x][y].get_net_access_point_map()) {
-        for (AccessPoint* access_point : access_point_list) {
-          pa_routing_access_point_map[access_point->get_layer_idx()]++;
-          pa_type_access_point_map[access_point->get_type()]++;
-          pa_total_access_point_num++;
-        }
-      }
+  for (auto& [net_idx, access_point_list] : DM_INST.getNetAccessPointMap(die)) {
+    for (AccessPoint* access_point : access_point_list) {
+      routing_access_point_num_map[access_point->get_layer_idx()]++;
+      type_access_point_num_map[access_point->get_type()]++;
+      total_access_point_num++;
     }
   }
+}
+
+void PinAccessor::printSummary(PAModel& pa_model)
+{
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+  std::map<int32_t, int32_t>& routing_access_point_num_map = DM_INST.getSummary().pa_summary.routing_access_point_num_map;
+  std::map<AccessPointType, int32_t>& type_access_point_num_map = DM_INST.getSummary().pa_summary.type_access_point_num_map;
+  int32_t& total_access_point_num = DM_INST.getSummary().pa_summary.total_access_point_num;
+
+  fort::char_table routing_access_point_num_map_table;
+  {
+    routing_access_point_num_map_table << fort::header << "routing_layer"
+                                       << "access_point_num"
+                                       << "proportion" << fort::endr;
+    for (RoutingLayer& routing_layer : routing_layer_list) {
+      routing_access_point_num_map_table << routing_layer.get_layer_name() << routing_access_point_num_map[routing_layer.get_layer_idx()]
+                                         << RTUtil::getPercentage(routing_access_point_num_map[routing_layer.get_layer_idx()],
+                                                                  total_access_point_num)
+                                         << fort::endr;
+    }
+    routing_access_point_num_map_table << fort::header << "Total" << total_access_point_num
+                                       << RTUtil::getPercentage(total_access_point_num, total_access_point_num) << fort::endr;
+  }
+  fort::char_table type_access_point_num_map_table;
+  {
+    type_access_point_num_map_table << fort::header << "type"
+                                    << "access_point_num"
+                                    << "proportion" << fort::endr;
+    for (auto& [type, access_point_num] : type_access_point_num_map) {
+      type_access_point_num_map_table << GetAccessPointTypeName()(type) << access_point_num
+                                      << RTUtil::getPercentage(access_point_num, total_access_point_num) << fort::endr;
+    }
+    type_access_point_num_map_table << fort::header << "Total" << total_access_point_num
+                                    << RTUtil::getPercentage(total_access_point_num, total_access_point_num) << fort::endr;
+  }
+  RTUtil::printTableList({routing_access_point_num_map_table, type_access_point_num_map_table});
 }
 
 void PinAccessor::writePinCSV(PAModel& pa_model)
 {
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
   GridMap<GCell>& gcell_map = DM_INST.getDatabase().get_gcell_map();
-  std::string pa_temp_directory_path = DM_INST.getConfig().pa_temp_directory_path;
-
+  std::string& pa_temp_directory_path = DM_INST.getConfig().pa_temp_directory_path;
+  int32_t output_csv = DM_INST.getConfig().output_csv;
+  if (!output_csv) {
+    return;
+  }
   std::vector<GridMap<int32_t>> layer_pin_map;
   layer_pin_map.resize(routing_layer_list.size());
   for (GridMap<int32_t>& pin_map : layer_pin_map) {

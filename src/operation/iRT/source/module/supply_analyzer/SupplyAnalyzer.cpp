@@ -58,8 +58,9 @@ void SupplyAnalyzer::analyze(std::vector<Net>& net_list)
   buildSupplySchedule(sa_model);
   analyzeSupply(sa_model);
   updateSAModel(sa_model);
-  // reportSummary(sa_model);
-  // writeSupplyCSV(sa_model);
+  updateSummary(sa_model);
+  printSummary(sa_model);
+  writeSupplyCSV(sa_model);
   LOG_INST.info(Loc::current(), "End analyze", monitor.getStatsInfo());
 
   // debugPlotSAModel(sa_model);
@@ -245,7 +246,7 @@ void SupplyAnalyzer::debugPlotSAModel(SAModel& sa_model)
   Die& die = DM_INST.getDatabase().get_die();
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
   GridMap<GCell>& gcell_map = DM_INST.getDatabase().get_gcell_map();
-  std::string sa_temp_directory_path = DM_INST.getConfig().sa_temp_directory_path;
+  std::string& sa_temp_directory_path = DM_INST.getConfig().sa_temp_directory_path;
 
   GPGDS gp_gds;
 
@@ -356,36 +357,59 @@ void SupplyAnalyzer::debugPlotSAModel(SAModel& sa_model)
 
 #if 1  // exhibit
 
-void SupplyAnalyzer::reportSummary(SAModel& sa_model)
+void SupplyAnalyzer::updateSummary(SAModel& sa_model)
 {
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
   GridMap<GCell>& gcell_map = DM_INST.getDatabase().get_gcell_map();
-  std::map<int32_t, int32_t>& sa_routing_supply_map = DM_INST.getSummary().sa_summary.routing_supply_map;
-  int32_t& sa_total_supply_num = DM_INST.getSummary().sa_summary.total_supply_num;
+  std::map<int32_t, int32_t>& routing_supply_map = DM_INST.getSummary().sa_summary.routing_supply_map;
+  int32_t& total_supply = DM_INST.getSummary().sa_summary.total_supply;
 
   for (RoutingLayer& routing_layer : routing_layer_list) {
-    sa_routing_supply_map[routing_layer.get_layer_idx()] = 0;
+    routing_supply_map[routing_layer.get_layer_idx()] = 0;
   }
-  sa_total_supply_num = 0;
+  total_supply = 0;
 
   for (int32_t x = 0; x < gcell_map.get_x_size(); x++) {
     for (int32_t y = 0; y < gcell_map.get_y_size(); y++) {
       for (auto& [routing_layer_idx, orien_supply_map] : gcell_map[x][y].get_routing_orien_supply_map()) {
         for (auto& [orien, supply] : orien_supply_map) {
-          sa_routing_supply_map[routing_layer_idx] += supply;
-          sa_total_supply_num += supply;
+          routing_supply_map[routing_layer_idx] += supply;
+          total_supply += supply;
         }
       }
     }
   }
 }
 
+void SupplyAnalyzer::printSummary(SAModel& sa_model)
+{
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+  std::map<int32_t, int32_t>& routing_supply_map = DM_INST.getSummary().sa_summary.routing_supply_map;
+  int32_t& total_supply = DM_INST.getSummary().sa_summary.total_supply;
+
+  fort::char_table routing_supply_map_table;
+  {
+    routing_supply_map_table << fort::header << "routing_layer"
+                             << "supply"
+                             << "proportion" << fort::endr;
+    for (RoutingLayer& routing_layer : routing_layer_list) {
+      routing_supply_map_table << routing_layer.get_layer_name() << routing_supply_map[routing_layer.get_layer_idx()]
+                               << RTUtil::getPercentage(routing_supply_map[routing_layer.get_layer_idx()], total_supply) << fort::endr;
+    }
+    routing_supply_map_table << fort::header << "Total" << total_supply << RTUtil::getPercentage(total_supply, total_supply) << fort::endr;
+  }
+  RTUtil::printTableList({routing_supply_map_table});
+}
+
 void SupplyAnalyzer::writeSupplyCSV(SAModel& sa_model)
 {
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
   GridMap<GCell>& gcell_map = DM_INST.getDatabase().get_gcell_map();
-  std::string sa_temp_directory_path = DM_INST.getConfig().sa_temp_directory_path;
-
+  std::string& sa_temp_directory_path = DM_INST.getConfig().sa_temp_directory_path;
+  int32_t output_csv = DM_INST.getConfig().output_csv;
+  if (!output_csv) {
+    return;
+  }
   for (RoutingLayer& routing_layer : routing_layer_list) {
     std::ofstream* supply_csv_file
         = RTUtil::getOutputFileStream(RTUtil::getString(sa_temp_directory_path, "supply_map_", routing_layer.get_layer_name(), ".csv"));

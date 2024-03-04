@@ -59,7 +59,8 @@ class SupplyAnalyzer
 #endif
 
 #if 1  // exhibit
-  void reportSummary(SAModel& sa_model);
+  void updateSummary(SAModel& sa_model);
+  void printSummary(SAModel& sa_model);
   void writeSupplyCSV(SAModel& sa_model);
 #endif
 };
