@@ -54,10 +54,13 @@ class SupplyAnalyzer
   bool isAccess(LayerRect& wire, SANode& first_node, SANode& second_node);
   void updateSAModel(SAModel& sa_model);
 
+#if 1  // debug
+  void debugPlotSAModel(SAModel& sa_model);
+#endif
+
 #if 1  // exhibit
-  void plotSAModel(SAModel& sa_model);
-  void reportSAModel(SAModel& sa_model);
-  void reportSummary(SAModel& sa_model);
+  void updateSummary(SAModel& sa_model);
+  void printSummary(SAModel& sa_model);
   void writeSupplyCSV(SAModel& sa_model);
 #endif
 };

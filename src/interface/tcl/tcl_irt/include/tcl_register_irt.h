@@ -22,13 +22,13 @@ using namespace ieda;
 
 namespace tcl {
 
-int registerCmdRT()
-{
-  registerTclCmd(TclClearDef, "clear_def");
-  registerTclCmd(TclDestroyRT, "destroy_rt");
-  registerTclCmd(TclInitRT, "init_rt");
-  registerTclCmd(TclRunRT, "run_rt");
-  return EXIT_SUCCESS;
-}
+  int registerCmdRT()
+  {
+    registerTclCmd(TclClearDef, "clear_def");
+    registerTclCmd(TclDestroyRT, "destroy_rt");
+    registerTclCmd(TclInitRT, "init_rt");
+    registerTclCmd(TclRunRT, "run_rt");
+    return EXIT_SUCCESS;
+  }
 
 }  // namespace tcl

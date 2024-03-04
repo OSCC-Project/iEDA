@@ -52,8 +52,6 @@ class NesterovPlace
   NesterovPlace& operator=(NesterovPlace&&) = delete;
 
   void runNesterovPlace();
-  void runNesterovRoutablityPlace();
-
   void printNesterovDatabase();
 
  private:
@@ -91,8 +89,6 @@ class NesterovPlace
 
   void initNesterovPlace(std::vector<NesInstance*>& inst_list);
   void NesterovSolve(std::vector<NesInstance*>& inst_list);
-  void NesterovWeightedRDP(std::vector<NesInstance*>& inst_list);
-
 
   std::vector<NesInstance*> obtianPlacableNesInstanceList();
 
@@ -103,6 +99,16 @@ class NesterovPlace
   void initGridFixedArea();
 
   void initTopologyManager();
+  void initNodes();
+  void initNetWorks();
+  void initGroups();
+  void initArcs();
+  void generatePortOutNetArc(Node* node);
+  void generateNetArc(Node* node);
+  void generateGroupArc(Node* node);
+  void initHPWLEvaluator();
+  void initWAWLGradientEvaluator();
+  void initTimingAnnotation();
   void updateTopologyManager();
 
   void initBaseWirelengthCoef();
@@ -122,7 +128,8 @@ class NesterovPlace
 
   void writeBackPlacerDB();
 
-  void updateNetWeight();
+  void updateMaxLengthNetWeight();
+  void updateTimingNetWeight();
 
   // DEBUG.
   void printAcrossLongNet(std::ofstream& file_stream, int32_t max_width, int32_t max_height);

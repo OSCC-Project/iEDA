@@ -58,10 +58,12 @@ void SupplyAnalyzer::analyze(std::vector<Net>& net_list)
   buildSupplySchedule(sa_model);
   analyzeSupply(sa_model);
   updateSAModel(sa_model);
+  updateSummary(sa_model);
+  printSummary(sa_model);
+  writeSupplyCSV(sa_model);
   LOG_INST.info(Loc::current(), "End analyze", monitor.getStatsInfo());
 
-  // plotSAModel(sa_model);
-  // reportSAModel(sa_model);
+  // debugPlotSAModel(sa_model);
 }
 
 // private
@@ -189,11 +191,11 @@ std::vector<LayerRect> SupplyAnalyzer::getCrossingWireList(int32_t layer_idx, SA
 
   std::vector<LayerRect> wire_list;
   if (routing_layer.isPreferH()) {
-    for (int32_t y : RTUtil::getOpenScaleList(real_lb_y, real_rt_y, routing_layer.getYTrackGridList())) {
+    for (int32_t y : RTUtil::getScaleList(real_lb_y, real_rt_y, routing_layer.getYTrackGridList())) {
       wire_list.emplace_back(real_lb_x, y - half_width, real_rt_x, y + half_width, layer_idx);
     }
   } else {
-    for (int32_t x : RTUtil::getOpenScaleList(real_lb_x, real_rt_x, routing_layer.getXTrackGridList())) {
+    for (int32_t x : RTUtil::getScaleList(real_lb_x, real_rt_x, routing_layer.getXTrackGridList())) {
       wire_list.emplace_back(x - half_width, real_lb_y, x + half_width, real_rt_y, layer_idx);
     }
   }
@@ -236,23 +238,23 @@ void SupplyAnalyzer::updateSAModel(SAModel& sa_model)
   }
 }
 
-#if 1  // exhibit
+#if 1  // debug
 
-void SupplyAnalyzer::plotSAModel(SAModel& sa_model)
+void SupplyAnalyzer::debugPlotSAModel(SAModel& sa_model)
 {
   ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
   Die& die = DM_INST.getDatabase().get_die();
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
   GridMap<GCell>& gcell_map = DM_INST.getDatabase().get_gcell_map();
-  std::string sa_temp_directory_path = DM_INST.getConfig().sa_temp_directory_path;
+  std::string& sa_temp_directory_path = DM_INST.getConfig().sa_temp_directory_path;
 
   GPGDS gp_gds;
 
   // track_axis_struct
   GPStruct track_axis_struct("track_axis_struct");
   for (RoutingLayer& routing_layer : routing_layer_list) {
-    std::vector<int32_t> x_list = RTUtil::getClosedScaleList(die.get_real_lb_x(), die.get_real_rt_x(), routing_layer.getXTrackGridList());
-    std::vector<int32_t> y_list = RTUtil::getClosedScaleList(die.get_real_lb_y(), die.get_real_rt_y(), routing_layer.getYTrackGridList());
+    std::vector<int32_t> x_list = RTUtil::getScaleList(die.get_real_lb_x(), die.get_real_rt_x(), routing_layer.getXTrackGridList());
+    std::vector<int32_t> y_list = RTUtil::getScaleList(die.get_real_lb_y(), die.get_real_rt_y(), routing_layer.getYTrackGridList());
     for (int32_t x : x_list) {
       GPPath gp_path;
       gp_path.set_data_type(static_cast<int32_t>(GPDataType::kAxis));
@@ -298,8 +300,8 @@ void SupplyAnalyzer::plotSAModel(SAModel& sa_model)
 
   // gcell_axis
   GPStruct gcell_axis_struct("gcell_axis");
-  std::vector<int32_t> gcell_x_list = RTUtil::getClosedScaleList(die.get_real_lb_x(), die.get_real_rt_x(), gcell_axis.get_x_grid_list());
-  std::vector<int32_t> gcell_y_list = RTUtil::getClosedScaleList(die.get_real_lb_y(), die.get_real_rt_y(), gcell_axis.get_y_grid_list());
+  std::vector<int32_t> gcell_x_list = RTUtil::getScaleList(die.get_real_lb_x(), die.get_real_rt_x(), gcell_axis.get_x_grid_list());
+  std::vector<int32_t> gcell_y_list = RTUtil::getScaleList(die.get_real_lb_y(), die.get_real_rt_y(), gcell_axis.get_y_grid_list());
   for (int32_t x : gcell_x_list) {
     GPPath gp_path;
     gp_path.set_layer_idx(0);
@@ -351,45 +353,63 @@ void SupplyAnalyzer::plotSAModel(SAModel& sa_model)
   GP_INST.plot(gp_gds, gds_file_path);
 }
 
-void SupplyAnalyzer::reportSAModel(SAModel& sa_model)
-{
-  Monitor monitor;
-  LOG_INST.info(Loc::current(), "Begin reporting...");
-  reportSummary(sa_model);
-  writeSupplyCSV(sa_model);
-  LOG_INST.info(Loc::current(), "End report", monitor.getStatsInfo());
-}
+#endif
 
-void SupplyAnalyzer::reportSummary(SAModel& sa_model)
+#if 1  // exhibit
+
+void SupplyAnalyzer::updateSummary(SAModel& sa_model)
 {
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
   GridMap<GCell>& gcell_map = DM_INST.getDatabase().get_gcell_map();
-  std::map<int32_t, int32_t>& sa_routing_supply_map = DM_INST.getSummary().sa_summary.routing_supply_map;
-  int32_t& sa_total_supply_num = DM_INST.getSummary().sa_summary.total_supply_num;
+  std::map<int32_t, int32_t>& routing_supply_map = DM_INST.getSummary().sa_summary.routing_supply_map;
+  int32_t& total_supply = DM_INST.getSummary().sa_summary.total_supply;
 
   for (RoutingLayer& routing_layer : routing_layer_list) {
-    sa_routing_supply_map[routing_layer.get_layer_idx()] = 0;
+    routing_supply_map[routing_layer.get_layer_idx()] = 0;
   }
-  sa_total_supply_num = 0;
+  total_supply = 0;
 
   for (int32_t x = 0; x < gcell_map.get_x_size(); x++) {
     for (int32_t y = 0; y < gcell_map.get_y_size(); y++) {
       for (auto& [routing_layer_idx, orien_supply_map] : gcell_map[x][y].get_routing_orien_supply_map()) {
         for (auto& [orien, supply] : orien_supply_map) {
-          sa_routing_supply_map[routing_layer_idx] += supply;
-          sa_total_supply_num += supply;
+          routing_supply_map[routing_layer_idx] += supply;
+          total_supply += supply;
         }
       }
     }
   }
 }
 
+void SupplyAnalyzer::printSummary(SAModel& sa_model)
+{
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+  std::map<int32_t, int32_t>& routing_supply_map = DM_INST.getSummary().sa_summary.routing_supply_map;
+  int32_t& total_supply = DM_INST.getSummary().sa_summary.total_supply;
+
+  fort::char_table routing_supply_map_table;
+  {
+    routing_supply_map_table << fort::header << "routing_layer"
+                             << "supply"
+                             << "proportion" << fort::endr;
+    for (RoutingLayer& routing_layer : routing_layer_list) {
+      routing_supply_map_table << routing_layer.get_layer_name() << routing_supply_map[routing_layer.get_layer_idx()]
+                               << RTUtil::getPercentage(routing_supply_map[routing_layer.get_layer_idx()], total_supply) << fort::endr;
+    }
+    routing_supply_map_table << fort::header << "Total" << total_supply << RTUtil::getPercentage(total_supply, total_supply) << fort::endr;
+  }
+  RTUtil::printTableList({routing_supply_map_table});
+}
+
 void SupplyAnalyzer::writeSupplyCSV(SAModel& sa_model)
 {
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
   GridMap<GCell>& gcell_map = DM_INST.getDatabase().get_gcell_map();
-  std::string sa_temp_directory_path = DM_INST.getConfig().sa_temp_directory_path;
-
+  std::string& sa_temp_directory_path = DM_INST.getConfig().sa_temp_directory_path;
+  int32_t output_csv = DM_INST.getConfig().output_csv;
+  if (!output_csv) {
+    return;
+  }
   for (RoutingLayer& routing_layer : routing_layer_list) {
     std::ofstream* supply_csv_file
         = RTUtil::getOutputFileStream(RTUtil::getString(sa_temp_directory_path, "supply_map_", routing_layer.get_layer_name(), ".csv"));

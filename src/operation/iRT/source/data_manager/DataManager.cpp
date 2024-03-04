@@ -392,6 +392,7 @@ void DataManager::wrapConfig(std::map<std::string, std::any>& config_map)
   _config.thread_number = RTUtil::getConfigValue<int32_t>(config_map, "-thread_number", 8);
   _config.bottom_routing_layer = RTUtil::getConfigValue<std::string>(config_map, "-bottom_routing_layer", "");
   _config.top_routing_layer = RTUtil::getConfigValue<std::string>(config_map, "-top_routing_layer", "");
+  _config.output_csv = RTUtil::getConfigValue<int32_t>(config_map, "-output_csv", 0);
   /////////////////////////////////////////////
 }
 
@@ -1571,6 +1572,8 @@ void DataManager::printConfig()
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.bottom_routing_layer);
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "top_routing_layer");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.top_routing_layer);
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "output_csv");
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.output_csv);
   // **********        RT         ********** //
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(0), "RT_CONFIG_BUILD");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "log_file_path");
@@ -1716,7 +1719,7 @@ void DataManager::printDatabase()
 
 void DataManager::writePYScript()
 {
-  std::string temp_directory_path = DM_INST.getConfig().temp_directory_path;
+  std::string& temp_directory_path = DM_INST.getConfig().temp_directory_path;
 
   std::ofstream* python_file = RTUtil::getOutputFileStream(RTUtil::getString(temp_directory_path, "plot.py"));
   RTUtil::pushStream(python_file, "import os", "\n");

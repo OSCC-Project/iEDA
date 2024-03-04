@@ -32,7 +32,7 @@ class Grid
 public:
   Grid() = default;
   Grid(int32_t r_id, int32_t g_id, int32_t w, int32_t h)
-      : row_idx(r_id), grid_idx(g_id), width(w), height(h), available_ratio(1.0), occupied_area(0), fixed_area(0), h_cong(0.0), v_cong(0.0)
+      : row_idx(r_id), grid_idx(g_id), width(w), height(h), available_ratio(1.0), occupied_area(0), fixed_area(0)
   {
     grid_area = static_cast<int64_t>(w) * static_cast<int64_t>(h);
   }
@@ -48,8 +48,6 @@ public:
     available_ratio = other.available_ratio;
     occupied_area = other.occupied_area;
     fixed_area = other.fixed_area;
-    h_cong = other.h_cong;
-    v_cong = other.v_cong;
   }
 
   ~Grid() = default;
@@ -67,8 +65,6 @@ public:
       available_ratio = other.available_ratio;
       occupied_area = other.occupied_area;
       fixed_area = other.fixed_area;
-      h_cong = other.h_cong;
-      v_cong = other.v_cong;
     }
     return (*this);
   }
@@ -149,7 +145,7 @@ class GridManager
   void plotRouteDem();
   void plotRouteUtil(int32_t iter_num);
   void fastGaussianBlur(std::vector<std::vector<float>>& image, float sigma, int kernelSize);
-  void blurRouteDemand();
+  void blurRouteDemand();  
 
   int64_t obtainOverlapArea(Grid* grid, const Rectangle<int32_t>& rect);
   Rectangle<int32_t> obtainOverlapRect(Grid* grid, const Rectangle<int32_t>& rect);

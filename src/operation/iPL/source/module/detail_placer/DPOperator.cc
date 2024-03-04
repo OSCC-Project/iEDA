@@ -387,7 +387,7 @@ void DPOperator::initTopoManager()
 
 void DPOperator::initGridManager()
 {
-  if(_config->get_enable_networkflow()){
+  if(_config->isEnableNetworkflow()){
     int beta = 9;
     const int32_t length = static_cast<int32_t> (beta * _database->get_layout()->get_row_height());
     int32_t bin_size_x = length;

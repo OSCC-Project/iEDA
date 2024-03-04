@@ -51,8 +51,9 @@ TEST_F(NetworkFlowTest, run_networkflow_api)
   auto* idb_builder = dmInst->get_idb_builder();
 
   iPLAPIInst.initAPI(pl_json_file, idb_builder);
+  // iPLAPIInst.runGP();
+  iPLAPIInst.runFlow();
 
-  iPLAPIInst.runDP();
   iPLAPIInst.reportPLInfo();
   iPLAPIInst.writeBackSourceDataBase();
   iPLAPIInst.destoryInst();

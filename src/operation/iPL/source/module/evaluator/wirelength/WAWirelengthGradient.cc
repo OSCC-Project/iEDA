@@ -228,7 +228,7 @@ void WAWirelengthGradient::updateWirelengthForce(float coeff_x, float coeff_y, f
 void WAWirelengthGradient::updateWirelengthForceDirect(float coeff_x, float coeff_y, float min_force_bar, int32_t thread_num, GridManager* grid_manager)
 {
   float util_max = std::max(grid_manager->get_h_util_max(), grid_manager->get_v_util_max());
-  LOG_INFO << "H_UTIL_MAX = " << grid_manager->get_h_util_max() << "; v_UTIL_MAX = " << grid_manager->get_v_util_max();
+  // LOG_INFO << "H_UTIL_MAX = " << grid_manager->get_h_util_max() << "; v_UTIL_MAX = " << grid_manager->get_v_util_max();
   // LOG_INFO << "H_UTIL_SUM = " << grid_manager->get_h_util_sum() << "; v_UTIL_SUM = " << grid_manager->get_v_util_sum();
 
   // NOLINTNEXTLINE
@@ -241,6 +241,9 @@ void WAWirelengthGradient::updateWirelengthForceDirect(float coeff_x, float coef
 
     Rectangle<int32_t> shape = grid_manager->get_shape();
     Rectangle<int32_t> network_shape = std::move(network->obtainNetWorkShape());
+    if (network_shape.get_ll_x() > network_shape.get_ur_x()){
+      continue;
+    }
     if (network_shape.get_ur_x() > grid_manager->get_shape().get_ur_x()){
       network_shape.set_upper_right(grid_manager->get_shape().get_ur_x(), network_shape.get_ur_y());
     }

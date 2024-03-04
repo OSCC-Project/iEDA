@@ -20,19 +20,19 @@
 
 namespace tcl {
 
-TclClearDef::TclClearDef(const char* cmd_name) : TclCmd(cmd_name)
-{
-}
-
-unsigned TclClearDef::exec()
-{
-  if (!check()) {
-    return 0;
+  TclClearDef::TclClearDef(const char* cmd_name) : TclCmd(cmd_name)
+  {
   }
 
-  RTAPI_INST.clearDef();
+  unsigned TclClearDef::exec()
+  {
+    if (!check()) {
+      return 0;
+    }
 
-  return 1;
-}
+    RTAPI_INST.clearDef();
+
+    return 1;
+  }
 
 }  // namespace tcl

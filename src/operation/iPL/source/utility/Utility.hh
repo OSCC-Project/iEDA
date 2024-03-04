@@ -47,6 +47,11 @@ struct Utility
 
   float getDistance(const std::vector<Point<int32_t>>& a, const std::vector<Point<int32_t>>& b);
   float getDistance(const std::vector<Point<float>>& a, const std::vector<Point<float>>& b);
+
+  float calManhattanDistance(const Point<int32_t>& pos_1, const Point<int32_t>& pos_2);
+
+  bool isFloatApproximatelyZero(float num);
+  bool isFloatPairApproximatelyEqual(float num_1, float num_2);
 };
 
 // https://stackoverflow.com/questions/33333363/built-in-mod-vs-custom-mod-function-improve-the-performance-of-modulus-op
@@ -95,6 +100,29 @@ inline float Utility::getDistance(const std::vector<Point<float>>& a, const std:
 
   // return std::sqrt(sumDistance / (2.0 * a.size()));
   return std::sqrt(sumDistance);
+}
+
+inline float Utility::calManhattanDistance(const Point<int32_t>& pos_1, const Point<int32_t>& pos_2)
+{
+  return (std::abs(pos_1.get_x() - pos_2.get_x()) + std::abs(pos_1.get_y() - pos_2.get_y()));
+}
+
+inline bool Utility::isFloatApproximatelyZero(float num)
+{
+  if (num < 1e-5) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+inline bool Utility::isFloatPairApproximatelyEqual(float num_1, float num_2)
+{
+  if (std::fabs(num_1 - num_2) < 1e-5) {
+    return true;
+  } else {
+    return false;
+  }
 }
 
 struct PointCMP

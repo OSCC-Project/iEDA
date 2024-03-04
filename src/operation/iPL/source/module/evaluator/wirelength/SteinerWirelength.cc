@@ -41,6 +41,18 @@ void SteinerWirelength::updateAllNetWorkPointPair()
   }
 }
 
+void SteinerWirelength::updateNetWorkPointPair(NetWork* network){
+  std::vector<std::pair<Point<int32_t>, Point<int32_t>>> point_pair;
+  this->obtainNetWorkPointPair(network, point_pair);
+
+  auto iter = _point_pair_map.find(network);
+  if (iter == _point_pair_map.end()) {
+    _point_pair_map.emplace(network, point_pair);
+  } else {
+    iter->second = point_pair;
+  }
+}
+
 void SteinerWirelength::updatePartOfNetWorkPointPair(const std::vector<NetWork*>& network_list)
 {
   for (auto* network : network_list) {

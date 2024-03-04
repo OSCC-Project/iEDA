@@ -59,10 +59,13 @@ class PinAccessor
   void buildAccessPointList(PAModel& pa_model);
   void updatePAModel(PAModel& pa_model);
 
+#if 1  // debug
+  void debugPlotPAModel(PAModel& pa_model);
+#endif
+
 #if 1  // exhibit
-  void plotPAModel(PAModel& pa_model);
-  void reportPAModel(PAModel& pa_model);
-  void reportSummary(PAModel& pa_model);
+  void updateSummary(PAModel& pa_model);
+  void printSummary(PAModel& pa_model);
   void writePinCSV(PAModel& pa_model);
 #endif
 };

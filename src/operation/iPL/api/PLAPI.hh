@@ -43,13 +43,15 @@ class PLAPI
   void runFlow();
   void runIncrementalFlow();
   void insertLayoutFiller();
-  void writeDef(std::string file_name);
 
   void runGP();
   void runMP();
+  void runNetworkFlowSpread();
+
   bool runLG();
   bool runIncrLG();
   bool runIncrLG(std::vector<std::string> inst_name_list);
+  void runPostGP();
   void runDP();
   void runBufferInsertion();
   void writeBackSourceDataBase();
@@ -92,6 +94,7 @@ class PLAPI
   // The following interfaces are only for iPL internal calls !
 
   void printHPWLInfo();
+  void printTimingInfo();
   void saveNetPinInfoForDebug(std::string path);
   void savePinListInfoForDebug(std::string path);
   void plotConnectionForDebug(std::vector<std::string> net_name_list, std::string path);
@@ -100,6 +103,7 @@ class PLAPI
 
   void modifySTAOutputDir(std::string path);
   void initSTA();
+  void initEval();
   void updateSTATiming();
   std::vector<std::string> obtainClockNameList();
   bool isClockNet(std::string net_name);
@@ -120,14 +124,26 @@ class PLAPI
   double obtainPinLateRequiredTime(std::string pin_name);
   double obtainWNS(const char* clock_name, ista::AnalysisMode mode);
   double obtainTNS(const char* clock_name, ista::AnalysisMode mode);
-  void updateTiming();
-  void updateTimingInstMovement(std::map<std::string, std::vector<std::pair<Point<int32_t>, Point<int32_t>>>> influenced_net_map,
+  double obtainEarlyWNS(const char* clock_name);
+  double obtainEarlyTNS(const char* clock_name);
+  double obtainLateWNS(const char* clock_name);
+  double obtainLateTNS(const char* clock_name);
+  void updateTiming(TopologyManager* topo_manager);
+  void updatePartOfTiming(TopologyManager* topo_manager, std::map<int32_t, std::vector<std::pair<Point<int32_t>, Point<int32_t>>>>& net_id_to_points_map);
+  void updateTimingInstMovement(TopologyManager* topo_manager,
+                                std::map<int32_t, std::vector<std::pair<Point<int32_t>, Point<int32_t>>>> net_id_to_points_map,
                                 std::vector<std::string> moved_inst_list);
+  float obtainPinCap(std::string inst_pin_name);
+  float obtainAvgWireResUnitLengthUm();
+  float obtainAvgWireCapUnitLengthUm();
+  float obtainInstOutPinRes(std::string cell_name, std::string port_name);
+  eval::TimingNet* generateTimingNet(NetWork* network,
+                                     const std::vector<std::pair<ipl::Point<int32_t>, ipl::Point<int32_t>>>& point_pair_list);
   void destroyTimingEval();
+
   /*****************************Timing-driven Placement: END*****************************/
 
   /*****************************Congestion-driven Placement: START*****************************/
-  void runRoutabilityGP();
   std::vector<float> obtainPinDens(int32_t grid_cnt_x, int32_t grid_cnt_y);
   std::vector<float> obtainNetCong(std::string rudy_type);
   std::vector<float> evalGRCong();
