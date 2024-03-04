@@ -268,7 +268,7 @@ void DrcEngineManager::filterData()
                     }
                   }
                   for (size_t i = 1; i < region_a_rects.size(); ++i) {
-                    // TODO: distance
+                    // distance
                     int distance = ieda_solver::manhattanDistance(region_a_rects[i], region_a_rects[i - 1]);
                     if (distance < rule_jog_to_jog_spacing) {
                       auto vio_rect = region_a_rects[i - 1];
@@ -399,6 +399,16 @@ void DrcEngineManager::filterData()
     int rule_min_enclosed_area = DrcTechRuleInst->getMinEnclosedArea(layer);
     std::vector<ieda_solver::GeometryRect> enclosed_area_violations;
 
+    // area
+    int rule_min_area = DrcTechRuleInst->getMinArea(layer);
+    auto rule_lef58_area_list = DrcTechRuleInst->getLef58AreaList(layer);
+    int rule_area_dbu = 2000;
+    int max_rule_lef58_area = 0;
+    for (auto& rule_lef58_area : rule_lef58_area_list) {
+      max_rule_lef58_area = std::max(max_rule_lef58_area, rule_lef58_area->get_min_area());
+    }
+    std::vector<ieda_solver::GeometryRect> area_violations;
+
     auto get_edge_orientation = [](const ieda_solver::GeometryPoint& p1, const ieda_solver::GeometryPoint& p2) {
       return p1.x() == p2.x() ? ieda_solver::VERTICAL : ieda_solver::HORIZONTAL;
     };
@@ -429,6 +439,8 @@ void DrcEngineManager::filterData()
       std::vector<ieda_solver::GeometryDirection2D> edge_direction_history(polygon_point_number);
       int corner_index = 0;
       long long polygon_area = 0;
+      int max_edge_length = 0;
+      int min_edge_length = std::numeric_limits<int>::max();
 
       auto it_next = polygon.begin();
       auto it_prev = it_next++;
@@ -445,6 +457,9 @@ void DrcEngineManager::filterData()
         corner_convex_history[corner_index] = is_current_convex;
         edge_orientation_history[corner_index] = edge_orientation;
         edge_direction_history[corner_index] = edge_direction;
+
+        max_edge_length = std::max(edge_length, max_edge_length);
+        min_edge_length = std::min(edge_length, min_edge_length);
 
         // refresh area
         area_calculator(polygon_area, *it_prev, *it_current);
@@ -723,12 +738,61 @@ void DrcEngineManager::filterData()
         polygon_area -= hole_area;
 
         // min enclosed area
-        if (hole_area < rule_min_enclosed_area) {
+        if (hole_area * rule_area_dbu < rule_min_enclosed_area) {
           ieda_solver::GeometryPolygon hole_polygon;
           hole_polygon.set(hole_it->begin(), hole_it->end());
           ieda_solver::GeometryRect violation_rect;
           ieda_solver::envelope(violation_rect, hole_polygon);
           enclosed_area_violations.push_back(violation_rect);
+        }
+      }
+
+      long long polygon_area_to_compare = polygon_area * rule_area_dbu;
+
+      // area
+      if (polygon_area_to_compare < rule_min_area) {
+        ieda_solver::GeometryRect violation_rect;
+        ieda_solver::envelope(violation_rect, polygon);
+        area_violations.push_back(violation_rect);
+        int a = 0;
+      }
+
+      if (polygon_area_to_compare < max_rule_lef58_area) {
+        std::vector<ieda_solver::GeometryRect> current_polygon_max_rects;
+        for (auto& rule_lef58_area : rule_lef58_area_list) {
+          if (polygon_area_to_compare >= rule_lef58_area->get_min_area()) {
+            continue;
+          }
+          auto rule_min_edge_length = rule_lef58_area->get_except_edge_length()->get_min_edge_length();
+          auto rule_max_edge_length = rule_lef58_area->get_except_edge_length()->get_max_edge_length();
+          if (max_edge_length < rule_min_edge_length || max_edge_length >= rule_max_edge_length) {
+            continue;
+          }
+
+          auto rule_except_size_width = rule_lef58_area->get_except_min_size()[0].get_min_width();
+          auto rule_except_size_length = rule_lef58_area->get_except_min_size()[0].get_min_length();
+
+          if (current_polygon_max_rects.empty()) {
+            ieda_solver::getMaxRectangles(current_polygon_max_rects, polygon);
+          }
+
+          bool is_ignore = false;
+          for (auto& rect : current_polygon_max_rects) {
+            auto orientation = ieda_solver::getWireDirection(rect);
+            int rect_width = ieda_solver::getWireWidth(rect, orientation.get_perpendicular());
+            int rect_length = ieda_solver::getWireWidth(rect, orientation);
+            if (rect_width >= rule_except_size_width && rect_length >= rule_except_size_length) {
+              is_ignore = true;
+              break;
+            }
+          }
+
+          if (!is_ignore) {
+            ieda_solver::GeometryRect violation_rect;
+            ieda_solver::envelope(violation_rect, polygon);
+            area_violations += violation_rect;
+            int a = 0;
+          }
         }
       }
 
@@ -823,6 +887,11 @@ void DrcEngineManager::filterData()
 
     // min enclosed area
     if (!enclosed_area_violations.empty()) {
+      int a = 0;
+    }
+
+    // min area
+    if (!area_violations.empty()) {
       int a = 0;
     }
 
