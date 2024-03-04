@@ -20,13 +20,13 @@ project(iEDA)
 
 # option setting
 option(BUILD_PR_FLOW "If ON, build PR flow." ON)
-option(BUILD_STATIC_LIB "If ON, build static lib." OFF)
+option(BUILD_STATIC_LIB "If ON, build static lib." ON)
 
 if(NOT BUILD_STATIC_LIB)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
 endif()
 
-option(BUILD_PYTHON "If ON, build python interface." ON)
+option(BUILD_PYTHON "If ON, build python interface." OFF)
 if(BUILD_PYTHON)
     set(BUILD_STATIC_LIB OFF)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
