@@ -46,6 +46,7 @@ class PLAPI
 
   void runGP();
   void runMP();
+  void runNetworkFlowSpread();
 
   bool runLG();
   bool runIncrLG();

@@ -47,7 +47,7 @@ public:
     int32_t get_global_padding() const { return _global_padding;}
     int32_t get_grid_cnt_x() const { return _grid_cnt_x;}
     int32_t get_grid_cnt_y() const { return _grid_cnt_y;}
-    int32_t get_enable_networkflow() const { return _enable_networkflow;} 
+    int32_t isEnableNetworkflow() const { return _enable_networkflow;} 
 
     // setter
     void set_thread_num(int32_t num_thread) { _thread_num = num_thread;}

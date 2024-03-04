@@ -377,6 +377,11 @@ namespace ipl {
       printHPWLInfo();
     }
 
+    if (PlacerDBInst.get_placer_config()->get_dp_config().isEnableNetworkflow()) {
+      std::cout << std::endl;
+      runNetworkFlowSpread();
+    }
+
     std::cout << std::endl;
     runLG();
     printHPWLInfo();
@@ -503,14 +508,18 @@ namespace ipl {
     DetailPlacer detail_place(PlacerDBInst.get_placer_config(), &PlacerDBInst);
     detail_place.runDetailPlace();
 
-    // run networkflow to spread cell 
-    // Input: after global placement. Output: low density distribution result with overlap.
-    // Legalization is further needed.
-    // detail_place.runDetailPlaceNFS();
-
     if (!checkLegality()) {
       LOG_WARNING << "DP result is not legal";
     }
+  }
+
+  // run networkflow to spread cell 
+  // Input: after global placement. Output: low density distribution result with overlap.
+  // Legalization is further needed.
+  void PLAPI::runNetworkFlowSpread()
+  {
+    DetailPlacer detail_place(PlacerDBInst.get_placer_config(), &PlacerDBInst);
+    detail_place.runDetailPlaceNFS();
   }
 
   void PLAPI::notifyPLWLInfo(int stage)
