@@ -100,7 +100,11 @@ void DrcEngineManager::filterData()
   // TODO: put logic bellow into condition module
   // TODO: multi-thread
   for (auto& [layer, layout] : get_engine_layouts()) {
-    // TODO: only for routing layers
+    // only for routing layers
+    if (!DrcTechRuleInst->isLayerRouting(layer)) {
+      continue;
+    }
+
     auto& layer_polyset = layout->get_layout()->get_engine()->get_polyset();
 
     // overlap
@@ -351,6 +355,8 @@ void DrcEngineManager::filterData()
     ieda_solver::GeometryPolygonSet corner_fill_check_regions;
 
     auto rule_eol_list = DrcTechRuleInst->getSpacingEolList(layer);
+    unsigned rule_eol_pattern = 0b11;
+    unsigned rule_eol_mask = 0b11;
     int max_eol_width = 0;
     for (auto& rule_eol : rule_eol_list) {
       max_eol_width = std::max(max_eol_width, rule_eol->get_eol_width());
@@ -359,6 +365,14 @@ void DrcEngineManager::filterData()
     EolRuleToRegionMap eol_check_regions;
     EolRuleToRegionMap eol_par_space_regions;
     EolRuleToRegionMap eol_same_metal_regions;
+    EolRuleToRegionMap eol_end_to_end_regions;
+
+    auto rule_notch = DrcTechRuleInst->getSpacingNotchlength(layer);
+    unsigned rule_notch_pattern = 0b00;
+    unsigned rule_notch_mask = 0b11;
+    int rule_notch_spacing = rule_notch ? rule_notch->get_min_spacing() : 0;
+    ieda_solver::GeometryPolygonSet notch_width_detect_regions;
+    ieda_solver::GeometryPolygonSet notch_spacing_check_regions;
 
     auto get_edge_orientation = [](const ieda_solver::GeometryPoint& p1, const ieda_solver::GeometryPoint& p2) {
       return p1.x() == p2.x() ? ieda_solver::VERTICAL : ieda_solver::HORIZONTAL;
@@ -445,8 +459,10 @@ void DrcEngineManager::filterData()
         auto edge_orientation = edge_orientation_history[i];
         auto edge_direction = edge_direction_history[i];
 
+        corner_pattern_4 = (corner_pattern_4 << 1) | is_current_convex;
+
         // eol
-        if (is_current_convex && corner_convex_history[point_index_prev] && edge_length < max_eol_width) {
+        if ((corner_pattern_4 & rule_eol_mask) == rule_eol_pattern && edge_length < max_eol_width) {
           for (auto& rule_eol : rule_eol_list) {
             if (edge_length >= rule_eol->get_eol_width()) {
               continue;
@@ -475,6 +491,12 @@ void DrcEngineManager::filterData()
               auto rule_end_to_end = rule_eol->get_end_to_end().value();
               int rule_end_to_end_spacing = rule_end_to_end.get_end_to_end_space();
               // TODO: end to end situation
+              // TODO: use end to end spacing to create check region
+              // TODO: use half end to end spacing to create detect region
+              // TODO: get detect region's self overlap
+              // TODO: get intersect regions between detect region and eol spacing check region
+              // TODO: subtract intersect regions from eol spacing check region
+              // TODO: get intersect regions between detect region and end to end spacing check region
             }
 
             if (rule_eol->get_parallel_edge().has_value()) {
@@ -531,8 +553,6 @@ void DrcEngineManager::filterData()
           int a = 0;
         }
 
-        corner_pattern_4 = (corner_pattern_4 << 1) | is_current_convex;
-
         // corner fill
         if (rule_corner_fill) {
           for (auto [pattern, offset] : rule_corner_fill_pattern) {
@@ -564,13 +584,67 @@ void DrcEngineManager::filterData()
           }
         }
 
-        // TODO: notch, step
+        // notch
+        if (rule_notch) {
+          if ((corner_pattern_4 & rule_notch_mask) == rule_notch_pattern && edge_length <= rule_notch_spacing) {
+            int notch_side1_idx = get_index_shifted(i, 1);
+            int notch_side2_idx = get_index_shifted(i, -1);
+            int rule_notch_length = rule_notch->get_min_notch_length();
+            bool is_violation = false;
+            int notch_length = 0;
+            if (rule_notch->get_concave_ends_side_of_notch_width().has_value()) {
+              if ((!corner_convex_history[get_index_shifted(i, 1)] && edge_length_history[notch_side1_idx] < rule_notch_length
+                   && edge_length_history[notch_side2_idx] >= rule_notch_length)
+                  || (!corner_convex_history[get_index_shifted(i, -2)] && edge_length_history[notch_side2_idx] < rule_notch_length
+                      && edge_length_history[notch_side1_idx] >= rule_notch_length)) {
+                is_violation = true;
+                // TODO: both side should be smaller than notch width
+                auto rule_notch_width = rule_notch->get_concave_ends_side_of_notch_width().value();
+                ieda_solver::GeometryRect detect_rect(point_current.x(), point_current.y(), point_prev.x(), point_prev.y());
+                ieda_solver::bloat(detect_rect, edge_direction.right(), 1);
+                auto subtract_rect = detect_rect;
+                ieda_solver::bloat(detect_rect, edge_orientation, rule_notch_width + 1);
+                notch_width_detect_regions += detect_rect;
+                notch_width_detect_regions -= subtract_rect;
+              }
+            } else if (edge_length_history[notch_side1_idx] < rule_notch_length
+                       || edge_length_history[notch_side2_idx] < rule_notch_length) {
+              is_violation = true;
+            }
+            if (is_violation) {
+              notch_length = std::min(edge_length_history[notch_side1_idx], edge_length_history[notch_side2_idx]);
+              ieda_solver::GeometryRect check_rect(point_current.x(), point_current.y(), point_prev.x(), point_prev.y());
+              ieda_solver::bloat(check_rect, edge_direction.right(), notch_length);
+              notch_spacing_check_regions += check_rect;
+            }
+          }
+        }
+
+        // TODO: step
       }
 
       // polygon holes
       // TODO: holes need to check edge?
       for (auto hole_it = polygon.begin_holes(); hole_it != polygon.end_holes(); ++hole_it) {
-        // TODO: polygon area subtract hole area
+        // long long hole_area = 0;
+        // auto hole_pt_it_next = hole_it->begin();
+        // auto hole_pt_it_prev = hole_pt_it_next++;
+        // auto hole_pt_it_current = hole_pt_it_next++;
+        // do {
+        //   // refresh area
+        //   area_calculator(hole_area, *hole_pt_it_prev, *hole_pt_it_current);
+
+        //   // next segment
+        //   hole_pt_it_prev = hole_pt_it_current;
+        //   hole_pt_it_current = hole_pt_it_next;
+        //   ++hole_pt_it_next;
+        //   if (hole_pt_it_next == polygon.end_holes()) {
+        //     hole_pt_it_next = polygon.begin_holes();
+        //   }
+        // } while (hole_pt_it_prev != hole_it->begin());
+
+        // hole_area = std::abs(hole_area) / 2;
+        // polygon_area -= hole_area;
 
         // TODO: min enclosed area
       }
@@ -578,6 +652,7 @@ void DrcEngineManager::filterData()
       // TODO: check rules
     }
 
+    // eol
     for (auto& rule_eol : rule_eol_list) {
       auto& check_regions = eol_check_regions[rule_eol];
       auto data_to_check = layer_polyset;  // TODO: avoid copy when SAMEMETAL not exist
@@ -619,6 +694,7 @@ void DrcEngineManager::filterData()
       int a = 0;
     }
 
+    // corner fill
     if (rule_corner_fill) {
       ieda_solver::GeometryPolygonSet violation_wires = corner_fill_check_regions & layer_polyset;
       ieda_solver::interact(corner_fill_check_regions, violation_wires);
@@ -628,6 +704,29 @@ void DrcEngineManager::filterData()
       std::vector<ieda_solver::GeometryViewPolygon> corner_fill_result_polygons;
       result_regions.get(corner_fill_result_polygons);
       if (!corner_fill_result_polygons.empty()) {
+        int a = 0;
+      }
+    }
+
+    // notch
+    if (rule_notch) {
+      std::vector<ieda_solver::GeometryViewPolygon> notch_detect_regions;
+      notch_width_detect_regions.get(notch_detect_regions);
+
+      if (rule_notch->get_concave_ends_side_of_notch_width().has_value()) {
+        auto detect_regions = notch_width_detect_regions & layer_polyset;
+        ieda_solver::GeometryPolygonSet remained_detect_regions = notch_width_detect_regions ^ detect_regions;
+        ieda_solver::interact(notch_width_detect_regions, remained_detect_regions);
+        ieda_solver::interact(notch_spacing_check_regions, notch_width_detect_regions);
+      }
+
+      // TODO: get violation regions
+      std::vector<ieda_solver::GeometryViewPolygon> notch_violations;
+      notch_spacing_check_regions.get(notch_violations);
+      if (!notch_violations.empty()) {
+        int a = 0;
+      }
+      if (!notch_detect_regions.empty()) {
         int a = 0;
       }
     }

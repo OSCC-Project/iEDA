@@ -54,6 +54,15 @@ class TechRules
     return idb_layout->get_layers()->find_layer(layer_name);
   }
 
+  bool isLayerRouting(std::string layer_name)
+  {
+    auto layer = findLayer(layer_name);
+    if (layer) {
+      return layer->is_routing();
+    }
+    return false;
+  }
+
   int getMinArea(std::string layer_name);
   std::vector<std::shared_ptr<idb::routinglayer::Lef58Area>>& getLef58AreaList(std::string layer_name);
   int getMinEnclosedArea(std::string layer_name);
@@ -67,6 +76,8 @@ class TechRules
   std::vector<std::shared_ptr<idb::routinglayer::Lef58SpacingEol>> getSpacingEolList(std::string layer_name);
 
   std::shared_ptr<routinglayer::Lef58CornerFillSpacing> getCornerFillSpacing(std::string layer_name);
+
+  std::shared_ptr<routinglayer::Lef58SpacingNotchlength> getSpacingNotchlength(std::string layer_name);
 
   ///
 

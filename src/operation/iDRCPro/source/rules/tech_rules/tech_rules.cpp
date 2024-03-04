@@ -117,4 +117,14 @@ std::shared_ptr<routinglayer::Lef58CornerFillSpacing> TechRules::getCornerFillSp
   return idb_routing_layer->get_lef58_corner_fill_spacing();
 }
 
+std::shared_ptr<routinglayer::Lef58SpacingNotchlength> TechRules::getSpacingNotchlength(std::string layer_name)
+{
+  auto layer = findLayer(layer_name);
+  idb::IdbLayerRouting* idb_routing_layer = dynamic_cast<idb::IdbLayerRouting*>(layer);
+  if (!idb_routing_layer)
+    return nullptr;
+
+  return idb_routing_layer->get_lef58_spacing_notchlength();
+}
+
 }  // namespace idrc
