@@ -286,11 +286,10 @@ vector<float> EvalAPI::evalPinDens()
 
 vector<float> EvalAPI::evalPinDens(CongGrid* grid, const vector<CongInst*>& inst_list)
 {
-  CongestionEval congestion_eval;
-  congestion_eval.set_cong_grid(grid);
-  congestion_eval.set_cong_inst_list(inst_list);
-  congestion_eval.mapInst2Bin();
-  return congestion_eval.evalPinDens();
+  _congestion_eval_inst->set_cong_grid(grid);
+  _congestion_eval_inst->set_cong_inst_list(inst_list);
+  _congestion_eval_inst->mapInst2Bin();
+  return _congestion_eval_inst->evalPinDens();
 }
 
 vector<float> EvalAPI::evalInstDens()
@@ -301,11 +300,10 @@ vector<float> EvalAPI::evalInstDens()
 
 vector<float> EvalAPI::evalInstDens(CongGrid* grid, const vector<CongInst*>& inst_list)
 {
-  CongestionEval congestion_eval;
-  congestion_eval.set_cong_grid(grid);
-  congestion_eval.set_cong_inst_list(inst_list);
-  congestion_eval.mapInst2Bin();
-  return congestion_eval.getInstDens();
+  _congestion_eval_inst->set_cong_grid(grid);
+  _congestion_eval_inst->set_cong_inst_list(inst_list);
+  _congestion_eval_inst->mapInst2Bin();
+  return _congestion_eval_inst->getInstDens();
 }
 
 vector<float> EvalAPI::evalNetCong(const string& rudy_type)
