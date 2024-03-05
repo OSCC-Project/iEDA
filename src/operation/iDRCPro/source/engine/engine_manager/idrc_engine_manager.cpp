@@ -16,11 +16,13 @@
 // ***************************************************************************************
 #include "idrc_engine_manager.h"
 
+#include "condition_manager.h"
 #include "engine_geometry_creator.h"
 #include "engine_scanline.h"
 #include "geometry_boost.h"
 #include "idm.h"
 #include "idrc_engine_manager.h"
+#include "idrc_violation_manager.h"
 #include "omp.h"
 #include "rule_condition_width.h"
 #include "tech_rules.h"
@@ -99,19 +101,25 @@ void DrcEngineManager::filterData()
 {
   // TODO: put logic bellow into condition module
   // TODO: multi-thread
-  for (auto& [layer, layout] : get_engine_layouts()) {
+  for (auto& [layer, layout] : get_engine_layouts(LayoutType::kRouting)) {
+    std::cout << "layer: " << layer << std::endl;
     // only for routing layers
     if (!DrcTechRuleInst->isLayerRouting(layer)) {
       continue;
     }
 
+    auto* violation_manager = _condition_manager->get_violation_manager();
+
     auto& layer_polyset = layout->get_layout()->get_engine()->get_polyset();
 
     // overlap
     auto& overlap = layout->get_layout()->get_engine()->getOverlap();
-    if (overlap.size() > 0) {
-      // TODO: create scanline point data
-      int a = 0;
+    for (auto& overlap_polygon : overlap) {
+      ieda_solver::GeometryRect overlap_violation_rect;
+      ieda_solver::envelope(overlap_violation_rect, overlap_polygon);
+      violation_manager->addViolation(ieda_solver::lowLeftX(overlap_violation_rect), ieda_solver::lowLeftY(overlap_violation_rect),
+                                      ieda_solver::upRightX(overlap_violation_rect), ieda_solver::upRightY(overlap_violation_rect),
+                                      ViolationEnumType::kShort, {}, layer);
     }
 
 #ifdef DEBUG_IDRC_ENGINE
@@ -144,19 +152,9 @@ void DrcEngineManager::filterData()
       for (auto& rect : results) {
         get_new_interval(ieda_solver::HORIZONTAL, rect);
         get_new_interval(ieda_solver::VERTICAL, rect);
+        violation_manager->addViolation(ieda_solver::lowLeftX(rect), ieda_solver::lowLeftY(rect), ieda_solver::upRightX(rect),
+                                        ieda_solver::upRightY(rect), ViolationEnumType::kDefaultSpacing, {}, layer);
       }
-
-      if (results.size() > 0) {
-        int a = 0;
-      }
-
-#ifdef DEBUG_IDRC_ENGINE
-      std::vector<ieda_solver::GeometryViewPolygon> grow_polygons;
-      violation_position_set.get(grow_polygons);
-      if (grow_polygons.size() > 0) {
-        int a = 0;
-      }
-#endif
     }
 
     // jog and prl
@@ -200,7 +198,6 @@ void DrcEngineManager::filterData()
         if (width_idx > 0) {
           prl_wire_map[width_idx] += wire;
         }
-        int a = 0;
       }
     }
 
@@ -288,8 +285,9 @@ void DrcEngineManager::filterData()
         }
       }
 
-      if (!jog_violations.empty()) {
-        int a = 0;
+      for (auto& rect : jog_violations) {
+        violation_manager->addViolation(ieda_solver::lowLeftX(rect), ieda_solver::lowLeftY(rect), ieda_solver::upRightX(rect),
+                                        ieda_solver::upRightY(rect), ViolationEnumType::kJogToJog, {}, layer);
       }
     }
 
@@ -302,8 +300,6 @@ void DrcEngineManager::filterData()
 
       auto prl_length_list = idb_prl_length_list;
       prl_length_list[0] = prl_length_list[1];  // t28 wide metal space rule summary table
-
-      std::vector<ieda_solver::GeometryRect> spacing_table_violations;
 
       for (auto& [width_idx, wire_set] : prl_wire_map) {
         int prl_idx = width_idx - 1;
@@ -336,15 +332,15 @@ void DrcEngineManager::filterData()
 
           std::vector<ieda_solver::GeometryRect> current_violations;
           touch_wire_region.get(current_violations);
-          spacing_table_violations.insert(spacing_table_violations.end(), current_violations.begin(), current_violations.end());
+
+          for (auto& rect : current_violations) {
+            violation_manager->addViolation(ieda_solver::lowLeftX(rect), ieda_solver::lowLeftY(rect), ieda_solver::upRightX(rect),
+                                            ieda_solver::upRightY(rect), ViolationEnumType::kPRLSpacing, {}, layer);
+          }
         };
 
         check_by_direction(ieda_solver::HORIZONTAL);
         check_by_direction(ieda_solver::VERTICAL);
-      }
-
-      if (!spacing_table_violations.empty()) {
-        int a = 0;
       }
     }
 
@@ -385,7 +381,7 @@ void DrcEngineManager::filterData()
     int max_rule_lef58_step_length = 0;
     std::vector<unsigned> rule_lef58_step_pattern_list(rule_lef58_step_list.size(), 0);
     std::vector<unsigned> rule_lef58_step_mask_list(rule_lef58_step_list.size(), 0);
-    for (int i = 0; i < rule_lef58_step_list.size(); ++i) {
+    for (size_t i = 0; i < rule_lef58_step_list.size(); ++i) {
       auto& rule_lef58_step = rule_lef58_step_list[i];
       max_rule_lef58_step_length = std::max(max_rule_lef58_step_length, rule_lef58_step->get_min_step_length());
       if (rule_lef58_step->get_min_adjacent_length().has_value() && rule_lef58_step->get_min_adjacent_length().value().is_convex_corner()) {
@@ -393,21 +389,18 @@ void DrcEngineManager::filterData()
         rule_lef58_step_pattern_list[i] = 0b010;
       }
     }
-    std::vector<ieda_solver::GeometryRect> step_violation_rects;
 
     // enclosed area
     int rule_min_enclosed_area = DrcTechRuleInst->getMinEnclosedArea(layer);
-    std::vector<ieda_solver::GeometryRect> enclosed_area_violations;
 
     // area
     int rule_min_area = DrcTechRuleInst->getMinArea(layer);
     auto rule_lef58_area_list = DrcTechRuleInst->getLef58AreaList(layer);
-    int rule_area_dbu = 2000;
+    auto rule_area_dbu = DrcTechRuleInst->getDBU();
     int max_rule_lef58_area = 0;
     for (auto& rule_lef58_area : rule_lef58_area_list) {
       max_rule_lef58_area = std::max(max_rule_lef58_area, rule_lef58_area->get_min_area());
     }
-    std::vector<ieda_solver::GeometryRect> area_violations;
 
     auto get_edge_orientation = [](const ieda_solver::GeometryPoint& p1, const ieda_solver::GeometryPoint& p2) {
       return p1.x() == p2.x() ? ieda_solver::VERTICAL : ieda_solver::HORIZONTAL;
@@ -591,8 +584,6 @@ void DrcEngineManager::filterData()
             ieda_solver::bloat(check_rect, edge_orientation, eol_within);
             eol_check_regions[rule_eol] += check_rect;
           }
-
-          int a = 0;
         }
 
         // corner fill
@@ -618,7 +609,6 @@ void DrcEngineManager::filterData()
                 ieda_solver::bloat(check_rect, edge_direction_history[edge2_index].right(),
                                    edge_length_history[edge1_index] + rule_corner_fill_spacing);
                 corner_fill_check_regions += check_rect;
-                int a = 0;
               }
 
               break;
@@ -681,7 +671,9 @@ void DrcEngineManager::filterData()
                 int edge_point2_idx = get_index_shifted(point_current_index, i);
                 ieda_solver::GeometryRect violation_rect(polygon_outline[edge_point1_idx].x(), polygon_outline[edge_point1_idx].y(),
                                                          polygon_outline[edge_point2_idx].x(), polygon_outline[edge_point2_idx].y());
-                step_violation_rects.push_back(violation_rect);
+                violation_manager->addViolation(ieda_solver::lowLeftX(violation_rect), ieda_solver::lowLeftY(violation_rect),
+                                                ieda_solver::upRightX(violation_rect), ieda_solver::upRightY(violation_rect),
+                                                ViolationEnumType::kMinStep, {}, layer);
               }
             }
           }
@@ -689,7 +681,7 @@ void DrcEngineManager::filterData()
 
         // TODO: lef58 step
         if (edge_length < max_rule_lef58_step_length) {
-          for (int i = 0; i < rule_lef58_step_list.size(); ++i) {
+          for (size_t i = 0; i < rule_lef58_step_list.size(); ++i) {
             if ((corner_pattern_4 & rule_lef58_step_mask_list[i]) == rule_lef58_step_pattern_list[i]) {
               // todo: what MAXEDGES mean here?
               auto rule_lef58_step = rule_lef58_step_list[i];
@@ -704,7 +696,9 @@ void DrcEngineManager::filterData()
                   int point_prev_prev_idx = get_index_shifted(point_current_index, -2);
                   ieda_solver::GeometryRect violation_rect(polygon_outline[point_prev_prev_idx].x(),
                                                            polygon_outline[point_prev_prev_idx].y(), point_current.x(), point_current.y());
-                  step_violation_rects.push_back(violation_rect);
+                  violation_manager->addViolation(ieda_solver::lowLeftX(violation_rect), ieda_solver::lowLeftY(violation_rect),
+                                                  ieda_solver::upRightX(violation_rect), ieda_solver::upRightY(violation_rect),
+                                                  ViolationEnumType::kMinStep, {}, layer);
                 }
               } else {
                 // todo
@@ -743,7 +737,9 @@ void DrcEngineManager::filterData()
           hole_polygon.set(hole_it->begin(), hole_it->end());
           ieda_solver::GeometryRect violation_rect;
           ieda_solver::envelope(violation_rect, hole_polygon);
-          enclosed_area_violations.push_back(violation_rect);
+          violation_manager->addViolation(ieda_solver::lowLeftX(violation_rect), ieda_solver::lowLeftY(violation_rect),
+                                          ieda_solver::upRightX(violation_rect), ieda_solver::upRightY(violation_rect),
+                                          ViolationEnumType::kAreaEnclosed, {}, layer);
         }
       }
 
@@ -753,8 +749,9 @@ void DrcEngineManager::filterData()
       if (polygon_area_to_compare < rule_min_area) {
         ieda_solver::GeometryRect violation_rect;
         ieda_solver::envelope(violation_rect, polygon);
-        area_violations.push_back(violation_rect);
-        int a = 0;
+        violation_manager->addViolation(ieda_solver::lowLeftX(violation_rect), ieda_solver::lowLeftY(violation_rect),
+                                        ieda_solver::upRightX(violation_rect), ieda_solver::upRightY(violation_rect),
+                                        ViolationEnumType::kArea, {}, layer);
       }
 
       if (polygon_area_to_compare < max_rule_lef58_area) {
@@ -790,13 +787,12 @@ void DrcEngineManager::filterData()
           if (!is_ignore) {
             ieda_solver::GeometryRect violation_rect;
             ieda_solver::envelope(violation_rect, polygon);
-            area_violations += violation_rect;
-            int a = 0;
+            violation_manager->addViolation(ieda_solver::lowLeftX(violation_rect), ieda_solver::lowLeftY(violation_rect),
+                                            ieda_solver::upRightX(violation_rect), ieda_solver::upRightY(violation_rect),
+                                            ViolationEnumType::kAreaEnclosed, {}, layer);
           }
         }
       }
-
-      // TODO: check rules
     }
 
     // eol
@@ -823,43 +819,34 @@ void DrcEngineManager::filterData()
       ieda_solver::interact(check_regions, data_to_check);
       auto violation_regions = check_regions - data_to_check;
 
-      // TODO: get violation regions
-      std::vector<ieda_solver::GeometryViewPolygon> through_polygons;
-      eol_same_metal_regions[rule_eol].get(through_polygons);
-      std::vector<ieda_solver::GeometryViewPolygon> detect_polygons;
-      eol_par_space_regions[rule_eol].get(detect_polygons);
-      std::vector<ieda_solver::GeometryViewPolygon> check_polygons;
-      check_regions.get(check_polygons);
       std::vector<ieda_solver::GeometryRect> violation_rects;
-      ieda_solver::getMaxRectangles(violation_rects, violation_regions);
-      if (!violation_rects.empty()) {
-        int a = 0;
+      ieda_solver::getDefaultRectangles(violation_rects, violation_regions);
+
+      for (auto& violation_rect : violation_rects) {
+        violation_manager->addViolation(ieda_solver::lowLeftX(violation_rect), ieda_solver::lowLeftY(violation_rect),
+                                        ieda_solver::upRightX(violation_rect), ieda_solver::upRightY(violation_rect),
+                                        ViolationEnumType::kEOL, {}, layer);
       }
-      if (rule_eol->get_parallel_edge().has_value() && rule_eol->get_parallel_edge().value().is_same_metal()) {
-        int a = 0;
-      }
-      int a = 0;
     }
 
     // corner fill
     if (rule_corner_fill) {
       ieda_solver::GeometryPolygonSet violation_wires = corner_fill_check_regions & layer_polyset;
       ieda_solver::interact(corner_fill_check_regions, violation_wires);
-      ieda_solver::GeometryPolygonSet result_regions = corner_fill_check_regions - violation_wires;
+      // ieda_solver::GeometryPolygonSet result_regions = corner_fill_check_regions - violation_wires;
 
-      // TODO: get violation regions
-      std::vector<ieda_solver::GeometryViewPolygon> corner_fill_result_polygons;
-      result_regions.get(corner_fill_result_polygons);
-      if (!corner_fill_result_polygons.empty()) {
-        int a = 0;
+      std::vector<ieda_solver::GeometryRect> violation_rects;
+      corner_fill_check_regions.get(violation_rects);
+
+      for (auto& violation_rect : violation_rects) {
+        violation_manager->addViolation(ieda_solver::lowLeftX(violation_rect), ieda_solver::lowLeftY(violation_rect),
+                                        ieda_solver::upRightX(violation_rect), ieda_solver::upRightY(violation_rect),
+                                        ViolationEnumType::kCornerFill, {}, layer);
       }
     }
 
     // notch
     if (rule_notch) {
-      std::vector<ieda_solver::GeometryViewPolygon> notch_detect_regions;
-      notch_width_detect_regions.get(notch_detect_regions);
-
       if (rule_notch->get_concave_ends_side_of_notch_width().has_value()) {
         auto detect_regions = notch_width_detect_regions & layer_polyset;
         ieda_solver::GeometryPolygonSet remained_detect_regions = notch_width_detect_regions ^ detect_regions;
@@ -867,37 +854,14 @@ void DrcEngineManager::filterData()
         ieda_solver::interact(notch_spacing_check_regions, notch_width_detect_regions);
       }
 
-      // TODO: get violation regions
-      std::vector<ieda_solver::GeometryViewPolygon> notch_violations;
+      std::vector<ieda_solver::GeometryRect> notch_violations;
       notch_spacing_check_regions.get(notch_violations);
-      if (!notch_violations.empty()) {
-        int a = 0;
-      }
-      if (!notch_detect_regions.empty()) {
-        int a = 0;
-      }
-    }
 
-    // step
-    if (rule_step) {
-      if (!step_violation_rects.empty()) {
-        int a = 0;
+      for (auto& rect : notch_violations) {
+        violation_manager->addViolation(ieda_solver::lowLeftX(rect), ieda_solver::lowLeftY(rect), ieda_solver::upRightX(rect),
+                                        ieda_solver::upRightY(rect), ViolationEnumType::kNotch, {}, layer);
       }
     }
-
-    // min enclosed area
-    if (!enclosed_area_violations.empty()) {
-      int a = 0;
-    }
-
-    // min area
-    if (!area_violations.empty()) {
-      int a = 0;
-    }
-
-    // TODO: other rule check
-
-    int a = 0;
   }
 }
 

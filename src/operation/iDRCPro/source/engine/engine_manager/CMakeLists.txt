@@ -9,6 +9,7 @@ target_link_libraries(idrc_engine_manager
     idrc_engine_scanline
     idrc_pro_data
     idrc_pro_tech_rules
+    idrc_pro_violation
     idm
 )
 

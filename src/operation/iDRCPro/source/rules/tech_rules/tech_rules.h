@@ -69,6 +69,8 @@ class TechRules
     return false;
   }
 
+  int getDBU() { return dmInst->get_idb_design()->get_units()->get_micron_dbu(); }
+
   int getMinArea(std::string layer_name);
   std::vector<std::shared_ptr<idb::routinglayer::Lef58Area>> getLef58AreaList(std::string layer_name);
   int getMinEnclosedArea(std::string layer_name);

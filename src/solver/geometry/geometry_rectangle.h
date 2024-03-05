@@ -38,27 +38,16 @@ typedef GtlRect GeometryRect;
 
 #define getWireWidth(wire, dir) gtl::delta(wire, dir)
 
-inline std::array<GeometryRect, 2> getExpandRects(const GeometryRect& rect, int within, GeometryOrientation dir)
-{
-  auto interval_wire = rect.get(dir.get_perpendicular());
-  auto interval_within = rect.get(dir);
-  GeometryInterval interval_high(gtl::get(interval_within, gtl::HIGH), gtl::get(interval_within, gtl::HIGH) + within);
-  GeometryInterval interval_low(gtl::get(interval_within, gtl::LOW) - within, gtl::get(interval_within, gtl::LOW));
-  GeometryRect rect_high;
-  rect_high.set(dir, interval_high);
-  rect_high.set(dir.get_perpendicular(), interval_wire);
-  GeometryRect rect_low;
-  rect_low.set(dir, interval_low);
-  rect_low.set(dir.get_perpendicular(), interval_wire);
-
-  return {rect_high, rect_low};
-}
-
-#define bloat(rect, direction, value) gtl::bloat(rect, direction, value)
-#define shrink(rect, direction, value) gtl::shrink(rect, direction, value)
+#define bloat(rect_to_change, direction, value) gtl::bloat(rect_to_change, direction, value)
+#define shrink(rect_to_change, direction, value) gtl::shrink(rect_to_change, direction, value)
 
 #define manhattanDistance(rect1, rect2) gtl::manhattan_distance(rect1, rect2)
 
 #define oppositeRegion(rect1, rect2) gtl::generalized_intersect(rect1, rect2)
+
+#define lowLeftX(rect_to_get_property) gtl::xl(rect_to_get_property)
+#define lowLeftY(rect_to_get_property) gtl::yl(rect_to_get_property)
+#define upRightX(rect_to_get_property) gtl::xh(rect_to_get_property)
+#define upRightY(rect_to_get_property) gtl::yh(rect_to_get_property)
 
 }  // namespace ieda_solver

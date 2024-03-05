@@ -105,7 +105,7 @@ std::vector<GeometryPolygon>& GeometryBoost::getLayoutPolygons()
   return _polygon_list;
 }
 
-std::vector<GeometryRect>& GeometryBoost::getOverlap()
+std::vector<GeometryPolygon>& GeometryBoost::getOverlap()
 {
   if (_overlap_list.size() <= 0) {
     GtlPolygon90Set set(_polyset);

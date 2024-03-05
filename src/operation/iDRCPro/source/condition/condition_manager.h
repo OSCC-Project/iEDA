@@ -37,6 +37,8 @@ class DrcConditionManager
   DrcConditionManager(DrcViolationManager* violation_manager) : _violation_manager(violation_manager) {}
   ~DrcConditionManager() {}
 
+  DrcViolationManager* get_violation_manager() { return _violation_manager; }
+
  private:
   DrcViolationManager* _violation_manager;
 };

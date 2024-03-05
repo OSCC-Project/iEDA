@@ -34,6 +34,7 @@ enum class ViolationEnumType
   kMinStep,
   kNotch,
   kConnectivity,
+  kCornerFill,
   kMax
 };
 
@@ -62,6 +63,8 @@ struct GetViolationTypeName
         return "Min Step";
       case ViolationEnumType::kNotch:
         return "Notch Spacing";
+      case ViolationEnumType::kCornerFill:
+        return "Corner Fill";
       default:
         return "None";
     }
