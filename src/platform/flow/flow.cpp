@@ -52,18 +52,18 @@ bool Flow::initFlow(string flow_config)
   return true;
 }
 
-void Flow::run(char* param)
+void Flow::run(int argc, char** argv)
 {
   if (PLFConfig::getInstance()->is_run_tcl()) {
-    runTcl(param);
+    runTcl(argc, argv);
   } else {
     runFlow();
   }
 }
 
-void Flow::runTcl(char* path)
+void Flow::runTcl(int argc, char** argv)
 {
-  tcl::tcl_start(path);
+  tcl::tcl_start(argc, argv);
 }
 
 void Flow::runFlow()
