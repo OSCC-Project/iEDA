@@ -22,14 +22,14 @@
 #include "rule_basic.h"
 
 namespace idrc {
-/// @brief  check width & prl rules contains condition
-/// @param width
-/// @param prl_length
-/// @return true : match condition == has violation; false == no violation
-bool ConditionRuleSpacingPRL::isMatchCondition(int width, int prl_length)
-{
-  return width > _width && prl_length > _prl_length;
-}
+// /// @brief  check width & prl rules contains condition
+// /// @param width
+// /// @param prl_length
+// /// @return true : match condition == has violation; false == no violation
+// bool ConditionRuleSpacingPRL::isMatchCondition(int width, int prl_length)
+// {
+//   return width > _width && prl_length > _prl_length;
+// }
 /// @brief check jot to jog rules contains condition
 /// @param value
 /// @return

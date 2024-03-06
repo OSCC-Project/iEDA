@@ -377,6 +377,11 @@ namespace ipl {
       printHPWLInfo();
     }
 
+    if (PlacerDBInst.get_placer_config()->get_dp_config().isEnableNetworkflow()) {
+      std::cout << std::endl;
+      runNetworkFlowSpread();
+    }
+
     std::cout << std::endl;
     runLG();
     printHPWLInfo();
@@ -503,14 +508,18 @@ namespace ipl {
     DetailPlacer detail_place(PlacerDBInst.get_placer_config(), &PlacerDBInst);
     detail_place.runDetailPlace();
 
-    // run networkflow to spread cell 
-    // Input: after global placement. Output: low density distribution result with overlap.
-    // Legalization is further needed.
-    // detail_place.runDetailPlaceNFS();
-
     if (!checkLegality()) {
       LOG_WARNING << "DP result is not legal";
     }
+  }
+
+  // run networkflow to spread cell 
+  // Input: after global placement. Output: low density distribution result with overlap.
+  // Legalization is further needed.
+  void PLAPI::runNetworkFlowSpread()
+  {
+    DetailPlacer detail_place(PlacerDBInst.get_placer_config(), &PlacerDBInst);
+    detail_place.runDetailPlaceNFS();
   }
 
   void PLAPI::notifyPLWLInfo(int stage)
@@ -876,15 +885,6 @@ namespace ipl {
     _reporter->plotModuleStateForDebug(special_inst_list, path);
   }
 
-  /*****************************Congestion-driven Placement: START*****************************/
-  void PLAPI::runRoutabilityGP()
-  {
-    CenterPlace(&PlacerDBInst).runCenterPlace();
-    NesterovPlace nesterov_place(PlacerDBInst.get_placer_config(), &PlacerDBInst);
-    nesterov_place.printNesterovDatabase();
-    nesterov_place.runNesterovRoutablityPlace();
-  }
-
   /**
    * @brief run GR based on dmInst data, evaluate 3D congestion, and return <ACE,TOF,MOF> vector
    * @return std::vector<float>
@@ -902,8 +902,6 @@ namespace ipl {
   {
     return _external_api->getUseCapRatioList();
   }
-
-  /*****************************Congestion-driven Placement: END*****************************/
 
   int64_t PLAPI::evalEGRWL()
   {
@@ -934,7 +932,6 @@ namespace ipl {
   {
     return _external_api->obtainNetCong(rudy_type);
   }
-  /*****************************Congestion-driven Placement: END*****************************/
 
   eval::TimingPin* wrapTimingTruePin(Node* node)
   {

@@ -52,8 +52,6 @@ class NesterovPlace
   NesterovPlace& operator=(NesterovPlace&&) = delete;
 
   void runNesterovPlace();
-  void runNesterovRoutablityPlace();
-
   void printNesterovDatabase();
 
  private:
@@ -73,7 +71,7 @@ class NesterovPlace
   void initQuadPenaltyCoeff();
   bool checkPlateau(int32_t window, float threshold);
   void entropyInjection(float shrink_factor, float noise_intensity);
-  bool checkDivergence(int32_t window, float threshold);
+  bool checkDivergence(int32_t window, float threshold, bool is_routability = false);
   bool checkLongTimeOverflowUnchanged(int32_t window, float threshold);
 
   void initNesConfig(Config* config);
@@ -91,7 +89,6 @@ class NesterovPlace
 
   void initNesterovPlace(std::vector<NesInstance*>& inst_list);
   void NesterovSolve(std::vector<NesInstance*>& inst_list);
-  void NesterovRoutablitySolve(std::vector<NesInstance*>& inst_list);
 
   std::vector<NesInstance*> obtianPlacableNesInstanceList();
 

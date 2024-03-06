@@ -46,6 +46,7 @@ class PLAPI
 
   void runGP();
   void runMP();
+  void runNetworkFlowSpread();
 
   bool runLG();
   bool runIncrLG();
@@ -143,7 +144,6 @@ class PLAPI
   /*****************************Timing-driven Placement: END*****************************/
 
   /*****************************Congestion-driven Placement: START*****************************/
-  void runRoutabilityGP();
   std::vector<float> obtainPinDens(int32_t grid_cnt_x, int32_t grid_cnt_y);
   std::vector<float> obtainNetCong(std::string rudy_type);
   std::vector<float> evalGRCong();

@@ -64,11 +64,19 @@ class Layout
 
   const std::vector<Row*> get_row_list() const { return _row_list; }
   const std::vector<Cell*> get_cell_list() const { return _cell_list; }
+  int get_route_cap_h() const {return _route_cap_h;}
+  int get_route_cap_v() const {return _route_cap_v;}
+  int get_partial_route_cap_h() const {return _partial_route_cap_h;}
+  int get_partial_route_cap_v() const {return _partial_route_cap_v;}
 
   // setter.
   void set_database_unit(int32_t dbu) { _database_unit = dbu; }
   void set_die_shape(Rectangle<int32_t> rect) { _die_shape = std::move(rect); }
   void set_core_shape(Rectangle<int32_t> rect) { _core_shape = std::move(rect); }
+  void set_route_cap_h(int num) {_route_cap_h = num;}
+  void set_route_cap_v(int num) {_route_cap_v = num;}
+  void set_partial_route_cap_h(int num) {_partial_route_cap_h = num;}
+  void set_partial_route_cap_v(int num) {_partial_route_cap_v = num;}
 
   void add_row(Row* row);
   void add_row_orient(Orient row_orient) { _row_orient_list.push_back(row_orient); }
@@ -88,6 +96,11 @@ class Layout
   std::vector<Row*> _row_list;
   std::vector<Orient> _row_orient_list;
   std::vector<Cell*> _cell_list;
+
+  int _route_cap_h;
+  int _route_cap_v;
+  int _partial_route_cap_h;
+  int _partial_route_cap_v;
 
   std::map<std::string, Row*> _name_to_row_map;
   std::map<std::string, Cell*> _name_to_cell_map;
