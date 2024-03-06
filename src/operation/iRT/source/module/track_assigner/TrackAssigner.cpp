@@ -50,11 +50,11 @@ void TrackAssigner::destroyInst()
 
 // function
 
-void TrackAssigner::assign(std::vector<Net>& net_list)
+void TrackAssigner::assign()
 {
   Monitor monitor;
   LOG_INST.info(Loc::current(), "Begin assigning...");
-  TAModel ta_model = initTAModel(net_list);
+  TAModel ta_model = initTAModel();
   setTAParameter(ta_model);
   initTAPanelMap(ta_model);
   initTATaskList(ta_model);
@@ -71,8 +71,10 @@ void TrackAssigner::assign(std::vector<Net>& net_list)
 
 TrackAssigner* TrackAssigner::_ta_instance = nullptr;
 
-TAModel TrackAssigner::initTAModel(std::vector<Net>& net_list)
+TAModel TrackAssigner::initTAModel()
 {
+  std::vector<Net>& net_list = DM_INST.getDatabase().get_net_list();
+
   TAModel ta_model;
   ta_model.set_ta_net_list(convertToTANetList(net_list));
   return ta_model;
@@ -167,26 +169,44 @@ void TrackAssigner::initTAPanelMap(TAModel& ta_model)
 
 void TrackAssigner::initTATaskList(TAModel& ta_model)
 {
+  std::vector<TANet>& ta_net_list = ta_model.get_ta_net_list();
   std::vector<std::vector<TAPanel>>& layer_panel_list = ta_model.get_layer_panel_list();
 
-  for (TANet& ta_net : ta_model.get_ta_net_list()) {
-    for (auto& [ta_panel_id, net_task_list] : getPanelTaskMap(ta_net)) {
-      TAPanel& ta_panel = layer_panel_list[ta_panel_id.get_layer_idx()][ta_panel_id.get_panel_idx()];
-      std::vector<TATask*>& panel_task_list = ta_panel.get_ta_task_list();
-      for (TATask* ta_task : net_task_list) {
-        ta_task->set_net_idx(ta_net.get_net_idx());
-        ta_task->set_task_idx(static_cast<int32_t>(panel_task_list.size()));
-        ta_task->set_connect_type(ta_net.get_connect_type());
-        buildBoundingBox(ta_task);
-        ta_task->set_routed_times(0);
-        panel_task_list.push_back(ta_task);
+  std::vector<std::map<TAPanelId, std::vector<TATask*>, CmpTAPanelId>> panel_task_map_list;
+  panel_task_map_list.resize(ta_net_list.size());
+#pragma omp parallel for
+  for (size_t i = 0; i < ta_net_list.size(); i++) {
+    panel_task_map_list[i] = getPanelTaskMap(ta_net_list[i]);
+  }
+  GridMap<std::vector<TATask*>> task_list_map;
+  {
+    int32_t x_size = static_cast<int32_t>(layer_panel_list.size());
+    int32_t y_size = INT_MIN;
+    for (std::vector<TAPanel>& ta_panel_list : layer_panel_list) {
+      y_size = std::max(y_size, static_cast<int32_t>(ta_panel_list.size()));
+    }
+    task_list_map.init(x_size, y_size);
+  }
+  for (std::map<TAPanelId, std::vector<TATask*>, CmpTAPanelId>& panel_task_map : panel_task_map_list) {
+    for (auto& [ta_panel_id, ta_task_list] : panel_task_map) {
+      for (TATask* ta_task : ta_task_list) {
+        task_list_map[ta_panel_id.get_layer_idx()][ta_panel_id.get_panel_idx()].push_back(ta_task);
       }
     }
   }
-  for (std::vector<TAPanel>& ta_panel_list : layer_panel_list) {
-    for (TAPanel& ta_panel : ta_panel_list) {
-      std::vector<TATask*>& ta_task_list = ta_panel.get_ta_task_list();
+
+#pragma omp parallel for collapse(2)
+  for (int x = 0; x < task_list_map.get_x_size(); x++) {
+    for (int y = 0; y < task_list_map.get_y_size(); y++) {
+      std::vector<TATask*>& ta_task_list = task_list_map[x][y];
+      if (ta_task_list.empty()) {
+        continue;
+      }
+      for (size_t i = 0; i < ta_task_list.size(); i++) {
+        ta_task_list[i]->set_task_idx(static_cast<int32_t>(i));
+      }
       std::sort(ta_task_list.begin(), ta_task_list.end(), CmpTATask());
+      layer_panel_list[x][y].set_ta_task_list(ta_task_list);
     }
   }
 }
@@ -241,9 +261,12 @@ std::map<TAPanelId, std::vector<TATask*>, CmpTAPanelId> TrackAssigner::getPanelT
         ta_group_list.back().get_coord_list().emplace_back(x, rt_y, guide_layer_idx);
       }
     }
-
     TATask* ta_task = new TATask();
+    ta_task->set_net_idx(ta_net.get_net_idx());
+    ta_task->set_connect_type(ta_net.get_connect_type());
     ta_task->set_ta_group_list(ta_group_list);
+    buildBoundingBox(ta_task);
+    ta_task->set_routed_times(0);
     panel_task_map[ta_panel_id].push_back(ta_task);
   }
   return panel_task_map;
@@ -310,7 +333,8 @@ void TrackAssigner::assignTAPanelMap(TAModel& ta_model)
       freeTAPanel(ta_panel);
     }
     assigned_panel_num += ta_panel_id_list.size();
-    LOG_INST.info(Loc::current(), "Assigned ", assigned_panel_num, "/", total_panel_num, " panels", stage_monitor.getStatsInfo());
+    LOG_INST.info(Loc::current(), "Assigned ", assigned_panel_num, "/", total_panel_num, "(",
+                  RTUtil::getPercentage(assigned_panel_num, total_panel_num), ") panels", stage_monitor.getStatsInfo());
   }
 }
 
