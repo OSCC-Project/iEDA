@@ -44,7 +44,7 @@ class InitialRouter
   InitialRouter() { Flute::readLUT(); }
   InitialRouter(const InitialRouter& other) = delete;
   InitialRouter(InitialRouter&& other) = delete;
-  ~InitialRouter() = default;
+  ~InitialRouter() { Flute::deleteLUT(); }
   InitialRouter& operator=(const InitialRouter& other) = delete;
   InitialRouter& operator=(InitialRouter&& other) = delete;
   // function

@@ -2987,14 +2987,14 @@ class RTUtil
     return result;
   }
 
-  template <typename T>
-  static double getRatio(T a, T b)
+  template <typename T, typename U>
+  static double getRatio(T a, U b)
   {
     return (b > 0 ? static_cast<double>(a) / static_cast<double>(b) : 0.0);
   }
 
-  template <typename T>
-  static std::string getPercentage(T a, T b)
+  template <typename T, typename U>
+  static std::string getPercentage(T a, U b)
   {
     return getString(std::round(getRatio(a, b) * 10000) / 10000 * 100.0, "%");
   }

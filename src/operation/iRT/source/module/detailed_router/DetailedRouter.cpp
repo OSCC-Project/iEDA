@@ -100,53 +100,50 @@ DRNet DetailedRouter::convertToDRNet(Net& net)
 
 void DetailedRouter::iterativeDRModel(DRModel& dr_model)
 {
-  int32_t cost_unit = 4;
+  int32_t cost_unit = 8;
   std::vector<DRParameter> dr_parameter_list = {
-      {6, 0, cost_unit, cost_unit, 4 * cost_unit, true},
-      {6, -1, cost_unit, cost_unit, 4 * cost_unit, true},
-      {6, -2, cost_unit, cost_unit, 4 * cost_unit, true},
-      {6, -3, cost_unit, cost_unit, 4 * cost_unit, true},
-      {6, -4, cost_unit, cost_unit, 4 * cost_unit, true},
-      {6, -5, cost_unit, cost_unit, 4 * cost_unit, true},
-      {6, 0, 8 * cost_unit, 4 * cost_unit, 4 * cost_unit, false},
-      {6, -1, 8 * cost_unit, 4 * cost_unit, 4 * cost_unit, false},
-      {6, -2, 8 * cost_unit, 4 * cost_unit, 4 * cost_unit, false},
-      {6, -3, 8 * cost_unit, 4 * cost_unit, 4 * cost_unit, false},
-      {6, -4, 8 * cost_unit, 4 * cost_unit, 4 * cost_unit, false},
-      {6, -5, 8 * cost_unit, 4 * cost_unit, 4 * cost_unit, false},
-      {6, 0, 16 * cost_unit, 8 * cost_unit, 8 * cost_unit, false},
-      {6, -1, 16 * cost_unit, 8 * cost_unit, 8 * cost_unit, false},
-      {6, -2, 16 * cost_unit, 8 * cost_unit, 8 * cost_unit, false},
-      {6, -3, 16 * cost_unit, 8 * cost_unit, 8 * cost_unit, false},
-      {6, -4, 16 * cost_unit, 8 * cost_unit, 8 * cost_unit, false},
-      {6, -5, 16 * cost_unit, 8 * cost_unit, 8 * cost_unit, false},
-      {6, 0, 32 * cost_unit, 16 * cost_unit, 16 * cost_unit, false},
-      {6, -1, 32 * cost_unit, 16 * cost_unit, 16 * cost_unit, false},
-      {6, -2, 32 * cost_unit, 16 * cost_unit, 16 * cost_unit, false},
-      {6, -3, 32 * cost_unit, 16 * cost_unit, 16 * cost_unit, false},
-      {6, -4, 32 * cost_unit, 16 * cost_unit, 16 * cost_unit, false},
-      {6, -5, 32 * cost_unit, 16 * cost_unit, 16 * cost_unit, false},
+      {8, 0, cost_unit, cost_unit, 4 * cost_unit, true}, {8, -2, cost_unit, cost_unit, 4 * cost_unit, true},
+      // {8, -4, cost_unit, cost_unit, 4 * cost_unit, true},
+      // {8, -6, cost_unit, cost_unit, 4 * cost_unit, true},
+      // {8, 0, 8 * cost_unit, 4 * cost_unit, 4 * cost_unit, false},
+      // {8, -1, 8 * cost_unit, 4 * cost_unit, 4 * cost_unit, false},
+      // {8, -2, 8 * cost_unit, 4 * cost_unit, 4 * cost_unit, false},
+      // {8, -3, 8 * cost_unit, 4 * cost_unit, 4 * cost_unit, false},
+      // {8, -4, 8 * cost_unit, 4 * cost_unit, 4 * cost_unit, false},
+      // {8, -5, 8 * cost_unit, 4 * cost_unit, 4 * cost_unit, false},
+      // {8, -6, 8 * cost_unit, 4 * cost_unit, 4 * cost_unit, false},
+      // {8, -7, 8 * cost_unit, 4 * cost_unit, 4 * cost_unit, false},
+      // {8, 0, 16 * cost_unit, 8 * cost_unit, 8 * cost_unit, false},
+      // {8, -1, 16 * cost_unit, 8 * cost_unit, 8 * cost_unit, false},
+      // {8, -2, 16 * cost_unit, 8 * cost_unit, 8 * cost_unit, false},
+      // {8, -3, 16 * cost_unit, 8 * cost_unit, 8 * cost_unit, false},
+      // {8, -4, 16 * cost_unit, 8 * cost_unit, 8 * cost_unit, false},
+      // {8, -5, 16 * cost_unit, 8 * cost_unit, 8 * cost_unit, false},
+      // {8, -6, 16 * cost_unit, 8 * cost_unit, 8 * cost_unit, false},
+      // {8, -7, 16 * cost_unit, 8 * cost_unit, 8 * cost_unit, false},
   };
-  for (size_t i = 0; i < dr_parameter_list.size(); i++) {
+  for (size_t i = 0, iter = 1; i < dr_parameter_list.size(); i++, iter++) {
     Monitor iter_monitor;
-    LOG_INST.info(Loc::current(), "****** Start Model Iteration ", (i + 1), "/", dr_parameter_list.size(), "(",
-                  RTUtil::getPercentage(i + 1, dr_parameter_list.size()), ")  ******");
-    setDRParameter(dr_model, dr_parameter_list[i]);
+    LOG_INST.info(Loc::current(), "***** Begin iteration ", iter, "/", dr_parameter_list.size(), "(",
+                  RTUtil::getPercentage(iter, dr_parameter_list.size()), ") *****");
+    setDRParameter(dr_model, iter, dr_parameter_list[i]);
     initDRBoxMap(dr_model);
     splitNetResult(dr_model);
     buildBoxSchedule(dr_model);
     routeDRBoxMap(dr_model);
-    updateSummary(dr_model, (i + 1));
-    printSummary(dr_model, (i + 1));
-    writeNetCSV(dr_model, (i + 1));
-    writeViolationCSV(dr_model, (i + 1));
-    LOG_INST.info(Loc::current(), "****** End Model Iteration ", (i + 1), "/", dr_parameter_list.size(), "(",
-                  RTUtil::getPercentage(i + 1, dr_parameter_list.size()), ")  ******");
+    updateSummary(dr_model);
+    printSummary(dr_model);
+    writeNetCSV(dr_model);
+    writeViolationCSV(dr_model);
+    debugOutputDef(dr_model);
+    LOG_INST.info(Loc::current(), "***** End Iteration ", iter, "/", dr_parameter_list.size(), "(",
+                  RTUtil::getPercentage(iter, dr_parameter_list.size()), ")", iter_monitor.getStatsInfo(), "*****");
   }
 }
 
-void DetailedRouter::setDRParameter(DRModel& dr_model, DRParameter& dr_parameter)
+void DetailedRouter::setDRParameter(DRModel& dr_model, int32_t iter, DRParameter& dr_parameter)
 {
+  dr_model.set_iter(iter);
   LOG_INST.info(Loc::current(), "prefer_wire_unit : ", dr_parameter.get_prefer_wire_unit());
   LOG_INST.info(Loc::current(), "nonprefer_wire_unit : ", dr_parameter.get_nonprefer_wire_unit());
   LOG_INST.info(Loc::current(), "via_unit : ", dr_parameter.get_via_unit());
@@ -274,8 +271,7 @@ void DetailedRouter::splitNetResult(DRBox& dr_box)
       // update split result
       DM_INST.updateNetResultToGCellMap(ChangeType::kDel, net_idx, segment);
       for (size_t i = 1; i < end_point_list.size(); i++) {
-        Segment<LayerCoord>* split_segment = new Segment<LayerCoord>(end_point_list[i - 1], end_point_list[i]);
-        DM_INST.updateNetResultToGCellMap(ChangeType::kAdd, net_idx, split_segment);
+        DM_INST.updateNetResultToGCellMap(ChangeType::kAdd, net_idx, new Segment<LayerCoord>(end_point_list[i - 1], end_point_list[i]));
       }
     }
   }
@@ -1311,7 +1307,21 @@ std::vector<Violation> DetailedRouter::getViolationList(DRBox& dr_box)
       net_result_map[dr_task->get_net_idx()].push_back(DM_INST.getIDBSegmentByNetPatch(dr_task->get_net_idx(), patch));
     }
   }
-  return RTAPI_INST.getViolationList(env_shape_list, net_pin_shape_map, net_result_map);
+  std::vector<Violation> violation_list = RTAPI_INST.getViolationList(env_shape_list, net_pin_shape_map, net_result_map);
+  // free memory
+  {
+    for (idb::IdbLayerShape* env_shape : env_shape_list) {
+      delete env_shape;
+      env_shape = nullptr;
+    }
+    for (auto& [net_idx, pin_shape_list] : net_pin_shape_map) {
+      for (idb::IdbLayerShape* pin_shape : pin_shape_list) {
+        delete pin_shape;
+        pin_shape = nullptr;
+      }
+    }
+  }
+  return violation_list;
 }
 
 void DetailedRouter::updateDRTaskToGcellMap(DRBox& dr_box)
@@ -1887,25 +1897,35 @@ void DetailedRouter::debugPlotDRBox(DRBox& dr_box, int32_t curr_task_idx, std::s
   GP_INST.plot(gp_gds, gds_file_path);
 }
 
+void DetailedRouter::debugOutputDef(DRModel& dr_model)
+{
+  std::string& dr_temp_directory_path = DM_INST.getConfig().dr_temp_directory_path;
+
+  DM_INST.output(DM_INST.getHelper().get_idb_builder());
+  RTAPI_INST.outputDef(RTUtil::getString(dr_temp_directory_path, "dr.def.temp"));
+}
+
 #endif
 
 #if 1  // exhibit
 
-void DetailedRouter::updateSummary(DRModel& dr_model, int32_t iter)
+void DetailedRouter::updateSummary(DRModel& dr_model)
 {
   int32_t micron_dbu = DM_INST.getDatabase().get_micron_dbu();
   Die& die = DM_INST.getDatabase().get_die();
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
   std::vector<CutLayer>& cut_layer_list = DM_INST.getDatabase().get_cut_layer_list();
   std::vector<std::vector<ViaMaster>>& layer_via_master_list = DM_INST.getDatabase().get_layer_via_master_list();
-  std::map<int32_t, double>& routing_wire_length_map = DM_INST.getSummary().iter_dr_summary_map[iter].routing_wire_length_map;
-  double& total_wire_length = DM_INST.getSummary().iter_dr_summary_map[iter].total_wire_length;
-  std::map<int32_t, int32_t>& cut_via_num_map = DM_INST.getSummary().iter_dr_summary_map[iter].cut_via_num_map;
-  int32_t& total_via_num = DM_INST.getSummary().iter_dr_summary_map[iter].total_via_num;
-  std::map<int32_t, int32_t>& routing_patch_num_map = DM_INST.getSummary().iter_dr_summary_map[iter].routing_patch_num_map;
-  int32_t& total_patch_num = DM_INST.getSummary().iter_dr_summary_map[iter].total_patch_num;
-  std::map<int32_t, int32_t>& routing_violation_num_map = DM_INST.getSummary().iter_dr_summary_map[iter].routing_violation_num_map;
-  int32_t& total_violation_num = DM_INST.getSummary().iter_dr_summary_map[iter].total_violation_num;
+  std::map<int32_t, double>& routing_wire_length_map
+      = DM_INST.getSummary().iter_dr_summary_map[dr_model.get_iter()].routing_wire_length_map;
+  double& total_wire_length = DM_INST.getSummary().iter_dr_summary_map[dr_model.get_iter()].total_wire_length;
+  std::map<int32_t, int32_t>& cut_via_num_map = DM_INST.getSummary().iter_dr_summary_map[dr_model.get_iter()].cut_via_num_map;
+  int32_t& total_via_num = DM_INST.getSummary().iter_dr_summary_map[dr_model.get_iter()].total_via_num;
+  std::map<int32_t, int32_t>& routing_patch_num_map = DM_INST.getSummary().iter_dr_summary_map[dr_model.get_iter()].routing_patch_num_map;
+  int32_t& total_patch_num = DM_INST.getSummary().iter_dr_summary_map[dr_model.get_iter()].total_patch_num;
+  std::map<int32_t, int32_t>& routing_violation_num_map
+      = DM_INST.getSummary().iter_dr_summary_map[dr_model.get_iter()].routing_violation_num_map;
+  int32_t& total_violation_num = DM_INST.getSummary().iter_dr_summary_map[dr_model.get_iter()].total_violation_num;
 
   for (RoutingLayer& routing_layer : routing_layer_list) {
     routing_wire_length_map[routing_layer.get_layer_idx()] = 0;
@@ -1951,7 +1971,7 @@ void DetailedRouter::updateSummary(DRModel& dr_model, int32_t iter)
     total_violation_num++;
   }
 #if 0
-  std::map<std::string, std::vector<double>>& timing = DM_INST.getSummary().iter_dr_summary_map[iter].timing;
+  std::map<std::string, std::vector<double>>& timing = DM_INST.getSummary().iter_dr_summary_map[dr_model.get_iter()].timing;
   std::map<int32_t, std::map<LayerCoord, std::vector<std::string>, CmpLayerCoordByXASC>> net_coord_real_pin_map;
   std::map<int32_t, std::vector<Segment<LayerCoord>>> net_routing_segment_map;
   for (DRNet& dr_net : dr_model.get_dr_net_list()) {
@@ -1974,18 +1994,20 @@ void DetailedRouter::updateSummary(DRModel& dr_model, int32_t iter)
 #endif
 }
 
-void DetailedRouter::printSummary(DRModel& dr_model, int32_t iter)
+void DetailedRouter::printSummary(DRModel& dr_model)
 {
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
   std::vector<CutLayer>& cut_layer_list = DM_INST.getDatabase().get_cut_layer_list();
-  std::map<int32_t, double>& routing_wire_length_map = DM_INST.getSummary().iter_dr_summary_map[iter].routing_wire_length_map;
-  double& total_wire_length = DM_INST.getSummary().iter_dr_summary_map[iter].total_wire_length;
-  std::map<int32_t, int32_t>& cut_via_num_map = DM_INST.getSummary().iter_dr_summary_map[iter].cut_via_num_map;
-  int32_t& total_via_num = DM_INST.getSummary().iter_dr_summary_map[iter].total_via_num;
-  std::map<int32_t, int32_t>& routing_patch_num_map = DM_INST.getSummary().iter_dr_summary_map[iter].routing_patch_num_map;
-  int32_t& total_patch_num = DM_INST.getSummary().iter_dr_summary_map[iter].total_patch_num;
-  std::map<int32_t, int32_t>& routing_violation_num_map = DM_INST.getSummary().iter_dr_summary_map[iter].routing_violation_num_map;
-  int32_t& total_violation_num = DM_INST.getSummary().iter_dr_summary_map[iter].total_violation_num;
+  std::map<int32_t, double>& routing_wire_length_map
+      = DM_INST.getSummary().iter_dr_summary_map[dr_model.get_iter()].routing_wire_length_map;
+  double& total_wire_length = DM_INST.getSummary().iter_dr_summary_map[dr_model.get_iter()].total_wire_length;
+  std::map<int32_t, int32_t>& cut_via_num_map = DM_INST.getSummary().iter_dr_summary_map[dr_model.get_iter()].cut_via_num_map;
+  int32_t& total_via_num = DM_INST.getSummary().iter_dr_summary_map[dr_model.get_iter()].total_via_num;
+  std::map<int32_t, int32_t>& routing_patch_num_map = DM_INST.getSummary().iter_dr_summary_map[dr_model.get_iter()].routing_patch_num_map;
+  int32_t& total_patch_num = DM_INST.getSummary().iter_dr_summary_map[dr_model.get_iter()].total_patch_num;
+  std::map<int32_t, int32_t>& routing_violation_num_map
+      = DM_INST.getSummary().iter_dr_summary_map[dr_model.get_iter()].routing_violation_num_map;
+  int32_t& total_violation_num = DM_INST.getSummary().iter_dr_summary_map[dr_model.get_iter()].total_violation_num;
 
   fort::char_table routing_wire_length_map_table;
   {
@@ -2042,7 +2064,7 @@ void DetailedRouter::printSummary(DRModel& dr_model, int32_t iter)
       {routing_wire_length_map_table, cut_via_num_map_table, routing_patch_num_map_table, routing_violation_num_map_table});
 }
 
-void DetailedRouter::writeNetCSV(DRModel& dr_model, int32_t iter)
+void DetailedRouter::writeNetCSV(DRModel& dr_model)
 {
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
   GridMap<GCell>& gcell_map = DM_INST.getDatabase().get_gcell_map();
@@ -2083,7 +2105,7 @@ void DetailedRouter::writeNetCSV(DRModel& dr_model, int32_t iter)
   }
   for (RoutingLayer& routing_layer : routing_layer_list) {
     std::ofstream* net_csv_file = RTUtil::getOutputFileStream(
-        RTUtil::getString(dr_temp_directory_path, "net_map_", routing_layer.get_layer_name(), "_", iter, ".csv"));
+        RTUtil::getString(dr_temp_directory_path, "net_map_", routing_layer.get_layer_name(), "_", dr_model.get_iter(), ".csv"));
     GridMap<int32_t>& net_map = layer_net_map[routing_layer.get_layer_idx()];
     for (int32_t y = net_map.get_y_size() - 1; y >= 0; y--) {
       for (int32_t x = 0; x < net_map.get_x_size(); x++) {
@@ -2095,7 +2117,7 @@ void DetailedRouter::writeNetCSV(DRModel& dr_model, int32_t iter)
   }
 }
 
-void DetailedRouter::writeViolationCSV(DRModel& dr_model, int32_t iter)
+void DetailedRouter::writeViolationCSV(DRModel& dr_model)
 {
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
   GridMap<GCell>& gcell_map = DM_INST.getDatabase().get_gcell_map();
@@ -2118,7 +2140,7 @@ void DetailedRouter::writeViolationCSV(DRModel& dr_model, int32_t iter)
   }
   for (RoutingLayer& routing_layer : routing_layer_list) {
     std::ofstream* violation_csv_file = RTUtil::getOutputFileStream(
-        RTUtil::getString(dr_temp_directory_path, "violation_map_", routing_layer.get_layer_name(), "_", iter, ".csv"));
+        RTUtil::getString(dr_temp_directory_path, "violation_map_", routing_layer.get_layer_name(), "_", dr_model.get_iter(), ".csv"));
     GridMap<int32_t>& violation_map = layer_violation_map[routing_layer.get_layer_idx()];
     for (int32_t y = violation_map.get_y_size() - 1; y >= 0; y--) {
       for (int32_t x = 0; x < violation_map.get_x_size(); x++) {

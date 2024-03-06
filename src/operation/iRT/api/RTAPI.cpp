@@ -467,6 +467,11 @@ std::map<std::string, std::vector<double>> RTAPI::getTiming(
 #endif
 }
 
+void RTAPI::outputDef(std::string output_def_file_path)
+{
+  dmInst->saveDef(output_def_file_path);
+}
+
 #endif
 
 // private
