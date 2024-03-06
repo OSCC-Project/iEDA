@@ -39,7 +39,7 @@ class DetailedRouter
   static DetailedRouter& getInst();
   static void destroyInst();
   // function
-  void route(std::vector<Net>& net_list);
+  void route();
 
  private:
   // self
@@ -52,7 +52,7 @@ class DetailedRouter
   DetailedRouter& operator=(const DetailedRouter& other) = delete;
   DetailedRouter& operator=(DetailedRouter&& other) = delete;
   // function
-  DRModel initDRModel(std::vector<Net>& net_list);
+  DRModel initDRModel();
   std::vector<DRNet> convertToDRNetList(std::vector<Net>& net_list);
   DRNet convertToDRNet(Net& net);
   void iterativeDRModel(DRModel& dr_model);

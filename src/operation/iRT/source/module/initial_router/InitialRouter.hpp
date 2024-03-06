@@ -35,7 +35,7 @@ class InitialRouter
   static InitialRouter& getInst();
   static void destroyInst();
   // function
-  void route(std::vector<Net>& net_list);
+  void route();
 
  private:
   // self
@@ -48,7 +48,7 @@ class InitialRouter
   InitialRouter& operator=(const InitialRouter& other) = delete;
   InitialRouter& operator=(InitialRouter&& other) = delete;
   // function
-  IRModel initIRModel(std::vector<Net>& net_list);
+  IRModel initIRModel();
   std::vector<IRNet> convertToIRNetList(std::vector<Net>& net_list);
   IRNet convertToIRNet(Net& net);
   void setIRParameter(IRModel& ir_model);

@@ -49,11 +49,11 @@ void InitialRouter::destroyInst()
 
 // function
 
-void InitialRouter::route(std::vector<Net>& net_list)
+void InitialRouter::route()
 {
   Monitor monitor;
   LOG_INST.info(Loc::current(), "Begin routing...");
-  IRModel ir_model = initIRModel(net_list);
+  IRModel ir_model = initIRModel();
   setIRParameter(ir_model);
   makeGridCoordList(ir_model);
   initLayerNodeMap(ir_model);
@@ -76,8 +76,10 @@ void InitialRouter::route(std::vector<Net>& net_list)
 
 InitialRouter* InitialRouter::_ir_instance = nullptr;
 
-IRModel InitialRouter::initIRModel(std::vector<Net>& net_list)
+IRModel InitialRouter::initIRModel()
 {
+  std::vector<Net>& net_list = DM_INST.getDatabase().get_net_list();
+
   IRModel ir_model;
   ir_model.set_ir_net_list(convertToIRNetList(net_list));
   return ir_model;
@@ -133,17 +135,19 @@ void InitialRouter::makeGridCoordList(IRModel& ir_model)
 
 void InitialRouter::initLayerNodeMap(IRModel& ir_model)
 {
-  Die& die = DM_INST.getDatabase().get_die();
+  GridMap<GCell>& gcell_map = DM_INST.getDatabase().get_gcell_map();
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
 
   std::vector<GridMap<IRNode>>& layer_node_map = ir_model.get_layer_node_map();
   layer_node_map.resize(routing_layer_list.size());
-  for (int32_t layer_idx = 0; layer_idx < static_cast<int32_t>(layer_node_map.size()); layer_idx++) {
-    GridMap<IRNode>& ir_node_map = layer_node_map[layer_idx];
-    ir_node_map.init(die.getXSize(), die.getYSize());
-    for (int32_t x = 0; x < ir_node_map.get_x_size(); x++) {
-      for (int32_t y = 0; y < ir_node_map.get_y_size(); y++) {
-        IRNode& ir_node = ir_node_map[x][y];
+  for (GridMap<IRNode>& ir_node_map : layer_node_map) {
+    ir_node_map.init(gcell_map.get_x_size(), gcell_map.get_y_size());
+  }
+#pragma omp parallel for collapse(2)
+  for (int32_t x = 0; x < gcell_map.get_x_size(); x++) {
+    for (int32_t y = 0; y < gcell_map.get_y_size(); y++) {
+      for (int32_t layer_idx = 0; layer_idx < static_cast<int32_t>(layer_node_map.size()); layer_idx++) {
+        IRNode& ir_node = layer_node_map[layer_idx][x][y];
         ir_node.set_coord(x, y);
         ir_node.set_layer_idx(layer_idx);
       }
@@ -154,35 +158,37 @@ void InitialRouter::initLayerNodeMap(IRModel& ir_model)
 void InitialRouter::buildIRNodeNeighbor(IRModel& ir_model)
 {
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+  GridMap<GCell>& gcell_map = DM_INST.getDatabase().get_gcell_map();
   int32_t bottom_routing_layer_idx = DM_INST.getConfig().bottom_routing_layer_idx;
   int32_t top_routing_layer_idx = DM_INST.getConfig().top_routing_layer_idx;
 
   std::vector<GridMap<IRNode>>& layer_node_map = ir_model.get_layer_node_map();
-  for (int32_t layer_idx = 0; layer_idx < static_cast<int32_t>(layer_node_map.size()); layer_idx++) {
-    bool routing_h = routing_layer_list[layer_idx].isPreferH();
-    bool routing_v = !routing_h;
-    if (layer_idx < bottom_routing_layer_idx || top_routing_layer_idx < layer_idx) {
-      routing_h = false;
-      routing_v = false;
-    }
-    GridMap<IRNode>& ir_node_map = layer_node_map[layer_idx];
-    for (int32_t x = 0; x < ir_node_map.get_x_size(); x++) {
-      for (int32_t y = 0; y < ir_node_map.get_y_size(); y++) {
-        std::map<Orientation, IRNode*>& neighbor_ptr_map = ir_node_map[x][y].get_neighbor_node_map();
+
+#pragma omp parallel for collapse(2)
+  for (int32_t x = 0; x < gcell_map.get_x_size(); x++) {
+    for (int32_t y = 0; y < gcell_map.get_y_size(); y++) {
+      for (int32_t layer_idx = 0; layer_idx < static_cast<int32_t>(layer_node_map.size()); layer_idx++) {
+        bool routing_h = routing_layer_list[layer_idx].isPreferH();
+        bool routing_v = !routing_h;
+        if (layer_idx < bottom_routing_layer_idx || top_routing_layer_idx < layer_idx) {
+          routing_h = false;
+          routing_v = false;
+        }
+        std::map<Orientation, IRNode*>& neighbor_ptr_map = layer_node_map[layer_idx][x][y].get_neighbor_node_map();
         if (routing_h) {
           if (x != 0) {
-            neighbor_ptr_map[Orientation::kWest] = &ir_node_map[x - 1][y];
+            neighbor_ptr_map[Orientation::kWest] = &layer_node_map[layer_idx][x - 1][y];
           }
-          if (x != (ir_node_map.get_x_size() - 1)) {
-            neighbor_ptr_map[Orientation::kEast] = &ir_node_map[x + 1][y];
+          if (x != (layer_node_map[layer_idx].get_x_size() - 1)) {
+            neighbor_ptr_map[Orientation::kEast] = &layer_node_map[layer_idx][x + 1][y];
           }
         }
         if (routing_v) {
           if (y != 0) {
-            neighbor_ptr_map[Orientation::kSouth] = &ir_node_map[x][y - 1];
+            neighbor_ptr_map[Orientation::kSouth] = &layer_node_map[layer_idx][x][y - 1];
           }
-          if (y != (ir_node_map.get_y_size() - 1)) {
-            neighbor_ptr_map[Orientation::kNorth] = &ir_node_map[x][y + 1];
+          if (y != (layer_node_map[layer_idx].get_y_size() - 1)) {
+            neighbor_ptr_map[Orientation::kNorth] = &layer_node_map[layer_idx][x][y + 1];
           }
         }
         if (layer_idx != 0) {
@@ -201,11 +207,12 @@ void InitialRouter::buildOrienSupply(IRModel& ir_model)
   GridMap<GCell>& gcell_map = DM_INST.getDatabase().get_gcell_map();
 
   std::vector<GridMap<IRNode>>& layer_node_map = ir_model.get_layer_node_map();
-  for (int32_t layer_idx = 0; layer_idx < static_cast<int32_t>(layer_node_map.size()); layer_idx++) {
-    GridMap<IRNode>& ir_node_map = layer_node_map[layer_idx];
-    for (int32_t x = 0; x < ir_node_map.get_x_size(); x++) {
-      for (int32_t y = 0; y < ir_node_map.get_y_size(); y++) {
-        ir_node_map[x][y].set_orien_supply_map(gcell_map[x][y].get_routing_orien_supply_map()[layer_idx]);
+
+#pragma omp parallel for collapse(2)
+  for (int32_t x = 0; x < gcell_map.get_x_size(); x++) {
+    for (int32_t y = 0; y < gcell_map.get_y_size(); y++) {
+      for (int32_t layer_idx = 0; layer_idx < static_cast<int32_t>(layer_node_map.size()); layer_idx++) {
+        layer_node_map[layer_idx][x][y].set_orien_supply_map(gcell_map[x][y].get_routing_orien_supply_map()[layer_idx]);
       }
     }
   }
@@ -337,7 +344,8 @@ void InitialRouter::routeIRModel(IRModel& ir_model)
   for (size_t i = 0; i < ir_net_idx_list.size(); i++) {
     routeIRNet(ir_model, ir_net_list[ir_net_idx_list[i]]);
     if ((i + 1) % batch_size == 0 || (i + 1) == ir_net_idx_list.size()) {
-      LOG_INST.info(Loc::current(), "Routed ", (i + 1), "/", ir_net_idx_list.size(), " nets", monitor.getStatsInfo());
+      LOG_INST.info(Loc::current(), "Routed ", (i + 1), "/", ir_net_idx_list.size(), "(",
+                    RTUtil::getPercentage(i + 1, ir_net_idx_list.size()), ") nets", monitor.getStatsInfo());
     }
   }
 }

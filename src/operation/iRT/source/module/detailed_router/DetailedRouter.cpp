@@ -54,11 +54,11 @@ void DetailedRouter::destroyInst()
 
 // function
 
-void DetailedRouter::route(std::vector<Net>& net_list)
+void DetailedRouter::route()
 {
   Monitor monitor;
   LOG_INST.info(Loc::current(), "Begin routing...");
-  DRModel dr_model = initDRModel(net_list);
+  DRModel dr_model = initDRModel();
   iterativeDRModel(dr_model);
   LOG_INST.info(Loc::current(), "End route", monitor.getStatsInfo());
 }
@@ -67,8 +67,10 @@ void DetailedRouter::route(std::vector<Net>& net_list)
 
 DetailedRouter* DetailedRouter::_dr_instance = nullptr;
 
-DRModel DetailedRouter::initDRModel(std::vector<Net>& net_list)
+DRModel DetailedRouter::initDRModel()
 {
+  std::vector<Net>& net_list = DM_INST.getDatabase().get_net_list();
+
   DRModel dr_model;
   dr_model.set_dr_net_list(convertToDRNetList(net_list));
   return dr_model;
@@ -103,31 +105,32 @@ void DetailedRouter::iterativeDRModel(DRModel& dr_model)
       {6, 0, cost_unit, cost_unit, 4 * cost_unit, true},
       {6, -1, cost_unit, cost_unit, 4 * cost_unit, true},
       {6, -2, cost_unit, cost_unit, 4 * cost_unit, true},
-      // {6, -3, cost_unit, cost_unit, 4 * cost_unit, true},
-      // {6, -4, cost_unit, cost_unit, 4 * cost_unit, true},
-      // {6, -5, cost_unit, cost_unit, 4 * cost_unit, true},
-      // {6, 0, 8 * cost_unit, 4 * cost_unit, 4 * cost_unit, false},
-      // {6, -1, 8 * cost_unit, 4 * cost_unit, 4 * cost_unit, false},
-      // {6, -2, 8 * cost_unit, 4 * cost_unit, 4 * cost_unit, false},
-      // {6, -3, 8 * cost_unit, 4 * cost_unit, 4 * cost_unit, false},
-      // {6, -4, 8 * cost_unit, 4 * cost_unit, 4 * cost_unit, false},
-      // {6, -5, 8 * cost_unit, 4 * cost_unit, 4 * cost_unit, false},
-      // {6, 0, 16 * cost_unit, 8 * cost_unit, 8 * cost_unit, false},
-      // {6, -1, 16 * cost_unit, 8 * cost_unit, 8 * cost_unit, false},
-      // {6, -2, 16 * cost_unit, 8 * cost_unit, 8 * cost_unit, false},
-      // {6, -3, 16 * cost_unit, 8 * cost_unit, 8 * cost_unit, false},
-      // {6, -4, 16 * cost_unit, 8 * cost_unit, 8 * cost_unit, false},
-      // {6, -5, 16 * cost_unit, 8 * cost_unit, 8 * cost_unit, false},
-      // {6, 0, 32 * cost_unit, 16 * cost_unit, 16 * cost_unit, false},
-      // {6, -1, 32 * cost_unit, 16 * cost_unit, 16 * cost_unit, false},
-      // {6, -2, 32 * cost_unit, 16 * cost_unit, 16 * cost_unit, false},
-      // {6, -3, 32 * cost_unit, 16 * cost_unit, 16 * cost_unit, false},
-      // {6, -4, 32 * cost_unit, 16 * cost_unit, 16 * cost_unit, false},
-      // {6, -5, 32 * cost_unit, 16 * cost_unit, 16 * cost_unit, false},
+      {6, -3, cost_unit, cost_unit, 4 * cost_unit, true},
+      {6, -4, cost_unit, cost_unit, 4 * cost_unit, true},
+      {6, -5, cost_unit, cost_unit, 4 * cost_unit, true},
+      {6, 0, 8 * cost_unit, 4 * cost_unit, 4 * cost_unit, false},
+      {6, -1, 8 * cost_unit, 4 * cost_unit, 4 * cost_unit, false},
+      {6, -2, 8 * cost_unit, 4 * cost_unit, 4 * cost_unit, false},
+      {6, -3, 8 * cost_unit, 4 * cost_unit, 4 * cost_unit, false},
+      {6, -4, 8 * cost_unit, 4 * cost_unit, 4 * cost_unit, false},
+      {6, -5, 8 * cost_unit, 4 * cost_unit, 4 * cost_unit, false},
+      {6, 0, 16 * cost_unit, 8 * cost_unit, 8 * cost_unit, false},
+      {6, -1, 16 * cost_unit, 8 * cost_unit, 8 * cost_unit, false},
+      {6, -2, 16 * cost_unit, 8 * cost_unit, 8 * cost_unit, false},
+      {6, -3, 16 * cost_unit, 8 * cost_unit, 8 * cost_unit, false},
+      {6, -4, 16 * cost_unit, 8 * cost_unit, 8 * cost_unit, false},
+      {6, -5, 16 * cost_unit, 8 * cost_unit, 8 * cost_unit, false},
+      {6, 0, 32 * cost_unit, 16 * cost_unit, 16 * cost_unit, false},
+      {6, -1, 32 * cost_unit, 16 * cost_unit, 16 * cost_unit, false},
+      {6, -2, 32 * cost_unit, 16 * cost_unit, 16 * cost_unit, false},
+      {6, -3, 32 * cost_unit, 16 * cost_unit, 16 * cost_unit, false},
+      {6, -4, 32 * cost_unit, 16 * cost_unit, 16 * cost_unit, false},
+      {6, -5, 32 * cost_unit, 16 * cost_unit, 16 * cost_unit, false},
   };
   for (size_t i = 0; i < dr_parameter_list.size(); i++) {
     Monitor iter_monitor;
-    LOG_INST.info(Loc::current(), "****** Start Model Iteration(", (i + 1), "/", dr_parameter_list.size(), ") ******");
+    LOG_INST.info(Loc::current(), "****** Start Model Iteration ", (i + 1), "/", dr_parameter_list.size(), "(",
+                  RTUtil::getPercentage(i + 1, dr_parameter_list.size()), ")  ******");
     setDRParameter(dr_model, dr_parameter_list[i]);
     initDRBoxMap(dr_model);
     splitNetResult(dr_model);
@@ -137,8 +140,8 @@ void DetailedRouter::iterativeDRModel(DRModel& dr_model)
     printSummary(dr_model, (i + 1));
     writeNetCSV(dr_model, (i + 1));
     writeViolationCSV(dr_model, (i + 1));
-    LOG_INST.info(Loc::current(), "****** End Model Iteration(", (i + 1), "/", dr_parameter_list.size(), ")", iter_monitor.getStatsInfo(),
-                  " ******");
+    LOG_INST.info(Loc::current(), "****** End Model Iteration ", (i + 1), "/", dr_parameter_list.size(), "(",
+                  RTUtil::getPercentage(i + 1, dr_parameter_list.size()), ")  ******");
   }
 }
 
@@ -335,8 +338,8 @@ void DetailedRouter::routeDRBoxMap(DRModel& dr_model)
     }
     routed_box_num += dr_box_id_list.size();
 
-    LOG_INST.info(Loc::current(), "Routed ", routed_box_num, "/", total_box_num, " boxes with ", getViolationNum(), " violations",
-                  stage_monitor.getStatsInfo());
+    LOG_INST.info(Loc::current(), "Routed ", routed_box_num, "/", total_box_num, "(", RTUtil::getPercentage(routed_box_num, total_box_num),
+                  ") boxes with ", getViolationNum(), " violations", stage_monitor.getStatsInfo());
   }
 }
 

@@ -1,7 +1,5 @@
 initSAModel:初始化model
-buildLayerNodeMap:从顶层gcell_map上得到结果，通过指针就行，实际上是拷贝了一部分局部数据
 buildSupplySchedule:构建将要计算的Schedule
 analyzeSupply:分析GCell之间的形状等特征，确定supply
-updateSAModel:更新gcell_map
 
 

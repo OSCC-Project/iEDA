@@ -1712,7 +1712,7 @@ void DataManager::printDatabase()
       head_info += ">=";
     }
     LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), head_info, pin_num, " pins: ", net_num, "(",
-                  RTUtil::getPercentage(net_num, net_list.size()), "%)");
+                  RTUtil::getPercentage(net_num, net_list.size()), ")");
   }
   ////////////////////////////////////////////////
 }
