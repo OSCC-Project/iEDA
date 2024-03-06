@@ -202,6 +202,7 @@ impl VerilogVirtualBaseID for VerilogSliceID {
 
     fn set_base_name(&mut self, id: &str) {
         self.id.set_base_name(id);
+        self.formatted_slice_id = format!("{}[{}:{}]", self.id.get_base_name(), self.range_from, self.range_to);
     }
 
     fn as_any(&self) -> &dyn std::any::Any {
@@ -220,6 +221,10 @@ pub trait VerilogVirtualBaseNetExpr: Debug + VerilogVirtualBaseNetExprClone {
         false
     }
     fn get_verilog_id(&self) -> &Box<dyn VerilogVirtualBaseID> {
+        panic!("This is unknown value.");
+    }
+
+    fn get_line_no(&self) -> usize {
         panic!("This is unknown value.");
     }
 
@@ -290,13 +295,16 @@ impl VerilogVirtualBaseNetExpr for VerilogNetIDExpr {
     fn get_verilog_id(&self) -> &Box<dyn VerilogVirtualBaseID> {
         &self.verilog_id
     }
+    fn get_line_no(&self) -> usize {
+        self.net_expr.get_line_no()
+    }
     fn as_any(&self) -> &dyn std::any::Any {
         self
     }
 }
 
 #[derive(Debug, Clone)]
-/// such as { 2'b00, _0_ }
+/// such as { 2'b00, _0_ } or  wire   [23:0] buf11_dout in dcl.
 pub struct VerilogNetConcatExpr {
     net_expr: VerilogNetExpr,
     verilog_id_concat: Vec<Box<dyn VerilogVirtualBaseNetExpr>>,
@@ -327,6 +335,10 @@ impl VerilogVirtualBaseNetExpr for VerilogNetConcatExpr {
 
     fn get_verilog_id(&self) -> &Box<dyn VerilogVirtualBaseID> {
         &self.verilog_id_concat.first().unwrap().get_verilog_id()
+    }
+
+    fn get_line_no(&self) -> usize {
+        self.net_expr.get_line_no()
     }
 
     fn as_any(&self) -> &dyn std::any::Any {
@@ -360,6 +372,9 @@ impl VerilogVirtualBaseNetExpr for VerilogConstantExpr {
     }
     fn get_verilog_id(&self) -> &Box<dyn VerilogVirtualBaseID> {
         &self.verilog_id
+    }
+    fn get_line_no(&self) -> usize {
+        self.net_expr.get_line_no()
     }
     fn as_any(&self) -> &dyn std::any::Any {
         self
@@ -1014,6 +1029,18 @@ impl VerilogModule {
                     if verilog_dcl.get_dcl_name().eq(name) {
                         return Some(module_stmt);
                     }
+                }
+            }
+        }
+        None
+    }
+
+    pub fn find_inst_stmt(&self, inst_name: &str, cell_name: &str) -> Option<VerilogInst> {
+        for module_stmt in &self.module_stmts {
+            if module_stmt.is_module_inst_stmt() {
+                let inst_stmt = module_stmt.as_any().downcast_ref::<VerilogInst>().unwrap();
+                if inst_stmt.get_inst_name().contains(inst_name) && inst_stmt.get_cell_name().eq(cell_name) {
+                    return Some(inst_stmt.clone());
                 }
             }
         }

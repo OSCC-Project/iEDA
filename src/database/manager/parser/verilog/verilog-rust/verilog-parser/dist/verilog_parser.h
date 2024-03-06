@@ -41,6 +41,8 @@ typedef struct RustVerilogID {
 
 typedef struct RustVerilogIndexID {
     char *id;
+    char *base_id;
+    int32_t index;
 } RustVerilogIndexID;
 
 typedef struct RustVerilogSliceID {
