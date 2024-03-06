@@ -97,9 +97,22 @@ void GeometryBoost::addGeometry(EngineGeometry* geometry)
   _polyset += boost_geometry->get_polyset();
 }
 
+void GeometryBoost::prepareData()
+{
+  if (_polygon_list.empty()) {
+    _polyset.get(_polygon_list);
+  }
+  if (_overlap_list.empty()) {
+    GtlPolygon90Set set(_polyset);
+    set.self_intersect();
+    set.get_rectangles(_overlap_list);
+    // _overlap_set.get(_overlap_list);
+  }
+}
+
 std::vector<GeometryPolygon>& GeometryBoost::getLayoutPolygons()
 {
-  if (_polygon_list.size() <= 0) {
+  if (_polygon_list.empty()) {
     _polyset.get(_polygon_list);
   }
   return _polygon_list;
@@ -107,7 +120,7 @@ std::vector<GeometryPolygon>& GeometryBoost::getLayoutPolygons()
 
 std::vector<GeometryPolygon>& GeometryBoost::getOverlap()
 {
-  if (_overlap_list.size() <= 0) {
+  if (_overlap_list.empty()) {
     GtlPolygon90Set set(_polyset);
     set.self_intersect();
     set.get_rectangles(_overlap_list);
@@ -118,7 +131,7 @@ std::vector<GeometryPolygon>& GeometryBoost::getOverlap()
 
 std::vector<GeometryRect>& GeometryBoost::getWires()
 {
-  if (_wire_list.size() <= 0) {
+  if (_wire_list.empty()) {
     gtl::get_max_rectangles(_wire_list, _polyset);
   }
   return _wire_list;

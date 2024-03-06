@@ -16,21 +16,22 @@
 // ***************************************************************************************
 
 #include "condition_manager.h"
-
 #include "engine_layout.h"
 #include "idm.h"
 
 namespace idrc {
 
-void DrcConditionManager::addViolation(ieda_solver::GeometryRect& rect, std::string layer, ViolationEnumType type, std::set<int> net_id)
+void DrcConditionManager::checkOverlap(std::string layer, DrcEngineLayout* layout)
 {
-#ifdef _PARALLEL_
-#pragma omp single
-#endif
-  {
-    _violation_manager->addViolation(ieda_solver::lowLeftX(rect), ieda_solver::lowLeftY(rect), ieda_solver::upRightX(rect),
-                                     ieda_solver::upRightY(rect), type, net_id, layer);
+  ieda::Stats states;
+  auto& overlap = layout->get_layout()->get_engine()->getOverlap();
+  for (auto& overlap_polygon : overlap) {
+    ieda_solver::GeometryRect overlap_violation_rect;
+    ieda_solver::envelope(overlap_violation_rect, overlap_polygon);
+    addViolation(overlap_violation_rect, layer, ViolationEnumType::kShort);
   }
+  DEBUGOUTPUT(DEBUGHIGHLIGHT("Metal Short:\t") << overlap.size() << "\ttime = " << states.elapsedRunTime()
+                                               << "\tmemory = " << states.memoryDelta());
 }
 
 }  // namespace idrc

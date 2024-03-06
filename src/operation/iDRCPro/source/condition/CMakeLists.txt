@@ -1,5 +1,9 @@
 add_library(idrc_condition_manager
   condition_manager.cpp
+  condition_min_spacing.cpp
+  condition_overlap.cpp
+  condition_wire_width.cpp
+  condition_polygon.cpp
 )
 
 target_link_libraries(idrc_condition_manager
@@ -7,6 +11,7 @@ target_link_libraries(idrc_condition_manager
     idrc_pro_util
     idrc_pro_violation
     idrc_pro_tech_rules
+    idrc_engine_manager
 )
 
 target_include_directories(idrc_condition_manager
