@@ -26,8 +26,6 @@ typedef enum DclType {
     KWor = 8,
 } DclType;
 
-typedef struct Vec_VerilogModule Vec_VerilogModule;
-
 typedef struct VerilogModule VerilogModule;
 
 typedef struct RustVec {
@@ -43,6 +41,8 @@ typedef struct RustVerilogID {
 
 typedef struct RustVerilogIndexID {
     char *id;
+    char *base_id;
+    int32_t index;
 } RustVerilogIndexID;
 
 typedef struct RustVerilogSliceID {
@@ -104,9 +104,9 @@ typedef struct RustVerilogPortRefPortConnect {
     void *net_expr;
 } RustVerilogPortRefPortConnect;
 
-void *rust_parse_verilog(const char *verilog_path);
+void *rust_parse_verilog(const char *verilog_path, const char *top_module_name);
 
-void rust_free_verilog_module(struct Vec_VerilogModule *c_verilog_module);
+void rust_free_verilog_module(struct VerilogModule *c_verilog_module);
 
 uintptr_t rust_vec_len(const struct RustVec *vec);
 

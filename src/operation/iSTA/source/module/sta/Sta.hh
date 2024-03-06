@@ -216,7 +216,8 @@ class Sta {
 
   void readVerilog(const char* verilog_file);
   void linkDesign(const char* top_cell_name);
-  void readVerilogWithRustParser(const char* verilog_file);
+  void readVerilogWithRustParser(const char* verilog_file,
+                                 const char* top_module_name);
   void linkDesignWithRustParser();
   void set_design_name(const char* design_name) {
     _netlist.set_name(design_name);
@@ -520,9 +521,6 @@ class Sta {
   std::vector<std::unique_ptr<VerilogModule>>
       _verilog_modules;  //!< The current design parsed from verilog file.
   VerilogModule* _top_module = nullptr;  //!< The design top module.
-  std::vector<std::unique_ptr<RustVerilogModule>>
-      _rust_verilog_modules;  //!< The current design parsed from verilog file.
-                              //!< whether need unique_ptr?
   RustVerilogModule* _rust_top_module = nullptr;
   Netlist _netlist;  //!< The current top netlist for sta analysis.
   Vector<std::unique_ptr<LibertyLibrary>>
