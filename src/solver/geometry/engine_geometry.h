@@ -45,7 +45,6 @@ class EngineGeometry
   // virtual std::vector<std::vector<std::pair<int, int>>> get_polygons_points() = 0;
 
   virtual void addGeometry(EngineGeometry* geometry) = 0;
-  virtual void prepareData() = 0;
 
   GeometryPolygonSet& get_polyset() { return _polyset; }
 

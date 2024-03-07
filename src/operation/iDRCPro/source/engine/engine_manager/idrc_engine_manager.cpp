@@ -94,7 +94,6 @@ void DrcEngineManager::dataPreprocess()
 {
   for (auto& [layer, layout] : get_engine_layouts()) {
     layout->combineLayout();
-    layout->get_layout()->get_engine()->prepareData();
   }
 }
 
@@ -107,12 +106,6 @@ void DrcEngineManager::filterData()
     //   continue;
     // }
 
-#ifdef DEBUG_IDRC_ENGINE
-    auto& layer_polyset = layout->get_layout()->get_engine()->get_polyset();
-    std::vector<ieda_solver::GeometryViewPolygon> polygons;
-    layer_polyset.get(polygons);
-#endif
-
     // overlap
     _condition_manager->checkOverlap(layer, layout);
 
@@ -124,6 +117,10 @@ void DrcEngineManager::filterData()
 
     // edge
     _condition_manager->checkPolygons(layer, layout);
+  }
+
+  for (auto& [layer, layout] : get_engine_layouts(LayoutType::kCut)) {
+    // TODO: cut rule
   }
 }
 

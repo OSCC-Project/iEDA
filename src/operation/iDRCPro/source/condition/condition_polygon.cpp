@@ -80,7 +80,6 @@ void DrcConditionManager::checkPolygons(std::string layer, DrcEngineLayout* layo
   // area
   int rule_min_area = DrcTechRuleInst->getMinArea(layer);
   auto rule_lef58_area_list = DrcTechRuleInst->getLef58AreaList(layer);
-  auto rule_area_dbu = 1;  //  DrcTechRuleInst->getDBU();
   int max_rule_lef58_area = 0;
   for (auto& rule_lef58_area : rule_lef58_area_list) {
     max_rule_lef58_area = std::max(max_rule_lef58_area, rule_lef58_area->get_min_area());
@@ -229,14 +228,14 @@ void DrcConditionManager::checkPolygons(std::string layer, DrcEngineLayout* layo
             ieda_solver::GeometryRect detect_rect_left(point_current.x(), point_current.y(), point_current.x(), point_current.y());
             ieda_solver::bloat(detect_rect_left, edge_direction, rule_par_spacing - 1);
             ieda_solver::shrink(detect_rect_left, edge_direction.backward(), 1);
-            ieda_solver::bloat(detect_rect_left, edge_direction.left(), rule_par_within);
+            ieda_solver::bloat(detect_rect_left, edge_direction.left(), rule_par_within - 1);
             ieda_solver::bloat(detect_rect_left, edge_direction.right(), eol_within);
             eol_par_space_regions[rule_eol] += detect_rect_left;
 
             ieda_solver::GeometryRect detect_rect_right(point_prev.x(), point_prev.y(), point_prev.x(), point_prev.y());
             ieda_solver::bloat(detect_rect_right, edge_direction.backward(), rule_par_spacing - 1);
             ieda_solver::shrink(detect_rect_right, edge_direction, 1);
-            ieda_solver::bloat(detect_rect_right, edge_direction.left(), rule_par_within);
+            ieda_solver::bloat(detect_rect_right, edge_direction.left(), rule_par_within - 1);
             ieda_solver::bloat(detect_rect_right, edge_direction.right(), eol_within);
             eol_par_space_regions[rule_eol] += detect_rect_right;
 
@@ -336,7 +335,8 @@ void DrcConditionManager::checkPolygons(std::string layer, DrcEngineLayout* layo
         }
       }
 
-      // step
+// step
+#ifndef DEBUGCLOSE_STEP
       if (rule_step) {
         if (count_step_checked_edges) {
           --count_step_checked_edges;
@@ -361,7 +361,7 @@ void DrcConditionManager::checkPolygons(std::string layer, DrcEngineLayout* layo
         }
       }
 
-      // TODO: lef58 step
+      // lef58 step
       if (edge_length < max_rule_lef58_step_length) {
         for (size_t i = 0; i < rule_lef58_step_list.size(); ++i) {
           if ((corner_pattern_4 & rule_lef58_step_mask_list[i]) == rule_lef58_step_pattern_list[i]) {
@@ -387,6 +387,7 @@ void DrcConditionManager::checkPolygons(std::string layer, DrcEngineLayout* layo
           }
         }
       }
+#endif
     }
 
     // polygon holes
@@ -412,8 +413,9 @@ void DrcConditionManager::checkPolygons(std::string layer, DrcEngineLayout* layo
       hole_area = std::abs(hole_area) / 2;
       polygon_area -= hole_area;
 
-      // min enclosed area
-      if (hole_area * rule_area_dbu < rule_min_enclosed_area) {
+// min enclosed area
+#ifndef DEBUGCLOSE_HOLE
+      if (hole_area < rule_min_enclosed_area) {
         ieda_solver::GeometryPolygon hole_polygon;
         hole_polygon.set(hole_it->begin(), hole_it->end());
         ieda_solver::GeometryRect violation_rect;
@@ -421,22 +423,22 @@ void DrcConditionManager::checkPolygons(std::string layer, DrcEngineLayout* layo
         addViolation(violation_rect, layer, ViolationEnumType::kAreaEnclosed);
         ++enclosed_area_count;
       }
+#endif
     }
 
-    long long polygon_area_to_compare = polygon_area * rule_area_dbu;
-
-    // area
-    if (polygon_area_to_compare < rule_min_area) {
+// area
+#ifndef DEBUGCLOSE_AREA
+    if (polygon_area < rule_min_area) {
       ieda_solver::GeometryRect violation_rect;
       ieda_solver::envelope(violation_rect, polygon);
       addViolation(violation_rect, layer, ViolationEnumType::kArea);
       ++area_count;
     }
 
-    if (polygon_area_to_compare < max_rule_lef58_area) {
+    if (polygon_area < max_rule_lef58_area) {
       std::vector<ieda_solver::GeometryRect> current_polygon_max_rects;
       for (auto& rule_lef58_area : rule_lef58_area_list) {
-        if (polygon_area_to_compare >= rule_lef58_area->get_min_area()) {
+        if (polygon_area >= rule_lef58_area->get_min_area()) {
           continue;
         }
         auto rule_min_edge_length = rule_lef58_area->get_except_edge_length()->get_min_edge_length();
@@ -471,6 +473,7 @@ void DrcConditionManager::checkPolygons(std::string layer, DrcEngineLayout* layo
         }
       }
     }
+#endif
   }
 
   DEBUGOUTPUT(DEBUGHIGHLIGHT("Polygon Filter:\t") << "-\ttime = " << states.elapsedRunTime() << "\tmemory = " << states.memoryDelta());
@@ -478,7 +481,8 @@ void DrcConditionManager::checkPolygons(std::string layer, DrcEngineLayout* layo
   DEBUGOUTPUT(DEBUGHIGHLIGHT("Enclosed Area:\t") << enclosed_area_count);
   DEBUGOUTPUT(DEBUGHIGHLIGHT("Min Area:\t") << area_count);
 
-  // eol
+// eol
+#ifndef DEBUGCLOSE_EOL
   ieda::Stats states_eol;
   int eol_count = 0;
   for (auto& rule_eol : rule_eol_list) {
@@ -505,18 +509,23 @@ void DrcConditionManager::checkPolygons(std::string layer, DrcEngineLayout* layo
     auto& violation_regions = check_regions;
     // auto violation_regions = check_regions - data_to_check;
 
-    std::vector<ieda_solver::GeometryRect> violation_rects;
-    ieda_solver::getDefaultRectangles(violation_rects, violation_regions);
+    std::vector<ieda_solver::GeometryPolygon> violation_polygons;
+    violation_regions.get(violation_polygons);
 
-    for (auto& violation_rect : violation_rects) {
+    for (auto& violation_polygon : violation_polygons) {
+      ieda_solver::GeometryRect violation_rect;
+      ieda_solver::envelope(violation_rect, violation_polygon);
       addViolation(violation_rect, layer, ViolationEnumType::kEOL);
     }
-    eol_count += violation_rects.size();
+
+    eol_count += violation_polygons.size();
   }
   DEBUGOUTPUT(DEBUGHIGHLIGHT("EOL Spacing:\t") << eol_count << "\ttime = " << states_eol.elapsedRunTime()
                                                << "\tmemory = " << states_eol.memoryDelta());
+#endif
 
-  // corner fill
+// corner fill
+#ifndef DEBUGCLOSE_CORNER_FILL
   ieda::Stats states_corner_fill;
   int corner_fill_count = 0;
   if (rule_corner_fill) {
@@ -534,8 +543,10 @@ void DrcConditionManager::checkPolygons(std::string layer, DrcEngineLayout* layo
   }
   DEBUGOUTPUT(DEBUGHIGHLIGHT("Corner Fill:\t") << corner_fill_count << "\ttime = " << states_corner_fill.elapsedRunTime()
                                                << "\tmemory = " << states_corner_fill.memoryDelta());
+#endif
 
-  // notch
+// notch
+#ifndef DEBUGCLOSE_NOTCH
   ieda::Stats states_notch;
   int notch_count = 0;
   if (rule_notch) {
@@ -555,6 +566,7 @@ void DrcConditionManager::checkPolygons(std::string layer, DrcEngineLayout* layo
   }
   DEBUGOUTPUT(DEBUGHIGHLIGHT("Notch Spacing:\t")
               << notch_count << "\ttime = " << states_notch.elapsedRunTime() << "\tmemory = " << states_notch.memoryDelta());
+#endif
 }
 
 }  // namespace idrc

@@ -45,7 +45,6 @@ class GeometryBoost : public EngineGeometry
   // std::vector<std::vector<std::pair<int, int>>> get_polygons_points() override;
 
   void addGeometry(EngineGeometry* geometry) override;
-  void prepareData() override;
 
   std::vector<GeometryPolygon>& getLayoutPolygons() override;
   std::vector<GeometryPolygon>& getOverlap() override;
@@ -53,6 +52,8 @@ class GeometryBoost : public EngineGeometry
 
  private:
   // GeometryPolygonSet _overlap_set;
+  bool _overlap_initialized = false;
+  bool _wires_initialized = false;
 };
 
 class PolygonProperty

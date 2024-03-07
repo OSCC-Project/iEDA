@@ -15,4 +15,5 @@ target_include_directories(solver_geometry
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/geometry_boost
 )
-set(CMAKE_BUILD_TYPE "debug")
+set(CMAKE_BUILD_TYPE "release")
+# set(CMAKE_BUILD_TYPE "debug")

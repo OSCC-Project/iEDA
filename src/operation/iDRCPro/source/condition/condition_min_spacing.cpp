@@ -23,6 +23,7 @@ namespace idrc {
 
 void DrcConditionManager::checkMinSpacing(std::string layer, DrcEngineLayout* layout)
 {
+#ifndef DEBUGCLOSE_MINSPACING
   ieda::Stats states;
   int min_spacing_count = 0;
   auto& layer_polyset = layout->get_layout()->get_engine()->get_polyset();
@@ -56,6 +57,7 @@ void DrcConditionManager::checkMinSpacing(std::string layer, DrcEngineLayout* la
   }
   DEBUGOUTPUT(DEBUGHIGHLIGHT("Min Spacing:\t") << min_spacing_count << "\ttime = " << states.elapsedRunTime()
                                                << "\tmemory = " << states.memoryDelta());
+#endif
 }
 
 }  // namespace idrc

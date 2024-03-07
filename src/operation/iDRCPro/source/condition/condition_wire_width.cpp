@@ -67,8 +67,12 @@ void DrcConditionManager::checkWires(std::string layer, DrcEngineLayout* layout)
     }
   }
   DEBUGOUTPUT(DEBUGHIGHLIGHT("Wire Filter:\t") << "-\ttime = " << states.elapsedRunTime() << "\tmemory = " << states.memoryDelta());
+#ifndef DEBUGCLOSE_JOG
   checkJog(layer, layout, jog_wire_map);
+#endif
+#ifndef DEBUGCLOSE_PRL
   checkSpacingTable(layer, layout, prl_wire_map);
+#endif
 }
 
 void DrcConditionManager::checkJog(std::string layer, DrcEngineLayout* layout, std::map<int, ieda_solver::GeometryPolygonSet>& jog_wire_map)

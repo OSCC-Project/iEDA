@@ -23,6 +23,7 @@ namespace idrc {
 
 void DrcConditionManager::checkOverlap(std::string layer, DrcEngineLayout* layout)
 {
+#ifndef DEBUGCLOSE_OVERLAP
   ieda::Stats states;
   auto& overlap = layout->get_layout()->get_engine()->getOverlap();
   for (auto& overlap_polygon : overlap) {
@@ -32,6 +33,7 @@ void DrcConditionManager::checkOverlap(std::string layer, DrcEngineLayout* layou
   }
   DEBUGOUTPUT(DEBUGHIGHLIGHT("Metal Short:\t") << overlap.size() << "\ttime = " << states.elapsedRunTime()
                                                << "\tmemory = " << states.memoryDelta());
+#endif
 }
 
 }  // namespace idrc

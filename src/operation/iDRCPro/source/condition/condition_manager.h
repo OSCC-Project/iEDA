@@ -28,13 +28,35 @@
 
 namespace idrc {
 
+#define DEBUGCONDITION 1
+
+#if DEBUGCONDITION
 #define DEBUGPRINT 1
+#define DEBUGCLOSE 1
+#else
+#define DEBUGPRINT 0
+#define DEBUGCLOSE 0
+#endif
+
 #if DEBUGPRINT
 #define DEBUGOUTPUT(x) (std::cout << "idrc : " << x << std::endl)
 #define DEBUGHIGHLIGHT(x) "\033[0;36m" << x << "\033[0m"
 #else
 #define DEBUGOUTPUT(x)
 #define DEBUGHIGHLIGHT(x)
+#endif
+
+#if DEBUGCLOSE
+// #define DEBUGCLOSE_OVERLAP
+#define DEBUGCLOSE_MINSPACING
+#define DEBUGCLOSE_JOG
+#define DEBUGCLOSE_PRL
+#define DEBUGCLOSE_STEP
+#define DEBUGCLOSE_HOLE
+#define DEBUGCLOSE_AREA
+#define DEBUGCLOSE_EOL
+#define DEBUGCLOSE_CORNER_FILL
+#define DEBUGCLOSE_NOTCH
 #endif
 
 class DrcEngineLayout;
