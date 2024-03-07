@@ -26,88 +26,91 @@
 #include "Pin.hh"
 #include "bound_skew_tree/BoundSkewTree.hh"
 namespace icts {
-/**
- * @brief TreeBuilder for Solver
- *       support:
- *          1. build tree:
- *                  1.1 shallow light tree
- *                  1.2 DME tree
- *          2. recover tree:
- *                  2.1 remove root pin
- *          3. place & cancel place buffer for feasible location
- */
-using SteinerTreeFunc = void (*)(const std::string&, Pin*, const std::vector<Pin*>&);
-using SkewTreeFunc
-    = Inst* (*) (const std::string&, const std::vector<Pin*>&, const std::optional<double>&, const std::optional<Point>&, const TopoType&);
-class TreeBuilder
-{
- public:
-  TreeBuilder() = delete;
-  ~TreeBuilder() = default;
+  /**
+   * @brief TreeBuilder for Solver
+   *       support:
+   *          1. build tree:
+   *                  1.1 shallow light tree
+   *                  1.2 DME tree
+   *          2. recover tree:
+   *                  2.1 remove root pin
+   *          3. place & cancel place buffer for feasible location
+   */
+  using SteinerTreeFunc = void (*)(const std::string&, Pin*, const std::vector<Pin*>&);
+  using SkewTreeFunc
+    = Inst * (*) (const std::string&, const std::vector<Pin*>&, const std::optional<double>&, const std::optional<Point>&, const TopoType&);
+  class TreeBuilder
+  {
+  public:
+    TreeBuilder() = delete;
+    ~TreeBuilder() = default;
 
-  static std::vector<Inst*> getSubInsts(Inst* inst);
-  static Inst* genBufInst(const std::string& prefix, const Point& location);
-  static void amplifyBufferSize(Inst* inst, const size_t& level = 1);
-  static void reduceBufferSize(Inst* inst, const size_t& level = 1);
-  static std::vector<std::string> feasibleCell(Inst* inst, const double& skew_bound);
+    static std::vector<Inst*> getSubInsts(Inst* inst);
+    static Inst* genBufInst(const std::string& prefix, const Point& location);
+    static void amplifyBufferSize(Inst* inst, const size_t& level = 1);
+    static void reduceBufferSize(Inst* inst, const size_t& level = 1);
+    static std::vector<std::string> feasibleCell(Inst* inst, const double& skew_bound);
 
-  static void connect(Node* parent, Node* child);
-  static void disconnect(Node* parent, Node* child);
-  static void directConnectTree(Pin* driver, Pin* load);
-  static void fluteTree(const std::string& net_name, Pin* driver, const std::vector<Pin*>& loads);
-  static void shallowLightTree(const std::string& net_name, Pin* driver, const std::vector<Pin*>& loads);
+    static void connect(Node* parent, Node* child);
+    static void disconnect(Node* parent, Node* child);
+    static void directConnectTree(Pin* driver, Pin* load);
+    static void fluteTree(const std::string& net_name, Pin* driver, const std::vector<Pin*>& loads);
+    static void shallowLightTree(const std::string& net_name, Pin* driver, const std::vector<Pin*>& loads);
 
-  static Inst* boundSkewTree(const std::string& net_name, const std::vector<Pin*>& loads,
-                             const std::optional<double>& skew_bound = std::nullopt, const std::optional<Point>& guide_loc = std::nullopt,
-                             const TopoType& topo_type = TopoType::kGreedyDist);
-  static Inst* noneEstBoundSkewTree(const std::string& net_name, const std::vector<Pin*>& loads,
-                                    const std::optional<double>& skew_bound = std::nullopt,
-                                    const std::optional<Point>& guide_loc = std::nullopt,
-                                    const TopoType& topo_type = TopoType::kGreedyDist);
-  static Inst* fluteBstSaltTree(const std::string& net_name, const std::vector<Pin*>& loads,
-                                const std::optional<double>& skew_bound = std::nullopt,
-                                const std::optional<Point>& guide_loc = std::nullopt);
-  static Inst* bstSaltTree(const std::string& net_name, const std::vector<Pin*>& loads,
-                           const std::optional<double>& skew_bound = std::nullopt, const std::optional<Point>& guide_loc = std::nullopt,
-                           const TopoType& topo_type = TopoType::kGreedyDist);
-  static Inst* cbsTree(const std::string& net_name, const std::vector<Pin*>& loads, const std::optional<double>& skew_bound = std::nullopt,
-                       const std::optional<Point>& guide_loc = std::nullopt, const TopoType& topo_type = TopoType::kGreedyDist);
-  static Inst* shiftCBSTree(const std::string& net_name, const std::vector<Pin*>& loads,
-                            const std::optional<double>& skew_bound = std::nullopt, const std::optional<Point>& guide_loc = std::nullopt,
-                            const TopoType& topo_type = TopoType::kGreedyDist, const bool& shift = false,
-                            const std::optional<double>& max_len = std::nullopt);
+    static Inst* boundSkewTree(const std::string& net_name, const std::vector<Pin*>& loads,
+      const std::optional<double>& skew_bound = std::nullopt, const std::optional<Point>& guide_loc = std::nullopt,
+      const TopoType& topo_type = TopoType::kGreedyDist);
+    static Inst* noneEstBoundSkewTree(const std::string& net_name, const std::vector<Pin*>& loads,
+      const std::optional<double>& skew_bound = std::nullopt,
+      const std::optional<Point>& guide_loc = std::nullopt,
+      const TopoType& topo_type = TopoType::kGreedyDist);
+    static Inst* fluteBstSaltTree(const std::string& net_name, const std::vector<Pin*>& loads,
+      const std::optional<double>& skew_bound = std::nullopt,
+      const std::optional<Point>& guide_loc = std::nullopt);
+    static Inst* bstSaltTree(const std::string& net_name, const std::vector<Pin*>& loads,
+      const std::optional<double>& skew_bound = std::nullopt, const std::optional<Point>& guide_loc = std::nullopt,
+      const TopoType& topo_type = TopoType::kGreedyDist);
+    static Inst* cbsTree(const std::string& net_name, const std::vector<Pin*>& loads, const std::optional<double>& skew_bound = std::nullopt,
+      const std::optional<Point>& guide_loc = std::nullopt, const TopoType& topo_type = TopoType::kGreedyDist);
+    static Inst* shiftCBSTree(const std::string& net_name, const std::vector<Pin*>& loads,
+      const std::optional<double>& skew_bound = std::nullopt, const std::optional<Point>& guide_loc = std::nullopt,
+      const TopoType& topo_type = TopoType::kGreedyDist, const bool& shift = false,
+      const std::optional<double>& max_len = std::nullopt);
 
-  static Inst* tempTree(const std::string& net_name, const std::vector<Pin*>& loads, const std::optional<double>& skew_bound = std::nullopt,
-                        const std::optional<Point>& guide_loc = std::nullopt, const TopoType& topo_type = TopoType::kGreedyDist);
+    static Inst* tempTree(const std::string& net_name, const std::vector<Pin*>& loads, const std::optional<double>& skew_bound = std::nullopt,
+      const std::optional<Point>& guide_loc = std::nullopt, const TopoType& topo_type = TopoType::kGreedyDist);
 
-  static void iterativeFixSkew(Net* net, const std::optional<double>& skew_bound = std::nullopt,
-                               const std::optional<Point>& guide_loc = std::nullopt);
+    static Inst* defaultTree(const std::string& net_name, const std::vector<Pin*>& loads, const std::optional<double>& skew_bound = std::nullopt,
+      const std::optional<Point>& guide_loc = std::nullopt, const TopoType& topo_type = TopoType::kGreedyDist);
 
-  static void convertToBinaryTree(Node* root);
-  static void removeRedundant(Node* root);
-  static std::string funcName(const SteinerTreeFunc& func);
-  static std::string funcName(const SkewTreeFunc& func);
+    static void iterativeFixSkew(Net* net, const std::optional<double>& skew_bound = std::nullopt,
+      const std::optional<Point>& guide_loc = std::nullopt);
 
-  static std::vector<SteinerTreeFunc> getSteinerTreeFuncs();
-  static std::vector<SkewTreeFunc> getSkewTreeFuncs();
+    static void convertToBinaryTree(Node* root);
+    static void removeRedundant(Node* root);
+    static std::string funcName(const SteinerTreeFunc& func);
+    static std::string funcName(const SkewTreeFunc& func);
 
-  static void localPlace(Inst* inst, const std::vector<Pin*>& load_pins);
-  static void localPlace(std::vector<Pin*>& pins);
-  static void localPlace(std::vector<Point>& variable_locs, const std::vector<Point>& fixed_locs);
+    static std::vector<SteinerTreeFunc> getSteinerTreeFuncs();
+    static std::vector<SkewTreeFunc> getSkewTreeFuncs();
 
-  static void updateId(Node* root);
+    static void localPlace(Inst* inst, const std::vector<Pin*>& load_pins);
+    static void localPlace(std::vector<Pin*>& pins);
+    static void localPlace(std::vector<Point>& variable_locs, const std::vector<Point>& fixed_locs);
 
-  // debug
-  static void printGraphviz(Node* root, const std::string& name = "debug");
-  static void writePy(Node* root, const std::string& name = "debug");
-  static void writeInstInfo(Node* root, const std::string& name = "debug");
+    static void updateId(Node* root);
 
- private:
-  // function interface to name
+    // debug
+    static void printGraphviz(Node* root, const std::string& name = "debug");
+    static void writePy(Node* root, const std::string& name = "debug");
+    static void writeInstInfo(Node* root, const std::string& name = "debug");
 
-  static const std::unordered_map<SteinerTreeFunc, std::string> kSteinterTreeName;
+  private:
+    // function interface to name
 
-  static const std::unordered_map<SkewTreeFunc, std::string> kSkewTreeName;
-};
+    static const std::unordered_map<SteinerTreeFunc, std::string> kSteinterTreeName;
+
+    static const std::unordered_map<SkewTreeFunc, std::string> kSkewTreeName;
+  };
 
 }  // namespace icts
