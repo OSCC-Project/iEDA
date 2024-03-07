@@ -35,7 +35,7 @@ class TrackAssigner
   static TrackAssigner& getInst();
   static void destroyInst();
   // function
-  void assign(std::vector<Net>& net_list);
+  void assign();
 
  private:
   // self
@@ -48,7 +48,7 @@ class TrackAssigner
   TrackAssigner& operator=(const TrackAssigner& other) = delete;
   TrackAssigner& operator=(TrackAssigner&& other) = delete;
   // function
-  TAModel initTAModel(std::vector<Net>& net_list);
+  TAModel initTAModel();
   std::vector<TANet> convertToTANetList(std::vector<Net>& net_list);
   TANet convertToTANet(Net& net);
   void setTAParameter(TAModel& ta_model);

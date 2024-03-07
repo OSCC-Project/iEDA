@@ -78,30 +78,28 @@ void RTAPI::initRT(std::map<std::string, std::any> config_map)
 
 void RTAPI::runRT()
 {
-  std::vector<Net>& net_list = DM_INST.getDatabase().get_net_list();
-
   PinAccessor::initInst();
-  PA_INST.access(net_list);
+  PA_INST.access();
   PinAccessor::destroyInst();
 
   SupplyAnalyzer::initInst();
-  SA_INST.analyze(net_list);
+  SA_INST.analyze();
   SupplyAnalyzer::destroyInst();
 
   InitialRouter::initInst();
-  IR_INST.route(net_list);
+  IR_INST.route();
   InitialRouter::destroyInst();
 
   GlobalRouter::initInst();
-  GR_INST.route(net_list);
+  GR_INST.route();
   GlobalRouter::destroyInst();
 
   TrackAssigner::initInst();
-  TA_INST.assign(net_list);
+  TA_INST.assign();
   TrackAssigner::destroyInst();
 
   DetailedRouter::initInst();
-  DR_INST.route(net_list);
+  DR_INST.route();
   DetailedRouter::destroyInst();
 }
 
@@ -467,6 +465,11 @@ std::map<std::string, std::vector<double>> RTAPI::getTiming(
   });
   return timing_map;
 #endif
+}
+
+void RTAPI::outputDef(std::string output_def_file_path)
+{
+  dmInst->saveDef(output_def_file_path);
 }
 
 #endif

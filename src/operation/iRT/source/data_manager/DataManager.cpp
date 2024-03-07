@@ -92,6 +92,7 @@ void DataManager::updateFixedRectToGCellMap(ChangeType change_type, int32_t net_
         net_fixed_rect_map[net_idx].erase(ext_layer_rect);
         if (net_fixed_rect_map[net_idx].empty()) {
           net_fixed_rect_map.erase(net_idx);
+          // 由于在database内的blockage_list引用过来，所以不需要delete，也不能delete
         }
       }
     }
@@ -109,6 +110,7 @@ void DataManager::updateAccessPointToGCellMap(ChangeType change_type, int32_t ne
     net_access_point_map[net_idx].erase(access_point);
     if (net_access_point_map[net_idx].empty()) {
       net_access_point_map.erase(net_idx);
+      // 由于在pin内的access_point_list引用过来，所以不需要delete，也不能delete
     }
   }
 }
@@ -130,6 +132,8 @@ void DataManager::updateNetResultToGCellMap(ChangeType change_type, int32_t net_
         if (net_result_map[net_idx].empty()) {
           net_result_map.erase(net_idx);
         }
+        // delete segment;
+        // segment = nullptr;
       }
     }
   }
@@ -149,6 +153,8 @@ void DataManager::updatePatchToGCellMap(ChangeType change_type, int32_t net_idx,
         if (net_patch_map[net_idx].empty()) {
           net_patch_map.erase(net_idx);
         }
+        // delete ext_layer_rect;
+        // ext_layer_rect = nullptr;
       }
     }
   }
@@ -167,6 +173,8 @@ void DataManager::updateViolationToGCellMap(ChangeType change_type, Violation* v
         gcell.get_violation_set().insert(violation);
       } else {
         gcell.get_violation_set().erase(violation);
+        // delete violation;
+        // violation = nullptr;
       }
     }
   }
@@ -1712,7 +1720,7 @@ void DataManager::printDatabase()
       head_info += ">=";
     }
     LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), head_info, pin_num, " pins: ", net_num, "(",
-                  RTUtil::getPercentage(net_num, net_list.size()), "%)");
+                  RTUtil::getPercentage(net_num, net_list.size()), ")");
   }
   ////////////////////////////////////////////////
 }

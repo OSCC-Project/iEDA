@@ -57,6 +57,8 @@ class RTAPI
   std::map<std::string, std::vector<double>> getTiming(
       std::map<int32_t, std::map<LayerCoord, std::vector<std::string>, CmpLayerCoordByXASC>>& net_pin_coord_map,
       std::map<int32_t, std::vector<Segment<LayerCoord>>>& net_segment_map);
+  // 输出def
+  void outputDef(std::string output_def_file_path);
 #endif
 
  private:

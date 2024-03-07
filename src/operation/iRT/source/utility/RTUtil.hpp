@@ -2466,19 +2466,19 @@ class RTUtil
   {
     std::vector<PlanarRect> result_list;
 
-    gtl::polygon_90_set_data<int> master_poly;
+    GTLPolySetInt master_poly;
     for (const PlanarRect& master : master_list) {
-      master_poly += gtl::rectangle_data<int>(master.get_lb_x(), master.get_lb_y(), master.get_rt_x(), master.get_rt_y());
+      master_poly += convertToGTLRectInt(master);
     }
     if (!is_open) {
       // 提取点矩形，线段矩形
-      std::vector<gtl::rectangle_data<int>> gtl_rect_list;
+      std::vector<GTLRectInt> gtl_rect_list;
       gtl::get_rectangles(gtl_rect_list, master_poly, gtl::HORIZONTAL);
       gtl::get_rectangles(gtl_rect_list, master_poly, gtl::VERTICAL);
 
       std::vector<PlanarRect> candidate_rect_list;
-      for (gtl::rectangle_data<int>& gtl_rect : gtl_rect_list) {
-        candidate_rect_list.emplace_back(gtl::xl(gtl_rect), gtl::yl(gtl_rect), gtl::xh(gtl_rect), gtl::yh(gtl_rect));
+      for (GTLRectInt& gtl_rect : gtl_rect_list) {
+        candidate_rect_list.emplace_back(convertToPlanarRect(gtl_rect));
       }
       for (PlanarRect candidate_rect : candidate_rect_list) {
         PlanarCoord& lb = candidate_rect.get_lb();
@@ -2500,12 +2500,12 @@ class RTUtil
     {
       master_poly.shrink(lb_x_add_offset, rt_x_minus_offset, lb_y_add_offset, rt_y_minus_offset);
 
-      std::vector<gtl::rectangle_data<int>> gtl_rect_list;
+      std::vector<GTLRectInt> gtl_rect_list;
       gtl::get_rectangles(gtl_rect_list, master_poly, gtl::HORIZONTAL);
       gtl::get_rectangles(gtl_rect_list, master_poly, gtl::VERTICAL);
 
-      for (gtl::rectangle_data<int>& gtl_rect : gtl_rect_list) {
-        result_list.emplace_back(gtl::xl(gtl_rect), gtl::yl(gtl_rect), gtl::xh(gtl_rect), gtl::yh(gtl_rect));
+      for (GTLRectInt& gtl_rect : gtl_rect_list) {
+        result_list.emplace_back(convertToPlanarRect(gtl_rect));
       }
     }
     // rect去重
@@ -2531,18 +2531,18 @@ class RTUtil
     }
     // 对常规矩形做merge
     std::vector<PlanarRect> regular_rect_list;
-    gtl::polygon_90_set_data<int> master_poly;
+    GTLPolySetInt master_poly;
     for (const PlanarRect& master : master_list) {
-      master_poly += gtl::rectangle_data<int>(master.get_lb_x(), master.get_lb_y(), master.get_rt_x(), master.get_rt_y());
+      master_poly += convertToGTLRectInt(master);
     }
-    std::vector<gtl::rectangle_data<int>> gtl_rect_list;
+    std::vector<GTLRectInt> gtl_rect_list;
     if (direction == Direction::kHorizontal) {
       gtl::get_rectangles(gtl_rect_list, master_poly, gtl::HORIZONTAL);
     } else if (direction == Direction::kVertical) {
       gtl::get_rectangles(gtl_rect_list, master_poly, gtl::VERTICAL);
     }
-    for (gtl::rectangle_data<int>& gtl_rect : gtl_rect_list) {
-      regular_rect_list.emplace_back(gtl::xl(gtl_rect), gtl::yl(gtl_rect), gtl::xh(gtl_rect), gtl::yh(gtl_rect));
+    for (GTLRectInt& gtl_rect : gtl_rect_list) {
+      regular_rect_list.emplace_back(convertToPlanarRect(gtl_rect));
     }
     std::vector<PlanarRect> result_list;
     // 将常规矩形减去特殊矩形
@@ -2623,7 +2623,7 @@ class RTUtil
     gtl::get_rectangles(gtl_rect_list, gtl_poly_set, gtl::HORIZONTAL);
     gtl::get_rectangles(gtl_rect_list, gtl_poly_set, gtl::VERTICAL);
     for (GTLRectInt& gtl_rect : gtl_rect_list) {
-      rect_list.emplace_back(gtl::xl(gtl_rect), gtl::yl(gtl_rect), gtl::xh(gtl_rect), gtl::yh(gtl_rect));
+      rect_list.emplace_back(convertToPlanarRect(gtl_rect));
     }
     return rect_list;
   }
@@ -2890,29 +2890,6 @@ class RTUtil
     return !sameSign(a, b);
   }
 
-  // 保留小数点后前n位不为0的数，并进行四舍五入
-  template <typename T>
-  static T retainPlaces(T a, int32_t n = 1)
-  {
-    if (isInteger(a)) {
-      return a;
-    }
-
-    if (n <= 0) {
-      return static_cast<T>(std::round(a));
-    }
-
-    T value = a;
-    int32_t digit_num = 0;
-    while (value < 1) {
-      value *= 10;
-      ++digit_num;
-    }
-
-    value *= static_cast<T>(std::pow(10, n - 1));
-    return static_cast<T>(std::round(value) / std::pow(10, digit_num + n - 1));
-  }
-
   template <typename Key>
   static bool exist(const std::vector<Key>& vector, const Key& key)
   {
@@ -3010,16 +2987,16 @@ class RTUtil
     return result;
   }
 
-  template <typename T>
-  static double getRatio(T a, T b)
+  template <typename T, typename U>
+  static double getRatio(T a, U b)
   {
     return (b > 0 ? static_cast<double>(a) / static_cast<double>(b) : 0.0);
   }
 
-  template <typename T>
-  static std::string getPercentage(T a, T b)
+  template <typename T, typename U>
+  static std::string getPercentage(T a, U b)
   {
-    return getString(getRatio(a, b) * 100.0, "%");
+    return getString(std::round(getRatio(a, b) * 10000) / 10000 * 100.0, "%");
   }
 
   static std::ifstream* getInputFileStream(std::string file_path) { return getFileStream<std::ifstream>(file_path); }

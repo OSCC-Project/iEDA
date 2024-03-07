@@ -39,7 +39,7 @@ class DetailedRouter
   static DetailedRouter& getInst();
   static void destroyInst();
   // function
-  void route(std::vector<Net>& net_list);
+  void route();
 
  private:
   // self
@@ -52,11 +52,11 @@ class DetailedRouter
   DetailedRouter& operator=(const DetailedRouter& other) = delete;
   DetailedRouter& operator=(DetailedRouter&& other) = delete;
   // function
-  DRModel initDRModel(std::vector<Net>& net_list);
+  DRModel initDRModel();
   std::vector<DRNet> convertToDRNetList(std::vector<Net>& net_list);
   DRNet convertToDRNet(Net& net);
   void iterativeDRModel(DRModel& dr_model);
-  void setDRParameter(DRModel& dr_model, DRParameter& dr_parameter);
+  void setDRParameter(DRModel& dr_model, int32_t curr_iter, DRParameter& dr_parameter);
   void initDRBoxMap(DRModel& dr_model);
   void splitNetResult(DRModel& dr_model);
   void splitNetResult(DRBox& dr_box);
@@ -131,13 +131,14 @@ class DetailedRouter
 #if 1  // debug
   void debugCheckDRBox(DRBox& dr_box);
   void debugPlotDRBox(DRBox& dr_box, int32_t curr_task_idx, std::string flag);
+  void debugOutputDef(DRModel& dr_model);
 #endif
 
 #if 1  // exhibit
-  void updateSummary(DRModel& dr_model, int32_t iter);
-  void printSummary(DRModel& dr_model, int32_t iter);
-  void writeNetCSV(DRModel& dr_model, int32_t iter);
-  void writeViolationCSV(DRModel& dr_model, int32_t iter);
+  void updateSummary(DRModel& dr_model);
+  void printSummary(DRModel& dr_model);
+  void writeNetCSV(DRModel& dr_model);
+  void writeViolationCSV(DRModel& dr_model);
 #endif
 };
 
