@@ -394,7 +394,7 @@ Net* AnnealOptInterface::buildNet(const std::vector<Inst*>& cluster)
   std::ranges::transform(cluster, std::back_inserter(load_pins), [](Inst* inst) { return inst->get_load_pin(); });
 
   TreeBuilder::localPlace(load_pins);
-  auto* temp_buf = TreeBuilder::cbsTree("temp", load_pins, TimingPropagator::getSkewBound(), std::nullopt, TopoType::kBiPartition);
+  auto* temp_buf = TreeBuilder::defaultTree("temp", load_pins, TimingPropagator::getSkewBound(), std::nullopt, TopoType::kBiPartition);
   temp_buf->set_cell_master(TimingPropagator::getMinSizeCell());
 
   auto* temp_net = TimingPropagator::genNet("temp", temp_buf->get_driver_pin(), load_pins);
