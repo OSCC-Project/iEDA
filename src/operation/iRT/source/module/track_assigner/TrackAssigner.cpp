@@ -954,7 +954,21 @@ std::vector<Violation> TrackAssigner::getViolationList(TAPanel& ta_panel)
       net_result_map[ta_task->get_net_idx()].push_back(DM_INST.getIDBSegmentByNetResult(ta_task->get_net_idx(), routing_segment));
     }
   }
-  return RTAPI_INST.getViolationList(env_shape_list, net_pin_shape_map, net_result_map);
+  std::vector<Violation> violation_list = RTAPI_INST.getViolationList(env_shape_list, net_pin_shape_map, net_result_map);
+  // free memory
+  {
+    for (idb::IdbLayerShape* env_shape : env_shape_list) {
+      delete env_shape;
+      env_shape = nullptr;
+    }
+    for (auto& [net_idx, pin_shape_list] : net_pin_shape_map) {
+      for (idb::IdbLayerShape* pin_shape : pin_shape_list) {
+        delete pin_shape;
+        pin_shape = nullptr;
+      }
+    }
+  }
+  return violation_list;
 }
 
 std::vector<TATask*> TrackAssigner::getTaskScheduleByViolation(TAPanel& ta_panel)
@@ -1135,7 +1149,6 @@ void TrackAssigner::debugCheckTAPanel(TAPanel& ta_panel)
         PlanarCoord grid_coord = RTUtil::getTrackGrid(coord, ta_panel.get_panel_track_axis());
         TANode& ta_node = ta_node_map[grid_coord.get_x()][grid_coord.get_y()];
         if (ta_node.get_neighbor_node_map().empty()) {
-          // debugPlotTAPanel(ta_panel, -1, "check");
           LOG_INST.error(Loc::current(), "The neighbor of group coord (", coord.get_x(), ",", coord.get_y(), ",", layer_idx,
                          ") is empty in panel(", ta_panel_id.get_layer_idx(), ",", ta_panel_id.get_panel_idx(), ")");
         }

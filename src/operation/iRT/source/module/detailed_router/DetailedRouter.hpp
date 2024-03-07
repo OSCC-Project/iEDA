@@ -59,7 +59,6 @@ class DetailedRouter
   void setDRParameter(DRModel& dr_model, int32_t curr_iter, DRParameter& dr_parameter);
   void initDRBoxMap(DRModel& dr_model);
   void splitNetResult(DRModel& dr_model);
-  void splitNetResult(DRBox& dr_box);
   void buildBoxSchedule(DRModel& dr_model);
   void routeDRBoxMap(DRModel& dr_model);
   void initDRTaskList(DRModel& dr_model, DRBox& dr_box);

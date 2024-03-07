@@ -134,10 +134,19 @@ void SupplyAnalyzer::analyzeSupply(SAModel& sa_model)
 
       std::vector<EXTLayerRect> fixed_rect_list;
       {
-        auto net_fixed_rect_map = DM_INST.getTypeLayerNetFixedRectMap(search_rect)[true][search_rect.get_layer_idx()];
-        for (auto& [net_idx, fixed_rect_set] : net_fixed_rect_map) {
-          for (auto& fixed_rect : fixed_rect_set) {
-            fixed_rect_list.push_back(*fixed_rect);
+        for (auto& [is_routing, layer_net_fixed_rect_map] : DM_INST.getTypeLayerNetFixedRectMap(search_rect)) {
+          if (!is_routing) {
+            continue;
+          }
+          for (auto& [layer_idx, net_fixed_rect_map] : layer_net_fixed_rect_map) {
+            if (search_rect.get_layer_idx() != layer_idx) {
+              continue;
+            }
+            for (auto& [net_idx, fixed_rect_set] : net_fixed_rect_map) {
+              for (EXTLayerRect* fixed_rect : fixed_rect_set) {
+                fixed_rect_list.push_back(*fixed_rect);
+              }
+            }
           }
         }
       }

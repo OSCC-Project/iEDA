@@ -81,7 +81,33 @@ class DataManager
   DataManager() = default;
   DataManager(const DataManager& other) = delete;
   DataManager(DataManager&& other) = delete;
-  ~DataManager() = default;
+  ~DataManager()
+  {
+    GridMap<GCell>& gcell_map = _database.get_gcell_map();
+
+    for (int32_t x = 0; x < gcell_map.get_x_size(); x++) {
+      for (int32_t y = 0; y < gcell_map.get_y_size(); y++) {
+        /**
+         * 不能在gcell_map内释放
+         * _type_layer_net_fixed_rect_map 内指针引用于 database内的blockage_list
+         * _net_access_point_map 内指针引用于 pin内的access_point_list
+         */
+        for (auto& [net_idx, segment_set] : gcell_map[x][y].get_net_result_map()) {
+          for (Segment<LayerCoord>* segment : segment_set) {
+            updateNetResultToGCellMap(ChangeType::kDel, net_idx, segment);
+          }
+        }
+        for (auto& [net_idx, patch_set] : gcell_map[x][y].get_net_patch_map()) {
+          for (EXTLayerRect* patch : patch_set) {
+            updatePatchToGCellMap(ChangeType::kDel, net_idx, patch);
+          }
+        }
+        for (Violation* violation : gcell_map[x][y].get_violation_set()) {
+          updateViolationToGCellMap(ChangeType::kDel, violation);
+        }
+      }
+    }
+  }
   DataManager& operator=(const DataManager& other) = delete;
   DataManager& operator=(DataManager&& other) = delete;
 

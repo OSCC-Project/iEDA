@@ -80,6 +80,9 @@ void IdbRegularWireSegment::clear()
   _via_list.clear();
   vector<IdbVia*>().swap(_via_list);
 
+  delete _delta_rect;
+  _delta_rect=nullptr;
+
   _virtual_points.clear();
 }
 
@@ -590,7 +593,6 @@ void IdbRegularWireList::clear()
       wire = nullptr;
     }
   }
-
   _wire_list.clear();
   vector<IdbRegularWire*>().swap(_wire_list);
 }

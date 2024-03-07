@@ -92,10 +92,12 @@ void DataManager::updateFixedRectToGCellMap(ChangeType change_type, int32_t net_
         net_fixed_rect_map[net_idx].erase(ext_layer_rect);
         if (net_fixed_rect_map[net_idx].empty()) {
           net_fixed_rect_map.erase(net_idx);
-          // 由于在database内的blockage_list引用过来，所以不需要delete，也不能delete
         }
       }
     }
+  }
+  if (change_type == ChangeType::kDel) {
+    // 由于在database内的blockage_list引用过来，所以不需要delete，也不能delete
   }
 }
 
@@ -110,8 +112,10 @@ void DataManager::updateAccessPointToGCellMap(ChangeType change_type, int32_t ne
     net_access_point_map[net_idx].erase(access_point);
     if (net_access_point_map[net_idx].empty()) {
       net_access_point_map.erase(net_idx);
-      // 由于在pin内的access_point_list引用过来，所以不需要delete，也不能delete
     }
+  }
+  if (change_type == ChangeType::kDel) {
+    // 由于在pin内的access_point_list引用过来，所以不需要delete，也不能delete
   }
 }
 
@@ -132,10 +136,12 @@ void DataManager::updateNetResultToGCellMap(ChangeType change_type, int32_t net_
         if (net_result_map[net_idx].empty()) {
           net_result_map.erase(net_idx);
         }
-        // delete segment;
-        // segment = nullptr;
       }
     }
+  }
+  if (change_type == ChangeType::kDel) {
+    delete segment;
+    segment = nullptr;
   }
 }
 
@@ -153,10 +159,12 @@ void DataManager::updatePatchToGCellMap(ChangeType change_type, int32_t net_idx,
         if (net_patch_map[net_idx].empty()) {
           net_patch_map.erase(net_idx);
         }
-        // delete ext_layer_rect;
-        // ext_layer_rect = nullptr;
       }
     }
+  }
+  if (change_type == ChangeType::kDel) {
+    delete ext_layer_rect;
+    ext_layer_rect = nullptr;
   }
 }
 
@@ -173,10 +181,12 @@ void DataManager::updateViolationToGCellMap(ChangeType change_type, Violation* v
         gcell.get_violation_set().insert(violation);
       } else {
         gcell.get_violation_set().erase(violation);
-        // delete violation;
-        // violation = nullptr;
       }
     }
+  }
+  if (change_type == ChangeType::kDel) {
+    delete violation;
+    violation = nullptr;
   }
 }
 
@@ -1787,25 +1797,20 @@ void DataManager::outputGCellGrid(idb::IdbBuilder* idb_builder)
 
 void DataManager::outputNetList(idb::IdbBuilder* idb_builder)
 {
-  GridMap<GCell>& gcell_map = _database.get_gcell_map();
+  Die& die = _database.get_die();
   std::vector<Net>& net_list = _database.get_net_list();
 
   std::map<int32_t, std::vector<idb::IdbRegularWireSegment*>> net_idb_segment_map;
-  for (int32_t x = 0; x < gcell_map.get_x_size(); x++) {
-    for (int32_t y = 0; y < gcell_map.get_y_size(); y++) {
-      for (auto& [net_idx, segment_set] : gcell_map[x][y].get_net_result_map()) {
-        for (Segment<LayerCoord>* segment : segment_set) {
-          net_idb_segment_map[net_idx].push_back(getIDBSegmentByNetResult(net_idx, *segment));
-        }
-      }
-      for (auto& [net_idx, patch_set] : gcell_map[x][y].get_net_patch_map()) {
-        for (EXTLayerRect* patch : patch_set) {
-          net_idb_segment_map[net_idx].push_back(getIDBSegmentByNetPatch(net_idx, *patch));
-        }
-      }
+  for (auto& [net_idx, segment_set] : getNetResultMap(die)) {
+    for (Segment<LayerCoord>* segment : segment_set) {
+      net_idb_segment_map[net_idx].push_back(getIDBSegmentByNetResult(net_idx, *segment));
     }
   }
-
+  for (auto& [net_idx, patch_set] : getNetPatchMap(die)) {
+    for (EXTLayerRect* patch : patch_set) {
+      net_idb_segment_map[net_idx].push_back(getIDBSegmentByNetPatch(net_idx, *patch));
+    }
+  }
   idb::IdbNetList* idb_net_list = idb_builder->get_def_service()->get_design()->get_net_list();
   if (idb_net_list == nullptr) {
     LOG_INST.error(Loc::current(), "The idb net list is empty!");
