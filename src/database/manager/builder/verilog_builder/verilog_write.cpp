@@ -29,6 +29,7 @@
 
 #include "log/Log.hh"
 #include "string/Str.hh"
+#include "time/Time.hh"
 
 namespace idb {
 VerilogWriter::VerilogWriter(const char* file_name, std::set<std::string>& exclude_cell_names, IdbDesign& idb_design)
@@ -52,6 +53,9 @@ void VerilogWriter::writeModule()
     LOG_INFO << "File" << _file_name << "NotWritable";
   }
   LOG_INFO << "start write verilog file " << _file_name;
+
+  fprintf(_stream, "//Generate the verilog at %s\n",
+               ieda::Time::getNowWallTime());
 
   fprintf(_stream, "module %s (", _idb_design.get_design_name().c_str());
   fprintf(_stream, "\n");
@@ -246,6 +250,11 @@ void VerilogWriter::writeWire()
     auto [net_bus_name, is_bus] = ieda::Str::matchBusName(net_name.c_str());
 
     if (net_bus_name.back() == '\\') {
+      is_bus = std::nullopt;
+    }
+
+    // bus of bus is not printed as bus
+    if (std::ranges::count(net_name, '[') > 1) {
       is_bus = std::nullopt;
     }
 
