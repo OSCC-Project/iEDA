@@ -44,7 +44,7 @@ struct GetViolationTypeName
   {
     switch (type) {
       case ViolationEnumType::kArea:
-        return "Area";
+        return "Minimal Area";
       case ViolationEnumType::kAreaEnclosed:
         return "Encolsed Area";
       case ViolationEnumType::kShort:
@@ -52,17 +52,17 @@ struct GetViolationTypeName
       case ViolationEnumType::kDefaultSpacing:
         return "Default Spacing";
       case ViolationEnumType::kPRLSpacing:
-        return "PRL Spacing";
+        return "Metal Parallel Run Length Spacing";
       case ViolationEnumType::kJogToJog:
         return "JogToJog Spacing";
       case ViolationEnumType::kEOL:
-        return "EndOfLine Spacing";
+        return "Metal EOL Spacing";
       case ViolationEnumType::kWidth:
         return "Wire Width";
       case ViolationEnumType::kMinStep:
-        return "Min Step";
+        return "MinStep";
       case ViolationEnumType::kNotch:
-        return "Notch Spacing";
+        return "Metal Notch Spacing";
       case ViolationEnumType::kCornerFill:
         return "Corner Fill";
       default:

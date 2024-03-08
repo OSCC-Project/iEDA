@@ -47,16 +47,18 @@ namespace idrc {
 #endif
 
 #if DEBUGCLOSE
-// #define DEBUGCLOSE_OVERLAP
+#if 0
+#define DEBUGCLOSE_OVERLAP
 #define DEBUGCLOSE_MINSPACING
 #define DEBUGCLOSE_JOG
 #define DEBUGCLOSE_PRL
 #define DEBUGCLOSE_STEP
 #define DEBUGCLOSE_HOLE
 #define DEBUGCLOSE_AREA
-#define DEBUGCLOSE_EOL
+// #define DEBUGCLOSE_EOL
 #define DEBUGCLOSE_CORNER_FILL
 #define DEBUGCLOSE_NOTCH
+#endif
 #endif
 
 class DrcEngineLayout;

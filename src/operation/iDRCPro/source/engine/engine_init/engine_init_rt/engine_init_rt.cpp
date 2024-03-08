@@ -61,20 +61,23 @@ void DrcEngineInitRT::init()
       /// rects
       if (idb_segment->is_rect()) {
         // add rect
-        initDataFromRect(idb_segment->get_delta_rect(), LayoutType::kRouting, idb_segment->get_layer(), net_id);
+        auto type = idb_segment->get_layer()->is_routing() ? LayoutType::kRouting : LayoutType::kCut;
+        initDataFromRect(idb_segment->get_delta_rect(), type, idb_segment->get_layer(), net_id);
       }
     }
   }
   for (auto& [net_id, pin_shape_list] : *(_data_manager->get_pin_data())) {
     for (auto& pin_shape : pin_shape_list) {
       for (auto& rect : pin_shape->get_rect_list()) {
-        initDataFromRect(rect, LayoutType::kRouting, pin_shape->get_layer(), net_id);
+        auto type = pin_shape->get_layer()->is_routing() ? LayoutType::kRouting : LayoutType::kCut;
+        initDataFromRect(rect, type, pin_shape->get_layer(), net_id);
       }
     }
   }
   for (auto& env_shape : *(_data_manager->get_env_shapes())) {
     for (auto& rect : env_shape->get_rect_list()) {
-      initDataFromRect(rect, LayoutType::kRouting, env_shape->get_layer());
+      auto type = env_shape->get_layer()->is_routing() ? LayoutType::kRouting : LayoutType::kCut;
+      initDataFromRect(rect, type, env_shape->get_layer());
     }
   }
 }

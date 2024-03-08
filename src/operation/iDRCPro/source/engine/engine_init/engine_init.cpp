@@ -83,7 +83,8 @@ void DrcEngineInit::initDataFromPoints(idb::IdbCoordinate<int>* point_1, idb::Id
     ury = std::max(point_1->get_y(), point_2->get_y()) + extend_size;
   }
 
-  _engine_manager->addRect(llx, lly, urx, ury, layer->get_name(), net_id, LayoutType::kRouting);
+  auto type = layer->is_routing() ? LayoutType::kRouting : LayoutType::kCut;
+  _engine_manager->addRect(llx, lly, urx, ury, layer->get_name(), net_id, type);
 }
 
 /**

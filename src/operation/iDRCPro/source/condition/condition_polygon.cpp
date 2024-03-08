@@ -30,6 +30,12 @@ void DrcConditionManager::checkPolygons(std::string layer, DrcEngineLayout* layo
   int area_count = 0;
 
   auto& layer_polyset = layout->get_layout()->get_engine()->get_polyset();
+
+#ifdef DEBUG_IDRC_CONDITION
+  std::vector<ieda_solver::GeometryViewPolygon> polygons;
+  layer_polyset.get(polygons);
+#endif
+
   // eol
   auto rule_eol_list = DrcTechRuleInst->getSpacingEolList(layer);
   unsigned rule_eol_pattern = 0b11;
@@ -40,8 +46,8 @@ void DrcConditionManager::checkPolygons(std::string layer, DrcEngineLayout* layo
   }
   using EolRuleToRegionMap = std::map<std::shared_ptr<idb::routinglayer::Lef58SpacingEol>, ieda_solver::GeometryPolygonSet>;
   EolRuleToRegionMap eol_check_regions;
-  EolRuleToRegionMap eol_par_space_regions;
-  EolRuleToRegionMap eol_same_metal_regions;
+  EolRuleToRegionMap eol_par_space_regions_left;
+  EolRuleToRegionMap eol_par_space_regions_right;
   EolRuleToRegionMap eol_end_to_end_regions;
 
   // corner fill
@@ -187,38 +193,24 @@ void DrcConditionManager::checkPolygons(std::string layer, DrcEngineLayout* layo
           }
 
           int eol_spacing = rule_eol->get_eol_space();
-          // mininum value is 1, to ensure detect parallel edge regions and check violation regions have overlap
-          int eol_within = std::max(rule_eol->get_eol_within().value_or(0), 1);
+          int eol_within = rule_eol->get_eol_within().value_or(0);
 
-          // key words
+          // TODO: ENCLOSE CUT
           if (rule_eol->get_enclose_cut().has_value()) {
-            // TODO: enclose cut
             continue;
           }
 
-          if (rule_eol->get_adj_edge_length().has_value()) {
-            auto rule_adj_edge_length = rule_eol->get_adj_edge_length().value();
-            int min_edge_length = rule_adj_edge_length.get_min_length().value_or(0);
+          // PARALLELEDGE
+          if (rule_eol->get_parallel_edge().has_value()) {
+            auto rule_par_edge = rule_eol->get_parallel_edge().value();
+
+            // MINLENGTH
+            auto min_edge_length = rule_par_edge.get_min_length().value_or(0);
             if (edge_length_history[get_index_shifted(point_current_index, 1)] < min_edge_length
                 || edge_length_history[point_index_prev] < min_edge_length) {
               continue;
             }
-          }
 
-          if (rule_eol->get_end_to_end().has_value()) {
-            auto rule_end_to_end = rule_eol->get_end_to_end().value();
-            int rule_end_to_end_spacing = rule_end_to_end.get_end_to_end_space();
-            // TODO: end to end situation
-            // TODO: use end to end spacing to create check region
-            // TODO: use half end to end spacing to create detect region
-            // TODO: get detect region's self overlap
-            // TODO: get intersect regions between detect region and eol spacing check region
-            // TODO: subtract intersect regions from eol spacing check region
-            // TODO: get intersect regions between detect region and end to end spacing check region
-          }
-
-          if (rule_eol->get_parallel_edge().has_value()) {
-            auto rule_par_edge = rule_eol->get_parallel_edge().value();
             int rule_par_spacing = rule_par_edge.get_par_space();
             if (rule_par_edge.is_subtract_eol_width()) {
               rule_par_spacing -= edge_length;
@@ -226,44 +218,23 @@ void DrcConditionManager::checkPolygons(std::string layer, DrcEngineLayout* layo
             int rule_par_within = rule_par_edge.get_par_within();
 
             ieda_solver::GeometryRect detect_rect_left(point_current.x(), point_current.y(), point_current.x(), point_current.y());
-            ieda_solver::bloat(detect_rect_left, edge_direction, rule_par_spacing - 1);
-            ieda_solver::shrink(detect_rect_left, edge_direction.backward(), 1);
-            ieda_solver::bloat(detect_rect_left, edge_direction.left(), rule_par_within - 1);
+            ieda_solver::bloat(detect_rect_left, edge_direction, rule_par_spacing);
+            ieda_solver::bloat(detect_rect_left, edge_direction.left(), rule_par_within);
             ieda_solver::bloat(detect_rect_left, edge_direction.right(), eol_within);
-            eol_par_space_regions[rule_eol] += detect_rect_left;
+            eol_par_space_regions_left[rule_eol] += detect_rect_left;
 
             ieda_solver::GeometryRect detect_rect_right(point_prev.x(), point_prev.y(), point_prev.x(), point_prev.y());
-            ieda_solver::bloat(detect_rect_right, edge_direction.backward(), rule_par_spacing - 1);
-            ieda_solver::shrink(detect_rect_right, edge_direction, 1);
-            ieda_solver::bloat(detect_rect_right, edge_direction.left(), rule_par_within - 1);
+            ieda_solver::bloat(detect_rect_right, edge_direction.backward(), rule_par_spacing);
+            ieda_solver::bloat(detect_rect_right, edge_direction.left(), rule_par_within);
             ieda_solver::bloat(detect_rect_right, edge_direction.right(), eol_within);
-            eol_par_space_regions[rule_eol] += detect_rect_right;
-
-            // TWOEDGES: connect detect region
-            if (rule_par_edge.is_two_edges()) {
-              ieda_solver::GeometryRect connect_rect(point_prev.x(), point_prev.y(), point_current.x(), point_current.y());
-              ieda_solver::bloat(connect_rect, edge_direction.right(), 2);
-              ieda_solver::shrink(connect_rect, edge_direction.left(), 1);
-              ieda_solver::bloat(connect_rect, edge_orientation, 2);
-              eol_par_space_regions[rule_eol] += connect_rect;
-            }
-
-            // SAMEMETAL:
-            if (rule_par_edge.is_same_metal()) {
-              ieda_solver::bloat(detect_rect_left, edge_direction, 1);
-              ieda_solver::bloat(detect_rect_right, edge_direction.backward(), 1);
-              ieda_solver::shrink(detect_rect_left, edge_direction.backward(), rule_par_spacing - 2);
-              ieda_solver::shrink(detect_rect_right, edge_direction, rule_par_spacing - 2);
-              eol_same_metal_regions[rule_eol] += detect_rect_left;
-              eol_same_metal_regions[rule_eol] += detect_rect_right;
-              continue;
-            }
+            eol_par_space_regions_right[rule_eol] += detect_rect_right;
           }
 
-          // eol spacing
+          // TODO: ENDTOEND
+
+          // eol spacing check window
           ieda_solver::GeometryRect check_rect(point_prev.x(), point_prev.y(), point_current.x(), point_current.y());
-          ieda_solver::bloat(check_rect, edge_direction.right(), eol_spacing - 1);
-          ieda_solver::shrink(check_rect, edge_direction.left(), 1);
+          ieda_solver::bloat(check_rect, edge_direction.right(), eol_spacing);
           ieda_solver::bloat(check_rect, edge_orientation, eol_within);
           eol_check_regions[rule_eol] += check_rect;
         }
@@ -477,48 +448,95 @@ void DrcConditionManager::checkPolygons(std::string layer, DrcEngineLayout* layo
   }
 
   DEBUGOUTPUT(DEBUGHIGHLIGHT("Polygon Filter:\t") << "-\ttime = " << states.elapsedRunTime() << "\tmemory = " << states.memoryDelta());
+#ifndef DEBUGCLOSE_STEP
   DEBUGOUTPUT(DEBUGHIGHLIGHT("Min Step:\t") << step_count);
+#endif
+#ifndef DEBUGCLOSE_HOLE
   DEBUGOUTPUT(DEBUGHIGHLIGHT("Enclosed Area:\t") << enclosed_area_count);
+#endif
+#ifndef DEBUGCLOSE_AREA
   DEBUGOUTPUT(DEBUGHIGHLIGHT("Min Area:\t") << area_count);
+#endif
 
 // eol
 #ifndef DEBUGCLOSE_EOL
   ieda::Stats states_eol;
   int eol_count = 0;
+  int last_eol_count = 0;
+  auto remove_through_detect_regions = [](ieda_solver::GeometryPolygonSet& regions_to_remove, int shrink_size) {
+    ieda_solver::GeometryPolygonSet par_shrink_vertical(regions_to_remove);
+    ieda_solver::shrink(par_shrink_vertical, ieda_solver::VERTICAL, shrink_size);
+    ieda_solver::GeometryPolygonSet par_shrink_horizontal(regions_to_remove);
+    ieda_solver::shrink(par_shrink_horizontal, ieda_solver::HORIZONTAL, shrink_size);
+    ieda_solver::GeometryPolygonSet par_shrink = par_shrink_vertical | par_shrink_horizontal;
+    auto par_regions_to_remove = regions_to_remove;
+    ieda_solver::interact(par_regions_to_remove, par_shrink);
+    regions_to_remove -= par_regions_to_remove;
+  };
   for (auto& rule_eol : rule_eol_list) {
+    ieda::Stats states_eol_rule;
     auto& check_regions = eol_check_regions[rule_eol];
-    auto data_to_check = layer_polyset;  // TODO: avoid copy when SAMEMETAL not exist
+
+    auto data_to_check = layer_polyset;
 
     if (rule_eol->get_parallel_edge().has_value()) {
-      auto& par_space_regions = eol_par_space_regions[rule_eol];
+      auto rule_parallel_edge = rule_eol->get_parallel_edge().value();
 
-      if (rule_eol->get_parallel_edge().value().is_same_metal()) {
-        auto& same_metal_through_detect_regions = eol_same_metal_regions[rule_eol];
-        auto same_metal_through_overlaps_layer = same_metal_through_detect_regions & data_to_check;
-        ieda_solver::GeometryPolygonSet remained_not_through_detect_regions
-            = same_metal_through_detect_regions ^ same_metal_through_overlaps_layer;
-        ieda_solver::interact(par_space_regions, remained_not_through_detect_regions);
+      ieda_solver::GeometryPolygonSet par_space_regions;
+
+      if (rule_parallel_edge.is_same_metal()) {
+        // remove wire through a detect region
+        int shrink_size = (rule_parallel_edge.get_par_within() + rule_eol->get_eol_within().value_or(0)) / 2 - 1;
+        remove_through_detect_regions(eol_par_space_regions_left[rule_eol], shrink_size);
+        remove_through_detect_regions(eol_par_space_regions_right[rule_eol], shrink_size);
+
+        // TOWEDGES
+        if (rule_parallel_edge.is_two_edges()) {
+          ieda_solver::GeometryPolygonSet check_regions_left(check_regions);
+          ieda_solver::GeometryPolygonSet check_regions_right(check_regions);
+          ieda_solver::interact(check_regions_left, eol_par_space_regions_left[rule_eol]);
+          ieda_solver::interact(check_regions_right, eol_par_space_regions_right[rule_eol]);
+          check_regions = check_regions_left & check_regions_right;
+        }
+
+        // remain polygons could be same metal
+        par_space_regions = eol_par_space_regions_left[rule_eol] | eol_par_space_regions_right[rule_eol];
         ieda_solver::interact(data_to_check, par_space_regions);
+      } else {
+        par_space_regions = eol_par_space_regions_left[rule_eol] | eol_par_space_regions_right[rule_eol];
       }
 
-      ieda_solver::interact(par_space_regions, data_to_check);
+      // remove detect regions that not contain any par edges
+      ieda_solver::GeometryPolygonSet detected_wires = par_space_regions & data_to_check;
+      ieda_solver::interact(par_space_regions, detected_wires);
+
+      // remain check regions contain par edges
       ieda_solver::interact(check_regions, par_space_regions);
     }
 
-    ieda_solver::interact(check_regions, data_to_check);
-    auto& violation_regions = check_regions;
-    // auto violation_regions = check_regions - data_to_check;
+    // remain check regions contain eol spacing violations
+    ieda_solver::GeometryPolygonSet violation_wires = check_regions & data_to_check;
+    ieda_solver::interact(check_regions, violation_wires);
+    ieda_solver::GeometryPolygonSet violation_regions = check_regions - violation_wires;
 
+    // create violations
     std::vector<ieda_solver::GeometryPolygon> violation_polygons;
     violation_regions.get(violation_polygons);
-
     for (auto& violation_polygon : violation_polygons) {
       ieda_solver::GeometryRect violation_rect;
       ieda_solver::envelope(violation_rect, violation_polygon);
+      if (violation_polygon.size() <= 4
+          && ieda_solver::getWireWidth(violation_rect, ieda_solver::getWireDirection(violation_rect).get_perpendicular())
+                 >= rule_eol->get_eol_space()) {
+        continue;
+      }
       addViolation(violation_rect, layer, ViolationEnumType::kEOL);
+      ++eol_count;
     }
 
-    eol_count += violation_polygons.size();
+    // DEBUGOUTPUT(DEBUGHIGHLIGHT("EOL Spacing:\t") << eol_count - last_eol_count << "\ttime = " << states_eol_rule.elapsedRunTime()
+    //                                              << "\tmemory = " << states_eol_rule.memoryDelta());
+    last_eol_count = eol_count;
   }
   DEBUGOUTPUT(DEBUGHIGHLIGHT("EOL Spacing:\t") << eol_count << "\ttime = " << states_eol.elapsedRunTime()
                                                << "\tmemory = " << states_eol.memoryDelta());
