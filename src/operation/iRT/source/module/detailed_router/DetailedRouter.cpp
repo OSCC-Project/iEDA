@@ -1295,16 +1295,16 @@ std::vector<Violation> DetailedRouter::getViolationList(DRBox& dr_box)
       }
     }
   }
-  std::map<int32_t, std::vector<idb::IdbRegularWireSegment*>> net_result_map;
+  std::map<int32_t, std::vector<idb::IdbRegularWireSegment*>> net_wire_via_map;
   for (DRTask* dr_task : dr_box.get_dr_task_list()) {
     for (Segment<LayerCoord>& routing_segment : dr_task->get_routing_segment_list()) {
-      net_result_map[dr_task->get_net_idx()].push_back(DM_INST.getIDBSegmentByNetResult(dr_task->get_net_idx(), routing_segment));
+      net_wire_via_map[dr_task->get_net_idx()].push_back(DM_INST.getIDBSegmentByNetResult(dr_task->get_net_idx(), routing_segment));
     }
     for (EXTLayerRect& patch : dr_task->get_patch_list()) {
-      net_result_map[dr_task->get_net_idx()].push_back(DM_INST.getIDBSegmentByNetPatch(dr_task->get_net_idx(), patch));
+      net_wire_via_map[dr_task->get_net_idx()].push_back(DM_INST.getIDBSegmentByNetPatch(dr_task->get_net_idx(), patch));
     }
   }
-  std::vector<Violation> violation_list = RTAPI_INST.getViolationList(env_shape_list, net_pin_shape_map, net_result_map);
+  std::vector<Violation> violation_list = RTAPI_INST.getViolationList(env_shape_list, net_pin_shape_map, net_wire_via_map);
   // free memory
   {
     for (idb::IdbLayerShape* env_shape : env_shape_list) {
@@ -1315,6 +1315,12 @@ std::vector<Violation> DetailedRouter::getViolationList(DRBox& dr_box)
       for (idb::IdbLayerShape* pin_shape : pin_shape_list) {
         delete pin_shape;
         pin_shape = nullptr;
+      }
+    }
+    for (auto& [net_idx, wire_via_list] : net_wire_via_map) {
+      for (idb::IdbRegularWireSegment* wire_via : wire_via_list) {
+        delete wire_via;
+        wire_via = nullptr;
       }
     }
   }
