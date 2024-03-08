@@ -21,4 +21,5 @@ target_link_libraries(verilog_builder
         utility 
         def_service 
         idb
+        time
 )
