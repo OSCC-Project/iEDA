@@ -455,8 +455,18 @@ std::string VerilogWriter::escapeName(const std::string& name)
  */
 std::string VerilogWriter::addSpaceForEscapeName(const std::string& name)
 {
-  std::string replace_str = ieda::Str::replace(name, "\\[", " [");
-  return replace_str;
+  if (std::count(name.begin(), name.end(), '[') > 1) {
+    return name;
+  }
+
+  size_t pos = name.find("[");
+  if (pos != string::npos) {
+    std::string replace_str = name;
+    replace_str.replace(pos, 1, " [");
+    return replace_str;
+  }
+
+  return name;
 }
 
 }  // namespace idb
