@@ -54,8 +54,7 @@ void VerilogWriter::writeModule()
   }
   LOG_INFO << "start write verilog file " << _file_name;
 
-  fprintf(_stream, "//Generate the verilog at %s\n",
-               ieda::Time::getNowWallTime());
+  fprintf(_stream, "//Generate the verilog at %s\n", ieda::Time::getNowWallTime());
 
   fprintf(_stream, "module %s (", _idb_design.get_design_name().c_str());
   fprintf(_stream, "\n");
@@ -444,8 +443,20 @@ bool VerilogWriter::isNeedEscape(const std::string& name)
 std::string VerilogWriter::escapeName(const std::string& name)
 {
   std::string trim_name = ieda::Str::trimBackslash(name);
-  std::string escape_name = isNeedEscape(trim_name) ? "\\" + trim_name : trim_name;
+  std::string escape_name = isNeedEscape(trim_name) ? "\\" + addSpaceForEscapeName(trim_name) : trim_name;
   return escape_name;
+}
+
+/**
+ * @brief add space for escape name between id and bracket
+ * such as \waddrReg_r[2] should be changed to \waddrReg_r [2], which is required by verilator.
+ * @param name
+ * @return std::string
+ */
+std::string VerilogWriter::addSpaceForEscapeName(const std::string& name)
+{
+  std::string replace_str = ieda::Str::replace(name, "\\[", " [");
+  return replace_str;
 }
 
 }  // namespace idb
