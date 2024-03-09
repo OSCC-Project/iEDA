@@ -46,6 +46,7 @@ class VerilogWriter
   void writeModule();
   bool isNeedEscape(const std::string& name);
   std::string escapeName(const std::string& name);
+  std::string addSpaceForEscapeName(const std::string& name);
 
  protected:
   void writePorts();
