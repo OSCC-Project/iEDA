@@ -26,6 +26,8 @@ typedef enum DclType {
     KWor = 8,
 } DclType;
 
+typedef struct Rc_RefCell_VerilogModule Rc_RefCell_VerilogModule;
+
 typedef struct VerilogModule VerilogModule;
 
 typedef struct RustVec {
@@ -104,7 +106,14 @@ typedef struct RustVerilogPortRefPortConnect {
     void *net_expr;
 } RustVerilogPortRefPortConnect;
 
-void *rust_parse_verilog(const char *verilog_path, const char *top_module_name);
+typedef struct RustVerilogFile {
+    struct RustVec verilog_modules;
+    struct RustVec hashmap_verilog_modules;
+} RustVerilogFile;
+
+void *rust_parse_verilog(const char *verilog_path);
+
+void rust_flatten_module(void *c_verilog_file, const char *top_module_name);
 
 void rust_free_verilog_module(struct VerilogModule *c_verilog_module);
 
@@ -157,3 +166,7 @@ bool rust_is_verilog_dcl_stmt(void *c_verilog_stmt);
 bool rust_is_verilog_dcls_stmt(void *c_verilog_stmt);
 
 bool rust_is_module_stmt(void *c_verilog_stmt);
+
+struct RustVerilogFile *rust_convert_verilog_file(void *c_verilog_file);
+
+void *rust_convert_rc_ref_cell_module(const struct Rc_RefCell_VerilogModule *c_data);
