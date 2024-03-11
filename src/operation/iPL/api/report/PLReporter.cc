@@ -917,7 +917,7 @@ namespace ipl {
     // std::string output_file_name = "CongMap";
     // iPLAPIInst.plotCongMap(plot_path, output_file_name);
 
-    _external_api->destroyCongEval();
+    // _external_api->destroyCongEval();
   }
 
   void PLReporter::reportPLBaseInfo(std::ofstream& feed)
