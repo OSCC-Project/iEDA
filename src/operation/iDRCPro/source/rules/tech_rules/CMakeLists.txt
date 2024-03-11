@@ -14,7 +14,6 @@ target_link_libraries(idrc_pro_tech_rules
     PUBLIC
     idm
     idb
-    idrc_rule_condition_matrix
 
 )
 
