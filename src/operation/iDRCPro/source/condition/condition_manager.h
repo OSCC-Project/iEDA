@@ -28,7 +28,7 @@
 
 namespace idrc {
 
-#define DEBUGCONDITION 1
+#define DEBUGCONDITION 0
 
 #if DEBUGCONDITION
 #define DEBUGPRINT 1
@@ -47,7 +47,7 @@ namespace idrc {
 #endif
 
 #if DEBUGCLOSE
-#if 0
+#if 1
 #define DEBUGCLOSE_OVERLAP
 #define DEBUGCLOSE_MINSPACING
 #define DEBUGCLOSE_JOG
@@ -55,7 +55,7 @@ namespace idrc {
 #define DEBUGCLOSE_STEP
 #define DEBUGCLOSE_HOLE
 #define DEBUGCLOSE_AREA
-// #define DEBUGCLOSE_EOL
+#define DEBUGCLOSE_EOL
 #define DEBUGCLOSE_CORNER_FILL
 #define DEBUGCLOSE_NOTCH
 #endif

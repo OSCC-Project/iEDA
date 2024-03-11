@@ -447,7 +447,8 @@ void DrcConditionManager::checkPolygons(std::string layer, DrcEngineLayout* layo
 #endif
   }
 
-  DEBUGOUTPUT(DEBUGHIGHLIGHT("Polygon Filter:\t") << "-\ttime = " << states.elapsedRunTime() << "\tmemory = " << states.memoryDelta());
+  DEBUGOUTPUT(DEBUGHIGHLIGHT("Polygon Filter:\t") << "-\ttime = " << states.elapsedRunTime() << "\tmemory = " << states.memoryDelta()
+                                                  << "\tpolygon count = " << polygon_with_holes.size());
 #ifndef DEBUGCLOSE_STEP
   DEBUGOUTPUT(DEBUGHIGHLIGHT("Min Step:\t") << step_count);
 #endif
@@ -581,6 +582,7 @@ void DrcConditionManager::checkPolygons(std::string layer, DrcEngineLayout* layo
     for (auto& violation_rect : notch_violations) {
       addViolation(violation_rect, layer, ViolationEnumType::kNotch);
     }
+    notch_count += notch_violations.size();
   }
   DEBUGOUTPUT(DEBUGHIGHLIGHT("Notch Spacing:\t")
               << notch_count << "\ttime = " << states_notch.elapsedRunTime() << "\tmemory = " << states_notch.memoryDelta());

@@ -66,7 +66,8 @@ void DrcConditionManager::checkWires(std::string layer, DrcEngineLayout* layout)
       }
     }
   }
-  DEBUGOUTPUT(DEBUGHIGHLIGHT("Wire Filter:\t") << "-\ttime = " << states.elapsedRunTime() << "\tmemory = " << states.memoryDelta());
+  DEBUGOUTPUT(DEBUGHIGHLIGHT("Wire Filter:\t") << "-\ttime = " << states.elapsedRunTime() << "\tmemory = " << states.memoryDelta()
+                                               << "\twire count = " << wires.size());
 #ifndef DEBUGCLOSE_JOG
   checkJog(layer, layout, jog_wire_map);
 #endif

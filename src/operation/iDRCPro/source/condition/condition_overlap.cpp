@@ -23,6 +23,8 @@ namespace idrc {
 
 void DrcConditionManager::checkOverlap(std::string layer, DrcEngineLayout* layout)
 {
+  DEBUGOUTPUT("");
+  DEBUGOUTPUT("layer " << layer);
 #ifndef DEBUGCLOSE_OVERLAP
   ieda::Stats states;
   auto& overlap = layout->get_layout()->get_engine()->getOverlap();

@@ -100,7 +100,7 @@ void DrcEngineManager::dataPreprocess()
 void DrcEngineManager::filterData()
 {
   for (auto& [layer, layout] : get_engine_layouts(LayoutType::kRouting)) {
-    std::cout << "\nidrc : layer " << layer << std::endl;
+    // std::cout << "\nidrc : layer " << layer << std::endl;
     // only for routing layers
     // if (!DrcTechRuleInst->isLayerRouting(layer)) {
     //   continue;

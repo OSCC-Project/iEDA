@@ -110,7 +110,7 @@ std::vector<GeometryPolygon>& GeometryBoost::getOverlap()
   if (!_overlap_initialized) {
     GtlPolygon90Set set(_polyset);
     set.self_intersect();
-    set.get_rectangles(_overlap_list);
+    set.get(_overlap_list);
     // _overlap_set.get(_overlap_list);
     _overlap_initialized = true;
   }
