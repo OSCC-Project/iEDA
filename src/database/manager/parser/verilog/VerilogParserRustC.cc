@@ -39,23 +39,22 @@ unsigned RustVerilogReader::readVerilog(const char* verilog_file_path)
 {
   unsigned is_ok = 1;
   LOG_INFO << "load verilog file " << verilog_file_path;
-  // generate1
   _verilog_file_ptr = rust_parse_verilog(verilog_file_path);
 
- if (_verilog_file_ptr) {
-  RustVerilogFile* rust_verilog_file = rust_convert_verilog_file(_verilog_file_ptr);
-  auto verilog_modules = rust_verilog_file->verilog_modules;
-  void* verilog_module;
-  FOREACH_VEC_ELEM(&verilog_modules, void, verilog_module)
-  {
-    void* verilog_module_ptr = rust_convert_rc_ref_cell_module(verilog_module);
-    RustVerilogModule* verilog_module = rust_convert_raw_verilog_module(verilog_module_ptr);
-    _verilog_modules.emplace_back(std::move(verilog_module));
+  if (_verilog_file_ptr) {
+    RustVerilogFile* rust_verilog_file = rust_convert_verilog_file(_verilog_file_ptr);
+    auto verilog_modules = rust_verilog_file->verilog_modules;
+    void* verilog_module;
+    FOREACH_VEC_ELEM(&verilog_modules, void, verilog_module)
+    {
+      void* verilog_module_ptr = rust_convert_rc_ref_cell_module(verilog_module);
+      RustVerilogModule* verilog_module = rust_convert_raw_verilog_module(verilog_module_ptr);
+      _verilog_modules.emplace_back(std::move(verilog_module));
+    }
+  } else {
+    is_ok = 0;
   }
- } else {
-  is_ok = 0;
- }
- 
+
   return is_ok;
 }
 
