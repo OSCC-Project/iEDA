@@ -127,7 +127,11 @@ int main(int argc, char** argv) {
     }
 
     if (argv_parse_result.count("script")) {
-      shell->userMain(argc, argv);
+      // discard the first arg from main()
+      // pass the rest of the args to Tcl interpreter
+      auto tcl_argc = argc - 1;
+      auto tcl_argv = argv + 1;
+      shell->userMain(tcl_argc, tcl_argv);
     }
 
     if (argc == 1) {

@@ -32,42 +32,17 @@ using namespace iplf;
 
 int main(int argc, char** argv)
 {
-  if (argc > 2) {
-    /// read iFP script if config
-    // char* tcl_file_path = nullptr;
-    char* tcl_file_path = nullptr;
-    for (int i = 0; i < argc; ++i) {
-      if (argv[i] == std::string("-script")) {
-        int len = strlen(argv[i + 1]);
-        tcl_file_path = new char[len + 1];
-        std::memcpy(tcl_file_path, argv[i + 1], len);
-        tcl_file_path[len] = '\0';
-        // tcl_file_path = argv[i + 1];
-      }
+  for (int i = 1; i < argc; ++i) {
+    if (std::string("-script") == argv[i]) {
+      // discard every args before the (first) "-script"
+      // pass the rest of the args to Tcl interpreter
+      argc -= i;
+      argv += i;
+      break;
     }
-
-    /// read flow config
-    std::string flow_config;
-    for (int i = 0; i < argc; ++i) {
-      if (argv[i] == std::string("-flow_config")) {
-        flow_config = argv[i + 1];
-      }
-    }
-
-    // if (!flow_config.empty()) {
-    //   if (plfInst->initFlow(flow_config)) {
-    //     plfInst->run(tcl_file_path)
-    //   }
-    // }
-
-    if (tcl_file_path != nullptr) {
-      plfInst->runTcl(tcl_file_path);
-
-      delete tcl_file_path;
-    }
-  } else {
-    plfInst->runTcl();
   }
+
+  plfInst->runTcl(argc, argv);
 
   return 0;
 }
