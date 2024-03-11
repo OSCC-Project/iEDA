@@ -178,20 +178,29 @@ std::vector<PlanarRect> PinAccessor::getPlanarLegalRectList(int32_t curr_net_idx
     pin_layer_idx_list = {curr_layer_idx, curr_layer_idx - 1};
   }
   std::vector<std::vector<PlanarRect>> routing_obs_shape_list_list;
-  for (int32_t layer_idx : pin_layer_idx_list) {
-    RoutingLayer& routing_layer = routing_layer_list[layer_idx];
+  for (int32_t pin_layer_idx : pin_layer_idx_list) {
+    RoutingLayer& routing_layer = routing_layer_list[pin_layer_idx];
     std::vector<PlanarRect> routing_obs_shape_list;
     for (EXTLayerRect& reduced_rect : reduced_rect_list) {
-      auto net_fixed_rect_map = DM_INST.getTypeLayerNetFixedRectMap(reduced_rect)[true][layer_idx];
-      for (auto& [net_idx, fixed_rect_set] : net_fixed_rect_map) {
-        if (net_idx == curr_net_idx) {
+      for (auto& [is_routing, layer_net_fixed_rect_map] : DM_INST.getTypeLayerNetFixedRectMap(reduced_rect)) {
+        if (!is_routing) {
           continue;
         }
-        for (EXTLayerRect* fixed_rect : fixed_rect_set) {
-          int32_t enlarged_size = routing_layer.getMinSpacing(fixed_rect->get_real_rect()) + (routing_layer.get_min_width() / 2);
-          PlanarRect enlarged_rect = RTUtil::getEnlargedRect(fixed_rect->get_real_rect(), enlarged_size);
-          if (RTUtil::isOpenOverlap(reduced_rect.get_real_rect(), enlarged_rect)) {
-            routing_obs_shape_list.push_back(enlarged_rect);
+        for (auto& [layer_idx, net_fixed_rect_map] : layer_net_fixed_rect_map) {
+          if (pin_layer_idx != layer_idx) {
+            continue;
+          }
+          for (auto& [net_idx, fixed_rect_set] : net_fixed_rect_map) {
+            if (net_idx == curr_net_idx) {
+              continue;
+            }
+            for (EXTLayerRect* fixed_rect : fixed_rect_set) {
+              int32_t enlarged_size = routing_layer.getMinSpacing(fixed_rect->get_real_rect()) + (routing_layer.get_min_width() / 2);
+              PlanarRect enlarged_rect = RTUtil::getEnlargedRect(fixed_rect->get_real_rect(), enlarged_size);
+              if (RTUtil::isOpenOverlap(reduced_rect.get_real_rect(), enlarged_rect)) {
+                routing_obs_shape_list.push_back(enlarged_rect);
+              }
+            }
           }
         }
       }

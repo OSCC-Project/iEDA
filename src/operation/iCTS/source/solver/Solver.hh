@@ -72,6 +72,7 @@ class Solver
   // report
   void writeNetPy(Pin* root, const std::string& save_name = "net") const;
   void levelReport() const;
+  void pinCapDistReport(const std::vector<Inst*>& insts) const;
   // member
   std::string _net_name;
   CtsPin* _cts_driver;

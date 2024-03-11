@@ -273,7 +273,7 @@ std::vector<double> RTAPI::getWireLengthAndViaNum(std::map<std::string, std::any
 
 std::vector<Violation> RTAPI::getViolationList(std::vector<idb::IdbLayerShape*>& env_shape_list,
                                                std::map<int32_t, std::vector<idb::IdbLayerShape*>>& net_pin_shape_map,
-                                               std::map<int32_t, std::vector<idb::IdbRegularWireSegment*>>& net_result_map)
+                                               std::map<int32_t, std::vector<idb::IdbRegularWireSegment*>>& net_wire_via_map)
 {
   /**
    * env_shape_list 存储 blockage obs pin_shape
@@ -285,7 +285,7 @@ std::vector<Violation> RTAPI::getViolationList(std::vector<idb::IdbLayerShape*>&
   std::vector<Violation> violation_list;
   idrc::DrcApi drc_api;
   drc_api.init();
-  for (auto& [type, idrc_violation_list] : drc_api.check(env_shape_list, net_pin_shape_map, net_result_map)) {
+  for (auto& [type, idrc_violation_list] : drc_api.check(env_shape_list, net_pin_shape_map, net_wire_via_map)) {
     for (idrc::DrcViolation* idrc_violation : idrc_violation_list) {
       if (idrc_violation->get_net_ids().size() < 2) {
         continue;

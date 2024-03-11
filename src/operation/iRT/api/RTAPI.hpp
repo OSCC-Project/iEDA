@@ -52,7 +52,7 @@ class RTAPI
   // 调用iDRC 计算版图的DRC违例
   std::vector<Violation> getViolationList(std::vector<idb::IdbLayerShape*>& env_shape_list,
                                           std::map<int32_t, std::vector<idb::IdbLayerShape*>>& net_pin_shape_map,
-                                          std::map<int32_t, std::vector<idb::IdbRegularWireSegment*>>& net_result_map);
+                                          std::map<int32_t, std::vector<idb::IdbRegularWireSegment*>>& net_wire_via_map);
   // 调用iSTA 计算时序
   std::map<std::string, std::vector<double>> getTiming(
       std::map<int32_t, std::map<LayerCoord, std::vector<std::string>, CmpLayerCoordByXASC>>& net_pin_coord_map,

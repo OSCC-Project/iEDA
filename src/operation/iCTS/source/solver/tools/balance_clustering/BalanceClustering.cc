@@ -388,7 +388,7 @@ std::vector<Point> BalanceClustering::guideCenter(const std::vector<std::vector<
   });
   std::vector<Pin*> pins;
   std::transform(insts.begin(), insts.end(), std::back_inserter(pins), [](Inst* inst) { return inst->get_load_pin(); });
-  auto* buf = TreeBuilder::cbsTree("temp", pins, std::nullopt, center.value_or(calcCentroid(insts)), TopoType::kBiPartition);
+  auto* buf = TreeBuilder::defaultTree("temp", pins, std::nullopt, center.value_or(calcCentroid(insts)), TopoType::kBiPartition);
   // auto* buf = TreeBuilder::genBufInst("temp", center.value_or(calcCentroid(insts)));
   auto* driver_pin = buf->get_driver_pin();
   // TreeBuilder::shallowLightTree("temp", driver_pin, pins);
@@ -730,7 +730,7 @@ double BalanceClustering::estimateNetLength(const std::vector<Inst*>& cluster)
   std::vector<Pin*> cluster_load_pins;
   std::transform(cluster.begin(), cluster.end(), std::back_inserter(cluster_load_pins), [](Inst* inst) { return inst->get_load_pin(); });
   TreeBuilder::localPlace(cluster_load_pins);
-  auto* buf = TreeBuilder::cbsTree("temp", cluster_load_pins, TimingPropagator::getSkewBound(), std::nullopt, TopoType::kBiPartition);
+  auto* buf = TreeBuilder::defaultTree("temp", cluster_load_pins, TimingPropagator::getSkewBound(), std::nullopt, TopoType::kBiPartition);
   auto* driver_pin = buf->get_driver_pin();
   TreeBuilder::localPlace(buf, cluster_load_pins);
   auto* net = TimingPropagator::genNet("temp", driver_pin, cluster_load_pins);

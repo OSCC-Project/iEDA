@@ -595,7 +595,6 @@ void IdbRegularWireList::clear()
       wire = nullptr;
     }
   }
-
   _wire_list.clear();
   vector<IdbRegularWire*>().swap(_wire_list);
 }

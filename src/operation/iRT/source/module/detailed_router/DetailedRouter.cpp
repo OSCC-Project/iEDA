@@ -102,25 +102,26 @@ void DetailedRouter::iterativeDRModel(DRModel& dr_model)
 {
   int32_t cost_unit = 8;
   std::vector<DRParameter> dr_parameter_list = {
-      {8, 0, cost_unit, cost_unit, 4 * cost_unit, true}, {8, -2, cost_unit, cost_unit, 4 * cost_unit, true},
-      // {8, -4, cost_unit, cost_unit, 4 * cost_unit, true},
-      // {8, -6, cost_unit, cost_unit, 4 * cost_unit, true},
-      // {8, 0, 8 * cost_unit, 4 * cost_unit, 4 * cost_unit, false},
-      // {8, -1, 8 * cost_unit, 4 * cost_unit, 4 * cost_unit, false},
-      // {8, -2, 8 * cost_unit, 4 * cost_unit, 4 * cost_unit, false},
-      // {8, -3, 8 * cost_unit, 4 * cost_unit, 4 * cost_unit, false},
-      // {8, -4, 8 * cost_unit, 4 * cost_unit, 4 * cost_unit, false},
-      // {8, -5, 8 * cost_unit, 4 * cost_unit, 4 * cost_unit, false},
-      // {8, -6, 8 * cost_unit, 4 * cost_unit, 4 * cost_unit, false},
-      // {8, -7, 8 * cost_unit, 4 * cost_unit, 4 * cost_unit, false},
-      // {8, 0, 16 * cost_unit, 8 * cost_unit, 8 * cost_unit, false},
-      // {8, -1, 16 * cost_unit, 8 * cost_unit, 8 * cost_unit, false},
-      // {8, -2, 16 * cost_unit, 8 * cost_unit, 8 * cost_unit, false},
-      // {8, -3, 16 * cost_unit, 8 * cost_unit, 8 * cost_unit, false},
-      // {8, -4, 16 * cost_unit, 8 * cost_unit, 8 * cost_unit, false},
-      // {8, -5, 16 * cost_unit, 8 * cost_unit, 8 * cost_unit, false},
-      // {8, -6, 16 * cost_unit, 8 * cost_unit, 8 * cost_unit, false},
-      // {8, -7, 16 * cost_unit, 8 * cost_unit, 8 * cost_unit, false},
+      {8, 0, cost_unit, cost_unit, 4 * cost_unit, true},
+      {8, -2, cost_unit, cost_unit, 4 * cost_unit, true},
+      {8, -4, cost_unit, cost_unit, 4 * cost_unit, true},
+      {8, -6, cost_unit, cost_unit, 4 * cost_unit, true},
+      {8, 0, 8 * cost_unit, 4 * cost_unit, 4 * cost_unit, false},
+      {8, -1, 8 * cost_unit, 4 * cost_unit, 4 * cost_unit, false},
+      {8, -2, 8 * cost_unit, 4 * cost_unit, 4 * cost_unit, false},
+      {8, -3, 8 * cost_unit, 4 * cost_unit, 4 * cost_unit, false},
+      {8, -4, 8 * cost_unit, 4 * cost_unit, 4 * cost_unit, false},
+      {8, -5, 8 * cost_unit, 4 * cost_unit, 4 * cost_unit, false},
+      {8, -6, 8 * cost_unit, 4 * cost_unit, 4 * cost_unit, false},
+      {8, -7, 8 * cost_unit, 4 * cost_unit, 4 * cost_unit, false},
+      {8, 0, 16 * cost_unit, 8 * cost_unit, 8 * cost_unit, false},
+      {8, -1, 16 * cost_unit, 8 * cost_unit, 8 * cost_unit, false},
+      {8, -2, 16 * cost_unit, 8 * cost_unit, 8 * cost_unit, false},
+      {8, -3, 16 * cost_unit, 8 * cost_unit, 8 * cost_unit, false},
+      {8, -4, 16 * cost_unit, 8 * cost_unit, 8 * cost_unit, false},
+      {8, -5, 16 * cost_unit, 8 * cost_unit, 8 * cost_unit, false},
+      {8, -6, 16 * cost_unit, 8 * cost_unit, 8 * cost_unit, false},
+      {8, -7, 16 * cost_unit, 8 * cost_unit, 8 * cost_unit, false},
   };
   for (size_t i = 0, iter = 1; i < dr_parameter_list.size(); i++, iter++) {
     Monitor iter_monitor;
@@ -135,7 +136,7 @@ void DetailedRouter::iterativeDRModel(DRModel& dr_model)
     printSummary(dr_model);
     writeNetCSV(dr_model);
     writeViolationCSV(dr_model);
-    debugOutputDef(dr_model);
+    // debugOutputDef(dr_model);
     LOG_INST.info(Loc::current(), "***** End Iteration ", iter, "/", dr_parameter_list.size(), "(",
                   RTUtil::getPercentage(iter, dr_parameter_list.size()), ")", iter_monitor.getStatsInfo(), "*****");
   }
@@ -211,67 +212,63 @@ void DetailedRouter::splitNetResult(DRModel& dr_model)
   for (int32_t x = 0; x < dr_box_map.get_x_size(); x++) {
     for (int32_t y = 0; y < dr_box_map.get_y_size(); y++) {
       DRBox& dr_box = dr_box_map[x][y];
-      splitNetResult(dr_box);
-    }
-  }
-}
 
-void DetailedRouter::splitNetResult(DRBox& dr_box)
-{
-  PlanarRect& real_rect = dr_box.get_box_rect().get_real_rect();
-  int32_t box_lb_x = real_rect.get_lb_x();
-  int32_t box_lb_y = real_rect.get_lb_y();
-  int32_t box_rt_x = real_rect.get_rt_x();
-  int32_t box_rt_y = real_rect.get_rt_y();
+      PlanarRect& real_rect = dr_box.get_box_rect().get_real_rect();
+      int32_t box_lb_x = real_rect.get_lb_x();
+      int32_t box_lb_y = real_rect.get_lb_y();
+      int32_t box_rt_x = real_rect.get_rt_x();
+      int32_t box_rt_y = real_rect.get_rt_y();
 
-  for (auto& [net_idx, segment_set] : DM_INST.getNetResultMap(dr_box.get_box_rect())) {
-    for (auto& segment : segment_set) {
-      LayerCoord first = segment->get_first();
-      int32_t first_x = first.get_x();
-      int32_t first_y = first.get_y();
-      int32_t first_layer_idx = first.get_layer_idx();
+      for (auto& [net_idx, segment_set] : DM_INST.getNetResultMap(dr_box.get_box_rect())) {
+        for (Segment<LayerCoord>* segment : segment_set) {
+          LayerCoord first = segment->get_first();
+          int32_t first_x = first.get_x();
+          int32_t first_y = first.get_y();
+          int32_t first_layer_idx = first.get_layer_idx();
 
-      LayerCoord second = segment->get_second();
-      int32_t second_x = second.get_x();
-      int32_t second_y = second.get_y();
-      int32_t second_layer_idx = second.get_layer_idx();
-      RTUtil::swapByASC(first_x, second_x);
-      RTUtil::swapByASC(first_y, second_y);
+          LayerCoord second = segment->get_second();
+          int32_t second_x = second.get_x();
+          int32_t second_y = second.get_y();
+          int32_t second_layer_idx = second.get_layer_idx();
+          RTUtil::swapByASC(first_x, second_x);
+          RTUtil::swapByASC(first_y, second_y);
 
-      if (first_layer_idx != second_layer_idx) {
-        continue;
-      }
-      if (!CmpLayerCoordByLayerASC()(first, second)) {
-        std::swap(first, second);
-      }
-      std::vector<LayerCoord> end_point_list = {first, second};
-      if (RTUtil::isHorizontal(first, second)) {
-        if (first_x <= box_lb_x && box_lb_x <= second_x) {
-          end_point_list.emplace_back(box_lb_x, first_y, first_layer_idx);
+          if (first_layer_idx != second_layer_idx) {
+            continue;
+          }
+          if (!CmpLayerCoordByLayerASC()(first, second)) {
+            std::swap(first, second);
+          }
+          std::vector<LayerCoord> end_point_list = {first, second};
+          if (RTUtil::isHorizontal(first, second)) {
+            if (first_x <= box_lb_x && box_lb_x <= second_x) {
+              end_point_list.emplace_back(box_lb_x, first_y, first_layer_idx);
+            }
+            if (first_x <= box_rt_x && box_rt_x <= second_x) {
+              end_point_list.emplace_back(box_rt_x, first_y, first_layer_idx);
+            }
+          } else if (RTUtil::isVertical(first, second)) {
+            if (first_y <= box_lb_y && box_lb_y <= second_y) {
+              end_point_list.emplace_back(first_x, box_lb_y, first_layer_idx);
+            }
+            if (first_y <= box_rt_y && box_rt_y <= second_y) {
+              end_point_list.emplace_back(first_x, box_rt_y, first_layer_idx);
+            }
+          } else {
+            LOG_INST.error(Loc::current(), "Routing Segmet is oblique!");
+          }
+          std::sort(end_point_list.begin(), end_point_list.end(), CmpLayerCoordByLayerASC());
+          end_point_list.erase(std::unique(end_point_list.begin(), end_point_list.end()), end_point_list.end());
+          if (end_point_list.size() == 2) {
+            continue;
+          }
+
+          // update split result
+          DM_INST.updateNetResultToGCellMap(ChangeType::kDel, net_idx, segment);
+          for (size_t i = 1; i < end_point_list.size(); i++) {
+            DM_INST.updateNetResultToGCellMap(ChangeType::kAdd, net_idx, new Segment<LayerCoord>(end_point_list[i - 1], end_point_list[i]));
+          }
         }
-        if (first_x <= box_rt_x && box_rt_x <= second_x) {
-          end_point_list.emplace_back(box_rt_x, first_y, first_layer_idx);
-        }
-      } else if (RTUtil::isVertical(first, second)) {
-        if (first_y <= box_lb_y && box_lb_y <= second_y) {
-          end_point_list.emplace_back(first_x, box_lb_y, first_layer_idx);
-        }
-        if (first_y <= box_rt_y && box_rt_y <= second_y) {
-          end_point_list.emplace_back(first_x, box_rt_y, first_layer_idx);
-        }
-      } else {
-        LOG_INST.error(Loc::current(), "Routing Segmet is oblique!");
-      }
-      std::sort(end_point_list.begin(), end_point_list.end(), CmpLayerCoordByLayerASC());
-      end_point_list.erase(std::unique(end_point_list.begin(), end_point_list.end()), end_point_list.end());
-      if (end_point_list.size() == 2) {
-        continue;
-      }
-
-      // update split result
-      DM_INST.updateNetResultToGCellMap(ChangeType::kDel, net_idx, segment);
-      for (size_t i = 1; i < end_point_list.size(); i++) {
-        DM_INST.updateNetResultToGCellMap(ChangeType::kAdd, net_idx, new Segment<LayerCoord>(end_point_list[i - 1], end_point_list[i]));
       }
     }
   }
@@ -391,7 +388,7 @@ std::map<int32_t, std::set<LayerCoord, CmpLayerCoordByLayerASC>> DetailedRouter:
   std::map<int32_t, std::set<LayerCoord, CmpLayerCoordByLayerASC>> boundary_point_map;
   for (auto& [net_idx, segment_set] : DM_INST.getNetResultMap(dr_box.get_box_rect())) {
     std::set<LayerCoord, CmpLayerCoordByLayerASC> boundary_point_set;
-    for (auto& segment : segment_set) {
+    for (Segment<LayerCoord>* segment : segment_set) {
       LayerCoord first = segment->get_first();
       int32_t first_x = first.get_x();
       int32_t first_y = first.get_y();
@@ -1298,16 +1295,16 @@ std::vector<Violation> DetailedRouter::getViolationList(DRBox& dr_box)
       }
     }
   }
-  std::map<int32_t, std::vector<idb::IdbRegularWireSegment*>> net_result_map;
+  std::map<int32_t, std::vector<idb::IdbRegularWireSegment*>> net_wire_via_map;
   for (DRTask* dr_task : dr_box.get_dr_task_list()) {
     for (Segment<LayerCoord>& routing_segment : dr_task->get_routing_segment_list()) {
-      net_result_map[dr_task->get_net_idx()].push_back(DM_INST.getIDBSegmentByNetResult(dr_task->get_net_idx(), routing_segment));
+      net_wire_via_map[dr_task->get_net_idx()].push_back(DM_INST.getIDBSegmentByNetResult(dr_task->get_net_idx(), routing_segment));
     }
     for (EXTLayerRect& patch : dr_task->get_patch_list()) {
-      net_result_map[dr_task->get_net_idx()].push_back(DM_INST.getIDBSegmentByNetPatch(dr_task->get_net_idx(), patch));
+      net_wire_via_map[dr_task->get_net_idx()].push_back(DM_INST.getIDBSegmentByNetPatch(dr_task->get_net_idx(), patch));
     }
   }
-  std::vector<Violation> violation_list = RTAPI_INST.getViolationList(env_shape_list, net_pin_shape_map, net_result_map);
+  std::vector<Violation> violation_list = RTAPI_INST.getViolationList(env_shape_list, net_pin_shape_map, net_wire_via_map);
   // free memory
   {
     for (idb::IdbLayerShape* env_shape : env_shape_list) {
@@ -1318,6 +1315,12 @@ std::vector<Violation> DetailedRouter::getViolationList(DRBox& dr_box)
       for (idb::IdbLayerShape* pin_shape : pin_shape_list) {
         delete pin_shape;
         pin_shape = nullptr;
+      }
+    }
+    for (auto& [net_idx, wire_via_list] : net_wire_via_map) {
+      for (idb::IdbRegularWireSegment* wire_via : wire_via_list) {
+        delete wire_via;
+        wire_via = nullptr;
       }
     }
   }
@@ -1566,7 +1569,6 @@ void DetailedRouter::debugCheckDRBox(DRBox& dr_box)
         PlanarCoord grid_coord = RTUtil::getTrackGrid(coord, dr_box.get_box_track_axis());
         DRNode& dr_node = layer_node_map[layer_idx][grid_coord.get_x()][grid_coord.get_y()];
         if (dr_node.get_neighbor_node_map().empty()) {
-          // debugPlotDRBox(dr_box, -1, "check");
           LOG_INST.error(Loc::current(), "The neighbor of group coord (", coord.get_x(), ",", coord.get_y(), ",", layer_idx,
                          ") is empty in box(", dr_box_id.get_x(), ",", dr_box_id.get_y(), ")");
         }
