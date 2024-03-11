@@ -311,19 +311,17 @@ void DetailedRouter::routeDRBoxMap(DRModel& dr_model)
     for (DRBoxId& dr_box_id : dr_box_id_list) {
       DRBox& dr_box = dr_box_map[dr_box_id.get_x()][dr_box_id.get_y()];
       initDRTaskList(dr_model, dr_box);
-      if (dr_box.get_dr_task_list().empty()) {
-        continue;
-      }
-      buildDRTaskList(dr_box);
-      buildFixedRectList(dr_box);
       buildViolationList(dr_box);
-      buildBoxTrackAxis(dr_box);
-      initLayerNodeMap(dr_box);
-      initDRNodeValid(dr_box);
-      buildDRNodeNeighbor(dr_box);
-      buildOrienNetMap(dr_box);
-      // debugCheckDRBox(dr_box);
-      routeDRBox(dr_box);
+      if (needRouting(dr_box)) {
+        buildFixedRectList(dr_box);
+        buildBoxTrackAxis(dr_box);
+        initLayerNodeMap(dr_box);
+        initDRNodeValid(dr_box);
+        buildDRNodeNeighbor(dr_box);
+        buildOrienNetMap(dr_box);
+        // debugCheckDRBox(dr_box);
+        routeDRBox(dr_box);
+      }
       updateDRTaskToGcellMap(dr_box);
       updateViolationToGcellMap(dr_box);
       // debugPlotDRBox(dr_box, -1, "routed");
@@ -340,7 +338,54 @@ void DetailedRouter::initDRTaskList(DRModel& dr_model, DRBox& dr_box)
 {
   std::vector<DRNet>& dr_net_list = dr_model.get_dr_net_list();
   std::vector<DRTask*>& dr_task_list = dr_box.get_dr_task_list();
-  for (auto [net_idx, connect_point_set] : getNetConnectPointMap(dr_box)) {
+
+  EXTPlanarRect& box_rect = dr_box.get_box_rect();
+  PlanarRect& real_rect = box_rect.get_real_rect();
+  std::map<int32_t, std::set<AccessPoint*>> net_access_point_map = DM_INST.getNetAccessPointMap(box_rect);
+  std::map<int32_t, std::set<Segment<LayerCoord>*>> net_result_map = DM_INST.getNetResultMap(box_rect);
+  std::map<int32_t, std::set<EXTLayerRect*>> net_patch_map = DM_INST.getNetPatchMap(box_rect);
+
+  std::map<int32_t, std::set<LayerCoord, CmpLayerCoordByLayerASC>> net_connect_point_map;
+  {
+    for (auto& [net_idx, access_point_set] : net_access_point_map) {
+      for (AccessPoint* access_point : access_point_set) {
+        net_connect_point_map[net_idx].insert(LayerCoord(access_point->get_real_coord(), access_point->get_layer_idx()));
+      }
+    }
+    for (auto& [net_idx, segment_set] : net_result_map) {
+      for (Segment<LayerCoord>* segment : segment_set) {
+        LayerCoord& first = segment->get_first();
+        LayerCoord& second = segment->get_second();
+        if (first.get_layer_idx() != second.get_layer_idx()) {
+          continue;
+        }
+        if (RTUtil::isHorizontal(first, second)) {
+          int32_t first_x = first.get_x();
+          int32_t second_x = second.get_x();
+          RTUtil::swapByASC(first_x, second_x);
+          if (first_x <= real_rect.get_lb_x() && real_rect.get_lb_x() <= second_x) {
+            net_connect_point_map[net_idx].insert(LayerCoord(real_rect.get_lb_x(), first.get_y(), first.get_layer_idx()));
+          }
+          if (first_x <= real_rect.get_rt_x() && real_rect.get_rt_x() <= second_x) {
+            net_connect_point_map[net_idx].insert(LayerCoord(real_rect.get_rt_x(), first.get_y(), first.get_layer_idx()));
+          }
+        } else if (RTUtil::isVertical(first, second)) {
+          int32_t first_y = first.get_y();
+          int32_t second_y = second.get_y();
+          RTUtil::swapByASC(first_y, second_y);
+          if (first_y <= real_rect.get_lb_y() && real_rect.get_lb_y() <= second_y) {
+            net_connect_point_map[net_idx].insert(LayerCoord(first.get_x(), real_rect.get_lb_y(), first.get_layer_idx()));
+          }
+          if (first_y <= real_rect.get_rt_y() && real_rect.get_rt_y() <= second_y) {
+            net_connect_point_map[net_idx].insert(LayerCoord(first.get_x(), real_rect.get_rt_y(), first.get_layer_idx()));
+          }
+        } else {
+          LOG_INST.error(Loc::current(), "The segment is oblique!");
+        }
+      }
+    }
+  }
+  for (auto [net_idx, connect_point_set] : net_connect_point_map) {
     if (connect_point_set.size() < 2) {
       continue;
     }
@@ -354,129 +399,35 @@ void DetailedRouter::initDRTaskList(DRModel& dr_model, DRBox& dr_box)
     dr_task->set_net_idx(net_idx);
     dr_task->set_connect_type(dr_net_list[net_idx].get_connect_type());
     dr_task->set_dr_group_list(dr_group_list);
-    buildBoundingBox(dr_task);
+    {
+      std::vector<PlanarCoord> coord_list;
+      for (DRGroup& dr_group : dr_task->get_dr_group_list()) {
+        for (auto& [coord, direction_set] : dr_group.get_coord_direction_map()) {
+          coord_list.push_back(coord);
+        }
+      }
+      dr_task->set_bounding_box(RTUtil::getBoundingBox(coord_list));
+    }
     dr_task->set_routed_times(0);
+    {
+      for (Segment<LayerCoord>* segment : net_result_map[net_idx]) {
+        if (RTUtil::isInside(real_rect, Segment<PlanarCoord>(segment->get_first(), segment->get_second()))) {
+          dr_task->get_routing_segment_list().push_back(*segment);
+          DM_INST.updateNetResultToGCellMap(ChangeType::kDel, net_idx, segment);
+        }
+      }
+    }
+    {
+      for (EXTLayerRect* patch : net_patch_map[net_idx]) {
+        if (RTUtil::isInside(real_rect, patch->get_real_rect())) {
+          dr_task->get_patch_list().push_back(*patch);
+          DM_INST.updatePatchToGCellMap(ChangeType::kDel, net_idx, patch);
+        }
+      }
+    }
     dr_task_list.push_back(dr_task);
   }
   std::sort(dr_task_list.begin(), dr_task_list.end(), CmpDRTask());
-}
-
-std::map<int32_t, std::set<LayerCoord, CmpLayerCoordByLayerASC>> DetailedRouter::getNetConnectPointMap(DRBox& dr_box)
-{
-  std::map<int32_t, std::set<LayerCoord, CmpLayerCoordByLayerASC>> net_connect_point_map;
-  for (auto& [net_idx, access_point_set] : DM_INST.getNetAccessPointMap(dr_box.get_box_rect())) {
-    for (AccessPoint* access_point : access_point_set) {
-      net_connect_point_map[net_idx].insert(LayerCoord(access_point->get_real_coord(), access_point->get_layer_idx()));
-    }
-  }
-  for (auto [net_idx, boundary_point_set] : getNetBoundaryPointMap(dr_box)) {
-    for (const LayerCoord& boundary_point : boundary_point_set) {
-      net_connect_point_map[net_idx].insert(boundary_point);
-    }
-  }
-  return net_connect_point_map;
-}
-
-std::map<int32_t, std::set<LayerCoord, CmpLayerCoordByLayerASC>> DetailedRouter::getNetBoundaryPointMap(DRBox& dr_box)
-{
-  PlanarRect& real_rect = dr_box.get_box_rect().get_real_rect();
-  int32_t box_lb_x = real_rect.get_lb_x();
-  int32_t box_lb_y = real_rect.get_lb_y();
-  int32_t box_rt_x = real_rect.get_rt_x();
-  int32_t box_rt_y = real_rect.get_rt_y();
-
-  std::map<int32_t, std::set<LayerCoord, CmpLayerCoordByLayerASC>> boundary_point_map;
-  for (auto& [net_idx, segment_set] : DM_INST.getNetResultMap(dr_box.get_box_rect())) {
-    std::set<LayerCoord, CmpLayerCoordByLayerASC> boundary_point_set;
-    for (Segment<LayerCoord>* segment : segment_set) {
-      LayerCoord first = segment->get_first();
-      int32_t first_x = first.get_x();
-      int32_t first_y = first.get_y();
-      int32_t first_layer_idx = first.get_layer_idx();
-
-      LayerCoord second = segment->get_second();
-      int32_t second_x = second.get_x();
-      int32_t second_y = second.get_y();
-      int32_t second_layer_idx = second.get_layer_idx();
-      RTUtil::swapByASC(first_x, second_x);
-      RTUtil::swapByASC(first_y, second_y);
-
-      if (first_layer_idx != second_layer_idx) {
-        continue;
-      }
-      if (RTUtil::isHorizontal(first, second)) {
-        if (first_x <= box_lb_x && box_lb_x <= second_x) {
-          boundary_point_set.insert(LayerCoord(box_lb_x, first_y, first_layer_idx));
-        }
-        if (first_x <= box_rt_x && box_rt_x <= second_x) {
-          boundary_point_set.insert(LayerCoord(box_rt_x, first_y, first_layer_idx));
-        }
-      } else if (RTUtil::isVertical(first, second)) {
-        if (first_y <= box_lb_y && box_lb_y <= second_y) {
-          boundary_point_set.insert(LayerCoord(first_x, box_lb_y, first_layer_idx));
-        }
-        if (first_y <= box_rt_y && box_rt_y <= second_y) {
-          boundary_point_set.insert(LayerCoord(first_x, box_rt_y, first_layer_idx));
-        }
-      } else {
-        LOG_INST.error(Loc::current(), "Routing Segmet is oblique!");
-      }
-    }
-    if (!boundary_point_set.empty()) {
-      boundary_point_map.insert(std::make_pair(net_idx, boundary_point_set));
-    }
-  }
-  return boundary_point_map;
-}
-
-void DetailedRouter::buildBoundingBox(DRTask* dr_task)
-{
-  std::vector<PlanarCoord> coord_list;
-  for (DRGroup& dr_group : dr_task->get_dr_group_list()) {
-    for (auto& [coord, direction_set] : dr_group.get_coord_direction_map()) {
-      coord_list.push_back(coord);
-    }
-  }
-  dr_task->set_bounding_box(RTUtil::getBoundingBox(coord_list));
-}
-
-void DetailedRouter::buildDRTaskList(DRBox& dr_box)
-{
-  // 将GCellMap中的segment+patch（segment和patch完全在Box内）拷贝到DRTask下，并且在GCellMap中移除
-  EXTPlanarRect& box_rect = dr_box.get_box_rect();
-  PlanarRect& real_rect = box_rect.get_real_rect();
-
-  std::map<int32_t, DRTask*> net_task_map;
-  for (DRTask* dr_task : dr_box.get_dr_task_list()) {
-    net_task_map[dr_task->get_net_idx()] = dr_task;
-  }
-  for (auto& [net_idx, segment_set] : DM_INST.getNetResultMap(box_rect)) {
-    if (!RTUtil::exist(net_task_map, net_idx)) {
-      continue;
-    }
-    for (Segment<LayerCoord>* segment : segment_set) {
-      if (RTUtil::isInside(real_rect, segment->get_first()) && RTUtil::isInside(real_rect, segment->get_second())) {
-        net_task_map[net_idx]->get_routing_segment_list().push_back(*segment);
-        DM_INST.updateNetResultToGCellMap(ChangeType::kDel, net_idx, segment);
-      }
-    }
-  }
-  for (auto& [net_idx, patch_set] : DM_INST.getNetPatchMap(box_rect)) {
-    if (!RTUtil::exist(net_task_map, net_idx)) {
-      continue;
-    }
-    for (EXTLayerRect* patch : patch_set) {
-      if (RTUtil::isInside(real_rect, patch->get_real_rect())) {
-        net_task_map[net_idx]->get_patch_list().push_back(*patch);
-        DM_INST.updatePatchToGCellMap(ChangeType::kDel, net_idx, patch);
-      }
-    }
-  }
-}
-
-void DetailedRouter::buildFixedRectList(DRBox& dr_box)
-{
-  dr_box.set_type_layer_net_fixed_rect_map(DM_INST.getTypeLayerNetFixedRectMap(dr_box.get_box_rect()));
 }
 
 void DetailedRouter::buildViolationList(DRBox& dr_box)
@@ -489,20 +440,31 @@ void DetailedRouter::buildViolationList(DRBox& dr_box)
   }
 }
 
+bool DetailedRouter::needRouting(DRBox& dr_box)
+{
+  if (dr_box.get_dr_task_list().empty()) {
+    return false;
+  }
+  if (dr_box.get_dr_parameter()->get_complete_ripup() == false && dr_box.get_violation_list().empty()) {
+    return false;
+  }
+  return true;
+}
+
+void DetailedRouter::buildFixedRectList(DRBox& dr_box)
+{
+  dr_box.set_type_layer_net_fixed_rect_map(DM_INST.getTypeLayerNetFixedRectMap(dr_box.get_box_rect()));
+}
+
 void DetailedRouter::buildBoxTrackAxis(DRBox& dr_box)
 {
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
-  int32_t bottom_routing_layer_idx = DM_INST.getConfig().bottom_routing_layer_idx;
-  int32_t top_routing_layer_idx = DM_INST.getConfig().top_routing_layer_idx;
 
   std::vector<int32_t> x_scale_list;
   std::vector<int32_t> y_scale_list;
 
   PlanarRect& box_region = dr_box.get_box_rect().get_real_rect();
   for (RoutingLayer& routing_layer : routing_layer_list) {
-    if (routing_layer.get_layer_idx() < bottom_routing_layer_idx || top_routing_layer_idx < routing_layer.get_layer_idx()) {
-      continue;
-    }
     for (int32_t x_scale : RTUtil::getScaleList(box_region.get_lb_x(), box_region.get_rt_x(), routing_layer.getXTrackGridList())) {
       x_scale_list.push_back(x_scale);
     }
@@ -644,51 +606,46 @@ void DetailedRouter::initDRNodeValid(DRBox& dr_box)
 
 void DetailedRouter::buildDRNodeNeighbor(DRBox& dr_box)
 {
-  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
-  int32_t bottom_routing_layer_idx = DM_INST.getConfig().bottom_routing_layer_idx;
-  int32_t top_routing_layer_idx = DM_INST.getConfig().top_routing_layer_idx;
-
-  // 在可布线层，为本层track建立平面连接
   std::vector<GridMap<DRNode>>& layer_node_map = dr_box.get_layer_node_map();
-  for (RoutingLayer& routing_layer : routing_layer_list) {
-    int32_t layer_idx = routing_layer.get_layer_idx();
-    if (layer_idx < bottom_routing_layer_idx || top_routing_layer_idx < layer_idx) {
-      continue;
-    }
-    GridMap<DRNode>& dr_node_map = layer_node_map[layer_idx];
-    for (int32_t x = 0; x < dr_node_map.get_x_size(); x++) {
-      for (int32_t y = 0; y < dr_node_map.get_y_size(); y++) {
-        DRNode& dr_node = dr_node_map[x][y];
-        if (!dr_node.get_is_valid()) {
+
+  for (int32_t curr_layer_idx = 0; curr_layer_idx < static_cast<int32_t>(layer_node_map.size()); curr_layer_idx++) {
+    for (int32_t curr_x = 0; curr_x < layer_node_map[curr_layer_idx].get_x_size(); curr_x++) {
+      for (int32_t curr_y = 0; curr_y < layer_node_map[curr_layer_idx].get_y_size(); curr_y++) {
+        DRNode& curr_node = layer_node_map[curr_layer_idx][curr_x][curr_y];
+        if (!curr_node.get_is_valid()) {
           continue;
         }
-        for (int32_t east_x = x + 1; east_x < dr_node_map.get_x_size(); east_x++) {
-          DRNode& east_node = dr_node_map[east_x][y];
+        // 向东寻找，找到第一个有效结点即为东邻居，并将东邻居的西邻居设为自己
+        for (int32_t east_x = curr_x + 1; east_x < layer_node_map[curr_layer_idx].get_x_size(); east_x++) {
+          DRNode& east_node = layer_node_map[curr_layer_idx][east_x][curr_y];
           if (!east_node.get_is_valid()) {
             continue;
           }
-          dr_node.get_neighbor_node_map()[Orientation::kEast] = &east_node;
-          east_node.get_neighbor_node_map()[Orientation::kWest] = &dr_node;
+          curr_node.get_neighbor_node_map()[Orientation::kEast] = &east_node;
+          east_node.get_neighbor_node_map()[Orientation::kWest] = &curr_node;
           break;
         }
-        for (int32_t north_y = y + 1; north_y < dr_node_map.get_y_size(); north_y++) {
-          DRNode& north_node = dr_node_map[x][north_y];
+        // 向北寻找，找到第一个有效结点即为北邻居，并将北邻居的南邻居设为自己
+        for (int32_t north_y = curr_y + 1; north_y < layer_node_map[curr_layer_idx].get_y_size(); north_y++) {
+          DRNode& north_node = layer_node_map[curr_layer_idx][curr_x][north_y];
           if (!north_node.get_is_valid()) {
             continue;
           }
-          dr_node.get_neighbor_node_map()[Orientation::kNorth] = &north_node;
-          north_node.get_neighbor_node_map()[Orientation::kSouth] = &dr_node;
+          curr_node.get_neighbor_node_map()[Orientation::kNorth] = &north_node;
+          north_node.get_neighbor_node_map()[Orientation::kSouth] = &curr_node;
           break;
         }
-        if (layer_idx + 1 > top_routing_layer_idx) {
-          continue;
+        // 向上寻找，找到第一个有效结点即为上邻居，并将上邻居的下邻居设为自己
+        for (int32_t above_layer_idx = curr_layer_idx + 1; above_layer_idx < static_cast<int32_t>(layer_node_map.size());
+             above_layer_idx++) {
+          DRNode& above_node = layer_node_map[above_layer_idx][curr_x][curr_y];
+          if (!above_node.get_is_valid()) {
+            continue;
+          }
+          curr_node.get_neighbor_node_map()[Orientation::kAbove] = &above_node;
+          above_node.get_neighbor_node_map()[Orientation::kBelow] = &curr_node;
+          break;
         }
-        DRNode& above_node = layer_node_map[layer_idx + 1][x][y];
-        if (!above_node.get_is_valid()) {
-          continue;
-        }
-        dr_node.get_neighbor_node_map()[Orientation::kUp] = &above_node;
-        above_node.get_neighbor_node_map()[Orientation::kDown] = &dr_node;
       }
     }
   }
@@ -1448,21 +1405,23 @@ std::map<DRNode*, std::set<Orientation>> DetailedRouter::getNodeOrientationMap(D
 
 std::map<DRNode*, std::set<Orientation>> DetailedRouter::getRoutingNodeOrientationMap(DRBox& dr_box, NetShape& net_shape)
 {
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
   if (!net_shape.get_is_routing()) {
     LOG_INST.error(Loc::current(), "The type of net_shape is cut!");
   }
-  RoutingLayer& routing_layer = DM_INST.getDatabase().get_routing_layer_list()[net_shape.get_layer_idx()];
-
   // 膨胀size为 min_spacing + half_width
+  RoutingLayer& routing_layer = routing_layer_list[net_shape.get_layer_idx()];
   int32_t enlarged_size = routing_layer.getMinSpacing(net_shape.get_rect()) + (routing_layer.get_min_width() / 2);
   PlanarRect enlarged_rect = RTUtil::getEnlargedRect(net_shape.get_rect(), enlarged_size);
+
+  GridMap<DRNode>& dr_node_map = dr_box.get_layer_node_map()[net_shape.get_layer_idx()];
 
   std::map<DRNode*, std::set<Orientation>> node_orientation_map;
   if (RTUtil::existTrackGrid(enlarged_rect, dr_box.get_box_track_axis())) {
     PlanarRect grid_rect = RTUtil::getTrackGridRect(enlarged_rect, dr_box.get_box_track_axis());
     for (int32_t grid_x = grid_rect.get_lb_x(); grid_x <= grid_rect.get_rt_x(); grid_x++) {
       for (int32_t grid_y = grid_rect.get_lb_y(); grid_y <= grid_rect.get_rt_y(); grid_y++) {
-        DRNode& node = dr_box.get_layer_node_map()[net_shape.get_layer_idx()][grid_x][grid_y];
+        DRNode& node = dr_node_map[grid_x][grid_y];
         for (auto& [orientation, neigbor_ptr] : node.get_neighbor_node_map()) {
           node_orientation_map[&node].insert(orientation);
           node_orientation_map[neigbor_ptr].insert(RTUtil::getOppositeOrientation(orientation));
@@ -1475,35 +1434,37 @@ std::map<DRNode*, std::set<Orientation>> DetailedRouter::getRoutingNodeOrientati
 
 std::map<DRNode*, std::set<Orientation>> DetailedRouter::getCutNodeOrientationMap(DRBox& dr_box, NetShape& net_shape)
 {
+  std::vector<CutLayer>& cut_layer_list = DM_INST.getDatabase().get_cut_layer_list();
+  std::vector<std::vector<ViaMaster>>& layer_via_master_list = DM_INST.getDatabase().get_layer_via_master_list();
+  Helper& helper = DM_INST.getHelper();
   if (net_shape.get_is_routing()) {
     LOG_INST.error(Loc::current(), "The type of net_shape is routing!");
   }
-
-  std::vector<int32_t> adjacent_routing_layer_idx_list = DM_INST.getHelper().getAdjacentRoutingLayerIdxList(net_shape.get_layer_idx());
+  std::vector<int32_t> adjacent_routing_layer_idx_list = helper.getAdjacentRoutingLayerIdxList(net_shape.get_layer_idx());
   if (adjacent_routing_layer_idx_list.size() != 2) {
-    // 如果相邻层只有一个，那么将不会在这构建graph
+    // 如果相邻层只有一个，那么将不会在此构建graph
     return {};
   }
-  int32_t bottom_routing_layer_idx = adjacent_routing_layer_idx_list.front();
-  int32_t top_routing_layer_idx = adjacent_routing_layer_idx_list.back();
-  RTUtil::swapByASC(bottom_routing_layer_idx, top_routing_layer_idx);
-
-  int32_t cut_spacing = DM_INST.getDatabase().get_cut_layer_list()[net_shape.get_layer_idx()].getMinSpacing(net_shape.get_rect());
-  PlanarRect& cut_shape = DM_INST.getDatabase().get_layer_via_master_list()[bottom_routing_layer_idx].front().get_cut_shape_list().front();
+  int32_t below_routing_layer_idx = adjacent_routing_layer_idx_list.front();
+  int32_t above_routing_layer_idx = adjacent_routing_layer_idx_list.back();
+  RTUtil::swapByASC(below_routing_layer_idx, above_routing_layer_idx);
 
   // 膨胀size为 min_spacing + 当前cut层的half_length和half_width
+  int32_t cut_spacing = cut_layer_list[net_shape.get_layer_idx()].getMinSpacing(net_shape.get_rect());
+  PlanarRect& cut_shape = layer_via_master_list[below_routing_layer_idx].front().get_cut_shape_list().front();
   int32_t enlarge_x_size = cut_spacing + cut_shape.getXSpan() / 2;
   int32_t enlarge_y_size = cut_spacing + cut_shape.getYSpan() / 2;
-
   PlanarRect enlarged_rect = RTUtil::getEnlargedRect(net_shape.get_rect(), enlarge_x_size, enlarge_y_size, enlarge_x_size, enlarge_y_size);
+
+  std::vector<GridMap<DRNode>>& layer_node_map = dr_box.get_layer_node_map();
 
   std::map<DRNode*, std::set<Orientation>> node_orientation_map;
   if (RTUtil::existTrackGrid(enlarged_rect, dr_box.get_box_track_axis())) {
     PlanarRect grid_rect = RTUtil::getTrackGridRect(enlarged_rect, dr_box.get_box_track_axis());
     for (int32_t grid_x = grid_rect.get_lb_x(); grid_x <= grid_rect.get_rt_x(); grid_x++) {
       for (int32_t grid_y = grid_rect.get_lb_y(); grid_y <= grid_rect.get_rt_y(); grid_y++) {
-        node_orientation_map[&dr_box.get_layer_node_map()[bottom_routing_layer_idx][grid_x][grid_y]].insert(Orientation::kUp);
-        node_orientation_map[&dr_box.get_layer_node_map()[top_routing_layer_idx][grid_x][grid_y]].insert(Orientation::kDown);
+        node_orientation_map[&layer_node_map[below_routing_layer_idx][grid_x][grid_y]].insert(Orientation::kAbove);
+        node_orientation_map[&layer_node_map[above_routing_layer_idx][grid_x][grid_y]].insert(Orientation::kBelow);
       }
     }
   }
@@ -1738,10 +1699,10 @@ void DetailedRouter::debugPlotDRBox(DRBox& dr_box, int32_t curr_task_idx, std::s
             case Orientation::kNorth:
               gp_path.set_segment(mid_x, rt_y - y_reduced_span, mid_x, rt_y);
               break;
-            case Orientation::kUp:
+            case Orientation::kAbove:
               gp_path.set_segment(rt_x - x_reduced_span, rt_y - y_reduced_span, rt_x, rt_y);
               break;
-            case Orientation::kDown:
+            case Orientation::kBelow:
               gp_path.set_segment(lb_x, lb_y, lb_x + x_reduced_span, lb_y + y_reduced_span);
               break;
             default:

@@ -192,10 +192,10 @@ void InitialRouter::buildIRNodeNeighbor(IRModel& ir_model)
           }
         }
         if (layer_idx != 0) {
-          neighbor_ptr_map[Orientation::kDown] = &layer_node_map[layer_idx - 1][x][y];
+          neighbor_ptr_map[Orientation::kBelow] = &layer_node_map[layer_idx - 1][x][y];
         }
         if (layer_idx != static_cast<int32_t>(layer_node_map.size()) - 1) {
-          neighbor_ptr_map[Orientation::kUp] = &layer_node_map[layer_idx + 1][x][y];
+          neighbor_ptr_map[Orientation::kAbove] = &layer_node_map[layer_idx + 1][x][y];
         }
       }
     }
@@ -396,15 +396,6 @@ void InitialRouter::makeIRTaskList(IRModel& ir_model, IRNet& ir_net, std::vector
     }
     ir_task_list.push_back(ir_task);
   } else {
-    // key_planar_group_map
-    std::map<PlanarCoord, std::vector<IRGroup>, CmpPlanarCoordByXASC> key_planar_group_map;
-    {
-      for (LayerCoord& grid_coord : ir_net.get_grid_coord_list()) {
-        IRGroup ir_group;
-        ir_group.get_coord_list().push_back(grid_coord);
-        key_planar_group_map[grid_coord.get_planar_coord()].push_back(ir_group);
-      }
-    }
     // planar_topo_list
     std::vector<Segment<PlanarCoord>> planar_topo_list;
     {
@@ -444,58 +435,42 @@ void InitialRouter::makeIRTaskList(IRModel& ir_model, IRNet& ir_net, std::vector
         }
       }
     }
-    // add_planar_layer_map
-    std::map<PlanarCoord, std::set<LayerCoord, CmpLayerCoordByLayerASC>, CmpPlanarCoordByXASC> add_planar_layer_map;
+    // planar_pin_group_map
+    std::map<PlanarCoord, std::vector<IRGroup>, CmpPlanarCoordByXASC> planar_pin_group_map;
     {
-      for (Segment<PlanarCoord>& planar_topo : planar_topo_list) {
-        if (!RTUtil::exist(key_planar_group_map, planar_topo.get_first())) {
-          for (int32_t layer_idx = bottom_routing_layer_idx; layer_idx <= top_routing_layer_idx; layer_idx++) {
-            add_planar_layer_map[planar_topo.get_first()].insert(LayerCoord(planar_topo.get_first(), layer_idx));
-          }
-        }
-        if (!RTUtil::exist(key_planar_group_map, planar_topo.get_second())) {
-          for (int32_t layer_idx = bottom_routing_layer_idx; layer_idx <= top_routing_layer_idx; layer_idx++) {
-            add_planar_layer_map[planar_topo.get_second()].insert(LayerCoord(planar_topo.get_second(), layer_idx));
-          }
-        }
+      for (LayerCoord& grid_coord : ir_net.get_grid_coord_list()) {
+        IRGroup ir_group;
+        ir_group.get_coord_list().push_back(grid_coord);
+        planar_pin_group_map[grid_coord.get_planar_coord()].push_back(ir_group);
       }
     }
-    // 补充steiner point的垂直线段
+    // planar_steiner_group_map
+    std::map<PlanarCoord, IRGroup, CmpPlanarCoordByXASC> planar_steiner_group_map;
     {
-      for (auto& [add_planar_coord, layer_coord_set] : add_planar_layer_map) {
-        LayerCoord first_coord = *layer_coord_set.begin();
-        LayerCoord second_coord = *layer_coord_set.rbegin();
-        if (first_coord == second_coord) {
-          continue;
+      for (Segment<PlanarCoord>& planar_topo : planar_topo_list) {
+        for (PlanarCoord coord : {planar_topo.get_first(), planar_topo.get_second()}) {
+          if (!RTUtil::exist(planar_pin_group_map, coord) && !RTUtil::exist(planar_steiner_group_map, coord)) {
+            // 补充steiner point的垂直线段
+            routing_segment_list.emplace_back(LayerCoord(coord, bottom_routing_layer_idx), LayerCoord(coord, top_routing_layer_idx));
+            for (int32_t layer_idx = bottom_routing_layer_idx; layer_idx <= top_routing_layer_idx; layer_idx++) {
+              planar_steiner_group_map[coord].get_coord_list().push_back(LayerCoord(coord, layer_idx));
+            }
+          }
         }
-        routing_segment_list.emplace_back(first_coord, second_coord);
       }
     }
     // 生成task group
     {
       for (Segment<PlanarCoord>& planar_topo : planar_topo_list) {
         IRTask ir_task;
-        if (RTUtil::exist(key_planar_group_map, planar_topo.get_first())) {
-          for (IRGroup& ir_group : key_planar_group_map[planar_topo.get_first()]) {
-            ir_task.get_ir_group_list().push_back(ir_group);
+        for (PlanarCoord coord : {planar_topo.get_first(), planar_topo.get_second()}) {
+          if (RTUtil::exist(planar_pin_group_map, coord)) {
+            for (IRGroup& ir_group : planar_pin_group_map[coord]) {
+              ir_task.get_ir_group_list().push_back(ir_group);
+            }
+          } else if (RTUtil::exist(planar_steiner_group_map, coord)) {
+            ir_task.get_ir_group_list().push_back(planar_steiner_group_map[coord]);
           }
-        } else if (RTUtil::exist(add_planar_layer_map, planar_topo.get_first())) {
-          IRGroup ir_group;
-          for (const LayerCoord& coord : add_planar_layer_map[planar_topo.get_first()]) {
-            ir_group.get_coord_list().push_back(coord);
-          }
-          ir_task.get_ir_group_list().push_back(ir_group);
-        }
-        if (RTUtil::exist(key_planar_group_map, planar_topo.get_second())) {
-          for (IRGroup& ir_group : key_planar_group_map[planar_topo.get_second()]) {
-            ir_task.get_ir_group_list().push_back(ir_group);
-          }
-        } else if (RTUtil::exist(add_planar_layer_map, planar_topo.get_second())) {
-          IRGroup ir_group;
-          for (const LayerCoord& coord : add_planar_layer_map[planar_topo.get_second()]) {
-            ir_group.get_coord_list().push_back(coord);
-          }
-          ir_task.get_ir_group_list().push_back(ir_group);
         }
         ir_task_list.push_back(ir_task);
       }
@@ -1021,7 +996,7 @@ void InitialRouter::updateDemand(IRModel& ir_model, IRNet& ir_net, MTree<LayerCo
     if (key_coord_set.size() > 1) {
       LOG_INST.error(Loc::current(), "The net is not local!");
     }
-    for (Orientation orientation : {Orientation::kUp, Orientation::kDown}) {
+    for (Orientation orientation : {Orientation::kAbove, Orientation::kBelow}) {
       usage_map[*key_coord_set.begin()].insert(orientation);
     }
   } else {

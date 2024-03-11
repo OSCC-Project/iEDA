@@ -62,12 +62,9 @@ class DetailedRouter
   void buildBoxSchedule(DRModel& dr_model);
   void routeDRBoxMap(DRModel& dr_model);
   void initDRTaskList(DRModel& dr_model, DRBox& dr_box);
-  std::map<int32_t, std::set<LayerCoord, CmpLayerCoordByLayerASC>> getNetConnectPointMap(DRBox& dr_box);
-  std::map<int32_t, std::set<LayerCoord, CmpLayerCoordByLayerASC>> getNetBoundaryPointMap(DRBox& dr_box);
-  void buildBoundingBox(DRTask* dr_task);
-  void buildDRTaskList(DRBox& dr_box);
-  void buildFixedRectList(DRBox& dr_box);
   void buildViolationList(DRBox& dr_box);
+  bool needRouting(DRBox& dr_box);
+  void buildFixedRectList(DRBox& dr_box);
   void buildBoxTrackAxis(DRBox& dr_box);
   void initLayerNodeMap(DRBox& dr_box);
   void initDRNodeValid(DRBox& dr_box);
