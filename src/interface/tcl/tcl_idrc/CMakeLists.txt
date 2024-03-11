@@ -11,7 +11,7 @@ target_link_libraries(tcl_idrc
         shell-cmd
         str
         tcl_util
-        idrc_api
+        # idrc_api
         tool_api_idrc
         idrc_pro_api
 )

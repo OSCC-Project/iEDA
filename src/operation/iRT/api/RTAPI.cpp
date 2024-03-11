@@ -19,7 +19,6 @@
 #include "CongTile.hpp"
 #include "DataManager.hpp"
 #include "DetailedRouter.hpp"
-#include "DrcRect.h"
 #include "EarlyGlobalRouter.hpp"
 #include "GDSPlotter.hpp"
 #include "GlobalRouter.hpp"

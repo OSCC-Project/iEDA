@@ -15,13 +15,12 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 #pragma once
-#include <DrcAPI.hpp>
+
 #include <iostream>
 #include <map>
 #include <ostream>
 #include <string>
 
-#include "DrcAPI.hpp"
 #include "ReportTable.hh"
 #include "report_basic.h"
 
