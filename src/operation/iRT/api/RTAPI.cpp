@@ -194,11 +194,6 @@ void RTAPI::clearDef()
   //////////////////////////////////////////
 }
 
-Summary RTAPI::getSummary()
-{
-  return DM_INST.getSummary();
-}
-
 eval::TileGrid* RTAPI::getCongestonMap(std::map<std::string, std::any> config_map, double& wirelength)
 {
   Monitor egr_monitor;
