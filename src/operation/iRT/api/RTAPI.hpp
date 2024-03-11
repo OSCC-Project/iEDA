@@ -59,6 +59,8 @@ class RTAPI
       std::map<int32_t, std::vector<Segment<LayerCoord>>>& net_segment_map);
   // 输出def
   void outputDef(std::string output_def_file_path);
+  // 输出summary
+  void outputSummary();
 #endif
 
  private:

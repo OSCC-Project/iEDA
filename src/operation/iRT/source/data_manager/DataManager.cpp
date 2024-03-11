@@ -66,13 +66,14 @@ void DataManager::input(std::map<std::string, std::any>& config_map, idb::IdbBui
   LOG_INST.info(Loc::current(), "End input!", monitor.getStatsInfo());
 }
 
-void DataManager::output(idb::IdbBuilder* idb_builder)
+void DataManager::output()
 {
   Monitor monitor;
   LOG_INST.info(Loc::current(), "Begin outputting...");
 
-  outputGCellGrid(idb_builder);
-  outputNetList(idb_builder);
+  outputGCellGrid();
+  outputNetList();
+  outputSummary();
 
   LOG_INST.info(Loc::current(), "End output!", monitor.getStatsInfo());
 }
@@ -1770,9 +1771,10 @@ void DataManager::writePYScript()
 
 #if 1  // output
 
-void DataManager::outputGCellGrid(idb::IdbBuilder* idb_builder)
+void DataManager::outputGCellGrid()
 {
   ScaleAxis& gcell_axis = _database.get_gcell_axis();
+  idb::IdbBuilder* idb_builder = _helper.get_idb_builder();
 
   idb::IdbGCellGridList* idb_gcell_grid_list = idb_builder->get_lef_service()->get_layout()->get_gcell_grid_list();
   idb_gcell_grid_list->clear();
@@ -1795,10 +1797,11 @@ void DataManager::outputGCellGrid(idb::IdbBuilder* idb_builder)
   }
 }
 
-void DataManager::outputNetList(idb::IdbBuilder* idb_builder)
+void DataManager::outputNetList()
 {
   Die& die = _database.get_die();
   std::vector<Net>& net_list = _database.get_net_list();
+  idb::IdbBuilder* idb_builder = _helper.get_idb_builder();
 
   std::map<int32_t, std::vector<idb::IdbRegularWireSegment*>> net_idb_segment_map;
   for (auto& [net_idx, segment_set] : getNetResultMap(die)) {
@@ -1839,6 +1842,11 @@ void DataManager::outputNetList(idb::IdbBuilder* idb_builder)
       }
     }
   }
+}
+
+void DataManager::outputSummary()
+{
+  RTAPI_INST.outputSummary();
 }
 
 #endif

@@ -105,7 +105,7 @@ void RTAPI::runRT()
 void RTAPI::destroyRT()
 {
   GDSPlotter::destroyInst();
-  DM_INST.output(dmInst->get_idb_builder());
+  DM_INST.output();
   DataManager::destroyInst();
   LOG_INST.printLogFilePath();
   // clang-format off
@@ -415,7 +415,7 @@ std::map<std::string, std::vector<double>> RTAPI::getTiming(
       double res = 0;
       if (first_rc_pin._coord.get_layer_idx() == second_rc_pin._coord.get_layer_idx()) {
         int32_t distance = RTUtil::getManhattanDistance(first_rc_pin._coord, second_rc_pin._coord);
-        int32_t unit = dmInst->get_idb_builder()->get_def_service()->get_design()->get_units()->get_micron_dbu();
+        int32_t unit = DM_INST.getHelper().get_idb_builder()->get_def_service()->get_design()->get_units()->get_micron_dbu();
         std::optional<double> width = std::nullopt;
         cap = dynamic_cast<ista::TimingIDBAdapter*>(timing_engine->get_db_adapter())
                   ->getCapacitance(first_rc_pin._coord.get_layer_idx() + 1, distance / 1.0 / unit, width);
@@ -469,6 +469,11 @@ std::map<std::string, std::vector<double>> RTAPI::getTiming(
 void RTAPI::outputDef(std::string output_def_file_path)
 {
   dmInst->saveDef(output_def_file_path);
+}
+
+void RTAPI::outputSummary()
+{
+  LOG_INST.info(Loc::current(), "outputSummary");
 }
 
 #endif

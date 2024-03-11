@@ -1864,7 +1864,7 @@ void DetailedRouter::debugOutputDef(DRModel& dr_model)
 {
   std::string& dr_temp_directory_path = DM_INST.getConfig().dr_temp_directory_path;
 
-  DM_INST.output(DM_INST.getHelper().get_idb_builder());
+  DM_INST.output();
   RTAPI_INST.outputDef(RTUtil::getString(dr_temp_directory_path, "dr.def.temp"));
 }
 
