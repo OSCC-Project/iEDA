@@ -56,6 +56,11 @@ IdbRegularWireSegment::IdbRegularWireSegment()
 IdbRegularWireSegment::~IdbRegularWireSegment()
 {
   clear();
+
+  if (_delta_rect != nullptr) {
+    delete _delta_rect;
+    _delta_rect = nullptr;
+  }
 }
 
 void IdbRegularWireSegment::clear()

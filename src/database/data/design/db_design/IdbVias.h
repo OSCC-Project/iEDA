@@ -83,6 +83,7 @@ class IdbVia : public IdbObject
  private:
   string _name;
   IdbViaMaster* _master_instance;
+  bool _b_master_clone = false;
   IdbCoordinate<int32_t>* _coordinate;
 };
 

@@ -25,7 +25,7 @@ target_link_libraries(feature_parser
         ipl-api
         icts_api
         ista-engine
-        idrc_api
+        idrc_pro_api
         eval_api
         ieda_report_evaluator
 )

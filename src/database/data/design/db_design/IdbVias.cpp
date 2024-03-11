@@ -44,8 +44,8 @@ namespace idb {
 IdbVia::IdbVia()
 {
   _name = "";
-  _master_instance = new IdbViaMaster();
   _coordinate = new IdbCoordinate<int32_t>();
+  _master_instance = nullptr;
 }
 
 IdbVia::~IdbVia()
@@ -55,10 +55,10 @@ IdbVia::~IdbVia()
 
 void IdbVia::clear()
 {
-  //   if (_master_instance != nullptr) {
-  //     delete _master_instance;
-  //     _master_instance = nullptr;
-  //   }
+  if (_master_instance != nullptr && _b_master_clone == false) {
+    delete _master_instance;
+    _master_instance = nullptr;
+  }
 
   if (_coordinate != nullptr) {
     delete _coordinate;
@@ -70,6 +70,7 @@ IdbViaMaster* IdbVia::get_instance()
 {
   if (_master_instance == nullptr) {
     _master_instance = new IdbViaMaster();
+    _b_master_clone = false;
   }
   return _master_instance;
 }
@@ -79,6 +80,7 @@ IdbVia* IdbVia::clone()
   IdbVia* via_new = new IdbVia();
   via_new->_name = _name;
   via_new->_master_instance = _master_instance;  //_via_instance->clone();
+  via_new->_b_master_clone = true;
   via_new->_coordinate->set_xy(_coordinate->get_x(), _coordinate->get_y());
 
   return via_new;
