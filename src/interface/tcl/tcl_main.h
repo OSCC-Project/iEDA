@@ -32,7 +32,7 @@
 
 namespace tcl {
 
-int tcl_start(char* path = nullptr)
+int tcl_start(int tcl_argc, char** tcl_argv)
 {
 #ifdef BUILD_GUI
   iplf::tmInst->guiInit();
@@ -42,7 +42,7 @@ int tcl_start(char* path = nullptr)
 
   auto shell = ieda::UserShell::getShell();
   shell->set_init_func(registerCommands);
-  shell->userMain(path);
+  shell->userMain(tcl_argc, tcl_argv);
 
   return 0;
 }

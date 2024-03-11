@@ -163,7 +163,7 @@ class RTUtil
       }
     } else {
       if (isProximal(start_coord, end_coord)) {
-        orientation = (start_coord.get_layer_idx() - end_coord.get_layer_idx()) > 0 ? Orientation::kDown : Orientation::kUp;
+        orientation = (start_coord.get_layer_idx() - end_coord.get_layer_idx()) > 0 ? Orientation::kBelow : Orientation::kAbove;
       } else {
         orientation = Orientation::kOblique;
       }
@@ -193,11 +193,11 @@ class RTUtil
       case Orientation::kNorth:
         opposite_orientation = Orientation::kSouth;
         break;
-      case Orientation::kUp:
-        opposite_orientation = Orientation::kDown;
+      case Orientation::kAbove:
+        opposite_orientation = Orientation::kBelow;
         break;
-      case Orientation::kDown:
-        opposite_orientation = Orientation::kUp;
+      case Orientation::kBelow:
+        opposite_orientation = Orientation::kAbove;
         break;
       default:
         LOG_INST.error(Loc::current(), "The orientation is error!");

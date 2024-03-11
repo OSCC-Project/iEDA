@@ -37,7 +37,7 @@ class DataManager
   static void destroyInst();
   // function
   void input(std::map<std::string, std::any>& config_map, idb::IdbBuilder* idb_builder);
-  void output(idb::IdbBuilder* idb_builder);
+  void output();
 
 #if 1  // 有关GCellMap操作
   void updateFixedRectToGCellMap(ChangeType change_type, int32_t net_idx, EXTLayerRect* ext_layer_rect, bool is_routing);
@@ -174,8 +174,9 @@ class DataManager
 #endif
 
 #if 1  // output
-  void outputGCellGrid(idb::IdbBuilder* idb_builder);
-  void outputNetList(idb::IdbBuilder* idb_builder);
+  void outputGCellGrid();
+  void outputNetList();
+  void outputSummary();
 #endif
 
 #if 1  // 获得IdbWireSegment

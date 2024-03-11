@@ -29,8 +29,8 @@ enum class Orientation
   kWest = 2,
   kSouth = 3,
   kNorth = 4,
-  kUp = 5,
-  kDown = 6,
+  kAbove = 5,
+  kBelow = 6,
   kOblique = 7
 };
 
@@ -55,11 +55,11 @@ struct GetOrientationName
       case Orientation::kNorth:
         orientation_name = "north";
         break;
-      case Orientation::kUp:
-        orientation_name = "up";
+      case Orientation::kAbove:
+        orientation_name = "above";
         break;
-      case Orientation::kDown:
-        orientation_name = "down";
+      case Orientation::kBelow:
+        orientation_name = "below";
         break;
       default:
         LOG_INST.error(Loc::current(), "Unrecognized type!");

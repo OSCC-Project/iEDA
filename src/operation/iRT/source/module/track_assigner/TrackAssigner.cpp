@@ -265,22 +265,19 @@ std::map<TAPanelId, std::vector<TATask*>, CmpTAPanelId> TrackAssigner::getPanelT
     ta_task->set_net_idx(ta_net.get_net_idx());
     ta_task->set_connect_type(ta_net.get_connect_type());
     ta_task->set_ta_group_list(ta_group_list);
-    buildBoundingBox(ta_task);
+    {
+      std::vector<PlanarCoord> coord_list;
+      for (TAGroup& ta_group : ta_task->get_ta_group_list()) {
+        for (LayerCoord& coord : ta_group.get_coord_list()) {
+          coord_list.push_back(coord);
+        }
+      }
+      ta_task->set_bounding_box(RTUtil::getBoundingBox(coord_list));
+    }
     ta_task->set_routed_times(0);
     panel_task_map[ta_panel_id].push_back(ta_task);
   }
   return panel_task_map;
-}
-
-void TrackAssigner::buildBoundingBox(TATask* ta_task)
-{
-  std::vector<PlanarCoord> coord_list;
-  for (TAGroup& ta_group : ta_task->get_ta_group_list()) {
-    for (LayerCoord& coord : ta_group.get_coord_list()) {
-      coord_list.push_back(coord);
-    }
-  }
-  ta_task->set_bounding_box(RTUtil::getBoundingBox(coord_list));
 }
 
 void TrackAssigner::buildPanelSchedule(TAModel& ta_model)
@@ -317,16 +314,15 @@ void TrackAssigner::assignTAPanelMap(TAModel& ta_model)
 #pragma omp parallel for
     for (TAPanelId& ta_panel_id : ta_panel_id_list) {
       TAPanel& ta_panel = layer_panel_list[ta_panel_id.get_layer_idx()][ta_panel_id.get_panel_idx()];
-      if (ta_panel.get_ta_task_list().empty()) {
-        continue;
+      if (needRouting(ta_panel)) {
+        buildFixedRectList(ta_panel);
+        buildPanelTrackAxis(ta_panel);
+        initTANodeMap(ta_panel);
+        buildTANodeNeighbor(ta_panel);
+        buildOrienNetMap(ta_panel);
+        // debugCheckTAPanel(ta_panel);
+        routeTAPanel(ta_panel);
       }
-      buildFixedRectList(ta_panel);
-      buildPanelTrackAxis(ta_panel);
-      initTANodeMap(ta_panel);
-      buildTANodeNeighbor(ta_panel);
-      buildOrienNetMap(ta_panel);
-      // debugCheckTAPanel(ta_panel);
-      routeTAPanel(ta_panel);
       updateTATaskToGcellMap(ta_panel);
       updateViolationToGcellMap(ta_panel);
       // debugPlotTAPanel(ta_panel, -1, "routed");
@@ -336,6 +332,14 @@ void TrackAssigner::assignTAPanelMap(TAModel& ta_model)
     LOG_INST.info(Loc::current(), "Assigned ", assigned_panel_num, "/", total_panel_num, "(",
                   RTUtil::getPercentage(assigned_panel_num, total_panel_num), ") panels", stage_monitor.getStatsInfo());
   }
+}
+
+bool TrackAssigner::needRouting(TAPanel& ta_panel)
+{
+  if (ta_panel.get_ta_task_list().empty()) {
+    return false;
+  }
+  return true;
 }
 
 void TrackAssigner::buildFixedRectList(TAPanel& ta_panel)
@@ -1323,10 +1327,10 @@ void TrackAssigner::debugPlotTAPanel(TAPanel& ta_panel, int32_t curr_task_idx, s
           case Orientation::kNorth:
             gp_path.set_segment(mid_x, rt_y - y_reduced_span, mid_x, rt_y);
             break;
-          case Orientation::kUp:
+          case Orientation::kAbove:
             gp_path.set_segment(rt_x - x_reduced_span, rt_y - y_reduced_span, rt_x, rt_y);
             break;
-          case Orientation::kDown:
+          case Orientation::kBelow:
             gp_path.set_segment(lb_x, lb_y, lb_x + x_reduced_span, lb_y + y_reduced_span);
             break;
           default:
