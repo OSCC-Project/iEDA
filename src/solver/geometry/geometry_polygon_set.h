@@ -31,4 +31,6 @@ typedef GtlPolygon90Set GeometryPolygonSet;
 
 #define envelope(rect, polygon_set) gtl::extents(rect, polygon_set)
 
+#define growAnd(polygon_set, value) gtl::grow_and(polygon_set, value)
+
 }  // namespace ieda_solver

@@ -31,7 +31,7 @@ void DrcConditionManager::checkMinSpacing(std::string layer, DrcEngineLayout* la
   if (min_spacing > 0) {
     auto violation_position_set = layer_polyset;
     int half_min_spacing = min_spacing / 2;
-    gtl::grow_and(violation_position_set, half_min_spacing);
+    ieda_solver::growAnd(violation_position_set, half_min_spacing);
     std::vector<ieda_solver::GeometryRect> results;
     violation_position_set.get(results);
 
