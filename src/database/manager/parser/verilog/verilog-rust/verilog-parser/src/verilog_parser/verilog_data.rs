@@ -1067,12 +1067,8 @@ pub struct VerilogFile {
 }
 
 impl VerilogFile {
-    pub fn new(top_module_name: &str) -> VerilogFile {
-        VerilogFile {
-            verilog_modules: Vec::new(),
-            module_map: HashMap::new(),
-            top_module_name: String::from(top_module_name),
-        }
+    pub fn new() -> VerilogFile {
+        VerilogFile { verilog_modules: Vec::new(), module_map: HashMap::new(), top_module_name: String::new() }
     }
 
     pub fn add_module(&mut self, verilog_module: Rc<RefCell<VerilogModule>>) {
@@ -1081,8 +1077,12 @@ impl VerilogFile {
         self.module_map.insert(module_name, verilog_module.clone());
     }
 
-    pub fn get_verilog_modules(&mut self) -> &mut Vec<Rc<RefCell<VerilogModule>>> {
-        &mut self.verilog_modules
+    pub fn get_verilog_modules(&self) -> &Vec<Rc<RefCell<VerilogModule>>> {
+        &self.verilog_modules
+    }
+
+    pub fn collect_hashmap_verilog_modules(&self) -> Vec<Rc<RefCell<VerilogModule>>> {
+        self.module_map.values().cloned().collect()
     }
 
     pub fn get_module_map(&mut self) -> &mut HashMap<String, Rc<RefCell<VerilogModule>>> {
@@ -1095,5 +1095,13 @@ impl VerilogFile {
 
     pub fn get_top_module(&mut self) -> &Rc<RefCell<VerilogModule>> {
         self.module_map.get(&self.top_module_name).unwrap()
+    }
+
+    pub fn get_top_module_name(&self) -> &str {
+        &self.top_module_name
+    }
+
+    pub fn set_top_module_name(&mut self, name: &str) {
+        self.top_module_name = name.to_string();
     }
 }

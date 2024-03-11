@@ -1,10 +1,12 @@
 use crate::verilog_parser::verilog_data;
 
+use std::cell::RefCell;
 use std::ffi::CStr;
 use std::ffi::CString;
 use std::ops::Deref;
 use std::ops::DerefMut;
 use std::os::raw::*;
+use std::rc::Rc;
 
 #[repr(C)]
 pub struct RustVec {
@@ -472,4 +474,37 @@ pub extern "C" fn rust_is_module_stmt(c_verilog_stmt: *mut c_void) -> bool {
     let mut verilog_stmt = unsafe { &mut *(c_verilog_stmt as *mut Box<dyn verilog_data::VerilogVirtualBaseStmt>) };
 
     unsafe { (*verilog_stmt).is_module_stmt() }
+}
+
+#[repr(C)]
+pub struct RustVerilogFile {
+    verilog_modules: RustVec,
+    hashmap_verilog_modules: RustVec,
+}
+
+#[no_mangle]
+pub extern "C" fn rust_convert_verilog_file(c_verilog_file: *const verilog_data::VerilogFile) -> *mut RustVerilogFile {
+    unsafe {
+        // let verilog_file = unsafe { &mut *(c_verilog_file as *mut Box<verilog_data::VerilogFile>) };
+        let verilog_modules_rust_vec = (*c_verilog_file).get_verilog_modules();
+        let hashmap_verilog_modules_rust_vec = (*c_verilog_file).collect_hashmap_verilog_modules();
+
+        let verilog_modules = rust_vec_to_c_array(verilog_modules_rust_vec);
+        let hashmap_verilog_modules = rust_vec_to_c_array(&hashmap_verilog_modules_rust_vec);
+
+        let rust_verilog_file = RustVerilogFile { verilog_modules, hashmap_verilog_modules };
+        let rust_verilog_file_pointer = Box::new(rust_verilog_file);
+        let raw_pointer = Box::into_raw(rust_verilog_file_pointer);
+        raw_pointer
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn rust_convert_rc_ref_cell_module(
+    c_data: *const Rc<RefCell<verilog_data::VerilogModule>>,
+) -> *mut c_void {
+    unsafe {
+        let module_ptr = (*c_data).deref().as_ptr();
+        module_ptr as *mut c_void
+    }
 }

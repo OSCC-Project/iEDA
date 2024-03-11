@@ -304,11 +304,9 @@ unsigned Sta::readLiberty(std::vector<std::string> &lib_files) {
  *
  * @param verilog_file
  */
-void Sta::readVerilogWithRustParser(const char *verilog_file,
-                                    const char *top_module_name) {
+void Sta::readVerilogWithRustParser(const char *verilog_file) {
   LOG_INFO << "read verilog file " << verilog_file << " start";
-  bool is_ok = _rust_verilog_reader.readVerilog(verilog_file, top_module_name);
-  _rust_top_module = _rust_verilog_reader.get_top_module();
+  bool is_ok = _rust_verilog_reader.readVerilog(verilog_file);
   LOG_FATAL_IF(!is_ok) << "read verilog file " << verilog_file << " failed.";
   LOG_INFO << "read verilog end";
 }
@@ -651,14 +649,20 @@ void Sta::linkDesign(const char *top_cell_name) {
  *
  * @param top_cell_name
  */
-void Sta::linkDesignWithRustParser() {
-  const char *top_cell_name = _rust_top_module->module_name;
-  auto top_module_stmts = _rust_top_module->module_stmts;
-  // auto port_list = _rust_top_module->port_list;
-
+void Sta::linkDesignWithRustParser(const char *top_cell_name) {
   LOG_INFO << "link design " << top_cell_name << " start";
+
+  _rust_verilog_reader.flattenModule(top_cell_name);
+  auto &rust_verilog_modules = _rust_verilog_reader.get_verilog_modules();
+  _rust_verilog_modules = std::move(rust_verilog_modules);
+
+  _rust_top_module= _rust_verilog_reader.get_top_module();
+  LOG_FATAL_IF(!_rust_top_module) << "top module not found.";
+  set_design_name(_rust_top_module->module_name);
+
+  auto top_module_stmts = _rust_top_module->module_stmts;
   Netlist &design_netlist = _netlist;
-  design_netlist.set_name(top_cell_name);
+  design_netlist.set_name(_rust_top_module->module_name);
 
   /*The verilog decalre statement process lookup table.*/
   std::map<DclType, std::function<DesignObject *(DclType, const char *)>>

@@ -170,9 +170,9 @@ typedef struct RustVerilogPortRefPortConnect
   void* net_expr;
 } RustVerilogPortRefPortConnect;
 
-typedef struct RustVerilogFile
-{
-  struct RustVec verilog_modules;
+typedef struct RustVerilogFile {
+    struct RustVec verilog_modules;
+    struct RustVec hashmap_verilog_modules;
 } RustVerilogFile;
 
 /**
@@ -319,9 +319,11 @@ bool rust_is_module_stmt(void* c_verilog_stmt);
  * @return struct RustVerilogFile*
  */
 struct RustVerilogFile* rust_convert_verilog_file(void* c_verilog_file);
-}
 
 void* rust_convert_rc_ref_cell_module(void* c_module_ref);
+}
+
+
 
 namespace ista {
 
