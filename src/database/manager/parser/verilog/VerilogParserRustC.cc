@@ -48,8 +48,8 @@ unsigned RustVerilogReader::readVerilog(const char* verilog_file_path)
     FOREACH_VEC_ELEM(&verilog_modules, void, verilog_module)
     {
       void* verilog_module_ptr = rust_convert_rc_ref_cell_module(verilog_module);
-      RustVerilogModule* verilog_module = rust_convert_raw_verilog_module(verilog_module_ptr);
-      _verilog_modules.emplace_back(std::move(verilog_module));
+      RustVerilogModule* rust_verilog_module = rust_convert_raw_verilog_module(verilog_module_ptr);
+      _verilog_modules.emplace_back(std::move(rust_verilog_module));
     }
   } else {
     is_ok = 0;
@@ -63,14 +63,15 @@ unsigned RustVerilogReader::flattenModule(const char* top_module_name)
   _top_module_name = top_module_name;
   rust_flatten_module(_verilog_file_ptr, top_module_name);
   RustVerilogFile* rust_verilog_file = rust_convert_verilog_file(_verilog_file_ptr);
-  auto hashmap_verilog_modules = rust_verilog_file->hashmap_verilog_modules;
-  void* hashmap_verilog_module;
-  FOREACH_VEC_ELEM(&hashmap_verilog_modules, void, hashmap_verilog_module)
+
+  auto verilog_modules = rust_verilog_file->verilog_modules;
+  void* verilog_module;
+  FOREACH_VEC_ELEM(&verilog_modules, void, verilog_module)
   {
-    void* hashmap_verilog_module_ptr = rust_convert_rc_ref_cell_module(hashmap_verilog_module);
-    RustVerilogModule* hashmap_verilog_module = rust_convert_raw_verilog_module(hashmap_verilog_module_ptr);
-    if (ieda::Str::equal(hashmap_verilog_module->module_name, top_module_name)) {
-      _top_module = hashmap_verilog_module;
+    void* verilog_module_ptr = rust_convert_rc_ref_cell_module(verilog_module);
+    RustVerilogModule* rust_verilog_module = rust_convert_raw_verilog_module(verilog_module_ptr);
+    if (ieda::Str::equal(rust_verilog_module->module_name, top_module_name)) {
+      _top_module = rust_verilog_module;
     }
   }
 }

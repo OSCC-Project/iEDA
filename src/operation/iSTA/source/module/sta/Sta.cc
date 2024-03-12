@@ -307,6 +307,7 @@ unsigned Sta::readLiberty(std::vector<std::string> &lib_files) {
 void Sta::readVerilogWithRustParser(const char *verilog_file) {
   LOG_INFO << "read verilog file " << verilog_file << " start";
   bool is_ok = _rust_verilog_reader.readVerilog(verilog_file);
+  _rust_verilog_file_ptr = _rust_verilog_reader.get_verilog_file_ptr();
   LOG_FATAL_IF(!is_ok) << "read verilog file " << verilog_file << " failed.";
   LOG_INFO << "read verilog end";
 }
@@ -656,7 +657,7 @@ void Sta::linkDesignWithRustParser(const char *top_cell_name) {
   auto &rust_verilog_modules = _rust_verilog_reader.get_verilog_modules();
   _rust_verilog_modules = std::move(rust_verilog_modules);
 
-  _rust_top_module= _rust_verilog_reader.get_top_module();
+  _rust_top_module = _rust_verilog_reader.get_top_module();
   LOG_FATAL_IF(!_rust_top_module) << "top module not found.";
   set_design_name(_rust_top_module->module_name);
 
@@ -982,7 +983,7 @@ void Sta::linkDesignWithRustParser(const char *top_cell_name) {
       design_netlist.addInstance(std::move(inst));
     }
   }
-
+  rust_free_verilog_file(_rust_verilog_file_ptr);
   LOG_INFO << "link design " << top_cell_name << " end";
 }
 

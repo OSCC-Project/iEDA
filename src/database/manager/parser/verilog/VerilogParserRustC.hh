@@ -170,9 +170,9 @@ typedef struct RustVerilogPortRefPortConnect
   void* net_expr;
 } RustVerilogPortRefPortConnect;
 
-typedef struct RustVerilogFile {
-    struct RustVec verilog_modules;
-    struct RustVec hashmap_verilog_modules;
+typedef struct RustVerilogFile
+{
+  struct RustVec verilog_modules;
 } RustVerilogFile;
 
 /**
@@ -192,11 +192,11 @@ void* rust_parse_verilog(const char* verilog_path);
 void rust_flatten_module(void* c_verilog_file, const char* top_module_name);
 
 /**
- * @brief rust free verilog_module memory after build data of verilog.
+ * @brief rust free verilog_file memory after build data of verilog.
  *
- * @param c_verilog_module
+ * @param c_verilog_file
  */
-void rust_free_verilog_module(void* c_verilog_module);
+void rust_free_verilog_file(void* c_verilog_file);
 
 uintptr_t rust_vec_len(const struct RustVec* vec);
 /**
@@ -323,8 +323,6 @@ struct RustVerilogFile* rust_convert_verilog_file(void* c_verilog_file);
 void* rust_convert_rc_ref_cell_module(void* c_module_ref);
 }
 
-
-
 namespace ista {
 
 class RustVerilogReader
@@ -336,6 +334,7 @@ class RustVerilogReader
   RustVerilogReader(RustVerilogReader&& other) noexcept = default;
   RustVerilogReader& operator=(RustVerilogReader&& rhs) noexcept = default;
 
+  void* get_verilog_file_ptr() { return _verilog_file_ptr; }
   auto* get_top_module() { return _top_module; }
   auto& get_verilog_modules() { return _verilog_modules; }
 
@@ -346,6 +345,6 @@ class RustVerilogReader
   void* _verilog_file_ptr;  // the parsered verilog file.
   std::string _top_module_name;
   std::vector<std::unique_ptr<RustVerilogModule>> _verilog_modules;  //!< The current design parsed from verilog file.
-  RustVerilogModule* _top_module = nullptr;          //!< The design top module.
+  RustVerilogModule* _top_module = nullptr;                          //!< The design top module.
 };
 }  // namespace ista

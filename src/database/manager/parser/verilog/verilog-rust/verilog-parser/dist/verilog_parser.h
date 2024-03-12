@@ -110,14 +110,13 @@ typedef struct RustVerilogPortRefPortConnect {
 
 typedef struct RustVerilogFile {
     struct RustVec verilog_modules;
-    struct RustVec hashmap_verilog_modules;
 } RustVerilogFile;
 
 void *rust_parse_verilog(const char *verilog_path);
 
 void rust_flatten_module(struct VerilogFile *c_verilog_file, const char *top_module_name);
 
-void rust_free_verilog_module(struct VerilogModule *c_verilog_module);
+void rust_free_verilog_file(struct VerilogFile *c_verilog_file);
 
 uintptr_t rust_vec_len(const struct RustVec *vec);
 

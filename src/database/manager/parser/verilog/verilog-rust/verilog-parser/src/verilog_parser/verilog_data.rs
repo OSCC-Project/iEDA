@@ -1081,10 +1081,6 @@ impl VerilogFile {
         &self.verilog_modules
     }
 
-    pub fn collect_hashmap_verilog_modules(&self) -> Vec<Rc<RefCell<VerilogModule>>> {
-        self.module_map.values().cloned().collect()
-    }
-
     pub fn get_module_map(&mut self) -> &mut HashMap<String, Rc<RefCell<VerilogModule>>> {
         &mut self.module_map
     }

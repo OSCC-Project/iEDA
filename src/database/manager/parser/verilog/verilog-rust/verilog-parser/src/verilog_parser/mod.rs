@@ -722,7 +722,7 @@ pub extern "C" fn rust_parse_verilog(verilog_path: *const c_char) -> *mut c_void
     let r_str_verilog_path = c_str_verilog_path.to_string_lossy().into_owned();
     println!("r str {}", r_str_verilog_path);
 
-    let mut verilog_file = parse_verilog_file(&r_str_verilog_path);
+    let verilog_file = parse_verilog_file(&r_str_verilog_path);
 
     let verilog_file_pointer = Box::new(verilog_file);
 
@@ -786,8 +786,8 @@ pub extern "C" fn rust_flatten_module(c_verilog_file: *mut verilog_data::Verilog
 
 // To do
 #[no_mangle]
-pub extern "C" fn rust_free_verilog_module(c_verilog_module: *mut verilog_data::VerilogModule) {
-    let _: Box<verilog_data::VerilogModule> = unsafe { Box::from_raw(c_verilog_module) };
+pub extern "C" fn rust_free_verilog_file(c_verilog_file: *mut verilog_data::VerilogFile) {
+    let _: Box<verilog_data::VerilogFile> = unsafe { Box::from_raw(c_verilog_file) };
 }
 
 #[cfg(test)]

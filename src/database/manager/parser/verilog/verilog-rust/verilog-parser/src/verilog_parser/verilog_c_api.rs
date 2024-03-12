@@ -479,20 +479,16 @@ pub extern "C" fn rust_is_module_stmt(c_verilog_stmt: *mut c_void) -> bool {
 #[repr(C)]
 pub struct RustVerilogFile {
     verilog_modules: RustVec,
-    hashmap_verilog_modules: RustVec,
 }
 
 #[no_mangle]
 pub extern "C" fn rust_convert_verilog_file(c_verilog_file: *const verilog_data::VerilogFile) -> *mut RustVerilogFile {
     unsafe {
-        // let verilog_file = unsafe { &mut *(c_verilog_file as *mut Box<verilog_data::VerilogFile>) };
         let verilog_modules_rust_vec = (*c_verilog_file).get_verilog_modules();
-        let hashmap_verilog_modules_rust_vec = (*c_verilog_file).collect_hashmap_verilog_modules();
 
         let verilog_modules = rust_vec_to_c_array(verilog_modules_rust_vec);
-        let hashmap_verilog_modules = rust_vec_to_c_array(&hashmap_verilog_modules_rust_vec);
 
-        let rust_verilog_file = RustVerilogFile { verilog_modules, hashmap_verilog_modules };
+        let rust_verilog_file = RustVerilogFile { verilog_modules };
         let rust_verilog_file_pointer = Box::new(rust_verilog_file);
         let raw_pointer = Box::into_raw(rust_verilog_file_pointer);
         raw_pointer
