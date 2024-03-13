@@ -36,11 +36,14 @@
 
 #include "file_manager.h"
 #include "idrc_violation.h"
+#include "json.hpp"
 
 using std::string;
 using std::vector;
 
 namespace iplf {
+
+using json = nlohmann::ordered_json;
 
 struct DrcFileHeader
 {
@@ -80,6 +83,7 @@ class FileDrcManager : public FileManager
   /// file save
   virtual int32_t getBufferSize() override;
   virtual bool saveFileData() override;
+  bool saveFileDataByJson();
 
   /// pa data
 
