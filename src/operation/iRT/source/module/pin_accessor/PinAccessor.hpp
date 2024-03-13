@@ -50,10 +50,10 @@ class PinAccessor
   void initAccessPointList(PAModel& pa_model);
   std::vector<LayerRect> getLegalShapeList(int32_t net_idx, Pin* pin);
   std::vector<PlanarRect> getPlanarLegalRectList(int32_t curr_net_idx, std::vector<EXTLayerRect>& pin_shape_list);
-  std::vector<AccessPoint> getAccessPointListByPrefTrackGrid(std::vector<LayerRect>& legal_shape_list);
-  std::vector<AccessPoint> getAccessPointListByCurrTrackGrid(std::vector<LayerRect>& legal_shape_list);
-  std::vector<AccessPoint> getAccessPointListByTrackCenter(std::vector<LayerRect>& legal_shape_list);
-  std::vector<AccessPoint> getAccessPointListByShapeCenter(std::vector<LayerRect>& legal_shape_list);
+  std::vector<AccessPoint> getAccessPointListByPrefTrackGrid(int32_t pin_idx, std::vector<LayerRect>& legal_shape_list);
+  std::vector<AccessPoint> getAccessPointListByCurrTrackGrid(int32_t pin_idx, std::vector<LayerRect>& legal_shape_list);
+  std::vector<AccessPoint> getAccessPointListByTrackCenter(int32_t pin_idx, std::vector<LayerRect>& legal_shape_list);
+  std::vector<AccessPoint> getAccessPointListByShapeCenter(int32_t pin_idx, std::vector<LayerRect>& legal_shape_list);
   void buildAccessPointList(PAModel& pa_model);
   void updateToGcellMap(PAModel& pa_model);
 #if 1  // debug

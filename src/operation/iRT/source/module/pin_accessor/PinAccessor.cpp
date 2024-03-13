@@ -86,13 +86,15 @@ void PinAccessor::initAccessPointList(PAModel& pa_model)
   }
 #pragma omp parallel for
   for (std::pair<int32_t, Pin*>& net_pin_pair : net_pin_pair_list) {
+    Pin* pin = net_pin_pair.second;
     std::vector<AccessPoint>& access_point_list = net_pin_pair.second->get_access_point_list();
-    std::vector<LayerRect> legal_shape_list = getLegalShapeList(net_pin_pair.first, net_pin_pair.second);
-    for (auto getAccessPointList : {std::bind(&PinAccessor::getAccessPointListByPrefTrackGrid, this, std::placeholders::_1),
-                                    std::bind(&PinAccessor::getAccessPointListByCurrTrackGrid, this, std::placeholders::_1),
-                                    std::bind(&PinAccessor::getAccessPointListByTrackCenter, this, std::placeholders::_1),
-                                    std::bind(&PinAccessor::getAccessPointListByShapeCenter, this, std::placeholders::_1)}) {
-      for (AccessPoint& access_point : getAccessPointList(legal_shape_list)) {
+    std::vector<LayerRect> legal_shape_list = getLegalShapeList(net_pin_pair.first, pin);
+    for (auto getAccessPointList :
+         {std::bind(&PinAccessor::getAccessPointListByPrefTrackGrid, this, std::placeholders::_1, std::placeholders::_2),
+          std::bind(&PinAccessor::getAccessPointListByCurrTrackGrid, this, std::placeholders::_1, std::placeholders::_2),
+          std::bind(&PinAccessor::getAccessPointListByTrackCenter, this, std::placeholders::_1, std::placeholders::_2),
+          std::bind(&PinAccessor::getAccessPointListByShapeCenter, this, std::placeholders::_1, std::placeholders::_2)}) {
+      for (AccessPoint& access_point : getAccessPointList(pin->get_pin_idx(), legal_shape_list)) {
         access_point_list.push_back(access_point);
       }
       if (!access_point_list.empty()) {
@@ -224,7 +226,7 @@ std::vector<PlanarRect> PinAccessor::getPlanarLegalRectList(int32_t curr_net_idx
   return legal_rect_list;
 }
 
-std::vector<AccessPoint> PinAccessor::getAccessPointListByPrefTrackGrid(std::vector<LayerRect>& legal_shape_list)
+std::vector<AccessPoint> PinAccessor::getAccessPointListByPrefTrackGrid(int32_t pin_idx, std::vector<LayerRect>& legal_shape_list)
 {
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
 
@@ -263,12 +265,12 @@ std::vector<AccessPoint> PinAccessor::getAccessPointListByPrefTrackGrid(std::vec
 
   std::vector<AccessPoint> access_point_list;
   for (LayerCoord& layer_coord : layer_coord_list) {
-    access_point_list.emplace_back(layer_coord.get_x(), layer_coord.get_y(), layer_coord.get_layer_idx(), AccessPointType::kPrefTrackGrid);
+    access_point_list.emplace_back(pin_idx, layer_coord, AccessPointType::kPrefTrackGrid);
   }
   return access_point_list;
 }
 
-std::vector<AccessPoint> PinAccessor::getAccessPointListByCurrTrackGrid(std::vector<LayerRect>& legal_shape_list)
+std::vector<AccessPoint> PinAccessor::getAccessPointListByCurrTrackGrid(int32_t pin_idx, std::vector<LayerRect>& legal_shape_list)
 {
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
 
@@ -292,12 +294,12 @@ std::vector<AccessPoint> PinAccessor::getAccessPointListByCurrTrackGrid(std::vec
 
   std::vector<AccessPoint> access_point_list;
   for (LayerCoord& layer_coord : layer_coord_list) {
-    access_point_list.emplace_back(layer_coord.get_x(), layer_coord.get_y(), layer_coord.get_layer_idx(), AccessPointType::kCurrTrackGrid);
+    access_point_list.emplace_back(pin_idx, layer_coord, AccessPointType::kCurrTrackGrid);
   }
   return access_point_list;
 }
 
-std::vector<AccessPoint> PinAccessor::getAccessPointListByTrackCenter(std::vector<LayerRect>& legal_shape_list)
+std::vector<AccessPoint> PinAccessor::getAccessPointListByTrackCenter(int32_t pin_idx, std::vector<LayerRect>& legal_shape_list)
 {
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
 
@@ -324,12 +326,12 @@ std::vector<AccessPoint> PinAccessor::getAccessPointListByTrackCenter(std::vecto
 
   std::vector<AccessPoint> access_point_list;
   for (LayerCoord& layer_coord : layer_coord_list) {
-    access_point_list.emplace_back(layer_coord.get_x(), layer_coord.get_y(), layer_coord.get_layer_idx(), AccessPointType::kTrackCenter);
+    access_point_list.emplace_back(pin_idx, layer_coord, AccessPointType::kTrackCenter);
   }
   return access_point_list;
 }
 
-std::vector<AccessPoint> PinAccessor::getAccessPointListByShapeCenter(std::vector<LayerRect>& legal_shape_list)
+std::vector<AccessPoint> PinAccessor::getAccessPointListByShapeCenter(int32_t pin_idx, std::vector<LayerRect>& legal_shape_list)
 {
   std::vector<LayerCoord> layer_coord_list;
   for (LayerRect& legal_shape : legal_shape_list) {
@@ -348,7 +350,7 @@ std::vector<AccessPoint> PinAccessor::getAccessPointListByShapeCenter(std::vecto
 
   std::vector<AccessPoint> access_point_list;
   for (LayerCoord& layer_coord : layer_coord_list) {
-    access_point_list.emplace_back(layer_coord.get_x(), layer_coord.get_y(), layer_coord.get_layer_idx(), AccessPointType::kShapeCenter);
+    access_point_list.emplace_back(pin_idx, layer_coord, AccessPointType::kShapeCenter);
   }
   return access_point_list;
 }

@@ -87,9 +87,9 @@ void DrcManager::check()
 {
   // TODO: sratagy and multi-thread
 
-  DrcRuleConditionSpacingTable spacing_table(_condition_manager, _engine);
+  // DrcRuleConditionSpacingTable spacing_table(_condition_manager, _engine);
 
-  spacing_table.checkFastMode();
+  // spacing_table.checkFastMode();
 
   DrcRuleConditionConnectivity connectivity(_condition_manager, _engine);
 

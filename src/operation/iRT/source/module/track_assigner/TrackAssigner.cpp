@@ -321,11 +321,12 @@ void TrackAssigner::assignTAPanelMap(TAModel& ta_model)
         buildTANodeNeighbor(ta_panel);
         buildOrienNetMap(ta_panel);
         // debugCheckTAPanel(ta_panel);
+        // debugPlotTAPanel(ta_panel, -1, "before_routing");
         routeTAPanel(ta_panel);
+        // debugPlotTAPanel(ta_panel, -1, "after_routing");
       }
       updateTATaskToGcellMap(ta_panel);
       updateViolationToGcellMap(ta_panel);
-      // debugPlotTAPanel(ta_panel, -1, "routed");
       freeTAPanel(ta_panel);
     }
     assigned_panel_num += ta_panel_id_list.size();
@@ -1267,6 +1268,78 @@ void TrackAssigner::debugPlotTAPanel(TAPanel& ta_panel, int32_t curr_task_idx, s
       gp_text_node_grid_coord.set_layer_idx(GP_INST.getGDSIdxByRouting(ta_node.get_layer_idx()));
       gp_text_node_grid_coord.set_presentation(GPTextPresentation::kLeftMiddle);
       ta_node_map_struct.push(gp_text_node_grid_coord);
+
+      y -= y_reduced_span;
+      GPText gp_text_orien_fixed_rect_map;
+      gp_text_orien_fixed_rect_map.set_coord(real_rect.get_lb_x(), y);
+      gp_text_orien_fixed_rect_map.set_text_type(static_cast<int32_t>(GPDataType::kInfo));
+      gp_text_orien_fixed_rect_map.set_message("orien_fixed_rect_map: ");
+      gp_text_orien_fixed_rect_map.set_layer_idx(GP_INST.getGDSIdxByRouting(ta_node.get_layer_idx()));
+      gp_text_orien_fixed_rect_map.set_presentation(GPTextPresentation::kLeftMiddle);
+      ta_node_map_struct.push(gp_text_orien_fixed_rect_map);
+
+      if (!ta_node.get_orien_fixed_rect_map().empty()) {
+        y -= y_reduced_span;
+        GPText gp_text_orien_fixed_rect_map_info;
+        gp_text_orien_fixed_rect_map_info.set_coord(real_rect.get_lb_x(), y);
+        gp_text_orien_fixed_rect_map_info.set_text_type(static_cast<int32_t>(GPDataType::kInfo));
+        std::string orien_fixed_rect_map_info_message = "--";
+        for (auto& [orien, net_set] : ta_node.get_orien_fixed_rect_map()) {
+          orien_fixed_rect_map_info_message += RTUtil::getString("(", GetOrientationName()(orien), ",", !net_set.empty(), ")");
+        }
+        gp_text_orien_fixed_rect_map_info.set_message(orien_fixed_rect_map_info_message);
+        gp_text_orien_fixed_rect_map_info.set_layer_idx(GP_INST.getGDSIdxByRouting(ta_node.get_layer_idx()));
+        gp_text_orien_fixed_rect_map_info.set_presentation(GPTextPresentation::kLeftMiddle);
+        ta_node_map_struct.push(gp_text_orien_fixed_rect_map_info);
+      }
+
+      y -= y_reduced_span;
+      GPText gp_text_orien_routed_rect_map;
+      gp_text_orien_routed_rect_map.set_coord(real_rect.get_lb_x(), y);
+      gp_text_orien_routed_rect_map.set_text_type(static_cast<int32_t>(GPDataType::kInfo));
+      gp_text_orien_routed_rect_map.set_message("orien_routed_rect_map: ");
+      gp_text_orien_routed_rect_map.set_layer_idx(GP_INST.getGDSIdxByRouting(ta_node.get_layer_idx()));
+      gp_text_orien_routed_rect_map.set_presentation(GPTextPresentation::kLeftMiddle);
+      ta_node_map_struct.push(gp_text_orien_routed_rect_map);
+
+      if (!ta_node.get_orien_routed_rect_map().empty()) {
+        y -= y_reduced_span;
+        GPText gp_text_orien_routed_rect_map_info;
+        gp_text_orien_routed_rect_map_info.set_coord(real_rect.get_lb_x(), y);
+        gp_text_orien_routed_rect_map_info.set_text_type(static_cast<int32_t>(GPDataType::kInfo));
+        std::string orien_routed_rect_map_info_message = "--";
+        for (auto& [orien, net_set] : ta_node.get_orien_routed_rect_map()) {
+          orien_routed_rect_map_info_message += RTUtil::getString("(", GetOrientationName()(orien), ",", !net_set.empty(), ")");
+        }
+        gp_text_orien_routed_rect_map_info.set_message(orien_routed_rect_map_info_message);
+        gp_text_orien_routed_rect_map_info.set_layer_idx(GP_INST.getGDSIdxByRouting(ta_node.get_layer_idx()));
+        gp_text_orien_routed_rect_map_info.set_presentation(GPTextPresentation::kLeftMiddle);
+        ta_node_map_struct.push(gp_text_orien_routed_rect_map_info);
+      }
+
+      y -= y_reduced_span;
+      GPText gp_text_orien_violation_number_map;
+      gp_text_orien_violation_number_map.set_coord(real_rect.get_lb_x(), y);
+      gp_text_orien_violation_number_map.set_text_type(static_cast<int32_t>(GPDataType::kInfo));
+      gp_text_orien_violation_number_map.set_message("orien_violation_number_map: ");
+      gp_text_orien_violation_number_map.set_layer_idx(GP_INST.getGDSIdxByRouting(ta_node.get_layer_idx()));
+      gp_text_orien_violation_number_map.set_presentation(GPTextPresentation::kLeftMiddle);
+      ta_node_map_struct.push(gp_text_orien_violation_number_map);
+
+      if (!ta_node.get_orien_violation_number_map().empty()) {
+        y -= y_reduced_span;
+        GPText gp_text_orien_violation_number_map_info;
+        gp_text_orien_violation_number_map_info.set_coord(real_rect.get_lb_x(), y);
+        gp_text_orien_violation_number_map_info.set_text_type(static_cast<int32_t>(GPDataType::kInfo));
+        std::string orien_violation_number_map_info_message = "--";
+        for (auto& [orien, violation_number] : ta_node.get_orien_violation_number_map()) {
+          orien_violation_number_map_info_message += RTUtil::getString("(", GetOrientationName()(orien), ",", violation_number != 0, ")");
+        }
+        gp_text_orien_violation_number_map_info.set_message(orien_violation_number_map_info_message);
+        gp_text_orien_violation_number_map_info.set_layer_idx(GP_INST.getGDSIdxByRouting(ta_node.get_layer_idx()));
+        gp_text_orien_violation_number_map_info.set_presentation(GPTextPresentation::kLeftMiddle);
+        ta_node_map_struct.push(gp_text_orien_violation_number_map_info);
+      }
 
       y -= y_reduced_span;
       GPText gp_text_direction_set;

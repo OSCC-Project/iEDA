@@ -82,7 +82,9 @@ class DRNode : public LayerCoord
       }
     }
     double cost = 0;
-    cost = (fixed_rect_num * fixed_rect_unit);
+    if (fixed_rect_num > 0) {
+      cost = fixed_rect_unit;
+    }
     return cost;
   }
   double getRoutedRectCost(int32_t net_idx, Orientation orientation, double routed_rect_unit)
@@ -99,7 +101,9 @@ class DRNode : public LayerCoord
       }
     }
     double cost = 0;
-    cost = (routed_rect_num * routed_rect_unit);
+    if (routed_rect_num > 0) {
+      cost = routed_rect_unit;
+    }
     return cost;
   }
   double getViolationCost(Orientation orientation, double violation_unit)
@@ -109,7 +113,9 @@ class DRNode : public LayerCoord
       violation_num = _orien_violation_number_map[orientation];
     }
     double cost = 0;
-    cost = (violation_num * violation_unit);
+    if (violation_num > 0) {
+      cost = violation_unit;
+    }
     return cost;
   }
 #if 1  // astar
