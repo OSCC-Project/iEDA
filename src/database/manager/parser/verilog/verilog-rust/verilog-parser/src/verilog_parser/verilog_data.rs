@@ -1003,7 +1003,6 @@ impl VerilogModule {
         self.module_stmts.iter().map(|module_stmt| module_stmt.clone()).collect()
     }
     pub fn erase_stmt(&mut self, the_stmt: &Box<dyn VerilogVirtualBaseStmt>) {
-        let old_len = self.module_stmts.len();
         self.module_stmts.retain(|stmt| {
             let line_no_to_remove = the_stmt.get_line_no();
             let line_no = stmt.get_line_no();
@@ -1012,7 +1011,6 @@ impl VerilogModule {
             }
             true
         });
-        let new_len = self.module_stmts.len();
     }
     pub fn is_port(&self, name: &str) -> bool {
         self.port_list.iter().any(|port| port.get_base_name() == name)
