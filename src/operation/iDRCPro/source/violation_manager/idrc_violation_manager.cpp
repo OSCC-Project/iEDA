@@ -20,9 +20,6 @@
 #include "DRCViolationType.h"
 
 namespace idrc {
-DrcViolationManager::DrcViolationManager()
-{
-}
 
 DrcViolationManager::~DrcViolationManager()
 {

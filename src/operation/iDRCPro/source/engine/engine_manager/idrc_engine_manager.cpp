@@ -93,7 +93,7 @@ bool DrcEngineManager::addRect(int llx, int lly, int urx, int ury, std::string l
 void DrcEngineManager::dataPreprocess()
 {
   for (auto& [layer, layout] : get_engine_layouts()) {
-    layout->combineLayout();
+    layout->combineLayout(_data_manager);
   }
 }
 

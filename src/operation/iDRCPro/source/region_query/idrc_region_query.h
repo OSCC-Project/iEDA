@@ -17,7 +17,7 @@
 #pragma once
 
 #include "boost_definition.h"
-#include "drc_basic_point.h"
+#include "engine_geometry.h"
 
 namespace idrc {
 class DrcDataManager;
@@ -28,32 +28,29 @@ class DrcRegionQuery
   DrcRegionQuery(DrcDataManager* data_manager) : _data_manager(data_manager) {}
   ~DrcRegionQuery() { _data_manager = nullptr; }
 
-  std::vector<std::pair<DrcBasicPoint*, DrcBasicPoint*>> getEdgesInRect(int llx, int lly, int urx, int ury)
+  std::set<int> queryNetId(std::string layer, int llx, int lly, int urx, int ury)
   {
-    std::vector<std::pair<DrcBasicPoint*, DrcBasicPoint*>> segments;
-    std::vector<std::pair<ieda_solver::BgSegment, std::pair<DrcBasicPoint*, DrcBasicPoint*>>> result;
+    std::set<int> net_ids;
+    std::vector<std::pair<ieda_solver::BgRect, int>> result;
     ieda_solver::BgRect rect(ieda_solver::BgPoint(llx, lly), ieda_solver::BgPoint(urx, ury));
-    _polygon_edge_rtree.query(bg::index::intersects(rect), std::back_inserter(result));
+    _query_tree[layer].query(bg::index::intersects(rect), std::back_inserter(result));
     for (auto& pair : result) {
-      segments.emplace_back(pair.second);
+      net_ids.insert(pair.second);
     }
-    return segments;
+    return net_ids;
   }
 
-  void addEdge(std::pair<DrcBasicPoint*, DrcBasicPoint*> edge)
+  void addRect(ieda_solver::GeometryRect rect, std::string layer, int id)
   {
-    // TODO: region query
-    return;
-    _polygon_edge_rtree.insert(std::make_pair(ieda_solver::BgSegment(ieda_solver::BgPoint(edge.first->get_x(), edge.first->get_y()),
-                                                                     ieda_solver::BgPoint(edge.second->get_x(), edge.second->get_y())),
-                                              edge));
+    ieda_solver::BgRect rtree_rect(ieda_solver::BgPoint(ieda_solver::lowLeftX(rect), ieda_solver::lowLeftY(rect)),
+                                   ieda_solver::BgPoint(ieda_solver::upRightX(rect), ieda_solver::upRightY(rect)));
+    _query_tree[layer].insert(std::make_pair(rtree_rect, id));
   }
 
  private:
   DrcDataManager* _data_manager = nullptr;
 
-  bg::index::rtree<std::pair<ieda_solver::BgSegment, std::pair<DrcBasicPoint*, DrcBasicPoint*>>, bg::index::quadratic<16>>
-      _polygon_edge_rtree;
+  std::map<std::string, bg::index::rtree<std::pair<ieda_solver::BgRect, int>, bg::index::quadratic<16>>> _query_tree;
 };
 
 }  // namespace idrc

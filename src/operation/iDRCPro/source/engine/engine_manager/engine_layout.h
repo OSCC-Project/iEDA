@@ -30,6 +30,9 @@ namespace idrc {
 /**
  *  DrcEngineLayout definition : describe all shapes for all nets in one layer
  */
+
+class DrcDataManager;
+
 class DrcEngineLayout
 {
  public:
@@ -45,13 +48,13 @@ class DrcEngineLayout
 
   bool addRect(int llx, int lly, int urx, int ury, int net_id);
 
-  void combineLayout();
+  void combineLayout(DrcDataManager* data_manager);
 
  private:
   /**
    * _layer : layer name
    */
-  std::string _layer = nullptr;
+  std::string _layer;
   /**
    * int : net id, if equal to -1, sub layout is a kind of blockage
    * DrcEngineSubLayout* : sub layout ptr describe the net shapes

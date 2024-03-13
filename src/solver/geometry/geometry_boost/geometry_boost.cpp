@@ -126,4 +126,13 @@ std::vector<GeometryRect>& GeometryBoost::getWires()
   return _wire_list;
 }
 
+std::vector<GeometryRect>& GeometryBoost::getRects()
+{
+  if (!_rect_initialized) {
+    gtl::get_rectangles(_rect_list, _polyset);
+    _rect_initialized = true;
+  }
+  return _rect_list;
+}
+
 }  // namespace ieda_solver

@@ -25,6 +25,8 @@
 #include "IdbLayer.h"
 #include "boost_definition.h"
 #include "idm.h"
+#include "idrc_dm.h"
+#include "idrc_region_query.h"
 #include "idrc_violation.h"
 #include "tech_rules.h"
 
@@ -34,10 +36,27 @@ namespace idrc {
 class DrcViolationManager
 {
  public:
-  DrcViolationManager();
+  DrcViolationManager(DrcDataManager* data_manager) : _data_manager(data_manager){};
   ~DrcViolationManager();
 
-  std::map<ViolationEnumType, std::vector<DrcViolation*>> get_violation_map() { return std::move(_violation_list); }
+  void get_net_id()
+  {
+    for (auto& [type, violation_list] : _violation_list) {
+      for (auto* violation : violation_list) {
+        auto* violation_rect = static_cast<DrcViolationRect*>(violation);
+        auto net_ids = _data_manager->get_region_query()->queryNetId(violation_rect->get_layer()->get_name(), violation_rect->get_llx(),
+                                                                     violation_rect->get_lly(), violation_rect->get_urx(),
+                                                                     violation_rect->get_ury());
+        violation_rect->set_net_ids(net_ids);
+      }
+    }
+  }
+
+  std::map<ViolationEnumType, std::vector<DrcViolation*>> get_violation_map()
+  {
+    get_net_id();
+    return std::move(_violation_list);
+  }
 
   std::vector<DrcViolation*>& get_violation_list(ViolationEnumType type)
   {
@@ -58,6 +77,7 @@ class DrcViolationManager
   }
 
  private:
+  DrcDataManager* _data_manager = nullptr;
   std::map<ViolationEnumType, std::vector<DrcViolation*>> _violation_list;
 };
 

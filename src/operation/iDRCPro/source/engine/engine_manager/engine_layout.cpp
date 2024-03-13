@@ -17,6 +17,8 @@
 #include "engine_layout.h"
 
 #include "geometry_boost.h"
+#include "idrc_dm.h"
+#include "idrc_region_query.h"
 
 namespace idrc {
 DrcEngineLayout::~DrcEngineLayout()
@@ -75,10 +77,14 @@ ieda_solver::EngineGeometry* DrcEngineLayout::get_net_engine(int net_id)
 //   return point_number;
 // }
 
-void DrcEngineLayout::combineLayout()
+void DrcEngineLayout::combineLayout(DrcDataManager* data_manager)
 {
   for (auto& [net_id, sub_layout] : _sub_layouts) {
     _layout->get_engine()->addGeometry(sub_layout->get_engine());
+    auto net_id_rects = sub_layout->get_engine()->getRects();
+    for (auto& rect : net_id_rects) {
+      data_manager->get_region_query()->addRect(rect, _layer, net_id);
+    }
   }
 }
 

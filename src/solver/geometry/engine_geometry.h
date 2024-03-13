@@ -51,12 +51,14 @@ class EngineGeometry
   virtual std::vector<GeometryPolygon>& getLayoutPolygons() = 0;
   virtual std::vector<GeometryPolygon>& getOverlap() = 0;
   virtual std::vector<GeometryRect>& getWires() = 0;
+  virtual std::vector<GeometryRect>& getRects() = 0;
 
  protected:
   GeometryPolygonSet _polyset;
   std::vector<GeometryPolygon> _polygon_list;
   std::vector<GeometryPolygon> _overlap_list;
   std::vector<GeometryRect> _wire_list;
+  std::vector<GeometryRect> _rect_list;
 };
 
 }  // namespace ieda_solver

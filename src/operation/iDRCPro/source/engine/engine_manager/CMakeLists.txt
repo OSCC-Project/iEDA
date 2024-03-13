@@ -10,6 +10,7 @@ target_link_libraries(idrc_engine_manager
     idrc_pro_data
     idrc_pro_tech_rules
     idrc_pro_violation
+    idrc_pro_region_query
     idm
 )
 
