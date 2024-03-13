@@ -117,7 +117,12 @@ std::shared_ptr<routinglayer::Lef58SpacingNotchlength> TechRules::getSpacingNotc
   if (!idb_routing_layer)
     return nullptr;
 
-  return idb_routing_layer->get_lef58_spacing_notchlength();
+  auto lef_58_spacing_notchlength = idb_routing_layer->get_lef58_spacing_notchlength();
+
+  return lef_58_spacing_notchlength
+             ? lef_58_spacing_notchlength
+             : std::make_shared<routinglayer::Lef58SpacingNotchlength>(idb_routing_layer->get_spacing_notchlength().get_min_spacing(),
+                                                                       idb_routing_layer->get_spacing_notchlength().get_notch_length());
 }
 
 std::shared_ptr<IdbMinStep> TechRules::getMinStep(std::string layer_name)
