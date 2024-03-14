@@ -320,14 +320,12 @@ void DrcConditionManager::checkPolygons(std::string layer, DrcEngineLayout* layo
             }
           }
           if (count_step_checked_edges > rule_max_edges) {
-            for (int i = 0; i < count_step_checked_edges; ++i) {
-              int edge_point1_idx = get_index_shifted(point_current_index, i - 1);
-              int edge_point2_idx = get_index_shifted(point_current_index, i);
-              ieda_solver::GeometryRect violation_rect(polygon_outline[edge_point1_idx].x(), polygon_outline[edge_point1_idx].y(),
-                                                       polygon_outline[edge_point2_idx].x(), polygon_outline[edge_point2_idx].y());
-              addViolation(violation_rect, layer, ViolationEnumType::kMinStep);
-              ++step_count;
-            }
+            auto point1_idx = get_index_shifted(point_current_index, -1);
+            auto point2_idx = get_index_shifted(point_current_index, count_step_checked_edges - 1);
+            ieda_solver::GeometryRect violation_rect(polygon_outline[point1_idx].x(), polygon_outline[point1_idx].y(),
+                                                     polygon_outline[point2_idx].x(), polygon_outline[point2_idx].y());
+            addViolation(violation_rect, layer, ViolationEnumType::kMinStep);
+            ++step_count;
           }
         }
       }
