@@ -99,6 +99,8 @@ CmdDRCDiagnosis::CmdDRCDiagnosis(const char* cmd_name) : TclCmd(cmd_name)
   addOption(third_json_file_option);
   auto* idrc_json_file_option = new TclStringOption("-idrc_json_file", 1, nullptr);
   addOption(idrc_json_file_option);
+  auto* output_dir_option = new TclStringOption("-output_dir", 1, nullptr);
+  addOption(output_dir_option);
 }
 
 unsigned CmdDRCDiagnosis::check()
@@ -107,6 +109,8 @@ unsigned CmdDRCDiagnosis::check()
   LOG_FATAL_IF(!third_json_file_option);
   TclOption* idrc_json_file_option = getOptionOrArg("-idrc_json_file");
   LOG_FATAL_IF(!idrc_json_file_option);
+  TclOption* output_dir_option = getOptionOrArg("-output_dir");
+  LOG_FATAL_IF(!output_dir_option);
   return 1;
 }
 
@@ -120,9 +124,11 @@ unsigned CmdDRCDiagnosis::exec()
   auto third_json_file = third_json_file_option->getStringVal();
   TclOption* idrc_json_file_option = getOptionOrArg("-idrc_json_file");
   auto idrc_json_file = idrc_json_file_option->getStringVal();
+  TclOption* output_dir_option = getOptionOrArg("-output_dir");
+  auto output_dir = output_dir_option->getStringVal();
 
   idrc::DrcApi drc_api;
-  drc_api.diagnosis(third_json_file, idrc_json_file);
+  drc_api.diagnosis(third_json_file, idrc_json_file, output_dir);
 
   return 1;
 }
