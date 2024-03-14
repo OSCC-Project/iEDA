@@ -408,7 +408,7 @@ void DataManager::wrapConfig(std::map<std::string, std::any>& config_map)
 {
   /////////////////////////////////////////////
   _config.temp_directory_path = RTUtil::getConfigValue<std::string>(config_map, "-temp_directory_path", "./rt_temp_directory");
-  _config.thread_number = RTUtil::getConfigValue<int32_t>(config_map, "-thread_number", 8);
+  _config.thread_number = RTUtil::getConfigValue<int32_t>(config_map, "-thread_number", 128);
   _config.bottom_routing_layer = RTUtil::getConfigValue<std::string>(config_map, "-bottom_routing_layer", "");
   _config.top_routing_layer = RTUtil::getConfigValue<std::string>(config_map, "-top_routing_layer", "");
   _config.output_csv = RTUtil::getConfigValue<int32_t>(config_map, "-output_csv", 0);

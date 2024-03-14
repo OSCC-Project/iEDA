@@ -102,26 +102,12 @@ void DetailedRouter::iterativeDRModel(DRModel& dr_model)
 {
   int32_t cost_unit = 8;
   std::vector<DRParameter> dr_parameter_list = {
-      {8, 0, 4 * cost_unit, cost_unit, cost_unit, true},
-      {8, -2, 4 * cost_unit, cost_unit, cost_unit, true},
-      {8, -4, 4 * cost_unit, cost_unit, cost_unit, true},
-      {8, -6, 4 * cost_unit, cost_unit, cost_unit, true},
-      {8, 0, 16 * cost_unit, 4 * cost_unit, 4 * cost_unit, false},
-      {8, -1, 16 * cost_unit, 4 * cost_unit, 4 * cost_unit, false},
-      {8, -2, 16 * cost_unit, 4 * cost_unit, 4 * cost_unit, false},
-      {8, -3, 16 * cost_unit, 4 * cost_unit, 4 * cost_unit, false},
-      {8, -4, 16 * cost_unit, 4 * cost_unit, 4 * cost_unit, false},
-      {8, -5, 16 * cost_unit, 4 * cost_unit, 4 * cost_unit, false},
-      {8, -6, 16 * cost_unit, 4 * cost_unit, 4 * cost_unit, false},
-      {8, -7, 16 * cost_unit, 4 * cost_unit, 4 * cost_unit, false},
-      {8, 0, 64 * cost_unit, 16 * cost_unit, 16 * cost_unit, false},
-      {8, -1, 64 * cost_unit, 16 * cost_unit, 16 * cost_unit, false},
-      {8, -2, 64 * cost_unit, 16 * cost_unit, 16 * cost_unit, false},
-      {8, -3, 64 * cost_unit, 16 * cost_unit, 16 * cost_unit, false},
-      {8, -4, 64 * cost_unit, 16 * cost_unit, 16 * cost_unit, false},
-      {8, -5, 64 * cost_unit, 16 * cost_unit, 16 * cost_unit, false},
-      {8, -6, 64 * cost_unit, 16 * cost_unit, 16 * cost_unit, false},
-      {8, -7, 64 * cost_unit, 16 * cost_unit, 16 * cost_unit, false},
+      /** format **/ {9, 0, 4 * cost_unit, 1 * cost_unit, 1 * cost_unit, true, 4},
+      /** format **/ {9, -3, 8 * cost_unit, 2 * cost_unit, 2 * cost_unit, false, 4},
+      /** format **/ {9, -6, 16 * cost_unit, 4 * cost_unit, 4 * cost_unit, false, 4},
+      /** format **/ {9, 0, 32 * cost_unit, 8 * cost_unit, 8 * cost_unit, false, 4},
+      /** format **/ {9, -3, 64 * cost_unit, 16 * cost_unit, 16 * cost_unit, false, 4},
+      /** format **/ {9, -6, 128 * cost_unit, 32 * cost_unit, 32 * cost_unit, false, 4},
   };
   for (size_t i = 0, iter = 1; i < dr_parameter_list.size(); i++, iter++) {
     Monitor iter_monitor;
@@ -155,6 +141,7 @@ void DetailedRouter::setDRParameter(DRModel& dr_model, int32_t iter, DRParameter
   LOG_INST.info(Loc::current(), "routed_rect_unit : ", dr_parameter.get_routed_rect_unit());
   LOG_INST.info(Loc::current(), "violation_unit : ", dr_parameter.get_violation_unit());
   LOG_INST.info(Loc::current(), "complete_ripup : ", dr_parameter.get_complete_ripup());
+  LOG_INST.info(Loc::current(), "max_routed_times : ", dr_parameter.get_max_routed_times());
   dr_model.set_dr_parameter(dr_parameter);
 }
 
@@ -714,6 +701,8 @@ std::vector<DRTask*> DetailedRouter::initTaskSchedule(DRBox& dr_box)
 
 std::vector<DRTask*> DetailedRouter::getTaskScheduleByViolation(DRBox& dr_box)
 {
+  int32_t max_routed_times = dr_box.get_dr_parameter()->get_max_routed_times();
+
   std::set<int32_t> violation_net_set;
   for (Violation& violation : dr_box.get_violation_list()) {
     for (int32_t violation_net : violation.get_violation_net_set()) {
@@ -725,7 +714,7 @@ std::vector<DRTask*> DetailedRouter::getTaskScheduleByViolation(DRBox& dr_box)
     if (!RTUtil::exist(violation_net_set, dr_task->get_net_idx())) {
       continue;
     }
-    if (dr_task->get_routed_times() > 1) {
+    if (dr_task->get_routed_times() >= max_routed_times) {
       continue;
     }
     dr_task_list.push_back(dr_task);

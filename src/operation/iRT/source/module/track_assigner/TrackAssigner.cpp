@@ -105,14 +105,14 @@ TANet TrackAssigner::convertToTANet(Net& net)
 
 void TrackAssigner::setTAParameter(TAModel& ta_model)
 {
-  int32_t cost_unit = 128;
-
-  TAParameter ta_parameter(cost_unit, cost_unit, cost_unit);
+  int32_t cost_unit = 8;
+  TAParameter ta_parameter(128 * cost_unit, 32 * cost_unit, 32 * cost_unit, 2);
   LOG_INST.info(Loc::current(), "prefer_wire_unit : ", ta_parameter.get_prefer_wire_unit());
   LOG_INST.info(Loc::current(), "corner_unit : ", ta_parameter.get_corner_unit());
   LOG_INST.info(Loc::current(), "fixed_rect_unit : ", ta_parameter.get_fixed_rect_unit());
   LOG_INST.info(Loc::current(), "routed_rect_unit : ", ta_parameter.get_routed_rect_unit());
   LOG_INST.info(Loc::current(), "violation_unit : ", ta_parameter.get_violation_unit());
+  LOG_INST.info(Loc::current(), "max_routed_times : ", ta_parameter.get_max_routed_times());
   ta_model.set_ta_parameter(ta_parameter);
 }
 
@@ -984,6 +984,8 @@ std::vector<Violation> TrackAssigner::getViolationList(TAPanel& ta_panel)
 
 std::vector<TATask*> TrackAssigner::getTaskScheduleByViolation(TAPanel& ta_panel)
 {
+  int32_t max_routed_times = ta_panel.get_ta_parameter()->get_max_routed_times();
+
   std::set<int32_t> violation_net_set;
   for (Violation& violation : ta_panel.get_violation_list()) {
     for (int32_t violation_net : violation.get_violation_net_set()) {
@@ -995,7 +997,7 @@ std::vector<TATask*> TrackAssigner::getTaskScheduleByViolation(TAPanel& ta_panel
     if (!RTUtil::exist(violation_net_set, ta_task->get_net_idx())) {
       continue;
     }
-    if (ta_task->get_routed_times() > 1) {
+    if (ta_task->get_routed_times() >= max_routed_times) {
       continue;
     }
     ta_task_list.push_back(ta_task);
