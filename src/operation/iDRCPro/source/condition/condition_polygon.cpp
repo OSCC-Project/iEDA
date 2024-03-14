@@ -402,9 +402,7 @@ void DrcConditionManager::checkPolygons(std::string layer, DrcEngineLayout* layo
       ieda_solver::envelope(violation_rect, polygon);
       addViolation(violation_rect, layer, ViolationEnumType::kArea);
       ++area_count;
-    }
-
-    if (polygon_area < max_rule_lef58_area) {
+    } else if (polygon_area < max_rule_lef58_area) {
       std::vector<ieda_solver::GeometryRect> current_polygon_max_rects;
       for (auto& rule_lef58_area : rule_lef58_area_list) {
         if (polygon_area >= rule_lef58_area->get_min_area()) {
