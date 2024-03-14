@@ -16,14 +16,14 @@
 // ***************************************************************************************
 #pragma once
 
+#include <fstream>
 #include <map>
 #include <string>
 #include <vector>
-#include "json/json.hpp"
 
 #include "DRCViolationType.h"
 #include "idrc_violation.h"
-#include <fstream>
+#include "json/json.hpp"
 
 namespace idb {
 class IdbRegularWireSegment;
@@ -46,7 +46,7 @@ class DrcApi
                                                                 std::map<int, std::vector<idb::IdbRegularWireSegment*>>& routing_data);
 
   std::map<ViolationEnumType, std::vector<DrcViolation*>> checkDef();
-  void diagnosis(std::string third_json_file, std::string idrc_json_file);
+  void diagnosis(std::string third_json_file, std::string idrc_json_file, std::string output_dir);
 
  private:
 };

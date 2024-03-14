@@ -117,12 +117,50 @@ std::map<ViolationEnumType, std::vector<DrcViolation*>> DrcApi::checkDef()
   return check(env_shape_list, pin_data, routing_data);
 }
 
-void DrcApi::diagnosis(std::string third_json_file, std::string idrc_json_file)
+void plotGDS(std::string gds_file,
+             std::map<int32_t, std::map<ViolationEnumType, std::vector<ieda_solver::GeometryRect>>>& layer_type_rect_list_map)
 {
-  std::cout << "Hello" << std::endl;
-  std::cout << third_json_file << std::endl;
-  std::cout << idrc_json_file << std::endl;
+  std::ofstream gds_stream(gds_file);
+  if (gds_stream.is_open()) {
+    gds_stream << "HEADER 600" << std::endl;
+    gds_stream << "BGNLIB" << std::endl;
+    gds_stream << "LIBNAME GDSLib" << std::endl;
+    gds_stream << "UNITS 0.001 1e-9" << std::endl;
+    gds_stream << "BGNSTR" << std::endl;
+    gds_stream << "STRNAME top" << std::endl;
 
+    for (auto& [layer_idx, type_rect_list_map] : layer_type_rect_list_map) {
+      for (auto& [type, rect_list] : type_rect_list_map) {
+        for (auto& rect : rect_list) {
+          int32_t lb_x = ieda_solver::lowLeftX(rect);
+          int32_t rt_x = ieda_solver::upRightX(rect);
+          int32_t lb_y = ieda_solver::lowLeftY(rect);
+          int32_t rt_y = ieda_solver::upRightY(rect);
+
+          gds_stream << "BOUNDARY" << std::endl;
+          gds_stream << "LAYER " << layer_idx << std::endl;
+          gds_stream << "DATATYPE " << int32_t(type) << std::endl;
+          gds_stream << "XY" << std::endl;
+          gds_stream << lb_x << " : " << lb_y << std::endl;
+          gds_stream << rt_x << " : " << lb_y << std::endl;
+          gds_stream << rt_x << " : " << rt_y << std::endl;
+          gds_stream << lb_x << " : " << rt_y << std::endl;
+          gds_stream << lb_x << " : " << lb_y << std::endl;
+          gds_stream << "ENDEL" << std::endl;
+        }
+      }
+    }
+    gds_stream << "ENDSTR" << std::endl;
+    gds_stream << "ENDLIB" << std::endl;
+    gds_stream.close();
+    std::cout << "[Info] Result has been written to '" << gds_file << "'!" << std::endl;
+  } else {
+    std::cout << "[Error] Failed to open gds file '" << gds_file << "'!" << std::endl;
+  }
+}
+
+void DrcApi::diagnosis(std::string third_json_file, std::string idrc_json_file, std::string output_dir)
+{
   std::map<int32_t, std::map<ViolationEnumType, std::vector<ieda_solver::GeometryRect>>> third_layer_type_rect_list_map;
   {
     std::ifstream third_json_stream(third_json_file);
@@ -147,7 +185,15 @@ void DrcApi::diagnosis(std::string third_json_file, std::string idrc_json_file)
     // idrc_layer_type_rect_list_map
   }
 
-  // todo
+  std::string third_gds_file = output_dir + "/third.gds";
+  std::string idrc_gds_file = output_dir + "/idrc.gds";
+  std::string third_diff_idrc_gds_file = output_dir + "/third_diff_idrc.gds";
+  std::string idrc_diff_third_gds_file = output_dir + "/idrc_diff_third.gds";
+
+  plotGDS(third_gds_file, third_layer_type_rect_list_map);
+  plotGDS(idrc_gds_file, idrc_layer_type_rect_list_map);
+  plotGDS(third_diff_idrc_gds_file, third_diff_idrc_layer_type_rect_list_map);
+  plotGDS(idrc_diff_third_gds_file, idrc_diff_third_layer_type_rect_list_map);
 }
 
 }  // namespace idrc
