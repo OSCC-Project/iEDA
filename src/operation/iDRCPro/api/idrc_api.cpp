@@ -184,40 +184,41 @@ void DrcApi::diagnosis(std::string third_json_file, std::string idrc_json_file, 
 
   auto string_to_int = [](std::string& s) { return atoi(s.c_str()); };
 
-  auto parse_json = [&](std::string& file_path,
-                        std::map<int32_t, std::map<ViolationEnumType, std::vector<ieda_solver::GeometryRect>>>& result, int32_t scale) {
-    std::cout << "idrc : parse json: " << file_path << std::endl;
-    std::ifstream json_stream(file_path);
-    json json_data;
-    json_stream >> json_data;
+  auto parse_json
+      = [&](std::string& file_path, std::map<int32_t, std::map<ViolationEnumType, std::vector<ieda_solver::GeometryRect>>>& result,
+            std::map<std::string, ViolationEnumType>& name_to_type_map, int32_t scale) {
+          std::cout << "idrc : parse json: " << file_path << std::endl;
+          std::ifstream json_stream(file_path);
+          json json_data;
+          json_stream >> json_data;
 
-    for (auto& entry : json_data[json_entry_key]) {
-      auto type = third_name_to_type_map[entry["type"]];
-      for (auto& violation_item : entry[json_drc_list_key]) {
-        auto& violation = violation_item["tech_DRCs"];
-        auto layer = layer_name_to_id_map[violation["layer"]];
-        double origin_llx = violation["llx"];
-        double origin_lly = violation["lly"];
-        double origin_urx = violation["urx"];
-        double origin_ury = violation["ury"];
-        int32_t llx = static_cast<int32_t>(origin_llx * scale);
-        int32_t lly = static_cast<int32_t>(origin_lly * scale);
-        int32_t urx = static_cast<int32_t>(origin_urx * scale);
-        int32_t ury = static_cast<int32_t>(origin_ury * scale);
-        // int32_t llx = string_to_int(llx_s);
-        // int32_t lly = string_to_int(lly_s);
-        // int32_t urx = string_to_int(urx_s);
-        // int32_t ury = string_to_int(ury_s);
-        result[layer][type].emplace_back(llx, lly, urx, ury);
-      }
-    }
-  };
+          for (auto& entry : json_data[json_entry_key]) {
+            auto type = name_to_type_map[entry["type"]];
+            for (auto& violation_item : entry[json_drc_list_key]) {
+              auto& violation = violation_item["tech_DRCs"];
+              auto layer = layer_name_to_id_map[violation["layer"]];
+              double origin_llx = violation["llx"];
+              double origin_lly = violation["lly"];
+              double origin_urx = violation["urx"];
+              double origin_ury = violation["ury"];
+              int32_t llx = static_cast<int32_t>(origin_llx * scale);
+              int32_t lly = static_cast<int32_t>(origin_lly * scale);
+              int32_t urx = static_cast<int32_t>(origin_urx * scale);
+              int32_t ury = static_cast<int32_t>(origin_ury * scale);
+              // int32_t llx = string_to_int(llx_s);
+              // int32_t lly = string_to_int(lly_s);
+              // int32_t urx = string_to_int(urx_s);
+              // int32_t ury = string_to_int(ury_s);
+              result[layer][type].emplace_back(llx, lly, urx, ury);
+            }
+          }
+        };
 
   std::map<int32_t, std::map<ViolationEnumType, std::vector<ieda_solver::GeometryRect>>> third_layer_type_rect_list_map;
   std::map<int32_t, std::map<ViolationEnumType, std::vector<ieda_solver::GeometryRect>>> idrc_layer_type_rect_list_map;
 
-  parse_json(third_json_file, third_layer_type_rect_list_map, 2000);
-  parse_json(idrc_json_file, idrc_layer_type_rect_list_map, 1);
+  parse_json(third_json_file, third_layer_type_rect_list_map, third_name_to_type_map, 2000);
+  parse_json(idrc_json_file, idrc_layer_type_rect_list_map, idrc_name_to_type_map, 1);
 
   std::map<int32_t, std::map<ViolationEnumType, std::vector<ieda_solver::GeometryRect>>> third_diff_idrc_layer_type_rect_list_map;
   std::map<int32_t, std::map<ViolationEnumType, std::vector<ieda_solver::GeometryRect>>> idrc_diff_third_layer_type_rect_list_map;
