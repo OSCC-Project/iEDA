@@ -47,6 +47,8 @@ int registerCmdDRC()
   registerTclCmd(TclDrcCheckAllNet, "check_all_net");
   registerTclCmd(TclCheckDrc, "check_drc");
 
+  registerTclCmd(CmdDRCDiagnosis, "idrc_diagnosis");
+
   return EXIT_SUCCESS;
 }
 

@@ -117,4 +117,37 @@ std::map<ViolationEnumType, std::vector<DrcViolation*>> DrcApi::checkDef()
   return check(env_shape_list, pin_data, routing_data);
 }
 
+void DrcApi::diagnosis(std::string third_json_file, std::string idrc_json_file)
+{
+  std::cout << "Hello" << std::endl;
+  std::cout << third_json_file << std::endl;
+  std::cout << idrc_json_file << std::endl;
+
+  std::map<int32_t, std::map<ViolationEnumType, std::vector<ieda_solver::GeometryRect>>> third_layer_type_rect_list_map;
+  {
+    std::ifstream third_json_stream(third_json_file);
+    json third_json;
+    third_json_stream >> third_json;
+
+    // third_layer_type_rect_list_map
+  }
+  std::map<int32_t, std::map<ViolationEnumType, std::vector<ieda_solver::GeometryRect>>> idrc_layer_type_rect_list_map;
+  {
+    std::ifstream idrc_json_stream(idrc_json_file);
+    json idrc_json;
+    idrc_json_stream >> idrc_json;
+
+    // idrc_layer_type_rect_list_map
+  }
+
+  std::map<int32_t, std::map<ViolationEnumType, std::vector<ieda_solver::GeometryRect>>> third_diff_idrc_layer_type_rect_list_map;
+  std::map<int32_t, std::map<ViolationEnumType, std::vector<ieda_solver::GeometryRect>>> idrc_diff_third_layer_type_rect_list_map;
+  {
+    // third_layer_type_rect_list_map
+    // idrc_layer_type_rect_list_map
+  }
+
+  // todo
+}
+
 }  // namespace idrc

@@ -93,6 +93,44 @@ unsigned CmdDRCSaveDetailFile::exec()
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+CmdDRCDiagnosis::CmdDRCDiagnosis(const char* cmd_name) : TclCmd(cmd_name)
+{
+  auto* third_json_file_option = new TclStringOption("-third_json_file", 1, nullptr);
+  addOption(third_json_file_option);
+  auto* idrc_json_file_option = new TclStringOption("-idrc_json_file", 1, nullptr);
+  addOption(idrc_json_file_option);
+}
+
+unsigned CmdDRCDiagnosis::check()
+{
+  TclOption* third_json_file_option = getOptionOrArg("-third_json_file");
+  LOG_FATAL_IF(!third_json_file_option);
+  TclOption* idrc_json_file_option = getOptionOrArg("-idrc_json_file");
+  LOG_FATAL_IF(!idrc_json_file_option);
+  return 1;
+}
+
+unsigned CmdDRCDiagnosis::exec()
+{
+  if (!check()) {
+    return 0;
+  }
+
+  TclOption* third_json_file_option = getOptionOrArg("-third_json_file");
+  auto third_json_file = third_json_file_option->getStringVal();
+  TclOption* idrc_json_file_option = getOptionOrArg("-idrc_json_file");
+  auto idrc_json_file = idrc_json_file_option->getStringVal();
+
+  idrc::DrcApi drc_api;
+  drc_api.diagnosis(third_json_file, idrc_json_file);
+
+  return 1;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 CmdDRCReadDetailFile::CmdDRCReadDetailFile(const char* cmd_name) : TclCmd(cmd_name)
 {
   auto* file_path_option = new TclStringOption(TCL_PATH, 1, nullptr);
