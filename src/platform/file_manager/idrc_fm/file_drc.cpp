@@ -32,6 +32,7 @@
 #include "file_drc.h"
 
 #include <cstring>
+#include <iomanip>
 #include <iostream>
 
 #include "IdbLayer.h"
@@ -141,6 +142,9 @@ int32_t FileDrcManager::getBufferSize()
 
 bool FileDrcManager::saveFileData()
 {
+  if (saveFileDataByJson() == true) {
+    return true;
+  }
   //   int size = getBufferSize();
   //   assert(size != 0);
   auto& detail_rule_map = drcInst->get_detail_drc();
@@ -196,6 +200,50 @@ bool FileDrcManager::saveFileData()
 
   delete[] data_buf;
   data_buf = nullptr;
+
+  return true;
+}
+
+bool FileDrcManager::saveFileDataByJson()
+{
+  auto path = get_data_path();
+  std::string tail_str = path.substr(path.length() - 4);
+  if (tail_str != "json") {
+    return false;
+  }
+
+  json drc_json;
+  json drc_json_list = json::array();
+  auto& detail_rule_map = drcInst->get_detail_drc();
+
+  for (auto [rule_name, drc_list] : detail_rule_map) {
+    json temp;
+    temp["type"] = rule_name;
+    temp["nums"] = drc_list.size();
+    json json_list = json::array();
+    for (auto drc_spot : drc_list) {
+      DrcDetailResult detail_result;
+      wrapDrcStruct(drc_spot, detail_result);
+      json json_obs;
+      json_obs["tech_DRCs"]["layer"] = detail_result.layer_name;
+      json_obs["tech_DRCs"]["llx"] = detail_result.min_x;
+      json_obs["tech_DRCs"]["lly"] = detail_result.min_y;
+      json_obs["tech_DRCs"]["urx"] = detail_result.max_x;
+      json_obs["tech_DRCs"]["ury"] = detail_result.max_y;
+      json_list.push_back(json_obs);
+    }
+    temp["tech_DRCs_list"] = json_list;
+    drc_json_list.push_back(temp);
+    drc_json["type_sorted_tech_DRCs_list"] = drc_json_list;
+  }
+
+  std::ofstream file_stream(path);
+
+  file_stream << std::setw(4) << drc_json;
+
+  file_stream.close();
+
+  std::cout << std::endl << "Save feature json success, path = " << path << std::endl;
 
   return true;
 }
