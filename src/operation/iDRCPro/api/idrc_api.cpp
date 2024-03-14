@@ -182,8 +182,6 @@ void DrcApi::diagnosis(std::string third_json_file, std::string idrc_json_file, 
   std::string json_entry_key = "type_sorted_tech_DRCs_list";
   std::string json_drc_list_key = "tech_DRCs_list";
 
-  auto string_to_int = [](std::string& s) { return atoi(s.c_str()); };
-
   auto parse_json
       = [&](std::string& file_path, std::map<int32_t, std::map<ViolationEnumType, std::vector<ieda_solver::GeometryRect>>>& result,
             std::map<std::string, ViolationEnumType>& name_to_type_map, int32_t scale) {
@@ -205,10 +203,6 @@ void DrcApi::diagnosis(std::string third_json_file, std::string idrc_json_file, 
               int32_t lly = static_cast<int32_t>(origin_lly * scale);
               int32_t urx = static_cast<int32_t>(origin_urx * scale);
               int32_t ury = static_cast<int32_t>(origin_ury * scale);
-              // int32_t llx = string_to_int(llx_s);
-              // int32_t lly = string_to_int(lly_s);
-              // int32_t urx = string_to_int(urx_s);
-              // int32_t ury = string_to_int(ury_s);
               result[layer][type].emplace_back(llx, lly, urx, ury);
             }
           }
