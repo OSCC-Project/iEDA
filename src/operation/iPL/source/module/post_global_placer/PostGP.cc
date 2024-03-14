@@ -238,7 +238,11 @@ namespace ipl {
 
     // calculate the cost and legal the inst.
     float old_cost = this->calCurrentCost(buffer);
+
+    // printTimingInfoForSTADebug(buffer);
     this->runIncrLGAndUpdateTiming(buffer, px, py);
+    // printTimingInfoForSTADebug(buffer);
+
     float new_cost = this->calCurrentCost(buffer);
 
     if (new_cost > old_cost || Utility().isFloatPairApproximatelyEqual(new_cost, old_cost)) {
@@ -341,7 +345,11 @@ namespace ipl {
 
       // calculate the cost and legal the inst.
       float old_cost = this->calCurrentCost(inst);
+
+      // printTimingInfoForSTADebug(inst);
       this->runIncrLGAndUpdateTiming(inst, avg_px, avg_py);
+      // printTimingInfoForSTADebug(inst);
+      
       float new_cost = this->calCurrentCost(inst);
 
       if (new_cost > old_cost || Utility().isFloatPairApproximatelyEqual(new_cost, old_cost)) {
@@ -554,6 +562,26 @@ namespace ipl {
         }
       }
     }
+  }
+
+  void PostGP::printTimingInfoForSTADebug(Instance* inst){
+    LOG_INFO << std::endl;
+    LOG_WARNING << "Debug Instance: " << inst->get_name()
+                << " Position: (" << inst->get_coordi().get_x() << ","
+                << inst->get_coordi().get_y() << ")";
+    
+    for(auto* pin : inst->get_pins()){
+      auto* pin_net = pin->get_net();
+      if(pin_net){
+        LOG_INFO << "Pin: " << pin->get_name() << " Associated Net: " << pin_net->get_name();
+        for(auto* net_sink_pin : pin_net->get_sink_pins()){
+          auto* node = _database._node_list[net_sink_pin->get_pin_id()];
+          LOG_INFO << " --- " << "pin: " << node->get_name() << " arrival time: "
+                   << _timing_annotation->get_node_late_arrival_time(node->get_node_id());
+        }
+      }
+    }
+    LOG_INFO << std::endl;
   }
 
 }  // namespace ipl

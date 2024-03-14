@@ -73,6 +73,7 @@ class PostGP
   // bool runIncrLG(std::vector<Instance*> target_inst_list);
   // bool rollBackToBestLocation(Instance* inst);
   float calCurrentCost(Instance* inst);
+  void printTimingInfoForSTADebug(Instance* inst);
 
   std::vector<std::string> obtainFrontInstNameList(Instance* inst);
 };
