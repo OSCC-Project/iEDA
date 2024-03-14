@@ -161,28 +161,66 @@ void plotGDS(std::string gds_file,
 
 void DrcApi::diagnosis(std::string third_json_file, std::string idrc_json_file, std::string output_dir)
 {
+  std::map<std::string, ViolationEnumType> third_name_to_type_map{{"SHORT", ViolationEnumType::kShort},
+                                                                  {"SPACING", ViolationEnumType::kPRLSpacing},
+                                                                  {"MINSTEP", ViolationEnumType::kMinStep},
+                                                                  {"EndOfLine", ViolationEnumType::kEOL},
+                                                                  {"MINHOLE", ViolationEnumType::kAreaEnclosed}};
+  std::map<std::string, ViolationEnumType> idrc_name_to_type_map{{"Corner Fill", ViolationEnumType::kCornerFill},
+                                                                 {"Default Spacing", ViolationEnumType::kPRLSpacing},
+                                                                 {"Enclosed Area", ViolationEnumType::kAreaEnclosed},
+                                                                 {"JogToJog Spacing", ViolationEnumType::kJogToJog},
+                                                                 {"Metal EOL Spacing", ViolationEnumType::kEOL},
+                                                                 {"Metal Notch Spacing", ViolationEnumType::kNotch},
+                                                                 {"Metal Parallel Run Length Spacing", ViolationEnumType::kPRLSpacing},
+                                                                 {"Metal Short", ViolationEnumType::kShort},
+                                                                 {"MinStep", ViolationEnumType::kMinStep},
+                                                                 {"Minimal Area", ViolationEnumType::kArea}};
+  std::map<std::string, int32_t> layer_name_to_id_map{{"M1", 1}, {"M2", 2}, {"M3", 3}, {"M4", 4}, {"M5", 5},
+                                                      {"M6", 6}, {"M7", 7}, {"M8", 8}, {"M9", 9}};
+
+  std::string json_entry_key = "type_sorted_tech_DRCs_list";
+  std::string json_drc_list_key = "tech_DRCs_list";
+
+  auto string_to_int = [](std::string& s) { return atoi(s.c_str()); };
+
+  auto parse_json
+      = [&](std::string& file_path, std::map<int32_t, std::map<ViolationEnumType, std::vector<ieda_solver::GeometryRect>>>& result) {
+          std::cout << "idrc : parse json: " << file_path << std::endl;
+          std::ifstream json_stream(file_path);
+          json json_data;
+          json_stream >> json_data;
+
+          for (auto& entry : json_data[json_entry_key]) {
+            auto type = third_name_to_type_map[entry["type"]];
+            for (auto& violation_item : entry[json_drc_list_key]) {
+              auto& violation = violation_item["tech_DRCs"];
+              auto layer = layer_name_to_id_map[violation["layer"]];
+              std::string llx_s = violation["llx"];
+              std::string lly_s = violation["lly"];
+              std::string urx_s = violation["urx"];
+              std::string ury_s = violation["ury"];
+              int32_t llx = string_to_int(llx_s);
+              int32_t lly = string_to_int(lly_s);
+              int32_t urx = string_to_int(urx_s);
+              int32_t ury = string_to_int(ury_s);
+              result[layer][type].emplace_back(llx, lly, urx, ury);
+            }
+          }
+        };
+
   std::map<int32_t, std::map<ViolationEnumType, std::vector<ieda_solver::GeometryRect>>> third_layer_type_rect_list_map;
-  {
-    std::ifstream third_json_stream(third_json_file);
-    json third_json;
-    third_json_stream >> third_json;
-
-    // third_layer_type_rect_list_map
-  }
   std::map<int32_t, std::map<ViolationEnumType, std::vector<ieda_solver::GeometryRect>>> idrc_layer_type_rect_list_map;
-  {
-    std::ifstream idrc_json_stream(idrc_json_file);
-    json idrc_json;
-    idrc_json_stream >> idrc_json;
 
-    // idrc_layer_type_rect_list_map
-  }
+  parse_json(third_json_file, third_layer_type_rect_list_map);
+  parse_json(idrc_json_file, idrc_layer_type_rect_list_map);
 
   std::map<int32_t, std::map<ViolationEnumType, std::vector<ieda_solver::GeometryRect>>> third_diff_idrc_layer_type_rect_list_map;
   std::map<int32_t, std::map<ViolationEnumType, std::vector<ieda_solver::GeometryRect>>> idrc_diff_third_layer_type_rect_list_map;
   {
     auto create_set = [](std::map<int32_t, std::map<ViolationEnumType, std::vector<ieda_solver::GeometryRect>>>& input,
                          std::map<int32_t, std::map<ViolationEnumType, ieda_solver::GeometryPolygonSet>>& result) {
+      std::cout << "idrc : create polygon set" << std::endl;
       for (auto& [layer, violation_map] : input) {
         for (auto& [type, violation_list] : violation_map) {
           for (auto& rect : violation_list) {
@@ -195,6 +233,7 @@ void DrcApi::diagnosis(std::string third_json_file, std::string idrc_json_file, 
     auto diff_two_map = [](std::map<int32_t, std::map<ViolationEnumType, ieda_solver::GeometryPolygonSet>>& map1,
                            std::map<int32_t, std::map<ViolationEnumType, ieda_solver::GeometryPolygonSet>>& map2,
                            std::map<int32_t, std::map<ViolationEnumType, std::vector<ieda_solver::GeometryRect>>>& result) {
+      std::cout << "idrc : boolean operations" << std::endl;
       for (auto& [layer, violation_map] : map1) {
         for (auto& [type, polyset] : violation_map) {
           auto& other_polyset = map2[layer][type];
@@ -213,6 +252,8 @@ void DrcApi::diagnosis(std::string third_json_file, std::string idrc_json_file, 
     diff_two_map(third_layer_type_polyset_map, idrc_layer_type_polyset_map, third_diff_idrc_layer_type_rect_list_map);
     diff_two_map(idrc_layer_type_polyset_map, third_layer_type_polyset_map, idrc_diff_third_layer_type_rect_list_map);
   }
+
+  std::cout << "idrc : output GDS file" << std::endl;
 
   std::string third_gds_file = output_dir + "/third.gds";
   std::string idrc_gds_file = output_dir + "/idrc.gds";
