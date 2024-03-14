@@ -22,13 +22,14 @@ class TAParameter
 {
  public:
   TAParameter() = default;
-  TAParameter(double fixed_rect_unit, double routed_rect_unit, double violation_unit)
+  TAParameter(double fixed_rect_unit, double routed_rect_unit, double violation_unit, int32_t max_routed_times)
   {
     _prefer_wire_unit = 1;
     _corner_unit = 1;
     _fixed_rect_unit = fixed_rect_unit;
     _routed_rect_unit = routed_rect_unit;
     _violation_unit = violation_unit;
+    _max_routed_times = max_routed_times;
   }
   ~TAParameter() = default;
   // getter
@@ -37,12 +38,14 @@ class TAParameter
   double get_fixed_rect_unit() const { return _fixed_rect_unit; }
   double get_routed_rect_unit() const { return _routed_rect_unit; }
   double get_violation_unit() const { return _violation_unit; }
+  int32_t get_max_routed_times() const { return _max_routed_times; }
   // setter
   void set_prefer_wire_unit(const double prefer_wire_unit) { _prefer_wire_unit = prefer_wire_unit; }
   void set_corner_unit(const double corner_unit) { _corner_unit = corner_unit; }
   void set_fixed_rect_unit(const double fixed_rect_unit) { _fixed_rect_unit = fixed_rect_unit; }
   void set_routed_rect_unit(const double routed_rect_unit) { _routed_rect_unit = routed_rect_unit; }
   void set_violation_unit(const double violation_unit) { _violation_unit = violation_unit; }
+  void set_max_routed_times(const int32_t max_routed_times) { _max_routed_times = max_routed_times; }
 
  private:
   double _prefer_wire_unit = 0;
@@ -50,6 +53,7 @@ class TAParameter
   double _fixed_rect_unit = 0;
   double _routed_rect_unit = 0;
   double _violation_unit = 0;
+  int32_t _max_routed_times = 0;
 };
 
 }  // namespace irt
