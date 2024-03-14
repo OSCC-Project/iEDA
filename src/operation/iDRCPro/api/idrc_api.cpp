@@ -143,8 +143,37 @@ void DrcApi::diagnosis(std::string third_json_file, std::string idrc_json_file)
   std::map<int32_t, std::map<ViolationEnumType, std::vector<ieda_solver::GeometryRect>>> third_diff_idrc_layer_type_rect_list_map;
   std::map<int32_t, std::map<ViolationEnumType, std::vector<ieda_solver::GeometryRect>>> idrc_diff_third_layer_type_rect_list_map;
   {
-    // third_layer_type_rect_list_map
-    // idrc_layer_type_rect_list_map
+    auto create_set = [](std::map<int32_t, std::map<ViolationEnumType, std::vector<ieda_solver::GeometryRect>>>& input,
+                         std::map<int32_t, std::map<ViolationEnumType, ieda_solver::GeometryPolygonSet>>& result) {
+      for (auto& [layer, violation_map] : input) {
+        for (auto& [type, violation_list] : violation_map) {
+          for (auto& rect : violation_list) {
+            result[layer][type] += rect;
+          }
+        }
+      }
+    };
+
+    auto diff_two_map = [](std::map<int32_t, std::map<ViolationEnumType, ieda_solver::GeometryPolygonSet>>& map1,
+                           std::map<int32_t, std::map<ViolationEnumType, ieda_solver::GeometryPolygonSet>>& map2,
+                           std::map<int32_t, std::map<ViolationEnumType, std::vector<ieda_solver::GeometryRect>>>& result) {
+      for (auto& [layer, violation_map] : map1) {
+        for (auto& [type, polyset] : violation_map) {
+          auto& other_polyset = map2[layer][type];
+          auto diff_set = polyset - other_polyset;
+          ieda_solver::getDefaultRectangles(result[layer][type], diff_set);
+        }
+      }
+    };
+
+    std::map<int32_t, std::map<ViolationEnumType, ieda_solver::GeometryPolygonSet>> third_layer_type_polyset_map;
+    std::map<int32_t, std::map<ViolationEnumType, ieda_solver::GeometryPolygonSet>> idrc_layer_type_polyset_map;
+
+    create_set(third_layer_type_rect_list_map, third_layer_type_polyset_map);
+    create_set(idrc_layer_type_rect_list_map, idrc_layer_type_polyset_map);
+
+    diff_two_map(third_layer_type_polyset_map, idrc_layer_type_polyset_map, third_diff_idrc_layer_type_rect_list_map);
+    diff_two_map(idrc_layer_type_polyset_map, third_layer_type_polyset_map, idrc_diff_third_layer_type_rect_list_map);
   }
 
   // todo
