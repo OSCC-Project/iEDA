@@ -19,6 +19,7 @@
 #include <cassert>
 #include <memory>
 #include <mutex>
+#include <set>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -283,6 +284,7 @@ class HyperGraph
   bool remove_vertex(size_t pos);
   bool remove_edge(size_t pos);
   bool remove_hyper_edge(size_t pos);
+  bool remove_hyper_edge(Hedge& hedge);
 
   GraphIterator<std::shared_ptr, Vertex> remove_vertex(const GraphIterator<std::shared_ptr, Vertex>& pos);
   GraphIterator<std::shared_ptr, Edge> remove_edge(const GraphIterator<std::shared_ptr, Edge>& pos);
@@ -315,6 +317,15 @@ class HyperGraph
     const VertexProperty& property() const { return _property; }
 
     size_t pos() const { return _pos; }
+    void remove_hyper_edge(const Hedge& hedge)
+    {
+      for (auto iter = _hyper_edges.begin(); iter != _hyper_edges.end(); ++iter) {
+        if ((*iter).lock().get() == &hedge) {
+          _hyper_edges.erase(iter);
+          return;
+        }
+      }
+    }
 
    private:
     friend class HyperGraph;
@@ -348,6 +359,7 @@ class HyperGraph
     const HedgeProperty& property() const { return _property; }
 
     size_t pos() const { return _pos; }
+    void set_pos(size_t new_pos) { _pos = new_pos; }
 
    private:
     friend class HyperGraph;
@@ -369,6 +381,7 @@ class HyperGraph
     EdgeProperty& property() { return _property; }
     const EdgeProperty& property() const { return _property; }
     size_t pos() const { return _pos; }
+    void set_pos(size_t new_pos) { _pos = new_pos; }
 
    private:
     friend class HyperGraph;
@@ -506,6 +519,47 @@ inline size_t HyperGraph<Config>::add_hyper_edge(const std::vector<size_t>& vert
 {
   return add_hyper_edge(vertex_ids, std::vector<EdgeProperty>(vertex_ids.size()));
 }
+template <HyperGraphConfig Config>
+inline bool HyperGraph<Config>::remove_hyper_edge(Hedge& hedge)
+{
+  bool has_edge = false;
+  size_t pos;
+  for (pos = 0; pos < heSize(); ++pos) {
+    if (&(hyper_edge_at(pos)) == &hedge) {
+      has_edge = true;
+      break;
+    }
+  }
+  if (!has_edge)
+    return false;
+
+  std::set<size_t> remove_edge_pos;
+  for (size_t i = 0; i < hedge.degree(); ++i) {
+    remove_edge_pos.insert(hedge.edge_at(i).pos());
+  }
+  // remove edges
+  size_t new_edge_pos = 0;
+  for (size_t old_edge_pos = 0; old_edge_pos < _edges.size(); ++old_edge_pos) {
+    if (remove_edge_pos.count(old_edge_pos) == 0) {
+      _edges[new_edge_pos] = _edges[old_edge_pos];
+      _edges[new_edge_pos]->set_pos(new_edge_pos);
+      ++new_edge_pos;
+    }
+  }
+  _edges.erase(_edges.end() - hedge.degree(), _edges.end());
+
+  // remove hedge in Vertex
+  for (size_t v_id = 0; v_id < hedge.degree(); ++v_id) {
+    hedge.vertex_at(v_id).remove_hyper_edge(hedge);
+  }
+
+  // remove hedge
+  _hyper_edges.erase(_hyper_edges.begin() + pos);
+  for (size_t i = 0; i < _hyper_edges.size(); ++i) {
+    _hyper_edges[i]->set_pos(i);
+  }
+  return true;
+}
 
 template <HyperGraphConfig Config>
 Config::VertexProperty& VertexProperty(const HyperGraph<Config>& graph, size_t pos)
@@ -563,7 +617,7 @@ auto edge_at(T& t, size_t pos) -> decltype(t.edge_at(pos))
   return t.edge_at(pos);
 }
 
-auto property(auto&& t) 
+auto property(auto&& t)
 {
   return t.property();
 }

@@ -28,18 +28,22 @@ struct EvalWirelength
 };
 
 template <template <typename> typename Wirelength, typename T>
-struct EvalWirelength2 : public EvalWirelength<Wirelength, T>
+struct EvalWirelength2
 {
   template <typename Product>
   float operator()(const Product& product)
   {
-    return EvalWirelength<Wirelength, T>::total_wirelength(product.x, product.y, product.dx, product.dy)
-           / EvalWirelength<Wirelength, T>::total_netweight / EvalWirelength<Wirelength, T>::max_wirelength;
+    return total_wirelength(product.x, product.y, product.dx, product.dy) / total_netweight / max_wirelength;
   }
-  EvalWirelength2(float outline_width, float outline_height, const Wirelength<T>& wl, const std::vector<T>& net_weights)
-      : EvalWirelength<Wirelength, T>(outline_width, outline_height, wl, net_weights)
+  EvalWirelength2(float outline_width, float outline_height, const Wirelength<T>& wl, const std::vector<float>& net_weights)
+      : total_wirelength(wl)
   {
+    max_wirelength = outline_width + outline_height;
+    total_netweight = std::accumulate(net_weights.begin(), net_weights.end(), 0);
   }
+  float total_netweight;
+  float max_wirelength;
+  Wirelength<T> total_wirelength;
 };
 
 template <typename T>
@@ -94,16 +98,17 @@ struct Evaluator
 {
   using Decoder = std::function<void(const Code&, Product&)>;
   using CostFunc = std::function<float(const Product&)>;
-  float operator()(const Code& code)
+  double operator()(const Code& code)
   {
     decode(code, product);
-    float cost = 0.f;
+    double cost = 0.0;
     for (size_t i = 0; i < cost_functions.size(); i++) {
-      cost += cost_weights[i] * cost_functions[i](product) / cost_norm[i];
+      auto cost_i = cost_weights[i] * cost_functions[i](product) / cost_norm[i];
+      cost += cost_i;
     }
     return cost;
   }
-  Evaluator(const Decoder& decode_t, const std::initializer_list<float>& wl, const std::initializer_list<CostFunc>& fl)
+  Evaluator(const Decoder& decode_t, const std::initializer_list<double>& wl, const std::initializer_list<CostFunc>& fl)
       : decode(decode_t), cost_weights(wl), cost_functions(fl)
   {
     cost_norm.resize(cost_functions.size(), 1);
@@ -112,7 +117,7 @@ struct Evaluator
   void initalize(const Product& inital_product, Code inital_code, Perturb perturb, size_t num_perturb)
   {
     product = inital_product;
-    std::vector<float> total_cost(cost_functions.size(), 0.f);
+    std::vector<double> total_cost(cost_functions.size(), 0.f);
     for (size_t i = 0; i < num_perturb; i++) {
       perturb(inital_code);
       decode(inital_code, product);
@@ -121,15 +126,15 @@ struct Evaluator
       }
     }
     for (size_t i = 0; i < cost_functions.size(); i++) {
-      cost_norm[i] = std::max(total_cost[i] / num_perturb, 1.f);
+      cost_norm[i] = std::max(total_cost[i] / num_perturb, 1.0);
     }
   }
   Decoder decode;
-  std::vector<float> cost_weights;
+  std::vector<double> cost_weights;
   std::vector<CostFunc> cost_functions;
 
   Product product;
-  std::vector<float> cost_norm;
+  std::vector<double> cost_norm;
 };
 
 }  // namespace imp

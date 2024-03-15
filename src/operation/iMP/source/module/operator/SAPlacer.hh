@@ -13,6 +13,8 @@
 #include "Block.hh"
 #include "HyperGraphAlgorithm.hh"
 #include "Logger.hpp"
+#include "Net.hh"
+#include "Object.hh"
 
 namespace imp {
 
@@ -39,8 +41,17 @@ struct NodeShape
     if (_shape_curve != nullptr && _shape_curve->isResizable()) {
       std::uniform_real_distribution<float> distribution(0., 1.);
       auto [w, h] = _shape_curve->generateRandomShape(distribution, generator);
-      width = w;
-      height = h;
+      float inflate_rate = 1.0;
+      // auto rand = distribution(generator) * 3;
+      // if (rand >= 2.0) {
+      //   inflate_rate = 1.2;
+      // } else if (rand >= 1.0) {
+      //   inflate_rate = 1.4;
+      // } else {
+      //   inflate_rate = 1.0;
+      // }
+      width = w * inflate_rate;
+      height = h * inflate_rate;
       return true;
     }
     return false;
@@ -50,7 +61,7 @@ struct NodeShape
   T width;
   T height;
 
- private:
+  //  private:
   const ShapeCurve<T>* _shape_curve;
 };
 
@@ -67,19 +78,7 @@ struct Coordinate
 template <typename T>
 struct SAPlace
 {
-  SAPlace(float weight_wl, float weight_ol, float weight_ob, float weight_periphery, size_t max_iters = 500, float cool_rate = 0.97,
-          float init_temperature = 1000)
-      : _weight_wl(weight_wl),
-        _weight_ol(weight_ol),
-        _weight_ob(weight_ob),
-        _weight_periphery(weight_periphery),
-        _max_iters(max_iters),
-        _cool_rate(cool_rate),
-        _init_temperature(init_temperature)
-  {
-  }
-
-  bool operator()(Block& cluster)
+  SeqPair<NodeShape<T>> operator()(Block& cluster)
   {
     if (cluster.netlist().vSize() == 0) {
       throw std::runtime_error("try to place cluster with 0 nodes...");
@@ -88,7 +87,8 @@ struct SAPlace
       auto sub_obj = cluster.netlist().vertex_at(0).property();
       // update shape && locaton
       sub_obj->set_min_corner(cluster.get_min_corner());
-      return true;
+      // return true;
+      return SeqPair<NodeShape<T>>();
     }
 
     using DimFunc = FastPackSP<NodeShape<T>, Coordinate>::DimFunc;
@@ -115,6 +115,8 @@ struct SAPlace
     T outline_ly = outline_min_corner.y();
     T outline_width = cluster.get_shape_curve().get_width();
     T outline_height = cluster.get_shape_curve().get_height();
+    T outline_ux = outline_lx + outline_width;
+    T outline_uy = outline_ly + outline_height;
 
     for (auto v_iter = cluster.netlist().vbegin(); v_iter != cluster.netlist().vend(); ++v_iter) {
       auto sub_obj = (*v_iter).property();
@@ -148,15 +150,34 @@ struct SAPlace
       initial_ly[v_pos] = min_corner.y();
     }
 
-    auto&& [eptr, eind] = vectorize(cluster.netlist());
-    std::vector<int32_t> net_weight(num_edges, 1);
+    auto get_net_weight = [](std::shared_ptr<Net> net) -> float { return net->get_net_weight(); };
+
+    auto&& [eptr, eind, vweight, heweight] = vectorize(cluster.netlist(), NoneWeight<std::shared_ptr<Object>>, get_net_weight);
+
+    std::vector<float> net_weight(num_edges, 1);
+    if (net_weight.size() != heweight.size()) {
+      throw std::runtime_error("net weight length error!");
+    }
+
+    std::cout << std::endl;
+
     Coordinate packing_result{.x = initial_lx, .y = initial_ly};
 
     auto end = std::chrono::high_resolution_clock::now();
     INFO("SAPlace data initialize time: ", std::chrono::duration<float>(end - start).count(), "s");
-    int seed = 2;
-    std::mt19937 gen(seed);
-    SeqPair<NodeShape<T>> sp(blk_shapes, gen);
+    std::mt19937 gen(_seed);
+    SeqPair<NodeShape<T>> sp;
+    if (_init_sp.size != 0) {
+      if (_init_sp.size != cluster.netlist().vSize()) {
+        throw std::runtime_error("Error, inital sp doesn't match netlist vertex num!");
+      }
+      sp = _init_sp;
+      INFO("using given initial sp solution");
+    } else {
+      sp = SeqPair<NodeShape<T>>(blk_shapes, gen);
+      INFO("using random initial sp solution");
+    }
+    // SeqPair<NodeShape<T>> sp(blk_shapes, gen);
 
     DimFunc get_blk_width = [&](size_t i, const NodeShape<T>& b) { return b.is_rotate ? b.height : b.width; };
     DimFunc get_blk_height = [&](size_t i, const NodeShape<T>& b) { return b.is_rotate ? b.width : b.height; };
@@ -168,15 +189,16 @@ struct SAPlace
 
     // Hpwl<T> hpwl(eptr, eind, {}, {}, {}, 1);
     // CostFunc wl = EvalWirelength(outline_width, outline_height, hpwl, net_weight);
-    Hpwl2<T> hpwl(eptr, eind, net_weight, 4);
+    Hpwl2<T> hpwl(eptr, eind, net_weight, num_threads);
     CostFunc wl = EvalWirelength2(outline_width, outline_height, hpwl, net_weight);  // EvalWirelength2 uses with Hpwl2
     CostFunc ol = EvalOutline(outline_width, outline_height);
     CostFunc ob = EvalOutOfBound(outline_width, outline_height, outline_lx, outline_ly);
     CostFunc periphery = [outline_width, outline_height, outline_lx, outline_ly, total_macro_num, &blk_macro_nums,
                           &macro_blk_indices](const Coordinate& packing_result) {
-      T min_dist = 0;
+      // T min_dist = 0;
       double periphery_cost = 0;
       for (size_t id : macro_blk_indices) {
+        T min_dist = 0;
         T dist_left = packing_result.x[id] - outline_lx;
         T dist_bottom = packing_result.y[id] - outline_ly;
         min_dist = std::min(dist_left, dist_bottom);
@@ -190,17 +212,25 @@ struct SAPlace
       return periphery_cost;
     };
 
-    // auto max_wirelength = outline_width + outline_height;
-    // auto total_netweight = std::accumulate(net_weight.begin(), net_weight.end(), 0);
-    // Hpwl2<T> hpwl(eptr, eind, net_weight, 1);
-    // CostFunc wl = [max_wirelength, total_netweight, &hpwl](const Coordinate& packing_result) {
-    //   auto wl = hpwl(packing_result.x, packing_result.y, packing_result.dx, packing_result.dy) / total_netweight / max_wirelength;
-    //   // std::cout << "SAWirelength:" << wl << "\n";
-    //   return wl;
-    // };
+    auto blockages = cluster.get_blockages();
 
-    Evaluator<SeqPair<NodeShape<T>>, Coordinate> eval(decoder, {_weight_wl, _weight_ol, _weight_ob, _weight_periphery},
-                                                      {wl, ol, ob, periphery});
+    auto blkOverlap = [blockages, &macro_blk_indices, &cluster](const Coordinate& packing_result) -> double {
+      double blk_overlap = 0;
+      for (size_t id : macro_blk_indices) {
+        for (auto&& blockage : blockages) {
+          blk_overlap += overlapArea(blockage.min_corner().x(), blockage.min_corner().y(), blockage.max_corner().x(),
+                                     blockage.max_corner().y(), packing_result.x[id], packing_result.y[id],
+                                     packing_result.x[id] + packing_result.dx[id], packing_result.y[id] + packing_result.dy[id]);
+        }
+      }
+      blk_overlap = blk_overlap / cluster.get_shape_curve().get_width() / cluster.get_shape_curve().get_height();
+      return blk_overlap;
+    };
+
+    EvalIODense io_dense(cluster, macro_blk_indices, 0.03, num_threads);
+
+    Evaluator<SeqPair<NodeShape<T>>, Coordinate> eval(decoder, {_weight_wl, _weight_ol, _weight_ob, _weight_periphery, _weight_blk, 0.05},
+                                                      {wl, ol, ob, periphery, blkOverlap, io_dense});
 
     PerturbFunc ps_op = PosSwap();
     PerturbFunc ns_op = NegSwap();
@@ -209,24 +239,27 @@ struct SAPlace
     PerturbFunc ni_op = NegInsert();
     PerturbFunc rs_op = Resize();
 
-    Perturb<SeqPair<NodeShape<T>>, void> perturb(seed, {0.2, 0.2, 0.2, 0.2, 0.2, 0.2}, {ps_op, ns_op, ds_op, pi_op, ni_op, rs_op});
+    Perturb<SeqPair<NodeShape<T>>, void> perturb(_seed, {_prob_ps_op, _prob_ns_op, _prob_ds_op, _prob_pi_op, _prob_ni_op, _prob_rs_op},
+                                                 {ps_op, ns_op, ds_op, pi_op, ni_op, rs_op});
 
     // intalize the norm cost and inital product
-    eval.initalize(packing_result, sp, perturb, num_vertices * 15 / 10);
+    eval.initalize(packing_result, sp, perturb, num_vertices * 15);
+    SeqPair<NodeShape<T>> solution_sp;
+    auto sa_start = std::chrono::high_resolution_clock::now();
 
-    SimulateAnneal solve{.seed = seed,
+    SimulateAnneal solve{.seed = _seed,
                          .max_iters = _max_iters,
                          .num_perturb = num_vertices * 4,
                          .cool_rate = _cool_rate,
                          .inital_temperature = _init_temperature};
-    auto sa_start = std::chrono::high_resolution_clock::now();
-    sp = solve(sp, eval, perturb, [](auto&& x) { std::cout << x << std::endl; });
+    solution_sp = solve(sp, eval, perturb, [](auto&& x) { std::cout << x << std::endl; });
+
     auto sa_end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<float> sa_elapsed = std::chrono::duration<float>(sa_end - sa_start);
     INFO("SAPlace time: ", sa_elapsed.count(), "s");
 
     // get location
-    pack(sp, packing_result);
+    pack(solution_sp, packing_result);
 
     // update sub_cluster's location
     for (size_t v_pos = 0; v_pos < initial_lx.size(); ++v_pos) {
@@ -237,27 +270,254 @@ struct SAPlace
       // update shape && locaton
       if (sub_obj->isBlock()) {  // only block has shape-curve, update shape
         auto sub_block = std::static_pointer_cast<Block, Object>(sub_obj);
-        sub_block->get_shape_curve().set_width(sp.properties[v_pos].width);
-        sub_block->get_shape_curve().set_height(sp.properties[v_pos].height);
+        sub_block->get_shape_curve().set_width(solution_sp.properties[v_pos].width);
+        sub_block->get_shape_curve().set_height(solution_sp.properties[v_pos].height);
       }
       sub_obj->set_min_corner(packing_result.x[v_pos], packing_result.y[v_pos]);
     }
 
-    if (packing_result.width > outline_width || packing_result.height > outline_height) {
-      return false;
-    } else {
-      return true;
-    }
+    // if (packing_result.width > outline_width || packing_result.height > outline_height) {
+    //   return false;
+    // } else {
+    //   return true;
+    // }
+
+    return solution_sp;
   }
 
- private:
-  float _weight_wl;
-  float _weight_ol;
-  float _weight_ob;
-  float _weight_periphery;
-  size_t _max_iters;
-  float _cool_rate;
-  float _init_temperature;
+  int _seed = 0;
+  float _weight_wl = 1.0;
+  float _weight_ol = 0.05;
+  float _weight_ob = 0.01;
+  float _weight_periphery = 0.01;
+  float _weight_blk = 0.01;
+  float _weight_io = 0.0;
+  size_t _max_iters = 1000;
+  double _cool_rate = 0.97;
+  double _init_temperature = 1000;
+  double _prob_ps_op = 0.2;
+  double _prob_ns_op = 0.2;
+  double _prob_ds_op = 0.2;
+  double _prob_pi_op = 0.2;
+  double _prob_ni_op = 0.2;
+  double _prob_rs_op = 0.2;
+  SeqPair<NodeShape<T>> _init_sp;
+  int num_threads = 4;
+
+  // template <typename T>
+  static float overlapArea(T lx1, T ly1, T ux1, T uy1, T lx2, T ly2, T ux2, T uy2)
+  {
+    T overlap_lx = std::max(lx1, lx2);
+    T overlap_ly = std::max(ly1, ly2);
+    T overlap_ux = std::min(ux1, ux2);
+    T overlap_uy = std::min(uy1, uy2);
+    if (overlap_lx > overlap_ux || overlap_ly > overlap_uy) {
+      return 0;
+    };
+    T width = overlap_ux - overlap_lx;
+    T height = overlap_uy - overlap_ly;
+    return float(width) * height;
+  }
+
+  struct EvalIODense
+  {
+    int num_threads = 4;
+
+    double operator()(const Coordinate& packing_result)
+    {
+      double lx, ly, ux, uy;
+      double cost = 0;
+      double grid_area = grid_w * grid_h;
+      int chunk_size = std::max(macro_indices.size() / num_threads, size_t(1));
+      // #pragma omp parallel for num_threads(num_threads) schedule(static, chunk_size) reduction(+ : cost)
+      for (size_t id : macro_indices) {
+        double macro_cost = 0;
+        lx = packing_result.x[id];
+        ly = packing_result.y[id];
+        ux = lx + packing_result.dx[id];
+        uy = ly + packing_result.dy[id];
+
+        size_t grid_start_x = get_x_grid(lx);
+        size_t grid_end_x = get_x_grid(ux);
+        size_t grid_start_y = get_y_grid(ly);
+        size_t grid_end_y = get_y_grid(uy);
+
+        for (size_t i = grid_start_x; i <= grid_end_x; ++i) {
+          for (size_t j = grid_start_y; j <= grid_end_y; ++j) {
+            macro_cost += dense_map[i][j];
+          }
+        }
+        if (ux > outline_ux || uy > outline_uy) {
+          double d1 = std::min(std::max(ux - outline_ux, 0.0), double(packing_result.dx[id]));
+          double d2 = std::min(std::max(uy - outline_uy, 0.0), double(packing_result.dy[id]));
+          double out_area = d1 * packing_result.dy[id] + d2 * packing_result.dx[id] - d1 * d2;
+          macro_cost += out_area / grid_area * clip_value;
+        }
+        cost += macro_cost;
+        // std::cout << "io_cost: " << cost << ",";
+      }
+      // std::cout << "io_cost: " << cost << ",";
+      return cost;
+      // return 0;
+    }
+
+    size_t get_x_grid(double x)
+    {
+      x = std::min(outline_ux, x);
+      size_t x_grid = std::min(size_t((x - outline_lx) / grid_w), grid_num - 1);
+      assert(x_grid <= grid_num - 1);
+      return x_grid;
+    }
+
+    size_t get_y_grid(double y)
+    {
+      y = std::min(outline_uy, y);
+      size_t y_grid = std::min(size_t((y - outline_ly) / grid_h), grid_num - 1);
+      assert(y_grid <= grid_num - 1);
+      return y_grid;
+    }
+
+    double dist(bool horizontal, double pin_x, double pin_y, double loc_x, double loc_y)
+    {
+      double small = 1;
+      double large = 2.0;
+      double dist;
+      if (abs(pin_x - loc_x) > 2 || abs(pin_y - loc_y) > 2) {
+        std::cout << ">1" << std::endl;
+      }
+      if (horizontal) {
+        dist = pow(pow(abs(pin_x - loc_x), large) + pow(abs(pin_y - loc_y), small), 0.5);
+      } else {
+        dist = pow(pow(abs(pin_x - loc_x), small) + pow(abs(pin_y - loc_y), large), 0.5);
+      }
+      // if (horizontal) {
+      //   dist = pow(pow(abs(pin_x - loc_x), small) + pow(abs(pin_y - loc_y), large), 0.5);
+      // } else {
+      //   dist = pow(pow(abs(pin_x - loc_x), large) + pow(abs(pin_y - loc_y), small), 0.5);
+      // }
+      // dist = 0.1 / std::max(dist, 0.1);
+      dist = 0.01 / std::max(dist, 0.01);
+      // if (dist > 1) {
+      //   std::cout << "dist > 1" << std::endl;
+      // }
+      return pow(dist, 1.5);
+    }
+
+    EvalIODense(Block& root_cluster, std::vector<size_t>& macro_ind, double clip_ratio, int num_threads = 4)
+        : macro_indices(macro_ind), num_threads(num_threads)
+    {
+      auto outline_min_corner = root_cluster.get_min_corner();
+      outline_lx = outline_min_corner.x();
+      outline_ly = outline_min_corner.y();
+      outline_width = root_cluster.get_shape_curve().get_width();
+      outline_height = root_cluster.get_shape_curve().get_height();
+      outline_ux = outline_lx + outline_width;
+      outline_uy = outline_ly + outline_height;
+
+      std::vector<std::shared_ptr<Object>> left_pins;
+      std::vector<std::shared_ptr<Object>> right_pins;
+      std::vector<std::shared_ptr<Object>> top_pins;
+      std::vector<std::shared_ptr<Object>> bottom_pins;
+
+      for (auto&& i : root_cluster.netlist().vRange()) {
+        auto obj = i.property();
+        auto blk = std::static_pointer_cast<Block, Object>(obj);
+        if (blk->is_io_cluster()) {
+          auto pin_x = blk->get_min_corner().x();
+          auto pin_y = blk->get_min_corner().y();
+          if (pin_x <= outline_lx) {
+            left_pins.push_back(obj);
+          } else if (pin_x >= outline_ux) {
+            right_pins.push_back(obj);
+          } else if (pin_y <= outline_ly) {
+            bottom_pins.push_back(obj);
+          } else if (pin_y >= outline_uy) {
+            top_pins.push_back(obj);
+          } else {
+            throw std::runtime_error("Error, io-pin in core!");
+          }
+        }
+      }
+      grid_num = 128;
+      grid_w = double(outline_width) / grid_num;
+      grid_h = double(outline_height) / grid_num;
+      dense_map = std::vector<std::vector<double>>(grid_num, std::vector<double>(grid_num, 0));
+      std::cout << "left size: " << left_pins.size() << std::endl;
+      std::cout << "right size: " << right_pins.size() << std::endl;
+      std::cout << "top size: " << top_pins.size() << std::endl;
+      std::cout << "bottom size: " << bottom_pins.size() << std::endl;
+      auto pin_num = left_pins.size() + right_pins.size() + top_pins.size() + bottom_pins.size();
+      std::vector<double> sorted_dense;
+      sorted_dense.reserve(grid_num * grid_num);
+      for (size_t i = 0; i < grid_num; ++i) {
+        for (size_t j = 0; j < grid_num; ++j) {
+          double scale = std::max(outline_height, outline_width);
+          double x = outline_lx + grid_w / 2 + grid_w * i;
+          double y = outline_ly + grid_h / 2 + grid_h * j;
+
+          x /= scale;
+          y /= scale;
+
+          for (auto pin : left_pins) {
+            double pin_x = pin->get_min_corner().x();
+            double pin_y = pin->get_min_corner().y();
+            pin_x /= scale;
+            pin_y /= scale;
+            // dense_map[j][i] += pin_dense(true, x, y, pin_x, pin_y);
+            dense_map[i][j] += dist(true, x, y, pin_x, pin_y) / pin_num;
+          }
+          for (auto pin : right_pins) {
+            double pin_x = pin->get_min_corner().x();
+            double pin_y = pin->get_min_corner().y();
+            pin_x /= scale;
+            pin_y /= scale;
+            // dense_map[j][i] += pin_dense(true, x, y, pin_x, pin_y);
+            dense_map[i][j] += dist(true, x, y, pin_x, pin_y) / pin_num;
+          }
+          for (auto pin : bottom_pins) {
+            double pin_x = pin->get_min_corner().x();
+            double pin_y = pin->get_min_corner().y();
+            pin_x /= scale;
+            pin_y /= scale;
+            // dense_map[j][i] += pin_dense(false, x, y, pin_x, pin_y);
+            dense_map[i][j] += dist(false, x, y, pin_x, pin_y) / pin_num;
+          }
+          for (auto pin : top_pins) {
+            double pin_x = pin->get_min_corner().x();
+            double pin_y = pin->get_min_corner().y();
+            pin_x /= scale;
+            pin_y /= scale;
+            // dense_map[j][i] += pin_dense(false, x, y, pin_x, pin_y);
+            dense_map[i][j] += dist(false, x, y, pin_x, pin_y) / pin_num;
+          }
+          sorted_dense.push_back(dense_map[i][j]);
+        }
+      }
+      // sort descending
+      std::sort(sorted_dense.begin(), sorted_dense.end(), [](double x1, double x2) -> bool { return x1 > x2; });
+      // double clip_ratio = 0.05;
+      clip_value = sorted_dense[size_t(sorted_dense.size() * clip_ratio)];
+      // clip large densities
+      for (size_t i = 0; i < dense_map.size(); ++i) {
+        for (size_t j = 0; j < dense_map[0].size(); ++j) {
+          dense_map[i][j] = std::min(dense_map[i][j], clip_value);
+        }
+      }
+    }
+
+    size_t grid_num;
+    double grid_w;
+    double grid_h;
+    double outline_lx;
+    double outline_ly;
+    double outline_ux;
+    double outline_uy;
+    double outline_width;
+    double outline_height;
+    double clip_value;
+    std::vector<std::vector<double>> dense_map;
+    std::vector<size_t>& macro_indices;
+  };
 };
 
 template <typename T>
@@ -267,7 +527,7 @@ std::pair<T, T> calMacroTilings(const std::vector<ShapeCurve<T>>& sub_shape_curv
   /**
    * @brief calculate children-macro-cluster's possible tilings with minimal area
    *
-   * @param cluster parent cluster
+   * @param cluster parent cluste
    * @param runs num sa_runs to generate different tilings
    * @param core_width Core-Width of Chip (Not parent cluster!)
    * @param core_height Core-Height of Chip (Not parent cluster!)

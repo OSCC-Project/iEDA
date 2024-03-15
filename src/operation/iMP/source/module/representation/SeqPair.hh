@@ -23,6 +23,8 @@ struct SeqPair
   template <typename RandGenerator>
   SeqPair(const std::vector<Property>& properties, RandGenerator&);
   SeqPair(const std::vector<Property>& properties);
+  SeqPair() = default;
+  SeqPair& operator=(const SeqPair& other) = default;
   ~SeqPair() = default;
   size_t size{0};
   std::vector<size_t> pos{};

@@ -106,7 +106,7 @@ struct Hpwl2
     return this->operator()(lx.data(), ly.data(), dx.data(), dy.data());
   }
 
-  Hpwl2(const std::vector<size_t>& eptr, const std::vector<size_t>& eind, const std::vector<T>& weight = {}, int num_threads = 1)
+  Hpwl2(const std::vector<size_t>& eptr, const std::vector<size_t>& eind, const std::vector<float>& weight = {}, int num_threads = 1)
       : _eptr(eptr), _eind(eind), _num_threads(num_threads)
   {
     if (_weight.empty())
