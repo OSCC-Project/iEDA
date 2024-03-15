@@ -19,7 +19,6 @@
 #include "CongTile.hpp"
 #include "DataManager.hpp"
 #include "DetailedRouter.hpp"
-#include "DrcRect.h"
 #include "EarlyGlobalRouter.hpp"
 #include "GDSPlotter.hpp"
 #include "GlobalRouter.hpp"
@@ -78,37 +77,35 @@ void RTAPI::initRT(std::map<std::string, std::any> config_map)
 
 void RTAPI::runRT()
 {
-  std::vector<Net>& net_list = DM_INST.getDatabase().get_net_list();
-
   PinAccessor::initInst();
-  PA_INST.access(net_list);
+  PA_INST.access();
   PinAccessor::destroyInst();
 
   SupplyAnalyzer::initInst();
-  SA_INST.analyze(net_list);
+  SA_INST.analyze();
   SupplyAnalyzer::destroyInst();
 
   InitialRouter::initInst();
-  IR_INST.route(net_list);
+  IR_INST.route();
   InitialRouter::destroyInst();
 
   GlobalRouter::initInst();
-  GR_INST.route(net_list);
+  GR_INST.route();
   GlobalRouter::destroyInst();
 
   TrackAssigner::initInst();
-  TA_INST.assign(net_list);
+  TA_INST.assign();
   TrackAssigner::destroyInst();
 
   DetailedRouter::initInst();
-  DR_INST.route(net_list);
+  DR_INST.route();
   DetailedRouter::destroyInst();
 }
 
 void RTAPI::destroyRT()
 {
   GDSPlotter::destroyInst();
-  DM_INST.output(dmInst->get_idb_builder());
+  DM_INST.output();
   DataManager::destroyInst();
   LOG_INST.printLogFilePath();
   // clang-format off
@@ -121,11 +118,6 @@ void RTAPI::destroyRT()
   LOG_INST.info(Loc::current(), ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
   // clang-format on
   Logger::destroyInst();
-}
-
-Summary RTAPI::getSummary()
-{
-  return DM_INST.getSummary();
 }
 
 void RTAPI::clearDef()
@@ -276,7 +268,7 @@ std::vector<double> RTAPI::getWireLengthAndViaNum(std::map<std::string, std::any
 
 std::vector<Violation> RTAPI::getViolationList(std::vector<idb::IdbLayerShape*>& env_shape_list,
                                                std::map<int32_t, std::vector<idb::IdbLayerShape*>>& net_pin_shape_map,
-                                               std::map<int32_t, std::vector<idb::IdbRegularWireSegment*>>& net_result_map)
+                                               std::map<int32_t, std::vector<idb::IdbRegularWireSegment*>>& net_wire_via_map)
 {
   /**
    * env_shape_list 存储 blockage obs pin_shape
@@ -288,7 +280,7 @@ std::vector<Violation> RTAPI::getViolationList(std::vector<idb::IdbLayerShape*>&
   std::vector<Violation> violation_list;
   idrc::DrcApi drc_api;
   drc_api.init();
-  for (auto& [type, idrc_violation_list] : drc_api.check(env_shape_list, net_pin_shape_map, net_result_map)) {
+  for (auto& [type, idrc_violation_list] : drc_api.check(env_shape_list, net_pin_shape_map, net_wire_via_map)) {
     for (idrc::DrcViolation* idrc_violation : idrc_violation_list) {
       if (idrc_violation->get_net_ids().size() < 2) {
         continue;
@@ -418,7 +410,7 @@ std::map<std::string, std::vector<double>> RTAPI::getTiming(
       double res = 0;
       if (first_rc_pin._coord.get_layer_idx() == second_rc_pin._coord.get_layer_idx()) {
         int32_t distance = RTUtil::getManhattanDistance(first_rc_pin._coord, second_rc_pin._coord);
-        int32_t unit = dmInst->get_idb_builder()->get_def_service()->get_design()->get_units()->get_micron_dbu();
+        int32_t unit = DM_INST.getHelper().get_idb_builder()->get_def_service()->get_design()->get_units()->get_micron_dbu();
         std::optional<double> width = std::nullopt;
         cap = dynamic_cast<ista::TimingIDBAdapter*>(timing_engine->get_db_adapter())
                   ->getCapacitance(first_rc_pin._coord.get_layer_idx() + 1, distance / 1.0 / unit, width);
@@ -467,6 +459,16 @@ std::map<std::string, std::vector<double>> RTAPI::getTiming(
   });
   return timing_map;
 #endif
+}
+
+void RTAPI::outputDef(std::string output_def_file_path)
+{
+  dmInst->saveDef(output_def_file_path);
+}
+
+void RTAPI::outputSummary()
+{
+  LOG_INST.info(Loc::current(), "outputSummary");
 }
 
 #endif

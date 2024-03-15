@@ -14,25 +14,40 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-#pragma once
 
-#include "Pin.hpp"
+#ifndef IPL_POST_GP_DATABASE_H
+#define IPL_POST_GP_DATABASE_H
 
-namespace irt {
+#include "PlacerDB.hh"
 
-class PAPin : public Pin
+namespace ipl {
+
+class PostGPDatabase
 {
  public:
-  PAPin() = default;
-  explicit PAPin(const Pin& pin) : Pin(pin) {}
-  ~PAPin() = default;
-  // getter
+  PostGPDatabase(): _placer_db(nullptr), _topo_manager(nullptr) {}
+  PostGPDatabase(const PostGPDatabase&) = delete;
+  PostGPDatabase(PostGPDatabase&&) = delete;
+  ~PostGPDatabase() = default;
 
-  // setter
-
-  // function
+  PostGPDatabase& operator=(const PostGPDatabase&) = default;
+  PostGPDatabase& operator=(PostGPDatabase&&) = default;
 
  private:
+  PlacerDB* _placer_db;
+  TopologyManager* _topo_manager;
+
+  std::vector<Instance*> _inst_list;
+  std::vector<Net*> _net_list;
+  std::vector<Pin*> _pin_list;
+
+  std::vector<Group*> _group_list;
+  std::vector<NetWork*> _network_list;
+  std::vector<Node*> _node_list;
+
+  friend class PostGP;
 };
 
-}  // namespace irt
+}  // namespace ipl
+
+#endif

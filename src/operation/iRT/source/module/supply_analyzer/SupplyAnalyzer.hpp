@@ -33,7 +33,7 @@ class SupplyAnalyzer
   static SupplyAnalyzer& getInst();
   static void destroyInst();
   // function
-  void analyze(std::vector<Net>& net_list);
+  void analyze();
 
  private:
   // self
@@ -46,18 +46,21 @@ class SupplyAnalyzer
   SupplyAnalyzer& operator=(const SupplyAnalyzer& other) = delete;
   SupplyAnalyzer& operator=(SupplyAnalyzer&& other) = delete;
   // function
-  SAModel initSAModel(std::vector<Net>& net_list);
+  SAModel initSAModel();
   void buildLayerNodeMap(SAModel& sa_model);
   void buildSupplySchedule(SAModel& sa_model);
   void analyzeSupply(SAModel& sa_model);
-  std::vector<LayerRect> getCrossingWireList(int32_t layer_idx, SANode& first_node, SANode& second_node);
-  bool isAccess(LayerRect& wire, SANode& first_node, SANode& second_node);
-  void updateSAModel(SAModel& sa_model);
+  EXTLayerRect getSearchRect(LayerCoord& first_coord, LayerCoord& second_coord);
+  std::vector<LayerRect> getCrossingWireList(EXTLayerRect& search_rect);
+  bool isAccess(LayerRect& wire, std::vector<EXTLayerRect>& fixed_rect_list);
+
+#if 1  // debug
+  void debugPlotSAModel(SAModel& sa_model);
+#endif
 
 #if 1  // exhibit
-  void plotSAModel(SAModel& sa_model);
-  void reportSAModel(SAModel& sa_model);
-  void reportSummary(SAModel& sa_model);
+  void updateSummary(SAModel& sa_model);
+  void printSummary(SAModel& sa_model);
   void writeSupplyCSV(SAModel& sa_model);
 #endif
 };

@@ -568,15 +568,12 @@ void DetailPlacer::runDetailPlace()
 
 void DetailPlacer::runDetailPlaceNFS()
 {
-  LOG_INFO << "-----------------Start Detail Placement(Network Flow Cell Spreading)-----------------";
+  LOG_INFO << "-----------------Start Network Flow Cell Spreading-----------------";
   ieda::Stats dp_status;
-  LOG_INFO << "Before Network Flow Cell Spreading HPWL: " << calTotalHPWL();
 
-  LOG_INFO << "Execution Network Flow Cell Spreading: ";
   NFSpread nfspread_opt(&_config, &_database, &_operator);
   nfspread_opt.runNFSpread();
   _operator.updateTopoManager();
-  LOG_INFO << "After Network Flow Cell Spreading HPWL: " << calTotalHPWL();
 
   _database._design->writeBackToPL(_database._shift_x, _database._shift_y);
   _database._placer_db->updateTopoManager();
@@ -584,7 +581,7 @@ void DetailPlacer::runDetailPlaceNFS()
 
   double time_delta = dp_status.elapsedRunTime();
   LOG_INFO << "Detail Plaement Total Time Elapsed: " << time_delta << "s";
-  LOG_INFO << "-----------------Finish Detail Placement(Network Flow Cell Spreading)-----------------";
+  LOG_INFO << "-----------------Finish Network Flow Cell Spreading-----------------";
 
 }
 

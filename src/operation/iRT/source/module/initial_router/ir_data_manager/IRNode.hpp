@@ -58,7 +58,7 @@ class IRNode : public LayerCoord
   double getCongestionCost(Orientation orientation)
   {
     double cost = 0;
-    if (orientation != Orientation::kUp && orientation != Orientation::kDown) {
+    if (orientation != Orientation::kAbove && orientation != Orientation::kBelow) {
       int32_t node_demand = 0;
       if (RTUtil::exist(_orien_demand_map, orientation)) {
         node_demand = _orien_demand_map[orientation];

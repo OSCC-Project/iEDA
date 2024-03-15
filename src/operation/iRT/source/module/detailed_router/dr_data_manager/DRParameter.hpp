@@ -32,7 +32,8 @@ class DRParameter
 {
  public:
   DRParameter() = default;
-  DRParameter(int32_t size, int32_t offset, int32_t fixed_rect_unit, int32_t routed_rect_unit, int32_t violation_unit, bool complete_ripup)
+  DRParameter(int32_t size, int32_t offset, int32_t fixed_rect_unit, int32_t routed_rect_unit, int32_t violation_unit, bool complete_ripup,
+              int32_t max_routed_times)
   {
     _prefer_wire_unit = 1;
     _nonprefer_wire_unit = 2;
@@ -44,6 +45,7 @@ class DRParameter
     _routed_rect_unit = routed_rect_unit;
     _violation_unit = violation_unit;
     _complete_ripup = complete_ripup;
+    _max_routed_times = max_routed_times;
   }
   ~DRParameter() = default;
   // getter
@@ -57,6 +59,7 @@ class DRParameter
   double get_routed_rect_unit() const { return _routed_rect_unit; }
   double get_violation_unit() const { return _violation_unit; }
   bool get_complete_ripup() const { return _complete_ripup; }
+  int32_t get_max_routed_times() const { return _max_routed_times; }
   // setter
   void set_prefer_wire_unit(const double prefer_wire_unit) { _prefer_wire_unit = prefer_wire_unit; }
   void set_nonprefer_wire_unit(const double nonprefer_wire_unit) { _nonprefer_wire_unit = nonprefer_wire_unit; }
@@ -68,6 +71,7 @@ class DRParameter
   void set_routed_rect_unit(const double routed_rect_unit) { _routed_rect_unit = routed_rect_unit; }
   void set_violation_unit(const double violation_unit) { _violation_unit = violation_unit; }
   void set_complete_ripup(const bool complete_ripup) { _complete_ripup = complete_ripup; }
+  void set_max_routed_times(const int32_t max_routed_times) { _max_routed_times = max_routed_times; }
 
  private:
   double _prefer_wire_unit = 0;
@@ -80,6 +84,7 @@ class DRParameter
   double _routed_rect_unit = 0;
   double _violation_unit = 0;
   bool _complete_ripup = true;
+  int32_t _max_routed_times = 0;
 };
 
 }  // namespace irt

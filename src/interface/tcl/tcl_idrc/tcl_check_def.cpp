@@ -14,7 +14,7 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-#include "DRC.h"
+// #include "DRC.h"
 #include "idrc_api.h"
 #include "tcl_drc.h"
 #include "tcl_util.h"
@@ -34,21 +34,7 @@ unsigned TclDrcCheckDef::exec()
   if (!check()) {
     return 0;
   }
-  //   std::map<std::string, std::any> config_map;
 
-  //   bool pass = false;
-  //   //   pass = !pass ? initConfigMapByJSON(config_map) : pass;
-  //   pass = !pass ? initConfigMapByTCL(config_map) : pass;
-  //   if (!pass) {
-  //     return 0;
-  //   }
-  //   DrcInst.initDesign(config_map);
-  //   std::cout << "init DRC check module ......" << std::endl;
-  //   DrcInst.initCheckModule();
-  //   std::cout << "run DRC check module ......" << std::endl;
-  //   DrcInst.run();
-  //   std::cout << "report check result ......" << std::endl;
-  //   DrcInst.report();
   idrc::DrcApi drc_api;
   drc_api.init();
   auto violations = drc_api.checkDef();

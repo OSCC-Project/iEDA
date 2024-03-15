@@ -39,7 +39,7 @@ class DetailedRouter
   static DetailedRouter& getInst();
   static void destroyInst();
   // function
-  void route(std::vector<Net>& net_list);
+  void route();
 
  private:
   // self
@@ -52,29 +52,24 @@ class DetailedRouter
   DetailedRouter& operator=(const DetailedRouter& other) = delete;
   DetailedRouter& operator=(DetailedRouter&& other) = delete;
   // function
-  DRModel initDRModel(std::vector<Net>& net_list);
+  DRModel initDRModel();
   std::vector<DRNet> convertToDRNetList(std::vector<Net>& net_list);
   DRNet convertToDRNet(Net& net);
   void iterativeDRModel(DRModel& dr_model);
-  void setDRParameter(DRModel& dr_model, DRParameter& dr_parameter);
+  void setDRParameter(DRModel& dr_model, int32_t curr_iter, DRParameter& dr_parameter);
   void initDRBoxMap(DRModel& dr_model);
   void splitNetResult(DRModel& dr_model);
-  void splitNetResult(DRBox& dr_box);
   void buildBoxSchedule(DRModel& dr_model);
   void routeDRBoxMap(DRModel& dr_model);
   void initDRTaskList(DRModel& dr_model, DRBox& dr_box);
-  std::map<int32_t, std::set<LayerCoord, CmpLayerCoordByLayerASC>> getNetConnectPointMap(DRBox& dr_box);
-  std::map<int32_t, std::set<LayerCoord, CmpLayerCoordByLayerASC>> getNetBoundaryPointMap(DRBox& dr_box);
-  void buildBoundingBox(DRTask* dr_task);
-  void buildDRTaskList(DRBox& dr_box);
-  void buildFixedRectList(DRBox& dr_box);
   void buildViolationList(DRBox& dr_box);
+  bool needRouting(DRBox& dr_box);
+  void buildFixedRectList(DRBox& dr_box);
   void buildBoxTrackAxis(DRBox& dr_box);
   void initLayerNodeMap(DRBox& dr_box);
   void initDRNodeValid(DRBox& dr_box);
   void buildDRNodeNeighbor(DRBox& dr_box);
   void buildOrienNetMap(DRBox& dr_box);
-  void checkDRBox(DRBox& dr_box);
   void routeDRBox(DRBox& dr_box);
   std::vector<DRTask*> initTaskSchedule(DRBox& dr_box);
   std::vector<DRTask*> getTaskScheduleByViolation(DRBox& dr_box);
@@ -129,12 +124,17 @@ class DetailedRouter
   void updateViolationToGraph(DRBox& dr_box, ChangeType change_type, Violation& violation);
 #endif
 
+#if 1  // debug
+  void debugCheckDRBox(DRBox& dr_box);
+  void debugPlotDRBox(DRBox& dr_box, int32_t curr_task_idx, std::string flag);
+  void debugOutputDef(DRModel& dr_model);
+#endif
+
 #if 1  // exhibit
-  void plotDRBox(DRBox& dr_box, int32_t curr_task_idx, std::string flag);
-  void reportDRModel(DRModel& dr_model, int32_t iter);
-  void reportSummary(DRModel& dr_model, int32_t iter);
-  void writeNetCSV(DRModel& dr_model, int32_t iter);
-  void writeViolationCSV(DRModel& dr_model, int32_t iter);
+  void updateSummary(DRModel& dr_model);
+  void printSummary(DRModel& dr_model);
+  void writeNetCSV(DRModel& dr_model);
+  void writeViolationCSV(DRModel& dr_model);
 #endif
 };
 

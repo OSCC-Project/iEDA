@@ -16,8 +16,6 @@
 // ***************************************************************************************
 #include "idrc_io.h"
 
-#include "DRCViolationType.h"
-#include "DrcAPI.hpp"
 #include "builder.h"
 #include "flow_config.h"
 #include "idm.h"
@@ -44,7 +42,9 @@ bool DrcIO::runDRC(std::string config, std::string report_path)
   _detail_drc.clear();
   auto result_drc_detail = getDetailCheckResult();
   std::map<std::string, int> result_drc;
-  std::tuple<bool, std::vector<std::string>, std::vector<std::string>, int> result_connectivity;
+  //   std::tuple<bool, std::vector<std::string>, std::vector<std::string>, int> result_connectivity;
+
+  auto result_connectivity = checkConnnectivity();
 
   for (auto [rule_name, drc_list] : result_drc_detail) {
     result_drc.insert(std::make_pair(rule_name, drc_list.size()));

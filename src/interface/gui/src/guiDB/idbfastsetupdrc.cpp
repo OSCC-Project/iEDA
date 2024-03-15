@@ -18,19 +18,17 @@
 #include "idbfastsetup.h"
 #include "omp.h"
 
-void IdbSpeedUpSetup::showDrc(std::map<std::string, std::vector<idrc::DrcViolationSpot*>>& drc_db, int max_num) {
+void IdbSpeedUpSetup::showDrc(std::map<std::string, std::vector<idrc::DrcViolation*>>& drc_db, int max_num) {
   for (auto drc : drc_db) {
     auto container = _gui_design->get_drc_container(drc.first);
     if (container != nullptr) {
-      int index = 0;
-
       auto drc_spot_list = drc.second;
       if (max_num > 0) {
         int size = max_num > drc_spot_list.size() ? drc_spot_list.size() : max_num;
         // #pragma omp parallel for
         for (int i = 0; i < size; i++) {
           /// create drc view
-          std::string layer = drc_spot_list[i]->get_layer();
+          std::string layer = drc_spot_list[i]->get_layer()->get_name();
           auto drc_list     = container->findDrcList(layer);
           createDrc(drc_list, drc_spot_list[i]);
         }
@@ -38,7 +36,7 @@ void IdbSpeedUpSetup::showDrc(std::map<std::string, std::vector<idrc::DrcViolati
         // #pragma omp parallel for
         for (auto drc_spot : drc_spot_list) {
           /// create drc view
-          std::string layer = drc_spot->get_layer();
+          std::string layer = drc_spot->get_layer()->get_name();
           auto drc_list     = container->findDrcList(layer);
           createDrc(drc_list, drc_spot);
         }
@@ -47,15 +45,16 @@ void IdbSpeedUpSetup::showDrc(std::map<std::string, std::vector<idrc::DrcViolati
   }
 }
 
-void IdbSpeedUpSetup::createDrc(GuiSpeedupDrcList* drc_list, idrc::DrcViolationSpot* drc_db) {
+void IdbSpeedUpSetup::createDrc(GuiSpeedupDrcList* drc_list, idrc::DrcViolation* drc_db) {
   if (drc_list == nullptr || drc_db == nullptr) {
     return;
   }
 
-  int min_x = drc_db->get_min_x();
-  int min_y = drc_db->get_min_y();
-  int max_x = drc_db->get_max_x();
-  int max_y = drc_db->get_max_y();
+  auto* spot_rect = static_cast<idrc::DrcViolationRect*>(drc_db);
+  int min_x       = spot_rect->get_llx();
+  int min_y       = spot_rect->get_lly();
+  int max_x       = spot_rect->get_urx();
+  int max_y       = spot_rect->get_ury();
 
   /// if line
   if (min_x == max_x || min_y == max_y) {

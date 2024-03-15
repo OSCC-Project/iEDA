@@ -16,7 +16,7 @@
 // ***************************************************************************************
 #pragma once
 
-#include "SANode.hpp"
+#include "RTHeader.hpp"
 
 namespace irt {
 
@@ -26,17 +26,14 @@ class SAModel
   SAModel() = default;
   ~SAModel() = default;
   // getter
-  std::vector<GridMap<SANode>>& get_layer_node_map() { return _layer_node_map; }
   std::vector<std::vector<std::pair<LayerCoord, LayerCoord>>>& get_grid_pair_list_list() { return _grid_pair_list_list; }
   // setter
-  void set_layer_node_map(const std::vector<GridMap<SANode>>& layer_node_map) { _layer_node_map = layer_node_map; }
   void set_grid_pair_list_list(const std::vector<std::vector<std::pair<LayerCoord, LayerCoord>>>& grid_pair_list_list)
   {
     _grid_pair_list_list = grid_pair_list_list;
   }
 
  private:
-  std::vector<GridMap<SANode>> _layer_node_map;
   std::vector<std::vector<std::pair<LayerCoord, LayerCoord>>> _grid_pair_list_list;
 };
 

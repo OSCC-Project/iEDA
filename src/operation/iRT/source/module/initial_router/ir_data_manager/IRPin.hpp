@@ -36,7 +36,7 @@ class IRPin : public Pin
   // function
 
  private:
-   LayerCoord _grid_coord;
+  LayerCoord _grid_coord;
 };
 
 }  // namespace irt

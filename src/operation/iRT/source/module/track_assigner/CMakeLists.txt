@@ -2,7 +2,7 @@ if(DEBUG_IRT_TRACK_ASSIGNER)
     message(STATUS "RT: DEBUG_IRT_TRACK_ASSIGNER")
     set(CMAKE_BUILD_TYPE "Debug")
 else()
-    message(STATUS "RT: DEBUG_IRT_TRACK_ASSIGNER")   
+    message(STATUS "RT: RELEASE_IRT_TRACK_ASSIGNER")   
     set(CMAKE_BUILD_TYPE "Release")   
 endif()
 

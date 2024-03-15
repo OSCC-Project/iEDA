@@ -10,15 +10,13 @@
 //
 // THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
 // EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
-// MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+// MERCHANTABILITY OR FIT FOR A SARTICULAR PURPOSE.
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 #pragma once
 
-#include <vector>
-
-#include "PANet.hpp"
+#include "RTHeader.hpp"
 
 namespace irt {
 
@@ -28,12 +26,8 @@ class PAModel
   PAModel() = default;
   ~PAModel() = default;
   // getter
-  std::vector<PANet>& get_pa_net_list() { return _pa_net_list; }
   // setter
-  void set_pa_net_list(const std::vector<PANet>& pa_net_list) { _pa_net_list = pa_net_list; }
-
  private:
-  std::vector<PANet> _pa_net_list;
 };
 
 }  // namespace irt

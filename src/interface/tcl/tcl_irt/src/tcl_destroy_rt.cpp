@@ -20,19 +20,19 @@
 
 namespace tcl {
 
-TclDestroyRT::TclDestroyRT(const char* cmd_name) : TclCmd(cmd_name)
-{
-}
-
-unsigned TclDestroyRT::exec()
-{
-  if (!check()) {
-    return 0;
+  TclDestroyRT::TclDestroyRT(const char* cmd_name) : TclCmd(cmd_name)
+  {
   }
 
-  RTAPI_INST.destroyRT();
+  unsigned TclDestroyRT::exec()
+  {
+    if (!check()) {
+      return 0;
+    }
 
-  return 1;
-}
+    RTAPI_INST.destroyRT();
+
+    return 1;
+  }
 
 }  // namespace tcl

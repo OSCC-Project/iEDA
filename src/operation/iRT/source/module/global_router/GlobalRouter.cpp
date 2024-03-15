@@ -48,8 +48,10 @@ void GlobalRouter::destroyInst()
 
 // function
 
-void GlobalRouter::route(std::vector<Net>& net_list)
+void GlobalRouter::route()
 {
+  std::vector<Net>& net_list = DM_INST.getDatabase().get_net_list();
+
   Monitor monitor;
   LOG_INST.info(Loc::current(), "Begin routing...");
   // 临时代码

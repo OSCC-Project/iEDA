@@ -12,7 +12,7 @@ target_link_libraries(tool_api_idrc
         idrc_pro_api
     PRIVATE
         flow_config
-        idrc_db
+        # idrc_db
         file_manager_drc 
         ieda_report
         idm

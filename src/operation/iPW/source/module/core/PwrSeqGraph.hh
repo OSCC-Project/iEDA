@@ -280,13 +280,13 @@ class PwrSeqGraph {
   }
 
   void insertInstToVertex(Instance* seq_inst, PwrSeqVertex* seq_vertex);
-  PwrSeqVertex* getSeqVertex(Instance* seq_inst) {
-    return _inst_to_vertex.contains(seq_inst) ? _inst_to_vertex[seq_inst]
-                                              : nullptr;
+  PwrSeqVertex* getSeqVertex(DesignObject* seq_obj) {
+    return _obj_to_vertex.contains(seq_obj) ? _obj_to_vertex[seq_obj] : nullptr;
   }
 
   void insertPortToVertex(PwrVertex* pwr_port, PwrSeqVertex* seq_vertex) {
     _port_to_vertex[pwr_port] = seq_vertex;
+    _obj_to_vertex[pwr_port->get_sta_vertex()->get_design_obj()] = seq_vertex;
   }
   PwrSeqVertex* getPortSeqVertex(PwrVertex* pwr_port) {
     return _port_to_vertex.contains(pwr_port) ? _port_to_vertex[pwr_port]
@@ -306,8 +306,8 @@ class PwrSeqGraph {
   std::vector<std::unique_ptr<PwrSeqArc>> _arcs;  //!< All sequential arcs.
   std::vector<PwrSeqVertex*> _input_port_vertexes;   //!< Input port vertexes.
   std::vector<PwrSeqVertex*> _output_port_vertexes;  // 1< Output port vertexes.
-  std::map<Instance*, PwrSeqVertex*>
-      _inst_to_vertex;  //!< The seq belong inst to graph vertex.
+  std::map<DesignObject*, PwrSeqVertex*>
+      _obj_to_vertex;  //!< The seq belong inst to graph vertex.
   std::map<PwrVertex*, PwrSeqVertex*>
       _port_to_vertex;  //!< The seq belong power port to graph vertex.
 };

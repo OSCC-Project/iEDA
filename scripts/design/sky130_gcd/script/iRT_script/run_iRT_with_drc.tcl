@@ -35,7 +35,6 @@ def_init -path ./result/iPL_lg_result.def
 
 set temp_folder_path ./result/rt/
 
-init_drc
 init_drc_api
 
 init_rt -temp_directory_path $temp_folder_path \

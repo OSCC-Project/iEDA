@@ -1514,7 +1514,7 @@ void BoundSkewTree::calcDetourEdgeLen(Area* cur) const
     double d1 = 0, d2 = 0;
     Pt bal_pt;
     calcBalBetweenPts(left_pt, right_pt, kMax, kX, d1, d2, bal_pt);
-    LOG_FATAL_IF(d1 != 0) << "dist to left_pt should be zero";
+    LOG_FATAL_IF(d1 > kEpsilon) << "dist to left_pt should be zero";
     cur->set_edge_len(kLeft, 0);
     cur->set_edge_len(kRight, d2);
   } else {
@@ -1522,7 +1522,7 @@ void BoundSkewTree::calcDetourEdgeLen(Area* cur) const
     double d1 = 0, d2 = 0;
     Pt bal_pt;
     calcBalBetweenPts(left_pt, right_pt, kMax, kX, d1, d2, bal_pt);
-    LOG_FATAL_IF(d2 != 0) << "dist to right_pt should be zero";
+    LOG_FATAL_IF(d2 > kEpsilon) << "dist to right_pt should be zero";
     cur->set_edge_len(kLeft, d1);
     cur->set_edge_len(kRight, 0);
   }

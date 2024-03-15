@@ -35,7 +35,7 @@ class TrackAssigner
   static TrackAssigner& getInst();
   static void destroyInst();
   // function
-  void assign(std::vector<Net>& net_list);
+  void assign();
 
  private:
   // self
@@ -48,22 +48,21 @@ class TrackAssigner
   TrackAssigner& operator=(const TrackAssigner& other) = delete;
   TrackAssigner& operator=(TrackAssigner&& other) = delete;
   // function
-  TAModel initTAModel(std::vector<Net>& net_list);
+  TAModel initTAModel();
   std::vector<TANet> convertToTANetList(std::vector<Net>& net_list);
   TANet convertToTANet(Net& net);
   void setTAParameter(TAModel& ta_model);
   void initTAPanelMap(TAModel& ta_model);
   void initTATaskList(TAModel& ta_model);
   std::map<TAPanelId, std::vector<TATask*>, CmpTAPanelId> getPanelTaskMap(TANet& ta_net);
-  void buildBoundingBox(TATask* dr_task);
   void buildPanelSchedule(TAModel& ta_model);
   void assignTAPanelMap(TAModel& ta_model);
+  bool needRouting(TAPanel& ta_panel);
   void buildFixedRectList(TAPanel& ta_panel);
   void buildPanelTrackAxis(TAPanel& ta_panel);
   void initTANodeMap(TAPanel& ta_panel);
   void buildTANodeNeighbor(TAPanel& ta_panel);
   void buildOrienNetMap(TAPanel& ta_panel);
-  void checkTAPanel(TAPanel& ta_panel);
   void routeTAPanel(TAPanel& ta_panel);
   std::vector<TATask*> initTaskSchedule(TAPanel& ta_panel);
   void routeTATask(TAPanel& ta_panel, TATask* ta_task);
@@ -108,10 +107,14 @@ class TrackAssigner
   std::map<TANode*, std::set<Orientation>> getRoutingNodeOrientationMap(TAPanel& ta_panel, NetShape& net_shape);
 #endif
 
+#if 1  // debug
+  void debugCheckTAPanel(TAPanel& ta_panel);
+  void debugPlotTAPanel(TAPanel& ta_panel, int32_t curr_task_idx, std::string flag);
+#endif
+
 #if 1  // exhibit
-  void plotTAPanel(TAPanel& ta_panel, int32_t curr_task_idx, std::string flag);
-  void reportTAModel(TAModel& ta_model);
-  void reportSummary(TAModel& ta_model);
+  void updateSummary(TAModel& ta_model);
+  void printSummary(TAModel& ta_model);
   void writeNetCSV(TAModel& ta_model);
   void writeViolationCSV(TAModel& ta_model);
 #endif

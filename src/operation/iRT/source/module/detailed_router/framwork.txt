@@ -5,16 +5,14 @@ iterativeDRModel:迭代DRModel
     splitNetResult:以Box为单位拆解布线结果，这个必须顺序，所以放在routeDRBoxMap前面（不包含patch
     buildBoxSchedule:构建Box布线的调度表
     routeDRBoxMap:
-        initDRTaskList:构建DRTask
-        buildFixedRectList:将GCellmap中的Fix_rect（与此Box覆盖）以指针的方式拷贝到Box内，不需要对GCellmap删除或添加
-        buildDRTaskList:将GCellMap中的segment+patch（segment和patch完全在Box内）拷贝到DRTask下，并且在GCellMap中移除
+        initDRTaskList:构建DRTask，并将GCellMap中的segment+patch（segment和patch完全在Box内）拷贝到DRTask下，并且在GCellMap中移除
         buildViolationList:从顶层GCellMap中读取Violation，将GCellMap中的Violation（Violation完全在Box内）拷贝到DRBox内，并且在GCellMap中移除
+        buildFixedRectList:将GCellmap中的Fix_rect（与此Box覆盖）以指针的方式拷贝到Box内，不需要对GCellmap删除或添加
         buildBoxTrackAxis:构建Box内的track_axis
         initLayerNodeMap:构建Box的Graph，只有节点，其他信息后续构建
         initDRNodeValid:初始化节点有效性
         buildDRNodeNeighbor:将有效节点连接
         buildOrienNetMap:构建Graph的cost，Fix_rect从Box中得到，segment+patch从DRTask下得到，Violation从DRBox下得到
-        checkDRBox:检查之前构建的信息是否有问题
         routeDRBox:
             initTaskSchedule:初始化task布线调度表
                 routeDRTask:给task布线，在此函数末尾，布线结果从graph中删除，再加入新的结果

@@ -39,8 +39,6 @@ class RTAPI
   void initRT(std::map<std::string, std::any> config_map);
   void runRT();
   void destroyRT();
-  // 获取RT的Summary
-  Summary getSummary();
   // 清理def
   void clearDef();
   // 拥塞驱动
@@ -52,11 +50,15 @@ class RTAPI
   // 调用iDRC 计算版图的DRC违例
   std::vector<Violation> getViolationList(std::vector<idb::IdbLayerShape*>& env_shape_list,
                                           std::map<int32_t, std::vector<idb::IdbLayerShape*>>& net_pin_shape_map,
-                                          std::map<int32_t, std::vector<idb::IdbRegularWireSegment*>>& net_result_map);
+                                          std::map<int32_t, std::vector<idb::IdbRegularWireSegment*>>& net_wire_via_map);
   // 调用iSTA 计算时序
   std::map<std::string, std::vector<double>> getTiming(
       std::map<int32_t, std::map<LayerCoord, std::vector<std::string>, CmpLayerCoordByXASC>>& net_pin_coord_map,
       std::map<int32_t, std::vector<Segment<LayerCoord>>>& net_segment_map);
+  // 输出def
+  void outputDef(std::string output_def_file_path);
+  // 输出summary
+  void outputSummary();
 #endif
 
  private:

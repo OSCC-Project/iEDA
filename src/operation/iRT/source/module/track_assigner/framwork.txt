@@ -9,7 +9,6 @@ assignTAPanelMap:
     initTANodeMap:构建Panel的Graph，只有节点，其他信息后续构建
     buildTANodeNeighbor:将所有节点连接
     buildOrienNetMap:构建Graph的cost，Fix_rect从Panel中得到
-    checkTAPanel:检查之前构建的信息是否有问题
     routeTAPanel:
         initTaskSchedule:初始化task布线调度表
             routeTATask:给task布线，在此函数末尾，布线结果从graph中删除，再加入新的结果

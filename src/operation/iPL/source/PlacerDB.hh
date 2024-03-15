@@ -88,6 +88,12 @@ class PlacerDB
   bool isInitialized() { return _db_wrapper != nullptr; }
 
   void initTopoManager();
+  void initNodes(Design* pl_design);
+  void initNetworks(Design* pl_design);
+  void initGroups(Design* pl_design);
+  void initArcs();
+  void generateNetArc(Node* node);
+  void generateGroupArc(Node* node);
 
  public:
   // tmp for iEDA evaluation

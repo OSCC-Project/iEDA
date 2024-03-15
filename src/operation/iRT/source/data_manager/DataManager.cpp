@@ -66,13 +66,14 @@ void DataManager::input(std::map<std::string, std::any>& config_map, idb::IdbBui
   LOG_INST.info(Loc::current(), "End input!", monitor.getStatsInfo());
 }
 
-void DataManager::output(idb::IdbBuilder* idb_builder)
+void DataManager::output()
 {
   Monitor monitor;
   LOG_INST.info(Loc::current(), "Begin outputting...");
 
-  outputGCellGrid(idb_builder);
-  outputNetList(idb_builder);
+  outputGCellGrid();
+  outputNetList();
+  outputSummary();
 
   LOG_INST.info(Loc::current(), "End output!", monitor.getStatsInfo());
 }
@@ -96,6 +97,9 @@ void DataManager::updateFixedRectToGCellMap(ChangeType change_type, int32_t net_
       }
     }
   }
+  if (change_type == ChangeType::kDel) {
+    // 由于在database内的blockage_list引用过来，所以不需要delete，也不能delete
+  }
 }
 
 void DataManager::updateAccessPointToGCellMap(ChangeType change_type, int32_t net_idx, AccessPoint* access_point)
@@ -110,6 +114,9 @@ void DataManager::updateAccessPointToGCellMap(ChangeType change_type, int32_t ne
     if (net_access_point_map[net_idx].empty()) {
       net_access_point_map.erase(net_idx);
     }
+  }
+  if (change_type == ChangeType::kDel) {
+    // 由于在pin内的access_point_list引用过来，所以不需要delete，也不能delete
   }
 }
 
@@ -133,6 +140,10 @@ void DataManager::updateNetResultToGCellMap(ChangeType change_type, int32_t net_
       }
     }
   }
+  if (change_type == ChangeType::kDel) {
+    delete segment;
+    segment = nullptr;
+  }
 }
 
 void DataManager::updatePatchToGCellMap(ChangeType change_type, int32_t net_idx, EXTLayerRect* ext_layer_rect)
@@ -152,6 +163,10 @@ void DataManager::updatePatchToGCellMap(ChangeType change_type, int32_t net_idx,
       }
     }
   }
+  if (change_type == ChangeType::kDel) {
+    delete ext_layer_rect;
+    ext_layer_rect = nullptr;
+  }
 }
 
 void DataManager::updateViolationToGCellMap(ChangeType change_type, Violation* violation)
@@ -169,6 +184,10 @@ void DataManager::updateViolationToGCellMap(ChangeType change_type, Violation* v
         gcell.get_violation_set().erase(violation);
       }
     }
+  }
+  if (change_type == ChangeType::kDel) {
+    delete violation;
+    violation = nullptr;
   }
 }
 
@@ -389,9 +408,10 @@ void DataManager::wrapConfig(std::map<std::string, std::any>& config_map)
 {
   /////////////////////////////////////////////
   _config.temp_directory_path = RTUtil::getConfigValue<std::string>(config_map, "-temp_directory_path", "./rt_temp_directory");
-  _config.thread_number = RTUtil::getConfigValue<int32_t>(config_map, "-thread_number", 8);
+  _config.thread_number = RTUtil::getConfigValue<int32_t>(config_map, "-thread_number", 128);
   _config.bottom_routing_layer = RTUtil::getConfigValue<std::string>(config_map, "-bottom_routing_layer", "");
   _config.top_routing_layer = RTUtil::getConfigValue<std::string>(config_map, "-top_routing_layer", "");
+  _config.output_csv = RTUtil::getConfigValue<int32_t>(config_map, "-output_csv", 0);
   /////////////////////////////////////////////
 }
 
@@ -689,7 +709,9 @@ void DataManager::wrapNetList(idb::IdbBuilder* idb_builder)
 
 bool DataManager::preSkipping(idb::IdbNet* idb_net)
 {
-  // 特殊线网，有iocell，iocell的PAD与iopin重合，不需要布线
+  if (idb_net->get_instance_pin_list()->get_pin_num() <= 1) {
+    return true;
+  }
   bool has_io_pin = false;
   if (idb_net->has_io_pins() && idb_net->get_io_pins()->get_pin_num() == 1) {
     has_io_pin = true;
@@ -699,11 +721,7 @@ bool DataManager::preSkipping(idb::IdbNet* idb_net)
   if (instance_list.size() == 1 && instance_list.front()->get_cell_master()->is_pad()) {
     has_io_cell = true;
   }
-  if (has_io_pin && has_io_cell) {
-    LOG_INST.info(Loc::current(), "The net '", idb_net->get_net_name(), "' only connects PAD and io_pin! skipping...");
-    return true;
-  }
-  return false;
+  return (has_io_pin && has_io_cell);
 }
 
 void DataManager::wrapPinList(Net& net, idb::IdbNet* idb_net)
@@ -754,17 +772,21 @@ void DataManager::wrapDrivingPin(Net& net, idb::IdbNet* idb_net)
 {
   idb::IdbPin* idb_driving_pin = idb_net->get_driving_pin();
   if (idb_driving_pin == nullptr) {
-    LOG_INST.warn(Loc::current(), "The net '", net.get_net_name(), "' driver not found, using the first pin as the driver!");
     idb_driving_pin = idb_net->get_instance_pin_list()->get_pin_list().front();
   }
   std::string driving_pin_name = idb_driving_pin->get_pin_name();
   if (!idb_driving_pin->is_io_pin()) {
     driving_pin_name = RTUtil::getString(idb_driving_pin->get_instance()->get_name(), ":", driving_pin_name);
   }
+  bool has_driving = false;
   for (Pin& pin : net.get_pin_list()) {
     if (pin.get_pin_name() == driving_pin_name) {
       pin.set_is_driving(true);
+      has_driving = true;
     }
+  }
+  if (!has_driving) {
+    net.get_pin_list().front().set_is_driving(true);
   }
 }
 
@@ -1569,6 +1591,8 @@ void DataManager::printConfig()
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.bottom_routing_layer);
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "top_routing_layer");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.top_routing_layer);
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "output_csv");
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.output_csv);
   // **********        RT         ********** //
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(0), "RT_CONFIG_BUILD");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "log_file_path");
@@ -1707,14 +1731,14 @@ void DataManager::printDatabase()
       head_info += ">=";
     }
     LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), head_info, pin_num, " pins: ", net_num, "(",
-                  RTUtil::getPercentage(net_num, net_list.size()), "%)");
+                  RTUtil::getPercentage(net_num, net_list.size()), ")");
   }
   ////////////////////////////////////////////////
 }
 
 void DataManager::writePYScript()
 {
-  std::string temp_directory_path = DM_INST.getConfig().temp_directory_path;
+  std::string& temp_directory_path = DM_INST.getConfig().temp_directory_path;
 
   std::ofstream* python_file = RTUtil::getOutputFileStream(RTUtil::getString(temp_directory_path, "plot.py"));
   RTUtil::pushStream(python_file, "import os", "\n");
@@ -1747,9 +1771,10 @@ void DataManager::writePYScript()
 
 #if 1  // output
 
-void DataManager::outputGCellGrid(idb::IdbBuilder* idb_builder)
+void DataManager::outputGCellGrid()
 {
   ScaleAxis& gcell_axis = _database.get_gcell_axis();
+  idb::IdbBuilder* idb_builder = _helper.get_idb_builder();
 
   idb::IdbGCellGridList* idb_gcell_grid_list = idb_builder->get_lef_service()->get_layout()->get_gcell_grid_list();
   idb_gcell_grid_list->clear();
@@ -1772,27 +1797,23 @@ void DataManager::outputGCellGrid(idb::IdbBuilder* idb_builder)
   }
 }
 
-void DataManager::outputNetList(idb::IdbBuilder* idb_builder)
+void DataManager::outputNetList()
 {
-  GridMap<GCell>& gcell_map = _database.get_gcell_map();
+  Die& die = _database.get_die();
   std::vector<Net>& net_list = _database.get_net_list();
+  idb::IdbBuilder* idb_builder = _helper.get_idb_builder();
 
   std::map<int32_t, std::vector<idb::IdbRegularWireSegment*>> net_idb_segment_map;
-  for (int32_t x = 0; x < gcell_map.get_x_size(); x++) {
-    for (int32_t y = 0; y < gcell_map.get_y_size(); y++) {
-      for (auto& [net_idx, segment_set] : gcell_map[x][y].get_net_result_map()) {
-        for (Segment<LayerCoord>* segment : segment_set) {
-          net_idb_segment_map[net_idx].push_back(getIDBSegmentByNetResult(net_idx, *segment));
-        }
-      }
-      for (auto& [net_idx, patch_set] : gcell_map[x][y].get_net_patch_map()) {
-        for (EXTLayerRect* patch : patch_set) {
-          net_idb_segment_map[net_idx].push_back(getIDBSegmentByNetPatch(net_idx, *patch));
-        }
-      }
+  for (auto& [net_idx, segment_set] : getNetResultMap(die)) {
+    for (Segment<LayerCoord>* segment : segment_set) {
+      net_idb_segment_map[net_idx].push_back(getIDBSegmentByNetResult(net_idx, *segment));
     }
   }
-
+  for (auto& [net_idx, patch_set] : getNetPatchMap(die)) {
+    for (EXTLayerRect* patch : patch_set) {
+      net_idb_segment_map[net_idx].push_back(getIDBSegmentByNetPatch(net_idx, *patch));
+    }
+  }
   idb::IdbNetList* idb_net_list = idb_builder->get_def_service()->get_design()->get_net_list();
   if (idb_net_list == nullptr) {
     LOG_INST.error(Loc::current(), "The idb net list is empty!");
@@ -1821,6 +1842,11 @@ void DataManager::outputNetList(idb::IdbBuilder* idb_builder)
       }
     }
   }
+}
+
+void DataManager::outputSummary()
+{
+  RTAPI_INST.outputSummary();
 }
 
 #endif

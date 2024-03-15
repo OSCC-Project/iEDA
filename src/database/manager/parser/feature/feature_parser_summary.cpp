@@ -32,7 +32,6 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #include "CTSAPI.hh"
-#include "DrcAPI.hpp"
 #include "EvalAPI.hpp"
 #include "Evaluator.hh"
 #include "IdbCore.h"
@@ -754,11 +753,11 @@ json FeatureParser::buildSummaryDRC()
 {
   json summary_drc;
 
-  auto drc_map = idrc::DrcAPIInst.getCheckResult();
-  // summary_drc["short_nums"] = drc_map
-  for (auto& [key, value] : drc_map) {
-    summary_drc[key] = value;
-  }
+  //   auto drc_map = idrc::DrcAPIInst.getCheckResult();
+  //   // summary_drc["short_nums"] = drc_map
+  //   for (auto& [key, value] : drc_map) {
+  //     summary_drc[key] = value;
+  //   }
 
   return summary_drc;
 }

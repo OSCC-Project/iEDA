@@ -59,7 +59,7 @@ void PLAPI::reportPLInfo()
   reportBinDensity(summary_stream);
 
   // report timing info
-  if (PlacerDBInst.get_placer_config()->isTimingAwareMode()) {
+  if (PlacerDBInst.get_placer_config()->isTimingEffort()) {
     reportTimingInfo(summary_stream);
   }
 
@@ -790,7 +790,7 @@ void PLAPI::reportLongNetInfo(std::ofstream& feed)
     if (fabs(network->get_net_weight()) < 1e-7) {
       continue;
     }
-    if (PlacerDBInst.get_placer_config()->isTimingAwareMode()) {
+    if (PlacerDBInst.get_placer_config()->isTimingEffort()) {
       if (this->isClockNet(network->get_name())) {
         continue;
       }
@@ -859,7 +859,7 @@ void PLAPI::reportTimingInfo(std::ofstream& feed)
 {
   if (this->isSTAStarted()) {
     iPLAPIInst.initTimingEval();
-    iPLAPIInst.updateTiming();
+    iPLAPIInst.updateTiming(PlacerDBInst.get_topo_manager());
 
     auto report_tbl = _external_api->generateTable("table");
     (*report_tbl) << TABLE_HEAD;

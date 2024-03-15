@@ -96,7 +96,7 @@ class Layout
   std::vector<Row*> _row_list;
   std::vector<Orient> _row_orient_list;
   std::vector<Cell*> _cell_list;
-  
+
   int _route_cap_h;
   int _route_cap_v;
   int _partial_route_cap_h;

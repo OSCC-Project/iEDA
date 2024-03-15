@@ -31,7 +31,6 @@ set(CMAKE_CXX_STANDARD 20)
 
 # set(DEBUG_IRT_LOGGER ON)
 # set(DEBUG_IRT_MONITOR ON)
-# set(DEBUG_IRT_REPORTER ON)
 
 ############################ setting path ############################
 

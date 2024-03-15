@@ -32,8 +32,7 @@ bool destroyRT()
 
 bool runRT()
 {
-  RTAPI_INST.runRT({irt::Tool::kPinAccessor, irt::Tool::kResourceAllocator, irt::Tool::kGlobalRouter, irt::Tool::kTrackAssigner,
-                    irt::Tool::kDetailedRouter});
+  RTAPI_INST.runRT();
   return true;
 }
 

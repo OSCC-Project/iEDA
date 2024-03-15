@@ -35,7 +35,7 @@ class InitialRouter
   static InitialRouter& getInst();
   static void destroyInst();
   // function
-  void route(std::vector<Net>& net_list);
+  void route();
 
  private:
   // self
@@ -44,11 +44,11 @@ class InitialRouter
   InitialRouter() { Flute::readLUT(); }
   InitialRouter(const InitialRouter& other) = delete;
   InitialRouter(InitialRouter&& other) = delete;
-  ~InitialRouter() = default;
+  ~InitialRouter() { Flute::deleteLUT(); }
   InitialRouter& operator=(const InitialRouter& other) = delete;
   InitialRouter& operator=(InitialRouter&& other) = delete;
   // function
-  IRModel initIRModel(std::vector<Net>& net_list);
+  IRModel initIRModel();
   std::vector<IRNet> convertToIRNetList(std::vector<Net>& net_list);
   IRNet convertToIRNet(Net& net);
   void setIRParameter(IRModel& ir_model);
@@ -56,7 +56,6 @@ class InitialRouter
   void initLayerNodeMap(IRModel& ir_model);
   void buildIRNodeNeighbor(IRModel& ir_model);
   void buildOrienSupply(IRModel& ir_model);
-  void checkIRModel(IRModel& ir_model);
   void sortIRModel(IRModel& ir_model);
   bool sortByMultiLevel(IRModel& ir_model, int32_t net_idx1, int32_t net_idx2);
   SortStatus sortByClockPriority(IRNet& net1, IRNet& net2);
@@ -100,11 +99,15 @@ class InitialRouter
   MTree<LayerCoord> getCoordTree(IRNet& ir_net, std::vector<Segment<LayerCoord>>& routing_segment_list);
   void updateDemand(IRModel& ir_model, IRNet& ir_net, MTree<LayerCoord>& coord_tree);
   void updateIRModel(IRModel& ir_model);
-  void outputGuide(IRModel& ir_model);
+
+#if 1  // debug
+  void debugCheckIRModel(IRModel& ir_model);
+  void debugOutputGuide(IRModel& ir_model);
+#endif
 
 #if 1  // exhibit
-  void reportIRModel(IRModel& ir_model);
-  void reportSummary(IRModel& ir_model);
+  void updateSummary(IRModel& ir_model);
+  void printSummary(IRModel& ir_model);
   void writeDemandCSV(IRModel& ir_model);
   void writeOverflowCSV(IRModel& ir_model);
 #endif

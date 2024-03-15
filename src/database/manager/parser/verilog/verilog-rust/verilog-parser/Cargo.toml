@@ -21,6 +21,7 @@ crate-type = ["cdylib"]
 [dependencies]
 pest = "2.6"
 pest_derive = "2.6"
+log = "0.4"
 
 # 配置build选项
 [profile.dev]

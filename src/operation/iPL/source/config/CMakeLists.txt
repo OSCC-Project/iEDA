@@ -1,7 +1,5 @@
 add_library(ipl-configurator Configurator.cc)
 
-# target_link_libraries(ipl-configurator absl::flat_hash_map)
-
 target_include_directories(ipl-configurator
     PUBLIC
     ${iPL_CONFIG}
@@ -11,4 +9,7 @@ target_include_directories(ipl-configurator
     ${iPL_SOURCE}/module/global_placer/electrostatic_placer/config
     ${iPL_SOURCE}/module/legalizer/config
     ${iPL_SOURCE}/module/macro_placer/config
+    ${iPL_SOURCE}/module/post_global_placer/config
 )
+
+target_include_directories(ipl-configurator PUBLIC ${iPL_CONFIG})
