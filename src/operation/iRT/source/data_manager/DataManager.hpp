@@ -122,15 +122,11 @@ class DataManager
   void wrapSpacingTable(RoutingLayer& routing_layer, idb::IdbLayerRouting* idb_layer);
   void wrapLayerViaMasterList(idb::IdbBuilder* idb_builder);
   void wrapBlockageList(idb::IdbBuilder* idb_builder);
-  void wrapArtificialBlockage(idb::IdbBuilder* idb_builder);
-  void wrapInstanceBlockage(idb::IdbBuilder* idb_builder);
-  void wrapSpecialNetBlockage(idb::IdbBuilder* idb_builder);
   void wrapNetList(idb::IdbBuilder* idb_builder);
-  bool preSkipping(idb::IdbNet* idb_net);
+  bool isSkipping(idb::IdbNet* idb_net);
   void wrapPinList(Net& net, idb::IdbNet* idb_net);
   void wrapPinShapeList(Pin& pin, idb::IdbPin* idb_pin);
   void wrapDrivingPin(Net& net, idb::IdbNet* idb_net);
-  bool postSkipping(Net& net);
   void updateHelper(idb::IdbBuilder* idb_builder);
   Direction getRTDirectionByDB(idb::IdbLayerDirection idb_direction);
   ConnectType getRTConnectTypeByDB(idb::IdbConnectType idb_connect_type);

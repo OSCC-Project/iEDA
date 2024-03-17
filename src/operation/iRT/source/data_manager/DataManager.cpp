@@ -53,29 +53,25 @@ void DataManager::destroyInst()
 void DataManager::input(std::map<std::string, std::any>& config_map, idb::IdbBuilder* idb_builder)
 {
   Monitor monitor;
-  LOG_INST.info(Loc::current(), "Begin inputting...");
-
+  LOG_INST.info(Loc::current(), "Starting...");
   wrapConfig(config_map);
   wrapDatabase(idb_builder);
   buildConfig();
   buildDatabase();
-  printConfig();
-  printDatabase();
+  // printConfig();
+  // printDatabase();
   writePYScript();
-
-  LOG_INST.info(Loc::current(), "End input!", monitor.getStatsInfo());
+  LOG_INST.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
 void DataManager::output()
 {
   Monitor monitor;
-  LOG_INST.info(Loc::current(), "Begin outputting...");
-
+  LOG_INST.info(Loc::current(), "Starting...");
   outputGCellGrid();
   outputNetList();
   outputSummary();
-
-  LOG_INST.info(Loc::current(), "End output!", monitor.getStatsInfo());
+  LOG_INST.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
 #if 1  // 更新GCellMap
@@ -584,134 +580,165 @@ void DataManager::wrapLayerViaMasterList(idb::IdbBuilder* idb_builder)
 
 void DataManager::wrapBlockageList(idb::IdbBuilder* idb_builder)
 {
-  wrapArtificialBlockage(idb_builder);
-  wrapInstanceBlockage(idb_builder);
-  wrapSpecialNetBlockage(idb_builder);
-}
+  Monitor monitor;
+  LOG_INST.info(Loc::current(), "Starting...");
 
-void DataManager::wrapArtificialBlockage(idb::IdbBuilder* idb_builder)
-{
-  // Artificial
-  idb::IdbBlockageList* idb_blockage_list = idb_builder->get_def_service()->get_design()->get_blockage_list();
-  if (!idb_blockage_list->get_blockage_list().empty()) {
-    LOG_INST.warn(Loc::current(), "The artificial blockage will be ignored!");
-  }
-}
-
-void DataManager::wrapInstanceBlockage(idb::IdbBuilder* idb_builder)
-{
   std::vector<Blockage>& routing_blockage_list = _database.get_routing_blockage_list();
   std::vector<Blockage>& cut_blockage_list = _database.get_cut_blockage_list();
-
-  // instance
-  std::vector<idb::IdbInstance*> instance_list = idb_builder->get_def_service()->get_design()->get_instance_list()->get_instance_list();
-  std::vector<idb::IdbLayerShape*> layer_shape_list;
-  for (idb::IdbInstance* instance : instance_list) {
-    // instance obs
-    std::vector<idb::IdbLayerShape*>& obs_box_list = instance->get_obs_box_list();
-    layer_shape_list.insert(layer_shape_list.end(), obs_box_list.begin(), obs_box_list.end());
-    // instance pin without net
-    for (idb::IdbPin* idb_pin : instance->get_pin_list()->get_pin_list()) {
-      if (idb_pin->get_net() != nullptr) {
-        continue;
-      }
-      std::vector<idb::IdbLayerShape*>& port_box_list = idb_pin->get_port_box_list();
-      layer_shape_list.insert(layer_shape_list.end(), port_box_list.begin(), port_box_list.end());
-    }
-  }
-  for (idb::IdbLayerShape* layer_shape : layer_shape_list) {
-    for (idb::IdbRect* rect : layer_shape->get_rect_list()) {
-      Blockage blockage;
-      blockage.set_real_lb(rect->get_low_x(), rect->get_low_y());
-      blockage.set_real_rt(rect->get_high_x(), rect->get_high_y());
-      blockage.set_layer_idx(layer_shape->get_layer()->get_id());
-      if (blockage.get_real_rect().getArea() < DBL_ERROR) {
-        continue;
-      }
-      if (layer_shape->get_layer()->is_routing()) {
-        routing_blockage_list.push_back(std::move(blockage));
-      } else if (layer_shape->get_layer()->is_cut()) {
-        cut_blockage_list.push_back(std::move(blockage));
-      }
-    }
-  }
-}
-
-void DataManager::wrapSpecialNetBlockage(idb::IdbBuilder* idb_builder)
-{
-  std::vector<Blockage>& routing_blockage_list = _database.get_routing_blockage_list();
-  std::vector<Blockage>& cut_blockage_list = _database.get_cut_blockage_list();
-
-  // special net
+  std::vector<idb::IdbInstance*>& instance_list = idb_builder->get_def_service()->get_design()->get_instance_list()->get_instance_list();
   idb::IdbSpecialNetList* idb_special_net_list = idb_builder->get_def_service()->get_design()->get_special_net_list();
-  for (idb::IdbSpecialNet* idb_net : idb_special_net_list->get_net_list()) {
-    for (idb::IdbSpecialWire* idb_wire : idb_net->get_wire_list()->get_wire_list()) {
-      for (idb::IdbSpecialWireSegment* idb_segment : idb_wire->get_segment_list()) {
-        if (idb_segment->is_via()) {
-          std::vector<idb::IdbLayerShape> layer_shape_list;
-          layer_shape_list.push_back(idb_segment->get_via()->get_top_layer_shape());
-          layer_shape_list.push_back(idb_segment->get_via()->get_bottom_layer_shape());
-          layer_shape_list.push_back(idb_segment->get_via()->get_cut_layer_shape());
 
-          for (idb::IdbLayerShape& layer_shape : layer_shape_list) {
-            for (idb::IdbRect* rect : layer_shape.get_rect_list()) {
-              Blockage blockage;
-              blockage.set_real_lb(rect->get_low_x(), rect->get_low_y());
-              blockage.set_real_rt(rect->get_high_x(), rect->get_high_y());
-              blockage.set_layer_idx(layer_shape.get_layer()->get_id());
-              if (blockage.get_real_rect().getArea() < DBL_ERROR) {
-                continue;
-              }
-              if (layer_shape.get_layer()->is_routing()) {
-                routing_blockage_list.push_back(std::move(blockage));
-              } else if (layer_shape.get_layer()->is_cut()) {
-                cut_blockage_list.push_back(std::move(blockage));
-              }
-            }
+  int32_t total_routing_blockage_num = 0;
+  int32_t total_cut_blockage_num = 0;
+  {
+    // instance
+    for (idb::IdbInstance* instance : instance_list) {
+      for (idb::IdbLayerShape* obs_box : instance->get_obs_box_list()) {
+        if (obs_box->get_layer()->is_routing()) {
+          total_routing_blockage_num += obs_box->get_rect_list().size();
+        } else if (obs_box->get_layer()->is_cut()) {
+          total_cut_blockage_num += obs_box->get_rect_list().size();
+        }
+      }
+      for (idb::IdbPin* idb_pin : instance->get_pin_list()->get_pin_list()) {
+        if (idb_pin->get_net() != nullptr) {
+          continue;
+        }
+        for (idb::IdbLayerShape* port_box : idb_pin->get_port_box_list()) {
+          if (port_box->get_layer()->is_routing()) {
+            total_routing_blockage_num += port_box->get_rect_list().size();
+          } else if (port_box->get_layer()->is_cut()) {
+            total_cut_blockage_num += port_box->get_rect_list().size();
           }
-        } else {
-          idb::IdbRect* idb_rect = idb_segment->get_bounding_box();
-          // wire
-          Blockage blockage;
-          blockage.set_real_lb(idb_rect->get_low_x(), idb_rect->get_low_y());
-          blockage.set_real_rt(idb_rect->get_high_x(), idb_rect->get_high_y());
-          blockage.set_layer_idx(idb_segment->get_layer()->get_id());
-          if (blockage.get_real_rect().getArea() < DBL_ERROR) {
-            continue;
+        }
+      }
+    }
+    // special net
+    for (idb::IdbSpecialNet* idb_net : idb_special_net_list->get_net_list()) {
+      for (idb::IdbSpecialWire* idb_wire : idb_net->get_wire_list()->get_wire_list()) {
+        for (idb::IdbSpecialWireSegment* idb_segment : idb_wire->get_segment_list()) {
+          if (idb_segment->is_via()) {
+            total_routing_blockage_num += idb_segment->get_via()->get_top_layer_shape().get_rect_list().size();
+            total_routing_blockage_num += idb_segment->get_via()->get_bottom_layer_shape().get_rect_list().size();
+            total_cut_blockage_num += idb_segment->get_via()->get_cut_layer_shape().get_rect_list().size();
+          } else {
+            total_routing_blockage_num += 1;
           }
-          routing_blockage_list.push_back(std::move(blockage));
         }
       }
     }
   }
+  routing_blockage_list.reserve(total_routing_blockage_num);
+  cut_blockage_list.reserve(total_cut_blockage_num);
+  {
+    // instance
+    for (idb::IdbInstance* instance : instance_list) {
+      // instance obs
+      for (idb::IdbLayerShape* obs_box : instance->get_obs_box_list()) {
+        for (idb::IdbRect* rect : obs_box->get_rect_list()) {
+          Blockage blockage;
+          blockage.set_real_lb(rect->get_low_x(), rect->get_low_y());
+          blockage.set_real_rt(rect->get_high_x(), rect->get_high_y());
+          blockage.set_layer_idx(obs_box->get_layer()->get_id());
+          if (obs_box->get_layer()->is_routing()) {
+            routing_blockage_list.push_back(std::move(blockage));
+          } else if (obs_box->get_layer()->is_cut()) {
+            cut_blockage_list.push_back(std::move(blockage));
+          }
+        }
+      }
+      // instance pin without net
+      for (idb::IdbPin* idb_pin : instance->get_pin_list()->get_pin_list()) {
+        if (idb_pin->get_net() != nullptr) {
+          continue;
+        }
+        for (idb::IdbLayerShape* port_box : idb_pin->get_port_box_list()) {
+          for (idb::IdbRect* rect : port_box->get_rect_list()) {
+            Blockage blockage;
+            blockage.set_real_lb(rect->get_low_x(), rect->get_low_y());
+            blockage.set_real_rt(rect->get_high_x(), rect->get_high_y());
+            blockage.set_layer_idx(port_box->get_layer()->get_id());
+            if (port_box->get_layer()->is_routing()) {
+              routing_blockage_list.push_back(std::move(blockage));
+            } else if (port_box->get_layer()->is_cut()) {
+              cut_blockage_list.push_back(std::move(blockage));
+            }
+          }
+        }
+      }
+    }
+    // special net
+    for (idb::IdbSpecialNet* idb_net : idb_special_net_list->get_net_list()) {
+      for (idb::IdbSpecialWire* idb_wire : idb_net->get_wire_list()->get_wire_list()) {
+        for (idb::IdbSpecialWireSegment* idb_segment : idb_wire->get_segment_list()) {
+          if (idb_segment->is_via()) {
+            for (idb::IdbLayerShape layer_shape :
+                 {idb_segment->get_via()->get_top_layer_shape(), idb_segment->get_via()->get_bottom_layer_shape()}) {
+              for (idb::IdbRect* rect : layer_shape.get_rect_list()) {
+                Blockage blockage;
+                blockage.set_real_lb(rect->get_low_x(), rect->get_low_y());
+                blockage.set_real_rt(rect->get_high_x(), rect->get_high_y());
+                blockage.set_layer_idx(layer_shape.get_layer()->get_id());
+                routing_blockage_list.push_back(std::move(blockage));
+              }
+            }
+            idb::IdbLayerShape cut_layer_shape = idb_segment->get_via()->get_cut_layer_shape();
+            for (idb::IdbRect* rect : cut_layer_shape.get_rect_list()) {
+              Blockage blockage;
+              blockage.set_real_lb(rect->get_low_x(), rect->get_low_y());
+              blockage.set_real_rt(rect->get_high_x(), rect->get_high_y());
+              blockage.set_layer_idx(cut_layer_shape.get_layer()->get_id());
+              cut_blockage_list.push_back(std::move(blockage));
+            }
+          } else {
+            idb::IdbRect* idb_rect = idb_segment->get_bounding_box();
+            // wire
+            Blockage blockage;
+            blockage.set_real_lb(idb_rect->get_low_x(), idb_rect->get_low_y());
+            blockage.set_real_rt(idb_rect->get_high_x(), idb_rect->get_high_y());
+            blockage.set_layer_idx(idb_segment->get_layer()->get_id());
+            routing_blockage_list.push_back(std::move(blockage));
+          }
+        }
+      }
+    }
+  }
+  LOG_INST.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
 void DataManager::wrapNetList(idb::IdbBuilder* idb_builder)
 {
-  std::vector<Net>& net_list = _database.get_net_list();
-  std::vector<idb::IdbNet*> idb_net_list = idb_builder->get_def_service()->get_design()->get_net_list()->get_net_list();
+  Monitor monitor;
+  LOG_INST.info(Loc::current(), "Starting...");
 
-  for (idb::IdbNet* idb_net : idb_net_list) {
-    if (preSkipping(idb_net)) {
-      continue;
+  std::vector<Net>& net_list = _database.get_net_list();
+  std::vector<idb::IdbNet*>& idb_net_list = idb_builder->get_def_service()->get_design()->get_net_list()->get_net_list();
+
+  std::vector<idb::IdbNet*> valid_idb_net_list;
+  {
+    valid_idb_net_list.reserve(idb_net_list.size());
+    for (idb::IdbNet* idb_net : idb_net_list) {
+      if (isSkipping(idb_net)) {
+        continue;
+      }
+      valid_idb_net_list.push_back(idb_net);
     }
-    Net net;
-    net.set_net_name(idb_net->get_net_name());
-    net.set_connect_type(getRTConnectTypeByDB(idb_net->get_connect_type()));
-    wrapPinList(net, idb_net);
-    wrapDrivingPin(net, idb_net);
-    if (postSkipping(net)) {
-      continue;
-    }
-    net_list.push_back(std::move(net));
   }
+  net_list.resize(valid_idb_net_list.size());
+#pragma omp parallel for
+  for (size_t i = 0; i < valid_idb_net_list.size(); i++) {
+    idb::IdbNet* valid_idb_net = valid_idb_net_list[i];
+    Net& net = net_list[i];
+    net.set_net_name(valid_idb_net->get_net_name());
+    net.set_connect_type(getRTConnectTypeByDB(valid_idb_net->get_connect_type()));
+    wrapPinList(net, valid_idb_net);
+    wrapDrivingPin(net, valid_idb_net);
+  }
+  LOG_INST.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
-bool DataManager::preSkipping(idb::IdbNet* idb_net)
+bool DataManager::isSkipping(idb::IdbNet* idb_net)
 {
-  if (idb_net->get_instance_pin_list()->get_pin_num() <= 1) {
-    return true;
-  }
   bool has_io_pin = false;
   if (idb_net->has_io_pins() && idb_net->get_io_pins()->get_pin_num() == 1) {
     has_io_pin = true;
@@ -721,7 +748,29 @@ bool DataManager::preSkipping(idb::IdbNet* idb_net)
   if (instance_list.size() == 1 && instance_list.front()->get_cell_master()->is_pad()) {
     has_io_cell = true;
   }
-  return (has_io_pin && has_io_cell);
+  if (has_io_pin && has_io_cell) {
+    return true;
+  }
+
+  int32_t pin_num = 0;
+  for (idb::IdbPin* idb_pin : idb_net->get_instance_pin_list()->get_pin_list()) {
+    if (idb_pin->get_term()->get_port_number() <= 0) {
+      continue;
+    }
+    pin_num++;
+  }
+  for (auto* io_pin : idb_net->get_io_pins()->get_pin_list()) {
+    if (io_pin->get_term()->get_port_number() <= 0) {
+      continue;
+    }
+    pin_num++;
+  }
+  if (pin_num <= 1) {
+    return true;
+  } else if (pin_num >= 500) {
+    LOG_INST.warn(Loc::current(), "The ultra large net: ", idb_net->get_net_name(), " has ", pin_num, " pins!");
+  }
+  return false;
 }
 
 void DataManager::wrapPinList(Net& net, idb::IdbNet* idb_net)
@@ -788,19 +837,6 @@ void DataManager::wrapDrivingPin(Net& net, idb::IdbNet* idb_net)
   if (!has_driving) {
     net.get_pin_list().front().set_is_driving(true);
   }
-}
-
-bool DataManager::postSkipping(Net& net)
-{
-  size_t pin_num = net.get_pin_list().size();
-  if (pin_num <= 1) {
-    LOG_INST.info(Loc::current(), "The net '", net.get_net_name(), "' has ", pin_num, " pin! skipping...");
-    return true;
-  } else if (pin_num >= 500) {
-    LOG_INST.warn(Loc::current(), "The ultra large net: ", net.get_net_name(), " has ", pin_num, " pins!");
-    sleep(2);
-  }
-  return false;
 }
 
 void DataManager::updateHelper(idb::IdbBuilder* idb_builder)
@@ -1373,9 +1409,11 @@ void DataManager::transBlockageList()
   std::vector<Blockage>& routing_blockage_list = _database.get_routing_blockage_list();
   std::vector<Blockage>& cut_blockage_list = _database.get_cut_blockage_list();
 
+#pragma omp parallel for
   for (Blockage& blockage : routing_blockage_list) {
     blockage.set_layer_idx(_helper.getRoutingLayerIdxByIDBLayerId(blockage.get_layer_idx()));
   }
+#pragma omp parallel for
   for (Blockage& blockage : cut_blockage_list) {
     blockage.set_layer_idx(_helper.getCutLayerIdxByIDBLayerId(blockage.get_layer_idx()));
   }
@@ -1388,10 +1426,12 @@ void DataManager::makeBlockageList()
   std::vector<Blockage>& routing_blockage_list = _database.get_routing_blockage_list();
   std::vector<Blockage>& cut_blockage_list = _database.get_cut_blockage_list();
 
+#pragma omp parallel for
   for (Blockage& routing_blockage : routing_blockage_list) {
     routing_blockage.set_real_rect(RTUtil::getRegularRect(routing_blockage.get_real_rect(), die.get_real_rect()));
     routing_blockage.set_grid_rect(RTUtil::getClosedGCellGridRect(routing_blockage.get_real_rect(), gcell_axis));
   }
+#pragma omp parallel for
   for (Blockage& cut_blockage : cut_blockage_list) {
     cut_blockage.set_real_rect(RTUtil::getRegularRect(cut_blockage.get_real_rect(), die.get_real_rect()));
     cut_blockage.set_grid_rect(RTUtil::getClosedGCellGridRect(cut_blockage.get_real_rect(), gcell_axis));
@@ -1405,6 +1445,7 @@ void DataManager::checkBlockageList()
   std::vector<Blockage>& routing_blockage_list = _database.get_routing_blockage_list();
   std::vector<Blockage>& cut_blockage_list = _database.get_cut_blockage_list();
 
+#pragma omp parallel for
   for (Blockage& blockage : routing_blockage_list) {
     if (blockage.get_real_lb_x() < die.get_real_lb_x() || blockage.get_real_lb_y() < die.get_real_lb_y()
         || die.get_real_rt_x() < blockage.get_real_rt_x() || die.get_real_rt_y() < blockage.get_real_rt_y()) {
@@ -1415,6 +1456,7 @@ void DataManager::checkBlockageList()
                      die.get_real_lb_y(), ") - (", die.get_real_rt_x(), " , ", die.get_real_rt_y(), ")'");
     }
   }
+#pragma omp parallel for
   for (Blockage& blockage : cut_blockage_list) {
     if (blockage.get_real_lb_x() < die.get_real_lb_x() || blockage.get_real_lb_y() < die.get_real_lb_y()
         || die.get_real_rt_x() < blockage.get_real_rt_x() || die.get_real_rt_y() < blockage.get_real_rt_y()) {
@@ -1430,7 +1472,7 @@ void DataManager::checkBlockageList()
 void DataManager::buildNetList()
 {
   std::vector<Net>& net_list = _database.get_net_list();
-
+#pragma omp parallel for
   for (size_t net_idx = 0; net_idx < net_list.size(); net_idx++) {
     Net& net = net_list[net_idx];
     net.set_net_idx(static_cast<int32_t>(net_idx));
@@ -1507,6 +1549,9 @@ void DataManager::checkPinList(Net& net)
 
 void DataManager::buildGCellMap()
 {
+  Monitor monitor;
+  LOG_INST.info(Loc::current(), "Starting...");
+
   Die& die = _database.get_die();
   std::vector<Blockage>& routing_blockage_list = _database.get_routing_blockage_list();
   std::vector<Blockage>& cut_blockage_list = _database.get_cut_blockage_list();
@@ -1515,22 +1560,105 @@ void DataManager::buildGCellMap()
   GridMap<GCell>& gcell_map = _database.get_gcell_map();
   gcell_map.init(die.getXSize(), die.getYSize());
 
-  for (Blockage& routing_blockage : routing_blockage_list) {
-    updateFixedRectToGCellMap(ChangeType::kAdd, -1, &routing_blockage, true);
+  std::vector<int32_t> interval_list;
+  {
+    int32_t min_interval = die.get_grid_rt_y() / 20;
+    interval_list.push_back(0);
+    for (int32_t i = min_interval; i < die.get_grid_rt_y(); i += min_interval) {
+      interval_list.push_back(i);
+    }
+    interval_list.push_back(die.get_grid_rt_y());
   }
-  for (Blockage& cut_blockage : cut_blockage_list) {
-    updateFixedRectToGCellMap(ChangeType::kAdd, -1, &cut_blockage, false);
-  }
-  for (Net& net : net_list) {
-    for (Pin& pin : net.get_pin_list()) {
-      for (EXTLayerRect& routing_shape : pin.get_routing_shape_list()) {
-        updateFixedRectToGCellMap(ChangeType::kAdd, net.get_net_idx(), &routing_shape, true);
+
+  std::vector<std::vector<std::tuple<int32_t, EXTLayerRect*, bool>>> parallel_rect_tuple_list_list;
+  std::vector<std::tuple<int32_t, EXTLayerRect*, bool>> single_rect_tuple_list_list;
+  {
+    parallel_rect_tuple_list_list.resize(std::max(0, static_cast<int32_t>(interval_list.size()) - 1));
+    for (Blockage& routing_blockage : routing_blockage_list) {
+      std::tuple<int32_t, EXTLayerRect*, bool> rect_tuple(-1, &routing_blockage, true);
+      bool is_insert = false;
+      for (size_t i = 0; (i + 1) < interval_list.size(); i++) {
+        if (interval_list[i] < routing_blockage.get_grid_lb_y() && routing_blockage.get_grid_rt_y() < interval_list[i + 1]) {
+          parallel_rect_tuple_list_list[i].push_back(rect_tuple);
+          is_insert = true;
+          break;
+        }
       }
-      for (EXTLayerRect& cut_shape : pin.get_cut_shape_list()) {
-        updateFixedRectToGCellMap(ChangeType::kAdd, net.get_net_idx(), &cut_shape, false);
+      if (!is_insert) {
+        single_rect_tuple_list_list.push_back(rect_tuple);
+      }
+    }
+    for (Blockage& cut_blockage : cut_blockage_list) {
+      std::tuple<int32_t, EXTLayerRect*, bool> rect_tuple(-1, &cut_blockage, false);
+      bool is_insert = false;
+      for (size_t i = 0; (i + 1) < interval_list.size(); i++) {
+        if (interval_list[i] < cut_blockage.get_grid_lb_y() && cut_blockage.get_grid_rt_y() < interval_list[i + 1]) {
+          parallel_rect_tuple_list_list[i].push_back(rect_tuple);
+          is_insert = true;
+          break;
+        }
+      }
+      if (!is_insert) {
+        single_rect_tuple_list_list.push_back(rect_tuple);
+      }
+    }
+    for (Net& net : net_list) {
+      for (Pin& pin : net.get_pin_list()) {
+        for (EXTLayerRect& routing_shape : pin.get_routing_shape_list()) {
+          std::tuple<int32_t, EXTLayerRect*, bool> rect_tuple(net.get_net_idx(), &routing_shape, true);
+          bool is_insert = false;
+          for (size_t i = 0; (i + 1) < interval_list.size(); i++) {
+            if (interval_list[i] < routing_shape.get_grid_lb_y() && routing_shape.get_grid_rt_y() < interval_list[i + 1]) {
+              parallel_rect_tuple_list_list[i].push_back(rect_tuple);
+              is_insert = true;
+              break;
+            }
+          }
+          if (!is_insert) {
+            single_rect_tuple_list_list.push_back(rect_tuple);
+          }
+        }
+        for (EXTLayerRect& cut_shape : pin.get_cut_shape_list()) {
+          std::tuple<int32_t, EXTLayerRect*, bool> rect_tuple(net.get_net_idx(), &cut_shape, false);
+          bool is_insert = false;
+          for (size_t i = 0; (i + 1) < interval_list.size(); i++) {
+            if (interval_list[i] < cut_shape.get_grid_lb_y() && cut_shape.get_grid_rt_y() < interval_list[i + 1]) {
+              parallel_rect_tuple_list_list[i].push_back(rect_tuple);
+              is_insert = true;
+              break;
+            }
+          }
+          if (!is_insert) {
+            single_rect_tuple_list_list.push_back(rect_tuple);
+          }
+        }
       }
     }
   }
+#pragma omp parallel for
+  for (std::vector<std::tuple<int32_t, EXTLayerRect*, bool>>& parallel_rect_tuple_list : parallel_rect_tuple_list_list) {
+    for (std::tuple<int32_t, EXTLayerRect*, bool>& rect_tuple : parallel_rect_tuple_list) {
+      int32_t net_idx = std::get<0>(rect_tuple);
+      EXTLayerRect* ext_layer_rect = std::get<1>(rect_tuple);
+      bool is_routing = std::get<2>(rect_tuple);
+      for (int32_t x = ext_layer_rect->get_grid_lb_x(); x <= ext_layer_rect->get_grid_rt_x(); x++) {
+        for (int32_t y = ext_layer_rect->get_grid_lb_y(); y <= ext_layer_rect->get_grid_rt_y(); y++) {
+          gcell_map[x][y].get_type_layer_net_fixed_rect_map()[is_routing][ext_layer_rect->get_layer_idx()][net_idx].insert(ext_layer_rect);
+        }
+      }
+    }
+  }
+  for (std::tuple<int32_t, EXTLayerRect*, bool>& rect_tuple : single_rect_tuple_list_list) {
+    int32_t net_idx = std::get<0>(rect_tuple);
+    EXTLayerRect* ext_layer_rect = std::get<1>(rect_tuple);
+    bool is_routing = std::get<2>(rect_tuple);
+    for (int32_t x = ext_layer_rect->get_grid_lb_x(); x <= ext_layer_rect->get_grid_rt_x(); x++) {
+      for (int32_t y = ext_layer_rect->get_grid_lb_y(); y <= ext_layer_rect->get_grid_rt_y(); y++) {
+        gcell_map[x][y].get_type_layer_net_fixed_rect_map()[is_routing][ext_layer_rect->get_layer_idx()][net_idx].insert(ext_layer_rect);
+      }
+    }
+  }
+  LOG_INST.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
 void DataManager::updateHelper()

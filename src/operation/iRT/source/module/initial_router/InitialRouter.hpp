@@ -53,7 +53,7 @@ class InitialRouter
   IRNet convertToIRNet(Net& net);
   void setIRParameter(IRModel& ir_model);
   void makeGridCoordList(IRModel& ir_model);
-  void initLayerNodeMap(IRModel& ir_model);
+  void buildLayerNodeMap(IRModel& ir_model);
   void buildIRNodeNeighbor(IRModel& ir_model);
   void buildOrienSupply(IRModel& ir_model);
   void sortIRModel(IRModel& ir_model);

@@ -52,11 +52,11 @@ void InitialRouter::destroyInst()
 void InitialRouter::route()
 {
   Monitor monitor;
-  LOG_INST.info(Loc::current(), "Begin routing...");
+  LOG_INST.info(Loc::current(), "Starting...");
   IRModel ir_model = initIRModel();
   setIRParameter(ir_model);
   makeGridCoordList(ir_model);
-  initLayerNodeMap(ir_model);
+  buildLayerNodeMap(ir_model);
   buildIRNodeNeighbor(ir_model);
   buildOrienSupply(ir_model);
   // debugCheckIRModel(ir_model);
@@ -67,7 +67,7 @@ void InitialRouter::route()
   printSummary(ir_model);
   writeDemandCSV(ir_model);
   writeOverflowCSV(ir_model);
-  LOG_INST.info(Loc::current(), "End route", monitor.getStatsInfo());
+  LOG_INST.info(Loc::current(), "Completed", monitor.getStatsInfo());
 
   // debugOutputGuide(ir_model);
 }
@@ -111,16 +111,17 @@ IRNet InitialRouter::convertToIRNet(Net& net)
 void InitialRouter::setIRParameter(IRModel& ir_model)
 {
   IRParameter ir_parameter;
-  LOG_INST.info(Loc::current(), "topo_spilt_length : ", ir_parameter.get_topo_spilt_length());
-  LOG_INST.info(Loc::current(), "congestion_unit : ", ir_parameter.get_congestion_unit());
-  LOG_INST.info(Loc::current(), "prefer_wire_unit : ", ir_parameter.get_prefer_wire_unit());
-  LOG_INST.info(Loc::current(), "via_unit : ", ir_parameter.get_via_unit());
-  LOG_INST.info(Loc::current(), "corner_unit : ", ir_parameter.get_corner_unit());
+  LOG_INST.info(Loc::current(), "topo_spilt_length: ", ir_parameter.get_topo_spilt_length());
+  LOG_INST.info(Loc::current(), "congestion_unit: ", ir_parameter.get_congestion_unit());
+  LOG_INST.info(Loc::current(), "prefer_wire_unit: ", ir_parameter.get_prefer_wire_unit());
+  LOG_INST.info(Loc::current(), "via_unit: ", ir_parameter.get_via_unit());
+  LOG_INST.info(Loc::current(), "corner_unit: ", ir_parameter.get_corner_unit());
   ir_model.set_ir_parameter(ir_parameter);
 }
 
 void InitialRouter::makeGridCoordList(IRModel& ir_model)
 {
+#pragma omp parallel for
   for (IRNet& ir_net : ir_model.get_ir_net_list()) {
     for (IRPin& ir_pin : ir_net.get_ir_pin_list()) {
       LayerCoord grid_coord = ir_pin.get_access_point_list().front().getGridLayerCoord();
@@ -133,30 +134,37 @@ void InitialRouter::makeGridCoordList(IRModel& ir_model)
   }
 }
 
-void InitialRouter::initLayerNodeMap(IRModel& ir_model)
+void InitialRouter::buildLayerNodeMap(IRModel& ir_model)
 {
+  Monitor monitor;
+  LOG_INST.info(Loc::current(), "Starting...");
+
   GridMap<GCell>& gcell_map = DM_INST.getDatabase().get_gcell_map();
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
 
   std::vector<GridMap<IRNode>>& layer_node_map = ir_model.get_layer_node_map();
   layer_node_map.resize(routing_layer_list.size());
-  for (GridMap<IRNode>& ir_node_map : layer_node_map) {
+#pragma omp parallel for
+  for (int32_t layer_idx = 0; layer_idx < static_cast<int32_t>(layer_node_map.size()); layer_idx++) {
+    GridMap<IRNode>& ir_node_map = layer_node_map[layer_idx];
     ir_node_map.init(gcell_map.get_x_size(), gcell_map.get_y_size());
-  }
-#pragma omp parallel for collapse(2)
-  for (int32_t x = 0; x < gcell_map.get_x_size(); x++) {
-    for (int32_t y = 0; y < gcell_map.get_y_size(); y++) {
-      for (int32_t layer_idx = 0; layer_idx < static_cast<int32_t>(layer_node_map.size()); layer_idx++) {
-        IRNode& ir_node = layer_node_map[layer_idx][x][y];
+    for (int32_t x = 0; x < gcell_map.get_x_size(); x++) {
+      for (int32_t y = 0; y < gcell_map.get_y_size(); y++) {
+        IRNode& ir_node = ir_node_map[x][y];
         ir_node.set_coord(x, y);
         ir_node.set_layer_idx(layer_idx);
       }
     }
   }
+
+  LOG_INST.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
 void InitialRouter::buildIRNodeNeighbor(IRModel& ir_model)
 {
+  Monitor monitor;
+  LOG_INST.info(Loc::current(), "Starting...");
+
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
   GridMap<GCell>& gcell_map = DM_INST.getDatabase().get_gcell_map();
   int32_t bottom_routing_layer_idx = DM_INST.getConfig().bottom_routing_layer_idx;
@@ -164,46 +172,52 @@ void InitialRouter::buildIRNodeNeighbor(IRModel& ir_model)
 
   std::vector<GridMap<IRNode>>& layer_node_map = ir_model.get_layer_node_map();
 
-#pragma omp parallel for collapse(2)
-  for (int32_t x = 0; x < gcell_map.get_x_size(); x++) {
-    for (int32_t y = 0; y < gcell_map.get_y_size(); y++) {
-      for (int32_t layer_idx = 0; layer_idx < static_cast<int32_t>(layer_node_map.size()); layer_idx++) {
-        bool routing_h = routing_layer_list[layer_idx].isPreferH();
-        bool routing_v = !routing_h;
-        if (layer_idx < bottom_routing_layer_idx || top_routing_layer_idx < layer_idx) {
-          routing_h = false;
-          routing_v = false;
-        }
-        std::map<Orientation, IRNode*>& neighbor_ptr_map = layer_node_map[layer_idx][x][y].get_neighbor_node_map();
+#pragma omp parallel for
+  for (int32_t layer_idx = 0; layer_idx < static_cast<int32_t>(layer_node_map.size()); layer_idx++) {
+    bool routing_h = routing_layer_list[layer_idx].isPreferH();
+    bool routing_v = !routing_h;
+    if (layer_idx < bottom_routing_layer_idx || top_routing_layer_idx < layer_idx) {
+      routing_h = false;
+      routing_v = false;
+    }
+    GridMap<IRNode>& ir_node_map = layer_node_map[layer_idx];
+    for (int32_t x = 0; x < gcell_map.get_x_size(); x++) {
+      for (int32_t y = 0; y < gcell_map.get_y_size(); y++) {
+        std::map<Orientation, IRNode*>& neighbor_node_map = ir_node_map[x][y].get_neighbor_node_map();
         if (routing_h) {
           if (x != 0) {
-            neighbor_ptr_map[Orientation::kWest] = &layer_node_map[layer_idx][x - 1][y];
+            neighbor_node_map[Orientation::kWest] = &ir_node_map[x - 1][y];
           }
-          if (x != (layer_node_map[layer_idx].get_x_size() - 1)) {
-            neighbor_ptr_map[Orientation::kEast] = &layer_node_map[layer_idx][x + 1][y];
+          if (x != (ir_node_map.get_x_size() - 1)) {
+            neighbor_node_map[Orientation::kEast] = &ir_node_map[x + 1][y];
           }
         }
         if (routing_v) {
           if (y != 0) {
-            neighbor_ptr_map[Orientation::kSouth] = &layer_node_map[layer_idx][x][y - 1];
+            neighbor_node_map[Orientation::kSouth] = &ir_node_map[x][y - 1];
           }
-          if (y != (layer_node_map[layer_idx].get_y_size() - 1)) {
-            neighbor_ptr_map[Orientation::kNorth] = &layer_node_map[layer_idx][x][y + 1];
+          if (y != (ir_node_map.get_y_size() - 1)) {
+            neighbor_node_map[Orientation::kNorth] = &ir_node_map[x][y + 1];
           }
         }
         if (layer_idx != 0) {
-          neighbor_ptr_map[Orientation::kBelow] = &layer_node_map[layer_idx - 1][x][y];
+          neighbor_node_map[Orientation::kBelow] = &layer_node_map[layer_idx - 1][x][y];
         }
         if (layer_idx != static_cast<int32_t>(layer_node_map.size()) - 1) {
-          neighbor_ptr_map[Orientation::kAbove] = &layer_node_map[layer_idx + 1][x][y];
+          neighbor_node_map[Orientation::kAbove] = &layer_node_map[layer_idx + 1][x][y];
         }
       }
     }
   }
+
+  LOG_INST.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
 void InitialRouter::buildOrienSupply(IRModel& ir_model)
 {
+  Monitor monitor;
+  LOG_INST.info(Loc::current(), "Starting...");
+
   GridMap<GCell>& gcell_map = DM_INST.getDatabase().get_gcell_map();
 
   std::vector<GridMap<IRNode>>& layer_node_map = ir_model.get_layer_node_map();
@@ -216,19 +230,21 @@ void InitialRouter::buildOrienSupply(IRModel& ir_model)
       }
     }
   }
+
+  LOG_INST.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
 void InitialRouter::sortIRModel(IRModel& ir_model)
 {
   Monitor monitor;
-  LOG_INST.info(Loc::current(), "Begin sorting nets...");
+  LOG_INST.info(Loc::current(), "Starting...");
   std::vector<int32_t>& ir_net_idx_list = ir_model.get_ir_net_idx_list();
   for (IRNet& ir_net : ir_model.get_ir_net_list()) {
     ir_net_idx_list.push_back(ir_net.get_net_idx());
   }
   std::sort(ir_net_idx_list.begin(), ir_net_idx_list.end(),
             [&](int32_t net_idx1, int32_t net_idx2) { return sortByMultiLevel(ir_model, net_idx1, net_idx2); });
-  LOG_INST.info(Loc::current(), "End sort nets", monitor.getStatsInfo());
+  LOG_INST.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
 bool InitialRouter::sortByMultiLevel(IRModel& ir_model, int32_t net_idx1, int32_t net_idx2)
@@ -335,19 +351,24 @@ SortStatus InitialRouter::sortByPinNumDESC(IRNet& net1, IRNet& net2)
 
 void InitialRouter::routeIRModel(IRModel& ir_model)
 {
+  Monitor monitor;
+  LOG_INST.info(Loc::current(), "Starting...");
+
   std::vector<IRNet>& ir_net_list = ir_model.get_ir_net_list();
   std::vector<int32_t>& ir_net_idx_list = ir_model.get_ir_net_idx_list();
 
   int32_t batch_size = RTUtil::getBatchSize(ir_net_idx_list.size());
 
-  Monitor monitor;
+  Monitor stage_monitor;
   for (size_t i = 0; i < ir_net_idx_list.size(); i++) {
     routeIRNet(ir_model, ir_net_list[ir_net_idx_list[i]]);
     if ((i + 1) % batch_size == 0 || (i + 1) == ir_net_idx_list.size()) {
       LOG_INST.info(Loc::current(), "Routed ", (i + 1), "/", ir_net_idx_list.size(), "(",
-                    RTUtil::getPercentage(i + 1, ir_net_idx_list.size()), ") nets", monitor.getStatsInfo());
+                    RTUtil::getPercentage(i + 1, ir_net_idx_list.size()), ") nets", stage_monitor.getStatsInfo());
     }
   }
+
+  LOG_INST.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
 void InitialRouter::routeIRNet(IRModel& ir_model, IRNet& ir_net)
@@ -1083,7 +1104,7 @@ void InitialRouter::debugCheckIRModel(IRModel& ir_model)
 void InitialRouter::debugOutputGuide(IRModel& ir_model)
 {
   Monitor monitor;
-  LOG_INST.info(Loc::current(), "Begin outputting...");
+  LOG_INST.info(Loc::current(), "Starting...");
 
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
   std::string& ir_temp_directory_path = DM_INST.getConfig().ir_temp_directory_path;
@@ -1119,7 +1140,7 @@ void InitialRouter::debugOutputGuide(IRModel& ir_model)
   }
   RTUtil::closeFileStream(guide_file_stream);
 
-  LOG_INST.info(Loc::current(), "End output", monitor.getStatsInfo());
+  LOG_INST.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
 #endif

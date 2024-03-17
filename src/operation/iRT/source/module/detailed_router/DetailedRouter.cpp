@@ -57,10 +57,10 @@ void DetailedRouter::destroyInst()
 void DetailedRouter::route()
 {
   Monitor monitor;
-  LOG_INST.info(Loc::current(), "Begin routing...");
+  LOG_INST.info(Loc::current(), "Starting...");
   DRModel dr_model = initDRModel();
   iterativeDRModel(dr_model);
-  LOG_INST.info(Loc::current(), "End route", monitor.getStatsInfo());
+  LOG_INST.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
 // private
@@ -103,11 +103,11 @@ void DetailedRouter::iterativeDRModel(DRModel& dr_model)
   int32_t cost_unit = 8;
   std::vector<DRParameter> dr_parameter_list = {
       /** format **/ {9, 0, 4 * cost_unit, 1 * cost_unit, 1 * cost_unit, true, 4},
-      /** format **/ {9, -3, 8 * cost_unit, 2 * cost_unit, 2 * cost_unit, false, 4},
-      /** format **/ {9, -6, 16 * cost_unit, 4 * cost_unit, 4 * cost_unit, false, 4},
-      /** format **/ {9, 0, 32 * cost_unit, 8 * cost_unit, 8 * cost_unit, false, 4},
-      /** format **/ {9, -3, 64 * cost_unit, 16 * cost_unit, 16 * cost_unit, false, 4},
-      /** format **/ {9, -6, 128 * cost_unit, 32 * cost_unit, 32 * cost_unit, false, 4},
+      // /** format **/ {9, -3, 8 * cost_unit, 2 * cost_unit, 2 * cost_unit, false, 4},
+      // /** format **/ {9, -6, 16 * cost_unit, 4 * cost_unit, 4 * cost_unit, false, 4},
+      // /** format **/ {9, 0, 32 * cost_unit, 8 * cost_unit, 8 * cost_unit, false, 4},
+      // /** format **/ {9, -3, 64 * cost_unit, 16 * cost_unit, 16 * cost_unit, false, 4},
+      // /** format **/ {9, -6, 128 * cost_unit, 32 * cost_unit, 32 * cost_unit, false, 4},
   };
   for (size_t i = 0, iter = 1; i < dr_parameter_list.size(); i++, iter++) {
     Monitor iter_monitor;
@@ -131,17 +131,17 @@ void DetailedRouter::iterativeDRModel(DRModel& dr_model)
 void DetailedRouter::setDRParameter(DRModel& dr_model, int32_t iter, DRParameter& dr_parameter)
 {
   dr_model.set_iter(iter);
-  LOG_INST.info(Loc::current(), "prefer_wire_unit : ", dr_parameter.get_prefer_wire_unit());
-  LOG_INST.info(Loc::current(), "nonprefer_wire_unit : ", dr_parameter.get_nonprefer_wire_unit());
-  LOG_INST.info(Loc::current(), "via_unit : ", dr_parameter.get_via_unit());
-  LOG_INST.info(Loc::current(), "corner_unit : ", dr_parameter.get_corner_unit());
-  LOG_INST.info(Loc::current(), "size : ", dr_parameter.get_size());
-  LOG_INST.info(Loc::current(), "offset : ", dr_parameter.get_offset());
-  LOG_INST.info(Loc::current(), "fixed_rect_unit : ", dr_parameter.get_fixed_rect_unit());
-  LOG_INST.info(Loc::current(), "routed_rect_unit : ", dr_parameter.get_routed_rect_unit());
-  LOG_INST.info(Loc::current(), "violation_unit : ", dr_parameter.get_violation_unit());
-  LOG_INST.info(Loc::current(), "complete_ripup : ", dr_parameter.get_complete_ripup());
-  LOG_INST.info(Loc::current(), "max_routed_times : ", dr_parameter.get_max_routed_times());
+  LOG_INST.info(Loc::current(), "prefer_wire_unit: ", dr_parameter.get_prefer_wire_unit());
+  LOG_INST.info(Loc::current(), "nonprefer_wire_unit: ", dr_parameter.get_nonprefer_wire_unit());
+  LOG_INST.info(Loc::current(), "via_unit: ", dr_parameter.get_via_unit());
+  LOG_INST.info(Loc::current(), "corner_unit: ", dr_parameter.get_corner_unit());
+  LOG_INST.info(Loc::current(), "size: ", dr_parameter.get_size());
+  LOG_INST.info(Loc::current(), "offset: ", dr_parameter.get_offset());
+  LOG_INST.info(Loc::current(), "fixed_rect_unit: ", dr_parameter.get_fixed_rect_unit());
+  LOG_INST.info(Loc::current(), "routed_rect_unit: ", dr_parameter.get_routed_rect_unit());
+  LOG_INST.info(Loc::current(), "violation_unit: ", dr_parameter.get_violation_unit());
+  LOG_INST.info(Loc::current(), "complete_ripup: ", dr_parameter.get_complete_ripup());
+  LOG_INST.info(Loc::current(), "max_routed_times: ", dr_parameter.get_max_routed_times());
   dr_model.set_dr_parameter(dr_parameter);
 }
 
@@ -284,6 +284,9 @@ void DetailedRouter::buildBoxSchedule(DRModel& dr_model)
 
 void DetailedRouter::routeDRBoxMap(DRModel& dr_model)
 {
+  Monitor monitor;
+  LOG_INST.info(Loc::current(), "Starting...");
+
   GridMap<DRBox>& dr_box_map = dr_model.get_dr_box_map();
 
   size_t total_box_num = 0;
@@ -302,8 +305,8 @@ void DetailedRouter::routeDRBoxMap(DRModel& dr_model)
       if (needRouting(dr_box)) {
         buildFixedRectList(dr_box);
         buildBoxTrackAxis(dr_box);
-        initLayerNodeMap(dr_box);
-        initDRNodeValid(dr_box);
+        buildLayerNodeMap(dr_box);
+        buildDRNodeValid(dr_box);
         buildDRNodeNeighbor(dr_box);
         buildOrienNetMap(dr_box);
         // debugCheckDRBox(dr_box);
@@ -319,6 +322,8 @@ void DetailedRouter::routeDRBoxMap(DRModel& dr_model)
     LOG_INST.info(Loc::current(), "Routed ", routed_box_num, "/", total_box_num, "(", RTUtil::getPercentage(routed_box_num, total_box_num),
                   ") boxes with ", getViolationNum(), " violations", stage_monitor.getStatsInfo());
   }
+
+  LOG_INST.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
 void DetailedRouter::initDRTaskList(DRModel& dr_model, DRBox& dr_box)
@@ -485,7 +490,7 @@ void DetailedRouter::buildBoxTrackAxis(DRBox& dr_box)
   box_track_axis.set_y_grid_list(RTUtil::makeScaleGridList(y_scale_list));
 }
 
-void DetailedRouter::initLayerNodeMap(DRBox& dr_box)
+void DetailedRouter::buildLayerNodeMap(DRBox& dr_box)
 {
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
 
@@ -511,7 +516,7 @@ void DetailedRouter::initLayerNodeMap(DRBox& dr_box)
   }
 }
 
-void DetailedRouter::initDRNodeValid(DRBox& dr_box)
+void DetailedRouter::buildDRNodeValid(DRBox& dr_box)
 {
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
   int32_t bottom_routing_layer_idx = DM_INST.getConfig().bottom_routing_layer_idx;

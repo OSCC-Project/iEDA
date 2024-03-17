@@ -6,7 +6,7 @@ buildPanelSchedule:构建时间表
 assignTAPanelMap:
     buildFixedRectList:将GCellmap中的Fix_rect（与此Panel覆盖）以指针的方式拷贝到Panel内，不需要对GCellmap删除或添加
     buildPanelTrackAxis:构建Panel内的track_axis
-    initTANodeMap:构建Panel的Graph，只有节点，其他信息后续构建
+    buildTANodeMap:构建Panel的Graph，只有节点，其他信息后续构建
     buildTANodeNeighbor:将所有节点连接
     buildOrienNetMap:构建Graph的cost，Fix_rect从Panel中得到
     routeTAPanel:

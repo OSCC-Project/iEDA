@@ -52,14 +52,14 @@ void SupplyAnalyzer::destroyInst()
 void SupplyAnalyzer::analyze()
 {
   Monitor monitor;
-  LOG_INST.info(Loc::current(), "Begin analyzing...");
+  LOG_INST.info(Loc::current(), "Starting...");
   SAModel sa_model = initSAModel();
   buildSupplySchedule(sa_model);
   analyzeSupply(sa_model);
   updateSummary(sa_model);
   printSummary(sa_model);
   writeSupplyCSV(sa_model);
-  LOG_INST.info(Loc::current(), "End analyze", monitor.getStatsInfo());
+  LOG_INST.info(Loc::current(), "Completed", monitor.getStatsInfo());
 
   // debugPlotSAModel(sa_model);
 }
@@ -108,6 +108,9 @@ void SupplyAnalyzer::buildSupplySchedule(SAModel& sa_model)
 
 void SupplyAnalyzer::analyzeSupply(SAModel& sa_model)
 {
+  Monitor monitor;
+  LOG_INST.info(Loc::current(), "Starting...");
+
   GridMap<GCell>& gcell_map = DM_INST.getDatabase().get_gcell_map();
 
   size_t total_pair_num = 0;
@@ -161,6 +164,8 @@ void SupplyAnalyzer::analyzeSupply(SAModel& sa_model)
     LOG_INST.info(Loc::current(), "Analyzed ", analyzed_pair_num, "/", total_pair_num, "(",
                   RTUtil::getPercentage(analyzed_pair_num, total_pair_num), ") grid pairs", stage_monitor.getStatsInfo());
   }
+
+  LOG_INST.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
 EXTLayerRect SupplyAnalyzer::getSearchRect(LayerCoord& first_coord, LayerCoord& second_coord)

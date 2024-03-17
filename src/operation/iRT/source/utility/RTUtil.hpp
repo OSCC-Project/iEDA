@@ -1757,7 +1757,7 @@ class RTUtil
         SortSegmentInnerXASC()(segment);
       }
       std::sort(segment_list.begin(), segment_list.end(), CmpSegmentXASC());
-      RTUtil::merge(segment_list, [](Segment<LayerCoord>& sentry, Segment<LayerCoord>& soldier) {
+      merge(segment_list, [](Segment<LayerCoord>& sentry, Segment<LayerCoord>& soldier) {
         return (sentry.get_first() == soldier.get_first()) && (sentry.get_second() == soldier.get_second());
       });
     };
@@ -2009,7 +2009,7 @@ class RTUtil
   {
     std::vector<std::vector<std::string>> print_table_list;
     for (const fort::char_table& table : table_list) {
-      print_table_list.push_back(RTUtil::splitString(table.to_string(), '\n'));
+      print_table_list.push_back(splitString(table.to_string(), '\n'));
     }
 
     int max_size = INT_MIN;
@@ -2637,8 +2637,8 @@ class RTUtil
       int32_t lb_y = getIntScale(bg_line[0].y());
       int32_t rt_x = getIntScale(bg_line[1].x());
       int32_t rt_y = getIntScale(bg_line[1].y());
-      RTUtil::swapByASC(lb_x, rt_x);
-      RTUtil::swapByASC(lb_y, rt_y);
+      swapByASC(lb_x, rt_x);
+      swapByASC(lb_y, rt_y);
       rect_list.emplace_back(lb_x, lb_y, rt_x, rt_y);
     }
 
@@ -2707,6 +2707,28 @@ class RTUtil
   }
 
   template <typename T>
+  static void erase(std::vector<T>& list, const std::function<bool(T&)>& eraseIf)
+  {
+    erase(list, eraseIf);
+  }
+
+  template <typename T, typename EraseIf>
+  static void erase(std::vector<T>& list, EraseIf eraseIf)
+  {
+    size_t save_idx = 0;
+    size_t sentry_idx = 0;
+    while (sentry_idx < list.size()) {
+      T& sentry = list[sentry_idx];
+      if (!eraseIf(sentry)) {
+        list[save_idx] = std::move(sentry);
+        ++save_idx;
+      }
+      sentry_idx++;
+    }
+    list.erase(list.begin() + save_idx, list.end());
+  }
+
+  template <typename T>
   static void merge(std::vector<T>& list, const std::function<bool(T&, T&)>& mergeIf)
   {
     merge(list, mergeIf);
@@ -2715,27 +2737,27 @@ class RTUtil
   template <typename T, typename MergeIf>
   static void merge(std::vector<T>& list, MergeIf mergeIf)
   {
-    size_t save_id = 0;
-    size_t sentry_id = 0;
-    size_t soldier_id = sentry_id + 1;
-    while (sentry_id < list.size()) {
-      T& sentry = list[sentry_id];
-      while (soldier_id < list.size()) {
-        T& soldier = list[soldier_id];
+    size_t save_idx = 0;
+    size_t sentry_idx = 0;
+    size_t soldier_idx = sentry_idx + 1;
+    while (sentry_idx < list.size()) {
+      T& sentry = list[sentry_idx];
+      while (soldier_idx < list.size()) {
+        T& soldier = list[soldier_idx];
         if (!mergeIf(sentry, soldier)) {
           break;
         }
-        ++soldier_id;
+        ++soldier_idx;
       }
-      list[save_id] = std::move(sentry);
-      ++save_id;
-      if (!(soldier_id < list.size())) {
+      list[save_idx] = std::move(sentry);
+      ++save_idx;
+      if (!(soldier_idx < list.size())) {
         break;
       }
-      sentry_id = soldier_id;
-      soldier_id = sentry_id + 1;
+      sentry_idx = soldier_idx;
+      soldier_idx = sentry_idx + 1;
     }
-    list.erase(list.begin() + save_id, list.end());
+    list.erase(list.begin() + save_idx, list.end());
   }
 
   template <typename T>

@@ -51,7 +51,7 @@ void PinAccessor::destroyInst()
 void PinAccessor::access()
 {
   Monitor monitor;
-  LOG_INST.info(Loc::current(), "Begin accessing...");
+  LOG_INST.info(Loc::current(), "Starting...");
   PAModel pa_model = initPAModel();
   initAccessPointList(pa_model);
   buildAccessPointList(pa_model);
@@ -59,7 +59,7 @@ void PinAccessor::access()
   updateSummary(pa_model);
   printSummary(pa_model);
   writePinCSV(pa_model);
-  LOG_INST.info(Loc::current(), "End access", monitor.getStatsInfo());
+  LOG_INST.info(Loc::current(), "Completed", monitor.getStatsInfo());
 
   // debugPlotPAModel();
 }

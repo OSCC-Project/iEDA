@@ -53,7 +53,7 @@ void TrackAssigner::destroyInst()
 void TrackAssigner::assign()
 {
   Monitor monitor;
-  LOG_INST.info(Loc::current(), "Begin assigning...");
+  LOG_INST.info(Loc::current(), "Starting...");
   TAModel ta_model = initTAModel();
   setTAParameter(ta_model);
   initTAPanelMap(ta_model);
@@ -64,7 +64,7 @@ void TrackAssigner::assign()
   printSummary(ta_model);
   writeNetCSV(ta_model);
   writeViolationCSV(ta_model);
-  LOG_INST.info(Loc::current(), "End assign", monitor.getStatsInfo());
+  LOG_INST.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
 // private
@@ -107,12 +107,12 @@ void TrackAssigner::setTAParameter(TAModel& ta_model)
 {
   int32_t cost_unit = 8;
   TAParameter ta_parameter(128 * cost_unit, 32 * cost_unit, 32 * cost_unit, 2);
-  LOG_INST.info(Loc::current(), "prefer_wire_unit : ", ta_parameter.get_prefer_wire_unit());
-  LOG_INST.info(Loc::current(), "corner_unit : ", ta_parameter.get_corner_unit());
-  LOG_INST.info(Loc::current(), "fixed_rect_unit : ", ta_parameter.get_fixed_rect_unit());
-  LOG_INST.info(Loc::current(), "routed_rect_unit : ", ta_parameter.get_routed_rect_unit());
-  LOG_INST.info(Loc::current(), "violation_unit : ", ta_parameter.get_violation_unit());
-  LOG_INST.info(Loc::current(), "max_routed_times : ", ta_parameter.get_max_routed_times());
+  LOG_INST.info(Loc::current(), "prefer_wire_unit: ", ta_parameter.get_prefer_wire_unit());
+  LOG_INST.info(Loc::current(), "corner_unit: ", ta_parameter.get_corner_unit());
+  LOG_INST.info(Loc::current(), "fixed_rect_unit: ", ta_parameter.get_fixed_rect_unit());
+  LOG_INST.info(Loc::current(), "routed_rect_unit: ", ta_parameter.get_routed_rect_unit());
+  LOG_INST.info(Loc::current(), "violation_unit: ", ta_parameter.get_violation_unit());
+  LOG_INST.info(Loc::current(), "max_routed_times: ", ta_parameter.get_max_routed_times());
   ta_model.set_ta_parameter(ta_parameter);
 }
 
@@ -301,6 +301,9 @@ void TrackAssigner::buildPanelSchedule(TAModel& ta_model)
 
 void TrackAssigner::assignTAPanelMap(TAModel& ta_model)
 {
+  Monitor monitor;
+  LOG_INST.info(Loc::current(), "Starting...");
+
   std::vector<std::vector<TAPanel>>& layer_panel_list = ta_model.get_layer_panel_list();
 
   size_t total_panel_num = 0;
@@ -317,7 +320,7 @@ void TrackAssigner::assignTAPanelMap(TAModel& ta_model)
       if (needRouting(ta_panel)) {
         buildFixedRectList(ta_panel);
         buildPanelTrackAxis(ta_panel);
-        initTANodeMap(ta_panel);
+        buildTANodeMap(ta_panel);
         buildTANodeNeighbor(ta_panel);
         buildOrienNetMap(ta_panel);
         // debugCheckTAPanel(ta_panel);
@@ -333,6 +336,8 @@ void TrackAssigner::assignTAPanelMap(TAModel& ta_model)
     LOG_INST.info(Loc::current(), "Assigned ", assigned_panel_num, "/", total_panel_num, "(",
                   RTUtil::getPercentage(assigned_panel_num, total_panel_num), ") panels", stage_monitor.getStatsInfo());
   }
+
+  LOG_INST.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
 bool TrackAssigner::needRouting(TAPanel& ta_panel)
@@ -378,7 +383,7 @@ void TrackAssigner::buildPanelTrackAxis(TAPanel& ta_panel)
   panel_track_axis.set_y_grid_list(RTUtil::makeScaleGridList(y_scale_list));
 }
 
-void TrackAssigner::initTANodeMap(TAPanel& ta_panel)
+void TrackAssigner::buildTANodeMap(TAPanel& ta_panel)
 {
   PlanarCoord& real_lb = ta_panel.get_panel_rect().get_real_lb();
   PlanarCoord& real_rt = ta_panel.get_panel_rect().get_real_rt();

@@ -66,8 +66,8 @@ class DetailedRouter
   bool needRouting(DRBox& dr_box);
   void buildFixedRectList(DRBox& dr_box);
   void buildBoxTrackAxis(DRBox& dr_box);
-  void initLayerNodeMap(DRBox& dr_box);
-  void initDRNodeValid(DRBox& dr_box);
+  void buildLayerNodeMap(DRBox& dr_box);
+  void buildDRNodeValid(DRBox& dr_box);
   void buildDRNodeNeighbor(DRBox& dr_box);
   void buildOrienNetMap(DRBox& dr_box);
   void routeDRBox(DRBox& dr_box);

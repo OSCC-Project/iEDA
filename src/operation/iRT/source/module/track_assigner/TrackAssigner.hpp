@@ -60,7 +60,7 @@ class TrackAssigner
   bool needRouting(TAPanel& ta_panel);
   void buildFixedRectList(TAPanel& ta_panel);
   void buildPanelTrackAxis(TAPanel& ta_panel);
-  void initTANodeMap(TAPanel& ta_panel);
+  void buildTANodeMap(TAPanel& ta_panel);
   void buildTANodeNeighbor(TAPanel& ta_panel);
   void buildOrienNetMap(TAPanel& ta_panel);
   void routeTAPanel(TAPanel& ta_panel);
