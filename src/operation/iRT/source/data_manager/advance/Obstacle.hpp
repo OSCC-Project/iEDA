@@ -23,11 +23,11 @@
 
 namespace irt {
 
-class Blockage : public EXTLayerRect
+class Obstacle : public EXTLayerRect
 {
  public:
-  Blockage() = default;
-  ~Blockage() = default;
+  Obstacle() = default;
+  ~Obstacle() = default;
   // getter
 
   // setter

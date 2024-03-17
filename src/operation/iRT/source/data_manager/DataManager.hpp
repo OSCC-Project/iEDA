@@ -89,7 +89,7 @@ class DataManager
       for (int32_t y = 0; y < gcell_map.get_y_size(); y++) {
         /**
          * 不能在gcell_map内释放
-         * _type_layer_net_fixed_rect_map 内指针引用于 database内的blockage_list
+         * _type_layer_net_fixed_rect_map 内指针引用于 database内的obstacle_list
          * _net_access_point_map 内指针引用于 pin内的access_point_list
          */
         for (auto& [net_idx, segment_set] : gcell_map[x][y].get_net_result_map()) {
@@ -121,7 +121,7 @@ class DataManager
   void wrapTrackAxis(RoutingLayer& routing_layer, idb::IdbLayerRouting* idb_layer);
   void wrapSpacingTable(RoutingLayer& routing_layer, idb::IdbLayerRouting* idb_layer);
   void wrapLayerViaMasterList(idb::IdbBuilder* idb_builder);
-  void wrapBlockageList(idb::IdbBuilder* idb_builder);
+  void wrapObstacleList(idb::IdbBuilder* idb_builder);
   void wrapNetList(idb::IdbBuilder* idb_builder);
   bool isSkipping(idb::IdbNet* idb_net);
   void wrapPinList(Net& net, idb::IdbNet* idb_net);
@@ -153,10 +153,10 @@ class DataManager
   SortStatus sortByLayerDirectionPriority(ViaMaster& via_master1, ViaMaster& via_master2);
   SortStatus sortByLengthASC(ViaMaster& via_master1, ViaMaster& via_master2);
   SortStatus sortBySymmetryPriority(ViaMaster& via_master1, ViaMaster& via_master2);
-  void buildBlockageList();
-  void transBlockageList();
-  void makeBlockageList();
-  void checkBlockageList();
+  void buildObstacleList();
+  void transObstacleList();
+  void makeObstacleList();
+  void checkObstacleList();
   void buildNetList();
   void buildPinList(Net& net);
   void transPinList(Net& net);

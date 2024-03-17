@@ -271,7 +271,7 @@ std::vector<Violation> RTAPI::getViolationList(std::vector<idb::IdbLayerShape*>&
                                                std::map<int32_t, std::vector<idb::IdbRegularWireSegment*>>& net_wire_via_map)
 {
   /**
-   * env_shape_list 存储 blockage obs pin_shape
+   * env_shape_list 存储 obstacle obs pin_shape
    * net_idb_segment_map 存储 wire via patch
    */
   ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();

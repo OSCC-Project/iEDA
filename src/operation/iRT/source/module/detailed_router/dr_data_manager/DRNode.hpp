@@ -141,7 +141,7 @@ class DRNode : public LayerCoord
  private:
   bool _is_valid = false;
   std::map<Orientation, DRNode*> _neighbor_node_map;
-  // blockage & pin_shape
+  // obstacle & pin_shape
   std::map<Orientation, std::set<int32_t>> _orien_fixed_rect_map;
   // net_result & patch
   std::map<Orientation, std::set<int32_t>> _orien_routed_rect_map;

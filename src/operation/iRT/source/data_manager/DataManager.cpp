@@ -94,7 +94,7 @@ void DataManager::updateFixedRectToGCellMap(ChangeType change_type, int32_t net_
     }
   }
   if (change_type == ChangeType::kDel) {
-    // 由于在database内的blockage_list引用过来，所以不需要delete，也不能delete
+    // 由于在database内的obstacle_list引用过来，所以不需要delete，也不能delete
   }
 }
 
@@ -418,7 +418,7 @@ void DataManager::wrapDatabase(idb::IdbBuilder* idb_builder)
   wrapRow(idb_builder);
   wrapLayerList(idb_builder);
   wrapLayerViaMasterList(idb_builder);
-  wrapBlockageList(idb_builder);
+  wrapObstacleList(idb_builder);
   wrapNetList(idb_builder);
   updateHelper(idb_builder);
 }
@@ -578,26 +578,26 @@ void DataManager::wrapLayerViaMasterList(idb::IdbBuilder* idb_builder)
   }
 }
 
-void DataManager::wrapBlockageList(idb::IdbBuilder* idb_builder)
+void DataManager::wrapObstacleList(idb::IdbBuilder* idb_builder)
 {
   Monitor monitor;
   LOG_INST.info(Loc::current(), "Starting...");
 
-  std::vector<Blockage>& routing_blockage_list = _database.get_routing_blockage_list();
-  std::vector<Blockage>& cut_blockage_list = _database.get_cut_blockage_list();
+  std::vector<Obstacle>& routing_obstacle_list = _database.get_routing_obstacle_list();
+  std::vector<Obstacle>& cut_obstacle_list = _database.get_cut_obstacle_list();
   std::vector<idb::IdbInstance*>& instance_list = idb_builder->get_def_service()->get_design()->get_instance_list()->get_instance_list();
   idb::IdbSpecialNetList* idb_special_net_list = idb_builder->get_def_service()->get_design()->get_special_net_list();
 
-  int32_t total_routing_blockage_num = 0;
-  int32_t total_cut_blockage_num = 0;
+  int32_t total_routing_obstacle_num = 0;
+  int32_t total_cut_obstacle_num = 0;
   {
     // instance
     for (idb::IdbInstance* instance : instance_list) {
       for (idb::IdbLayerShape* obs_box : instance->get_obs_box_list()) {
         if (obs_box->get_layer()->is_routing()) {
-          total_routing_blockage_num += obs_box->get_rect_list().size();
+          total_routing_obstacle_num += obs_box->get_rect_list().size();
         } else if (obs_box->get_layer()->is_cut()) {
-          total_cut_blockage_num += obs_box->get_rect_list().size();
+          total_cut_obstacle_num += obs_box->get_rect_list().size();
         }
       }
       for (idb::IdbPin* idb_pin : instance->get_pin_list()->get_pin_list()) {
@@ -606,9 +606,9 @@ void DataManager::wrapBlockageList(idb::IdbBuilder* idb_builder)
         }
         for (idb::IdbLayerShape* port_box : idb_pin->get_port_box_list()) {
           if (port_box->get_layer()->is_routing()) {
-            total_routing_blockage_num += port_box->get_rect_list().size();
+            total_routing_obstacle_num += port_box->get_rect_list().size();
           } else if (port_box->get_layer()->is_cut()) {
-            total_cut_blockage_num += port_box->get_rect_list().size();
+            total_cut_obstacle_num += port_box->get_rect_list().size();
           }
         }
       }
@@ -618,32 +618,32 @@ void DataManager::wrapBlockageList(idb::IdbBuilder* idb_builder)
       for (idb::IdbSpecialWire* idb_wire : idb_net->get_wire_list()->get_wire_list()) {
         for (idb::IdbSpecialWireSegment* idb_segment : idb_wire->get_segment_list()) {
           if (idb_segment->is_via()) {
-            total_routing_blockage_num += idb_segment->get_via()->get_top_layer_shape().get_rect_list().size();
-            total_routing_blockage_num += idb_segment->get_via()->get_bottom_layer_shape().get_rect_list().size();
-            total_cut_blockage_num += idb_segment->get_via()->get_cut_layer_shape().get_rect_list().size();
+            total_routing_obstacle_num += idb_segment->get_via()->get_top_layer_shape().get_rect_list().size();
+            total_routing_obstacle_num += idb_segment->get_via()->get_bottom_layer_shape().get_rect_list().size();
+            total_cut_obstacle_num += idb_segment->get_via()->get_cut_layer_shape().get_rect_list().size();
           } else {
-            total_routing_blockage_num += 1;
+            total_routing_obstacle_num += 1;
           }
         }
       }
     }
   }
-  routing_blockage_list.reserve(total_routing_blockage_num);
-  cut_blockage_list.reserve(total_cut_blockage_num);
+  routing_obstacle_list.reserve(total_routing_obstacle_num);
+  cut_obstacle_list.reserve(total_cut_obstacle_num);
   {
     // instance
     for (idb::IdbInstance* instance : instance_list) {
       // instance obs
       for (idb::IdbLayerShape* obs_box : instance->get_obs_box_list()) {
         for (idb::IdbRect* rect : obs_box->get_rect_list()) {
-          Blockage blockage;
-          blockage.set_real_lb(rect->get_low_x(), rect->get_low_y());
-          blockage.set_real_rt(rect->get_high_x(), rect->get_high_y());
-          blockage.set_layer_idx(obs_box->get_layer()->get_id());
+          Obstacle obstacle;
+          obstacle.set_real_lb(rect->get_low_x(), rect->get_low_y());
+          obstacle.set_real_rt(rect->get_high_x(), rect->get_high_y());
+          obstacle.set_layer_idx(obs_box->get_layer()->get_id());
           if (obs_box->get_layer()->is_routing()) {
-            routing_blockage_list.push_back(std::move(blockage));
+            routing_obstacle_list.push_back(std::move(obstacle));
           } else if (obs_box->get_layer()->is_cut()) {
-            cut_blockage_list.push_back(std::move(blockage));
+            cut_obstacle_list.push_back(std::move(obstacle));
           }
         }
       }
@@ -654,14 +654,14 @@ void DataManager::wrapBlockageList(idb::IdbBuilder* idb_builder)
         }
         for (idb::IdbLayerShape* port_box : idb_pin->get_port_box_list()) {
           for (idb::IdbRect* rect : port_box->get_rect_list()) {
-            Blockage blockage;
-            blockage.set_real_lb(rect->get_low_x(), rect->get_low_y());
-            blockage.set_real_rt(rect->get_high_x(), rect->get_high_y());
-            blockage.set_layer_idx(port_box->get_layer()->get_id());
+            Obstacle obstacle;
+            obstacle.set_real_lb(rect->get_low_x(), rect->get_low_y());
+            obstacle.set_real_rt(rect->get_high_x(), rect->get_high_y());
+            obstacle.set_layer_idx(port_box->get_layer()->get_id());
             if (port_box->get_layer()->is_routing()) {
-              routing_blockage_list.push_back(std::move(blockage));
+              routing_obstacle_list.push_back(std::move(obstacle));
             } else if (port_box->get_layer()->is_cut()) {
-              cut_blockage_list.push_back(std::move(blockage));
+              cut_obstacle_list.push_back(std::move(obstacle));
             }
           }
         }
@@ -675,29 +675,29 @@ void DataManager::wrapBlockageList(idb::IdbBuilder* idb_builder)
             for (idb::IdbLayerShape layer_shape :
                  {idb_segment->get_via()->get_top_layer_shape(), idb_segment->get_via()->get_bottom_layer_shape()}) {
               for (idb::IdbRect* rect : layer_shape.get_rect_list()) {
-                Blockage blockage;
-                blockage.set_real_lb(rect->get_low_x(), rect->get_low_y());
-                blockage.set_real_rt(rect->get_high_x(), rect->get_high_y());
-                blockage.set_layer_idx(layer_shape.get_layer()->get_id());
-                routing_blockage_list.push_back(std::move(blockage));
+                Obstacle obstacle;
+                obstacle.set_real_lb(rect->get_low_x(), rect->get_low_y());
+                obstacle.set_real_rt(rect->get_high_x(), rect->get_high_y());
+                obstacle.set_layer_idx(layer_shape.get_layer()->get_id());
+                routing_obstacle_list.push_back(std::move(obstacle));
               }
             }
             idb::IdbLayerShape cut_layer_shape = idb_segment->get_via()->get_cut_layer_shape();
             for (idb::IdbRect* rect : cut_layer_shape.get_rect_list()) {
-              Blockage blockage;
-              blockage.set_real_lb(rect->get_low_x(), rect->get_low_y());
-              blockage.set_real_rt(rect->get_high_x(), rect->get_high_y());
-              blockage.set_layer_idx(cut_layer_shape.get_layer()->get_id());
-              cut_blockage_list.push_back(std::move(blockage));
+              Obstacle obstacle;
+              obstacle.set_real_lb(rect->get_low_x(), rect->get_low_y());
+              obstacle.set_real_rt(rect->get_high_x(), rect->get_high_y());
+              obstacle.set_layer_idx(cut_layer_shape.get_layer()->get_id());
+              cut_obstacle_list.push_back(std::move(obstacle));
             }
           } else {
             idb::IdbRect* idb_rect = idb_segment->get_bounding_box();
             // wire
-            Blockage blockage;
-            blockage.set_real_lb(idb_rect->get_low_x(), idb_rect->get_low_y());
-            blockage.set_real_rt(idb_rect->get_high_x(), idb_rect->get_high_y());
-            blockage.set_layer_idx(idb_segment->get_layer()->get_id());
-            routing_blockage_list.push_back(std::move(blockage));
+            Obstacle obstacle;
+            obstacle.set_real_lb(idb_rect->get_low_x(), idb_rect->get_low_y());
+            obstacle.set_real_rt(idb_rect->get_high_x(), idb_rect->get_high_y());
+            obstacle.set_layer_idx(idb_segment->get_layer()->get_id());
+            routing_obstacle_list.push_back(std::move(obstacle));
           }
         }
       }
@@ -943,7 +943,7 @@ void DataManager::buildDatabase()
   buildDie();
   buildLayerList();
   buildLayerViaMasterList();
-  buildBlockageList();
+  buildObstacleList();
   buildNetList();
   buildGCellMap();
   updateHelper();
@@ -1397,73 +1397,73 @@ SortStatus DataManager::sortBySymmetryPriority(ViaMaster& via_master1, ViaMaster
   }
 }
 
-void DataManager::buildBlockageList()
+void DataManager::buildObstacleList()
 {
-  transBlockageList();
-  makeBlockageList();
-  checkBlockageList();
+  transObstacleList();
+  makeObstacleList();
+  checkObstacleList();
 }
 
-void DataManager::transBlockageList()
+void DataManager::transObstacleList()
 {
-  std::vector<Blockage>& routing_blockage_list = _database.get_routing_blockage_list();
-  std::vector<Blockage>& cut_blockage_list = _database.get_cut_blockage_list();
+  std::vector<Obstacle>& routing_obstacle_list = _database.get_routing_obstacle_list();
+  std::vector<Obstacle>& cut_obstacle_list = _database.get_cut_obstacle_list();
 
 #pragma omp parallel for
-  for (Blockage& blockage : routing_blockage_list) {
-    blockage.set_layer_idx(_helper.getRoutingLayerIdxByIDBLayerId(blockage.get_layer_idx()));
+  for (Obstacle& obstacle : routing_obstacle_list) {
+    obstacle.set_layer_idx(_helper.getRoutingLayerIdxByIDBLayerId(obstacle.get_layer_idx()));
   }
 #pragma omp parallel for
-  for (Blockage& blockage : cut_blockage_list) {
-    blockage.set_layer_idx(_helper.getCutLayerIdxByIDBLayerId(blockage.get_layer_idx()));
+  for (Obstacle& obstacle : cut_obstacle_list) {
+    obstacle.set_layer_idx(_helper.getCutLayerIdxByIDBLayerId(obstacle.get_layer_idx()));
   }
 }
 
-void DataManager::makeBlockageList()
+void DataManager::makeObstacleList()
 {
   ScaleAxis& gcell_axis = _database.get_gcell_axis();
   Die& die = _database.get_die();
-  std::vector<Blockage>& routing_blockage_list = _database.get_routing_blockage_list();
-  std::vector<Blockage>& cut_blockage_list = _database.get_cut_blockage_list();
+  std::vector<Obstacle>& routing_obstacle_list = _database.get_routing_obstacle_list();
+  std::vector<Obstacle>& cut_obstacle_list = _database.get_cut_obstacle_list();
 
 #pragma omp parallel for
-  for (Blockage& routing_blockage : routing_blockage_list) {
-    routing_blockage.set_real_rect(RTUtil::getRegularRect(routing_blockage.get_real_rect(), die.get_real_rect()));
-    routing_blockage.set_grid_rect(RTUtil::getClosedGCellGridRect(routing_blockage.get_real_rect(), gcell_axis));
+  for (Obstacle& routing_obstacle : routing_obstacle_list) {
+    routing_obstacle.set_real_rect(RTUtil::getRegularRect(routing_obstacle.get_real_rect(), die.get_real_rect()));
+    routing_obstacle.set_grid_rect(RTUtil::getClosedGCellGridRect(routing_obstacle.get_real_rect(), gcell_axis));
   }
 #pragma omp parallel for
-  for (Blockage& cut_blockage : cut_blockage_list) {
-    cut_blockage.set_real_rect(RTUtil::getRegularRect(cut_blockage.get_real_rect(), die.get_real_rect()));
-    cut_blockage.set_grid_rect(RTUtil::getClosedGCellGridRect(cut_blockage.get_real_rect(), gcell_axis));
+  for (Obstacle& cut_obstacle : cut_obstacle_list) {
+    cut_obstacle.set_real_rect(RTUtil::getRegularRect(cut_obstacle.get_real_rect(), die.get_real_rect()));
+    cut_obstacle.set_grid_rect(RTUtil::getClosedGCellGridRect(cut_obstacle.get_real_rect(), gcell_axis));
   }
 }
 
-void DataManager::checkBlockageList()
+void DataManager::checkObstacleList()
 {
   Die& die = _database.get_die();
   std::vector<RoutingLayer>& routing_layer_list = _database.get_routing_layer_list();
-  std::vector<Blockage>& routing_blockage_list = _database.get_routing_blockage_list();
-  std::vector<Blockage>& cut_blockage_list = _database.get_cut_blockage_list();
+  std::vector<Obstacle>& routing_obstacle_list = _database.get_routing_obstacle_list();
+  std::vector<Obstacle>& cut_obstacle_list = _database.get_cut_obstacle_list();
 
 #pragma omp parallel for
-  for (Blockage& blockage : routing_blockage_list) {
-    if (blockage.get_real_lb_x() < die.get_real_lb_x() || blockage.get_real_lb_y() < die.get_real_lb_y()
-        || die.get_real_rt_x() < blockage.get_real_rt_x() || die.get_real_rt_y() < blockage.get_real_rt_y()) {
+  for (Obstacle& obstacle : routing_obstacle_list) {
+    if (obstacle.get_real_lb_x() < die.get_real_lb_x() || obstacle.get_real_lb_y() < die.get_real_lb_y()
+        || die.get_real_rt_x() < obstacle.get_real_rt_x() || die.get_real_rt_y() < obstacle.get_real_rt_y()) {
       // log
-      LOG_INST.error(Loc::current(), "The blockage '(", blockage.get_real_lb_x(), " , ", blockage.get_real_lb_y(), ") - (",
-                     blockage.get_real_rt_x(), " , ", blockage.get_real_rt_y(), ") ",
-                     routing_layer_list[blockage.get_layer_idx()].get_layer_name(), "' is wrong! Die '(", die.get_real_lb_x(), " , ",
+      LOG_INST.error(Loc::current(), "The obstacle '(", obstacle.get_real_lb_x(), " , ", obstacle.get_real_lb_y(), ") - (",
+                     obstacle.get_real_rt_x(), " , ", obstacle.get_real_rt_y(), ") ",
+                     routing_layer_list[obstacle.get_layer_idx()].get_layer_name(), "' is wrong! Die '(", die.get_real_lb_x(), " , ",
                      die.get_real_lb_y(), ") - (", die.get_real_rt_x(), " , ", die.get_real_rt_y(), ")'");
     }
   }
 #pragma omp parallel for
-  for (Blockage& blockage : cut_blockage_list) {
-    if (blockage.get_real_lb_x() < die.get_real_lb_x() || blockage.get_real_lb_y() < die.get_real_lb_y()
-        || die.get_real_rt_x() < blockage.get_real_rt_x() || die.get_real_rt_y() < blockage.get_real_rt_y()) {
+  for (Obstacle& obstacle : cut_obstacle_list) {
+    if (obstacle.get_real_lb_x() < die.get_real_lb_x() || obstacle.get_real_lb_y() < die.get_real_lb_y()
+        || die.get_real_rt_x() < obstacle.get_real_rt_x() || die.get_real_rt_y() < obstacle.get_real_rt_y()) {
       // log
-      LOG_INST.error(Loc::current(), "The blockage '(", blockage.get_real_lb_x(), " , ", blockage.get_real_lb_y(), ") - (",
-                     blockage.get_real_rt_x(), " , ", blockage.get_real_rt_y(), ") ",
-                     routing_layer_list[blockage.get_layer_idx()].get_layer_name(), "' is wrong! Die '(", die.get_real_lb_x(), " , ",
+      LOG_INST.error(Loc::current(), "The obstacle '(", obstacle.get_real_lb_x(), " , ", obstacle.get_real_lb_y(), ") - (",
+                     obstacle.get_real_rt_x(), " , ", obstacle.get_real_rt_y(), ") ",
+                     routing_layer_list[obstacle.get_layer_idx()].get_layer_name(), "' is wrong! Die '(", die.get_real_lb_x(), " , ",
                      die.get_real_lb_y(), ") - (", die.get_real_rt_x(), " , ", die.get_real_rt_y(), ")'");
     }
   }
@@ -1553,8 +1553,8 @@ void DataManager::buildGCellMap()
   LOG_INST.info(Loc::current(), "Starting...");
 
   Die& die = _database.get_die();
-  std::vector<Blockage>& routing_blockage_list = _database.get_routing_blockage_list();
-  std::vector<Blockage>& cut_blockage_list = _database.get_cut_blockage_list();
+  std::vector<Obstacle>& routing_obstacle_list = _database.get_routing_obstacle_list();
+  std::vector<Obstacle>& cut_obstacle_list = _database.get_cut_obstacle_list();
   std::vector<Net>& net_list = _database.get_net_list();
 
   GridMap<GCell>& gcell_map = _database.get_gcell_map();
@@ -1574,11 +1574,11 @@ void DataManager::buildGCellMap()
   std::vector<std::tuple<int32_t, EXTLayerRect*, bool>> single_rect_tuple_list_list;
   {
     parallel_rect_tuple_list_list.resize(std::max(0, static_cast<int32_t>(interval_list.size()) - 1));
-    for (Blockage& routing_blockage : routing_blockage_list) {
-      std::tuple<int32_t, EXTLayerRect*, bool> rect_tuple(-1, &routing_blockage, true);
+    for (Obstacle& routing_obstacle : routing_obstacle_list) {
+      std::tuple<int32_t, EXTLayerRect*, bool> rect_tuple(-1, &routing_obstacle, true);
       bool is_insert = false;
       for (size_t i = 0; (i + 1) < interval_list.size(); i++) {
-        if (interval_list[i] < routing_blockage.get_grid_lb_y() && routing_blockage.get_grid_rt_y() < interval_list[i + 1]) {
+        if (interval_list[i] < routing_obstacle.get_grid_lb_y() && routing_obstacle.get_grid_rt_y() < interval_list[i + 1]) {
           parallel_rect_tuple_list_list[i].push_back(rect_tuple);
           is_insert = true;
           break;
@@ -1588,11 +1588,11 @@ void DataManager::buildGCellMap()
         single_rect_tuple_list_list.push_back(rect_tuple);
       }
     }
-    for (Blockage& cut_blockage : cut_blockage_list) {
-      std::tuple<int32_t, EXTLayerRect*, bool> rect_tuple(-1, &cut_blockage, false);
+    for (Obstacle& cut_obstacle : cut_obstacle_list) {
+      std::tuple<int32_t, EXTLayerRect*, bool> rect_tuple(-1, &cut_obstacle, false);
       bool is_insert = false;
       for (size_t i = 0; (i + 1) < interval_list.size(); i++) {
-        if (interval_list[i] < cut_blockage.get_grid_lb_y() && cut_blockage.get_grid_rt_y() < interval_list[i + 1]) {
+        if (interval_list[i] < cut_obstacle.get_grid_lb_y() && cut_obstacle.get_grid_rt_y() < interval_list[i + 1]) {
           parallel_rect_tuple_list_list[i].push_back(rect_tuple);
           is_insert = true;
           break;
@@ -1837,11 +1837,11 @@ void DataManager::printDatabase()
     }
     LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), via_master_name_string);
   }
-  // ********** Blockage ********** //
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "routing_blockage_num");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _database.get_routing_blockage_list().size());
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "cut_blockage_num");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _database.get_cut_blockage_list().size());
+  // ********** Obstacle ********** //
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "routing_obstacle_num");
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _database.get_routing_obstacle_list().size());
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "cut_obstacle_num");
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _database.get_cut_obstacle_list().size());
   // ********** Net ********** //
   std::vector<Net>& net_list = _database.get_net_list();
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "net_num");

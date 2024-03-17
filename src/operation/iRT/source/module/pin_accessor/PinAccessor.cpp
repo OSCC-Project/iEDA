@@ -167,9 +167,9 @@ std::vector<PlanarRect> PinAccessor::getPlanarLegalRectList(int32_t curr_net_idx
       reduced_rect_list.push_back(reduced_rect);
     }
   }
-  // 要被剪裁的blockage的集合 排序按照 本层 上层
+  // 要被剪裁的obstacle的集合 排序按照 本层 上层
   /**
-   * 要被剪裁的blockage的集合
+   * 要被剪裁的obstacle的集合
    * 如果不是最顶层就往上取一层
    * 是最顶层就往下取一层
    */

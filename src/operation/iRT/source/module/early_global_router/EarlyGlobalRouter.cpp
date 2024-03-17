@@ -95,10 +95,10 @@ void EarlyGlobalRouter::recordLog(std::string record_file_path)
 void EarlyGlobalRouter::plot()
 {
   int32_t node_data_type = 0;
-  int32_t blockage_data_type = 1;
+  int32_t obstacle_data_type = 1;
   int32_t text_data_type = 2;
 
-  std::vector<Blockage>& routing_blockage_list = _egr_data_manager.getDatabase().get_routing_blockage_list();
+  std::vector<Obstacle>& routing_obstacle_list = _egr_data_manager.getDatabase().get_routing_obstacle_list();
   std::vector<GridMap<EGRNode>>& layer_resource_map = _egr_data_manager.getDatabase().get_layer_resource_map();
 
   std::ofstream* gds_file = RTUtil::getOutputFileStream(_egr_data_manager.getConfig().temp_directory_path + "egr.gds");
@@ -108,18 +108,18 @@ void EarlyGlobalRouter::plot()
   RTUtil::pushStream(gds_file, "LIBNAME early_global_router", "\n");
   RTUtil::pushStream(gds_file, "UNITS 0.001 1e-9", "\n");
 
-  // routing_blockage_list
+  // routing_obstacle_list
   RTUtil::pushStream(gds_file, "BGNSTR", "\n");
-  RTUtil::pushStream(gds_file, "STRNAME ", "routing_blockage_list", "\n");
-  for (Blockage& routing_blockage : routing_blockage_list) {
-    int32_t lb_x = routing_blockage.get_real_lb_x();
-    int32_t lb_y = routing_blockage.get_real_lb_y();
-    int32_t rt_x = routing_blockage.get_real_rt_x();
-    int32_t rt_y = routing_blockage.get_real_rt_y();
+  RTUtil::pushStream(gds_file, "STRNAME ", "routing_obstacle_list", "\n");
+  for (Obstacle& routing_obstacle : routing_obstacle_list) {
+    int32_t lb_x = routing_obstacle.get_real_lb_x();
+    int32_t lb_y = routing_obstacle.get_real_lb_y();
+    int32_t rt_x = routing_obstacle.get_real_rt_x();
+    int32_t rt_y = routing_obstacle.get_real_rt_y();
 
     RTUtil::pushStream(gds_file, "BOUNDARY", "\n");
-    RTUtil::pushStream(gds_file, "LAYER ", routing_blockage.get_layer_idx(), "\n");
-    RTUtil::pushStream(gds_file, "DATATYPE ", blockage_data_type, "\n");
+    RTUtil::pushStream(gds_file, "LAYER ", routing_obstacle.get_layer_idx(), "\n");
+    RTUtil::pushStream(gds_file, "DATATYPE ", obstacle_data_type, "\n");
     RTUtil::pushStream(gds_file, "XY", "\n");
     RTUtil::pushStream(gds_file, lb_x, " : ", lb_y, "\n");
     RTUtil::pushStream(gds_file, rt_x, " : ", lb_y, "\n");
@@ -210,7 +210,7 @@ void EarlyGlobalRouter::plot()
   RTUtil::pushStream(gds_file, "BGNSTR", "\n");
   RTUtil::pushStream(gds_file, "STRNAME ", "top", "\n");
   RTUtil::pushStream(gds_file, "SREF", "\n");
-  RTUtil::pushStream(gds_file, "SNAME routing_blockage_list\n");
+  RTUtil::pushStream(gds_file, "SNAME routing_obstacle_list\n");
   RTUtil::pushStream(gds_file, "XY 0:0", "\n");
   RTUtil::pushStream(gds_file, "ENDEL", "\n");
   RTUtil::pushStream(gds_file, "SREF", "\n");
