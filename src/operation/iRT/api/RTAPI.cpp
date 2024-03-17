@@ -71,7 +71,7 @@ void RTAPI::initRT(std::map<std::string, std::any> config_map)
   // clang-format on
   LOG_INST.printLogFilePath();
   DataManager::initInst();
-  DM_INST.input(config_map, dmInst->get_idb_builder());
+  DM_INST.prepare(config_map, dmInst->get_idb_builder());
   GDSPlotter::initInst();
 }
 
@@ -105,7 +105,7 @@ void RTAPI::runRT()
 void RTAPI::destroyRT()
 {
   GDSPlotter::destroyInst();
-  DM_INST.output();
+  DM_INST.clean();
   DataManager::destroyInst();
   LOG_INST.printLogFilePath();
   // clang-format off
@@ -463,6 +463,7 @@ std::map<std::string, std::vector<double>> RTAPI::getTiming(
 
 void RTAPI::outputDef(std::string output_def_file_path)
 {
+  DM_INST.outputToIDB();
   dmInst->saveDef(output_def_file_path);
 }
 

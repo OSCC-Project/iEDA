@@ -110,13 +110,13 @@ void DrcManager::checkSelf()
 
   // condition_area.checkFastMode();
 
-  DrcRuleConditionNotch condition_notch(_condition_manager, _engine);
+  // DrcRuleConditionNotch condition_notch(_condition_manager, _engine);
 
-  condition_notch.checkFastMode();
+  // condition_notch.checkFastMode();
 
-  DrcRuleConditionStep condition_step(_condition_manager, _engine);
+  // DrcRuleConditionStep condition_step(_condition_manager, _engine);
 
-  condition_step.checkFastMode();
+  // condition_step.checkFastMode();
 }
 
 }  // namespace idrc

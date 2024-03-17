@@ -50,7 +50,7 @@ void DataManager::destroyInst()
 
 // function
 
-void DataManager::input(std::map<std::string, std::any>& config_map, idb::IdbBuilder* idb_builder)
+void DataManager::prepare(std::map<std::string, std::any>& config_map, idb::IdbBuilder* idb_builder)
 {
   Monitor monitor;
   LOG_INST.info(Loc::current(), "Starting...");
@@ -64,14 +64,20 @@ void DataManager::input(std::map<std::string, std::any>& config_map, idb::IdbBui
   LOG_INST.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
-void DataManager::output()
+void DataManager::clean()
 {
   Monitor monitor;
   LOG_INST.info(Loc::current(), "Starting...");
+  outputToIDB();
+  outputSummary();
+  freeGCellMap();
+  LOG_INST.info(Loc::current(), "Completed", monitor.getStatsInfo());
+}
+
+void DataManager::outputToIDB()
+{
   outputGCellGrid();
   outputNetList();
-  outputSummary();
-  LOG_INST.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
 #if 1  // 更新GCellMap
@@ -398,7 +404,7 @@ idb::IdbRegularWireSegment* DataManager::getIDBSegmentByNetPatch(int32_t net_idx
 
 DataManager* DataManager::_dm_instance = nullptr;
 
-#if 1  // input
+#if 1  // prepare
 
 void DataManager::wrapConfig(std::map<std::string, std::any>& config_map)
 {
@@ -1897,7 +1903,9 @@ void DataManager::writePYScript()
 
 #endif
 
-#if 1  // output
+#if 1  // clean
+
+
 
 void DataManager::outputGCellGrid()
 {
@@ -1975,6 +1983,34 @@ void DataManager::outputNetList()
 void DataManager::outputSummary()
 {
   RTAPI_INST.outputSummary();
+}
+
+void DataManager::freeGCellMap()
+{
+  GridMap<GCell>& gcell_map = _database.get_gcell_map();
+
+  for (int32_t x = 0; x < gcell_map.get_x_size(); x++) {
+    for (int32_t y = 0; y < gcell_map.get_y_size(); y++) {
+      /**
+       * 不能在gcell_map内释放
+       * _type_layer_net_fixed_rect_map 内指针引用于 database内的obstacle_list
+       * _net_access_point_map 内指针引用于 pin内的access_point_list
+       */
+      for (auto& [net_idx, segment_set] : gcell_map[x][y].get_net_result_map()) {
+        for (Segment<LayerCoord>* segment : segment_set) {
+          updateNetResultToGCellMap(ChangeType::kDel, net_idx, segment);
+        }
+      }
+      for (auto& [net_idx, patch_set] : gcell_map[x][y].get_net_patch_map()) {
+        for (EXTLayerRect* patch : patch_set) {
+          updatePatchToGCellMap(ChangeType::kDel, net_idx, patch);
+        }
+      }
+      for (Violation* violation : gcell_map[x][y].get_violation_set()) {
+        updateViolationToGCellMap(ChangeType::kDel, violation);
+      }
+    }
+  }
 }
 
 #endif

@@ -103,11 +103,11 @@ void DetailedRouter::iterativeDRModel(DRModel& dr_model)
   int32_t cost_unit = 8;
   std::vector<DRParameter> dr_parameter_list = {
       /** format **/ {9, 0, 4 * cost_unit, 1 * cost_unit, 1 * cost_unit, true, 4},
-      // /** format **/ {9, -3, 8 * cost_unit, 2 * cost_unit, 2 * cost_unit, false, 4},
-      // /** format **/ {9, -6, 16 * cost_unit, 4 * cost_unit, 4 * cost_unit, false, 4},
-      // /** format **/ {9, 0, 32 * cost_unit, 8 * cost_unit, 8 * cost_unit, false, 4},
-      // /** format **/ {9, -3, 64 * cost_unit, 16 * cost_unit, 16 * cost_unit, false, 4},
-      // /** format **/ {9, -6, 128 * cost_unit, 32 * cost_unit, 32 * cost_unit, false, 4},
+      /** format **/ {9, -3, 8 * cost_unit, 2 * cost_unit, 2 * cost_unit, false, 4},
+      /** format **/ {9, -6, 16 * cost_unit, 4 * cost_unit, 4 * cost_unit, false, 4},
+      /** format **/ {9, 0, 32 * cost_unit, 8 * cost_unit, 8 * cost_unit, false, 4},
+      /** format **/ {9, -3, 64 * cost_unit, 16 * cost_unit, 16 * cost_unit, false, 4},
+      /** format **/ {9, -6, 128 * cost_unit, 32 * cost_unit, 32 * cost_unit, false, 4},
   };
   for (size_t i = 0, iter = 1; i < dr_parameter_list.size(); i++, iter++) {
     Monitor iter_monitor;
@@ -1938,7 +1938,6 @@ void DetailedRouter::debugOutputDef(DRModel& dr_model)
 {
   std::string& dr_temp_directory_path = DM_INST.getConfig().dr_temp_directory_path;
 
-  DM_INST.output();
   RTAPI_INST.outputDef(RTUtil::getString(dr_temp_directory_path, "dr.def.temp"));
 }
 
