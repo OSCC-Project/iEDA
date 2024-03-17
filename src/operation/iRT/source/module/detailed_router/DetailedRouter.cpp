@@ -102,7 +102,7 @@ void DetailedRouter::iterativeDRModel(DRModel& dr_model)
 {
   int32_t cost_unit = 8;
   std::vector<DRParameter> dr_parameter_list = {
-      /** format **/ {9, 0, 4 * cost_unit, 1 * cost_unit, 1 * cost_unit, true, 1},
+      /** format **/ {9, 0, 4 * cost_unit, 1 * cost_unit, 1 * cost_unit, true, 4},
       /** format **/ {9, -3, 8 * cost_unit, 2 * cost_unit, 2 * cost_unit, false, 4},
       /** format **/ {9, -6, 16 * cost_unit, 4 * cost_unit, 4 * cost_unit, false, 4},
       /** format **/ {9, 0, 32 * cost_unit, 8 * cost_unit, 8 * cost_unit, false, 4},
