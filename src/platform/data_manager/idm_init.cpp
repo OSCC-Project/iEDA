@@ -54,7 +54,7 @@ bool DataManager::initDef(string def_path)
 
 bool DataManager::initVerilog(string verilog_path, string top_module)
 {
-  _idb_def_service = _idb_builder->buildVerilog(verilog_path, top_module);
+  _idb_def_service = _idb_builder->rustBuildVerilog(verilog_path, top_module);
   _design = get_idb_design();
 
   return _idb_def_service == nullptr ? false : true;
