@@ -51,6 +51,10 @@ typedef enum DclType
   KWor = 8,
 } DclType;
 
+typedef struct Rc_RefCell_VerilogModule Rc_RefCell_VerilogModule;
+
+typedef struct VerilogFile VerilogFile;
+
 typedef struct VerilogModule VerilogModule;
 
 /**
@@ -166,20 +170,33 @@ typedef struct RustVerilogPortRefPortConnect
   void* net_expr;
 } RustVerilogPortRefPortConnect;
 
+typedef struct RustVerilogFile
+{
+  struct RustVec verilog_modules;
+} RustVerilogFile;
+
 /**
  * @brief Rust parser verilog interface.
  *
  * @param verilog_path
  * @return void*
  */
-void* rust_parse_verilog(const char* verilog_path, const char* top_module_name);
+void* rust_parse_verilog(const char* verilog_path);
 
 /**
- * @brief rust free verilog_module memory after build data of verilog.
+ * @brief  Rust flateen module interface.
  *
- * @param c_verilog_module
+ * @param c_verilog_file
+ * @param top_module_name
  */
-void rust_free_verilog_module(void* c_verilog_module);
+void rust_flatten_module(void* c_verilog_file, const char* top_module_name);
+
+/**
+ * @brief rust free verilog_file memory after build data of verilog.
+ *
+ * @param c_verilog_file
+ */
+void rust_free_verilog_file(void* c_verilog_file);
 
 uintptr_t rust_vec_len(const struct RustVec* vec);
 /**
@@ -294,6 +311,16 @@ bool rust_is_verilog_dcls_stmt(void* c_verilog_stmt);
  * @return false
  */
 bool rust_is_module_stmt(void* c_verilog_stmt);
+
+/**
+ * @brief  Rust convert verilog_file to C struct.
+ *
+ * @param c_verilog_file
+ * @return struct RustVerilogFile*
+ */
+struct RustVerilogFile* rust_convert_verilog_file(void* c_verilog_file);
+
+void* rust_convert_rc_ref_cell_module(void* c_module_ref);
 }
 
 namespace ista {
@@ -307,12 +334,17 @@ class RustVerilogReader
   RustVerilogReader(RustVerilogReader&& other) noexcept = default;
   RustVerilogReader& operator=(RustVerilogReader&& rhs) noexcept = default;
 
+  void* get_verilog_file_ptr() { return _verilog_file_ptr; }
   auto* get_top_module() { return _top_module; }
+  auto& get_verilog_modules() { return _verilog_modules; }
 
-  unsigned readVerilog(const char* verilog_file, const char* top_module_name);
+  unsigned readVerilog(const char* verilog_file);
+  unsigned flattenModule(const char* top_module_name);
 
  private:
-  std::vector<RustVerilogModule*> _verilog_modules;  //!< The current design parsed from verilog file. whether need unique_ptr?
-  RustVerilogModule* _top_module = nullptr;          //!< The design top module.
+  void* _verilog_file_ptr;  // the parsered verilog file.
+  std::string _top_module_name;
+  std::vector<std::unique_ptr<RustVerilogModule>> _verilog_modules;  //!< The current design parsed from verilog file.
+  RustVerilogModule* _top_module = nullptr;                          //!< The design top module.
 };
 }  // namespace ista

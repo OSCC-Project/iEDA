@@ -529,7 +529,7 @@ fn process_concat_net_expr(
     new_one_net_expr
 }
 
-fn flatten_module(
+fn flatten_the_module(
     cur_module: &Rc<RefCell<verilog_data::VerilogModule>>,
     parent_module: &Rc<RefCell<verilog_data::VerilogModule>>,
     inst_stmt: &verilog_data::VerilogInst,
@@ -555,7 +555,7 @@ fn flatten_module(
                         module_inst_stmt.get_inst_name()
                     );
 
-                    flatten_module(sub_module, cur_module, module_inst_stmt, module_map);
+                    flatten_the_module(sub_module, cur_module, module_inst_stmt, module_map);
 
                     let mut cur_module_mut = cur_module.borrow_mut();
 
@@ -646,13 +646,13 @@ fn flatten_module(
     }
 }
 
-pub fn parse_verilog_file(verilog_file_path: &str, top_module_name: &str) -> verilog_data::VerilogFile {
+pub fn parse_verilog_file(verilog_file_path: &str) -> verilog_data::VerilogFile {
     // Generate verilog.pest parser
     let input_str =
         std::fs::read_to_string(verilog_file_path).unwrap_or_else(|_| panic!("Can't read file: {}", verilog_file_path));
     let parse_result = VerilogParser::parse(Rule::verilog_file, input_str.as_str());
 
-    let mut verilog_file = verilog_data::VerilogFile::new(top_module_name);
+    let mut verilog_file = verilog_data::VerilogFile::new();
 
     match parse_result {
         Ok(pairs) => {
@@ -713,6 +713,25 @@ pub fn parse_verilog_file(verilog_file_path: &str, top_module_name: &str) -> ver
         }
     }
 
+    verilog_file
+}
+
+#[no_mangle]
+pub extern "C" fn rust_parse_verilog(verilog_path: *const c_char) -> *mut c_void {
+    let c_str_verilog_path = unsafe { std::ffi::CStr::from_ptr(verilog_path) };
+    let r_str_verilog_path = c_str_verilog_path.to_string_lossy().into_owned();
+    println!("r str {}", r_str_verilog_path);
+
+    let verilog_file = parse_verilog_file(&r_str_verilog_path);
+
+    let verilog_file_pointer = Box::new(verilog_file);
+
+    let raw_pointer = Box::into_raw(verilog_file_pointer);
+    raw_pointer as *mut c_void
+}
+
+pub fn flatten_module(verilog_file: &mut verilog_data::VerilogFile, top_module_name: &str) {
+    verilog_file.set_top_module_name(top_module_name);
     let module_map = verilog_file.get_module_map();
     if module_map.len() > 1 {
         let the_module = module_map.get(top_module_name).unwrap();
@@ -739,7 +758,7 @@ pub fn parse_verilog_file(verilog_file_path: &str, top_module_name: &str) -> ver
                             module_inst_stmt.get_inst_name()
                         );
 
-                        flatten_module(sub_module, the_module, module_inst_stmt, module_map);
+                        flatten_the_module(sub_module, the_module, module_inst_stmt, module_map);
                         let mut the_module_mut = the_module.borrow_mut();
                         the_module_mut.erase_stmt(&stmt);
                         break;
@@ -753,30 +772,22 @@ pub fn parse_verilog_file(verilog_file_path: &str, top_module_name: &str) -> ver
 
         println!("flatten module {} end", top_module_name);
     }
-    verilog_file
 }
 
 #[no_mangle]
-pub extern "C" fn rust_parse_verilog(verilog_path: *const c_char, top_module_name: *const c_char) -> *mut c_void {
-    let c_str_verilog_path = unsafe { std::ffi::CStr::from_ptr(verilog_path) };
-    let r_str_verilog_path = c_str_verilog_path.to_string_lossy().into_owned();
-    println!("r str {}", r_str_verilog_path);
-
+pub extern "C" fn rust_flatten_module(c_verilog_file: *mut verilog_data::VerilogFile, top_module_name: *const c_char) {
     let c_str_top_module_name = unsafe { std::ffi::CStr::from_ptr(top_module_name) };
     let r_str_top_module_name = c_str_top_module_name.to_string_lossy().into_owned();
 
-    let mut verilog_file = parse_verilog_file(&r_str_verilog_path, &r_str_top_module_name);
-    let verilog_module_clone = (*verilog_file.get_top_module().borrow()).clone();
-    let verilog_modules_pointer = Box::new(verilog_module_clone);
+    let verilog_file = unsafe { &mut (*c_verilog_file) };
 
-    let raw_pointer = Box::into_raw(verilog_modules_pointer);
-    raw_pointer as *mut c_void
+    flatten_module(verilog_file, &r_str_top_module_name);
 }
 
 // To do
 #[no_mangle]
-pub extern "C" fn rust_free_verilog_module(c_verilog_module: *mut verilog_data::VerilogModule) {
-    let _: Box<verilog_data::VerilogModule> = unsafe { Box::from_raw(c_verilog_module) };
+pub extern "C" fn rust_free_verilog_file(c_verilog_file: *mut verilog_data::VerilogFile) {
+    let _: Box<verilog_data::VerilogFile> = unsafe { Box::from_raw(c_verilog_file) };
 }
 
 #[cfg(test)]

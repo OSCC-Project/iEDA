@@ -143,7 +143,7 @@ void IDBParser::initNetlist()
       inst_pos.push_back(pos);
       // }
     }
-    
+
     if (idb_net->has_io_pins()) {
       for (auto* idb_pin : idb_net->get_io_pins()->get_pin_list()) {
         auto pin = transform(idb_pin);
@@ -304,7 +304,9 @@ std::shared_ptr<Net> IDBParser::transform(idb::IdbNet* idb_net)
   } else {
     net_ptr->set_net_type(NET_TYPE::kSignal);
   }
-
+  if (idb_net->has_io_pins()) {
+    net_ptr->set_io_net();
+  }
   // set net state.
   net_ptr->set_net_state(NET_STATE::kNormal);
   return net_ptr;
