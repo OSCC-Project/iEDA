@@ -16,6 +16,7 @@
 // ***************************************************************************************
 #pragma once
 
+#include "PlanarRect.hpp"
 #include "RTHeader.hpp"
 
 namespace irt {

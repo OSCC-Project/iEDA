@@ -16,12 +16,12 @@
 // ***************************************************************************************
 #pragma once
 
-#include "Obstacle.hpp"
 #include "CutLayer.hpp"
 #include "Die.hpp"
 #include "GCell.hpp"
 #include "Helper.hpp"
 #include "Net.hpp"
+#include "Obstacle.hpp"
 #include "RoutingLayer.hpp"
 #include "Row.hpp"
 #include "ViaMaster.hpp"

@@ -58,8 +58,8 @@ void DataManager::prepare(std::map<std::string, std::any>& config_map, idb::IdbB
   wrapDatabase(idb_builder);
   buildConfig();
   buildDatabase();
-  // printConfig();
-  // printDatabase();
+  printConfig();
+  printDatabase();
   writePYScript();
   LOG_INST.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
@@ -411,6 +411,7 @@ void DataManager::wrapConfig(std::map<std::string, std::any>& config_map)
   /////////////////////////////////////////////
   _config.temp_directory_path = RTUtil::getConfigValue<std::string>(config_map, "-temp_directory_path", "./rt_temp_directory");
   _config.thread_number = RTUtil::getConfigValue<int32_t>(config_map, "-thread_number", 128);
+  omp_set_num_threads(std::max(_config.thread_number, 1));
   _config.bottom_routing_layer = RTUtil::getConfigValue<std::string>(config_map, "-bottom_routing_layer", "");
   _config.top_routing_layer = RTUtil::getConfigValue<std::string>(config_map, "-top_routing_layer", "");
   _config.output_csv = RTUtil::getConfigValue<int32_t>(config_map, "-output_csv", 0);
@@ -941,6 +942,7 @@ void DataManager::buildConfig()
   // **********  DetailedRouter   ********** //
   RTUtil::createDir(_config.dr_temp_directory_path);
   /////////////////////////////////////////////
+  LOG_INST.openLogFileStream(_config.log_file_path);
 }
 
 void DataManager::buildDatabase()
@@ -1712,8 +1714,6 @@ void DataManager::updateHelper()
 
 void DataManager::printConfig()
 {
-  omp_set_num_threads(std::max(_config.thread_number, 1));
-  LOG_INST.openLogFileStream(_config.log_file_path);
   /////////////////////////////////////////////
   // **********        RT         ********** //
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(0), "RT_CONFIG_INPUT");
@@ -1905,8 +1905,6 @@ void DataManager::writePYScript()
 
 #if 1  // clean
 
-
-
 void DataManager::outputGCellGrid()
 {
   ScaleAxis& gcell_axis = _database.get_gcell_axis();
@@ -1987,6 +1985,9 @@ void DataManager::outputSummary()
 
 void DataManager::freeGCellMap()
 {
+  Monitor monitor;
+  LOG_INST.info(Loc::current(), "Starting...");
+
   GridMap<GCell>& gcell_map = _database.get_gcell_map();
 
   for (int32_t x = 0; x < gcell_map.get_x_size(); x++) {
@@ -1996,21 +1997,28 @@ void DataManager::freeGCellMap()
        * _type_layer_net_fixed_rect_map 内指针引用于 database内的obstacle_list
        * _net_access_point_map 内指针引用于 pin内的access_point_list
        */
-      for (auto& [net_idx, segment_set] : gcell_map[x][y].get_net_result_map()) {
-        for (Segment<LayerCoord>* segment : segment_set) {
-          updateNetResultToGCellMap(ChangeType::kDel, net_idx, segment);
+      if (!gcell_map[x][y].get_net_result_map().empty()) {
+        for (auto& [net_idx, segment_set] : gcell_map[x][y].get_net_result_map()) {
+          for (Segment<LayerCoord>* segment : segment_set) {
+            updateNetResultToGCellMap(ChangeType::kDel, net_idx, segment);
+          }
         }
       }
-      for (auto& [net_idx, patch_set] : gcell_map[x][y].get_net_patch_map()) {
-        for (EXTLayerRect* patch : patch_set) {
-          updatePatchToGCellMap(ChangeType::kDel, net_idx, patch);
+      if (!gcell_map[x][y].get_net_patch_map().empty()) {
+        for (auto& [net_idx, patch_set] : gcell_map[x][y].get_net_patch_map()) {
+          for (EXTLayerRect* patch : patch_set) {
+            updatePatchToGCellMap(ChangeType::kDel, net_idx, patch);
+          }
         }
       }
-      for (Violation* violation : gcell_map[x][y].get_violation_set()) {
-        updateViolationToGCellMap(ChangeType::kDel, violation);
+      if (!gcell_map[x][y].get_violation_set().empty()) {
+        for (Violation* violation : gcell_map[x][y].get_violation_set()) {
+          updateViolationToGCellMap(ChangeType::kDel, violation);
+        }
       }
     }
   }
+  LOG_INST.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
 #endif
