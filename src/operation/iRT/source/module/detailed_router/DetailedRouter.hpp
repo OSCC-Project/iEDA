@@ -69,7 +69,7 @@ class DetailedRouter
   void buildLayerNodeMap(DRBox& dr_box);
   void buildDRNodeValid(DRBox& dr_box);
   void buildDRNodeNeighbor(DRBox& dr_box);
-  void buildOrienNetMap(DRBox& dr_box);
+  void buildOrientNetMap(DRBox& dr_box);
   void routeDRBox(DRBox& dr_box);
   std::vector<DRTask*> initTaskSchedule(DRBox& dr_box);
   std::vector<DRTask*> getTaskScheduleByViolation(DRBox& dr_box);
@@ -109,8 +109,8 @@ class DetailedRouter
   std::vector<EXTLayerRect> getMinAreaPatchList(DRBox& dr_box, DRTask* dr_task);
   void updateViolationList(DRBox& dr_box);
   std::vector<Violation> getViolationList(DRBox& dr_box);
-  void updateDRTaskToGcellMap(DRBox& dr_box);
-  void updateViolationToGcellMap(DRBox& dr_box);
+  void updateDRTaskToGCellMap(DRBox& dr_box);
+  void updateViolationToGCellMap(DRBox& dr_box);
   void freeDRBox(DRBox& dr_box);
   int32_t getViolationNum();
 

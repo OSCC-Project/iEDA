@@ -195,7 +195,7 @@ class RTUtil
     }
   }
 
-  static void plotGDS(std::string gds_name, BGMultiPolyDBL bg_multipoly)
+  static void plotGDS(std::string gds_name, BGMultiPolyDBL bg_multi_poly)
   {
     std::ostringstream oss;
     oss << gds_name << ".gds";
@@ -209,8 +209,8 @@ class RTUtil
       gds_file << "LIBNAME GDSLib" << std::endl;
       gds_file << "UNITS 0.001 1e-9" << std::endl;
       // pin_point
-      for (size_t i = 0; i < bg_multipoly.size(); i++) {
-        BGPolyDBL& bg_poly = bg_multipoly[i];
+      for (size_t i = 0; i < bg_multi_poly.size(); i++) {
+        BGPolyDBL& bg_poly = bg_multi_poly[i];
 
         gds_file << "BGNSTR" << std::endl;
         gds_file << "STRNAME bg_poly_" << i << std::endl;
@@ -231,7 +231,7 @@ class RTUtil
       gds_file << "BGNSTR" << std::endl;
       gds_file << "STRNAME top" << std::endl;
       // pin_point
-      for (size_t i = 0; i < bg_multipoly.size(); i++) {
+      for (size_t i = 0; i < bg_multi_poly.size(); i++) {
         gds_file << "SREF" << std::endl;
         gds_file << "SNAME bg_poly_" << i << std::endl;
         gds_file << "XY 0:0" << std::endl;
@@ -400,64 +400,64 @@ class RTUtil
     std::vector<BGPolyDBL> rect_poly_list = getBGPolyDBLList(rect_list);
 
     // 计算((A - D) ∩ (A - E) ∩ (A - F)) ∪ ((B - D) ∩ (B - E) ∩ (B - F))
-    BGMultiPolyDBL top_multipoly;
+    BGMultiPolyDBL top_multi_poly;
     BGMultiLineDBL top_multiline;
     BGMultiPointDBL top_multipoint;
     for (BGPolyDBL& master_poly : master_poly_list) {
       // 计算(A - D)和(A - E)和(A - F)
-      std::vector<BGMultiPolyDBL> diff_mutilpoly_list;
+      std::vector<BGMultiPolyDBL> diff_multi_poly_list;
       {
         if (rect_poly_list.empty()) {
-          BGMultiPolyDBL diff_mutilpoly;
-          diff_mutilpoly.push_back(master_poly);
-          diff_mutilpoly_list.push_back(diff_mutilpoly);
+          BGMultiPolyDBL diff_multi_poly;
+          diff_multi_poly.push_back(master_poly);
+          diff_multi_poly_list.push_back(diff_multi_poly);
         } else {
           for (BGPolyDBL& rect_poly : rect_poly_list) {
             // 计算(A - D)
-            BGMultiPolyDBL diff_mutilpoly;
-            bg::difference(master_poly, rect_poly, diff_mutilpoly);
-            if (diff_mutilpoly.empty()) {
+            BGMultiPolyDBL diff_multi_poly;
+            bg::difference(master_poly, rect_poly, diff_multi_poly);
+            if (diff_multi_poly.empty()) {
               // 当(A - D)为空，后续(A - D) ∩ (A - E) ∩ (A - F)结果为空，直接跳过
-              diff_mutilpoly_list.clear();
+              diff_multi_poly_list.clear();
               break;
             } else {
-              diff_mutilpoly_list.push_back(diff_mutilpoly);
+              diff_multi_poly_list.push_back(diff_multi_poly);
             }
           }
         }
       }
-      if (diff_mutilpoly_list.empty()) {
+      if (diff_multi_poly_list.empty()) {
         continue;
       }
       // 计算(A - D) ∩ (A - E) ∩ (A - F)
-      BGMultiPolyDBL mid_multipoly;
+      BGMultiPolyDBL mid_multi_poly;
       BGMultiLineDBL mid_multiline;
       BGMultiPointDBL mid_multipoint;
       {
         // 用(A - D)初始化
-        mid_multipoly = diff_mutilpoly_list.front();
-        for (size_t i = 1; i < diff_mutilpoly_list.size(); i++) {
-          BGMultiPolyDBL& curr_mutilpoly = diff_mutilpoly_list[i];
+        mid_multi_poly = diff_multi_poly_list.front();
+        for (size_t i = 1; i < diff_multi_poly_list.size(); i++) {
+          BGMultiPolyDBL& curr_multi_poly = diff_multi_poly_list[i];
           // (A - D) ∩ (A - E)
-          BGMultiPolyDBL mid_multipoly_temp;
+          BGMultiPolyDBL mid_multi_poly_temp;
           // 与顶层poly相交
-          bg::intersection(mid_multipoly, curr_mutilpoly, mid_multipoly_temp);
+          bg::intersection(mid_multi_poly, curr_multi_poly, mid_multi_poly_temp);
           if (!is_open) {
-            bg::intersection(mid_multipoly, curr_mutilpoly, mid_multiline);
-            bg::intersection(mid_multipoly, curr_mutilpoly, mid_multipoint);
+            bg::intersection(mid_multi_poly, curr_multi_poly, mid_multiline);
+            bg::intersection(mid_multi_poly, curr_multi_poly, mid_multipoint);
           }
-          mid_multipoly = mid_multipoly_temp;
+          mid_multi_poly = mid_multi_poly_temp;
         }
       }
       // 计算((A - D) ∩ (A - E) ∩ (A - F)) ∪ ((B - D) ∩ (B - E) ∩ (B - F))
       {
-        top_multipoly.insert(top_multipoly.end(), mid_multipoly.begin(), mid_multipoly.end());
+        top_multi_poly.insert(top_multi_poly.end(), mid_multi_poly.begin(), mid_multi_poly.end());
         top_multiline.insert(top_multiline.end(), mid_multiline.begin(), mid_multiline.end());
         top_multipoint.insert(top_multipoint.end(), mid_multipoint.begin(), mid_multipoint.end());
       }
     }
     // 生成对应的矩形结果
-    for (PlanarRect& rect : getRTRectListByBGMultiPolyDBL(top_multipoly)) {
+    for (PlanarRect& rect : getRTRectListByBGMultiPolyDBL(top_multi_poly)) {
       result_list.push_back(rect);
     }
     for (PlanarRect& rect : getRTRectListByBGMultiLineDBL(top_multiline)) {
@@ -512,12 +512,12 @@ class RTUtil
     // 其中rect_poly_list为(D ∪ E ∪ F)
     std::vector<BGPolyDBL> rect_poly_list = getBGPolyDBLList(rect_list);
 
-    BGMultiPolyDBL result_multipoly;
+    BGMultiPolyDBL result_multi_poly;
     BGMultiLineDBL result_multiline;
     BGMultiPointDBL result_multipoint;
     for (BGPolyDBL& master_poly : master_poly_list) {
       for (BGPolyDBL& rect_poly : rect_poly_list) {
-        bg::intersection(master_poly, rect_poly, result_multipoly);
+        bg::intersection(master_poly, rect_poly, result_multi_poly);
         if (!is_open) {
           bg::intersection(master_poly, rect_poly, result_multiline);
           bg::intersection(master_poly, rect_poly, result_multipoint);
@@ -525,7 +525,7 @@ class RTUtil
       }
     }
     // 生成对应的矩形结果
-    for (PlanarRect& rect : getRTRectListByBGMultiPolyDBL(result_multipoly)) {
+    for (PlanarRect& rect : getRTRectListByBGMultiPolyDBL(result_multi_poly)) {
       result_list.push_back(rect);
     }
     for (PlanarRect& rect : getRTRectListByBGMultiLineDBL(result_multiline)) {
@@ -586,7 +586,7 @@ class RTUtil
         addOffset(ll, ll_x_add_offset, ll_y_add_offset);
         minusOffset(ur, ur_x_minus_offset, ur_y_minus_offset);
         // 去除不是矩形的
-        if (candidate_rect.isIncorrected()) {
+        if (candidate_rect.isIncorrect()) {
           continue;
         }
         // 去除面积不为0的
@@ -652,12 +652,12 @@ class RTUtil
     return integer_scale;
   }
 
-  static std::vector<PlanarRect> getRTRectListByBGMultiPolyDBL(const BGMultiPolyDBL& bg_multipoly)
+  static std::vector<PlanarRect> getRTRectListByBGMultiPolyDBL(const BGMultiPolyDBL& bg_multi_poly)
   {
     std::vector<PlanarRect> rect_list;
 
     GTLPolySetInt gtl_poly_set;
-    for (const BGPolyDBL& bg_poly : bg_multipoly) {
+    for (const BGPolyDBL& bg_poly : bg_multi_poly) {
       // 将double类型转int32_t
       std::vector<GTLPointInt> gtl_point_list;
       for (size_t i = 0; i < bg::num_points(bg_poly); i++) {

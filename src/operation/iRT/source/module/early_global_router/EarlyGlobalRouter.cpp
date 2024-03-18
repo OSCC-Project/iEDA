@@ -223,19 +223,19 @@ void EarlyGlobalRouter::plot()
   RTUtil::closeFileStream(gds_file);
 }
 
-void EarlyGlobalRouter::plotCongstLoc()
+void EarlyGlobalRouter::plotCongestionLoc()
 {
   const int32_t kLevel = 9;
   int32_t node_data_type = 0;
   std::vector<GridMap<EGRNode>>& layer_resource_map = _egr_data_manager.getDatabase().get_layer_resource_map();
-  std::ofstream* gds_file = RTUtil::getOutputFileStream(_egr_data_manager.getConfig().temp_directory_path + "egr_congst_loc.gds");
+  std::ofstream* gds_file = RTUtil::getOutputFileStream(_egr_data_manager.getConfig().temp_directory_path + "egr_congestion_loc.gds");
 
   RTUtil::pushStream(gds_file, "HEADER 600", "\n");
   RTUtil::pushStream(gds_file, "BGNLIB", "\n");
   RTUtil::pushStream(gds_file, "LIBNAME early_global_router", "\n");
   RTUtil::pushStream(gds_file, "UNITS 0.001 1e-9", "\n");
 
-  // congstion_map
+  // congestion_map
   int32_t x_size = layer_resource_map[0].get_x_size();
   int32_t y_size = layer_resource_map[0].get_y_size();
 
@@ -260,7 +260,7 @@ void EarlyGlobalRouter::plotCongstLoc()
   }
   int32_t interval = std::max(max_congestion_val / kLevel, 1);
   RTUtil::pushStream(gds_file, "BGNSTR", "\n");
-  RTUtil::pushStream(gds_file, "STRNAME ", "congstion_map", "\n");
+  RTUtil::pushStream(gds_file, "STRNAME ", "congestion_map", "\n");
 
   GridMap<EGRNode>& resource_map = layer_resource_map[0];
   for (int32_t x = 0; x < x_size; x++) {
@@ -288,7 +288,7 @@ void EarlyGlobalRouter::plotCongstLoc()
   RTUtil::pushStream(gds_file, "BGNSTR", "\n");
   RTUtil::pushStream(gds_file, "STRNAME ", "top", "\n");
   RTUtil::pushStream(gds_file, "SREF", "\n");
-  RTUtil::pushStream(gds_file, "SNAME congstion_map\n");
+  RTUtil::pushStream(gds_file, "SNAME congestion_map\n");
   RTUtil::pushStream(gds_file, "XY 0:0", "\n");
   RTUtil::pushStream(gds_file, "ENDEL", "\n");
   RTUtil::pushStream(gds_file, "ENDSTR", "\n");
@@ -376,7 +376,7 @@ void EarlyGlobalRouter::routeEGRRoutingPackage(EGRRoutingPackage& egr_routing_pa
   EGRStrategy strategy = _egr_data_manager.getConfig().egr_strategy;
   if (strategy == EGRStrategy::kTopo) {
     routeByTopo(egr_routing_package);
-  } else if (strategy == EGRStrategy::kGradul) {
+  } else if (strategy == EGRStrategy::kGradual) {
     routeByGradual(egr_routing_package);
   }
 }
@@ -802,12 +802,12 @@ void EarlyGlobalRouter::routeByUPattern(std::vector<std::vector<Segment<LayerCoo
   int32_t scope = 2 * _egr_data_manager.getConfig().accuracy;
   LayerCoord start_coord = coord_pair.first;
   LayerCoord end_coord = coord_pair.second;
-  int32_t staur_x = start_coord.get_x();
+  int32_t start_x = start_coord.get_x();
   int32_t end_x = end_coord.get_x();
-  int32_t staur_y = start_coord.get_y();
+  int32_t start_y = start_coord.get_y();
   int32_t end_y = end_coord.get_y();
-  RTUtil::swapByASC(staur_x, end_x);
-  RTUtil::swapByASC(staur_y, end_y);
+  RTUtil::swapByASC(start_x, end_x);
+  RTUtil::swapByASC(start_y, end_y);
 
   if (RTUtil::isProximal(start_coord, end_coord)) {
     return;
@@ -817,16 +817,16 @@ void EarlyGlobalRouter::routeByUPattern(std::vector<std::vector<Segment<LayerCoo
   std::vector<int32_t> inflection_y_list;
   for (int32_t i = 1; i <= scope; ++i) {
     if (!RTUtil::isHorizontal(start_coord, end_coord)) {
-      if (staur_x - i > die_ll_x) {
-        inflection_x_list.push_back(staur_x - i);
+      if (start_x - i > die_ll_x) {
+        inflection_x_list.push_back(start_x - i);
       }
       if (end_x + i < die_ur_x) {
         inflection_x_list.push_back(end_x + i);
       }
     }
     if (!RTUtil::isVertical(start_coord, end_coord)) {
-      if (staur_y - i > die_ll_y) {
-        inflection_y_list.push_back(staur_y - i);
+      if (start_y - i > die_ll_y) {
+        inflection_y_list.push_back(start_y - i);
       }
       if (end_y + i < die_ur_y) {
         inflection_y_list.push_back(end_y + i);
@@ -1217,17 +1217,17 @@ void EarlyGlobalRouter::addDemandBySegmentList(std::vector<Segment<TNode<LayerCo
 
 void EarlyGlobalRouter::reportEGRNetList()
 {
-  calcuResult();
+  calcResult();
   reportResult();
 }
 
-void EarlyGlobalRouter::calcuResult()
+void EarlyGlobalRouter::calcResult()
 {
-  calcuCongestion();
-  calcuWireViaStatistics();
+  calcCongestion();
+  calcWireViaStatistics();
 }
 
-void EarlyGlobalRouter::calcuCongestion()
+void EarlyGlobalRouter::calcCongestion()
 {
   EGRDatabase& egr_database = _egr_data_manager.getDatabase();
   EGRStat& egr_stat = _egr_data_manager.getEGRStat();
@@ -1262,7 +1262,7 @@ void EarlyGlobalRouter::calcuCongestion()
   }
 }
 
-void EarlyGlobalRouter::calcuWireViaStatistics()
+void EarlyGlobalRouter::calcWireViaStatistics()
 {
   EGRDatabase& egr_database = _egr_data_manager.getDatabase();
   EGRStat& egr_stat = _egr_data_manager.getEGRStat();

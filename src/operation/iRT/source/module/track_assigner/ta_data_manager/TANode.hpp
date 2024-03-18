@@ -40,22 +40,22 @@ class TANode : public LayerCoord
   ~TANode() = default;
   // getter
   std::map<Orientation, TANode*>& get_neighbor_node_map() { return _neighbor_node_map; }
-  std::map<Orientation, std::set<int32_t>>& get_orien_fixed_rect_map() { return _orien_fixed_rect_map; }
-  std::map<Orientation, std::set<int32_t>>& get_orien_routed_rect_map() { return _orien_routed_rect_map; }
-  std::map<Orientation, int32_t>& get_orien_violation_number_map() { return _orien_violation_number_map; }
+  std::map<Orientation, std::set<int32_t>>& get_orient_fixed_rect_map() { return _orient_fixed_rect_map; }
+  std::map<Orientation, std::set<int32_t>>& get_orient_routed_rect_map() { return _orient_routed_rect_map; }
+  std::map<Orientation, int32_t>& get_orient_violation_number_map() { return _orient_violation_number_map; }
   // setter
   void set_neighbor_node_map(const std::map<Orientation, TANode*>& neighbor_node_map) { _neighbor_node_map = neighbor_node_map; }
-  void set_orien_fixed_rect_map(const std::map<Orientation, std::set<int32_t>>& orien_fixed_rect_map)
+  void set_orient_fixed_rect_map(const std::map<Orientation, std::set<int32_t>>& orient_fixed_rect_map)
   {
-    _orien_fixed_rect_map = orien_fixed_rect_map;
+    _orient_fixed_rect_map = orient_fixed_rect_map;
   }
-  void set_orien_routed_rect_map(const std::map<Orientation, std::set<int32_t>>& orien_routed_rect_map)
+  void set_orient_routed_rect_map(const std::map<Orientation, std::set<int32_t>>& orient_routed_rect_map)
   {
-    _orien_routed_rect_map = orien_routed_rect_map;
+    _orient_routed_rect_map = orient_routed_rect_map;
   }
-  void set_orien_violation_number_map(const std::map<Orientation, int32_t>& orien_violation_number_map)
+  void set_orient_violation_number_map(const std::map<Orientation, int32_t>& orient_violation_number_map)
   {
-    _orien_violation_number_map = orien_violation_number_map;
+    _orient_violation_number_map = orient_violation_number_map;
   }
   // function
   TANode* getNeighborNode(Orientation orientation)
@@ -69,8 +69,8 @@ class TANode : public LayerCoord
   double getFixedRectCost(int32_t net_idx, Orientation orientation, double fixed_rect_unit)
   {
     int32_t fixed_rect_num = 0;
-    if (RTUtil::exist(_orien_fixed_rect_map, orientation)) {
-      std::set<int32_t>& net_set = _orien_fixed_rect_map[orientation];
+    if (RTUtil::exist(_orient_fixed_rect_map, orientation)) {
+      std::set<int32_t>& net_set = _orient_fixed_rect_map[orientation];
       fixed_rect_num = static_cast<int32_t>(net_set.size());
       if (RTUtil::exist(net_set, net_idx)) {
         fixed_rect_num--;
@@ -88,8 +88,8 @@ class TANode : public LayerCoord
   double getRoutedRectCost(int32_t net_idx, Orientation orientation, double routed_rect_unit)
   {
     int32_t routed_rect_num = 0;
-    if (RTUtil::exist(_orien_routed_rect_map, orientation)) {
-      std::set<int32_t>& net_set = _orien_routed_rect_map[orientation];
+    if (RTUtil::exist(_orient_routed_rect_map, orientation)) {
+      std::set<int32_t>& net_set = _orient_routed_rect_map[orientation];
       routed_rect_num = static_cast<int32_t>(net_set.size());
       if (RTUtil::exist(net_set, net_idx)) {
         routed_rect_num--;
@@ -107,8 +107,8 @@ class TANode : public LayerCoord
   double getViolationCost(Orientation orientation, double violation_unit)
   {
     int32_t violation_num = 0;
-    if (RTUtil::exist(_orien_violation_number_map, orientation)) {
-      violation_num = _orien_violation_number_map[orientation];
+    if (RTUtil::exist(_orient_violation_number_map, orientation)) {
+      violation_num = _orient_violation_number_map[orientation];
     }
     double cost = 0;
     if (violation_num > 0) {
@@ -139,11 +139,11 @@ class TANode : public LayerCoord
  private:
   std::map<Orientation, TANode*> _neighbor_node_map;
   // obstacle & pin_shape
-  std::map<Orientation, std::set<int32_t>> _orien_fixed_rect_map;
+  std::map<Orientation, std::set<int32_t>> _orient_fixed_rect_map;
   // net_result & patch
-  std::map<Orientation, std::set<int32_t>> _orien_routed_rect_map;
+  std::map<Orientation, std::set<int32_t>> _orient_routed_rect_map;
   // violation
-  std::map<Orientation, int32_t> _orien_violation_number_map;
+  std::map<Orientation, int32_t> _orient_violation_number_map;
 #if 1  // astar
   // single task
   std::set<Direction> _direction_set;

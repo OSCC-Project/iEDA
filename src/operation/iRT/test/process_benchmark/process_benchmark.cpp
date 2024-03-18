@@ -36,15 +36,15 @@ class SingleCore
   double _net_num;
 };
 
-class MutilCore
+class MultiCore
 {
  public:
-  MutilCore(const double target_single_core_num, const double target_utilization_rate)
+  MultiCore(const double target_single_core_num, const double target_utilization_rate)
   {
     _target_single_core_num = target_single_core_num;
     _target_utilization_rate = target_utilization_rate;
   }
-  ~MutilCore() = default;
+  ~MultiCore() = default;
   // getter
   double get_target_single_core_num() const { return _target_single_core_num; }
   double get_target_utilization_rate() const { return _target_utilization_rate; }
@@ -121,35 +121,35 @@ void buildSingleCoreList(std::vector<SingleCore>& single_core_list)
   }
 }
 
-std::vector<MutilCore> getMutilCoreList()
+std::vector<MultiCore> getMultiCoreList()
 {
-  std::vector<MutilCore> mutil_core_list;
-  mutil_core_list.emplace_back(1, 0.5);
-  mutil_core_list.emplace_back(1, 0.7);
-  mutil_core_list.emplace_back(2, 0.5);
-  mutil_core_list.emplace_back(2, 0.7);
-  mutil_core_list.emplace_back(4, 0.5);
-  mutil_core_list.emplace_back(4, 0.7);
-  mutil_core_list.emplace_back(8, 0.5);
-  mutil_core_list.emplace_back(8, 0.7);
-  mutil_core_list.emplace_back(12, 0.5);
-  mutil_core_list.emplace_back(12, 0.7);
-  mutil_core_list.emplace_back(20, 0.5);
-  mutil_core_list.emplace_back(20, 0.7);
-  mutil_core_list.emplace_back(27, 0.5);
-  mutil_core_list.emplace_back(27, 0.7);
-  return mutil_core_list;
+  std::vector<MultiCore> multi_core_list;
+  multi_core_list.emplace_back(1, 0.5);
+  multi_core_list.emplace_back(1, 0.7);
+  multi_core_list.emplace_back(2, 0.5);
+  multi_core_list.emplace_back(2, 0.7);
+  multi_core_list.emplace_back(4, 0.5);
+  multi_core_list.emplace_back(4, 0.7);
+  multi_core_list.emplace_back(8, 0.5);
+  multi_core_list.emplace_back(8, 0.7);
+  multi_core_list.emplace_back(12, 0.5);
+  multi_core_list.emplace_back(12, 0.7);
+  multi_core_list.emplace_back(20, 0.5);
+  multi_core_list.emplace_back(20, 0.7);
+  multi_core_list.emplace_back(27, 0.5);
+  multi_core_list.emplace_back(27, 0.7);
+  return multi_core_list;
 }
 
-void buildMutilCoreList(std::vector<MutilCore>& mutil_core_list, std::vector<SingleCore>& single_core_list)
+void buildMultiCoreList(std::vector<MultiCore>& multi_core_list, std::vector<SingleCore>& single_core_list)
 {
   std::vector<int> random_idx_list;
   for (size_t i = 0; i < single_core_list.size(); i++) {
     random_idx_list.push_back(i);
   }
-  for (size_t i = 0; i < mutil_core_list.size(); i++) {
-    MutilCore& mutil_core = mutil_core_list[i];
-    mutil_core.set_name(std::string("ysyx_") + std::to_string(i));
+  for (size_t i = 0; i < multi_core_list.size(); i++) {
+    MultiCore& multi_core = multi_core_list[i];
+    multi_core.set_name(std::string("ysyx_") + std::to_string(i));
 
     std::vector<std::string> single_core_name_list;
     double area = 0;
@@ -160,7 +160,7 @@ void buildMutilCoreList(std::vector<MutilCore>& mutil_core_list, std::vector<Sin
       srand(unsigned(time(NULL)));
       random_shuffle(random_idx_list.begin(), random_idx_list.end());
 
-      size_t target_num = static_cast<size_t>(mutil_core.get_target_single_core_num());
+      size_t target_num = static_cast<size_t>(multi_core.get_target_single_core_num());
       size_t select_num = std::min(target_num, random_idx_list.size());
 
       for (size_t i = 0; i < select_num; i++) {
@@ -172,12 +172,12 @@ void buildMutilCoreList(std::vector<MutilCore>& mutil_core_list, std::vector<Sin
         net_num += single_core.get_net_num();
       }
     }
-    mutil_core.set_single_core_name_list(single_core_name_list);
-    mutil_core.set_area(area);
-    mutil_core.set_cell_num(cell_num);
-    mutil_core.set_ff_num(ff_num);
-    mutil_core.set_net_num(net_num);
-    mutil_core.set_die_size(std::sqrt(cell_num / mutil_core.get_target_utilization_rate()));
+    multi_core.set_single_core_name_list(single_core_name_list);
+    multi_core.set_area(area);
+    multi_core.set_cell_num(cell_num);
+    multi_core.set_ff_num(ff_num);
+    multi_core.set_net_num(net_num);
+    multi_core.set_die_size(std::sqrt(cell_num / multi_core.get_target_utilization_rate()));
   }
 }
 
@@ -199,7 +199,7 @@ void writeCSV(const std::string& filename, const std::vector<std::vector<std::st
   }
 }
 
-void printMutilCoreList(std::vector<MutilCore>& mutil_core_list)
+void printMultiCoreList(std::vector<MultiCore>& multi_core_list)
 {
   std::vector<std::vector<std::string>> csv_data;
 
@@ -215,26 +215,26 @@ void printMutilCoreList(std::vector<MutilCore>& mutil_core_list)
   head_csv.push_back("正方形die大小");
   csv_data.push_back(head_csv);
 
-  for (MutilCore& mutil_core : mutil_core_list) {
+  for (MultiCore& multi_core : multi_core_list) {
     std::vector<std::string> value_csv;
 
-    value_csv.push_back(std::to_string(static_cast<int>(mutil_core.get_target_single_core_num())));
-    value_csv.push_back(std::to_string(mutil_core.get_target_utilization_rate()));
-    value_csv.push_back(mutil_core.get_name());
+    value_csv.push_back(std::to_string(static_cast<int>(multi_core.get_target_single_core_num())));
+    value_csv.push_back(std::to_string(multi_core.get_target_utilization_rate()));
+    value_csv.push_back(multi_core.get_name());
 
     std::string single_core_name_list_string = "( ";
-    for (std::string single_core_name : mutil_core.get_single_core_name_list()) {
+    for (std::string single_core_name : multi_core.get_single_core_name_list()) {
       single_core_name_list_string += single_core_name;
       single_core_name_list_string += " ";
     }
     single_core_name_list_string += ")";
     value_csv.push_back(single_core_name_list_string);
 
-    value_csv.push_back(std::to_string(mutil_core.get_area()));
-    value_csv.push_back(std::to_string(static_cast<int>(mutil_core.get_cell_num())));
-    value_csv.push_back(std::to_string(static_cast<int>(mutil_core.get_ff_num())));
-    value_csv.push_back(std::to_string(static_cast<int>(mutil_core.get_net_num())));
-    value_csv.push_back(std::to_string(static_cast<int>(mutil_core.get_die_size())));
+    value_csv.push_back(std::to_string(multi_core.get_area()));
+    value_csv.push_back(std::to_string(static_cast<int>(multi_core.get_cell_num())));
+    value_csv.push_back(std::to_string(static_cast<int>(multi_core.get_ff_num())));
+    value_csv.push_back(std::to_string(static_cast<int>(multi_core.get_net_num())));
+    value_csv.push_back(std::to_string(static_cast<int>(multi_core.get_die_size())));
 
     csv_data.push_back(value_csv);
   }
@@ -246,8 +246,8 @@ int main()
 {
   std::vector<SingleCore> single_core_list = getSingleCoreList();
   buildSingleCoreList(single_core_list);
-  std::vector<MutilCore> mutil_core_list = getMutilCoreList();
-  buildMutilCoreList(mutil_core_list, single_core_list);
-  printMutilCoreList(mutil_core_list);
+  std::vector<MultiCore> multi_core_list = getMultiCoreList();
+  buildMultiCoreList(multi_core_list, single_core_list);
+  printMultiCoreList(multi_core_list);
   return 0;
 }

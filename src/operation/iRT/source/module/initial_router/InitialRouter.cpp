@@ -58,7 +58,7 @@ void InitialRouter::route()
   makeGridCoordList(ir_model);
   buildLayerNodeMap(ir_model);
   buildIRNodeNeighbor(ir_model);
-  buildOrienSupply(ir_model);
+  buildOrientSupply(ir_model);
   // debugCheckIRModel(ir_model);
   sortIRModel(ir_model);
   routeIRModel(ir_model);
@@ -213,7 +213,7 @@ void InitialRouter::buildIRNodeNeighbor(IRModel& ir_model)
   LOG_INST.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
-void InitialRouter::buildOrienSupply(IRModel& ir_model)
+void InitialRouter::buildOrientSupply(IRModel& ir_model)
 {
   Monitor monitor;
   LOG_INST.info(Loc::current(), "Starting...");
@@ -226,7 +226,7 @@ void InitialRouter::buildOrienSupply(IRModel& ir_model)
   for (int32_t x = 0; x < gcell_map.get_x_size(); x++) {
     for (int32_t y = 0; y < gcell_map.get_y_size(); y++) {
       for (int32_t layer_idx = 0; layer_idx < static_cast<int32_t>(layer_node_map.size()); layer_idx++) {
-        layer_node_map[layer_idx][x][y].set_orien_supply_map(gcell_map[x][y].get_routing_orien_supply_map()[layer_idx]);
+        layer_node_map[layer_idx][x][y].set_orient_supply_map(gcell_map[x][y].get_routing_orient_supply_map()[layer_idx]);
       }
     }
   }
@@ -525,7 +525,6 @@ std::vector<Segment<PlanarCoord>> InitialRouter::getPlanarTopoListByFlute(std::v
     y_list[i] = planar_coord_list[i].get_y();
   }
   Flute::Tree flute_tree = Flute::flute(point_num, x_list, y_list, FLUTE_ACCURACY);
-  // Flute::printtree(flute_tree);
   free(x_list);
   free(y_list);
 
@@ -1030,7 +1029,7 @@ void InitialRouter::updateDemand(IRModel& ir_model, IRNet& ir_net, MTree<LayerCo
       if (orientation == Orientation::kNone || orientation == Orientation::kOblique) {
         LOG_INST.error(Loc::current(), "The orientation is error!");
       }
-      Orientation oppo_orientation = RTUtil::getOppositeOrientation(orientation);
+      Orientation opposite_orientation = RTUtil::getOppositeOrientation(orientation);
 
       int32_t first_x = first_coord.get_x();
       int32_t first_y = first_coord.get_y();
@@ -1047,7 +1046,7 @@ void InitialRouter::updateDemand(IRModel& ir_model, IRNet& ir_net, MTree<LayerCo
           for (int32_t layer_idx = first_layer_idx; layer_idx <= second_layer_idx; layer_idx++) {
             LayerCoord coord(x, y, layer_idx);
             if (coord != first_coord) {
-              usage_map[coord].insert(oppo_orientation);
+              usage_map[coord].insert(opposite_orientation);
             }
             if (coord != second_coord) {
               usage_map[coord].insert(orientation);
@@ -1081,20 +1080,20 @@ void InitialRouter::debugCheckIRModel(IRModel& ir_model)
     for (int32_t x = 0; x < ir_node_map.get_x_size(); x++) {
       for (int32_t y = 0; y < ir_node_map.get_y_size(); y++) {
         IRNode& ir_node = ir_node_map[x][y];
-        for (auto& [orien, neighbor] : ir_node.get_neighbor_node_map()) {
-          Orientation opposite_orien = RTUtil::getOppositeOrientation(orien);
-          if (!RTUtil::exist(neighbor->get_neighbor_node_map(), opposite_orien)) {
-            LOG_INST.error(Loc::current(), "The ir_node neighbor is not bidirection!");
+        for (auto& [orient, neighbor] : ir_node.get_neighbor_node_map()) {
+          Orientation opposite_orient = RTUtil::getOppositeOrientation(orient);
+          if (!RTUtil::exist(neighbor->get_neighbor_node_map(), opposite_orient)) {
+            LOG_INST.error(Loc::current(), "The ir_node neighbor is not bidirectional!");
           }
-          if (neighbor->get_neighbor_node_map()[opposite_orien] != &ir_node) {
-            LOG_INST.error(Loc::current(), "The ir_node neighbor is not bidirection!");
+          if (neighbor->get_neighbor_node_map()[opposite_orient] != &ir_node) {
+            LOG_INST.error(Loc::current(), "The ir_node neighbor is not bidirectional!");
           }
           LayerCoord node_coord(ir_node.get_planar_coord(), ir_node.get_layer_idx());
           LayerCoord neighbor_coord(neighbor->get_planar_coord(), neighbor->get_layer_idx());
-          if (RTUtil::getOrientation(node_coord, neighbor_coord) == orien) {
+          if (RTUtil::getOrientation(node_coord, neighbor_coord) == orient) {
             continue;
           }
-          LOG_INST.error(Loc::current(), "The neighbor orien is different with real region!");
+          LOG_INST.error(Loc::current(), "The neighbor orient is different with real region!");
         }
       }
     }
@@ -1180,18 +1179,18 @@ void InitialRouter::updateSummary(IRModel& ir_model)
     GridMap<IRNode>& ir_node_map = layer_node_map[layer_idx];
     for (int32_t x = 0; x < ir_node_map.get_x_size(); x++) {
       for (int32_t y = 0; y < ir_node_map.get_y_size(); y++) {
-        std::map<Orientation, int32_t>& orien_supply_map = ir_node_map[x][y].get_orien_supply_map();
-        std::map<Orientation, int32_t>& orien_demand_map = ir_node_map[x][y].get_orien_demand_map();
+        std::map<Orientation, int32_t>& orient_supply_map = ir_node_map[x][y].get_orient_supply_map();
+        std::map<Orientation, int32_t>& orient_demand_map = ir_node_map[x][y].get_orient_demand_map();
         int32_t node_demand = 0;
         int32_t node_overflow = 0;
         if (routing_layer_list[layer_idx].isPreferH()) {
-          node_demand = (orien_demand_map[Orientation::kEast] + orien_demand_map[Orientation::kWest]);
-          node_overflow = std::max(0, orien_demand_map[Orientation::kEast] - orien_supply_map[Orientation::kEast])
-                          + std::max(0, orien_demand_map[Orientation::kWest] - orien_supply_map[Orientation::kWest]);
+          node_demand = (orient_demand_map[Orientation::kEast] + orient_demand_map[Orientation::kWest]);
+          node_overflow = std::max(0, orient_demand_map[Orientation::kEast] - orient_supply_map[Orientation::kEast])
+                          + std::max(0, orient_demand_map[Orientation::kWest] - orient_supply_map[Orientation::kWest]);
         } else {
-          node_demand = (orien_demand_map[Orientation::kSouth] + orien_demand_map[Orientation::kNorth]);
-          node_overflow = std::max(0, orien_demand_map[Orientation::kSouth] - orien_supply_map[Orientation::kSouth])
-                          + std::max(0, orien_demand_map[Orientation::kNorth] - orien_supply_map[Orientation::kNorth]);
+          node_demand = (orient_demand_map[Orientation::kSouth] + orient_demand_map[Orientation::kNorth]);
+          node_overflow = std::max(0, orient_demand_map[Orientation::kSouth] - orient_supply_map[Orientation::kSouth])
+                          + std::max(0, orient_demand_map[Orientation::kNorth] - orient_supply_map[Orientation::kNorth]);
         }
         routing_demand_map[layer_idx] += node_demand;
         total_demand += node_demand;
@@ -1319,12 +1318,12 @@ void InitialRouter::writeDemandCSV(IRModel& ir_model)
     GridMap<IRNode>& ir_node_map = layer_node_map[routing_layer.get_layer_idx()];
     for (int32_t y = ir_node_map.get_y_size() - 1; y >= 0; y--) {
       for (int32_t x = 0; x < ir_node_map.get_x_size(); x++) {
-        std::map<Orientation, int32_t>& orien_demand_map = ir_node_map[x][y].get_orien_demand_map();
+        std::map<Orientation, int32_t>& orient_demand_map = ir_node_map[x][y].get_orient_demand_map();
         int32_t total_demand = 0;
         if (routing_layer.isPreferH()) {
-          total_demand = (orien_demand_map[Orientation::kEast] + orien_demand_map[Orientation::kWest]);
+          total_demand = (orient_demand_map[Orientation::kEast] + orient_demand_map[Orientation::kWest]);
         } else {
-          total_demand = (orien_demand_map[Orientation::kSouth] + orien_demand_map[Orientation::kNorth]);
+          total_demand = (orient_demand_map[Orientation::kSouth] + orient_demand_map[Orientation::kNorth]);
         }
         RTUtil::pushStream(demand_csv_file, total_demand, ",");
       }
@@ -1350,15 +1349,15 @@ void InitialRouter::writeOverflowCSV(IRModel& ir_model)
     GridMap<IRNode>& ir_node_map = layer_node_map[routing_layer.get_layer_idx()];
     for (int32_t y = ir_node_map.get_y_size() - 1; y >= 0; y--) {
       for (int32_t x = 0; x < ir_node_map.get_x_size(); x++) {
-        std::map<Orientation, int32_t>& orien_supply_map = ir_node_map[x][y].get_orien_supply_map();
-        std::map<Orientation, int32_t>& orien_demand_map = ir_node_map[x][y].get_orien_demand_map();
+        std::map<Orientation, int32_t>& orient_supply_map = ir_node_map[x][y].get_orient_supply_map();
+        std::map<Orientation, int32_t>& orient_demand_map = ir_node_map[x][y].get_orient_demand_map();
         int32_t total_overflow = 0;
         if (routing_layer.isPreferH()) {
-          total_overflow = std::max(0, orien_demand_map[Orientation::kEast] - orien_supply_map[Orientation::kEast])
-                           + std::max(0, orien_demand_map[Orientation::kWest] - orien_supply_map[Orientation::kWest]);
+          total_overflow = std::max(0, orient_demand_map[Orientation::kEast] - orient_supply_map[Orientation::kEast])
+                           + std::max(0, orient_demand_map[Orientation::kWest] - orient_supply_map[Orientation::kWest]);
         } else {
-          total_overflow = std::max(0, orien_demand_map[Orientation::kSouth] - orien_supply_map[Orientation::kSouth])
-                           + std::max(0, orien_demand_map[Orientation::kNorth] - orien_supply_map[Orientation::kNorth]);
+          total_overflow = std::max(0, orient_demand_map[Orientation::kSouth] - orient_supply_map[Orientation::kSouth])
+                           + std::max(0, orient_demand_map[Orientation::kNorth] - orient_supply_map[Orientation::kNorth]);
         }
         RTUtil::pushStream(overflow_csv_file, total_overflow, ",");
       }

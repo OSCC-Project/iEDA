@@ -445,15 +445,15 @@ void DataManager::wrapDie(idb::IdbBuilder* idb_builder)
 
 void DataManager::wrapRow(idb::IdbBuilder* idb_builder)
 {
-  int32_t staur_x = INT_MAX;
-  int32_t staur_y = INT_MAX;
+  int32_t start_x = INT_MAX;
+  int32_t start_y = INT_MAX;
   for (idb::IdbRow* idb_row : idb_builder->get_def_service()->get_layout()->get_rows()->get_row_list()) {
-    staur_x = std::min(staur_x, idb_row->get_original_coordinate()->get_x());
-    staur_y = std::min(staur_y, idb_row->get_original_coordinate()->get_y());
+    start_x = std::min(start_x, idb_row->get_original_coordinate()->get_x());
+    start_y = std::min(start_y, idb_row->get_original_coordinate()->get_y());
   }
   Row& row = _database.get_row();
-  row.set_staur_x(staur_x);
-  row.set_staur_y(staur_y);
+  row.set_start_x(start_x);
+  row.set_start_y(start_y);
   row.set_height(idb_builder->get_def_service()->get_layout()->get_rows()->get_row_height());
 }
 
@@ -1009,7 +1009,7 @@ std::vector<ScaleGrid> DataManager::makeGCellGridList(Direction direction, int32
 
   int32_t die_start_scale = (direction == Direction::kVertical ? die.get_real_ll_x() : die.get_real_ll_y());
   int32_t die_end_scale = (direction == Direction::kVertical ? die.get_real_ur_x() : die.get_real_ur_y());
-  int32_t row_mid_scale = (direction == Direction::kVertical ? row.get_staur_x() : row.get_staur_y());
+  int32_t row_mid_scale = (direction == Direction::kVertical ? row.get_start_x() : row.get_start_y());
   // 为了防止与track重合，减去一个recommended_pitch的一半
   row_mid_scale -= (recommended_pitch / 2);
   int32_t step_length = row.get_height();

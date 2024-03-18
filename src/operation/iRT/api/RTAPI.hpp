@@ -42,7 +42,7 @@ class RTAPI
   // 清理def
   void clearDef();
   // 拥塞驱动
-  eval::TileGrid* getCongestonMap(std::map<std::string, std::any> config_map, double& wirelength);
+  eval::TileGrid* getCongestionMap(std::map<std::string, std::any> config_map, double& wire_length);
   std::vector<double> getWireLengthAndViaNum(std::map<std::string, std::any> config_map);
 #endif
 

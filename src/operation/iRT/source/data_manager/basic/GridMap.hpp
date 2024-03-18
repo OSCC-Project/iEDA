@@ -105,7 +105,7 @@ class GridMap
   inline void initDataMap();
   inline void copyDataMap(T** other_data_map);
   inline void freeDataMap();
-  inline void deassignDataMap(T value);
+  inline void assignDataMap(T value);
 };
 
 // public
@@ -139,7 +139,7 @@ inline void GridMap<T>::init(int32_t x_size, int32_t y_size, T value)
   _x_size = x_size;
   _y_size = y_size;
   initDataMap();
-  deassignDataMap(value);
+  assignDataMap(value);
 }
 
 template <typename T>
@@ -222,7 +222,7 @@ inline void GridMap<T>::freeDataMap()
 }
 
 template <typename T>
-inline void GridMap<T>::deassignDataMap(T value)
+inline void GridMap<T>::assignDataMap(T value)
 {
   for (int32_t i = 0; i < _x_size; i++) {
     for (int32_t j = 0; j < _y_size; j++) {

@@ -194,13 +194,13 @@ void RTAPI::clearDef()
   //////////////////////////////////////////
 }
 
-eval::TileGrid* RTAPI::getCongestonMap(std::map<std::string, std::any> config_map, double& wirelength)
+eval::TileGrid* RTAPI::getCongestionMap(std::map<std::string, std::any> config_map, double& wire_length)
 {
   Monitor egr_monitor;
 
   EarlyGlobalRouter::initInst(config_map, dmInst->get_idb_builder());
   EGR_INST.route();
-  wirelength = EGR_INST.getDataManager().getEGRStat().get_total_wire_length();
+  wire_length = EGR_INST.getDataManager().getEGRStat().get_total_wire_length();
 
   eval::TileGrid* eval_tile_grid = new eval::TileGrid();
   int32_t cell_width = EGR_INST.getDataManager().getConfig().cell_width;
@@ -397,11 +397,11 @@ std::map<std::string, std::vector<double>> RTAPI::getTiming(
   timing_engine->buildGraph();
   timing_engine->initRcTree();
 
-  ista::Netlist* sta_netlist = timing_engine->get_netlist();
+  ista::Netlist* sta_net_list = timing_engine->get_netlist();
   for (auto& [net_idx, coord_real_pin_map] : net_coord_real_pin_map) {
     std::vector<Segment<LayerCoord>>& routing_segment_list = net_routing_segment_map[net_idx];
     // 构建RC-tree
-    ista::Net* ista_net = sta_netlist->findNet(RTUtil::escapeBackslash(net_list[net_idx].get_net_name()).c_str());
+    ista::Net* ista_net = sta_net_list->findNet(RTUtil::escapeBackslash(net_list[net_idx].get_net_name()).c_str());
     for (Segment<RCPin>& segment : getRCSegmentList(coord_real_pin_map, routing_segment_list)) {
       RCPin& first_rc_pin = segment.get_first();
       RCPin& second_rc_pin = segment.get_second();
@@ -418,15 +418,15 @@ std::map<std::string, std::vector<double>> RTAPI::getTiming(
                   ->getResistance(first_rc_pin._coord.get_layer_idx() + 1, distance / 1.0 / unit, width);
       }
 
-      auto getRctNode = [timing_engine, sta_netlist, ista_net](RCPin& rc_pin) {
+      auto getRctNode = [timing_engine, sta_net_list, ista_net](RCPin& rc_pin) {
         ista::RctNode* rct_node = nullptr;
         if (rc_pin._is_real_pin) {
           ista::DesignObject* pin_port = nullptr;
-          auto pin_port_list = sta_netlist->findPin(rc_pin._pin_name.c_str(), false, false);
+          auto pin_port_list = sta_net_list->findPin(rc_pin._pin_name.c_str(), false, false);
           if (!pin_port_list.empty()) {
             pin_port = pin_port_list.front();
           } else {
-            pin_port = sta_netlist->findPort(rc_pin._pin_name.c_str());
+            pin_port = sta_net_list->findPort(rc_pin._pin_name.c_str());
           }
           rct_node = timing_engine->makeOrFindRCTreeNode(pin_port);
         } else {
