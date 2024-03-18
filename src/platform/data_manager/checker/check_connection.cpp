@@ -71,8 +71,9 @@ int CheckNet::wrapNetPinList(IdbNet* net)
   }
 
   /// IO pin
-  if (net->get_io_pin() != nullptr) {
-    CheckNodePin* node = new CheckNodePin(net->get_io_pin(), _node_list.size());
+  auto* io_pins = net->get_io_pins();
+  for (auto* io_pin : io_pins->get_pin_list()) {
+    CheckNodePin* node = new CheckNodePin(io_pin, _node_list.size());
 
     _node_list.push_back(node);
   }

@@ -40,7 +40,7 @@
 
 class GuiSpeedupDesign {
  public:
-  GuiSpeedupDesign(GuiGraphicsScene* scene, DbSetupType type=DbSetupType::kChip) {
+  GuiSpeedupDesign(GuiGraphicsScene* scene, DbSetupType type = DbSetupType::kChip) {
     _scene = scene;
     _type  = type;
     if (_type == DbSetupType::kClockTree) {

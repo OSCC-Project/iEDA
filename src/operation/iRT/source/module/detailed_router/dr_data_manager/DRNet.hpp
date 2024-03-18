@@ -23,7 +23,6 @@
 #include "Guide.hpp"
 #include "MTree.hpp"
 #include "Net.hpp"
-#include "PhysicalNode.hpp"
 #include "Pin.hpp"
 #include "TNode.hpp"
 
@@ -36,23 +35,20 @@ class DRNet
   ~DRNet() = default;
   // getter
   Net* get_origin_net() { return _origin_net; }
-  irt_int get_net_idx() const { return _net_idx; }
+  int32_t get_net_idx() const { return _net_idx; }
   ConnectType get_connect_type() const { return _connect_type; }
   std::vector<DRPin>& get_dr_pin_list() { return _dr_pin_list; }
-  std::vector<Segment<LayerCoord>>& get_ta_result_list() { return _ta_result_list; }
   // setter
   void set_origin_net(Net* origin_net) { _origin_net = origin_net; }
-  void set_net_idx(const irt_int net_idx) { _net_idx = net_idx; }
+  void set_net_idx(const int32_t net_idx) { _net_idx = net_idx; }
   void set_connect_type(const ConnectType& connect_type) { _connect_type = connect_type; }
   void set_dr_pin_list(const std::vector<DRPin>& dr_pin_list) { _dr_pin_list = dr_pin_list; }
-  void set_ta_result_list(const std::vector<Segment<LayerCoord>>& ta_result_list) { _ta_result_list = ta_result_list; }
 
  private:
   Net* _origin_net = nullptr;
-  irt_int _net_idx = -1;
+  int32_t _net_idx = -1;
   ConnectType _connect_type = ConnectType::kNone;
   std::vector<DRPin> _dr_pin_list;
-  std::vector<Segment<LayerCoord>> _ta_result_list;
 };
 
 }  // namespace irt

@@ -26,9 +26,10 @@ namespace irt {
 enum class AccessPointType
 {
   kNone,
-  kTrackGrid,
-  kOnTrack,
-  kOnShape
+  kPrefTrackGrid,
+  kCurrTrackGrid,
+  kTrackCenter,
+  kShapeCenter
 };
 
 struct GetAccessPointTypeName
@@ -40,14 +41,17 @@ struct GetAccessPointTypeName
       case AccessPointType::kNone:
         access_point_name = "none";
         break;
-      case AccessPointType::kTrackGrid:
-        access_point_name = "track_grid";
+      case AccessPointType::kPrefTrackGrid:
+        access_point_name = "pref_track_grid";
         break;
-      case AccessPointType::kOnTrack:
-        access_point_name = "on_track";
+      case AccessPointType::kCurrTrackGrid:
+        access_point_name = "curr_track_grid";
         break;
-      case AccessPointType::kOnShape:
-        access_point_name = "on_shape";
+      case AccessPointType::kTrackCenter:
+        access_point_name = "track_center";
+        break;
+      case AccessPointType::kShapeCenter:
+        access_point_name = "shape_center";
         break;
       default:
         LOG_INST.error(Loc::current(), "Unrecognized type!");

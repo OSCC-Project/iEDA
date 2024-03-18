@@ -29,17 +29,17 @@ class GuideSeg : public Segment<Guide>
   GuideSeg() = default;
   ~GuideSeg() = default;
   // getter
-  std::set<irt_int>& get_pin_idx_set() { return _pin_idx_set; }
+  std::set<int32_t>& get_pin_idx_set() { return _pin_idx_set; }
   MTree<LayerCoord>& get_routing_tree() { return _routing_tree; }
   // setter
-  void set_pin_idx_set(const std::set<irt_int>& pin_idx_set) { _pin_idx_set = pin_idx_set; }
+  void set_pin_idx_set(const std::set<int32_t>& pin_idx_set) { _pin_idx_set = pin_idx_set; }
   void set_routing_tree(const MTree<LayerCoord>& routing_tree) { _routing_tree = routing_tree; }
   // function
   bool toTA() { return get_first().get_grid_coord().get_planar_coord() != get_second().get_grid_coord().get_planar_coord(); }
   bool toDR() { return !toTA(); }
 
  private:
-  std::set<irt_int> _pin_idx_set;
+  std::set<int32_t> _pin_idx_set;
   MTree<LayerCoord> _routing_tree;
 };
 

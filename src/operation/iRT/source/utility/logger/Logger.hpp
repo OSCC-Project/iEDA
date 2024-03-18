@@ -19,7 +19,7 @@
 #include <thread>
 
 #include "LogLevel.hpp"
-#include "RTU.hpp"
+#include "RTHeader.hpp"
 
 namespace irt {
 
@@ -34,8 +34,6 @@ class Logger
   static Logger& getInst();
   static void destroyInst();
   // function
-  irt_int getLogLevel() const { return _log_level; }
-  void setLogLevel(const irt_int log_level) { _log_level = log_level; }
   void openLogFileStream(const std::string& log_file_path);
   void closeLogFileStream();
   void printLogFilePath();
@@ -43,18 +41,12 @@ class Logger
   template <typename T, typename... Args>
   void info(Loc location, const T& value, const Args&... args)
   {
-    if (_log_level > 0) {
-      return;
-    }
     printLog(LogLevel::kInfo, location, value, args...);
   }
 
   template <typename T, typename... Args>
   void warn(Loc location, const T& value, const Args&... args)
   {
-    if (_log_level > 1) {
-      return;
-    }
     printLog(LogLevel::kWarn, location, value, args...);
   }
 
@@ -70,7 +62,6 @@ class Logger
   // self
   static Logger* _log_instance;
   // config & database
-  irt_int _log_level = 0;
   std::string _log_file_path;
   std::ofstream* _log_file = nullptr;
   size_t _temp_storage_size = 1024;
@@ -115,12 +106,13 @@ class Logger
       std::string::size_type pos = file_name.find_last_of('/') + 1;
       file_name = file_name.substr(pos, file_name.length() - pos);
     }
-    std::string header = getString("[RT ", getTimestamp(), " ", getCompressedBase62(std::stoul(getString(std::this_thread::get_id()))), " ",
-                                   file_name, " ", location.function_name(), " ");
+    std::string prefix = getString("[RT ", getTimestamp(), " ", getCompressedBase62(std::stoul(getString(std::this_thread::get_id()))), " ",
+                                   file_name, " ");
+    std::string suffix = getString(" ", location.function_name());
     std::string message = getString(value, args...);
 
-    std::string origin_log = getString(header, log_level_char, "] ", message, "\n");
-    std::string color_log = getString(header, log_color_start, log_level_char, log_color_end, "] ", message, "\n");
+    std::string origin_log = getString(prefix, log_level_char, suffix, "] ", message, "\n");
+    std::string color_log = getString(prefix, log_color_start, log_level_char, log_color_end, suffix, "] ", message, "\n");
 
     if (_log_file != nullptr) {
       if (!_temp_storage.empty()) {

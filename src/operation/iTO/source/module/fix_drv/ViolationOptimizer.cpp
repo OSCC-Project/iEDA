@@ -77,6 +77,7 @@ void ViolationOptimizer::fixViolations() {
   _parasitics_estimator->estimateAllNetParasitics();
   _timing_engine->updateTiming();
   // _timing_engine->reportTiming();
+  _db_interface->set_eval_data();
 
   StaSeqPathData *worst_path_rise =
       _timing_engine->vertexWorstRequiredPath(AnalysisMode::kMax, TransType::kRise);

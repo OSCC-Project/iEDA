@@ -1,4 +1,6 @@
 
+# set(CMAKE_BUILD_TYPE "Debug")
+
 include_directories(${iPL_CONFIG})
 
 add_library(ipl-module-detail_placer
@@ -13,11 +15,15 @@ add_library(ipl-module-detail_placer
     database/DPPin.cc
     database/DPRegion.cc
     database/DPRow.cc
+    database/DPBin.cc
+    database/DPSegment.cc
+    database/DPNode.cc
 
     operation/BinOpt.cc
     operation/InstanceSwap.cc
     operation/LocalReorder.cc
     operation/RowOpt.cc
+    operation/NFSpread.cc
 
     DPOperator.cc
     DetailPlacer.cc
@@ -27,6 +33,7 @@ target_link_libraries(ipl-module-detail_placer
     PUBLIC
             ipl-configurator
             ipl-module-grid_manager
-            ipl-module-topology_manager)
+            ipl-module-topology_manager
+            )
 
 target_include_directories(ipl-module-detail_placer PUBLIC ${iPL_DP})

@@ -214,10 +214,10 @@ unsigned PwrBuildSeqGraph::buildPortVertexes(PwrGraph* the_graph) {
     _seq_graph.insertPortToVertex(input_port_vertex, seq_vertex);
   }
 
-  /*Build speical seq vertexes for input port vertexes.*/
+  /*Build speical seq vertexes for output port vertexes.*/
   auto& output_port_vertexes = the_graph->get_output_port_vertexes();
   for (auto* output_port_vertex : output_port_vertexes) {
-    // New a seq vertex for this input port.
+    // New a seq vertex for this output port.
     PwrSeqVertex* seq_vertex =
         new PwrSeqVertex(SeqPortType::kOutput, output_port_vertex);
     // Add the seq vertex into graph.

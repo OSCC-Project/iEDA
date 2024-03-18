@@ -41,9 +41,10 @@ class DPOperator
   TopologyManager* get_topo_manager() const { return _topo_manager; }
   GridManager* get_grid_manager() const { return _grid_manager; }
 
-  void initDPOperator(DPDatabase* database);
+  void initDPOperator(DPDatabase* database, DPConfig* config);
   void updateTopoManager();
   void updateGridManager();
+  void initPlaceableArea();
 
   std::pair<int32_t, int32_t> obtainOptimalXCoordiLine(DPInstance* inst);
   std::pair<int32_t, int32_t> obtainOptimalYCoordiLine(DPInstance* inst);
@@ -67,6 +68,7 @@ class DPOperator
 
  private:
   DPDatabase* _database;
+  DPConfig* _config;
   TopologyManager* _topo_manager;
   GridManager* _grid_manager;
 

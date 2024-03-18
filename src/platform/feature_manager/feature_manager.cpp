@@ -38,10 +38,10 @@ bool FeatureManager::save_nets(std::string path)
   return feature_parser.buildNets(path);
 }
 
-bool FeatureManager::save_reportSummary(std::string path)
+bool FeatureManager::save_reportSummary(std::string path, std::string step)
 {
   FeatureParser feature_parser(_idb_layout, _idb_design);
-  return feature_parser.buildReportSummary(path);
+  return feature_parser.buildReportSummary(path, step);
 }
 
 }  // namespace iplf

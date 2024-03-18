@@ -6,6 +6,7 @@ add_library(tcl_ino
 
 target_link_libraries(tcl_ino 
     PUBLIC
+        tcl_util
         tool_manager
         tcl
         shell-cmd

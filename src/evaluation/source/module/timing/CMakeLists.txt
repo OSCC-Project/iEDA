@@ -1,3 +1,4 @@
+set(DEBUG_EVAL_TIMING ON)
 if(DEBUG_EVAL_TIMING)
     message(STATUS "evaluator: DEBUG EVAL_TIMING")
     set(CMAKE_BUILD_TYPE "Debug")

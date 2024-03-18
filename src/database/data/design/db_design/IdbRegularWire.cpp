@@ -56,6 +56,11 @@ IdbRegularWireSegment::IdbRegularWireSegment()
 IdbRegularWireSegment::~IdbRegularWireSegment()
 {
   clear();
+
+  if (_delta_rect != nullptr) {
+    delete _delta_rect;
+    _delta_rect = nullptr;
+  }
 }
 
 void IdbRegularWireSegment::clear()
@@ -153,7 +158,7 @@ void IdbRegularWireSegment::set_delta_rect(int32_t ll_x, int32_t ll_y, int32_t u
   _delta_rect = new IdbRect(ll_x, ll_y, ur_x, ur_y);
 }
 
-int32_t IdbRegularWireSegment::length()
+uint64_t IdbRegularWireSegment::length()
 {
   if (is_via()) {
     /// thickness
@@ -560,9 +565,9 @@ void IdbRegularWire::clear_segment()
   vector<IdbRegularWireSegment*>().swap(_segment_list);
 }
 
-int32_t IdbRegularWire::wireLength()
+uint64_t IdbRegularWire::wireLength()
 {
-  int32_t wire_len = 0;
+  uint64_t wire_len = 0;
   for (auto seg : _segment_list) {
     wire_len += seg->length();
   }
@@ -590,7 +595,6 @@ void IdbRegularWireList::clear()
       wire = nullptr;
     }
   }
-
   _wire_list.clear();
   vector<IdbRegularWire*>().swap(_wire_list);
 }
@@ -629,9 +633,9 @@ IdbRegularWire* IdbRegularWireList::add_wire(IdbRegularWire* wire)
   return pWire;
 }
 
-int32_t IdbRegularWireList::wireLength()
+uint64_t IdbRegularWireList::wireLength()
 {
-  int32_t total_len = 0;
+  uint64_t total_len = 0;
   for (auto wire : _wire_list) {
     total_len += wire->wireLength();
   }

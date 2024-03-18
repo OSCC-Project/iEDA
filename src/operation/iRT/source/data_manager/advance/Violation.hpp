@@ -17,7 +17,7 @@
 #pragma once
 
 #include "EXTLayerRect.hpp"
-#include "RTU.hpp"
+#include "RTHeader.hpp"
 
 namespace irt {
 
@@ -29,17 +29,17 @@ class Violation
   // getter
   EXTLayerRect& get_violation_shape() { return _violation_shape; }
   bool get_is_routing() { return _is_routing; }
-  std::set<irt_int>& get_violation_net_set() { return _violation_net_set; }
+  std::set<int32_t>& get_violation_net_set() { return _violation_net_set; }
   // setter
   void set_violation_shape(const EXTLayerRect& violation_shape) { _violation_shape = violation_shape; }
   void set_is_routing(const bool is_routing) { _is_routing = is_routing; }
-  void set_violation_net_set(const std::set<irt_int>& violation_net_set) { _violation_net_set = violation_net_set; }
+  void set_violation_net_set(const std::set<int32_t>& violation_net_set) { _violation_net_set = violation_net_set; }
   // function
 
  private:
   EXTLayerRect _violation_shape;
   bool _is_routing = true;
-  std::set<irt_int> _violation_net_set;
+  std::set<int32_t> _violation_net_set;
 };
 
 }  // namespace irt

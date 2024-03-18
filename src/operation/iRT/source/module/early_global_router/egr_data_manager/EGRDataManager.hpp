@@ -60,10 +60,10 @@ class EGRDataManager
   void wrapLayerList(idb::IdbBuilder* idb_builder);
   void wrapTrackAxis(RoutingLayer& routing_layer, idb::IdbLayerRouting* idb_layer);
   void wrapLayerViaMasterList(idb::IdbBuilder* idb_builder);
-  void wrapBlockageList(idb::IdbBuilder* idb_builder);
-  void wrapArtificialBlockage(idb::IdbBuilder* idb_builder);
-  void wrapInstanceBlockage(idb::IdbBuilder* idb_builder);
-  void wrapSpecialNetBlockage(idb::IdbBuilder* idb_builder);
+  void wrapObstacleList(idb::IdbBuilder* idb_builder);
+  void wrapArtificialObstacle(idb::IdbBuilder* idb_builder);
+  void wrapInstanceObstacle(idb::IdbBuilder* idb_builder);
+  void wrapSpecialNetObstacle(idb::IdbBuilder* idb_builder);
   void wrapNetList(idb::IdbBuilder* idb_builder);
   bool checkSkipping(idb::IdbNet* idb_net);
   void wrapPinList(EGRNet& egr_net, idb::IdbNet* idb_net);
@@ -82,7 +82,7 @@ class EGRDataManager
   void transLayerViaMasterList();
   void makeLayerViaMasterList();
   void buildDie();
-  void buildBlockageList();
+  void buildObstacleList();
   void buildNetList();
   void buildPinList(EGRNet& egr_net);
   void buildDrivingPin(EGRNet& egr_net);
@@ -93,8 +93,8 @@ class EGRDataManager
   void legalizeResourceMapDemand();
   void buildHVLayerIdxList();
   Direction getRTDirectionByDB(idb::IdbLayerDirection idb_direction);
-  irt_int getEGRRoutingLayerIndexByDB(irt_int db_layer_idx);
-  irt_int getEGRCutLayerIndexByDB(irt_int db_layer_idx);
+  int32_t getEGRRoutingLayerIndexByDB(int32_t db_layer_idx);
+  int32_t getEGRCutLayerIndexByDB(int32_t db_layer_idx);
   PlanarRect getGridRect(PlanarRect& real_rect);
   void printConfig();
   void printDatabase();

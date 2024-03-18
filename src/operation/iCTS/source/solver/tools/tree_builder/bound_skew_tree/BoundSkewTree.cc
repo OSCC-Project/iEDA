@@ -956,7 +956,7 @@ void BoundSkewTree::calcNotManhattanJrEndpoints(Area* parent, Area* left, Area* 
     for (size_t j = 1; j < _join_region[side].size() - 1; ++j) {
       auto cur_val = incr_pts.back().val;
       auto next_val = _join_region[side][j].val;
-      LOG_FATAL_IF(cur_val > next_val + 10 * kEpsilon)
+      LOG_FATAL_IF(cur_val > next_val + 100 * kEpsilon)
           << "cur_val: " << cur_val << "> next_val: " << next_val << ", skew slope is not strictly monotone increasing";
       if (next_val > cur_val) {
         incr_pts.push_back(_join_region[side][j]);
@@ -1514,7 +1514,7 @@ void BoundSkewTree::calcDetourEdgeLen(Area* cur) const
     double d1 = 0, d2 = 0;
     Pt bal_pt;
     calcBalBetweenPts(left_pt, right_pt, kMax, kX, d1, d2, bal_pt);
-    LOG_FATAL_IF(d1 != 0) << "dist to left_pt should be zero";
+    LOG_FATAL_IF(d1 > kEpsilon) << "dist to left_pt should be zero";
     cur->set_edge_len(kLeft, 0);
     cur->set_edge_len(kRight, d2);
   } else {
@@ -1522,7 +1522,7 @@ void BoundSkewTree::calcDetourEdgeLen(Area* cur) const
     double d1 = 0, d2 = 0;
     Pt bal_pt;
     calcBalBetweenPts(left_pt, right_pt, kMax, kX, d1, d2, bal_pt);
-    LOG_FATAL_IF(d2 != 0) << "dist to right_pt should be zero";
+    LOG_FATAL_IF(d2 > kEpsilon) << "dist to right_pt should be zero";
     cur->set_edge_len(kLeft, d1);
     cur->set_edge_len(kRight, 0);
   }
@@ -1991,7 +1991,7 @@ void BoundSkewTree::printArea(const Area* area) const
 }
 void BoundSkewTree::writePy(const std::vector<Pt>& pts, const std::string& file) const
 {
-  auto dir = CTSAPIInst.get_config()->get_sta_workspace() + "/file";
+  auto dir = CTSAPIInst.get_config()->get_work_dir() + "/file";
   if (!std::filesystem::exists(dir)) {
     std::filesystem::create_directories(dir);
   }
@@ -2018,7 +2018,7 @@ void BoundSkewTree::writePy(const std::vector<Pt>& pts, const std::string& file)
 
 void BoundSkewTree::writePy(Area* area, const std::string& file) const
 {
-  auto dir = CTSAPIInst.get_config()->get_sta_workspace() + "/file";
+  auto dir = CTSAPIInst.get_config()->get_work_dir() + "/file";
   if (!std::filesystem::exists(dir)) {
     std::filesystem::create_directories(dir);
   }

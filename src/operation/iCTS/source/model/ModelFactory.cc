@@ -68,6 +68,48 @@ std::vector<double> ModelFactory::cppLinearModel(const std::vector<std::vector<d
 
   return result;
 }
+
+double ModelFactory::criticalBufWireLen(const double& alpha, const double& beta, const double& gamma, const double& r, const double& c,
+                                        const double& cap_pin)
+{
+  return 2 * std::sqrt((beta * cap_pin + gamma) / (r * c * (std::log(9) * alpha + 1)));
+}
+
+std::pair<double, double> ModelFactory::criticalSteinerWireLen(const double& alpha, const double& beta, const double& gamma,
+                                                               const double& r, const double& c, const double& cap_pin,
+                                                               const double& cap_load, const size_t& step)
+{
+  if (alpha <= 0 || beta <= 0 || gamma <= 0 || r <= 0 || c <= 0 || cap_load <= 0 || step <= 0) {
+    assert(false);
+    return {0, 0};
+  }
+  /**
+   * f(x,l) = 1/2*r*c*[(2+alpha*ln9)*x^2-2x]*l^2+{r*c*[(1+alpha*ln9)*cap_pin-cap_load]+gamma <= 0
+   *
+   */
+  double critical_wl = std::numeric_limits<double>::max();
+  double critical_x = 0;
+  double max_x = 2.0 / (2.0 + alpha * std::log(9));
+  for (size_t i = 0; i < step; ++i) {
+    auto x = 1.0 / step * (i + 1);
+    if (x > max_x) {
+      break;
+    }
+    double a = 0.5 * r * c * ((2 + alpha * std::log(9)) * x * x - 2 * x);
+    double b = r * c * ((1 + alpha * std::log(9)) * cap_pin - cap_load);
+    double c = gamma;
+    double delta = b * b - 4 * a * c;
+    if (delta < 0) {
+      continue;
+    }
+    double l1 = (-b - std::sqrt(delta)) / (2 * a);
+    if (l1 < critical_wl) {
+      critical_wl = l1;
+      critical_x = x;
+    }
+  }
+  return {critical_wl, critical_x};
+}
 #ifdef PY_MODEL
 /**
  * @brief Python interface for timing model

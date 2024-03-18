@@ -41,6 +41,9 @@ CmdVerilogToDef::CmdVerilogToDef(const char* cmd_name) : TclCmd(cmd_name) {
 
   auto* top_option = new TclStringOption("-top", 0, nullptr);
   addOption(top_option);
+
+  auto* die_are_option = new TclDoubleListOption("-die_area", 0);
+  addOption(die_are_option);
 }
 
 unsigned CmdVerilogToDef::check() { return 1; }
@@ -63,12 +66,31 @@ unsigned CmdVerilogToDef::exec() {
   TclOption* top_option = getOptionOrArg("-top");
   auto* top = top_option->getStringVal();
 
-  std::set<std::string> exclude_cell_names;
-  db_builder->buildVerilog(verilog_file, top);
+  // db_builder->buildVerilog(verilog_file, top);
+  db_builder->rustBuildVerilog(verilog_file, top);
+
+  // set die area
+  TclOption* die_area_option = getOptionOrArg("-die_area");
+  std::vector<double> die_area{0.0, 0.0, 0.0, 0.0};
+  if (die_area_option->is_set_val()) {
+    die_area = die_area_option->getDoubleList();
+  }
+  LOG_FATAL_IF(die_area.size() != 4) << "Invalid die area";
+
+  auto* idb_layout = db_builder->get_def_service()->get_layout();
+  idb_layout->get_die()->add_point(idb_layout->transUnitDB(die_area[0]),
+                                   idb_layout->transUnitDB(die_area[1]));
+
+  idb_layout->get_die()->add_point(idb_layout->transUnitDB(die_area[2]),
+                                   idb_layout->transUnitDB(die_area[3]));
 
   TclOption* def_option = getOptionOrArg("-def");
   auto* def_file = def_option->getStringVal();
   db_builder->saveDef(def_file);
+
+  // the below two lines is used to test idb verilog.
+  // std::set<std::string> exclude_cell_names = {};
+  // db_builder->saveVerilog(def_file, exclude_cell_names);
 
   return 1;
 }

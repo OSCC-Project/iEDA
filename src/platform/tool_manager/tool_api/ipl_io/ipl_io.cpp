@@ -16,9 +16,9 @@
 // ***************************************************************************************
 #include "ipl_io.h"
 
+#include "PLAPI.hh"
 #include "builder.h"
 #include "flow_config.h"
-#include "PLAPI.hh"
 #include "idm.h"
 
 namespace iplf {
@@ -48,10 +48,10 @@ void PlacerIO::destroyPlacer()
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-bool PlacerIO::runPlacement()
+bool PlacerIO::runPlacement(std::string config)
 {
   if (!iPLAPIInst.isPlacerDBStarted()) {
-    this->initPlacer("");
+    this->initPlacer(config);
   } else {
     iPLAPIInst.updatePlacerDB();
   }
@@ -61,6 +61,8 @@ bool PlacerIO::runPlacement()
 
   flowConfigInst->add_status_runtime(stats.elapsedRunTime());
   flowConfigInst->set_status_memmory(stats.memoryDelta());
+
+  // destroyPlacer();
 
   return true;
 }
@@ -83,6 +85,8 @@ bool PlacerIO::runIncrementalLegalization()
     flag = iPLAPIInst.runIncrLG();
   }
 
+  destroyPlacer();
+
   return flag;
 }
 
@@ -103,6 +107,8 @@ bool PlacerIO::runIncrementalLegalization(std::vector<std::string>& changed_inst
   } else {
     flag = iPLAPIInst.runIncrLG(changed_inst_list);
   }
+
+  destroyPlacer();
 
   return flag;
 }
@@ -240,7 +246,13 @@ bool PlacerIO::runIncrementalFlow(std::string config)
 
   ieda::Stats stats;
 
-  iPLAPIInst.initAPI(config, dmInst->get_idb_builder());
+  if (!iPLAPIInst.isPlacerDBStarted()) {
+    this->initPlacer(config);
+  } else {
+    iPLAPIInst.updatePlacerDB();
+  }
+
+  //   iPLAPIInst.initAPI(config, dmInst->get_idb_builder());
 
   iPLAPIInst.runIncrementalFlow();
 

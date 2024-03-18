@@ -21,14 +21,16 @@
  * @version 0.1
  * @date 2021-05-24
  */
+#include <ranges>
+
 #include "Cmd.hh"
 #include "log/Log.hh"
 #include "netlist/DesignObject.hh"
+#include "sdc/SdcAllPorts.hh"
 #include "sdc/SdcCommand.hh"
 #include "sdc/SdcConstrain.hh"
 #include "sdc/SdcSetIODelay.hh"
 #include "sta/Sta.hh"
-
 namespace ista {
 /**
  * @brief The common add option of io delay.
@@ -134,7 +136,23 @@ void commonExec(TclCmd* cmd, SdcSetIODelay* io_delay) {
   for (auto& object : object_list) {
     std::visit(
         overloaded{
-            [](SdcCommandObj* sdc_obj) { LOG_FATAL << "not support sdc obj."; },
+            [&ports](SdcCommandObj* sdc_obj) {
+              if (sdc_obj->isAllInputPorts()) {
+                auto* all_input_ports =
+                    dynamic_cast<SdcAllInputPorts*>(sdc_obj);
+                auto& input_ports = all_input_ports->get_input_ports();
+                std::ranges::for_each(input_ports, [&ports](auto* input_port) {
+                  ports.insert(input_port);
+                });
+              } else if (sdc_obj->isAllOutputPorts()) {
+                auto* all_output_ports =
+                    dynamic_cast<SdcAllOutputPorts*>(sdc_obj);
+                auto& output_ports = all_output_ports->get_output_ports();
+                std::ranges::for_each(
+                    output_ports,
+                    [&ports](auto* output_port) { ports.insert(output_port); });
+              }
+            },
             [&ports](DesignObject* design_obj) { ports.insert(design_obj); },
         },
         object);

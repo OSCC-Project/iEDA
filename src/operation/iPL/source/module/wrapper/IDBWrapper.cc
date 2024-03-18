@@ -386,7 +386,6 @@ void IDBWrapper::wrapRoutingInfo(IdbLayout* idb_layout)
   ipl_layout->set_partial_route_cap_v(partial_route_cap_v);
 }
 
-
 void IDBWrapper::wrapDesign(IdbDesign* idb_design)
 {
   auto* ipl_design = _idbw_database->_design;

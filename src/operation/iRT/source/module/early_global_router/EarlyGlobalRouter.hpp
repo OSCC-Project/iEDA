@@ -67,7 +67,7 @@ class EarlyGlobalRouter
   void routeByTopo(EGRRoutingPackage& egr_routing_package);
   void generateFluteTree(EGRRoutingPackage& egr_routing_package);
   void generateCoordPairList(EGRRoutingPackage& egr_routing_package);
-  irt_int getMinCostLayerIdx(const PlanarCoord& planar_coord);
+  int32_t getMinCostLayerIdx(const PlanarCoord& planar_coord);
   LayerCoord getNearestCoordOnSegment(LayerCoord& coord, Segment<LayerCoord>& segment);
   void routeAllCoordPairs(EGRRoutingPackage& egr_routing_package);
   void initTempData(EGRRoutingPackage& egr_routing_package);
@@ -82,7 +82,7 @@ class EarlyGlobalRouter
                        std::pair<LayerCoord, LayerCoord>& coord_pair);
   void routeByZPattern(std::vector<std::vector<Segment<LayerCoord>>>& routing_segment_list_list,
                        std::pair<LayerCoord, LayerCoord>& coord_pair);
-  std::vector<irt_int> getMidIndexList(irt_int start_idx, irt_int end_idx);
+  std::vector<int32_t> getMidIndexList(int32_t start_idx, int32_t end_idx);
   void routeByInner3BendsPattern(std::vector<std::vector<Segment<LayerCoord>>>& routing_segment_list_list,
                                  std::pair<LayerCoord, LayerCoord>& coord_pair);
   void routeByOuter3BendsPattern(std::vector<std::vector<Segment<LayerCoord>>>& routing_segment_list_list,

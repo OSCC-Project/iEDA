@@ -238,13 +238,11 @@ bool FileDrcManager::saveFileDataByJson()
   }
 
   std::ofstream file_stream(path);
-
   file_stream << std::setw(4) << drc_json;
 
   file_stream.close();
 
   std::cout << std::endl << "Save feature json success, path = " << path << std::endl;
-
   return true;
 }
 

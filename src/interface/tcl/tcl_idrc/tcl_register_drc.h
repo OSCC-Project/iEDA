@@ -36,16 +36,13 @@ int registerCmdDRC()
   registerTclCmd(CmdDRCSaveDetailFile, "save_drc");
   registerTclCmd(CmdDRCReadDetailFile, "read_drc");
 
-  registerTclCmd(TclInitDrc, "init_drc");
   registerTclCmd(TclDrcCheckDef, "drc_check_def");
-  registerTclCmd(TclDestroyDrc, "destroy_drc");
 
   registerTclCmd(TclInitDrcAPI, "init_drc_api");
   registerTclCmd(TclDestroyDrcAPI, "destroy_drc_api");
 
   registerTclCmd(TclDrcCheckNet, "check_net");
   registerTclCmd(TclDrcCheckAllNet, "check_all_net");
-  registerTclCmd(TclCheckDrc, "check_drc");
 
   registerTclCmd(CmdDRCDiagnosis, "idrc_diagnosis");
 

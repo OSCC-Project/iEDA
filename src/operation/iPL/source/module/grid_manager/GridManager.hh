@@ -27,11 +27,12 @@
 
 namespace ipl {
 
-struct Grid
+class Grid
 {
+public:
   Grid() = default;
   Grid(int32_t r_id, int32_t g_id, int32_t w, int32_t h)
-      : row_idx(r_id), grid_idx(g_id), width(w), height(h), available_ratio(1.0), occupied_area(0), fixed_area(0), h_cong(0.0), v_cong(0.0)
+      : row_idx(r_id), grid_idx(g_id), width(w), height(h), available_ratio(1.0), occupied_area(0), fixed_area(0)
   {
     grid_area = static_cast<int64_t>(w) * static_cast<int64_t>(h);
   }
@@ -47,8 +48,6 @@ struct Grid
     available_ratio = other.available_ratio;
     occupied_area = other.occupied_area;
     fixed_area = other.fixed_area;
-    h_cong = other.h_cong;
-    v_cong = other.v_cong;
   }
 
   ~Grid() = default;
@@ -66,8 +65,6 @@ struct Grid
       available_ratio = other.available_ratio;
       occupied_area = other.occupied_area;
       fixed_area = other.fixed_area;
-      h_cong = other.h_cong;
-      v_cong = other.v_cong;
     }
     return (*this);
   }
@@ -76,6 +73,9 @@ struct Grid
   int64_t obtainAvailableArea();
   int64_t obtainGridOverflowArea();
   float obtainGridDensity();
+  std::vector<Grid*> &allNeighbors() {return neighbors;}
+  void addNeighbor(Grid* grid) {neighbors.push_back(grid);}
+  int getNumNodes() const { return num_node; }
 
   int32_t row_idx;
   int32_t grid_idx;
@@ -88,6 +88,7 @@ struct Grid
   float available_ratio;
   int64_t occupied_area;
   int64_t fixed_area;
+  int64_t placeable_area = 0;
 
   float h_cong;
   float v_cong;
@@ -95,6 +96,9 @@ struct Grid
   int32_t v_cap;
   float h_util;
   float v_util;
+  int num_node;
+
+  std::vector<Grid*> neighbors;
 };
 
 class GridManager
@@ -102,6 +106,8 @@ class GridManager
  public:
   GridManager() = delete;
   GridManager(Rectangle<int32_t> region, int32_t grid_cnt_x, int32_t grid_cnt_y, float available_ratio, int32_t thread_num);
+  GridManager(Rectangle<int32_t> region, int32_t grid_cnt_x, int32_t grid_cnt_y, int32_t grid_size_x, int32_t grid_size_y, 
+              float available_ratio, int32_t thread_num);
   GridManager(const GridManager&) = delete;
   GridManager(GridManager&&) = delete;
   ~GridManager();
@@ -130,6 +136,7 @@ class GridManager
 
   void obtainOverflowIllegalGridList(std::vector<Grid*>& gird_list);
   void clearAllOccupiedArea();
+  void clearAllOccupiedNodeNum();
 
   void clearRUDY();
   void initRouteCap(int32_t h_cap, int32_t v_cap);
@@ -138,21 +145,23 @@ class GridManager
   void plotRouteDem();
   void plotRouteUtil(int32_t iter_num);
   void fastGaussianBlur(std::vector<std::vector<float>>& image, float sigma, int kernelSize);
-  void blurRouteDemand();
+  void blurRouteDemand();  
 
   int64_t obtainOverlapArea(Grid* grid, const Rectangle<int32_t>& rect);
+  Rectangle<int32_t> obtainOverlapRect(Grid* grid, const Rectangle<int32_t>& rect);
   int64_t obtainTotalOverflowArea();
   float obtainPeakGridDensity();
+  float obtainAvgGridDensity();
 
  private:
   Utility _utility;
   int32_t _thread_num;
   Rectangle<int32_t> _shape;
-  int32_t _grid_cnt_x;
-  int32_t _grid_cnt_y;
+  int32_t _grid_cnt_x = -1;
+  int32_t _grid_cnt_y = -1;
   float _available_ratio;
-  int32_t _grid_size_x;
-  int32_t _grid_size_y;
+  int32_t _grid_size_x = -1;
+  int32_t _grid_size_y = -1;
   float _h_util_max = 0.f;
   float _v_util_max = 0.f;
   float _h_util_sum = 0.f;
@@ -170,6 +179,20 @@ inline GridManager::GridManager(Rectangle<int32_t> region, int32_t grid_cnt_x, i
       _shape(std::move(region)),
       _grid_cnt_x(grid_cnt_x),
       _grid_cnt_y(grid_cnt_y),
+      _available_ratio(available_ratio)
+{
+  init();
+}
+
+inline GridManager::GridManager(Rectangle<int32_t> region, int32_t grid_cnt_x, int32_t grid_cnt_y, int32_t grid_size_x, int32_t grid_size_y, 
+              float available_ratio, int32_t thread_num)
+    : _utility(Utility()),
+      _thread_num(thread_num),
+      _shape(std::move(region)),
+      _grid_cnt_x(grid_cnt_x),
+      _grid_cnt_y(grid_cnt_y),
+      _grid_size_x(grid_size_x),
+      _grid_size_y(grid_size_y),
       _available_ratio(available_ratio)
 {
   init();

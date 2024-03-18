@@ -280,17 +280,16 @@ double EvalAPI::evalMacroChannelPinRatio(float dist_ratio)
 ///////////////////////////////////////////////////////////////////////////////
 vector<float> EvalAPI::evalPinDens()
 {
-  _congestion_eval_inst->mapInst2Bin();
+  // _congestion_eval_inst->mapInst2Bin();
   return _congestion_eval_inst->evalPinDens();
 }
 
 vector<float> EvalAPI::evalPinDens(CongGrid* grid, const vector<CongInst*>& inst_list)
 {
-  CongestionEval congestion_eval;
-  congestion_eval.set_cong_grid(grid);
-  congestion_eval.set_cong_inst_list(inst_list);
-  congestion_eval.mapInst2Bin();
-  return congestion_eval.evalPinDens();
+  _congestion_eval_inst->set_cong_grid(grid);
+  _congestion_eval_inst->set_cong_inst_list(inst_list);
+  _congestion_eval_inst->mapInst2Bin();
+  return _congestion_eval_inst->evalPinDens();
 }
 
 vector<float> EvalAPI::evalInstDens()
@@ -301,11 +300,10 @@ vector<float> EvalAPI::evalInstDens()
 
 vector<float> EvalAPI::evalInstDens(CongGrid* grid, const vector<CongInst*>& inst_list)
 {
-  CongestionEval congestion_eval;
-  congestion_eval.set_cong_grid(grid);
-  congestion_eval.set_cong_inst_list(inst_list);
-  congestion_eval.mapInst2Bin();
-  return congestion_eval.getInstDens();
+  _congestion_eval_inst->set_cong_grid(grid);
+  _congestion_eval_inst->set_cong_inst_list(inst_list);
+  _congestion_eval_inst->mapInst2Bin();
+  return _congestion_eval_inst->getInstDens();
 }
 
 vector<float> EvalAPI::evalNetCong(const string& rudy_type)
@@ -330,11 +328,17 @@ vector<float> EvalAPI::evalGRCong()
   // call router to get tilegrid info
   irt::RTAPI& rt_api = irt::RTAPI::getInst();
   std::map<std::string, std::any> config_map;
-  TileGrid* tile_grid = rt_api.getCongestonMap(config_map);
+  double wirelength = 0.0;
+  TileGrid* tile_grid = rt_api.getCongestonMap(config_map, wirelength);
   rt_api.destroyInst();
 
   _congestion_eval_inst->set_tile_grid(tile_grid);
-  return _congestion_eval_inst->evalRouteCong();
+
+  vector<float> result;
+  result.reserve(4);
+  result = _congestion_eval_inst->evalRouteCong();
+  result.push_back(static_cast<float>(wirelength));
+  return result;
 }
 
 vector<float> EvalAPI::getUseCapRatioList()

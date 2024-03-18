@@ -1,12 +1,4 @@
 {
-    "file_path": {
-        "read_cts_data": "OFF",
-        "write_cts_data": "ON",
-        "cts_data_file": "./result/cts/cts_sky130.dat",
-        "sta_work_dir": "./result/cts",
-        "log_file": "./result/cts/cts.log",
-        "gds_file": "./result/cts/cts.gds"
-    },
     "router_type": "GOCA",
     "delay_type": "elmore",
     "cluster_type": "kmeans",
@@ -28,6 +20,7 @@
     ],
     "root_buffer_type": "sky130_fd_sc_hs__buf_1",
     "root_buffer_required": "OFF",
+    "inherit_root": "OFF",
     "break_long_wire": "OFF",
     "level_max_length": [
         "300",

@@ -49,9 +49,17 @@ unsigned StaBwdPropagation::createEndData(StaVertex* the_vertex) {
     // auto analysis_mode = delay_data->get_delay_type();
     // auto trans_type = delay_data->get_trans_type();
 
-    auto* seq_data = ista->getSeqData(the_vertex, delay_data);
-    if (seq_data) {
+    auto seq_data_vec = ista->getSeqData(the_vertex, delay_data);
+    if (!seq_data_vec.empty()) {
+      std::sort(seq_data_vec.begin(), seq_data_vec.end(),
+                [](auto* lhs, auto* rhs) {
+                  return lhs->getSlack() < rhs->getSlack();
+                });
+      auto* seq_data = seq_data_vec.front();
       auto slack = seq_data->getSlack();
+      LOG_INFO_IF_EVERY_N(slack < 0, 10)
+          << "the endpoint vertex " << the_vertex->getName()
+          << " has negative slack";
       auto arrive_time = delay_data->get_arrive_time();
       auto req_time = (delay_data->get_delay_type() == AnalysisMode::kMax)
                           ? arrive_time + slack
@@ -439,7 +447,7 @@ unsigned StaFwdPropagation::operator()(StaArc* the_arc) {
       if (the_arc->isNegativeArc()) {
         trans_type = FLIP_TRANS(trans_type);
       }
-      next_data1 = src_vertex->getPathDelayData(delay_data->get_delay_type(),
+      next_data1 = snk_vertex->getPathDelayData(delay_data->get_delay_type(),
                                                 trans_type, delay_data);
     }
 
@@ -472,7 +480,7 @@ unsigned StaFwdPropagation::operator()(StaArc* the_arc) {
       if (isIncremental()) {
         auto trans_type = delay_data->get_trans_type();
         trans_type = FLIP_TRANS(trans_type);
-        next_data2 = src_vertex->getPathDelayData(delay_data->get_delay_type(),
+        next_data2 = snk_vertex->getPathDelayData(delay_data->get_delay_type(),
                                                   trans_type, delay_data);
       }
 

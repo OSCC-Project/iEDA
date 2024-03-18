@@ -50,6 +50,7 @@ class SteinerWirelength : public Wirelength
   SteinerWirelength& operator=(SteinerWirelength&&) = delete;
 
   void updateAllNetWorkPointPair();
+  void updateNetWorkPointPair(NetWork* network);
   void updatePartOfNetWorkPointPair(const std::vector<NetWork*>& network_list);
 
   const std::vector<std::pair<Point<int32_t>, Point<int32_t>>>& obtainPointPairList(NetWork* network);

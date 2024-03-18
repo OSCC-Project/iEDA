@@ -7,6 +7,7 @@ add_library(tcl_icts
 target_link_libraries(tcl_icts 
     PUBLIC
         tool_manager
+        tcl_util
         tcl
         shell-cmd
         str

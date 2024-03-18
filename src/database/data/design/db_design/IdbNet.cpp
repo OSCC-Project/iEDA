@@ -52,8 +52,7 @@ IdbNet::IdbNet()
   _fix_bump = false;
   _frequency = -1;
 
-  _io_pin = nullptr;
-  // _io_pin_list = new IdbPins();
+  _io_pin_list = new IdbPins();
   _instance_pin_list = new IdbPins();
   _instance_list = new IdbInstanceList();
 
@@ -109,36 +108,27 @@ void IdbNet::set_source_type(string type)
 // IdbPin* IdbNet::findDrivingPin()
 IdbPin* IdbNet::get_driving_pin()
 {
-  if (_io_pin == nullptr) {
-    // case 1
-    for (IdbPin* pin : _instance_pin_list->get_pin_list()) {
-      if (pin->get_term()->get_direction() == IdbConnectDirection::kOutput) {
-        return pin;
-      }
-    }
-    std::cout << "No driving pin in net : " << _net_name << std::endl;
-  } else {
+  for (IdbPin* io_pin : _io_pin_list->get_pin_list()) {
     // case 2
-    if (_io_pin->get_term()->get_direction() == IdbConnectDirection::kInput) {
-      return _io_pin;
+    if (io_pin->get_term()->get_direction() == IdbConnectDirection::kInput) {
+      return io_pin;
     }
-    if (_instance_pin_list->get_pin_list().size() > 0) {
-      for (auto* instance_pin : _instance_pin_list->get_pin_list()) {
-        if (instance_pin->get_term()->get_direction() == IdbConnectDirection::kOutput) {
-          return instance_pin;
-        }
-      }
-    }
-
-    //     // case 3 or case 4
-    // IdbInstance* instance      = instance_pin->get_instance();
-    // IdbPins* instance_pin_list = instance->get_pin_list();
-    // for (IdbPin* pin : instance_pin_list->get_pin_list()) {
-    //   if (pin->get_pin_name() != instance_pin->get_pin_name()) {
-    //     return pin->get_term()->get_direction() == IdbConnectDirection::kOutput ? _io_pin : instance_pin;
-    //   }
-    //   }
   }
+
+  for (IdbPin* pin : _instance_pin_list->get_pin_list()) {
+    if (pin->get_term()->get_direction() == IdbConnectDirection::kOutput) {
+      return pin;
+    }
+  }
+
+  //     // case 3 or case 4
+  // IdbInstance* instance      = instance_pin->get_instance();
+  // IdbPins* instance_pin_list = instance->get_pin_list();
+  // for (IdbPin* pin : instance_pin_list->get_pin_list()) {
+  //   if (pin->get_pin_name() != instance_pin->get_pin_name()) {
+  //     return pin->get_term()->get_direction() == IdbConnectDirection::kOutput ? _io_pin : instance_pin;
+  //   }
+  //   }
 
   // std::cout << "Error : No driven pin exist..." << std::endl;
   return nullptr;
@@ -147,32 +137,20 @@ IdbPin* IdbNet::get_driving_pin()
 vector<IdbPin*> IdbNet::get_load_pins()
 {
   vector<IdbPin*> pin_list;
-  if (_io_pin == nullptr) {
-    // case 1
-    for (IdbPin* pin : _instance_pin_list->get_pin_list()) {
-      if (pin->get_term()->get_direction() != IdbConnectDirection::kOutput) {
-        pin_list.emplace_back(pin);
-      }
-    }
-  } else {
+
+  for (IdbPin* io_pin : _io_pin_list->get_pin_list()) {
     // case 2
-    if (_io_pin->get_term()->get_direction() != IdbConnectDirection::kInput) {
-      pin_list.emplace_back(_io_pin);
-    }
-
-    if (_instance_pin_list->get_pin_list().size() > 0) {
-      // IdbPin* instance_pin = _instance_pin_list->get_pin_list().at(0);
-      // if (instance_pin->get_term()->get_direction() != IdbConnectDirection::kOutput) {
-      //   pin_list.emplace_back(instance_pin);
-      // }
-
-      for (IdbPin* pin : _instance_pin_list->get_pin_list()) {
-        if (pin->get_term()->get_direction() != IdbConnectDirection::kOutput) {
-          pin_list.emplace_back(pin);
-        }
-      }
+    if (io_pin->get_term()->get_direction() == IdbConnectDirection::kOutput) {
+      pin_list.emplace_back(io_pin);
     }
   }
+
+  for (IdbPin* pin : _instance_pin_list->get_pin_list()) {
+    if (pin->get_term()->get_direction() == IdbConnectDirection::kInput) {
+      pin_list.emplace_back(pin);
+    }
+  }
+
   return pin_list;
 }
 
@@ -190,12 +168,8 @@ bool IdbNet::set_bounding_box()
 
 void IdbNet::remove_pin(IdbPin* pin)
 {
-  if (_io_pin == pin) {
-    _io_pin->remove_net();
-    _io_pin = nullptr;
-  } else {
-    _instance_pin_list->remove_pin(pin);
-  }
+  _io_pin_list->remove_pin(pin);
+  _instance_pin_list->remove_pin(pin);
 }
 
 bool IdbNet::checkConnection()
@@ -219,7 +193,7 @@ bool IdbNet::checkConnection()
   return b_result;
 }
 
-int32_t IdbNet::wireLength()
+uint64_t IdbNet::wireLength()
 {
   return _wire_list->wireLength();
 }

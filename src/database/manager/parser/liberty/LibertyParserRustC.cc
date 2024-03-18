@@ -164,6 +164,17 @@ unsigned RustLibertyReader::visitSimpleAttri(RustLibertySimpleAttrStmt* attri)
             }
             rust_free_string_value(rust_attri_value);
           }},
+          {"time_unit",
+          [=]() {
+            auto* rust_attri_value = rust_convert_string_value(attri_value);
+            const char* time_unit = rust_attri_value->value;
+            if (Str::equal(time_unit, "1fs")) {
+              current_lib->set_time_unit(TimeUnit::kFS);
+            }else if (Str::equal(time_unit, "1ps")) {
+              current_lib->set_time_unit(TimeUnit::kPS);
+            }
+            rust_free_string_value(rust_attri_value);
+          }},
 
          {"nom_voltage",
           [=]() {

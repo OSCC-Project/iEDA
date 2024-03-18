@@ -29,20 +29,20 @@ class EGRDatabase
   ~EGRDatabase() = default;
   // getter
   std::string& get_design_name() { return _design_name; }
-  irt_int get_micron_dbu() { return _micron_dbu; }
+  int32_t get_micron_dbu() { return _micron_dbu; }
   Die& get_die() { return _die; }
   std::vector<RoutingLayer>& get_routing_layer_list() { return _routing_layer_list; }
   std::vector<CutLayer>& get_cut_layer_list() { return _cut_layer_list; }
   std::vector<std::vector<ViaMaster>>& get_layer_via_master_list() { return _layer_via_master_list; }
-  std::vector<Blockage>& get_routing_blockage_list() { return _routing_blockage_list; }
+  std::vector<Obstacle>& get_routing_obstacle_list() { return _routing_obstacle_list; }
   std::vector<EGRNet>& get_egr_net_list() { return _egr_net_list; }
   std::vector<GridMap<EGRNode>>& get_layer_resource_map() { return _layer_resource_map; }
-  std::vector<irt_int>& get_h_layer_idx_list() { return _h_layer_idx_list; }
-  std::vector<irt_int>& get_v_layer_idx_list() { return _v_layer_idx_list; }
+  std::vector<int32_t>& get_h_layer_idx_list() { return _h_layer_idx_list; }
+  std::vector<int32_t>& get_v_layer_idx_list() { return _v_layer_idx_list; }
 
   // setter
   void set_design_name(const std::string& design_name) { _design_name = design_name; }
-  void set_micron_dbu(irt_int micron_dbu) { _micron_dbu = micron_dbu; }
+  void set_micron_dbu(int32_t micron_dbu) { _micron_dbu = micron_dbu; }
   void set_die(Die& die) { _die = die; }
   void set_routing_layer_list(const std::vector<RoutingLayer>& routing_layer_list) { _routing_layer_list = routing_layer_list; }
   void set_cut_layer_list(const std::vector<CutLayer>& cut_layer_list) { _cut_layer_list = cut_layer_list; }
@@ -50,24 +50,24 @@ class EGRDatabase
   {
     _layer_via_master_list = layer_via_master_list;
   }
-  void set_routing_blockage_list(const std::vector<Blockage>& routing_blockage_list) { _routing_blockage_list = routing_blockage_list; }
+  void set_routing_obstacle_list(const std::vector<Obstacle>& routing_obstacle_list) { _routing_obstacle_list = routing_obstacle_list; }
   void set_egr_net_list(const std::vector<EGRNet>& egr_net_list) { _egr_net_list = egr_net_list; }
   void set_layer_resource_map(const std::vector<GridMap<EGRNode>>& layer_resource_map) { _layer_resource_map = layer_resource_map; }
-  void set_h_layer_idx_list(const std::vector<irt_int>& h_layer_idx_list) { _h_layer_idx_list = h_layer_idx_list; }
-  void set_v_layer_idx_list(const std::vector<irt_int>& v_layer_idx_list) { _v_layer_idx_list = v_layer_idx_list; }
+  void set_h_layer_idx_list(const std::vector<int32_t>& h_layer_idx_list) { _h_layer_idx_list = h_layer_idx_list; }
+  void set_v_layer_idx_list(const std::vector<int32_t>& v_layer_idx_list) { _v_layer_idx_list = v_layer_idx_list; }
 
  private:
   std::string _design_name;
-  irt_int _micron_dbu = -1;
+  int32_t _micron_dbu = -1;
   Die _die;
   std::vector<RoutingLayer> _routing_layer_list;
   std::vector<CutLayer> _cut_layer_list;
   std::vector<std::vector<ViaMaster>> _layer_via_master_list;
-  std::vector<Blockage> _routing_blockage_list;
+  std::vector<Obstacle> _routing_obstacle_list;
   std::vector<EGRNet> _egr_net_list;
   std::vector<GridMap<EGRNode>> _layer_resource_map;
-  std::vector<irt_int> _h_layer_idx_list;
-  std::vector<irt_int> _v_layer_idx_list;
+  std::vector<int32_t> _h_layer_idx_list;
+  std::vector<int32_t> _v_layer_idx_list;
 };
 
 }  // namespace irt

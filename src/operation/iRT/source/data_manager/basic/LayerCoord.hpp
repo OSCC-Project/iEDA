@@ -17,7 +17,7 @@
 #pragma once
 
 #include "PlanarCoord.hpp"
-#include "RTU.hpp"
+#include "RTHeader.hpp"
 
 namespace irt {
 
@@ -25,14 +25,14 @@ class LayerCoord : public PlanarCoord
 {
  public:
   LayerCoord() = default;
-  LayerCoord(const PlanarCoord& coord, const irt_int layer_idx = -1) : PlanarCoord(coord) { _layer_idx = layer_idx; }
-  LayerCoord(const irt_int x, const irt_int y, const irt_int layer_idx = -1) : PlanarCoord(x, y) { _layer_idx = layer_idx; }
+  LayerCoord(const PlanarCoord& coord, const int32_t layer_idx = -1) : PlanarCoord(coord) { _layer_idx = layer_idx; }
+  LayerCoord(const int32_t x, const int32_t y, const int32_t layer_idx = -1) : PlanarCoord(x, y) { _layer_idx = layer_idx; }
   ~LayerCoord() = default;
   bool operator==(const LayerCoord& other) const { return PlanarCoord::operator==(other) && _layer_idx == other._layer_idx; }
   bool operator!=(const LayerCoord& other) const { return !((*this) == other); }
   // getter
   PlanarCoord& get_planar_coord() { return (*this); }
-  irt_int get_layer_idx() const { return _layer_idx; }
+  int32_t get_layer_idx() const { return _layer_idx; }
   // const getter
   const PlanarCoord& get_planar_coord() const { return (*this); }
   // setter
@@ -42,11 +42,11 @@ class LayerCoord : public PlanarCoord
     set_y(coord.get_y());
   }
   using PlanarCoord::set_coord;
-  void set_layer_idx(const irt_int layer_idx) { _layer_idx = layer_idx; }
+  void set_layer_idx(const int32_t layer_idx) { _layer_idx = layer_idx; }
   // function
 
  private:
-  irt_int _layer_idx = -1;
+  int32_t _layer_idx = -1;
 };
 
 struct CmpLayerCoordByXASC

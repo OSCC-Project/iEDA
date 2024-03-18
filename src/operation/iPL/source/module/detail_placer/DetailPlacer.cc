@@ -22,6 +22,7 @@
 #include "operation/InstanceSwap.hh"
 #include "operation/LocalReorder.hh"
 #include "operation/RowOpt.hh"
+#include "operation/NFSpread.hh"
 #include "usage/usage.hh"
 #include "utility/Utility.hh"
 
@@ -30,8 +31,11 @@ namespace ipl {
 DetailPlacer::DetailPlacer(Config* pl_config, PlacerDB* placer_db)
 {
   initDPConfig(pl_config);
+  _config.set_grid_cnt_x(pl_config->get_nes_config().get_bin_cnt_x());
+  _config.set_grid_cnt_y(pl_config->get_nes_config().get_bin_cnt_y());
+
   initDPDatabase(placer_db);
-  _operator.initDPOperator(&_database);
+  _operator.initDPOperator(&_database, &_config);
 }
 
 DetailPlacer::~DetailPlacer()
@@ -93,6 +97,9 @@ void DetailPlacer::wrapRowList()
     DPRow* row = new DPRow(pl_row->get_name(), row_site, pl_row->get_site_num());
     row->set_coordinate(row_shift_x, row_shift_y);
     row->set_orient(std::move(pl_site->get_orient()));
+    
+    Rectangle<int64_t> rect(row_shift_x, row_shift_y, row_shift_x + pl_row->get_site_num() * row_site->get_width(), row_shift_y + row_site->get_height());
+    row->set_bound(rect);
 
     row_2d_list.at(row_index).push_back(row);
   }
@@ -548,6 +555,8 @@ void DetailPlacer::runDetailPlace()
     ++shift_iter;
   } while (improve_ratio > threshold && shift_iter < 10);
 
+  notifyPLPlaceDensity();
+
   _database._design->writeBackToPL(_database._shift_x, _database._shift_y);
   _database._placer_db->updateTopoManager();
   _database._placer_db->updateGridManager();
@@ -555,6 +564,31 @@ void DetailPlacer::runDetailPlace()
   double time_delta = dp_status.elapsedRunTime();
   LOG_INFO << "Detail Plaement Total Time Elapsed: " << time_delta << "s";
   LOG_INFO << "-----------------Finish Detail Placement-----------------";
+}
+
+void DetailPlacer::runDetailPlaceNFS()
+{
+  LOG_INFO << "-----------------Start Network Flow Cell Spreading-----------------";
+  ieda::Stats dp_status;
+
+  NFSpread nfspread_opt(&_config, &_database, &_operator);
+  nfspread_opt.runNFSpread();
+  _operator.updateTopoManager();
+
+  _database._design->writeBackToPL(_database._shift_x, _database._shift_y);
+  _database._placer_db->updateTopoManager();
+  _database._placer_db->updateGridManager();
+
+  double time_delta = dp_status.elapsedRunTime();
+  LOG_INFO << "Detail Plaement Total Time Elapsed: " << time_delta << "s";
+  LOG_INFO << "-----------------Finish Network Flow Cell Spreading-----------------";
+
+}
+
+void DetailPlacer::notifyPLPlaceDensity()
+{
+ auto* grid_manager = _operator.get_grid_manager();
+ PlacerDBInst.place_density[2] = grid_manager->obtainAvgGridDensity(); 
 }
 
 int64_t DetailPlacer::calTotalHPWL()

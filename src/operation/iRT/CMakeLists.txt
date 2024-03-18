@@ -14,20 +14,14 @@ set(CMAKE_CXX_STANDARD 20)
 
 ############################ debug source module ############################
 
-# set(DEBUG_IRT_DETAILED_ROUTER ON)
-# set(DEBUG_IRT_DRC_CHECKER ON)
 # set(DEBUG_IRT_EARLY_GLOBAL_ROUTER ON)
 # set(DEBUG_IRT_GDS_PLOTTER ON)
-# set(DEBUG_IRT_GLOBAL_ROUTER ON)
 # set(DEBUG_IRT_PIN_ACCESSOR ON)
-# set(DEBUG_IRT_REGION_QUERY ON)
-# set(DEBUG_IRT_RESOURCE_ALLOCATOR ON) 
-# set(DEBUG_IRT_TRACK_ASSIGNER ON)
-# set(DEBUG_IRT_VIOLATION_REPAIRER ON)
-
-############################ debug source solver ############################
-
-# set(DEBUG_IRT_UNIVERSAL_ROUTER ON)
+# set(DEBUG_IRT_SUPPLY_ANALYZER ON) 
+# set(DEBUG_IRT_INITIAL_ROUTER ON)
+# set(DEBUG_IRT_GLOBAL_ROUTER ON)
+# set(DEBUG_IRT_TRACK_ASSIGNER ON) 
+# set(DEBUG_IRT_DETAILED_ROUTER ON)
 
 ############################ debug source data_manager ############################
 
@@ -37,7 +31,6 @@ set(CMAKE_CXX_STANDARD 20)
 
 # set(DEBUG_IRT_LOGGER ON)
 # set(DEBUG_IRT_MONITOR ON)
-# set(DEBUG_IRT_REPORTER ON)
 
 ############################ setting path ############################
 

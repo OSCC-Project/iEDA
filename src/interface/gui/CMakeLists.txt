@@ -195,6 +195,7 @@ if(BUILD_PR_FLOW)
         file_manager_drc 
         file_manager_placement
         tool_api_ipl
+        idrc_pro_violation
     )
 
     if(OpenMP_CXX_FOUND)

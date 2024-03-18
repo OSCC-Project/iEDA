@@ -57,7 +57,8 @@ void Config::initConfigByJson(nlohmann::json json)
 {
   int32_t is_max_length_opt = getDataByJson(json, {"PL", "is_max_length_opt"});
   int32_t max_length_constraint = getDataByJson(json, {"PL", "max_length_constraint"});
-  int32_t is_timing_aware_mode = getDataByJson(json, {"PL", "is_timing_aware_mode"});
+  int32_t is_timing_effort = getDataByJson(json, {"PL", "is_timing_effort"});
+  int32_t is_congestion_effort = getDataByJson(json, {"PL", "is_congestion_effort"});
   int32_t ignore_net_degree = getDataByJson(json, {"PL", "ignore_net_degree"});
   int32_t num_threads = getDataByJson(json, {"PL", "num_threads"});
 
@@ -93,6 +94,7 @@ void Config::initConfigByJson(nlohmann::json json)
   // Detail Placer
   int32_t dp_max_displacement = getDataByJson(json, {"PL", "DP", "max_displacement"});
   int32_t dp_global_padding = getDataByJson(json, {"PL", "DP", "global_right_padding"});
+  int32_t dp_enable_networkflow = getDataByJson(json, {"PL", "DP", "enable_networkflow"});
 
   // Filler
   std::vector<std::vector<std::string>> filler_group_list;
@@ -164,6 +166,16 @@ void Config::initConfigByJson(nlohmann::json json)
     _nes_config.set_is_opt_max_wirelength(false);
     _nes_config.set_max_net_wirelength(-1);
   }
+  if(is_timing_effort){
+    _nes_config.set_is_opt_timing(true);
+  }else{
+    _nes_config.set_is_opt_timing(false);
+  }
+  if(is_congestion_effort){
+    _nes_config.set_is_opt_congestion(true);
+  }else{
+    _nes_config.set_is_opt_congestion(false);
+  }
 
   // Buffer
   _buffer_config.set_thread_num(num_threads);
@@ -183,6 +195,7 @@ void Config::initConfigByJson(nlohmann::json json)
   _dp_config.set_thread_num(num_threads);
   _dp_config.set_max_displacement(dp_max_displacement);
   _dp_config.set_global_padding(dp_global_padding);
+  _dp_config.set_enable_networkflow(dp_enable_networkflow);
 
   // Filler
   _filler_config.set_thread_num(num_threads);
@@ -206,7 +219,8 @@ void Config::initConfigByJson(nlohmann::json json)
   _mp_config.set_output_path(output_path);
 
   _ignore_net_degree = ignore_net_degree;
-  _is_timing_aware_mode = (is_timing_aware_mode == 1);
+  _is_timing_effort = (is_timing_effort == 1);
+  _is_congestion_effort = (is_congestion_effort == 1);
 }
 
 nlohmann::json Config::getDataByJson(nlohmann::json value, std::vector<std::string> flag_list)

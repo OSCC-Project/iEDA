@@ -48,6 +48,14 @@ using CellTargetLoadMap = std::map<LibertyCell *, float>;
 const float kInf = 1E+30F;
 #define REPORT_TO_TXT ;
 
+struct EvalData
+{
+  std::string name;
+  double initial_wns;
+  double initial_tns;
+  double initial_freq;
+};
+
 class DbInterface {
  public:
   static DbInterface *get_db_interface(ToConfig *config, IdbBuilder *idb,
@@ -103,6 +111,9 @@ class DbInterface {
 
   int &make_net_index() { return _make_net_index; }
   int &make_instance_index() { return _make_instance_index; }
+
+  void set_eval_data();
+  std::vector<EvalData> eval_data() { return _eval_data; }
 
  private:
   DbInterface(ToConfig *config) : _config(config){};
@@ -164,5 +175,7 @@ class DbInterface {
 
   int _make_net_index = 0;
   int _make_instance_index = 0;
+
+  std::vector<EvalData> _eval_data;
 };
 } // namespace ito

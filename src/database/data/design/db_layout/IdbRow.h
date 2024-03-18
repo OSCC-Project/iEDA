@@ -66,8 +66,22 @@ class IdbRow : public IdbObject
 
   // setter
   void set_name(string name) { _name = name; }
-  void set_site(IdbSite* site) { _site = site; }
-  void set_original_coordinate(IdbCoordinate<int32_t>* original_coordinate) { _original_coordinate = original_coordinate; }
+  void set_site(IdbSite* site)
+  {
+    if (_site != nullptr) {
+      delete _site;
+      _site = nullptr;
+    }
+    _site = site;
+  }
+  void set_original_coordinate(IdbCoordinate<int32_t>* original_coordinate)
+  {
+    if (_original_coordinate != nullptr) {
+      delete _original_coordinate;
+      _original_coordinate = nullptr;
+    }
+    _original_coordinate = original_coordinate;
+  }
   void set_original_coordinate(int32_t x, int32_t y) { _original_coordinate->set_xy(x, y); }
   void set_row_num_x(int32_t row_num_x);
   void set_row_num_y(int32_t row_num_y);

@@ -36,7 +36,7 @@ def_init -path ./result/iPL_result.def
 #===========================================================
 ##   run CTS
 #===========================================================
-run_cts -config ./iEDA_config/cts_default_config.json
+run_cts -config ./iEDA_config/cts_default_config.json -work_dir ./result/cts
 
 #===========================================================
 ##   def & netlist

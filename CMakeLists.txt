@@ -28,9 +28,12 @@ endif()
 
 option(BUILD_PYTHON "If ON, build python interface." OFF)
 if(BUILD_PYTHON)
+    set(BUILD_STATIC_LIB OFF)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
 endif()
 option(BUILD_GUI "If ON, build GUI." OFF)
+
+# add_subdirectory(src/third_party/mt-kahypar)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_VERBOSE_MAKEFILE OFF)
@@ -51,9 +54,11 @@ if(NOT DEFINED CMD_BUILD)
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
 endif()
 
+set(SANITIZER OFF)
 if(SANITIZER)
     add_compile_options("-fsanitize=address")
     link_libraries("-fsanitize=address")
+    message("address sanitizer load")
 endif()
 
 include(cmake/setting.cmake)

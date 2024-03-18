@@ -46,10 +46,13 @@ class Legalizer
 
   void updateInstanceList();
   void updateInstanceList(std::vector<Instance*> inst_list);
+  bool updateInstance(Instance* pl_inst);
+  bool updateInstance(std::string pl_inst_name);
 
   LG_MODE get_mode() const { return _mode; }
   bool runLegalize();
   bool runIncrLegalize();
+  bool runRollback(bool clear_but_not_rollback);
 
   bool isInitialized() { return _mode != LG_MODE::kNone; }
 
@@ -84,7 +87,11 @@ class Legalizer
   void updateInstanceMapping(Instance* pl_inst, LGInstance* lg_inst);
 
   void alignInstanceOrient();
+
   int64_t calTotalMovement();
+  int64_t calMaxMovement();
+  void notifyPLMovementInfo();
+
   void writebackPlacerDB();
 };
 

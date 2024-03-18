@@ -20,7 +20,7 @@
 #include "EXTLayerCoord.hpp"
 #include "LayerCoord.hpp"
 #include "Orientation.hpp"
-#include "RTU.hpp"
+#include "RTHeader.hpp"
 
 namespace irt {
 
@@ -28,26 +28,27 @@ class AccessPoint : public EXTLayerCoord
 {
  public:
   AccessPoint() = default;
-  AccessPoint(irt_int real_x, irt_int real_y, irt_int layer_idx, AccessPointType type)
+  AccessPoint(int32_t pin_idx, const LayerCoord& coord, const AccessPointType& type)
   {
-    set_real_coord(real_x, real_y);
-    set_layer_idx(layer_idx);
+    _pin_idx = pin_idx;
+    set_real_coord(coord);
+    set_layer_idx(coord.get_layer_idx());
     _type = type;
   }
   ~AccessPoint() = default;
   // getter
+  int32_t get_pin_idx() const { return _pin_idx; }
   AccessPointType get_type() const { return _type; }
-  std::set<Orientation>& get_access_orien_set() { return _access_orien_set; }
   // setter
+  void set_pin_idx(const int32_t pin_idx) { _pin_idx = pin_idx; }
   void set_type(const AccessPointType& type) { _type = type; }
-  void set_access_orien_set(const std::set<Orientation>& access_orien_set) { _access_orien_set = access_orien_set; }
   // function
   LayerCoord getGridLayerCoord() { return LayerCoord(get_grid_coord(), get_layer_idx()); }
   LayerCoord getRealLayerCoord() { return LayerCoord(get_real_coord(), get_layer_idx()); }
 
  private:
+  int32_t _pin_idx = -1;
   AccessPointType _type = AccessPointType::kNone;
-  std::set<Orientation> _access_orien_set;
 };
 
 }  // namespace irt

@@ -36,8 +36,8 @@ void IdbBuilder::buildBus()
     }
 
     // parse io pin bus
-    auto* io_pin = net->get_io_pin();
-    if (io_pin) {
+    auto* io_pins = net->get_io_pins();
+    for (auto* io_pin : io_pins->get_pin_list()) {
       auto io_bus_info = IdbBus::parseBusName(io_pin->get_pin_name(), *bus_bit_chars);
       if (io_bus_info) {
         bus_list->addOrUpdate(io_bus_info.value(), [io_pin, &io_bus_info](IdbBus& bus) {

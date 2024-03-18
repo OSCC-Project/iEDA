@@ -29,6 +29,7 @@
 
 #include "log/Log.hh"
 #include "string/Str.hh"
+#include "time/Time.hh"
 
 namespace idb {
 VerilogWriter::VerilogWriter(const char* file_name, std::set<std::string>& exclude_cell_names, IdbDesign& idb_design)
@@ -52,6 +53,8 @@ void VerilogWriter::writeModule()
     LOG_INFO << "File" << _file_name << "NotWritable";
   }
   LOG_INFO << "start write verilog file " << _file_name;
+
+  fprintf(_stream, "//Generate the verilog at %s\n", ieda::Time::getNowWallTime());
 
   fprintf(_stream, "module %s (", _idb_design.get_design_name().c_str());
   fprintf(_stream, "\n");
@@ -225,6 +228,11 @@ void VerilogWriter::writeWire()
       is_bus = std::nullopt;
     }
 
+    // bus of bus is not printed as bus
+    if (std::ranges::count(net_name, '[') > 1) {
+      is_bus = std::nullopt;
+    }
+
     if (is_bus) {
       continue;
     }
@@ -244,6 +252,11 @@ void VerilogWriter::writeWire()
       is_bus = std::nullopt;
     }
 
+    // bus of bus is not printed as bus
+    if (std::ranges::count(net_name, '[') > 1) {
+      is_bus = std::nullopt;
+    }
+
     if (!is_bus) {
       continue;
     }
@@ -253,7 +266,8 @@ void VerilogWriter::writeWire()
     }
 
     bus_processed.insert(net_bus_name);
-
+    // remove all "\" in net_bus_name
+    net_bus_name.erase(std::remove(net_bus_name.begin(), net_bus_name.end(), '\\'), net_bus_name.end());
     auto net_bus = _idb_design.get_bus_list()->findBus(net_bus_name);
     assert(net_bus);
     int bus_left = net_bus->get().get_left();
@@ -429,8 +443,30 @@ bool VerilogWriter::isNeedEscape(const std::string& name)
 std::string VerilogWriter::escapeName(const std::string& name)
 {
   std::string trim_name = ieda::Str::trimBackslash(name);
-  std::string escape_name = isNeedEscape(trim_name) ? "\\" + trim_name : trim_name;
+  std::string escape_name = isNeedEscape(trim_name) ? "\\" + addSpaceForEscapeName(trim_name) : trim_name;
   return escape_name;
+}
+
+/**
+ * @brief add space for escape name between id and bracket
+ * such as \waddrReg_r[2] should be changed to \waddrReg_r [2], which is required by verilator.
+ * @param name
+ * @return std::string
+ */
+std::string VerilogWriter::addSpaceForEscapeName(const std::string& name)
+{
+  if (std::count(name.begin(), name.end(), '[') > 1) {
+    return name;
+  }
+
+  size_t pos = name.find("[");
+  if (pos != string::npos) {
+    std::string replace_str = name;
+    replace_str.replace(pos, 1, " [");
+    return replace_str;
+  }
+
+  return name;
 }
 
 }  // namespace idb

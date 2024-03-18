@@ -52,6 +52,8 @@ class DetailPlacer
   int64_t calTotalHPWL();
   float calPeakBinDensity();
 
+  void runDetailPlaceNFS();
+
  private:
   DPConfig _config;
   DPDatabase _database;
@@ -75,6 +77,8 @@ class DetailPlacer
 
   void clearClusterInfo();
   void alignInstanceOrient();
+
+  void notifyPLPlaceDensity();
 };
 }  // namespace ipl
 

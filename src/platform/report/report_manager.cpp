@@ -183,13 +183,13 @@ bool ReportManager::reportInstLevel(const std::string& prefix, int level, int nu
   return true;
 }
 
-// bool ReportManager::reportDRC(const std::string& file)
-// {
-//   ReportDRC report("DRC");
-//   report.createDrcReport();
-//   ReportOStream{file} << report;
-//   return true;
-// }
+bool ReportManager::reportDRC(const std::string& file)
+{
+  //   ReportDRC report("DRC");
+  //   report.createDrcReport();
+  //   ReportOStream{file} << report;
+  return true;
+}
 
 bool ReportManager::reportDRC(const std::string& file_name, std::map<std::string, int>& drc_result,
                               std::tuple<bool, std::vector<std::string>, std::vector<std::string>, int>& connectivity_result)

@@ -1,3 +1,4 @@
+set(DEBUG_EVAL_API ON)
 if(DEBUG_EVAL_API)
     message(STATUS "evaluator: DEBUG EVAL_API")
     set(CMAKE_BUILD_TYPE "Debug")

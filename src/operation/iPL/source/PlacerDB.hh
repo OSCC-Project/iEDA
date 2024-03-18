@@ -88,6 +88,32 @@ class PlacerDB
   bool isInitialized() { return _db_wrapper != nullptr; }
 
   void initTopoManager();
+  void initNodes(Design* pl_design);
+  void initNetworks(Design* pl_design);
+  void initGroups(Design* pl_design);
+  void initArcs();
+  void generateNetArc(Node* node);
+  void generateGroupArc(Node* node);
+
+ public:
+  // tmp for iEDA evaluation
+  int32_t bin_size_x = 0;
+  int32_t bin_size_y = 0;
+  int32_t gp_overflow_number = 0;
+  float gp_overflow = 0.0f;
+  float place_density[3] = {0.0f, 0.0f, 0.0f};
+  float pin_density[3] = {0.0f, 0.0f, 0.0f};
+  int64_t PL_HPWL[3] = {0,0,0};
+  int64_t PL_STWL[3] = {0,0,0};
+  int64_t PL_GRWL[3] = {0,0,0};
+  float congestion[3] = {0.0f,0.0f,0.0f};
+  float tns[3] = {0.0f,0.0f,0.0f};
+  float wns[3] = {0.0f,0.0f,0.0f};
+  float suggest_freq[3] = {0.0f,0.0f,0.0f};
+  int64_t lg_total_movement = 0;
+  int64_t lg_max_movement = 0;
+  float sta_update_time = 0.0f;
+  int32_t init_inst_cnt = 0;
 
  private:
   static PlacerDB* _s_placer_db_instance;

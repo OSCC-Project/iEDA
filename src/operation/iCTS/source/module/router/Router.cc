@@ -27,13 +27,13 @@
 namespace icts {
 void Router::init()
 {
-  CTSAPIInst.saveToLog("\n\n##Router Log##");
+  CTSAPIInst.saveToLog("--RC Info--");
   auto* design = CTSAPIInst.get_design();
   // report unit res & cap
-  CTSAPIInst.saveToLog("\nRouter unit res (H): ", CTSAPIInst.getClockUnitRes(LayerPattern::kH));
-  CTSAPIInst.saveToLog("Router unit cap (H): ", CTSAPIInst.getClockUnitCap(LayerPattern::kH));
-  CTSAPIInst.saveToLog("Router unit res (V): ", CTSAPIInst.getClockUnitRes(LayerPattern::kV));
-  CTSAPIInst.saveToLog("Router unit cap (V): ", CTSAPIInst.getClockUnitCap(LayerPattern::kV));
+  CTSAPIInst.saveToLog("Unit RES (H): ", CTSAPIInst.getClockUnitRes(LayerPattern::kH), " ohm");
+  CTSAPIInst.saveToLog("Unit CAP (H): ", CTSAPIInst.getClockUnitCap(LayerPattern::kH), " pF");
+  CTSAPIInst.saveToLog("Unit RES (V): ", CTSAPIInst.getClockUnitRes(LayerPattern::kV), " ohm");
+  CTSAPIInst.saveToLog("Unit CAP (V): ", CTSAPIInst.getClockUnitCap(LayerPattern::kV), " pF");
   printLog();
   auto& clocks = design->get_clocks();
   for (auto& clock : clocks) {
@@ -49,32 +49,30 @@ void Router::init()
       }
     }
   }
+  CTSAPIInst.saveToLog("");
 }
 void Router::build()
 {
   ieda::Stats stats;
-  CTSAPIInst.saveToLog("\n\n##Router Build Log##");
+  CTSAPIInst.saveToLog("--Clock Net Info--");
   for (auto* clock : _clocks) {
     auto* design = CTSAPIInst.get_design();
     auto& clock_nets = clock->get_clock_nets();
-    CTSAPIInst.saveToLog("\n");
     for (auto* clk_net : clock_nets) {
-      CTSAPIInst.saveToLog("\n####################");
-      CTSAPIInst.saveToLog("clock net: ", clk_net->get_net_name());
-      LOG_INFO << "clock net: " << clk_net->get_net_name();
+      CTSAPIInst.saveToLog("Net name: ", clk_net->get_net_name());
+      LOG_INFO << "Net name: " << clk_net->get_net_name();
       design->resetId();
       auto sink_pins = getSinkPins(clk_net);
       auto buf_pins = getBufferPins(clk_net);
-      CTSAPIInst.saveToLog("sink pins: ", sink_pins.size());
-      LOG_INFO << "sink pins: " << sink_pins.size();
-      CTSAPIInst.saveToLog("buf pins: ", buf_pins.size());
-      LOG_INFO << "buf pins: " << buf_pins.size();
+      CTSAPIInst.saveToLog("\tSink pins num: ", sink_pins.size());
+      LOG_INFO << "\tSink pins num: " << sink_pins.size();
+      CTSAPIInst.saveToLog("\tBuffer pins num: ", buf_pins.size());
+      LOG_INFO << "\tBuffer pins num: " << buf_pins.size();
       routing(clk_net);
       clk_net->setClockRouted();
     }
   }
-  CTSAPIInst.saveToLog("Router build memory usage ", stats.memoryDelta(), "MB");
-  CTSAPIInst.saveToLog("Router build elapsed time ", stats.elapsedRunTime(), "s");
+  CTSAPIInst.saveToLog("");
 }
 void Router::update()
 {

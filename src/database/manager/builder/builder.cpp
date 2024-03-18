@@ -199,6 +199,33 @@ IdbDefService* IdbBuilder::buildVerilog(string file, std::string top_module_name
   std::shared_ptr<VerilogRead> verilog_read = std::make_shared<VerilogRead>(_def_service);
   verilog_read->createDb(file.c_str(), top_module_name);
 
+  checkNetPins();
+
+  return _def_service;
+}
+
+IdbDefService* IdbBuilder::rustBuildVerilog(string file, std::string top_module_name)
+{
+  if (_def_service != nullptr) {
+    delete _def_service;
+    _def_service = nullptr;
+  }
+
+  IdbLayout* layout = _lef_service->get_layout();
+  _def_service = new IdbDefService(layout);
+
+  if (IdbDefServiceResult::kServiceFailed == _def_service->VerilogFileInit(file.c_str())) {
+    std::cout << "Read Verilog file failed..." << endl;
+    return nullptr;
+  } else {
+    std::cout << "Read Verilog file success : " << file << endl;
+  }
+
+  std::shared_ptr<RustVerilogRead> rust_verilog_read = std::make_shared<RustVerilogRead>(_def_service);
+  rust_verilog_read->createDb(file.c_str(), top_module_name);
+
+  checkNetPins();
+
   return _def_service;
 }
 
@@ -276,8 +303,7 @@ bool IdbBuilder::saveGDSII(string file)
   return gds_write->writeDb(file.c_str());
 }
 
-
-bool IdbBuilder::saveJSON(string file,string options)
+bool IdbBuilder::saveJSON(string file, string options)
 {
   if (IdbDefServiceResult::kServiceFailed == _def_service->DefFileWriteInit(file.c_str())) {
     std::cout << "Create JSON file failed..." << endl;
@@ -285,7 +311,7 @@ bool IdbBuilder::saveJSON(string file,string options)
   }
   // std::cout << options << endl;
   std::shared_ptr<Gds2JsonWrite> json_write = std::make_shared<Gds2JsonWrite>(_def_service);
-  return json_write->writeDb(file.c_str(),options);
+  return json_write->writeDb(file.c_str(), options);
 }
 
 // void IdbBuilder::saveLayout(string folder)

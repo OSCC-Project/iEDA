@@ -1,12 +1,30 @@
+// ***************************************************************************************
+// Copyright (c) 2023-2025 Peng Cheng Laboratory
+// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of Sciences
+// Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
+//
+// iEDA is licensed under Mulan PSL v2.
+// You can use this software according to the terms and conditions of the Mulan PSL v2.
+// You may obtain a copy of Mulan PSL v2 at:
+// http://license.coscl.org.cn/MulanPSL2
+//
+// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
+// EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
+// MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+//
+// See the Mulan PSL v2 for more details.
+// ***************************************************************************************
 #ifndef IMP_HYPERGRAPH_H
 #define IMP_HYPERGRAPH_H
 #include <cassert>
 #include <memory>
 #include <mutex>
+#include <set>
 #include <string>
 #include <unordered_map>
 #include <vector>
 /**
+ * TODO: make enable to using std::ranges through fix class GraphIterator and class GraphRange.
  * hmatrix = (6, 5, 11);
  *
  *     he0  he1  he2  he3  he4
@@ -50,25 +68,65 @@ struct None
 {
 };
 
-template <typename T>
+template <template <typename> class ptr_type, typename T>
 class GraphIterator
 {
  public:
-  GraphIterator(const std::vector<T*>& data, size_t index) : _data(data), _index(index) {}
+  using iterator_category = std::random_access_iterator_tag;
+  using difference_type = std::ptrdiff_t;
+  using value_type = T;
+  using pointer = T*;
+  using reference = T&;
 
-  const T& operator*() const { return (_index < _data.size()) ? *(_data[_index]) : *(*(_data.end())); }
-  T& operator*() { return (_index < _data.size()) ? *(_data[_index]) : *(*(_data.end())); }
+  GraphIterator(const std::vector<ptr_type<T>>& data, size_t index) : _data(data), _index(index) {}
 
-  GraphIterator& operator+=(size_t n)
+  const reference operator*() const
   {
-    _index += n;
+    if constexpr (std::is_same_v<ptr_type<T>, std::weak_ptr<T>>) {
+      return *(_data.at(_index).lock());
+    } else {
+      return *(_data.at(_index));
+    }
+  }
+
+  reference operator*()
+  {
+    if constexpr (std::is_same_v<ptr_type<T>, std::weak_ptr<T>>) {
+      return *(_data.at(_index).lock());
+    } else {
+      return *(_data.at(_index));
+    }
+  }
+  GraphIterator& operator=(const GraphIterator& other)
+  {
+    if (this != &other && &_data != &other._data) {
+      const_cast<std::vector<ptr_type<T>>&>(_data) = other._data;
+    }
+    _index = other._index;
+    return *this;
+  }
+  GraphIterator& operator+=(size_t pos)
+  {
+    _index += pos;
     return *this;
   }
 
-  GraphIterator operator+(size_t n)
+  GraphIterator operator+(size_t pos) const
   {
-    size_t index = _index + n;
-    return GraphIterator<T>(_data, index);
+    size_t index = _index + pos;
+    return GraphIterator<ptr_type, T>(_data, index);
+  }
+
+  GraphIterator& operator-=(size_t pos)
+  {
+    _index -= pos;
+    return *this;
+  }
+
+  GraphIterator operator-(size_t pos) const
+  {
+    size_t index = _index - pos;
+    return GraphIterator<ptr_type, T>(_data, index);
   }
 
   GraphIterator& operator++()
@@ -76,12 +134,63 @@ class GraphIterator
     ++_index;
     return *this;
   }
+
+  GraphIterator operator++(int)
+  {
+    GraphIterator<ptr_type, T> temp(*this);
+    ++(*this);
+    return temp;
+  }
+
+  GraphIterator& operator--()
+  {
+    --_index;
+    return *this;
+  }
+
+  GraphIterator operator--(int)
+  {
+    GraphIterator<ptr_type, T> temp(*this);
+    --(*this);
+    return temp;
+  }
+
   bool operator==(const GraphIterator& other) const { return &_data == &other._data && _index == other._index; }
   bool operator!=(const GraphIterator& other) const { return &_data != &other._data || _index != other._index; }
 
+  bool operator<(const GraphIterator& other) const { return _index < other._index; }
+  bool operator>(const GraphIterator& other) const { return _index > other._index; }
+  bool operator<=(const GraphIterator& other) const { return _index <= other._index; }
+  bool operator>=(const GraphIterator& other) const { return _index >= other._index; }
+
+  reference operator[](size_t pos) { return *(_data.at(_index + pos)); }
+  const reference operator[](size_t pos) const { return *(_data.at(_index + pos)); }
+
+  difference_type operator-(const GraphIterator& other) const { return _index - other._index; }
+
  private:
-  const std::vector<T*>& _data;
+  const std::vector<ptr_type<T>>& _data;
   size_t _index;
+};
+
+template <template <typename> class ptr_type, typename T>
+auto make_iterator(const std::vector<ptr_type<T>>& data, size_t index)
+{
+  return GraphIterator<ptr_type, T>(data, index);
+}
+
+template <typename Iterator>
+class GraphRange
+{
+ public:
+  GraphRange() = delete;
+  GraphRange(Iterator begin, Iterator end) : _begin(begin), _end(end) {}
+  Iterator begin() { return _begin; }
+  Iterator end() { return _end; }
+
+ private:
+  Iterator _begin;
+  Iterator _end;
 };
 
 template <typename Config>
@@ -111,27 +220,32 @@ class HyperGraph
   using HedgeProperty = Config::HedgeProperty;
   using EdgeProperty = Config::EdgeProperty;
   using GraphProperty = Config::GraphProperty;
-  using VertexIterator = GraphIterator<Vertex>;
-  using HedgeIterator = GraphIterator<Hedge>;
-  using EdgeIterator = GraphIterator<Edge>;
+  // using GraphIterator<std::shared_ptr, Vertex> = GraphIterator<Vertex>;
+  // using GraphIterator<std::shared_ptr, Hedge> = GraphIterator<Hedge>;
+  // using GraphIterator<std::shared_ptr, Edge> = GraphIterator<Edge>;
 
  public:
   HyperGraph(const GraphProperty& graph_property = GraphProperty());
-  HyperGraph(size_t n, const GraphProperty& graph_property = GraphProperty());
+  HyperGraph(size_t pos, const GraphProperty& graph_property = GraphProperty());
   HyperGraph(const std::vector<VertexProperty>& vertex_properties, const GraphProperty& graph_property = GraphProperty());
+  ~HyperGraph();
 
-  const Vertex& vertex_at(size_t n) const;
-  Vertex& vertex_at(size_t n);
+  bool empty() const { return _vertices.empty(); }
+  GraphProperty& property() { return _property; }
+  const GraphProperty& property() const { return _property; }
 
-  const Edge& edge_at(size_t n) const;
-  Edge& edge_at(size_t n);
+  const Vertex& vertex_at(size_t pos) const;
+  Vertex& vertex_at(size_t pos);
 
-  const Hedge& hyper_edge_at(size_t n) const;
-  Hedge& hyper_edge_at(size_t n);
+  const Edge& edge_at(size_t pos) const;
+  Edge& edge_at(size_t pos);
+
+  const Hedge& hyper_edge_at(size_t pos) const;
+  Hedge& hyper_edge_at(size_t pos);
 
   size_t add_vertex(const VertexProperty& vertex_property = VertexProperty());
-  std::vector<size_t> add_vertexs(const std::vector<VertexProperty>& vertex_properties);
-  std::vector<size_t> add_vertexs(size_t n);
+  std::vector<size_t> add_vertices(const std::vector<VertexProperty>& vertex_properties);
+  std::vector<size_t> add_vertices(size_t n);
 
   size_t add_edge(size_t vertex_id, size_t hedge_id, const EdgeProperty& edge_property = EdgeProperty());
 
@@ -141,84 +255,148 @@ class HyperGraph
 
   size_t add_hyper_edges(const std::vector<size_t>& eptr, const std::vector<size_t>& eind,
                          const std::vector<HedgeProperty>& hedge_properties, const std::vector<EdgeProperty>& edge_properties);
+  size_t vSize() const { return _vertices.size(); }
+  size_t heSize() const { return _hyper_edges.size(); }
+  size_t eSize() const { return _edges.size(); }
 
-  const VertexIterator vbegin() const { return VertexIterator(_vertices, 0); }
-  const VertexIterator vend() const { return VertexIterator(_vertices, _vertices.size()); }
+  const GraphIterator<std::shared_ptr, Vertex> vbegin() const { return GraphIterator<std::shared_ptr, Vertex>(_vertices, 0); }
+  const GraphIterator<std::shared_ptr, Vertex> vend() const { return GraphIterator<std::shared_ptr, Vertex>(_vertices, _vertices.size()); }
 
-  VertexIterator vbegin() { return VertexIterator(_vertices, 0); }
-  VertexIterator vend() { return VertexIterator(_vertices, _vertices.size()); }
+  GraphIterator<std::shared_ptr, Vertex> vbegin() { return GraphIterator<std::shared_ptr, Vertex>(_vertices, 0); }
+  GraphIterator<std::shared_ptr, Vertex> vend() { return GraphIterator<std::shared_ptr, Vertex>(_vertices, _vertices.size()); }
 
-  HedgeIterator hebegin() { return HedgeIterator(_hyper_edges, 0); }
-  HedgeIterator hend() { return HedgeIterator(_hyper_edges, _hyper_edges.size()); }
+  const GraphIterator<std::shared_ptr, Hedge> hebegin() const { return GraphIterator<std::shared_ptr, Hedge>(_hyper_edges, 0); }
+  const GraphIterator<std::shared_ptr, Hedge> hend() const
+  {
+    return GraphIterator<std::shared_ptr, Hedge>(_hyper_edges, _hyper_edges.size());
+  }
 
-  EdgeIterator ebegin() { return EdgeIterator(_edges, 0); }
-  EdgeIterator eend() { return EdgeIterator(_edges, _edges.size()); }
+  GraphIterator<std::shared_ptr, Hedge> hebegin() { return GraphIterator<std::shared_ptr, Hedge>(_hyper_edges, 0); }
+  GraphIterator<std::shared_ptr, Hedge> hend() { return GraphIterator<std::shared_ptr, Hedge>(_hyper_edges, _hyper_edges.size()); }
 
-  // Noted that the id will chage after removing;
-  bool remove_vertex(size_t n);
-  bool remove_edge(size_t n);
-  bool remove_hyper_edge(size_t n);
+  GraphIterator<std::shared_ptr, Edge> ebegin() { return GraphIterator<std::shared_ptr, Edge>(_edges, 0); }
+  GraphIterator<std::shared_ptr, Edge> eend() { return GraphIterator<std::shared_ptr, Edge>(_edges, _edges.size()); }
 
-  VertexIterator remove_vertex(const VertexIterator& pos);
-  EdgeIterator remove_edge(const EdgeIterator& pos);
-  HedgeIterator remove_hyper_edge(const HedgeIterator& pos);
+  GraphRange<GraphIterator<std::shared_ptr, Vertex>> vRange() { return {vbegin(), vend()}; }
+  GraphRange<GraphIterator<std::shared_ptr, Hedge>> heRange() { return {hebegin(), hend()}; }
+
+  // Noted that the pos will chage after removing;
+  bool remove_vertex(size_t pos);
+  bool remove_edge(size_t pos);
+  bool remove_hyper_edge(size_t pos);
+  bool remove_hyper_edge(Hedge& hedge);
+
+  GraphIterator<std::shared_ptr, Vertex> remove_vertex(const GraphIterator<std::shared_ptr, Vertex>& pos);
+  GraphIterator<std::shared_ptr, Edge> remove_edge(const GraphIterator<std::shared_ptr, Edge>& pos);
+  GraphIterator<std::shared_ptr, Hedge> remove_hyper_edge(const GraphIterator<std::shared_ptr, Hedge>& pos);
 
   void reserve_vertices(size_t n) { _vertices.reserve(n); }
   void reserve_hedges(size_t n) { _hyper_edges.reserve(n); }
   void reserve_edges(size_t n) { _edges.reserve(n); }
 
  public:
-  struct Vertex
+  class Vertex
   {
-    const HedgeIterator hebegin() const { return HedgeIterator(hyper_edges, 0); }
-    HedgeIterator hebegin() { return HedgeIterator(hyper_edges, 0); }
+   public:
+    Vertex(size_t pos, const std::vector<std::weak_ptr<Hedge>>& hyper_edges, const std::vector<std::weak_ptr<Edge>>& edges,
+           const VertexProperty& property)
+        : _pos(pos), _hyper_edges(hyper_edges), _edges(edges), _property(property)
+    {
+    }
+    const GraphIterator<std::weak_ptr, Hedge> hebegin() const { return GraphIterator<std::weak_ptr, Hedge>(_hyper_edges, 0); }
+    GraphIterator<std::weak_ptr, Hedge> hebegin() { return GraphIterator<std::weak_ptr, Hedge>(_hyper_edges, 0); }
 
-    const HedgeIterator hend() const { return HedgeIterator(hyper_edges, hyper_edges.size()); }
-    HedgeIterator hend() { return HedgeIterator(hyper_edges, hyper_edges.size()); }
+    const GraphIterator<std::weak_ptr, Hedge> hend() const
+    {
+      return GraphIterator<std::weak_ptr, Hedge>(_hyper_edges, _hyper_edges.size());
+    }
+    GraphIterator<std::weak_ptr, Hedge> hend() { return GraphIterator<std::weak_ptr, Hedge>(_hyper_edges, _hyper_edges.size()); }
 
-    size_t degree() const { return hyper_edges.size(); }
-    size_t id;
-    std::vector<Hedge*> hyper_edges;
-    std::vector<Edge*> edges;
-    VertexProperty property{};
+    size_t degree() const { return _hyper_edges.size(); }
+    VertexProperty& property() { return _property; }
+    const VertexProperty& property() const { return _property; }
+
+    size_t pos() const { return _pos; }
+    void remove_hyper_edge(const Hedge& hedge)
+    {
+      for (auto iter = _hyper_edges.begin(); iter != _hyper_edges.end(); ++iter) {
+        if ((*iter).lock().get() == &hedge) {
+          _hyper_edges.erase(iter);
+          return;
+        }
+      }
+    }
+
+   private:
+    friend class HyperGraph;
+    size_t _pos;
+    std::vector<std::weak_ptr<Hedge>> _hyper_edges;
+    std::vector<std::weak_ptr<Edge>> _edges;
+    VertexProperty _property{};
   };
 
-  struct Hedge
+  class Hedge
   {
-    const VertexIterator vbegin() const { return VertexIterator(vertices, 0); }
-    VertexIterator vbegin() { return VertexIterator(vertices, 0); }
+   public:
+    Hedge(size_t pos, std::vector<std::weak_ptr<Vertex>> vertices, std::vector<std::weak_ptr<Edge>> edges, HedgeProperty property)
+        : _pos(pos), _vertices(vertices), _edges(edges), _property(property)
+    {
+    }
+    const GraphIterator<std::weak_ptr, Vertex> vbegin() const { return GraphIterator<std::weak_ptr, Vertex>(_vertices, 0); }
+    GraphIterator<std::weak_ptr, Vertex> vbegin() { return GraphIterator<std::weak_ptr, Vertex>(_vertices, 0); }
 
-    const VertexIterator vend() const { return VertexIterator(vertices, vertices.size()); }
-    VertexIterator vend() { return VertexIterator(vertices, vertices.size()); }
+    const GraphIterator<std::weak_ptr, Vertex> vend() const { return GraphIterator<std::weak_ptr, Vertex>(_vertices, _vertices.size()); }
+    GraphIterator<std::weak_ptr, Vertex> vend() { return GraphIterator<std::shared_ptr, Vertex>(_vertices, _vertices.size()); }
 
-    const Vertex& vertex_at(size_t n) const { return *(vertices.at(n)); }
-    Vertex& vertex_at(size_t n) { return *(vertices.at(n)); }
+    const Vertex& vertex_at(size_t pos) const { return *(_vertices.at(pos).lock()); }
+    Vertex& vertex_at(size_t pos) { return *(_vertices.at(pos).lock()); }
 
-    const Edge& edge_at(size_t n) const { return *(edges.at(n)); }
-    Edge& edge_at(size_t n) { return *(edges.at(n)); }
+    const Edge& edge_at(size_t pos) const { return *(_edges.at(pos).lock()); }
+    Edge& edge_at(size_t pos) { return *(_edges.at(pos).lock()); }
 
-    size_t degree() const { return vertices.size(); }
+    size_t degree() const { return _vertices.size(); }
+    HedgeProperty& property() { return _property; }
+    const HedgeProperty& property() const { return _property; }
 
-    size_t id;
-    std::vector<Vertex*> vertices;
-    std::vector<Edge*> edges;
-    HedgeProperty property{};
+    size_t pos() const { return _pos; }
+    void set_pos(size_t new_pos) { _pos = new_pos; }
+
+   private:
+    friend class HyperGraph;
+    size_t _pos;
+    std::vector<std::weak_ptr<Vertex>> _vertices;
+    std::vector<std::weak_ptr<Edge>> _edges;
+    HedgeProperty _property{};
   };
 
-  struct Edge
+  class Edge
   {
-    size_t id;
-    Vertex* vertex;
-    Hedge* hedge;
-    EdgeProperty property{};
+   public:
+    Edge(size_t pos, std::weak_ptr<Vertex> vertex, std::weak_ptr<Hedge> hedge, const EdgeProperty& property)
+        : _pos(pos), _vertex(vertex), _hedge(hedge), _property(property)
+    {
+    }
+    Vertex& vertex() { return *_vertex.lock(); }
+    const Vertex& vertex() const { return *_vertex.lock(); }
+    EdgeProperty& property() { return _property; }
+    const EdgeProperty& property() const { return _property; }
+    size_t pos() const { return _pos; }
+    void set_pos(size_t new_pos) { _pos = new_pos; }
+
+   private:
+    friend class HyperGraph;
+    size_t _pos;
+    std::weak_ptr<Vertex> _vertex;
+    std::weak_ptr<Hedge> _hedge;
+    EdgeProperty _property{};
   };
 
  private:
-  GraphProperty _property;
-  std::vector<Vertex*> _vertices;
-  std::vector<Hedge*> _hyper_edges;
-  std::vector<Edge*> _edges;
-  // std::shared_ptr<IdAllocator> _id_allocator;
+  GraphProperty _property{};
+  std::vector<std::shared_ptr<Vertex>> _vertices;
+  std::vector<std::shared_ptr<Hedge>> _hyper_edges;
+  std::vector<std::shared_ptr<Edge>> _edges;
+  // std::std::shared_ptr<IdAllocator> _id_allocator;
 };
 
 template <HyperGraphConfig Config>
@@ -227,16 +405,20 @@ inline HyperGraph<Config>::HyperGraph(const GraphProperty& graph_property) : _pr
 }
 
 template <HyperGraphConfig Config>
-inline HyperGraph<Config>::HyperGraph(size_t n, const GraphProperty& graph_property) : HyperGraph(graph_property)
+inline HyperGraph<Config>::HyperGraph(size_t pos, const GraphProperty& graph_property) : HyperGraph(graph_property)
 {
-  add_vertexs(n);
+  add_vertices(pos);
 }
 
 template <HyperGraphConfig Config>
 inline HyperGraph<Config>::HyperGraph(const std::vector<VertexProperty>& vertex_properties, const GraphProperty& graph_property)
     : HyperGraph(graph_property)
 {
-  add_vertexs(vertex_properties);
+  add_vertices(vertex_properties);
+}
+template <HyperGraphConfig Config>
+inline HyperGraph<Config>::~HyperGraph()
+{
 }
 // template <HyperGraphConfig Config>
 // inline const Vertex<typename Config::VertexProperty>& HyperGraph<Config>::vertex_at(size_t vertex_id) const
@@ -244,50 +426,51 @@ inline HyperGraph<Config>::HyperGraph(const std::vector<VertexProperty>& vertex_
 //   return *(_vertices.at(vertex_id));
 // }
 template <HyperGraphConfig Config>
-inline const HyperGraph<Config>::Vertex& HyperGraph<Config>::vertex_at(size_t n) const
+inline const HyperGraph<Config>::Vertex& HyperGraph<Config>::vertex_at(size_t pos) const
 {
-  return *(_vertices.at(n));
+  return *(_vertices.at(pos));
 }
 template <HyperGraphConfig Config>
-inline HyperGraph<Config>::Vertex& HyperGraph<Config>::vertex_at(size_t n)
+inline HyperGraph<Config>::Vertex& HyperGraph<Config>::vertex_at(size_t pos)
 {
-  return *(_vertices.at(n));
-}
-
-template <HyperGraphConfig Config>
-inline const HyperGraph<Config>::Edge& HyperGraph<Config>::edge_at(size_t n) const
-{
-  return *(_edges.at(n));
+  return *(_vertices.at(pos));
 }
 
 template <HyperGraphConfig Config>
-inline HyperGraph<Config>::Edge& HyperGraph<Config>::edge_at(size_t n)
+inline const HyperGraph<Config>::Edge& HyperGraph<Config>::edge_at(size_t pos) const
 {
-  return *(_edges.at(n));
+  return *(_edges.at(pos));
 }
 
 template <HyperGraphConfig Config>
-inline const HyperGraph<Config>::Hedge& HyperGraph<Config>::hyper_edge_at(size_t n) const
+inline HyperGraph<Config>::Edge& HyperGraph<Config>::edge_at(size_t pos)
 {
-  return *(_hyper_edges.at(n));
+  return *(_edges.at(pos));
 }
 
 template <HyperGraphConfig Config>
-inline HyperGraph<Config>::Hedge& HyperGraph<Config>::hyper_edge_at(size_t n)
+inline const HyperGraph<Config>::Hedge& HyperGraph<Config>::hyper_edge_at(size_t pos) const
 {
-  return *(_hyper_edges.at(n));
+  return *(_hyper_edges.at(pos));
+}
+
+template <HyperGraphConfig Config>
+inline HyperGraph<Config>::Hedge& HyperGraph<Config>::hyper_edge_at(size_t pos)
+{
+  return *(_hyper_edges.at(pos));
 }
 
 template <HyperGraphConfig Config>
 inline size_t HyperGraph<Config>::add_vertex(const VertexProperty& vertex_property)
 {
-  size_t id = _vertices.size();
-  _vertices.push_back(new Vertex(id, {}, {}, vertex_property));
-  return id;
+  size_t pos = _vertices.size();
+  // auto v = std::make_shared<Vertex>(pos, std::vector<std::shared_ptr<Hedge>>(), std::vector<std::shared_ptr<Edge>>(), vertex_property);
+  _vertices.emplace_back(new Vertex(pos, {}, {}, vertex_property));
+  return pos;
 }
 
 template <HyperGraphConfig Config>
-inline std::vector<size_t> HyperGraph<Config>::add_vertexs(const std::vector<VertexProperty>& vertex_properties)
+inline std::vector<size_t> HyperGraph<Config>::add_vertices(const std::vector<VertexProperty>& vertex_properties)
 {
   std::vector<size_t> ids;
   _vertices.reserve(_vertices.size() + vertex_properties.size());
@@ -298,37 +481,37 @@ inline std::vector<size_t> HyperGraph<Config>::add_vertexs(const std::vector<Ver
 }
 
 template <HyperGraphConfig Config>
-inline std::vector<size_t> HyperGraph<Config>::add_vertexs(size_t n)
+inline std::vector<size_t> HyperGraph<Config>::add_vertices(size_t n)
 {
-  return add_vertexs(std::vector<VertexProperty>(n));
+  return add_vertices(std::vector<VertexProperty>(n));
 }
 
 template <HyperGraphConfig Config>
 inline size_t HyperGraph<Config>::add_edge(size_t vertex_id, size_t hedge_id, const EdgeProperty& edge_property)
 {
   assert((_vertices.size() >= vertex_id) && (_hyper_edges.size() >= hedge_id));
-  size_t id = _edges.size();
-  Vertex* vertex = _vertices[vertex_id];
-  Hedge* hedge = _hyper_edges[hedge_id];
-  _edges.push_back(new Edge(id, vertex, hedge, edge_property));
-  vertex->hyper_edges.push_back(hedge);
-  vertex->edges.push_back(_edges.back());
-  hedge->vertices.push_back(vertex);
-  hedge->edges.push_back(_edges.back());
-  return id;
+  size_t pos = _edges.size();
+  std::shared_ptr<Vertex> vertex = _vertices[vertex_id];
+  std::shared_ptr<Hedge> hedge = _hyper_edges[hedge_id];
+  _edges.emplace_back(new Edge(pos, vertex, hedge, edge_property));
+  vertex->_hyper_edges.push_back(hedge);
+  vertex->_edges.push_back(_edges.back());
+  hedge->_vertices.push_back(vertex);
+  hedge->_edges.push_back(_edges.back());
+  return pos;
 }
 
 template <HyperGraphConfig Config>
 inline size_t HyperGraph<Config>::add_hyper_edge(const std::vector<size_t>& vertex_ids, const std::vector<EdgeProperty>& edge_properties,
                                                  const HedgeProperty& hedge_property)
 {
-  size_t id = _hyper_edges.size();
-  _hyper_edges.push_back(new Hedge(id, {}, {}, hedge_property));
+  size_t pos = _hyper_edges.size();
+  _hyper_edges.emplace_back(new Hedge(pos, {}, {}, hedge_property));
   for (size_t i = 0; i < vertex_ids.size(); i++) {
     assert(_vertices.size() >= vertex_ids[i]);
-    add_edge(vertex_ids[i], id, edge_properties[i]);
+    add_edge(vertex_ids[i], pos, edge_properties[i]);
   }
-  return id;
+  return pos;
 }
 
 template <HyperGraphConfig Config>
@@ -336,20 +519,61 @@ inline size_t HyperGraph<Config>::add_hyper_edge(const std::vector<size_t>& vert
 {
   return add_hyper_edge(vertex_ids, std::vector<EdgeProperty>(vertex_ids.size()));
 }
-
 template <HyperGraphConfig Config>
-Config::VertexProperty& VertexProperty(const HyperGraph<Config>& graph, size_t n)
+inline bool HyperGraph<Config>::remove_hyper_edge(Hedge& hedge)
 {
-  return graph.vertex_at(n).property;
+  bool has_edge = false;
+  size_t pos;
+  for (pos = 0; pos < heSize(); ++pos) {
+    if (&(hyper_edge_at(pos)) == &hedge) {
+      has_edge = true;
+      break;
+    }
+  }
+  if (!has_edge)
+    return false;
+
+  std::set<size_t> remove_edge_pos;
+  for (size_t i = 0; i < hedge.degree(); ++i) {
+    remove_edge_pos.insert(hedge.edge_at(i).pos());
+  }
+  // remove edges
+  size_t new_edge_pos = 0;
+  for (size_t old_edge_pos = 0; old_edge_pos < _edges.size(); ++old_edge_pos) {
+    if (remove_edge_pos.count(old_edge_pos) == 0) {
+      _edges[new_edge_pos] = _edges[old_edge_pos];
+      _edges[new_edge_pos]->set_pos(new_edge_pos);
+      ++new_edge_pos;
+    }
+  }
+  _edges.erase(_edges.end() - hedge.degree(), _edges.end());
+
+  // remove hedge in Vertex
+  for (size_t v_id = 0; v_id < hedge.degree(); ++v_id) {
+    hedge.vertex_at(v_id).remove_hyper_edge(hedge);
+  }
+
+  // remove hedge
+  _hyper_edges.erase(_hyper_edges.begin() + pos);
+  for (size_t i = 0; i < _hyper_edges.size(); ++i) {
+    _hyper_edges[i]->set_pos(i);
+  }
+  return true;
 }
 
 template <HyperGraphConfig Config>
-Config::HedgeProperty HedgeProperty(HyperGraph<Config> graph, size_t n)
+Config::VertexProperty& VertexProperty(const HyperGraph<Config>& graph, size_t pos)
+{
+  return graph.vertex_at(pos)._property;
+}
+
+template <HyperGraphConfig Config>
+Config::HedgeProperty HedgeProperty(HyperGraph<Config> graph, size_t pos)
 {
 }
 
 template <HyperGraphConfig Config>
-Config::EdgeProperty EdgeProperty(HyperGraph<Config> graph, size_t n)
+Config::EdgeProperty EdgeProperty(HyperGraph<Config> graph, size_t pos)
 {
 }
 
@@ -362,7 +586,7 @@ auto vbegin(const T& t) -> const decltype(t.vbegin())
 template <typename T>
 auto vend(const T& t) -> const decltype(t.vend())
 {
-  return t.vbegin();
+  return t.vend();
 }
 template <typename T>
 auto hebegin(const T& t) -> const decltype(t.hebegin())
@@ -383,20 +607,19 @@ auto degree(const T& t) -> const decltype(t.degree())
 }
 
 template <typename T>
-auto vertex_at(T& t, size_t n) -> decltype(t.vertex_at(n))
+auto vertex_at(T& t, size_t pos) -> decltype(t.vertex_at(pos))
 {
-  return t.vertex_at(n);
+  return t.vertex_at(pos);
 }
 template <typename T>
-auto edge_at(T& t, size_t n) -> decltype(t.edge_at(n))
+auto edge_at(T& t, size_t pos) -> decltype(t.edge_at(pos))
 {
-  return t.edge_at(n);
+  return t.edge_at(pos);
 }
 
-template <typename T>
-auto property(const T& t) -> const decltype(t.property)&
+auto property(auto&& t)
 {
-  return t.property;
+  return t.property();
 }
 }  // namespace imp
 

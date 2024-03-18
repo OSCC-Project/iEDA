@@ -10,11 +10,9 @@
 #include "EXTPlanarRect.hpp"
 #include "MTree.hpp"
 #include "Net.hpp"
-#include "PhysicalNode.hpp"
 #include "PlanarCoord.hpp"
 #include "PlanarRect.hpp"
 #include "TNode.hpp"
-#include "WireNode.hpp"
 #include "serialize.hpp"
 
 namespace irt {
@@ -29,8 +27,8 @@ void save(Archive& ar, irt::Net& net, const unsigned int version)
   auto connect_type = net.get_connect_type();
 
   auto& pin_list = net.get_pin_list();
-  iplf::Archive(ar, net_idx, net.get_net_name(), connect_type, pin_list, net.get_driving_pin(), net.get_bounding_box());
-  iplf::Archive(ar, net.get_gr_result_tree(), net.get_ta_result_list());
+  iplf::Archive(ar, net_idx, net.get_net_name(), connect_type, pin_list, net.get_bounding_box());
+  iplf::Archive(ar, net.get_ir_result_tree(), net.get_gr_result_tree());
 }
 
 template <typename Archive>
@@ -39,8 +37,8 @@ void load(Archive& ar, irt::Net& net, const unsigned int version)
   int32_t net_idx;
   irt::ConnectType connect_type = net.get_connect_type();
   std::string net_name;
-  iplf::Archive(ar, net_idx, net_name, connect_type, net.get_pin_list(), net.get_driving_pin(), net.get_bounding_box());
-  iplf::Archive(ar, net.get_gr_result_tree(), net.get_ta_result_list());
+  iplf::Archive(ar, net_idx, net_name, connect_type, net.get_pin_list(), net.get_bounding_box());
+  iplf::Archive(ar, net.get_ir_result_tree(), net.get_gr_result_tree());
   net.set_connect_type(connect_type);
   net.set_net_idx(net_idx);
 }
@@ -51,15 +49,13 @@ void load(Archive& ar, irt::Net& net, const unsigned int version)
 template <typename Archive>
 void save(Archive& ar, irt::Pin& pin, const unsigned int version)
 {
-  iplf::Archive(ar, pin.get_pin_name(), pin.get_routing_shape_list(), pin.get_cut_shape_list(), pin.get_access_point_list(),
-                pin.get_protected_access_point());
+  iplf::Archive(ar, pin.get_pin_name(), pin.get_routing_shape_list(), pin.get_cut_shape_list(), pin.get_access_point_list());
 }
 
 template <typename Archive>
 void load(Archive& ar, irt::Pin& pin, const unsigned int version)
 {
-  iplf::Archive(ar, pin.get_pin_name(), pin.get_routing_shape_list(), pin.get_cut_shape_list(), pin.get_access_point_list(),
-                pin.get_protected_access_point());
+  iplf::Archive(ar, pin.get_pin_name(), pin.get_routing_shape_list(), pin.get_cut_shape_list(), pin.get_access_point_list());
 }
 
 // ----------------------------------------------------------------------------
@@ -110,7 +106,7 @@ void serialize(Archive& ar, irt::AccessPoint& ap, const unsigned int version)
 {
   auto type = ap.get_type();
   int layer_idx = ap.get_layer_idx();
-  iplf::Archive(ar, type, layer_idx, ap.get_grid_coord(), ap.get_real_coord(), ap.get_access_orien_set());
+  iplf::Archive(ar, type, layer_idx, ap.get_grid_coord(), ap.get_real_coord());
   if constexpr (Archive::is_loading::value) {
     ap.set_type(type);
     ap.set_layer_idx(layer_idx);
@@ -247,103 +243,6 @@ void serialize(Archive& ar, irt::Segment<T>& segment, const unsigned int version
 {
   ar & segment.get_first();
   ar & segment.get_second();
-}
-
-// ----------------------------------------------------------------------------
-// Serialize functions for irt::GuideSegNode
-// ----------------------------------------------------------------------------
-template <typename Archive>
-void serialize(Archive& ar, irt::GuideSegNode& guide_seg_node, const unsigned int version)
-{
-  iplf::Archive(ar, guide_seg_node.get_first(), guide_seg_node.get_second(), guide_seg_node.get_pin_idx_set(), guide_seg_node.get_routing_tree());
-}
-
-enum class NodeType : int
-{
-  monostate = 0,
-  WireNode,
-  ViaNode,
-  PatchNode
-};
-static NodeType PhysicalNodeType(irt::PhysicalNode& physical_node)
-{
-  if (physical_node.isEmpty()) {
-    return NodeType::monostate;
-  }
-  if (physical_node.isType<irt::WireNode>()) {
-    return NodeType::WireNode;
-  }
-  if (physical_node.isType<irt::ViaNode>()) {
-    return NodeType::ViaNode;
-  }
-  if (physical_node.isType<irt::PatchNode>()) {
-    return NodeType::PatchNode;
-  }
-  assert(false);
-  return NodeType::monostate;
-}
-
-template <typename Archive>
-void serialize(Archive& ar, irt::PhysicalNode& physical_node, const unsigned int version)
-{
-  NodeType type = PhysicalNodeType(physical_node);
-  ar & type;
-  switch (type) {
-    case NodeType::monostate: {
-      break;
-    }
-    case NodeType::WireNode: {
-      ar & physical_node.getNode<irt::WireNode>();
-      break;
-    }
-    case NodeType::ViaNode: {
-      ar & physical_node.getNode<irt::ViaNode>();
-      break;
-    }
-    case NodeType::PatchNode: {
-      ar & physical_node.getNode<irt::PatchNode>();
-      break;
-    }
-  }
-}
-
-template <typename Archive>
-void serialize(Archive& ar, irt::WireNode& node, const unsigned int version)
-{
-  int net_idx = node.get_net_idx();
-  int layer_idx = node.get_layer_idx();
-  int wire_width = node.get_wire_width();
-  iplf::Archive(ar, net_idx, layer_idx, wire_width);
-  iplf::Archive(ar, node.get_first(), node.get_second());
-  if constexpr (Archive::is_loading::value) {
-    node.set_net_idx(net_idx);
-    node.set_layer_idx(layer_idx);
-    node.set_wire_width(wire_width);
-  }
-}
-
-template <typename Archive>
-void serialize(Archive& ar, irt::ViaNode& node, const unsigned int version)
-{
-  int net_idx = node.get_net_idx();
-  int below_layer_idx = node.get_via_master_idx().get_below_layer_idx();
-  int via_idx = node.get_via_master_idx().get_via_idx();
-  iplf::Archive(ar, net_idx, below_layer_idx, via_idx, boost::serialization::base_object<irt::PlanarCoord>(node));
-  if constexpr (Archive::is_loading::value) {
-    node.set_net_idx(net_idx);
-    node.get_via_master_idx().set_below_layer_idx(below_layer_idx);
-    node.get_via_master_idx().set_via_idx(via_idx);
-  }
-}
-
-template <typename Archive>
-void serialize(Archive& ar, irt::PatchNode& node, const unsigned int version)
-{
-  int net_idx = node.get_net_idx();
-  iplf::Archive(ar, net_idx, boost::serialization::base_object<irt::LayerRect>(node));
-  if constexpr (Archive::is_loading::value) {
-    node.set_net_idx(net_idx);
-  }
 }
 
 template <typename Archive>

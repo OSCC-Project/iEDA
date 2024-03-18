@@ -5,7 +5,7 @@ target_link_libraries(irt_api_external_libs
         eval_source
         tool_manager
         idm
-        idrc_api
+        idrc_pro_api
 )
 
 target_include_directories(irt_api_external_libs

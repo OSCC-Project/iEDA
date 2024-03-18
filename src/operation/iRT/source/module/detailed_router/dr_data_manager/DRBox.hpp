@@ -17,16 +17,14 @@
 #pragma once
 
 #include "DRBoxId.hpp"
-#include "DRCChecker.hpp"
 #include "DRNode.hpp"
 #include "DRParameter.hpp"
 #include "DRTask.hpp"
 #include "LayerCoord.hpp"
 #include "LayerRect.hpp"
 #include "PriorityQueue.hpp"
-#include "RTAPI.hpp"
-#include "RegionQuery.hpp"
 #include "ScaleAxis.hpp"
+#include "Violation.hpp"
 
 namespace irt {
 
@@ -38,9 +36,9 @@ class DRBox
   // getter
   EXTPlanarRect& get_box_rect() { return _box_rect; }
   DRBoxId& get_dr_box_id() { return _dr_box_id; }
-  DRParameter* get_curr_dr_parameter() { return _curr_dr_parameter; }
+  DRParameter* get_dr_parameter() { return _dr_parameter; }
   std::vector<DRTask*>& get_dr_task_list() { return _dr_task_list; }
-  std::map<bool, std::map<irt_int, std::map<irt_int, std::set<EXTLayerRect*>>>>& get_type_layer_net_fixed_rect_map()
+  std::map<bool, std::map<int32_t, std::map<int32_t, std::set<EXTLayerRect*>>>>& get_type_layer_net_fixed_rect_map()
   {
     return _type_layer_net_fixed_rect_map;
   }
@@ -50,10 +48,10 @@ class DRBox
   // setter
   void set_box_rect(const EXTPlanarRect& box_rect) { _box_rect = box_rect; }
   void set_dr_box_id(const DRBoxId& dr_box_id) { _dr_box_id = dr_box_id; }
-  void set_curr_dr_parameter(DRParameter* curr_dr_parameter) { _curr_dr_parameter = curr_dr_parameter; }
+  void set_dr_parameter(DRParameter* dr_parameter) { _dr_parameter = dr_parameter; }
   void set_dr_task_list(const std::vector<DRTask*>& dr_task_list) { _dr_task_list = dr_task_list; }
   void set_type_layer_net_fixed_rect_map(
-      const std::map<bool, std::map<irt_int, std::map<irt_int, std::set<EXTLayerRect*>>>>& type_layer_net_fixed_rect_map)
+      const std::map<bool, std::map<int32_t, std::map<int32_t, std::set<EXTLayerRect*>>>>& type_layer_net_fixed_rect_map)
   {
     _type_layer_net_fixed_rect_map = type_layer_net_fixed_rect_map;
   }
@@ -63,13 +61,13 @@ class DRBox
   // function
 #if 1  // astar
   // single task
-  const irt_int get_curr_net_idx() const { return _curr_net_idx; }
+  DRTask* get_curr_dr_task() { return _curr_dr_task; }
   std::vector<std::vector<DRNode*>>& get_start_node_list_list() { return _start_node_list_list; }
   std::vector<std::vector<DRNode*>>& get_end_node_list_list() { return _end_node_list_list; }
   std::vector<DRNode*>& get_path_node_list() { return _path_node_list; }
   std::vector<DRNode*>& get_single_task_visited_node_list() { return _single_task_visited_node_list; }
   std::vector<Segment<LayerCoord>>& get_routing_segment_list() { return _routing_segment_list; }
-  void set_curr_net_idx(const irt_int curr_net_idx) { _curr_net_idx = curr_net_idx; }
+  void set_curr_dr_task(DRTask* curr_dr_task) { _curr_dr_task = curr_dr_task; }
   void set_start_node_list_list(const std::vector<std::vector<DRNode*>>& start_node_list_list)
   {
     _start_node_list_list = start_node_list_list;
@@ -88,28 +86,28 @@ class DRBox
   PriorityQueue<DRNode*, std::vector<DRNode*>, CmpDRNodeCost>& get_open_queue() { return _open_queue; }
   std::vector<DRNode*>& get_single_path_visited_node_list() { return _single_path_visited_node_list; }
   DRNode* get_path_head_node() { return _path_head_node; }
-  irt_int get_end_node_comb_idx() const { return _end_node_comb_idx; }
+  int32_t get_end_node_comb_idx() const { return _end_node_comb_idx; }
   void set_open_queue(const PriorityQueue<DRNode*, std::vector<DRNode*>, CmpDRNodeCost>& open_queue) { _open_queue = open_queue; }
   void set_single_path_visited_node_list(const std::vector<DRNode*>& single_path_visited_node_list)
   {
     _single_path_visited_node_list = single_path_visited_node_list;
   }
   void set_path_head_node(DRNode* path_head_node) { _path_head_node = path_head_node; }
-  void set_end_node_comb_idx(const irt_int end_node_comb_idx) { _end_node_comb_idx = end_node_comb_idx; }
+  void set_end_node_comb_idx(const int32_t end_node_comb_idx) { _end_node_comb_idx = end_node_comb_idx; }
 #endif
 
  private:
   EXTPlanarRect _box_rect;
   DRBoxId _dr_box_id;
-  DRParameter* _curr_dr_parameter = nullptr;
+  DRParameter* _dr_parameter = nullptr;
   std::vector<DRTask*> _dr_task_list;
-  std::map<bool, std::map<irt_int, std::map<irt_int, std::set<EXTLayerRect*>>>> _type_layer_net_fixed_rect_map;
+  std::map<bool, std::map<int32_t, std::map<int32_t, std::set<EXTLayerRect*>>>> _type_layer_net_fixed_rect_map;
   std::vector<Violation> _violation_list;
   ScaleAxis _box_track_axis;
   std::vector<GridMap<DRNode>> _layer_node_map;
 #if 1  // astar
   // single task
-  irt_int _curr_net_idx = -1;
+  DRTask* _curr_dr_task = nullptr;
   std::vector<std::vector<DRNode*>> _start_node_list_list;
   std::vector<std::vector<DRNode*>> _end_node_list_list;
   std::vector<DRNode*> _path_node_list;
@@ -119,7 +117,7 @@ class DRBox
   PriorityQueue<DRNode*, std::vector<DRNode*>, CmpDRNodeCost> _open_queue;
   std::vector<DRNode*> _single_path_visited_node_list;
   DRNode* _path_head_node = nullptr;
-  irt_int _end_node_comb_idx = -1;
+  int32_t _end_node_comb_idx = -1;
 #endif
 };
 

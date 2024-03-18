@@ -237,6 +237,8 @@ double LibertyTable::findValue(double slew, double constrain_slew_or_load)
 
     auto result = BilinearInterpolation(q11, q12, q21, q22, x1, x2, y1, y2, val1, val2);
 
+    LOG_ERROR_IF_EVERY_N(result < 0.0, 100) << "table " << get_file_name() << " " << get_line_no() << " "
+                                            << "delay value less zero.";
     return result;
   }
 }
@@ -326,11 +328,13 @@ std::vector<double> LibertyVectorTable::getOutputCurrent(std::optional<LibertyCu
   auto get_time_index = [&time_axis_value](double current_time, int start_index) -> int {
     int axis_size = time_axis_value.size();
     while (start_index < axis_size) {
-      if (time_axis_value[start_index]->getFloatValue() > current_time) {
+      double time_value = time_axis_value[start_index]->getFloatValue();
+      if ((time_value > current_time) || IsDoubleEqual(time_value, current_time, 0.000000001)) {
         break;
       }
       ++start_index;
     }
+    LOG_FATAL_IF(start_index >= axis_size) << "start index beyond axis size.";
     return start_index;
   };
 
@@ -341,10 +345,11 @@ std::vector<double> LibertyVectorTable::getOutputCurrent(std::optional<LibertyCu
   std::vector<double> output_currents;
   double start_time = ref_time + simu_info->_start_time;
   double end_time = ref_time + simu_info->_end_time;
-  double interval = (simu_info->_end_time - simu_info->_start_time) / simu_info->_num_sim_point;
+  double interval = (simu_info->_end_time - simu_info->_start_time) / (simu_info->_num_sim_point - 1);
 
   int start_index = 0;
-  for (double current_time = start_time; current_time < end_time; current_time += interval) {
+  for (double current_time = start_time; (current_time < end_time) || IsDoubleEqual(current_time, end_time, 0.000000001);
+       current_time += interval) {
     start_index = get_time_index(current_time, start_index);
     int time_index = start_index == 0 ? 1 : start_index;
     auto [upper_time, upper_current] = get_time_and_current(time_index--);
@@ -352,6 +357,8 @@ std::vector<double> LibertyVectorTable::getOutputCurrent(std::optional<LibertyCu
     double output_current = LinearInterpolate(lower_time, upper_time, lower_current, upper_current, current_time);
     output_currents.push_back(output_current);
   }
+
+  LOG_FATAL_IF(simu_info->_num_sim_point != output_currents.size()) << "output currents size is not equal sim point num.";
 
   return output_currents;
 }
@@ -447,13 +454,17 @@ LibertyDelayTableModel& LibertyDelayTableModel::operator=(LibertyDelayTableModel
  * @param load The constrain_slew_or_load.
  * @return double The delay.
  */
-double LibertyDelayTableModel::gateDelay(TransType trans_type, double slew, double load)
+std::optional<double> LibertyDelayTableModel::gateDelay(TransType trans_type, double slew, double load)
 {
   LibertyTable* table = nullptr;
   if (trans_type == TransType::kRise) {
     table = getTable(CAST_TYPE_TO_INDEX(LibertyTable::TableType::kCellRise));
   } else {
     table = getTable(CAST_TYPE_TO_INDEX(LibertyTable::TableType::kCellFall));
+  }
+
+  if (!table) {
+    return std::nullopt;
   }
 
   return table->findValue(slew, load);
@@ -465,15 +476,19 @@ double LibertyDelayTableModel::gateDelay(TransType trans_type, double slew, doub
  * @param trans_type Rise/Fall.
  * @param slew The slew.
  * @param load The constrain_slew_or_load.
- * @return double The slew.
+ * @return std::optional<double> The slew.
  */
-double LibertyDelayTableModel::gateSlew(TransType trans_type, double slew, double load)
+std::optional<double> LibertyDelayTableModel::gateSlew(TransType trans_type, double slew, double load)
 {
   LibertyTable* table = nullptr;
   if (trans_type == TransType::kRise) {
     table = getTable(CAST_TYPE_TO_INDEX(LibertyTable::TableType::kRiseTransition));
   } else {
     table = getTable(CAST_TYPE_TO_INDEX(LibertyTable::TableType::kFallTransition));
+  }
+
+  if (!table) {
+    return std::nullopt;
   }
 
   return table->findValue(slew, load);
@@ -588,7 +603,7 @@ double LibertyDelayTableModel::driveResistance()
  * @param constrain_slew The constrain_slew.
  * @return double The slew.
  */
-double LibertyCheckTableModel::gateCheckConstrain(TransType trans_type, double slew, double constrain_slew)
+std::optional<double> LibertyCheckTableModel::gateCheckConstrain(TransType trans_type, double slew, double constrain_slew)
 {
   LibertyTable* table = nullptr;
   if (trans_type == TransType::kRise) {
@@ -598,7 +613,7 @@ double LibertyCheckTableModel::gateCheckConstrain(TransType trans_type, double s
   }
 
   if (!table) {
-    return 0.0;
+    return std::nullopt;
   }
 
   return table->findValue(slew, constrain_slew);
@@ -1069,11 +1084,19 @@ double LibertyArc::getDelayOrConstrainCheckNs(TransType trans_type, double slew,
   }
 
   // pass converted slew into `gateDelay()` and return conveted Delay
+  std::optional<double> found_delay;
   if (isDelayArc()) {
-    return _table_model->gateDelay(trans_type, slew * input_to_liberty_convert, load_or_constrain_slew) * liberty_to_output_convert;
+    found_delay = _table_model->gateDelay(trans_type, slew * input_to_liberty_convert, load_or_constrain_slew);
   } else {
-    return _table_model->gateCheckConstrain(trans_type, slew * input_to_liberty_convert, load_or_constrain_slew);
+    found_delay = _table_model->gateCheckConstrain(trans_type, slew * input_to_liberty_convert, load_or_constrain_slew);
   }
+
+  if (found_delay) {
+    double ret_value = (*found_delay) * liberty_to_output_convert;
+    return ret_value;
+  }
+
+  return 0.0;
 }
 
 /**
@@ -1107,10 +1130,14 @@ double LibertyArc::getSlewNs(TransType trans_type, double slew, double load)
   }
 
   // pass converted slew into `gateSlew()` and return in ns
-  double found_slew = _table_model->gateSlew(trans_type, slew * input_to_liberty_convert, load);
-  double ret_value = found_slew * liberty_to_output_convert * slew_derate_from_library;
+  auto found_slew = _table_model->gateSlew(trans_type, slew * input_to_liberty_convert, load);
 
-  return ret_value;
+  if (found_slew) {
+    double ret_value = (*found_slew) * liberty_to_output_convert * slew_derate_from_library;
+    return ret_value;
+  }
+
+  return 0.0;
 }
 
 /**

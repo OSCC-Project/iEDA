@@ -41,6 +41,7 @@ class Solver
   {
     auto* config = CTSAPIInst.get_config();
     _root_buffer_required = config->is_root_buffer_required();
+    _inherit_root = config->is_inherit_root();
     _break_long_wire = config->is_break_long_wire();
     _shift_level = config->get_shift_level();
     _latency_opt_level = config->get_latency_opt_level();
@@ -71,6 +72,7 @@ class Solver
   // report
   void writeNetPy(Pin* root, const std::string& save_name = "net") const;
   void levelReport() const;
+  void pinCapDistReport(const std::vector<Inst*>& insts) const;
   // member
   std::string _net_name;
   CtsPin* _cts_driver;
@@ -84,6 +86,7 @@ class Solver
   uint8_t _max_thread = 1;
   // config
   bool _root_buffer_required = true;
+  bool _inherit_root = true;
   bool _break_long_wire = true;
   int _shift_level = 1;
   int _latency_opt_level = 1;

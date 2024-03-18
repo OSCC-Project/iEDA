@@ -48,12 +48,15 @@ int registerCmdSTA()
   registerTclCmd(ista::CmdTESTSLL, "test_string_list_list");
   registerTclCmd(ista::CmdSetDesignWorkSpace, "set_design_workspace");
   registerTclCmd(ista::CmdReadVerilog, "read_netlist");
+  registerTclCmd(ista::CmdReadLefDef, "read_lef_def");
   registerTclCmd(ista::CmdReadLiberty, "read_liberty");
   registerTclCmd(ista::CmdLinkDesign, "link_design");
   registerTclCmd(ista::CmdReadSpef, "read_spef");
   registerTclCmd(ista::CmdReadSdc, "read_sdc");
   registerTclCmd(ista::CmdReportTiming, "report_timing");
   registerTclCmd(ista::CmdReportConstraint, "report_constraint");
+  registerTclCmd(ista::CmdDefToVerilog, "def_to_verilog");
+  registerTclCmd(ista::CmdVerilogToDef, "verilog_to_def");
   return EXIT_SUCCESS;
 }
 

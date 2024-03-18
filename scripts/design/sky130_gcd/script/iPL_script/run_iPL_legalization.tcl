@@ -14,6 +14,16 @@ db_init -config ./iEDA_config/db_default_config.json
 source ./script/DB_script/db_path_setting.tcl
 
 #===========================================================
+##   reset lib
+#===========================================================
+source ./script/DB_script/db_init_lib.tcl
+
+#===========================================================
+##   reset sdc
+#===========================================================
+source ./script/DB_script/db_init_sdc.tcl
+
+#===========================================================
 ##   read lef
 #===========================================================
 source ./script/DB_script/db_init_lef.tcl
