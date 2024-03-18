@@ -40,48 +40,6 @@ class ConditionRuleSpacingRange : public ConditionRule
   idb::IdbLayerSpacing* _spacing_range;
 };
 
-class ConditionRuleSpacingPRL : public ConditionRule
-{
- public:
-  ConditionRuleSpacingPRL(RuleType type, int spacing, int width, int prl_length)
-      : ConditionRule(type, spacing), _width(width), _prl_length(prl_length)
-  {
-  }
-  ~ConditionRuleSpacingPRL() {}
-
-  // void addSpacingItem(int width, int prl_length) { _spacing_items[width].insert(prl_length); }
-
-  bool isMatchCondition(int width, int prl_length)
-  {
-    return width > _width && prl_length > _prl_length;
-  }
-
-  int get_width() { return _width; }
-  int get_prl_length() { return _prl_length; }
-
- private:
-  int _width;
-  int _prl_length;
-};
-
-class ConditionRuleJogToJog : public ConditionRule
-{
- public:
-  ConditionRuleJogToJog(RuleType type, int spacing, idb::routinglayer::Lef58SpacingTableJogToJog* jog_to_jog)
-      : ConditionRule(type, spacing), _jog_to_jog(jog_to_jog)
-  {
-  }
-  ~ConditionRuleJogToJog() {}
-
-  idb::routinglayer::Lef58SpacingTableJogToJog* get_jog_to_jog() { return _jog_to_jog; }
-  void addWidth(int width, idb::routinglayer::Lef58SpacingTableJogToJog::Width* jog_width_class) { _width_map[width] = jog_width_class; }
-  std::vector<idb::routinglayer::Lef58SpacingTableJogToJog::Width*> findWidthRule(int wire_max_width);
-
- private:
-  idb::routinglayer::Lef58SpacingTableJogToJog* _jog_to_jog;
-  std::map<int, idb::routinglayer::Lef58SpacingTableJogToJog::Width*, std::greater<int>> _width_map;  // int : width
-};
-
 class RulesMapSpacing : public RulesConditionMap
 {
  public:

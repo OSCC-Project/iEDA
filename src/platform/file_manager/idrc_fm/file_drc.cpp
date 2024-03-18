@@ -32,6 +32,7 @@
 #include "file_drc.h"
 
 #include <cstring>
+#include <iomanip>
 #include <iostream>
 
 #include "IdbLayer.h"
@@ -141,7 +142,7 @@ int32_t FileDrcManager::getBufferSize()
 
 bool FileDrcManager::saveFileData()
 {
-  if(saveFileDataByJson() == true){
+  if (saveFileDataByJson() == true) {
     return true;
   }
   //   int size = getBufferSize();
@@ -220,7 +221,7 @@ bool FileDrcManager::saveFileDataByJson()
     temp["type"] = rule_name;
     temp["nums"] = drc_list.size();
     json json_list = json::array();
-    for(auto drc_spot : drc_list){
+    for (auto drc_spot : drc_list) {
       DrcDetailResult detail_result;
       wrapDrcStruct(drc_spot, detail_result);
       json json_obs;
@@ -237,13 +238,11 @@ bool FileDrcManager::saveFileDataByJson()
   }
 
   std::ofstream file_stream(path);
-  
   file_stream << std::setw(4) << drc_json;
 
   file_stream.close();
 
   std::cout << std::endl << "Save feature json success, path = " << path << std::endl;
-  
   return true;
 }
 
