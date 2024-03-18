@@ -16,7 +16,6 @@ target_link_libraries(irt_early_global_router
     PUBLIC
         irt_data_manager
         irt_module
-        irt_solver
         irt_utility
 )
 

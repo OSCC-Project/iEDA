@@ -73,7 +73,7 @@ class DataManager
 
  private:
   static DataManager* _dm_instance;
-  // config & database & helper
+  // config & database & helper & summary
   Config _config;
   Database _database;
   Helper _helper;

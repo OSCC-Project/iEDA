@@ -19,7 +19,6 @@
 #include "RTAPI.hpp"
 #include "RTHeader.hpp"
 #include "RTUtil.hpp"
-#include "file_rt.hpp"
 
 namespace irt {
 
