@@ -66,53 +66,53 @@ class PlanarRect
 {
  public:
   PlanarRect() = default;
-  PlanarRect(const PlanarCoord& lb, const PlanarCoord& rt)
+  PlanarRect(const PlanarCoord& ll, const PlanarCoord& ur)
   {
-    _lb = lb;
-    _rt = rt;
+    _ll = ll;
+    _ur = ur;
   }
-  PlanarRect(const int32_t lb_x, const int32_t lb_y, const int32_t rt_x, const int32_t rt_y)
+  PlanarRect(const int32_t ll_x, const int32_t ll_y, const int32_t ur_x, const int32_t ur_y)
   {
-    set_lb(lb_x, lb_y);
-    set_rt(rt_x, rt_y);
+    set_ll(ll_x, ll_y);
+    set_ur(ur_x, ur_y);
   }
   ~PlanarRect() = default;
-  bool operator==(const PlanarRect& other) const { return (_lb == other._lb && _rt == other._rt); }
+  bool operator==(const PlanarRect& other) const { return (_ll == other._ll && _ur == other._ur); }
   bool operator!=(const PlanarRect& other) const { return !((*this) == other); }
   // getter
-  PlanarCoord& get_lb() { return _lb; }
-  PlanarCoord& get_rt() { return _rt; }
-  int32_t get_lb_x() const { return _lb.get_x(); }
-  int32_t get_lb_y() const { return _lb.get_y(); }
-  int32_t get_rt_x() const { return _rt.get_x(); }
-  int32_t get_rt_y() const { return _rt.get_y(); }
+  PlanarCoord& get_ll() { return _ll; }
+  PlanarCoord& get_ur() { return _ur; }
+  int32_t get_ll_x() const { return _ll.get_x(); }
+  int32_t get_ll_y() const { return _ll.get_y(); }
+  int32_t get_ur_x() const { return _ur.get_x(); }
+  int32_t get_ur_y() const { return _ur.get_y(); }
   // const getter
-  const PlanarCoord& get_lb() const { return _lb; }
-  const PlanarCoord& get_rt() const { return _rt; }
+  const PlanarCoord& get_ll() const { return _ll; }
+  const PlanarCoord& get_ur() const { return _ur; }
   // setter
-  void set_lb(const PlanarCoord& lb) { _lb = lb; }
-  void set_rt(const PlanarCoord& rt) { _rt = rt; }
-  void set_lb(const int32_t x, const int32_t y) { _lb.set_coord(x, y); }
-  void set_rt(const int32_t x, const int32_t y) { _rt.set_coord(x, y); }
-  void set_lb_x(const int32_t lb_x) { _lb.set_x(lb_x); }
-  void set_lb_y(const int32_t lb_y) { _lb.set_y(lb_y); }
-  void set_rt_x(const int32_t rt_x) { _rt.set_x(rt_x); }
-  void set_rt_y(const int32_t rt_y) { _rt.set_y(rt_y); }
+  void set_ll(const PlanarCoord& ll) { _ll = ll; }
+  void set_ur(const PlanarCoord& ur) { _ur = ur; }
+  void set_ll(const int32_t x, const int32_t y) { _ll.set_coord(x, y); }
+  void set_ur(const int32_t x, const int32_t y) { _ur.set_coord(x, y); }
+  void set_ll_x(const int32_t ll_x) { _ll.set_x(ll_x); }
+  void set_ll_y(const int32_t ll_y) { _ll.set_y(ll_y); }
+  void set_ur_x(const int32_t ur_x) { _ur.set_x(ur_x); }
+  void set_ur_y(const int32_t ur_y) { _ur.set_y(ur_y); }
   // function
 
  private:
-  PlanarCoord _lb;
-  PlanarCoord _rt;
+  PlanarCoord _ll;
+  PlanarCoord _ur;
 };
 
 struct CmpPlanarRectByXASC
 {
   bool operator()(const PlanarRect& a, const PlanarRect& b) const
   {
-    if (a.get_lb() == b.get_lb()) {
-      return CmpPlanarCoordByXASC()(a.get_rt(), b.get_rt());
+    if (a.get_ll() == b.get_ll()) {
+      return CmpPlanarCoordByXASC()(a.get_ur(), b.get_ur());
     } else {
-      return CmpPlanarCoordByXASC()(a.get_lb(), b.get_lb());
+      return CmpPlanarCoordByXASC()(a.get_ll(), b.get_ll());
     }
   }
 };
@@ -157,20 +157,20 @@ class RTUtil
 
         gds_file << "BGNSTR" << std::endl;
         gds_file << "STRNAME rect_" << i << std::endl;
-        int32_t lb_x = rect.get_lb_x();
-        int32_t lb_y = rect.get_lb_y();
-        int32_t rt_x = rect.get_rt_x();
-        int32_t rt_y = rect.get_rt_y();
+        int32_t ll_x = rect.get_ll_x();
+        int32_t ll_y = rect.get_ll_y();
+        int32_t ur_x = rect.get_ur_x();
+        int32_t ur_y = rect.get_ur_y();
 
         gds_file << "BOUNDARY" << std::endl;
         gds_file << "LAYER " << 0 << std::endl;
         gds_file << "DATATYPE 0" << std::endl;
         gds_file << "XY" << std::endl;
-        gds_file << lb_x << " : " << lb_y << std::endl;
-        gds_file << rt_x << " : " << lb_y << std::endl;
-        gds_file << rt_x << " : " << rt_y << std::endl;
-        gds_file << lb_x << " : " << rt_y << std::endl;
-        gds_file << lb_x << " : " << lb_y << std::endl;
+        gds_file << ll_x << " : " << ll_y << std::endl;
+        gds_file << ur_x << " : " << ll_y << std::endl;
+        gds_file << ur_x << " : " << ur_y << std::endl;
+        gds_file << ll_x << " : " << ur_y << std::endl;
+        gds_file << ll_x << " : " << ll_y << std::endl;
         gds_file << "ENDEL" << std::endl;
 
         gds_file << "ENDSTR" << std::endl;
@@ -381,7 +381,7 @@ class RTUtil
     if (!is_open) {
       // 先保存master_list中的特殊矩形
       for (const PlanarRect& master : master_list) {
-        if (master.get_lb_x() == master.get_rt_x() || master.get_lb_y() == master.get_rt_y()) {
+        if (master.get_ll_x() == master.get_ur_x() || master.get_ll_y() == master.get_ur_y()) {
           // 特殊矩形
           result_list.push_back(master);
         }
@@ -496,7 +496,7 @@ class RTUtil
     if (!is_open) {
       // 先保存master_list中的特殊矩形
       for (const PlanarRect& master : master_list) {
-        if (master.get_lb_x() == master.get_rt_x() || master.get_lb_y() == master.get_rt_y()) {
+        if (master.get_ll_x() == master.get_ur_x() || master.get_ll_y() == master.get_ur_y()) {
           // 特殊矩形
           result_list.push_back(master);
         }
@@ -544,10 +544,10 @@ class RTUtil
 
 #if 1  // reduce
 
-  static std::vector<PlanarRect> getOpenReducedRectListByBoost(const std::vector<PlanarRect>& master_list, int lb_x_add_offset,
-                                                               int lb_y_add_offset, int rt_x_minus_offset, int rt_y_minus_offset)
+  static std::vector<PlanarRect> getOpenReducedRectListByBoost(const std::vector<PlanarRect>& master_list, int ll_x_add_offset,
+                                                               int ll_y_add_offset, int ur_x_minus_offset, int ur_y_minus_offset)
   {
-    return getReducedRectListByBoost(master_list, lb_x_add_offset, lb_y_add_offset, rt_x_minus_offset, rt_y_minus_offset, true);
+    return getReducedRectListByBoost(master_list, ll_x_add_offset, ll_y_add_offset, ur_x_minus_offset, ur_y_minus_offset, true);
   }
 
   static std::vector<PlanarRect> getClosedReducedRectListByBoost(const std::vector<PlanarRect>& master_list, int reduced_offset)
@@ -555,20 +555,20 @@ class RTUtil
     return getReducedRectListByBoost(master_list, reduced_offset, reduced_offset, reduced_offset, reduced_offset, false);
   }
 
-  static std::vector<PlanarRect> getClosedReducedRectListByBoost(const std::vector<PlanarRect>& master_list, int lb_x_add_offset,
-                                                                 int lb_y_add_offset, int rt_x_minus_offset, int rt_y_minus_offset)
+  static std::vector<PlanarRect> getClosedReducedRectListByBoost(const std::vector<PlanarRect>& master_list, int ll_x_add_offset,
+                                                                 int ll_y_add_offset, int ur_x_minus_offset, int ur_y_minus_offset)
   {
-    return getReducedRectListByBoost(master_list, lb_x_add_offset, lb_y_add_offset, rt_x_minus_offset, rt_y_minus_offset, false);
+    return getReducedRectListByBoost(master_list, ll_x_add_offset, ll_y_add_offset, ur_x_minus_offset, ur_y_minus_offset, false);
   }
 
-  static std::vector<PlanarRect> getReducedRectListByBoost(const std::vector<PlanarRect>& master_list, int lb_x_add_offset,
-                                                           int lb_y_add_offset, int rt_x_minus_offset, int rt_y_minus_offset, bool is_open)
+  static std::vector<PlanarRect> getReducedRectListByBoost(const std::vector<PlanarRect>& master_list, int ll_x_add_offset,
+                                                           int ll_y_add_offset, int ur_x_minus_offset, int ur_y_minus_offset, bool is_open)
   {
     std::vector<PlanarRect> result_list;
 
     gtl::polygon_90_set_data<int> master_poly;
     for (const PlanarRect& master : master_list) {
-      master_poly += gtl::rectangle_data<int>(master.get_lb_x(), master.get_lb_y(), master.get_rt_x(), master.get_rt_y());
+      master_poly += gtl::rectangle_data<int>(master.get_ll_x(), master.get_ll_y(), master.get_ur_x(), master.get_ur_y());
     }
     if (!is_open) {
       // 提取点矩形，线段矩形
@@ -581,10 +581,10 @@ class RTUtil
         candidate_rect_list.emplace_back(gtl::xl(gtl_rect), gtl::yl(gtl_rect), gtl::xh(gtl_rect), gtl::yh(gtl_rect));
       }
       for (PlanarRect candidate_rect : candidate_rect_list) {
-        PlanarCoord& lb = candidate_rect.get_lb();
-        PlanarCoord& rt = candidate_rect.get_rt();
-        addOffset(lb, lb_x_add_offset, lb_y_add_offset);
-        minusOffset(rt, rt_x_minus_offset, rt_y_minus_offset);
+        PlanarCoord& ll = candidate_rect.get_ll();
+        PlanarCoord& ur = candidate_rect.get_ur();
+        addOffset(ll, ll_x_add_offset, ll_y_add_offset);
+        minusOffset(ur, ur_x_minus_offset, ur_y_minus_offset);
         // 去除不是矩形的
         if (candidate_rect.isIncorrected()) {
           continue;
@@ -598,7 +598,7 @@ class RTUtil
     }
     // 获得常规收缩的矩形
     {
-      master_poly.shrink(lb_x_add_offset, rt_x_minus_offset, lb_y_add_offset, rt_y_minus_offset);
+      master_poly.shrink(ll_x_add_offset, ur_x_minus_offset, ll_y_add_offset, ur_y_minus_offset);
 
       std::vector<gtl::rectangle_data<int>> gtl_rect_list;
       gtl::get_rectangles(gtl_rect_list, master_poly, gtl::HORIZONTAL);
@@ -635,11 +635,11 @@ class RTUtil
   {
     // 要求顺时针
     std::vector<BGPointDBL> point_list;
-    point_list.emplace_back(rect.get_lb_x(), rect.get_lb_y());
-    point_list.emplace_back(rect.get_lb_x(), rect.get_rt_y());
-    point_list.emplace_back(rect.get_rt_x(), rect.get_rt_y());
-    point_list.emplace_back(rect.get_rt_x(), rect.get_lb_y());
-    point_list.emplace_back(rect.get_lb_x(), rect.get_lb_y());
+    point_list.emplace_back(rect.get_ll_x(), rect.get_ll_y());
+    point_list.emplace_back(rect.get_ll_x(), rect.get_ur_y());
+    point_list.emplace_back(rect.get_ur_x(), rect.get_ur_y());
+    point_list.emplace_back(rect.get_ur_x(), rect.get_ll_y());
+    point_list.emplace_back(rect.get_ll_x(), rect.get_ll_y());
     return point_list;
   }
 

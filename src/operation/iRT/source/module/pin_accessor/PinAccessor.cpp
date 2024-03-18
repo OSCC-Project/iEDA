@@ -232,10 +232,10 @@ std::vector<AccessPoint> PinAccessor::getAccessPointListByPrefTrackGrid(int32_t 
 
   std::vector<LayerCoord> layer_coord_list;
   for (LayerRect& legal_shape : legal_shape_list) {
-    int32_t lb_x = legal_shape.get_lb_x();
-    int32_t lb_y = legal_shape.get_lb_y();
-    int32_t rt_x = legal_shape.get_rt_x();
-    int32_t rt_y = legal_shape.get_rt_y();
+    int32_t ll_x = legal_shape.get_ll_x();
+    int32_t ll_y = legal_shape.get_ll_y();
+    int32_t ur_x = legal_shape.get_ur_x();
+    int32_t ur_y = legal_shape.get_ur_y();
     int32_t curr_layer_idx = legal_shape.get_layer_idx();
     int32_t other_layer_idx;
     if (curr_layer_idx < (static_cast<int32_t>(routing_layer_list.size()) - 1)) {
@@ -247,14 +247,14 @@ std::vector<AccessPoint> PinAccessor::getAccessPointListByPrefTrackGrid(int32_t 
     RoutingLayer curr_routing_layer = routing_layer_list[curr_layer_idx];
     RoutingLayer other_routing_layer = routing_layer_list[other_layer_idx];
     if (curr_routing_layer.isPreferH()) {
-      for (int32_t x : RTUtil::getScaleList(lb_x, rt_x, other_routing_layer.getXTrackGridList())) {
-        for (int32_t y : RTUtil::getScaleList(lb_y, rt_y, curr_routing_layer.getYTrackGridList())) {
+      for (int32_t x : RTUtil::getScaleList(ll_x, ur_x, other_routing_layer.getXTrackGridList())) {
+        for (int32_t y : RTUtil::getScaleList(ll_y, ur_y, curr_routing_layer.getYTrackGridList())) {
           layer_coord_list.emplace_back(x, y, curr_layer_idx);
         }
       }
     } else {
-      for (int32_t x : RTUtil::getScaleList(lb_x, rt_x, curr_routing_layer.getXTrackGridList())) {
-        for (int32_t y : RTUtil::getScaleList(lb_y, rt_y, other_routing_layer.getYTrackGridList())) {
+      for (int32_t x : RTUtil::getScaleList(ll_x, ur_x, curr_routing_layer.getXTrackGridList())) {
+        for (int32_t y : RTUtil::getScaleList(ll_y, ur_y, other_routing_layer.getYTrackGridList())) {
           layer_coord_list.emplace_back(x, y, curr_layer_idx);
         }
       }
@@ -276,15 +276,15 @@ std::vector<AccessPoint> PinAccessor::getAccessPointListByCurrTrackGrid(int32_t 
 
   std::vector<LayerCoord> layer_coord_list;
   for (LayerRect& legal_shape : legal_shape_list) {
-    int32_t lb_x = legal_shape.get_lb_x();
-    int32_t lb_y = legal_shape.get_lb_y();
-    int32_t rt_x = legal_shape.get_rt_x();
-    int32_t rt_y = legal_shape.get_rt_y();
+    int32_t ll_x = legal_shape.get_ll_x();
+    int32_t ll_y = legal_shape.get_ll_y();
+    int32_t ur_x = legal_shape.get_ur_x();
+    int32_t ur_y = legal_shape.get_ur_y();
     int32_t curr_layer_idx = legal_shape.get_layer_idx();
     RoutingLayer curr_routing_layer = routing_layer_list[curr_layer_idx];
     // curr layer track grid
-    for (int32_t x : RTUtil::getScaleList(lb_x, rt_x, curr_routing_layer.getXTrackGridList())) {
-      for (int32_t y : RTUtil::getScaleList(lb_y, rt_y, curr_routing_layer.getYTrackGridList())) {
+    for (int32_t x : RTUtil::getScaleList(ll_x, ur_x, curr_routing_layer.getXTrackGridList())) {
+      for (int32_t y : RTUtil::getScaleList(ll_y, ur_y, curr_routing_layer.getYTrackGridList())) {
         layer_coord_list.emplace_back(x, y, curr_layer_idx);
       }
     }
@@ -305,19 +305,19 @@ std::vector<AccessPoint> PinAccessor::getAccessPointListByTrackCenter(int32_t pi
 
   std::vector<LayerCoord> layer_coord_list;
   for (LayerRect& legal_shape : legal_shape_list) {
-    int32_t lb_x = legal_shape.get_lb_x();
-    int32_t lb_y = legal_shape.get_lb_y();
-    int32_t rt_x = legal_shape.get_rt_x();
-    int32_t rt_y = legal_shape.get_rt_y();
+    int32_t ll_x = legal_shape.get_ll_x();
+    int32_t ll_y = legal_shape.get_ll_y();
+    int32_t ur_x = legal_shape.get_ur_x();
+    int32_t ur_y = legal_shape.get_ur_y();
     int32_t curr_layer_idx = legal_shape.get_layer_idx();
     RoutingLayer curr_routing_layer = routing_layer_list[curr_layer_idx];
     // on track
-    int32_t mid_x = (lb_x + rt_x) / 2;
-    int32_t mid_y = (lb_y + rt_y) / 2;
-    for (int32_t y : RTUtil::getScaleList(lb_y, rt_y, curr_routing_layer.getYTrackGridList())) {
+    int32_t mid_x = (ll_x + ur_x) / 2;
+    int32_t mid_y = (ll_y + ur_y) / 2;
+    for (int32_t y : RTUtil::getScaleList(ll_y, ur_y, curr_routing_layer.getYTrackGridList())) {
       layer_coord_list.emplace_back(mid_x, y, curr_layer_idx);
     }
-    for (int32_t x : RTUtil::getScaleList(lb_x, rt_x, curr_routing_layer.getXTrackGridList())) {
+    for (int32_t x : RTUtil::getScaleList(ll_x, ur_x, curr_routing_layer.getXTrackGridList())) {
       layer_coord_list.emplace_back(x, mid_y, curr_layer_idx);
     }
   }
@@ -335,14 +335,14 @@ std::vector<AccessPoint> PinAccessor::getAccessPointListByShapeCenter(int32_t pi
 {
   std::vector<LayerCoord> layer_coord_list;
   for (LayerRect& legal_shape : legal_shape_list) {
-    int32_t lb_x = legal_shape.get_lb_x();
-    int32_t lb_y = legal_shape.get_lb_y();
-    int32_t rt_x = legal_shape.get_rt_x();
-    int32_t rt_y = legal_shape.get_rt_y();
+    int32_t ll_x = legal_shape.get_ll_x();
+    int32_t ll_y = legal_shape.get_ll_y();
+    int32_t ur_x = legal_shape.get_ur_x();
+    int32_t ur_y = legal_shape.get_ur_y();
     int32_t curr_layer_idx = legal_shape.get_layer_idx();
     // on shape
-    int32_t mid_x = (lb_x + rt_x) / 2;
-    int32_t mid_y = (lb_y + rt_y) / 2;
+    int32_t mid_x = (ll_x + ur_x) / 2;
+    int32_t mid_y = (ll_y + ur_y) / 2;
     layer_coord_list.emplace_back(mid_x, mid_y, curr_layer_idx);
   }
   std::sort(layer_coord_list.begin(), layer_coord_list.end(), CmpLayerCoordByXASC());
@@ -408,19 +408,19 @@ void PinAccessor::debugPlotPAModel(PAModel& pa_model)
   // track_axis_struct
   GPStruct track_axis_struct("track_axis_struct");
   for (RoutingLayer& routing_layer : routing_layer_list) {
-    std::vector<int32_t> x_list = RTUtil::getScaleList(die.get_real_lb_x(), die.get_real_rt_x(), routing_layer.getXTrackGridList());
-    std::vector<int32_t> y_list = RTUtil::getScaleList(die.get_real_lb_y(), die.get_real_rt_y(), routing_layer.getYTrackGridList());
+    std::vector<int32_t> x_list = RTUtil::getScaleList(die.get_real_ll_x(), die.get_real_ur_x(), routing_layer.getXTrackGridList());
+    std::vector<int32_t> y_list = RTUtil::getScaleList(die.get_real_ll_y(), die.get_real_ur_y(), routing_layer.getYTrackGridList());
     for (int32_t x : x_list) {
       GPPath gp_path;
       gp_path.set_data_type(static_cast<int32_t>(GPDataType::kAxis));
-      gp_path.set_segment(x, die.get_real_lb_y(), x, die.get_real_rt_y());
+      gp_path.set_segment(x, die.get_real_ll_y(), x, die.get_real_ur_y());
       gp_path.set_layer_idx(GP_INST.getGDSIdxByRouting(routing_layer.get_layer_idx()));
       track_axis_struct.push(gp_path);
     }
     for (int32_t y : y_list) {
       GPPath gp_path;
       gp_path.set_data_type(static_cast<int32_t>(GPDataType::kAxis));
-      gp_path.set_segment(die.get_real_lb_x(), y, die.get_real_rt_x(), y);
+      gp_path.set_segment(die.get_real_ll_x(), y, die.get_real_ur_x(), y);
       gp_path.set_layer_idx(GP_INST.getGDSIdxByRouting(routing_layer.get_layer_idx()));
       track_axis_struct.push(gp_path);
     }

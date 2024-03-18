@@ -214,8 +214,8 @@ eval::TileGrid* RTAPI::getCongestonMap(std::map<std::string, std::any> config_ma
   }
 
   // init eval_tile_grid
-  eval_tile_grid->set_lx(die.get_real_lb_x());
-  eval_tile_grid->set_ly(die.get_real_lb_y());
+  eval_tile_grid->set_lx(die.get_real_ll_x());
+  eval_tile_grid->set_ly(die.get_real_ll_y());
   eval_tile_grid->set_tileCnt(die.getXSize(), die.getYSize());
   eval_tile_grid->set_tileSize(cell_width, cell_height);
   eval_tile_grid->set_num_routing_layers(static_cast<int>(layer_resource_map.size()));  // single layer
@@ -227,7 +227,7 @@ eval::TileGrid* RTAPI::getCongestonMap(std::map<std::string, std::any> config_ma
     for (int x = 0; x < resource_map.get_x_size(); x++) {
       for (int y = 0; y < resource_map.get_y_size(); y++) {
         EGRNode& egr_node = resource_map[x][y];
-        eval::Tile* tile = new eval::Tile(x, y, egr_node.get_lb_x(), egr_node.get_lb_y(), egr_node.get_rt_x(), egr_node.get_rt_y(),
+        eval::Tile* tile = new eval::Tile(x, y, egr_node.get_ll_x(), egr_node.get_ll_y(), egr_node.get_ur_x(), egr_node.get_ur_y(),
                                           static_cast<int32_t>(layer_idx));
         tile->set_direction(routing_layer_list[layer_idx].get_prefer_direction() == Direction::kHorizontal);
 
@@ -291,8 +291,8 @@ std::vector<Violation> RTAPI::getViolationList(std::vector<idb::IdbLayerShape*>&
       EXTLayerRect ext_layer_rect;
       if (idrc_violation->is_rect()) {
         idrc::DrcViolationRect* idrc_violation_rect = static_cast<idrc::DrcViolationRect*>(idrc_violation);
-        ext_layer_rect.set_real_lb(idrc_violation_rect->get_llx(), idrc_violation_rect->get_lly());
-        ext_layer_rect.set_real_rt(idrc_violation_rect->get_urx(), idrc_violation_rect->get_ury());
+        ext_layer_rect.set_real_ll(idrc_violation_rect->get_llx(), idrc_violation_rect->get_lly());
+        ext_layer_rect.set_real_ur(idrc_violation_rect->get_urx(), idrc_violation_rect->get_ury());
       } else {
         LOG_INST.error(Loc::current(), "Type not supported!");
       }

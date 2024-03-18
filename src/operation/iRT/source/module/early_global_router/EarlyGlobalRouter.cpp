@@ -112,20 +112,20 @@ void EarlyGlobalRouter::plot()
   RTUtil::pushStream(gds_file, "BGNSTR", "\n");
   RTUtil::pushStream(gds_file, "STRNAME ", "routing_obstacle_list", "\n");
   for (Obstacle& routing_obstacle : routing_obstacle_list) {
-    int32_t lb_x = routing_obstacle.get_real_lb_x();
-    int32_t lb_y = routing_obstacle.get_real_lb_y();
-    int32_t rt_x = routing_obstacle.get_real_rt_x();
-    int32_t rt_y = routing_obstacle.get_real_rt_y();
+    int32_t ll_x = routing_obstacle.get_real_ll_x();
+    int32_t ll_y = routing_obstacle.get_real_ll_y();
+    int32_t ur_x = routing_obstacle.get_real_ur_x();
+    int32_t ur_y = routing_obstacle.get_real_ur_y();
 
     RTUtil::pushStream(gds_file, "BOUNDARY", "\n");
     RTUtil::pushStream(gds_file, "LAYER ", routing_obstacle.get_layer_idx(), "\n");
     RTUtil::pushStream(gds_file, "DATATYPE ", obstacle_data_type, "\n");
     RTUtil::pushStream(gds_file, "XY", "\n");
-    RTUtil::pushStream(gds_file, lb_x, " : ", lb_y, "\n");
-    RTUtil::pushStream(gds_file, rt_x, " : ", lb_y, "\n");
-    RTUtil::pushStream(gds_file, rt_x, " : ", rt_y, "\n");
-    RTUtil::pushStream(gds_file, lb_x, " : ", rt_y, "\n");
-    RTUtil::pushStream(gds_file, lb_x, " : ", lb_y, "\n");
+    RTUtil::pushStream(gds_file, ll_x, " : ", ll_y, "\n");
+    RTUtil::pushStream(gds_file, ur_x, " : ", ll_y, "\n");
+    RTUtil::pushStream(gds_file, ur_x, " : ", ur_y, "\n");
+    RTUtil::pushStream(gds_file, ll_x, " : ", ur_y, "\n");
+    RTUtil::pushStream(gds_file, ll_x, " : ", ll_y, "\n");
     RTUtil::pushStream(gds_file, "ENDEL", "\n");
   }
   RTUtil::pushStream(gds_file, "ENDSTR", "\n");
@@ -138,31 +138,31 @@ void EarlyGlobalRouter::plot()
     for (int32_t x = 0; x < resource_map.get_x_size(); x++) {
       for (int32_t y = 0; y < resource_map.get_y_size(); y++) {
         EGRNode& node = resource_map[x][y];
-        int32_t lb_x = node.get_lb_x();
-        int32_t lb_y = node.get_lb_y();
-        int32_t rt_x = node.get_rt_x();
-        int32_t rt_y = node.get_rt_y();
+        int32_t ll_x = node.get_ll_x();
+        int32_t ll_y = node.get_ll_y();
+        int32_t ur_x = node.get_ur_x();
+        int32_t ur_y = node.get_ur_y();
 
         RTUtil::pushStream(gds_file, "BOUNDARY", "\n");
         RTUtil::pushStream(gds_file, "LAYER ", layer_idx, "\n");
         RTUtil::pushStream(gds_file, "DATATYPE ", node_data_type, "\n");
         RTUtil::pushStream(gds_file, "XY", "\n");
-        RTUtil::pushStream(gds_file, lb_x, " : ", lb_y, "\n");
-        RTUtil::pushStream(gds_file, rt_x, " : ", lb_y, "\n");
-        RTUtil::pushStream(gds_file, rt_x, " : ", rt_y, "\n");
-        RTUtil::pushStream(gds_file, lb_x, " : ", rt_y, "\n");
-        RTUtil::pushStream(gds_file, lb_x, " : ", lb_y, "\n");
+        RTUtil::pushStream(gds_file, ll_x, " : ", ll_y, "\n");
+        RTUtil::pushStream(gds_file, ur_x, " : ", ll_y, "\n");
+        RTUtil::pushStream(gds_file, ur_x, " : ", ur_y, "\n");
+        RTUtil::pushStream(gds_file, ll_x, " : ", ur_y, "\n");
+        RTUtil::pushStream(gds_file, ll_x, " : ", ll_y, "\n");
         RTUtil::pushStream(gds_file, "ENDEL", "\n");
 
-        int32_t mid_x = (lb_x + rt_x) / 2;
-        int32_t mid_y = (lb_y + rt_y) / 2;
+        int32_t mid_x = (ll_x + ur_x) / 2;
+        int32_t mid_y = (ll_y + ur_y) / 2;
 
         RTUtil::pushStream(gds_file, "TEXT", "\n");
         RTUtil::pushStream(gds_file, "LAYER ", layer_idx, "\n");
         RTUtil::pushStream(gds_file, "TEXTTYPE ", text_data_type, "\n");
         RTUtil::pushStream(gds_file, "PRESENTATION ", 4, "\n");
         RTUtil::pushStream(gds_file, "XY", "\n");
-        RTUtil::pushStream(gds_file, lb_x, " : ", mid_y, "\n");
+        RTUtil::pushStream(gds_file, ll_x, " : ", mid_y, "\n");
         RTUtil::pushStream(gds_file, "STRING ", RTUtil::getString("west: ", node.get_west_demand(), "/", node.get_west_supply()), "\n");
         RTUtil::pushStream(gds_file, "ENDEL", "\n");
 
@@ -171,7 +171,7 @@ void EarlyGlobalRouter::plot()
         RTUtil::pushStream(gds_file, "TEXTTYPE ", text_data_type, "\n");
         RTUtil::pushStream(gds_file, "PRESENTATION ", 6, "\n");
         RTUtil::pushStream(gds_file, "XY", "\n");
-        RTUtil::pushStream(gds_file, rt_x, " : ", mid_y, "\n");
+        RTUtil::pushStream(gds_file, ur_x, " : ", mid_y, "\n");
         RTUtil::pushStream(gds_file, "STRING ", RTUtil::getString("east: ", node.get_east_demand(), "/", node.get_east_supply()), "\n");
         RTUtil::pushStream(gds_file, "ENDEL", "\n");
 
@@ -189,7 +189,7 @@ void EarlyGlobalRouter::plot()
         RTUtil::pushStream(gds_file, "TEXTTYPE ", text_data_type, "\n");
         RTUtil::pushStream(gds_file, "PRESENTATION ", 9, "\n");
         RTUtil::pushStream(gds_file, "XY", "\n");
-        RTUtil::pushStream(gds_file, mid_x, " : ", lb_y, "\n");
+        RTUtil::pushStream(gds_file, mid_x, " : ", ll_y, "\n");
         RTUtil::pushStream(gds_file, "STRING ", RTUtil::getString("south: ", node.get_south_demand(), "/", node.get_south_supply()), "\n");
         RTUtil::pushStream(gds_file, "ENDEL", "\n");
 
@@ -198,7 +198,7 @@ void EarlyGlobalRouter::plot()
         RTUtil::pushStream(gds_file, "TEXTTYPE ", text_data_type, "\n");
         RTUtil::pushStream(gds_file, "PRESENTATION ", 1, "\n");
         RTUtil::pushStream(gds_file, "XY", "\n");
-        RTUtil::pushStream(gds_file, mid_x, " : ", rt_y, "\n");
+        RTUtil::pushStream(gds_file, mid_x, " : ", ur_y, "\n");
         RTUtil::pushStream(gds_file, "STRING ", RTUtil::getString("north: ", node.get_north_demand(), "/", node.get_north_supply()), "\n");
         RTUtil::pushStream(gds_file, "ENDEL", "\n");
       }
@@ -266,19 +266,19 @@ void EarlyGlobalRouter::plotCongstLoc()
   for (int32_t x = 0; x < x_size; x++) {
     for (int32_t y = 0; y < y_size; y++) {
       EGRNode& node = resource_map[x][y];
-      int32_t lb_x = node.get_lb_x();
-      int32_t lb_y = node.get_lb_y();
-      int32_t rt_x = node.get_rt_x();
-      int32_t rt_y = node.get_rt_y();
+      int32_t ll_x = node.get_ll_x();
+      int32_t ll_y = node.get_ll_y();
+      int32_t ur_x = node.get_ur_x();
+      int32_t ur_y = node.get_ur_y();
       RTUtil::pushStream(gds_file, "BOUNDARY", "\n");
       RTUtil::pushStream(gds_file, "LAYER ", static_cast<int32_t>(std::ceil(cong_map[x][y] * 1.0 / interval)), "\n");
       RTUtil::pushStream(gds_file, "DATATYPE ", node_data_type, "\n");
       RTUtil::pushStream(gds_file, "XY", "\n");
-      RTUtil::pushStream(gds_file, lb_x, " : ", lb_y, "\n");
-      RTUtil::pushStream(gds_file, rt_x, " : ", lb_y, "\n");
-      RTUtil::pushStream(gds_file, rt_x, " : ", rt_y, "\n");
-      RTUtil::pushStream(gds_file, lb_x, " : ", rt_y, "\n");
-      RTUtil::pushStream(gds_file, lb_x, " : ", lb_y, "\n");
+      RTUtil::pushStream(gds_file, ll_x, " : ", ll_y, "\n");
+      RTUtil::pushStream(gds_file, ur_x, " : ", ll_y, "\n");
+      RTUtil::pushStream(gds_file, ur_x, " : ", ur_y, "\n");
+      RTUtil::pushStream(gds_file, ll_x, " : ", ur_y, "\n");
+      RTUtil::pushStream(gds_file, ll_x, " : ", ll_y, "\n");
       RTUtil::pushStream(gds_file, "ENDEL", "\n");
     }
   }
@@ -794,20 +794,20 @@ void EarlyGlobalRouter::routeByUPattern(std::vector<std::vector<Segment<LayerCoo
 {
   EGRDatabase& egr_database = _egr_data_manager.getDatabase();
   PlanarRect die = egr_database.get_die().get_grid_rect();
-  int32_t die_lb_x = egr_database.get_die().get_grid_lb_x();
-  int32_t die_lb_y = egr_database.get_die().get_grid_lb_y();
-  int32_t die_rt_x = egr_database.get_die().get_grid_rt_x();
-  int32_t die_rt_y = egr_database.get_die().get_grid_rt_y();
+  int32_t die_ll_x = egr_database.get_die().get_grid_ll_x();
+  int32_t die_ll_y = egr_database.get_die().get_grid_ll_y();
+  int32_t die_ur_x = egr_database.get_die().get_grid_ur_x();
+  int32_t die_ur_y = egr_database.get_die().get_grid_ur_y();
 
   int32_t scope = 2 * _egr_data_manager.getConfig().accuracy;
   LayerCoord start_coord = coord_pair.first;
   LayerCoord end_coord = coord_pair.second;
-  int32_t start_x = start_coord.get_x();
+  int32_t staur_x = start_coord.get_x();
   int32_t end_x = end_coord.get_x();
-  int32_t start_y = start_coord.get_y();
+  int32_t staur_y = start_coord.get_y();
   int32_t end_y = end_coord.get_y();
-  RTUtil::swapByASC(start_x, end_x);
-  RTUtil::swapByASC(start_y, end_y);
+  RTUtil::swapByASC(staur_x, end_x);
+  RTUtil::swapByASC(staur_y, end_y);
 
   if (RTUtil::isProximal(start_coord, end_coord)) {
     return;
@@ -817,18 +817,18 @@ void EarlyGlobalRouter::routeByUPattern(std::vector<std::vector<Segment<LayerCoo
   std::vector<int32_t> inflection_y_list;
   for (int32_t i = 1; i <= scope; ++i) {
     if (!RTUtil::isHorizontal(start_coord, end_coord)) {
-      if (start_x - i > die_lb_x) {
-        inflection_x_list.push_back(start_x - i);
+      if (staur_x - i > die_ll_x) {
+        inflection_x_list.push_back(staur_x - i);
       }
-      if (end_x + i < die_rt_x) {
+      if (end_x + i < die_ur_x) {
         inflection_x_list.push_back(end_x + i);
       }
     }
     if (!RTUtil::isVertical(start_coord, end_coord)) {
-      if (start_y - i > die_lb_y) {
-        inflection_y_list.push_back(start_y - i);
+      if (staur_y - i > die_ll_y) {
+        inflection_y_list.push_back(staur_y - i);
       }
-      if (end_y + i < die_rt_y) {
+      if (end_y + i < die_ur_y) {
         inflection_y_list.push_back(end_y + i);
       }
     }
@@ -1000,10 +1000,10 @@ void EarlyGlobalRouter::routeByOuter3BendsPattern(std::vector<std::vector<Segmen
 {
   EGRDatabase& egr_database = _egr_data_manager.getDatabase();
   PlanarRect die = egr_database.get_die().get_grid_rect();
-  int32_t die_lb_x = egr_database.get_die().get_grid_lb_x();
-  int32_t die_lb_y = egr_database.get_die().get_grid_lb_y();
-  int32_t die_rt_x = egr_database.get_die().get_grid_rt_x();
-  int32_t die_rt_y = egr_database.get_die().get_grid_rt_y();
+  int32_t die_ll_x = egr_database.get_die().get_grid_ll_x();
+  int32_t die_ll_y = egr_database.get_die().get_grid_ll_y();
+  int32_t die_ur_x = egr_database.get_die().get_grid_ur_x();
+  int32_t die_ur_y = egr_database.get_die().get_grid_ur_y();
 
   LayerCoord start_coord = coord_pair.first;
   LayerCoord end_coord = coord_pair.second;
@@ -1021,7 +1021,7 @@ void EarlyGlobalRouter::routeByOuter3BendsPattern(std::vector<std::vector<Segmen
     for (int32_t i = 1; i <= scope; ++i) {
       int32_t inflection_x = start_coord.get_x() - i;
       int32_t inflection_y = end_coord.get_y() + i;
-      if ((inflection_x < die_lb_x) || (inflection_y > die_rt_y)) {
+      if ((inflection_x < die_ll_x) || (inflection_y > die_ur_y)) {
         break;
       }
       for (int32_t h_layer_idx : egr_database.get_h_layer_idx_list()) {
@@ -1046,7 +1046,7 @@ void EarlyGlobalRouter::routeByOuter3BendsPattern(std::vector<std::vector<Segmen
     for (int32_t i = 1; i <= scope; ++i) {
       int32_t inflection_x = end_coord.get_x() + i;
       int32_t inflection_y = start_coord.get_y() - i;
-      if ((inflection_x > die_rt_x) || (inflection_y < die_lb_y)) {
+      if ((inflection_x > die_ur_x) || (inflection_y < die_ll_y)) {
         break;
       }
       for (int32_t h_layer_idx : egr_database.get_h_layer_idx_list()) {
@@ -1074,7 +1074,7 @@ void EarlyGlobalRouter::routeByOuter3BendsPattern(std::vector<std::vector<Segmen
     for (int32_t i = 1; i <= scope; ++i) {
       int32_t inflection_x = start_coord.get_x() - i;
       int32_t inflection_y = end_coord.get_y() - i;
-      if ((inflection_x < die_lb_x) || (inflection_y < die_lb_y)) {
+      if ((inflection_x < die_ll_x) || (inflection_y < die_ll_y)) {
         break;
       }
       for (int32_t h_layer_idx : egr_database.get_h_layer_idx_list()) {
@@ -1099,7 +1099,7 @@ void EarlyGlobalRouter::routeByOuter3BendsPattern(std::vector<std::vector<Segmen
     for (int32_t i = 1; i <= scope; ++i) {
       int32_t inflection_x = end_coord.get_x() + i;
       int32_t inflection_y = start_coord.get_y() + i;
-      if ((inflection_x > die_rt_x) || (inflection_y > die_rt_y)) {
+      if ((inflection_x > die_ur_x) || (inflection_y > die_ur_y)) {
         break;
       }
       for (int32_t h_layer_idx : egr_database.get_h_layer_idx_list()) {

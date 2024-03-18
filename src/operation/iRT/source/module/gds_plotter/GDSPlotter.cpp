@@ -295,20 +295,20 @@ void GDSPlotter::plotStruct(std::ofstream* gds_file, GPStruct& gp_struct)
 
 void GDSPlotter::plotBoundary(std::ofstream* gds_file, GPBoundary& gp_boundary)
 {
-  int32_t lb_x = gp_boundary.get_lb_x();
-  int32_t lb_y = gp_boundary.get_lb_y();
-  int32_t rt_x = gp_boundary.get_rt_x();
-  int32_t rt_y = gp_boundary.get_rt_y();
+  int32_t ll_x = gp_boundary.get_ll_x();
+  int32_t ll_y = gp_boundary.get_ll_y();
+  int32_t ur_x = gp_boundary.get_ur_x();
+  int32_t ur_y = gp_boundary.get_ur_y();
 
   RTUtil::pushStream(gds_file, "BOUNDARY", "\n");
   RTUtil::pushStream(gds_file, "LAYER ", gp_boundary.get_layer_idx(), "\n");
   RTUtil::pushStream(gds_file, "DATATYPE ", static_cast<int32_t>(gp_boundary.get_data_type()), "\n");
   RTUtil::pushStream(gds_file, "XY", "\n");
-  RTUtil::pushStream(gds_file, lb_x, " : ", lb_y, "\n");
-  RTUtil::pushStream(gds_file, rt_x, " : ", lb_y, "\n");
-  RTUtil::pushStream(gds_file, rt_x, " : ", rt_y, "\n");
-  RTUtil::pushStream(gds_file, lb_x, " : ", rt_y, "\n");
-  RTUtil::pushStream(gds_file, lb_x, " : ", lb_y, "\n");
+  RTUtil::pushStream(gds_file, ll_x, " : ", ll_y, "\n");
+  RTUtil::pushStream(gds_file, ur_x, " : ", ll_y, "\n");
+  RTUtil::pushStream(gds_file, ur_x, " : ", ur_y, "\n");
+  RTUtil::pushStream(gds_file, ll_x, " : ", ur_y, "\n");
+  RTUtil::pushStream(gds_file, ll_x, " : ", ll_y, "\n");
   RTUtil::pushStream(gds_file, "ENDEL", "\n");
 }
 

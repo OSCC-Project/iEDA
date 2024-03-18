@@ -1126,14 +1126,14 @@ void InitialRouter::debugOutputGuide(IRModel& ir_model)
       if (first_layer_idx != second_layer_idx) {
         RTUtil::swapByASC(first_layer_idx, second_layer_idx);
         for (int layer_idx = first_layer_idx; layer_idx <= second_layer_idx; layer_idx++) {
-          RTUtil::pushStream(guide_file_stream, first_guide.get_lb_x(), " ", first_guide.get_lb_y(), " ", first_guide.get_rt_x(), " ",
-                             first_guide.get_rt_y(), " ", routing_layer_list[layer_idx].get_layer_name(), "\n");
+          RTUtil::pushStream(guide_file_stream, first_guide.get_ll_x(), " ", first_guide.get_ll_y(), " ", first_guide.get_ur_x(), " ",
+                             first_guide.get_ur_y(), " ", routing_layer_list[layer_idx].get_layer_name(), "\n");
         }
       } else {
         RTUtil::swapByCMP(first_guide, second_guide,
                           [](Guide& a, Guide& b) { return CmpPlanarCoordByXASC()(a.get_grid_coord(), b.get_grid_coord()); });
-        RTUtil::pushStream(guide_file_stream, first_guide.get_lb_x(), " ", first_guide.get_lb_y(), " ", second_guide.get_rt_x(), " ",
-                           second_guide.get_rt_y(), " ", routing_layer_list[first_guide.get_layer_idx()].get_layer_name(), "\n");
+        RTUtil::pushStream(guide_file_stream, first_guide.get_ll_x(), " ", first_guide.get_ll_y(), " ", second_guide.get_ur_x(), " ",
+                           second_guide.get_ur_y(), " ", routing_layer_list[first_guide.get_layer_idx()].get_layer_name(), "\n");
       }
     }
     RTUtil::pushStream(guide_file_stream, ")\n");

@@ -26,17 +26,17 @@ class Row
   Row() = default;
   ~Row() = default;
   // getter
-  int32_t get_start_x() const { return _start_x; }
-  int32_t get_start_y() const { return _start_y; }
+  int32_t get_staur_x() const { return _staur_x; }
+  int32_t get_staur_y() const { return _staur_y; }
   int32_t get_height() const { return _height; }
   // setter
-  void set_start_x(const int32_t start_x) { _start_x = start_x; }
-  void set_start_y(const int32_t start_y) { _start_y = start_y; }
+  void set_staur_x(const int32_t staur_x) { _staur_x = staur_x; }
+  void set_staur_y(const int32_t staur_y) { _staur_y = staur_y; }
   void set_height(const int32_t height) { _height = height; }
   // function
  private:
-  int32_t _start_x = -1;
-  int32_t _start_y = -1;
+  int32_t _staur_x = -1;
+  int32_t _staur_y = -1;
   int32_t _height = -1;
 };
 
