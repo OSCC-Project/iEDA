@@ -22,8 +22,6 @@
  * @date 2020-11-27
  */
 
-#include "Sta.hh"
-
 #include <algorithm>
 #include <filesystem>
 #include <map>
@@ -33,6 +31,7 @@
 #include <tuple>
 #include <utility>
 
+#include "Sta.hh"
 #include "StaAnalyze.hh"
 #include "StaApplySdc.hh"
 #include "StaBuildClockTree.hh"
@@ -204,7 +203,7 @@ unsigned Sta::readSdc(const char *sdc_file) {
 unsigned Sta::readSpef(const char *spef_file) {
   StaGraph &the_graph = get_graph();
 
-  StaBuildRCTree func(spef_file, DelayCalcMethod::kElmore);
+  StaBuildRCTree func(spef_file, DelayCalcMethod::kArnoldi);
   func(&the_graph);
 
   return 1;
@@ -988,6 +987,26 @@ void Sta::linkDesignWithRustParser(const char *top_cell_name) {
 }
 
 /**
+ * @brief get the design used libs.
+ * 
+ * @return std::set<LibertyLibrary *> 
+ */
+std::set<LibertyLibrary *> Sta::getUsedLibs() {
+  if (!isBuildGraph()) {
+    return std::set<LibertyLibrary *>();
+  }
+
+  std::set<LibertyLibrary *> used_libs;
+  Instance* inst;
+  FOREACH_INSTANCE(&_netlist, inst) {
+    auto* used_lib = inst->get_inst_cell()->get_owner_lib();
+    used_libs.insert(used_lib);
+  }
+
+  return used_libs;
+}
+
+/**
  * @brief reset constraint.
  */
 void Sta::resetConstraint() { _constrains.reset(); }
@@ -1139,6 +1158,10 @@ void Sta::initSdcCmd() {
   auto get_ports = std::make_unique<CmdGetPorts>("get_ports");
   LOG_FATAL_IF(!get_ports);
   TclCmds::addTclCmd(std::move(get_ports));
+
+  auto get_libs = std::make_unique<CmdGetLibs>("get_libs");
+  LOG_FATAL_IF(!get_libs);
+  TclCmds::addTclCmd(std::move(get_libs));
 
   auto all_clocks = std::make_unique<CmdAllClocks>("all_clocks");
   LOG_FATAL_IF(!all_clocks);

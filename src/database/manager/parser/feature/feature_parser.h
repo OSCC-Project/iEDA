@@ -87,5 +87,7 @@ class FeatureParser
   json buildSummarySTA();
   json buildSummaryDRC();
 
+  json buildSummaryRT();
+
 };
 }  // namespace idb

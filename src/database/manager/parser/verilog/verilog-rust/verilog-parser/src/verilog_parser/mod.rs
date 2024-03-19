@@ -91,7 +91,7 @@ fn process_inner_port_declaration(
     }
 }
 
-fn process_port_declaration(
+fn process_port_or_wire_declaration(
     pair: Pair<Rule>,
 ) -> Result<Box<dyn verilog_data::VerilogVirtualBaseStmt>, pest::error::Error<Rule>> {
     let pair_clone = pair.clone();
@@ -109,6 +109,11 @@ fn process_port_declaration(
         Rule::inout_declaration => {
             let dcl_type = verilog_data::DclType::KInout;
             let verilog_dcls = process_inner_port_declaration(pair, dcl_type);
+            verilog_dcls
+        }
+        Rule::wire_declaration => {
+            let dcl_type = verilog_data::DclType::KWire;
+            let verilog_dcls = process_inner_wire_declaration(pair, dcl_type);
             verilog_dcls
         }
         _ => Err(pest::error::Error::new_from_span(
@@ -155,23 +160,6 @@ fn process_inner_wire_declaration(
             }
             let verilog_dcls = verilog_data::VerilogDcls::new(line_no, verilog_dcl_vec);
             Ok(Box::new(verilog_dcls) as Box<dyn verilog_data::VerilogVirtualBaseStmt>)
-        }
-        _ => Err(pest::error::Error::new_from_span(
-            pest::error::ErrorVariant::CustomError { message: "Unknown rule".into() },
-            pair_clone.as_span(),
-        )),
-    }
-}
-
-fn process_wire_declaration(
-    pair: Pair<Rule>,
-) -> Result<Box<dyn verilog_data::VerilogVirtualBaseStmt>, pest::error::Error<Rule>> {
-    let pair_clone = pair.clone();
-    match pair.as_rule() {
-        Rule::wire_declaration => {
-            let dcl_type = verilog_data::DclType::KWire;
-            let verilog_dcls = process_inner_wire_declaration(pair, dcl_type);
-            verilog_dcls
         }
         _ => Err(pest::error::Error::new_from_span(
             pest::error::ErrorVariant::CustomError { message: "Unknown rule".into() },
@@ -677,15 +665,9 @@ pub fn parse_verilog_file(verilog_file_path: &str) -> verilog_data::VerilogFile 
                                 port_list.push(port_id);
                             }
                         }
-                        Rule::port_block_declaration => {
+                        Rule::port_or_wire_block_declaration => {
                             for inner_inner_pair in inner_pair.into_inner() {
-                                let verilog_dcls = process_port_declaration(inner_inner_pair).unwrap();
-                                module_stmts.push(verilog_dcls);
-                            }
-                        }
-                        Rule::wire_block_declaration => {
-                            for inner_inner_pair in inner_pair.into_inner() {
-                                let verilog_dcls = process_wire_declaration(inner_inner_pair).unwrap();
+                                let verilog_dcls = process_port_or_wire_declaration(inner_inner_pair).unwrap();
                                 module_stmts.push(verilog_dcls);
                             }
                         }
@@ -885,18 +867,19 @@ mod tests {
 
     #[test]
     fn test_parse_port_or_wire_id1() {
-        let input_str = "\\clk_cfg[6]";
+        let _input_str = "\\in_$002 [0]";
+        let input_str = "sky130_fd_sc_hs__nor2_1 _17_";
         let parse_result = VerilogParser::parse(Rule::port_or_wire_id, input_str);
-
+        println!("{:#?}", parse_result);
         print_parse_result(parse_result);
     }
 
     #[test]
     fn test_parse_input_declaration() {
-        let input_str = "input chiplink_rx_clk_pad;";
+        let input_str = r#"input chiplink_rx_clk_pad;"#;
         let parse_result = VerilogParser::parse(Rule::input_declaration, input_str);
 
-        print_parse_result(parse_result);
+        println!("{:#?}", parse_result);
     }
 
     #[test]
@@ -909,10 +892,13 @@ mod tests {
 
     #[test]
     fn test_parse_port_block_declaration() {
-        let input_str = r#"output [3:0] osc_25m_out_pad;
-        input osc_100m_in_pad;
-        output osc_100m_out_pad;"#;
-        let parse_result = VerilogParser::parse(Rule::port_block_declaration, input_str);
+        let input_str = r#"output [1:0] a_mux_sel;
+        output a_reg_en;
+        output b_mux_sel;
+        output b_reg_en;
+        input clk;
+      "#;
+        let parse_result = VerilogParser::parse(Rule::port_or_wire_block_declaration, input_str);
         println!("{:#?}", parse_result);
         print_parse_result(parse_result);
     }
@@ -935,7 +921,7 @@ mod tests {
         wire \u0_rcg/u0_pll_fbdiv_5_ ;
         wire \u0_rcg/u0_pll_postdiv2_1_ ;
         wire \u0_rcg/u0_pll_clk ;"#;
-        let parse_result = VerilogParser::parse(Rule::wire_block_declaration, input_str);
+        let parse_result = VerilogParser::parse(Rule::port_or_wire_block_declaration, input_str);
 
         print_parse_result(parse_result);
     }
