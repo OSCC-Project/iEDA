@@ -1953,6 +1953,7 @@ void DetailedRouter::updateSummary(DRModel& dr_model)
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
   std::vector<CutLayer>& cut_layer_list = DM_INST.getDatabase().get_cut_layer_list();
   std::vector<std::vector<ViaMaster>>& layer_via_master_list = DM_INST.getDatabase().get_layer_via_master_list();
+  int32_t  enable_timing = DM_INST.getConfig().enable_timing;
   std::map<int32_t, double>& routing_wire_length_map
       = DM_INST.getSummary().iter_dr_summary_map[dr_model.get_iter()].routing_wire_length_map;
   double& total_wire_length = DM_INST.getSummary().iter_dr_summary_map[dr_model.get_iter()].total_wire_length;
@@ -1963,6 +1964,7 @@ void DetailedRouter::updateSummary(DRModel& dr_model)
   std::map<int32_t, int32_t>& routing_violation_num_map
       = DM_INST.getSummary().iter_dr_summary_map[dr_model.get_iter()].routing_violation_num_map;
   int32_t& total_violation_num = DM_INST.getSummary().iter_dr_summary_map[dr_model.get_iter()].total_violation_num;
+  std::map<std::string, std::vector<double>>& timing = DM_INST.getSummary().iter_dr_summary_map[dr_model.get_iter()].timing;
 
   for (RoutingLayer& routing_layer : routing_layer_list) {
     routing_wire_length_map[routing_layer.get_layer_idx()] = 0;
@@ -2007,28 +2009,23 @@ void DetailedRouter::updateSummary(DRModel& dr_model)
     routing_violation_num_map[violation->get_violation_shape().get_layer_idx()]++;
     total_violation_num++;
   }
-#if 0
-  std::map<std::string, std::vector<double>>& timing = DM_INST.getSummary().iter_dr_summary_map[dr_model.get_iter()].timing;
-  std::map<int32_t, std::map<LayerCoord, std::vector<std::string>, CmpLayerCoordByXASC>> net_coord_real_pin_map;
-  std::map<int32_t, std::vector<Segment<LayerCoord>>> net_routing_segment_map;
-  for (DRNet& dr_net : dr_model.get_dr_net_list()) {
-    for (DRPin& dr_pin : dr_net.get_dr_pin_list()) {
-      for (AccessPoint& access_point : dr_pin.get_access_point_list()) {
-        net_coord_real_pin_map[dr_net.get_net_idx()][access_point.getRealLayerCoord()].push_back(dr_pin.get_pin_name());
-      }
-    }
-  }
-  for (int32_t x = 0; x < gcell_map.get_x_size(); x++) {
-    for (int32_t y = 0; y < gcell_map.get_y_size(); y++) {
-      for (auto& [net_idx, segment_set] : gcell_map[x][y].get_net_result_map()) {
-        for (Segment<LayerCoord>* segment : segment_set) {
-          net_routing_segment_map[net_idx].emplace_back(segment->get_first(), segment->get_second());
+  if (enable_timing) {
+    std::map<int32_t, std::map<LayerCoord, std::vector<std::string>, CmpLayerCoordByXASC>> net_coord_real_pin_map;
+    std::map<int32_t, std::vector<Segment<LayerCoord>>> net_routing_segment_map;
+    for (DRNet& dr_net : dr_model.get_dr_net_list()) {
+      for (DRPin& dr_pin : dr_net.get_dr_pin_list()) {
+        for (AccessPoint& access_point : dr_pin.get_access_point_list()) {
+          net_coord_real_pin_map[dr_net.get_net_idx()][access_point.getRealLayerCoord()].push_back(dr_pin.get_pin_name());
         }
       }
     }
+    for (auto& [net_idx, segment_set] : DM_INST.getNetResultMap(die)) {
+      for (Segment<LayerCoord>* segment : segment_set) {
+        net_routing_segment_map[net_idx].emplace_back(segment->get_first(), segment->get_second());
+      }
+    }
+    timing = RTAPI_INST.getTiming(net_coord_real_pin_map, net_routing_segment_map);
   }
-  timing = RTAPI_INST.getTiming(net_coord_real_pin_map, net_routing_segment_map);
-#endif
 }
 
 void DetailedRouter::printSummary(DRModel& dr_model)

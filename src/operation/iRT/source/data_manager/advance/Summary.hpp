@@ -106,7 +106,7 @@ class Summary
   PASummary pa_summary;
   SASummary sa_summary;
   IRSummary ir_summary;
-  GRSummary gr_summary;
+  std::map<int32_t, GRSummary> iter_gr_summary_map;
   TASummary ta_summary;
   std::map<int32_t, DRSummary> iter_dr_summary_map;
 };

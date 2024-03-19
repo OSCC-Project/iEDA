@@ -1152,6 +1152,7 @@ void InitialRouter::updateSummary(IRModel& ir_model)
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
   std::vector<CutLayer>& cut_layer_list = DM_INST.getDatabase().get_cut_layer_list();
   std::vector<std::vector<ViaMaster>>& layer_via_master_list = DM_INST.getDatabase().get_layer_via_master_list();
+  int32_t enable_timing = DM_INST.getConfig().enable_timing;
   std::map<int32_t, int32_t>& routing_demand_map = DM_INST.getSummary().ir_summary.routing_demand_map;
   int32_t& total_demand = DM_INST.getSummary().ir_summary.total_demand;
   std::map<int32_t, int32_t>& routing_overflow_map = DM_INST.getSummary().ir_summary.routing_overflow_map;
@@ -1160,6 +1161,7 @@ void InitialRouter::updateSummary(IRModel& ir_model)
   double& total_wire_length = DM_INST.getSummary().ir_summary.total_wire_length;
   std::map<int32_t, int32_t>& cut_via_num_map = DM_INST.getSummary().ir_summary.cut_via_num_map;
   int32_t& total_via_num = DM_INST.getSummary().ir_summary.total_via_num;
+  std::map<std::string, std::vector<double>>& timing = DM_INST.getSummary().ir_summary.timing;
 
   for (RoutingLayer& routing_layer : routing_layer_list) {
     routing_demand_map[routing_layer.get_layer_idx()] = 0;
@@ -1219,23 +1221,22 @@ void InitialRouter::updateSummary(IRModel& ir_model)
       }
     }
   }
-#if 0
-  std::map<std::string, std::vector<double>>& timing = DM_INST.getSummary().ir_summary.timing;
-  std::map<int32_t, std::map<LayerCoord, std::vector<std::string>, CmpLayerCoordByXASC>> net_coord_real_pin_map;
-  std::map<int32_t, std::vector<Segment<LayerCoord>>> net_routing_segment_map;
-  for (IRNet& ir_net : ir_model.get_ir_net_list()) {
-    for (IRPin& ir_pin : ir_net.get_ir_pin_list()) {
-      for (AccessPoint& access_point : ir_pin.get_access_point_list()) {
-        net_coord_real_pin_map[ir_net.get_net_idx()][access_point.getGridLayerCoord()].push_back(ir_pin.get_pin_name());
+  if (enable_timing) {
+    std::map<int32_t, std::map<LayerCoord, std::vector<std::string>, CmpLayerCoordByXASC>> net_coord_real_pin_map;
+    std::map<int32_t, std::vector<Segment<LayerCoord>>> net_routing_segment_map;
+    for (IRNet& ir_net : ir_model.get_ir_net_list()) {
+      for (IRPin& ir_pin : ir_net.get_ir_pin_list()) {
+        for (AccessPoint& access_point : ir_pin.get_access_point_list()) {
+          net_coord_real_pin_map[ir_net.get_net_idx()][access_point.getGridLayerCoord()].push_back(ir_pin.get_pin_name());
+        }
+      }
+      for (Segment<TNode<Guide>*>& segment : RTUtil::getSegListByTree(ir_net.get_ir_result_tree())) {
+        net_routing_segment_map[ir_net.get_net_idx()].emplace_back(segment.get_first()->value().get_grid_coord(),
+                                                                   segment.get_second()->value().get_grid_coord());
       }
     }
-    for (Segment<TNode<Guide>*>& segment : RTUtil::getSegListByTree(ir_net.get_ir_result_tree())) {
-      net_routing_segment_map[ir_net.get_net_idx()].emplace_back(segment.get_first()->value().get_grid_coord(),
-                                                                                    segment.get_second()->value().get_grid_coord());
-    }
+    timing = RTAPI_INST.getTiming(net_coord_real_pin_map, net_routing_segment_map);
   }
-  timing = RTAPI_INST.getTiming(net_coord_real_pin_map, net_routing_segment_map);
-#endif
 }
 
 void InitialRouter::printSummary(IRModel& ir_model)

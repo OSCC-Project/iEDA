@@ -414,6 +414,7 @@ void DataManager::wrapConfig(std::map<std::string, std::any>& config_map)
   _config.bottom_routing_layer = RTUtil::getConfigValue<std::string>(config_map, "-bottom_routing_layer", "");
   _config.top_routing_layer = RTUtil::getConfigValue<std::string>(config_map, "-top_routing_layer", "");
   _config.output_csv = RTUtil::getConfigValue<int32_t>(config_map, "-output_csv", 0);
+  _config.enable_timing = RTUtil::getConfigValue<int32_t>(config_map, "-enable_timing", 0);
   /////////////////////////////////////////////
 }
 
@@ -1726,6 +1727,8 @@ void DataManager::printConfig()
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.top_routing_layer);
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "output_csv");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.output_csv);
+    LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "enable_timing");
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.enable_timing);
   // **********        RT         ********** //
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(0), "RT_CONFIG_BUILD");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "log_file_path");

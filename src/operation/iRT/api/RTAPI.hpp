@@ -37,6 +37,7 @@ class RTAPI
 #if 1  // 外部调用RT的API
   // RT主要函数
   void initRT(std::map<std::string, std::any> config_map);
+  void runEGR();
   void runRT();
   void destroyRT();
   // 清理def

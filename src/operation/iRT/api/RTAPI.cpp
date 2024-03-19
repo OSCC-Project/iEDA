@@ -75,8 +75,31 @@ void RTAPI::initRT(std::map<std::string, std::any> config_map)
   GDSPlotter::initInst();
 }
 
+void RTAPI::runEGR()
+{
+  Monitor monitor;
+  LOG_INST.info(Loc::current(), "Starting...");
+
+  PinAccessor::initInst();
+  PA_INST.access();
+  PinAccessor::destroyInst();
+
+  SupplyAnalyzer::initInst();
+  SA_INST.analyze();
+  SupplyAnalyzer::destroyInst();
+
+  InitialRouter::initInst();
+  IR_INST.route();
+  InitialRouter::destroyInst();
+
+  LOG_INST.info(Loc::current(), "Completed", monitor.getStatsInfo());
+}
+
 void RTAPI::runRT()
 {
+  Monitor monitor;
+  LOG_INST.info(Loc::current(), "Starting...");
+
   PinAccessor::initInst();
   PA_INST.access();
   PinAccessor::destroyInst();
@@ -100,6 +123,8 @@ void RTAPI::runRT()
   DetailedRouter::initInst();
   DR_INST.route();
   DetailedRouter::destroyInst();
+
+  LOG_INST.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
 void RTAPI::destroyRT()
