@@ -811,30 +811,30 @@ json FeatureParser::buildSummaryRT()
   }
   summary_rt["IR"] = rt_ir;
 
-  // GR
-  auto& gr_sum = rt_sum.get_gr_summary();
-  json rt_gr;
-  // 和ir一样
-  for (auto demand : gr_sum.getDemand().routing_demand_map) {
-    rt_gr["routing_demand_map"][std::to_string(demand.first)] = demand.second;
-  }
-  rt_gr["routing_demand_map"]["total_demand"] = gr_sum.getDemand().total_demand;
-  for (auto routing_overflow : gr_sum.getOverflow().routing_overflow_map) {
-    rt_gr["routing_overflow_map"][std::to_string(routing_overflow.first)] = routing_overflow.second;
-  }
-  rt_gr["routing_overflow_map"]["total_overflow"] = gr_sum.getOverflow().total_overflow;
-  for (auto routing_wire_length : gr_sum.getWireLength().routing_wire_length_map) {
-    rt_gr["routing_wire_length_map"][std::to_string(routing_wire_length.first)] = routing_wire_length.second;
-  }
-  rt_gr["routing_wire_length_map"]["total_wire_length"] = gr_sum.getWireLength().total_wire_length;
-  for (auto cut_via_num : gr_sum.getCutViaNum().cut_via_num_map) {
-    rt_gr["routing_cut_via_num_map"][std::to_string(cut_via_num.first)] = cut_via_num.second;
-  }
-  rt_gr["routing_cut_via_num_map"]["total_cut_via_num"] = gr_sum.getCutViaNum().total_via_num;
-  for (auto timing : gr_sum.getTiming().timing) {
-    rt_gr["routing_timing_map"][timing.first] = timing.second;
-  }
-  summary_rt["GR"] = rt_gr;
+  // // GR
+  // auto& gr_sum = rt_sum.get_gr_summary();
+  // json rt_gr;
+  // // 和ir一样
+  // for (auto demand : gr_sum.getDemand().routing_demand_map) {
+  //   rt_gr["routing_demand_map"][std::to_string(demand.first)] = demand.second;
+  // }
+  // rt_gr["routing_demand_map"]["total_demand"] = gr_sum.getDemand().total_demand;
+  // for (auto routing_overflow : gr_sum.getOverflow().routing_overflow_map) {
+  //   rt_gr["routing_overflow_map"][std::to_string(routing_overflow.first)] = routing_overflow.second;
+  // }
+  // rt_gr["routing_overflow_map"]["total_overflow"] = gr_sum.getOverflow().total_overflow;
+  // for (auto routing_wire_length : gr_sum.getWireLength().routing_wire_length_map) {
+  //   rt_gr["routing_wire_length_map"][std::to_string(routing_wire_length.first)] = routing_wire_length.second;
+  // }
+  // rt_gr["routing_wire_length_map"]["total_wire_length"] = gr_sum.getWireLength().total_wire_length;
+  // for (auto cut_via_num : gr_sum.getCutViaNum().cut_via_num_map) {
+  //   rt_gr["routing_cut_via_num_map"][std::to_string(cut_via_num.first)] = cut_via_num.second;
+  // }
+  // rt_gr["routing_cut_via_num_map"]["total_cut_via_num"] = gr_sum.getCutViaNum().total_via_num;
+  // for (auto timing : gr_sum.getTiming().timing) {
+  //   rt_gr["routing_timing_map"][timing.first] = timing.second;
+  // }
+  // summary_rt["GR"] = rt_gr;
 
   // TA
   auto& ta_sum = rt_sum.get_ta_summary();

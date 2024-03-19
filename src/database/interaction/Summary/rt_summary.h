@@ -93,18 +93,12 @@ class PASummary
   {
     access_point_num.routing_access_point_num_map = std::move(routing_access_point_num_map);
   }
-  void setRoutingAccessPointNumMap(const int32_t key, const int32_t value)
-  {
-    access_point_num.routing_access_point_num_map[key] = value;
-  }
+  void setRoutingAccessPointNumMap(const int32_t key, const int32_t value) { access_point_num.routing_access_point_num_map[key] = value; }
   void setTypeAccessPointNumMap(std::map<std::string, int32_t>&& type_access_point_num_map)
   {
     access_point_num.type_access_point_num_map = std::move(type_access_point_num_map);
   }
-  void setTypeAccessPointNumMap(const std::string key, const int32_t value)
-  {
-    access_point_num.type_access_point_num_map[key] = value;
-  }
+  void setTypeAccessPointNumMap(const std::string key, const int32_t value) { access_point_num.type_access_point_num_map[key] = value; }
   void setTotalAccessPointNum(int32_t num) { access_point_num.total_access_point_num = num; }
 };
 
@@ -120,14 +114,8 @@ class SASummary
   routing_supply_map& getSupply() { return supply; }
   // setter
   void setSupply(routing_supply_map&& supply) { this->supply = std::move(supply); }
-  void setRoutingSupplyMap(std::map<int32_t, int32_t>&& routing_supply_map)
-  {
-    supply.routing_supply_map = std::move(routing_supply_map);
-  }
-  void setRoutingSupplyMap(const int32_t key, const int32_t value)
-  {
-    supply.routing_supply_map[key] = value;
-  }
+  void setRoutingSupplyMap(std::map<int32_t, int32_t>&& routing_supply_map) { supply.routing_supply_map = std::move(routing_supply_map); }
+  void setRoutingSupplyMap(const int32_t key, const int32_t value) { supply.routing_supply_map[key] = value; }
   void setTotalSupply(int32_t num) { supply.total_supply = num; }
 };
 
@@ -151,14 +139,8 @@ class IRSummary
   timing_map& getTiming() { return timing; }
   // setter
   void setDemand(demand_map&& demand) { this->demand = std::move(demand); }
-  void setRoutingDemandMap(std::map<int32_t, int32_t>&& routing_demand_map)
-  {
-    demand.routing_demand_map = std::move(routing_demand_map);
-  }
-  void setRoutingDemandMap(const int32_t key, const int32_t value)
-  {
-    demand.routing_demand_map[key] = value;
-  }
+  void setRoutingDemandMap(std::map<int32_t, int32_t>&& routing_demand_map) { demand.routing_demand_map = std::move(routing_demand_map); }
+  void setRoutingDemandMap(const int32_t key, const int32_t value) { demand.routing_demand_map[key] = value; }
   void setRoutingDemandNum(int32_t num) { demand.total_demand = num; }
 
   void setOverflow(overflow_map&& overflow) { this->overflow = std::move(overflow); }
@@ -166,10 +148,7 @@ class IRSummary
   {
     overflow.routing_overflow_map = std::move(routing_overflow_map);
   }
-  void setRoutingOverflowMap(const int32_t key, const int32_t value)
-  {
-    overflow.routing_overflow_map[key] = value;
-  }
+  void setRoutingOverflowMap(const int32_t key, const int32_t value) { overflow.routing_overflow_map[key] = value; }
   void setRoutingOverflowNum(int32_t num) { overflow.total_overflow = num; }
 
   void setWireLength(wire_length_map&& wire_length) { this->wire_length = std::move(wire_length); }
@@ -177,21 +156,12 @@ class IRSummary
   {
     wire_length.routing_wire_length_map = std::move(routing_wire_length_map);
   }
-  void setRoutingWireLengthMap(const int32_t key, const double value)
-  {
-    wire_length.routing_wire_length_map[key] = value;
-  }
+  void setRoutingWireLengthMap(const int32_t key, const double value) { wire_length.routing_wire_length_map[key] = value; }
   void setRoutingWireLengthNum(int32_t num) { wire_length.total_wire_length = num; }
 
   void setCutViaNum(cut_via_num_map&& via_num) { this->cut_via_num = std::move(via_num); }
-  void setCutViaNumMap(std::map<int32_t, int32_t>&& cut_via_num_map)
-  {
-    cut_via_num.cut_via_num_map = std::move(cut_via_num_map);
-  }
-  void setCutViaNumMap(const int32_t key, const int32_t value)
-  {
-    cut_via_num.cut_via_num_map[key] = value;
-  }
+  void setCutViaNumMap(std::map<int32_t, int32_t>&& cut_via_num_map) { cut_via_num.cut_via_num_map = std::move(cut_via_num_map); }
+  void setCutViaNumMap(const int32_t key, const int32_t value) { cut_via_num.cut_via_num_map[key] = value; }
   void setCutViaNumNum(int32_t num) { cut_via_num.total_via_num = num; }
 
   void setTiming(timing_map&& timing) { this->timing = std::move(timing); }
@@ -219,14 +189,8 @@ class GRSummary
   timing_map& getTiming() { return timing; }
   // setter
   void setDemand(demand_map&& demand) { this->demand = std::move(demand); }
-  void setRoutingDemandMap(std::map<int32_t, int32_t>&& routing_demand_map)
-  {
-    demand.routing_demand_map = std::move(routing_demand_map);
-  }
-  void setRoutingDemandMap(const int32_t key, const int32_t value)
-  {
-    demand.routing_demand_map[key] = value;
-  }
+  void setRoutingDemandMap(std::map<int32_t, int32_t>&& routing_demand_map) { demand.routing_demand_map = std::move(routing_demand_map); }
+  void setRoutingDemandMap(const int32_t key, const int32_t value) { demand.routing_demand_map[key] = value; }
   void setRoutingDemandNum(int32_t num) { demand.total_demand = num; }
 
   void setOverflow(overflow_map&& overflow) { this->overflow = std::move(overflow); }
@@ -234,10 +198,7 @@ class GRSummary
   {
     overflow.routing_overflow_map = std::move(routing_overflow_map);
   }
-  void setRoutingOverflowMap(const int32_t key, const int32_t value)
-  {
-    overflow.routing_overflow_map[key] = value;
-  }
+  void setRoutingOverflowMap(const int32_t key, const int32_t value) { overflow.routing_overflow_map[key] = value; }
   void setRoutingOverflowNum(int32_t num) { overflow.total_overflow = num; }
 
   void setWireLength(wire_length_map&& wire_length) { this->wire_length = std::move(wire_length); }
@@ -245,21 +206,12 @@ class GRSummary
   {
     wire_length.routing_wire_length_map = std::move(routing_wire_length_map);
   }
-  void setRoutingWireLengthMap(const int32_t key, const double value)
-  {
-    wire_length.routing_wire_length_map[key] = value;
-  }
+  void setRoutingWireLengthMap(const int32_t key, const double value) { wire_length.routing_wire_length_map[key] = value; }
   void setRoutingWireLengthNum(int32_t num) { wire_length.total_wire_length = num; }
 
   void setCutViaNum(cut_via_num_map&& via_num) { this->cut_via_num = std::move(via_num); }
-  void setCutViaNumMap(std::map<int32_t, int32_t>&& cut_via_num_map)
-  {
-    cut_via_num.cut_via_num_map = std::move(cut_via_num_map);
-  }
-  void setCutViaNumMap(const int32_t key, const int32_t value)
-  {
-    cut_via_num.cut_via_num_map[key] = value;
-  }
+  void setCutViaNumMap(std::map<int32_t, int32_t>&& cut_via_num_map) { cut_via_num.cut_via_num_map = std::move(cut_via_num_map); }
+  void setCutViaNumMap(const int32_t key, const int32_t value) { cut_via_num.cut_via_num_map[key] = value; }
   void setCutViaNumNum(int32_t num) { cut_via_num.total_via_num = num; }
 
   void setTiming(timing_map&& timing) { this->timing = std::move(timing); }
@@ -285,10 +237,7 @@ class TASummary
   {
     wire_length.routing_wire_length_map = std::move(routing_wire_length_map);
   }
-  void setRoutingWireLengthMap(const int32_t key, const double value)
-  {
-    wire_length.routing_wire_length_map[key] = value;
-  }
+  void setRoutingWireLengthMap(const int32_t key, const double value) { wire_length.routing_wire_length_map[key] = value; }
   void setRoutingWireLengthNum(int32_t num) { wire_length.total_wire_length = num; }
 
   void setViolationNum(violation_num_map&& violation_num) { this->violation_num = std::move(violation_num); }
@@ -296,11 +245,8 @@ class TASummary
   {
     violation_num.routing_violation_num_map = std::move(routing_violation_num_map);
   }
-  void setRoutingViolationNumMap(const int32_t key, const int32_t value)
-  {
-    violation_num.routing_violation_num_map[key] = value;
-  }
-  void setRoutingViolationNumNum(int32_t num) { violation_num.total_violation_num = num;}
+  void setRoutingViolationNumMap(const int32_t key, const int32_t value) { violation_num.routing_violation_num_map[key] = value; }
+  void setRoutingViolationNumNum(int32_t num) { violation_num.total_violation_num = num; }
 };
 
 // DR
@@ -327,21 +273,12 @@ class DRSummary
   {
     wire_length.routing_wire_length_map = std::move(routing_wire_length_map);
   }
-  void setRoutingWireLengthMap(const int32_t key, const double value)
-  {
-    wire_length.routing_wire_length_map[key] = value;
-  }
+  void setRoutingWireLengthMap(const int32_t key, const double value) { wire_length.routing_wire_length_map[key] = value; }
   void setRoutingWireLengthNum(int32_t num) { wire_length.total_wire_length = num; }
 
   void setCutViaNum(cut_via_num_map&& cut_via_num) { this->cut_via_num = std::move(cut_via_num); }
-  void setCutViaNumMap(std::map<int32_t, int32_t>&& cut_via_num_map)
-  {
-    cut_via_num.cut_via_num_map = std::move(cut_via_num_map);
-  }
-  void setCutViaNumMap(const int32_t key, const int32_t value)
-  {
-    cut_via_num.cut_via_num_map[key] = value;
-  }
+  void setCutViaNumMap(std::map<int32_t, int32_t>&& cut_via_num_map) { cut_via_num.cut_via_num_map = std::move(cut_via_num_map); }
+  void setCutViaNumMap(const int32_t key, const int32_t value) { cut_via_num.cut_via_num_map[key] = value; }
   void setCutViaNumNum(int32_t num) { cut_via_num.total_via_num = num; }
 
   void setViolationNum(violation_num_map&& violation_num) { this->violation_num = std::move(violation_num); }
@@ -349,10 +286,7 @@ class DRSummary
   {
     violation_num.routing_violation_num_map = std::move(routing_violation_num_map);
   }
-  void setRoutingViolationNumMap(const int32_t key, const int32_t value)
-  {
-    violation_num.routing_violation_num_map[key] = value;
-  }
+  void setRoutingViolationNumMap(const int32_t key, const int32_t value) { violation_num.routing_violation_num_map[key] = value; }
   void setRoutingViolationNumNum(int32_t num) { violation_num.total_violation_num = num; }
 
   void setPatchNum(patch_num_map&& patch_num) { this->patch_num = std::move(patch_num); }
@@ -360,10 +294,7 @@ class DRSummary
   {
     patch_num.routing_patch_num_map = std::move(routing_patch_num_map);
   }
-  void setRoutingPatchNumMap(const int32_t key, const int32_t value)
-  {
-    patch_num.routing_patch_num_map[key] = value;
-  }
+  void setRoutingPatchNumMap(const int32_t key, const int32_t value) { patch_num.routing_patch_num_map[key] = value; }
   void setRoutingPatchNumNum(int32_t num) { patch_num.total_patch_num = num; }
 
   void setTiming(timing_map&& timing) { this->timing = std::move(timing); }
@@ -378,7 +309,7 @@ class RTSummary
   PASummary pa_summary;
   SASummary sa_summary;
   IRSummary ir_summary;
-  GRSummary gr_summary;
+  std::map<int32_t, GRSummary> iter_gr_summary_map;
   TASummary ta_summary;
   DRSummary dr_summary;
   std::map<int32_t, DRSummary> iter_dr_summary_map;
@@ -389,7 +320,7 @@ class RTSummary
   PASummary& get_pa_summary() { return pa_summary; }
   SASummary& get_sa_summary() { return sa_summary; }
   IRSummary& get_ir_summary() { return ir_summary; }
-  GRSummary& get_gr_summary() { return gr_summary; }
+  std::map<int32_t, GRSummary>& get_iter_gr_summary_map() { return iter_gr_summary_map; }
   TASummary& get_ta_summary() { return ta_summary; }
   DRSummary& get_dr_summary() { return dr_summary; }
   std::map<int32_t, DRSummary>& get_iter_dr_summary_map() { return iter_dr_summary_map; }
@@ -397,7 +328,8 @@ class RTSummary
   void setPASummary(const PASummary& pa_summary) { this->pa_summary = pa_summary; }
   void setSASummary(const SASummary& sa_summary) { this->sa_summary = sa_summary; }
   void setIRSummary(const IRSummary& ir_summary) { this->ir_summary = ir_summary; }
-  void setGRSummary(const GRSummary& gr_summary) { this->gr_summary = gr_summary; }
+  void setIterGRSummaryMap(const std::map<int32_t, GRSummary>& iter_gr_summary_map) { this->iter_gr_summary_map = iter_gr_summary_map; }
+  void setIterGRSummaryMap(const int32_t key, const GRSummary value) { iter_gr_summary_map[key] = value; }
   void setTASummary(const TASummary& ta_summary) { this->ta_summary = ta_summary; }
   void setDRSummary(const DRSummary& dr_summary) { this->dr_summary = dr_summary; }
   void setIterDRSummaryMap(const std::map<int32_t, DRSummary>& iter_dr_summary_map) { this->iter_dr_summary_map = iter_dr_summary_map; }

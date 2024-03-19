@@ -500,7 +500,7 @@ void RTAPI::outputSummary()
   // PA
   auto& top_pa_summary = top_rt_summary.get_pa_summary();
   top_pa_summary.setRoutingAccessPointNumMap(std::move(rt_summary.pa_summary.routing_access_point_num_map));
-  for(auto type_access_point_num : rt_summary.pa_summary.type_access_point_num_map){
+  for (auto type_access_point_num : rt_summary.pa_summary.type_access_point_num_map) {
     top_pa_summary.setTypeAccessPointNumMap(GetAccessPointTypeName()(type_access_point_num.first), type_access_point_num.second);
   }
   top_pa_summary.setTotalAccessPointNum(rt_summary.pa_summary.total_access_point_num);
@@ -523,16 +523,19 @@ void RTAPI::outputSummary()
   top_ir_summary.setTimingMap(std::move(rt_summary.ir_summary.timing));
 
   // GR
-  auto& top_gr_summary = top_rt_summary.get_gr_summary();
-  top_gr_summary.setRoutingDemandMap(std::move(rt_summary.gr_summary.routing_demand_map));
-  top_gr_summary.setRoutingDemandNum(rt_summary.gr_summary.total_demand);
-  top_gr_summary.setRoutingOverflowMap(std::move(rt_summary.gr_summary.routing_overflow_map));
-  top_gr_summary.setRoutingOverflowNum(rt_summary.gr_summary.total_overflow);
-  top_gr_summary.setRoutingWireLengthMap(std::move(rt_summary.gr_summary.routing_wire_length_map));
-  top_gr_summary.setRoutingWireLengthNum(rt_summary.gr_summary.total_wire_length);
-  top_gr_summary.setCutViaNumMap(std::move(rt_summary.gr_summary.cut_via_num_map));
-  top_gr_summary.setCutViaNumNum(rt_summary.gr_summary.total_via_num);
-  top_gr_summary.setTimingMap(std::move(rt_summary.gr_summary.timing));
+  for (auto gr_summary : rt_summary.iter_gr_summary_map) {
+    idb::GRSummary top_gr_summary;
+    top_gr_summary.setRoutingDemandMap(std::move(gr_summary.second.routing_demand_map));
+    top_gr_summary.setRoutingDemandNum(gr_summary.second.total_demand);
+    top_gr_summary.setRoutingOverflowMap(std::move(gr_summary.second.routing_overflow_map));
+    top_gr_summary.setRoutingOverflowNum(gr_summary.second.total_overflow);
+    top_gr_summary.setRoutingWireLengthMap(std::move(gr_summary.second.routing_wire_length_map));
+    top_gr_summary.setRoutingWireLengthNum(gr_summary.second.total_wire_length);
+    top_gr_summary.setCutViaNumMap(std::move(gr_summary.second.cut_via_num_map));
+    top_gr_summary.setCutViaNumNum(gr_summary.second.total_via_num);
+    top_gr_summary.setTimingMap(std::move(gr_summary.second.timing));
+    top_rt_summary.setIterGRSummaryMap(gr_summary.first, top_gr_summary);
+  }
 
   // TA
   auto& top_ta_summary = top_rt_summary.get_ta_summary();
@@ -542,7 +545,7 @@ void RTAPI::outputSummary()
   top_ta_summary.setRoutingViolationNumNum(rt_summary.ta_summary.total_violation_num);
 
   // DR
-  for(auto dr_summary : rt_summary.iter_dr_summary_map){
+  for (auto dr_summary : rt_summary.iter_dr_summary_map) {
     idb::DRSummary top_dr_summary;
     top_dr_summary.setRoutingWireLengthMap(std::move(dr_summary.second.routing_wire_length_map));
     top_dr_summary.setRoutingWireLengthNum(dr_summary.second.total_wire_length);
