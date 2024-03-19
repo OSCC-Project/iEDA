@@ -71,7 +71,7 @@ void RTAPI::initRT(std::map<std::string, std::any> config_map)
   // clang-format on
   LOG_INST.printLogFilePath();
   DataManager::initInst();
-  DM_INST.input(config_map, dmInst->get_idb_builder());
+  DM_INST.prepare(config_map, dmInst->get_idb_builder());
   GDSPlotter::initInst();
 }
 
@@ -105,7 +105,7 @@ void RTAPI::runRT()
 void RTAPI::destroyRT()
 {
   GDSPlotter::destroyInst();
-  DM_INST.output();
+  DM_INST.clean();
   DataManager::destroyInst();
   LOG_INST.printLogFilePath();
   // clang-format off
@@ -194,13 +194,13 @@ void RTAPI::clearDef()
   //////////////////////////////////////////
 }
 
-eval::TileGrid* RTAPI::getCongestonMap(std::map<std::string, std::any> config_map, double& wirelength)
+eval::TileGrid* RTAPI::getCongestionMap(std::map<std::string, std::any> config_map, double& wire_length)
 {
   Monitor egr_monitor;
 
   EarlyGlobalRouter::initInst(config_map, dmInst->get_idb_builder());
   EGR_INST.route();
-  wirelength = EGR_INST.getDataManager().getEGRStat().get_total_wire_length();
+  wire_length = EGR_INST.getDataManager().getEGRStat().get_total_wire_length();
 
   eval::TileGrid* eval_tile_grid = new eval::TileGrid();
   int32_t cell_width = EGR_INST.getDataManager().getConfig().cell_width;
@@ -214,8 +214,8 @@ eval::TileGrid* RTAPI::getCongestonMap(std::map<std::string, std::any> config_ma
   }
 
   // init eval_tile_grid
-  eval_tile_grid->set_lx(die.get_real_lb_x());
-  eval_tile_grid->set_ly(die.get_real_lb_y());
+  eval_tile_grid->set_lx(die.get_real_ll_x());
+  eval_tile_grid->set_ly(die.get_real_ll_y());
   eval_tile_grid->set_tileCnt(die.getXSize(), die.getYSize());
   eval_tile_grid->set_tileSize(cell_width, cell_height);
   eval_tile_grid->set_num_routing_layers(static_cast<int>(layer_resource_map.size()));  // single layer
@@ -227,7 +227,7 @@ eval::TileGrid* RTAPI::getCongestonMap(std::map<std::string, std::any> config_ma
     for (int x = 0; x < resource_map.get_x_size(); x++) {
       for (int y = 0; y < resource_map.get_y_size(); y++) {
         EGRNode& egr_node = resource_map[x][y];
-        eval::Tile* tile = new eval::Tile(x, y, egr_node.get_lb_x(), egr_node.get_lb_y(), egr_node.get_rt_x(), egr_node.get_rt_y(),
+        eval::Tile* tile = new eval::Tile(x, y, egr_node.get_ll_x(), egr_node.get_ll_y(), egr_node.get_ur_x(), egr_node.get_ur_y(),
                                           static_cast<int32_t>(layer_idx));
         tile->set_direction(routing_layer_list[layer_idx].get_prefer_direction() == Direction::kHorizontal);
 
@@ -271,7 +271,7 @@ std::vector<Violation> RTAPI::getViolationList(std::vector<idb::IdbLayerShape*>&
                                                std::map<int32_t, std::vector<idb::IdbRegularWireSegment*>>& net_wire_via_map)
 {
   /**
-   * env_shape_list 存储 blockage obs pin_shape
+   * env_shape_list 存储 obstacle obs pin_shape
    * net_idb_segment_map 存储 wire via patch
    */
   ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
@@ -291,8 +291,8 @@ std::vector<Violation> RTAPI::getViolationList(std::vector<idb::IdbLayerShape*>&
       EXTLayerRect ext_layer_rect;
       if (idrc_violation->is_rect()) {
         idrc::DrcViolationRect* idrc_violation_rect = static_cast<idrc::DrcViolationRect*>(idrc_violation);
-        ext_layer_rect.set_real_lb(idrc_violation_rect->get_llx(), idrc_violation_rect->get_lly());
-        ext_layer_rect.set_real_rt(idrc_violation_rect->get_urx(), idrc_violation_rect->get_ury());
+        ext_layer_rect.set_real_ll(idrc_violation_rect->get_llx(), idrc_violation_rect->get_lly());
+        ext_layer_rect.set_real_ur(idrc_violation_rect->get_urx(), idrc_violation_rect->get_ury());
       } else {
         LOG_INST.error(Loc::current(), "Type not supported!");
       }
@@ -397,11 +397,11 @@ std::map<std::string, std::vector<double>> RTAPI::getTiming(
   timing_engine->buildGraph();
   timing_engine->initRcTree();
 
-  ista::Netlist* sta_netlist = timing_engine->get_netlist();
+  ista::Netlist* sta_net_list = timing_engine->get_netlist();
   for (auto& [net_idx, coord_real_pin_map] : net_coord_real_pin_map) {
     std::vector<Segment<LayerCoord>>& routing_segment_list = net_routing_segment_map[net_idx];
     // 构建RC-tree
-    ista::Net* ista_net = sta_netlist->findNet(RTUtil::escapeBackslash(net_list[net_idx].get_net_name()).c_str());
+    ista::Net* ista_net = sta_net_list->findNet(RTUtil::escapeBackslash(net_list[net_idx].get_net_name()).c_str());
     for (Segment<RCPin>& segment : getRCSegmentList(coord_real_pin_map, routing_segment_list)) {
       RCPin& first_rc_pin = segment.get_first();
       RCPin& second_rc_pin = segment.get_second();
@@ -418,15 +418,15 @@ std::map<std::string, std::vector<double>> RTAPI::getTiming(
                   ->getResistance(first_rc_pin._coord.get_layer_idx() + 1, distance / 1.0 / unit, width);
       }
 
-      auto getRctNode = [timing_engine, sta_netlist, ista_net](RCPin& rc_pin) {
+      auto getRctNode = [timing_engine, sta_net_list, ista_net](RCPin& rc_pin) {
         ista::RctNode* rct_node = nullptr;
         if (rc_pin._is_real_pin) {
           ista::DesignObject* pin_port = nullptr;
-          auto pin_port_list = sta_netlist->findPin(rc_pin._pin_name.c_str(), false, false);
+          auto pin_port_list = sta_net_list->findPin(rc_pin._pin_name.c_str(), false, false);
           if (!pin_port_list.empty()) {
             pin_port = pin_port_list.front();
           } else {
-            pin_port = sta_netlist->findPort(rc_pin._pin_name.c_str());
+            pin_port = sta_net_list->findPort(rc_pin._pin_name.c_str());
           }
           rct_node = timing_engine->makeOrFindRCTreeNode(pin_port);
         } else {
@@ -463,6 +463,7 @@ std::map<std::string, std::vector<double>> RTAPI::getTiming(
 
 void RTAPI::outputDef(std::string output_def_file_path)
 {
+  DM_INST.outputToIDB();
   dmInst->saveDef(output_def_file_path);
 }
 

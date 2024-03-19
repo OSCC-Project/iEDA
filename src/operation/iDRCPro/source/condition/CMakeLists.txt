@@ -1,35 +1,17 @@
-add_subdirectory(condition_matrix)
-add_subdirectory(condition_area)
-add_subdirectory(condition_spacing)
-add_subdirectory(condition_connectivity)
-add_subdirectory(condition_step)
-add_subdirectory(condition_eol)
-add_subdirectory(condition_notch)
-add_subdirectory(condition_spacing_table)
-add_subdirectory(condition_jog)
-
 add_library(idrc_condition_manager
-    condition_manager.cpp
-    condition_builder.cpp
-    condition_builder_routing.cpp
+  condition_manager.cpp
+  condition_min_spacing.cpp
+  condition_overlap.cpp
+  condition_wire_width.cpp
+  condition_polygon.cpp
 )
 
 target_link_libraries(idrc_condition_manager
     PUBLIC
-    idrc_pro_engine
-    idrc_pro_rule_stratagy
-    idrc_rule_condition_matrix
-    idrc_rule_condition_area
-    idrc_rule_condition_connectivity
-    idrc_rule_condition_spacing
-    idrc_rule_condition_step
-    idrc_rule_condition_eol
-    idrc_rule_condition_notch
-    idrc_rule_condition_spacing_table
-    idrc_rule_condition_jog
-    idrc_pro_tech_rules
-    idrc_pro_violation
     idrc_pro_util
+    idrc_pro_violation
+    idrc_pro_tech_rules
+    idrc_engine_manager
 )
 
 target_include_directories(idrc_condition_manager
@@ -37,10 +19,10 @@ target_include_directories(idrc_condition_manager
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
-if(DEBUG_IDRC_CONDITION_BUILDER)
-  message(STATUS "iDRC: DEBUG_IDRC_CONDITION_BUILDER")
+if(DEBUG_IDRC_CONDITION)
+  message(STATUS "iDRC: DEBUG_IDRC_CONDITION")
   set(CMAKE_BUILD_TYPE "Debug")
 else()
-  message(STATUS "iDRC: RELEASE_IDRC_CONDITION_BUILDER")
+  message(STATUS "iDRC: RELEASE_IDRC_CONDITION")
   set(CMAKE_BUILD_TYPE "Release")
 endif()

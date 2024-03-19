@@ -66,9 +66,8 @@ unsigned CmdVerilogToDef::exec() {
   TclOption* top_option = getOptionOrArg("-top");
   auto* top = top_option->getStringVal();
 
-  db_builder->buildVerilog(verilog_file, top);
-  // the below two lines is used to test idb verilog.
-  // db_builder->rustBuildVerilog(verilog_file, top);
+  // db_builder->buildVerilog(verilog_file, top);
+  db_builder->rustBuildVerilog(verilog_file, top);
 
   // set die area
   TclOption* die_area_option = getOptionOrArg("-die_area");

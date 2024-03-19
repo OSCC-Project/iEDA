@@ -53,9 +53,9 @@ class InitialRouter
   IRNet convertToIRNet(Net& net);
   void setIRParameter(IRModel& ir_model);
   void makeGridCoordList(IRModel& ir_model);
-  void initLayerNodeMap(IRModel& ir_model);
+  void buildLayerNodeMap(IRModel& ir_model);
   void buildIRNodeNeighbor(IRModel& ir_model);
-  void buildOrienSupply(IRModel& ir_model);
+  void buildOrientSupply(IRModel& ir_model);
   void sortIRModel(IRModel& ir_model);
   bool sortByMultiLevel(IRModel& ir_model, int32_t net_idx1, int32_t net_idx2);
   SortStatus sortByClockPriority(IRNet& net1, IRNet& net2);

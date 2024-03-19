@@ -17,12 +17,18 @@
 #pragma once
 
 #include <map>
+#include <set>
 #include <string>
 #include <vector>
 
 #include "DRCViolationType.h"
+#include "IdbLayer.h"
 #include "boost_definition.h"
+#include "idm.h"
+#include "idrc_dm.h"
+#include "idrc_region_query.h"
 #include "idrc_violation.h"
+#include "tech_rules.h"
 
 namespace idrc {
 // class DrcViolation;
@@ -30,10 +36,27 @@ namespace idrc {
 class DrcViolationManager
 {
  public:
-  DrcViolationManager();
+  DrcViolationManager(DrcDataManager* data_manager) : _data_manager(data_manager){};
   ~DrcViolationManager();
 
-  std::map<ViolationEnumType, std::vector<DrcViolation*>> get_violation_map() { return std::move(_violation_list); }
+  void get_net_id()
+  {
+    for (auto& [type, violation_list] : _violation_list) {
+      for (auto* violation : violation_list) {
+        auto* violation_rect = static_cast<DrcViolationRect*>(violation);
+        auto net_ids = _data_manager->get_region_query()->queryNetId(violation_rect->get_layer()->get_name(), violation_rect->get_llx(),
+                                                                     violation_rect->get_lly(), violation_rect->get_urx(),
+                                                                     violation_rect->get_ury());
+        violation_rect->set_net_ids(net_ids);
+      }
+    }
+  }
+
+  std::map<ViolationEnumType, std::vector<DrcViolation*>> get_violation_map()
+  {
+    get_net_id();
+    return std::move(_violation_list);
+  }
 
   std::vector<DrcViolation*>& get_violation_list(ViolationEnumType type)
   {
@@ -44,27 +67,17 @@ class DrcViolationManager
     return _violation_list[type];
   }
 
-  /// debug
-  std::vector<ieda_solver::GtlRect> get_boost_rects(idb::IdbLayer* layer)
+  void addViolation(int llx, int lly, int urx, int ury, ViolationEnumType type, std::set<int> net_id, std::string layer_name)
   {
-    std::vector<ieda_solver::GtlRect> boost_rects;
+    idb::IdbLayer* layer = DrcTechRuleInst->findLayer(layer_name);
 
-    for (auto& violation : _violation_list) {
-      for (auto& violation_shape : violation.second) {
-        if (violation_shape->get_layer() == layer) {
-          if (violation_shape->is_rect()) {
-            auto* rect = static_cast<DrcViolationRect*>(violation_shape);
-            ieda_solver::GtlRect boost_rect(rect->get_llx(), rect->get_lly(), rect->get_urx(), rect->get_ury());
-            boost_rects.emplace_back(boost_rect);
-          }
-        }
-      }
-    }
-
-    return boost_rects;
+    DrcViolationRect* violation_rect = new DrcViolationRect(layer, net_id, type, llx, lly, urx, ury);
+    auto& violation_list = get_violation_list(type);
+    violation_list.emplace_back(static_cast<DrcViolation*>(violation_rect));
   }
 
  private:
+  DrcDataManager* _data_manager = nullptr;
   std::map<ViolationEnumType, std::vector<DrcViolation*>> _violation_list;
 };
 

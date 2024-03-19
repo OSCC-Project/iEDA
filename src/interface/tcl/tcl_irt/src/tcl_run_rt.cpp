@@ -24,29 +24,17 @@
 
 namespace tcl {
 
-  TclRunRT::TclRunRT(const char* cmd_name) : TclCmd(cmd_name)
-  {
-    _config_list.push_back(std::make_pair("-flow", ValueType::kStringList));
-    TclUtil::addOption(this, _config_list);
+TclRunRT::TclRunRT(const char* cmd_name) : TclCmd(cmd_name)
+{
+}
+
+unsigned TclRunRT::exec()
+{
+  if (!check()) {
+    return 0;
   }
-
-  unsigned TclRunRT::exec()
-  {
-    if (!check()) {
-      return 0;
-    }
-
-    iplf::flowConfigInst->set_status_stage("iRT - Routing");
-    ieda::Stats stats;
-
-    std::map<std::string, std::any> config_map = TclUtil::getConfigMap(this, _config_list);
-
-    RTAPI_INST.runRT();
-
-    iplf::flowConfigInst->add_status_runtime(stats.elapsedRunTime());
-    iplf::flowConfigInst->set_status_memmory(stats.memoryDelta());
-
-    return 1;
-  }
+  RTAPI_INST.runRT();
+  return 1;
+}
 
 }  // namespace tcl

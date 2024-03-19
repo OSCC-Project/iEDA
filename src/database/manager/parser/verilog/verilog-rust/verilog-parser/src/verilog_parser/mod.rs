@@ -91,7 +91,7 @@ fn process_inner_port_declaration(
     }
 }
 
-fn process_port_declaration(
+fn process_port_or_wire_declaration(
     pair: Pair<Rule>,
 ) -> Result<Box<dyn verilog_data::VerilogVirtualBaseStmt>, pest::error::Error<Rule>> {
     let pair_clone = pair.clone();
@@ -109,6 +109,11 @@ fn process_port_declaration(
         Rule::inout_declaration => {
             let dcl_type = verilog_data::DclType::KInout;
             let verilog_dcls = process_inner_port_declaration(pair, dcl_type);
+            verilog_dcls
+        }
+        Rule::wire_declaration => {
+            let dcl_type = verilog_data::DclType::KWire;
+            let verilog_dcls = process_inner_wire_declaration(pair, dcl_type);
             verilog_dcls
         }
         _ => Err(pest::error::Error::new_from_span(
@@ -155,23 +160,6 @@ fn process_inner_wire_declaration(
             }
             let verilog_dcls = verilog_data::VerilogDcls::new(line_no, verilog_dcl_vec);
             Ok(Box::new(verilog_dcls) as Box<dyn verilog_data::VerilogVirtualBaseStmt>)
-        }
-        _ => Err(pest::error::Error::new_from_span(
-            pest::error::ErrorVariant::CustomError { message: "Unknown rule".into() },
-            pair_clone.as_span(),
-        )),
-    }
-}
-
-fn process_wire_declaration(
-    pair: Pair<Rule>,
-) -> Result<Box<dyn verilog_data::VerilogVirtualBaseStmt>, pest::error::Error<Rule>> {
-    let pair_clone = pair.clone();
-    match pair.as_rule() {
-        Rule::wire_declaration => {
-            let dcl_type = verilog_data::DclType::KWire;
-            let verilog_dcls = process_inner_wire_declaration(pair, dcl_type);
-            verilog_dcls
         }
         _ => Err(pest::error::Error::new_from_span(
             pest::error::ErrorVariant::CustomError { message: "Unknown rule".into() },
@@ -529,7 +517,7 @@ fn process_concat_net_expr(
     new_one_net_expr
 }
 
-fn flatten_module(
+fn flatten_the_module(
     cur_module: &Rc<RefCell<verilog_data::VerilogModule>>,
     parent_module: &Rc<RefCell<verilog_data::VerilogModule>>,
     inst_stmt: &verilog_data::VerilogInst,
@@ -555,7 +543,7 @@ fn flatten_module(
                         module_inst_stmt.get_inst_name()
                     );
 
-                    flatten_module(sub_module, cur_module, module_inst_stmt, module_map);
+                    flatten_the_module(sub_module, cur_module, module_inst_stmt, module_map);
 
                     let mut cur_module_mut = cur_module.borrow_mut();
 
@@ -646,13 +634,13 @@ fn flatten_module(
     }
 }
 
-pub fn parse_verilog_file(verilog_file_path: &str, top_module_name: &str) -> verilog_data::VerilogFile {
+pub fn parse_verilog_file(verilog_file_path: &str) -> verilog_data::VerilogFile {
     // Generate verilog.pest parser
     let input_str =
         std::fs::read_to_string(verilog_file_path).unwrap_or_else(|_| panic!("Can't read file: {}", verilog_file_path));
     let parse_result = VerilogParser::parse(Rule::verilog_file, input_str.as_str());
 
-    let mut verilog_file = verilog_data::VerilogFile::new(top_module_name);
+    let mut verilog_file = verilog_data::VerilogFile::new();
 
     match parse_result {
         Ok(pairs) => {
@@ -677,15 +665,9 @@ pub fn parse_verilog_file(verilog_file_path: &str, top_module_name: &str) -> ver
                                 port_list.push(port_id);
                             }
                         }
-                        Rule::port_block_declaration => {
+                        Rule::port_or_wire_block_declaration => {
                             for inner_inner_pair in inner_pair.into_inner() {
-                                let verilog_dcls = process_port_declaration(inner_inner_pair).unwrap();
-                                module_stmts.push(verilog_dcls);
-                            }
-                        }
-                        Rule::wire_block_declaration => {
-                            for inner_inner_pair in inner_pair.into_inner() {
-                                let verilog_dcls = process_wire_declaration(inner_inner_pair).unwrap();
+                                let verilog_dcls = process_port_or_wire_declaration(inner_inner_pair).unwrap();
                                 module_stmts.push(verilog_dcls);
                             }
                         }
@@ -713,6 +695,25 @@ pub fn parse_verilog_file(verilog_file_path: &str, top_module_name: &str) -> ver
         }
     }
 
+    verilog_file
+}
+
+#[no_mangle]
+pub extern "C" fn rust_parse_verilog(verilog_path: *const c_char) -> *mut c_void {
+    let c_str_verilog_path = unsafe { std::ffi::CStr::from_ptr(verilog_path) };
+    let r_str_verilog_path = c_str_verilog_path.to_string_lossy().into_owned();
+    println!("r str {}", r_str_verilog_path);
+
+    let verilog_file = parse_verilog_file(&r_str_verilog_path);
+
+    let verilog_file_pointer = Box::new(verilog_file);
+
+    let raw_pointer = Box::into_raw(verilog_file_pointer);
+    raw_pointer as *mut c_void
+}
+
+pub fn flatten_module(verilog_file: &mut verilog_data::VerilogFile, top_module_name: &str) {
+    verilog_file.set_top_module_name(top_module_name);
     let module_map = verilog_file.get_module_map();
     if module_map.len() > 1 {
         let the_module = module_map.get(top_module_name).unwrap();
@@ -739,7 +740,7 @@ pub fn parse_verilog_file(verilog_file_path: &str, top_module_name: &str) -> ver
                             module_inst_stmt.get_inst_name()
                         );
 
-                        flatten_module(sub_module, the_module, module_inst_stmt, module_map);
+                        flatten_the_module(sub_module, the_module, module_inst_stmt, module_map);
                         let mut the_module_mut = the_module.borrow_mut();
                         the_module_mut.erase_stmt(&stmt);
                         break;
@@ -753,30 +754,22 @@ pub fn parse_verilog_file(verilog_file_path: &str, top_module_name: &str) -> ver
 
         println!("flatten module {} end", top_module_name);
     }
-    verilog_file
 }
 
 #[no_mangle]
-pub extern "C" fn rust_parse_verilog(verilog_path: *const c_char, top_module_name: *const c_char) -> *mut c_void {
-    let c_str_verilog_path = unsafe { std::ffi::CStr::from_ptr(verilog_path) };
-    let r_str_verilog_path = c_str_verilog_path.to_string_lossy().into_owned();
-    println!("r str {}", r_str_verilog_path);
-
+pub extern "C" fn rust_flatten_module(c_verilog_file: *mut verilog_data::VerilogFile, top_module_name: *const c_char) {
     let c_str_top_module_name = unsafe { std::ffi::CStr::from_ptr(top_module_name) };
     let r_str_top_module_name = c_str_top_module_name.to_string_lossy().into_owned();
 
-    let mut verilog_file = parse_verilog_file(&r_str_verilog_path, &r_str_top_module_name);
-    let verilog_module_clone = (*verilog_file.get_top_module().borrow()).clone();
-    let verilog_modules_pointer = Box::new(verilog_module_clone);
+    let verilog_file = unsafe { &mut (*c_verilog_file) };
 
-    let raw_pointer = Box::into_raw(verilog_modules_pointer);
-    raw_pointer as *mut c_void
+    flatten_module(verilog_file, &r_str_top_module_name);
 }
 
 // To do
 #[no_mangle]
-pub extern "C" fn rust_free_verilog_module(c_verilog_module: *mut verilog_data::VerilogModule) {
-    let _: Box<verilog_data::VerilogModule> = unsafe { Box::from_raw(c_verilog_module) };
+pub extern "C" fn rust_free_verilog_file(c_verilog_file: *mut verilog_data::VerilogFile) {
+    let _: Box<verilog_data::VerilogFile> = unsafe { Box::from_raw(c_verilog_file) };
 }
 
 #[cfg(test)]
@@ -874,18 +867,19 @@ mod tests {
 
     #[test]
     fn test_parse_port_or_wire_id1() {
-        let input_str = "\\clk_cfg[6]";
+        let _input_str = "\\in_$002 [0]";
+        let input_str = "sky130_fd_sc_hs__nor2_1 _17_";
         let parse_result = VerilogParser::parse(Rule::port_or_wire_id, input_str);
-
+        println!("{:#?}", parse_result);
         print_parse_result(parse_result);
     }
 
     #[test]
     fn test_parse_input_declaration() {
-        let input_str = "input chiplink_rx_clk_pad;";
+        let input_str = r#"input chiplink_rx_clk_pad;"#;
         let parse_result = VerilogParser::parse(Rule::input_declaration, input_str);
 
-        print_parse_result(parse_result);
+        println!("{:#?}", parse_result);
     }
 
     #[test]
@@ -898,10 +892,13 @@ mod tests {
 
     #[test]
     fn test_parse_port_block_declaration() {
-        let input_str = r#"output [3:0] osc_25m_out_pad;
-        input osc_100m_in_pad;
-        output osc_100m_out_pad;"#;
-        let parse_result = VerilogParser::parse(Rule::port_block_declaration, input_str);
+        let input_str = r#"output [1:0] a_mux_sel;
+        output a_reg_en;
+        output b_mux_sel;
+        output b_reg_en;
+        input clk;
+      "#;
+        let parse_result = VerilogParser::parse(Rule::port_or_wire_block_declaration, input_str);
         println!("{:#?}", parse_result);
         print_parse_result(parse_result);
     }
@@ -924,7 +921,7 @@ mod tests {
         wire \u0_rcg/u0_pll_fbdiv_5_ ;
         wire \u0_rcg/u0_pll_postdiv2_1_ ;
         wire \u0_rcg/u0_pll_clk ;"#;
-        let parse_result = VerilogParser::parse(Rule::wire_block_declaration, input_str);
+        let parse_result = VerilogParser::parse(Rule::port_or_wire_block_declaration, input_str);
 
         print_parse_result(parse_result);
     }

@@ -16,12 +16,12 @@
 // ***************************************************************************************
 #pragma once
 
-#include "Blockage.hpp"
 #include "CutLayer.hpp"
 #include "Die.hpp"
 #include "GCell.hpp"
 #include "Helper.hpp"
 #include "Net.hpp"
+#include "Obstacle.hpp"
 #include "RoutingLayer.hpp"
 #include "Row.hpp"
 #include "ViaMaster.hpp"
@@ -41,8 +41,8 @@ class Database
   std::vector<RoutingLayer>& get_routing_layer_list() { return _routing_layer_list; }
   std::vector<CutLayer>& get_cut_layer_list() { return _cut_layer_list; }
   std::vector<std::vector<ViaMaster>>& get_layer_via_master_list() { return _layer_via_master_list; }
-  std::vector<Blockage>& get_routing_blockage_list() { return _routing_blockage_list; }
-  std::vector<Blockage>& get_cut_blockage_list() { return _cut_blockage_list; }
+  std::vector<Obstacle>& get_routing_obstacle_list() { return _routing_obstacle_list; }
+  std::vector<Obstacle>& get_cut_obstacle_list() { return _cut_obstacle_list; }
   std::vector<Net>& get_net_list() { return _net_list; }
   GridMap<GCell>& get_gcell_map() { return _gcell_map; }
   // setter
@@ -57,8 +57,8 @@ class Database
   std::vector<RoutingLayer> _routing_layer_list;
   std::vector<CutLayer> _cut_layer_list;
   std::vector<std::vector<ViaMaster>> _layer_via_master_list;
-  std::vector<Blockage> _routing_blockage_list;
-  std::vector<Blockage> _cut_blockage_list;
+  std::vector<Obstacle> _routing_obstacle_list;
+  std::vector<Obstacle> _cut_obstacle_list;
   std::vector<Net> _net_list;
   GridMap<GCell> _gcell_map;
 };

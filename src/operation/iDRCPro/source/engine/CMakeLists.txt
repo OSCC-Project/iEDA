@@ -1,6 +1,7 @@
 add_subdirectory(engine_manager)
 add_subdirectory(engine_init)
-add_subdirectory(scanline)
+add_subdirectory(engine_scanline)
+add_subdirectory(engine_check)
 
 file(GLOB_RECURSE DRC_ENGINE "*.cpp")
 
