@@ -16,6 +16,8 @@
 // ***************************************************************************************
 #pragma once
 
+#include <string>
+
 #include "idm.h"
 #include "tech_rule_layer.h"
 
@@ -33,21 +35,53 @@ class TechRules
     return _instance;
   }
 
+  static void init();
+
   static void destroyInst();
   void set_inited() { _b_inited = true; }
   bool hasInited() { return _b_inited; }
 
-  std::map<idb::IdbLayer*, ConditionRuleLayer*>& get_rule_routing_layers_map() { return _rule_routing_layers; }
-  std::map<idb::IdbLayer*, ConditionRuleLayer*>& get_rule_cut_layers_map() { return _rule_cut_layers; }
+  std::map<std::string, ConditionRuleLayer*>& get_rule_routing_layers_map() { return _rule_routing_layers; }
+  std::map<std::string, ConditionRuleLayer*>& get_rule_cut_layers_map() { return _rule_cut_layers; }
 
-  ConditionRuleLayer* get_rule_routing_layer(idb::IdbLayer* layer) { return _rule_routing_layers[layer]; }
-  ConditionRuleLayer* get_rule_cut_layer(idb::IdbLayer* layer) { return _rule_cut_layers[layer]; }
+  ConditionRuleLayer* get_rule_routing_layer(std::string layer_name) { return _rule_routing_layers[layer_name]; }
+  ConditionRuleLayer* get_rule_cut_layer(std::string layer_name) { return _rule_cut_layers[layer_name]; }
 
-  int getMinArea(idb::IdbLayer* layer);
-  std::vector<std::shared_ptr<idb::routinglayer::Lef58Area>>& getLef58AreaList(idb::IdbLayer* layer);
-  int getMinEnclosedArea(idb::IdbLayer* layer);
+  idb::IdbLayer* findLayer(std::string layer_name)
+  {
+    auto idb_design = dmInst->get_idb_design();
+    auto idb_layout = idb_design->get_layout();
+    return idb_layout->get_layers()->find_layer(layer_name);
+  }
 
-  int getMinSpacing(idb::IdbLayer* layer, int width = -1);
+  idb::IdbLayerRouting* findRoutingLayer(std::string layer_name)
+  {
+    auto layer = findLayer(layer_name);
+    return dynamic_cast<idb::IdbLayerRouting*>(layer);
+  }
+
+  bool isLayerRouting(std::string layer_name)
+  {
+    auto layer = findLayer(layer_name);
+    if (layer) {
+      return layer->is_routing();
+    }
+    return false;
+  }
+
+  int getDBU() { return dmInst->get_idb_design()->get_units()->get_micron_dbu(); }
+
+  int getMinArea(std::string layer_name);
+  std::vector<std::shared_ptr<idb::routinglayer::Lef58Area>> getLef58AreaList(std::string layer_name);
+  int getMinEnclosedArea(std::string layer_name);
+  int getMinSpacing(std::string layer_name, int width = 0);
+  std::shared_ptr<idb::routinglayer::Lef58SpacingTableJogToJog> getJogToJog(std::string layer_name);
+  std::shared_ptr<idb::IdbLayerSpacingTable> getSpacingTable(std::string layer_name);
+  std::vector<std::shared_ptr<idb::routinglayer::Lef58SpacingEol>> getSpacingEolList(std::string layer_name);
+  std::shared_ptr<routinglayer::Lef58CornerFillSpacing> getCornerFillSpacing(std::string layer_name);
+  std::shared_ptr<routinglayer::Lef58SpacingNotchlength> getSpacingNotchlength(std::string layer_name);
+  std::shared_ptr<IdbMinStep> getMinStep(std::string layer_name);
+  std::vector<std::shared_ptr<routinglayer::Lef58MinStep>> getLef58MinStep(std::string layer_name);
 
   ///
 
@@ -55,10 +89,10 @@ class TechRules
   static TechRules* _instance;
   bool _b_inited = false;
 
-  std::map<idb::IdbLayer*, ConditionRuleLayer*>
-      _rule_routing_layers;  /// int : routing layer id, ConditionRuleLayer : all rule map for one routing layer
-  std::map<idb::IdbLayer*, ConditionRuleLayer*>
-      _rule_cut_layers;  /// int : cut layer id, ConditionRuleLayer : all rule map for one cut layer
+  std::map<std::string, ConditionRuleLayer*>
+      _rule_routing_layers;  /// string : routing layer name, ConditionRuleLayer : all rule map for one routing layer
+  std::map<std::string, ConditionRuleLayer*>
+      _rule_cut_layers;  /// string : cut layer name, ConditionRuleLayer : all rule map for one cut layer
 
   TechRules() {}
   ~TechRules() = default;

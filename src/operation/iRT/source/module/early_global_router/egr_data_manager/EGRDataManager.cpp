@@ -503,13 +503,13 @@ void EGRDataManager::buildEGRStrategy()
 {
   std::string strategy = _egr_config.strategy;
   if (strategy == "gradual") {
-    _egr_config.egr_strategy = EGRStrategy::kGradul;
+    _egr_config.egr_strategy = EGRStrategy::kGradual;
   } else if (strategy == "topo") {
     _egr_config.egr_strategy = EGRStrategy::kTopo;
   } else {
-    _egr_config.egr_strategy = EGRStrategy::kGradul;
+    _egr_config.egr_strategy = EGRStrategy::kGradual;
     _egr_config.strategy = "gradual";
-    LOG_INST.info(Loc::current(), "Optional strategys are 'topo' and 'gradual', use default strategy:gradual");
+    LOG_INST.info(Loc::current(), "Optional strategies are 'topo' and 'gradual', use default strategy:gradual");
   }
 }
 

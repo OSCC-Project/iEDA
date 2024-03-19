@@ -14,7 +14,6 @@ target_link_libraries(idrc_pro_tech_rules
     PUBLIC
     idm
     idb
-    idrc_rule_condition_matrix
 
 )
 
@@ -22,3 +21,9 @@ target_include_directories(idrc_pro_tech_rules
     PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
+
+if(DEBUG_IDRC_RULE)
+  set(CMAKE_BUILD_TYPE "Debug")
+else()
+  set(CMAKE_BUILD_TYPE "Release")
+endif()

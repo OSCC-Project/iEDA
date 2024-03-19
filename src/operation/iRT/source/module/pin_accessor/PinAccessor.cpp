@@ -55,7 +55,7 @@ void PinAccessor::access()
   PAModel pa_model = initPAModel();
   initAccessPointList(pa_model);
   buildAccessPointList(pa_model);
-  updateToGcellMap(pa_model);
+  updateToGCellMap(pa_model);
   updateSummary(pa_model);
   printSummary(pa_model);
   writePinCSV(pa_model);
@@ -116,8 +116,8 @@ std::vector<LayerRect> PinAccessor::getLegalShapeList(int32_t net_idx, Pin* pin)
     layer_pin_shape_list[routing_shape.get_layer_idx()].emplace_back(routing_shape);
   }
   std::vector<LayerRect> legal_rect_list;
-  for (auto& [layer_idx, pin_shpae_list] : layer_pin_shape_list) {
-    std::vector<PlanarRect> planar_legal_rect_list = getPlanarLegalRectList(net_idx, pin_shpae_list);
+  for (auto& [layer_idx, pin_shape_list] : layer_pin_shape_list) {
+    std::vector<PlanarRect> planar_legal_rect_list = getPlanarLegalRectList(net_idx, pin_shape_list);
     // 对legal rect进行融合，prefer横就竖着切，prefer竖就横着切
     if (routing_layer_list[layer_idx].isPreferH()) {
       planar_legal_rect_list = RTUtil::mergeRectListByBoost(planar_legal_rect_list, Direction::kVertical);
@@ -379,7 +379,7 @@ void PinAccessor::buildAccessPointList(PAModel& pa_model)
   }
 }
 
-void PinAccessor::updateToGcellMap(PAModel& pa_model)
+void PinAccessor::updateToGCellMap(PAModel& pa_model)
 {
   std::vector<Net>& net_list = DM_INST.getDatabase().get_net_list();
 

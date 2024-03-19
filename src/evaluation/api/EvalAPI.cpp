@@ -329,7 +329,7 @@ vector<float> EvalAPI::evalGRCong()
   irt::RTAPI& rt_api = irt::RTAPI::getInst();
   std::map<std::string, std::any> config_map;
   double wirelength = 0.0;
-  TileGrid* tile_grid = rt_api.getCongestonMap(config_map, wirelength);
+  TileGrid* tile_grid = rt_api.getCongestionMap(config_map, wirelength);
   rt_api.destroyInst();
 
   _congestion_eval_inst->set_tile_grid(tile_grid);

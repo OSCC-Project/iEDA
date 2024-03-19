@@ -50,7 +50,7 @@ void DrcRuleBuilder::initRoutingLayerRules()
 
     /// create rule layer
     ConditionRuleLayer* rule_layer = new ConditionRuleLayer();
-    rule_routing_layers[idb_routing_layer] = rule_layer;
+    rule_routing_layers[idb_routing_layer->get_name()] = rule_layer;
 
     buildRoutingLayerArea(rule_layer, idb_routing_layer);
     buildRoutingLayerSpacing(rule_layer, idb_routing_layer);
@@ -114,72 +114,11 @@ void DrcRuleBuilder::buildRoutingLayerSpacing(ConditionRuleLayer* rule_layer, id
     }
   };
 
-  /// lef5.8 P474
-  /// parallel run length
-  /// keywords : SPACINGTABLE, PARALLELRUNLENGTH
-  auto build_spacing_parallel_run_length = [](idb::IdbLayerRouting* idb_routing_layer, RulesMapSpacing* rule_map) {
-    auto idb_table = idb_routing_layer->get_spacing_table();
-    if (idb_table == nullptr) {
-      return;
-    }
-
-    if (idb_table->is_parallel()) {
-      /// get prl table
-      auto idb_table_prl = idb_table->get_parallel();
-
-      auto& idb_width_list = idb_table_prl->get_width_list();
-      auto& prl_length_list = idb_table_prl->get_parallel_length_list();
-      auto& idb_spacing_array = idb_table_prl->get_spacing_table();
-      for (size_t i = 0; i < idb_spacing_array.size(); ++i) {
-        /// get width
-        int width = idb_width_list[i];
-
-        for (size_t j = 0; j < idb_spacing_array[i].size(); ++j) {
-          /// get prl
-          int prl_length = prl_length_list[j];
-
-          /// get spacing
-          int spacing = idb_spacing_array[i][j];
-
-          ConditionRuleSpacingPRL* spacing_prl = nullptr;
-          spacing_prl = new ConditionRuleSpacingPRL(RuleType::kSpacintPRLTable, spacing, width, prl_length);
-          rule_map->set_condition_rule(RuleType::kSpacintPRLTable, spacing, static_cast<ConditionRule*>(spacing_prl));
-        }
-      }
-    }
-  };
-
-  /// jog to jog
-  auto build_spacing_jogtojog = [](idb::IdbLayerRouting* idb_routing_layer, RulesMapSpacing* rule_map) {
-    auto idb_rule_jog = idb_routing_layer->get_lef58_spacingtable_jogtojog();
-    if (idb_rule_jog == nullptr) {
-      return;
-    }
-
-    for (auto& row : idb_rule_jog->get_width_list()) {
-      int within = row.get_par_within();
-
-      ConditionRuleJogToJog* rule_jog = new ConditionRuleJogToJog(RuleType::kSpacingJogToJog, within, idb_rule_jog.get());
-
-      for (auto& idb_width : idb_rule_jog->get_width_list()) {
-        rule_jog->addWidth(idb_width.get_width(), &idb_width);
-      }
-
-      rule_map->set_condition_rule(RuleType::kSpacingJogToJog, within, static_cast<ConditionRule*>(rule_jog));
-    }
-  };
-
   /// build rule map
   auto* rule_map = new RulesMapSpacing(RuleType::kSpacing);
 
   /// spacing range
   build_spacing_range(idb_routing_layer, rule_map);
-
-  /// spacing prl
-  build_spacing_parallel_run_length(idb_routing_layer, rule_map);
-
-  /// jog to jog
-  build_spacing_jogtojog(idb_routing_layer, rule_map);
 
   /// set rule map to layer
   rule_layer->set_condition(RuleType::kSpacing, static_cast<RulesConditionMap*>(rule_map));
@@ -202,10 +141,74 @@ void DrcRuleBuilder::buildRoutingLayerWidth(ConditionRuleLayer* rule_layer, idb:
     rule_map->set_default_rule(idb_routing_layer->get_width(), rule_width_default);
   };
 
+  /// lef5.8 P474
+  /// parallel run length
+  /// keywords : SPACINGTABLE, PARALLELRUNLENGTH
+  auto build_spacing_parallel_run_length = [](idb::IdbLayerRouting* idb_routing_layer, RulesMapWidth* rule_map) {
+    auto idb_table = idb_routing_layer->get_spacing_table();
+    if (idb_table == nullptr) {
+      return;
+    }
+
+    if (idb_table->is_parallel()) {
+      /// get prl table
+      auto idb_table_prl = idb_table->get_parallel();
+
+      auto& idb_width_list = idb_table_prl->get_width_list();
+      auto& prl_length_list = idb_table_prl->get_parallel_length_list();
+      auto& idb_spacing_array = idb_table_prl->get_spacing_table();
+      for (size_t i = 0; i < idb_spacing_array.size(); ++i) {
+        /// get width
+        int width = idb_width_list[i];
+
+        ConditionRuleSpacingPRL* spacing_prl = nullptr;
+        spacing_prl = new ConditionRuleSpacingPRL(RuleType::kWidthPRLTable, width);
+
+        for (size_t j = 0; j < idb_spacing_array[i].size(); ++j) {
+          /// get prl
+          int prl_length = prl_length_list[j];
+
+          /// get spacing
+          int spacing = idb_spacing_array[i][j];
+
+          spacing_prl->set_spacing(prl_length, spacing);
+        }
+
+        rule_map->set_condition_rule(RuleType::kWidthPRLTable, width, static_cast<ConditionRule*>(spacing_prl));
+      }
+    }
+  };
+
+  /// jog to jog
+  auto build_spacing_jogtojog = [](idb::IdbLayerRouting* idb_routing_layer, RulesMapWidth* rule_map) {
+    auto idb_rule_jog = idb_routing_layer->get_lef58_spacingtable_jogtojog();
+    if (idb_rule_jog == nullptr) {
+      return;
+    }
+
+    for (auto& row : idb_rule_jog->get_width_list()) {
+      int width = row.get_width();
+
+      ConditionRuleJogToJog* rule_jog = new ConditionRuleJogToJog(RuleType::kWidthJogToJog, width, idb_rule_jog.get());
+
+      for (auto& idb_width : idb_rule_jog->get_width_list()) {
+        rule_jog->addWidth(idb_width.get_width(), &idb_width);
+      }
+
+      rule_map->set_condition_rule(RuleType::kWidthJogToJog, width, static_cast<ConditionRule*>(rule_jog));
+    }
+  };
+
   auto* rule_map = new RulesMapWidth(RuleType::kWidth);
 
   /// default width
   build_routing_layer_width(idb_routing_layer, rule_map);
+
+  /// spacing prl
+  build_spacing_parallel_run_length(idb_routing_layer, rule_map);
+
+  /// jog to jog
+  build_spacing_jogtojog(idb_routing_layer, rule_map);
 
   /// set rule map to layer
   rule_layer->set_condition(RuleType::kWidth, static_cast<RulesConditionMap*>(rule_map));

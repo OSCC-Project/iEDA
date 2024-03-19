@@ -160,6 +160,18 @@ class CmdDRCSaveDetailFile : public TclCmd
   // private data
 };
 
+class CmdDRCDiagnosis : public TclCmd
+{
+ public:
+  explicit CmdDRCDiagnosis(const char* cmd_name);
+  ~CmdDRCDiagnosis() override = default;
+
+  unsigned check() override;
+  unsigned exec() override;
+
+ private:
+};
+
 class CmdDRCReadDetailFile : public TclCmd
 {
  public:

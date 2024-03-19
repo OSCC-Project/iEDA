@@ -208,21 +208,21 @@ void GDSPlotter::buildTopStruct(GPGDS& gp_gds)
 {
   std::vector<GPStruct>& struct_list = gp_gds.get_struct_list();
 
-  std::set<std::string> unrefed_struct_name_set;
+  std::set<std::string> no_ref_struct_name_set;
   for (GPStruct& gp_struct : struct_list) {
-    unrefed_struct_name_set.insert(gp_struct.get_name());
+    no_ref_struct_name_set.insert(gp_struct.get_name());
   }
 
   for (GPStruct& gp_struct : struct_list) {
     std::vector<std::string>& sref_name_list = gp_struct.get_sref_name_list();
     for (std::string& sref_name : sref_name_list) {
-      unrefed_struct_name_set.erase(sref_name);
+      no_ref_struct_name_set.erase(sref_name);
     }
   }
 
   GPStruct top_struct(gp_gds.get_top_name());
-  for (const std::string& unrefed_struct_name : unrefed_struct_name_set) {
-    top_struct.push(unrefed_struct_name);
+  for (const std::string& no_ref_struct_name : no_ref_struct_name_set) {
+    top_struct.push(no_ref_struct_name);
   }
   gp_gds.addStruct(top_struct);
 }

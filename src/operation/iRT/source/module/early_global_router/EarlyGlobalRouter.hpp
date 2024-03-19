@@ -37,7 +37,7 @@ class EarlyGlobalRouter
   void recordLog(std::string record_file_path);
 
   void plot();
-  void plotCongstLoc();
+  void plotCongestionLoc();
   EGRDataManager& getDataManager() { return _egr_data_manager; }
 
  private:
@@ -92,9 +92,9 @@ class EarlyGlobalRouter
   void addDemandBySegmentList(std::vector<Segment<TNode<LayerCoord>*>>& segment_list);
   // report
   void reportEGRNetList();
-  void calcuResult();
-  void calcuCongestion();
-  void calcuWireViaStatistics();
+  void calcResult();
+  void calcCongestion();
+  void calcWireViaStatistics();
   void reportResult();
   void reportCongestion();
   void reportWireViaStatistics();

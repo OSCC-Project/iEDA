@@ -208,13 +208,13 @@ class RTUtil
 
   static std::vector<Orientation> convertToOrientation(Direction direction)
   {
-    std::vector<Orientation> orien_list;
+    std::vector<Orientation> orient_list;
     if (direction == Direction::kHorizontal) {
-      orien_list = {Orientation::kEast, Orientation::kWest};
+      orient_list = {Orientation::kEast, Orientation::kWest};
     } else if (direction == Direction::kVertical) {
-      orien_list = {Orientation::kSouth, Orientation::kNorth};
+      orient_list = {Orientation::kSouth, Orientation::kNorth};
     }
-    return orien_list;
+    return orient_list;
   }
 
 #endif
@@ -771,21 +771,21 @@ class RTUtil
   // 在有最大外边界约束下扩大矩形
   static PlanarRect getEnlargedRect(PlanarRect rect, int32_t enlarge_size, PlanarRect border)
   {
-    PlanarRect enalrged_rect = getEnlargedRect(rect, enlarge_size);
+    PlanarRect enlarged_rect = getEnlargedRect(rect, enlarge_size);
 
-    enalrged_rect.set_ll(std::max(enalrged_rect.get_ll_x(), border.get_ll_x()), std::max(enalrged_rect.get_ll_y(), border.get_ll_y()));
-    enalrged_rect.set_ur(std::min(enalrged_rect.get_ur_x(), border.get_ur_x()), std::min(enalrged_rect.get_ur_y(), border.get_ur_y()));
+    enlarged_rect.set_ll(std::max(enlarged_rect.get_ll_x(), border.get_ll_x()), std::max(enlarged_rect.get_ll_y(), border.get_ll_y()));
+    enlarged_rect.set_ur(std::min(enlarged_rect.get_ur_x(), border.get_ur_x()), std::min(enlarged_rect.get_ur_y(), border.get_ur_y()));
 
-    return enalrged_rect;
+    return enlarged_rect;
   }
 
   // 在有最大外边界约束下扩大矩形
   static PlanarRect getEnlargedRect(PlanarRect rect, int32_t ll_x_minus_offset, int32_t ll_y_minus_offset, int32_t ur_x_add_offset,
                                     int32_t ur_y_add_offset, PlanarRect border)
   {
-    PlanarRect enalrged_rect = getEnlargedRect(rect, ll_x_minus_offset, ll_y_minus_offset, ur_x_add_offset, ur_y_add_offset);
-    enalrged_rect = getRegularRect(enalrged_rect, border);
-    return enalrged_rect;
+    PlanarRect enlarged_rect = getEnlargedRect(rect, ll_x_minus_offset, ll_y_minus_offset, ur_x_add_offset, ur_y_add_offset);
+    enlarged_rect = getRegularRect(enlarged_rect, border);
+    return enlarged_rect;
   }
 
   static PlanarRect getRegularRect(PlanarRect rect, PlanarRect border)
@@ -867,7 +867,7 @@ class RTUtil
   static std::vector<TNode<T>*> getNodeList(TNode<T>* root)
   {
     std::vector<TNode<T>*> node_list;
-    std::vector<std::vector<TNode<T>*>> level_list = getlevelOrder(root);
+    std::vector<std::vector<TNode<T>*>> level_list = getLevelOrder(root);
     for (size_t i = 0; i < level_list.size(); i++) {
       for (size_t j = 0; j < level_list[i].size(); j++) {
         node_list.push_back(level_list[i][j]);
@@ -878,14 +878,14 @@ class RTUtil
 
   // 以层序遍历获取树的所有结点，可以控制遍历最大深度
   template <typename T>
-  static std::vector<std::vector<TNode<T>*>> getlevelOrder(MTree<T>& tree, int32_t max_level = -1)
+  static std::vector<std::vector<TNode<T>*>> getLevelOrder(MTree<T>& tree, int32_t max_level = -1)
   {
-    return getlevelOrder(tree.get_root(), max_level);
+    return getLevelOrder(tree.get_root(), max_level);
   }
 
   // 以层序遍历获取树的所有结点，可以控制遍历最大深度
   template <typename T>
-  static std::vector<std::vector<TNode<T>*>> getlevelOrder(TNode<T>* root, int32_t max_level = -1)
+  static std::vector<std::vector<TNode<T>*>> getLevelOrder(TNode<T>* root, int32_t max_level = -1)
   {
     if (root == nullptr) {
       return {};
@@ -993,7 +993,7 @@ class RTUtil
     }
 
     std::vector<Segment<TNode<T>*>> segment_list;
-    std::vector<std::vector<TNode<T>*>> level_list = getlevelOrder(root);
+    std::vector<std::vector<TNode<T>*>> level_list = getLevelOrder(root);
     for (size_t i = 0; i < level_list.size(); i++) {
       for (size_t j = 0; j < level_list[i].size(); j++) {
         if (level_list[i][j]->isLeafNode()) {
@@ -1559,14 +1559,14 @@ class RTUtil
 
   // 获得配置的值
   template <typename T>
-  static T getConfigValue(std::map<std::string, std::any>& config_map, const std::string& config_name, const T& defalut_value)
+  static T getConfigValue(std::map<std::string, std::any>& config_map, const std::string& config_name, const T& default_value)
   {
     T value;
     if (exist(config_map, config_name)) {
       value = std::any_cast<T>(config_map[config_name]);
     } else {
       LOG_INST.warn(Loc::current(), "The config '", config_name, "' uses the default value!");
-      value = defalut_value;
+      value = default_value;
     }
     return value;
   }
@@ -2204,70 +2204,70 @@ class RTUtil
     std::vector<BGPolyDBL> rect_poly_list = getBGPolyDBLList(rect_list);
 
     // 计算((A - D) ∩ (A - E) ∩ (A - F)) ∪ ((B - D) ∩ (B - E) ∩ (B - F))
-    BGMultiPolyDBL top_multipoly;
-    BGMultiLineDBL top_multiline;
-    BGMultiPointDBL top_multipoint;
+    BGMultiPolyDBL top_multi_poly;
+    BGMultiLineDBL top_multi_line;
+    BGMultiPointDBL top_multi_point;
     for (BGPolyDBL& master_poly : master_poly_list) {
       // 计算(A - D)和(A - E)和(A - F)
-      std::vector<BGMultiPolyDBL> diff_mutilpoly_list;
+      std::vector<BGMultiPolyDBL> diff_multi_poly_list;
       {
         if (rect_poly_list.empty()) {
-          BGMultiPolyDBL diff_mutilpoly;
-          diff_mutilpoly.push_back(master_poly);
-          diff_mutilpoly_list.push_back(diff_mutilpoly);
+          BGMultiPolyDBL diff_multi_poly;
+          diff_multi_poly.push_back(master_poly);
+          diff_multi_poly_list.push_back(diff_multi_poly);
         } else {
           for (BGPolyDBL& rect_poly : rect_poly_list) {
             // 计算(A - D)
-            BGMultiPolyDBL diff_mutilpoly;
-            bg::difference(master_poly, rect_poly, diff_mutilpoly);
-            if (diff_mutilpoly.empty()) {
+            BGMultiPolyDBL diff_multi_poly;
+            bg::difference(master_poly, rect_poly, diff_multi_poly);
+            if (diff_multi_poly.empty()) {
               // 当(A - D)为空，后续(A - D) ∩ (A - E) ∩ (A - F)结果为空，直接跳过
-              diff_mutilpoly_list.clear();
+              diff_multi_poly_list.clear();
               break;
             } else {
-              diff_mutilpoly_list.push_back(diff_mutilpoly);
+              diff_multi_poly_list.push_back(diff_multi_poly);
             }
           }
         }
       }
-      if (diff_mutilpoly_list.empty()) {
+      if (diff_multi_poly_list.empty()) {
         continue;
       }
       // 计算(A - D) ∩ (A - E) ∩ (A - F)
-      BGMultiPolyDBL mid_multipoly;
-      BGMultiLineDBL mid_multiline;
-      BGMultiPointDBL mid_multipoint;
+      BGMultiPolyDBL mid_multi_poly;
+      BGMultiLineDBL mid_multi_line;
+      BGMultiPointDBL mid_multi_point;
       {
         // 用(A - D)初始化
-        mid_multipoly = diff_mutilpoly_list.front();
-        for (size_t i = 1; i < diff_mutilpoly_list.size(); i++) {
-          BGMultiPolyDBL& curr_mutilpoly = diff_mutilpoly_list[i];
+        mid_multi_poly = diff_multi_poly_list.front();
+        for (size_t i = 1; i < diff_multi_poly_list.size(); i++) {
+          BGMultiPolyDBL& curr_multi_poly = diff_multi_poly_list[i];
           // (A - D) ∩ (A - E)
-          BGMultiPolyDBL mid_multipoly_temp;
+          BGMultiPolyDBL mid_multi_poly_temp;
           // 与顶层poly相交
-          bg::intersection(mid_multipoly, curr_mutilpoly, mid_multipoly_temp);
+          bg::intersection(mid_multi_poly, curr_multi_poly, mid_multi_poly_temp);
           if (!is_open) {
-            bg::intersection(mid_multipoly, curr_mutilpoly, mid_multiline);
-            bg::intersection(mid_multipoly, curr_mutilpoly, mid_multipoint);
+            bg::intersection(mid_multi_poly, curr_multi_poly, mid_multi_line);
+            bg::intersection(mid_multi_poly, curr_multi_poly, mid_multi_point);
           }
-          mid_multipoly = mid_multipoly_temp;
+          mid_multi_poly = mid_multi_poly_temp;
         }
       }
       // 计算((A - D) ∩ (A - E) ∩ (A - F)) ∪ ((B - D) ∩ (B - E) ∩ (B - F))
       {
-        top_multipoly.insert(top_multipoly.end(), mid_multipoly.begin(), mid_multipoly.end());
-        top_multiline.insert(top_multiline.end(), mid_multiline.begin(), mid_multiline.end());
-        top_multipoint.insert(top_multipoint.end(), mid_multipoint.begin(), mid_multipoint.end());
+        top_multi_poly.insert(top_multi_poly.end(), mid_multi_poly.begin(), mid_multi_poly.end());
+        top_multi_line.insert(top_multi_line.end(), mid_multi_line.begin(), mid_multi_line.end());
+        top_multi_point.insert(top_multi_point.end(), mid_multi_point.begin(), mid_multi_point.end());
       }
     }
     // 生成对应的矩形结果
-    for (PlanarRect& rect : getRTRectListByBGMultiPolyDBL(top_multipoly)) {
+    for (PlanarRect& rect : getRTRectListByBGMultiPolyDBL(top_multi_poly)) {
       result_list.push_back(rect);
     }
-    for (PlanarRect& rect : getRTRectListByBGMultiLineDBL(top_multiline)) {
+    for (PlanarRect& rect : getRTRectListByBGMultiLineDBL(top_multi_line)) {
       result_list.push_back(rect);
     }
-    for (PlanarRect& rect : getRTRectListByBGMultiPointDBL(top_multipoint)) {
+    for (PlanarRect& rect : getRTRectListByBGMultiPointDBL(top_multi_point)) {
       result_list.push_back(rect);
     }
     if (!is_open) {
@@ -2412,26 +2412,26 @@ class RTUtil
   //   // 其中rect_poly_list为(D ∪ E ∪ F)
   //   std::vector<BGPolyDBL> rect_poly_list = getBGPolyDBLList(rect_list);
 
-  //   BGMultiPolyDBL result_multipoly;
-  //   BGMultiLineDBL result_multiline;
-  //   BGMultiPointDBL result_multipoint;
+  //   BGMultiPolyDBL result_multi_poly;
+  //   BGMultiLineDBL result_multi_line;
+  //   BGMultiPointDBL result_multi_point;
   //   for (BGPolyDBL& master_poly : master_poly_list) {
   //     for (BGPolyDBL& rect_poly : rect_poly_list) {
-  //       bg::intersection(master_poly, rect_poly, result_multipoly);
+  //       bg::intersection(master_poly, rect_poly, result_multi_poly);
   //       if (!is_open) {
-  //         bg::intersection(master_poly, rect_poly, result_multiline);
-  //         bg::intersection(master_poly, rect_poly, result_multipoint);
+  //         bg::intersection(master_poly, rect_poly, result_multi_line);
+  //         bg::intersection(master_poly, rect_poly, result_multi_point);
   //       }
   //     }
   //   }
   //   // 生成对应的矩形结果
-  //   for (PlanarRect& rect : getRTRectListByBGMultiPolyDBL(result_multipoly)) {
+  //   for (PlanarRect& rect : getRTRectListByBGMultiPolyDBL(result_multi_poly)) {
   //     result_list.push_back(rect);
   //   }
-  //   for (PlanarRect& rect : getRTRectListByBGMultiLineDBL(result_multiline)) {
+  //   for (PlanarRect& rect : getRTRectListByBGMultiLineDBL(result_multi_line)) {
   //     result_list.push_back(rect);
   //   }
-  //   for (PlanarRect& rect : getRTRectListByBGMultiPointDBL(result_multipoint)) {
+  //   for (PlanarRect& rect : getRTRectListByBGMultiPointDBL(result_multi_point)) {
   //     result_list.push_back(rect);
   //   }
   //   // rect去重
@@ -2486,7 +2486,7 @@ class RTUtil
         addOffset(ll, ll_x_add_offset, ll_y_add_offset);
         minusOffset(ur, ur_x_minus_offset, ur_y_minus_offset);
         // 去除不是矩形的
-        if (candidate_rect.isIncorrected()) {
+        if (candidate_rect.isIncorrect()) {
           continue;
         }
         // 去除面积不为0的
@@ -2546,11 +2546,11 @@ class RTUtil
     }
     std::vector<PlanarRect> result_list;
     // 将常规矩形减去特殊矩形
-    for (PlanarRect& recult_rect : getCuttingSpecialRectList(special_rect_list, regular_rect_list)) {
-      result_list.push_back(recult_rect);
+    for (PlanarRect& result_rect : getCuttingSpecialRectList(special_rect_list, regular_rect_list)) {
+      result_list.push_back(result_rect);
     }
-    for (PlanarRect& recult_rect : regular_rect_list) {
-      result_list.push_back(recult_rect);
+    for (PlanarRect& result_rect : regular_rect_list) {
+      result_list.push_back(result_rect);
     }
     return result_list;
   }
@@ -2593,12 +2593,12 @@ class RTUtil
     return integer_scale;
   }
 
-  static std::vector<PlanarRect> getRTRectListByBGMultiPolyDBL(const BGMultiPolyDBL& bg_multipoly)
+  static std::vector<PlanarRect> getRTRectListByBGMultiPolyDBL(const BGMultiPolyDBL& bg_multi_poly)
   {
     std::vector<PlanarRect> rect_list;
 
     GTLPolySetInt gtl_poly_set;
-    for (const BGPolyDBL& bg_poly : bg_multipoly) {
+    for (const BGPolyDBL& bg_poly : bg_multi_poly) {
       // 将double类型转int32_t
       std::vector<GTLPointInt> gtl_point_list;
       for (size_t i = 0; i < bg::num_points(bg_poly); i++) {
@@ -2628,11 +2628,11 @@ class RTUtil
     return rect_list;
   }
 
-  static std::vector<PlanarRect> getRTRectListByBGMultiLineDBL(const BGMultiLineDBL& bg_multiline)
+  static std::vector<PlanarRect> getRTRectListByBGMultiLineDBL(const BGMultiLineDBL& bg_multi_line)
   {
     std::vector<PlanarRect> rect_list;
 
-    for (const BGLineDBL& bg_line : bg_multiline) {
+    for (const BGLineDBL& bg_line : bg_multi_line) {
       int32_t ll_x = getIntScale(bg_line[0].x());
       int32_t ll_y = getIntScale(bg_line[0].y());
       int32_t ur_x = getIntScale(bg_line[1].x());
@@ -2645,11 +2645,11 @@ class RTUtil
     return rect_list;
   }
 
-  static std::vector<PlanarRect> getRTRectListByBGMultiPointDBL(const BGMultiPointDBL& bg_multipoint)
+  static std::vector<PlanarRect> getRTRectListByBGMultiPointDBL(const BGMultiPointDBL& bg_multi_point)
   {
     std::vector<PlanarRect> rect_list;
 
-    for (const BGPointDBL& bg_point : bg_multipoint) {
+    for (const BGPointDBL& bg_point : bg_multi_point) {
       PlanarCoord coord(getIntScale(bg_point.x()), getIntScale(bg_point.y()));
       rect_list.emplace_back(coord, coord);
     }
@@ -2666,25 +2666,25 @@ class RTUtil
 #if 1  // std数据结构工具函数
 
   template <typename Key, typename Value>
-  static Value getValueByAny(std::map<Key, std::any>& map, const Key& key, const Value& defalut_value)
+  static Value getValueByAny(std::map<Key, std::any>& map, const Key& key, const Value& default_value)
   {
     Value value;
     if (exist(map, key)) {
       value = std::any_cast<Value>(map[key]);
     } else {
-      value = defalut_value;
+      value = default_value;
     }
     return value;
   }
 
   template <typename Key, typename Value>
-  static Value getValue(std::map<Key, Value>& map, const Key& key, const Value& defalut_value)
+  static Value getValue(std::map<Key, Value>& map, const Key& key, const Value& default_value)
   {
     Value value;
     if (exist(map, key)) {
       value = map[key];
     } else {
-      value = defalut_value;
+      value = default_value;
     }
     return value;
   }

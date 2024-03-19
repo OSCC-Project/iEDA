@@ -26,12 +26,14 @@ namespace idrc {
 
 class RulesConditionMap
 {
+  using RuleMap = std::map<int, std::vector<ConditionRule*>, std::less<int>>;
+
  public:
   RulesConditionMap(RuleType type) : _type(type) {}
   virtual ~RulesConditionMap() {}
 
-  std::map<RuleType, std::map<int, std::vector<ConditionRule*>, std::less<int>>>& get_conditon_rules() { return _conditon_rules; }
-  std::map<int, std::vector<ConditionRule*>, std::less<int>>& get_rule_map(RuleType type) { return _conditon_rules[type]; }
+  std::map<RuleType, RuleMap>& get_conditon_rules() { return _conditon_rules; }
+  RuleMap& get_rule_map(RuleType type) { return _conditon_rules[type]; }
   std::vector<ConditionRule*> get_condition_rule(RuleType type, int value) { return _conditon_rules[type][value]; }
   int get_min() { return _min; }
   int get_max() { return _max; }
@@ -89,8 +91,7 @@ class RulesConditionMap
     std::map<int, std::vector<ConditionRule*>> rule_list;
     auto& rule_map = get_rule_map(type);
     /// reverse iterate
-    for (std::map<int, std::vector<ConditionRule*>, std::less<int>>::reverse_iterator rule = rule_map.rbegin(); rule != rule_map.rend();
-         ++rule) {
+    for (RuleMap::reverse_iterator rule = rule_map.rbegin(); rule != rule_map.rend(); ++rule) {
       /// value must be greater than rule's value
       if (value >= rule->first) {
         rule_list[rule->first] = rule->second;
@@ -104,8 +105,7 @@ class RulesConditionMap
 
  private:
   RuleType _type;
-  std::map<RuleType, std::map<int, std::vector<ConditionRule*>, std::less<int>>>
-      _conditon_rules;  /// int : value, ConditionRule* : condition rule for each layer
+  std::map<RuleType, RuleMap> _conditon_rules;  /// int : value, ConditionRule* : condition rule for each layer
 
   std::pair<int, ConditionRule*> _default_rule{0, nullptr};  /// indicate the default rule
 
