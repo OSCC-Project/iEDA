@@ -15,54 +15,59 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 /**
- * @file CmdGetPins.cc
+ * @file CmdGetLibs.cc
  * @author simin tao (taosm@pcl.ac.cn)
- * @brief
+ * @brief The sdc cmd of get_libs
  * @version 0.1
- * @date 2021-10-14
+ * @date 2024-03-19
  */
 #include "Cmd.hh"
 #include "sdc/SdcCollection.hh"
+#include "wildcards/single_include/wildcards.hpp"
 
 namespace ista {
 
-CmdGetPins::CmdGetPins(const char* cmd_name) : TclCmd(cmd_name) {
+CmdGetLibs::CmdGetLibs(const char* cmd_name) : TclCmd(cmd_name) {
   auto* patterns_arg = new TclStringListOption("patterns", 1, {});
   addOption(patterns_arg);
+
+  auto* used_option = new TclSwitchOption("-used");
+  addOption(used_option);
 }
 
-unsigned CmdGetPins::check() { return 1; }
+unsigned CmdGetLibs::check() { return 1; }
 
 /**
- * @brief execute the get_pins.
+ * @brief execute the get_libs.
  *
  * @return unsigned
  */
-unsigned CmdGetPins::exec() {
+unsigned CmdGetLibs::exec() {
   Sta* ista = Sta::getOrCreateSta();
-  auto& the_constrain = ista->get_constrains();
 
-  auto* pin_list_arg = getOptionOrArg("patterns");
-  auto pin_list = pin_list_arg->getStringList();
+  auto* lib_patterns_arg = getOptionOrArg("patterns");
+  auto lib_patterns = lib_patterns_arg->getStringList();
 
-  std::vector<SdcCollectionObj> obj_list;
+  auto* used_option = getOptionOrArg("-used");
 
-  Netlist* design_nl = ista->get_netlist();
-  for (auto& pin_name : pin_list) {
-    auto pin_ports = design_nl->findObj(pin_name.c_str(), false, false);
-    for (auto* design_obj : pin_ports) {
-      obj_list.emplace_back(design_obj);
+  if (used_option->is_set_val()) {
+    auto used_libs = ista->getUsedLibs();
+    for (auto* used_lib : used_libs) {
+      std::string lib_name = used_lib->get_lib_name();
+
+      for (auto& pattern : lib_patterns) {
+        // match lib name all str.
+        std::string_view pattern_str = pattern;
+        if (wildcards::match(lib_name, pattern_str)) {
+            LOG_INFO << "used lib: " << lib_name;
+        }
+      }
     }
+  } else {
+    // TODO(to taosimin), get all lib as collection.
   }
-
-  auto* sdc_collection = new SdcCollection(SdcCollection::CollectionType::kPin,
-                                           std::move(obj_list));
-
-  the_constrain->addSdcCollection(sdc_collection);
-
-  char* result = TclEncodeResult::encode(sdc_collection);
-  ScriptEngine::getOrCreateInstance()->setResult(result);
 
   return 1;
 }
+
 }  // namespace ista
