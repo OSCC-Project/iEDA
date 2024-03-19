@@ -58,8 +58,8 @@ class PwrVertex {
   auto* get_sta_vertex() { return _sta_vertex; }
 
   auto* getDesignObj() { return _sta_vertex->get_design_obj(); }
-  Instance* getOwnInstance() {
-    if (auto* the_pin = dynamic_cast<Pin*>(_sta_vertex->get_design_obj());
+  ista::Instance* getOwnInstance() {
+    if (auto* the_pin = dynamic_cast<ista::Pin*>(_sta_vertex->get_design_obj());
         the_pin) {
       return the_pin->get_own_instance();
     }
@@ -81,7 +81,7 @@ class PwrVertex {
   unsigned isSeqClockPin() { return isPin() && (_sta_vertex->is_clock()); }
 
   LibertyPort* getLibertyPort() {
-    return isPin() ? dynamic_cast<Pin*>(getDesignObj())->get_cell_port()
+    return isPin() ? dynamic_cast<ista::Pin*>(getDesignObj())->get_cell_port()
                    : nullptr;
   }
   unsigned isSeqDataIn() {
