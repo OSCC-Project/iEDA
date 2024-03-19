@@ -6,7 +6,8 @@ fn main() {
 
     let verilog_file_str =
         // "/home/longshuaiying/iEDA/src/database/manager/parser/verilog/verilog-rust/verilog-parser/example/example1.v";
-    "/home/taosimin/T28/ieda_1208/asic_top_1208.syn.v";
+    // "/home/taosimin/T28/ieda_1208/asic_top_1208.syn.v";
+    "/home/longshuaiying/iEDA/scripts/design/sky130_gcd/result/verilog/gcd.v";
 
     let top_module_name = "asic_top";
     let mut verilog_file = verilog_parser::parse_verilog_file(verilog_file_str);

@@ -10,8 +10,8 @@ line_comment      = _{ "//" ~ (!("\n") ~ ASCII)* ~ ("\n" | EOI) }
 multiline_comment = _{ "/*" ~ (!"*/" ~ ANY)* ~ "*/" }
 COMMENT = _{ line_comment | multiline_comment }
 
-char = _{ ASCII_ALPHANUMERIC | "_" | "\\" | "[" | "]" | "/" | ":" | "$"}
-
+char = _{ ASCII_ALPHANUMERIC | "_" | "\\" | "[" | "]" | "/" | ":" | "$" | " "}
+char_without_whitespace = _{ ASCII_ALPHANUMERIC | "_" | "\\" | "[" | "]" | "/" | ":" | "$"}
 
 port_or_wire_id = @{ char+ }
 port_list = { port_or_wire_id ~ ("," ~ port_or_wire_id)* }
@@ -22,7 +22,7 @@ first_wire_list_with_scalar_constant = _{ scalar_constant | port_or_wire_id }
 next_wire_list_with_scalar_constant = _{ (("," ~ scalar_constant) | ("," ~ port_or_wire_id))* }
 wire_list_with_scalar_constant = _{ first_wire_list_with_scalar_constant ~ next_wire_list_with_scalar_constant }
 
-inst_or_cell_id = { char+ }
+inst_or_cell_id = { char_without_whitespace+ }
 module_id = { char+ }
 WHITESPACE = _{ " " | "\t" | "\r" | "\n" }
 semicolon_opt = _{ ";" }
