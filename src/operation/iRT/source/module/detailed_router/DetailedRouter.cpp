@@ -588,9 +588,6 @@ void DetailedRouter::buildDRNodeValid(DRBox& dr_box)
 
   for (RoutingLayer& routing_layer : routing_layer_list) {
     int32_t layer_idx = routing_layer.get_layer_idx();
-    if (layer_idx < bottom_routing_layer_idx || top_routing_layer_idx < layer_idx) {
-      continue;
-    }
     for (int32_t x_scale : layer_x_scale_map[layer_idx]) {
       for (int32_t y_scale : layer_y_scale_map[layer_idx]) {
         PlanarCoord real_coord(x_scale, y_scale);
@@ -607,12 +604,25 @@ void DetailedRouter::buildDRNodeValid(DRBox& dr_box)
 void DetailedRouter::buildDRNodeNeighbor(DRBox& dr_box)
 {
   std::vector<GridMap<DRNode>>& layer_node_map = dr_box.get_layer_node_map();
+  int32_t bottom_routing_layer_idx = DM_INST.getConfig().bottom_routing_layer_idx;
+  int32_t top_routing_layer_idx = DM_INST.getConfig().top_routing_layer_idx;
 
   for (int32_t curr_layer_idx = 0; curr_layer_idx < static_cast<int32_t>(layer_node_map.size()); curr_layer_idx++) {
     for (int32_t curr_x = 0; curr_x < layer_node_map[curr_layer_idx].get_x_size(); curr_x++) {
       for (int32_t curr_y = 0; curr_y < layer_node_map[curr_layer_idx].get_y_size(); curr_y++) {
         DRNode& curr_node = layer_node_map[curr_layer_idx][curr_x][curr_y];
         if (!curr_node.get_is_valid()) {
+          continue;
+        }
+        // 向上寻找，如果上邻居是有效结果，设置空间邻居关系
+        if (curr_layer_idx + 1 < static_cast<int32_t>(layer_node_map.size())) {
+          DRNode& above_node = layer_node_map[curr_layer_idx + 1][curr_x][curr_y];
+          if (above_node.get_is_valid()) {
+            curr_node.get_neighbor_node_map()[Orientation::kAbove] = &above_node;
+            above_node.get_neighbor_node_map()[Orientation::kBelow] = &curr_node;
+          }
+        }
+        if (curr_layer_idx < bottom_routing_layer_idx || curr_layer_idx > top_routing_layer_idx) {
           continue;
         }
         // 向东寻找，找到第一个有效结点即为东邻居，并将东邻居的西邻居设为自己
@@ -633,17 +643,6 @@ void DetailedRouter::buildDRNodeNeighbor(DRBox& dr_box)
           }
           curr_node.get_neighbor_node_map()[Orientation::kNorth] = &north_node;
           north_node.get_neighbor_node_map()[Orientation::kSouth] = &curr_node;
-          break;
-        }
-        // 向上寻找，找到第一个有效结点即为上邻居，并将上邻居的下邻居设为自己
-        for (int32_t above_layer_idx = curr_layer_idx + 1; above_layer_idx < static_cast<int32_t>(layer_node_map.size());
-             above_layer_idx++) {
-          DRNode& above_node = layer_node_map[above_layer_idx][curr_x][curr_y];
-          if (!above_node.get_is_valid()) {
-            continue;
-          }
-          curr_node.get_neighbor_node_map()[Orientation::kAbove] = &above_node;
-          above_node.get_neighbor_node_map()[Orientation::kBelow] = &curr_node;
           break;
         }
       }
@@ -1953,7 +1952,7 @@ void DetailedRouter::updateSummary(DRModel& dr_model)
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
   std::vector<CutLayer>& cut_layer_list = DM_INST.getDatabase().get_cut_layer_list();
   std::vector<std::vector<ViaMaster>>& layer_via_master_list = DM_INST.getDatabase().get_layer_via_master_list();
-  int32_t  enable_timing = DM_INST.getConfig().enable_timing;
+  int32_t enable_timing = DM_INST.getConfig().enable_timing;
   std::map<int32_t, double>& routing_wire_length_map
       = DM_INST.getSummary().iter_dr_summary_map[dr_model.get_iter()].routing_wire_length_map;
   double& total_wire_length = DM_INST.getSummary().iter_dr_summary_map[dr_model.get_iter()].total_wire_length;
