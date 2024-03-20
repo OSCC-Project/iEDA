@@ -501,69 +501,57 @@ void RTAPI::outputDef(std::string output_def_file_path)
 
 void RTAPI::outputSummary()
 {
-  auto rt_summary = DM_INST.getSummary();
-  auto& top_rt_summary = dmInst->get_feature_summary().getRTSummary();
+  Summary& rt_summary = DM_INST.getSummary();
+  idb::RTSummary& top_rt_summary = dmInst->get_feature_summary().getRTSummary();
 
-  // PA
-  auto& top_pa_summary = top_rt_summary.get_pa_summary();
-  top_pa_summary.setRoutingAccessPointNumMap(std::move(rt_summary.pa_summary.routing_access_point_num_map));
-  for (auto type_access_point_num : rt_summary.pa_summary.type_access_point_num_map) {
-    top_pa_summary.setTypeAccessPointNumMap(GetAccessPointTypeName()(type_access_point_num.first), type_access_point_num.second);
+  top_rt_summary.pa_summary.routing_access_point_num_map = rt_summary.pa_summary.routing_access_point_num_map;
+  for (auto& [type, access_point_num] : rt_summary.pa_summary.type_access_point_num_map) {
+    top_rt_summary.pa_summary.type_access_point_num_map[GetAccessPointTypeName()(type)] = access_point_num;
   }
-  top_pa_summary.setTotalAccessPointNum(rt_summary.pa_summary.total_access_point_num);
+  top_rt_summary.pa_summary.total_access_point_num = rt_summary.pa_summary.total_access_point_num;
 
-  // SA
-  auto& top_sa_summary = top_rt_summary.get_sa_summary();
-  top_sa_summary.setRoutingSupplyMap(std::move(rt_summary.sa_summary.routing_supply_map));
-  top_sa_summary.setTotalSupply(rt_summary.sa_summary.total_supply);
+  top_rt_summary.sa_summary.routing_supply_map = rt_summary.sa_summary.routing_supply_map;
+  top_rt_summary.sa_summary.total_supply = rt_summary.sa_summary.total_supply;
 
-  // IR
-  auto& top_ir_summary = top_rt_summary.get_ir_summary();
-  top_ir_summary.setRoutingDemandMap(std::move(rt_summary.ir_summary.routing_demand_map));
-  top_ir_summary.setRoutingDemandNum(rt_summary.ir_summary.total_demand);
-  top_ir_summary.setRoutingOverflowMap(std::move(rt_summary.ir_summary.routing_overflow_map));
-  top_ir_summary.setRoutingOverflowNum(rt_summary.ir_summary.total_overflow);
-  top_ir_summary.setRoutingWireLengthMap(std::move(rt_summary.ir_summary.routing_wire_length_map));
-  top_ir_summary.setRoutingWireLengthNum(rt_summary.ir_summary.total_wire_length);
-  top_ir_summary.setCutViaNumMap(std::move(rt_summary.ir_summary.cut_via_num_map));
-  top_ir_summary.setCutViaNumNum(rt_summary.ir_summary.total_via_num);
-  top_ir_summary.setTimingMap(std::move(rt_summary.ir_summary.timing));
+  top_rt_summary.ir_summary.routing_demand_map = rt_summary.ir_summary.routing_demand_map;
+  top_rt_summary.ir_summary.total_demand = rt_summary.ir_summary.total_demand;
+  top_rt_summary.ir_summary.routing_overflow_map = rt_summary.ir_summary.routing_overflow_map;
+  top_rt_summary.ir_summary.total_overflow = rt_summary.ir_summary.total_overflow;
+  top_rt_summary.ir_summary.routing_wire_length_map = rt_summary.ir_summary.routing_wire_length_map;
+  top_rt_summary.ir_summary.total_wire_length = rt_summary.ir_summary.total_wire_length;
+  top_rt_summary.ir_summary.cut_via_num_map = rt_summary.ir_summary.cut_via_num_map;
+  top_rt_summary.ir_summary.total_via_num = rt_summary.ir_summary.total_via_num;
+  top_rt_summary.ir_summary.timing = rt_summary.ir_summary.timing;
 
-  // GR
-  for (auto gr_summary : rt_summary.iter_gr_summary_map) {
-    idb::GRSummary top_gr_summary;
-    top_gr_summary.setRoutingDemandMap(std::move(gr_summary.second.routing_demand_map));
-    top_gr_summary.setRoutingDemandNum(gr_summary.second.total_demand);
-    top_gr_summary.setRoutingOverflowMap(std::move(gr_summary.second.routing_overflow_map));
-    top_gr_summary.setRoutingOverflowNum(gr_summary.second.total_overflow);
-    top_gr_summary.setRoutingWireLengthMap(std::move(gr_summary.second.routing_wire_length_map));
-    top_gr_summary.setRoutingWireLengthNum(gr_summary.second.total_wire_length);
-    top_gr_summary.setCutViaNumMap(std::move(gr_summary.second.cut_via_num_map));
-    top_gr_summary.setCutViaNumNum(gr_summary.second.total_via_num);
-    top_gr_summary.setTimingMap(std::move(gr_summary.second.timing));
-    top_rt_summary.setIterGRSummaryMap(gr_summary.first, top_gr_summary);
+  for (auto& [iter, gr_summary] : rt_summary.iter_gr_summary_map) {
+    idb::GRSummary& top_gr_summary = top_rt_summary.iter_gr_summary_map[iter];
+    top_gr_summary.routing_demand_map = gr_summary.routing_demand_map;
+    top_gr_summary.total_demand = gr_summary.total_demand;
+    top_gr_summary.routing_overflow_map = gr_summary.routing_overflow_map;
+    top_gr_summary.total_overflow = gr_summary.total_overflow;
+    top_gr_summary.routing_wire_length_map = gr_summary.routing_wire_length_map;
+    top_gr_summary.total_wire_length = gr_summary.total_wire_length;
+    top_gr_summary.cut_via_num_map = gr_summary.cut_via_num_map;
+    top_gr_summary.total_via_num = gr_summary.total_via_num;
+    top_gr_summary.timing = gr_summary.timing;
   }
 
-  // TA
-  auto& top_ta_summary = top_rt_summary.get_ta_summary();
-  top_ta_summary.setRoutingWireLengthMap(std::move(rt_summary.ta_summary.routing_wire_length_map));
-  top_ta_summary.setRoutingWireLengthNum(rt_summary.ta_summary.total_wire_length);
-  top_ta_summary.setRoutingViolationNumMap(std::move(rt_summary.ta_summary.routing_violation_num_map));
-  top_ta_summary.setRoutingViolationNumNum(rt_summary.ta_summary.total_violation_num);
+  top_rt_summary.ta_summary.routing_wire_length_map = rt_summary.ta_summary.routing_wire_length_map;
+  top_rt_summary.ta_summary.total_wire_length = rt_summary.ta_summary.total_wire_length;
+  top_rt_summary.ta_summary.routing_violation_num_map = rt_summary.ta_summary.routing_violation_num_map;
+  top_rt_summary.ta_summary.total_violation_num = rt_summary.ta_summary.total_violation_num;
 
-  // DR
-  for (auto dr_summary : rt_summary.iter_dr_summary_map) {
-    idb::DRSummary top_dr_summary;
-    top_dr_summary.setRoutingWireLengthMap(std::move(dr_summary.second.routing_wire_length_map));
-    top_dr_summary.setRoutingWireLengthNum(dr_summary.second.total_wire_length);
-    top_dr_summary.setCutViaNumMap(std::move(dr_summary.second.cut_via_num_map));
-    top_dr_summary.setCutViaNumNum(dr_summary.second.total_via_num);
-    top_dr_summary.setRoutingPatchNumMap(std::move(dr_summary.second.routing_patch_num_map));
-    top_dr_summary.setRoutingPatchNumNum(dr_summary.second.total_patch_num);
-    top_dr_summary.setRoutingViolationNumMap(std::move(dr_summary.second.routing_violation_num_map));
-    top_dr_summary.setRoutingViolationNumNum(dr_summary.second.total_violation_num);
-    top_dr_summary.setTimingMap(std::move(dr_summary.second.timing));
-    top_rt_summary.setIterDRSummaryMap(dr_summary.first, top_dr_summary);
+  for (auto& [iter, dr_summary] : rt_summary.iter_dr_summary_map) {
+    idb::DRSummary& top_dr_summary = top_rt_summary.iter_dr_summary_map[iter];
+    top_dr_summary.routing_wire_length_map = dr_summary.routing_wire_length_map;
+    top_dr_summary.total_wire_length = dr_summary.total_wire_length;
+    top_dr_summary.cut_via_num_map = dr_summary.cut_via_num_map;
+    top_dr_summary.total_via_num = dr_summary.total_via_num;
+    top_dr_summary.routing_patch_num_map = dr_summary.routing_patch_num_map;
+    top_dr_summary.total_patch_num = dr_summary.total_patch_num;
+    top_dr_summary.routing_violation_num_map = dr_summary.routing_violation_num_map;
+    top_dr_summary.total_violation_num = dr_summary.total_violation_num;
+    top_dr_summary.timing = dr_summary.timing;
   }
 }
 
