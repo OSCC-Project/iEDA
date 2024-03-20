@@ -191,7 +191,7 @@ void rust_free_lib_group(void* c_lib_group);
  *
  * @param s
  */
-void free_c_char(char* s);
+void lib_free_c_char(char* s);
 
 /**
  * @brief judge whether stmt is simple attribute stmt.
