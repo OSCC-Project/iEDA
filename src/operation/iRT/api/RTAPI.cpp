@@ -364,6 +364,11 @@ std::map<std::string, std::vector<double>> RTAPI::getTiming(
   };
   auto getRCSegmentList = [](std::map<LayerCoord, std::vector<std::string>, CmpLayerCoordByXASC>& coord_real_pin_map,
                              std::vector<Segment<LayerCoord>>& routing_segment_list) {
+    // 预处理 对名字去重
+    for (auto& [coord, real_pin_list] : coord_real_pin_map) {
+      std::sort(real_pin_list.begin(), real_pin_list.end());
+      real_pin_list.erase(std::unique(real_pin_list.begin(), real_pin_list.end()), real_pin_list.end());
+    }
     // 构建coord_fake_pin_map
     std::map<LayerCoord, int32_t, CmpLayerCoordByXASC> coord_fake_pin_map;
     {
@@ -412,13 +417,14 @@ std::map<std::string, std::vector<double>> RTAPI::getTiming(
 
 #if 1  // 主流程
   std::vector<Net>& net_list = DM_INST.getDatabase().get_net_list();
+  int32_t thread_number = DM_INST.getConfig().thread_number;
 
   ista::TimingEngine* timing_engine = ista::TimingEngine::getOrCreateTimingEngine();
   auto db_adapter = std::make_unique<ista::TimingIDBAdapter>(timing_engine->get_ista());
   db_adapter->set_idb(DM_INST.getHelper().get_idb_builder());
   db_adapter->convertDBToTimingNetlist();
   timing_engine->set_db_adapter(std::move(db_adapter));
-  timing_engine->set_num_threads(40);
+  timing_engine->set_num_threads(thread_number);
   timing_engine->buildGraph();
   timing_engine->initRcTree();
 
@@ -469,6 +475,7 @@ std::map<std::string, std::vector<double>> RTAPI::getTiming(
 
     // auto* rc_tree = timing_engine->get_ista()->getRcNet(ista_net)->rct();
     // rc_tree->printGraphViz();
+    // dot -Tpdf tree.dot -o tree.pdf
   }
   timing_engine->updateTiming();
   timing_engine->reportTiming();
