@@ -729,7 +729,6 @@ std::vector<Segment<LayerCoord>> TrackAssigner::getRoutingSegmentList(TAPanel& t
       key_coord_pin_map[coord].insert(static_cast<int32_t>(i));
     }
   }
-  // 构建 优化 检查 routing_segment_list
   MTree<LayerCoord> coord_tree = RTUtil::getTreeByFullFlow(driving_grid_coord_list, ta_panel.get_routing_segment_list(), key_coord_pin_map);
 
   std::vector<Segment<LayerCoord>> routing_segment_list;

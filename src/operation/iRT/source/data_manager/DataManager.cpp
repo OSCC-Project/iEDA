@@ -1727,7 +1727,7 @@ void DataManager::printConfig()
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.top_routing_layer);
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "output_csv");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.output_csv);
-    LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "enable_timing");
+  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "enable_timing");
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.enable_timing);
   // **********        RT         ********** //
   LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(0), "RT_CONFIG_BUILD");
@@ -1999,24 +1999,18 @@ void DataManager::freeGCellMap()
        * _type_layer_net_fixed_rect_map 内指针引用于 database内的obstacle_list
        * _net_access_point_map 内指针引用于 pin内的access_point_list
        */
-      if (!gcell_map[x][y].get_net_result_map().empty()) {
-        for (auto& [net_idx, segment_set] : gcell_map[x][y].get_net_result_map()) {
-          for (Segment<LayerCoord>* segment : segment_set) {
-            updateNetResultToGCellMap(ChangeType::kDel, net_idx, segment);
-          }
+      for (auto& [net_idx, segment_set] : gcell_map[x][y].get_net_result_map()) {
+        for (Segment<LayerCoord>* segment : segment_set) {
+          updateNetResultToGCellMap(ChangeType::kDel, net_idx, segment);
         }
       }
-      if (!gcell_map[x][y].get_net_patch_map().empty()) {
-        for (auto& [net_idx, patch_set] : gcell_map[x][y].get_net_patch_map()) {
-          for (EXTLayerRect* patch : patch_set) {
-            updatePatchToGCellMap(ChangeType::kDel, net_idx, patch);
-          }
+      for (auto& [net_idx, patch_set] : gcell_map[x][y].get_net_patch_map()) {
+        for (EXTLayerRect* patch : patch_set) {
+          updatePatchToGCellMap(ChangeType::kDel, net_idx, patch);
         }
       }
-      if (!gcell_map[x][y].get_violation_set().empty()) {
-        for (Violation* violation : gcell_map[x][y].get_violation_set()) {
-          updateViolationToGCellMap(ChangeType::kDel, violation);
-        }
+      for (Violation* violation : gcell_map[x][y].get_violation_set()) {
+        updateViolationToGCellMap(ChangeType::kDel, violation);
       }
     }
   }
