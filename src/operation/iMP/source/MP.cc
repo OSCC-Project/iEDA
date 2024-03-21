@@ -46,10 +46,12 @@ void MP::runMP()
   placer(root());
   std::string file_name = "placement_level" + std::to_string(clustering.level_num) + "_" + std::to_string(clustering.l1_nparts) + "_"
                           + std::to_string(clustering.l2_nparts);
-  writePlacement(root(), file_name + ".txt");
+  // writePlacement(root(), file_name + ".txt");
   auto macro_aligner = MacroAligner<int32_t>();
   macro_aligner(root());
-  writePlacement(root(), file_name + "_aligned.txt");
+  // writePlacement(root(), file_name + "_aligned.txt");
+  writePlacementTcl(root(), file_name + ".tcl", root().netlist().property()->get_database_unit());
+  _parser->write(); // write back to idb
 }
 
 }  // namespace imp

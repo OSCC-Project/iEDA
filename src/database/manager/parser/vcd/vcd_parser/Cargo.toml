@@ -10,8 +10,8 @@ cbindgen = "0.26"
 
 [lib]
 name = "vcd_parser"
-# #crate-type = ["staticlib"]
-crate-type = ["cdylib"]
+crate-type = ["staticlib"]
+# crate-type = ["cdylib"]
 
 [dependencies]
 pest = "2.6"

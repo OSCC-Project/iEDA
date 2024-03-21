@@ -198,13 +198,13 @@ void rust_flatten_module(void* c_verilog_file, const char* top_module_name);
  */
 void rust_free_verilog_file(void* c_verilog_file);
 
-uintptr_t rust_vec_len(const struct RustVec* vec);
+uintptr_t verilog_rust_vec_len(const struct RustVec* vec);
 /**
  * @brief free Rust string convert to C.
  *
  * @param s
  */
-void free_c_char(char* s);
+void verilog_free_c_char(char* s);
 
 struct RustVerilogID* rust_convert_verilog_id(void* c_verilog_virtual_base_id);
 

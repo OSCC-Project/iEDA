@@ -14,19 +14,18 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-#include "py_register_imp.h"
 
-#include <pybind11/cast.h>
-
-// #include "../../../operation/iMP/api/MPAPI.hh"
 #include "py_mp.h"
-namespace python_interface {
-namespace py = pybind11;
 
-void register_imp(py::module& m)
+#include "iMP/api/MPAPI.hh"
+#include "idm.h"
+
+namespace python_interface {
+
+void runMP()
 {
-  // m.def("SAPlaceSeqPairInt64", imp::SAPlaceSeqPairInt64);
-  m.def("runMP", runMP);
+  iMPAPIInst.initAPI("", dmInst->get_idb_builder());
+  iMPAPIInst.runMP();
 }
 
 }  // namespace python_interface
