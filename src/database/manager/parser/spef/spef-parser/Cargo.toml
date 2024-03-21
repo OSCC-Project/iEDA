@@ -16,7 +16,8 @@ cbindgen = "0.26"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [lib]
 name = "spef_parser"
-crate-type = ["cdylib"]
+# crate-type = ["cdylib"]
+crate-type = ["staticlib"]
 
 [dependencies]
 pest = "2.6"

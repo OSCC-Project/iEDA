@@ -53,13 +53,13 @@ typename Config::VertexProperty defaultMerge(const HyperGraph<Config>& graph, co
 template <HyperGraphConfig Config>
 typename Config::HedgeProperty defaultHedge(const HyperGraph<Config>& graph, size_t id)
 {
-  return typename Config::HedgeProperty();
+  return graph.hyper_edge_at(id).property();
 }
 
 template <HyperGraphConfig Config>
 typename Config::EdgeProperty defaultEdge(const HyperGraph<Config>& graph, size_t id)
 {
-  return typename Config::EdgeProperty();
+  return graph.edge_at(id).property();
 }
 
 template <HyperGraphConfig Config, typename MergeVertices = decltype(defaultMerge<Config>),

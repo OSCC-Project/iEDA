@@ -1,0 +1,10 @@
+BasedOnStyle: Google
+
+AllowShortFunctionsOnASingleLine: None
+AllowShortIfStatementsOnASingleLine: false
+AllowShortLoopsOnASingleLine: false
+BreakBeforeBraces: Allman
+ColumnLimit: 100
+KeepEmptyLinesAtTheStartOfBlocks: true
+SpaceAfterCStyleCast: true
+Standard: Cpp11

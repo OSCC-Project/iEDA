@@ -53,7 +53,7 @@ void TrackAssigner::destroyInst()
 void TrackAssigner::assign()
 {
   Monitor monitor;
-  LOG_INST.info(Loc::current(), "Begin assigning...");
+  LOG_INST.info(Loc::current(), "Starting...");
   TAModel ta_model = initTAModel();
   setTAParameter(ta_model);
   initTAPanelMap(ta_model);
@@ -64,7 +64,7 @@ void TrackAssigner::assign()
   printSummary(ta_model);
   writeNetCSV(ta_model);
   writeViolationCSV(ta_model);
-  LOG_INST.info(Loc::current(), "End assign", monitor.getStatsInfo());
+  LOG_INST.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
 // private
@@ -107,12 +107,12 @@ void TrackAssigner::setTAParameter(TAModel& ta_model)
 {
   int32_t cost_unit = 8;
   TAParameter ta_parameter(128 * cost_unit, 32 * cost_unit, 32 * cost_unit, 2);
-  LOG_INST.info(Loc::current(), "prefer_wire_unit : ", ta_parameter.get_prefer_wire_unit());
-  LOG_INST.info(Loc::current(), "corner_unit : ", ta_parameter.get_corner_unit());
-  LOG_INST.info(Loc::current(), "fixed_rect_unit : ", ta_parameter.get_fixed_rect_unit());
-  LOG_INST.info(Loc::current(), "routed_rect_unit : ", ta_parameter.get_routed_rect_unit());
-  LOG_INST.info(Loc::current(), "violation_unit : ", ta_parameter.get_violation_unit());
-  LOG_INST.info(Loc::current(), "max_routed_times : ", ta_parameter.get_max_routed_times());
+  LOG_INST.info(Loc::current(), "prefer_wire_unit: ", ta_parameter.get_prefer_wire_unit());
+  LOG_INST.info(Loc::current(), "corner_unit: ", ta_parameter.get_corner_unit());
+  LOG_INST.info(Loc::current(), "fixed_rect_unit: ", ta_parameter.get_fixed_rect_unit());
+  LOG_INST.info(Loc::current(), "routed_rect_unit: ", ta_parameter.get_routed_rect_unit());
+  LOG_INST.info(Loc::current(), "violation_unit: ", ta_parameter.get_violation_unit());
+  LOG_INST.info(Loc::current(), "max_routed_times: ", ta_parameter.get_max_routed_times());
   ta_model.set_ta_parameter(ta_parameter);
 }
 
@@ -131,8 +131,8 @@ void TrackAssigner::initTAPanelMap(TAModel& ta_model)
         for (int32_t line = gcell_grid.get_start_line(); line < gcell_grid.get_end_line(); line += gcell_grid.get_step_length()) {
           TAPanel ta_panel;
           EXTLayerRect ta_panel_rect;
-          ta_panel_rect.set_real_lb(die.get_real_lb_x(), line);
-          ta_panel_rect.set_real_rt(die.get_real_rt_x(), line + gcell_grid.get_step_length());
+          ta_panel_rect.set_real_ll(die.get_real_ll_x(), line);
+          ta_panel_rect.set_real_ur(die.get_real_ur_x(), line + gcell_grid.get_step_length());
           ta_panel_rect.set_grid_rect(RTUtil::getOpenGCellGridRect(ta_panel_rect.get_real_rect(), gcell_axis));
           ta_panel_rect.set_layer_idx(routing_layer.get_layer_idx());
           ta_panel.set_panel_rect(ta_panel_rect);
@@ -149,8 +149,8 @@ void TrackAssigner::initTAPanelMap(TAModel& ta_model)
         for (int32_t line = gcell_grid.get_start_line(); line < gcell_grid.get_end_line(); line += gcell_grid.get_step_length()) {
           TAPanel ta_panel;
           EXTLayerRect ta_panel_rect;
-          ta_panel_rect.set_real_lb(line, die.get_real_lb_y());
-          ta_panel_rect.set_real_rt(line + gcell_grid.get_step_length(), die.get_real_rt_y());
+          ta_panel_rect.set_real_ll(line, die.get_real_ll_y());
+          ta_panel_rect.set_real_ur(line + gcell_grid.get_step_length(), die.get_real_ur_y());
           ta_panel_rect.set_grid_rect(RTUtil::getOpenGCellGridRect(ta_panel_rect.get_real_rect(), gcell_axis));
           ta_panel_rect.set_layer_idx(routing_layer.get_layer_idx());
           ta_panel.set_panel_rect(ta_panel_rect);
@@ -217,22 +217,22 @@ std::map<TAPanelId, std::vector<TATask*>, CmpTAPanelId> TrackAssigner::getPanelT
 
   std::map<TAPanelId, std::vector<TATask*>, CmpTAPanelId> panel_task_map;
   for (Segment<TNode<Guide>*>& segment : RTUtil::getSegListByTree(ta_net.get_gr_result_tree())) {
-    Guide lb_guide = segment.get_first()->value();
-    Guide rt_guide = segment.get_second()->value();
-    PlanarCoord& lb_grid_coord = lb_guide.get_grid_coord().get_planar_coord();
-    PlanarCoord& rt_grid_coord = rt_guide.get_grid_coord().get_planar_coord();
-    int32_t guide_layer_idx = lb_guide.get_layer_idx();
+    Guide ll_guide = segment.get_first()->value();
+    Guide ur_guide = segment.get_second()->value();
+    PlanarCoord& ll_grid_coord = ll_guide.get_grid_coord().get_planar_coord();
+    PlanarCoord& ur_grid_coord = ur_guide.get_grid_coord().get_planar_coord();
+    int32_t guide_layer_idx = ll_guide.get_layer_idx();
 
-    if (lb_grid_coord == rt_grid_coord) {
+    if (ll_grid_coord == ur_grid_coord) {
       continue;
     }
     // ta_panel_id
     TAPanelId ta_panel_id;
     ta_panel_id.set_layer_idx(guide_layer_idx);
-    if (RTUtil::isHorizontal(lb_grid_coord, rt_grid_coord)) {
-      ta_panel_id.set_panel_idx(lb_grid_coord.get_y());
+    if (RTUtil::isHorizontal(ll_grid_coord, ur_grid_coord)) {
+      ta_panel_id.set_panel_idx(ll_grid_coord.get_y());
     } else {
-      ta_panel_id.set_panel_idx(lb_grid_coord.get_x());
+      ta_panel_id.set_panel_idx(ll_grid_coord.get_x());
     }
     // ta_task
     RoutingLayer& routing_layer = routing_layer_list[guide_layer_idx];
@@ -240,25 +240,25 @@ std::map<TAPanelId, std::vector<TATask*>, CmpTAPanelId> TrackAssigner::getPanelT
     std::vector<ScaleGrid>& y_track_grid_list = routing_layer.getYTrackGridList();
 
     std::vector<TAGroup> ta_group_list(2);
-    if (RTUtil::isHorizontal(lb_grid_coord, rt_grid_coord)) {
-      RTUtil::swapByCMP(lb_guide, rt_guide, [](Guide& a, Guide& b) {
+    if (RTUtil::isHorizontal(ll_grid_coord, ur_grid_coord)) {
+      RTUtil::swapByCMP(ll_guide, ur_guide, [](Guide& a, Guide& b) {
         return CmpPlanarCoordByXASC()(a.get_grid_coord().get_planar_coord(), b.get_grid_coord().get_planar_coord());
       });
-      int32_t lb_x = RTUtil::getScaleList(lb_guide.get_lb_x(), lb_guide.get_rt_x(), x_track_grid_list).back();
-      int32_t rt_x = RTUtil::getScaleList(rt_guide.get_lb_x(), rt_guide.get_rt_x(), x_track_grid_list).front();
-      for (int32_t y : RTUtil::getScaleList(lb_guide.get_lb_y(), lb_guide.get_rt_y(), y_track_grid_list)) {
-        ta_group_list.front().get_coord_list().emplace_back(lb_x, y, guide_layer_idx);
-        ta_group_list.back().get_coord_list().emplace_back(rt_x, y, guide_layer_idx);
+      int32_t ll_x = RTUtil::getScaleList(ll_guide.get_ll_x(), ll_guide.get_ur_x(), x_track_grid_list).back();
+      int32_t ur_x = RTUtil::getScaleList(ur_guide.get_ll_x(), ur_guide.get_ur_x(), x_track_grid_list).front();
+      for (int32_t y : RTUtil::getScaleList(ll_guide.get_ll_y(), ll_guide.get_ur_y(), y_track_grid_list)) {
+        ta_group_list.front().get_coord_list().emplace_back(ll_x, y, guide_layer_idx);
+        ta_group_list.back().get_coord_list().emplace_back(ur_x, y, guide_layer_idx);
       }
-    } else if (RTUtil::isVertical(lb_grid_coord, rt_grid_coord)) {
-      RTUtil::swapByCMP(lb_guide, rt_guide, [](Guide& a, Guide& b) {
+    } else if (RTUtil::isVertical(ll_grid_coord, ur_grid_coord)) {
+      RTUtil::swapByCMP(ll_guide, ur_guide, [](Guide& a, Guide& b) {
         return CmpPlanarCoordByYASC()(a.get_grid_coord().get_planar_coord(), b.get_grid_coord().get_planar_coord());
       });
-      int32_t lb_y = RTUtil::getScaleList(lb_guide.get_lb_y(), lb_guide.get_rt_y(), y_track_grid_list).back();
-      int32_t rt_y = RTUtil::getScaleList(rt_guide.get_lb_y(), rt_guide.get_rt_y(), y_track_grid_list).front();
-      for (int32_t x : RTUtil::getScaleList(lb_guide.get_lb_x(), lb_guide.get_rt_x(), x_track_grid_list)) {
-        ta_group_list.front().get_coord_list().emplace_back(x, lb_y, guide_layer_idx);
-        ta_group_list.back().get_coord_list().emplace_back(x, rt_y, guide_layer_idx);
+      int32_t ll_y = RTUtil::getScaleList(ll_guide.get_ll_y(), ll_guide.get_ur_y(), y_track_grid_list).back();
+      int32_t ur_y = RTUtil::getScaleList(ur_guide.get_ll_y(), ur_guide.get_ur_y(), y_track_grid_list).front();
+      for (int32_t x : RTUtil::getScaleList(ll_guide.get_ll_x(), ll_guide.get_ur_x(), x_track_grid_list)) {
+        ta_group_list.front().get_coord_list().emplace_back(x, ll_y, guide_layer_idx);
+        ta_group_list.back().get_coord_list().emplace_back(x, ur_y, guide_layer_idx);
       }
     }
     TATask* ta_task = new TATask();
@@ -301,6 +301,9 @@ void TrackAssigner::buildPanelSchedule(TAModel& ta_model)
 
 void TrackAssigner::assignTAPanelMap(TAModel& ta_model)
 {
+  Monitor monitor;
+  LOG_INST.info(Loc::current(), "Starting...");
+
   std::vector<std::vector<TAPanel>>& layer_panel_list = ta_model.get_layer_panel_list();
 
   size_t total_panel_num = 0;
@@ -317,22 +320,24 @@ void TrackAssigner::assignTAPanelMap(TAModel& ta_model)
       if (needRouting(ta_panel)) {
         buildFixedRectList(ta_panel);
         buildPanelTrackAxis(ta_panel);
-        initTANodeMap(ta_panel);
+        buildTANodeMap(ta_panel);
         buildTANodeNeighbor(ta_panel);
-        buildOrienNetMap(ta_panel);
+        buildOrientNetMap(ta_panel);
         // debugCheckTAPanel(ta_panel);
         // debugPlotTAPanel(ta_panel, -1, "before_routing");
         routeTAPanel(ta_panel);
         // debugPlotTAPanel(ta_panel, -1, "after_routing");
       }
-      updateTATaskToGcellMap(ta_panel);
-      updateViolationToGcellMap(ta_panel);
+      updateTATaskToGCellMap(ta_panel);
+      updateViolationToGCellMap(ta_panel);
       freeTAPanel(ta_panel);
     }
     assigned_panel_num += ta_panel_id_list.size();
     LOG_INST.info(Loc::current(), "Assigned ", assigned_panel_num, "/", total_panel_num, "(",
                   RTUtil::getPercentage(assigned_panel_num, total_panel_num), ") panels", stage_monitor.getStatsInfo());
   }
+
+  LOG_INST.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
 bool TrackAssigner::needRouting(TAPanel& ta_panel)
@@ -378,13 +383,13 @@ void TrackAssigner::buildPanelTrackAxis(TAPanel& ta_panel)
   panel_track_axis.set_y_grid_list(RTUtil::makeScaleGridList(y_scale_list));
 }
 
-void TrackAssigner::initTANodeMap(TAPanel& ta_panel)
+void TrackAssigner::buildTANodeMap(TAPanel& ta_panel)
 {
-  PlanarCoord& real_lb = ta_panel.get_panel_rect().get_real_lb();
-  PlanarCoord& real_rt = ta_panel.get_panel_rect().get_real_rt();
+  PlanarCoord& real_ll = ta_panel.get_panel_rect().get_real_ll();
+  PlanarCoord& real_ur = ta_panel.get_panel_rect().get_real_ur();
   ScaleAxis& panel_track_axis = ta_panel.get_panel_track_axis();
-  std::vector<int32_t> x_list = RTUtil::getScaleList(real_lb.get_x(), real_rt.get_x(), panel_track_axis.get_x_grid_list());
-  std::vector<int32_t> y_list = RTUtil::getScaleList(real_lb.get_y(), real_rt.get_y(), panel_track_axis.get_y_grid_list());
+  std::vector<int32_t> x_list = RTUtil::getScaleList(real_ll.get_x(), real_ur.get_x(), panel_track_axis.get_x_grid_list());
+  std::vector<int32_t> y_list = RTUtil::getScaleList(real_ll.get_y(), real_ur.get_y(), panel_track_axis.get_y_grid_list());
 
   GridMap<TANode>& ta_node_map = ta_panel.get_ta_node_map();
   ta_node_map.init(x_list.size(), y_list.size());
@@ -425,7 +430,7 @@ void TrackAssigner::buildTANodeNeighbor(TAPanel& ta_panel)
   }
 }
 
-void TrackAssigner::buildOrienNetMap(TAPanel& ta_panel)
+void TrackAssigner::buildOrientNetMap(TAPanel& ta_panel)
 {
   for (auto& [net_idx, fixed_rect_set] : ta_panel.get_net_fixed_rect_map()) {
     for (auto& fixed_rect : fixed_rect_set) {
@@ -1005,7 +1010,7 @@ std::vector<TATask*> TrackAssigner::getTaskScheduleByViolation(TAPanel& ta_panel
   return ta_task_list;
 }
 
-void TrackAssigner::updateTATaskToGcellMap(TAPanel& ta_panel)
+void TrackAssigner::updateTATaskToGCellMap(TAPanel& ta_panel)
 {
   for (TATask* ta_task : ta_panel.get_ta_task_list()) {
     for (Segment<LayerCoord>& routing_segment : ta_task->get_routing_segment_list()) {
@@ -1014,7 +1019,7 @@ void TrackAssigner::updateTATaskToGcellMap(TAPanel& ta_panel)
   }
 }
 
-void TrackAssigner::updateViolationToGcellMap(TAPanel& ta_panel)
+void TrackAssigner::updateViolationToGCellMap(TAPanel& ta_panel)
 {
   for (Violation& violation : ta_panel.get_violation_list()) {
     DM_INST.updateViolationToGCellMap(ChangeType::kAdd, new Violation(violation));
@@ -1040,9 +1045,9 @@ void TrackAssigner::updateFixedRectToGraph(TAPanel& ta_panel, ChangeType change_
   for (auto& [ta_node, orientation_set] : getRoutingNodeOrientationMap(ta_panel, net_shape)) {
     for (Orientation orientation : orientation_set) {
       if (change_type == ChangeType::kAdd) {
-        ta_node->get_orien_fixed_rect_map()[orientation].insert(net_shape.get_net_idx());
+        ta_node->get_orient_fixed_rect_map()[orientation].insert(net_shape.get_net_idx());
       } else if (change_type == ChangeType::kDel) {
-        ta_node->get_orien_fixed_rect_map()[orientation].erase(net_shape.get_net_idx());
+        ta_node->get_orient_fixed_rect_map()[orientation].erase(net_shape.get_net_idx());
       }
     }
   }
@@ -1054,9 +1059,9 @@ void TrackAssigner::updateNetResultToGraph(TAPanel& ta_panel, ChangeType change_
     for (auto& [ta_node, orientation_set] : getRoutingNodeOrientationMap(ta_panel, net_shape)) {
       for (Orientation orientation : orientation_set) {
         if (change_type == ChangeType::kAdd) {
-          ta_node->get_orien_routed_rect_map()[orientation].insert(net_shape.get_net_idx());
+          ta_node->get_orient_routed_rect_map()[orientation].insert(net_shape.get_net_idx());
         } else if (change_type == ChangeType::kDel) {
-          ta_node->get_orien_routed_rect_map()[orientation].erase(net_shape.get_net_idx());
+          ta_node->get_orient_routed_rect_map()[orientation].erase(net_shape.get_net_idx());
         }
       }
     }
@@ -1069,9 +1074,9 @@ void TrackAssigner::updateViolationToGraph(TAPanel& ta_panel, ChangeType change_
   for (auto& [ta_node, orientation_set] : getRoutingNodeOrientationMap(ta_panel, net_shape)) {
     for (Orientation orientation : orientation_set) {
       if (change_type == ChangeType::kAdd) {
-        ta_node->get_orien_violation_number_map()[orientation]++;
+        ta_node->get_orient_violation_number_map()[orientation]++;
       } else if (change_type == ChangeType::kDel) {
-        ta_node->get_orien_violation_number_map()[orientation]--;
+        ta_node->get_orient_violation_number_map()[orientation]--;
       }
     }
   }
@@ -1094,12 +1099,12 @@ std::map<TANode*, std::set<Orientation>> TrackAssigner::getRoutingNodeOrientatio
   std::map<TANode*, std::set<Orientation>> node_orientation_map;
   if (RTUtil::existTrackGrid(enlarged_rect, ta_panel.get_panel_track_axis())) {
     PlanarRect grid_rect = RTUtil::getTrackGridRect(enlarged_rect, ta_panel.get_panel_track_axis());
-    for (int32_t grid_x = grid_rect.get_lb_x(); grid_x <= grid_rect.get_rt_x(); grid_x++) {
-      for (int32_t grid_y = grid_rect.get_lb_y(); grid_y <= grid_rect.get_rt_y(); grid_y++) {
+    for (int32_t grid_x = grid_rect.get_ll_x(); grid_x <= grid_rect.get_ur_x(); grid_x++) {
+      for (int32_t grid_y = grid_rect.get_ll_y(); grid_y <= grid_rect.get_ur_y(); grid_y++) {
         TANode& node = ta_panel.get_ta_node_map()[grid_x][grid_y];
-        for (auto& [orientation, neigbor_ptr] : node.get_neighbor_node_map()) {
+        for (auto& [orientation, neighbor_ptr] : node.get_neighbor_node_map()) {
           node_orientation_map[&node].insert(orientation);
-          node_orientation_map[neigbor_ptr].insert(RTUtil::getOppositeOrientation(orientation));
+          node_orientation_map[neighbor_ptr].insert(RTUtil::getOppositeOrientation(orientation));
         }
       }
     }
@@ -1125,20 +1130,20 @@ void TrackAssigner::debugCheckTAPanel(TAPanel& ta_panel)
       if (!RTUtil::isInside(ta_panel.get_panel_rect().get_real_rect(), ta_node.get_planar_coord())) {
         LOG_INST.error(Loc::current(), "The ta_node is out of panel!");
       }
-      for (auto& [orien, neighbor] : ta_node.get_neighbor_node_map()) {
-        Orientation opposite_orien = RTUtil::getOppositeOrientation(orien);
-        if (!RTUtil::exist(neighbor->get_neighbor_node_map(), opposite_orien)) {
-          LOG_INST.error(Loc::current(), "The ta_node neighbor is not bidirection!");
+      for (auto& [orient, neighbor] : ta_node.get_neighbor_node_map()) {
+        Orientation opposite_orient = RTUtil::getOppositeOrientation(orient);
+        if (!RTUtil::exist(neighbor->get_neighbor_node_map(), opposite_orient)) {
+          LOG_INST.error(Loc::current(), "The ta_node neighbor is not bidirectional!");
         }
-        if (neighbor->get_neighbor_node_map()[opposite_orien] != &ta_node) {
-          LOG_INST.error(Loc::current(), "The ta_node neighbor is not bidirection!");
+        if (neighbor->get_neighbor_node_map()[opposite_orient] != &ta_node) {
+          LOG_INST.error(Loc::current(), "The ta_node neighbor is not bidirectional!");
         }
         LayerCoord node_coord(ta_node.get_planar_coord(), ta_node.get_layer_idx());
         LayerCoord neighbor_coord(neighbor->get_planar_coord(), neighbor->get_layer_idx());
-        if (RTUtil::getOrientation(node_coord, neighbor_coord) == orien) {
+        if (RTUtil::getOrientation(node_coord, neighbor_coord) == orient) {
           continue;
         }
-        LOG_INST.error(Loc::current(), "The neighbor orien is different with real region!");
+        LOG_INST.error(Loc::current(), "The neighbor orient is different with real region!");
       }
     }
   }
@@ -1205,20 +1210,20 @@ void TrackAssigner::debugPlotTAPanel(TAPanel& ta_panel, int32_t curr_task_idx, s
 
   // gcell_axis
   GPStruct gcell_axis_struct("gcell_axis");
-  std::vector<int32_t> gcell_x_list = RTUtil::getScaleList(panel_rect.get_lb_x(), panel_rect.get_rt_x(), gcell_axis.get_x_grid_list());
-  std::vector<int32_t> gcell_y_list = RTUtil::getScaleList(panel_rect.get_lb_y(), panel_rect.get_rt_y(), gcell_axis.get_y_grid_list());
+  std::vector<int32_t> gcell_x_list = RTUtil::getScaleList(panel_rect.get_ll_x(), panel_rect.get_ur_x(), gcell_axis.get_x_grid_list());
+  std::vector<int32_t> gcell_y_list = RTUtil::getScaleList(panel_rect.get_ll_y(), panel_rect.get_ur_y(), gcell_axis.get_y_grid_list());
   for (int32_t x : gcell_x_list) {
     GPPath gp_path;
     gp_path.set_layer_idx(0);
     gp_path.set_data_type(1);
-    gp_path.set_segment(x, panel_rect.get_lb_y(), x, panel_rect.get_rt_y());
+    gp_path.set_segment(x, panel_rect.get_ll_y(), x, panel_rect.get_ur_y());
     gcell_axis_struct.push(gp_path);
   }
   for (int32_t y : gcell_y_list) {
     GPPath gp_path;
     gp_path.set_layer_idx(0);
     gp_path.set_data_type(1);
-    gp_path.set_segment(panel_rect.get_lb_x(), y, panel_rect.get_rt_x(), y);
+    gp_path.set_segment(panel_rect.get_ll_x(), y, panel_rect.get_ur_x(), y);
     gcell_axis_struct.push(gp_path);
   }
   gp_gds.addStruct(gcell_axis_struct);
@@ -1231,7 +1236,7 @@ void TrackAssigner::debugPlotTAPanel(TAPanel& ta_panel, int32_t curr_task_idx, s
       TANode& ta_node = ta_node_map[grid_x][grid_y];
       PlanarRect real_rect = RTUtil::getEnlargedRect(ta_node.get_planar_coord(), width);
       int32_t y_reduced_span = std::max(1, real_rect.getYSpan() / 12);
-      int32_t y = real_rect.get_rt_y();
+      int32_t y = real_rect.get_ur_y();
 
       GPBoundary gp_boundary;
       switch (ta_node.get_state()) {
@@ -1254,7 +1259,7 @@ void TrackAssigner::debugPlotTAPanel(TAPanel& ta_panel, int32_t curr_task_idx, s
 
       y -= y_reduced_span;
       GPText gp_text_node_real_coord;
-      gp_text_node_real_coord.set_coord(real_rect.get_lb_x(), y);
+      gp_text_node_real_coord.set_coord(real_rect.get_ll_x(), y);
       gp_text_node_real_coord.set_text_type(static_cast<int32_t>(GPDataType::kInfo));
       gp_text_node_real_coord.set_message(
           RTUtil::getString("(", ta_node.get_x(), " , ", ta_node.get_y(), " , ", ta_node.get_layer_idx(), ")"));
@@ -1264,7 +1269,7 @@ void TrackAssigner::debugPlotTAPanel(TAPanel& ta_panel, int32_t curr_task_idx, s
 
       y -= y_reduced_span;
       GPText gp_text_node_grid_coord;
-      gp_text_node_grid_coord.set_coord(real_rect.get_lb_x(), y);
+      gp_text_node_grid_coord.set_coord(real_rect.get_ll_x(), y);
       gp_text_node_grid_coord.set_text_type(static_cast<int32_t>(GPDataType::kInfo));
       gp_text_node_grid_coord.set_message(RTUtil::getString("(", grid_x, " , ", grid_y, " , ", ta_node.get_layer_idx(), ")"));
       gp_text_node_grid_coord.set_layer_idx(GP_INST.getGDSIdxByRouting(ta_node.get_layer_idx()));
@@ -1272,80 +1277,80 @@ void TrackAssigner::debugPlotTAPanel(TAPanel& ta_panel, int32_t curr_task_idx, s
       ta_node_map_struct.push(gp_text_node_grid_coord);
 
       y -= y_reduced_span;
-      GPText gp_text_orien_fixed_rect_map;
-      gp_text_orien_fixed_rect_map.set_coord(real_rect.get_lb_x(), y);
-      gp_text_orien_fixed_rect_map.set_text_type(static_cast<int32_t>(GPDataType::kInfo));
-      gp_text_orien_fixed_rect_map.set_message("orien_fixed_rect_map: ");
-      gp_text_orien_fixed_rect_map.set_layer_idx(GP_INST.getGDSIdxByRouting(ta_node.get_layer_idx()));
-      gp_text_orien_fixed_rect_map.set_presentation(GPTextPresentation::kLeftMiddle);
-      ta_node_map_struct.push(gp_text_orien_fixed_rect_map);
+      GPText gp_text_orient_fixed_rect_map;
+      gp_text_orient_fixed_rect_map.set_coord(real_rect.get_ll_x(), y);
+      gp_text_orient_fixed_rect_map.set_text_type(static_cast<int32_t>(GPDataType::kInfo));
+      gp_text_orient_fixed_rect_map.set_message("orient_fixed_rect_map: ");
+      gp_text_orient_fixed_rect_map.set_layer_idx(GP_INST.getGDSIdxByRouting(ta_node.get_layer_idx()));
+      gp_text_orient_fixed_rect_map.set_presentation(GPTextPresentation::kLeftMiddle);
+      ta_node_map_struct.push(gp_text_orient_fixed_rect_map);
 
-      if (!ta_node.get_orien_fixed_rect_map().empty()) {
+      if (!ta_node.get_orient_fixed_rect_map().empty()) {
         y -= y_reduced_span;
-        GPText gp_text_orien_fixed_rect_map_info;
-        gp_text_orien_fixed_rect_map_info.set_coord(real_rect.get_lb_x(), y);
-        gp_text_orien_fixed_rect_map_info.set_text_type(static_cast<int32_t>(GPDataType::kInfo));
-        std::string orien_fixed_rect_map_info_message = "--";
-        for (auto& [orien, net_set] : ta_node.get_orien_fixed_rect_map()) {
-          orien_fixed_rect_map_info_message += RTUtil::getString("(", GetOrientationName()(orien), ",", !net_set.empty(), ")");
+        GPText gp_text_orient_fixed_rect_map_info;
+        gp_text_orient_fixed_rect_map_info.set_coord(real_rect.get_ll_x(), y);
+        gp_text_orient_fixed_rect_map_info.set_text_type(static_cast<int32_t>(GPDataType::kInfo));
+        std::string orient_fixed_rect_map_info_message = "--";
+        for (auto& [orient, net_set] : ta_node.get_orient_fixed_rect_map()) {
+          orient_fixed_rect_map_info_message += RTUtil::getString("(", GetOrientationName()(orient), ",", !net_set.empty(), ")");
         }
-        gp_text_orien_fixed_rect_map_info.set_message(orien_fixed_rect_map_info_message);
-        gp_text_orien_fixed_rect_map_info.set_layer_idx(GP_INST.getGDSIdxByRouting(ta_node.get_layer_idx()));
-        gp_text_orien_fixed_rect_map_info.set_presentation(GPTextPresentation::kLeftMiddle);
-        ta_node_map_struct.push(gp_text_orien_fixed_rect_map_info);
+        gp_text_orient_fixed_rect_map_info.set_message(orient_fixed_rect_map_info_message);
+        gp_text_orient_fixed_rect_map_info.set_layer_idx(GP_INST.getGDSIdxByRouting(ta_node.get_layer_idx()));
+        gp_text_orient_fixed_rect_map_info.set_presentation(GPTextPresentation::kLeftMiddle);
+        ta_node_map_struct.push(gp_text_orient_fixed_rect_map_info);
       }
 
       y -= y_reduced_span;
-      GPText gp_text_orien_routed_rect_map;
-      gp_text_orien_routed_rect_map.set_coord(real_rect.get_lb_x(), y);
-      gp_text_orien_routed_rect_map.set_text_type(static_cast<int32_t>(GPDataType::kInfo));
-      gp_text_orien_routed_rect_map.set_message("orien_routed_rect_map: ");
-      gp_text_orien_routed_rect_map.set_layer_idx(GP_INST.getGDSIdxByRouting(ta_node.get_layer_idx()));
-      gp_text_orien_routed_rect_map.set_presentation(GPTextPresentation::kLeftMiddle);
-      ta_node_map_struct.push(gp_text_orien_routed_rect_map);
+      GPText gp_text_orient_routed_rect_map;
+      gp_text_orient_routed_rect_map.set_coord(real_rect.get_ll_x(), y);
+      gp_text_orient_routed_rect_map.set_text_type(static_cast<int32_t>(GPDataType::kInfo));
+      gp_text_orient_routed_rect_map.set_message("orient_routed_rect_map: ");
+      gp_text_orient_routed_rect_map.set_layer_idx(GP_INST.getGDSIdxByRouting(ta_node.get_layer_idx()));
+      gp_text_orient_routed_rect_map.set_presentation(GPTextPresentation::kLeftMiddle);
+      ta_node_map_struct.push(gp_text_orient_routed_rect_map);
 
-      if (!ta_node.get_orien_routed_rect_map().empty()) {
+      if (!ta_node.get_orient_routed_rect_map().empty()) {
         y -= y_reduced_span;
-        GPText gp_text_orien_routed_rect_map_info;
-        gp_text_orien_routed_rect_map_info.set_coord(real_rect.get_lb_x(), y);
-        gp_text_orien_routed_rect_map_info.set_text_type(static_cast<int32_t>(GPDataType::kInfo));
-        std::string orien_routed_rect_map_info_message = "--";
-        for (auto& [orien, net_set] : ta_node.get_orien_routed_rect_map()) {
-          orien_routed_rect_map_info_message += RTUtil::getString("(", GetOrientationName()(orien), ",", !net_set.empty(), ")");
+        GPText gp_text_orient_routed_rect_map_info;
+        gp_text_orient_routed_rect_map_info.set_coord(real_rect.get_ll_x(), y);
+        gp_text_orient_routed_rect_map_info.set_text_type(static_cast<int32_t>(GPDataType::kInfo));
+        std::string orient_routed_rect_map_info_message = "--";
+        for (auto& [orient, net_set] : ta_node.get_orient_routed_rect_map()) {
+          orient_routed_rect_map_info_message += RTUtil::getString("(", GetOrientationName()(orient), ",", !net_set.empty(), ")");
         }
-        gp_text_orien_routed_rect_map_info.set_message(orien_routed_rect_map_info_message);
-        gp_text_orien_routed_rect_map_info.set_layer_idx(GP_INST.getGDSIdxByRouting(ta_node.get_layer_idx()));
-        gp_text_orien_routed_rect_map_info.set_presentation(GPTextPresentation::kLeftMiddle);
-        ta_node_map_struct.push(gp_text_orien_routed_rect_map_info);
+        gp_text_orient_routed_rect_map_info.set_message(orient_routed_rect_map_info_message);
+        gp_text_orient_routed_rect_map_info.set_layer_idx(GP_INST.getGDSIdxByRouting(ta_node.get_layer_idx()));
+        gp_text_orient_routed_rect_map_info.set_presentation(GPTextPresentation::kLeftMiddle);
+        ta_node_map_struct.push(gp_text_orient_routed_rect_map_info);
       }
 
       y -= y_reduced_span;
-      GPText gp_text_orien_violation_number_map;
-      gp_text_orien_violation_number_map.set_coord(real_rect.get_lb_x(), y);
-      gp_text_orien_violation_number_map.set_text_type(static_cast<int32_t>(GPDataType::kInfo));
-      gp_text_orien_violation_number_map.set_message("orien_violation_number_map: ");
-      gp_text_orien_violation_number_map.set_layer_idx(GP_INST.getGDSIdxByRouting(ta_node.get_layer_idx()));
-      gp_text_orien_violation_number_map.set_presentation(GPTextPresentation::kLeftMiddle);
-      ta_node_map_struct.push(gp_text_orien_violation_number_map);
+      GPText gp_text_orient_violation_number_map;
+      gp_text_orient_violation_number_map.set_coord(real_rect.get_ll_x(), y);
+      gp_text_orient_violation_number_map.set_text_type(static_cast<int32_t>(GPDataType::kInfo));
+      gp_text_orient_violation_number_map.set_message("orient_violation_number_map: ");
+      gp_text_orient_violation_number_map.set_layer_idx(GP_INST.getGDSIdxByRouting(ta_node.get_layer_idx()));
+      gp_text_orient_violation_number_map.set_presentation(GPTextPresentation::kLeftMiddle);
+      ta_node_map_struct.push(gp_text_orient_violation_number_map);
 
-      if (!ta_node.get_orien_violation_number_map().empty()) {
+      if (!ta_node.get_orient_violation_number_map().empty()) {
         y -= y_reduced_span;
-        GPText gp_text_orien_violation_number_map_info;
-        gp_text_orien_violation_number_map_info.set_coord(real_rect.get_lb_x(), y);
-        gp_text_orien_violation_number_map_info.set_text_type(static_cast<int32_t>(GPDataType::kInfo));
-        std::string orien_violation_number_map_info_message = "--";
-        for (auto& [orien, violation_number] : ta_node.get_orien_violation_number_map()) {
-          orien_violation_number_map_info_message += RTUtil::getString("(", GetOrientationName()(orien), ",", violation_number != 0, ")");
+        GPText gp_text_orient_violation_number_map_info;
+        gp_text_orient_violation_number_map_info.set_coord(real_rect.get_ll_x(), y);
+        gp_text_orient_violation_number_map_info.set_text_type(static_cast<int32_t>(GPDataType::kInfo));
+        std::string orient_violation_number_map_info_message = "--";
+        for (auto& [orient, violation_number] : ta_node.get_orient_violation_number_map()) {
+          orient_violation_number_map_info_message += RTUtil::getString("(", GetOrientationName()(orient), ",", violation_number != 0, ")");
         }
-        gp_text_orien_violation_number_map_info.set_message(orien_violation_number_map_info_message);
-        gp_text_orien_violation_number_map_info.set_layer_idx(GP_INST.getGDSIdxByRouting(ta_node.get_layer_idx()));
-        gp_text_orien_violation_number_map_info.set_presentation(GPTextPresentation::kLeftMiddle);
-        ta_node_map_struct.push(gp_text_orien_violation_number_map_info);
+        gp_text_orient_violation_number_map_info.set_message(orient_violation_number_map_info_message);
+        gp_text_orient_violation_number_map_info.set_layer_idx(GP_INST.getGDSIdxByRouting(ta_node.get_layer_idx()));
+        gp_text_orient_violation_number_map_info.set_presentation(GPTextPresentation::kLeftMiddle);
+        ta_node_map_struct.push(gp_text_orient_violation_number_map_info);
       }
 
       y -= y_reduced_span;
       GPText gp_text_direction_set;
-      gp_text_direction_set.set_coord(real_rect.get_lb_x(), y);
+      gp_text_direction_set.set_coord(real_rect.get_ll_x(), y);
       gp_text_direction_set.set_text_type(static_cast<int32_t>(GPDataType::kInfo));
       gp_text_direction_set.set_message("direction_set: ");
       gp_text_direction_set.set_layer_idx(GP_INST.getGDSIdxByRouting(ta_node.get_layer_idx()));
@@ -1355,7 +1360,7 @@ void TrackAssigner::debugPlotTAPanel(TAPanel& ta_panel, int32_t curr_task_idx, s
       if (!ta_node.get_direction_set().empty()) {
         y -= y_reduced_span;
         GPText gp_text_direction_set_info;
-        gp_text_direction_set_info.set_coord(real_rect.get_lb_x(), y);
+        gp_text_direction_set_info.set_coord(real_rect.get_ll_x(), y);
         gp_text_direction_set_info.set_text_type(static_cast<int32_t>(GPDataType::kInfo));
         std::string direction_set_info_message = "--";
         for (Direction direction : ta_node.get_direction_set()) {
@@ -1377,36 +1382,36 @@ void TrackAssigner::debugPlotTAPanel(TAPanel& ta_panel, int32_t curr_task_idx, s
       TANode& ta_node = ta_node_map[grid_x][grid_y];
       PlanarRect real_rect = RTUtil::getEnlargedRect(ta_node.get_planar_coord(), width);
 
-      int32_t lb_x = real_rect.get_lb_x();
-      int32_t lb_y = real_rect.get_lb_y();
-      int32_t rt_x = real_rect.get_rt_x();
-      int32_t rt_y = real_rect.get_rt_y();
-      int32_t mid_x = (lb_x + rt_x) / 2;
-      int32_t mid_y = (lb_y + rt_y) / 2;
-      int32_t x_reduced_span = (rt_x - lb_x) / 4;
-      int32_t y_reduced_span = (rt_y - lb_y) / 4;
+      int32_t ll_x = real_rect.get_ll_x();
+      int32_t ll_y = real_rect.get_ll_y();
+      int32_t ur_x = real_rect.get_ur_x();
+      int32_t ur_y = real_rect.get_ur_y();
+      int32_t mid_x = (ll_x + ur_x) / 2;
+      int32_t mid_y = (ll_y + ur_y) / 2;
+      int32_t x_reduced_span = (ur_x - ll_x) / 4;
+      int32_t y_reduced_span = (ur_y - ll_y) / 4;
       int32_t width = std::min(x_reduced_span, y_reduced_span) / 2;
 
       for (auto& [orientation, neighbor_node] : ta_node.get_neighbor_node_map()) {
         GPPath gp_path;
         switch (orientation) {
           case Orientation::kEast:
-            gp_path.set_segment(rt_x - x_reduced_span, mid_y, rt_x, mid_y);
+            gp_path.set_segment(ur_x - x_reduced_span, mid_y, ur_x, mid_y);
             break;
           case Orientation::kSouth:
-            gp_path.set_segment(mid_x, lb_y, mid_x, lb_y + y_reduced_span);
+            gp_path.set_segment(mid_x, ll_y, mid_x, ll_y + y_reduced_span);
             break;
           case Orientation::kWest:
-            gp_path.set_segment(lb_x, mid_y, lb_x + x_reduced_span, mid_y);
+            gp_path.set_segment(ll_x, mid_y, ll_x + x_reduced_span, mid_y);
             break;
           case Orientation::kNorth:
-            gp_path.set_segment(mid_x, rt_y - y_reduced_span, mid_x, rt_y);
+            gp_path.set_segment(mid_x, ur_y - y_reduced_span, mid_x, ur_y);
             break;
           case Orientation::kAbove:
-            gp_path.set_segment(rt_x - x_reduced_span, rt_y - y_reduced_span, rt_x, rt_y);
+            gp_path.set_segment(ur_x - x_reduced_span, ur_y - y_reduced_span, ur_x, ur_y);
             break;
           case Orientation::kBelow:
-            gp_path.set_segment(lb_x, lb_y, lb_x + x_reduced_span, lb_y + y_reduced_span);
+            gp_path.set_segment(ll_x, ll_y, ll_x + x_reduced_span, ll_y + y_reduced_span);
             break;
           default:
             LOG_INST.error(Loc::current(), "The orientation is oblique!");
@@ -1423,23 +1428,23 @@ void TrackAssigner::debugPlotTAPanel(TAPanel& ta_panel, int32_t curr_task_idx, s
 
   // panel_track_axis
   GPStruct panel_track_axis_struct("panel_track_axis");
-  PlanarCoord& real_lb = panel_rect.get_lb();
-  PlanarCoord& real_rt = panel_rect.get_rt();
+  PlanarCoord& real_ll = panel_rect.get_ll();
+  PlanarCoord& real_ur = panel_rect.get_ur();
   ScaleAxis& panel_track_axis = ta_panel.get_panel_track_axis();
-  std::vector<int32_t> x_list = RTUtil::getScaleList(real_lb.get_x(), real_rt.get_x(), panel_track_axis.get_x_grid_list());
-  std::vector<int32_t> y_list = RTUtil::getScaleList(real_lb.get_y(), real_rt.get_y(), panel_track_axis.get_y_grid_list());
+  std::vector<int32_t> x_list = RTUtil::getScaleList(real_ll.get_x(), real_ur.get_x(), panel_track_axis.get_x_grid_list());
+  std::vector<int32_t> y_list = RTUtil::getScaleList(real_ll.get_y(), real_ur.get_y(), panel_track_axis.get_y_grid_list());
 
   for (int32_t x : x_list) {
     GPPath gp_path;
     gp_path.set_data_type(static_cast<int32_t>(GPDataType::kAxis));
-    gp_path.set_segment(x, real_lb.get_y(), x, real_rt.get_y());
+    gp_path.set_segment(x, real_ll.get_y(), x, real_ur.get_y());
     gp_path.set_layer_idx(GP_INST.getGDSIdxByRouting(ta_panel.get_panel_rect().get_layer_idx()));
     panel_track_axis_struct.push(gp_path);
   }
   for (int32_t y : y_list) {
     GPPath gp_path;
     gp_path.set_data_type(static_cast<int32_t>(GPDataType::kAxis));
-    gp_path.set_segment(real_lb.get_x(), y, real_rt.get_x(), y);
+    gp_path.set_segment(real_ll.get_x(), y, real_ur.get_x(), y);
     gp_path.set_layer_idx(GP_INST.getGDSIdxByRouting(ta_panel.get_panel_rect().get_layer_idx()));
     panel_track_axis_struct.push(gp_path);
   }

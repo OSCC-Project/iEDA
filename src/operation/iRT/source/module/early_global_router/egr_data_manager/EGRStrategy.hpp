@@ -18,6 +18,6 @@
 
 enum class EGRStrategy
 {
-  kGradul = 0,
+  kGradual = 0,
   kTopo = 1
 };

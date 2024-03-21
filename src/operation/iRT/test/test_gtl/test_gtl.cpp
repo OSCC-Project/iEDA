@@ -36,20 +36,20 @@ void plotGDS(std::string gds_name, std::vector<GTLRectInt>& rect_list)
 
       gds_file << "BGNSTR" << std::endl;
       gds_file << "STRNAME rect_" << i << std::endl;
-      int32_t lb_x = gtl::xl(rect);
-      int32_t lb_y = gtl::yl(rect);
-      int32_t rt_x = gtl::xh(rect);
-      int32_t rt_y = gtl::yh(rect);
+      int32_t ll_x = gtl::xl(rect);
+      int32_t ll_y = gtl::yl(rect);
+      int32_t ur_x = gtl::xh(rect);
+      int32_t ur_y = gtl::yh(rect);
 
       gds_file << "BOUNDARY" << std::endl;
       gds_file << "LAYER " << 0 << std::endl;
       gds_file << "DATATYPE 0" << std::endl;
       gds_file << "XY" << std::endl;
-      gds_file << lb_x << " : " << lb_y << std::endl;
-      gds_file << rt_x << " : " << lb_y << std::endl;
-      gds_file << rt_x << " : " << rt_y << std::endl;
-      gds_file << lb_x << " : " << rt_y << std::endl;
-      gds_file << lb_x << " : " << lb_y << std::endl;
+      gds_file << ll_x << " : " << ll_y << std::endl;
+      gds_file << ur_x << " : " << ll_y << std::endl;
+      gds_file << ur_x << " : " << ur_y << std::endl;
+      gds_file << ll_x << " : " << ur_y << std::endl;
+      gds_file << ll_x << " : " << ll_y << std::endl;
       gds_file << "ENDEL" << std::endl;
 
       gds_file << "ENDSTR" << std::endl;

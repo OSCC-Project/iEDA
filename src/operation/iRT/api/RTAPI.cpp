@@ -71,12 +71,35 @@ void RTAPI::initRT(std::map<std::string, std::any> config_map)
   // clang-format on
   LOG_INST.printLogFilePath();
   DataManager::initInst();
-  DM_INST.input(config_map, dmInst->get_idb_builder());
+  DM_INST.prepare(config_map, dmInst->get_idb_builder());
   GDSPlotter::initInst();
+}
+
+void RTAPI::runEGR()
+{
+  Monitor monitor;
+  LOG_INST.info(Loc::current(), "Starting...");
+
+  PinAccessor::initInst();
+  PA_INST.access();
+  PinAccessor::destroyInst();
+
+  SupplyAnalyzer::initInst();
+  SA_INST.analyze();
+  SupplyAnalyzer::destroyInst();
+
+  InitialRouter::initInst();
+  IR_INST.route();
+  InitialRouter::destroyInst();
+
+  LOG_INST.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
 void RTAPI::runRT()
 {
+  Monitor monitor;
+  LOG_INST.info(Loc::current(), "Starting...");
+
   PinAccessor::initInst();
   PA_INST.access();
   PinAccessor::destroyInst();
@@ -100,12 +123,14 @@ void RTAPI::runRT()
   DetailedRouter::initInst();
   DR_INST.route();
   DetailedRouter::destroyInst();
+
+  LOG_INST.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
 void RTAPI::destroyRT()
 {
   GDSPlotter::destroyInst();
-  DM_INST.output();
+  DM_INST.clean();
   DataManager::destroyInst();
   LOG_INST.printLogFilePath();
   // clang-format off
@@ -194,13 +219,13 @@ void RTAPI::clearDef()
   //////////////////////////////////////////
 }
 
-eval::TileGrid* RTAPI::getCongestonMap(std::map<std::string, std::any> config_map, double& wirelength)
+eval::TileGrid* RTAPI::getCongestionMap(std::map<std::string, std::any> config_map, double& wire_length)
 {
   Monitor egr_monitor;
 
   EarlyGlobalRouter::initInst(config_map, dmInst->get_idb_builder());
   EGR_INST.route();
-  wirelength = EGR_INST.getDataManager().getEGRStat().get_total_wire_length();
+  wire_length = EGR_INST.getDataManager().getEGRStat().get_total_wire_length();
 
   eval::TileGrid* eval_tile_grid = new eval::TileGrid();
   int32_t cell_width = EGR_INST.getDataManager().getConfig().cell_width;
@@ -214,8 +239,8 @@ eval::TileGrid* RTAPI::getCongestonMap(std::map<std::string, std::any> config_ma
   }
 
   // init eval_tile_grid
-  eval_tile_grid->set_lx(die.get_real_lb_x());
-  eval_tile_grid->set_ly(die.get_real_lb_y());
+  eval_tile_grid->set_lx(die.get_real_ll_x());
+  eval_tile_grid->set_ly(die.get_real_ll_y());
   eval_tile_grid->set_tileCnt(die.getXSize(), die.getYSize());
   eval_tile_grid->set_tileSize(cell_width, cell_height);
   eval_tile_grid->set_num_routing_layers(static_cast<int>(layer_resource_map.size()));  // single layer
@@ -227,7 +252,7 @@ eval::TileGrid* RTAPI::getCongestonMap(std::map<std::string, std::any> config_ma
     for (int x = 0; x < resource_map.get_x_size(); x++) {
       for (int y = 0; y < resource_map.get_y_size(); y++) {
         EGRNode& egr_node = resource_map[x][y];
-        eval::Tile* tile = new eval::Tile(x, y, egr_node.get_lb_x(), egr_node.get_lb_y(), egr_node.get_rt_x(), egr_node.get_rt_y(),
+        eval::Tile* tile = new eval::Tile(x, y, egr_node.get_ll_x(), egr_node.get_ll_y(), egr_node.get_ur_x(), egr_node.get_ur_y(),
                                           static_cast<int32_t>(layer_idx));
         tile->set_direction(routing_layer_list[layer_idx].get_prefer_direction() == Direction::kHorizontal);
 
@@ -271,7 +296,7 @@ std::vector<Violation> RTAPI::getViolationList(std::vector<idb::IdbLayerShape*>&
                                                std::map<int32_t, std::vector<idb::IdbRegularWireSegment*>>& net_wire_via_map)
 {
   /**
-   * env_shape_list 存储 blockage obs pin_shape
+   * env_shape_list 存储 obstacle obs pin_shape
    * net_idb_segment_map 存储 wire via patch
    */
   ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
@@ -291,8 +316,8 @@ std::vector<Violation> RTAPI::getViolationList(std::vector<idb::IdbLayerShape*>&
       EXTLayerRect ext_layer_rect;
       if (idrc_violation->is_rect()) {
         idrc::DrcViolationRect* idrc_violation_rect = static_cast<idrc::DrcViolationRect*>(idrc_violation);
-        ext_layer_rect.set_real_lb(idrc_violation_rect->get_llx(), idrc_violation_rect->get_lly());
-        ext_layer_rect.set_real_rt(idrc_violation_rect->get_urx(), idrc_violation_rect->get_ury());
+        ext_layer_rect.set_real_ll(idrc_violation_rect->get_llx(), idrc_violation_rect->get_lly());
+        ext_layer_rect.set_real_ur(idrc_violation_rect->get_urx(), idrc_violation_rect->get_ury());
       } else {
         LOG_INST.error(Loc::current(), "Type not supported!");
       }
@@ -397,11 +422,11 @@ std::map<std::string, std::vector<double>> RTAPI::getTiming(
   timing_engine->buildGraph();
   timing_engine->initRcTree();
 
-  ista::Netlist* sta_netlist = timing_engine->get_netlist();
+  ista::Netlist* sta_net_list = timing_engine->get_netlist();
   for (auto& [net_idx, coord_real_pin_map] : net_coord_real_pin_map) {
     std::vector<Segment<LayerCoord>>& routing_segment_list = net_routing_segment_map[net_idx];
     // 构建RC-tree
-    ista::Net* ista_net = sta_netlist->findNet(RTUtil::escapeBackslash(net_list[net_idx].get_net_name()).c_str());
+    ista::Net* ista_net = sta_net_list->findNet(RTUtil::escapeBackslash(net_list[net_idx].get_net_name()).c_str());
     for (Segment<RCPin>& segment : getRCSegmentList(coord_real_pin_map, routing_segment_list)) {
       RCPin& first_rc_pin = segment.get_first();
       RCPin& second_rc_pin = segment.get_second();
@@ -418,15 +443,15 @@ std::map<std::string, std::vector<double>> RTAPI::getTiming(
                   ->getResistance(first_rc_pin._coord.get_layer_idx() + 1, distance / 1.0 / unit, width);
       }
 
-      auto getRctNode = [timing_engine, sta_netlist, ista_net](RCPin& rc_pin) {
+      auto getRctNode = [timing_engine, sta_net_list, ista_net](RCPin& rc_pin) {
         ista::RctNode* rct_node = nullptr;
         if (rc_pin._is_real_pin) {
           ista::DesignObject* pin_port = nullptr;
-          auto pin_port_list = sta_netlist->findPin(rc_pin._pin_name.c_str(), false, false);
+          auto pin_port_list = sta_net_list->findPin(rc_pin._pin_name.c_str(), false, false);
           if (!pin_port_list.empty()) {
             pin_port = pin_port_list.front();
           } else {
-            pin_port = sta_netlist->findPort(rc_pin._pin_name.c_str());
+            pin_port = sta_net_list->findPort(rc_pin._pin_name.c_str());
           }
           rct_node = timing_engine->makeOrFindRCTreeNode(pin_port);
         } else {
@@ -463,12 +488,64 @@ std::map<std::string, std::vector<double>> RTAPI::getTiming(
 
 void RTAPI::outputDef(std::string output_def_file_path)
 {
+  DM_INST.outputToIDB();
   dmInst->saveDef(output_def_file_path);
 }
 
 void RTAPI::outputSummary()
 {
-  LOG_INST.info(Loc::current(), "outputSummary");
+  Summary& rt_summary = DM_INST.getSummary();
+  idb::RTSummary& top_rt_summary = dmInst->get_feature_summary().getRTSummary();
+
+  top_rt_summary.pa_summary.routing_access_point_num_map = rt_summary.pa_summary.routing_access_point_num_map;
+  for (auto& [type, access_point_num] : rt_summary.pa_summary.type_access_point_num_map) {
+    top_rt_summary.pa_summary.type_access_point_num_map[GetAccessPointTypeName()(type)] = access_point_num;
+  }
+  top_rt_summary.pa_summary.total_access_point_num = rt_summary.pa_summary.total_access_point_num;
+
+  top_rt_summary.sa_summary.routing_supply_map = rt_summary.sa_summary.routing_supply_map;
+  top_rt_summary.sa_summary.total_supply = rt_summary.sa_summary.total_supply;
+
+  top_rt_summary.ir_summary.routing_demand_map = rt_summary.ir_summary.routing_demand_map;
+  top_rt_summary.ir_summary.total_demand = rt_summary.ir_summary.total_demand;
+  top_rt_summary.ir_summary.routing_overflow_map = rt_summary.ir_summary.routing_overflow_map;
+  top_rt_summary.ir_summary.total_overflow = rt_summary.ir_summary.total_overflow;
+  top_rt_summary.ir_summary.routing_wire_length_map = rt_summary.ir_summary.routing_wire_length_map;
+  top_rt_summary.ir_summary.total_wire_length = rt_summary.ir_summary.total_wire_length;
+  top_rt_summary.ir_summary.cut_via_num_map = rt_summary.ir_summary.cut_via_num_map;
+  top_rt_summary.ir_summary.total_via_num = rt_summary.ir_summary.total_via_num;
+  top_rt_summary.ir_summary.timing = rt_summary.ir_summary.timing;
+
+  for (auto& [iter, gr_summary] : rt_summary.iter_gr_summary_map) {
+    idb::GRSummary& top_gr_summary = top_rt_summary.iter_gr_summary_map[iter];
+    top_gr_summary.routing_demand_map = gr_summary.routing_demand_map;
+    top_gr_summary.total_demand = gr_summary.total_demand;
+    top_gr_summary.routing_overflow_map = gr_summary.routing_overflow_map;
+    top_gr_summary.total_overflow = gr_summary.total_overflow;
+    top_gr_summary.routing_wire_length_map = gr_summary.routing_wire_length_map;
+    top_gr_summary.total_wire_length = gr_summary.total_wire_length;
+    top_gr_summary.cut_via_num_map = gr_summary.cut_via_num_map;
+    top_gr_summary.total_via_num = gr_summary.total_via_num;
+    top_gr_summary.timing = gr_summary.timing;
+  }
+
+  top_rt_summary.ta_summary.routing_wire_length_map = rt_summary.ta_summary.routing_wire_length_map;
+  top_rt_summary.ta_summary.total_wire_length = rt_summary.ta_summary.total_wire_length;
+  top_rt_summary.ta_summary.routing_violation_num_map = rt_summary.ta_summary.routing_violation_num_map;
+  top_rt_summary.ta_summary.total_violation_num = rt_summary.ta_summary.total_violation_num;
+
+  for (auto& [iter, dr_summary] : rt_summary.iter_dr_summary_map) {
+    idb::DRSummary& top_dr_summary = top_rt_summary.iter_dr_summary_map[iter];
+    top_dr_summary.routing_wire_length_map = dr_summary.routing_wire_length_map;
+    top_dr_summary.total_wire_length = dr_summary.total_wire_length;
+    top_dr_summary.cut_via_num_map = dr_summary.cut_via_num_map;
+    top_dr_summary.total_via_num = dr_summary.total_via_num;
+    top_dr_summary.routing_patch_num_map = dr_summary.routing_patch_num_map;
+    top_dr_summary.total_patch_num = dr_summary.total_patch_num;
+    top_dr_summary.routing_violation_num_map = dr_summary.routing_violation_num_map;
+    top_dr_summary.total_violation_num = dr_summary.total_violation_num;
+    top_dr_summary.timing = dr_summary.timing;
+  }
 }
 
 #endif

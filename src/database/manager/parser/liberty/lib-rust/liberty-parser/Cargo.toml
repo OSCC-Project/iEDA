@@ -11,8 +11,8 @@ cbindgen = "0.26"
 
 [lib]
 name = "liberty_parser"
-# #crate-type = ["staticlib"]
-crate-type = ["cdylib"]
+crate-type = ["staticlib"]
+#crate-type = ["cdylib"]
 
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html

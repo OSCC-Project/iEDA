@@ -34,7 +34,7 @@ class EGRDatabase
   std::vector<RoutingLayer>& get_routing_layer_list() { return _routing_layer_list; }
   std::vector<CutLayer>& get_cut_layer_list() { return _cut_layer_list; }
   std::vector<std::vector<ViaMaster>>& get_layer_via_master_list() { return _layer_via_master_list; }
-  std::vector<Blockage>& get_routing_blockage_list() { return _routing_blockage_list; }
+  std::vector<Obstacle>& get_routing_obstacle_list() { return _routing_obstacle_list; }
   std::vector<EGRNet>& get_egr_net_list() { return _egr_net_list; }
   std::vector<GridMap<EGRNode>>& get_layer_resource_map() { return _layer_resource_map; }
   std::vector<int32_t>& get_h_layer_idx_list() { return _h_layer_idx_list; }
@@ -50,7 +50,7 @@ class EGRDatabase
   {
     _layer_via_master_list = layer_via_master_list;
   }
-  void set_routing_blockage_list(const std::vector<Blockage>& routing_blockage_list) { _routing_blockage_list = routing_blockage_list; }
+  void set_routing_obstacle_list(const std::vector<Obstacle>& routing_obstacle_list) { _routing_obstacle_list = routing_obstacle_list; }
   void set_egr_net_list(const std::vector<EGRNet>& egr_net_list) { _egr_net_list = egr_net_list; }
   void set_layer_resource_map(const std::vector<GridMap<EGRNode>>& layer_resource_map) { _layer_resource_map = layer_resource_map; }
   void set_h_layer_idx_list(const std::vector<int32_t>& h_layer_idx_list) { _h_layer_idx_list = h_layer_idx_list; }
@@ -63,7 +63,7 @@ class EGRDatabase
   std::vector<RoutingLayer> _routing_layer_list;
   std::vector<CutLayer> _cut_layer_list;
   std::vector<std::vector<ViaMaster>> _layer_via_master_list;
-  std::vector<Blockage> _routing_blockage_list;
+  std::vector<Obstacle> _routing_obstacle_list;
   std::vector<EGRNet> _egr_net_list;
   std::vector<GridMap<EGRNode>> _layer_resource_map;
   std::vector<int32_t> _h_layer_idx_list;

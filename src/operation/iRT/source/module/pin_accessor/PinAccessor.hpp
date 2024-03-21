@@ -55,7 +55,7 @@ class PinAccessor
   std::vector<AccessPoint> getAccessPointListByTrackCenter(int32_t pin_idx, std::vector<LayerRect>& legal_shape_list);
   std::vector<AccessPoint> getAccessPointListByShapeCenter(int32_t pin_idx, std::vector<LayerRect>& legal_shape_list);
   void buildAccessPointList(PAModel& pa_model);
-  void updateToGcellMap(PAModel& pa_model);
+  void updateToGCellMap(PAModel& pa_model);
 #if 1  // debug
   void debugPlotPAModel(PAModel& pa_model);
 #endif

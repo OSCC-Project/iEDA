@@ -20,57 +20,74 @@
 
 namespace tcl {
 
-  class TclClearDef : public TclCmd
-  {
-  public:
-    explicit TclClearDef(const char* cmd_name);
-    ~TclClearDef() override = default;
+class TclClearDef : public TclCmd
+{
+ public:
+  explicit TclClearDef(const char* cmd_name);
+  ~TclClearDef() override = default;
 
-    unsigned check() override { return 1; };
+  unsigned check() override { return 1; };
 
-    unsigned exec() override;
+  unsigned exec() override;
 
-  private:
-    std::vector<std::pair<std::string, ValueType>> _config_list;
-  };
+ private:
+  std::vector<std::pair<std::string, ValueType>> _config_list;
+};
 
-  class TclDestroyRT : public TclCmd
-  {
-  public:
-    explicit TclDestroyRT(const char* cmd_name);
-    ~TclDestroyRT() override = default;
+class TclDestroyRT : public TclCmd
+{
+ public:
+  explicit TclDestroyRT(const char* cmd_name);
+  ~TclDestroyRT() override = default;
 
-    unsigned check() override { return 1; };
+  unsigned check() override { return 1; };
 
-    unsigned exec() override;
-  };
+  unsigned exec() override;
 
-  class TclInitRT : public TclCmd
-  {
-  public:
-    explicit TclInitRT(const char* cmd_name);
-    ~TclInitRT() override = default;
+ private:
+  std::vector<std::pair<std::string, ValueType>> _config_list;
+};
 
-    unsigned check() override { return 1; };
+class TclInitRT : public TclCmd
+{
+ public:
+  explicit TclInitRT(const char* cmd_name);
+  ~TclInitRT() override = default;
 
-    unsigned exec() override;
+  unsigned check() override { return 1; };
 
-  private:
-    std::vector<std::pair<std::string, ValueType>> _config_list;
-  };
+  unsigned exec() override;
 
-  class TclRunRT : public TclCmd
-  {
-  public:
-    explicit TclRunRT(const char* cmd_name);
-    ~TclRunRT() override = default;
+ private:
+  std::vector<std::pair<std::string, ValueType>> _config_list;
+};
 
-    unsigned check() override { return 1; };
+class TclRunEGR : public TclCmd
+{
+ public:
+  explicit TclRunEGR(const char* cmd_name);
+  ~TclRunEGR() override = default;
 
-    unsigned exec() override;
+  unsigned check() override { return 1; };
 
-  private:
-    std::vector<std::pair<std::string, ValueType>> _config_list;
-  };
+  unsigned exec() override;
+
+ private:
+  std::vector<std::pair<std::string, ValueType>> _config_list;
+};
+
+class TclRunRT : public TclCmd
+{
+ public:
+  explicit TclRunRT(const char* cmd_name);
+  ~TclRunRT() override = default;
+
+  unsigned check() override { return 1; };
+
+  unsigned exec() override;
+
+ private:
+  std::vector<std::pair<std::string, ValueType>> _config_list;
+};
 
 }  // namespace tcl

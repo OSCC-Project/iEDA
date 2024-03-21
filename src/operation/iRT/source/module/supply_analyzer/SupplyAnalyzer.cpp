@@ -10,7 +10,7 @@
 //
 // THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
 // EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
-// MERCHANTABILITY OR FIT FOR A SARTICULAR PURPOSE.
+// MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
@@ -52,14 +52,14 @@ void SupplyAnalyzer::destroyInst()
 void SupplyAnalyzer::analyze()
 {
   Monitor monitor;
-  LOG_INST.info(Loc::current(), "Begin analyzing...");
+  LOG_INST.info(Loc::current(), "Starting...");
   SAModel sa_model = initSAModel();
   buildSupplySchedule(sa_model);
   analyzeSupply(sa_model);
   updateSummary(sa_model);
   printSummary(sa_model);
   writeSupplyCSV(sa_model);
-  LOG_INST.info(Loc::current(), "End analyze", monitor.getStatsInfo());
+  LOG_INST.info(Loc::current(), "Completed", monitor.getStatsInfo());
 
   // debugPlotSAModel(sa_model);
 }
@@ -108,6 +108,9 @@ void SupplyAnalyzer::buildSupplySchedule(SAModel& sa_model)
 
 void SupplyAnalyzer::analyzeSupply(SAModel& sa_model)
 {
+  Monitor monitor;
+  LOG_INST.info(Loc::current(), "Starting...");
+
   GridMap<GCell>& gcell_map = DM_INST.getDatabase().get_gcell_map();
 
   size_t total_pair_num = 0;
@@ -124,10 +127,10 @@ void SupplyAnalyzer::analyzeSupply(SAModel& sa_model)
       LayerCoord second_coord = grid_pair.second;
       EXTLayerRect search_rect = getSearchRect(first_coord, second_coord);
 
-      std::map<Orientation, int32_t>& first_orien_supply_map
-          = gcell_map[first_coord.get_x()][first_coord.get_y()].get_routing_orien_supply_map()[search_rect.get_layer_idx()];
-      std::map<Orientation, int32_t>& second_orien_supply_map
-          = gcell_map[second_coord.get_x()][second_coord.get_y()].get_routing_orien_supply_map()[search_rect.get_layer_idx()];
+      std::map<Orientation, int32_t>& first_orient_supply_map
+          = gcell_map[first_coord.get_x()][first_coord.get_y()].get_routing_orient_supply_map()[search_rect.get_layer_idx()];
+      std::map<Orientation, int32_t>& second_orient_supply_map
+          = gcell_map[second_coord.get_x()][second_coord.get_y()].get_routing_orient_supply_map()[search_rect.get_layer_idx()];
 
       Orientation first_orientation = RTUtil::getOrientation(first_coord, second_coord);
       Orientation second_orientation = RTUtil::getOppositeOrientation(first_orientation);
@@ -152,8 +155,8 @@ void SupplyAnalyzer::analyzeSupply(SAModel& sa_model)
       }
       for (LayerRect& wire : getCrossingWireList(search_rect)) {
         if (isAccess(wire, fixed_rect_list)) {
-          first_orien_supply_map[first_orientation]++;
-          second_orien_supply_map[second_orientation]++;
+          first_orient_supply_map[first_orientation]++;
+          second_orient_supply_map[second_orientation]++;
         }
       }
     }
@@ -161,6 +164,8 @@ void SupplyAnalyzer::analyzeSupply(SAModel& sa_model)
     LOG_INST.info(Loc::current(), "Analyzed ", analyzed_pair_num, "/", total_pair_num, "(",
                   RTUtil::getPercentage(analyzed_pair_num, total_pair_num), ") grid pairs", stage_monitor.getStatsInfo());
   }
+
+  LOG_INST.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
 EXTLayerRect SupplyAnalyzer::getSearchRect(LayerCoord& first_coord, LayerCoord& second_coord)
@@ -185,19 +190,19 @@ std::vector<LayerRect> SupplyAnalyzer::getCrossingWireList(EXTLayerRect& search_
   RoutingLayer& routing_layer = routing_layer_list[search_rect.get_layer_idx()];
   int32_t half_width = routing_layer.get_min_width() / 2;
 
-  int32_t real_lb_x = search_rect.get_real_lb_x();
-  int32_t real_lb_y = search_rect.get_real_lb_y();
-  int32_t real_rt_x = search_rect.get_real_rt_x();
-  int32_t real_rt_y = search_rect.get_real_rt_y();
+  int32_t real_ll_x = search_rect.get_real_ll_x();
+  int32_t real_ll_y = search_rect.get_real_ll_y();
+  int32_t real_ur_x = search_rect.get_real_ur_x();
+  int32_t real_ur_y = search_rect.get_real_ur_y();
 
   std::vector<LayerRect> wire_list;
   if (routing_layer.isPreferH()) {
-    for (int32_t y : RTUtil::getScaleList(real_lb_y, real_rt_y, routing_layer.getYTrackGridList())) {
-      wire_list.emplace_back(real_lb_x, y - half_width, real_rt_x, y + half_width, search_rect.get_layer_idx());
+    for (int32_t y : RTUtil::getScaleList(real_ll_y, real_ur_y, routing_layer.getYTrackGridList())) {
+      wire_list.emplace_back(real_ll_x, y - half_width, real_ur_x, y + half_width, search_rect.get_layer_idx());
     }
   } else {
-    for (int32_t x : RTUtil::getScaleList(real_lb_x, real_rt_x, routing_layer.getXTrackGridList())) {
-      wire_list.emplace_back(x - half_width, real_lb_y, x + half_width, real_rt_y, search_rect.get_layer_idx());
+    for (int32_t x : RTUtil::getScaleList(real_ll_x, real_ur_x, routing_layer.getXTrackGridList())) {
+      wire_list.emplace_back(x - half_width, real_ll_y, x + half_width, real_ur_y, search_rect.get_layer_idx());
     }
   }
   return wire_list;
@@ -234,19 +239,19 @@ void SupplyAnalyzer::debugPlotSAModel(SAModel& sa_model)
   // track_axis_struct
   GPStruct track_axis_struct("track_axis_struct");
   for (RoutingLayer& routing_layer : routing_layer_list) {
-    std::vector<int32_t> x_list = RTUtil::getScaleList(die.get_real_lb_x(), die.get_real_rt_x(), routing_layer.getXTrackGridList());
-    std::vector<int32_t> y_list = RTUtil::getScaleList(die.get_real_lb_y(), die.get_real_rt_y(), routing_layer.getYTrackGridList());
+    std::vector<int32_t> x_list = RTUtil::getScaleList(die.get_real_ll_x(), die.get_real_ur_x(), routing_layer.getXTrackGridList());
+    std::vector<int32_t> y_list = RTUtil::getScaleList(die.get_real_ll_y(), die.get_real_ur_y(), routing_layer.getYTrackGridList());
     for (int32_t x : x_list) {
       GPPath gp_path;
       gp_path.set_data_type(static_cast<int32_t>(GPDataType::kAxis));
-      gp_path.set_segment(x, die.get_real_lb_y(), x, die.get_real_rt_y());
+      gp_path.set_segment(x, die.get_real_ll_y(), x, die.get_real_ur_y());
       gp_path.set_layer_idx(GP_INST.getGDSIdxByRouting(routing_layer.get_layer_idx()));
       track_axis_struct.push(gp_path);
     }
     for (int32_t y : y_list) {
       GPPath gp_path;
       gp_path.set_data_type(static_cast<int32_t>(GPDataType::kAxis));
-      gp_path.set_segment(die.get_real_lb_x(), y, die.get_real_rt_x(), y);
+      gp_path.set_segment(die.get_real_ll_x(), y, die.get_real_ur_x(), y);
       gp_path.set_layer_idx(GP_INST.getGDSIdxByRouting(routing_layer.get_layer_idx()));
       track_axis_struct.push(gp_path);
     }
@@ -281,20 +286,20 @@ void SupplyAnalyzer::debugPlotSAModel(SAModel& sa_model)
 
   // gcell_axis
   GPStruct gcell_axis_struct("gcell_axis");
-  std::vector<int32_t> gcell_x_list = RTUtil::getScaleList(die.get_real_lb_x(), die.get_real_rt_x(), gcell_axis.get_x_grid_list());
-  std::vector<int32_t> gcell_y_list = RTUtil::getScaleList(die.get_real_lb_y(), die.get_real_rt_y(), gcell_axis.get_y_grid_list());
+  std::vector<int32_t> gcell_x_list = RTUtil::getScaleList(die.get_real_ll_x(), die.get_real_ur_x(), gcell_axis.get_x_grid_list());
+  std::vector<int32_t> gcell_y_list = RTUtil::getScaleList(die.get_real_ll_y(), die.get_real_ur_y(), gcell_axis.get_y_grid_list());
   for (int32_t x : gcell_x_list) {
     GPPath gp_path;
     gp_path.set_layer_idx(0);
     gp_path.set_data_type(1);
-    gp_path.set_segment(x, die.get_real_lb_y(), x, die.get_real_rt_y());
+    gp_path.set_segment(x, die.get_real_ll_y(), x, die.get_real_ur_y());
     gcell_axis_struct.push(gp_path);
   }
   for (int32_t y : gcell_y_list) {
     GPPath gp_path;
     gp_path.set_layer_idx(0);
     gp_path.set_data_type(1);
-    gp_path.set_segment(die.get_real_lb_x(), y, die.get_real_rt_x(), y);
+    gp_path.set_segment(die.get_real_ll_x(), y, die.get_real_ur_x(), y);
     gcell_axis_struct.push(gp_path);
   }
   gp_gds.addStruct(gcell_axis_struct);
@@ -304,23 +309,23 @@ void SupplyAnalyzer::debugPlotSAModel(SAModel& sa_model)
   for (int32_t x = 0; x < gcell_map.get_x_size(); x++) {
     for (int32_t y = 0; y < gcell_map.get_y_size(); y++) {
       PlanarRect shape = RTUtil::getRealRectByGCell(x, y, gcell_axis);
-      for (auto& [layer_idx, orien_supply_map] : gcell_map[x][y].get_routing_orien_supply_map()) {
+      for (auto& [layer_idx, orient_supply_map] : gcell_map[x][y].get_routing_orient_supply_map()) {
         int32_t y_reduced_span = shape.getYSpan() / 25;
-        int32_t y = shape.get_rt_y();
+        int32_t y = shape.get_ur_y();
 
-        if (!orien_supply_map.empty()) {
+        if (!orient_supply_map.empty()) {
           y -= y_reduced_span;
-          GPText gp_text_orien_supply_map_info;
-          gp_text_orien_supply_map_info.set_coord(shape.get_lb_x(), y);
-          gp_text_orien_supply_map_info.set_text_type(static_cast<int32_t>(GPDataType::kInfo));
-          std::string orien_supply_map_message = "--";
-          for (auto& [orientation, supply] : orien_supply_map) {
-            orien_supply_map_message += RTUtil::getString("(", GetOrientationName()(orientation), ":", supply, ")");
+          GPText gp_text_orient_supply_map_info;
+          gp_text_orient_supply_map_info.set_coord(shape.get_ll_x(), y);
+          gp_text_orient_supply_map_info.set_text_type(static_cast<int32_t>(GPDataType::kInfo));
+          std::string orient_supply_map_message = "--";
+          for (auto& [orientation, supply] : orient_supply_map) {
+            orient_supply_map_message += RTUtil::getString("(", GetOrientationName()(orientation), ":", supply, ")");
           }
-          gp_text_orien_supply_map_info.set_message(orien_supply_map_message);
-          gp_text_orien_supply_map_info.set_layer_idx(GP_INST.getGDSIdxByRouting(static_cast<int32_t>(layer_idx)));
-          gp_text_orien_supply_map_info.set_presentation(GPTextPresentation::kLeftMiddle);
-          supply_map_struct.push(gp_text_orien_supply_map_info);
+          gp_text_orient_supply_map_info.set_message(orient_supply_map_message);
+          gp_text_orient_supply_map_info.set_layer_idx(GP_INST.getGDSIdxByRouting(static_cast<int32_t>(layer_idx)));
+          gp_text_orient_supply_map_info.set_presentation(GPTextPresentation::kLeftMiddle);
+          supply_map_struct.push(gp_text_orient_supply_map_info);
         }
       }
     }
@@ -349,8 +354,8 @@ void SupplyAnalyzer::updateSummary(SAModel& sa_model)
 
   for (int32_t x = 0; x < gcell_map.get_x_size(); x++) {
     for (int32_t y = 0; y < gcell_map.get_y_size(); y++) {
-      for (auto& [routing_layer_idx, orien_supply_map] : gcell_map[x][y].get_routing_orien_supply_map()) {
-        for (auto& [orien, supply] : orien_supply_map) {
+      for (auto& [routing_layer_idx, orient_supply_map] : gcell_map[x][y].get_routing_orient_supply_map()) {
+        for (auto& [orient, supply] : orient_supply_map) {
           routing_supply_map[routing_layer_idx] += supply;
           total_supply += supply;
         }
@@ -394,7 +399,7 @@ void SupplyAnalyzer::writeSupplyCSV(SAModel& sa_model)
     for (int32_t y = gcell_map.get_y_size() - 1; y >= 0; y--) {
       for (int32_t x = 0; x < gcell_map.get_x_size(); x++) {
         int32_t total_supply = 0;
-        for (auto& [orien, supply] : gcell_map[x][y].get_routing_orien_supply_map()[routing_layer.get_layer_idx()]) {
+        for (auto& [orient, supply] : gcell_map[x][y].get_routing_orient_supply_map()[routing_layer.get_layer_idx()]) {
           total_supply += supply;
         }
         RTUtil::pushStream(supply_csv_file, total_supply, ",");
