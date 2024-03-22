@@ -589,27 +589,29 @@ void DetailedRouter::buildDRNodeValid(DRBox& dr_box)
           }
           int32_t x_pitch = routing_layer_list[point_layer_idx].getXTrackGridList().front().get_step_length();
           int32_t y_pitch = routing_layer_list[point_layer_idx].getYTrackGridList().front().get_step_length();
-          PlanarRect valid_region = RTUtil::getEnlargedRect(real_coord, x_pitch, y_pitch, x_pitch, y_pitch);
           std::vector<PlanarCoord> valid_h_coord_list;
           for (int32_t x_scale : layer_x_scale_map[point_layer_idx]) {
-            if (x_scale < valid_region.get_ll_x()) {
+            if ((real_coord.get_x() - 2 * x_pitch <= x_scale && x_scale <= real_coord.get_x() - x_pitch)
+                || (real_coord.get_x() + x_pitch <= x_scale && x_scale <= real_coord.get_x() + 2 * x_pitch)) {
+              valid_h_coord_list.emplace_back(x_scale, real_coord.get_y());
               continue;
             }
-            if (x_scale > valid_region.get_ur_x()) {
+            if (x_scale > real_coord.get_x() + 2 * x_pitch) {
               break;
             }
-            valid_h_coord_list.emplace_back(x_scale, real_coord.get_y());
           }
           std::vector<PlanarCoord> valid_v_coord_list;
           for (int32_t y_scale : layer_y_scale_map[point_layer_idx]) {
-            if (y_scale < valid_region.get_ll_y()) {
+            if ((real_coord.get_y() - 2 * y_pitch <= y_scale && y_scale <= real_coord.get_y() - y_pitch)
+                || (real_coord.get_y() + y_pitch <= y_scale && y_scale <= real_coord.get_y() + 2 * y_pitch)) {
+              valid_v_coord_list.emplace_back(real_coord.get_x(), y_scale);
               continue;
             }
-            if (y_scale > valid_region.get_ur_y()) {
+            if (y_scale > real_coord.get_y() + 2 * y_pitch) {
               break;
             }
-            valid_v_coord_list.emplace_back(real_coord.get_x(), y_scale);
           }
+
           if (on_v_track) {
             for (PlanarCoord& valid_h_coord : valid_h_coord_list) {
               PlanarCoord grid_coord = RTUtil::getTrackGrid(valid_h_coord, dr_box.get_box_track_axis());
@@ -636,90 +638,6 @@ void DetailedRouter::buildDRNodeValid(DRBox& dr_box)
   }
 }
 
-// void DetailedRouter::buildDRNodeValid(DRBox& dr_box)
-// {
-//   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
-//   int32_t bottom_routing_layer_idx = DM_INST.getConfig().bottom_routing_layer_idx;
-//   int32_t top_routing_layer_idx = DM_INST.getConfig().top_routing_layer_idx;
-
-//   std::vector<GridMap<DRNode>>& layer_node_map = dr_box.get_layer_node_map();
-//   ScaleAxis& box_track_axis = dr_box.get_box_track_axis();
-
-//   std::map<int32_t, std::set<int32_t>> layer_x_scale_map;
-//   std::map<int32_t, std::set<int32_t>> layer_y_scale_map;
-//   // point映射
-//   for (DRTask* dr_task : dr_box.get_dr_task_list()) {
-//     for (DRGroup& dr_group : dr_task->get_dr_group_list()) {
-//       for (auto& [real_coord, direction_set] : dr_group.get_coord_direction_map()) {
-//         std::vector<int32_t> point_layer_idx_list
-//             = RTUtil::getReservedViaBelowLayerIdxList(real_coord.get_layer_idx(), bottom_routing_layer_idx, top_routing_layer_idx);
-//         std::sort(point_layer_idx_list.begin(), point_layer_idx_list.end());
-//         point_layer_idx_list.push_back(point_layer_idx_list.back() + 1);
-//         for (int32_t point_layer_idx : point_layer_idx_list) {
-//           layer_x_scale_map[point_layer_idx].insert(real_coord.get_x());
-//           layer_y_scale_map[point_layer_idx].insert(real_coord.get_y());
-//         }
-//       }
-//     }
-//   }
-//   // 本层track上的node设置点合法状态
-//   int32_t box_ll_x = dr_box.get_box_rect().get_real_ll_x();
-//   int32_t box_ll_y = dr_box.get_box_rect().get_real_ll_y();
-//   int32_t box_ur_x = dr_box.get_box_rect().get_real_ur_x();
-//   int32_t box_ur_y = dr_box.get_box_rect().get_real_ur_y();
-//   for (RoutingLayer& curr_routing_layer : routing_layer_list) {
-//     int32_t curr_layer_idx = curr_routing_layer.get_layer_idx();
-//     if (curr_layer_idx < bottom_routing_layer_idx || top_routing_layer_idx < curr_layer_idx) {
-//       continue;
-//     }
-//     for (int32_t x_scale : RTUtil::getScaleList(box_ll_x, box_ur_x, curr_routing_layer.getXTrackGridList())) {
-//       layer_x_scale_map[curr_layer_idx].insert(x_scale);
-//     }
-//     for (int32_t y_scale : RTUtil::getScaleList(box_ll_y, box_ur_y, curr_routing_layer.getYTrackGridList())) {
-//       layer_y_scale_map[curr_layer_idx].insert(y_scale);
-//     }
-//     int32_t below_layer_idx = curr_layer_idx - 1;
-//     if (bottom_routing_layer_idx <= below_layer_idx && below_layer_idx <= top_routing_layer_idx) {
-//       RoutingLayer& below_routing_layer = routing_layer_list[below_layer_idx];
-//       if (below_routing_layer.isPreferH()) {
-//         for (int32_t y_scale : RTUtil::getScaleList(box_ll_y, box_ur_y, below_routing_layer.getYTrackGridList())) {
-//           layer_y_scale_map[curr_layer_idx].insert(y_scale);
-//         }
-//       } else {
-//         for (int32_t x_scale : RTUtil::getScaleList(box_ll_x, box_ur_x, below_routing_layer.getXTrackGridList())) {
-//           layer_x_scale_map[curr_layer_idx].insert(x_scale);
-//         }
-//       }
-//     }
-//     int32_t above_layer_idx = curr_layer_idx + 1;
-//     if (bottom_routing_layer_idx <= above_layer_idx && above_layer_idx <= top_routing_layer_idx) {
-//       RoutingLayer& above_routing_layer = routing_layer_list[above_layer_idx];
-//       if (above_routing_layer.isPreferH()) {
-//         for (int32_t y_scale : RTUtil::getScaleList(box_ll_y, box_ur_y, above_routing_layer.getYTrackGridList())) {
-//           layer_y_scale_map[curr_layer_idx].insert(y_scale);
-//         }
-//       } else {
-//         for (int32_t x_scale : RTUtil::getScaleList(box_ll_x, box_ur_x, above_routing_layer.getXTrackGridList())) {
-//           layer_x_scale_map[curr_layer_idx].insert(x_scale);
-//         }
-//       }
-//     }
-//   }
-
-//   for (RoutingLayer& routing_layer : routing_layer_list) {
-//     int32_t layer_idx = routing_layer.get_layer_idx();
-//     for (int32_t x_scale : layer_x_scale_map[layer_idx]) {
-//       for (int32_t y_scale : layer_y_scale_map[layer_idx]) {
-//         PlanarCoord real_coord(x_scale, y_scale);
-//         if (!RTUtil::existTrackGrid(real_coord, dr_box.get_box_track_axis())) {
-//           LOG_INST.error(Loc::current(), "There is no grid coord for real coord(", x_scale, ",", y_scale, ")!");
-//         }
-//         PlanarCoord grid_coord = RTUtil::getTrackGrid(real_coord, box_track_axis);
-//         layer_node_map[layer_idx][grid_coord.get_x()][grid_coord.get_y()].set_is_valid(true);
-//       }
-//     }
-//   }
-// }
 
 void DetailedRouter::buildDRNodeNeighbor(DRBox& dr_box)
 {
@@ -1642,9 +1560,6 @@ void DetailedRouter::debugCheckDRBox(DRBox& dr_box)
       }
       for (auto& [coord, direction_set] : dr_group.get_coord_direction_map()) {
         int32_t layer_idx = coord.get_layer_idx();
-        if (layer_idx == 0) {
-          int a = 1;
-        }
         if (routing_layer_list.back().get_layer_idx() < layer_idx || layer_idx < routing_layer_list.front().get_layer_idx()) {
           LOG_INST.error(Loc::current(), "The layer idx of group coord is illegal!");
         }
