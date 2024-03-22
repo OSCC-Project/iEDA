@@ -1990,29 +1990,23 @@ void DataManager::freeGCellMap()
   Monitor monitor;
   LOG_INST.info(Loc::current(), "Starting...");
 
-  GridMap<GCell>& gcell_map = _database.get_gcell_map();
+  Die& die = _database.get_die();
 
-  for (int32_t x = 0; x < gcell_map.get_x_size(); x++) {
-    for (int32_t y = 0; y < gcell_map.get_y_size(); y++) {
-      /**
-       * 不能在gcell_map内释放
-       * _type_layer_net_fixed_rect_map 内指针引用于 database内的obstacle_list
-       * _net_access_point_map 内指针引用于 pin内的access_point_list
-       */
-      for (auto& [net_idx, segment_set] : gcell_map[x][y].get_net_result_map()) {
-        for (Segment<LayerCoord>* segment : segment_set) {
-          updateNetResultToGCellMap(ChangeType::kDel, net_idx, segment);
-        }
-      }
-      for (auto& [net_idx, patch_set] : gcell_map[x][y].get_net_patch_map()) {
-        for (EXTLayerRect* patch : patch_set) {
-          updatePatchToGCellMap(ChangeType::kDel, net_idx, patch);
-        }
-      }
-      for (Violation* violation : gcell_map[x][y].get_violation_set()) {
-        updateViolationToGCellMap(ChangeType::kDel, violation);
-      }
+  for (auto& [net_idx, segment_set] : getNetResultMap(die)) {
+    for (Segment<LayerCoord>* segment : segment_set) {
+      delete segment;
+      segment = nullptr;
     }
+  }
+  for (auto& [net_idx, patch_set] : getNetPatchMap(die)) {
+    for (EXTLayerRect* patch : patch_set) {
+      delete patch;
+      patch = nullptr;
+    }
+  }
+  for (Violation* violation : getViolationSet(die)) {
+    delete violation;
+    violation = nullptr;
   }
   LOG_INST.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }

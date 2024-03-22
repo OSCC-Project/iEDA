@@ -782,16 +782,16 @@ std::vector<Segment<LayerCoord>> InitialRouter::getRoutingSegmentList(IRModel& i
 {
   IRTask* curr_ir_task = ir_model.get_curr_ir_task();
 
-  std::vector<LayerCoord> driving_grid_coord_list;
+  std::vector<LayerCoord> candidate_root_coord_list;
   std::map<LayerCoord, std::set<int32_t>, CmpLayerCoordByXASC> key_coord_pin_map;
   std::vector<IRGroup>& ir_group_list = curr_ir_task->get_ir_group_list();
   for (size_t i = 0; i < ir_group_list.size(); i++) {
     for (LayerCoord& coord : ir_group_list[i].get_coord_list()) {
-      driving_grid_coord_list.push_back(coord);
+      candidate_root_coord_list.push_back(coord);
       key_coord_pin_map[coord].insert(static_cast<int32_t>(i));
     }
   }
-  MTree<LayerCoord> coord_tree = RTUtil::getTreeByFullFlow(driving_grid_coord_list, ir_model.get_routing_segment_list(), key_coord_pin_map);
+  MTree<LayerCoord> coord_tree = RTUtil::getTreeByFullFlow(candidate_root_coord_list, ir_model.get_routing_segment_list(), key_coord_pin_map);
 
   std::vector<Segment<LayerCoord>> routing_segment_list;
   for (Segment<TNode<LayerCoord>*>& segment : RTUtil::getSegListByTree(coord_tree)) {

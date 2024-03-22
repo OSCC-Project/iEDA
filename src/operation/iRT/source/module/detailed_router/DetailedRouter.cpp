@@ -118,7 +118,7 @@ void DetailedRouter::iterativeDRModel(DRModel& dr_model)
     splitNetResult(dr_model);
     buildBoxSchedule(dr_model);
     routeDRBoxMap(dr_model);
-    organizeResults(dr_model);
+    // organizeResults(dr_model);
     updateSummary(dr_model);
     printSummary(dr_model);
     writeNetCSV(dr_model);
@@ -972,16 +972,16 @@ std::vector<Segment<LayerCoord>> DetailedRouter::getRoutingSegmentList(DRBox& dr
 {
   DRTask* curr_dr_task = dr_box.get_curr_dr_task();
 
-  std::vector<LayerCoord> driving_grid_coord_list;
+  std::vector<LayerCoord> candidate_root_coord_list;
   std::map<LayerCoord, std::set<int32_t>, CmpLayerCoordByXASC> key_coord_pin_map;
   std::vector<DRGroup>& dr_group_list = curr_dr_task->get_dr_group_list();
   for (size_t i = 0; i < dr_group_list.size(); i++) {
     for (auto& [coord, direction_set] : dr_group_list[i].get_coord_direction_map()) {
-      driving_grid_coord_list.push_back(coord);
+      candidate_root_coord_list.push_back(coord);
       key_coord_pin_map[coord].insert(static_cast<int32_t>(i));
     }
   }
-  MTree<LayerCoord> coord_tree = RTUtil::getTreeByFullFlow(driving_grid_coord_list, dr_box.get_routing_segment_list(), key_coord_pin_map);
+  MTree<LayerCoord> coord_tree = RTUtil::getTreeByFullFlow(candidate_root_coord_list, dr_box.get_routing_segment_list(), key_coord_pin_map);
 
   std::vector<Segment<LayerCoord>> routing_segment_list;
   for (Segment<TNode<LayerCoord>*>& segment : RTUtil::getSegListByTree(coord_tree)) {
@@ -1293,13 +1293,13 @@ void DetailedRouter::organizeResults(DRModel& dr_model)
   for (auto& [net_idx, segment_set] : DM_INST.getNetResultMap(die)) {
     DRNet& dr_net = dr_net_list[net_idx];
 
-    std::vector<LayerCoord> driving_grid_coord_list;
+    std::vector<LayerCoord> candidate_root_coord_list;
     std::map<LayerCoord, std::set<int32_t>, CmpLayerCoordByXASC> key_coord_pin_map;
     std::vector<DRPin>& dr_pin_list = dr_net.get_dr_pin_list();
     for (size_t i = 0; i < dr_pin_list.size(); i++) {
       for (AccessPoint& access_point : dr_pin_list[i].get_access_point_list()) {
         LayerCoord coord = access_point.getRealLayerCoord();
-        driving_grid_coord_list.push_back(coord);
+        candidate_root_coord_list.push_back(coord);
         key_coord_pin_map[coord].insert(static_cast<int32_t>(i));
       }
     }
@@ -1308,7 +1308,7 @@ void DetailedRouter::organizeResults(DRModel& dr_model)
       routing_segment_list.emplace_back(segment->get_first(), segment->get_second());
       DM_INST.updateNetResultToGCellMap(ChangeType::kDel, net_idx, segment);
     }
-    MTree<LayerCoord> coord_tree = RTUtil::getTreeByFullFlow(driving_grid_coord_list, routing_segment_list, key_coord_pin_map);
+    MTree<LayerCoord> coord_tree = RTUtil::getTreeByFullFlow(candidate_root_coord_list, routing_segment_list, key_coord_pin_map);
     for (Segment<TNode<LayerCoord>*>& coord_segment : RTUtil::getSegListByTree(coord_tree)) {
       Segment<LayerCoord>* segment = new Segment<LayerCoord>(coord_segment.get_first()->value(), coord_segment.get_second()->value());
       DM_INST.updateNetResultToGCellMap(ChangeType::kAdd, net_idx, segment);
