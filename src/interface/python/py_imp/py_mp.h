@@ -16,39 +16,8 @@
 // ***************************************************************************************
 #pragma once
 
-#include <sys/resource.h>
-#include <sys/time.h>
+namespace python_interface {
 
-#include <string>
+void runMP();
 
-namespace irt {
-
-class Monitor
-{
- public:
-  Monitor() { init(); }
-  ~Monitor() = default;
-  // getter
-
-  // setter
-
-  // function
-  std::string getStatsInfo();
-  std::string getElapsedTime();
-  std::string getCPUTime();
-  std::string getUsageMemory();
-
- private:
-  double _init_elapsed_time = 0;  // \s
-  double _init_cpu_time = 0;      // \s
-  double _init_usage_memory = 0;  // \GB
-
-  // function
-  void init();
-  void updateStats();
-  double getCurrElapsedTime();
-  double getCurrCPUTime();
-  double getCurrUsageMemory();
-};
-
-}  // namespace irt
+}  // namespace python_interface

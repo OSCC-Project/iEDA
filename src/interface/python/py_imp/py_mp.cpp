@@ -14,41 +14,18 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-#pragma once
 
-#include <sys/resource.h>
-#include <sys/time.h>
+#include "py_mp.h"
 
-#include <string>
+#include "iMP/api/MPAPI.hh"
+#include "idm.h"
 
-namespace irt {
+namespace python_interface {
 
-class Monitor
+void runMP()
 {
- public:
-  Monitor() { init(); }
-  ~Monitor() = default;
-  // getter
+  iMPAPIInst.initAPI("", dmInst->get_idb_builder());
+  iMPAPIInst.runMP();
+}
 
-  // setter
-
-  // function
-  std::string getStatsInfo();
-  std::string getElapsedTime();
-  std::string getCPUTime();
-  std::string getUsageMemory();
-
- private:
-  double _init_elapsed_time = 0;  // \s
-  double _init_cpu_time = 0;      // \s
-  double _init_usage_memory = 0;  // \GB
-
-  // function
-  void init();
-  void updateStats();
-  double getCurrElapsedTime();
-  double getCurrCPUTime();
-  double getCurrUsageMemory();
-};
-
-}  // namespace irt
+}  // namespace python_interface
