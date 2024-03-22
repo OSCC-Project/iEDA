@@ -10,12 +10,13 @@ add_library(liberty ${SRC})
 
 set(RUST_PROJECT_NAME liberty_parser)
 set(RUST_PROJECT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib-rust/liberty-parser)
+set(RUST_LIB_TYPE a)
 
 if(CMAKE_BUILD_TYPE MATCHES Debug)
-    set(RUST_LIB_PATH ${RUST_PROJECT_DIR}/target/debug/lib${RUST_PROJECT_NAME}.so)
+    set(RUST_LIB_PATH ${RUST_PROJECT_DIR}/target/debug/lib${RUST_PROJECT_NAME}.${RUST_LIB_TYPE})
     set(RUST_BUILD_CMD_OPTION "")
 else()
-    set(RUST_LIB_PATH ${RUST_PROJECT_DIR}/target/release/lib${RUST_PROJECT_NAME}.so)
+    set(RUST_LIB_PATH ${RUST_PROJECT_DIR}/target/release/lib${RUST_PROJECT_NAME}.${RUST_LIB_TYPE})
     set(RUST_BUILD_CMD_OPTION "--release")
 endif()
 
@@ -23,7 +24,7 @@ message("liberty parser rust lib path ${RUST_LIB_PATH}")
 
 ADD_EXTERNAL_PROJ(liberty)
 
-target_link_libraries(liberty str sta-solver log ${RUST_LIB_PATH})
+target_link_libraries(liberty str sta-solver log ${RUST_LIB_PATH} dl)
 
 target_include_directories(liberty PUBLIC 
     ${CMAKE_CURRENT_SOURCE_DIR} 

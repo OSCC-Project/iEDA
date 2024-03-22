@@ -118,6 +118,7 @@ void DetailedRouter::iterativeDRModel(DRModel& dr_model)
     splitNetResult(dr_model);
     buildBoxSchedule(dr_model);
     routeDRBoxMap(dr_model);
+    // organizeResults(dr_model);
     updateSummary(dr_model);
     printSummary(dr_model);
     writeNetCSV(dr_model);
@@ -335,7 +336,6 @@ void DetailedRouter::initDRTaskList(DRModel& dr_model, DRBox& dr_box)
   PlanarRect& real_rect = box_rect.get_real_rect();
   std::map<int32_t, std::set<AccessPoint*>> net_access_point_map = DM_INST.getNetAccessPointMap(box_rect);
   std::map<int32_t, std::set<Segment<LayerCoord>*>> net_result_map = DM_INST.getNetResultMap(box_rect);
-  std::map<int32_t, std::set<EXTLayerRect*>> net_patch_map = DM_INST.getNetPatchMap(box_rect);
 
   std::map<int32_t, std::vector<DRGroup>> net_group_list_map;
   {
@@ -414,14 +414,6 @@ void DetailedRouter::initDRTaskList(DRModel& dr_model, DRBox& dr_box)
         if (RTUtil::isInside(real_rect, Segment<PlanarCoord>(segment->get_first(), segment->get_second()))) {
           dr_task->get_routing_segment_list().push_back(*segment);
           DM_INST.updateNetResultToGCellMap(ChangeType::kDel, net_idx, segment);
-        }
-      }
-    }
-    {
-      for (EXTLayerRect* patch : net_patch_map[net_idx]) {
-        if (RTUtil::isInside(real_rect, patch->get_real_rect())) {
-          dr_task->get_patch_list().push_back(*patch);
-          DM_INST.updatePatchToGCellMap(ChangeType::kDel, net_idx, patch);
         }
       }
     }
@@ -666,9 +658,6 @@ void DetailedRouter::buildOrientNetMap(DRBox& dr_box)
     for (Segment<LayerCoord>& routing_segment : dr_task->get_routing_segment_list()) {
       updateNetResultToGraph(dr_box, ChangeType::kAdd, dr_task->get_net_idx(), routing_segment);
     }
-    for (EXTLayerRect& patch : dr_task->get_patch_list()) {
-      updatePatchToGraph(dr_box, ChangeType::kAdd, dr_task->get_net_idx(), patch);
-    }
   }
   for (Violation& violation : dr_box.get_violation_list()) {
     updateViolationToGraph(dr_box, ChangeType::kAdd, violation);
@@ -681,7 +670,6 @@ void DetailedRouter::routeDRBox(DRBox& dr_box)
   while (!dr_task_list.empty()) {
     for (DRTask* dr_task : dr_task_list) {
       routeDRTask(dr_box, dr_task);
-      applyPatch(dr_box, dr_task);
       dr_task->addRoutedTimes();
     }
     updateViolationList(dr_box);
@@ -984,17 +972,16 @@ std::vector<Segment<LayerCoord>> DetailedRouter::getRoutingSegmentList(DRBox& dr
 {
   DRTask* curr_dr_task = dr_box.get_curr_dr_task();
 
-  std::vector<LayerCoord> driving_grid_coord_list;
+  std::vector<LayerCoord> candidate_root_coord_list;
   std::map<LayerCoord, std::set<int32_t>, CmpLayerCoordByXASC> key_coord_pin_map;
   std::vector<DRGroup>& dr_group_list = curr_dr_task->get_dr_group_list();
   for (size_t i = 0; i < dr_group_list.size(); i++) {
     for (auto& [coord, direction_set] : dr_group_list[i].get_coord_direction_map()) {
-      driving_grid_coord_list.push_back(coord);
+      candidate_root_coord_list.push_back(coord);
       key_coord_pin_map[coord].insert(static_cast<int32_t>(i));
     }
   }
-  // 构建 优化 检查 routing_segment_list
-  MTree<LayerCoord> coord_tree = RTUtil::getTreeByFullFlow(driving_grid_coord_list, dr_box.get_routing_segment_list(), key_coord_pin_map);
+  MTree<LayerCoord> coord_tree = RTUtil::getTreeByFullFlow(candidate_root_coord_list, dr_box.get_routing_segment_list(), key_coord_pin_map);
 
   std::vector<Segment<LayerCoord>> routing_segment_list;
   for (Segment<TNode<LayerCoord>*>& segment : RTUtil::getSegListByTree(coord_tree)) {
@@ -1199,27 +1186,6 @@ double DetailedRouter::getEstimateViaCost(DRBox& dr_box, DRNode* start_node, DRN
   return via_cost;
 }
 
-void DetailedRouter::applyPatch(DRBox& dr_box, DRTask* dr_task)
-{
-  std::vector<EXTLayerRect> new_patch_list = getPatchList(dr_box, dr_task);
-
-  // 原结果从graph删除
-  for (EXTLayerRect& patch : dr_task->get_patch_list()) {
-    updatePatchToGraph(dr_box, ChangeType::kDel, dr_task->get_net_idx(), patch);
-  }
-  dr_task->set_patch_list(new_patch_list);
-  // 新结果添加到graph
-  for (EXTLayerRect& patch : dr_task->get_patch_list()) {
-    updatePatchToGraph(dr_box, ChangeType::kAdd, dr_task->get_net_idx(), patch);
-  }
-}
-
-std::vector<EXTLayerRect> DetailedRouter::getPatchList(DRBox& dr_box, DRTask* dr_task)
-{
-  std::vector<EXTLayerRect> patch_list;
-  return patch_list;
-}
-
 void DetailedRouter::updateViolationList(DRBox& dr_box)
 {
   std::vector<Violation> new_violation_list = getViolationList(dr_box);
@@ -1259,9 +1225,6 @@ std::vector<Violation> DetailedRouter::getViolationList(DRBox& dr_box)
     for (Segment<LayerCoord>& routing_segment : dr_task->get_routing_segment_list()) {
       net_wire_via_map[dr_task->get_net_idx()].push_back(DM_INST.getIDBSegmentByNetResult(dr_task->get_net_idx(), routing_segment));
     }
-    for (EXTLayerRect& patch : dr_task->get_patch_list()) {
-      net_wire_via_map[dr_task->get_net_idx()].push_back(DM_INST.getIDBSegmentByNetPatch(dr_task->get_net_idx(), patch));
-    }
   }
   std::vector<Violation> violation_list = RTAPI_INST.getViolationList(env_shape_list, net_pin_shape_map, net_wire_via_map);
   // free memory
@@ -1292,9 +1255,6 @@ void DetailedRouter::updateDRTaskToGCellMap(DRBox& dr_box)
     for (Segment<LayerCoord>& routing_segment : dr_task->get_routing_segment_list()) {
       DM_INST.updateNetResultToGCellMap(ChangeType::kAdd, dr_task->get_net_idx(), new Segment<LayerCoord>(routing_segment));
     }
-    for (EXTLayerRect& patch : dr_task->get_patch_list()) {
-      DM_INST.updatePatchToGCellMap(ChangeType::kAdd, dr_task->get_net_idx(), new EXTLayerRect(patch));
-    }
   }
 }
 
@@ -1320,6 +1280,41 @@ int32_t DetailedRouter::getViolationNum()
   Die& die = DM_INST.getDatabase().get_die();
 
   return static_cast<int32_t>(DM_INST.getViolationSet(die).size());
+}
+
+void DetailedRouter::organizeResults(DRModel& dr_model)
+{
+  Monitor monitor;
+  LOG_INST.info(Loc::current(), "Starting...");
+
+  Die& die = DM_INST.getDatabase().get_die();
+  std::vector<DRNet>& dr_net_list = dr_model.get_dr_net_list();
+
+  for (auto& [net_idx, segment_set] : DM_INST.getNetResultMap(die)) {
+    DRNet& dr_net = dr_net_list[net_idx];
+
+    std::vector<LayerCoord> candidate_root_coord_list;
+    std::map<LayerCoord, std::set<int32_t>, CmpLayerCoordByXASC> key_coord_pin_map;
+    std::vector<DRPin>& dr_pin_list = dr_net.get_dr_pin_list();
+    for (size_t i = 0; i < dr_pin_list.size(); i++) {
+      for (AccessPoint& access_point : dr_pin_list[i].get_access_point_list()) {
+        LayerCoord coord = access_point.getRealLayerCoord();
+        candidate_root_coord_list.push_back(coord);
+        key_coord_pin_map[coord].insert(static_cast<int32_t>(i));
+      }
+    }
+    std::vector<Segment<LayerCoord>> routing_segment_list;
+    for (Segment<LayerCoord>* segment : segment_set) {
+      routing_segment_list.emplace_back(segment->get_first(), segment->get_second());
+      DM_INST.updateNetResultToGCellMap(ChangeType::kDel, net_idx, segment);
+    }
+    MTree<LayerCoord> coord_tree = RTUtil::getTreeByFullFlow(candidate_root_coord_list, routing_segment_list, key_coord_pin_map);
+    for (Segment<TNode<LayerCoord>*>& coord_segment : RTUtil::getSegListByTree(coord_tree)) {
+      Segment<LayerCoord>* segment = new Segment<LayerCoord>(coord_segment.get_first()->value(), coord_segment.get_second()->value());
+      DM_INST.updateNetResultToGCellMap(ChangeType::kAdd, net_idx, segment);
+    }
+  }
+  LOG_INST.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
 #if 1  // update env
@@ -1355,23 +1350,6 @@ void DetailedRouter::updateNetResultToGraph(DRBox& dr_box, ChangeType change_typ
         } else if (change_type == ChangeType::kDel) {
           dr_node->get_orient_routed_rect_map()[orientation].erase(net_shape.get_net_idx());
         }
-      }
-    }
-  }
-}
-
-void DetailedRouter::updatePatchToGraph(DRBox& dr_box, ChangeType change_type, int32_t net_idx, EXTLayerRect& patch)
-{
-  NetShape net_shape(net_idx, patch.getRealLayerRect(), true);
-  for (auto& [dr_node, orientation_set] : getNodeOrientationMap(dr_box, net_shape)) {
-    if (!dr_node->get_is_valid()) {
-      continue;
-    }
-    for (Orientation orientation : orientation_set) {
-      if (change_type == ChangeType::kAdd) {
-        dr_node->get_orient_routed_rect_map()[orientation].insert(net_shape.get_net_idx());
-      } else if (change_type == ChangeType::kDel) {
-        dr_node->get_orient_routed_rect_map()[orientation].erase(net_shape.get_net_idx());
       }
     }
   }
@@ -1953,24 +1931,24 @@ void DetailedRouter::updateSummary(DRModel& dr_model)
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
   std::vector<CutLayer>& cut_layer_list = DM_INST.getDatabase().get_cut_layer_list();
   std::vector<std::vector<ViaMaster>>& layer_via_master_list = DM_INST.getDatabase().get_layer_via_master_list();
+  int32_t enable_timing = DM_INST.getConfig().enable_timing;
   std::map<int32_t, double>& routing_wire_length_map
       = DM_INST.getSummary().iter_dr_summary_map[dr_model.get_iter()].routing_wire_length_map;
   double& total_wire_length = DM_INST.getSummary().iter_dr_summary_map[dr_model.get_iter()].total_wire_length;
   std::map<int32_t, int32_t>& cut_via_num_map = DM_INST.getSummary().iter_dr_summary_map[dr_model.get_iter()].cut_via_num_map;
   int32_t& total_via_num = DM_INST.getSummary().iter_dr_summary_map[dr_model.get_iter()].total_via_num;
-  std::map<int32_t, int32_t>& routing_patch_num_map = DM_INST.getSummary().iter_dr_summary_map[dr_model.get_iter()].routing_patch_num_map;
-  int32_t& total_patch_num = DM_INST.getSummary().iter_dr_summary_map[dr_model.get_iter()].total_patch_num;
   std::map<int32_t, int32_t>& routing_violation_num_map
       = DM_INST.getSummary().iter_dr_summary_map[dr_model.get_iter()].routing_violation_num_map;
   int32_t& total_violation_num = DM_INST.getSummary().iter_dr_summary_map[dr_model.get_iter()].total_violation_num;
+  std::map<std::string, std::vector<double>>& timing = DM_INST.getSummary().iter_dr_summary_map[dr_model.get_iter()].timing;
+
+  std::vector<DRNet>& dr_net_list = dr_model.get_dr_net_list();
 
   for (RoutingLayer& routing_layer : routing_layer_list) {
     routing_wire_length_map[routing_layer.get_layer_idx()] = 0;
-    routing_patch_num_map[routing_layer.get_layer_idx()] = 0;
     routing_violation_num_map[routing_layer.get_layer_idx()] = 0;
   }
   total_wire_length = 0;
-  total_patch_num = 0;
   total_violation_num = 0;
   for (CutLayer& cut_layer : cut_layer_list) {
     cut_via_num_map[cut_layer.get_layer_idx()] = 0;
@@ -1997,38 +1975,29 @@ void DetailedRouter::updateSummary(DRModel& dr_model)
       }
     }
   }
-  for (auto& [net_idx, patch_set] : DM_INST.getNetPatchMap(die)) {
-    for (EXTLayerRect* patch : patch_set) {
-      routing_patch_num_map[patch->get_layer_idx()]++;
-      total_patch_num++;
-    }
-  }
   for (Violation* violation : DM_INST.getViolationSet(die)) {
     routing_violation_num_map[violation->get_violation_shape().get_layer_idx()]++;
     total_violation_num++;
   }
-#if 0
-  std::map<std::string, std::vector<double>>& timing = DM_INST.getSummary().iter_dr_summary_map[dr_model.get_iter()].timing;
-  std::map<int32_t, std::map<LayerCoord, std::vector<std::string>, CmpLayerCoordByXASC>> net_coord_real_pin_map;
-  std::map<int32_t, std::vector<Segment<LayerCoord>>> net_routing_segment_map;
-  for (DRNet& dr_net : dr_model.get_dr_net_list()) {
-    for (DRPin& dr_pin : dr_net.get_dr_pin_list()) {
-      for (AccessPoint& access_point : dr_pin.get_access_point_list()) {
-        net_coord_real_pin_map[dr_net.get_net_idx()][access_point.getRealLayerCoord()].push_back(dr_pin.get_pin_name());
-      }
-    }
-  }
-  for (int32_t x = 0; x < gcell_map.get_x_size(); x++) {
-    for (int32_t y = 0; y < gcell_map.get_y_size(); y++) {
-      for (auto& [net_idx, segment_set] : gcell_map[x][y].get_net_result_map()) {
-        for (Segment<LayerCoord>* segment : segment_set) {
-          net_routing_segment_map[net_idx].emplace_back(segment->get_first(), segment->get_second());
+  if (enable_timing) {
+    std::vector<std::map<std::string, std::vector<LayerCoord>>> real_pin_coord_map_list;
+    real_pin_coord_map_list.resize(dr_net_list.size());
+    std::vector<std::vector<Segment<LayerCoord>>> routing_segment_list_list;
+    routing_segment_list_list.resize(dr_net_list.size());
+    for (DRNet& dr_net : dr_net_list) {
+      for (DRPin& dr_pin : dr_net.get_dr_pin_list()) {
+        for (AccessPoint& access_point : dr_pin.get_access_point_list()) {
+          real_pin_coord_map_list[dr_net.get_net_idx()][dr_pin.get_pin_name()].push_back(access_point.getRealLayerCoord());
         }
       }
     }
+    for (auto& [net_idx, segment_set] : DM_INST.getNetResultMap(die)) {
+      for (Segment<LayerCoord>* segment : segment_set) {
+        routing_segment_list_list[net_idx].emplace_back(segment->get_first(), segment->get_second());
+      }
+    }
+    timing = RTAPI_INST.getTiming(real_pin_coord_map_list, routing_segment_list_list);
   }
-  timing = RTAPI_INST.getTiming(net_coord_real_pin_map, net_routing_segment_map);
-#endif
 }
 
 void DetailedRouter::printSummary(DRModel& dr_model)
@@ -2040,8 +2009,6 @@ void DetailedRouter::printSummary(DRModel& dr_model)
   double& total_wire_length = DM_INST.getSummary().iter_dr_summary_map[dr_model.get_iter()].total_wire_length;
   std::map<int32_t, int32_t>& cut_via_num_map = DM_INST.getSummary().iter_dr_summary_map[dr_model.get_iter()].cut_via_num_map;
   int32_t& total_via_num = DM_INST.getSummary().iter_dr_summary_map[dr_model.get_iter()].total_via_num;
-  std::map<int32_t, int32_t>& routing_patch_num_map = DM_INST.getSummary().iter_dr_summary_map[dr_model.get_iter()].routing_patch_num_map;
-  int32_t& total_patch_num = DM_INST.getSummary().iter_dr_summary_map[dr_model.get_iter()].total_patch_num;
   std::map<int32_t, int32_t>& routing_violation_num_map
       = DM_INST.getSummary().iter_dr_summary_map[dr_model.get_iter()].routing_violation_num_map;
   int32_t& total_violation_num = DM_INST.getSummary().iter_dr_summary_map[dr_model.get_iter()].total_violation_num;
@@ -2070,19 +2037,6 @@ void DetailedRouter::printSummary(DRModel& dr_model)
     }
     cut_via_num_map_table << fort::header << "Total" << total_via_num << RTUtil::getPercentage(total_via_num, total_via_num) << fort::endr;
   }
-  fort::char_table routing_patch_num_map_table;
-  {
-    routing_patch_num_map_table << fort::header << "routing_layer"
-                                << "patch_num"
-                                << "proportion" << fort::endr;
-    for (RoutingLayer& routing_layer : routing_layer_list) {
-      routing_patch_num_map_table << routing_layer.get_layer_name() << routing_patch_num_map[routing_layer.get_layer_idx()]
-                                  << RTUtil::getPercentage(routing_patch_num_map[routing_layer.get_layer_idx()], total_patch_num)
-                                  << fort::endr;
-    }
-    routing_patch_num_map_table << fort::header << "Total" << total_patch_num << RTUtil::getPercentage(total_patch_num, total_patch_num)
-                                << fort::endr;
-  }
   fort::char_table routing_violation_num_map_table;
   {
     routing_violation_num_map_table << fort::header << "routing_layer"
@@ -2097,8 +2051,7 @@ void DetailedRouter::printSummary(DRModel& dr_model)
     routing_violation_num_map_table << fort::header << "Total" << total_violation_num
                                     << RTUtil::getPercentage(total_violation_num, total_violation_num) << fort::endr;
   }
-  RTUtil::printTableList(
-      {routing_wire_length_map_table, cut_via_num_map_table, routing_patch_num_map_table, routing_violation_num_map_table});
+  RTUtil::printTableList({routing_wire_length_map_table, cut_via_num_map_table, routing_violation_num_map_table});
 }
 
 void DetailedRouter::writeNetCSV(DRModel& dr_model)
@@ -2126,11 +2079,6 @@ void DetailedRouter::writeNetCSV(DRModel& dr_model)
           for (int32_t layer_idx = first_layer_idx; layer_idx <= second_layer_idx; layer_idx++) {
             net_layer_map[net_idx].insert(layer_idx);
           }
-        }
-      }
-      for (auto& [net_idx, patch_set] : gcell_map[x][y].get_net_patch_map()) {
-        for (EXTLayerRect* patch : patch_set) {
-          net_layer_map[net_idx].insert(patch->get_layer_idx());
         }
       }
       for (auto& [net_idx, layer_set] : net_layer_map) {

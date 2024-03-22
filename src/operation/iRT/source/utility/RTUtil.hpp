@@ -3018,7 +3018,7 @@ class RTUtil
   template <typename T, typename U>
   static std::string getPercentage(T a, U b)
   {
-    return getString(std::round(getRatio(a, b) * 10000) / 10000 * 100.0, "%");
+    return getString(formatByTwoDecimalPlaces(getRatio(a, b) * 100), "%");
   }
 
   static std::ifstream* getInputFileStream(std::string file_path) { return getFileStream<std::ifstream>(file_path); }
@@ -3212,7 +3212,7 @@ class RTUtil
   {
     std::string sec_string;
 
-    int32_t integer_sec = static_cast<int32_t>(sec);
+    int32_t integer_sec = std::round(sec);
     int32_t h = integer_sec / 3600;
     int32_t m = (integer_sec % 3600) / 60;
     int32_t s = (integer_sec % 3600) % 60;
@@ -3225,17 +3225,17 @@ class RTUtil
     return sec_string;
   }
 
-  static std::string formatMem(double mem)
+  static std::string formatByTwoDecimalPlaces(double digit)
   {
-    std::string mem_string;
+    std::string digit_string;
 
     char* buffer = new char[32];
-    sprintf(buffer, "%02.2f", mem);
-    mem_string = buffer;
+    sprintf(buffer, "%02.2f", digit);
+    digit_string = buffer;
     delete[] buffer;
     buffer = nullptr;
 
-    return mem_string;
+    return digit_string;
   }
 
   template <typename T>

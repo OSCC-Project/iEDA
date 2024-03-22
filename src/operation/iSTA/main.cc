@@ -126,17 +126,19 @@ int main(int argc, char** argv) {
                 << std::endl;
     }
 
-    if (argv_parse_result.count("script")) {
-      // discard the first arg from main()
-      // pass the rest of the args to Tcl interpreter
-      auto tcl_argc = argc - 1;
-      auto tcl_argv = argv + 1;
-      shell->userMain(tcl_argc, tcl_argv);
-    }
-
     if (argc == 1) {
       shell->displayHelp();
       shell->userMain(argc, argv);
+    } else if (argc == 2) {
+      shell->userMain(argv[1]);
+    } else {
+      if (argv_parse_result.count("script")) {
+        // discard the first arg from main()
+        // pass the rest of the args to Tcl interpreter
+        auto tcl_argc = argc - 1;
+        auto tcl_argv = argv + 1;
+        shell->userMain(tcl_argc, tcl_argv);
+      }
     }
   } catch (const cxxopts::exceptions::exception& e) {
     std::cerr << "Error parsing options: " << e.what() << std::endl;

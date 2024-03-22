@@ -14,6 +14,7 @@ target_include_directories(feature_parser
         ##auxiliary
         ${HOME_UTILITY}
         ${HOME_UTILITY}/json
+        ${HOME_DATABASE}/interaction/Summary
 )
 
 target_link_libraries(feature_parser 
@@ -21,6 +22,7 @@ target_link_libraries(feature_parser
         idb
         flow_config
         idm
+        irt_api
         ipl-source
         ipl-api
         icts_api

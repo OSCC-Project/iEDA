@@ -27,6 +27,7 @@ int registerCmdRT()
   registerTclCmd(TclClearDef, "clear_def");
   registerTclCmd(TclDestroyRT, "destroy_rt");
   registerTclCmd(TclInitRT, "init_rt");
+  registerTclCmd(TclRunEGR, "run_egr");
   registerTclCmd(TclRunRT, "run_rt");
   return EXIT_SUCCESS;
 }

@@ -48,7 +48,7 @@ bool read_vcd(std::string vcd_file, std::string top_instance_name) {
   ista::Sta* ista = ista::Sta::getOrCreateSta();
   ipower::Power* ipower = ipower::Power::getOrCreatePower(&(ista->get_graph()));
 
-  return ipower->readRustVCD(vcd_file, top_instance_name);
+  return ipower->readRustVCD(vcd_file.c_str(), top_instance_name.c_str());
 }
 
 /**

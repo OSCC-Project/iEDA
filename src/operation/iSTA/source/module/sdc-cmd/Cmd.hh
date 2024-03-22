@@ -310,6 +310,19 @@ class CmdGetPins : public TclCmd {
 };
 
 /**
+ * @brief get_libs get the matched libs.
+ *
+ */
+class CmdGetLibs : public TclCmd {
+ public:
+  explicit CmdGetLibs(const char* cmd_name);
+  ~CmdGetLibs() override = default;
+
+  unsigned check() override;
+  unsigned exec() override;
+};
+
+/**
  * @brief set_propagated_clock, specifies the clock to be propagated.
  *
  */

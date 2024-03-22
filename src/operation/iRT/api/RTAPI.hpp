@@ -37,6 +37,7 @@ class RTAPI
 #if 1  // 外部调用RT的API
   // RT主要函数
   void initRT(std::map<std::string, std::any> config_map);
+  void runEGR();
   void runRT();
   void destroyRT();
   // 清理def
@@ -52,9 +53,8 @@ class RTAPI
                                           std::map<int32_t, std::vector<idb::IdbLayerShape*>>& net_pin_shape_map,
                                           std::map<int32_t, std::vector<idb::IdbRegularWireSegment*>>& net_wire_via_map);
   // 调用iSTA 计算时序
-  std::map<std::string, std::vector<double>> getTiming(
-      std::map<int32_t, std::map<LayerCoord, std::vector<std::string>, CmpLayerCoordByXASC>>& net_pin_coord_map,
-      std::map<int32_t, std::vector<Segment<LayerCoord>>>& net_segment_map);
+  std::map<std::string, std::vector<double>> getTiming(std::vector<std::map<std::string, std::vector<LayerCoord>>>& real_pin_coord_map_list,
+                                                       std::vector<std::vector<Segment<LayerCoord>>>& routing_segment_list_list);
   // 输出def
   void outputDef(std::string output_def_file_path);
   // 输出summary

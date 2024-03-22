@@ -75,8 +75,31 @@ void RTAPI::initRT(std::map<std::string, std::any> config_map)
   GDSPlotter::initInst();
 }
 
+void RTAPI::runEGR()
+{
+  Monitor monitor;
+  LOG_INST.info(Loc::current(), "Starting...");
+
+  PinAccessor::initInst();
+  PA_INST.access();
+  PinAccessor::destroyInst();
+
+  SupplyAnalyzer::initInst();
+  SA_INST.analyze();
+  SupplyAnalyzer::destroyInst();
+
+  InitialRouter::initInst();
+  IR_INST.route();
+  InitialRouter::destroyInst();
+
+  LOG_INST.info(Loc::current(), "Completed", monitor.getStatsInfo());
+}
+
 void RTAPI::runRT()
 {
+  Monitor monitor;
+  LOG_INST.info(Loc::current(), "Starting...");
+
   PinAccessor::initInst();
   PA_INST.access();
   PinAccessor::destroyInst();
@@ -100,6 +123,8 @@ void RTAPI::runRT()
   DetailedRouter::initInst();
   DR_INST.route();
   DetailedRouter::destroyInst();
+
+  LOG_INST.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
 void RTAPI::destroyRT()
@@ -311,8 +336,8 @@ std::vector<Violation> RTAPI::getViolationList(std::vector<idb::IdbLayerShape*>&
 }
 
 std::map<std::string, std::vector<double>> RTAPI::getTiming(
-    std::map<int32_t, std::map<LayerCoord, std::vector<std::string>, CmpLayerCoordByXASC>>& net_coord_real_pin_map,
-    std::map<int32_t, std::vector<Segment<LayerCoord>>>& net_routing_segment_map)
+    std::vector<std::map<std::string, std::vector<LayerCoord>>>& real_pin_coord_map_list,
+    std::vector<std::vector<Segment<LayerCoord>>>& routing_segment_list_list)
 {
 #if 1  // 数据结构定义
   struct RCPin
@@ -337,8 +362,27 @@ std::map<std::string, std::vector<double>> RTAPI::getTiming(
     std::string _pin_name;
     int32_t _fake_pin_id;
   };
+#endif
+
+#if 1  // 函数定义
+  auto initTimingEngine = [](idb::IdbBuilder* idb_builder, int32_t thread_number) {
+    ista::TimingEngine* timing_engine = ista::TimingEngine::getOrCreateTimingEngine();
+    auto db_adapter = std::make_unique<ista::TimingIDBAdapter>(timing_engine->get_ista());
+    db_adapter->set_idb(idb_builder);
+    db_adapter->convertDBToTimingNetlist();
+    timing_engine->set_db_adapter(std::move(db_adapter));
+    timing_engine->set_num_threads(thread_number);
+    timing_engine->buildGraph();
+    timing_engine->initRcTree();
+    return timing_engine;
+  };
   auto getRCSegmentList = [](std::map<LayerCoord, std::vector<std::string>, CmpLayerCoordByXASC>& coord_real_pin_map,
                              std::vector<Segment<LayerCoord>>& routing_segment_list) {
+    // 预处理 对名字去重
+    for (auto& [coord, real_pin_list] : coord_real_pin_map) {
+      std::sort(real_pin_list.begin(), real_pin_list.end());
+      real_pin_list.erase(std::unique(real_pin_list.begin(), real_pin_list.end()), real_pin_list.end());
+    }
     // 构建coord_fake_pin_map
     std::map<LayerCoord, int32_t, CmpLayerCoordByXASC> coord_fake_pin_map;
     {
@@ -383,26 +427,77 @@ std::map<std::string, std::vector<double>> RTAPI::getTiming(
     }
     return rc_segment_list;
   };
+  auto getRctNode = [](ista::TimingEngine* timing_engine, ista::Netlist* sta_net_list, ista::Net* ista_net, RCPin& rc_pin) {
+    ista::RctNode* rct_node = nullptr;
+    if (rc_pin._is_real_pin) {
+      ista::DesignObject* pin_port = nullptr;
+      auto pin_port_list = sta_net_list->findPin(rc_pin._pin_name.c_str(), false, false);
+      if (!pin_port_list.empty()) {
+        pin_port = pin_port_list.front();
+      } else {
+        pin_port = sta_net_list->findPort(rc_pin._pin_name.c_str());
+      }
+      rct_node = timing_engine->makeOrFindRCTreeNode(pin_port);
+    } else {
+      rct_node = timing_engine->makeOrFindRCTreeNode(ista_net, rc_pin._fake_pin_id);
+    }
+    return rct_node;
+  };
+#endif
+
+#if 1  // 预处理流程
+  // 每个pin只留一个连通的坐标
+  for (size_t i = 0; i < real_pin_coord_map_list.size(); i++) {
+    std::vector<Segment<LayerCoord>>& routing_segment_list = routing_segment_list_list[i];
+    for (auto& [pin_name, coord_list] : real_pin_coord_map_list[i]) {
+      if (coord_list.size() < 2) {
+        continue;
+      }
+      if (routing_segment_list.empty()) {
+        coord_list.erase(coord_list.begin() + 1, coord_list.end());
+      } else {
+        for (LayerCoord& coord : coord_list) {
+          bool is_exist = false;
+          for (Segment<LayerCoord>& routing_segment : routing_segment_list) {
+            if (coord == routing_segment.get_first() || coord == routing_segment.get_second()) {
+              is_exist = true;
+              break;
+            }
+          }
+          if (is_exist) {
+            coord_list[0] = coord;
+            coord_list.erase(coord_list.begin() + 1, coord_list.end());
+            break;
+          }
+        }
+      }
+      if (coord_list.size() > 2) {
+        LOG_INST.error(Loc::current(), "The pin ", pin_name, " is not in segment_list");
+      }
+    }
+  }
+  // coord_real_pin_map_list
+  std::vector<std::map<LayerCoord, std::vector<std::string>, CmpLayerCoordByXASC>> coord_real_pin_map_list;
+  coord_real_pin_map_list.resize(real_pin_coord_map_list.size());
+  for (size_t i = 0; i < real_pin_coord_map_list.size(); i++) {
+    for (auto& [real_pin, coord_list] : real_pin_coord_map_list[i]) {
+      for (LayerCoord& coord : coord_list) {
+        coord_real_pin_map_list[i][coord].push_back(real_pin);
+      }
+    }
+  }
 #endif
 
 #if 1  // 主流程
   std::vector<Net>& net_list = DM_INST.getDatabase().get_net_list();
+  int32_t thread_number = DM_INST.getConfig().thread_number;
 
-  ista::TimingEngine* timing_engine = ista::TimingEngine::getOrCreateTimingEngine();
-  auto db_adapter = std::make_unique<ista::TimingIDBAdapter>(timing_engine->get_ista());
-  db_adapter->set_idb(DM_INST.getHelper().get_idb_builder());
-  db_adapter->convertDBToTimingNetlist();
-  timing_engine->set_db_adapter(std::move(db_adapter));
-  timing_engine->set_num_threads(40);
-  timing_engine->buildGraph();
-  timing_engine->initRcTree();
-
+  ista::TimingEngine* timing_engine = initTimingEngine(DM_INST.getHelper().get_idb_builder(), thread_number);
   ista::Netlist* sta_net_list = timing_engine->get_netlist();
-  for (auto& [net_idx, coord_real_pin_map] : net_coord_real_pin_map) {
-    std::vector<Segment<LayerCoord>>& routing_segment_list = net_routing_segment_map[net_idx];
-    // 构建RC-tree
+
+  for (size_t net_idx = 0; net_idx < coord_real_pin_map_list.size(); net_idx++) {
     ista::Net* ista_net = sta_net_list->findNet(RTUtil::escapeBackslash(net_list[net_idx].get_net_name()).c_str());
-    for (Segment<RCPin>& segment : getRCSegmentList(coord_real_pin_map, routing_segment_list)) {
+    for (Segment<RCPin>& segment : getRCSegmentList(coord_real_pin_map_list[net_idx], routing_segment_list_list[net_idx])) {
       RCPin& first_rc_pin = segment.get_first();
       RCPin& second_rc_pin = segment.get_second();
 
@@ -418,32 +513,16 @@ std::map<std::string, std::vector<double>> RTAPI::getTiming(
                   ->getResistance(first_rc_pin._coord.get_layer_idx() + 1, distance / 1.0 / unit, width);
       }
 
-      auto getRctNode = [timing_engine, sta_net_list, ista_net](RCPin& rc_pin) {
-        ista::RctNode* rct_node = nullptr;
-        if (rc_pin._is_real_pin) {
-          ista::DesignObject* pin_port = nullptr;
-          auto pin_port_list = sta_net_list->findPin(rc_pin._pin_name.c_str(), false, false);
-          if (!pin_port_list.empty()) {
-            pin_port = pin_port_list.front();
-          } else {
-            pin_port = sta_net_list->findPort(rc_pin._pin_name.c_str());
-          }
-          rct_node = timing_engine->makeOrFindRCTreeNode(pin_port);
-        } else {
-          rct_node = timing_engine->makeOrFindRCTreeNode(ista_net, rc_pin._fake_pin_id);
-        }
-        return rct_node;
-      };
-      ista::RctNode* first_node = getRctNode(first_rc_pin);
-      ista::RctNode* second_node = getRctNode(second_rc_pin);
+      ista::RctNode* first_node = getRctNode(timing_engine, sta_net_list, ista_net, first_rc_pin);
+      ista::RctNode* second_node = getRctNode(timing_engine, sta_net_list, ista_net, second_rc_pin);
       timing_engine->makeResistor(ista_net, first_node, second_node, res);
       timing_engine->incrCap(first_node, cap / 2);
       timing_engine->incrCap(second_node, cap / 2);
     }
     timing_engine->updateRCTreeInfo(ista_net);
-
     // auto* rc_tree = timing_engine->get_ista()->getRcNet(ista_net)->rct();
     // rc_tree->printGraphViz();
+    // dot -Tpdf tree.dot -o tree.pdf
   }
   timing_engine->updateTiming();
   timing_engine->reportTiming();
@@ -469,7 +548,58 @@ void RTAPI::outputDef(std::string output_def_file_path)
 
 void RTAPI::outputSummary()
 {
-  LOG_INST.info(Loc::current(), "outputSummary");
+  Summary& rt_summary = DM_INST.getSummary();
+  idb::RTSummary& top_rt_summary = dmInst->get_feature_summary().getRTSummary();
+  // pa_summary
+  top_rt_summary.pa_summary.routing_access_point_num_map = rt_summary.pa_summary.routing_access_point_num_map;
+  for (auto& [type, access_point_num] : rt_summary.pa_summary.type_access_point_num_map) {
+    top_rt_summary.pa_summary.type_access_point_num_map[GetAccessPointTypeName()(type)] = access_point_num;
+  }
+  top_rt_summary.pa_summary.total_access_point_num = rt_summary.pa_summary.total_access_point_num;
+  // sa_summary
+  top_rt_summary.sa_summary.routing_supply_map = rt_summary.sa_summary.routing_supply_map;
+  top_rt_summary.sa_summary.total_supply = rt_summary.sa_summary.total_supply;
+  // ir_summary
+  top_rt_summary.ir_summary.routing_demand_map = rt_summary.ir_summary.routing_demand_map;
+  top_rt_summary.ir_summary.total_demand = rt_summary.ir_summary.total_demand;
+  top_rt_summary.ir_summary.routing_overflow_map = rt_summary.ir_summary.routing_overflow_map;
+  top_rt_summary.ir_summary.total_overflow = rt_summary.ir_summary.total_overflow;
+  top_rt_summary.ir_summary.routing_wire_length_map = rt_summary.ir_summary.routing_wire_length_map;
+  top_rt_summary.ir_summary.total_wire_length = rt_summary.ir_summary.total_wire_length;
+  top_rt_summary.ir_summary.cut_via_num_map = rt_summary.ir_summary.cut_via_num_map;
+  top_rt_summary.ir_summary.total_via_num = rt_summary.ir_summary.total_via_num;
+  top_rt_summary.ir_summary.timing = rt_summary.ir_summary.timing;
+  // gr_summary
+  for (auto& [iter, gr_summary] : rt_summary.iter_gr_summary_map) {
+    idb::GRSummary& top_gr_summary = top_rt_summary.iter_gr_summary_map[iter];
+    top_gr_summary.routing_demand_map = gr_summary.routing_demand_map;
+    top_gr_summary.total_demand = gr_summary.total_demand;
+    top_gr_summary.routing_overflow_map = gr_summary.routing_overflow_map;
+    top_gr_summary.total_overflow = gr_summary.total_overflow;
+    top_gr_summary.routing_wire_length_map = gr_summary.routing_wire_length_map;
+    top_gr_summary.total_wire_length = gr_summary.total_wire_length;
+    top_gr_summary.cut_via_num_map = gr_summary.cut_via_num_map;
+    top_gr_summary.total_via_num = gr_summary.total_via_num;
+    top_gr_summary.timing = gr_summary.timing;
+  }
+  // ta_summary
+  top_rt_summary.ta_summary.routing_wire_length_map = rt_summary.ta_summary.routing_wire_length_map;
+  top_rt_summary.ta_summary.total_wire_length = rt_summary.ta_summary.total_wire_length;
+  top_rt_summary.ta_summary.routing_violation_num_map = rt_summary.ta_summary.routing_violation_num_map;
+  top_rt_summary.ta_summary.total_violation_num = rt_summary.ta_summary.total_violation_num;
+  // dr_summary
+  for (auto& [iter, dr_summary] : rt_summary.iter_dr_summary_map) {
+    idb::DRSummary& top_dr_summary = top_rt_summary.iter_dr_summary_map[iter];
+    top_dr_summary.routing_wire_length_map = dr_summary.routing_wire_length_map;
+    top_dr_summary.total_wire_length = dr_summary.total_wire_length;
+    top_dr_summary.cut_via_num_map = dr_summary.cut_via_num_map;
+    top_dr_summary.total_via_num = dr_summary.total_via_num;
+    top_dr_summary.routing_patch_num_map = dr_summary.routing_patch_num_map;
+    top_dr_summary.total_patch_num = dr_summary.total_patch_num;
+    top_dr_summary.routing_violation_num_map = dr_summary.routing_violation_num_map;
+    top_dr_summary.total_violation_num = dr_summary.total_violation_num;
+    top_dr_summary.timing = dr_summary.timing;
+  }
 }
 
 #endif
