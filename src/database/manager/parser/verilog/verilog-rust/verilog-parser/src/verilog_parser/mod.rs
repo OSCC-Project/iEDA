@@ -869,7 +869,7 @@ mod tests {
     #[test]
     fn test_parse_port_or_wire_id1() {
         let _input_str = "clk ";
-        let input_str = "\\in_$002 [0]";
+        let input_str = "\\in_$002 [0]"; //(wire)
         let _input_str = "sky130_fd_sc_hs__nor2_1 _17_"; //(cell inst)
         let parse_result = VerilogParser::parse(Rule::port_or_wire_id, input_str);
         println!("{:#?}", parse_result);
