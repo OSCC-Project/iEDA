@@ -1914,13 +1914,14 @@ class RTUtil
         visited_map[pin_idx] = true;
       }
     }
+    bool is_connectivity = true;
     for (auto [pin_idx, is_visited] : visited_map) {
       if (is_visited == false) {
         LOG_INST.warn(Loc::current(), "The pin idx ", pin_idx, " unreachable!");
-        return false;
+        is_connectivity = false;
       }
     }
-    return true;
+    return is_connectivity;
   }
 
   /**

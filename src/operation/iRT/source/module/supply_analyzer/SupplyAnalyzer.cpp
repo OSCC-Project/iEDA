@@ -259,27 +259,22 @@ void SupplyAnalyzer::debugPlotSAModel(SAModel& sa_model)
   gp_gds.addStruct(track_axis_struct);
 
   // 整张版图的fixed_rect
-  for (int32_t x = 0; x < gcell_map.get_x_size(); x++) {
-    for (int32_t y = 0; y < gcell_map.get_y_size(); y++) {
-      GCell& gcell = gcell_map[x][y];
-      for (auto& [is_routing, layer_net_fixed_rect_map] : gcell.get_type_layer_net_fixed_rect_map()) {
-        for (auto& [layer_idx, net_fixed_rect_map] : layer_net_fixed_rect_map) {
-          for (auto& [net_idx, fixed_rect_set] : net_fixed_rect_map) {
-            GPStruct fixed_rect_struct(RTUtil::getString("fixed_rect(net_", net_idx, ")"));
-            for (auto& fixed_rect : fixed_rect_set) {
-              GPBoundary gp_boundary;
-              gp_boundary.set_data_type(static_cast<int32_t>(GPDataType::kShape));
-              gp_boundary.set_rect(fixed_rect->get_real_rect());
-              if (is_routing) {
-                gp_boundary.set_layer_idx(GP_INST.getGDSIdxByRouting(layer_idx));
-              } else {
-                gp_boundary.set_layer_idx(GP_INST.getGDSIdxByCut(layer_idx));
-              }
-              fixed_rect_struct.push(gp_boundary);
-            }
-            gp_gds.addStruct(fixed_rect_struct);
+  for (auto& [is_routing, layer_net_fixed_rect_map] : DM_INST.getTypeLayerNetFixedRectMap(die)) {
+    for (auto& [layer_idx, net_fixed_rect_map] : layer_net_fixed_rect_map) {
+      for (auto& [net_idx, fixed_rect_set] : net_fixed_rect_map) {
+        GPStruct fixed_rect_struct(RTUtil::getString("fixed_rect(net_", net_idx, ")"));
+        for (auto& fixed_rect : fixed_rect_set) {
+          GPBoundary gp_boundary;
+          gp_boundary.set_data_type(static_cast<int32_t>(GPDataType::kShape));
+          gp_boundary.set_rect(fixed_rect->get_real_rect());
+          if (is_routing) {
+            gp_boundary.set_layer_idx(GP_INST.getGDSIdxByRouting(layer_idx));
+          } else {
+            gp_boundary.set_layer_idx(GP_INST.getGDSIdxByCut(layer_idx));
           }
+          fixed_rect_struct.push(gp_boundary);
         }
+        gp_gds.addStruct(fixed_rect_struct);
       }
     }
   }

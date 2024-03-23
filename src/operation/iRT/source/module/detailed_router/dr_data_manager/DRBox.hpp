@@ -42,6 +42,7 @@ class DRBox
   {
     return _type_layer_net_fixed_rect_map;
   }
+  std::map<int32_t, std::vector<Segment<LayerCoord>>>& get_net_result_map() { return _net_result_map; }
   std::vector<Violation>& get_violation_list() { return _violation_list; }
   ScaleAxis& get_box_track_axis() { return _box_track_axis; }
   std::vector<GridMap<DRNode>>& get_layer_node_map() { return _layer_node_map; }
@@ -55,6 +56,7 @@ class DRBox
   {
     _type_layer_net_fixed_rect_map = type_layer_net_fixed_rect_map;
   }
+  void set_net_result_map(const std::map<int32_t, std::vector<Segment<LayerCoord>>>& net_result_map) { _net_result_map = net_result_map; }
   void set_violation_list(const std::vector<Violation>& violation_list) { _violation_list = violation_list; }
   void set_box_track_axis(const ScaleAxis& box_track_axis) { _box_track_axis = box_track_axis; }
   void set_layer_node_map(const std::vector<GridMap<DRNode>>& layer_node_map) { _layer_node_map = layer_node_map; }
@@ -102,6 +104,7 @@ class DRBox
   DRParameter* _dr_parameter = nullptr;
   std::vector<DRTask*> _dr_task_list;
   std::map<bool, std::map<int32_t, std::map<int32_t, std::set<EXTLayerRect*>>>> _type_layer_net_fixed_rect_map;
+  std::map<int32_t, std::vector<Segment<LayerCoord>>> _net_result_map;
   std::vector<Violation> _violation_list;
   ScaleAxis _box_track_axis;
   std::vector<GridMap<DRNode>> _layer_node_map;

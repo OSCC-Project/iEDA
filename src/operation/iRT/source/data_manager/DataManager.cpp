@@ -147,7 +147,7 @@ void DataManager::updateNetResultToGCellMap(ChangeType change_type, int32_t net_
   }
 }
 
-void DataManager::updatePatchToGCellMap(ChangeType change_type, int32_t net_idx, EXTLayerRect* ext_layer_rect)
+void DataManager::updateNetPatchToGCellMap(ChangeType change_type, int32_t net_idx, EXTLayerRect* ext_layer_rect)
 {
   GridMap<GCell>& gcell_map = _database.get_gcell_map();
 
@@ -1994,19 +1994,16 @@ void DataManager::freeGCellMap()
 
   for (auto& [net_idx, segment_set] : getNetResultMap(die)) {
     for (Segment<LayerCoord>* segment : segment_set) {
-      delete segment;
-      segment = nullptr;
+      DM_INST.updateNetResultToGCellMap(ChangeType::kDel, net_idx, segment);
     }
   }
   for (auto& [net_idx, patch_set] : getNetPatchMap(die)) {
     for (EXTLayerRect* patch : patch_set) {
-      delete patch;
-      patch = nullptr;
+      DM_INST.updateNetPatchToGCellMap(ChangeType::kDel, net_idx, patch);
     }
   }
   for (Violation* violation : getViolationSet(die)) {
-    delete violation;
-    violation = nullptr;
+    DM_INST.updateViolationToGCellMap(ChangeType::kDel, violation);
   }
   LOG_INST.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }

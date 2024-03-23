@@ -328,8 +328,8 @@ void TrackAssigner::assignTAPanelMap(TAModel& ta_model)
         routeTAPanel(ta_panel);
         // debugPlotTAPanel(ta_panel, -1, "after_routing");
       }
-      updateTATaskToGCellMap(ta_panel);
-      updateViolationToGCellMap(ta_panel);
+      uploadNetResult(ta_panel);
+      uploadViolation(ta_panel);
       freeTAPanel(ta_panel);
     }
     assigned_panel_num += ta_panel_id_list.size();
@@ -704,15 +704,17 @@ void TrackAssigner::updateTaskResult(TAPanel& ta_panel)
 {
   std::vector<Segment<LayerCoord>> new_routing_segment_list = getRoutingSegmentList(ta_panel);
 
-  TATask* curr_ta_task = ta_panel.get_curr_ta_task();
+  int32_t curr_net_idx = ta_panel.get_curr_ta_task()->get_net_idx();
+  int32_t curr_task_idx = ta_panel.get_curr_ta_task()->get_task_idx();
+  std::vector<Segment<LayerCoord>>& routing_segment_list = ta_panel.get_net_task_result_map()[curr_net_idx][curr_task_idx];
   // 原结果从graph删除
-  for (Segment<LayerCoord>& routing_segment : curr_ta_task->get_routing_segment_list()) {
-    updateNetResultToGraph(ta_panel, ChangeType::kDel, curr_ta_task->get_net_idx(), routing_segment);
+  for (Segment<LayerCoord>& routing_segment : routing_segment_list) {
+    updateNetResultToGraph(ta_panel, ChangeType::kDel, curr_net_idx, routing_segment);
   }
-  curr_ta_task->set_routing_segment_list(new_routing_segment_list);
+  routing_segment_list = new_routing_segment_list;
   // 新结果添加到graph
-  for (Segment<LayerCoord>& routing_segment : curr_ta_task->get_routing_segment_list()) {
-    updateNetResultToGraph(ta_panel, ChangeType::kAdd, curr_ta_task->get_net_idx(), routing_segment);
+  for (Segment<LayerCoord>& routing_segment : routing_segment_list) {
+    updateNetResultToGraph(ta_panel, ChangeType::kAdd, curr_net_idx, routing_segment);
   }
 }
 
@@ -729,7 +731,8 @@ std::vector<Segment<LayerCoord>> TrackAssigner::getRoutingSegmentList(TAPanel& t
       key_coord_pin_map[coord].insert(static_cast<int32_t>(i));
     }
   }
-  MTree<LayerCoord> coord_tree = RTUtil::getTreeByFullFlow(candidate_root_coord_list, ta_panel.get_routing_segment_list(), key_coord_pin_map);
+  MTree<LayerCoord> coord_tree
+      = RTUtil::getTreeByFullFlow(candidate_root_coord_list, ta_panel.get_routing_segment_list(), key_coord_pin_map);
 
   std::vector<Segment<LayerCoord>> routing_segment_list;
   for (Segment<TNode<LayerCoord>*>& segment : RTUtil::getSegListByTree(coord_tree)) {
@@ -931,13 +934,14 @@ void TrackAssigner::updateViolationList(TAPanel& ta_panel)
 {
   std::vector<Violation> new_violation_list = getViolationList(ta_panel);
 
+  std::vector<Violation>& violation_list = ta_panel.get_violation_list();
   // 原结果从graph删除
-  for (Violation& violation : ta_panel.get_violation_list()) {
+  for (Violation& violation : violation_list) {
     updateViolationToGraph(ta_panel, ChangeType::kDel, violation);
   }
-  ta_panel.set_violation_list(new_violation_list);
+  violation_list = new_violation_list;
   // 新结果添加到graph
-  for (Violation& violation : ta_panel.get_violation_list()) {
+  for (Violation& violation : violation_list) {
     updateViolationToGraph(ta_panel, ChangeType::kAdd, violation);
   }
 }
@@ -958,9 +962,11 @@ std::vector<Violation> TrackAssigner::getViolationList(TAPanel& ta_panel)
     }
   }
   std::map<int32_t, std::vector<idb::IdbRegularWireSegment*>> net_wire_via_map;
-  for (TATask* ta_task : ta_panel.get_ta_task_list()) {
-    for (Segment<LayerCoord>& routing_segment : ta_task->get_routing_segment_list()) {
-      net_wire_via_map[ta_task->get_net_idx()].push_back(DM_INST.getIDBSegmentByNetResult(ta_task->get_net_idx(), routing_segment));
+  for (auto& [net_idx, task_result_map] : ta_panel.get_net_task_result_map()) {
+    for (auto& [task_idx, segment_list] : task_result_map) {
+      for (Segment<LayerCoord>& segment : segment_list) {
+        net_wire_via_map[net_idx].push_back(DM_INST.getIDBSegmentByNetResult(net_idx, segment));
+      }
     }
   }
   std::vector<Violation> violation_list = RTAPI_INST.getViolationList(env_shape_list, net_pin_shape_map, net_wire_via_map);
@@ -1009,16 +1015,18 @@ std::vector<TATask*> TrackAssigner::getTaskScheduleByViolation(TAPanel& ta_panel
   return ta_task_list;
 }
 
-void TrackAssigner::updateTATaskToGCellMap(TAPanel& ta_panel)
+void TrackAssigner::uploadNetResult(TAPanel& ta_panel)
 {
-  for (TATask* ta_task : ta_panel.get_ta_task_list()) {
-    for (Segment<LayerCoord>& routing_segment : ta_task->get_routing_segment_list()) {
-      DM_INST.updateNetResultToGCellMap(ChangeType::kAdd, ta_task->get_net_idx(), new Segment<LayerCoord>(routing_segment));
+  for (auto& [net_idx, task_result_map] : ta_panel.get_net_task_result_map()) {
+    for (auto& [task_idx, segment_list] : task_result_map) {
+      for (Segment<LayerCoord>& segment : segment_list) {
+        DM_INST.updateNetResultToGCellMap(ChangeType::kAdd, net_idx, new Segment<LayerCoord>(segment));
+      }
     }
   }
 }
 
-void TrackAssigner::updateViolationToGCellMap(TAPanel& ta_panel)
+void TrackAssigner::uploadViolation(TAPanel& ta_panel)
 {
   for (Violation& violation : ta_panel.get_violation_list()) {
     DM_INST.updateViolationToGCellMap(ChangeType::kAdd, new Violation(violation));
@@ -1500,7 +1508,7 @@ void TrackAssigner::debugPlotTAPanel(TAPanel& ta_panel, int32_t curr_task_idx, s
     //   gp_boundary.set_rect(ta_task.get_bounding_box().get_base_region());
     //   task_struct.push(gp_boundary);
     // }
-    for (Segment<LayerCoord>& segment : ta_task->get_routing_segment_list()) {
+    for (Segment<LayerCoord>& segment : ta_panel.get_net_task_result_map()[ta_task->get_net_idx()][ta_task->get_task_idx()]) {
       LayerCoord first_coord = segment.get_first();
       LayerCoord second_coord = segment.get_second();
       int32_t first_layer_idx = first_coord.get_layer_idx();

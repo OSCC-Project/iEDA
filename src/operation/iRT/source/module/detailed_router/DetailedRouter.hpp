@@ -56,15 +56,15 @@ class DetailedRouter
   std::vector<DRNet> convertToDRNetList(std::vector<Net>& net_list);
   DRNet convertToDRNet(Net& net);
   void iterativeDRModel(DRModel& dr_model);
-  void setDRParameter(DRModel& dr_model, int32_t curr_iter, DRParameter& dr_parameter);
+  void setDRParameter(DRModel& dr_model, int32_t iter, DRParameter& dr_parameter);
   void initDRBoxMap(DRModel& dr_model);
-  void splitNetResult(DRModel& dr_model);
   void buildBoxSchedule(DRModel& dr_model);
   void routeDRBoxMap(DRModel& dr_model);
-  void initDRTaskList(DRModel& dr_model, DRBox& dr_box);
-  void buildViolationList(DRBox& dr_box);
-  bool needRouting(DRBox& dr_box);
   void buildFixedRectList(DRBox& dr_box);
+  void buildNetResultMap(DRBox& dr_box);
+  void buildViolationList(DRBox& dr_box);
+  void initDRTaskList(DRModel& dr_model, DRBox& dr_box);
+  bool needRouting(DRBox& dr_box);
   void buildBoxTrackAxis(DRBox& dr_box);
   void buildLayerNodeMap(DRBox& dr_box);
   void buildDRNodeValid(DRBox& dr_box);
@@ -104,11 +104,10 @@ class DetailedRouter
   double getEstimateViaCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
   void updateViolationList(DRBox& dr_box);
   std::vector<Violation> getViolationList(DRBox& dr_box);
-  void updateDRTaskToGCellMap(DRBox& dr_box);
-  void updateViolationToGCellMap(DRBox& dr_box);
   void freeDRBox(DRBox& dr_box);
-  int32_t getViolationNum();
-  void organizeResults(DRModel& dr_model);
+  int32_t getViolationNum(DRModel& dr_model);
+  void uploadNetResult(DRModel& dr_model);
+  void uploadViolation(DRModel& dr_model);
 
 #if 1  // update env
   void updateFixedRectToGraph(DRBox& dr_box, ChangeType change_type, int32_t net_idx, EXTLayerRect* fixed_rect, bool is_routing);
