@@ -69,7 +69,7 @@ void DataManager::clean()
   LOG_INST.info(Loc::current(), "Starting...");
   outputToIDB();
   outputSummary();
-  // freeGCellMap();
+  freeGCellMap();
   LOG_INST.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 

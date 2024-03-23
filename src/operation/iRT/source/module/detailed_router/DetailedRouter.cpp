@@ -472,7 +472,6 @@ void DetailedRouter::buildDRNodeValid(DRBox& dr_box)
       }
     }
   }
-
   for (RoutingLayer& routing_layer : routing_layer_list) {
     int32_t layer_idx = routing_layer.get_layer_idx();
     for (int32_t x_scale : layer_x_scale_map[layer_idx]) {
@@ -486,7 +485,6 @@ void DetailedRouter::buildDRNodeValid(DRBox& dr_box)
       }
     }
   }
-
   // ap点设置有效点
   for (DRTask* dr_task : dr_box.get_dr_task_list()) {
     for (DRGroup& dr_group : dr_task->get_dr_group_list()) {
@@ -2046,7 +2044,6 @@ void DetailedRouter::printSummary(DRModel& dr_model)
 
 void DetailedRouter::writeNetCSV(DRModel& dr_model)
 {
-  Die& die = DM_INST.getDatabase().get_die();
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
   GridMap<GCell>& gcell_map = DM_INST.getDatabase().get_gcell_map();
   std::string& dr_temp_directory_path = DM_INST.getConfig().dr_temp_directory_path;
