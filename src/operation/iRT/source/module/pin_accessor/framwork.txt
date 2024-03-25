@@ -1,5 +1,5 @@
 initPAModel:初始化model
 initAccessPointList:用boost得到pinshape上的合法区域并生成ap
 buildAccessPointList:根据得到的ap生成bbox，并根据bbox得到对应ap的grid坐标
-updateToGCellMap:更新顶层gcell_map
+updatePAModel:更新顶层gcell_map
 

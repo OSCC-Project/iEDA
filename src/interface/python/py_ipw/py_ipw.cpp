@@ -1,41 +1,53 @@
 // ***************************************************************************************
 // Copyright (c) 2023-2025 Peng Cheng Laboratory
-// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of Sciences
-// Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
+// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of
+// Sciences Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
 //
 // iEDA is licensed under Mulan PSL v2.
-// You can use this software according to the terms and conditions of the Mulan PSL v2.
-// You may obtain a copy of Mulan PSL v2 at:
+// You can use this software according to the terms and conditions of the Mulan
+// PSL v2. You may obtain a copy of Mulan PSL v2 at:
 // http://license.coscl.org.cn/MulanPSL2
 //
-// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
-// EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
-// MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY
+// KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+// NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
+#include "py_ipw.h"
+
 #include <string>
 
 #include "api/Power.hh"
 #include "sta/Sta.hh"
 
 namespace python_interface {
-bool readRustVCD(const char* vcd_path, const char* top_instance_name)
-{
+bool readRustVCD(const char* vcd_path, const char* top_instance_name) {
   ista::Sta* ista = ista::Sta::getOrCreateSta();
   ipower::Power* ipower = ipower::Power::getOrCreatePower(&(ista->get_graph()));
 
   return ipower->readRustVCD(vcd_path, top_instance_name);
 }
 
-unsigned reportPower()
-{
+unsigned reportPower() {
   Sta* ista = Sta::getOrCreateSta();
   ipower::Power* ipower = ipower::Power::getOrCreatePower(&(ista->get_graph()));
 
   ipower->runCompleteFlow();
 
   return 1;
+}
+
+unsigned create_data_flow() {
+  auto* power_engine = ipower::PowerEngine::getOrCreatePowerEngine();
+  return power_engine->creatDataflow();
+}
+
+std::map<std::size_t, std::vector<ipower::ClusterConnection>>
+build_connection_map(std::vector<std::set<std::string>> clusters,
+                     unsigned max_hop) {
+  auto* power_engine = ipower::PowerEngine::getOrCreatePowerEngine();
+  return power_engine->buildConnectionMap(clusters, max_hop);
 }
 
 }  // namespace python_interface

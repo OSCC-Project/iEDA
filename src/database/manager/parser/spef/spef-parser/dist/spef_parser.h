@@ -104,7 +104,7 @@ typedef struct RustResCapItem {
     double res_cap;
 } RustResCapItem;
 
-void free_c_char(char *s);
+void spef_free_c_char(char *s);
 
 void *rust_parser_spef(const char *spef_path);
 

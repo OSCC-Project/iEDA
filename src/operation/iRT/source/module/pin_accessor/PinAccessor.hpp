@@ -47,6 +47,8 @@ class PinAccessor
   PinAccessor& operator=(PinAccessor&& other) = delete;
   // function
   PAModel initPAModel();
+  std::vector<PANet> convertToPANetList(std::vector<Net>& net_list);
+  PANet convertToPANet(Net& net);
   void initAccessPointList(PAModel& pa_model);
   std::vector<LayerRect> getLegalShapeList(int32_t net_idx, Pin* pin);
   std::vector<PlanarRect> getPlanarLegalRectList(int32_t curr_net_idx, std::vector<EXTLayerRect>& pin_shape_list);
@@ -55,7 +57,7 @@ class PinAccessor
   std::vector<AccessPoint> getAccessPointListByTrackCenter(int32_t pin_idx, std::vector<LayerRect>& legal_shape_list);
   std::vector<AccessPoint> getAccessPointListByShapeCenter(int32_t pin_idx, std::vector<LayerRect>& legal_shape_list);
   void buildAccessPointList(PAModel& pa_model);
-  void updateToGCellMap(PAModel& pa_model);
+  void updatePAModel(PAModel& pa_model);
 #if 1  // debug
   void debugPlotPAModel(PAModel& pa_model);
 #endif

@@ -42,6 +42,7 @@ class DRBox
   {
     return _type_layer_net_fixed_rect_map;
   }
+  std::map<int32_t, std::vector<Segment<LayerCoord>>>& get_net_result_map() { return _net_result_map; }
   std::vector<Violation>& get_violation_list() { return _violation_list; }
   ScaleAxis& get_box_track_axis() { return _box_track_axis; }
   std::vector<GridMap<DRNode>>& get_layer_node_map() { return _layer_node_map; }
@@ -55,6 +56,7 @@ class DRBox
   {
     _type_layer_net_fixed_rect_map = type_layer_net_fixed_rect_map;
   }
+  void set_net_result_map(const std::map<int32_t, std::vector<Segment<LayerCoord>>>& net_result_map) { _net_result_map = net_result_map; }
   void set_violation_list(const std::vector<Violation>& violation_list) { _violation_list = violation_list; }
   void set_box_track_axis(const ScaleAxis& box_track_axis) { _box_track_axis = box_track_axis; }
   void set_layer_node_map(const std::vector<GridMap<DRNode>>& layer_node_map) { _layer_node_map = layer_node_map; }
@@ -86,14 +88,14 @@ class DRBox
   PriorityQueue<DRNode*, std::vector<DRNode*>, CmpDRNodeCost>& get_open_queue() { return _open_queue; }
   std::vector<DRNode*>& get_single_path_visited_node_list() { return _single_path_visited_node_list; }
   DRNode* get_path_head_node() { return _path_head_node; }
-  int32_t get_end_node_comb_idx() const { return _end_node_comb_idx; }
+  int32_t get_end_node_list_idx() const { return _end_node_list_idx; }
   void set_open_queue(const PriorityQueue<DRNode*, std::vector<DRNode*>, CmpDRNodeCost>& open_queue) { _open_queue = open_queue; }
   void set_single_path_visited_node_list(const std::vector<DRNode*>& single_path_visited_node_list)
   {
     _single_path_visited_node_list = single_path_visited_node_list;
   }
   void set_path_head_node(DRNode* path_head_node) { _path_head_node = path_head_node; }
-  void set_end_node_comb_idx(const int32_t end_node_comb_idx) { _end_node_comb_idx = end_node_comb_idx; }
+  void set_end_node_list_idx(const int32_t end_node_list_idx) { _end_node_list_idx = end_node_list_idx; }
 #endif
 
  private:
@@ -102,6 +104,7 @@ class DRBox
   DRParameter* _dr_parameter = nullptr;
   std::vector<DRTask*> _dr_task_list;
   std::map<bool, std::map<int32_t, std::map<int32_t, std::set<EXTLayerRect*>>>> _type_layer_net_fixed_rect_map;
+  std::map<int32_t, std::vector<Segment<LayerCoord>>> _net_result_map;
   std::vector<Violation> _violation_list;
   ScaleAxis _box_track_axis;
   std::vector<GridMap<DRNode>> _layer_node_map;
@@ -117,7 +120,7 @@ class DRBox
   PriorityQueue<DRNode*, std::vector<DRNode*>, CmpDRNodeCost> _open_queue;
   std::vector<DRNode*> _single_path_visited_node_list;
   DRNode* _path_head_node = nullptr;
-  int32_t _end_node_comb_idx = -1;
+  int32_t _end_node_list_idx = -1;
 #endif
 };
 

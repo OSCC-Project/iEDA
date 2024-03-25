@@ -516,7 +516,7 @@ unsigned Power::reportInstancePower(const char* rpt_file_name,
 
   // lambda for print power data float to string.
   auto data_str = [](double data) { return Str::printf("%.3e", data); };
-  auto data_str_f = [](double data) { return Str::printf("%.3f", data); };
+  // auto data_str_f = [](double data) { return Str::printf("%.3f", data); };
 
   PwrGroupData* group_data;
   FOREACH_PWR_GROUP_DATA(this, group_data) {

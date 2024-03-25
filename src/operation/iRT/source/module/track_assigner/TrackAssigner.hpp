@@ -97,8 +97,8 @@ class TrackAssigner
   void updateViolationList(TAPanel& ta_panel);
   std::vector<Violation> getViolationList(TAPanel& ta_panel);
   std::vector<TATask*> getTaskScheduleByViolation(TAPanel& ta_panel);
-  void updateTATaskToGCellMap(TAPanel& ta_panel);
-  void updateViolationToGCellMap(TAPanel& ta_panel);
+  void uploadNetResult(TAPanel& ta_panel);
+  void uploadViolation(TAPanel& ta_panel);
   void freeTAPanel(TAPanel& ta_panel);
 #if 1  // update env
   void updateFixedRectToGraph(TAPanel& ta_panel, ChangeType change_type, int32_t net_idx, EXTLayerRect* fixed_rect, bool is_routing);

@@ -38,6 +38,7 @@ class TAPanel
   TAParameter* get_ta_parameter() { return _ta_parameter; }
   std::vector<TATask*>& get_ta_task_list() { return _ta_task_list; }
   std::map<int32_t, std::set<EXTLayerRect*>>& get_net_fixed_rect_map() { return _net_fixed_rect_map; }
+  std::map<int32_t, std::map<int32_t, std::vector<Segment<LayerCoord>>>>& get_net_task_result_map() { return _net_task_result_map; }
   std::vector<Violation>& get_violation_list() { return _violation_list; }
   ScaleAxis& get_panel_track_axis() { return _panel_track_axis; }
   GridMap<TANode>& get_ta_node_map() { return _ta_node_map; }
@@ -49,6 +50,10 @@ class TAPanel
   void set_net_fixed_rect_map(const std::map<int32_t, std::set<EXTLayerRect*>>& net_fixed_rect_map)
   {
     _net_fixed_rect_map = net_fixed_rect_map;
+  }
+  void set_net_task_result_map(const std::map<int32_t, std::map<int32_t, std::vector<Segment<LayerCoord>>>>& net_task_result_map)
+  {
+    _net_task_result_map = net_task_result_map;
   }
   void set_violation_list(const std::vector<Violation>& violation_list) { _violation_list = violation_list; }
   void set_panel_track_axis(const ScaleAxis& panel_track_axis) { _panel_track_axis = panel_track_axis; }
@@ -81,14 +86,14 @@ class TAPanel
   PriorityQueue<TANode*, std::vector<TANode*>, CmpTANodeCost>& get_open_queue() { return _open_queue; }
   std::vector<TANode*>& get_single_path_visited_node_list() { return _single_path_visited_node_list; }
   TANode* get_path_head_node() { return _path_head_node; }
-  int32_t get_end_node_comb_idx() const { return _end_node_comb_idx; }
+  int32_t get_end_node_list_idx() const { return _end_node_list_idx; }
   void set_open_queue(const PriorityQueue<TANode*, std::vector<TANode*>, CmpTANodeCost>& open_queue) { _open_queue = open_queue; }
   void set_single_path_visited_node_list(const std::vector<TANode*>& single_path_visited_node_list)
   {
     _single_path_visited_node_list = single_path_visited_node_list;
   }
   void set_path_head_node(TANode* path_head_node) { _path_head_node = path_head_node; }
-  void set_end_node_comb_idx(const int32_t end_node_comb_idx) { _end_node_comb_idx = end_node_comb_idx; }
+  void set_end_node_list_idx(const int32_t end_node_list_idx) { _end_node_list_idx = end_node_list_idx; }
 #endif
 
  private:
@@ -97,6 +102,7 @@ class TAPanel
   TAParameter* _ta_parameter = nullptr;
   std::vector<TATask*> _ta_task_list;
   std::map<int32_t, std::set<EXTLayerRect*>> _net_fixed_rect_map;
+  std::map<int32_t, std::map<int32_t, std::vector<Segment<LayerCoord>>>> _net_task_result_map;
   std::vector<Violation> _violation_list;
   ScaleAxis _panel_track_axis;
   GridMap<TANode> _ta_node_map;
@@ -112,7 +118,7 @@ class TAPanel
   PriorityQueue<TANode*, std::vector<TANode*>, CmpTANodeCost> _open_queue;
   std::vector<TANode*> _single_path_visited_node_list;
   TANode* _path_head_node = nullptr;
-  int32_t _end_node_comb_idx = -1;
+  int32_t _end_node_list_idx = -1;
 #endif
 };
 

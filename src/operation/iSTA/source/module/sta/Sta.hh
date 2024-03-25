@@ -238,6 +238,8 @@ class Sta {
     return _libs.empty() ? nullptr : _libs.back().get();
   }
 
+  std::set<LibertyLibrary*> getUsedLibs();
+
   Vector<std::unique_ptr<LibertyLibrary>>& getAllLib() { return _libs; }
 
   void resetRcNet(Net* the_net) {

@@ -24,7 +24,7 @@ fn rust_vec_to_c_array<T>(vec: &Vec<T>) -> RustVec {
 }
 
 #[no_mangle]
-pub extern "C" fn rust_vec_len(vec: &RustVec) -> usize {
+pub extern "C" fn lib_rust_vec_len(vec: &RustVec) -> usize {
     vec.len
 }
 
@@ -36,7 +36,7 @@ pub fn string_to_c_char(s: &str) -> *mut c_char {
 }
 
 #[no_mangle]
-pub extern "C" fn free_c_char(s: *mut c_char) {
+pub extern "C" fn lib_free_c_char(s: *mut c_char) {
     unsafe {
         let _ = CString::from_raw(s);
     }
@@ -77,7 +77,7 @@ pub extern "C" fn rust_convert_string_value(string_value: *mut c_void) -> *mut R
 #[no_mangle]
 pub extern "C" fn rust_free_string_value(c_string_value: *mut RustLibertyStringValue) {
     unsafe {
-        free_c_char((*c_string_value).value);
+        lib_free_c_char((*c_string_value).value);
         let _: Box<RustLibertyStringValue> = Box::from_raw(c_string_value);
     }
 }
@@ -158,8 +158,8 @@ pub extern "C" fn rust_convert_raw_group_stmt(
 #[no_mangle]
 pub extern "C" fn rust_free_group_stmt(c_group_stmt: *mut RustLibertyGroupStmt) {
     unsafe {
-        free_c_char((*c_group_stmt).file_name);
-        free_c_char((*c_group_stmt).group_name);
+        lib_free_c_char((*c_group_stmt).file_name);
+        lib_free_c_char((*c_group_stmt).group_name);
 
         let _: Box<RustLibertyGroupStmt> = Box::from_raw(c_group_stmt);
     }
@@ -229,8 +229,8 @@ pub extern "C" fn rust_convert_simple_attribute_stmt(
 #[no_mangle]
 pub extern "C" fn rust_free_simple_attribute_stmt(c_simple_attri_stmt: *mut RustLibertySimpleAttrStmt) {
     unsafe {
-        free_c_char((*c_simple_attri_stmt).file_name);
-        free_c_char((*c_simple_attri_stmt).attri_name);
+        lib_free_c_char((*c_simple_attri_stmt).file_name);
+        lib_free_c_char((*c_simple_attri_stmt).attri_name);
 
         let _: Box<RustLibertySimpleAttrStmt> = Box::from_raw(c_simple_attri_stmt);
     }
@@ -273,8 +273,8 @@ pub extern "C" fn rust_convert_complex_attribute_stmt(
 #[no_mangle]
 pub extern "C" fn rust_free_complex_attribute_stmt(c_complex_attri_stmt: *mut RustLibertyComplexAttrStmt) {
     unsafe {
-        free_c_char((*c_complex_attri_stmt).file_name);
-        free_c_char((*c_complex_attri_stmt).attri_name);
+        lib_free_c_char((*c_complex_attri_stmt).file_name);
+        lib_free_c_char((*c_complex_attri_stmt).attri_name);
 
         let _: Box<RustLibertyComplexAttrStmt> = Box::from_raw(c_complex_attri_stmt);
     }
