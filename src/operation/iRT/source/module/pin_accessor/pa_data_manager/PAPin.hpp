@@ -16,8 +16,23 @@
 // ***************************************************************************************
 #pragma once
 
-enum class EGRStrategy
+#include "Pin.hpp"
+
+namespace irt {
+
+class PAPin : public Pin
 {
-  kGradual = 0,
-  kTopo = 1
+ public:
+  PAPin() = default;
+  explicit PAPin(const Pin& pin) : Pin(pin) {}
+  ~PAPin() = default;
+  // getter
+  std::vector<AccessPoint>& get_access_point_list() { return _access_point_list; }
+  // setter
+  void set_access_point_list(const std::vector<AccessPoint>& access_point_list) { _access_point_list = access_point_list; }
+  // function
+ private:
+  std::vector<AccessPoint> _access_point_list;
 };
+
+}  // namespace irt

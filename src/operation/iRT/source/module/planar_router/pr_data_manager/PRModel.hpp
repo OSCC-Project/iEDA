@@ -14,30 +14,37 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
+
 #pragma once
 
-#include "AccessPoint.hpp"
-#include "EXTLayerRect.hpp"
-#include "PlanarCoord.hpp"
+#include "PRNet.hpp"
+#include "PRNode.hpp"
+#include "PRParameter.hpp"
 #include "RTHeader.hpp"
 
 namespace irt {
 
-class IRPin : public Pin
+class PRModel
 {
  public:
-  IRPin() = default;
-  explicit IRPin(const Pin& pin) : Pin(pin) {}
-  ~IRPin() = default;
+  PRModel() = default;
+  ~PRModel() = default;
   // getter
-
+  std::vector<PRNet>& get_pr_net_list() { return _pr_net_list; }
+  PRParameter& get_pr_parameter() { return _pr_parameter; }
+  GridMap<PRNode>& get_pr_node_map() { return _pr_node_map; }
+  std::vector<int32_t>& get_pr_net_idx_list() { return _pr_net_idx_list; }
   // setter
-
-  // function
+  void set_pr_net_list(const std::vector<PRNet>& pr_net_list) { _pr_net_list = pr_net_list; }
+  void set_pr_parameter(const PRParameter& pr_parameter) { _pr_parameter = pr_parameter; }
+  void set_pr_node_map(const GridMap<PRNode>& pr_node_map) { _pr_node_map = pr_node_map; }
+  void set_pr_net_idx_list(const std::vector<int32_t>& pr_net_idx_list) { _pr_net_idx_list = pr_net_idx_list; }
 
  private:
- 
+  std::vector<PRNet> _pr_net_list;
+  PRParameter _pr_parameter;
+  GridMap<PRNode> _pr_node_map;
+  std::vector<int32_t> _pr_net_idx_list;
 };
-
 
 }  // namespace irt

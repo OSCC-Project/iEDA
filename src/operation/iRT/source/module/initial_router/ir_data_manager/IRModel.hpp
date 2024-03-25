@@ -67,14 +67,14 @@ class IRModel
   PriorityQueue<IRNode*, std::vector<IRNode*>, CmpIRNodeCost>& get_open_queue() { return _open_queue; }
   std::vector<IRNode*>& get_single_path_visited_node_list() { return _single_path_visited_node_list; }
   IRNode* get_path_head_node() { return _path_head_node; }
-  int32_t get_end_node_comb_idx() const { return _end_node_comb_idx; }
+  int32_t get_end_node_list_idx() const { return _end_node_list_idx; }
   void set_open_queue(const PriorityQueue<IRNode*, std::vector<IRNode*>, CmpIRNodeCost>& open_queue) { _open_queue = open_queue; }
   void set_single_path_visited_node_list(const std::vector<IRNode*>& single_path_visited_node_list)
   {
     _single_path_visited_node_list = single_path_visited_node_list;
   }
   void set_path_head_node(IRNode* path_head_node) { _path_head_node = path_head_node; }
-  void set_end_node_comb_idx(const int32_t end_node_comb_idx) { _end_node_comb_idx = end_node_comb_idx; }
+  void set_end_node_list_idx(const int32_t end_node_list_idx) { _end_node_list_idx = end_node_list_idx; }
 #endif
 
  private:
@@ -94,7 +94,7 @@ class IRModel
   PriorityQueue<IRNode*, std::vector<IRNode*>, CmpIRNodeCost> _open_queue;
   std::vector<IRNode*> _single_path_visited_node_list;
   IRNode* _path_head_node = nullptr;
-  int32_t _end_node_comb_idx = -1;
+  int32_t _end_node_list_idx = -1;
 #endif
 };
 

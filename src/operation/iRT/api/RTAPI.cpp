@@ -19,12 +19,13 @@
 #include "CongTile.hpp"
 #include "DataManager.hpp"
 #include "DetailedRouter.hpp"
-#include "EarlyGlobalRouter.hpp"
 #include "GDSPlotter.hpp"
 #include "GlobalRouter.hpp"
 #include "InitialRouter.hpp"
+#include "LayerAssigner.hpp"
 #include "Monitor.hpp"
 #include "PinAccessor.hpp"
+#include "PlanarRouter.hpp"
 #include "SupplyAnalyzer.hpp"
 #include "TimingEval.hpp"
 #include "TrackAssigner.hpp"
@@ -70,9 +71,17 @@ void RTAPI::initRT(std::map<std::string, std::any> config_map)
   LOG_INST.info(Loc::current(), ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
   // clang-format on
   LOG_INST.printLogFilePath();
+  //////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////
+  Monitor monitor;
+  LOG_INST.info(Loc::current(), "Starting...");
+
   DataManager::initInst();
-  DM_INST.prepare(config_map, dmInst->get_idb_builder());
+  DM_INST.input(config_map, dmInst->get_idb_builder());
   GDSPlotter::initInst();
+
+  LOG_INST.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
 void RTAPI::runEGR()
@@ -108,9 +117,29 @@ void RTAPI::runRT()
   SA_INST.analyze();
   SupplyAnalyzer::destroyInst();
 
+  // PlanarRouter::initInst();
+  // PR_INST.route();
+  // PlanarRouter::destroyInst();
+
+  // LayerAssigner::initInst();
+  // LA_INST.assign();
+  // LayerAssigner::destroyInst();
+
+  // // 临时代码
+  // for (Net& net : DM_INST.getDatabase().get_net_list()) {
+  //   net.set_gr_result_tree(net.get_la_result_tree());
+  // }
+
+  // return;
+
   InitialRouter::initInst();
   IR_INST.route();
   InitialRouter::destroyInst();
+
+  // 临时代码
+  for (Net& net : DM_INST.getDatabase().get_net_list()) {
+    net.set_gr_result_tree(net.get_ir_result_tree());
+  }
 
   GlobalRouter::initInst();
   GR_INST.route();
@@ -129,9 +158,17 @@ void RTAPI::runRT()
 
 void RTAPI::destroyRT()
 {
+  Monitor monitor;
+  LOG_INST.info(Loc::current(), "Starting...");
+
   GDSPlotter::destroyInst();
-  DM_INST.clean();
+  DM_INST.output();
   DataManager::destroyInst();
+
+  LOG_INST.info(Loc::current(), "Completed", monitor.getStatsInfo());
+  //////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////
   LOG_INST.printLogFilePath();
   // clang-format off
   LOG_INST.info(Loc::current(), ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
@@ -217,74 +254,6 @@ void RTAPI::clearDef()
   }
   // 删除虚空的io_pin
   //////////////////////////////////////////
-}
-
-eval::TileGrid* RTAPI::getCongestionMap(std::map<std::string, std::any> config_map, double& wire_length)
-{
-  Monitor egr_monitor;
-
-  EarlyGlobalRouter::initInst(config_map, dmInst->get_idb_builder());
-  EGR_INST.route();
-  wire_length = EGR_INST.getDataManager().getEGRStat().get_total_wire_length();
-
-  eval::TileGrid* eval_tile_grid = new eval::TileGrid();
-  int32_t cell_width = EGR_INST.getDataManager().getConfig().cell_width;
-  int32_t cell_height = EGR_INST.getDataManager().getConfig().cell_height;
-  Die& die = EGR_INST.getDataManager().getDatabase().get_die();
-  std::vector<RoutingLayer>& routing_layer_list = EGR_INST.getDataManager().getDatabase().get_routing_layer_list();
-  std::vector<GridMap<EGRNode>>& layer_resource_map = EGR_INST.getDataManager().getDatabase().get_layer_resource_map();
-
-  if (layer_resource_map.empty()) {
-    LOG_INST.error(Loc::current(), "The size of space resource map is empty!");
-  }
-
-  // init eval_tile_grid
-  eval_tile_grid->set_lx(die.get_real_ll_x());
-  eval_tile_grid->set_ly(die.get_real_ll_y());
-  eval_tile_grid->set_tileCnt(die.getXSize(), die.getYSize());
-  eval_tile_grid->set_tileSize(cell_width, cell_height);
-  eval_tile_grid->set_num_routing_layers(static_cast<int>(layer_resource_map.size()));  // single layer
-
-  // init eval_tiles
-  std::vector<eval::Tile*>& eval_tiles = eval_tile_grid->get_tiles();
-  for (size_t layer_idx = 0; layer_idx < layer_resource_map.size(); layer_idx++) {
-    GridMap<EGRNode>& resource_map = layer_resource_map[layer_idx];
-    for (int x = 0; x < resource_map.get_x_size(); x++) {
-      for (int y = 0; y < resource_map.get_y_size(); y++) {
-        EGRNode& egr_node = resource_map[x][y];
-        eval::Tile* tile = new eval::Tile(x, y, egr_node.get_ll_x(), egr_node.get_ll_y(), egr_node.get_ur_x(), egr_node.get_ur_y(),
-                                          static_cast<int32_t>(layer_idx));
-        tile->set_direction(routing_layer_list[layer_idx].get_prefer_direction() == Direction::kHorizontal);
-
-        tile->set_east_cap(static_cast<int32_t>(std::round(egr_node.get_east_supply())));
-        tile->set_north_cap(static_cast<int32_t>(std::round(egr_node.get_north_supply())));
-        tile->set_south_cap(static_cast<int32_t>(std::round(egr_node.get_south_supply())));
-        tile->set_west_cap(static_cast<int32_t>(std::round(egr_node.get_west_supply())));
-        tile->set_track_cap(static_cast<int32_t>(std::round(egr_node.get_track_supply())));
-
-        tile->set_east_use(static_cast<int32_t>(std::round(egr_node.get_east_demand())));
-        tile->set_north_use(static_cast<int32_t>(std::round(egr_node.get_north_demand())));
-        tile->set_south_use(static_cast<int32_t>(std::round(egr_node.get_south_demand())));
-        tile->set_west_use(static_cast<int32_t>(std::round(egr_node.get_west_demand())));
-        tile->set_track_use(static_cast<int32_t>(std::round(egr_node.get_track_demand())));
-
-        eval_tiles.push_back(tile);
-      }
-    }
-  }
-  EarlyGlobalRouter::destroyInst();
-  return eval_tile_grid;
-}
-
-std::vector<double> RTAPI::getWireLengthAndViaNum(std::map<std::string, std::any> config_map)
-{
-  std::vector<double> wire_length_via_num;
-  EarlyGlobalRouter::initInst(config_map, dmInst->get_idb_builder());
-  EGR_INST.route();
-  wire_length_via_num.push_back(EGR_INST.getDataManager().getEGRStat().get_total_wire_length());
-  wire_length_via_num.push_back(EGR_INST.getDataManager().getEGRStat().get_total_via_num());
-  EarlyGlobalRouter::destroyInst();
-  return wire_length_via_num;
 }
 
 #endif
@@ -538,12 +507,6 @@ std::map<std::string, std::vector<double>> RTAPI::getTiming(
   });
   return timing_map;
 #endif
-}
-
-void RTAPI::outputDef(std::string output_def_file_path)
-{
-  DM_INST.outputToIDB();
-  dmInst->saveDef(output_def_file_path);
 }
 
 void RTAPI::outputSummary()

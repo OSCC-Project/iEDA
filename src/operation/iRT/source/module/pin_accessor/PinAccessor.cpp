@@ -55,7 +55,7 @@ void PinAccessor::access()
   PAModel pa_model = initPAModel();
   initAccessPointList(pa_model);
   buildAccessPointList(pa_model);
-  updateToGCellMap(pa_model);
+  updatePAModel(pa_model);
   updateSummary(pa_model);
   printSummary(pa_model);
   writePinCSV(pa_model);
@@ -70,23 +70,49 @@ PinAccessor* PinAccessor::_pa_instance = nullptr;
 
 PAModel PinAccessor::initPAModel()
 {
+  std::vector<Net>& net_list = DM_INST.getDatabase().get_net_list();
+
   PAModel pa_model;
+  pa_model.set_pa_net_list(convertToPANetList(net_list));
   return pa_model;
+}
+
+std::vector<PANet> PinAccessor::convertToPANetList(std::vector<Net>& net_list)
+{
+  std::vector<PANet> pa_net_list;
+  pa_net_list.reserve(net_list.size());
+  for (Net& net : net_list) {
+    pa_net_list.emplace_back(convertToPANet(net));
+  }
+  return pa_net_list;
+}
+
+PANet PinAccessor::convertToPANet(Net& net)
+{
+  PANet pa_net;
+  pa_net.set_origin_net(&net);
+  pa_net.set_net_idx(net.get_net_idx());
+  pa_net.set_connect_type(net.get_connect_type());
+  for (Pin& pin : net.get_pin_list()) {
+    pa_net.get_pa_pin_list().push_back(PAPin(pin));
+  }
+  pa_net.set_bounding_box(net.get_bounding_box());
+  return pa_net;
 }
 
 void PinAccessor::initAccessPointList(PAModel& pa_model)
 {
-  std::vector<Net>& net_list = DM_INST.getDatabase().get_net_list();
+  std::vector<PANet>& pa_net_list = pa_model.get_pa_net_list();
 
-  std::vector<std::pair<int32_t, Pin*>> net_pin_pair_list;
-  for (Net& net : net_list) {
-    for (Pin& pin : net.get_pin_list()) {
-      net_pin_pair_list.emplace_back(net.get_net_idx(), &pin);
+  std::vector<std::pair<int32_t, PAPin*>> net_pin_pair_list;
+  for (PANet& pa_net : pa_net_list) {
+    for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
+      net_pin_pair_list.emplace_back(pa_net.get_net_idx(), &pa_pin);
     }
   }
 #pragma omp parallel for
-  for (std::pair<int32_t, Pin*>& net_pin_pair : net_pin_pair_list) {
-    Pin* pin = net_pin_pair.second;
+  for (std::pair<int32_t, PAPin*>& net_pin_pair : net_pin_pair_list) {
+    PAPin* pin = net_pin_pair.second;
     std::vector<AccessPoint>& access_point_list = net_pin_pair.second->get_access_point_list();
     std::vector<LayerRect> legal_shape_list = getLegalShapeList(net_pin_pair.first, pin);
     for (auto getAccessPointList :
@@ -359,38 +385,41 @@ std::vector<AccessPoint> PinAccessor::getAccessPointListByShapeCenter(int32_t pi
 void PinAccessor::buildAccessPointList(PAModel& pa_model)
 {
   ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
-  std::vector<Net>& net_list = DM_INST.getDatabase().get_net_list();
+
+  std::vector<PANet>& pa_net_list = pa_model.get_pa_net_list();
 
 #pragma omp parallel for
-  for (Net& net : net_list) {
+  for (PANet& pa_net : pa_net_list) {
     std::vector<PlanarCoord> coord_list;
-    for (Pin& pin : net.get_pin_list()) {
-      for (AccessPoint& access_point : pin.get_access_point_list()) {
+    for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
+      for (AccessPoint& access_point : pa_pin.get_access_point_list()) {
         coord_list.push_back(access_point.get_real_coord());
       }
     }
-    BoundingBox& bounding_box = net.get_bounding_box();
+    BoundingBox& bounding_box = pa_net.get_bounding_box();
     bounding_box.set_real_rect(RTUtil::getBoundingBox(coord_list));
     bounding_box.set_grid_rect(RTUtil::getOpenGCellGridRect(bounding_box.get_real_rect(), gcell_axis));
-    for (Pin& pin : net.get_pin_list()) {
-      for (AccessPoint& access_point : pin.get_access_point_list()) {
+    for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
+      for (AccessPoint& access_point : pa_pin.get_access_point_list()) {
         access_point.set_grid_coord(RTUtil::getGCellGridCoordByBBox(access_point.get_real_coord(), gcell_axis, bounding_box));
       }
     }
   }
 }
 
-void PinAccessor::updateToGCellMap(PAModel& pa_model)
+void PinAccessor::updatePAModel(PAModel& pa_model)
 {
-  std::vector<Net>& net_list = DM_INST.getDatabase().get_net_list();
-
   // 更新到顶层
-  for (Net& net : net_list) {
-    for (Pin& pin : net.get_pin_list()) {
-      for (AccessPoint& access_point : pin.get_access_point_list()) {
-        DM_INST.updateAccessPointToGCellMap(ChangeType::kAdd, net.get_net_idx(), &access_point);
+  for (PANet& pa_net : pa_model.get_pa_net_list()) {
+    for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
+      Pin& origin_pin = pa_net.get_origin_net()->get_pin_list()[pa_pin.get_pin_idx()];
+      if (origin_pin.get_pin_idx() != pa_pin.get_pin_idx()) {
+        LOG_INST.error(Loc::current(), "The pin idx is not equal!");
       }
+      origin_pin.set_key_access_point(pa_pin.get_access_point_list().front());
+      DM_INST.updateAccessPointToGCellMap(ChangeType::kAdd, pa_net.get_net_idx(), &origin_pin.get_key_access_point());
     }
+    pa_net.get_origin_net()->set_bounding_box(pa_net.get_bounding_box());
   }
 }
 
@@ -400,9 +429,9 @@ void PinAccessor::debugPlotPAModel(PAModel& pa_model)
 {
   Die& die = DM_INST.getDatabase().get_die();
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
-  std::vector<Net>& net_list = DM_INST.getDatabase().get_net_list();
-  GridMap<GCell>& gcell_map = DM_INST.getDatabase().get_gcell_map();
   std::string& pa_temp_directory_path = DM_INST.getConfig().pa_temp_directory_path;
+
+  std::vector<PANet>& pa_net_list = pa_model.get_pa_net_list();
 
   GPGDS gp_gds;
 
@@ -450,10 +479,10 @@ void PinAccessor::debugPlotPAModel(PAModel& pa_model)
   }
 
   // access_point
-  for (Net& net : net_list) {
-    GPStruct access_point_struct(RTUtil::getString("access_point(net_", net.get_net_idx(), ")"));
-    for (Pin& pin : net.get_pin_list()) {
-      for (AccessPoint& access_point : pin.get_access_point_list()) {
+  for (PANet& pa_net : pa_net_list) {
+    GPStruct access_point_struct(RTUtil::getString("access_point(net_", pa_net.get_net_idx(), ")"));
+    for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
+      for (AccessPoint& access_point : pa_pin.get_access_point_list()) {
         int32_t x = access_point.get_real_x();
         int32_t y = access_point.get_real_y();
 

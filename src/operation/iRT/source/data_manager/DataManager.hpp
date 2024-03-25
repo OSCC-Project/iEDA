@@ -36,9 +36,8 @@ class DataManager
   static DataManager& getInst();
   static void destroyInst();
   // function
-  void prepare(std::map<std::string, std::any>& config_map, idb::IdbBuilder* idb_builder);
-  void clean();
-  void outputToIDB();
+  void input(std::map<std::string, std::any>& config_map, idb::IdbBuilder* idb_builder);
+  void output();
 
 #if 1  // 有关GCellMap操作
   void updateFixedRectToGCellMap(ChangeType change_type, int32_t net_idx, EXTLayerRect* ext_layer_rect, bool is_routing);
@@ -82,11 +81,28 @@ class DataManager
   DataManager() = default;
   DataManager(const DataManager& other) = delete;
   DataManager(DataManager&& other) = delete;
-  ~DataManager() = default;
+  ~DataManager()
+  {
+    Die& die = _database.get_die();
+
+    for (auto& [net_idx, segment_set] : getNetResultMap(die)) {
+      for (Segment<LayerCoord>* segment : segment_set) {
+        DM_INST.updateNetResultToGCellMap(ChangeType::kDel, net_idx, segment);
+      }
+    }
+    for (auto& [net_idx, patch_set] : getNetPatchMap(die)) {
+      for (EXTLayerRect* patch : patch_set) {
+        DM_INST.updateNetPatchToGCellMap(ChangeType::kDel, net_idx, patch);
+      }
+    }
+    for (Violation* violation : getViolationSet(die)) {
+      DM_INST.updateViolationToGCellMap(ChangeType::kDel, violation);
+    }
+  }
   DataManager& operator=(const DataManager& other) = delete;
   DataManager& operator=(DataManager&& other) = delete;
 
-#if 1  // prepare
+#if 1  // input
   void wrapConfig(std::map<std::string, std::any>& config_map);
   void wrapDatabase(idb::IdbBuilder* idb_builder);
   void wrapMicronDBU(idb::IdbBuilder* idb_builder);
@@ -144,11 +160,10 @@ class DataManager
   void writePYScript();
 #endif
 
-#if 1  // clean
+#if 1  // output
   void outputGCellGrid();
   void outputNetList();
   void outputSummary();
-  void freeGCellMap();
 #endif
 
 #if 1  // 获得IdbWireSegment

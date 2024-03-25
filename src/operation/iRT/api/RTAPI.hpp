@@ -42,9 +42,6 @@ class RTAPI
   void destroyRT();
   // 清理def
   void clearDef();
-  // 拥塞驱动
-  eval::TileGrid* getCongestionMap(std::map<std::string, std::any> config_map, double& wire_length);
-  std::vector<double> getWireLengthAndViaNum(std::map<std::string, std::any> config_map);
 #endif
 
 #if 1  // RT调用外部的API
@@ -55,8 +52,6 @@ class RTAPI
   // 调用iSTA 计算时序
   std::map<std::string, std::vector<double>> getTiming(std::vector<std::map<std::string, std::vector<LayerCoord>>>& real_pin_coord_map_list,
                                                        std::vector<std::vector<Segment<LayerCoord>>>& routing_segment_list_list);
-  // 输出def
-  void outputDef(std::string output_def_file_path);
   // 输出summary
   void outputSummary();
 #endif

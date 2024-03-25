@@ -16,16 +16,23 @@
 // ***************************************************************************************
 #pragma once
 
+#include "Pin.hpp"
+
 namespace irt {
 
-enum class EGRResourceType
+class PRPin : public Pin
 {
-  kNone = 0,
-  kEast = 1,
-  kWest = 2,
-  kSouth = 3,
-  kNorth = 4,
-  kTrack = 5
+ public:
+  PRPin() = default;
+  explicit PRPin(const Pin& pin) : Pin(pin) {}
+  ~PRPin() = default;
+  // getter
+
+  // setter
+
+  // function
+
+ private:
 };
 
 }  // namespace irt

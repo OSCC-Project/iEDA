@@ -122,13 +122,15 @@ int64_t EvalAPI::evalDriver2LoadWL(WLNet* wl_net, const string& sink_pin_name)
 
 double EvalAPI::evalEGRWL()
 {
-  // call router to get eGR wirelength info
-  irt::RTAPI& rt_api = irt::RTAPI::getInst();
-  std::map<std::string, std::any> config_map;
-  std::vector<double> wl_via_pair = rt_api.getWireLengthAndViaNum(config_map);
-  rt_api.destroyInst();
+  return 0;
 
-  return wl_via_pair[0];
+  // call router to get eGR wirelength info
+  // irt::RTAPI& rt_api = irt::RTAPI::getInst();
+  // std::map<std::string, std::any> config_map;
+  // std::vector<double> wl_via_pair = rt_api.getWireLengthAndViaNum(config_map);
+  // rt_api.destroyInst();
+
+  // return wl_via_pair[0];
 }
 
 void EvalAPI::reportWirelength(const string& plot_path, const string& output_file_name, const vector<WLNet*>& net_list)
@@ -325,20 +327,21 @@ vector<float> EvalAPI::evalNetCong(CongGrid* grid, const vector<CongNet*>& net_l
 
 vector<float> EvalAPI::evalGRCong()
 {
-  // call router to get tilegrid info
-  irt::RTAPI& rt_api = irt::RTAPI::getInst();
-  std::map<std::string, std::any> config_map;
-  double wirelength = 0.0;
-  TileGrid* tile_grid = rt_api.getCongestionMap(config_map, wirelength);
-  rt_api.destroyInst();
+  return {};
+  // // call router to get tilegrid info
+  // irt::RTAPI& rt_api = irt::RTAPI::getInst();
+  // std::map<std::string, std::any> config_map;
+  // double wirelength = 0.0;
+  // TileGrid* tile_grid = rt_api.getCongestionMap(config_map, wirelength);
+  // rt_api.destroyInst();
 
-  _congestion_eval_inst->set_tile_grid(tile_grid);
+  // _congestion_eval_inst->set_tile_grid(tile_grid);
 
-  vector<float> result;
-  result.reserve(4);
-  result = _congestion_eval_inst->evalRouteCong();
-  result.push_back(static_cast<float>(wirelength));
-  return result;
+  // vector<float> result;
+  // result.reserve(4);
+  // result = _congestion_eval_inst->evalRouteCong();
+  // result.push_back(static_cast<float>(wirelength));
+  // return result;
 }
 
 vector<float> EvalAPI::getUseCapRatioList()

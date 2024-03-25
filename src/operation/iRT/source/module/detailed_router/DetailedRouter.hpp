@@ -121,7 +121,6 @@ class DetailedRouter
 #if 1  // debug
   void debugCheckDRBox(DRBox& dr_box);
   void debugPlotDRBox(DRBox& dr_box, int32_t curr_task_idx, std::string flag);
-  void debugOutputDef(DRModel& dr_model);
 #endif
 
 #if 1  // exhibit

@@ -1572,6 +1572,38 @@ class RTUtil
   }
 
   // 从segment_list 到 tree的完全流程 (包括构建 优化 检查)
+  static MTree<PlanarCoord> getTreeByFullFlow(PlanarCoord& root_coord, std::vector<Segment<PlanarCoord>>& segment_list,
+                                              std::map<PlanarCoord, std::set<int32_t>, CmpPlanarCoordByXASC>& key_coord_pin_map)
+  {
+    std::vector<PlanarCoord> candidate_root_coord_list{root_coord};
+    return getTreeByFullFlow(candidate_root_coord_list, segment_list, key_coord_pin_map);
+  }
+
+  // 从segment_list 到 tree的完全流程 (包括构建 优化 检查)
+  static MTree<PlanarCoord> getTreeByFullFlow(std::vector<PlanarCoord>& candidate_root_coord_list,
+                                              std::vector<Segment<PlanarCoord>>& segment_list,
+                                              std::map<PlanarCoord, std::set<int32_t>, CmpPlanarCoordByXASC>& key_coord_pin_map)
+  {
+    std::vector<LayerCoord> temp_candidate_root_coord_list;
+    for (PlanarCoord& candidate_root_coord : candidate_root_coord_list) {
+      temp_candidate_root_coord_list.emplace_back(candidate_root_coord);
+    }
+    std::vector<Segment<LayerCoord>> temp_layer_segment_list;
+    for (Segment<PlanarCoord>& segment : segment_list) {
+      temp_layer_segment_list.emplace_back(segment.get_first(), segment.get_second());
+    }
+    std::map<LayerCoord, std::set<int32_t>, CmpLayerCoordByXASC> temp_layer_key_coord_pin_map;
+    for (auto& [coord, pin_idx_set] : key_coord_pin_map) {
+      temp_layer_key_coord_pin_map[coord] = pin_idx_set;
+    }
+    MTree<LayerCoord> temp_coord_tree
+        = getTreeByFullFlow(temp_candidate_root_coord_list, temp_layer_segment_list, temp_layer_key_coord_pin_map);
+
+    std::function<PlanarCoord(LayerCoord&)> convertToPlanarCoord = [](LayerCoord& coord) { return coord.get_planar_coord(); };
+    return convertTree(temp_coord_tree, convertToPlanarCoord);
+  }
+
+  // 从segment_list 到 tree的完全流程 (包括构建 优化 检查)
   static MTree<LayerCoord> getTreeByFullFlow(LayerCoord& root_coord, std::vector<Segment<LayerCoord>>& segment_list,
                                              std::map<LayerCoord, std::set<int32_t>, CmpLayerCoordByXASC>& key_coord_pin_map)
   {

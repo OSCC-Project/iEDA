@@ -88,14 +88,14 @@ class DRBox
   PriorityQueue<DRNode*, std::vector<DRNode*>, CmpDRNodeCost>& get_open_queue() { return _open_queue; }
   std::vector<DRNode*>& get_single_path_visited_node_list() { return _single_path_visited_node_list; }
   DRNode* get_path_head_node() { return _path_head_node; }
-  int32_t get_end_node_comb_idx() const { return _end_node_comb_idx; }
+  int32_t get_end_node_list_idx() const { return _end_node_list_idx; }
   void set_open_queue(const PriorityQueue<DRNode*, std::vector<DRNode*>, CmpDRNodeCost>& open_queue) { _open_queue = open_queue; }
   void set_single_path_visited_node_list(const std::vector<DRNode*>& single_path_visited_node_list)
   {
     _single_path_visited_node_list = single_path_visited_node_list;
   }
   void set_path_head_node(DRNode* path_head_node) { _path_head_node = path_head_node; }
-  void set_end_node_comb_idx(const int32_t end_node_comb_idx) { _end_node_comb_idx = end_node_comb_idx; }
+  void set_end_node_list_idx(const int32_t end_node_list_idx) { _end_node_list_idx = end_node_list_idx; }
 #endif
 
  private:
@@ -120,7 +120,7 @@ class DRBox
   PriorityQueue<DRNode*, std::vector<DRNode*>, CmpDRNodeCost> _open_queue;
   std::vector<DRNode*> _single_path_visited_node_list;
   DRNode* _path_head_node = nullptr;
-  int32_t _end_node_comb_idx = -1;
+  int32_t _end_node_list_idx = -1;
 #endif
 };
 

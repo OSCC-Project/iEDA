@@ -49,7 +49,7 @@ void DataManager::destroyInst()
 
 // function
 
-void DataManager::prepare(std::map<std::string, std::any>& config_map, idb::IdbBuilder* idb_builder)
+void DataManager::input(std::map<std::string, std::any>& config_map, idb::IdbBuilder* idb_builder)
 {
   Monitor monitor;
   LOG_INST.info(Loc::current(), "Starting...");
@@ -63,20 +63,14 @@ void DataManager::prepare(std::map<std::string, std::any>& config_map, idb::IdbB
   LOG_INST.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
-void DataManager::clean()
+void DataManager::output()
 {
   Monitor monitor;
   LOG_INST.info(Loc::current(), "Starting...");
-  outputToIDB();
-  outputSummary();
-  freeGCellMap();
-  LOG_INST.info(Loc::current(), "Completed", monitor.getStatsInfo());
-}
-
-void DataManager::outputToIDB()
-{
   outputGCellGrid();
   outputNetList();
+  outputSummary();
+  LOG_INST.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
 #if 1  // 更新GCellMap
@@ -403,7 +397,7 @@ idb::IdbRegularWireSegment* DataManager::getIDBSegmentByNetPatch(int32_t net_idx
 
 DataManager* DataManager::_dm_instance = nullptr;
 
-#if 1  // prepare
+#if 1  // input
 
 void DataManager::wrapConfig(std::map<std::string, std::any>& config_map)
 {
@@ -1905,7 +1899,7 @@ void DataManager::writePYScript()
 
 #endif
 
-#if 1  // clean
+#if 1  // output
 
 void DataManager::outputGCellGrid()
 {
@@ -1983,29 +1977,6 @@ void DataManager::outputNetList()
 void DataManager::outputSummary()
 {
   RTAPI_INST.outputSummary();
-}
-
-void DataManager::freeGCellMap()
-{
-  Monitor monitor;
-  LOG_INST.info(Loc::current(), "Starting...");
-
-  Die& die = _database.get_die();
-
-  for (auto& [net_idx, segment_set] : getNetResultMap(die)) {
-    for (Segment<LayerCoord>* segment : segment_set) {
-      DM_INST.updateNetResultToGCellMap(ChangeType::kDel, net_idx, segment);
-    }
-  }
-  for (auto& [net_idx, patch_set] : getNetPatchMap(die)) {
-    for (EXTLayerRect* patch : patch_set) {
-      DM_INST.updateNetPatchToGCellMap(ChangeType::kDel, net_idx, patch);
-    }
-  }
-  for (Violation* violation : getViolationSet(die)) {
-    DM_INST.updateViolationToGCellMap(ChangeType::kDel, violation);
-  }
-  LOG_INST.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
 #endif
