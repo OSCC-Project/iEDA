@@ -118,7 +118,6 @@ void DetailedRouter::iterativeDRModel(DRModel& dr_model)
     buildBoxSchedule(dr_model);
     routeDRBoxMap(dr_model);
     uploadNetResult(dr_model);
-    uploadViolation(dr_model);
     updateSummary(dr_model);
     printSummary(dr_model);
     writeNetCSV(dr_model);
@@ -247,11 +246,12 @@ void DetailedRouter::routeDRBoxMap(DRModel& dr_model)
         routeDRBox(dr_box);
         // debugPlotDRBox(dr_box, -1, "after_routing");
       }
+      uploadViolation(dr_box);
       freeDRBox(dr_box);
     }
     routed_box_num += dr_box_id_list.size();
     LOG_INST.info(Loc::current(), "Routed ", routed_box_num, "/", total_box_num, "(", RTUtil::getPercentage(routed_box_num, total_box_num),
-                  ") boxes with ", getViolationNum(dr_model), " violations", stage_monitor.getStatsInfo());
+                  ") boxes with ", getViolationNum(), " violations", stage_monitor.getStatsInfo());
   }
 
   LOG_INST.info(Loc::current(), "Completed", monitor.getStatsInfo());
@@ -275,6 +275,7 @@ void DetailedRouter::buildViolationList(DRBox& dr_box)
 {
   for (Violation* violation : DM_INST.getViolationSet(dr_box.get_box_rect())) {
     dr_box.get_violation_list().push_back(*violation);
+    DM_INST.updateViolationToGCellMap(ChangeType::kDel, violation);
   }
 }
 
@@ -1213,6 +1214,13 @@ std::vector<Violation> DetailedRouter::getViolationList(DRBox& dr_box)
   return violation_list;
 }
 
+void DetailedRouter::uploadViolation(DRBox& dr_box)
+{
+  for (Violation& violation : dr_box.get_violation_list()) {
+    DM_INST.updateViolationToGCellMap(ChangeType::kAdd, new Violation(violation));
+  }
+}
+
 void DetailedRouter::freeDRBox(DRBox& dr_box)
 {
   for (DRTask* dr_task : dr_box.get_dr_task_list()) {
@@ -1223,18 +1231,11 @@ void DetailedRouter::freeDRBox(DRBox& dr_box)
   dr_box.get_layer_node_map().clear();
 }
 
-int32_t DetailedRouter::getViolationNum(DRModel& dr_model)
+int32_t DetailedRouter::getViolationNum()
 {
-  int32_t violation_num = 0;
+  Die& die = DM_INST.getDatabase().get_die();
 
-  GridMap<DRBox>& dr_box_map = dr_model.get_dr_box_map();
-  for (int32_t x = 0; x < dr_box_map.get_x_size(); x++) {
-    for (int32_t y = 0; y < dr_box_map.get_y_size(); y++) {
-      violation_num += static_cast<int32_t>(dr_box_map[x][y].get_violation_list().size());
-    }
-  }
-
-  return violation_num;
+  return static_cast<int32_t>(DM_INST.getViolationSet(die).size());
 }
 
 void DetailedRouter::uploadNetResult(DRModel& dr_model)
@@ -1279,22 +1280,6 @@ void DetailedRouter::uploadNetResult(DRModel& dr_model)
     }
   }
   LOG_INST.info(Loc::current(), "Completed", monitor.getStatsInfo());
-}
-
-void DetailedRouter::uploadViolation(DRModel& dr_model)
-{
-  Die& die = DM_INST.getDatabase().get_die();
-  for (Violation* violation : DM_INST.getViolationSet(die)) {
-    DM_INST.updateViolationToGCellMap(ChangeType::kDel, violation);
-  }
-  GridMap<DRBox>& dr_box_map = dr_model.get_dr_box_map();
-  for (int32_t x = 0; x < dr_box_map.get_x_size(); x++) {
-    for (int32_t y = 0; y < dr_box_map.get_y_size(); y++) {
-      for (Violation& violation : dr_box_map[x][y].get_violation_list()) {
-        DM_INST.updateViolationToGCellMap(ChangeType::kAdd, new Violation(violation));
-      }
-    }
-  }
 }
 
 #if 1  // update env

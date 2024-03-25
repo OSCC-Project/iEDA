@@ -65,7 +65,8 @@ class PinAccessor
 #if 1  // exhibit
   void updateSummary(PAModel& pa_model);
   void printSummary(PAModel& pa_model);
-  void writePinCSV(PAModel& pa_model);
+  void writePlanarPinCSV(PAModel& pa_model);
+  void writeLayerPinCSV(PAModel& pa_model);
 #endif
 };
 

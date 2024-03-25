@@ -58,7 +58,8 @@ void PinAccessor::access()
   updatePAModel(pa_model);
   updateSummary(pa_model);
   printSummary(pa_model);
-  writePinCSV(pa_model);
+  writePlanarPinCSV(pa_model);
+  writeLayerPinCSV(pa_model);
   LOG_INST.info(Loc::current(), "Completed", monitor.getStatsInfo());
 
   // debugPlotPAModel();
@@ -567,7 +568,34 @@ void PinAccessor::printSummary(PAModel& pa_model)
   RTUtil::printTableList({routing_access_point_num_map_table, type_access_point_num_map_table});
 }
 
-void PinAccessor::writePinCSV(PAModel& pa_model)
+void PinAccessor::writePlanarPinCSV(PAModel& pa_model)
+{
+  GridMap<GCell>& gcell_map = DM_INST.getDatabase().get_gcell_map();
+  std::string& pa_temp_directory_path = DM_INST.getConfig().pa_temp_directory_path;
+  int32_t output_csv = DM_INST.getConfig().output_csv;
+  if (!output_csv) {
+    return;
+  }
+  GridMap<int32_t> planar_pin_map;
+  planar_pin_map.init(gcell_map.get_x_size(), gcell_map.get_y_size());
+  for (int32_t x = 0; x < gcell_map.get_x_size(); x++) {
+    for (int32_t y = 0; y < gcell_map.get_y_size(); y++) {
+      for (auto& [net_idx, access_point_list] : gcell_map[x][y].get_net_access_point_map()) {
+        planar_pin_map[x][y] += static_cast<int32_t>(access_point_list.size());
+      }
+    }
+  }
+  std::ofstream* pin_csv_file = RTUtil::getOutputFileStream(RTUtil::getString(pa_temp_directory_path, "pin_map_planar.csv"));
+  for (int32_t y = planar_pin_map.get_y_size() - 1; y >= 0; y--) {
+    for (int32_t x = 0; x < planar_pin_map.get_x_size(); x++) {
+      RTUtil::pushStream(pin_csv_file, planar_pin_map[x][y], ",");
+    }
+    RTUtil::pushStream(pin_csv_file, "\n");
+  }
+  RTUtil::closeFileStream(pin_csv_file);
+}
+
+void PinAccessor::writeLayerPinCSV(PAModel& pa_model)
 {
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
   GridMap<GCell>& gcell_map = DM_INST.getDatabase().get_gcell_map();
