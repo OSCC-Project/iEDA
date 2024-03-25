@@ -23,6 +23,9 @@ namespace idrc {
 
 void DrcConditionManager::checkOverlap(std::string layer, DrcEngineLayout* layout)
 {
+  if (_check_select.find(ViolationEnumType::kShort) == _check_select.end()) {
+    return;
+  }
   DEBUGOUTPUT("");
   DEBUGOUTPUT("layer " << layer);
 #ifndef DEBUGCLOSE_OVERLAP

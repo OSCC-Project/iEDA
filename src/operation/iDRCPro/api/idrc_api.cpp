@@ -41,16 +41,20 @@ void DrcApi::exit()
 
 std::map<ViolationEnumType, std::vector<DrcViolation*>> DrcApi::check(std::vector<idb::IdbLayerShape*>& env_shape_list,
                                                                       std::map<int, std::vector<idb::IdbLayerShape*>>& pin_data,
-                                                                      std::map<int, std::vector<idb::IdbRegularWireSegment*>>& routing_data)
+                                                                      std::map<int, std::vector<idb::IdbRegularWireSegment*>>& routing_data,
+                                                                      std::set<ViolationEnumType> check_select)
 {
   DrcManager drc_manager;
 
   auto* data_manager = drc_manager.get_data_manager();
   // auto* rule_manager = drc_manager.get_rule_manager();
+  auto* condition_manager = drc_manager.get_condition_manager();
   auto* violation_manager = drc_manager.get_violation_manager();
-  if (data_manager == nullptr /*|| rule_manager == nullptr */ || violation_manager == nullptr) {
+  if (data_manager == nullptr /*|| rule_manager == nullptr */ || condition_manager == nullptr || violation_manager == nullptr) {
     return {};
   }
+
+  condition_manager->set_check_select(check_select);
 
   /// set drc rule stratagy by rt paramter
   /// tbd

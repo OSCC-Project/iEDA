@@ -78,6 +78,9 @@ void DrcConditionManager::checkWires(std::string layer, DrcEngineLayout* layout)
 
 void DrcConditionManager::checkJog(std::string layer, DrcEngineLayout* layout, std::map<int, ieda_solver::GeometryPolygonSet>& jog_wire_map)
 {
+  if (_check_select.find(ViolationEnumType::kJogToJog) == _check_select.end()) {
+    return;
+  }
   ieda::Stats states;
   int jog_count = 0;
   auto rule_jog_to_jog = DrcTechRuleInst->getJogToJog(layer);
@@ -177,6 +180,9 @@ void DrcConditionManager::checkJog(std::string layer, DrcEngineLayout* layout, s
 void DrcConditionManager::checkSpacingTable(std::string layer, DrcEngineLayout* layout,
                                             std::map<int, ieda_solver::GeometryPolygonSet>& prl_wire_map)
 {
+  if (_check_select.find(ViolationEnumType::kPRLSpacing) == _check_select.end()) {
+    return;
+  }
   ieda::Stats states;
   int prl_count = 0;
   auto rule_spacing_table = DrcTechRuleInst->getSpacingTable(layer);
