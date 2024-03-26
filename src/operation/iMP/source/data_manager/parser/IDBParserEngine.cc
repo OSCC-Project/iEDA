@@ -160,7 +160,9 @@ void IDBParser::initNetlist()
     }
 
     if (!pins.empty()) {
-      add_net(_design->netlist(), inst_pos, pins, transform(idb_net));
+      auto net = transform(idb_net);
+      _net2idb[net] = idb_net;
+      add_net(_design->netlist(), inst_pos, pins, net);
     }
   }
 }
