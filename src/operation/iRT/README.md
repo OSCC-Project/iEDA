@@ -20,8 +20,6 @@
 
 - pin_accessor: 对所有pin分配access点，在port上找到可以接入的点
 
-- early_global_router: 早期全局布线器，快速预估拥塞、线长与通孔等布线指标
-
 - global_router: 全局布线器，以GCell为单位，在三维网格上进行全局布线
 
 - track_assigner: wire轨道分配，建模为布线问题进行轨道分配

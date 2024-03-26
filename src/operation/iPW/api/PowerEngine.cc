@@ -99,13 +99,13 @@ unsigned PowerEngine::creatDataflow() {
  * @return std::map<std::size_t, std::vector<PowerEngine::ClusterConnection>>
  * the map key is src cluster id, value is dst cluster id and hop.
  */
-std::map<std::size_t, std::vector<PowerEngine::ClusterConnection>>
+std::map<std::size_t, std::vector<ClusterConnection>>
 PowerEngine::buildConnectionMap(
-    std::vector<std::set<std::string_view>> clusters, unsigned max_hop) {
+    std::vector<std::set<std::string>> clusters, unsigned max_hop) {
   auto& seq_graph = _ipower->get_power_seq_graph();
   auto* nl = _timing_engine->get_netlist();
 
-  std::vector<std::tuple<std::size_t, std::string_view, unsigned>>
+  std::vector<std::tuple<std::size_t, std::string, unsigned>>
       cluster_connections;
 
   // dfs cluster connecton from one seq vertex.
@@ -118,11 +118,11 @@ PowerEngine::buildConnectionMap(
           return;
         }
 
-        std::tuple<std::size_t, std::string_view, unsigned> one_connection;
+        std::tuple<std::size_t, std::string, unsigned> one_connection;
         auto& src_arcs = current_seq_vertex->get_src_arcs();
         for (auto* src_arc : src_arcs) {
           auto* snk_seq_vertex = src_arc->get_snk();
-          auto snk_obj_name = snk_seq_vertex->get_obj_name();
+          std::string snk_obj_name(snk_seq_vertex->get_obj_name());
 
           auto one_connection =
               std::make_tuple(src_cluster_id, snk_obj_name, max_hop - hop + 1);
@@ -152,7 +152,7 @@ PowerEngine::buildConnectionMap(
   }
 
   // build connection map.
-  std::map<std::size_t, std::vector<PowerEngine::ClusterConnection>>
+  std::map<std::size_t, std::vector<ClusterConnection>>
       connection_map;
   for (auto& one_connection : cluster_connections) {
     auto& src_cluster_id = std::get<0>(one_connection);
@@ -163,7 +163,7 @@ PowerEngine::buildConnectionMap(
     std::size_t snk_cluster_id = 0;
     bool is_found = false;
     for (std::size_t i = 0; i < clusters.size(); ++i) {
-      if (clusters[i].count(snk_obj_name)) {
+      if (clusters[i].contains(snk_obj_name)) {
         snk_cluster_id = i;
         is_found = true;
         break;

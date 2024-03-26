@@ -1572,6 +1572,38 @@ class RTUtil
   }
 
   // 从segment_list 到 tree的完全流程 (包括构建 优化 检查)
+  static MTree<PlanarCoord> getTreeByFullFlow(PlanarCoord& root_coord, std::vector<Segment<PlanarCoord>>& segment_list,
+                                              std::map<PlanarCoord, std::set<int32_t>, CmpPlanarCoordByXASC>& key_coord_pin_map)
+  {
+    std::vector<PlanarCoord> candidate_root_coord_list{root_coord};
+    return getTreeByFullFlow(candidate_root_coord_list, segment_list, key_coord_pin_map);
+  }
+
+  // 从segment_list 到 tree的完全流程 (包括构建 优化 检查)
+  static MTree<PlanarCoord> getTreeByFullFlow(std::vector<PlanarCoord>& candidate_root_coord_list,
+                                              std::vector<Segment<PlanarCoord>>& segment_list,
+                                              std::map<PlanarCoord, std::set<int32_t>, CmpPlanarCoordByXASC>& key_coord_pin_map)
+  {
+    std::vector<LayerCoord> temp_candidate_root_coord_list;
+    for (PlanarCoord& candidate_root_coord : candidate_root_coord_list) {
+      temp_candidate_root_coord_list.emplace_back(candidate_root_coord);
+    }
+    std::vector<Segment<LayerCoord>> temp_layer_segment_list;
+    for (Segment<PlanarCoord>& segment : segment_list) {
+      temp_layer_segment_list.emplace_back(segment.get_first(), segment.get_second());
+    }
+    std::map<LayerCoord, std::set<int32_t>, CmpLayerCoordByXASC> temp_layer_key_coord_pin_map;
+    for (auto& [coord, pin_idx_set] : key_coord_pin_map) {
+      temp_layer_key_coord_pin_map[coord] = pin_idx_set;
+    }
+    MTree<LayerCoord> temp_coord_tree
+        = getTreeByFullFlow(temp_candidate_root_coord_list, temp_layer_segment_list, temp_layer_key_coord_pin_map);
+
+    std::function<PlanarCoord(LayerCoord&)> convertToPlanarCoord = [](LayerCoord& coord) { return coord.get_planar_coord(); };
+    return convertTree(temp_coord_tree, convertToPlanarCoord);
+  }
+
+  // 从segment_list 到 tree的完全流程 (包括构建 优化 检查)
   static MTree<LayerCoord> getTreeByFullFlow(LayerCoord& root_coord, std::vector<Segment<LayerCoord>>& segment_list,
                                              std::map<LayerCoord, std::set<int32_t>, CmpLayerCoordByXASC>& key_coord_pin_map)
   {
@@ -1914,13 +1946,14 @@ class RTUtil
         visited_map[pin_idx] = true;
       }
     }
+    bool is_connectivity = true;
     for (auto [pin_idx, is_visited] : visited_map) {
       if (is_visited == false) {
         LOG_INST.warn(Loc::current(), "The pin idx ", pin_idx, " unreachable!");
-        return false;
+        is_connectivity = false;
       }
     }
-    return true;
+    return is_connectivity;
   }
 
   /**
@@ -3018,7 +3051,7 @@ class RTUtil
   template <typename T, typename U>
   static std::string getPercentage(T a, U b)
   {
-    return getString(std::round(getRatio(a, b) * 10000) / 10000 * 100.0, "%");
+    return getString(formatByTwoDecimalPlaces(getRatio(a, b) * 100), "%");
   }
 
   static std::ifstream* getInputFileStream(std::string file_path) { return getFileStream<std::ifstream>(file_path); }
@@ -3212,7 +3245,7 @@ class RTUtil
   {
     std::string sec_string;
 
-    int32_t integer_sec = static_cast<int32_t>(sec);
+    int32_t integer_sec = std::round(sec);
     int32_t h = integer_sec / 3600;
     int32_t m = (integer_sec % 3600) / 60;
     int32_t s = (integer_sec % 3600) % 60;
@@ -3225,17 +3258,17 @@ class RTUtil
     return sec_string;
   }
 
-  static std::string formatMem(double mem)
+  static std::string formatByTwoDecimalPlaces(double digit)
   {
-    std::string mem_string;
+    std::string digit_string;
 
     char* buffer = new char[32];
-    sprintf(buffer, "%02.2f", mem);
-    mem_string = buffer;
+    sprintf(buffer, "%02.2f", digit);
+    digit_string = buffer;
     delete[] buffer;
     buffer = nullptr;
 
-    return mem_string;
+    return digit_string;
   }
 
   template <typename T>

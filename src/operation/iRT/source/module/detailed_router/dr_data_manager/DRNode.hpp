@@ -143,7 +143,7 @@ class DRNode : public LayerCoord
   std::map<Orientation, DRNode*> _neighbor_node_map;
   // obstacle & pin_shape
   std::map<Orientation, std::set<int32_t>> _orient_fixed_rect_map;
-  // net_result & patch
+  // net_result
   std::map<Orientation, std::set<int32_t>> _orient_routed_rect_map;
   // violation
   std::map<Orientation, int32_t> _orient_violation_number_map;

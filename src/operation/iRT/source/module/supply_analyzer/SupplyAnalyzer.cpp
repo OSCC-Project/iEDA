@@ -58,7 +58,8 @@ void SupplyAnalyzer::analyze()
   analyzeSupply(sa_model);
   updateSummary(sa_model);
   printSummary(sa_model);
-  writeSupplyCSV(sa_model);
+  writePlanarSupplyCSV(sa_model);
+  writeLayerSupplyCSV(sa_model);
   LOG_INST.info(Loc::current(), "Completed", monitor.getStatsInfo());
 
   // debugPlotSAModel(sa_model);
@@ -78,8 +79,13 @@ void SupplyAnalyzer::buildSupplySchedule(SAModel& sa_model)
 {
   Die& die = DM_INST.getDatabase().get_die();
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+  int32_t bottom_routing_layer_idx = DM_INST.getConfig().bottom_routing_layer_idx;
+  int32_t top_routing_layer_idx = DM_INST.getConfig().top_routing_layer_idx;
 
   for (RoutingLayer& routing_layer : routing_layer_list) {
+    if (routing_layer.get_layer_idx() < bottom_routing_layer_idx || top_routing_layer_idx < routing_layer.get_layer_idx()) {
+      continue;
+    }
     if (routing_layer.isPreferH()) {
       for (int32_t begin_x = 1; begin_x <= 2; begin_x++) {
         std::vector<std::pair<LayerCoord, LayerCoord>> grid_pair_list;
@@ -259,27 +265,22 @@ void SupplyAnalyzer::debugPlotSAModel(SAModel& sa_model)
   gp_gds.addStruct(track_axis_struct);
 
   // 整张版图的fixed_rect
-  for (int32_t x = 0; x < gcell_map.get_x_size(); x++) {
-    for (int32_t y = 0; y < gcell_map.get_y_size(); y++) {
-      GCell& gcell = gcell_map[x][y];
-      for (auto& [is_routing, layer_net_fixed_rect_map] : gcell.get_type_layer_net_fixed_rect_map()) {
-        for (auto& [layer_idx, net_fixed_rect_map] : layer_net_fixed_rect_map) {
-          for (auto& [net_idx, fixed_rect_set] : net_fixed_rect_map) {
-            GPStruct fixed_rect_struct(RTUtil::getString("fixed_rect(net_", net_idx, ")"));
-            for (auto& fixed_rect : fixed_rect_set) {
-              GPBoundary gp_boundary;
-              gp_boundary.set_data_type(static_cast<int32_t>(GPDataType::kShape));
-              gp_boundary.set_rect(fixed_rect->get_real_rect());
-              if (is_routing) {
-                gp_boundary.set_layer_idx(GP_INST.getGDSIdxByRouting(layer_idx));
-              } else {
-                gp_boundary.set_layer_idx(GP_INST.getGDSIdxByCut(layer_idx));
-              }
-              fixed_rect_struct.push(gp_boundary);
-            }
-            gp_gds.addStruct(fixed_rect_struct);
+  for (auto& [is_routing, layer_net_fixed_rect_map] : DM_INST.getTypeLayerNetFixedRectMap(die)) {
+    for (auto& [layer_idx, net_fixed_rect_map] : layer_net_fixed_rect_map) {
+      for (auto& [net_idx, fixed_rect_set] : net_fixed_rect_map) {
+        GPStruct fixed_rect_struct(RTUtil::getString("fixed_rect(net_", net_idx, ")"));
+        for (auto& fixed_rect : fixed_rect_set) {
+          GPBoundary gp_boundary;
+          gp_boundary.set_data_type(static_cast<int32_t>(GPDataType::kShape));
+          gp_boundary.set_rect(fixed_rect->get_real_rect());
+          if (is_routing) {
+            gp_boundary.set_layer_idx(GP_INST.getGDSIdxByRouting(layer_idx));
+          } else {
+            gp_boundary.set_layer_idx(GP_INST.getGDSIdxByCut(layer_idx));
           }
+          fixed_rect_struct.push(gp_boundary);
         }
+        gp_gds.addStruct(fixed_rect_struct);
       }
     }
   }
@@ -384,7 +385,32 @@ void SupplyAnalyzer::printSummary(SAModel& sa_model)
   RTUtil::printTableList({routing_supply_map_table});
 }
 
-void SupplyAnalyzer::writeSupplyCSV(SAModel& sa_model)
+void SupplyAnalyzer::writePlanarSupplyCSV(SAModel& sa_model)
+{
+  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+  GridMap<GCell>& gcell_map = DM_INST.getDatabase().get_gcell_map();
+  std::string& sa_temp_directory_path = DM_INST.getConfig().sa_temp_directory_path;
+  int32_t output_csv = DM_INST.getConfig().output_csv;
+  if (!output_csv) {
+    return;
+  }
+  std::ofstream* supply_csv_file = RTUtil::getOutputFileStream(RTUtil::getString(sa_temp_directory_path, "supply_map_planar.csv"));
+  for (int32_t y = gcell_map.get_y_size() - 1; y >= 0; y--) {
+    for (int32_t x = 0; x < gcell_map.get_x_size(); x++) {
+      int32_t total_supply = 0;
+      for (RoutingLayer& routing_layer : routing_layer_list) {
+        for (auto& [orient, supply] : gcell_map[x][y].get_routing_orient_supply_map()[routing_layer.get_layer_idx()]) {
+          total_supply += supply;
+        }
+      }
+      RTUtil::pushStream(supply_csv_file, total_supply, ",");
+    }
+    RTUtil::pushStream(supply_csv_file, "\n");
+  }
+  RTUtil::closeFileStream(supply_csv_file);
+}
+
+void SupplyAnalyzer::writeLayerSupplyCSV(SAModel& sa_model)
 {
   std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
   GridMap<GCell>& gcell_map = DM_INST.getDatabase().get_gcell_map();

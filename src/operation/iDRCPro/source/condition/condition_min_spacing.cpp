@@ -23,6 +23,9 @@ namespace idrc {
 
 void DrcConditionManager::checkMinSpacing(std::string layer, DrcEngineLayout* layout)
 {
+  if (_check_select.find(ViolationEnumType::kDefaultSpacing) == _check_select.end()) {
+    return;
+  }
 #ifndef DEBUGCLOSE_MINSPACING
   ieda::Stats states;
   int min_spacing_count = 0;

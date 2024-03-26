@@ -28,11 +28,11 @@
 
 namespace idrc {
 
-#define DEBUGCONDITION 1
+#define DEBUGCONDITION 0
 
 #if DEBUGCONDITION
-#define DEBUGPRINT 0
-#define DEBUGCLOSE 1
+#define DEBUGPRINT 1
+#define DEBUGCLOSE 0
 #else
 #define DEBUGPRINT 0
 #define DEBUGCLOSE 0
@@ -71,6 +71,17 @@ class DrcConditionManager
 
   DrcViolationManager* get_violation_manager() { return _violation_manager; }
 
+  void set_check_select(std::set<ViolationEnumType> check_select)
+  {
+    if (check_select.empty()) {
+      for (int type = (int) ViolationEnumType::kNone; type < (int) ViolationEnumType::kMax; ++type) {
+        _check_select.insert((ViolationEnumType) type);
+      }
+    } else {
+      _check_select = check_select;
+    }
+  }
+
   void checkOverlap(std::string layer, DrcEngineLayout* layout);
   void checkMinSpacing(std::string layer, DrcEngineLayout* layout);
   void checkWires(std::string layer, DrcEngineLayout* layout);
@@ -78,6 +89,8 @@ class DrcConditionManager
 
  private:
   DrcViolationManager* _violation_manager;
+
+  std::set<ViolationEnumType> _check_select;
 
   void addViolation(ieda_solver::GeometryRect& rect, std::string layer, ViolationEnumType type, std::set<int> net_id = {});
   void checkJog(std::string layer, DrcEngineLayout* layout, std::map<int, ieda_solver::GeometryPolygonSet>& jog_wire_map);

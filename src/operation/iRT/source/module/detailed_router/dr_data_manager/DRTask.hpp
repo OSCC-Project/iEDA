@@ -35,8 +35,6 @@ class DRTask
   std::vector<DRGroup>& get_dr_group_list() { return _dr_group_list; }
   PlanarRect& get_bounding_box() { return _bounding_box; }
   int32_t get_routed_times() { return _routed_times; }
-  std::vector<Segment<LayerCoord>>& get_routing_segment_list() { return _routing_segment_list; }
-  std::vector<EXTLayerRect>& get_patch_list() { return _patch_list; }
   // const getter
   const ConnectType& get_connect_type() const { return _connect_type; }
   const std::vector<DRGroup>& get_dr_group_list() const { return _dr_group_list; }
@@ -47,11 +45,6 @@ class DRTask
   void set_dr_group_list(const std::vector<DRGroup>& dr_group_list) { _dr_group_list = dr_group_list; }
   void set_bounding_box(const PlanarRect& bounding_box) { _bounding_box = bounding_box; }
   void set_routed_times(const int32_t routed_times) { _routed_times = routed_times; }
-  void set_routing_segment_list(const std::vector<Segment<LayerCoord>>& routing_segment_list)
-  {
-    _routing_segment_list = routing_segment_list;
-  }
-  void set_patch_list(const std::vector<EXTLayerRect>& patch_list) { _patch_list = patch_list; }
   // function
   void addRoutedTimes() { ++_routed_times; }
 
@@ -61,8 +54,6 @@ class DRTask
   std::vector<DRGroup> _dr_group_list;
   PlanarRect _bounding_box;
   int32_t _routed_times = 0;
-  std::vector<Segment<LayerCoord>> _routing_segment_list;
-  std::vector<EXTLayerRect> _patch_list;
 };
 
 struct CmpDRTask

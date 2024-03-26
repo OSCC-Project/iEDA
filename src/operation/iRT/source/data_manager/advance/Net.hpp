@@ -37,6 +37,10 @@ class Net
   // PinAccessor
   std::vector<Pin>& get_pin_list() { return _pin_list; }
   BoundingBox& get_bounding_box() { return _bounding_box; }
+  // PlanarRouter
+  MTree<Guide>& get_pr_result_tree() { return _pr_result_tree; }
+  // LayerAssigner
+  MTree<Guide>& get_la_result_tree() { return _la_result_tree; }
   // InitialRouter
   MTree<Guide>& get_ir_result_tree() { return _ir_result_tree; }
   // GlobalRouter
@@ -49,6 +53,10 @@ class Net
   // PinAccessor
   void set_pin_list(const std::vector<Pin>& pin_list) { _pin_list = pin_list; }
   void set_bounding_box(const BoundingBox& bounding_box) { _bounding_box = bounding_box; }
+  // PlanarRouter
+  void set_pr_result_tree(const MTree<Guide>& pr_result_tree) { _pr_result_tree = pr_result_tree; }
+  // LayerAssigner
+  void set_la_result_tree(const MTree<Guide>& la_result_tree) { _la_result_tree = la_result_tree; }
   // InitialRouter
   void set_ir_result_tree(const MTree<Guide>& ir_result_tree) { _ir_result_tree = ir_result_tree; }
   // GlobalRouter
@@ -61,6 +69,10 @@ class Net
   // PinAccessor
   std::vector<Pin> _pin_list;
   BoundingBox _bounding_box;
+  // PlanarRouter
+  MTree<Guide> _pr_result_tree;
+  // LayerAssigner
+  MTree<Guide> _la_result_tree;
   // InitialRouter
   MTree<Guide> _ir_result_tree;
   // GlobalRouter

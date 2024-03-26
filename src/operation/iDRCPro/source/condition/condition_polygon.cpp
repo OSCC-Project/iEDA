@@ -49,12 +49,18 @@ void DrcConditionManager::checkPolygons(std::string layer, DrcEngineLayout* layo
   EolRuleToRegionMap eol_par_space_regions_left;
   EolRuleToRegionMap eol_par_space_regions_right;
   EolRuleToRegionMap eol_end_to_end_regions;
+  if (_check_select.find(ViolationEnumType::kEOL) == _check_select.end()) {
+    rule_eol_list.clear();
+  }
 
   // corner fill
   auto rule_corner_fill = DrcTechRuleInst->getCornerFillSpacing(layer);
   std::map<unsigned, std::vector<int>> rule_corner_fill_pattern{{0b1011, {-2, -2, -1, 0}}, {0b1101, {-1, 0, -1, -2}}};
   unsigned rule_corner_fill_mask = 0b1111;
   ieda_solver::GeometryPolygonSet corner_fill_check_regions;
+  if (_check_select.find(ViolationEnumType::kCornerFill) == _check_select.end()) {
+    rule_corner_fill = nullptr;
+  }
 
   // notch
   auto rule_notch = DrcTechRuleInst->getSpacingNotchlength(layer);
@@ -63,6 +69,9 @@ void DrcConditionManager::checkPolygons(std::string layer, DrcEngineLayout* layo
   int rule_notch_spacing = rule_notch ? rule_notch->get_min_spacing() : 0;
   ieda_solver::GeometryPolygonSet notch_width_detect_regions;
   ieda_solver::GeometryPolygonSet notch_spacing_check_regions;
+  if (_check_select.find(ViolationEnumType::kNotch) == _check_select.end()) {
+    rule_notch = nullptr;
+  }
 
   // step
   auto rule_step = DrcTechRuleInst->getMinStep(layer);
@@ -79,9 +88,16 @@ void DrcConditionManager::checkPolygons(std::string layer, DrcEngineLayout* layo
       rule_lef58_step_pattern_list[i] = 0b010;
     }
   }
+  if (_check_select.find(ViolationEnumType::kMinStep) == _check_select.end()) {
+    rule_step = nullptr;
+    rule_lef58_step_list.clear();
+  }
 
   // enclosed area
   int rule_min_enclosed_area = DrcTechRuleInst->getMinEnclosedArea(layer);
+  if (_check_select.find(ViolationEnumType::kAreaEnclosed) == _check_select.end()) {
+    rule_min_enclosed_area = 0;
+  }
 
   // area
   int rule_min_area = DrcTechRuleInst->getMinArea(layer);
@@ -90,7 +106,12 @@ void DrcConditionManager::checkPolygons(std::string layer, DrcEngineLayout* layo
   for (auto& rule_lef58_area : rule_lef58_area_list) {
     max_rule_lef58_area = std::max(max_rule_lef58_area, rule_lef58_area->get_min_area());
   }
+  if (_check_select.find(ViolationEnumType::kArea) == _check_select.end()) {
+    rule_min_area = 0;
+    rule_lef58_area_list.clear();
+  }
 
+  // methods
   auto get_edge_orientation = [](const ieda_solver::GeometryPoint& p1, const ieda_solver::GeometryPoint& p2) {
     return p1.x() == p2.x() ? ieda_solver::VERTICAL : ieda_solver::HORIZONTAL;
   };
@@ -106,6 +127,7 @@ void DrcConditionManager::checkPolygons(std::string layer, DrcEngineLayout* layo
     area_accumulated += (long long) p1.x() * (long long) p2.y() - (long long) p1.y() * (long long) p2.x();
   };
 
+  // filter polygon edges
   auto& polygon_with_holes = layout->get_layout()->get_engine()->getLayoutPolygons();
   for (auto& polygon : polygon_with_holes) {
     int polygon_point_number = polygon.size();

@@ -101,6 +101,10 @@ namespace iplf {
    */
   bool StaIO::initSTA(std::string path)
   {
+    char config[]="test";
+    char* argv[]= {config};
+    Log::init(argv);
+    
     /// init
     setStaWorkDirectory(path);
     std::vector<std::string> paths;

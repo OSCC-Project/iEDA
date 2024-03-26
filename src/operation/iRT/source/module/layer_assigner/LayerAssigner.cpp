@@ -14,30 +14,50 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-#pragma once
+#include "LayerAssigner.hpp"
 
-#include <string>
-#include <vector>
-
-#include "EXTLayerRect.hpp"
-#include "LayerCoord.hpp"
-#include "Pin.hpp"
+#include "GDSPlotter.hpp"
+#include "RTUtil.hpp"
 
 namespace irt {
 
-class EGRPin : public Pin
+// public
+
+void LayerAssigner::initInst()
 {
- public:
-  EGRPin() = default;
-  explicit EGRPin(const Pin& pin) : Pin(pin) {}
-  ~EGRPin() = default;
-  // getter
+  if (_la_instance == nullptr) {
+    _la_instance = new LayerAssigner();
+  }
+}
 
-  // setter
+LayerAssigner& LayerAssigner::getInst()
+{
+  if (_la_instance == nullptr) {
+    LOG_INST.error(Loc::current(), "The instance not initialized!");
+  }
+  return *_la_instance;
+}
 
-  // function
+void LayerAssigner::destroyInst()
+{
+  if (_la_instance != nullptr) {
+    delete _la_instance;
+    _la_instance = nullptr;
+  }
+}
 
- private:
-};
+// function
+
+void LayerAssigner::assign()
+{
+  Monitor monitor;
+  LOG_INST.info(Loc::current(), "Starting...");
+
+  LOG_INST.info(Loc::current(), "Completed", monitor.getStatsInfo());
+}
+
+// private
+
+LayerAssigner* LayerAssigner::_la_instance = nullptr;
 
 }  // namespace irt

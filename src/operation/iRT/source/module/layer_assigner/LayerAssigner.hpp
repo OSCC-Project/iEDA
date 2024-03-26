@@ -16,35 +16,34 @@
 // ***************************************************************************************
 #pragma once
 
-#include <string>
-
-#include "EGRStrategy.hpp"
+#include "Config.hpp"
+#include "DataManager.hpp"
+#include "Database.hpp"
 
 namespace irt {
 
-class EGRConfig
+#define LA_INST (irt::LayerAssigner::getInst())
+
+class LayerAssigner
 {
  public:
-  EGRConfig() = default;
-  ~EGRConfig() = default;
+  static void initInst();
+  static LayerAssigner& getInst();
+  static void destroyInst();
+  // function
+  void assign();
 
-  std::string temp_directory_path;
-  int32_t thread_number;
-  std::string log_file_path;
-  int32_t accuracy;
-  int32_t congestion_cell_x_pitch;
-  int32_t congestion_cell_y_pitch;
-  std::string bottom_routing_layer;
-  std::string top_routing_layer;
-  std::vector<std::string> skip_net_name_list;
-  std::string strategy;
+ private:
+  // self
+  static LayerAssigner* _la_instance;
 
-  int32_t cell_width = -1;
-  int32_t cell_height = -1;
-  int32_t bottom_routing_layer_idx = -1;
-  int32_t top_routing_layer_idx = -1;
-  std::set<std::string> skip_net_name_set;
-  EGRStrategy egr_strategy;
+  LayerAssigner() = default;
+  LayerAssigner(const LayerAssigner& other) = delete;
+  LayerAssigner(LayerAssigner&& other) = delete;
+  ~LayerAssigner() = default;
+  LayerAssigner& operator=(const LayerAssigner& other) = delete;
+  LayerAssigner& operator=(LayerAssigner&& other) = delete;
+  // function
 };
 
 }  // namespace irt

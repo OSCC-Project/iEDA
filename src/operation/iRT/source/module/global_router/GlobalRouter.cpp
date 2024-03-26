@@ -50,14 +50,9 @@ void GlobalRouter::destroyInst()
 
 void GlobalRouter::route()
 {
-  std::vector<Net>& net_list = DM_INST.getDatabase().get_net_list();
-
   Monitor monitor;
   LOG_INST.info(Loc::current(), "Starting...");
-  // 临时代码
-  for (Net& net : net_list) {
-    net.set_gr_result_tree(net.get_ir_result_tree());
-  }
+
   LOG_INST.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
