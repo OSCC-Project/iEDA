@@ -75,7 +75,7 @@ struct GetGPDataTypeName
         data_type_name = "violation";
         break;
       default:
-        LOG_INST.error(Loc::current(), "Unrecognized type!");
+        RTLOG.error(Loc::current(), "Unrecognized type!");
         break;
     }
     return data_type_name;

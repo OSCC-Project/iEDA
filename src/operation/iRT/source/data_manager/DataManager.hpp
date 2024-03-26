@@ -27,7 +27,7 @@
 
 namespace irt {
 
-#define DM_INST (irt::DataManager::getInst())
+#define RTDM (irt::DataManager::getInst())
 
 class DataManager
 {
@@ -87,16 +87,16 @@ class DataManager
 
     for (auto& [net_idx, segment_set] : getNetResultMap(die)) {
       for (Segment<LayerCoord>* segment : segment_set) {
-        DM_INST.updateNetResultToGCellMap(ChangeType::kDel, net_idx, segment);
+        RTDM.updateNetResultToGCellMap(ChangeType::kDel, net_idx, segment);
       }
     }
     for (auto& [net_idx, patch_set] : getNetPatchMap(die)) {
       for (EXTLayerRect* patch : patch_set) {
-        DM_INST.updateNetPatchToGCellMap(ChangeType::kDel, net_idx, patch);
+        RTDM.updateNetPatchToGCellMap(ChangeType::kDel, net_idx, patch);
       }
     }
     for (Violation* violation : getViolationSet(die)) {
-      DM_INST.updateViolationToGCellMap(ChangeType::kDel, violation);
+      RTDM.updateViolationToGCellMap(ChangeType::kDel, violation);
     }
   }
   DataManager& operator=(const DataManager& other) = delete;

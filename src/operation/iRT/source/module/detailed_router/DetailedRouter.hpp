@@ -30,7 +30,7 @@
 
 namespace irt {
 
-#define DR_INST (irt::DetailedRouter::getInst())
+#define RTDR (irt::DetailedRouter::getInst())
 
 class DetailedRouter
 {

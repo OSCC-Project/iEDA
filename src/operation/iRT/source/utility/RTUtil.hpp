@@ -92,7 +92,7 @@ class RTUtil
   static bool isCollinear(std::vector<PlanarCoord>& coord_list)
   {
     if (coord_list.empty()) {
-      LOG_INST.error(Loc::current(), "The coord list is empty!");
+      RTLOG.error(Loc::current(), "The coord list is empty!");
     } else if (coord_list.size() <= 2) {
       return true;
     } else {
@@ -200,7 +200,7 @@ class RTUtil
         opposite_orientation = Orientation::kAbove;
         break;
       default:
-        LOG_INST.error(Loc::current(), "The orientation is error!");
+        RTLOG.error(Loc::current(), "The orientation is error!");
         break;
     }
     return opposite_orientation;
@@ -757,7 +757,7 @@ class RTUtil
     if (isRightAngled(start_coord, end_coord)) {
       rect = getEnlargedRect(rect, enlarge_size);
     } else {
-      LOG_INST.error(Loc::current(), "The segment is oblique!");
+      RTLOG.error(Loc::current(), "The segment is oblique!");
     }
     return rect;
   }
@@ -1045,7 +1045,7 @@ class RTUtil
       addListToQueue(node_queue, next_node_list);
     }
     if (remain_num > 0) {
-      LOG_INST.error(Loc::current(), "There are segments remaining, the tree has not been fully constructed!");
+      RTLOG.error(Loc::current(), "There are segments remaining, the tree has not been fully constructed!");
     }
     return MTree<T>(root);
   }
@@ -1057,7 +1057,7 @@ class RTUtil
   static GridMap<T> sliceMap(GridMap<T>& source_map, EXTPlanarRect& source_rect, EXTPlanarRect& target_rect, T fill_value)
   {
     if (source_rect.getXSize() != source_map.get_x_size() || source_rect.getYSize() != source_map.get_y_size()) {
-      LOG_INST.error(Loc::current(), "The rect size is inconsistent with map size!");
+      RTLOG.error(Loc::current(), "The rect size is inconsistent with map size!");
     }
 
     GridMap<T> target_map(target_rect.getXSize(), target_rect.getYSize(), fill_value);
@@ -1141,13 +1141,13 @@ class RTUtil
   static int32_t getGCellGridLB(const int32_t real_coord, std::vector<ScaleGrid>& gcell_grid_list)
   {
     if (gcell_grid_list.empty()) {
-      LOG_INST.error(Loc::current(), "The gcell grid list is empty!");
+      RTLOG.error(Loc::current(), "The gcell grid list is empty!");
     }
     if (real_coord < gcell_grid_list.front().get_start_line()) {
-      LOG_INST.error(Loc::current(), "The real coord '", real_coord, "' < gcell grid '", gcell_grid_list.front().get_start_line(), "'!");
+      RTLOG.error(Loc::current(), "The real coord '", real_coord, "' < gcell grid '", gcell_grid_list.front().get_start_line(), "'!");
     }
     if (gcell_grid_list.back().get_end_line() < real_coord) {
-      LOG_INST.error(Loc::current(), "The gcell grid '", gcell_grid_list.back().get_end_line(), "' < real coord '", real_coord, "'!");
+      RTLOG.error(Loc::current(), "The gcell grid '", gcell_grid_list.back().get_end_line(), "' < real coord '", real_coord, "'!");
     }
     // gcell_grid_list 要求有序
     int32_t gcell_grid_idx = 0;
@@ -1171,13 +1171,13 @@ class RTUtil
   static int32_t getGCellGridRT(const int32_t real_coord, std::vector<ScaleGrid>& gcell_grid_list)
   {
     if (gcell_grid_list.empty()) {
-      LOG_INST.error(Loc::current(), "The gcell grid list is empty!");
+      RTLOG.error(Loc::current(), "The gcell grid list is empty!");
     }
     if (real_coord < gcell_grid_list.front().get_start_line()) {
-      LOG_INST.error(Loc::current(), "The real coord '", real_coord, "' < gcell grid '", gcell_grid_list.front().get_start_line(), "'!");
+      RTLOG.error(Loc::current(), "The real coord '", real_coord, "' < gcell grid '", gcell_grid_list.front().get_start_line(), "'!");
     }
     if (gcell_grid_list.back().get_end_line() < real_coord) {
-      LOG_INST.error(Loc::current(), "The gcell grid '", gcell_grid_list.back().get_end_line(), "' < real coord '", real_coord, "'!");
+      RTLOG.error(Loc::current(), "The gcell grid '", gcell_grid_list.back().get_end_line(), "' < real coord '", real_coord, "'!");
     }
     // gcell_grid_list 要求有序
     int32_t gcell_grid_idx = 0;
@@ -1243,7 +1243,7 @@ class RTUtil
   static int32_t getRealLBByGCell(int32_t grid, std::vector<ScaleGrid>& gcell_grid_list)
   {
     if (gcell_grid_list.empty()) {
-      LOG_INST.error(Loc::current(), "The gcell grid list is empty!");
+      RTLOG.error(Loc::current(), "The gcell grid list is empty!");
     }
 
     for (size_t i = 0; i < gcell_grid_list.size(); i++) {
@@ -1255,14 +1255,14 @@ class RTUtil
         grid -= gcell_grid.get_step_num();
       }
     }
-    LOG_INST.error(Loc::current(), "The grid coord outside grid list!");
+    RTLOG.error(Loc::current(), "The grid coord outside grid list!");
     return 0;
   }
 
   static int32_t getRealRTByGCell(int32_t grid, std::vector<ScaleGrid>& gcell_grid_list)
   {
     if (gcell_grid_list.empty()) {
-      LOG_INST.error(Loc::current(), "The gcell grid list is empty!");
+      RTLOG.error(Loc::current(), "The gcell grid list is empty!");
     }
 
     for (size_t i = 0; i < gcell_grid_list.size(); i++) {
@@ -1274,7 +1274,7 @@ class RTUtil
         grid -= gcell_grid.get_step_num();
       }
     }
-    LOG_INST.error(Loc::current(), "The grid coord outside grid list!");
+    RTLOG.error(Loc::current(), "The grid coord outside grid list!");
     return 0;
   }
 
@@ -1432,7 +1432,7 @@ class RTUtil
   {
     PlanarRect bounding_box;
     if (coord_list.empty()) {
-      LOG_INST.warn(Loc::current(), "The coord list size is empty!");
+      RTLOG.warn(Loc::current(), "The coord list size is empty!");
     } else {
       int32_t ll_x = INT32_MAX;
       int32_t ll_y = INT32_MAX;
@@ -1565,7 +1565,7 @@ class RTUtil
     if (exist(config_map, config_name)) {
       value = std::any_cast<T>(config_map[config_name]);
     } else {
-      LOG_INST.warn(Loc::current(), "The config '", config_name, "' uses the default value!");
+      RTLOG.warn(Loc::current(), "The config '", config_name, "' uses the default value!");
       value = default_value;
     }
     return value;
@@ -1618,7 +1618,7 @@ class RTUtil
   {
     // 判断是否有斜线段
     if (!passCheckingOblique(segment_list)) {
-      LOG_INST.error(Loc::current(), "There are oblique segments in segment_list!");
+      RTLOG.error(Loc::current(), "There are oblique segments in segment_list!");
     }
     // 删除点线段
     erasePointSegment(segment_list);
@@ -1634,11 +1634,11 @@ class RTUtil
     mergeMiddleNode(coord_tree, key_coord_pin_map);
     // 检查树中是否有斜线
     if (!passCheckingOblique(coord_tree)) {
-      LOG_INST.error(Loc::current(), "There are oblique segments in tree!");
+      RTLOG.error(Loc::current(), "There are oblique segments in tree!");
     }
     // 检查树是否到达所有的关键坐标
     if (!passCheckingConnectivity(coord_tree, key_coord_pin_map)) {
-      LOG_INST.error(Loc::current(), "The key points unreachable!");
+      RTLOG.error(Loc::current(), "The key points unreachable!");
     }
     return coord_tree;
   }
@@ -1818,7 +1818,7 @@ class RTUtil
       }
     }
     if (!segment_list.empty()) {
-      LOG_INST.error(Loc::current(), "The segment_list not covered driving_pin!");
+      RTLOG.error(Loc::current(), "The segment_list not covered driving_pin!");
     }
     int32_t max_pin_num = INT32_MIN;
     for (auto& [key_coord, pin_idx_set] : key_coord_pin_map) {
@@ -1949,7 +1949,7 @@ class RTUtil
     bool is_connectivity = true;
     for (auto [pin_idx, is_visited] : visited_map) {
       if (is_visited == false) {
-        LOG_INST.warn(Loc::current(), "The pin idx ", pin_idx, " unreachable!");
+        RTLOG.warn(Loc::current(), "The pin idx ", pin_idx, " unreachable!");
         is_connectivity = false;
       }
     }
@@ -1967,7 +1967,7 @@ class RTUtil
   static std::vector<int32_t> getReservedViaBelowLayerIdxList(int32_t curr_layer_idx, int32_t bottom_layer_idx, int32_t top_layer_idx)
   {
     if (bottom_layer_idx > top_layer_idx) {
-      LOG_INST.error(Loc::current(), "The bottom_layer_idx > top_layer_idx!");
+      RTLOG.error(Loc::current(), "The bottom_layer_idx > top_layer_idx!");
     }
     std::vector<int32_t> reserved_via_below_layer_idx_list;
     if (curr_layer_idx <= bottom_layer_idx) {
@@ -2063,7 +2063,7 @@ class RTUtil
         table_str += table[i];
         table_str += " ";
       }
-      LOG_INST.info(Loc::current(), table_str);
+      RTLOG.info(Loc::current(), table_str);
     }
   }
 
@@ -2826,7 +2826,7 @@ class RTUtil
     int32_t batch_size = 10000;
 
     if (total_size < 0) {
-      LOG_INST.error(Loc::current(), "The total of size < 0!");
+      RTLOG.error(Loc::current(), "The total of size < 0!");
     } else if (total_size <= 10) {
       batch_size = 5;
     } else {
@@ -2873,7 +2873,7 @@ class RTUtil
     } else if (start > end) {
       offset = -1;
     } else {
-      LOG_INST.warn(Loc::current(), "The step == 0!");
+      RTLOG.warn(Loc::current(), "The step == 0!");
     }
     return offset;
   }
@@ -2984,7 +2984,7 @@ class RTUtil
   static T getData(nlohmann::json value, std::vector<std::string> flag_list)
   {
     if (flag_list.empty()) {
-      LOG_INST.error(Loc::current(), "The flag list is empty!");
+      RTLOG.error(Loc::current(), "The flag list is empty!");
     }
     for (size_t i = 0; i < flag_list.size(); i++) {
       value = value[flag_list[i]];
@@ -2996,7 +2996,7 @@ class RTUtil
     for (size_t i = 0; i < flag_list.size(); i++) {
       key += flag_list[i] + ".";
     }
-    LOG_INST.error(Loc::current(), "The configuration file key '", key, "' does not exist!");
+    RTLOG.error(Loc::current(), "The configuration file key '", key, "' does not exist!");
     return value;
   }
 
@@ -3004,13 +3004,13 @@ class RTUtil
   static T getData(nlohmann::json value, std::string flag)
   {
     if (flag.empty()) {
-      LOG_INST.error(Loc::current(), "The flag is empty!");
+      RTLOG.error(Loc::current(), "The flag is empty!");
     }
     value = value[flag];
     if (!value.is_null()) {
       return value;
     }
-    LOG_INST.error(Loc::current(), "The configuration file key '", flag, "' does not exist!");
+    RTLOG.error(Loc::current(), "The configuration file key '", flag, "' does not exist!");
     return value;
   }
 
@@ -3037,7 +3037,7 @@ class RTUtil
     }
     double result = (1.0 / (1 + std::exp(4.5951 * (1 - 2 * value / threshold))));
     if (std::isnan(result)) {
-      LOG_INST.error(Loc::current(), "The value is nan!");
+      RTLOG.error(Loc::current(), "The value is nan!");
     }
     return result;
   }
@@ -3063,7 +3063,7 @@ class RTUtil
   {
     T* file = new T(file_path);
     if (!file->is_open()) {
-      LOG_INST.error(Loc::current(), "Failed to open file '", file_path, "'!");
+      RTLOG.error(Loc::current(), "Failed to open file '", file_path, "'!");
     }
     return file;
   }
@@ -3117,7 +3117,7 @@ class RTUtil
   static void checkFile(std::string file_path)
   {
     if (0 != access(file_path.c_str(), F_OK)) {
-      LOG_INST.error(Loc::current(), "The file ", file_path, " does not exist!");
+      RTLOG.error(Loc::current(), "The file ", file_path, " does not exist!");
     }
   }
 
@@ -3126,11 +3126,11 @@ class RTUtil
   static void createDir(std::string dir_path)
   {
     if (0 != access(dir_path.c_str(), F_OK)) {
-      LOG_INST.info(Loc::current(), "Create directory ", dir_path);
+      RTLOG.info(Loc::current(), "Create directory ", dir_path);
       std::error_code system_error;
       if (!std::filesystem::create_directories(dir_path, system_error)) {
         if (!std::filesystem::exists(dir_path)) {
-          LOG_INST.error(Loc::current(), "Failed to create directory '", dir_path, "', system_error:", system_error.message());
+          RTLOG.error(Loc::current(), "Failed to create directory '", dir_path, "', system_error:", system_error.message());
         }
       }
     }

@@ -26,7 +26,7 @@
 
 namespace irt {
 
-#define TA_INST (irt::TrackAssigner::getInst())
+#define RTTA (irt::TrackAssigner::getInst())
 
 class TrackAssigner
 {

@@ -52,7 +52,7 @@ struct GetDirectionName
         direction_name = "proximal";
         break;
       default:
-        LOG_INST.error(Loc::current(), "Unrecognized type!");
+        RTLOG.error(Loc::current(), "Unrecognized type!");
         break;
     }
     return direction_name;

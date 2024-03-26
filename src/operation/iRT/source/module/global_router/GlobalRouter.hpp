@@ -22,7 +22,7 @@
 
 namespace irt {
 
-#define GR_INST (irt::GlobalRouter::getInst())
+#define RTGR (irt::GlobalRouter::getInst())
 
 class GlobalRouter
 {

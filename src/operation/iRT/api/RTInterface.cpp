@@ -14,7 +14,7 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-#include "RTAPI.hpp"
+#include "RTInterface.hpp"
 
 #include "CongTile.hpp"
 #include "DataManager.hpp"
@@ -40,15 +40,15 @@ namespace irt {
 
 // public
 
-RTAPI& RTAPI::getInst()
+RTInterface& RTInterface::getInst()
 {
   if (_rt_api_instance == nullptr) {
-    _rt_api_instance = new RTAPI();
+    _rt_api_instance = new RTInterface();
   }
   return *_rt_api_instance;
 }
 
-void RTAPI::destroyInst()
+void RTInterface::destroyInst()
 {
   if (_rt_api_instance != nullptr) {
     delete _rt_api_instance;
@@ -58,131 +58,131 @@ void RTAPI::destroyInst()
 
 #if 1  // 外部调用RT的API
 
-void RTAPI::initRT(std::map<std::string, std::any> config_map)
+void RTInterface::initRT(std::map<std::string, std::any> config_map)
 {
   Logger::initInst();
   // clang-format off
-  LOG_INST.info(Loc::current(), ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
-  LOG_INST.info(Loc::current(), "_____ ________ ________     _______________________ ________ ________  ");
-  LOG_INST.info(Loc::current(), "___(_)___  __ \\___  __/     __  ___/___  __/___    |___  __ \\___  __/");
-  LOG_INST.info(Loc::current(), "__  / __  /_/ /__  /        _____ \\ __  /   __  /| |__  /_/ /__  /    ");
-  LOG_INST.info(Loc::current(), "_  /  _  _, _/ _  /         ____/ / _  /    _  ___ |_  _, _/ _  /      ");
-  LOG_INST.info(Loc::current(), "/_/   /_/ |_|  /_/          /____/  /_/     /_/  |_|/_/ |_|  /_/       ");
-  LOG_INST.info(Loc::current(), ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
+  RTLOG.info(Loc::current(), ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
+  RTLOG.info(Loc::current(), "_____ ________ ________     _______________________ ________ ________  ");
+  RTLOG.info(Loc::current(), "___(_)___  __ \\___  __/     __  ___/___  __/___    |___  __ \\___  __/");
+  RTLOG.info(Loc::current(), "__  / __  /_/ /__  /        _____ \\ __  /   __  /| |__  /_/ /__  /    ");
+  RTLOG.info(Loc::current(), "_  /  _  _, _/ _  /         ____/ / _  /    _  ___ |_  _, _/ _  /      ");
+  RTLOG.info(Loc::current(), "/_/   /_/ |_|  /_/          /____/  /_/     /_/  |_|/_/ |_|  /_/       ");
+  RTLOG.info(Loc::current(), ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
   // clang-format on
-  LOG_INST.printLogFilePath();
+  RTLOG.printLogFilePath();
   //////////////////////////////////////////////////////
   //////////////////////////////////////////////////////
   //////////////////////////////////////////////////////
   Monitor monitor;
-  LOG_INST.info(Loc::current(), "Starting...");
+  RTLOG.info(Loc::current(), "Starting...");
 
   DataManager::initInst();
-  DM_INST.input(config_map, dmInst->get_idb_builder());
+  RTDM.input(config_map, dmInst->get_idb_builder());
   GDSPlotter::initInst();
 
-  LOG_INST.info(Loc::current(), "Completed", monitor.getStatsInfo());
+  RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
-void RTAPI::runEGR()
+void RTInterface::runEGR()
 {
   Monitor monitor;
-  LOG_INST.info(Loc::current(), "Starting...");
+  RTLOG.info(Loc::current(), "Starting...");
 
   PinAccessor::initInst();
-  PA_INST.access();
+  RTPA.access();
   PinAccessor::destroyInst();
 
   SupplyAnalyzer::initInst();
-  SA_INST.analyze();
+  RTSA.analyze();
   SupplyAnalyzer::destroyInst();
 
   InitialRouter::initInst();
-  IR_INST.route();
+  RTIR.route();
   InitialRouter::destroyInst();
 
-  LOG_INST.info(Loc::current(), "Completed", monitor.getStatsInfo());
+  RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
-void RTAPI::runRT()
+void RTInterface::runRT()
 {
   Monitor monitor;
-  LOG_INST.info(Loc::current(), "Starting...");
+  RTLOG.info(Loc::current(), "Starting...");
 
   PinAccessor::initInst();
-  PA_INST.access();
+  RTPA.access();
   PinAccessor::destroyInst();
 
   SupplyAnalyzer::initInst();
-  SA_INST.analyze();
+  RTSA.analyze();
   SupplyAnalyzer::destroyInst();
 
   // PlanarRouter::initInst();
-  // PR_INST.route();
+  // RTPR.route();
   // PlanarRouter::destroyInst();
 
   // LayerAssigner::initInst();
-  // LA_INST.assign();
+  // RTLA.assign();
   // LayerAssigner::destroyInst();
 
   // // 临时代码
-  // for (Net& net : DM_INST.getDatabase().get_net_list()) {
+  // for (Net& net : RTDM.getDatabase().get_net_list()) {
   //   net.set_gr_result_tree(net.get_la_result_tree());
   // }
 
   // return;
 
   InitialRouter::initInst();
-  IR_INST.route();
+  RTIR.route();
   InitialRouter::destroyInst();
 
   // 临时代码
-  for (Net& net : DM_INST.getDatabase().get_net_list()) {
+  for (Net& net : RTDM.getDatabase().get_net_list()) {
     net.set_gr_result_tree(net.get_ir_result_tree());
   }
 
   GlobalRouter::initInst();
-  GR_INST.route();
+  RTGR.route();
   GlobalRouter::destroyInst();
 
   TrackAssigner::initInst();
-  TA_INST.assign();
+  RTTA.assign();
   TrackAssigner::destroyInst();
 
   DetailedRouter::initInst();
-  DR_INST.route();
+  RTDR.route();
   DetailedRouter::destroyInst();
 
-  LOG_INST.info(Loc::current(), "Completed", monitor.getStatsInfo());
+  RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
-void RTAPI::destroyRT()
+void RTInterface::destroyRT()
 {
   Monitor monitor;
-  LOG_INST.info(Loc::current(), "Starting...");
+  RTLOG.info(Loc::current(), "Starting...");
 
   GDSPlotter::destroyInst();
-  DM_INST.output();
+  RTDM.output();
   DataManager::destroyInst();
 
-  LOG_INST.info(Loc::current(), "Completed", monitor.getStatsInfo());
+  RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
   //////////////////////////////////////////////////////
   //////////////////////////////////////////////////////
   //////////////////////////////////////////////////////
-  LOG_INST.printLogFilePath();
+  RTLOG.printLogFilePath();
   // clang-format off
-  LOG_INST.info(Loc::current(), ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
-  LOG_INST.info(Loc::current(), "_____ ________ ________     _______________________   ________________________  __  ");
-  LOG_INST.info(Loc::current(), "___(_)___  __ \\___  __/     ___  ____/____  _/___  | / /____  _/__  ___/___  / / / ");
-  LOG_INST.info(Loc::current(), "__  / __  /_/ /__  /        __  /_     __  /  __   |/ /  __  /  _____ \\ __  /_/ /  ");
-  LOG_INST.info(Loc::current(), "_  /  _  _, _/ _  /         _  __/    __/ /   _  /|  /  __/ /   ____/ / _  __  /    ");
-  LOG_INST.info(Loc::current(), "/_/   /_/ |_|  /_/          /_/       /___/   /_/ |_/   /___/   /____/  /_/ /_/     ");
-  LOG_INST.info(Loc::current(), ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
+  RTLOG.info(Loc::current(), ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
+  RTLOG.info(Loc::current(), "_____ ________ ________     _______________________   ________________________  __  ");
+  RTLOG.info(Loc::current(), "___(_)___  __ \\___  __/     ___  ____/____  _/___  | / /____  _/__  ___/___  / / / ");
+  RTLOG.info(Loc::current(), "__  / __  /_/ /__  /        __  /_     __  /  __   |/ /  __  /  _____ \\ __  /_/ /  ");
+  RTLOG.info(Loc::current(), "_  /  _  _, _/ _  /         _  __/    __/ /   _  /|  /  __/ /   ____/ / _  __  /    ");
+  RTLOG.info(Loc::current(), "/_/   /_/ |_|  /_/          /_/       /___/   /_/ |_/   /___/   /____/  /_/ /_/     ");
+  RTLOG.info(Loc::current(), ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
   // clang-format on
   Logger::destroyInst();
 }
 
-void RTAPI::clearDef()
+void RTInterface::clearDef()
 {
   idb::IdbBuilder* idb_builder = dmInst->get_idb_builder();
   idb::IdbPins* idb_pin_list = idb_builder->get_def_service()->get_design()->get_io_pin_list();
@@ -230,7 +230,7 @@ void RTAPI::clearDef()
       }
     }
     if (has_io_pin && has_io_cell) {
-      LOG_INST.info(Loc::current(), "The net '", idb_net->get_net_name(), "' connects PAD and io_pin! removing...");
+      RTLOG.info(Loc::current(), "The net '", idb_net->get_net_name(), "' connects PAD and io_pin! removing...");
       remove_net_list.push_back(idb_net->get_net_name());
     }
   }
@@ -260,7 +260,7 @@ void RTAPI::clearDef()
 
 #if 1  // RT调用外部的API
 
-std::vector<Violation> RTAPI::getViolationList(std::vector<idb::IdbLayerShape*>& env_shape_list,
+std::vector<Violation> RTInterface::getViolationList(std::vector<idb::IdbLayerShape*>& env_shape_list,
                                                std::map<int32_t, std::vector<idb::IdbLayerShape*>>& net_pin_shape_map,
                                                std::map<int32_t, std::vector<idb::IdbRegularWireSegment*>>& net_wire_via_map)
 {
@@ -268,8 +268,8 @@ std::vector<Violation> RTAPI::getViolationList(std::vector<idb::IdbLayerShape*>&
    * env_shape_list 存储 obstacle obs pin_shape
    * net_idb_segment_map 存储 wire via patch
    */
-  ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
-  Helper& helper = DM_INST.getHelper();
+  ScaleAxis& gcell_axis = RTDM.getDatabase().get_gcell_axis();
+  Helper& helper = RTDM.getHelper();
 
   std::vector<Violation> violation_list;
   idrc::DrcApi drc_api;
@@ -288,7 +288,7 @@ std::vector<Violation> RTAPI::getViolationList(std::vector<idb::IdbLayerShape*>&
         ext_layer_rect.set_real_ll(idrc_violation_rect->get_llx(), idrc_violation_rect->get_lly());
         ext_layer_rect.set_real_ur(idrc_violation_rect->get_urx(), idrc_violation_rect->get_ury());
       } else {
-        LOG_INST.error(Loc::current(), "Type not supported!");
+        RTLOG.error(Loc::current(), "Type not supported!");
       }
       ext_layer_rect.set_grid_rect(RTUtil::getClosedGCellGridRect(ext_layer_rect.get_real_rect(), gcell_axis));
       ext_layer_rect.set_layer_idx(idb_layer->is_routing() ? helper.getRoutingLayerIdxByName(idb_layer->get_name())
@@ -304,7 +304,7 @@ std::vector<Violation> RTAPI::getViolationList(std::vector<idb::IdbLayerShape*>&
   return violation_list;
 }
 
-std::map<std::string, std::vector<double>> RTAPI::getTiming(
+std::map<std::string, std::vector<double>> RTInterface::getTiming(
     std::vector<std::map<std::string, std::vector<LayerCoord>>>& real_pin_coord_map_list,
     std::vector<std::vector<Segment<LayerCoord>>>& routing_segment_list_list)
 {
@@ -387,7 +387,7 @@ std::map<std::string, std::vector<double>> RTAPI::getTiming(
           } else if (RTUtil::exist(coord_fake_pin_map, coord)) {
             rc_pin = RCPin(coord, false, coord_fake_pin_map[coord]);
           } else {
-            LOG_INST.error(Loc::current(), "The coord is not exist!");
+            RTLOG.error(Loc::current(), "The coord is not exist!");
           }
           return rc_pin;
         };
@@ -441,7 +441,7 @@ std::map<std::string, std::vector<double>> RTAPI::getTiming(
         }
       }
       if (coord_list.size() > 2) {
-        LOG_INST.error(Loc::current(), "The pin ", pin_name, " is not in segment_list");
+        RTLOG.error(Loc::current(), "The pin ", pin_name, " is not in segment_list");
       }
     }
   }
@@ -458,10 +458,10 @@ std::map<std::string, std::vector<double>> RTAPI::getTiming(
 #endif
 
 #if 1  // 主流程
-  std::vector<Net>& net_list = DM_INST.getDatabase().get_net_list();
-  int32_t thread_number = DM_INST.getConfig().thread_number;
+  std::vector<Net>& net_list = RTDM.getDatabase().get_net_list();
+  int32_t thread_number = RTDM.getConfig().thread_number;
 
-  ista::TimingEngine* timing_engine = initTimingEngine(DM_INST.getHelper().get_idb_builder(), thread_number);
+  ista::TimingEngine* timing_engine = initTimingEngine(RTDM.getHelper().get_idb_builder(), thread_number);
   ista::Netlist* sta_net_list = timing_engine->get_netlist();
 
   for (size_t net_idx = 0; net_idx < coord_real_pin_map_list.size(); net_idx++) {
@@ -474,7 +474,7 @@ std::map<std::string, std::vector<double>> RTAPI::getTiming(
       double res = 0;
       if (first_rc_pin._coord.get_layer_idx() == second_rc_pin._coord.get_layer_idx()) {
         int32_t distance = RTUtil::getManhattanDistance(first_rc_pin._coord, second_rc_pin._coord);
-        int32_t unit = DM_INST.getHelper().get_idb_builder()->get_def_service()->get_design()->get_units()->get_micron_dbu();
+        int32_t unit = RTDM.getHelper().get_idb_builder()->get_def_service()->get_design()->get_units()->get_micron_dbu();
         std::optional<double> width = std::nullopt;
         cap = dynamic_cast<ista::TimingIDBAdapter*>(timing_engine->get_db_adapter())
                   ->getCapacitance(first_rc_pin._coord.get_layer_idx() + 1, distance / 1.0 / unit, width);
@@ -509,9 +509,9 @@ std::map<std::string, std::vector<double>> RTAPI::getTiming(
 #endif
 }
 
-void RTAPI::outputSummary()
+void RTInterface::outputSummary()
 {
-  Summary& rt_summary = DM_INST.getSummary();
+  Summary& rt_summary = RTDM.getSummary();
   idb::RTSummary& top_rt_summary = dmInst->get_feature_summary().getRTSummary();
   // pa_summary
   top_rt_summary.pa_summary.routing_access_point_num_map = rt_summary.pa_summary.routing_access_point_num_map;
@@ -569,6 +569,6 @@ void RTAPI::outputSummary()
 
 // private
 
-RTAPI* RTAPI::_rt_api_instance = nullptr;
+RTInterface* RTInterface::_rt_api_instance = nullptr;
 
 }  // namespace irt

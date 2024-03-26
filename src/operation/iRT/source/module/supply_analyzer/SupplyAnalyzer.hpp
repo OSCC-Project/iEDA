@@ -24,7 +24,7 @@
 
 namespace irt {
 
-#define SA_INST (irt::SupplyAnalyzer::getInst())
+#define RTSA (irt::SupplyAnalyzer::getInst())
 
 class SupplyAnalyzer
 {

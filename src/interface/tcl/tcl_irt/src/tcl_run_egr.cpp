@@ -16,7 +16,7 @@
 // ***************************************************************************************
 #include <set>
 
-#include "RTAPI.hpp"
+#include "RTInterface.hpp"
 #include "flow_config.h"
 #include "tcl_rt.h"
 #include "tcl_util.h"

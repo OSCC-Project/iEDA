@@ -25,7 +25,7 @@ namespace irt {
 
 using Loc = std::experimental::source_location;
 
-#define LOG_INST (irt::Logger::getInst())
+#define RTLOG (irt::Logger::getInst())
 
 class Logger
 {

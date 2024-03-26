@@ -24,7 +24,7 @@
 
 namespace irt {
 
-#define PA_INST (irt::PinAccessor::getInst())
+#define RTPA (irt::PinAccessor::getInst())
 
 class PinAccessor
 {

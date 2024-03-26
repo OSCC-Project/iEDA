@@ -36,7 +36,7 @@ void GDSPlotter::initInst()
 GDSPlotter& GDSPlotter::getInst()
 {
   if (_gp_instance == nullptr) {
-    LOG_INST.error(Loc::current(), "The instance not initialized!");
+    RTLOG.error(Loc::current(), "The instance not initialized!");
   }
   return *_gp_instance;
 }
@@ -64,7 +64,7 @@ int32_t GDSPlotter::getGDSIdxByRouting(int32_t routing_layer_idx)
   if (RTUtil::exist(_routing_layer_gds_map, routing_layer_idx)) {
     gds_layer_idx = _routing_layer_gds_map[routing_layer_idx];
   } else {
-    LOG_INST.warn(Loc::current(), "The routing_layer_idx '", routing_layer_idx, "' have not gds_layer_idx!");
+    RTLOG.warn(Loc::current(), "The routing_layer_idx '", routing_layer_idx, "' have not gds_layer_idx!");
   }
   return gds_layer_idx;
 }
@@ -75,7 +75,7 @@ int32_t GDSPlotter::getGDSIdxByCut(int32_t cut_layer_idx)
   if (RTUtil::exist(_cut_layer_gds_map, cut_layer_idx)) {
     gds_layer_idx = _cut_layer_gds_map[cut_layer_idx];
   } else {
-    LOG_INST.warn(Loc::current(), "The cut_layer_idx '", cut_layer_idx, "' have not gds_layer_idx!");
+    RTLOG.warn(Loc::current(), "The cut_layer_idx '", cut_layer_idx, "' have not gds_layer_idx!");
   }
   return gds_layer_idx;
 }
@@ -92,8 +92,8 @@ void GDSPlotter::init()
 
 void GDSPlotter::buildGDSLayerMap()
 {
-  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
-  std::vector<CutLayer>& cut_layer_list = DM_INST.getDatabase().get_cut_layer_list();
+  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
+  std::vector<CutLayer>& cut_layer_list = RTDM.getDatabase().get_cut_layer_list();
 
   std::map<int32_t, int32_t> order_gds_map;
   for (RoutingLayer& routing_layer : routing_layer_list) {
@@ -121,9 +121,9 @@ void GDSPlotter::buildGDSLayerMap()
 
 void GDSPlotter::buildGraphLypFile()
 {
-  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
-  std::vector<CutLayer>& cut_layer_list = DM_INST.getDatabase().get_cut_layer_list();
-  std::string& temp_directory_path = DM_INST.getConfig().temp_directory_path;
+  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
+  std::vector<CutLayer>& cut_layer_list = RTDM.getDatabase().get_cut_layer_list();
+  std::string& temp_directory_path = RTDM.getConfig().temp_directory_path;
 
   std::vector<std::string> color_list = {"#ff9d9d", "#ff80a8", "#c080ff", "#9580ff", "#8086ff", "#80a8ff", "#ff0000", "#ff0080", "#ff00ff",
                                          "#8000ff", "#0000ff", "#0080ff", "#800000", "#800057", "#800080", "#500080", "#000080", "#004080",
@@ -243,9 +243,9 @@ void GDSPlotter::checkSRefList(GPGDS& gp_gds)
 
   if (!nonexistent_sref_name_set.empty()) {
     for (const std::string& nonexistent_sref_name : nonexistent_sref_name_set) {
-      LOG_INST.warn(Loc::current(), "There is no corresponding structure ", nonexistent_sref_name, " in GDS!");
+      RTLOG.warn(Loc::current(), "There is no corresponding structure ", nonexistent_sref_name, " in GDS!");
     }
-    LOG_INST.error(Loc::current(), "There is a non-existent structure reference!");
+    RTLOG.error(Loc::current(), "There is a non-existent structure reference!");
   }
 }
 
@@ -253,7 +253,7 @@ void GDSPlotter::plotGDS(GPGDS& gp_gds, std::string gds_file_path)
 {
   Monitor monitor;
 
-  LOG_INST.info(Loc::current(), "The gds file is being saved...");
+  RTLOG.info(Loc::current(), "The gds file is being saved...");
 
   std::ofstream* gds_file = RTUtil::getOutputFileStream(gds_file_path);
   RTUtil::pushStream(gds_file, "HEADER 600", "\n");
@@ -267,7 +267,7 @@ void GDSPlotter::plotGDS(GPGDS& gp_gds, std::string gds_file_path)
   RTUtil::pushStream(gds_file, "ENDLIB", "\n");
   RTUtil::closeFileStream(gds_file);
 
-  LOG_INST.info(Loc::current(), "The gds file has been saved in '", gds_file_path, "'!", monitor.getStatsInfo());
+  RTLOG.info(Loc::current(), "The gds file has been saved in '", gds_file_path, "'!", monitor.getStatsInfo());
 }
 
 void GDSPlotter::plotStruct(std::ofstream* gds_file, GPStruct& gp_struct)

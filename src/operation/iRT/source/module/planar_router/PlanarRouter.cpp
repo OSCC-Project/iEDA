@@ -33,7 +33,7 @@ void PlanarRouter::initInst()
 PlanarRouter& PlanarRouter::getInst()
 {
   if (_pr_instance == nullptr) {
-    LOG_INST.error(Loc::current(), "The instance not initialized!");
+    RTLOG.error(Loc::current(), "The instance not initialized!");
   }
   return *_pr_instance;
 }
@@ -51,7 +51,7 @@ void PlanarRouter::destroyInst()
 void PlanarRouter::route()
 {
   Monitor monitor;
-  LOG_INST.info(Loc::current(), "Starting...");
+  RTLOG.info(Loc::current(), "Starting...");
   PRModel pr_model = initPRModel();
   setPRParameter(pr_model);
   buildNodeMap(pr_model);
@@ -64,7 +64,7 @@ void PlanarRouter::route()
   // printSummary(pr_model);
   // writeDemandCSV(pr_model);
   // writeOverflowCSV(pr_model);
-  LOG_INST.info(Loc::current(), "Completed", monitor.getStatsInfo());
+  RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
 // private
@@ -73,7 +73,7 @@ PlanarRouter* PlanarRouter::_pr_instance = nullptr;
 
 PRModel PlanarRouter::initPRModel()
 {
-  std::vector<Net>& net_list = DM_INST.getDatabase().get_net_list();
+  std::vector<Net>& net_list = RTDM.getDatabase().get_net_list();
 
   PRModel pr_model;
   pr_model.set_pr_net_list(convertToPRNetList(net_list));
@@ -106,16 +106,16 @@ PRNet PlanarRouter::convertToPRNet(Net& net)
 void PlanarRouter::setPRParameter(PRModel& pr_model)
 {
   PRParameter pr_parameter;
-  LOG_INST.info(Loc::current(), "congestion_unit: ", pr_parameter.get_congestion_unit());
+  RTLOG.info(Loc::current(), "congestion_unit: ", pr_parameter.get_congestion_unit());
   pr_model.set_pr_parameter(pr_parameter);
 }
 
 void PlanarRouter::buildNodeMap(PRModel& pr_model)
 {
   Monitor monitor;
-  LOG_INST.info(Loc::current(), "Starting...");
+  RTLOG.info(Loc::current(), "Starting...");
 
-  GridMap<GCell>& gcell_map = DM_INST.getDatabase().get_gcell_map();
+  GridMap<GCell>& gcell_map = RTDM.getDatabase().get_gcell_map();
   GridMap<PRNode>& pr_node_map = pr_model.get_pr_node_map();
   pr_node_map.init(gcell_map.get_x_size(), gcell_map.get_y_size());
 #pragma omp parallel for collapse(2)
@@ -125,15 +125,15 @@ void PlanarRouter::buildNodeMap(PRModel& pr_model)
       pr_node.set_coord(x, y);
     }
   }
-  LOG_INST.info(Loc::current(), "Completed", monitor.getStatsInfo());
+  RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
 void PlanarRouter::buildPRNodeNeighbor(PRModel& pr_model)
 {
   Monitor monitor;
-  LOG_INST.info(Loc::current(), "Starting...");
+  RTLOG.info(Loc::current(), "Starting...");
 
-  GridMap<GCell>& gcell_map = DM_INST.getDatabase().get_gcell_map();
+  GridMap<GCell>& gcell_map = RTDM.getDatabase().get_gcell_map();
 
   GridMap<PRNode>& pr_node_map = pr_model.get_pr_node_map();
 #pragma omp parallel for collapse(2)
@@ -154,17 +154,17 @@ void PlanarRouter::buildPRNodeNeighbor(PRModel& pr_model)
       }
     }
   }
-  LOG_INST.info(Loc::current(), "Completed", monitor.getStatsInfo());
+  RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
 void PlanarRouter::buildOrientSupply(PRModel& pr_model)
 {
   Monitor monitor;
-  LOG_INST.info(Loc::current(), "Starting...");
+  RTLOG.info(Loc::current(), "Starting...");
 
-  GridMap<GCell>& gcell_map = DM_INST.getDatabase().get_gcell_map();
-  int32_t bottom_routing_layer_idx = DM_INST.getConfig().bottom_routing_layer_idx;
-  int32_t top_routing_layer_idx = DM_INST.getConfig().top_routing_layer_idx;
+  GridMap<GCell>& gcell_map = RTDM.getDatabase().get_gcell_map();
+  int32_t bottom_routing_layer_idx = RTDM.getConfig().bottom_routing_layer_idx;
+  int32_t top_routing_layer_idx = RTDM.getConfig().top_routing_layer_idx;
 
   GridMap<PRNode>& pr_node_map = pr_model.get_pr_node_map();
 
@@ -179,20 +179,20 @@ void PlanarRouter::buildOrientSupply(PRModel& pr_model)
     }
   }
 
-  LOG_INST.info(Loc::current(), "Completed", monitor.getStatsInfo());
+  RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
 void PlanarRouter::sortPRModel(PRModel& pr_model)
 {
   Monitor monitor;
-  LOG_INST.info(Loc::current(), "Starting...");
+  RTLOG.info(Loc::current(), "Starting...");
   std::vector<int32_t>& pr_net_idx_list = pr_model.get_pr_net_idx_list();
   for (PRNet& pr_net : pr_model.get_pr_net_list()) {
     pr_net_idx_list.push_back(pr_net.get_net_idx());
   }
   std::sort(pr_net_idx_list.begin(), pr_net_idx_list.end(),
             [&](int32_t net_idx1, int32_t net_idx2) { return sortByMultiLevel(pr_model, net_idx1, net_idx2); });
-  LOG_INST.info(Loc::current(), "Completed", monitor.getStatsInfo());
+  RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
 bool PlanarRouter::sortByMultiLevel(PRModel& pr_model, int32_t net_idx1, int32_t net_idx2)
@@ -300,7 +300,7 @@ SortStatus PlanarRouter::sortByPinNumDESC(PRNet& net1, PRNet& net2)
 void PlanarRouter::routePRModel(PRModel& pr_model)
 {
   Monitor monitor;
-  LOG_INST.info(Loc::current(), "Starting...");
+  RTLOG.info(Loc::current(), "Starting...");
 
   std::vector<PRNet>& pr_net_list = pr_model.get_pr_net_list();
   std::vector<int32_t>& pr_net_idx_list = pr_model.get_pr_net_idx_list();
@@ -311,12 +311,12 @@ void PlanarRouter::routePRModel(PRModel& pr_model)
   for (size_t i = 0; i < pr_net_idx_list.size(); i++) {
     routePRNet(pr_model, pr_net_list[pr_net_idx_list[i]]);
     if ((i + 1) % batch_size == 0 || (i + 1) == pr_net_idx_list.size()) {
-      LOG_INST.info(Loc::current(), "Routed ", (i + 1), "/", pr_net_idx_list.size(), "(",
+      RTLOG.info(Loc::current(), "Routed ", (i + 1), "/", pr_net_idx_list.size(), "(",
                     RTUtil::getPercentage(i + 1, pr_net_idx_list.size()), ") nets", stage_monitor.getStatsInfo());
     }
   }
 
-  LOG_INST.info(Loc::current(), "Completed", monitor.getStatsInfo());
+  RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
 void PlanarRouter::routePRNet(PRModel& pr_model, PRNet& pr_net)
@@ -330,7 +330,7 @@ void PlanarRouter::routePRNet(PRModel& pr_model, PRNet& pr_net)
   MTree<PlanarCoord> coord_tree = getCoordTree(pr_net, routing_segment_list);
   updateDemand(pr_model, pr_net, coord_tree);
   std::function<Guide(PlanarCoord&)> convertToGuide = [](PlanarCoord& coord) {
-    ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
+    ScaleAxis& gcell_axis = RTDM.getDatabase().get_gcell_axis();
     return Guide(LayerRect(RTUtil::getRealRectByGCell(coord, gcell_axis)), coord);
   };
   pr_net.set_pr_result_tree(RTUtil::convertTree(coord_tree, convertToGuide));
@@ -527,7 +527,7 @@ double PlanarRouter::getNodeCost(PRModel& pr_model, std::vector<Segment<PlanarCo
 
     Orientation orientation = RTUtil::getOrientation(first_coord, second_coord);
     if (orientation == Orientation::kNone || orientation == Orientation::kOblique) {
-      LOG_INST.error(Loc::current(), "The orientation is error!");
+      RTLOG.error(Loc::current(), "The orientation is error!");
     }
     Orientation opposite_orientation = RTUtil::getOppositeOrientation(orientation);
 
@@ -592,7 +592,7 @@ void PlanarRouter::updateDemand(PRModel& pr_model, PRNet& pr_net, MTree<PlanarCo
 
     Orientation orientation = RTUtil::getOrientation(first_coord, second_coord);
     if (orientation == Orientation::kNone || orientation == Orientation::kOblique) {
-      LOG_INST.error(Loc::current(), "The orientation is error!");
+      RTLOG.error(Loc::current(), "The orientation is error!");
     }
     Orientation opposite_orientation = RTUtil::getOppositeOrientation(orientation);
 

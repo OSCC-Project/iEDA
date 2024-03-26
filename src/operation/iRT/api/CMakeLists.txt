@@ -7,7 +7,7 @@ else()
 endif()
 
 add_library(irt_api
-    ${IRT_API}/RTAPI.cpp
+    ${IRT_API}/RTInterface.cpp
 )
 
 target_link_libraries(irt_api

@@ -18,7 +18,7 @@
 
 #include <tcl_util.h>
 
-#include <iRT/api/RTAPI.hpp>
+#include <iRT/api/RTInterface.hpp>
 #include <string>
 
 #include "flow_config.h"

@@ -22,7 +22,7 @@
 
 namespace irt {
 
-#define LA_INST (irt::LayerAssigner::getInst())
+#define RTLA (irt::LayerAssigner::getInst())
 
 class LayerAssigner
 {

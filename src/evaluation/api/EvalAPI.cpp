@@ -22,7 +22,7 @@
 #include <iostream>
 #include <sstream>
 
-#include "RTAPI.hpp"
+#include "RTInterface.hpp"
 #include "idm.h"
 #include "manager.hpp"
 
