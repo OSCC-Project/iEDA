@@ -22,7 +22,7 @@ target_link_libraries(feature_parser
         idb
         flow_config
         idm
-        irt_api
+        irt_interface
         ipl-source
         ipl-api
         icts_api

@@ -30,7 +30,7 @@ unsigned TclClearDef::exec()
     return 0;
   }
 
-  RTAPI_INST.clearDef();
+  RTI.clearDef();
 
   return 1;
 }

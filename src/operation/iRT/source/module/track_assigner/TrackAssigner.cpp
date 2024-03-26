@@ -969,7 +969,7 @@ std::vector<Violation> TrackAssigner::getViolationList(TAPanel& ta_panel)
       }
     }
   }
-  std::vector<Violation> violation_list = RTAPI_INST.getViolationList(env_shape_list, net_pin_shape_map, net_wire_via_map);
+  std::vector<Violation> violation_list = RTI.getViolationList(env_shape_list, net_pin_shape_map, net_wire_via_map,"TA");
   // free memory
   {
     for (idb::IdbLayerShape* env_shape : env_shape_list) {

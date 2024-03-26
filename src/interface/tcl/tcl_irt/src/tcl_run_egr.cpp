@@ -33,7 +33,7 @@ unsigned TclRunEGR::exec()
   if (!check()) {
     return 0;
   }
-  RTAPI_INST.runEGR();
+  RTI.runEGR();
   return 1;
 }
 

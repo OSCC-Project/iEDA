@@ -42,17 +42,17 @@ namespace irt {
 
 RTInterface& RTInterface::getInst()
 {
-  if (_rt_api_instance == nullptr) {
-    _rt_api_instance = new RTInterface();
+  if (_rt_interface_instance == nullptr) {
+    _rt_interface_instance = new RTInterface();
   }
-  return *_rt_api_instance;
+  return *_rt_interface_instance;
 }
 
 void RTInterface::destroyInst()
 {
-  if (_rt_api_instance != nullptr) {
-    delete _rt_api_instance;
-    _rt_api_instance = nullptr;
+  if (_rt_interface_instance != nullptr) {
+    delete _rt_interface_instance;
+    _rt_interface_instance = nullptr;
   }
 }
 
@@ -261,9 +261,19 @@ void RTInterface::clearDef()
 #if 1  // RT调用外部的API
 
 std::vector<Violation> RTInterface::getViolationList(std::vector<idb::IdbLayerShape*>& env_shape_list,
-                                               std::map<int32_t, std::vector<idb::IdbLayerShape*>>& net_pin_shape_map,
-                                               std::map<int32_t, std::vector<idb::IdbRegularWireSegment*>>& net_wire_via_map)
+                                                     std::map<int32_t, std::vector<idb::IdbLayerShape*>>& net_pin_shape_map,
+                                                     std::map<int32_t, std::vector<idb::IdbRegularWireSegment*>>& net_wire_via_map,
+                                                     std::string stage)
 {
+  std::set<idrc::ViolationEnumType> check_select;
+  if (stage == "TA") {
+    check_select.insert(idrc::ViolationEnumType::kShort);
+  } else if (stage == "DR") {
+    check_select.insert(idrc::ViolationEnumType::kShort);
+    check_select.insert(idrc::ViolationEnumType::kDefaultSpacing);
+  } else {
+    RTLOG.error(Loc::current(), "Currently not supporting other stages");
+  }
   /**
    * env_shape_list 存储 obstacle obs pin_shape
    * net_idb_segment_map 存储 wire via patch
@@ -274,7 +284,7 @@ std::vector<Violation> RTInterface::getViolationList(std::vector<idb::IdbLayerSh
   std::vector<Violation> violation_list;
   idrc::DrcApi drc_api;
   drc_api.init();
-  for (auto& [type, idrc_violation_list] : drc_api.check(env_shape_list, net_pin_shape_map, net_wire_via_map)) {
+  for (auto& [type, idrc_violation_list] : drc_api.check(env_shape_list, net_pin_shape_map, net_wire_via_map, check_select)) {
     for (idrc::DrcViolation* idrc_violation : idrc_violation_list) {
       if (idrc_violation->get_net_ids().size() < 2) {
         continue;
@@ -569,6 +579,6 @@ void RTInterface::outputSummary()
 
 // private
 
-RTInterface* RTInterface::_rt_api_instance = nullptr;
+RTInterface* RTInterface::_rt_interface_instance = nullptr;
 
 }  // namespace irt

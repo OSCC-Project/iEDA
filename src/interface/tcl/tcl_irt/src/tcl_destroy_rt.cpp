@@ -29,7 +29,7 @@ unsigned TclDestroyRT::exec()
   if (!check()) {
     return 0;
   }
-  RTAPI_INST.destroyRT();
+  RTI.destroyRT();
   return 1;
 }
 

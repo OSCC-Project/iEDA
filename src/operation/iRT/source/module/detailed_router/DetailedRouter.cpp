@@ -1191,7 +1191,7 @@ std::vector<Violation> DetailedRouter::getViolationList(DRBox& dr_box)
       net_wire_via_map[net_idx].push_back(RTDM.getIDBSegmentByNetResult(net_idx, segment));
     }
   }
-  std::vector<Violation> violation_list = RTAPI_INST.getViolationList(env_shape_list, net_pin_shape_map, net_wire_via_map);
+  std::vector<Violation> violation_list = RTI.getViolationList(env_shape_list, net_pin_shape_map, net_wire_via_map,"DR");
   // free memory
   {
     for (idb::IdbLayerShape* env_shape : env_shape_list) {
@@ -1952,7 +1952,7 @@ void DetailedRouter::updateSummary(DRModel& dr_model)
         routing_segment_list_list[net_idx].emplace_back(segment->get_first(), segment->get_second());
       }
     }
-    timing = RTAPI_INST.getTiming(real_pin_coord_map_list, routing_segment_list_list);
+    timing = RTI.getTiming(real_pin_coord_map_list, routing_segment_list_list);
   }
 }
 

@@ -1212,7 +1212,7 @@ void InitialRouter::updateSummary(IRModel& ir_model)
                                                                      segment.get_second()->value().get_grid_coord());
       }
     }
-    timing = RTAPI_INST.getTiming(real_pin_coord_map_list, routing_segment_list_list);
+    timing = RTI.getTiming(real_pin_coord_map_list, routing_segment_list_list);
   }
 }
 

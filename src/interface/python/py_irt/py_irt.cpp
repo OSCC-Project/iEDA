@@ -26,13 +26,13 @@ namespace python_interface {
 
 bool destroyRT()
 {
-  RTAPI_INST.destroyRT();
+  RTI.destroyRT();
   return true;
 }
 
 bool runRT()
 {
-  RTAPI_INST.runRT();
+  RTI.runRT();
   return true;
 }
 
@@ -51,7 +51,7 @@ bool initRT(std::string& config, std::map<std::string, std::string>& config_dict
   if (!pass) {
     return false;
   }
-  RTAPI_INST.initRT(config_map);
+  RTI.initRT(config_map);
   return true;
 }
 

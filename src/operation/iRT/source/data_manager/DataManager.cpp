@@ -1976,7 +1976,7 @@ void DataManager::outputNetList()
 
 void DataManager::outputSummary()
 {
-  RTAPI_INST.outputSummary();
+  RTI.outputSummary();
 }
 
 #endif

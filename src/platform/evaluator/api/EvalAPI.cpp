@@ -135,7 +135,7 @@ vector<float> EvalAPI::evalGRCong()
 {
   // call router to get tilegrid info
   std::map<std::string, std::any> config_map;
-  TileGrid* tile_grid = RTAPIInst.getCongestonMap(config_map);
+  TileGrid* tile_grid = RTIInst.getCongestonMap(config_map);
 
   _congestion_eval_inst->set_tile_grid(tile_grid);
   return _congestion_eval_inst->evalRouteCong();

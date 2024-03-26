@@ -33,7 +33,7 @@ unsigned TclRunRT::exec()
   if (!check()) {
     return 0;
   }
-  RTAPI_INST.runRT();
+  RTI.runRT();
   return 1;
 }
 

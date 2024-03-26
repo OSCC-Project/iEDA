@@ -26,7 +26,7 @@
 
 namespace irt {
 
-#define RTAPI_INST (irt::RTInterface::getInst())
+#define RTI (irt::RTInterface::getInst())
 
 class RTInterface
 {
@@ -48,7 +48,7 @@ class RTInterface
   // 调用iDRC 计算版图的DRC违例
   std::vector<Violation> getViolationList(std::vector<idb::IdbLayerShape*>& env_shape_list,
                                           std::map<int32_t, std::vector<idb::IdbLayerShape*>>& net_pin_shape_map,
-                                          std::map<int32_t, std::vector<idb::IdbRegularWireSegment*>>& net_wire_via_map);
+                                          std::map<int32_t, std::vector<idb::IdbRegularWireSegment*>>& net_wire_via_map, std::string stage);
   // 调用iSTA 计算时序
   std::map<std::string, std::vector<double>> getTiming(std::vector<std::map<std::string, std::vector<LayerCoord>>>& real_pin_coord_map_list,
                                                        std::vector<std::vector<Segment<LayerCoord>>>& routing_segment_list_list);
@@ -57,7 +57,7 @@ class RTInterface
 #endif
 
  private:
-  static RTInterface* _rt_api_instance;
+  static RTInterface* _rt_interface_instance;
 
   RTInterface() = default;
   RTInterface(const RTInterface& other) = delete;
