@@ -16,8 +16,8 @@
 // ***************************************************************************************
 #pragma once
 
-#include "PRPin.hpp"
 #include "Net.hpp"
+#include "PRPin.hpp"
 
 namespace irt {
 

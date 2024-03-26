@@ -347,8 +347,8 @@ void InitialRouter::routeIRModel(IRModel& ir_model)
   for (size_t i = 0; i < ir_net_idx_list.size(); i++) {
     routeIRNet(ir_model, ir_net_list[ir_net_idx_list[i]]);
     if ((i + 1) % batch_size == 0 || (i + 1) == ir_net_idx_list.size()) {
-      RTLOG.info(Loc::current(), "Routed ", (i + 1), "/", ir_net_idx_list.size(), "(",
-                    RTUtil::getPercentage(i + 1, ir_net_idx_list.size()), ") nets", stage_monitor.getStatsInfo());
+      RTLOG.info(Loc::current(), "Routed ", (i + 1), "/", ir_net_idx_list.size(), "(", RTUtil::getPercentage(i + 1, ir_net_idx_list.size()),
+                 ") nets", stage_monitor.getStatsInfo());
     }
   }
 

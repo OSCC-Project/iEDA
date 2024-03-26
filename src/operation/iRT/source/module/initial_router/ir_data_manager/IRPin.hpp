@@ -36,8 +36,6 @@ class IRPin : public Pin
   // function
 
  private:
- 
 };
-
 
 }  // namespace irt

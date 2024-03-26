@@ -311,8 +311,8 @@ void PlanarRouter::routePRModel(PRModel& pr_model)
   for (size_t i = 0; i < pr_net_idx_list.size(); i++) {
     routePRNet(pr_model, pr_net_list[pr_net_idx_list[i]]);
     if ((i + 1) % batch_size == 0 || (i + 1) == pr_net_idx_list.size()) {
-      RTLOG.info(Loc::current(), "Routed ", (i + 1), "/", pr_net_idx_list.size(), "(",
-                    RTUtil::getPercentage(i + 1, pr_net_idx_list.size()), ") nets", stage_monitor.getStatsInfo());
+      RTLOG.info(Loc::current(), "Routed ", (i + 1), "/", pr_net_idx_list.size(), "(", RTUtil::getPercentage(i + 1, pr_net_idx_list.size()),
+                 ") nets", stage_monitor.getStatsInfo());
     }
   }
 

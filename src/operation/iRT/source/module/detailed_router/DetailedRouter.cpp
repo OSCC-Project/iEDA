@@ -112,7 +112,7 @@ void DetailedRouter::iterativeDRModel(DRModel& dr_model)
   for (size_t i = 0, iter = 1; i < dr_parameter_list.size(); i++, iter++) {
     Monitor iter_monitor;
     RTLOG.info(Loc::current(), "***** Begin iteration ", iter, "/", dr_parameter_list.size(), "(",
-                  RTUtil::getPercentage(iter, dr_parameter_list.size()), ") *****");
+               RTUtil::getPercentage(iter, dr_parameter_list.size()), ") *****");
     setDRParameter(dr_model, iter, dr_parameter_list[i]);
     initDRBoxMap(dr_model);
     buildBoxSchedule(dr_model);
@@ -123,7 +123,7 @@ void DetailedRouter::iterativeDRModel(DRModel& dr_model)
     writeNetCSV(dr_model);
     writeViolationCSV(dr_model);
     RTLOG.info(Loc::current(), "***** End Iteration ", iter, "/", dr_parameter_list.size(), "(",
-                  RTUtil::getPercentage(iter, dr_parameter_list.size()), ")", iter_monitor.getStatsInfo(), "*****");
+               RTUtil::getPercentage(iter, dr_parameter_list.size()), ")", iter_monitor.getStatsInfo(), "*****");
   }
 }
 
@@ -251,7 +251,7 @@ void DetailedRouter::routeDRBoxMap(DRModel& dr_model)
     }
     routed_box_num += dr_box_id_list.size();
     RTLOG.info(Loc::current(), "Routed ", routed_box_num, "/", total_box_num, "(", RTUtil::getPercentage(routed_box_num, total_box_num),
-                  ") boxes with ", getViolationNum(), " violations", stage_monitor.getStatsInfo());
+               ") boxes with ", getViolationNum(), " violations", stage_monitor.getStatsInfo());
   }
 
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
@@ -1191,7 +1191,7 @@ std::vector<Violation> DetailedRouter::getViolationList(DRBox& dr_box)
       net_wire_via_map[net_idx].push_back(RTDM.getIDBSegmentByNetResult(net_idx, segment));
     }
   }
-  std::vector<Violation> violation_list = RTI.getViolationList(env_shape_list, net_pin_shape_map, net_wire_via_map,"DR");
+  std::vector<Violation> violation_list = RTI.getViolationList(env_shape_list, net_pin_shape_map, net_wire_via_map, "DR");
   // free memory
   {
     for (idb::IdbLayerShape* env_shape : env_shape_list) {
@@ -1476,7 +1476,7 @@ void DetailedRouter::debugCheckDRBox(DRBox& dr_box)
         DRNode& dr_node = layer_node_map[layer_idx][grid_coord.get_x()][grid_coord.get_y()];
         if (dr_node.get_neighbor_node_map().empty()) {
           RTLOG.error(Loc::current(), "The neighbor of group coord (", coord.get_x(), ",", coord.get_y(), ",", layer_idx,
-                         ") is empty in box(", dr_box_id.get_x(), ",", dr_box_id.get_y(), ")");
+                      ") is empty in box(", dr_box_id.get_x(), ",", dr_box_id.get_y(), ")");
         }
         if (RTUtil::isInside(dr_box.get_box_rect().get_real_rect(), coord)) {
           continue;
@@ -1890,8 +1890,7 @@ void DetailedRouter::updateSummary(DRModel& dr_model)
   std::vector<CutLayer>& cut_layer_list = RTDM.getDatabase().get_cut_layer_list();
   std::vector<std::vector<ViaMaster>>& layer_via_master_list = RTDM.getDatabase().get_layer_via_master_list();
   int32_t enable_timing = RTDM.getConfig().enable_timing;
-  std::map<int32_t, double>& routing_wire_length_map
-      = RTDM.getSummary().iter_dr_summary_map[dr_model.get_iter()].routing_wire_length_map;
+  std::map<int32_t, double>& routing_wire_length_map = RTDM.getSummary().iter_dr_summary_map[dr_model.get_iter()].routing_wire_length_map;
   double& total_wire_length = RTDM.getSummary().iter_dr_summary_map[dr_model.get_iter()].total_wire_length;
   std::map<int32_t, int32_t>& cut_via_num_map = RTDM.getSummary().iter_dr_summary_map[dr_model.get_iter()].cut_via_num_map;
   int32_t& total_via_num = RTDM.getSummary().iter_dr_summary_map[dr_model.get_iter()].total_via_num;
@@ -1960,8 +1959,7 @@ void DetailedRouter::printSummary(DRModel& dr_model)
 {
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
   std::vector<CutLayer>& cut_layer_list = RTDM.getDatabase().get_cut_layer_list();
-  std::map<int32_t, double>& routing_wire_length_map
-      = RTDM.getSummary().iter_dr_summary_map[dr_model.get_iter()].routing_wire_length_map;
+  std::map<int32_t, double>& routing_wire_length_map = RTDM.getSummary().iter_dr_summary_map[dr_model.get_iter()].routing_wire_length_map;
   double& total_wire_length = RTDM.getSummary().iter_dr_summary_map[dr_model.get_iter()].total_wire_length;
   std::map<int32_t, int32_t>& cut_via_num_map = RTDM.getSummary().iter_dr_summary_map[dr_model.get_iter()].cut_via_num_map;
   int32_t& total_via_num = RTDM.getSummary().iter_dr_summary_map[dr_model.get_iter()].total_via_num;

@@ -16,8 +16,8 @@
 // ***************************************************************************************
 #include "DataManager.hpp"
 
-#include "RTInterface.hpp"
 #include "RTHeader.hpp"
+#include "RTInterface.hpp"
 #include "RTUtil.hpp"
 
 namespace irt {
@@ -1081,20 +1081,18 @@ void DataManager::checkGCellAxis()
   }
   for (size_t i = 1; i < x_grid_list.size(); i++) {
     if (x_grid_list[i - 1].get_end_line() < x_grid_list[i].get_start_line()) {
-      RTLOG.error(Loc::current(), "The x grid with gap '", x_grid_list[i - 1].get_end_line(), " < ", x_grid_list[i].get_start_line(),
-                     "'!");
+      RTLOG.error(Loc::current(), "The x grid with gap '", x_grid_list[i - 1].get_end_line(), " < ", x_grid_list[i].get_start_line(), "'!");
     } else if (x_grid_list[i - 1].get_end_line() > x_grid_list[i].get_start_line()) {
       RTLOG.error(Loc::current(), "The x grid with overlapping '", x_grid_list[i - 1].get_end_line(), " < ",
-                     x_grid_list[i].get_start_line(), "'!");
+                  x_grid_list[i].get_start_line(), "'!");
     }
   }
   for (size_t i = 1; i < y_grid_list.size(); i++) {
     if (y_grid_list[i - 1].get_end_line() < y_grid_list[i].get_start_line()) {
-      RTLOG.error(Loc::current(), "The y grid with gap '", y_grid_list[i - 1].get_end_line(), " < ", y_grid_list[i].get_start_line(),
-                     "'!");
+      RTLOG.error(Loc::current(), "The y grid with gap '", y_grid_list[i - 1].get_end_line(), " < ", y_grid_list[i].get_start_line(), "'!");
     } else if (y_grid_list[i - 1].get_end_line() > y_grid_list[i].get_start_line()) {
       RTLOG.error(Loc::current(), "The y grid with overlapping '", y_grid_list[i - 1].get_end_line(), " > ",
-                     y_grid_list[i].get_start_line(), "'!");
+                  y_grid_list[i].get_start_line(), "'!");
     }
   }
 }
@@ -1118,11 +1116,11 @@ void DataManager::checkDie()
 
   if (die.get_real_ll_x() < 0 || die.get_real_ll_y() < 0 || die.get_real_ur_x() < 0 || die.get_real_ur_y() < 0) {
     RTLOG.error(Loc::current(), "The die '(", die.get_real_ll_x(), " , ", die.get_real_ll_y(), ") - (", die.get_real_ur_x(), " , ",
-                   die.get_real_ur_y(), ")' is wrong!");
+                die.get_real_ur_y(), ")' is wrong!");
   }
   if ((die.get_real_ur_x() <= die.get_real_ll_x()) || (die.get_real_ur_y() <= die.get_real_ll_y())) {
     RTLOG.error(Loc::current(), "The die '(", die.get_real_ll_x(), " , ", die.get_real_ll_y(), ") - (", die.get_real_ur_x(), " , ",
-                   die.get_real_ur_y(), ")' is wrong!");
+                die.get_real_ur_y(), ")' is wrong!");
   }
 }
 
@@ -1177,13 +1175,13 @@ void DataManager::checkLayerList()
     for (ScaleGrid& x_track_grid : routing_layer.getXTrackGridList()) {
       if (x_track_grid.get_step_length() <= 0) {
         RTLOG.error(Loc::current(), "The layer '", layer_name, "' x_track_grid step length '", x_track_grid.get_step_length(),
-                       "' is wrong!");
+                    "' is wrong!");
       }
     }
     for (ScaleGrid& y_track_grid : routing_layer.getYTrackGridList()) {
       if (y_track_grid.get_step_length() <= 0) {
         RTLOG.error(Loc::current(), "The layer '", layer_name, "' y_track_grid step length '", y_track_grid.get_step_length(),
-                       "' is wrong!");
+                    "' is wrong!");
       }
     }
     SpacingTable& spacing_table = routing_layer.get_spacing_table();
@@ -1453,9 +1451,9 @@ void DataManager::checkObstacleList()
         || die.get_real_ur_x() < obstacle.get_real_ur_x() || die.get_real_ur_y() < obstacle.get_real_ur_y()) {
       // log
       RTLOG.error(Loc::current(), "The obstacle '(", obstacle.get_real_ll_x(), " , ", obstacle.get_real_ll_y(), ") - (",
-                     obstacle.get_real_ur_x(), " , ", obstacle.get_real_ur_y(), ") ",
-                     routing_layer_list[obstacle.get_layer_idx()].get_layer_name(), "' is wrong! Die '(", die.get_real_ll_x(), " , ",
-                     die.get_real_ll_y(), ") - (", die.get_real_ur_x(), " , ", die.get_real_ur_y(), ")'");
+                  obstacle.get_real_ur_x(), " , ", obstacle.get_real_ur_y(), ") ",
+                  routing_layer_list[obstacle.get_layer_idx()].get_layer_name(), "' is wrong! Die '(", die.get_real_ll_x(), " , ",
+                  die.get_real_ll_y(), ") - (", die.get_real_ur_x(), " , ", die.get_real_ur_y(), ")'");
     }
   }
 #pragma omp parallel for
@@ -1464,9 +1462,9 @@ void DataManager::checkObstacleList()
         || die.get_real_ur_x() < obstacle.get_real_ur_x() || die.get_real_ur_y() < obstacle.get_real_ur_y()) {
       // log
       RTLOG.error(Loc::current(), "The obstacle '(", obstacle.get_real_ll_x(), " , ", obstacle.get_real_ll_y(), ") - (",
-                     obstacle.get_real_ur_x(), " , ", obstacle.get_real_ur_y(), ") ",
-                     routing_layer_list[obstacle.get_layer_idx()].get_layer_name(), "' is wrong! Die '(", die.get_real_ll_x(), " , ",
-                     die.get_real_ll_y(), ") - (", die.get_real_ur_x(), " , ", die.get_real_ur_y(), ")'");
+                  obstacle.get_real_ur_x(), " , ", obstacle.get_real_ur_y(), ") ",
+                  routing_layer_list[obstacle.get_layer_idx()].get_layer_name(), "' is wrong! Die '(", die.get_real_ll_x(), " , ",
+                  die.get_real_ll_y(), ") - (", die.get_real_ur_x(), " , ", die.get_real_ur_y(), ")'");
     }
   }
 }
@@ -1532,18 +1530,18 @@ void DataManager::checkPinList(Net& net)
       if (routing_shape.get_real_ll_x() < die.get_real_ll_x() || routing_shape.get_real_ll_y() < die.get_real_ll_y()
           || die.get_real_ur_x() < routing_shape.get_real_ur_x() || die.get_real_ur_y() < routing_shape.get_real_ur_y()) {
         RTLOG.error(Loc::current(), "The pin_shape '(", routing_shape.get_real_ll_x(), " , ", routing_shape.get_real_ll_y(), ") - (",
-                       routing_shape.get_real_ur_x(), " , ", routing_shape.get_real_ur_y(), ") ",
-                       routing_layer_list[routing_shape.get_layer_idx()].get_layer_name(), "' is wrong! Die '(", die.get_real_ll_x(), " , ",
-                       die.get_real_ll_y(), ") - (", die.get_real_ur_x(), " , ", die.get_real_ur_y(), ")'");
+                    routing_shape.get_real_ur_x(), " , ", routing_shape.get_real_ur_y(), ") ",
+                    routing_layer_list[routing_shape.get_layer_idx()].get_layer_name(), "' is wrong! Die '(", die.get_real_ll_x(), " , ",
+                    die.get_real_ll_y(), ") - (", die.get_real_ur_x(), " , ", die.get_real_ur_y(), ")'");
       }
     }
     for (EXTLayerRect& cut_shape : pin.get_cut_shape_list()) {
       if (cut_shape.get_real_ll_x() < die.get_real_ll_x() || cut_shape.get_real_ll_y() < die.get_real_ll_y()
           || die.get_real_ur_x() < cut_shape.get_real_ur_x() || die.get_real_ur_y() < cut_shape.get_real_ur_y()) {
         RTLOG.error(Loc::current(), "The pin_shape '(", cut_shape.get_real_ll_x(), " , ", cut_shape.get_real_ll_y(), ") - (",
-                       cut_shape.get_real_ur_x(), " , ", cut_shape.get_real_ur_y(), ") ",
-                       cut_layer_list[cut_shape.get_layer_idx()].get_layer_name(), "' is wrong! Die '(", die.get_real_ll_x(), " , ",
-                       die.get_real_ll_y(), ") - (", die.get_real_ur_x(), " , ", die.get_real_ur_y(), ")'");
+                    cut_shape.get_real_ur_x(), " , ", cut_shape.get_real_ur_y(), ") ",
+                    cut_layer_list[cut_shape.get_layer_idx()].get_layer_name(), "' is wrong! Die '(", die.get_real_ll_x(), " , ",
+                    die.get_real_ll_y(), ") - (", die.get_real_ur_x(), " , ", die.get_real_ur_y(), ")'");
       }
     }
   }
@@ -1781,19 +1779,19 @@ void DataManager::printDatabase()
   RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(2), "x_grid_list");
   for (ScaleGrid& x_grid : x_grid_list) {
     RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(3), "start:", x_grid.get_start_line(), " step_length:", x_grid.get_step_length(),
-                  " step_num:", x_grid.get_step_num(), " end:", x_grid.get_end_line());
+               " step_num:", x_grid.get_step_num(), " end:", x_grid.get_end_line());
   }
   std::vector<ScaleGrid>& y_grid_list = gcell_axis.get_y_grid_list();
   RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(2), "y_grid_list");
   for (ScaleGrid& y_grid : y_grid_list) {
     RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(3), "start:", y_grid.get_start_line(), " step_length:", y_grid.get_step_length(),
-                  " step_num:", y_grid.get_step_num(), " end:", y_grid.get_end_line());
+               " step_num:", y_grid.get_step_num(), " end:", y_grid.get_end_line());
   }
   // ********** Die ********** //
   Die& die = _database.get_die();
   RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "die");
   RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(2), "(", die.get_real_ll_x(), ",", die.get_real_ll_y(), ")-(", die.get_real_ur_x(),
-                ",", die.get_real_ur_y(), ")");
+             ",", die.get_real_ur_y(), ")");
   // ********** RoutingLayer ********** //
   std::vector<RoutingLayer>& routing_layer_list = _database.get_routing_layer_list();
   RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "routing_layer_num");
@@ -1801,23 +1799,23 @@ void DataManager::printDatabase()
   RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "routing_layer");
   for (RoutingLayer& routing_layer : routing_layer_list) {
     RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(2), "idx:", routing_layer.get_layer_idx(),
-                  " order:", routing_layer.get_layer_order(), " name:", routing_layer.get_layer_name(),
-                  " min_width:", routing_layer.get_min_width(), " min_area:", routing_layer.get_min_area(),
-                  " prefer_direction:", GetDirectionName()(routing_layer.get_prefer_direction()));
+               " order:", routing_layer.get_layer_order(), " name:", routing_layer.get_layer_name(),
+               " min_width:", routing_layer.get_min_width(), " min_area:", routing_layer.get_min_area(),
+               " prefer_direction:", GetDirectionName()(routing_layer.get_prefer_direction()));
 
     ScaleAxis& track_axis = routing_layer.get_track_axis();
     RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(2), "track_axis");
     std::vector<ScaleGrid>& x_grid_list = track_axis.get_x_grid_list();
     RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(3), "x_grid_list");
     for (ScaleGrid& x_grid : x_grid_list) {
-      RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(4), "start:", x_grid.get_start_line(),
-                    " step_length:", x_grid.get_step_length(), " step_num:", x_grid.get_step_num(), " end:", x_grid.get_end_line());
+      RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(4), "start:", x_grid.get_start_line(), " step_length:", x_grid.get_step_length(),
+                 " step_num:", x_grid.get_step_num(), " end:", x_grid.get_end_line());
     }
     std::vector<ScaleGrid>& y_grid_list = track_axis.get_y_grid_list();
     RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(3), "y_grid_list");
     for (ScaleGrid& y_grid : y_grid_list) {
-      RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(4), "start:", y_grid.get_start_line(),
-                    " step_length:", y_grid.get_step_length(), " step_num:", y_grid.get_step_num(), " end:", y_grid.get_end_line());
+      RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(4), "start:", y_grid.get_start_line(), " step_length:", y_grid.get_step_length(),
+                 " step_num:", y_grid.get_step_num(), " end:", y_grid.get_end_line());
     }
   }
   // ********** CutLayer ********** //
@@ -1827,7 +1825,7 @@ void DataManager::printDatabase()
   RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "cut_layer");
   for (CutLayer& cut_layer : cut_layer_list) {
     RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(2), "idx:", cut_layer.get_layer_idx(), " order:", cut_layer.get_layer_order(),
-                  " name:", cut_layer.get_layer_name());
+               " name:", cut_layer.get_layer_name());
   }
   // ********** ViaMaster ********** //
   std::vector<std::vector<ViaMaster>>& layer_via_master_list = _database.get_layer_via_master_list();
@@ -1861,7 +1859,7 @@ void DataManager::printDatabase()
       head_info += ">=";
     }
     RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(2), head_info, pin_num, " pins: ", net_num, "(",
-                  RTUtil::getPercentage(net_num, net_list.size()), ")");
+               RTUtil::getPercentage(net_num, net_list.size()), ")");
   }
   ////////////////////////////////////////////////
 }

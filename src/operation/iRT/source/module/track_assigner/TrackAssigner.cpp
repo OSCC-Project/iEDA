@@ -334,7 +334,7 @@ void TrackAssigner::assignTAPanelMap(TAModel& ta_model)
     }
     assigned_panel_num += ta_panel_id_list.size();
     RTLOG.info(Loc::current(), "Assigned ", assigned_panel_num, "/", total_panel_num, "(",
-                  RTUtil::getPercentage(assigned_panel_num, total_panel_num), ") panels", stage_monitor.getStatsInfo());
+               RTUtil::getPercentage(assigned_panel_num, total_panel_num), ") panels", stage_monitor.getStatsInfo());
   }
 
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
@@ -969,7 +969,7 @@ std::vector<Violation> TrackAssigner::getViolationList(TAPanel& ta_panel)
       }
     }
   }
-  std::vector<Violation> violation_list = RTI.getViolationList(env_shape_list, net_pin_shape_map, net_wire_via_map,"TA");
+  std::vector<Violation> violation_list = RTI.getViolationList(env_shape_list, net_pin_shape_map, net_wire_via_map, "TA");
   // free memory
   {
     for (idb::IdbLayerShape* env_shape : env_shape_list) {
@@ -1175,7 +1175,7 @@ void TrackAssigner::debugCheckTAPanel(TAPanel& ta_panel)
         TANode& ta_node = ta_node_map[grid_coord.get_x()][grid_coord.get_y()];
         if (ta_node.get_neighbor_node_map().empty()) {
           RTLOG.error(Loc::current(), "The neighbor of group coord (", coord.get_x(), ",", coord.get_y(), ",", layer_idx,
-                         ") is empty in panel(", ta_panel_id.get_layer_idx(), ",", ta_panel_id.get_panel_idx(), ")");
+                      ") is empty in panel(", ta_panel_id.get_layer_idx(), ",", ta_panel_id.get_panel_idx(), ")");
         }
         if (RTUtil::isInside(ta_panel.get_panel_rect().get_real_rect(), coord)) {
           continue;

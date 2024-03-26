@@ -168,7 +168,7 @@ void SupplyAnalyzer::analyzeSupply(SAModel& sa_model)
     }
     analyzed_pair_num += grid_pair_list.size();
     RTLOG.info(Loc::current(), "Analyzed ", analyzed_pair_num, "/", total_pair_num, "(",
-                  RTUtil::getPercentage(analyzed_pair_num, total_pair_num), ") grid pairs", stage_monitor.getStatsInfo());
+               RTUtil::getPercentage(analyzed_pair_num, total_pair_num), ") grid pairs", stage_monitor.getStatsInfo());
   }
 
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
