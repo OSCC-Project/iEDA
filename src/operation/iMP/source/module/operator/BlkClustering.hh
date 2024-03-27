@@ -18,9 +18,9 @@ struct BlkClustering
 struct BlkClustering2
 {
   void operator()(imp::Block& block);
-  size_t l1_nparts = 200;
-  size_t l2_nparts = 0;
-  size_t level_num = 1;
+  size_t l1_nparts{std::numeric_limits<size_t>::max()};
+  size_t l2_nparts{std::numeric_limits<size_t>::max()};
+  size_t level_num = 2;
   std::weak_ptr<ParserEngine> parser;
 };
 
