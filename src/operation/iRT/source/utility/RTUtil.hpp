@@ -1017,9 +1017,6 @@ class RTUtil
     for (size_t i = 0; i < segment_list.size(); i++) {
       visited_value_pair_list.emplace_back(false, segment_list[i]);
     }
-
-    int32_t remain_num = static_cast<int32_t>(visited_value_pair_list.size());
-
     TNode<T>* root = new TNode(root_value);
     std::queue<TNode<T>*> node_queue = initQueue(root);
     while (!node_queue.empty()) {
@@ -1039,13 +1036,9 @@ class RTUtil
           next_node_list.push_back(child_node);
           node->addChild(child_node);
           visited_value_pair.first = true;
-          remain_num--;
         }
       }
       addListToQueue(node_queue, next_node_list);
-    }
-    if (remain_num > 0) {
-      RTLOG.error(Loc::current(), "There are segments remaining, the tree has not been fully constructed!");
     }
     return MTree<T>(root);
   }
