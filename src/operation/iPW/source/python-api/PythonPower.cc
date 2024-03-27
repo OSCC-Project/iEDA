@@ -49,6 +49,7 @@ PYBIND11_MODULE(ipower_cpp, m) {
 
   py::class_<ipower::ClusterConnection>(m, "ClusterConnection")
     .def_readwrite("dst_cluster_id", &ipower::ClusterConnection::_dst_cluster_id)
+    .def_readwrite("stages_each_hop", &ipower::ClusterConnection::_stages_each_hop)
     .def_readwrite("hop", &ipower::ClusterConnection::_hop);
   m.def("build_connection_map", &build_connection_map);
 }

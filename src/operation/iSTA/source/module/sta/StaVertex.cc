@@ -22,12 +22,11 @@
  * @date 2021-02-10
  */
 
-#include "StaVertex.hh"
-
 #include <ranges>
 
 #include "StaDump.hh"
 #include "StaFunc.hh"
+#include "StaVertex.hh"
 #include "delay/ElmoreDelayCalc.hh"
 #include "log/Log.hh"
 
@@ -903,6 +902,27 @@ void StaVertex::getPathDepth(
       src_vertex->getPathDepth(depth_min_queue, depth);
     }
   }
+}
+
+/**
+ * @brief Assume the vertex is endpoint, get the depth of the worst path.
+ *
+ * @return unsigned
+ */
+unsigned StaVertex::GetWorstPathDepth(AnalysisMode analysis_mode) {
+  auto* ista = Sta::getOrCreateSta();
+
+  auto rise_worst_seq_data =
+      ista->getWorstSeqData(this, analysis_mode, TransType::kRise);
+  auto fall_worst_seq_data =
+      ista->getWorstSeqData(this, analysis_mode, TransType::kFall);
+
+  auto rise_depth = rise_worst_seq_data->getPathDelayData().size();
+  auto fall_depth = fall_worst_seq_data->getPathDelayData().size();
+
+  return rise_worst_seq_data->getSlackNs() < fall_worst_seq_data->getSlackNs()
+             ? rise_depth
+             : fall_depth;
 }
 
 /**
