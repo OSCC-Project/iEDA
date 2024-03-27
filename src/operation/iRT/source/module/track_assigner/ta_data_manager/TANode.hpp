@@ -16,11 +16,11 @@
 // ***************************************************************************************
 #pragma once
 
+#include "Direction.hpp"
 #include "LayerCoord.hpp"
 #include "Orientation.hpp"
-#include "RTU.hpp"
+#include "RTHeader.hpp"
 #include "RTUtil.hpp"
-#include "TASourceType.hpp"
 
 namespace irt {
 
@@ -38,68 +38,81 @@ class TANode : public LayerCoord
  public:
   TANode() = default;
   ~TANode() = default;
-
   // getter
-  std::map<Orientation, TANode*>& get_neighbor_ptr_map() { return _neighbor_ptr_map; }
-  std::map<TASourceType, std::map<Orientation, std::set<irt_int>>>& get_source_orien_net_map() { return _source_orien_net_map; }
-  std::map<Orientation, double>& get_orien_history_cost_map() { return _orien_history_cost_map; }
+  std::map<Orientation, TANode*>& get_neighbor_node_map() { return _neighbor_node_map; }
+  std::map<Orientation, std::set<int32_t>>& get_orient_fixed_rect_map() { return _orient_fixed_rect_map; }
+  std::map<Orientation, std::set<int32_t>>& get_orient_routed_rect_map() { return _orient_routed_rect_map; }
+  std::map<Orientation, int32_t>& get_orient_violation_number_map() { return _orient_violation_number_map; }
   // setter
-  void set_neighbor_ptr_map(const std::map<Orientation, TANode*>& neighbor_ptr_map) { _neighbor_ptr_map = neighbor_ptr_map; }
-  void set_source_orien_net_map(const std::map<TASourceType, std::map<Orientation, std::set<irt_int>>>& source_orien_net_map)
+  void set_neighbor_node_map(const std::map<Orientation, TANode*>& neighbor_node_map) { _neighbor_node_map = neighbor_node_map; }
+  void set_orient_fixed_rect_map(const std::map<Orientation, std::set<int32_t>>& orient_fixed_rect_map)
   {
-    _source_orien_net_map = source_orien_net_map;
+    _orient_fixed_rect_map = orient_fixed_rect_map;
   }
-  void set_orien_history_cost_map(const std::map<Orientation, double>& orien_history_cost_map)
+  void set_orient_routed_rect_map(const std::map<Orientation, std::set<int32_t>>& orient_routed_rect_map)
   {
-    _orien_history_cost_map = orien_history_cost_map;
+    _orient_routed_rect_map = orient_routed_rect_map;
+  }
+  void set_orient_violation_number_map(const std::map<Orientation, int32_t>& orient_violation_number_map)
+  {
+    _orient_violation_number_map = orient_violation_number_map;
   }
   // function
   TANode* getNeighborNode(Orientation orientation)
   {
     TANode* neighbor_node = nullptr;
-    if (RTUtil::exist(_neighbor_ptr_map, orientation)) {
-      neighbor_node = _neighbor_ptr_map[orientation];
+    if (RTUtil::exist(_neighbor_node_map, orientation)) {
+      neighbor_node = _neighbor_node_map[orientation];
     }
     return neighbor_node;
   }
-  double getCost(irt_int net_idx, Orientation orientation)
+  double getFixedRectCost(int32_t net_idx, Orientation orientation, double fixed_rect_unit)
   {
-    double ta_blockage_unit = DM_INST.getConfig().ta_blockage_unit;
-    double ta_net_shape_unit = DM_INST.getConfig().ta_net_shape_unit;
-    double ta_reserved_via_unit = DM_INST.getConfig().ta_reserved_via_unit;
-
-    double cost = 0;
-    for (TASourceType ta_source_type : {TASourceType::kBlockage, TASourceType::kNetShape, TASourceType::kReservedVia}) {
-      irt_int violation_net_num = 0;
-      if (RTUtil::exist(_source_orien_net_map, ta_source_type)) {
-        std::map<Orientation, std::set<irt_int>>& orien_net_map = _source_orien_net_map[ta_source_type];
-        if (RTUtil::exist(orien_net_map, orientation)) {
-          std::set<irt_int>& net_set = orien_net_map[orientation];
-          if (net_set.size() >= 2) {
-            violation_net_num = static_cast<irt_int>(net_set.size());
-          } else {
-            violation_net_num = RTUtil::exist(net_set, net_idx) ? 0 : 1;
-          }
-        }
+    int32_t fixed_rect_num = 0;
+    if (RTUtil::exist(_orient_fixed_rect_map, orientation)) {
+      std::set<int32_t>& net_set = _orient_fixed_rect_map[orientation];
+      fixed_rect_num = static_cast<int32_t>(net_set.size());
+      if (RTUtil::exist(net_set, net_idx)) {
+        fixed_rect_num--;
       }
-      if (violation_net_num > 0) {
-        switch (ta_source_type) {
-          case TASourceType::kBlockage:
-            cost += (ta_blockage_unit * violation_net_num);
-            break;
-          case TASourceType::kNetShape:
-            cost += (ta_net_shape_unit * violation_net_num);
-            break;
-          case TASourceType::kReservedVia:
-            cost += (ta_reserved_via_unit * violation_net_num);
-            break;
-          default:
-            break;
-        }
+      if (fixed_rect_num < 0) {
+        RTLOG.error(Loc::current(), "The fixed_rect_num < 0!");
       }
     }
-    if (RTUtil::exist(_orien_history_cost_map, orientation)) {
-      cost += _orien_history_cost_map[orientation];
+    double cost = 0;
+    if (fixed_rect_num > 0) {
+      cost = fixed_rect_unit;
+    }
+    return cost;
+  }
+  double getRoutedRectCost(int32_t net_idx, Orientation orientation, double routed_rect_unit)
+  {
+    int32_t routed_rect_num = 0;
+    if (RTUtil::exist(_orient_routed_rect_map, orientation)) {
+      std::set<int32_t>& net_set = _orient_routed_rect_map[orientation];
+      routed_rect_num = static_cast<int32_t>(net_set.size());
+      if (RTUtil::exist(net_set, net_idx)) {
+        routed_rect_num--;
+      }
+      if (routed_rect_num < 0) {
+        RTLOG.error(Loc::current(), "The routed_rect_num < 0!");
+      }
+    }
+    double cost = 0;
+    if (routed_rect_num > 0) {
+      cost = routed_rect_unit;
+    }
+    return cost;
+  }
+  double getViolationCost(Orientation orientation, double violation_unit)
+  {
+    int32_t violation_num = 0;
+    if (RTUtil::exist(_orient_violation_number_map, orientation)) {
+      violation_num = _orient_violation_number_map[orientation];
+    }
+    double cost = 0;
+    if (violation_num > 0) {
+      cost = violation_unit;
     }
     return cost;
   }
@@ -124,9 +137,13 @@ class TANode : public LayerCoord
 #endif
 
  private:
-  std::map<Orientation, TANode*> _neighbor_ptr_map;
-  std::map<TASourceType, std::map<Orientation, std::set<irt_int>>> _source_orien_net_map;
-  std::map<Orientation, double> _orien_history_cost_map;
+  std::map<Orientation, TANode*> _neighbor_node_map;
+  // obstacle & pin_shape
+  std::map<Orientation, std::set<int32_t>> _orient_fixed_rect_map;
+  // net_result & patch
+  std::map<Orientation, std::set<int32_t>> _orient_routed_rect_map;
+  // violation
+  std::map<Orientation, int32_t> _orient_violation_number_map;
 #if 1  // astar
   // single task
   std::set<Direction> _direction_set;
@@ -145,7 +162,7 @@ struct CmpTANodeCost
   {
     if (RTUtil::equalDoubleByError(a->getTotalCost(), b->getTotalCost(), DBL_ERROR)) {
       if (RTUtil::equalDoubleByError(a->get_estimated_cost(), b->get_estimated_cost(), DBL_ERROR)) {
-        return a->get_neighbor_ptr_map().size() < b->get_neighbor_ptr_map().size();
+        return a->get_neighbor_node_map().size() < b->get_neighbor_node_map().size();
       } else {
         return a->get_estimated_cost() > b->get_estimated_cost();
       }

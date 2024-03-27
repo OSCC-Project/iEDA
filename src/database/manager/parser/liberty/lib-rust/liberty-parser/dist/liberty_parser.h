@@ -113,9 +113,9 @@ void *rust_parse_lib(const char *lib_path);
 
 void rust_free_lib_group(struct LibertyGroupStmt *c_lib_group);
 
-uintptr_t rust_vec_len(const struct RustVec *vec);
+uintptr_t lib_rust_vec_len(const struct RustVec *vec);
 
-void free_c_char(char *s);
+void lib_free_c_char(char *s);
 
 struct RustStingView test_string_to_view(void);
 

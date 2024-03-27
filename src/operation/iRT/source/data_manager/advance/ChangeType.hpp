@@ -43,7 +43,7 @@ struct GetChangeTypeName
         connect_name = "del";
         break;
       default:
-        LOG_INST.error(Loc::current(), "Unrecognized type!");
+        RTLOG.error(Loc::current(), "Unrecognized type!");
         break;
     }
     return connect_name;

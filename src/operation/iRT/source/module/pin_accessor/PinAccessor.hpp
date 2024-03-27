@@ -17,17 +17,14 @@
 #pragma once
 
 #include "Config.hpp"
-#include "DRCChecker.hpp"
-#include "DRCRect.hpp"
 #include "DataManager.hpp"
 #include "Database.hpp"
 #include "Net.hpp"
 #include "PAModel.hpp"
-#include "PANode.hpp"
 
 namespace irt {
 
-#define PA_INST (irt::PinAccessor::getInst())
+#define RTPA (irt::PinAccessor::getInst())
 
 class PinAccessor
 {
@@ -36,7 +33,7 @@ class PinAccessor
   static PinAccessor& getInst();
   static void destroyInst();
   // function
-  void access(std::vector<Net>& net_list);
+  void access();
 
  private:
   // self
@@ -49,68 +46,27 @@ class PinAccessor
   PinAccessor& operator=(const PinAccessor& other) = delete;
   PinAccessor& operator=(PinAccessor&& other) = delete;
   // function
-  void accessNetList(std::vector<Net>& net_list);
-
-#if 1  // init
-  PAModel init(std::vector<Net>& net_list);
-  PAModel initPAModel(std::vector<Net>& net_list);
+  PAModel initPAModel();
   std::vector<PANet> convertToPANetList(std::vector<Net>& net_list);
   PANet convertToPANet(Net& net);
-  void buildPAModel(PAModel& pa_model);
-  void updateBlockageMap(PAModel& pa_model);
-  void addRectToEnv(PAModel& pa_model, PASourceType pa_source_type, DRCRect drc_rect);
-  void updateNetShapeMap(PAModel& pa_model);
-  void checkPAModel(PAModel& pa_model);
+  void initAccessPointList(PAModel& pa_model);
+  std::vector<LayerRect> getLegalShapeList(int32_t net_idx, Pin* pin);
+  std::vector<PlanarRect> getPlanarLegalRectList(int32_t curr_net_idx, std::vector<EXTLayerRect>& pin_shape_list);
+  std::vector<AccessPoint> getAccessPointListByPrefTrackGrid(int32_t pin_idx, std::vector<LayerRect>& legal_shape_list);
+  std::vector<AccessPoint> getAccessPointListByCurrTrackGrid(int32_t pin_idx, std::vector<LayerRect>& legal_shape_list);
+  std::vector<AccessPoint> getAccessPointListByTrackCenter(int32_t pin_idx, std::vector<LayerRect>& legal_shape_list);
+  std::vector<AccessPoint> getAccessPointListByShapeCenter(int32_t pin_idx, std::vector<LayerRect>& legal_shape_list);
+  void buildAccessPointList(PAModel& pa_model);
+  void updatePAModel(PAModel& pa_model);
+#if 1  // debug
+  void debugPlotPAModel(PAModel& pa_model);
 #endif
 
-#if 1  // iterative
-  void iterative(PAModel& pa_model);
-  void accessPAModel(PAModel& pa_model);
-  void accessPANetList(PAModel& pa_model);
-  void accessPANet(PAModel& pa_model, PANet& pa_net);
-  void initAccessPointList(PAModel& pa_model, PANet& pa_net);
-  std::vector<LayerRect> getLegalPinShapeList(PAModel& pa_model, irt_int pa_net_idx, PAPin& pa_pin);
-  std::vector<PlanarRect> getViaLegalRectList(PAModel& pa_model, irt_int pa_net_idx, irt_int via_below_layer_idx,
-                                              std::vector<EXTLayerRect>& pin_shape_list);
-  std::vector<PlanarRect> getWireLegalRectList(PAModel& pa_model, irt_int pa_net_idx, std::vector<EXTLayerRect>& pin_shape_list);
-  void mergeAccessPointList(PANet& pa_net);
-  void updateAccessGridCoord(PANet& pa_net);
-  void updateBoundingBox(PANet& pa_net);
-  void updateAccessGrid(PANet& pa_net);
-  void updateViaAccessByDRC(PAModel& pa_model, PANet& pa_net);
-  void updateWireAccessByDRC(PAModel& pa_model, PANet& pa_net);
-  void updateWeakAccessByDRC(PAModel& pa_model, PANet& pa_net);
-  void initProtectedPointList(PANet& pa_net);
-  void checkProtectedPointList(PANet& pa_net);
-  void updateNetCandidateViaMap(PAModel& pa_model);
-  void filterPANetList(PAModel& pa_model);
-  void filterGoodByViaConflict(PANet& pa_net, PAModel& pa_model);
-  void filterGoodByAccessOrienSet(PANet& pa_net);
-  void filterGoodByAccessPointType(PANet& pa_net);
-  void filterGoodByNetDistance(PANet& pa_net);
-  void initProtectedAccessPoint(PANet& pa_net);
-  void processPAModel(PAModel& pa_model);
-  void updateAccessPointList(PAModel& pa_model);
-  void updateDrivingPin(PANet& pa_net);
-  void updateNetAccessPointMap(PAModel& pa_model);
-  void countPAModel(PAModel& pa_model);
-  void reportPAModel(PAModel& pa_model);
-  bool stopPAModel(PAModel& pa_model);
-#endif
-
-#if 1  // update
-  void update(PAModel& pa_model);
-#endif
-
-#if 1  // valid drc
-  bool hasViolation(PAModel& pa_model, PASourceType pa_source_type, const std::vector<DRCCheckType>& check_type_list,
-                    const DRCRect& drc_rect);
-  bool hasViolation(PAModel& pa_model, PASourceType pa_source_type, const std::vector<DRCCheckType>& check_type_list,
-                    const std::vector<DRCRect>& drc_rect_list);
-  std::map<std::string, std::vector<ViolationInfo>> getPAViolationInfo(PAGCell& pa_gcell, PASourceType pa_source_type,
-                                                                       const std::vector<DRCCheckType>& check_type_list,
-                                                                       const std::vector<DRCRect>& drc_rect_list);
-  void removeInvalidPAViolationInfo(PAGCell& pa_gcell, std::map<std::string, std::vector<ViolationInfo>>& drc_violation_map);
+#if 1  // exhibit
+  void updateSummary(PAModel& pa_model);
+  void printSummary(PAModel& pa_model);
+  void writePlanarPinCSV(PAModel& pa_model);
+  void writeLayerPinCSV(PAModel& pa_model);
 #endif
 };
 

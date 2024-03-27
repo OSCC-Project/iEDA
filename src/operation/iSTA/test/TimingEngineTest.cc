@@ -30,6 +30,18 @@ class TimingEngineTest : public testing::Test {
   void TearDown() { Log::end(); }
 };
 
+TEST_F(TimingEngineTest, my_test) {
+  bool have_sub_module;
+  do {
+    have_sub_module = false;
+    for (int i = 0; i <= 5; i++) {
+      //   have_sub_module = true;
+      LOG_INFO << i << "\n";
+      break;
+    }
+  } while (have_sub_module);
+}
+
 TEST_F(TimingEngineTest, resizer) {
   TimingEngine* timing_engine = TimingEngine::getOrCreateTimingEngine();
   if (timing_engine) {

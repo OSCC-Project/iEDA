@@ -26,7 +26,9 @@ typedef enum DclType {
     KWor = 8,
 } DclType;
 
-typedef struct Vec_VerilogModule Vec_VerilogModule;
+typedef struct Rc_RefCell_VerilogModule Rc_RefCell_VerilogModule;
+
+typedef struct VerilogFile VerilogFile;
 
 typedef struct VerilogModule VerilogModule;
 
@@ -43,6 +45,8 @@ typedef struct RustVerilogID {
 
 typedef struct RustVerilogIndexID {
     char *id;
+    char *base_id;
+    int32_t index;
 } RustVerilogIndexID;
 
 typedef struct RustVerilogSliceID {
@@ -104,13 +108,19 @@ typedef struct RustVerilogPortRefPortConnect {
     void *net_expr;
 } RustVerilogPortRefPortConnect;
 
+typedef struct RustVerilogFile {
+    struct RustVec verilog_modules;
+} RustVerilogFile;
+
 void *rust_parse_verilog(const char *verilog_path);
 
-void rust_free_verilog_module(struct Vec_VerilogModule *c_verilog_module);
+void rust_flatten_module(struct VerilogFile *c_verilog_file, const char *top_module_name);
 
-uintptr_t rust_vec_len(const struct RustVec *vec);
+void rust_free_verilog_file(struct VerilogFile *c_verilog_file);
 
-void free_c_char(char *s);
+uintptr_t verilog_rust_vec_len(const struct RustVec *vec);
+
+void verilog_free_c_char(char *s);
 
 struct RustVerilogID *rust_convert_verilog_id(void *c_verilog_virtual_base_id);
 
@@ -157,3 +167,7 @@ bool rust_is_verilog_dcl_stmt(void *c_verilog_stmt);
 bool rust_is_verilog_dcls_stmt(void *c_verilog_stmt);
 
 bool rust_is_module_stmt(void *c_verilog_stmt);
+
+struct RustVerilogFile *rust_convert_verilog_file(const struct VerilogFile *c_verilog_file);
+
+void *rust_convert_rc_ref_cell_module(const struct Rc_RefCell_VerilogModule *c_data);

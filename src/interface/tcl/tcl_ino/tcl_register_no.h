@@ -26,6 +26,7 @@
 #include "ScriptEngine.hh"
 #include "UserShell.hh"
 #include "tcl_ino.h"
+#include "tcl_noconfig.h"
 
 using namespace ieda;
 namespace tcl {
@@ -33,6 +34,7 @@ namespace tcl {
 int registerCmdNO()
 {
   registerTclCmd(CmdNORunFixFanout, "run_no_fixfanout");
+  registerTclCmd(CmdNOConfig, "no_config");
   return EXIT_SUCCESS;
 }
 

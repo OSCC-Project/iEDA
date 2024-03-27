@@ -328,11 +328,13 @@ std::vector<double> LibertyVectorTable::getOutputCurrent(std::optional<LibertyCu
   auto get_time_index = [&time_axis_value](double current_time, int start_index) -> int {
     int axis_size = time_axis_value.size();
     while (start_index < axis_size) {
-      if (time_axis_value[start_index]->getFloatValue() > current_time) {
+      double time_value = time_axis_value[start_index]->getFloatValue();
+      if ((time_value > current_time) || IsDoubleEqual(time_value, current_time, 0.000000001)) {
         break;
       }
       ++start_index;
     }
+    LOG_FATAL_IF(start_index >= axis_size) << "start index beyond axis size.";
     return start_index;
   };
 
@@ -343,10 +345,11 @@ std::vector<double> LibertyVectorTable::getOutputCurrent(std::optional<LibertyCu
   std::vector<double> output_currents;
   double start_time = ref_time + simu_info->_start_time;
   double end_time = ref_time + simu_info->_end_time;
-  double interval = (simu_info->_end_time - simu_info->_start_time) / simu_info->_num_sim_point;
+  double interval = (simu_info->_end_time - simu_info->_start_time) / (simu_info->_num_sim_point - 1);
 
   int start_index = 0;
-  for (double current_time = start_time; current_time < end_time; current_time += interval) {
+  for (double current_time = start_time; (current_time < end_time) || IsDoubleEqual(current_time, end_time, 0.000000001);
+       current_time += interval) {
     start_index = get_time_index(current_time, start_index);
     int time_index = start_index == 0 ? 1 : start_index;
     auto [upper_time, upper_current] = get_time_and_current(time_index--);
@@ -354,6 +357,8 @@ std::vector<double> LibertyVectorTable::getOutputCurrent(std::optional<LibertyCu
     double output_current = LinearInterpolate(lower_time, upper_time, lower_current, upper_current, current_time);
     output_currents.push_back(output_current);
   }
+
+  LOG_FATAL_IF(simu_info->_num_sim_point != output_currents.size()) << "output currents size is not equal sim point num.";
 
   return output_currents;
 }

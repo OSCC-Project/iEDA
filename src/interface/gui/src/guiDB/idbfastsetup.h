@@ -20,7 +20,6 @@
 #include <list>
 #include <map>
 
-#include "DrcViolationSpot.h"
 #include "builder.h"
 #include "dbsetup.h"
 #include "def_service.h"
@@ -44,6 +43,7 @@
 #include "guistandardcell.h"
 #include "guistring.h"
 #include "guivia.h"
+#include "idrc_violation.h"
 #include "lef_service.h"
 #include "transform.h"
 
@@ -74,7 +74,7 @@ class IdbSpeedUpSetup : public DbSetup {
   void search(std::string search_text);
 
   /// drc
-  void showDrc(std::map<std::string, std::vector<idrc::DrcViolationSpot*>>& drc_db, int max_num = -1);
+  void showDrc(std::map<std::string, std::vector<idrc::DrcViolation*>>& drc_db, int max_num = -1);
 
   /// clock tree
   void showClockTree(std::vector<iplf::CtsTreeNodeMap*>& _node_list);
@@ -122,6 +122,7 @@ class IdbSpeedUpSetup : public DbSetup {
   void createInstancePad(IdbInstance* instance);
   void createInstanceBlock(IdbInstance* instance);
   void createInstanceCorePin(vector<IdbPin*>& pin_list, GuiSpeedupItem* item = nullptr);
+  void createInstanceCoreObs(vector<idb::IdbLayerShape*>& obs_list, GuiSpeedupItem* item = nullptr);
   void createInstanceMacroPin(vector<IdbPin*>& pin_list, GuiInstance* gui_instance);
   void createInstanceLayerShape(IdbLayerShape& layer_shape);
   ////special nets
@@ -144,7 +145,7 @@ class IdbSpeedUpSetup : public DbSetup {
   void createBlockage();
 
   /// DRC
-  void createDrc(GuiSpeedupDrcList* drc_list, idrc::DrcViolationSpot* drc_db);
+  void createDrc(GuiSpeedupDrcList* drc_list, idrc::DrcViolation* drc_db);
 
   void createPinPortShape(vector<IdbPin*>& pin_list, GuiSpeedupItem* item = nullptr);
   void createLayerShape(IdbLayerShape& layer_shape, GuiSpeedupItem* item = nullptr);

@@ -60,6 +60,10 @@ class Instance final : public Object
 
   int32_t get_width() const { return _cell->get_width(); }
   int32_t get_height() const { return _cell->get_height(); }
+  int32_t get_lx() const { return _min_corner.x(); }
+  int32_t get_ly() const { return _min_corner.y(); }
+  int32_t get_ux() const { return _min_corner.x() + get_width(); }
+  int32_t get_uy() const { return _min_corner.y() + get_height(); }
   int32_t get_halo_lx() const { return _min_corner.x() - _extend_left; }
   int32_t get_halo_ly() const { return _min_corner.y() - _extend_bottom; }
   int32_t get_halo_ux() const { return _min_corner.x() + get_width() + _extend_right; }

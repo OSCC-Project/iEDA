@@ -70,21 +70,25 @@ class Net
   bool isClockNet() const { return _net_type == NET_TYPE::kClock; }
   bool isResetNet() const { return _net_type == NET_TYPE::kReset; }
   bool isFakeNet() const { return _net_type == NET_TYPE::kFakeNet; }
+  bool isIONet() const { return _is_io_net; }
 
   bool isNormalStateNet() const { return _net_state == NET_STATE::kNormal; }
   bool isDontCareNet() const { return _net_state == NET_STATE::kDontCare; }
 
   // setter.
-  void set_netweight(float weight) { _netweight = weight; }
+  void set_net_weight(float weight) { _netweight = weight; }
   void set_net_type(NET_TYPE type) { _net_type = type; }
   void set_net_state(NET_STATE state) { _net_state = state; }
+  void set_io_net() { _is_io_net = true; }
+  void unset_io_net() { _is_io_net = false; }
 
  private:
   std::string _name;
-  float _netweight;
+  float _netweight = 1.;
 
   NET_TYPE _net_type;
   NET_STATE _net_state;
+  bool _is_io_net = false;
 };
 
 inline Net::Net(std::string name) : _name(std::move(name)), _netweight(1.0), _net_type(NET_TYPE::kNone), _net_state(NET_STATE::kNone)

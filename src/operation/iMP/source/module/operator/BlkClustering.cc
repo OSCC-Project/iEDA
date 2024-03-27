@@ -3,7 +3,10 @@
 #include "Block.hh"
 #include "Hmetis.hh"
 #include "HyperGraphAlgorithm.hh"
+#include "IDBParserEngine.hh"
 #include "Logger.hpp"
+#include "Net.hh"
+
 namespace imp {
 void BlkClustering::operator()(Block& block)
 {
@@ -43,7 +46,7 @@ void BlkClustering2::operator()(Block& block)
     return;
 
   auto&& [eptr, eind] = vectorize(netlist);
-  HMetis partition{.seed = 0};
+  HMetis partition{.seed = 0, .ufactor = 1.0};
   auto parts = partition(block.get_name(), eptr, eind, nparts);
 
   // extract io-cell as single cluster at level 1
@@ -91,7 +94,24 @@ void BlkClustering2::operator()(Block& block)
     return new_block;
   };
 
-  auto clusters = clustering(netlist, parts, sub_block);
+  auto make_cluster_net = [&](const Netlist& graph, size_t id) {
+    auto origin_net = graph.hyper_edge_at(id).property();
+    auto net_ptr = std::make_shared<Net>("cluster_net");
+    net_ptr->set_net_type(NET_TYPE::kSignal);
+    if (origin_net->isIONet()) {
+      // std::cout << "io net" << std::endl;
+      net_ptr->set_net_weight(2.0);  // give io-net double weights
+    } else {
+      net_ptr->set_net_weight(1.0);
+    }
+    auto parser = std::static_pointer_cast<IDBParser, ParserEngine>(this->parser.lock());
+
+    auto idb_net = parser->get_net2idb().at(origin_net);
+    parser->add_net2idb(net_ptr, idb_net);
+    return net_ptr;
+  };
+
+  auto clusters = clustering(netlist, parts, sub_block, make_cluster_net);
   block.set_netlist(std::make_shared<Netlist>(std::move(clusters)));
 }
 

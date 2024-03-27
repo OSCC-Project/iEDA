@@ -26,5 +26,5 @@ DB_script/run_def_to_gds_text.tcl"
 mkdir -p $LOG_DIR
 
 for SCRIPT in $TCL_SCRIPTS; do
-    time ./iEDA -script "${TCL_SCRIPT_DIR}/${SCRIPT}" 2>&1 | tee "${LOG_DIR}/$(basename $SCRIPT .tcl).log"
+    ./iEDA -script "${TCL_SCRIPT_DIR}/${SCRIPT}"
 done

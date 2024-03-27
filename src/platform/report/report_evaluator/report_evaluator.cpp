@@ -168,6 +168,17 @@ std::shared_ptr<ieda::ReportTable> ReportEvaluator::createCongestionReport()
          << Str::printf("%.2f", 100 * pin_den_cnt[i] / static_cast<double>(pin_density.size())) << TABLE_ENDLINE;
   }
 
+  // Early Global Routing Information
+  *tbl << TABLE_HEAD << "Average Congestion of Edges"
+       << "Total Overflow"
+       << "Maximal Overflow" << TABLE_ENDLINE;
+  
+  std::vector<float> gr_congestion = EvalInst.evalGRCong();
+  *tbl << Str::printf("%.2f", gr_congestion[0]) 
+      << Str::printf("%.2f", gr_congestion[1]) 
+      << Str::printf("%.2f", gr_congestion[2]) 
+      << TABLE_ENDLINE;
+
   // Release wrapped congestion instance objects.
   std::thread([](std::vector<eval::CongInst*>&& insts) { freeWrapped(insts); }, std::move(cong_inst)).detach();
 

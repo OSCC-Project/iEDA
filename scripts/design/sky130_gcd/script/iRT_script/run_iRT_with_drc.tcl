@@ -35,7 +35,6 @@ def_init -path ./result/iPL_lg_result.def
 
 set temp_folder_path ./result/rt/
 
-init_drc
 init_drc_api
 
 init_rt -temp_directory_path $temp_folder_path \
@@ -43,7 +42,6 @@ init_rt -temp_directory_path $temp_folder_path \
         -thread_number 8 \
         -bottom_routing_layer "" \
         -top_routing_layer "" \
-        -enable_output_gds_files 0 \
         -ra_initial_penalty 100 \
         -ra_penalty_drop_rate 0.8 \
         -ra_outer_max_iter_num 10 \

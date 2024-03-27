@@ -424,7 +424,7 @@ void* TclEncodeResult::decode(const char* encode_str)
 
 bool containWildcard(const char* pattern)
 {
-  return strpbrk(pattern, "*?") != nullptr;
+  return (pattern[0] == '-') && (strpbrk(pattern, "*?") != nullptr);
 }
 
 bool matchWildcardWithtarget(const char* const pattern, const char* const target)

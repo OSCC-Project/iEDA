@@ -8,65 +8,90 @@
 #include "Block.hh"
 #include "Layout.hh"
 #include "Logger.hpp"
+#include "Net.hh"
+#include "Pin.hh"
 #include "SAPlacer.hh"
 #include "thread"
+
 namespace imp {
 
-class HierPlacer
+struct HierPlacer
 {
  public:
-  explicit HierPlacer(Block& root_cluster) : _root_cluster(root_cluster) {}
-  virtual void initialize(){};                // do some initilaize operations
-  virtual void placeCluster(Block& blk) = 0;  // place a given cluster
-  void hierPlace(bool parallel = true)
+  explicit HierPlacer(bool parallel = true) : _parallel(parallel), _root_cluster(nullptr){};
+  explicit HierPlacer(Block& root_cluster) { _root_cluster = &root_cluster; }
+
+  void operator()(Block& root_cluster)
   {
-    initialize();
     auto place_op = [this](Block& blk) -> void {
       if (!blk.isFixed()) {
-        this->placeCluster(blk);
+        this->place(blk);
       }
     };
-    if (parallel) {
-      _root_cluster.parallel_preorder_op(place_op);
+    if (_parallel) {
+      get_root_cluster().parallel_preorder_op(place_op);
     } else {
-      _root_cluster.preorder_op(place_op);
+      get_root_cluster().preorder_op(place_op);
     }
   }
   ~HierPlacer() = default;
 
- protected:
-  Block& _root_cluster;
+  //  protected:
+  bool _parallel;
+
+  // virtual void initialize(){};         // do some initilaize operations
+  virtual void place(Block& blk) = 0;  // place a given cluster
+  Block& get_root_cluster() { return *_root_cluster; }
+  const Block& get_root_cluster() const { return *_root_cluster; }
+
+  //  private:
+  Block* _root_cluster;
 };
 
 template <typename T>
-class SAHierPlacer : public HierPlacer
+struct SAHierPlacer : public HierPlacer
 {
  public:
   explicit SAHierPlacer(Block& root_cluster, float macro_halo_micron = 2.0, float dead_space_ratio = 0.5, float weight_wl = 1.0,
-                        float weight_ol = 0.05, float weight_area = 0.01, float weight_periphery = 0.05, float max_iters = 500,
-                        float cool_rate = 0.97, float init_temperature = 1000.0)
+                        float weight_ol = 0.05, float weight_ob = 0.0, float weight_periphery = 0.05, float weight_fence = 0.05,
+                        float weight_io = 0.05, float max_iters = 500, double cool_rate = 0.97, double init_temperature = 1000.0,
+                        int seed = 0, SeqPair<NodeShape<T>> init_top_level_sp = SeqPair<NodeShape<T>>(), bool init_cluster = true)
       : HierPlacer(root_cluster),
+        _macro_halo_micron(macro_halo_micron),
         _dead_space_ratio(dead_space_ratio),
         _weight_wl(weight_wl),
         _weight_ol(weight_ol),
-        _weight_area(weight_area),
+        _weight_ob(weight_ob),
         _weight_periphery(weight_periphery),
+        _weight_blk(weight_fence),
+        _weight_io(weight_io),
         _max_iters(max_iters),
         _cool_rate(cool_rate),
-        _init_temperature(init_temperature)
+        _init_temperature(init_temperature),
+        _init_top_level_sp(init_top_level_sp),
+        _init_cluster(init_cluster),
+        _seed(seed)
   {
-    _dbu = _root_cluster.netlist().property()->get_database_unit();
-    _macro_halo = _dbu * macro_halo_micron;
+    if (init_cluster == true) {
+      initialize();
+    }
   }
   ~SAHierPlacer() = default;
 
-  void initialize() override
+  const SeqPair<NodeShape<T>>& get_sp_solution() const { return _solution_top_level_sp; }
+
+  void initialize()
   {
-    init_cell_area(_macro_halo);                 // init stdcell-area && macro-area
-    coarse_shaping(generate_different_tilings);  // init discrete-shapes bottom-up (coarse-shaping, only considers macros)
+    _dbu = get_root_cluster().netlist().property()->get_database_unit();
+    _macro_halo = _dbu * _macro_halo_micron;
+    if (_init_cluster) {
+      std::cout << "init cluster area && coarse shaping..." << std::endl;
+      init_cell_area(_macro_halo);                 // init stdcell-area && macro-area
+      coarse_shaping(generate_different_tilings);  // init discrete-shapes bottom-up (coarse-shaping, only considers macros)
+    }
   }
 
-  void placeCluster(Block& blk)
+  void place(Block& blk) override
   {
     if (blk.netlist().vSize() == 0 || blk.isFixed() || blk.is_stdcell_cluster() || blk.is_io_cluster()) {
       return;  // only place cluster with macros..
@@ -84,39 +109,86 @@ class SAHierPlacer : public HierPlacer
     }
 
     else {
-      clipChildrenShapes(blk);                         // clip discrete-shapes larger than parent-clusters bounding-box
-      addChildrenStdcellArea(blk, _dead_space_ratio);  // add stdcell area
+      if (_init_cluster) {
+        std::cout << "add children shapes" << std::endl;
+        clipChildrenShapes(blk);                         // clip discrete-shapes larger than parent-clusters bounding-box
+        addChildrenStdcellArea(blk, _dead_space_ratio);  // add stdcell area
+      }
       INFO("start placing cluster ", blk.get_name(), ", node_num: ", blk.netlist().vSize());
-      auto th = std::thread(SAPlace<T>, std::ref(blk), _weight_wl, _weight_ol, _weight_area, _weight_periphery, _max_iters, _cool_rate,
-                            _init_temperature);
-      th.join();
-      // SAPlace<T>(blk, _weight_wl, _weight_ol, _weight_area, _weight_periphery, _max_iters, _cool_rate, _init_temperature);
+      // auto th = std::thread(SAPlace<T>(_weight_wl, _weight_ol, _weight_ob, _weight_periphery, _max_iters, _cool_rate, _init_temperature),
+      //                       std::ref(blk));
+      // th.join();
+      if (blk.isRoot()) {
+        std::cout << "hierplacer set solution_sp" << std::endl;
+        SAPlace<T> placer{._seed = _seed,
+                          ._weight_wl = _weight_wl,
+                          ._weight_ol = _weight_ol,
+                          ._weight_ob = _weight_ob,
+                          ._weight_periphery = _weight_periphery,
+                          ._weight_blk = _weight_blk,
+                          ._weight_io = _weight_io,
+                          ._max_iters = _max_iters,
+                          ._cool_rate = _cool_rate,
+                          ._init_temperature = _init_temperature,
+                          ._prob_ps_op = _prob_ps,
+                          ._prob_ns_op = _prob_ns,
+                          ._prob_ds_op = _prob_ds,
+                          ._prob_pi_op = _prob_pi,
+                          ._prob_ni_op = _prob_ni,
+                          ._prob_rs_op = _prob_rs};
+
+        _solution_top_level_sp = placer(blk);
+      } else {
+        SAPlace<T> placer{._seed = _seed,
+                          ._weight_wl = _weight_wl,
+                          ._weight_ol = _weight_ol,
+                          ._weight_ob = _weight_ob,
+                          ._weight_periphery = _weight_periphery,
+                          ._weight_blk = _weight_blk,
+                          ._weight_io = _weight_io,
+                          ._max_iters = _max_iters,
+                          ._cool_rate = _cool_rate,
+                          ._init_temperature = _init_temperature,
+                          ._prob_ps_op = _prob_ps,
+                          ._prob_ns_op = _prob_ns,
+                          ._prob_ds_op = _prob_ds,
+                          ._prob_pi_op = _prob_pi,
+                          ._prob_ni_op = _prob_ni,
+                          ._prob_rs_op = _prob_rs,
+                          ._init_sp = _init_top_level_sp};
+        placer(blk);
+      }
     }
-    blk.set_fixed();  // set placed cluster fixed
   }
 
-  void writePlacement(Block& blk, std::string file_name)
-  {
-    std::ofstream out(file_name);
-    auto core = _root_cluster.netlist().property()->get_core_shape();
-    auto core_min_corner = core.min_corner();
-    auto core_max_corner = core.max_corner();
-    out << core_min_corner.x() << "," << core_min_corner.y() << "," << core_max_corner.x() - core_min_corner.x() << ","
-        << core_max_corner.y() - core_min_corner.y() << std::endl;
-    preorder_out(blk, out);
-  }
+ public:
+  bool _init_cluster = true;
+  float _macro_halo_micron = 3.0;
+  float _dead_space_ratio = 0.7;
 
- private:
+  int _seed = 0;
+  float _weight_wl = 1.0;
+  float _weight_ol = 0.05;
+  float _weight_ob = 0.01;
+  float _weight_periphery = 0.01;
+  float _weight_blk = 0.02;
+  float _weight_io = 0.0;
+  size_t _max_iters = 1000;
+  double _cool_rate = 0.97;
+  double _init_temperature = 1000;
+
+  double _prob_ps = 0.2;
+  double _prob_ns = 0.2;
+  double _prob_ds = 0.2;
+  double _prob_pi = 0.2;
+  double _prob_ni = 0.2;
+  double _prob_rs = 0.2;
   T _macro_halo;
   double _dbu;
-  float _dead_space_ratio;
-  float _weight_wl;
-  float _weight_ol;
-  float _weight_area;
-  float _weight_periphery;
-  size_t _max_iters;
-  float _cool_rate;
-  float _init_temperature;
+
+  //  private:
+  SeqPair<NodeShape<T>> _solution_top_level_sp;
+  SeqPair<NodeShape<T>> _init_top_level_sp;
 
   void init_cell_area(T macro_halo)
   {
@@ -173,9 +245,9 @@ class SAHierPlacer : public HierPlacer
       INFO(obj.get_name(), " macro_area: ", macro_area, " stdcell area: ", stdcell_area, " io_area: ", io_area);
       return;
     };
-    _root_cluster.postorder_op(area_op);
-    INFO("total macro area: ", _root_cluster.get_macro_area());
-    INFO("total stdcell area: ", _root_cluster.get_stdcell_area());
+    get_root_cluster().postorder_op(area_op);
+    INFO("total macro area: ", get_root_cluster().get_macro_area());
+    INFO("total stdcell area: ", get_root_cluster().get_stdcell_area());
   }
 
   static std::vector<std::pair<T, T>> generate_different_tilings(const std::vector<ShapeCurve<T>>& sub_shape_curves, T core_width,
@@ -283,7 +355,7 @@ class SAHierPlacer : public HierPlacer
       INFO(blk.get_name(), " clipped shape width: ", blk.get_shape_curve().get_width(), " height: ", blk.get_shape_curve().get_height(),
            " shape_curve_size: ", blk.get_shape_curve().get_width_list().size(), " area: ", blk.get_shape_curve().get_area());
     };
-    _root_cluster.postorder_op(coarse_shape_op);
+    get_root_cluster().postorder_op(coarse_shape_op);
   }
 
   static void clipChildrenShapes(Block& blk)
@@ -366,41 +438,171 @@ class SAHierPlacer : public HierPlacer
     }
   }
 
-  void preorder_out(Block& blk, std::ofstream& out)
-  {
-    out << blk.get_min_corner().x() << "," << blk.get_min_corner().y() << "," << blk.get_shape_curve().get_width() << ","
-        << blk.get_shape_curve().get_height() << "," << blk.get_name() << ","
-        << "cluster" << std::endl;
-    if (blk.is_stdcell_cluster()) {
-      return;
-    }
-    for (auto&& i : blk.netlist().vRange()) {
-      auto obj = i.property();
-      if (obj->isInstance()) {
-        std::string type;
-        auto inst = std::static_pointer_cast<Instance, Object>(obj);
-        if (inst->get_cell_master().isMacro()) {
-          type = "macro";
-        } else if (inst->get_cell_master().isIOCell()) {
-          type = "io";
-        } else {
-          continue;
-        }
-        // print macro & io info
-        out << inst->get_min_corner().x() << "," << inst->get_min_corner().y() << "," << inst->get_width() << "," << inst->get_height()
-            << "," << blk.get_name() << "," << type << std::endl;
-      }
-      if (!obj->isBlock())
-        continue;
-      auto sub_block = std::static_pointer_cast<Block, Object>(obj);
-      preorder_out(*sub_block, out);
-    }
-  }
-
   std::pair<T, T> get_core_size() const
   {
-    return std::make_pair(_root_cluster.get_shape_curve().get_width(), _root_cluster.get_shape_curve().get_height());
+    return std::make_pair(get_root_cluster().get_shape_curve().get_width(), get_root_cluster().get_shape_curve().get_height());
   }
 };
+
+void preorder_out(Block& blk, std::ofstream& out)
+{
+  // if (blk.isRoot()) {
+  //   auto fence = blk.get_fence_region();
+  //   out << fence.min_corner().x() << "," << fence.min_corner().y() << "," << fence.max_corner().x() - fence.min_corner().x() << ","
+  //       << fence.max_corner().y() - fence.min_corner().y() << "," << blk.get_name() << ","
+  //       << "fence" << std::endl;
+  // }
+  out << blk.get_min_corner().x() << "," << blk.get_min_corner().y() << "," << blk.get_shape_curve().get_width() << ","
+      << blk.get_shape_curve().get_height() << "," << blk.get_name() << ","
+      << "cluster" << std::endl;
+  if (blk.is_stdcell_cluster()) {
+    return;
+  }
+  for (auto&& i : blk.netlist().vRange()) {
+    auto obj = i.property();
+    if (obj->isInstance()) {
+      std::string type;
+      auto inst = std::static_pointer_cast<Instance, Object>(obj);
+      if (inst->get_cell_master().isMacro()) {
+        type = "macro";
+      } else if (inst->get_cell_master().isIOCell()) {
+        type = "io";
+      } else {
+        continue;
+      }
+      // print macro & io info
+      out << inst->get_min_corner().x() << "," << inst->get_min_corner().y() << "," << inst->get_width() << "," << inst->get_height() << ","
+          << blk.get_name() << "," << type << std::endl;
+    }
+    if (!obj->isBlock())
+      continue;
+    auto sub_block = std::static_pointer_cast<Block, Object>(obj);
+    preorder_out(*sub_block, out);
+  }
+}
+
+void preorder_get_macros(Block& blk, std::vector<std::shared_ptr<imp::Instance>>& macros)
+{
+  for (auto&& i : blk.netlist().vRange()) {
+    auto sub_obj = i.property();
+    if (sub_obj->isInstance()) {
+      auto sub_inst = std::static_pointer_cast<Instance, Object>(sub_obj);
+      if (sub_inst->get_cell_master().isMacro()) {
+        macros.push_back(sub_inst);
+      }
+    } else {
+      auto sub_block = std::static_pointer_cast<Block, Object>(sub_obj);
+      preorder_get_macros(*sub_block, macros);
+    }
+  }
+}
+
+std::vector<std::shared_ptr<imp::Instance>> get_macros(Block& blk)
+{
+  std::vector<std::shared_ptr<imp::Instance>> macros;
+  preorder_get_macros(blk, macros);
+  return macros;
+}
+
+void writePlacement(Block& root_cluster, std::string file_name)
+{
+  std::ofstream out(file_name);
+  auto core = root_cluster.netlist().property()->get_core_shape();
+  auto core_min_corner = core.min_corner();
+  auto core_max_corner = core.max_corner();
+  out << core_min_corner.x() << "," << core_min_corner.y() << "," << core_max_corner.x() - core_min_corner.x() << ","
+      << core_max_corner.y() - core_min_corner.y() << std::endl;
+  preorder_out(root_cluster, out);
+}
+
+std::string orientToInnovusStr(const Orient& orient)
+{
+  switch (orient) {
+    case Orient::kNone:
+      return "None";
+    case Orient::kN_R0:
+      return "R0";
+    case Orient::kW_R90:
+      return "R90";
+    case Orient::kS_R180:
+      return "R180";
+    case Orient::kE_R270:
+      return "R270";
+    case Orient::kFN_MY:
+      return "MY";
+    case Orient::kFE_MY90:
+      return "MY90";
+    case Orient::kFS_MX:
+      return "MX";
+    case Orient::kFW_MX90:
+      return "MX90";
+  }
+  return "None";
+}
+
+void writePlacementTcl(Block& blk, std::string file_name, int32_t dbu)
+{
+  auto macros = get_macros(blk);
+  std::ofstream out(file_name, std::ios::binary);
+  if (!out) {
+    ERROR("Cannot create file " + file_name);
+  }
+
+  for (const auto& macro : macros) {
+    out << "placeInstance " << macro->get_name() << " " << macro->get_min_corner().x() / dbu << " " << macro->get_min_corner().y() / dbu
+        << " " << orientToInnovusStr(macro->get_orient()) << std::endl;
+    out << "setInstancePlacementStatus -status "
+        << "fixed"
+        << " -name " << macro->get_name() << std::endl;
+  }
+}
+
+void preorder_get_instances(Block& blk, std::vector<std::shared_ptr<imp::Instance>>& instances)
+{
+  for (auto&& i : blk.netlist().vRange()) {
+    auto sub_obj = i.property();
+    if (sub_obj->isInstance()) {
+      auto sub_inst = std::static_pointer_cast<Instance, Object>(sub_obj);
+      instances.push_back(sub_inst);
+    } else {
+      auto sub_block = std::static_pointer_cast<Block, Object>(sub_obj);
+      preorder_get_instances(*sub_block, instances);
+    }
+  }
+}
+
+std::vector<std::shared_ptr<imp::Instance>> get_instances(Block& blk)
+{
+  std::vector<std::shared_ptr<imp::Instance>> instances;
+  preorder_get_instances(blk, instances);
+  return instances;
+}
+
+void addVirtualNet(Block& parent_blk, size_t sub_obj_pos1, size_t sub_obj_pos2, float net_weight = 1.0)
+{
+  if (sub_obj_pos1 > parent_blk.netlist().vSize() || sub_obj_pos2 > parent_blk.netlist().vSize()) {
+    throw std::runtime_error("Error, sub_obj_pos invalid!");
+  }
+  if (sub_obj_pos1 == sub_obj_pos2) {
+    return;
+  }
+  std::vector<std::shared_ptr<imp::Pin>> pins;
+  std::vector<size_t> sub_obj_pos = {sub_obj_pos1, sub_obj_pos2};
+  // pins.push_back(std::make_shared<imp::Pin>("virtual_pin_" + std::to_string(_virtual_pin_id++)));
+  // pins.push_back(std::make_shared<imp::Pin>("virtual_pin_" + std::to_string(_virtual_pin_id++)));
+  pins.push_back(std::make_shared<imp::Pin>("virtual_pin"));
+  pins.push_back(std::make_shared<imp::Pin>("virtual_pin"));
+  // for (size_t i = 0; i < pins.size(); ++i) {
+  //   pins[i]->set_offset(0);  // not setting pin-offset currently
+  //   // pins[i]->set_pin_type(PIN_TYPE::kInstancePort);
+  //   // pin_ptr->set_pin_io_type(PIN_IO_TYPE::kNone);
+  // }
+
+  auto net_ptr = std::make_shared<Net>("virtual_net");
+  // auto net_ptr = std::make_shared<Net>("virtual_net_" + std::to_string(_virtual_net_id));
+  net_ptr->set_net_type(NET_TYPE::kFakeNet);
+  net_ptr->set_net_weight(net_weight);
+  add_net(parent_blk.netlist(), sub_obj_pos, pins, net_ptr);
+}
 
 }  // namespace imp

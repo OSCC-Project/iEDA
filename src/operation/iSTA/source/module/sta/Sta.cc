@@ -22,16 +22,16 @@
  * @date 2020-11-27
  */
 
-#include "Sta.hh"
-
 #include <algorithm>
 #include <filesystem>
 #include <map>
 #include <memory>
 #include <mutex>
 #include <ranges>
+#include <tuple>
 #include <utility>
 
+#include "Sta.hh"
 #include "StaAnalyze.hh"
 #include "StaApplySdc.hh"
 #include "StaBuildClockTree.hh"
@@ -203,7 +203,7 @@ unsigned Sta::readSdc(const char *sdc_file) {
 unsigned Sta::readSpef(const char *spef_file) {
   StaGraph &the_graph = get_graph();
 
-  StaBuildRCTree func(spef_file, DelayCalcMethod::kElmore);
+  StaBuildRCTree func(spef_file, DelayCalcMethod::kArnoldi);
   func(&the_graph);
 
   return 1;
@@ -306,7 +306,7 @@ unsigned Sta::readLiberty(std::vector<std::string> &lib_files) {
 void Sta::readVerilogWithRustParser(const char *verilog_file) {
   LOG_INFO << "read verilog file " << verilog_file << " start";
   bool is_ok = _rust_verilog_reader.readVerilog(verilog_file);
-  _rust_top_module = _rust_verilog_reader.get_top_module();
+  _rust_verilog_file_ptr = _rust_verilog_reader.get_verilog_file_ptr();
   LOG_FATAL_IF(!is_ok) << "read verilog file " << verilog_file << " failed.";
   LOG_INFO << "read verilog end";
 }
@@ -649,14 +649,20 @@ void Sta::linkDesign(const char *top_cell_name) {
  *
  * @param top_cell_name
  */
-void Sta::linkDesignWithRustParser() {
-  const char *top_cell_name = _rust_top_module->module_name;
-  auto top_module_stmts = _rust_top_module->module_stmts;
-  // auto port_list = _rust_top_module->port_list;
-
+void Sta::linkDesignWithRustParser(const char *top_cell_name) {
   LOG_INFO << "link design " << top_cell_name << " start";
+
+  _rust_verilog_reader.flattenModule(top_cell_name);
+  auto &rust_verilog_modules = _rust_verilog_reader.get_verilog_modules();
+  _rust_verilog_modules = std::move(rust_verilog_modules);
+
+  _rust_top_module = _rust_verilog_reader.get_top_module();
+  LOG_FATAL_IF(!_rust_top_module) << "top module not found.";
+  set_design_name(_rust_top_module->module_name);
+
+  auto top_module_stmts = _rust_top_module->module_stmts;
   Netlist &design_netlist = _netlist;
-  design_netlist.set_name(top_cell_name);
+  design_netlist.set_name(_rust_top_module->module_name);
 
   /*The verilog decalre statement process lookup table.*/
   std::map<DclType, std::function<DesignObject *(DclType, const char *)>>
@@ -976,8 +982,28 @@ void Sta::linkDesignWithRustParser() {
       design_netlist.addInstance(std::move(inst));
     }
   }
-
+  rust_free_verilog_file(_rust_verilog_file_ptr);
   LOG_INFO << "link design " << top_cell_name << " end";
+}
+
+/**
+ * @brief get the design used libs.
+ * 
+ * @return std::set<LibertyLibrary *> 
+ */
+std::set<LibertyLibrary *> Sta::getUsedLibs() {
+  if (!isBuildGraph()) {
+    return std::set<LibertyLibrary *>();
+  }
+
+  std::set<LibertyLibrary *> used_libs;
+  Instance* inst;
+  FOREACH_INSTANCE(&_netlist, inst) {
+    auto* used_lib = inst->get_inst_cell()->get_owner_lib();
+    used_libs.insert(used_lib);
+  }
+
+  return used_libs;
 }
 
 /**
@@ -1132,6 +1158,10 @@ void Sta::initSdcCmd() {
   auto get_ports = std::make_unique<CmdGetPorts>("get_ports");
   LOG_FATAL_IF(!get_ports);
   TclCmds::addTclCmd(std::move(get_ports));
+
+  auto get_libs = std::make_unique<CmdGetLibs>("get_libs");
+  LOG_FATAL_IF(!get_libs);
+  TclCmds::addTclCmd(std::move(get_libs));
 
   auto all_clocks = std::make_unique<CmdAllClocks>("all_clocks");
   LOG_FATAL_IF(!all_clocks);
@@ -2129,6 +2159,119 @@ StaSeqPathData *Sta::getWorstSeqData(std::optional<StaVertex *> vertex,
  */
 StaSeqPathData *Sta::getWorstSeqData(AnalysisMode mode, TransType trans_type) {
   return getWorstSeqData(std::nullopt, mode, trans_type);
+}
+
+/**
+ * @brief obtain the start_end_slack tuples of the top n voilated timing
+ * path(slack_n<slack_(n-1)<...<slack_1).
+ *
+ * @param top_n
+ * @param mode
+ * @param trans_type
+ * @return std::vector<std::tuple<std::string, std::string, double>>
+ */
+std::vector<std::tuple<std::string, std::string, double>>
+Sta::getStartEndSlackPairsOfTopNPaths(int top_n, AnalysisMode mode,
+                                      TransType trans_type) {
+  auto cmp = [](StaPathData *left, StaPathData *right) -> bool {
+    int left_slack = left->getSlack();
+    int right_slack = right->getSlack();
+    return left_slack > right_slack;
+  };
+
+  std::priority_queue<StaPathData *, std::vector<StaPathData *>, decltype(cmp)>
+      seq_data_queue(cmp);
+
+  for (const auto &[clk, seq_path_group] : _clock_groups) {
+    StaPathEnd *path_end;
+    StaPathData *path_data;
+    FOREACH_PATH_GROUP_END(seq_path_group.get(), path_end) {
+      FOREACH_PATH_END_DATA(path_end, mode, path_data) {
+        seq_data_queue.push(path_data);
+      }
+    }
+  }
+
+  StaSeqPathData *seq_path_data = nullptr;
+  std::vector<std::tuple<std::string, std::string, double>> start_end_slacks;
+  while (!seq_data_queue.empty() && top_n > 0) {
+    seq_path_data = dynamic_cast<StaSeqPathData *>(seq_data_queue.top());
+
+    if (seq_path_data->get_delay_data()->get_trans_type() == trans_type) {
+      auto start_pin_name =
+          seq_path_data->getPathDelayData().top()->get_own_vertex()->getName();
+      auto end_pin_name =
+          seq_path_data->get_delay_data()->get_own_vertex()->getName();
+      double slack = seq_path_data->getSlackNs();
+      if (slack >= 0) {
+        break;
+      }
+      start_end_slacks.push_back(
+          std::make_tuple(start_pin_name, end_pin_name, slack));
+
+      --top_n;
+    }
+    seq_data_queue.pop();
+  }
+
+  return start_end_slacks;
+}
+
+/**
+ * @brief obtain the start_end_slack tuples of the top percentage voilated
+ * timing path(slack_n<slack_(n-1)<...<slack_1).
+ *
+ * @param top_percentage
+ * @param mode
+ * @param trans_type
+ * @return std::vector<std::tuple<std::string, std::string, double>>
+ */
+std::vector<std::tuple<std::string, std::string, double>>
+Sta::getStartEndSlackPairsOfTopNPercentPaths(double top_percentage,
+                                             AnalysisMode mode,
+                                             TransType trans_type) {
+  auto cmp = [](StaPathData *left, StaPathData *right) -> bool {
+    int left_slack = left->getSlack();
+    int right_slack = right->getSlack();
+    return left_slack > right_slack;
+  };
+
+  std::priority_queue<StaPathData *, std::vector<StaPathData *>, decltype(cmp)>
+      seq_data_queue(cmp);
+
+  for (const auto &[clk, seq_path_group] : _clock_groups) {
+    StaPathEnd *path_end;
+    StaPathData *path_data;
+    FOREACH_PATH_GROUP_END(seq_path_group.get(), path_end) {
+      FOREACH_PATH_END_DATA(path_end, mode, path_data) {
+        seq_data_queue.push(path_data);
+      }
+    }
+  }
+
+  StaSeqPathData *seq_path_data = nullptr;
+  std::vector<std::tuple<std::string, std::string, double>> start_end_slacks;
+  int top_n = seq_data_queue.size() * top_percentage;
+  while (!seq_data_queue.empty() && top_n > 0) {
+    seq_path_data = dynamic_cast<StaSeqPathData *>(seq_data_queue.top());
+
+    if (seq_path_data->get_delay_data()->get_trans_type() == trans_type) {
+      auto start_pin_name =
+          seq_path_data->getPathDelayData().top()->get_own_vertex()->getName();
+      auto end_pin_name =
+          seq_path_data->get_delay_data()->get_own_vertex()->getName();
+      double slack = seq_path_data->getSlackNs();
+      if (slack >= 0) {
+        break;
+      }
+      start_end_slacks.push_back(
+          std::make_tuple(start_pin_name, end_pin_name, slack));
+      --top_n;
+    }
+    seq_data_queue.pop();
+  }
+
+  return start_end_slacks;
 }
 
 /**

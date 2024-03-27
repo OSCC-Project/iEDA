@@ -33,6 +33,7 @@ CmdReadVerilog::CmdReadVerilog(const char* cmd_name) : TclCmd(cmd_name) {
 unsigned CmdReadVerilog::check() {
   TclOption* file_name_option = getOptionOrArg("file_name");
   LOG_FATAL_IF(!file_name_option);
+
   return 1;
 }
 

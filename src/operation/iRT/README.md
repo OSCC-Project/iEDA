@@ -20,17 +20,11 @@
 
 - pin_accessor: 对所有pin分配access点，在port上找到可以接入的点
 
-- resource_allocator: 将布线资源的分配建模为二次规划问题，通过梯度下降迭代，在布线前给线网分配资源
-
-- early_global_router: 早期全局布线器，快速预估拥塞、线长与通孔等布线指标
-
 - global_router: 全局布线器，以GCell为单位，在三维网格上进行全局布线
 
 - track_assigner: wire轨道分配，建模为布线问题进行轨道分配
 
 - detailed_router: 详细布线器，以DRC驱动的，基于三维track网格的详细布线器
-
-- violation_repairer: 违例修复器，在已有的布线结果上，通过patch等方式进行违例修复
 
 ### solver：布线时可以使用的求解器
 

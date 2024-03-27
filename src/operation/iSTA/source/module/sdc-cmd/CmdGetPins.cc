@@ -27,14 +27,14 @@
 namespace ista {
 
 CmdGetPins::CmdGetPins(const char* cmd_name) : TclCmd(cmd_name) {
-  auto* clock_list_arg = new TclStringListOption("patterns", 1, {});
-  addOption(clock_list_arg);
+  auto* patterns_arg = new TclStringListOption("patterns", 1, {});
+  addOption(patterns_arg);
 }
 
 unsigned CmdGetPins::check() { return 1; }
 
 /**
- * @brief execute the nl.
+ * @brief execute the get_pins.
  *
  * @return unsigned
  */

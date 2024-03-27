@@ -34,20 +34,21 @@ class Monitor
 
   // function
   std::string getStatsInfo();
-  double getCPUTime();
-  double getElapsedTime();
-  double getUsageMemory();
+  std::string getElapsedTime();
+  std::string getCPUTime();
+  std::string getUsageMemory();
 
  private:
-  double _init_cpu_time = 0;      // \s
   double _init_elapsed_time = 0;  // \s
+  double _init_cpu_time = 0;      // \s
   double _init_usage_memory = 0;  // \GB
 
   // function
   void init();
   void updateStats();
-  double getCurrCPUTime();
   double getCurrElapsedTime();
+  double getCurrCPUTime();
   double getCurrUsageMemory();
 };
+
 }  // namespace irt

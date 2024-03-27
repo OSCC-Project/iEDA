@@ -18,7 +18,7 @@ void readGuide(const std::string& guide_file_path, std::vector<Net>& net_list)
 
   std::string net_name, layer_name;
   while (getline(*guide_file_stream, new_line)) {
-    int lb_x, lb_y, rt_x, rt_y;
+    int ll_x, ll_y, ur_x, ur_y;
     if (is_new_net) {
       net_name = new_line;
       is_new_net = false;
@@ -41,13 +41,13 @@ void readGuide(const std::string& guide_file_path, std::vector<Net>& net_list)
           break;
         }
         std::istringstream str(new_line);
-        str >> lb_x >> lb_y >> rt_x >> rt_y >> layer_name;
+        str >> ll_x >> ll_y >> ur_x >> ur_y >> layer_name;
 
         Guide guide;
-        guide.set_lb_x(lb_x);
-        guide.set_lb_y(lb_y);
-        guide.set_rt_x(rt_x);
-        guide.set_rt_y(rt_y);
+        guide.set_ll_x(ll_x);
+        guide.set_ll_y(ll_y);
+        guide.set_ur_x(ur_x);
+        guide.set_ur_y(ur_y);
         guide.set_layer_name(layer_name);
         guide_list.push_back(guide);
       }
@@ -65,7 +65,7 @@ void writeGuide(std::vector<Net>& net_list, const std::string& guide_file_path)
     Net& net = net_list[i];
     (*guide_file_stream) << net.get_net_name() << "\n(\n";
     for (Guide& guide : net.get_guide_list()) {
-      (*guide_file_stream) << guide.get_lb_x() << " " << guide.get_lb_y() << " " << guide.get_rt_x() << " " << guide.get_rt_y() << " "
+      (*guide_file_stream) << guide.get_ll_x() << " " << guide.get_ll_y() << " " << guide.get_ur_x() << " " << guide.get_ur_y() << " "
                            << guide.get_layer_name() << "\n";
     }
     (*guide_file_stream) << ")\n";

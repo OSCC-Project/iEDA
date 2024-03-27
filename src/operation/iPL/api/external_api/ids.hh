@@ -50,6 +50,8 @@ class Rectangle;
 
 template <typename T>
 class Point;
+
+class TopologyManager;
 }  // namespace ipl
 
 namespace eval {

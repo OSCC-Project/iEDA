@@ -34,13 +34,16 @@
 #include <fstream>
 #include <vector>
 
-#include "DrcViolationSpot.h"
 #include "file_manager.h"
+#include "idrc_violation.h"
+#include "json.hpp"
 
 using std::string;
 using std::vector;
 
 namespace iplf {
+
+using json = nlohmann::ordered_json;
 
 struct DrcFileHeader
 {
@@ -80,6 +83,7 @@ class FileDrcManager : public FileManager
   /// file save
   virtual int32_t getBufferSize() override;
   virtual bool saveFileData() override;
+  bool saveFileDataByJson();
 
   /// pa data
 
@@ -87,8 +91,8 @@ class FileDrcManager : public FileManager
   constexpr static size_t max_num = 100000;
   constexpr static size_t max_size = max_num * sizeof(DrcDetailResult) + 100;
 
-  void wrapDrcStruct(idrc::DrcViolationSpot* spot, DrcDetailResult& detail_result);
-  void parseDrcStruct(DrcDetailResult& detail_result, idrc::DrcViolationSpot* spot);
+  void wrapDrcStruct(idrc::DrcViolation* spot, DrcDetailResult& detail_result);
+  idrc::DrcViolation* parseDrcStruct(DrcDetailResult& detail_result);
 };
 
 }  // namespace iplf

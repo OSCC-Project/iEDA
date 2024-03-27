@@ -16,7 +16,8 @@
 // ***************************************************************************************
 #pragma once
 
-#include "RTU.hpp"
+#include "PlanarRect.hpp"
+#include "RTHeader.hpp"
 
 namespace irt {
 
@@ -26,20 +27,24 @@ class CutLayer
   CutLayer() = default;
   ~CutLayer() = default;
   // getter
-  irt_int get_layer_idx() const { return _layer_idx; }
-  irt_int get_layer_order() const { return _layer_order; }
+  int32_t get_layer_idx() const { return _layer_idx; }
+  int32_t get_layer_order() const { return _layer_order; }
   std::string& get_layer_name() { return _layer_name; }
+  int32_t get_spacing() const { return _spacing; }
   // setter
-  void set_layer_idx(const irt_int layer_idx) { _layer_idx = layer_idx; }
-  void set_layer_order(const irt_int layer_order) { _layer_order = layer_order; }
+  void set_layer_idx(const int32_t layer_idx) { _layer_idx = layer_idx; }
+  void set_layer_order(const int32_t layer_order) { _layer_order = layer_order; }
   void set_layer_name(const std::string& layer_name) { _layer_name = layer_name; }
+  void set_spacing(const int32_t spacing) { _spacing = spacing; }
   // function
-  irt_int getMinSpacing() { return 0; }
+  int32_t getMinSpacing(const PlanarRect& rect) { return _spacing; }
+  int32_t getMaxSpacing(const PlanarRect& rect) { return _spacing; }
 
  private:
-  irt_int _layer_idx = -1;
-  irt_int _layer_order = -1;
+  int32_t _layer_idx = -1;
+  int32_t _layer_order = -1;
   std::string _layer_name;
+  int32_t _spacing = -1;
 };
 
 }  // namespace irt

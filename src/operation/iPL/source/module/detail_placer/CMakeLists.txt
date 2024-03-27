@@ -3,10 +3,6 @@
 
 include_directories(${iPL_CONFIG})
 
-# set(Boost_INCLUDE_DIR /usr/lib/x86_64-linux-gnu/cmake/Boost-1.71.0/)
-# find_package(Boost COMPONENTS system filesystem program_options REQUIRED)
-
-
 add_library(ipl-module-detail_placer
     database/DPCell.cc
     database/DPCluster.cc
@@ -38,10 +34,6 @@ target_link_libraries(ipl-module-detail_placer
             ipl-configurator
             ipl-module-grid_manager
             ipl-module-topology_manager
-            # ${Boost_LIBRARIES}
             )
 
 target_include_directories(ipl-module-detail_placer PUBLIC ${iPL_DP})
-
-# Boost   
-# target_include_directories(ipl-module-detail_placer PUBLIC ${Boost_INCLUDE_DIR})

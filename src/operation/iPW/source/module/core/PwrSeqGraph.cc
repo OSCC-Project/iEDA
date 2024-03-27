@@ -1,16 +1,16 @@
 // ***************************************************************************************
 // Copyright (c) 2023-2025 Peng Cheng Laboratory
-// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of Sciences
-// Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
+// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of
+// Sciences Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
 //
 // iEDA is licensed under Mulan PSL v2.
-// You can use this software according to the terms and conditions of the Mulan PSL v2.
-// You may obtain a copy of Mulan PSL v2 at:
+// You can use this software according to the terms and conditions of the Mulan
+// PSL v2. You may obtain a copy of Mulan PSL v2 at:
 // http://license.coscl.org.cn/MulanPSL2
 //
-// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
-// EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
-// MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY
+// KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+// NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
@@ -22,9 +22,10 @@
  * @date 2023-02-27
  */
 
-#include "PwrSeqGraph.hh"
-
 #include <fstream>
+
+#include "PwrSeqGraph.hh"
+#include "sta/Sta.hh"
 
 namespace ipower {
 
@@ -60,9 +61,14 @@ void PwrSeqGraph::insertInstToVertex(Instance* seq_inst,
                                      PwrSeqVertex* seq_vertex) {
   static std::mutex mt;
   std::lock_guard lk(mt);
-  _inst_to_vertex[seq_inst] = seq_vertex;
+  _obj_to_vertex[seq_inst] = seq_vertex;
 }
 
+/**
+ * @brief get seq vertex max fanout and max fanin.
+ *
+ * @return std::pair<std::size_t, std::size_t>
+ */
 std::pair<std::size_t, std::size_t>
 PwrSeqGraph::getSeqVertexMaxFanoutAndMaxFain() {
   PwrSeqVertex* max_fanout_vertex;
@@ -139,6 +145,34 @@ void PwrSeqVertex::addSnkArc(PwrSeqArc* snk_arc) {
   static std::mutex mt;
   std::lock_guard lk(mt);
   _snk_arcs.insert(snk_arc);
+}
+
+/**
+ * @brief get seq vertex data in vertex worst slack and depth for dataflow
+ * created.
+ *
+ * @return std::pair<double, unsigned>
+ */
+std::pair<std::optional<double>, unsigned>
+PwrSeqVertex::getDataInVertexWorstSlackAndDepth() {
+  auto data_in_vertexes = getDataInVertexes();
+
+  std::optional<double> worst_slack = 0;
+  unsigned depth = 0;
+  for (auto* data_in_vertex : data_in_vertexes) {
+    auto* data_in_sta_vertex = data_in_vertex->get_sta_vertex();
+    auto data_in_vertex_worst_slack =
+        data_in_sta_vertex->getWorstSlackNs(AnalysisMode::kMax);
+    auto data_in_vertex_depth =
+        data_in_sta_vertex->GetWorstPathDepth(AnalysisMode::kMax);
+    if (!worst_slack || (data_in_vertex_worst_slack &&
+                         (*data_in_vertex_worst_slack < *worst_slack))) {
+      worst_slack = data_in_vertex_worst_slack;
+      depth = data_in_vertex_depth;
+    }
+  }
+
+  return std::make_pair(*worst_slack, depth);
 }
 
 }  // namespace ipower

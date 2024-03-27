@@ -1,0 +1,32 @@
+initDRModel:初始化dr_net
+iterativeDRModel:迭代DRModel
+    setDRParameter:设置参数
+    initDRBoxMap:构建DRBox框架，里面主要数据为空
+    buildBoxSchedule:构建Box布线的调度表
+    routeDRBoxMap:
+        buildFixedRectList:将GCellMap中的fix_rect以指针的方式添加到Box的type_layer_net_fixed_rect_map
+        buildNetResultMap:将GCellMap中的net_result以实体的方式拷贝到Box的net_result_map
+        buildViolationList:将GCellMap中的violation以实体的方式拷贝到Box的violation_list，并在GCellMap中删除
+        initDRTaskList:构建DRTask
+        buildBoxTrackAxis:构建Box内的track_axis
+        buildLayerNodeMap:构建Box的Graph，只有节点，其他信息后续构建
+        buildDRNodeValid:初始化节点有效性
+        buildDRNodeNeighbor:将有效节点连接
+        buildOrientNetMap:构建Graph的cost，环境从Box中得到
+        routeDRBox:
+            initTaskSchedule:初始化task布线调度表
+                routeDRTask:给task布线，在此函数末尾，布线结果从graph中删除，再加入新的结果
+            updateViolationList:首先通过idrc得到Violation存到Box下面，然后Violation结果从graph中删除，再加入新的结果
+            getTaskScheduleByViolation:通过Violation得到新的布线调度
+        uploadViolation:将box内的violation添加到GCellMap
+        freeDRBox:析构
+    uploadNetResult:将所有的box布线结果去环优化，然后删除所有GCellMap的结果再添加
+
+
+
+
+
+
+
+
+

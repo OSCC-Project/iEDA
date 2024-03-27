@@ -25,6 +25,7 @@
 #include "VerilogParserRustC.hh"
 
 #include "log/Log.hh"
+#include "string/Str.hh"
 
 namespace ista {
 
@@ -34,28 +35,45 @@ namespace ista {
  * @return unsigned
  */
 
-unsigned RustVerilogReader::readVerilog(const char* verilog_file)
+unsigned RustVerilogReader::readVerilog(const char* verilog_file_path)
 {
   unsigned is_ok = 1;
-  LOG_INFO << "load verilog file " << verilog_file;
-  // generate1
-  auto* verilog_result = rust_parse_verilog(verilog_file);
+  LOG_INFO << "load verilog file " << verilog_file_path;
+  _verilog_file_ptr = rust_parse_verilog(verilog_file_path);
 
-  RustVerilogModule* verilog_module = nullptr;
-  if (verilog_result) {
-    // generate2
-    verilog_module = rust_convert_raw_verilog_module(verilog_result);
-    LOG_FATAL_IF(!verilog_module) << "convert verilog module failed.";
-    _top_module = verilog_module;
-    _verilog_modules.push_back(verilog_module);
-    // generate3.why can not free?
-    // rust_free_verilog_module(verilog_result);
-    LOG_INFO << "load verilog file " << verilog_file << " success.";
+  if (_verilog_file_ptr) {
+    RustVerilogFile* rust_verilog_file = rust_convert_verilog_file(_verilog_file_ptr);
+    auto verilog_modules = rust_verilog_file->verilog_modules;
+    void* verilog_module;
+    FOREACH_VEC_ELEM(&verilog_modules, void, verilog_module)
+    {
+      void* verilog_module_ptr = rust_convert_rc_ref_cell_module(verilog_module);
+      RustVerilogModule* rust_verilog_module = rust_convert_raw_verilog_module(verilog_module_ptr);
+      _verilog_modules.emplace_back(std::move(rust_verilog_module));
+    }
   } else {
     is_ok = 0;
   }
 
   return is_ok;
+}
+
+unsigned RustVerilogReader::flattenModule(const char* top_module_name)
+{
+  _top_module_name = top_module_name;
+  rust_flatten_module(_verilog_file_ptr, top_module_name);
+  RustVerilogFile* rust_verilog_file = rust_convert_verilog_file(_verilog_file_ptr);
+
+  auto verilog_modules = rust_verilog_file->verilog_modules;
+  void* verilog_module;
+  FOREACH_VEC_ELEM(&verilog_modules, void, verilog_module)
+  {
+    void* verilog_module_ptr = rust_convert_rc_ref_cell_module(verilog_module);
+    RustVerilogModule* rust_verilog_module = rust_convert_raw_verilog_module(verilog_module_ptr);
+    if (ieda::Str::equal(rust_verilog_module->module_name, top_module_name)) {
+      _top_module = rust_verilog_module;
+    }
+  }
 }
 
 }  // namespace ista

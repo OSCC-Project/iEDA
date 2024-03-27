@@ -135,6 +135,8 @@ class PwrSeqVertex {
     }
     return data_in_vertexes;
   }
+  std::pair<std::optional<double>, unsigned>
+  getDataInVertexWorstSlackAndDepth();
 
   void addSrcArc(PwrSeqArc* src_arc);
   void addSnkArc(PwrSeqArc* snk_arc);
@@ -187,6 +189,9 @@ class PwrSeqArc {
   [[nodiscard]] unsigned isPipelineLoop() const { return _is_pipeline_loop; }
   void set_is_pipeline_loop() { _is_pipeline_loop = 1; }
 
+  [[nodiscard]] unsigned get_combine_depth() const { return _combine_depth; }
+  void set_combine_depth(unsigned combine_depth) { _combine_depth = combine_depth; }
+
   [[nodiscard]] auto* get_src() const { return _src; }
   [[nodiscard]] auto* get_snk() const { return _snk; }
 
@@ -194,8 +199,9 @@ class PwrSeqArc {
 
  private:
   unsigned _is_pipeline_loop : 1 =
-      0;                        //!<  The arc is belong to a pipe line loop.
-  unsigned _reserved : 31 = 0;  //!< reserved.
+      0;  //!<  The arc is belong to a pipe line loop.
+  unsigned _combine_depth : 10 = 0;  //!< The seq arc combine depth.
+  unsigned _reserved : 21 = 0;       //!< reserved.
 
   PwrSeqVertex* _src;  //!< The arc src vertex.
   PwrSeqVertex* _snk;  //!< The arc snk vertex.
@@ -280,13 +286,13 @@ class PwrSeqGraph {
   }
 
   void insertInstToVertex(Instance* seq_inst, PwrSeqVertex* seq_vertex);
-  PwrSeqVertex* getSeqVertex(Instance* seq_inst) {
-    return _inst_to_vertex.contains(seq_inst) ? _inst_to_vertex[seq_inst]
-                                              : nullptr;
+  PwrSeqVertex* getSeqVertex(DesignObject* seq_obj) {
+    return _obj_to_vertex.contains(seq_obj) ? _obj_to_vertex[seq_obj] : nullptr;
   }
 
   void insertPortToVertex(PwrVertex* pwr_port, PwrSeqVertex* seq_vertex) {
     _port_to_vertex[pwr_port] = seq_vertex;
+    _obj_to_vertex[pwr_port->get_sta_vertex()->get_design_obj()] = seq_vertex;
   }
   PwrSeqVertex* getPortSeqVertex(PwrVertex* pwr_port) {
     return _port_to_vertex.contains(pwr_port) ? _port_to_vertex[pwr_port]
@@ -306,8 +312,8 @@ class PwrSeqGraph {
   std::vector<std::unique_ptr<PwrSeqArc>> _arcs;  //!< All sequential arcs.
   std::vector<PwrSeqVertex*> _input_port_vertexes;   //!< Input port vertexes.
   std::vector<PwrSeqVertex*> _output_port_vertexes;  // 1< Output port vertexes.
-  std::map<Instance*, PwrSeqVertex*>
-      _inst_to_vertex;  //!< The seq belong inst to graph vertex.
+  std::map<DesignObject*, PwrSeqVertex*>
+      _obj_to_vertex;  //!< The seq belong inst to graph vertex.
   std::map<PwrVertex*, PwrSeqVertex*>
       _port_to_vertex;  //!< The seq belong power port to graph vertex.
 };

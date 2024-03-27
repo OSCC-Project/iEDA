@@ -32,34 +32,43 @@
 #include "file_drc.h"
 
 #include <cstring>
+#include <iomanip>
 #include <iostream>
 
+#include "IdbLayer.h"
+#include "idm.h"
 #include "idrc_io/idrc_io.h"
 
 using namespace std;
 
 namespace iplf {
 
-void FileDrcManager::wrapDrcStruct(idrc::DrcViolationSpot* spot, DrcDetailResult& detail_result)
+void FileDrcManager::wrapDrcStruct(idrc::DrcViolation* spot, DrcDetailResult& detail_result)
 {
   memset(&detail_result, 0, sizeof(DrcDetailResult));
   detail_result.violation_type = (int) spot->get_violation_type();
-  std::memcpy(detail_result.layer_name, spot->get_layer().c_str(), spot->get_layer().length());
-  detail_result.layer_id = spot->get_layer_id();
-  detail_result.net_id = spot->get_net_id();
-  detail_result.min_x = spot->get_min_x();
-  detail_result.min_y = spot->get_min_y();
-  detail_result.max_x = spot->get_max_x();
-  detail_result.max_y = spot->get_max_y();
+  std::memcpy(detail_result.layer_name, spot->get_layer()->get_name().c_str(), spot->get_layer()->get_name().length());
+  detail_result.layer_id = spot->get_layer()->get_id();
+  detail_result.net_id = spot->get_net_ids().size() > 0 ? *spot->get_net_ids().begin() : -1;
+
+  if (!spot->is_rect()) {
+    std::cout << "idrc : violation type is not rectangle!" << std::endl;
+    return;
+  }
+
+  auto* spot_rect = static_cast<idrc::DrcViolationRect*>(spot);
+  detail_result.min_x = spot_rect->get_llx();
+  detail_result.min_y = spot_rect->get_lly();
+  detail_result.max_x = spot_rect->get_urx();
+  detail_result.max_y = spot_rect->get_ury();
 }
 
-void FileDrcManager::parseDrcStruct(DrcDetailResult& detail_result, idrc::DrcViolationSpot* spot)
+idrc::DrcViolation* FileDrcManager::parseDrcStruct(DrcDetailResult& detail_result)
 {
-  spot->set_vio_type((idrc::ViolationType) detail_result.violation_type);
-  spot->set_layer_name(detail_result.layer_name);
-  spot->set_layer_id(detail_result.layer_id);
-  spot->set_net_id(detail_result.net_id);
-  spot->setCoordinate(detail_result.min_x, detail_result.min_y, detail_result.max_x, detail_result.max_y);
+  auto* idb_layer = dmInst->get_idb_layout()->get_layers()->find_routing_layer(detail_result.layer_id);
+  auto* violation = new idrc::DrcViolationRect(idb_layer, {detail_result.net_id}, (idrc::ViolationEnumType) detail_result.violation_type,
+                                               detail_result.min_x, detail_result.min_y, detail_result.max_x, detail_result.max_y);
+  return violation;
 }
 
 bool FileDrcManager::parseFileData()
@@ -86,7 +95,7 @@ bool FileDrcManager::parseFileData()
     get_fstream().read((char*) &drc_header, sizeof(DrcResultHeader));
     get_fstream().seekp(sizeof(DrcResultHeader), ios::cur);
 
-    vector<idrc::DrcViolationSpot*> spot_list;
+    vector<idrc::DrcViolation*> spot_list;
     spot_list.reserve(drc_header.drc_num);
 
     std::memset(data_buf, 0, max_size);
@@ -101,11 +110,10 @@ bool FileDrcManager::parseFileData()
       get_fstream().seekp(sizeof(DrcDetailResult) * read_num, ios::cur);
 
       for (int j = 0; j < read_num; j++) {
-        idrc::DrcViolationSpot* spot = new idrc::DrcViolationSpot();
         /// parse single unit
         DrcDetailResult detail_result;
         std::memcpy(&detail_result, buf_ref, sizeof(DrcDetailResult));
-        parseDrcStruct(detail_result, spot);
+        auto* spot = parseDrcStruct(detail_result);
 
         /// add to spot list
         spot_list.push_back(spot);
@@ -134,6 +142,9 @@ int32_t FileDrcManager::getBufferSize()
 
 bool FileDrcManager::saveFileData()
 {
+  if (saveFileDataByJson() == true) {
+    return true;
+  }
   //   int size = getBufferSize();
   //   assert(size != 0);
   auto& detail_rule_map = drcInst->get_detail_drc();
@@ -190,6 +201,48 @@ bool FileDrcManager::saveFileData()
   delete[] data_buf;
   data_buf = nullptr;
 
+  return true;
+}
+
+bool FileDrcManager::saveFileDataByJson()
+{
+  auto path = get_data_path();
+  std::string tail_str = path.substr(path.length() - 4);
+  if (tail_str != "json") {
+    return false;
+  }
+
+  json drc_json;
+  json drc_json_list = json::array();
+  auto& detail_rule_map = drcInst->get_detail_drc();
+
+  for (auto [rule_name, drc_list] : detail_rule_map) {
+    json temp;
+    temp["type"] = rule_name;
+    temp["nums"] = drc_list.size();
+    json json_list = json::array();
+    for (auto drc_spot : drc_list) {
+      DrcDetailResult detail_result;
+      wrapDrcStruct(drc_spot, detail_result);
+      json json_obs;
+      json_obs["tech_DRCs"]["layer"] = detail_result.layer_name;
+      json_obs["tech_DRCs"]["llx"] = detail_result.min_x;
+      json_obs["tech_DRCs"]["lly"] = detail_result.min_y;
+      json_obs["tech_DRCs"]["urx"] = detail_result.max_x;
+      json_obs["tech_DRCs"]["ury"] = detail_result.max_y;
+      json_list.push_back(json_obs);
+    }
+    temp["tech_DRCs_list"] = json_list;
+    drc_json_list.push_back(temp);
+    drc_json["type_sorted_tech_DRCs_list"] = drc_json_list;
+  }
+
+  std::ofstream file_stream(path);
+  file_stream << std::setw(4) << drc_json;
+
+  file_stream.close();
+
+  std::cout << std::endl << "Save feature json success, path = " << path << std::endl;
   return true;
 }
 

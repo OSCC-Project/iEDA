@@ -66,8 +66,8 @@ unsigned CmdVerilogToDef::exec() {
   TclOption* top_option = getOptionOrArg("-top");
   auto* top = top_option->getStringVal();
 
-  std::set<std::string> exclude_cell_names;
   db_builder->buildVerilog(verilog_file, top);
+  // db_builder->rustBuildVerilog(verilog_file, top);
 
   // set die area
   TclOption* die_area_option = getOptionOrArg("-die_area");
@@ -87,6 +87,10 @@ unsigned CmdVerilogToDef::exec() {
   TclOption* def_option = getOptionOrArg("-def");
   auto* def_file = def_option->getStringVal();
   db_builder->saveDef(def_file);
+
+  // the below two lines is used to test idb verilog.
+  // std::set<std::string> exclude_cell_names = {};
+  // db_builder->saveVerilog(def_file, exclude_cell_names);
 
   return 1;
 }

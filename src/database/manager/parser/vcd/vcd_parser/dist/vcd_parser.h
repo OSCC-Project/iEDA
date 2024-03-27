@@ -116,9 +116,9 @@ typedef struct RustTcAndSpResVecs {
     struct RustVec signal_duration_vec;
 } RustTcAndSpResVecs;
 
-uintptr_t rust_vec_len(const struct RustVec *vec);
+uintptr_t vcd_rust_vec_len(const struct RustVec *vec);
 
-void free_c_char(char *s);
+void vcd_free_c_char(char *s);
 
 struct RustSignalTC *rust_convert_signal_tc(struct SignalTC *c_signal_tc);
 

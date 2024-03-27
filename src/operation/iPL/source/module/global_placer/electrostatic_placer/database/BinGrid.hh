@@ -38,6 +38,7 @@
 #include "NesInstance.hh"
 
 namespace ipl {
+
 struct AreaInfo
 {
   AreaInfo();
@@ -90,7 +91,6 @@ class BinGrid
   void fastGaussianBlur();
   void plotOverflowUtil(float sum_overflow, int32_t iter_num);
 
-
   int64_t obtainOverflowAreaWithoutFiller();
   int64_t obtainOverflowArea();
 
@@ -114,7 +114,7 @@ class BinGrid
   int32_t _bin_cnt_y;
   int32_t _bin_size_x;
   int32_t _bin_size_y;
-
+  
   int _route_cap_h;
   int _route_cap_v;
   int _partial_route_cap_h;
@@ -124,6 +124,7 @@ class BinGrid
   std::vector<AreaInfo> _bin_area_list;
 
   void resetBinToArea();
+
   float calcLness(std::vector<std::pair<int32_t, int32_t>>& point_set, int32_t xmin, int32_t xmax, int32_t ymin, int32_t ymax);
   int64_t calcLowerLeftRP(std::vector<std::pair<int32_t, int32_t>>& point_set, int32_t xmin, int32_t ymin);
   int64_t calcLowerRightRP(std::vector<std::pair<int32_t, int32_t>>& point_set, int32_t xmax, int32_t ymin);
@@ -162,20 +163,18 @@ inline void BinGrid::resetBinToArea()
 inline void BinGrid::initNesInstanceTypeList(std::vector<NesInstance*>& nInst_list)
 {
   for (auto* nInst : nInst_list) {
-    if (nInst->isFixed()){
+    if (nInst->isFixed()) {
       if (nInst->isMacro()){
         _route_macro_inst_list.push_back(nInst);
       }
       continue;
-    }  
+    }
 
     if (nInst->isMacro()) {
       _macro_inst_list.push_back(nInst);
-    }
-    else if (nInst->isFiller()) {
+    } else if (nInst->isFiller()) {
       _filler_list.push_back(nInst);
-    } 
-    else {
+    } else {
       _stdcell_list.push_back(nInst);
     }
   }
@@ -272,7 +271,11 @@ inline void BinGrid::evalRouteDem(const std::vector<NetWork*>& network_list,int3
     if (network->isIgnoreNetwork()){
       continue;
     }
+    
     auto net_shape = std::move(network->obtainNetWorkShape());
+    if (net_shape.get_ll_x() > net_shape.get_ur_x()){
+      continue;
+    }
     if (net_shape.get_ur_x() > _grid_manager->get_shape().get_ur_x()){
       net_shape.set_upper_right(_grid_manager->get_shape().get_ur_x(), net_shape.get_ur_y());
     }
@@ -505,6 +508,7 @@ inline void BinGrid::plotRouteDem(){
 inline void BinGrid::plotRouteUtil(int32_t iter_num){
   _grid_manager->plotRouteUtil(iter_num);
 }
+
 
 
 inline int64_t BinGrid::obtainOverflowAreaWithoutFiller()

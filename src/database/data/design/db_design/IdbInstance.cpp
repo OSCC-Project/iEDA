@@ -363,7 +363,6 @@ void IdbInstance::set_obs_box_list()
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 IdbInstanceList::IdbInstanceList()
 {
-  _num = 0;
 }
 
 IdbInstanceList::~IdbInstanceList()
@@ -397,7 +396,7 @@ IdbInstance* IdbInstanceList::find_instance(string name)
 
 IdbInstance* IdbInstanceList::find_instance(size_t index)
 {
-  if (_num > index) {
+  if (_instance_list.size() > index) {
     return _instance_list.at(index);
   }
 
@@ -410,9 +409,9 @@ IdbInstance* IdbInstanceList::add_instance(IdbInstance* instance)
   if (pInstance == nullptr) {
     pInstance = new IdbInstance();
   }
+  pInstance->set_id(_mutex_index++);
   _instance_list.emplace_back(pInstance);
   _instance_map.insert(make_pair(instance->get_name(), pInstance));
-  _num++;
 
   return pInstance;
 }
@@ -420,10 +419,10 @@ IdbInstance* IdbInstanceList::add_instance(IdbInstance* instance)
 IdbInstance* IdbInstanceList::add_instance(string name)
 {
   IdbInstance* pInstance = new IdbInstance();
+  pInstance->set_id(_mutex_index++);
   pInstance->set_name(name);
   _instance_list.emplace_back(pInstance);
   _instance_map.insert(make_pair(name, pInstance));
-  _num++;
 
   return pInstance;
 }
@@ -461,7 +460,6 @@ bool IdbInstanceList::remove_instance(string name)
   delete *it;
   *it = nullptr;
   _instance_list.erase(it);
-  _num--;
 
   return true;
 }

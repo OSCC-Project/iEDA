@@ -1,0 +1,12 @@
+initIRModel:初始化ir_net_list
+setIRParameter:设置布线参数
+buildLayerNodeMap:初始化graph
+buildIRNodeNeighbor:构建graph的邻居
+buildOrientSupply:从supply_analyzer获取supply的access
+sortIRModel:对ir_net进行排序
+routeIRModel:
+    routeIRNet:一个接一个的ir_net进行布线
+        makeIRTaskList:通过flute获取多个topo，并将每个topo构建成task，通过加入斯坦纳点的垂直线段
+        routeIRTask:布线
+        updateDemand:将布线结果添加到graph上
+updateIRModel:将结果更新到顶层

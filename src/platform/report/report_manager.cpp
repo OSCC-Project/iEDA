@@ -185,9 +185,9 @@ bool ReportManager::reportInstLevel(const std::string& prefix, int level, int nu
 
 bool ReportManager::reportDRC(const std::string& file)
 {
-  ReportDRC report("DRC");
-  report.createDrcReport();
-  ReportOStream{file} << report;
+  //   ReportDRC report("DRC");
+  //   report.createDrcReport();
+  //   ReportOStream{file} << report;
   return true;
 }
 
@@ -197,6 +197,7 @@ bool ReportManager::reportDRC(const std::string& file_name, std::map<std::string
   ReportOStream os(file_name);
   ReportDRC report_drc("Report DRC Summary");
   report_drc.add_table(report_drc.createDRCTable(drc_result));
+  std::cout << report_drc;  // TODO: remove this line
   report_drc.add_table(report_drc.createConnectivityTable(connectivity_result));
   report_drc.add_table(report_drc.createConnectivityDetailTable(connectivity_result));
 

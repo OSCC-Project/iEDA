@@ -32,7 +32,6 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #include "CTSAPI.hh"
-#include "DrcAPI.hpp"
 #include "EvalAPI.hpp"
 #include "Evaluator.hh"
 #include "IdbCore.h"
@@ -46,6 +45,7 @@
 #include "IdbTrackGrid.h"
 #include "PLAPI.hh"
 #include "PlacerDB.hh"
+#include "RTInterface.hpp"
 #include "TimingEngine.hh"
 #include "ToApi.hpp"
 #include "feature_parser.h"
@@ -54,6 +54,7 @@
 #include "iomanip"
 #include "json_parser.h"
 #include "report_evaluator.h"
+#include "summary.h"
 
 namespace idb {
 
@@ -509,14 +510,14 @@ json FeatureParser::flowSummary(std::string step)
                                                                        {"optHold", [this, step]() { return buildSummaryTO(step); }},
                                                                        {"optSetup", [this, step]() { return buildSummaryTO(step); }},
                                                                        {"sta", [this]() { return buildSummarySTA(); }},
-                                                                       {"drc", [this]() { return buildSummaryDRC(); }}};
+                                                                       {"drc", [this]() { return buildSummaryDRC(); }},
+                                                                       {"route", [this]() { return buildSummaryRT(); }}};
 
   return stepToBuilder[step]();
 }
 
 json FeatureParser::buildSummaryPL(std::string step)
 {
-
   json summary_pl;
   // 1:全局布局、详细布局、合法化都需要存储的数据参数，需要根据step存储不同的值
   auto place_density = PlacerDBInst.place_density;
@@ -530,7 +531,7 @@ json FeatureParser::buildSummaryPL(std::string step)
   auto suggest_freq = PlacerDBInst.suggest_freq;
 
   // 2:全局布局、详细布局需要存储的数据参数
-  if(step == "place"){
+  if (step == "place") {
     summary_pl["gplace"]["place_density"] = place_density[0];
     summary_pl["gplace"]["pin_density"] = pin_density[0];
     summary_pl["gplace"]["HPWL"] = HPWL[0];
@@ -541,7 +542,6 @@ json FeatureParser::buildSummaryPL(std::string step)
     summary_pl["gplace"]["wns"] = wns[0];
     summary_pl["gplace"]["suggest_freq"] = suggest_freq[0];
 
-    
     summary_pl["dplace"]["place_density"] = place_density[1];
     summary_pl["dplace"]["pin_density"] = pin_density[1];
     summary_pl["dplace"]["HPWL"] = HPWL[1];
@@ -574,7 +574,7 @@ json FeatureParser::buildSummaryPL(std::string step)
     summary_pl["overflow"] = PlacerDBInst.gp_overflow;
   }
   // 3:合法化需要存储的数据参数
-  else if(step == "legalization"){
+  else if (step == "legalization") {
     summary_pl["legalization"]["place_density"] = place_density[2];
     summary_pl["legalization"]["pin_density"] = pin_density[2];
     summary_pl["legalization"]["HPWL"] = HPWL[2];
@@ -670,11 +670,10 @@ json FeatureParser::buildSummaryTO(std::string step)
 
   // max_fanout, min_slew_slack, min_cap_slack
 
-
   // before: 初始值，tns，wns，freq
   json summary_subto;
   auto to_eval_data = ToApiInst.getEvalData();
-  for(auto eval_data : to_eval_data){
+  for (auto eval_data : to_eval_data) {
     auto clk_name = eval_data.name;
     summary_subto[clk_name]["initial_tns"] = eval_data.initial_tns;
     summary_subto[clk_name]["initial_wns"] = eval_data.initial_wns;
@@ -696,11 +695,14 @@ json FeatureParser::buildSummaryTO(std::string step)
   });
 
   // delta: 迭代的值，优化后的值减去初始值
-  for(auto eval_data : to_eval_data){
+  for (auto eval_data : to_eval_data) {
     auto clk_name = eval_data.name;
-    summary_subto[clk_name]["delta_tns"] = static_cast<double>(summary_subto[clk_name]["optimized_tns"]) - static_cast<double>(summary_subto[clk_name]["initial_tns"]);
-    summary_subto[clk_name]["delta_wns"] = static_cast<double>(summary_subto[clk_name]["optimized_wns"]) - static_cast<double>(summary_subto[clk_name]["initial_wns"]);
-    summary_subto[clk_name]["delta_suggest_freq"] = static_cast<double>(summary_subto[clk_name]["optimized_suggest_freq"]) - static_cast<double>(summary_subto[clk_name]["initial_suggest_freq"]);
+    summary_subto[clk_name]["delta_tns"]
+        = static_cast<double>(summary_subto[clk_name]["optimized_tns"]) - static_cast<double>(summary_subto[clk_name]["initial_tns"]);
+    summary_subto[clk_name]["delta_wns"]
+        = static_cast<double>(summary_subto[clk_name]["optimized_wns"]) - static_cast<double>(summary_subto[clk_name]["initial_wns"]);
+    summary_subto[clk_name]["delta_suggest_freq"] = static_cast<double>(summary_subto[clk_name]["optimized_suggest_freq"])
+                                                    - static_cast<double>(summary_subto[clk_name]["initial_suggest_freq"]);
   }
 
   summary_to["sta"] = summary_subto;
@@ -754,13 +756,123 @@ json FeatureParser::buildSummaryDRC()
 {
   json summary_drc;
 
-  auto drc_map = idrc::DrcAPIInst.getCheckResult();
-  // summary_drc["short_nums"] = drc_map
-  for (auto& [key, value] : drc_map) {
-    summary_drc[key] = value;
-  }
+  //   auto drc_map = idrc::DrcAPIInst.getCheckResult();
+  //   // summary_drc["short_nums"] = drc_map
+  //   for (auto& [key, value] : drc_map) {
+  //     summary_drc[key] = value;
+  //   }
 
   return summary_drc;
+}
+
+json FeatureParser::buildSummaryRT()
+{
+  json summary_rt;
+
+  auto& rt_sum = dmInst->get_feature_summary().getRTSummary();
+  json rt_pa;
+  for (auto routing_access_point_num : rt_sum.pa_summary.routing_access_point_num_map) {
+    rt_pa["routing_access_point_num_map"][std::to_string(routing_access_point_num.first)] = routing_access_point_num.second;
+  }
+  for (auto type_access_point_num : rt_sum.pa_summary.type_access_point_num_map) {
+    rt_pa["routing_access_point_num_map"][type_access_point_num.first] = type_access_point_num.second;
+  }
+  rt_pa["routing_access_point_num_map"]["total_access_point_num"] = rt_sum.pa_summary.total_access_point_num;
+  summary_rt["PA"] = rt_pa;
+
+  auto& sa_sum = rt_sum.sa_summary;
+  json rt_sa;
+  for (auto routing_supply_num : rt_sum.sa_summary.routing_supply_map) {
+    rt_sa["routing_supply_num_map"][std::to_string(routing_supply_num.first)] = routing_supply_num.second;
+  }
+  rt_sa["routing_supply_num_map"]["total_supply_num"] = rt_sum.sa_summary.total_supply;
+
+  json rt_ir;
+  for (auto demand : rt_sum.ir_summary.routing_demand_map) {
+    rt_ir["routing_demand_map"][std::to_string(demand.first)] = demand.second;
+  }
+  rt_ir["routing_demand_map"]["total_demand"] = rt_sum.ir_summary.total_demand;
+  for (auto routing_overflow : rt_sum.ir_summary.routing_overflow_map) {
+    rt_ir["routing_overflow_map"][std::to_string(routing_overflow.first)] = routing_overflow.second;
+  }
+  rt_ir["routing_overflow_map"]["total_overflow"] = rt_sum.ir_summary.total_overflow;
+  for (auto routing_wire_length : rt_sum.ir_summary.routing_wire_length_map) {
+    rt_ir["routing_wire_length_map"][std::to_string(routing_wire_length.first)] = routing_wire_length.second;
+  }
+  rt_ir["routing_wire_length_map"]["total_wire_length"] = rt_sum.ir_summary.total_wire_length;
+  for (auto cut_via_num : rt_sum.ir_summary.cut_via_num_map) {
+    rt_ir["routing_cut_via_num_map"][std::to_string(cut_via_num.first)] = cut_via_num.second;
+  }
+  rt_ir["routing_cut_via_num_map"]["total_cut_via_num"] = rt_sum.ir_summary.total_via_num;
+  for (auto timing : rt_sum.ir_summary.timing) {
+    rt_ir["routing_timing_map"][timing.first] = timing.second;
+  }
+  summary_rt["IR"] = rt_ir;
+
+  // // GR
+  for (auto [id, gr_sum] : rt_sum.iter_gr_summary_map) {
+    json rt_gr;
+    // 和ir一样
+    for (auto demand : gr_sum.routing_demand_map) {
+      rt_gr["routing_demand_map"][std::to_string(demand.first)] = demand.second;
+    }
+    rt_gr["routing_demand_map"]["total_demand"] = gr_sum.total_demand;
+    for (auto routing_overflow : gr_sum.routing_overflow_map) {
+      rt_gr["routing_overflow_map"][std::to_string(routing_overflow.first)] = routing_overflow.second;
+    }
+    rt_gr["routing_overflow_map"]["total_overflow"] = gr_sum.total_overflow;
+    for (auto routing_wire_length : gr_sum.routing_wire_length_map) {
+      rt_gr["routing_wire_length_map"][std::to_string(routing_wire_length.first)] = routing_wire_length.second;
+    }
+    rt_gr["routing_wire_length_map"]["total_wire_length"] = gr_sum.total_wire_length;
+    for (auto cut_via_num : gr_sum.cut_via_num_map) {
+      rt_gr["routing_cut_via_num_map"][std::to_string(cut_via_num.first)] = cut_via_num.second;
+    }
+    rt_gr["routing_cut_via_num_map"]["total_cut_via_num"] = gr_sum.total_via_num;
+    for (auto timing : gr_sum.timing) {
+      rt_gr["routing_timing_map"][timing.first] = timing.second;
+    }
+    summary_rt["GR"][std::to_string(id)] = rt_gr;
+  }
+  // TA
+  json rt_ta;
+  // wirelength, violation
+  for (auto routing_wire_length : rt_sum.ta_summary.routing_wire_length_map) {
+    rt_ta["routing_wire_length_map"][std::to_string(routing_wire_length.first)] = routing_wire_length.second;
+  }
+  rt_ta["routing_wire_length_map"]["total_wire_length"] = rt_sum.ta_summary.total_wire_length;
+  for (auto routing_violation : rt_sum.ta_summary.routing_violation_num_map) {
+    rt_ta["routing_violation_map"][std::to_string(routing_violation.first)] = routing_violation.second;
+  }
+  rt_ta["routing_violation_map"]["total_violation"] = rt_sum.ta_summary.total_violation_num;
+  summary_rt["TA"] = rt_ta;
+
+  // DR
+  for (auto [id, dr_sum] : rt_sum.iter_dr_summary_map) {
+    json rt_dr;
+    for (auto routing_wire_length : dr_sum.routing_wire_length_map) {
+      rt_dr["routing_wire_length_map"][std::to_string(routing_wire_length.first)] = routing_wire_length.second;
+    }
+    rt_dr["routing_wire_length_map"]["total_wire_length"] = dr_sum.total_wire_length;
+    for (auto cut_via_num : dr_sum.cut_via_num_map) {
+      rt_dr["routing_cut_via_num_map"][std::to_string(cut_via_num.first)] = cut_via_num.second;
+    }
+    rt_dr["routing_cut_via_num_map"]["total_cut_via_num"] = dr_sum.total_via_num;
+    // violation
+    for (auto routing_violation : dr_sum.routing_violation_num_map) {
+      rt_dr["routing_violation_map"][std::to_string(routing_violation.first)] = routing_violation.second;
+    }
+    rt_dr["routing_violation_map"]["total_violation"] = dr_sum.total_violation_num;
+    for (auto routing_patch_num : dr_sum.routing_patch_num_map) {
+      rt_dr["routing_patch_num_map"][std::to_string(routing_patch_num.first)] = routing_patch_num.second;
+    }
+    rt_dr["routing_patch_num_map"]["total_patch_num"] = dr_sum.total_patch_num;
+    for (auto timing : dr_sum.timing) {
+      rt_dr["routing_timing_map"][timing.first] = timing.second;
+    }
+    summary_rt["DR"][std::to_string(id)] = rt_dr;
+  }
+  return summary_rt;
 }
 
 }  // namespace idb

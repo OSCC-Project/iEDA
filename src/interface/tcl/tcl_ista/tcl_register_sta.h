@@ -30,7 +30,7 @@
 #define TCL_USERSHELL
 
 #ifdef TCL_USERSHELL
-// #include "sdc-cmd/Cmd.hh"
+#include "sdc-cmd/Cmd.hh"
 #include "shell-cmd/ShellCmd.hh"
 #endif
 
@@ -57,6 +57,7 @@ int registerCmdSTA()
   registerTclCmd(ista::CmdReportConstraint, "report_constraint");
   registerTclCmd(ista::CmdDefToVerilog, "def_to_verilog");
   registerTclCmd(ista::CmdVerilogToDef, "verilog_to_def");
+  registerTclCmd(ista::CmdGetLibs, "get_libs");
   return EXIT_SUCCESS;
 }
 

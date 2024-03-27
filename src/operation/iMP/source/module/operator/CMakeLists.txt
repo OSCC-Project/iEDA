@@ -4,6 +4,7 @@ target_link_libraries(imp-operator
     imp-partition
     imp-basic
     imp-logger
+    imp-parser
 )
 target_include_directories(imp-operator
     PUBLIC

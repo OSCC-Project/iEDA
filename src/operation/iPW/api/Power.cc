@@ -77,7 +77,6 @@ void Power::destroyPower() {
  * @return unsigned
  */
 unsigned Power::buildGraph() {
-  // TODO build graph use power graph in Power class.
   PwrBuildGraph build_graph(_power_graph);
   build_graph(_power_graph.get_sta_graph());
   _power_graph.set_pwr_seq_graph(&_power_seq_graph);
@@ -517,7 +516,7 @@ unsigned Power::reportInstancePower(const char* rpt_file_name,
 
   // lambda for print power data float to string.
   auto data_str = [](double data) { return Str::printf("%.3e", data); };
-  auto data_str_f = [](double data) { return Str::printf("%.3f", data); };
+  // auto data_str_f = [](double data) { return Str::printf("%.3f", data); };
 
   PwrGroupData* group_data;
   FOREACH_PWR_GROUP_DATA(this, group_data) {

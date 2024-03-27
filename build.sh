@@ -51,7 +51,7 @@ echo -e "build.sh: Build iEDA executable binary"
 echo -e "Usage:"
 echo -e "  ${bold}bash build.sh${clear} [-h] [-n] [-r] [-b] [-c] [-d] [-i] "
 echo -e "                [-b ${underline}binary path${clear}] [-c ${underline}compiler path${clear}]"
-echo -e "                [-j ${underline}num${clear}] [-i apt|nonit-apt|docker]"
+echo -e "                [-j ${underline}num${clear}] [-i apt|docker]"
 echo -e "Options:"
 echo -e "  ${bold}-h${clear} display this help and exit"
 echo -e "  ${bold}-n${clear} do not build iEDA (default OFF)"
@@ -123,7 +123,8 @@ install_dependencies_apt()
     apt-get update && apt-get install -y \
       g++-10 cmake ninja-build \
       tcl-dev libgflags-dev libgoogle-glog-dev libboost-all-dev libgtest-dev flex\
-      libeigen3-dev libyaml-cpp-dev libunwind-dev libmetis-dev libgmp-dev bison rustc cargo
+      libeigen3-dev libyaml-cpp-dev libunwind-dev libmetis-dev libgmp-dev bison rustc cargo\
+      libhwloc-dev libcairo2-dev 
     exit 0
   else
     echo -e "${red}apt-get not found, pleas make sure you were running on Debian-Based Linux distribution${clear}"
@@ -136,7 +137,8 @@ install_dependencies()
   if [[ $INSTALL_DEP == "apt" ]]; then
     sys_requirement_warning
     install_dependencies_apt
-  elif [[ $INSTALL_DEP == "nonit-apt" ]]; then
+  elif [[ $INSTALL_DEP == "mirror" ]]; then
+    sed -i 's@//.*archive.ubuntu.com@//mirrors.tuna.tsinghua.edu.cn@g' /etc/apt/sources.list
     install_dependencies_apt
   elif [[ $INSTALL_DEP == "docker" ]]; then
     install_docker_experimental
@@ -173,8 +175,8 @@ install_docker_experimental()
 {
   if command_exists docker; then
     echo -e "${yellow}Warning:"
-    echo -e "  Docker exists, this installation may cause problems.${clear}"
-    read_continue_or_exit
+    echo -e "  Docker exists, try \`docker pull iedaopensource/base:latest\` instead${clear}"
+    exit 1;
   fi
 
   echo -e "${yellow}Warning:\n  Experimental option, caution with sudo!\n\
