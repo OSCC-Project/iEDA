@@ -26,12 +26,12 @@
 
 namespace irt {
 
-#define RTAPI_INST (irt::RTAPI::getInst())
+#define RTI (irt::RTInterface::getInst())
 
-class RTAPI
+class RTInterface
 {
  public:
-  static RTAPI& getInst();
+  static RTInterface& getInst();
   static void destroyInst();
 
 #if 1  // 外部调用RT的API
@@ -48,7 +48,7 @@ class RTAPI
   // 调用iDRC 计算版图的DRC违例
   std::vector<Violation> getViolationList(std::vector<idb::IdbLayerShape*>& env_shape_list,
                                           std::map<int32_t, std::vector<idb::IdbLayerShape*>>& net_pin_shape_map,
-                                          std::map<int32_t, std::vector<idb::IdbRegularWireSegment*>>& net_wire_via_map);
+                                          std::map<int32_t, std::vector<idb::IdbRegularWireSegment*>>& net_wire_via_map, std::string stage);
   // 调用iSTA 计算时序
   std::map<std::string, std::vector<double>> getTiming(std::vector<std::map<std::string, std::vector<LayerCoord>>>& real_pin_coord_map_list,
                                                        std::vector<std::vector<Segment<LayerCoord>>>& routing_segment_list_list);
@@ -57,14 +57,14 @@ class RTAPI
 #endif
 
  private:
-  static RTAPI* _rt_api_instance;
+  static RTInterface* _rt_interface_instance;
 
-  RTAPI() = default;
-  RTAPI(const RTAPI& other) = delete;
-  RTAPI(RTAPI&& other) = delete;
-  ~RTAPI() = default;
-  RTAPI& operator=(const RTAPI& other) = delete;
-  RTAPI& operator=(RTAPI&& other) = delete;
+  RTInterface() = default;
+  RTInterface(const RTInterface& other) = delete;
+  RTInterface(RTInterface&& other) = delete;
+  ~RTInterface() = default;
+  RTInterface& operator=(const RTInterface& other) = delete;
+  RTInterface& operator=(RTInterface&& other) = delete;
   // function
 };
 

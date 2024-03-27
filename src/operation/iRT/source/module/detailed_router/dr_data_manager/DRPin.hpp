@@ -38,7 +38,6 @@ class DRPin : public Pin
   // function
 
  private:
- 
 };
 
 }  // namespace irt

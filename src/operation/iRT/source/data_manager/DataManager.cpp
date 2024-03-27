@@ -16,8 +16,8 @@
 // ***************************************************************************************
 #include "DataManager.hpp"
 
-#include "RTAPI.hpp"
 #include "RTHeader.hpp"
+#include "RTInterface.hpp"
 #include "RTUtil.hpp"
 
 namespace irt {
@@ -34,7 +34,7 @@ void DataManager::initInst()
 DataManager& DataManager::getInst()
 {
   if (_dm_instance == nullptr) {
-    LOG_INST.error(Loc::current(), "The instance not initialized!");
+    RTLOG.error(Loc::current(), "The instance not initialized!");
   }
   return *_dm_instance;
 }
@@ -52,7 +52,7 @@ void DataManager::destroyInst()
 void DataManager::input(std::map<std::string, std::any>& config_map, idb::IdbBuilder* idb_builder)
 {
   Monitor monitor;
-  LOG_INST.info(Loc::current(), "Starting...");
+  RTLOG.info(Loc::current(), "Starting...");
   wrapConfig(config_map);
   wrapDatabase(idb_builder);
   buildConfig();
@@ -60,17 +60,17 @@ void DataManager::input(std::map<std::string, std::any>& config_map, idb::IdbBui
   printConfig();
   printDatabase();
   writePYScript();
-  LOG_INST.info(Loc::current(), "Completed", monitor.getStatsInfo());
+  RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
 void DataManager::output()
 {
   Monitor monitor;
-  LOG_INST.info(Loc::current(), "Starting...");
+  RTLOG.info(Loc::current(), "Starting...");
   outputGCellGrid();
   outputNetList();
   outputSummary();
-  LOG_INST.info(Loc::current(), "Completed", monitor.getStatsInfo());
+  RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
 #if 1  // 更新GCellMap
@@ -301,8 +301,8 @@ std::vector<NetShape> DataManager::getNetShapeList(int32_t net_idx, MTree<LayerC
 
 std::vector<NetShape> DataManager::getNetShapeList(int32_t net_idx, LayerCoord& first_coord, LayerCoord& second_coord)
 {
-  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
-  std::vector<std::vector<ViaMaster>>& layer_via_master_list = DM_INST.getDatabase().get_layer_via_master_list();
+  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
+  std::vector<std::vector<ViaMaster>>& layer_via_master_list = RTDM.getDatabase().get_layer_via_master_list();
 
   std::vector<NetShape> drc_shape_list;
   int32_t first_layer_idx = first_coord.get_layer_idx();
@@ -351,7 +351,7 @@ idb::IdbLayerShape* DataManager::getIDBLayerShapeByFixedRect(EXTLayerRect* fixed
   }
   idb::IdbLayer* idb_layer = idb_layer_list->find_layer(layer_name);
   if (idb_layer == nullptr) {
-    LOG_INST.error(Loc::current(), "Can not find idb layer ", layer_name);
+    RTLOG.error(Loc::current(), "Can not find idb layer ", layer_name);
   }
   PlanarRect& real_rect = fixed_rect->get_real_rect();
 
@@ -379,7 +379,7 @@ idb::IdbRegularWireSegment* DataManager::getIDBSegmentByNetPatch(int32_t net_idx
   std::string layer_name = routing_layer_list[ext_layer_rect.get_layer_idx()].get_layer_name();
   idb::IdbLayer* idb_layer = idb_layer_list->find_layer(layer_name);
   if (idb_layer == nullptr) {
-    LOG_INST.error(Loc::current(), "Can not find idb layer ", layer_name);
+    RTLOG.error(Loc::current(), "Can not find idb layer ", layer_name);
   }
   PlanarRect& real_rect = ext_layer_rect.get_real_rect();
 
@@ -511,7 +511,7 @@ void DataManager::wrapSpacingTable(RoutingLayer& routing_layer, idb::IdbLayerRou
   } else if (idb_layer->get_spacing_list() != nullptr && !idb_layer->get_spacing_table().get()->is_parallel()) {
     idb_spacing_table = idb_layer->get_spacing_table_from_spacing_list()->get_parallel();
   } else {
-    LOG_INST.error(Loc::current(), "The idb spacing table is error!");
+    RTLOG.error(Loc::current(), "The idb spacing table is error!");
   }
 
   SpacingTable& spacing_table = routing_layer.get_spacing_table();
@@ -533,7 +533,7 @@ void DataManager::wrapLayerViaMasterList(idb::IdbBuilder* idb_builder)
 {
   idb::IdbVias* idb_via_list_lib = idb_builder->get_lef_service()->get_layout()->get_via_list();
   if (idb_via_list_lib == nullptr) {
-    LOG_INST.error(Loc::current(), "Via list in tech lef is empty!");
+    RTLOG.error(Loc::current(), "Via list in tech lef is empty!");
   }
 
   std::vector<std::vector<ViaMaster>>& layer_via_master_list = _database.get_layer_via_master_list();
@@ -544,7 +544,7 @@ void DataManager::wrapLayerViaMasterList(idb::IdbBuilder* idb_builder)
   for (size_t i = 0; i < idb_via_list.size(); i++) {
     idb::IdbVia* idb_via = idb_via_list[i];
     if (idb_via == nullptr) {
-      LOG_INST.error(Loc::current(), "The via is empty!");
+      RTLOG.error(Loc::current(), "The via is empty!");
     }
     ViaMaster via_master;
     via_master.set_via_name(idb_via->get_name());
@@ -582,7 +582,7 @@ void DataManager::wrapLayerViaMasterList(idb::IdbBuilder* idb_builder)
 void DataManager::wrapObstacleList(idb::IdbBuilder* idb_builder)
 {
   Monitor monitor;
-  LOG_INST.info(Loc::current(), "Starting...");
+  RTLOG.info(Loc::current(), "Starting...");
 
   std::vector<Obstacle>& routing_obstacle_list = _database.get_routing_obstacle_list();
   std::vector<Obstacle>& cut_obstacle_list = _database.get_cut_obstacle_list();
@@ -704,13 +704,13 @@ void DataManager::wrapObstacleList(idb::IdbBuilder* idb_builder)
       }
     }
   }
-  LOG_INST.info(Loc::current(), "Completed", monitor.getStatsInfo());
+  RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
 void DataManager::wrapNetList(idb::IdbBuilder* idb_builder)
 {
   Monitor monitor;
-  LOG_INST.info(Loc::current(), "Starting...");
+  RTLOG.info(Loc::current(), "Starting...");
 
   std::vector<Net>& net_list = _database.get_net_list();
   std::vector<idb::IdbNet*>& idb_net_list = idb_builder->get_def_service()->get_design()->get_net_list()->get_net_list();
@@ -735,7 +735,7 @@ void DataManager::wrapNetList(idb::IdbBuilder* idb_builder)
     wrapPinList(net, valid_idb_net);
     wrapDrivingPin(net, valid_idb_net);
   }
-  LOG_INST.info(Loc::current(), "Completed", monitor.getStatsInfo());
+  RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
 bool DataManager::isSkipping(idb::IdbNet* idb_net)
@@ -769,7 +769,7 @@ bool DataManager::isSkipping(idb::IdbNet* idb_net)
   if (pin_num <= 1) {
     return true;
   } else if (pin_num >= 500) {
-    LOG_INST.warn(Loc::current(), "The ultra large net: ", idb_net->get_net_name(), " has ", pin_num, " pins!");
+    RTLOG.warn(Loc::current(), "The ultra large net: ", idb_net->get_net_name(), " has ", pin_num, " pins!");
   }
   return false;
 }
@@ -905,7 +905,7 @@ void DataManager::buildConfig()
   _config.bottom_routing_layer_idx = _helper.getRoutingLayerIdxByName(_config.bottom_routing_layer);
   _config.top_routing_layer_idx = _helper.getRoutingLayerIdxByName(_config.top_routing_layer);
   if (_config.bottom_routing_layer_idx >= _config.top_routing_layer_idx) {
-    LOG_INST.error(Loc::current(), "The routing layer should be at least two layers!");
+    RTLOG.error(Loc::current(), "The routing layer should be at least two layers!");
   }
   // **********   PinAccessor     ********** //
   _config.pa_temp_directory_path = _config.temp_directory_path + "pin_accessor/";
@@ -936,7 +936,7 @@ void DataManager::buildConfig()
   // **********  DetailedRouter   ********** //
   RTUtil::createDir(_config.dr_temp_directory_path);
   /////////////////////////////////////////////
-  LOG_INST.openLogFileStream(_config.log_file_path);
+  RTLOG.openLogFileStream(_config.log_file_path);
 }
 
 void DataManager::buildDatabase()
@@ -992,7 +992,7 @@ int32_t DataManager::getRecommendedPitch()
     recommended_pitch = min_pitch;
   }
   if (recommended_pitch == -1) {
-    LOG_INST.error(Loc::current(), "The recommended_pitch is -1!");
+    RTLOG.error(Loc::current(), "The recommended_pitch is -1!");
   }
   return recommended_pitch;
 }
@@ -1067,34 +1067,32 @@ void DataManager::checkGCellAxis()
   std::vector<ScaleGrid>& y_grid_list = gcell_axis.get_y_grid_list();
 
   if (x_grid_list.empty() || y_grid_list.empty()) {
-    LOG_INST.error(Loc::current(), "The gcell grid list is empty!");
+    RTLOG.error(Loc::current(), "The gcell grid list is empty!");
   }
   for (size_t i = 0; i < x_grid_list.size(); i++) {
     if (x_grid_list[i].get_step_length() <= 0) {
-      LOG_INST.error(Loc::current(), "The step length of x grid '", x_grid_list[i].get_step_length(), "' is wrong!");
+      RTLOG.error(Loc::current(), "The step length of x grid '", x_grid_list[i].get_step_length(), "' is wrong!");
     }
   }
   for (size_t i = 0; i < y_grid_list.size(); i++) {
     if (y_grid_list[i].get_step_length() <= 0) {
-      LOG_INST.error(Loc::current(), "The step length of y grid '", y_grid_list[i].get_step_length(), "' is wrong!");
+      RTLOG.error(Loc::current(), "The step length of y grid '", y_grid_list[i].get_step_length(), "' is wrong!");
     }
   }
   for (size_t i = 1; i < x_grid_list.size(); i++) {
     if (x_grid_list[i - 1].get_end_line() < x_grid_list[i].get_start_line()) {
-      LOG_INST.error(Loc::current(), "The x grid with gap '", x_grid_list[i - 1].get_end_line(), " < ", x_grid_list[i].get_start_line(),
-                     "'!");
+      RTLOG.error(Loc::current(), "The x grid with gap '", x_grid_list[i - 1].get_end_line(), " < ", x_grid_list[i].get_start_line(), "'!");
     } else if (x_grid_list[i - 1].get_end_line() > x_grid_list[i].get_start_line()) {
-      LOG_INST.error(Loc::current(), "The x grid with overlapping '", x_grid_list[i - 1].get_end_line(), " < ",
-                     x_grid_list[i].get_start_line(), "'!");
+      RTLOG.error(Loc::current(), "The x grid with overlapping '", x_grid_list[i - 1].get_end_line(), " < ",
+                  x_grid_list[i].get_start_line(), "'!");
     }
   }
   for (size_t i = 1; i < y_grid_list.size(); i++) {
     if (y_grid_list[i - 1].get_end_line() < y_grid_list[i].get_start_line()) {
-      LOG_INST.error(Loc::current(), "The y grid with gap '", y_grid_list[i - 1].get_end_line(), " < ", y_grid_list[i].get_start_line(),
-                     "'!");
+      RTLOG.error(Loc::current(), "The y grid with gap '", y_grid_list[i - 1].get_end_line(), " < ", y_grid_list[i].get_start_line(), "'!");
     } else if (y_grid_list[i - 1].get_end_line() > y_grid_list[i].get_start_line()) {
-      LOG_INST.error(Loc::current(), "The y grid with overlapping '", y_grid_list[i - 1].get_end_line(), " > ",
-                     y_grid_list[i].get_start_line(), "'!");
+      RTLOG.error(Loc::current(), "The y grid with overlapping '", y_grid_list[i - 1].get_end_line(), " > ",
+                  y_grid_list[i].get_start_line(), "'!");
     }
   }
 }
@@ -1117,12 +1115,12 @@ void DataManager::checkDie()
   Die& die = _database.get_die();
 
   if (die.get_real_ll_x() < 0 || die.get_real_ll_y() < 0 || die.get_real_ur_x() < 0 || die.get_real_ur_y() < 0) {
-    LOG_INST.error(Loc::current(), "The die '(", die.get_real_ll_x(), " , ", die.get_real_ll_y(), ") - (", die.get_real_ur_x(), " , ",
-                   die.get_real_ur_y(), ")' is wrong!");
+    RTLOG.error(Loc::current(), "The die '(", die.get_real_ll_x(), " , ", die.get_real_ll_y(), ") - (", die.get_real_ur_x(), " , ",
+                die.get_real_ur_y(), ")' is wrong!");
   }
   if ((die.get_real_ur_x() <= die.get_real_ll_x()) || (die.get_real_ur_y() <= die.get_real_ll_y())) {
-    LOG_INST.error(Loc::current(), "The die '(", die.get_real_ll_x(), " , ", die.get_real_ll_y(), ") - (", die.get_real_ur_x(), " , ",
-                   die.get_real_ur_y(), ")' is wrong!");
+    RTLOG.error(Loc::current(), "The die '(", die.get_real_ll_x(), " , ", die.get_real_ll_y(), ") - (", die.get_real_ur_x(), " , ",
+                die.get_real_ur_y(), ")' is wrong!");
   }
 }
 
@@ -1163,48 +1161,48 @@ void DataManager::checkLayerList()
   std::vector<CutLayer>& cut_layer_list = _database.get_cut_layer_list();
 
   if (routing_layer_list.empty()) {
-    LOG_INST.error(Loc::current(), "The routing_layer_list is empty!");
+    RTLOG.error(Loc::current(), "The routing_layer_list is empty!");
   }
   if (cut_layer_list.empty()) {
-    LOG_INST.error(Loc::current(), "The cut_layer_list is empty!");
+    RTLOG.error(Loc::current(), "The cut_layer_list is empty!");
   }
 
   for (RoutingLayer& routing_layer : routing_layer_list) {
     std::string& layer_name = routing_layer.get_layer_name();
     if (routing_layer.get_prefer_direction() == Direction::kNone) {
-      LOG_INST.error(Loc::current(), "The layer '", layer_name, "' prefer_direction is none!");
+      RTLOG.error(Loc::current(), "The layer '", layer_name, "' prefer_direction is none!");
     }
     for (ScaleGrid& x_track_grid : routing_layer.getXTrackGridList()) {
       if (x_track_grid.get_step_length() <= 0) {
-        LOG_INST.error(Loc::current(), "The layer '", layer_name, "' x_track_grid step length '", x_track_grid.get_step_length(),
-                       "' is wrong!");
+        RTLOG.error(Loc::current(), "The layer '", layer_name, "' x_track_grid step length '", x_track_grid.get_step_length(),
+                    "' is wrong!");
       }
     }
     for (ScaleGrid& y_track_grid : routing_layer.getYTrackGridList()) {
       if (y_track_grid.get_step_length() <= 0) {
-        LOG_INST.error(Loc::current(), "The layer '", layer_name, "' y_track_grid step length '", y_track_grid.get_step_length(),
-                       "' is wrong!");
+        RTLOG.error(Loc::current(), "The layer '", layer_name, "' y_track_grid step length '", y_track_grid.get_step_length(),
+                    "' is wrong!");
       }
     }
     SpacingTable& spacing_table = routing_layer.get_spacing_table();
     if (spacing_table.get_width_list().empty()) {
-      LOG_INST.error(Loc::current(), "The layer '", layer_name, "' spacing width list is empty!");
+      RTLOG.error(Loc::current(), "The layer '", layer_name, "' spacing width list is empty!");
     }
     for (int32_t width : spacing_table.get_width_list()) {
       if (width < 0) {
-        LOG_INST.error(Loc::current(), "The layer '", layer_name, "' width < 0!");
+        RTLOG.error(Loc::current(), "The layer '", layer_name, "' width < 0!");
       }
     }
     for (int32_t parallel_length : spacing_table.get_parallel_length_list()) {
       if (parallel_length < 0) {
-        LOG_INST.error(Loc::current(), "The layer '", layer_name, "' parallel_length < 0!");
+        RTLOG.error(Loc::current(), "The layer '", layer_name, "' parallel_length < 0!");
       }
     }
     GridMap<int32_t>& width_parallel_length_map = spacing_table.get_width_parallel_length_map();
     for (int32_t width_idx = 0; width_idx < width_parallel_length_map.get_x_size(); width_idx++) {
       for (int32_t parallel_length_idx = 0; parallel_length_idx < width_parallel_length_map.get_y_size(); parallel_length_idx++) {
         if (width_parallel_length_map[width_idx][parallel_length_idx] < 0) {
-          LOG_INST.error(Loc::current(), "The layer '", layer_name, "' spacing < 0!");
+          RTLOG.error(Loc::current(), "The layer '", layer_name, "' spacing < 0!");
         }
       }
     }
@@ -1452,10 +1450,10 @@ void DataManager::checkObstacleList()
     if (obstacle.get_real_ll_x() < die.get_real_ll_x() || obstacle.get_real_ll_y() < die.get_real_ll_y()
         || die.get_real_ur_x() < obstacle.get_real_ur_x() || die.get_real_ur_y() < obstacle.get_real_ur_y()) {
       // log
-      LOG_INST.error(Loc::current(), "The obstacle '(", obstacle.get_real_ll_x(), " , ", obstacle.get_real_ll_y(), ") - (",
-                     obstacle.get_real_ur_x(), " , ", obstacle.get_real_ur_y(), ") ",
-                     routing_layer_list[obstacle.get_layer_idx()].get_layer_name(), "' is wrong! Die '(", die.get_real_ll_x(), " , ",
-                     die.get_real_ll_y(), ") - (", die.get_real_ur_x(), " , ", die.get_real_ur_y(), ")'");
+      RTLOG.error(Loc::current(), "The obstacle '(", obstacle.get_real_ll_x(), " , ", obstacle.get_real_ll_y(), ") - (",
+                  obstacle.get_real_ur_x(), " , ", obstacle.get_real_ur_y(), ") ",
+                  routing_layer_list[obstacle.get_layer_idx()].get_layer_name(), "' is wrong! Die '(", die.get_real_ll_x(), " , ",
+                  die.get_real_ll_y(), ") - (", die.get_real_ur_x(), " , ", die.get_real_ur_y(), ")'");
     }
   }
 #pragma omp parallel for
@@ -1463,10 +1461,10 @@ void DataManager::checkObstacleList()
     if (obstacle.get_real_ll_x() < die.get_real_ll_x() || obstacle.get_real_ll_y() < die.get_real_ll_y()
         || die.get_real_ur_x() < obstacle.get_real_ur_x() || die.get_real_ur_y() < obstacle.get_real_ur_y()) {
       // log
-      LOG_INST.error(Loc::current(), "The obstacle '(", obstacle.get_real_ll_x(), " , ", obstacle.get_real_ll_y(), ") - (",
-                     obstacle.get_real_ur_x(), " , ", obstacle.get_real_ur_y(), ") ",
-                     routing_layer_list[obstacle.get_layer_idx()].get_layer_name(), "' is wrong! Die '(", die.get_real_ll_x(), " , ",
-                     die.get_real_ll_y(), ") - (", die.get_real_ur_x(), " , ", die.get_real_ur_y(), ")'");
+      RTLOG.error(Loc::current(), "The obstacle '(", obstacle.get_real_ll_x(), " , ", obstacle.get_real_ll_y(), ") - (",
+                  obstacle.get_real_ur_x(), " , ", obstacle.get_real_ur_y(), ") ",
+                  routing_layer_list[obstacle.get_layer_idx()].get_layer_name(), "' is wrong! Die '(", die.get_real_ll_x(), " , ",
+                  die.get_real_ll_y(), ") - (", die.get_real_ur_x(), " , ", die.get_real_ur_y(), ")'");
     }
   }
 }
@@ -1531,19 +1529,19 @@ void DataManager::checkPinList(Net& net)
     for (EXTLayerRect& routing_shape : pin.get_routing_shape_list()) {
       if (routing_shape.get_real_ll_x() < die.get_real_ll_x() || routing_shape.get_real_ll_y() < die.get_real_ll_y()
           || die.get_real_ur_x() < routing_shape.get_real_ur_x() || die.get_real_ur_y() < routing_shape.get_real_ur_y()) {
-        LOG_INST.error(Loc::current(), "The pin_shape '(", routing_shape.get_real_ll_x(), " , ", routing_shape.get_real_ll_y(), ") - (",
-                       routing_shape.get_real_ur_x(), " , ", routing_shape.get_real_ur_y(), ") ",
-                       routing_layer_list[routing_shape.get_layer_idx()].get_layer_name(), "' is wrong! Die '(", die.get_real_ll_x(), " , ",
-                       die.get_real_ll_y(), ") - (", die.get_real_ur_x(), " , ", die.get_real_ur_y(), ")'");
+        RTLOG.error(Loc::current(), "The pin_shape '(", routing_shape.get_real_ll_x(), " , ", routing_shape.get_real_ll_y(), ") - (",
+                    routing_shape.get_real_ur_x(), " , ", routing_shape.get_real_ur_y(), ") ",
+                    routing_layer_list[routing_shape.get_layer_idx()].get_layer_name(), "' is wrong! Die '(", die.get_real_ll_x(), " , ",
+                    die.get_real_ll_y(), ") - (", die.get_real_ur_x(), " , ", die.get_real_ur_y(), ")'");
       }
     }
     for (EXTLayerRect& cut_shape : pin.get_cut_shape_list()) {
       if (cut_shape.get_real_ll_x() < die.get_real_ll_x() || cut_shape.get_real_ll_y() < die.get_real_ll_y()
           || die.get_real_ur_x() < cut_shape.get_real_ur_x() || die.get_real_ur_y() < cut_shape.get_real_ur_y()) {
-        LOG_INST.error(Loc::current(), "The pin_shape '(", cut_shape.get_real_ll_x(), " , ", cut_shape.get_real_ll_y(), ") - (",
-                       cut_shape.get_real_ur_x(), " , ", cut_shape.get_real_ur_y(), ") ",
-                       cut_layer_list[cut_shape.get_layer_idx()].get_layer_name(), "' is wrong! Die '(", die.get_real_ll_x(), " , ",
-                       die.get_real_ll_y(), ") - (", die.get_real_ur_x(), " , ", die.get_real_ur_y(), ")'");
+        RTLOG.error(Loc::current(), "The pin_shape '(", cut_shape.get_real_ll_x(), " , ", cut_shape.get_real_ll_y(), ") - (",
+                    cut_shape.get_real_ur_x(), " , ", cut_shape.get_real_ur_y(), ") ",
+                    cut_layer_list[cut_shape.get_layer_idx()].get_layer_name(), "' is wrong! Die '(", die.get_real_ll_x(), " , ",
+                    die.get_real_ll_y(), ") - (", die.get_real_ur_x(), " , ", die.get_real_ur_y(), ")'");
       }
     }
   }
@@ -1552,7 +1550,7 @@ void DataManager::checkPinList(Net& net)
 void DataManager::buildGCellMap()
 {
   Monitor monitor;
-  LOG_INST.info(Loc::current(), "Starting...");
+  RTLOG.info(Loc::current(), "Starting...");
 
   Die& die = _database.get_die();
   std::vector<Obstacle>& routing_obstacle_list = _database.get_routing_obstacle_list();
@@ -1660,7 +1658,7 @@ void DataManager::buildGCellMap()
       }
     }
   }
-  LOG_INST.info(Loc::current(), "Completed", monitor.getStatsInfo());
+  RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
 void DataManager::updateHelper()
@@ -1710,51 +1708,51 @@ void DataManager::printConfig()
 {
   /////////////////////////////////////////////
   // **********        RT         ********** //
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(0), "RT_CONFIG_INPUT");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "temp_directory_path");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.temp_directory_path);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "thread_number");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.thread_number);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "bottom_routing_layer");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.bottom_routing_layer);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "top_routing_layer");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.top_routing_layer);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "output_csv");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.output_csv);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "enable_timing");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.enable_timing);
+  RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(0), "RT_CONFIG_INPUT");
+  RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "temp_directory_path");
+  RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.temp_directory_path);
+  RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "thread_number");
+  RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.thread_number);
+  RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "bottom_routing_layer");
+  RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.bottom_routing_layer);
+  RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "top_routing_layer");
+  RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.top_routing_layer);
+  RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "output_csv");
+  RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.output_csv);
+  RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "enable_timing");
+  RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.enable_timing);
   // **********        RT         ********** //
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(0), "RT_CONFIG_BUILD");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "log_file_path");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.log_file_path);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "bottom_routing_layer_idx");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.bottom_routing_layer_idx);
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "top_routing_layer_idx");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.top_routing_layer_idx);
+  RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(0), "RT_CONFIG_BUILD");
+  RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "log_file_path");
+  RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.log_file_path);
+  RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "bottom_routing_layer_idx");
+  RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.bottom_routing_layer_idx);
+  RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "top_routing_layer_idx");
+  RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _config.top_routing_layer_idx);
   // **********   PinAccessor     ********** //
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "PinAccessor");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), "pa_temp_directory_path");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(3), _config.pa_temp_directory_path);
+  RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "PinAccessor");
+  RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(2), "pa_temp_directory_path");
+  RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(3), _config.pa_temp_directory_path);
   // **********   SupplyAnalyzer   ********** //
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "SupplyAnalyzer");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), "sa_temp_directory_path");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(3), _config.sa_temp_directory_path);
+  RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "SupplyAnalyzer");
+  RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(2), "sa_temp_directory_path");
+  RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(3), _config.sa_temp_directory_path);
   // **********   InitialRouter    ********** //
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "InitialRouter");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), "ir_temp_directory_path");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(3), _config.ir_temp_directory_path);
+  RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "InitialRouter");
+  RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(2), "ir_temp_directory_path");
+  RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(3), _config.ir_temp_directory_path);
   // **********   GlobalRouter    ********** //
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "GlobalRouter");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), "gr_temp_directory_path");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(3), _config.gr_temp_directory_path);
+  RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "GlobalRouter");
+  RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(2), "gr_temp_directory_path");
+  RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(3), _config.gr_temp_directory_path);
   // **********   TrackAssigner   ********** //
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "TrackAssigner");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), "ta_temp_directory_path");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(3), _config.ta_temp_directory_path);
+  RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "TrackAssigner");
+  RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(2), "ta_temp_directory_path");
+  RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(3), _config.ta_temp_directory_path);
   // **********  DetailedRouter   ********** //
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "DetailedRouter");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), "dr_temp_directory_path");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(3), _config.dr_temp_directory_path);
+  RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "DetailedRouter");
+  RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(2), "dr_temp_directory_path");
+  RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(3), _config.dr_temp_directory_path);
   /////////////////////////////////////////////
 }
 
@@ -1762,93 +1760,93 @@ void DataManager::printDatabase()
 {
   ////////////////////////////////////////////////
   // ********** RT ********** //
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(0), "RT_DATABASE");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "design_name");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _helper.get_design_name());
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "lef_file_path_list");
+  RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(0), "RT_DATABASE");
+  RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "design_name");
+  RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _helper.get_design_name());
+  RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "lef_file_path_list");
   for (std::string& lef_file_path : _helper.get_lef_file_path_list()) {
-    LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), lef_file_path);
+    RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(2), lef_file_path);
   }
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "def_file_path");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _helper.get_def_file_path());
+  RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "def_file_path");
+  RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _helper.get_def_file_path());
   // ********** MicronDBU ********** //
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "micron_dbu");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _database.get_micron_dbu());
+  RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "micron_dbu");
+  RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _database.get_micron_dbu());
   // ********** GCellAxis ********** //
   ScaleAxis& gcell_axis = _database.get_gcell_axis();
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "gcell_axis");
+  RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "gcell_axis");
   std::vector<ScaleGrid>& x_grid_list = gcell_axis.get_x_grid_list();
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), "x_grid_list");
+  RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(2), "x_grid_list");
   for (ScaleGrid& x_grid : x_grid_list) {
-    LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(3), "start:", x_grid.get_start_line(), " step_length:", x_grid.get_step_length(),
-                  " step_num:", x_grid.get_step_num(), " end:", x_grid.get_end_line());
+    RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(3), "start:", x_grid.get_start_line(), " step_length:", x_grid.get_step_length(),
+               " step_num:", x_grid.get_step_num(), " end:", x_grid.get_end_line());
   }
   std::vector<ScaleGrid>& y_grid_list = gcell_axis.get_y_grid_list();
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), "y_grid_list");
+  RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(2), "y_grid_list");
   for (ScaleGrid& y_grid : y_grid_list) {
-    LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(3), "start:", y_grid.get_start_line(), " step_length:", y_grid.get_step_length(),
-                  " step_num:", y_grid.get_step_num(), " end:", y_grid.get_end_line());
+    RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(3), "start:", y_grid.get_start_line(), " step_length:", y_grid.get_step_length(),
+               " step_num:", y_grid.get_step_num(), " end:", y_grid.get_end_line());
   }
   // ********** Die ********** //
   Die& die = _database.get_die();
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "die");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), "(", die.get_real_ll_x(), ",", die.get_real_ll_y(), ")-(", die.get_real_ur_x(),
-                ",", die.get_real_ur_y(), ")");
+  RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "die");
+  RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(2), "(", die.get_real_ll_x(), ",", die.get_real_ll_y(), ")-(", die.get_real_ur_x(),
+             ",", die.get_real_ur_y(), ")");
   // ********** RoutingLayer ********** //
   std::vector<RoutingLayer>& routing_layer_list = _database.get_routing_layer_list();
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "routing_layer_num");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), routing_layer_list.size());
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "routing_layer");
+  RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "routing_layer_num");
+  RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(2), routing_layer_list.size());
+  RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "routing_layer");
   for (RoutingLayer& routing_layer : routing_layer_list) {
-    LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), "idx:", routing_layer.get_layer_idx(),
-                  " order:", routing_layer.get_layer_order(), " name:", routing_layer.get_layer_name(),
-                  " min_width:", routing_layer.get_min_width(), " min_area:", routing_layer.get_min_area(),
-                  " prefer_direction:", GetDirectionName()(routing_layer.get_prefer_direction()));
+    RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(2), "idx:", routing_layer.get_layer_idx(),
+               " order:", routing_layer.get_layer_order(), " name:", routing_layer.get_layer_name(),
+               " min_width:", routing_layer.get_min_width(), " min_area:", routing_layer.get_min_area(),
+               " prefer_direction:", GetDirectionName()(routing_layer.get_prefer_direction()));
 
     ScaleAxis& track_axis = routing_layer.get_track_axis();
-    LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), "track_axis");
+    RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(2), "track_axis");
     std::vector<ScaleGrid>& x_grid_list = track_axis.get_x_grid_list();
-    LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(3), "x_grid_list");
+    RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(3), "x_grid_list");
     for (ScaleGrid& x_grid : x_grid_list) {
-      LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(4), "start:", x_grid.get_start_line(),
-                    " step_length:", x_grid.get_step_length(), " step_num:", x_grid.get_step_num(), " end:", x_grid.get_end_line());
+      RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(4), "start:", x_grid.get_start_line(), " step_length:", x_grid.get_step_length(),
+                 " step_num:", x_grid.get_step_num(), " end:", x_grid.get_end_line());
     }
     std::vector<ScaleGrid>& y_grid_list = track_axis.get_y_grid_list();
-    LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(3), "y_grid_list");
+    RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(3), "y_grid_list");
     for (ScaleGrid& y_grid : y_grid_list) {
-      LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(4), "start:", y_grid.get_start_line(),
-                    " step_length:", y_grid.get_step_length(), " step_num:", y_grid.get_step_num(), " end:", y_grid.get_end_line());
+      RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(4), "start:", y_grid.get_start_line(), " step_length:", y_grid.get_step_length(),
+                 " step_num:", y_grid.get_step_num(), " end:", y_grid.get_end_line());
     }
   }
   // ********** CutLayer ********** //
   std::vector<CutLayer>& cut_layer_list = _database.get_cut_layer_list();
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "cut_layer_num");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), cut_layer_list.size());
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "cut_layer");
+  RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "cut_layer_num");
+  RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(2), cut_layer_list.size());
+  RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "cut_layer");
   for (CutLayer& cut_layer : cut_layer_list) {
-    LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), "idx:", cut_layer.get_layer_idx(), " order:", cut_layer.get_layer_order(),
-                  " name:", cut_layer.get_layer_name());
+    RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(2), "idx:", cut_layer.get_layer_idx(), " order:", cut_layer.get_layer_order(),
+               " name:", cut_layer.get_layer_name());
   }
   // ********** ViaMaster ********** //
   std::vector<std::vector<ViaMaster>>& layer_via_master_list = _database.get_layer_via_master_list();
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "layer_via_master_list");
+  RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "layer_via_master_list");
   for (size_t below_layer_idx = 0; below_layer_idx < layer_via_master_list.size(); below_layer_idx++) {
     std::string via_master_name_string = (routing_layer_list[below_layer_idx].get_layer_name() + ": ");
     for (ViaMaster& via_master : layer_via_master_list[below_layer_idx]) {
       via_master_name_string += (via_master.get_via_name() + " ");
     }
-    LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), via_master_name_string);
+    RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(2), via_master_name_string);
   }
   // ********** Obstacle ********** //
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "routing_obstacle_num");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _database.get_routing_obstacle_list().size());
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "cut_obstacle_num");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _database.get_cut_obstacle_list().size());
+  RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "routing_obstacle_num");
+  RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _database.get_routing_obstacle_list().size());
+  RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "cut_obstacle_num");
+  RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(2), _database.get_cut_obstacle_list().size());
   // ********** Net ********** //
   std::vector<Net>& net_list = _database.get_net_list();
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "net_num");
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), net_list.size());
-  LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "pin_num_ratio");
+  RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "net_num");
+  RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(2), net_list.size());
+  RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(1), "pin_num_ratio");
 
   size_t pin_num_upper_limit = 100;
   std::map<size_t, size_t> pin_net_map;
@@ -1860,15 +1858,15 @@ void DataManager::printDatabase()
     if (pin_num == pin_num_upper_limit) {
       head_info += ">=";
     }
-    LOG_INST.info(Loc::current(), RTUtil::getSpaceByTabNum(2), head_info, pin_num, " pins: ", net_num, "(",
-                  RTUtil::getPercentage(net_num, net_list.size()), ")");
+    RTLOG.info(Loc::current(), RTUtil::getSpaceByTabNum(2), head_info, pin_num, " pins: ", net_num, "(",
+               RTUtil::getPercentage(net_num, net_list.size()), ")");
   }
   ////////////////////////////////////////////////
 }
 
 void DataManager::writePYScript()
 {
-  std::string& temp_directory_path = DM_INST.getConfig().temp_directory_path;
+  std::string& temp_directory_path = RTDM.getConfig().temp_directory_path;
 
   std::ofstream* python_file = RTUtil::getOutputFileStream(RTUtil::getString(temp_directory_path, "plot.py"));
   RTUtil::pushStream(python_file, "import os", "\n");
@@ -1946,19 +1944,19 @@ void DataManager::outputNetList()
   }
   idb::IdbNetList* idb_net_list = idb_builder->get_def_service()->get_design()->get_net_list();
   if (idb_net_list == nullptr) {
-    LOG_INST.error(Loc::current(), "The idb net list is empty!");
+    RTLOG.error(Loc::current(), "The idb net list is empty!");
   }
   for (auto& [net_idx, idb_segment_list] : net_idb_segment_map) {
     std::string net_name = net_list[net_idx].get_net_name();
     idb::IdbNet* idb_net = idb_net_list->find_net(net_name);
     if (idb_net == nullptr) {
-      LOG_INST.info(Loc::current(), "The idb net named ", net_name, " cannot be found!");
+      RTLOG.info(Loc::current(), "The idb net named ", net_name, " cannot be found!");
       continue;
     }
     idb_net->clear_wire_list();
     idb::IdbRegularWireList* idb_wire_list = idb_net->get_wire_list();
     if (idb_wire_list == nullptr) {
-      LOG_INST.error(Loc::current(), "The idb wire list is empty!");
+      RTLOG.error(Loc::current(), "The idb wire list is empty!");
     }
     idb::IdbRegularWire* idb_wire = idb_wire_list->add_wire();
     idb_wire->set_wire_state(idb::IdbWiringStatement::kRouted);
@@ -1976,7 +1974,7 @@ void DataManager::outputNetList()
 
 void DataManager::outputSummary()
 {
-  RTAPI_INST.outputSummary();
+  RTI.outputSummary();
 }
 
 #endif
@@ -1993,12 +1991,12 @@ idb::IdbRegularWireSegment* DataManager::getIDBWire(int32_t net_idx, Segment<Lay
   int32_t layer_idx = first_coord.get_layer_idx();
 
   if (RTUtil::isOblique(first_coord, second_coord)) {
-    LOG_INST.error(Loc::current(), "The wire is oblique!");
+    RTLOG.error(Loc::current(), "The wire is oblique!");
   }
   std::string layer_name = routing_layer_list[layer_idx].get_layer_name();
   idb::IdbLayer* idb_layer = idb_layer_list->find_layer(layer_name);
   if (idb_layer == nullptr) {
-    LOG_INST.error(Loc::current(), "Can not find idb layer ", layer_name);
+    RTLOG.error(Loc::current(), "Can not find idb layer ", layer_name);
   }
   idb::IdbRegularWireSegment* idb_segment = new idb::IdbRegularWireSegment();
   idb_segment->set_layer(idb_layer);
@@ -2018,7 +2016,7 @@ idb::IdbRegularWireSegment* DataManager::getIDBVia(int32_t net_idx, Segment<Laye
   int32_t below_layer_idx = std::min(first_coord.get_layer_idx(), second_coord.get_layer_idx());
 
   if (below_layer_idx < 0 || below_layer_idx >= static_cast<int32_t>(layer_via_master_list.size())) {
-    LOG_INST.error(Loc::current(), "The via below_layer_idx is illegal!");
+    RTLOG.error(Loc::current(), "The via below_layer_idx is illegal!");
   }
   std::string via_name = layer_via_master_list[below_layer_idx].front().get_via_name();
   idb::IdbVia* idb_via = lef_via_list->find_via(via_name);
@@ -2026,11 +2024,11 @@ idb::IdbRegularWireSegment* DataManager::getIDBVia(int32_t net_idx, Segment<Laye
     idb_via = def_via_list->find_via(via_name);
   }
   if (idb_via == nullptr) {
-    LOG_INST.error(Loc::current(), "Can not find idb via ", via_name, "!");
+    RTLOG.error(Loc::current(), "Can not find idb via ", via_name, "!");
   }
   idb::IdbLayer* idb_layer_top = idb_via->get_instance()->get_top_layer_shape()->get_layer();
   if (idb_layer_top == nullptr) {
-    LOG_INST.error(Loc::current(), "Can not find layer from idb via ", via_name, "!");
+    RTLOG.error(Loc::current(), "Can not find layer from idb via ", via_name, "!");
   }
   idb::IdbRegularWireSegment* idb_segment = new idb::IdbRegularWireSegment();
   idb_segment->set_layer(idb_layer_top);

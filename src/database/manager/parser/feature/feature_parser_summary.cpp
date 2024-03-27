@@ -45,7 +45,7 @@
 #include "IdbTrackGrid.h"
 #include "PLAPI.hh"
 #include "PlacerDB.hh"
-#include "RTAPI.hpp"
+#include "RTInterface.hpp"
 #include "TimingEngine.hh"
 #include "ToApi.hpp"
 #include "feature_parser.h"

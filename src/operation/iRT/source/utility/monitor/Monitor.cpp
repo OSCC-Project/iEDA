@@ -72,7 +72,7 @@ double Monitor::getCurrCPUTime()
 {
   struct rusage usage;
   if (0 != getrusage(RUSAGE_SELF, &usage)) {
-    LOG_INST.error(Loc::current(), "Unable to get rusage!");
+    RTLOG.error(Loc::current(), "Unable to get rusage!");
   }
   return static_cast<double>(usage.ru_utime.tv_sec) + static_cast<double>(usage.ru_utime.tv_usec) / 1000000.0
          + static_cast<double>(usage.ru_stime.tv_sec) + static_cast<double>(usage.ru_stime.tv_usec) / 1000000.0;
@@ -82,7 +82,7 @@ double Monitor::getCurrUsageMemory()
 {
   struct rusage usage;
   if (0 != getrusage(RUSAGE_SELF, &usage)) {
-    LOG_INST.error(Loc::current(), "Unable to get rusage!");
+    RTLOG.error(Loc::current(), "Unable to get rusage!");
   }
   return static_cast<double>(usage.ru_maxrss) / 1000.0;
 }

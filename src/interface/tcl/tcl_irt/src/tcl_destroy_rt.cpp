@@ -14,7 +14,7 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-#include "RTAPI.hpp"
+#include "RTInterface.hpp"
 #include "tcl_rt.h"
 #include "tcl_util.h"
 
@@ -29,7 +29,7 @@ unsigned TclDestroyRT::exec()
   if (!check()) {
     return 0;
   }
-  RTAPI_INST.destroyRT();
+  RTI.destroyRT();
   return 1;
 }
 

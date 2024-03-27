@@ -33,7 +33,7 @@ void LayerAssigner::initInst()
 LayerAssigner& LayerAssigner::getInst()
 {
   if (_la_instance == nullptr) {
-    LOG_INST.error(Loc::current(), "The instance not initialized!");
+    RTLOG.error(Loc::current(), "The instance not initialized!");
   }
   return *_la_instance;
 }
@@ -51,9 +51,9 @@ void LayerAssigner::destroyInst()
 void LayerAssigner::assign()
 {
   Monitor monitor;
-  LOG_INST.info(Loc::current(), "Starting...");
+  RTLOG.info(Loc::current(), "Starting...");
 
-  LOG_INST.info(Loc::current(), "Completed", monitor.getStatsInfo());
+  RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
 // private

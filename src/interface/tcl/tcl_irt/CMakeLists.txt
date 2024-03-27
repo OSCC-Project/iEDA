@@ -11,7 +11,7 @@ target_link_libraries(tcl_irt
         tool_manager
         tcl_util
     PRIVATE
-        irt_api
+        irt_interface
 )
 
 target_include_directories(tcl_irt

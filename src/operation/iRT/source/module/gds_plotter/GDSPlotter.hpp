@@ -28,7 +28,7 @@
 
 namespace irt {
 
-#define GP_INST (irt::GDSPlotter::getInst())
+#define RTGP (irt::GDSPlotter::getInst())
 
 class GDSPlotter
 {

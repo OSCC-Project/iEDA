@@ -1,6 +1,6 @@
-add_library(irt_api_external_libs INTERFACE)
+add_library(irt_interface_external_libs INTERFACE)
 
-target_link_libraries(irt_api_external_libs
+target_link_libraries(irt_interface_external_libs
     INTERFACE
         eval_source
         tool_manager
@@ -8,7 +8,7 @@ target_link_libraries(irt_api_external_libs
         idrc_pro_api
 )
 
-target_include_directories(irt_api_external_libs
+target_include_directories(irt_interface_external_libs
     INTERFACE
         ${HOME_PLATFORM}/tool_manager
         ${HOME_PLATFORM}/tool_manager/tool_api

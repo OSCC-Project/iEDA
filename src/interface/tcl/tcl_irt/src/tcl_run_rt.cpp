@@ -16,7 +16,7 @@
 // ***************************************************************************************
 #include <set>
 
-#include "RTAPI.hpp"
+#include "RTInterface.hpp"
 #include "flow_config.h"
 #include "tcl_rt.h"
 #include "tcl_util.h"
@@ -33,7 +33,7 @@ unsigned TclRunRT::exec()
   if (!check()) {
     return 0;
   }
-  RTAPI_INST.runRT();
+  RTI.runRT();
   return 1;
 }
 

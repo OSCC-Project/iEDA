@@ -54,7 +54,7 @@ struct GetAccessPointTypeName
         access_point_name = "shape_center";
         break;
       default:
-        LOG_INST.error(Loc::current(), "Unrecognized type!");
+        RTLOG.error(Loc::current(), "Unrecognized type!");
         break;
     }
     return access_point_name;

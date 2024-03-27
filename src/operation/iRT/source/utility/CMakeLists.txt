@@ -7,7 +7,7 @@ target_link_libraries(irt_utility
     INTERFACE
         irt_logger
         irt_monitor
-        irt_api
+        irt_interface
         irt_source_external_libs
 )
 

@@ -26,7 +26,7 @@
 
 namespace irt {
 
-#define IR_INST (irt::InitialRouter::getInst())
+#define RTIR (irt::InitialRouter::getInst())
 
 class InitialRouter
 {

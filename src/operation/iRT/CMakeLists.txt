@@ -8,9 +8,9 @@ set(CMAKE_CXX_STANDARD 20)
 # ADD_COMPILE_OPTIONS("-fsanitize=address")
 # LINK_LIBRARIES("-fsanitize=address")
 
-############################ debug api ############################
+############################ debug interface ############################
 
-# set(DEBUG_IRT_API ON)
+# set(DEBUG_IRT_INTERFACE ON)
 
 ############################ debug source module ############################
 
@@ -37,14 +37,14 @@ set(CMAKE_CXX_STANDARD 20)
 ############################ setting path ############################
 
 set(HOME_IRT ${HOME_OPERATION}/iRT)
-set(IRT_API ${HOME_IRT}/api)
+set(IRT_INTERFACE ${HOME_IRT}/interface)
 set(IRT_EXTERNAL_LIBS ${HOME_IRT}/external_libs)
 set(IRT_SOURCE ${HOME_IRT}/source)
 set(IRT_TEST ${HOME_IRT}/test)
 
 ############################ cmake subdirectory ############################
 
-add_subdirectory(${IRT_API})
+add_subdirectory(${IRT_INTERFACE})
 add_subdirectory(${IRT_EXTERNAL_LIBS})
 add_subdirectory(${IRT_SOURCE})
 # add_subdirectory(${IRT_TEST})

@@ -14,7 +14,7 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-#include "RTAPI.hpp"
+#include "RTInterface.hpp"
 #include "tcl_rt.h"
 #include "tcl_util.h"
 
@@ -30,7 +30,7 @@ unsigned TclClearDef::exec()
     return 0;
   }
 
-  RTAPI_INST.clearDef();
+  RTI.clearDef();
 
   return 1;
 }

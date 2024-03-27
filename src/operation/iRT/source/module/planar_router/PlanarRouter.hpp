@@ -24,7 +24,7 @@
 
 namespace irt {
 
-#define PR_INST (irt::PlanarRouter::getInst())
+#define RTPR (irt::PlanarRouter::getInst())
 
 class PlanarRouter
 {

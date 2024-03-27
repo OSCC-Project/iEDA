@@ -14,7 +14,7 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-#include "RTAPI.hpp"
+#include "RTInterface.hpp"
 #include "tcl_rt.h"
 #include "tcl_util.h"
 
@@ -43,7 +43,7 @@ TclInitRT::TclInitRT(const char* cmd_name) : TclCmd(cmd_name)
 unsigned TclInitRT::exec()
 {
   std::map<std::string, std::any> config_map = TclUtil::getConfigMap(this, _config_list);
-  RTAPI_INST.initRT(config_map);
+  RTI.initRT(config_map);
   return 1;
 }
 

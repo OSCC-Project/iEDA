@@ -22,7 +22,7 @@
 #include <iostream>
 #include <sstream>
 
-#include "RTAPI.hpp"
+#include "RTInterface.hpp"
 #include "idm.h"
 #include "manager.hpp"
 
@@ -125,7 +125,7 @@ double EvalAPI::evalEGRWL()
   return 0;
 
   // call router to get eGR wirelength info
-  // irt::RTAPI& rt_api = irt::RTAPI::getInst();
+  // irt::RTI& rt_api = irt::RTI::getInst();
   // std::map<std::string, std::any> config_map;
   // std::vector<double> wl_via_pair = rt_api.getWireLengthAndViaNum(config_map);
   // rt_api.destroyInst();
@@ -329,7 +329,7 @@ vector<float> EvalAPI::evalGRCong()
 {
   return {};
   // // call router to get tilegrid info
-  // irt::RTAPI& rt_api = irt::RTAPI::getInst();
+  // irt::RTI& rt_api = irt::RTI::getInst();
   // std::map<std::string, std::any> config_map;
   // double wirelength = 0.0;
   // TileGrid* tile_grid = rt_api.getCongestionMap(config_map, wirelength);

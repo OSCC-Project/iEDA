@@ -17,7 +17,7 @@
 #include "InitialRouter.hpp"
 
 #include "GDSPlotter.hpp"
-#include "RTAPI.hpp"
+#include "RTInterface.hpp"
 #include "RTUtil.hpp"
 
 namespace irt {
@@ -34,7 +34,7 @@ void InitialRouter::initInst()
 InitialRouter& InitialRouter::getInst()
 {
   if (_ir_instance == nullptr) {
-    LOG_INST.error(Loc::current(), "The instance not initialized!");
+    RTLOG.error(Loc::current(), "The instance not initialized!");
   }
   return *_ir_instance;
 }
@@ -52,7 +52,7 @@ void InitialRouter::destroyInst()
 void InitialRouter::route()
 {
   Monitor monitor;
-  LOG_INST.info(Loc::current(), "Starting...");
+  RTLOG.info(Loc::current(), "Starting...");
   IRModel ir_model = initIRModel();
   setIRParameter(ir_model);
   buildLayerNodeMap(ir_model);
@@ -66,7 +66,7 @@ void InitialRouter::route()
   printSummary(ir_model);
   writeDemandCSV(ir_model);
   writeOverflowCSV(ir_model);
-  LOG_INST.info(Loc::current(), "Completed", monitor.getStatsInfo());
+  RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 
   // debugOutputGuide(ir_model);
 }
@@ -77,7 +77,7 @@ InitialRouter* InitialRouter::_ir_instance = nullptr;
 
 IRModel InitialRouter::initIRModel()
 {
-  std::vector<Net>& net_list = DM_INST.getDatabase().get_net_list();
+  std::vector<Net>& net_list = RTDM.getDatabase().get_net_list();
 
   IRModel ir_model;
   ir_model.set_ir_net_list(convertToIRNetList(net_list));
@@ -110,21 +110,21 @@ IRNet InitialRouter::convertToIRNet(Net& net)
 void InitialRouter::setIRParameter(IRModel& ir_model)
 {
   IRParameter ir_parameter;
-  LOG_INST.info(Loc::current(), "topo_spilt_length: ", ir_parameter.get_topo_spilt_length());
-  LOG_INST.info(Loc::current(), "congestion_unit: ", ir_parameter.get_congestion_unit());
-  LOG_INST.info(Loc::current(), "prefer_wire_unit: ", ir_parameter.get_prefer_wire_unit());
-  LOG_INST.info(Loc::current(), "via_unit: ", ir_parameter.get_via_unit());
-  LOG_INST.info(Loc::current(), "corner_unit: ", ir_parameter.get_corner_unit());
+  RTLOG.info(Loc::current(), "topo_spilt_length: ", ir_parameter.get_topo_spilt_length());
+  RTLOG.info(Loc::current(), "congestion_unit: ", ir_parameter.get_congestion_unit());
+  RTLOG.info(Loc::current(), "prefer_wire_unit: ", ir_parameter.get_prefer_wire_unit());
+  RTLOG.info(Loc::current(), "via_unit: ", ir_parameter.get_via_unit());
+  RTLOG.info(Loc::current(), "corner_unit: ", ir_parameter.get_corner_unit());
   ir_model.set_ir_parameter(ir_parameter);
 }
 
 void InitialRouter::buildLayerNodeMap(IRModel& ir_model)
 {
   Monitor monitor;
-  LOG_INST.info(Loc::current(), "Starting...");
+  RTLOG.info(Loc::current(), "Starting...");
 
-  GridMap<GCell>& gcell_map = DM_INST.getDatabase().get_gcell_map();
-  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+  GridMap<GCell>& gcell_map = RTDM.getDatabase().get_gcell_map();
+  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
 
   std::vector<GridMap<IRNode>>& layer_node_map = ir_model.get_layer_node_map();
   layer_node_map.resize(routing_layer_list.size());
@@ -141,18 +141,18 @@ void InitialRouter::buildLayerNodeMap(IRModel& ir_model)
     }
   }
 
-  LOG_INST.info(Loc::current(), "Completed", monitor.getStatsInfo());
+  RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
 void InitialRouter::buildIRNodeNeighbor(IRModel& ir_model)
 {
   Monitor monitor;
-  LOG_INST.info(Loc::current(), "Starting...");
+  RTLOG.info(Loc::current(), "Starting...");
 
-  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
-  GridMap<GCell>& gcell_map = DM_INST.getDatabase().get_gcell_map();
-  int32_t bottom_routing_layer_idx = DM_INST.getConfig().bottom_routing_layer_idx;
-  int32_t top_routing_layer_idx = DM_INST.getConfig().top_routing_layer_idx;
+  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
+  GridMap<GCell>& gcell_map = RTDM.getDatabase().get_gcell_map();
+  int32_t bottom_routing_layer_idx = RTDM.getConfig().bottom_routing_layer_idx;
+  int32_t top_routing_layer_idx = RTDM.getConfig().top_routing_layer_idx;
 
   std::vector<GridMap<IRNode>>& layer_node_map = ir_model.get_layer_node_map();
 
@@ -194,15 +194,15 @@ void InitialRouter::buildIRNodeNeighbor(IRModel& ir_model)
     }
   }
 
-  LOG_INST.info(Loc::current(), "Completed", monitor.getStatsInfo());
+  RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
 void InitialRouter::buildOrientSupply(IRModel& ir_model)
 {
   Monitor monitor;
-  LOG_INST.info(Loc::current(), "Starting...");
+  RTLOG.info(Loc::current(), "Starting...");
 
-  GridMap<GCell>& gcell_map = DM_INST.getDatabase().get_gcell_map();
+  GridMap<GCell>& gcell_map = RTDM.getDatabase().get_gcell_map();
 
   std::vector<GridMap<IRNode>>& layer_node_map = ir_model.get_layer_node_map();
 
@@ -215,20 +215,20 @@ void InitialRouter::buildOrientSupply(IRModel& ir_model)
     }
   }
 
-  LOG_INST.info(Loc::current(), "Completed", monitor.getStatsInfo());
+  RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
 void InitialRouter::sortIRModel(IRModel& ir_model)
 {
   Monitor monitor;
-  LOG_INST.info(Loc::current(), "Starting...");
+  RTLOG.info(Loc::current(), "Starting...");
   std::vector<int32_t>& ir_net_idx_list = ir_model.get_ir_net_idx_list();
   for (IRNet& ir_net : ir_model.get_ir_net_list()) {
     ir_net_idx_list.push_back(ir_net.get_net_idx());
   }
   std::sort(ir_net_idx_list.begin(), ir_net_idx_list.end(),
             [&](int32_t net_idx1, int32_t net_idx2) { return sortByMultiLevel(ir_model, net_idx1, net_idx2); });
-  LOG_INST.info(Loc::current(), "Completed", monitor.getStatsInfo());
+  RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
 bool InitialRouter::sortByMultiLevel(IRModel& ir_model, int32_t net_idx1, int32_t net_idx2)
@@ -336,7 +336,7 @@ SortStatus InitialRouter::sortByPinNumDESC(IRNet& net1, IRNet& net2)
 void InitialRouter::routeIRModel(IRModel& ir_model)
 {
   Monitor monitor;
-  LOG_INST.info(Loc::current(), "Starting...");
+  RTLOG.info(Loc::current(), "Starting...");
 
   std::vector<IRNet>& ir_net_list = ir_model.get_ir_net_list();
   std::vector<int32_t>& ir_net_idx_list = ir_model.get_ir_net_idx_list();
@@ -347,12 +347,12 @@ void InitialRouter::routeIRModel(IRModel& ir_model)
   for (size_t i = 0; i < ir_net_idx_list.size(); i++) {
     routeIRNet(ir_model, ir_net_list[ir_net_idx_list[i]]);
     if ((i + 1) % batch_size == 0 || (i + 1) == ir_net_idx_list.size()) {
-      LOG_INST.info(Loc::current(), "Routed ", (i + 1), "/", ir_net_idx_list.size(), "(",
-                    RTUtil::getPercentage(i + 1, ir_net_idx_list.size()), ") nets", stage_monitor.getStatsInfo());
+      RTLOG.info(Loc::current(), "Routed ", (i + 1), "/", ir_net_idx_list.size(), "(", RTUtil::getPercentage(i + 1, ir_net_idx_list.size()),
+                 ") nets", stage_monitor.getStatsInfo());
     }
   }
 
-  LOG_INST.info(Loc::current(), "Completed", monitor.getStatsInfo());
+  RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
 void InitialRouter::routeIRNet(IRModel& ir_model, IRNet& ir_net)
@@ -370,7 +370,7 @@ void InitialRouter::routeIRNet(IRModel& ir_model, IRNet& ir_net)
   MTree<LayerCoord> coord_tree = getCoordTree(ir_net, routing_segment_list);
   updateDemand(ir_model, ir_net, coord_tree);
   std::function<Guide(LayerCoord&)> convertToGuide = [](LayerCoord& coord) {
-    ScaleAxis& gcell_axis = DM_INST.getDatabase().get_gcell_axis();
+    ScaleAxis& gcell_axis = RTDM.getDatabase().get_gcell_axis();
     return Guide(LayerRect(RTUtil::getRealRectByGCell(coord, gcell_axis), coord.get_layer_idx()), coord);
   };
   ir_net.set_ir_result_tree(RTUtil::convertTree(coord_tree, convertToGuide));
@@ -379,8 +379,8 @@ void InitialRouter::routeIRNet(IRModel& ir_model, IRNet& ir_net)
 void InitialRouter::makeIRTaskList(IRModel& ir_model, IRNet& ir_net, std::vector<IRTask>& ir_task_list,
                                    std::vector<Segment<LayerCoord>>& routing_segment_list)
 {
-  int32_t bottom_routing_layer_idx = DM_INST.getConfig().bottom_routing_layer_idx;
-  int32_t top_routing_layer_idx = DM_INST.getConfig().top_routing_layer_idx;
+  int32_t bottom_routing_layer_idx = RTDM.getConfig().bottom_routing_layer_idx;
+  int32_t top_routing_layer_idx = RTDM.getConfig().top_routing_layer_idx;
   int32_t topo_spilt_length = ir_model.get_ir_parameter().get_topo_spilt_length();
   // planar_coord_list
   std::vector<PlanarCoord> planar_coord_list;
@@ -841,7 +841,7 @@ double InitialRouter::getKnowCost(IRModel& ir_model, IRNode* start_node, IRNode*
     }
   }
   if (!exist_neighbor) {
-    LOG_INST.error(Loc::current(), "The neighbor not exist!");
+    RTLOG.error(Loc::current(), "The neighbor not exist!");
   }
 
   double cost = 0;
@@ -865,7 +865,7 @@ double InitialRouter::getNodeCost(IRModel& ir_model, IRNode* curr_node, Orientat
 
 double InitialRouter::getKnowWireCost(IRModel& ir_model, IRNode* start_node, IRNode* end_node)
 {
-  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
+  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
   double prefer_wire_unit = ir_model.get_ir_parameter().get_prefer_wire_unit();
 
   double wire_cost = 0;
@@ -903,7 +903,7 @@ double InitialRouter::getKnowCornerCost(IRModel& ir_model, IRNode* start_node, I
     if (direction_set.size() == 2) {
       corner_cost += corner_unit;
     } else if (direction_set.size() == 2) {
-      LOG_INST.error(Loc::current(), "Direction set is error!");
+      RTLOG.error(Loc::current(), "Direction set is error!");
     }
   }
   return corner_cost;
@@ -1003,7 +1003,7 @@ void InitialRouter::updateDemand(IRModel& ir_model, IRNet& ir_net, MTree<LayerCo
 
     Orientation orientation = RTUtil::getOrientation(first_coord, second_coord);
     if (orientation == Orientation::kNone || orientation == Orientation::kOblique) {
-      LOG_INST.error(Loc::current(), "The orientation is error!");
+      RTLOG.error(Loc::current(), "The orientation is error!");
     }
     Orientation opposite_orientation = RTUtil::getOppositeOrientation(orientation);
 
@@ -1058,17 +1058,17 @@ void InitialRouter::debugCheckIRModel(IRModel& ir_model)
         for (auto& [orient, neighbor] : ir_node.get_neighbor_node_map()) {
           Orientation opposite_orient = RTUtil::getOppositeOrientation(orient);
           if (!RTUtil::exist(neighbor->get_neighbor_node_map(), opposite_orient)) {
-            LOG_INST.error(Loc::current(), "The ir_node neighbor is not bidirectional!");
+            RTLOG.error(Loc::current(), "The ir_node neighbor is not bidirectional!");
           }
           if (neighbor->get_neighbor_node_map()[opposite_orient] != &ir_node) {
-            LOG_INST.error(Loc::current(), "The ir_node neighbor is not bidirectional!");
+            RTLOG.error(Loc::current(), "The ir_node neighbor is not bidirectional!");
           }
           LayerCoord node_coord(ir_node.get_planar_coord(), ir_node.get_layer_idx());
           LayerCoord neighbor_coord(neighbor->get_planar_coord(), neighbor->get_layer_idx());
           if (RTUtil::getOrientation(node_coord, neighbor_coord) == orient) {
             continue;
           }
-          LOG_INST.error(Loc::current(), "The neighbor orient is different with real region!");
+          RTLOG.error(Loc::current(), "The neighbor orient is different with real region!");
         }
       }
     }
@@ -1078,10 +1078,10 @@ void InitialRouter::debugCheckIRModel(IRModel& ir_model)
 void InitialRouter::debugOutputGuide(IRModel& ir_model)
 {
   Monitor monitor;
-  LOG_INST.info(Loc::current(), "Starting...");
+  RTLOG.info(Loc::current(), "Starting...");
 
-  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
-  std::string& ir_temp_directory_path = DM_INST.getConfig().ir_temp_directory_path;
+  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
+  std::string& ir_temp_directory_path = RTDM.getConfig().ir_temp_directory_path;
 
   std::ofstream* guide_file_stream = RTUtil::getOutputFileStream(ir_temp_directory_path + "route.guide");
   if (guide_file_stream == nullptr) {
@@ -1114,7 +1114,7 @@ void InitialRouter::debugOutputGuide(IRModel& ir_model)
   }
   RTUtil::closeFileStream(guide_file_stream);
 
-  LOG_INST.info(Loc::current(), "Completed", monitor.getStatsInfo());
+  RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
 #endif
@@ -1123,20 +1123,20 @@ void InitialRouter::debugOutputGuide(IRModel& ir_model)
 
 void InitialRouter::updateSummary(IRModel& ir_model)
 {
-  int32_t micron_dbu = DM_INST.getDatabase().get_micron_dbu();
-  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
-  std::vector<CutLayer>& cut_layer_list = DM_INST.getDatabase().get_cut_layer_list();
-  std::vector<std::vector<ViaMaster>>& layer_via_master_list = DM_INST.getDatabase().get_layer_via_master_list();
-  int32_t enable_timing = DM_INST.getConfig().enable_timing;
-  std::map<int32_t, int32_t>& routing_demand_map = DM_INST.getSummary().ir_summary.routing_demand_map;
-  int32_t& total_demand = DM_INST.getSummary().ir_summary.total_demand;
-  std::map<int32_t, int32_t>& routing_overflow_map = DM_INST.getSummary().ir_summary.routing_overflow_map;
-  int32_t& total_overflow = DM_INST.getSummary().ir_summary.total_overflow;
-  std::map<int32_t, double>& routing_wire_length_map = DM_INST.getSummary().ir_summary.routing_wire_length_map;
-  double& total_wire_length = DM_INST.getSummary().ir_summary.total_wire_length;
-  std::map<int32_t, int32_t>& cut_via_num_map = DM_INST.getSummary().ir_summary.cut_via_num_map;
-  int32_t& total_via_num = DM_INST.getSummary().ir_summary.total_via_num;
-  std::map<std::string, std::vector<double>>& timing = DM_INST.getSummary().ir_summary.timing;
+  int32_t micron_dbu = RTDM.getDatabase().get_micron_dbu();
+  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
+  std::vector<CutLayer>& cut_layer_list = RTDM.getDatabase().get_cut_layer_list();
+  std::vector<std::vector<ViaMaster>>& layer_via_master_list = RTDM.getDatabase().get_layer_via_master_list();
+  int32_t enable_timing = RTDM.getConfig().enable_timing;
+  std::map<int32_t, int32_t>& routing_demand_map = RTDM.getSummary().ir_summary.routing_demand_map;
+  int32_t& total_demand = RTDM.getSummary().ir_summary.total_demand;
+  std::map<int32_t, int32_t>& routing_overflow_map = RTDM.getSummary().ir_summary.routing_overflow_map;
+  int32_t& total_overflow = RTDM.getSummary().ir_summary.total_overflow;
+  std::map<int32_t, double>& routing_wire_length_map = RTDM.getSummary().ir_summary.routing_wire_length_map;
+  double& total_wire_length = RTDM.getSummary().ir_summary.total_wire_length;
+  std::map<int32_t, int32_t>& cut_via_num_map = RTDM.getSummary().ir_summary.cut_via_num_map;
+  int32_t& total_via_num = RTDM.getSummary().ir_summary.total_via_num;
+  std::map<std::string, std::vector<double>>& timing = RTDM.getSummary().ir_summary.timing;
 
   std::vector<GridMap<IRNode>>& layer_node_map = ir_model.get_layer_node_map();
   std::vector<IRNet>& ir_net_list = ir_model.get_ir_net_list();
@@ -1212,22 +1212,22 @@ void InitialRouter::updateSummary(IRModel& ir_model)
                                                                      segment.get_second()->value().get_grid_coord());
       }
     }
-    timing = RTAPI_INST.getTiming(real_pin_coord_map_list, routing_segment_list_list);
+    timing = RTI.getTiming(real_pin_coord_map_list, routing_segment_list_list);
   }
 }
 
 void InitialRouter::printSummary(IRModel& ir_model)
 {
-  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
-  std::vector<CutLayer>& cut_layer_list = DM_INST.getDatabase().get_cut_layer_list();
-  std::map<int32_t, int32_t>& routing_demand_map = DM_INST.getSummary().ir_summary.routing_demand_map;
-  int32_t& total_demand = DM_INST.getSummary().ir_summary.total_demand;
-  std::map<int32_t, int32_t>& routing_overflow_map = DM_INST.getSummary().ir_summary.routing_overflow_map;
-  int32_t& total_overflow = DM_INST.getSummary().ir_summary.total_overflow;
-  std::map<int32_t, double>& routing_wire_length_map = DM_INST.getSummary().ir_summary.routing_wire_length_map;
-  double& total_wire_length = DM_INST.getSummary().ir_summary.total_wire_length;
-  std::map<int32_t, int32_t>& cut_via_num_map = DM_INST.getSummary().ir_summary.cut_via_num_map;
-  int32_t& total_via_num = DM_INST.getSummary().ir_summary.total_via_num;
+  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
+  std::vector<CutLayer>& cut_layer_list = RTDM.getDatabase().get_cut_layer_list();
+  std::map<int32_t, int32_t>& routing_demand_map = RTDM.getSummary().ir_summary.routing_demand_map;
+  int32_t& total_demand = RTDM.getSummary().ir_summary.total_demand;
+  std::map<int32_t, int32_t>& routing_overflow_map = RTDM.getSummary().ir_summary.routing_overflow_map;
+  int32_t& total_overflow = RTDM.getSummary().ir_summary.total_overflow;
+  std::map<int32_t, double>& routing_wire_length_map = RTDM.getSummary().ir_summary.routing_wire_length_map;
+  double& total_wire_length = RTDM.getSummary().ir_summary.total_wire_length;
+  std::map<int32_t, int32_t>& cut_via_num_map = RTDM.getSummary().ir_summary.cut_via_num_map;
+  int32_t& total_via_num = RTDM.getSummary().ir_summary.total_via_num;
 
   fort::char_table routing_demand_map_table;
   {
@@ -1282,9 +1282,9 @@ void InitialRouter::printSummary(IRModel& ir_model)
 
 void InitialRouter::writeDemandCSV(IRModel& ir_model)
 {
-  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
-  std::string& ir_temp_directory_path = DM_INST.getConfig().ir_temp_directory_path;
-  int32_t output_csv = DM_INST.getConfig().output_csv;
+  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
+  std::string& ir_temp_directory_path = RTDM.getConfig().ir_temp_directory_path;
+  int32_t output_csv = RTDM.getConfig().output_csv;
   if (!output_csv) {
     return;
   }
@@ -1313,9 +1313,9 @@ void InitialRouter::writeDemandCSV(IRModel& ir_model)
 
 void InitialRouter::writeOverflowCSV(IRModel& ir_model)
 {
-  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
-  std::string& ir_temp_directory_path = DM_INST.getConfig().ir_temp_directory_path;
-  int32_t output_csv = DM_INST.getConfig().output_csv;
+  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
+  std::string& ir_temp_directory_path = RTDM.getConfig().ir_temp_directory_path;
+  int32_t output_csv = RTDM.getConfig().output_csv;
   if (!output_csv) {
     return;
   }

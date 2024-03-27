@@ -78,7 +78,7 @@ class DRNode : public LayerCoord
         fixed_rect_num--;
       }
       if (fixed_rect_num < 0) {
-        LOG_INST.error(Loc::current(), "The fixed_rect_num < 0!");
+        RTLOG.error(Loc::current(), "The fixed_rect_num < 0!");
       }
     }
     double cost = 0;
@@ -97,7 +97,7 @@ class DRNode : public LayerCoord
         routed_rect_num--;
       }
       if (routed_rect_num < 0) {
-        LOG_INST.error(Loc::current(), "The routed_rect_num < 0!");
+        RTLOG.error(Loc::current(), "The routed_rect_num < 0!");
       }
     }
     double cost = 0;

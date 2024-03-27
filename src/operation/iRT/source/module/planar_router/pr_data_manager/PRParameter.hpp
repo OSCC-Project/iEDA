@@ -21,10 +21,7 @@ namespace irt {
 class PRParameter
 {
  public:
-  PRParameter()
-  {
-    _congestion_unit = 1;
-  }
+  PRParameter() { _congestion_unit = 1; }
   ~PRParameter() = default;
   // getter
   double get_congestion_unit() const { return _congestion_unit; }
