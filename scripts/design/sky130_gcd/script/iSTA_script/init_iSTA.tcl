@@ -1,40 +1,40 @@
 #===========================================================
 ##   init flow config
 #===========================================================
-flow_init -config ./iEDA_config/flow_config.json
+flow_init -config $::env(CONFIG_DIR)/flow_config.json
 
 #===========================================================
 ##   read db config
 #===========================================================
-db_init -config ./iEDA_config/db_default_config.json
+db_init -config $::env(CONFIG_DIR)/db_default_config.json
 
 #===========================================================
 ##   reset data path
 #===========================================================
-source ./script/DB_script/db_path_setting.tcl
+source $::env(TCL_SCRIPT_DIR)/DB_script/db_path_setting.tcl
 
 #===========================================================
 ##   reset lib
 #===========================================================
-source ./script/DB_script/db_init_lib.tcl
+source $::env(TCL_SCRIPT_DIR)/DB_script/db_init_lib.tcl
 
 #===========================================================
 ##   reset sdc
 #===========================================================
-source ./script/DB_script/db_init_sdc.tcl
+source $::env(TCL_SCRIPT_DIR)/DB_script/db_init_sdc.tcl
 
 #===========================================================
 ##   read lef
 #===========================================================
-source ./script/DB_script/db_init_lef.tcl
+source $::env(TCL_SCRIPT_DIR)/DB_script/db_init_lef.tcl
 
 #===========================================================
 ##   read def
 #===========================================================
-def_init -path ./result/iPL_result.def
+def_init -path $::env(RESULT_DIR)/iPL_result.def
 
 #===========================================================
 ##   run STA
 #===========================================================
-init_sta -output ./result/sta/timing.log
+init_sta -output $::env(RESULT_DIR)/sta/timing.log
 
