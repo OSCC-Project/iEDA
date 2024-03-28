@@ -38,6 +38,7 @@ namespace ipower {
  */
 struct ClusterConnection {
     std::size_t _dst_cluster_id;
+    std::vector<unsigned> _stages_each_hop;
     unsigned _hop;
   };
 

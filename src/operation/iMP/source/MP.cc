@@ -36,7 +36,7 @@ void MP::runMP()
   float weight_periphery = 0.05;
   float weight_blockage = 0.0;
   float weight_io = 0.0;
-  float max_iters = 20;
+  float max_iters = 1000;
   float cool_rate = 0.96;
   float init_temperature = 2000.0;
 

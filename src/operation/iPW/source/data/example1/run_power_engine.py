@@ -18,7 +18,10 @@ connection_map = ipower_cpp.build_connection_map(
 for src_cluster_id, snk_clusters in connection_map.items():
     for snk_cluster in snk_clusters:
         print(
-            "src cluster id {} -> snk cluster id {} hop {}".format(
-                src_cluster_id, snk_cluster.dst_cluster_id, snk_cluster.hop
+            "src cluster id {} -> snk cluster id {} stages {} hop {}".format(
+                src_cluster_id,
+                snk_cluster.dst_cluster_id,
+                " ".join([str(x) for x in snk_cluster.stages_each_hop]),
+                snk_cluster.hop,
             )
         )
