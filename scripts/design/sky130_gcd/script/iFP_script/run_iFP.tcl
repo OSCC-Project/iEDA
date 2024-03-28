@@ -1,53 +1,44 @@
 #===========================================================
 ##   init flow config
 #===========================================================
-flow_init -config ./iEDA_config/flow_config.json
+flow_init -config $::env(CONFIG_DIR)/flow_config.json
 
 #===========================================================
 ##   read db config
 #===========================================================
-db_init -config ./iEDA_config/db_default_config.json
+db_init -config $::env(CONFIG_DIR)/db_default_config.json
 
 #===========================================================
 ##   reset data path
 #===========================================================
-source ./script/DB_script/db_path_setting.tcl
+source $::env(TCL_SCRIPT_DIR)/DB_script/db_path_setting.tcl
 
 #===========================================================
 ##   read lef
 #===========================================================
-source ./script/DB_script/db_init_lef.tcl
+source $::env(TCL_SCRIPT_DIR)/DB_script/db_init_lef.tcl
 
 #===========================================================
 ##   read verilog
 #===========================================================
-if { $DESIGN == "gcd" } {
-    verilog_init -path ./result/verilog/gcd.v -top gcd
-} elseif { $DESIGN == "APU" } {
-    verilog_init -path ./result/verilog/APU.v -top APU
-} else {
-    verilog_init -path ./result/verilog/gcd.v -top gcd
-}
-
-#===========================================================
-##   read def
-#===========================================================
-#def_init -path $PRE_RESULT_PATH/$DESIGN.def
+verilog_init -path $::env(NETLIST_FILE) -top $::env(DESIGN_TOP)
 
 #===========================================================
 ##   init floorplan
 ##   gcd & & APU & uart
 #===========================================================
-if { $DESIGN == "gcd" } {
-    set DIE_AREA "0.0    0.0   149.96   150.128"
-    set CORE_AREA "9.996 10.08 139.964  140.048"
-} elseif { $DESIGN == "APU" } {
-    set DIE_AREA "0.0    0.0   500   500"
-    set CORE_AREA "10.0  10.0  490   490"
-} else {
-    set DIE_AREA "0.0    0.0   149.96   150.128"
-    set CORE_AREA "9.996 10.08 139.964  140.048"
-}
+set DIE_AREA $::env(DIE_AREA)
+set CORE_AREA $::env(CORE_AREA)
+# if { $DESIGN_TOP == "gcd" } {
+#     set DIE_AREA "0.0    0.0   149.96   150.128"
+#     set CORE_AREA "9.996 10.08 139.964  140.048"
+# } elseif { $DESIGN_TOP == "APU" } {
+#     set DIE_AREA "0.0    0.0   500   500"
+#     set CORE_AREA "10.0  10.0  490   490"
+# } else {
+#     set DIE_AREA "0.0    0.0   149.96   150.128"
+#     set CORE_AREA "9.996 10.08 139.964  140.048"
+# }
 
 #===========================================================
 ##   init floorplan
@@ -67,7 +58,7 @@ init_floorplan \
    -io_site $IO_SITE \
    -corner_site $CORNER_SITE
 
-source ./script/iFP_script/module/create_tracks.tcl
+source $::env(TCL_SCRIPT_DIR)/iFP_script/module/create_tracks.tcl
 
 #===========================================================
 ##   Place IO Port
@@ -85,22 +76,24 @@ tapcell \
 #===========================================================
 ##   PDN 
 #===========================================================
-source ./script/iFP_script/module/pdn.tcl 
+source $::env(TCL_SCRIPT_DIR)/iFP_script/module/pdn.tcl 
 
 #===========================================================
 ##   set clock net
 #===========================================================
-source ./script/iFP_script/module/set_clocknet.tcl
+source $::env(TCL_SCRIPT_DIR)/iFP_script/module/set_clocknet.tcl
 
 #===========================================================
 ##   save def 
 #===========================================================
-def_save -path ./result/iFP_result.def
+def_save -path $::env(RESULT_DIR)/iFP_result.def
 
 #===========================================================
 ##   report db summary
 #===========================================================
-report_db -path "./result/report/fp_db.rpt"
+report_db -path "$::env(RESULT_DIR)/report/fp_db.rpt"
+
+# run_power -output $::env(RESULT_PATH)/sta/
 
 #===========================================================
 ##   Exit 
