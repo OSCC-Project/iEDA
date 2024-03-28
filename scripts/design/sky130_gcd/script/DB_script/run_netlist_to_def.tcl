@@ -1,37 +1,37 @@
 #===========================================================
 ##   init flow config
 #===========================================================
-flow_init -config ./iEDA_config/flow_config.json
+flow_init -config $::env(CONFIG_DIR)/flow_config.json
 
 #===========================================================
 ##   read db config
 #===========================================================
-db_init -config ./iEDA_config/db_default_config.json
+db_init -config $::env(CONFIG_DIR)/db_default_config.json
 
 #===========================================================
 ##   reset data path
 #===========================================================
-source ./script/DB_script/db_path_setting.tcl
+source $::env(TCL_SCRIPT_DIR)/DB_script/db_path_setting.tcl
 
 #===========================================================
 ##   read lef
 #===========================================================
-source ./script/DB_script/db_init_lef.tcl
+source $::env(TCL_SCRIPT_DIR)/DB_script/db_init_lef.tcl
 
 #===========================================================
 ##   read verilog
 #===========================================================
-verilog_init -path ./result/verilog/gcd.v -top gcd
+verilog_init -path $::env(RESULT_DIR)/verilog/gcd.v -top gcd
 
 #===========================================================
 ##   save def 
 #===========================================================
-def_save -path ./result/netlist_result.def
+def_save -path $::env(RESULT_DIR)/netlist_result.def
 
 #===========================================================
 ##   save verilog 
 #===========================================================
-netlist_save -path ./result/netlist_result.v -exclude_cell_names {}
+netlist_save -path $::env(RESULT_DIR)/netlist_result.v -exclude_cell_names {}
 
 #===========================================================
 ##   Exit 
