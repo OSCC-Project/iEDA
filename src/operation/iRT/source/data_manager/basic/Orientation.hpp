@@ -62,7 +62,7 @@ struct GetOrientationName
         orientation_name = "below";
         break;
       default:
-        LOG_INST.error(Loc::current(), "Unrecognized type!");
+        RTLOG.error(Loc::current(), "Unrecognized type!");
         break;
     }
     return orientation_name;

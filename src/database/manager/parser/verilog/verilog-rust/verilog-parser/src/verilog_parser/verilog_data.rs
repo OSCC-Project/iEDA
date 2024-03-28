@@ -1003,7 +1003,6 @@ impl VerilogModule {
         self.module_stmts.iter().map(|module_stmt| module_stmt.clone()).collect()
     }
     pub fn erase_stmt(&mut self, the_stmt: &Box<dyn VerilogVirtualBaseStmt>) {
-        let old_len = self.module_stmts.len();
         self.module_stmts.retain(|stmt| {
             let line_no_to_remove = the_stmt.get_line_no();
             let line_no = stmt.get_line_no();
@@ -1012,7 +1011,6 @@ impl VerilogModule {
             }
             true
         });
-        let new_len = self.module_stmts.len();
     }
     pub fn is_port(&self, name: &str) -> bool {
         self.port_list.iter().any(|port| port.get_base_name() == name)
@@ -1067,12 +1065,8 @@ pub struct VerilogFile {
 }
 
 impl VerilogFile {
-    pub fn new(top_module_name: &str) -> VerilogFile {
-        VerilogFile {
-            verilog_modules: Vec::new(),
-            module_map: HashMap::new(),
-            top_module_name: String::from(top_module_name),
-        }
+    pub fn new() -> VerilogFile {
+        VerilogFile { verilog_modules: Vec::new(), module_map: HashMap::new(), top_module_name: String::new() }
     }
 
     pub fn add_module(&mut self, verilog_module: Rc<RefCell<VerilogModule>>) {
@@ -1081,8 +1075,8 @@ impl VerilogFile {
         self.module_map.insert(module_name, verilog_module.clone());
     }
 
-    pub fn get_verilog_modules(&mut self) -> &mut Vec<Rc<RefCell<VerilogModule>>> {
-        &mut self.verilog_modules
+    pub fn get_verilog_modules(&self) -> &Vec<Rc<RefCell<VerilogModule>>> {
+        &self.verilog_modules
     }
 
     pub fn get_module_map(&mut self) -> &mut HashMap<String, Rc<RefCell<VerilogModule>>> {
@@ -1095,5 +1089,13 @@ impl VerilogFile {
 
     pub fn get_top_module(&mut self) -> &Rc<RefCell<VerilogModule>> {
         self.module_map.get(&self.top_module_name).unwrap()
+    }
+
+    pub fn get_top_module_name(&self) -> &str {
+        &self.top_module_name
+    }
+
+    pub fn set_top_module_name(&mut self, name: &str) {
+        self.top_module_name = name.to_string();
     }
 }

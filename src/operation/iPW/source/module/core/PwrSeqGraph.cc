@@ -22,9 +22,10 @@
  * @date 2023-02-27
  */
 
-#include "PwrSeqGraph.hh"
-
 #include <fstream>
+
+#include "PwrSeqGraph.hh"
+#include "sta/Sta.hh"
 
 namespace ipower {
 
@@ -63,6 +64,11 @@ void PwrSeqGraph::insertInstToVertex(Instance* seq_inst,
   _obj_to_vertex[seq_inst] = seq_vertex;
 }
 
+/**
+ * @brief get seq vertex max fanout and max fanin.
+ *
+ * @return std::pair<std::size_t, std::size_t>
+ */
 std::pair<std::size_t, std::size_t>
 PwrSeqGraph::getSeqVertexMaxFanoutAndMaxFain() {
   PwrSeqVertex* max_fanout_vertex;
@@ -139,6 +145,34 @@ void PwrSeqVertex::addSnkArc(PwrSeqArc* snk_arc) {
   static std::mutex mt;
   std::lock_guard lk(mt);
   _snk_arcs.insert(snk_arc);
+}
+
+/**
+ * @brief get seq vertex data in vertex worst slack and depth for dataflow
+ * created.
+ *
+ * @return std::pair<double, unsigned>
+ */
+std::pair<std::optional<double>, unsigned>
+PwrSeqVertex::getDataInVertexWorstSlackAndDepth() {
+  auto data_in_vertexes = getDataInVertexes();
+
+  std::optional<double> worst_slack = 0;
+  unsigned depth = 0;
+  for (auto* data_in_vertex : data_in_vertexes) {
+    auto* data_in_sta_vertex = data_in_vertex->get_sta_vertex();
+    auto data_in_vertex_worst_slack =
+        data_in_sta_vertex->getWorstSlackNs(AnalysisMode::kMax);
+    auto data_in_vertex_depth =
+        data_in_sta_vertex->GetWorstPathDepth(AnalysisMode::kMax);
+    if (!worst_slack || (data_in_vertex_worst_slack &&
+                         (*data_in_vertex_worst_slack < *worst_slack))) {
+      worst_slack = data_in_vertex_worst_slack;
+      depth = data_in_vertex_depth;
+    }
+  }
+
+  return std::make_pair(*worst_slack, depth);
 }
 
 }  // namespace ipower

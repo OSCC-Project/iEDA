@@ -33,7 +33,7 @@ void GlobalRouter::initInst()
 GlobalRouter& GlobalRouter::getInst()
 {
   if (_gr_instance == nullptr) {
-    LOG_INST.error(Loc::current(), "The instance not initialized!");
+    RTLOG.error(Loc::current(), "The instance not initialized!");
   }
   return *_gr_instance;
 }
@@ -50,15 +50,10 @@ void GlobalRouter::destroyInst()
 
 void GlobalRouter::route()
 {
-  std::vector<Net>& net_list = DM_INST.getDatabase().get_net_list();
-
   Monitor monitor;
-  LOG_INST.info(Loc::current(), "Begin routing...");
-  // 临时代码
-  for (Net& net : net_list) {
-    net.set_gr_result_tree(net.get_ir_result_tree());
-  }
-  LOG_INST.info(Loc::current(), "End route", monitor.getStatsInfo());
+  RTLOG.info(Loc::current(), "Starting...");
+
+  RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
 // private

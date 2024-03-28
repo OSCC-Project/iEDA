@@ -55,7 +55,7 @@ class GridMap
     const U& operator[](const int32_t i) const
     {
       if (i < 0 || _y_size <= i) {
-        LOG_INST.error(Loc::current(), "The grid map index y ", i, " is out of bounds!");
+        RTLOG.error(Loc::current(), "The grid map index y ", i, " is out of bounds!");
       }
       return _data_array[i];
     }
@@ -74,7 +74,7 @@ class GridMap
   Proxy<T> operator[](const int32_t i) const
   {
     if (i < 0 || _x_size <= i) {
-      LOG_INST.error(Loc::current(), "The grid map index x ", i, " is out of bounds!");
+      RTLOG.error(Loc::current(), "The grid map index x ", i, " is out of bounds!");
     }
     return Proxy<T>(_y_size, _data_map[i]);
   }
@@ -105,7 +105,7 @@ class GridMap
   inline void initDataMap();
   inline void copyDataMap(T** other_data_map);
   inline void freeDataMap();
-  inline void deassignDataMap(T value);
+  inline void assignDataMap(T value);
 };
 
 // public
@@ -139,7 +139,7 @@ inline void GridMap<T>::init(int32_t x_size, int32_t y_size, T value)
   _x_size = x_size;
   _y_size = y_size;
   initDataMap();
-  deassignDataMap(value);
+  assignDataMap(value);
 }
 
 template <typename T>
@@ -188,7 +188,7 @@ template <typename T>
 inline void GridMap<T>::initDataMap()
 {
   if (_x_size < 0 || _y_size < 0) {
-    LOG_INST.error(Loc::current(), "The map size setting error!");
+    RTLOG.error(Loc::current(), "The map size setting error!");
   }
   if (_x_size == 0 || _y_size == 0) {
     _data_map = nullptr;
@@ -222,7 +222,7 @@ inline void GridMap<T>::freeDataMap()
 }
 
 template <typename T>
-inline void GridMap<T>::deassignDataMap(T value)
+inline void GridMap<T>::assignDataMap(T value)
 {
   for (int32_t i = 0; i < _x_size; i++) {
     for (int32_t j = 0; j < _y_size; j++) {

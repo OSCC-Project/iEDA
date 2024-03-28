@@ -17,11 +17,13 @@
 #include "MP.hh"
 
 #include <functional>
+#include <memory>
 
 #include "BlkClustering.hh"
 #include "HierPlacer.hh"
 #include "Logger.hpp"
 #include "MacroAligner.hh"
+
 namespace imp {
 
 void MP::runMP()
@@ -38,7 +40,7 @@ void MP::runMP()
   float cool_rate = 0.96;
   float init_temperature = 2000.0;
 
-  BlkClustering2 clustering{.l1_nparts = 200, .level_num = 1};  // one level place
+  BlkClustering2 clustering{.l1_nparts = 200, .level_num = 1, .parser = _parser};  // one level place
   root().parallel_preorder_op(clustering);
   auto placer = SAHierPlacer<int32_t>(root(), macro_halo_micron, dead_space_ratio, weight_wl, weight_ol, weight_ob, weight_periphery,
                                       weight_blockage, weight_io, max_iters, cool_rate, init_temperature);
@@ -46,10 +48,12 @@ void MP::runMP()
   placer(root());
   std::string file_name = "placement_level" + std::to_string(clustering.level_num) + "_" + std::to_string(clustering.l1_nparts) + "_"
                           + std::to_string(clustering.l2_nparts);
-  writePlacement(root(), file_name + ".txt");
+  // writePlacement(root(), file_name + ".txt");
   auto macro_aligner = MacroAligner<int32_t>();
   macro_aligner(root());
-  writePlacement(root(), file_name + "_aligned.txt");
+  // writePlacement(root(), file_name + "_aligned.txt");
+  writePlacementTcl(root(), file_name + ".tcl", root().netlist().property()->get_database_unit());
+  _parser->write();  // write back to idb
 }
 
 }  // namespace imp

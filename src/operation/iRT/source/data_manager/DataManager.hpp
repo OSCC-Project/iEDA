@@ -27,7 +27,7 @@
 
 namespace irt {
 
-#define DM_INST (irt::DataManager::getInst())
+#define RTDM (irt::DataManager::getInst())
 
 class DataManager
 {
@@ -43,7 +43,7 @@ class DataManager
   void updateFixedRectToGCellMap(ChangeType change_type, int32_t net_idx, EXTLayerRect* ext_layer_rect, bool is_routing);
   void updateAccessPointToGCellMap(ChangeType change_type, int32_t net_idx, AccessPoint* access_point);
   void updateNetResultToGCellMap(ChangeType change_type, int32_t net_idx, Segment<LayerCoord>* segment);
-  void updatePatchToGCellMap(ChangeType change_type, int32_t net_idx, EXTLayerRect* ext_layer_rect);
+  void updateNetPatchToGCellMap(ChangeType change_type, int32_t net_idx, EXTLayerRect* ext_layer_rect);
   void updateViolationToGCellMap(ChangeType change_type, Violation* violation);
   std::map<bool, std::map<int32_t, std::map<int32_t, std::set<EXTLayerRect*>>>> getTypeLayerNetFixedRectMap(EXTPlanarRect& region);
   std::map<int32_t, std::set<AccessPoint*>> getNetAccessPointMap(EXTPlanarRect& region);
@@ -72,7 +72,7 @@ class DataManager
 
  private:
   static DataManager* _dm_instance;
-  // config & database & helper
+  // config & database & helper & summary
   Config _config;
   Database _database;
   Helper _helper;
@@ -83,29 +83,20 @@ class DataManager
   DataManager(DataManager&& other) = delete;
   ~DataManager()
   {
-    GridMap<GCell>& gcell_map = _database.get_gcell_map();
+    Die& die = _database.get_die();
 
-    for (int32_t x = 0; x < gcell_map.get_x_size(); x++) {
-      for (int32_t y = 0; y < gcell_map.get_y_size(); y++) {
-        /**
-         * 不能在gcell_map内释放
-         * _type_layer_net_fixed_rect_map 内指针引用于 database内的blockage_list
-         * _net_access_point_map 内指针引用于 pin内的access_point_list
-         */
-        for (auto& [net_idx, segment_set] : gcell_map[x][y].get_net_result_map()) {
-          for (Segment<LayerCoord>* segment : segment_set) {
-            updateNetResultToGCellMap(ChangeType::kDel, net_idx, segment);
-          }
-        }
-        for (auto& [net_idx, patch_set] : gcell_map[x][y].get_net_patch_map()) {
-          for (EXTLayerRect* patch : patch_set) {
-            updatePatchToGCellMap(ChangeType::kDel, net_idx, patch);
-          }
-        }
-        for (Violation* violation : gcell_map[x][y].get_violation_set()) {
-          updateViolationToGCellMap(ChangeType::kDel, violation);
-        }
+    for (auto& [net_idx, segment_set] : getNetResultMap(die)) {
+      for (Segment<LayerCoord>* segment : segment_set) {
+        RTDM.updateNetResultToGCellMap(ChangeType::kDel, net_idx, segment);
       }
+    }
+    for (auto& [net_idx, patch_set] : getNetPatchMap(die)) {
+      for (EXTLayerRect* patch : patch_set) {
+        RTDM.updateNetPatchToGCellMap(ChangeType::kDel, net_idx, patch);
+      }
+    }
+    for (Violation* violation : getViolationSet(die)) {
+      RTDM.updateViolationToGCellMap(ChangeType::kDel, violation);
     }
   }
   DataManager& operator=(const DataManager& other) = delete;
@@ -121,16 +112,12 @@ class DataManager
   void wrapTrackAxis(RoutingLayer& routing_layer, idb::IdbLayerRouting* idb_layer);
   void wrapSpacingTable(RoutingLayer& routing_layer, idb::IdbLayerRouting* idb_layer);
   void wrapLayerViaMasterList(idb::IdbBuilder* idb_builder);
-  void wrapBlockageList(idb::IdbBuilder* idb_builder);
-  void wrapArtificialBlockage(idb::IdbBuilder* idb_builder);
-  void wrapInstanceBlockage(idb::IdbBuilder* idb_builder);
-  void wrapSpecialNetBlockage(idb::IdbBuilder* idb_builder);
+  void wrapObstacleList(idb::IdbBuilder* idb_builder);
   void wrapNetList(idb::IdbBuilder* idb_builder);
-  bool preSkipping(idb::IdbNet* idb_net);
+  bool isSkipping(idb::IdbNet* idb_net);
   void wrapPinList(Net& net, idb::IdbNet* idb_net);
   void wrapPinShapeList(Pin& pin, idb::IdbPin* idb_pin);
   void wrapDrivingPin(Net& net, idb::IdbNet* idb_net);
-  bool postSkipping(Net& net);
   void updateHelper(idb::IdbBuilder* idb_builder);
   Direction getRTDirectionByDB(idb::IdbLayerDirection idb_direction);
   ConnectType getRTConnectTypeByDB(idb::IdbConnectType idb_connect_type);
@@ -157,10 +144,10 @@ class DataManager
   SortStatus sortByLayerDirectionPriority(ViaMaster& via_master1, ViaMaster& via_master2);
   SortStatus sortByLengthASC(ViaMaster& via_master1, ViaMaster& via_master2);
   SortStatus sortBySymmetryPriority(ViaMaster& via_master1, ViaMaster& via_master2);
-  void buildBlockageList();
-  void transBlockageList();
-  void makeBlockageList();
-  void checkBlockageList();
+  void buildObstacleList();
+  void transObstacleList();
+  void makeObstacleList();
+  void checkObstacleList();
   void buildNetList();
   void buildPinList(Net& net);
   void transPinList(Net& net);

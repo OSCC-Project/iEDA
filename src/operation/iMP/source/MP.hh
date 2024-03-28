@@ -32,7 +32,7 @@ class MP
 
  private:
   std::shared_ptr<Block> _root;
-  std::unique_ptr<ParserEngine> _parser;
+  std::shared_ptr<ParserEngine> _parser;
 };
 }  // namespace imp
 #endif

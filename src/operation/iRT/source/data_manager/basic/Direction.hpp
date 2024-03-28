@@ -1,4 +1,5 @@
 // ***************************************************************************************
+// ***************************************************************************************
 // Copyright (c) 2023-2025 Peng Cheng Laboratory
 // Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of Sciences
 // Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
@@ -51,7 +52,7 @@ struct GetDirectionName
         direction_name = "proximal";
         break;
       default:
-        LOG_INST.error(Loc::current(), "Unrecognized type!");
+        RTLOG.error(Loc::current(), "Unrecognized type!");
         break;
     }
     return direction_name;

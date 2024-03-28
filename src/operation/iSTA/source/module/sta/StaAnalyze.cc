@@ -542,6 +542,11 @@ unsigned StaAnalyze::operator()(StaGraph* the_graph) {
   StaVertex* end_vertex;
   unsigned is_ok = 1;
   FOREACH_END_VERTEX(the_graph, end_vertex) {
+    if (end_vertex->is_start() && end_vertex->is_end()) {
+      // for clk vertex, maybe need check recovery time, skip this now.
+      continue;
+    }
+
     if (IS_MAX(analysis_mode)) {
       if (end_vertex->is_port()) {
         is_ok &= analyzePortSetupHold(end_vertex, AnalysisMode::kMax);

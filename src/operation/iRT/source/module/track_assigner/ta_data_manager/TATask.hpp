@@ -35,7 +35,6 @@ class TATask
   std::vector<TAGroup>& get_ta_group_list() { return _ta_group_list; }
   PlanarRect& get_bounding_box() { return _bounding_box; }
   int32_t get_routed_times() const { return _routed_times; }
-  std::vector<Segment<LayerCoord>>& get_routing_segment_list() { return _routing_segment_list; }
   // const getter
   const ConnectType& get_connect_type() const { return _connect_type; }
   const PlanarRect& get_bounding_box() const { return _bounding_box; }
@@ -46,10 +45,6 @@ class TATask
   void set_ta_group_list(const std::vector<TAGroup>& ta_group_list) { _ta_group_list = ta_group_list; }
   void set_bounding_box(const PlanarRect& bounding_box) { _bounding_box = bounding_box; }
   void set_routed_times(const int32_t routed_times) { _routed_times = routed_times; }
-  void set_routing_segment_list(const std::vector<Segment<LayerCoord>>& routing_segment_list)
-  {
-    _routing_segment_list = routing_segment_list;
-  }
   // function
   void addRoutedTimes() { ++_routed_times; }
 
@@ -60,7 +55,6 @@ class TATask
   std::vector<TAGroup> _ta_group_list;
   PlanarRect _bounding_box;
   int32_t _routed_times = 0;
-  std::vector<Segment<LayerCoord>> _routing_segment_list;
 };
 
 struct CmpTATask

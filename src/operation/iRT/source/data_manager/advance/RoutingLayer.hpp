@@ -54,7 +54,7 @@ class RoutingLayer
   std::vector<ScaleGrid>& getXTrackGridList() { return _track_axis.get_x_grid_list(); }
   std::vector<ScaleGrid>& getYTrackGridList() { return _track_axis.get_y_grid_list(); }
   std::vector<ScaleGrid>& getPreferTrackGridList() { return isPreferH() ? getYTrackGridList() : getXTrackGridList(); }
-  std::vector<ScaleGrid>& getNonpreferTrackGridList() { return isPreferH() ? getXTrackGridList() : getYTrackGridList(); }
+  std::vector<ScaleGrid>& getNonPreferTrackGridList() { return isPreferH() ? getXTrackGridList() : getYTrackGridList(); }
   int32_t getMinSpacing(const PlanarRect& rect)
   {
     std::vector<int32_t>& width_list = _spacing_table.get_width_list();

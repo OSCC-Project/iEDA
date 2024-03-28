@@ -10,7 +10,7 @@
 //
 // THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
 // EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
-// MERCHANTABILITY OR FIT FOR A SARTICULAR PURPOSE.
+// MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
@@ -24,7 +24,7 @@
 
 namespace irt {
 
-#define SA_INST (irt::SupplyAnalyzer::getInst())
+#define RTSA (irt::SupplyAnalyzer::getInst())
 
 class SupplyAnalyzer
 {
@@ -61,7 +61,8 @@ class SupplyAnalyzer
 #if 1  // exhibit
   void updateSummary(SAModel& sa_model);
   void printSummary(SAModel& sa_model);
-  void writeSupplyCSV(SAModel& sa_model);
+  void writePlanarSupplyCSV(SAModel& sa_model);
+  void writeLayerSupplyCSV(SAModel& sa_model);
 #endif
 };
 

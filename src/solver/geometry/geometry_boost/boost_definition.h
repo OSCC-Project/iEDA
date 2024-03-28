@@ -32,17 +32,19 @@
 namespace ieda_solver {
 namespace gtl = boost::polygon;
 using namespace boost::polygon::operators;
-typedef gtl::point_data<int32_t> GtlPoint;
-typedef gtl::segment_data<int32_t> GtlSegment;
-typedef gtl::rectangle_data<int32_t> GtlRect;
-typedef gtl::polygon_90_data<int32_t> GtlPolygon90;
-typedef gtl::polygon_90_set_data<int32_t> GtlPolygon90Set;
-typedef gtl::polygon_data<int32_t> GtlPolygon;
-typedef gtl::polygon_set_data<int32_t> GtlPolygonSet;
-typedef gtl::polygon_with_holes_data<int32_t> PolygonWithHoles;
+typedef int32_t CoordType;
+typedef gtl::point_data<CoordType> GtlPoint;
+typedef gtl::segment_data<CoordType> GtlSegment;
+typedef gtl::rectangle_data<CoordType> GtlRect;
+typedef gtl::polygon_90_data<CoordType> GtlPolygon90;
+typedef gtl::polygon_90_with_holes_data<CoordType> GtlPolygon90WithHoles;
+typedef gtl::polygon_90_set_data<CoordType> GtlPolygon90Set;
+typedef gtl::polygon_data<CoordType> GtlPolygon;
+typedef gtl::polygon_set_data<CoordType> GtlPolygonSet;
+typedef gtl::polygon_with_holes_data<CoordType> GtlPolygonWithHoles;
 
 namespace bg = boost::geometry;
-typedef boost::geometry::model::d2::point_xy<int32_t> BgPoint;
+typedef boost::geometry::model::d2::point_xy<CoordType> BgPoint;
 typedef boost::geometry::model::segment<BgPoint> BgSegment;
 typedef boost::geometry::model::box<BgPoint> BgRect;
 typedef boost::geometry::model::polygon<BgPoint> BgPolygon;

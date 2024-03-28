@@ -67,7 +67,6 @@ unsigned CmdVerilogToDef::exec() {
   auto* top = top_option->getStringVal();
 
   db_builder->buildVerilog(verilog_file, top);
-  // the below two lines is used to test idb verilog.
   // db_builder->rustBuildVerilog(verilog_file, top);
 
   // set die area

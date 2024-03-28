@@ -26,38 +26,38 @@ class PlanarRect
 {
  public:
   PlanarRect() = default;
-  PlanarRect(const PlanarCoord& lb, const PlanarCoord& rt)
+  PlanarRect(const PlanarCoord& ll, const PlanarCoord& ur)
   {
-    _lb = lb;
-    _rt = rt;
+    _ll = ll;
+    _ur = ur;
   }
-  PlanarRect(const int32_t lb_x, const int32_t lb_y, const int32_t rt_x, const int32_t rt_y)
+  PlanarRect(const int32_t ll_x, const int32_t ll_y, const int32_t ur_x, const int32_t ur_y)
   {
-    set_lb(lb_x, lb_y);
-    set_rt(rt_x, rt_y);
+    set_ll(ll_x, ll_y);
+    set_ur(ur_x, ur_y);
   }
   ~PlanarRect() = default;
-  bool operator==(const PlanarRect& other) const { return (_lb == other._lb && _rt == other._rt); }
+  bool operator==(const PlanarRect& other) const { return (_ll == other._ll && _ur == other._ur); }
   bool operator!=(const PlanarRect& other) const { return !((*this) == other); }
   // getter
-  PlanarCoord& get_lb() { return _lb; }
-  PlanarCoord& get_rt() { return _rt; }
-  int32_t get_lb_x() const { return _lb.get_x(); }
-  int32_t get_lb_y() const { return _lb.get_y(); }
-  int32_t get_rt_x() const { return _rt.get_x(); }
-  int32_t get_rt_y() const { return _rt.get_y(); }
+  PlanarCoord& get_ll() { return _ll; }
+  PlanarCoord& get_ur() { return _ur; }
+  int32_t get_ll_x() const { return _ll.get_x(); }
+  int32_t get_ll_y() const { return _ll.get_y(); }
+  int32_t get_ur_x() const { return _ur.get_x(); }
+  int32_t get_ur_y() const { return _ur.get_y(); }
   // const getter
-  const PlanarCoord& get_lb() const { return _lb; }
-  const PlanarCoord& get_rt() const { return _rt; }
+  const PlanarCoord& get_ll() const { return _ll; }
+  const PlanarCoord& get_ur() const { return _ur; }
   // setter
-  void set_lb(const PlanarCoord& lb) { _lb = lb; }
-  void set_rt(const PlanarCoord& rt) { _rt = rt; }
-  void set_lb(const int32_t x, const int32_t y) { _lb.set_coord(x, y); }
-  void set_rt(const int32_t x, const int32_t y) { _rt.set_coord(x, y); }
-  void set_lb_x(const int32_t lb_x) { _lb.set_x(lb_x); }
-  void set_lb_y(const int32_t lb_y) { _lb.set_y(lb_y); }
-  void set_rt_x(const int32_t rt_x) { _rt.set_x(rt_x); }
-  void set_rt_y(const int32_t rt_y) { _rt.set_y(rt_y); }
+  void set_ll(const PlanarCoord& ll) { _ll = ll; }
+  void set_ur(const PlanarCoord& ur) { _ur = ur; }
+  void set_ll(const int32_t x, const int32_t y) { _ll.set_coord(x, y); }
+  void set_ur(const int32_t x, const int32_t y) { _ur.set_coord(x, y); }
+  void set_ll_x(const int32_t ll_x) { _ll.set_x(ll_x); }
+  void set_ll_y(const int32_t ll_y) { _ll.set_y(ll_y); }
+  void set_ur_x(const int32_t ur_x) { _ur.set_x(ur_x); }
+  void set_ur_y(const int32_t ur_y) { _ur.set_y(ur_y); }
   // function
   inline int32_t getXSpan() const;
   inline int32_t getYSpan() const;
@@ -69,21 +69,21 @@ class PlanarRect
   inline double getArea() const;
   inline std::vector<Segment<PlanarCoord>> getEdgeList() const;
   inline PlanarCoord getMidPoint() const;
-  inline bool isIncorrected() const;
+  inline bool isIncorrect() const;
 
  private:
-  PlanarCoord _lb;
-  PlanarCoord _rt;
+  PlanarCoord _ll;
+  PlanarCoord _ur;
 };
 
 inline int32_t PlanarRect::getXSpan() const
 {
-  return get_rt_x() - get_lb_x();
+  return get_ur_x() - get_ll_x();
 }
 
 inline int32_t PlanarRect::getYSpan() const
 {
-  return get_rt_y() - get_lb_y();
+  return get_ur_y() - get_ll_y();
 }
 
 inline int32_t PlanarRect::getLength() const
@@ -100,8 +100,8 @@ inline Direction PlanarRect::getRectDirection(Direction point_direction = Direct
 {
   Direction direction = Direction::kNone;
 
-  int32_t x_length = get_rt_x() - get_lb_x();
-  int32_t y_length = get_rt_y() - get_lb_y();
+  int32_t x_length = get_ur_x() - get_ll_x();
+  int32_t y_length = get_ur_y() - get_ll_y();
 
   if (x_length > y_length) {
     direction = Direction::kHorizontal;
@@ -133,30 +133,30 @@ inline double PlanarRect::getArea() const
 
 inline std::vector<Segment<PlanarCoord>> PlanarRect::getEdgeList() const
 {
-  int32_t lb_x = _lb.get_x();
-  int32_t lb_y = _lb.get_y();
-  int32_t rt_x = _rt.get_x();
-  int32_t rt_y = _rt.get_y();
+  int32_t ll_x = _ll.get_x();
+  int32_t ll_y = _ll.get_y();
+  int32_t ur_x = _ur.get_x();
+  int32_t ur_y = _ur.get_y();
   std::vector<Segment<PlanarCoord>> segment_list;
-  if (lb_x == rt_x || lb_y == rt_y) {
-    segment_list.emplace_back(_lb, _rt);
+  if (ll_x == ur_x || ll_y == ur_y) {
+    segment_list.emplace_back(_ll, _ur);
   } else {
-    segment_list.emplace_back(_lb, PlanarCoord(lb_x, rt_y));
-    segment_list.emplace_back(_lb, PlanarCoord(rt_x, lb_y));
-    segment_list.emplace_back(PlanarCoord(lb_x, rt_y), _rt);
-    segment_list.emplace_back(PlanarCoord(rt_x, lb_y), _rt);
+    segment_list.emplace_back(_ll, PlanarCoord(ll_x, ur_y));
+    segment_list.emplace_back(_ll, PlanarCoord(ur_x, ll_y));
+    segment_list.emplace_back(PlanarCoord(ll_x, ur_y), _ur);
+    segment_list.emplace_back(PlanarCoord(ur_x, ll_y), _ur);
   }
   return segment_list;
 }
 
 inline PlanarCoord PlanarRect::getMidPoint() const
 {
-  return PlanarCoord((get_lb_x() + get_rt_x()) / 2, (get_lb_y() + get_rt_y()) / 2);
+  return PlanarCoord((get_ll_x() + get_ur_x()) / 2, (get_ll_y() + get_ur_y()) / 2);
 }
 
-inline bool PlanarRect::isIncorrected() const
+inline bool PlanarRect::isIncorrect() const
 {
-  if (_lb.get_x() > _rt.get_x() || _lb.get_y() > _rt.get_y()) {
+  if (_ll.get_x() > _ur.get_x() || _ll.get_y() > _ur.get_y()) {
     return true;
   } else {
     return false;
@@ -167,10 +167,10 @@ struct CmpPlanarRectByXASC
 {
   bool operator()(const PlanarRect& a, const PlanarRect& b) const
   {
-    if (a.get_lb() == b.get_lb()) {
-      return CmpPlanarCoordByXASC()(a.get_rt(), b.get_rt());
+    if (a.get_ll() == b.get_ll()) {
+      return CmpPlanarCoordByXASC()(a.get_ur(), b.get_ur());
     } else {
-      return CmpPlanarCoordByXASC()(a.get_lb(), b.get_lb());
+      return CmpPlanarCoordByXASC()(a.get_ll(), b.get_ll());
     }
   }
 };
@@ -179,10 +179,10 @@ struct CmpPlanarRectByYASC
 {
   bool operator()(const PlanarRect& a, const PlanarRect& b) const
   {
-    if (a.get_lb() == b.get_lb()) {
-      return CmpPlanarCoordByYASC()(a.get_rt(), b.get_rt());
+    if (a.get_ll() == b.get_ll()) {
+      return CmpPlanarCoordByYASC()(a.get_ur(), b.get_ur());
     } else {
-      return CmpPlanarCoordByYASC()(a.get_lb(), b.get_lb());
+      return CmpPlanarCoordByYASC()(a.get_ll(), b.get_ll());
     }
   }
 };

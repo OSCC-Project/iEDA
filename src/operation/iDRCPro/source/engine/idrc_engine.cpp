@@ -18,15 +18,15 @@
 
 #include "engine_init_def.h"
 #include "engine_init_rt.h"
-#include "engine_init_scanline.h"
 #include "idm.h"
 
 namespace idrc {
 
-DrcEngine::DrcEngine(DrcDataManager* data_manager)
+DrcEngine::DrcEngine(DrcDataManager* data_manager, DrcConditionManager* condition_manager)
 {
   _data_manager = data_manager;
-  _engine_manager = new DrcEngineManager();
+  _condition_manager = condition_manager;
+  _engine_manager = new DrcEngineManager(data_manager, condition_manager);
 }
 
 DrcEngine::~DrcEngine()
@@ -50,18 +50,16 @@ void DrcEngine::initEngine(DrcCheckerType checker_type)
       std::cout << "idrc : init engine def time = " << stats_def.elapsedRunTime() << " memory = " << stats_def.memoryDelta() << std::endl;
 #endif
 
-      initEngineScanline();
-
       break;
     }
     case DrcCheckerType::kRT:
       initEngineGeometryData();
-      initEngineScanline();
 
     default:
       break;
   }
 }
+
 /**
  * init engine data from RT data
  */
@@ -79,13 +77,15 @@ void DrcEngine::initEngineDef()
   init_def.init();
 }
 
-/**
- * init scanline engine data from geometry data
- */
-void DrcEngine::initEngineScanline()
+void DrcEngine::operateEngine()
 {
-  DrcEngineInitScanline init_scanline(_engine_manager);
-  init_scanline.init();
+  _engine_manager->dataPreprocess();
+  _engine_manager->filterData();
+}
+
+void DrcEngine::checkEngine()
+{
+  // _engine_manager->get_engine_check()->check();
 }
 
 }  // namespace idrc

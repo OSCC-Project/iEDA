@@ -15,102 +15,86 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 #pragma once
-#include "idrc_data.h"
-#include "idrc_engine.h"
-#include "idrc_rule_stratagy.h"
+
+#include <list>
+#include <map>
+#include <string>
+#include <vector>
+
+#include "engine_geometry.h"
+#include "idrc_util.h"
+#include "idrc_violation_manager.h"
 #include "tech_rules.h"
 
 namespace idrc {
 
-class DrcBasicPoint;
-class DrcViolationManager;
-/**
- * rule conditions are concepts built from tech lef drc rules, it contains a condition matrix to guide condition check orders, the rule
- * matrix index indicates the checking order,
- *
- */
+#define DEBUGCONDITION 0
+
+#if DEBUGCONDITION
+#define DEBUGPRINT 1
+#define DEBUGCLOSE 0
+#else
+#define DEBUGPRINT 0
+#define DEBUGCLOSE 0
+#endif
+
+#if DEBUGPRINT
+#define DEBUGOUTPUT(x) (std::cout << "idrc : " << x << std::endl)
+#define DEBUGHIGHLIGHT(x) "\033[0;36m" << x << "\033[0m"
+#else
+#define DEBUGOUTPUT(x)
+#define DEBUGHIGHLIGHT(x)
+#endif
+
+#if DEBUGCLOSE
+#if 1
+// #define DEBUGCLOSE_OVERLAP
+// #define DEBUGCLOSE_MINSPACING
+// #define DEBUGCLOSE_JOG
+// #define DEBUGCLOSE_PRL
+#define DEBUGCLOSE_STEP
+#define DEBUGCLOSE_HOLE
+#define DEBUGCLOSE_AREA
+// #define DEBUGCLOSE_EOL
+// #define DEBUGCLOSE_CORNER_FILL
+#define DEBUGCLOSE_NOTCH
+#endif
+#endif
+
+class DrcEngineLayout;
 
 class DrcConditionManager
 {
-  class LayerCheckList
-  {
-   public:
-    LayerCheckList(idb::IdbLayer* layer) : _layer(layer) {}
-    ~LayerCheckList() {}
-
-    void addCheckList(DrcBasicPoint* pt1, DrcBasicPoint* pt2) { _points.emplace_back(std::make_pair(pt1, pt2)); }
-    std::vector<std::pair<DrcBasicPoint*, DrcBasicPoint*>>& get_points() { return _points; }
-
-   private:
-    idb::IdbLayer* _layer = nullptr;
-    std::vector<std::pair<DrcBasicPoint*, DrcBasicPoint*>> _points;
-  };
-
-  class LayerExceptList
-  {
-   public:
-    LayerExceptList(idb::IdbLayer* layer) : _layer(layer) {}
-    ~LayerExceptList() {}
-
-    void addExceptList(int id) { _except_ids.insert(id); }
-    bool hasId(int id) { return _except_ids.find(id) != _except_ids.end(); }
-
-   private:
-    idb::IdbLayer* _layer = nullptr;
-    std::set<int> _except_ids;
-  };
-
  public:
-  DrcConditionManager(DrcEngine* engine, DrcViolationManager* violation_manager) : _engine(engine), _violation_manager(violation_manager) {}
-  ~DrcConditionManager()
-  {
-    for (auto& [type, layer_map] : _check_maps) {
-      for (auto& [layer, check_list] : layer_map) {
-        delete check_list;
-      }
-    }
-  }
+  DrcConditionManager(DrcViolationManager* violation_manager) : _violation_manager(violation_manager) {}
+  ~DrcConditionManager() {}
 
-  bool buildCondition();
-
-  DrcEngine* get_engine() { return _engine; }
   DrcViolationManager* get_violation_manager() { return _violation_manager; }
 
-  std::map<RuleType, std::map<idb::IdbLayer*, LayerCheckList*>>& get_check_maps() { return _check_maps; }
-  std::map<idb::IdbLayer*, LayerCheckList*>& get_check_map(RuleType type) { return _check_maps[type]; }
-  LayerCheckList* get_check_list(RuleType type, idb::IdbLayer* layer)
+  void set_check_select(std::set<ViolationEnumType> check_select)
   {
-    auto& layer_map = _check_maps[type];
-    if (false == layer_map.contains(layer)) {
-      layer_map[layer] = new LayerCheckList(layer);
+    if (check_select.empty()) {
+      for (int type = (int) ViolationEnumType::kNone; type < (int) ViolationEnumType::kMax; ++type) {
+        _check_select.insert((ViolationEnumType) type);
+      }
+    } else {
+      _check_select = check_select;
     }
-
-    return layer_map[layer];
   }
 
-  std::map<RuleType, std::map<idb::IdbLayer*, LayerExceptList*>>& get_except_maps() { return _except_maps; }
-  std::map<idb::IdbLayer*, LayerExceptList*>& get_except_map(RuleType type) { return _except_maps[type]; }
-  LayerExceptList* get_except_list(RuleType type, idb::IdbLayer* layer)
-  {
-    auto& layer_map = _except_maps[type];
-    if (false == layer_map.contains(layer)) {
-      layer_map[layer] = new LayerExceptList(layer);
-    }
-
-    return layer_map[layer];
-  }
+  void checkOverlap(std::string layer, DrcEngineLayout* layout);
+  void checkMinSpacing(std::string layer, DrcEngineLayout* layout);
+  void checkWires(std::string layer, DrcEngineLayout* layout);
+  void checkPolygons(std::string layer, DrcEngineLayout* layout);
 
  private:
-  DrcEngine* _engine = nullptr;
   DrcViolationManager* _violation_manager;
 
-  std::map<RuleType, std::map<idb::IdbLayer*, LayerCheckList*>> _check_maps;
-  std::map<RuleType, std::map<idb::IdbLayer*, LayerExceptList*>> _except_maps;
+  std::set<ViolationEnumType> _check_select;
 
-  /// condition builder
-  bool buildConditonConnectivity();
-  bool buildConditonArea();
-  bool buildConditonSpacing();
+  void addViolation(ieda_solver::GeometryRect& rect, std::string layer, ViolationEnumType type, std::set<int> net_id = {});
+  void checkJog(std::string layer, DrcEngineLayout* layout, std::map<int, ieda_solver::GeometryPolygonSet>& jog_wire_map);
+  void checkSpacingTable(std::string layer, DrcEngineLayout* layout, std::map<int, ieda_solver::GeometryPolygonSet>& prl_wire_map);
 };
 
 }  // namespace idrc

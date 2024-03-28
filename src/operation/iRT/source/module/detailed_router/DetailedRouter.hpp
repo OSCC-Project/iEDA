@@ -30,7 +30,7 @@
 
 namespace irt {
 
-#define DR_INST (irt::DetailedRouter::getInst())
+#define RTDR (irt::DetailedRouter::getInst())
 
 class DetailedRouter
 {
@@ -56,20 +56,20 @@ class DetailedRouter
   std::vector<DRNet> convertToDRNetList(std::vector<Net>& net_list);
   DRNet convertToDRNet(Net& net);
   void iterativeDRModel(DRModel& dr_model);
-  void setDRParameter(DRModel& dr_model, int32_t curr_iter, DRParameter& dr_parameter);
+  void setDRParameter(DRModel& dr_model, int32_t iter, DRParameter& dr_parameter);
   void initDRBoxMap(DRModel& dr_model);
-  void splitNetResult(DRModel& dr_model);
   void buildBoxSchedule(DRModel& dr_model);
   void routeDRBoxMap(DRModel& dr_model);
-  void initDRTaskList(DRModel& dr_model, DRBox& dr_box);
-  void buildViolationList(DRBox& dr_box);
-  bool needRouting(DRBox& dr_box);
   void buildFixedRectList(DRBox& dr_box);
+  void buildNetResultMap(DRBox& dr_box);
+  void buildViolationList(DRBox& dr_box);
+  void initDRTaskList(DRModel& dr_model, DRBox& dr_box);
+  bool needRouting(DRBox& dr_box);
   void buildBoxTrackAxis(DRBox& dr_box);
-  void initLayerNodeMap(DRBox& dr_box);
-  void initDRNodeValid(DRBox& dr_box);
+  void buildLayerNodeMap(DRBox& dr_box);
+  void buildDRNodeValid(DRBox& dr_box);
   void buildDRNodeNeighbor(DRBox& dr_box);
-  void buildOrienNetMap(DRBox& dr_box);
+  void buildOrientNetMap(DRBox& dr_box);
   void routeDRBox(DRBox& dr_box);
   std::vector<DRTask*> initTaskSchedule(DRBox& dr_box);
   std::vector<DRTask*> getTaskScheduleByViolation(DRBox& dr_box);
@@ -102,22 +102,16 @@ class DetailedRouter
   double getEstimateWireCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
   double getEstimateCornerCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
   double getEstimateViaCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
-  void applyPatch(DRBox& dr_box, DRTask* dr_task);
-  std::vector<EXTLayerRect> getPatchList(DRBox& dr_box, DRTask* dr_task);
-  std::vector<EXTLayerRect> getNotchPatchList(DRBox& dr_box, DRTask* dr_task);
-  LayerRect getNotchPatch(int32_t layer_idx, std::vector<PlanarCoord>& task_point_list);
-  std::vector<EXTLayerRect> getMinAreaPatchList(DRBox& dr_box, DRTask* dr_task);
   void updateViolationList(DRBox& dr_box);
   std::vector<Violation> getViolationList(DRBox& dr_box);
-  void updateDRTaskToGcellMap(DRBox& dr_box);
-  void updateViolationToGcellMap(DRBox& dr_box);
+  void uploadViolation(DRBox& dr_box);
   void freeDRBox(DRBox& dr_box);
   int32_t getViolationNum();
+  void uploadNetResult(DRModel& dr_model);
 
 #if 1  // update env
   void updateFixedRectToGraph(DRBox& dr_box, ChangeType change_type, int32_t net_idx, EXTLayerRect* fixed_rect, bool is_routing);
   void updateNetResultToGraph(DRBox& dr_box, ChangeType change_type, int32_t net_idx, Segment<LayerCoord>& segment);
-  void updatePatchToGraph(DRBox& dr_box, ChangeType change_type, int32_t net_idx, EXTLayerRect& patch);
   std::map<DRNode*, std::set<Orientation>> getNodeOrientationMap(DRBox& dr_box, NetShape& net_shape);
   std::map<DRNode*, std::set<Orientation>> getRoutingNodeOrientationMap(DRBox& dr_box, NetShape& net_shape);
   std::map<DRNode*, std::set<Orientation>> getCutNodeOrientationMap(DRBox& dr_box, NetShape& net_shape);
@@ -127,7 +121,6 @@ class DetailedRouter
 #if 1  // debug
   void debugCheckDRBox(DRBox& dr_box);
   void debugPlotDRBox(DRBox& dr_box, int32_t curr_task_idx, std::string flag);
-  void debugOutputDef(DRModel& dr_model);
 #endif
 
 #if 1  // exhibit

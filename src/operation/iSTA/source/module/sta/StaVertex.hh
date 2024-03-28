@@ -414,6 +414,8 @@ class StaVertex {
                                         std::greater<int>>& depth_min_queue,
                     int depth = 0);
 
+  unsigned GetWorstPathDepth(AnalysisMode analysis_mode);
+
   unsigned exec(StaFunc& func);
 
   void dump();

@@ -36,7 +36,7 @@ void GDSPlotter::initInst()
 GDSPlotter& GDSPlotter::getInst()
 {
   if (_gp_instance == nullptr) {
-    LOG_INST.error(Loc::current(), "The instance not initialized!");
+    RTLOG.error(Loc::current(), "The instance not initialized!");
   }
   return *_gp_instance;
 }
@@ -64,7 +64,7 @@ int32_t GDSPlotter::getGDSIdxByRouting(int32_t routing_layer_idx)
   if (RTUtil::exist(_routing_layer_gds_map, routing_layer_idx)) {
     gds_layer_idx = _routing_layer_gds_map[routing_layer_idx];
   } else {
-    LOG_INST.warn(Loc::current(), "The routing_layer_idx '", routing_layer_idx, "' have not gds_layer_idx!");
+    RTLOG.warn(Loc::current(), "The routing_layer_idx '", routing_layer_idx, "' have not gds_layer_idx!");
   }
   return gds_layer_idx;
 }
@@ -75,7 +75,7 @@ int32_t GDSPlotter::getGDSIdxByCut(int32_t cut_layer_idx)
   if (RTUtil::exist(_cut_layer_gds_map, cut_layer_idx)) {
     gds_layer_idx = _cut_layer_gds_map[cut_layer_idx];
   } else {
-    LOG_INST.warn(Loc::current(), "The cut_layer_idx '", cut_layer_idx, "' have not gds_layer_idx!");
+    RTLOG.warn(Loc::current(), "The cut_layer_idx '", cut_layer_idx, "' have not gds_layer_idx!");
   }
   return gds_layer_idx;
 }
@@ -92,8 +92,8 @@ void GDSPlotter::init()
 
 void GDSPlotter::buildGDSLayerMap()
 {
-  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
-  std::vector<CutLayer>& cut_layer_list = DM_INST.getDatabase().get_cut_layer_list();
+  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
+  std::vector<CutLayer>& cut_layer_list = RTDM.getDatabase().get_cut_layer_list();
 
   std::map<int32_t, int32_t> order_gds_map;
   for (RoutingLayer& routing_layer : routing_layer_list) {
@@ -121,9 +121,9 @@ void GDSPlotter::buildGDSLayerMap()
 
 void GDSPlotter::buildGraphLypFile()
 {
-  std::vector<RoutingLayer>& routing_layer_list = DM_INST.getDatabase().get_routing_layer_list();
-  std::vector<CutLayer>& cut_layer_list = DM_INST.getDatabase().get_cut_layer_list();
-  std::string& temp_directory_path = DM_INST.getConfig().temp_directory_path;
+  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
+  std::vector<CutLayer>& cut_layer_list = RTDM.getDatabase().get_cut_layer_list();
+  std::string& temp_directory_path = RTDM.getConfig().temp_directory_path;
 
   std::vector<std::string> color_list = {"#ff9d9d", "#ff80a8", "#c080ff", "#9580ff", "#8086ff", "#80a8ff", "#ff0000", "#ff0080", "#ff00ff",
                                          "#8000ff", "#0000ff", "#0080ff", "#800000", "#800057", "#800080", "#500080", "#000080", "#004080",
@@ -208,21 +208,21 @@ void GDSPlotter::buildTopStruct(GPGDS& gp_gds)
 {
   std::vector<GPStruct>& struct_list = gp_gds.get_struct_list();
 
-  std::set<std::string> unrefed_struct_name_set;
+  std::set<std::string> no_ref_struct_name_set;
   for (GPStruct& gp_struct : struct_list) {
-    unrefed_struct_name_set.insert(gp_struct.get_name());
+    no_ref_struct_name_set.insert(gp_struct.get_name());
   }
 
   for (GPStruct& gp_struct : struct_list) {
     std::vector<std::string>& sref_name_list = gp_struct.get_sref_name_list();
     for (std::string& sref_name : sref_name_list) {
-      unrefed_struct_name_set.erase(sref_name);
+      no_ref_struct_name_set.erase(sref_name);
     }
   }
 
   GPStruct top_struct(gp_gds.get_top_name());
-  for (const std::string& unrefed_struct_name : unrefed_struct_name_set) {
-    top_struct.push(unrefed_struct_name);
+  for (const std::string& no_ref_struct_name : no_ref_struct_name_set) {
+    top_struct.push(no_ref_struct_name);
   }
   gp_gds.addStruct(top_struct);
 }
@@ -243,9 +243,9 @@ void GDSPlotter::checkSRefList(GPGDS& gp_gds)
 
   if (!nonexistent_sref_name_set.empty()) {
     for (const std::string& nonexistent_sref_name : nonexistent_sref_name_set) {
-      LOG_INST.warn(Loc::current(), "There is no corresponding structure ", nonexistent_sref_name, " in GDS!");
+      RTLOG.warn(Loc::current(), "There is no corresponding structure ", nonexistent_sref_name, " in GDS!");
     }
-    LOG_INST.error(Loc::current(), "There is a non-existent structure reference!");
+    RTLOG.error(Loc::current(), "There is a non-existent structure reference!");
   }
 }
 
@@ -253,7 +253,7 @@ void GDSPlotter::plotGDS(GPGDS& gp_gds, std::string gds_file_path)
 {
   Monitor monitor;
 
-  LOG_INST.info(Loc::current(), "The gds file is being saved...");
+  RTLOG.info(Loc::current(), "The gds file is being saved...");
 
   std::ofstream* gds_file = RTUtil::getOutputFileStream(gds_file_path);
   RTUtil::pushStream(gds_file, "HEADER 600", "\n");
@@ -267,7 +267,7 @@ void GDSPlotter::plotGDS(GPGDS& gp_gds, std::string gds_file_path)
   RTUtil::pushStream(gds_file, "ENDLIB", "\n");
   RTUtil::closeFileStream(gds_file);
 
-  LOG_INST.info(Loc::current(), "The gds file has been saved in '", gds_file_path, "'!", monitor.getStatsInfo());
+  RTLOG.info(Loc::current(), "The gds file has been saved in '", gds_file_path, "'!", monitor.getStatsInfo());
 }
 
 void GDSPlotter::plotStruct(std::ofstream* gds_file, GPStruct& gp_struct)
@@ -295,20 +295,20 @@ void GDSPlotter::plotStruct(std::ofstream* gds_file, GPStruct& gp_struct)
 
 void GDSPlotter::plotBoundary(std::ofstream* gds_file, GPBoundary& gp_boundary)
 {
-  int32_t lb_x = gp_boundary.get_lb_x();
-  int32_t lb_y = gp_boundary.get_lb_y();
-  int32_t rt_x = gp_boundary.get_rt_x();
-  int32_t rt_y = gp_boundary.get_rt_y();
+  int32_t ll_x = gp_boundary.get_ll_x();
+  int32_t ll_y = gp_boundary.get_ll_y();
+  int32_t ur_x = gp_boundary.get_ur_x();
+  int32_t ur_y = gp_boundary.get_ur_y();
 
   RTUtil::pushStream(gds_file, "BOUNDARY", "\n");
   RTUtil::pushStream(gds_file, "LAYER ", gp_boundary.get_layer_idx(), "\n");
   RTUtil::pushStream(gds_file, "DATATYPE ", static_cast<int32_t>(gp_boundary.get_data_type()), "\n");
   RTUtil::pushStream(gds_file, "XY", "\n");
-  RTUtil::pushStream(gds_file, lb_x, " : ", lb_y, "\n");
-  RTUtil::pushStream(gds_file, rt_x, " : ", lb_y, "\n");
-  RTUtil::pushStream(gds_file, rt_x, " : ", rt_y, "\n");
-  RTUtil::pushStream(gds_file, lb_x, " : ", rt_y, "\n");
-  RTUtil::pushStream(gds_file, lb_x, " : ", lb_y, "\n");
+  RTUtil::pushStream(gds_file, ll_x, " : ", ll_y, "\n");
+  RTUtil::pushStream(gds_file, ur_x, " : ", ll_y, "\n");
+  RTUtil::pushStream(gds_file, ur_x, " : ", ur_y, "\n");
+  RTUtil::pushStream(gds_file, ll_x, " : ", ur_y, "\n");
+  RTUtil::pushStream(gds_file, ll_x, " : ", ll_y, "\n");
   RTUtil::pushStream(gds_file, "ENDEL", "\n");
 }
 

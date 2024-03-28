@@ -14,25 +14,25 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-#include "RTAPI.hpp"
-#include "tcl_util.h"
+#include "RTInterface.hpp"
 #include "tcl_rt.h"
+#include "tcl_util.h"
 
 namespace tcl {
 
-  TclClearDef::TclClearDef(const char* cmd_name) : TclCmd(cmd_name)
-  {
+TclClearDef::TclClearDef(const char* cmd_name) : TclCmd(cmd_name)
+{
+}
+
+unsigned TclClearDef::exec()
+{
+  if (!check()) {
+    return 0;
   }
 
-  unsigned TclClearDef::exec()
-  {
-    if (!check()) {
-      return 0;
-    }
+  RTI.clearDef();
 
-    RTAPI_INST.clearDef();
-
-    return 1;
-  }
+  return 1;
+}
 
 }  // namespace tcl

@@ -33,7 +33,7 @@ fn rust_vec_to_c_array<T>(vec: &Vec<T>) -> RustVec {
 }
 
 #[no_mangle]
-pub extern "C" fn rust_vec_len(vec: &RustVec) -> usize {
+pub extern "C" fn vcd_rust_vec_len(vec: &RustVec) -> usize {
     vec.len
 }
 
@@ -43,7 +43,7 @@ fn string_to_c_char(s: &str) -> *mut c_char {
 }
 
 #[no_mangle]
-pub extern "C" fn free_c_char(s: *mut c_char) {
+pub extern "C" fn vcd_free_c_char(s: *mut c_char) {
     unsafe {
         let _ = CString::from_raw(s);
     }

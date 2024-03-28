@@ -25,7 +25,7 @@ namespace irt {
 
 using Loc = std::experimental::source_location;
 
-#define LOG_INST (irt::Logger::getInst())
+#define RTLOG (irt::Logger::getInst())
 
 class Logger
 {
@@ -106,12 +106,13 @@ class Logger
       std::string::size_type pos = file_name.find_last_of('/') + 1;
       file_name = file_name.substr(pos, file_name.length() - pos);
     }
-    std::string header = getString("[RT ", getTimestamp(), " ", getCompressedBase62(std::stoul(getString(std::this_thread::get_id()))), " ",
-                                   file_name, " ", location.function_name(), " ");
+    std::string prefix = getString("[RT ", getTimestamp(), " ", getCompressedBase62(std::stoul(getString(std::this_thread::get_id()))), " ",
+                                   file_name, " ");
+    std::string suffix = getString(" ", location.function_name());
     std::string message = getString(value, args...);
 
-    std::string origin_log = getString(header, log_level_char, "] ", message, "\n");
-    std::string color_log = getString(header, log_color_start, log_level_char, log_color_end, "] ", message, "\n");
+    std::string origin_log = getString(prefix, log_level_char, suffix, "] ", message, "\n");
+    std::string color_log = getString(prefix, log_color_start, log_level_char, log_color_end, suffix, "] ", message, "\n");
 
     if (_log_file != nullptr) {
       if (!_temp_storage.empty()) {

@@ -43,6 +43,7 @@ class DrcViolation
   {
   }
   ~DrcViolation() {}
+  void set_net_ids(std::set<int> net_ids) { _net_ids = net_ids; }
   idb::IdbLayer* get_layer() { return _layer; }
   std::set<int>& get_net_ids() { return _net_ids; }
   Type get_type() { return _type; }

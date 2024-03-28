@@ -3,6 +3,7 @@
 #include "Block.hh"
 #include "Hmetis.hh"
 #include "HyperGraphAlgorithm.hh"
+#include "IDBParserEngine.hh"
 #include "Logger.hpp"
 #include "Net.hh"
 
@@ -103,6 +104,10 @@ void BlkClustering2::operator()(Block& block)
     } else {
       net_ptr->set_net_weight(1.0);
     }
+    auto parser = std::static_pointer_cast<IDBParser, ParserEngine>(this->parser.lock());
+
+    auto idb_net = parser->get_net2idb().at(origin_net);
+    parser->add_net2idb(net_ptr, idb_net);
     return net_ptr;
   };
 

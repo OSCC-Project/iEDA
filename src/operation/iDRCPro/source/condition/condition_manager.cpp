@@ -17,80 +17,20 @@
 
 #include "condition_manager.h"
 
-#include "condition.h"
-#include "condition_area.h"
-#include "condition_connectivity.h"
-#include "condition_spacing.h"
-#include "drc_basic_point.h"
-#include "idrc_data.h"
-#include "idrc_violation_manager.h"
+#include "engine_layout.h"
+#include "idm.h"
 
 namespace idrc {
-/**
- * build condition for all stratagy and conditon matrix
- * return : true = no violation, false = has violation
- */
-bool DrcConditionManager::buildCondition()
+
+void DrcConditionManager::addViolation(ieda_solver::GeometryRect& rect, std::string layer, ViolationEnumType type, std::set<int> net_id)
 {
-  bool b_result = true;
-
-  b_result &= buildConditonConnectivity();
-  //   b_result &= buildConditonSpacing();
-  b_result &= buildConditonArea();
-
-  //   auto& stratagy_type = _stratagy.get_stratagy_type();
-  //   switch (stratagy_type) {
-  //     case DrcStratagyType::kCheckFast: {
-  //       b_result &= buildConditonConnectivity();
-  //       //   b_result &= buildConditonSpacing();
-  //       b_result &= buildConditonArea();
-  //     } break;
-  //     case DrcStratagyType::kCheckComplete: {
-  //       b_result &= buildConditonConnectivity();
-  //       //   b_result &= buildConditonSpacing();
-  //       b_result &= buildConditonArea();
-  //     } break;
-  //     default:
-  //       break;
-  //   }
-
-  return b_result;
-}
-/**
- * build condition for connectivity
- */
-bool DrcConditionManager::buildConditonConnectivity()
-{
-  bool b_result = true;
-
-  DrcRuleConditionConnectivity condition_connectivity(this, _engine);
-  b_result = condition_connectivity.check();
-
-  return b_result;
-}
-/**
- * build condition for area
- */
-bool DrcConditionManager::buildConditonArea()
-{
-  bool b_result = true;
-
-  DrcRuleConditionArea condition_area(this, _engine);
-  b_result = condition_area.check();
-
-  return b_result;
-}
-/**
- * build condition for spacing
- */
-bool DrcConditionManager::buildConditonSpacing()
-{
-  bool b_result = true;
-
-  DrcRuleConditionSpacing condition_spacing(this, _engine);
-  b_result = condition_spacing.check();
-
-  return b_result;
+#ifdef _PARALLEL_
+#pragma omp single
+#endif
+  {
+    _violation_manager->addViolation(ieda_solver::lowLeftX(rect), ieda_solver::lowLeftY(rect), ieda_solver::upRightX(rect),
+                                     ieda_solver::upRightY(rect), type, net_id, layer);
+  }
 }
 
 }  // namespace idrc

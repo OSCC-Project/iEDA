@@ -14,7 +14,7 @@ add_library(eval_api
 target_link_libraries(eval_api
     PRIVATE
         eval_module
-        irt_api     
+        irt_interface     
     INTERFACE
         eval_wirelength
         eval_congestion

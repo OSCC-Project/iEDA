@@ -26,7 +26,7 @@
 
 namespace irt {
 
-#define TA_INST (irt::TrackAssigner::getInst())
+#define RTTA (irt::TrackAssigner::getInst())
 
 class TrackAssigner
 {
@@ -60,9 +60,9 @@ class TrackAssigner
   bool needRouting(TAPanel& ta_panel);
   void buildFixedRectList(TAPanel& ta_panel);
   void buildPanelTrackAxis(TAPanel& ta_panel);
-  void initTANodeMap(TAPanel& ta_panel);
+  void buildTANodeMap(TAPanel& ta_panel);
   void buildTANodeNeighbor(TAPanel& ta_panel);
-  void buildOrienNetMap(TAPanel& ta_panel);
+  void buildOrientNetMap(TAPanel& ta_panel);
   void routeTAPanel(TAPanel& ta_panel);
   std::vector<TATask*> initTaskSchedule(TAPanel& ta_panel);
   void routeTATask(TAPanel& ta_panel, TATask* ta_task);
@@ -97,8 +97,8 @@ class TrackAssigner
   void updateViolationList(TAPanel& ta_panel);
   std::vector<Violation> getViolationList(TAPanel& ta_panel);
   std::vector<TATask*> getTaskScheduleByViolation(TAPanel& ta_panel);
-  void updateTATaskToGcellMap(TAPanel& ta_panel);
-  void updateViolationToGcellMap(TAPanel& ta_panel);
+  void uploadNetResult(TAPanel& ta_panel);
+  void uploadViolation(TAPanel& ta_panel);
   void freeTAPanel(TAPanel& ta_panel);
 #if 1  // update env
   void updateFixedRectToGraph(TAPanel& ta_panel, ChangeType change_type, int32_t net_idx, EXTLayerRect* fixed_rect, bool is_routing);

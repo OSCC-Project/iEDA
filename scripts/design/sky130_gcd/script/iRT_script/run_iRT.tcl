@@ -39,12 +39,12 @@ def_init -path ./result/iPL_lg_result.def
 init_rt -temp_directory_path "./result/rt/" \
         -bottom_routing_layer "met1" \
         -top_routing_layer "met5" \
-        -thread_number 50
+        -thread_number 64
 
 run_rt
 
-init_sta -output ./result/rt/sta/
-report_timing -stage "dr"
+# init_sta -output ./result/rt/sta/
+# report_timing -stage "dr"
 
 destroy_rt
 
