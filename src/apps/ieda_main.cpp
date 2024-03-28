@@ -32,13 +32,17 @@ using namespace iplf;
 
 int main(int argc, char** argv)
 {
-  for (int i = 1; i < argc; ++i) {
-    if (std::string("-script") == argv[i]) {
-      // discard every args before the (first) "-script"
-      // pass the rest of the args to Tcl interpreter
-      argc -= i;
-      argv += i;
-      break;
+  if (argc == 1) {
+    argv[0] = const_cast<char*>("UserShell\n");
+  } else {
+    for (int i = 1; i < argc; ++i) {
+      if (std::string("-script") == argv[i]) {
+        // discard every args before the (first) "-script"
+        // pass the rest of the args to Tcl interpreter
+        argc -= i;
+        argv += i;
+        break;
+      }
     }
   }
 

@@ -82,7 +82,7 @@ void PwrPropagateConst::setTieCellFanout(PwrSeqGraph* the_seq_graph) {
   std::function<void(PwrSeqVertex * seq_vertex, PwrVertex * pwr_vertex)>
       set_fanout_vertex = [&set_fanout_vertex](PwrSeqVertex* seq_vertex,
                                                PwrVertex* pwr_vertex) {
-        pwr_vertex->addFanoutSeqVertex(seq_vertex);
+        pwr_vertex->addFanoutSeqVertex(seq_vertex, 1);
         FOREACH_SNK_PWR_ARC(pwr_vertex, snk_arc) {
           auto* the_src_vertex = snk_arc->get_src();
           set_fanout_vertex(seq_vertex, the_src_vertex);

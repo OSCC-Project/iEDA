@@ -135,6 +135,8 @@ class PwrSeqVertex {
     }
     return data_in_vertexes;
   }
+  std::pair<std::optional<double>, unsigned>
+  getDataInVertexWorstSlackAndDepth();
 
   void addSrcArc(PwrSeqArc* src_arc);
   void addSnkArc(PwrSeqArc* snk_arc);
@@ -187,6 +189,9 @@ class PwrSeqArc {
   [[nodiscard]] unsigned isPipelineLoop() const { return _is_pipeline_loop; }
   void set_is_pipeline_loop() { _is_pipeline_loop = 1; }
 
+  [[nodiscard]] unsigned get_combine_depth() const { return _combine_depth; }
+  void set_combine_depth(unsigned combine_depth) { _combine_depth = combine_depth; }
+
   [[nodiscard]] auto* get_src() const { return _src; }
   [[nodiscard]] auto* get_snk() const { return _snk; }
 
@@ -194,8 +199,9 @@ class PwrSeqArc {
 
  private:
   unsigned _is_pipeline_loop : 1 =
-      0;                        //!<  The arc is belong to a pipe line loop.
-  unsigned _reserved : 31 = 0;  //!< reserved.
+      0;  //!<  The arc is belong to a pipe line loop.
+  unsigned _combine_depth : 10 = 0;  //!< The seq arc combine depth.
+  unsigned _reserved : 21 = 0;       //!< reserved.
 
   PwrSeqVertex* _src;  //!< The arc src vertex.
   PwrSeqVertex* _snk;  //!< The arc snk vertex.

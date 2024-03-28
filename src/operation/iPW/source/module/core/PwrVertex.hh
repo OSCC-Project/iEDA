@@ -1,16 +1,16 @@
 // ***************************************************************************************
 // Copyright (c) 2023-2025 Peng Cheng Laboratory
-// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of Sciences
-// Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
+// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of
+// Sciences Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
 //
 // iEDA is licensed under Mulan PSL v2.
-// You can use this software according to the terms and conditions of the Mulan PSL v2.
-// You may obtain a copy of Mulan PSL v2 at:
+// You can use this software according to the terms and conditions of the Mulan
+// PSL v2. You may obtain a copy of Mulan PSL v2 at:
 // http://license.coscl.org.cn/MulanPSL2
 //
-// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
-// EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
-// MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY
+// KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+// NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
@@ -23,6 +23,7 @@
  */
 #pragma once
 
+#include <map>
 #include <mutex>
 
 #include "PwrData.hh"
@@ -143,9 +144,16 @@ class PwrVertex {
   double getToggleData(std::optional<PwrDataSource> data_source);
   double getSPData(std::optional<PwrDataSource> data_source);
 
-  void addFanoutSeqVertex(PwrSeqVertex* fanout_seq_vertex) {
+  void addFanoutSeqVertex(PwrSeqVertex* fanout_seq_vertex, unsigned level) {
     LOG_FATAL_IF(!fanout_seq_vertex) << "insert nullptr.";
     _fanout_seq_vertexes.insert(fanout_seq_vertex);
+    if (_fanout_seq_vertex_to_level.contains(fanout_seq_vertex)) {
+      auto current_level = _fanout_seq_vertex_to_level[fanout_seq_vertex];
+      _fanout_seq_vertex_to_level[fanout_seq_vertex] =
+          (level > current_level) ? level : current_level;
+    } else {
+      _fanout_seq_vertex_to_level[fanout_seq_vertex] = level;
+    }
   }
 
   void addFanoutSeqVertex(const PwrSeqVertexSet& seq_vertex_set) {
@@ -154,6 +162,7 @@ class PwrVertex {
         std::inserter(_fanout_seq_vertexes, _fanout_seq_vertexes.begin()));
   }
   auto& get_fanout_seq_vertexes() { return _fanout_seq_vertexes; }
+  auto& get_fanout_seq_vertex_to_level() { return _fanout_seq_vertex_to_level; }
 
   std::optional<PwrSeqVertex*> getFanoutMinSeqLevel();
   void set_own_seq_vertex(PwrSeqVertex* own_seq_vertex) {
@@ -179,13 +188,13 @@ class PwrVertex {
       0;  //!< The vertex is visited when propagate const.
   unsigned _is_toggle_sp_propagated : 1 =
       0;  //!< The vertex is visited when propagate toggle sp.
-  unsigned _is_const : 1 = 0;        //!< The vertex is const.
-  unsigned _is_const_vdd : 1 = 0;    //!< The vertex is const one.
-  unsigned _is_const_gnd : 1 = 0;    //!< The vertex is const zero.
-  unsigned _is_input_port : 1 = 0;   //!< The vertex is input port.
-  unsigned _is_output_port : 1 = 0;  //!< The vertex is output port.
+  unsigned _is_const : 1 = 0;          //!< The vertex is const.
+  unsigned _is_const_vdd : 1 = 0;      //!< The vertex is const one.
+  unsigned _is_const_gnd : 1 = 0;      //!< The vertex is const zero.
+  unsigned _is_input_port : 1 = 0;     //!< The vertex is input port.
+  unsigned _is_output_port : 1 = 0;    //!< The vertex is output port.
   unsigned _is_clock_network : 1 = 0;  //!< The vertex is clock nerwork.
-  unsigned _reserved : 23 = 0;       //!< reserved.
+  unsigned _reserved : 23 = 0;         //!< reserved.
 
   StaVertex* _sta_vertex;          //!< The mapped sta vertex.
   std::vector<PwrArc*> _src_arcs;  //!< The power arc sourced from the vertex.
@@ -196,6 +205,10 @@ class PwrVertex {
   PwrSeqVertexSet _fanout_seq_vertexes;  //!< The fan out seq vertexes if the
                                          //!< vertex is belong to combine logic,
                                          //!< sorted by object name.
+  std::map<PwrSeqVertex*, unsigned>
+      _fanout_seq_vertex_to_level;  //!< The fanout seq vertex level to the
+                                    //!< vertex from end vertex, end vertex is
+                                    //!< level zero.
   PwrSeqVertex* _own_seq_vertex =
       nullptr;  //!< The own seq vertex, may be the vertex is belong a
                 //!< sequential instance.

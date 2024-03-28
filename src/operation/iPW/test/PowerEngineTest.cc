@@ -68,9 +68,13 @@ TEST_F(PowerEngineTest, example1) {
 
   for (auto [src_cluster_id, snk_clusters] : connection_map) {
     for (auto snk_cluster : snk_clusters) {
+      std::string stages_str = std::accumulate(
+          snk_cluster._stages_each_hop.begin(),
+          snk_cluster._stages_each_hop.end(), std::string(),
+          [](const auto a, const auto b) { return a + " " + std::to_string(b); });
       LOG_INFO << "src cluster id " << src_cluster_id << " -> "
-               << "snk cluster id " << snk_cluster._dst_cluster_id << " hop "
-               << snk_cluster._hop;
+               << "snk cluster id " << snk_cluster._dst_cluster_id << " stages "
+               << stages_str << " hop " << snk_cluster._hop;
     }
   }
 }
