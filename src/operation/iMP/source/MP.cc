@@ -40,8 +40,7 @@ void MP::runMP()
   float cool_rate = 0.96;
   float init_temperature = 2000.0;
 
-  std::shared_ptr<ParserEngine> temp = std::move(_parser);
-  BlkClustering2 clustering{.l1_nparts = 200, .level_num = 1, .parser = temp};  // one level place
+  BlkClustering2 clustering{.l1_nparts = 200, .level_num = 1, .parser = _parser};  // one level place
   root().parallel_preorder_op(clustering);
   auto placer = SAHierPlacer<int32_t>(root(), macro_halo_micron, dead_space_ratio, weight_wl, weight_ol, weight_ob, weight_periphery,
                                       weight_blockage, weight_io, max_iters, cool_rate, init_temperature);
