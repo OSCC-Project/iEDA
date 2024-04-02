@@ -1,54 +1,54 @@
 #===========================================================
 ##   init flow config
 #===========================================================
-flow_init -config ./iEDA_config/flow_config.json
+flow_init -config $::env(CONFIG_DIR)/flow_config.json
 
 #===========================================================
 ##   read db config
 #===========================================================
-db_init -config ./iEDA_config/db_default_config.json
+db_init -config $::env(CONFIG_DIR)/db_default_config.json
 
 #===========================================================
 ##   reset data path
 #===========================================================
-source ./script/DB_script/db_path_setting.tcl
+source $::env(TCL_SCRIPT_DIR)/DB_script/db_path_setting.tcl
 
 #===========================================================
 ##   reset lib
 #===========================================================
-source ./script/DB_script/db_init_lib.tcl
+source $::env(TCL_SCRIPT_DIR)/DB_script/db_init_lib.tcl
 
 #===========================================================
 ##   reset sdc
 #===========================================================
-source ./script/DB_script/db_init_sdc.tcl
+source $::env(TCL_SCRIPT_DIR)/DB_script/db_init_sdc.tcl
 
 #===========================================================
 ##   reset spef
 #===========================================================
-source ./script/DB_script/db_init_spef.tcl
+source $::env(TCL_SCRIPT_DIR)/DB_script/db_init_spef.tcl
 
 #===========================================================
 ##   read lef
 #===========================================================
-source ./script/DB_script/db_init_lef.tcl
+source $::env(TCL_SCRIPT_DIR)/DB_script/db_init_lef.tcl
 
 #===========================================================
 ##   read def
 #===========================================================
-def_init -path ./result/iCTS_result.def
+def_init -path $::env(RESULT_DIR)/iCTS_result.def
 
 #===========================================================
 ##   build clock tree by sta & save data
 #===========================================================
-build_clock_tree -output ./result/cts/clocktree 
-cts_save_tree -path ./result/cts/clocktree/gui.clk
+build_clock_tree -output $::env(RESULT_DIR)/cts/clocktree 
+cts_save_tree -path $::env(RESULT_DIR)/cts/clocktree/gui.clk
 flow_exit
 
 #===========================================================
 ##   build clock tree by data 
 #===========================================================
-build_clock_tree -clock_data_path ./result/cts/clocktree/gui.clk
+build_clock_tree -clock_data_path $::env(RESULT_DIR)/cts/clocktree/gui.clk
 
 #===========================================================
 ##   show CTS GUI

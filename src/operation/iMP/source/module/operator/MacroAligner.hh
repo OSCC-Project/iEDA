@@ -15,7 +15,14 @@ struct MacroAligner
   MacroAligner(float notch_v_ratio = 1.5, float notch_h_ratio = 1.5) : _notch_v_ratio(notch_v_ratio), _notch_h_ratio(notch_h_ratio) {}
   ~MacroAligner() = default;
 
-  void operator()(Block& blk) { alignMacrosGlobal(blk); }
+  void operator()(Block& blk)
+  {
+    auto sa_start = std::chrono::high_resolution_clock::now();
+    alignMacrosGlobal(blk);
+    auto sa_end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<float> elapsed = std::chrono::duration<float>(sa_end - sa_start);
+    INFO("Macro Refinement time:", elapsed.count(), "s");
+  }
 
   void flipBoundaryMacros(Block& blk, const std::map<std::string, std::vector<bool>>& macro_pin_locs)
   {

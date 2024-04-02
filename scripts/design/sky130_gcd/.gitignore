@@ -10,4 +10,4 @@
 *.spef
 iEDA
 iEDA_gui
-
+${RESULT_PATH}

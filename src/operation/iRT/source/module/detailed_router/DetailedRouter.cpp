@@ -443,6 +443,7 @@ void DetailedRouter::buildDRNodeValid(DRBox& dr_box)
   int32_t bottom_routing_layer_idx = RTDM.getConfig().bottom_routing_layer_idx;
   int32_t top_routing_layer_idx = RTDM.getConfig().top_routing_layer_idx;
 
+  int32_t max_neighbor_range = dr_box.get_dr_parameter()->get_max_neighbor_range();
   std::vector<GridMap<DRNode>>& layer_node_map = dr_box.get_layer_node_map();
   ScaleAxis& box_track_axis = dr_box.get_box_track_axis();
 
@@ -507,26 +508,28 @@ void DetailedRouter::buildDRNodeValid(DRBox& dr_box)
             continue;
           }
           int32_t x_pitch = routing_layer_list[point_layer_idx].getXTrackGridList().front().get_step_length();
-          int32_t y_pitch = routing_layer_list[point_layer_idx].getYTrackGridList().front().get_step_length();
+          int32_t x_neighbor_range = x_pitch * max_neighbor_range;
           std::vector<PlanarCoord> valid_h_coord_list;
           for (int32_t x_scale : layer_x_scale_map[point_layer_idx]) {
-            if ((real_coord.get_x() - 2 * x_pitch <= x_scale && x_scale <= real_coord.get_x() - x_pitch)
-                || (real_coord.get_x() + x_pitch <= x_scale && x_scale <= real_coord.get_x() + 2 * x_pitch)) {
+            if ((real_coord.get_x() - x_neighbor_range <= x_scale && x_scale <= real_coord.get_x() - x_pitch)
+                || (real_coord.get_x() + x_pitch <= x_scale && x_scale <= real_coord.get_x() + x_neighbor_range)) {
               valid_h_coord_list.emplace_back(x_scale, real_coord.get_y());
               continue;
             }
-            if (x_scale > real_coord.get_x() + 2 * x_pitch) {
+            if (x_scale > real_coord.get_x() + x_neighbor_range) {
               break;
             }
           }
+          int32_t y_pitch = routing_layer_list[point_layer_idx].getYTrackGridList().front().get_step_length();
+          int32_t y_neighbor_range = y_pitch * max_neighbor_range;
           std::vector<PlanarCoord> valid_v_coord_list;
           for (int32_t y_scale : layer_y_scale_map[point_layer_idx]) {
-            if ((real_coord.get_y() - 2 * y_pitch <= y_scale && y_scale <= real_coord.get_y() - y_pitch)
-                || (real_coord.get_y() + y_pitch <= y_scale && y_scale <= real_coord.get_y() + 2 * y_pitch)) {
+            if ((real_coord.get_y() - y_neighbor_range <= y_scale && y_scale <= real_coord.get_y() - y_pitch)
+                || (real_coord.get_y() + y_pitch <= y_scale && y_scale <= real_coord.get_y() + y_neighbor_range)) {
               valid_v_coord_list.emplace_back(real_coord.get_x(), y_scale);
               continue;
             }
-            if (y_scale > real_coord.get_y() + 2 * y_pitch) {
+            if (y_scale > real_coord.get_y() + y_neighbor_range) {
               break;
             }
           }
@@ -559,9 +562,12 @@ void DetailedRouter::buildDRNodeValid(DRBox& dr_box)
 
 void DetailedRouter::buildDRNodeNeighbor(DRBox& dr_box)
 {
-  std::vector<GridMap<DRNode>>& layer_node_map = dr_box.get_layer_node_map();
+  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
   int32_t bottom_routing_layer_idx = RTDM.getConfig().bottom_routing_layer_idx;
   int32_t top_routing_layer_idx = RTDM.getConfig().top_routing_layer_idx;
+
+  int32_t max_neighbor_range = dr_box.get_dr_parameter()->get_max_neighbor_range();
+  std::vector<GridMap<DRNode>>& layer_node_map = dr_box.get_layer_node_map();
 
   for (int32_t curr_layer_idx = 0; curr_layer_idx < static_cast<int32_t>(layer_node_map.size()); curr_layer_idx++) {
     for (int32_t curr_x = 0; curr_x < layer_node_map[curr_layer_idx].get_x_size(); curr_x++) {
@@ -582,20 +588,30 @@ void DetailedRouter::buildDRNodeNeighbor(DRBox& dr_box)
           continue;
         }
         // 向东寻找，找到第一个有效结点即为东邻居，并将东邻居的西邻居设为自己
+        int32_t x_pitch = routing_layer_list[curr_layer_idx].getXTrackGridList().front().get_step_length();
+        int32_t x_neighbor_range = x_pitch * max_neighbor_range;
         for (int32_t east_x = curr_x + 1; east_x < layer_node_map[curr_layer_idx].get_x_size(); east_x++) {
           DRNode& east_node = layer_node_map[curr_layer_idx][east_x][curr_y];
           if (!east_node.get_is_valid()) {
             continue;
+          }
+          if (std::abs(curr_node.get_x() - east_node.get_x()) > x_neighbor_range) {
+            break;
           }
           curr_node.get_neighbor_node_map()[Orientation::kEast] = &east_node;
           east_node.get_neighbor_node_map()[Orientation::kWest] = &curr_node;
           break;
         }
         // 向北寻找，找到第一个有效结点即为北邻居，并将北邻居的南邻居设为自己
+        int32_t y_pitch = routing_layer_list[curr_layer_idx].getYTrackGridList().front().get_step_length();
+        int32_t y_neighbor_range = y_pitch * max_neighbor_range;
         for (int32_t north_y = curr_y + 1; north_y < layer_node_map[curr_layer_idx].get_y_size(); north_y++) {
           DRNode& north_node = layer_node_map[curr_layer_idx][curr_x][north_y];
           if (!north_node.get_is_valid()) {
             continue;
+          }
+          if (std::abs(curr_node.get_y() - north_node.get_y()) > y_neighbor_range) {
+            break;
           }
           curr_node.get_neighbor_node_map()[Orientation::kNorth] = &north_node;
           north_node.get_neighbor_node_map()[Orientation::kSouth] = &curr_node;
