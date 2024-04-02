@@ -915,7 +915,7 @@ namespace ipl {
     //** plot congestion map which format is csv
     // std::string plot_path = "./result/pl/report/";
     // std::string output_file_name = "CongMap";
-    // iPLAPIInst.plotCongMap(plot_path, output_file_name);
+    // _external_api->plotCongMap(plot_path, output_file_name);
 
     // _external_api->destroyCongEval();
   }

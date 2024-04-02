@@ -170,7 +170,7 @@ std::vector<float> ExternalAPI::evalGRCong()
   std::vector<float> gr_congestion;
   gr_congestion = eval_api.evalGRCong();
 
-  eval::EvalAPI::destroyInst();
+  // eval::EvalAPI::destroyInst();
 
   return gr_congestion;
 }
@@ -208,7 +208,7 @@ void ExternalAPI::plotCongMap(const std::string& plot_path, const std::string& o
   // layer by layer
   eval_api.plotGRCong(plot_path, output_file_name);
   // statistical TotalOverflow/MaximumOverflow
-  eval_api.plotOverflow(plot_path, output_file_name);
+  // eval_api.plotOverflow(plot_path, output_file_name);
 }
 
 void ExternalAPI::destroyCongEval()

@@ -8,7 +8,7 @@
         "sdc_path": ""
     },
     "OUTPUT": {
-        "output_dir_path": "./result"
+        "output_dir_path": "${RESULT_DIR}"
     },
     "LayerSettings": {
         "routing_layer_1st": "met1"

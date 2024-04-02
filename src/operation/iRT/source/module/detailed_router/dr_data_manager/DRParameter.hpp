@@ -44,6 +44,7 @@ class DRParameter
     _fixed_rect_unit = fixed_rect_unit;
     _routed_rect_unit = routed_rect_unit;
     _violation_unit = violation_unit;
+    _max_neighbor_range = 2;
     _complete_rip_up = complete_rip_up;
     _max_routed_times = max_routed_times;
   }
@@ -58,6 +59,7 @@ class DRParameter
   double get_fixed_rect_unit() const { return _fixed_rect_unit; }
   double get_routed_rect_unit() const { return _routed_rect_unit; }
   double get_violation_unit() const { return _violation_unit; }
+  int32_t get_max_neighbor_range() const { return _max_neighbor_range; }
   bool get_complete_rip_up() const { return _complete_rip_up; }
   int32_t get_max_routed_times() const { return _max_routed_times; }
   // setter
@@ -70,6 +72,7 @@ class DRParameter
   void set_fixed_rect_unit(const double fixed_rect_unit) { _fixed_rect_unit = fixed_rect_unit; }
   void set_routed_rect_unit(const double routed_rect_unit) { _routed_rect_unit = routed_rect_unit; }
   void set_violation_unit(const double violation_unit) { _violation_unit = violation_unit; }
+  void set_max_neighbor_range(const double max_neighbor_range) { _max_neighbor_range = max_neighbor_range; }
   void set_complete_rip_up(const bool complete_rip_up) { _complete_rip_up = complete_rip_up; }
   void set_max_routed_times(const int32_t max_routed_times) { _max_routed_times = max_routed_times; }
 
@@ -83,6 +86,7 @@ class DRParameter
   double _fixed_rect_unit = 0;
   double _routed_rect_unit = 0;
   double _violation_unit = 0;
+  int32_t _max_neighbor_range = 0;
   bool _complete_rip_up = true;
   int32_t _max_routed_times = 0;
 };
