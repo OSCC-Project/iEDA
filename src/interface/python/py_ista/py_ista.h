@@ -18,6 +18,8 @@
 
 #include <set>
 #include <string>
+#include <vector>
+
 namespace python_interface {
 bool staRun(const std::string& output);
 
