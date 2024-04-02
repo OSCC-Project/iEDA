@@ -54,10 +54,10 @@ bool readVerilog(const std::string& file_name)
   return true;
 }
 
-bool readLiberty(const std::string& file_name)
+bool readLiberty(std::vector<std::string>& lib_files)
 {
   auto* ista = ista::Sta::getOrCreateSta();
-  ista->readLiberty(file_name.c_str());
+  ista->readLiberty(lib_files);
   return true;
 }
 
