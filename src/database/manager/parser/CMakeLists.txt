@@ -1,7 +1,5 @@
 SET(CMAKE_BUILD_TYPE "Release")
 
-include(rust-common/rust-common.cmake)
-
 include_directories(${HOME_DATABASE}/manager/parser)
 add_compile_options(-w)
 add_subdirectory(aocv)

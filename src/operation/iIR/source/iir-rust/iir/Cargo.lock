@@ -211,6 +211,7 @@ dependencies = [
 name = "iir"
 version = "0.1.0"
 dependencies = [
+ "cbindgen",
  "csv",
  "nalgebra",
  "serde",

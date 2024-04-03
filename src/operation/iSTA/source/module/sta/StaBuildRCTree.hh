@@ -29,6 +29,8 @@
 
 #include "StaFunc.hh"
 
+class RustSpefNet;
+
 namespace ista {
 
 /**
@@ -46,7 +48,7 @@ class StaBuildRCTree : public StaFunc {
   std::unique_ptr<RcNet> createRcNet(Net* net);
   DelayCalcMethod get_calc_method() { return _calc_method; }
 
-  // void printYaml(const spef::Net& spef_net);
+  void printYaml(RustSpefNet& spef_net);
   void printYamlText(const char* file_name);
 
  private:
