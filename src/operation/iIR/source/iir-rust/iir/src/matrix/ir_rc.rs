@@ -2,7 +2,7 @@ use spef_parser::spef_parser;
 use std::collections::HashMap;
 
 extern crate nalgebra as na;
-use na::{DMatrix, Matrix, Vector};
+use na::{DMatrix};
 
 /// RC node of the spef network.
 pub struct RCNode {
@@ -66,6 +66,9 @@ impl RCOneNetData {
     pub fn get_nodes(&self) -> &Vec<RCNode> {
         &self.nodes
     }
+    pub fn get_node_id(&self, node_name:&String) -> Option<usize> {
+        self.node_name_to_node_id.get(node_name).cloned()
+    }
 
     pub fn get_resistances(&self) -> &Vec<RCResistance> {
         &self.resistances
@@ -82,6 +85,9 @@ impl RCData {
     pub fn add_one_net_data(&mut self, one_net_data: RCOneNetData) {
         self.power_nets_data
             .insert(String::from(one_net_data.get_name()), one_net_data);
+    }
+    pub fn get_power_nets_data(&self) -> &HashMap<String, RCOneNetData> {
+        &self.power_nets_data
     }
 }
 
@@ -152,12 +158,14 @@ pub fn build_conductance_matrix(rc_one_net_data: &RCOneNetData) -> DMatrix<f64> 
     let matrix_size = nodes.len();
     let mut arr = vec![vec![0.0; matrix_size]; matrix_size];
 
+    //TODO process the
     for rc_resistance in resistances {
         let node1_id = rc_resistance.from_node_id;
         let node2_id = rc_resistance.to_node_id;
         let resistance_val = rc_resistance.resistance;
 
         arr[node1_id][node2_id] = -1.0 / resistance_val;
+        arr[node2_id][node1_id] = -1.0 / resistance_val;
         arr[node1_id][node1_id] += 1.0 / resistance_val;
         arr[node2_id][node2_id] += 1.0 / resistance_val;
     }
@@ -173,4 +181,44 @@ pub fn build_conductance_matrix(rc_one_net_data: &RCOneNetData) -> DMatrix<f64> 
     );
 
     matrix
+}
+
+
+
+
+extern crate quickcheck;
+
+use quickcheck::{TestResult};
+
+use super::*;
+
+#[test]
+fn test_build_conductance_matrix() {
+    let one_net_data = RCOneNetData {
+        name: "test_net".to_string(),
+        node_name_to_node_id: HashMap::new(),
+        nodes: vec![
+            RCNode::new("node1".to_string()),
+            RCNode::new("node2".to_string()),
+        ],
+        resistances: vec![
+            RCResistance {
+                from_node_id: 0,
+                to_node_id: 1,
+                resistance: 1.0,
+            }
+        ],
+    };
+
+    let matrix = build_conductance_matrix(&one_net_data);
+    let expected_matrix = DMatrix::from_row_slice(
+        2,
+        2,
+        &[
+            1.0, -1.0,
+            -1.0, 1.0,
+        ],
+    );
+
+    assert_eq!(matrix, expected_matrix);
 }
