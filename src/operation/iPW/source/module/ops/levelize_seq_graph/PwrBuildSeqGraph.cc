@@ -22,11 +22,12 @@
  * @date 2023-03-03
  */
 
+#include "PwrBuildSeqGraph.hh"
+
 #include <condition_variable>
 #include <mutex>
 #include <ranges>
 
-#include "PwrBuildSeqGraph.hh"
 #include "ThreadPool/ThreadPool.h"
 #include "ops/dump/PwrDumpSeqGraph.hh"
 
@@ -88,6 +89,10 @@ unsigned PwrBuildSeqGraph::operator()(PwrVertex* the_vertex) {
   auto& src_arcs = the_sta_vertex->get_src_arcs();
   for (auto& src_arc : src_arcs) {
     if (!src_arc->isDelayArc()) {
+      continue;
+    }
+
+    if (src_arc->is_loop_disable()) {
       continue;
     }
 
