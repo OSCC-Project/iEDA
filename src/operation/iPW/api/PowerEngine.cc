@@ -176,8 +176,8 @@ PowerEngine::buildConnectionMap(std::vector<std::set<std::string>> clusters,
         dfs_from_src_seq_vertex(src_cluster_id, seq_vertex, stages_each_hop,
                                 max_hop);
 #endif
-        ++src_cluster_id;
       }
+      ++src_cluster_id;
     }
   }
 
