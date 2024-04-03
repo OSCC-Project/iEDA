@@ -1,6 +1,9 @@
 use spef_parser::spef_parser;
 use std::collections::HashMap;
 
+extern crate nalgebra as na;
+use na::{DMatrix, Matrix, Vector};
+
 /// RC node of the spef network.
 pub struct RCNode {
     name: String,
@@ -34,9 +37,9 @@ impl RCNode {
 /// RC resistance.
 #[derive(Default)]
 pub struct RCResistance {
-    from_node_id: u32,
-    to_node_id: u32,
-    resistance: f32,
+    pub from_node_id: usize,
+    pub to_node_id: usize,
+    pub resistance: f64,
 }
 
 /// One power net rc data.
@@ -52,10 +55,20 @@ impl RCOneNetData {
     pub fn get_name(&self) -> &str {
         &self.name
     }
-    pub fn add_node(&mut self, one_node: RCNode) {
+    pub fn add_node(&mut self, one_node: RCNode) -> usize {
+        let node_id = self.nodes.len();
         self.node_name_to_node_id
-            .insert(String::from(one_node.get_name()), self.nodes.len() - 1);
+            .insert(String::from(one_node.get_name()), node_id);
         self.nodes.push(one_node);
+        node_id
+    }
+
+    pub fn get_nodes(&self) -> &Vec<RCNode> {
+        &self.nodes
+    }
+
+    pub fn get_resistances(&self) -> &Vec<RCResistance> {
+        &self.resistances
     }
 }
 
@@ -73,7 +86,7 @@ impl RCData {
 }
 
 /// read rc data from spef file.
-pub fn read_rc_data_from_spef(spef_file_path: &str) {
+pub fn read_rc_data_from_spef(spef_file_path: &str) -> RCData {
     let spef_file = spef_parser::parse_spef_file(spef_file_path);
     let spef_data_nets = spef_file.get_nets();
 
@@ -113,10 +126,51 @@ pub fn read_rc_data_from_spef(spef_file_path: &str) {
             let node2_name: &str = &one_resistance.node2;
             let resistance_val = one_resistance.res_or_cap;
 
-            let rc_node = RCNode::new(String::from(node1_name));
-            one_net_data.add_node(rc_node);
+            let rc_node1 = RCNode::new(String::from(node1_name));
+            let node1_id = one_net_data.add_node(rc_node1);
+
+            let rc_node2 = RCNode::new(String::from(node2_name));
+            let node2_id = one_net_data.add_node(rc_node2);
+
+            let mut rc_resistance = RCResistance::default();
+            rc_resistance.from_node_id = node1_id;
+            rc_resistance.to_node_id = node2_id;
+            rc_resistance.resistance = resistance_val;
         }
 
         rc_data.add_one_net_data(one_net_data);
     }
+
+    rc_data
+}
+
+/// build conductance matrix from one net rc data.
+pub fn build_conductance_matrix(rc_one_net_data: &RCOneNetData) -> DMatrix<f64> {
+    let nodes = rc_one_net_data.get_nodes();
+    let resistances = rc_one_net_data.get_resistances();
+
+    let matrix_size = nodes.len();
+    let mut arr = vec![vec![0.0; matrix_size]; matrix_size];
+
+    for rc_resistance in resistances {
+        let node1_id = rc_resistance.from_node_id;
+        let node2_id = rc_resistance.to_node_id;
+        let resistance_val = rc_resistance.resistance;
+
+        arr[node1_id][node2_id] = -1.0 / resistance_val;
+        arr[node1_id][node1_id] += 1.0 / resistance_val;
+        arr[node2_id][node2_id] += 1.0 / resistance_val;
+    }
+
+    let matrix: DMatrix<f64> = DMatrix::from_row_slice(
+        arr.len(),
+        arr[0].len(),
+        arr.iter()
+            .flatten()
+            .map(|&x| x)
+            .collect::<Vec<_>>()
+            .as_slice(),
+    );
+
+    matrix
 }
