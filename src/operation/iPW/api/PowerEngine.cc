@@ -102,8 +102,9 @@ unsigned PowerEngine::creatDataflow() {
  * the map key is src cluster id, value is dst cluster id and hop.
  */
 std::map<std::size_t, std::vector<ClusterConnection>>
-PowerEngine::buildConnectionMap(std::vector<std::set<std::string>> clusters,
-                                unsigned max_hop) {
+PowerEngine::buildConnectionMap(
+    std::vector<std::set<std::string>> clusters,
+    std::vector<std::set<std::string>> src_instances, unsigned max_hop) {
   auto& seq_graph = _ipower->get_power_seq_graph();
   auto* nl = _timing_engine->get_netlist();
 
@@ -157,6 +158,9 @@ PowerEngine::buildConnectionMap(std::vector<std::set<std::string>> clusters,
 
         // not seq instance, skip.
         if (!seq_vertex) {
+          continue;
+        }
+        if (src_instances[src_cluster_id].count(obj_name) == 0) {
           continue;
         }
 
