@@ -17,6 +17,13 @@
 namespace imp {
 
 template <typename T>
+std::vector<std::pair<T, T>> generateDifferentTilings(const std::vector<ShapeCurve<T>>& sub_shape_curves, T core_width, T core_height,
+                                                      const std::string& name);
+
+std::vector<std::shared_ptr<imp::Instance>> get_instances(Block& blk);
+std::vector<std::shared_ptr<imp::Instance>> get_macros(Block& blk);
+
+template <typename T>
 struct SAHierPlacer
 {
   ~SAHierPlacer() {}
@@ -29,6 +36,7 @@ struct SAHierPlacer
 
     // sta & add-virtual-net
     std::unordered_map<idb::IdbNet*, std::map<std::string, double>> net_lengths;
+    // createDataflow(root_cluster, 2);
     auto negative_slack_paths = timing_evaluator.getNegativeSlackPaths(net_lengths, 1.0);
     addVirtualNet(root_cluster, negative_slack_paths);
 
@@ -85,6 +93,8 @@ struct SAHierPlacer
   void initIstaPinNameMap();
   void initInstanceInfo();
   void addVirtualNet(Block& root_cluster, std::vector<std::tuple<std::string, std::string, double>> negative_slack_paths);
+  void createDataflow(Block& root_cluster, size_t max_hop);
+  std::set<std::string> get_boundary_instances(Block& root_cluster);
   std::string fullPinName(idb::IdbPin* idb_pin);
   const SeqPair<NodeShape<T>>& get_sp_solution() const { return solution_top_level_sp; }
 
@@ -239,7 +249,7 @@ void SAHierPlacer<T>::place(Block& blk)
                         .prob_pi_op = prob_pi,
                         .prob_ni_op = prob_ni,
                         .prob_rs_op = prob_rs,
-                        .init_sp = init_top_level_sp};
+                        .init_represent = init_top_level_sp};
       auto not_used_sp = placer(blk);
     }
   }
@@ -503,6 +513,52 @@ std::string SAHierPlacer<T>::fullPinName(idb::IdbPin* idb_pin)
 }
 
 template <typename T>
+void SAHierPlacer<T>::createDataflow(Block& root_cluster, size_t max_hop)
+{
+  std::vector<std::set<std::string>> cluster_instances;
+  std::vector<std::set<std::string>> cluster_src_instances;
+
+  std::set<std::string> inst_count;
+  // std::set<std::string> boundary_inst_names = get_boundary_instances(root_cluster);
+  for (size_t i = 0; i < root_cluster.netlist().vSize(); ++i) {
+    std::set<std::string> inst_set;
+    std::set<std::string> src_inst_set;
+    auto sub_blk = *(std::static_pointer_cast<Block, Object>(root_cluster.netlist().vertex_at(i).property()));
+
+    auto inst_list = get_instances(sub_blk);
+    for (auto&& inst : inst_list) {
+      std::string inst_name = Str::trimBackslash(inst->get_name());
+      if (inst_count.count(inst_name) != 0) {
+        ERROR("Error, same instance in multi-clusters");
+      }
+      inst_set.insert(inst_name);
+      if (inst->get_cell_master().isMacro()) {
+        src_inst_set.insert(inst_name);
+      }
+    }
+
+    cluster_instances.push_back(std::move(inst_set));
+    cluster_src_instances.push_back(std::move(src_inst_set));
+
+  }
+  timing_evaluator.createDataflow(cluster_instances, cluster_src_instances, max_hop);
+}
+
+// template <typename T>
+// std::set<std::string> SAHierPlacer<T>::get_boundary_instances(Block& root_cluster)
+// {
+//   std::set<std::string> boundary_inst_names;
+//   auto& net2idb = ParserInst()->get_net2idb();
+//   for (auto&& he : root_cluster.netlist().heRange()) {
+//     auto idb_net = net2idb.at(he.property());
+//     for (auto inst : idb_net->get_instance_list()->get_instance_list()) {
+//       boundary_inst_names.insert(Str::trimBackslash(inst->get_name()));
+//     }
+//   }
+//   return boundary_inst_names;
+// }
+
+template <typename T>
 std::vector<std::pair<T, T>> generateDifferentTilings(const std::vector<ShapeCurve<T>>& sub_shape_curves, T core_width, T core_height,
                                                       const std::string& name)
 {
@@ -750,6 +806,7 @@ void writePlacementTcl(Block& blk, std::string file_name, int32_t dbu)
         << "fixed"
         << " -name " << macro->get_name() << std::endl;
   }
+  INFO(file_name, " write success");
 }
 
 void preorder_get_instances(Block& blk, std::vector<std::shared_ptr<imp::Instance>>& instances)
