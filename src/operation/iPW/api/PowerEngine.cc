@@ -104,7 +104,7 @@ unsigned PowerEngine::creatDataflow() {
 std::map<std::size_t, std::vector<ClusterConnection>>
 PowerEngine::buildConnectionMap(
     std::vector<std::set<std::string>> clusters,
-    std::vector<std::set<std::string>> src_instances, unsigned max_hop) {
+    std::set<std::string> src_instances, unsigned max_hop) {
   auto& seq_graph = _ipower->get_power_seq_graph();
   auto* nl = _timing_engine->get_netlist();
 
@@ -160,7 +160,7 @@ PowerEngine::buildConnectionMap(
         if (!seq_vertex) {
           continue;
         }
-        if (src_instances[src_cluster_id].count(obj_name) == 0) {
+        if (src_instances.count(obj_name) == 0) {
           continue;
         }
 

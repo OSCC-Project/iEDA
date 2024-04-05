@@ -30,6 +30,6 @@ unsigned reportPower();
 unsigned create_data_flow();
 
 std::map<std::size_t, std::vector<ipower::ClusterConnection>> build_connection_map(
-    std::vector<std::set<std::string>> clusters, unsigned max_hop);
+    std::vector<std::set<std::string>> clusters,  std::set<std::string> src_instances, unsigned max_hop);
 
 }  // namespace python_interface

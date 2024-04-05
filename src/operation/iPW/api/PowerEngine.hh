@@ -61,7 +61,7 @@ class PowerEngine {
   unsigned creatDataflow();
   std::map<std::size_t, std::vector<ClusterConnection>> buildConnectionMap(
       std::vector<std::set<std::string>> clusters,
-      std::vector<std::set<std::string>> src_instances, unsigned max_hop);
+      std::set<std::string> src_instances, unsigned max_hop);
 
  private:
   PowerEngine();
