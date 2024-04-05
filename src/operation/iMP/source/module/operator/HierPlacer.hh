@@ -516,13 +516,14 @@ template <typename T>
 void SAHierPlacer<T>::createDataflow(Block& root_cluster, size_t max_hop)
 {
   std::vector<std::set<std::string>> cluster_instances;
-  std::vector<std::set<std::string>> cluster_src_instances;
+  // std::vector<std::set<std::string>> cluster_src_instances;
+  std::set<std::string> src_instances;
 
   std::set<std::string> inst_count;
   // std::set<std::string> boundary_inst_names = get_boundary_instances(root_cluster);
   for (size_t i = 0; i < root_cluster.netlist().vSize(); ++i) {
     std::set<std::string> inst_set;
-    std::set<std::string> src_inst_set;
+    // std::set<std::string> src_inst_set;
     auto sub_blk = *(std::static_pointer_cast<Block, Object>(root_cluster.netlist().vertex_at(i).property()));
 
     auto inst_list = get_instances(sub_blk);
@@ -533,15 +534,14 @@ void SAHierPlacer<T>::createDataflow(Block& root_cluster, size_t max_hop)
       }
       inst_set.insert(inst_name);
       if (inst->get_cell_master().isMacro()) {
-        src_inst_set.insert(inst_name);
+        // src_inst_set.insert(inst_name);
+        src_instances.insert(inst_name);
       }
     }
 
     cluster_instances.push_back(std::move(inst_set));
-    cluster_src_instances.push_back(std::move(src_inst_set));
-
   }
-  timing_evaluator.createDataflow(cluster_instances, cluster_src_instances, max_hop);
+  timing_evaluator.createDataflow(cluster_instances, src_instances, max_hop);
 }
 
 // template <typename T>

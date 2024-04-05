@@ -28,7 +28,7 @@ void ClusterTimingEvaluator::initTimingEngine()
 }
 
 void ClusterTimingEvaluator::createDataflow(const std::vector<std::set<std::string>>& cluster_instances,
-                                            const std::vector<std::set<std::string>>& cluster_boundary_instances, size_t max_hop)
+                                            const std::set<std::string>& src_instances, size_t max_hop)
 {
 
   auto start = std::chrono::high_resolution_clock::now();
@@ -36,7 +36,7 @@ void ClusterTimingEvaluator::createDataflow(const std::vector<std::set<std::stri
   INFO("Cluster num: ", cluster_instances.size());
   _timing_engine->updateTiming();
   _power_engine->creatDataflow();
-  _dataflow_connection_map = _power_engine->buildConnectionMap(cluster_instances, cluster_boundary_instances, max_hop);
+  _dataflow_connection_map = _power_engine->buildConnectionMap(cluster_instances, src_instances, max_hop);
   _dataflow_connections.clear();
   for (auto&& [src_cluster_id, snk_clusters] : _dataflow_connection_map) {
     for (auto&& snk_cluster : snk_clusters) {

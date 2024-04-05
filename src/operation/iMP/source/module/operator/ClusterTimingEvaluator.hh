@@ -25,7 +25,7 @@ class ClusterTimingEvaluator
   std::vector<std::tuple<std::string, std::string, double>> getNegativeSlackPaths(
       std::unordered_map<idb::IdbNet*, std::map<std::string, double>>& net_lengths_between_cluster, double percent = 0.5);
   void createDataflow(const std::vector<std::set<std::string>>& cluster_instances,
-                      const std::vector<std::set<std::string>>& cluster_boundary_instances, size_t max_hop);
+                      const std::set<std::string>& src_instances, size_t max_hop);
 
  private:
   idb::IdbBuilder* _idb_builder;
