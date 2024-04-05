@@ -64,7 +64,7 @@ TEST_F(PowerEngineTest, example1) {
   power_engine->creatDataflow();
 
   auto connection_map = power_engine->buildConnectionMap(
-      {{"r1", "u1"}, {"r2", "u2"}, {"r3"}, {"in1"}, {"in2"}, {"out"}}, 2);
+      {{"r1", "u1"}, {"r2", "u2"}, {"r3"}, {"in1"}, {"in2"}, {"out"}}, {}, 2);
 
   for (auto [src_cluster_id, snk_clusters] : connection_map) {
     for (auto snk_cluster : snk_clusters) {

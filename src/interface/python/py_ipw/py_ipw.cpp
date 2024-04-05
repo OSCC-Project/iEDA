@@ -50,4 +50,9 @@ build_connection_map(std::vector<std::set<std::string>> clusters, std::set<std::
   return power_engine->buildConnectionMap(clusters, src_instances, max_hop);
 }
 
+std::vector<ipower::MacroConnection> build_macro_connection_map(unsigned max_hop) {
+  auto* power_engine = ipower::PowerEngine::getOrCreatePowerEngine();
+  return power_engine->buildMacroConnectionMap(max_hop);
+}
+
 }  // namespace python_interface
