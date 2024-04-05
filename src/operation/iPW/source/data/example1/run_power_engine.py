@@ -31,7 +31,7 @@ macro_connections = ipower_cpp.build_macro_connection_map(2)
 print("build macro connections finished")
 for macro_connection in macro_connections:
     print(
-        "src cluster id {} -> snk cluster id {} stages {} hop {}".format(
+        "src macro name {} -> snk macro name {} stages {} hop {}".format(
             macro_connection.src_macro_name,
             macro_connection.dst_macro_name,
             " ".join([str(x) for x in snk_cluster.stages_each_hop]),
