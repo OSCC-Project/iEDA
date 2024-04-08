@@ -32,7 +32,11 @@ using namespace iplf;
 
 int main(int argc, char** argv)
 {
+  bool printVersion = false;
   for (int i = 1; i < argc; ++i) {
+    if (std::string("-v") == argv[i]) {
+      printVersion = true;
+    }
     if (std::string("-script") == argv[i]) {
       // discard every args before the (first) "-script"
       // pass the rest of the args to Tcl interpreter
@@ -40,6 +44,10 @@ int main(int argc, char** argv)
       argv += i;
       break;
     }
+  }
+
+  if (printVersion) {
+    std::cout << "Git version: " << GIT_VERSION << std::endl;
   }
 
   plfInst->runTcl(argc, argv);
