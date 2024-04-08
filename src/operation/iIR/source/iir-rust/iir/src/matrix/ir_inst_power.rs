@@ -66,9 +66,16 @@ fn get_instance_current(instance_power_data: Vec<InstancePowerRecord>) -> HashMa
 }
 
 /// build instance current vector.
-pub fn build_instance_current_vector(inst_power_path:&str, net_data: &RCOneNetData) -> Result<DVector<f64>, Box<dyn StdError + 'static>> {
-    let instance_power_data =
-        ir_inst_power::read_inst_pwr_csv(inst_power_path)?;
+pub fn build_instance_current_vector(
+    inst_power_path: &str,
+    net_data: &RCOneNetData,
+) -> Result<DVector<f64>, Box<dyn StdError + 'static>> {
+    log::info!(
+        "build instance current vector from {} for power net {}",
+        inst_power_path,
+        net_data.get_name()
+    );
+    let instance_power_data = ir_inst_power::read_inst_pwr_csv(inst_power_path)?;
     let instance_current_map = ir_inst_power::get_instance_current(instance_power_data);
 
     let mut instance_current_vec: Vec<f64> = vec![0.0; net_data.get_nodes().len()];
@@ -79,7 +86,7 @@ pub fn build_instance_current_vector(inst_power_path:&str, net_data: &RCOneNetDa
         instance_current_vec[node_index] = instance_current;
     }
 
-    let current_vector:DVector<f64> = DVector::from_iterator(
+    let current_vector: DVector<f64> = DVector::from_iterator(
         instance_current_vec.len(),
         instance_current_vec.iter().cloned(),
     );

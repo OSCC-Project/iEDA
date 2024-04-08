@@ -2,7 +2,8 @@ use spef_parser::spef_parser;
 use std::collections::HashMap;
 
 extern crate nalgebra as na;
-use na::{DMatrix};
+use log;
+use na::DMatrix;
 
 /// RC node of the spef network.
 pub struct RCNode {
@@ -52,6 +53,14 @@ pub struct RCOneNetData {
 }
 
 impl RCOneNetData {
+    pub fn new(name: String) -> RCOneNetData {
+        RCOneNetData {
+            name,
+            node_name_to_node_id: HashMap::new(),
+            nodes: Vec::new(),
+            resistances: Vec::new(),
+        }
+    }
     pub fn get_name(&self) -> &str {
         &self.name
     }
@@ -66,7 +75,7 @@ impl RCOneNetData {
     pub fn get_nodes(&self) -> &Vec<RCNode> {
         &self.nodes
     }
-    pub fn get_node_id(&self, node_name:&String) -> Option<usize> {
+    pub fn get_node_id(&self, node_name: &String) -> Option<usize> {
         self.node_name_to_node_id.get(node_name).cloned()
     }
 
@@ -93,31 +102,51 @@ impl RCData {
 
 /// read rc data from spef file.
 pub fn read_rc_data_from_spef(spef_file_path: &str) -> RCData {
+    log::info!("read spef file {} start", spef_file_path);
     let spef_file = spef_parser::parse_spef_file(spef_file_path);
-    let spef_data_nets = spef_file.get_nets();
+    log::info!("read spef file {} finish", spef_file_path);
 
+    let node_name_map = spef_file.get_name_map();
+    let spef_data_nets = spef_file.get_nets();
     let mut rc_data = RCData::default();
+
+    let spef_index_to_string = |index_str : &str| {
+        let split_names = spef_parser::spef_c_api::split_spef_index_str(&index_str);
+        let index = split_names.0.parse::<usize>().unwrap();
+        let node_name = node_name_map.get(&index);
+        if !split_names.1.is_empty() {
+                let expand_node1_name = node_name.unwrap().clone() + ":" + split_names.1;
+                return expand_node1_name;
+        }
+        String::from(node_name.unwrap())
+    };
+
+    log::info!("build net rc data start");
 
     // from the spef connection build bump port node and inst pin node.
     for spef_net in spef_data_nets {
         // println!("{:?}", spef_net);
-        let mut one_net_data = RCOneNetData::default();
+        let spef_net_name = &spef_net.name;
+        let net_name_str = spef_index_to_string(&spef_net_name);
+        log::info!("build net {} rc data", net_name_str);
+        let mut one_net_data = RCOneNetData::new(net_name_str);
 
         // build the power bump and inst pin node.
         for conn_entry in spef_net.get_conns() {
             let conn_type = conn_entry.get_conn_type();
-            let pin_port_name = conn_entry.get_pin_port_name();
+            let pin_port_name_index = conn_entry.get_pin_port_name();
+            let pin_port_name = spef_index_to_string(pin_port_name_index);
             match conn_type {
                 spef_parser::spef_data::ConnectionType::EXTERNAL => {
                     // bump port
-                    let mut rc_node = RCNode::new(String::from(pin_port_name));
+                    let mut rc_node = RCNode::new(pin_port_name);
                     rc_node.set_is_bump();
 
                     one_net_data.add_node(rc_node);
                 }
                 spef_parser::spef_data::ConnectionType::INTERNAL => {
                     // inst pin
-                    let mut rc_node = RCNode::new(String::from(pin_port_name));
+                    let mut rc_node = RCNode::new(pin_port_name);
                     rc_node.set_is_inst_pin();
 
                     one_net_data.add_node(rc_node);
@@ -128,14 +157,16 @@ pub fn read_rc_data_from_spef(spef_file_path: &str) -> RCData {
 
         // build the internal PDN node.
         for one_resistance in spef_net.get_ress() {
-            let node1_name: &str = &one_resistance.node1;
-            let node2_name: &str = &one_resistance.node2;
+            let node1_name_index: &str = &one_resistance.node1;
+            let node1_name = spef_index_to_string(node1_name_index);
+            let node2_name_index: &str = &one_resistance.node2;
+            let node2_name = spef_index_to_string(node2_name_index);
             let resistance_val = one_resistance.res_or_cap;
 
-            let rc_node1 = RCNode::new(String::from(node1_name));
+            let rc_node1 = RCNode::new(node1_name);
             let node1_id = one_net_data.add_node(rc_node1);
 
-            let rc_node2 = RCNode::new(String::from(node2_name));
+            let rc_node2 = RCNode::new(node2_name);
             let node2_id = one_net_data.add_node(rc_node2);
 
             let mut rc_resistance = RCResistance::default();
@@ -147,6 +178,7 @@ pub fn read_rc_data_from_spef(spef_file_path: &str) -> RCData {
         rc_data.add_one_net_data(one_net_data);
     }
 
+    log::info!("build net rc data finish");
     rc_data
 }
 
@@ -156,9 +188,10 @@ pub fn build_conductance_matrix(rc_one_net_data: &RCOneNetData) -> DMatrix<f64> 
     let resistances = rc_one_net_data.get_resistances();
 
     let matrix_size = nodes.len();
+    log::info!("matrix size {}", matrix_size);
     let mut arr = vec![vec![0.0; matrix_size]; matrix_size];
 
-    //TODO process the
+    //TODO(to taosimin) process the bump node.
     for rc_resistance in resistances {
         let node1_id = rc_resistance.from_node_id;
         let node2_id = rc_resistance.to_node_id;
@@ -183,12 +216,9 @@ pub fn build_conductance_matrix(rc_one_net_data: &RCOneNetData) -> DMatrix<f64> 
     matrix
 }
 
-
-
-
 extern crate quickcheck;
 
-use quickcheck::{TestResult};
+use quickcheck::TestResult;
 
 use super::*;
 
@@ -201,24 +231,15 @@ fn test_build_conductance_matrix() {
             RCNode::new("node1".to_string()),
             RCNode::new("node2".to_string()),
         ],
-        resistances: vec![
-            RCResistance {
-                from_node_id: 0,
-                to_node_id: 1,
-                resistance: 1.0,
-            }
-        ],
+        resistances: vec![RCResistance {
+            from_node_id: 0,
+            to_node_id: 1,
+            resistance: 1.0,
+        }],
     };
 
     let matrix = build_conductance_matrix(&one_net_data);
-    let expected_matrix = DMatrix::from_row_slice(
-        2,
-        2,
-        &[
-            1.0, -1.0,
-            -1.0, 1.0,
-        ],
-    );
+    let expected_matrix = DMatrix::from_row_slice(2, 2, &[1.0, -1.0, -1.0, 1.0]);
 
     assert_eq!(matrix, expected_matrix);
 }
