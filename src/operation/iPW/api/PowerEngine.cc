@@ -22,10 +22,12 @@
  * @date 2024-02-26
  *
  */
+#include "PowerEngine.hh"
+
 #include <tuple>
 #include <vector>
 
-#include "PowerEngine.hh"
+#include "ThreadPool/ThreadPool.h"
 
 namespace ipower {
 PowerEngine* PowerEngine::_power_engine = nullptr;
@@ -101,6 +103,7 @@ unsigned PowerEngine::creatDataflow() {
  */
 std::map<std::size_t, std::vector<ClusterConnection>>
 PowerEngine::buildConnectionMap(std::vector<std::set<std::string>> clusters,
+                                std::set<std::string> src_instances,
                                 unsigned max_hop) {
   auto& seq_graph = _ipower->get_power_seq_graph();
   auto* nl = _timing_engine->get_netlist();
@@ -108,14 +111,16 @@ PowerEngine::buildConnectionMap(std::vector<std::set<std::string>> clusters,
   std::vector<
       std::tuple<std::size_t, std::string, unsigned, std::vector<unsigned>>>
       cluster_connections;
+  std::mutex connection_mutex;
 
   // dfs cluster connecton from one seq vertex.
   std::function<void(std::size_t, PwrSeqVertex*, std::vector<unsigned>&,
                      unsigned)>
       dfs_from_src_seq_vertex =
-          [&cluster_connections, &dfs_from_src_seq_vertex, max_hop](
-              std::size_t src_cluster_id, PwrSeqVertex* current_seq_vertex,
-              std::vector<unsigned>& stages_each_hop, unsigned hop) {
+          [&cluster_connections, &connection_mutex, &dfs_from_src_seq_vertex,
+           max_hop](std::size_t src_cluster_id,
+                    PwrSeqVertex* current_seq_vertex,
+                    std::vector<unsigned>& stages_each_hop, unsigned hop) {
             if (hop == 0) {
               return;
             }
@@ -130,30 +135,52 @@ PowerEngine::buildConnectionMap(std::vector<std::set<std::string>> clusters,
               auto one_connection =
                   std::make_tuple(src_cluster_id, snk_obj_name,
                                   max_hop - hop + 1, stages_each_hop);
+              {
+                // add connection.
+                std::lock_guard lk(connection_mutex);
+                cluster_connections.push_back(one_connection);
+              }
 
-              cluster_connections.push_back(one_connection);
               dfs_from_src_seq_vertex(src_cluster_id, snk_seq_vertex,
                                       stages_each_hop, hop - 1);
             }
           };
 
   // assume cluster id start from 0.
-  for (std::size_t src_cluster_id = 0; auto& cluster_instances : clusters) {
-    for (auto& obj_name : cluster_instances) {
-      auto the_instance_or_port = nl->findObj(obj_name.data(), false, false);
-      LOG_FATAL_IF(the_instance_or_port.size() != 1)
-          << "the instance " << obj_name << " is not found";
-      auto* seq_vertex = seq_graph.getSeqVertex(the_instance_or_port.front());
+  {
+    ThreadPool thread_pool(48);
+    for (std::size_t src_cluster_id = 0; auto& cluster_instances : clusters) {
+      for (auto& obj_name : cluster_instances) {
+        auto the_instance_or_port = nl->findObj(obj_name.data(), false, false);
+        LOG_FATAL_IF(the_instance_or_port.size() != 1)
+            << "the instance " << obj_name << " is not found";
+        auto* seq_vertex = seq_graph.getSeqVertex(the_instance_or_port.front());
 
-      // not seq instance, skip.
-      if (!seq_vertex) {
-        continue;
+        // not seq instance, skip.
+        if (!seq_vertex) {
+          continue;
+        }
+        if (src_instances.count(obj_name) == 0) {
+          continue;
+        }
+
+// dfs from src seq vertex.
+#if 1
+        thread_pool.enqueue(
+            [max_hop, &dfs_from_src_seq_vertex](auto src_cluster_id,
+                                                auto* seq_vertex) {
+              std::vector<unsigned> stages_each_hop(max_hop, 0);
+              dfs_from_src_seq_vertex(src_cluster_id, seq_vertex,
+                                      stages_each_hop, max_hop);
+            },
+            src_cluster_id, seq_vertex);
+
+#else
+        std::vector<unsigned> stages_each_hop(max_hop, 0);
+        dfs_from_src_seq_vertex(src_cluster_id, seq_vertex, stages_each_hop,
+                                max_hop);
+#endif
       }
-
-      // dfs from src seq vertex.
-      std::vector<unsigned> stages_each_hop(max_hop, 0);
-      dfs_from_src_seq_vertex(src_cluster_id, seq_vertex, stages_each_hop,
-                              max_hop);
       ++src_cluster_id;
     }
   }
@@ -189,6 +216,82 @@ PowerEngine::buildConnectionMap(std::vector<std::set<std::string>> clusters,
   }
 
   return connection_map;
+}
+
+
+/**
+ * @brief build connection for macro.
+ * 
+ * @param max_hop 
+ * @return std::vector<MacroConnection> 
+ */
+std::vector<MacroConnection> PowerEngine::buildMacroConnectionMap(
+    unsigned max_hop) {
+  auto& seq_graph = _ipower->get_power_seq_graph();
+  auto* nl = _timing_engine->get_netlist();
+
+  std::vector<MacroConnection> macro_connections;
+  std::mutex connection_mutex;
+
+  // dfs macro connecton from one seq vertex.
+  std::function<void(PwrSeqVertex*, PwrSeqVertex*, std::vector<unsigned>&,
+                     unsigned)>
+      dfs_from_src_seq_vertex =
+          [&macro_connections, &connection_mutex, &max_hop,
+           &dfs_from_src_seq_vertex](PwrSeqVertex* src_marco_vertex,
+                                     PwrSeqVertex* current_macro_vertex,
+                                     std::vector<unsigned> stages_each_hop,
+                                     unsigned hop) {
+            if (hop == 0) {
+              return;
+            }
+
+            std::tuple<std::size_t, std::string, unsigned> one_connection;
+            auto& src_arcs = current_macro_vertex->get_src_arcs();
+            for (auto* src_arc : src_arcs) {
+              auto* snk_seq_vertex = src_arc->get_snk();
+              if (!snk_seq_vertex->isMacro()) {
+                continue;
+              }
+              std::string snk_obj_name(snk_seq_vertex->get_obj_name());
+              stages_each_hop[max_hop - hop] = src_arc->get_combine_depth();
+
+              MacroConnection one_connection(
+                  src_marco_vertex->get_obj_name().data(), snk_obj_name,
+                  stages_each_hop, max_hop - hop + 1);
+              {
+                // add connection.
+                std::lock_guard lk(connection_mutex);
+                macro_connections.push_back(one_connection);
+              }
+
+              dfs_from_src_seq_vertex(src_marco_vertex, snk_seq_vertex,
+                                      stages_each_hop, hop - 1);
+            }
+          };
+
+  {
+    ThreadPool thread_pool(48);
+    PwrSeqVertex* seq_vertex;
+    FOREACH_SEQ_VERTEX(&seq_graph, seq_vertex) {
+      if (seq_vertex->isMacro()) {
+        thread_pool.enqueue(
+            [max_hop, &dfs_from_src_seq_vertex](auto* src_marco_vertex,
+                                                auto* current_macro_vertex) {
+              std::vector<unsigned> stages_each_hop(max_hop, 0);
+              dfs_from_src_seq_vertex(src_marco_vertex, current_macro_vertex,
+                                      stages_each_hop, max_hop);
+            },
+            seq_vertex, seq_vertex);
+      }
+    }
+  }
+
+  for (auto& macro_connection : macro_connections) {
+    macro_connection._stages_each_hop.resize(macro_connection._hop);
+  }
+
+  return macro_connections;
 }
 
 }  // namespace ipower

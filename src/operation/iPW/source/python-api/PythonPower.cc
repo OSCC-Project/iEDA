@@ -52,5 +52,14 @@ PYBIND11_MODULE(ipower_cpp, m) {
     .def_readwrite("stages_each_hop", &ipower::ClusterConnection::_stages_each_hop)
     .def_readwrite("hop", &ipower::ClusterConnection::_hop);
   m.def("build_connection_map", &build_connection_map);
+
+  py::class_<ipower::MacroConnection>(m, "MacroConnection")
+    .def_readwrite("src_macro_name", &ipower::MacroConnection::_src_macro_name)
+    .def_readwrite("dst_macro_name", &ipower::MacroConnection::_dst_macro_name)
+    .def_readwrite("stages_each_hop", &ipower::MacroConnection::_stages_each_hop)
+    .def_readwrite("hop", &ipower::MacroConnection::_hop);
+  m.def("build_macro_connection_map", &build_macro_connection_map);
+
+
 }
 }  // namespace ipower

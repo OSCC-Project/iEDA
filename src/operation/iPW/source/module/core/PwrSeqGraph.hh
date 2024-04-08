@@ -329,7 +329,7 @@ class PwrSeqGraph {
  *
  */
 #define FOREACH_SEQ_VERTEX(graph, vertex)                        \
-  if (auto& vertexes = graph->get_vertexes(); !vertexes.empty()) \
+  if (auto& vertexes = (graph)->get_vertexes(); !vertexes.empty()) \
     for (auto p = vertexes.begin();                              \
          p != vertexes.end() ? vertex = p->get(), true : false; ++p)
 
