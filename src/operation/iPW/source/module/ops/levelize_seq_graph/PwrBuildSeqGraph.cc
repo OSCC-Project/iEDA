@@ -182,8 +182,14 @@ unsigned PwrBuildSeqGraph::buildSeqVertexes(PwrGraph* the_graph) {
     auto data_in_pwr_vertexes = find_clk_to_in_vertex(clock_vertex);
     // Find dataout vertexes from clk.
     auto data_out_pwr_vertexes = find_clk_to_out_vertex(clock_vertex);
+    Instance* seq_instance = nullptr;
     // Find the instance of these vertexes.
-    Instance* seq_instance = (*data_out_pwr_vertexes.begin())->getOwnInstance();
+    if (!data_out_pwr_vertexes.empty()) {
+      seq_instance = (*data_out_pwr_vertexes.begin())->getOwnInstance();
+    } else {
+      seq_instance = (*data_in_pwr_vertexes.begin())->getOwnInstance();
+    }
+     
     // New a seq vertex for this instance.
     PwrSeqVertex* seq_vertex = new PwrSeqVertex(
         std::move(data_in_pwr_vertexes), std::move(data_out_pwr_vertexes));
