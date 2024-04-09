@@ -522,7 +522,7 @@ class Sta {
   std::string _top_module_name;
   std::vector<std::unique_ptr<VerilogModule>>
       _verilog_modules;  //!< The current design parsed from verilog file.
-  std::vector<std::unique_ptr<RustVerilogModule>>
+  std::vector<RustVerilogModule*>
       _rust_verilog_modules;  //!< The current design parsed from verilog file
                               //!< of rust version.
   VerilogModule* _top_module = nullptr;  //!< The design top module.
