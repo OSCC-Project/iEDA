@@ -29,6 +29,7 @@ void register_ista(py::module& m)
   m.def("report_sta", staReport, ("output"));
 
   m.def("set_design_workspace", setDesignWorkSpace, ("design_workspace"));
+  m.def("read_lef_def", read_lef_def, ("lef_files"), ("def_file"));
   m.def("read_netlist", readVerilog, ("file_name"));
   m.def("read_liberty", readLiberty, ("file_name"));
   m.def("link_design", linkDesign, ("cell_name"));

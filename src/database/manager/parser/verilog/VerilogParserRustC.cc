@@ -49,7 +49,7 @@ unsigned RustVerilogReader::readVerilog(const char* verilog_file_path)
     {
       void* verilog_module_ptr = rust_convert_rc_ref_cell_module(verilog_module);
       RustVerilogModule* rust_verilog_module = rust_convert_raw_verilog_module(verilog_module_ptr);
-      _verilog_modules.emplace_back(std::move(rust_verilog_module));
+      _verilog_modules.emplace_back(rust_verilog_module);
     }
   } else {
     is_ok = 0;
@@ -72,8 +72,11 @@ unsigned RustVerilogReader::flattenModule(const char* top_module_name)
     RustVerilogModule* rust_verilog_module = rust_convert_raw_verilog_module(verilog_module_ptr);
     if (ieda::Str::equal(rust_verilog_module->module_name, top_module_name)) {
       _top_module = rust_verilog_module;
+      break;
     }
   }
+
+  return 1;
 }
 
 }  // namespace ista

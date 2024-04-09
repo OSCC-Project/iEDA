@@ -18,7 +18,9 @@
 
 #include <tool_manager.h>
 
-#include <sta/Sta.hh>
+#include "sta/Sta.hh"
+#include "api/TimingEngine.hh"
+#include "api/TimingIDBAdapter.hh"
 
 namespace python_interface {
 bool staRun(const std::string& output)
@@ -44,6 +46,23 @@ bool setDesignWorkSpace(const std::string& design_workspace)
   auto* ista = ista::Sta::getOrCreateSta();
   ista->set_design_work_space(design_workspace.c_str());
   return true;
+}
+
+bool read_lef_def(std::vector<std::string>& lef_files,
+                  const std::string& def_file) {
+  auto* timing_engine = ista::TimingEngine::getOrCreateTimingEngine();
+
+  auto* db_builder = new idb::IdbBuilder();
+  db_builder->buildLef(lef_files);
+
+  db_builder->buildDef(def_file);
+
+  auto db_adapter =
+      std::make_unique<ista::TimingIDBAdapter>(timing_engine->get_ista());
+  db_adapter->set_idb(db_builder);
+  unsigned is_ok = db_adapter->convertDBToTimingNetlist();
+
+  return is_ok;
 }
 
 bool readVerilog(const std::string& file_name)

@@ -344,7 +344,7 @@ class RustVerilogReader
  private:
   void* _verilog_file_ptr;  // the parsered verilog file.
   std::string _top_module_name;
-  std::vector<std::unique_ptr<RustVerilogModule>> _verilog_modules;  //!< The current design parsed from verilog file.
-  RustVerilogModule* _top_module = nullptr;                          //!< The design top module.
+  std::vector<RustVerilogModule*> _verilog_modules;  //!< The current design parsed from verilog file.
+  RustVerilogModule* _top_module = nullptr;          //!< The design top module.
 };
 }  // namespace ista
