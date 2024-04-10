@@ -308,6 +308,8 @@ unsigned PwrBuildSeqGraph::operator()(PwrGraph* the_graph) {
   LOG_INFO << "seq inst num: " << _seq_graph.getSeqVertexNum();
   LOG_INFO << "input port num: " << _seq_graph.getInputPortNum();
   LOG_INFO << "output port num: " << _seq_graph.getOutputPortNum();
+  LOG_INFO << "seq macro num: " << _seq_graph.getMacroSeqVertexNum();
+  LOG_INFO << "seq arc num: " << _seq_graph.getSeqArcNum();
 
   auto [max_fanout, max_fanin] = _seq_graph.getSeqVertexMaxFanoutAndMaxFain();
   LOG_INFO << "seq vertex max fanout: " << max_fanout;

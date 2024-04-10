@@ -22,11 +22,10 @@
  * @date 2024-02-26
  *
  */
-#include "PowerEngine.hh"
-
 #include <tuple>
 #include <vector>
 
+#include "PowerEngine.hh"
 #include "ThreadPool/ThreadPool.h"
 
 namespace ipower {
@@ -218,18 +217,15 @@ PowerEngine::buildConnectionMap(std::vector<std::set<std::string>> clusters,
   return connection_map;
 }
 
-
 /**
  * @brief build connection for macro.
- * 
- * @param max_hop 
- * @return std::vector<MacroConnection> 
+ *
+ * @param max_hop
+ * @return std::vector<MacroConnection>
  */
 std::vector<MacroConnection> PowerEngine::buildMacroConnectionMap(
     unsigned max_hop) {
   auto& seq_graph = _ipower->get_power_seq_graph();
-  auto* nl = _timing_engine->get_netlist();
-
   std::vector<MacroConnection> macro_connections;
   std::mutex connection_mutex;
 
@@ -250,19 +246,17 @@ std::vector<MacroConnection> PowerEngine::buildMacroConnectionMap(
             auto& src_arcs = current_macro_vertex->get_src_arcs();
             for (auto* src_arc : src_arcs) {
               auto* snk_seq_vertex = src_arc->get_snk();
-              if (!snk_seq_vertex->isMacro()) {
-                continue;
-              }
               std::string snk_obj_name(snk_seq_vertex->get_obj_name());
               stages_each_hop[max_hop - hop] = src_arc->get_combine_depth();
-
-              MacroConnection one_connection(
-                  src_marco_vertex->get_obj_name().data(), snk_obj_name,
-                  stages_each_hop, max_hop - hop + 1);
-              {
-                // add connection.
-                std::lock_guard lk(connection_mutex);
-                macro_connections.push_back(one_connection);
+              if (snk_seq_vertex->isMacro()) {
+                MacroConnection one_connection(
+                    src_marco_vertex->get_obj_name().data(), snk_obj_name,
+                    stages_each_hop, max_hop - hop + 1);
+                {
+                  // add connection.
+                  std::lock_guard lk(connection_mutex);
+                  macro_connections.push_back(one_connection);
+                }
               }
 
               dfs_from_src_seq_vertex(src_marco_vertex, snk_seq_vertex,
