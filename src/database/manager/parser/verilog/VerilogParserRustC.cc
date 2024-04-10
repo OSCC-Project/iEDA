@@ -58,6 +58,12 @@ unsigned RustVerilogReader::readVerilog(const char* verilog_file_path)
   return is_ok;
 }
 
+/**
+ * @brief Flatten module use rust parser.
+ *
+ * @param top_module_name
+ * @return unsigned
+ */
 unsigned RustVerilogReader::flattenModule(const char* top_module_name)
 {
   _top_module_name = top_module_name;
