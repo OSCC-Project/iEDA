@@ -246,10 +246,9 @@ std::vector<MacroConnection> PowerEngine::buildMacroConnectionMap(
             auto& src_arcs = current_macro_vertex->get_src_arcs();
             for (auto* src_arc : src_arcs) {
               auto* snk_seq_vertex = src_arc->get_snk();
+              std::string snk_obj_name(snk_seq_vertex->get_obj_name());
+              stages_each_hop[max_hop - hop] = src_arc->get_combine_depth();
               if (snk_seq_vertex->isMacro()) {
-                std::string snk_obj_name(snk_seq_vertex->get_obj_name());
-                stages_each_hop[max_hop - hop] = src_arc->get_combine_depth();
-
                 MacroConnection one_connection(
                     src_marco_vertex->get_obj_name().data(), snk_obj_name,
                     stages_each_hop, max_hop - hop + 1);
