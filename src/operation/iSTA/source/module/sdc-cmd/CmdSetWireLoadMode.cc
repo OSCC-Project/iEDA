@@ -15,27 +15,23 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 /**
- * @file CmdSetOperateCondition.cc
+ * @file CmdSetWireLoadMode.cc
  * @author long shuaiying (longshy@pcl.ac.cn)
- * @brief support `set_operating_conditions` command in sdc
+ * @brief support `set_wire_load_mode` command in sdc
  * @version 0.1
  * @date 2024-04-09
  */
 #include "Cmd.hh"
 
 namespace ista {
-CmdSetOperateCondition::CmdSetOperateCondition(const char* cmd_name)
+CmdSetWireLoadMode::CmdSetWireLoadMode(const char* cmd_name)
     : TclCmd(cmd_name) {
-  auto* analysis_type_option =
-      new TclStringOption("-analysis_type", 0, nullptr);
-  addOption(analysis_type_option);
-
-  auto* library_option = new TclStringOption("-library", 0, nullptr);
-  addOption(library_option);
+  auto* mode_name_arg = new TclStringOption("mode_name", 1, nullptr);
+  addOption(mode_name_arg);
 }
 
-unsigned CmdSetOperateCondition::check() { return 1; }
+unsigned CmdSetWireLoadMode::check() { return 1; }
 
-unsigned CmdSetOperateCondition::exec() { return 1; }
+unsigned CmdSetWireLoadMode::exec() { return 1; }
 
 }  // namespace ista

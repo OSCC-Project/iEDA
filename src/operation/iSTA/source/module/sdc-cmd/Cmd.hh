@@ -421,19 +421,19 @@ class CmdGroupPath : public TclCmd {
   unsigned exec() override;
 };
 
-class CmdSetOperateCondition : public TclCmd {
+class CmdSetOperatingConditions : public TclCmd {
  public:
-  explicit CmdSetOperateCondition(const char* cmd_name);
-  ~CmdSetOperateCondition() override = default;
+  explicit CmdSetOperatingConditions(const char* cmd_name);
+  ~CmdSetOperatingConditions() override = default;
 
   unsigned check() override;
   unsigned exec() override;
 };
 
-class CmdSetWireLoadModel : public TclCmd {
+class CmdSetWireLoadMode : public TclCmd {
  public:
-  explicit CmdSetWireLoadModel(const char* cmd_name);
-  ~CmdSetWireLoadModel() override = default;
+  explicit CmdSetWireLoadMode(const char* cmd_name);
+  ~CmdSetWireLoadMode() override = default;
 
   unsigned check() override;
   unsigned exec() override;

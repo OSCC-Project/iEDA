@@ -1209,15 +1209,15 @@ void Sta::initSdcCmd() {
   LOG_FATAL_IF(!group_path);
   TclCmds::addTclCmd(std::move(group_path));
 
-  auto set_operate_condition =
-      std::make_unique<CmdSetOperateCondition>("set_operate_condition");
-  LOG_FATAL_IF(!set_operate_condition);
-  TclCmds::addTclCmd(std::move(set_operate_condition));
+  auto set_operating_conditions =
+      std::make_unique<CmdSetOperatingConditions>("set_operating_conditions");
+  LOG_FATAL_IF(!set_operating_conditions);
+  TclCmds::addTclCmd(std::move(set_operating_conditions));
 
-  auto set_wire_load_model =
-      std::make_unique<CmdSetWireLoadModel>("set_wire_load_model");
-  LOG_FATAL_IF(!set_wire_load_model);
-  TclCmds::addTclCmd(std::move(set_wire_load_model));
+  auto set_wire_load_mode =
+      std::make_unique<CmdSetWireLoadMode>("set_wire_load_mode");
+  LOG_FATAL_IF(!set_wire_load_mode);
+  TclCmds::addTclCmd(std::move(set_wire_load_mode));
 }
 
 /**
