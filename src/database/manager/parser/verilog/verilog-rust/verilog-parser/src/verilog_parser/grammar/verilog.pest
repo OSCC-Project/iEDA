@@ -10,7 +10,7 @@ line_comment      = _{ "//" ~ (!("\n") ~ ASCII)* ~ ("\n" | EOI) }
 multiline_comment = _{ "/*" ~ (!"*/" ~ ANY)* ~ "*/" }
 COMMENT = _{ line_comment | multiline_comment }
 
-char = _{ ASCII_ALPHANUMERIC | "_" | "\\" | "[" | "]" | "/" | ":" | "$"}
+char = _{ ASCII_ALPHANUMERIC | "_" | "\\" | "[" | "]" | "/" | ":" | "$" | "=" }
 
 port_or_wire_id = @{ (char+ ~ " " ~ char+) | char+ }
 port_list = { port_or_wire_id ~ ("," ~ port_or_wire_id)* }
@@ -44,7 +44,7 @@ first_port_connection = _{ first_port_connection_single_connect | first_port_con
 port_connection = _{ "," ~ first_port_connection }
 port_block_connection = !{ "(" ~ first_port_connection? ~ port_connection* ~ ")"  ~ semicolon_opt }
 
-inst_declaration = ${ inst_or_cell_id ~ WHITESPACE ~ inst_or_cell_id ~ WHITESPACE+ ~ port_block_connection }
+inst_declaration = ${ inst_or_cell_id ~ WHITESPACE+ ~ inst_or_cell_id ~ WHITESPACE+ ~ port_block_connection }
 inst_block_declaration = { inst_declaration+ }
 
 module_declaration = { "module" ~ module_id ~ "(" ~ port_list ~ ");" ~ port_or_wire_block_declaration 
