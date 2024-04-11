@@ -1,7 +1,8 @@
 use spef_parser::spef_parser;
 use std::collections::HashMap;
 use log;
-use sprs::{TriMat, TriMatI};
+use sprs::TriMatI;
+use sprs::TriMat;
 
 /// RC node of the spef network.
 pub struct RCNode {
