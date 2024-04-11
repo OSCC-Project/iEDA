@@ -1,9 +1,7 @@
 use spef_parser::spef_parser;
 use std::collections::HashMap;
-
-extern crate nalgebra as na;
 use log;
-use na::DMatrix;
+use sprs::{TriMat, TriMatI};
 
 /// RC node of the spef network.
 pub struct RCNode {
@@ -84,7 +82,7 @@ impl RCOneNetData {
     }
 }
 
-/// all power net rc data.
+/// All power net rc data.
 #[derive(Default)]
 pub struct RCData {
     power_nets_data: HashMap<String, RCOneNetData>,
@@ -100,23 +98,23 @@ impl RCData {
     }
 }
 
-/// read rc data from spef file.
+/// Read rc data from spef file.
 pub fn read_rc_data_from_spef(spef_file_path: &str) -> RCData {
     log::info!("read spef file {} start", spef_file_path);
     let spef_file = spef_parser::parse_spef_file(spef_file_path);
     log::info!("read spef file {} finish", spef_file_path);
 
-    let node_name_map = spef_file.get_name_map();
+    let node_name_map = &spef_file.index_to_name_map;
     let spef_data_nets = spef_file.get_nets();
     let mut rc_data = RCData::default();
 
-    let spef_index_to_string = |index_str : &str| {
+    let spef_index_to_string = |index_str: &str| {
         let split_names = spef_parser::spef_c_api::split_spef_index_str(&index_str);
         let index = split_names.0.parse::<usize>().unwrap();
         let node_name = node_name_map.get(&index);
         if !split_names.1.is_empty() {
-                let expand_node1_name = node_name.unwrap().clone() + ":" + split_names.1;
-                return expand_node1_name;
+            let expand_node1_name = node_name.unwrap().clone() + ":" + split_names.1;
+            return expand_node1_name;
         }
         String::from(node_name.unwrap())
     };
@@ -182,14 +180,15 @@ pub fn read_rc_data_from_spef(spef_file_path: &str) -> RCData {
     rc_data
 }
 
-/// build conductance matrix from one net rc data.
-pub fn build_conductance_matrix(rc_one_net_data: &RCOneNetData) -> DMatrix<f64> {
+/// Build conductance matrix from one net rc data.
+pub fn build_conductance_matrix(rc_one_net_data: &RCOneNetData) -> TriMatI<f64,usize> {
     let nodes = rc_one_net_data.get_nodes();
     let resistances = rc_one_net_data.get_resistances();
 
     let matrix_size = nodes.len();
     log::info!("matrix size {}", matrix_size);
-    let mut arr = vec![vec![0.0; matrix_size]; matrix_size];
+
+    let mut g_matrix = TriMat::new((matrix_size, matrix_size));
 
     //TODO(to taosimin) process the bump node.
     for rc_resistance in resistances {
@@ -197,49 +196,15 @@ pub fn build_conductance_matrix(rc_one_net_data: &RCOneNetData) -> DMatrix<f64> 
         let node2_id = rc_resistance.to_node_id;
         let resistance_val = rc_resistance.resistance;
 
-        arr[node1_id][node2_id] = -1.0 / resistance_val;
-        arr[node2_id][node1_id] = -1.0 / resistance_val;
-        arr[node1_id][node1_id] += 1.0 / resistance_val;
-        arr[node2_id][node2_id] += 1.0 / resistance_val;
+        g_matrix.add_triplet(node1_id, node2_id, -1.0 / resistance_val);
+        g_matrix.add_triplet(node2_id, node1_id, -1.0 / resistance_val);
+        g_matrix.add_triplet(node1_id, node1_id, 1.0 / resistance_val);
+        g_matrix.add_triplet(node2_id, node2_id, 1.0 / resistance_val);
     }
 
-    let matrix: DMatrix<f64> = DMatrix::from_row_slice(
-        arr.len(),
-        arr[0].len(),
-        arr.iter()
-            .flatten()
-            .map(|&x| x)
-            .collect::<Vec<_>>()
-            .as_slice(),
-    );
-
-    matrix
+    g_matrix
 }
 
-extern crate quickcheck;
 
-use quickcheck::TestResult;
 
-use super::*;
 
-#[test]
-fn test_build_conductance_matrix() {
-    let one_net_data = RCOneNetData {
-        name: "test_net".to_string(),
-        node_name_to_node_id: HashMap::new(),
-        nodes: vec![
-            RCNode::new("node1".to_string()),
-            RCNode::new("node2".to_string()),
-        ],
-        resistances: vec![RCResistance {
-            from_node_id: 0,
-            to_node_id: 1,
-            resistance: 1.0,
-        }],
-    };
-
-    let matrix = build_conductance_matrix(&one_net_data);
-    let expected_matrix = DMatrix::from_row_slice(2, 2, &[1.0, -1.0, -1.0, 1.0]);
-
-    assert_eq!(matrix, expected_matrix);
-}

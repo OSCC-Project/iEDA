@@ -1,8 +1,8 @@
 mod matrix;
 
-use std::io::Write;
 use env_logger;
 use log;
+use std::io::Write;
 
 fn main() {
     env_logger::Builder::new()
@@ -24,5 +24,7 @@ fn main() {
     log::info!("start iIR");
     let spef_file_path = "/home/taosimin/T28/spef/asic_top.spef_vdd_vss_1212.rcworst.0c.spef";
     let instance_power_path = "/home/shaozheqing/iEDA/bin/report_instance.csv";
-    matrix::build_matrix_from_raw_data(instance_power_path, spef_file_path);
+
+    matrix::ir_rc::read_rc_data_from_spef(spef_file_path);
+
 }
