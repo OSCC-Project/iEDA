@@ -1,9 +1,8 @@
-
+use log;
 use std::collections::HashMap;
 use std::error::Error;
 use std::fs::File;
 use std::io::BufReader;
-use log;
 
 use csv::ReaderBuilder;
 use serde::de::StdError;
@@ -70,11 +69,7 @@ pub fn build_instance_current_vector(
     inst_power_path: &str,
     net_data: &RCOneNetData,
 ) -> Result<HashMap<usize, f64>, Box<dyn StdError + 'static>> {
-    log::info!(
-        "build instance current vector from {} for power net {}",
-        inst_power_path,
-        net_data.get_name()
-    );
+    log::info!("build instance current vector from {} for power net {}", inst_power_path, net_data.get_name());
     let instance_power_data = ir_inst_power::read_inst_pwr_csv(inst_power_path)?;
     let instance_current_map = ir_inst_power::get_instance_current(instance_power_data);
 
