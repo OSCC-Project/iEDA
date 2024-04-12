@@ -5,6 +5,8 @@ set (CMAKE_BUILD_TYPE "Debug")
 
 set(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -DNDEBUG")
 
+include_directories(${HOME_OPERATION}/iIR/source)
+
 add_subdirectory(source/iir-rust)
 add_subdirectory(source/ir-solver)
 
