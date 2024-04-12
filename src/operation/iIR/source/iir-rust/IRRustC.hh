@@ -7,28 +7,35 @@
  */
 #pragma once
 
-#include <stdarg.h>
-#include <stdbool.h>
-#include <stdint.h>
-#include <stdlib.h>
+#include "RustCommon.hh"
 
-#include <vector>
+extern "C" {
 
-/**
- * Rust vec to C vec
- */
-typedef struct RustVec {
-  void *data;
-  uintptr_t len;
-  uintptr_t cap;
-  uintptr_t type_size;
-} RustVec;
+typedef struct RustMatrix {
+  // val at (row,col)
+  double data;
+  uintptr_t row;
+  uintptr_t col;
+} RustMatrix;
+
+typedef struct RustNetConductanceData {
+  char *net_name;
+  uintptr_t node_num;
+  struct RustVec g_matrix_vec;
+  const void *ir_net_raw_ptr;
+} RustNetConductanceData;
+
+const void *read_spef(const char *c_power_net_spef);
+
+struct RustNetConductanceData build_one_net_conductance_matrix_data(
+    const void *c_rc_data, const char *c_net_name);
 
 /**
  * Build RC matrix and current vector data.
  */
 struct RustVec build_matrix_from_raw_data(const char *c_inst_power_path,
                                           const char *c_power_net_spef);
+}
 
 namespace iir {
 

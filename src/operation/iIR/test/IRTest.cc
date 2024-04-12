@@ -14,11 +14,8 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-
-// #include <gperftools/heap-profiler.h>
-
 #include "gtest/gtest.h"
-#include "iir-rust/IRRustC.hh"
+#include "api/iIR.hh"
 #include "log/Log.hh"
 #include "string/Str.hh"
 
@@ -28,7 +25,7 @@ using namespace iir;
 
 namespace {
 
-class BuildMatrixTest : public testing::Test {
+class IRTest : public testing::Test {
   void SetUp() {
     char config[] = "test";
     char* argv[] = {config};
@@ -37,35 +34,14 @@ class BuildMatrixTest : public testing::Test {
   void TearDown() { Log::end(); }
 };
 
-TEST_F(BuildMatrixTest, build_equcation) {
-  const char* spef_file_path =
-      "/home/taosimin/T28/spef/asic_top.spef_vdd_vss_1212.rcworst.0c.spef";
-  const char* instance_power_path =
-      "/home/shaozheqing/iEDA/bin/report_instance.csv";
-
-  BuildMatrixFromRawData(instance_power_path, spef_file_path);
-}
-
-TEST_F(BuildMatrixTest, build_matrix) {
+TEST_F(IRTest, ir_api) {
   const char* spef_file_path =
       "/home/taosimin/T28/spef/asic_top.spef_vdd_vss_1212.rcworst.0c.spef";
 
-  auto* rc_data = read_spef(spef_file_path);
-  auto one_net_matrix_data =
-      build_one_net_conductance_matrix_data(rc_data, "VDD");
-
-  RustMatrix* one_data;
-  FOREACH_VEC_ELEM(&one_net_matrix_data.g_matrix_vec, RustMatrix, one_data) {
-    LOG_INFO << "row " << one_data->row << " column " << one_data->col
-             << " data " << one_data->data;
-  }
+  iIR ir_analysis;
+  ir_analysis.readSpef(spef_file_path);
+  ir_analysis.solveIRDrop("VDD");
 }
 
-}  // namespace
-
-int main(int argc, char** argv) {
-  ::testing::InitGoogleTest(&argc, argv);
-
-  testing::GTEST_FLAG(filter) = "IRTest.*";
-  return RUN_ALL_TESTS();
 }
+

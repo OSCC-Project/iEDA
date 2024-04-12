@@ -4,11 +4,10 @@ set (CMAKE_CXX_STANDARD 20)
 set(CMAKE_VERBOSE_MAKEFILE ON)
 
 set(CMAKE_BUILD_TYPE "Debug")
-# MESSAGE(STATUS "iSTA Test")
 
 find_package(GTest REQUIRED)
 
 aux_source_directory(. SourceFiles)
-add_executable(iSTATest ${SourceFiles})
+add_executable(iIRTest ${SourceFiles})
 
-target_link_libraries(iIRTest iIR-Rust)
+target_link_libraries(iIRTest api iIR-Rust gtest log)

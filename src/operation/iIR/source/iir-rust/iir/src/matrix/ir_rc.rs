@@ -1,8 +1,8 @@
-use spef_parser::spef_parser;
-use std::collections::HashMap;
 use log;
-use sprs::TriMatI;
+use spef_parser::spef_parser;
 use sprs::TriMat;
+use sprs::TriMatI;
+use std::collections::HashMap;
 
 /// RC node of the spef network.
 pub struct RCNode {
@@ -14,11 +14,7 @@ pub struct RCNode {
 
 impl RCNode {
     pub fn new(name: String) -> RCNode {
-        RCNode {
-            name,
-            is_bump: false,
-            is_inst_pin: false,
-        }
+        RCNode { name, is_bump: false, is_inst_pin: false }
     }
 
     pub fn get_name(&self) -> &str {
@@ -53,20 +49,14 @@ pub struct RCOneNetData {
 
 impl RCOneNetData {
     pub fn new(name: String) -> RCOneNetData {
-        RCOneNetData {
-            name,
-            node_name_to_node_id: HashMap::new(),
-            nodes: Vec::new(),
-            resistances: Vec::new(),
-        }
+        RCOneNetData { name, node_name_to_node_id: HashMap::new(), nodes: Vec::new(), resistances: Vec::new() }
     }
     pub fn get_name(&self) -> &str {
         &self.name
     }
     pub fn add_node(&mut self, one_node: RCNode) -> usize {
         let node_id = self.nodes.len();
-        self.node_name_to_node_id
-            .insert(String::from(one_node.get_name()), node_id);
+        self.node_name_to_node_id.insert(String::from(one_node.get_name()), node_id);
         self.nodes.push(one_node);
         node_id
     }
@@ -76,6 +66,10 @@ impl RCOneNetData {
     }
     pub fn get_node_id(&self, node_name: &String) -> Option<usize> {
         self.node_name_to_node_id.get(node_name).cloned()
+    }
+
+    pub fn add_resistance(&mut self, one_resistance: RCResistance) {
+        self.resistances.push(one_resistance);
     }
 
     pub fn get_resistances(&self) -> &Vec<RCResistance> {
@@ -91,11 +85,14 @@ pub struct RCData {
 
 impl RCData {
     pub fn add_one_net_data(&mut self, one_net_data: RCOneNetData) {
-        self.power_nets_data
-            .insert(String::from(one_net_data.get_name()), one_net_data);
+        self.power_nets_data.insert(String::from(one_net_data.get_name()), one_net_data);
     }
     pub fn get_power_nets_data(&self) -> &HashMap<String, RCOneNetData> {
         &self.power_nets_data
+    }
+
+    pub fn get_one_net_data(&self, name: &str) -> &RCOneNetData {
+        self.power_nets_data.get(name).unwrap()
     }
 }
 
@@ -172,6 +169,8 @@ pub fn read_rc_data_from_spef(spef_file_path: &str) -> RCData {
             rc_resistance.from_node_id = node1_id;
             rc_resistance.to_node_id = node2_id;
             rc_resistance.resistance = resistance_val;
+
+            one_net_data.add_resistance(rc_resistance);
         }
 
         rc_data.add_one_net_data(one_net_data);
@@ -182,7 +181,7 @@ pub fn read_rc_data_from_spef(spef_file_path: &str) -> RCData {
 }
 
 /// Build conductance matrix from one net rc data.
-pub fn build_conductance_matrix(rc_one_net_data: &RCOneNetData) -> TriMatI<f64,usize> {
+pub fn build_conductance_matrix(rc_one_net_data: &RCOneNetData) -> TriMatI<f64, usize> {
     let nodes = rc_one_net_data.get_nodes();
     let resistances = rc_one_net_data.get_resistances();
 
@@ -205,7 +204,3 @@ pub fn build_conductance_matrix(rc_one_net_data: &RCOneNetData) -> TriMatI<f64,u
 
     g_matrix
 }
-
-
-
-

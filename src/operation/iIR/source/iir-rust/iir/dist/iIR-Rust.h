@@ -22,6 +22,21 @@ typedef struct RustVec {
 } RustVec;
 
 /**
+ * One net conductance matrix data for C.
+ */
+typedef struct RustNetConductanceData {
+    const char *net_name;
+    uintptr_t node_num;
+    struct RustVec g_matrix_vec;
+    const void *ir_net_raw_ptr;
+} RustNetConductanceData;
+
+const void *read_spef(const char *c_power_net_spef);
+
+struct RustNetConductanceData build_one_net_conductance_matrix_data(const void *c_rc_data,
+                                                                    const char *c_net_name);
+
+/**
  * Build RC matrix and current vector data.
  */
 struct RustVec build_matrix_from_raw_data(const char *c_inst_power_path,

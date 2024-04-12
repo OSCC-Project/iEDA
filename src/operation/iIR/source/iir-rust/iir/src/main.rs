@@ -26,5 +26,4 @@ fn main() {
     let instance_power_path = "/home/shaozheqing/iEDA/bin/report_instance.csv";
 
     matrix::ir_rc::read_rc_data_from_spef(spef_file_path);
-
 }
