@@ -15,41 +15,27 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 /**
- * @file CmdLinkDesign.cc
- * @author Wang Hao (harry0789@qq.com)
- * @brief
+ * @file CmdSetOperatingConditions.cc
+ * @author long shuaiying (longshy@pcl.ac.cn)
+ * @brief support `set_operating_conditions` command in sdc
  * @version 0.1
- * @date 2021-10-12
+ * @date 2024-04-09
  */
-#include "ShellCmd.hh"
-#include "sta/Sta.hh"
+#include "Cmd.hh"
 
 namespace ista {
-CmdLinkDesign::CmdLinkDesign(const char* cmd_name) : TclCmd(cmd_name) {
-  auto* cell_name_option = new TclStringOption("cell_name", 1, nullptr);
-  addOption(cell_name_option);
+CmdSetOperatingConditions::CmdSetOperatingConditions(const char* cmd_name)
+    : TclCmd(cmd_name) {
+  auto* analysis_type_option =
+      new TclStringOption("-analysis_type", 0, nullptr);
+  addOption(analysis_type_option);
+
+  auto* library_option = new TclStringOption("-library", 0, nullptr);
+  addOption(library_option);
 }
 
-unsigned CmdLinkDesign::check() {
-  TclOption* cell_name_option = getOptionOrArg("cell_name");
-  LOG_FATAL_IF(!cell_name_option);
-  return 1;
-}
+unsigned CmdSetOperatingConditions::check() { return 1; }
 
-unsigned CmdLinkDesign::exec() {
-  if (!check()) {
-    return 0;
-  }
+unsigned CmdSetOperatingConditions::exec() { return 1; }
 
-  TclOption* cell_name_option = getOptionOrArg("cell_name");
-  auto* cell_name = cell_name_option->getStringVal();
-
-  Sta* ista = Sta::getOrCreateSta();
-  ista->set_top_module_name(cell_name);
-
-  // ista->linkDesign(cell_name);
-  ista->linkDesignWithRustParser(cell_name);
-
-  return 1;
-}
 }  // namespace ista

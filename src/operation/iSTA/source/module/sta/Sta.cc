@@ -22,6 +22,8 @@
  * @date 2020-11-27
  */
 
+#include "Sta.hh"
+
 #include <algorithm>
 #include <filesystem>
 #include <map>
@@ -31,7 +33,6 @@
 #include <tuple>
 #include <utility>
 
-#include "Sta.hh"
 #include "StaAnalyze.hh"
 #include "StaApplySdc.hh"
 #include "StaBuildClockTree.hh"
@@ -988,8 +989,8 @@ void Sta::linkDesignWithRustParser(const char *top_cell_name) {
 
 /**
  * @brief get the design used libs.
- * 
- * @return std::set<LibertyLibrary *> 
+ *
+ * @return std::set<LibertyLibrary *>
  */
 std::set<LibertyLibrary *> Sta::getUsedLibs() {
   if (!isBuildGraph()) {
@@ -997,9 +998,9 @@ std::set<LibertyLibrary *> Sta::getUsedLibs() {
   }
 
   std::set<LibertyLibrary *> used_libs;
-  Instance* inst;
+  Instance *inst;
   FOREACH_INSTANCE(&_netlist, inst) {
-    auto* used_lib = inst->get_inst_cell()->get_owner_lib();
+    auto *used_lib = inst->get_inst_cell()->get_owner_lib();
     used_libs.insert(used_lib);
   }
 
@@ -1203,6 +1204,20 @@ void Sta::initSdcCmd() {
   auto set_units = std::make_unique<CmdSetUnits>("set_units");
   LOG_FATAL_IF(!set_units);
   TclCmds::addTclCmd(std::move(set_units));
+
+  auto group_path = std::make_unique<CmdGroupPath>("group_path");
+  LOG_FATAL_IF(!group_path);
+  TclCmds::addTclCmd(std::move(group_path));
+
+  auto set_operating_conditions =
+      std::make_unique<CmdSetOperatingConditions>("set_operating_conditions");
+  LOG_FATAL_IF(!set_operating_conditions);
+  TclCmds::addTclCmd(std::move(set_operating_conditions));
+
+  auto set_wire_load_mode =
+      std::make_unique<CmdSetWireLoadMode>("set_wire_load_mode");
+  LOG_FATAL_IF(!set_wire_load_mode);
+  TclCmds::addTclCmd(std::move(set_wire_load_mode));
 }
 
 /**

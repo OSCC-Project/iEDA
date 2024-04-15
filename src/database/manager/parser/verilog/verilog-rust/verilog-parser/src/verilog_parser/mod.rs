@@ -476,7 +476,7 @@ fn process_port_connect(
             net_expr_id_clone,
             range,
         );
-        return Some(port_connect_net);
+        return port_connect_net;
     }
 }
 

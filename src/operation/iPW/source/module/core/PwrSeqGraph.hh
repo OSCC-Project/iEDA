@@ -268,6 +268,16 @@ class PwrSeqGraph {
     return _vertexes.size() - _input_port_vertexes.size() -
            _output_port_vertexes.size();
   }
+  unsigned getMacroSeqVertexNum() {
+    unsigned num = 0;
+    for (auto& vertex : _vertexes) {
+      if (vertex->isMacro()) {
+        ++num;
+      }
+    }
+    return num;
+  }
+  unsigned getSeqArcNum() { return _arcs.size(); }
   unsigned getInputPortNum() { return _input_port_vertexes.size(); }
   unsigned getOutputPortNum() { return _output_port_vertexes.size(); }
 
