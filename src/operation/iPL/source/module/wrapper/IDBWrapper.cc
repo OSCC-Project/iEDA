@@ -332,6 +332,11 @@ void IDBWrapper::wrapCells(IdbLayout* idb_layout)
       cell_ptr->set_type(CELL_TYPE::kNone);
     }
 
+    // lable io cell from idb.
+    if(idb_cell->is_pad()){    
+      cell_ptr->set_type(CELL_TYPE::kIOCell);
+    }
+
     // set inpin/outpin name list
     for (auto* idb_term : idb_cell->get_term_list()) {
       auto idb_direction = idb_term->get_direction();
@@ -464,7 +469,9 @@ void IDBWrapper::wrapIdbInstance(IdbInstance* idb_inst)
     if (idb_inst->is_fixed()) {
       inst_ptr->set_instance_type(INSTANCE_TYPE::kOutside);
     } else {
-      if (!checkInCore(idb_inst)) {
+      if(cell_ptr->isIOCell()){
+         inst_ptr->set_instance_type(INSTANCE_TYPE::kOutside);
+      }else if(!checkInCore(idb_inst)) {
         inst_ptr->set_shape(-1, -1, -1, -1);  // set an unlegal coordinate.
       }
     }
@@ -477,6 +484,14 @@ void IDBWrapper::wrapIdbInstance(IdbInstance* idb_inst)
       cell_ptr->set_width(cross_shape.get_ur_x() - cross_shape.get_ll_x());
     } else {
       inst_ptr->set_instance_type(INSTANCE_TYPE::kNormal);
+    }
+  }
+
+  if(cell_ptr->isIOCell()){
+    if(!inst_ptr->isOutsideInstance()){
+       LOG_WARNING << "Inst: " << inst_ptr->get_name() << " is io_cell but it is not fixed outside. " << "Shape: " 
+                   << " (" << inst_ptr->get_coordi().get_x() << "," << inst_ptr->get_coordi().get_y() << ") "
+                   << " (" << inst_ptr->get_shape().get_ur_x() << "," << inst_ptr->get_shape().get_ur_y() << ")"; 
     }
   }
 
