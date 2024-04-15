@@ -164,13 +164,13 @@ unsigned RustLibertyReader::visitSimpleAttri(RustLibertySimpleAttrStmt* attri)
             }
             rust_free_string_value(rust_attri_value);
           }},
-          {"time_unit",
+         {"time_unit",
           [=]() {
             auto* rust_attri_value = rust_convert_string_value(attri_value);
             const char* time_unit = rust_attri_value->value;
             if (Str::equal(time_unit, "1fs")) {
               current_lib->set_time_unit(TimeUnit::kFS);
-            }else if (Str::equal(time_unit, "1ps")) {
+            } else if (Str::equal(time_unit, "1ps")) {
               current_lib->set_time_unit(TimeUnit::kPS);
             }
             rust_free_string_value(rust_attri_value);
@@ -980,7 +980,12 @@ unsigned RustLibertyReader::visitInternalPower(RustLibertyGroupStmt* group)
   auto lib_power_arc = std::make_unique<LibertyPowerArc>();
   lib_builder->set_power_arc(lib_power_arc.get());
   lib_builder->set_table_model(nullptr);  // reset table model.
-  lib_port ? lib_power_arc->set_snk_port(lib_port->get_port_name()) : lib_power_arc->set_snk_port(lib_port_bus->get_port_name());
+  if (lib_port) {
+    lib_power_arc->set_snk_port(lib_port->get_port_name());
+  } else if (lib_port_bus) {
+    lib_power_arc->set_snk_port(lib_port_bus->get_port_name());
+  }
+
   lib_power_arc->set_owner_cell(lib_cell);
 
   auto internal_power_info = std::make_unique<LibertyInternalPowerInfo>();
@@ -1015,6 +1020,9 @@ unsigned RustLibertyReader::visitInternalPower(RustLibertyGroupStmt* group)
 
   if (!lib_power_arc->isSrcPortEmpty()) {
     lib_cell->addLibertyPowerArc(std::move(lib_power_arc));
+  } else if (lib_power_arc->isSrcPortEmpty() && lib_power_arc->isSnkPortEmpty()) {
+    lib_cell->addLibertyPowerArc(std::move(lib_power_arc));  // TODO(to taosimin), for s180, the internal power
+                                                             // calculation may be power arc src and snk is empty.
   } else {
     auto& internal_power_info = lib_power_arc->get_internal_power_info();
     lib_port ? lib_port->addInternalPower(std::move(internal_power_info)) : lib_port_bus->addInternalPower(std::move(internal_power_info));
