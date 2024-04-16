@@ -1,19 +1,17 @@
-use serde::Deserialize;
+use log;
 use std::collections::HashMap;
 use std::error::Error;
+use std::ffi::{c_char, c_void};
 use std::fs::File;
-use std::io::BufReader;
 
-use csv::ReaderBuilder;
-use nalgebra::DVector;
+use serde::de::StdError;
+use serde::Deserialize;
 
 use crate::matrix::ir_inst_power;
 use crate::matrix::ir_rc::RCOneNetData;
-use log;
-use serde::de::StdError;
 
 #[derive(Deserialize)]
-struct InstancePowerRecord {
+pub struct InstancePowerRecord {
     #[serde(rename = "Instance Name")]
     instance_name: String,
     #[serde(rename = "Nominal Voltage")]
@@ -28,7 +26,7 @@ struct InstancePowerRecord {
     total_power: f64,
 }
 
-/// read instance power csv file.
+/// Read instance power csv file.
 pub fn read_inst_pwr_csv(file_path: &str) -> Result<Vec<InstancePowerRecord>, Box<dyn Error>> {
     let file = File::open(file_path)?;
     let mut reader = csv::Reader::from_reader(file);
@@ -40,7 +38,7 @@ pub fn read_inst_pwr_csv(file_path: &str) -> Result<Vec<InstancePowerRecord>, Bo
     Ok(records)
 }
 
-/// print instance power data.
+/// Print instance power data.
 fn print_inst_pwr_data(records: &[InstancePowerRecord]) {
     for record in records {
         println!(
@@ -65,33 +63,39 @@ fn get_instance_current(instance_power_data: Vec<InstancePowerRecord>) -> HashMa
     instance_current_map
 }
 
-/// build instance current vector.
+/// Build instance current vector.
 pub fn build_instance_current_vector(
     inst_power_path: &str,
     net_data: &RCOneNetData,
-) -> Result<DVector<f64>, Box<dyn StdError + 'static>> {
-    log::info!(
-        "build instance current vector from {} for power net {}",
-        inst_power_path,
-        net_data.get_name()
-    );
+) -> Result<HashMap<usize, f64>, Box<dyn StdError + 'static>> {
+    log::info!("build instance current vector from {} for power net {}", inst_power_path, net_data.get_name());
     let instance_power_data = ir_inst_power::read_inst_pwr_csv(inst_power_path)?;
     let instance_current_map = ir_inst_power::get_instance_current(instance_power_data);
 
-    let mut instance_current_vec: Vec<f64> = vec![0.0; net_data.get_nodes().len()];
+    let mut instance_current_data: HashMap<usize, f64> = HashMap::new();
 
     for (instance_name, instance_current) in instance_current_map {
         let instance_power_pin_name = instance_name; // TODO(to taosimin) fix power pin name.
         let node_index = net_data.get_node_id(&instance_power_pin_name).unwrap();
-        instance_current_vec[node_index] = instance_current;
+        instance_current_data.insert(node_index, instance_current);
     }
 
-    let current_vector: DVector<f64> = DVector::from_iterator(
-        instance_current_vec.len(),
-        instance_current_vec.iter().cloned(),
-    );
+    Ok(instance_current_data)
+}
 
-    Ok(current_vector)
+/// Build one net instance current vector.
+#[no_mangle]
+pub extern "C" fn build_one_net_instance_current_vector(
+    inst_power_path: *const c_char,
+    net_data: *const RCOneNetData,
+) -> *mut c_void {
+    let inst_power_path = unsafe { std::ffi::CStr::from_ptr(inst_power_path) };
+    let inst_power_path = inst_power_path.to_str().unwrap();
+
+    let net_data = unsafe { &*net_data };
+    let instance_current_data = build_instance_current_vector(inst_power_path, net_data).unwrap();
+
+    Box::into_raw(Box::new(instance_current_data)) as *mut c_void
 }
 
 #[cfg(test)]
