@@ -138,9 +138,11 @@ class BoundSkewTree
 
   // Balance Point
   void calcBalancePt(Area* cur);
-  void calcBalBetweenPts(Pt& p1, Pt& p2, const size_t& timing_type, const size_t& bal_ref_side, double& d1, double& d2, Pt& bal_pt) const;
-  void calcBalPtOnLine(Pt& p1, Pt& p2, const size_t& timing_type, double& d1, double& d2, Pt& bal_pt) const;
-  void calcBalPtNotOnLine(Pt& p1, Pt& p2, const size_t& timing_type, const size_t& bal_ref_side, double& d1, double& d2, Pt& bal_pt) const;
+  void calcBalBetweenPts(Pt& p1, Pt& p2, const size_t& timing_type, const size_t& bal_ref_side, double& d1, double& d2, Pt& bal_pt,
+                         const RCPattern& pattern) const;
+  void calcBalPtOnLine(Pt& p1, Pt& p2, const size_t& timing_type, double& d1, double& d2, Pt& bal_pt, const RCPattern& pattern) const;
+  void calcBalPtNotOnLine(Pt& p1, Pt& p2, const size_t& timing_type, const size_t& bal_ref_side, double& d1, double& d2, Pt& bal_pt,
+                         const RCPattern& pattern) const;
   void calcMergeDist(const double& r, const double& c, const double& cap1, const double& delay1, const double& cap2, const double& delay2,
                      const double& dist, double& d1, double& d2) const;
   void calcPtCoordOnLine(const Pt& p1, const Pt& p2, const double& d1, const double& d2, Pt& pt) const;
@@ -189,9 +191,9 @@ class BoundSkewTree
   void calcPtDelays(Area* cur, Pt& pt, Line& line) const;
   void updatePtDelaysByEndSide(Area* cur, const size_t& end_side, Pt& pt) const;
   void calcIrregularPtDelays(Area* cur, Pt& pt, Line& line) const;
-  double ptDelayIncrease(Pt& p1, Pt& p2, const double& cap, const RCPattern& pattern = RCPattern::kHV) const;
-  double ptDelayIncrease(Pt& p1, Pt& p2, const double& len, const double& cap, const RCPattern& pattern = RCPattern::kHV) const;
-  double calcDelayIncrease(const double& x, const double& y, const double& cap, const RCPattern& pattern = RCPattern::kHV) const;
+  double ptDelayIncrease(Pt& p1, Pt& p2, const double& cap, const RCPattern& pattern) const;
+  double ptDelayIncrease(Pt& p1, Pt& p2, const double& len, const double& cap, const RCPattern& pattern) const;
+  double calcDelayIncrease(const double& x, const double& y, const double& cap, const RCPattern& pattern) const;
   double ptSkew(const Pt& pt) const;
   Line getJrLine(const size_t& side) const;
   Line getJsLine(const size_t& side) const;

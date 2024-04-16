@@ -33,6 +33,12 @@ CmdSetUnits::CmdSetUnits(const char* cmd_name) : TclCmd(cmd_name) {
   addOption(time_unit);
   auto* cap_unit = new TclStringOption("-capacitance", 0, "PF");
   addOption(cap_unit);
+  auto* current_unit = new TclStringOption("-current", 0, "mA");
+  addOption(current_unit);
+  auto* voltage_unit = new TclStringOption("-voltage", 0, "V");
+  addOption(voltage_unit);
+  auto* res_unit = new TclStringOption("-resistance", 0, "kOhm");
+  addOption(res_unit);
 }
 
 unsigned CmdSetUnits::check() {

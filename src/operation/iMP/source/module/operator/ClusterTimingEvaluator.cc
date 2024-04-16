@@ -1,5 +1,6 @@
 #include "ClusterTimingEvaluator.hh"
 
+#include "Logger.hpp"
 #include "TimingEngine.hh"
 #include "TimingIDBAdapter.hh"
 
@@ -9,7 +10,6 @@ ClusterTimingEvaluator::ClusterTimingEvaluator()
 {
   _sdc_file = dmInst->get_config().get_sdc_path();
   _lib_files = dmInst->get_config().get_lib_paths();
-  std::cout << "constructer lib_files_size: " << _lib_files.size() << std::endl;
 }
 
 void ClusterTimingEvaluator::initTimingEngine()
@@ -22,22 +22,51 @@ void ClusterTimingEvaluator::initTimingEngine()
   db_adapter->set_idb(_idb_builder);
   db_adapter->convertDBToTimingNetlist();
   _timing_engine->set_db_adapter(std::move(db_adapter));
-  _timing_engine->buildGraph();
   _timing_engine->readSdc(_sdc_file.c_str());
+  _timing_engine->buildGraph();
+  _power_engine = ipower::PowerEngine::getOrCreatePowerEngine();
+}
+
+void ClusterTimingEvaluator::createDataflow(const std::vector<std::set<std::string>>& cluster_instances,
+                                            const std::set<std::string>& src_instances, size_t max_hop)
+{
+
+  auto start = std::chrono::high_resolution_clock::now();
+
+  INFO("Cluster num: ", cluster_instances.size());
+  _timing_engine->updateTiming();
+  _power_engine->creatDataflow();
+  _dataflow_connection_map = _power_engine->buildConnectionMap(cluster_instances, src_instances, max_hop);
+  _dataflow_connections.clear();
+  for (auto&& [src_cluster_id, snk_clusters] : _dataflow_connection_map) {
+    for (auto&& snk_cluster : snk_clusters) {
+      _dataflow_connections[std::tuple<size_t, size_t, size_t>(src_cluster_id, snk_cluster._dst_cluster_id, snk_cluster._hop)] += 1;
+    }
+  }
+
+  // INFO("Dataflow_start_id: ", src_cluster_id, " Dataflow_end_id: ", snk_cluster._dst_cluster_id, " hop: ", snk_cluster._hop);
+  for (auto&& [k, v] : _dataflow_connections){
+    INFO("Dataflow_start_id: ", std::get<0>(k), " Dataflow_end_id: ", std::get<1>(k), " hop: ", std::get<2>(k), " connetion-num: ", v);
+  }
+  auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<float> elapsed = std::chrono::duration<float>(end - start);
+    INFO("create dataflow time:", elapsed.count(), "s");
 }
 
 std::vector<std::tuple<std::string, std::string, double>> ClusterTimingEvaluator::getNegativeSlackPaths(
     std::unordered_map<idb::IdbNet*, std::map<std::string, double>>& net_lengths_between_cluster, double percent)
 {
-  std::cout << "update from cluster graph start " << std::endl;
-  clock_t begin = clock();
+  INFO("Update from cluster graph start");
+  auto start = std::chrono::high_resolution_clock::now();
 
   for (auto iter = net_lengths_between_cluster.begin(); iter != net_lengths_between_cluster.end(); ++iter) {
     _timing_engine->resetRcTree(_timing_engine->findNet(Str::trimBackslash(iter->first->get_net_name()).c_str()));
     _timing_engine->buildRcTreeAndUpdateRcTreeInfo(Str::trimBackslash(iter->first->get_net_name()).c_str(), iter->second);
   }
-  clock_t end = clock();
-  std::cout << "sta update netlength time: " << double(end - begin) / CLOCKS_PER_SEC << std::endl;
+
+  auto end = std::chrono::high_resolution_clock::now();
+  std::chrono::duration<float> elapsed = std::chrono::duration<float>(end - start);
+  INFO("STA update netlength time: ", elapsed.count());
 
   _timing_engine->updateTiming();
   return _timing_engine->getStartEndSlackPairsOfTopNPercentPaths(percent, ista::AnalysisMode::kMax, ista::TransType::kRise);

@@ -14,25 +14,28 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-#pragma once
+/**
+ * @file CmdSetOperatingConditions.cc
+ * @author long shuaiying (longshy@pcl.ac.cn)
+ * @brief support `set_operating_conditions` command in sdc
+ * @version 0.1
+ * @date 2024-04-09
+ */
+#include "Cmd.hh"
 
-#include <map>
-#include <set>
-#include <string>
+namespace ista {
+CmdSetOperatingConditions::CmdSetOperatingConditions(const char* cmd_name)
+    : TclCmd(cmd_name) {
+  auto* analysis_type_option =
+      new TclStringOption("-analysis_type", 0, nullptr);
+  addOption(analysis_type_option);
 
-#include "api/PowerEngine.hh"
+  auto* library_option = new TclStringOption("-library", 0, nullptr);
+  addOption(library_option);
+}
 
-namespace python_interface {
-bool readRustVCD(const char* vcd_path, const char* top_instance_name);
-unsigned reportPower();
+unsigned CmdSetOperatingConditions::check() { return 1; }
 
-// for dataflow.
-unsigned create_data_flow();
+unsigned CmdSetOperatingConditions::exec() { return 1; }
 
-std::map<std::size_t, std::vector<ipower::ClusterConnection>>
-build_connection_map(std::vector<std::set<std::string>> clusters,
-                     std::set<std::string> src_instances, unsigned max_hop);
-
-std::vector<ipower::MacroConnection> build_macro_connection_map(unsigned max_hop);
-
-}  // namespace python_interface
+}  // namespace ista

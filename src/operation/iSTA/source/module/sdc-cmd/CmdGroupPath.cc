@@ -14,25 +14,29 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-#pragma once
+/**
+ * @file CmdGroupPath.cc
+ * @author long shuaiying (longshy@pcl.ac.cn)
+ * @brief support `group_path` command in sdc
+ * @version 0.1
+ * @date 2024-04-09
+ */
+#include "Cmd.hh"
 
-#include <map>
-#include <set>
-#include <string>
+namespace ista {
+CmdGroupPath::CmdGroupPath(const char* cmd_name) : TclCmd(cmd_name) {
+  auto* name_option = new TclStringOption("-name", 0, nullptr);
+  addOption(name_option);
 
-#include "api/PowerEngine.hh"
+  auto* from = new TclStringListOption("-from", 0);
+  addOption(from);
 
-namespace python_interface {
-bool readRustVCD(const char* vcd_path, const char* top_instance_name);
-unsigned reportPower();
+  auto* to = new TclStringListOption("-to", 0);
+  addOption(to);
+}
 
-// for dataflow.
-unsigned create_data_flow();
+unsigned CmdGroupPath::check() { return 1; }
 
-std::map<std::size_t, std::vector<ipower::ClusterConnection>>
-build_connection_map(std::vector<std::set<std::string>> clusters,
-                     std::set<std::string> src_instances, unsigned max_hop);
+unsigned CmdGroupPath::exec() { return 1; }
 
-std::vector<ipower::MacroConnection> build_macro_connection_map(unsigned max_hop);
-
-}  // namespace python_interface
+}  // namespace ista

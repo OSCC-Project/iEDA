@@ -647,17 +647,13 @@ impl VerilogInst {
         parent_module: &Rc<RefCell<VerilogModule>>,
         port_id: Box<dyn VerilogVirtualBaseID>,
         port_bus_wide_range: Option<(i32, i32)>,
-    ) -> Box<dyn VerilogVirtualBaseNetExpr> {
+    ) -> Option<Box<dyn VerilogVirtualBaseNetExpr>> {
         // process the inst connection below.
-        let verilog_id = VerilogID::default();
-        let verilog_virtual_base_id = Box::new(verilog_id);
-        let port_connect_net_option: Option<Box<dyn VerilogVirtualBaseNetExpr>> =
-            Some(Box::new(VerilogNetIDExpr::new(0, verilog_virtual_base_id)));
-        let mut port_connect_net: Box<dyn VerilogVirtualBaseNetExpr> = port_connect_net_option.unwrap();
+        let mut port_connect_net_option: Option<Box<dyn VerilogVirtualBaseNetExpr>> = None;
         for port_connection in &self.port_connections {
             if port_connection.get_port_id().get_name() == port_id.get_base_name() {
                 if let Some(net_expr) = port_connection.get_net_expr().clone() {
-                    port_connect_net = net_expr;
+                    let mut port_connect_net: Box<dyn VerilogVirtualBaseNetExpr> = net_expr;
                     if port_connect_net.is_id_expr() {
                         // is not concat expr.
                         if port_id.is_bus_index_id() || port_id.is_bus_slice_id() {
@@ -694,6 +690,7 @@ impl VerilogInst {
                                     let mut port_connect_net_struct_clone = port_connect_net_struct.clone();
                                     port_connect_net_struct_clone.set_verilog_id(dyn_new_port_connect_port_id);
                                     port_connect_net = Box::new(port_connect_net_struct_clone);
+                                    port_connect_net_option = Some(port_connect_net);
                                 } else if !port_connect_net.get_verilog_id().is_bus_index_id() {
                                     let port_connect_name = port_connect_net.get_verilog_id().get_base_name();
                                     let borrowed_parent_module = parent_module.borrow();
@@ -721,6 +718,9 @@ impl VerilogInst {
                                     let mut port_connect_net_struct_clone = port_connect_net_struct.clone();
                                     port_connect_net_struct_clone.set_verilog_id(dyn_port_connect_port_id);
                                     port_connect_net = Box::new(port_connect_net_struct_clone);
+                                    port_connect_net_option = Some(port_connect_net);
+                                } else if port_connect_net.get_verilog_id().is_bus_index_id() {
+                                    port_connect_net_option = Some(port_connect_net);
                                 }
                             } else if port_id.is_bus_slice_id() {
                                 if port_connect_net.get_verilog_id().is_bus_slice_id() {
@@ -733,7 +733,8 @@ impl VerilogInst {
                                     let mut port_connect_net_slice_id_clone = port_connect_net_slice_id.clone();
                                     port_connect_net_slice_id_clone.set_range_from(port_slice_id.get_range_from());
                                     port_connect_net_slice_id_clone.set_range_to(port_slice_id.get_range_to());
-                                    port_connect_net_slice_id = &port_connect_net_slice_id_clone;
+                                    // the code below line is useful.                                    port_connect_net_slice_id = &port_connect_net_slice_id_clone;
+                                    port_connect_net_option = Some(port_connect_net);
                                 } else if !port_connect_net.get_verilog_id().is_bus_index_id() {
                                     let port_slice_id = port_id.as_any().downcast_ref::<VerilogSliceID>().unwrap();
                                     let new_port_connect_port_id = VerilogSliceID::new(
@@ -747,9 +748,11 @@ impl VerilogInst {
                                     let mut port_connect_net_struct_clone = port_connect_net_struct.clone();
                                     port_connect_net_struct_clone.set_verilog_id(new_dyn_port_connect_port_id);
                                     port_connect_net = Box::new(port_connect_net_struct_clone);
+                                    port_connect_net_option = Some(port_connect_net);
                                 }
                             }
                         } else {
+                            port_connect_net_option = Some(port_connect_net);
                             if port_bus_wide_range.is_some() {}
                         }
                     } else if port_connect_net.is_concat_expr() {
@@ -765,6 +768,7 @@ impl VerilogInst {
                                 index,
                             );
                             port_connect_net = index_port_connect;
+                            port_connect_net_option = Some(port_connect_net);
                         } else if port_id.is_bus_slice_id() {
                             let port_slice_id = port_id.as_any().downcast_ref::<VerilogSliceID>().unwrap();
                             let from = port_slice_id.get_range_from();
@@ -787,6 +791,7 @@ impl VerilogInst {
                             }
                             let slice_concat_connect_net = VerilogNetConcatExpr::new(0, slice_concat);
                             port_connect_net = Box::new(slice_concat_connect_net);
+                            port_connect_net_option = Some(port_connect_net);
                         }
                     } else if port_connect_net.is_constant() {
                         println!("port {} connect net is constant", port_connection.get_port_id().get_name());
@@ -797,7 +802,7 @@ impl VerilogInst {
                 break;
             }
         }
-        return port_connect_net;
+        return port_connect_net_option;
     }
 }
 

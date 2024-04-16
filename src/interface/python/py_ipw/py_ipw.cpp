@@ -44,10 +44,15 @@ unsigned create_data_flow() {
 }
 
 std::map<std::size_t, std::vector<ipower::ClusterConnection>>
-build_connection_map(std::vector<std::set<std::string>> clusters,
+build_connection_map(std::vector<std::set<std::string>> clusters, std::set<std::string> src_instances,
                      unsigned max_hop) {
   auto* power_engine = ipower::PowerEngine::getOrCreatePowerEngine();
-  return power_engine->buildConnectionMap(clusters, max_hop);
+  return power_engine->buildConnectionMap(clusters, src_instances, max_hop);
+}
+
+std::vector<ipower::MacroConnection> build_macro_connection_map(unsigned max_hop) {
+  auto* power_engine = ipower::PowerEngine::getOrCreatePowerEngine();
+  return power_engine->buildMacroConnectionMap(max_hop);
 }
 
 }  // namespace python_interface

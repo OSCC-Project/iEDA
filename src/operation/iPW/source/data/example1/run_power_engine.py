@@ -12,7 +12,7 @@ ipower_cpp.read_sdc(work_dir + "/example1.sdc")
 
 ipower_cpp.create_data_flow()
 connection_map = ipower_cpp.build_connection_map(
-    [{"r1", "u1"}, {"r2", "u2"}, {"r3"}, {"in1"}, {"in2"}, {"out"}], 2
+    [{"r1", "u1"}, {"r2", "u2"}, {"r3"}, {"in1"}, {"in2"}, {"out"}], {"r1", "u1"}, 2
 )
 
 for src_cluster_id, snk_clusters in connection_map.items():
@@ -25,3 +25,16 @@ for src_cluster_id, snk_clusters in connection_map.items():
                 snk_cluster.hop,
             )
         )
+
+
+macro_connections = ipower_cpp.build_macro_connection_map(2)
+print("build macro connections finished")
+for macro_connection in macro_connections:
+    print(
+        "src macro name {} -> snk macro name {} stages {} hop {}".format(
+            macro_connection.src_macro_name,
+            macro_connection.dst_macro_name,
+            " ".join([str(x) for x in snk_cluster.stages_each_hop]),
+            macro_connection.hop,
+        )
+    )

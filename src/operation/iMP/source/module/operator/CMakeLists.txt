@@ -5,6 +5,7 @@ target_link_libraries(imp-operator
     imp-basic
     imp-logger
     imp-parser
+    power
 )
 
 target_include_directories(imp-operator

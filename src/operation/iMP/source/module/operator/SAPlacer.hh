@@ -105,8 +105,8 @@ struct SAPlace
   double prob_pi_op = 0.2;
   double prob_ni_op = 0.2;
   double prob_rs_op = 0.2;
-  SeqPair<NodeShape<T>> init_sp;
   int num_threads = 4;
+  Represent init_represent;
 
   // data
   size_t num_vertices;
@@ -208,8 +208,7 @@ SAPlace<T>::Represent SAPlace<T>::operator()(Block& cluster)
     auto sub_obj = cluster.netlist().vertex_at(0).property();
     // update shape && locaton
     sub_obj->set_min_corner(cluster.get_min_corner());
-    // return true;
-    return Represent();
+    return init_represent;
   }
 
   initPlaceData(cluster);
@@ -313,15 +312,15 @@ void SAPlace<T>::initRepresent(Block& cluster)
     delete represent;
   }
 
-  if (init_sp.size != 0) {
-    if (init_sp.size != cluster.netlist().vSize()) {
-      ERROR("Error, inital sp doesn't match netlist vertex num!");
+  if (init_represent.size != 0) {
+    if (init_represent.size != cluster.netlist().vSize()) {
+      ERROR("Error, inital represent doesn't match netlist vertex num!");
     }
-    represent = new Represent(init_sp);
-    INFO("Using given initial sp solution");
+    represent = new Represent(init_represent);
+    INFO("Using given initial represent solution");
   } else {
     represent = new Represent(blk_shapes, gen);
-    INFO("Using random initial sp solution");
+    INFO("Using random initial represent solution");
   }
 }
 
