@@ -28,6 +28,15 @@ unsigned iIR::readSpef(std::string_view spef_file_path) {
 };
 
 /**
+ * @brief read instance power db file to build current vector.
+ * 
+ * @return unsigned 
+ */
+unsigned iIR::readInstancePowerDB(std::string_view instance_power_file_path) {
+  return 1;
+}
+
+/**
  * @brief solve the power net IR drop.
  *
  */

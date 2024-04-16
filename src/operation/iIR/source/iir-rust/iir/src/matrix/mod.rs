@@ -116,6 +116,8 @@ pub extern "C" fn build_one_net_conductance_matrix_data(
 
     let one_net_conductance_data =
         Box::from(IRNetConductanceData { net_name: one_net_name, conductance_matrix: rust_matrix });
+
+    // Need free the memory after use.
     let ir_net_raw_ptr = Box::into_raw(one_net_conductance_data);
 
     // The C image of rust data.
