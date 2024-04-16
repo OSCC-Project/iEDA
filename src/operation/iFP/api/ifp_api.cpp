@@ -100,6 +100,13 @@ bool FpApi::placePort(std::string pin_name, int32_t x_offset, int32_t y_offset, 
   return io_placer.placePort(pin_name, x_offset, y_offset, rect_width, rect_height, layer_name);
 }
 
+bool FpApi::autoPlacePad(std::vector<std::string> pad_masters, std::vector<std::string> conner_masters)
+{
+  IoPlacer io_placer;
+
+  return io_placer.autoPlacePad(pad_masters, conner_masters);
+}
+
 bool FpApi::placeIOFiller(std::vector<std::string> filler_name_list, std::string prefix, std::string orient, double begin, double end,
                           std::string source)
 {

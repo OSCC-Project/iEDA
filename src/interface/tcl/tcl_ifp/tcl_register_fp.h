@@ -37,6 +37,7 @@ int registerCmdFP()
   registerTclCmd(TclFpMakeTracks, "gern_track");
   registerTclCmd(TclFpPlacePins, "auto_place_pins");
   registerTclCmd(TclFpPlacePort, "place_port");
+  registerTclCmd(TclFpAutoPlaceIO, "auto_place_io");
   registerTclCmd(TclFpPlaceIOFiller, "place_io_filler");
   registerTclCmd(TclFpAddPlacementBlockage, "add_placement_blockage");
   registerTclCmd(TclFpAddPlacementHalo, "add_placement_halo");

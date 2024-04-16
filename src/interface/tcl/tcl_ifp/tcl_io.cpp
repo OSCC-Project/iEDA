@@ -202,4 +202,44 @@ unsigned TclFpPlaceIOFiller::exec()
   return 1;
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+TclFpAutoPlaceIO::TclFpAutoPlaceIO(const char* cmd_name) : TclCmd(cmd_name)
+{
+  auto* tcl_pads = new TclStringListOption("-pads", 0);
+  auto* tcl_corners = new TclStringListOption("-conners", 0);
+
+  addOption(tcl_pads);
+  addOption(tcl_corners);
+}
+
+unsigned TclFpAutoPlaceIO::check()
+{
+  auto* tcl_pads = getOptionOrArg("-pads");
+  auto* tcl_corners = getOptionOrArg("-conners");
+
+  //   LOG_FATAL_IF(!tcl_pads);
+  //   LOG_FATAL_IF(!tcl_pads);
+
+  return 1;
+}
+
+unsigned TclFpAutoPlaceIO::exec()
+{
+  if (!check()) {
+    return 0;
+  }
+
+  auto* tcl_pads = getOptionOrArg("-pads");
+  auto* tcl_corners = getOptionOrArg("-conners");
+
+  std::vector<std::string> pad_names = tcl_pads != nullptr ? tcl_pads->getStringList() : std::vector<std::string>{};
+  std::vector<std::string> corner_names = tcl_corners != nullptr ? tcl_corners->getStringList() : std::vector<std::string>{};
+
+  fpApiInst->autoPlacePad(pad_names, corner_names);
+
+  return 1;
+}
+
 }  // namespace tcl

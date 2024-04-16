@@ -480,4 +480,177 @@ void IoPlacer::fillInterval(Interval interval, std::vector<idb::IdbCellMaster*> 
   }
 }
 
+/// calculate pad coordinate begin/end
+void IoPlacer::set_pad_coords(vector<string> conner_masters)
+{
+  auto* idb_design = dmInst->get_idb_design();
+  auto* idb_layout = idb_design->get_layout();
+  auto* idb_die = idb_layout->get_die();
+  auto* inst_list = idb_design->get_instance_list();
+  auto* io_site = idb_layout->get_sites()->get_io_site();
+
+  auto corner_list = inst_list->get_corner_list(conner_masters);
+  int site_height = io_site->get_height();
+
+  if (corner_list.size() == 0) {
+    /// no corner, place pad in to the die edge
+    auto die_box = idb_die->get_bounding_box();
+
+    /// bottom
+    _pad_coord[0].edge = Edge::kBottom;
+    _pad_coord[0].begin = site_height;
+    _pad_coord[0].end = die_box->get_width() - site_height;
+    _pad_coord[0].coord = 0;
+    /// lef
+    _pad_coord[1].edge = Edge::kLeft;
+    _pad_coord[1].begin = site_height;
+    _pad_coord[1].end = die_box->get_height() - site_height;
+    _pad_coord[1].coord = 0;
+    /// top
+    _pad_coord[2].edge = Edge::kTop;
+    _pad_coord[2].begin = site_height;
+    _pad_coord[2].end = die_box->get_width() - site_height;
+    _pad_coord[2].coord = die_box->get_height() - site_height;
+    /// right
+    _pad_coord[3].edge = Edge::kRight;
+    _pad_coord[3].begin = site_height;
+    _pad_coord[3].end = die_box->get_height() - site_height;
+    _pad_coord[3].coord = die_box->get_width() - site_height;
+  } else {
+    /// build range for x y
+    std::set<int> list_x;
+    std::set<int> list_y;
+    for (auto* inst : corner_list) {
+      auto bounding_box = inst->get_bounding_box();
+      list_x.insert(bounding_box->get_low_x());
+      list_x.insert(bounding_box->get_high_x());
+      list_y.insert(bounding_box->get_low_y());
+      list_y.insert(bounding_box->get_high_y());
+    }
+    std::vector<int> coord_x, coord_y;
+
+    auto iter_x = list_x.begin();
+    auto iter_y = list_y.begin();
+    for (int i = 0; i < 4; i++) {
+      coord_x.push_back(*iter_x++);
+      coord_y.push_back(*iter_y++);
+    }
+
+    /// bottom
+    _pad_coord[0].edge = Edge::kBottom;
+    _pad_coord[0].begin = coord_x[1];
+    _pad_coord[0].end = coord_x[2];
+    _pad_coord[0].coord = coord_y[0];
+    /// lef
+    _pad_coord[1].edge = Edge::kLeft;
+    _pad_coord[1].begin = coord_y[1];
+    _pad_coord[1].end = coord_y[2];
+    _pad_coord[1].coord = coord_x[0];
+    /// top
+    _pad_coord[2].edge = Edge::kTop;
+    _pad_coord[2].begin = coord_x[1];
+    _pad_coord[2].end = coord_x[2];
+    _pad_coord[2].coord = coord_y[2];
+    /// right
+    _pad_coord[3].edge = Edge::kRight;
+    _pad_coord[3].begin = coord_y[1];
+    _pad_coord[3].end = coord_y[2];
+    _pad_coord[3].coord = coord_x[2];
+  }
+}
+
+/**
+ * pad_masters : pad cell name list
+ * conner_masters : corner cell name list
+ */
+bool IoPlacer::autoPlacePad(std::vector<std::string> pad_masters, std::vector<std::string> conner_masters)
+{
+  auto place_pad = [](std::vector<IdbInstance*>& pad_list, int& index_begin, PadCoordinate& pad_coord, int step) {
+    int coord_offset = pad_coord.begin + step;
+    for (; index_begin < (int) pad_list.size() && coord_offset < pad_coord.end; index_begin++) {
+      int pad_witdh = pad_list[index_begin]->get_cell_master()->get_width();
+      if (coord_offset + pad_witdh > pad_coord.end) {
+        index_begin--;
+        return;
+      }
+
+      if (pad_coord.edge == Edge::kBottom || pad_coord.edge == Edge::kTop) {
+        int coord_x = coord_offset;
+        int coord_y = pad_coord.coord;
+        auto orient = pad_coord.edge == Edge::kBottom ? IdbOrient::kN_R0 : IdbOrient::kS_R180;
+
+        pad_list[index_begin]->set_coodinate(coord_x, coord_y, false);
+        pad_list[index_begin]->set_orient(orient);
+        pad_list[index_begin]->set_status_placed();
+
+      } else {
+        int coord_x = pad_coord.coord;
+        int coord_y = coord_offset;
+        auto orient = pad_coord.edge == Edge::kLeft ? IdbOrient::kE_R270 : IdbOrient::kW_R90;
+
+        pad_list[index_begin]->set_coodinate(coord_x, coord_y, false);
+        pad_list[index_begin]->set_orient(orient);
+        pad_list[index_begin]->set_status_placed();
+      }
+
+      coord_offset = coord_offset + pad_witdh + step;
+    }
+  };
+
+  auto* idb_design = dmInst->get_idb_design();
+  auto* idb_layout = idb_design->get_layout();
+  auto* inst_list = idb_design->get_instance_list();
+
+  auto pad_list = inst_list->get_iopad_list(pad_masters);
+  if (pad_list.size() <= 0) {
+    return false;
+  }
+
+  set_pad_coords(conner_masters);
+
+  int range_total_len = 0;
+  for (int i = 0; i < 4; i++) {
+    range_total_len += (_pad_coord[i].end - _pad_coord[i].begin);
+  }
+
+  /// calculate average interval between pads
+  int pad_total_len = 0;
+  for (auto* inst : pad_list) {
+    pad_total_len += inst->get_cell_master()->get_width();
+  }
+
+  int site_step = (range_total_len - pad_total_len) / (pad_list.size() + 8);
+
+  int pad_index = 0;
+  /// bottom = kN_R0
+  place_pad(pad_list, pad_index, _pad_coord[0], site_step);
+
+  /// left = kE_R270
+  place_pad(pad_list, pad_index, _pad_coord[1], site_step);
+
+  /// top = kS_R180
+  place_pad(pad_list, pad_index, _pad_coord[2], site_step);
+
+  /// right = kW_R90
+  place_pad(pad_list, pad_index, _pad_coord[3], site_step);
+
+  return true;
+}
+
+bool IoPlacer::autoIOFiller(std::vector<std::string> filler_name_list, std::string prefix)
+{
+  auto* idb_design = dmInst->get_idb_design();
+  auto* idb_layout = idb_design->get_layout();
+
+  auto pad_fillers = idb_layout->get_cell_master_list()->getIOFillers(filler_name_list);
+  if (pad_fillers.size() <= 0) {
+    return false;
+  }
+  /// sort pad filler
+  sort(pad_fillers.begin(), pad_fillers.end(),
+       [](idb::IdbCellMaster* fill_1, idb::IdbCellMaster* fill_2) { return fill_1->get_width() > fill_2->get_width(); });
+
+  return true;
+}
+
 }  // namespace ifp

@@ -93,6 +93,16 @@ class TclFpPlaceIOFiller : public TclCmd
   unsigned exec();
 };
 
+class TclFpAutoPlaceIO : public TclCmd
+{
+ public:
+  explicit TclFpAutoPlaceIO(const char* cmd_name);
+  ~TclFpAutoPlaceIO() override = default;
+
+  unsigned check();
+  unsigned exec();
+};
+
 class TclFpAddPlacementBlockage : public TclCmd
 {
  public:
