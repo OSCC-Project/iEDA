@@ -1,10 +1,9 @@
 use log;
 use std::collections::HashMap;
 use std::error::Error;
+use std::ffi::{c_char, c_void};
 use std::fs::File;
-use std::io::BufReader;
 
-use csv::ReaderBuilder;
 use serde::de::StdError;
 use serde::Deserialize;
 
@@ -12,7 +11,7 @@ use crate::matrix::ir_inst_power;
 use crate::matrix::ir_rc::RCOneNetData;
 
 #[derive(Deserialize)]
-struct InstancePowerRecord {
+pub struct InstancePowerRecord {
     #[serde(rename = "Instance Name")]
     instance_name: String,
     #[serde(rename = "Nominal Voltage")]
@@ -82,6 +81,21 @@ pub fn build_instance_current_vector(
     }
 
     Ok(instance_current_data)
+}
+
+/// Build one net instance current vector.
+#[no_mangle]
+pub extern "C" fn build_one_net_instance_current_vector(
+    inst_power_path: *const c_char,
+    net_data: *const RCOneNetData,
+) -> *mut c_void {
+    let inst_power_path = unsafe { std::ffi::CStr::from_ptr(inst_power_path) };
+    let inst_power_path = inst_power_path.to_str().unwrap();
+
+    let net_data = unsafe { &*net_data };
+    let instance_current_data = build_instance_current_vector(inst_power_path, net_data).unwrap();
+
+    Box::into_raw(Box::new(instance_current_data)) as *mut c_void
 }
 
 #[cfg(test)]

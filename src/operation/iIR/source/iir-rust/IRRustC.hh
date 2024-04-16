@@ -22,6 +22,7 @@ typedef struct RustNetConductanceData {
   char *net_name;
   uintptr_t node_num;
   struct RustVec g_matrix_vec;
+  // for free Rust ir net memory, record the ptr. 
   const void *ir_net_raw_ptr;
 } RustNetConductanceData;
 

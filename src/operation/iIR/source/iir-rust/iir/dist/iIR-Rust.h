@@ -12,6 +12,11 @@ Do not modify this manually.
 #include <stdlib.h>
 
 /**
+ * One power net rc data.
+ */
+typedef struct RCOneNetData RCOneNetData;
+
+/**
  * Rust vec to C vec
  */
 typedef struct RustVec {
@@ -41,3 +46,9 @@ struct RustNetConductanceData build_one_net_conductance_matrix_data(const void *
  */
 struct RustVec build_matrix_from_raw_data(const char *c_inst_power_path,
                                           const char *c_power_net_spef);
+
+/**
+ * Build one net instance current vector.
+ */
+void *build_one_net_instance_current_vector(const char *inst_power_path,
+                                            const struct RCOneNetData *net_data);
