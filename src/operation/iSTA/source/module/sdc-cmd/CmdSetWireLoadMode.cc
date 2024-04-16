@@ -14,25 +14,24 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-#pragma once
+/**
+ * @file CmdSetWireLoadMode.cc
+ * @author long shuaiying (longshy@pcl.ac.cn)
+ * @brief support `set_wire_load_mode` command in sdc
+ * @version 0.1
+ * @date 2024-04-09
+ */
+#include "Cmd.hh"
 
-#include <map>
-#include <set>
-#include <string>
+namespace ista {
+CmdSetWireLoadMode::CmdSetWireLoadMode(const char* cmd_name)
+    : TclCmd(cmd_name) {
+  auto* mode_name_arg = new TclStringOption("mode_name", 1, nullptr);
+  addOption(mode_name_arg);
+}
 
-#include "api/PowerEngine.hh"
+unsigned CmdSetWireLoadMode::check() { return 1; }
 
-namespace python_interface {
-bool readRustVCD(const char* vcd_path, const char* top_instance_name);
-unsigned reportPower();
+unsigned CmdSetWireLoadMode::exec() { return 1; }
 
-// for dataflow.
-unsigned create_data_flow();
-
-std::map<std::size_t, std::vector<ipower::ClusterConnection>>
-build_connection_map(std::vector<std::set<std::string>> clusters,
-                     std::set<std::string> src_instances, unsigned max_hop);
-
-std::vector<ipower::MacroConnection> build_macro_connection_map(unsigned max_hop);
-
-}  // namespace python_interface
+}  // namespace ista

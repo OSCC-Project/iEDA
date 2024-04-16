@@ -46,6 +46,15 @@ void JsonParser::parse(const string& json_file, CtsConfig* config) const
   ifs >> json;
 
   {
+    if (COMUtil::getData(json, {"use_skew_tree_alg"}) != nullptr) {
+      std::string use_skew_tree_alg = COMUtil::getData(json, {"use_skew_tree_alg"});
+      if (use_skew_tree_alg == "true" || use_skew_tree_alg == "True" || use_skew_tree_alg == "TRUE" || use_skew_tree_alg == "On"
+          || use_skew_tree_alg == "ON" || use_skew_tree_alg == "on") {
+        config->set_use_skew_tree_alg(true);
+      } else {
+        config->set_use_skew_tree_alg(false);
+      }
+    }
     if (COMUtil::getData(json, {"router_type"}) != nullptr) {
       config->set_router_type(COMUtil::getData(json, {"router_type"}));
     }
