@@ -1367,25 +1367,63 @@ std::map<DRNode*, std::set<Orientation>> DetailedRouter::getNodeOrientationMap(D
 std::map<DRNode*, std::set<Orientation>> DetailedRouter::getRoutingNodeOrientationMap(DRBox& dr_box, NetShape& net_shape)
 {
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
+  std::vector<std::vector<ViaMaster>>& layer_via_master_list = RTDM.getDatabase().get_layer_via_master_list();
   if (!net_shape.get_is_routing()) {
     RTLOG.error(Loc::current(), "The type of net_shape is cut!");
   }
-  // 膨胀size为 min_spacing + half_width
-  RoutingLayer& routing_layer = routing_layer_list[net_shape.get_layer_idx()];
-  int32_t enlarged_size = routing_layer.getMinSpacing(net_shape.get_rect()) + (routing_layer.get_min_width() / 2);
-  PlanarRect enlarged_rect = RTUtil::getEnlargedRect(net_shape.get_rect(), enlarged_size);
-
-  GridMap<DRNode>& dr_node_map = dr_box.get_layer_node_map()[net_shape.get_layer_idx()];
-
+  int32_t layer_idx = net_shape.get_layer_idx();
+  GridMap<DRNode>& dr_node_map = dr_box.get_layer_node_map()[layer_idx];
   std::map<DRNode*, std::set<Orientation>> node_orientation_map;
-  if (RTUtil::existTrackGrid(enlarged_rect, dr_box.get_box_track_axis())) {
-    PlanarRect grid_rect = RTUtil::getTrackGridRect(enlarged_rect, dr_box.get_box_track_axis());
+
+  RoutingLayer& routing_layer = routing_layer_list[layer_idx];
+  int32_t min_spacing = routing_layer.getMinSpacing(net_shape.get_rect());
+  // 膨胀size为 min_spacing + half_width
+  int32_t enlarged_size = min_spacing + (routing_layer.get_min_width() / 2);
+  PlanarRect planar_enlarged_rect = RTUtil::getEnlargedRect(net_shape.get_rect(), enlarged_size);
+
+  if (RTUtil::existTrackGrid(planar_enlarged_rect, dr_box.get_box_track_axis())) {
+    PlanarRect grid_rect = RTUtil::getTrackGridRect(planar_enlarged_rect, dr_box.get_box_track_axis());
     for (int32_t grid_x = grid_rect.get_ll_x(); grid_x <= grid_rect.get_ur_x(); grid_x++) {
       for (int32_t grid_y = grid_rect.get_ll_y(); grid_y <= grid_rect.get_ur_y(); grid_y++) {
         DRNode& node = dr_node_map[grid_x][grid_y];
-        for (auto& [orientation, neighbor_ptr] : node.get_neighbor_node_map()) {
+        for (Orientation orientation : {Orientation::kEast, Orientation::kWest, Orientation::kSouth, Orientation::kNorth}) {
+          if (!RTUtil::exist(node.get_neighbor_node_map(), orientation)) {
+            continue;
+          }
           node_orientation_map[&node].insert(orientation);
-          node_orientation_map[neighbor_ptr].insert(RTUtil::getOppositeOrientation(orientation));
+          node_orientation_map[node.get_neighbor_node_map()[orientation]].insert(RTUtil::getOppositeOrientation(orientation));
+        }
+      }
+    }
+  }
+  // 膨胀size为 min_spacing + half_width
+  int32_t x_range = INT32_MAX;
+  int32_t y_range = INT32_MAX;
+  for (int32_t via_below_layer_idx : {layer_idx - 1, layer_idx}) {
+    if (via_below_layer_idx < 0 || via_below_layer_idx > static_cast<int32_t>(layer_via_master_list.size()) - 1) {
+      continue;
+    }
+    ViaMaster& via_master = layer_via_master_list[via_below_layer_idx].front();
+    LayerRect& enclosure = via_below_layer_idx == layer_idx ? via_master.get_below_enclosure() : via_master.get_above_enclosure();
+    x_range = std::min(x_range, enclosure.getXSpan());
+    y_range = std::min(y_range, enclosure.getYSpan());
+  }
+  int32_t x_enlarged_size = min_spacing + x_range / 2;
+  int32_t y_enlarged_size = min_spacing + y_range / 2;
+  PlanarRect space_enlarged_rect
+      = RTUtil::getEnlargedRect(net_shape.get_rect(), x_enlarged_size, y_enlarged_size, x_enlarged_size, y_enlarged_size);
+
+  if (RTUtil::existTrackGrid(space_enlarged_rect, dr_box.get_box_track_axis())) {
+    PlanarRect grid_rect = RTUtil::getTrackGridRect(space_enlarged_rect, dr_box.get_box_track_axis());
+    for (int32_t grid_x = grid_rect.get_ll_x(); grid_x <= grid_rect.get_ur_x(); grid_x++) {
+      for (int32_t grid_y = grid_rect.get_ll_y(); grid_y <= grid_rect.get_ur_y(); grid_y++) {
+        DRNode& node = dr_node_map[grid_x][grid_y];
+        for (Orientation orientation : {Orientation::kBelow, Orientation::kAbove}) {
+          if (!RTUtil::exist(node.get_neighbor_node_map(), orientation)) {
+            continue;
+          }
+          node_orientation_map[&node].insert(orientation);
+          node_orientation_map[node.get_neighbor_node_map()[orientation]].insert(RTUtil::getOppositeOrientation(orientation));
         }
       }
     }
