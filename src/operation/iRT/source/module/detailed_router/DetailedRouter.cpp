@@ -1400,7 +1400,7 @@ std::map<DRNode*, std::set<Orientation>> DetailedRouter::getRoutingNodeOrientati
   int32_t x_range = INT32_MAX;
   int32_t y_range = INT32_MAX;
   for (int32_t via_below_layer_idx : {layer_idx - 1, layer_idx}) {
-    if (via_below_layer_idx < 0 || via_below_layer_idx > static_cast<int32_t>(layer_via_master_list.size()) - 1) {
+    if (via_below_layer_idx < 0 || via_below_layer_idx >= static_cast<int32_t>(layer_via_master_list.size()) - 1) {
       continue;
     }
     ViaMaster& via_master = layer_via_master_list[via_below_layer_idx].front();
