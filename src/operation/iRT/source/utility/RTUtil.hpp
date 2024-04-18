@@ -1316,11 +1316,17 @@ class RTUtil
         int32_t end_line = x_grid.get_end_line();
 
         if (start_line <= real_ll_x && real_ll_x <= end_line) {
-          int32_t offset_x = static_cast<int32_t>(std::ceil(static_cast<double>(real_ll_x - start_line) / step_length));
+          int32_t offset_x = 0;
+          if (step_length != 0) {
+            offset_x = static_cast<int32_t>(std::ceil(static_cast<double>(real_ll_x - start_line) / step_length));
+          }
           grid_ll_x = (grid_scale_x + offset_x);
         }
         if (start_line <= real_ur_x && real_ur_x <= end_line) {
-          int32_t offset_x = static_cast<int32_t>(static_cast<double>(real_ur_x - start_line) / step_length);
+          int32_t offset_x = 0;
+          if (step_length != 0) {
+            offset_x = static_cast<int32_t>(static_cast<double>(real_ur_x - start_line) / step_length);
+          }
           grid_ur_x = (grid_scale_x + offset_x);
           break;
         }
@@ -1349,11 +1355,17 @@ class RTUtil
         int32_t end_line = y_grid.get_end_line();
 
         if (start_line <= real_ll_y && real_ll_y <= end_line) {
-          int32_t offset_y = static_cast<int32_t>(std::ceil(static_cast<double>(real_ll_y - start_line) / step_length));
+          int32_t offset_y = 0;
+          if (step_length != 0) {
+            offset_y = static_cast<int32_t>(std::ceil(static_cast<double>(real_ll_y - start_line) / step_length));
+          }
           grid_ll_y = (grid_scale_y + offset_y);
         }
         if (start_line <= real_ur_y && real_ur_y <= end_line) {
-          int32_t offset_y = static_cast<int32_t>(static_cast<double>(real_ur_y - start_line) / step_length);
+          int32_t offset_y = 0;
+          if (step_length != 0) {
+            offset_y = static_cast<int32_t>(static_cast<double>(real_ur_y - start_line) / step_length);
+          }
           grid_ur_y = (grid_scale_y + offset_y);
           break;
         }
