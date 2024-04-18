@@ -10,6 +10,9 @@ use serde::Deserialize;
 use crate::matrix::ir_inst_power;
 use crate::matrix::ir_rc::RCOneNetData;
 
+use super::c_str_to_r_str;
+use super::ir_rc::RCData;
+
 #[derive(Deserialize)]
 pub struct InstancePowerRecord {
     #[serde(rename = "Instance Name")]
@@ -27,15 +30,27 @@ pub struct InstancePowerRecord {
 }
 
 /// Read instance power csv file.
-pub fn read_inst_pwr_csv(file_path: &str) -> Result<Vec<InstancePowerRecord>, Box<dyn Error>> {
-    let file = File::open(file_path)?;
-    let mut reader = csv::Reader::from_reader(file);
+pub fn read_instance_pwr_csv(file_path: &str) -> Result<Vec<InstancePowerRecord>, Box<dyn Error>> {
     let mut records = Vec::new();
-    for result in reader.deserialize() {
-        let record: InstancePowerRecord = result?;
-        records.push(record);
+    if let Ok(file) = File::open(file_path) {
+        let mut reader = csv::Reader::from_reader(file);
+
+        for result in reader.deserialize() {
+            let record: InstancePowerRecord = result.expect("error read csv");
+            records.push(record);
+        }
     }
     Ok(records)
+}
+
+/// Read instance power csv file for C.
+#[no_mangle]
+pub extern "C" fn read_inst_pwr_csv(file_path: *const c_char) -> *mut c_void {
+    let inst_power_path_cstr = unsafe { std::ffi::CStr::from_ptr(file_path) };
+    let inst_power_path = inst_power_path_cstr.to_str().unwrap();
+
+    let records = read_instance_pwr_csv(inst_power_path).expect("error reading instance power csv file");
+    Box::into_raw(Box::new(records)) as *mut c_void
 }
 
 /// Print instance power data.
@@ -54,23 +69,22 @@ fn print_inst_pwr_data(records: &[InstancePowerRecord]) {
 }
 
 /// generate instance current vector from instance power.
-fn get_instance_current(instance_power_data: Vec<InstancePowerRecord>) -> HashMap<String, f64> {
+fn get_instance_current(instance_power_data: &Vec<InstancePowerRecord>) -> HashMap<String, f64> {
     let mut instance_current_map: HashMap<String, f64> = HashMap::new();
     for record in instance_power_data {
         let current = record.total_power / record.nominal_voltage;
-        instance_current_map.insert(record.instance_name, current);
+        instance_current_map.insert(record.instance_name.clone(), current);
     }
     instance_current_map
 }
 
 /// Build instance current vector.
 pub fn build_instance_current_vector(
-    inst_power_path: &str,
+    inst_power_data: &Vec<InstancePowerRecord>,
     net_data: &RCOneNetData,
 ) -> Result<HashMap<usize, f64>, Box<dyn StdError + 'static>> {
-    log::info!("build instance current vector from {} for power net {}", inst_power_path, net_data.get_name());
-    let instance_power_data = ir_inst_power::read_inst_pwr_csv(inst_power_path)?;
-    let instance_current_map = ir_inst_power::get_instance_current(instance_power_data);
+    log::info!("build instance current vector for power net {}", net_data.get_name());
+    let instance_current_map = ir_inst_power::get_instance_current(inst_power_data);
 
     let mut instance_current_data: HashMap<usize, f64> = HashMap::new();
 
@@ -86,14 +100,18 @@ pub fn build_instance_current_vector(
 /// Build one net instance current vector.
 #[no_mangle]
 pub extern "C" fn build_one_net_instance_current_vector(
-    inst_power_path: *const c_char,
-    net_data: *const RCOneNetData,
+    c_instance_power_data: *const c_void,
+    c_rc_data: *const c_void,
+    c_net_name: *const c_char,
 ) -> *mut c_void {
-    let inst_power_path = unsafe { std::ffi::CStr::from_ptr(inst_power_path) };
-    let inst_power_path = inst_power_path.to_str().unwrap();
+    let inst_power_data = unsafe { &*(c_instance_power_data as *const Vec<InstancePowerRecord>) };
 
-    let net_data = unsafe { &*net_data };
-    let instance_current_data = build_instance_current_vector(inst_power_path, net_data).unwrap();
+    let rc_data = unsafe { &*(c_rc_data as *const RCData) };
+
+    let one_net_name = c_str_to_r_str(c_net_name);
+    let one_net_rc_data = rc_data.get_one_net_data(&one_net_name);
+    
+    let instance_current_data = build_instance_current_vector(inst_power_data, one_net_rc_data).unwrap();
 
     Box::into_raw(Box::new(instance_current_data)) as *mut c_void
 }
@@ -105,7 +123,7 @@ mod pwr_data_tests {
     #[test]
     fn read_inst_pwr_csv_test() -> Result<(), Box<dyn Error>> {
         let file_path = "/home/shaozheqing/iEDA/bin/report_instance.csv";
-        let vectors = read_inst_pwr_csv(file_path)?;
+        let vectors = read_instance_pwr_csv(file_path)?;
         print_inst_pwr_data(&vectors);
         Ok(())
     }

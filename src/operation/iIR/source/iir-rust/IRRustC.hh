@@ -28,6 +28,11 @@ typedef struct RustNetConductanceData {
 
 const void *read_spef(const char *c_power_net_spef);
 
+/**
+ * Read instance power csv file.
+ */
+const void *read_inst_pwr_csv(const char *file_path);
+
 struct RustNetConductanceData build_one_net_conductance_matrix_data(
     const void *c_rc_data, const char *c_net_name);
 
@@ -36,6 +41,13 @@ struct RustNetConductanceData build_one_net_conductance_matrix_data(
  */
 struct RustVec build_matrix_from_raw_data(const char *c_inst_power_path,
                                           const char *c_power_net_spef);
+
+/**
+ * Build one net instance current vector.
+ */
+void *build_one_net_instance_current_vector(const void *c_instance_power_data,
+                                            const void *c_rc_data,
+                                            const char *c_net_name);
 }
 
 namespace iir {

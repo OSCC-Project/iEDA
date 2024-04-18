@@ -1,11 +1,9 @@
 /**
- * @file CalcIRDrop.cc
+ * @file iIR.cc
  * @author shaozheqing (707005020@qq.com)
- * @brief
+ * @brief The top interface of the iIR tools.
  * @version 0.1
  * @date 2023-08-18
- *
- * @copyright Copyright (c) 2023
  *
  */
 #include <string_view>
@@ -33,6 +31,7 @@ unsigned iIR::readSpef(std::string_view spef_file_path) {
  * @return unsigned 
  */
 unsigned iIR::readInstancePowerDB(std::string_view instance_power_file_path) {
+  _power_data = read_inst_pwr_csv(instance_power_file_path.data());
   return 1;
 }
 
@@ -50,6 +49,7 @@ unsigned iIR::solveIRDrop(const char* net_name) {
   Eigen::VectorXd J_vector(one_net_matrix_data.node_num);
   J_vector.setZero();
   // TODO(to taosimin), get instance power and calculate the current.
+  build_one_net_instance_current_vector(_power_data, _rc_data, net_name);
 
   IRSolver ir_solver;
   auto grid_voltages = ir_solver(G_matrix, J_vector);

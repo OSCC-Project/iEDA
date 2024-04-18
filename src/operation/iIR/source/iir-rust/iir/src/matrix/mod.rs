@@ -105,7 +105,7 @@ pub extern "C" fn build_one_net_conductance_matrix_data(
     c_rc_data: *const c_void,
     c_net_name: *const c_char,
 ) -> RustNetConductanceData {
-    let rc_data = Box::from(unsafe { &*(c_rc_data as *const RCData) });
+    let rc_data = unsafe { &*(c_rc_data as *const RCData) };
 
     let one_net_name = c_str_to_r_str(c_net_name);
     let one_net_rc_data = rc_data.get_one_net_data(&one_net_name);
@@ -141,6 +141,7 @@ pub extern "C" fn build_matrix_from_raw_data(
     let inst_power_path = c_str_to_r_str(c_inst_power_path);
 
     let rc_data = ir_rc::read_rc_data_from_spef(&power_net_spef);
+    let instance_power_data = ir_inst_power::read_instance_pwr_csv(&inst_power_path).expect("error reading instance power csv file");
 
     let mut net_matrix_data: Vec<RustNetEquationData> = Vec::new();
     // Secondly, construct matrix data.
@@ -152,7 +153,7 @@ pub extern "C" fn build_matrix_from_raw_data(
         let rust_matrix = rust_convert_rc_matrix(&conductance_matrix_triplet);
 
         // Read instance power data.
-        let current_vector_result = ir_inst_power::build_instance_current_vector(&inst_power_path, one_net_data);
+        let current_vector_result = ir_inst_power::build_instance_current_vector(&instance_power_data, one_net_data);
         if let Ok(current_vector) = current_vector_result {
             // Construct net matrix(rc matrix and current vector) data.
             let mut current_vec: Vec<RustVector> = Vec::new();

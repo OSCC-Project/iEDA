@@ -1,11 +1,9 @@
 /**
- * @file CalcIRDrop.hh
+ * @file iIR.hh
  * @author shaozheqing (707005020@qq.com)
- * @brief
+ * @brief The top interface of the iIR tools.
  * @version 0.1
  * @date 2023-08-18
- *
- * @copyright Copyright (c) 2023
  *
  */
 
@@ -23,5 +21,6 @@ class iIR {
 
  private:
   const void* _rc_data = nullptr;
+  const void* _power_data = nullptr;
 };
 }  // namespace iir
