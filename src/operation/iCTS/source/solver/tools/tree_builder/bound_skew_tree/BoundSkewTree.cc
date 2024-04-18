@@ -190,8 +190,7 @@ double BoundSkewTree::distanceCost(Area* left, Area* right) const
 Area* BoundSkewTree::merge(Area* left, Area* right)
 {
   auto* parent = new Area(++_id);
-  auto pattern = static_cast<RCPattern>(1 + std::rand() % 2);
-  parent->set_pattern(pattern);
+  parent->set_pattern(_pattern);
   parent->set_left(left);
   parent->set_right(right);
   left->set_parent(parent);
@@ -536,8 +535,7 @@ void BoundSkewTree::bottomUpAllPairBased()
     auto* right = best_match.right;
     auto* parent = new Area(++_id);
     // random select RCpattern
-    auto pattern = static_cast<RCPattern>(1 + std::rand() % 2);
-    parent->set_pattern(pattern);
+    parent->set_pattern(_pattern);
     merge(parent, left, right);
     // erase left and right
     _unmerged_nodes.erase(
@@ -703,8 +701,8 @@ void BoundSkewTree::embedding(Area* cur) const
   auto right_pt = right->get_location();
   pt.min = std::numeric_limits<double>::max();
   pt.max = std::numeric_limits<double>::min();
-  auto delay_left = ptDelayIncrease(pt, left_pt, cur->get_edge_len(kLeft), left->get_cap_load(), left->get_pattern());
-  auto delay_right = ptDelayIncrease(pt, right_pt, cur->get_edge_len(kRight), right->get_cap_load(), right->get_pattern());
+  auto delay_left = ptDelayIncrease(pt, left_pt, cur->get_edge_len(kLeft), left->get_cap_load(), _pattern);
+  auto delay_right = ptDelayIncrease(pt, right_pt, cur->get_edge_len(kRight), right->get_cap_load(), _pattern);
   pt.min = std::min(left_pt.min + delay_left, right_pt.min + delay_right);
   pt.max = std::max(left_pt.max + delay_left, right_pt.max + delay_right);
   LOG_FATAL_IF(ptSkew(pt) > _skew_bound + 100 * kEpsilon) << "skew is so larger than skew bound, skew: " << ptSkew(pt);
@@ -862,7 +860,10 @@ void BoundSkewTree::addJsPts(Area* parent, Area* left, Area* right)
     }
     Geom::sortPtsByFront(new_js[side]);
   }
-  FOR_EACH_SIDE(side) { _join_segment[side] = new_js[side]; }
+  FOR_EACH_SIDE(side)
+  {
+    _join_segment[side] = new_js[side];
+  }
 }
 double BoundSkewTree::delayFromJs(const size_t& js_side, const size_t& side, const size_t& idx, const size_t& timing_type,
                                   const Side<double>& delay_from) const
@@ -907,8 +908,8 @@ void BoundSkewTree::calcJrEndpoints(Area* cur)
 void BoundSkewTree::calcNotManhattanJrEndpoints(Area* parent, Area* left, Area* right)
 {
   addJsPts(parent, left, right);
-  Side<double> delay_from = {ptDelayIncrease(_join_segment[kLeft][kHead], _join_segment[kRight][kHead], left->get_cap_load()),
-                             ptDelayIncrease(_join_segment[kLeft][kHead], _join_segment[kRight][kHead], right->get_cap_load())};
+  Side<double> delay_from = {ptDelayIncrease(_join_segment[kLeft][kHead], _join_segment[kRight][kHead], left->get_cap_load(), _pattern),
+                             ptDelayIncrease(_join_segment[kLeft][kHead], _join_segment[kRight][kHead], right->get_cap_load(), _pattern)};
   FOR_EACH_SIDE(side)
   {
     auto other_side = side == kLeft ? kRight : kLeft;
@@ -1065,7 +1066,10 @@ bool BoundSkewTree::jrCornerExist(const size_t& end_side) const
 }
 void BoundSkewTree::calcBalancePt(Area* cur)
 {
-  FOR_EACH_SIDE(end_side) { _bal_points[end_side].clear(); }
+  FOR_EACH_SIDE(end_side)
+  {
+    _bal_points[end_side].clear();
+  }
   if (Equal(cur->get_radius(), 0)) {
     return;
   }
@@ -1082,7 +1086,7 @@ void BoundSkewTree::calcBalancePt(Area* cur)
     {
       double dist_to_left = 0, dist_to_right = 0;
       Pt bal_pt;
-      calcBalBetweenPts(left_pt, right_pt, timing_type, bal_ref_side, dist_to_left, dist_to_right, bal_pt);
+      calcBalBetweenPts(left_pt, right_pt, timing_type, bal_ref_side, dist_to_left, dist_to_right, bal_pt, _pattern);
       if (!Equal(dist_to_left, 0) && !Equal(dist_to_right, 0)) {
         updatePtDelaysByEndSide(cur, end_side, bal_pt);
         _bal_points[end_side].push_back(bal_pt);
@@ -1091,19 +1095,20 @@ void BoundSkewTree::calcBalancePt(Area* cur)
   }
 }
 void BoundSkewTree::calcBalBetweenPts(Pt& p1, Pt& p2, const size_t& timing_type, const size_t& bal_ref_side, double& d1, double& d2,
-                                      Pt& bal_pt) const
+                                      Pt& bal_pt, const RCPattern& pattern) const
 {
   auto h = std::abs(p1.x - p2.x);
   auto v = std::abs(p1.y - p2.y);
   if (Equal(h, 0) || Equal(v, 0)) {
-    calcBalPtOnLine(p1, p2, timing_type, d1, d2, bal_pt);
+    calcBalPtOnLine(p1, p2, timing_type, d1, d2, bal_pt, pattern);
   } else if (p1.x <= p2.x) {
-    calcBalPtNotOnLine(p1, p2, timing_type, bal_ref_side, d1, d2, bal_pt);
+    calcBalPtNotOnLine(p1, p2, timing_type, bal_ref_side, d1, d2, bal_pt, pattern);
   } else {
-    calcBalPtNotOnLine(p2, p1, timing_type, bal_ref_side, d2, d1, bal_pt);
+    calcBalPtNotOnLine(p2, p1, timing_type, bal_ref_side, d2, d1, bal_pt, pattern);
   }
 }
-void BoundSkewTree::calcBalPtOnLine(Pt& p1, Pt& p2, const size_t& timing_type, double& d1, double& d2, Pt& bal_pt) const
+void BoundSkewTree::calcBalPtOnLine(Pt& p1, Pt& p2, const size_t& timing_type, double& d1, double& d2, Pt& bal_pt,
+                                    const RCPattern& pattern) const
 {
   auto h = std::abs(p1.x - p2.x);
   auto v = std::abs(p1.y - p2.y);
@@ -1111,25 +1116,24 @@ void BoundSkewTree::calcBalPtOnLine(Pt& p1, Pt& p2, const size_t& timing_type, d
 
   auto delay1 = timing_type == kMin ? p1.min : p1.max;
   auto delay2 = timing_type == kMin ? p2.min : p2.max;
-  auto pattern = Equal(h, 0) ? LayerPattern::kV : LayerPattern::kH;
-  auto r = pattern == LayerPattern::kH ? _unit_h_res : _unit_v_res;
-  auto c = pattern == LayerPattern::kH ? _unit_h_cap : _unit_v_cap;
+  auto r = Equal(h, 0) ? _unit_v_res : _unit_h_res;
+  auto c = Equal(h, 0) ? _unit_v_cap : _unit_h_cap;
   calcMergeDist(r, c, p1.val, delay1, p2.val, delay2, h + v, d1, d2);
   calcPtCoordOnLine(p1, p2, d1, d2, bal_pt);
   double incr_delay1 = 0;
   double incr_delay2 = 0;
   if (Equal(h, 0)) {
-    incr_delay1 = calcDelayIncrease(0, d1, p1.val);
-    incr_delay2 = calcDelayIncrease(0, d2, p2.val);
+    incr_delay1 = calcDelayIncrease(0, d1, p1.val, pattern);
+    incr_delay2 = calcDelayIncrease(0, d2, p2.val, pattern);
   } else {
-    incr_delay1 = calcDelayIncrease(d1, 0, p1.val);
-    incr_delay2 = calcDelayIncrease(d2, 0, p2.val);
+    incr_delay1 = calcDelayIncrease(d1, 0, p1.val, pattern);
+    incr_delay2 = calcDelayIncrease(d2, 0, p2.val, pattern);
   }
   bal_pt.min = std::min(p1.min + incr_delay1, p2.min + incr_delay2);
   bal_pt.max = std::max(p1.max + incr_delay1, p2.max + incr_delay2);
 }
 void BoundSkewTree::calcBalPtNotOnLine(Pt& p1, Pt& p2, const size_t& timing_type, const size_t& bal_ref_side, double& d1, double& d2,
-                                       Pt& bal_pt) const
+                                       Pt& bal_pt, const RCPattern& pattern) const
 {
   auto h = std::abs(p1.x - p2.x);
   auto v = std::abs(p1.y - p2.y);
@@ -1153,33 +1157,33 @@ void BoundSkewTree::calcBalPtNotOnLine(Pt& p1, Pt& p2, const size_t& timing_type
   if (x < 0) {
     LOG_FATAL_IF(y >= 0) << "y is illegal";
     auto temp_pt = p1;
-    auto incr_delay = calcDelayIncrease(h, v, p2.val);
+    auto incr_delay = calcDelayIncrease(h, v, p2.val, pattern);
     temp_pt.min = p2.min + incr_delay;
     temp_pt.max = p2.max + incr_delay;
     temp_pt.val = p2.val + _unit_h_cap * h + _unit_v_cap * v;
-    calcBalPtOnLine(p1, temp_pt, timing_type, d1, d2, bal_pt);
+    calcBalPtOnLine(p1, temp_pt, timing_type, d1, d2, bal_pt, pattern);
     LOG_FATAL_IF(d1 > kEpsilon) << "dist to p1 should be zero";
-    auto new_incr_delay = calcDelayIncrease(0, d2, temp_pt.val);
+    auto new_incr_delay = calcDelayIncrease(0, d2, temp_pt.val, pattern);
     LOG_FATAL_IF(!Equal(delay1, incr_delay + new_incr_delay + delay2)) << "delay is not equal";
     d2 += h + v;
   } else if (x > h) {
     LOG_FATAL_IF(y <= v) << "y: " << y << " is not greater than v: " << v;
     auto temp_pt = p2;
-    auto incr_delay = calcDelayIncrease(h, v, p1.val);
+    auto incr_delay = calcDelayIncrease(h, v, p1.val, pattern);
     temp_pt.min = p1.min + incr_delay;
     temp_pt.max = p1.max + incr_delay;
     temp_pt.val = p1.val + _unit_h_cap * h + _unit_v_cap * v;
-    calcBalPtOnLine(temp_pt, p2, timing_type, d1, d2, bal_pt);
+    calcBalPtOnLine(temp_pt, p2, timing_type, d1, d2, bal_pt, pattern);
     LOG_FATAL_IF(d2 > kEpsilon) << "dist to p2 should be zero";
-    auto new_incr_delay = calcDelayIncrease(0, d1, temp_pt.val);
+    auto new_incr_delay = calcDelayIncrease(0, d1, temp_pt.val, pattern);
     LOG_FATAL_IF(!Equal(delay2, incr_delay + new_incr_delay + delay1)) << "delay is not equal";
     d1 += h + v;
   } else {
     LOG_FATAL_IF(y < -kEpsilon || y > v + kEpsilon) << "y: " << y << " is not in range [0, " << v << "]";
     bal_pt.x = p1.x + x;
     bal_pt.y = p1.y < p2.y ? p1.y + y : p1.y - y;
-    auto incr_delay1 = calcDelayIncrease(x, y, p1.val);
-    auto incr_delay2 = calcDelayIncrease(h - x, v - y, p2.val);
+    auto incr_delay1 = calcDelayIncrease(x, y, p1.val, pattern);
+    auto incr_delay2 = calcDelayIncrease(h - x, v - y, p2.val, pattern);
     bal_pt.min = std::min(p1.min + incr_delay1, p2.min + incr_delay2);
     bal_pt.max = std::max(p1.max + incr_delay1, p2.max + incr_delay2);
     d1 = x + y;
@@ -1452,8 +1456,8 @@ void BoundSkewTree::fmsOfLineExist(Area* cur, const size_t& side, const size_t& 
     auto x = std::abs(pt.x - _join_region[side][idx].x);
     auto y = std::abs(pt.y - _join_region[side][idx].y);
     LOG_FATAL_IF(!Equal(x, 0) && !Equal(y, 0)) << "not horizontal or vertical";
-    auto incr_delay = side == kLeft ? calcDelayIncrease(x, y, cur->get_left()->get_cap_load())
-                                    : calcDelayIncrease(x, y, cur->get_right()->get_cap_load());
+    auto incr_delay = side == kLeft ? calcDelayIncrease(x, y, cur->get_left()->get_cap_load(), _pattern)
+                                    : calcDelayIncrease(x, y, cur->get_right()->get_cap_load(), _pattern);
     pt.min += incr_delay;
     pt.max = _skew_bound + pt.min;
     cur->add_mr_point(pt);
@@ -1510,18 +1514,18 @@ void BoundSkewTree::calcDetourEdgeLen(Area* cur) const
   auto h = std::abs(left_pt.x - right_pt.x);
   auto v = std::abs(left_pt.y - right_pt.y);
   if (left_pt.max > right_pt.max) {
-    right_pt.max = left_pt.max - delta - calcDelayIncrease(h, v, right_pt.val);
+    right_pt.max = left_pt.max - delta - calcDelayIncrease(h, v, right_pt.val, _pattern);
     double d1 = 0, d2 = 0;
     Pt bal_pt;
-    calcBalBetweenPts(left_pt, right_pt, kMax, kX, d1, d2, bal_pt);
+    calcBalBetweenPts(left_pt, right_pt, kMax, kX, d1, d2, bal_pt, _pattern);
     LOG_FATAL_IF(d1 > kEpsilon) << "dist to left_pt should be zero";
     cur->set_edge_len(kLeft, 0);
     cur->set_edge_len(kRight, d2);
   } else {
-    left_pt.max = right_pt.max - delta - calcDelayIncrease(h, v, left_pt.val);
+    left_pt.max = right_pt.max - delta - calcDelayIncrease(h, v, left_pt.val, _pattern);
     double d1 = 0, d2 = 0;
     Pt bal_pt;
-    calcBalBetweenPts(left_pt, right_pt, kMax, kX, d1, d2, bal_pt);
+    calcBalBetweenPts(left_pt, right_pt, kMax, kX, d1, d2, bal_pt, _pattern);
     LOG_FATAL_IF(d2 > kEpsilon) << "dist to right_pt should be zero";
     cur->set_edge_len(kLeft, d1);
     cur->set_edge_len(kRight, 0);
@@ -1826,8 +1830,8 @@ void BoundSkewTree::updatePtDelaysByEndSide(Area* cur, const size_t& end_side, P
 {
   auto left_line = cur->get_line(kLeft);
   auto right_line = cur->get_line(kRight);
-  auto delay_left = ptDelayIncrease(pt, left_line[end_side], cur->get_left()->get_cap_load());
-  auto delay_right = ptDelayIncrease(pt, right_line[end_side], cur->get_right()->get_cap_load());
+  auto delay_left = ptDelayIncrease(pt, left_line[end_side], cur->get_left()->get_cap_load(), _pattern);
+  auto delay_right = ptDelayIncrease(pt, right_line[end_side], cur->get_right()->get_cap_load(), _pattern);
   pt.min = std::min(left_line[end_side].min + delay_left, right_line[end_side].min + delay_right);
   pt.max = std::max(left_line[end_side].max + delay_left, right_line[end_side].max + delay_right);
 }
@@ -1844,8 +1848,8 @@ void BoundSkewTree::calcIrregularPtDelays(Area* cur, Pt& pt, Line& line) const
         << left_line[kTail].x << ", " << left_line[kTail].y << "], right head: [" << right_line[kHead].x << ", " << right_line[kHead].y
         << "], right tail: [" << right_line[kTail].x << ", " << right_line[kTail].y << "]";
 
-    auto delay_left = ptDelayIncrease(left_line[kHead], pt, cur->get_left()->get_cap_load());
-    auto delay_right = ptDelayIncrease(right_line[kHead], pt, cur->get_right()->get_cap_load());
+    auto delay_left = ptDelayIncrease(left_line[kHead], pt, cur->get_left()->get_cap_load(), _pattern);
+    auto delay_right = ptDelayIncrease(right_line[kHead], pt, cur->get_right()->get_cap_load(), _pattern);
     pt.min = std::min(left_line[kHead].min + delay_left, right_line[kHead].min + delay_right);
     pt.max = std::max(left_line[kHead].max + delay_left, right_line[kHead].max + delay_right);
     LOG_FATAL_IF(ptSkew(pt) >= _skew_bound + kEpsilon) << "skew is larger than skew bound";
