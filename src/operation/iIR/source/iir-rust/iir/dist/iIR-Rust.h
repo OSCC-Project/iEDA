@@ -11,10 +11,15 @@ Do not modify this manually.
 #include <stdint.h>
 #include <stdlib.h>
 
+typedef struct HashMap_usize__f64 HashMap_usize__f64;
+
 /**
- * One power net rc data.
+ * The iterator for Rust hash map, temporarily write here.
  */
-typedef struct RCOneNetData RCOneNetData;
+typedef struct HashMapIterator {
+    struct HashMap_usize__f64 *hashmap;
+    Iter<uintptr_t, double> iter;
+} HashMapIterator;
 
 /**
  * Rust vec to C vec
@@ -36,19 +41,31 @@ typedef struct RustNetConductanceData {
     const void *ir_net_raw_ptr;
 } RustNetConductanceData;
 
+struct HashMapIterator *create_hashmap_iterator(struct HashMap_usize__f64 *hashmap);
+
+bool hashmap_iterator_next(struct HashMapIterator *iterator, uintptr_t *out_key, double *out_value);
+
+void destroy_hashmap_iterator(struct HashMapIterator *iterator);
+
 const void *read_spef(const char *c_power_net_spef);
 
 struct RustNetConductanceData build_one_net_conductance_matrix_data(const void *c_rc_data,
                                                                     const char *c_net_name);
 
 /**
- * Build RC matrix and current vector data.
+ * Read instance power csv file for C.
  */
-struct RustVec build_matrix_from_raw_data(const char *c_inst_power_path,
-                                          const char *c_power_net_spef);
+void *read_inst_pwr_csv(const char *file_path);
 
 /**
  * Build one net instance current vector.
  */
-void *build_one_net_instance_current_vector(const char *inst_power_path,
-                                            const struct RCOneNetData *net_data);
+void *build_one_net_instance_current_vector(const void *c_instance_power_data,
+                                            const void *c_rc_data,
+                                            const char *c_net_name);
+
+/**
+ * Build RC matrix and current vector data.
+ */
+struct RustVec build_matrix_from_raw_data(const char *c_inst_power_path,
+                                          const char *c_power_net_spef);
