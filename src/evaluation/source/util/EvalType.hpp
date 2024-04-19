@@ -75,13 +75,29 @@ enum class INSTANCE_STATUS
   kMax
 };
 
+enum class INSTANCE_ORIENT
+{
+  kNone,
+  kN_R0,    /* Rotate object 0 degrees */
+  kW_R90,   /* Rotate object 90 degrees */
+  kS_R180,  /* Rotate object 180 degrees */
+  kE_R270,  /* Rotate object 270 degrees */
+  kFN_MY,   /* Mirror ablout the "Y" axis*/
+  kFE_MY90, /* Mirror ablout the "Y" axis and rotate 90 degrees */
+  kFS_MX,   /* Mirror ablout the "X" axis*/
+  kFW_MX90  /* Mirror ablout the "X" axis and rotate 90 degrees */
+};
+
 enum class CONGESTION_TYPE
 {
   kNone = 0,
   kInstDens = 1,
   kPinDens = 2,
   kNetCong = 3,
-  kGRCong = 4
+  kGRCong = 4,
+  kMacroMarginH = 5,
+  kMacroMarginV = 6,
+  kContinuousWS = 7
 };
 
 enum class CHIP_REGION_TYPE
