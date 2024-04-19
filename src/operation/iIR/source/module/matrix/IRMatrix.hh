@@ -23,6 +23,7 @@ class IRMatrix {
  public:
   Eigen::Map<Eigen::SparseMatrix<double>> buildConductanceMatrix(
       RustNetConductanceData& one_net_matrix_data);
+  Eigen::VectorXd buildCurrentVector(void* instance_current_map, std::size_t node_num);
 };
 
 }  // namespace iir

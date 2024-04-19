@@ -23,5 +23,6 @@ bool feature_layout(const std::string& path);
 bool feature_instances(const std::string& path);
 bool feature_nets(const std::string& path);
 bool feature_summary(const std::string& path, const std::string& step);
+bool feature_summary_map(const std::string& path, const int& bin_cnt_x, const int& bin_cnt_y);
 
 }  // namespace python_interface

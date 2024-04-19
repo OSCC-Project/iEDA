@@ -59,6 +59,10 @@ class IdbSite
   const int32_t get_height() const { return _heigtht; }
   const IdbOrient get_orient() { return _orient; }
 
+  bool is_core_site() { return _type == IdbSiteType::kCore ? true : false; }
+  bool is_pad_site() { return _type == IdbSiteType::kPad ? true : false; }
+  bool is_corner_site() { return _type == IdbSiteType::kCorner ? true : false; }
+
   IdbSite* clone();
 
   // setter
@@ -72,6 +76,10 @@ class IdbSite
   void set_width(int32_t width) { _width = width; }
   void set_height(int32_t height) { _heigtht = height; }
 
+  void set_type_core() { _type = IdbSiteType::kCore; }
+  void set_type_pad() { _type = IdbSiteType::kPad; }
+  void set_type_corner() { _type = IdbSiteType::kCorner; }
+
  private:
   string _name;
   int32_t _width;
@@ -81,6 +89,8 @@ class IdbSite
   IdbSiteClass _site_class;
   IdbSymmetry _symmetry;
   IdbOrient _orient;
+
+  IdbSiteType _type = IdbSiteType::kNone;
 
   // RowPattern预留
 };
@@ -99,9 +109,21 @@ class IdbSites
   IdbSite* get_corner_site() { return _corner_site == nullptr ? _io_site : _corner_site; }
   IdbSite* get_core_site() { return _core_site; }
   // setter
-  void set_io_site(IdbSite* site) { _io_site = site; }
-  void set_corener_site(IdbSite* site) { _corner_site = site; }
-  void set_core_site(IdbSite* site) { _core_site = site; }
+  void set_io_site(IdbSite* site)
+  {
+    site->set_type_pad();
+    _io_site = site;
+  }
+  void set_corener_site(IdbSite* site)
+  {
+    site->set_type_corner();
+    _corner_site = site;
+  }
+  void set_core_site(IdbSite* site)
+  {
+    site->set_type_core();
+    _core_site = site;
+  }
   void set_sites_number(uint32_t number) { _site_num = number; }
   IdbSite* add_site_list(IdbSite* site = nullptr);
   IdbSite* add_site_list(string site_name);

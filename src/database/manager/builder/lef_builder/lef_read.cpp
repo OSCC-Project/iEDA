@@ -219,8 +219,6 @@ int LefRead::parse_sites(lefiSite* lef_site)
 
   // site->set_name(const_cast<char *>(lef_site->lefiSite::name()));
 
-  site->set_class(lef_site->siteClass());
-
   if (lef_site->hasXSymmetry()) {
     site->set_symmetry(IdbSymmetry::kX);
   } else if (lef_site->hasYSymmetry()) {
@@ -235,6 +233,8 @@ int LefRead::parse_sites(lefiSite* lef_site)
     site->set_width(transUnitDB(lef_site->sizeX()));
     site->set_height(transUnitDB(lef_site->sizeY()));
   }
+
+  site->set_class(lef_site->siteClass());
 
   return kDbSuccess;
 }
@@ -793,6 +793,8 @@ int LefRead::parse_macro(lefiMacro* lef_macro)
     return kDbFail;
   }
 
+  IdbLayout* layout = _lef_service->get_layout();
+
   if (lef_macro->hasClass()) {
     _this_cell_master->set_type(lef_macro->macroClass());
   }
@@ -817,6 +819,14 @@ int LefRead::parse_macro(lefiMacro* lef_macro)
   if (lef_macro->hasSize()) {
     _this_cell_master->set_width(transUnitDB(lef_macro->sizeX()));
     _this_cell_master->set_height(transUnitDB(lef_macro->sizeY()));
+  }
+
+  if (lef_macro->hasSiteName()) {
+    auto site_list = layout->get_sites();
+    auto* site = site_list->find_site(lef_macro->siteName());
+    if (site != nullptr) {
+      _this_cell_master->set_site(site);
+    }
   }
 
   // std::cout << "Parse Macro success... Macro name = " << _this_cell_master->get_name() << std::endl;

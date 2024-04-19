@@ -403,6 +403,19 @@ IdbInstance* IdbInstanceList::find_instance(size_t index)
   return nullptr;
 }
 
+vector<IdbInstance*> IdbInstanceList::find_instance_by_master(string master_name)
+{
+  vector<IdbInstance*> inst_list;
+
+  for (auto* inst : _instance_list) {
+    if (inst->get_cell_master()->get_name() == master_name) {
+      inst_list.push_back(inst);
+    }
+  }
+
+  return inst_list;
+}
+
 IdbInstance* IdbInstanceList::add_instance(IdbInstance* instance)
 {
   IdbInstance* pInstance = instance;
@@ -624,6 +637,46 @@ uint64_t IdbInstanceList::get_area_physics()
   }
 
   return inst_area;
+}
+
+vector<IdbInstance*> IdbInstanceList::get_iopad_list(std::vector<std::string> master_list)
+{
+  vector<IdbInstance*> inst_list;
+  if (master_list.size() == 0) {
+    for (auto inst : _instance_list) {
+      if (inst->get_cell_master()->is_pad() && !inst->get_cell_master()->is_spacer()) {
+        inst_list.push_back(inst);
+      }
+    }
+  } else {
+    for (auto& master_name : master_list) {
+      auto insts_find = find_instance_by_master(master_name);
+      inst_list.insert(inst_list.end(), std::make_move_iterator(insts_find.begin()), std::make_move_iterator(insts_find.end()));
+    }
+  }
+
+  return inst_list;
+}
+
+vector<IdbInstance*> IdbInstanceList::get_corner_list(std::vector<std::string> master_list)
+{
+  vector<IdbInstance*> inst_list;
+
+  if (master_list.size() == 0) {
+    for (auto* inst : _instance_list) {
+      auto* site = inst->get_cell_master()->get_site();
+      if (site != nullptr && site->is_corner_site()) {
+        inst_list.push_back(inst);
+      }
+    }
+  } else {
+    for (auto& master_name : master_list) {
+      auto insts_find = find_instance_by_master(master_name);
+      inst_list.insert(inst_list.end(), std::make_move_iterator(insts_find.begin()), std::make_move_iterator(insts_find.end()));
+    }
+  }
+
+  return inst_list;
 }
 
 }  // namespace idb

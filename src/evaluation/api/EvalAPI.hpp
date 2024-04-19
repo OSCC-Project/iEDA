@@ -80,6 +80,11 @@ class EvalAPI
   int32_t evalMacroGuidance(int32_t cx, int32_t cy, int32_t width, int32_t height, const string& name);
   double evalMacroChannelUtil(float dist_ratio);
   double evalMacroChannelPinRatio(float dist_ratio);
+  vector<MacroVariant> evalMacrosInfo();
+  void plotMacroChannel(float dist_ratio,  const std::string& filename);
+  void evalMacroMargin();
+  double evalMaxContinuousSpace();
+  void evalIOPinAccess(const std::string& filename);
 
   vector<float> evalPinDens();
   vector<float> evalPinDens(CongGrid* grid, const vector<CongInst*>& inst_list);
