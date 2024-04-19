@@ -16,9 +16,9 @@
 // ***************************************************************************************
 #include <tcl_util.h>
 
-#include <iRT/api/RTInterface.hpp>
 #include <string>
 
+#include "RTInterface.hpp"
 #include "py_irt.h"
 
 namespace python_interface {
@@ -219,34 +219,33 @@ bool initConfigMapByJSON(const std::string& config, std::map<std::string, std::a
   nlohmann::json json;
   config_file >> json;
   nlohmann::json rt_json = json["RT"];
-  for(nlohmann::json::iterator item = rt_json.begin(); item != rt_json.end(); ++item){
-    for(auto& kv : _config_list){
+  for (nlohmann::json::iterator item = rt_json.begin(); item != rt_json.end(); ++item) {
+    for (auto& kv : _config_list) {
       std::any value;
-      if(item.key() == kv.first){
-        switch (kv.second)
-        {
-        case tcl::ValueType::kInt:
-          value = std::stoi(item.value().get<std::string>());
-          break;
-        case tcl::ValueType::kIntList:
-          value = strToIntVec(item.value());
-        case tcl::ValueType::kDouble:
-          value = std::stod(item.value().get<std::string>());
-          break;
-        case tcl::ValueType::kDoubleList:
-          value = strToDoubleVec(item.value());
-          break;
-        case tcl::ValueType::kString:
-          value = std::string(item.value());
-          break;
-        case tcl::ValueType::kStringList:
-          value = strToVector(std::string(item.value()));
-          break;
-        case tcl::ValueType::kStringDoubleMap:
-          value = strToDoubleMap(std::string(item.value()));
-          break;
-        default:
-          break;
+      if (item.key() == kv.first) {
+        switch (kv.second) {
+          case tcl::ValueType::kInt:
+            value = std::stoi(item.value().get<std::string>());
+            break;
+          case tcl::ValueType::kIntList:
+            value = strToIntVec(item.value());
+          case tcl::ValueType::kDouble:
+            value = std::stod(item.value().get<std::string>());
+            break;
+          case tcl::ValueType::kDoubleList:
+            value = strToDoubleVec(item.value());
+            break;
+          case tcl::ValueType::kString:
+            value = std::string(item.value());
+            break;
+          case tcl::ValueType::kStringList:
+            value = strToVector(std::string(item.value()));
+            break;
+          case tcl::ValueType::kStringDoubleMap:
+            value = strToDoubleMap(std::string(item.value()));
+            break;
+          default:
+            break;
         }
         config_map.insert(std::make_pair(kv.first, value));
       }
