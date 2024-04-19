@@ -1,4 +1,5 @@
 {
+    "use_skew_tree_alg": "OFF",
     "router_type": "GOCA",
     "delay_type": "elmore",
     "cluster_type": "kmeans",

@@ -244,8 +244,19 @@ std::map<TAPanelId, std::vector<TATask*>, CmpTAPanelId> TrackAssigner::getPanelT
       RTUtil::swapByCMP(ll_guide, ur_guide, [](Guide& a, Guide& b) {
         return CmpPlanarCoordByXASC()(a.get_grid_coord().get_planar_coord(), b.get_grid_coord().get_planar_coord());
       });
-      int32_t ll_x = RTUtil::getScaleList(ll_guide.get_ll_x(), ll_guide.get_ur_x(), x_track_grid_list).back();
-      int32_t ur_x = RTUtil::getScaleList(ur_guide.get_ll_x(), ur_guide.get_ur_x(), x_track_grid_list).front();
+      std::vector<int32_t> ll_scale_list = RTUtil::getScaleList(ll_guide.get_ll_x(), ll_guide.get_ur_x(), x_track_grid_list);
+      std::vector<int32_t> ur_scale_list = RTUtil::getScaleList(ur_guide.get_ll_x(), ur_guide.get_ur_x(), x_track_grid_list);
+      auto ll_iter = ll_scale_list.rbegin();
+      auto ur_iter = ur_scale_list.begin();
+      while (ll_iter != ll_scale_list.rend() && ur_iter != ur_scale_list.end()) {
+        if (*ll_iter != *ur_iter) {
+          break;
+        }
+        ++ll_iter;
+        ++ur_iter;
+      }
+      int32_t ll_x = *ll_iter;
+      int32_t ur_x = *ur_iter;
       for (int32_t y : RTUtil::getScaleList(ll_guide.get_ll_y(), ll_guide.get_ur_y(), y_track_grid_list)) {
         ta_group_list.front().get_coord_list().emplace_back(ll_x, y, guide_layer_idx);
         ta_group_list.back().get_coord_list().emplace_back(ur_x, y, guide_layer_idx);
@@ -254,8 +265,19 @@ std::map<TAPanelId, std::vector<TATask*>, CmpTAPanelId> TrackAssigner::getPanelT
       RTUtil::swapByCMP(ll_guide, ur_guide, [](Guide& a, Guide& b) {
         return CmpPlanarCoordByYASC()(a.get_grid_coord().get_planar_coord(), b.get_grid_coord().get_planar_coord());
       });
-      int32_t ll_y = RTUtil::getScaleList(ll_guide.get_ll_y(), ll_guide.get_ur_y(), y_track_grid_list).back();
-      int32_t ur_y = RTUtil::getScaleList(ur_guide.get_ll_y(), ur_guide.get_ur_y(), y_track_grid_list).front();
+      std::vector<int32_t> ll_scale_list = RTUtil::getScaleList(ll_guide.get_ll_y(), ll_guide.get_ur_y(), y_track_grid_list);
+      std::vector<int32_t> ur_scale_list = RTUtil::getScaleList(ur_guide.get_ll_y(), ur_guide.get_ur_y(), y_track_grid_list);
+      auto ll_iter = ll_scale_list.rbegin();
+      auto ur_iter = ur_scale_list.begin();
+      while (ll_iter != ll_scale_list.rend() && ur_iter != ur_scale_list.end()) {
+        if (*ll_iter != *ur_iter) {
+          break;
+        }
+        ++ll_iter;
+        ++ur_iter;
+      }
+      int32_t ll_y = *ll_iter;
+      int32_t ur_y = *ur_iter;
       for (int32_t x : RTUtil::getScaleList(ll_guide.get_ll_x(), ll_guide.get_ur_x(), x_track_grid_list)) {
         ta_group_list.front().get_coord_list().emplace_back(x, ll_y, guide_layer_idx);
         ta_group_list.back().get_coord_list().emplace_back(x, ur_y, guide_layer_idx);

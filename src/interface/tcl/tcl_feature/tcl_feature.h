@@ -32,6 +32,7 @@
 using ieda::TclCmd;
 using ieda::TclOption;
 using ieda::TclStringOption;
+using ieda::TclIntOption;
 
 namespace tcl {
 
@@ -82,6 +83,20 @@ class CmdFeatureSummary : public TclCmd
  public:
   explicit CmdFeatureSummary(const char* cmd_name);
   ~CmdFeatureSummary() override = default;
+
+  unsigned check() override;
+  unsigned exec() override;
+
+ private:
+  // private function
+  // private data
+};
+
+class CmdFeatureSummaryMap : public TclCmd
+{
+ public:
+  explicit CmdFeatureSummaryMap(const char* cmd_name);
+  ~CmdFeatureSummaryMap() override = default;
 
   unsigned check() override;
   unsigned exec() override;
