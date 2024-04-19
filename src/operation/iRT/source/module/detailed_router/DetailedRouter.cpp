@@ -118,6 +118,7 @@ void DetailedRouter::iterativeDRModel(DRModel& dr_model)
     buildBoxSchedule(dr_model);
     routeDRBoxMap(dr_model);
     uploadNetResult(dr_model);
+    uploadViolation(dr_model);
     updateSummary(dr_model);
     printSummary(dr_model);
     writeNetCSV(dr_model);
@@ -246,7 +247,6 @@ void DetailedRouter::routeDRBoxMap(DRModel& dr_model)
         routeDRBox(dr_box);
         // debugPlotDRBox(dr_box, -1, "after_routing");
       }
-      uploadViolation(dr_box);
       freeDRBox(dr_box);
     }
     routed_box_num += dr_box_id_list.size();
@@ -275,7 +275,6 @@ void DetailedRouter::buildViolationList(DRBox& dr_box)
 {
   for (Violation* violation : RTDM.getViolationSet(dr_box.get_box_rect())) {
     dr_box.get_violation_list().push_back(*violation);
-    RTDM.updateViolationToGCellMap(ChangeType::kDel, violation);
   }
 }
 
@@ -1230,13 +1229,6 @@ std::vector<Violation> DetailedRouter::getViolationList(DRBox& dr_box)
   return violation_list;
 }
 
-void DetailedRouter::uploadViolation(DRBox& dr_box)
-{
-  for (Violation& violation : dr_box.get_violation_list()) {
-    RTDM.updateViolationToGCellMap(ChangeType::kAdd, new Violation(violation));
-  }
-}
-
 void DetailedRouter::freeDRBox(DRBox& dr_box)
 {
   for (DRTask* dr_task : dr_box.get_dr_task_list()) {
@@ -1296,6 +1288,22 @@ void DetailedRouter::uploadNetResult(DRModel& dr_model)
     }
   }
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
+}
+
+void DetailedRouter::uploadViolation(DRModel& dr_model)
+{
+  Die& die = RTDM.getDatabase().get_die();
+  for (Violation* violation : RTDM.getViolationSet(die)) {
+    RTDM.updateViolationToGCellMap(ChangeType::kDel, violation);
+  }
+  GridMap<DRBox>& dr_box_map = dr_model.get_dr_box_map();
+  for (int32_t x = 0; x < dr_box_map.get_x_size(); x++) {
+    for (int32_t y = 0; y < dr_box_map.get_y_size(); y++) {
+      for (Violation& violation : dr_box_map[x][y].get_violation_list()) {
+        RTDM.updateViolationToGCellMap(ChangeType::kAdd, new Violation(violation));
+      }
+    }
+  }
 }
 
 #if 1  // update env
