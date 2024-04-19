@@ -43,16 +43,6 @@ pub fn read_instance_pwr_csv(file_path: &str) -> Result<Vec<InstancePowerRecord>
     Ok(records)
 }
 
-/// Read instance power csv file for C.
-#[no_mangle]
-pub extern "C" fn read_inst_pwr_csv(file_path: *const c_char) -> *mut c_void {
-    let inst_power_path_cstr = unsafe { std::ffi::CStr::from_ptr(file_path) };
-    let inst_power_path = inst_power_path_cstr.to_str().unwrap();
-
-    let records = read_instance_pwr_csv(inst_power_path).expect("error reading instance power csv file");
-    Box::into_raw(Box::new(records)) as *mut c_void
-}
-
 /// Print instance power data.
 fn print_inst_pwr_data(records: &[InstancePowerRecord]) {
     for record in records {
@@ -97,24 +87,6 @@ pub fn build_instance_current_vector(
     Ok(instance_current_data)
 }
 
-/// Build one net instance current vector.
-#[no_mangle]
-pub extern "C" fn build_one_net_instance_current_vector(
-    c_instance_power_data: *const c_void,
-    c_rc_data: *const c_void,
-    c_net_name: *const c_char,
-) -> *mut c_void {
-    let inst_power_data = unsafe { &*(c_instance_power_data as *const Vec<InstancePowerRecord>) };
-
-    let rc_data = unsafe { &*(c_rc_data as *const RCData) };
-
-    let one_net_name = c_str_to_r_str(c_net_name);
-    let one_net_rc_data = rc_data.get_one_net_data(&one_net_name);
-    
-    let instance_current_data = build_instance_current_vector(inst_power_data, one_net_rc_data).unwrap();
-
-    Box::into_raw(Box::new(instance_current_data)) as *mut c_void
-}
 
 #[cfg(test)]
 mod pwr_data_tests {

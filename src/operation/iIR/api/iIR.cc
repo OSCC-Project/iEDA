@@ -46,10 +46,9 @@ unsigned iIR::solveIRDrop(const char* net_name) {
   IRMatrix ir_matrix;
   auto G_matrix = ir_matrix.buildConductanceMatrix(one_net_matrix_data);
 
-  Eigen::VectorXd J_vector(one_net_matrix_data.node_num);
-  J_vector.setZero();
   // TODO(to taosimin), get instance power and calculate the current.
-  build_one_net_instance_current_vector(_power_data, _rc_data, net_name);
+  auto* current_rust_map = build_one_net_instance_current_vector(_power_data, _rc_data, net_name);
+  auto J_vector = ir_matrix.buildCurrentVector(current_rust_map, one_net_matrix_data.node_num);
 
   IRSolver ir_solver;
   auto grid_voltages = ir_solver(G_matrix, J_vector);
