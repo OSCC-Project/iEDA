@@ -9,24 +9,15 @@ export RESULT_DIR=$WORKSPACE/result
 export TCL_SCRIPT_DIR=$WORKSPACE/script
 
 # design files
-export DESIGN_TOP=picorv32a
-export NETLIST_FILE=$WORKSPACE/result/verilog/picorv32a.v
-export SDC_FILE=$WORKSPACE/result/verilog/picorv32a.sdc
+export DESIGN_TOP=gcd
+export NETLIST_FILE=$WORKSPACE/result/verilog/gcd.v
+export SDC_FILE=$FOUNDRY_DIR/sdc/gcd.sdc
+export SPEF_FILE=$FOUNDRY_DIR/spef/gcd.spef
 
 # floorplan setting
-export DIE_AREA="0.0 0.0 1120 1020.8"
-export CORE_AREA="10 12 1110 1011.2"
-
-# # design files
-# export DESIGN_TOP=gcd
-# export NETLIST_FILE=$WORKSPACE/result/verilog/gcd.v
-# export SDC_FILE=$FOUNDRY_DIR/sdc/gcd.sdc
-# export SPEF_FILE=$FOUNDRY_DIR/spef/gcd.spef
-
-# # floorplan setting
-# ## gcd
-# export DIE_AREA="0.0    0.0   149.96   150.128"
-# export CORE_AREA="9.996 10.08 139.964  140.048"
+## gcd
+export DIE_AREA="0.0    0.0   149.96   150.128"
+export CORE_AREA="9.996 10.08 139.964  140.048"
 
 # system variables
 PATH=$WORKSPACE/../../../bin:$PATH
