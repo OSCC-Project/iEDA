@@ -66,6 +66,7 @@ class FeatureParser
   bool buildNets(std::string json_path);
   // report
   bool buildReportSummary(std::string json_path, std::string step);
+  bool buildReportSummaryMap(std::string csv_path, int bin_cnt_x, int bin_cnt_y);
 
  private:
   IdbLayout* _layout = nullptr;
@@ -75,6 +76,8 @@ class FeatureParser
   json buildSummaryLayout();
   json buildSummaryStatis();
   json buildSummaryInstances();
+  json buildSummaryMacrosStatis();
+  json buildSummaryMacros();
   json buildSummaryLayers();
   json buildSummaryNets();
   json buildSummaryPdn();

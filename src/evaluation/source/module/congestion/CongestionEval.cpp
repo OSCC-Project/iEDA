@@ -23,6 +23,7 @@
 #include <regex>
 #include <omp.h>
 #include <mutex>
+#include <stack>
 
 #include "../manager.hpp"
 #include "EvalLog.hpp"
@@ -87,6 +88,28 @@ void CongestionEval::initCongInst()
     } else {
       inst_ptr->set_status(INSTANCE_STATUS::kMax);
     }
+
+    const IdbOrient idb_orient = idb_inst->get_orient();
+    if (idb_orient == IdbOrient::kN_R0) {
+      inst_ptr->set_orient(INSTANCE_ORIENT::kN_R0);
+    } else if (idb_orient == IdbOrient::kS_R180) {
+      inst_ptr->set_orient(INSTANCE_ORIENT::kS_R180);
+    } else if (idb_orient == IdbOrient::kW_R90) {
+      inst_ptr->set_orient(INSTANCE_ORIENT::kW_R90);
+    } else if (idb_orient == IdbOrient::kE_R270) {
+      inst_ptr->set_orient(INSTANCE_ORIENT::kE_R270);
+    } else if (idb_orient == IdbOrient::kFN_MY) {
+      inst_ptr->set_orient(INSTANCE_ORIENT::kFN_MY);
+    } else if (idb_orient == IdbOrient::kFS_MX) {
+      inst_ptr->set_orient(INSTANCE_ORIENT::kFS_MX);
+    } else if (idb_orient == IdbOrient::kFW_MX90) {
+      inst_ptr->set_orient(INSTANCE_ORIENT::kFW_MX90);
+    } else if (idb_orient == IdbOrient::kFE_MY90) {
+      inst_ptr->set_orient(INSTANCE_ORIENT::kFE_MY90);
+    } else {
+      inst_ptr->set_orient(INSTANCE_ORIENT::kN_R0);
+    }
+
 
     if (idb_inst->is_flip_flop()) {
       inst_ptr->set_flip_flop(true);
@@ -397,6 +420,42 @@ void CongestionEval::plotBinValue(const string& plot_path, const string& output_
           feed << net_cong;
         } else {
           feed << net_cong << ",";
+        }
+      }
+      feed << std::endl;
+    }
+  } else if (cong_type == CONGESTION_TYPE::kMacroMarginH) {
+    for (int i = y_cnt - 1; i >= 0; i--) {
+      for (int j = 0; j < x_cnt; j++) {
+        double h_margin = _cong_grid->get_bin_list()[i * x_cnt + j]->get_h_margin();
+        if (j == x_cnt - 1) {
+          feed << h_margin;
+        } else {
+          feed << h_margin << ",";
+        }
+      }
+      feed << std::endl;
+    }
+  }else if (cong_type == CONGESTION_TYPE::kMacroMarginV) {
+    for (int i = y_cnt - 1; i >= 0; i--) {
+      for (int j = 0; j < x_cnt; j++) {
+        double v_margin = _cong_grid->get_bin_list()[i * x_cnt + j]->get_v_margin();
+        if (j == x_cnt - 1) {
+          feed << v_margin;
+        } else {
+          feed << v_margin << ",";
+        }
+      }
+      feed << std::endl;
+    }
+  }else if (cong_type == CONGESTION_TYPE::kContinuousWS) {
+    for (int i = y_cnt - 1; i >= 0; i--) {
+      for (int j = 0; j < x_cnt; j++) {
+        int continuous = _cong_grid->get_bin_list()[i * x_cnt + j]->isContinuousWhiteSpace();
+        if (j == x_cnt - 1) {
+          feed << continuous;
+        } else {
+          feed << continuous << ",";
         }
       }
       feed << std::endl;
@@ -720,10 +779,10 @@ double CongestionEval::evalMacroChannelUtil(float dist_ratio)
             int64_t height = 0;
             if (macro_list[i]->get_ly() < macro_list[j]->get_ly()) {
               // i在下，j在上
-              height = macro_list[j]->get_ly() - macro_list[i]->get_ly() - macro_list[i]->get_height();
+              height = std::max((macro_list[j]->get_ly() - macro_list[i]->get_ly() - macro_list[i]->get_height()), (long)0);
             } else {
               // i在上，j在下
-              height = macro_list[i]->get_ly() - macro_list[j]->get_ly() - macro_list[j]->get_height();
+              height = std::max((macro_list[i]->get_ly() - macro_list[j]->get_ly() - macro_list[j]->get_height()), (long)0);
             }
             channel_area += (ux - lx) * height;
           } else {
@@ -733,10 +792,10 @@ double CongestionEval::evalMacroChannelUtil(float dist_ratio)
             int64_t width = 0;
             if (macro_list[i]->get_lx() < macro_list[j]->get_lx()) {
               // i在左，j在右
-              width = macro_list[j]->get_lx() - macro_list[i]->get_lx() - macro_list[i]->get_width();
+              width = std::max((macro_list[j]->get_lx() - macro_list[i]->get_lx() - macro_list[i]->get_width()), (long)0 );
             } else {
               // i在右，j在左
-              width = macro_list[i]->get_lx() - macro_list[j]->get_lx() - macro_list[j]->get_width();
+              width = std::max((macro_list[i]->get_lx() - macro_list[j]->get_lx() - macro_list[j]->get_width()), (long)0);
             }
             channel_area += (uy - ly) * width;
           }
@@ -747,6 +806,289 @@ double CongestionEval::evalMacroChannelUtil(float dist_ratio)
 
   return channel_area / (double) core_area;
 }
+
+void CongestionEval::plotMacroChannel(float dist_ratio,  const std::string& filename)
+{
+  struct ChannelInfo {
+      int lx;
+      int ly;
+      int width;
+      int height;
+  };
+  struct MacroInfo {
+      int lx;
+      int ly;
+      int width;
+      int height;
+  };
+
+  auto die_info = evalChipWidthHeightArea(CHIP_REGION_TYPE::kDie);
+  int32_t check_width = die_info[0] * dist_ratio;
+  int32_t check_height = die_info[1] * dist_ratio;
+
+  std::vector<MacroInfo> macro_infos;
+  for (auto& inst : _cong_inst_list) {
+      if (inst->get_status() == INSTANCE_STATUS::kFixed) {
+        MacroInfo macro_info;
+        macro_info.lx = inst->get_lx();
+        macro_info.ly = inst->get_ly();
+        macro_info.width = inst->get_width();
+        macro_info.height = inst->get_height();
+        macro_infos.push_back(macro_info);
+      }
+  }
+
+  std::vector<ChannelInfo> channel_infos;
+  if (macro_infos.size() != 0) {
+      for (size_t i = 0; i < macro_infos.size(); i++) {
+          for (size_t j = i + 1; j < macro_infos.size(); j++) {
+              auto x_dist = std::abs(macro_infos[i].lx - macro_infos[j].lx);
+              auto y_dist = std::abs(macro_infos[i].ly - macro_infos[j].ly);
+              if ((x_dist < check_width) && (y_dist < check_height)) {
+                  ChannelInfo channel_info;
+                  if (x_dist < y_dist) {
+                      auto lx = std::max(macro_infos[i].lx, macro_infos[j].lx);
+                      auto ux = std::min(macro_infos[i].lx + macro_infos[i].width, macro_infos[j].lx + macro_infos[j].width);
+                      int64_t height = 0;
+                      int64_t ly = 0;
+                      if (macro_infos[i].ly < macro_infos[j].ly) {
+                          height = std::max((macro_infos[j].ly - macro_infos[i].ly - macro_infos[i].height), 0);
+                          ly = macro_infos[i].ly + macro_infos[i].height;
+                      } else {
+                          height = std::max((macro_infos[i].ly - macro_infos[j].ly - macro_infos[j].height), 0);
+                          ly = macro_infos[j].ly + macro_infos[j].height;
+                      }
+                      channel_info.lx = lx;
+                      channel_info.ly = ly;
+                      channel_info.width = ux - lx;
+                      channel_info.height = height;
+                  } else {
+                      auto ly = std::max(macro_infos[i].ly, macro_infos[j].ly);
+                      auto uy = std::min(macro_infos[i].ly + macro_infos[i].height, macro_infos[j].ly+macro_infos[j].height);
+                      int64_t width = 0;
+                      int64_t lx = 0;
+                      if (macro_infos[i].lx < macro_infos[j].lx) {
+                          width = std::max((macro_infos[j].lx - macro_infos[i].lx - macro_infos[i].width), 0);
+                          lx = macro_infos[i].lx + macro_infos[i].width;
+                      } else {
+                          width = std::max((macro_infos[i].lx - macro_infos[j].lx - macro_infos[j].width), 0);
+                          lx = macro_infos[j].lx + macro_infos[j].width;
+                      }
+                      channel_info.lx = lx;
+                      channel_info.ly = ly;
+                      channel_info.width = width;
+                      channel_info.height = uy - ly;
+                  }
+                  channel_infos.push_back(channel_info);
+              }
+          }
+      }
+  }
+
+  std::ofstream file(filename);
+  if (file.is_open()) {
+      file << "Die Width,Die Height\n";
+      file << die_info[0] << "," << die_info[1] << "\n\n";
+
+      file << "Channel ID,LX,LY,Width,Height\n";
+      for (size_t i = 0; i < channel_infos.size(); ++i) {
+          file << i + 1 << "," << channel_infos[i].lx << "," << channel_infos[i].ly << ","
+                << channel_infos[i].width << "," << channel_infos[i].height << "\n";
+      }
+
+      file << "\nMacro ID,LX,LY,Width,Height\n";
+      for (size_t i = 0; i < macro_infos.size(); ++i) {
+          file << i + 1 << "," << macro_infos[i].lx << "," << macro_infos[i].ly << ","
+                << macro_infos[i].width << "," << macro_infos[i].height << "\n";
+      }
+
+      file.close();
+  } else {
+      std::cerr << "Unable to open file: " << filename << std::endl;
+  }
+
+}
+
+void CongestionEval::evalMacroMargin()
+{
+  auto* idb_builder = dmInst->get_idb_builder();
+  idb::IdbLayout* idb_layout = idb_builder->get_def_service()->get_layout();
+  idb::IdbRect* idb_core = idb_layout->get_core()->get_bounding_box();
+  int64_t h_max_coord = idb_core->get_high_x();
+  int64_t h_min_coord = idb_core->get_low_x();
+  int64_t v_max_coord = idb_core->get_high_y();
+  int64_t v_min_coord = idb_core->get_low_y();
+
+  std::vector<CongInst*> macros;
+  for (auto& inst : _cong_inst_list) {
+      if (inst->get_status() == INSTANCE_STATUS::kFixed) {
+        macros.push_back(inst);
+      }
+  }
+
+  for (size_t i = 0; i < _cong_grid->get_bin_list().size(); i++) {
+    auto& bin = _cong_grid->get_bin_list()[i];
+    bin->set_h_margin(0.0);
+    bin->set_v_margin(0.0);
+  }
+
+  for (size_t i = 0; i < _cong_grid->get_bin_list().size(); i++) {
+    int64_t h_right = h_max_coord;
+    int64_t h_left = h_min_coord;
+    int64_t v_up = v_max_coord;
+    int64_t v_down = v_min_coord;
+    auto& bin = _cong_grid->get_bin_list()[i];
+    bool overlap = false;
+
+    for (size_t j = 0; j < macros.size(); j++){
+      if (getOverlapArea(bin, macros[j]) != 0){
+        overlap = true;
+        break;
+      }
+    }
+    if (!overlap){
+      for (size_t j = 0; j < macros.size(); j++){
+        int64_t macro_middle_x = (macros[j]->get_lx() + macros[j]->get_ux()) * 0.5;
+        int64_t macro_middle_y = (macros[j]->get_ly() + macros[j]->get_uy()) * 0.5;
+        int64_t bin_middle_x = (bin->get_lx() + bin->get_ux()) * 0.5 ;
+        int64_t bin_middle_y = (bin->get_uy() + bin->get_ly()) * 0.5 ;
+        if (bin_middle_y >= macros[j]->get_ly() && bin_middle_y <= macros[j]->get_uy()){
+          if (macro_middle_x > bin_middle_x){
+            h_right = std::min(macros[j]->get_lx(), h_right); 
+          }else{
+            h_left = std::max(macros[j]->get_ux(), h_left);
+          }
+        }
+        if (bin_middle_x >= macros[j]->get_lx() && bin_middle_x <= macros[j]->get_ux()){
+          if (macro_middle_y > bin_middle_y){
+            v_up = std::min(macros[j]->get_ly(), v_up); 
+          }else{
+            v_down = std::max(macros[j]->get_uy(), v_down);
+          }
+        }
+      }
+      bin->set_h_margin(h_right - h_left);
+      bin->set_v_margin(v_up - v_down);
+    }
+  }
+}
+
+double CongestionEval::evalMaxContinuousSpace()
+{
+  evalInstDens(INSTANCE_STATUS::kFixed);
+  int height = _cong_grid->get_bin_cnt_y();
+  int width = _cong_grid->get_bin_cnt_x();
+  vector<vector<int>> left(height, vector<int>(width, 0));
+
+  // 寻找连续为 1 的最大网格数（密度<0.2时设为1）
+  for (int i = 0; i < height; i++) {
+    for (int j = 0; j < width; j++) {
+      if (_cong_grid->get_bin_list()[i *width + j ]->get_inst_density() < 0.2){
+          left[i][j] = (j == 0 ? 0: left[i][j - 1]) + 1;
+      }
+    }
+  }
+
+  int max_area = 0;
+  int top_left_row = 0;
+  int top_left_col = 0;
+  int bottom_right_row = 0;
+  int bottom_right_col = 0;
+
+  for (int j = 0; j < width; j++) { // 对于每一列，使用基于柱状图的方法
+      vector<int> up(height, 0), down(height, 0);
+      std::stack<int> stk;
+
+      for (int i = 0; i < height; i++) {
+          while (!stk.empty() && left[stk.top()][j] >= left[i][j]) {
+              stk.pop();
+          }
+          up[i] = stk.empty() ? -1 : stk.top();
+          stk.push(i);
+      }
+
+      stk = std::stack<int>();
+      for (int i = height - 1; i >= 0; i--) {
+          while (!stk.empty() && left[stk.top()][j] >= left[i][j]) {
+              stk.pop();
+          }
+          down[i] = stk.empty() ? height : stk.top();
+          stk.push(i);
+      }
+
+      for (int i = 0; i < height; i++) {
+          int rect_height = down[i] - up[i] - 1;
+          int rect_width = left[i][j];
+          int area = rect_height * rect_width;
+          if (area > max_area) {
+              max_area = area;
+              // 更新最大矩形的位置信息
+              top_left_row = up[i] + 1;
+              top_left_col = j - rect_width + 1;
+              bottom_right_row = down[i] - 1;
+              bottom_right_col = j;
+          }
+      }
+  }
+
+  for (int i = top_left_row; i < bottom_right_row; i++) {
+    for (int j = top_left_col; j < bottom_right_col ; j++) {
+      _cong_grid->get_bin_list()[i * width + j]->set_ContinousWhiteSpace(1);
+    }
+  }
+
+  return (double)max_area / (height*width) ;
+}
+
+void CongestionEval::evalIOPinAccess(const std::string& filename)
+{
+  auto idb_design = dmInst->get_idb_design();
+  auto idb_layout = idb_design->get_layout();
+  auto idb_die = idb_layout->get_die();
+  auto pin_list = idb_design->get_io_pin_list()->get_pin_list();
+
+  struct MacroInfo {
+      int lx;
+      int ly;
+      int width;
+      int height;
+  };
+  std::vector<MacroInfo> macro_infos;
+  for (auto& inst : _cong_inst_list) {
+      if (inst->get_status() == INSTANCE_STATUS::kFixed) {
+        MacroInfo macro_info;
+        macro_info.lx = inst->get_lx();
+        macro_info.ly = inst->get_ly();
+        macro_info.width = inst->get_width();
+        macro_info.height = inst->get_height();
+        macro_infos.push_back(macro_info);
+      }
+  }
+
+  
+  std::ofstream file(filename);
+  if (file.is_open()) {
+      file << "Die Width,Die Height\n";
+      file << idb_die->get_width() << "," << idb_die->get_height() << "\n\n";
+
+      file << "IO ID,LX,LY,Width,Height\n";
+      for (size_t i = 0; i < pin_list.size(); ++i) {
+          file << i + 1 << "," << pin_list[i]->get_location()->get_x() << "," <<pin_list[i]->get_location()->get_y() << ","
+                << pin_list[i]->get_bounding_box()->get_width() << "," <<  pin_list[i]->get_bounding_box()->get_height() << "\n";
+      }
+      file << "\nMacro ID,LX,LY,Width,Height\n";
+      for (size_t i = 0; i < macro_infos.size(); ++i) {
+          file << i + 1 << "," << macro_infos[i].lx << "," << macro_infos[i].ly << ","
+                << macro_infos[i].width << "," << macro_infos[i].height << "\n";
+      }
+
+      file.close();
+  } else {
+      std::cerr << "Unable to open file: " << filename << std::endl;
+  }
+
+}
+
 
 double CongestionEval::evalMacroChannelPinRatio(float dist_ratio)
 {
@@ -783,14 +1125,14 @@ double CongestionEval::evalMacroChannelPinRatio(float dist_ratio)
               for (auto& pin : macro_list[i]->get_pin_list()) {
                 auto pin_x = pin->get_x();
                 auto pin_y = pin->get_y();
-                if (pin_x >= lx && pin_x <= ux && pin_y >= macro_list[i]->get_uy() * 0.9) {
+                if (pin_x >= lx && pin_x <= ux && pin_y >= macro_list[i]->get_uy() * 0.8) {
                   pin_num++;
                 }
               }
               for (auto& pin : macro_list[j]->get_pin_list()) {
                 auto pin_x = pin->get_x();
                 auto pin_y = pin->get_y();
-                if (pin_x >= lx && pin_x <= ux && pin_y <= macro_list[j]->get_ly() * 1.1) {
+                if (pin_x >= lx && pin_x <= ux && pin_y <= macro_list[j]->get_ly() * 1.2) {
                   pin_num++;
                 }
               }
@@ -799,14 +1141,14 @@ double CongestionEval::evalMacroChannelPinRatio(float dist_ratio)
               for (auto& pin : macro_list[j]->get_pin_list()) {
                 auto pin_x = pin->get_x();
                 auto pin_y = pin->get_y();
-                if (pin_x >= lx && pin_x <= ux && pin_y >= macro_list[j]->get_uy() * 0.9) {
+                if (pin_x >= lx && pin_x <= ux && pin_y >= macro_list[j]->get_uy() * 0.8) {
                   pin_num++;
                 }
               }
               for (auto& pin : macro_list[i]->get_pin_list()) {
                 auto pin_x = pin->get_x();
                 auto pin_y = pin->get_y();
-                if (pin_x >= lx && pin_x <= ux && pin_y <= macro_list[i]->get_ly() * 1.1) {
+                if (pin_x >= lx && pin_x <= ux && pin_y <= macro_list[i]->get_ly() * 1.2) {
                   pin_num++;
                 }
               }
@@ -821,14 +1163,14 @@ double CongestionEval::evalMacroChannelPinRatio(float dist_ratio)
               for (auto& pin : macro_list[j]->get_pin_list()) {
                 auto pin_x = pin->get_x();
                 auto pin_y = pin->get_y();
-                if (pin_y >= ly && pin_y <= uy && pin_x <= macro_list[j]->get_lx() * 1.1) {
+                if (pin_y >= ly && pin_y <= uy && pin_x <= macro_list[j]->get_lx() * 1.2) {
                   pin_num++;
                 }
               }
               for (auto& pin : macro_list[i]->get_pin_list()) {
                 auto pin_x = pin->get_x();
                 auto pin_y = pin->get_y();
-                if (pin_y >= ly && pin_y <= uy && pin_x >= macro_list[i]->get_ux() * 0.9) {
+                if (pin_y >= ly && pin_y <= uy && pin_x >= macro_list[i]->get_ux() * 0.8) {
                   pin_num++;
                 }
               }
@@ -837,14 +1179,14 @@ double CongestionEval::evalMacroChannelPinRatio(float dist_ratio)
               for (auto& pin : macro_list[i]->get_pin_list()) {
                 auto pin_x = pin->get_x();
                 auto pin_y = pin->get_y();
-                if (pin_y >= ly && pin_y <= uy && pin_x <= macro_list[i]->get_lx() * 1.1) {
+                if (pin_y >= ly && pin_y <= uy && pin_x <= macro_list[i]->get_lx() * 1.2) {
                   pin_num++;
                 }
               }
               for (auto& pin : macro_list[j]->get_pin_list()) {
                 auto pin_x = pin->get_x();
                 auto pin_y = pin->get_y();
-                if (pin_y >= ly && pin_y <= uy && pin_x >= macro_list[j]->get_ux() * 0.9) {
+                if (pin_y >= ly && pin_y <= uy && pin_x >= macro_list[j]->get_ux() * 0.8) {
                   pin_num++;
                 }
               }
@@ -1500,6 +1842,93 @@ double CongestionEval::getLUT(const int32_t& pin_num, const int32_t& aspect_rati
   }
   return 0;
 }
+
+
+std::vector<MacroVariant> CongestionEval::evalMacrosInfo()
+{
+  std::vector<MacroVariant> macro_list;
+
+  auto core_info = evalChipWidthHeightArea(CHIP_REGION_TYPE::kCore);
+  auto core_width = core_info[0];
+  auto core_height = core_info[1];
+  auto core_area = core_info[2];
+  for (auto& inst : _cong_inst_list) {
+    if (inst->get_status() == INSTANCE_STATUS::kFixed) {
+      MacroVariant macro;
+  
+      float area = inst->get_shape().get_area();
+      float area_ratio = area / core_area;
+      float left = inst->get_lx();
+      float bottom = inst->get_ly();
+      float width = inst->get_width();
+      float height = inst->get_height();
+      float pin_cnt = inst->get_pin_list().size();
+
+      float right = core_width - left - width;
+      float top = core_height - bottom - height;
+      float min_bias =  std::min(std::min(left, bottom), std::min(right, top));
+      min_bias = min_bias * min_bias;
+
+      macro["Area"] = area;
+      macro["Area Ratio"] = area_ratio;
+      macro["Lx"] = left;
+      macro["Ly"] = bottom;
+      macro["Width"] = width;
+      macro["Height"] = height;
+      macro["#Pins"] = pin_cnt;
+      macro["Peri Bias"] = min_bias;
+
+      std::string type = inst->get_name();
+      size_t pos = type.find('/');
+      if (pos != std::string::npos) {
+          type = type.substr(0, pos);
+      }
+      macro["Type"] = type;
+
+      std::string orient_string;
+      switch (inst->get_orient()) {
+        case INSTANCE_ORIENT::kNone:
+            orient_string = "None";
+            break;
+        case INSTANCE_ORIENT::kN_R0:
+            orient_string = "N_R0";
+            break;
+        case INSTANCE_ORIENT::kW_R90:
+            orient_string = "W_R90";
+            break;
+        case INSTANCE_ORIENT::kS_R180:
+            orient_string = "S_R180";
+            break;
+        case INSTANCE_ORIENT::kE_R270:
+            orient_string = "E_R270";
+            break;
+        case INSTANCE_ORIENT::kFN_MY:
+            orient_string = "FN_MY";
+            break;
+        case INSTANCE_ORIENT::kFE_MY90:
+            orient_string =  "FE_MY90";
+            break;
+        case INSTANCE_ORIENT::kFS_MX:
+            orient_string =  "FS_MX";
+            break;
+        case INSTANCE_ORIENT::kFW_MX90:
+            orient_string =  "FW_MX90";
+            break;
+        default:
+            orient_string = "UNKNOWN";
+            break;
+      }
+      
+      macro["Orient"] = orient_string;
+
+      macro_list.emplace_back(macro);
+    }
+  }
+
+  return macro_list;
+
+}
+
 
 /////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////
