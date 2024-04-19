@@ -67,6 +67,22 @@ IdbSite* IdbSite::clone()
 void IdbSite::set_class(string site_class)
 {
   _site_class = IdbEnum::GetInstance()->get_site_property()->get_class_type(site_class);
+
+  switch (_site_class) {
+    case IdbSiteClass::kCore:
+      set_type_core();
+      break;
+    case IdbSiteClass::kPad:
+      if (_width == _heigtht) {
+        set_type_corner();
+      } else {
+        set_type_pad();
+      }
+      break;
+
+    default:
+      break;
+  }
 }
 
 void IdbSite::set_orient_by_enum(int32_t lef_orient)

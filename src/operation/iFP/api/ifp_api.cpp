@@ -107,12 +107,11 @@ bool FpApi::autoPlacePad(std::vector<std::string> pad_masters, std::vector<std::
   return io_placer.autoPlacePad(pad_masters, conner_masters);
 }
 
-bool FpApi::placeIOFiller(std::vector<std::string> filler_name_list, std::string prefix, std::string orient, double begin, double end,
-                          std::string source)
+bool FpApi::placeIOFiller(std::vector<std::string> filler_name_list, std::string prefix)
 {
   IoPlacer io_placer;
 
-  return io_placer.placeIOFiller(filler_name_list, prefix, orient, begin, end, source);
+  return io_placer.autoIOFiller(filler_name_list, prefix);
 }
 
 bool FpApi::tapCells(double distance, std::string tapcell_name, std::string endcap_name)

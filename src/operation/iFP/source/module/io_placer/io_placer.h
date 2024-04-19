@@ -30,6 +30,7 @@ namespace ifp {
 struct PadCoordinate
 {
   Edge edge;  /// bottom, left, top, right
+  idb::IdbOrient orient;
   int begin;  /// coordinate range begin
   int end;    /// coordinate range end
   int coord;  /// the other coordinate value, not change
@@ -47,24 +48,18 @@ class IoPlacer
 
   bool autoPlacePad(std::vector<std::string> pad_masters = {}, std::vector<std::string> conner_masters = {});
   bool autoIOFiller(std::vector<std::string> filler_name_list = {}, std::string prefix = "IOFIL_");
-  bool placeIOFiller(std::vector<std::string> filler_name_list, std::string prefix, std::string orient, double begin, double end,
-                     std::string source);
-
-  void placeIOFiller(std::vector<std::string> filler_names, const std::string prefix, Edge edge, double begin_pos, double end_pos,
-                     std::string source);
 
  private:
-  idb::IdbDesign* _idb_design;
   int32_t _iofiller_idx = -1;
   PadCoordinate _pad_coord[4];  /// 4 edge, in order clockwise by bottom, left, top, right
 
+  void set_pad_coords(vector<string> conner_masters = {});
+  void placeIOFiller(std::vector<idb::IdbCellMaster*>& fillers, const std::string prefix, PadCoordinate coord);
+  void fillInterval(Interval interval, std::vector<idb::IdbCellMaster*> fillers, const std::string prefix,  PadCoordinate coord);
+
   int32_t transUnitDB(double value);
   idb::IdbOrient transferEdgeToOrient(Edge edge);
-  int32_t chooseFillerIndex(int32_t length, std::vector<idb::IdbCellMaster*> fillers);
   bool edgeIsSameToOrient(Edge edge, idb::IdbOrient orient);
   std::string transferOrientToString(idb::IdbOrient orient);
-
-  void fillInterval(Interval interval, std::vector<idb::IdbCellMaster*> fillers, const std::string prefix, std::string source);
-  void set_pad_coords(vector<string> conner_masters = {});
 };
 }  // namespace ifp

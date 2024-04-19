@@ -58,16 +58,6 @@ std::string IoPlacer::transferOrientToString(idb::IdbOrient orient)
   return "NO Orient";
 }
 
-int32_t IoPlacer::chooseFillerIndex(int32_t length, std::vector<idb::IdbCellMaster*> fillers)
-{
-  for (size_t i = 0; i != fillers.size(); ++i) {
-    if ((ssize_t) (fillers[i]->get_width()) <= (ssize_t) length) {
-      return i;
-    }
-  }
-  return -1;
-}
-
 bool IoPlacer::edgeIsSameToOrient(Edge edge, idb::IdbOrient orient)
 {
   if (edge == Edge::kBottom && orient == idb::IdbOrient::kN_R0) {
@@ -255,115 +245,29 @@ bool IoPlacer::placePort(std::string pin_name, int32_t x_offset, int32_t y_offse
   return true;
 }
 
-bool IoPlacer::placeIOFiller(std::vector<std::string> filler_name_list, std::string prefix, std::string orient, double begin, double end,
-                             std::string source)
+void IoPlacer::placeIOFiller(std::vector<idb::IdbCellMaster*>& fillers, const std::string prefix, PadCoordinate coord)
 {
   auto idb_design = dmInst->get_idb_design();
-  auto idb_layout = idb_design->get_layout();
-  auto idb_die = idb_layout->get_die();
-
-  int32_t dbu = idb_layout->get_units()->get_micron_dbu();
-  double die_llx = ((double) idb_die->get_llx()) / dbu;
-  double die_lly = ((double) idb_die->get_lly()) / dbu;
-  double die_urx = ((double) idb_die->get_urx()) / dbu;
-  double die_ury = ((double) idb_die->get_ury()) / dbu;
-
-  if (orient.empty()) {
-    placeIOFiller(filler_name_list, prefix, Edge::kBottom, die_llx, die_urx, source);
-    placeIOFiller(filler_name_list, prefix, Edge::kTop, die_llx, die_urx, source);
-    placeIOFiller(filler_name_list, prefix, Edge::kLeft, die_lly, die_ury, source);
-    placeIOFiller(filler_name_list, prefix, Edge::kRight, die_lly, die_ury, source);
-    return true;
-  }
-
-  double begin_new = begin;
-  double end_new = end;
-  Edge edge;
-  if (orient == "bottom") {
-    edge = Edge::kBottom;
-    begin_new = die_llx;
-    end_new = die_urx;
-  } else if (orient == "top") {
-    edge = Edge::kTop;
-    begin_new = die_llx;
-    end_new = die_urx;
-  } else if (orient == "left") {
-    edge = Edge::kLeft;
-    begin_new = die_lly;
-    end_new = die_ury;
-  } else {
-    edge = Edge::kRight;
-    begin_new = die_lly;
-    end_new = die_ury;
-  }
-
-  placeIOFiller(filler_name_list, prefix, edge, begin_new, end_new, source);
-
-  return true;
-}
-
-void IoPlacer::placeIOFiller(std::vector<std::string> filler_names, const std::string prefix, Edge edge, double begin_pos, double end_pos,
-                             std::string source)
-{
-  auto idb_design = dmInst->get_idb_design();
-  auto idb_layout = idb_design->get_layout();
   auto idb_inst_list = idb_design->get_instance_list();
   auto idb_io_inst_list = idb_inst_list->get_io_cell_list();
-  auto idb_die = idb_layout->get_die();
-  auto idb_cellmaster_list = idb_layout->get_cell_master_list();
 
   _iofiller_idx = -1;
-  vector<idb::IdbCellMaster*> fillers;
-
-  int32_t dbu = idb_layout->get_units()->get_micron_dbu();
-  int32_t iocell_height = idb_io_inst_list[0]->get_cell_master()->get_height();
-
-  int32_t die_llx = idb_die->get_llx();
-  int32_t die_lly = idb_die->get_lly();
-  int32_t die_urx = idb_die->get_urx();
-  int32_t die_ury = idb_die->get_ury();
-  int32_t begin_position = 0, end_position = 0;
-
-  begin_position = dbu * begin_pos;
-  end_position = dbu * end_pos;
-  if (edge == Edge::kLeft || edge == Edge::kRight) {
-    if (end_position > die_ury - iocell_height) {
-      end_position = die_ury - iocell_height;
-    }
-    if (begin_position < iocell_height + die_lly) {
-      begin_position = iocell_height + die_lly;
-    }
-  } else if (edge == Edge::kBottom || edge == Edge::kTop) {
-    if (end_position > die_urx - iocell_height) {
-      end_position = die_urx - iocell_height;
-    }
-    if (begin_position < iocell_height + die_llx) {
-      begin_position = iocell_height + die_llx;
-    }
-  }
-
-  for (std::string fill : filler_names) {
-    auto filler = idb_cellmaster_list->find_cell_master(fill);
-    fillers.push_back(filler);
-  }
-  sort(fillers.begin(), fillers.end(),
-       [](idb::IdbCellMaster* fill_fir, idb::IdbCellMaster* fill_sec) { return fill_fir->get_width() > fill_sec->get_width(); });
 
   vector<Interval> used;
   vector<Interval> need_filler;
   for (auto io : idb_io_inst_list) {
-    if ((io->is_placed() || io->is_fixed() || io->is_cover()) && edgeIsSameToOrient(edge, io->get_orient())) {
+    if ((io->is_placed() || io->is_fixed() || io->is_cover()) && edgeIsSameToOrient(coord.edge, io->get_orient())) {
       int32_t width = io->get_cell_master()->get_width();
       io->set_bounding_box();
       int32_t llx = io->get_bounding_box()->get_low_x();
       int32_t lly = io->get_bounding_box()->get_low_y();
       Interval inter = Interval();
-      if (edge == Edge::kLeft || edge == Edge::kRight) {
-        inter.set_edge(edge);
+      if (coord.edge == Edge::kLeft || coord.edge == Edge::kRight) {
+        inter.set_edge(coord.edge);
         inter.set_begin_position(lly);
         inter.set_end_position(lly + width);
       } else {
-        inter.set_edge(edge);
+        inter.set_edge(coord.edge);
         inter.set_begin_position(llx);
         inter.set_end_position(llx + width);
       }
@@ -375,27 +279,27 @@ void IoPlacer::placeIOFiller(std::vector<std::string> filler_names, const std::s
   }
 
   if (used.empty()) {
-    need_filler.push_back(Interval(edge, begin_position, end_position));
+    need_filler.push_back(Interval(coord.edge, coord.begin, coord.end));
   } else {
     sort(used.begin(), used.end(), [](Interval a, Interval b) { return a.get_begin_position() < b.get_begin_position(); });
 
     int32_t start_idx = 0, end_idx = 0;
     for (size_t i = 0; i != used.size(); ++i) {
-      if (used[i].get_end_position() > begin_position) {
+      if (used[i].get_end_position() > coord.begin) {
         start_idx = i;
         break;
       }
     }
     for (ssize_t i = used.size() - 1; i != -1; --i) {
-      if (used[i].get_begin_position() < end_position) {
+      if (used[i].get_begin_position() < coord.end) {
         end_idx = i;
         break;
       }
     }
 
-    int32_t need_start = begin_position;
+    int32_t need_start = coord.begin;
     for (int i = start_idx; i <= end_idx; ++i) {
-      if (used[i].get_begin_position() < begin_position) {
+      if (used[i].get_begin_position() < coord.begin) {
         need_start = used[i].get_end_position();
         continue;
       }
@@ -403,80 +307,78 @@ void IoPlacer::placeIOFiller(std::vector<std::string> filler_names, const std::s
         need_start = used[i].get_end_position();
         continue;
       }
-      Interval interval = Interval(edge, need_start, used[i].get_begin_position());
+      Interval interval = Interval(coord.edge, need_start, used[i].get_begin_position());
       need_start = used[i].get_end_position();
       need_filler.push_back(interval);
     }
 
-    if (used[end_idx].get_end_position() < end_position) {
-      Interval interval_end = Interval(edge, used[end_idx].get_end_position(), end_position);
+    if (used[end_idx].get_end_position() < coord.end) {
+      Interval interval_end = Interval(coord.edge, used[end_idx].get_end_position(), coord.end);
       need_filler.push_back(interval_end);
     }
   }
 
   for (Interval fil : need_filler) {
-    fillInterval(fil, fillers, prefix, source);
+    fillInterval(fil, fillers, prefix, coord);
   }
 }
 
-void IoPlacer::fillInterval(Interval interval, std::vector<idb::IdbCellMaster*> fillers, const std::string prefix, std::string source)
+void IoPlacer::fillInterval(Interval interval, std::vector<idb::IdbCellMaster*> fillers, const std::string prefix, PadCoordinate coord)
 {
-  auto idb_design = dmInst->get_idb_design();
-  auto idb_layout = idb_design->get_layout();
-  auto idb_die = idb_layout->get_die();
+  auto chooseFillerIndex = [](int32_t length, std::vector<idb::IdbCellMaster*> fillers) ->idb::IdbCellMaster* {
+    for (size_t i = 0; i != fillers.size(); ++i) {
+        if ((ssize_t) (fillers[i]->get_width()) <= (ssize_t) length) {
+          return fillers[i];
+        }
+    }
 
-  idb::IdbOrient orient = transferEdgeToOrient(interval.get_edge());
+    return nullptr;
+  };
+
+  auto build_inst_name = [](const std::string prefix, PadCoordinate coord, int idx){
+    string inst_name = "";
+
+    switch(coord.orient){
+        case IdbOrient::kN_R0:
+            inst_name = prefix + "_" + "S" + "_" + to_string(idx);
+            break;
+        case IdbOrient::kS_R180:
+            inst_name = prefix + "_" + "N" + "_" + to_string(idx);
+            break;
+        case IdbOrient::kW_R90:
+            inst_name = prefix + "_" + "E" + "_" + to_string(idx);
+            break;
+        case IdbOrient::kE_R270:
+            inst_name = prefix + "_" + "W" + "_" + to_string(idx);
+            break;
+        default:
+            inst_name = inst_name.substr(0, inst_name.length() - 2);
+    }
+
+    return inst_name;
+  };
+
   int32_t begin_pos = interval.get_begin_position();
   int32_t length = interval.get_interval_length();
 
-  int32_t die_llx = idb_die->get_llx();
-  int32_t die_urx = idb_die->get_urx();
-  int32_t die_lly = idb_die->get_lly();
-  int32_t die_ury = idb_die->get_ury();
-  int32_t llx = 0, lly = 0;
-  int32_t width, height;
   while (length > 0) {
-    int32_t index = chooseFillerIndex(length, fillers);
-    if (index < 0) {
+    auto* filler = chooseFillerIndex(length, fillers);
+    if (filler == nullptr) {
       printf("IOFiller place error.Please Check IOCELL Place\n");
-      printf("Edge is %s. llx or lly is %d\n", transferOrientToString(orient).c_str(), begin_pos);
+      printf("Edge is %s. llx or lly is %d\n", transferOrientToString(coord.orient).c_str(), begin_pos);
       return;
     }
-    width = fillers[index]->get_width();
-    height = fillers[index]->get_height();
-    // string inst_name, int32_t x, int32_t y, string orient_name,string
-    // cell_master_name
-    string inst_name;
 
-    if (orient == IdbOrient::kN_R0) {
-      llx = begin_pos;
-      lly = die_lly;
-      inst_name = prefix + "_" + "S" + "_" + to_string(_iofiller_idx);
-    }
-    if (orient == IdbOrient::kS_R180) {
-      llx = begin_pos;
-      lly = die_ury - height;
-      inst_name = prefix + "_" + "N" + "_" + to_string(_iofiller_idx);
-    }
-    if (orient == IdbOrient::kW_R90) {
-      llx = die_urx - height;
-      lly = begin_pos;
-      inst_name = prefix + "_" + "E" + "_" + to_string(_iofiller_idx);
-    }
-    if (orient == IdbOrient::kE_R270) {
-      llx = die_llx;
-      lly = begin_pos;
-      inst_name = prefix + "_" + "W" + "_" + to_string(_iofiller_idx);
-    }
-    if (_iofiller_idx == -1) {
-      inst_name = inst_name.substr(0, inst_name.length() - 2);
-    }
+    string inst_name = build_inst_name(prefix, coord, _iofiller_idx);
 
-    dmInst->placeInst(inst_name, llx, lly, transferOrientToString(orient), fillers[index]->get_name(), source);
+    int32_t llx = coord.orient == IdbOrient::kN_R0 || coord.orient == IdbOrient::kS_R180 ? begin_pos : coord.coord;
+    int32_t lly = coord.orient == IdbOrient::kN_R0 || coord.orient == IdbOrient::kS_R180 ? coord.coord : begin_pos;
+
+    dmInst->placeInst(inst_name, llx, lly, transferOrientToString(coord.orient), filler->get_name());
 
     ++_iofiller_idx;
-    begin_pos += width;
-    length -= width;
+    begin_pos += filler->get_width();
+    length -= filler->get_width();
   }
 }
 
@@ -538,21 +440,25 @@ void IoPlacer::set_pad_coords(vector<string> conner_masters)
 
     /// bottom
     _pad_coord[0].edge = Edge::kBottom;
+    _pad_coord[0].orient = IdbOrient::kN_R0;
     _pad_coord[0].begin = coord_x[1];
     _pad_coord[0].end = coord_x[2];
     _pad_coord[0].coord = coord_y[0];
     /// lef
     _pad_coord[1].edge = Edge::kLeft;
+    _pad_coord[1].orient = IdbOrient::kE_R270;
     _pad_coord[1].begin = coord_y[1];
     _pad_coord[1].end = coord_y[2];
     _pad_coord[1].coord = coord_x[0];
     /// top
     _pad_coord[2].edge = Edge::kTop;
+    _pad_coord[2].orient = IdbOrient::kS_R180;
     _pad_coord[2].begin = coord_x[1];
     _pad_coord[2].end = coord_x[2];
     _pad_coord[2].coord = coord_y[2];
     /// right
     _pad_coord[3].edge = Edge::kRight;
+    _pad_coord[3].orient = IdbOrient::kW_R90;
     _pad_coord[3].begin = coord_y[1];
     _pad_coord[3].end = coord_y[2];
     _pad_coord[3].coord = coord_x[2];
@@ -577,7 +483,7 @@ bool IoPlacer::autoPlacePad(std::vector<std::string> pad_masters, std::vector<st
       if (pad_coord.edge == Edge::kBottom || pad_coord.edge == Edge::kTop) {
         int coord_x = coord_offset;
         int coord_y = pad_coord.coord;
-        auto orient = pad_coord.edge == Edge::kBottom ? IdbOrient::kN_R0 : IdbOrient::kS_R180;
+        auto orient = pad_coord.orient;
 
         pad_list[index_begin]->set_coodinate(coord_x, coord_y, false);
         pad_list[index_begin]->set_orient(orient);
@@ -586,7 +492,7 @@ bool IoPlacer::autoPlacePad(std::vector<std::string> pad_masters, std::vector<st
       } else {
         int coord_x = pad_coord.coord;
         int coord_y = coord_offset;
-        auto orient = pad_coord.edge == Edge::kLeft ? IdbOrient::kE_R270 : IdbOrient::kW_R90;
+        auto orient = pad_coord.orient;
 
         pad_list[index_begin]->set_coodinate(coord_x, coord_y, false);
         pad_list[index_begin]->set_orient(orient);
@@ -599,6 +505,7 @@ bool IoPlacer::autoPlacePad(std::vector<std::string> pad_masters, std::vector<st
 
   auto* idb_design = dmInst->get_idb_design();
   auto* idb_layout = idb_design->get_layout();
+  int io_site_width = idb_layout->get_sites()->get_io_site()->get_width();
   auto* inst_list = idb_design->get_instance_list();
 
   auto pad_list = inst_list->get_iopad_list(pad_masters);
@@ -608,31 +515,21 @@ bool IoPlacer::autoPlacePad(std::vector<std::string> pad_masters, std::vector<st
 
   set_pad_coords(conner_masters);
 
+  /// calculate average interval between pads
   int range_total_len = 0;
   for (int i = 0; i < 4; i++) {
     range_total_len += (_pad_coord[i].end - _pad_coord[i].begin);
   }
-
-  /// calculate average interval between pads
   int pad_total_len = 0;
   for (auto* inst : pad_list) {
     pad_total_len += inst->get_cell_master()->get_width();
   }
-
-  int site_step = (range_total_len - pad_total_len) / (pad_list.size() + 8);
+  int site_step = (range_total_len - pad_total_len) / (pad_list.size() + 8) / io_site_width * io_site_width;
 
   int pad_index = 0;
-  /// bottom = kN_R0
-  place_pad(pad_list, pad_index, _pad_coord[0], site_step);
-
-  /// left = kE_R270
-  place_pad(pad_list, pad_index, _pad_coord[1], site_step);
-
-  /// top = kS_R180
-  place_pad(pad_list, pad_index, _pad_coord[2], site_step);
-
-  /// right = kW_R90
-  place_pad(pad_list, pad_index, _pad_coord[3], site_step);
+  for (int i = 0; i < 4; i++) {
+    place_pad(pad_list, pad_index, _pad_coord[i], site_step);
+  }
 
   return true;
 }
@@ -641,14 +538,25 @@ bool IoPlacer::autoIOFiller(std::vector<std::string> filler_name_list, std::stri
 {
   auto* idb_design = dmInst->get_idb_design();
   auto* idb_layout = idb_design->get_layout();
+  auto* idb_cell_masters = idb_layout->get_cell_master_list();
+  if(idb_cell_masters == nullptr){
+    std::cout << "Error : cell master not exist!" << std::endl;
+    return false;
+  }
 
-  auto pad_fillers = idb_layout->get_cell_master_list()->getIOFillers(filler_name_list);
+  auto pad_fillers = idb_cell_masters->getIOFillers(filler_name_list);
   if (pad_fillers.size() <= 0) {
     return false;
   }
   /// sort pad filler
   sort(pad_fillers.begin(), pad_fillers.end(),
        [](idb::IdbCellMaster* fill_1, idb::IdbCellMaster* fill_2) { return fill_1->get_width() > fill_2->get_width(); });
+
+  set_pad_coords();
+
+  for (int i = 0; i < 4; i++) {
+    placeIOFiller(pad_fillers, prefix, _pad_coord[i]);
+  }
 
   return true;
 }

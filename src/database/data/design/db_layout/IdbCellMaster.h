@@ -86,8 +86,8 @@ class IdbCellMaster
   // setter
   void set_type(CellMasterType type) { _type = type; }
   void set_type(string type_name);
-  bool set_type_core_filler();
-  bool set_type_pad_filler();
+  void set_type_core_filler();
+  void set_type_pad_filler();
   void set_name(string name) { _name = name; }
   void set_symmetry_x(bool value) { _symmetry_x = value; }
   void set_symmetry_y(bool value) { _symmetry_y = value; }
@@ -151,7 +151,6 @@ class IdbCellMasterList
 
   // operator
   IdbCellMaster* find_cell_master(const string& src_name);
-  IdbCellMaster* find_cell_master(IdbCellMaster* src_master);
 
   vector<IdbCellMaster*> getCoreFillers(vector<string> name_list);
   vector<IdbCellMaster*> getIOFillers(vector<string> name_list);

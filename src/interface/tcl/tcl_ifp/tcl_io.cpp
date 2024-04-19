@@ -126,32 +126,18 @@ TclFpPlaceIOFiller::TclFpPlaceIOFiller(const char* cmd_name) : TclCmd(cmd_name)
 {
   auto* fillers_name = new TclStringListOption("-filler_types", 0);
   auto* prefix = new TclStringOption("-prefix", 0);
-  auto* orient = new TclStringOption("-edge", 0);
-  auto* begin = new TclDoubleOption("-begin_pos", 0, 0);
-  auto* end = new TclDoubleOption("-end_pos", 0, 0);
-  auto* source = new TclStringOption("-source", 0, nullptr);
-  addOption(source);
+
   addOption(fillers_name);
   addOption(prefix);
-  addOption(orient);
-  addOption(begin);
-  addOption(end);
 }
 
 unsigned TclFpPlaceIOFiller::check()
 {
   TclOption* fillers_name = getOptionOrArg("-filler_types");
   TclOption* prefix = getOptionOrArg("-prefix");
-  TclOption* orient = getOptionOrArg("-edge");
-  TclOption* begin = getOptionOrArg("-begin_pos");
-  TclOption* end = getOptionOrArg("-end_pos");
-  TclOption* sourcev = getOptionOrArg("-source");
-  LOG_FATAL_IF(!sourcev);
+
   LOG_FATAL_IF(!fillers_name);
   LOG_FATAL_IF(!prefix);
-  LOG_FATAL_IF(!orient);
-  LOG_FATAL_IF(!begin);
-  LOG_FATAL_IF(!end);
   return 1;
 }
 
@@ -163,21 +149,10 @@ unsigned TclFpPlaceIOFiller::exec()
 
   TclOption* fillers_name = getOptionOrArg("-filler_types");
   TclOption* prefix = getOptionOrArg("-prefix");
-  TclOption* orient = getOptionOrArg("-edge");
-  TclOption* begin = getOptionOrArg("-begin_pos");
-  TclOption* end = getOptionOrArg("-end_pos");
-  TclOption* sourcev = getOptionOrArg("-source");
 
-  string pre, ori, source_str;
-  double beg = 0, en = 0;
+  string pre;
 
   auto fill = fillers_name->getStringList();
-  auto source = sourcev->getStringVal();
-  if (source != nullptr) {
-    source_str = source;
-  } else {
-    source_str = "";
-  }
 
   if (prefix->is_set_val() == 0) {
     pre = "IOFill";
@@ -185,19 +160,7 @@ unsigned TclFpPlaceIOFiller::exec()
     pre = prefix->getStringVal();
   }
 
-  if (begin != nullptr) {
-    beg = begin->getDoubleVal();
-  }
-
-  if (end != nullptr) {
-    en = end->getDoubleVal();
-  }
-
-  if (orient != nullptr && orient->is_set_val() != 0) {
-    ori = orient->getStringVal();
-  }
-
-  fpApiInst->placeIOFiller(fill, pre, ori, beg, en, source_str);
+  fpApiInst->placeIOFiller(fill, pre);
 
   return 1;
 }

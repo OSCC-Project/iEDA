@@ -132,7 +132,7 @@ class DataManager
   IdbInstance* insertIOFiller(string inst_name, string cell_master_name, int32_t coord_x = 0, int32_t coord_y = 0,
                               IdbOrient orient = IdbOrient::kN_R0);
 
-  bool placeInst(string inst_name, int32_t x, int32_t y, string orient, string cell_master_name, string source);
+  bool placeInst(string inst_name, int32_t x, int32_t y, string orient, string cell_master_name, string source="");
 
   void place_macro_generate_tcl(std::string directory, std::string tcl_name, int number = 100);
   bool place_macro_loc_rand(std::string tcl_path);

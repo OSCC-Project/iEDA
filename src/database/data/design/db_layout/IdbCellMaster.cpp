@@ -158,25 +158,21 @@ bool IdbCellMaster::is_core_filler()
   return _type == CellMasterType::kCoreSpacer || _core_filler == true ? true : false;
 }
 
-bool IdbCellMaster::set_type_core_filler()
+void IdbCellMaster::set_type_core_filler()
 {
   if (_type == CellMasterType::kCoreSpacer) {
     _core_filler = true;
-    return true;
   } else if (_type < CellMasterType::kCore || _type > CellMasterType::kCoreWelltap) {
     _core_filler = false;
-    return false;
   } else {
     /// A filler can only have Power and Ground pins
     for (IdbTerm* term : _term_list) {
       if (term->get_type() != IdbConnectType::kPower && term->get_type() != IdbConnectType::kGround) {
         _core_filler = false;
-        return false;
       }
     }
 
     _core_filler = true;
-    return true;
   }
 }
 
@@ -185,7 +181,7 @@ bool IdbCellMaster::is_pad_filler()
   return _type == CellMasterType::kPadSpacer ? true : false;
 }
 
-bool IdbCellMaster::set_type_pad_filler()
+void IdbCellMaster::set_type_pad_filler()
 {
   _pad_filler = true;
 }
@@ -289,10 +285,6 @@ IdbCellMaster* IdbCellMasterList::find_cell_master(const string& src_name)
   }
   return nullptr;
 }
-IdbCellMaster* IdbCellMasterList::find_cell_master(IdbCellMaster* src_master)
-{
-  return find_cell_master(src_master->get_name());
-}
 
 vector<IdbCellMaster*> IdbCellMasterList::getCoreFillers(vector<string> name_list)
 {
@@ -323,7 +315,7 @@ vector<IdbCellMaster*> IdbCellMasterList::getIOFillers(vector<string> name_list)
 {
   vector<IdbCellMaster*> cell_master_list;
 
-  if (name_list.empty()) {
+  if (name_list.size() == 0) {
     for (auto* cell_master : _master_List) {
       if (cell_master->is_pad_filler()) {
         cell_master_list.push_back(cell_master);
@@ -332,7 +324,7 @@ vector<IdbCellMaster*> IdbCellMasterList::getIOFillers(vector<string> name_list)
   } else {
     for (string name : name_list) {
       IdbCellMaster* cell_master = find_cell_master(name);
-      if (cell_master != nullptr || cell_master->is_pad_filler()) {
+      if (cell_master != nullptr) {
         cell_master->set_type_pad_filler();
         cell_master_list.push_back(cell_master);
       } else {

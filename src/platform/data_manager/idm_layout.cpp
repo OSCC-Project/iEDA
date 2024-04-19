@@ -35,8 +35,25 @@ void DataManager::initDie(int ll_x, int ll_y, int ur_x, int ur_y)
 {
   IdbDie* die = _layout->get_die();
   die->reset();
-  die->add_point(ll_x, ll_y);
-  die->add_point(ur_x, ur_y);
+
+  auto io_site = _layout->get_sites()->get_io_site();
+  auto corner_site = _layout->get_sites()->get_corner_site();
+
+  if (io_site == nullptr || corner_site == nullptr) {
+    die->add_point(ll_x, ll_y);
+    die->add_point(ur_x, ur_y);
+  } else {
+    /// adjust urx & ury
+    int corner_width = corner_site->get_width();
+    int io_site_width = io_site->get_width();
+    int width = ur_x - ll_x;
+    int height = ur_y - ll_y;
+    ur_x = ll_x + ((width - corner_width * 2) / io_site_width * io_site_width + corner_width * 2);
+    ur_y = ll_y + ((height - corner_width * 2) / io_site_width * io_site_width + corner_width * 2);
+
+    die->add_point(ll_x, ll_y);
+    die->add_point(ur_x, ur_y);
+  }
 }
 
 uint64_t DataManager::dieArea()
