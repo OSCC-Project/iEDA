@@ -54,7 +54,7 @@ enum RustConnectionType
 typedef struct RustSpefConnEntry
 {
   RustConnectionType _conn_type;
-  RustConnectionType _conn_direction;
+  RustConnectionDirection _conn_direction;
   char* _name;
   char* _driving_cell;
   double _load;

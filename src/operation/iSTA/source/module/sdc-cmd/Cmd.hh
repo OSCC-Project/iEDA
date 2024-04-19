@@ -411,4 +411,32 @@ class CmdSetUnits : public TclCmd {
  private:
   bool isOptionValid(const char* unit_type, std::string inputStr);
 };
+
+class CmdGroupPath : public TclCmd {
+ public:
+  explicit CmdGroupPath(const char* cmd_name);
+  ~CmdGroupPath() override = default;
+
+  unsigned check() override;
+  unsigned exec() override;
+};
+
+class CmdSetOperatingConditions : public TclCmd {
+ public:
+  explicit CmdSetOperatingConditions(const char* cmd_name);
+  ~CmdSetOperatingConditions() override = default;
+
+  unsigned check() override;
+  unsigned exec() override;
+};
+
+class CmdSetWireLoadMode : public TclCmd {
+ public:
+  explicit CmdSetWireLoadMode(const char* cmd_name);
+  ~CmdSetWireLoadMode() override = default;
+
+  unsigned check() override;
+  unsigned exec() override;
+};
+
 }  // namespace ista

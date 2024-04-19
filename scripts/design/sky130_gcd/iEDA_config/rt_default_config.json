@@ -1,6 +1,6 @@
 {
     "RT": {
-        "-temp_directory_path": "./result/rt/",
+        "-temp_directory_path": "${RESULT_DIR}/rt/",
         "-thread_number": 50,
         "-bottom_routing_layer": "met1",
         "-top_routing_layer": "met5"

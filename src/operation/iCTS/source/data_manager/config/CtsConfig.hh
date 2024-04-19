@@ -60,6 +60,7 @@ class CtsConfig
   CtsConfig(const CtsConfig& rhs) = default;
   ~CtsConfig() = default;
   // algorithm
+  bool get_use_skew_tree_alg() const { return _use_skew_tree_alg; }
   const std::string& get_router_type() const { return _router_type; }
   const std::string& get_delay_type() const { return _delay_type; }
   const std::string& get_cluster_type() const { return _cluster_type; }
@@ -101,6 +102,7 @@ class CtsConfig
   const std::vector<std::pair<std::string, std::string>> get_external_models() const { return _external_models; }
 
   // algorithm
+  void set_use_skew_tree_alg(const bool& use_skew_tree_alg) { _use_skew_tree_alg = use_skew_tree_alg; }
   void set_router_type(const std::string& router_type) { _router_type = router_type; }
   void set_delay_type(const std::string& delay_type) { _delay_type = delay_type; }
   void set_cluster_type(const std::string& cluster_type) { _cluster_type = cluster_type; }
@@ -213,6 +215,7 @@ class CtsConfig
 
  private:
   // algorithm
+  bool _use_skew_tree_alg = false;
   std::string _router_type = "GOCA";
   std::string _delay_type = "elmore";
   std::string _cluster_type = "kmeans";

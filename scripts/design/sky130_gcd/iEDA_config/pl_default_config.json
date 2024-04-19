@@ -76,7 +76,7 @@
             },
             "halo_x": 0,
             "halo_y": 0,
-            "output_path": "./result/pl/"
+            "output_path": "${RESULT_DIR}/pl/"
         }
     }
 }

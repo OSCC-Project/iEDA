@@ -1,9 +1,27 @@
 set -e
 
-# iRT_script/run_iRT_STA.tcl
+export WORKSPACE=$(cd "$(dirname "$0")";pwd)
 
-WORKSPACE="$(cd "$(dirname "$0")";pwd)"
-TCL_SCRIPT_DIR="${WORKSPACE}/script"
+# (fixed) iEDA setting
+export CONFIG_DIR=$WORKSPACE/iEDA_config
+export FOUNDRY_DIR=$WORKSPACE/../../foundry/sky130
+export RESULT_DIR=$WORKSPACE/result
+export TCL_SCRIPT_DIR=$WORKSPACE/script
+
+# design files
+export DESIGN_TOP=gcd
+export NETLIST_FILE=$WORKSPACE/result/verilog/gcd.v
+export SDC_FILE=$FOUNDRY_DIR/sdc/gcd.sdc
+export SPEF_FILE=$FOUNDRY_DIR/spef/gcd.spef
+
+# floorplan setting
+## gcd
+export DIE_AREA="0.0    0.0   149.96   150.128"
+export CORE_AREA="9.996 10.08 139.964  140.048"
+
+# system variables
+PATH=$WORKSPACE/../../../bin:$PATH
+
 TCL_SCRIPTS="iFP_script/run_iFP.tcl
 iNO_script/run_iNO_fix_fanout.tcl
 iPL_script/run_iPL.tcl
@@ -25,5 +43,5 @@ DB_script/run_def_to_gds_text.tcl"
 
 for SCRIPT in $TCL_SCRIPTS; do
     echo ">>> $ iEDA -script ${TCL_SCRIPT_DIR}/${SCRIPT}"
-    ./iEDA -script "${TCL_SCRIPT_DIR}/${SCRIPT}"
+    iEDA -script "${TCL_SCRIPT_DIR}/${SCRIPT}"
 done

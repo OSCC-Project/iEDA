@@ -2,4 +2,4 @@
 
 namespace imp {
 
-}
+}  // namespace imp

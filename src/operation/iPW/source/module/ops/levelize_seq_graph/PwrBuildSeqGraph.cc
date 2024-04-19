@@ -22,11 +22,12 @@
  * @date 2023-03-03
  */
 
+#include "PwrBuildSeqGraph.hh"
+
 #include <condition_variable>
 #include <mutex>
 #include <ranges>
 
-#include "PwrBuildSeqGraph.hh"
 #include "ThreadPool/ThreadPool.h"
 #include "ops/dump/PwrDumpSeqGraph.hh"
 
@@ -88,6 +89,10 @@ unsigned PwrBuildSeqGraph::operator()(PwrVertex* the_vertex) {
   auto& src_arcs = the_sta_vertex->get_src_arcs();
   for (auto& src_arc : src_arcs) {
     if (!src_arc->isDelayArc()) {
+      continue;
+    }
+
+    if (src_arc->is_loop_disable()) {
       continue;
     }
 
@@ -177,8 +182,14 @@ unsigned PwrBuildSeqGraph::buildSeqVertexes(PwrGraph* the_graph) {
     auto data_in_pwr_vertexes = find_clk_to_in_vertex(clock_vertex);
     // Find dataout vertexes from clk.
     auto data_out_pwr_vertexes = find_clk_to_out_vertex(clock_vertex);
+    Instance* seq_instance = nullptr;
     // Find the instance of these vertexes.
-    Instance* seq_instance = (*data_out_pwr_vertexes.begin())->getOwnInstance();
+    if (!data_out_pwr_vertexes.empty()) {
+      seq_instance = (*data_out_pwr_vertexes.begin())->getOwnInstance();
+    } else {
+      seq_instance = (*data_in_pwr_vertexes.begin())->getOwnInstance();
+    }
+     
     // New a seq vertex for this instance.
     PwrSeqVertex* seq_vertex = new PwrSeqVertex(
         std::move(data_in_pwr_vertexes), std::move(data_out_pwr_vertexes));
@@ -297,6 +308,8 @@ unsigned PwrBuildSeqGraph::operator()(PwrGraph* the_graph) {
   LOG_INFO << "seq inst num: " << _seq_graph.getSeqVertexNum();
   LOG_INFO << "input port num: " << _seq_graph.getInputPortNum();
   LOG_INFO << "output port num: " << _seq_graph.getOutputPortNum();
+  LOG_INFO << "seq macro num: " << _seq_graph.getMacroSeqVertexNum();
+  LOG_INFO << "seq arc num: " << _seq_graph.getSeqArcNum();
 
   auto [max_fanout, max_fanin] = _seq_graph.getSeqVertexMaxFanoutAndMaxFain();
   LOG_INFO << "seq vertex max fanout: " << max_fanout;
