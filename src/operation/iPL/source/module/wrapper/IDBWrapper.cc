@@ -333,7 +333,7 @@ void IDBWrapper::wrapCells(IdbLayout* idb_layout)
     }
 
     // lable io cell from idb.
-    if(idb_cell->is_pad()){    
+    if(idb_cell->is_pad() || idb_cell->is_endcap()){    
       cell_ptr->set_type(CELL_TYPE::kIOCell);
     }
 
@@ -522,7 +522,7 @@ void IDBWrapper::wrapIdbInstance(IdbInstance* idb_inst)
   // TODO : where is clock buffer?
   if (idb_inst->get_cell_master()->is_block()) {
     cell_ptr->set_type(CELL_TYPE::kMacro);
-  } else if (idb_inst->is_io_instance() || inst_ptr->isOutsideInstance()) {
+  } else if (inst_ptr->isOutsideInstance()) {
     cell_ptr->set_type(CELL_TYPE::kIOCell);
   } else if (idb_inst->is_flip_flop()) {
     cell_ptr->set_type(CELL_TYPE::kFlipflop);
