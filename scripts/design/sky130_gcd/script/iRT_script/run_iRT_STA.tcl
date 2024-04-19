@@ -39,7 +39,7 @@ def_init -path $::env(RESULT_DIR)/iRT_result.def
 
 init_rt -temp_directory_path "$::env(RESULT_DIR)/rt/" \
         -bottom_routing_layer "met1" \
-        -top_routing_layer "met5"
+        -top_routing_layer "met4"
 
 # run_rt -flow vr
 run_rt

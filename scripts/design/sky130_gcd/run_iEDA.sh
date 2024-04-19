@@ -9,21 +9,32 @@ export RESULT_DIR=$WORKSPACE/result
 export TCL_SCRIPT_DIR=$WORKSPACE/script
 
 # design files
-export DESIGN_TOP=gcd
-export NETLIST_FILE=$WORKSPACE/result/verilog/gcd.v
-export SDC_FILE=$FOUNDRY_DIR/sdc/gcd.sdc
-export SPEF_FILE=$FOUNDRY_DIR/spef/gcd.spef
+export DESIGN_TOP=picorv32a
+export NETLIST_FILE=$WORKSPACE/result/verilog/picorv32a.v
+export SDC_FILE=$WORKSPACE/result/verilog/picorv32a.sdc
 
 # floorplan setting
-## gcd
-export DIE_AREA="0.0    0.0   149.96   150.128"
-export CORE_AREA="9.996 10.08 139.964  140.048"
+export DIE_AREA="0.0 0.0 1120 1020.8"
+export CORE_AREA="10 12 1110 1011.2"
+
+# # design files
+# export DESIGN_TOP=gcd
+# export NETLIST_FILE=$WORKSPACE/result/verilog/gcd.v
+# export SDC_FILE=$FOUNDRY_DIR/sdc/gcd.sdc
+# export SPEF_FILE=$FOUNDRY_DIR/spef/gcd.spef
+
+# # floorplan setting
+# ## gcd
+# export DIE_AREA="0.0    0.0   149.96   150.128"
+# export CORE_AREA="9.996 10.08 139.964  140.048"
 
 # system variables
 PATH=$WORKSPACE/../../../bin:$PATH
 
-TCL_SCRIPTS="iFP_script/run_iFP.tcl
-iNO_script/run_iNO_fix_fanout.tcl
+iEDA -script "${TCL_SCRIPT_DIR}/iFP_script/run_iFP.tcl"
+sed -i 's/\( [^+ ]*\) + NET  +/\1 + NET\1 +/' ${RESULT_DIR}/iFP_result.def
+
+TCL_SCRIPTS="iNO_script/run_iNO_fix_fanout.tcl
 iPL_script/run_iPL.tcl
 iPL_script/run_iPL_eval.tcl
 iCTS_script/run_iCTS.tcl
