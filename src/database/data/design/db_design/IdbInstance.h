@@ -174,6 +174,8 @@ class IdbInstanceList
 
   // getter
   vector<IdbInstance*>& get_instance_list() { return _instance_list; }
+  vector<IdbInstance*> get_iopad_list(std::vector<std::string> master_list = std::vector<std::string>{});
+  vector<IdbInstance*> get_corner_list(std::vector<std::string> master_list = std::vector<std::string>{});
   int32_t get_num(IdbInstanceType type = IdbInstanceType::kMax);
   int32_t get_num_by_master_type(CellMasterType type = CellMasterType::kMax);
   int32_t get_num_by_master_type_range(CellMasterType type_begin = CellMasterType::kNone, CellMasterType type_end = CellMasterType::kMax);
@@ -201,6 +203,7 @@ class IdbInstanceList
 
   IdbInstance* find_instance(string name);
   IdbInstance* find_instance(size_t index);
+  vector<IdbInstance*> find_instance_by_master(string master_name);
   bool has_io_cell()
   {
     for (IdbInstance* instance : _instance_list) {

@@ -6,6 +6,7 @@
 #include <set>
 
 #include "Block.hh"
+#include "ClusterTimingEvaluator.hh"
 #include "Layout.hh"
 #include "Logger.hpp"
 #include "Net.hh"
@@ -15,303 +16,94 @@
 
 namespace imp {
 
-struct HierPlacer
-{
- public:
-  explicit HierPlacer(bool parallel = true) : _parallel(parallel), _root_cluster(nullptr){};
-  explicit HierPlacer(Block& root_cluster) { _root_cluster = &root_cluster; }
+template <typename T>
+std::vector<std::pair<T, T>> generateDifferentTilings(const std::vector<ShapeCurve<T>>& sub_shape_curves, T core_width, T core_height,
+                                                      const std::string& name);
 
+std::vector<std::shared_ptr<imp::Instance>> get_instances(Block& blk);
+std::vector<std::shared_ptr<imp::Instance>> get_macros(Block& blk);
+
+template <typename T>
+struct SAHierPlacer
+{
+  ~SAHierPlacer() {}
   void operator()(Block& root_cluster)
   {
+    // initialize
+    if (init_cluster == true) {
+      initialize(root_cluster);
+    }
+
+    // sta & add-virtual-net
+    std::unordered_map<idb::IdbNet*, std::map<std::string, double>> net_lengths;
+    // createDataflow(root_cluster, 2);
+    auto negative_slack_paths = timing_evaluator.getNegativeSlackPaths(net_lengths, 1.0);
+    addVirtualNet(root_cluster, negative_slack_paths);
+
+    // Hier-place
     auto place_op = [this](Block& blk) -> void {
       if (!blk.isFixed()) {
         this->place(blk);
       }
     };
-    if (_parallel) {
-      get_root_cluster().parallel_preorder_op(place_op);
-    } else {
-      get_root_cluster().preorder_op(place_op);
-    }
-  }
-  ~HierPlacer() = default;
-
-  //  protected:
-  bool _parallel;
-
-  // virtual void initialize(){};         // do some initilaize operations
-  virtual void place(Block& blk) = 0;  // place a given cluster
-  Block& get_root_cluster() { return *_root_cluster; }
-  const Block& get_root_cluster() const { return *_root_cluster; }
-
-  //  private:
-  Block* _root_cluster;
-};
-
-template <typename T>
-struct SAHierPlacer : public HierPlacer
-{
- public:
-  explicit SAHierPlacer(Block& root_cluster, float macro_halo_micron = 2.0, float dead_space_ratio = 0.5, float weight_wl = 1.0,
-                        float weight_ol = 0.05, float weight_ob = 0.0, float weight_periphery = 0.05, float weight_fence = 0.05,
-                        float weight_io = 0.05, float max_iters = 500, double cool_rate = 0.97, double init_temperature = 1000.0,
-                        int seed = 0, SeqPair<NodeShape<T>> init_top_level_sp = SeqPair<NodeShape<T>>(), bool init_cluster = true)
-      : HierPlacer(root_cluster),
-        _macro_halo_micron(macro_halo_micron),
-        _dead_space_ratio(dead_space_ratio),
-        _weight_wl(weight_wl),
-        _weight_ol(weight_ol),
-        _weight_ob(weight_ob),
-        _weight_periphery(weight_periphery),
-        _weight_blk(weight_fence),
-        _weight_io(weight_io),
-        _max_iters(max_iters),
-        _cool_rate(cool_rate),
-        _init_temperature(init_temperature),
-        _init_top_level_sp(init_top_level_sp),
-        _init_cluster(init_cluster),
-        _seed(seed)
-  {
-    if (init_cluster == true) {
-      initialize();
-    }
-  }
-  ~SAHierPlacer() = default;
-
-  const SeqPair<NodeShape<T>>& get_sp_solution() const { return _solution_top_level_sp; }
-
-  void initialize()
-  {
-    _dbu = get_root_cluster().netlist().property()->get_database_unit();
-    _macro_halo = _dbu * _macro_halo_micron;
-    if (_init_cluster) {
-      std::cout << "init cluster area && coarse shaping..." << std::endl;
-      init_cell_area(_macro_halo);                 // init stdcell-area && macro-area
-      coarse_shaping(generate_different_tilings);  // init discrete-shapes bottom-up (coarse-shaping, only considers macros)
-    }
+    root_cluster.parallel_preorder_op(place_op);
   }
 
-  void place(Block& blk) override
-  {
-    if (blk.netlist().vSize() == 0 || blk.isFixed() || blk.is_stdcell_cluster() || blk.is_io_cluster()) {
-      return;  // only place cluster with macros..
-    }
+  // settings
+  float macro_halo_micron = 3.0;
+  float dead_space_ratio = 0.7;
+  float weight_wl = 1.0;
+  float weight_ol = 0.05;
+  float weight_ob = 0.01;
+  float weight_periphery = 0.01;
+  float weight_blk = 0.02;
+  float weight_io = 0.0;
+  size_t max_iters = 1000;
+  double cool_rate = 0.97;
+  double init_temperature = 1000;
+  double prob_ps = 0.2;
+  double prob_ns = 0.2;
+  double prob_ds = 0.2;
+  double prob_pi = 0.2;
+  double prob_ni = 0.2;
+  double prob_rs = 0.2;
+  float virtual_net_weight = 0.5;
+  int seed = 0;
 
-    // only one children nodes, place it at min_corner of parent cluster
-    if (blk.netlist().vSize() == 1) {
-      auto sub_obj = blk.netlist().vertex_at(0).property();
-      if (sub_obj->isBlock()) {
-        sub_obj->set_min_corner(blk.get_min_corner());
-      } else {
-        // place Instance's halo_min_corner at min_corner of parent cluster
-        std::static_pointer_cast<Instance, Object>(sub_obj)->set_halo_min_corner(blk.get_min_corner());
-      }
-    }
+  // data
+  T macro_halo;
+  double dbu;
+  bool init_cluster = true;
+  SeqPair<NodeShape<T>> solution_top_level_sp;
+  SeqPair<NodeShape<T>> init_top_level_sp = SeqPair<NodeShape<T>>();
+  Block* root = nullptr;
 
-    else {
-      if (_init_cluster) {
-        std::cout << "add children shapes" << std::endl;
-        clipChildrenShapes(blk);                         // clip discrete-shapes larger than parent-clusters bounding-box
-        addChildrenStdcellArea(blk, _dead_space_ratio);  // add stdcell area
-      }
-      INFO("start placing cluster ", blk.get_name(), ", node_num: ", blk.netlist().vSize());
-      // auto th = std::thread(SAPlace<T>(_weight_wl, _weight_ol, _weight_ob, _weight_periphery, _max_iters, _cool_rate, _init_temperature),
-      //                       std::ref(blk));
-      // th.join();
-      if (blk.isRoot()) {
-        std::cout << "hierplacer set solution_sp" << std::endl;
-        SAPlace<T> placer{._seed = _seed,
-                          ._weight_wl = _weight_wl,
-                          ._weight_ol = _weight_ol,
-                          ._weight_ob = _weight_ob,
-                          ._weight_periphery = _weight_periphery,
-                          ._weight_blk = _weight_blk,
-                          ._weight_io = _weight_io,
-                          ._max_iters = _max_iters,
-                          ._cool_rate = _cool_rate,
-                          ._init_temperature = _init_temperature,
-                          ._prob_ps_op = _prob_ps,
-                          ._prob_ns_op = _prob_ns,
-                          ._prob_ds_op = _prob_ds,
-                          ._prob_pi_op = _prob_pi,
-                          ._prob_ni_op = _prob_ni,
-                          ._prob_rs_op = _prob_rs};
+  // sta
+  ClusterTimingEvaluator timing_evaluator;
+  std::unordered_map<std::string, idb::IdbPin*> ista_pin_name2idb_pin;
+  std::unordered_map<std::string, idb::IdbPin*> idb_name2pin;
+  std::unordered_map<std::string, size_t> inst2cluster;  // top-level cluster
+  std::unordered_map<std::string, std::shared_ptr<Instance>> name2inst;
 
-        _solution_top_level_sp = placer(blk);
-      } else {
-        SAPlace<T> placer{._seed = _seed,
-                          ._weight_wl = _weight_wl,
-                          ._weight_ol = _weight_ol,
-                          ._weight_ob = _weight_ob,
-                          ._weight_periphery = _weight_periphery,
-                          ._weight_blk = _weight_blk,
-                          ._weight_io = _weight_io,
-                          ._max_iters = _max_iters,
-                          ._cool_rate = _cool_rate,
-                          ._init_temperature = _init_temperature,
-                          ._prob_ps_op = _prob_ps,
-                          ._prob_ns_op = _prob_ns,
-                          ._prob_ds_op = _prob_ds,
-                          ._prob_pi_op = _prob_pi,
-                          ._prob_ni_op = _prob_ni,
-                          ._prob_rs_op = _prob_rs,
-                          ._init_sp = _init_top_level_sp};
-        placer(blk);
-      }
-    }
-  }
-
- public:
-  bool _init_cluster = true;
-  float _macro_halo_micron = 3.0;
-  float _dead_space_ratio = 0.7;
-
-  int _seed = 0;
-  float _weight_wl = 1.0;
-  float _weight_ol = 0.05;
-  float _weight_ob = 0.01;
-  float _weight_periphery = 0.01;
-  float _weight_blk = 0.02;
-  float _weight_io = 0.0;
-  size_t _max_iters = 1000;
-  double _cool_rate = 0.97;
-  double _init_temperature = 1000;
-
-  double _prob_ps = 0.2;
-  double _prob_ns = 0.2;
-  double _prob_ds = 0.2;
-  double _prob_pi = 0.2;
-  double _prob_ni = 0.2;
-  double _prob_rs = 0.2;
-  T _macro_halo;
-  double _dbu;
-
-  //  private:
-  SeqPair<NodeShape<T>> _solution_top_level_sp;
-  SeqPair<NodeShape<T>> _init_top_level_sp;
-
-  void init_cell_area(T macro_halo)
-  {
-    auto area_op = [macro_halo](imp::Block& obj) -> void {
-      obj.set_macro_area(0.);
-      obj.set_stdcell_area(0.);
-
-      size_t macro_num = 0;
-      float macro_area = 0, stdcell_area = 0, io_area = 0;
-      for (auto&& i : obj.netlist().vRange()) {
-        auto sub_obj = i.property();
-        if (sub_obj->isInstance()) {  // add direct instance child area
-          auto sub_inst = std::static_pointer_cast<Instance, Object>(sub_obj);
-          if (sub_inst->get_cell_master().isMacro()) {
-            macro_num++;
-            macro_area += sub_inst->get_area();
-            // add halo for macros
-            sub_inst->set_extend_left(macro_halo);
-            sub_inst->set_extend_right(macro_halo);
-            sub_inst->set_extend_bottom(macro_halo);
-            sub_inst->set_extend_top(macro_halo);
-          } else if (sub_inst->get_cell_master().isIOCell()) {
-            io_area += 1;  // assume io-cluster has area 1
-          } else {
-            stdcell_area += sub_inst->get_area();
-          }
-        } else {  // add block children's instance area
-          auto sub_block = std::static_pointer_cast<Block, Object>(sub_obj);
-          macro_num += sub_block->get_macro_num();
-          macro_area += sub_block->get_macro_area();
-          stdcell_area += sub_block->get_stdcell_area();
-          io_area += sub_block->get_io_area();
-        }
-      }
-      obj.set_macro_num(macro_num);
-      obj.set_macro_area(macro_area);
-      obj.set_stdcell_area(stdcell_area);
-      obj.set_io_area(io_area);
-
-      // set io-cluster's location and fix it.
-      if (obj.is_io_cluster()) {
-        float mean_x = 0, mean_y = 0;
-        for (auto&& i : obj.netlist().vRange()) {
-          auto min_corner = i.property()->get_min_corner();
-          mean_x += min_corner.x();
-          mean_y += min_corner.y();
-        }
-        mean_x /= obj.netlist().vSize();
-        mean_y /= obj.netlist().vSize();
-        obj.set_min_corner(mean_x, mean_y);
-        obj.set_shape_curve(geo::make_box(0, 0, 0, 0));  // io-cluster 0 area
-        obj.set_fixed();
-      }
-      INFO(obj.get_name(), " macro_area: ", macro_area, " stdcell area: ", stdcell_area, " io_area: ", io_area);
-      return;
-    };
-    get_root_cluster().postorder_op(area_op);
-    INFO("total macro area: ", get_root_cluster().get_macro_area());
-    INFO("total stdcell area: ", get_root_cluster().get_stdcell_area());
-  }
-
-  static std::vector<std::pair<T, T>> generate_different_tilings(const std::vector<ShapeCurve<T>>& sub_shape_curves, T core_width,
-                                                                 T core_height, const std::string& name)
-  {
-    if (sub_shape_curves.empty()) {
-      throw std::runtime_error("no shapes to place!");
-    }
-    if (sub_shape_curves.size() == 1) {
-      // maybe only one child macro-cluster, return it's possbile-discrete-shapes
-      INFO("only one shapes here! ");
-      return sub_shape_curves[0].get_discrete_shapes();
-    }
-
-    size_t num_runs = 10;
-    // auto [core_width, core_height] = get_core_size();
-    std::vector<T> outline_width_list;
-    std::vector<T> outline_height_list;
-    float width_unit = float(core_width) / num_runs;
-    float height_unit = float(core_height) / num_runs;
-    for (size_t i = 1; i <= num_runs; ++i) {
-      outline_width_list.emplace_back(core_width);
-      outline_height_list.emplace_back(width_unit * i);  // vary outline-height
-      outline_height_list.emplace_back(core_height);
-      outline_width_list.emplace_back(height_unit * i);  // vary outline-width
-    }
-
-    std::vector<std::thread> threads;
-    threads.reserve(outline_width_list.size());
-    std::vector<std::promise<std::pair<T, T>>> promises(outline_width_list.size());
-    std::vector<std::future<std::pair<T, T>>> futures;
-    for (size_t i = 0; i < outline_width_list.size(); ++i) {
-      futures.push_back(promises[i].get_future());
-      // t.detach();
-      threads.emplace_back([&promises, &sub_shape_curves, &outline_width_list, &outline_height_list, name, i] {
-        std::pair<T, T> shape
-            = calMacroTilings<T>(sub_shape_curves, outline_width_list[i], outline_height_list[i], name + "_run" + std::to_string(i));
-        promises[i].set_value(shape);
-      });
-    }
-    for (auto& t : threads) {
-      t.join();
-    }
-    std::set<std::pair<T, T>> tilings_set;  // remove same tilings
-    for (auto&& future : futures) {
-      tilings_set.insert(future.get());
-    }
-    std::vector<std::pair<T, T>> tilings;
-    tilings.reserve(tilings_set.size());
-    for (auto& shape : tilings_set) {
-      tilings.push_back(shape);
-    }
-
-    INFO("child cluster num: ", sub_shape_curves.size(), ", generated tilings num: ", tilings.size());
-    return tilings;
-  }
+  // functions
+  void initialize(Block& root_cluster);
+  void place(Block& blk);
+  void init_cell_area(Block& root_cluster, T macro_halo);
+  void initTimingEvaluator();
+  void initIstaPinNameMap();
+  void initInstanceInfo();
+  void addVirtualNet(Block& root_cluster, std::vector<std::tuple<std::string, std::string, double>> negative_slack_paths);
+  void createDataflow(Block& root_cluster, size_t max_hop);
+  std::set<std::string> get_boundary_instances(Block& root_cluster);
+  std::string fullPinName(idb::IdbPin* idb_pin);
+  const SeqPair<NodeShape<T>>& get_sp_solution() const { return solution_top_level_sp; }
 
   template <typename getPackingShapes>
-  std::enable_if_t<std::is_invocable_v<getPackingShapes, std::vector<ShapeCurve<T>>, T, T, std::string>, void> coarse_shaping(
-      getPackingShapes get_packing_shapes)
-  // void coarse_shaping(std::function<std::vector<std::pair<T, T>>(std::vector<ShapeCurve<T>>&, T, T, const std::string&)>
-  // get_packing_shapes)
+  std::enable_if_t<std::is_invocable_v<getPackingShapes, std::vector<ShapeCurve<T>>, T, T, std::string>, void> coarseShaping(
+      Block& root_cluster, getPackingShapes get_packing_shapes)
   {
     // calculate cluster's discrete shapes based on children's discrete shapes recursively, only called on root node
+
     auto [core_width, core_height] = get_core_size();
     auto coarse_shape_op = [get_packing_shapes, core_width, core_height](imp::Block& blk) -> void {
       // calculate current node's discrete_shape_curve based on children node's discrete shapes, only concerns macros
@@ -322,7 +114,6 @@ struct SAHierPlacer : public HierPlacer
       }
       if (blk.netlist().vSize() == 1) {  // single macro cluster, set its shape as child-shape
         auto macro = std::static_pointer_cast<Instance, Object>(blk.netlist().vertex_at(0).property());
-        // blk.set_shape_curve({{macro->get_width(), macro->get_height()}}, 0, true);
         blk.set_shape_curve({{macro->get_halo_width(), macro->get_halo_height()}}, 0, true);  // use halo width & height
         return;
       }
@@ -355,94 +146,554 @@ struct SAHierPlacer : public HierPlacer
       INFO(blk.get_name(), " clipped shape width: ", blk.get_shape_curve().get_width(), " height: ", blk.get_shape_curve().get_height(),
            " shape_curve_size: ", blk.get_shape_curve().get_width_list().size(), " area: ", blk.get_shape_curve().get_area());
     };
-    get_root_cluster().postorder_op(coarse_shape_op);
-  }
-
-  static void clipChildrenShapes(Block& blk)
-  {
-    // remove child cluster's shapes larger than current-node's bounding-box,
-    auto bound_width = blk.get_shape_curve().get_width();
-    auto bound_height = blk.get_shape_curve().get_height();
-    for (auto&& i : blk.netlist().vRange()) {
-      auto sub_obj = i.property();
-      if (sub_obj->isInstance()) {  // instance not supported..
-        throw std::runtime_error("try to clip instance");
-      }
-
-      // only clip clusters with macros
-      auto sub_block = std::static_pointer_cast<Block, Object>(sub_obj);
-      if (!(sub_block->is_macro_cluster() || sub_block->is_mixed_cluster())) {
-        continue;
-      }
-      auto clipped_shape_curve = sub_block->get_shape_curve();
-      clipped_shape_curve.clip(bound_width, bound_height);
-      sub_block->set_shape_curve(clipped_shape_curve);
-    }
-  }
-
-  static void addChildrenStdcellArea(Block& blk, float dead_space_ratio)
-  {
-    float bound_area = blk.get_shape_curve().get_area();
-    float mixed_cluster_stdcell_area = 0;
-    float stdcell_cluster_area = 0;
-    float macro_area = 0;
-
-    for (auto&& i : blk.netlist().vRange()) {
-      auto sub_obj = i.property();
-      if (sub_obj->isInstance()) {  // 目前不考虑中间层有单独stdcell情况
-        throw std::runtime_error("Instance in cluster hierarchy");
-      }
-
-      auto sub_block = std::static_pointer_cast<Block, Object>(sub_obj);
-      if (sub_block->is_macro_cluster()) {
-        macro_area += sub_block->get_shape_curve().get_area();  // shape-curve has only macro area now..
-      } else if (sub_block->is_mixed_cluster()) {
-        macro_area += sub_block->get_shape_curve().get_area();  // shape-curve has only macro area now..
-        mixed_cluster_stdcell_area += sub_block->get_stdcell_area();
-      } else if (sub_block->is_stdcell_cluster()) {
-        stdcell_cluster_area += sub_block->get_stdcell_area();
-      }
-    }
-
-    // 假设每一层级，剩余空间的一半用来膨胀单元，一半用来留空。(先用mixed-cluster和 stdcell-cluster相同膨胀率)
-    // 考虑mixed-cluster需要后续布局，让它膨胀率为stdcell 2倍吧)
-    float area_left = bound_area - macro_area - stdcell_cluster_area - mixed_cluster_stdcell_area;
-    if (area_left < 0) {
-      INFO("------- fine-shaping cluster ", blk.get_name(), "--------");
-      INFO("bound_area: ", bound_area);
-      INFO("macro_cluster_area: ", macro_area);
-      INFO("real macro area: ", blk.get_macro_area());
-      INFO("stdcell_cluster_area: ", stdcell_cluster_area);
-      INFO("mixed_cluster_stdcell_area: ", mixed_cluster_stdcell_area);
-      INFO("area left: ", area_left);
-      throw std::runtime_error("Error: Not enough area left...");
-    }
-    float inflate_area_for_stdcell = area_left * (1 - dead_space_ratio);
-    float stdcell_inflate_ratio = inflate_area_for_stdcell / (2 * mixed_cluster_stdcell_area + stdcell_cluster_area);
-    float mixed_cluster_stdcell_inflate_ratio = 2 * stdcell_inflate_ratio;
-
-    for (auto&& i : blk.netlist().vRange()) {
-      auto sub_obj = i.property();
-      // add stdcell area to discrete-shape-curve
-      if (sub_obj->isInstance()) {  // 目前不考虑中间层有instance
-        throw std::runtime_error("Instance in cluster hierarchy");
-      }
-      auto sub_block = std::static_pointer_cast<Block, Object>(sub_obj);
-      if (sub_block->is_mixed_cluster()) {
-        auto new_shape_curve = sub_block->get_shape_curve();
-        new_shape_curve.add_continous_area((1 + mixed_cluster_stdcell_inflate_ratio) * sub_block->get_stdcell_area());
-        sub_block->set_shape_curve(new_shape_curve);
-      } else if (sub_block->is_stdcell_cluster()) {
-        sub_block->set_shape_curve(std::vector<std::pair<T, T>>(), (1 + stdcell_inflate_ratio) * sub_block->get_stdcell_area());
-      }
-    }
+    root_cluster.postorder_op(coarse_shape_op);
   }
 
   std::pair<T, T> get_core_size() const
   {
-    return std::make_pair(get_root_cluster().get_shape_curve().get_width(), get_root_cluster().get_shape_curve().get_height());
+    return std::make_pair(root->get_shape_curve().get_width(), root->get_shape_curve().get_height());
   }
 };
+
+template <typename T>
+std::vector<std::pair<T, T>> generateDifferentTilings(const std::vector<ShapeCurve<T>>& sub_shape_curves, T core_width, T core_height,
+                                                      const std::string& name);
+template <typename T>
+void SAHierPlacer<T>::initialize(Block& root_cluster)
+{
+  root = &root_cluster;
+  dbu = root_cluster.netlist().property()->get_database_unit();
+  macro_halo = dbu * macro_halo_micron;
+
+  // init shape-curve
+  std::cout << "init cluster area && coarse shaping..." << std::endl;
+  init_cell_area(root_cluster, macro_halo);                  // init stdcell-area && macro-area
+  coarseShaping(root_cluster, generateDifferentTilings<T>);  // init discrete-shapes bottom-up (coarse-shaping, only considers macros)
+
+  // init timing-engine;
+  initTimingEvaluator();
+}
+
+template <typename T>
+void SAHierPlacer<T>::initTimingEvaluator()
+{
+  timing_evaluator.initTimingEngine();
+  initInstanceInfo();
+  initIstaPinNameMap();
+}
+
+template <typename T>
+void SAHierPlacer<T>::place(Block& blk)
+{
+  void clipChildrenShapes(Block & blk);
+  void addChildrenStdcellArea(Block & blk, float dead_space_ratio);
+
+  if (blk.netlist().vSize() == 0 || blk.isFixed() || blk.is_stdcell_cluster() || blk.is_io_cluster()) {
+    return;  // only place cluster with macros..
+  }
+
+  // only one children nodes, place it at min_corner of parent cluster
+  if (blk.netlist().vSize() == 1) {
+    auto sub_obj = blk.netlist().vertex_at(0).property();
+    if (sub_obj->isBlock()) {
+      sub_obj->set_min_corner(blk.get_min_corner());
+    } else {
+      // place Instance's halo_min_corner at min_corner of parent cluster
+      std::static_pointer_cast<Instance, Object>(sub_obj)->set_halo_min_corner(blk.get_min_corner());
+    }
+  }
+
+  else {
+    if (init_cluster) {
+      std::cout << "add children shapes" << std::endl;
+      clipChildrenShapes(blk);                        // clip discrete-shapes larger than parent-clusters bounding-box
+      addChildrenStdcellArea(blk, dead_space_ratio);  // add stdcell area
+    }
+    // INFO("start placing cluster ", blk.get_name(), ", node_num: ", blk.netlist().vSize());
+    // auto th = std::thread(SAPlace<T>(_weight_wl, _weight_ol, _weight_ob, _weight_periphery, _max_iters, _cool_rate, _init_temperature),
+    //                       std::ref(blk));
+    // th.join();
+    if (blk.isRoot()) {
+      SAPlace<T> placer{.seed = seed,
+                        .weight_wl = weight_wl,
+                        .weight_ol = weight_ol,
+                        .weight_ob = weight_ob,
+                        .weight_periphery = weight_periphery,
+                        .weight_blk = weight_blk,
+                        .weight_io = weight_io,
+                        .max_iters = max_iters,
+                        .cool_rate = cool_rate,
+                        .init_temperature = init_temperature,
+                        .prob_ps_op = prob_ps,
+                        .prob_ns_op = prob_ns,
+                        .prob_ds_op = prob_ds,
+                        .prob_pi_op = prob_pi,
+                        .prob_ni_op = prob_ni,
+                        .prob_rs_op = prob_rs};
+
+      solution_top_level_sp = placer(blk);
+    } else {
+      SAPlace<T> placer{.seed = seed,
+                        .weight_wl = weight_wl,
+                        .weight_ol = weight_ol,
+                        .weight_ob = weight_ob,
+                        .weight_periphery = weight_periphery,
+                        .weight_blk = weight_blk,
+                        .weight_io = weight_io,
+                        .max_iters = max_iters,
+                        .cool_rate = cool_rate,
+                        .init_temperature = init_temperature,
+                        .prob_ps_op = prob_ps,
+                        .prob_ns_op = prob_ns,
+                        .prob_ds_op = prob_ds,
+                        .prob_pi_op = prob_pi,
+                        .prob_ni_op = prob_ni,
+                        .prob_rs_op = prob_rs,
+                        .init_represent = init_top_level_sp};
+      auto not_used_sp = placer(blk);
+    }
+  }
+}
+
+template <typename T>
+void SAHierPlacer<T>::init_cell_area(Block& root_cluster, T macro_halo)
+{
+  auto area_op = [macro_halo](imp::Block& obj) -> void {
+    obj.set_macro_area(0.);
+    obj.set_stdcell_area(0.);
+
+    size_t macro_num = 0;
+    float macro_area = 0, stdcell_area = 0, io_area = 0;
+    for (auto&& i : obj.netlist().vRange()) {
+      auto sub_obj = i.property();
+      if (sub_obj->isInstance()) {  // add direct instance child area
+        auto sub_inst = std::static_pointer_cast<Instance, Object>(sub_obj);
+        if (sub_inst->get_cell_master().isMacro()) {
+          macro_num++;
+          macro_area += sub_inst->get_area();
+          // add halo for macros
+          sub_inst->set_extend_left(macro_halo);
+          sub_inst->set_extend_right(macro_halo);
+          sub_inst->set_extend_bottom(macro_halo);
+          sub_inst->set_extend_top(macro_halo);
+        } else if (sub_inst->get_cell_master().isIOCell()) {
+          io_area += 1;  // assume io-cluster has area 1
+        } else {
+          stdcell_area += sub_inst->get_area();
+        }
+      } else {  // add block children's instance area
+        auto sub_block = std::static_pointer_cast<Block, Object>(sub_obj);
+        macro_num += sub_block->get_macro_num();
+        macro_area += sub_block->get_macro_area();
+        stdcell_area += sub_block->get_stdcell_area();
+        io_area += sub_block->get_io_area();
+      }
+    }
+    obj.set_macro_num(macro_num);
+    obj.set_macro_area(macro_area);
+    obj.set_stdcell_area(stdcell_area);
+    obj.set_io_area(io_area);
+
+    // set io-cluster's location and fix it.
+    if (obj.is_io_cluster()) {
+      float mean_x = 0, mean_y = 0;
+      for (auto&& i : obj.netlist().vRange()) {
+        auto min_corner = i.property()->get_min_corner();
+        mean_x += min_corner.x();
+        mean_y += min_corner.y();
+      }
+      mean_x /= obj.netlist().vSize();
+      mean_y /= obj.netlist().vSize();
+      obj.set_min_corner(mean_x, mean_y);
+      obj.set_shape_curve(geo::make_box(0, 0, 0, 0));  // io-cluster 0 area
+      obj.set_fixed();
+    }
+    // INFO(obj.get_name(), " macro_area: ", macro_area, " stdcell area: ", stdcell_area, " io_area: ", io_area);
+    return;
+  };
+  root_cluster.postorder_op(area_op);
+  // INFO("total macro area: ", get_root_cluster().get_macro_area());
+  // INFO("total stdcell area: ", get_root_cluster().get_stdcell_area());
+}
+
+template <typename T>
+void SAHierPlacer<T>::initIstaPinNameMap()
+{
+  // init idb_pin_name_map
+  ista_pin_name2idb_pin.clear();
+  for (idb::IdbNet* idb_net : dmInst->get_idb_design()->get_net_list()->get_net_list()) {
+    for (auto pin : idb_net->get_instance_pin_list()->get_pin_list()) {
+      idb_name2pin[pin->get_pin_name()] = pin;
+      std::string pin_name = fullPinName(pin);
+      std::string pin_name_trim_slash = Str::trimBackslash(pin_name);
+      ista_pin_name2idb_pin[pin_name_trim_slash] = pin;
+    }
+    if (idb_net->has_io_pins()) {
+      for (auto pin : idb_net->get_io_pins()->get_pin_list()) {
+        idb_name2pin[pin->get_pin_name()] = pin;
+        std::string pin_name = fullPinName(pin);
+        std::string pin_name_trim_slash = Str::trimBackslash(pin_name);
+        ista_pin_name2idb_pin[pin_name_trim_slash] = pin;
+      }
+    }
+  }
+}
+
+template <typename T>
+void SAHierPlacer<T>::addVirtualNet(Block& root_cluster, std::vector<std::tuple<std::string, std::string, double>> negative_slack_paths)
+{
+  size_t valid_paths = 0;
+  size_t pin_not_found = 0;
+  size_t inst_not_found = 0;
+  size_t small_weight = 0;
+  size_t same_cluster = 0;
+  std::vector<double> initial_slacks;
+  std::vector<double> smooth_weights;
+  std::map<std::pair<size_t, size_t>, double> total_slack_between_cluster;
+  float total_outlier_slack = 0;
+  size_t outlier_slack_num = 0;
+  double min_slack = -2.0;
+  double max_slack = 0.1;
+  double max_weight = 2.0;
+  double min_weight = 0.05;
+  for (size_t i = 0; i < negative_slack_paths.size(); ++i) {
+    auto [start_pin_name, end_pin_name, slack] = negative_slack_paths[i];
+    // std::cout << "oslack: " << slack << ", ";
+    if (slack < -5) {
+      ++outlier_slack_num;
+      total_outlier_slack += outlier_slack_num;
+      // continue;  // some wrong paths ?
+    }
+    if (slack > max_slack) {
+      continue;
+    } else if (slack < min_slack) {
+      slack = min_slack;
+    }
+
+    std::replace(start_pin_name.begin(), start_pin_name.end(), ':', '/');
+    std::replace(end_pin_name.begin(), end_pin_name.end(), ':', '/');
+    if (ista_pin_name2idb_pin.find(start_pin_name) == ista_pin_name2idb_pin.end()
+        || ista_pin_name2idb_pin.find(end_pin_name) == ista_pin_name2idb_pin.end()) {
+      std::cout << "sta-pin not found..." << std::endl;
+      std::cout << "start_pin: " << start_pin_name << std::endl;
+      std::cout << "end_pin: " << end_pin_name << std::endl;
+      pin_not_found++;
+      continue;
+    }
+    // float net_weight = smooth_weight(slack);
+    // float net_weight = std::min(std::max(pow(-(slack - 0.2), 0.5), min_weight), max_weight);
+    float net_weight = virtual_net_weight * std::min(std::max(pow(-(slack - max_slack), 1.0), min_weight), max_weight);
+    // if (net_weight < _min_net_weight) {
+    //   small_weight++;
+    //   continue;
+    // }
+    size_t start_cluster_id = 0, end_cluster_id = 0;
+    auto start_pin = ista_pin_name2idb_pin.at(start_pin_name);
+    auto end_pin = ista_pin_name2idb_pin.at(end_pin_name);
+    if (start_pin->is_io_pin()) {
+      start_cluster_id = inst2cluster.at(start_pin->get_pin_name());
+    } else if (start_pin->get_instance() != nullptr) {
+      start_cluster_id = inst2cluster.at(start_pin->get_instance()->get_name());
+    } else {
+      inst_not_found++;
+      continue;
+    }
+
+    if (end_pin->is_io_pin()) {
+      end_cluster_id = inst2cluster.at(end_pin->get_pin_name());
+    } else if (end_pin->get_instance() != nullptr) {
+      end_cluster_id = inst2cluster.at(end_pin->get_instance()->get_name());
+    } else {
+      inst_not_found++;
+      continue;
+    }
+
+    if (start_cluster_id == end_cluster_id) {
+      same_cluster++;
+      continue;  // start && end in same cluster
+    }
+
+    if (slack < -5) {
+      std::cout << "wrong path: " << root_cluster.netlist().vertex_at(start_cluster_id).property()->get_name();
+      std::cout << ", " << root_cluster.netlist().vertex_at(end_cluster_id).property()->get_name() << std::endl;
+      continue;
+    }
+
+    initial_slacks.push_back(slack);
+    smooth_weights.push_back(net_weight);
+    total_slack_between_cluster[std::make_pair(start_cluster_id, end_cluster_id)] += net_weight;  // count virtual nets between clusters
+    // std::cout << "start id: " << start_cluster_id << ", end id: " << end_cluster_id << " slack:" << slack << std::endl;
+    // addVirtualNet(root_cluster, start_cluster_id, end_cluster_id, net_weight);
+    valid_paths++;
+  }
+
+  void addVirtualNet(Block & parent_blk, size_t sub_obj_pos1, size_t sub_obj_pos2, float net_weight);
+  for (auto& [k, v] : total_slack_between_cluster) {
+    addVirtualNet(root_cluster, k.first, k.second, v);  //
+  }
+
+  std::vector<std::pair<float, std::pair<size_t, size_t>>> total_slack_between_cluster_sort;
+  for (auto& [k, v] : total_slack_between_cluster) {
+    total_slack_between_cluster_sort.push_back(std::make_pair(v, k));
+  }
+  std::sort(total_slack_between_cluster_sort.begin(), total_slack_between_cluster_sort.end(),
+            [](const std::pair<float, std::pair<size_t, size_t>>& x1, const std::pair<float, std::pair<size_t, size_t>>& x2) -> bool {
+              return x1.first < x2.first;
+            });
+  for (size_t i = 0; i < total_slack_between_cluster_sort.size(); ++i) {
+    std::cout << "begin: " << total_slack_between_cluster_sort[i].second.first
+              << ", end: " << total_slack_between_cluster_sort[i].second.second
+              << ", total_net_weight: " << total_slack_between_cluster_sort[i].first << std::endl;
+    auto begin = std::static_pointer_cast<Block, Object>(
+        root_cluster.netlist().vertex_at(total_slack_between_cluster_sort[i].second.first).property());
+    auto end = std::static_pointer_cast<Block, Object>(
+        root_cluster.netlist().vertex_at(total_slack_between_cluster_sort[i].second.second).property());
+    std::string begin_type, end_type;
+    if (begin->is_io_cluster()) {
+      begin_type = "io";
+    } else if (begin->is_macro_cluster()) {
+      begin_type = "macro";
+    } else {
+      begin_type = "stdcell";
+    }
+    if (end->is_io_cluster()) {
+      end_type = "io";
+    } else if (end->is_macro_cluster()) {
+      end_type = "macro";
+    } else {
+      end_type = "stdcell";
+    }
+    std::cout << "begin: " << begin_type << ", " << begin->get_name() << std::endl;
+    std::cout << "end: " << end_type << ", " << end->get_name() << std::endl;
+  }
+
+  std::cout << "outlier_slack_num: " << outlier_slack_num << std::endl;
+  std::cout << "total_outlier_slack: " << total_outlier_slack << std::endl;
+  std::cout << "pin_not_found: " << pin_not_found << std::endl;
+  std::cout << "inst_not_found: " << inst_not_found << std::endl;
+  std::cout << "small_weight: " << small_weight << std::endl;
+  std::cout << "same_cluster: " << same_cluster << std::endl;
+  std::cout << "add " << valid_paths << " path" << std::endl;
+  std::cout << "add " << total_slack_between_cluster.size() << " virtual nets" << std::endl;
+  for (size_t i = 0; i < initial_slacks.size(); ++i) {
+    std::cout << "slack: " << initial_slacks[i] << ", smooth_weight: " << smooth_weights[i] << ", ";
+  }
+  std::cout << std::endl;
+}
+
+template <typename T>
+void SAHierPlacer<T>::initInstanceInfo()
+{
+  std::vector<std::shared_ptr<imp::Instance>> get_instances(Block&);
+
+  name2inst.clear();
+  inst2cluster.clear();
+  for (size_t v_id = 0; v_id < root->netlist().vSize(); ++v_id) {
+    auto sub_obj = root->netlist().vertex_at(v_id).property();
+    auto sub_blk = std::static_pointer_cast<Block, Object>(sub_obj);
+    std::vector<std::shared_ptr<imp::Instance>> instances = get_instances(*sub_blk);
+    for (auto inst : instances) {
+      // if (inst->get_cell_master().isIOCell()) {
+      //   continue;
+      // }
+      // IO-CELL uses pin-name as instance-name
+      name2inst[inst->get_name()] = inst;
+      inst2cluster[inst->get_name()] = v_id;
+    }
+  }
+}
+template <typename T>
+std::string SAHierPlacer<T>::fullPinName(idb::IdbPin* idb_pin)
+{
+  if (idb_pin->get_instance() != nullptr) {
+    return idb_pin->get_instance()->get_name() + "/" + idb_pin->get_pin_name();
+  } else {
+    return idb_pin->get_pin_name();
+  }
+}
+
+template <typename T>
+void SAHierPlacer<T>::createDataflow(Block& root_cluster, size_t max_hop)
+{
+  std::vector<std::set<std::string>> cluster_instances;
+  // std::vector<std::set<std::string>> cluster_src_instances;
+  std::set<std::string> src_instances;
+
+  std::set<std::string> inst_count;
+  // std::set<std::string> boundary_inst_names = get_boundary_instances(root_cluster);
+  for (size_t i = 0; i < root_cluster.netlist().vSize(); ++i) {
+    std::set<std::string> inst_set;
+    // std::set<std::string> src_inst_set;
+    auto sub_blk = *(std::static_pointer_cast<Block, Object>(root_cluster.netlist().vertex_at(i).property()));
+
+    auto inst_list = get_instances(sub_blk);
+    for (auto&& inst : inst_list) {
+      std::string inst_name = Str::trimBackslash(inst->get_name());
+      if (inst_count.count(inst_name) != 0) {
+        ERROR("Error, same instance in multi-clusters");
+      }
+      inst_set.insert(inst_name);
+      if (inst->get_cell_master().isMacro()) {
+        // src_inst_set.insert(inst_name);
+        src_instances.insert(inst_name);
+      }
+    }
+
+    cluster_instances.push_back(std::move(inst_set));
+  }
+  timing_evaluator.createDataflow(cluster_instances, src_instances, max_hop);
+}
+
+// template <typename T>
+// std::set<std::string> SAHierPlacer<T>::get_boundary_instances(Block& root_cluster)
+// {
+//   std::set<std::string> boundary_inst_names;
+//   auto& net2idb = ParserInst()->get_net2idb();
+//   for (auto&& he : root_cluster.netlist().heRange()) {
+//     auto idb_net = net2idb.at(he.property());
+//     for (auto inst : idb_net->get_instance_list()->get_instance_list()) {
+//       boundary_inst_names.insert(Str::trimBackslash(inst->get_name()));
+//     }
+//   }
+//   return boundary_inst_names;
+// }
+
+template <typename T>
+std::vector<std::pair<T, T>> generateDifferentTilings(const std::vector<ShapeCurve<T>>& sub_shape_curves, T core_width, T core_height,
+                                                      const std::string& name)
+{
+  if (sub_shape_curves.empty()) {
+    throw std::runtime_error("no shapes to place!");
+  }
+  if (sub_shape_curves.size() == 1) {
+    // maybe only one child macro-cluster, return it's possbile-discrete-shapes
+    INFO("only one shapes here! ");
+    return sub_shape_curves[0].get_discrete_shapes();
+  }
+
+  size_t num_runs = 10;
+  std::vector<T> outline_width_list;
+  std::vector<T> outline_height_list;
+  float width_unit = float(core_width) / num_runs;
+  float height_unit = float(core_height) / num_runs;
+  for (size_t i = 1; i <= num_runs; ++i) {
+    outline_width_list.emplace_back(core_width);
+    outline_height_list.emplace_back(width_unit * i);  // vary outline-height
+    outline_height_list.emplace_back(core_height);
+    outline_width_list.emplace_back(height_unit * i);  // vary outline-width
+  }
+
+  std::vector<std::thread> threads;
+  threads.reserve(outline_width_list.size());
+  std::vector<std::promise<std::pair<T, T>>> promises(outline_width_list.size());
+  std::vector<std::future<std::pair<T, T>>> futures;
+  for (size_t i = 0; i < outline_width_list.size(); ++i) {
+    futures.push_back(promises[i].get_future());
+    // t.detach();
+    threads.emplace_back([&promises, &sub_shape_curves, &outline_width_list, &outline_height_list, name, i] {
+      std::pair<T, T> shape
+          = calMacroTilings<T>(sub_shape_curves, outline_width_list[i], outline_height_list[i], name + "_run" + std::to_string(i));
+      promises[i].set_value(shape);
+    });
+  }
+  for (auto& t : threads) {
+    t.join();
+  }
+  std::set<std::pair<T, T>> tilings_set;  // remove same tilings
+  for (auto&& future : futures) {
+    tilings_set.insert(future.get());
+  }
+  std::vector<std::pair<T, T>> tilings;
+  tilings.reserve(tilings_set.size());
+  for (auto& shape : tilings_set) {
+    tilings.push_back(shape);
+  }
+
+  INFO("child cluster num: ", sub_shape_curves.size(), ", generated tilings num: ", tilings.size());
+  return tilings;
+}
+
+void clipChildrenShapes(Block& blk)
+{
+  // remove child cluster's shapes larger than current-node's bounding-box,
+  auto bound_width = blk.get_shape_curve().get_width();
+  auto bound_height = blk.get_shape_curve().get_height();
+  for (auto&& i : blk.netlist().vRange()) {
+    auto sub_obj = i.property();
+    if (sub_obj->isInstance()) {  // instance not supported..
+      throw std::runtime_error("try to clip instance");
+    }
+
+    // only clip clusters with macros
+    auto sub_block = std::static_pointer_cast<Block, Object>(sub_obj);
+    if (!(sub_block->is_macro_cluster() || sub_block->is_mixed_cluster())) {
+      continue;
+    }
+    auto clipped_shape_curve = sub_block->get_shape_curve();
+    clipped_shape_curve.clip(bound_width, bound_height);
+    sub_block->set_shape_curve(clipped_shape_curve);
+  }
+}
+
+void addChildrenStdcellArea(Block& blk, float dead_space_ratio)
+{
+  float bound_area = blk.get_shape_curve().get_area();
+  float mixed_cluster_stdcell_area = 0;
+  float stdcell_cluster_area = 0;
+  float macro_area = 0;
+
+  for (auto&& i : blk.netlist().vRange()) {
+    auto sub_obj = i.property();
+    if (sub_obj->isInstance()) {  // 目前不考虑中间层有单独stdcell情况
+      throw std::runtime_error("Instance in cluster hierarchy");
+    }
+
+    auto sub_block = std::static_pointer_cast<Block, Object>(sub_obj);
+    if (sub_block->is_macro_cluster()) {
+      macro_area += sub_block->get_shape_curve().get_area();  // shape-curve has only macro area now..
+    } else if (sub_block->is_mixed_cluster()) {
+      macro_area += sub_block->get_shape_curve().get_area();  // shape-curve has only macro area now..
+      mixed_cluster_stdcell_area += sub_block->get_stdcell_area();
+    } else if (sub_block->is_stdcell_cluster()) {
+      stdcell_cluster_area += sub_block->get_stdcell_area();
+    }
+  }
+
+  // 假设每一层级，剩余空间的一半用来膨胀单元，一半用来留空。(先用mixed-cluster和 stdcell-cluster相同膨胀率)
+  // 考虑mixed-cluster需要后续布局，让它膨胀率为stdcell 2倍吧)
+  float area_left = bound_area - macro_area - stdcell_cluster_area - mixed_cluster_stdcell_area;
+  if (area_left < 0) {
+    INFO("------- fine-shaping cluster ", blk.get_name(), "--------");
+    INFO("bound_area: ", bound_area);
+    INFO("macro_cluster_area: ", macro_area);
+    INFO("real macro area: ", blk.get_macro_area());
+    INFO("stdcell_cluster_area: ", stdcell_cluster_area);
+    INFO("mixed_cluster_stdcell_area: ", mixed_cluster_stdcell_area);
+    INFO("area left: ", area_left);
+    throw std::runtime_error("Error: Not enough area left...");
+  }
+  float inflate_area_for_stdcell = area_left * (1 - dead_space_ratio);
+  float stdcell_inflate_ratio = inflate_area_for_stdcell / (2 * mixed_cluster_stdcell_area + stdcell_cluster_area);
+  float mixed_cluster_stdcell_inflate_ratio = 2 * stdcell_inflate_ratio;
+
+  for (auto&& i : blk.netlist().vRange()) {
+    auto sub_obj = i.property();
+    // add stdcell area to discrete-shape-curve
+    if (sub_obj->isInstance()) {  // 目前不考虑中间层有instance
+      throw std::runtime_error("Instance in cluster hierarchy");
+    }
+    auto sub_block = std::static_pointer_cast<Block, Object>(sub_obj);
+    if (sub_block->is_mixed_cluster()) {
+      auto new_shape_curve = sub_block->get_shape_curve();
+      new_shape_curve.add_continous_area((1 + mixed_cluster_stdcell_inflate_ratio) * sub_block->get_stdcell_area());
+      sub_block->set_shape_curve(new_shape_curve);
+    } else if (sub_block->is_stdcell_cluster()) {
+      auto discrete_shapes = std::vector<
+          std::pair<decltype(sub_block->get_shape_curve().get_width()), decltype(sub_block->get_shape_curve().get_width())>>();
+      sub_block->set_shape_curve(discrete_shapes, (1 + stdcell_inflate_ratio) * sub_block->get_stdcell_area());
+    }
+  }
+}
 
 void preorder_out(Block& blk, std::ofstream& out)
 {
@@ -555,6 +806,7 @@ void writePlacementTcl(Block& blk, std::string file_name, int32_t dbu)
         << "fixed"
         << " -name " << macro->get_name() << std::endl;
   }
+  INFO(file_name, " write success");
 }
 
 void preorder_get_instances(Block& blk, std::vector<std::shared_ptr<imp::Instance>>& instances)

@@ -1,0 +1,63 @@
+/**
+ * @file IRRustC.hh
+ * @author simin tao (taosm@pcl.ac.cn)
+ * @brief The C wrapper for iIR Rust.
+ * @version 0.1
+ * @date 2024-04-11
+ */
+#pragma once
+
+#include "RustCommon.hh"
+
+extern "C" {
+
+typedef struct RustMatrix {
+  // val at (row,col)
+  double data;
+  uintptr_t row;
+  uintptr_t col;
+} RustMatrix;
+
+typedef struct RustNetConductanceData {
+  char *net_name;
+  uintptr_t node_num;
+  struct RustVec g_matrix_vec;
+  // for free Rust ir net memory, record the ptr. 
+  const void *ir_net_raw_ptr;
+} RustNetConductanceData;
+
+// iterator for access hash map
+void *create_hashmap_iterator(void *hashmap);
+bool hashmap_iterator_next(void *iterator, uintptr_t *out_key, double *out_value);
+void destroy_hashmap_iterator(void *iterator);
+
+const void *read_spef(const char *c_power_net_spef);
+
+/**
+ * Read instance power csv file.
+ */
+const void *read_inst_pwr_csv(const char *file_path);
+
+struct RustNetConductanceData build_one_net_conductance_matrix_data(
+    const void *c_rc_data, const char *c_net_name);
+
+/**
+ * Build RC matrix and current vector data.
+ */
+struct RustVec build_matrix_from_raw_data(const char *c_inst_power_path,
+                                          const char *c_power_net_spef);
+
+/**
+ * Build one net instance current vector.
+ */
+void *build_one_net_instance_current_vector(const void *c_instance_power_data,
+                                            const void *c_rc_data,
+                                            const char *c_net_name);
+}
+
+namespace iir {
+
+void BuildMatrixFromRawData(const char *c_inst_power_path,
+                            const char *c_power_net_spef);
+
+}

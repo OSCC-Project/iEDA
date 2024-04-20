@@ -163,6 +163,7 @@ IdbSiteProperty::IdbSiteProperty()
 
 IdbSiteClass IdbSiteProperty::get_class_type(string class_name)
 {
+  std::transform(class_name.begin(), class_name.end(), class_name.begin(), ::toupper);
   auto result = std::find_if(_site_class_list.begin(), _site_class_list.end(),
                              [class_name](const auto& iter) { return iter.second == class_name; });
 

@@ -175,7 +175,7 @@ fn extract_range(input: &str) -> Option<(&str, i32, i32)> {
                 let name = &input[..open_bracket];
                 let start = input[open_bracket + 1..colon].parse().ok()?;
                 let end = input[colon + 1..close_bracket].parse().ok()?;
-                return Some((name, start, end));
+                return Some((name.trim_end(), start, end));
             }
         }
     }
@@ -185,9 +185,13 @@ fn extract_range(input: &str) -> Option<(&str, i32, i32)> {
 fn extract_single(input: &str) -> Option<(&str, i32)> {
     if let Some(open_bracket) = input.find('[') {
         if let Some(close_bracket) = input.find(']') {
+            // return None when input likes "cpuregs[19][1]".
+            if input[close_bracket + 1..].contains('[') {
+                return None;
+            }
             let name = &input[..open_bracket];
             let index = input[open_bracket + 1..close_bracket].parse().ok()?;
-            return Some((name, index));
+            return Some((name.trim_end(), index));
         }
     }
     None
@@ -476,7 +480,7 @@ fn process_port_connect(
             net_expr_id_clone,
             range,
         );
-        return Some(port_connect_net);
+        return port_connect_net;
     }
 }
 
@@ -576,10 +580,19 @@ fn flatten_the_module(
             // name(for port), next change the inst name to parent inst name /
             // current inst name.
             let module_inst_stmt = (*stmt).as_any().downcast_ref::<verilog_data::VerilogInst>().unwrap();
+            // if module_inst_stmt.get_cell_name() == "sky130_fd_sc_hs__buf_1"
+            //     && module_inst_stmt.get_inst_name().contains("_113_")
+            // {
+            //     println!("Debug");
+            // }
 
             let mut new_module_inst_connection: Vec<Box<verilog_data::VerilogPortRefPortConnect>> = Vec::new();
             for port_connect in module_inst_stmt.get_port_connections() {
                 let net_expr_option = port_connect.get_net_expr();
+                // let port_id = port_connect.get_port_id().get_name();
+                // if port_id == "A" {
+                //     println!("Debug");
+                // }
 
                 if let Some(net_expr) = net_expr_option {
                     if net_expr.is_id_expr() {
@@ -817,7 +830,7 @@ mod tests {
                     let name = &input[..open_bracket];
                     let start = input[open_bracket + 1..colon].parse().ok()?;
                     let end = input[colon + 1..close_bracket].parse().ok()?;
-                    return Some((name, start, end));
+                    return Some((name.trim_end(), start, end));
                 }
             }
         }
@@ -827,9 +840,13 @@ mod tests {
     fn extract_single(input: &str) -> Option<(&str, i32)> {
         if let Some(open_bracket) = input.find('[') {
             if let Some(close_bracket) = input.find(']') {
+                // return None when input likes "cpuregs[19][1]".
+                if input[close_bracket + 1..].contains('[') {
+                    return None;
+                }
                 let name = &input[..open_bracket];
                 let index = input[open_bracket + 1..close_bracket].parse().ok()?;
-                return Some((name, index));
+                return Some((name.trim_end(), index));
             }
         }
         None
@@ -907,9 +924,9 @@ mod tests {
 
     #[test]
     fn test_parse_wire_declaration() {
-        let _input_str = "wire \\vga_b[0] ;";
-        let input_str1 = "wire ps2_dat;";
-        let parse_result = VerilogParser::parse(Rule::wire_declaration, input_str1);
+        let input_str = "wire \\vga_b[0] ;";
+        let _input_str = "wire ps2_dat;";
+        let parse_result = VerilogParser::parse(Rule::wire_declaration, input_str);
 
         print_parse_result(parse_result);
     }
@@ -1127,15 +1144,16 @@ mod tests {
     #[test]
     fn test_extract_funs() {
         let _input1 = "gpio[3:0]";
-        let _input2 = "gpio[0]";
-        let input3 = "gpio";
-        if let Some((name, range_from, range_to)) = extract_range(input3) {
+        let _input2 = "gpio [0]";
+        let input2 = "cpuregs[0][0]";
+        let _input3 = "gpio";
+        if let Some((name, range_from, range_to)) = extract_range(input2) {
             // extract gpio，3，0
             println!("extract_range:name={}, range_from={}, range_to={}", name, range_from, range_to);
-        } else if let Some((name, index)) = extract_single(input3) {
+        } else if let Some((name, index)) = extract_single(input2) {
             // extract:gpio，0
             println!("extract_single:name={}, index={}", name, index);
-        } else if let Some(name) = extract_name(input3) {
+        } else if let Some(name) = extract_name(input2) {
             // extract:gpio
             println!("extract_name:name={}", name);
         } else {

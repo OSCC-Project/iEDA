@@ -17,3 +17,5 @@ ExternalProject_Add(
 add_dependencies(${proj_name} ${RUST_PROJECT_NAME})
 
 endmacro()
+
+include_directories(${HOME_DATABASE}/manager/parser/rust-common)

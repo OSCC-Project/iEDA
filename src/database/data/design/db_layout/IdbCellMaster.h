@@ -47,6 +47,7 @@ using std::vector;
 
 class IdbTerm;
 class IdbObs;
+class IdbSite;
 
 class IdbCellMaster
 {
@@ -66,10 +67,12 @@ class IdbCellMaster
   bool is_pad_filler();
   bool is_io_cell() { return is_pad() || is_pad_filler(); }
   bool is_logic();
+  bool is_spacer();
   string& get_name() { return _name; }
   const bool is_symmetry_x() const { return _symmetry_x; }
   const bool is_symmetry_y() const { return _symmetry_y; }
   bool is_symmetry_R90() { return _symmetry_R90; }
+  IdbSite* get_site() { return _site; }
   const int64_t get_origin_x() const { return _origin_x; }
   const int64_t get_origin_y() const { return _origin_y; }
   const uint32_t get_width() const { return _width; }
@@ -83,11 +86,13 @@ class IdbCellMaster
   // setter
   void set_type(CellMasterType type) { _type = type; }
   void set_type(string type_name);
-  bool set_type_core_filler();
+  void set_type_core_filler();
+  void set_type_pad_filler();
   void set_name(string name) { _name = name; }
   void set_symmetry_x(bool value) { _symmetry_x = value; }
   void set_symmetry_y(bool value) { _symmetry_y = value; }
   void set_symmetry_R90(bool value) { _symmetry_R90 = value; }
+  void set_site(IdbSite* site) { _site = site; }
   void set_origin_x(int64_t value) { _origin_x = value; }
   void set_origin_y(int64_t value) { _origin_y = value; }
   void set_width(uint32_t value) { _width = value; }
@@ -108,6 +113,8 @@ class IdbCellMaster
   bool _symmetry_y;
   bool _symmetry_R90;
   bool _core_filler;
+  bool _pad_filler;
+  IdbSite* _site = nullptr;
   /*
   If ORIGIN is given in
   the macro, the macro is shifted by the ORIGIN x, y values first,
@@ -144,12 +151,9 @@ class IdbCellMasterList
 
   // operator
   IdbCellMaster* find_cell_master(const string& src_name);
-  IdbCellMaster* find_cell_master(IdbCellMaster* src_master);
 
-  void initFillerList(vector<string> name_list);
-
-  // verify data
-  void print();
+  vector<IdbCellMaster*> getCoreFillers(vector<string> name_list);
+  vector<IdbCellMaster*> getIOFillers(vector<string> name_list);
 
  private:
   uint32_t _number;

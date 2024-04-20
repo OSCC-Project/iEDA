@@ -38,8 +38,8 @@ def_init -path $::env(RESULT_DIR)/iPL_lg_result.def
 #===========================================================
 init_rt -temp_directory_path "$::env(RESULT_DIR)/rt/" \
         -bottom_routing_layer "met1" \
-        -top_routing_layer "met5" \
-        -thread_number 50
+        -top_routing_layer "met4" \
+        -thread_number 64
 
 run_rt
 

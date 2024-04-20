@@ -22,8 +22,10 @@ export CORE_AREA="9.996 10.08 139.964  140.048"
 # system variables
 PATH=$WORKSPACE/../../../bin:$PATH
 
-TCL_SCRIPTS="iFP_script/run_iFP.tcl
-iNO_script/run_iNO_fix_fanout.tcl
+iEDA -script "${TCL_SCRIPT_DIR}/iFP_script/run_iFP.tcl"
+sed -i 's/\( [^+ ]*\) + NET  +/\1 + NET\1 +/' ${RESULT_DIR}/iFP_result.def
+
+TCL_SCRIPTS="iNO_script/run_iNO_fix_fanout.tcl
 iPL_script/run_iPL.tcl
 iPL_script/run_iPL_eval.tcl
 iCTS_script/run_iCTS.tcl
@@ -37,12 +39,9 @@ iPL_script/run_iPL_legalization.tcl
 iPL_script/run_iPL_legalization_eval.tcl
 iRT_script/run_iRT.tcl
 iRT_script/run_iRT_eval.tcl
-iRT_script/run_iRT_STA.tcl
 iRT_script/run_iRT_DRC.tcl
 iPL_script/run_iPL_filler.tcl
 DB_script/run_def_to_gds_text.tcl"
-
-mkdir -p $LOG_DIR
 
 for SCRIPT in $TCL_SCRIPTS; do
     echo ">>> $ iEDA -script ${TCL_SCRIPT_DIR}/${SCRIPT}"

@@ -32,6 +32,10 @@ using namespace iplf;
 
 int main(int argc, char** argv)
 {
+  if (argc == 1) {
+    argv[0] = const_cast<char*>("UserShell\n");
+  }
+
   bool printVersion = false;
   for (int i = 1; i < argc; ++i) {
     if (std::string("-v") == argv[i]) {

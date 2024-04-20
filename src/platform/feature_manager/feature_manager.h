@@ -56,6 +56,7 @@ class FeatureManager
   bool save_instances(std::string path);
   bool save_nets(std::string path);
   bool save_reportSummary(std::string path, std::string step);
+  bool save_reportSummary_map(std::string path, int bin_cnt_x, int bin_cnt_y);
 
  private:
   IdbDesign* _idb_design = nullptr;

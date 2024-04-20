@@ -2,11 +2,29 @@
 name = "iir"
 version = "0.1.0"
 edition = "2021"
+exclude = ["build"]
+rust-version = "1.70"
+authors = ["taosimin <taosm@pcl.ac.cn>"]
+
+[build-dependencies]
+cbindgen = "0.26"
+
+[lib]
+name = "iir"
+crate-type = ["staticlib"]
+#crate-type = ["cdylib"]
+
+[build]
+rustflags = ["-Z", "threads=8"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-spef-parser = "0.2.3"
+spef-parser = "0.2.4"
 csv = "1.1.6"
-nalgebra = "0.32.3"
 serde = { version = "1.0.193", features = ["derive"] }
+env_logger = "0.10.0"
+log = "0.4.14"
+chrono = "0.4.19"
+sprs = "0.11.1"
+
