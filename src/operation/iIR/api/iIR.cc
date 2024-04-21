@@ -15,6 +15,16 @@
 namespace iir {
 
 /**
+ * @brief init IR.
+ * 
+ * @return unsigned 
+ */
+unsigned iIR::init() {
+  init_iir();
+  return 1;
+}
+
+/**
  * @brief read spef file.
  *
  * @param spef_file_path

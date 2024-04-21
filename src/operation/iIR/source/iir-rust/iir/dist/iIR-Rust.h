@@ -69,3 +69,5 @@ void *build_one_net_instance_current_vector(const void *c_instance_power_data,
  */
 struct RustVec build_matrix_from_raw_data(const char *c_inst_power_path,
                                           const char *c_power_net_spef);
+
+void init_iir(void);

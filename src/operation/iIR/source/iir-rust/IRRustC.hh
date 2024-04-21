@@ -31,6 +31,8 @@ void *create_hashmap_iterator(void *hashmap);
 bool hashmap_iterator_next(void *iterator, uintptr_t *out_key, double *out_value);
 void destroy_hashmap_iterator(void *iterator);
 
+void init_iir(void);
+
 const void *read_spef(const char *c_power_net_spef);
 
 /**
