@@ -159,11 +159,23 @@ pub fn read_rc_data_from_spef(spef_file_path: &str) -> RCData {
             let node2_name = spef_index_to_string(node2_name_index);
             let resistance_val = one_resistance.res_or_cap;
 
-            let rc_node1 = RCNode::new(node1_name);
-            let node1_id = one_net_data.add_node(rc_node1);
+            let mut node_id = one_net_data.get_node_id(&node1_name);
 
-            let rc_node2 = RCNode::new(node2_name);
-            let node2_id = one_net_data.add_node(rc_node2);
+            let node1_id = if node_id.is_none() {
+                let rc_node = RCNode::new(node1_name);
+                one_net_data.add_node(rc_node)
+            } else {
+                node_id.unwrap()
+            };
+
+            node_id = one_net_data.get_node_id(&node2_name);
+
+            let node2_id = if node_id.is_none() {
+                let rc_node2 = RCNode::new(node2_name);
+                one_net_data.add_node(rc_node2)
+            } else {
+                node_id.unwrap()
+            };
 
             let mut rc_resistance = RCResistance::default();
             rc_resistance.from_node_id = node1_id;

@@ -16,6 +16,8 @@
 #include <map>
 
 namespace iir {
+
+void PrintMatrix(Eigen::Map<Eigen::SparseMatrix<double>>& G_matrix, Eigen::Index base_index); 
 class IRSolver {
  public:
   IRSolver() = default;

@@ -89,7 +89,6 @@ pub fn build_instance_current_vector(
     Ok(instance_current_data)
 }
 
-
 #[cfg(test)]
 mod pwr_data_tests {
     use super::*;

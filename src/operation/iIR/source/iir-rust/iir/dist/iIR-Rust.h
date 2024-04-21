@@ -41,6 +41,8 @@ typedef struct RustNetConductanceData {
     const void *ir_net_raw_ptr;
 } RustNetConductanceData;
 
+void init_iir(void);
+
 struct HashMapIterator *create_hashmap_iterator(struct HashMap_usize__f64 *hashmap);
 
 bool hashmap_iterator_next(struct HashMapIterator *iterator, uintptr_t *out_key, double *out_value);
@@ -69,5 +71,3 @@ void *build_one_net_instance_current_vector(const void *c_instance_power_data,
  */
 struct RustVec build_matrix_from_raw_data(const char *c_inst_power_path,
                                           const char *c_power_net_spef);
-
-void init_iir(void);

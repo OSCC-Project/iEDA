@@ -105,11 +105,8 @@ pub struct HashMapIterator {
 
 #[no_mangle]
 pub extern "C" fn create_hashmap_iterator(hashmap: *mut HashMap<usize, f64>) -> *mut HashMapIterator {
-    let iter = unsafe {(*hashmap).iter() };
-    Box::into_raw(Box::new(HashMapIterator {
-        hashmap,
-        iter,
-    }))
+    let iter = unsafe { (*hashmap).iter() };
+    Box::into_raw(Box::new(HashMapIterator { hashmap, iter }))
 }
 
 #[no_mangle]
@@ -199,12 +196,11 @@ pub extern "C" fn build_one_net_instance_current_vector(
 
     let one_net_name = c_str_to_r_str(c_net_name);
     let one_net_rc_data = rc_data.get_one_net_data(&one_net_name);
-    
+
     let instance_current_data = build_instance_current_vector(inst_power_data, one_net_rc_data).unwrap();
 
     Box::into_raw(Box::new(instance_current_data)) as *mut c_void
 }
-
 
 /// Build RC matrix and current vector data.
 #[no_mangle]
@@ -217,7 +213,8 @@ pub extern "C" fn build_matrix_from_raw_data(
     let inst_power_path = c_str_to_r_str(c_inst_power_path);
 
     let rc_data = ir_rc::read_rc_data_from_spef(&power_net_spef);
-    let instance_power_data = ir_inst_power::read_instance_pwr_csv(&inst_power_path).expect("error reading instance power csv file");
+    let instance_power_data =
+        ir_inst_power::read_instance_pwr_csv(&inst_power_path).expect("error reading instance power csv file");
 
     let mut net_matrix_data: Vec<RustNetEquationData> = Vec::new();
     // Secondly, construct matrix data.

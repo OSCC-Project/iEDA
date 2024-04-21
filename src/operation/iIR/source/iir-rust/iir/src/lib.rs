@@ -1,2 +1,2 @@
-mod matrix;
 mod app;
+mod matrix;
