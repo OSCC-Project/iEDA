@@ -86,6 +86,17 @@ pub fn build_instance_current_vector(
         instance_current_data.insert(node_index, instance_current);
     }
 
+    let nodes = net_data.get_nodes();
+    for node in nodes {
+        if node.get_is_bump() {
+            let node_name = node.get_node_name();
+            let node_index = net_data.get_node_id(node_name).unwrap();
+            // bump current value is opposite of the instance value, so we use negative value instead.
+            let current_val: f64 = -1.0 / 1e-9;
+            instance_current_data.insert(node_index, current_val);
+        }
+    }
+
     Ok(instance_current_data)
 }
 

@@ -53,7 +53,7 @@ Eigen::VectorXd IRMatrix::buildCurrentVector(void* instance_current_map,
   uintptr_t node_id;
   double current_value;
   while (hashmap_iterator_next(iter, &node_id, &current_value)) {
-    J_vector(node_id) = current_value;
+    J_vector(node_id) = -current_value;
   }
 
   destroy_hashmap_iterator(iter);
