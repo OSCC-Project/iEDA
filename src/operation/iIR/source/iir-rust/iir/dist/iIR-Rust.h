@@ -67,6 +67,13 @@ void *build_one_net_instance_current_vector(const void *c_instance_power_data,
                                             const char *c_net_name);
 
 /**
+ * Get one net bump node id.
+ */
+struct RustVec get_bump_node_ids(const void *c_rc_data, const char *c_net_name);
+
+struct RustVec get_instance_node_ids(const void *c_rc_data, const char *c_net_name);
+
+/**
  * Build RC matrix and current vector data.
  */
 struct RustVec build_matrix_from_raw_data(const char *c_inst_power_path,

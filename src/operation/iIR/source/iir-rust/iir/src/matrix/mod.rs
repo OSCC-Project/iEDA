@@ -202,6 +202,53 @@ pub extern "C" fn build_one_net_instance_current_vector(
     Box::into_raw(Box::new(instance_current_data)) as *mut c_void
 }
 
+/// Get one net bump node id.
+#[no_mangle]
+pub extern "C" fn get_bump_node_ids(c_rc_data: *const c_void,
+    c_net_name: *const c_char) -> RustVec {
+
+    let rc_data = unsafe { &*(c_rc_data as *const RCData) };
+    let one_net_name = c_str_to_r_str(c_net_name);
+    let one_net_rc_data = rc_data.get_one_net_data(&one_net_name);
+
+    let nodes = one_net_rc_data.get_nodes();
+    let mut bump_node_ids = Box::new(Vec::new());
+    for node in nodes {
+        if node.get_is_bump() {
+            let node_name = node.get_node_name();
+            let node_id = one_net_rc_data.get_node_id(&node_name).unwrap();
+            bump_node_ids.push(node_id);
+        }
+    }
+
+    let rust_bump_node_id_vec = rust_vec_to_c_array(&bump_node_ids);
+    let _ = Box::into_raw(bump_node_ids);
+    rust_bump_node_id_vec
+}
+
+#[no_mangle]
+pub extern "C" fn get_instance_node_ids(c_rc_data: *const c_void,
+    c_net_name: *const c_char) -> RustVec {
+
+    let rc_data = unsafe { &*(c_rc_data as *const RCData) };
+    let one_net_name = c_str_to_r_str(c_net_name);
+    let one_net_rc_data = rc_data.get_one_net_data(&one_net_name);
+
+    let nodes = one_net_rc_data.get_nodes();
+    let mut instance_node_ids = Box::new(Vec::new());
+    for node in nodes {
+        if node.get_is_inst_pin() {
+            let node_name = node.get_node_name();
+            let node_id = one_net_rc_data.get_node_id(&node_name).unwrap();
+            instance_node_ids.push(node_id);
+        }
+    }
+
+    let rust_instance_node_id_vec = rust_vec_to_c_array(&instance_node_ids);
+    let _ = Box::into_raw(instance_node_ids);
+    rust_instance_node_id_vec
+}
+
 /// Build RC matrix and current vector data.
 #[no_mangle]
 pub extern "C" fn build_matrix_from_raw_data(

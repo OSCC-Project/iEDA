@@ -61,7 +61,7 @@ std::vector<double> IRSolver::operator()(
   double voltage_max = v_vector.maxCoeff();
   std::vector<double> ir_drops;
   ir_drops.reserve(node_num);
-  for (unsigned i = 0; i < node_num; i++) {
+  for (unsigned i = 0; i < node_num; ++i) {
     double val = v_vector(i);
     ir_drops.push_back(voltage_max - val);
   }
