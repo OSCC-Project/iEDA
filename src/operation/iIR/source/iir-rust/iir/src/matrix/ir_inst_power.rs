@@ -79,14 +79,26 @@ pub fn build_instance_current_vector(
     let mut instance_current_data: HashMap<usize, f64> = HashMap::new();
 
     for (instance_name, instance_current) in instance_current_map {
-        let instance_power_pin_name = instance_name; // TODO(to taosimin) fix power pin name.
+        let mut instance_power_pin_name = instance_name; // TODO(to taosimin) fix power pin name.
+        instance_power_pin_name += ":";
+        instance_power_pin_name += net_data.get_name();
         let node_index = net_data.get_node_id(&instance_power_pin_name).unwrap();
         instance_current_data.insert(node_index, instance_current);
     }
 
+    let nodes = net_data.get_nodes();
+    for node in nodes {
+        if node.get_is_bump() {
+            let node_name = node.get_node_name();
+            let node_index = net_data.get_node_id(node_name).unwrap();
+            // bump current value is opposite of the instance value, so we use negative value instead.
+            let current_val: f64 = -1.0 / 1e-9;
+            instance_current_data.insert(node_index, current_val);
+        }
+    }
+
     Ok(instance_current_data)
 }
-
 
 #[cfg(test)]
 mod pwr_data_tests {

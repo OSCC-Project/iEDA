@@ -21,12 +21,22 @@ impl RCNode {
         &self.name
     }
 
+    pub fn get_node_name(&self) -> &String {
+        &self.name
+    }
+
     pub fn set_is_bump(&mut self) {
         self.is_bump = true;
+    }
+    pub fn get_is_bump(&self) -> bool {
+        self.is_bump
     }
 
     pub fn set_is_inst_pin(&mut self) {
         self.is_inst_pin = true;
+    }
+    pub fn get_is_inst_pin(&self) -> bool {
+        self.is_inst_pin
     }
 }
 
@@ -159,11 +169,23 @@ pub fn read_rc_data_from_spef(spef_file_path: &str) -> RCData {
             let node2_name = spef_index_to_string(node2_name_index);
             let resistance_val = one_resistance.res_or_cap;
 
-            let rc_node1 = RCNode::new(node1_name);
-            let node1_id = one_net_data.add_node(rc_node1);
+            let mut node_id = one_net_data.get_node_id(&node1_name);
 
-            let rc_node2 = RCNode::new(node2_name);
-            let node2_id = one_net_data.add_node(rc_node2);
+            let node1_id = if node_id.is_none() {
+                let rc_node = RCNode::new(node1_name);
+                one_net_data.add_node(rc_node)
+            } else {
+                node_id.unwrap()
+            };
+
+            node_id = one_net_data.get_node_id(&node2_name);
+
+            let node2_id = if node_id.is_none() {
+                let rc_node2 = RCNode::new(node2_name);
+                one_net_data.add_node(rc_node2)
+            } else {
+                node_id.unwrap()
+            };
 
             let mut rc_resistance = RCResistance::default();
             rc_resistance.from_node_id = node1_id;
@@ -189,6 +211,14 @@ pub fn build_conductance_matrix(rc_one_net_data: &RCOneNetData) -> TriMatI<f64, 
     log::info!("matrix size {}", matrix_size);
 
     let mut g_matrix = TriMat::new((matrix_size, matrix_size));
+
+    for node in nodes {
+        if node.get_is_bump() {
+            let node_name = node.get_node_name();
+            let node_id = rc_one_net_data.get_node_id(node_name).unwrap();
+            g_matrix.add_triplet(node_id, node_id, 1.0 / 1e-9);
+        }
+    }
 
     //TODO(to taosimin) process the bump node.
     for rc_resistance in resistances {

@@ -41,6 +41,8 @@ typedef struct RustNetConductanceData {
     const void *ir_net_raw_ptr;
 } RustNetConductanceData;
 
+void init_iir(void);
+
 struct HashMapIterator *create_hashmap_iterator(struct HashMap_usize__f64 *hashmap);
 
 bool hashmap_iterator_next(struct HashMapIterator *iterator, uintptr_t *out_key, double *out_value);
@@ -63,6 +65,13 @@ void *read_inst_pwr_csv(const char *file_path);
 void *build_one_net_instance_current_vector(const void *c_instance_power_data,
                                             const void *c_rc_data,
                                             const char *c_net_name);
+
+/**
+ * Get one net bump node id.
+ */
+struct RustVec get_bump_node_ids(const void *c_rc_data, const char *c_net_name);
+
+struct RustVec get_instance_node_ids(const void *c_rc_data, const char *c_net_name);
 
 /**
  * Build RC matrix and current vector data.
