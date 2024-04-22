@@ -51,6 +51,10 @@ class IDBParser final : public ParserEngine
   IDBParser& operator=(IDBParser&&) = delete;
   void setIdbBuilder(idb::IdbBuilder* idb_builder);
   const std::unordered_map<std::shared_ptr<Net>, idb::IdbNet*>& get_net2idb() const { return _net2idb; }
+  idb::IdbNet* net2idb(std::shared_ptr<Net> net) { return _net2idb.at(net); }
+  std::shared_ptr<Net> idb2net(idb::IdbNet* idb_net) { return _idb2net.at(idb_net); }
+  idb::IdbInstance* inst2idb(std::shared_ptr<Instance> inst) { return _inst2idb.at(inst); }
+  std::shared_ptr<Instance> idb2inst(idb::IdbInstance* idb_inst) { return _idb2inst.at(idb_inst); }
   void add_net2idb(std::shared_ptr<Net> net, idb::IdbNet* idb_net) { _net2idb[net] = idb_net; }
 
  private:

@@ -22,6 +22,7 @@ struct Prop
 {
 };
 
+// Node-Property
 template <typename T>
 struct NodeShape
 {
@@ -65,16 +66,18 @@ struct NodeShape
   const ShapeCurve<T>* _shape_curve;
 };
 
+// Stores Packing result
 struct Coordinate
 {
   int32_t width{0};
   int32_t height{0};
-  std::vector<int32_t> x{};
-  std::vector<int32_t> y{};
-  std::vector<int32_t> dx{};
-  std::vector<int32_t> dy{};
+  std::vector<int32_t> x{};   // node-lower-x
+  std::vector<int32_t> y{};   // node-lower-y
+  std::vector<int32_t> dx{};  // node-width
+  std::vector<int32_t> dy{};  // node-height
 };
 
+// Use Simlulated Annealing & SeqPair to Place given Block
 template <typename T>
 struct SAPlace
 {
@@ -111,31 +114,31 @@ struct SAPlace
   // data
   size_t num_vertices;
   size_t num_edges;
-  std::vector<NodeShape<T>> blk_shapes;
-  std::vector<bool> ignore;
-  std::vector<T> initial_lx;
-  std::vector<T> initial_ly;
-  std::vector<size_t> blk_macro_nums;
+  std::vector<NodeShape<T>> blk_shapes;   // node-shape
+  std::vector<bool> ignore;               // ignore this node in packing
+  std::vector<T> initial_lx;              // node-lower-x, not used now
+  std::vector<T> initial_ly;              // node-lower-y, not used now
+  std::vector<size_t> blk_macro_nums;     // macro-num in block
   std::vector<size_t> macro_blk_indices;  // indices of blocks which contains macros
-  std::vector<size_t> eptr;
-  std::vector<size_t> eind;
+  std::vector<size_t> eptr;               // edge-pointer
+  std::vector<size_t> eind;               // edge-index
   std::vector<float> net_weight;
   size_t total_macro_num;
-  geo::point<int32_t> outline_min_corner;
-  T outline_lx;
-  T outline_ly;
+  geo::point<int32_t> outline_min_corner;  // place-outline's lower-left-corner
+  T outline_lx;                            // outline lower x
+  T outline_ly;                            // outline lower y
   T outline_width;
   T outline_height;
-  T outline_ux;
-  T outline_uy;
-  Coordinate packing_result;
-  Represent* represent{nullptr};
-  Perturb<Represent, void>* perturb{nullptr};
-  Evaluator<Represent, Coordinate>* eval{nullptr};
+  T outline_ux;                                     // outline upper x
+  T outline_uy;                                     // outline upper y
+  Coordinate packing_result;                        // packing result from SeqPair
+  Represent* represent{nullptr};                    // SeqPair representation
+  Perturb<Represent, void>* perturb{nullptr};       // perturb function
+  Evaluator<Represent, Coordinate>* eval{nullptr};  // evaluator
   Represent& get_represent() { return *represent; }
   Perturb<Represent, void>& get_perturb_func() { return *perturb; }
   Evaluator<Represent, Coordinate>& get_evaluator() { return *eval; }
-  Decoder decoder;
+  Decoder decoder;  // Representation packing
 
   void initPlaceData(Block& cluster);
   void initPerturbFunc();
@@ -163,7 +166,7 @@ struct SAPlace
     double operator()(const Coordinate& packing_result);
     EvalIODense(Block& root_cluster, std::vector<size_t>& macro_ind, double clip_ratio, int num_threads = 4);
 
-    int num_threads = 4;
+    int num_threads;
     size_t grid_num;
     double grid_w;
     double grid_h;
@@ -183,6 +186,7 @@ struct SAPlace
   };
 };
 
+// calculate possible tilings of macros
 template <typename T>
 std::pair<T, T> calMacroTilings(const std::vector<ShapeCurve<T>>& sub_shape_curves, T outline_width, T outline_height,
                                 const std::string& name);
@@ -227,6 +231,7 @@ SAPlace<T>::Represent SAPlace<T>::operator()(Block& cluster)
   std::chrono::duration<float> sa_elapsed = std::chrono::duration<float>(sa_end - sa_start);
   INFO("SAPlace time: ", sa_elapsed.count(), "s");
 
+  // write back packing result
   updateNetlist(cluster, solution_represent);
   return solution_represent;
 }
@@ -476,7 +481,7 @@ double SAPlace<T>::EvalIODense::operator()(const Coordinate& packing_result)
 
 template <typename T>
 SAPlace<T>::EvalIODense::EvalIODense(Block& root_cluster, std::vector<size_t>& macro_ind, double clip_ratio, int num_threads)
-    : macro_indices(macro_ind), num_threads(num_threads)
+    : num_threads(num_threads), macro_indices(macro_ind)
 {
   auto outline_min_corner = root_cluster.get_min_corner();
   outline_lx = outline_min_corner.x();
@@ -657,7 +662,8 @@ std::pair<T, T> calMacroTilings(const std::vector<ShapeCurve<T>>& sub_shape_curv
   Coordinate packing_result{.x = initial_lx, .y = initial_ly};
 
   auto bench_end = std::chrono::high_resolution_clock::now();
-  INFO("cal macro tiling initialize time: ", std::chrono::duration<float>(bench_end - bench_begin).count(), "s");
+  // INFO("cal macro tiling initialize time: ", std::chrono::duration<float>(bench_end - bench_begin).count(), "s"); //multi-threading error
+  std::cout << "cal macro tiling initialize time: " << std::chrono::duration<float>(bench_end - bench_begin).count() << "s" << std::endl;
   int seed = 0;
   std::mt19937 gen(seed);
   SeqPair<Prop> sp(prop, gen);
@@ -688,7 +694,8 @@ std::pair<T, T> calMacroTilings(const std::vector<ShapeCurve<T>>& sub_shape_curv
   // intalize the norm cost and inital product
   eval.initalize(packing_result, sp, perturb, num_vertices * 15 / 10);
 
-  INFO("start calculate macro tiling..., num_vertices = ", num_vertices);
+  // INFO("start calculate macro tiling..., num_vertices = ", num_vertices);
+  std::cout << "start calculate macro tiling..., num_vertices = " << num_vertices << std::endl;
   auto sa_start = std::chrono::high_resolution_clock::now();
   SimulateAnneal solve{.seed = seed, .num_perturb = num_vertices * 2, .cool_rate = 0.98, .inital_temperature = 1000};
   sp = solve(sp, eval, perturb, [](auto&& x) {});
@@ -697,9 +704,8 @@ std::pair<T, T> calMacroTilings(const std::vector<ShapeCurve<T>>& sub_shape_curv
 
   // update solution
   pack(sp, packing_result);
-  INFO("cal macro tiling SA time: ", sa_elapsed.count(), "s");
-  // writePlacement<T>("/home/liuyuezuo/iEDA-master/build/output/" + name + ".txt", packing_result.x, packing_result.y, blk_widths,
-  //                   blk_heights, outline_width, outline_height);
+  // INFO("cal macro tiling SA time: ", sa_elapsed.count(), "s");
+  std::cout << "cal macro tiling SA time: " << sa_elapsed.count() << "s" << std::endl;
   return std::make_pair(packing_result.width, packing_result.height);
 }
 
