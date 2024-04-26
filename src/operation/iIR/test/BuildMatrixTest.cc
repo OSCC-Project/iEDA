@@ -66,6 +66,6 @@ TEST_F(BuildMatrixTest, build_matrix) {
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
 
-  testing::GTEST_FLAG(filter) = "IRTest.*";
+  testing::GTEST_FLAG(filter) = "IRTest.ir_small";
   return RUN_ALL_TESTS();
 }

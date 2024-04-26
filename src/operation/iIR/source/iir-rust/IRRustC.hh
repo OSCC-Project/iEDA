@@ -31,6 +31,8 @@ void *create_hashmap_iterator(void *hashmap);
 bool hashmap_iterator_next(void *iterator, uintptr_t *out_key, double *out_value);
 void destroy_hashmap_iterator(void *iterator);
 
+void init_iir(void);
+
 const void *read_spef(const char *c_power_net_spef);
 
 /**
@@ -53,6 +55,9 @@ struct RustVec build_matrix_from_raw_data(const char *c_inst_power_path,
 void *build_one_net_instance_current_vector(const void *c_instance_power_data,
                                             const void *c_rc_data,
                                             const char *c_net_name);
+
+struct RustVec get_bump_node_ids(const void *c_rc_data, const char *c_net_name);
+struct RustVec get_instance_node_ids(const void *c_rc_data, const char *c_net_name);
 }
 
 namespace iir {

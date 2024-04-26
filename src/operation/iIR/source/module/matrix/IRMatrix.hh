@@ -7,6 +7,7 @@
  */
 #pragma once
 
+#include <memory>
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
 #include <Eigen/SparseLU>
@@ -24,6 +25,11 @@ class IRMatrix {
   Eigen::Map<Eigen::SparseMatrix<double>> buildConductanceMatrix(
       RustNetConductanceData& one_net_matrix_data);
   Eigen::VectorXd buildCurrentVector(void* instance_current_map, std::size_t node_num);
+
+private:
+  std::unique_ptr<Eigen::SparseMatrix<double>> _mat;
+
+
 };
 
 }  // namespace iir

@@ -4,9 +4,11 @@
 #include <future>
 #include <numeric>
 #include <set>
+#include <unordered_set>
 
 #include "Block.hh"
 #include "ClusterTimingEvaluator.hh"
+#include "IDBParserEngine.hh"
 #include "Layout.hh"
 #include "Logger.hpp"
 #include "Net.hh"
@@ -20,9 +22,6 @@ template <typename T>
 std::vector<std::pair<T, T>> generateDifferentTilings(const std::vector<ShapeCurve<T>>& sub_shape_curves, T core_width, T core_height,
                                                       const std::string& name);
 
-std::vector<std::shared_ptr<imp::Instance>> get_instances(Block& blk);
-std::vector<std::shared_ptr<imp::Instance>> get_macros(Block& blk);
-
 template <typename T>
 struct SAHierPlacer
 {
@@ -34,76 +33,90 @@ struct SAHierPlacer
       initialize(root_cluster);
     }
 
-    // sta & add-virtual-net
-    std::unordered_map<idb::IdbNet*, std::map<std::string, double>> net_lengths;
-    // createDataflow(root_cluster, 2);
-    auto negative_slack_paths = timing_evaluator.getNegativeSlackPaths(net_lengths, 1.0);
-    addVirtualNet(root_cluster, negative_slack_paths);
+    if (cluster_level_num > 1) {
+      addOuterNets(root_cluster);
+    }
+
+    // // sta & add-virtual-net
+
+    // // createDataflow(root_cluster, 2);
+
+    // std::unordered_map<idb::IdbNet*, std::map<std::string, double>> net_lengths; // default empty net-length
+    // auto negative_slack_paths = timing_evaluator.getNegativeSlackPaths(net_lengths, 1.0);
+    // addVirtualNet(root_cluster, negative_slack_paths);
 
     // Hier-place
     auto place_op = [this](Block& blk) -> void {
       if (!blk.isFixed()) {
         this->place(blk);
+        blk.set_fixed();
       }
     };
     root_cluster.parallel_preorder_op(place_op);
   }
 
   // settings
-  float macro_halo_micron = 3.0;
-  float dead_space_ratio = 0.7;
-  float weight_wl = 1.0;
-  float weight_ol = 0.05;
-  float weight_ob = 0.01;
-  float weight_periphery = 0.01;
-  float weight_blk = 0.02;
-  float weight_io = 0.0;
-  size_t max_iters = 1000;
-  double cool_rate = 0.97;
-  double init_temperature = 1000;
-  double prob_ps = 0.2;
-  double prob_ns = 0.2;
-  double prob_ds = 0.2;
-  double prob_pi = 0.2;
-  double prob_ni = 0.2;
-  double prob_rs = 0.2;
-  float virtual_net_weight = 0.5;
+  float macro_halo_micron = 3.0;   // macro halo, micron metric
+  float dead_space_ratio = 0.7;    // explain in
+  float weight_wl = 1.0;           // wirelength cost weight
+  float weight_ol = 0.05;          // outline cost weight
+  float weight_ob = 0.01;          // out-of-bound cost weight
+  float weight_periphery = 0.01;   // periphery cost weight
+  float weight_blk = 0.02;         // blockage overlap cost weight
+  float weight_io = 0.0;           // io density cost weight
+  size_t max_iters = 1000;         // simulated annealing max-iterations
+  double cool_rate = 0.97;         // simulated annealing cool-rate
+  double init_temperature = 1000;  // simulated annealing init-temperature
+  double prob_ps = 0.2;            // SeqPair pos-swap probability
+  double prob_ns = 0.2;            // SeqPair neg-swap probability
+  double prob_ds = 0.2;            // SeqPair double-swap probability
+  double prob_pi = 0.2;            // SeqPair pos-insert probability
+  double prob_ni = 0.2;            // SeqPair neg-insert probability
+  double prob_rs = 0.2;            // SeqPair reshape probability
+  float virtual_net_weight = 0.5;  // added virtual-net weight ratio
   int seed = 0;
+  size_t cluster_level_num = 1;        // level-num of root-cluster
+  std::weak_ptr<ParserEngine> parser;  // parser pointer
 
   // data
-  T macro_halo;
+  T macro_halo;  // macro halo, database-unit metric
   double dbu;
-  bool init_cluster = true;
-  SeqPair<NodeShape<T>> solution_top_level_sp;
-  SeqPair<NodeShape<T>> init_top_level_sp = SeqPair<NodeShape<T>>();
-  Block* root = nullptr;
+  bool init_cluster = true;                                           // if true, call initialize
+  SeqPair<NodeShape<T>> solution_top_level_sp;                        // solution seqPair representation of top-level-cluster
+  SeqPair<NodeShape<T>> init_top_level_sp = SeqPair<NodeShape<T>>();  // initial seqPair representation of top-level-cluster
+  Block* root = nullptr;                                              // top-level cluster
 
   // sta
   ClusterTimingEvaluator timing_evaluator;
   std::unordered_map<std::string, idb::IdbPin*> ista_pin_name2idb_pin;
   std::unordered_map<std::string, idb::IdbPin*> idb_name2pin;
-  std::unordered_map<std::string, size_t> inst2cluster;  // top-level cluster
+  std::unordered_map<std::string, size_t> inst2cluster;  // inst to top-level-cluster map
   std::unordered_map<std::string, std::shared_ptr<Instance>> name2inst;
 
   // functions
   void initialize(Block& root_cluster);
   void place(Block& blk);
-  void init_cell_area(Block& root_cluster, T macro_halo);
+  void initCellArea(Block& root_cluster, T macro_halo);
   void initTimingEvaluator();
   void initIstaPinNameMap();
   void initInstanceInfo();
-  void addVirtualNet(Block& root_cluster, std::vector<std::tuple<std::string, std::string, double>> negative_slack_paths);
+  void fineShaping(Block& blk, float dead_space_ratio);
+  void addVirtualNet(Block& root_cluster, const std::vector<std::tuple<std::string, std::string, double>>& negative_slack_paths);
+  void addVirtualNet(Block& root_cluster,
+                     const std::map<std::tuple<size_t, size_t, size_t>, size_t>& dataflow_connections);  // to implement
   void createDataflow(Block& root_cluster, size_t max_hop);
   std::set<std::string> get_boundary_instances(Block& root_cluster);
   std::string fullPinName(idb::IdbPin* idb_pin);
   const SeqPair<NodeShape<T>>& get_sp_solution() const { return solution_top_level_sp; }
+  void addOuterNets(imp::Block& block);
+  size_t findInstancePos(const Block& blk, const std::unordered_map<std::string, std::string>& instname2blk1_name,
+                         const std::unordered_map<std::string, std::string>& instname2blk2_name, const std::string& inst_name);
 
   template <typename getPackingShapes>
   std::enable_if_t<std::is_invocable_v<getPackingShapes, std::vector<ShapeCurve<T>>, T, T, std::string>, void> coarseShaping(
       Block& root_cluster, getPackingShapes get_packing_shapes)
   {
     // calculate cluster's discrete shapes based on children's discrete shapes recursively, only called on root node
-
     auto [core_width, core_height] = get_core_size();
     auto coarse_shape_op = [get_packing_shapes, core_width, core_height](imp::Block& blk) -> void {
       // calculate current node's discrete_shape_curve based on children node's discrete shapes, only concerns macros
@@ -167,7 +180,7 @@ void SAHierPlacer<T>::initialize(Block& root_cluster)
 
   // init shape-curve
   std::cout << "init cluster area && coarse shaping..." << std::endl;
-  init_cell_area(root_cluster, macro_halo);                  // init stdcell-area && macro-area
+  initCellArea(root_cluster, macro_halo);                    // init stdcell-area && macro-area
   coarseShaping(root_cluster, generateDifferentTilings<T>);  // init discrete-shapes bottom-up (coarse-shaping, only considers macros)
 
   // init timing-engine;
@@ -183,10 +196,19 @@ void SAHierPlacer<T>::initTimingEvaluator()
 }
 
 template <typename T>
-void SAHierPlacer<T>::place(Block& blk)
+void SAHierPlacer<T>::fineShaping(Block& blk, float dead_space_ratio)
 {
   void clipChildrenShapes(Block & blk);
   void addChildrenStdcellArea(Block & blk, float dead_space_ratio);
+  clipChildrenShapes(blk);
+  addChildrenStdcellArea(blk, dead_space_ratio);
+}
+
+template <typename T>
+void SAHierPlacer<T>::place(Block& blk)
+{
+  void clipChildrenShapes(Block & blk);                              // clip discrete-shapes larger than parent-clusters bounding-box
+  void addChildrenStdcellArea(Block & blk, float dead_space_ratio);  // add stdcell area
 
   if (blk.netlist().vSize() == 0 || blk.isFixed() || blk.is_stdcell_cluster() || blk.is_io_cluster()) {
     return;  // only place cluster with macros..
@@ -206,8 +228,7 @@ void SAHierPlacer<T>::place(Block& blk)
   else {
     if (init_cluster) {
       std::cout << "add children shapes" << std::endl;
-      clipChildrenShapes(blk);                        // clip discrete-shapes larger than parent-clusters bounding-box
-      addChildrenStdcellArea(blk, dead_space_ratio);  // add stdcell area
+      fineShaping(blk, dead_space_ratio);
     }
     // INFO("start placing cluster ", blk.get_name(), ", node_num: ", blk.netlist().vSize());
     // auto th = std::thread(SAPlace<T>(_weight_wl, _weight_ol, _weight_ob, _weight_periphery, _max_iters, _cool_rate, _init_temperature),
@@ -256,7 +277,7 @@ void SAHierPlacer<T>::place(Block& blk)
 }
 
 template <typename T>
-void SAHierPlacer<T>::init_cell_area(Block& root_cluster, T macro_halo)
+void SAHierPlacer<T>::initCellArea(Block& root_cluster, T macro_halo)
 {
   auto area_op = [macro_halo](imp::Block& obj) -> void {
     obj.set_macro_area(0.);
@@ -308,12 +329,9 @@ void SAHierPlacer<T>::init_cell_area(Block& root_cluster, T macro_halo)
       obj.set_shape_curve(geo::make_box(0, 0, 0, 0));  // io-cluster 0 area
       obj.set_fixed();
     }
-    // INFO(obj.get_name(), " macro_area: ", macro_area, " stdcell area: ", stdcell_area, " io_area: ", io_area);
     return;
   };
   root_cluster.postorder_op(area_op);
-  // INFO("total macro area: ", get_root_cluster().get_macro_area());
-  // INFO("total stdcell area: ", get_root_cluster().get_stdcell_area());
 }
 
 template <typename T>
@@ -340,7 +358,8 @@ void SAHierPlacer<T>::initIstaPinNameMap()
 }
 
 template <typename T>
-void SAHierPlacer<T>::addVirtualNet(Block& root_cluster, std::vector<std::tuple<std::string, std::string, double>> negative_slack_paths)
+void SAHierPlacer<T>::addVirtualNet(Block& root_cluster,
+                                    const std::vector<std::tuple<std::string, std::string, double>>& negative_slack_paths)
 {
   size_t valid_paths = 0;
   size_t pin_not_found = 0;
@@ -374,19 +393,15 @@ void SAHierPlacer<T>::addVirtualNet(Block& root_cluster, std::vector<std::tuple<
     std::replace(end_pin_name.begin(), end_pin_name.end(), ':', '/');
     if (ista_pin_name2idb_pin.find(start_pin_name) == ista_pin_name2idb_pin.end()
         || ista_pin_name2idb_pin.find(end_pin_name) == ista_pin_name2idb_pin.end()) {
-      std::cout << "sta-pin not found..." << std::endl;
-      std::cout << "start_pin: " << start_pin_name << std::endl;
-      std::cout << "end_pin: " << end_pin_name << std::endl;
+      INFO("sta-pin not found...");
+      INFO("start_pin: ");
+      INFO("end_pin: ", end_pin_name);
       pin_not_found++;
       continue;
     }
-    // float net_weight = smooth_weight(slack);
-    // float net_weight = std::min(std::max(pow(-(slack - 0.2), 0.5), min_weight), max_weight);
-    float net_weight = virtual_net_weight * std::min(std::max(pow(-(slack - max_slack), 1.0), min_weight), max_weight);
-    // if (net_weight < _min_net_weight) {
-    //   small_weight++;
-    //   continue;
-    // }
+
+    float virtual_net_weight = std::min(std::max(pow(-(slack - max_slack), 1.0), min_weight), max_weight);
+
     size_t start_cluster_id = 0, end_cluster_id = 0;
     auto start_pin = ista_pin_name2idb_pin.at(start_pin_name);
     auto end_pin = ista_pin_name2idb_pin.at(end_pin_name);
@@ -420,10 +435,9 @@ void SAHierPlacer<T>::addVirtualNet(Block& root_cluster, std::vector<std::tuple<
     }
 
     initial_slacks.push_back(slack);
-    smooth_weights.push_back(net_weight);
-    total_slack_between_cluster[std::make_pair(start_cluster_id, end_cluster_id)] += net_weight;  // count virtual nets between clusters
-    // std::cout << "start id: " << start_cluster_id << ", end id: " << end_cluster_id << " slack:" << slack << std::endl;
-    // addVirtualNet(root_cluster, start_cluster_id, end_cluster_id, net_weight);
+    smooth_weights.push_back(virtual_net_weight);
+    total_slack_between_cluster[std::make_pair(start_cluster_id, end_cluster_id)]
+        += virtual_net_weight;  // count virtual nets between clusters
     valid_paths++;
   }
 
@@ -484,14 +498,12 @@ void SAHierPlacer<T>::addVirtualNet(Block& root_cluster, std::vector<std::tuple<
 template <typename T>
 void SAHierPlacer<T>::initInstanceInfo()
 {
-  std::vector<std::shared_ptr<imp::Instance>> get_instances(Block&);
-
   name2inst.clear();
   inst2cluster.clear();
   for (size_t v_id = 0; v_id < root->netlist().vSize(); ++v_id) {
     auto sub_obj = root->netlist().vertex_at(v_id).property();
     auto sub_blk = std::static_pointer_cast<Block, Object>(sub_obj);
-    std::vector<std::shared_ptr<imp::Instance>> instances = get_instances(*sub_blk);
+    std::set<std::shared_ptr<imp::Instance>> instances = sub_blk->get_instances();
     for (auto inst : instances) {
       // if (inst->get_cell_master().isIOCell()) {
       //   continue;
@@ -526,7 +538,7 @@ void SAHierPlacer<T>::createDataflow(Block& root_cluster, size_t max_hop)
     // std::set<std::string> src_inst_set;
     auto sub_blk = *(std::static_pointer_cast<Block, Object>(root_cluster.netlist().vertex_at(i).property()));
 
-    auto inst_list = get_instances(sub_blk);
+    auto inst_list = sub_blk.get_instances();
     for (auto&& inst : inst_list) {
       std::string inst_name = Str::trimBackslash(inst->get_name());
       if (inst_count.count(inst_name) != 0) {
@@ -544,19 +556,181 @@ void SAHierPlacer<T>::createDataflow(Block& root_cluster, size_t max_hop)
   timing_evaluator.createDataflow(cluster_instances, src_instances, max_hop);
 }
 
-// template <typename T>
-// std::set<std::string> SAHierPlacer<T>::get_boundary_instances(Block& root_cluster)
-// {
-//   std::set<std::string> boundary_inst_names;
-//   auto& net2idb = ParserInst()->get_net2idb();
-//   for (auto&& he : root_cluster.netlist().heRange()) {
-//     auto idb_net = net2idb.at(he.property());
-//     for (auto inst : idb_net->get_instance_list()->get_instance_list()) {
-//       boundary_inst_names.insert(Str::trimBackslash(inst->get_name()));
-//     }
-//   }
-//   return boundary_inst_names;
-// }
+template <typename T>
+void SAHierPlacer<T>::addOuterNets(Block& blk)
+{
+  std::vector<std::set<std::shared_ptr<Object>>> outer_instances(blk.netlist().vSize());
+  std::unordered_map<std::string, std::string> instname2blk1_name;
+  std::unordered_map<std::string, std::string> instname2blk2_name;
+
+  for (auto&& v : blk.netlist().vRange()) {
+    auto sub_blk = std::static_pointer_cast<Block, Object>(v.property());
+    auto sub_blk_name = sub_blk->get_name();
+    for (auto inst : sub_blk->get_instances()) {
+      instname2blk1_name[inst->get_name()] = sub_blk_name;
+    }
+
+    for (auto&& vv : sub_blk->netlist().vRange()) {
+      if (!vv.property()->isBlock()) {
+        continue;
+      }
+      auto sub_sub_blk = std::static_pointer_cast<Block, Object>(vv.property());
+      if (!sub_blk->has_netlist()) {
+        continue;
+      }
+
+      auto sub_sub_blk_name = sub_sub_blk->get_name();
+      for (auto inst : sub_sub_blk->get_instances()) {
+        instname2blk2_name[inst->get_name()] = sub_sub_blk_name;
+      }
+    }
+  }
+
+  size_t outer_net_num = 0;
+  for (auto&& he : blk.netlist().heRange()) {
+    std::vector<size_t> vertex_pos;
+    for (auto&& v = he.vbegin(); v != he.vend(); v++) {
+      vertex_pos.push_back((*v).pos());
+    }
+
+    for (size_t k = 0; k < vertex_pos.size(); ++k) {
+      // single io-cluster needn't add outer-instances
+      if (std::static_pointer_cast<Block, Object>(blk.netlist().vertex_at(k).property())->netlist().vSize() <= 1) {
+        continue;
+      }
+      for (size_t m = 0; m < vertex_pos.size(); ++m) {
+        if (m != k) {
+          outer_instances[k].insert(blk.netlist().vertex_at(m).property());
+        }
+      }
+    }
+  }
+
+  auto parser = std::static_pointer_cast<IDBParser, ParserEngine>(this->parser.lock());
+  std::unordered_map<std::string, size_t> instname2blk;
+  std::map<std::string, std::set<std::string>> blk_inst_names_map;
+  std::vector<std::set<std::string>> blk_inst_names;
+  std::unordered_map<std::string, std::shared_ptr<Instance>> name2inst;
+
+  for (size_t v_id = 0; v_id < blk.netlist().vSize(); ++v_id) {
+    auto sub_blk = std::static_pointer_cast<Block, Object>(blk.netlist().vertex_at(v_id).property());
+    std::set<std::string> inst_names;
+    for (const auto& inst : sub_blk->get_instances()) {
+      inst_names.insert(inst->get_name());
+      name2inst[inst->get_name()] = inst;
+    }
+    blk_inst_names_map[sub_blk->get_name()] = inst_names;
+    blk_inst_names.push_back(std::move(inst_names));
+
+    // add outer objects;
+    for (auto obj : outer_instances.at(v_id)) {
+      // create outer-objects as fake-IO-CELL
+      auto fake_blk = std::make_shared<Block>(obj->get_name(), std::make_shared<Netlist>(), sub_blk->shared_from_this());
+      fake_blk->set_io_area(1);
+      fake_blk->set_fixed();
+      fake_blk->set_min_corner(obj->get_min_corner());
+      fake_blk->set_shape_curve(geo::make_box(0, 0, 0, 0));
+      sub_blk->netlist().add_vertex(fake_blk);
+    }
+  }
+
+  std::unordered_map<size_t, std::unordered_set<size_t>> vertex_outer_heids;
+  for (size_t he_id = 0; he_id < blk.netlist().heSize(); ++he_id) {
+    auto&& he = blk.netlist().hyper_edge_at(he_id);
+    for (auto v = he.vbegin(); v != he.vend(); ++v) {
+      vertex_outer_heids[(*v).pos()].insert(he_id);
+    }
+  }
+
+  // add connetions to outer-objects
+  size_t total_add_net_num = 0;
+  for (size_t v_id = 0; v_id < blk.netlist().vSize(); ++v_id) {
+    size_t blk_add_net_num = 0;
+    auto sub_blk = std::static_pointer_cast<Block, Object>(blk.netlist().vertex_at(v_id).property());
+    if (sub_blk->netlist().vSize() <= 1) {
+      continue;
+    }
+
+    INFO("adding OuterNets, cluster id : ", v_id);
+
+    for (auto he_id : vertex_outer_heids.at(v_id)) {
+      auto&& he = blk.netlist().hyper_edge_at(he_id);
+
+      auto idb_net = parser->net2idb(he.property());
+      std::vector<std::string> net_inst_names;
+      for (auto&& inst : idb_net->get_instance_list()->get_instance_list()) {
+        net_inst_names.emplace_back(inst->get_name());
+      }
+      if (idb_net->has_io_pins()) {
+        for (auto&& pin : idb_net->get_io_pins()->get_pin_list()) {
+          net_inst_names.emplace_back(pin->get_pin_name());
+        }
+      }
+
+      auto start = std::chrono::high_resolution_clock::now();
+      // add net
+      std::vector<size_t> inst_pos;
+      std::set<size_t> inst_pos_set;
+      for (auto& inst_name : net_inst_names) {
+        try {
+          inst_pos_set.insert(findInstancePos(*sub_blk, instname2blk1_name, instname2blk2_name, inst_name));
+        } catch (const std::exception& e) {
+          WARNING(e.what());
+        }
+      }
+      if (inst_pos_set.size() <= 1) {
+        continue;
+      }
+      for (size_t pos : inst_pos_set) {
+        inst_pos.emplace_back(pos);
+      }
+
+      auto end = std::chrono::high_resolution_clock::now();
+      std::chrono::duration<float> elapsed = std::chrono::duration<float>(end - start);
+
+      start = std::chrono::high_resolution_clock::now();
+      std::vector<std::shared_ptr<Pin>> pins(inst_pos.size(), std::make_shared<Pin>("virtual_pin"));
+      auto net_ptr = std::make_shared<Net>("virtual_net");
+      net_ptr->set_net_type(NET_TYPE::kFakeNet);
+      net_ptr->set_net_weight(he.property()->get_net_weight());
+      sub_blk->netlist().add_hyper_edge(inst_pos, pins, net_ptr);
+      outer_net_num += 1;
+      blk_add_net_num++;
+      total_add_net_num++;
+
+      std::cout << std::endl;
+      end = std::chrono::high_resolution_clock::now();
+      elapsed = std::chrono::duration<float>(end - start);
+      INFO("add net time: ", elapsed.count(), "s");
+    }
+  }
+}
+
+template <typename T>
+size_t SAHierPlacer<T>::findInstancePos(const Block& blk, const std::unordered_map<std::string, std::string>& instname2blk1_name,
+                                        const std::unordered_map<std::string, std::string>& instname2blk2_name,
+                                        const std::string& inst_name)
+{
+  for (size_t i = 0; i < blk.netlist().vSize(); ++i) {
+    auto sub_obj = blk.netlist().vertex_at(i).property();
+    if (sub_obj->isInstance()) {
+      if (sub_obj->get_name() == inst_name) {
+        return i;
+      }
+      continue;
+    }
+    auto sub_blk = std::static_pointer_cast<Block, Object>(sub_obj);
+    auto sub_blk_name = sub_blk->get_name();
+    if ((instname2blk2_name.count(inst_name) != 0 && sub_blk->get_name() == instname2blk2_name.at(inst_name))
+        || (instname2blk1_name.count(inst_name) != 0 && sub_blk->get_name() == instname2blk1_name.at(inst_name))) {
+      return i;
+    }
+  }
+  // ERROR("Inst ", inst_name, " not found!");
+  std::string error_info = "Inst " + inst_name + " not found!";
+  throw std::runtime_error(error_info);
+  return 0;
+}
 
 template <typename T>
 std::vector<std::pair<T, T>> generateDifferentTilings(const std::vector<ShapeCurve<T>>& sub_shape_curves, T core_width, T core_height,
@@ -732,29 +906,6 @@ void preorder_out(Block& blk, std::ofstream& out)
   }
 }
 
-void preorder_get_macros(Block& blk, std::vector<std::shared_ptr<imp::Instance>>& macros)
-{
-  for (auto&& i : blk.netlist().vRange()) {
-    auto sub_obj = i.property();
-    if (sub_obj->isInstance()) {
-      auto sub_inst = std::static_pointer_cast<Instance, Object>(sub_obj);
-      if (sub_inst->get_cell_master().isMacro()) {
-        macros.push_back(sub_inst);
-      }
-    } else {
-      auto sub_block = std::static_pointer_cast<Block, Object>(sub_obj);
-      preorder_get_macros(*sub_block, macros);
-    }
-  }
-}
-
-std::vector<std::shared_ptr<imp::Instance>> get_macros(Block& blk)
-{
-  std::vector<std::shared_ptr<imp::Instance>> macros;
-  preorder_get_macros(blk, macros);
-  return macros;
-}
-
 void writePlacement(Block& root_cluster, std::string file_name)
 {
   std::ofstream out(file_name);
@@ -793,7 +944,7 @@ std::string orientToInnovusStr(const Orient& orient)
 
 void writePlacementTcl(Block& blk, std::string file_name, int32_t dbu)
 {
-  auto macros = get_macros(blk);
+  auto macros = blk.get_macros();
   std::ofstream out(file_name, std::ios::binary);
   if (!out) {
     ERROR("Cannot create file " + file_name);
@@ -807,27 +958,6 @@ void writePlacementTcl(Block& blk, std::string file_name, int32_t dbu)
         << " -name " << macro->get_name() << std::endl;
   }
   INFO(file_name, " write success");
-}
-
-void preorder_get_instances(Block& blk, std::vector<std::shared_ptr<imp::Instance>>& instances)
-{
-  for (auto&& i : blk.netlist().vRange()) {
-    auto sub_obj = i.property();
-    if (sub_obj->isInstance()) {
-      auto sub_inst = std::static_pointer_cast<Instance, Object>(sub_obj);
-      instances.push_back(sub_inst);
-    } else {
-      auto sub_block = std::static_pointer_cast<Block, Object>(sub_obj);
-      preorder_get_instances(*sub_block, instances);
-    }
-  }
-}
-
-std::vector<std::shared_ptr<imp::Instance>> get_instances(Block& blk)
-{
-  std::vector<std::shared_ptr<imp::Instance>> instances;
-  preorder_get_instances(blk, instances);
-  return instances;
 }
 
 void addVirtualNet(Block& parent_blk, size_t sub_obj_pos1, size_t sub_obj_pos2, float net_weight = 1.0)

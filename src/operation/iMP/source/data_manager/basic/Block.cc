@@ -32,6 +32,11 @@ bool Block::is_leaf() const
   return !_netlist || _netlist->empty();
 }
 
+bool Block::has_netlist() const
+{
+  return _netlist != nullptr;
+}
+
 Netlist& Block::netlist()
 {
   return *_netlist;
@@ -46,4 +51,45 @@ void Block::set_netlist(std::shared_ptr<Netlist> netlist)
 {
   _netlist = netlist;
 }
+
+static void preorder_get_instances(Block& blk, std::set<std::shared_ptr<imp::Instance>>& instances, CELL_TYPE cell_type = CELL_TYPE::kNone)
+{
+  if (!blk.has_netlist()) {
+    return;
+  }
+  for (auto&& i : blk.netlist().vRange()) {
+    auto sub_obj = i.property();
+    if (sub_obj->isInstance()) {
+      auto sub_inst = std::static_pointer_cast<Instance, Object>(sub_obj);
+      if (cell_type == CELL_TYPE::kNone || cell_type == sub_inst->get_cell_master().get_cell_type()) {
+        instances.insert(sub_inst);
+      }
+    } else {
+      auto sub_block = std::static_pointer_cast<Block, Object>(sub_obj);
+      preorder_get_instances(*sub_block, instances);
+    }
+  }
+}
+
+std::set<std::shared_ptr<imp::Instance>> Block::get_instances()
+{
+  std::set<std::shared_ptr<imp::Instance>> instances;
+  preorder_get_instances(*this, instances, CELL_TYPE::kNone);
+  return instances;
+}
+
+std::set<std::shared_ptr<imp::Instance>> Block::get_macros()
+{
+  std::set<std::shared_ptr<imp::Instance>> macros;
+  preorder_get_instances(*this, macros, CELL_TYPE::kMacro);
+  return macros;
+}
+
+std::set<std::shared_ptr<imp::Instance>> Block::get_io_instances()
+{
+  std::set<std::shared_ptr<imp::Instance>> macros;
+  preorder_get_instances(*this, macros, CELL_TYPE::kIOCell);
+  return macros;
+}
+
 }  // namespace imp

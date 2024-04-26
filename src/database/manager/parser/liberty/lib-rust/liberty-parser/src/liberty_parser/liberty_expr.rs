@@ -45,7 +45,7 @@ fn process_not(
     Ok(Box::new(not))
 }
 
-/// process default and expr.
+/// process default and expr.such as (A1 A2 A3)
 fn process_default_and_expr(
     pair: &mut Pair<Rule>,
     substitute_queue: &mut VecDeque<Box<liberty_expr_data::LibertyExpr>>,
@@ -54,11 +54,15 @@ fn process_default_and_expr(
     let mut left = substitute_queue.pop_front().unwrap();
     and.set_left(left);
 
-    for index in 0..substitute_queue.len() {
+    while !substitute_queue.is_empty() {
         let right = substitute_queue.pop_front().unwrap();
         and.set_right(right);
-        left = and;
-        and = Box::new(liberty_expr_data::LibertyExpr::new(liberty_expr_data::LibertyExprOp::And));
+
+        if !substitute_queue.is_empty() {
+            left = and;
+            and = Box::new(liberty_expr_data::LibertyExpr::new(liberty_expr_data::LibertyExprOp::And));
+            and.set_left(left);
+        }
     }
 
     Ok(and)
@@ -132,7 +136,7 @@ fn process_pair(
     }
 }
 
-/// process vcd file data.
+/// process expr func data.
 pub fn parse_expr(expr_str: &str) -> Result<Box<liberty_expr_data::LibertyExpr>, pest::error::Error<Rule>> {
     let parse_result = LibertyExprParser::parse(Rule::expr_result, expr_str);
     let mut parser_queue: VecDeque<Box<liberty_expr_data::LibertyExpr>> = VecDeque::new();

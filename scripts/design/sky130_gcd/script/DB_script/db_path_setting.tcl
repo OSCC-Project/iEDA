@@ -135,4 +135,6 @@ set SDC_PATH "$::env(SDC_FILE)"
 #===========================================================
 ##   set spef path
 #===========================================================
-set SPEF_PATH "$::env(SPEF_FILE)"
+if {[info exists ::env(SPEF_FILE)]} {
+    set SPEF_PATH $::env(SPEF_FILE)
+}

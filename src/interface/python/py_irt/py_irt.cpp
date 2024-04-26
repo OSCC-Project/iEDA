@@ -18,9 +18,9 @@
 
 #include <tcl_util.h>
 
-#include <iRT/api/RTInterface.hpp>
 #include <string>
 
+#include "RTInterface.hpp"
 #include "flow_config.h"
 namespace python_interface {
 

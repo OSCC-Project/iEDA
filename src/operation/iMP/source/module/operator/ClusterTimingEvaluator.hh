@@ -26,6 +26,7 @@ class ClusterTimingEvaluator
       std::unordered_map<idb::IdbNet*, std::map<std::string, double>>& net_lengths_between_cluster, double percent = 0.5);
   void createDataflow(const std::vector<std::set<std::string>>& cluster_instances,
                       const std::set<std::string>& src_instances, size_t max_hop);
+  const std::map<std::tuple<size_t, size_t, size_t>, size_t>& get_dataflow_connections() { return _dataflow_connections; }
 
  private:
   idb::IdbBuilder* _idb_builder;

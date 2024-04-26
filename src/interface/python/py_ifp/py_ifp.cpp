@@ -52,10 +52,9 @@ bool fpPlacePort(const std::string& pin_name, int offset_x, int offset_y, int wi
   return place_ok;
 }
 
-bool fpPlaceIOFiller(std::vector<std::string>& filler_types, const std::string& prefix, const std::string& orient, double begin, double end,
-                     const std::string& source)
+bool fpPlaceIOFiller(std::vector<std::string>& filler_types, const std::string& prefix)
 {
-  bool place_ok = fpApiInst->placeIOFiller(filler_types, prefix, orient, begin, end, source);
+  bool place_ok = fpApiInst->placeIOFiller(filler_types, prefix);
   return place_ok;
 }
 
