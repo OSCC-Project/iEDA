@@ -219,18 +219,25 @@ unsigned StaApplySdc::setupIODelay(
       unsigned is_clock_fall = set_io_delay->isClockFall();
       auto construct_clock_data = [&the_vertex, launch_clock,
                                    is_clock_fall](auto analysis_mode) {
-        StaClockData* launch_clock_data = nullptr;
-        if (!is_clock_fall) {
-          launch_clock_data = new StaClockData(analysis_mode, TransType::kRise,
-                                               0, *the_vertex, launch_clock);
-          launch_clock_data->set_clock_wave_type(TransType::kRise);
-          (*the_vertex)->addData(launch_clock_data);
+        auto clock_datas =
+            !is_clock_fall
+                ? (*the_vertex)->getClockData(analysis_mode, TransType::kRise)
+                : (*the_vertex)->getClockData(analysis_mode, TransType::kFall);
 
-        } else {
-          launch_clock_data = new StaClockData(analysis_mode, TransType::kFall,
-                                               0, *the_vertex, launch_clock);
-          launch_clock_data->set_clock_wave_type(TransType::kFall);
-          (*the_vertex)->addData(launch_clock_data);
+        if (clock_datas.empty()) {
+          StaClockData* launch_clock_data = nullptr;
+          if (!is_clock_fall) {
+            launch_clock_data = new StaClockData(
+                analysis_mode, TransType::kRise, 0, *the_vertex, launch_clock);
+            launch_clock_data->set_clock_wave_type(TransType::kRise);
+            (*the_vertex)->addData(launch_clock_data);
+
+          } else {
+            launch_clock_data = new StaClockData(
+                analysis_mode, TransType::kFall, 0, *the_vertex, launch_clock);
+            launch_clock_data->set_clock_wave_type(TransType::kFall);
+            (*the_vertex)->addData(launch_clock_data);
+          }
         }
       };
 
