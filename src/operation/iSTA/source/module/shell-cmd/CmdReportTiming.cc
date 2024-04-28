@@ -48,7 +48,10 @@ unsigned CmdReportTiming::exec() {
   }
 
   TclOption* delay_type_option = getOptionOrArg("-delay_type");
-  auto* delay_type = delay_type_option->getStringVal();
+  char* delay_type;
+  if (delay_type_option) {
+    delay_type = delay_type_option->getStringVal();
+  }
 
   TclOption* exclude_cell_names_option = getOptionOrArg("-exclude_cell_names");
   std::set<std::string> new_exclude_cell_names;
@@ -73,8 +76,13 @@ unsigned CmdReportTiming::exec() {
 
   Sta* ista = Sta::getOrCreateSta();
   ista->buildGraph();
-  Str::equal(delay_type, "setup") ? ista->set_analysis_mode(AnalysisMode::kMax)
-                                  : ista->set_analysis_mode(AnalysisMode::kMin);
+
+  if (delay_type) {
+    Str::equal(delay_type, "setup")
+        ? ista->set_analysis_mode(AnalysisMode::kMax)
+        : ista->set_analysis_mode(AnalysisMode::kMin);
+  }
+
   ista->updateTiming();
   ista->reportTiming(std::move(new_exclude_cell_names), is_derate,
                      is_clock_cap);
