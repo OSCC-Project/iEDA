@@ -58,6 +58,8 @@ report_db -path "$::env(RESULT_DIR)/report/cts_db.rpt"
 #===========================================================
 cts_report -path $::env(RESULT_DIR)/cts
 
+report_wirelength -path  "$::env(RESULT_DIR)/report/eval/iCTS_result_wirelength0.rpt"
+
 #===========================================================
 ##   Exit 
 #===========================================================

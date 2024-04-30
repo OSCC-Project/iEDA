@@ -52,6 +52,8 @@ netlist_save -path $::env(RESULT_DIR)/iPL_lg_result.v -exclude_cell_names {}
 ##   report db summary
 #===========================================================
 report_db -path "$::env(RESULT_DIR)/report/lg_db.rpt"
+report_wirelength -path  "$::env(RESULT_DIR)/report/eval/iPL_lg_result_wirelength0.rpt"
+report_congestion -path "$::env(RESULT_DIR)/report/eval/iPL_lg_result_congestion0.rpt"
 
 #===========================================================
 ##   Exit 

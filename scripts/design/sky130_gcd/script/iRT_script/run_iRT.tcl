@@ -48,6 +48,8 @@ run_rt
 
 destroy_rt
 
+report_wirelength -path  "$::env(RESULT_DIR)/report/eval/iRT_result_wirelength0.rpt"
+
 #===========================================================
 ##   save def & netlist
 #===========================================================
