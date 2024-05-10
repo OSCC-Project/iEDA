@@ -894,6 +894,14 @@ mod tests {
     }
 
     #[test]
+    fn test_parse_inst_or_cell_id() {
+        let input_str = "i_cache_subsystem/i_nbdcache/sram_block[7].tag_sram/macro_mem[2].i_ram";
+        let parse_result = VerilogParser::parse(Rule::inst_or_cell_id, input_str);
+        println!("{:#?}", parse_result);
+        print_parse_result(parse_result);
+    }
+
+    #[test]
     fn test_parse_input_declaration() {
         let input_str = r#"input chiplink_rx_clk_pad;"#;
         let parse_result = VerilogParser::parse(Rule::input_declaration, input_str);
