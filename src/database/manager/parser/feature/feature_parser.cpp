@@ -198,6 +198,10 @@ bool FeatureParser::buildNets(std::string json_path)
       nlohmann::json json_net;
       json_net["name"] = net->get_net_name();
       json_net["type"] = connect_property.get_type_name(net->get_connect_type());
+      json_net["pin_number"] = net->get_pin_number();
+      json_net["wire_len"] = net->wireLength();
+      json_net["segment_number"] = net->get_segment_num();
+      json_net["via_number"] = net->get_via_number();
 
       auto array_pins = json::array();
       /// io pin
