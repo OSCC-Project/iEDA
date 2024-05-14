@@ -181,10 +181,6 @@ void IdbDieHeader::load_data()
   fread(&height, sizeof(int32_t), 1, _file_ptr);
   _die->set_height(height);
 
-  float utilization;
-  fread(&utilization, sizeof(float), 1, _file_ptr);
-  _die->set_utilization(utilization);
-
   _die->set_bounding_box();
 
   fclose(_file_ptr);

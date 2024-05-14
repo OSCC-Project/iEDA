@@ -30,13 +30,18 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
+#include <boost/geometry.hpp>
+#include <boost/geometry/geometries/point_xy.hpp>
+#include <boost/geometry/geometries/polygon.hpp>
 #include <iostream>
 #include <string>
 #include <vector>
 
 #include "../IdbObject.h"
-// #include "../../../basic/geometry/IdbGeometry.h"
+
+namespace bg = boost::geometry;
+typedef bg::model::d2::point_xy<int32_t> point_t;
+typedef bg::model::polygon<point_t> polygon_t;
 
 namespace idb {
 
@@ -50,20 +55,17 @@ class IdbDie : public IdbObject
 
   // getter
   vector<IdbCoordinate<int32_t>*>& get_points() { return _points; }
-  const float get_utilization() const { return _utilization; }
-  const uint64_t get_area() const { return ((uint64_t) _width) * ((uint64_t) _height); }
-  const int32_t get_llx() { return std::min(_points[0]->get_x(), _points[1]->get_x()); }
-  const int32_t get_lly() { return std::min(_points[0]->get_y(), _points[1]->get_y()); }
-  const int32_t get_urx() { return std::max(_points[0]->get_x(), _points[1]->get_x()); }
-  const int32_t get_ury() { return std::max(_points[0]->get_y(), _points[1]->get_y()); }
-  const int32_t get_width() { return _width; }
-  const int32_t get_height() { return _height; }
+  uint64_t get_area();
+  const int32_t get_llx() { return get_bounding_box()->get_low_x(); }
+  const int32_t get_lly() { return get_bounding_box()->get_low_y(); }
+  const int32_t get_urx() { return get_bounding_box()->get_high_x(); }
+  const int32_t get_ury() { return get_bounding_box()->get_high_y(); }
+  const int32_t get_width() { return get_bounding_box()->get_width(); }
+  const int32_t get_height() { return get_bounding_box()->get_height(); }
 
-  // setter
-  void set_points(vector<IdbCoordinate<int32_t>*> points);
-  void set_width(int32_t width) { _width = width; }
-  void set_height(int32_t height) { _height = height; }
-  void set_utilization(float utilization) { _utilization = utilization; }
+  bool is_polygon() { return _points.size() > RECTANGLE_NUM ? true : false; }
+  //   bool is_inside(int32_t x, int32_t y) { return bg::model::contains(_polygon, point_t(x, y)); }
+
   bool set_bounding_box();
 
   // operator
@@ -86,13 +88,11 @@ class IdbDie : public IdbObject
   void print();
 
  private:
-  constexpr static size_t kMaxPointsNumber = 2;
+  constexpr static size_t RECTANGLE_NUM = 2;
   /// @brief only support rectangle
   vector<IdbCoordinate<int32_t>*> _points;
-  int32_t _width;
-  int32_t _height;
-
-  float _utilization;
+  uint64_t _area;
+  polygon_t _polygon;
 };
 
 }  // namespace idb
