@@ -15,28 +15,35 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 #pragma once
+/**
+ * @file		summary_db.h
+ * @date		13/05/2024
+ * @version		0.1
+ * @description
 
+
+        summary data
+ *
+ */
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+#include <cmath>
 #include <iostream>
 #include <string>
 #include <vector>
 
-#include "pl_summary.h"
-#include "rt_summary.h"
+namespace ieda_feature {
 
-namespace idb {
-
-class FeatureSummary{
- private:
-  PlaceSummary place_summary;
-  RTSummary rt_summary;
-
+class DBSummary
+{
  public:
-  FeatureSummary() = default;
-  ~FeatureSummary() = default;
-  // getter
-  PlaceSummary& getPlaceSummary() { return place_summary; }
-  RTSummary& getRTSummary() { return rt_summary; }
+  DBSummary() {}
+  ~DBSummary() = default;
 
+ private:
 };
 
-}
+}  // namespace ieda_feature

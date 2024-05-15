@@ -16,51 +16,46 @@
 // ***************************************************************************************
 #pragma once
 /**
- * @File Name: feature_manager.h
- * @Brief :
- * @Author : Yell (12112088@qq.com)
- * @Version : 1.0
- * @Creat Date : 2023-0811
+ * @file		summary.h
+ * @date		13/05/2024
+ * @version		0.1
+ * @description
+
+
+        summary data
  *
  */
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+#include <cmath>
 #include <iostream>
 #include <string>
 #include <vector>
 
-#include "IdbDesign.h"
-#include "IdbLayout.h"
+#include "feature_db.h"
+#include "feature_ipl.h"
+#include "feature_irt.h"
 
-using namespace idb;
+namespace ieda_feature {
 
-namespace iplf {
-
-class FeatureManager
+class FeatureSummary
 {
  public:
-  FeatureManager(IdbLayout* idb_layout, IdbDesign* idb_design)
-  {
-    _idb_layout = idb_layout;
-    _idb_design = idb_design;
-  }
-  ~FeatureManager()
-  {
-    _idb_layout = nullptr;
-    _idb_design = nullptr;
-  };
+  FeatureSummary();
+  ~FeatureSummary();
 
-  bool save_layout(std::string path);
-  bool save_instances(std::string path);
-  bool save_nets(std::string path);
-  bool save_reportSummary(std::string path, std::string step);
-  bool save_reportSummary_map(std::string path, int bin_cnt_x, int bin_cnt_y);
+  // getter
+  DBSummary& get_db() { return _db; }
+  PlaceSummary& get_summary_ipl() { return _summary_ipl; }
+  RTSummary& get_summary_irt() { return _summary_irt; }
 
  private:
-  IdbDesign* _idb_design = nullptr;
-  IdbLayout* _idb_layout = nullptr;
+  PlaceSummary _summary_ipl;
+  RTSummary _summary_irt;
+  DBSummary _db;
 };
 
-}  // namespace iplf
+}  // namespace ieda_feature

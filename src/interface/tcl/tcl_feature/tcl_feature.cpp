@@ -53,9 +53,7 @@ unsigned CmdFeatureGenerateLayout::exec()
   TclOption* option = getOptionOrArg(TCL_PATH);
   auto path = option->getStringVal();
 
-  iplf::FeatureManager feature_parser(dmInst->get_idb_layout(), dmInst->get_idb_design());
-
-  feature_parser.save_layout(path);
+  featureInst->save_layout(path);
 
   return 1;
 }
@@ -84,9 +82,7 @@ unsigned CmdFeatureGenerateInstances::exec()
   TclOption* option = getOptionOrArg(TCL_PATH);
   auto path = option->getStringVal();
 
-  iplf::FeatureManager feature_parser(dmInst->get_idb_layout(), dmInst->get_idb_design());
-
-  feature_parser.save_instances(path);
+  featureInst->save_instances(path);
 
   return 1;
 }
@@ -115,9 +111,7 @@ unsigned CmdFeatureGenerateNets::exec()
   TclOption* option = getOptionOrArg(TCL_PATH);
   auto path = option->getStringVal();
 
-  iplf::FeatureManager feature_parser(dmInst->get_idb_layout(), dmInst->get_idb_design());
-
-  feature_parser.save_nets(path);
+  featureInst->save_nets(path);
 
   return 1;
 }
@@ -160,9 +154,7 @@ unsigned CmdFeatureSummary::exec()
     step = step_option->getStringVal();
   }
 
-  iplf::FeatureManager feature_parser(dmInst->get_idb_layout(), dmInst->get_idb_design());
-
-  feature_parser.save_reportSummary(path, step);
+  featureInst->save_reportSummary(path, step);
 
   return 1;
 }
@@ -181,7 +173,6 @@ CmdFeatureSummaryMap::CmdFeatureSummaryMap(const char* cmd_name) : TclCmd(cmd_na
   addOption(path_option);
   addOption(bin_cnt_x);
   addOption(bin_cnt_y);
-
 }
 
 unsigned CmdFeatureSummaryMap::check()
@@ -208,9 +199,7 @@ unsigned CmdFeatureSummaryMap::exec()
   auto bin_cnt_x = opt_bin_cnt_x->getIntVal();
   auto bin_cnt_y = opt_bin_cnt_y->getIntVal();
 
-  iplf::FeatureManager feature_parser(dmInst->get_idb_layout(), dmInst->get_idb_design());
-
-  feature_parser.save_reportSummary_map(path, bin_cnt_x, bin_cnt_y);
+  featureInst->save_reportSummary_map(path, bin_cnt_x, bin_cnt_y);
 
   return 1;
 }

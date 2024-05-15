@@ -40,25 +40,23 @@
 using json = nlohmann::json;
 
 namespace idb {
+class IdbDesign;
+class IdbLayout;
+}  // namespace idb
+
+using namespace idb;
+
+namespace ieda_feature {
 
 using std::vector;
 
-class IdbDesign;
-class IdbLayout;
+class FeatureSummary;
 
 class FeatureParser
 {
  public:
-  FeatureParser(IdbLayout* layout, IdbDesign* design)
-  {
-    _layout = layout;
-    _design = design;
-  }
-  ~FeatureParser()
-  {
-    _layout = nullptr;
-    _design = nullptr;
-  }
+  FeatureParser(FeatureSummary* summary);
+  ~FeatureParser();
 
   // builder
   bool buildLayout(std::string json_path);
@@ -71,6 +69,7 @@ class FeatureParser
  private:
   IdbLayout* _layout = nullptr;
   IdbDesign* _design = nullptr;
+  FeatureSummary* _summary = nullptr;
 
   json buildSummaryInfo();
   json buildSummaryLayout();
@@ -91,6 +90,5 @@ class FeatureParser
   json buildSummaryDRC();
 
   json buildSummaryRT();
-
 };
-}  // namespace idb
+}  // namespace ieda_feature

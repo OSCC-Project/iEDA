@@ -8,7 +8,7 @@ target_link_libraries(tcl_feature
     PUBLIC
         tcl
         shell-cmd
-        feature_manager
+        ieda_feature
         idm
         idb
 )

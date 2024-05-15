@@ -48,15 +48,16 @@
 #include "RTInterface.hpp"
 #include "TimingEngine.hh"
 #include "ToApi.hpp"
+#include "feature_irt.h"
 #include "feature_parser.h"
 #include "flow_config.h"
 #include "idm.h"
 #include "iomanip"
 #include "json_parser.h"
 #include "report_evaluator.h"
-#include "summary.h"
+#include "feature_summary.h"
 
-namespace idb {
+namespace ieda_feature {
 
 bool FeatureParser::buildReportSummary(std::string json_path, std::string step)
 {
@@ -111,18 +112,17 @@ bool FeatureParser::buildReportSummaryMap(std::string csv_path, int bin_cnt_x, i
   eval_api.evalNetDens(inst_status);
   eval_api.plotBinValue(csv_path, "macro_net_density", eval::CONGESTION_TYPE::kNetCong);
 
-  eval_api.plotMacroChannel(0.5, csv_path+"macro_channel.csv" );
+  eval_api.plotMacroChannel(0.5, csv_path + "macro_channel.csv");
   eval_api.evalMacroMargin();
   eval_api.plotBinValue(csv_path, "macro_margin_h", eval::CONGESTION_TYPE::kMacroMarginH);
   eval_api.plotBinValue(csv_path, "macro_margin_v", eval::CONGESTION_TYPE::kMacroMarginV);
   double space_ratio = eval_api.evalMaxContinuousSpace();
   eval_api.plotBinValue(csv_path, "macro_continuous_white_space", eval::CONGESTION_TYPE::kContinuousWS);
-  eval_api.evalIOPinAccess( csv_path+"io_pin_access.csv");
+  eval_api.evalIOPinAccess(csv_path + "io_pin_access.csv");
 
   std::cout << std::endl << "Save feature map success, path = " << csv_path << std::endl;
   return true;
 }
-
 
 json FeatureParser::buildSummaryInfo()
 {
@@ -335,20 +335,18 @@ json FeatureParser::buildSummaryMacros()
   for (int i = 0; i < block_num; i++) {
     summary_macro[i]["Type"] = std::get<std::string>(macro_list[i]["Type"]);
     summary_macro[i]["Orient"] = std::get<std::string>(macro_list[i]["Orient"]);
-    summary_macro[i]["Area"] = std::get<float>(macro_list[i]["Area"]) / dbu / dbu ;
-    summary_macro[i]["Area Ratio"] =  std::get<float>(macro_list[i]["Area Ratio"]);
-    summary_macro[i]["Lx"] =  std::get<float>(macro_list[i]["Lx"]) / dbu;
-    summary_macro[i]["Ly"] =  std::get<float>(macro_list[i]["Ly"]) / dbu;
-    summary_macro[i]["Width"] =  std::get<float>(macro_list[i]["Width"])  / dbu;
-    summary_macro[i]["Height"] =  std::get<float>(macro_list[i]["Height"])  / dbu;
-    summary_macro[i]["#Pins"] =  std::get<float>(macro_list[i]["#Pins"]) ;
+    summary_macro[i]["Area"] = std::get<float>(macro_list[i]["Area"]) / dbu / dbu;
+    summary_macro[i]["Area Ratio"] = std::get<float>(macro_list[i]["Area Ratio"]);
+    summary_macro[i]["Lx"] = std::get<float>(macro_list[i]["Lx"]) / dbu;
+    summary_macro[i]["Ly"] = std::get<float>(macro_list[i]["Ly"]) / dbu;
+    summary_macro[i]["Width"] = std::get<float>(macro_list[i]["Width"]) / dbu;
+    summary_macro[i]["Height"] = std::get<float>(macro_list[i]["Height"]) / dbu;
+    summary_macro[i]["#Pins"] = std::get<float>(macro_list[i]["#Pins"]);
     summary_macro[i]["Peri Bias"] = std::get<float>(macro_list[i]["Peri Bias"]) / dbu / dbu;
   }
 
   return summary_macro;
 }
-
-
 
 json FeatureParser::buildSummaryLayers()
 {
@@ -842,7 +840,8 @@ json FeatureParser::buildSummaryRT()
 {
   json summary_rt;
 
-  auto& rt_sum = dmInst->get_feature_summary().getRTSummary();
+  RTSummary& rt_sum = _summary->get_summary_irt();
+
   json rt_pa;
   for (auto routing_access_point_num : rt_sum.pa_summary.routing_access_point_num_map) {
     rt_pa["routing_access_point_num_map"][std::to_string(routing_access_point_num.first)] = routing_access_point_num.second;
@@ -948,4 +947,4 @@ json FeatureParser::buildSummaryRT()
   return summary_rt;
 }
 
-}  // namespace idb
+}  // namespace ieda_feature
