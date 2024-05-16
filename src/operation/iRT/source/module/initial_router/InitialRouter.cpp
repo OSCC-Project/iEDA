@@ -1124,6 +1124,7 @@ void InitialRouter::debugOutputGuide(IRModel& ir_model)
 void InitialRouter::updateSummary(IRModel& ir_model)
 {
   int32_t micron_dbu = RTDM.getDatabase().get_micron_dbu();
+  ScaleAxis& gcell_axis = RTDM.getDatabase().get_gcell_axis();
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
   std::vector<CutLayer>& cut_layer_list = RTDM.getDatabase().get_cut_layer_list();
   std::vector<std::vector<ViaMaster>>& layer_via_master_list = RTDM.getDatabase().get_layer_via_master_list();
@@ -1205,11 +1206,19 @@ void InitialRouter::updateSummary(IRModel& ir_model)
     routing_segment_list_list.resize(ir_net_list.size());
     for (IRNet& ir_net : ir_net_list) {
       for (IRPin& ir_pin : ir_net.get_ir_pin_list()) {
-        real_pin_coord_map_list[ir_net.get_net_idx()][ir_pin.get_pin_name()].push_back(ir_pin.get_key_access_point().getGridLayerCoord());
+        LayerCoord layer_coord = ir_pin.get_key_access_point().getGridLayerCoord();
+        real_pin_coord_map_list[ir_net.get_net_idx()][ir_pin.get_pin_name()].emplace_back(
+            RTUtil::getRealRectByGCell(layer_coord, gcell_axis).getMidPoint(), layer_coord.get_layer_idx());
       }
       for (Segment<TNode<Guide>*>& segment : RTUtil::getSegListByTree(ir_net.get_ir_result_tree())) {
-        routing_segment_list_list[ir_net.get_net_idx()].emplace_back(segment.get_first()->value().get_grid_coord(),
-                                                                     segment.get_second()->value().get_grid_coord());
+        LayerCoord first_layer_coord = segment.get_first()->value().get_grid_coord();
+        LayerCoord first_real_coord(RTUtil::getRealRectByGCell(first_layer_coord, gcell_axis).getMidPoint(),
+                                    first_layer_coord.get_layer_idx());
+        LayerCoord second_layer_coord = segment.get_second()->value().get_grid_coord();
+        LayerCoord second_real_coord(RTUtil::getRealRectByGCell(second_layer_coord, gcell_axis).getMidPoint(),
+                                     second_layer_coord.get_layer_idx());
+
+        routing_segment_list_list[ir_net.get_net_idx()].emplace_back(first_real_coord, second_real_coord);
       }
     }
     timing = RTI.getTiming(real_pin_coord_map_list, routing_segment_list_list);
@@ -1231,9 +1240,7 @@ void InitialRouter::printSummary(IRModel& ir_model)
 
   fort::char_table routing_demand_map_table;
   {
-    routing_demand_map_table << fort::header << "routing_layer"
-                             << "demand"
-                             << "proportion" << fort::endr;
+    routing_demand_map_table << fort::header << "routing_layer" << "demand" << "proportion" << fort::endr;
     for (RoutingLayer& routing_layer : routing_layer_list) {
       routing_demand_map_table << routing_layer.get_layer_name() << routing_demand_map[routing_layer.get_layer_idx()]
                                << RTUtil::getPercentage(routing_demand_map[routing_layer.get_layer_idx()], total_demand) << fort::endr;
@@ -1242,9 +1249,7 @@ void InitialRouter::printSummary(IRModel& ir_model)
   }
   fort::char_table routing_overflow_map_table;
   {
-    routing_overflow_map_table << fort::header << "routing_layer"
-                               << "overflow"
-                               << "proportion" << fort::endr;
+    routing_overflow_map_table << fort::header << "routing_layer" << "overflow" << "proportion" << fort::endr;
     for (RoutingLayer& routing_layer : routing_layer_list) {
       routing_overflow_map_table << routing_layer.get_layer_name() << routing_overflow_map[routing_layer.get_layer_idx()]
                                  << RTUtil::getPercentage(routing_overflow_map[routing_layer.get_layer_idx()], total_overflow)
@@ -1255,9 +1260,7 @@ void InitialRouter::printSummary(IRModel& ir_model)
   }
   fort::char_table routing_wire_length_map_table;
   {
-    routing_wire_length_map_table << fort::header << "routing_layer"
-                                  << "wire_length"
-                                  << "proportion" << fort::endr;
+    routing_wire_length_map_table << fort::header << "routing_layer" << "wire_length" << "proportion" << fort::endr;
     for (RoutingLayer& routing_layer : routing_layer_list) {
       routing_wire_length_map_table << routing_layer.get_layer_name() << routing_wire_length_map[routing_layer.get_layer_idx()]
                                     << RTUtil::getPercentage(routing_wire_length_map[routing_layer.get_layer_idx()], total_wire_length)
@@ -1268,9 +1271,7 @@ void InitialRouter::printSummary(IRModel& ir_model)
   }
   fort::char_table cut_via_num_map_table;
   {
-    cut_via_num_map_table << fort::header << "cut_layer"
-                          << "via_num"
-                          << "proportion" << fort::endr;
+    cut_via_num_map_table << fort::header << "cut_layer" << "via_num" << "proportion" << fort::endr;
     for (CutLayer& cut_layer : cut_layer_list) {
       cut_via_num_map_table << cut_layer.get_layer_name() << cut_via_num_map[cut_layer.get_layer_idx()]
                             << RTUtil::getPercentage(cut_via_num_map[cut_layer.get_layer_idx()], total_via_num) << fort::endr;
