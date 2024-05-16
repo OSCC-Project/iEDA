@@ -45,7 +45,9 @@ class CongBin
   double get_net_cong() const { return _net_cong; }
   double get_h_net_cong() const { return _h_net_cong; }
   double get_v_net_cong() const { return _v_net_cong; }
-
+  double get_h_margin() const { return _h_margin; }
+  double get_v_margin() const { return _v_margin; }
+  bool isContinuousWhiteSpace() const {return _continuous_white_space;}
 
   int get_average_wire_width() const { return _average_wire_width; }
   int get_horizontal_capacity() const { return _horizontal_capacity; }
@@ -60,6 +62,9 @@ class CongBin
   void set_net_cong(const double& bbox_cong) { _net_cong = bbox_cong; }
   void set_h_net_cong(const double& bbox_cong) { _h_net_cong = bbox_cong; }
   void set_v_net_cong(const double& bbox_cong) { _v_net_cong = bbox_cong; }
+  void set_h_margin(const double& h_margin) { _h_margin = h_margin; }
+  void set_v_margin(const double& v_margin) { _v_margin = v_margin; }
+  void set_ContinousWhiteSpace(bool continuous_white_space) { _continuous_white_space = continuous_white_space;}
 
 
   void set_average_wire_width(const int& average_wire_width) { _average_wire_width = average_wire_width; }
@@ -87,6 +92,9 @@ class CongBin
   double _net_cong;
   double _h_net_cong;
   double _v_net_cong;
+  double _h_margin;
+  double _v_margin;
+  bool _continuous_white_space;
 
   int _average_wire_width;
   int _horizontal_capacity;
@@ -103,6 +111,9 @@ inline void CongBin::reset()
   _net_cong = 0.0;
   _h_net_cong = 0.0;
   _v_net_cong = 0.0;
+  _h_margin = 0.0;
+  _v_margin = 0.0;
+  _continuous_white_space = false;
 }
 
 class CongGrid

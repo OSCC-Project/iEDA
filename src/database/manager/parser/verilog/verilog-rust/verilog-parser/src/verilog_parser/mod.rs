@@ -185,6 +185,10 @@ fn extract_range(input: &str) -> Option<(&str, i32, i32)> {
 fn extract_single(input: &str) -> Option<(&str, i32)> {
     if let Some(open_bracket) = input.find('[') {
         if let Some(close_bracket) = input.find(']') {
+            // return None when input likes "cpuregs[19][1]".
+            if input[close_bracket + 1..].contains('[') {
+                return None;
+            }
             let name = &input[..open_bracket];
             let index = input[open_bracket + 1..close_bracket].parse().ok()?;
             return Some((name.trim_end(), index));
@@ -836,6 +840,10 @@ mod tests {
     fn extract_single(input: &str) -> Option<(&str, i32)> {
         if let Some(open_bracket) = input.find('[') {
             if let Some(close_bracket) = input.find(']') {
+                // return None when input likes "cpuregs[19][1]".
+                if input[close_bracket + 1..].contains('[') {
+                    return None;
+                }
                 let name = &input[..open_bracket];
                 let index = input[open_bracket + 1..close_bracket].parse().ok()?;
                 return Some((name.trim_end(), index));
@@ -881,6 +889,14 @@ mod tests {
         let input_str = "\\in_$002 [0]"; //(wire)
         let _input_str = "sky130_fd_sc_hs__nor2_1 _17_"; //(cell inst)
         let parse_result = VerilogParser::parse(Rule::port_or_wire_id, input_str);
+        println!("{:#?}", parse_result);
+        print_parse_result(parse_result);
+    }
+
+    #[test]
+    fn test_parse_inst_or_cell_id() {
+        let input_str = "i_cache_subsystem/i_nbdcache/sram_block[7].tag_sram/macro_mem[2].i_ram";
+        let parse_result = VerilogParser::parse(Rule::inst_or_cell_id, input_str);
         println!("{:#?}", parse_result);
         print_parse_result(parse_result);
     }
@@ -1136,7 +1152,8 @@ mod tests {
     #[test]
     fn test_extract_funs() {
         let _input1 = "gpio[3:0]";
-        let input2 = "gpio [0]";
+        let _input2 = "gpio [0]";
+        let input2 = "cpuregs[0][0]";
         let _input3 = "gpio";
         if let Some((name, range_from, range_to)) = extract_range(input2) {
             // extract gpio，3，0

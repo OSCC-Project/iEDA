@@ -28,6 +28,7 @@ void register_feature(py::module& m)
   m.def("feature_instances", feature_instances, py::arg("path"));
   m.def("feature_nets", feature_nets, py::arg("path"));
   m.def("feature_summary", feature_summary, py::arg("path"), py::arg("step"));
+  m.def("feature_summary_map", feature_summary_map, py::arg("path"), py::arg("bin_cnt_x"), py::arg("bin_cnt_y"));
 }
 
 }  // namespace python_interface

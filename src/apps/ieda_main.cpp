@@ -34,16 +34,24 @@ int main(int argc, char** argv)
 {
   if (argc == 1) {
     argv[0] = const_cast<char*>("UserShell\n");
-  } else {
-    for (int i = 1; i < argc; ++i) {
-      if (std::string("-script") == argv[i]) {
-        // discard every args before the (first) "-script"
-        // pass the rest of the args to Tcl interpreter
-        argc -= i;
-        argv += i;
-        break;
-      }
+  }
+
+  bool printVersion = false;
+  for (int i = 1; i < argc; ++i) {
+    if (std::string("-v") == argv[i]) {
+      printVersion = true;
     }
+    if (std::string("-script") == argv[i]) {
+      // discard every args before the (first) "-script"
+      // pass the rest of the args to Tcl interpreter
+      argc -= i;
+      argv += i;
+      break;
+    }
+  }
+
+  if (printVersion) {
+    std::cout << "Git version: " << GIT_VERSION << std::endl;
   }
 
   plfInst->runTcl(argc, argv);

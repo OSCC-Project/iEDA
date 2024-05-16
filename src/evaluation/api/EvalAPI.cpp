@@ -278,6 +278,32 @@ double EvalAPI::evalMacroChannelPinRatio(float dist_ratio)
   return _congestion_eval_inst->evalMacroChannelPinRatio(dist_ratio);
 }
 
+vector<MacroVariant> EvalAPI::evalMacrosInfo()
+{
+  return _congestion_eval_inst->evalMacrosInfo();
+}
+
+void EvalAPI::plotMacroChannel(float dist_ratio,  const std::string& filename)
+{
+  _congestion_eval_inst->plotMacroChannel(dist_ratio, filename);
+}
+
+void EvalAPI::evalMacroMargin()
+{
+  _congestion_eval_inst->evalMacroMargin();
+}
+
+double EvalAPI::evalMaxContinuousSpace()
+{
+  return _congestion_eval_inst->evalMaxContinuousSpace();
+}
+
+void EvalAPI::evalIOPinAccess(const std::string& filename)
+{
+  return _congestion_eval_inst->evalIOPinAccess(filename);
+}
+
+
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 vector<float> EvalAPI::evalPinDens()

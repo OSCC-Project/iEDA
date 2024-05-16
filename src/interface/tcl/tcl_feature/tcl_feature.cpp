@@ -167,4 +167,52 @@ unsigned CmdFeatureSummary::exec()
   return 1;
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/**
+ * feature_summary -path "xxxx.csv"
+ */
+CmdFeatureSummaryMap::CmdFeatureSummaryMap(const char* cmd_name) : TclCmd(cmd_name)
+{
+  auto* path_option = new TclStringOption(TCL_PATH, 1, nullptr);
+  auto* bin_cnt_x = new TclIntOption("-bin_cnt_x", 0);
+  auto* bin_cnt_y = new TclIntOption("-bin_cnt_y", 0);
+  addOption(path_option);
+  addOption(bin_cnt_x);
+  addOption(bin_cnt_y);
+
+}
+
+unsigned CmdFeatureSummaryMap::check()
+{
+  TclOption* path_option = getOptionOrArg(TCL_PATH);
+  TclOption* bin_cnt_x = getOptionOrArg("-bin_cnt_x");
+  TclOption* bin_cnt_y = getOptionOrArg("-bin_cnt_y");
+  LOG_FATAL_IF(!path_option);
+  LOG_FATAL_IF(!bin_cnt_x);
+  LOG_FATAL_IF(!bin_cnt_y);
+  return 1;
+}
+
+unsigned CmdFeatureSummaryMap::exec()
+{
+  if (!check()) {
+    return 0;
+  }
+
+  TclOption* option = getOptionOrArg(TCL_PATH);
+  auto* opt_bin_cnt_x = getOptionOrArg("-bin_cnt_x");
+  auto* opt_bin_cnt_y = getOptionOrArg("-bin_cnt_y");
+  auto path = option->getStringVal();
+  auto bin_cnt_x = opt_bin_cnt_x->getIntVal();
+  auto bin_cnt_y = opt_bin_cnt_y->getIntVal();
+
+  iplf::FeatureManager feature_parser(dmInst->get_idb_layout(), dmInst->get_idb_design());
+
+  feature_parser.save_reportSummary_map(path, bin_cnt_x, bin_cnt_y);
+
+  return 1;
+}
+
 }  // namespace tcl

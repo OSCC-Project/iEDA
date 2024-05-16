@@ -42,6 +42,8 @@ class ParserEngine
 
   Block& get_design() { return *_design; }
   const Block& get_design() const { return *_design; }
+  const std::unordered_map<std::string, std::shared_ptr<Cell>>& get_cells()const { return _cells;}
+  const std::unordered_map<std::string, std::shared_ptr<Instance>>& get_instances()const { return _instances;}
 
   std::shared_ptr<Block> get_design_ptr() { return _design; }
 

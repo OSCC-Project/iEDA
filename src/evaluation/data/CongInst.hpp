@@ -40,6 +40,7 @@ class CongInst
   std::vector<CongPin*> get_pin_list() const { return _pin_list; }
   INSTANCE_LOC_TYPE get_loc_type() const { return _loc_type; }
   INSTANCE_STATUS get_status() const { return _status; }
+  INSTANCE_ORIENT get_orient() const { return _orient; }
 
   // booler
   bool isNormalInst() const { return _loc_type == INSTANCE_LOC_TYPE::kNormal; }
@@ -54,6 +55,7 @@ class CongInst
   void set_flip_flop(const bool is_flip_flop) { _is_flip_flop = is_flip_flop; }
   void set_status(const INSTANCE_STATUS& status) { _status = status; }
   void add_pin(CongPin* pin) { _pin_list.push_back(pin); }
+  void set_orient(const INSTANCE_ORIENT& orient) { _orient = orient;}
 
  private:
   std::string _name;
@@ -61,6 +63,7 @@ class CongInst
   std::vector<CongPin*> _pin_list;
   INSTANCE_LOC_TYPE _loc_type;
   INSTANCE_STATUS _status;
+  INSTANCE_ORIENT _orient;
   bool _is_flip_flop = false;
 };
 

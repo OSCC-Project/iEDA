@@ -14,8 +14,8 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-#include "gtest/gtest.h"
 #include "api/iIR.hh"
+#include "gtest/gtest.h"
 #include "log/Log.hh"
 #include "string/Str.hh"
 
@@ -37,11 +37,26 @@ class IRTest : public testing::Test {
 TEST_F(IRTest, ir_api) {
   const char* spef_file_path =
       "/home/taosimin/T28/spef/asic_top.spef_vdd_vss_1212.rcworst.0c.spef";
+  const char* instance_power_path =
+      "/home/shaozheqing/iEDA/bin/report_instance.csv";
 
   iIR ir_analysis;
+  ir_analysis.readInstancePowerDB(instance_power_path);
   ir_analysis.readSpef(spef_file_path);
   ir_analysis.solveIRDrop("VDD");
 }
 
+TEST_F(IRTest, ir_small) {
+  const char* spef_file_path =
+      "/home/taosimin/ir_example/aes/aes_vdd_vss.spef";
+  const char* instance_power_path =
+      "/home/taosimin/ir_example/aes/aes_instance.csv";
+
+  iIR ir_analysis;
+  ir_analysis.init();
+  ir_analysis.readInstancePowerDB(instance_power_path);
+  ir_analysis.readSpef(spef_file_path);
+  ir_analysis.solveIRDrop("VDD");
 }
 
+}  // namespace

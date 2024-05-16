@@ -188,7 +188,7 @@ if(BUILD_PR_FLOW)
           ${sources}
     )
 
-    target_link_libraries(iGUI Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::Xml Qt${QT_VERSION_MAJOR}::Core)
+    target_link_libraries(iGUI Qt5${QT_VERSION_MAJOR}::Widgets Qt5${QT_VERSION_MAJOR}::Xml Qt5${QT_VERSION_MAJOR}::Core)
     # target_link_libraries(iGUI idrc_api file_manager_cts file_manager_drc file_manager_placement tool_api_ipl OpenMP::OpenMP_CXX)
     target_link_libraries(iGUI 
         file_manager_cts 

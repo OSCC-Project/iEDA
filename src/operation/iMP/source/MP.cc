@@ -41,9 +41,8 @@ void MP::runMP()
   float init_temperature = 2000.0;
 
   BlkClustering2 clustering{.l1_nparts = 200, .level_num = 1, .parser = _parser};  // one level place
-  root().parallel_preorder_op(clustering);
-  // auto placer = SAHierPlacer<int32_t>(root(), macro_halo_micron, dead_space_ratio, weight_wl, weight_ol, weight_ob, weight_periphery,
-  //                                     weight_blockage, weight_io, max_iters, cool_rate, init_temperature);
+  // BlkClustering2 clustering{.l1_nparts = 10, .l2_nparts = 20, .level_num = 2, .parser = _parser};  // two-level place
+  clustering(root());
   auto placer = SAHierPlacer<int32_t>{.macro_halo_micron = macro_halo_micron,
                                       .dead_space_ratio = dead_space_ratio,
                                       .weight_wl = weight_wl,
@@ -54,7 +53,9 @@ void MP::runMP()
                                       .weight_io = weight_io,
                                       .max_iters = max_iters,
                                       .cool_rate = cool_rate,
-                                      .init_temperature = init_temperature};
+                                      .init_temperature = init_temperature,
+                                      .cluster_level_num = clustering.level_num,
+                                      .parser = _parser};
 
   placer(root());
   std::string file_name = "placement_level" + std::to_string(clustering.level_num) + "_" + std::to_string(clustering.l1_nparts) + "_"

@@ -50,8 +50,8 @@ class FpApi
   bool makeTracks(std::string layer_name, int x_offset, int x_pitch, int y_offset, int y_pitch);
   bool autoPlacePins(std::string layer_name, int width, int height);
   bool placePort(std::string pin_name, int32_t x_offset, int32_t y_offset, int32_t rect_width, int32_t rect_height, std::string layer_name);
-  bool placeIOFiller(std::vector<std::string> filler_name_list, std::string prefix, std::string orient, double begin, double end,
-                     std::string source);
+  bool autoPlacePad(std::vector<std::string> pad_masters, std::vector<std::string> conner_masters);
+  bool placeIOFiller(std::vector<std::string> filler_name_list, std::string prefix);
 
   bool tapCells(double distance, std::string tapcell_name, std::string endcap_name);
 

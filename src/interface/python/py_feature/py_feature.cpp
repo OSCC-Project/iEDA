@@ -48,4 +48,12 @@ bool feature_summary(const std::string& path, const std::string& step)
   return feature_parser.save_reportSummary(path, step);
 }
 
+bool feature_summary_map(const std::string& path,  const int& bin_cnt_x, const int& bin_cnt_y)
+{
+  iplf::FeatureManager feature_parser(dmInst->get_idb_layout(), dmInst->get_idb_design());
+
+  return feature_parser.save_reportSummary_map(path, bin_cnt_x, bin_cnt_y);
+}
+
+
 }  // namespace python_interface

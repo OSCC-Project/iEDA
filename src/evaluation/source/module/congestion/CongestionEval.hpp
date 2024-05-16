@@ -18,6 +18,7 @@
 #define SRC_EVALUATOR_SOURCE_CONGESTION_CONGESTIONEVAL_HPP_
 
 #include <map>
+#include <variant>
 
 #include "CongBin.hpp"
 #include "CongInst.hpp"
@@ -26,6 +27,10 @@
 #include "idm.h"
 
 namespace eval {
+// Define a type alias for the variant inside the map
+using ValueVariant = std::variant<float, std::string>;
+// Define a type alias for your variants
+using MacroVariant = std::map<std::string, ValueVariant>;
 
 class CongestionEval
 {
@@ -78,6 +83,14 @@ class CongestionEval
   int32_t evalMacroGuidance(int32_t cx, int32_t cy, int32_t width, int32_t height, const string& name);
   double evalMacroChannelUtil(float dist_ratio);
   double evalMacroChannelPinRatio(float dist_ratio);
+
+  std::vector<MacroVariant> evalMacrosInfo();
+  void plotMacroChannel(float dist_ratio,  const std::string& filename);
+  void evalMacroMargin();
+  double evalMaxContinuousSpace();
+  void evalIOPinAccess(const std::string& filename);
+
+
   /////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////
   void reportCongestion(const std::string& plot_path, const std::string& output_file_name);

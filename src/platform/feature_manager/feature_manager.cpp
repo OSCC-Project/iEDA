@@ -44,4 +44,10 @@ bool FeatureManager::save_reportSummary(std::string path, std::string step)
   return feature_parser.buildReportSummary(path, step);
 }
 
+bool FeatureManager::save_reportSummary_map(std::string path, int bin_cnt_x, int bin_cnt_y)
+{
+  FeatureParser feature_parser(_idb_layout, _idb_design);
+  return feature_parser.buildReportSummaryMap(path, bin_cnt_x, bin_cnt_y);
+}
+
 }  // namespace iplf
