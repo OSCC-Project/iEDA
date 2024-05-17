@@ -16,6 +16,7 @@
 // ***************************************************************************************
 #include "feature_manager.h"
 
+#include "feature_builder.h"
 #include "feature_parser.h"
 
 namespace ieda_feature {
@@ -31,28 +32,15 @@ FeatureManager::~FeatureManager()
     delete _summary;
     _summary = nullptr;
   }
-};
-
-bool FeatureManager::save_layout(std::string path)
-{
-  FeatureParser feature_parser(_summary);
-  return feature_parser.buildLayout(path);
-}
-
-bool FeatureManager::save_instances(std::string path)
-{
-  FeatureParser feature_parser(_summary);
-  return feature_parser.buildInstances(path);
-}
-
-bool FeatureManager::save_nets(std::string path)
-{
-  FeatureParser feature_parser(_summary);
-  return feature_parser.buildNets(path);
 }
 
 bool FeatureManager::save_reportSummary(std::string path, std::string step)
 {
+  FeatureBuilder builder;
+  auto db_summary = builder.buildDBSummary();
+
+  _summary->set_db(db_summary);
+
   FeatureParser feature_parser(_summary);
   return feature_parser.buildReportSummary(path, step);
 }

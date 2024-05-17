@@ -37,13 +37,124 @@
 
 namespace ieda_feature {
 
-class DBSummary
+struct SummaryInfo
 {
- public:
-  DBSummary() {}
-  ~DBSummary() = default;
+  std::string eda_tool;
+  std::string eda_version;
+  std::string design_name;
+  std::string design_version;
+  std::string flow_stage;
+  std::string flow_runtime;
+  std::string flow_memory;
+};
 
- private:
+struct SummaryLayout
+{
+  int design_dbu;
+  double die_area;
+  double die_usage;
+  double die_bounding_width;
+  double die_bounding_height;
+  double core_area;
+  double core_usage;
+  double core_bounding_width;
+  double core_bounding_height;
+};
+
+struct SummaryStatis
+{
+  uint num_layers;
+  uint num_layers_routing;
+  uint num_layers_cut;
+  uint num_iopins;
+  uint num_instances;
+  uint num_nets;
+  uint num_pdn;
+};
+
+struct SummaryInstance
+{
+  uint num;
+  double num_ratio;
+  double area;
+  double area_ratio;
+  double die_usage;
+  double core_usage;
+  uint pin_num;
+  double pin_ratio;
+};
+
+struct SummaryInstances
+{
+  SummaryInstance total;
+  SummaryInstance iopads;
+  SummaryInstance macros;
+  SummaryInstance logic;
+  SummaryInstance clock;
+};
+
+struct SummaryNets
+{
+  uint64_t num_total;
+  uint64_t num_signal;
+  uint64_t num_clock;
+  uint64_t num_pins;
+  uint64_t num_segment;
+  uint64_t num_via;
+  uint64_t num_wire;
+  uint64_t num_patch;
+
+  double wire_len;
+  double wire_len_signal;
+  double ratio_signal;
+  double wire_len_clock;
+  double ratio_clock;
+};
+
+struct SummaryLayerRouting
+{
+  std::string layer_name;
+  int32_t layer_order;
+  double wire_len;
+  uint64_t wire_num;
+  uint64_t patch_num;
+};
+
+struct SummaryLayerCut
+{
+  std::string layer_name;
+  int32_t layer_order;
+  uint64_t via_num;
+};
+
+struct SummaryLayers
+{
+  std::vector<SummaryLayerRouting> routing_layers;
+  std::vector<SummaryLayerCut> cut_layers;
+};
+
+struct SummaryPin
+{
+  uint64_t pin_num;
+  uint64_t net_num;
+  double net_ratio;
+};
+
+struct SummaryPins
+{
+  int max_fanout;
+  std::vector<SummaryPin> pin_distribution;
+};
+
+struct DBSummary
+{
+  SummaryInfo info;
+  SummaryLayout layout;
+  SummaryStatis statis;
+  SummaryInstances instances;
+  SummaryNets nets;
+  SummaryLayers layers;
+  SummaryPins pins;
 };
 
 }  // namespace ieda_feature

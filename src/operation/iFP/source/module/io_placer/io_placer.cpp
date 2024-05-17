@@ -249,7 +249,7 @@ void IoPlacer::placeIOFiller(std::vector<idb::IdbCellMaster*>& fillers, const st
 {
   auto idb_design = dmInst->get_idb_design();
   auto idb_inst_list = idb_design->get_instance_list();
-  auto idb_io_inst_list = idb_inst_list->get_io_cell_list();
+  auto idb_io_inst_list = idb_inst_list->get_iopad_list();
 
   _iofiller_idx = -1;
 

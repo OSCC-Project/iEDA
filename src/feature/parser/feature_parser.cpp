@@ -33,20 +33,14 @@
 
 #include "feature_parser.h"
 
-#include "IdbCore.h"
-#include "IdbDesign.h"
-#include "IdbDie.h"
-#include "IdbEnum.h"
-#include "IdbInstance.h"
-#include "IdbLayout.h"
-#include "IdbNet.h"
-#include "IdbRow.h"
-#include "IdbTrackGrid.h"
+#include "EvalAPI.hpp"
+#include "Evaluator.hh"
 #include "feature_summary.h"
 #include "flow_config.h"
 #include "idm.h"
 #include "iomanip"
 #include "json_parser.h"
+#include "report_evaluator.h"
 
 namespace ieda_feature {
 FeatureParser::FeatureParser(FeatureSummary* summary)
@@ -62,205 +56,64 @@ FeatureParser::~FeatureParser()
   _design = nullptr;
 }
 
-bool FeatureParser::buildLayout(std::string json_path)
+bool FeatureParser::buildReportSummary(std::string json_path, std::string step)
 {
-  nlohmann::json root_json;
   std::ofstream& file_stream = ieda::getOutputFileStream(json_path);
-  {
-    root_json["top_name"] = _design->get_design_name();
-    root_json["dbu"] = _layout->get_units()->get_micron_dbu();
+  json root;
 
-    // Die
-    root_json["die"]["llx"] = _layout->get_die()->get_llx();
-    root_json["die"]["lly"] = _layout->get_die()->get_lly();
-    root_json["die"]["urx"] = _layout->get_die()->get_urx();
-    root_json["die"]["ury"] = _layout->get_die()->get_ury();
+  root["Design Information"] = buildSummaryInfo();
 
-    // Core
-    root_json["core"]["llx"] = _layout->get_core()->get_bounding_box()->get_low_x();
-    root_json["core"]["lly"] = _layout->get_core()->get_bounding_box()->get_low_y();
-    root_json["core"]["urx"] = _layout->get_core()->get_bounding_box()->get_high_x();
-    root_json["core"]["ury"] = _layout->get_core()->get_bounding_box()->get_high_y();
+  root["Design Layout"] = buildSummaryLayout();
 
-    // Rows
-    root_json["rows"]["num_rows"] = _layout->get_rows()->get_row_num();
-    root_json["rows"]["row_width"] = _layout->get_core()->get_bounding_box()->get_width();  // iEDA using the core width as the row width
-    root_json["rows"]["row_height"] = _layout->get_rows()->get_row_height();
-  }
-  // tracks
-  {
-    json array = json::array();
-    for (auto* track : _layout->get_track_grid_list()->get_track_grid_list()) {
-      nlohmann::json json;
-      json["layer"] = track->get_first_layer()->get_name();
-      json["prefer_dir"] = track->get_track()->is_track_horizontal() ? "H" : "V";
-      json["num"] = track->get_track_num();
-      json["start"] = track->get_track()->get_start();
-      json["step"] = track->get_track()->get_pitch();
+  root["Design Statis"] = buildSummaryStatis();
 
-      array.push_back(json);
-    }
-    root_json["tracks"] = array;
-  }
+  root["Instances"] = buildSummaryInstances();
 
-  // layers
-  {
-    json array = json::array();
-    IdbLayerProperty layer_property;
-    for (auto* layer : _layout->get_layers()->get_routing_layers()) {
-      IdbLayerRouting* routing_layer = dynamic_cast<IdbLayerRouting*>(layer);
+  root["Macros Statis"] = buildSummaryMacrosStatis();
 
-      nlohmann::json json;
-      json["name"] = routing_layer->get_name();
-      json["type"] = layer_property.get_name(routing_layer->get_type());
-      json["id"] = routing_layer->get_id();
-      json["order"] = routing_layer->get_order();
-      json["min_width"] = routing_layer->get_min_width();
-      json["max_width"] = routing_layer->get_max_width();
-      json["width"] = routing_layer->get_width();
-      json["area"] = routing_layer->get_area();
+  root["Macros"] = buildSummaryMacros();
 
-      array.push_back(json);
-    }
+  root["Nets"] = buildSummaryNets();
 
-    root_json["routing_layers"] = array;
-  }
+  root["PDN"] = buildSummaryPdn();
 
-  file_stream << std::setw(4) << root_json;
+  root["Layers"] = buildSummaryLayers();
+
+  root["Pins"] = buildSummaryPins();
+
+  if (!step.empty())
+    root[step] = flowSummary(step);
+
+  file_stream << std::setw(4) << root;
 
   ieda::closeFileStream(file_stream);
 
   std::cout << std::endl << "Save feature json success, path = " << json_path << std::endl;
-
   return true;
 }
 
-bool FeatureParser::buildInstances(std::string json_path)
+bool FeatureParser::buildReportSummaryMap(std::string csv_path, int bin_cnt_x, int bin_cnt_y)
 {
-  nlohmann::json root_json;
-  std::ofstream& file_stream = ieda::getOutputFileStream(json_path);
-  // instance list
-  {
-    auto array_instance = json::array();
-    IdbCellProperty cell_property;
-    IdbSiteProperty orient_property;
-    IdbInstancePropertyMap instance_property;
-    int index = 0;
-    for (auto* instacne : _design->get_instance_list()->get_instance_list()) {
-      nlohmann::json json_instance;
-      json_instance["name"] = instacne->get_name();
-      json_instance["master"] = instacne->get_cell_master()->get_name();
-      json_instance["type"] = cell_property.get_name(instacne->get_cell_master()->get_type());
-      json_instance["llx"] = instacne->get_coordinate()->get_x();
-      json_instance["lly"] = instacne->get_coordinate()->get_y();
-      json_instance["urx"] = instacne->get_bounding_box()->get_high_x();
-      json_instance["ury"] = instacne->get_bounding_box()->get_high_y();
-      json_instance["orient"] = orient_property.get_orient_name(instacne->get_orient());
-      json_instance["status"] = instance_property.get_status_str(instacne->get_status());
+  eval::EvalAPI& eval_api = eval::EvalAPI::initInst();
+  eval_api.initCongDataFromIDB(bin_cnt_x, bin_cnt_y);
 
-      auto array_pins = json::array();
-      for (auto* pin : instacne->get_pin_list()->get_pin_list()) {
-        if (pin->get_term()->is_pdn() || pin->get_net() == nullptr)
-          continue;
+  auto inst_status = eval::INSTANCE_STATUS::kFixed;
+  eval_api.evalInstDens(inst_status);
+  eval_api.plotBinValue(csv_path, "macro_density", eval::CONGESTION_TYPE::kInstDens);
+  eval_api.evalPinDens(inst_status);
+  eval_api.plotBinValue(csv_path, "macro_pin_density", eval::CONGESTION_TYPE::kPinDens);
+  eval_api.evalNetDens(inst_status);
+  eval_api.plotBinValue(csv_path, "macro_net_density", eval::CONGESTION_TYPE::kNetCong);
 
-        nlohmann::json json_pin;
+  eval_api.plotMacroChannel(0.5, csv_path + "macro_channel.csv");
+  eval_api.evalMacroMargin();
+  eval_api.plotBinValue(csv_path, "macro_margin_h", eval::CONGESTION_TYPE::kMacroMarginH);
+  eval_api.plotBinValue(csv_path, "macro_margin_v", eval::CONGESTION_TYPE::kMacroMarginV);
+  double space_ratio = eval_api.evalMaxContinuousSpace();
+  eval_api.plotBinValue(csv_path, "macro_continuous_white_space", eval::CONGESTION_TYPE::kContinuousWS);
+  eval_api.evalIOPinAccess(csv_path + "io_pin_access.csv");
 
-        json_pin["name"] = pin->get_term()->get_name();
-        json_pin["c_x"] = pin->get_average_coordinate()->get_x();
-        json_pin["c_y"] = pin->get_average_coordinate()->get_y();
-        json_pin["net"] = pin->get_net()->get_net_name();
-
-        array_pins.push_back(json_pin);
-      }
-      json_instance["pin"] = array_pins;
-
-      array_instance.push_back(json_instance);
-
-      index++;
-      if (index % 1000 == 0) {
-        std::cout << "-" << std::flush;
-        if (index % 100000 == 0 || index == _design->get_instance_list()->get_num()) {
-          std::cout << std::endl;
-        }
-      }
-    }
-
-    root_json["instances"] = array_instance;
-  }
-
-  file_stream << std::setw(4) << root_json;
-
-  ieda::closeFileStream(file_stream);
-
-  std::cout << std::endl << "Save feature json success, path = " << json_path << std::endl;
-
-  return true;
-}
-
-bool FeatureParser::buildNets(std::string json_path)
-{
-  nlohmann::json root_json;
-  std::ofstream& file_stream = ieda::getOutputFileStream(json_path);
-  // net list
-  {
-    auto array_net = json::array();
-
-    IdbConnectProperty connect_property;
-    int index = 0;
-    for (auto* net : _design->get_net_list()->get_net_list()) {
-      nlohmann::json json_net;
-      json_net["name"] = net->get_net_name();
-      json_net["type"] = connect_property.get_type_name(net->get_connect_type());
-      json_net["pin_number"] = net->get_pin_number();
-      json_net["wire_len"] = net->wireLength();
-      json_net["segment_number"] = net->get_segment_num();
-      json_net["via_number"] = net->get_via_number();
-
-      auto array_pins = json::array();
-      /// io pin
-      auto* io_pins = net->get_io_pins();
-      for (auto* io_pin : io_pins->get_pin_list()) {
-        nlohmann::json json_io_pin;
-        json_io_pin["name"] = io_pin->get_term()->get_name();
-        json_io_pin["c_x"] = io_pin->get_average_coordinate()->get_x();
-        json_io_pin["c_y"] = io_pin->get_average_coordinate()->get_y();
-        json_io_pin["instance"] = "";
-
-        array_pins.push_back(json_io_pin);
-      }
-
-      // instance pins
-      for (auto* pin : net->get_instance_pin_list()->get_pin_list()) {
-        nlohmann::json json_pin;
-        json_pin["name"] = pin->get_term()->get_name();
-        json_pin["c_x"] = pin->get_average_coordinate()->get_x();
-        json_pin["c_y"] = pin->get_average_coordinate()->get_y();
-        json_pin["instance"] = pin->get_instance() == nullptr ? "" : pin->get_instance()->get_name();
-
-        array_pins.push_back(json_pin);
-      }
-      json_net["pin"] = array_pins;
-
-      array_net.push_back(json_net);
-
-      index++;
-      if (index % 1000 == 0) {
-        std::cout << "-" << std::flush;
-        if (index % 100000 == 0 || index == _design->get_instance_list()->get_num()) {
-          std::cout << std::endl;
-        }
-      }
-    }
-
-    root_json["nets"] = array_net;
-  }
-
-  file_stream << std::setw(4) << root_json;
-
-  ieda::closeFileStream(file_stream);
-
-  std::cout << std::endl << "Save feature json success, path = " << json_path << std::endl;
-
+  std::cout << std::endl << "Save feature map success, path = " << csv_path << std::endl;
   return true;
 }
 

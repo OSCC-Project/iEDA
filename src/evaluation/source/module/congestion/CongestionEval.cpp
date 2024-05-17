@@ -113,7 +113,7 @@ void CongestionEval::initCongInst()
 
     if (idb_inst->is_flip_flop()) {
       inst_ptr->set_flip_flop(true);
-      std::cout << "flip flop " << std::endl;
+    //   std::cout << "flip flop " << std::endl;
     }
 
     if ((bbox->get_low_x() >= die_lx && bbox->get_high_x() <= core_lx) || (bbox->get_low_x() >= core_ux && bbox->get_high_x() <= die_ux)

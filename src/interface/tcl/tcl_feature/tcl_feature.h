@@ -35,49 +35,6 @@ using ieda::TclStringOption;
 using ieda::TclIntOption;
 
 namespace tcl {
-
-class CmdFeatureGenerateLayout : public TclCmd
-{
- public:
-  explicit CmdFeatureGenerateLayout(const char* cmd_name);
-  ~CmdFeatureGenerateLayout() override = default;
-
-  unsigned check() override;
-  unsigned exec() override;
-
- private:
-  // private function
-  // private data
-};
-
-class CmdFeatureGenerateInstances : public TclCmd
-{
- public:
-  explicit CmdFeatureGenerateInstances(const char* cmd_name);
-  ~CmdFeatureGenerateInstances() override = default;
-
-  unsigned check() override;
-  unsigned exec() override;
-
- private:
-  // private function
-  // private data
-};
-
-class CmdFeatureGenerateNets : public TclCmd
-{
- public:
-  explicit CmdFeatureGenerateNets(const char* cmd_name);
-  ~CmdFeatureGenerateNets() override = default;
-
-  unsigned check() override;
-  unsigned exec() override;
-
- private:
-  // private function
-  // private data
-};
-
 class CmdFeatureSummary : public TclCmd
 {
  public:

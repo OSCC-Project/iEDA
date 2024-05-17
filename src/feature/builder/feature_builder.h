@@ -16,13 +16,13 @@
 // ***************************************************************************************
 #pragma once
 /**
- * @file		summary.h
+ * @file		feature_builder.h
  * @date		13/05/2024
  * @version		0.1
  * @description
 
 
-        summary data
+        build feature data
  *
  */
 
@@ -41,23 +41,23 @@
 
 namespace ieda_feature {
 
-class FeatureSummary
+class FeatureBuilder
 {
  public:
-  FeatureSummary();
-  ~FeatureSummary();
+  FeatureBuilder();
+  ~FeatureBuilder();
 
-  // getter
-  DBSummary& get_db() { return _db; }
-  PlaceSummary& get_summary_ipl() { return _summary_ipl; }
-  RTSummary& get_summary_irt() { return _summary_irt; }
-
-  void set_db(DBSummary db) { _db = db; }
+  // builder
+  DBSummary buildDBSummary();
 
  private:
-  PlaceSummary _summary_ipl;
-  RTSummary _summary_irt;
-  DBSummary _db;
+  SummaryInfo buildSummaryInfo();
+  SummaryLayout buildSummaryLayout();
+  SummaryStatis buildSummaryStatis();
+  SummaryInstances buildSummaryInstances();
+  SummaryNets buildSummaryNets();
+  SummaryLayers buildSummaryLayers();
+  SummaryPins buildSummaryPins();
 };
 
 }  // namespace ieda_feature

@@ -405,6 +405,18 @@ IdbSpecialWire::~IdbSpecialWire()
   _segment_list.clear();
 }
 
+uint IdbSpecialWire::get_via_num()
+{
+  uint number = 0;
+  for (auto segment : _segment_list) {
+    if (segment->is_via()) {
+      number++;
+    }
+  }
+
+  return number;
+}
+
 void IdbSpecialWire::set_wire_state(string state)
 {
   set_wire_state(IdbEnum::GetInstance()->get_connect_property()->get_wiring_state(state));
