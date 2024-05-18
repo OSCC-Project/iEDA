@@ -53,6 +53,8 @@ class FeatureSummary
   RTSummary& get_summary_irt() { return _summary_irt; }
 
   void set_db(DBSummary db) { _db = db; }
+  void set_ipl(PlaceSummary db) { _summary_ipl = db; }
+  void set_irt(RTSummary db) { _summary_irt = db; }
 
  private:
   PlaceSummary _summary_ipl;

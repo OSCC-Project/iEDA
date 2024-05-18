@@ -1,9 +1,7 @@
-file(GLOB_RECURSE FEATURE_BUILDER_SRC "*.cpp")
-if(BUILD_STATIC_LIB)
-  add_library(feature_builder ${FEATURE_BUILDER_SRC})
-else()
-  add_library(feature_builder SHARED ${FEATURE_BUILDER_SRC})
-endif()
+add_library(feature_builder
+    feature_builder.cpp
+    feature_builder_tool.cpp
+)
 
 target_include_directories(feature_builder 
     PUBLIC 
@@ -11,16 +9,16 @@ target_include_directories(feature_builder
 )
 target_link_libraries(feature_builder 
     PRIVATE 
+        feature_db
         idb
         flow_config
         idm
-        irt_interface
-        ipl-source
-        ipl-api
-        icts_api
-        ista-engine
-        idrc_pro_api
-        eval_api
-        ieda_report_evaluator
-        feature_db
+        # irt_interface
+        # ipl-source
+        # ipl-api
+        # icts_api
+        # ista-engine
+        # idrc_pro_api
+        # eval_api
+        # ieda_report_evaluator  
 )

@@ -14,55 +14,36 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-#pragma once
 /**
- * @File Name: feature_manager.h
- * @Brief :
- * @Author : Yell (12112088@qq.com)
- * @Version : 1.0
- * @Creat Date : 2023-0811
+ * @file		feature_builder.h
+ * @date		13/05/2024
+ * @version		0.1
+ * @description
+
+
+        build feature data
  *
  */
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-#include <iostream>
-#include <string>
-#include <vector>
-
-#include "feature_summary.h"
-
-#define featureInst ieda_feature::FeatureManager::getInstance()
+#include "feature_builder.h"
 
 namespace ieda_feature {
 
-class FeatureManager
+PlaceSummary FeatureBuilder::buildPLSummary()
 {
- public:
-  static FeatureManager* getInstance()
-  {
-    if (!_instance) {
-      _instance = new FeatureManager;
-    }
-    return _instance;
-  }
+  PlaceSummary summary;
 
-  ///
-  bool has_feature() { return _summary == nullptr ? false : true; }
-  FeatureSummary* get_summary() { return _summary; }
+  return summary;
+}
 
-  bool save_summary(std::string path);
-  bool save_tools(std::string path, std::string step);
-  bool save_eval_map(std::string path, int bin_cnt_x, int bin_cnt_y);
+RTSummary FeatureBuilder::buildRTSummary()
+{
+  RTSummary summary;
 
- private:
-  static FeatureManager* _instance;
-
-  FeatureSummary* _summary = nullptr;
-
-  FeatureManager();
-  ~FeatureManager();
-};
+  return summary;
+}
 
 }  // namespace ieda_feature

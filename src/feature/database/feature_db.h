@@ -116,6 +116,7 @@ struct SummaryLayerRouting
   std::string layer_name;
   int32_t layer_order;
   double wire_len;
+  double wire_ratio;
   uint64_t wire_num;
   uint64_t patch_num;
 };
@@ -125,10 +126,14 @@ struct SummaryLayerCut
   std::string layer_name;
   int32_t layer_order;
   uint64_t via_num;
+  double via_ratio;
 };
 
 struct SummaryLayers
 {
+  int32_t num_layers;
+  int32_t num_layers_routing;
+  int32_t num_layers_cut;
   std::vector<SummaryLayerRouting> routing_layers;
   std::vector<SummaryLayerCut> cut_layers;
 };

@@ -27,7 +27,6 @@
 #include <iostream>
 
 #include "feature_manager.h"
-#include "idm.h"
 
 namespace tcl {
 
@@ -69,7 +68,7 @@ unsigned CmdFeatureSummary::exec()
     step = step_option->getStringVal();
   }
 
-  featureInst->save_reportSummary(path, step);
+  featureInst->save_summary(path);
 
   return 1;
 }
@@ -78,9 +77,52 @@ unsigned CmdFeatureSummary::exec()
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /**
- * feature_summary -path "xxxx.csv"
+ * CmdFeatureTool -path "xxxx.json"
  */
-CmdFeatureSummaryMap::CmdFeatureSummaryMap(const char* cmd_name) : TclCmd(cmd_name)
+CmdFeatureTool::CmdFeatureTool(const char* cmd_name) : TclCmd(cmd_name)
+{
+  auto* path_option = new TclStringOption(TCL_PATH, 1, nullptr);
+  auto* step_option = new TclStringOption(TCL_STEP, 1, nullptr);
+  addOption(path_option);
+  addOption(step_option);
+}
+
+unsigned CmdFeatureTool::check()
+{
+  TclOption* path_option = getOptionOrArg(TCL_PATH);
+  TclOption* step_option = getOptionOrArg(TCL_STEP);
+  LOG_FATAL_IF(!path_option);
+  //   LOG_FATAL_IF(!step_option);
+  return 1;
+}
+
+unsigned CmdFeatureTool::exec()
+{
+  if (!check()) {
+    return 0;
+  }
+
+  TclOption* option = getOptionOrArg(TCL_PATH);
+  auto path = option->getStringVal();
+
+  std::string step = "";
+  TclOption* step_option = getOptionOrArg(TCL_STEP);
+  if (step_option->getStringVal() != nullptr) {
+    step = step_option->getStringVal();
+  }
+
+  featureInst->save_tools(path, step);
+
+  return 1;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/**
+ * feature_eval_map -path "xxxx.csv"
+ */
+CmdFeatureEvalMap::CmdFeatureEvalMap(const char* cmd_name) : TclCmd(cmd_name)
 {
   auto* path_option = new TclStringOption(TCL_PATH, 1, nullptr);
   auto* bin_cnt_x = new TclIntOption("-bin_cnt_x", 0);
@@ -90,7 +132,7 @@ CmdFeatureSummaryMap::CmdFeatureSummaryMap(const char* cmd_name) : TclCmd(cmd_na
   addOption(bin_cnt_y);
 }
 
-unsigned CmdFeatureSummaryMap::check()
+unsigned CmdFeatureEvalMap::check()
 {
   TclOption* path_option = getOptionOrArg(TCL_PATH);
   TclOption* bin_cnt_x = getOptionOrArg("-bin_cnt_x");
@@ -101,7 +143,7 @@ unsigned CmdFeatureSummaryMap::check()
   return 1;
 }
 
-unsigned CmdFeatureSummaryMap::exec()
+unsigned CmdFeatureEvalMap::exec()
 {
   if (!check()) {
     return 0;
@@ -114,7 +156,7 @@ unsigned CmdFeatureSummaryMap::exec()
   auto bin_cnt_x = opt_bin_cnt_x->getIntVal();
   auto bin_cnt_y = opt_bin_cnt_y->getIntVal();
 
-  featureInst->save_reportSummary_map(path, bin_cnt_x, bin_cnt_y);
+  featureInst->save_eval_map(path, bin_cnt_x, bin_cnt_y);
 
   return 1;
 }

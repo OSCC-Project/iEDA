@@ -31,6 +31,7 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+#include "EvalAPI.hpp"
 #include "IdbCore.h"
 #include "IdbDesign.h"
 #include "IdbDie.h"
@@ -46,7 +47,6 @@
 #include "idm.h"
 #include "iomanip"
 #include "json_parser.h"
-#include "EvalAPI.hpp"
 
 namespace ieda_feature {
 
@@ -240,11 +240,16 @@ json FeatureParser::buildSummaryLayers()
 
   auto& db_summary = _summary->get_db();
 
+  json_layer["num_layers"] = db_summary.layers.num_layers;
+  json_layer["num_layers_routing"] = db_summary.layers.num_layers_routing;
+  json_layer["num_layers_cut"] = db_summary.layers.num_layers_cut;
+
   json json_layer_routing;
   for (int i = 0; i < (int) db_summary.layers.routing_layers.size(); i++) {
     json_layer_routing[i]["layer_name"] = db_summary.layers.routing_layers[i].layer_name;
     json_layer_routing[i]["layer_order"] = db_summary.layers.routing_layers[i].layer_order;
     json_layer_routing[i]["wire_len"] = db_summary.layers.routing_layers[i].wire_len;
+    json_layer_routing[i]["wire_ratio"] = db_summary.layers.routing_layers[i].wire_ratio;
     json_layer_routing[i]["wire_num"] = db_summary.layers.routing_layers[i].wire_num;
     json_layer_routing[i]["patch_num"] = db_summary.layers.routing_layers[i].patch_num;
   }
@@ -255,6 +260,7 @@ json FeatureParser::buildSummaryLayers()
     json_layer_cut[i]["layer_name"] = db_summary.layers.cut_layers[i].layer_name;
     json_layer_cut[i]["layer_order"] = db_summary.layers.cut_layers[i].layer_order;
     json_layer_cut[i]["via_num"] = db_summary.layers.cut_layers[i].via_num;
+    json_layer_cut[i]["via_ratio"] = db_summary.layers.cut_layers[i].via_ratio;
   }
   json_layer["cut_layers"] = json_layer_cut;
 

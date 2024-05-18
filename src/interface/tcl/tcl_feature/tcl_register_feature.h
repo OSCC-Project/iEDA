@@ -34,8 +34,8 @@ namespace tcl {
 int registerCmdFeature()
 {
   registerTclCmd(CmdFeatureSummary, "feature_summary");
-  registerTclCmd(CmdFeatureSummaryMap, "feature_summary_map");
-
+  registerTclCmd(CmdFeatureTool, "feature_tool");
+  registerTclCmd(CmdFeatureEvalMap, "feature_eval_map");
 
   return EXIT_SUCCESS;
 }

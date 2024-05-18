@@ -5,8 +5,6 @@ add_library(py_feature ${PY_FEATURE_SRC})
 target_link_libraries(py_feature
     PUBLIC
         ieda_feature
-        idm
-        idb
         pybind11::pybind11
 
 )

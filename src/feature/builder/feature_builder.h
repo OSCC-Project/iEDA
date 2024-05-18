@@ -49,6 +49,8 @@ class FeatureBuilder
 
   // builder
   DBSummary buildDBSummary();
+  PlaceSummary buildPLSummary();
+  RTSummary buildRTSummary();
 
  private:
   SummaryInfo buildSummaryInfo();

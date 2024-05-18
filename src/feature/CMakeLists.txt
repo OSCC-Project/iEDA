@@ -18,4 +18,3 @@ target_include_directories(ieda_feature
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}
 )
-set(CMAKE_BUILD_TYPE "debug")

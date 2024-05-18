@@ -238,8 +238,6 @@ SummaryLayers FeatureBuilder::buildSummaryLayers()
       layer_routing.wire_num = 0;
       layer_routing.patch_num = 0;
 
-      summary_layers.routing_layers.push_back(layer_routing);
-
       routing_layer_map.insert(std::make_pair(layer->get_order(), layer_routing));
     }
 
@@ -249,12 +247,12 @@ SummaryLayers FeatureBuilder::buildSummaryLayers()
       layer_cut.layer_order = layer->get_order();
       layer_cut.via_num = 0;
 
-      summary_layers.cut_layers.push_back(layer_cut);
-
       cut_layer_map.insert(std::make_pair(layer->get_order(), layer_cut));
     }
   }
 
+  double wire_total = 0;
+  uint64_t via_total = 0;
   for (auto net : idb_design->get_net_list()->get_net_list()) {
     for (auto wire : net->get_wire_list()->get_wire_list()) {
       for (auto segment : wire->get_segment_list()) {
@@ -262,12 +260,16 @@ SummaryLayers FeatureBuilder::buildSummaryLayers()
           int order = segment->get_layer()->get_order();
           routing_layer_map[order].wire_num += 1;
           routing_layer_map[order].wire_len += ((double) segment->length()) / dbu;
+
+          wire_total += ((double) segment->length()) / dbu;
         }
 
         if (segment->is_rect()) {
           int order = segment->get_layer()->get_order();
           routing_layer_map[order].patch_num += 1;
           routing_layer_map[order].wire_len += ((double) segment->length()) / dbu;
+
+          wire_total += ((double) segment->length()) / dbu;
         }
 
         if (segment->is_via()) {
@@ -277,6 +279,8 @@ SummaryLayers FeatureBuilder::buildSummaryLayers()
 
             int order = layer_shape.get_layer()->get_order();
             cut_layer_map[order].via_num += 1;
+
+            via_total += 1;
           }
         }
       }
@@ -291,18 +295,29 @@ SummaryLayers FeatureBuilder::buildSummaryLayers()
           auto layer_shape = via->get_cut_layer_shape();
           int order = layer_shape.get_layer()->get_order();
           cut_layer_map[order].via_num += 1;
+
+          via_total += 1;
         }
       }
     }
   }
 
-  for (int i = 0; i < routing_layer_map.size(); i++) {
-    summary_layers.routing_layers.push_back(routing_layer_map[i]);
+  for (auto layer_iter = routing_layer_map.begin(); layer_iter != routing_layer_map.end(); layer_iter++) {
+    auto layer = (*layer_iter).second;
+    layer.wire_ratio = wire_total == 0 ? 0 : ((double) layer.wire_len) / wire_total;
+    summary_layers.routing_layers.push_back(layer);
   }
 
-  for (int i = 0; i < cut_layer_map.size(); i++) {
-    summary_layers.cut_layers.push_back(cut_layer_map[i]);
+  for (auto layer_iter = cut_layer_map.begin(); layer_iter != cut_layer_map.end(); layer_iter++) {
+    auto layer = (*layer_iter).second;
+    layer.via_ratio = via_total == 0 ? 0 : ((double) layer.via_num) / via_total;
+
+    summary_layers.cut_layers.push_back(layer);
   }
+
+  summary_layers.num_layers = idb_layout->get_layers()->get_layers_num();
+  summary_layers.num_layers_routing = idb_layout->get_layers()->get_routing_layers_number();
+  summary_layers.num_layers_cut = idb_layout->get_layers()->get_cut_layers_number();
 
   return summary_layers;
 }
@@ -312,7 +327,6 @@ SummaryPins FeatureBuilder::buildSummaryPins()
   SummaryPins summary_pins;
 
   auto idb_design = dmInst->get_idb_design();
-  auto idb_layout = dmInst->get_idb_layout();
 
   summary_pins.max_fanout = 32;
   for (int i = 0; i <= summary_pins.max_fanout + 1; i++) {

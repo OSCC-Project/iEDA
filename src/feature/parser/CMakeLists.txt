@@ -1,7 +1,7 @@
 add_library(feature_parser
     feature_parser.cpp
     feature_parser_summary.cpp
-    feature_parser_tools.cpp
+    # feature_parser_tools.cpp
 )
 
 target_include_directories(feature_parser 
@@ -22,15 +22,16 @@ target_include_directories(feature_parser
 target_link_libraries(feature_parser 
     PRIVATE 
         idb
+        feature_db
         flow_config
         idm
-        irt_interface
-        ipl-source
-        ipl-api
-        icts_api
-        ista-engine
-        idrc_pro_api
-        eval_api
-        ieda_report_evaluator
-        feature_db
+        # irt_interface
+        # ipl-source
+        # ipl-api
+        # icts_api
+        # ista-engine
+        # idrc_pro_api
+        # eval_api
+        # ieda_report_evaluator
+    
 )

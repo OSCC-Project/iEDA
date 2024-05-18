@@ -27,12 +27,12 @@
 #include <iostream>
 
 #include "ScriptEngine.hh"
-#include "tcl_definition.h"
+#include "../tcl_definition.h"
 
 using ieda::TclCmd;
+using ieda::TclIntOption;
 using ieda::TclOption;
 using ieda::TclStringOption;
-using ieda::TclIntOption;
 
 namespace tcl {
 class CmdFeatureSummary : public TclCmd
@@ -49,11 +49,25 @@ class CmdFeatureSummary : public TclCmd
   // private data
 };
 
-class CmdFeatureSummaryMap : public TclCmd
+class CmdFeatureTool : public TclCmd
 {
  public:
-  explicit CmdFeatureSummaryMap(const char* cmd_name);
-  ~CmdFeatureSummaryMap() override = default;
+  explicit CmdFeatureTool(const char* cmd_name);
+  ~CmdFeatureTool() override = default;
+
+  unsigned check() override;
+  unsigned exec() override;
+
+ private:
+  // private function
+  // private data
+};
+
+class CmdFeatureEvalMap : public TclCmd
+{
+ public:
+  explicit CmdFeatureEvalMap(const char* cmd_name);
+  ~CmdFeatureEvalMap() override = default;
 
   unsigned check() override;
   unsigned exec() override;

@@ -42,33 +42,15 @@
 #include "feature_ipl.h"
 #include "feature_irt.h"
 #include "feature_parser.h"
+#include "feature_summary.h"
 #include "flow_config.h"
 #include "idm.h"
 #include "iomanip"
 #include "json_parser.h"
 #include "report_evaluator.h"
-#include "feature_summary.h"
 
 namespace ieda_feature {
 
-/**
- * if step = "", only save idb summary
- */
-json FeatureParser::flowSummary(std::string step)
-{
-  using SummaryBuilder = std::function<json()>;
-  auto stepToBuilder = std::unordered_map<std::string, SummaryBuilder>{{"place", [this, step]() { return buildSummaryPL(step); }},
-                                                                       {"legalization", [this, step]() { return buildSummaryPL(step); }},
-                                                                       {"CTS", [this]() { return buildSummaryCTS(); }},
-                                                                       {"optDrv", [this, step]() { return buildSummaryTO(step); }},
-                                                                       {"optHold", [this, step]() { return buildSummaryTO(step); }},
-                                                                       {"optSetup", [this, step]() { return buildSummaryTO(step); }},
-                                                                       {"sta", [this]() { return buildSummarySTA(); }},
-                                                                       {"drc", [this]() { return buildSummaryDRC(); }},
-                                                                       {"route", [this]() { return buildSummaryRT(); }}};
-
-  return stepToBuilder[step]();
-}
 
 json FeatureParser::buildSummaryPL(std::string step)
 {

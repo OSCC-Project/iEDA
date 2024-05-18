@@ -34,7 +34,7 @@ FeatureManager::~FeatureManager()
   }
 }
 
-bool FeatureManager::save_reportSummary(std::string path, std::string step)
+bool FeatureManager::save_summary(std::string path)
 {
   FeatureBuilder builder;
   auto db_summary = builder.buildDBSummary();
@@ -42,13 +42,33 @@ bool FeatureManager::save_reportSummary(std::string path, std::string step)
   _summary->set_db(db_summary);
 
   FeatureParser feature_parser(_summary);
-  return feature_parser.buildReportSummary(path, step);
+  return feature_parser.buildSummary(path);
 }
 
-bool FeatureManager::save_reportSummary_map(std::string path, int bin_cnt_x, int bin_cnt_y)
+bool FeatureManager::save_tools(std::string path, std::string step)
+{
+  FeatureBuilder builder;
+
+  if (step == "placer") {
+    auto db = builder.buildPLSummary();
+
+    _summary->set_ipl(db);
+
+  } else if (step == "route") {
+    auto db = builder.buildRTSummary();
+
+    _summary->set_irt(db);
+  } else {
+  }
+
+  FeatureParser feature_parser(_summary);
+  return feature_parser.buildTools(path, step);
+}
+
+bool FeatureManager::save_eval_map(std::string path, int bin_cnt_x, int bin_cnt_y)
 {
   FeatureParser feature_parser(_summary);
-  return feature_parser.buildReportSummaryMap(path, bin_cnt_x, bin_cnt_y);
+  return feature_parser.buildSummaryMap(path, bin_cnt_x, bin_cnt_y);
 }
 
 }  // namespace ieda_feature

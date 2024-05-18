@@ -17,32 +17,22 @@
 #include "py_feature.h"
 
 #include "feature_manager.h"
-#include "idm.h"
 
 namespace python_interface {
-bool feature_layout(const std::string& path)
+
+bool feature_summary(const std::string& path)
 {
-  return featureInst->save_layout(path);
+  return featureInst->save_summary(path);
 }
 
-bool feature_instances(const std::string& path)
+bool feature_tool(const std::string& path, const std::string& step)
 {
-  return featureInst->save_instances(path);
+  return featureInst->save_tools(path, step);
 }
 
-bool feature_nets(const std::string& path)
+bool feature_eval_map(const std::string& path, const int& bin_cnt_x, const int& bin_cnt_y)
 {
-  return featureInst->save_nets(path);
-}
-
-bool feature_summary(const std::string& path, const std::string& step)
-{
-  return featureInst->save_reportSummary(path, step);
-}
-
-bool feature_summary_map(const std::string& path, const int& bin_cnt_x, const int& bin_cnt_y)
-{
-  return featureInst->save_reportSummary_map(path, bin_cnt_x, bin_cnt_y);
+  return featureInst->save_eval_map(path, bin_cnt_x, bin_cnt_y);
 }
 
 }  // namespace python_interface

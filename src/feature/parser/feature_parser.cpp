@@ -33,14 +33,10 @@
 
 #include "feature_parser.h"
 
-#include "EvalAPI.hpp"
-#include "Evaluator.hh"
 #include "feature_summary.h"
 #include "flow_config.h"
 #include "idm.h"
-#include "iomanip"
 #include "json_parser.h"
-#include "report_evaluator.h"
 
 namespace ieda_feature {
 FeatureParser::FeatureParser(FeatureSummary* summary)
@@ -56,7 +52,7 @@ FeatureParser::~FeatureParser()
   _design = nullptr;
 }
 
-bool FeatureParser::buildReportSummary(std::string json_path, std::string step)
+bool FeatureParser::buildSummary(std::string json_path)
 {
   std::ofstream& file_stream = ieda::getOutputFileStream(json_path);
   json root;
@@ -75,14 +71,11 @@ bool FeatureParser::buildReportSummary(std::string json_path, std::string step)
 
   root["Nets"] = buildSummaryNets();
 
-  root["PDN"] = buildSummaryPdn();
+  //   root["PDN"] = buildSummaryPdn();
 
   root["Layers"] = buildSummaryLayers();
 
   root["Pins"] = buildSummaryPins();
-
-  if (!step.empty())
-    root[step] = flowSummary(step);
 
   file_stream << std::setw(4) << root;
 
@@ -92,28 +85,37 @@ bool FeatureParser::buildReportSummary(std::string json_path, std::string step)
   return true;
 }
 
-bool FeatureParser::buildReportSummaryMap(std::string csv_path, int bin_cnt_x, int bin_cnt_y)
+/**
+ * if step = "", only save idb summary
+ */
+bool FeatureParser::buildTools(std::string json_path, std::string step)
 {
-  eval::EvalAPI& eval_api = eval::EvalAPI::initInst();
-  eval_api.initCongDataFromIDB(bin_cnt_x, bin_cnt_y);
+//   if (json_path.empty() || step.empty()) {
+//     return false;
+//   }
 
-  auto inst_status = eval::INSTANCE_STATUS::kFixed;
-  eval_api.evalInstDens(inst_status);
-  eval_api.plotBinValue(csv_path, "macro_density", eval::CONGESTION_TYPE::kInstDens);
-  eval_api.evalPinDens(inst_status);
-  eval_api.plotBinValue(csv_path, "macro_pin_density", eval::CONGESTION_TYPE::kPinDens);
-  eval_api.evalNetDens(inst_status);
-  eval_api.plotBinValue(csv_path, "macro_net_density", eval::CONGESTION_TYPE::kNetCong);
+//   using SummaryBuilder = std::function<json()>;
+//   auto stepToBuilder = std::unordered_map<std::string, SummaryBuilder>{{"place", [this, step]() { return buildSummaryPL(step); }},
+//                                                                        {"legalization", [this, step]() { return buildSummaryPL(step); }},
+//                                                                        {"CTS", [this]() { return buildSummaryCTS(); }},
+//                                                                        {"optDrv", [this, step]() { return buildSummaryTO(step); }},
+//                                                                        {"optHold", [this, step]() { return buildSummaryTO(step); }},
+//                                                                        {"optSetup", [this, step]() { return buildSummaryTO(step); }},
+//                                                                        {"sta", [this]() { return buildSummarySTA(); }},
+//                                                                        {"drc", [this]() { return buildSummaryDRC(); }},
+//                                                                        {"route", [this]() { return buildSummaryRT(); }}};
 
-  eval_api.plotMacroChannel(0.5, csv_path + "macro_channel.csv");
-  eval_api.evalMacroMargin();
-  eval_api.plotBinValue(csv_path, "macro_margin_h", eval::CONGESTION_TYPE::kMacroMarginH);
-  eval_api.plotBinValue(csv_path, "macro_margin_v", eval::CONGESTION_TYPE::kMacroMarginV);
-  double space_ratio = eval_api.evalMaxContinuousSpace();
-  eval_api.plotBinValue(csv_path, "macro_continuous_white_space", eval::CONGESTION_TYPE::kContinuousWS);
-  eval_api.evalIOPinAccess(csv_path + "io_pin_access.csv");
+//   std::ofstream& file_stream = ieda::getOutputFileStream(json_path);
+//   json root;
 
-  std::cout << std::endl << "Save feature map success, path = " << csv_path << std::endl;
+//   root[step] = stepToBuilder[step]();
+
+//   file_stream << std::setw(4) << root;
+
+//   ieda::closeFileStream(file_stream);
+
+//   std::cout << std::endl << "Save feature json success, path = " << json_path << std::endl;
+
   return true;
 }
 
