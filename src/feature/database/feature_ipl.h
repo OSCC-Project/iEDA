@@ -18,7 +18,7 @@
 
 #include <cstdint>
 
-namespace idb {
+namespace ieda_feature {
 
 class PLCommonSummary
 {
@@ -32,7 +32,7 @@ class PLCommonSummary
   float tns;
   float wns;
   float suggest_freq;
-  
+
   // setter
   void setPlaceDensity(float density) { place_density = density; }
   void setPinDensity(float density) { pin_density = density; }
@@ -54,7 +54,6 @@ class PLCommonSummary
   float getTNS() const { return tns; }
   float getWNS() const { return wns; }
   float getSuggestFreq() const { return suggest_freq; }
-
 };
 
 class LGSummary
@@ -151,7 +150,6 @@ class PlaceSummary
   void setLGPlaceTNS(float value) { lg_summary.pl_common_summary.setTNS(value); }
   void setLGPlaceWNS(float value) { lg_summary.pl_common_summary.setWNS(value); }
   void setLGPlaceSuggestFreq(float value) { lg_summary.pl_common_summary.setSuggestFreq(value); }
-
 };
 
-}
+}  // namespace ieda_feature

@@ -14,29 +14,36 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-#pragma once
+/**
+ * @file		feature_builder.h
+ * @date		13/05/2024
+ * @version		0.1
+ * @description
 
-#include <iostream>
-#include <string>
-#include <vector>
 
-#include "pl_summary.h"
-#include "rt_summary.h"
+        build feature data
+ *
+ */
 
-namespace idb {
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+#include "feature_builder.h"
 
-class FeatureSummary{
- private:
-  PlaceSummary place_summary;
-  RTSummary rt_summary;
+namespace ieda_feature {
 
- public:
-  FeatureSummary() = default;
-  ~FeatureSummary() = default;
-  // getter
-  PlaceSummary& getPlaceSummary() { return place_summary; }
-  RTSummary& getRTSummary() { return rt_summary; }
+PlaceSummary FeatureBuilder::buildPLSummary()
+{
+  PlaceSummary summary;
 
-};
-
+  return summary;
 }
+
+RTSummary FeatureBuilder::buildRTSummary()
+{
+  RTSummary summary;
+
+  return summary;
+}
+
+}  // namespace ieda_feature

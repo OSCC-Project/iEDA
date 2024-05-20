@@ -96,6 +96,8 @@ class IdbInstance : public IdbObject
   IdbCoordinate<int32_t>* get_coordinate() { return _coordinate; }
   IdbCoordinate<int32_t> get_origin_coordinate();
   int get_logic_pin_num();
+  uint get_connected_pin_num();
+  bool is_clock_instance();
 
   IdbHalo* get_halo() { return _halo; }
   bool has_halo() { return _halo == nullptr ? false : true; }
@@ -189,7 +191,15 @@ class IdbInstanceList
   int32_t get_num_physics();
   int32_t get_num_tapcell() { return get_num_by_master_type(CellMasterType::kCoreWelltap); }
 
-  uint64_t get_area_by_master_type(CellMasterType type = CellMasterType::kMax);
+  uint get_num_clockcell();
+
+  uint get_connected_pin_num();
+  uint get_iopads_pin_num();
+  uint get_macro_pin_num();
+  uint get_logic_pin_num();
+  uint get_clock_pin_num();
+
+  uint64_t get_area(CellMasterType type = CellMasterType::kMax);
   uint64_t get_area_by_master_type_range(CellMasterType type_begin = CellMasterType::kNone, CellMasterType type_end = CellMasterType::kMax);
   uint64_t get_area_cover() { return get_area_by_master_type_range(CellMasterType::kCover, CellMasterType::kCoverBump); }
   uint64_t get_area_block() { return get_area_by_master_type_range(CellMasterType::kBlock, CellMasterType::kBLockSoft); }
@@ -198,8 +208,9 @@ class IdbInstanceList
   uint64_t get_area_pad() { return get_area_by_master_type_range(CellMasterType::kPad, CellMasterType::kPadAreaIO); }
   uint64_t get_area_endcap() { return get_area_by_master_type_range(CellMasterType::kEndcap, CellMasterType::kEndcapBottomRight); }
   uint64_t get_area_tapcell() { return get_area_by_master_type_range(CellMasterType::kCoreWelltap, CellMasterType::kCoreWelltap); }
-  uint64_t get_area_ring() { return get_area_by_master_type(CellMasterType::kRing); }
+  uint64_t get_area_ring() { return get_area(CellMasterType::kRing); }
   uint64_t get_area_physics();
+  uint64_t get_area_clock();
 
   IdbInstance* find_instance(string name);
   IdbInstance* find_instance(size_t index);
@@ -235,18 +246,6 @@ class IdbInstanceList
   // operator
   void init(int32_t size) { _instance_list.reserve(size); }
   int32_t get_pin_list_by_names(vector<string> pin_name_list, IdbPins* pin_list, IdbInstanceList* instance_list);
-
-  vector<IdbInstance*> get_io_cell_list()
-  {
-    vector<IdbInstance*> inst_list;
-    for (auto instance : _instance_list) {
-      if (instance->get_cell_master()->is_pad() || instance->get_cell_master()->is_pad_filler()) {
-        inst_list.push_back(instance);
-      }
-    }
-
-    return inst_list;
-  }
 
  private:
   uint64_t _mutex_index = 0;

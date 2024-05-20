@@ -21,7 +21,7 @@
 #include <string>
 #include <vector>
 
-namespace idb {
+namespace ieda_feature {
 
 class PASummary
 {
@@ -114,4 +114,4 @@ class RTSummary
   std::map<int32_t, DRSummary> iter_dr_summary_map;
 };
 
-}  // namespace idb
+}  // namespace ieda_feature

@@ -14,25 +14,30 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-#include "py_feature.h"
+/**
+ * @file		summary.cpp
+ * @date		25/05/2021
+ * @version		0.1
+* @description
 
-#include "feature_manager.h"
 
-namespace python_interface {
 
-bool feature_summary(const std::string& path)
+ *
+ */
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+#include "feature_summary.h"
+
+namespace ieda_feature {
+
+FeatureSummary::FeatureSummary()
 {
-  return featureInst->save_summary(path);
 }
 
-bool feature_tool(const std::string& path, const std::string& step)
+FeatureSummary::~FeatureSummary()
 {
-  return featureInst->save_tools(path, step);
 }
 
-bool feature_eval_map(const std::string& path, const int& bin_cnt_x, const int& bin_cnt_y)
-{
-  return featureInst->save_eval_map(path, bin_cnt_x, bin_cnt_y);
-}
-
-}  // namespace python_interface
+}  // namespace ieda_feature

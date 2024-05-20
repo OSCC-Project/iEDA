@@ -6,6 +6,8 @@ target_link_libraries(irt_interface_external_libs
         tool_manager
         idm
         idrc_pro_api
+        ieda_feature
+        feature_db
 )
 
 target_include_directories(irt_interface_external_libs

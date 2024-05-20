@@ -61,6 +61,10 @@ uint32_t IdbDie::add_point(IdbCoordinate<int32_t>* pt)
   _points.push_back(pt);
   bg::append(_polygon, point_t(pt->get_x(), pt->get_y()));
 
+  if(_points.size() >= RECTANGLE_NUM){
+    set_bounding_box();
+  }
+
   return _points.size();
 }
 

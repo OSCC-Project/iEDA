@@ -104,15 +104,46 @@ class IdbNet : public IdbObject
   IdbPins* get_instance_pin_list() { return _instance_pin_list; }
   int32_t get_pin_number() { return _io_pin_list->get_pin_num() + _instance_pin_list->get_pin_num(); }
 
-  int32_t get_segment_num()
+  uint64_t get_segment_num()
   {
-    int number = 0;
+    uint64_t number = 0;
     for (auto wire : _wire_list->get_wire_list()) {
       number += wire->get_num();
     }
 
     return number;
   }
+
+  uint64_t get_segment_wire_num()
+  {
+    uint64_t number = 0;
+    for (auto wire : _wire_list->get_wire_list()) {
+      number += wire->get_wire_num();
+    }
+
+    return number;
+  }
+
+  uint64_t get_patch_num()
+  {
+    uint64_t number = 0;
+    for (auto wire : _wire_list->get_wire_list()) {
+      number += wire->get_patch_num();
+    }
+
+    return number;
+  }
+
+  uint get_via_num()
+  {
+    uint number = 0;
+    for (auto wire : _wire_list->get_wire_list()) {
+      number += wire->get_via_num();
+    }
+
+    return number;
+  }
+
   std::vector<IdbPin*> get_load_pins();  // tbd
   IdbInstanceList* get_instance_list() { return _instance_list; }
   IdbRegularWireList* get_wire_list() { return _wire_list; }
@@ -149,6 +180,7 @@ class IdbNet : public IdbObject
   void clear_wire_list();
   bool checkConnection();
   uint64_t wireLength();
+  uint64_t get_via_number();
 
  private:
   std::string _net_name;
@@ -229,6 +261,50 @@ class IdbNetList
 
     return number;
   }
+
+  uint64_t get_pin_num()
+  {
+    uint64_t number = 0;
+
+    for (auto* net : _net_list) {
+      number += net->get_pin_number();
+    }
+
+    return number;
+  }
+
+  uint64_t get_via_num()
+  {
+    uint64_t number = 0;
+
+    for (auto* net : _net_list) {
+      number += net->get_via_num();
+    }
+
+    return number;
+  }
+
+  uint64_t get_segment_wire_num()
+  {
+    uint64_t number = 0;
+
+    for (auto* net : _net_list) {
+      number += net->get_segment_wire_num();
+    }
+
+    return number;
+  }
+
+  uint64_t get_patch_num()
+  {
+    uint64_t number = 0;
+
+    for (auto* net : _net_list) {
+      number += net->get_patch_num();
+    }
+
+    return number;
+  }  
 
   IdbNet* find_net(string name);
   IdbNet* find_net(size_t index);
