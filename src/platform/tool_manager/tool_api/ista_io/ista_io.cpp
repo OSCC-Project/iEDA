@@ -99,11 +99,14 @@ namespace iplf {
    * @return true
    * @return false
    */
-  bool StaIO::initSTA(std::string path)
+  bool StaIO::initSTA(std::string path, bool init_log)
   {
-    char config[]="test";
-    char* argv[]= {config};
-    Log::init(argv);
+    if (init_log) {
+      char config[] = "test";
+      char* argv[] = {config};
+      Log::init(argv);
+    }
+
     
     /// init
     setStaWorkDirectory(path);
