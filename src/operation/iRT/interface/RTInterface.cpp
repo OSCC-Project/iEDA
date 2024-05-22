@@ -348,10 +348,12 @@ std::map<std::string, std::vector<double>> RTInterface::getTiming(
 #if 1  // 函数定义
   auto initTimingEngine = [](idb::IdbBuilder* idb_builder, int32_t thread_number) {
     ista::TimingEngine* timing_engine = ista::TimingEngine::getOrCreateTimingEngine();
-    auto db_adapter = std::make_unique<ista::TimingIDBAdapter>(timing_engine->get_ista());
-    db_adapter->set_idb(idb_builder);
-    db_adapter->convertDBToTimingNetlist();
-    timing_engine->set_db_adapter(std::move(db_adapter));
+    if (!timing_engine->get_db_adapter()) {
+      auto db_adapter = std::make_unique<ista::TimingIDBAdapter>(timing_engine->get_ista());
+      db_adapter->set_idb(idb_builder);
+      db_adapter->convertDBToTimingNetlist();
+      timing_engine->set_db_adapter(std::move(db_adapter));
+    }
     timing_engine->set_num_threads(thread_number);
     timing_engine->buildGraph();
     timing_engine->initRcTree();
