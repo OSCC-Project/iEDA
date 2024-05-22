@@ -82,9 +82,9 @@ class FeatureParser
   json buildSummaryPL(std::string step);
   json buildSummaryCTS();
   json buildSummaryTO(std::string step = "");
-  //   json buildSummarySTA();
-  //   json buildSummaryDRC();
   json buildSummaryNetOpt();
   json buildSummaryRT();
+  json buildSummarySTA();
+  json buildSummaryDRC();
 };
 }  // namespace ieda_feature

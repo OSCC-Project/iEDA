@@ -95,17 +95,16 @@ bool FeatureParser::buildTools(std::string json_path, std::string step)
   }
 
   using SummaryBuilder = std::function<json()>;
-  auto stepToBuilder = std::unordered_map<std::string, SummaryBuilder>{
-      {"place", [this, step]() { return buildSummaryPL(step); }},
-      {"legalization", [this, step]() { return buildSummaryPL(step); }},
-      {"CTS", [this]() { return buildSummaryCTS(); }},
-      {"fixFanout", [this]() { return buildSummaryNetOpt(); }},
-      {"optDrv", [this, step]() { return buildSummaryTO(step); }},
-      {"optHold", [this, step]() { return buildSummaryTO(step); }},
-      {"optSetup", [this, step]() { return buildSummaryTO(step); }},
-      //                                                                        {"sta", [this]() { return buildSummarySTA(); }},
-      //                                                                        {"drc", [this]() { return buildSummaryDRC(); }},
-      {"route", [this]() { return buildSummaryRT(); }}};
+  auto stepToBuilder = std::unordered_map<std::string, SummaryBuilder>{{"place", [this, step]() { return buildSummaryPL(step); }},
+                                                                       {"legalization", [this, step]() { return buildSummaryPL(step); }},
+                                                                       {"CTS", [this]() { return buildSummaryCTS(); }},
+                                                                       {"fixFanout", [this]() { return buildSummaryNetOpt(); }},
+                                                                       {"optDrv", [this, step]() { return buildSummaryTO(step); }},
+                                                                       {"optHold", [this, step]() { return buildSummaryTO(step); }},
+                                                                       {"optSetup", [this, step]() { return buildSummaryTO(step); }},
+                                                                       {"sta", [this]() { return buildSummarySTA(); }},
+                                                                       {"drc", [this]() { return buildSummaryDRC(); }},
+                                                                       {"route", [this]() { return buildSummaryRT(); }}};
 
   std::ofstream& file_stream = ieda::getOutputFileStream(json_path);
   json root;
