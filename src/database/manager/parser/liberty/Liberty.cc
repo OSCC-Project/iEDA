@@ -237,8 +237,8 @@ double LibertyTable::findValue(double slew, double constrain_slew_or_load)
 
     auto result = BilinearInterpolation(q11, q12, q21, q22, x1, x2, y1, y2, val1, val2);
 
-    LOG_ERROR_IF_EVERY_N(result < 0.0, 100) << "table " << get_file_name() << " " << get_line_no() << " "
-                                            << "delay value less zero.";
+    // LOG_ERROR_IF_EVERY_N(result < 0.0, 100) << "table " << get_file_name() << " " << get_line_no() << " "
+    //                                         << "delay value less zero.";
     return result;
   }
 }

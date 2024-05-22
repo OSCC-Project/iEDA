@@ -1,5 +1,3 @@
-use std::default::Default;
-
 /// liberty expression operation.
 #[repr(C)]
 #[derive(Clone, Copy)]
@@ -37,20 +35,20 @@ impl LibertyExpr {
         self.port_name = Some(port_name);
     }
     pub fn get_port_name(&self) -> &Option<String> {
-        return &self.port_name;
+        &self.port_name
     }
 
     pub fn set_left(&mut self, left: Box<LibertyExpr>) {
         self.left = Some(left);
     }
     pub fn get_left(&self) -> &Option<Box<LibertyExpr>> {
-        return &self.left;
+        &self.left
     }
 
     pub fn set_right(&mut self, right: Box<LibertyExpr>) {
         self.right = Some(right);
     }
     pub fn get_right(&self) -> &Option<Box<LibertyExpr>> {
-        return &self.right;
+        &self.right
     }
 }

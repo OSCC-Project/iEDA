@@ -3,9 +3,9 @@ pub mod ir_rc;
 
 use log;
 
-use sprs::{TriMat, TriMatI};
+use sprs::TriMatI;
 use std::collections::HashMap;
-use std::ffi::c_double;
+
 use std::ffi::c_void;
 use std::ffi::CString;
 use std::os::raw::c_char;
@@ -42,6 +42,7 @@ pub struct RustVec {
 }
 
 /// One Net conductance matrix data.
+#[allow(dead_code)]
 struct IRNetConductanceData {
     net_name: String,
     conductance_matrix: Vec<RustMatrix>,
@@ -204,9 +205,7 @@ pub extern "C" fn build_one_net_instance_current_vector(
 
 /// Get one net bump node id.
 #[no_mangle]
-pub extern "C" fn get_bump_node_ids(c_rc_data: *const c_void,
-    c_net_name: *const c_char) -> RustVec {
-
+pub extern "C" fn get_bump_node_ids(c_rc_data: *const c_void, c_net_name: *const c_char) -> RustVec {
     let rc_data = unsafe { &*(c_rc_data as *const RCData) };
     let one_net_name = c_str_to_r_str(c_net_name);
     let one_net_rc_data = rc_data.get_one_net_data(&one_net_name);
@@ -227,9 +226,7 @@ pub extern "C" fn get_bump_node_ids(c_rc_data: *const c_void,
 }
 
 #[no_mangle]
-pub extern "C" fn get_instance_node_ids(c_rc_data: *const c_void,
-    c_net_name: *const c_char) -> RustVec {
-
+pub extern "C" fn get_instance_node_ids(c_rc_data: *const c_void, c_net_name: *const c_char) -> RustVec {
     let rc_data = unsafe { &*(c_rc_data as *const RCData) };
     let one_net_name = c_str_to_r_str(c_net_name);
     let one_net_rc_data = rc_data.get_one_net_data(&one_net_name);
@@ -302,8 +299,7 @@ pub extern "C" fn build_matrix_from_raw_data(
 mod tests {
     use super::ir_rc;
     use crate::matrix::{
-        rust_convert_rc_matrix, rust_vec_to_c_array, string_to_c_char, RustNetConductanceData, RustNetEquationData,
-        RustVector,
+        rust_convert_rc_matrix, rust_vec_to_c_array, string_to_c_char, RustNetEquationData, RustVector,
     };
 
     #[test]
@@ -319,13 +315,13 @@ mod tests {
             let conductance_matrix_triplet = ir_rc::build_conductance_matrix(one_net_data);
             let rust_matrix = rust_convert_rc_matrix(&conductance_matrix_triplet);
 
-            let mut current_vec: Vec<RustVector> = Vec::new();
+            let current_vec: Vec<RustVector> = Vec::new();
 
             let rust_matrix_vec = rust_vec_to_c_array(&rust_matrix);
             let rust_current_vec = rust_vec_to_c_array(&current_vec);
 
-            let mut net_matrix_data: Vec<RustNetConductanceData> = Vec::new();
-            let mut one_net_rc_net = RustNetEquationData {
+            let mut net_matrix_data: Vec<RustNetEquationData> = Vec::new();
+            let one_net_rc_net = RustNetEquationData {
                 net_name: string_to_c_char(net_name),
                 g_matrix_vec: rust_matrix_vec,
                 j_vec: rust_current_vec,
