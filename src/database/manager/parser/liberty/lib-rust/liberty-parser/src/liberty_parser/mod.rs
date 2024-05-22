@@ -14,7 +14,7 @@ use std::os::raw::c_char;
 
 use self::liberty_data::{LibertyAttrValue, LibertyGroupStmt};
 
-use std::time::Instant;
+
 
 #[derive(Parser)]
 #[grammar = "liberty_parser/grammar/liberty.pest"]
@@ -322,7 +322,7 @@ pub extern "C" fn rust_free_lib_group(c_lib_group: *mut LibertyGroupStmt) {
 
 #[cfg(test)]
 mod tests {
-    use pest::error;
+    
     use pest::iterators::Pair;
     use pest::iterators::Pairs;
 
@@ -354,7 +354,7 @@ mod tests {
             }
         }
 
-        assert!(!parse_result_clone.is_err());
+        assert!(parse_result_clone.is_ok());
     }
 
     fn test_process_parse_result(parse_result: Result<Pairs<Rule>, pest::error::Error<Rule>>) {
