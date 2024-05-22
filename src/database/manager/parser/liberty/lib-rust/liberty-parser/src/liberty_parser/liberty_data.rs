@@ -245,7 +245,7 @@ impl LibertyGroupStmt {
     pub fn get_attri(&self) -> &LibertyAttrStmt {
         &self.attri
     }
-
+    #[allow(dead_code)]
     pub fn get_attri_name(&self) -> &str {
         self.attri_values.first().unwrap().get_string_value()
     }

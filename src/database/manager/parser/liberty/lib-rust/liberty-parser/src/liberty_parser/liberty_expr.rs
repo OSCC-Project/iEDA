@@ -144,7 +144,7 @@ pub fn parse_expr(expr_str: &str) -> Result<Box<liberty_expr_data::LibertyExpr>,
     match parse_result {
         Ok(pairs) => {
             let mut pair = pairs.into_iter().next().unwrap();
-            
+
             process_pair(&mut pair, &mut parser_queue)
         }
         Err(err) => {

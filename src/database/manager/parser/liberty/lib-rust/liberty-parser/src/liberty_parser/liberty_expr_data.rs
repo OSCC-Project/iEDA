@@ -1,5 +1,3 @@
-
-
 /// liberty expression operation.
 #[repr(C)]
 #[derive(Clone, Copy)]
