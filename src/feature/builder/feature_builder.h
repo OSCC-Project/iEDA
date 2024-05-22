@@ -36,8 +36,11 @@
 #include <vector>
 
 #include "feature_db.h"
+#include "feature_icts.h"
+#include "feature_ino.h"
 #include "feature_ipl.h"
 #include "feature_irt.h"
+#include "feature_ito.h"
 
 namespace ieda_feature {
 
@@ -49,8 +52,11 @@ class FeatureBuilder
 
   // builder
   DBSummary buildDBSummary();
-  PlaceSummary buildPLSummary();
+  PlaceSummary buildPLSummary(std::string step);
   RTSummary buildRTSummary();
+  CTSSummary buildCTSSummary();
+  NetOptSummary buildNetOptSummary();
+  TimingOptSummary buildTimingOptSummary();
 
  private:
   SummaryInfo buildSummaryInfo();

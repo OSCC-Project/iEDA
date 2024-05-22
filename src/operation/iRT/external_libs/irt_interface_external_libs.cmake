@@ -6,7 +6,6 @@ target_link_libraries(irt_interface_external_libs
         tool_manager
         idm
         idrc_pro_api
-        ieda_feature
         feature_db
 )
 
@@ -17,4 +16,5 @@ target_include_directories(irt_interface_external_libs
         ${HOME_PLATFORM}/tool_manager/tool_api/irt_io
         ${HOME_PLATFORM}/data_manager
         ${HOME_PLATFORM}/data_manager/file_manager
+        ${HOME_FEATURE}/database
 )

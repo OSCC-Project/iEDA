@@ -58,6 +58,9 @@ report_db -path "$::env(RESULT_DIR)/report/cts_db.rpt"
 #===========================================================
 cts_report -path $::env(RESULT_DIR)/cts
 
+feature_tool -path $::env(RESULT_DIR)/feature/icts.json -step CTS
+feature_summary -path $::env(RESULT_DIR)/feature/summary_icts.json -step CTS
+
 #===========================================================
 ##   Exit 
 #===========================================================

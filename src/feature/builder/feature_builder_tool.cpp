@@ -28,20 +28,53 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+#include "CTSAPI.hh"
+#include "PLAPI.hh"
+#include "RTInterface.hpp"
+#include "ToApi.hpp"
 #include "feature_builder.h"
+#include "idm.h"
+#include "report_evaluator.h"
 
 namespace ieda_feature {
 
-PlaceSummary FeatureBuilder::buildPLSummary()
+PlaceSummary FeatureBuilder::buildPLSummary(std::string step)
 {
-  PlaceSummary summary;
+  PlaceSummary summary = iPLAPIInst.outputSummary(step);
 
   return summary;
 }
 
 RTSummary FeatureBuilder::buildRTSummary()
 {
-  RTSummary summary;
+  RTSummary summary = RTI.outputSummary();
+
+  return summary;
+}
+
+CTSSummary FeatureBuilder::buildCTSSummary()
+{
+  CTSSummary summary = CTSAPIInst.outputSummary();
+
+  return summary;
+}
+
+NetOptSummary FeatureBuilder::buildNetOptSummary()
+{
+  NetOptSummary summary;
+
+  return summary;
+}
+
+TimingOptSummary FeatureBuilder::buildTimingOptSummary()
+{
+  TimingOptSummary summary = ToApiInst.outputSummary();
+
+  // HPWL, STWL, Global_routing_WL, congestion
+  auto& nets = dmInst->get_idb_design()->get_net_list()->get_net_list();
+  auto wl_nets = iplf::EvalWrapper::parallelWrap<eval::WLNet>(nets, iplf::EvalWrapper::wrapWLNet);
+  summary.HPWL = EvalInst.evalTotalWL("kHPWL", wl_nets);
+  summary.STWL = EvalInst.evalTotalWL("kFlute", wl_nets);
 
   return summary;
 }

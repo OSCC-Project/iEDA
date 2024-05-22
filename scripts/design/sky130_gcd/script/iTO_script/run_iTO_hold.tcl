@@ -37,6 +37,7 @@ def_init -path $::env(RESULT_DIR)/iTO_drv_result.def
 ##   run TO to fix_drv，opt_hold, opt_setup
 #===========================================================
 run_to_hold -config $::env(CONFIG_DIR)/to_default_config_hold.json
+feature_summary -path $::env(RESULT_DIR)/feature/summary_ito_opthold.json -step optHold
 
 #===========================================================
 ##   save def 
@@ -52,6 +53,8 @@ netlist_save -path $::env(RESULT_DIR)/iTO_hold_result.v -exclude_cell_names {}
 ##   report db summary
 #===========================================================
 report_db -path "$::env(RESULT_DIR)/report/hold_db.rpt"
+
+feature_tool -path $::env(RESULT_DIR)/feature/ito_opthold.json -step optHold
 
 #===========================================================
 ##   Exit 

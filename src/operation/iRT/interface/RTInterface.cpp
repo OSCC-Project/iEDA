@@ -31,7 +31,6 @@
 #include "TrackAssigner.hpp"
 #include "builder.h"
 #include "feature_irt.h"
-#include "feature_manager.h"
 #include "flow_config.h"
 #include "icts_fm/file_cts.h"
 #include "icts_io.h"
@@ -156,6 +155,8 @@ void RTInterface::runRT()
   DetailedRouter::destroyInst();
 
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
+
+  RTDM.output();
 }
 
 void RTInterface::destroyRT()
@@ -164,7 +165,7 @@ void RTInterface::destroyRT()
   RTLOG.info(Loc::current(), "Starting...");
 
   GDSPlotter::destroyInst();
-  RTDM.output();
+  //   RTDM.output();
   DataManager::destroyInst();
 
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
@@ -523,10 +524,12 @@ std::map<std::string, std::vector<double>> RTInterface::getTiming(
 #endif
 }
 
-void RTInterface::outputSummary()
+ieda_feature::RTSummary RTInterface::outputSummary()
 {
+  ieda_feature::RTSummary top_rt_summary;
+
   Summary& rt_summary = RTDM.getSummary();
-  ieda_feature::RTSummary& top_rt_summary = featureInst->get_summary()->get_summary_irt();
+
   // pa_summary
   top_rt_summary.pa_summary.routing_access_point_num_map = rt_summary.pa_summary.routing_access_point_num_map;
   for (auto& [type, access_point_num] : rt_summary.pa_summary.type_access_point_num_map) {
@@ -577,6 +580,8 @@ void RTInterface::outputSummary()
     top_dr_summary.total_violation_num = dr_summary.total_violation_num;
     top_dr_summary.timing = dr_summary.timing;
   }
+
+  return top_rt_summary;
 }
 
 #endif

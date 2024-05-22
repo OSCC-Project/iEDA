@@ -13,12 +13,11 @@ target_link_libraries(feature_builder
         idb
         flow_config
         idm
-        # irt_interface
-        # ipl-source
-        # ipl-api
-        # icts_api
+        irt_interface
+        ipl-api
+        icts_api
+        ito_api
         # ista-engine
         # idrc_pro_api
-        # eval_api
-        # ieda_report_evaluator  
+        ieda_report_evaluator
 )

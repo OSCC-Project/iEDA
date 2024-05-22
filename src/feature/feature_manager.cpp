@@ -48,12 +48,30 @@ bool FeatureManager::save_summary(std::string path)
 bool FeatureManager::save_tools(std::string path, std::string step)
 {
   FeatureBuilder builder;
+  if (step == "fixFanout") {
+    auto db = builder.buildNetOptSummary();
 
-  if (step == "placer") {
-    auto db = builder.buildPLSummary();
+    _summary->set_ino(db);
+  } else if (step == "place" || step == "legalization") {
+    auto db = builder.buildPLSummary(step);
 
     _summary->set_ipl(db);
+  } else if (step == "CTS") {
+    auto db = builder.buildCTSSummary();
 
+    _summary->set_icts(db);
+  } else if (step == "optDrv") {
+    auto db = builder.buildTimingOptSummary();
+
+    _summary->set_ito_optdrv(db);
+  } else if (step == "optHold") {
+    auto db = builder.buildTimingOptSummary();
+
+    _summary->set_ito_opthold(db);
+  } else if (step == "optSetup") {
+    auto db = builder.buildTimingOptSummary();
+
+    _summary->set_ito_optsetup(db);
   } else if (step == "route") {
     auto db = builder.buildRTSummary();
 

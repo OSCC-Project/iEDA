@@ -60,7 +60,7 @@ class FeatureParser
 
   // report
   bool buildSummary(std::string json_path);
-  bool buildSummaryMap(std::string csv_path, int bin_cnt_x, int bin_cnt_y){return true;}
+  bool buildSummaryMap(std::string csv_path, int bin_cnt_x, int bin_cnt_y) { return true; }
   bool buildTools(std::string json_path, std::string step);
 
  private:
@@ -79,12 +79,12 @@ class FeatureParser
   json buildSummaryPdn();
   json buildSummaryPins();
 
-//   json buildSummaryPL(std::string json_path);
-//   json buildSummaryCTS();
-//   json buildSummaryTO(std::string step = "");
-//   json buildSummarySTA();
-//   json buildSummaryDRC();
-
-//   json buildSummaryRT();
+  json buildSummaryPL(std::string step);
+  json buildSummaryCTS();
+  json buildSummaryTO(std::string step = "");
+  //   json buildSummarySTA();
+  //   json buildSummaryDRC();
+  json buildSummaryNetOpt();
+  json buildSummaryRT();
 };
 }  // namespace ieda_feature

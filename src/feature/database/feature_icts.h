@@ -18,43 +18,21 @@
 
 #include <cstdint>
 
+#include "feature_ista.h"
+
 namespace ieda_feature {
 
-struct PLCommonSummary
+struct CTSSummary
 {
-  float place_density;
-  float pin_density;
-  int64_t HPWL;
-  int64_t STWL;
-  int64_t GRWL;
-  float congestion;
-  float tns;
-  float wns;
-  float suggest_freq;
-};
+  int32_t buffer_num;
+  double buffer_area;
+  int32_t clock_path_min_buffer;
+  int32_t clock_path_max_buffer;
+  int32_t max_level_of_clock_tree;
+  int32_t max_clock_wirelength;
+  double total_clock_wirelength;
 
-struct LGSummary
-{
-  PLCommonSummary pl_common_summary;
-  int64_t lg_total_movement;
-  int64_t lg_max_movement;
-};
-
-struct PlaceSummary
-{
-  int32_t bin_number;
-  int32_t bin_size_x;
-  int32_t bin_size_y;
-  int32_t fix_inst_cnt;
-  int32_t instance_cnt;
-  int32_t net_cnt;
-  int32_t overflow_number;
-  float overflow;
-  int32_t total_pins;
-
-  PLCommonSummary dplace;
-  PLCommonSummary gplace;
-  LGSummary lg_summary;
+  std::vector<NetTiming> nets_timing;
 };
 
 }  // namespace ieda_feature

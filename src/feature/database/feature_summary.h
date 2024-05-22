@@ -36,8 +36,11 @@
 #include <vector>
 
 #include "feature_db.h"
+#include "feature_icts.h"
+#include "feature_ino.h"
 #include "feature_ipl.h"
 #include "feature_irt.h"
+#include "feature_ito.h"
 
 namespace ieda_feature {
 
@@ -51,15 +54,30 @@ class FeatureSummary
   DBSummary& get_db() { return _db; }
   PlaceSummary& get_summary_ipl() { return _summary_ipl; }
   RTSummary& get_summary_irt() { return _summary_irt; }
+  CTSSummary& get_summary_icts() { return _summary_icts; }
+  NetOptSummary& get_summary_ino() { return _summary_ino; }
+  TimingOptSummary& get_summary_ito_optdrv() { return _summary_ito_optdrv; }
+  TimingOptSummary& get_summary_ito_opthold() { return _summary_ito_opthold; }
+  TimingOptSummary& get_summary_ito_optsetup() { return _summary_ito_optsetup; }
 
   void set_db(DBSummary db) { _db = db; }
   void set_ipl(PlaceSummary db) { _summary_ipl = db; }
   void set_irt(RTSummary db) { _summary_irt = db; }
+  void set_icts(CTSSummary db) { _summary_icts = db; }
+  void set_ino(NetOptSummary db) { _summary_ino = db; }
+  void set_ito_optdrv(TimingOptSummary db) { _summary_ito_optdrv = db; }
+  void set_ito_opthold(TimingOptSummary db) { _summary_ito_opthold = db; }
+  void set_ito_optsetup(TimingOptSummary db) { _summary_ito_optsetup = db; }
 
  private:
+  DBSummary _db;
   PlaceSummary _summary_ipl;
   RTSummary _summary_irt;
-  DBSummary _db;
+  CTSSummary _summary_icts;
+  NetOptSummary _summary_ino;
+  TimingOptSummary _summary_ito_optdrv;
+  TimingOptSummary _summary_ito_opthold;
+  TimingOptSummary _summary_ito_optsetup;
 };
 
 }  // namespace ieda_feature

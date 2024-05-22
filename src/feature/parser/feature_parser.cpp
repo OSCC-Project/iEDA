@@ -90,31 +90,33 @@ bool FeatureParser::buildSummary(std::string json_path)
  */
 bool FeatureParser::buildTools(std::string json_path, std::string step)
 {
-//   if (json_path.empty() || step.empty()) {
-//     return false;
-//   }
+  if (json_path.empty() || step.empty()) {
+    return false;
+  }
 
-//   using SummaryBuilder = std::function<json()>;
-//   auto stepToBuilder = std::unordered_map<std::string, SummaryBuilder>{{"place", [this, step]() { return buildSummaryPL(step); }},
-//                                                                        {"legalization", [this, step]() { return buildSummaryPL(step); }},
-//                                                                        {"CTS", [this]() { return buildSummaryCTS(); }},
-//                                                                        {"optDrv", [this, step]() { return buildSummaryTO(step); }},
-//                                                                        {"optHold", [this, step]() { return buildSummaryTO(step); }},
-//                                                                        {"optSetup", [this, step]() { return buildSummaryTO(step); }},
-//                                                                        {"sta", [this]() { return buildSummarySTA(); }},
-//                                                                        {"drc", [this]() { return buildSummaryDRC(); }},
-//                                                                        {"route", [this]() { return buildSummaryRT(); }}};
+  using SummaryBuilder = std::function<json()>;
+  auto stepToBuilder = std::unordered_map<std::string, SummaryBuilder>{
+      {"place", [this, step]() { return buildSummaryPL(step); }},
+      {"legalization", [this, step]() { return buildSummaryPL(step); }},
+      {"CTS", [this]() { return buildSummaryCTS(); }},
+      {"fixFanout", [this]() { return buildSummaryNetOpt(); }},
+      {"optDrv", [this, step]() { return buildSummaryTO(step); }},
+      {"optHold", [this, step]() { return buildSummaryTO(step); }},
+      {"optSetup", [this, step]() { return buildSummaryTO(step); }},
+      //                                                                        {"sta", [this]() { return buildSummarySTA(); }},
+      //                                                                        {"drc", [this]() { return buildSummaryDRC(); }},
+      {"route", [this]() { return buildSummaryRT(); }}};
 
-//   std::ofstream& file_stream = ieda::getOutputFileStream(json_path);
-//   json root;
+  std::ofstream& file_stream = ieda::getOutputFileStream(json_path);
+  json root;
 
-//   root[step] = stepToBuilder[step]();
+  root[step] = stepToBuilder[step]();
 
-//   file_stream << std::setw(4) << root;
+  file_stream << std::setw(4) << root;
 
-//   ieda::closeFileStream(file_stream);
+  ieda::closeFileStream(file_stream);
 
-//   std::cout << std::endl << "Save feature json success, path = " << json_path << std::endl;
+  std::cout << std::endl << "Save feature json success, path = " << json_path << std::endl;
 
   return true;
 }

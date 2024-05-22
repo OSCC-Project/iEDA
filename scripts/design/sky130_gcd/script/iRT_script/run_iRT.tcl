@@ -45,6 +45,7 @@ run_rt
 
 # init_sta -output $::env(RESULT_DIR)/rt/sta/
 # report_timing -stage "dr"
+feature_tool -path $::env(RESULT_DIR)/feature/irt.json -step route
 
 destroy_rt
 
@@ -62,6 +63,8 @@ netlist_save -path $::env(RESULT_DIR)/iRT_result.v -exclude_cell_names {}
 ##   report db summary
 #===========================================================
 report_db -path "$::env(RESULT_DIR)/report/rt_db.rpt"
+
+feature_summary -path $::env(RESULT_DIR)/feature/summary_irt.json -step route
 
 #===========================================================
 ##   Exit 

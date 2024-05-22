@@ -17,44 +17,18 @@
 #pragma once
 
 #include <cstdint>
+#include <string>
 
 namespace ieda_feature {
 
-struct PLCommonSummary
+struct NetTiming
 {
-  float place_density;
-  float pin_density;
-  int64_t HPWL;
-  int64_t STWL;
-  int64_t GRWL;
-  float congestion;
-  float tns;
-  float wns;
-  float suggest_freq;
-};
-
-struct LGSummary
-{
-  PLCommonSummary pl_common_summary;
-  int64_t lg_total_movement;
-  int64_t lg_max_movement;
-};
-
-struct PlaceSummary
-{
-  int32_t bin_number;
-  int32_t bin_size_x;
-  int32_t bin_size_y;
-  int32_t fix_inst_cnt;
-  int32_t instance_cnt;
-  int32_t net_cnt;
-  int32_t overflow_number;
-  float overflow;
-  int32_t total_pins;
-
-  PLCommonSummary dplace;
-  PLCommonSummary gplace;
-  LGSummary lg_summary;
+  std::string net_name;
+  double setup_tns;
+  double setup_wns;
+  double hold_tns;
+  double hold_wns;
+  double suggest_freq;
 };
 
 }  // namespace ieda_feature

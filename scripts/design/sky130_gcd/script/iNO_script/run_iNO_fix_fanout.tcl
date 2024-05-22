@@ -52,6 +52,7 @@ netlist_save -path $::env(RESULT_DIR)/iTO_fix_fanout_result.v -exclude_cell_name
 ##   report db summary
 #===========================================================
 report_db -path "$::env(RESULT_DIR)/report/fixfanout_db.rpt"
+feature_summary -path $::env(RESULT_DIR)/feature/summary_fixFanout.json -step fixFanout
 
 #===========================================================
 ##   Exit 

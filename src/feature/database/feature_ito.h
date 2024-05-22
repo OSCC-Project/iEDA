@@ -17,44 +17,31 @@
 #pragma once
 
 #include <cstdint>
+#include <string>
+#include <vector>
 
 namespace ieda_feature {
 
-struct PLCommonSummary
+struct TONetTiming
 {
-  float place_density;
-  float pin_density;
-  int64_t HPWL;
-  int64_t STWL;
-  int64_t GRWL;
-  float congestion;
-  float tns;
-  float wns;
-  float suggest_freq;
+  double tns;
+  double wns;
+  double suggest_freq;
 };
 
-struct LGSummary
+struct TONetTimingCmp
 {
-  PLCommonSummary pl_common_summary;
-  int64_t lg_total_movement;
-  int64_t lg_max_movement;
+  std::string net_name;
+  TONetTiming origin;
+  TONetTiming opt;
+  TONetTiming detal;
 };
 
-struct PlaceSummary
+struct TimingOptSummary
 {
-  int32_t bin_number;
-  int32_t bin_size_x;
-  int32_t bin_size_y;
-  int32_t fix_inst_cnt;
-  int32_t instance_cnt;
-  int32_t net_cnt;
-  int32_t overflow_number;
-  float overflow;
-  int32_t total_pins;
-
-  PLCommonSummary dplace;
-  PLCommonSummary gplace;
-  LGSummary lg_summary;
+  double HPWL;
+  double STWL;
+  std::vector<TONetTimingCmp> net_timings;
 };
 
 }  // namespace ieda_feature
