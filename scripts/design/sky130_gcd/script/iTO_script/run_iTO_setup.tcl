@@ -37,7 +37,9 @@ def_init -path $::env(RESULT_DIR)/iTO_hold_result.def
 ##   run TO to  opt_setup
 #===========================================================
 run_to_setup -config $::env(CONFIG_DIR)/to_default_config_setup.json
-feature_summary -path $::env(RESULT_DIR)/feature/summary_ito_optsetup.json -step optSetup
+
+feature_tool -path $::env(RESULT_DIR)/feature/ito_optsetup.json -step optSetup
+
 
 #===========================================================
 ##   save def 
@@ -53,9 +55,7 @@ netlist_save -path $::env(RESULT_DIR)/iTO_setup_result.v -exclude_cell_names {}
 ##   report db summary
 #===========================================================
 report_db -path "$::env(RESULT_DIR)/report/setup_db.rpt"
-
-feature_tool -path $::env(RESULT_DIR)/feature/ito_optsetup.json -step optSetup
-
+feature_summary -path $::env(RESULT_DIR)/feature/summary_ito_optsetup.json -step optSetup
 #===========================================================
 ##   Exit 
 #===========================================================

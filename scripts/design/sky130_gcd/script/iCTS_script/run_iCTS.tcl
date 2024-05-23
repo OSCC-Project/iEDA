@@ -38,6 +38,8 @@ def_init -path $::env(RESULT_DIR)/iPL_result.def
 #===========================================================
 run_cts -config $::env(CONFIG_DIR)/cts_default_config.json -work_dir $::env(RESULT_DIR)/cts
 
+feature_tool -path $::env(RESULT_DIR)/feature/icts.json -step CTS
+
 #===========================================================
 ##   def & netlist
 #===========================================================
@@ -58,7 +60,6 @@ report_db -path "$::env(RESULT_DIR)/report/cts_db.rpt"
 #===========================================================
 cts_report -path $::env(RESULT_DIR)/cts
 
-feature_tool -path $::env(RESULT_DIR)/feature/icts.json -step CTS
 feature_summary -path $::env(RESULT_DIR)/feature/summary_icts.json -step CTS
 
 #===========================================================
