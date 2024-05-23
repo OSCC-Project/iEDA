@@ -533,23 +533,23 @@ void PLAPI::notifyPLWLInfo(int stage)
 
 void PLAPI::notifyPLCongestionInfo(int stage)
 {
-  // special operator
-  _external_api->destroyCongEval();
+  // // special operator
+  // _external_api->destroyCongEval();
 
-  this->writeBackSourceDataBase();
+  // this->writeBackSourceDataBase();
 
-  std::vector<float> gr_congestion = this->evalGRCong();  // return <ACE, TOF, MOF, egr-Wirelength>
-  PlacerDBInst.congestion[stage] = gr_congestion[1];
-  PlacerDBInst.PL_GRWL[stage] = gr_congestion[3];
+  // std::vector<float> gr_congestion = this->evalGRCong();  // return <ACE, TOF, MOF, egr-Wirelength>
+  // PlacerDBInst.congestion[stage] = gr_congestion[1];
+  // PlacerDBInst.PL_GRWL[stage] = gr_congestion[3];
 
-  int32_t grid_cnt_x = PlacerDBInst.get_placer_config()->get_nes_config().get_bin_cnt_x();
-  int32_t grid_cnt_y = PlacerDBInst.get_placer_config()->get_nes_config().get_bin_cnt_y();
-  std::vector<float> pin_dens
-      = this->obtainPinDens(grid_cnt_x, grid_cnt_y);  // return <average, peak> , average = sum / bin_cnt, peak = max / average
-  PlacerDBInst.pin_density[stage] = pin_dens[1];
+  // int32_t grid_cnt_x = PlacerDBInst.get_placer_config()->get_nes_config().get_bin_cnt_x();
+  // int32_t grid_cnt_y = PlacerDBInst.get_placer_config()->get_nes_config().get_bin_cnt_y();
+  // std::vector<float> pin_dens
+  //     = this->obtainPinDens(grid_cnt_x, grid_cnt_y);  // return <average, peak> , average = sum / bin_cnt, peak = max / average
+  // PlacerDBInst.pin_density[stage] = pin_dens[1];
 
-  // special operator
-  _external_api->initTimingEval(PlacerDBInst.get_layout()->get_database_unit());
+  // // special operator
+  // _external_api->initTimingEval(PlacerDBInst.get_layout()->get_database_unit());
 }
 
 void PLAPI::notifyPLTimingInfo(int stage)
