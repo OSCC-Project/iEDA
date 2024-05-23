@@ -158,7 +158,7 @@ json FeatureParser::buildSummaryPL(std::string step)
     summary_pl["gplace"]["pin_density"] = pl_summary.gplace.pin_density;
     summary_pl["gplace"]["HPWL"] = pl_summary.gplace.HPWL;
     summary_pl["gplace"]["STWL"] = pl_summary.gplace.STWL;
-    summary_pl["gplace"]["global_routing_WL"] = pl_summary.gplace.GRWL;
+    summary_pl["gplace"]["GRWL"] = pl_summary.gplace.GRWL;
     summary_pl["gplace"]["congestion"] = pl_summary.gplace.congestion;
     summary_pl["gplace"]["tns"] = pl_summary.gplace.tns;
     summary_pl["gplace"]["wns"] = pl_summary.gplace.wns;
@@ -168,15 +168,15 @@ json FeatureParser::buildSummaryPL(std::string step)
     summary_pl["dplace"]["pin_density"] = pl_summary.dplace.pin_density;
     summary_pl["dplace"]["HPWL"] = pl_summary.dplace.HPWL;
     summary_pl["dplace"]["STWL"] = pl_summary.dplace.STWL;
-    summary_pl["dplace"]["global_routing_WL"] = pl_summary.dplace.GRWL;
+    summary_pl["dplace"]["GRWL"] = pl_summary.dplace.GRWL;
     summary_pl["dplace"]["congestion"] = pl_summary.dplace.congestion;
     summary_pl["dplace"]["tns"] = pl_summary.dplace.tns;
     summary_pl["dplace"]["wns"] = pl_summary.dplace.wns;
     summary_pl["dplace"]["suggest_freq"] = pl_summary.dplace.suggest_freq;
 
-    summary_pl["instance"] = pl_summary.instance_cnt;
-    summary_pl["fix_instances"] = pl_summary.fix_inst_cnt;
-    summary_pl["nets"] = pl_summary.net_cnt;
+    summary_pl["instance_cnt"] = pl_summary.instance_cnt;
+    summary_pl["fix_inst_cnt"] = pl_summary.fix_inst_cnt;
+    summary_pl["net_cnt"] = pl_summary.net_cnt;
     summary_pl["total_pins"] = pl_summary.total_pins;
     summary_pl["bin_number"] = pl_summary.bin_number;
     summary_pl["bin_size_x"] = pl_summary.bin_size_x;
@@ -190,7 +190,7 @@ json FeatureParser::buildSummaryPL(std::string step)
     summary_pl["legalization"]["pin_density"] = pl_summary.lg_summary.pl_common_summary.pin_density;
     summary_pl["legalization"]["HPWL"] = pl_summary.lg_summary.pl_common_summary.HPWL;
     summary_pl["legalization"]["STWL"] = pl_summary.lg_summary.pl_common_summary.STWL;
-    summary_pl["legalization"]["global_routing_WL"] = pl_summary.lg_summary.pl_common_summary.GRWL;
+    summary_pl["legalization"]["GRWL"] = pl_summary.lg_summary.pl_common_summary.GRWL;
     summary_pl["legalization"]["congestion"] = pl_summary.lg_summary.pl_common_summary.congestion;
     summary_pl["legalization"]["tns"] = pl_summary.lg_summary.pl_common_summary.tns;
     summary_pl["legalization"]["wns"] = pl_summary.lg_summary.pl_common_summary.wns;
