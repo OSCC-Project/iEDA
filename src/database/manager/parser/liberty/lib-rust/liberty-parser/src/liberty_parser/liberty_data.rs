@@ -86,7 +86,7 @@ pub struct LibertyAttrStmt {
 
 impl LibertyAttrStmt {
     fn new(file_name: &str, line_no: usize) -> LibertyAttrStmt {
-        LibertyAttrStmt { file_name: file_name.to_string(), line_no: line_no }
+        LibertyAttrStmt { file_name: file_name.to_string(), line_no }
     }
 
     pub fn get_file_name(&self) -> &str {
@@ -118,7 +118,7 @@ impl LibertySimpleAttrStmt {
         LibertySimpleAttrStmt {
             attri: LibertyAttrStmt::new(file_name, line_no),
             attri_name: attri_name.to_string(),
-            attri_value: attri_value,
+            attri_value,
         }
     }
 
@@ -167,7 +167,7 @@ impl LibertyComplexAttrStmt {
         LibertyComplexAttrStmt {
             attri: LibertyAttrStmt::new(file_name, line_no),
             attri_name: attri_name.to_string(),
-            attri_values: attri_values,
+            attri_values,
         }
     }
 
@@ -245,9 +245,9 @@ impl LibertyGroupStmt {
     pub fn get_attri(&self) -> &LibertyAttrStmt {
         &self.attri
     }
-
+    #[allow(dead_code)]
     pub fn get_attri_name(&self) -> &str {
-        &self.attri_values.first().unwrap().get_string_value()
+        self.attri_values.first().unwrap().get_string_value()
     }
 
     pub fn get_attri_values(&self) -> &Vec<Box<dyn LibertyAttrValue>> {

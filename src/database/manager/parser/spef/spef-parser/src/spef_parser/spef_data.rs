@@ -10,7 +10,7 @@ pub struct SpefEntryBasicInfo {
 
 impl SpefEntryBasicInfo {
     pub fn new(file_name: &str, line_no: usize) -> SpefEntryBasicInfo {
-        SpefEntryBasicInfo { file_name: file_name.to_string(), line_no: line_no }
+        SpefEntryBasicInfo { file_name: file_name.to_string(), line_no }
     }
 
     pub fn get_file_name(&self) -> &str {
@@ -64,8 +64,8 @@ impl SpefHeaderEntry {
     pub fn new(file_name: &str, line_no: usize, header_key: String, header_value: String) -> SpefHeaderEntry {
         SpefHeaderEntry {
             basic_info: SpefEntryBasicInfo::new(file_name, line_no),
-            header_key: header_key,
-            header_value: header_value,
+            header_key,
+            header_value,
         }
     }
 
@@ -146,7 +146,7 @@ impl SpefPortEntry {
     }
 
     pub fn get_direction(&self) -> ConnectionDirection {
-        self.direction.clone()
+        self.direction
     }
 
     pub fn get_coordinate(&self) -> (f64, f64) {
@@ -215,7 +215,7 @@ impl SpefConnEntry {
     }
 
     pub fn get_conn_type(&self) -> ConnectionType {
-        self.conn_type.clone()
+        self.conn_type
     }
 
     pub fn set_conn_type(&mut self, conn_type: ConnectionType) {
@@ -223,24 +223,24 @@ impl SpefConnEntry {
     }
 
     pub fn get_conn_direction(&self) -> ConnectionDirection {
-        self.conn_direction.clone()
+        self.conn_direction
     }
     pub fn set_conn_direction(&mut self, conn_direction: ConnectionDirection) {
         self.conn_direction = conn_direction;
     }
 
     pub fn get_xy_coordinate(&self) -> (f64, f64) {
-        self.coordinate.clone()
+        self.coordinate
     }
     pub fn set_xy_coordinate(&mut self, coordinate: (f64, f64)) {
         self.coordinate = coordinate;
     }
 
     pub fn get_ll_coordinate(&self) -> (f64, f64) {
-        self.ll_coordinate.clone()
+        self.ll_coordinate
     }
     pub fn get_ur_coordinate(&self) -> (f64, f64) {
-        self.ur_coordinate.clone()
+        self.ur_coordinate
     }
 
     pub fn set_ll_corr(&mut self, coordinate: (f64, f64)) {
@@ -267,7 +267,7 @@ impl SpefConnEntry {
         self.load = load;
     }
     pub fn get_load(&self) -> f64 {
-        self.load.clone()
+        self.load
     }
 }
 

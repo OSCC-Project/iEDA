@@ -20,6 +20,7 @@
 #include "api/TimingEngine.hh"
 #include "api/TimingIDBAdapter.hh"
 #include "builder.h"
+#include "feature_ito.h"
 #include "iTO.h"
 #include "idm.h"
 
@@ -177,4 +178,57 @@ void ToApi::resetConfigSdc(std::string &path) {
 }
 
 void ToApi::reportTiming() { _timing_engine->reportTiming(); }
+
+ieda_feature::TimingOptSummary ToApi::outputSummary() {
+  ieda_feature::TimingOptSummary to_summary;
+
+  std::map<std::string, ieda_feature::TONetTimingCmp> summary_map;
+
+  // origin data，tns，wns，freq
+  auto to_eval_data = getEvalData();
+  for (auto eval_data : to_eval_data) {
+    ieda_feature::TONetTiming net_timing;
+    std::string               net_name = eval_data.name;
+    net_timing.tns = eval_data.initial_tns;
+    net_timing.wns = eval_data.initial_wns;
+    net_timing.suggest_freq = eval_data.initial_freq;
+
+    ieda_feature::TONetTimingCmp net_cmp;
+    memset(&net_cmp, 0, sizeof(ieda_feature::TONetTimingCmp));
+    net_cmp.origin = net_timing;
+    summary_map[net_name] = net_cmp;
+  }
+
+  // after optimize timing
+  auto clk_list = _timing_engine->getClockList();
+
+  std::ranges::for_each(clk_list, [&](ista::StaClock *clk) {
+    auto clk_name = clk->get_clock_name();
+    auto drv_tns = _timing_engine->reportTNS(clk_name, AnalysisMode::kMax);
+    auto drv_wns = _timing_engine->reportWNS(clk_name, AnalysisMode::kMax);
+    auto suggest_freq = 1000.0 / (clk->getPeriodNs() - drv_wns);
+
+    ieda_feature::TONetTiming net_timing;
+    std::string               net_name = clk_name;
+    net_timing.tns = drv_tns;
+    net_timing.wns = drv_wns;
+    net_timing.suggest_freq = suggest_freq;
+
+    summary_map[net_name].opt = net_timing;
+  });
+
+  for (auto [net_name, net_timings] : summary_map) {
+    net_timings.net_name = net_name;
+
+    net_timings.detal.tns = net_timings.opt.tns - net_timings.origin.tns;
+    net_timings.detal.wns = net_timings.opt.wns - net_timings.origin.wns;
+    net_timings.detal.suggest_freq =
+        net_timings.opt.suggest_freq - net_timings.origin.suggest_freq;
+
+    to_summary.net_timings.push_back(net_timings);
+  }
+
+  return to_summary;
+}
+
 } // namespace ito

@@ -35,8 +35,7 @@ namespace idb {
 
 IdbDie::IdbDie()
 {
-  _width = -1;
-  _height = -1;
+  _area = 0;
 }
 
 IdbDie::~IdbDie()
@@ -44,33 +43,46 @@ IdbDie::~IdbDie()
   reset();
 }
 
-void IdbDie::set_points(vector<IdbCoordinate<int32_t>*> points)
+uint64_t IdbDie::get_area()
 {
-  _points = std::move(points);
-
-  if (_points.size() >= kMaxPointsNumber) {
-    _width = get_urx() - get_llx();
-    _height = get_ury() - get_lly();
-
-    set_bounding_box();
+  if (_area == 0) {
+    if (is_polygon()) {
+      _area = bg::area(_polygon);
+    } else {
+      _area = ((uint64_t) get_width()) * ((uint64_t) get_height());
+    }
   }
+
+  return _area;
 }
 
 uint32_t IdbDie::add_point(IdbCoordinate<int32_t>* pt)
 {
   _points.push_back(pt);
+  bg::append(_polygon, point_t(pt->get_x(), pt->get_y()));
 
-  //<!--------------tbd--------------
-  //<!---only support rectangle------
-  //_points[0] & _points[1] construct rectangle
-  if (_points.size() >= kMaxPointsNumber) {
-    _width = get_urx() - get_llx();
-    _height = get_ury() - get_lly();
-
+  if(_points.size() >= RECTANGLE_NUM){
     set_bounding_box();
   }
 
   return _points.size();
+}
+
+bool IdbDie::set_bounding_box()
+{
+  int32_t llx = INT32_MAX;
+  int32_t lly = INT32_MAX;
+  int32_t urx = 0;
+  int32_t ury = 0;
+
+  for (auto pt : _points) {
+    llx = std::min(llx, pt->get_x());
+    lly = std::min(lly, pt->get_y());
+    urx = std::max(urx, pt->get_x());
+    ury = std::max(ury, pt->get_y());
+  }
+
+  return IdbObject::set_bounding_box(llx, lly, urx, ury);
 }
 
 uint32_t IdbDie::add_point(int32_t x, int32_t y)
@@ -78,11 +90,6 @@ uint32_t IdbDie::add_point(int32_t x, int32_t y)
   IdbCoordinate<int32_t>* point = new IdbCoordinate<int32_t>(x, y);
 
   return add_point(point);
-}
-
-bool IdbDie::set_bounding_box()
-{
-  return IdbObject::set_bounding_box(get_llx(), get_lly(), get_urx(), get_ury());
 }
 
 void IdbDie::print()

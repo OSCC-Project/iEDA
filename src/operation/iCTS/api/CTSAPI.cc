@@ -42,6 +42,8 @@
 #include "api/TimingEngine.hh"
 #include "api/TimingIDBAdapter.hh"
 #include "builder.h"
+#include "feature_icts.h"
+#include "feature_ista.h"
 #include "idm.h"
 #include "log/Log.hh"
 #include "model/ModelFactory.hh"
@@ -105,8 +107,10 @@ void CTSAPI::writeGDS()
 
 void CTSAPI::report(const std::string& save_dir)
 {
+  bool b_read_data = false;
   if (_timing_engine == nullptr) {
     startDbSta();
+    b_read_data = true;
   }
   if (_evaluator == nullptr) {
     _evaluator = new Evaluator();
@@ -114,7 +118,9 @@ void CTSAPI::report(const std::string& save_dir)
     _evaluator->evaluate();
   }
   _evaluator->statistics(save_dir);
-  _timing_engine->destroyTimingEngine();
+  if (b_read_data) {
+    _timing_engine->destroyTimingEngine();
+  }
 }
 
 void CTSAPI::initEvalInfo()
@@ -914,7 +920,10 @@ void CTSAPI::latencySkewLog() const
       ista::StaPathEnd* path_end;
       ista::StaPathData* path_data;
       FOREACH_PATH_GROUP_END(seq_path_group.get(), path_end)
-      FOREACH_PATH_END_DATA(path_end, mode, path_data) { seq_data_queue.push(path_data); }
+      FOREACH_PATH_END_DATA(path_end, mode, path_data)
+      {
+        seq_data_queue.push(path_data);
+      }
       auto* worst_seq_data = seq_data_queue.top();
       auto* launch_clock_data = worst_seq_data->get_launch_clock_data();
       auto* capture_clock_data = worst_seq_data->get_capture_clock_data();
@@ -1144,6 +1153,60 @@ double CTSAPI::getResistance(const double& wire_length, const int& level) const
 ista::TimingIDBAdapter* CTSAPI::getStaDbAdapter() const
 {
   return dynamic_cast<ista::TimingIDBAdapter*>(_timing_engine->get_db_adapter());
+}
+
+ieda_feature::CTSSummary CTSAPI::outputSummary()
+{
+  ieda_feature::CTSSummary summary;
+
+  initEvalInfo();
+
+  summary.buffer_num = getInsertCellNum();
+  summary.buffer_area = getInsertCellArea();
+
+  auto path_info = getPathInfos();
+  int max_path = path_info[0].max_depth;
+  int min_path = path_info[0].min_depth;
+
+  for (auto path : path_info) {
+    max_path = std::max(max_path, path.max_depth);
+    min_path = std::min(min_path, path.min_depth);
+  }
+  auto max_level_of_clock_tree = max_path;
+
+  summary.clock_path_min_buffer = min_path;
+  summary.clock_path_max_buffer = max_path;
+  summary.max_level_of_clock_tree = max_level_of_clock_tree;
+  summary.max_clock_wirelength = getMaxClockNetWL();
+  summary.total_clock_wirelength = getTotalClockNetWL();
+
+  bool b_read_data = false;
+  if (_timing_engine == nullptr) {
+    startDbSta();
+    b_read_data = true;
+  }
+  // 可能有多个clk_name，每一个时钟都需要报告tns、wns、freq
+  auto clk_list = _timing_engine->getClockList();
+  for (auto* clk : clk_list) {
+    ieda_feature::NetTiming net_timing;
+
+    auto clk_name = clk->get_clock_name();
+
+    net_timing.net_name = clk_name;
+    net_timing.setup_tns = _timing_engine->reportTNS(clk_name, AnalysisMode::kMax);
+    net_timing.setup_wns = _timing_engine->reportWNS(clk_name, AnalysisMode::kMax);
+    net_timing.hold_tns = _timing_engine->reportTNS(clk_name, AnalysisMode::kMin);
+    net_timing.hold_wns = _timing_engine->reportWNS(clk_name, AnalysisMode::kMin);
+    net_timing.suggest_freq = 1000.0 / (clk->getPeriodNs() - net_timing.setup_wns);
+
+    summary.nets_timing.push_back(net_timing);
+  }
+
+  if (b_read_data) {
+    _timing_engine->destroyTimingEngine();
+  }
+
+  return summary;
 }
 
 }  // namespace icts

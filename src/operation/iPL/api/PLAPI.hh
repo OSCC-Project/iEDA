@@ -29,6 +29,10 @@
 #include "external_api/ExternalAPI.hh"
 #include "report/PLReporter.hh"
 
+namespace ieda_feature {
+    class PlaceSummary;
+}// namespace
+
 namespace ipl {
 
 #define iPLAPIInst ipl::PLAPI::getInst()
@@ -63,7 +67,7 @@ class PLAPI
                                                                 std::pair<int32_t, int32_t> site_range);
   bool checkLegality();
 
-  PLReporter* get_reporter() { return _reporter;}
+  PLReporter* get_reporter() { return _reporter; }
 
   void reportPLInfo();
   void reportTopoInfo();
@@ -79,7 +83,7 @@ class PLAPI
   void reportCongestionInfo(std::ofstream& feed);
   void reportPLBaseInfo(std::ofstream& feed);
 
-  void notifyPLWLInfo(int stage); // for indicator record: 0-GP, 1-LG, 2-DP
+  void notifyPLWLInfo(int stage);  // for indicator record: 0-GP, 1-LG, 2-DP
   void notifyPLTimingInfo(int stage);
   void notifySTAUpdateTimingRuntime();
   void notifyPLCongestionInfo(int stage);
@@ -129,7 +133,8 @@ class PLAPI
   double obtainLateWNS(const char* clock_name);
   double obtainLateTNS(const char* clock_name);
   void updateTiming(TopologyManager* topo_manager);
-  void updatePartOfTiming(TopologyManager* topo_manager, std::map<int32_t, std::vector<std::pair<Point<int32_t>, Point<int32_t>>>>& net_id_to_points_map);
+  void updatePartOfTiming(TopologyManager* topo_manager,
+                          std::map<int32_t, std::vector<std::pair<Point<int32_t>, Point<int32_t>>>>& net_id_to_points_map);
   void updateTimingInstMovement(TopologyManager* topo_manager,
                                 std::map<int32_t, std::vector<std::pair<Point<int32_t>, Point<int32_t>>>> net_id_to_points_map,
                                 std::vector<std::string> moved_inst_list);
@@ -152,6 +157,7 @@ class PLAPI
   void plotCongMap(const std::string& plot_path, const std::string& output_file_name);
   void destroyCongEval();
   /*****************************Congestion-driven Placement: END*****************************/
+  ieda_feature::PlaceSummary outputSummary(std::string step);
 
  private:
   static PLAPI* _s_ipl_api_instance;

@@ -16,27 +16,19 @@
 // ***************************************************************************************
 #pragma once
 
-#include <iostream>
+#include <cstdint>
 #include <string>
-#include <vector>
 
-#include "pl_summary.h"
-#include "rt_summary.h"
+namespace ieda_feature {
 
-namespace idb {
-
-class FeatureSummary{
- private:
-  PlaceSummary place_summary;
-  RTSummary rt_summary;
-
- public:
-  FeatureSummary() = default;
-  ~FeatureSummary() = default;
-  // getter
-  PlaceSummary& getPlaceSummary() { return place_summary; }
-  RTSummary& getRTSummary() { return rt_summary; }
-
+struct NetOptSummary
+{
+  std::string net_name;
+  double setup_tns;
+  double setup_wns;
+  double hold_tns;
+  double hold_wns;
+  double suggest_freq;
 };
 
-}
+}  // namespace ieda_feature

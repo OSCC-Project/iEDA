@@ -31,36 +31,38 @@
 #include <string>
 #include <vector>
 
-#include "IdbDesign.h"
-#include "IdbLayout.h"
+#include "feature_summary.h"
 
-using namespace idb;
+#define featureInst ieda_feature::FeatureManager::getInstance()
 
-namespace iplf {
+namespace ieda_feature {
 
 class FeatureManager
 {
  public:
-  FeatureManager(IdbLayout* idb_layout, IdbDesign* idb_design)
+  static FeatureManager* getInstance()
   {
-    _idb_layout = idb_layout;
-    _idb_design = idb_design;
+    if (!_instance) {
+      _instance = new FeatureManager;
+    }
+    return _instance;
   }
-  ~FeatureManager()
-  {
-    _idb_layout = nullptr;
-    _idb_design = nullptr;
-  };
 
-  bool save_layout(std::string path);
-  bool save_instances(std::string path);
-  bool save_nets(std::string path);
-  bool save_reportSummary(std::string path, std::string step);
-  bool save_reportSummary_map(std::string path, int bin_cnt_x, int bin_cnt_y);
+  ///
+  bool has_feature() { return _summary == nullptr ? false : true; }
+  FeatureSummary* get_summary() { return _summary; }
+
+  bool save_summary(std::string path);
+  bool save_tools(std::string path, std::string step);
+  bool save_eval_map(std::string path, int bin_cnt_x, int bin_cnt_y);
 
  private:
-  IdbDesign* _idb_design = nullptr;
-  IdbLayout* _idb_layout = nullptr;
+  static FeatureManager* _instance;
+
+  FeatureSummary* _summary = nullptr;
+
+  FeatureManager();
+  ~FeatureManager();
 };
 
-}  // namespace iplf
+}  // namespace ieda_feature

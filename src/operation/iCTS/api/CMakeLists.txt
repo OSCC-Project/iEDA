@@ -8,6 +8,6 @@ endif()
 
 add_library(icts_api ${ICTS_API}/CTSAPI.cc)
 
-target_link_libraries(icts_api PRIVATE icts_source icts_api_external_libs usage)
+target_link_libraries(icts_api PRIVATE icts_source icts_api_external_libs usage feature_db)
 
 target_include_directories(icts_api PUBLIC ${ICTS_API})

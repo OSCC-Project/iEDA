@@ -10,6 +10,9 @@ set(HOME_UTILITY ${PROJECT_SOURCE_DIR}/src/utility)
 #database settings
 set(HOME_DATABASE ${PROJECT_SOURCE_DIR}/src/database)
 
+#feature settings
+set(HOME_FEATURE ${PROJECT_SOURCE_DIR}/src/feature)
+
 #interface settings
 set(HOME_INTERFACE ${PROJECT_SOURCE_DIR}/src/interface)
 

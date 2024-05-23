@@ -24,11 +24,9 @@ namespace python_interface {
 namespace py = pybind11;
 void register_feature(py::module& m)
 {
-  m.def("feature_layout", feature_layout, py::arg("path"));
-  m.def("feature_instances", feature_instances, py::arg("path"));
-  m.def("feature_nets", feature_nets, py::arg("path"));
-  m.def("feature_summary", feature_summary, py::arg("path"), py::arg("step"));
-  m.def("feature_summary_map", feature_summary_map, py::arg("path"), py::arg("bin_cnt_x"), py::arg("bin_cnt_y"));
+  m.def("feature_summary", feature_summary, py::arg("path"));
+  m.def("feature_tool", feature_tool, py::arg("path"), py::arg("step"));
+  m.def("feature_eval_map", feature_eval_map, py::arg("path"), py::arg("bin_cnt_x"), py::arg("bin_cnt_y"));
 }
 
 }  // namespace python_interface

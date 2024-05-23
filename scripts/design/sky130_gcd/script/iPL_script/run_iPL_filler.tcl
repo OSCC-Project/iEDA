@@ -43,6 +43,8 @@ netlist_save -path $::env(RESULT_DIR)/iPL_filler_result.v -exclude_cell_names {}
 #===========================================================
 report_db -path "$::env(RESULT_DIR)/report/filler_db.rpt"
 
+feature_summary -path $::env(RESULT_DIR)/feature/summary_ipl_filler.json -step filler
+
 #===========================================================
 ##   Exit 
 #===========================================================

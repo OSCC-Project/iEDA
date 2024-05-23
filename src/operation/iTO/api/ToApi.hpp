@@ -25,6 +25,10 @@
 #include "../source/io/DbInterface.h"
 #include "../iTO.h"
 
+namespace ieda_feature {
+    class TimingOptSummary;
+}// namespace
+
 namespace ito {
 
 #define ToApiInst (ito::ToApi::getInst())
@@ -58,6 +62,8 @@ class ToApi {
   void topoSetDriverId(ito::Tree *topo, const int &id);
   void reportTiming();
   std::vector<EvalData> getEvalData() { return _ito->get_db_interface()->eval_data(); }
+
+  ieda_feature::TimingOptSummary outputSummary();
 
  private:
   static ToApi *_to_api_instance;

@@ -180,6 +180,7 @@ class IdbSpecialWire
   // getter
   vector<IdbSpecialWireSegment*>& get_segment_list() { return _segment_list; }
   size_t get_num() { return _segment_list.size(); }
+  uint get_via_num();
   IdbWiringStatement get_wire_state() { return _wire_state; }
   string& get_shiled_name() { return _shiled_name; }
   IdbSpecialWireSegment* get_segment(size_t index) { return get_num() > 0 && get_num() > index ? _segment_list[index] : nullptr; }

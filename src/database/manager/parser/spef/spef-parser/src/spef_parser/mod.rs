@@ -17,8 +17,8 @@ struct SpefParser;
 fn measure_elapsed_time(start_time: Instant) -> u128 {
     let end_time = Instant::now();
     let elapsed_time = end_time.duration_since(start_time);
-    let elapsed_us = elapsed_time.as_micros();
-    return elapsed_us;
+    
+    elapsed_time.as_micros()
 }
 
 /// process float pairs, returing a f64 or an Err.
@@ -262,7 +262,7 @@ fn process_conn_entry(pair: Pair<Rule>) -> Result<spef_data::SpefConnEntry, pest
 
     let mut current_conn = spef_data::SpefConnEntry::new("tbd", line_no);
 
-    let mut inner_rules = pair.into_inner();
+    let inner_rules = pair.into_inner();
     for inner_pair in inner_rules {
         match inner_pair.as_rule() {
             Rule::conn_type => {
@@ -285,22 +285,14 @@ fn process_conn_entry(pair: Pair<Rule>) -> Result<spef_data::SpefConnEntry, pest
             Rule::xy_coordinates => {
                 let xy_coordinate = {
                     let coor_pair_result = process_coordinate(inner_pair);
-                    match coor_pair_result {
-                        Ok(coors) => coors,
-                        // (-1.0, -1.0) is used as a special tuple as uninitialized value
-                        // the reason is cxx currently not support std::optional<T> to be transfered
-                        Err(_) => (-1.0, -1.0),
-                    }
+                    coor_pair_result.unwrap_or((-1.0, -1.0))
                 };
                 current_conn.set_xy_coordinate(xy_coordinate);
             }
             Rule::cap_or_res_val => {
                 let load = {
                     let load_pair_result = process_float(inner_pair);
-                    match load_pair_result {
-                        Ok(load) => load,
-                        Err(_) => 0.0,
-                    }
+                    load_pair_result.unwrap_or(0.0)
                 };
 
                 current_conn.set_load(load);
@@ -506,7 +498,7 @@ pub fn parse_spef_file(spef_file_path: &str) -> spef_data::SpefExchange {
 
 #[cfg(test)]
 mod tests {
-    use pest::error;
+
     use pest::iterators::Pair;
     use pest::iterators::Pairs;
 
@@ -538,7 +530,7 @@ mod tests {
             }
         }
 
-        assert!(!parse_result_clone.is_err());
+        assert!(parse_result_clone.is_ok());
     }
 
     #[test]

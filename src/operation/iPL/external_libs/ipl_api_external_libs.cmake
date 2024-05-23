@@ -8,6 +8,7 @@ target_link_libraries(ipl-api_external_libs
         idm
         OpenMP::OpenMP_CXX
         report_table
+        feature_db
 )
 
 target_include_directories(ipl-api_external_libs

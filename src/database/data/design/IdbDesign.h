@@ -66,8 +66,6 @@ class IdbDesign
   const std::string& get_design_name() const { return _design_name; }
   IdbUnits* get_units() { return _units; }
 
-  // IdbRow* get_row(){return _row;}
-
   IdbInstanceList* get_instance_list() { return _instance_list; }
   IdbPins* get_io_pin_list() { return _io_pin_list; }
   IdbNetList* get_net_list() { return _net_list; }
@@ -80,6 +78,7 @@ class IdbDesign
   IdbFillList* get_fill_list() { return _fill_list; }
   IdbBusBitChars* get_bus_bit_chars() { return &_bus_bit_chars; }
   IdbBusList* get_bus_list() { return _bus_list; }
+
   // setter
   void set_version(std::string version) { _version = version; }
   void set_design_name(std::string name) { _design_name = name; }

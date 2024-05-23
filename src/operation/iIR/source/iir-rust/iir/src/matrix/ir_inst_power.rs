@@ -1,7 +1,7 @@
 use log;
 use std::collections::HashMap;
 use std::error::Error;
-use std::ffi::{c_char, c_void};
+
 use std::fs::File;
 
 use serde::de::StdError;
@@ -10,10 +10,7 @@ use serde::Deserialize;
 use crate::matrix::ir_inst_power;
 use crate::matrix::ir_rc::RCOneNetData;
 
-use super::c_str_to_r_str;
-use super::ir_rc::RCData;
-
-#[derive(Deserialize)]
+#[allow(dead_code)] #[derive(Deserialize)]
 pub struct InstancePowerRecord {
     #[serde(rename = "Instance Name")]
     instance_name: String,
@@ -44,6 +41,7 @@ pub fn read_instance_pwr_csv(file_path: &str) -> Result<Vec<InstancePowerRecord>
 }
 
 /// Print instance power data.
+#[allow(dead_code)]
 fn print_inst_pwr_data(records: &[InstancePowerRecord]) {
     for record in records {
         println!(

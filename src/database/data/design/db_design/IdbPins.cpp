@@ -497,6 +497,20 @@ uint32_t IdbPins::get_net_pin_num()
   return num;
 }
 
+uint IdbPins::get_connected_pin_num()
+{
+  uint32_t num = 0;
+  for (auto pin : _pin_list) {
+    if (pin->get_net() == nullptr) {
+      continue;
+    }
+
+    num++;
+  }
+
+  return num;
+}
+
 IdbPin* IdbPins::find_pin(IdbPin* pin)
 {
   for (IdbPin* pin_iter : _pin_list) {
