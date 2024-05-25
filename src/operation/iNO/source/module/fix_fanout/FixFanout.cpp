@@ -30,6 +30,7 @@ FixFanout::FixFanout(ino::DbInterface *db_interface) : _db_interface(db_interfac
 }
 
 void FixFanout::fixFanout() {
+  _db_interface->set_eval_data();
   _idb_layout = _idb->get_lef_service()->get_layout();
   _idb_design = _idb->get_def_service()->get_design();
   auto net_list = _idb_design->get_net_list()->get_net_list();

@@ -32,6 +32,7 @@
 #include "PLAPI.hh"
 #include "RTInterface.hpp"
 #include "ToApi.hpp"
+#include "NoApi.hpp"
 #include "feature_builder.h"
 #include "idm.h"
 #include "report_evaluator.h"
@@ -61,7 +62,7 @@ CTSSummary FeatureBuilder::buildCTSSummary()
 
 NetOptSummary FeatureBuilder::buildNetOptSummary()
 {
-  NetOptSummary summary;
+  NetOptSummary summary = NoApiInst.outputSummary();
 
   return summary;
 }

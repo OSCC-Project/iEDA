@@ -238,6 +238,32 @@ json FeatureParser::buildSummaryNetOpt()
 {
   json json_netopt;
 
+  NetOptSummary& summary = _summary->get_summary_ino();
+
+  json json_net_timings;
+  for (int i = 0; i < summary.net_timings.size(); ++i) {
+    NONetTimingCmp net_timing = summary.net_timings[i];
+
+    json_net_timings[i]["clock_name"] = net_timing.net_name;
+    json_net_timings[i]["origin_setup_tns"] = net_timing.origin.setup_tns;
+    json_net_timings[i]["origin_setup_wns"] = net_timing.origin.setup_wns;
+    json_net_timings[i]["origin_hold_tns"] = net_timing.origin.hold_tns;
+    json_net_timings[i]["origin_hold_wns"] = net_timing.origin.hold_wns;
+    json_net_timings[i]["origin_suggest_freq"] = net_timing.origin.suggest_freq;
+    json_net_timings[i]["opt_setup_tns"] = net_timing.opt.setup_tns;
+    json_net_timings[i]["opt_setup_wns"] = net_timing.opt.setup_wns;
+    json_net_timings[i]["opt_hold_tns"] = net_timing.opt.hold_tns;
+    json_net_timings[i]["opt_hold_wns"] = net_timing.opt.hold_wns;
+    json_net_timings[i]["opt_suggest_freq"] = net_timing.opt.suggest_freq;
+    json_net_timings[i]["detal_setup_tns"] = net_timing.detal.setup_tns;
+    json_net_timings[i]["detal_setup_wns"] = net_timing.detal.setup_wns;
+    json_net_timings[i]["detal_hold_tns"] = net_timing.detal.hold_tns;
+    json_net_timings[i]["detal_hold_wns"] = net_timing.detal.hold_wns;
+    json_net_timings[i]["detal_suggest_freq"] = net_timing.detal.suggest_freq;
+  }
+
+  json_netopt["nets_timing"] = json_net_timings;
+
   return json_netopt;
 }
 
