@@ -29,7 +29,7 @@ pub trait VerilogVirtualBaseID: Debug + VerilogVirtualBaseIDClone {
     fn as_any(&self) -> &dyn std::any::Any;
 }
 
-trait VerilogVirtualBaseIDClone {
+pub trait VerilogVirtualBaseIDClone {
     fn clone_box(&self) -> Box<dyn VerilogVirtualBaseID>;
 }
 
@@ -105,6 +105,7 @@ impl VerilogIndexID {
         VerilogIndexID { id: VerilogID::new(id), index: index, formatted_index_id: formatted_index_id }
     }
 
+    #[allow(dead_code)]
     pub fn get_id(&self) -> &VerilogID {
         &self.id
     }
@@ -156,6 +157,7 @@ impl VerilogSliceID {
         }
     }
 
+    #[allow(dead_code)]
     pub fn get_id(&self) -> &VerilogID {
         &self.id
     }
@@ -168,6 +170,7 @@ impl VerilogSliceID {
         self.range_to
     }
 
+    #[allow(dead_code)]
     pub fn get_name_with_index(&self, index: i32) -> String {
         format!("{}[{}]", &self.id.get_base_name(), index)
     }
@@ -322,7 +325,7 @@ impl VerilogNetConcatExpr {
     pub fn get_verilog_id_concat(&self) -> &Vec<Box<dyn VerilogVirtualBaseNetExpr>> {
         &self.verilog_id_concat
     }
-
+    #[allow(dead_code)]
     pub fn update_verilog_id_concat(&mut self, new_verilog_id_concat: Vec<Box<dyn VerilogVirtualBaseNetExpr>>) {
         self.verilog_id_concat = new_verilog_id_concat;
     }
@@ -438,7 +441,7 @@ pub trait VerilogVirtualBaseStmt: Debug + VerilogVirtualBaseStmtClone {
     fn as_any(&self) -> &dyn std::any::Any;
 }
 
-trait VerilogVirtualBaseStmtClone {
+pub trait VerilogVirtualBaseStmtClone {
     fn clone_box(&self) -> Box<dyn VerilogVirtualBaseStmt>;
 }
 
@@ -724,7 +727,7 @@ impl VerilogInst {
                                 }
                             } else if port_id.is_bus_slice_id() {
                                 if port_connect_net.get_verilog_id().is_bus_slice_id() {
-                                    let mut port_connect_net_slice_id = port_connect_net
+                                    let port_connect_net_slice_id = port_connect_net
                                         .get_verilog_id()
                                         .as_any()
                                         .downcast_ref::<VerilogSliceID>()
@@ -818,6 +821,7 @@ impl VerilogVirtualBaseStmt for VerilogInst {
     }
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct VerilogAssign {
     stmt: VerilogStmt, //stmt denote line_no
@@ -825,6 +829,7 @@ pub struct VerilogAssign {
     right_net_expr: Box<dyn VerilogVirtualBaseNetExpr>,
 }
 
+#[allow(dead_code)]
 impl VerilogAssign {
     pub fn new(
         line_no: usize,
@@ -859,6 +864,7 @@ impl VerilogVirtualBaseStmt for VerilogAssign {
     }
 }
 
+#[allow(dead_code)]
 #[repr(C)]
 /// The wire or port declaration.
 #[derive(Debug)]
@@ -938,6 +944,7 @@ impl VerilogDcls {
     pub fn get_verilog_dcls(&self) -> &Vec<Box<VerilogDcl>> {
         &self.verilog_dcls
     }
+    #[allow(dead_code)]
     pub fn get_dcl_num(&self) -> usize {
         self.verilog_dcls.len()
     }
@@ -956,6 +963,7 @@ impl VerilogVirtualBaseStmt for VerilogDcls {
 }
 
 ///The verilog module class.
+#[allow(dead_code)]
 #[derive(Debug)]
 pub enum PortDclType {
     KInput = 0,
@@ -1038,6 +1046,7 @@ impl VerilogModule {
         None
     }
 
+    #[allow(dead_code)]
     pub fn find_inst_stmt(&self, inst_name: &str, cell_name: &str) -> Option<VerilogInst> {
         for module_stmt in &self.module_stmts {
             if module_stmt.is_module_inst_stmt() {
@@ -1088,14 +1097,17 @@ impl VerilogFile {
         &mut self.module_map
     }
 
+    #[allow(dead_code)]
     pub fn get_module(&mut self, module_name: &str) -> Option<&mut Rc<RefCell<VerilogModule>>> {
         self.module_map.get_mut(module_name)
     }
 
+    #[allow(dead_code)]
     pub fn get_top_module(&mut self) -> &Rc<RefCell<VerilogModule>> {
         self.module_map.get(&self.top_module_name).unwrap()
     }
 
+    #[allow(dead_code)]
     pub fn get_top_module_name(&self) -> &str {
         &self.top_module_name
     }
