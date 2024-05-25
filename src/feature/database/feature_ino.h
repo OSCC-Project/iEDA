@@ -36,7 +36,7 @@ struct NONetTimingCmp
   std::string net_name;
   NONetTiming origin;
   NONetTiming opt;
-  NONetTiming detal;
+  NONetTiming delta;
 };
 
 struct NetOptSummary

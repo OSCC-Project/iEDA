@@ -237,7 +237,7 @@ json FeatureParser::buildSummaryPL(std::string step)
     summary_pl["legalization"]["total_movement"] = pl_summary.lg_summary.lg_total_movement;
     summary_pl["legalization"]["max_movement"] = pl_summary.lg_summary.lg_max_movement;
   }
-
+  
   return summary_pl;
 }
 
@@ -256,7 +256,7 @@ json FeatureParser::buildSummaryCTS()
   json_cts["total_clock_wirelength"] = summary.total_clock_wirelength;
 
   json json_timing;
-  for (int i = 0; i < summary.nets_timing.size(); ++i) {
+  for (int i = 0; i < (int)summary.nets_timing.size(); ++i) {
     auto net_timing = summary.nets_timing[i];
 
     json_timing[i]["net_name"] = net_timing.net_name;
@@ -279,10 +279,10 @@ json FeatureParser::buildSummaryNetOpt()
   NetOptSummary& summary = _summary->get_summary_ino();
 
   json json_net_timings;
-  for (int i = 0; i < summary.net_timings.size(); ++i) {
+  for (int i = 0; i < (int)summary.net_timings.size(); ++i) {
     NONetTimingCmp net_timing = summary.net_timings[i];
 
-    json_net_timings[i]["clock_name"] = net_timing.net_name;
+    json_net_timings[i]["net_name"] = net_timing.net_name;
     json_net_timings[i]["origin_setup_tns"] = net_timing.origin.setup_tns;
     json_net_timings[i]["origin_setup_wns"] = net_timing.origin.setup_wns;
     json_net_timings[i]["origin_hold_tns"] = net_timing.origin.hold_tns;
@@ -293,11 +293,11 @@ json FeatureParser::buildSummaryNetOpt()
     json_net_timings[i]["opt_hold_tns"] = net_timing.opt.hold_tns;
     json_net_timings[i]["opt_hold_wns"] = net_timing.opt.hold_wns;
     json_net_timings[i]["opt_suggest_freq"] = net_timing.opt.suggest_freq;
-    json_net_timings[i]["detal_setup_tns"] = net_timing.detal.setup_tns;
-    json_net_timings[i]["detal_setup_wns"] = net_timing.detal.setup_wns;
-    json_net_timings[i]["detal_hold_tns"] = net_timing.detal.hold_tns;
-    json_net_timings[i]["detal_hold_wns"] = net_timing.detal.hold_wns;
-    json_net_timings[i]["detal_suggest_freq"] = net_timing.detal.suggest_freq;
+    json_net_timings[i]["delta_setup_tns"] = net_timing.delta.setup_tns;
+    json_net_timings[i]["delta_setup_wns"] = net_timing.delta.setup_wns;
+    json_net_timings[i]["delta_hold_tns"] = net_timing.delta.hold_tns;
+    json_net_timings[i]["delta_hold_wns"] = net_timing.delta.hold_wns;
+    json_net_timings[i]["delta_suggest_freq"] = net_timing.delta.suggest_freq;
   }
 
   json_netopt["nets_timing"] = json_net_timings;
@@ -335,9 +335,9 @@ json FeatureParser::buildSummaryTO(std::string step)
     json_net_timings[i]["opt_tns"] = net_timing.opt.tns;
     json_net_timings[i]["opt_wns"] = net_timing.opt.wns;
     json_net_timings[i]["opt_suggest_freq"] = net_timing.opt.suggest_freq;
-    json_net_timings[i]["detal_tns"] = net_timing.detal.tns;
-    json_net_timings[i]["detal_wns"] = net_timing.detal.wns;
-    json_net_timings[i]["detal_suggest_freq"] = net_timing.detal.suggest_freq;
+    json_net_timings[i]["delta_tns"] = net_timing.delta.tns;
+    json_net_timings[i]["delta_wns"] = net_timing.delta.wns;
+    json_net_timings[i]["delta_suggest_freq"] = net_timing.delta.suggest_freq;
   }
 
   summary_to["nets_timing"] = json_net_timings;

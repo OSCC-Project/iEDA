@@ -171,11 +171,11 @@ ieda_feature::NetOptSummary NoApi::outputSummary() {
   for (auto [net_name, net_timings] : summary_map) {
 
     net_timings.net_name = net_name;
-    net_timings.detal.setup_tns = net_timings.opt.setup_tns - net_timings.origin.setup_tns;
-    net_timings.detal.setup_wns = net_timings.opt.setup_wns - net_timings.origin.setup_wns;
-    net_timings.detal.hold_tns = net_timings.opt.hold_tns - net_timings.origin.hold_tns;
-    net_timings.detal.hold_wns = net_timings.opt.hold_wns - net_timings.origin.hold_wns;
-    net_timings.detal.suggest_freq =
+    net_timings.delta.setup_tns = net_timings.opt.setup_tns - net_timings.origin.setup_tns;
+    net_timings.delta.setup_wns = net_timings.opt.setup_wns - net_timings.origin.setup_wns;
+    net_timings.delta.hold_tns = net_timings.opt.hold_tns - net_timings.origin.hold_tns;
+    net_timings.delta.hold_wns = net_timings.opt.hold_wns - net_timings.origin.hold_wns;
+    net_timings.delta.suggest_freq =
         net_timings.opt.suggest_freq - net_timings.origin.suggest_freq;
 
     no_summary.net_timings.push_back(net_timings);

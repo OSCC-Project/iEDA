@@ -52,7 +52,7 @@ bool FeatureManager::save_tools(std::string path, std::string step)
     auto db = builder.buildNetOptSummary();
 
     _summary->set_ino(db);
-  } else if (step == "place" || step == "legalization") {
+  } else if (step == "place" || step == "legalization" || (step == "filler") ) {
     auto db = builder.buildPLSummary(step);
 
     _summary->set_ipl(db);
