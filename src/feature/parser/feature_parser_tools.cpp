@@ -38,113 +38,151 @@ namespace ieda_feature {
 
 json FeatureParser::buildSummaryRT()
 {
-  json summary_rt;
+  json json_rt;
 
   RTSummary& rt_sum = _summary->get_summary_irt();
 
-  json rt_pa;
+  /// PA
+  json json_pa;
+  json_pa["total_access_point_num"] = rt_sum.pa_summary.total_access_point_num;
   for (auto routing_access_point_num : rt_sum.pa_summary.routing_access_point_num_map) {
-    rt_pa["routing_access_point_num_map"][std::to_string(routing_access_point_num.first)] = routing_access_point_num.second;
+    json_pa["routing_access_point_num_map"][std::to_string(routing_access_point_num.first)] = routing_access_point_num.second;
   }
   for (auto type_access_point_num : rt_sum.pa_summary.type_access_point_num_map) {
-    rt_pa["routing_access_point_num_map"][type_access_point_num.first] = type_access_point_num.second;
+    json_pa["type_access_point_num_map"][type_access_point_num.first] = type_access_point_num.second;
   }
-  rt_pa["routing_access_point_num_map"]["total_access_point_num"] = rt_sum.pa_summary.total_access_point_num;
-  summary_rt["PA"] = rt_pa;
+  json_rt["PA"] = json_pa;
 
-  auto& sa_sum = rt_sum.sa_summary;
-  json rt_sa;
+  /// SA
+  json json_sa;
+  json_sa["total_supply"] = rt_sum.sa_summary.total_supply;
+
   for (auto routing_supply_num : rt_sum.sa_summary.routing_supply_map) {
-    rt_sa["routing_supply_num_map"][std::to_string(routing_supply_num.first)] = routing_supply_num.second;
+    json_sa["routing_supply_map"][std::to_string(routing_supply_num.first)] = routing_supply_num.second;
   }
-  rt_sa["routing_supply_num_map"]["total_supply_num"] = rt_sum.sa_summary.total_supply;
+  json_rt["SA"] = json_sa;
 
-  json rt_ir;
+  /// IR
+  json json_ir;
+  json_ir["total_demand"] = rt_sum.ir_summary.total_demand;
   for (auto demand : rt_sum.ir_summary.routing_demand_map) {
-    rt_ir["routing_demand_map"][std::to_string(demand.first)] = demand.second;
+    json_ir["routing_demand_map"][std::to_string(demand.first)] = demand.second;
   }
-  rt_ir["routing_demand_map"]["total_demand"] = rt_sum.ir_summary.total_demand;
+
+  json_ir["total_overflow"] = rt_sum.ir_summary.total_overflow;
   for (auto routing_overflow : rt_sum.ir_summary.routing_overflow_map) {
-    rt_ir["routing_overflow_map"][std::to_string(routing_overflow.first)] = routing_overflow.second;
+    json_ir["routing_overflow_map"][std::to_string(routing_overflow.first)] = routing_overflow.second;
   }
-  rt_ir["routing_overflow_map"]["total_overflow"] = rt_sum.ir_summary.total_overflow;
+
+  json_ir["total_wire_length"] = rt_sum.ir_summary.total_wire_length;
   for (auto routing_wire_length : rt_sum.ir_summary.routing_wire_length_map) {
-    rt_ir["routing_wire_length_map"][std::to_string(routing_wire_length.first)] = routing_wire_length.second;
+    json_ir["routing_wire_length_map"][std::to_string(routing_wire_length.first)] = routing_wire_length.second;
   }
-  rt_ir["routing_wire_length_map"]["total_wire_length"] = rt_sum.ir_summary.total_wire_length;
+
+  json_ir["total_via_num"] = rt_sum.ir_summary.total_via_num;
   for (auto cut_via_num : rt_sum.ir_summary.cut_via_num_map) {
-    rt_ir["routing_cut_via_num_map"][std::to_string(cut_via_num.first)] = cut_via_num.second;
+    json_ir["cut_via_num_map"][std::to_string(cut_via_num.first)] = cut_via_num.second;
   }
-  rt_ir["routing_cut_via_num_map"]["total_cut_via_num"] = rt_sum.ir_summary.total_via_num;
-  for (auto timing : rt_sum.ir_summary.timing) {
-    rt_ir["routing_timing_map"][timing.first] = timing.second;
+
+  for (int i = 0; i < (int) rt_sum.ir_summary.nets_timing.size(); i++) {
+    auto net_timing = rt_sum.ir_summary.nets_timing[i];
+    json_ir["nets_timing"][i]["net_name"] = net_timing.net_name;
+    json_ir["nets_timing"][i]["setup_tns"] = net_timing.setup_tns;
+    json_ir["nets_timing"][i]["setup_wns"] = net_timing.setup_wns;
+    json_ir["nets_timing"][i]["suggest_freq"] = net_timing.suggest_freq;
   }
-  summary_rt["IR"] = rt_ir;
+
+  json_rt["IR"] = json_ir;
 
   // // GR
+  json json_gr_list;
   for (auto [id, gr_sum] : rt_sum.iter_gr_summary_map) {
-    json rt_gr;
-    // 和ir一样
+    json json_gr;
+    json_gr["total_demand"] = gr_sum.total_demand;
     for (auto demand : gr_sum.routing_demand_map) {
-      rt_gr["routing_demand_map"][std::to_string(demand.first)] = demand.second;
+      json_gr["routing_demand_map"][std::to_string(demand.first)] = demand.second;
     }
-    rt_gr["routing_demand_map"]["total_demand"] = gr_sum.total_demand;
+
+    json_gr["total_overflow"] = gr_sum.total_overflow;
     for (auto routing_overflow : gr_sum.routing_overflow_map) {
-      rt_gr["routing_overflow_map"][std::to_string(routing_overflow.first)] = routing_overflow.second;
+      json_gr["routing_overflow_map"][std::to_string(routing_overflow.first)] = routing_overflow.second;
     }
-    rt_gr["routing_overflow_map"]["total_overflow"] = gr_sum.total_overflow;
+
+    json_gr["total_wire_length"] = gr_sum.total_wire_length;
     for (auto routing_wire_length : gr_sum.routing_wire_length_map) {
-      rt_gr["routing_wire_length_map"][std::to_string(routing_wire_length.first)] = routing_wire_length.second;
+      json_gr["routing_wire_length_map"][std::to_string(routing_wire_length.first)] = routing_wire_length.second;
     }
-    rt_gr["routing_wire_length_map"]["total_wire_length"] = gr_sum.total_wire_length;
+
+    json_gr["total_cut_via_num"] = gr_sum.total_via_num;
     for (auto cut_via_num : gr_sum.cut_via_num_map) {
-      rt_gr["routing_cut_via_num_map"][std::to_string(cut_via_num.first)] = cut_via_num.second;
+      json_gr["cut_via_num_map"][std::to_string(cut_via_num.first)] = cut_via_num.second;
     }
-    rt_gr["routing_cut_via_num_map"]["total_cut_via_num"] = gr_sum.total_via_num;
-    for (auto timing : gr_sum.timing) {
-      rt_gr["routing_timing_map"][timing.first] = timing.second;
+
+    for (int i = 0; i < (int) gr_sum.nets_timing.size(); i++) {
+      auto net_timing = gr_sum.nets_timing[i];
+      json_gr["nets_timing"][i]["net_name"] = net_timing.net_name;
+      json_gr["nets_timing"][i]["setup_tns"] = net_timing.setup_tns;
+      json_gr["nets_timing"][i]["setup_wns"] = net_timing.setup_wns;
+      json_gr["nets_timing"][i]["suggest_freq"] = net_timing.suggest_freq;
     }
-    summary_rt["GR"][std::to_string(id)] = rt_gr;
+
+    json_gr_list[std::to_string(id)] = json_gr;
   }
+  json_rt["GR"] = json_gr_list;
+
   // TA
-  json rt_ta;
+  json json_ta;
   // wirelength, violation
+  json_ta["total_wire_length"] = rt_sum.ta_summary.total_wire_length;
   for (auto routing_wire_length : rt_sum.ta_summary.routing_wire_length_map) {
-    rt_ta["routing_wire_length_map"][std::to_string(routing_wire_length.first)] = routing_wire_length.second;
+    json_ta["routing_wire_length_map"][std::to_string(routing_wire_length.first)] = routing_wire_length.second;
   }
-  rt_ta["routing_wire_length_map"]["total_wire_length"] = rt_sum.ta_summary.total_wire_length;
+
+  json_ta["total_violation_num"] = rt_sum.ta_summary.total_violation_num;
   for (auto routing_violation : rt_sum.ta_summary.routing_violation_num_map) {
-    rt_ta["routing_violation_map"][std::to_string(routing_violation.first)] = routing_violation.second;
+    json_ta["routing_violation_num_map"][std::to_string(routing_violation.first)] = routing_violation.second;
   }
-  rt_ta["routing_violation_map"]["total_violation"] = rt_sum.ta_summary.total_violation_num;
-  summary_rt["TA"] = rt_ta;
+
+  json_rt["TA"] = json_ta;
 
   // DR
+  json json_dr_list;
   for (auto [id, dr_sum] : rt_sum.iter_dr_summary_map) {
-    json rt_dr;
+    json json_dr;
+
+    json_dr["total_wire_length"] = dr_sum.total_wire_length;
     for (auto routing_wire_length : dr_sum.routing_wire_length_map) {
-      rt_dr["routing_wire_length_map"][std::to_string(routing_wire_length.first)] = routing_wire_length.second;
+      json_dr["routing_wire_length_map"][std::to_string(routing_wire_length.first)] = routing_wire_length.second;
     }
-    rt_dr["routing_wire_length_map"]["total_wire_length"] = dr_sum.total_wire_length;
+
+    json_dr["total_via_num"] = dr_sum.total_via_num;
     for (auto cut_via_num : dr_sum.cut_via_num_map) {
-      rt_dr["routing_cut_via_num_map"][std::to_string(cut_via_num.first)] = cut_via_num.second;
+      json_dr["cut_via_num_map"][std::to_string(cut_via_num.first)] = cut_via_num.second;
     }
-    rt_dr["routing_cut_via_num_map"]["total_cut_via_num"] = dr_sum.total_via_num;
-    // violation
-    for (auto routing_violation : dr_sum.routing_violation_num_map) {
-      rt_dr["routing_violation_map"][std::to_string(routing_violation.first)] = routing_violation.second;
-    }
-    rt_dr["routing_violation_map"]["total_violation"] = dr_sum.total_violation_num;
+
+    json_dr["total_patch_num"] = dr_sum.total_patch_num;
     for (auto routing_patch_num : dr_sum.routing_patch_num_map) {
-      rt_dr["routing_patch_num_map"][std::to_string(routing_patch_num.first)] = routing_patch_num.second;
+      json_dr["routing_patch_num_map"][std::to_string(routing_patch_num.first)] = routing_patch_num.second;
     }
-    rt_dr["routing_patch_num_map"]["total_patch_num"] = dr_sum.total_patch_num;
-    for (auto timing : dr_sum.timing) {
-      rt_dr["routing_timing_map"][timing.first] = timing.second;
+
+    json_dr["total_violation_num"] = dr_sum.total_violation_num;
+    for (auto routing_violation : dr_sum.routing_violation_num_map) {
+      json_dr["routing_violation_num_map"][std::to_string(routing_violation.first)] = routing_violation.second;
     }
-    summary_rt["DR"][std::to_string(id)] = rt_dr;
+
+    for (int i = 0; i < (int) dr_sum.nets_timing.size(); i++) {
+      auto net_timing = dr_sum.nets_timing[i];
+      json_dr["nets_timing"][i]["net_name"] = net_timing.net_name;
+      json_dr["nets_timing"][i]["setup_tns"] = net_timing.setup_tns;
+      json_dr["nets_timing"][i]["setup_wns"] = net_timing.setup_wns;
+      json_dr["nets_timing"][i]["suggest_freq"] = net_timing.suggest_freq;
+    }
+
+    json_dr_list[std::to_string(id)] = json_dr;
   }
-  return summary_rt;
+  json_rt["DR"] = json_dr_list;
+
+  return json_rt;
 }
 
 json FeatureParser::buildSummaryPL(std::string step)

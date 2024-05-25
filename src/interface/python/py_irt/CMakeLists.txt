@@ -13,4 +13,5 @@ target_link_libraries(py_irt
 target_include_directories(py_irt
     PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
+    ${HOME_UTILITY}/json
 )

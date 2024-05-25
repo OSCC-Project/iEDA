@@ -36,7 +36,6 @@ bool runRT()
   return true;
 }
 
-bool initConfigMapByDict(std::map<std::string, std::string>& config_dict, std::map<std::string, std::any>& config_map);
 bool initConfigMapByJSON(const std::string& config, std::map<std::string, std::any>& config_map);
 
 bool initRT(std::string& config, std::map<std::string, std::string>& config_dict)
@@ -47,7 +46,6 @@ bool initRT(std::string& config, std::map<std::string, std::string>& config_dict
 
   bool pass = false;
   pass = !pass ? initConfigMapByJSON(config, config_map) : pass;
-  pass = !pass ? initConfigMapByDict(config_dict, config_map) : pass;
   if (!pass) {
     return false;
   }
