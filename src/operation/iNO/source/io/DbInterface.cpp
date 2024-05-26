@@ -15,6 +15,9 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 #include "DbInterface.h"
+#include "api/TimingEngine.hh"
+#include "api/TimingIDBAdapter.hh"
+#include "builder.h"
 
 namespace ino {
 DbInterface *DbInterface::_db_interface = nullptr;
@@ -46,6 +49,22 @@ void DbInterface::initData() {
   string report_path = _config->get_report_file();
   _reporter = new Reporter(report_path);
   _reporter->reportTime(true);
+}
+
+void DbInterface::set_eval_data() {
+  if (!_eval_data.empty()) {
+    _eval_data.clear();
+  }
+  auto clk_list = _timing_engine->getClockList();
+  for (auto clk : clk_list) {
+    auto clk_name = clk->get_clock_name();
+    auto  setup_wns = _timing_engine->reportWNS(clk_name, ista::AnalysisMode::kMax);
+    auto  setup_tns = _timing_engine->reportTNS(clk_name, ista::AnalysisMode::kMax);
+    auto  hold_wns = _timing_engine->reportWNS(clk_name, ista::AnalysisMode::kMin);
+    auto  hold_tns = _timing_engine->reportTNS(clk_name, ista::AnalysisMode::kMin);
+    auto  freq = 1000.0 / (clk->getPeriodNs() - setup_wns);
+    _eval_data.push_back({clk_name, setup_wns, setup_tns, hold_wns, hold_tns, freq});
+  }
 }
 
 } // namespace ino

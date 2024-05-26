@@ -37,6 +37,7 @@ def_init -path $::env(RESULT_DIR)/iFP_result.def
 ##   run TO to fix fanout
 #===========================================================
 run_no_fixfanout -config $::env(CONFIG_DIR)/no_default_config_fixfanout.json
+feature_tool -path $::env(RESULT_DIR)/feature/ino_opt.json -step fixFanout
 
 #===========================================================
 ##   save def 

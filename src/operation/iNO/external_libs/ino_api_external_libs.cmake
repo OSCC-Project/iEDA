@@ -7,6 +7,7 @@ target_link_libraries(ino_api_external_libs
         ista-engine
         idb
         IdbBuilder
+        feature_db
 )
 
 target_include_directories(ino_api_external_libs

@@ -30,6 +30,7 @@
 #include "TrackAssigner.hpp"
 #include "builder.h"
 #include "feature_irt.h"
+#include "feature_ista.h"
 #include "flow_config.h"
 #include "icts_fm/file_cts.h"
 #include "icts_io.h"
@@ -544,7 +545,16 @@ ieda_feature::RTSummary RTInterface::outputSummary()
   top_rt_summary.ir_summary.total_wire_length = rt_summary.ir_summary.total_wire_length;
   top_rt_summary.ir_summary.cut_via_num_map = rt_summary.ir_summary.cut_via_num_map;
   top_rt_summary.ir_summary.total_via_num = rt_summary.ir_summary.total_via_num;
-  top_rt_summary.ir_summary.timing = rt_summary.ir_summary.timing;
+
+  for (auto timing : rt_summary.ir_summary.timing) {
+    ieda_feature::NetTiming net_timing;
+    net_timing.net_name = timing.first;
+    auto timing_array = timing.second;
+    net_timing.setup_tns = timing_array[0];
+    net_timing.setup_wns = timing_array[1];
+    net_timing.suggest_freq = timing_array[2];
+    top_rt_summary.ir_summary.nets_timing.push_back(net_timing);
+  }
   // gr_summary
   for (auto& [iter, gr_summary] : rt_summary.iter_gr_summary_map) {
     ieda_feature::GRSummary& top_gr_summary = top_rt_summary.iter_gr_summary_map[iter];
@@ -556,7 +566,16 @@ ieda_feature::RTSummary RTInterface::outputSummary()
     top_gr_summary.total_wire_length = gr_summary.total_wire_length;
     top_gr_summary.cut_via_num_map = gr_summary.cut_via_num_map;
     top_gr_summary.total_via_num = gr_summary.total_via_num;
-    top_gr_summary.timing = gr_summary.timing;
+
+    for (auto timing : gr_summary.timing) {
+      ieda_feature::NetTiming net_timing;
+      net_timing.net_name = timing.first;
+      auto timing_array = timing.second;
+      net_timing.setup_tns = timing_array[0];
+      net_timing.setup_wns = timing_array[1];
+      net_timing.suggest_freq = timing_array[2];
+      top_gr_summary.nets_timing.push_back(net_timing);
+    }
   }
   // ta_summary
   top_rt_summary.ta_summary.routing_wire_length_map = rt_summary.ta_summary.routing_wire_length_map;
@@ -574,7 +593,16 @@ ieda_feature::RTSummary RTInterface::outputSummary()
     top_dr_summary.total_patch_num = dr_summary.total_patch_num;
     top_dr_summary.routing_violation_num_map = dr_summary.routing_violation_num_map;
     top_dr_summary.total_violation_num = dr_summary.total_violation_num;
-    top_dr_summary.timing = dr_summary.timing;
+
+    for (auto timing : dr_summary.timing) {
+      ieda_feature::NetTiming net_timing;
+      net_timing.net_name = timing.first;
+      auto timing_array = timing.second;
+      net_timing.setup_tns = timing_array[0];
+      net_timing.setup_wns = timing_array[1];
+      net_timing.suggest_freq = timing_array[2];
+      top_dr_summary.nets_timing.push_back(net_timing);
+    }
   }
 
   return top_rt_summary;

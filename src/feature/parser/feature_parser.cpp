@@ -97,6 +97,7 @@ bool FeatureParser::buildTools(std::string json_path, std::string step)
   using SummaryBuilder = std::function<json()>;
   auto stepToBuilder = std::unordered_map<std::string, SummaryBuilder>{{"place", [this, step]() { return buildSummaryPL(step); }},
                                                                        {"legalization", [this, step]() { return buildSummaryPL(step); }},
+                                                                       {"filler", [this, step]() { return buildSummaryPL(step); }},
                                                                        {"CTS", [this]() { return buildSummaryCTS(); }},
                                                                        {"fixFanout", [this]() { return buildSummaryNetOpt(); }},
                                                                        {"optDrv", [this, step]() { return buildSummaryTO(step); }},

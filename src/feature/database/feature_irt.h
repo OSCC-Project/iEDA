@@ -21,32 +21,25 @@
 #include <string>
 #include <vector>
 
+#include "feature_ista.h"
+
 namespace ieda_feature {
 
-class PASummary
+struct PASummary
 {
- public:
-  PASummary() = default;
-  ~PASummary() = default;
   std::map<int32_t, int32_t> routing_access_point_num_map;
   std::map<std::string, int32_t> type_access_point_num_map;
   int32_t total_access_point_num = 0;
 };
 
-class SASummary
+struct SASummary
 {
- public:
-  SASummary() = default;
-  ~SASummary() = default;
   std::map<int32_t, int32_t> routing_supply_map;
   int32_t total_supply = 0;
 };
 
-class IRSummary
+struct IRSummary
 {
- public:
-  IRSummary() = default;
-  ~IRSummary() = default;
   std::map<int32_t, int32_t> routing_demand_map;
   int32_t total_demand = 0;
   std::map<int32_t, int32_t> routing_overflow_map;
@@ -55,14 +48,11 @@ class IRSummary
   double total_wire_length = 0;
   std::map<int32_t, int32_t> cut_via_num_map;
   int32_t total_via_num = 0;
-  std::map<std::string, std::vector<double>> timing;
+  std::vector<NetTiming> nets_timing;
 };
 
-class GRSummary
+struct GRSummary
 {
- public:
-  GRSummary() = default;
-  ~GRSummary() = default;
   std::map<int32_t, int32_t> routing_demand_map;
   int32_t total_demand = 0;
   std::map<int32_t, int32_t> routing_overflow_map;
@@ -71,25 +61,19 @@ class GRSummary
   double total_wire_length = 0;
   std::map<int32_t, int32_t> cut_via_num_map;
   int32_t total_via_num = 0;
-  std::map<std::string, std::vector<double>> timing;
+  std::vector<NetTiming> nets_timing;
 };
 
-class TASummary
+struct TASummary
 {
- public:
-  TASummary() = default;
-  ~TASummary() = default;
   std::map<int32_t, double> routing_wire_length_map;
   double total_wire_length = 0;
   std::map<int32_t, int32_t> routing_violation_num_map;
   int32_t total_violation_num = 0;
 };
 
-class DRSummary
+struct DRSummary
 {
- public:
-  DRSummary() = default;
-  ~DRSummary() = default;
   std::map<int32_t, double> routing_wire_length_map;
   double total_wire_length = 0;
   std::map<int32_t, int32_t> cut_via_num_map;
@@ -98,14 +82,11 @@ class DRSummary
   int32_t total_patch_num = 0;
   std::map<int32_t, int32_t> routing_violation_num_map;
   int32_t total_violation_num = 0;
-  std::map<std::string, std::vector<double>> timing;
+  std::vector<NetTiming> nets_timing;
 };
 
-class RTSummary
+struct RTSummary
 {
- public:
-  RTSummary() = default;
-  ~RTSummary() = default;
   PASummary pa_summary;
   SASummary sa_summary;
   IRSummary ir_summary;

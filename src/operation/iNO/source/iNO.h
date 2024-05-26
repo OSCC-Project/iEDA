@@ -32,7 +32,7 @@ class iNO {
   iNO(const std::string &config_file);
   ~iNO();
 
-  //   DbInterface *get_db_interface() { return _db_interface; }
+  DbInterface *get_db_interface() { return _db_interface; }
   NoConfig *get_config() { return _no_config; }
 
   void fixFanout();
