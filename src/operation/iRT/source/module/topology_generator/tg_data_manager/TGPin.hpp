@@ -16,25 +16,23 @@
 // ***************************************************************************************
 #pragma once
 
-#include "LayerRect.hpp"
-#include "RTHeader.hpp"
-#include "Utility.hpp"
+#include "Pin.hpp"
 
 namespace irt {
 
-class Guide : public LayerRect
+class TGPin : public Pin
 {
  public:
-  Guide() = default;
-  Guide(const LayerRect& shape, const LayerCoord& grid_coord) : LayerRect(shape) { _grid_coord = grid_coord; }
-  ~Guide() = default;
+  TGPin() = default;
+  explicit TGPin(const Pin& pin) : Pin(pin) {}
+  ~TGPin() = default;
   // getter
-  LayerCoord& get_grid_coord() { return _grid_coord; }
+
   // setter
+
   // function
 
  private:
-  LayerCoord _grid_coord;
 };
 
 }  // namespace irt

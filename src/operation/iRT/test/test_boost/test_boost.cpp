@@ -802,28 +802,28 @@ int main()
     std::vector<PlanarRect>& master_list = master_list_list[i];
     std::vector<PlanarRect>& rect_list = rect_list_list[i];
 
-    RTUtil::plotGDS("1master_list", master_list);
-    RTUtil::plotGDS("2rect_list", rect_list);
+    RTUTIL.plotGDS("1master_list", master_list);
+    RTUTIL.plotGDS("2rect_list", rect_list);
 
-    std::vector<PlanarRect> OpenCuttingRectListByBoost = RTUtil::getOpenCuttingRectListByBoost(master_list, rect_list);
-    RTUtil::plotGDS("3OpenCuttingRectListByBoost", OpenCuttingRectListByBoost);
-    std::vector<PlanarRect> ClosedCuttingRectListByBoost = RTUtil::getClosedCuttingRectListByBoost(master_list, rect_list);
-    RTUtil::plotGDS("4ClosedCuttingRectListByBoost", ClosedCuttingRectListByBoost);
+    std::vector<PlanarRect> OpenCuttingRectListByBoost = RTUTIL.getOpenCuttingRectListByBoost(master_list, rect_list);
+    RTUTIL.plotGDS("3OpenCuttingRectListByBoost", OpenCuttingRectListByBoost);
+    std::vector<PlanarRect> ClosedCuttingRectListByBoost = RTUTIL.getClosedCuttingRectListByBoost(master_list, rect_list);
+    RTUTIL.plotGDS("4ClosedCuttingRectListByBoost", ClosedCuttingRectListByBoost);
 
-    // std::vector<PlanarRect> OpenOverlapRectListByBoost = RTUtil::getOpenOverlapRectListByBoost(master_list, rect_list);
-    // RTUtil::plotGDS("5OpenOverlapRectListByBoost", OpenOverlapRectListByBoost);
-    // std::vector<PlanarRect> ClosedOverlapRectListByBoost = RTUtil::getClosedOverlapRectListByBoost(master_list, rect_list);
-    // RTUtil::plotGDS("6ClosedOverlapRectListByBoost", ClosedOverlapRectListByBoost);
+    // std::vector<PlanarRect> OpenOverlapRectListByBoost = RTUTIL.getOpenOverlapRectListByBoost(master_list, rect_list);
+    // RTUTIL.plotGDS("5OpenOverlapRectListByBoost", OpenOverlapRectListByBoost);
+    // std::vector<PlanarRect> ClosedOverlapRectListByBoost = RTUTIL.getClosedOverlapRectListByBoost(master_list, rect_list);
+    // RTUTIL.plotGDS("6ClosedOverlapRectListByBoost", ClosedOverlapRectListByBoost);
 
-    // std::vector<PlanarRect> master_OpenReducedRectListByBoost = RTUtil::getOpenReducedRectListByBoost(master_list, 5, 5, 5, 5);
-    // RTUtil::plotGDS("7master_OpenReducedRectListByBoost", master_OpenReducedRectListByBoost);
-    // std::vector<PlanarRect> master_ClosedReducedRectListByBoost = RTUtil::getClosedReducedRectListByBoost(master_list, 5, 5, 5, 5);
-    // RTUtil::plotGDS("8master_ClosedReducedRectListByBoost", master_ClosedReducedRectListByBoost);
+    // std::vector<PlanarRect> master_OpenReducedRectListByBoost = RTUTIL.getOpenReducedRectListByBoost(master_list, 5, 5, 5, 5);
+    // RTUTIL.plotGDS("7master_OpenReducedRectListByBoost", master_OpenReducedRectListByBoost);
+    // std::vector<PlanarRect> master_ClosedReducedRectListByBoost = RTUTIL.getClosedReducedRectListByBoost(master_list, 5, 5, 5, 5);
+    // RTUTIL.plotGDS("8master_ClosedReducedRectListByBoost", master_ClosedReducedRectListByBoost);
 
-    // std::vector<PlanarRect> rect_OpenReducedRectListByBoost = RTUtil::getOpenReducedRectListByBoost(rect_list, 5, 5, 5, 5);
-    // RTUtil::plotGDS("9rect_OpenReducedRectListByBoost", rect_OpenReducedRectListByBoost);
-    // std::vector<PlanarRect> rect_ClosedReducedRectListByBoost = RTUtil::getClosedReducedRectListByBoost(rect_list, 5, 5, 5, 5);
-    // RTUtil::plotGDS("91rect_ClosedReducedRectListByBoost", rect_ClosedReducedRectListByBoost);
+    // std::vector<PlanarRect> rect_OpenReducedRectListByBoost = RTUTIL.getOpenReducedRectListByBoost(rect_list, 5, 5, 5, 5);
+    // RTUTIL.plotGDS("9rect_OpenReducedRectListByBoost", rect_OpenReducedRectListByBoost);
+    // std::vector<PlanarRect> rect_ClosedReducedRectListByBoost = RTUTIL.getClosedReducedRectListByBoost(rect_list, 5, 5, 5, 5);
+    // RTUTIL.plotGDS("91rect_ClosedReducedRectListByBoost", rect_ClosedReducedRectListByBoost);
     int a = 0;
   }
 

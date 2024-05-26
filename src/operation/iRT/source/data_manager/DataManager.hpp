@@ -21,6 +21,7 @@
 #include "Database.hpp"
 #include "Helper.hpp"
 #include "Logger.hpp"
+#include "Monitor.hpp"
 #include "NetShape.hpp"
 #include "SortStatus.hpp"
 #include "Summary.hpp"
@@ -42,12 +43,14 @@ class DataManager
 #if 1  // 有关GCellMap操作
   void updateFixedRectToGCellMap(ChangeType change_type, int32_t net_idx, EXTLayerRect* ext_layer_rect, bool is_routing);
   void updateAccessPointToGCellMap(ChangeType change_type, int32_t net_idx, AccessPoint* access_point);
-  void updateNetResultToGCellMap(ChangeType change_type, int32_t net_idx, Segment<LayerCoord>* segment);
+  void updateGlobalNetResultToGCellMap(ChangeType change_type, int32_t net_idx, Segment<LayerCoord>* segment);
+  void updateDetailedNetResultToGCellMap(ChangeType change_type, int32_t net_idx, Segment<LayerCoord>* segment);
   void updateNetPatchToGCellMap(ChangeType change_type, int32_t net_idx, EXTLayerRect* ext_layer_rect);
   void updateViolationToGCellMap(ChangeType change_type, Violation* violation);
   std::map<bool, std::map<int32_t, std::map<int32_t, std::set<EXTLayerRect*>>>> getTypeLayerNetFixedRectMap(EXTPlanarRect& region);
   std::map<int32_t, std::set<AccessPoint*>> getNetAccessPointMap(EXTPlanarRect& region);
-  std::map<int32_t, std::set<Segment<LayerCoord>*>> getNetResultMap(EXTPlanarRect& region);
+  std::map<int32_t, std::set<Segment<LayerCoord>*>> getGlobalNetResultMap(EXTPlanarRect& region);
+  std::map<int32_t, std::set<Segment<LayerCoord>*>> getDetailedNetResultMap(EXTPlanarRect& region);
   std::map<int32_t, std::set<EXTLayerRect*>> getNetPatchMap(EXTPlanarRect& region);
   std::set<Violation*> getViolationSet(EXTPlanarRect& region);
 #endif
@@ -85,9 +88,14 @@ class DataManager
   {
     Die& die = _database.get_die();
 
-    for (auto& [net_idx, segment_set] : getNetResultMap(die)) {
+    for (auto& [net_idx, segment_set] : getGlobalNetResultMap(die)) {
       for (Segment<LayerCoord>* segment : segment_set) {
-        RTDM.updateNetResultToGCellMap(ChangeType::kDel, net_idx, segment);
+        RTDM.updateGlobalNetResultToGCellMap(ChangeType::kDel, net_idx, segment);
+      }
+    }
+    for (auto& [net_idx, segment_set] : getDetailedNetResultMap(die)) {
+      for (Segment<LayerCoord>* segment : segment_set) {
+        RTDM.updateDetailedNetResultToGCellMap(ChangeType::kDel, net_idx, segment);
       }
     }
     for (auto& [net_idx, patch_set] : getNetPatchMap(die)) {

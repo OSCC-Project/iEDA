@@ -17,7 +17,7 @@
 #include "GlobalRouter.hpp"
 
 #include "GDSPlotter.hpp"
-#include "RTUtil.hpp"
+#include "Utility.hpp"
 
 namespace irt {
 

@@ -20,7 +20,7 @@
 #include "LayerCoord.hpp"
 #include "Orientation.hpp"
 #include "RTHeader.hpp"
-#include "RTUtil.hpp"
+#include "Utility.hpp"
 
 namespace irt {
 
@@ -63,7 +63,7 @@ class DRNode : public LayerCoord
   DRNode* getNeighborNode(Orientation orientation)
   {
     DRNode* neighbor_node = nullptr;
-    if (RTUtil::exist(_neighbor_node_map, orientation)) {
+    if (RTUTIL.exist(_neighbor_node_map, orientation)) {
       neighbor_node = _neighbor_node_map[orientation];
     }
     return neighbor_node;
@@ -71,10 +71,10 @@ class DRNode : public LayerCoord
   double getFixedRectCost(int32_t net_idx, Orientation orientation, double fixed_rect_unit)
   {
     int32_t fixed_rect_num = 0;
-    if (RTUtil::exist(_orient_fixed_rect_map, orientation)) {
+    if (RTUTIL.exist(_orient_fixed_rect_map, orientation)) {
       std::set<int32_t>& net_set = _orient_fixed_rect_map[orientation];
       fixed_rect_num = static_cast<int32_t>(net_set.size());
-      if (RTUtil::exist(net_set, net_idx)) {
+      if (RTUTIL.exist(net_set, net_idx)) {
         fixed_rect_num--;
       }
       if (fixed_rect_num < 0) {
@@ -90,10 +90,10 @@ class DRNode : public LayerCoord
   double getRoutedRectCost(int32_t net_idx, Orientation orientation, double routed_rect_unit)
   {
     int32_t routed_rect_num = 0;
-    if (RTUtil::exist(_orient_routed_rect_map, orientation)) {
+    if (RTUTIL.exist(_orient_routed_rect_map, orientation)) {
       std::set<int32_t>& net_set = _orient_routed_rect_map[orientation];
       routed_rect_num = static_cast<int32_t>(net_set.size());
-      if (RTUtil::exist(net_set, net_idx)) {
+      if (RTUTIL.exist(net_set, net_idx)) {
         routed_rect_num--;
       }
       if (routed_rect_num < 0) {
@@ -109,7 +109,7 @@ class DRNode : public LayerCoord
   double getViolationCost(Orientation orientation, double violation_unit)
   {
     int32_t violation_num = 0;
-    if (RTUtil::exist(_orient_violation_number_map, orientation)) {
+    if (RTUTIL.exist(_orient_violation_number_map, orientation)) {
       violation_num = _orient_violation_number_map[orientation];
     }
     double cost = 0;
@@ -163,8 +163,8 @@ struct CmpDRNodeCost
 {
   bool operator()(DRNode* a, DRNode* b)
   {
-    if (RTUtil::equalDoubleByError(a->getTotalCost(), b->getTotalCost(), DBL_ERROR)) {
-      if (RTUtil::equalDoubleByError(a->get_estimated_cost(), b->get_estimated_cost(), DBL_ERROR)) {
+    if (RTUTIL.equalDoubleByError(a->getTotalCost(), b->getTotalCost(), DBL_ERROR)) {
+      if (RTUTIL.equalDoubleByError(a->get_estimated_cost(), b->get_estimated_cost(), DBL_ERROR)) {
         return a->get_neighbor_node_map().size() < b->get_neighbor_node_map().size();
       } else {
         return a->get_estimated_cost() > b->get_estimated_cost();

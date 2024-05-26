@@ -15,7 +15,7 @@ target_link_libraries(irt_gds_plotter
     PUBLIC
         irt_data_manager
         irt_module
-        irt_utility
+        irt_toolkit
 )
 
 target_include_directories(irt_gds_plotter 

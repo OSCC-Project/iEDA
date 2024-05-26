@@ -19,6 +19,7 @@
 #include "Config.hpp"
 #include "DataManager.hpp"
 #include "Database.hpp"
+#include "Monitor.hpp"
 #include "Net.hpp"
 #include "PAModel.hpp"
 
@@ -49,24 +50,33 @@ class PinAccessor
   PAModel initPAModel();
   std::vector<PANet> convertToPANetList(std::vector<Net>& net_list);
   PANet convertToPANet(Net& net);
+  void initLayerEnclosureMap(PAModel& pa_model);
   void initAccessPointList(PAModel& pa_model);
-  std::vector<LayerRect> getLegalShapeList(int32_t net_idx, Pin* pin);
-  std::vector<PlanarRect> getPlanarLegalRectList(int32_t curr_net_idx, std::vector<EXTLayerRect>& pin_shape_list);
+  std::vector<LayerRect> getLegalShapeList(PAModel& pa_model, int32_t net_idx, Pin* pin);
+  std::vector<PlanarRect> getPlanarLegalRectList(PAModel& pa_model, int32_t curr_net_idx, std::vector<EXTLayerRect>& pin_shape_list);
   std::vector<AccessPoint> getAccessPointListByPrefTrackGrid(int32_t pin_idx, std::vector<LayerRect>& legal_shape_list);
   std::vector<AccessPoint> getAccessPointListByCurrTrackGrid(int32_t pin_idx, std::vector<LayerRect>& legal_shape_list);
   std::vector<AccessPoint> getAccessPointListByTrackCenter(int32_t pin_idx, std::vector<LayerRect>& legal_shape_list);
   std::vector<AccessPoint> getAccessPointListByShapeCenter(int32_t pin_idx, std::vector<LayerRect>& legal_shape_list);
   void buildAccessPointList(PAModel& pa_model);
+  void uploadAccessPoint(PAModel& pa_model);
+  void buildConflictGroupList(PAModel& pa_model);
+  std::map<PAPin*, std::set<PAPin*>> getPinConlictMap(PAModel& pa_model);
+  bool hasConflict(PAModel& pa_model, AccessPoint& access_point_a, AccessPoint& access_point_b);
+  void eliminateConflict(PAModel& pa_model);
+  vector<ConflictAccessPoint> simulatedAnnealing(const std::vector<vector<ConflictAccessPoint>>& conflict_ap_list_list);
+  int getMinDistance(std::vector<ConflictAccessPoint>& point_list);
   void updatePAModel(PAModel& pa_model);
-#if 1  // debug
-  void debugPlotPAModel(PAModel& pa_model);
-#endif
 
 #if 1  // exhibit
   void updateSummary(PAModel& pa_model);
   void printSummary(PAModel& pa_model);
   void writePlanarPinCSV(PAModel& pa_model);
   void writeLayerPinCSV(PAModel& pa_model);
+#endif
+
+#if 1  // debug
+  void debugPlotPAModel(PAModel& pa_model, std::string flag);
 #endif
 };
 

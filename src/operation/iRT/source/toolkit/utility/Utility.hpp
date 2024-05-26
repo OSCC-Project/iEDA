@@ -20,9 +20,7 @@
 #include "EXTPlanarRect.hpp"
 #include "GridMap.hpp"
 #include "LayerCoord.hpp"
-#include "Logger.hpp"
 #include "MTree.hpp"
-#include "Monitor.hpp"
 #include "Orientation.hpp"
 #include "PlanarCoord.hpp"
 #include "PlanarRect.hpp"
@@ -35,9 +33,16 @@
 
 namespace irt {
 
-class RTUtil
+#define RTUTIL (irt::Utility::getInst())
+
+class Utility
 {
  public:
+  static void initInst();
+  static Utility& getInst();
+  static void destroyInst();
+  // function
+
 #if 1  // 方向方位计算
 
   // 判断线段方向
@@ -390,7 +395,7 @@ class RTUtil
    *  如果a与b中有膨胀矩形，那么则用isOpenOverlap
    *  如果a与b中都是真实矩形，那么用isClosedOverlap
    *
-   *  isOpenOverlap：不考虑边的overlap
+   *  isOpenOverlap:不考虑边的overlap
    */
   static bool isOpenOverlap(const PlanarRect& a, const PlanarRect& b) { return isOverlap(a, b, false); }
 
@@ -399,7 +404,7 @@ class RTUtil
    *  如果a与b中有膨胀矩形，那么则用isOpenOverlap
    *  如果a与b中都是真实矩形，那么用isClosedOverlap
    *
-   *  isClosedOverlap：考虑边的overlap
+   *  isClosedOverlap:考虑边的overlap
    */
   static bool isClosedOverlap(const PlanarRect& a, const PlanarRect& b) { return isOverlap(a, b, true); }
 
@@ -1577,38 +1582,6 @@ class RTUtil
   }
 
   // 从segment_list 到 tree的完全流程 (包括构建 优化 检查)
-  static MTree<PlanarCoord> getTreeByFullFlow(PlanarCoord& root_coord, std::vector<Segment<PlanarCoord>>& segment_list,
-                                              std::map<PlanarCoord, std::set<int32_t>, CmpPlanarCoordByXASC>& key_coord_pin_map)
-  {
-    std::vector<PlanarCoord> candidate_root_coord_list{root_coord};
-    return getTreeByFullFlow(candidate_root_coord_list, segment_list, key_coord_pin_map);
-  }
-
-  // 从segment_list 到 tree的完全流程 (包括构建 优化 检查)
-  static MTree<PlanarCoord> getTreeByFullFlow(std::vector<PlanarCoord>& candidate_root_coord_list,
-                                              std::vector<Segment<PlanarCoord>>& segment_list,
-                                              std::map<PlanarCoord, std::set<int32_t>, CmpPlanarCoordByXASC>& key_coord_pin_map)
-  {
-    std::vector<LayerCoord> temp_candidate_root_coord_list;
-    for (PlanarCoord& candidate_root_coord : candidate_root_coord_list) {
-      temp_candidate_root_coord_list.emplace_back(candidate_root_coord);
-    }
-    std::vector<Segment<LayerCoord>> temp_layer_segment_list;
-    for (Segment<PlanarCoord>& segment : segment_list) {
-      temp_layer_segment_list.emplace_back(segment.get_first(), segment.get_second());
-    }
-    std::map<LayerCoord, std::set<int32_t>, CmpLayerCoordByXASC> temp_layer_key_coord_pin_map;
-    for (auto& [coord, pin_idx_set] : key_coord_pin_map) {
-      temp_layer_key_coord_pin_map[coord] = pin_idx_set;
-    }
-    MTree<LayerCoord> temp_coord_tree
-        = getTreeByFullFlow(temp_candidate_root_coord_list, temp_layer_segment_list, temp_layer_key_coord_pin_map);
-
-    std::function<PlanarCoord(LayerCoord&)> convertToPlanarCoord = [](LayerCoord& coord) { return coord.get_planar_coord(); };
-    return convertTree(temp_coord_tree, convertToPlanarCoord);
-  }
-
-  // 从segment_list 到 tree的完全流程 (包括构建 优化 检查)
   static MTree<LayerCoord> getTreeByFullFlow(LayerCoord& root_coord, std::vector<Segment<LayerCoord>>& segment_list,
                                              std::map<LayerCoord, std::set<int32_t>, CmpLayerCoordByXASC>& key_coord_pin_map)
   {
@@ -1823,7 +1796,7 @@ class RTUtil
       }
     }
     if (!segment_list.empty()) {
-      RTLOG.error(Loc::current(), "The segment_list not covered driving_pin!");
+      RTLOG.error(Loc::current(), "The segment_list not covered root!");
     }
     int32_t max_pin_num = INT32_MIN;
     for (auto& [key_coord, pin_idx_set] : key_coord_pin_map) {
@@ -2047,7 +2020,9 @@ class RTUtil
   {
     std::vector<std::vector<std::string>> print_table_list;
     for (const fort::char_table& table : table_list) {
-      print_table_list.push_back(splitString(table.to_string(), '\n'));
+      if (!table.is_empty()) {
+        print_table_list.push_back(splitString(table.to_string(), '\n'));
+      }
     }
 
     int max_size = INT_MIN;
@@ -2745,19 +2720,19 @@ class RTUtil
   }
 
   template <typename T>
-  static void erase(std::vector<T>& list, const std::function<bool(T&)>& eraseIf)
+  static void erase(std::vector<T>& list, const std::function<bool(T&)>& erase_if)
   {
-    erase(list, eraseIf);
+    erase(list, erase_if);
   }
 
   template <typename T, typename EraseIf>
-  static void erase(std::vector<T>& list, EraseIf eraseIf)
+  static void erase(std::vector<T>& list, EraseIf erase_if)
   {
     size_t save_idx = 0;
     size_t sentry_idx = 0;
     while (sentry_idx < list.size()) {
       T& sentry = list[sentry_idx];
-      if (!eraseIf(sentry)) {
+      if (!erase_if(sentry)) {
         list[save_idx] = std::move(sentry);
         ++save_idx;
       }
@@ -2767,13 +2742,13 @@ class RTUtil
   }
 
   template <typename T>
-  static void merge(std::vector<T>& list, const std::function<bool(T&, T&)>& mergeIf)
+  static void merge(std::vector<T>& list, const std::function<bool(T&, T&)>& merge_if)
   {
-    merge(list, mergeIf);
+    merge(list, merge_if);
   }
 
   template <typename T, typename MergeIf>
-  static void merge(std::vector<T>& list, MergeIf mergeIf)
+  static void merge(std::vector<T>& list, MergeIf merge_if)
   {
     size_t save_idx = 0;
     size_t sentry_idx = 0;
@@ -2782,7 +2757,7 @@ class RTUtil
       T& sentry = list[sentry_idx];
       while (soldier_idx < list.size()) {
         T& soldier = list[soldier_idx];
-        if (!mergeIf(sentry, soldier)) {
+        if (!merge_if(sentry, soldier)) {
           break;
         }
         ++soldier_idx;
@@ -3290,6 +3265,17 @@ class RTUtil
 
 #endif
 
-};  // namespace irt
+ private:
+  // self
+  static Utility* _util_instance;
+
+  Utility() = default;
+  Utility(const Utility& other) = delete;
+  Utility(Utility&& other) = delete;
+  ~Utility() = default;
+  Utility& operator=(const Utility& other) = delete;
+  Utility& operator=(Utility&& other) = delete;
+  // function
+};
 
 }  // namespace irt

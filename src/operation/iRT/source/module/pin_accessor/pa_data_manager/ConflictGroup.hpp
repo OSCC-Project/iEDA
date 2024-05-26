@@ -14,37 +14,27 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-
 #pragma once
 
-#include "PRNet.hpp"
-#include "PRNode.hpp"
-#include "PRParameter.hpp"
-#include "RTHeader.hpp"
+#include "ConflictAccessPoint.hpp"
 
 namespace irt {
 
-class PRModel
+class ConflictGroup
 {
  public:
-  PRModel() = default;
-  ~PRModel() = default;
+  ConflictGroup() = default;
+  ~ConflictGroup() = default;
   // getter
-  std::vector<PRNet>& get_pr_net_list() { return _pr_net_list; }
-  PRParameter& get_pr_parameter() { return _pr_parameter; }
-  GridMap<PRNode>& get_pr_node_map() { return _pr_node_map; }
-  std::vector<int32_t>& get_pr_net_idx_list() { return _pr_net_idx_list; }
+  std::vector<std::vector<ConflictAccessPoint>>& get_conflict_ap_list_list() { return _conflict_ap_list_list; }
   // setter
-  void set_pr_net_list(const std::vector<PRNet>& pr_net_list) { _pr_net_list = pr_net_list; }
-  void set_pr_parameter(const PRParameter& pr_parameter) { _pr_parameter = pr_parameter; }
-  void set_pr_node_map(const GridMap<PRNode>& pr_node_map) { _pr_node_map = pr_node_map; }
-  void set_pr_net_idx_list(const std::vector<int32_t>& pr_net_idx_list) { _pr_net_idx_list = pr_net_idx_list; }
-
+  void set_conflict_ap_list_list(const std::vector<std::vector<ConflictAccessPoint>>& conflict_ap_list_list)
+  {
+    _conflict_ap_list_list = conflict_ap_list_list;
+  }
+  // function
  private:
-  std::vector<PRNet> _pr_net_list;
-  PRParameter _pr_parameter;
-  GridMap<PRNode> _pr_node_map;
-  std::vector<int32_t> _pr_net_idx_list;
+  std::vector<std::vector<ConflictAccessPoint>> _conflict_ap_list_list;
 };
 
 }  // namespace irt

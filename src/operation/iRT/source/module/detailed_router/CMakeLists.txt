@@ -15,7 +15,7 @@ target_link_libraries(irt_detailed_router
     PUBLIC
         irt_data_manager
         irt_module
-        irt_utility
+        irt_toolkit
 )
 
 target_include_directories(irt_detailed_router 

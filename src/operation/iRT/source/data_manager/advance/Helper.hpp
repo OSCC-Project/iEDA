@@ -18,7 +18,7 @@
 
 #include "Logger.hpp"
 #include "RTHeader.hpp"
-#include "RTUtil.hpp"
+#include "Utility.hpp"
 #include "builder.h"
 #include "def_service.h"
 #include "lef_service.h"
@@ -70,7 +70,7 @@ class Helper
 inline int32_t Helper::getRoutingLayerIdxByIDBLayerId(const int32_t idb_layer_id)
 {
   int32_t routing_layer_idx = -1;
-  if (RTUtil::exist(_routing_idb_layer_id_to_idx_map, idb_layer_id)) {
+  if (RTUTIL.exist(_routing_idb_layer_id_to_idx_map, idb_layer_id)) {
     routing_layer_idx = _routing_idb_layer_id_to_idx_map[idb_layer_id];
   } else {
     RTLOG.error(Loc::current(), "The idb_layer_id ", idb_layer_id, " is not exist!");
@@ -81,7 +81,7 @@ inline int32_t Helper::getRoutingLayerIdxByIDBLayerId(const int32_t idb_layer_id
 inline int32_t Helper::getCutLayerIdxByIDBLayerId(const int32_t idb_layer_id)
 {
   int32_t cut_layer_idx = -1;
-  if (RTUtil::exist(_cut_idb_layer_id_to_idx_map, idb_layer_id)) {
+  if (RTUTIL.exist(_cut_idb_layer_id_to_idx_map, idb_layer_id)) {
     cut_layer_idx = _cut_idb_layer_id_to_idx_map[idb_layer_id];
   } else {
     RTLOG.error(Loc::current(), "The idb_layer_id ", idb_layer_id, " is not exist!");
@@ -92,7 +92,7 @@ inline int32_t Helper::getCutLayerIdxByIDBLayerId(const int32_t idb_layer_id)
 inline int32_t Helper::getRoutingLayerIdxByName(const std::string& routing_layer_name)
 {
   int32_t routing_layer_idx = -1;
-  if (RTUtil::exist(_routing_layer_name_to_idx_map, routing_layer_name)) {
+  if (RTUTIL.exist(_routing_layer_name_to_idx_map, routing_layer_name)) {
     routing_layer_idx = _routing_layer_name_to_idx_map[routing_layer_name];
   } else {
     RTLOG.error(Loc::current(), "The routing_layer_name '", routing_layer_name, "' is not exist!");
@@ -103,7 +103,7 @@ inline int32_t Helper::getRoutingLayerIdxByName(const std::string& routing_layer
 inline int32_t Helper::getCutLayerIdxByName(const std::string& cut_layer_name)
 {
   int32_t cut_layer_idx = -1;
-  if (RTUtil::exist(_cut_layer_name_to_idx_map, cut_layer_name)) {
+  if (RTUTIL.exist(_cut_layer_name_to_idx_map, cut_layer_name)) {
     cut_layer_idx = _cut_layer_name_to_idx_map[cut_layer_name];
   } else {
     RTLOG.error(Loc::current(), "The cut_layer_name ", cut_layer_name, " is not exist!");
@@ -114,7 +114,7 @@ inline int32_t Helper::getCutLayerIdxByName(const std::string& cut_layer_name)
 inline ViaMasterIdx Helper::getRTViaMasterIdxByName(const std::string& via_name)
 {
   ViaMasterIdx via_master_idx;
-  if (RTUtil::exist(_via_name_to_idx_map, via_name)) {
+  if (RTUTIL.exist(_via_name_to_idx_map, via_name)) {
     via_master_idx = _via_name_to_idx_map[via_name];
   } else {
     RTLOG.error(Loc::current(), "The via_name ", via_name, " is not exist!");
@@ -125,7 +125,7 @@ inline ViaMasterIdx Helper::getRTViaMasterIdxByName(const std::string& via_name)
 inline std::vector<int32_t> Helper::getAdjacentRoutingLayerIdxList(const int32_t cut_layer_idx)
 {
   std::vector<int32_t> adjacent_routing_layer_idx;
-  if (RTUtil::exist(_cut_to_adjacent_routing_map, cut_layer_idx)) {
+  if (RTUTIL.exist(_cut_to_adjacent_routing_map, cut_layer_idx)) {
     adjacent_routing_layer_idx = _cut_to_adjacent_routing_map[cut_layer_idx];
   } else {
     RTLOG.error(Loc::current(), "The cut layer idx ", cut_layer_idx, " is not exist!");

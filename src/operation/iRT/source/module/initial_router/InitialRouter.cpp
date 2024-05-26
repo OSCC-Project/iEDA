@@ -17,8 +17,9 @@
 #include "InitialRouter.hpp"
 
 #include "GDSPlotter.hpp"
+#include "Monitor.hpp"
 #include "RTInterface.hpp"
-#include "RTUtil.hpp"
+#include "Utility.hpp"
 
 namespace irt {
 
@@ -341,13 +342,13 @@ void InitialRouter::routeIRModel(IRModel& ir_model)
   std::vector<IRNet>& ir_net_list = ir_model.get_ir_net_list();
   std::vector<int32_t>& ir_net_idx_list = ir_model.get_ir_net_idx_list();
 
-  int32_t batch_size = RTUtil::getBatchSize(ir_net_idx_list.size());
+  int32_t batch_size = RTUTIL.getBatchSize(ir_net_idx_list.size());
 
   Monitor stage_monitor;
   for (size_t i = 0; i < ir_net_idx_list.size(); i++) {
     routeIRNet(ir_model, ir_net_list[ir_net_idx_list[i]]);
     if ((i + 1) % batch_size == 0 || (i + 1) == ir_net_idx_list.size()) {
-      RTLOG.info(Loc::current(), "Routed ", (i + 1), "/", ir_net_idx_list.size(), "(", RTUtil::getPercentage(i + 1, ir_net_idx_list.size()),
+      RTLOG.info(Loc::current(), "Routed ", (i + 1), "/", ir_net_idx_list.size(), "(", RTUTIL.getPercentage(i + 1, ir_net_idx_list.size()),
                  ") nets", stage_monitor.getStatsInfo());
     }
   }
@@ -371,9 +372,9 @@ void InitialRouter::routeIRNet(IRModel& ir_model, IRNet& ir_net)
   updateDemand(ir_model, ir_net, coord_tree);
   std::function<Guide(LayerCoord&)> convertToGuide = [](LayerCoord& coord) {
     ScaleAxis& gcell_axis = RTDM.getDatabase().get_gcell_axis();
-    return Guide(LayerRect(RTUtil::getRealRectByGCell(coord, gcell_axis), coord.get_layer_idx()), coord);
+    return Guide(LayerRect(RTUTIL.getRealRectByGCell(coord, gcell_axis), coord.get_layer_idx()), coord);
   };
-  ir_net.set_ir_result_tree(RTUtil::convertTree(coord_tree, convertToGuide));
+  ir_net.set_ir_result_tree(RTUTIL.convertTree(coord_tree, convertToGuide));
 }
 
 void InitialRouter::makeIRTaskList(IRModel& ir_model, IRNet& ir_net, std::vector<IRTask>& ir_task_list,
@@ -455,7 +456,7 @@ void InitialRouter::makeIRTaskList(IRModel& ir_model, IRNet& ir_net, std::vector
     {
       for (Segment<PlanarCoord>& planar_topo : planar_topo_list) {
         for (PlanarCoord coord : {planar_topo.get_first(), planar_topo.get_second()}) {
-          if (!RTUtil::exist(planar_pin_group_map, coord) && !RTUtil::exist(planar_steiner_group_map, coord)) {
+          if (!RTUTIL.exist(planar_pin_group_map, coord) && !RTUTIL.exist(planar_steiner_group_map, coord)) {
             // 补充steiner point的垂直线段
             routing_segment_list.emplace_back(LayerCoord(coord, bottom_routing_layer_idx), LayerCoord(coord, top_routing_layer_idx));
             for (int32_t layer_idx = bottom_routing_layer_idx; layer_idx <= top_routing_layer_idx; layer_idx++) {
@@ -470,11 +471,11 @@ void InitialRouter::makeIRTaskList(IRModel& ir_model, IRNet& ir_net, std::vector
       for (Segment<PlanarCoord>& planar_topo : planar_topo_list) {
         IRTask ir_task;
         for (PlanarCoord coord : {planar_topo.get_first(), planar_topo.get_second()}) {
-          if (RTUtil::exist(planar_pin_group_map, coord)) {
+          if (RTUTIL.exist(planar_pin_group_map, coord)) {
             for (IRGroup& ir_group : planar_pin_group_map[coord]) {
               ir_task.get_ir_group_list().push_back(ir_group);
             }
-          } else if (RTUtil::exist(planar_steiner_group_map, coord)) {
+          } else if (RTUTIL.exist(planar_steiner_group_map, coord)) {
             ir_task.get_ir_group_list().push_back(planar_steiner_group_map[coord]);
           }
         }
@@ -492,7 +493,7 @@ void InitialRouter::makeIRTaskList(IRModel& ir_model, IRNet& ir_net, std::vector
           coord_list.push_back(coord);
         }
       }
-      ir_task.set_bounding_box(RTUtil::getBoundingBox(coord_list));
+      ir_task.set_bounding_box(RTUTIL.getBoundingBox(coord_list));
     }
   }
 }
@@ -629,7 +630,7 @@ void InitialRouter::expandSearching(IRModel& ir_model)
     if (neighbor_node == nullptr) {
       continue;
     }
-    if (!RTUtil::isInside(ir_model.get_curr_ir_task()->get_bounding_box(), *neighbor_node)) {
+    if (!RTUTIL.isInside(ir_model.get_curr_ir_task()->get_bounding_box(), *neighbor_node)) {
       continue;
     }
     if (neighbor_node->isClose()) {
@@ -696,9 +697,9 @@ std::vector<Segment<LayerCoord>> InitialRouter::getRoutingSegmentListByNode(IRNo
     // 起点和终点重合
     return routing_segment_list;
   }
-  Orientation curr_orientation = RTUtil::getOrientation(*curr_node, *pre_node);
+  Orientation curr_orientation = RTUTIL.getOrientation(*curr_node, *pre_node);
   while (pre_node->get_parent_node() != nullptr) {
-    Orientation pre_orientation = RTUtil::getOrientation(*pre_node, *pre_node->get_parent_node());
+    Orientation pre_orientation = RTUTIL.getOrientation(*pre_node, *pre_node->get_parent_node());
     if (curr_orientation != pre_orientation) {
       routing_segment_list.emplace_back(*curr_node, *pre_node);
       curr_orientation = pre_orientation;
@@ -718,8 +719,8 @@ void InitialRouter::updateDirectionSet(IRModel& ir_model)
   IRNode* curr_node = path_head_node;
   IRNode* pre_node = curr_node->get_parent_node();
   while (pre_node != nullptr) {
-    curr_node->get_direction_set().insert(RTUtil::getDirection(*curr_node, *pre_node));
-    pre_node->get_direction_set().insert(RTUtil::getDirection(*pre_node, *curr_node));
+    curr_node->get_direction_set().insert(RTUTIL.getDirection(*curr_node, *pre_node));
+    pre_node->get_direction_set().insert(RTUTIL.getDirection(*pre_node, *curr_node));
     curr_node = pre_node;
     pre_node = curr_node->get_parent_node();
   }
@@ -777,10 +778,10 @@ std::vector<Segment<LayerCoord>> InitialRouter::getRoutingSegmentList(IRModel& i
     }
   }
   MTree<LayerCoord> coord_tree
-      = RTUtil::getTreeByFullFlow(candidate_root_coord_list, ir_model.get_routing_segment_list(), key_coord_pin_map);
+      = RTUTIL.getTreeByFullFlow(candidate_root_coord_list, ir_model.get_routing_segment_list(), key_coord_pin_map);
 
   std::vector<Segment<LayerCoord>> routing_segment_list;
-  for (Segment<TNode<LayerCoord>*>& segment : RTUtil::getSegListByTree(coord_tree)) {
+  for (Segment<TNode<LayerCoord>*>& segment : RTUTIL.getSegListByTree(coord_tree)) {
     routing_segment_list.emplace_back(segment.get_first()->value(), segment.get_second()->value());
   }
   return routing_segment_list;
@@ -846,8 +847,8 @@ double InitialRouter::getKnowCost(IRModel& ir_model, IRNode* start_node, IRNode*
 
   double cost = 0;
   cost += start_node->get_known_cost();
-  cost += getNodeCost(ir_model, start_node, RTUtil::getOrientation(*start_node, *end_node));
-  cost += getNodeCost(ir_model, end_node, RTUtil::getOrientation(*end_node, *start_node));
+  cost += getNodeCost(ir_model, start_node, RTUTIL.getOrientation(*start_node, *end_node));
+  cost += getNodeCost(ir_model, end_node, RTUTIL.getOrientation(*end_node, *start_node));
   cost += getKnowWireCost(ir_model, start_node, end_node);
   cost += getKnowCornerCost(ir_model, start_node, end_node);
   cost += getKnowViaCost(ir_model, start_node, end_node);
@@ -870,10 +871,10 @@ double InitialRouter::getKnowWireCost(IRModel& ir_model, IRNode* start_node, IRN
 
   double wire_cost = 0;
   if (start_node->get_layer_idx() == end_node->get_layer_idx()) {
-    wire_cost += RTUtil::getManhattanDistance(start_node->get_planar_coord(), end_node->get_planar_coord());
+    wire_cost += RTUTIL.getManhattanDistance(start_node->get_planar_coord(), end_node->get_planar_coord());
 
     RoutingLayer& routing_layer = routing_layer_list[start_node->get_layer_idx()];
-    if (routing_layer.get_prefer_direction() == RTUtil::getDirection(*start_node, *end_node)) {
+    if (routing_layer.get_prefer_direction() == RTUTIL.getDirection(*start_node, *end_node)) {
       wire_cost *= prefer_wire_unit;
     }
   }
@@ -892,13 +893,13 @@ double InitialRouter::getKnowCornerCost(IRModel& ir_model, IRNode* start_node, I
     direction_set.insert(start_direction_set.begin(), start_direction_set.end());
     // 添加start到parent的direction
     if (start_node->get_parent_node() != nullptr) {
-      direction_set.insert(RTUtil::getDirection(*start_node->get_parent_node(), *start_node));
+      direction_set.insert(RTUTIL.getDirection(*start_node->get_parent_node(), *start_node));
     }
     // 添加end direction
     std::set<Direction>& end_direction_set = end_node->get_direction_set();
     direction_set.insert(end_direction_set.begin(), end_direction_set.end());
     // 添加start到end的direction
-    direction_set.insert(RTUtil::getDirection(*start_node, *end_node));
+    direction_set.insert(RTUTIL.getDirection(*start_node, *end_node));
 
     if (direction_set.size() == 2) {
       corner_cost += corner_unit;
@@ -948,7 +949,7 @@ double InitialRouter::getEstimateWireCost(IRModel& ir_model, IRNode* start_node,
   double prefer_wire_unit = ir_model.get_ir_parameter().get_prefer_wire_unit();
 
   double wire_cost = 0;
-  wire_cost += RTUtil::getManhattanDistance(start_node->get_planar_coord(), end_node->get_planar_coord());
+  wire_cost += RTUTIL.getManhattanDistance(start_node->get_planar_coord(), end_node->get_planar_coord());
   wire_cost *= prefer_wire_unit;
   return wire_cost;
 }
@@ -959,7 +960,7 @@ double InitialRouter::getEstimateCornerCost(IRModel& ir_model, IRNode* start_nod
 
   double corner_cost = 0;
   if (start_node->get_layer_idx() == end_node->get_layer_idx()) {
-    if (RTUtil::isOblique(*start_node, *end_node)) {
+    if (RTUTIL.isOblique(*start_node, *end_node)) {
       corner_cost += corner_unit;
     }
   }
@@ -983,7 +984,7 @@ MTree<LayerCoord> InitialRouter::getCoordTree(IRNet& ir_net, std::vector<Segment
     candidate_root_coord_list.push_back(coord);
     key_coord_pin_map[coord].insert(static_cast<int32_t>(i));
   }
-  return RTUtil::getTreeByFullFlow(candidate_root_coord_list, routing_segment_list, key_coord_pin_map);
+  return RTUTIL.getTreeByFullFlow(candidate_root_coord_list, routing_segment_list, key_coord_pin_map);
 }
 
 void InitialRouter::updateDemand(IRModel& ir_model, IRNet& ir_net, MTree<LayerCoord>& coord_tree)
@@ -993,7 +994,7 @@ void InitialRouter::updateDemand(IRModel& ir_model, IRNet& ir_net, MTree<LayerCo
     key_coord_set.insert(ir_pin.get_key_access_point().getGridLayerCoord());
   }
   std::vector<Segment<LayerCoord>> routing_segment_list;
-  for (Segment<TNode<LayerCoord>*>& coord_segment : RTUtil::getSegListByTree(coord_tree)) {
+  for (Segment<TNode<LayerCoord>*>& coord_segment : RTUTIL.getSegListByTree(coord_tree)) {
     routing_segment_list.emplace_back(coord_segment.get_first()->value(), coord_segment.get_second()->value());
   }
   std::map<LayerCoord, std::set<Orientation>, CmpLayerCoordByXASC> usage_map;
@@ -1001,11 +1002,11 @@ void InitialRouter::updateDemand(IRModel& ir_model, IRNet& ir_net, MTree<LayerCo
     LayerCoord& first_coord = coord_segment.get_first();
     LayerCoord& second_coord = coord_segment.get_second();
 
-    Orientation orientation = RTUtil::getOrientation(first_coord, second_coord);
+    Orientation orientation = RTUTIL.getOrientation(first_coord, second_coord);
     if (orientation == Orientation::kNone || orientation == Orientation::kOblique) {
       RTLOG.error(Loc::current(), "The orientation is error!");
     }
-    Orientation opposite_orientation = RTUtil::getOppositeOrientation(orientation);
+    Orientation opposite_orientation = RTUTIL.getOppositeOrientation(orientation);
 
     int32_t first_x = first_coord.get_x();
     int32_t first_y = first_coord.get_y();
@@ -1013,9 +1014,9 @@ void InitialRouter::updateDemand(IRModel& ir_model, IRNet& ir_net, MTree<LayerCo
     int32_t second_x = second_coord.get_x();
     int32_t second_y = second_coord.get_y();
     int32_t second_layer_idx = second_coord.get_layer_idx();
-    RTUtil::swapByASC(first_x, second_x);
-    RTUtil::swapByASC(first_y, second_y);
-    RTUtil::swapByASC(first_layer_idx, second_layer_idx);
+    RTUTIL.swapByASC(first_x, second_x);
+    RTUTIL.swapByASC(first_y, second_y);
+    RTUTIL.swapByASC(first_layer_idx, second_layer_idx);
 
     for (int32_t x = first_x; x <= second_x; x++) {
       for (int32_t y = first_y; y <= second_y; y++) {
@@ -1056,8 +1057,8 @@ void InitialRouter::debugCheckIRModel(IRModel& ir_model)
       for (int32_t y = 0; y < ir_node_map.get_y_size(); y++) {
         IRNode& ir_node = ir_node_map[x][y];
         for (auto& [orient, neighbor] : ir_node.get_neighbor_node_map()) {
-          Orientation opposite_orient = RTUtil::getOppositeOrientation(orient);
-          if (!RTUtil::exist(neighbor->get_neighbor_node_map(), opposite_orient)) {
+          Orientation opposite_orient = RTUTIL.getOppositeOrientation(orient);
+          if (!RTUTIL.exist(neighbor->get_neighbor_node_map(), opposite_orient)) {
             RTLOG.error(Loc::current(), "The ir_node neighbor is not bidirectional!");
           }
           if (neighbor->get_neighbor_node_map()[opposite_orient] != &ir_node) {
@@ -1065,7 +1066,7 @@ void InitialRouter::debugCheckIRModel(IRModel& ir_model)
           }
           LayerCoord node_coord(ir_node.get_planar_coord(), ir_node.get_layer_idx());
           LayerCoord neighbor_coord(neighbor->get_planar_coord(), neighbor->get_layer_idx());
-          if (RTUtil::getOrientation(node_coord, neighbor_coord) == orient) {
+          if (RTUTIL.getOrientation(node_coord, neighbor_coord) == orient) {
             continue;
           }
           RTLOG.error(Loc::current(), "The neighbor orient is different with real region!");
@@ -1083,14 +1084,14 @@ void InitialRouter::debugOutputGuide(IRModel& ir_model)
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
   std::string& ir_temp_directory_path = RTDM.getConfig().ir_temp_directory_path;
 
-  std::ofstream* guide_file_stream = RTUtil::getOutputFileStream(ir_temp_directory_path + "route.guide");
+  std::ofstream* guide_file_stream = RTUTIL.getOutputFileStream(ir_temp_directory_path + "route.guide");
   if (guide_file_stream == nullptr) {
     return;
   }
   for (IRNet& ir_net : ir_model.get_ir_net_list()) {
-    RTUtil::pushStream(guide_file_stream, ir_net.get_origin_net()->get_net_name(), "\n(\n");
+    RTUTIL.pushStream(guide_file_stream, ir_net.get_origin_net()->get_net_name(), "\n(\n");
 
-    for (Segment<TNode<Guide>*> guide_node_seg : RTUtil::getSegListByTree(ir_net.get_ir_result_tree())) {
+    for (Segment<TNode<Guide>*> guide_node_seg : RTUTIL.getSegListByTree(ir_net.get_ir_result_tree())) {
       Guide first_guide = guide_node_seg.get_first()->value();
       Guide second_guide = guide_node_seg.get_second()->value();
 
@@ -1098,21 +1099,21 @@ void InitialRouter::debugOutputGuide(IRModel& ir_model)
       int second_layer_idx = second_guide.get_layer_idx();
 
       if (first_layer_idx != second_layer_idx) {
-        RTUtil::swapByASC(first_layer_idx, second_layer_idx);
+        RTUTIL.swapByASC(first_layer_idx, second_layer_idx);
         for (int layer_idx = first_layer_idx; layer_idx <= second_layer_idx; layer_idx++) {
-          RTUtil::pushStream(guide_file_stream, first_guide.get_ll_x(), " ", first_guide.get_ll_y(), " ", first_guide.get_ur_x(), " ",
-                             first_guide.get_ur_y(), " ", routing_layer_list[layer_idx].get_layer_name(), "\n");
+          RTUTIL.pushStream(guide_file_stream, first_guide.get_ll_x(), " ", first_guide.get_ll_y(), " ", first_guide.get_ur_x(), " ",
+                            first_guide.get_ur_y(), " ", routing_layer_list[layer_idx].get_layer_name(), "\n");
         }
       } else {
-        RTUtil::swapByCMP(first_guide, second_guide,
-                          [](Guide& a, Guide& b) { return CmpPlanarCoordByXASC()(a.get_grid_coord(), b.get_grid_coord()); });
-        RTUtil::pushStream(guide_file_stream, first_guide.get_ll_x(), " ", first_guide.get_ll_y(), " ", second_guide.get_ur_x(), " ",
-                           second_guide.get_ur_y(), " ", routing_layer_list[first_guide.get_layer_idx()].get_layer_name(), "\n");
+        RTUTIL.swapByCMP(first_guide, second_guide,
+                         [](Guide& a, Guide& b) { return CmpPlanarCoordByXASC()(a.get_grid_coord(), b.get_grid_coord()); });
+        RTUTIL.pushStream(guide_file_stream, first_guide.get_ll_x(), " ", first_guide.get_ll_y(), " ", second_guide.get_ur_x(), " ",
+                          second_guide.get_ur_y(), " ", routing_layer_list[first_guide.get_layer_idx()].get_layer_name(), "\n");
       }
     }
-    RTUtil::pushStream(guide_file_stream, ")\n");
+    RTUTIL.pushStream(guide_file_stream, ")\n");
   }
-  RTUtil::closeFileStream(guide_file_stream);
+  RTUTIL.closeFileStream(guide_file_stream);
 
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
@@ -1180,18 +1181,18 @@ void InitialRouter::updateSummary(IRModel& ir_model)
     }
   }
   for (IRNet& ir_net : ir_net_list) {
-    for (Segment<TNode<Guide>*> guide_node_seg : RTUtil::getSegListByTree(ir_net.get_ir_result_tree())) {
+    for (Segment<TNode<Guide>*> guide_node_seg : RTUTIL.getSegListByTree(ir_net.get_ir_result_tree())) {
       Guide& first_guide = guide_node_seg.get_first()->value();
       int32_t first_layer_idx = first_guide.get_layer_idx();
       Guide& second_guide = guide_node_seg.get_second()->value();
       int32_t second_layer_idx = second_guide.get_layer_idx();
 
       if (first_layer_idx == second_layer_idx) {
-        double wire_length = RTUtil::getManhattanDistance(first_guide.getMidPoint(), second_guide.getMidPoint()) / 1.0 / micron_dbu;
+        double wire_length = RTUTIL.getManhattanDistance(first_guide.getMidPoint(), second_guide.getMidPoint()) / 1.0 / micron_dbu;
         routing_wire_length_map[first_layer_idx] += wire_length;
         total_wire_length += wire_length;
       } else {
-        RTUtil::swapByASC(first_layer_idx, second_layer_idx);
+        RTUTIL.swapByASC(first_layer_idx, second_layer_idx);
         for (int32_t layer_idx = first_layer_idx; layer_idx < second_layer_idx; layer_idx++) {
           cut_via_num_map[layer_via_master_list[layer_idx].front().get_cut_layer_idx()]++;
           total_via_num++;
@@ -1208,14 +1209,14 @@ void InitialRouter::updateSummary(IRModel& ir_model)
       for (IRPin& ir_pin : ir_net.get_ir_pin_list()) {
         LayerCoord layer_coord = ir_pin.get_key_access_point().getGridLayerCoord();
         real_pin_coord_map_list[ir_net.get_net_idx()][ir_pin.get_pin_name()].emplace_back(
-            RTUtil::getRealRectByGCell(layer_coord, gcell_axis).getMidPoint(), layer_coord.get_layer_idx());
+            RTUTIL.getRealRectByGCell(layer_coord, gcell_axis).getMidPoint(), layer_coord.get_layer_idx());
       }
-      for (Segment<TNode<Guide>*>& segment : RTUtil::getSegListByTree(ir_net.get_ir_result_tree())) {
+      for (Segment<TNode<Guide>*>& segment : RTUTIL.getSegListByTree(ir_net.get_ir_result_tree())) {
         LayerCoord first_layer_coord = segment.get_first()->value().get_grid_coord();
-        LayerCoord first_real_coord(RTUtil::getRealRectByGCell(first_layer_coord, gcell_axis).getMidPoint(),
+        LayerCoord first_real_coord(RTUTIL.getRealRectByGCell(first_layer_coord, gcell_axis).getMidPoint(),
                                     first_layer_coord.get_layer_idx());
         LayerCoord second_layer_coord = segment.get_second()->value().get_grid_coord();
-        LayerCoord second_real_coord(RTUtil::getRealRectByGCell(second_layer_coord, gcell_axis).getMidPoint(),
+        LayerCoord second_real_coord(RTUTIL.getRealRectByGCell(second_layer_coord, gcell_axis).getMidPoint(),
                                      second_layer_coord.get_layer_idx());
 
         routing_segment_list_list[ir_net.get_net_idx()].emplace_back(first_real_coord, second_real_coord);
@@ -1243,19 +1244,18 @@ void InitialRouter::printSummary(IRModel& ir_model)
     routing_demand_map_table << fort::header << "routing_layer" << "demand" << "proportion" << fort::endr;
     for (RoutingLayer& routing_layer : routing_layer_list) {
       routing_demand_map_table << routing_layer.get_layer_name() << routing_demand_map[routing_layer.get_layer_idx()]
-                               << RTUtil::getPercentage(routing_demand_map[routing_layer.get_layer_idx()], total_demand) << fort::endr;
+                               << RTUTIL.getPercentage(routing_demand_map[routing_layer.get_layer_idx()], total_demand) << fort::endr;
     }
-    routing_demand_map_table << fort::header << "Total" << total_demand << RTUtil::getPercentage(total_demand, total_demand) << fort::endr;
+    routing_demand_map_table << fort::header << "Total" << total_demand << RTUTIL.getPercentage(total_demand, total_demand) << fort::endr;
   }
   fort::char_table routing_overflow_map_table;
   {
     routing_overflow_map_table << fort::header << "routing_layer" << "overflow" << "proportion" << fort::endr;
     for (RoutingLayer& routing_layer : routing_layer_list) {
       routing_overflow_map_table << routing_layer.get_layer_name() << routing_overflow_map[routing_layer.get_layer_idx()]
-                                 << RTUtil::getPercentage(routing_overflow_map[routing_layer.get_layer_idx()], total_overflow)
-                                 << fort::endr;
+                                 << RTUTIL.getPercentage(routing_overflow_map[routing_layer.get_layer_idx()], total_overflow) << fort::endr;
     }
-    routing_overflow_map_table << fort::header << "Total" << total_overflow << RTUtil::getPercentage(total_overflow, total_overflow)
+    routing_overflow_map_table << fort::header << "Total" << total_overflow << RTUTIL.getPercentage(total_overflow, total_overflow)
                                << fort::endr;
   }
   fort::char_table routing_wire_length_map_table;
@@ -1263,22 +1263,22 @@ void InitialRouter::printSummary(IRModel& ir_model)
     routing_wire_length_map_table << fort::header << "routing_layer" << "wire_length" << "proportion" << fort::endr;
     for (RoutingLayer& routing_layer : routing_layer_list) {
       routing_wire_length_map_table << routing_layer.get_layer_name() << routing_wire_length_map[routing_layer.get_layer_idx()]
-                                    << RTUtil::getPercentage(routing_wire_length_map[routing_layer.get_layer_idx()], total_wire_length)
+                                    << RTUTIL.getPercentage(routing_wire_length_map[routing_layer.get_layer_idx()], total_wire_length)
                                     << fort::endr;
     }
     routing_wire_length_map_table << fort::header << "Total" << total_wire_length
-                                  << RTUtil::getPercentage(total_wire_length, total_wire_length) << fort::endr;
+                                  << RTUTIL.getPercentage(total_wire_length, total_wire_length) << fort::endr;
   }
   fort::char_table cut_via_num_map_table;
   {
     cut_via_num_map_table << fort::header << "cut_layer" << "via_num" << "proportion" << fort::endr;
     for (CutLayer& cut_layer : cut_layer_list) {
       cut_via_num_map_table << cut_layer.get_layer_name() << cut_via_num_map[cut_layer.get_layer_idx()]
-                            << RTUtil::getPercentage(cut_via_num_map[cut_layer.get_layer_idx()], total_via_num) << fort::endr;
+                            << RTUTIL.getPercentage(cut_via_num_map[cut_layer.get_layer_idx()], total_via_num) << fort::endr;
     }
-    cut_via_num_map_table << fort::header << "Total" << total_via_num << RTUtil::getPercentage(total_via_num, total_via_num) << fort::endr;
+    cut_via_num_map_table << fort::header << "Total" << total_via_num << RTUTIL.getPercentage(total_via_num, total_via_num) << fort::endr;
   }
-  RTUtil::printTableList({routing_demand_map_table, routing_overflow_map_table, routing_wire_length_map_table, cut_via_num_map_table});
+  RTUTIL.printTableList({routing_demand_map_table, routing_overflow_map_table, routing_wire_length_map_table, cut_via_num_map_table});
 }
 
 void InitialRouter::writeDemandCSV(IRModel& ir_model)
@@ -1292,7 +1292,7 @@ void InitialRouter::writeDemandCSV(IRModel& ir_model)
   std::vector<GridMap<IRNode>>& layer_node_map = ir_model.get_layer_node_map();
   for (RoutingLayer& routing_layer : routing_layer_list) {
     std::ofstream* demand_csv_file
-        = RTUtil::getOutputFileStream(RTUtil::getString(ir_temp_directory_path, "demand_map_", routing_layer.get_layer_name(), ".csv"));
+        = RTUTIL.getOutputFileStream(RTUTIL.getString(ir_temp_directory_path, "demand_map_", routing_layer.get_layer_name(), ".csv"));
 
     GridMap<IRNode>& ir_node_map = layer_node_map[routing_layer.get_layer_idx()];
     for (int32_t y = ir_node_map.get_y_size() - 1; y >= 0; y--) {
@@ -1304,11 +1304,11 @@ void InitialRouter::writeDemandCSV(IRModel& ir_model)
         } else {
           total_demand = (orient_demand_map[Orientation::kSouth] + orient_demand_map[Orientation::kNorth]);
         }
-        RTUtil::pushStream(demand_csv_file, total_demand, ",");
+        RTUTIL.pushStream(demand_csv_file, total_demand, ",");
       }
-      RTUtil::pushStream(demand_csv_file, "\n");
+      RTUTIL.pushStream(demand_csv_file, "\n");
     }
-    RTUtil::closeFileStream(demand_csv_file);
+    RTUTIL.closeFileStream(demand_csv_file);
   }
 }
 
@@ -1323,7 +1323,7 @@ void InitialRouter::writeOverflowCSV(IRModel& ir_model)
   std::vector<GridMap<IRNode>>& layer_node_map = ir_model.get_layer_node_map();
   for (RoutingLayer& routing_layer : routing_layer_list) {
     std::ofstream* overflow_csv_file
-        = RTUtil::getOutputFileStream(RTUtil::getString(ir_temp_directory_path, "overflow_map_", routing_layer.get_layer_name(), ".csv"));
+        = RTUTIL.getOutputFileStream(RTUTIL.getString(ir_temp_directory_path, "overflow_map_", routing_layer.get_layer_name(), ".csv"));
 
     GridMap<IRNode>& ir_node_map = layer_node_map[routing_layer.get_layer_idx()];
     for (int32_t y = ir_node_map.get_y_size() - 1; y >= 0; y--) {
@@ -1338,11 +1338,11 @@ void InitialRouter::writeOverflowCSV(IRModel& ir_model)
           total_overflow = std::max(0, orient_demand_map[Orientation::kSouth] - orient_supply_map[Orientation::kSouth])
                            + std::max(0, orient_demand_map[Orientation::kNorth] - orient_supply_map[Orientation::kNorth]);
         }
-        RTUtil::pushStream(overflow_csv_file, total_overflow, ",");
+        RTUTIL.pushStream(overflow_csv_file, total_overflow, ",");
       }
-      RTUtil::pushStream(overflow_csv_file, "\n");
+      RTUTIL.pushStream(overflow_csv_file, "\n");
     }
-    RTUtil::closeFileStream(overflow_csv_file);
+    RTUTIL.closeFileStream(overflow_csv_file);
   }
 }
 
