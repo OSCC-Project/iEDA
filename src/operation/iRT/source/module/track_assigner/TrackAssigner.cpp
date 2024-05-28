@@ -58,6 +58,36 @@ void TrackAssigner::assign()
   TAModel ta_model = initTAModel();
   setTAParameter(ta_model);
   initTAPanelMap(ta_model);
+  {
+    // todo
+    Die& die = RTDM.getDatabase().get_die();
+
+    std::vector<TANet>& ta_net_list = ta_model.get_ta_net_list();
+
+    for (auto& [net_idx, segment_set] : RTDM.getGlobalNetResultMap(die)) {
+      TANet& ta_net = ta_net_list[net_idx];
+
+      std::vector<Segment<LayerCoord>> routing_segment_list;
+      for (Segment<LayerCoord>* segment : segment_set) {
+        routing_segment_list.push_back(*segment);
+      }
+      std::vector<LayerCoord> candidate_root_coord_list;
+      std::map<LayerCoord, std::set<int32_t>, CmpLayerCoordByXASC> key_coord_pin_map;
+      std::vector<TAPin>& ta_pin_list = ta_net.get_ta_pin_list();
+      for (size_t i = 0; i < ta_pin_list.size(); i++) {
+        LayerCoord coord=ta_pin_list[i].get_key_access_point().getGridLayerCoord();
+        candidate_root_coord_list.push_back(coord);
+        key_coord_pin_map[coord].insert(static_cast<int32_t>(i));
+      }
+      MTree<LayerCoord> coord_tree = RTUTIL.getTreeByFullFlow(candidate_root_coord_list, routing_segment_list, key_coord_pin_map);
+      std::function<Guide(LayerCoord&)> convertToGuide = [](LayerCoord& coord) {
+        ScaleAxis& gcell_axis = RTDM.getDatabase().get_gcell_axis();
+        return Guide(LayerRect(RTUTIL.getRealRectByGCell(coord, gcell_axis), coord.get_layer_idx()), coord);
+      };
+      ta_net.set_gr_result_tree(RTUTIL.convertTree(coord_tree, convertToGuide));
+    }
+  }
+
   initTATaskList(ta_model);
   buildPanelSchedule(ta_model);
   assignTAPanelMap(ta_model);
@@ -100,7 +130,6 @@ TANet TrackAssigner::convertToTANet(Net& net)
   for (Pin& pin : net.get_pin_list()) {
     ta_net.get_ta_pin_list().push_back(TAPin(pin));
   }
-  ta_net.set_ir_result_tree(net.get_ir_result_tree());
   return ta_net;
 }
 
@@ -217,9 +246,9 @@ std::map<TAPanelId, std::vector<TATask*>, CmpTAPanelId> TrackAssigner::getPanelT
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
 
   std::map<TAPanelId, std::vector<TATask*>, CmpTAPanelId> panel_task_map;
-  for (Segment<TNode<Guide>*>& segment : RTUTIL.getSegListByTree(ta_net.get_ir_result_tree())) {
-    Guide ll_guide = segment.get_first()->value();
-    Guide ur_guide = segment.get_second()->value();
+  for (Segment<TNode<Guide>*>& coord_segment : RTUTIL.getSegListByTree(ta_net.get_gr_result_tree())) {
+    Guide ll_guide = coord_segment.get_first()->value();
+    Guide ur_guide = coord_segment.get_second()->value();
     PlanarCoord& ll_grid_coord = ll_guide.get_grid_coord().get_planar_coord();
     PlanarCoord& ur_grid_coord = ur_guide.get_grid_coord().get_planar_coord();
     int32_t guide_layer_idx = ll_guide.get_layer_idx();
@@ -758,8 +787,8 @@ std::vector<Segment<LayerCoord>> TrackAssigner::getRoutingSegmentList(TAPanel& t
       = RTUTIL.getTreeByFullFlow(candidate_root_coord_list, ta_panel.get_routing_segment_list(), key_coord_pin_map);
 
   std::vector<Segment<LayerCoord>> routing_segment_list;
-  for (Segment<TNode<LayerCoord>*>& segment : RTUTIL.getSegListByTree(coord_tree)) {
-    routing_segment_list.emplace_back(segment.get_first()->value(), segment.get_second()->value());
+  for (Segment<TNode<LayerCoord>*>& coord_segment : RTUTIL.getSegListByTree(coord_tree)) {
+    routing_segment_list.emplace_back(coord_segment.get_first()->value(), coord_segment.get_second()->value());
   }
   return routing_segment_list;
 }

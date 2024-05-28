@@ -527,13 +527,18 @@ void TopologyGenerator::updateSummary(TGModel& tg_model)
   for (auto& [net_idx, segment_set] : RTDM.getGlobalNetResultMap(die)) {
     for (Segment<LayerCoord>* segment : segment_set) {
       LayerCoord& first_coord = segment->get_first();
+      int32_t first_layer_idx = first_coord.get_layer_idx();
       LayerCoord& second_coord = segment->get_second();
+      int32_t second_layer_idx = second_coord.get_layer_idx();
 
-      GCell& first_gcell = gcell_map[first_coord.get_x()][first_coord.get_y()];
-      GCell& second_gcell = gcell_map[second_coord.get_x()][second_coord.get_y()];
-
-      double wire_length = RTUTIL.getManhattanDistance(first_gcell.getMidPoint(), second_gcell.getMidPoint()) / 1.0 / micron_dbu;
-      total_wire_length += wire_length;
+      if (first_layer_idx == second_layer_idx) {
+        GCell& first_gcell = gcell_map[first_coord.get_x()][first_coord.get_y()];
+        GCell& second_gcell = gcell_map[second_coord.get_x()][second_coord.get_y()];
+        double wire_length = RTUTIL.getManhattanDistance(first_gcell.getMidPoint(), second_gcell.getMidPoint()) / 1.0 / micron_dbu;
+        total_wire_length += wire_length;
+      } else {
+        RTLOG.error(Loc::current(), "first_layer_idx != second_layer_idx!");
+      }
     }
   }
   if (enable_timing) {

@@ -37,8 +37,6 @@ class Net
   // PinAccessor
   std::vector<Pin>& get_pin_list() { return _pin_list; }
   BoundingBox& get_bounding_box() { return _bounding_box; }
-  // InitialRouter
-  MTree<Guide>& get_ir_result_tree() { return _ir_result_tree; }
 
   // setter
   void set_net_idx(const int32_t net_idx) { _net_idx = net_idx; }
@@ -47,8 +45,6 @@ class Net
   // PinAccessor
   void set_pin_list(const std::vector<Pin>& pin_list) { _pin_list = pin_list; }
   void set_bounding_box(const BoundingBox& bounding_box) { _bounding_box = bounding_box; }
-  // InitialRouter
-  void set_ir_result_tree(const MTree<Guide>& ir_result_tree) { _ir_result_tree = ir_result_tree; }
 
  private:
   int32_t _net_idx = -1;
@@ -57,8 +53,6 @@ class Net
   // PinAccessor
   std::vector<Pin> _pin_list;
   BoundingBox _bounding_box;
-  // InitialRouter
-  MTree<Guide> _ir_result_tree;
 };
 
 }  // namespace irt

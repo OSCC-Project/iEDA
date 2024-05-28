@@ -964,8 +964,8 @@ std::vector<Segment<LayerCoord>> DetailedRouter::getRoutingSegmentList(DRBox& dr
   MTree<LayerCoord> coord_tree = RTUTIL.getTreeByFullFlow(candidate_root_coord_list, dr_box.get_routing_segment_list(), key_coord_pin_map);
 
   std::vector<Segment<LayerCoord>> routing_segment_list;
-  for (Segment<TNode<LayerCoord>*>& segment : RTUTIL.getSegListByTree(coord_tree)) {
-    routing_segment_list.emplace_back(segment.get_first()->value(), segment.get_second()->value());
+  for (Segment<TNode<LayerCoord>*>& coord_segment : RTUTIL.getSegListByTree(coord_tree)) {
+    routing_segment_list.emplace_back(coord_segment.get_first()->value(), coord_segment.get_second()->value());
   }
   return routing_segment_list;
 }
