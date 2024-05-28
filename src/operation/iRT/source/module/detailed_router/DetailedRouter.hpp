@@ -118,16 +118,16 @@ class DetailedRouter
   void updateViolationToGraph(DRBox& dr_box, ChangeType change_type, Violation& violation);
 #endif
 
-#if 1  // debug
-  void debugCheckDRBox(DRBox& dr_box);
-  void debugPlotDRBox(DRBox& dr_box, int32_t curr_task_idx, std::string flag);
-#endif
-
 #if 1  // exhibit
   void updateSummary(DRModel& dr_model);
   void printSummary(DRModel& dr_model);
   void writeNetCSV(DRModel& dr_model);
   void writeViolationCSV(DRModel& dr_model);
+#endif
+
+#if 1  // debug
+  void debugCheckDRBox(DRBox& dr_box);
+  void debugPlotDRBox(DRBox& dr_box, int32_t curr_task_idx, std::string flag);
 #endif
 };
 

@@ -107,16 +107,16 @@ class TrackAssigner
   std::map<TANode*, std::set<Orientation>> getRoutingNodeOrientationMap(TAPanel& ta_panel, NetShape& net_shape);
 #endif
 
-#if 1  // debug
-  void debugCheckTAPanel(TAPanel& ta_panel);
-  void debugPlotTAPanel(TAPanel& ta_panel, int32_t curr_task_idx, std::string flag);
-#endif
-
 #if 1  // exhibit
   void updateSummary(TAModel& ta_model);
   void printSummary(TAModel& ta_model);
   void writeNetCSV(TAModel& ta_model);
   void writeViolationCSV(TAModel& ta_model);
+#endif
+
+#if 1  // debug
+  void debugCheckTAPanel(TAPanel& ta_panel);
+  void debugPlotTAPanel(TAPanel& ta_panel, int32_t curr_task_idx, std::string flag);
 #endif
 };
 

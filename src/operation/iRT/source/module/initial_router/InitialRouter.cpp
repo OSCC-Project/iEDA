@@ -937,37 +937,6 @@ void InitialRouter::uploadNetResult(IRNet* ir_net, MTree<LayerCoord>& coord_tree
   }
 }
 
-#if 1  // debug
-
-void InitialRouter::debugCheckIRModel(IRModel& ir_model)
-{
-  std::vector<GridMap<IRNode>>& layer_node_map = ir_model.get_layer_node_map();
-  for (GridMap<IRNode>& ir_node_map : layer_node_map) {
-    for (int32_t x = 0; x < ir_node_map.get_x_size(); x++) {
-      for (int32_t y = 0; y < ir_node_map.get_y_size(); y++) {
-        IRNode& ir_node = ir_node_map[x][y];
-        for (auto& [orient, neighbor] : ir_node.get_neighbor_node_map()) {
-          Orientation opposite_orient = RTUTIL.getOppositeOrientation(orient);
-          if (!RTUTIL.exist(neighbor->get_neighbor_node_map(), opposite_orient)) {
-            RTLOG.error(Loc::current(), "The ir_node neighbor is not bidirectional!");
-          }
-          if (neighbor->get_neighbor_node_map()[opposite_orient] != &ir_node) {
-            RTLOG.error(Loc::current(), "The ir_node neighbor is not bidirectional!");
-          }
-          LayerCoord node_coord(ir_node.get_planar_coord(), ir_node.get_layer_idx());
-          LayerCoord neighbor_coord(neighbor->get_planar_coord(), neighbor->get_layer_idx());
-          if (RTUTIL.getOrientation(node_coord, neighbor_coord) == orient) {
-            continue;
-          }
-          RTLOG.error(Loc::current(), "The neighbor orient is different with real region!");
-        }
-      }
-    }
-  }
-}
-
-#endif
-
 #if 1  // exhibit
 
 void InitialRouter::updateSummary(IRModel& ir_model)
@@ -1197,6 +1166,37 @@ void InitialRouter::writeOverflowCSV(IRModel& ir_model)
       RTUTIL.pushStream(overflow_csv_file, "\n");
     }
     RTUTIL.closeFileStream(overflow_csv_file);
+  }
+}
+
+#endif
+
+#if 1  // debug
+
+void InitialRouter::debugCheckIRModel(IRModel& ir_model)
+{
+  std::vector<GridMap<IRNode>>& layer_node_map = ir_model.get_layer_node_map();
+  for (GridMap<IRNode>& ir_node_map : layer_node_map) {
+    for (int32_t x = 0; x < ir_node_map.get_x_size(); x++) {
+      for (int32_t y = 0; y < ir_node_map.get_y_size(); y++) {
+        IRNode& ir_node = ir_node_map[x][y];
+        for (auto& [orient, neighbor] : ir_node.get_neighbor_node_map()) {
+          Orientation opposite_orient = RTUTIL.getOppositeOrientation(orient);
+          if (!RTUTIL.exist(neighbor->get_neighbor_node_map(), opposite_orient)) {
+            RTLOG.error(Loc::current(), "The ir_node neighbor is not bidirectional!");
+          }
+          if (neighbor->get_neighbor_node_map()[opposite_orient] != &ir_node) {
+            RTLOG.error(Loc::current(), "The ir_node neighbor is not bidirectional!");
+          }
+          LayerCoord node_coord(ir_node.get_planar_coord(), ir_node.get_layer_idx());
+          LayerCoord neighbor_coord(neighbor->get_planar_coord(), neighbor->get_layer_idx());
+          if (RTUTIL.getOrientation(node_coord, neighbor_coord) == orient) {
+            continue;
+          }
+          RTLOG.error(Loc::current(), "The neighbor orient is different with real region!");
+        }
+      }
+    }
   }
 }
 

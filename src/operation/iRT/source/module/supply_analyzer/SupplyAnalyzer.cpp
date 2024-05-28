@@ -231,6 +231,103 @@ bool SupplyAnalyzer::isAccess(LayerRect& wire, std::vector<EXTLayerRect>& fixed_
   return true;
 }
 
+#if 1  // exhibit
+
+void SupplyAnalyzer::updateSummary(SAModel& sa_model)
+{
+  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
+  GridMap<GCell>& gcell_map = RTDM.getDatabase().get_gcell_map();
+  std::map<int32_t, int32_t>& routing_supply_map = RTDM.getSummary().sa_summary.routing_supply_map;
+  int32_t& total_supply = RTDM.getSummary().sa_summary.total_supply;
+
+  for (RoutingLayer& routing_layer : routing_layer_list) {
+    routing_supply_map[routing_layer.get_layer_idx()] = 0;
+  }
+  total_supply = 0;
+
+  for (int32_t x = 0; x < gcell_map.get_x_size(); x++) {
+    for (int32_t y = 0; y < gcell_map.get_y_size(); y++) {
+      for (auto& [routing_layer_idx, orient_supply_map] : gcell_map[x][y].get_routing_orient_supply_map()) {
+        for (auto& [orient, supply] : orient_supply_map) {
+          routing_supply_map[routing_layer_idx] += supply;
+          total_supply += supply;
+        }
+      }
+    }
+  }
+}
+
+void SupplyAnalyzer::printSummary(SAModel& sa_model)
+{
+  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
+  std::map<int32_t, int32_t>& routing_supply_map = RTDM.getSummary().sa_summary.routing_supply_map;
+  int32_t& total_supply = RTDM.getSummary().sa_summary.total_supply;
+
+  fort::char_table routing_supply_map_table;
+  {
+    routing_supply_map_table << fort::header << "routing_layer" << "supply" << "proportion" << fort::endr;
+    for (RoutingLayer& routing_layer : routing_layer_list) {
+      routing_supply_map_table << routing_layer.get_layer_name() << routing_supply_map[routing_layer.get_layer_idx()]
+                               << RTUTIL.getPercentage(routing_supply_map[routing_layer.get_layer_idx()], total_supply) << fort::endr;
+    }
+    routing_supply_map_table << fort::header << "Total" << total_supply << RTUTIL.getPercentage(total_supply, total_supply) << fort::endr;
+  }
+  RTUTIL.printTableList({routing_supply_map_table});
+}
+
+void SupplyAnalyzer::writePlanarSupplyCSV(SAModel& sa_model)
+{
+  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
+  GridMap<GCell>& gcell_map = RTDM.getDatabase().get_gcell_map();
+  std::string& sa_temp_directory_path = RTDM.getConfig().sa_temp_directory_path;
+  int32_t output_csv = RTDM.getConfig().output_csv;
+  if (!output_csv) {
+    return;
+  }
+  std::ofstream* supply_csv_file = RTUTIL.getOutputFileStream(RTUTIL.getString(sa_temp_directory_path, "supply_map_planar.csv"));
+  for (int32_t y = gcell_map.get_y_size() - 1; y >= 0; y--) {
+    for (int32_t x = 0; x < gcell_map.get_x_size(); x++) {
+      int32_t total_supply = 0;
+      for (RoutingLayer& routing_layer : routing_layer_list) {
+        for (auto& [orient, supply] : gcell_map[x][y].get_routing_orient_supply_map()[routing_layer.get_layer_idx()]) {
+          total_supply += supply;
+        }
+      }
+      RTUTIL.pushStream(supply_csv_file, total_supply, ",");
+    }
+    RTUTIL.pushStream(supply_csv_file, "\n");
+  }
+  RTUTIL.closeFileStream(supply_csv_file);
+}
+
+void SupplyAnalyzer::writeLayerSupplyCSV(SAModel& sa_model)
+{
+  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
+  GridMap<GCell>& gcell_map = RTDM.getDatabase().get_gcell_map();
+  std::string& sa_temp_directory_path = RTDM.getConfig().sa_temp_directory_path;
+  int32_t output_csv = RTDM.getConfig().output_csv;
+  if (!output_csv) {
+    return;
+  }
+  for (RoutingLayer& routing_layer : routing_layer_list) {
+    std::ofstream* supply_csv_file
+        = RTUTIL.getOutputFileStream(RTUTIL.getString(sa_temp_directory_path, "supply_map_", routing_layer.get_layer_name(), ".csv"));
+    for (int32_t y = gcell_map.get_y_size() - 1; y >= 0; y--) {
+      for (int32_t x = 0; x < gcell_map.get_x_size(); x++) {
+        int32_t total_supply = 0;
+        for (auto& [orient, supply] : gcell_map[x][y].get_routing_orient_supply_map()[routing_layer.get_layer_idx()]) {
+          total_supply += supply;
+        }
+        RTUTIL.pushStream(supply_csv_file, total_supply, ",");
+      }
+      RTUTIL.pushStream(supply_csv_file, "\n");
+    }
+    RTUTIL.closeFileStream(supply_csv_file);
+  }
+}
+
+#endif
+
 #if 1  // debug
 
 void SupplyAnalyzer::debugPlotSAModel(SAModel& sa_model)
@@ -336,103 +433,6 @@ void SupplyAnalyzer::debugPlotSAModel(SAModel& sa_model)
 
   std::string gds_file_path = RTUTIL.getString(sa_temp_directory_path, "supply.gds");
   RTGP.plot(gp_gds, gds_file_path);
-}
-
-#endif
-
-#if 1  // exhibit
-
-void SupplyAnalyzer::updateSummary(SAModel& sa_model)
-{
-  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
-  GridMap<GCell>& gcell_map = RTDM.getDatabase().get_gcell_map();
-  std::map<int32_t, int32_t>& routing_supply_map = RTDM.getSummary().sa_summary.routing_supply_map;
-  int32_t& total_supply = RTDM.getSummary().sa_summary.total_supply;
-
-  for (RoutingLayer& routing_layer : routing_layer_list) {
-    routing_supply_map[routing_layer.get_layer_idx()] = 0;
-  }
-  total_supply = 0;
-
-  for (int32_t x = 0; x < gcell_map.get_x_size(); x++) {
-    for (int32_t y = 0; y < gcell_map.get_y_size(); y++) {
-      for (auto& [routing_layer_idx, orient_supply_map] : gcell_map[x][y].get_routing_orient_supply_map()) {
-        for (auto& [orient, supply] : orient_supply_map) {
-          routing_supply_map[routing_layer_idx] += supply;
-          total_supply += supply;
-        }
-      }
-    }
-  }
-}
-
-void SupplyAnalyzer::printSummary(SAModel& sa_model)
-{
-  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
-  std::map<int32_t, int32_t>& routing_supply_map = RTDM.getSummary().sa_summary.routing_supply_map;
-  int32_t& total_supply = RTDM.getSummary().sa_summary.total_supply;
-
-  fort::char_table routing_supply_map_table;
-  {
-    routing_supply_map_table << fort::header << "routing_layer" << "supply" << "proportion" << fort::endr;
-    for (RoutingLayer& routing_layer : routing_layer_list) {
-      routing_supply_map_table << routing_layer.get_layer_name() << routing_supply_map[routing_layer.get_layer_idx()]
-                               << RTUTIL.getPercentage(routing_supply_map[routing_layer.get_layer_idx()], total_supply) << fort::endr;
-    }
-    routing_supply_map_table << fort::header << "Total" << total_supply << RTUTIL.getPercentage(total_supply, total_supply) << fort::endr;
-  }
-  RTUTIL.printTableList({routing_supply_map_table});
-}
-
-void SupplyAnalyzer::writePlanarSupplyCSV(SAModel& sa_model)
-{
-  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
-  GridMap<GCell>& gcell_map = RTDM.getDatabase().get_gcell_map();
-  std::string& sa_temp_directory_path = RTDM.getConfig().sa_temp_directory_path;
-  int32_t output_csv = RTDM.getConfig().output_csv;
-  if (!output_csv) {
-    return;
-  }
-  std::ofstream* supply_csv_file = RTUTIL.getOutputFileStream(RTUTIL.getString(sa_temp_directory_path, "supply_map_planar.csv"));
-  for (int32_t y = gcell_map.get_y_size() - 1; y >= 0; y--) {
-    for (int32_t x = 0; x < gcell_map.get_x_size(); x++) {
-      int32_t total_supply = 0;
-      for (RoutingLayer& routing_layer : routing_layer_list) {
-        for (auto& [orient, supply] : gcell_map[x][y].get_routing_orient_supply_map()[routing_layer.get_layer_idx()]) {
-          total_supply += supply;
-        }
-      }
-      RTUTIL.pushStream(supply_csv_file, total_supply, ",");
-    }
-    RTUTIL.pushStream(supply_csv_file, "\n");
-  }
-  RTUTIL.closeFileStream(supply_csv_file);
-}
-
-void SupplyAnalyzer::writeLayerSupplyCSV(SAModel& sa_model)
-{
-  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
-  GridMap<GCell>& gcell_map = RTDM.getDatabase().get_gcell_map();
-  std::string& sa_temp_directory_path = RTDM.getConfig().sa_temp_directory_path;
-  int32_t output_csv = RTDM.getConfig().output_csv;
-  if (!output_csv) {
-    return;
-  }
-  for (RoutingLayer& routing_layer : routing_layer_list) {
-    std::ofstream* supply_csv_file
-        = RTUTIL.getOutputFileStream(RTUTIL.getString(sa_temp_directory_path, "supply_map_", routing_layer.get_layer_name(), ".csv"));
-    for (int32_t y = gcell_map.get_y_size() - 1; y >= 0; y--) {
-      for (int32_t x = 0; x < gcell_map.get_x_size(); x++) {
-        int32_t total_supply = 0;
-        for (auto& [orient, supply] : gcell_map[x][y].get_routing_orient_supply_map()[routing_layer.get_layer_idx()]) {
-          total_supply += supply;
-        }
-        RTUTIL.pushStream(supply_csv_file, total_supply, ",");
-      }
-      RTUTIL.pushStream(supply_csv_file, "\n");
-    }
-    RTUTIL.closeFileStream(supply_csv_file);
-  }
 }
 
 #endif

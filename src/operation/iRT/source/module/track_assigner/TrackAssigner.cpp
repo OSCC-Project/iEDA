@@ -75,7 +75,7 @@ void TrackAssigner::assign()
       std::map<LayerCoord, std::set<int32_t>, CmpLayerCoordByXASC> key_coord_pin_map;
       std::vector<TAPin>& ta_pin_list = ta_net.get_ta_pin_list();
       for (size_t i = 0; i < ta_pin_list.size(); i++) {
-        LayerCoord coord=ta_pin_list[i].get_key_access_point().getGridLayerCoord();
+        LayerCoord coord = ta_pin_list[i].get_key_access_point().getGridLayerCoord();
         candidate_root_coord_list.push_back(coord);
         key_coord_pin_map[coord].insert(static_cast<int32_t>(i));
       }
@@ -1173,6 +1173,160 @@ std::map<TANode*, std::set<Orientation>> TrackAssigner::getRoutingNodeOrientatio
 
 #endif
 
+#if 1  // exhibit
+
+void TrackAssigner::updateSummary(TAModel& ta_model)
+{
+  int32_t micron_dbu = RTDM.getDatabase().get_micron_dbu();
+  Die& die = RTDM.getDatabase().get_die();
+  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
+  std::map<int32_t, double>& routing_wire_length_map = RTDM.getSummary().ta_summary.routing_wire_length_map;
+  double& total_wire_length = RTDM.getSummary().ta_summary.total_wire_length;
+  std::map<int32_t, int32_t>& routing_violation_num_map = RTDM.getSummary().ta_summary.routing_violation_num_map;
+  int32_t& total_violation_num = RTDM.getSummary().ta_summary.total_violation_num;
+
+  for (RoutingLayer& routing_layer : routing_layer_list) {
+    routing_wire_length_map[routing_layer.get_layer_idx()] = 0;
+    routing_violation_num_map[routing_layer.get_layer_idx()] = 0;
+  }
+  total_wire_length = 0;
+  total_violation_num = 0;
+
+  for (auto& [net_idx, segment_set] : RTDM.getDetailedNetResultMap(die)) {
+    for (Segment<LayerCoord>* segment : segment_set) {
+      LayerCoord& first_coord = segment->get_first();
+      LayerCoord& second_coord = segment->get_second();
+      if (first_coord.get_layer_idx() == second_coord.get_layer_idx()) {
+        double wire_length = RTUTIL.getManhattanDistance(first_coord, second_coord) / 1.0 / micron_dbu;
+        routing_wire_length_map[first_coord.get_layer_idx()] += wire_length;
+        total_wire_length += wire_length;
+      }
+    }
+  }
+  for (Violation* violation : RTDM.getViolationSet(die)) {
+    routing_violation_num_map[violation->get_violation_shape().get_layer_idx()]++;
+    total_violation_num++;
+  }
+}
+
+void TrackAssigner::printSummary(TAModel& ta_model)
+{
+  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
+  std::map<int32_t, double>& routing_wire_length_map = RTDM.getSummary().ta_summary.routing_wire_length_map;
+  double& total_wire_length = RTDM.getSummary().ta_summary.total_wire_length;
+  std::map<int32_t, int32_t>& routing_violation_num_map = RTDM.getSummary().ta_summary.routing_violation_num_map;
+  int32_t& total_violation_num = RTDM.getSummary().ta_summary.total_violation_num;
+
+  fort::char_table routing_wire_length_map_table;
+  {
+    routing_wire_length_map_table << fort::header << "routing_layer" << "wire_length" << "proportion" << fort::endr;
+    for (RoutingLayer& routing_layer : routing_layer_list) {
+      routing_wire_length_map_table << routing_layer.get_layer_name() << routing_wire_length_map[routing_layer.get_layer_idx()]
+                                    << RTUTIL.getPercentage(routing_wire_length_map[routing_layer.get_layer_idx()], total_wire_length)
+                                    << fort::endr;
+    }
+    routing_wire_length_map_table << fort::header << "Total" << total_wire_length
+                                  << RTUTIL.getPercentage(total_wire_length, total_wire_length) << fort::endr;
+  }
+  fort::char_table routing_violation_num_map_table;
+  {
+    routing_violation_num_map_table << fort::header << "routing_layer" << "violation_num" << "proportion" << fort::endr;
+    for (RoutingLayer& routing_layer : routing_layer_list) {
+      routing_violation_num_map_table << routing_layer.get_layer_name() << routing_violation_num_map[routing_layer.get_layer_idx()]
+                                      << RTUTIL.getPercentage(routing_violation_num_map[routing_layer.get_layer_idx()], total_violation_num)
+                                      << fort::endr;
+    }
+    routing_violation_num_map_table << fort::header << "Total" << total_violation_num
+                                    << RTUTIL.getPercentage(total_violation_num, total_violation_num) << fort::endr;
+  }
+  RTUTIL.printTableList({routing_wire_length_map_table, routing_violation_num_map_table});
+}
+
+void TrackAssigner::writeNetCSV(TAModel& ta_model)
+{
+  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
+  GridMap<GCell>& gcell_map = RTDM.getDatabase().get_gcell_map();
+  std::string& ta_temp_directory_path = RTDM.getConfig().ta_temp_directory_path;
+  int32_t output_csv = RTDM.getConfig().output_csv;
+  if (!output_csv) {
+    return;
+  }
+  std::vector<GridMap<int32_t>> layer_net_map;
+  layer_net_map.resize(routing_layer_list.size());
+  for (GridMap<int32_t>& net_map : layer_net_map) {
+    net_map.init(gcell_map.get_x_size(), gcell_map.get_y_size());
+  }
+  for (int32_t x = 0; x < gcell_map.get_x_size(); x++) {
+    for (int32_t y = 0; y < gcell_map.get_y_size(); y++) {
+      std::map<int32_t, std::set<int32_t>> net_layer_map;
+      for (auto& [net_idx, segment_set] : gcell_map[x][y].get_detailed_net_result_map()) {
+        for (Segment<LayerCoord>* segment : segment_set) {
+          int32_t first_layer_idx = segment->get_first().get_layer_idx();
+          int32_t second_layer_idx = segment->get_second().get_layer_idx();
+          RTUTIL.swapByASC(first_layer_idx, second_layer_idx);
+          for (int32_t layer_idx = first_layer_idx; layer_idx <= second_layer_idx; layer_idx++) {
+            net_layer_map[net_idx].insert(layer_idx);
+          }
+        }
+      }
+      for (auto& [net_idx, layer_set] : net_layer_map) {
+        for (int32_t layer_idx : layer_set) {
+          layer_net_map[layer_idx][x][y]++;
+        }
+      }
+    }
+  }
+  for (RoutingLayer& routing_layer : routing_layer_list) {
+    std::ofstream* net_csv_file
+        = RTUTIL.getOutputFileStream(RTUTIL.getString(ta_temp_directory_path, "net_map_", routing_layer.get_layer_name(), ".csv"));
+    GridMap<int32_t>& net_map = layer_net_map[routing_layer.get_layer_idx()];
+    for (int32_t y = net_map.get_y_size() - 1; y >= 0; y--) {
+      for (int32_t x = 0; x < net_map.get_x_size(); x++) {
+        RTUTIL.pushStream(net_csv_file, net_map[x][y], ",");
+      }
+      RTUTIL.pushStream(net_csv_file, "\n");
+    }
+    RTUTIL.closeFileStream(net_csv_file);
+  }
+}
+
+void TrackAssigner::writeViolationCSV(TAModel& ta_model)
+{
+  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
+  GridMap<GCell>& gcell_map = RTDM.getDatabase().get_gcell_map();
+  std::string& ta_temp_directory_path = RTDM.getConfig().ta_temp_directory_path;
+  int32_t output_csv = RTDM.getConfig().output_csv;
+  if (!output_csv) {
+    return;
+  }
+  std::vector<GridMap<int32_t>> layer_violation_map;
+  layer_violation_map.resize(routing_layer_list.size());
+  for (GridMap<int32_t>& violation_map : layer_violation_map) {
+    violation_map.init(gcell_map.get_x_size(), gcell_map.get_y_size());
+  }
+  for (int32_t x = 0; x < gcell_map.get_x_size(); x++) {
+    for (int32_t y = 0; y < gcell_map.get_y_size(); y++) {
+      for (Violation* violation : gcell_map[x][y].get_violation_set()) {
+        layer_violation_map[violation->get_violation_shape().get_layer_idx()][x][y]++;
+      }
+    }
+  }
+  for (RoutingLayer& routing_layer : routing_layer_list) {
+    std::ofstream* violation_csv_file
+        = RTUTIL.getOutputFileStream(RTUTIL.getString(ta_temp_directory_path, "violation_map_", routing_layer.get_layer_name(), ".csv"));
+    GridMap<int32_t>& violation_map = layer_violation_map[routing_layer.get_layer_idx()];
+    for (int32_t y = violation_map.get_y_size() - 1; y >= 0; y--) {
+      for (int32_t x = 0; x < violation_map.get_x_size(); x++) {
+        RTUTIL.pushStream(violation_csv_file, violation_map[x][y], ",");
+      }
+      RTUTIL.pushStream(violation_csv_file, "\n");
+    }
+    RTUTIL.closeFileStream(violation_csv_file);
+  }
+}
+
+#endif
+
 #if 1  // debug
 
 void TrackAssigner::debugCheckTAPanel(TAPanel& ta_panel)
@@ -1610,160 +1764,6 @@ void TrackAssigner::debugPlotTAPanel(TAPanel& ta_panel, int32_t curr_task_idx, s
   std::string gds_file_path = RTUTIL.getString(ta_temp_directory_path, flag, "_ta_panel_", ta_panel.get_ta_panel_id().get_layer_idx(), "_",
                                                ta_panel.get_ta_panel_id().get_panel_idx(), ".gds");
   RTGP.plot(gp_gds, gds_file_path);
-}
-
-#endif
-
-#if 1  // exhibit
-
-void TrackAssigner::updateSummary(TAModel& ta_model)
-{
-  int32_t micron_dbu = RTDM.getDatabase().get_micron_dbu();
-  Die& die = RTDM.getDatabase().get_die();
-  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
-  std::map<int32_t, double>& routing_wire_length_map = RTDM.getSummary().ta_summary.routing_wire_length_map;
-  double& total_wire_length = RTDM.getSummary().ta_summary.total_wire_length;
-  std::map<int32_t, int32_t>& routing_violation_num_map = RTDM.getSummary().ta_summary.routing_violation_num_map;
-  int32_t& total_violation_num = RTDM.getSummary().ta_summary.total_violation_num;
-
-  for (RoutingLayer& routing_layer : routing_layer_list) {
-    routing_wire_length_map[routing_layer.get_layer_idx()] = 0;
-    routing_violation_num_map[routing_layer.get_layer_idx()] = 0;
-  }
-  total_wire_length = 0;
-  total_violation_num = 0;
-
-  for (auto& [net_idx, segment_set] : RTDM.getDetailedNetResultMap(die)) {
-    for (Segment<LayerCoord>* segment : segment_set) {
-      LayerCoord& first_coord = segment->get_first();
-      LayerCoord& second_coord = segment->get_second();
-      if (first_coord.get_layer_idx() == second_coord.get_layer_idx()) {
-        double wire_length = RTUTIL.getManhattanDistance(first_coord, second_coord) / 1.0 / micron_dbu;
-        routing_wire_length_map[first_coord.get_layer_idx()] += wire_length;
-        total_wire_length += wire_length;
-      }
-    }
-  }
-  for (Violation* violation : RTDM.getViolationSet(die)) {
-    routing_violation_num_map[violation->get_violation_shape().get_layer_idx()]++;
-    total_violation_num++;
-  }
-}
-
-void TrackAssigner::printSummary(TAModel& ta_model)
-{
-  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
-  std::map<int32_t, double>& routing_wire_length_map = RTDM.getSummary().ta_summary.routing_wire_length_map;
-  double& total_wire_length = RTDM.getSummary().ta_summary.total_wire_length;
-  std::map<int32_t, int32_t>& routing_violation_num_map = RTDM.getSummary().ta_summary.routing_violation_num_map;
-  int32_t& total_violation_num = RTDM.getSummary().ta_summary.total_violation_num;
-
-  fort::char_table routing_wire_length_map_table;
-  {
-    routing_wire_length_map_table << fort::header << "routing_layer" << "wire_length" << "proportion" << fort::endr;
-    for (RoutingLayer& routing_layer : routing_layer_list) {
-      routing_wire_length_map_table << routing_layer.get_layer_name() << routing_wire_length_map[routing_layer.get_layer_idx()]
-                                    << RTUTIL.getPercentage(routing_wire_length_map[routing_layer.get_layer_idx()], total_wire_length)
-                                    << fort::endr;
-    }
-    routing_wire_length_map_table << fort::header << "Total" << total_wire_length
-                                  << RTUTIL.getPercentage(total_wire_length, total_wire_length) << fort::endr;
-  }
-  fort::char_table routing_violation_num_map_table;
-  {
-    routing_violation_num_map_table << fort::header << "routing_layer" << "violation_num" << "proportion" << fort::endr;
-    for (RoutingLayer& routing_layer : routing_layer_list) {
-      routing_violation_num_map_table << routing_layer.get_layer_name() << routing_violation_num_map[routing_layer.get_layer_idx()]
-                                      << RTUTIL.getPercentage(routing_violation_num_map[routing_layer.get_layer_idx()], total_violation_num)
-                                      << fort::endr;
-    }
-    routing_violation_num_map_table << fort::header << "Total" << total_violation_num
-                                    << RTUTIL.getPercentage(total_violation_num, total_violation_num) << fort::endr;
-  }
-  RTUTIL.printTableList({routing_wire_length_map_table, routing_violation_num_map_table});
-}
-
-void TrackAssigner::writeNetCSV(TAModel& ta_model)
-{
-  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
-  GridMap<GCell>& gcell_map = RTDM.getDatabase().get_gcell_map();
-  std::string& ta_temp_directory_path = RTDM.getConfig().ta_temp_directory_path;
-  int32_t output_csv = RTDM.getConfig().output_csv;
-  if (!output_csv) {
-    return;
-  }
-  std::vector<GridMap<int32_t>> layer_net_map;
-  layer_net_map.resize(routing_layer_list.size());
-  for (GridMap<int32_t>& net_map : layer_net_map) {
-    net_map.init(gcell_map.get_x_size(), gcell_map.get_y_size());
-  }
-  for (int32_t x = 0; x < gcell_map.get_x_size(); x++) {
-    for (int32_t y = 0; y < gcell_map.get_y_size(); y++) {
-      std::map<int32_t, std::set<int32_t>> net_layer_map;
-      for (auto& [net_idx, segment_set] : gcell_map[x][y].get_detailed_net_result_map()) {
-        for (Segment<LayerCoord>* segment : segment_set) {
-          int32_t first_layer_idx = segment->get_first().get_layer_idx();
-          int32_t second_layer_idx = segment->get_second().get_layer_idx();
-          RTUTIL.swapByASC(first_layer_idx, second_layer_idx);
-          for (int32_t layer_idx = first_layer_idx; layer_idx <= second_layer_idx; layer_idx++) {
-            net_layer_map[net_idx].insert(layer_idx);
-          }
-        }
-      }
-      for (auto& [net_idx, layer_set] : net_layer_map) {
-        for (int32_t layer_idx : layer_set) {
-          layer_net_map[layer_idx][x][y]++;
-        }
-      }
-    }
-  }
-  for (RoutingLayer& routing_layer : routing_layer_list) {
-    std::ofstream* net_csv_file
-        = RTUTIL.getOutputFileStream(RTUTIL.getString(ta_temp_directory_path, "net_map_", routing_layer.get_layer_name(), ".csv"));
-    GridMap<int32_t>& net_map = layer_net_map[routing_layer.get_layer_idx()];
-    for (int32_t y = net_map.get_y_size() - 1; y >= 0; y--) {
-      for (int32_t x = 0; x < net_map.get_x_size(); x++) {
-        RTUTIL.pushStream(net_csv_file, net_map[x][y], ",");
-      }
-      RTUTIL.pushStream(net_csv_file, "\n");
-    }
-    RTUTIL.closeFileStream(net_csv_file);
-  }
-}
-
-void TrackAssigner::writeViolationCSV(TAModel& ta_model)
-{
-  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
-  GridMap<GCell>& gcell_map = RTDM.getDatabase().get_gcell_map();
-  std::string& ta_temp_directory_path = RTDM.getConfig().ta_temp_directory_path;
-  int32_t output_csv = RTDM.getConfig().output_csv;
-  if (!output_csv) {
-    return;
-  }
-  std::vector<GridMap<int32_t>> layer_violation_map;
-  layer_violation_map.resize(routing_layer_list.size());
-  for (GridMap<int32_t>& violation_map : layer_violation_map) {
-    violation_map.init(gcell_map.get_x_size(), gcell_map.get_y_size());
-  }
-  for (int32_t x = 0; x < gcell_map.get_x_size(); x++) {
-    for (int32_t y = 0; y < gcell_map.get_y_size(); y++) {
-      for (Violation* violation : gcell_map[x][y].get_violation_set()) {
-        layer_violation_map[violation->get_violation_shape().get_layer_idx()][x][y]++;
-      }
-    }
-  }
-  for (RoutingLayer& routing_layer : routing_layer_list) {
-    std::ofstream* violation_csv_file
-        = RTUTIL.getOutputFileStream(RTUTIL.getString(ta_temp_directory_path, "violation_map_", routing_layer.get_layer_name(), ".csv"));
-    GridMap<int32_t>& violation_map = layer_violation_map[routing_layer.get_layer_idx()];
-    for (int32_t y = violation_map.get_y_size() - 1; y >= 0; y--) {
-      for (int32_t x = 0; x < violation_map.get_x_size(); x++) {
-        RTUTIL.pushStream(violation_csv_file, violation_map[x][y], ",");
-      }
-      RTUTIL.pushStream(violation_csv_file, "\n");
-    }
-    RTUTIL.closeFileStream(violation_csv_file);
-  }
 }
 
 #endif

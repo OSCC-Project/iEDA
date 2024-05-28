@@ -93,15 +93,15 @@ class InitialRouter
   void updateDemand(IRModel& ir_model, IRNet* ir_net, MTree<LayerCoord>& coord_tree);
   void uploadNetResult(IRNet* ir_net, MTree<LayerCoord>& coord_tree);
 
-#if 1  // debug
-  void debugCheckIRModel(IRModel& ir_model);
-#endif
-
 #if 1  // exhibit
   void updateSummary(IRModel& ir_model);
   void printSummary(IRModel& ir_model);
   void writeDemandCSV(IRModel& ir_model);
   void writeOverflowCSV(IRModel& ir_model);
+#endif
+
+#if 1  // debug
+  void debugCheckIRModel(IRModel& ir_model);
 #endif
 };
 
