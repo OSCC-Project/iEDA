@@ -42,7 +42,6 @@ void HoldOptimizer::optimizeHold() {
   _parasitics_estimator->estimateAllNetParasitics();
 
   _timing_engine->updateTiming();
-  _timing_engine->reportTiming();
   _db_interface->set_eval_data();
 
   reportWNSAndTNS();

@@ -740,12 +740,19 @@ int32_t RustVerilogRead::build_pins()
     idb_io_pin_list = new IdbPins();
     idb_design->set_io_pin_list(idb_io_pin_list);
   }
-
+  auto replace_str = [](const string& str, const string& replace_str, const string& new_str) {
+    std::regex re(replace_str);
+    return std::regex_replace(str, re, new_str);
+  };
   // create pin.
-  auto dcl_process = [idb_io_pin_list, this](DclType dcl_type, const char* dcl_name) -> IdbPin* {
+  auto dcl_process = [idb_io_pin_list, &replace_str, this](DclType dcl_type, const char* dcl_name) -> IdbPin* {
     if (dcl_type == DclType::KInput || dcl_type == DclType::KOutput || dcl_type == DclType::KInout) {
       IdbPin* idb_io_pin = new IdbPin();
-      idb_io_pin->set_pin_name(dcl_name);
+      std::string pin_name = dcl_name;
+      if (std::string::npos != pin_name.find('\\')) {
+        pin_name = replace_str(pin_name, R"(\\)", "");
+      }
+      idb_io_pin->set_pin_name(pin_name);
       idb_io_pin->set_term();
       idb_io_pin->get_term()->set_direction(netlistToIdb(dcl_type));
       idb_io_pin->get_term()->set_type(IdbConnectType::kSignal);

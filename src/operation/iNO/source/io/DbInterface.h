@@ -29,6 +29,16 @@ using ino::NoConfig;
 
 const float kInf = 1E+30F;
 
+struct EvalData
+{
+  std::string name;
+  double setup_wns;
+  double setup_tns;
+  double hold_wns;
+  double hold_tns;
+  double freq;
+};
+
 class DbInterface {
  public:
   static DbInterface *get_db_interface(NoConfig *config, IdbBuilder *idb,
@@ -46,6 +56,9 @@ class DbInterface {
 
   Reporter *report() { return _reporter; }
 
+  void set_eval_data();
+  std::vector<EvalData> eval_data() { return _eval_data; }
+
  private:
   DbInterface(NoConfig *config) : _config(config){};
   ~DbInterface(){};
@@ -59,5 +72,7 @@ class DbInterface {
   TimingEngine *_timing_engine = nullptr;
 
   Reporter *_reporter = nullptr;
+
+  std::vector<EvalData> _eval_data;
 };
 } // namespace ino

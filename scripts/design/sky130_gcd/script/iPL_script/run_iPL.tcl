@@ -37,7 +37,6 @@ def_init -path $::env(RESULT_DIR)/iTO_fix_fanout_result.def
 ##   run Placer
 #===========================================================
 run_placer -config $::env(CONFIG_DIR)/pl_default_config.json
-feature_summary -path $::env(RESULT_DIR)/feature/summary_ipl_place.json -step place
 
 #===========================================================
 ##   save def 
@@ -55,6 +54,7 @@ netlist_save -path $::env(RESULT_DIR)/iPL_result.v -exclude_cell_names {}
 report_db -path "$::env(RESULT_DIR)/report/pl_db.rpt"
 
 feature_tool -path $::env(RESULT_DIR)/feature/ipl_place.json -step place
+feature_summary -path $::env(RESULT_DIR)/feature/summary_ipl_place.json -step place
 
 #===========================================================
 ##   Exit 
