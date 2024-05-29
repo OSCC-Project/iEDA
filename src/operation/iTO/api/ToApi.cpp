@@ -220,9 +220,9 @@ ieda_feature::TimingOptSummary ToApi::outputSummary() {
   for (auto [net_name, net_timings] : summary_map) {
     net_timings.net_name = net_name;
 
-    net_timings.detal.tns = net_timings.opt.tns - net_timings.origin.tns;
-    net_timings.detal.wns = net_timings.opt.wns - net_timings.origin.wns;
-    net_timings.detal.suggest_freq =
+    net_timings.delta.tns = net_timings.opt.tns - net_timings.origin.tns;
+    net_timings.delta.wns = net_timings.opt.wns - net_timings.origin.wns;
+    net_timings.delta.suggest_freq =
         net_timings.opt.suggest_freq - net_timings.origin.suggest_freq;
 
     to_summary.net_timings.push_back(net_timings);

@@ -19,6 +19,7 @@
 #include "api/TimingEngine.hh"
 #include "api/TimingIDBAdapter.hh"
 #include "builder.h"
+#include "feature_ino.h"
 #include "iNO.h"
 #include "idm.h"
 
@@ -101,6 +102,7 @@ ista::TimingEngine *NoApi::initISTA(idb::IdbBuilder *idb) {
   }
 
   timing_engine->buildGraph();
+  timing_engine->initRcTree();
   timing_engine->updateTiming();
   return timing_engine;
 }
@@ -117,4 +119,69 @@ void NoApi::saveDef(string saved_def_path) {
 NoConfig *NoApi::get_no_config() { return _ino->get_config(); }
 
 void NoApi::reportTiming() { _timing_engine->reportTiming(); }
+
+ieda_feature::NetOptSummary NoApi::outputSummary() {
+  ieda_feature::NetOptSummary no_summary;
+
+  std::map<std::string, ieda_feature::NONetTimingCmp> summary_map;
+
+  // origin data，tns，wns，freq
+  auto no_eval_data = getEvalData();
+  for (auto eval_data : no_eval_data) {
+    ieda_feature::NONetTiming net_timing;
+    std::string               net_name = eval_data.name;
+    net_timing.net_name = net_name;
+    net_timing.setup_tns = eval_data.setup_tns;
+    net_timing.setup_wns = eval_data.setup_wns;
+    net_timing.hold_tns = eval_data.hold_tns;
+    net_timing.hold_wns = eval_data.hold_wns;
+    net_timing.suggest_freq = eval_data.freq;
+
+    ieda_feature::NONetTimingCmp net_cmp;
+    memset(&net_cmp, 0, sizeof(ieda_feature::NONetTimingCmp));
+    net_cmp.origin = net_timing;
+    summary_map[net_name] = net_cmp;
+  }
+
+  // after optimize timing
+  _timing_engine->destroyTimingEngine();
+  _timing_engine = initISTA(_idb);
+  auto clk_list = _timing_engine->getClockList();
+
+  std::ranges::for_each(clk_list, [&](ista::StaClock *clk) {
+    auto clk_name = clk->get_clock_name();
+    auto  setup_wns = _timing_engine->reportWNS(clk_name, ista::AnalysisMode::kMax);
+    auto  setup_tns = _timing_engine->reportTNS(clk_name, ista::AnalysisMode::kMax);
+    auto  hold_wns = _timing_engine->reportWNS(clk_name, ista::AnalysisMode::kMin);
+    auto  hold_tns = _timing_engine->reportTNS(clk_name, ista::AnalysisMode::kMin);
+    auto  freq = 1000.0 / (clk->getPeriodNs() - setup_wns);
+
+    ieda_feature::NONetTiming net_timing;
+    std::string               net_name = clk_name;
+    net_timing.net_name = net_name;
+    net_timing.setup_tns = setup_tns;
+    net_timing.setup_wns = setup_wns;
+    net_timing.hold_tns = hold_tns;
+    net_timing.hold_wns = hold_wns;
+    net_timing.suggest_freq = freq;
+
+    summary_map[net_name].opt = net_timing;
+  });
+
+  for (auto [net_name, net_timings] : summary_map) {
+
+    net_timings.net_name = net_name;
+    net_timings.delta.setup_tns = net_timings.opt.setup_tns - net_timings.origin.setup_tns;
+    net_timings.delta.setup_wns = net_timings.opt.setup_wns - net_timings.origin.setup_wns;
+    net_timings.delta.hold_tns = net_timings.opt.hold_tns - net_timings.origin.hold_tns;
+    net_timings.delta.hold_wns = net_timings.opt.hold_wns - net_timings.origin.hold_wns;
+    net_timings.delta.suggest_freq =
+        net_timings.opt.suggest_freq - net_timings.origin.suggest_freq;
+
+    no_summary.net_timings.push_back(net_timings);
+  }
+
+  return no_summary;
+}
+
 } // namespace ino

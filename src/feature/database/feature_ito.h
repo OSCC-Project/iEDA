@@ -34,7 +34,7 @@ struct TONetTimingCmp
   std::string net_name;
   TONetTiming origin;
   TONetTiming opt;
-  TONetTiming detal;
+  TONetTiming delta;
 };
 
 struct TimingOptSummary
