@@ -8,9 +8,7 @@ target_link_libraries(tcl_feature
     PUBLIC
         tcl
         shell-cmd
-        feature_manager
-        idm
-        idb
+        ieda_feature
 )
 
 target_include_directories(tcl_feature

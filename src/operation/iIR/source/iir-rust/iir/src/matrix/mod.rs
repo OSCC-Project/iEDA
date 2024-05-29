@@ -3,9 +3,9 @@ pub mod ir_rc;
 
 use log;
 
-use sprs::{TriMat, TriMatI};
+use sprs::TriMatI;
 use std::collections::HashMap;
-use std::ffi::c_double;
+
 use std::ffi::c_void;
 use std::ffi::CString;
 use std::os::raw::c_char;
@@ -42,6 +42,7 @@ pub struct RustVec {
 }
 
 /// One Net conductance matrix data.
+#[allow(dead_code)]
 struct IRNetConductanceData {
     net_name: String,
     conductance_matrix: Vec<RustMatrix>,
@@ -105,11 +106,8 @@ pub struct HashMapIterator {
 
 #[no_mangle]
 pub extern "C" fn create_hashmap_iterator(hashmap: *mut HashMap<usize, f64>) -> *mut HashMapIterator {
-    let iter = unsafe {(*hashmap).iter() };
-    Box::into_raw(Box::new(HashMapIterator {
-        hashmap,
-        iter,
-    }))
+    let iter = unsafe { (*hashmap).iter() };
+    Box::into_raw(Box::new(HashMapIterator { hashmap, iter }))
 }
 
 #[no_mangle]
@@ -199,12 +197,54 @@ pub extern "C" fn build_one_net_instance_current_vector(
 
     let one_net_name = c_str_to_r_str(c_net_name);
     let one_net_rc_data = rc_data.get_one_net_data(&one_net_name);
-    
+
     let instance_current_data = build_instance_current_vector(inst_power_data, one_net_rc_data).unwrap();
 
     Box::into_raw(Box::new(instance_current_data)) as *mut c_void
 }
 
+/// Get one net bump node id.
+#[no_mangle]
+pub extern "C" fn get_bump_node_ids(c_rc_data: *const c_void, c_net_name: *const c_char) -> RustVec {
+    let rc_data = unsafe { &*(c_rc_data as *const RCData) };
+    let one_net_name = c_str_to_r_str(c_net_name);
+    let one_net_rc_data = rc_data.get_one_net_data(&one_net_name);
+
+    let nodes = one_net_rc_data.get_nodes();
+    let mut bump_node_ids = Box::new(Vec::new());
+    for node in nodes {
+        if node.get_is_bump() {
+            let node_name = node.get_node_name();
+            let node_id = one_net_rc_data.get_node_id(&node_name).unwrap();
+            bump_node_ids.push(node_id);
+        }
+    }
+
+    let rust_bump_node_id_vec = rust_vec_to_c_array(&bump_node_ids);
+    let _ = Box::into_raw(bump_node_ids);
+    rust_bump_node_id_vec
+}
+
+#[no_mangle]
+pub extern "C" fn get_instance_node_ids(c_rc_data: *const c_void, c_net_name: *const c_char) -> RustVec {
+    let rc_data = unsafe { &*(c_rc_data as *const RCData) };
+    let one_net_name = c_str_to_r_str(c_net_name);
+    let one_net_rc_data = rc_data.get_one_net_data(&one_net_name);
+
+    let nodes = one_net_rc_data.get_nodes();
+    let mut instance_node_ids = Box::new(Vec::new());
+    for node in nodes {
+        if node.get_is_inst_pin() {
+            let node_name = node.get_node_name();
+            let node_id = one_net_rc_data.get_node_id(&node_name).unwrap();
+            instance_node_ids.push(node_id);
+        }
+    }
+
+    let rust_instance_node_id_vec = rust_vec_to_c_array(&instance_node_ids);
+    let _ = Box::into_raw(instance_node_ids);
+    rust_instance_node_id_vec
+}
 
 /// Build RC matrix and current vector data.
 #[no_mangle]
@@ -217,7 +257,8 @@ pub extern "C" fn build_matrix_from_raw_data(
     let inst_power_path = c_str_to_r_str(c_inst_power_path);
 
     let rc_data = ir_rc::read_rc_data_from_spef(&power_net_spef);
-    let instance_power_data = ir_inst_power::read_instance_pwr_csv(&inst_power_path).expect("error reading instance power csv file");
+    let instance_power_data =
+        ir_inst_power::read_instance_pwr_csv(&inst_power_path).expect("error reading instance power csv file");
 
     let mut net_matrix_data: Vec<RustNetEquationData> = Vec::new();
     // Secondly, construct matrix data.
@@ -258,8 +299,7 @@ pub extern "C" fn build_matrix_from_raw_data(
 mod tests {
     use super::ir_rc;
     use crate::matrix::{
-        rust_convert_rc_matrix, rust_vec_to_c_array, string_to_c_char, RustNetConductanceData, RustNetEquationData,
-        RustVector,
+        rust_convert_rc_matrix, rust_vec_to_c_array, string_to_c_char, RustNetEquationData, RustVector,
     };
 
     #[test]
@@ -275,13 +315,13 @@ mod tests {
             let conductance_matrix_triplet = ir_rc::build_conductance_matrix(one_net_data);
             let rust_matrix = rust_convert_rc_matrix(&conductance_matrix_triplet);
 
-            let mut current_vec: Vec<RustVector> = Vec::new();
+            let current_vec: Vec<RustVector> = Vec::new();
 
             let rust_matrix_vec = rust_vec_to_c_array(&rust_matrix);
             let rust_current_vec = rust_vec_to_c_array(&current_vec);
 
-            let mut net_matrix_data: Vec<RustNetConductanceData> = Vec::new();
-            let mut one_net_rc_net = RustNetEquationData {
+            let mut net_matrix_data: Vec<RustNetEquationData> = Vec::new();
+            let one_net_rc_net = RustNetEquationData {
                 net_name: string_to_c_char(net_name),
                 g_matrix_vec: rust_matrix_vec,
                 j_vec: rust_current_vec,

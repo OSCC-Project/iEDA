@@ -40,37 +40,33 @@
 using json = nlohmann::json;
 
 namespace idb {
+class IdbDesign;
+class IdbLayout;
+}  // namespace idb
+
+using namespace idb;
+
+namespace ieda_feature {
 
 using std::vector;
 
-class IdbDesign;
-class IdbLayout;
+class FeatureSummary;
 
 class FeatureParser
 {
  public:
-  FeatureParser(IdbLayout* layout, IdbDesign* design)
-  {
-    _layout = layout;
-    _design = design;
-  }
-  ~FeatureParser()
-  {
-    _layout = nullptr;
-    _design = nullptr;
-  }
+  FeatureParser(FeatureSummary* summary);
+  ~FeatureParser();
 
-  // builder
-  bool buildLayout(std::string json_path);
-  bool buildInstances(std::string json_path);
-  bool buildNets(std::string json_path);
   // report
-  bool buildReportSummary(std::string json_path, std::string step);
-  bool buildReportSummaryMap(std::string csv_path, int bin_cnt_x, int bin_cnt_y);
+  bool buildSummary(std::string json_path);
+  bool buildSummaryMap(std::string csv_path, int bin_cnt_x, int bin_cnt_y) { return true; }
+  bool buildTools(std::string json_path, std::string step);
 
  private:
   IdbLayout* _layout = nullptr;
   IdbDesign* _design = nullptr;
+  FeatureSummary* _summary = nullptr;
 
   json buildSummaryInfo();
   json buildSummaryLayout();
@@ -83,14 +79,12 @@ class FeatureParser
   json buildSummaryPdn();
   json buildSummaryPins();
 
-  json flowSummary(std::string step = "");
-  json buildSummaryPL(std::string json_path);
+  json buildSummaryPL(std::string step);
   json buildSummaryCTS();
   json buildSummaryTO(std::string step = "");
+  json buildSummaryNetOpt();
+  json buildSummaryRT();
   json buildSummarySTA();
   json buildSummaryDRC();
-
-  json buildSummaryRT();
-
 };
-}  // namespace idb
+}  // namespace ieda_feature

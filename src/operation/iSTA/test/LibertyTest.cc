@@ -46,11 +46,18 @@ TEST_F(LibertyTest, rust_reader) {
   auto library = lib.loadLibertyWithRustParser(lib_path);
 }
 
+TEST_F(LibertyTest, rust_expr_builder) {
+  RustLibertyExprBuilder expr_builder("(!((A1 A2)+(B1 B2)))");
+  expr_builder.execute();
+  auto* func_expr = expr_builder.get_result_expr();
+  LOG_FATAL_IF(!func_expr) << "func_expr is nullptr";
+}
+
 }  // namespace
 
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
 
-  testing::GTEST_FLAG(filter) = "TimingEngineTest.my_*";
+  testing::GTEST_FLAG(filter) = "LibertyTest.rust_expr_builder*";
   return RUN_ALL_TESTS();
 }

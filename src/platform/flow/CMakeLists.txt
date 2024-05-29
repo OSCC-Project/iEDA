@@ -13,8 +13,6 @@ target_include_directories(flow
 
         ${HOME_PLATFORM}/tool_manager
         ${HOME_PLATFORM}/tool_manager/module
-        ${HOME_PLATFORM}/script/tcl
-
 )
 
 

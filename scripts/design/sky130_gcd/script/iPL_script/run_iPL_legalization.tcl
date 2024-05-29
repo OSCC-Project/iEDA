@@ -38,6 +38,8 @@ def_init -path $::env(RESULT_DIR)/iTO_hold_result.def
 #===========================================================
 run_incremental_flow -config $::env(CONFIG_DIR)/pl_default_config.json
 
+feature_tool -path $::env(RESULT_DIR)/feature/ipl_legalization.json -step legalization
+
 #===========================================================
 ##   save def 
 #===========================================================
@@ -54,6 +56,8 @@ netlist_save -path $::env(RESULT_DIR)/iPL_lg_result.v -exclude_cell_names {}
 report_db -path "$::env(RESULT_DIR)/report/lg_db.rpt"
 report_wirelength -path  "$::env(RESULT_DIR)/report/eval/iPL_lg_result_wirelength0.rpt"
 report_congestion -path "$::env(RESULT_DIR)/report/eval/iPL_lg_result_congestion0.rpt"
+
+feature_summary -path $::env(RESULT_DIR)/feature/summary_ipl_legalization.json -step legalization
 
 #===========================================================
 ##   Exit 

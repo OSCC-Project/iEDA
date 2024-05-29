@@ -7,6 +7,7 @@ target_link_libraries(ito_api_external_libs
         ista-engine
         idb
         IdbBuilder
+        feature_db
 )
 
 target_include_directories(ito_api_external_libs
@@ -16,4 +17,5 @@ target_include_directories(ito_api_external_libs
         ${HOME_PLATFORM}/tool_manager/tool_api/ito_io
         ${HOME_PLATFORM}/data_manager
         ${HOME_PLATFORM}/data_manager/file_manager
+        ${HOME_FEATURE}/database
 )

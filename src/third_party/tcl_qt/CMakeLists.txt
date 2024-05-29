@@ -6,7 +6,7 @@ set(CMAKE_PREFIX_PATH "/opt/Qt/5.15.2/gcc_64")
 find_package(Qt5 COMPONENTS Core REQUIRED)
 include_directories(${QT_INCLUDE})
 add_library(tcl_qt tcl_qt.cpp )
-target_link_libraries( tcl_qt Qt${QT_VERSION_MAJOR}::Core )
+target_link_libraries( tcl_qt Qt5${QT_VERSION_MAJOR}::Core )
 
 find_package(TCL 8.6 QUIET)
 if(TCL_FOUND)

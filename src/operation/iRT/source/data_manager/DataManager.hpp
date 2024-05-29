@@ -163,7 +163,6 @@ class DataManager
 #if 1  // output
   void outputGCellGrid();
   void outputNetList();
-  void outputSummary();
 #endif
 
 #if 1  // 获得IdbWireSegment

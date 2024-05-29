@@ -1,7 +1,7 @@
 use log;
 use std::collections::HashMap;
 use std::error::Error;
-use std::ffi::{c_char, c_void};
+
 use std::fs::File;
 
 use serde::de::StdError;
@@ -10,10 +10,7 @@ use serde::Deserialize;
 use crate::matrix::ir_inst_power;
 use crate::matrix::ir_rc::RCOneNetData;
 
-use super::c_str_to_r_str;
-use super::ir_rc::RCData;
-
-#[derive(Deserialize)]
+#[allow(dead_code)] #[derive(Deserialize)]
 pub struct InstancePowerRecord {
     #[serde(rename = "Instance Name")]
     instance_name: String,
@@ -44,6 +41,7 @@ pub fn read_instance_pwr_csv(file_path: &str) -> Result<Vec<InstancePowerRecord>
 }
 
 /// Print instance power data.
+#[allow(dead_code)]
 fn print_inst_pwr_data(records: &[InstancePowerRecord]) {
     for record in records {
         println!(
@@ -79,14 +77,26 @@ pub fn build_instance_current_vector(
     let mut instance_current_data: HashMap<usize, f64> = HashMap::new();
 
     for (instance_name, instance_current) in instance_current_map {
-        let instance_power_pin_name = instance_name; // TODO(to taosimin) fix power pin name.
+        let mut instance_power_pin_name = instance_name; // TODO(to taosimin) fix power pin name.
+        instance_power_pin_name += ":";
+        instance_power_pin_name += net_data.get_name();
         let node_index = net_data.get_node_id(&instance_power_pin_name).unwrap();
         instance_current_data.insert(node_index, instance_current);
     }
 
+    let nodes = net_data.get_nodes();
+    for node in nodes {
+        if node.get_is_bump() {
+            let node_name = node.get_node_name();
+            let node_index = net_data.get_node_id(node_name).unwrap();
+            // bump current value is opposite of the instance value, so we use negative value instead.
+            let current_val: f64 = -1.0 / 1e-9;
+            instance_current_data.insert(node_index, current_val);
+        }
+    }
+
     Ok(instance_current_data)
 }
-
 
 #[cfg(test)]
 mod pwr_data_tests {

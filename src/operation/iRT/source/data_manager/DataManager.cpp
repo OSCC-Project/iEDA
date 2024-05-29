@@ -69,7 +69,6 @@ void DataManager::output()
   RTLOG.info(Loc::current(), "Starting...");
   outputGCellGrid();
   outputNetList();
-  outputSummary();
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
@@ -1970,11 +1969,6 @@ void DataManager::outputNetList()
       }
     }
   }
-}
-
-void DataManager::outputSummary()
-{
-  RTI.outputSummary();
 }
 
 #endif

@@ -16,27 +16,32 @@
 // ***************************************************************************************
 #pragma once
 
-#include <iostream>
+#include <cstdint>
 #include <string>
 #include <vector>
 
-#include "pl_summary.h"
-#include "rt_summary.h"
+namespace ieda_feature {
 
-namespace idb {
-
-class FeatureSummary{
- private:
-  PlaceSummary place_summary;
-  RTSummary rt_summary;
-
- public:
-  FeatureSummary() = default;
-  ~FeatureSummary() = default;
-  // getter
-  PlaceSummary& getPlaceSummary() { return place_summary; }
-  RTSummary& getRTSummary() { return rt_summary; }
-
+struct TONetTiming
+{
+  double tns;
+  double wns;
+  double suggest_freq;
 };
 
-}
+struct TONetTimingCmp
+{
+  std::string net_name;
+  TONetTiming origin;
+  TONetTiming opt;
+  TONetTiming delta;
+};
+
+struct TimingOptSummary
+{
+  double HPWL;
+  double STWL;
+  std::vector<TONetTimingCmp> net_timings;
+};
+
+}  // namespace ieda_feature

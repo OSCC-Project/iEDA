@@ -37,6 +37,7 @@ def_init -path $::env(RESULT_DIR)/iFP_result.def
 ##   run TO to fix fanout
 #===========================================================
 run_no_fixfanout -config $::env(CONFIG_DIR)/no_default_config_fixfanout.json
+feature_tool -path $::env(RESULT_DIR)/feature/ino_opt.json -step fixFanout
 
 #===========================================================
 ##   save def 
@@ -52,6 +53,7 @@ netlist_save -path $::env(RESULT_DIR)/iTO_fix_fanout_result.v -exclude_cell_name
 ##   report db summary
 #===========================================================
 report_db -path "$::env(RESULT_DIR)/report/fixfanout_db.rpt"
+feature_summary -path $::env(RESULT_DIR)/feature/summary_fixFanout.json -step fixFanout
 
 #===========================================================
 ##   Exit 

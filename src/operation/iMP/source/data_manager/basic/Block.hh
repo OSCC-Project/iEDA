@@ -50,6 +50,7 @@ class Block : public Object, public std::enable_shared_from_this<Block>
 
   size_t level() const;
   bool is_leaf() const;
+  bool has_netlist() const;
   Netlist& netlist();
   const Netlist& netlist() const;
   void set_netlist(std::shared_ptr<Netlist> netlist);
@@ -80,6 +81,9 @@ class Block : public Object, public std::enable_shared_from_this<Block>
   float get_macro_area() const { return _macro_area; }
   float get_stdcell_area() const { return _stdcell_area; }
   float get_io_area() const { return _io_area; }
+  std::set<std::shared_ptr<imp::Instance>> get_instances();
+  std::set<std::shared_ptr<imp::Instance>> get_macros();
+  std::set<std::shared_ptr<imp::Instance>> get_io_instances();
   bool isFixed() const { return _is_fixed; }
   bool is_macro_cluster() { return _macro_area > 0 && _stdcell_area <= 0 && _io_area <= 0; }
   bool is_stdcell_cluster() { return _macro_area <= 0 && _stdcell_area > 0 && _io_area <= 0; }

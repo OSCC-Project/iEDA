@@ -54,7 +54,7 @@ void DbInterface::set_eval_data() {
   auto clk_list = _timing_engine->getClockList();
   for (auto clk : clk_list) {
     auto clk_name = clk->get_clock_name();
-    auto  wns = _timing_engine->reportTNS(clk_name, AnalysisMode::kMax);
+    auto  wns = _timing_engine->reportWNS(clk_name, AnalysisMode::kMax);
     auto  tns = _timing_engine->reportTNS(clk_name, AnalysisMode::kMax);
     auto  freq = 1000.0 / (clk->getPeriodNs() - wns);
     _eval_data.push_back({clk_name, wns, tns, freq});

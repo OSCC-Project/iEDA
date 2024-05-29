@@ -41,26 +41,24 @@ pub extern "C" fn spef_free_c_char(s: *mut c_char) {
         let _ = CString::from_raw(s);
     }
 }
-
-#[repr(C)]
+#[allow(dead_code)] #[repr(C)]
 struct RustHeaderItem {
     key: *mut c_char,
     value: String,
 }
 
-#[repr(C)]
+#[allow(dead_code)] #[repr(C)]
 struct RustNameMapItem {
     index: usize,
     name: *mut c_char,
 }
 
-#[repr(C)]
+#[allow(dead_code)] #[repr(C)]
 struct RustPortItem {
     name: *mut c_char,
     direction: spef_data::ConnectionDirection,
     coordinate: [f64; 2],
 }
-
 #[repr(C)]
 pub struct RustConnItem {
     conn_type: spef_data::ConnectionType,
@@ -99,7 +97,7 @@ pub struct RustSpefFile {
 }
 
 pub fn split_spef_index_str(index_name: &str) -> (&str, &str) {
-    let v: Vec<&str> = index_name.split(":").collect();
+    let v: Vec<&str> = index_name.split(':').collect();
     let index_str = v.first().unwrap();
     let node_str = v.last().unwrap();
     if v.len() == 2 {
@@ -111,17 +109,15 @@ pub fn split_spef_index_str(index_name: &str) -> (&str, &str) {
 
 #[no_mangle]
 pub extern "C" fn rust_parser_spef(spef_path: *const c_char) -> *mut c_void {
-    unsafe {
-        let c_str = unsafe { std::ffi::CStr::from_ptr(spef_path) };
-        let r_str = c_str.to_string_lossy().into_owned();
-        println!("rust read spef {}", r_str);
+    let c_str = unsafe { std::ffi::CStr::from_ptr(spef_path) };
+    let r_str = c_str.to_string_lossy().into_owned();
+    println!("rust read spef {}", r_str);
 
-        let spef_data = parse_spef_file(&r_str);
+    let spef_data = parse_spef_file(&r_str);
 
-        let spef_data_pointer = Box::new(spef_data);
-        let raw_pointer = Box::into_raw(spef_data_pointer);
-        raw_pointer as *mut c_void
-    }
+    let spef_data_pointer = Box::new(spef_data);
+    let raw_pointer = Box::into_raw(spef_data_pointer);
+    raw_pointer as *mut c_void
 }
 
 #[no_mangle]
@@ -261,7 +257,7 @@ pub extern "C" fn rust_expand_name(c_spef_data: *mut spef_data::SpefExchange, in
 pub extern "C" fn rust_expand_all_name(c_spef_data: *mut spef_data::SpefExchange) {
     unsafe {
         let expand_name = |name: &str, spef_data: &mut spef_data::SpefExchange| -> String {
-            let split_names = split_spef_index_str(&name);
+            let split_names = split_spef_index_str(name);
             let index = split_names.0.parse::<usize>().unwrap();
             let node1_map_name = spef_data.index_to_name_map.get(&index).unwrap();
             let remove_slash_name: String = node1_map_name.chars().filter(|&c| c != '\\').collect();

@@ -30,6 +30,8 @@
 #include "TimingEval.hpp"
 #include "TrackAssigner.hpp"
 #include "builder.h"
+#include "feature_irt.h"
+#include "feature_ista.h"
 #include "flow_config.h"
 #include "icts_fm/file_cts.h"
 #include "icts_io.h"
@@ -154,6 +156,8 @@ void RTInterface::runRT()
   DetailedRouter::destroyInst();
 
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
+
+  RTDM.output();
 }
 
 void RTInterface::destroyRT()
@@ -162,7 +166,7 @@ void RTInterface::destroyRT()
   RTLOG.info(Loc::current(), "Starting...");
 
   GDSPlotter::destroyInst();
-  RTDM.output();
+  //   RTDM.output();
   DataManager::destroyInst();
 
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
@@ -346,10 +350,12 @@ std::map<std::string, std::vector<double>> RTInterface::getTiming(
 #if 1  // 函数定义
   auto initTimingEngine = [](idb::IdbBuilder* idb_builder, int32_t thread_number) {
     ista::TimingEngine* timing_engine = ista::TimingEngine::getOrCreateTimingEngine();
-    auto db_adapter = std::make_unique<ista::TimingIDBAdapter>(timing_engine->get_ista());
-    db_adapter->set_idb(idb_builder);
-    db_adapter->convertDBToTimingNetlist();
-    timing_engine->set_db_adapter(std::move(db_adapter));
+    if (!timing_engine->get_db_adapter()) {
+      auto db_adapter = std::make_unique<ista::TimingIDBAdapter>(timing_engine->get_ista());
+      db_adapter->set_idb(idb_builder);
+      db_adapter->convertDBToTimingNetlist();
+      timing_engine->set_db_adapter(std::move(db_adapter));
+    }
     timing_engine->set_num_threads(thread_number);
     timing_engine->buildGraph();
     timing_engine->initRcTree();
@@ -519,10 +525,12 @@ std::map<std::string, std::vector<double>> RTInterface::getTiming(
 #endif
 }
 
-void RTInterface::outputSummary()
+ieda_feature::RTSummary RTInterface::outputSummary()
 {
+  ieda_feature::RTSummary top_rt_summary;
+
   Summary& rt_summary = RTDM.getSummary();
-  idb::RTSummary& top_rt_summary = dmInst->get_feature_summary().getRTSummary();
+
   // pa_summary
   top_rt_summary.pa_summary.routing_access_point_num_map = rt_summary.pa_summary.routing_access_point_num_map;
   for (auto& [type, access_point_num] : rt_summary.pa_summary.type_access_point_num_map) {
@@ -541,10 +549,19 @@ void RTInterface::outputSummary()
   top_rt_summary.ir_summary.total_wire_length = rt_summary.ir_summary.total_wire_length;
   top_rt_summary.ir_summary.cut_via_num_map = rt_summary.ir_summary.cut_via_num_map;
   top_rt_summary.ir_summary.total_via_num = rt_summary.ir_summary.total_via_num;
-  top_rt_summary.ir_summary.timing = rt_summary.ir_summary.timing;
+
+  for (auto timing : rt_summary.ir_summary.timing) {
+    ieda_feature::NetTiming net_timing;
+    net_timing.net_name = timing.first;
+    auto timing_array = timing.second;
+    net_timing.setup_tns = timing_array[0];
+    net_timing.setup_wns = timing_array[1];
+    net_timing.suggest_freq = timing_array[2];
+    top_rt_summary.ir_summary.nets_timing.push_back(net_timing);
+  }
   // gr_summary
   for (auto& [iter, gr_summary] : rt_summary.iter_gr_summary_map) {
-    idb::GRSummary& top_gr_summary = top_rt_summary.iter_gr_summary_map[iter];
+    ieda_feature::GRSummary& top_gr_summary = top_rt_summary.iter_gr_summary_map[iter];
     top_gr_summary.routing_demand_map = gr_summary.routing_demand_map;
     top_gr_summary.total_demand = gr_summary.total_demand;
     top_gr_summary.routing_overflow_map = gr_summary.routing_overflow_map;
@@ -553,7 +570,16 @@ void RTInterface::outputSummary()
     top_gr_summary.total_wire_length = gr_summary.total_wire_length;
     top_gr_summary.cut_via_num_map = gr_summary.cut_via_num_map;
     top_gr_summary.total_via_num = gr_summary.total_via_num;
-    top_gr_summary.timing = gr_summary.timing;
+
+    for (auto timing : gr_summary.timing) {
+      ieda_feature::NetTiming net_timing;
+      net_timing.net_name = timing.first;
+      auto timing_array = timing.second;
+      net_timing.setup_tns = timing_array[0];
+      net_timing.setup_wns = timing_array[1];
+      net_timing.suggest_freq = timing_array[2];
+      top_gr_summary.nets_timing.push_back(net_timing);
+    }
   }
   // ta_summary
   top_rt_summary.ta_summary.routing_wire_length_map = rt_summary.ta_summary.routing_wire_length_map;
@@ -562,7 +588,7 @@ void RTInterface::outputSummary()
   top_rt_summary.ta_summary.total_violation_num = rt_summary.ta_summary.total_violation_num;
   // dr_summary
   for (auto& [iter, dr_summary] : rt_summary.iter_dr_summary_map) {
-    idb::DRSummary& top_dr_summary = top_rt_summary.iter_dr_summary_map[iter];
+    ieda_feature::DRSummary& top_dr_summary = top_rt_summary.iter_dr_summary_map[iter];
     top_dr_summary.routing_wire_length_map = dr_summary.routing_wire_length_map;
     top_dr_summary.total_wire_length = dr_summary.total_wire_length;
     top_dr_summary.cut_via_num_map = dr_summary.cut_via_num_map;
@@ -571,8 +597,19 @@ void RTInterface::outputSummary()
     top_dr_summary.total_patch_num = dr_summary.total_patch_num;
     top_dr_summary.routing_violation_num_map = dr_summary.routing_violation_num_map;
     top_dr_summary.total_violation_num = dr_summary.total_violation_num;
-    top_dr_summary.timing = dr_summary.timing;
+
+    for (auto timing : dr_summary.timing) {
+      ieda_feature::NetTiming net_timing;
+      net_timing.net_name = timing.first;
+      auto timing_array = timing.second;
+      net_timing.setup_tns = timing_array[0];
+      net_timing.setup_wns = timing_array[1];
+      net_timing.suggest_freq = timing_array[2];
+      top_dr_summary.nets_timing.push_back(net_timing);
+    }
   }
+
+  return top_rt_summary;
 }
 
 #endif

@@ -23,20 +23,20 @@ fn process_port(pair: &mut Pair<Rule>) -> Result<Box<liberty_expr_data::LibertyE
 }
 
 /// process constant zero
-fn process_zero(pair: &mut Pair<Rule>) -> Result<Box<liberty_expr_data::LibertyExpr>, pest::error::Error<Rule>> {
+fn process_zero(_pair: &mut Pair<Rule>) -> Result<Box<liberty_expr_data::LibertyExpr>, pest::error::Error<Rule>> {
     let zero = liberty_expr_data::LibertyExpr::new(liberty_expr_data::LibertyExprOp::Zero);
     Ok(Box::new(zero))
 }
 
 /// process constant one
-fn process_one(pair: &mut Pair<Rule>) -> Result<Box<liberty_expr_data::LibertyExpr>, pest::error::Error<Rule>> {
+fn process_one(_pair: &mut Pair<Rule>) -> Result<Box<liberty_expr_data::LibertyExpr>, pest::error::Error<Rule>> {
     let one = liberty_expr_data::LibertyExpr::new(liberty_expr_data::LibertyExprOp::One);
     Ok(Box::new(one))
 }
 
 /// process not expr
 fn process_not(
-    pair: &mut Pair<Rule>,
+    _pair: &mut Pair<Rule>,
     substitute_queue: &mut VecDeque<Box<liberty_expr_data::LibertyExpr>>,
 ) -> Result<Box<liberty_expr_data::LibertyExpr>, pest::error::Error<Rule>> {
     let mut not = liberty_expr_data::LibertyExpr::new(liberty_expr_data::LibertyExprOp::Not);
@@ -45,20 +45,24 @@ fn process_not(
     Ok(Box::new(not))
 }
 
-/// process default and expr.
+/// process default and expr.such as (A1 A2 A3)
 fn process_default_and_expr(
-    pair: &mut Pair<Rule>,
+    _pair: &mut Pair<Rule>,
     substitute_queue: &mut VecDeque<Box<liberty_expr_data::LibertyExpr>>,
 ) -> Result<Box<liberty_expr_data::LibertyExpr>, pest::error::Error<Rule>> {
     let mut and = Box::new(liberty_expr_data::LibertyExpr::new(liberty_expr_data::LibertyExprOp::And));
     let mut left = substitute_queue.pop_front().unwrap();
     and.set_left(left);
 
-    for index in 0..substitute_queue.len() {
+    while !substitute_queue.is_empty() {
         let right = substitute_queue.pop_front().unwrap();
         and.set_right(right);
-        left = and;
-        and = Box::new(liberty_expr_data::LibertyExpr::new(liberty_expr_data::LibertyExprOp::And));
+
+        if !substitute_queue.is_empty() {
+            left = and;
+            and = Box::new(liberty_expr_data::LibertyExpr::new(liberty_expr_data::LibertyExprOp::And));
+            and.set_left(left);
+        }
     }
 
     Ok(and)
@@ -81,12 +85,12 @@ fn process_expr_op(pair: &mut Pair<Rule>) -> Result<Box<liberty_expr_data::Liber
 
 /// process expr.
 fn process_expr(
-    pair: &mut Pair<Rule>,
+    _pair: &mut Pair<Rule>,
     substitute_queue: &mut VecDeque<Box<liberty_expr_data::LibertyExpr>>,
 ) -> Result<Box<liberty_expr_data::LibertyExpr>, pest::error::Error<Rule>> {
     let mut left = substitute_queue.pop_front().unwrap();
 
-    for index in (0..substitute_queue.len()).step_by(2) {
+    for _index in (0..substitute_queue.len()).step_by(2) {
         let mut op = substitute_queue.pop_front().unwrap();
         op.set_left(left);
         let right = substitute_queue.pop_front().unwrap();
@@ -132,7 +136,7 @@ fn process_pair(
     }
 }
 
-/// process vcd file data.
+/// process expr func data.
 pub fn parse_expr(expr_str: &str) -> Result<Box<liberty_expr_data::LibertyExpr>, pest::error::Error<Rule>> {
     let parse_result = LibertyExprParser::parse(Rule::expr_result, expr_str);
     let mut parser_queue: VecDeque<Box<liberty_expr_data::LibertyExpr>> = VecDeque::new();
@@ -140,8 +144,8 @@ pub fn parse_expr(expr_str: &str) -> Result<Box<liberty_expr_data::LibertyExpr>,
     match parse_result {
         Ok(pairs) => {
             let mut pair = pairs.into_iter().next().unwrap();
-            let lib_expr = process_pair(&mut pair, &mut parser_queue);
-            lib_expr
+
+            process_pair(&mut pair, &mut parser_queue)
         }
         Err(err) => {
             // Handle parsing error
@@ -157,8 +161,8 @@ pub extern "C" fn rust_parse_expr(expr_str: *const c_char) -> *mut c_void {
     let mut r_expr_str = c_expr_str.to_string_lossy().into_owned();
     // println!("r str {}", r_expr_str);
 
-    if !r_expr_str.ends_with(";") {
-        r_expr_str = r_expr_str + ";";
+    if !r_expr_str.ends_with(';') {
+        r_expr_str += ";";
     }
 
     let lib_expr = parse_expr(&r_expr_str);
@@ -190,7 +194,7 @@ pub extern "C" fn rust_convert_expr(c_expr: *mut liberty_expr_data::LibertyExpr)
         let c_right =
             if right.is_some() { right.as_deref().unwrap() as *const _ as *mut c_void } else { std::ptr::null_mut() };
         let c_port_name =
-            if port_name.is_some() { string_to_c_char(&port_name.as_deref().unwrap()) } else { std::ptr::null_mut() };
+            if port_name.is_some() { string_to_c_char(port_name.as_deref().unwrap()) } else { std::ptr::null_mut() };
 
         let expr =
             RustLibertyExpr { op, left: c_left as *mut c_void, right: c_right as *mut c_void, port_name: c_port_name };

@@ -8,6 +8,7 @@
 
 namespace imp {
 
+// refine macro positions and orient
 template <typename T>
 struct MacroAligner
 {
@@ -47,6 +48,15 @@ struct MacroAligner
   }
 
   // void nearBound(std::shared_ptr<imp::Instance>, const imp::geo::box<T>& outline) { if (std::abs(inst)) }
+  std::vector<std::shared_ptr<imp::Instance>> get_macros(Block& blk)
+  {
+    std::vector<std::shared_ptr<imp::Instance>> macros;
+    std::set<std::shared_ptr<imp::Instance>> macro_set = blk.get_macros();
+    for (auto& macro : macro_set) {
+      macros.emplace_back(macro);
+    }
+    return macros;
+  }
 
   imp::geo::box<T> get_outline(Block& blk)
   {
@@ -431,28 +441,6 @@ struct MacroAligner
   float _notch_h_ratio;
   float _notch_v_th;
   float _notch_h_th;
-  std::vector<std::shared_ptr<imp::Instance>> get_macros(Block& blk)
-  {
-    std::vector<std::shared_ptr<imp::Instance>> macros;
-    preorder_get_macros(blk, macros);
-    return macros;
-  }
-
-  void preorder_get_macros(Block& blk, std::vector<std::shared_ptr<imp::Instance>>& macros)
-  {
-    for (auto&& i : blk.netlist().vRange()) {
-      auto sub_obj = i.property();
-      if (sub_obj->isInstance()) {  // add direct instance child area
-        auto sub_inst = std::static_pointer_cast<Instance, Object>(sub_obj);
-        if (sub_inst->get_cell_master().isMacro()) {
-          macros.push_back(sub_inst);
-        }
-      } else {  // add block children's instance area
-        auto sub_block = std::static_pointer_cast<Block, Object>(sub_obj);
-        preorder_get_macros(*sub_block, macros);
-      }
-    }
-  }
 
   bool isValidMove(size_t macro_id, const std::vector<std::shared_ptr<imp::Instance>>& macros, const imp::geo::box<T>& outline,
                    bool consider_halo = true) const

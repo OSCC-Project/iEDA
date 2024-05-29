@@ -112,6 +112,11 @@ int IdbInstance::get_logic_pin_num()
   return _pin_list->get_net_pin_num();
 }
 
+uint IdbInstance::get_connected_pin_num()
+{
+  return _pin_list->get_connected_pin_num();
+}
+
 void IdbInstance::set_orient(IdbOrient orient, bool b_update)
 {
   _orient = orient;
@@ -323,6 +328,20 @@ bool IdbInstance::is_io_instance()
       continue;
     }
     if (net->has_io_pins()) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool IdbInstance::is_clock_instance()
+{
+  for (IdbPin* pin : _pin_list->get_pin_list()) {
+    IdbNet* net = pin->get_net();
+    if (net == nullptr) {
+      continue;
+    }
+    if (net->is_clock()) {
       return true;
     }
   }
@@ -585,11 +604,76 @@ int32_t IdbInstanceList::get_num_physics()
   return num;
 }
 
-uint64_t IdbInstanceList::get_area_by_master_type(CellMasterType type)
+uint IdbInstanceList::get_num_clockcell()
+{
+  uint number = 0;
+  for (auto inst : _instance_list) {
+    if (inst->is_clock_instance()) {
+      number++;
+    }
+  }
+
+  return number;
+}
+
+uint IdbInstanceList::get_connected_pin_num()
+{
+  uint number = 0;
+  for (auto inst : _instance_list) {
+    number += inst->get_connected_pin_num();
+  }
+  return number;
+}
+
+uint IdbInstanceList::get_iopads_pin_num()
+{
+  uint number = 0;
+  for (auto inst : _instance_list) {
+    if (inst->get_cell_master()->is_pad()) {
+      number += inst->get_connected_pin_num();
+    }
+  }
+  return number;
+}
+
+uint IdbInstanceList::get_macro_pin_num()
+{
+  uint number = 0;
+  for (auto inst : _instance_list) {
+    if (inst->get_cell_master()->is_block()) {
+      number += inst->get_connected_pin_num();
+    }
+  }
+  return number;
+}
+
+uint IdbInstanceList::get_logic_pin_num()
+{
+  uint number = 0;
+  for (auto inst : _instance_list) {
+    if (inst->get_cell_master()->get_type() == CellMasterType::kCore && inst->get_cell_master()->is_logic()) {
+      number += inst->get_connected_pin_num();
+    }
+  }
+  return number;
+}
+
+uint IdbInstanceList::get_clock_pin_num()
+{
+  uint number = 0;
+  for (auto inst : _instance_list) {
+    if (inst->is_clock_instance()) {
+      number += inst->get_connected_pin_num();
+    }
+  }
+  return number;
+}
+
+uint64_t IdbInstanceList::get_area(CellMasterType type)
 {
   uint64_t inst_area = 0;
   for (auto inst : _instance_list) {
-    if (inst->get_cell_master()->get_type() == type) {
+    if (type == CellMasterType::kMax || inst->get_cell_master()->get_type() == type) {
       uint64_t area = inst->get_cell_master()->get_width() * inst->get_cell_master()->get_height();
       inst_area += area;
     }
@@ -631,6 +715,19 @@ uint64_t IdbInstanceList::get_area_physics()
     auto cell_type = inst->get_cell_master()->get_type();
     if (cell_type == CellMasterType::kCover || cell_type == CellMasterType::kCoverBump || cell_type == CellMasterType::kPadSpacer
         || (cell_type >= CellMasterType::kCoreSpacer && cell_type <= CellMasterType::kEndcapBottomRight)) {
+      uint64_t area = inst->get_cell_master()->get_width() * inst->get_cell_master()->get_height();
+      inst_area += area;
+    }
+  }
+
+  return inst_area;
+}
+
+uint64_t IdbInstanceList::get_area_clock()
+{
+  uint64_t inst_area = 0;
+  for (auto inst : _instance_list) {
+    if (inst->is_clock_instance()) {
       uint64_t area = inst->get_cell_master()->get_width() * inst->get_cell_master()->get_height();
       inst_area += area;
     }

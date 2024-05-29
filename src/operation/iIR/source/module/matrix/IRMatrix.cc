@@ -7,6 +7,7 @@
  */
 
 #include "IRMatrix.hh"
+#include "log/Log.hh"
 
 namespace iir {
 
@@ -20,7 +21,7 @@ namespace iir {
 Eigen::Map<Eigen::SparseMatrix<double>> IRMatrix::buildConductanceMatrix(
     RustNetConductanceData& one_net_matrix_data) {
   auto node_num = one_net_matrix_data.node_num;
-  Eigen::SparseMatrix<double> mat(node_num, node_num);
+  _mat = std::make_unique<Eigen::SparseMatrix<double>>(node_num, node_num);
 
   std::vector<Eigen::Triplet<double>> triplets;
   RustMatrix* one_data;
@@ -28,11 +29,11 @@ Eigen::Map<Eigen::SparseMatrix<double>> IRMatrix::buildConductanceMatrix(
     triplets.emplace_back(
         Eigen::Triplet<double>(one_data->row, one_data->col, one_data->data));
   }
-  mat.setFromTriplets(triplets.begin(), triplets.end());
+  _mat->setFromTriplets(triplets.begin(), triplets.end());
 
   Eigen::Map<Eigen::SparseMatrix<double>> G_matrix(
-      mat.rows(), mat.cols(), mat.nonZeros(), mat.outerIndexPtr(),
-      mat.innerIndexPtr(), mat.valuePtr());
+      _mat->rows(), _mat->cols(), _mat->nonZeros(), _mat->outerIndexPtr(),
+      _mat->innerIndexPtr(), _mat->valuePtr());
 
   return G_matrix;
 }
@@ -51,8 +52,8 @@ Eigen::VectorXd IRMatrix::buildCurrentVector(void* instance_current_map,
   auto* iter = create_hashmap_iterator(instance_current_map);
   uintptr_t node_id;
   double current_value;
-  while(hashmap_iterator_next(iter, &node_id, &current_value)) {
-    J_vector(node_id) = current_value;
+  while (hashmap_iterator_next(iter, &node_id, &current_value)) {
+    J_vector(node_id) = -current_value;
   }
 
   destroy_hashmap_iterator(iter);

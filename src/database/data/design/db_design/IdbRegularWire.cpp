@@ -523,6 +523,18 @@ IdbRegularWire::~IdbRegularWire()
   std::vector<IdbRegularWireSegment*>().swap(_segment_list);
 }
 
+uint IdbRegularWire::get_via_num()
+{
+  uint number = 0;
+  for (auto& segment : _segment_list) {
+    if (segment->is_via()) {
+      number += segment->get_via_list().size();
+    }
+  }
+
+  return number;
+}
+
 void IdbRegularWire::set_wire_state(string state)
 {
   set_wire_state(IdbEnum::GetInstance()->get_connect_property()->get_wiring_state(state));

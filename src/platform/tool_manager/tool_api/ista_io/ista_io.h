@@ -53,7 +53,7 @@ class StaIO
 
   /// io
   bool autoRunSTA(std::string path = "");
-  bool initSTA(std::string path = "");
+  bool initSTA(std::string path = "", bool init_log = false);
   bool isInitSTA();
   unsigned buildGraph();
   bool runSTA(std::string path = "");

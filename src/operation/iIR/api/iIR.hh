@@ -15,6 +15,7 @@
 namespace iir {
 class iIR {
  public:
+  unsigned init();
   unsigned readSpef(std::string_view spef_file_path);
   unsigned readInstancePowerDB(std::string_view instance_power_file_path);
 
