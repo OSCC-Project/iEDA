@@ -84,32 +84,20 @@ PLAPI::~PLAPI()
 
 void PLAPI::initAPI(std::string pl_json_path, idb::IdbBuilder* idb_builder)
 {
+  PlacerDBInst.updatePlacerConfig(pl_json_path);
+
+  createPLDirectory();
+
   char config[] = "info_ipl_glog";
   char* argv[] = {config};
 
-  std::string home_path = "./result/pl/log/";
+  std::string log_home_path = PlacerDBInst.get_placer_config()->get_pl_dir() +  "/pl/log/";
   // std::string design_name = idb_builder->get_def_service()->get_design()->get_design_name();
   // std::string home_path = "./evaluation_task/benchmark/" + design_name + "/pl_reports/";
 
-  Log::init(argv, home_path);
+  Log::init(argv, log_home_path);
   IDBWrapper* idb_wrapper = new IDBWrapper(idb_builder);
   PlacerDBInst.initPlacerDB(pl_json_path, idb_wrapper);
-
-  // create log and report folder
-  if (!std::filesystem::exists("./result/pl/log")) {
-    if (std::filesystem::create_directory("./result/pl/log")) {
-      LOG_INFO << "Create folder './result/pl/log' for iPL log";
-    } else {
-      LOG_ERROR << "Cannot create './result/pl/log' for iPL log";
-    }
-  }
-  if (!std::filesystem::exists("./result/pl/report")) {
-    if (std::filesystem::create_directory("./result/pl/report")) {
-      LOG_INFO << "Create folder './result/pl/report' for iPL report";
-    } else {
-      LOG_ERROR << "Cannot create './result/pl/report' for iPL report";
-    }
-  }
 
   // prepare sta for timing aware mode placement
   if (PlacerDBInst.get_placer_config()->isTimingEffort()) {
@@ -141,6 +129,39 @@ void PLAPI::initAPI(std::string pl_json_path, idb::IdbBuilder* idb_builder)
   _reporter = new PLReporter(_external_api);
 
   Log::end();
+}
+
+void PLAPI::createPLDirectory(){
+  std::string pl_dir = PlacerDBInst.get_placer_config()->get_pl_dir();
+  // create log and report folder
+  if (!std::filesystem::exists(pl_dir + "/pl/log")) {
+    if (std::filesystem::create_directory(pl_dir + "/pl/log")) {
+      LOG_INFO << "Create folder " + pl_dir +  "/pl/log for iPL log";
+    } else {
+      LOG_ERROR << "Cannot create " + pl_dir + "/pl/log for iPL log";
+    }
+  }
+  if (!std::filesystem::exists(pl_dir + "/pl/report")) {
+    if (std::filesystem::create_directory(pl_dir + "/pl/report")) {
+      LOG_INFO << "Create folder " + pl_dir +  "/pl/report for iPL report";
+    } else {
+      LOG_ERROR << "Cannot create " + pl_dir + "/pl/report for iPL report";
+    }
+  }
+  if (!std::filesystem::exists(pl_dir + "/pl/plot")) {
+    if (std::filesystem::create_directory(pl_dir + "/pl/plot")) {
+      LOG_INFO << "Create folder " + pl_dir +  "/pl/plot for iPL plot";
+    } else {
+      LOG_ERROR << "Cannot create " + pl_dir + "/pl/plot for iPL plot";
+    }
+  }
+  if (!std::filesystem::exists(pl_dir + "/pl/gui")) {
+    if (std::filesystem::create_directory(pl_dir + "/pl/gui")) {
+      LOG_INFO << "Create folder " + pl_dir +  "/pl/gui for iPL gui";
+    } else {
+      LOG_ERROR << "Cannot create " + pl_dir + "/pl/gui for iPL gui";
+    }
+  }
 }
 
 void PLAPI::runIncrementalFlow()
@@ -763,7 +784,7 @@ void PLAPI::reportPLInfo()
 
   ieda::Stats report_status;
 
-  std::string output_dir = "./result/pl/report/";
+  std::string output_dir = PlacerDBInst.get_placer_config()->get_pl_dir() + "/pl/report/";
 
   // std::string design_name = PlacerDBInst.get_design()->get_design_name();
   // std::string output_dir = "./evaluation_task/benchmark/" + design_name + "/pl_reports/";
