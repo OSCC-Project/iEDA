@@ -2607,8 +2607,9 @@ std::set<std::string> Sta::findStartOrEnd(StaVertex *the_vertex,
  * @return unsigned
  */
 unsigned Sta::reportTiming(std::set<std::string> &&exclude_cell_names /*= {}*/,
-                           bool is_derate /*=true*/,
-                           bool is_clock_cap /*=false*/) {
+                           bool is_derate /*=false*/,
+                           bool is_clock_cap /*=false*/,
+                           bool is_copy /*=false*/) {
   const char *design_work_space = get_design_work_space();
   std::string now_time = Time::getNowWallTime();
   std::string tmp = Str::replace(now_time, ":", "_");
@@ -2617,7 +2618,8 @@ unsigned Sta::reportTiming(std::set<std::string> &&exclude_cell_names /*= {}*/,
 
   LOG_INFO << "start write sta report.";
   LOG_INFO << "output sta report path: " << design_work_space;
-  if (std::filesystem::exists(design_work_space)) {
+
+  if (std::filesystem::exists(design_work_space) && is_copy) {
     std::filesystem::create_directories(copy_design_work_space);
   }
   std::filesystem::create_directories(design_work_space);
@@ -2647,37 +2649,51 @@ unsigned Sta::reportTiming(std::set<std::string> &&exclude_cell_names /*= {}*/,
 
   std::string rpt_file_name =
       Str::printf("%s/%s.rpt", design_work_space, get_design_name().c_str());
-  copy_file(rpt_file_name, ".rpt");
+  if (is_copy) {
+    copy_file(rpt_file_name, ".rpt");
+  }
   reportPath(rpt_file_name.c_str(), is_derate);
 
   std::string trans_rpt_file_name =
       Str::printf("%s/%s.trans", design_work_space, get_design_name().c_str());
-  copy_file(trans_rpt_file_name, ".trans");
+  if (is_copy) {
+    copy_file(trans_rpt_file_name, ".trans");
+  }
   reportTrans(trans_rpt_file_name.c_str());
 
   std::string cap_rpt_file_name =
       Str::printf("%s/%s.cap", design_work_space, get_design_name().c_str());
-  copy_file(cap_rpt_file_name, ".cap");
+  if (is_copy) {
+    copy_file(cap_rpt_file_name, ".cap");
+  }
   reportCap(cap_rpt_file_name.c_str(), is_clock_cap);
 
   std::string fanout_rpt_file_name =
       Str::printf("%s/%s.fanout", design_work_space, get_design_name().c_str());
-  copy_file(fanout_rpt_file_name, ".fanout");
+  if (is_copy) {
+    copy_file(fanout_rpt_file_name, ".fanout");
+  }
   reportFanout(fanout_rpt_file_name.c_str());
 
   std::string setup_skew_rpt_file_name = Str::printf(
       "%s/%s_setup.skew", design_work_space, get_design_name().c_str());
-  copy_file(setup_skew_rpt_file_name, "_setup.skew");
+  if (is_copy) {
+    copy_file(setup_skew_rpt_file_name, "_setup.skew");
+  }
   reportSkew(setup_skew_rpt_file_name.c_str(), AnalysisMode::kMax);
 
   std::string hold_skew_rpt_file_name = Str::printf(
       "%s/%s_hold.skew", design_work_space, get_design_name().c_str());
-  copy_file(hold_skew_rpt_file_name, "_hold.skew");
+  if (is_copy) {
+    copy_file(hold_skew_rpt_file_name, "_hold.skew");
+  }
   reportSkew(hold_skew_rpt_file_name.c_str(), AnalysisMode::kMin);
 
   std::string verilog_file_name =
       Str::printf("%s/%s.v", design_work_space, get_design_name().c_str());
-  copy_file(verilog_file_name, ".v");
+  if (is_copy) {
+    copy_file(verilog_file_name, ".v");
+  }
   writeVerilog(verilog_file_name.c_str(), exclude_cell_names);
 
   LOG_INFO << "The timing engine run success.";
