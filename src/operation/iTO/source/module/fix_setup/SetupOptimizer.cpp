@@ -63,7 +63,6 @@ void SetupOptimizer::optimizeSetup() {
 
   _parasitics_estimator->estimateAllNetParasitics();
   _timing_engine->updateTiming();
-  _timing_engine->reportTiming();
   _db_interface->set_eval_data();
 
   initBufferCell();
@@ -160,7 +159,6 @@ void SetupOptimizer::optimizeSetup() {
 
   _parasitics_estimator->estimateAllNetParasitics();
   _timing_engine->updateTiming();
-  _timing_engine->reportTiming();
 
   printf("Inserted {%d} buffers.\n", _inserted_buffer_count);
   printf("Resized {%d} instances.\n", _resize_instance_count);
