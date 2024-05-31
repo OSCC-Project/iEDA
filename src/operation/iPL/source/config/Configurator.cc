@@ -61,6 +61,7 @@ void Config::initConfigByJson(nlohmann::json json)
   int32_t is_congestion_effort = getDataByJson(json, {"PL", "is_congestion_effort"});
   int32_t ignore_net_degree = getDataByJson(json, {"PL", "ignore_net_degree"});
   int32_t num_threads = getDataByJson(json, {"PL", "num_threads"});
+  std::string pl_dir = getDataByJson(json, {"PL", "pl_dir"});
 
   // Global Placer
   float init_wirelength_coef = getDataByJson(json, {"PL", "GP", "Wirelength", "init_wirelength_coef"});
@@ -139,7 +140,6 @@ void Config::initConfigByJson(nlohmann::json json)
   float new_macro_density = getDataByJson(json, {"PL", "MP", "Partition", "new_macro_density"});
   int32_t halo_x = getDataByJson(json, {"PL", "MP", "halo_x"});
   int32_t halo_y = getDataByJson(json, {"PL", "MP", "halo_y"});
-  std::string output_path = getDataByJson(json, {"PL", "MP", "output_path"});
 
   /***********************************************************************/
 
@@ -216,11 +216,11 @@ void Config::initConfigByJson(nlohmann::json json)
   _mp_config.set_new_macro_density(new_macro_density);
   _mp_config.set_halo_x(halo_x);
   _mp_config.set_halo_y(halo_y);
-  _mp_config.set_output_path(output_path);
 
   _ignore_net_degree = ignore_net_degree;
   _is_timing_effort = (is_timing_effort == 1);
   _is_congestion_effort = (is_congestion_effort == 1);
+  _pl_dir = pl_dir;
 }
 
 nlohmann::json Config::getDataByJson(nlohmann::json value, std::vector<std::string> flag_list)

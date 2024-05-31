@@ -6,6 +6,7 @@
         "is_congestion_effort": 0,
         "ignore_net_degree": 100,
         "num_threads": 8,
+        "pl_dir:" : "./result",
         "GP": {
             "Wirelength": {
                 "init_wirelength_coef": 0.25,
@@ -63,8 +64,7 @@
                 "new_macro_density": 0.6
             },
             "halo_x": 0,
-            "halo_y": 0,
-            "output_path": "./result/pl/"
+            "halo_y": 0
         }
     }
 }
