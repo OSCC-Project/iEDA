@@ -239,8 +239,10 @@ class TimingEngine {
     return *this;
   }
   TimingEngine &reportTiming(std::set<std::string> &&exclude_cell_names = {},
-                             bool is_derate = true, bool is_clock_cap = false) {
-    _ista->reportTiming(std::move(exclude_cell_names), is_derate, is_clock_cap);
+                             bool is_derate = false, bool is_clock_cap = false,
+                             bool is_copy = false) {
+    _ista->reportTiming(std::move(exclude_cell_names), is_derate, is_clock_cap,
+                        is_copy);
     return *this;
   }
 
