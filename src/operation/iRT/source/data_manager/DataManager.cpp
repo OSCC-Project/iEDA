@@ -1205,6 +1205,13 @@ void DataManager::makeLayerList()
       y_track_grid.set_end_line(y_track_grid.get_start_line() + y_track_grid.get_step_length() * y_track_grid.get_step_num());
     }
   }
+  if (routing_layer_list.size() < 2) {
+    RTLOG.error(Loc::current(), "The size of routing_layer < 2!");
+  }
+  ScaleAxis& standard_track_axis = routing_layer_list[1].get_track_axis();
+  for (RoutingLayer& routing_layer : routing_layer_list) {
+    routing_layer.set_track_axis(standard_track_axis);
+  }
 }
 
 void DataManager::checkLayerList()

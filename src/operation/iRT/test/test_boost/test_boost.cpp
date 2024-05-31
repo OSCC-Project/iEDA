@@ -6,7 +6,7 @@
 #include <vector>
 
 using int32_t = int32_t;
-#define DBL_ERROR 1E-5
+#define RT_ERROR 1E-5
 
 namespace gtl = boost::polygon;
 using namespace boost::polygon::operators;
@@ -646,7 +646,7 @@ class RTUtil
   static int32_t getIntScale(double double_scale)
   {
     int32_t integer_scale = std::round(double_scale);
-    if (std::abs(double_scale - integer_scale) > DBL_ERROR) {
+    if (std::abs(double_scale - integer_scale) > RT_ERROR) {
       std::cout << "Exceeding the error range of a double!" << std::endl;
     }
     return integer_scale;

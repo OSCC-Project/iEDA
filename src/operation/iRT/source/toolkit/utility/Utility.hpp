@@ -2600,7 +2600,7 @@ class Utility
   static int32_t getIntScale(double double_scale)
   {
     int32_t integer_scale = std::round(double_scale);
-    if (std::abs(double_scale - integer_scale) > DBL_ERROR) {
+    if (std::abs(double_scale - integer_scale) > RT_ERROR) {
       std::cout << "Exceeding the error range of a double!" << std::endl;
     }
     return integer_scale;
@@ -2623,7 +2623,7 @@ class Utility
         GTLPointInt& pre_coord = gtl_point_list[i - 1];
         GTLPointInt& curr_coord = gtl_point_list[i];
         if (gtl::x(pre_coord) != gtl::x(curr_coord) && gtl::y(pre_coord) != gtl::y(curr_coord)) {
-          std::cout << "The segment is oblique!" << std::endl;
+          RTLOG.error(Loc::current(), "The segment is oblique!");
         }
       }
       // 生成poly_90
@@ -2828,7 +2828,7 @@ class Utility
   static bool isDivisible(double dividend, double divisor)
   {
     double merchant = dividend / divisor;
-    return equalDoubleByError(merchant, static_cast<int32_t>(merchant), DBL_ERROR);
+    return equalDoubleByError(merchant, static_cast<int32_t>(merchant), RT_ERROR);
   }
 
   template <typename T, typename Compare>
@@ -3092,7 +3092,7 @@ class Utility
     return std::regex_replace(a, re, "");
   }
 
-  static bool isInteger(double a) { return equalDoubleByError(a, static_cast<int32_t>(a), DBL_ERROR); }
+  static bool isInteger(double a) { return equalDoubleByError(a, static_cast<int32_t>(a), RT_ERROR); }
 
   static void checkFile(std::string file_path)
   {

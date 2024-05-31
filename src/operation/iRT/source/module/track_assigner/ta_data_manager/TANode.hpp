@@ -160,8 +160,8 @@ struct CmpTANodeCost
 {
   bool operator()(TANode* a, TANode* b)
   {
-    if (RTUTIL.equalDoubleByError(a->getTotalCost(), b->getTotalCost(), DBL_ERROR)) {
-      if (RTUTIL.equalDoubleByError(a->get_estimated_cost(), b->get_estimated_cost(), DBL_ERROR)) {
+    if (RTUTIL.equalDoubleByError(a->getTotalCost(), b->getTotalCost(), RT_ERROR)) {
+      if (RTUTIL.equalDoubleByError(a->get_estimated_cost(), b->get_estimated_cost(), RT_ERROR)) {
         return a->get_neighbor_node_map().size() < b->get_neighbor_node_map().size();
       } else {
         return a->get_estimated_cost() > b->get_estimated_cost();

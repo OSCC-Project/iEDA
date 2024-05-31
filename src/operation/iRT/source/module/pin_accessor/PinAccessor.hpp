@@ -22,6 +22,7 @@
 #include "Monitor.hpp"
 #include "Net.hpp"
 #include "PAModel.hpp"
+#include "PAParameter.hpp"
 
 namespace irt {
 
@@ -52,11 +53,10 @@ class PinAccessor
   PANet convertToPANet(Net& net);
   void initLayerEnclosureMap(PAModel& pa_model);
   void initAccessPointList(PAModel& pa_model);
-  std::vector<LayerRect> getLegalShapeList(PAModel& pa_model, int32_t net_idx, Pin* pin);
+  std::vector<AccessPoint> getAccessPointList(PAModel& pa_model, std::pair<int32_t, PAPin*>& net_pin_pair, PAParameter& pa_parameter);
   std::vector<PlanarRect> getPlanarLegalRectList(PAModel& pa_model, int32_t curr_net_idx, std::vector<EXTLayerRect>& pin_shape_list);
-  std::vector<AccessPoint> getAccessPointListByPrefTrackGrid(int32_t pin_idx, std::vector<LayerRect>& legal_shape_list);
-  std::vector<AccessPoint> getAccessPointListByCurrTrackGrid(int32_t pin_idx, std::vector<LayerRect>& legal_shape_list);
-  std::vector<AccessPoint> getAccessPointListByTrackCenter(int32_t pin_idx, std::vector<LayerRect>& legal_shape_list);
+  std::vector<AccessPoint> getAccessPointListByTrackGrid(int32_t pin_idx, std::vector<LayerRect>& legal_shape_list);
+  std::vector<AccessPoint> getAccessPointListByOnTrack(int32_t pin_idx, std::vector<LayerRect>& legal_shape_list);
   std::vector<AccessPoint> getAccessPointListByShapeCenter(int32_t pin_idx, std::vector<LayerRect>& legal_shape_list);
   void buildAccessPointList(PAModel& pa_model);
   void uploadAccessPoint(PAModel& pa_model);
