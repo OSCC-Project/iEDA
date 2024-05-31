@@ -127,36 +127,34 @@ void PLAPI::initAPI(std::string pl_json_path, idb::IdbBuilder* idb_builder)
   // create external_api and reporter ptr
   _external_api = new ExternalAPI();
   _reporter = new PLReporter(_external_api);
-
-  Log::end();
 }
 
 void PLAPI::createPLDirectory(){
   std::string pl_dir = PlacerDBInst.get_placer_config()->get_pl_dir();
   // create log and report folder
   if (!std::filesystem::exists(pl_dir + "/pl/log")) {
-    if (std::filesystem::create_directory(pl_dir + "/pl/log")) {
+    if (std::filesystem::create_directories(pl_dir + "/pl/log")) {
       LOG_INFO << "Create folder " + pl_dir +  "/pl/log for iPL log";
     } else {
       LOG_ERROR << "Cannot create " + pl_dir + "/pl/log for iPL log";
     }
   }
   if (!std::filesystem::exists(pl_dir + "/pl/report")) {
-    if (std::filesystem::create_directory(pl_dir + "/pl/report")) {
+    if (std::filesystem::create_directories(pl_dir + "/pl/report")) {
       LOG_INFO << "Create folder " + pl_dir +  "/pl/report for iPL report";
     } else {
       LOG_ERROR << "Cannot create " + pl_dir + "/pl/report for iPL report";
     }
   }
   if (!std::filesystem::exists(pl_dir + "/pl/plot")) {
-    if (std::filesystem::create_directory(pl_dir + "/pl/plot")) {
+    if (std::filesystem::create_directories(pl_dir + "/pl/plot")) {
       LOG_INFO << "Create folder " + pl_dir +  "/pl/plot for iPL plot";
     } else {
       LOG_ERROR << "Cannot create " + pl_dir + "/pl/plot for iPL plot";
     }
   }
   if (!std::filesystem::exists(pl_dir + "/pl/gui")) {
-    if (std::filesystem::create_directory(pl_dir + "/pl/gui")) {
+    if (std::filesystem::create_directories(pl_dir + "/pl/gui")) {
       LOG_INFO << "Create folder " + pl_dir +  "/pl/gui for iPL gui";
     } else {
       LOG_ERROR << "Cannot create " + pl_dir + "/pl/gui for iPL gui";
