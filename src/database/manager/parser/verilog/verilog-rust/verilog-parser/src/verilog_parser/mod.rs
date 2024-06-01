@@ -342,10 +342,11 @@ fn process_inner_inst_declaration(
     let line_no = pair.line_col().0;
     let pair_clone = pair.clone();
     let mut inner_pair = pair.into_inner();
-    let inst_id_pair = inner_pair.next();
-    match inst_id_pair.clone().unwrap().as_rule() {
-        Rule::inst_or_cell_id => {
-            let cell_name = inst_id_pair.unwrap().as_str();
+    let cell_id_pair = inner_pair.next();
+    // println!("{:#?}", cell_id_pair);
+    match cell_id_pair.clone().unwrap().as_rule() {
+        Rule::cell_id => {
+            let cell_name = cell_id_pair.unwrap().as_str();
             let inst_name = inner_pair.next().unwrap().as_str();
             let port_connections = process_port_block_connection(inner_pair.next().unwrap());
             let port_connections_vec = port_connections.unwrap();
@@ -896,7 +897,7 @@ mod tests {
     #[test]
     fn test_parse_inst_or_cell_id() {
         let input_str = "i_cache_subsystem/i_nbdcache/sram_block[7].tag_sram/macro_mem[2].i_ram";
-        let parse_result = VerilogParser::parse(Rule::inst_or_cell_id, input_str);
+        let parse_result = VerilogParser::parse(Rule::inst_id, input_str);
         println!("{:#?}", parse_result);
         print_parse_result(parse_result);
     }
@@ -1027,7 +1028,7 @@ mod tests {
 
     #[test]
     fn test_parse_inst_declaration() {
-        let input_str = r#"PLLTS28HPMLAINT \u0_rcg/u0_pll  (.BYPASS(\u0_rcg/u0_pll_bp ),
+        let _input_str = r#"PLLTS28HPMLAINT \u0_rcg/u0_pll  (.BYPASS(\u0_rcg/u0_pll_bp ),
         .REFDIV({ DRV_net_6,
                 DRV_net_6,
                 DRV_net_6,
@@ -1061,6 +1062,10 @@ mod tests {
         .CLKSSCG(),
         .LOCK(),
         .FOUTPOSTDIV(\u0_rcg/u0_pll_clk ));"#;
+        //inst_id =  @{ (char+ ~ " " ~ char+) | char+  }  adapt to:inst_id contain " "
+        let input_str = r#"INV_X1 \core_top_inst/ifu_inst/ICache_inst/cache_core_inst/cache_way_inst [0].cache_way_inst/_118_ 
+        ( .A(\core_top_inst/ifu_inst/ICache_inst/cache_core_inst/cache_way_inst [0].cache_way_inst/_015_ ), 
+        .ZN(\core_top_inst/ifu_inst/ICache_inst/cache_core_inst/cache_way_inst [0].cache_way_inst/_046_ ) );"#;
         let parse_result = VerilogParser::parse(Rule::inst_declaration, input_str);
         println!("{:#?}", parse_result);
         // print_parse_result(parse_result);
