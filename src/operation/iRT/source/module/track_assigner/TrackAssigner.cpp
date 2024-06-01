@@ -226,8 +226,8 @@ void TrackAssigner::initTATaskList(TAModel& ta_model)
   }
 
 #pragma omp parallel for collapse(2)
-  for (int x = 0; x < task_list_map.get_x_size(); x++) {
-    for (int y = 0; y < task_list_map.get_y_size(); y++) {
+  for (int32_t x = 0; x < task_list_map.get_x_size(); x++) {
+    for (int32_t y = 0; y < task_list_map.get_y_size(); y++) {
       std::vector<TATask*>& ta_task_list = task_list_map[x][y];
       if (ta_task_list.empty()) {
         continue;

@@ -461,8 +461,8 @@ void DetailedRouter::buildDRNodeValid(DRBox& dr_box)
         continue;
       }
       RoutingLayer& curr_routing_layer = routing_layer_list[curr_layer_idx];
-      std::vector<int> x_scale_list = RTUTIL.getScaleList(box_ll_x, box_ur_x, curr_routing_layer.getXTrackGridList());
-      std::vector<int> y_scale_list = RTUTIL.getScaleList(box_ll_y, box_ur_y, curr_routing_layer.getYTrackGridList());
+      std::vector<int32_t> x_scale_list = RTUTIL.getScaleList(box_ll_x, box_ur_x, curr_routing_layer.getXTrackGridList());
+      std::vector<int32_t> y_scale_list = RTUTIL.getScaleList(box_ll_y, box_ur_y, curr_routing_layer.getYTrackGridList());
       if (curr_layer_idx == layer_idx) {
         layer_x_scale_map[layer_idx].insert(x_scale_list.begin(), x_scale_list.end());
         layer_y_scale_map[layer_idx].insert(y_scale_list.begin(), y_scale_list.end());

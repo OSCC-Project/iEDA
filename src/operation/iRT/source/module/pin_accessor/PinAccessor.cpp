@@ -57,11 +57,11 @@ void PinAccessor::access()
   initAccessPointList(pa_model);
   buildAccessPointList(pa_model);
   uploadAccessPoint(pa_model);
-  // debugPlotPAModel(pa_model, "before_eliminate");
+  debugPlotPAModel(pa_model, "before_eliminate");
   buildConflictGroupList(pa_model);
   eliminateConflict(pa_model);
   updatePAModel(pa_model);
-  // debugPlotPAModel(pa_model, "after_eliminate");
+  debugPlotPAModel(pa_model, "after_eliminate");
   updateSummary(pa_model);
   printSummary(pa_model);
   writePlanarPinCSV(pa_model);
@@ -138,29 +138,19 @@ void PinAccessor::initAccessPointList(PAModel& pa_model)
       net_pin_pair_list.emplace_back(pa_net.get_net_idx(), &pa_pin);
     }
   }
-  std::vector<PAParameter> pa_parameter_list = {
-      {0, false, std::bind(&PinAccessor::getAccessPointListByTrackGrid, this, std::placeholders::_1, std::placeholders::_2)},
-      {1, true, std::bind(&PinAccessor::getAccessPointListByTrackGrid, this, std::placeholders::_1, std::placeholders::_2)},
-      {0, false, std::bind(&PinAccessor::getAccessPointListByOnTrack, this, std::placeholders::_1, std::placeholders::_2)},
-      {0, false, std::bind(&PinAccessor::getAccessPointListByShapeCenter, this, std::placeholders::_1, std::placeholders::_2)},
-  };
 #pragma omp parallel for
   for (std::pair<int32_t, PAPin*>& net_pin_pair : net_pin_pair_list) {
+    PAPin* pin = net_pin_pair.second;
     std::vector<AccessPoint>& access_point_list = net_pin_pair.second->get_access_point_list();
-    for (PAParameter& pa_parameter : pa_parameter_list) {
-      access_point_list = getAccessPointList(pa_model, net_pin_pair, pa_parameter);
+    std::vector<LayerRect> legal_shape_list = getLegalShapeList(pa_model, net_pin_pair.first, pin);
+    for (auto getAccessPointList :
+         {std::bind(&PinAccessor::getAccessPointListByTrackGrid, this, std::placeholders::_1, std::placeholders::_2),
+          std::bind(&PinAccessor::getAccessPointListByOnTrack, this, std::placeholders::_1, std::placeholders::_2),
+          std::bind(&PinAccessor::getAccessPointListByShapeCenter, this, std::placeholders::_1, std::placeholders::_2)}) {
+      for (AccessPoint& access_point : getAccessPointList(pin->get_pin_idx(), legal_shape_list)) {
+        access_point_list.push_back(access_point);
+      }
       if (!access_point_list.empty()) {
-        std::sort(access_point_list.begin(), access_point_list.end(),
-                  [](AccessPoint& a, AccessPoint& b) { return CmpLayerCoordByXASC()(a.getRealLayerCoord(), b.getRealLayerCoord()); });
-        int32_t n = 5;
-        int32_t size = static_cast<int32_t>(access_point_list.size());
-        if (size > n) {
-          std::vector<AccessPoint> access_point_list_temp;
-          for (int32_t i = 0; i < n; ++i) {
-            access_point_list_temp.push_back(access_point_list[i * (size / n)]);
-          }
-          access_point_list = access_point_list_temp;
-        }
         break;
       }
     }
@@ -171,61 +161,34 @@ void PinAccessor::initAccessPointList(PAModel& pa_model)
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
-std::vector<AccessPoint> PinAccessor::getAccessPointList(PAModel& pa_model, std::pair<int32_t, PAPin*>& net_pin_pair,
-                                                         PAParameter& pa_parameter)
+std::vector<LayerRect> PinAccessor::getLegalShapeList(PAModel& pa_model, int32_t net_idx, Pin* pin)
 {
-  ScaleAxis& gcell_axis = RTDM.getDatabase().get_gcell_axis();
-  Die& die = RTDM.getDatabase().get_die();
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
-
-  PAPin* pin = net_pin_pair.second;
-  int32_t enlarged_pitch_num = pa_parameter.get_enlarged_pitch_num();
-  bool try_adjacent_layer = pa_parameter.get_try_adjacent_layer();
-
   std::map<int32_t, std::vector<EXTLayerRect>> layer_pin_shape_list;
-  {
-    for (EXTLayerRect& routing_shape : pin->get_routing_shape_list()) {
-      int32_t layer_idx = routing_shape.get_layer_idx();
-      if (try_adjacent_layer) {
-        if (layer_idx < (static_cast<int32_t>(routing_layer_list.size()) - 1)) {
-          layer_idx += 1;
-        } else {
-          layer_idx -= 1;
-        }
-      }
-      int32_t x_step_length = routing_layer_list[layer_idx].getXTrackGridList().front().get_step_length() * enlarged_pitch_num;
-      int32_t y_step_length = routing_layer_list[layer_idx].getYTrackGridList().front().get_step_length() * enlarged_pitch_num;
-
-      EXTLayerRect new_routing_shape;
-      new_routing_shape.set_real_rect(RTUTIL.getEnlargedRect(routing_shape.get_real_rect(), x_step_length, y_step_length, x_step_length,
-                                                             y_step_length, die.get_real_rect()));
-      new_routing_shape.set_grid_rect(RTUTIL.getClosedGCellGridRect(new_routing_shape.get_real_rect(), gcell_axis));
-      new_routing_shape.set_layer_idx(layer_idx);
-      layer_pin_shape_list[layer_idx].emplace_back(new_routing_shape);
+  for (EXTLayerRect& routing_shape : pin->get_routing_shape_list()) {
+    layer_pin_shape_list[routing_shape.get_layer_idx()].emplace_back(routing_shape);
+  }
+  std::vector<LayerRect> legal_rect_list;
+  for (auto& [layer_idx, pin_shape_list] : layer_pin_shape_list) {
+    std::vector<PlanarRect> planar_legal_rect_list = getPlanarLegalRectList(pa_model, net_idx, pin_shape_list);
+    // 对legal rect进行融合，prefer横就竖着切，prefer竖就横着切
+    if (routing_layer_list[layer_idx].isPreferH()) {
+      planar_legal_rect_list = RTUTIL.mergeRectListByBoost(planar_legal_rect_list, Direction::kVertical);
+    } else {
+      planar_legal_rect_list = RTUTIL.mergeRectListByBoost(planar_legal_rect_list, Direction::kHorizontal);
+    }
+    for (PlanarRect planar_legal_rect : planar_legal_rect_list) {
+      legal_rect_list.emplace_back(planar_legal_rect, layer_idx);
     }
   }
-  std::vector<LayerRect> legal_shape_list;
-  {
-    for (auto& [layer_idx, pin_shape_list] : layer_pin_shape_list) {
-      std::vector<PlanarRect> planar_legal_shape_list = getPlanarLegalRectList(pa_model, net_pin_pair.first, pin_shape_list);
-      // 对legal rect进行融合，prefer横就竖着切，prefer竖就横着切
-      if (routing_layer_list[layer_idx].isPreferH()) {
-        planar_legal_shape_list = RTUTIL.mergeRectListByBoost(planar_legal_shape_list, Direction::kVertical);
-      } else {
-        planar_legal_shape_list = RTUTIL.mergeRectListByBoost(planar_legal_shape_list, Direction::kHorizontal);
-      }
-      for (PlanarRect planar_legal_rect : planar_legal_shape_list) {
-        legal_shape_list.emplace_back(planar_legal_rect, layer_idx);
-      }
-    }
-    if (legal_shape_list.empty()) {
-      RTLOG.warn(Loc::current(), "The pin ", pin->get_pin_name(), " without legal shape!");
-      for (EXTLayerRect& routing_shape : pin->get_routing_shape_list()) {
-        legal_shape_list.emplace_back(routing_shape.getRealLayerRect());
-      }
-    }
+  if (!legal_rect_list.empty()) {
+    return legal_rect_list;
   }
-  return pa_parameter.get_func()(pin->get_pin_idx(), legal_shape_list);
+  RTLOG.warn(Loc::current(), "The pin ", pin->get_pin_name(), " without legal shape!");
+  for (EXTLayerRect& routing_shape : pin->get_routing_shape_list()) {
+    legal_rect_list.emplace_back(routing_shape.getRealLayerRect());
+  }
+  return legal_rect_list;
 }
 
 std::vector<PlanarRect> PinAccessor::getPlanarLegalRectList(PAModel& pa_model, int32_t curr_net_idx,
@@ -536,21 +499,24 @@ bool PinAccessor::hasConflict(PAModel& pa_model, AccessPoint& curr_access_point,
 
   std::map<int32_t, PlanarRect>& layer_enclosure_map = pa_model.get_layer_enclosure_map();
 
-  if (curr_access_point.get_layer_idx() != gcell_access_point.get_layer_idx()) {
-    return false;
+  std::set<int32_t> conflict_layer_idx_set;
+  {
+    int32_t start_layer_idx = curr_access_point.get_layer_idx();
+    int32_t end_layer_idx = gcell_access_point.get_layer_idx();
+    RTUTIL.swapByASC(start_layer_idx, end_layer_idx);
+    for (int32_t layer_idx = start_layer_idx; layer_idx <= end_layer_idx; layer_idx++) {
+      if (layer_idx < (static_cast<int32_t>(routing_layer_list.size()) - 1)) {
+        conflict_layer_idx_set.insert(layer_idx);
+        conflict_layer_idx_set.insert(layer_idx + 1);
+      } else {
+        conflict_layer_idx_set.insert(layer_idx);
+        conflict_layer_idx_set.insert(layer_idx - 1);
+      }
+    }
   }
-  int32_t curr_layer_idx = curr_access_point.get_layer_idx();
-
-  std::vector<int32_t> conflict_layer_idx_list;
-  if (curr_layer_idx < (static_cast<int32_t>(routing_layer_list.size()) - 1)) {
-    conflict_layer_idx_list = {curr_layer_idx, curr_layer_idx + 1};
-  } else {
-    conflict_layer_idx_list = {curr_layer_idx, curr_layer_idx - 1};
-  }
-
   int32_t x_searched_distance = 0;
   int32_t y_searched_distance = 0;
-  for (int32_t conflict_layer_idx : conflict_layer_idx_list) {
+  for (int32_t conflict_layer_idx : conflict_layer_idx_set) {
     PlanarRect& enclosure = layer_enclosure_map[conflict_layer_idx];
     RoutingLayer& routing_layer = routing_layer_list[conflict_layer_idx];
     int32_t min_spacing = routing_layer.getMinSpacing(enclosure);
@@ -580,7 +546,7 @@ void PinAccessor::eliminateConflict(PAModel& pa_model)
   RTLOG.info(Loc::current(), "Starting...");
 
   for (ConflictGroup& conflict_group : pa_model.get_conflict_group_list()) {
-    for (ConflictAccessPoint& best_point : simulatedAnnealing(conflict_group.get_conflict_ap_list_list())) {
+    for (ConflictAccessPoint& best_point : getBestPointList(conflict_group.get_conflict_ap_list_list())) {
       PAPin* pa_pin = best_point.get_pa_pin();
       pa_pin->set_key_access_point(pa_pin->get_access_point_list()[best_point.get_access_point_idx()]);
     }
@@ -596,13 +562,13 @@ void PinAccessor::eliminateConflict(PAModel& pa_model)
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
-vector<ConflictAccessPoint> PinAccessor::simulatedAnnealing(const std::vector<vector<ConflictAccessPoint>>& conflict_ap_list_list)
+vector<ConflictAccessPoint> PinAccessor::getBestPointList(const std::vector<vector<ConflictAccessPoint>>& conflict_ap_list_list)
 {
   std::vector<ConflictAccessPoint> curr_conflict_ap_list;
   std::vector<ConflictAccessPoint> best_conflict_ap_list;
   int32_t best_min_distance = -1;
 
-  std::srand(static_cast<unsigned>(time(0)));
+  std::srand(0);
 
   for (const auto& conflict_ap_list : conflict_ap_list_list) {
     curr_conflict_ap_list.push_back(conflict_ap_list[rand() % conflict_ap_list.size()]);
@@ -612,9 +578,9 @@ vector<ConflictAccessPoint> PinAccessor::simulatedAnnealing(const std::vector<ve
 
   double temperature = 100.0;
   double cooling_rate = 0.01;
-  int32_t iteration_num = 20;
+  int32_t iteration_num = 25;
   int32_t no_improvement_count = 0;
-  int32_t max_no_improvement = 50;
+  int32_t max_no_improvement = 75;
 
   while (temperature > 1 && no_improvement_count < max_no_improvement) {
     for (int32_t i = 0; i < iteration_num; ++i) {
@@ -624,13 +590,13 @@ vector<ConflictAccessPoint> PinAccessor::simulatedAnnealing(const std::vector<ve
       int32_t point_idx = std::rand() % conflict_ap_list_list[conflict_ap_list_idx].size();
       new_conflict_ap_list[conflict_ap_list_idx] = conflict_ap_list_list[conflict_ap_list_idx][point_idx];
 
-      int32_t currentMinDist = getMinDistance(curr_conflict_ap_list);
-      int32_t newMinDist = getMinDistance(new_conflict_ap_list);
+      int32_t curr_min_distance = getMinDistance(curr_conflict_ap_list);
+      int32_t new_min_distance = getMinDistance(new_conflict_ap_list);
 
-      if (newMinDist > currentMinDist || (std::exp((newMinDist - currentMinDist) / temperature) > (std::rand() / 1.0 / RAND_MAX))) {
+      if (new_min_distance > curr_min_distance || (std::exp((new_min_distance - curr_min_distance) / temperature) > (std::rand() / 1.0 / RAND_MAX))) {
         curr_conflict_ap_list = new_conflict_ap_list;
-        if (newMinDist > best_min_distance) {
-          best_min_distance = newMinDist;
+        if (new_min_distance > best_min_distance) {
+          best_min_distance = new_min_distance;
           best_conflict_ap_list = new_conflict_ap_list;
           no_improvement_count = 0;
         }
@@ -638,9 +604,8 @@ vector<ConflictAccessPoint> PinAccessor::simulatedAnnealing(const std::vector<ve
         no_improvement_count++;
       }
     }
-    temperature *= 1 - cooling_rate;
+    temperature *= (1 - cooling_rate);
   }
-
   return best_conflict_ap_list;
 }
 

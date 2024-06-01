@@ -328,10 +328,10 @@ void InitialRouter::makeIRTopoList(IRModel& ir_model, IRNet* ir_net, std::vector
         int32_t second_y = second_coord.get_y();
 
         if (first_x == second_x) {
-          int y_diff = std::abs(second_y - first_y);
-          int segment_num = std::max(1, static_cast<int>(std::ceil(y_diff / topo_spilt_length)));
-          int step = (second_y - first_y) / segment_num;
-          for (int i = 0; i < segment_num; ++i) {
+          int32_t y_diff = std::abs(second_y - first_y);
+          int32_t segment_num = std::max(1, static_cast<int32_t>(std::ceil(y_diff / topo_spilt_length)));
+          int32_t step = (second_y - first_y) / segment_num;
+          for (int32_t i = 0; i < segment_num; ++i) {
             PlanarCoord start(first_x, first_y + i * step);
             PlanarCoord end(first_x, first_y + (i + 1) * step);
             planar_topo_list.emplace_back(start, end);
@@ -341,10 +341,10 @@ void InitialRouter::makeIRTopoList(IRModel& ir_model, IRNet* ir_net, std::vector
             planar_topo_list.emplace_back(planar_topo_list.back().get_second(), second_coord);
           }
         } else if (first_y == second_y) {
-          int x_diff = std::abs(second_x - first_x);
-          int segment_num = std::max(1, static_cast<int>(std::ceil(x_diff / topo_spilt_length)));
-          int step = (second_x - first_x) / segment_num;
-          for (int i = 0; i < segment_num; ++i) {
+          int32_t x_diff = std::abs(second_x - first_x);
+          int32_t segment_num = std::max(1, static_cast<int32_t>(std::ceil(x_diff / topo_spilt_length)));
+          int32_t step = (second_x - first_x) / segment_num;
+          for (int32_t i = 0; i < segment_num; ++i) {
             PlanarCoord start(first_x + i * step, first_y);
             PlanarCoord end(first_x + (i + 1) * step, first_y);
             planar_topo_list.emplace_back(start, end);

@@ -544,40 +544,40 @@ class RTUtil
 
 #if 1  // reduce
 
-  static std::vector<PlanarRect> getOpenReducedRectListByBoost(const std::vector<PlanarRect>& master_list, int ll_x_add_offset,
-                                                               int ll_y_add_offset, int ur_x_minus_offset, int ur_y_minus_offset)
+  static std::vector<PlanarRect> getOpenReducedRectListByBoost(const std::vector<PlanarRect>& master_list, int32_t ll_x_add_offset,
+                                                               int32_t ll_y_add_offset, int32_t ur_x_minus_offset, int32_t ur_y_minus_offset)
   {
     return getReducedRectListByBoost(master_list, ll_x_add_offset, ll_y_add_offset, ur_x_minus_offset, ur_y_minus_offset, true);
   }
 
-  static std::vector<PlanarRect> getClosedReducedRectListByBoost(const std::vector<PlanarRect>& master_list, int reduced_offset)
+  static std::vector<PlanarRect> getClosedReducedRectListByBoost(const std::vector<PlanarRect>& master_list, int32_t reduced_offset)
   {
     return getReducedRectListByBoost(master_list, reduced_offset, reduced_offset, reduced_offset, reduced_offset, false);
   }
 
-  static std::vector<PlanarRect> getClosedReducedRectListByBoost(const std::vector<PlanarRect>& master_list, int ll_x_add_offset,
-                                                                 int ll_y_add_offset, int ur_x_minus_offset, int ur_y_minus_offset)
+  static std::vector<PlanarRect> getClosedReducedRectListByBoost(const std::vector<PlanarRect>& master_list, int32_t ll_x_add_offset,
+                                                                 int32_t ll_y_add_offset, int32_t ur_x_minus_offset, int32_t ur_y_minus_offset)
   {
     return getReducedRectListByBoost(master_list, ll_x_add_offset, ll_y_add_offset, ur_x_minus_offset, ur_y_minus_offset, false);
   }
 
-  static std::vector<PlanarRect> getReducedRectListByBoost(const std::vector<PlanarRect>& master_list, int ll_x_add_offset,
-                                                           int ll_y_add_offset, int ur_x_minus_offset, int ur_y_minus_offset, bool is_open)
+  static std::vector<PlanarRect> getReducedRectListByBoost(const std::vector<PlanarRect>& master_list, int32_t ll_x_add_offset,
+                                                           int32_t ll_y_add_offset, int32_t ur_x_minus_offset, int32_t ur_y_minus_offset, bool is_open)
   {
     std::vector<PlanarRect> result_list;
 
-    gtl::polygon_90_set_data<int> master_poly;
+    gtl::polygon_90_set_data<int32_t> master_poly;
     for (const PlanarRect& master : master_list) {
-      master_poly += gtl::rectangle_data<int>(master.get_ll_x(), master.get_ll_y(), master.get_ur_x(), master.get_ur_y());
+      master_poly += gtl::rectangle_data<int32_t>(master.get_ll_x(), master.get_ll_y(), master.get_ur_x(), master.get_ur_y());
     }
     if (!is_open) {
       // 提取点矩形，线段矩形
-      std::vector<gtl::rectangle_data<int>> gtl_rect_list;
+      std::vector<gtl::rectangle_data<int32_t>> gtl_rect_list;
       gtl::get_rectangles(gtl_rect_list, master_poly, gtl::HORIZONTAL);
       gtl::get_rectangles(gtl_rect_list, master_poly, gtl::VERTICAL);
 
       std::vector<PlanarRect> candidate_rect_list;
-      for (gtl::rectangle_data<int>& gtl_rect : gtl_rect_list) {
+      for (gtl::rectangle_data<int32_t>& gtl_rect : gtl_rect_list) {
         candidate_rect_list.emplace_back(gtl::xl(gtl_rect), gtl::yl(gtl_rect), gtl::xh(gtl_rect), gtl::yh(gtl_rect));
       }
       for (PlanarRect candidate_rect : candidate_rect_list) {
@@ -600,11 +600,11 @@ class RTUtil
     {
       master_poly.shrink(ll_x_add_offset, ur_x_minus_offset, ll_y_add_offset, ur_y_minus_offset);
 
-      std::vector<gtl::rectangle_data<int>> gtl_rect_list;
+      std::vector<gtl::rectangle_data<int32_t>> gtl_rect_list;
       gtl::get_rectangles(gtl_rect_list, master_poly, gtl::HORIZONTAL);
       gtl::get_rectangles(gtl_rect_list, master_poly, gtl::VERTICAL);
 
-      for (gtl::rectangle_data<int>& gtl_rect : gtl_rect_list) {
+      for (gtl::rectangle_data<int32_t>& gtl_rect : gtl_rect_list) {
         result_list.emplace_back(gtl::xl(gtl_rect), gtl::yl(gtl_rect), gtl::xh(gtl_rect), gtl::yh(gtl_rect));
       }
     }
@@ -713,7 +713,7 @@ class RTUtil
   }
 };
 
-int main()
+int32_t main()
 {
   int32_t factor = 10;
   std::vector<std::vector<PlanarRect>> master_list_list;
@@ -824,7 +824,7 @@ int main()
     // RTUTIL.plotGDS("9rect_OpenReducedRectListByBoost", rect_OpenReducedRectListByBoost);
     // std::vector<PlanarRect> rect_ClosedReducedRectListByBoost = RTUTIL.getClosedReducedRectListByBoost(rect_list, 5, 5, 5, 5);
     // RTUTIL.plotGDS("91rect_ClosedReducedRectListByBoost", rect_ClosedReducedRectListByBoost);
-    int a = 0;
+    int32_t a = 0;
   }
 
   return 0;

@@ -253,8 +253,8 @@ std::vector<Segment<PlanarCoord>> TopologyGenerator::getPlanarTopoListByFlute(TG
     free(x_list);
     free(y_list);
 
-    for (int i = 0; i < 2 * flute_tree.deg - 2; i++) {
-      int n_id = flute_tree.branch[i].n;
+    for (int32_t i = 0; i < 2 * flute_tree.deg - 2; i++) {
+      int32_t n_id = flute_tree.branch[i].n;
       PlanarCoord first_coord(flute_tree.branch[i].x, flute_tree.branch[i].y);
       PlanarCoord second_coord(flute_tree.branch[n_id].x, flute_tree.branch[n_id].y);
       if (first_coord != second_coord) {

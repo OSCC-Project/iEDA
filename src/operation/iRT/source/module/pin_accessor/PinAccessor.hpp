@@ -22,7 +22,6 @@
 #include "Monitor.hpp"
 #include "Net.hpp"
 #include "PAModel.hpp"
-#include "PAParameter.hpp"
 
 namespace irt {
 
@@ -53,7 +52,7 @@ class PinAccessor
   PANet convertToPANet(Net& net);
   void initLayerEnclosureMap(PAModel& pa_model);
   void initAccessPointList(PAModel& pa_model);
-  std::vector<AccessPoint> getAccessPointList(PAModel& pa_model, std::pair<int32_t, PAPin*>& net_pin_pair, PAParameter& pa_parameter);
+  std::vector<LayerRect> getLegalShapeList(PAModel& pa_model, int32_t net_idx, Pin* pin);
   std::vector<PlanarRect> getPlanarLegalRectList(PAModel& pa_model, int32_t curr_net_idx, std::vector<EXTLayerRect>& pin_shape_list);
   std::vector<AccessPoint> getAccessPointListByTrackGrid(int32_t pin_idx, std::vector<LayerRect>& legal_shape_list);
   std::vector<AccessPoint> getAccessPointListByOnTrack(int32_t pin_idx, std::vector<LayerRect>& legal_shape_list);
@@ -64,8 +63,8 @@ class PinAccessor
   std::map<PAPin*, std::set<PAPin*>> getPinConlictMap(PAModel& pa_model);
   bool hasConflict(PAModel& pa_model, AccessPoint& access_point_a, AccessPoint& access_point_b);
   void eliminateConflict(PAModel& pa_model);
-  vector<ConflictAccessPoint> simulatedAnnealing(const std::vector<vector<ConflictAccessPoint>>& conflict_ap_list_list);
-  int getMinDistance(std::vector<ConflictAccessPoint>& point_list);
+  vector<ConflictAccessPoint> getBestPointList(const std::vector<vector<ConflictAccessPoint>>& conflict_ap_list_list);
+  int32_t getMinDistance(std::vector<ConflictAccessPoint>& point_list);
   void updatePAModel(PAModel& pa_model);
 
 #if 1  // exhibit
