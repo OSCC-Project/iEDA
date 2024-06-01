@@ -469,7 +469,8 @@ class Sta {
   unsigned updateClockTiming();
   std::set<std::string> findStartOrEnd(StaVertex* the_vertex, bool is_find_end);
   unsigned reportTiming(std::set<std::string>&& exclude_cell_names = {},
-                        bool is_derate = true, bool is_clock_cap = false);
+                        bool is_derate = false, bool is_clock_cap = false,
+                        bool is_copy = false);
 
   void dumpVertexData(std::vector<std::string> vertex_names);
   void dumpNetlistData();
