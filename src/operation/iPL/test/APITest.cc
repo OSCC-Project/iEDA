@@ -213,7 +213,7 @@ namespace ipl {
 
     std::vector<std::string> module_list{ "", "" };
 
-    iPLAPIInst.plotModuleListForDebug(module_list, "./result/pl/report/MouduleConnection.gds");
+    iPLAPIInst.plotModuleListForDebug(module_list, PlacerDBInst.get_placer_config()->get_pl_dir() + "/pl/report/MouduleConnection.gds");
   }
 
   TEST_F(APITestInterface, print_wl)
@@ -257,12 +257,12 @@ namespace ipl {
     inst_list.push_back(inst1);
     PlacerDBInst.updateInstancesForDebug(inst_list);
 
-    iPLAPIInst.plotModuleStateForDebug(incremental_insts, "./result/pl/report/InstanceState_before.gds");
+    iPLAPIInst.plotModuleStateForDebug(incremental_insts, PlacerDBInst.get_placer_config()->get_pl_dir() + "/pl/report/InstanceState_before.gds");
 
     iPLAPIInst.runIncrLG(incremental_insts);
     iPLAPIInst.reportPLInfo();
 
-    iPLAPIInst.plotModuleStateForDebug(incremental_insts, "./result/pl/report/InstanceState_after.gds");
+    iPLAPIInst.plotModuleStateForDebug(incremental_insts, PlacerDBInst.get_placer_config()->get_pl_dir() + "/pl/report/InstanceState_after.gds");
   }
 
 }  // namespace ipl

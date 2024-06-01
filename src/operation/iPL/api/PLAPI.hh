@@ -97,6 +97,7 @@ class PLAPI
   // The following interfaces are only for iPL internal calls !
   // The following interfaces are only for iPL internal calls !
 
+  void createPLDirectory();
   void printHPWLInfo();
   void printTimingInfo();
   void saveNetPinInfoForDebug(std::string path);

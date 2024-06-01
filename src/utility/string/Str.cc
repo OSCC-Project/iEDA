@@ -599,6 +599,10 @@ std::vector<std::string> Str::matchPattern(const char* str, std::string regex_pa
  */
 std::pair<std::string, std::optional<int>> Str::matchBusName(const char* str)
 {
+  if (!Str::endWith(str, "]")) {
+    return {str, std::nullopt};
+  }
+
   char* copy_str = Str::copy(str);
 
   char* token = strtok(copy_str, "[");
@@ -624,6 +628,10 @@ std::pair<std::string, std::optional<int>> Str::matchBusName(const char* str)
  */
 std::pair<std::string, std::optional<std::pair<int, int>>> Str::matchBusSliceName(const char* str)
 {
+  if (!Str::endWith(str, "]")) {
+    return {str, std::nullopt};
+  }
+  
   char* copy_str = Str::copy(str);
 
   char* token = strtok(copy_str, "[");

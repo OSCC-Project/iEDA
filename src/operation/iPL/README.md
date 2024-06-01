@@ -93,7 +93,7 @@ placer_run_dp // 进行标准单元详细布局
 | [MP] new_macro_density                        | 指定虚拟宏单元密度                                                                                                          | [0.0-1.0]                    | 0.6           |
 | [MP] halo_x                                   | 指定宏单元的halo（横向）                                                                                                    | [0-1000000]                  | 0             |
 | [MP] halo_y                                   | 指定宏单元的halo（纵向）                                                                                                    | [0-1000000]                  | 0             |
-| [MP] output_path                              | 指定输出文件路径                                                                                                            |                              | "./result/pl" |
+
 
 ### 运行的Log、Report
 
