@@ -541,7 +541,7 @@ void DataManager::wrapTrackAxis(RoutingLayer& routing_layer, idb::IdbLayerRoutin
     ScaleGrid track_grid;
     track_grid.set_start_line(static_cast<int32_t>(idb_track->get_start()));
     track_grid.set_step_length(static_cast<int32_t>(idb_track->get_pitch()));
-    track_grid.set_step_num(static_cast<int32_t>(idb_track_grid->get_track_num()));
+    track_grid.set_step_num(static_cast<int32_t>(idb_track_grid->get_track_num()) - 1);
 
     if (idb_track->get_direction() == idb::IdbTrackDirection::kDirectionX) {
       track_axis.get_x_grid_list().push_back(track_grid);

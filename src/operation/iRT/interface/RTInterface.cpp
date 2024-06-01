@@ -240,7 +240,7 @@ void RTInterface::clearDef()
   std::vector<idb::IdbPin*> remove_pin_list;
   for (idb::IdbPin* io_pin : idb_pin_list->get_pin_list()) {
     if (io_pin->get_port_box_list().empty()) {
-      std::cout << io_pin->get_pin_name() << std::endl;
+      RTLOG.info(Loc::current(), io_pin->get_pin_name());
       remove_pin_list.push_back(io_pin);
     }
   }

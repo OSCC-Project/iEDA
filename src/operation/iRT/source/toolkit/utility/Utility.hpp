@@ -2242,6 +2242,9 @@ class Utility
             }
           }
         }
+        for (BGMultiPolyDBL& diff_multi_poly : diff_multi_poly_list) {
+          removeError(diff_multi_poly);
+        }
       }
       if (diff_multi_poly_list.empty()) {
         continue;
@@ -2264,6 +2267,7 @@ class Utility
             bg::intersection(mid_multi_poly, curr_multi_poly, mid_multi_point);
           }
           mid_multi_poly = mid_multi_poly_temp;
+          removeError(mid_multi_poly);
         }
       }
       // 计算((A - D) ∩ (A - E) ∩ (A - F)) ∪ ((B - D) ∩ (B - E) ∩ (B - F))
@@ -2384,74 +2388,6 @@ class Utility
     }
     return result_list;
   }
-
-#endif
-
-#if 1  // overlap
-
-  // static std::vector<PlanarRect> getOpenOverlapRectListByBoost(const std::vector<PlanarRect>& master_list,
-  //                                                              const std::vector<PlanarRect>& rect_list)
-  // {
-  //   return getOverlapRectListByBoost(master_list, rect_list, true);
-  // }
-
-  // static std::vector<PlanarRect> getClosedOverlapRectListByBoost(const std::vector<PlanarRect>& master_list,
-  //                                                                const std::vector<PlanarRect>& rect_list)
-  // {
-  //   return getOverlapRectListByBoost(master_list, rect_list, false);
-  // }
-
-  // static std::vector<PlanarRect> getOverlapRectListByBoost(const std::vector<PlanarRect>& master_list,
-  //                                                          const std::vector<PlanarRect>& rect_list, bool is_open)
-  // {
-  //   std::vector<PlanarRect> result_list;
-
-  //   if (!is_open) {
-  //     // 先保存master_list中的特殊矩形
-  //     for (const PlanarRect& master : master_list) {
-  //       if (master.get_ll_x() == master.get_ur_x() || master.get_ll_y() == master.get_ur_y()) {
-  //         // 特殊矩形
-  //         result_list.push_back(master);
-  //       }
-  //     }
-  //   }
-  //   /**
-  //    * 下面每个字母表示一个独立的直角多边形
-  //    * 求解(A ∪ B) ∩ (D ∪ E ∪ F)
-  //    * 转(A ∩ D) ∪ (A ∩ E) ∪ (A ∩ F) ∪ (B ∩ D) ∪ (B ∩ E) ∪ (B ∩ F)
-  //    */
-  //   // 其中master_poly_list为(A ∪ B)
-  //   std::vector<BGPolyDBL> master_poly_list = getBGPolyDBLList(master_list);
-  //   // 其中rect_poly_list为(D ∪ E ∪ F)
-  //   std::vector<BGPolyDBL> rect_poly_list = getBGPolyDBLList(rect_list);
-
-  //   BGMultiPolyDBL result_multi_poly;
-  //   BGMultiLineDBL result_multi_line;
-  //   BGMultiPointDBL result_multi_point;
-  //   for (BGPolyDBL& master_poly : master_poly_list) {
-  //     for (BGPolyDBL& rect_poly : rect_poly_list) {
-  //       bg::intersection(master_poly, rect_poly, result_multi_poly);
-  //       if (!is_open) {
-  //         bg::intersection(master_poly, rect_poly, result_multi_line);
-  //         bg::intersection(master_poly, rect_poly, result_multi_point);
-  //       }
-  //     }
-  //   }
-  //   // 生成对应的矩形结果
-  //   for (PlanarRect& rect : getRTRectListByBGMultiPolyDBL(result_multi_poly)) {
-  //     result_list.push_back(rect);
-  //   }
-  //   for (PlanarRect& rect : getRTRectListByBGMultiLineDBL(result_multi_line)) {
-  //     result_list.push_back(rect);
-  //   }
-  //   for (PlanarRect& rect : getRTRectListByBGMultiPointDBL(result_multi_point)) {
-  //     result_list.push_back(rect);
-  //   }
-  //   // rect去重
-  //   std::sort(result_list.begin(), result_list.end(), CmpPlanarRectByXASC());
-  //   result_list.erase(std::unique(result_list.begin(), result_list.end()), result_list.end());
-  //   return result_list;
-  // }
 
 #endif
 
@@ -2597,11 +2533,27 @@ class Utility
     return point_list;
   }
 
+  static void removeError(BGMultiPolyDBL& multipoly)
+  {
+    for (auto& poly : multipoly) {
+      for (auto& ring : poly.outer()) {
+        ring.x(getIntScale(ring.x()));
+        ring.y(getIntScale(ring.y()));
+      }
+      for (auto& ring : poly.inners()) {
+        for (auto& point : ring) {
+          point.x(getIntScale(point.x()));
+          point.y(getIntScale(point.y()));
+        }
+      }
+    }
+  }
+
   static int32_t getIntScale(double double_scale)
   {
     int32_t integer_scale = std::round(double_scale);
     if (std::abs(double_scale - integer_scale) > RT_ERROR) {
-      std::cout << "Exceeding the error range of a double!" << std::endl;
+      RTLOG.error(Loc::current(), "Exceeding the error range of a double!");
     }
     return integer_scale;
   }

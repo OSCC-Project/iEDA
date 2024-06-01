@@ -140,17 +140,27 @@ void PinAccessor::initAccessPointList(PAModel& pa_model)
   }
   std::vector<PAParameter> pa_parameter_list = {
       {0, false, std::bind(&PinAccessor::getAccessPointListByTrackGrid, this, std::placeholders::_1, std::placeholders::_2)},
-      {1, false, std::bind(&PinAccessor::getAccessPointListByTrackGrid, this, std::placeholders::_1, std::placeholders::_2)},
       {1, true, std::bind(&PinAccessor::getAccessPointListByTrackGrid, this, std::placeholders::_1, std::placeholders::_2)},
       {0, false, std::bind(&PinAccessor::getAccessPointListByOnTrack, this, std::placeholders::_1, std::placeholders::_2)},
       {0, false, std::bind(&PinAccessor::getAccessPointListByShapeCenter, this, std::placeholders::_1, std::placeholders::_2)},
   };
-  #pragma omp parallel for
+#pragma omp parallel for
   for (std::pair<int32_t, PAPin*>& net_pin_pair : net_pin_pair_list) {
     std::vector<AccessPoint>& access_point_list = net_pin_pair.second->get_access_point_list();
     for (PAParameter& pa_parameter : pa_parameter_list) {
       access_point_list = getAccessPointList(pa_model, net_pin_pair, pa_parameter);
       if (!access_point_list.empty()) {
+        std::sort(access_point_list.begin(), access_point_list.end(),
+                  [](AccessPoint& a, AccessPoint& b) { return CmpLayerCoordByXASC()(a.getRealLayerCoord(), b.getRealLayerCoord()); });
+        int32_t n = 5;
+        int32_t size = static_cast<int32_t>(access_point_list.size());
+        if (size > n) {
+          std::vector<AccessPoint> access_point_list_temp;
+          for (int32_t i = 0; i < n; ++i) {
+            access_point_list_temp.push_back(access_point_list[i * (size / n)]);
+          }
+          access_point_list = access_point_list_temp;
+        }
         break;
       }
     }
