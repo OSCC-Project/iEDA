@@ -57,11 +57,11 @@ void PinAccessor::access()
   initAccessPointList(pa_model);
   buildAccessPointList(pa_model);
   uploadAccessPoint(pa_model);
-  debugPlotPAModel(pa_model, "before_eliminate");
+  // debugPlotPAModel(pa_model, "before_eliminate");
   buildConflictGroupList(pa_model);
   eliminateConflict(pa_model);
   updatePAModel(pa_model);
-  debugPlotPAModel(pa_model, "after_eliminate");
+  // debugPlotPAModel(pa_model, "after_eliminate");
   updateSummary(pa_model);
   printSummary(pa_model);
   writePlanarPinCSV(pa_model);
@@ -419,70 +419,88 @@ void PinAccessor::buildConflictGroupList(PAModel& pa_model)
 
   std::vector<ConflictGroup>& conflict_group_list = pa_model.get_conflict_group_list();
 
-  std::map<PAPin*, std::set<PAPin*>> pin_conflict_map = getPinConlictMap(pa_model);
+  std::map<PAPin*, std::set<PAPin*>> pin_conflict_map;
+  for (auto& [curr_pin, conflict_pin_set] : getPinConlictMap(pa_model)) {
+    pin_conflict_map[curr_pin] = conflict_pin_set;
+  }
   for (auto& [curr_pin, conflict_pin_set] : pin_conflict_map) {
     if (conflict_pin_set.empty()) {
       continue;
     }
-    std::set<PAPin*> pa_pin_set;
+    std::vector<std::pair<PAPin*, PAPin*>> conflict_list;
+    std::map<PAPin*, int32_t> pin_idx_map;
     std::queue<PAPin*> pin_queue = RTUTIL.initQueue(curr_pin);
     while (!pin_queue.empty()) {
       PAPin* pa_pin = RTUTIL.getFrontAndPop(pin_queue);
-      pa_pin_set.insert(pa_pin);
+      if (!RTUTIL.exist(pin_idx_map, pa_pin)) {
+        pin_idx_map[pa_pin] = pin_idx_map.size();
+      }
       if (!RTUTIL.exist(pin_conflict_map, pa_pin)) {
         continue;
       }
       std::set<PAPin*>& conflict_pin_set = pin_conflict_map[pa_pin];
-      for (PAPin* pa_pin : conflict_pin_set) {
-        pin_queue.push(pa_pin);
+      for (PAPin* conflict_pin : conflict_pin_set) {
+        conflict_list.emplace_back(pa_pin, conflict_pin);
+        pin_queue.push(conflict_pin);
       }
       conflict_pin_set.clear();
     }
     ConflictGroup conflict_group;
-    for (PAPin* pa_pin : pa_pin_set) {
+    std::vector<std::vector<ConflictAccessPoint>>& conflict_ap_list_list = conflict_group.get_conflict_ap_list_list();
+    conflict_ap_list_list.resize(pin_idx_map.size());
+    for (auto& [pa_pin, conflict_ap_list_idx] : pin_idx_map) {
       std::vector<ConflictAccessPoint> conflict_ap_list;
-
-      std::vector<AccessPoint>& access_point_list = pa_pin->get_access_point_list();
-      for (int32_t i = 0; i < static_cast<int32_t>(access_point_list.size()); i++) {
+      for (AccessPoint& access_point : pa_pin->get_access_point_list()) {
         ConflictAccessPoint conflict_ap;
         conflict_ap.set_pa_pin(pa_pin);
-        conflict_ap.set_access_point_idx(i);
-        conflict_ap.set_real_coord(access_point_list[i].get_real_coord());
+        conflict_ap.set_access_point(&access_point);
+        conflict_ap.set_coord(access_point.get_real_coord());
         conflict_ap_list.push_back(conflict_ap);
       }
-      conflict_group.get_conflict_ap_list_list().push_back(conflict_ap_list);
+      conflict_ap_list_list[conflict_ap_list_idx] = conflict_ap_list;
+    }
+    std::map<int32_t, std::vector<int32_t>>& conflict_map = conflict_group.get_conflict_map();
+    for (std::pair<PAPin*, PAPin*>& conflict_pair : conflict_list) {
+      conflict_map[pin_idx_map[conflict_pair.first]].push_back(pin_idx_map[conflict_pair.second]);
     }
     conflict_group_list.push_back(conflict_group);
   }
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
-std::map<PAPin*, std::set<PAPin*>> PinAccessor::getPinConlictMap(PAModel& pa_model)
+std::vector<std::pair<PAPin*, std::set<PAPin*>>> PinAccessor::getPinConlictMap(PAModel& pa_model)
 {
   GridMap<GCell>& gcell_map = RTDM.getDatabase().get_gcell_map();
   Die& die = RTDM.getDatabase().get_die();
 
   std::vector<PANet>& pa_net_list = pa_model.get_pa_net_list();
 
-  std::map<PAPin*, std::set<PAPin*>> pin_conflict_map;
+  std::vector<std::pair<PAPin*, std::set<PAPin*>>> pin_conflict_list;
   for (PANet& pa_net : pa_net_list) {
     for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
-      for (AccessPoint& access_point : pa_pin.get_access_point_list()) {
-        PlanarCoord& grid_coord = access_point.get_grid_coord();
-        for (int32_t x : {grid_coord.get_x() - 1, grid_coord.get_x(), grid_coord.get_x() + 1}) {
-          for (int32_t y : {grid_coord.get_y() - 1, grid_coord.get_y(), grid_coord.get_y() + 1}) {
-            if (!RTUTIL.isInside(die.get_grid_rect(), PlanarCoord(x, y))) {
-              continue;
-            }
-            for (auto& [net_idx, access_point_set] : gcell_map[x][y].get_net_access_point_map()) {
-              for (AccessPoint* gcell_access_point : access_point_set) {
-                PAPin* gcell_pin = &pa_net_list[net_idx].get_pa_pin_list()[gcell_access_point->get_pin_idx()];
-                if (gcell_pin == (&pa_pin)) {
-                  continue;
-                }
-                if (hasConflict(pa_model, access_point, *gcell_access_point)) {
-                  pin_conflict_map[&pa_pin].insert(gcell_pin);
-                }
+      pin_conflict_list.emplace_back(&pa_pin, std::set<PAPin*>{});
+    }
+  }
+#pragma omp parallel for
+  for (std::pair<PAPin*, std::set<PAPin*>>& pin_conflict_pair : pin_conflict_list) {
+    PAPin* pa_pin = pin_conflict_pair.first;
+    std::set<PAPin*>& conflict_pin_set = pin_conflict_pair.second;
+
+    for (AccessPoint& access_point : pa_pin->get_access_point_list()) {
+      PlanarCoord& grid_coord = access_point.get_grid_coord();
+      for (int32_t x : {grid_coord.get_x() - 1, grid_coord.get_x(), grid_coord.get_x() + 1}) {
+        for (int32_t y : {grid_coord.get_y() - 1, grid_coord.get_y(), grid_coord.get_y() + 1}) {
+          if (!RTUTIL.isInside(die.get_grid_rect(), PlanarCoord(x, y))) {
+            continue;
+          }
+          for (auto& [net_idx, access_point_set] : gcell_map[x][y].get_net_access_point_map()) {
+            for (AccessPoint* gcell_access_point : access_point_set) {
+              PAPin* gcell_pin = &pa_net_list[net_idx].get_pa_pin_list()[gcell_access_point->get_pin_idx()];
+              if (gcell_pin == pa_pin) {
+                continue;
+              }
+              if (hasConflict(pa_model, access_point, *gcell_access_point)) {
+                conflict_pin_set.insert(gcell_pin);
               }
             }
           }
@@ -490,7 +508,7 @@ std::map<PAPin*, std::set<PAPin*>> PinAccessor::getPinConlictMap(PAModel& pa_mod
       }
     }
   }
-  return pin_conflict_map;
+  return pin_conflict_list;
 }
 
 bool PinAccessor::hasConflict(PAModel& pa_model, AccessPoint& curr_access_point, AccessPoint& gcell_access_point)
@@ -546,9 +564,8 @@ void PinAccessor::eliminateConflict(PAModel& pa_model)
   RTLOG.info(Loc::current(), "Starting...");
 
   for (ConflictGroup& conflict_group : pa_model.get_conflict_group_list()) {
-    for (ConflictAccessPoint& best_point : getBestPointList(conflict_group.get_conflict_ap_list_list())) {
-      PAPin* pa_pin = best_point.get_pa_pin();
-      pa_pin->set_key_access_point(pa_pin->get_access_point_list()[best_point.get_access_point_idx()]);
+    for (ConflictAccessPoint& best_point : getBestPointList(conflict_group)) {
+      best_point.get_pa_pin()->set_key_access_point(*best_point.get_access_point());
     }
   }
   for (PANet& pa_net : pa_model.get_pa_net_list()) {
@@ -562,63 +579,44 @@ void PinAccessor::eliminateConflict(PAModel& pa_model)
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
-vector<ConflictAccessPoint> PinAccessor::getBestPointList(const std::vector<vector<ConflictAccessPoint>>& conflict_ap_list_list)
+std::vector<ConflictAccessPoint> PinAccessor::getBestPointList(ConflictGroup& conflict_group)
 {
-  std::vector<ConflictAccessPoint> curr_conflict_ap_list;
-  std::vector<ConflictAccessPoint> best_conflict_ap_list;
-  int32_t best_min_distance = -1;
+  std::vector<std::vector<ConflictAccessPoint>>& conflict_ap_list_list = conflict_group.get_conflict_ap_list_list();
+  std::map<int32_t, std::vector<int32_t>>& conflict_map = conflict_group.get_conflict_map();
 
-  std::srand(0);
-
-  for (const auto& conflict_ap_list : conflict_ap_list_list) {
-    curr_conflict_ap_list.push_back(conflict_ap_list[rand() % conflict_ap_list.size()]);
+  std::vector<ConflictAccessPoint> curr_ap_list;
+  for (std::vector<ConflictAccessPoint>& conflict_ap_list : conflict_ap_list_list) {
+    curr_ap_list.push_back(conflict_ap_list.front());
   }
-  best_conflict_ap_list = curr_conflict_ap_list;
-  best_min_distance = getMinDistance(curr_conflict_ap_list);
-
-  double temperature = 100.0;
-  double cooling_rate = 0.01;
-  int32_t iteration_num = 25;
-  int32_t no_improvement_count = 0;
-  int32_t max_no_improvement = 75;
-
-  while (temperature > 1 && no_improvement_count < max_no_improvement) {
-    for (int32_t i = 0; i < iteration_num; ++i) {
-      std::vector<ConflictAccessPoint> new_conflict_ap_list = curr_conflict_ap_list;
-
-      int32_t conflict_ap_list_idx = std::rand() % conflict_ap_list_list.size();
-      int32_t point_idx = std::rand() % conflict_ap_list_list[conflict_ap_list_idx].size();
-      new_conflict_ap_list[conflict_ap_list_idx] = conflict_ap_list_list[conflict_ap_list_idx][point_idx];
-
-      int32_t curr_min_distance = getMinDistance(curr_conflict_ap_list);
-      int32_t new_min_distance = getMinDistance(new_conflict_ap_list);
-
-      if (new_min_distance > curr_min_distance || (std::exp((new_min_distance - curr_min_distance) / temperature) > (std::rand() / 1.0 / RAND_MAX))) {
-        curr_conflict_ap_list = new_conflict_ap_list;
-        if (new_min_distance > best_min_distance) {
-          best_min_distance = new_min_distance;
-          best_conflict_ap_list = new_conflict_ap_list;
-          no_improvement_count = 0;
-        }
+  bool improved = true;
+  while (improved) {
+    improved = false;
+    for (int32_t i = 0; i < static_cast<int32_t>(conflict_ap_list_list.size()); ++i) {
+      std::vector<int32_t> conflict_j_list;
+      if (RTUTIL.exist(conflict_map, i)) {
+        conflict_j_list = conflict_map[i];
       } else {
-        no_improvement_count++;
+        RTLOG.error(Loc::current(), "The conflict_map is not exist i!");
+      }
+      int32_t max_min_distance = INT32_MIN;
+      ConflictAccessPoint best_ap = curr_ap_list[i];
+      for (ConflictAccessPoint& conflict_ap : conflict_ap_list_list[i]) {
+        int32_t min_distance = INT32_MAX;
+        for (int32_t j : conflict_j_list) {
+          min_distance = std::min(min_distance, RTUTIL.getManhattanDistance(conflict_ap, curr_ap_list[j]));
+        }
+        if (max_min_distance < min_distance) {
+          max_min_distance = min_distance;
+          best_ap = conflict_ap;
+        }
+      }
+      if (best_ap.get_access_point() != curr_ap_list[i].get_access_point()) {
+        curr_ap_list[i] = best_ap;
+        improved = true;
       }
     }
-    temperature *= (1 - cooling_rate);
   }
-  return best_conflict_ap_list;
-}
-
-int32_t PinAccessor::getMinDistance(std::vector<ConflictAccessPoint>& conflict_ap_list)
-{
-  int32_t minDist = INT32_MAX;
-  for (size_t i = 0; i < conflict_ap_list.size(); ++i) {
-    for (size_t j = i + 1; j < conflict_ap_list.size(); ++j) {
-      int32_t dist = RTUTIL.getManhattanDistance(conflict_ap_list[i].get_real_coord(), conflict_ap_list[j].get_real_coord());
-      minDist = std::min(minDist, dist);
-    }
-  }
-  return minDist;
+  return curr_ap_list;
 }
 
 void PinAccessor::updatePAModel(PAModel& pa_model)

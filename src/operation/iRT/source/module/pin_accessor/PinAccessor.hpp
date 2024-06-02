@@ -60,11 +60,10 @@ class PinAccessor
   void buildAccessPointList(PAModel& pa_model);
   void uploadAccessPoint(PAModel& pa_model);
   void buildConflictGroupList(PAModel& pa_model);
-  std::map<PAPin*, std::set<PAPin*>> getPinConlictMap(PAModel& pa_model);
+  std::vector<std::pair<PAPin*, std::set<PAPin*>>> getPinConlictMap(PAModel& pa_model);
   bool hasConflict(PAModel& pa_model, AccessPoint& access_point_a, AccessPoint& access_point_b);
   void eliminateConflict(PAModel& pa_model);
-  vector<ConflictAccessPoint> getBestPointList(const std::vector<vector<ConflictAccessPoint>>& conflict_ap_list_list);
-  int32_t getMinDistance(std::vector<ConflictAccessPoint>& point_list);
+  std::vector<ConflictAccessPoint> getBestPointList(ConflictGroup& conflict_group);
   void updatePAModel(PAModel& pa_model);
 
 #if 1  // exhibit
