@@ -30,16 +30,13 @@ class PAModel
   ~PAModel() = default;
   // getter
   std::vector<PANet>& get_pa_net_list() { return _pa_net_list; }
-  std::map<int32_t, PlanarRect>& get_layer_enclosure_map() { return _layer_enclosure_map; }
   std::vector<ConflictGroup>& get_conflict_group_list() { return _conflict_group_list; }
   // setter
   void set_pa_net_list(const std::vector<PANet>& pa_net_list) { _pa_net_list = pa_net_list; }
-  void set_layer_enclosure_map(const std::map<int32_t, PlanarRect>& layer_enclosure_map) { _layer_enclosure_map = layer_enclosure_map; }
   void set_conflict_group_list(const std::vector<ConflictGroup>& conflict_group_list) { _conflict_group_list = conflict_group_list; }
 
  private:
   std::vector<PANet> _pa_net_list;
-  std::map<int32_t, PlanarRect> _layer_enclosure_map;
   std::vector<ConflictGroup> _conflict_group_list;
 };
 

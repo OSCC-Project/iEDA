@@ -19,7 +19,6 @@
 #include "ChangeType.hpp"
 #include "Config.hpp"
 #include "Database.hpp"
-#include "Helper.hpp"
 #include "Logger.hpp"
 #include "Monitor.hpp"
 #include "NetShape.hpp"
@@ -70,15 +69,13 @@ class DataManager
 
   Config& getConfig() { return _config; }
   Database& getDatabase() { return _database; }
-  Helper& getHelper() { return _helper; }
   Summary& getSummary() { return _summary; }
 
  private:
   static DataManager* _dm_instance;
-  // config & database & helper & summary
+  // config & database & summary
   Config _config;
   Database _database;
-  Helper _helper;
   Summary _summary;
 
   DataManager() = default;
@@ -113,20 +110,21 @@ class DataManager
 #if 1  // input
   void wrapConfig(std::map<std::string, std::any>& config_map);
   void wrapDatabase(idb::IdbBuilder* idb_builder);
-  void wrapMicronDBU(idb::IdbBuilder* idb_builder);
-  void wrapDie(idb::IdbBuilder* idb_builder);
-  void wrapRow(idb::IdbBuilder* idb_builder);
-  void wrapLayerList(idb::IdbBuilder* idb_builder);
+  void wrapDBInfo(idb::IdbBuilder* idb_builder);
+  void wrapMicronDBU();
+  void wrapDie();
+  void wrapRow();
+  void wrapLayerList();
   void wrapTrackAxis(RoutingLayer& routing_layer, idb::IdbLayerRouting* idb_layer);
   void wrapSpacingTable(RoutingLayer& routing_layer, idb::IdbLayerRouting* idb_layer);
-  void wrapLayerViaMasterList(idb::IdbBuilder* idb_builder);
-  void wrapObstacleList(idb::IdbBuilder* idb_builder);
-  void wrapNetList(idb::IdbBuilder* idb_builder);
+  void wrapLayerInfo();
+  void wrapLayerViaMasterList();
+  void wrapObstacleList();
+  void wrapNetList();
   bool isSkipping(idb::IdbNet* idb_net);
   void wrapPinList(Net& net, idb::IdbNet* idb_net);
   void wrapPinShapeList(Pin& pin, idb::IdbPin* idb_pin);
   void wrapDrivingPin(Net& net, idb::IdbNet* idb_net);
-  void updateHelper(idb::IdbBuilder* idb_builder);
   Direction getRTDirectionByDB(idb::IdbLayerDirection idb_direction);
   ConnectType getRTConnectTypeByDB(idb::IdbConnectType idb_connect_type);
   void buildConfig();
@@ -144,6 +142,7 @@ class DataManager
   void transLayerList();
   void makeLayerList();
   void checkLayerList();
+  void buildLayerInfo();
   void buildLayerViaMasterList();
   void transLayerViaMasterList();
   void makeLayerViaMasterList();
@@ -152,6 +151,7 @@ class DataManager
   SortStatus sortByLayerDirectionPriority(ViaMaster& via_master1, ViaMaster& via_master2);
   SortStatus sortByLengthASC(ViaMaster& via_master1, ViaMaster& via_master2);
   SortStatus sortBySymmetryPriority(ViaMaster& via_master1, ViaMaster& via_master2);
+  void buildLayerViaMasterInfo();
   void buildObstacleList();
   void transObstacleList();
   void makeObstacleList();
@@ -162,7 +162,6 @@ class DataManager
   void makePinList(Net& net);
   void checkPinList(Net& net);
   void buildGCellMap();
-  void updateHelper();
   void printConfig();
   void printDatabase();
   void writePYScript();

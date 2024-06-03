@@ -545,7 +545,8 @@ class RTUtil
 #if 1  // reduce
 
   static std::vector<PlanarRect> getOpenReducedRectListByBoost(const std::vector<PlanarRect>& master_list, int32_t ll_x_add_offset,
-                                                               int32_t ll_y_add_offset, int32_t ur_x_minus_offset, int32_t ur_y_minus_offset)
+                                                               int32_t ll_y_add_offset, int32_t ur_x_minus_offset,
+                                                               int32_t ur_y_minus_offset)
   {
     return getReducedRectListByBoost(master_list, ll_x_add_offset, ll_y_add_offset, ur_x_minus_offset, ur_y_minus_offset, true);
   }
@@ -556,13 +557,15 @@ class RTUtil
   }
 
   static std::vector<PlanarRect> getClosedReducedRectListByBoost(const std::vector<PlanarRect>& master_list, int32_t ll_x_add_offset,
-                                                                 int32_t ll_y_add_offset, int32_t ur_x_minus_offset, int32_t ur_y_minus_offset)
+                                                                 int32_t ll_y_add_offset, int32_t ur_x_minus_offset,
+                                                                 int32_t ur_y_minus_offset)
   {
     return getReducedRectListByBoost(master_list, ll_x_add_offset, ll_y_add_offset, ur_x_minus_offset, ur_y_minus_offset, false);
   }
 
   static std::vector<PlanarRect> getReducedRectListByBoost(const std::vector<PlanarRect>& master_list, int32_t ll_x_add_offset,
-                                                           int32_t ll_y_add_offset, int32_t ur_x_minus_offset, int32_t ur_y_minus_offset, bool is_open)
+                                                           int32_t ll_y_add_offset, int32_t ur_x_minus_offset, int32_t ur_y_minus_offset,
+                                                           bool is_open)
   {
     std::vector<PlanarRect> result_list;
 

@@ -1442,13 +1442,16 @@ std::map<DRNode*, std::set<Orientation>> DetailedRouter::getRoutingNodeOrientati
 
 std::map<DRNode*, std::set<Orientation>> DetailedRouter::getCutNodeOrientationMap(DRBox& dr_box, NetShape& net_shape)
 {
+  // 暂时关闭
+  return {};
+
   std::vector<CutLayer>& cut_layer_list = RTDM.getDatabase().get_cut_layer_list();
+  std::map<int32_t, std::vector<int32_t>>& cut_to_adjacent_routing_map = RTDM.getDatabase().get_cut_to_adjacent_routing_map();
   std::vector<std::vector<ViaMaster>>& layer_via_master_list = RTDM.getDatabase().get_layer_via_master_list();
-  Helper& helper = RTDM.getHelper();
   if (net_shape.get_is_routing()) {
     RTLOG.error(Loc::current(), "The type of net_shape is routing!");
   }
-  std::vector<int32_t> adjacent_routing_layer_idx_list = helper.getAdjacentRoutingLayerIdxList(net_shape.get_layer_idx());
+  std::vector<int32_t> adjacent_routing_layer_idx_list = cut_to_adjacent_routing_map[net_shape.get_layer_idx()];
   if (adjacent_routing_layer_idx_list.size() != 2) {
     // 如果相邻层只有一个，那么将不会在此构建graph
     return {};
@@ -1868,7 +1871,11 @@ void DetailedRouter::debugPlotDRBox(DRBox& dr_box, int32_t curr_task_idx, std::s
           gp_text_orient_fixed_rect_map_info.set_text_type(static_cast<int32_t>(GPDataType::kInfo));
           std::string orient_fixed_rect_map_info_message = "--";
           for (auto& [orient, net_set] : dr_node.get_orient_fixed_rect_map()) {
-            orient_fixed_rect_map_info_message += RTUTIL.getString("(", GetOrientationName()(orient), ",", !net_set.empty(), ")");
+            orient_fixed_rect_map_info_message += RTUTIL.getString("(", GetOrientationName()(orient));
+            for (int32_t net_idx : net_set) {
+              orient_fixed_rect_map_info_message += RTUTIL.getString(",", net_idx);
+            }
+            orient_fixed_rect_map_info_message += RTUTIL.getString(")");
           }
           gp_text_orient_fixed_rect_map_info.set_message(orient_fixed_rect_map_info_message);
           gp_text_orient_fixed_rect_map_info.set_layer_idx(RTGP.getGDSIdxByRouting(dr_node.get_layer_idx()));
@@ -1892,7 +1899,11 @@ void DetailedRouter::debugPlotDRBox(DRBox& dr_box, int32_t curr_task_idx, std::s
           gp_text_orient_routed_rect_map_info.set_text_type(static_cast<int32_t>(GPDataType::kInfo));
           std::string orient_routed_rect_map_info_message = "--";
           for (auto& [orient, net_set] : dr_node.get_orient_routed_rect_map()) {
-            orient_routed_rect_map_info_message += RTUTIL.getString("(", GetOrientationName()(orient), ",", !net_set.empty(), ")");
+            orient_routed_rect_map_info_message += RTUTIL.getString("(", GetOrientationName()(orient));
+            for (int32_t net_idx : net_set) {
+              orient_routed_rect_map_info_message += RTUTIL.getString(",", net_idx);
+            }
+            orient_routed_rect_map_info_message += RTUTIL.getString(")");
           }
           gp_text_orient_routed_rect_map_info.set_message(orient_routed_rect_map_info_message);
           gp_text_orient_routed_rect_map_info.set_layer_idx(RTGP.getGDSIdxByRouting(dr_node.get_layer_idx()));

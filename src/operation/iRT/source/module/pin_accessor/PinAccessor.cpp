@@ -53,7 +53,6 @@ void PinAccessor::access()
   Monitor monitor;
   RTLOG.info(Loc::current(), "Starting...");
   PAModel pa_model = initPAModel();
-  initLayerEnclosureMap(pa_model);
   initAccessPointList(pa_model);
   buildAccessPointList(pa_model);
   uploadAccessPoint(pa_model);
@@ -103,26 +102,6 @@ PANet PinAccessor::convertToPANet(Net& net)
   }
   pa_net.set_bounding_box(net.get_bounding_box());
   return pa_net;
-}
-
-void PinAccessor::initLayerEnclosureMap(PAModel& pa_model)
-{
-  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
-  std::vector<std::vector<ViaMaster>>& layer_via_master_list = RTDM.getDatabase().get_layer_via_master_list();
-
-  std::map<int32_t, PlanarRect>& layer_enclosure_map = pa_model.get_layer_enclosure_map();
-
-  int32_t start_layer_idx = 0;
-  int32_t end_layer_idx = static_cast<int32_t>(routing_layer_list.size()) - 1;
-
-  layer_enclosure_map[start_layer_idx] = layer_via_master_list[start_layer_idx].front().get_below_enclosure();
-  for (int32_t layer_idx = 1; layer_idx < end_layer_idx; layer_idx++) {
-    std::vector<PlanarRect> rect_list;
-    rect_list.push_back(layer_via_master_list[layer_idx - 1].front().get_above_enclosure());
-    rect_list.push_back(layer_via_master_list[layer_idx].front().get_below_enclosure());
-    layer_enclosure_map[layer_idx] = RTUTIL.getBoundingBox(rect_list);
-  }
-  layer_enclosure_map[end_layer_idx] = layer_via_master_list[end_layer_idx - 1].front().get_above_enclosure();
 }
 
 void PinAccessor::initAccessPointList(PAModel& pa_model)
@@ -196,8 +175,7 @@ std::vector<PlanarRect> PinAccessor::getPlanarLegalRectList(PAModel& pa_model, i
 {
   ScaleAxis& gcell_axis = RTDM.getDatabase().get_gcell_axis();
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
-
-  std::map<int32_t, PlanarRect>& layer_enclosure_map = pa_model.get_layer_enclosure_map();
+  std::map<int32_t, PlanarRect>& layer_enclosure_map = RTDM.getDatabase().get_layer_enclosure_map();
 
   int32_t curr_layer_idx;
   {
@@ -514,8 +492,7 @@ std::vector<std::pair<PAPin*, std::set<PAPin*>>> PinAccessor::getPinConlictMap(P
 bool PinAccessor::hasConflict(PAModel& pa_model, AccessPoint& curr_access_point, AccessPoint& gcell_access_point)
 {
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
-
-  std::map<int32_t, PlanarRect>& layer_enclosure_map = pa_model.get_layer_enclosure_map();
+  std::map<int32_t, PlanarRect>& layer_enclosure_map = RTDM.getDatabase().get_layer_enclosure_map();
 
   std::set<int32_t> conflict_layer_idx_set;
   {

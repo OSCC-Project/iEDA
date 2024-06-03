@@ -50,7 +50,6 @@ class PinAccessor
   PAModel initPAModel();
   std::vector<PANet> convertToPANetList(std::vector<Net>& net_list);
   PANet convertToPANet(Net& net);
-  void initLayerEnclosureMap(PAModel& pa_model);
   void initAccessPointList(PAModel& pa_model);
   std::vector<LayerRect> getLegalShapeList(PAModel& pa_model, int32_t net_idx, Pin* pin);
   std::vector<PlanarRect> getPlanarLegalRectList(PAModel& pa_model, int32_t curr_net_idx, std::vector<EXTLayerRect>& pin_shape_list);
