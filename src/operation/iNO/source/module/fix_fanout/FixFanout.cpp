@@ -53,7 +53,7 @@ void FixFanout::fixFanout() {
   }
 
   LOG_INFO << "[Result: ] Find " << _fanout_vio_num << " Net with fanout violation.\n";
-  LOG_INFO << "[Result: ] Insert " << _insert_instance_index << " Buffers.\n";
+  LOG_INFO << "[Result: ] Insert " << _insert_instance_index - 1 << " Buffers.\n";
 
   _db_interface->report()->get_ofstream() << "[Result: ] Find " << _fanout_vio_num
                                           << " Net with fanout violation.\n"

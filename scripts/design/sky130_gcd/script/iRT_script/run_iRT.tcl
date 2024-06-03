@@ -49,6 +49,8 @@ feature_tool -path $::env(RESULT_DIR)/feature/irt.json -step route
 
 destroy_rt
 
+
+
 #===========================================================
 ##   save def & netlist
 #===========================================================

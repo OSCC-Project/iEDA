@@ -10,7 +10,7 @@ line_comment      = _{ "//" ~ (!("\n") ~ ASCII)* ~ ("\n" | EOI) }
 multiline_comment = _{ "/*" ~ (!"*/" ~ ANY)* ~ "*/" }
 COMMENT = _{ line_comment | multiline_comment }
 
-char = _{ ASCII_ALPHANUMERIC | "_" | "\\" | "[" | "]" | "/" | ":" | "$" | "=" | "." }
+char = _{ ASCII_ALPHANUMERIC | "_" | "\\" | "[" | "]" | "/" | ":" | "$" | "=" | "." | "'" }
 
 port_or_wire_id = @{ (char+ ~ " " ~ char+) | char+ }
 port_list = { port_or_wire_id ~ ("," ~ port_or_wire_id)* }
@@ -21,7 +21,8 @@ first_wire_list_with_scalar_constant = _{ scalar_constant | port_or_wire_id }
 next_wire_list_with_scalar_constant = _{ (("," ~ scalar_constant) | ("," ~ port_or_wire_id))* }
 wire_list_with_scalar_constant = _{ first_wire_list_with_scalar_constant ~ next_wire_list_with_scalar_constant }
 
-inst_or_cell_id = { char+ }
+cell_id = { char+ }
+inst_id =  @{ (char+ ~ " " ~ char+) | char+  }
 module_id = { char+ }
 WHITESPACE = _{ " " | "\t" | "\r" | "\n" }
 semicolon_opt = _{ ";" }
@@ -44,7 +45,7 @@ first_port_connection = _{ first_port_connection_single_connect | first_port_con
 port_connection = _{ "," ~ first_port_connection }
 port_block_connection = !{ "(" ~ first_port_connection? ~ port_connection* ~ ")"  ~ semicolon_opt }
 
-inst_declaration = ${ inst_or_cell_id ~ WHITESPACE+ ~ inst_or_cell_id ~ WHITESPACE+ ~ port_block_connection }
+inst_declaration = ${ cell_id ~ WHITESPACE+ ~ inst_id ~ WHITESPACE+ ~ port_block_connection }
 inst_block_declaration = { inst_declaration+ }
 
 module_declaration = { "module" ~ module_id ~ "(" ~ port_list ~ ");" ~ port_or_wire_block_declaration 

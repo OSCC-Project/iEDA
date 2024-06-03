@@ -134,7 +134,7 @@ class GridManager
   std::vector<Rectangle<int32_t>> obtainAvailableRectList(int32_t row_low, int32_t row_high, int32_t grid_left, int32_t grid_right,
                                                           float available_ratio);
 
-  void obtainOverflowIllegalGridList(std::vector<Grid*>& gird_list);
+  void obtainOverflowIllegalGridList(std::vector<Grid*>& grid_list);
   void clearAllOccupiedArea();
   void clearAllOccupiedNodeNum();
 
@@ -145,7 +145,7 @@ class GridManager
   void plotRouteDem();
   void plotRouteUtil(int32_t iter_num);
   void fastGaussianBlur(std::vector<std::vector<float>>& image, float sigma, int kernelSize);
-  void blurRouteDemand();  
+  void blurRouteDemand();
 
   int64_t obtainOverlapArea(Grid* grid, const Rectangle<int32_t>& rect);
   Rectangle<int32_t> obtainOverlapRect(Grid* grid, const Rectangle<int32_t>& rect);

@@ -38,6 +38,8 @@ CmdReportTiming::CmdReportTiming(const char* cmd_name) : TclCmd(cmd_name) {
   addOption(derate_option);
   auto* is_clock_cap_option = new TclSwitchOption("-is_clock_cap");
   addOption(is_clock_cap_option);
+  auto* is_snappot_option = new TclSwitchOption("-is_snappot");
+  addOption(is_snappot_option);
 }
 
 unsigned CmdReportTiming::check() { return 1; }
@@ -64,14 +66,20 @@ unsigned CmdReportTiming::exec() {
 
   TclOption* derate_option = getOptionOrArg("-derate");
   bool is_derate = false;
-  if (derate_option) {
+  if (derate_option->is_set_val()) {
     is_derate = true;
   }
 
   TclOption* is_clock_cap_option = getOptionOrArg("-is_clock_cap");
   bool is_clock_cap = false;
-  if (is_clock_cap_option) {
+  if (is_clock_cap_option->is_set_val()) {
     is_clock_cap = true;
+  }
+
+  TclOption* is_snappot_option = getOptionOrArg("-is_snappot");
+  bool is_snappot = false;
+  if (is_snappot_option->is_set_val()) {
+    is_snappot = true;
   }
 
   Sta* ista = Sta::getOrCreateSta();
@@ -84,8 +92,8 @@ unsigned CmdReportTiming::exec() {
   }
 
   ista->updateTiming();
-  ista->reportTiming(std::move(new_exclude_cell_names), is_derate,
-                     is_clock_cap);
+  ista->reportTiming(std::move(new_exclude_cell_names), is_derate, is_clock_cap,
+                     is_snappot);
   // ista->dumpNetlistData();
   return 1;
 }
