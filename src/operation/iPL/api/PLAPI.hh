@@ -107,7 +107,7 @@ class PLAPI
   void plotModuleStateForDebug(std::vector<std::string> special_inst_list, std::string path);
 
   void modifySTAOutputDir(std::string path);
-  void initSTA();
+  void initSTA(std::string path, bool init_log);
   void initEval();
   void updateSTATiming();
   std::vector<std::string> obtainClockNameList();
