@@ -22,7 +22,6 @@
 #include "Database.hpp"
 #include "IRModel.hpp"
 #include "RTHeader.hpp"
-#include "flute3/flute.h"
 
 namespace irt {
 
@@ -41,33 +40,28 @@ class InitialRouter
   // self
   static InitialRouter* _ir_instance;
 
-  InitialRouter() { Flute::readLUT(); }
+  InitialRouter() = default;
   InitialRouter(const InitialRouter& other) = delete;
   InitialRouter(InitialRouter&& other) = delete;
-  ~InitialRouter() { Flute::deleteLUT(); }
+  ~InitialRouter() = default;
   InitialRouter& operator=(const InitialRouter& other) = delete;
   InitialRouter& operator=(InitialRouter&& other) = delete;
   // function
   IRModel initIRModel();
   std::vector<IRNet> convertToIRNetList(std::vector<Net>& net_list);
   IRNet convertToIRNet(Net& net);
+  void initIRTaskList(IRModel& ir_model);
   void setIRParameter(IRModel& ir_model);
   void buildLayerNodeMap(IRModel& ir_model);
   void buildIRNodeNeighbor(IRModel& ir_model);
   void buildOrientSupply(IRModel& ir_model);
-  void sortIRModel(IRModel& ir_model);
-  bool sortByMultiLevel(IRModel& ir_model, int32_t net_idx1, int32_t net_idx2);
-  SortStatus sortByClockPriority(IRNet& net1, IRNet& net2);
-  SortStatus sortByRoutingAreaASC(IRNet& net1, IRNet& net2);
-  SortStatus sortByLengthWidthRatioDESC(IRNet& net1, IRNet& net2);
-  SortStatus sortByPinNumDESC(IRNet& net1, IRNet& net2);
+  void buildTopoTree(IRModel& ir_model);
   void routeIRModel(IRModel& ir_model);
-  void routeIRNet(IRModel& ir_model, IRNet& ir_net);
-  void makeIRTaskList(IRModel& ir_model, IRNet& ir_net, std::vector<IRTask>& ir_task_list,
+  void routeIRNet(IRModel& ir_model, IRNet* ir_net);
+  void makeIRTopoList(IRModel& ir_model, IRNet* ir_net, std::vector<IRTopo>& ir_topo_list,
                       std::vector<Segment<LayerCoord>>& routing_segment_list);
-  std::vector<Segment<PlanarCoord>> getPlanarTopoListByFlute(std::vector<PlanarCoord>& planar_coord_list);
-  void routeIRTask(IRModel& ir_model, IRTask* ir_task);
-  void initSingleTask(IRModel& ir_model, IRTask* ir_task);
+  void routeIRTopo(IRModel& ir_model, IRTopo* ir_topo);
+  void initSingleTask(IRModel& ir_model, IRTopo* ir_topo);
   bool isConnectedAllEnd(IRModel& ir_model);
   void routeSinglePath(IRModel& ir_model);
   void initPathHead(IRModel& ir_model);
@@ -95,20 +89,19 @@ class InitialRouter
   double getEstimateWireCost(IRModel& ir_model, IRNode* start_node, IRNode* end_node);
   double getEstimateCornerCost(IRModel& ir_model, IRNode* start_node, IRNode* end_node);
   double getEstimateViaCost(IRModel& ir_model, IRNode* start_node, IRNode* end_node);
-  MTree<LayerCoord> getCoordTree(IRNet& ir_net, std::vector<Segment<LayerCoord>>& routing_segment_list);
-  void updateDemand(IRModel& ir_model, IRNet& ir_net, MTree<LayerCoord>& coord_tree);
-  void updateIRModel(IRModel& ir_model);
-
-#if 1  // debug
-  void debugCheckIRModel(IRModel& ir_model);
-  void debugOutputGuide(IRModel& ir_model);
-#endif
+  MTree<LayerCoord> getCoordTree(IRNet* ir_net, std::vector<Segment<LayerCoord>>& routing_segment_list);
+  void updateDemand(IRModel& ir_model, IRNet* ir_net, MTree<LayerCoord>& coord_tree);
+  void uploadNetResult(IRNet* ir_net, MTree<LayerCoord>& coord_tree);
 
 #if 1  // exhibit
   void updateSummary(IRModel& ir_model);
   void printSummary(IRModel& ir_model);
   void writeDemandCSV(IRModel& ir_model);
   void writeOverflowCSV(IRModel& ir_model);
+#endif
+
+#if 1  // debug
+  void debugCheckIRModel(IRModel& ir_model);
 #endif
 };
 

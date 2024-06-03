@@ -17,7 +17,7 @@
 #include "Monitor.hpp"
 
 #include "Logger.hpp"
-#include "RTUtil.hpp"
+#include "Utility.hpp"
 
 namespace irt {
 
@@ -26,24 +26,24 @@ namespace irt {
 std::string Monitor::getStatsInfo()
 {
   std::string stats_info;
-  stats_info = RTUtil::getString(" (elapsed = ", getElapsedTime(), ", cpu = ", getCPUTime(), ", mem = ", getUsageMemory(), ") ");
+  stats_info = RTUTIL.getString(" (elapsed = ", getElapsedTime(), ", cpu = ", getCPUTime(), ", mem = ", getUsageMemory(), ") ");
   updateStats();
   return stats_info;
 }
 
 std::string Monitor::getElapsedTime()
 {
-  return RTUtil::formatSec(getCurrElapsedTime() - _init_elapsed_time);
+  return RTUTIL.formatSec(getCurrElapsedTime() - _init_elapsed_time);
 }
 
 std::string Monitor::getCPUTime()
 {
-  return RTUtil::formatSec(getCurrCPUTime() - _init_cpu_time);
+  return RTUTIL.formatSec(getCurrCPUTime() - _init_cpu_time);
 }
 
 std::string Monitor::getUsageMemory()
 {
-  return RTUtil::getString(RTUtil::formatByTwoDecimalPlaces(getCurrUsageMemory() - _init_usage_memory), "MB");
+  return RTUTIL.getString(RTUTIL.formatByTwoDecimalPlaces(getCurrUsageMemory() - _init_usage_memory), "MB");
 }
 
 // private

@@ -20,11 +20,11 @@
 
 namespace irt {
 
-class IRTask
+class IRTopo
 {
  public:
-  IRTask() = default;
-  ~IRTask() = default;
+  IRTopo() = default;
+  ~IRTopo() = default;
   // getter
   int32_t get_net_idx() { return _net_idx; }
   std::vector<IRGroup>& get_ir_group_list() { return _ir_group_list; }

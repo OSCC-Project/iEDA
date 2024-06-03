@@ -20,28 +20,28 @@
 #include "LayerCoord.hpp"
 #include "Orientation.hpp"
 #include "RTHeader.hpp"
-#include "RTUtil.hpp"
+#include "Utility.hpp"
 
 namespace irt {
 
-class PRNode : public PlanarCoord
+class TGNode : public PlanarCoord
 {
  public:
-  PRNode() = default;
-  ~PRNode() = default;
+  TGNode() = default;
+  ~TGNode() = default;
   // getter
-  std::map<Orientation, PRNode*>& get_neighbor_node_map() { return _neighbor_node_map; }
+  std::map<Orientation, TGNode*>& get_neighbor_node_map() { return _neighbor_node_map; }
   std::map<Orientation, int32_t>& get_orient_supply_map() { return _orient_supply_map; }
   std::map<Orientation, int32_t>& get_orient_demand_map() { return _orient_demand_map; }
   // setter
-  void set_neighbor_node_map(const std::map<Orientation, PRNode*>& neighbor_node_map) { _neighbor_node_map = neighbor_node_map; }
+  void set_neighbor_node_map(const std::map<Orientation, TGNode*>& neighbor_node_map) { _neighbor_node_map = neighbor_node_map; }
   void set_orient_supply_map(const std::map<Orientation, int32_t>& orient_supply_map) { _orient_supply_map = orient_supply_map; }
   void set_orient_demand_map(const std::map<Orientation, int32_t>& orient_demand_map) { _orient_demand_map = orient_demand_map; }
   // function
-  PRNode* getNeighborNode(Orientation orientation)
+  TGNode* getNeighborNode(Orientation orientation)
   {
-    PRNode* neighbor_node = nullptr;
-    if (RTUtil::exist(_neighbor_node_map, orientation)) {
+    TGNode* neighbor_node = nullptr;
+    if (RTUTIL.exist(_neighbor_node_map, orientation)) {
       neighbor_node = _neighbor_node_map[orientation];
     }
     return neighbor_node;
@@ -49,17 +49,15 @@ class PRNode : public PlanarCoord
   double getCongestionCost(Orientation orientation)
   {
     double cost = 0;
-    if (orientation != Orientation::kAbove && orientation != Orientation::kBelow) {
-      int32_t node_demand = 0;
-      if (RTUtil::exist(_orient_demand_map, orientation)) {
-        node_demand = _orient_demand_map[orientation];
-      }
-      int32_t node_supply = 0;
-      if (RTUtil::exist(_orient_supply_map, orientation)) {
-        node_supply = _orient_supply_map[orientation];
-      }
-      cost += calcCost(node_demand + 1, node_supply);
+    int32_t node_demand = 0;
+    if (RTUTIL.exist(_orient_demand_map, orientation)) {
+      node_demand = _orient_demand_map[orientation];
     }
+    int32_t node_supply = 0;
+    if (RTUTIL.exist(_orient_supply_map, orientation)) {
+      node_supply = _orient_supply_map[orientation];
+    }
+    cost += calcCost(node_demand + 1, node_supply);
     return cost;
   }
   double calcCost(double demand, double supply)
@@ -84,7 +82,7 @@ class PRNode : public PlanarCoord
   }
 
  private:
-  std::map<Orientation, PRNode*> _neighbor_node_map;
+  std::map<Orientation, TGNode*> _neighbor_node_map;
   std::map<Orientation, int32_t> _orient_supply_map;
   std::map<Orientation, int32_t> _orient_demand_map;
 };

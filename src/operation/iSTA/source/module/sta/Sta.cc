@@ -204,7 +204,7 @@ unsigned Sta::readSdc(const char *sdc_file) {
 unsigned Sta::readSpef(const char *spef_file) {
   StaGraph &the_graph = get_graph();
 
-  StaBuildRCTree func(spef_file, DelayCalcMethod::kArnoldi);
+  StaBuildRCTree func(spef_file, DelayCalcMethod::kElmore);
   func(&the_graph);
 
   return 1;

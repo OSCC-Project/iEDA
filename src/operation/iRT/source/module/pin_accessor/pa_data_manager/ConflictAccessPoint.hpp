@@ -16,23 +16,25 @@
 // ***************************************************************************************
 #pragma once
 
-#include "Pin.hpp"
+#include "PAPin.hpp"
 
 namespace irt {
 
-class PRPin : public Pin
+class ConflictAccessPoint : public PlanarCoord
 {
  public:
-  PRPin() = default;
-  explicit PRPin(const Pin& pin) : Pin(pin) {}
-  ~PRPin() = default;
+  ConflictAccessPoint() = default;
+  ~ConflictAccessPoint() = default;
   // getter
-
+  PAPin* get_pa_pin() { return _pa_pin; }
+  AccessPoint* get_access_point() { return _access_point; }
   // setter
-
+  void set_pa_pin(PAPin* pa_pin) { _pa_pin = pa_pin; }
+  void set_access_point(AccessPoint* access_point) { _access_point = access_point; }
   // function
-
  private:
+  PAPin* _pa_pin = nullptr;
+  AccessPoint* _access_point = nullptr;
 };
 
 }  // namespace irt

@@ -17,34 +17,34 @@
 
 #pragma once
 
-#include "PRNet.hpp"
-#include "PRNode.hpp"
-#include "PRParameter.hpp"
 #include "RTHeader.hpp"
+#include "TGNet.hpp"
+#include "TGNode.hpp"
+#include "TGParameter.hpp"
 
 namespace irt {
 
-class PRModel
+class TGModel
 {
  public:
-  PRModel() = default;
-  ~PRModel() = default;
+  TGModel() = default;
+  ~TGModel() = default;
   // getter
-  std::vector<PRNet>& get_pr_net_list() { return _pr_net_list; }
-  PRParameter& get_pr_parameter() { return _pr_parameter; }
-  GridMap<PRNode>& get_pr_node_map() { return _pr_node_map; }
-  std::vector<int32_t>& get_pr_net_idx_list() { return _pr_net_idx_list; }
+  std::vector<TGNet>& get_tg_net_list() { return _tg_net_list; }
+  TGParameter& get_tg_parameter() { return _tg_parameter; }
+  std::vector<TGNet*>& get_tg_task_list() { return _tg_task_list; }
+  GridMap<TGNode>& get_tg_node_map() { return _tg_node_map; }
   // setter
-  void set_pr_net_list(const std::vector<PRNet>& pr_net_list) { _pr_net_list = pr_net_list; }
-  void set_pr_parameter(const PRParameter& pr_parameter) { _pr_parameter = pr_parameter; }
-  void set_pr_node_map(const GridMap<PRNode>& pr_node_map) { _pr_node_map = pr_node_map; }
-  void set_pr_net_idx_list(const std::vector<int32_t>& pr_net_idx_list) { _pr_net_idx_list = pr_net_idx_list; }
+  void set_tg_net_list(const std::vector<TGNet>& tg_net_list) { _tg_net_list = tg_net_list; }
+  void set_tg_parameter(const TGParameter& tg_parameter) { _tg_parameter = tg_parameter; }
+  void set_tg_task_list(const std::vector<TGNet*>& tg_task_list) { _tg_task_list = tg_task_list; }
+  void set_tg_node_map(const GridMap<TGNode>& tg_node_map) { _tg_node_map = tg_node_map; }
 
  private:
-  std::vector<PRNet> _pr_net_list;
-  PRParameter _pr_parameter;
-  GridMap<PRNode> _pr_node_map;
-  std::vector<int32_t> _pr_net_idx_list;
+  std::vector<TGNet> _tg_net_list;
+  TGParameter _tg_parameter;
+  std::vector<TGNet*> _tg_task_list;
+  GridMap<TGNode> _tg_node_map;
 };
 
 }  // namespace irt
