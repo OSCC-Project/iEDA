@@ -237,10 +237,10 @@ std::vector<PlanarRect> PinAccessor::getPlanarLegalRectList(PAModel& pa_model, i
             }
             for (EXTLayerRect* fixed_rect : fixed_rect_set) {
               int32_t min_spacing = routing_layer.getMinSpacing(fixed_rect->get_real_rect());
-              int32_t enlarged_size_x = min_spacing + enclosure_half_x_span;
-              int32_t enlarged_size_y = min_spacing + enclosure_half_y_span;
+              int32_t enlarged_x_size = min_spacing + enclosure_half_x_span;
+              int32_t enlarged_y_size = min_spacing + enclosure_half_y_span;
               PlanarRect enlarged_rect
-                  = RTUTIL.getEnlargedRect(fixed_rect->get_real_rect(), enlarged_size_x, enlarged_size_y, enlarged_size_x, enlarged_size_y);
+                  = RTUTIL.getEnlargedRect(fixed_rect->get_real_rect(), enlarged_x_size, enlarged_y_size, enlarged_x_size, enlarged_y_size);
               if (RTUTIL.isOpenOverlap(reduced_rect.get_real_rect(), enlarged_rect)) {
                 routing_obs_shape_list.push_back(enlarged_rect);
               }

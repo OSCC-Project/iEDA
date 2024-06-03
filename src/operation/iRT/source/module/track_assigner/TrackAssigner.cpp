@@ -87,7 +87,6 @@ void TrackAssigner::assign()
       ta_net.set_gr_result_tree(RTUTIL.convertTree(coord_tree, convertToGuide));
     }
   }
-
   initTATaskList(ta_model);
   buildPanelSchedule(ta_model);
   assignTAPanelMap(ta_model);
@@ -136,7 +135,7 @@ TANet TrackAssigner::convertToTANet(Net& net)
 void TrackAssigner::setTAParameter(TAModel& ta_model)
 {
   int32_t cost_unit = 8;
-  TAParameter ta_parameter(128 * cost_unit, 32 * cost_unit, 32 * cost_unit, 2);
+  TAParameter ta_parameter(128 * cost_unit, 32 * cost_unit, 32 * cost_unit, 4);
   RTLOG.info(Loc::current(), "prefer_wire_unit: ", ta_parameter.get_prefer_wire_unit());
   RTLOG.info(Loc::current(), "corner_unit: ", ta_parameter.get_corner_unit());
   RTLOG.info(Loc::current(), "fixed_rect_unit: ", ta_parameter.get_fixed_rect_unit());
@@ -1101,7 +1100,7 @@ void TrackAssigner::updateFixedRectToGraph(TAPanel& ta_panel, ChangeType change_
                                            bool is_routing)
 {
   NetShape net_shape(net_idx, fixed_rect->getRealLayerRect(), is_routing);
-  for (auto& [ta_node, orientation_set] : getRoutingNodeOrientationMap(ta_panel, net_shape)) {
+  for (auto& [ta_node, orientation_set] : getNodeOrientationMap(ta_panel, net_shape)) {
     for (Orientation orientation : orientation_set) {
       if (change_type == ChangeType::kAdd) {
         ta_node->get_orient_fixed_rect_map()[orientation].insert(net_shape.get_net_idx());
@@ -1115,7 +1114,7 @@ void TrackAssigner::updateFixedRectToGraph(TAPanel& ta_panel, ChangeType change_
 void TrackAssigner::updateNetResultToGraph(TAPanel& ta_panel, ChangeType change_type, int32_t net_idx, Segment<LayerCoord>& segment)
 {
   for (NetShape& net_shape : RTDM.getNetShapeList(net_idx, segment)) {
-    for (auto& [ta_node, orientation_set] : getRoutingNodeOrientationMap(ta_panel, net_shape)) {
+    for (auto& [ta_node, orientation_set] : getNodeOrientationMap(ta_panel, net_shape)) {
       for (Orientation orientation : orientation_set) {
         if (change_type == ChangeType::kAdd) {
           ta_node->get_orient_routed_rect_map()[orientation].insert(net_shape.get_net_idx());
@@ -1130,7 +1129,7 @@ void TrackAssigner::updateNetResultToGraph(TAPanel& ta_panel, ChangeType change_
 void TrackAssigner::updateViolationToGraph(TAPanel& ta_panel, ChangeType change_type, Violation& violation)
 {
   NetShape net_shape(-1, violation.get_violation_shape().getRealLayerRect(), violation.get_is_routing());
-  for (auto& [ta_node, orientation_set] : getRoutingNodeOrientationMap(ta_panel, net_shape)) {
+  for (auto& [ta_node, orientation_set] : getNodeOrientationMap(ta_panel, net_shape)) {
     for (Orientation orientation : orientation_set) {
       if (change_type == ChangeType::kAdd) {
         ta_node->get_orient_violation_number_map()[orientation]++;
@@ -1141,29 +1140,52 @@ void TrackAssigner::updateViolationToGraph(TAPanel& ta_panel, ChangeType change_
   }
 }
 
+std::map<TANode*, std::set<Orientation>> TrackAssigner::getNodeOrientationMap(TAPanel& ta_panel, NetShape& net_shape)
+{
+  std::map<TANode*, std::set<Orientation>> node_orientation_map;
+  if (net_shape.get_is_routing()) {
+    node_orientation_map = getRoutingNodeOrientationMap(ta_panel, net_shape);
+  } else {
+    RTLOG.error(Loc::current(), "The type of net_shape is cut!");
+  }
+  return node_orientation_map;
+}
+
 std::map<TANode*, std::set<Orientation>> TrackAssigner::getRoutingNodeOrientationMap(TAPanel& ta_panel, NetShape& net_shape)
 {
+  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
   if (!net_shape.get_is_routing()) {
     RTLOG.error(Loc::current(), "The type of net_shape is cut!");
   }
   if (ta_panel.get_panel_rect().get_layer_idx() != net_shape.get_layer_idx()) {
     RTLOG.error(Loc::current(), "The layer_idx is error!");
   }
-  RoutingLayer& routing_layer = RTDM.getDatabase().get_routing_layer_list()[net_shape.get_layer_idx()];
+  int32_t layer_idx = net_shape.get_layer_idx();
+  RoutingLayer& routing_layer = routing_layer_list[layer_idx];
+  int32_t min_spacing = routing_layer.getMinSpacing(net_shape.get_rect());
+  int32_t half_wire_width = routing_layer.get_min_width() / 2;
 
-  // 膨胀size为 min_spacing + 1/2 * width
-  int32_t enlarged_size = routing_layer.getMinSpacing(net_shape.get_rect()) + (routing_layer.get_min_width() / 2);
-  PlanarRect enlarged_rect = RTUTIL.getEnlargedRect(net_shape.get_rect(), enlarged_size);
-
+  GridMap<TANode>& ta_node_map = ta_panel.get_ta_node_map();
   std::map<TANode*, std::set<Orientation>> node_orientation_map;
-  if (RTUTIL.existTrackGrid(enlarged_rect, ta_panel.get_panel_track_axis())) {
-    PlanarRect grid_rect = RTUTIL.getTrackGridRect(enlarged_rect, ta_panel.get_panel_track_axis());
-    for (int32_t grid_x = grid_rect.get_ll_x(); grid_x <= grid_rect.get_ur_x(); grid_x++) {
-      for (int32_t grid_y = grid_rect.get_ll_y(); grid_y <= grid_rect.get_ur_y(); grid_y++) {
-        TANode& node = ta_panel.get_ta_node_map()[grid_x][grid_y];
-        for (auto& [orientation, neighbor_ptr] : node.get_neighbor_node_map()) {
-          node_orientation_map[&node].insert(orientation);
-          node_orientation_map[neighbor_ptr].insert(RTUTIL.getOppositeOrientation(orientation));
+  // wire
+  {
+    // 膨胀size为 min_spacing + half_wire_width
+    int32_t enlarged_size = min_spacing + half_wire_width;
+    // 贴合的也不算违例
+    enlarged_size -= 1;
+    PlanarRect planar_enlarged_rect = RTUTIL.getEnlargedRect(net_shape.get_rect(), enlarged_size);
+    if (RTUTIL.existTrackGrid(planar_enlarged_rect, ta_panel.get_panel_track_axis())) {
+      PlanarRect grid_rect = RTUTIL.getTrackGridRect(planar_enlarged_rect, ta_panel.get_panel_track_axis());
+      for (int32_t grid_x = grid_rect.get_ll_x(); grid_x <= grid_rect.get_ur_x(); grid_x++) {
+        for (int32_t grid_y = grid_rect.get_ll_y(); grid_y <= grid_rect.get_ur_y(); grid_y++) {
+          TANode& node = ta_node_map[grid_x][grid_y];
+          for (Orientation orientation : {Orientation::kEast, Orientation::kWest, Orientation::kSouth, Orientation::kNorth}) {
+            if (!RTUTIL.exist(node.get_neighbor_node_map(), orientation)) {
+              continue;
+            }
+            node_orientation_map[&node].insert(orientation);
+            node_orientation_map[node.get_neighbor_node_map()[orientation]].insert(RTUTIL.getOppositeOrientation(orientation));
+          }
         }
       }
     }
