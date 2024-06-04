@@ -1174,19 +1174,17 @@ std::map<TANode*, std::set<Orientation>> TrackAssigner::getRoutingNodeOrientatio
     // 贴合的也不算违例
     enlarged_size -= 1;
     PlanarRect planar_enlarged_rect = RTUTIL.getEnlargedRect(net_shape.get_rect(), enlarged_size);
-    if (RTUTIL.existTrackGrid(planar_enlarged_rect, ta_panel.get_panel_track_axis())) {
-      PlanarRect grid_rect = RTUTIL.getTrackGridRect(planar_enlarged_rect, ta_panel.get_panel_track_axis());
-      for (int32_t grid_x = grid_rect.get_ll_x(); grid_x <= grid_rect.get_ur_x(); grid_x++) {
-        for (int32_t grid_y = grid_rect.get_ll_y(); grid_y <= grid_rect.get_ur_y(); grid_y++) {
-          TANode& node = ta_node_map[grid_x][grid_y];
-          for (Orientation orientation : {Orientation::kEast, Orientation::kWest, Orientation::kSouth, Orientation::kNorth}) {
-            if (!RTUTIL.exist(node.get_neighbor_node_map(), orientation)) {
-              continue;
-            }
-            node_orientation_map[&node].insert(orientation);
-            node_orientation_map[node.get_neighbor_node_map()[orientation]].insert(RTUTIL.getOppositeOrientation(orientation));
-          }
+    for (auto& [grid_coord, orientation_set] : RTUTIL.getTrackGridOrientationMap(planar_enlarged_rect, ta_panel.get_panel_track_axis())) {
+      TANode& node = ta_node_map[grid_coord.get_x()][grid_coord.get_y()];
+      for (const Orientation& orientation : orientation_set) {
+        if (orientation == Orientation::kAbove || orientation == Orientation::kBelow) {
+          continue;
         }
+        if (!RTUTIL.exist(node.get_neighbor_node_map(), orientation)) {
+          continue;
+        }
+        node_orientation_map[&node].insert(orientation);
+        node_orientation_map[node.get_neighbor_node_map()[orientation]].insert(RTUTIL.getOppositeOrientation(orientation));
       }
     }
   }
@@ -1527,7 +1525,11 @@ void TrackAssigner::debugPlotTAPanel(TAPanel& ta_panel, int32_t curr_task_idx, s
         gp_text_orient_fixed_rect_map_info.set_text_type(static_cast<int32_t>(GPDataType::kInfo));
         std::string orient_fixed_rect_map_info_message = "--";
         for (auto& [orient, net_set] : ta_node.get_orient_fixed_rect_map()) {
-          orient_fixed_rect_map_info_message += RTUTIL.getString("(", GetOrientationName()(orient), ",", !net_set.empty(), ")");
+          orient_fixed_rect_map_info_message += RTUTIL.getString("(", GetOrientationName()(orient));
+          for (int32_t net_idx : net_set) {
+            orient_fixed_rect_map_info_message += RTUTIL.getString(",", net_idx);
+          }
+          orient_fixed_rect_map_info_message += RTUTIL.getString(")");
         }
         gp_text_orient_fixed_rect_map_info.set_message(orient_fixed_rect_map_info_message);
         gp_text_orient_fixed_rect_map_info.set_layer_idx(RTGP.getGDSIdxByRouting(ta_node.get_layer_idx()));
@@ -1551,7 +1553,11 @@ void TrackAssigner::debugPlotTAPanel(TAPanel& ta_panel, int32_t curr_task_idx, s
         gp_text_orient_routed_rect_map_info.set_text_type(static_cast<int32_t>(GPDataType::kInfo));
         std::string orient_routed_rect_map_info_message = "--";
         for (auto& [orient, net_set] : ta_node.get_orient_routed_rect_map()) {
-          orient_routed_rect_map_info_message += RTUTIL.getString("(", GetOrientationName()(orient), ",", !net_set.empty(), ")");
+          orient_routed_rect_map_info_message += RTUTIL.getString("(", GetOrientationName()(orient));
+          for (int32_t net_idx : net_set) {
+            orient_routed_rect_map_info_message += RTUTIL.getString(",", net_idx);
+          }
+          orient_routed_rect_map_info_message += RTUTIL.getString(")");
         }
         gp_text_orient_routed_rect_map_info.set_message(orient_routed_rect_map_info_message);
         gp_text_orient_routed_rect_map_info.set_layer_idx(RTGP.getGDSIdxByRouting(ta_node.get_layer_idx()));

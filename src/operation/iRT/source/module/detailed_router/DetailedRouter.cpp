@@ -1389,19 +1389,17 @@ std::map<DRNode*, std::set<Orientation>> DetailedRouter::getRoutingNodeOrientati
     // 贴合的也不算违例
     enlarged_size -= 1;
     PlanarRect planar_enlarged_rect = RTUTIL.getEnlargedRect(net_shape.get_rect(), enlarged_size);
-    if (RTUTIL.existTrackGrid(planar_enlarged_rect, dr_box.get_box_track_axis())) {
-      PlanarRect grid_rect = RTUTIL.getTrackGridRect(planar_enlarged_rect, dr_box.get_box_track_axis());
-      for (int32_t grid_x = grid_rect.get_ll_x(); grid_x <= grid_rect.get_ur_x(); grid_x++) {
-        for (int32_t grid_y = grid_rect.get_ll_y(); grid_y <= grid_rect.get_ur_y(); grid_y++) {
-          DRNode& node = dr_node_map[grid_x][grid_y];
-          for (Orientation orientation : {Orientation::kEast, Orientation::kWest, Orientation::kSouth, Orientation::kNorth}) {
-            if (!RTUTIL.exist(node.get_neighbor_node_map(), orientation)) {
-              continue;
-            }
-            node_orientation_map[&node].insert(orientation);
-            node_orientation_map[node.get_neighbor_node_map()[orientation]].insert(RTUTIL.getOppositeOrientation(orientation));
-          }
+    for (auto& [grid_coord, orientation_set] : RTUTIL.getTrackGridOrientationMap(planar_enlarged_rect, dr_box.get_box_track_axis())) {
+      DRNode& node = dr_node_map[grid_coord.get_x()][grid_coord.get_y()];
+      for (const Orientation& orientation : orientation_set) {
+        if (orientation == Orientation::kAbove || orientation == Orientation::kBelow) {
+          continue;
         }
+        if (!RTUTIL.exist(node.get_neighbor_node_map(), orientation)) {
+          continue;
+        }
+        node_orientation_map[&node].insert(orientation);
+        node_orientation_map[node.get_neighbor_node_map()[orientation]].insert(RTUTIL.getOppositeOrientation(orientation));
       }
     }
   }
@@ -1415,19 +1413,18 @@ std::map<DRNode*, std::set<Orientation>> DetailedRouter::getRoutingNodeOrientati
     enlarged_y_size -= 1;
     PlanarRect space_enlarged_rect
         = RTUTIL.getEnlargedRect(net_shape.get_rect(), enlarged_x_size, enlarged_y_size, enlarged_x_size, enlarged_y_size);
-    if (RTUTIL.existTrackGrid(space_enlarged_rect, dr_box.get_box_track_axis())) {
-      PlanarRect grid_rect = RTUTIL.getTrackGridRect(space_enlarged_rect, dr_box.get_box_track_axis());
-      for (int32_t grid_x = grid_rect.get_ll_x(); grid_x <= grid_rect.get_ur_x(); grid_x++) {
-        for (int32_t grid_y = grid_rect.get_ll_y(); grid_y <= grid_rect.get_ur_y(); grid_y++) {
-          DRNode& node = dr_node_map[grid_x][grid_y];
-          for (Orientation orientation : {Orientation::kBelow, Orientation::kAbove}) {
-            if (!RTUTIL.exist(node.get_neighbor_node_map(), orientation)) {
-              continue;
-            }
-            node_orientation_map[&node].insert(orientation);
-            node_orientation_map[node.get_neighbor_node_map()[orientation]].insert(RTUTIL.getOppositeOrientation(orientation));
-          }
+    for (auto& [grid_coord, orientation_set] : RTUTIL.getTrackGridOrientationMap(space_enlarged_rect, dr_box.get_box_track_axis())) {
+      DRNode& node = dr_node_map[grid_coord.get_x()][grid_coord.get_y()];
+      for (const Orientation& orientation : orientation_set) {
+        if (orientation == Orientation::kEast || orientation == Orientation::kWest || orientation == Orientation::kSouth
+            || orientation == Orientation::kNorth) {
+          continue;
         }
+        if (!RTUTIL.exist(node.get_neighbor_node_map(), orientation)) {
+          continue;
+        }
+        node_orientation_map[&node].insert(orientation);
+        node_orientation_map[node.get_neighbor_node_map()[orientation]].insert(RTUTIL.getOppositeOrientation(orientation));
       }
     }
   }
@@ -1436,9 +1433,9 @@ std::map<DRNode*, std::set<Orientation>> DetailedRouter::getRoutingNodeOrientati
 
 std::map<DRNode*, std::set<Orientation>> DetailedRouter::getCutNodeOrientationMap(DRBox& dr_box, NetShape& net_shape)
 {
-  // 暂时关闭
   return {};
-
+#if 0
+  // 暂时关闭
   std::vector<CutLayer>& cut_layer_list = RTDM.getDatabase().get_cut_layer_list();
   std::map<int32_t, std::vector<int32_t>>& cut_to_adjacent_routing_map = RTDM.getDatabase().get_cut_to_adjacent_routing_map();
   std::vector<std::vector<ViaMaster>>& layer_via_master_list = RTDM.getDatabase().get_layer_via_master_list();
@@ -1474,6 +1471,7 @@ std::map<DRNode*, std::set<Orientation>> DetailedRouter::getCutNodeOrientationMa
     }
   }
   return node_orientation_map;
+#endif
 }
 
 #endif
