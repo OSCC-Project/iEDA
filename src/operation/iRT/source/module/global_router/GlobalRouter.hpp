@@ -19,6 +19,7 @@
 #include "Config.hpp"
 #include "DataManager.hpp"
 #include "Database.hpp"
+#include "Monitor.hpp"
 
 namespace irt {
 

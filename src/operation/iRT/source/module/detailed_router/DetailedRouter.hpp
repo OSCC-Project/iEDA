@@ -104,10 +104,10 @@ class DetailedRouter
   double getEstimateViaCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
   void updateViolationList(DRBox& dr_box);
   std::vector<Violation> getViolationList(DRBox& dr_box);
+  void uploadViolation(DRBox& dr_box);
   void freeDRBox(DRBox& dr_box);
   int32_t getViolationNum();
   void uploadNetResult(DRModel& dr_model);
-  void uploadViolation(DRModel& dr_model);
 
 #if 1  // update env
   void updateFixedRectToGraph(DRBox& dr_box, ChangeType change_type, int32_t net_idx, EXTLayerRect* fixed_rect, bool is_routing);
@@ -118,16 +118,16 @@ class DetailedRouter
   void updateViolationToGraph(DRBox& dr_box, ChangeType change_type, Violation& violation);
 #endif
 
-#if 1  // debug
-  void debugCheckDRBox(DRBox& dr_box);
-  void debugPlotDRBox(DRBox& dr_box, int32_t curr_task_idx, std::string flag);
-#endif
-
 #if 1  // exhibit
   void updateSummary(DRModel& dr_model);
   void printSummary(DRModel& dr_model);
   void writeNetCSV(DRModel& dr_model);
   void writeViolationCSV(DRModel& dr_model);
+#endif
+
+#if 1  // debug
+  void debugCheckDRBox(DRBox& dr_box);
+  void debugPlotDRBox(DRBox& dr_box, int32_t curr_task_idx, std::string flag);
 #endif
 };
 

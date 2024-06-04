@@ -18,7 +18,7 @@
 
 #include "LayerRect.hpp"
 #include "RTHeader.hpp"
-#include "RTUtil.hpp"
+#include "Utility.hpp"
 
 namespace irt {
 

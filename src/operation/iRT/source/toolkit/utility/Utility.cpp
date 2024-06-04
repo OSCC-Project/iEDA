@@ -14,22 +14,37 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-#pragma once
+#include "Utility.hpp"
 
 namespace irt {
 
-class PRParameter
-{
- public:
-  PRParameter() { _congestion_unit = 1; }
-  ~PRParameter() = default;
-  // getter
-  double get_congestion_unit() const { return _congestion_unit; }
-  // setter
-  void set_congestion_unit(const double congestion_unit) { _congestion_unit = congestion_unit; }
+// public
 
- private:
-  double _congestion_unit = 0;
-};
+void Utility::initInst()
+{
+  if (_util_instance == nullptr) {
+    _util_instance = new Utility();
+  }
+}
+
+Utility& Utility::getInst()
+{
+  if (_util_instance == nullptr) {
+    initInst();
+  }
+  return *_util_instance;
+}
+
+void Utility::destroyInst()
+{
+  if (_util_instance != nullptr) {
+    delete _util_instance;
+    _util_instance = nullptr;
+  }
+}
+
+// private
+
+Utility* Utility::_util_instance = nullptr;
 
 }  // namespace irt

@@ -19,7 +19,7 @@
 #include "IRNet.hpp"
 #include "IRNode.hpp"
 #include "IRParameter.hpp"
-#include "IRTask.hpp"
+#include "IRTopo.hpp"
 #include "PriorityQueue.hpp"
 
 namespace irt {
@@ -32,32 +32,32 @@ class IRModel
   // getter
   std::vector<IRNet>& get_ir_net_list() { return _ir_net_list; }
   IRParameter& get_ir_parameter() { return _ir_parameter; }
+  std::vector<IRNet*>& get_ir_task_list() { return _ir_task_list; }
   std::vector<GridMap<IRNode>>& get_layer_node_map() { return _layer_node_map; }
-  std::vector<int32_t>& get_ir_net_idx_list() { return _ir_net_idx_list; }
   // setter
   void set_ir_net_list(const std::vector<IRNet>& ir_net_list) { _ir_net_list = ir_net_list; }
   void set_ir_parameter(const IRParameter& ir_parameter) { _ir_parameter = ir_parameter; }
+  void set_ir_task_list(const std::vector<IRNet*>& ir_task_list) { _ir_task_list = ir_task_list; }
   void set_layer_node_map(const std::vector<GridMap<IRNode>>& layer_node_map) { _layer_node_map = layer_node_map; }
-  void set_ir_net_idx_list(const std::vector<int32_t>& ir_net_idx_list) { _ir_net_idx_list = ir_net_idx_list; }
   // function
 #if 1  // astar
-  // single task
-  IRTask* get_curr_ir_task() { return _curr_ir_task; }
+  // single topo
+  IRTopo* get_curr_ir_topo() { return _curr_ir_topo; }
   std::vector<std::vector<IRNode*>>& get_start_node_list_list() { return _start_node_list_list; }
   std::vector<std::vector<IRNode*>>& get_end_node_list_list() { return _end_node_list_list; }
   std::vector<IRNode*>& get_path_node_list() { return _path_node_list; }
-  std::vector<IRNode*>& get_single_task_visited_node_list() { return _single_task_visited_node_list; }
+  std::vector<IRNode*>& get_single_topo_visited_node_list() { return _single_topo_visited_node_list; }
   std::vector<Segment<LayerCoord>>& get_routing_segment_list() { return _routing_segment_list; }
-  void set_curr_ir_task(IRTask* curr_ir_task) { _curr_ir_task = curr_ir_task; }
+  void set_curr_ir_topo(IRTopo* curr_ir_topo) { _curr_ir_topo = curr_ir_topo; }
   void set_start_node_list_list(const std::vector<std::vector<IRNode*>>& start_node_list_list)
   {
     _start_node_list_list = start_node_list_list;
   }
   void set_end_node_list_list(const std::vector<std::vector<IRNode*>>& end_node_list_list) { _end_node_list_list = end_node_list_list; }
   void set_path_node_list(const std::vector<IRNode*>& path_node_list) { _path_node_list = path_node_list; }
-  void set_single_task_visited_node_list(const std::vector<IRNode*>& single_task_visited_node_list)
+  void set_single_topo_visited_node_list(const std::vector<IRNode*>& single_topo_visited_node_list)
   {
-    _single_task_visited_node_list = single_task_visited_node_list;
+    _single_topo_visited_node_list = single_topo_visited_node_list;
   }
   void set_routing_segment_list(const std::vector<Segment<LayerCoord>>& routing_segment_list)
   {
@@ -80,15 +80,15 @@ class IRModel
  private:
   std::vector<IRNet> _ir_net_list;
   IRParameter _ir_parameter;
+  std::vector<IRNet*> _ir_task_list;
   std::vector<GridMap<IRNode>> _layer_node_map;
-  std::vector<int32_t> _ir_net_idx_list;
 #if 1  // astar
-  // single task
-  IRTask* _curr_ir_task = nullptr;
+  // single topo
+  IRTopo* _curr_ir_topo = nullptr;
   std::vector<std::vector<IRNode*>> _start_node_list_list;
   std::vector<std::vector<IRNode*>> _end_node_list_list;
   std::vector<IRNode*> _path_node_list;
-  std::vector<IRNode*> _single_task_visited_node_list;
+  std::vector<IRNode*> _single_topo_visited_node_list;
   std::vector<Segment<LayerCoord>> _routing_segment_list;
   // single path
   PriorityQueue<IRNode*, std::vector<IRNode*>, CmpIRNodeCost> _open_queue;

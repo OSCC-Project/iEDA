@@ -207,4 +207,21 @@ std::map<std::pair<double, double>, double> display_slew_map(
   return ista->displayTransitionMap(AnalysisMode::kMin);
 }
 
+/**
+ * @brief Get the used libs in netlist.
+ *
+ * @return std::vector<std::string>
+ */
+std::vector<std::string> get_used_libs() {
+  auto* ista = ista::Sta::getOrCreateSta();
+  auto used_libs = ista->getUsedLibs();
+
+  std::vector<std::string> ret;
+  for (auto& lib : used_libs) {
+    ret.push_back(lib->get_file_name());
+  }
+
+  return ret;
+}
+
 }  // namespace ista

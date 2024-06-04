@@ -29,17 +29,21 @@ class IRNet
   // getter
   Net* get_origin_net() { return _origin_net; }
   int32_t get_net_idx() const { return _net_idx; }
-  ConnectType get_connect_type() const { return _connect_type; }
+  ConnectType& get_connect_type() { return _connect_type; }
   std::vector<IRPin>& get_ir_pin_list() { return _ir_pin_list; }
   BoundingBox& get_bounding_box() { return _bounding_box; }
-  MTree<Guide>& get_ir_result_tree() { return _ir_result_tree; }
+  MTree<LayerCoord>& get_topo_tree() { return _topo_tree; }
+  // const getter
+  const ConnectType& get_connect_type() const { return _connect_type; }
+  const std::vector<IRPin>& get_ir_pin_list() const { return _ir_pin_list; }
+  const BoundingBox& get_bounding_box() const { return _bounding_box; }
   // setter
   void set_origin_net(Net* origin_net) { _origin_net = origin_net; }
   void set_net_idx(const int32_t net_idx) { _net_idx = net_idx; }
   void set_connect_type(const ConnectType& connect_type) { _connect_type = connect_type; }
   void set_ir_pin_list(const std::vector<IRPin>& ir_pin_list) { _ir_pin_list = ir_pin_list; }
   void set_bounding_box(const BoundingBox& bounding_box) { _bounding_box = bounding_box; }
-  void set_ir_result_tree(const MTree<Guide>& ir_result_tree) { _ir_result_tree = ir_result_tree; }
+  void set_topo_tree(const MTree<LayerCoord>& topo_tree) { _topo_tree = topo_tree; }
   // function
 
  private:
@@ -48,7 +52,75 @@ class IRNet
   ConnectType _connect_type = ConnectType::kNone;
   std::vector<IRPin> _ir_pin_list;
   BoundingBox _bounding_box;
-  MTree<Guide> _ir_result_tree;
+  MTree<LayerCoord> _topo_tree;
+};
+
+struct CmpIRNet
+{
+  bool operator()(const IRNet* a, const IRNet* b) const
+  {
+    SortStatus sort_status = SortStatus::kEqual;
+    // 时钟线网优先
+    if (sort_status == SortStatus::kEqual) {
+      ConnectType a_connect_type = a->get_connect_type();
+      ConnectType b_connect_type = b->get_connect_type();
+      if (a_connect_type == ConnectType::kClock && b_connect_type != ConnectType::kClock) {
+        sort_status = SortStatus::kTrue;
+      } else if (a_connect_type != ConnectType::kClock && b_connect_type == ConnectType::kClock) {
+        sort_status = SortStatus::kFalse;
+      } else {
+        sort_status = SortStatus::kEqual;
+      }
+    }
+    // BoundingBox 大小升序
+    if (sort_status == SortStatus::kEqual) {
+      double a_total_size = a->get_bounding_box().getTotalSize();
+      double b_total_size = b->get_bounding_box().getTotalSize();
+      if (a_total_size < b_total_size) {
+        sort_status = SortStatus::kTrue;
+      } else if (a_total_size == b_total_size) {
+        sort_status = SortStatus::kEqual;
+      } else {
+        sort_status = SortStatus::kFalse;
+      }
+    }
+    // 长宽比 降序
+    if (sort_status == SortStatus::kEqual) {
+      double a_length_width_ratio = a->get_bounding_box().getXSize() / 1.0 / a->get_bounding_box().getYSize();
+      if (a_length_width_ratio < 1) {
+        a_length_width_ratio = 1 / a_length_width_ratio;
+      }
+      double b_length_width_ratio = b->get_bounding_box().getXSize() / 1.0 / b->get_bounding_box().getYSize();
+      if (b_length_width_ratio < 1) {
+        b_length_width_ratio = 1 / b_length_width_ratio;
+      }
+      if (a_length_width_ratio > b_length_width_ratio) {
+        sort_status = SortStatus::kTrue;
+      } else if (a_length_width_ratio == b_length_width_ratio) {
+        sort_status = SortStatus::kEqual;
+      } else {
+        sort_status = SortStatus::kFalse;
+      }
+    }
+    // PinNum 降序
+    if (sort_status == SortStatus::kEqual) {
+      int32_t a_pin_num = static_cast<int32_t>(a->get_ir_pin_list().size());
+      int32_t b_pin_num = static_cast<int32_t>(b->get_ir_pin_list().size());
+      if (a_pin_num > b_pin_num) {
+        sort_status = SortStatus::kTrue;
+      } else if (a_pin_num == b_pin_num) {
+        sort_status = SortStatus::kEqual;
+      } else {
+        sort_status = SortStatus::kFalse;
+      }
+    }
+    if (sort_status == SortStatus::kTrue) {
+      return true;
+    } else if (sort_status == SortStatus::kFalse) {
+      return false;
+    }
+    return false;
+  }
 };
 
 }  // namespace irt

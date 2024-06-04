@@ -7,7 +7,7 @@ else()
 endif()
 
 add_library(irt_monitor
-    ${IRT_UTILITY}/monitor/Monitor.cpp
+    ${IRT_TOOLKIT}/monitor/Monitor.cpp
 )
 
 target_link_libraries(irt_monitor 
@@ -17,5 +17,5 @@ target_link_libraries(irt_monitor
 
 target_include_directories(irt_monitor 
     PUBLIC
-        ${IRT_UTILITY}/monitor
+        ${IRT_TOOLKIT}/monitor
 )

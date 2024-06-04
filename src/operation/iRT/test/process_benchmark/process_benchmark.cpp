@@ -143,7 +143,7 @@ std::vector<MultiCore> getMultiCoreList()
 
 void buildMultiCoreList(std::vector<MultiCore>& multi_core_list, std::vector<SingleCore>& single_core_list)
 {
-  std::vector<int> random_idx_list;
+  std::vector<int32_t> random_idx_list;
   for (size_t i = 0; i < single_core_list.size(); i++) {
     random_idx_list.push_back(i);
   }
@@ -218,7 +218,7 @@ void printMultiCoreList(std::vector<MultiCore>& multi_core_list)
   for (MultiCore& multi_core : multi_core_list) {
     std::vector<std::string> value_csv;
 
-    value_csv.push_back(std::to_string(static_cast<int>(multi_core.get_target_single_core_num())));
+    value_csv.push_back(std::to_string(static_cast<int32_t>(multi_core.get_target_single_core_num())));
     value_csv.push_back(std::to_string(multi_core.get_target_utilization_rate()));
     value_csv.push_back(multi_core.get_name());
 
@@ -231,10 +231,10 @@ void printMultiCoreList(std::vector<MultiCore>& multi_core_list)
     value_csv.push_back(single_core_name_list_string);
 
     value_csv.push_back(std::to_string(multi_core.get_area()));
-    value_csv.push_back(std::to_string(static_cast<int>(multi_core.get_cell_num())));
-    value_csv.push_back(std::to_string(static_cast<int>(multi_core.get_ff_num())));
-    value_csv.push_back(std::to_string(static_cast<int>(multi_core.get_net_num())));
-    value_csv.push_back(std::to_string(static_cast<int>(multi_core.get_die_size())));
+    value_csv.push_back(std::to_string(static_cast<int32_t>(multi_core.get_cell_num())));
+    value_csv.push_back(std::to_string(static_cast<int32_t>(multi_core.get_ff_num())));
+    value_csv.push_back(std::to_string(static_cast<int32_t>(multi_core.get_net_num())));
+    value_csv.push_back(std::to_string(static_cast<int32_t>(multi_core.get_die_size())));
 
     csv_data.push_back(value_csv);
   }
@@ -242,7 +242,7 @@ void printMultiCoreList(std::vector<MultiCore>& multi_core_list)
   writeCSV("/home/zengzhisheng/iEDA/aaa.csv", csv_data);
 }
 
-int main()
+int32_t main()
 {
   std::vector<SingleCore> single_core_list = getSingleCoreList();
   buildSingleCoreList(single_core_list);
