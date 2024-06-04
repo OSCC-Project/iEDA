@@ -52,6 +52,9 @@ class Netlist : public DesignObject {
   Netlist() : DesignObject("top"){};
   ~Netlist() override = default;
 
+  Netlist(Netlist&& other) = default;
+  Netlist& operator=(Netlist&& rhs) = default;
+
   friend PortIterator;
   friend PortBusIterator;
   friend InstanceIterator;

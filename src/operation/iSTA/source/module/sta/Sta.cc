@@ -993,10 +993,6 @@ void Sta::linkDesignWithRustParser(const char *top_cell_name) {
  * @return std::set<LibertyLibrary *>
  */
 std::set<LibertyLibrary *> Sta::getUsedLibs() {
-  if (!isBuildGraph()) {
-    return std::set<LibertyLibrary *>();
-  }
-
   std::set<LibertyLibrary *> used_libs;
   Instance *inst;
   FOREACH_INSTANCE(&_netlist, inst) {
