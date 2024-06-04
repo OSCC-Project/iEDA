@@ -42,6 +42,7 @@ PYBIND11_MODULE(ista_cpp, m) {
   m.def("display_timing_map", display_timing_map);
   m.def("display_timing_tns_map", display_timing_tns_map);
   m.def("display_slew_map", display_slew_map);
+  m.def("get_used_libs", get_used_libs);
 }
 
 }  // namespace ista

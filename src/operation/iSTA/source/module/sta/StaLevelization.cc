@@ -58,6 +58,10 @@ unsigned StaLevelization::operator()(StaVertex* the_vertex) {
  * @return unsigned  1 if success, 0 else fail.
  */
 unsigned StaLevelization::operator()(StaArc* the_arc) {
+  if (the_arc->is_loop_disable()) {
+    return 1;
+  }
+  
   auto* src_vertex = the_arc->get_src();
   auto* snk_vertex = the_arc->get_snk();
   src_vertex->exec(*this);

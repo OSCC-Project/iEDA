@@ -33,9 +33,9 @@ void ExternalAPI::modifySTAOutputDir(std::string path){
   staInst->setStaWorkDirectory(path);
 }
 
-void ExternalAPI::initSTA()
+void ExternalAPI::initSTA(std::string path, bool init_log)
 {
-  staInst->initSTA();
+  staInst->initSTA(path, init_log);
   staInst->buildGraph();
 }
 

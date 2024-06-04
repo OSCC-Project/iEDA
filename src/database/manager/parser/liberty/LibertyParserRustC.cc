@@ -703,6 +703,9 @@ unsigned RustLibertyReader::visitLibrary(RustLibertyGroupStmt* group)
   auto* library_builder = new LibertyBuilder(lib_name);
   set_library_builder(library_builder);
 
+  auto* curr_lib = library_builder->get_lib();
+  curr_lib->set_file_name(group->file_name);
+
   unsigned is_ok = visitStmtInGroup(group);
 
   return 1;

@@ -204,7 +204,7 @@ unsigned Sta::readSdc(const char *sdc_file) {
 unsigned Sta::readSpef(const char *spef_file) {
   StaGraph &the_graph = get_graph();
 
-  StaBuildRCTree func(spef_file, DelayCalcMethod::kArnoldi);
+  StaBuildRCTree func(spef_file, DelayCalcMethod::kElmore);
   func(&the_graph);
 
   return 1;
@@ -993,10 +993,6 @@ void Sta::linkDesignWithRustParser(const char *top_cell_name) {
  * @return std::set<LibertyLibrary *>
  */
 std::set<LibertyLibrary *> Sta::getUsedLibs() {
-  if (!isBuildGraph()) {
-    return std::set<LibertyLibrary *>();
-  }
-
   std::set<LibertyLibrary *> used_libs;
   Instance *inst;
   FOREACH_INSTANCE(&_netlist, inst) {
