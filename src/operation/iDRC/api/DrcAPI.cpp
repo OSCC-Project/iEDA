@@ -138,7 +138,7 @@ std::map<std::string, int> DrcAPI::getCheckResult(RegionQuery* region_query)
 //     std::set<DrcPoly*> intersect_poly_set;
 //     // Get all polygons intersecting with this set of rectangles.
 //     region_query->getIntersectPoly(intersect_poly_set, drc_rect_list);
-//     // 删除与这组rect相交的所有polygon
+//     // Delete all polygons that intersect with this group of rectangles
 //     region_query->deleteIntersectPoly(intersect_poly_set);
 
 //     DrcPoly* new_poly = region_query->rebuildPoly_add(intersect_poly_set, drc_rect_list);
@@ -157,9 +157,9 @@ void DrcAPI::add(RegionQuery* region_query, std::vector<idrc::DrcRect*> drc_rect
   region_rect_list.insert(region_rect_list.end(), drc_rect_list.begin(), drc_rect_list.end());
 
   std::set<DrcPoly*> intersect_poly_set;
-  // 得到与这组rect相交的所有polygon
+  // Get all polygons that intersect with this group of rectangles
   region_query->getIntersectPoly(intersect_poly_set, drc_rect_list);
-  // 删除与这组rect相交的所有polygon
+  // Delete all polygons that intersect with this group of rectangles
   region_query->deleteIntersectPoly(intersect_poly_set);
 
   //   DrcPoly* new_poly = region_query->rebuildPoly_add(intersect_poly_set, drc_rect_list);
@@ -238,7 +238,8 @@ bool DrcAPI::checkSpacing(RegionQuery* region_query, DrcRect* check_rect)
   std::map<void*, std::map<ScopeType, std::vector<DrcRect*>>> min_scope_query_result;
   region_query->queryInMinScope(layer_id, DRCUtil::getRTreeBox(check_rect), min_scope_query_result);
 
-  // 排除与poly相交，rect直接query 出edge和rect，移除掉同一net的，不同net的直接报短路违例，再把这些edge、rect从min和max中移除
+  // Exclude intersections with poly. Directly query edges and rectangles from rect, remove those belonging to the same net. For different nets, report a short circuit violation. Then, remove these edges and rectangles from min and max.
+
   for (auto [rtree_seg, edge] : edge_query_result) {
     min_scope_query_result.erase(edge);
     max_scope_query_result.erase(edge);
@@ -280,7 +281,7 @@ bool DrcAPI::checkSpacing(RegionQuery* region_query, DrcRect* check_rect)
       }
     }
   } else {
-    // 以rect为主体查，融合为poly，过程同读def的检查流程
+    // Use rect as the main subject for checking, merge into poly, following the same process as the DEF file check.
     return checkSpacing_rect(check_rect, region_query);
   }
   return true;
@@ -765,7 +766,7 @@ void DrcAPI::initPolyPolygon(DrcNet* net)
   for (int routing_layer_id = 0; routing_layer_id < routing_layer_num; routing_layer_id++) {
     polygons.clear();
     layer_routing_polys[routing_layer_id] = net->get_routing_polygon_set_by_id(routing_layer_id);
-    // 输出到polys中；
+    // output to polys；
     layer_routing_polys[routing_layer_id].get(polygons);
     for (auto& polygon : polygons) {
       net->addPoly(polygon, routing_layer_id);

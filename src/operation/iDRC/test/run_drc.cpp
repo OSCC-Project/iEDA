@@ -343,15 +343,16 @@ class DrcRectangle;
 //   // main
 //   DRC* drc = new DRC();
 
+
 //   LayerNameToRTreeMap layer_to_rects_rtree_map;
 //   initLayerToRectsRtree(layer_to_rects_rtree_map);
 //   writeGDS(layer_to_rects_rtree_map);
-//   // 1.用IDB初始化Tech
-//   //函数重载，参数可换为iDB_Builder指针
+//   // 1. Initialize Tech with IDB
+//   // Function overload, the parameter can be changed to iDB_Builder pointer
 //   drc->initTechFromIDB(drc_config_path);
-//   // 2.初始化规则数据后初始化各个检查模块
+//   // 2. Initialize each check module after initializing the rule data
 //   drc->initCheckModule();
-//   // 3.检查iRT的绕线结果，数据参数为层名字对应矩形块R树
+//   // 3. Check the routing result of iRT, with data parameter as the R-tree of rectangles corresponding to layer names
 //   drc->checkiRTResult(layer_to_rects_rtree_map);
 //   return 0;
 // }
