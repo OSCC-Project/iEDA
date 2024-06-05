@@ -136,7 +136,7 @@ std::map<std::string, int> DrcAPI::getCheckResult(RegionQuery* region_query)
 // {
 //   for (auto& [region_query, drc_rect_list] : task_list) {
 //     std::set<DrcPoly*> intersect_poly_set;
-//     // 得到与这组rect相交的所有polygon
+//     // Get all polygons intersecting with this set of rectangles.
 //     region_query->getIntersectPoly(intersect_poly_set, drc_rect_list);
 //     // 删除与这组rect相交的所有polygon
 //     region_query->deleteIntersectPoly(intersect_poly_set);

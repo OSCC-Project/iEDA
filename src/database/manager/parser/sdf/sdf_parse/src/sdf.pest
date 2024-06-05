@@ -2,12 +2,12 @@
 underline=_{"_"}
 quotes=_{"\""}
 
-WHITESPACE=_{" "|"\t"|"\r"|"\n"}//告诉pest需要跳过哪些字符
+WHITESPACE=_{" "|"\t"|"\r"|"\n"}  //pest skip chars
 
 left_bracket=_{"("}
 right_bracket=_{")"}
 QM=_{"?"}
-colon=_{":"}//即CLN
+colon=_{":"} //CLN
 
 qstring=_{(ASCII_ALPHANUMERIC|underline|"."|","|colon|";"|"{"|"}"|"/"|"\\"|"-"|"+"|"*"|"@"|"#"|"$"|"%"|"^"|"&"|"="|"~"|"!"|"|"|"]"|"["|"?"|"<"|
         ">"|" "|"\t")+}
@@ -21,9 +21,9 @@ BINARY_OPERATOR={"==="|"!=="|"=="|"!="|"||"|"&&"|"<="|">="|"^~"|"~^"|">>"|"<<"|"
 EQUALITY_OPERATOR={"==="|"!=="|"=="|"!="}
 
 
-number=@{((!("-")) ~ (ASCII_DIGIT|"e"|"-"|"."))+}//非负实数
-rnumber=@{(ASCII_DIGIT|"."|"-"|"+"|"e")+}//实数
-dnumber=@{"+"? ~ (ASCII_DIGIT)+}//非负整数
+number=@{((!("-")) ~ (ASCII_DIGIT|"e"|"-"|"."))+} //non-negative real number
+rnumber=@{(ASCII_DIGIT|"."|"-"|"+"|"e")+} //real number
+dnumber=@{"+"? ~ (ASCII_DIGIT)+} //non-negative interger
 
 triple_type1={number ~ colon ~ colon}
 triple_type2={colon ~ number ~ colon}
@@ -51,19 +51,19 @@ rvalue={left_bracket ~ (rtriple|rnumber)? ~ right_bracket}
 //delay_file=${keyword ~ NEWLINE ~ sdf_header (~ NEWLINE ~ WHITESPACES ~ cell)+}
 keyword=@{(ASCII_ALPHA_UPPER)+}
 val_string={qstring}
-divider={"."|"/"}//默认是"."
+divider={"."|"/"} // default "."
 voltage={rtriple|rnumber}//min:typical:max
-temperature={rtriple|rnumber}//默认是1ns
+temperature={rtriple|rnumber}//default 1ns
 time_scale_number={rnumber}
 time_scale_unit={(ASCII_ALPHA)+}
 //time_scale 100 ns
 //time_scale 100ns
 
-//总的delay file
+//delay file
 //delay_file_keyword=_{keyword}
 delay_file={left_bracket ~ keyword ~ sdf_header ~ cell+ ~ right_bracket}
 
-//header组件
+//header components
 sdf_header_keyword=@{keyword}
 sdf_version_pair={left_bracket ~ sdf_header_keyword ~ quotes ~ val_string ~ quotes ~ right_bracket}
 design_name_pair={left_bracket ~ sdf_header_keyword ~ quotes ~ val_string ~ quotes ~ right_bracket}
@@ -84,7 +84,7 @@ sdf_header={sdf_version_pair ~ design_name_pair? ~ date_pair? ~ vendor_pair? ~ p
             ~ voltage_pair? ~ process_pair? ~ temperature_pair? ~ time_scale_pair?}
 
 
-//构建cell
+//construct cell
 cell={left_bracket ~ keyword ~ celltype ~ cell_instance ~ timing_spec* ~ right_bracket}
 timing_spec={del_spec|tc_spec|te_spec}//DELAY、timging check、timing environments
 
@@ -95,7 +95,7 @@ wildcard={"*"}
 path={identifier ~ (hchar ~ port)*}
 //bits_spec=_{"["|"]"|left_bracket|right_bracket|":"}
 //forbid=_{"  "|" "|NEWLINE}
-//构建cell的cell type和 cell instance
+//constrcut cell type and cell instance
 cell_type={qstring}
 celltype={left_bracket ~ cell_type_instance_keyword ~ quotes ~ cell_type ~ quotes ~ right_bracket}
 
@@ -110,13 +110,14 @@ cell_instance={cellinstance_path|cellinstance_wildcard}
 del_spec_keyword=@{keyword}
 del_spec={left_bracket ~ del_spec_keyword ~ deltype+ ~ right_bracket}
 deltype={path_pulse_percent|absolute_increment}
-//构建deltype：path_pulse、path_pulse_percent
+//construct deltype：path_pulse、path_pulse_percent
 deltype_keyword=@{keyword}
 path_pulse_percent={left_bracket ~ deltype_keyword ~ input_output_path? ~ value ~ value? ~ right_bracket}
+
 //input_output_path={port_instance ~ port_instance}//input、output、pulse rejection limit(narrowest pulse)、minimum pulse(X limit)
-//如果只有一个值value，则这两个值一样；如果input_output_path被省略，那么这个cell的所有路径都遵循这个value的限制和标准        23::29，中间没有表示0
-input_output_path={port_instance ~ port_instance}//疑问1
-port_instance=@{(identifier ~ (hchar ~ port)+)|port}//疑问2，path是什么   mem/   abc[2:3]
+//If there is only one value, then both values are the same; if input_output_path is omitted, then all paths of this cell follow the constraints and standards of this value. 23::29, indicating zero in between.
+input_output_path={port_instance ~ port_instance}//
+port_instance=@{(identifier ~ (hchar ~ port)+)|port}//what is path？   mem/   abc[2:3]
 port={bus_port|scalar_port}
 scalar_port=@{(identifier ~ "[" ~ dnumber ~ "]")|identifier}
 bus_port=@{identifier ~ "[" ~ dnumber ~ colon ~ dnumber ~ "]"}//mem[2:3]
@@ -128,7 +129,7 @@ posedge={"posedge"}
 negedge={"negedge"}
 edge_identifier={posedge|negedge|"01"|"10"|"0z"|"z0"|"z1"|"1z"}
 
-//构建deltype：absolute、increment
+//construct deltype：absolute、increment
 absolute_increment={left_bracket ~ deltype_keyword ~ del_def+ ~ right_bracket}
 del_def={cond_item|condelse_item|iopath_item|interconnect_item|port_item|device_item}
 
@@ -158,10 +159,10 @@ conditional_port_expr={conditional_port_expr_type4|conditional_port_expr_otherty
 
 simple_expression_type1={left_bracket ~ simple_expression ~ right_bracket}
 simple_expression_type2={UNARY_OPERATOR ~ simple_expression_type1}
-simple_expression_type3={port}//终止情况
-simple_expression_type4={UNARY_OPERATOR ~ simple_expression_type3}//终止情况
-simple_expression_type5={SCALAR_CONSTANT}//终止情况
-simple_expression_type6={UNARY_OPERATOR ~ SCALAR_CONSTANT}//终止情况
+simple_expression_type3={port} //termination
+simple_expression_type4={UNARY_OPERATOR ~ simple_expression_type3} //termination
+simple_expression_type5={SCALAR_CONSTANT} //termination
+simple_expression_type6={UNARY_OPERATOR ~ SCALAR_CONSTANT} //termination
 
 simple_expression_othertypes = { simple_expression_type1 | simple_expression_type2  | simple_expression_type4 | simple_expression_type6 
     | simple_expression_type8 | simple_expression_type9 | simple_expression_type5|simple_expression_type3}
