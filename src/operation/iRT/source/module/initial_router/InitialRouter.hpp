@@ -102,6 +102,7 @@ class InitialRouter
 
 #if 1  // debug
   void debugCheckIRModel(IRModel& ir_model);
+  void debugOutputGuide(IRModel& ir_model);
 #endif
 };
 

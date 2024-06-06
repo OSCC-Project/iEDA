@@ -168,6 +168,7 @@ class DataManager
 #endif
 
 #if 1  // output
+  void outputTrackGrid();
   void outputGCellGrid();
   void outputNetList();
 #endif

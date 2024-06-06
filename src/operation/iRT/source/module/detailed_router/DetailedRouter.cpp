@@ -125,6 +125,9 @@ void DetailedRouter::iterativeDRModel(DRModel& dr_model)
     writeViolationCSV(dr_model);
     RTLOG.info(Loc::current(), "***** End Iteration ", iter, "/", dr_parameter_list.size(), "(",
                RTUTIL.getPercentage(iter, dr_parameter_list.size()), ")", iter_monitor.getStatsInfo(), "*****");
+    if (stopIteration(dr_model)) {
+      break;
+    }
   }
 }
 
@@ -1297,6 +1300,15 @@ void DetailedRouter::uploadNetResult(DRModel& dr_model)
     }
   }
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
+}
+
+bool DetailedRouter::stopIteration(DRModel& dr_model)
+{
+  if (getViolationNum() == 0) {
+    RTLOG.info(Loc::current(), "***** Iteration stopped early *****");
+    return true;
+  }
+  return false;
 }
 
 #if 1  // update env

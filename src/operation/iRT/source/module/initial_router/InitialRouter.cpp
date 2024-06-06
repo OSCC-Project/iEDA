@@ -63,6 +63,7 @@ void InitialRouter::route()
   // debugCheckIRModel(ir_model);
   buildTopoTree(ir_model);
   routeIRModel(ir_model);
+  // debugOutputGuide(ir_model);
   updateSummary(ir_model);
   printSummary(ir_model);
   writeDemandCSV(ir_model);
@@ -1198,6 +1199,52 @@ void InitialRouter::debugCheckIRModel(IRModel& ir_model)
       }
     }
   }
+}
+
+void InitialRouter::debugOutputGuide(IRModel& ir_model)
+{
+  Monitor monitor;
+  RTLOG.info(Loc::current(), "Starting...");
+
+  Die& die = RTDM.getDatabase().get_die();
+  ScaleAxis& gcell_axis = RTDM.getDatabase().get_gcell_axis();
+  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
+  std::string& ir_temp_directory_path = RTDM.getConfig().ir_temp_directory_path;
+
+  std::vector<IRNet>& ir_net_list = ir_model.get_ir_net_list();
+
+  std::ofstream* guide_file_stream = RTUTIL.getOutputFileStream(ir_temp_directory_path + "route.guide");
+  if (guide_file_stream == nullptr) {
+    return;
+  }
+  for (auto& [net_idx, segment_set] : RTDM.getGlobalNetResultMap(die)) {
+    IRNet& ir_net = ir_net_list[net_idx];
+    RTUTIL.pushStream(guide_file_stream, ir_net.get_origin_net()->get_net_name(), "\n(\n");
+
+    for (Segment<LayerCoord>* segment : segment_set) {
+      LayerCoord first_layer_coord = segment->get_first();
+      int first_layer_idx = first_layer_coord.get_layer_idx();
+      LayerCoord second_layer_coord = segment->get_second();
+      int second_layer_idx = second_layer_coord.get_layer_idx();
+      PlanarRect first_real_rect = RTUTIL.getRealRectByGCell(first_layer_coord, gcell_axis);
+      PlanarRect second_real_rect = RTUTIL.getRealRectByGCell(second_layer_coord, gcell_axis);
+      if (first_layer_idx != second_layer_idx) {
+        RTUTIL.swapByASC(first_layer_idx, second_layer_idx);
+        for (int layer_idx = first_layer_idx; layer_idx <= second_layer_idx; layer_idx++) {
+          RTUTIL.pushStream(guide_file_stream, first_real_rect.get_ll_x(), " ", first_real_rect.get_ll_y(), " ", first_real_rect.get_ur_x(),
+                            " ", first_real_rect.get_ur_y(), " ", routing_layer_list[layer_idx].get_layer_name(), "\n");
+        }
+      } else {
+        PlanarRect real_rect = RTUTIL.getBoundingBox({first_real_rect, second_real_rect});
+        RTUTIL.pushStream(guide_file_stream, real_rect.get_ll_x(), " ", real_rect.get_ll_y(), " ", real_rect.get_ur_x(), " ",
+                          real_rect.get_ur_y(), " ", routing_layer_list[first_layer_idx].get_layer_name(), "\n");
+      }
+    }
+    RTUTIL.pushStream(guide_file_stream, ")\n");
+  }
+  RTUTIL.closeFileStream(guide_file_stream);
+
+  RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
 #endif

@@ -68,6 +68,7 @@ void DataManager::output()
 {
   Monitor monitor;
   RTLOG.info(Loc::current(), "Starting...");
+  outputTrackGrid();
   outputGCellGrid();
   outputNetList();
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
@@ -2004,12 +2005,57 @@ void DataManager::writePYScript()
 
 #if 1  // output
 
+void DataManager::outputTrackGrid()
+{
+  idb::IdbLayers* idb_layer_list = _database.get_idb_builder()->get_def_service()->get_layout()->get_layers();
+  idb::IdbTrackGridList* idb_track_grid_list = _database.get_idb_builder()->get_def_service()->get_layout()->get_track_grid_list();
+  std::vector<RoutingLayer>& routing_layer_list = _database.get_routing_layer_list();
+
+  idb_track_grid_list->reset();
+
+  for (int32_t i = static_cast<int32_t>(routing_layer_list.size()) - 1; i >= 0; --i) {
+    RoutingLayer& routing_layer = routing_layer_list[i];
+
+    std::string layer_name = routing_layer.get_layer_name();
+    idb::IdbLayer* idb_layer = idb_layer_list->find_layer(layer_name);
+    if (idb_layer == nullptr) {
+      RTLOG.error(Loc::current(), "Can not find idb layer ", layer_name);
+    }
+    idb::IdbLayerRouting* idb_routing_layer = dynamic_cast<idb::IdbLayerRouting*>(idb_layer);
+    idb_routing_layer->get_track_grid_list().clear();
+
+    std::map<Direction, std::vector<ScaleGrid>> direction_scale_grid_list_map;
+    for (ScaleGrid& x_grid : routing_layer.get_track_axis().get_x_grid_list()) {
+      direction_scale_grid_list_map[Direction::kVertical].push_back(x_grid);
+    }
+    for (ScaleGrid& y_grid : routing_layer.get_track_axis().get_y_grid_list()) {
+      direction_scale_grid_list_map[Direction::kHorizontal].push_back(y_grid);
+    }
+    for (auto& [direction, scale_grid_list] : direction_scale_grid_list_map) {
+      for (ScaleGrid& scale_grid : scale_grid_list) {
+        idb::IdbTrackGrid* idb_track_grid = idb_track_grid_list->add_track_grid();
+        idb::IdbTrack* idb_track = idb_track_grid->get_track();
+        if (direction == Direction::kVertical) {
+          idb_track->set_direction(idb::IdbTrackDirection::kDirectionX);
+        } else if (direction == Direction::kHorizontal) {
+          idb_track->set_direction(idb::IdbTrackDirection::kDirectionY);
+        }
+        idb_track->set_start(scale_grid.get_start_line());
+        idb_track->set_pitch(scale_grid.get_step_length());
+        idb_track_grid->set_track_number(scale_grid.get_step_num() + 1);
+        idb_track_grid->add_layer_list(idb_layer);
+        idb_routing_layer->add_track_grid(idb_track_grid);
+      }
+    }
+  }
+}
+
 void DataManager::outputGCellGrid()
 {
   idb::IdbBuilder* idb_builder = _database.get_idb_builder();
   ScaleAxis& gcell_axis = _database.get_gcell_axis();
 
-  idb::IdbGCellGridList* idb_gcell_grid_list = idb_builder->get_lef_service()->get_layout()->get_gcell_grid_list();
+  idb::IdbGCellGridList* idb_gcell_grid_list = _database.get_idb_builder()->get_lef_service()->get_layout()->get_gcell_grid_list();
   idb_gcell_grid_list->clear();
 
   for (idb::IdbTrackDirection idb_track_direction : {idb::IdbTrackDirection::kDirectionX, idb::IdbTrackDirection::kDirectionY}) {
