@@ -1223,14 +1223,14 @@ void InitialRouter::debugOutputGuide(IRModel& ir_model)
 
     for (Segment<LayerCoord>* segment : segment_set) {
       LayerCoord first_layer_coord = segment->get_first();
-      int first_layer_idx = first_layer_coord.get_layer_idx();
+      int32_t first_layer_idx = first_layer_coord.get_layer_idx();
       LayerCoord second_layer_coord = segment->get_second();
-      int second_layer_idx = second_layer_coord.get_layer_idx();
+      int32_t second_layer_idx = second_layer_coord.get_layer_idx();
       PlanarRect first_real_rect = RTUTIL.getRealRectByGCell(first_layer_coord, gcell_axis);
       PlanarRect second_real_rect = RTUTIL.getRealRectByGCell(second_layer_coord, gcell_axis);
       if (first_layer_idx != second_layer_idx) {
         RTUTIL.swapByASC(first_layer_idx, second_layer_idx);
-        for (int layer_idx = first_layer_idx; layer_idx <= second_layer_idx; layer_idx++) {
+        for (int32_t layer_idx = first_layer_idx; layer_idx <= second_layer_idx; layer_idx++) {
           RTUTIL.pushStream(guide_file_stream, first_real_rect.get_ll_x(), " ", first_real_rect.get_ll_y(), " ", first_real_rect.get_ur_x(),
                             " ", first_real_rect.get_ur_y(), " ", routing_layer_list[layer_idx].get_layer_name(), "\n");
         }

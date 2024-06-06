@@ -1326,14 +1326,14 @@ class Utility
 
   static PlanarRect getTrackGrid(const PlanarRect& real_rect, ScaleAxis& track_axis)
   {
-    std::set<int> x_pre_set;
-    std::set<int> x_mid_set;
-    std::set<int> x_post_set;
+    std::set<int32_t> x_pre_set;
+    std::set<int32_t> x_mid_set;
+    std::set<int32_t> x_post_set;
     updateScaleList(track_axis.get_x_grid_list(), real_rect.get_ll_x(), real_rect.get_ur_x(), x_pre_set, x_mid_set, x_post_set);
 
-    std::set<int> y_pre_set;
-    std::set<int> y_mid_set;
-    std::set<int> y_post_set;
+    std::set<int32_t> y_pre_set;
+    std::set<int32_t> y_mid_set;
+    std::set<int32_t> y_post_set;
     updateScaleList(track_axis.get_y_grid_list(), real_rect.get_ll_y(), real_rect.get_ur_y(), y_pre_set, y_mid_set, y_post_set);
 
     PlanarRect grid_rect;
@@ -1350,39 +1350,39 @@ class Utility
   static std::map<PlanarCoord, std::set<Orientation>, CmpPlanarCoordByXASC> getTrackGridOrientationMap(const PlanarRect& real_rect,
                                                                                                        ScaleAxis& track_axis)
   {
-    std::set<int> x_pre_set;
-    std::set<int> x_mid_set;
-    std::set<int> x_post_set;
+    std::set<int32_t> x_pre_set;
+    std::set<int32_t> x_mid_set;
+    std::set<int32_t> x_post_set;
     updateScaleList(track_axis.get_x_grid_list(), real_rect.get_ll_x(), real_rect.get_ur_x(), x_pre_set, x_mid_set, x_post_set);
 
-    std::set<int> y_pre_set;
-    std::set<int> y_mid_set;
-    std::set<int> y_post_set;
+    std::set<int32_t> y_pre_set;
+    std::set<int32_t> y_mid_set;
+    std::set<int32_t> y_post_set;
     updateScaleList(track_axis.get_y_grid_list(), real_rect.get_ll_y(), real_rect.get_ur_y(), y_pre_set, y_mid_set, y_post_set);
 
     std::map<PlanarCoord, std::set<Orientation>, CmpPlanarCoordByXASC> grid_orientation_map;
-    for (int x_pre : x_pre_set) {
-      for (int y_mid : y_mid_set) {
+    for (int32_t x_pre : x_pre_set) {
+      for (int32_t y_mid : y_mid_set) {
         grid_orientation_map[PlanarCoord(x_pre, y_mid)].insert(Orientation::kEast);
       }
     }
-    for (int x_post : x_post_set) {
-      for (int y_mid : y_mid_set) {
+    for (int32_t x_post : x_post_set) {
+      for (int32_t y_mid : y_mid_set) {
         grid_orientation_map[PlanarCoord(x_post, y_mid)].insert(Orientation::kWest);
       }
     }
-    for (int y_pre : y_pre_set) {
-      for (int x_mid : x_mid_set) {
+    for (int32_t y_pre : y_pre_set) {
+      for (int32_t x_mid : x_mid_set) {
         grid_orientation_map[PlanarCoord(x_mid, y_pre)].insert(Orientation::kNorth);
       }
     }
-    for (int y_post : y_post_set) {
-      for (int x_mid : x_mid_set) {
+    for (int32_t y_post : y_post_set) {
+      for (int32_t x_mid : x_mid_set) {
         grid_orientation_map[PlanarCoord(x_mid, y_post)].insert(Orientation::kSouth);
       }
     }
-    for (int x_mid : x_mid_set) {
-      for (int y_mid : y_mid_set) {
+    for (int32_t x_mid : x_mid_set) {
+      for (int32_t y_mid : y_mid_set) {
         grid_orientation_map[PlanarCoord(x_mid, y_mid)].insert(
             {Orientation::kEast, Orientation::kWest, Orientation::kNorth, Orientation::kSouth, Orientation::kAbove, Orientation::kBelow});
       }
@@ -1390,19 +1390,19 @@ class Utility
     return grid_orientation_map;
   }
 
-  static void updateScaleList(std::vector<ScaleGrid>& scale_grid_list, int ll_scale, int ur_scale, std::set<int>& pre_index_set,
-                              std::set<int>& mid_index_set, std::set<int>& post_index_set)
+  static void updateScaleList(std::vector<ScaleGrid>& scale_grid_list, int32_t ll_scale, int32_t ur_scale, std::set<int32_t>& pre_index_set,
+                              std::set<int32_t>& mid_index_set, std::set<int32_t>& post_index_set)
   {
-    int pre_index = -1;
-    int post_index = -1;
-    int pre_scale = INT32_MIN;
-    int post_scale = INT32_MAX;
+    int32_t pre_index = -1;
+    int32_t post_index = -1;
+    int32_t pre_scale = INT32_MIN;
+    int32_t post_scale = INT32_MAX;
 
-    int index = -1;
-    int index_scale = -1;
+    int32_t index = -1;
+    int32_t index_scale = -1;
     for (ScaleGrid& scale_grid : scale_grid_list) {
-      for (int i = 0; i <= scale_grid.get_step_num(); ++i) {
-        int scale = scale_grid.get_start_line() + i * scale_grid.get_step_length();
+      for (int32_t i = 0; i <= scale_grid.get_step_num(); ++i) {
+        int32_t scale = scale_grid.get_start_line() + i * scale_grid.get_step_length();
         if (index_scale != scale) {
           ++index;
           index_scale = scale;
