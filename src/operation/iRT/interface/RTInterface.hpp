@@ -25,8 +25,8 @@
 #include "../../../database/interaction/ids.hpp"
 
 namespace ieda_feature {
-    class RTSummary;
-}// namespace
+class RTSummary;
+}  // namespace ieda_feature
 
 namespace irt {
 

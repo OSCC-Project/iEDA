@@ -34,9 +34,26 @@ class Logger
   static Logger& getInst();
   static void destroyInst();
   // function
-  void openLogFileStream(const std::string& log_file_path);
-  void closeLogFileStream();
-  void printLogFilePath();
+  void openLogFileStream(const std::string& log_file_path)
+  {
+    _log_file_path = log_file_path;
+    _log_file = new std::ofstream(_log_file_path);
+  }
+
+  void closeLogFileStream()
+  {
+    if (_log_file != nullptr) {
+      _log_file->close();
+      delete _log_file;
+    }
+  }
+
+  void printLogFilePath()
+  {
+    if (!_log_file_path.empty()) {
+      info(Loc::current(), "The log file path is '", _log_file_path, "'!");
+    }
+  }
 
   template <typename T, typename... Args>
   void info(Loc location, const T& value, const Args&... args)

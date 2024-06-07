@@ -697,6 +697,8 @@ void TimingIDBAdapter::removeNet(Net* sta_net) {
 unsigned TimingIDBAdapter::convertDBToTimingNetlist() {
   // reset all net to rc net
   _ista->resetAllRcNet();
+
+  _ista->resetNetlist();
   Netlist& design_netlist = *(_ista->get_netlist());
 
   auto* def_service = _idb->get_def_service();

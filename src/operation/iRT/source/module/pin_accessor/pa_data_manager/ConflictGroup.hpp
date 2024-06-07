@@ -14,50 +14,30 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-#include "LayerAssigner.hpp"
+#pragma once
 
-#include "GDSPlotter.hpp"
-#include "RTUtil.hpp"
+#include "ConflictAccessPoint.hpp"
 
 namespace irt {
 
-// public
-
-void LayerAssigner::initInst()
+class ConflictGroup
 {
-  if (_la_instance == nullptr) {
-    _la_instance = new LayerAssigner();
+ public:
+  ConflictGroup() = default;
+  ~ConflictGroup() = default;
+  // getter
+  std::vector<std::vector<ConflictAccessPoint>>& get_conflict_ap_list_list() { return _conflict_ap_list_list; }
+  std::map<int32_t, std::vector<int32_t>>& get_conflict_map() { return _conflict_map; }
+  // setter
+  void set_conflict_ap_list_list(const std::vector<std::vector<ConflictAccessPoint>>& conflict_ap_list_list)
+  {
+    _conflict_ap_list_list = conflict_ap_list_list;
   }
-}
-
-LayerAssigner& LayerAssigner::getInst()
-{
-  if (_la_instance == nullptr) {
-    RTLOG.error(Loc::current(), "The instance not initialized!");
-  }
-  return *_la_instance;
-}
-
-void LayerAssigner::destroyInst()
-{
-  if (_la_instance != nullptr) {
-    delete _la_instance;
-    _la_instance = nullptr;
-  }
-}
-
-// function
-
-void LayerAssigner::assign()
-{
-  Monitor monitor;
-  RTLOG.info(Loc::current(), "Starting...");
-
-  RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
-}
-
-// private
-
-LayerAssigner* LayerAssigner::_la_instance = nullptr;
+  void set_conflict_map(const std::map<int32_t, std::vector<int32_t>>& conflict_map) { _conflict_map = conflict_map; }
+  // function
+ private:
+  std::vector<std::vector<ConflictAccessPoint>> _conflict_ap_list_list;
+  std::map<int32_t, std::vector<int32_t>> _conflict_map;
+};
 
 }  // namespace irt

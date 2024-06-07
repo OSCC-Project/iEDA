@@ -264,13 +264,19 @@ void Tree::SetParentFromChildren()
 void Tree::SetParentFromUndirectedAdjList()
 {
   preOrder([](const shared_ptr<TreeNode>& node) {
-    for (auto& c : node->children) {
-      auto& n = c->children;
-      auto it = find(n.begin(), n.end(), node);
-      assert(it != n.end());
-      *it = n.back();
-      n.pop_back();
-      c->parent = node;
+    for (auto it = node->children.begin(); it != node->children.end();) {
+      auto child = *it;
+      if (!child->parent) {
+        child->parent = node;
+        ++it;
+      } else {
+        it = node->children.erase(it);
+      }
+      auto& sub_children = child->children;
+      auto sub_it = find(sub_children.begin(), sub_children.end(), node);
+      assert(sub_it != sub_children.end());
+      *sub_it = sub_children.back();
+      sub_children.pop_back();
     }
   });
 }

@@ -7,7 +7,7 @@ else()
 endif()
 
 add_library(irt_logger
-    ${IRT_UTILITY}/logger/Logger.cpp
+    ${IRT_TOOLKIT}/logger/Logger.cpp
 )
 
 target_link_libraries(irt_logger 
@@ -17,5 +17,5 @@ target_link_libraries(irt_logger
 
 target_include_directories(irt_logger 
     PUBLIC
-        ${IRT_UTILITY}/logger
+        ${IRT_TOOLKIT}/logger
 )

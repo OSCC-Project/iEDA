@@ -105,7 +105,8 @@ void PLAPI::initAPI(std::string pl_json_path, idb::IdbBuilder* idb_builder)
     if (!this->isSTAStarted()) {
       LOG_INFO << "Try to apply to start iSTA";
       // apply to start sta
-      this->initSTA();
+      std::string sta_home_path = PlacerDBInst.get_placer_config()->get_pl_dir() + "/sta";
+      this->initSTA(sta_home_path, false);
 
       // tmp for evalution.
       // std::string design_name = PlacerDBInst.get_design()->get_design_name();
@@ -603,9 +604,9 @@ void PLAPI::modifySTAOutputDir(std::string path)
   _external_api->modifySTAOutputDir(path);
 }
 
-void PLAPI::initSTA()
+void PLAPI::initSTA(std::string path, bool init_log)
 {
-  _external_api->initSTA();
+  _external_api->initSTA(path, init_log);
 }
 
 void PLAPI::initEval()
