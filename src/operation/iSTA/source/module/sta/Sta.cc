@@ -1847,7 +1847,9 @@ unsigned Sta::reportNet(const char *rpt_file_name, Net *the_net) {
  */
 unsigned Sta::reportNet() {
   std::string design_work_space = get_design_work_space();
-  std::string path_dir = design_work_space + "/net";
+  std::string now_time = Time::getNowWallTime();
+  std::string tmp = Str::replace(now_time, ":", "_");
+  std::string path_dir = design_work_space + "/net_" + tmp;
   std::filesystem::create_directories(path_dir);
 
   auto *nl = get_netlist();
@@ -2687,7 +2689,7 @@ std::set<std::string> Sta::findStartOrEnd(StaVertex *the_vertex,
 unsigned Sta::reportTiming(std::set<std::string> &&exclude_cell_names /*= {}*/,
                            bool is_derate /*=false*/,
                            bool is_clock_cap /*=false*/,
-                           bool is_copy /*=false*/) {
+                           bool is_copy /*=true*/) {
   const char *design_work_space = get_design_work_space();
   std::string now_time = Time::getNowWallTime();
   std::string tmp = Str::replace(now_time, ":", "_");

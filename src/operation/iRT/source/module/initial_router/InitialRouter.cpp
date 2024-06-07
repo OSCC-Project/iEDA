@@ -1033,17 +1033,17 @@ void InitialRouter::updateSummary(IRModel& ir_model)
         real_pin_coord_map_list[ir_net.get_net_idx()][ir_pin.get_pin_name()].emplace_back(
             RTUTIL.getRealRectByGCell(layer_coord, gcell_axis).getMidPoint(), layer_coord.get_layer_idx());
       }
-      for (auto& [net_idx, segment_set] : RTDM.getGlobalNetResultMap(die)) {
-        for (Segment<LayerCoord>* segment : segment_set) {
-          LayerCoord first_layer_coord = segment->get_first();
-          LayerCoord first_real_coord(RTUTIL.getRealRectByGCell(first_layer_coord, gcell_axis).getMidPoint(),
-                                      first_layer_coord.get_layer_idx());
-          LayerCoord second_layer_coord = segment->get_second();
-          LayerCoord second_real_coord(RTUTIL.getRealRectByGCell(second_layer_coord, gcell_axis).getMidPoint(),
-                                       second_layer_coord.get_layer_idx());
+    }
+    for (auto& [net_idx, segment_set] : RTDM.getGlobalNetResultMap(die)) {
+      for (Segment<LayerCoord>* segment : segment_set) {
+        LayerCoord first_layer_coord = segment->get_first();
+        LayerCoord first_real_coord(RTUTIL.getRealRectByGCell(first_layer_coord, gcell_axis).getMidPoint(),
+                                    first_layer_coord.get_layer_idx());
+        LayerCoord second_layer_coord = segment->get_second();
+        LayerCoord second_real_coord(RTUTIL.getRealRectByGCell(second_layer_coord, gcell_axis).getMidPoint(),
+                                     second_layer_coord.get_layer_idx());
 
-          routing_segment_list_list[ir_net.get_net_idx()].emplace_back(first_real_coord, second_real_coord);
-        }
+        routing_segment_list_list[net_idx].emplace_back(first_real_coord, second_real_coord);
       }
     }
     timing = RTI.getTiming(real_pin_coord_map_list, routing_segment_list_list);
