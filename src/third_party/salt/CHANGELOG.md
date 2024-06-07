@@ -151,6 +151,10 @@ diff -r ./base/net.h {ORIGIN REPOSITORY}/src/salt/base/net.h
 >     friend ostream& operator<<(ostream& os, const Net& net) { net.Write(os); return os; }
 ```
 
+### Tree::SetParentFromUndirectedAdjList function
+
+Fixed the non-tree topology error in SALT, caused by undirected cyclic graph of third_party:flute3
+
 ### Refine::removeRedundantCoincident function
 
 Fixed a bug caused by redundancy after flip and ushit
