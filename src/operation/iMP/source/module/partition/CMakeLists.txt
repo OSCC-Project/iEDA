@@ -15,5 +15,5 @@ set(HMETIS_BINARY ${PROJECT_SOURCE_DIR}/src/third_party/hmetis/hmetis2.0pre1)
 message(STATUS "MP: Hmetis binary path - " ${HMETIS_BINARY})
 add_definitions("-DHMETIS_BINARY=\"${HMETIS_BINARY}\"")
 
-add_executable(imp-test-partition partition_example.cc)
-target_link_libraries(imp-test-partition PRIVATE imp-partition)
+# add_executable(imp-test-partition partition_example.cc)
+# target_link_libraries(imp-test-partition PRIVATE imp-partition)
