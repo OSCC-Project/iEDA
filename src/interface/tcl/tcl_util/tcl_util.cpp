@@ -133,7 +133,7 @@ bool TclUtil::alterJsonConfig(std::string json_path, std::map<std::string, std::
   modifyJson(config, config_map);
 
   // for (auto [key, value] : config_map) {
-  //   // 把参数列表中的第一个字符'-'删除
+  //   // Remove the first character '-' from the parameter list.
   //   std::string sub_key = key.substr(1, key.size() - 1);
   //   if (value.type() == typeid(std::string)) {
   //     config[sub_key] = std::any_cast<std::string>(value);

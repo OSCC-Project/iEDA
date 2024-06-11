@@ -251,7 +251,7 @@ void CutSpacingCheck::checkCutSpacing(DrcRect* target_rect)
 
 int CutSpacingCheck::getQuerySpacing_PrlPos(int cut_class_index, DrcRect* target_rect)
 {
-  // 该Cut类型的最大间隔
+  //the max spacing of this Cut type
   int max_index = _lef58_spacing_table_list[_rule_index]->get_cutclass().get_class_name1_list().size() - 1;
   return _lef58_spacing_table_list[_rule_index]->get_cutclass().get_cut_spacing(cut_class_index, max_index).get_cut_spacing2().value();
 }

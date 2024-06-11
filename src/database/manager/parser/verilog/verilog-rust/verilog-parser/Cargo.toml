@@ -17,12 +17,13 @@ crate-type = ["staticlib"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
-# 使用Pest解析器生成器库的依赖项
+
+# Dependencies on the Pest parser generator library.
 [dependencies]
 pest = "2.6"
 pest_derive = "2.6"
 log = "0.4"
 
-# 配置build选项
+# Config build option
 [profile.dev]
 debug = true
