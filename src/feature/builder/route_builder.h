@@ -16,58 +16,51 @@
 // ***************************************************************************************
 #pragma once
 /**
- * @File Name: feature_manager.h
- * @Brief :
- * @Author : Yell (12112088@qq.com)
- * @Version : 1.0
- * @Creat Date : 2023-0811
+ * @file		route_builder.h
+ * @date		13/05/2024
+ * @version		0.1
+ * @description
+
+
+        build feature data
  *
  */
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+#include <cmath>
 #include <iostream>
 #include <string>
 #include <vector>
 
 #include "feature_irt.h"
-#include "feature_summary.h"
 
-#define featureInst ieda_feature::FeatureManager::getInstance()
+namespace idb{
+    class IdbPin;
+    class IdbVia;
+}
+using namespace idb;
 
 namespace ieda_feature {
 
-class FeatureManager
+class RouteDataBuilder
 {
  public:
-  static FeatureManager* getInstance()
-  {
-    if (!_instance) {
-      _instance = new FeatureManager;
-    }
-    return _instance;
-  }
+  RouteDataBuilder() = default;
+  ~RouteDataBuilder() = default;
 
-  ///
-  FeatureSummary* get_summary() { return _summary; }
-  RouteAnalyseData& get_route_data() { return _route_data; }
-
-  bool save_summary(std::string path);
-  bool save_tools(std::string path, std::string step);
-  bool save_eval_map(std::string path, int bin_cnt_x, int bin_cnt_y);
-  /// route data
-  bool save_route_data(std::string path);
-  bool read_route_data(std::string path);
+  // builder
+  RouteAnalyseData buildRouteData();
 
  private:
-  static FeatureManager* _instance;
+  RouteAnalyseData _data;
 
-  FeatureSummary* _summary = nullptr;
-  RouteAnalyseData _route_data;
+  bool is_pa(IdbPin* pin, IdbVia* via);
 
-  FeatureManager();
-  ~FeatureManager();
+  void add_term_pa(TermPA& term_pa, DbPinAccess pin_access);
+  TermPA& find_cell_term_pa(std::string cell_master_name, std::string term_name);
 };
 
 }  // namespace ieda_feature

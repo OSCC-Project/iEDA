@@ -29,13 +29,14 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 #include "CTSAPI.hh"
+#include "NoApi.hpp"
 #include "PLAPI.hh"
 #include "RTInterface.hpp"
 #include "ToApi.hpp"
-#include "NoApi.hpp"
 #include "feature_builder.h"
 #include "idm.h"
 #include "report_evaluator.h"
+#include "route_builder.h"
 
 namespace ieda_feature {
 
@@ -78,6 +79,13 @@ TimingOptSummary FeatureBuilder::buildTimingOptSummary()
   summary.STWL = EvalInst.evalTotalWL("kFlute", wl_nets);
 
   return summary;
+}
+
+RouteAnalyseData FeatureBuilder::buildRouteData()
+{
+  RouteDataBuilder route_builder;
+
+  return route_builder.buildRouteData();
 }
 
 }  // namespace ieda_feature

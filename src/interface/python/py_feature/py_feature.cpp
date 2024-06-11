@@ -35,4 +35,14 @@ bool feature_eval_map(const std::string& path, const int& bin_cnt_x, const int& 
   return featureInst->save_eval_map(path, bin_cnt_x, bin_cnt_y);
 }
 
+bool feature_route(const std::string& path)
+{
+  return featureInst->save_route_data(path);
+}
+
+bool feature_route_read(const std::string& path)
+{
+  return featureInst->read_route_data(path);
+}
+
 }  // namespace python_interface
