@@ -70,7 +70,7 @@ class TclUtil : public TclCmd
  private:
   static void modifyJson(ordered_json& j, const std::map<std::string, std::any>& config_map) {
     for (auto& [key, value] : config_map) {
-      // 把参数列表中的第一个字符'-'删除
+      // Remove the first character '-' from the parameter list.
       std::string sub_key = key.substr(1, key.size() - 1);
       if (!modifyJsonValue(j, sub_key, value)) {
         std::cerr << "The key is not found." << sub_key << std::endl;

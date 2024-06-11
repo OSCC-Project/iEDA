@@ -194,12 +194,12 @@ namespace idrc {
 // void IDRWrapper::wrapNetVia(idr::SpaceSegment<idr::RRPoint>& dr_space_segment, DrcNet* drc_net)
 // {
 //   Tech* tech = get_tech();
-//   // via_idx要与tech里的对齐
+//   // via_idx should match with in tech
 //   int dr_via_idx = dr_space_segment.get_via_lib_idx();
 //   idr::RRPoint first_point = dr_space_segment.get_segment().get_first();
 
 //   idr::Coordinate<int> dr_via_coor = first_point.get_coord();
-//   // dr里的via_idx要与tech里的对齐
+//   // via_idx in dr should match with in tech
 //   DrcVia* via = tech->findViaByIdx(dr_via_idx);
 //   // bottom
 //   DrcEnclosure bottom_enclosure = via->get_bottom_enclosure();
