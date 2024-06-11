@@ -22,12 +22,11 @@
 #include "GDSPlotter.hpp"
 #include "GlobalRouter.hpp"
 #include "InitialRouter.hpp"
-#include "LayerAssigner.hpp"
 #include "Monitor.hpp"
 #include "PinAccessor.hpp"
-#include "PlanarRouter.hpp"
 #include "SupplyAnalyzer.hpp"
 #include "TimingEval.hpp"
+#include "TopologyGenerator.hpp"
 #include "TrackAssigner.hpp"
 #include "builder.h"
 #include "feature_irt.h"
@@ -99,9 +98,17 @@ void RTInterface::runEGR()
   RTSA.analyze();
   SupplyAnalyzer::destroyInst();
 
+  TopologyGenerator::initInst();
+  RTTG.generate();
+  TopologyGenerator::destroyInst();
+
   InitialRouter::initInst();
   RTIR.route();
   InitialRouter::destroyInst();
+
+  GlobalRouter::initInst();
+  RTGR.route();
+  GlobalRouter::destroyInst();
 
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
@@ -119,29 +126,13 @@ void RTInterface::runRT()
   RTSA.analyze();
   SupplyAnalyzer::destroyInst();
 
-  // PlanarRouter::initInst();
-  // RTPR.route();
-  // PlanarRouter::destroyInst();
-
-  // LayerAssigner::initInst();
-  // RTLA.assign();
-  // LayerAssigner::destroyInst();
-
-  // // 临时代码
-  // for (Net& net : RTDM.getDatabase().get_net_list()) {
-  //   net.set_gr_result_tree(net.get_la_result_tree());
-  // }
-
-  // return;
+  TopologyGenerator::initInst();
+  RTTG.generate();
+  TopologyGenerator::destroyInst();
 
   InitialRouter::initInst();
   RTIR.route();
   InitialRouter::destroyInst();
-
-  // 临时代码
-  for (Net& net : RTDM.getDatabase().get_net_list()) {
-    net.set_gr_result_tree(net.get_ir_result_tree());
-  }
 
   GlobalRouter::initInst();
   RTGR.route();
@@ -249,7 +240,7 @@ void RTInterface::clearDef()
   std::vector<idb::IdbPin*> remove_pin_list;
   for (idb::IdbPin* io_pin : idb_pin_list->get_pin_list()) {
     if (io_pin->get_port_box_list().empty()) {
-      std::cout << io_pin->get_pin_name() << std::endl;
+      RTLOG.info(Loc::current(), io_pin->get_pin_name());
       remove_pin_list.push_back(io_pin);
     }
   }
@@ -283,19 +274,25 @@ std::vector<Violation> RTInterface::getViolationList(std::vector<idb::IdbLayerSh
    * net_idb_segment_map 存储 wire via patch
    */
   ScaleAxis& gcell_axis = RTDM.getDatabase().get_gcell_axis();
-  Helper& helper = RTDM.getHelper();
+  std::map<std::string, int32_t>& routing_layer_name_to_idx_map = RTDM.getDatabase().get_routing_layer_name_to_idx_map();
+  std::map<std::string, int32_t>& cut_layer_name_to_idx_map = RTDM.getDatabase().get_cut_layer_name_to_idx_map();
 
   std::vector<Violation> violation_list;
   idrc::DrcApi drc_api;
   drc_api.init();
   for (auto& [type, idrc_violation_list] : drc_api.check(env_shape_list, net_pin_shape_map, net_wire_via_map, check_select)) {
     for (idrc::DrcViolation* idrc_violation : idrc_violation_list) {
+      // self的drc违例先过滤
       if (idrc_violation->get_net_ids().size() < 2) {
         continue;
       }
-
+      // 由于pin_shape之间的drc违例存在，第一布线层的drc违例先过滤
       idb::IdbLayer* idb_layer = idrc_violation->get_layer();
-
+      if (idb_layer->is_routing()) {
+        if (routing_layer_name_to_idx_map[idb_layer->get_name()] == 0) {
+          continue;
+        }
+      }
       EXTLayerRect ext_layer_rect;
       if (idrc_violation->is_rect()) {
         idrc::DrcViolationRect* idrc_violation_rect = static_cast<idrc::DrcViolationRect*>(idrc_violation);
@@ -304,9 +301,9 @@ std::vector<Violation> RTInterface::getViolationList(std::vector<idb::IdbLayerSh
       } else {
         RTLOG.error(Loc::current(), "Type not supported!");
       }
-      ext_layer_rect.set_grid_rect(RTUtil::getClosedGCellGridRect(ext_layer_rect.get_real_rect(), gcell_axis));
-      ext_layer_rect.set_layer_idx(idb_layer->is_routing() ? helper.getRoutingLayerIdxByName(idb_layer->get_name())
-                                                           : helper.getCutLayerIdxByName(idb_layer->get_name()));
+      ext_layer_rect.set_grid_rect(RTUTIL.getClosedGCellGridRect(ext_layer_rect.get_real_rect(), gcell_axis));
+      ext_layer_rect.set_layer_idx(idb_layer->is_routing() ? routing_layer_name_to_idx_map[idb_layer->get_name()]
+                                                           : cut_layer_name_to_idx_map[idb_layer->get_name()]);
 
       Violation violation;
       violation.set_violation_shape(ext_layer_rect);
@@ -376,10 +373,10 @@ std::map<std::string, std::vector<double>> RTInterface::getTiming(
         LayerCoord& first_coord = routing_segment.get_first();
         LayerCoord& second_coord = routing_segment.get_second();
 
-        if (!RTUtil::exist(coord_real_pin_map, first_coord) && !RTUtil::exist(coord_fake_pin_map, first_coord)) {
+        if (!RTUTIL.exist(coord_real_pin_map, first_coord) && !RTUTIL.exist(coord_fake_pin_map, first_coord)) {
           coord_fake_pin_map[first_coord] = fake_id++;
         }
-        if (!RTUtil::exist(coord_real_pin_map, second_coord) && !RTUtil::exist(coord_fake_pin_map, second_coord)) {
+        if (!RTUTIL.exist(coord_real_pin_map, second_coord) && !RTUTIL.exist(coord_fake_pin_map, second_coord)) {
           coord_fake_pin_map[second_coord] = fake_id++;
         }
       }
@@ -389,8 +386,8 @@ std::map<std::string, std::vector<double>> RTInterface::getTiming(
       // 生成线长为0的线段
       for (auto& [coord, real_pin_list] : coord_real_pin_map) {
         for (size_t i = 1; i < real_pin_list.size(); i++) {
-          RCPin first_rc_pin(coord, true, RTUtil::escapeBackslash(real_pin_list[i - 1]));
-          RCPin second_rc_pin(coord, true, RTUtil::escapeBackslash(real_pin_list[i]));
+          RCPin first_rc_pin(coord, true, RTUTIL.escapeBackslash(real_pin_list[i - 1]));
+          RCPin second_rc_pin(coord, true, RTUTIL.escapeBackslash(real_pin_list[i]));
           rc_segment_list.emplace_back(first_rc_pin, second_rc_pin);
         }
       }
@@ -398,9 +395,9 @@ std::map<std::string, std::vector<double>> RTInterface::getTiming(
       for (Segment<LayerCoord>& routing_segment : routing_segment_list) {
         auto getRCPin = [&](LayerCoord& coord) {
           RCPin rc_pin;
-          if (RTUtil::exist(coord_real_pin_map, coord)) {
-            rc_pin = RCPin(coord, true, RTUtil::escapeBackslash(coord_real_pin_map[coord].front()));
-          } else if (RTUtil::exist(coord_fake_pin_map, coord)) {
+          if (RTUTIL.exist(coord_real_pin_map, coord)) {
+            rc_pin = RCPin(coord, true, RTUTIL.escapeBackslash(coord_real_pin_map[coord].front()));
+          } else if (RTUTIL.exist(coord_fake_pin_map, coord)) {
             rc_pin = RCPin(coord, false, coord_fake_pin_map[coord]);
           } else {
             RTLOG.error(Loc::current(), "The coord is not exist!");
@@ -477,11 +474,11 @@ std::map<std::string, std::vector<double>> RTInterface::getTiming(
   std::vector<Net>& net_list = RTDM.getDatabase().get_net_list();
   int32_t thread_number = RTDM.getConfig().thread_number;
 
-  ista::TimingEngine* timing_engine = initTimingEngine(RTDM.getHelper().get_idb_builder(), thread_number);
+  ista::TimingEngine* timing_engine = initTimingEngine(RTDM.getDatabase().get_idb_builder(), thread_number);
   ista::Netlist* sta_net_list = timing_engine->get_netlist();
 
   for (size_t net_idx = 0; net_idx < coord_real_pin_map_list.size(); net_idx++) {
-    ista::Net* ista_net = sta_net_list->findNet(RTUtil::escapeBackslash(net_list[net_idx].get_net_name()).c_str());
+    ista::Net* ista_net = sta_net_list->findNet(RTUTIL.escapeBackslash(net_list[net_idx].get_net_name()).c_str());
     for (Segment<RCPin>& segment : getRCSegmentList(coord_real_pin_map_list[net_idx], routing_segment_list_list[net_idx])) {
       RCPin& first_rc_pin = segment.get_first();
       RCPin& second_rc_pin = segment.get_second();
@@ -489,8 +486,8 @@ std::map<std::string, std::vector<double>> RTInterface::getTiming(
       double cap = 0;
       double res = 0;
       if (first_rc_pin._coord.get_layer_idx() == second_rc_pin._coord.get_layer_idx()) {
-        int32_t distance = RTUtil::getManhattanDistance(first_rc_pin._coord, second_rc_pin._coord);
-        int32_t unit = RTDM.getHelper().get_idb_builder()->get_def_service()->get_design()->get_units()->get_micron_dbu();
+        int32_t distance = RTUTIL.getManhattanDistance(first_rc_pin._coord, second_rc_pin._coord);
+        int32_t unit = RTDM.getDatabase().get_idb_builder()->get_def_service()->get_design()->get_units()->get_micron_dbu();
         std::optional<double> width = std::nullopt;
         cap = dynamic_cast<ista::TimingIDBAdapter*>(timing_engine->get_db_adapter())
                   ->getCapacitance(first_rc_pin._coord.get_layer_idx() + 1, distance / 1.0 / unit, width);

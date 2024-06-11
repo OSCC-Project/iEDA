@@ -12,7 +12,7 @@ add_library(irt_data_manager
 
 target_link_libraries(irt_data_manager 
     PUBLIC
-        irt_utility
+        irt_toolkit
 )
 
 target_include_directories(irt_data_manager 

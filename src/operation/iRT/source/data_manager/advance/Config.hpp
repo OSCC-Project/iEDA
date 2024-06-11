@@ -42,6 +42,8 @@ class Config
   std::string pa_temp_directory_path;  // building
   // ********     SupplyAnalyzer    ******** //
   std::string sa_temp_directory_path;  // building
+  // ********   TopologyGenerator   ******** //
+  std::string tg_temp_directory_path;  // building
   // **********   InitialRouter   ********** //
   std::string ir_temp_directory_path;  // building
   // **********   GlobalRouter    ********** //

@@ -204,7 +204,7 @@ unsigned Sta::readSdc(const char *sdc_file) {
 unsigned Sta::readSpef(const char *spef_file) {
   StaGraph &the_graph = get_graph();
 
-  StaBuildRCTree func(spef_file, DelayCalcMethod::kArnoldi);
+  StaBuildRCTree func(spef_file, DelayCalcMethod::kElmore);
   func(&the_graph);
 
   return 1;
@@ -993,10 +993,6 @@ void Sta::linkDesignWithRustParser(const char *top_cell_name) {
  * @return std::set<LibertyLibrary *>
  */
 std::set<LibertyLibrary *> Sta::getUsedLibs() {
-  if (!isBuildGraph()) {
-    return std::set<LibertyLibrary *>();
-  }
-
   std::set<LibertyLibrary *> used_libs;
   Instance *inst;
   FOREACH_INSTANCE(&_netlist, inst) {
@@ -1780,6 +1776,90 @@ unsigned Sta::reportSkew(const char *rpt_file_name,
     std::fprintf(f.get(), "%s", report_tbl_skew->c_str());
   }
 
+  return 1;
+}
+
+/**
+ * @brief report one net in yaml format
+ *
+ * @param rpt_file_name
+ * @param net
+ * @return unsigned
+ */
+unsigned Sta::reportNet(const char *rpt_file_name, Net *the_net) {
+  YAML::Node node;
+
+  auto *rc_net = getRcNet(the_net);
+
+  node["net_name"] = the_net->get_name();
+  node["fanout"] = the_net->getLoads().size();
+  node["driver"] = the_net->getDriver()->getFullName();
+
+  auto driver_vertex = get_graph().findVertex(the_net->getDriver());
+
+  unsigned index = 0;
+  DesignObject *pin_port;
+  FOREACH_NET_PIN(the_net, pin_port) {
+    if (pin_port == the_net->getDriver()) {
+      continue;
+    }
+
+    auto load_vertex = get_graph().findVertex(pin_port);
+
+    YAML::Node load_node;
+    std::string load_node_name = Str::printf("node_%d", index++);
+    node[load_node_name] = load_node;
+
+    load_node["load"] = pin_port->getFullName();
+
+    FOREACH_MODE_TRANS(mode, trans) {
+      YAML::Node one_node;
+      std::string mode_str = (mode == AnalysisMode::kMax) ? "max" : "min";
+      std::string trans_str = (trans == TransType::kRise) ? "rise" : "fall";
+      std::string node_name = mode_str + "_" + trans_str;
+      load_node[node_name] = one_node;
+
+      one_node["total_capacitance_pf"] = (*driver_vertex)->getLoad(mode, trans);
+
+      auto vertex_slew = (*driver_vertex)->getSlewNs(mode, trans);
+      one_node["input_slew_ns"] = vertex_slew ? *vertex_slew : 0.0;
+
+      auto vertex_resistance = (*load_vertex)->getResistance(mode, trans);
+      one_node["load_resistance"] = vertex_resistance;
+
+      one_node["load_delay_ns"] =
+          rc_net->delayNs(*pin_port, RcNet::DelayMethod::kElmore).value_or(0.0);
+    }
+  }
+
+  std::ofstream file(rpt_file_name, std::ios::trunc);
+  file << node << std::endl;
+  file.close();
+
+  return 1;
+}
+
+/**
+ * @brief report all net information.
+ *
+ * @param rpt_file_name
+ * @return unsigned
+ */
+unsigned Sta::reportNet() {
+  std::string design_work_space = get_design_work_space();
+  std::string now_time = Time::getNowWallTime();
+  std::string tmp = Str::replace(now_time, ":", "_");
+  std::string path_dir = design_work_space + "/net_" + tmp;
+  std::filesystem::create_directories(path_dir);
+
+  auto *nl = get_netlist();
+  Net *net;
+  FOREACH_NET(nl, net) {
+    auto *net_name = net->get_name();
+    std::string rpt_file_name =
+        Str::printf("%s/net_%s.yaml", path_dir.c_str(), net_name);
+    reportNet(rpt_file_name.c_str(), net);
+  }
   return 1;
 }
 
@@ -2609,7 +2689,7 @@ std::set<std::string> Sta::findStartOrEnd(StaVertex *the_vertex,
 unsigned Sta::reportTiming(std::set<std::string> &&exclude_cell_names /*= {}*/,
                            bool is_derate /*=false*/,
                            bool is_clock_cap /*=false*/,
-                           bool is_copy /*=false*/) {
+                           bool is_copy /*=true*/) {
   const char *design_work_space = get_design_work_space();
   std::string now_time = Time::getNowWallTime();
   std::string tmp = Str::replace(now_time, ":", "_");
@@ -2694,6 +2774,11 @@ unsigned Sta::reportTiming(std::set<std::string> &&exclude_cell_names /*= {}*/,
   if (is_copy) {
     copy_file(verilog_file_name, ".v");
   }
+
+  if (c_print_net_yaml) {
+    reportNet();
+  }
+
   writeVerilog(verilog_file_name.c_str(), exclude_cell_names);
 
   LOG_INFO << "The timing engine run success.";

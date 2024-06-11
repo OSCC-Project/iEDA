@@ -20,9 +20,7 @@
 #include "EXTPlanarRect.hpp"
 #include "GridMap.hpp"
 #include "LayerCoord.hpp"
-#include "Logger.hpp"
 #include "MTree.hpp"
-#include "Monitor.hpp"
 #include "Orientation.hpp"
 #include "PlanarCoord.hpp"
 #include "PlanarRect.hpp"
@@ -35,9 +33,16 @@
 
 namespace irt {
 
-class RTUtil
+#define RTUTIL (irt::Utility::getInst())
+
+class Utility
 {
  public:
+  static void initInst();
+  static Utility& getInst();
+  static void destroyInst();
+  // function
+
 #if 1  // 方向方位计算
 
   // 判断线段方向
@@ -390,7 +395,7 @@ class RTUtil
    *  如果a与b中有膨胀矩形，那么则用isOpenOverlap
    *  如果a与b中都是真实矩形，那么用isClosedOverlap
    *
-   *  isOpenOverlap：不考虑边的overlap
+   *  isOpenOverlap:不考虑边的overlap
    */
   static bool isOpenOverlap(const PlanarRect& a, const PlanarRect& b) { return isOverlap(a, b, false); }
 
@@ -399,7 +404,7 @@ class RTUtil
    *  如果a与b中有膨胀矩形，那么则用isOpenOverlap
    *  如果a与b中都是真实矩形，那么用isClosedOverlap
    *
-   *  isClosedOverlap：考虑边的overlap
+   *  isClosedOverlap:考虑边的overlap
    */
   static bool isClosedOverlap(const PlanarRect& a, const PlanarRect& b) { return isOverlap(a, b, true); }
 
@@ -1275,124 +1280,6 @@ class RTUtil
 
 #if 1  // 与Track有关的计算
 
-  static bool existTrackGrid(const PlanarCoord& real_coord, ScaleAxis& track_axis)
-  {
-    PlanarCoord grid_coord = getTrackGrid(real_coord, track_axis);
-    return ((grid_coord.get_x() != -1) && (grid_coord.get_y() != -1));
-  }
-
-  static PlanarCoord getTrackGrid(const PlanarCoord& real_coord, ScaleAxis& track_axis)
-  {
-    return getTrackGridRect(PlanarRect(real_coord, real_coord), track_axis).get_ll();
-  }
-
-  static bool existTrackGrid(const PlanarRect& real_rect, ScaleAxis& track_axis)
-  {
-    PlanarRect grid_rect = getTrackGrid(real_rect, track_axis);
-    return ((grid_rect.get_ll_x() != -1) && (grid_rect.get_ll_y() != -1) && (grid_rect.get_ur_x() != -1) && (grid_rect.get_ur_y() != -1));
-  }
-
-  static PlanarRect getTrackGrid(const PlanarRect& real_rect, ScaleAxis& track_axis) { return getTrackGridRect(real_rect, track_axis); }
-
-  /**
-   * 生成real_rect覆盖到的track grid rect
-   */
-  static PlanarRect getTrackGridRect(const PlanarRect& real_rect, ScaleAxis& track_axis)
-  {
-    int32_t real_ll_x = real_rect.get_ll_x();
-    int32_t real_ur_x = real_rect.get_ur_x();
-    int32_t real_ll_y = real_rect.get_ll_y();
-    int32_t real_ur_y = real_rect.get_ur_y();
-    std::vector<ScaleGrid>& x_grid_list = track_axis.get_x_grid_list();
-    std::vector<ScaleGrid>& y_grid_list = track_axis.get_y_grid_list();
-
-    int32_t grid_ll_x = -1;
-    int32_t grid_ur_x = -1;
-    {
-      int32_t grid_scale_x = 0;
-      for (ScaleGrid& x_grid : x_grid_list) {
-        int32_t start_line = x_grid.get_start_line();
-        int32_t step_length = x_grid.get_step_length();
-        int32_t end_line = x_grid.get_end_line();
-
-        if (start_line <= real_ll_x && real_ll_x <= end_line) {
-          int32_t offset_x = 0;
-          if (step_length != 0) {
-            offset_x = static_cast<int32_t>(std::ceil(static_cast<double>(real_ll_x - start_line) / step_length));
-          }
-          grid_ll_x = (grid_scale_x + offset_x);
-        }
-        if (start_line <= real_ur_x && real_ur_x <= end_line) {
-          int32_t offset_x = 0;
-          if (step_length != 0) {
-            offset_x = static_cast<int32_t>(static_cast<double>(real_ur_x - start_line) / step_length);
-          }
-          grid_ur_x = (grid_scale_x + offset_x);
-          break;
-        }
-        grid_scale_x += x_grid.get_step_num();
-      }
-      if (grid_ll_x == -1) {
-        if (!x_grid_list.empty()) {
-          grid_ll_x = (real_ll_x < x_grid_list.front().get_start_line() ? 0 : -1);
-        }
-      }
-      if (grid_ll_x != -1 && grid_ur_x == -1) {
-        grid_ur_x = (real_ur_x < x_grid_list.front().get_start_line() ? -1 : grid_scale_x);
-      }
-      if (grid_ll_x > grid_ur_x) {
-        grid_ll_x = -1;
-        grid_ur_x = -1;
-      }
-    }
-    int32_t grid_ll_y = -1;
-    int32_t grid_ur_y = -1;
-    {
-      int32_t grid_scale_y = 0;
-      for (ScaleGrid& y_grid : y_grid_list) {
-        int32_t start_line = y_grid.get_start_line();
-        int32_t step_length = y_grid.get_step_length();
-        int32_t end_line = y_grid.get_end_line();
-
-        if (start_line <= real_ll_y && real_ll_y <= end_line) {
-          int32_t offset_y = 0;
-          if (step_length != 0) {
-            offset_y = static_cast<int32_t>(std::ceil(static_cast<double>(real_ll_y - start_line) / step_length));
-          }
-          grid_ll_y = (grid_scale_y + offset_y);
-        }
-        if (start_line <= real_ur_y && real_ur_y <= end_line) {
-          int32_t offset_y = 0;
-          if (step_length != 0) {
-            offset_y = static_cast<int32_t>(static_cast<double>(real_ur_y - start_line) / step_length);
-          }
-          grid_ur_y = (grid_scale_y + offset_y);
-          break;
-        }
-        grid_scale_y += y_grid.get_step_num();
-      }
-      if (grid_ll_y == -1) {
-        if (!y_grid_list.empty()) {
-          grid_ll_y = (real_ll_y < y_grid_list.front().get_start_line() ? 0 : -1);
-        }
-      }
-      if (grid_ll_y != -1 && grid_ur_y == -1) {
-        grid_ur_y = (real_ur_y < y_grid_list.front().get_start_line() ? -1 : grid_scale_y);
-      }
-      if (grid_ll_y > grid_ur_y) {
-        grid_ll_y = -1;
-        grid_ur_y = -1;
-      }
-    }
-    if (grid_ll_x == -1 || grid_ur_x == -1 || grid_ll_y == -1 || grid_ur_y == -1) {
-      grid_ll_x = -1;
-      grid_ur_x = -1;
-      grid_ll_y = -1;
-      grid_ur_y = -1;
-    }
-    return PlanarRect(grid_ll_x, grid_ll_y, grid_ur_x, grid_ur_y);
-  }
-
   /**
    * 计算边界包含的刻度列表，如果边界与刻度重合，那么也会包含在内
    */
@@ -1418,6 +1305,133 @@ class RTUtil
     std::sort(scale_line_list.begin(), scale_line_list.end());
     scale_line_list.erase(std::unique(scale_line_list.begin(), scale_line_list.end()), scale_line_list.end());
     return scale_line_list;
+  }
+
+  static bool existTrackGrid(const PlanarCoord& real_coord, ScaleAxis& track_axis)
+  {
+    PlanarCoord grid_coord = getTrackGrid(real_coord, track_axis);
+    return ((grid_coord.get_x() != -1) && (grid_coord.get_y() != -1));
+  }
+
+  static PlanarCoord getTrackGrid(const PlanarCoord& real_coord, ScaleAxis& track_axis)
+  {
+    return getTrackGrid(PlanarRect(real_coord, real_coord), track_axis).get_ll();
+  }
+
+  static bool existTrackGrid(const PlanarRect& real_rect, ScaleAxis& track_axis)
+  {
+    PlanarRect grid_rect = getTrackGrid(real_rect, track_axis);
+    return ((grid_rect.get_ll_x() != -1) && (grid_rect.get_ll_y() != -1) && (grid_rect.get_ur_x() != -1) && (grid_rect.get_ur_y() != -1));
+  }
+
+  static PlanarRect getTrackGrid(const PlanarRect& real_rect, ScaleAxis& track_axis)
+  {
+    std::set<int32_t> x_pre_set;
+    std::set<int32_t> x_mid_set;
+    std::set<int32_t> x_post_set;
+    updateScaleList(track_axis.get_x_grid_list(), real_rect.get_ll_x(), real_rect.get_ur_x(), x_pre_set, x_mid_set, x_post_set);
+
+    std::set<int32_t> y_pre_set;
+    std::set<int32_t> y_mid_set;
+    std::set<int32_t> y_post_set;
+    updateScaleList(track_axis.get_y_grid_list(), real_rect.get_ll_y(), real_rect.get_ur_y(), y_pre_set, y_mid_set, y_post_set);
+
+    PlanarRect grid_rect;
+    if (x_mid_set.empty() || y_mid_set.empty()) {
+      grid_rect.set_ll(-1, -1);
+      grid_rect.set_ur(-1, -1);
+    } else {
+      grid_rect.set_ll(*x_mid_set.begin(), *y_mid_set.begin());
+      grid_rect.set_ur(*x_mid_set.rbegin(), *y_mid_set.rbegin());
+    }
+    return grid_rect;
+  }
+
+  static std::map<PlanarCoord, std::set<Orientation>, CmpPlanarCoordByXASC> getTrackGridOrientationMap(const PlanarRect& real_rect,
+                                                                                                       ScaleAxis& track_axis)
+  {
+    std::set<int32_t> x_pre_set;
+    std::set<int32_t> x_mid_set;
+    std::set<int32_t> x_post_set;
+    updateScaleList(track_axis.get_x_grid_list(), real_rect.get_ll_x(), real_rect.get_ur_x(), x_pre_set, x_mid_set, x_post_set);
+
+    std::set<int32_t> y_pre_set;
+    std::set<int32_t> y_mid_set;
+    std::set<int32_t> y_post_set;
+    updateScaleList(track_axis.get_y_grid_list(), real_rect.get_ll_y(), real_rect.get_ur_y(), y_pre_set, y_mid_set, y_post_set);
+
+    std::map<PlanarCoord, std::set<Orientation>, CmpPlanarCoordByXASC> grid_orientation_map;
+    for (int32_t x_pre : x_pre_set) {
+      for (int32_t y_mid : y_mid_set) {
+        grid_orientation_map[PlanarCoord(x_pre, y_mid)].insert(Orientation::kEast);
+      }
+    }
+    for (int32_t x_post : x_post_set) {
+      for (int32_t y_mid : y_mid_set) {
+        grid_orientation_map[PlanarCoord(x_post, y_mid)].insert(Orientation::kWest);
+      }
+    }
+    for (int32_t y_pre : y_pre_set) {
+      for (int32_t x_mid : x_mid_set) {
+        grid_orientation_map[PlanarCoord(x_mid, y_pre)].insert(Orientation::kNorth);
+      }
+    }
+    for (int32_t y_post : y_post_set) {
+      for (int32_t x_mid : x_mid_set) {
+        grid_orientation_map[PlanarCoord(x_mid, y_post)].insert(Orientation::kSouth);
+      }
+    }
+    for (int32_t x_mid : x_mid_set) {
+      for (int32_t y_mid : y_mid_set) {
+        grid_orientation_map[PlanarCoord(x_mid, y_mid)].insert(
+            {Orientation::kEast, Orientation::kWest, Orientation::kNorth, Orientation::kSouth, Orientation::kAbove, Orientation::kBelow});
+      }
+    }
+    return grid_orientation_map;
+  }
+
+  static void updateScaleList(std::vector<ScaleGrid>& scale_grid_list, int32_t ll_scale, int32_t ur_scale, std::set<int32_t>& pre_index_set,
+                              std::set<int32_t>& mid_index_set, std::set<int32_t>& post_index_set)
+  {
+    int32_t pre_index = -1;
+    int32_t post_index = -1;
+    int32_t pre_scale = INT32_MIN;
+    int32_t post_scale = INT32_MAX;
+
+    int32_t index = -1;
+    int32_t index_scale = -1;
+    for (ScaleGrid& scale_grid : scale_grid_list) {
+      for (int32_t i = 0; i <= scale_grid.get_step_num(); ++i) {
+        int32_t scale = scale_grid.get_start_line() + i * scale_grid.get_step_length();
+        if (index_scale != scale) {
+          ++index;
+          index_scale = scale;
+        } else {
+          continue;
+        }
+        if (scale < ll_scale) {
+          if (pre_scale < scale) {
+            pre_scale = scale;
+            pre_index = index;
+          }
+        } else if (ur_scale < scale) {
+          if (scale < post_scale) {
+            post_scale = scale;
+            post_index = index;
+          }
+          goto here;
+        } else {
+          mid_index_set.insert(index);
+        }
+      }
+    }
+  here:
+    if (pre_index != -1) {
+      pre_index_set.insert(pre_index);
+    }
+    if (post_index != -1) {
+      post_index_set.insert(post_index);
+    }
   }
 
 #endif
@@ -1574,38 +1588,6 @@ class RTUtil
       value = default_value;
     }
     return value;
-  }
-
-  // 从segment_list 到 tree的完全流程 (包括构建 优化 检查)
-  static MTree<PlanarCoord> getTreeByFullFlow(PlanarCoord& root_coord, std::vector<Segment<PlanarCoord>>& segment_list,
-                                              std::map<PlanarCoord, std::set<int32_t>, CmpPlanarCoordByXASC>& key_coord_pin_map)
-  {
-    std::vector<PlanarCoord> candidate_root_coord_list{root_coord};
-    return getTreeByFullFlow(candidate_root_coord_list, segment_list, key_coord_pin_map);
-  }
-
-  // 从segment_list 到 tree的完全流程 (包括构建 优化 检查)
-  static MTree<PlanarCoord> getTreeByFullFlow(std::vector<PlanarCoord>& candidate_root_coord_list,
-                                              std::vector<Segment<PlanarCoord>>& segment_list,
-                                              std::map<PlanarCoord, std::set<int32_t>, CmpPlanarCoordByXASC>& key_coord_pin_map)
-  {
-    std::vector<LayerCoord> temp_candidate_root_coord_list;
-    for (PlanarCoord& candidate_root_coord : candidate_root_coord_list) {
-      temp_candidate_root_coord_list.emplace_back(candidate_root_coord);
-    }
-    std::vector<Segment<LayerCoord>> temp_layer_segment_list;
-    for (Segment<PlanarCoord>& segment : segment_list) {
-      temp_layer_segment_list.emplace_back(segment.get_first(), segment.get_second());
-    }
-    std::map<LayerCoord, std::set<int32_t>, CmpLayerCoordByXASC> temp_layer_key_coord_pin_map;
-    for (auto& [coord, pin_idx_set] : key_coord_pin_map) {
-      temp_layer_key_coord_pin_map[coord] = pin_idx_set;
-    }
-    MTree<LayerCoord> temp_coord_tree
-        = getTreeByFullFlow(temp_candidate_root_coord_list, temp_layer_segment_list, temp_layer_key_coord_pin_map);
-
-    std::function<PlanarCoord(LayerCoord&)> convertToPlanarCoord = [](LayerCoord& coord) { return coord.get_planar_coord(); };
-    return convertTree(temp_coord_tree, convertToPlanarCoord);
   }
 
   // 从segment_list 到 tree的完全流程 (包括构建 优化 检查)
@@ -1823,7 +1805,7 @@ class RTUtil
       }
     }
     if (!segment_list.empty()) {
-      RTLOG.error(Loc::current(), "The segment_list not covered driving_pin!");
+      RTLOG.error(Loc::current(), "The segment_list not covered root!");
     }
     int32_t max_pin_num = INT32_MIN;
     for (auto& [key_coord, pin_idx_set] : key_coord_pin_map) {
@@ -1976,7 +1958,7 @@ class RTUtil
     }
     std::vector<int32_t> reserved_via_below_layer_idx_list;
     if (curr_layer_idx <= bottom_layer_idx) {
-      for (int layer_idx = curr_layer_idx; layer_idx <= bottom_layer_idx && layer_idx < top_layer_idx; layer_idx++) {
+      for (int32_t layer_idx = curr_layer_idx; layer_idx <= bottom_layer_idx && layer_idx < top_layer_idx; layer_idx++) {
         reserved_via_below_layer_idx_list.push_back(layer_idx);
       }
     } else if (bottom_layer_idx < curr_layer_idx && curr_layer_idx < top_layer_idx) {
@@ -2047,10 +2029,12 @@ class RTUtil
   {
     std::vector<std::vector<std::string>> print_table_list;
     for (const fort::char_table& table : table_list) {
-      print_table_list.push_back(splitString(table.to_string(), '\n'));
+      if (!table.is_empty()) {
+        print_table_list.push_back(splitString(table.to_string(), '\n'));
+      }
     }
 
-    int max_size = INT_MIN;
+    int32_t max_size = INT_MIN;
     for (std::vector<std::string>& table : print_table_list) {
       max_size = std::max(max_size, static_cast<int32_t>(table.size()));
     }
@@ -2267,6 +2251,9 @@ class RTUtil
             }
           }
         }
+        for (BGMultiPolyDBL& diff_multi_poly : diff_multi_poly_list) {
+          removeError(diff_multi_poly);
+        }
       }
       if (diff_multi_poly_list.empty()) {
         continue;
@@ -2289,6 +2276,7 @@ class RTUtil
             bg::intersection(mid_multi_poly, curr_multi_poly, mid_multi_point);
           }
           mid_multi_poly = mid_multi_poly_temp;
+          removeError(mid_multi_poly);
         }
       }
       // 计算((A - D) ∩ (A - E) ∩ (A - F)) ∪ ((B - D) ∩ (B - E) ∩ (B - F))
@@ -2412,95 +2400,30 @@ class RTUtil
 
 #endif
 
-#if 1  // overlap
-
-  // static std::vector<PlanarRect> getOpenOverlapRectListByBoost(const std::vector<PlanarRect>& master_list,
-  //                                                              const std::vector<PlanarRect>& rect_list)
-  // {
-  //   return getOverlapRectListByBoost(master_list, rect_list, true);
-  // }
-
-  // static std::vector<PlanarRect> getClosedOverlapRectListByBoost(const std::vector<PlanarRect>& master_list,
-  //                                                                const std::vector<PlanarRect>& rect_list)
-  // {
-  //   return getOverlapRectListByBoost(master_list, rect_list, false);
-  // }
-
-  // static std::vector<PlanarRect> getOverlapRectListByBoost(const std::vector<PlanarRect>& master_list,
-  //                                                          const std::vector<PlanarRect>& rect_list, bool is_open)
-  // {
-  //   std::vector<PlanarRect> result_list;
-
-  //   if (!is_open) {
-  //     // 先保存master_list中的特殊矩形
-  //     for (const PlanarRect& master : master_list) {
-  //       if (master.get_ll_x() == master.get_ur_x() || master.get_ll_y() == master.get_ur_y()) {
-  //         // 特殊矩形
-  //         result_list.push_back(master);
-  //       }
-  //     }
-  //   }
-  //   /**
-  //    * 下面每个字母表示一个独立的直角多边形
-  //    * 求解(A ∪ B) ∩ (D ∪ E ∪ F)
-  //    * 转(A ∩ D) ∪ (A ∩ E) ∪ (A ∩ F) ∪ (B ∩ D) ∪ (B ∩ E) ∪ (B ∩ F)
-  //    */
-  //   // 其中master_poly_list为(A ∪ B)
-  //   std::vector<BGPolyDBL> master_poly_list = getBGPolyDBLList(master_list);
-  //   // 其中rect_poly_list为(D ∪ E ∪ F)
-  //   std::vector<BGPolyDBL> rect_poly_list = getBGPolyDBLList(rect_list);
-
-  //   BGMultiPolyDBL result_multi_poly;
-  //   BGMultiLineDBL result_multi_line;
-  //   BGMultiPointDBL result_multi_point;
-  //   for (BGPolyDBL& master_poly : master_poly_list) {
-  //     for (BGPolyDBL& rect_poly : rect_poly_list) {
-  //       bg::intersection(master_poly, rect_poly, result_multi_poly);
-  //       if (!is_open) {
-  //         bg::intersection(master_poly, rect_poly, result_multi_line);
-  //         bg::intersection(master_poly, rect_poly, result_multi_point);
-  //       }
-  //     }
-  //   }
-  //   // 生成对应的矩形结果
-  //   for (PlanarRect& rect : getRTRectListByBGMultiPolyDBL(result_multi_poly)) {
-  //     result_list.push_back(rect);
-  //   }
-  //   for (PlanarRect& rect : getRTRectListByBGMultiLineDBL(result_multi_line)) {
-  //     result_list.push_back(rect);
-  //   }
-  //   for (PlanarRect& rect : getRTRectListByBGMultiPointDBL(result_multi_point)) {
-  //     result_list.push_back(rect);
-  //   }
-  //   // rect去重
-  //   std::sort(result_list.begin(), result_list.end(), CmpPlanarRectByXASC());
-  //   result_list.erase(std::unique(result_list.begin(), result_list.end()), result_list.end());
-  //   return result_list;
-  // }
-
-#endif
-
 #if 1  // reduce
 
-  static std::vector<PlanarRect> getOpenReducedRectListByBoost(const std::vector<PlanarRect>& master_list, int ll_x_add_offset,
-                                                               int ll_y_add_offset, int ur_x_minus_offset, int ur_y_minus_offset)
+  static std::vector<PlanarRect> getOpenReducedRectListByBoost(const std::vector<PlanarRect>& master_list, int32_t ll_x_add_offset,
+                                                               int32_t ll_y_add_offset, int32_t ur_x_minus_offset,
+                                                               int32_t ur_y_minus_offset)
   {
     return getReducedRectListByBoost(master_list, ll_x_add_offset, ll_y_add_offset, ur_x_minus_offset, ur_y_minus_offset, true);
   }
 
-  static std::vector<PlanarRect> getClosedReducedRectListByBoost(const std::vector<PlanarRect>& master_list, int reduced_offset)
+  static std::vector<PlanarRect> getClosedReducedRectListByBoost(const std::vector<PlanarRect>& master_list, int32_t reduced_offset)
   {
     return getReducedRectListByBoost(master_list, reduced_offset, reduced_offset, reduced_offset, reduced_offset, false);
   }
 
-  static std::vector<PlanarRect> getClosedReducedRectListByBoost(const std::vector<PlanarRect>& master_list, int ll_x_add_offset,
-                                                                 int ll_y_add_offset, int ur_x_minus_offset, int ur_y_minus_offset)
+  static std::vector<PlanarRect> getClosedReducedRectListByBoost(const std::vector<PlanarRect>& master_list, int32_t ll_x_add_offset,
+                                                                 int32_t ll_y_add_offset, int32_t ur_x_minus_offset,
+                                                                 int32_t ur_y_minus_offset)
   {
     return getReducedRectListByBoost(master_list, ll_x_add_offset, ll_y_add_offset, ur_x_minus_offset, ur_y_minus_offset, false);
   }
 
-  static std::vector<PlanarRect> getReducedRectListByBoost(const std::vector<PlanarRect>& master_list, int ll_x_add_offset,
-                                                           int ll_y_add_offset, int ur_x_minus_offset, int ur_y_minus_offset, bool is_open)
+  static std::vector<PlanarRect> getReducedRectListByBoost(const std::vector<PlanarRect>& master_list, int32_t ll_x_add_offset,
+                                                           int32_t ll_y_add_offset, int32_t ur_x_minus_offset, int32_t ur_y_minus_offset,
+                                                           bool is_open)
   {
     std::vector<PlanarRect> result_list;
 
@@ -2622,11 +2545,27 @@ class RTUtil
     return point_list;
   }
 
+  static void removeError(BGMultiPolyDBL& multipoly)
+  {
+    for (auto& poly : multipoly) {
+      for (auto& ring : poly.outer()) {
+        ring.x(getIntScale(ring.x()));
+        ring.y(getIntScale(ring.y()));
+      }
+      for (auto& ring : poly.inners()) {
+        for (auto& point : ring) {
+          point.x(getIntScale(point.x()));
+          point.y(getIntScale(point.y()));
+        }
+      }
+    }
+  }
+
   static int32_t getIntScale(double double_scale)
   {
     int32_t integer_scale = std::round(double_scale);
-    if (std::abs(double_scale - integer_scale) > DBL_ERROR) {
-      std::cout << "Exceeding the error range of a double!" << std::endl;
+    if (std::abs(double_scale - integer_scale) > RT_ERROR) {
+      RTLOG.error(Loc::current(), "Exceeding the error range of a double!");
     }
     return integer_scale;
   }
@@ -2648,7 +2587,7 @@ class RTUtil
         GTLPointInt& pre_coord = gtl_point_list[i - 1];
         GTLPointInt& curr_coord = gtl_point_list[i];
         if (gtl::x(pre_coord) != gtl::x(curr_coord) && gtl::y(pre_coord) != gtl::y(curr_coord)) {
-          std::cout << "The segment is oblique!" << std::endl;
+          RTLOG.error(Loc::current(), "The segment is oblique!");
         }
       }
       // 生成poly_90
@@ -2745,19 +2684,19 @@ class RTUtil
   }
 
   template <typename T>
-  static void erase(std::vector<T>& list, const std::function<bool(T&)>& eraseIf)
+  static void erase(std::vector<T>& list, const std::function<bool(T&)>& erase_if)
   {
-    erase(list, eraseIf);
+    erase(list, erase_if);
   }
 
   template <typename T, typename EraseIf>
-  static void erase(std::vector<T>& list, EraseIf eraseIf)
+  static void erase(std::vector<T>& list, EraseIf erase_if)
   {
     size_t save_idx = 0;
     size_t sentry_idx = 0;
     while (sentry_idx < list.size()) {
       T& sentry = list[sentry_idx];
-      if (!eraseIf(sentry)) {
+      if (!erase_if(sentry)) {
         list[save_idx] = std::move(sentry);
         ++save_idx;
       }
@@ -2767,13 +2706,13 @@ class RTUtil
   }
 
   template <typename T>
-  static void merge(std::vector<T>& list, const std::function<bool(T&, T&)>& mergeIf)
+  static void merge(std::vector<T>& list, const std::function<bool(T&, T&)>& merge_if)
   {
-    merge(list, mergeIf);
+    merge(list, merge_if);
   }
 
   template <typename T, typename MergeIf>
-  static void merge(std::vector<T>& list, MergeIf mergeIf)
+  static void merge(std::vector<T>& list, MergeIf merge_if)
   {
     size_t save_idx = 0;
     size_t sentry_idx = 0;
@@ -2782,7 +2721,7 @@ class RTUtil
       T& sentry = list[sentry_idx];
       while (soldier_idx < list.size()) {
         T& soldier = list[soldier_idx];
-        if (!mergeIf(sentry, soldier)) {
+        if (!merge_if(sentry, soldier)) {
           break;
         }
         ++soldier_idx;
@@ -2853,7 +2792,7 @@ class RTUtil
   static bool isDivisible(double dividend, double divisor)
   {
     double merchant = dividend / divisor;
-    return equalDoubleByError(merchant, static_cast<int32_t>(merchant), DBL_ERROR);
+    return equalDoubleByError(merchant, static_cast<int32_t>(merchant), RT_ERROR);
   }
 
   template <typename T, typename Compare>
@@ -3117,7 +3056,7 @@ class RTUtil
     return std::regex_replace(a, re, "");
   }
 
-  static bool isInteger(double a) { return equalDoubleByError(a, static_cast<int32_t>(a), DBL_ERROR); }
+  static bool isInteger(double a) { return equalDoubleByError(a, static_cast<int32_t>(a), RT_ERROR); }
 
   static void checkFile(std::string file_path)
   {
@@ -3290,6 +3229,17 @@ class RTUtil
 
 #endif
 
-};  // namespace irt
+ private:
+  // self
+  static Utility* _util_instance;
+
+  Utility() = default;
+  Utility(const Utility& other) = delete;
+  Utility(Utility&& other) = delete;
+  ~Utility() = default;
+  Utility& operator=(const Utility& other) = delete;
+  Utility& operator=(Utility&& other) = delete;
+  // function
+};
 
 }  // namespace irt

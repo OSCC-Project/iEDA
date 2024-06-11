@@ -59,4 +59,4 @@
 #include "libfort/fort.hpp"
 #include "omp.h"
 
-#define DBL_ERROR 1E-5
+#define RT_ERROR 1E-5

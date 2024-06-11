@@ -16,34 +16,27 @@
 // ***************************************************************************************
 #pragma once
 
-#include "Config.hpp"
-#include "DataManager.hpp"
-#include "Database.hpp"
-
 namespace irt {
 
-#define RTLA (irt::LayerAssigner::getInst())
-
-class LayerAssigner
+class TGParameter
 {
  public:
-  static void initInst();
-  static LayerAssigner& getInst();
-  static void destroyInst();
-  // function
-  void assign();
+  TGParameter()
+  {
+    _topo_spilt_length = 10;
+    _congestion_unit = 1;
+  }
+  ~TGParameter() = default;
+  // getter
+  double get_topo_spilt_length() const { return _topo_spilt_length; }
+  double get_congestion_unit() const { return _congestion_unit; }
+  // setter
+  void set_topo_spilt_length(const double topo_spilt_length) { _topo_spilt_length = topo_spilt_length; }
+  void set_congestion_unit(const double congestion_unit) { _congestion_unit = congestion_unit; }
 
  private:
-  // self
-  static LayerAssigner* _la_instance;
-
-  LayerAssigner() = default;
-  LayerAssigner(const LayerAssigner& other) = delete;
-  LayerAssigner(LayerAssigner&& other) = delete;
-  ~LayerAssigner() = default;
-  LayerAssigner& operator=(const LayerAssigner& other) = delete;
-  LayerAssigner& operator=(LayerAssigner&& other) = delete;
-  // function
+  double _topo_spilt_length = 0;
+  double _congestion_unit = 0;
 };
 
 }  // namespace irt

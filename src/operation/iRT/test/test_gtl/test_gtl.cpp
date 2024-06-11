@@ -126,7 +126,7 @@ std::vector<GTLRectInt> getOverlapRectListByBoost(std::vector<GTLRectInt>& maste
 
 #endif
 
-int main()
+int32_t main()
 {
   int32_t factor = 100000000;
   std::vector<std::vector<GTLRectInt>> master_list_list;
@@ -212,7 +212,7 @@ int main()
     std::vector<GTLRectInt> OverlapRectListByBoost = getOverlapRectListByBoost(master_list, rect_list);
     plotGDS("4OverlapRectListByBoost", OverlapRectListByBoost);
 
-    int a = 0;
+    int32_t a = 0;
   }
 
   return 0;

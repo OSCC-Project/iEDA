@@ -20,7 +20,7 @@
 #include "LayerCoord.hpp"
 #include "Orientation.hpp"
 #include "RTHeader.hpp"
-#include "RTUtil.hpp"
+#include "Utility.hpp"
 
 namespace irt {
 
@@ -50,7 +50,7 @@ class IRNode : public LayerCoord
   IRNode* getNeighborNode(Orientation orientation)
   {
     IRNode* neighbor_node = nullptr;
-    if (RTUtil::exist(_neighbor_node_map, orientation)) {
+    if (RTUTIL.exist(_neighbor_node_map, orientation)) {
       neighbor_node = _neighbor_node_map[orientation];
     }
     return neighbor_node;
@@ -60,11 +60,11 @@ class IRNode : public LayerCoord
     double cost = 0;
     if (orientation != Orientation::kAbove && orientation != Orientation::kBelow) {
       int32_t node_demand = 0;
-      if (RTUtil::exist(_orient_demand_map, orientation)) {
+      if (RTUTIL.exist(_orient_demand_map, orientation)) {
         node_demand = _orient_demand_map[orientation];
       }
       int32_t node_supply = 0;
-      if (RTUtil::exist(_orient_supply_map, orientation)) {
+      if (RTUTIL.exist(_orient_supply_map, orientation)) {
         node_supply = _orient_supply_map[orientation];
       }
       cost += calcCost(node_demand + 1, node_supply);
@@ -131,8 +131,8 @@ struct CmpIRNodeCost
 {
   bool operator()(IRNode* a, IRNode* b)
   {
-    if (RTUtil::equalDoubleByError(a->getTotalCost(), b->getTotalCost(), DBL_ERROR)) {
-      if (RTUtil::equalDoubleByError(a->get_estimated_cost(), b->get_estimated_cost(), DBL_ERROR)) {
+    if (RTUTIL.equalDoubleByError(a->getTotalCost(), b->getTotalCost(), RT_ERROR)) {
+      if (RTUTIL.equalDoubleByError(a->get_estimated_cost(), b->get_estimated_cost(), RT_ERROR)) {
         return a->get_neighbor_node_map().size() < b->get_neighbor_node_map().size();
       } else {
         return a->get_estimated_cost() > b->get_estimated_cost();
