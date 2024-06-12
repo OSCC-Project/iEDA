@@ -55,6 +55,7 @@ class IdbOrientTransform
   // setter
 
   // Operator
+  /// transform to instance coordinate
   bool transformCoordinate(IdbCoordinate<int32_t>* coordinate_transform);
   bool transformRect(IdbRect* rect);
   void transform_r0(IdbCoordinate<int32_t>* coordinate_transform);
@@ -65,6 +66,17 @@ class IdbOrientTransform
   void transform_mx(IdbCoordinate<int32_t>* coordinate_transform);
   void transform_mx90(IdbCoordinate<int32_t>* coordinate_transform);
   void transform_my90(IdbCoordinate<int32_t>* coordinate_transform);
+
+  /// transform to cell master coordinate
+  bool cellMasterCoordinate(IdbCoordinate<int32_t>* coordinate_transform);
+  void cellMaster_r0(IdbCoordinate<int32_t>* coordinate_transform);
+  void cellMaster_r90(IdbCoordinate<int32_t>* coordinate_transform);
+  void cellMaster_r180(IdbCoordinate<int32_t>* coordinate_transform);
+  void cellMaster_r270(IdbCoordinate<int32_t>* coordinate_transform);
+  void cellMaster_my(IdbCoordinate<int32_t>* coordinate_transform);
+  void cellMaster_mx(IdbCoordinate<int32_t>* coordinate_transform);
+  void cellMaster_mx90(IdbCoordinate<int32_t>* coordinate_transform);
+  void cellMaster_my90(IdbCoordinate<int32_t>* coordinate_transform);
 
  private:
   IdbOrient _orient;

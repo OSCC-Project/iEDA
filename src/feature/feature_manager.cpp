@@ -52,7 +52,7 @@ bool FeatureManager::save_tools(std::string path, std::string step)
     auto db = builder.buildNetOptSummary();
 
     _summary->set_ino(db);
-  } else if (step == "place" || step == "legalization" || (step == "filler") ) {
+  } else if (step == "place" || step == "legalization" || (step == "filler")) {
     auto db = builder.buildPLSummary(step);
 
     _summary->set_ipl(db);
@@ -87,6 +87,21 @@ bool FeatureManager::save_eval_map(std::string path, int bin_cnt_x, int bin_cnt_
 {
   FeatureParser feature_parser(_summary);
   return feature_parser.buildSummaryMap(path, bin_cnt_x, bin_cnt_y);
+}
+
+bool FeatureManager::save_route_data(std::string path)
+{
+  FeatureBuilder builder;
+  builder.buildRouteData(&_route_data);
+
+  FeatureParser feature_parser(_summary);
+  return feature_parser.buildRouteData(path, &_route_data);
+}
+
+bool FeatureManager::read_route_data(std::string path)
+{
+  FeatureParser feature_parser;
+  return feature_parser.readRouteData(path, &_route_data);
 }
 
 }  // namespace ieda_feature

@@ -34,6 +34,7 @@ enum class DbSetupType {
   kGlobalRouting,
   kDetailRouting,
   kClockTree,
+  kCellMaster,
   kMax
 };
 
@@ -79,6 +80,8 @@ static DbSetupType translate_type(std::string type) {
     return DbSetupType::kGlobalPlace;
   } else if (type == "clock_tree") {
     return DbSetupType::kClockTree;
+  } else if (type == "view_cells") {
+    return DbSetupType::kCellMaster;
   } else {
     return DbSetupType::kChip;
   }

@@ -155,4 +155,21 @@ IdbLayerShape& IdbLayerShape::operator=(const IdbLayerShape& other)
   return (*this);
 }
 
+bool IdbLayerShape::isIntersected(int x, int y, IdbLayer* layer)
+{
+  if (_layer != layer) {
+    return false;
+  }
+
+  IdbCoordinate<int32_t> point(x, y);
+
+  for (auto& rect : _rect_list) {
+    if (nullptr != rect && rect->containPoint(&point)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 }  // namespace idb
