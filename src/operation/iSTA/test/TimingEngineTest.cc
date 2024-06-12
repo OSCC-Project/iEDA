@@ -278,10 +278,7 @@ TEST_F(TimingEngineTest, equiv_lib) {
   std::vector<LibertyLibrary*> equiv_libs;
   auto& all_libs = timing_engine->getAllLib();
   for (auto& lib : all_libs) {
-    for (auto& cell : lib->get_cells()) {
-      equiv_libs.push_back(lib.get());
-      break;
-    }
+    equiv_libs.push_back(lib.get());
   }
 
   timing_engine->makeEquivCells(equiv_libs);

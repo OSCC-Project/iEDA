@@ -22,8 +22,6 @@
  * @date 2020-11-27
  */
 
-#include "Sta.hh"
-
 #include <algorithm>
 #include <filesystem>
 #include <map>
@@ -33,6 +31,7 @@
 #include <tuple>
 #include <utility>
 
+#include "Sta.hh"
 #include "StaAnalyze.hh"
 #include "StaApplySdc.hh"
 #include "StaBuildClockTree.hh"
@@ -2236,7 +2235,8 @@ StaSeqPathData *Sta::getWorstSeqData(std::optional<StaVertex *> vertex,
   while (!seq_data_queue.empty()) {
     seq_path_data = dynamic_cast<StaSeqPathData *>(seq_data_queue.top());
 
-    if (seq_path_data->get_delay_data()->get_trans_type() == trans_type) {
+    if ((seq_path_data->get_delay_data()->get_trans_type() == trans_type) ||
+        (trans_type == TransType::kRiseFall)) {
       break;
     }
     seq_data_queue.pop();
