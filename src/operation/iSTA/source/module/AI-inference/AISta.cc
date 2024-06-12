@@ -57,9 +57,9 @@ unsigned AICalibratePathDelay::init() {
  */
 auto AICalibratePathDelay::preprocessData(StaSeqPathData* seq_path_data) {
   std::map<std::string, std::array<float, MAX_SEQ_LEN>> feature_vecs{
-      {"pin_name", {0.0}},  {"cell_name", {0.0}},  {"fanout", {0.0}},
-      {"rise_fall", {0.0}}, {"is_net", {0.0}},     {"capacitance", {0.0}},
-      {"slew", {0.0}},      {"incr_delay", {0.0}}, {"arrive_time", {0.0}}};
+      {"pin_name", {}},  {"cell_name", {}},  {"fanout", {}},
+      {"rise_fall", {}}, {"is_net", {}},     {"capacitance", {}},
+      {"slew", {}},      {"incr_delay", {}}, {"arrive_time", {}}};
 
   std::stack<StaPathDelayData*> path_stack = seq_path_data->getPathDelayData();
 
@@ -103,9 +103,12 @@ auto AICalibratePathDelay::preprocessData(StaSeqPathData* seq_path_data) {
 
     // for cell node.
     auto* pin_name = obj->get_name();
-    feature_vecs["pin_name"][vertex_index] = _pin_to_id.at(pin_name);
+    auto* cell_name = obj->get_own_instance()->get_inst_cell()->get_cell_name();
+    std::string cell_pin_name = Str::printf("%s:%s", cell_name, pin_name);
+    feature_vecs["pin_name"][vertex_index] = _pin_to_id.at(cell_pin_name);
     if (obj->get_own_instance()) {
-      auto* cell_name = obj->get_own_instance()->get_name();
+      auto* cell_name =
+          obj->get_own_instance()->get_inst_cell()->get_cell_name();
       feature_vecs["cell_name"][vertex_index] = _cell_to_id.at(cell_name);
     }
 
@@ -148,8 +151,18 @@ auto AICalibratePathDelay::preprocessData(StaSeqPathData* seq_path_data) {
 Ort::Value AICalibratePathDelay::createInputTensor(
     StaSeqPathData* seq_path_data) {
   auto feature_vecs = preprocessData(seq_path_data);
+  std::vector<std::string> feature_names = {
+      "pin_name",    "cell_name", "fanout",     "rise_fall",  "is_net",
+      "capacitance", "slew",      "incr_delay", "arrive_time"};
 
-  std::vector<float> input_data = {1.7641, 0.4002};
+  std::vector<float> input_data;
+  for (auto& feature_name : feature_names) {
+    std::array<float, MAX_SEQ_LEN> feature_vec = feature_vecs[feature_name];
+    for (const auto feature_value : feature_vec) {
+      input_data.push_back(feature_value);
+    }
+  }
+
   std::vector<int64_t> input_dims = {1,
                                      static_cast<int64_t>(input_data.size())};
 
@@ -187,14 +200,19 @@ std::vector<Ort::Value> AICalibratePathDelay::infer(Ort::Value& input_tensor) {
 
 /**
  * @brief Get the output result of infer.
- * 
- * @param output_tensor 
- * @return std::vector<float> 
+ *
+ * @param output_tensor
+ * @return std::vector<float>
  */
 std::vector<float> AICalibratePathDelay::getOutputResult(
-    std::vector<Ort::Value>& output_tensor) {
+    std::vector<Ort::Value>& output_tensors) {
   std::vector<float> result;
 
+  for(auto& output_tensor: output_tensors) {
+      float* output = output_tensor.GetTensorMutableData<float>();
+      result.emplace_back(*output);  
+  }
+  
   return result;
 }
 

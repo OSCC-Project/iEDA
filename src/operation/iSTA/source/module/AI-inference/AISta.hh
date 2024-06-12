@@ -64,7 +64,7 @@ class AICalibratePathDelay : public AISta {
   Ort::Value createInputTensor(StaSeqPathData* seq_path_data) override;
   std::vector<Ort::Value> infer(Ort::Value& input_tensor) override;
   std::vector<float> getOutputResult(
-      std::vector<Ort::Value>& output_tensor) override;
+      std::vector<Ort::Value>& output_tensors) override;
 
  private:
   auto preprocessData(StaSeqPathData* seq_path_data);

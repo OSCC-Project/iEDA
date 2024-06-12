@@ -80,6 +80,8 @@ TEST_F(AIModelTest, calibration) {
       std::move(model_to_path),
       AICalibratePathDelay::AIModeType::kSky130CalibratePathDelay,
       std::move(cell_list_path), std::move(pin_list_path));
+  path_calibration.init();
+
   auto input_tensor = path_calibration.createInputTensor(worst_path);
   auto output_tensor = path_calibration.infer(input_tensor);
   auto output_value = path_calibration.getOutputResult(output_tensor);
@@ -87,6 +89,9 @@ TEST_F(AIModelTest, calibration) {
   for(auto value : output_value) {
     LOG_INFO << "output result: " << value;
   }
+
+  worst_path->get_delay_data()->set_calibrated_derate(output_value[0]);
+  timing_engine->reportTiming();
 }
 
 }  // namespace
