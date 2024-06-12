@@ -101,7 +101,7 @@ class RegionQuery
   }
   std::map<int, DrcNet>& get_nets_map() { return _nets_map; }
   // function
-  /**********目前用到的接口**************/
+  
 
   void clear()
   {
@@ -111,17 +111,17 @@ class RegionQuery
     _layer_to_block_edges.clear();
     _layer_to_routing_edges.clear();
   }
-  // 获得搜索区域内的矩形
+  // Get the rectangles within the search area
   void queryInRoutingLayer(int routingLayerId, RTreeBox query_box, std::vector<std::pair<RTreeBox, DrcRect*>>& query_result);
   // find cut rect enclosure
   void queryEnclosureInRoutingLayer(int LayerId, RTreeBox query_box, std::vector<std::pair<RTreeBox, DrcRect*>>& query_result);
-  // 将线段或通孔矩形添加到对应金属层的R树
+  // Add a line segment or via rectangle to the R-tree of the corresponding metal layer
   void add_routing_rect_to_rtree(int routingLayerId, DrcRect* drcRect);
 
-  // 将Pin或Blockage矩形添加到对应金属层的R树
+  // Add a Pin or Blockage rectangle to the R-tree of the corresponding metal layer
   void add_fixed_rect_to_rtree(int routingLayerId, DrcRect* drcRect);
 
-  /**********目前用到的接口**************/
+  
   void add_routing_rect_to_api_rtree(int routingLayerId, DrcRect* rect);
   void add_spacing_min_region(DrcRect* common_spacing_min_region);
   void add_spacing_max_region(DrcRect* common_spacing_max_region);
@@ -216,7 +216,7 @@ class RegionQuery
   std::map<int, bgi::rtree<std::pair<RTreeBox, DrcRect*>, bgi::quadratic<16>>> _layer_to_routing_max_region_tree_map;
 
   ////////////////////////////////
-  ///////下面的没用到
+  /////// useless following
   // cut layer
   std::map<int, bgi::rtree<std::pair<RTreeBox, DrcRect*>, bgi::quadratic<16>>> _layer_to_cut_rects_tree_map;
   // drc edge
