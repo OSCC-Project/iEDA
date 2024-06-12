@@ -222,7 +222,7 @@ json FeatureParser::buildSummaryPL(std::string step)
     summary_pl["overflow_number"] = pl_summary.overflow_number;
     summary_pl["overflow"] = pl_summary.overflow;
   }
-  // 3:合法化需要存储的数据参数
+  // 3: Data parameters required for legalization.
   else if (step == "legalization") {
     summary_pl["legalization"]["place_density"] = pl_summary.lg_summary.pl_common_summary.place_density;
     summary_pl["legalization"]["pin_density"] = pl_summary.lg_summary.pl_common_summary.pin_density;

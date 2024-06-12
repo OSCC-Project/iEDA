@@ -49,28 +49,28 @@ Checks: >
 HeaderFilterRegex: '*.h, *.hpp, *.hh'
 
 CheckOptions:
-  # 局部变量名单词之间使用下划线隔开
+  # Use underscores to separate words in local variable names
   - { key: readability-identifier-naming.LocalVariableCase,           value: lower_case }
   - { key: readability-identifier-naming.LocalVariableIgnoredRegexp,  value: '_[a-zA-Z_]+' }
-  # 类的变量成员用下划线作为前缀如 _file_name
+  # Use an underscore as a prefix of class member variables, ex.: _file_name
   - { key: readability-identifier-naming.ClassMemberCase,             value: lower_case }
   - { key: readability-identifier-naming.ClassMemberPrefix,           value: _          }
-  # 类的函数名使用驼峰类型；如doSomething()
+  # Use camel case for class function names, ex.: doSomething()
   - { key: readability-identifier-naming.ClassMethodCase,             value: camelBack }
-  # 类的成员存取使用 如get_file_name() set_file_name()
+  # Use "get" or "set" to access class member, ex.: get_file_name(), set_file_name()
   - { key: readability-identifier-naming.ClassMethodIgnoredRegexp,    value: '[gs]et_[a-zA-Z_]+' }
-  # 类名是PASCAL风格，即首字母大写 如MyClass
+  # Class names are in PASCAL style, which means the first letter is capitalized, ex.: MyClass
   - { key: readability-identifier-naming.ClassCase,                   value: CamelCase  }
   - { key: readability-identifier-naming.StructCase,                  value: CamelCase  }
-  # 常量用k作为前缀后面是PASCAL风格如 kFileName
+  # Constants use 'k' as a prefix followed by Pascal case, ex.: kFileName
   - { key: readability-identifier-naming.GlobalConstantPrefix,        value: k }
   - { key: readability-identifier-naming.GlobalConstantCase,          value: CamelCase }
-  # 全局变量用g作为前缀后面是PASCAL风格如 gFileName
+  # Global variables use 'g' as a prefix followed by Pascal case, ex.: gFileName
   - { key: readability-identifier-naming.GlobalVariablePrefix,        value: g }
   - { key: readability-identifier-naming.GlobalVariableCase,          value: CamelCase }
-  # 接口类必须以Interface为后缀
+  # Interface classes must have 'Interface' as a suffix
   - { key: readability-identifier-naming.AbstractClassSuffix,         value: Interface }
-  # 宏定义全大写，中间用下划线隔开 FILE_NAME
+  # Macro definitions are in all caps, with underscores separating words, ex.: FILE_NAME
   - { key: readability-identifier-naming.MacroDefinitionCase,         value: UPPER_CASE }
   - { key: readability-identifier-naming.EnumConstantCase,            value: CamelCase  }
   - { key: readability-identifier-naming.EnumConstantPrefix,          value: k          }
