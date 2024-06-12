@@ -127,12 +127,12 @@ bool FeatureParser::buildTools(std::string json_path, std::string step)
   return true;
 }
 
-bool FeatureParser::buildRouteData(std::string json_path, RouteAnalyseData data)
+bool FeatureParser::buildRouteData(std::string json_path, RouteAnalyseData* data)
 {
   std::ofstream& file_stream = ieda::getOutputFileStream(json_path);
   json root;
 
-  for (auto [cellmaster_name, cell_master] : data.cell_master_list) {
+  for (auto [cellmaster_name, cell_master] : data->cell_master_list) {
     json json_cellmaster;
     for (auto [term_name, term_pa] : cell_master.term_list) {
       json json_term;
@@ -161,47 +161,48 @@ bool FeatureParser::buildRouteData(std::string json_path, RouteAnalyseData data)
   return true;
 }
 
-RouteAnalyseData FeatureParser::readRouteData(std::string json_path)
+bool FeatureParser::readRouteData(std::string json_path, RouteAnalyseData* data)
 {
-  RouteAnalyseData data;
-
   auto json_file = std::ifstream(json_path);
-  if (json_file.is_open()) {
-    json root;
-    json_file >> root;
-    for (json::iterator item_cell = root.begin(); item_cell != root.end(); ++item_cell) {
-      CellMasterPA master_pa;
+  if (false == json_file.is_open()) {
+    return false;
+  }
 
-      std::string cell_name = item_cell.key();
-      auto json_cell = item_cell.value();
+  json root;
+  json_file >> root;
+  for (json::iterator item_cell = root.begin(); item_cell != root.end(); ++item_cell) {
+    CellMasterPA master_pa;
 
-      for (json::iterator item_term = json_cell.begin(); item_term != json_cell.end(); ++item_term) {
-        TermPA term_pa;
+    std::string cell_name = item_cell.key();
+    auto json_cell = item_cell.value();
 
-        std::string term_name = item_term.key();
-        auto json_term = item_term.value();
+    for (json::iterator item_term = json_cell.begin(); item_term != json_cell.end(); ++item_term) {
+      TermPA term_pa;
 
-        for (json::iterator item_pa = json_term.begin(); item_pa != json_term.end(); ++item_pa) {
-          auto json_pa = item_pa.value();
+      std::string term_name = item_term.key();
+      auto json_term = item_term.value();
 
-          DbPinAccess pa;
-          pa.layer = json_pa["layer"];
-          pa.number = json_pa["number"];
-          pa.x = json_pa["x"];
-          pa.y = json_pa["y"];
+      for (json::iterator item_pa = json_term.begin(); item_pa != json_term.end(); ++item_pa) {
+        auto json_pa = item_pa.value();
 
-          term_pa.pa_list.push_back(pa);
-        }
+        DbPinAccess pa;
+        pa.layer = json_pa["layer"];
+        pa.number = json_pa["number"];
+        pa.x = json_pa["x"];
+        pa.y = json_pa["y"];
 
-        master_pa.term_list.insert(std::make_pair(term_name, term_pa));
+        term_pa.pa_list.push_back(pa);
       }
 
-      master_pa.name = cell_name;
-
-      data.cell_master_list.insert(std::make_pair(cell_name, master_pa));
+      master_pa.term_list.insert(std::make_pair(term_name, term_pa));
     }
+
+    master_pa.name = cell_name;
+
+    data->cell_master_list.insert(std::make_pair(cell_name, master_pa));
   }
-  return data;
+
+  return true;
 }
 
 }  // namespace ieda_feature

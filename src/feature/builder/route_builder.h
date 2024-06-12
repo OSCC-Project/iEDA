@@ -37,10 +37,10 @@
 
 #include "feature_irt.h"
 
-namespace idb{
-    class IdbPin;
-    class IdbVia;
-}
+namespace idb {
+class IdbPin;
+class IdbVia;
+}  // namespace idb
 using namespace idb;
 
 namespace ieda_feature {
@@ -48,14 +48,14 @@ namespace ieda_feature {
 class RouteDataBuilder
 {
  public:
-  RouteDataBuilder() = default;
+  RouteDataBuilder(RouteAnalyseData* data = nullptr) { _data = data == nullptr ? new RouteAnalyseData() : data ; }
   ~RouteDataBuilder() = default;
 
   // builder
-  RouteAnalyseData buildRouteData();
+  bool buildRouteData();
 
  private:
-  RouteAnalyseData _data;
+  RouteAnalyseData* _data = nullptr;
 
   bool is_pa(IdbPin* pin, IdbVia* via);
 

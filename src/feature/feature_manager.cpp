@@ -92,18 +92,16 @@ bool FeatureManager::save_eval_map(std::string path, int bin_cnt_x, int bin_cnt_
 bool FeatureManager::save_route_data(std::string path)
 {
   FeatureBuilder builder;
-  RouteAnalyseData data = builder.buildRouteData();
+  builder.buildRouteData(&_route_data);
 
   FeatureParser feature_parser(_summary);
-  return feature_parser.buildRouteData(path, data);
+  return feature_parser.buildRouteData(path, &_route_data);
 }
 
 bool FeatureManager::read_route_data(std::string path)
 {
   FeatureParser feature_parser;
-  _route_data = feature_parser.readRouteData(path);
-
-  return true;
+  return feature_parser.readRouteData(path, &_route_data);
 }
 
 }  // namespace ieda_feature

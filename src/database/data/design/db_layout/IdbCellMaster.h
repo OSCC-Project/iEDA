@@ -79,6 +79,7 @@ class IdbCellMaster
   const uint32_t get_height() const { return _height; }
 
   vector<IdbTerm*> get_term_list() { return _term_list; }
+  IdbTerm* findTerm(std::string term_name);
   vector<IdbObs*> get_obs_list() { return _obs_list; }
 
   IdbLayer* get_top_layer();

@@ -65,8 +65,8 @@ class FeatureParser
   bool buildSummaryMap(std::string csv_path, int bin_cnt_x, int bin_cnt_y) { return true; }
   bool buildTools(std::string json_path, std::string step);
 
-  bool buildRouteData(std::string json_path, RouteAnalyseData data);
-  RouteAnalyseData readRouteData(std::string json_path);
+  bool buildRouteData(std::string json_path, RouteAnalyseData* data);
+  bool readRouteData(std::string json_path, RouteAnalyseData* data);
 
  private:
   IdbLayout* _layout = nullptr;

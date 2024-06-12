@@ -54,6 +54,7 @@ set(sources
     ${CMAKE_CURRENT_SOURCE_DIR}/src/guiDB/idbfastsetupdrc.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/guiDB/idbfastsetupclocktree.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/guiDB/idbfastsetupInstancedemo.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/guiDB/idbfastsetupCellMaster.cpp
 
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphicsitem/guiitem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphicsitem/guirect.cpp
@@ -196,6 +197,7 @@ if(BUILD_PR_FLOW)
         file_manager_placement
         tool_api_ipl
         idrc_pro_violation
+        ieda_feature
     )
 
     if(OpenMP_CXX_FOUND)
@@ -257,4 +259,4 @@ endif()
 
 
 #     add_subdirectory(${IDB_HOME} idb.out)
-# SET(CMAKE_BUILD_TYPE "debug")
+SET(CMAKE_BUILD_TYPE "debug")

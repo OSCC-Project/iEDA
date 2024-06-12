@@ -81,9 +81,9 @@ TimingOptSummary FeatureBuilder::buildTimingOptSummary()
   return summary;
 }
 
-RouteAnalyseData FeatureBuilder::buildRouteData()
+bool FeatureBuilder::buildRouteData(RouteAnalyseData* data)
 {
-  RouteDataBuilder route_builder;
+  RouteDataBuilder route_builder(data);
 
   return route_builder.buildRouteData();
 }

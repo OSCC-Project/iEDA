@@ -58,7 +58,7 @@ class FeatureBuilder
   NetOptSummary buildNetOptSummary();
   TimingOptSummary buildTimingOptSummary();
 
-  RouteAnalyseData buildRouteData();
+  bool buildRouteData(RouteAnalyseData* data);
 
  private:
   SummaryInfo buildSummaryInfo();

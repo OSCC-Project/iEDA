@@ -37,7 +37,7 @@
 
 namespace ieda_feature {
 
-RouteAnalyseData RouteDataBuilder::buildRouteData()
+bool RouteDataBuilder::buildRouteData()
 {
   auto idb_design = dmInst->get_idb_design();
   auto net_list = idb_design->get_net_list();
@@ -49,8 +49,6 @@ RouteAnalyseData RouteDataBuilder::buildRouteData()
       for (IdbRegularWireSegment* segment : wire->get_segment_list()) {
         if (segment->is_via()) {
           for (auto via : segment->get_via_list()) {
-            // std::string layer_name = via->get_cut_layer_shape().get_layer()->get_name();
-            // if ((layer_name == "VIA1" || layer_name == "VIA2")) {
             for (auto pin : pin_list->get_pin_list()) {
               if (is_pa(pin, via)) {
                 auto instance = pin->get_instance();
@@ -71,17 +69,10 @@ RouteAnalyseData RouteDataBuilder::buildRouteData()
                 pa_db.layer = via->get_bottom_layer_shape().get_layer()->get_name();
                 pa_db.x = pa_coord->get_x();
                 pa_db.y = pa_coord->get_y();
-                if (pa_db.x < 0 || pa_db.y < 0) {
-                  int a = 0;
-                }
 
                 delete pa_coord;
 
                 add_term_pa(term_pa, pa_db);
-
-                // pa.term_list.insert(std::make_pair(term_name, term_pa));
-
-                // _data.cell_master_list.insert(std::make_pair(cell_master_name, pa));
               }
             }
           }
@@ -90,7 +81,7 @@ RouteAnalyseData RouteDataBuilder::buildRouteData()
     }
   }
 
-  return _data;
+  return true;
 }
 
 bool RouteDataBuilder::is_pa(IdbPin* pin, IdbVia* via)
@@ -122,8 +113,8 @@ void RouteDataBuilder::add_term_pa(TermPA& term_pa, DbPinAccess pin_access)
 TermPA& RouteDataBuilder::find_cell_term_pa(std::string cell_master_name, std::string term_name)
 {
   /// check exist
-  auto cell_master = _data.cell_master_list.find(cell_master_name);
-  if (cell_master != _data.cell_master_list.end()) {
+  auto cell_master = _data->cell_master_list.find(cell_master_name);
+  if (cell_master != _data->cell_master_list.end()) {
     auto term_pa = cell_master->second.term_list.find(term_name);
     if (term_pa != cell_master->second.term_list.end()) {
       return term_pa->second;
@@ -131,7 +122,7 @@ TermPA& RouteDataBuilder::find_cell_term_pa(std::string cell_master_name, std::s
       TermPA term_pa;
       cell_master->second.term_list.insert(std::make_pair(term_name, term_pa));
 
-      return _data.cell_master_list[cell_master_name].term_list[term_name];
+      return _data->cell_master_list[cell_master_name].term_list[term_name];
     }
   } else {
     CellMasterPA master_pa;
@@ -140,9 +131,9 @@ TermPA& RouteDataBuilder::find_cell_term_pa(std::string cell_master_name, std::s
     TermPA term_pa;
     master_pa.term_list.insert(std::make_pair(term_name, term_pa));
 
-    _data.cell_master_list.insert(std::make_pair(cell_master_name, master_pa));
+    _data->cell_master_list.insert(std::make_pair(cell_master_name, master_pa));
 
-    return _data.cell_master_list[cell_master_name].term_list[term_name];
+    return _data->cell_master_list[cell_master_name].term_list[term_name];
   }
 
   /// add pa
