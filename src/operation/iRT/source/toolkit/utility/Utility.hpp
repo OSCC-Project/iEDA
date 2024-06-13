@@ -1329,12 +1329,12 @@ class Utility
     std::set<int32_t> x_pre_set;
     std::set<int32_t> x_mid_set;
     std::set<int32_t> x_post_set;
-    updateScaleList(track_axis.get_x_grid_list(), real_rect.get_ll_x(), real_rect.get_ur_x(), x_pre_set, x_mid_set, x_post_set);
+    getTrackIndexSet(track_axis.get_x_grid_list(), real_rect.get_ll_x(), real_rect.get_ur_x(), x_pre_set, x_mid_set, x_post_set);
 
     std::set<int32_t> y_pre_set;
     std::set<int32_t> y_mid_set;
     std::set<int32_t> y_post_set;
-    updateScaleList(track_axis.get_y_grid_list(), real_rect.get_ll_y(), real_rect.get_ur_y(), y_pre_set, y_mid_set, y_post_set);
+    getTrackIndexSet(track_axis.get_y_grid_list(), real_rect.get_ll_y(), real_rect.get_ur_y(), y_pre_set, y_mid_set, y_post_set);
 
     PlanarRect grid_rect;
     if (x_mid_set.empty() || y_mid_set.empty()) {
@@ -1353,12 +1353,12 @@ class Utility
     std::set<int32_t> x_pre_set;
     std::set<int32_t> x_mid_set;
     std::set<int32_t> x_post_set;
-    updateScaleList(track_axis.get_x_grid_list(), real_rect.get_ll_x(), real_rect.get_ur_x(), x_pre_set, x_mid_set, x_post_set);
+    getTrackIndexSet(track_axis.get_x_grid_list(), real_rect.get_ll_x(), real_rect.get_ur_x(), x_pre_set, x_mid_set, x_post_set);
 
     std::set<int32_t> y_pre_set;
     std::set<int32_t> y_mid_set;
     std::set<int32_t> y_post_set;
-    updateScaleList(track_axis.get_y_grid_list(), real_rect.get_ll_y(), real_rect.get_ur_y(), y_pre_set, y_mid_set, y_post_set);
+    getTrackIndexSet(track_axis.get_y_grid_list(), real_rect.get_ll_y(), real_rect.get_ur_y(), y_pre_set, y_mid_set, y_post_set);
 
     std::map<PlanarCoord, std::set<Orientation>, CmpPlanarCoordByXASC> grid_orientation_map;
     for (int32_t x_pre : x_pre_set) {
@@ -1390,7 +1390,7 @@ class Utility
     return grid_orientation_map;
   }
 
-  static void updateScaleList(std::vector<ScaleGrid>& scale_grid_list, int32_t ll_scale, int32_t ur_scale, std::set<int32_t>& pre_index_set,
+  static void getTrackIndexSet(std::vector<ScaleGrid>& scale_grid_list, int32_t ll_scale, int32_t ur_scale, std::set<int32_t>& pre_index_set,
                               std::set<int32_t>& mid_index_set, std::set<int32_t>& post_index_set)
   {
     int32_t pre_index = -1;
@@ -1431,6 +1431,44 @@ class Utility
     }
     if (post_index != -1) {
       post_index_set.insert(post_index);
+    }
+  }
+
+  static void getTrackScaleSet(std::vector<ScaleGrid>& scale_grid_list, int32_t ll_scale, int32_t ur_scale, std::set<int32_t>& pre_scale_set,
+                              std::set<int32_t>& mid_scale_set, std::set<int32_t>& post_scale_set)
+  {
+    int32_t pre_scale = INT32_MIN;
+    int32_t post_scale = INT32_MAX;
+
+    int32_t index_scale = -1;
+    for (ScaleGrid& scale_grid : scale_grid_list) {
+      for (int32_t i = 0; i <= scale_grid.get_step_num(); ++i) {
+        int32_t scale = scale_grid.get_start_line() + i * scale_grid.get_step_length();
+        if (index_scale != scale) {
+          index_scale = scale;
+        } else {
+          continue;
+        }
+        if (scale < ll_scale) {
+          if (pre_scale < scale) {
+            pre_scale = scale;
+          }
+        } else if (ur_scale < scale) {
+          if (scale < post_scale) {
+            post_scale = scale;
+          }
+          goto here;
+        } else {
+          mid_scale_set.insert(index_scale);
+        }
+      }
+    }
+  here:
+    if (pre_scale != INT32_MIN) {
+      pre_scale_set.insert(pre_scale);
+    }
+    if (post_scale != INT32_MAX) {
+      post_scale_set.insert(post_scale);
     }
   }
 

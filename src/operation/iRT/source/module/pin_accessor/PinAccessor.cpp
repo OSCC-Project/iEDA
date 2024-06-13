@@ -130,6 +130,8 @@ void PinAccessor::initAccessPointList(PAModel& pa_model)
         access_point_list.push_back(access_point);
       }
       if (!access_point_list.empty()) {
+        std::sort(access_point_list.begin(), access_point_list.end(),
+                  [](AccessPoint& a, AccessPoint& b) { return CmpLayerCoordByXASC()(a.getRealLayerCoord(), b.getRealLayerCoord()); });
         break;
       }
     }
@@ -601,22 +603,35 @@ void PinAccessor::updatePAModel(PAModel& pa_model)
   Monitor monitor;
   RTLOG.info(Loc::current(), "Starting...");
 
+  ScaleAxis& gcell_axis = RTDM.getDatabase().get_gcell_axis();
   Die& die = RTDM.getDatabase().get_die();
+
   for (auto& [net_idx, access_point_set] : RTDM.getNetAccessPointMap(die)) {
     for (AccessPoint* access_point : access_point_set) {
       RTDM.updateAccessPointToGCellMap(ChangeType::kDel, net_idx, access_point);
     }
   }
   for (PANet& pa_net : pa_model.get_pa_net_list()) {
+    BoundingBox bounding_box;
+    {
+      std::vector<PlanarCoord> coord_list;
+      for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
+        coord_list.push_back(pa_pin.get_key_access_point().get_real_coord());
+      }
+      bounding_box.set_real_rect(RTUTIL.getBoundingBox(coord_list));
+      bounding_box.set_grid_rect(RTUTIL.getOpenGCellGridRect(bounding_box.get_real_rect(), gcell_axis));
+    }
     for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
       Pin& origin_pin = pa_net.get_origin_net()->get_pin_list()[pa_pin.get_pin_idx()];
       if (origin_pin.get_pin_idx() != pa_pin.get_pin_idx()) {
         RTLOG.error(Loc::current(), "The pin idx is not equal!");
       }
-      origin_pin.set_key_access_point(pa_pin.get_key_access_point());
-      RTDM.updateAccessPointToGCellMap(ChangeType::kAdd, pa_net.get_net_idx(), &origin_pin.get_key_access_point());
+      AccessPoint& access_point = origin_pin.get_key_access_point();
+      access_point = pa_pin.get_key_access_point();
+      access_point.set_grid_coord(RTUTIL.getGCellGridCoordByBBox(access_point.get_real_coord(), gcell_axis, bounding_box));
+      RTDM.updateAccessPointToGCellMap(ChangeType::kAdd, pa_net.get_net_idx(), &access_point);
     }
-    pa_net.get_origin_net()->set_bounding_box(pa_net.get_bounding_box());
+    pa_net.get_origin_net()->set_bounding_box(bounding_box);
   }
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
