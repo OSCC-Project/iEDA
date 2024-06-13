@@ -41,7 +41,7 @@ TEST_F(AIModelTest, calibration) {
   TimingEngine* timing_engine = TimingEngine::getOrCreateTimingEngine();
   timing_engine->set_num_threads(1);
 
-  const char* design_work_space = "/home/taosimin/skywater130";
+  const char* design_work_space = "/home/taosimin/skywater130/rpt";
   timing_engine->set_design_work_space(design_work_space);
 
   std::vector<const char*> lib_files = {
