@@ -812,7 +812,7 @@ void DataManager::wrapNetList()
     net.set_net_name(valid_idb_net->get_net_name());
     net.set_connect_type(getRTConnectTypeByDB(valid_idb_net->get_connect_type()));
     wrapPinList(net, valid_idb_net);
-    wrapDrivingPin(net, valid_idb_net);
+    wrapDrivenPin(net, valid_idb_net);
   }
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
@@ -897,25 +897,25 @@ void DataManager::wrapPinShapeList(Pin& pin, idb::IdbPin* idb_pin)
   }
 }
 
-void DataManager::wrapDrivingPin(Net& net, idb::IdbNet* idb_net)
+void DataManager::wrapDrivenPin(Net& net, idb::IdbNet* idb_net)
 {
   idb::IdbPin* idb_driving_pin = idb_net->get_driving_pin();
   if (idb_driving_pin == nullptr) {
     idb_driving_pin = idb_net->get_instance_pin_list()->get_pin_list().front();
   }
-  std::string driving_pin_name = idb_driving_pin->get_pin_name();
+  std::string driven_pin_name = idb_driving_pin->get_pin_name();
   if (!idb_driving_pin->is_io_pin()) {
-    driving_pin_name = RTUTIL.getString(idb_driving_pin->get_instance()->get_name(), ":", driving_pin_name);
+    driven_pin_name = RTUTIL.getString(idb_driving_pin->get_instance()->get_name(), ":", driven_pin_name);
   }
-  bool has_driving = false;
+  bool has_driven = false;
   for (Pin& pin : net.get_pin_list()) {
-    if (pin.get_pin_name() == driving_pin_name) {
-      pin.set_is_driving(true);
-      has_driving = true;
+    if (pin.get_pin_name() == driven_pin_name) {
+      pin.set_is_driven(true);
+      has_driven = true;
     }
   }
-  if (!has_driving) {
-    net.get_pin_list().front().set_is_driving(true);
+  if (!has_driven) {
+    net.get_pin_list().front().set_is_driven(true);
   }
 }
 

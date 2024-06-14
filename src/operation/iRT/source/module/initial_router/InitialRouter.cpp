@@ -1219,6 +1219,7 @@ void InitialRouter::debugOutputGuide(IRModel& ir_model)
     return;
   }
   RTUTIL.pushStream(guide_file_stream, "guide net_name\n");
+  RTUTIL.pushStream(guide_file_stream, "pin g_x g_y r_x r_y l c\n");
   RTUTIL.pushStream(guide_file_stream, "wire g1_x g1_y g2_x g2_y r1_x r1_y r2_x r2_y l\n");
   RTUTIL.pushStream(guide_file_stream, "via g_x g_y r_x r_y l1 l2\n");
 
@@ -1226,6 +1227,21 @@ void InitialRouter::debugOutputGuide(IRModel& ir_model)
     IRNet& ir_net = ir_net_list[net_idx];
     RTUTIL.pushStream(guide_file_stream, "guide ", ir_net.get_origin_net()->get_net_name(), "\n");
 
+    for (IRPin& ir_pin : ir_net.get_ir_pin_list()) {
+      AccessPoint& key_access_point = ir_pin.get_key_access_point();
+      double grid_x = key_access_point.get_grid_x();
+      double grid_y = key_access_point.get_grid_y();
+      double real_x = key_access_point.get_real_x() / 1.0 / micron_dbu;
+      double real_y = key_access_point.get_real_y() / 1.0 / micron_dbu;
+      std::string layer = routing_layer_list[key_access_point.get_layer_idx()].get_layer_name();
+      std::string connnect;
+      if (ir_pin.get_is_driven()) {
+        connnect = "driven";
+      } else {
+        connnect = "load";
+      }
+      RTUTIL.pushStream(guide_file_stream, "pin ", grid_x, " ", grid_y, " ", real_x, " ", real_y, " ", layer, " ", connnect, "\n");
+    }
     for (Segment<LayerCoord>* segment : segment_set) {
       LayerCoord first_layer_coord = segment->get_first();
       double grid1_x = first_layer_coord.get_x();
