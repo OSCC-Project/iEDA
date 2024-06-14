@@ -38,13 +38,14 @@ class CongAPITest : public testing::Test
   void TearDown() final {}
 };
 
-TEST_F(CongAPITest, sample)
+TEST_F(CongAPITest, sample)   //评估器调用位置
 {
   EvalAPI& eval_api = EvalAPI::initInst();
 
   int32_t bin_cnt_x = 512;
   int32_t bin_cnt_y = 512;
-  eval_api.initCongDataFromIDB(bin_cnt_x, bin_cnt_y);
+  eval_api.initCongDataFromIDB(bin_cnt_x, bin_cnt_y); //底层数据到评估器
+  eval_api.evalNetCong('RUDY');  //用RUDY
 
   eval_api.evalInstDens(INSTANCE_STATUS::kPlaced);
   std::string plot_path = "/DREAMPlace/iEDA/bin/";
