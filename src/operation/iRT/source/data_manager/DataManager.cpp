@@ -901,21 +901,16 @@ void DataManager::wrapDrivenPin(Net& net, idb::IdbNet* idb_net)
 {
   idb::IdbPin* idb_driving_pin = idb_net->get_driving_pin();
   if (idb_driving_pin == nullptr) {
-    idb_driving_pin = idb_net->get_instance_pin_list()->get_pin_list().front();
+    return;
   }
   std::string driven_pin_name = idb_driving_pin->get_pin_name();
   if (!idb_driving_pin->is_io_pin()) {
     driven_pin_name = RTUTIL.getString(idb_driving_pin->get_instance()->get_name(), ":", driven_pin_name);
   }
-  bool has_driven = false;
   for (Pin& pin : net.get_pin_list()) {
     if (pin.get_pin_name() == driven_pin_name) {
       pin.set_is_driven(true);
-      has_driven = true;
     }
-  }
-  if (!has_driven) {
-    net.get_pin_list().front().set_is_driven(true);
   }
 }
 
