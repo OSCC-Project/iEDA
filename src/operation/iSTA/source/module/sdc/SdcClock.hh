@@ -63,7 +63,7 @@ class SdcClock : public SdcCommandObj {
 
  private:
   std::string _clock_name;        //!< The clock name.
-  double _period;                 //!< The clock period.
+  double _period;                 //!< The clock period, unit is ns.
   std::set<DesignObject*> _objs;  //!< The clock source object.
   SdcWaveform _edges;  //!< The waveform edges, one rise edge, one fall edge.
   unsigned _is_propagated : 1 = 0;
