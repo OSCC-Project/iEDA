@@ -51,7 +51,7 @@ int main(int argc, char** argv)
   }
 
   if (printVersion) {
-    std::cout << "Git version: " << GIT_VERSION << std::endl;
+    std::cout << "Git version: " << iEDA_GIT_VERSION << std::endl;
   }
 
   plfInst->runTcl(argc, argv);

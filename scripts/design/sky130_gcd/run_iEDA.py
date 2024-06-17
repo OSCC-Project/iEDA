@@ -35,13 +35,13 @@ def main():
     ##   run Placer
     #===========================================================
     execute_shell_command('./iEDA -script ./script/iPL_script/run_iPL.tcl')
-    execute_shell_command('./iEDA -script ./script/iPL_script/run_iPL_eval.tcl')
+    # execute_shell_command('./iEDA -script ./script/iPL_script/run_iPL_eval.tcl')
 
     # ===========================================================
     #   run CTS
     # ===========================================================
     execute_shell_command('./iEDA -script ./script/iCTS_script/run_iCTS.tcl')
-    execute_shell_command('./iEDA -script ./script/iCTS_script/run_iCTS_eval.tcl')
+    # execute_shell_command('./iEDA -script ./script/iCTS_script/run_iCTS_eval.tcl')
     execute_shell_command('./iEDA -script ./script/iCTS_script/run_iCTS_STA.tcl')
 
     #===========================================================
@@ -65,12 +65,12 @@ def main():
     #   run PL Incremental Flow
     #===========================================================
     execute_shell_command('./iEDA -script ./script/iPL_script/run_iPL_legalization.tcl')
-    execute_shell_command('./iEDA -script ./script/iPL_script/run_iPL_legalization_eval.tcl')
+    # execute_shell_command('./iEDA -script ./script/iPL_script/run_iPL_legalization_eval.tcl')
 
     # ===========================================================
     # #   run Router
     execute_shell_command('./iEDA -script ./script/iRT_script/run_iRT.tcl')
-    execute_shell_command('./iEDA -script ./script/iRT_script/run_iRT_eval.tcl')
+    # execute_shell_command('./iEDA -script ./script/iRT_script/run_iRT_eval.tcl')
     # execute_shell_command('./iEDA -script ./script/iRT_script/run_iRT_STA.tcl')
     execute_shell_command('./iEDA -script ./script/iRT_script/run_iRT_DRC.tcl')
 

@@ -53,7 +53,7 @@ void FixFanout::fixFanout() {
   }
 
   LOG_INFO << "[Result: ] Find " << _fanout_vio_num << " Net with fanout violation.\n";
-  LOG_INFO << "[Result: ] Insert " << _insert_instance_index << " Buffers.\n";
+  LOG_INFO << "[Result: ] Insert " << _insert_instance_index - 1 << " Buffers.\n";
 
   _db_interface->report()->get_ofstream() << "[Result: ] Find " << _fanout_vio_num
                                           << " Net with fanout violation.\n"
@@ -64,6 +64,7 @@ void FixFanout::fixFanout() {
 }
 
 void FixFanout::fixFanout(IdbNet *net) {
+  // return;
   int fanout = net->get_load_pins().size();
   while (fanout > _max_fanout) {
     auto load_pins = net->get_load_pins();
@@ -141,19 +142,27 @@ void FixFanout::disconnectPin(IdbPin *dpin) {
 }
 
 void FixFanout::connect(IdbInstance *dinst, IdbPin *dpin, IdbNet *dnet) {
-  auto  &dpin_list = dinst->get_pin_list()->get_pin_list();
-  string port_name = dpin->get_pin_name();
-  for (auto dpin : dpin_list) {
-    if (dpin->get_pin_name() == port_name) {
-      if (dpin->is_io_pin()) {
-        dnet->add_io_pin(dpin);
-        dpin->set_net(dnet);
-      } else {
-        dnet->add_instance_pin(dpin);
-        dpin->set_net(dnet);
+  if(dinst) {
+    auto  &dpin_list = dinst->get_pin_list()->get_pin_list();
+    string port_name = dpin->get_pin_name();
+    for (auto dpin : dpin_list) {
+      if (dpin->get_pin_name() == port_name) {
+        if (dpin->is_io_pin()) {
+          dnet->add_io_pin(dpin);
+          dpin->set_net(dnet);
+          dpin->set_net_name(dnet->get_net_name());
+        } else {
+          dnet->add_instance_pin(dpin);
+          dpin->set_net(dnet);
+          dpin->set_net_name(dnet->get_net_name());
+        }
+        break;
       }
-      break;
     }
+  } else {
+    dnet->add_io_pin(dpin);
+    dpin->set_net(dnet);
+    dpin->set_net_name(dnet->get_net_name());
   }
 }
 

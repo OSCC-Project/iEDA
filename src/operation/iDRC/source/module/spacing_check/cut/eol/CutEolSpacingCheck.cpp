@@ -63,7 +63,8 @@ void CutEolSpacingCheck::queryInExtBoxes()
     std::vector<std::pair<RTreeSegment, DrcEdge*>> query_result;
     _region_query->queryEdgeInRoutingLayer(layer_id, query_box, query_result);
     for (auto [rtree_seg, drc_edge] : query_result) {
-      //排除掉方向不对的和自身poly的；
+      // Exclude those with incorrect orientation and self-polygons
+
       if (edge_dir == EdgeDirection::kEast || edge_dir == EdgeDirection::kWest) {
         if (drc_edge->isHorizontal() && drc_edge->get_owner_polygon() != _cut_above_poly) {
           switch (corner_dir) {

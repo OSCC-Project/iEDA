@@ -28,12 +28,12 @@ static void closeFileStream(T* t)
   }
 }
 
-int countDifferentLines(const std::string& file1, const std::string& file2)
+int32_t countDifferentLines(const std::string& file1, const std::string& file2)
 {
   std::ifstream fileStream1(file1);
   std::ifstream fileStream2(file2);
   std::string line1, line2;
-  int count = 0;
+  int32_t count = 0;
 
   while (std::getline(fileStream1, line1) && std::getline(fileStream2, line2)) {
     if (line1 != line2) {

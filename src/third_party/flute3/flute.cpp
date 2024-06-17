@@ -545,6 +545,7 @@ DTYPE flute_wl(int d, DTYPE x[], DTYPE y[], int acc) {
                 ptp[d]->x = ptp[d]->y = -999999;
                 j = 0;
                 for (i = 0; i < d; i++) {
+                        int k = 0;
                         for (k = i + 1; ptp[k]->x == ptp[i]->x; k++)
                                 if (ptp[k]->y == ptp[i]->y)  // pins k and i are the same
                                         break;
@@ -1046,6 +1047,7 @@ Tree flute(int d, DTYPE x[], DTYPE y[], int acc) {
                 ptp[d]->x = ptp[d]->y = -999999;
                 j = 0;
                 for (i = 0; i < d; i++) {
+                        int k = 0;
                         for (k = i + 1; ptp[k]->x == ptp[i]->x; k++)
                                 if (ptp[k]->y == ptp[i]->y)  // pins k and i are the same
                                         break;

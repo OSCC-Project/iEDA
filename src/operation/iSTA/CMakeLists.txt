@@ -20,10 +20,12 @@ include_directories(SYSTEM ${HOME_THIRDPARTY})
 include_directories(${HOME_OPERATION}/iSTA)
 include_directories(${HOME_OPERATION}/iSTA/source/module)
 include_directories(${HOME_OPERATION}/iSTA/source/module/include)
+include_directories(${HOME_THIRDPARTY}/onnxruntime/include)
 
 include(${HOME_CMAKE}/operation/idb.cmake)
 
 link_directories(${CMAKE_BINARY_DIR}/lib)
+link_directories(${HOME_THIRDPARTY}/onnxruntime/)
 
 find_package(Eigen3 REQUIRED)
 
@@ -52,6 +54,7 @@ add_subdirectory(api)
 add_subdirectory(source/module/netlist)
 add_subdirectory(source/module/sdc)
 add_subdirectory(source/module/sdc-cmd)
+add_subdirectory(source/module/AI-inference)
 add_subdirectory(source/module/python-api)
 add_subdirectory(source/module/shell-cmd)
 add_subdirectory(source/module/sta)
@@ -63,7 +66,7 @@ add_subdirectory(test)
 
 add_executable(iSTA main.cc)
 
-target_link_libraries(iSTA sdc ista-engine
+target_link_libraries(iSTA sdc ista-engine inference
 sdc-cmd shell-cmd sta log str time netlist liberty
 delay utility sta-solver verilog graph idb
 tcl usage pthread stdc++fs IdbBuilder def_service lef_service)

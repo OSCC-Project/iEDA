@@ -19,8 +19,8 @@
 #include "ChangeType.hpp"
 #include "Config.hpp"
 #include "Database.hpp"
-#include "Helper.hpp"
 #include "Logger.hpp"
+#include "Monitor.hpp"
 #include "NetShape.hpp"
 #include "SortStatus.hpp"
 #include "Summary.hpp"
@@ -42,12 +42,14 @@ class DataManager
 #if 1  // 有关GCellMap操作
   void updateFixedRectToGCellMap(ChangeType change_type, int32_t net_idx, EXTLayerRect* ext_layer_rect, bool is_routing);
   void updateAccessPointToGCellMap(ChangeType change_type, int32_t net_idx, AccessPoint* access_point);
-  void updateNetResultToGCellMap(ChangeType change_type, int32_t net_idx, Segment<LayerCoord>* segment);
+  void updateGlobalNetResultToGCellMap(ChangeType change_type, int32_t net_idx, Segment<LayerCoord>* segment);
+  void updateDetailedNetResultToGCellMap(ChangeType change_type, int32_t net_idx, Segment<LayerCoord>* segment);
   void updateNetPatchToGCellMap(ChangeType change_type, int32_t net_idx, EXTLayerRect* ext_layer_rect);
   void updateViolationToGCellMap(ChangeType change_type, Violation* violation);
   std::map<bool, std::map<int32_t, std::map<int32_t, std::set<EXTLayerRect*>>>> getTypeLayerNetFixedRectMap(EXTPlanarRect& region);
   std::map<int32_t, std::set<AccessPoint*>> getNetAccessPointMap(EXTPlanarRect& region);
-  std::map<int32_t, std::set<Segment<LayerCoord>*>> getNetResultMap(EXTPlanarRect& region);
+  std::map<int32_t, std::set<Segment<LayerCoord>*>> getGlobalNetResultMap(EXTPlanarRect& region);
+  std::map<int32_t, std::set<Segment<LayerCoord>*>> getDetailedNetResultMap(EXTPlanarRect& region);
   std::map<int32_t, std::set<EXTLayerRect*>> getNetPatchMap(EXTPlanarRect& region);
   std::set<Violation*> getViolationSet(EXTPlanarRect& region);
 #endif
@@ -67,15 +69,13 @@ class DataManager
 
   Config& getConfig() { return _config; }
   Database& getDatabase() { return _database; }
-  Helper& getHelper() { return _helper; }
   Summary& getSummary() { return _summary; }
 
  private:
   static DataManager* _dm_instance;
-  // config & database & helper & summary
+  // config & database & summary
   Config _config;
   Database _database;
-  Helper _helper;
   Summary _summary;
 
   DataManager() = default;
@@ -85,9 +85,14 @@ class DataManager
   {
     Die& die = _database.get_die();
 
-    for (auto& [net_idx, segment_set] : getNetResultMap(die)) {
+    for (auto& [net_idx, segment_set] : getGlobalNetResultMap(die)) {
       for (Segment<LayerCoord>* segment : segment_set) {
-        RTDM.updateNetResultToGCellMap(ChangeType::kDel, net_idx, segment);
+        RTDM.updateGlobalNetResultToGCellMap(ChangeType::kDel, net_idx, segment);
+      }
+    }
+    for (auto& [net_idx, segment_set] : getDetailedNetResultMap(die)) {
+      for (Segment<LayerCoord>* segment : segment_set) {
+        RTDM.updateDetailedNetResultToGCellMap(ChangeType::kDel, net_idx, segment);
       }
     }
     for (auto& [net_idx, patch_set] : getNetPatchMap(die)) {
@@ -105,20 +110,21 @@ class DataManager
 #if 1  // input
   void wrapConfig(std::map<std::string, std::any>& config_map);
   void wrapDatabase(idb::IdbBuilder* idb_builder);
-  void wrapMicronDBU(idb::IdbBuilder* idb_builder);
-  void wrapDie(idb::IdbBuilder* idb_builder);
-  void wrapRow(idb::IdbBuilder* idb_builder);
-  void wrapLayerList(idb::IdbBuilder* idb_builder);
+  void wrapDBInfo(idb::IdbBuilder* idb_builder);
+  void wrapMicronDBU();
+  void wrapDie();
+  void wrapRow();
+  void wrapLayerList();
   void wrapTrackAxis(RoutingLayer& routing_layer, idb::IdbLayerRouting* idb_layer);
   void wrapSpacingTable(RoutingLayer& routing_layer, idb::IdbLayerRouting* idb_layer);
-  void wrapLayerViaMasterList(idb::IdbBuilder* idb_builder);
-  void wrapObstacleList(idb::IdbBuilder* idb_builder);
-  void wrapNetList(idb::IdbBuilder* idb_builder);
+  void wrapLayerInfo();
+  void wrapLayerViaMasterList();
+  void wrapObstacleList();
+  void wrapNetList();
   bool isSkipping(idb::IdbNet* idb_net);
   void wrapPinList(Net& net, idb::IdbNet* idb_net);
   void wrapPinShapeList(Pin& pin, idb::IdbPin* idb_pin);
-  void wrapDrivingPin(Net& net, idb::IdbNet* idb_net);
-  void updateHelper(idb::IdbBuilder* idb_builder);
+  void wrapDrivenPin(Net& net, idb::IdbNet* idb_net);
   Direction getRTDirectionByDB(idb::IdbLayerDirection idb_direction);
   ConnectType getRTConnectTypeByDB(idb::IdbConnectType idb_connect_type);
   void buildConfig();
@@ -136,6 +142,7 @@ class DataManager
   void transLayerList();
   void makeLayerList();
   void checkLayerList();
+  void buildLayerInfo();
   void buildLayerViaMasterList();
   void transLayerViaMasterList();
   void makeLayerViaMasterList();
@@ -144,6 +151,7 @@ class DataManager
   SortStatus sortByLayerDirectionPriority(ViaMaster& via_master1, ViaMaster& via_master2);
   SortStatus sortByLengthASC(ViaMaster& via_master1, ViaMaster& via_master2);
   SortStatus sortBySymmetryPriority(ViaMaster& via_master1, ViaMaster& via_master2);
+  void buildLayerViaMasterInfo();
   void buildObstacleList();
   void transObstacleList();
   void makeObstacleList();
@@ -154,13 +162,14 @@ class DataManager
   void makePinList(Net& net);
   void checkPinList(Net& net);
   void buildGCellMap();
-  void updateHelper();
+  int32_t getIntervalIdx(int32_t scale_start, int32_t scale_end, int32_t interval_start, int32_t interval_end, int32_t interval_length);
   void printConfig();
   void printDatabase();
   void writePYScript();
 #endif
 
 #if 1  // output
+  void outputTrackGrid();
   void outputGCellGrid();
   void outputNetList();
 #endif

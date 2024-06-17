@@ -537,7 +537,7 @@ void EnclosureCheck::checkEnclosure(DrcRect* target_cut_rect)
       if (!edges_query_result.empty()) {
         int size = edges_query_result.size();
         for (int i = 0; i < size; i++) {
-          //避免取到short的poly
+          //aviod getting short poly
           if (edges_query_result[i].second->get_owner_polygon()->getNetId() == target_cut_rect->get_net_id()) {
             _cut_above_poly = edges_query_result[i].second->get_owner_polygon();
             break;
@@ -584,7 +584,7 @@ void EnclosureCheck::checkEnclosure(DrcRect* target_cut_rect)
       if (!edges_query_result.empty()) {
         int size = edges_query_result.size();
         for (int i = 0; i < size; i++) {
-          //避免取到short的poly
+          //aviod getting short poly
           if (edges_query_result[i].second->get_owner_polygon()->getNetId() == target_cut_rect->get_net_id()) {
             _cut_below_poly = edges_query_result[i].second->get_owner_polygon();
             break;

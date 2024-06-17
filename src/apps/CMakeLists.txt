@@ -9,14 +9,14 @@ endif()
 find_package(Git)
 if(GIT_FOUND)
     execute_process(COMMAND ${GIT_EXECUTABLE} describe --abbrev=40 --always OUTPUT_VARIABLE GIT_VERSION)
-    string(STRIP "${GIT_VERSION}" GIT_VERSION)
-    message(STATUS "Git Version: " ${GIT_VERSION})
+    string(STRIP "${GIT_VERSION}" iEDA_GIT_VERSION)
+    message(STATUS "Git Version: " ${iEDA_GIT_VERSION})
 else()
     message(WARNING "Git Version: not available")
-    set(GIT_VERSION "not available")
+    set(iEDA_GIT_VERSION "not available")
 endif()
 
-add_definitions(-DGIT_VERSION="${GIT_VERSION}")
+add_definitions(-DiEDA_GIT_VERSION="${iEDA_GIT_VERSION}")
 
 add_executable(iEDA
     ieda_main.cpp

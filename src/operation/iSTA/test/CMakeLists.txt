@@ -11,7 +11,7 @@ find_package(GTest REQUIRED)
 aux_source_directory(. SourceFiles)
 add_executable(iSTATest ${SourceFiles})
 
-target_link_libraries(iSTATest ista-engine
+target_link_libraries(iSTATest ista-engine inference
 sdc-cmd shell-cmd sta log str time netlist liberty
 delay utility sta-solver verilog graph idb
 tcl usage pthread stdc++fs IdbBuilder def_service lef_service gtest)

@@ -767,6 +767,11 @@ void RcNet::updateRcTreeInfo() {
   auto* driver = _net->getDriver();
   auto pin_ports = _net->get_pin_ports();
 
+  // fix for net is only driver
+  if (pin_ports.size() < 2) {
+    return;
+  }
+
   if (_rct.index() == 0) {
     std::get<EmptyRct>(_rct).load =
         std::accumulate(pin_ports.begin(), pin_ports.end(), 0.0,
@@ -795,7 +800,8 @@ void RcNet::updateRcTreeInfo() {
     // if (name() == "fanout_buf_215") {
     //   rct.printGraphViz();
     // }
-    LOG_FATAL_IF(!rct._root) << "not found rct root.";
+    LOG_FATAL_IF(!rct._root)
+        << "not found rct root for net " << _net->get_name();
   }
 
   // printRctInfo();

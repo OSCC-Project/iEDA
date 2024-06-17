@@ -1333,7 +1333,7 @@ class LibertyCurrentTemplate : public LibertyLutTableTemplate
  * @brief The timing library class.
  *
  */
-class LibertyLibrary
+class LibertyLibrary : public LibertyObject
 {
  public:
   explicit LibertyLibrary(const char* lib_name) : _lib_name(lib_name) {}
