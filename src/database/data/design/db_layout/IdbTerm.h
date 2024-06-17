@@ -191,6 +191,8 @@ class IdbTerm
   bool is_multi_layer();
   bool is_pdn();
 
+  vector<IdbCoordinate<int32_t>*>& get_pa_list() { return _pa_list; }
+
   // setter
   void set_name(string name) { _name = name; }
   void set_direction(IdbConnectDirection direction) { _direction = direction; }
@@ -229,6 +231,7 @@ class IdbTerm
   IdbPlacementStatus _placement_status;
   // mustjoin
   vector<IdbPort*> _port_list;
+  vector<IdbCoordinate<int32_t>*> _pa_list;
 
   IdbCoordinate<int32_t> _average_position;
   IdbRect* _bouding_box;

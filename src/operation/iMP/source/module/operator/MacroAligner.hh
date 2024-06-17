@@ -173,7 +173,7 @@ struct MacroAligner
 
   void alignMacrosGlobal(Block& blk)
   {
-    // macro alginment based on OpenRoad-mpl2
+    // macro alginment based on mpl2
     std::vector<std::shared_ptr<imp::Instance>> macros = get_macros(blk);
     T outline_lx = blk.get_min_corner().x();
     T outline_ly = blk.get_min_corner().y();

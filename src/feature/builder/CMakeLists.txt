@@ -1,6 +1,7 @@
 add_library(feature_builder
     feature_builder.cpp
     feature_builder_tool.cpp
+    route_builder.cpp
 )
 
 target_include_directories(feature_builder 

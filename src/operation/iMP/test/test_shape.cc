@@ -6,7 +6,7 @@
 
 #include "../source/data_manager/basic/ShapeCurve.hh"
 
-/*  openroad default params
+/*  default params
     set max_num_macro 0
     set min_num_macro 0
     set max_num_inst  0

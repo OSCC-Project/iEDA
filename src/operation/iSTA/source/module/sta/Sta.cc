@@ -22,8 +22,6 @@
  * @date 2020-11-27
  */
 
-#include "Sta.hh"
-
 #include <algorithm>
 #include <filesystem>
 #include <map>
@@ -33,6 +31,7 @@
 #include <tuple>
 #include <utility>
 
+#include "Sta.hh"
 #include "StaAnalyze.hh"
 #include "StaApplySdc.hh"
 #include "StaBuildClockTree.hh"
@@ -1847,7 +1846,9 @@ unsigned Sta::reportNet(const char *rpt_file_name, Net *the_net) {
  */
 unsigned Sta::reportNet() {
   std::string design_work_space = get_design_work_space();
-  std::string path_dir = design_work_space + "/net";
+  std::string now_time = Time::getNowWallTime();
+  std::string tmp = Str::replace(now_time, ":", "_");
+  std::string path_dir = design_work_space + "/net_" + tmp;
   std::filesystem::create_directories(path_dir);
 
   auto *nl = get_netlist();
@@ -2234,7 +2235,8 @@ StaSeqPathData *Sta::getWorstSeqData(std::optional<StaVertex *> vertex,
   while (!seq_data_queue.empty()) {
     seq_path_data = dynamic_cast<StaSeqPathData *>(seq_data_queue.top());
 
-    if (seq_path_data->get_delay_data()->get_trans_type() == trans_type) {
+    if ((seq_path_data->get_delay_data()->get_trans_type() == trans_type) ||
+        (trans_type == TransType::kRiseFall)) {
       break;
     }
     seq_data_queue.pop();
@@ -2687,7 +2689,7 @@ std::set<std::string> Sta::findStartOrEnd(StaVertex *the_vertex,
 unsigned Sta::reportTiming(std::set<std::string> &&exclude_cell_names /*= {}*/,
                            bool is_derate /*=false*/,
                            bool is_clock_cap /*=false*/,
-                           bool is_copy /*=false*/) {
+                           bool is_copy /*=true*/) {
   const char *design_work_space = get_design_work_space();
   std::string now_time = Time::getNowWallTime();
   std::string tmp = Str::replace(now_time, ":", "_");

@@ -108,6 +108,7 @@ class DetailedRouter
   void freeDRBox(DRBox& dr_box);
   int32_t getViolationNum();
   void uploadNetResult(DRModel& dr_model);
+  bool stopIteration(DRModel& dr_model);
 
 #if 1  // update env
   void updateFixedRectToGraph(DRBox& dr_box, ChangeType change_type, int32_t net_idx, EXTLayerRect* fixed_rect, bool is_routing);

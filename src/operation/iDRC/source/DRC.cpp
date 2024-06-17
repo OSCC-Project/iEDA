@@ -70,31 +70,30 @@ DRC::DRC()
   _multi_patterning = new MultiPatterning();
   _region_query = new RegionQuery(_tech);
 }
-
 // /**
-//  * @brief 读取DEF文件的模式下获得短路违规的数目
+//  * @brief Get the number of short circuit violations in DEF file mode
 //  *
-//  * @return int 短路违规的数目
+//  * @return int Number of short circuit violations
 //  */
 // int DRC::getShortViolationNum()
 // {
-//   return _routing_sapcing_check->get_short_violation_num();
+//   return _routing_spacing_check->get_short_violation_num();
 // }
 
 // /**
-//  * @brief 读取DEF文件的模式下获得间距违规的数目
+//  * @brief Get the number of spacing violations in DEF file mode
 //  *
-//  * @return int 间距违规的数目
+//  * @return int Number of spacing violations
 //  */
 // int DRC::getSpacingViolationNum()
 // {
-//   return _routing_sapcing_check->get_spacing_violation_num();
+//   return _routing_spacing_check->get_spacing_violation_num();
 // }
 
 // /**
-//  * @brief 读取DEF文件的模式下获得宽度违规的数目
+//  * @brief Get the number of width violations in DEF file mode
 //  *
-//  * @return int 宽度违规的数目
+//  * @return int Number of width violations
 //  */
 // int DRC::getWidthViolationNum()
 // {
@@ -102,9 +101,9 @@ DRC::DRC()
 // }
 
 // /**
-//  * @brief 读取DEF文件的模式下获得面积违规的数目
+//  * @brief Get the number of area violations in DEF file mode
 //  *
-//  * @return int 面积违规的数目
+//  * @return int Number of area violations
 //  */
 // int DRC::getAreaViolationNum()
 // {
@@ -112,9 +111,9 @@ DRC::DRC()
 // }
 
 // /**
-//  * @brief 读取DEF文件的模式下获得包围面积违规的数目
+//  * @brief Get the number of enclosed area violations in DEF file mode
 //  *
-//  * @return int 包围面积违规的数目
+//  * @return int Number of enclosed area violations
 //  */
 // int DRC::getEnclosedAreaViolationNum()
 // {
@@ -122,27 +121,27 @@ DRC::DRC()
 // }
 
 // /**
-//  * @brief 返回存储短路违规信息的Spot列表
+//  * @brief Return the list of Spots storing short circuit violation information
 //  *
 //  * @return std::map<int, std::vector<DrcSpot>>&
 //  */
 // std::map<int, std::vector<DrcSpot>>& DRC::getShortSpotList()
 // {
-//   return _routing_sapcing_check->get_routing_layer_to_short_spots_list();
+//   return _routing_spacing_check->get_routing_layer_to_short_spots_list();
 // }
 
 // /**
-//  * @brief 返回存储间距违规信息的Spot列表
+//  * @brief Return the list of Spots storing spacing violation information
 //  *
 //  * @return std::map<int, std::vector<DrcSpot>>&
 //  */
 // std::map<int, std::vector<DrcSpot>>& DRC::getSpacingSpotList()
 // {
-//   return _routing_sapcing_check->get_routing_layer_to_spacing_spots_list();
+//   return _routing_spacing_check->get_routing_layer_to_spacing_spots_list();
 // }
 
 // /**
-//  * @brief 返回存储宽度违规信息的Spot列表
+//  * @brief Return the list of Spots storing width violation information
 //  *
 //  * @return std::map<int, std::vector<DrcSpot>>&
 //  */
@@ -152,7 +151,7 @@ DRC::DRC()
 // }
 
 // /**
-//  * @brief 返回存储面积违规信息的Spot列表
+//  * @brief Return the list of Spots storing area violation information
 //  *
 //  * @return std::map<int, std::vector<DrcSpot>>&
 //  */
@@ -162,7 +161,7 @@ DRC::DRC()
 // }
 
 // /**
-//  * @brief 返回存储孔洞面积违规信息的Spot列表
+//  * @brief Return the list of Spots storing enclosed area violation information
 //  *
 //  * @return std::map<int, std::vector<DrcSpot>>&
 //  */
@@ -172,9 +171,9 @@ DRC::DRC()
 // }
 
 // /**
-//  * @brief 通过配置文件的方式初始化Tech数据（工艺设计规则数据）
+//  * @brief Initialize Tech data (process design rules data) through the configuration file
 //  *
-//  * @param drc_config_path 配置文件路径
+//  * @param drc_config_path Configuration file path
 //  */
 // void DRC::initTechFromIDB(std::string& drc_config_path)
 // {
@@ -183,14 +182,16 @@ DRC::DRC()
 //   delete configurator;
 
 //   _idb_wrapper = new DrcIDBWrapper(_config, _tech, _drc_design, _region_query);
-//   _idb_wrapper->initTech();  //传入IdbBuilder？
+//   _idb_wrapper->initTech();  //input IdbBuilder？
 // }
 
 /**
- * @brief 通过iDB_Builder的指针的方式初始化Tech数据（工艺规则数据）
+ * @brief Initialize Tech data (process rules data) using the iDB_Builder pointer
  *
- * @param idb_builder idb_builder指针
+ * @param idb_builder iDB_Builder pointer
  */
+
+
 void DRC::initTechFromIDB(idb::IdbBuilder* idb_builder)
 {
   delete _idb_wrapper;
@@ -199,9 +200,10 @@ void DRC::initTechFromIDB(idb::IdbBuilder* idb_builder)
 }
 
 /**
- * @brief 通过配置文件的方式初始化iDRC，包括Tech数据，DrcDesign数据，RegionQuery模块数据
+ * @brief Initialize each design rule check module to prepare for design rule checks
+
  *
- * @param drc_config_path 配置文件路径
+ * @param drc_config_path 
  */
 void DRC::initDRC(std::string& drc_config_path, idb::IdbBuilder* idb_builder)
 {
@@ -245,7 +247,7 @@ void DRC::initDesign(std::map<std::string, std::any> config_map)
 }
 
 /**
- * @brief 初始化各个设计规则检查模块，为进行设计规则检查做准备
+ * @brief Initialize each design rule check module to prepare for design rule checks
  *
  */
 void DRC::initCheckModule()
@@ -266,7 +268,7 @@ void DRC::initCheckModule()
 }
 
 /**
- * @brief 更新当前各个设计规则检查模块的过程数据与存储结果，以备下一轮设计规则检查
+ * @brief Update the current process data and stored results of each design rule check module to prepare for the next round of checks
  *
  */
 void DRC::update()
@@ -280,7 +282,7 @@ void DRC::update()
 }
 
 /**
- * @brief 遍历每一条Net运行各个设计规则检查模块对每一条Net进行设计规则检查
+ * @brief Traverse each Net and run each design rule check module for every Net
  *
  */
 void DRC::run()
@@ -320,7 +322,7 @@ void DRC::run()
 }
 
 // /**
-//  * @brief 检查目标Net是否存在设计违规（需要重新实现）
+//  * @brief Check if the target Net has any design violations (needs to be re-implemented)
 //  *
 //  * @param netId
 //  */
@@ -334,7 +336,8 @@ void DRC::run()
 // }
 
 /**
- * @brief 以文件的形式报告每个模块的设计规则检查结果
+ * @brief Report the results of each design rule check module in the form of a file
+ *
  *
  */
 void DRC::report()
@@ -370,10 +373,10 @@ std::map<std::string, std::vector<DrcViolationSpot*>> DRC::getDrcDetailResult()
 }
 
 /**
- * @brief 与iRT的交互接口
+ * @brief Interaction interface with iRT
  *
- * @param layer_to_rects_rtree_map iRT的区域绕线结果，包含多层的导体图形信息
- * @return std::vector<std::pair<DrcRect*, DrcRect*>> 存在间距违规或短路违规的矩形对
+ * @param layer_to_rects_rtree_map The region routing result of iRT, including conductor information of multiple layers
+ * @return std::vector<std::pair<DrcRect*, DrcRect*>> A list of rectangle pairs that have spacing or short violations
  */
 // std::vector<std::pair<DrcRect*, DrcRect*>> DRC::checkiRTResult(const LayerNameToRTreeMap& layer_to_rects_rtree_map)
 // {

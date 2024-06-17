@@ -124,7 +124,7 @@ class DataManager
   bool isSkipping(idb::IdbNet* idb_net);
   void wrapPinList(Net& net, idb::IdbNet* idb_net);
   void wrapPinShapeList(Pin& pin, idb::IdbPin* idb_pin);
-  void wrapDrivingPin(Net& net, idb::IdbNet* idb_net);
+  void wrapDrivenPin(Net& net, idb::IdbNet* idb_net);
   Direction getRTDirectionByDB(idb::IdbLayerDirection idb_direction);
   ConnectType getRTConnectTypeByDB(idb::IdbConnectType idb_connect_type);
   void buildConfig();
@@ -162,12 +162,14 @@ class DataManager
   void makePinList(Net& net);
   void checkPinList(Net& net);
   void buildGCellMap();
+  int32_t getIntervalIdx(int32_t scale_start, int32_t scale_end, int32_t interval_start, int32_t interval_end, int32_t interval_length);
   void printConfig();
   void printDatabase();
   void writePYScript();
 #endif
 
 #if 1  // output
+  void outputTrackGrid();
   void outputGCellGrid();
   void outputNetList();
 #endif

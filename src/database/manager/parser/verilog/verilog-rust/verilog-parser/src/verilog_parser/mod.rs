@@ -185,13 +185,12 @@ fn extract_range(input: &str) -> Option<(&str, i32, i32)> {
 fn extract_single(input: &str) -> Option<(&str, i32)> {
     if let Some(open_bracket) = input.find('[') {
         if let Some(close_bracket) = input.find(']') {
-            // return None when input likes "cpuregs[19][1]".
-            if input[close_bracket + 1..].contains('[') {
-                return None;
+            // return None when input likes "cpuregs[19][1]" or "\core_top_inst/ifu_inst/ICache_top_inst/icache_inst/cache_core_inst/cache_way_inst [0].cache_way_inst/_015_".
+            if input[close_bracket + 1..].is_empty() {
+                let name = &input[..open_bracket];
+                let index = input[open_bracket + 1..close_bracket].parse().ok()?;
+                return Some((name.trim_end(), index));
             }
-            let name = &input[..open_bracket];
-            let index = input[open_bracket + 1..close_bracket].parse().ok()?;
-            return Some((name.trim_end(), index));
         }
     }
     None
@@ -841,13 +840,12 @@ mod tests {
     fn extract_single(input: &str) -> Option<(&str, i32)> {
         if let Some(open_bracket) = input.find('[') {
             if let Some(close_bracket) = input.find(']') {
-                // return None when input likes "cpuregs[19][1]".
-                if input[close_bracket + 1..].contains('[') {
-                    return None;
+                // return None when input likes "cpuregs[19][1]" or "\core_top_inst/ifu_inst/ICache_top_inst/icache_inst/cache_core_inst/cache_way_inst [0].cache_way_inst/_015_".
+                if input[close_bracket + 1..].is_empty() {
+                    let name = &input[..open_bracket];
+                    let index = input[open_bracket + 1..close_bracket].parse().ok()?;
+                    return Some((name.trim_end(), index));
                 }
-                let name = &input[..open_bracket];
-                let index = input[open_bracket + 1..close_bracket].parse().ok()?;
-                return Some((name.trim_end(), index));
             }
         }
         None
