@@ -72,6 +72,16 @@
 
 namespace ista {
 
+static bool IsFileExists(const char *name) {
+  std::ifstream f(name);
+  bool is_exit = f.good();
+  if (!is_exit) {
+    LOG_WARNING << "Can't read file:" << name << ".";
+  }
+  f.close();
+  return is_exit;
+}
+
 Sta *Sta::_sta = nullptr;
 
 Sta::Sta()
@@ -162,6 +172,9 @@ SdcConstrain *Sta::getConstrain() {
  * @return unsigned
  */
 unsigned Sta::readDesign(const char *verilog_file) {
+  if (!IsFileExists(verilog_file)) {
+    return 0;
+  }
   readVerilog(verilog_file);
   auto &top_module_name = get_top_module_name();
   linkDesign(top_module_name.c_str());
@@ -177,6 +190,9 @@ unsigned Sta::readDesignWithRustParser(const char *file_name) { return 1; }
  * @return unsigned
  */
 unsigned Sta::readSdc(const char *sdc_file) {
+  if (!IsFileExists(sdc_file)) {
+    return 0;
+  }
   LOG_INFO << "read sdc " << sdc_file << " start ";
   Sta::initSdcCmd();
 
@@ -202,6 +218,9 @@ unsigned Sta::readSdc(const char *sdc_file) {
  * @return unsigned
  */
 unsigned Sta::readSpef(const char *spef_file) {
+  if (!IsFileExists(spef_file)) {
+    return 0;
+  }
   StaGraph &the_graph = get_graph();
 
   StaBuildRCTree func(spef_file, DelayCalcMethod::kElmore);
@@ -217,6 +236,9 @@ unsigned Sta::readSpef(const char *spef_file) {
  * @return unsigned
  */
 unsigned Sta::readAocv(const char *aocv_file) {
+  if (!IsFileExists(aocv_file)) {
+    return 0;
+  }
   AocvReader aocv_reader(aocv_file);
   auto load_aocv = aocv_reader.readAocvLibrary();
   addAocv(std::move(load_aocv));
@@ -230,6 +252,15 @@ unsigned Sta::readAocv(const char *aocv_file) {
  * @return unsigned
  */
 unsigned Sta::readAocv(std::vector<std::string> &aocv_files) {
+  bool is_exit = true;
+  for (auto &aocv_file : aocv_files) {
+    if (!IsFileExists(aocv_file.c_str())) {
+      is_exit = false;
+    }
+  }
+  if (!is_exit) {
+    return 0;
+  }
   LOG_INFO << "load aocv start";
 
 #if 0
@@ -261,6 +292,9 @@ unsigned Sta::readAocv(std::vector<std::string> &aocv_files) {
  * @return unsigned
  */
 unsigned Sta::readLiberty(const char *lib_file) {
+  if (!IsFileExists(lib_file)) {
+    return 0;
+  }
   Liberty lib;
   auto load_lib = lib.loadLibertyWithRustParser(lib_file);
   addLib(std::move(load_lib));
@@ -275,6 +309,15 @@ unsigned Sta::readLiberty(const char *lib_file) {
  * @return unsigned
  */
 unsigned Sta::readLiberty(std::vector<std::string> &lib_files) {
+  bool is_exit = true;
+  for (auto &lib_file : lib_files) {
+    if (!IsFileExists(lib_file.c_str())) {
+      is_exit = false;
+    }
+  }
+  if (!is_exit) {
+    return 0;
+  }
   LOG_INFO << "load lib start";
 
 #if 0
@@ -304,12 +347,16 @@ unsigned Sta::readLiberty(std::vector<std::string> &lib_files) {
  *
  * @param verilog_file
  */
-void Sta::readVerilogWithRustParser(const char *verilog_file) {
+unsigned Sta::readVerilogWithRustParser(const char *verilog_file) {
+  if (!IsFileExists(verilog_file)) {
+    return 0;
+  }
   LOG_INFO << "read verilog file " << verilog_file << " start";
   bool is_ok = _rust_verilog_reader.readVerilog(verilog_file);
   _rust_verilog_file_ptr = _rust_verilog_reader.get_verilog_file_ptr();
-  LOG_FATAL_IF(!is_ok) << "read verilog file " << verilog_file << " failed.";
+  LOG_WARNING_IF(!is_ok) << "read verilog file " << verilog_file << " failed.";
   LOG_INFO << "read verilog end";
+  return is_ok;
 }
 
 /**
@@ -317,12 +364,16 @@ void Sta::readVerilogWithRustParser(const char *verilog_file) {
  *
  * @param verilog_file
  */
-void Sta::readVerilog(const char *verilog_file) {
+unsigned Sta::readVerilog(const char *verilog_file) {
+  if (!IsFileExists(verilog_file)) {
+    return 0;
+  }
   LOG_INFO << "read verilog file " << verilog_file << " start";
   bool is_ok = _verilog_reader.read(verilog_file);
   LOG_FATAL_IF(!is_ok) << "read verilog file " << verilog_file << " failed.";
 
   LOG_INFO << "read verilog end";
+  return is_ok;
 }
 
 /**
@@ -830,8 +881,8 @@ void Sta::linkDesignWithRustParser(const char *top_cell_name) {
             auto *net_id = const_cast<void *>(
                 rust_convert_verilog_net_id_expr(net_expr)->verilog_id);
             LOG_FATAL_IF(!net_id) << "The port connection " << cell_port_name
-                                  << " net id is not exist "
-                                  << "at line " << verilog_inst->line_no;
+                                  << " net id is not exist " << "at line "
+                                  << verilog_inst->line_no;
 
             if (rust_is_id(net_id)) {
               net_name = rust_convert_verilog_id(net_id)->id;
