@@ -15,7 +15,7 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 /**
- * @file ArnoldiReduce.hh
+ * @file Reduce.hh
  * @author LH (liuh0326@163.com)
  * @brief The arnoldi reduce method use prime algorithm.
  * @version 0.1

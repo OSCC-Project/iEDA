@@ -15,7 +15,7 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 /**
- * @file ArnoldiCal.cc
+ * @file ReduceDelayCal.cc
  * @author LH (liuh0326@163.com)
  * @brief Calc the delay by ccs model.
  * @version 0.1
@@ -25,7 +25,7 @@
 // #include <gperftools/heap-checker.h>
 // #include <gperftools/profiler.h>
 
-#include "ArnoldiDelayCal.hh"
+#include "ReduceDelayCal.hh"
 
 #include <Eigen/Core>
 #include <Eigen/Dense>
@@ -42,7 +42,7 @@
 #include <string>
 #include <unordered_set>
 
-#include "ArnoldiReduce.hh"
+#include "Reduce.hh"
 #include "Type.hh"
 #include "liberty/Liberty.hh"
 #include "log/Log.hh"

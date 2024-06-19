@@ -15,13 +15,13 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 /**
- * @file ArnoldiReduce.cc
+ * @file Reduce.cc
  * @author LH (liuh0326@163.com)
  * @brief The arnoldi reduce method implemention use prime algorithm.
  * @version 0.1
  * @date 2023-03-08
  */
-#include "ArnoldiReduce.hh"
+#include "Reduce.hh"
 
 #include <Eigen/Core>
 #include <Eigen/Dense>

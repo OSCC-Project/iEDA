@@ -15,7 +15,7 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 /**
- * @file ArnoldiCal.hh
+ * @file ReduceDelayCal.hh
  * @author LH (liuh0326@163.com)
  * @brief Calc the delay by ccs model.
  * @version 0.1
@@ -196,10 +196,5 @@ class ArnoldiNet : public RcNet {
   unsigned _is_reduce : 1 = 0;  // default reduce.
   unsigned _reserved : 30 = 0;
 };
-
-/**
- * @brief class for PI-model.
- *
- */
 
 }  // namespace ista
