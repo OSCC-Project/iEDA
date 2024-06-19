@@ -68,8 +68,8 @@ void ViolationOptimizer::fixViolations() {
   int length_violations = 0;
   int cap_violations = 0;
   // int fanout_violations = 0;
-  _inserted_buffer_count = 0;
-  _resize_instance_count = 0;
+  _number_insert_buffer = 0;
+  _number_resized_instance = 0;
 
   //////////////////for test ////////////////////////////////////////////
   int slew_violations_after = 0;
@@ -155,9 +155,9 @@ void ViolationOptimizer::fixViolations() {
 
 #ifdef REPORT_TO_TXT
   _db_interface->report()->get_ofstream()
-      << "TO: Total insert " << _inserted_buffer_count << " buffers in " << repair_count
+      << "TO: Total insert " << _number_insert_buffer << " buffers in " << repair_count
       << " nets when fix DRV.\n"
-      << "TO: Total resize " << _resize_instance_count << " instances when fix DRV."
+      << "TO: Total resize " << _number_resized_instance << " instances when fix DRV."
       << endl;
   _db_interface->report()->reportTime(false);
 #endif
@@ -167,9 +167,9 @@ void ViolationOptimizer::fixViolations() {
          cap_violations);
   printf("\t\t\t\t\t\fTO: Total find {%d} nets with long wires.\n", length_violations);
   printf("\t\t\t\t\t\tTO: Total insert {%d} buffers in {%d} nets when fix DRV.\n",
-         _inserted_buffer_count, repair_count);
+         _number_insert_buffer, repair_count);
   printf("\t\t\t\t\t\tTO: Total resize {%d} instances when fix DRV.\n",
-         _resize_instance_count);
+         _number_resized_instance);
 
   printf("Before ViolationFix | slew_vio:%d  cap_vio:%d  length_vio:%d\n",
          slew_violations, cap_violations, length_violations);
@@ -586,7 +586,7 @@ void ViolationOptimizer::insertBuffer(int x, int y, Net *net,
     float area = DesignCalculator::calcMasterArea(master, _dbu);
     increDesignArea(area);
 
-    _inserted_buffer_count++;
+    _number_insert_buffer++;
 
     auto debug_buf_in =
         db_adapter->attach(buffer, buffer_input_port->get_port_name(), in_net);
@@ -618,7 +618,7 @@ void ViolationOptimizer::insertBuffer(int x, int y, Net *net,
                                                                   rsz_net);
             }
           }
-          _resize_instance_count++;
+          _number_resized_instance++;
         }
       }
     }

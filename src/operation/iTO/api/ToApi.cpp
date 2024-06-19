@@ -15,7 +15,6 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 #include "ToApi.hpp"
-#include "CTSViolationFixer.h"
 #include "ToConfig.h"
 #include "api/TimingEngine.hh"
 #include "api/TimingIDBAdapter.hh"
@@ -28,19 +27,6 @@ namespace ito {
 
 ToApi *ToApi::_to_api_instance = nullptr;
 
-Tree *ToApi::get_tree(const int &size) { return new Tree(size); }
-
-void ToApi::addTopoEdge(Tree *topo, const int &first_id, const int &second_id,
-                        const int &x1, const int &y1, const int &x2, const int &y2) {
-  topo->idToLocation(first_id, Point(x1, y1));
-  topo->idToLocation(second_id, Point(x2, y2));
-  topo->add_edge(ito::Edge(first_id, second_id));
-}
-void ToApi::topoIdToDesignObject(ito::Tree *topo, const int &id,
-                                 ista::DesignObject *sta_pin) {
-  topo->idToDesignObject(id, sta_pin);
-}
-void   ToApi::topoSetDriverId(ito::Tree *topo, const int &id) { topo->set_drvr_id(id); }
 ToApi &ToApi::getInst() {
   if (_to_api_instance == nullptr) {
     _to_api_instance = new ToApi();
@@ -144,15 +130,15 @@ void ToApi::optimizeSetup() { _ito->optimizeSetup(); }
 
 void ToApi::optimizeHold() { _ito->optimizeHold(); }
 
-void ToApi::initCTSDesignViolation(idb::IdbBuilder *idb, ista::TimingEngine *timing) {
-  CTSViolationFixer::get_cts_violation_fixer(idb, timing);
-}
+// void ToApi::initCTSDesignViolation(idb::IdbBuilder *idb, ista::TimingEngine *timing) {
+//   CTSViolationFixer::get_cts_violation_fixer(idb, timing);
+// }
 
-std::vector<idb::IdbNet *> ToApi::optimizeCTSDesignViolation(idb::IdbNet *idb_net,
-                                                             Tree        *topo) {
-  CTSViolationFixer *cts_drv_opt = CTSViolationFixer::get_cts_violation_fixer();
-  return cts_drv_opt->fixTiming(idb_net, topo);
-}
+// std::vector<idb::IdbNet *> ToApi::optimizeCTSDesignViolation(idb::IdbNet *idb_net,
+//                                                              Tree        *topo) {
+//   CTSViolationFixer *cts_drv_opt = CTSViolationFixer::get_cts_violation_fixer();
+//   return cts_drv_opt->fixTiming(idb_net, topo);
+// }
 
 void ToApi::saveDef(string saved_def_path) {
   if (saved_def_path.empty()) {

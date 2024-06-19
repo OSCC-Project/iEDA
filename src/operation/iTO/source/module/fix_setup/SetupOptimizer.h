@@ -99,8 +99,8 @@ class SetupOptimizer {
   EstimateParasitics *_parasitics_estimator;
   ViolationOptimizer *_violation_fixer;
 
-  int _resize_instance_count;
-  int _inserted_buffer_count;
+  int _number_resized_instance;
+  int _number_insert_buffer;
 
   // to name the instance
   int _insert_instance_index;

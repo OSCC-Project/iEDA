@@ -28,7 +28,7 @@ int SetupOptimizer::_rise = (int)TransType::kRise - 1;
 int SetupOptimizer::_fall = (int)TransType::kFall - 1;
 
 SetupOptimizer::SetupOptimizer(DbInterface *dbinterface)
-    : _db_interface(dbinterface), _resize_instance_count(0), _inserted_buffer_count(0),
+    : _db_interface(dbinterface), _number_resized_instance(0), _number_insert_buffer(0),
       _insert_instance_index(1), _make_net_index(1) {
   _timing_engine = _db_interface->get_timing_engine();
   _dbu = _db_interface->get_dbu();
@@ -158,11 +158,11 @@ void SetupOptimizer::optimizeSetup() {
   _parasitics_estimator->estimateAllNetParasitics();
   _timing_engine->updateTiming();
 
-  printf("TO: Total insert {%d} buffers when fix setup.\n", _inserted_buffer_count);
-  printf("TO: Total resize {%d} instances when fix setup.\n", _resize_instance_count);
+  printf("TO: Total insert {%d} buffers when fix setup.\n", _number_insert_buffer);
+  printf("TO: Total resize {%d} instances when fix setup.\n", _number_resized_instance);
   _db_interface->report()->get_ofstream()
-      << "TO: Total insert " << _inserted_buffer_count << " buffers when fix setup.\n"
-      << "TO: Total resize " << _resize_instance_count << " instances when fix setup.\n";
+      << "TO: Total insert " << _number_insert_buffer << " buffers when fix setup.\n"
+      << "TO: Total resize " << _number_resized_instance << " instances when fix setup.\n";
   _db_interface->report()->get_ofstream().close();
 
   if (worst_slack < slack_margin) {
@@ -229,7 +229,7 @@ void SetupOptimizer::optimizeSetup(StaSeqPathData *worst_path, TOSlack path_slac
         if (upsized_lib_cell) {
           Instance *drvr_inst = drvr_pin->get_own_instance();
           if (_violation_fixer->repowerInstance(drvr_inst, upsized_lib_cell)) {
-            _resize_instance_count++;
+            _number_resized_instance++;
             _parasitics_estimator->estimateNetParasitics(drvr_pin->get_net());
           }
           break;
@@ -237,9 +237,9 @@ void SetupOptimizer::optimizeSetup(StaSeqPathData *worst_path, TOSlack path_slac
       }
 
       if (fanout > 1 && fanout < _rebuffer_max_fanout) {
-        int count_before = _inserted_buffer_count;
-        performBuffering(drvr_pin); // _inserted_buffer_count++
-        int insert_count = _inserted_buffer_count - count_before;
+        int count_before = _number_insert_buffer;
+        performBuffering(drvr_pin); // _number_insert_buffer++
+        int insert_count = _number_insert_buffer - count_before;
 
         if (insert_count > 0) {
           break;
@@ -314,7 +314,7 @@ void SetupOptimizer::optimizeSetup(StaVertex *vertex, TOSlack path_slack) {
         if (upsized_lib_cell) {
           Instance *drvr_inst = drvr_pin->get_own_instance();
           if (_violation_fixer->repowerInstance(drvr_inst, upsized_lib_cell)) {
-            _resize_instance_count++;
+            _number_resized_instance++;
             _parasitics_estimator->invalidNetRC(drvr_pin->get_net());
           }
           break;
@@ -322,9 +322,9 @@ void SetupOptimizer::optimizeSetup(StaVertex *vertex, TOSlack path_slack) {
       }
 
       if (fanout > 1 && fanout < _rebuffer_max_fanout) {
-        int count_before = _inserted_buffer_count;
-        performBuffering(drvr_pin); // _inserted_buffer_count++
-        int insert_count = _inserted_buffer_count - count_before;
+        int count_before = _number_insert_buffer;
+        performBuffering(drvr_pin); // _number_insert_buffer++
+        int insert_count = _number_insert_buffer - count_before;
 
         if (insert_count > 0) {
           break;
@@ -609,7 +609,7 @@ void SetupOptimizer::topDownImplementBuffering(BufferedOption *buf_opt, Net *net
     // _parasitics_estimator->estimateInvalidNetParasitics(net->getDriver(), net);
     // _parasitics_estimator->estimateInvalidNetParasitics(net2->getDriver(), net2);
 
-    _inserted_buffer_count++;
+    _number_insert_buffer++;
 
     // increase design area
     idb::IdbCellMaster *idb_master = idb_adapter->staToDb(insert_buf_cell);
