@@ -28,8 +28,8 @@
 #include "StaArc.hh"
 #include "ThreadPool/ThreadPool.h"
 #include "Type.hh"
-#include "delay/ArnoldiDelayCal.hh"
 #include "delay/ElmoreDelayCalc.hh"
+#include "delay/ReduceDelayCal.hh"
 #include "netlist/Pin.hh"
 #include "netlist/Port.hh"
 

@@ -23,13 +23,14 @@
  */
 // #include <gperftools/profiler.h>
 
+#include "StaBuildRCTree.hh"
+
 #include <string>
 #include <utility>
 
-#include "StaBuildRCTree.hh"
 #include "ThreadPool/ThreadPool.h"
-#include "delay/ArnoldiDelayCal.hh"
 #include "delay/ElmoreDelayCalc.hh"
+#include "delay/ReduceDelayCal.hh"
 #include "log/Log.hh"
 #include "netlist/Netlist.hh"
 #include "spef/SpefParserRustC.hh"
@@ -209,14 +210,15 @@ void StaBuildRCTree::printYaml(RustSpefNet& spef_net) {
     conn_node[conn_id] = one_node;
     one_node["type"] =
         (rust_spef_conn->_conn_type == RustConnectionType::kINTERNAL) ? "I"
-                                                                     : "P";
+                                                                      : "P";
     one_node["node_name"] = rust_spef_conn->_name;
     one_node["direction"] =
         (rust_spef_conn->_conn_direction == RustConnectionDirection::kOUTPUT)
             ? "O"
-        : (rust_spef_conn->_conn_direction == RustConnectionDirection::kINPUT)
-            ? "I"
-            : "IO";
+            : (rust_spef_conn->_conn_direction ==
+               RustConnectionDirection::kINPUT)
+                  ? "I"
+                  : "IO";
     one_node["coordinate_x"] = rust_spef_conn->_coordinate._x;
     one_node["coordinate_y"] = rust_spef_conn->_coordinate._y;
     one_node["load"] = rust_spef_conn->_load;
@@ -258,8 +260,8 @@ void StaBuildRCTree::printYaml(RustSpefNet& spef_net) {
   i = 0;
   void* spef_net_res;
   FOREACH_VEC_ELEM(&(spef_net._ress), void, spef_net_res) {
-          auto* rust_spef_res = static_cast<RustSpefResCap*>(
-          rust_convert_spef_net_cap_res(spef_net_res));
+    auto* rust_spef_res = static_cast<RustSpefResCap*>(
+        rust_convert_spef_net_cap_res(spef_net_res));
     std::string res_id = Str::printf("resistance_%d", i++);
     YAML::Node one_node;
     resistance_node[res_id] = one_node;
