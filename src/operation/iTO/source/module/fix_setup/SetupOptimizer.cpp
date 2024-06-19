@@ -315,7 +315,7 @@ void SetupOptimizer::optimizeSetup(StaVertex *vertex, TOSlack path_slack) {
           Instance *drvr_inst = drvr_pin->get_own_instance();
           if (_violation_fixer->repowerInstance(drvr_inst, upsized_lib_cell)) {
             _resize_instance_count++;
-            _parasitics_estimator->parasiticsInvalid(drvr_pin->get_net());
+            _parasitics_estimator->invalidNetRC(drvr_pin->get_net());
           }
           break;
         }
@@ -603,8 +603,8 @@ void SetupOptimizer::topDownImplementBuffering(BufferedOption *buf_opt, Net *net
     Point loc = buf_opt->get_location();
     setLocation(buffer, loc.get_x(), loc.get_y());
 
-    _parasitics_estimator->parasiticsInvalid(net);
-    _parasitics_estimator->parasiticsInvalid(net2);
+    _parasitics_estimator->invalidNetRC(net);
+    _parasitics_estimator->invalidNetRC(net2);
 
     // _parasitics_estimator->estimateInvalidNetParasitics(net->getDriver(), net);
     // _parasitics_estimator->estimateInvalidNetParasitics(net2->getDriver(), net2);
@@ -643,8 +643,8 @@ void SetupOptimizer::topDownImplementBuffering(BufferedOption *buf_opt, Net *net
       _timing_engine->insertBuffer(load_inst->get_name());
       // _timing_engine->updateTiming();
 
-      _parasitics_estimator->parasiticsInvalid(load_net);
-      _parasitics_estimator->parasiticsInvalid(net);
+      _parasitics_estimator->invalidNetRC(load_net);
+      _parasitics_estimator->invalidNetRC(net);
 
       // _parasitics_estimator->estimateInvalidNetParasitics(net->getDriver(), net);
       // _parasitics_estimator->estimateInvalidNetParasitics(load_net->getDriver(),
@@ -731,10 +731,10 @@ void SetupOptimizer::insertBufferSeparateLoads(StaVertex *drvr_vertex, TOSlack d
   _violation_fixer->repowerInstance(buffer_out_pin);
   setLocation(buffer, drvr_loc.get_x(), drvr_loc.get_y());
 
-  _parasitics_estimator->parasiticsInvalid(net);
+  _parasitics_estimator->invalidNetRC(net);
   // _parasitics_estimator->estimateInvalidNetParasitics(net->getDriver(), net);
 
-  _parasitics_estimator->parasiticsInvalid(out_net);
+  _parasitics_estimator->invalidNetRC(out_net);
   // _parasitics_estimator->estimateInvalidNetParasitics(out_net->getDriver(), out_net);
 }
 
@@ -810,40 +810,42 @@ LibertyCell *SetupOptimizer::repowerCell(LibertyPort *in_port, LibertyPort *drvr
                                         float load_cap, float prev_drive_resis) {
   LibertyCell           *drvr_lib_cell = drvr_port->get_ower_cell();
   Vector<LibertyCell *> *equiv_lib_cells = _timing_engine->equivCells(drvr_lib_cell);
-  if (equiv_lib_cells) {
-    const char *in_port_name = in_port->get_port_name();
-    const char *drvr_port_name = drvr_port->get_port_name();
+  if (!equiv_lib_cells) {
+    return nullptr;
+  }
 
-    sort(equiv_lib_cells->begin(), equiv_lib_cells->end(),
-         [=](LibertyCell *cell1, LibertyCell *cell2) {
-           LibertyPort *port1 = cell1->get_cell_port_or_port_bus(drvr_port_name);
-           LibertyPort *port2 = cell2->get_cell_port_or_port_bus(drvr_port_name);
-           return (port1->driveResistance() > port2->driveResistance());
-         });
+  const char *in_port_name = in_port->get_port_name();
+  const char *drvr_port_name = drvr_port->get_port_name();
 
-    // float drive = drvr_port->driveResistance();
-    float delay =
-        calcDelayOfGate(drvr_port, load_cap) + prev_drive_resis * in_port->get_port_cap();
+  sort(equiv_lib_cells->begin(), equiv_lib_cells->end(),
+        [=](LibertyCell *cell1, LibertyCell *cell2) {
+          LibertyPort *port1 = cell1->get_cell_port_or_port_bus(drvr_port_name);
+          LibertyPort *port2 = cell2->get_cell_port_or_port_bus(drvr_port_name);
+          return (port1->driveResistance() > port2->driveResistance());
+        });
 
-    for (LibertyCell *equiv : *equiv_lib_cells) {
-      if (strstr(equiv->get_cell_name(), "CLK") != NULL) {
-        continue;
-      }
-      LibertyPort *eq_drvr_port = equiv->get_cell_port_or_port_bus(drvr_port_name);
-      LibertyPort *eq_input_port = equiv->get_cell_port_or_port_bus(in_port_name);
+  // float drive = drvr_port->driveResistance();
+  float delay =
+      calcDelayOfGate(drvr_port, load_cap) + prev_drive_resis * in_port->get_port_cap();
 
-      float eq_cell_delay;
-      if (eq_input_port) {
-        eq_cell_delay = calcDelayOfGate(eq_drvr_port, load_cap);// +
-                      // prev_drive_resis * eq_input_port->get_port_cap();
-      } else {
-        eq_cell_delay =
-            calcDelayOfGate(eq_drvr_port, load_cap);// + prev_drive_resis * in_port->get_port_cap();
-      }
+  for (LibertyCell *equiv_lib_cell : *equiv_lib_cells) {
+    if (strstr(equiv_lib_cell->get_cell_name(), "CLK") != NULL) {
+      continue;
+    }
+    LibertyPort *eq_drvr_port = equiv_lib_cell->get_cell_port_or_port_bus(drvr_port_name);
+    LibertyPort *eq_input_port = equiv_lib_cell->get_cell_port_or_port_bus(in_port_name);
 
-      if (eq_cell_delay < 0.5*delay) {
-        return equiv;
-      }
+    float eq_cell_delay;
+    if (eq_input_port) {
+      eq_cell_delay = calcDelayOfGate(eq_drvr_port, load_cap);// +
+                    // prev_drive_resis * eq_input_port->get_port_cap();
+    } else {
+      eq_cell_delay =
+          calcDelayOfGate(eq_drvr_port, load_cap);// + prev_drive_resis * in_port->get_port_cap();
+    }
+
+    if (eq_cell_delay < 0.5*delay) {
+      return equiv_lib_cell;
     }
   }
   return nullptr;

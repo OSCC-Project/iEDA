@@ -78,7 +78,6 @@ void FixWireLength::fixMaxLength(Net *net, int max_length, bool fix) {
 
 void FixWireLength::fixMaxLength(RoutingTree *tree, int curr_pt, int prev_pt, Net *net,
                                  int max_length, int level,
-                                 // Return values.
                                  int &wire_length, TODesignObjSeq &load_pins) {
   int          left_branch = tree->left(curr_pt);
   int          left_wire_length = 0;

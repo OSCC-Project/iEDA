@@ -44,7 +44,7 @@ class EstimateParasitics {
 
   void estimateNetParasitics(Net *net);
 
-  void parasiticsInvalid(Net *net);
+  void invalidNetRC(Net *net);
 
   void estimateInvalidNetParasitics(DesignObject *drvr_pin_port, Net *net);
 

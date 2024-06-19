@@ -97,7 +97,7 @@ void HoldOptimizer::optimizeHold() {
 
   _db_interface->report()->get_ofstream()
       << "\nTO: Finish hold optimization!\n"
-      << "TO: Total inserted " << _inserted_buffer_count << " hold buffers and "
+      << "TO: Total inserte " << _inserted_buffer_count << " hold buffers and "
       << _inserted_load_buffer_count << " load buffers when fix hold.\n";
 
   reportWNSAndTNS();
@@ -129,7 +129,7 @@ int HoldOptimizer::checkAndOptimizeHold(TOVertexSet  end_points,
       << "\nTO: Beign hold optimization! Hold target slack -> " << _target_slack << endl;
   if (!end_pts_hold_violation.empty()) {
     _db_interface->report()->get_ofstream()
-        << "\nTO: Total found " << end_pts_hold_violation.size()
+        << "\nTO: Total find " << end_pts_hold_violation.size()
         << " endpoints with hold violations in current design.\n";
     _db_interface->report()->get_ofstream().close();
     int repair_count = 1;
@@ -164,7 +164,7 @@ int HoldOptimizer::checkAndOptimizeHold(TOVertexSet  end_points,
                                             worst_slack, _inserted_buffer_count);
 
   _db_interface->report()->get_ofstream()
-      << "TO: Total inserted " << insert_buf_count << " hold buffers when fix hold.\n";
+      << "TO: Total inserte " << insert_buf_count << " hold buffers when fix hold.\n";
   _db_interface->report()->get_ofstream().close();
   return insert_buf_count;
 }
@@ -344,7 +344,7 @@ void HoldOptimizer::insertLoadBuffer(LibertyCell *load_buffer, StaVertex *drvr_v
     _timing_engine->insertBuffer(buffer->get_name());
   }
 
-  _parasitics_estimator->parasiticsInvalid(drvr->get_net());
+  _parasitics_estimator->invalidNetRC(drvr->get_net());
 }
 
 void HoldOptimizer::insertBufferDelay(StaVertex *drvr_vertex, int insert_number,
@@ -385,7 +385,7 @@ void HoldOptimizer::insertBufferDelay(StaVertex *drvr_vertex, int insert_number,
     }
   }
 
-  _parasitics_estimator->parasiticsInvalid(in_net);
+  _parasitics_estimator->invalidNetRC(in_net);
   // Spread buffers between driver and load center.
   IdbCoordinate<int32_t> *loc = idb_adapter->idbLocation(drvr_obj);
   Point                   drvr_pin_loc = Point(loc->get_x(), loc->get_y());
@@ -458,7 +458,7 @@ void HoldOptimizer::insertBufferDelay(StaVertex *drvr_vertex, int insert_number,
     // update in net
     buf_in_net = buf_out_net;
 
-    _parasitics_estimator->parasiticsInvalid(buf_out_net);
+    _parasitics_estimator->invalidNetRC(buf_out_net);
 
     _timing_engine->insertBuffer(buffer->get_name());
     insert_inst_name.push_back(buffer->get_name());
@@ -507,7 +507,6 @@ float HoldOptimizer::calcHoldDelayOfBuffer(LibertyCell *buffer) {
 }
 
 void HoldOptimizer::findEndpointsWithHoldViolation(TOVertexSet end_points,
-                                                   // return values
                                                    TOSlack     &worst_slack,
                                                    TOVertexSet &hold_violations) {
   worst_slack = kInf;

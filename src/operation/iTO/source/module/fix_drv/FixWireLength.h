@@ -37,9 +37,7 @@ class FixWireLength {
  private:
 
   void fixMaxLength(RoutingTree *tree, int curr_pt, int prev_pt, Net *net, int max_length,
-                    int level,
-                    // Return values.
-                    int &wire_length, TODesignObjSeq &load_pins);
+                    int level, int &wire_length, TODesignObjSeq &load_pins);
 
   template <class T1, class T2>
   void determineFixSide(T1 max_numb, T2 left, T2 middle, T2 right, bool &fix_left,

@@ -157,7 +157,7 @@ void ViolationOptimizer::fixViolations() {
   _db_interface->report()->get_ofstream()
       << "TO: Total insert " << _inserted_buffer_count << " buffers in " << repair_count
       << " nets when fix DRV.\n"
-      << "TO: Total resized " << _resize_instance_count << " instances when fix DRV."
+      << "TO: Total resize " << _resize_instance_count << " instances when fix DRV."
       << endl;
   _db_interface->report()->reportTime(false);
 #endif
@@ -168,7 +168,7 @@ void ViolationOptimizer::fixViolations() {
   printf("\t\t\t\t\t\fTO: Total find {%d} nets with long wires.\n", length_violations);
   printf("\t\t\t\t\t\tTO: Total insert {%d} buffers in {%d} nets when fix DRV.\n",
          _inserted_buffer_count, repair_count);
-  printf("\t\t\t\t\t\tTO: Total resized {%d} instances when fix DRV.\n",
+  printf("\t\t\t\t\t\tTO: Total resize {%d} instances when fix DRV.\n",
          _resize_instance_count);
 
   printf("Before ViolationFix | slew_vio:%d  cap_vio:%d  length_vio:%d\n",
@@ -613,7 +613,7 @@ void ViolationOptimizer::insertBuffer(int x, int y, Net *net,
           FOREACH_INSTANCE_PIN(inst, rsz_pin) {
             Net *rsz_net = rsz_pin->get_net();
             if (rsz_net) {
-              _parasitics_estimator->parasiticsInvalid(rsz_net);
+              _parasitics_estimator->invalidNetRC(rsz_net);
               _parasitics_estimator->estimateInvalidNetParasitics(rsz_net->getDriver(),
                                                                   rsz_net);
             }
@@ -625,8 +625,8 @@ void ViolationOptimizer::insertBuffer(int x, int y, Net *net,
 
     setLocation(buffer, x, y);
 
-    _parasitics_estimator->parasiticsInvalid(in_net);
-    _parasitics_estimator->parasiticsInvalid(out_net);
+    _parasitics_estimator->invalidNetRC(in_net);
+    _parasitics_estimator->invalidNetRC(out_net);
 
     _parasitics_estimator->estimateInvalidNetParasitics(in_net->getDriver(), in_net);
     _parasitics_estimator->estimateInvalidNetParasitics(out_net->getDriver(), out_net);
@@ -767,7 +767,6 @@ double ViolationOptimizer::calcDelayOfBuffer(LibertyCell *buffer_cell, float loa
 }
 
 void ViolationOptimizer::checkCapacitanceViolation(DesignObject *drvr_pin,
-                                                   // return values
                                                    double &max_drvr_cap,
                                                    int    &cap_violations,
                                                    bool   &repair_cap) {
@@ -788,7 +787,6 @@ void ViolationOptimizer::checkCapacitanceViolation(DesignObject *drvr_pin,
 }
 
 void ViolationOptimizer::checkSlewViolation(DesignObject *drvr_pin,
-                                            // return values
                                             double &max_drvr_cap, int &slew_violations,
                                             bool &repair_slew) {
   float slew_slack1 = kInf;
@@ -883,7 +881,6 @@ double ViolationOptimizer::calcSlewDiff(LibertyPort *drvr_port, double target_sl
 }
 
 void ViolationOptimizer::calcGateRiseFallDelays(LibertyPort *drvr_port, float load_cap,
-                                                // return values.
                                                 TODelay delays[], TOSlew slews[]) {
   for (int rf_index = 0; rf_index < 2; rf_index++) {
     delays[rf_index] = -kInf;
@@ -916,7 +913,6 @@ void ViolationOptimizer::calcGateRiseFallDelays(LibertyPort *drvr_port, float lo
 }
 
 void ViolationOptimizer::gateRiseFallDelay(TransType rf, LibertyArc *arc, float load_cap,
-                                           // return values.
                                            TODelay delays[], TOSlew slews[]) {
   int     rise_fall = (int)rf - 1;
   float   in_slew = _db_interface->get_target_slews()[rise_fall];

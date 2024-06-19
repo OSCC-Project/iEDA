@@ -137,12 +137,11 @@ class DbInterface {
                    TOSlew slews[], int counts[]);
 
   void  calcTargetLoad(LibertyCell *cell);
-  void  calcTargetLoad(LibertyCell *cell, LibertyArc *arc, TransType rf,
-                       float &target_load_sum, int &arc_count);
-  float calcTargetLoad(LibertyCell *cell, LibertyArc *arc, TransType in_type,
-                       TransType out_type);
-  TOSlew  gateSlewDiff(TransType in_type, LibertyCell *cell, float load_cap, TOSlew in_slew,
-                     TOSlew out_slew, LibertyArc *arc);
+  void   calcTargetLoad(LibertyArc *arc, TransType rf, float &target_load_sum,
+                        int &arc_count);
+  float  calcTargetLoad(LibertyArc *arc, TransType in_type, TransType out_type);
+  TOSlew calcSlewDiffOfGate(TransType in_type, float load_cap, TOSlew in_slew,
+                            TOSlew out_slew, LibertyArc *arc);
 
   static DbInterface *_db_interface;
 
