@@ -214,9 +214,9 @@ class Sta {
   }
   auto& get_top_module_name() { return _top_module_name; }
 
-  void readVerilog(const char* verilog_file);
+  unsigned readVerilog(const char* verilog_file);
   void linkDesign(const char* top_cell_name);
-  void readVerilogWithRustParser(const char* verilog_file);
+  unsigned readVerilogWithRustParser(const char* verilog_file);
   void linkDesignWithRustParser(const char* top_cell_name);
   void set_design_name(const char* design_name) {
     _netlist.set_name(design_name);
