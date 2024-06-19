@@ -1236,7 +1236,7 @@ namespace ipl {
   {
     // diverged control.
     if (_nes_database->_is_diverged) {
-      LOG_ERROR << "Detect diverged, the reason may be parameters setting.";
+      LOG_ERROR << "Detect diverged, The reason may be parameters setting.";
       return;
     }
 
@@ -1252,8 +1252,8 @@ namespace ipl {
     std::vector<Point<float>> next_slp_sum_grad_list(inst_size, Point<float>());
 
     // divergence detection
-    float min_sum_overflow = 1e30;
-    float hpwl_with_min_sum_overflow = 1e30;
+    float min_sum_overflow = 1e25;
+    float hpwl_with_min_sum_overflow = 1e25;
 
     Rectangle<int32_t> core_shape = _nes_database->_placer_db->get_layout()->get_core_shape();
 
@@ -1302,7 +1302,7 @@ namespace ipl {
       // _nes_database->_bin_grid->plotRouteCap();
     }
 
-    // core Nesterov loop.
+    // algorithm core loop.
     for (int32_t iter_num = 1; iter_num <= _nes_config.get_max_iter(); iter_num++) {
       solver->runNextIter(iter_num, _nes_config.get_thread_num());
       int32_t num_backtrack = 0;
@@ -1389,11 +1389,9 @@ namespace ipl {
         }
       }
 
-      // usually, max back track should be 1~3
-      // 10 is the case when all of cells are not moved at all.
       if (num_backtrack == _nes_config.get_max_back_track()) {
-        LOG_ERROR << "divergence detected. \n"
-          << " please decrease init_density_penalty value";
+        LOG_ERROR << "Detect divergence," 
+          << " The reason may be high init_density_penalty value";
         _nes_database->_is_diverged = true;
       }
 
@@ -1422,15 +1420,14 @@ namespace ipl {
           // update net weight.
           updateTimingNetWeight();
           --cur_opt_overflow_step;
-          LOG_INFO << "[NesterovSolve] update netweight for timing improvement.";
+          LOG_INFO << "[NesterovSolve] Update netweight for timing improvement.";
         }
       }
 
       updateWirelengthCoef(sum_overflow);
-      // dynamic adjustment for better convergence with large designs
       if (!is_max_phi_coef_changed && sum_overflow < 0.35f) {
         is_max_phi_coef_changed = true;
-        _nes_config.set_max_phi_coef(0.99 * _nes_config.get_max_phi_coef());
+        _nes_config.set_max_phi_coef(0.985 * _nes_config.get_max_phi_coef());
       }
 
       hpwl = _nes_database->_wirelength->obtainTotalWirelength();
@@ -1466,9 +1463,9 @@ namespace ipl {
         hpwl_with_min_sum_overflow = prev_hpwl;
       }
 
-      if (sum_overflow < 0.3f && sum_overflow - min_sum_overflow >= 0.02f && hpwl_with_min_sum_overflow * 1.2f < prev_hpwl) {
+      if (sum_overflow < 0.32f && sum_overflow - min_sum_overflow >= 0.05f && hpwl_with_min_sum_overflow * 1.25f < prev_hpwl) {
         LOG_ERROR << "Detect divergence. \n"
-          << "    the reason may be max_phi_cof value: try to decrease max_phi_cof";
+          << "    The reason may be max_phi_cof value: try to decrease max_phi_cof";
         _nes_database->_is_diverged = true;
         break;
       }
@@ -1512,8 +1509,8 @@ namespace ipl {
         }
       }
 
-      // minimun iteration is 50
-      if ((iter_num > 50 && sum_overflow <= _nes_config.get_target_overflow()) || stop_placement) {
+      // minimun iteration is 30
+      if ((iter_num > 30 && sum_overflow <= _nes_config.get_target_overflow()) || stop_placement) {
         if (PRINT_LONG_NET) {
           long_net_stream << "CURRENT ITERATION: " << iter_num << std::endl;
           long_net_stream << std::endl;
