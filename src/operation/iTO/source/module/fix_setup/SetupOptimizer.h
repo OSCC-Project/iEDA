@@ -46,8 +46,8 @@ class SetupOptimizer {
  private:
   void initBufferCell();
 
-  void optimizeSetup(StaSeqPathData *worst_path, TOSlack path_slack);
-  void optimizeSetup(StaVertex *vertex, TOSlack path_slack);
+  void optimizeSetup(StaSeqPathData *worst_path, TOSlack path_slack, bool only_gs = false);
+  void optimizeSetup(StaVertex *vertex, TOSlack path_slack, bool only_gs = false);
 
   void performBuffering(Pin *pin);
 

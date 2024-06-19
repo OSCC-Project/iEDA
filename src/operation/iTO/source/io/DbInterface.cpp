@@ -357,7 +357,7 @@ TOSlew DbInterface::calcSlewDiffOfGate(TransType in_type, float load_cap, TOSlew
   return slew - out_slew;
 }
 
-bool DbInterface::overMaxArea() {
+bool DbInterface::reachMaxArea() {
   double max_utilization = _config->get_max_utilization();
   // initBlock();
   double core_area = DesignCalculator::calculateCoreArea(_core, _dbu);

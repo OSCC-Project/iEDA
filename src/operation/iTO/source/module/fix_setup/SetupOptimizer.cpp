@@ -69,7 +69,6 @@ void SetupOptimizer::optimizeSetup() {
   LOG_ERROR_IF(_available_buffer_cells.empty()) << "Can not found specified buffers.\n";
 
   TOSlack prev_worst_slack = -kInf;
-  int   pass = 1;
   int   number_of_decreasing_slack_iter = 0;
 
   float slack_margin = _db_interface->get_setup_target_slack();
@@ -93,6 +92,11 @@ void SetupOptimizer::optimizeSetup() {
   _db_interface->report()->get_ofstream()
       << "TO: Total find " << (int)end_pts_setup_violation.size() << " endpoints with setup violation in current design.\n";
   _db_interface->report()->get_ofstream().close();
+
+  for (auto node : end_pts_setup_violation) {
+    optimizeSetup(node, worst_slack, true);
+  }
+  _parasitics_estimator->excuteParasiticsEstimate();
 
   // slack violation
   for (auto node : end_pts_setup_violation) {
@@ -148,10 +152,6 @@ void SetupOptimizer::optimizeSetup() {
         number_of_decreasing_slack_iter = 0;
       }
     }
-    // if (_db_interface->overMaxArea()) {
-    //   break;
-    // }
-    pass++;
   }
   _db_interface->report()->reportSetupResult(slack_store);
 
@@ -170,7 +170,7 @@ void SetupOptimizer::optimizeSetup() {
     _db_interface->report()->get_ofstream() << "TO: Failed to fix all setup violations in current design.\n";
     _db_interface->report()->get_ofstream().close();
   }
-  if (_db_interface->overMaxArea()) {
+  if (_db_interface->reachMaxArea()) {
     printf("TO: Reach the maximum utilization of current design.\n");
     _db_interface->report()->get_ofstream() << "TO: Reach the maximum utilization of current design.\n";
     _db_interface->report()->get_ofstream().close();
@@ -180,7 +180,7 @@ void SetupOptimizer::optimizeSetup() {
   _db_interface->report()->reportTime(false);
 }
 
-void SetupOptimizer::optimizeSetup(StaSeqPathData *worst_path, TOSlack path_slack) {
+void SetupOptimizer::optimizeSetup(StaSeqPathData *worst_path, TOSlack path_slack, bool only_gs) {
   vector<TimingEngine::PathNet> path_driver_vertexs =
       _timing_engine->getPathDriverVertexs(worst_path);
   int path_length = path_driver_vertexs.size();
@@ -236,6 +236,10 @@ void SetupOptimizer::optimizeSetup(StaSeqPathData *worst_path, TOSlack path_slac
         }
       }
 
+      if (only_gs) {
+        break;
+      }
+
       if (fanout > 1 && fanout < _rebuffer_max_fanout) {
         int count_before = _number_insert_buffer;
         performBuffering(drvr_pin); // _number_insert_buffer++
@@ -256,7 +260,7 @@ void SetupOptimizer::optimizeSetup(StaSeqPathData *worst_path, TOSlack path_slac
   }
 }
 
-void SetupOptimizer::optimizeSetup(StaVertex *vertex, TOSlack path_slack) {
+void SetupOptimizer::optimizeSetup(StaVertex *vertex, TOSlack path_slack, bool only_gs) {
   StaSeqPathData *worst_path_rise = _timing_engine->vertexWorstRequiredPath(
       vertex, AnalysisMode::kMax, TransType::kRise);
   StaSeqPathData *worst_path_fall = _timing_engine->vertexWorstRequiredPath(
@@ -319,6 +323,10 @@ void SetupOptimizer::optimizeSetup(StaVertex *vertex, TOSlack path_slack) {
           }
           break;
         }
+      }
+
+      if (only_gs) {
+        break;
       }
 
       if (fanout > 1 && fanout < _rebuffer_max_fanout) {

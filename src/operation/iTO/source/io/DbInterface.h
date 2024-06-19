@@ -101,7 +101,7 @@ class DbInterface {
 
   void increDesignArea(float delta) { _design_area += delta; }
 
-  bool overMaxArea();
+  bool reachMaxArea();
 
   bool canFindLibertyCell(LibertyCell *cell);
 

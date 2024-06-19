@@ -89,7 +89,7 @@ void HoldOptimizer::optimizeHold() {
     _db_interface->report()->report(
         "TO: Reach the maximum number of buffers that can be inserted.\n");
   }
-  if (_db_interface->overMaxArea()) {
+  if (_db_interface->reachMaxArea()) {
     printf("TO: Reach the maximum utilization of current design.\n");
     _db_interface->report()->report(
         "TO: Reach the maximum utilization of current design.\n");
@@ -136,7 +136,7 @@ int HoldOptimizer::checkAndOptimizeHold(TOVertexSet  end_points,
 
     while (exit_vioaltion &&
            _number_insert_buffer < _max_numb_insert_buf &&
-           !_db_interface->overMaxArea() && repair_count > 0) {
+           !_db_interface->reachMaxArea() && repair_count > 0) {
       TOVertexSet fanins = getFanins(end_pts_hold_violation);
 
       TOVertexSeq sorted_fanins = sortFanins(fanins);
@@ -287,7 +287,7 @@ int HoldOptimizer::fixHoldVioPath(TOVertexSeq fanins, LibertyCell *insert_buffer
       insert_buffer_count += insert_number;
       insertBufferDelay(vertex, insert_number, load_pins, insert_buffer_cell);
 
-      if (_number_insert_buffer > _max_numb_insert_buf || _db_interface->overMaxArea()) {
+      if (_number_insert_buffer > _max_numb_insert_buf || _db_interface->reachMaxArea()) {
         // return repair_pass_count;
         return insert_buffer_count;
       }
