@@ -311,12 +311,12 @@ void HoldOptimizer::insertLoadBuffer(LibertyCell *load_buffer, StaVertex *drvr_v
   for (int i = 0; i < insert_num; i++) {
     std::string buffer_name = ("hold_load_buf_" + to_string(_insert_instance_index));
     _insert_instance_index++;
-    auto buffer = idb_adapter->makeInstance(load_buffer, buffer_name.c_str());
+    auto buffer = idb_adapter->createInstance(load_buffer, buffer_name.c_str());
 
     LibertyPort *input, *output;
     load_buffer->bufferPorts(input, output);
     auto debug_buf_in =
-        idb_adapter->connect(buffer, input->get_port_name(), drvr->get_net());
+        idb_adapter->attach(buffer, input->get_port_name(), drvr->get_net());
     LOG_ERROR_IF(!debug_buf_in);
 
     int loc_x = drvr_pin_loc.get_x();
@@ -345,9 +345,9 @@ void HoldOptimizer::insertLoadBuffer(LibertyCell *load_buffer, StaVertex *drvr_v
 
 void HoldOptimizer::insertBufferDelay(StaVertex *drvr_vertex, int insert_number,
                                       DesignObjSeq &load_pins,
-                                      LibertyCell  *insert_buffer_cell) {
+                                      LibertyCell * insert_buffer_cell) {
   auto *drvr_obj = drvr_vertex->get_design_obj();
-  Net  *drvr_net = drvr_obj->get_net();
+  Net * drvr_net = drvr_obj->get_net();
 
   TimingIDBAdapter *idb_adapter = dynamic_cast<TimingIDBAdapter *>(_db_adapter);
 
@@ -359,7 +359,7 @@ void HoldOptimizer::insertBufferDelay(StaVertex *drvr_vertex, int insert_number,
   std::string net_name = ("hold_net_" + to_string(_make_net_index));
   _make_net_index++;
 
-  out_net = idb_adapter->makeNet(net_name.c_str(), nullptr);
+  out_net = idb_adapter->createNet(net_name.c_str(), nullptr);
   // Copy signal type to new net.
   idb::IdbNet *out_net_db = idb_adapter->staToDb(out_net);
   idb::IdbNet *in_net_db = idb_adapter->staToDb(in_net);
@@ -367,16 +367,16 @@ void HoldOptimizer::insertBufferDelay(StaVertex *drvr_vertex, int insert_number,
 
   for (auto *pin_port : load_pins) {
     if (pin_port->isPin()) {
-      Pin      *load_pin = dynamic_cast<Pin *>(pin_port);
+      Pin *     load_pin = dynamic_cast<Pin *>(pin_port);
       Instance *load_inst = load_pin->get_own_instance();
       // idb_adapter->disconnectPin(load_pin);
-      idb_adapter->disconnectPinPort(pin_port);
-      auto debug = idb_adapter->connect(load_inst, load_pin->get_name(), out_net);
+      idb_adapter->disattachPinPort(pin_port);
+      auto debug = idb_adapter->attach(load_inst, load_pin->get_name(), out_net);
       LOG_ERROR_IF(!debug);
     } else if (pin_port->isPort()) {
       Port *load_port = dynamic_cast<Port *>(pin_port);
-      idb_adapter->disconnectPinPort(pin_port);
-      auto debug = idb_adapter->connect(load_port, load_port->get_name(), out_net);
+      idb_adapter->disattachPinPort(pin_port);
+      auto debug = idb_adapter->attach(load_port, load_port->get_name(), out_net);
       LOG_ERROR_IF(!debug);
     }
   }
@@ -401,8 +401,8 @@ void HoldOptimizer::insertBufferDelay(StaVertex *drvr_vertex, int insert_number,
   int dx = (drvr_pin_loc.get_x() - center_x) / (insert_number + 1);
   int dy = (drvr_pin_loc.get_y() - center_y) / (insert_number + 1);
 
-  Net         *buf_in_net = in_net;
-  Instance    *buffer = nullptr;
+  Net *        buf_in_net = in_net;
+  Instance *   buffer = nullptr;
   LibertyPort *input, *output;
   insert_buffer_cell->bufferPorts(input, output);
 
@@ -416,7 +416,7 @@ void HoldOptimizer::insertBufferDelay(StaVertex *drvr_vertex, int insert_number,
       std::string net_name = ("hold_net_" + to_string(_make_net_index));
       _make_net_index++;
 
-      buf_out_net = idb_adapter->makeNet(net_name.c_str(), nullptr);
+      buf_out_net = idb_adapter->createNet(net_name.c_str(), nullptr);
     }
 
     // Copy signal type to new net.
@@ -425,13 +425,13 @@ void HoldOptimizer::insertBufferDelay(StaVertex *drvr_vertex, int insert_number,
 
     std::string buffer_name = ("hold_buf_" + to_string(_insert_instance_index));
     _insert_instance_index++;
-    buffer = idb_adapter->makeInstance(insert_buffer_cell, buffer_name.c_str());
+    buffer = idb_adapter->createInstance(insert_buffer_cell, buffer_name.c_str());
 
     _inserted_buffer_count++;
 
-    auto debug_buf_in = idb_adapter->connect(buffer, input->get_port_name(), buf_in_net);
+    auto debug_buf_in = idb_adapter->attach(buffer, input->get_port_name(), buf_in_net);
     auto debug_buf_out =
-        idb_adapter->connect(buffer, output->get_port_name(), buf_out_net);
+        idb_adapter->attach(buffer, output->get_port_name(), buf_out_net);
     LOG_ERROR_IF(!debug_buf_in);
     LOG_ERROR_IF(!debug_buf_out);
 
@@ -462,7 +462,7 @@ void HoldOptimizer::insertBufferDelay(StaVertex *drvr_vertex, int insert_number,
 
     // increase design area
     idb::IdbCellMaster *idb_master = idb_adapter->staToDb(insert_buffer_cell);
-    Master             *master = new Master(idb_master);
+    Master *            master = new Master(idb_master);
 
     float area = DesignCalculator::calcMasterArea(master, _dbu);
     _violation_fixer->increDesignArea(area);
@@ -505,7 +505,7 @@ float HoldOptimizer::getBufferHoldDelay(LibertyCell *buffer) {
 
 void HoldOptimizer::findEndpointsWithHoldViolation(VertexSet end_points,
                                                    // return values
-                                                   Slack     &worst_slack,
+                                                   Slack &    worst_slack,
                                                    VertexSet &hold_violations) {
   worst_slack = kInf;
   hold_violations.clear();
@@ -569,8 +569,8 @@ void HoldOptimizer::setLocation(Instance *inst, int x, int y) {
 
 VertexSet HoldOptimizer::getEndPoints() {
   VertexSet  end_points;
-  auto      *ista = _timing_engine->get_ista();
-  StaGraph  *the_graph = &(ista->get_graph());
+  auto *     ista = _timing_engine->get_ista();
+  StaGraph * the_graph = &(ista->get_graph());
   StaVertex *vertex;
   FOREACH_END_VERTEX(the_graph, vertex) { end_points.insert(vertex); }
   return end_points;
@@ -649,19 +649,19 @@ Slack HoldOptimizer::getWorstSlack(StaVertex *vertex, AnalysisMode mode) {
 
 void HoldOptimizer::insertHoldDelay(string insert_buf_name, string pin_name,
                                     int insert_number) {
-  ista::Sta   *ista = _timing_engine->get_ista();
+  ista::Sta *  ista = _timing_engine->get_ista();
   LibertyCell *insert_buffer_cell = ista->findLibertyCell(insert_buf_name.c_str());
   LibertyPort *input, *output;
   insert_buffer_cell->bufferPorts(input, output);
 
   // iSta ->findPin
-  StaVertex    *vertex = ista->findVertex(pin_name.c_str());
+  StaVertex *   vertex = ista->findVertex(pin_name.c_str());
   DesignObject *load_obj = vertex->get_design_obj();
-  Net          *net = load_obj->get_net();
+  Net *         net = load_obj->get_net();
 
   DesignObject *drvr_obj = net->getDriver();
 
-  Net              *drvr_net = net;
+  Net *             drvr_net = net;
   TimingIDBAdapter *idb_adapter = dynamic_cast<TimingIDBAdapter *>(_db_adapter);
 
   // make net
@@ -670,7 +670,7 @@ void HoldOptimizer::insertHoldDelay(string insert_buf_name, string pin_name,
   std::string net_name =
       ("hold_net_byhand_" + to_string(_db_interface->make_net_index()));
   _db_interface->make_net_index()++;
-  out_net = idb_adapter->makeNet(net_name.c_str(), nullptr);
+  out_net = idb_adapter->createNet(net_name.c_str(), nullptr);
 
   // Copy signal type to new net.
   idb::IdbNet *out_net_db = idb_adapter->staToDb(out_net);
@@ -681,15 +681,15 @@ void HoldOptimizer::insertHoldDelay(string insert_buf_name, string pin_name,
    * @brief move load pin to outnet
    */
   if (load_obj->isPin()) {
-    Pin      *load_pin = dynamic_cast<Pin *>(load_obj);
+    Pin *     load_pin = dynamic_cast<Pin *>(load_obj);
     Instance *load_inst = load_pin->get_own_instance();
-    idb_adapter->disconnectPinPort(load_pin);
-    auto debug = idb_adapter->connect(load_inst, load_pin->get_name(), out_net);
+    idb_adapter->disattachPinPort(load_pin);
+    auto debug = idb_adapter->attach(load_inst, load_pin->get_name(), out_net);
     LOG_ERROR_IF(!debug);
   } else if (load_obj->isPort()) {
     Port *load_port = dynamic_cast<Port *>(load_obj);
-    idb_adapter->disconnectPinPort(load_port);
-    auto debug = idb_adapter->connect(load_port, load_port->get_name(), out_net);
+    idb_adapter->disattachPinPort(load_port);
+    auto debug = idb_adapter->attach(load_port, load_port->get_name(), out_net);
     LOG_ERROR_IF(!debug);
   }
 
@@ -714,7 +714,7 @@ void HoldOptimizer::insertHoldDelay(string insert_buf_name, string pin_name,
           ("hold_net_byhand_" + to_string(_db_interface->make_net_index()));
       _db_interface->make_net_index()++;
 
-      buf_out_net = idb_adapter->makeNet(net_name.c_str(), nullptr);
+      buf_out_net = idb_adapter->createNet(net_name.c_str(), nullptr);
     }
 
     // Copy signal type to new net.
@@ -725,13 +725,14 @@ void HoldOptimizer::insertHoldDelay(string insert_buf_name, string pin_name,
     std::string buffer_name =
         ("hold_buf_byhand_" + to_string(_db_interface->make_instance_index()));
     _db_interface->make_instance_index()++;
-    Instance *buffer = idb_adapter->makeInstance(insert_buffer_cell, buffer_name.c_str());
+    Instance *buffer =
+        idb_adapter->createInstance(insert_buffer_cell, buffer_name.c_str());
 
     _inserted_buffer_count++;
 
-    auto debug_buf_in = idb_adapter->connect(buffer, input->get_port_name(), buf_in_net);
+    auto debug_buf_in = idb_adapter->attach(buffer, input->get_port_name(), buf_in_net);
     auto debug_buf_out =
-        idb_adapter->connect(buffer, output->get_port_name(), buf_out_net);
+        idb_adapter->attach(buffer, output->get_port_name(), buf_out_net);
     LOG_ERROR_IF(!debug_buf_in);
     LOG_ERROR_IF(!debug_buf_out);
 

@@ -558,7 +558,7 @@ void ViolationOptimizer::insertBuffer(int x, int y, Net *net,
     // make net name
     std::string net_name = ("DRV_net_" + to_string(_make_net_index));
     _make_net_index++;
-    out_net = db_adapter->makeNet(net_name.c_str(), nullptr);
+    out_net = db_adapter->createNet(net_name.c_str(), nullptr);
     // Copy signal type to new net.
     idb::IdbNet *out_net_db = db_adapter->staToDb(out_net);
     idb::IdbNet *in_net_db = db_adapter->staToDb(in_net);
@@ -570,12 +570,12 @@ void ViolationOptimizer::insertBuffer(int x, int y, Net *net,
         Pin *     pin = dynamic_cast<Pin *>(pin_port);
         Instance *inst = pin->get_own_instance();
 
-        db_adapter->disconnectPin(pin);
-        auto debug = db_adapter->connect(inst, pin->get_name(), out_net);
+        db_adapter->disattachPin(pin);
+        auto debug = db_adapter->attach(inst, pin->get_name(), out_net);
         LOG_ERROR_IF(!debug);
       }
     }
-    Instance *buffer = db_adapter->makeInstance(insert_buf_cell, buffer_name.c_str());
+    Instance *buffer = db_adapter->createInstance(insert_buf_cell, buffer_name.c_str());
 
     idb::IdbCellMaster *idb_master = db_adapter->staToDb(insert_buf_cell);
     Master *            master = new Master(idb_master);
@@ -586,9 +586,9 @@ void ViolationOptimizer::insertBuffer(int x, int y, Net *net,
     _inserted_buffer_count++;
 
     auto debug_buf_in =
-        db_adapter->connect(buffer, buffer_input_port->get_port_name(), in_net);
+        db_adapter->attach(buffer, buffer_input_port->get_port_name(), in_net);
     auto debug_buf_out =
-        db_adapter->connect(buffer, buffer_output_port->get_port_name(), out_net);
+        db_adapter->attach(buffer, buffer_output_port->get_port_name(), out_net);
     LOG_ERROR_IF(!debug_buf_in);
     LOG_ERROR_IF(!debug_buf_out);
 
@@ -753,7 +753,7 @@ bool ViolationOptimizer::repowerInstance(Instance *inst, LibertyCell *replace) {
     Master *replace_master = new Master(replace_master_idb);
     float   area_replace_master = DesignCalculator::calcMasterArea(replace_master, _dbu);
 
-    idb_adapter->replaceCell(inst, replace);
+    idb_adapter->substituteCell(inst, replace);
     _timing_engine->repowerInstance(inst->get_name(), replace->get_cell_name());
     increDesignArea(area_replace_master);
 

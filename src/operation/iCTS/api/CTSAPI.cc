@@ -439,7 +439,7 @@ icts::CtsPin* CTSAPI::findDriverPin(icts::CtsNet* net)
 std::map<std::string, double> CTSAPI::elmoreDelay(const icts::EvalNet& eval_net)
 {
   auto* db_adapter = getStaDbAdapter();
-  auto* sta_net = db_adapter->makeNet(eval_net.get_name().c_str(), nullptr);
+  auto* sta_net = db_adapter->createNet(eval_net.get_name().c_str(), nullptr);
   buildRCTree(eval_net);
   auto* rc_net = _timing_engine->get_ista()->getRcNet(sta_net);
   auto* rc_tree = rc_net->rct();
@@ -452,7 +452,7 @@ std::map<std::string, double> CTSAPI::elmoreDelay(const icts::EvalNet& eval_net)
     auto delay = rc_tree->delay(pin_name);
     delay_map[pin->get_instance()->get_name()] = delay;
   }
-  db_adapter->removeNet(sta_net);
+  db_adapter->deleteNet(sta_net);
   return delay_map;
 }
 
@@ -706,7 +706,7 @@ bool CTSAPI::isInDie(const icts::Point& point) const
 idb::IdbInstance* CTSAPI::makeIdbInstance(const std::string& inst_name, const std::string& cell_master)
 {
   auto* db_adapter = getStaDbAdapter();
-  auto sta_inst = db_adapter->makeInstance(_timing_engine->findLibertyCell(cell_master.c_str()), inst_name.c_str());
+  auto sta_inst = db_adapter->createInstance(_timing_engine->findLibertyCell(cell_master.c_str()), inst_name.c_str());
   auto idb_inst = db_adapter->staToDb(sta_inst);
   return idb_inst;
 }
@@ -714,7 +714,7 @@ idb::IdbInstance* CTSAPI::makeIdbInstance(const std::string& inst_name, const st
 idb::IdbNet* CTSAPI::makeIdbNet(const std::string& net_name)
 {
   auto* db_adapter = getStaDbAdapter();
-  auto sta_net = db_adapter->makeNet(net_name.c_str(), nullptr);
+  auto sta_net = db_adapter->createNet(net_name.c_str(), nullptr);
   auto idb_net = db_adapter->staToDb(sta_net);
   return idb_net;
 }
@@ -722,7 +722,7 @@ idb::IdbNet* CTSAPI::makeIdbNet(const std::string& net_name)
 void CTSAPI::linkIdbNetToSta(idb::IdbNet* idb_net)
 {
   auto* db_adapter = getStaDbAdapter();
-  auto sta_net = db_adapter->makeNet(idb_net->get_net_name().c_str(), nullptr);
+  auto sta_net = db_adapter->createNet(idb_net->get_net_name().c_str(), nullptr);
   db_adapter->crossRef(sta_net, idb_net);
 }
 
@@ -730,7 +730,7 @@ void CTSAPI::disconnect(idb::IdbPin* pin)
 {
   auto* db_adapter = getStaDbAdapter();
   auto sta_pin = db_adapter->dbToStaPin(pin);
-  db_adapter->disconnectPin(sta_pin);
+  db_adapter->disattachPin(sta_pin);
 }
 
 void CTSAPI::connect(idb::IdbInstance* idb_inst, const std::string& pin_name, idb::IdbNet* net)
@@ -738,7 +738,7 @@ void CTSAPI::connect(idb::IdbInstance* idb_inst, const std::string& pin_name, id
   auto* db_adapter = getStaDbAdapter();
   auto sta_inst = _timing_engine->get_netlist()->findInstance(idb_inst->get_name().c_str());
   auto sta_net = db_adapter->dbToSta(net);
-  db_adapter->connect(sta_inst, pin_name.c_str(), sta_net);
+  db_adapter->attach(sta_inst, pin_name.c_str(), sta_net);
 }
 
 void CTSAPI::insertBuffer(const std::string& name)
@@ -920,10 +920,7 @@ void CTSAPI::latencySkewLog() const
       ista::StaPathEnd* path_end;
       ista::StaPathData* path_data;
       FOREACH_PATH_GROUP_END(seq_path_group.get(), path_end)
-      FOREACH_PATH_END_DATA(path_end, mode, path_data)
-      {
-        seq_data_queue.push(path_data);
-      }
+      FOREACH_PATH_END_DATA(path_end, mode, path_data) { seq_data_queue.push(path_data); }
       auto* worst_seq_data = seq_data_queue.top();
       auto* launch_clock_data = worst_seq_data->get_launch_clock_data();
       auto* capture_clock_data = worst_seq_data->get_capture_clock_data();
