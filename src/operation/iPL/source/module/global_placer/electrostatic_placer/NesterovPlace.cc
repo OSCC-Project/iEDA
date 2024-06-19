@@ -1251,14 +1251,11 @@ namespace ipl {
     std::vector<Point<float>> next_slp_density_grad_list(inst_size, Point<float>());
     std::vector<Point<float>> next_slp_sum_grad_list(inst_size, Point<float>());
 
-    // divergence detection
-    float min_sum_overflow = 1e25;
-    float hpwl_with_min_sum_overflow = 1e25;
+    float sum_overflow_threshold = 1e25;
+    float hpwl_attach_sum_overflow = 1e25;
+    bool max_phi_coef_record = false;
 
     Rectangle<int32_t> core_shape = _nes_database->_placer_db->get_layout()->get_core_shape();
-
-    // dynamic adjustment of max_phi_coef
-    bool is_max_phi_coef_changed = false;
 
     // opt setting
     const std::vector<float>& opt_overflow_list = _nes_config.get_opt_overflow_list();
@@ -1381,7 +1378,6 @@ namespace ipl {
         float next_steplength = solver->get_next_steplength();
 
         if (next_steplength > current_steplength * 0.95) {
-          //
           break;
         }
         else {
@@ -1425,8 +1421,8 @@ namespace ipl {
       }
 
       updateWirelengthCoef(sum_overflow);
-      if (!is_max_phi_coef_changed && sum_overflow < 0.35f) {
-        is_max_phi_coef_changed = true;
+      if (!max_phi_coef_record && sum_overflow < 0.35f) {
+        max_phi_coef_record = true;
         _nes_config.set_max_phi_coef(0.985 * _nes_config.get_max_phi_coef());
       }
 
@@ -1458,12 +1454,12 @@ namespace ipl {
         }
       }
 
-      if (min_sum_overflow > sum_overflow) {
-        min_sum_overflow = sum_overflow;
-        hpwl_with_min_sum_overflow = prev_hpwl;
+      if (sum_overflow_threshold > sum_overflow) {
+        sum_overflow_threshold = sum_overflow;
+        hpwl_attach_sum_overflow = prev_hpwl;
       }
 
-      if (sum_overflow < 0.32f && sum_overflow - min_sum_overflow >= 0.05f && hpwl_with_min_sum_overflow * 1.25f < prev_hpwl) {
+      if (sum_overflow < 0.32f && sum_overflow - sum_overflow_threshold >= 0.05f && hpwl_attach_sum_overflow * 1.25f < prev_hpwl) {
         LOG_ERROR << "Detect divergence. \n"
           << "    The reason may be max_phi_cof value: try to decrease max_phi_cof";
         _nes_database->_is_diverged = true;
