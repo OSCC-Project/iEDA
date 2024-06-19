@@ -66,7 +66,6 @@ unsigned CmdVerilogToDef::exec() {
   TclOption* top_option = getOptionOrArg("-top");
   auto* top = top_option->getStringVal();
 
-  // db_builder->buildVerilog(verilog_file, top);
   db_builder->rustBuildVerilog(verilog_file, top);
 
   // set die area

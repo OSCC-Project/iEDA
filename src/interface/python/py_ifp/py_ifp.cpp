@@ -84,8 +84,8 @@ bool fpAddPlacementHalo(const std::string& inst_name, const std::string& distanc
 
 bool fpAddRoutingBlockage(const std::string& layer, const std::string& box, bool exceptpgnet)
 {
-  auto layers = Str::split(layer.c_str(), " ");
-  auto box_result = Str::splitInt(box.c_str(), " ");
+  auto layers = ieda::Str::split(layer.c_str(), " ");
+  auto box_result = ieda::Str::splitInt(box.c_str(), " ");
 
   int32_t llx = box_result[0];
   int32_t lly = box_result[1];
@@ -98,8 +98,8 @@ bool fpAddRoutingBlockage(const std::string& layer, const std::string& box, bool
 
 bool fpAddRoutingHalo(const std::string& layer, const std::string& distance, bool exceptpgnet, const std::string& inst_name)
 {
-  auto layers = Str::split(layer.c_str(), " ");
-  auto box_result = Str::splitInt(distance.c_str(), " ");
+  auto layers = ieda::Str::split(layer.c_str(), " ");
+  auto box_result = ieda::Str::splitInt(distance.c_str(), " ");
   int32_t left = box_result[0];
   int32_t bottom = box_result[1];
   int32_t right = box_result[2];

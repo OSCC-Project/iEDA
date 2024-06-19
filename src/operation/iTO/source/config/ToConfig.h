@@ -44,7 +44,7 @@ class ToConfig {
   void set_gds_file(const string gds) { _gds_path = gds; }
 
   void set_setup_target_slack(float slack_m) { this->_setup_target_slack = slack_m; }
-  void set_hold_slack_margin(float slack_m) { this->_hold_target_slack = slack_m; }
+  void set_hold_target_slack(float slack_m) { this->_hold_target_slack = slack_m; }
   void set_max_buffer_percent(float percent) { _max_buffer_percent = percent; }
   void set_max_utilization(float util) { _max_utilization = util; }
 

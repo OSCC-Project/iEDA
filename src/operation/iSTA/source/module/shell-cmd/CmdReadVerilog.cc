@@ -47,8 +47,6 @@ unsigned CmdReadVerilog::exec() {
 
   Sta* ista = Sta::getOrCreateSta();
 
-  // ista->readVerilog(verilog_file);
   return ista->readVerilogWithRustParser(verilog_file);
-
 }
 }  // namespace ista

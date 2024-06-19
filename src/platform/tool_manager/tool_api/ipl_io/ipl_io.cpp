@@ -20,6 +20,7 @@
 #include "builder.h"
 #include "flow_config.h"
 #include "idm.h"
+#include "usage/usage.hh"
 
 namespace iplf {
 PlacerIO* PlacerIO::_instance = nullptr;

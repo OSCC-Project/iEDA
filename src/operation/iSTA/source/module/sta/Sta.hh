@@ -46,7 +46,6 @@
 #include "netlist/Netlist.hh"
 #include "sdc/SdcSetIODelay.hh"
 #include "verilog/VerilogParserRustC.hh"
-#include "verilog/VerilogReader.hh"
 
 namespace ista {
 
@@ -194,8 +193,7 @@ class Sta {
   // void initScriptEngine();
   SdcConstrain* getConstrain();
 
-  unsigned readDesign(const char* verilog_file);
-  unsigned readDesignWithRustParser(const char* file_name);
+  unsigned readDesignWithRustParser(const char* verilog_file);
   unsigned readLiberty(const char* lib_file);
   unsigned readLiberty(std::vector<std::string>& lib_files);
   unsigned readSdc(const char* sdc_file);
@@ -203,19 +201,11 @@ class Sta {
   unsigned readAocv(const char* aocv_file);
   unsigned readAocv(std::vector<std::string>& aocv_files);
 
-  VerilogModule* findModule(const char* module_name);
-  void set_verilog_modules(
-      std::vector<std::unique_ptr<VerilogModule>>&& verilog_modules) {
-    _verilog_modules = std::move(verilog_modules);
-  }
-
   void set_top_module_name(const char* top_module_name) {
     _top_module_name = top_module_name;
   }
   auto& get_top_module_name() { return _top_module_name; }
 
-  unsigned readVerilog(const char* verilog_file);
-  void linkDesign(const char* top_cell_name);
   unsigned readVerilogWithRustParser(const char* verilog_file);
   void linkDesignWithRustParser(const char* top_cell_name);
   void set_design_name(const char* design_name) {
@@ -519,16 +509,12 @@ class Sta {
                                               //!< config for each endpoint.
   std::optional<std::string> _path_group;     //!< The path group.
   std::unique_ptr<SdcConstrain> _constrains;  //!< The sdc constrain.
-  VerilogReader _verilog_reader;
   RustVerilogReader _rust_verilog_reader;
   void* _rust_verilog_file_ptr;
   std::string _top_module_name;
-  std::vector<std::unique_ptr<VerilogModule>>
-      _verilog_modules;  //!< The current design parsed from verilog file.
   std::vector<RustVerilogModule*>
       _rust_verilog_modules;  //!< The current design parsed from verilog file
                               //!< of rust version.
-  VerilogModule* _top_module = nullptr;  //!< The design top module.
   RustVerilogModule* _rust_top_module =
       nullptr;       //!< The design top module of rust version.
   Netlist _netlist;  //!< The current top netlist for sta analysis.

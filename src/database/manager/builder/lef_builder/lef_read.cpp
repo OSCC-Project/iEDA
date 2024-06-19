@@ -158,14 +158,6 @@ bool LefRead::createDb(const char* file_name)
   return true;
 }
 
-bool LefRead::createTechDb()
-{
-  IdbLayout* layout = _lef_service->get_layout();
-  IdbCheck* check = _lef_service->get_check();
-  check->initTech(layout);
-  return true;
-}
-
 int LefRead::manufacturingCB(lefrCallbackType_e c, double lef_num, lefiUserData data)
 {
   LefRead* lef_reader = (LefRead*) data;

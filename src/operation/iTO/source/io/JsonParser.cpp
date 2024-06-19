@@ -67,7 +67,7 @@ void JsonParser::jsonToConfig(Json *json, ToConfig *config) const {
   config->set_gds_file(file_path.at("gds_file").get<string>());
 
   config->set_setup_target_slack(json->at("setup_slack_margin").get<float>());
-  config->set_hold_slack_margin(json->at("hold_slack_margin").get<float>());
+  config->set_hold_target_slack(json->at("hold_slack_margin").get<float>());
   config->set_max_buffer_percent(json->at("max_buffer_percent").get<float>());
   config->set_max_utilization(json->at("max_utilization").get<float>());
   config->set_fix_fanout(json->at("fix_fanout").get<bool>());

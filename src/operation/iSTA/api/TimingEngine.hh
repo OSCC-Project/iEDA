@@ -93,7 +93,7 @@ class TimingEngine {
   }
 
   TimingEngine &readDesign(const char *verilog_file) {
-    _ista->readDesign(verilog_file);
+    _ista->readVerilogWithRustParser(verilog_file);
     return *this;
   }
   TimingEngine &readSdc(const char *sdc_file) {

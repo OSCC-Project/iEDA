@@ -179,30 +179,6 @@ IdbLefService* IdbBuilder::buildLef(vector<string>& files, bool b_techfile)
   return _lef_service;
 }
 
-IdbDefService* IdbBuilder::buildVerilog(string file, std::string top_module_name)
-{
-  if (_def_service != nullptr) {
-    delete _def_service;
-    _def_service = nullptr;
-  }
-
-  IdbLayout* layout = _lef_service->get_layout();
-  _def_service = new IdbDefService(layout);
-
-  if (IdbDefServiceResult::kServiceFailed == _def_service->VerilogFileInit(file.c_str())) {
-    std::cout << "Read Verilog file failed..." << endl;
-    return nullptr;
-  } else {
-    std::cout << "Read Verilog file success : " << file << endl;
-  }
-
-  std::shared_ptr<VerilogRead> verilog_read = std::make_shared<VerilogRead>(_def_service);
-  verilog_read->createDb(file.c_str(), top_module_name);
-
-  checkNetPins();
-
-  return _def_service;
-}
 
 IdbDefService* IdbBuilder::rustBuildVerilog(string file, std::string top_module_name)
 {
