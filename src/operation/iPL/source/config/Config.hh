@@ -33,14 +33,14 @@
 #include "DetailPlacerConfig.hh"
 #include "FillerConfig.h"
 #include "LegalizerConfig.hh"
-#include "MacroPlacerConfig.hh"
+// #include "MacroPlacerConfig.hh"
 #include "NesterovPlaceConfig.hh"
 #include "PostGPConfig.hh"
 #include "json/json.hpp"
 
 namespace ipl {
 
-using imp::MacroPlacerConfig;
+// using imp::MacroPlacerConfig;
 class Config
 {
  public:
@@ -65,8 +65,8 @@ class Config
   DPConfig& get_dp_config() { return _dp_config; }
   // Filler config
   FillerConfig& get_filler_config() { return _filler_config; }
-  // MacroPlacer config
-  MacroPlacerConfig& get_mp_config() { return _mp_config; }
+  // // MacroPlacer config
+  // MacroPlacerConfig& get_mp_config() { return _mp_config; }
   // PostGP config
   PostGPConfig& get_post_gp_config() { return _post_gp_config; }
 
@@ -86,8 +86,8 @@ class Config
   DPConfig _dp_config;
   // Filler config
   FillerConfig _filler_config;
-  // MacroPlacer config
-  MacroPlacerConfig _mp_config;
+  // // MacroPlacer config
+  // MacroPlacerConfig _mp_config;
   PostGPConfig _post_gp_config;
   int32_t _ignore_net_degree;
   bool _is_timing_effort;

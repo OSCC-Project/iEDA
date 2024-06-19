@@ -111,35 +111,35 @@ void Config::initConfigByJson(nlohmann::json json)
   filler_group_list.push_back(filler_name_list);
   int32_t min_filler_width = getDataByJson(json, {"PL", "Filler", "min_filler_width"});
 
-  // macro placer
-  std::vector<std::string> fixed_macro_list;
-  std::vector<int32_t> fixed_macro_coordinate;
-  std::vector<int32_t> blockage;
-  std::vector<std::string> guidance_macro_list;
-  std::vector<int32_t> guidance;
-  for (std::string macro_name : getDataByJson(json, {"PL", "MP", "fixed_macro"})) {
-    fixed_macro_list.emplace_back(macro_name);
-  }
-  for (int32_t coord : getDataByJson(json, {"PL", "MP", "fixed_macro_coordinate"})) {
-    fixed_macro_coordinate.emplace_back(coord);
-  }
-  for (int32_t coord : getDataByJson(json, {"PL", "MP", "blockage"})) {
-    blockage.emplace_back(coord);
-  }
-  for (std::string macro_name : getDataByJson(json, {"PL", "MP", "guidance_macro"})) {
-    guidance_macro_list.emplace_back(macro_name);
-  }
-  for (int32_t coord : getDataByJson(json, {"PL", "MP", "guidance"})) {
-    guidance.emplace_back(coord);
-  }
-  std::string solution_type = getDataByJson(json, {"PL", "MP", "solution_type"});
-  int32_t perturb_per_step = getDataByJson(json, {"PL", "MP", "SimulateAnneal", "perturb_per_step"});
-  float cool_rate = getDataByJson(json, {"PL", "MP", "SimulateAnneal", "cool_rate"});
-  int32_t parts = getDataByJson(json, {"PL", "MP", "Partition", "parts"});
-  int32_t ufactor = getDataByJson(json, {"PL", "MP", "Partition", "ufactor"});
-  float new_macro_density = getDataByJson(json, {"PL", "MP", "Partition", "new_macro_density"});
-  int32_t halo_x = getDataByJson(json, {"PL", "MP", "halo_x"});
-  int32_t halo_y = getDataByJson(json, {"PL", "MP", "halo_y"});
+  // // macro placer
+  // std::vector<std::string> fixed_macro_list;
+  // std::vector<int32_t> fixed_macro_coordinate;
+  // std::vector<int32_t> blockage;
+  // std::vector<std::string> guidance_macro_list;
+  // std::vector<int32_t> guidance;
+  // for (std::string macro_name : getDataByJson(json, {"PL", "MP", "fixed_macro"})) {
+  //   fixed_macro_list.emplace_back(macro_name);
+  // }
+  // for (int32_t coord : getDataByJson(json, {"PL", "MP", "fixed_macro_coordinate"})) {
+  //   fixed_macro_coordinate.emplace_back(coord);
+  // }
+  // for (int32_t coord : getDataByJson(json, {"PL", "MP", "blockage"})) {
+  //   blockage.emplace_back(coord);
+  // }
+  // for (std::string macro_name : getDataByJson(json, {"PL", "MP", "guidance_macro"})) {
+  //   guidance_macro_list.emplace_back(macro_name);
+  // }
+  // for (int32_t coord : getDataByJson(json, {"PL", "MP", "guidance"})) {
+  //   guidance.emplace_back(coord);
+  // }
+  // std::string solution_type = getDataByJson(json, {"PL", "MP", "solution_type"});
+  // int32_t perturb_per_step = getDataByJson(json, {"PL", "MP", "SimulateAnneal", "perturb_per_step"});
+  // float cool_rate = getDataByJson(json, {"PL", "MP", "SimulateAnneal", "cool_rate"});
+  // int32_t parts = getDataByJson(json, {"PL", "MP", "Partition", "parts"});
+  // int32_t ufactor = getDataByJson(json, {"PL", "MP", "Partition", "ufactor"});
+  // float new_macro_density = getDataByJson(json, {"PL", "MP", "Partition", "new_macro_density"});
+  // int32_t halo_x = getDataByJson(json, {"PL", "MP", "halo_x"});
+  // int32_t halo_y = getDataByJson(json, {"PL", "MP", "halo_y"});
 
   /***********************************************************************/
 
@@ -202,20 +202,20 @@ void Config::initConfigByJson(nlohmann::json json)
   _filler_config.set_filler_group_list(filler_group_list);
   _filler_config.set_min_filler_width(min_filler_width);
 
-  // MacroPlacer
-  _mp_config.set_fixed_macro(fixed_macro_list);
-  _mp_config.set_fixed_macro_coord(fixed_macro_coordinate);
-  _mp_config.set_blockage(blockage);
-  _mp_config.set_guidance_macro(guidance_macro_list);
-  _mp_config.set_guidance(guidance);
-  _mp_config.set_solution_type(solution_type);
-  _mp_config.set_perturb_per_step(perturb_per_step);
-  _mp_config.set_cool_rate(cool_rate);
-  _mp_config.set_parts(parts);
-  _mp_config.set_ufactor(ufactor);
-  _mp_config.set_new_macro_density(new_macro_density);
-  _mp_config.set_halo_x(halo_x);
-  _mp_config.set_halo_y(halo_y);
+  // // MacroPlacer
+  // _mp_config.set_fixed_macro(fixed_macro_list);
+  // _mp_config.set_fixed_macro_coord(fixed_macro_coordinate);
+  // _mp_config.set_blockage(blockage);
+  // _mp_config.set_guidance_macro(guidance_macro_list);
+  // _mp_config.set_guidance(guidance);
+  // _mp_config.set_solution_type(solution_type);
+  // _mp_config.set_perturb_per_step(perturb_per_step);
+  // _mp_config.set_cool_rate(cool_rate);
+  // _mp_config.set_parts(parts);
+  // _mp_config.set_ufactor(ufactor);
+  // _mp_config.set_new_macro_density(new_macro_density);
+  // _mp_config.set_halo_x(halo_x);
+  // _mp_config.set_halo_y(halo_y);
 
   _ignore_net_degree = ignore_net_degree;
   _is_timing_effort = (is_timing_effort == 1);

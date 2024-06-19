@@ -133,15 +133,15 @@ namespace ipl {
     idb_builder->saveDef("<local_path>/iPL_buffer_result.def");
   }
 
-  TEST_F(APITestInterface, run_mp)
-  {
-    std::string pl_json_file = "<local_path>/pl_default_config.json";
-    auto* idb_builder = dmInst->get_idb_builder();
+  // TEST_F(APITestInterface, run_mp)
+  // {
+  //   std::string pl_json_file = "<local_path>/pl_default_config.json";
+  //   auto* idb_builder = dmInst->get_idb_builder();
 
-    iPLAPIInst.initAPI(pl_json_file, idb_builder);
-    iPLAPIInst.runMP();
-    iPLAPIInst.destoryInst();
-  }
+  //   iPLAPIInst.initAPI(pl_json_file, idb_builder);
+  //   iPLAPIInst.runMP();
+  //   iPLAPIInst.destoryInst();
+  // }
 
   TEST_F(APITestInterface, run_incremental)
   {

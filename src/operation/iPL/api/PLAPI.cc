@@ -34,7 +34,7 @@
 #include "LayoutChecker.hh"
 #include "Legalizer.hh"
 #include "Log.hh"
-#include "MacroPlacer.hh"
+// #include "MacroPlacer.hh"
 #include "NesterovPlace.hh"
 #include "PlacerDB.hh"
 #include "PostGP.hh"
@@ -462,12 +462,12 @@ void PLAPI::insertLayoutFiller()
   writeBackSourceDataBase();
 }
 
-void PLAPI::runMP()
-{
-  imp::MPDB* mpdb = new imp::MPDB(&PlacerDBInst);
-  imp::MacroPlacer(mpdb, PlacerDBInst.get_placer_config()).runMacroPlacer();
-  delete mpdb;
-}
+// void PLAPI::runMP()
+// {
+//   imp::MPDB* mpdb = new imp::MPDB(&PlacerDBInst);
+//   imp::MacroPlacer(mpdb, PlacerDBInst.get_placer_config()).runMacroPlacer();
+//   delete mpdb;
+// }
 
 void PLAPI::runGP()
 {
