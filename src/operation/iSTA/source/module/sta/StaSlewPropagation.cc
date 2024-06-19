@@ -26,7 +26,7 @@
 #include <optional>
 
 #include "ThreadPool/ThreadPool.h"
-#include "delay/ArnoldiDelayCal.hh"
+#include "delay/ReduceDelayCal.hh"
 #include "netlist/Pin.hh"
 #include "netlist/Port.hh"
 

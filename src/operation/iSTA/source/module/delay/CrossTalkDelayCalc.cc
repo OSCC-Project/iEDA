@@ -23,7 +23,7 @@
  */
 #include "CrossTalkDelayCalc.hh"
 
-#include "ArnoldiReduce.hh"
+#include "Reduce.hh"
 
 namespace ista {
 
