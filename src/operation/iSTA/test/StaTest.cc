@@ -104,4 +104,19 @@ TEST_F(StaTest, simple_design) {
   }
 }
 
+TEST_F(StaTest, read_error_file) {
+  Sta* ista = Sta::getOrCreateSta();
+  if (ista) {
+    ista->readDesign("1.txt");
+    ista->readDesignWithRustParser("1.txt");
+    ista->readLiberty("1.txt");
+    ista->readSdc("1.txt");
+    ista->readSpef("1.txt");
+    ista->readAocv("1.txt");
+    std::vector<std::string> error_files{"1.txt", "2.txt"};
+    ista->readLiberty(error_files);
+    ista->readAocv(error_files);
+  }
+}
+
 }  // namespace

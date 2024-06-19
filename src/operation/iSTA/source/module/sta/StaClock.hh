@@ -95,6 +95,7 @@ class StaClock {
     return _is_need_update_period_waveform;
   }
 
+  void set_period(int period_ps) { _period = period_ps; }
   [[nodiscard]] int get_period() const { return _period; }
   double getPeriodNs() const { return PS_TO_NS(_period); }
 

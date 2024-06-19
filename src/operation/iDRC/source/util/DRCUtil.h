@@ -193,7 +193,8 @@ class DRCUtil
   }
   /**
    * @brief Get the Span Rect Between Two Rects object
-   * 竖直平行交叠下span_box   水平平行交叠下的span_box
+   * Span box for vertical parallel overlap; span box for horizontal parallel overlap
+
    *             ___         ____________
    *  __________|   |       |__1_________|
    * |   |span  |   |           |span box|

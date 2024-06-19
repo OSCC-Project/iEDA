@@ -58,7 +58,7 @@ StaClockPair StaAnalyze::analyzeClockRelation(
   double ratio = static_cast<double>(the_max_period) / the_min_period;
   int ratio_n = std::round(ratio);
   constexpr double ratio_accuracy =
-      0.001;  // if the ratio decimal less than this value, we choose the
+      0.002;  // if the ratio decimal less than this value, we choose the
               // interger.
 
   // Firstly, we get the period the lowest common multiple.

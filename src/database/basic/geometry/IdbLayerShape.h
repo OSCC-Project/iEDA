@@ -101,6 +101,8 @@ class IdbLayerShape
     return nullptr;
   }
 
+  bool isIntersected(int x, int y, IdbLayer* layer);
+
  private:
   IdbLayerShapeType _type;
   IdbLayer* _layer;

@@ -59,5 +59,6 @@ int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
 
   testing::GTEST_FLAG(filter) = "LibertyTest.rust_expr_builder*";
+  testing::GTEST_FLAG(filter) = "StaTest.read_error_file*";
   return RUN_ALL_TESTS();
 }

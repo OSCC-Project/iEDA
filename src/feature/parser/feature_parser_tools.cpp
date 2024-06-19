@@ -222,7 +222,7 @@ json FeatureParser::buildSummaryPL(std::string step)
     summary_pl["overflow_number"] = pl_summary.overflow_number;
     summary_pl["overflow"] = pl_summary.overflow;
   }
-  // 3:合法化需要存储的数据参数
+  // 3: Data parameters required for legalization.
   else if (step == "legalization") {
     summary_pl["legalization"]["place_density"] = pl_summary.lg_summary.pl_common_summary.place_density;
     summary_pl["legalization"]["pin_density"] = pl_summary.lg_summary.pl_common_summary.pin_density;
@@ -237,7 +237,7 @@ json FeatureParser::buildSummaryPL(std::string step)
     summary_pl["legalization"]["total_movement"] = pl_summary.lg_summary.lg_total_movement;
     summary_pl["legalization"]["max_movement"] = pl_summary.lg_summary.lg_max_movement;
   }
-  
+
   return summary_pl;
 }
 
@@ -256,7 +256,7 @@ json FeatureParser::buildSummaryCTS()
   json_cts["total_clock_wirelength"] = summary.total_clock_wirelength;
 
   json json_timing;
-  for (int i = 0; i < (int)summary.nets_timing.size(); ++i) {
+  for (int i = 0; i < (int) summary.nets_timing.size(); ++i) {
     auto net_timing = summary.nets_timing[i];
 
     json_timing[i]["net_name"] = net_timing.net_name;
@@ -279,7 +279,7 @@ json FeatureParser::buildSummaryNetOpt()
   NetOptSummary& summary = _summary->get_summary_ino();
 
   json json_net_timings;
-  for (int i = 0; i < (int)summary.net_timings.size(); ++i) {
+  for (int i = 0; i < (int) summary.net_timings.size(); ++i) {
     NONetTimingCmp net_timing = summary.net_timings[i];
 
     json_net_timings[i]["net_name"] = net_timing.net_name;

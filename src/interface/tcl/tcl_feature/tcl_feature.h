@@ -77,4 +77,32 @@ class CmdFeatureEvalMap : public TclCmd
   // private data
 };
 
+class CmdFeatureRoute : public TclCmd
+{
+ public:
+  explicit CmdFeatureRoute(const char* cmd_name);
+  ~CmdFeatureRoute() override = default;
+
+  unsigned check() override;
+  unsigned exec() override;
+
+ private:
+  // private function
+  // private data
+};
+
+class CmdFeatureRouteRead : public TclCmd
+{
+ public:
+  explicit CmdFeatureRouteRead(const char* cmd_name);
+  ~CmdFeatureRouteRead() override = default;
+
+  unsigned check() override;
+  unsigned exec() override;
+
+ private:
+  // private function
+  // private data
+};
+
 }  // namespace tcl

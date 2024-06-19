@@ -34,7 +34,7 @@
 
 namespace idb {
 
-//***** 下面是对于 TreeNode 结构体的定义实现 *****///
+//***** TreeNode implementation *****///
 
 TreeNode::TreeNode(int type = 0, TreeNode* Parent = 0)
 {
@@ -53,7 +53,7 @@ void TreeNode::InsertChildren(TreeNode& node)
   _children.push_back(p);
 }
 
-//***** 下面是对于 Tree 类的定义实现 *****///
+//*****  Tree implementation *****///
 Tree ::Tree()
 {
 }
@@ -72,15 +72,15 @@ Tree ::Tree(const Tree& t)
 
 Tree ::Tree(const int type, const list<Tree*>& lit)
 {
-  TreeNode* root = new TreeNode(type);  // 建立根节点
-  _nodes.push_back(root);               // 放入树中
+  TreeNode* root = new TreeNode(type);  // root node
+  _nodes.push_back(root);               // push into tree
   list<Tree*>::const_iterator it;
   for (it = lit.begin(); it != lit.end(); it++) {
-    if (!((*it)->_nodes.empty())) {  // 如果当前节点元素不为空
+    if (!((*it)->_nodes.empty())) {  // If the current node element is not empty.
       Tree* tp = new Tree(**it);
       TreeNode* p = tp->_nodes.front();
-      root->_children.push_back(p);  // 设置根的子节点
-      p->_parent = root;             // 设置节点的父节点为根
+      root->_children.push_back(p);  // set the children node of root
+      p->_parent = root;             // set the father of node as root 
       list<TreeNode*>::iterator lit1 = tp->_nodes.begin();
       list<TreeNode*>::iterator lit2 = tp->_nodes.end();
       list<TreeNode*>::iterator lit3 = _nodes.end();
@@ -176,7 +176,7 @@ int Tree ::Height()
     TreeNode* TNode = _nodes.front();
     return height(TNode);
   } else {
-    return -1;  // 判断为空树
+    return -1;  // Check for an empty tree.
   }
 }
 
@@ -246,7 +246,7 @@ int Tree ::NumChildren(Iterator it)
   return (int) p._children.size();
 }
 
-//***** 下面是对于 Tree::Iterator 类的定义实现 *****///
+//***** Tree::Iterator  *****///
 Iterator ::Iterator()
 {
 }
@@ -309,7 +309,7 @@ bool Iterator ::operator!()
   return _lit == _tree->_nodes.end();
 }
 
-// Clone 函数
+// Clone 
 TreeNode* clone(TreeNode* node, List& nodes, TreeNode* nodep)
 {
   TreeNode* cp = new TreeNode(node->_data, nodep);

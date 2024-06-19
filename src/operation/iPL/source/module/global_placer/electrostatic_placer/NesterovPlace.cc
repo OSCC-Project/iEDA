@@ -98,7 +98,7 @@ namespace ipl {
     auto inst_list = _nes_database->_placer_db->get_design()->get_instance_list();
 
     for (auto* inst : inst_list) {
-      // outside inst is none of nesterov place business.
+      // skip the outside inst
       if (inst->isOutsideInstance()) {
         continue;
       }
@@ -229,7 +229,7 @@ namespace ipl {
 
       auto* inst = pin->get_instance();
 
-      // outside inst is none of nesterov place business.
+      // skip the outside inst.
       if (inst && !inst->isOutsideInstance()) {
         auto* n_inst = _nes_database->_nInstance_map[inst];
 
@@ -507,7 +507,6 @@ namespace ipl {
 
   void NesterovPlace::initFillerNesInstance()
   {
-    // extract average edge_x / edge_y in range(10%, 90%)
     std::vector<int32_t> edge_x_assemble;
     std::vector<int32_t> edge_y_assemble;
 
@@ -549,7 +548,6 @@ namespace ipl {
     std::sort(edge_x_assemble.begin(), edge_x_assemble.end());
     std::sort(edge_y_assemble.begin(), edge_y_assemble.end());
 
-    // average from (10% - 90%)
     int64_t edge_x_sum = 0, edge_y_sum = 0;
 
     int min_idx = edge_x_assemble.size() * 0.05;
@@ -559,24 +557,18 @@ namespace ipl {
       edge_y_sum += edge_y_assemble[i];
     }
 
-    // the avg_edge_x and avg_edge_y will be used as filler cells' width and
-    // height
     int avg_edge_x = static_cast<int>(edge_x_sum / (max_idx - min_idx));
     int avg_edge_y = static_cast<int>(edge_y_sum / (max_idx - min_idx));
 
     Rectangle<int32_t> core_shape = _nes_database->_placer_db->get_layout()->get_core_shape();
     int64_t core_area = static_cast<int64_t>(core_shape.get_width()) * static_cast<int64_t>(core_shape.get_height());
-    // nonPlaceInstsArea should not have targetDensity downscaling!!!
     int64_t white_space_area = core_area - nonplace_area;
     int64_t movable_area = white_space_area * _nes_config.get_target_density();
     int64_t total_filler_area = movable_area - occupied_area;
 
-    LOG_ERROR_IF(total_filler_area < 0) << "Filler area is negative!!\n"
-      << "       Please put higher target density or \n"
-      << "       Re-floorplan to have enough coreArea\n";
+    LOG_ERROR_IF(total_filler_area < 0) << "Detect: Negative filler area \n"
+      << "       The reason may be target_density setting: try to improve target_density \n";
 
-    // mt19937 supports huge range of random values.
-    // rand()'s RAND_MAX is only 32767
     std::mt19937 rand_val(0);
 
     // int32_t filler_cnt = total_filler_area / (avg_edge_x * avg_edge_y);
@@ -585,11 +577,9 @@ namespace ipl {
     int32_t filler_cnt = std::ceil(static_cast<int32_t>(static_cast<float>(total_filler_area / (avg_edge_x * avg_edge_y))));
 
     for (int i = 0; i < filler_cnt; i++) {
-      // instability problem between g++ and clang++!
       auto rand_x = rand_val();
       auto rand_y = rand_val();
 
-      // place filler cells on random coordi and set size as avgDx and avgDy
       NesInstance* filler = new NesInstance("filler_" + std::to_string(i));
 
       int32_t center_x = rand_x % core_shape.get_width() + core_shape.get_ll_x();
@@ -1244,9 +1234,9 @@ namespace ipl {
 
   void NesterovPlace::NesterovSolve(std::vector<NesInstance*>& inst_list)
   {
-    // if placer diverged in init() function, global placement must be skipped.
+    // diverged control.
     if (_nes_database->_is_diverged) {
-      LOG_ERROR << "diverged occured. please tune the parameters again";
+      LOG_ERROR << "Detect diverged, the reason may be parameters setting.";
       return;
     }
 
@@ -1477,8 +1467,8 @@ namespace ipl {
       }
 
       if (sum_overflow < 0.3f && sum_overflow - min_sum_overflow >= 0.02f && hpwl_with_min_sum_overflow * 1.2f < prev_hpwl) {
-        LOG_ERROR << " divergence detected. \n"
-          << "    please decrease max_phi_cof value";
+        LOG_ERROR << "Detect divergence. \n"
+          << "    the reason may be max_phi_cof value: try to decrease max_phi_cof";
         _nes_database->_is_diverged = true;
         break;
       }
@@ -1510,12 +1500,12 @@ namespace ipl {
           // quad mode
           is_add_quad_penalty = true;
           is_cal_phi = true;
-          LOG_INFO << "Stuck at early stage. Turn on quadratic penalty with double density factor to accelerate convergence";
+          LOG_INFO << "Try to enable quadratic penalty for density to accelerate convergence";
           if (sum_overflow > 0.95) {
             float noise_intensity = std::min(std::max(40 + (120 - 40) * (sum_overflow - 0.95) * 10, 40.0), 90.0)
               * _nes_database->_placer_db->get_layout()->get_site_width();
             entropyInjection(0.996, noise_intensity);
-            LOG_INFO << "Stuck at very early stage. Turn on entropy injection with noise intensity = " << noise_intensity
+            LOG_INFO << "Try to entropy injection with noise intensity = " << noise_intensity
               << " to help convergence";
           }
           last_perturb_iter = iter_num;
@@ -2073,16 +2063,16 @@ namespace ipl {
 
     if (wl_ratio > threshold * 1.2) {
       if (overflow_ratio > threshold  && is_routability == false) {
-        LOG_WARNING << "Divergence detected: overflow increases too much than best overflow (" << overflow_ratio << " > " << threshold << ")";
+        LOG_WARNING << "Detect divergence: overflow increases too much than best overflow (" << overflow_ratio << " > " << threshold << ")";
         return true;
       }
       else if ((overflow_max - overflow_min) / overflow_mean < threshold && is_routability == false) {
-        LOG_WARNING << "Divergence detected: overflow plateau ( " << (overflow_max - overflow_min) / overflow_mean << " < " << threshold
+        LOG_WARNING << "Detect divergence: overflow plateau ( " << (overflow_max - overflow_min) / overflow_mean << " < " << threshold
           << ")";
         return true;
       }
       else if (overflow_diff > 0.6) {
-        LOG_WARNING << "Divergence detected: overflow fluctuate too frequently (" << overflow_diff << "> 0.6)";
+        LOG_WARNING << "Detect divergence: overflow fluctuate too frequently (" << overflow_diff << "> 0.6)";
         return true;
       }
       else {
@@ -2118,7 +2108,7 @@ namespace ipl {
 
     float overflow_ratio = (overflow_max - overflow_min) / overflow_mean;
     if (overflow_ratio < 0.8 * threshold) {
-      LOG_WARNING << "Divergence detected: overflow plateau ( " << overflow_ratio << " < " << (0.8 * threshold) << ")";
+      LOG_WARNING << "Detect divergence: overflow plateau ( " << overflow_ratio << " < " << (0.8 * threshold) << ")";
       return true;
     }
     else {

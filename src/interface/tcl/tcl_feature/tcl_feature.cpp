@@ -161,4 +161,70 @@ unsigned CmdFeatureEvalMap::exec()
   return 1;
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/**
+ * feature_route -path "xxxx.json"
+ */
+CmdFeatureRoute::CmdFeatureRoute(const char* cmd_name) : TclCmd(cmd_name)
+{
+  auto* path_option = new TclStringOption(TCL_PATH, 1, nullptr);
+  addOption(path_option);
+}
+
+unsigned CmdFeatureRoute::check()
+{
+  TclOption* path_option = getOptionOrArg(TCL_PATH);
+
+  return 1;
+}
+
+unsigned CmdFeatureRoute::exec()
+{
+  if (!check()) {
+    return 0;
+  }
+
+  TclOption* option = getOptionOrArg(TCL_PATH);
+  auto path = option->getStringVal();
+
+  featureInst->save_route_data(path);
+
+  return 1;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/**
+ * feature_route_read -path "xxxx.json"
+ */
+CmdFeatureRouteRead::CmdFeatureRouteRead(const char* cmd_name) : TclCmd(cmd_name)
+{
+  auto* path_option = new TclStringOption(TCL_PATH, 1, nullptr);
+  addOption(path_option);
+}
+
+unsigned CmdFeatureRouteRead::check()
+{
+  TclOption* path_option = getOptionOrArg(TCL_PATH);
+
+  return 1;
+}
+
+unsigned CmdFeatureRouteRead::exec()
+{
+  if (!check()) {
+    return 0;
+  }
+
+  TclOption* option = getOptionOrArg(TCL_PATH);
+  auto path = option->getStringVal();
+
+  featureInst->read_route_data(path);
+
+  return 1;
+}
+
 }  // namespace tcl
