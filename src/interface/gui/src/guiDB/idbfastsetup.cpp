@@ -22,7 +22,7 @@
 IdbSpeedUpSetup::IdbSpeedUpSetup(const std::vector<std::string>& lef_paths, const std::string& def_path,
                                  GuiGraphicsScene* scene)
     : DbSetup(lef_paths, def_path, scene) {
-  set_type(DbSetupType::kChip);
+  //   set_type(DbSetupType::kChip);
 
   _gui_design = new GuiSpeedupDesign(scene, _type);
 
@@ -97,6 +97,7 @@ void IdbSpeedUpSetup::initDB() {
     case DbSetupType::kGlobalRouting: def_service = _db_builder->buildDef(_def_path); break;
     case DbSetupType::kDetailRouting: def_service = _db_builder->buildDef(_def_path); break;
     case DbSetupType::kClockTree: def_service = _db_builder->buildDef(_def_path); break;
+    case DbSetupType::kCellMaster: break;
     default: break;
   }
 
@@ -227,6 +228,14 @@ void IdbSpeedUpSetup::createChip() {
       _gui_design->finishCreateItem();
       break;
     case DbSetupType::kClockTree: break;
+    case DbSetupType::kCellMaster:
+      createDie();
+      createCore();
+      createRow();
+      createTrackGrid();
+      showCellMasters();
+      _gui_design->finishCreateItem();
+      break;
     default: break;
   }
 
@@ -342,20 +351,28 @@ void IdbSpeedUpSetup::createInstanceCorePin(vector<IdbPin*>& pin_list, GuiSpeedu
   /// if metal 1 not exist, using row height / 20 as pin shape width
   //   IdbLayerRouting* layer_routing = dynamic_cast<IdbLayerRouting*>(_layout->get_layers()->find_layer("METAL1"));
   auto layer_routing = _layout->get_layers()->get_bottom_routing_layer();
-  int32_t pin_width = layer_routing != nullptr ? layer_routing->get_width() - 2 : _layout->get_rows()->get_row_height() / 20;
+  int32_t pin_width = layer_routing != nullptr ? layer_routing->get_width() / 4 : _layout->get_rows()->get_row_height() / 10;
 
   for (IdbPin* pin : pin_list) {
-    if (pin->get_term()->is_pdn() || pin->get_net() == nullptr) {
+    if (pin->get_term()->is_pdn()) {
       continue;
     }
 
-    if (pin != nullptr && pin->get_term()->get_port_number() > 0) {
-      if (pin->get_instance()->get_cell_master()->is_core()) {
-        IdbCoordinate<int32_t>* coordinate = pin->get_grid_coordinate();
+    if (pin != nullptr && pin->get_term()->get_port_number() > 0 && pin->get_instance()->get_cell_master()->is_core()) {
+      if (pin->get_term()->get_pa_list().size() > 0) {
+        for (auto pa : pin->get_term()->get_pa_list()) {
+          (dynamic_cast<GuiSpeedupInstance*>(item))
+              ->add_pin(_transform.db_to_guidb(pa->get_x()), _transform.db_to_guidb_rotate(pa->get_y()),
+                        _transform.db_to_guidb(pin_width));
+        }
+      } else {
+        if (pin->get_net() != nullptr) {
+          IdbCoordinate<int32_t>* coordinate = pin->get_grid_coordinate();
 
-        (dynamic_cast<GuiSpeedupInstance*>(item))
-            ->add_pin(_transform.db_to_guidb(coordinate->get_x()), _transform.db_to_guidb_rotate(coordinate->get_y()),
-                      _transform.db_to_guidb(pin_width));
+          (dynamic_cast<GuiSpeedupInstance*>(item))
+              ->add_pin(_transform.db_to_guidb(coordinate->get_x()), _transform.db_to_guidb_rotate(coordinate->get_y()),
+                        _transform.db_to_guidb(pin_width));
+        }
       }
     }
   }
@@ -426,10 +443,14 @@ void IdbSpeedUpSetup::createPinPortShape(vector<IdbPin*>& pin_list, GuiSpeedupIt
   }
 }
 
-void IdbSpeedUpSetup::createInstance() {
+void IdbSpeedUpSetup::createInstance(IdbInstanceList* inst_list) {
   std::cout << "Begin to create Instance..." << std::endl;
 
-  for (IdbInstance* instance : _design->get_instance_list()->get_instance_list()) {
+  auto insts = inst_list == nullptr ? _design->get_instance_list()->get_instance_list() : inst_list->get_instance_list();
+  if (inst_list == nullptr) {
+    std::cout << "inst_list == nullptr" << std::endl;
+  }
+  for (IdbInstance* instance : insts) {
     if (instance == nullptr || instance->get_cell_master() == nullptr) {
       continue;
     }
@@ -443,11 +464,9 @@ void IdbSpeedUpSetup::createInstance() {
 
 void IdbSpeedUpSetup::createInstanceCore(IdbInstance* instance) {
   IdbCellMaster* cell_master = instance->get_cell_master();
-
   if ((cell_master->is_core() && (!is_floorplan())) ||
       ((is_floorplan() && (cell_master->is_core_filler() || cell_master->is_endcap())))) {
-    IdbRect* bounding_box = instance->get_bounding_box();
-
+    IdbRect* bounding_box    = instance->get_bounding_box();
     QRectF rect              = _transform.db_to_guidb_rect(bounding_box);
     GuiSpeedupInstance* item = _gui_design->get_instance_list()->findItem(rect.center());
     if (item == nullptr) {

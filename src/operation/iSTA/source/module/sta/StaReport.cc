@@ -342,6 +342,7 @@ unsigned StaReportPathDetail::operator()(StaSeqPathData* seq_path_data) {
 
       auto arrive_time = FS_TO_NS(path_delay_data->get_arrive_time());
 
+      // if vertex is clock, use trigger type to report.
       if (own_vertex->is_clock()) {
         trans_type = own_vertex->isRisingTriggered() ? TransType::kRise
                                                      : TransType::kFall;

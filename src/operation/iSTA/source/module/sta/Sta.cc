@@ -22,8 +22,6 @@
  * @date 2020-11-27
  */
 
-#include "Sta.hh"
-
 #include <algorithm>
 #include <filesystem>
 #include <map>
@@ -33,6 +31,7 @@
 #include <tuple>
 #include <utility>
 
+#include "Sta.hh"
 #include "StaAnalyze.hh"
 #include "StaApplySdc.hh"
 #include "StaBuildClockTree.hh"
@@ -71,6 +70,16 @@
 // }
 
 namespace ista {
+
+static bool IsFileExists(const char *name) {
+  std::ifstream f(name);
+  bool is_exit = f.good();
+  if (!is_exit) {
+    LOG_WARNING << "Can't read file:" << name << ".";
+  }
+  f.close();
+  return is_exit;
+}
 
 Sta *Sta::_sta = nullptr;
 
@@ -162,6 +171,9 @@ SdcConstrain *Sta::getConstrain() {
  * @return unsigned
  */
 unsigned Sta::readDesign(const char *verilog_file) {
+  if (!IsFileExists(verilog_file)) {
+    return 0;
+  }
   readVerilog(verilog_file);
   auto &top_module_name = get_top_module_name();
   linkDesign(top_module_name.c_str());
@@ -177,6 +189,9 @@ unsigned Sta::readDesignWithRustParser(const char *file_name) { return 1; }
  * @return unsigned
  */
 unsigned Sta::readSdc(const char *sdc_file) {
+  if (!IsFileExists(sdc_file)) {
+    return 0;
+  }
   LOG_INFO << "read sdc " << sdc_file << " start ";
   Sta::initSdcCmd();
 
@@ -202,6 +217,9 @@ unsigned Sta::readSdc(const char *sdc_file) {
  * @return unsigned
  */
 unsigned Sta::readSpef(const char *spef_file) {
+  if (!IsFileExists(spef_file)) {
+    return 0;
+  }
   StaGraph &the_graph = get_graph();
 
   StaBuildRCTree func(spef_file, DelayCalcMethod::kElmore);
@@ -217,6 +235,9 @@ unsigned Sta::readSpef(const char *spef_file) {
  * @return unsigned
  */
 unsigned Sta::readAocv(const char *aocv_file) {
+  if (!IsFileExists(aocv_file)) {
+    return 0;
+  }
   AocvReader aocv_reader(aocv_file);
   auto load_aocv = aocv_reader.readAocvLibrary();
   addAocv(std::move(load_aocv));
@@ -230,6 +251,15 @@ unsigned Sta::readAocv(const char *aocv_file) {
  * @return unsigned
  */
 unsigned Sta::readAocv(std::vector<std::string> &aocv_files) {
+  bool is_exit = true;
+  for (auto &aocv_file : aocv_files) {
+    if (!IsFileExists(aocv_file.c_str())) {
+      is_exit = false;
+    }
+  }
+  if (!is_exit) {
+    return 0;
+  }
   LOG_INFO << "load aocv start";
 
 #if 0
@@ -261,6 +291,9 @@ unsigned Sta::readAocv(std::vector<std::string> &aocv_files) {
  * @return unsigned
  */
 unsigned Sta::readLiberty(const char *lib_file) {
+  if (!IsFileExists(lib_file)) {
+    return 0;
+  }
   Liberty lib;
   auto load_lib = lib.loadLibertyWithRustParser(lib_file);
   addLib(std::move(load_lib));
@@ -275,6 +308,15 @@ unsigned Sta::readLiberty(const char *lib_file) {
  * @return unsigned
  */
 unsigned Sta::readLiberty(std::vector<std::string> &lib_files) {
+  bool is_exit = true;
+  for (auto &lib_file : lib_files) {
+    if (!IsFileExists(lib_file.c_str())) {
+      is_exit = false;
+    }
+  }
+  if (!is_exit) {
+    return 0;
+  }
   LOG_INFO << "load lib start";
 
 #if 0
@@ -304,12 +346,16 @@ unsigned Sta::readLiberty(std::vector<std::string> &lib_files) {
  *
  * @param verilog_file
  */
-void Sta::readVerilogWithRustParser(const char *verilog_file) {
+unsigned Sta::readVerilogWithRustParser(const char *verilog_file) {
+  if (!IsFileExists(verilog_file)) {
+    return 0;
+  }
   LOG_INFO << "read verilog file " << verilog_file << " start";
   bool is_ok = _rust_verilog_reader.readVerilog(verilog_file);
   _rust_verilog_file_ptr = _rust_verilog_reader.get_verilog_file_ptr();
-  LOG_FATAL_IF(!is_ok) << "read verilog file " << verilog_file << " failed.";
+  LOG_WARNING_IF(!is_ok) << "read verilog file " << verilog_file << " failed.";
   LOG_INFO << "read verilog end";
+  return is_ok;
 }
 
 /**
@@ -317,12 +363,16 @@ void Sta::readVerilogWithRustParser(const char *verilog_file) {
  *
  * @param verilog_file
  */
-void Sta::readVerilog(const char *verilog_file) {
+unsigned Sta::readVerilog(const char *verilog_file) {
+  if (!IsFileExists(verilog_file)) {
+    return 0;
+  }
   LOG_INFO << "read verilog file " << verilog_file << " start";
   bool is_ok = _verilog_reader.read(verilog_file);
   LOG_FATAL_IF(!is_ok) << "read verilog file " << verilog_file << " failed.";
 
   LOG_INFO << "read verilog end";
+  return is_ok;
 }
 
 /**
@@ -830,8 +880,8 @@ void Sta::linkDesignWithRustParser(const char *top_cell_name) {
             auto *net_id = const_cast<void *>(
                 rust_convert_verilog_net_id_expr(net_expr)->verilog_id);
             LOG_FATAL_IF(!net_id) << "The port connection " << cell_port_name
-                                  << " net id is not exist "
-                                  << "at line " << verilog_inst->line_no;
+                                  << " net id is not exist " << "at line "
+                                  << verilog_inst->line_no;
 
             if (rust_is_id(net_id)) {
               net_name = rust_convert_verilog_id(net_id)->id;
@@ -993,10 +1043,6 @@ void Sta::linkDesignWithRustParser(const char *top_cell_name) {
  * @return std::set<LibertyLibrary *>
  */
 std::set<LibertyLibrary *> Sta::getUsedLibs() {
-  if (!isBuildGraph()) {
-    return std::set<LibertyLibrary *>();
-  }
-
   std::set<LibertyLibrary *> used_libs;
   Instance *inst;
   FOREACH_INSTANCE(&_netlist, inst) {
@@ -1784,6 +1830,90 @@ unsigned Sta::reportSkew(const char *rpt_file_name,
 }
 
 /**
+ * @brief report one net in yaml format
+ *
+ * @param rpt_file_name
+ * @param net
+ * @return unsigned
+ */
+unsigned Sta::reportNet(const char *rpt_file_name, Net *the_net) {
+  YAML::Node node;
+
+  auto *rc_net = getRcNet(the_net);
+
+  node["net_name"] = the_net->get_name();
+  node["fanout"] = the_net->getLoads().size();
+  node["driver"] = the_net->getDriver()->getFullName();
+
+  auto driver_vertex = get_graph().findVertex(the_net->getDriver());
+
+  unsigned index = 0;
+  DesignObject *pin_port;
+  FOREACH_NET_PIN(the_net, pin_port) {
+    if (pin_port == the_net->getDriver()) {
+      continue;
+    }
+
+    auto load_vertex = get_graph().findVertex(pin_port);
+
+    YAML::Node load_node;
+    std::string load_node_name = Str::printf("node_%d", index++);
+    node[load_node_name] = load_node;
+
+    load_node["load"] = pin_port->getFullName();
+
+    FOREACH_MODE_TRANS(mode, trans) {
+      YAML::Node one_node;
+      std::string mode_str = (mode == AnalysisMode::kMax) ? "max" : "min";
+      std::string trans_str = (trans == TransType::kRise) ? "rise" : "fall";
+      std::string node_name = mode_str + "_" + trans_str;
+      load_node[node_name] = one_node;
+
+      one_node["total_capacitance_pf"] = (*driver_vertex)->getLoad(mode, trans);
+
+      auto vertex_slew = (*driver_vertex)->getSlewNs(mode, trans);
+      one_node["input_slew_ns"] = vertex_slew ? *vertex_slew : 0.0;
+
+      auto vertex_resistance = (*load_vertex)->getResistance(mode, trans);
+      one_node["load_resistance"] = vertex_resistance;
+
+      one_node["load_delay_ns"] =
+          rc_net->delayNs(*pin_port, RcNet::DelayMethod::kElmore).value_or(0.0);
+    }
+  }
+
+  std::ofstream file(rpt_file_name, std::ios::trunc);
+  file << node << std::endl;
+  file.close();
+
+  return 1;
+}
+
+/**
+ * @brief report all net information.
+ *
+ * @param rpt_file_name
+ * @return unsigned
+ */
+unsigned Sta::reportNet() {
+  std::string design_work_space = get_design_work_space();
+  std::string now_time = Time::getNowWallTime();
+  std::string tmp = Str::replace(now_time, ":", "_");
+  std::string path_dir = design_work_space + "/net_" + tmp;
+  std::filesystem::create_directories(path_dir);
+
+  auto *nl = get_netlist();
+  Net *net;
+  FOREACH_NET(nl, net) {
+    auto *net_name = net->get_name();
+    std::string rpt_file_name =
+        Str::printf("%s/net_%s.yaml", path_dir.c_str(), net_name);
+    reportNet(rpt_file_name.c_str(), net);
+  }
+  return 1;
+}
+
+/**
  * @brief report the specify path.
  *
  * @param rpt_file_name
@@ -2156,7 +2286,8 @@ StaSeqPathData *Sta::getWorstSeqData(std::optional<StaVertex *> vertex,
   while (!seq_data_queue.empty()) {
     seq_path_data = dynamic_cast<StaSeqPathData *>(seq_data_queue.top());
 
-    if (seq_path_data->get_delay_data()->get_trans_type() == trans_type) {
+    if ((seq_path_data->get_delay_data()->get_trans_type() == trans_type) ||
+        (trans_type == TransType::kRiseFall)) {
       break;
     }
     seq_data_queue.pop();
@@ -2609,7 +2740,7 @@ std::set<std::string> Sta::findStartOrEnd(StaVertex *the_vertex,
 unsigned Sta::reportTiming(std::set<std::string> &&exclude_cell_names /*= {}*/,
                            bool is_derate /*=false*/,
                            bool is_clock_cap /*=false*/,
-                           bool is_copy /*=false*/) {
+                           bool is_copy /*=true*/) {
   const char *design_work_space = get_design_work_space();
   std::string now_time = Time::getNowWallTime();
   std::string tmp = Str::replace(now_time, ":", "_");
@@ -2694,6 +2825,11 @@ unsigned Sta::reportTiming(std::set<std::string> &&exclude_cell_names /*= {}*/,
   if (is_copy) {
     copy_file(verilog_file_name, ".v");
   }
+
+  if (c_print_net_yaml) {
+    reportNet();
+  }
+
   writeVerilog(verilog_file_name.c_str(), exclude_cell_names);
 
   LOG_INFO << "The timing engine run success.";

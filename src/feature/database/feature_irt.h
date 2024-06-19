@@ -24,7 +24,9 @@
 #include "feature_ista.h"
 
 namespace ieda_feature {
-
+/// ###################################################################################///
+///  summary
+/// ###################################################################################///
 struct PASummary
 {
   std::map<int32_t, int32_t> routing_access_point_num_map;
@@ -93,6 +95,34 @@ struct RTSummary
   std::map<int32_t, GRSummary> iter_gr_summary_map;
   TASummary ta_summary;
   std::map<int32_t, DRSummary> iter_dr_summary_map;
+};
+
+/// ###################################################################################///
+///  net feature
+/// ###################################################################################///
+///  pin access distribution
+struct DbPinAccess
+{
+  std::string layer;
+  int x = 0;
+  int y = 0;
+  int number = 0;
+};
+
+struct TermPA
+{
+  std::vector<DbPinAccess> pa_list;
+};
+
+struct CellMasterPA
+{
+  std::string name;                         // cell master name
+  std::map<std::string, TermPA> term_list;  // 1 term name, 2 pa list for a term
+};
+
+struct RouteAnalyseData
+{
+  std::map<std::string, CellMasterPA> cell_master_list;
 };
 
 }  // namespace ieda_feature

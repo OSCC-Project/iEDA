@@ -83,6 +83,9 @@ class IdbSpeedUpSetup : public DbSetup {
   /// update instance for demo
   void updateInstanceInFastMode(std::vector<iplf::FileInstance>& file_inst_list);
 
+  /// show cell master
+  void showCellMasters();
+
   void resetIndex() { _item_index = 0; }
   bool updateInstance();
   bool updateNet();
@@ -117,7 +120,7 @@ class IdbSpeedUpSetup : public DbSetup {
   void createIO();
   void createIOPinPortShape(vector<IdbPin*>& pin_list);
   /// Instance
-  void createInstance();
+  void createInstance(IdbInstanceList* inst_list = nullptr);
   void createInstanceCore(IdbInstance* instance);
   void createInstancePad(IdbInstance* instance);
   void createInstanceBlock(IdbInstance* instance);

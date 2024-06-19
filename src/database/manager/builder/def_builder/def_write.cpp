@@ -41,6 +41,12 @@ using std::endl;
 
 namespace idb {
 
+/**
+ * @brief Constructor for DefWrite class.
+ * 
+ * @param def_service Pointer to IdbDefService object.
+ * @param type Type of DefWrite.
+ */
 DefWrite::DefWrite(IdbDefService* def_service, DefWriteType type)
 {
   _def_service = def_service;
@@ -52,9 +58,15 @@ DefWrite::~DefWrite()
 {
 }
 
+/**
+ * @brief Initialize the output file.
+ * 
+ * @param file Path to the file.
+ * @return true if initialization succeeds, false otherwise.
+ */
 bool DefWrite::initFile(const char* file)
 {
-  // 创建一个压缩格式的句柄
+  // Creating a compressed format handle
   if (ieda::Str::contain(file, ".gz")) {
     _font = SaveFormat::kGzip;
     _file_write_gz = gzopen(file, "w");
@@ -75,6 +87,11 @@ bool DefWrite::initFile(const char* file)
   return true;
 }
 
+/**
+ * @brief Close the output file.
+ * 
+ * @return true if file closure succeeds, false otherwise.
+ */
 bool DefWrite::closeFile()
 {
   bool result;
@@ -93,7 +110,11 @@ bool DefWrite::closeFile()
   return result;
 }
 
-// 需要存为其它文件形式，可以添加case，写入对应的方法
+/**
+ * @brief Write formatted string data to the output file.
+ * 
+ * @param strdata Formatted string data.
+ */
 void DefWrite::writestr(const char* strdata, ...)
 {
   va_list args;
@@ -109,6 +130,12 @@ void DefWrite::writestr(const char* strdata, ...)
   va_end(args);
 }
 
+/**
+ * @brief Write the design to the output file.
+ * 
+ * @param file Path to the file.
+ * @return true if writing succeeds, false otherwise.
+ */
 bool DefWrite::writeDb(const char* file)
 {
   if (!initFile(file)) {
@@ -142,6 +169,12 @@ bool DefWrite::writeDb(const char* file)
   return closeFile();
 }
 
+/**
+ * @brief Write the design to the output file.
+ * 
+ * @param file Path to the file.
+ * @return true if writing succeeds, false otherwise.
+ */
 bool DefWrite::writeChip()
 {
   write_version();
@@ -167,6 +200,10 @@ bool DefWrite::writeChip()
   return true;
 }
 
+/**
+ * @brief Writes Synthesis related information to the DEF file.
+ * @return True if writing is successful, false otherwise.
+ */
 bool DefWrite::writeDbSynthesis()
 {
   write_version();
@@ -181,12 +218,22 @@ bool DefWrite::writeDbSynthesis()
   return true;
 }
 
+
+/**
+ * @brief Writes END DESIGN marker to the DEF file.
+ * @return Status code indicating success or failure.
+ */
 int32_t DefWrite::write_end()
 {
   writestr("END DESIGN\n");
   return kDbSuccess;
 }
 
+
+/**
+ * @brief Writes the VERSION information to the DEF file.
+ * @return Status code indicating success or failure.
+ */
 int32_t DefWrite::write_version()
 {
   IdbDesign* design = _def_service->get_design();
@@ -198,6 +245,11 @@ int32_t DefWrite::write_version()
   return kDbSuccess;
 }
 
+
+/**
+ * @brief Writes the DESIGN name to the DEF file.
+ * @return Status code indicating success or failure.
+ */
 int32_t DefWrite::write_design()
 {
   IdbDesign* design = _def_service->get_design();
@@ -207,6 +259,8 @@ int32_t DefWrite::write_design()
   std::cout << "Write DESIGN name success..." << std::endl;
   return kDbSuccess;
 }
+
+
 
 int32_t DefWrite::write_units()
 {

@@ -18,9 +18,9 @@
 
 #include <tool_manager.h>
 
-#include "sta/Sta.hh"
 #include "api/TimingEngine.hh"
 #include "api/TimingIDBAdapter.hh"
+#include "sta/Sta.hh"
 
 namespace python_interface {
 bool staRun(const std::string& output)
@@ -48,8 +48,8 @@ bool setDesignWorkSpace(const std::string& design_workspace)
   return true;
 }
 
-bool read_lef_def(std::vector<std::string>& lef_files,
-                  const std::string& def_file) {
+bool read_lef_def(std::vector<std::string>& lef_files, const std::string& def_file)
+{
   auto* timing_engine = ista::TimingEngine::getOrCreateTimingEngine();
 
   auto* db_builder = new idb::IdbBuilder();
@@ -57,8 +57,7 @@ bool read_lef_def(std::vector<std::string>& lef_files,
 
   db_builder->buildDef(def_file);
 
-  auto db_adapter =
-      std::make_unique<ista::TimingIDBAdapter>(timing_engine->get_ista());
+  auto db_adapter = std::make_unique<ista::TimingIDBAdapter>(timing_engine->get_ista());
   db_adapter->set_idb(db_builder);
   unsigned is_ok = db_adapter->convertDBToTimingNetlist();
 
@@ -108,6 +107,19 @@ bool reportTiming(int digits, const std::string& delay_type, std::set<std::strin
   ista->updateTiming();
   ista->reportTiming(std::move(exclude_cell_names), derate);
   return true;
+}
+
+std::vector<std::string> get_used_libs()
+{
+  auto* ista = ista::Sta::getOrCreateSta();
+  auto used_libs = ista->getUsedLibs();
+
+  std::vector<std::string> ret;
+  for (auto& lib : used_libs) {
+    ret.push_back(lib->get_file_name());
+  }
+
+  return ret;
 }
 
 }  // namespace python_interface

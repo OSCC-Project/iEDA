@@ -23,7 +23,7 @@
 #include <vector>
 
 #include "Type.hh"
-#include "delay/ArnoldiDelayCal.hh"
+#include "delay/ReduceDelayCal.hh"
 #include "delay/ElmoreDelayCalc.hh"
 #include "gtest/gtest.h"
 #include "liberty/Liberty.hh"

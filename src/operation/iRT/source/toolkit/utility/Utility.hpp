@@ -1280,124 +1280,6 @@ class Utility
 
 #if 1  // 与Track有关的计算
 
-  static bool existTrackGrid(const PlanarCoord& real_coord, ScaleAxis& track_axis)
-  {
-    PlanarCoord grid_coord = getTrackGrid(real_coord, track_axis);
-    return ((grid_coord.get_x() != -1) && (grid_coord.get_y() != -1));
-  }
-
-  static PlanarCoord getTrackGrid(const PlanarCoord& real_coord, ScaleAxis& track_axis)
-  {
-    return getTrackGridRect(PlanarRect(real_coord, real_coord), track_axis).get_ll();
-  }
-
-  static bool existTrackGrid(const PlanarRect& real_rect, ScaleAxis& track_axis)
-  {
-    PlanarRect grid_rect = getTrackGrid(real_rect, track_axis);
-    return ((grid_rect.get_ll_x() != -1) && (grid_rect.get_ll_y() != -1) && (grid_rect.get_ur_x() != -1) && (grid_rect.get_ur_y() != -1));
-  }
-
-  static PlanarRect getTrackGrid(const PlanarRect& real_rect, ScaleAxis& track_axis) { return getTrackGridRect(real_rect, track_axis); }
-
-  /**
-   * 生成real_rect覆盖到的track grid rect
-   */
-  static PlanarRect getTrackGridRect(const PlanarRect& real_rect, ScaleAxis& track_axis)
-  {
-    int32_t real_ll_x = real_rect.get_ll_x();
-    int32_t real_ur_x = real_rect.get_ur_x();
-    int32_t real_ll_y = real_rect.get_ll_y();
-    int32_t real_ur_y = real_rect.get_ur_y();
-    std::vector<ScaleGrid>& x_grid_list = track_axis.get_x_grid_list();
-    std::vector<ScaleGrid>& y_grid_list = track_axis.get_y_grid_list();
-
-    int32_t grid_ll_x = -1;
-    int32_t grid_ur_x = -1;
-    {
-      int32_t grid_scale_x = 0;
-      for (ScaleGrid& x_grid : x_grid_list) {
-        int32_t start_line = x_grid.get_start_line();
-        int32_t step_length = x_grid.get_step_length();
-        int32_t end_line = x_grid.get_end_line();
-
-        if (start_line <= real_ll_x && real_ll_x <= end_line) {
-          int32_t offset_x = 0;
-          if (step_length != 0) {
-            offset_x = static_cast<int32_t>(std::ceil(static_cast<double>(real_ll_x - start_line) / step_length));
-          }
-          grid_ll_x = (grid_scale_x + offset_x);
-        }
-        if (start_line <= real_ur_x && real_ur_x <= end_line) {
-          int32_t offset_x = 0;
-          if (step_length != 0) {
-            offset_x = static_cast<int32_t>(static_cast<double>(real_ur_x - start_line) / step_length);
-          }
-          grid_ur_x = (grid_scale_x + offset_x);
-          break;
-        }
-        grid_scale_x += x_grid.get_step_num();
-      }
-      if (grid_ll_x == -1) {
-        if (!x_grid_list.empty()) {
-          grid_ll_x = (real_ll_x < x_grid_list.front().get_start_line() ? 0 : -1);
-        }
-      }
-      if (grid_ll_x != -1 && grid_ur_x == -1) {
-        grid_ur_x = (real_ur_x < x_grid_list.front().get_start_line() ? -1 : grid_scale_x);
-      }
-      if (grid_ll_x > grid_ur_x) {
-        grid_ll_x = -1;
-        grid_ur_x = -1;
-      }
-    }
-    int32_t grid_ll_y = -1;
-    int32_t grid_ur_y = -1;
-    {
-      int32_t grid_scale_y = 0;
-      for (ScaleGrid& y_grid : y_grid_list) {
-        int32_t start_line = y_grid.get_start_line();
-        int32_t step_length = y_grid.get_step_length();
-        int32_t end_line = y_grid.get_end_line();
-
-        if (start_line <= real_ll_y && real_ll_y <= end_line) {
-          int32_t offset_y = 0;
-          if (step_length != 0) {
-            offset_y = static_cast<int32_t>(std::ceil(static_cast<double>(real_ll_y - start_line) / step_length));
-          }
-          grid_ll_y = (grid_scale_y + offset_y);
-        }
-        if (start_line <= real_ur_y && real_ur_y <= end_line) {
-          int32_t offset_y = 0;
-          if (step_length != 0) {
-            offset_y = static_cast<int32_t>(static_cast<double>(real_ur_y - start_line) / step_length);
-          }
-          grid_ur_y = (grid_scale_y + offset_y);
-          break;
-        }
-        grid_scale_y += y_grid.get_step_num();
-      }
-      if (grid_ll_y == -1) {
-        if (!y_grid_list.empty()) {
-          grid_ll_y = (real_ll_y < y_grid_list.front().get_start_line() ? 0 : -1);
-        }
-      }
-      if (grid_ll_y != -1 && grid_ur_y == -1) {
-        grid_ur_y = (real_ur_y < y_grid_list.front().get_start_line() ? -1 : grid_scale_y);
-      }
-      if (grid_ll_y > grid_ur_y) {
-        grid_ll_y = -1;
-        grid_ur_y = -1;
-      }
-    }
-    if (grid_ll_x == -1 || grid_ur_x == -1 || grid_ll_y == -1 || grid_ur_y == -1) {
-      grid_ll_x = -1;
-      grid_ur_x = -1;
-      grid_ll_y = -1;
-      grid_ur_y = -1;
-    }
-    return PlanarRect(grid_ll_x, grid_ll_y, grid_ur_x, grid_ur_y);
-  }
-
   /**
    * 计算边界包含的刻度列表，如果边界与刻度重合，那么也会包含在内
    */
@@ -1423,6 +1305,171 @@ class Utility
     std::sort(scale_line_list.begin(), scale_line_list.end());
     scale_line_list.erase(std::unique(scale_line_list.begin(), scale_line_list.end()), scale_line_list.end());
     return scale_line_list;
+  }
+
+  static bool existTrackGrid(const PlanarCoord& real_coord, ScaleAxis& track_axis)
+  {
+    PlanarCoord grid_coord = getTrackGrid(real_coord, track_axis);
+    return ((grid_coord.get_x() != -1) && (grid_coord.get_y() != -1));
+  }
+
+  static PlanarCoord getTrackGrid(const PlanarCoord& real_coord, ScaleAxis& track_axis)
+  {
+    return getTrackGrid(PlanarRect(real_coord, real_coord), track_axis).get_ll();
+  }
+
+  static bool existTrackGrid(const PlanarRect& real_rect, ScaleAxis& track_axis)
+  {
+    PlanarRect grid_rect = getTrackGrid(real_rect, track_axis);
+    return ((grid_rect.get_ll_x() != -1) && (grid_rect.get_ll_y() != -1) && (grid_rect.get_ur_x() != -1) && (grid_rect.get_ur_y() != -1));
+  }
+
+  static PlanarRect getTrackGrid(const PlanarRect& real_rect, ScaleAxis& track_axis)
+  {
+    std::set<int32_t> x_pre_set;
+    std::set<int32_t> x_mid_set;
+    std::set<int32_t> x_post_set;
+    getTrackIndexSet(track_axis.get_x_grid_list(), real_rect.get_ll_x(), real_rect.get_ur_x(), x_pre_set, x_mid_set, x_post_set);
+
+    std::set<int32_t> y_pre_set;
+    std::set<int32_t> y_mid_set;
+    std::set<int32_t> y_post_set;
+    getTrackIndexSet(track_axis.get_y_grid_list(), real_rect.get_ll_y(), real_rect.get_ur_y(), y_pre_set, y_mid_set, y_post_set);
+
+    PlanarRect grid_rect;
+    if (x_mid_set.empty() || y_mid_set.empty()) {
+      grid_rect.set_ll(-1, -1);
+      grid_rect.set_ur(-1, -1);
+    } else {
+      grid_rect.set_ll(*x_mid_set.begin(), *y_mid_set.begin());
+      grid_rect.set_ur(*x_mid_set.rbegin(), *y_mid_set.rbegin());
+    }
+    return grid_rect;
+  }
+
+  static std::map<PlanarCoord, std::set<Orientation>, CmpPlanarCoordByXASC> getTrackGridOrientationMap(const PlanarRect& real_rect,
+                                                                                                       ScaleAxis& track_axis)
+  {
+    std::set<int32_t> x_pre_set;
+    std::set<int32_t> x_mid_set;
+    std::set<int32_t> x_post_set;
+    getTrackIndexSet(track_axis.get_x_grid_list(), real_rect.get_ll_x(), real_rect.get_ur_x(), x_pre_set, x_mid_set, x_post_set);
+
+    std::set<int32_t> y_pre_set;
+    std::set<int32_t> y_mid_set;
+    std::set<int32_t> y_post_set;
+    getTrackIndexSet(track_axis.get_y_grid_list(), real_rect.get_ll_y(), real_rect.get_ur_y(), y_pre_set, y_mid_set, y_post_set);
+
+    std::map<PlanarCoord, std::set<Orientation>, CmpPlanarCoordByXASC> grid_orientation_map;
+    for (int32_t x_pre : x_pre_set) {
+      for (int32_t y_mid : y_mid_set) {
+        grid_orientation_map[PlanarCoord(x_pre, y_mid)].insert(Orientation::kEast);
+      }
+    }
+    for (int32_t x_post : x_post_set) {
+      for (int32_t y_mid : y_mid_set) {
+        grid_orientation_map[PlanarCoord(x_post, y_mid)].insert(Orientation::kWest);
+      }
+    }
+    for (int32_t y_pre : y_pre_set) {
+      for (int32_t x_mid : x_mid_set) {
+        grid_orientation_map[PlanarCoord(x_mid, y_pre)].insert(Orientation::kNorth);
+      }
+    }
+    for (int32_t y_post : y_post_set) {
+      for (int32_t x_mid : x_mid_set) {
+        grid_orientation_map[PlanarCoord(x_mid, y_post)].insert(Orientation::kSouth);
+      }
+    }
+    for (int32_t x_mid : x_mid_set) {
+      for (int32_t y_mid : y_mid_set) {
+        grid_orientation_map[PlanarCoord(x_mid, y_mid)].insert(
+            {Orientation::kEast, Orientation::kWest, Orientation::kNorth, Orientation::kSouth, Orientation::kAbove, Orientation::kBelow});
+      }
+    }
+    return grid_orientation_map;
+  }
+
+  static void getTrackIndexSet(std::vector<ScaleGrid>& scale_grid_list, int32_t ll_scale, int32_t ur_scale, std::set<int32_t>& pre_index_set,
+                              std::set<int32_t>& mid_index_set, std::set<int32_t>& post_index_set)
+  {
+    int32_t pre_index = -1;
+    int32_t post_index = -1;
+    int32_t pre_scale = INT32_MIN;
+    int32_t post_scale = INT32_MAX;
+
+    int32_t index = -1;
+    int32_t index_scale = -1;
+    for (ScaleGrid& scale_grid : scale_grid_list) {
+      for (int32_t i = 0; i <= scale_grid.get_step_num(); ++i) {
+        int32_t scale = scale_grid.get_start_line() + i * scale_grid.get_step_length();
+        if (index_scale != scale) {
+          ++index;
+          index_scale = scale;
+        } else {
+          continue;
+        }
+        if (scale < ll_scale) {
+          if (pre_scale < scale) {
+            pre_scale = scale;
+            pre_index = index;
+          }
+        } else if (ur_scale < scale) {
+          if (scale < post_scale) {
+            post_scale = scale;
+            post_index = index;
+          }
+          goto here;
+        } else {
+          mid_index_set.insert(index);
+        }
+      }
+    }
+  here:
+    if (pre_index != -1) {
+      pre_index_set.insert(pre_index);
+    }
+    if (post_index != -1) {
+      post_index_set.insert(post_index);
+    }
+  }
+
+  static void getTrackScaleSet(std::vector<ScaleGrid>& scale_grid_list, int32_t ll_scale, int32_t ur_scale, std::set<int32_t>& pre_scale_set,
+                              std::set<int32_t>& mid_scale_set, std::set<int32_t>& post_scale_set)
+  {
+    int32_t pre_scale = INT32_MIN;
+    int32_t post_scale = INT32_MAX;
+
+    int32_t index_scale = -1;
+    for (ScaleGrid& scale_grid : scale_grid_list) {
+      for (int32_t i = 0; i <= scale_grid.get_step_num(); ++i) {
+        int32_t scale = scale_grid.get_start_line() + i * scale_grid.get_step_length();
+        if (index_scale != scale) {
+          index_scale = scale;
+        } else {
+          continue;
+        }
+        if (scale < ll_scale) {
+          if (pre_scale < scale) {
+            pre_scale = scale;
+          }
+        } else if (ur_scale < scale) {
+          if (scale < post_scale) {
+            post_scale = scale;
+          }
+          goto here;
+        } else {
+          mid_scale_set.insert(index_scale);
+        }
+      }
+    }
+  here:
+    if (pre_scale != INT32_MIN) {
+      pre_scale_set.insert(pre_scale);
+    }
+    if (post_scale != INT32_MAX) {
+      post_scale_set.insert(post_scale);
+    }
   }
 
 #endif

@@ -737,6 +737,12 @@ Inst* TreeBuilder::defaultTree(const std::string& net_name, const std::vector<Pi
   if (use_skew_tree_alg) {
     return cbsTree(net_name, loads, skew_bound, guide_loc, topo_type);
   }
+  if (loads.size() == 1) {
+    auto loc = guide_loc.value_or(loads.front()->get_location());
+    auto* buf = genBufInst(net_name, loc);
+    directConnectTree(buf->get_driver_pin(), loads.front());
+    return buf;
+  }
   std::vector<Inst*> load_insts;
   std::ranges::transform(loads, std::back_inserter(load_insts), [&](Pin* pin) { return pin->get_inst(); });
   auto* buf = genBufInst(net_name, guide_loc.value_or(BalanceClustering::calcCentroid(load_insts)));

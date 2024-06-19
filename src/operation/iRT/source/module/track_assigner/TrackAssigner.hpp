@@ -53,10 +53,9 @@ class TrackAssigner
   TANet convertToTANet(Net& net);
   void setTAParameter(TAModel& ta_model);
   void initTAPanelMap(TAModel& ta_model);
-  void initTATaskList(TAModel& ta_model);
-  std::map<TAPanelId, std::vector<TATask*>, CmpTAPanelId> getPanelTaskMap(TANet& ta_net);
   void buildPanelSchedule(TAModel& ta_model);
   void assignTAPanelMap(TAModel& ta_model);
+  void initTATaskList(TAModel& ta_model, TAPanel& ta_panel);
   bool needRouting(TAPanel& ta_panel);
   void buildFixedRectList(TAPanel& ta_panel);
   void buildPanelTrackAxis(TAPanel& ta_panel);

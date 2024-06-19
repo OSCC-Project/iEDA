@@ -214,9 +214,9 @@ class Sta {
   }
   auto& get_top_module_name() { return _top_module_name; }
 
-  void readVerilog(const char* verilog_file);
+  unsigned readVerilog(const char* verilog_file);
   void linkDesign(const char* top_cell_name);
-  void readVerilogWithRustParser(const char* verilog_file);
+  unsigned readVerilogWithRustParser(const char* verilog_file);
   void linkDesignWithRustParser(const char* top_cell_name);
   void set_design_name(const char* design_name) {
     _netlist.set_name(design_name);
@@ -405,6 +405,8 @@ class Sta {
   unsigned reportCap(const char* rpt_file_name, bool is_clock_cap);
   unsigned reportFanout(const char* rpt_file_name);
   unsigned reportSkew(const char* rpt_file_name, AnalysisMode analysis_mode);
+  unsigned reportNet(const char* rpt_file_name, Net* net);
+  unsigned reportNet();
   unsigned reportFromThroughTo(const char* rpt_file_name,
                                AnalysisMode analysis_mode, const char* from_pin,
                                const char* through_pin, const char* to_pin);
