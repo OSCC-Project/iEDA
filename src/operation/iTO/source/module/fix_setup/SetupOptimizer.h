@@ -27,8 +27,8 @@
 
 namespace ito {
 using ito::BufferedOptionSeq;
-using ito::fuzzyLess;
-using ito::fuzzyLessEqual;
+using ito::approximatelyLess;
+using ito::approximatelyLessEqual;
 class SetupOptimizer {
  public:
   SetupOptimizer(DbInterface *dbinterface);
@@ -46,14 +46,14 @@ class SetupOptimizer {
  private:
   void initBufferCell();
 
-  void optimizeSetup(StaSeqPathData *worst_path, Slack path_slack);
-  void optimizeSetup(StaVertex *vertex, Slack path_slack);
+  void optimizeSetup(StaSeqPathData *worst_path, TOSlack path_slack);
+  void optimizeSetup(StaVertex *vertex, TOSlack path_slack);
 
-  void buffering(Pin *pin);
+  void performBuffering(Pin *pin);
 
-  void insertBufferSeparateLoads(StaVertex *drvr_vertex, Slack drvr_slack);
+  void insertBufferSeparateLoads(StaVertex *drvr_vertex, TOSlack drvr_slack);
 
-  LibertyCell *upsizeCell(LibertyPort *in_port, LibertyPort *drvr_port, float load_cap,
+  LibertyCell *repowerCell(LibertyPort *in_port, LibertyPort *drvr_port, float load_cap,
                           float prev_drive);
 
   BufferedOptionSeq bottomUpBuffering(RoutingTree *tree, int curr_id, int prev_id,
@@ -63,23 +63,22 @@ class SetupOptimizer {
                                 BufferedOptionSeq buf_opt_right, Point curr_loc);
 
   BufferedOptionSeq addWireAndBuffer(BufferedOptionSeq buf_opt_seq,
-                                     //  RoutingTree *tree,
                                      Point curr_loc, Point prev_loc, int level);
 
   BufferedOptionSeq addBuffer(BufferedOptionSeq buf_opt_seq, Point prev_loc);
 
   void topDownImplementBuffering(BufferedOption *buf_opt, Net *net, int level);
 
-  float calcBufferDelay(LibertyCell *buffer_cell, float load_cap);
-  float calcBufferDelay(LibertyCell *buffer_cell, float load_cap, TransType rf);
+  float calcDelayOfBuffer(LibertyCell *buffer_cell, float load_cap);
+  float calcDelayOfBuffer(LibertyCell *buffer_cell, float load_cap, TransType rf);
 
-  float calcGateDelay(LibertyPort *drvr_port, float load_cap, TransType rf);
+  float calcDelayOfGate(LibertyPort *drvr_port, float load_cap, TransType rf);
 
-  float calcGateDelay(LibertyPort *drvr_port, float load_cap);
+  float calcDelayOfGate(LibertyPort *drvr_port, float load_cap);
 
   int getFanoutNumber(Pin *pin);
 
-  bool hasTopLevelOutputPort(Net *net);
+  bool netConnectToOutputPort(Net *net);
 
   void setLocation(Instance *inst, int x, int y);
 
@@ -87,11 +86,10 @@ class SetupOptimizer {
 
   bool netConnectToPort(Net *net);
 
-  Slack getWorstSlack(StaVertex *vertex, AnalysisMode mode);
-  VertexSet getEndPoints();
-  void      findEndpointsWithSetupViolation(VertexSet end_points, Slack slack_margin,
-                                            // return values
-                                            VertexSeq &setup_violations);
+  TOSlack getWorstSlack(StaVertex *vertex, AnalysisMode mode);
+  TOVertexSet getEndPoints();
+  void      findEndpointsWithSetupViolation(TOVertexSet end_points, TOSlack slack_margin,
+                                            TOVertexSeq &setup_violations);
 
   // data
   DbInterface     *_db_interface;
@@ -114,7 +112,7 @@ class SetupOptimizer {
   static int _rise;
   static int _fall;
 
-  LibertyCellSeq _buf_cells;
+  TOLibertyCellSeq _available_buffer_cells;
 
   friend class HoldOptimizer;
 };

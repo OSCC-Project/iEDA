@@ -30,7 +30,7 @@ double dbuToMeters(int dist, int dbu) {
 }
 
 
-bool fuzzyEqual(float f1, float f2) {
+bool approximatelyEqual(float f1, float f2) {
   if (f1 == f2) {
     return true;
   } else if (f1 == 0.0) {
@@ -43,35 +43,27 @@ bool fuzzyEqual(float f1, float f2) {
 }
 
 
-bool fuzzyLess(float f1, float f2) {
-  return f1 < f2 && !fuzzyEqual(f1, f2);
+bool approximatelyLess(float f1, float f2) {
+  return f1 < f2 && !approximatelyEqual(f1, f2);
 }
 
 
-bool fuzzyLessEqual(float f1, float f2) {
-  return f1 < f2 || fuzzyEqual(f1, f2);
+bool approximatelyLessEqual(float f1, float f2) {
+  return f1 < f2 || approximatelyEqual(f1, f2);
 }
 
 
-bool fuzzyGreater(float f1, float f2) {
-  return f1 > f2 && !fuzzyEqual(f1, f2);
+bool approximatelyGreater(float f1, float f2) {
+  return f1 > f2 && !approximatelyEqual(f1, f2);
 }
 
 
-bool fuzzyGreaterEqual(float f1, float f2) {
-  return f1 > f2 || fuzzyEqual(f1, f2);
+bool approximatelyGreaterEqual(float f1, float f2) {
+  return f1 > f2 || approximatelyEqual(f1, f2);
 }
 
-bool stringLess(const char *str1, const char *str2) {
-  return strcmp(str1, str2) < 0;
-}
 
-bool stringEqual(const char *str1, const char *str2) {
-  return (str1 == nullptr && str2 == nullptr)
-    || (str1 && str2 && strcasecmp(str1, str2) == 0);
-}
-
-void hashIncr(size_t &hash, size_t add) {
+void increaseHash(size_t &hash, size_t add) {
   hash = ((hash << 5) + hash) ^ add;
 }
 } // namespace ito

@@ -52,7 +52,7 @@ class EstimateParasitics {
                            TimingDBAdapter *db_adapter);
 
   std::unordered_set<ista::Net *> get_parasitics_invalid_net() {
-    return _parasitics_invalid;
+    return _parasitics_invalid_nets;
   }
 
  private:
@@ -63,7 +63,7 @@ class EstimateParasitics {
   TimingDBAdapter *_db_adapter = nullptr;
   int              _dbu;
 
-  std::unordered_set<ista::Net *> _parasitics_invalid;
+  std::unordered_set<ista::Net *> _parasitics_invalid_nets;
 
   bool _have_estimated_parasitics = false;
 };

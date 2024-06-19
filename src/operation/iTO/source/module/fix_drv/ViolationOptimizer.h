@@ -44,10 +44,8 @@ class ViolationOptimizer {
   void checkViolations();
 
   void fixViolations(RoutingTree *tree, int curr_pt, int prev_pt, Net *net, float max_cap,
-                     int level,
-                     // Return values.
-                     int   &wire_length, // dbu
-                     float &pin_cap, DesignObjSeq &load_pins);
+                     int level, int &wire_length, float &pin_cap,
+                     TODesignObjSeq &load_pins);
 
   void fixLargeNet(Net *net, int max_fanout, LibertyCell *insert_buf_cell);
 
@@ -58,40 +56,32 @@ class ViolationOptimizer {
                         bool &fix_middle, bool &fix_right);
 
   void insertBuffer(int x, int y, Net *net, LibertyCell *insert_buf_cell, int level,
-                    int &wire_length, float &cap, DesignObjSeq &load_pins);
+                    int &wire_length, float &cap, TODesignObjSeq &load_pins);
 
-  void checkFanoutViolation(DesignObject *drvr_pin,
-                            // return values
-                            double &max_fanout, int &fanout_violations,
-                            bool &repair_fanout, vector<int> &fanouts);
+  void checkFanoutViolation(DesignObject *drvr_pin, double &max_fanout,
+                            int &fanout_violations, bool &repair_fanout,
+                            vector<int> &fanouts);
 
-  void checkCapacitanceViolation(DesignObject *drvr_pin,
-                                 // return values
-                                 double &max_drvr_cap, int &cap_violations,
-                                 bool &repair_cap);
+  void checkCapacitanceViolation(DesignObject *drvr_pin, double &max_drvr_cap,
+                                 int &cap_violations, bool &repair_cap);
 
-  void   checkSlewViolation(DesignObject *drvr_pin,
-                            // return values
-                            double &max_drvr_cap, int &slew_violations, bool &repair_slew);
+  void   checkSlewViolation(DesignObject *drvr_pin, double &max_drvr_cap,
+                            int &slew_violations, bool &repair_slew);
   double calcLoadCap(LibertyPort *drvr_port, double slew);
   double calcSlewDiff(LibertyPort *drvr_port, double target_slew, double load_cap);
-  void   calcGateRiseFallDelays(LibertyPort *drvr_port, float load_cap,
-                                // return values.
-                                Delay delays[], Slew slews[]);
-  void   gateRiseFallDelay(TransType rf, LibertyArc *arc, float load_cap,
-                           // return values.
-                           Delay delays[], Slew slews[]);
+  void   calcGateRiseFallDelays(LibertyPort *drvr_port, float load_cap, TODelay delays[],
+                                TOSlew slews[]);
+  void gateRiseFallDelay(TransType rf, LibertyArc *arc, float load_cap, TODelay delays[],
+                         TOSlew slews[]);
 
   void setLocation(Instance *inst, int x, int y);
 
   void increDesignArea(float delta) { _db_interface->increDesignArea(delta); }
 
-  bool hasMultipleOutputs(Instance *inst);
-
   bool repowerInstance(Pin *drvr_pin);
   bool repowerInstance(Instance *inst, LibertyCell *replace);
 
-  double calcBufferDelay(LibertyCell *buffer_cell, float load);
+  double calcDelayOfBuffer(LibertyCell *buffer_cell, float load);
 
   int portFanoutLoadNum(LibertyPort *port);
 

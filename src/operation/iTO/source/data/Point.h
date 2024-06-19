@@ -21,7 +21,7 @@
 
 #include "Utility.h"
 namespace ito {
-using ito::hashIncr;
+using ito::increaseHash;
 class Point {
  public:
   Point() = default;
@@ -58,8 +58,8 @@ class PointHash {
  public:
   size_t operator()(const Point &pt) const {
     size_t hash = 5381;
-    hashIncr(hash, pt.get_x());
-    hashIncr(hash, pt.get_y());
+    increaseHash(hash, pt.get_x());
+    increaseHash(hash, pt.get_y());
     return hash;
   }
 };

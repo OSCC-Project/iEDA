@@ -24,7 +24,7 @@ int RoutingTree::_null_pt = -1;
 
 void getConnectedPins(Net *net,
                       // Return value.
-                      DesignObjSeq &pins) {
+                      TODesignObjSeq &pins) {
   pins.clear();
   DesignObject *obj;
   FOREACH_NET_PIN(net, obj) { pins.push_back(obj); }
@@ -124,7 +124,7 @@ void RoutingTree::plotPinName(std::stringstream &feed, const std::string net_nam
 RoutingTree *makeRoutingTree(Net *net, TimingDBAdapter *db_adapter,
                              RoutingType rout_type) {
   RoutingTree  *tree = new RoutingTree();
-  DesignObjSeq &pins = tree->get_pins();
+  TODesignObjSeq &pins = tree->get_pins();
   vector<Point> points;
   // get drvr
   DesignObject *drvr_pin_port = net->getDriver();

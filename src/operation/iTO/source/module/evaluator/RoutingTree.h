@@ -41,7 +41,7 @@ RoutingTree *makeRoutingTree(Net *net, ista::TimingDBAdapter *db_adapter,
 
 void getConnectedPins(Net *net,
                       // Return value.
-                      DesignObjSeq &pins);
+                      TODesignObjSeq &pins);
 
 void printTree(Node *root);
 
@@ -139,7 +139,7 @@ class RoutingTree {
   void set_points(vector<Point> pts) { this->_points = pts; }
 
   // get
-  DesignObjSeq &get_pins() { return _pins; }
+  TODesignObjSeq &get_pins() { return _pins; }
   Node         *get_root() const { return _root; }
   vector<Point> get_points() const { return _points; }
   Point         get_location(int idx) const { return _points[idx]; }
@@ -206,7 +206,7 @@ class RoutingTree {
                    int id);
   // _root always cooresponds to the driver pin.
   Node        *_root = nullptr;
-  DesignObjSeq _pins;
+  TODesignObjSeq _pins;
 
   // pin pts + steiner pts, the index of steiner pts is behind of the pin pts.
   std::vector<Point> _points;
