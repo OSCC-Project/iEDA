@@ -46,11 +46,12 @@ class MinCostFlow
   void add_node(const double& x, const double& y, Value& value) { _nodes.push_back({FlowPoint{x, y}, value}); }
 
   void add_center(const double& x, const double& y) { _centers.push_back({x, y}); }
+
   std::vector<std::vector<Value>> run(const size_t& max_fanout)
   {
-    // Define the graph
-    // Builds source -> [sink nodes] -> [buffer nodes] - > target
-    ListDigraph graph;
+    // Flow problem:
+    // virturl source -> [sinks] -> [buffers] -> virturl target
+    // requirement: meet the max_fanout constraint
 
     // Define the node and arc types
     typedef ListDigraph::Node Node;
@@ -58,30 +59,34 @@ class MinCostFlow
     typedef ListDigraph::Arc Arc;
     typedef ListDigraph::ArcMap<int> ArcMap;
     typedef ListDigraph::ArcIt ArcIt;
+    typedef NetworkSimplex<ListDigraph, int, int> MinCostFlowSolver;
 
-    // Add nodes to the graph
-    Node source = graph.addNode();
-    Node target = graph.addNode();
-    std::vector<Node> sink_nodes, buffer_nodes;
-    std::ranges::for_each(_nodes, [&](auto& node) { sink_nodes.emplace_back(graph.addNode()); });
-    std::ranges::for_each(_centers, [&](auto& center) { buffer_nodes.emplace_back(graph.addNode()); });
+    // Define the network
+    ListDigraph network;
 
-    // Add arcs to the graph
+    // Add nodes to the network
+    Node source = network.addNode();
+    Node target = network.addNode();
+    std::vector<Node> sinks, buffers;
+    std::ranges::for_each(_nodes, [&](auto& node) { sinks.emplace_back(network.addNode()); });
+    std::ranges::for_each(_centers, [&](auto& center) { buffers.emplace_back(network.addNode()); });
+
+    // Add arcs to the network
     std::vector<Arc> source_sink_arcs, sink_buffer_arcs, buffer_target_arcs;
     // source sink arc
-    std::ranges::for_each(sink_nodes, [&](auto& sink_node) { source_sink_arcs.emplace_back(graph.addArc(source, sink_node)); });
+    std::ranges::for_each(sinks, [&](auto& sink_node) { source_sink_arcs.emplace_back(network.addArc(source, sink_node)); });
     // sink buffer arc, dist cost
     std::vector<float> dist_costs;
-    for (size_t i = 0; i < sink_nodes.size(); ++i) {
-      for (size_t j = 0; j < buffer_nodes.size(); ++j) {
+    for (size_t i = 0; i < sinks.size(); ++i) {
+      for (size_t j = 0; j < buffers.size(); ++j) {
         auto dist = calcManhDist(_nodes[i].point, _centers[j]);
-        sink_buffer_arcs.emplace_back(graph.addArc(sink_nodes[i], buffer_nodes[j]));
+        sink_buffer_arcs.emplace_back(network.addArc(sinks[i], buffers[j]));
         dist_costs.emplace_back(dist);
       }
     }
     // buffer target arc
-    std::ranges::for_each(buffer_nodes, [&](auto& buffer_node) { buffer_target_arcs.emplace_back(graph.addArc(buffer_node, target)); });
-    ArcMap arc_cost(graph), arc_capacity(graph);
+    std::ranges::for_each(buffers, [&](auto& buffer_node) { buffer_target_arcs.emplace_back(network.addArc(buffer_node, target)); });
+    ArcMap arc_cost(network), arc_capacity(network);
     std::ranges::for_each(source_sink_arcs, [&](auto& arc) { arc_capacity[arc] = 1; });
     for (size_t i = 0; i < sink_buffer_arcs.size(); ++i) {
       arc_capacity[sink_buffer_arcs[i]] = 1;
@@ -89,34 +94,38 @@ class MinCostFlow
     }
     std::ranges::for_each(buffer_target_arcs, [&](auto& arc) { arc_capacity[arc] = max_fanout; });
 
-    // define the min cost flow solver
-    NetworkSimplex<ListDigraph, int, int> mcf(graph);
+    // mcf solver by lemon
+    MinCostFlowSolver mcf(network);
     mcf.costMap(arc_cost);
     mcf.upperMap(arc_capacity);
     mcf.stSupply(source, target, _nodes.size());
     mcf.run();
-    ListDigraph::ArcMap<int> solution(graph);
+    ArcMap solution(network);
     mcf.flowMap(solution);
+
+    // init the node map
+    NodeMap node_map(network);
+    for (size_t i = 0; i < sinks.size(); ++i) {
+      node_map[sinks[i]] = {i, -1};
+    }
+
+    for (size_t i = 0; i < buffers.size(); ++i) {
+      node_map[buffers[i]] = {-1, i};
+    }
+
+    std::pair<int, int> virtual_node = {-2, -2};
+    node_map[source] = virtual_node;
+    node_map[target] = virtual_node;
+
+    // get the clusters
     std::vector<std::vector<Value>> clusters(_centers.size());
-    NodeMap node_map(graph);
-    for (size_t i = 0; i < sink_nodes.size(); ++i) {
-      node_map[sink_nodes[i]] = {i, -1};
-    }
-
-    for (size_t i = 0; i < buffer_nodes.size(); ++i) {
-      node_map[buffer_nodes[i]] = {-1, i};
-    }
-
-    node_map[source] = {-2, -2};
-    node_map[target] = {-2, -2};
-
-    for (ArcIt it(graph); it != INVALID; ++it) {
+    for (ArcIt it(network); it != INVALID; ++it) {
       if (solution[it] == 0) {
         continue;
       }
-      if (node_map[graph.source(it)].second == -1 && node_map[graph.target(it)].first == -1) {
-        auto cluster_id = node_map[graph.target(it)].second;
-        clusters[cluster_id].emplace_back(_nodes[node_map[graph.source(it)].first].value);
+      if (node_map[network.source(it)].second == -1 && node_map[network.target(it)].first == -1) {
+        auto cluster_id = node_map[network.target(it)].second;
+        clusters[cluster_id].emplace_back(_nodes[node_map[network.source(it)].first].value);
       }
     }
     // remove empty cluster
