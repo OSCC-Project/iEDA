@@ -19,22 +19,16 @@
 #include <iostream>
 #include <string>
 
-#include "PLAPI.hh"
-#include "PlacerDB.hh"
-#include "idm.h"
+#include "../../tcl_definition.h"
+#include "ScriptEngine.hh"
 
-using namespace ipl;
-// using namespace imp;
+using ieda::TclCmd;
+using ieda::TclOption;
+using ieda::TclStringOption;
 
-int main(int argc, char* argv[])
-{
-  // std::string idb_json = argv[1];
-  // std::string ipl_json = argv[2];
-  // dmInst->init(idb_json);
+namespace tcl {
 
-  // auto* idb_builder = dmInst->get_idb_builder();
+DEFINE_CMD_CLASS(ReportWL);
+DEFINE_CMD_CLASS(ReportCong);
 
-  // iPLAPIInst.initAPI(ipl_json, idb_builder);
-  // iPLAPIInst.runMP();
-  return 1;
-}
+}  // namespace tcl
