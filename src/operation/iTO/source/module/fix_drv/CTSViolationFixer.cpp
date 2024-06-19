@@ -165,7 +165,7 @@ std::vector<IdbNet *> CTSViolationFixer::fixTiming(IdbNet *idb_net, Tree *topo) 
 
     int          wire_length;
     float        pin_cap, fanout;
-    DesignObjSeq load_pins;
+    TODesignObjSeq load_pins;
 
     int  drvr_id = topo->get_drvr_id();
     auto drvr_pt = topo->get_location(drvr_id);
@@ -190,16 +190,14 @@ std::vector<IdbNet *> CTSViolationFixer::fixTiming(IdbNet *idb_net, Tree *topo) 
 
 void CTSViolationFixer::fixViolations(Tree *tree, int curr_pt, int prev_pt, Net *net,
                                       float max_cap, float max_fanout, int level,
-                                      // Return values.
-                                      // Remaining parasiics after repeater insertion.
                                       int &  wire_length, // dbu
                                       float &pin_cap, float &fanout,
-                                      DesignObjSeq &load_pins) {
+                                      TODesignObjSeq &load_pins) {
   int          left_branch = tree->left(curr_pt);
   int          left_wire_length = 0;
   float        left_pin_cap = 0.0;
   float        left_fanout = 0.0;
-  DesignObjSeq left_load_pins;
+  TODesignObjSeq left_load_pins;
   if (left_branch != Tree::_null_pt) {
     fixViolations(tree, left_branch, curr_pt, net, max_cap, max_fanout, level + 1,
                   left_wire_length, left_pin_cap, left_fanout, left_load_pins);
@@ -209,7 +207,7 @@ void CTSViolationFixer::fixViolations(Tree *tree, int curr_pt, int prev_pt, Net 
   int          middle_wire_length = 0;
   float        middle_pin_cap = 0.0;
   float        middle_fanout = 0.0;
-  DesignObjSeq middle_load_pins;
+  TODesignObjSeq middle_load_pins;
   if (middle_branch != Tree::_null_pt) {
     fixViolations(tree, middle_branch, curr_pt, net, max_cap, max_fanout, level + 1,
                   middle_wire_length, middle_pin_cap, middle_fanout, middle_load_pins);
@@ -219,7 +217,7 @@ void CTSViolationFixer::fixViolations(Tree *tree, int curr_pt, int prev_pt, Net 
   int          right_wire_length = 0;
   float        right_pin_cap = 0.0;
   float        right_fanout = 0.0;
-  DesignObjSeq right_load_pins;
+  TODesignObjSeq right_load_pins;
   if (right_branch != Tree::_null_pt) {
     fixViolations(tree, right_branch, curr_pt, net, max_cap, max_fanout, level + 1,
                   right_wire_length, right_pin_cap, right_fanout, right_load_pins);
@@ -349,9 +347,9 @@ void CTSViolationFixer::fixViolations(Tree *tree, int curr_pt, int prev_pt, Net 
 
     int wire_insert_count = 0; // number of buffer insert in wire // max 10
     while (pin_cap < max_cap && pin_wire_length_cap > max_cap) {
-      // Make the wire a bit shorter than necessary to allow for
-      // offset from instance origin to pin and detailed placement movement.
-      double length_margin = .2;
+      // Make the wire slightly shorter than needed to accommodate the offset from the
+      // instance origin to the pin and to allow for detailed placement adjustments.
+      double length_margin_for_placement_remove = .2;
       // Distance from pt to repeater backward toward prev_pt.
       double buf_dist;
 
@@ -360,7 +358,7 @@ void CTSViolationFixer::fixViolations(Tree *tree, int curr_pt, int prev_pt, Net 
       int cap_length = dynamic_cast<TimingIDBAdapter *>(_db_adapter)
                            ->capToLength(1, abs(max_cap - pin_cap), width) *
                        _dbu;
-      buf_dist = length - (wire_length - cap_length * (1.0 - length_margin));
+      buf_dist = length - (wire_length - cap_length * (1.0 - length_margin_for_placement_remove));
       if (buf_dist < 0.0) {
         buf_dist = 0;
       }
@@ -440,7 +438,7 @@ pair<int, int> CTSViolationFixer::selectBufferLocation(std::deque<Point> &segmen
 void CTSViolationFixer::insertCLKBuffer(int x, int y, Net *net,
                                         LibertyCell *insert_buf_cell, int level,
                                         int &wire_length, float &cap, float &fanout,
-                                        DesignObjSeq &load_pins) {
+                                        TODesignObjSeq &load_pins) {
   LibertyPort *buffer_input_port, *buffer_output_port;
   insert_buf_cell->bufferPorts(buffer_input_port, buffer_output_port);
 
@@ -464,7 +462,7 @@ void CTSViolationFixer::insertCLKBuffer(int x, int y, Net *net,
   idb::IdbNet *in_net_db = db_adapter->staToDb(in_net);
   out_net_db->set_connect_type(in_net_db->get_connect_type());
 
-  // Move load pins to out_net.
+  // Re-connect the load_pins to out_net.
   for (auto *pin_port : load_pins) {
     if (pin_port->isPin()) {
       Pin *     pin = dynamic_cast<Pin *>(pin_port);
@@ -572,7 +570,6 @@ void CTSViolationFixer::setLocation(Instance *inst, int x, int y) {
 }
 
 void CTSViolationFixer::checkFanoutViolation(DesignObject *drvr_pin,
-                                             // return values
                                              double &max_fanout, bool &repair_fanout) {
   double                fanout, fanout_slack;
   std::optional<double> max_fanout_tmp;
@@ -588,7 +585,6 @@ void CTSViolationFixer::checkFanoutViolation(DesignObject *drvr_pin,
 }
 
 void CTSViolationFixer::checkCapacitanceViolation(DesignObject *drvr_pin,
-                                                  // return values
                                                   double &max_drvr_cap,
                                                   bool &  repair_cap) {
   double                cap1;
@@ -606,7 +602,6 @@ void CTSViolationFixer::checkCapacitanceViolation(DesignObject *drvr_pin,
 }
 
 void CTSViolationFixer::checkSlewViolation(DesignObject *drvr_pin,
-                                           // return values
                                            double &max_drvr_cap, bool &repair_slew) {
   float slew_slack1 = kInf;
   float max_slew1{0.f};
@@ -614,7 +609,6 @@ void CTSViolationFixer::checkSlewViolation(DesignObject *drvr_pin,
   Net *         net = drvr_pin->get_net();
   DesignObject *pin;
   FOREACH_NET_PIN(net, pin) {
-    // Slew slew_tmp;
     double                slew_tmp;
     std::optional<double> limit_tmp;
     double                slack_tmp;
@@ -637,7 +631,7 @@ void CTSViolationFixer::checkSlewViolation(DesignObject *drvr_pin,
     }
 
     if (drvr_port) {
-      // Find max load cap that corresponds to max_slew.
+      // Identify the maximum load capacitance that corresponds to the maximum slew.
       double max_cap1 = calcLoadCap(drvr_port, max_slew1); // 2
       max_drvr_cap = min(max_drvr_cap, max_cap1);          // 3
       repair_slew = true;
@@ -648,23 +642,23 @@ void CTSViolationFixer::checkSlewViolation(DesignObject *drvr_pin,
 double CTSViolationFixer::calcLoadCap(LibertyPort *drvr_port, double slew) {
   double lower_cap = 0.0;
   double upper_cap = slew / drvr_port->driveResistance() * 2;
-  double tol = .01;
+  double tolerate = 0.01;
 
   double slew_diff_upper_cap = calcSlewDiff(drvr_port, slew, upper_cap);
 
-  while (abs(lower_cap - upper_cap) > tol * max(lower_cap, upper_cap)) {
+  while (abs(lower_cap - upper_cap) > tolerate * max(lower_cap, upper_cap)) {
     if (slew_diff_upper_cap < 0.0) {
       lower_cap = upper_cap;
       upper_cap *= 2;
       slew_diff_upper_cap = calcSlewDiff(drvr_port, slew, upper_cap);
     } else {
-      double cap3 = (lower_cap + upper_cap) / 2.0;
-      double diff3 = calcSlewDiff(drvr_port, slew, cap3);
-      if (diff3 < 0.0) {
-        lower_cap = cap3;
+      double mid_cap = (lower_cap + upper_cap) / 2.0;
+      double mid_diff = calcSlewDiff(drvr_port, slew, mid_cap);
+      if (mid_diff < 0.0) {
+        lower_cap = mid_cap;
       } else {
-        upper_cap = cap3;
-        slew_diff_upper_cap = diff3;
+        upper_cap = mid_cap;
+        slew_diff_upper_cap = mid_diff;
       }
     }
   }
@@ -681,27 +675,17 @@ double CTSViolationFixer::calcLoadCap(LibertyPort *drvr_port, double slew) {
  */
 double CTSViolationFixer::calcSlewDiff(LibertyPort *drvr_port, double target_slew,
                                        double load_cap) {
-  Delay delays[2];
-  Slew  slews[2];
+  TODelay delays[2];
+  TOSlew  slews[2];
   calcGateRiseFallDelays(drvr_port, load_cap, delays, slews);
   int  fall = (int)TransType::kFall - 1;
   int  rise = (int)TransType::kRise - 1;
-  Slew gate_slew = max(slews[fall], slews[rise]);
+  TOSlew gate_slew = max(slews[fall], slews[rise]);
   return gate_slew - target_slew;
 }
 
-/**
- * @brief Rise/fall delays across all timing arcs into drvr_port.
-  Uses target slew for input slew.
- *
- * @param drvr_port
- * @param load_cap
- * @param delays
- * @param slews
- */
 void CTSViolationFixer::calcGateRiseFallDelays(LibertyPort *drvr_port, float load_cap,
-                                               // return values.
-                                               Delay delays[], Slew slews[]) {
+                                               TODelay delays[], TOSlew slews[]) {
   for (int rf_index = 0; rf_index < 2; rf_index++) {
     delays[rf_index] = -kInf;
     slews[rf_index] = -kInf;
@@ -733,12 +717,11 @@ void CTSViolationFixer::calcGateRiseFallDelays(LibertyPort *drvr_port, float loa
 }
 
 void CTSViolationFixer::gateRiseFallDelay(TransType rf, LibertyArc *arc, float load_cap,
-                                          // return values.
-                                          Delay delays[], Slew slews[]) {
+                                          TODelay delays[], TOSlew slews[]) {
   int   rise_fall = (int)rf - 1;
   float in_slew = _targ_slews[rise_fall];
-  Delay gate_delay;
-  Slew  drvr_slew;
+  TODelay gate_delay;
+  TOSlew  drvr_slew;
   gate_delay = arc->getDelayOrConstrainCheckNs(rf, in_slew, load_cap);
   drvr_slew = arc->getSlewNs(rf, in_slew, load_cap);
   delays[rise_fall] = max(delays[rise_fall], gate_delay);

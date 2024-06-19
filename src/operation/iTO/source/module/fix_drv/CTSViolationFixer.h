@@ -39,18 +39,18 @@ namespace ito {
 
 using idb::IdbNet;
 
-using ito::hashIncr;
+using ito::increaseHash;
 
-using Delay = double;
-using Slew = Delay;
-using Slack = Delay;
-using Slacks = Slack[2][2];
-using Required = Delay;
-using ArcDelay = Delay;
-using TgtSlews = array<Slew, 2>; // TransType: kFall / kRise;
-using LibertyCellSeq = vector<LibertyCell *>;
+using TODelay = double;
+using TOSlew = TODelay;
+using TOSlack = TODelay;
+using TOSlacks = TOSlack[2][2];
+using TORequired = TODelay;
+using TOArcDelay = TODelay;
+using TOSlewTarget = array<TOSlew, 2>; // TransType: kFall / kRise;
+using TOLibertyCellSeq = vector<LibertyCell *>;
 
-using DesignObjSeq = std::vector<ista::DesignObject *>;
+using TODesignObjSeq = std::vector<ista::DesignObject *>;
 
 struct Edge {
   Edge(int father, int child) : _father(father), _child(child) {}
@@ -63,8 +63,8 @@ class EdgeHash {
  public:
   size_t operator()(const Edge &edg) const {
     size_t hash = 5381;
-    hashIncr(hash, edg._father);
-    hashIncr(hash, edg._child);
+    increaseHash(hash, edg._father);
+    increaseHash(hash, edg._child);
     return hash;
   }
 };
@@ -145,7 +145,7 @@ class CTSViolationFixer {
                      // Return values.
                      // Remaining parasiics after repeater insertion.
                      int   &wire_length, // dbu
-                     float &pin_cap, float &fanout, DesignObjSeq &load_pins);
+                     float &pin_cap, float &fanout, TODesignObjSeq &load_pins);
 
   // Tree *clkTreeToTree(Net *sta_net, CtsNet *cnet);
   pair<int, int> selectBufferLocation(std::deque<Point> &segments, Point current_loc,
@@ -167,10 +167,10 @@ class CTSViolationFixer {
   double calcSlewDiff(LibertyPort *drvr_port, double target_slew, double load_cap);
   void   calcGateRiseFallDelays(LibertyPort *drvr_port, float load_cap,
                                 // return values.
-                                Delay delays[], Slew slews[]);
+                                TODelay delays[], TOSlew slews[]);
   void   gateRiseFallDelay(TransType rf, LibertyArc *arc, float load_cap,
                            // return values.
-                           Delay delays[], Slew slews[]);
+                           TODelay delays[], TOSlew slews[]);
 
   int portFanoutLoadNum(LibertyPort *port);
 
@@ -180,7 +180,7 @@ class CTSViolationFixer {
 
   void insertCLKBuffer(int x, int y, Net *net, LibertyCell *insert_buf_cell, int level,
                        int &wire_length, float &cap, float &fanout,
-                       DesignObjSeq &load_pins);
+                       TODesignObjSeq &load_pins);
 
   void setLocation(Instance *inst, int x, int y);
 
@@ -199,8 +199,8 @@ class CTSViolationFixer {
 
   int _dbu;
 
-  TgtSlews       _targ_slews;
-  LibertyCellSeq _buffer_cells;
+  TOSlewTarget       _targ_slews;
+  TOLibertyCellSeq _available_buffer_cells;
 
   vector<int> _fanouts;
 

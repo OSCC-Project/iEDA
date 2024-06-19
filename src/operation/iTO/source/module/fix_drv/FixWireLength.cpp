@@ -37,7 +37,7 @@ void FixWireLength::set_insert_buffer(LibertyCell *insert_buf) {
 
 void FixWireLength::fixMaxLength(int max_length) {
   auto *netlist = _timing_engine->get_netlist();
-  Net * net;
+  Net  *net;
   FOREACH_NET(netlist, net) {
     if (net->isClockNet()) {
       continue;
@@ -67,7 +67,7 @@ void FixWireLength::fixMaxLength(Net *net, int max_length, bool fix) {
 
   if (length_violation) {
     int          wire_length;
-    DesignObjSeq load_pins;
+    TODesignObjSeq load_pins;
 
     int root_id = tree->get_root()->get_id();
     tree->updateBranch();
@@ -79,10 +79,10 @@ void FixWireLength::fixMaxLength(Net *net, int max_length, bool fix) {
 void FixWireLength::fixMaxLength(RoutingTree *tree, int curr_pt, int prev_pt, Net *net,
                                  int max_length, int level,
                                  // Return values.
-                                 int &wire_length, DesignObjSeq &load_pins) {
+                                 int &wire_length, TODesignObjSeq &load_pins) {
   int          left_branch = tree->left(curr_pt);
   int          left_wire_length = 0;
-  DesignObjSeq left_load_pins;
+  TODesignObjSeq left_load_pins;
   if (left_branch != RoutingTree::_null_pt) {
     fixMaxLength(tree, left_branch, curr_pt, net, max_length, level + 1, left_wire_length,
                  left_load_pins);
@@ -90,7 +90,7 @@ void FixWireLength::fixMaxLength(RoutingTree *tree, int curr_pt, int prev_pt, Ne
 
   int          middle_branch = tree->middle(curr_pt);
   int          middle_wire_length = 0;
-  DesignObjSeq middle_load_pins;
+  TODesignObjSeq middle_load_pins;
   if (middle_branch != RoutingTree::_null_pt) {
     fixMaxLength(tree, middle_branch, curr_pt, net, max_length, level + 1,
                  middle_wire_length, middle_load_pins);
@@ -98,7 +98,7 @@ void FixWireLength::fixMaxLength(RoutingTree *tree, int curr_pt, int prev_pt, Ne
 
   int          right_branch = tree->right(curr_pt);
   int          right_wire_length = 0;
-  DesignObjSeq right_load_pins;
+  TODesignObjSeq right_load_pins;
   if (right_branch != RoutingTree::_null_pt) {
     fixMaxLength(tree, right_branch, curr_pt, net, max_length, level + 1,
                  right_wire_length, right_load_pins);
@@ -160,10 +160,10 @@ void FixWireLength::fixMaxLength(RoutingTree *tree, int curr_pt, int prev_pt, Ne
 
   int wire_insert_count = 0; // number of buffer insert in wire // max 10
   while (wire_length > max_length) {
-    double length_margin = .2;
+    double length_margin_for_placement_remove = .2;
     // Distance from pt to repeater backward toward prev_pt.
     double buf_dist;
-    buf_dist = length - (wire_length - max_length * (1.0 - length_margin));
+    buf_dist = length - (wire_length - max_length * (1.0 - length_margin_for_placement_remove));
     buf_dist = max(0.0, buf_dist);
 
     double dx = prev_x - curr_pt_x;
@@ -222,7 +222,7 @@ void FixWireLength::determineFixSide(T1 max_numb, T2 left, T2 middle, T2 right,
 }
 
 void FixWireLength::insertBuffer(int x, int y, Net *net, LibertyCell *insert_buf_cell,
-                                 int level, int &wire_length, DesignObjSeq &load_pins) {
+                                 int level, int &wire_length, TODesignObjSeq &load_pins) {
 
   LibertyPort *buffer_input_port, *buffer_output_port;
   insert_buf_cell->bufferPorts(buffer_input_port, buffer_output_port);
@@ -239,15 +239,15 @@ void FixWireLength::insertBuffer(int x, int y, Net *net, LibertyCell *insert_buf
   std::string net_name = ("length_net_" + to_string(_make_net_index));
   _make_net_index++;
   out_net = db_adapter->createNet(net_name.c_str(), nullptr);
-  // Copy signal type to new net.
+
   idb::IdbNet *out_net_db = db_adapter->staToDb(out_net);
   idb::IdbNet *in_net_db = db_adapter->staToDb(in_net);
   out_net_db->set_connect_type(in_net_db->get_connect_type());
 
-  // Move load pins to out_net.
+  // Re-connect the load_pins to out_net.
   for (auto *pin_port : load_pins) {
     if (pin_port->isPin()) {
-      Pin *     pin = dynamic_cast<Pin *>(pin_port);
+      Pin      *pin = dynamic_cast<Pin *>(pin_port);
       Instance *inst = pin->get_own_instance();
 
       db_adapter->disattachPin(pin);

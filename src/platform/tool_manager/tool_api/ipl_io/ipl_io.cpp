@@ -144,13 +144,13 @@ bool PlacerIO::runFillerInsertion(std::string config)
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 bool PlacerIO::runMacroPlacement()
 {
-  if (!iPLAPIInst.isPlacerDBStarted()) {
-    this->initPlacer("");
-  } else {
-    iPLAPIInst.updatePlacerDB();
-  }
+  // if (!iPLAPIInst.isPlacerDBStarted()) {
+  //   this->initPlacer("");
+  // } else {
+  //   iPLAPIInst.updatePlacerDB();
+  // }
 
-  iPLAPIInst.runMP();
+  // iPLAPIInst.runMP();
 
   return true;
 }

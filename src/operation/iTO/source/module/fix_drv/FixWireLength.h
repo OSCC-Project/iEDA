@@ -39,14 +39,14 @@ class FixWireLength {
   void fixMaxLength(RoutingTree *tree, int curr_pt, int prev_pt, Net *net, int max_length,
                     int level,
                     // Return values.
-                    int &wire_length, DesignObjSeq &load_pins);
+                    int &wire_length, TODesignObjSeq &load_pins);
 
   template <class T1, class T2>
   void determineFixSide(T1 max_numb, T2 left, T2 middle, T2 right, bool &fix_left,
                         bool &fix_middle, bool &fix_right);
 
   void insertBuffer(int x, int y, Net *net, LibertyCell *insert_buf_cell, int level,
-                    int &wire_length, DesignObjSeq &load_pins);
+                    int &wire_length, TODesignObjSeq &load_pins);
 
   void setLocation(Instance *inst, int x, int y);
 

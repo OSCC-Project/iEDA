@@ -38,7 +38,7 @@ class HoldOptimizer {
   void insertHoldDelay(string insert_buf_name, string pin_name, int insert_number = 1);
 
  private:
-  int checkAndOptimizeHold(VertexSet end_points, LibertyCell *insert_buf_cell);
+  int checkAndOptimizeHold(TOVertexSet end_points, LibertyCell *insert_buf_cell);
 
   void initBufferCell();
 
@@ -46,35 +46,33 @@ class HoldOptimizer {
 
   LibertyCell *findBufferWithMaxDelay();
 
-  void findEndpointsWithHoldViolation(VertexSet end_points,
-                                      // return values
-                                      Slack &worst_slack, VertexSet &hold_violations);
+  void findEndpointsWithHoldViolation(TOVertexSet end_points,
+                                      TOSlack &worst_slack, TOVertexSet &hold_violations);
 
-  int  fixHoldPass(VertexSeq fanins, LibertyCell *insert_buffer_cell);
+  int  fixHoldVioPath(TOVertexSeq fanins, LibertyCell *insert_buffer_cell);
 
   void insertBufferDelay(StaVertex *drvr_vertex, int insert_number,
-                         DesignObjSeq &load_pins, LibertyCell *insert_buffer_cell);
+                         TODesignObjSeq &load_pins, LibertyCell *insert_buffer_cell);
 
-  void  vertexSlacks(StaVertex *vertex,
-                     // return value
-                     Slacks slacks);
-  Slack calcSlackGap(StaVertex *vertex);
+  void  calcStaVertexSlacks(StaVertex *vertex,
+                     TOSlacks slacks);
+  TOSlack calcSlackGap(StaVertex *vertex);
 
   void setLocation(Instance *inst, int x, int y);
 
-  float getBufferHoldDelay(LibertyCell *buffer);
+  float calcHoldDelayOfBuffer(LibertyCell *buffer);
 
-  VertexSet getEndPoints();
+  TOVertexSet getEndPoints();
 
-  VertexSet getFanins(VertexSet end_points);
+  TOVertexSet getFanins(TOVertexSet end_points);
 
-  VertexSeq sortFanins(VertexSet fanins);
+  TOVertexSeq sortFanins(TOVertexSet fanins);
 
-  Slack getWorstSlack(AnalysisMode mode);
-  Slack getWorstSlack(StaVertex *vertex, AnalysisMode mode);
+  TOSlack getWorstSlack(AnalysisMode mode);
+  TOSlack getWorstSlack(StaVertex *vertex, AnalysisMode mode);
 
   void insertLoadBuffer(LibertyCell *load_buffer, StaVertex *drvr_vtx, int insert_num);
-  void insertLoadBuffer(VertexSeq fanins);
+  void insertLoadBuffer(TOVertexSeq fanins);
 
   void reportWNSAndTNS();
 
@@ -86,11 +84,11 @@ class HoldOptimizer {
   EstimateParasitics *_parasitics_estimator;
   ViolationOptimizer *_violation_fixer;
 
-  LibertyCellSeq _buffer_cells;
+  TOLibertyCellSeq _available_buffer_cells;
 
   int _dbu;
 
-  float _slack_margin = 0.0;
+  float _target_slack = 0.0;
   bool  _allow_setup_violation = true;
   int   _max_numb_insert_buf = 0;
 
