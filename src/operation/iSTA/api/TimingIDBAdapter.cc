@@ -367,7 +367,8 @@ IdbTerm* TimingIDBAdapter::staToDb(LibertyPort* port) const {
  * @brief Create instance in db and timing netlist.
  *
  */
-Instance* TimingIDBAdapter::makeInstance(LibertyCell* cell, const char* name) {
+Instance* TimingIDBAdapter::createInstance(LibertyCell* cell,
+                                           const char* name) {
   const char* cell_name = cell->get_cell_name();
   IdbLayout* idb_layout = _idb_lef_service->get_layout();
   IdbCellMasterList* master_list = idb_layout->get_cell_master_list();
@@ -402,7 +403,7 @@ Instance* TimingIDBAdapter::makeInstance(LibertyCell* cell, const char* name) {
  *
  * @param instance_name
  */
-void TimingIDBAdapter::removeInstance(const char* instance_name) {
+void TimingIDBAdapter::deleteInstance(const char* instance_name) {
   auto* design_netlist = getNetlist();
   auto* the_instance = design_netlist->findInstance(instance_name);
 
@@ -427,7 +428,7 @@ void TimingIDBAdapter::removeInstance(const char* instance_name) {
  * @param inst
  * @param cell
  */
-void TimingIDBAdapter::replaceCell(Instance* inst, LibertyCell* cell) {
+void TimingIDBAdapter::substituteCell(Instance* inst, LibertyCell* cell) {
   IdbCellMaster* idb_master = staToDb(cell);
   IdbInstance* idb_inst = staToDb(inst);
   idb_inst->set_cell_master(idb_master);  // TODO: dinst->swapMaster(master)
@@ -441,8 +442,7 @@ void TimingIDBAdapter::replaceCell(Instance* inst, LibertyCell* cell) {
  * @param net
  * @return Pin*
  */
-Pin* TimingIDBAdapter::connect(Instance* inst, const char* port_name,
-                               Net* net) {
+Pin* TimingIDBAdapter::attach(Instance* inst, const char* port_name, Net* net) {
   IdbNet* dnet = staToDb(net);
   if (!dnet) {
     dnet = _idb_design->get_net_list()->find_net(net->get_name());
@@ -486,7 +486,7 @@ Pin* TimingIDBAdapter::connect(Instance* inst, const char* port_name,
  * @param net
  * @return Port*
  */
-Port* TimingIDBAdapter::connect(Port* port, const char* port_name, Net* net) {
+Port* TimingIDBAdapter::attach(Port* port, const char* port_name, Net* net) {
   IdbNet* dnet = staToDb(net);
   if (!dnet) {
     dnet = _idb_design->get_net_list()->find_net(net->get_name());
@@ -508,7 +508,7 @@ Port* TimingIDBAdapter::connect(Port* port, const char* port_name, Net* net) {
  *
  * @param pin
  */
-void TimingIDBAdapter::disconnectPin(Pin* pin) {
+void TimingIDBAdapter::disattachPin(Pin* pin) {
   auto* sta_net = pin->get_net();
   sta_net->removePinPort(pin);
   IdbPin* dpin = staToDb(pin);
@@ -538,9 +538,9 @@ void TimingIDBAdapter::disconnectPin(Pin* pin) {
  *
  * @param pin
  */
-void TimingIDBAdapter::disconnectPinPort(DesignObject* pin_or_port) {
+void TimingIDBAdapter::disattachPinPort(DesignObject* pin_or_port) {
   if (pin_or_port->isPin()) {
-    disconnectPin(dynamic_cast<Pin*>(pin_or_port));
+    disattachPin(dynamic_cast<Pin*>(pin_or_port));
   } else {
     // port
     IdbPin* dpin = staToDb(dynamic_cast<Port*>(pin_or_port));
@@ -565,8 +565,8 @@ void TimingIDBAdapter::disconnectPinPort(DesignObject* pin_or_port) {
  * @param pin
  * @param net
  */
-void TimingIDBAdapter::reconnectPin(Net* net, Pin* old_connect_pin,
-                                    std::vector<Pin*> new_connect_pins) {
+void TimingIDBAdapter::reattachPin(Net* net, Pin* old_connect_pin,
+                                   std::vector<Pin*> new_connect_pins) {
   IdbNet* dnet = staToDb(net);
   IdbPin* old_dpin = staToDb(old_connect_pin);
   old_dpin->set_net(nullptr);
@@ -596,7 +596,7 @@ void TimingIDBAdapter::reconnectPin(Net* net, Pin* old_connect_pin,
  * @param parent
  * @return Net*
  */
-Net* TimingIDBAdapter::makeNet(const char* name, Instance* /*parent*/) {
+Net* TimingIDBAdapter::createNet(const char* name, Instance* /*parent*/) {
   std::string str_name = name;
   IdbNetList* dbnet_list = _idb_design->get_net_list();
   IdbNet* dnet = dbnet_list->add_net(str_name, idb::IdbConnectType::kClock);
@@ -613,8 +613,8 @@ Net* TimingIDBAdapter::makeNet(const char* name, Instance* /*parent*/) {
  * @param parent
  * @return Net*
  */
-Net* TimingIDBAdapter::makeNet(const char* name, Instance* /*parent*/,
-                               idb::IdbConnectType connect_type) {
+Net* TimingIDBAdapter::createNet(const char* name, Instance* /*parent*/,
+                                 idb::IdbConnectType connect_type) {
   std::string str_name = name;
   IdbNetList* dbnet_list = _idb_design->get_net_list();
   IdbNet* dnet = dbnet_list->add_net(str_name, connect_type);
@@ -632,9 +632,9 @@ Net* TimingIDBAdapter::makeNet(const char* name, Instance* /*parent*/,
  * @param connect_type
  * @return Net*
  */
-Net* TimingIDBAdapter::makeNet(const char* name,
-                               std::vector<std::string>& sink_pin_list,
-                               idb::IdbConnectType connect_type) {
+Net* TimingIDBAdapter::createNet(const char* name,
+                                 std::vector<std::string>& sink_pin_list,
+                                 idb::IdbConnectType connect_type) {
   std::string str_name = name;
   IdbNetList* dbnet_list = _idb_design->get_net_list();
   IdbNet* dnet = dbnet_list->add_net(str_name, connect_type);
@@ -677,7 +677,7 @@ Net* TimingIDBAdapter::makeNet(const char* name,
  *
  * @param sta_net
  */
-void TimingIDBAdapter::removeNet(Net* sta_net) {
+void TimingIDBAdapter::deleteNet(Net* sta_net) {
   IdbNetList* dbnet_list = _idb_design->get_net_list();
   IdbNet* dnet = dbnet_list->find_net(sta_net->get_name());
 

@@ -37,7 +37,7 @@ void FixWireLength::set_insert_buffer(LibertyCell *insert_buf) {
 
 void FixWireLength::fixMaxLength(int max_length) {
   auto *netlist = _timing_engine->get_netlist();
-  Net  *net;
+  Net * net;
   FOREACH_NET(netlist, net) {
     if (net->isClockNet()) {
       continue;
@@ -238,7 +238,7 @@ void FixWireLength::insertBuffer(int x, int y, Net *net, LibertyCell *insert_buf
   // make net name
   std::string net_name = ("length_net_" + to_string(_make_net_index));
   _make_net_index++;
-  out_net = db_adapter->makeNet(net_name.c_str(), nullptr);
+  out_net = db_adapter->createNet(net_name.c_str(), nullptr);
   // Copy signal type to new net.
   idb::IdbNet *out_net_db = db_adapter->staToDb(out_net);
   idb::IdbNet *in_net_db = db_adapter->staToDb(in_net);
@@ -247,20 +247,20 @@ void FixWireLength::insertBuffer(int x, int y, Net *net, LibertyCell *insert_buf
   // Move load pins to out_net.
   for (auto *pin_port : load_pins) {
     if (pin_port->isPin()) {
-      Pin      *pin = dynamic_cast<Pin *>(pin_port);
+      Pin *     pin = dynamic_cast<Pin *>(pin_port);
       Instance *inst = pin->get_own_instance();
 
-      db_adapter->disconnectPin(pin);
-      auto debug = db_adapter->connect(inst, pin->get_name(), out_net);
+      db_adapter->disattachPin(pin);
+      auto debug = db_adapter->attach(inst, pin->get_name(), out_net);
       LOG_ERROR_IF(!debug);
     }
   }
-  Instance *buffer = db_adapter->makeInstance(insert_buf_cell, buffer_name.c_str());
+  Instance *buffer = db_adapter->createInstance(insert_buf_cell, buffer_name.c_str());
 
   auto debug_buf_in =
-      db_adapter->connect(buffer, buffer_input_port->get_port_name(), in_net);
+      db_adapter->attach(buffer, buffer_input_port->get_port_name(), in_net);
   auto debug_buf_out =
-      db_adapter->connect(buffer, buffer_output_port->get_port_name(), out_net);
+      db_adapter->attach(buffer, buffer_output_port->get_port_name(), out_net);
   LOG_ERROR_IF(!debug_buf_in);
   LOG_ERROR_IF(!debug_buf_out);
 
