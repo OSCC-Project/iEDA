@@ -66,7 +66,7 @@ void JsonParser::jsonToConfig(Json *json, ToConfig *config) const {
   config->set_report_file(file_path.at("report_file").get<string>());
   config->set_gds_file(file_path.at("gds_file").get<string>());
 
-  config->set_setup_slack_margin(json->at("setup_slack_margin").get<float>());
+  config->set_setup_target_slack(json->at("setup_slack_margin").get<float>());
   config->set_hold_slack_margin(json->at("hold_slack_margin").get<float>());
   config->set_max_buffer_percent(json->at("max_buffer_percent").get<float>());
   config->set_max_utilization(json->at("max_utilization").get<float>());
@@ -111,7 +111,7 @@ void JsonParser::jsonToConfig(Json *json, ToConfig *config) const {
   config->set_rebuffer_max_fanout(json->at("rebuffer_max_fanout").get<int>());
   config->set_split_load_min_fanout(json->at("split_load_min_fanout").get<int>());
 
-  cout << "[ToConfig Info] hold_slack_margin:\n\t\t" << config->get_hold_slack_margin()
+  cout << "[ToConfig Info] hold_slack_margin:\n\t\t" << config->get_hold_target_slack()
        << endl;
 }
 

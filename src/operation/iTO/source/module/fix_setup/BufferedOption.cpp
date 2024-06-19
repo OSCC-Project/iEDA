@@ -18,7 +18,7 @@
 #include "api/TimingEngine.hh"
 
 namespace ito {
-Required BufferedOption::get_required_arrival_time() { return _req - _required_delay; }
+TORequired BufferedOption::get_required_arrival_time() { return _req - _required_delay; }
 
 void BufferedOption::printBuffered(int level) {
   printTree(level);
@@ -46,23 +46,23 @@ void BufferedOption::printBuffered(int level) {
 void BufferedOption::printTree(int level) {
   switch (_type) {
   case BufferedOptionType::kLoad: {
-    printf("%*s load %s (%d, %d) cap %f req %lf\n", level, "", _load_pin->getFullName().c_str(),
+    printf("%*s load %s (%d, %d), load_cap %f, required_arrival_time %lf\n", level, "", _load_pin->getFullName().c_str(),
            _location.get_x(), _location.get_y(), _cap, _req);
     break;
   }
   case BufferedOptionType::kBuffer: {
-    printf("%*s buffer (%d, %d) %s cap %f req %lf\n", level, "", _location.get_x(),
+    printf("%*s buffer (%d, %d), %s load_cap %f, required_arrival_time %lf\n", level, "", _location.get_x(),
            _location.get_y(), _buffer_cell->get_cell_name(), _cap,
            get_required_arrival_time());
     break;
   }
   case BufferedOptionType::kWire: {
-    printf("%*s wire (%d, %d) cap %f req %lf\n", level, "", _location.get_x(),
+    printf("%*s wire (%d, %d), load_cap %f, required_arrival_time %lf\n", level, "", _location.get_x(),
            _location.get_y(), _cap, get_required_arrival_time());
     break;
   }
   case BufferedOptionType::kJunction: {
-    printf("%*s junction (%d, %d) cap %f req %lf\n", level, "", _location.get_x(),
+    printf("%*s junction (%d, %d), load_cap %f, required_arrival_time %lf\n", level, "", _location.get_x(),
            _location.get_y(), _cap, get_required_arrival_time());
     break;
   }

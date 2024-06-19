@@ -16,8 +16,8 @@
 // ***************************************************************************************
 #include "SetupOptimizer.h"
 
-#include "api/TimingEngine.hh"
 #include "api/TimingIDBAdapter.hh"
+#include "api/TimingEngine.hh"
 #include "liberty/Liberty.hh"
 
 using namespace std;
@@ -40,11 +40,11 @@ SetupOptimizer::SetupOptimizer(DbInterface *dbinterface)
 void SetupOptimizer::initBufferCell() {
   bool not_specified_buffer = _db_interface->get_setup_insert_buffers().empty();
   if (not_specified_buffer) {
-    LibertyCellSeq buf_cells = _db_interface->get_buffer_cells();
+    TOLibertyCellSeq buf_cells = _db_interface->get_buffer_cells();
     for (auto buf : buf_cells) {
       if (strstr(buf->get_cell_name(), "BUF") != NULL &&
           strstr(buf->get_cell_name(), "CLK") == NULL) {
-        _buf_cells.emplace_back(buf);
+        _available_buffer_cells.emplace_back(buf);
       }
     }
     return;
@@ -53,47 +53,45 @@ void SetupOptimizer::initBufferCell() {
   auto bufs = _db_interface->get_setup_insert_buffers();
   for (auto buf : bufs) {
     auto buffer = _timing_engine->findLibertyCell(buf.c_str());
-    _buf_cells.emplace_back(buffer);
+    _available_buffer_cells.emplace_back(buffer);
   }
 }
 
 void SetupOptimizer::optimizeSetup() {
   // to store slack each time
-  vector<Slack> slack_store;
+  vector<TOSlack> slack_store;
 
   _parasitics_estimator->estimateAllNetParasitics();
   _timing_engine->updateTiming();
   _db_interface->set_eval_data();
 
   initBufferCell();
-  LOG_ERROR_IF(_buf_cells.empty()) << "Can not found specified buffers.\n";
+  LOG_ERROR_IF(_available_buffer_cells.empty()) << "Can not found specified buffers.\n";
 
-  Slack prev_worst_slack = -kInf;
+  TOSlack prev_worst_slack = -kInf;
   int   pass = 1;
-  int   decreasing_slack_passes = 0;
+  int   number_of_decreasing_slack_iter = 0;
 
-  float slack_margin = _db_interface->get_setup_slack_margin();
-  int   _number_passes_allowed_decreasing_slack =
+  float slack_margin = _db_interface->get_setup_target_slack();
+  int   _number_iter_allowed_decreasing_slack =
       _db_interface->get_number_passes_allowed_decreasing_slack();
 
   StaSeqPathData *worst_path = worstRequiredPath();
-  Slack           worst_slack = worst_path->getSlackNs();
+  TOSlack worst_slack = worst_path->getSlackNs();
   slack_store.push_back(worst_slack);
 
   auto end_points = getEndPoints();
   // endpoints with setup violation.
-  VertexSeq end_pts_setup_violation;
+  TOVertexSeq end_pts_setup_violation;
   findEndpointsWithSetupViolation(end_points, slack_margin, end_pts_setup_violation);
   // 根据slack进行升序排序
   sort(end_pts_setup_violation.begin(), end_pts_setup_violation.end(),
        [](StaVertex *end1, StaVertex *end2) {
-         return end1->getWorstSlackNs(AnalysisMode::kMax) <
-                end2->getWorstSlackNs(AnalysisMode::kMax);
+        return end1->getWorstSlackNs(AnalysisMode::kMax) < end2->getWorstSlackNs(AnalysisMode::kMax);
        });
 
   _db_interface->report()->get_ofstream()
-      << "Find " << (int)end_pts_setup_violation.size()
-      << " endpoints with setup violation.\n";
+      << "TO: Total find " << (int)end_pts_setup_violation.size() << " endpoints with setup violation in current design.\n";
   _db_interface->report()->get_ofstream().close();
 
   // slack violation
@@ -127,29 +125,27 @@ void SetupOptimizer::optimizeSetup() {
       if (!worst_path_fall || !worst_path_rise) {
         break;
       }
-      Slack           worst_slack_rise = worst_path_rise->getSlackNs();
-      Slack           worst_slack_fall = worst_path_fall->getSlackNs();
+      TOSlack           worst_slack_rise = worst_path_rise->getSlackNs();
+      TOSlack           worst_slack_fall = worst_path_fall->getSlackNs();
       StaSeqPathData *worst_path =
           worst_slack_rise > worst_slack_fall ? worst_path_fall : worst_path_rise;
       worst_slack = worst_path->getSlackNs();
       slack_store.push_back(worst_slack);
 
-      if (fuzzyLessEqual(worst_slack, prev_worst_slack)) {
-        // excessive slack increase is prohibited
+      if (approximatelyLessEqual(worst_slack, prev_worst_slack)) {
         float diff = prev_worst_slack - worst_slack;
         if (diff > 0.02 * abs(prev_worst_slack)) {
           break;
         }
 
-        // Allow slack to increase a few passes to get out of local minima.
-        // Do not update prev_worst_slack so it saves the high water mark.
-        decreasing_slack_passes++;
-        if (decreasing_slack_passes > _number_passes_allowed_decreasing_slack) {
+        // The slack is allowed to decrease after a few iterations.
+        number_of_decreasing_slack_iter++;
+        if (number_of_decreasing_slack_iter > _number_iter_allowed_decreasing_slack) {
           break;
         }
       } else {
         prev_worst_slack = worst_slack;
-        decreasing_slack_passes = 0;
+        number_of_decreasing_slack_iter = 0;
       }
     }
     // if (_db_interface->overMaxArea()) {
@@ -162,27 +158,29 @@ void SetupOptimizer::optimizeSetup() {
   _parasitics_estimator->estimateAllNetParasitics();
   _timing_engine->updateTiming();
 
-  printf("Inserted {%d} buffers.\n", _inserted_buffer_count);
-  printf("Resized {%d} instances.\n", _resize_instance_count);
+  printf("TO: Total insert {%d} buffers when fix setup.\n", _inserted_buffer_count);
+  printf("TO: Total resize {%d} instances when fix setup.\n", _resize_instance_count);
   _db_interface->report()->get_ofstream()
-      << "Inserted " << _inserted_buffer_count << " buffers."
-      << "\nResized " << _resize_instance_count << " instances.\n";
+      << "TO: Total insert " << _inserted_buffer_count << " buffers when fix setup.\n"
+      << "TO: Total resize " << _resize_instance_count << " instances when fix setup.\n";
   _db_interface->report()->get_ofstream().close();
 
   if (worst_slack < slack_margin) {
-    printf("Unable to repair all setup violations.\n");
-    _db_interface->report()->get_ofstream() << "Unable to repair all setup violations.\n";
+    printf("TO: Failed to fix all setup violations in current design.\n");
+    _db_interface->report()->get_ofstream() << "TO: Failed to fix all setup violations in current design.\n";
     _db_interface->report()->get_ofstream().close();
   }
   if (_db_interface->overMaxArea()) {
-    printf("max utilization reached.\n");
+    printf("TO: Reach the maximum utilization of current design.\n");
+    _db_interface->report()->get_ofstream() << "TO: Reach the maximum utilization of current design.\n";
+    _db_interface->report()->get_ofstream().close();
   }
 
   _db_interface->report()->reportSetupResult(slack_store);
   _db_interface->report()->reportTime(false);
 }
 
-void SetupOptimizer::optimizeSetup(StaSeqPathData *worst_path, Slack path_slack) {
+void SetupOptimizer::optimizeSetup(StaSeqPathData *worst_path, TOSlack path_slack) {
   vector<TimingEngine::PathNet> path_driver_vertexs =
       _timing_engine->getPathDriverVertexs(worst_path);
   int path_length = path_driver_vertexs.size();
@@ -201,8 +199,8 @@ void SetupOptimizer::optimizeSetup(StaSeqPathData *worst_path, Slack path_slack)
     for (int i = 0; i < (int)path_length; i++) {
       auto       path = sorted_path_driver_vertexs[i];
       StaVertex *drvr_vertex = path.driver;
-      auto *     obj = drvr_vertex->get_design_obj();
-      Pin *      drvr_pin = dynamic_cast<Pin *>(obj);
+      auto      *obj = drvr_vertex->get_design_obj();
+      Pin       *drvr_pin = dynamic_cast<Pin *>(obj);
 
       int fanout = getFanoutNumber(drvr_pin);
       int _rebuffer_max_fanout = _db_interface->get_rebuffer_max_fanout();
@@ -215,22 +213,22 @@ void SetupOptimizer::optimizeSetup(StaSeqPathData *worst_path, Slack path_slack)
       int drvr_idx = distance(path_driver_vertexs.begin(), itr);
       if (drvr_idx >= 1) {
         auto         in_path = path_driver_vertexs[drvr_idx - 1];
-        StaVertex *  in_vertex = in_path.load;
-        auto *       in_obj = in_vertex->get_design_obj();
-        Pin *        in_pin = dynamic_cast<Pin *>(in_obj);
+        StaVertex   *in_vertex = in_path.load;
+        auto        *in_obj = in_vertex->get_design_obj();
+        Pin         *in_pin = dynamic_cast<Pin *>(in_obj);
         LibertyPort *in_port = in_pin->get_cell_port();
 
-        float        prev_drive;
-        auto *       prev_drvr_vertex = in_path.driver;
-        auto *       prev_drvr_obj = prev_drvr_vertex->get_design_obj();
-        Pin *        prev_drvr_pin = dynamic_cast<Pin *>(prev_drvr_obj);
+        float        prev_drive_resis;
+        auto        *prev_drvr_vertex = in_path.driver;
+        auto        *prev_drvr_obj = prev_drvr_vertex->get_design_obj();
+        Pin         *prev_drvr_pin = dynamic_cast<Pin *>(prev_drvr_obj);
         LibertyPort *prev_drvr_port = prev_drvr_pin->get_cell_port();
-        prev_drive = prev_drvr_port->driveResistance();
+        prev_drive_resis = prev_drvr_port->driveResistance();
 
-        LibertyCell *upsize = upsizeCell(in_port, drvr_port, load_cap, prev_drive);
-        if (upsize) {
+        LibertyCell *upsized_lib_cell = repowerCell(in_port, drvr_port, load_cap, prev_drive_resis);
+        if (upsized_lib_cell) {
           Instance *drvr_inst = drvr_pin->get_own_instance();
-          if (_violation_fixer->repowerInstance(drvr_inst, upsize)) {
+          if (_violation_fixer->repowerInstance(drvr_inst, upsized_lib_cell)) {
             _resize_instance_count++;
             _parasitics_estimator->estimateNetParasitics(drvr_pin->get_net());
           }
@@ -238,11 +236,9 @@ void SetupOptimizer::optimizeSetup(StaSeqPathData *worst_path, Slack path_slack)
         }
       }
 
-      if (fanout > 1
-          // Rebuffer blows up on large fanout nets.
-          && fanout < _rebuffer_max_fanout) {
+      if (fanout > 1 && fanout < _rebuffer_max_fanout) {
         int count_before = _inserted_buffer_count;
-        buffering(drvr_pin); // _inserted_buffer_count++
+        performBuffering(drvr_pin); // _inserted_buffer_count++
         int insert_count = _inserted_buffer_count - count_before;
 
         if (insert_count > 0) {
@@ -250,7 +246,7 @@ void SetupOptimizer::optimizeSetup(StaSeqPathData *worst_path, Slack path_slack)
         }
       }
 
-      // Don't split loads on low fanout nets.
+      // Nets with low fanout don't need to split loads.
       int split_load_min_fanout = _db_interface->get_split_load_min_fanout();
       if (fanout > split_load_min_fanout) {
         insertBufferSeparateLoads(drvr_vertex, path_slack);
@@ -260,13 +256,13 @@ void SetupOptimizer::optimizeSetup(StaSeqPathData *worst_path, Slack path_slack)
   }
 }
 
-void SetupOptimizer::optimizeSetup(StaVertex *vertex, Slack path_slack) {
+void SetupOptimizer::optimizeSetup(StaVertex *vertex, TOSlack path_slack) {
   StaSeqPathData *worst_path_rise = _timing_engine->vertexWorstRequiredPath(
       vertex, AnalysisMode::kMax, TransType::kRise);
   StaSeqPathData *worst_path_fall = _timing_engine->vertexWorstRequiredPath(
       vertex, AnalysisMode::kMax, TransType::kFall);
-  Slack           worst_slack_rise = worst_path_rise->getSlackNs();
-  Slack           worst_slack_fall = worst_path_fall->getSlackNs();
+  TOSlack           worst_slack_rise = worst_path_rise->getSlackNs();
+  TOSlack           worst_slack_fall = worst_path_fall->getSlackNs();
   StaSeqPathData *worst_path =
       worst_slack_rise > worst_slack_fall ? worst_path_fall : worst_path_rise;
 
@@ -288,8 +284,8 @@ void SetupOptimizer::optimizeSetup(StaVertex *vertex, Slack path_slack) {
     for (int i = 0; i < (int)path_length; i++) {
       auto       path = sorted_path_driver_vertexs[i];
       StaVertex *drvr_vertex = path.driver;
-      auto *     obj = drvr_vertex->get_design_obj();
-      Pin *      drvr_pin = dynamic_cast<Pin *>(obj);
+      auto      *obj = drvr_vertex->get_design_obj();
+      Pin       *drvr_pin = dynamic_cast<Pin *>(obj);
 
       int fanout = getFanoutNumber(drvr_pin);
       int _rebuffer_max_fanout = _db_interface->get_rebuffer_max_fanout();
@@ -302,22 +298,22 @@ void SetupOptimizer::optimizeSetup(StaVertex *vertex, Slack path_slack) {
       int drvr_idx = distance(path_driver_vertexs.begin(), itr);
       if (drvr_idx >= 1) {
         auto         in_path = path_driver_vertexs[drvr_idx - 1];
-        StaVertex *  in_vertex = in_path.load;
-        auto *       in_obj = in_vertex->get_design_obj();
-        Pin *        in_pin = dynamic_cast<Pin *>(in_obj);
+        StaVertex   *in_vertex = in_path.load;
+        auto        *in_obj = in_vertex->get_design_obj();
+        Pin         *in_pin = dynamic_cast<Pin *>(in_obj);
         LibertyPort *in_port = in_pin->get_cell_port();
 
-        float        prev_drive;
-        auto *       prev_drvr_vertex = in_path.driver;
-        auto *       prev_drvr_obj = prev_drvr_vertex->get_design_obj();
-        Pin *        prev_drvr_pin = dynamic_cast<Pin *>(prev_drvr_obj);
+        float        prev_drive_resis;
+        auto        *prev_drvr_vertex = in_path.driver;
+        auto        *prev_drvr_obj = prev_drvr_vertex->get_design_obj();
+        Pin         *prev_drvr_pin = dynamic_cast<Pin *>(prev_drvr_obj);
         LibertyPort *prev_drvr_port = prev_drvr_pin->get_cell_port();
-        prev_drive = prev_drvr_port->driveResistance();
+        prev_drive_resis = prev_drvr_port->driveResistance();
 
-        LibertyCell *upsize = upsizeCell(in_port, drvr_port, load_cap, prev_drive);
-        if (upsize) {
+        LibertyCell *upsized_lib_cell = repowerCell(in_port, drvr_port, load_cap, prev_drive_resis);
+        if (upsized_lib_cell) {
           Instance *drvr_inst = drvr_pin->get_own_instance();
-          if (_violation_fixer->repowerInstance(drvr_inst, upsize)) {
+          if (_violation_fixer->repowerInstance(drvr_inst, upsized_lib_cell)) {
             _resize_instance_count++;
             _parasitics_estimator->parasiticsInvalid(drvr_pin->get_net());
           }
@@ -325,11 +321,9 @@ void SetupOptimizer::optimizeSetup(StaVertex *vertex, Slack path_slack) {
         }
       }
 
-      if (fanout > 1
-          // Rebuffer blows up on large fanout nets.
-          && fanout < _rebuffer_max_fanout) {
+      if (fanout > 1 && fanout < _rebuffer_max_fanout) {
         int count_before = _inserted_buffer_count;
-        buffering(drvr_pin); // _inserted_buffer_count++
+        performBuffering(drvr_pin); // _inserted_buffer_count++
         int insert_count = _inserted_buffer_count - count_before;
 
         if (insert_count > 0) {
@@ -337,7 +331,7 @@ void SetupOptimizer::optimizeSetup(StaVertex *vertex, Slack path_slack) {
         }
       }
 
-      // Don't split loads on low fanout nets.
+      // Nets with low fanout don't need to split loads.
       int split_load_min_fanout = _db_interface->get_split_load_min_fanout();
       if (fanout > split_load_min_fanout) {
         insertBufferSeparateLoads(drvr_vertex, path_slack);
@@ -347,8 +341,8 @@ void SetupOptimizer::optimizeSetup(StaVertex *vertex, Slack path_slack) {
   }
 }
 
-void SetupOptimizer::buffering(Pin *pin) {
-  Net *        net = pin->get_net();
+void SetupOptimizer::performBuffering(Pin *pin) {
+  Net         *net = pin->get_net();
   LibertyPort *drvr_port = pin->get_cell_port();
 
   if (netConnectToPort(net)) {
@@ -363,10 +357,10 @@ void SetupOptimizer::buffering(Pin *pin) {
       BufferedOptionSeq buf_opts =
           bottomUpBuffering(tree, tree->left(drvr_id), drvr_id, 1);
 
-      Required        best_slack = -kInf;
+      TORequired        best_slack = -kInf;
       BufferedOption *best_option = nullptr;
       for (BufferedOption *opt : buf_opts) {
-        Slack slack = opt->get_required_arrival_time();
+        TOSlack slack = opt->get_required_arrival_time();
         if (slack > best_slack) {
           best_slack = slack;
           best_option = opt;
@@ -393,19 +387,19 @@ BufferedOptionSeq SetupOptimizer::bottomUpBuffering(RoutingTree *tree, int curr_
       auto *pin = dynamic_cast<Pin *>(obj_pin);
 
       if (_timing_engine->isLoad(pin->getFullName().c_str())) {
-        StaVertex *vertex = _timing_engine->findVertex(pin->getFullName().c_str());
-        auto       req_ns_r = vertex->getReqTimeNs(AnalysisMode::kMax, TransType::kRise);
-        double     req_r = req_ns_r ? *req_ns_r : 0.0;
-        auto       req_ns_f = vertex->getReqTimeNs(AnalysisMode::kMax, TransType::kFall);
-        double     req_f = req_ns_f ? *req_ns_f : 0.0;
-        double     req = min(req_r, req_f);
+        StaVertex      *vertex = _timing_engine->findVertex(pin->getFullName().c_str());
+        auto   req_ns_r = vertex->getReqTimeNs(AnalysisMode::kMax, TransType::kRise);
+        double req_r = req_ns_r ? *req_ns_r : 0.0;
+        auto   req_ns_f = vertex->getReqTimeNs(AnalysisMode::kMax, TransType::kFall);
+        double req_f = req_ns_f ? *req_ns_f : 0.0;
+        double req = min(req_r, req_f);
 
-        BufferedOption *buffered_option =
-            new BufferedOption(BufferedOptionType::kLoad,
-                               curr_loc,   // load pin loc
-                               pin->cap(), // load pin cap
-                               pin,        // load pin
-                               0.0, nullptr, nullptr, nullptr, req);
+        BufferedOption *buffered_option = new BufferedOption(
+            BufferedOptionType::kLoad,
+            curr_loc,   // location of location of the load pin
+            pin->cap(), // load cap of the load pin
+            pin,        // load pin
+            0.0, nullptr, nullptr, nullptr, req);
         BufferedOptionSeq buf_option_seq;
         buf_option_seq.emplace_back(buffered_option);
 
@@ -433,43 +427,41 @@ BufferedOptionSeq SetupOptimizer::mergeBranch(BufferedOptionSeq buf_opt_left,
   BufferedOptionSeq buf_opt_merger;
   for (auto left : buf_opt_left) {
     for (auto right : buf_opt_right) {
-      Required left_req = left->get_required_arrival_time();
+      TORequired left_req = left->get_required_arrival_time();
       float    left_cap = left->get_cap();
-      Required right_req = right->get_required_arrival_time();
+      TORequired right_req = right->get_required_arrival_time();
       float    right_cap = right->get_cap();
 
-      BufferedOption *min_opt = fuzzyLess(left_req, right_req) ? left : right;
+      BufferedOption *min_opt = approximatelyLess(left_req, right_req) ? left : right;
 
-      BufferedOption *buffered_option = new BufferedOption(
-          BufferedOptionType::kJunction,
-          curr_loc,             // load pin loc
-          left_cap + right_cap, // load pin cap
-          nullptr,              // load pin
-          min_opt->get_required_delay(), nullptr, left, right, min_opt->get_req());
+      BufferedOption *buffered_option =
+          new BufferedOption(BufferedOptionType::kJunction,
+                             curr_loc,             // location of the load pin
+                             left_cap + right_cap, // load cap of the load pin
+                             nullptr,              // load pin
+                             min_opt->get_required_delay(),
+                             nullptr, left, right, min_opt->get_req());
       buf_opt_merger.emplace_back(buffered_option);
     }
   }
   sort(buf_opt_merger.begin(), buf_opt_merger.end(),
        [=](BufferedOption *opt1, BufferedOption *opt2) {
-         return fuzzyGreater(opt1->get_required_arrival_time(),
-                             opt2->get_required_arrival_time());
+         return approximatelyGreater(opt1->get_required_arrival_time(),
+                                     opt2->get_required_arrival_time());
        });
-  int si = 0;
-  for (size_t pi = 0; pi < buf_opt_merger.size(); pi++) {
-    BufferedOption *p = buf_opt_merger[pi];
-    float           Lp = p->get_cap();
-    // Remove options by shifting down with index si.
-    si = pi + 1;
-    // Because the options are sorted we don't have to look
-    // beyond the first option.
-    for (size_t qi = pi + 1; qi < buf_opt_merger.size(); qi++) {
-      BufferedOption *q = buf_opt_merger[qi];
-      float           Lq = q->get_cap();
-      if (fuzzyLess(Lq, Lp)) {
-        buf_opt_merger[si++] = q;
+  int idx = 0;
+  for (size_t i = 0; i < buf_opt_merger.size(); i++) {
+    BufferedOption *buffer_option_1 = buf_opt_merger[i];
+    float           buffer_option_1_cap = buffer_option_1->get_cap();
+    idx = i + 1;
+    for (size_t j = i + 1; j < buf_opt_merger.size(); j++) {
+      BufferedOption *buffer_option_2 = buf_opt_merger[j];
+      float           buffer_option_2_cap = buffer_option_2->get_cap();
+      if (approximatelyLess(buffer_option_2_cap, buffer_option_1_cap)) {
+        buf_opt_merger[idx++] = buffer_option_2;
       }
     }
-    buf_opt_merger.resize(si);
+    buf_opt_merger.resize(idx);
   }
   return buf_opt_merger;
 }
@@ -477,27 +469,27 @@ BufferedOptionSeq SetupOptimizer::mergeBranch(BufferedOptionSeq buf_opt_left,
 BufferedOptionSeq SetupOptimizer::addWireAndBuffer(BufferedOptionSeq buf_opt_seq,
                                                    Point curr_loc, Point prev_loc,
                                                    int level) {
-  int wire_length_dbu =
+  int wire_length =
       abs(curr_loc.get_x() - prev_loc.get_x()) + abs(curr_loc.get_y() - prev_loc.get_y());
 
   BufferedOptionSeq buf_option_seq;
   for (BufferedOption *buf_opt : buf_opt_seq) {
     std::optional<double> width = std::nullopt;
     double                wire_cap = dynamic_cast<TimingIDBAdapter *>(_db_adapter)
-                          ->getCapacitance(1, (double)wire_length_dbu / _dbu, width);
+                          ->getCapacitance(1, (double)wire_length / _dbu, width);
     double wire_res = dynamic_cast<TimingIDBAdapter *>(_db_adapter)
-                          ->getResistance(1, (double)wire_length_dbu / _dbu, width);
+                          ->getResistance(1, (double)wire_length / _dbu, width);
     // double wire_delay = wire_res * wire_cap;
     double wire_delay = wire_res * (wire_cap / 2 + buf_opt->get_cap());
 
     float update_cap = buf_opt->get_cap() + wire_cap;
-    Delay update_req_delay = buf_opt->get_required_delay() + wire_delay;
+    TODelay update_req_delay = buf_opt->get_required_delay() + wire_delay;
 
     BufferedOption *buffered_option =
         new BufferedOption(BufferedOptionType::kWire,
-                           prev_loc,         // load pin loc
-                           update_cap,       // load pin cap
-                           nullptr,          // load pin
+                           prev_loc,   // location of the load pin
+                           update_cap, // load cap of the load pin
+                           nullptr,    // load pin
                            update_req_delay, // plus wire delay
                            nullptr,          // no buf
                            buf_opt, nullptr, buf_opt->get_req());
@@ -518,37 +510,37 @@ BufferedOptionSeq SetupOptimizer::addBuffer(BufferedOptionSeq buf_opt_seq,
                                             Point             prev_loc) {
   BufferedOptionSeq buf_option_seq;
 
-  for (LibertyCell *buf_cell : _buf_cells) {
-    Required better_req_time = -kInf;
+  for (LibertyCell *buf_cell : _available_buffer_cells) {
+    TORequired better_req_time = -kInf;
     // "wire" option
     BufferedOption *better_buf_option = nullptr;
 
     // "wire" option
     for (BufferedOption *buf_opt : buf_opt_seq) {
-      Required req_time = kInf;
+      TORequired        req_time = kInf;
       // buffer delay, related to load capacitance
-      Delay buffer_delay = calcBufferDelay(buf_cell, buf_opt->get_cap());
+      TODelay buffer_delay = calcDelayOfBuffer(buf_cell, buf_opt->get_cap());
 
       req_time = buf_opt->get_required_arrival_time() - buffer_delay;
 
       // Find greater required arrival time and it's corresponding "wire" option
-      if (fuzzyGreater(req_time, better_req_time)) {
-        // if (req_time > better_req_time) {
+      if (approximatelyGreater(req_time, better_req_time)) {
+      // if (req_time > better_req_time) {
         better_req_time = req_time;
         better_buf_option = buf_opt;
       }
     }
     if (better_buf_option) {
-      Required req_time = kInf;
-      float    buffer_cap = 0.0;
-      Delay    buffer_delay = 0.0;
+      TORequired        req_time = kInf;
+      float           buffer_cap = 0.0;
+      TODelay           buffer_delay = 0.0;
 
       LibertyPort *intput_port, *output_port;
       buf_cell->bufferPorts(intput_port, output_port);
       buffer_cap = intput_port->get_port_cap();
 
       // buffer delay, related to load capacitance
-      buffer_delay = calcBufferDelay(buf_cell, better_buf_option->get_cap());
+      buffer_delay = calcDelayOfBuffer(buf_cell, better_buf_option->get_cap());
 
       req_time = better_buf_option->get_required_arrival_time() - buffer_delay;
 
@@ -563,12 +555,12 @@ BufferedOptionSeq SetupOptimizer::addBuffer(BufferedOptionSeq buf_opt_seq,
         }
       }
       if (!prune) {
-        Delay update_req_delay = better_buf_option->get_required_delay() + buffer_delay;
+        TODelay update_req_delay = better_buf_option->get_required_delay() + buffer_delay;
         BufferedOption *buffered_option = new BufferedOption(
             BufferedOptionType::kBuffer,
-            prev_loc,         // load pin loc
-            buffer_cap,       // load pin cap
-            nullptr,          // load pin
+            prev_loc,   // location of the load pin
+            buffer_cap, // load cap of the load pin
+            nullptr,    // load pin
             update_req_delay, // plus buf delay
             buf_cell, better_buf_option, nullptr, better_buf_option->get_req());
 
@@ -621,7 +613,7 @@ void SetupOptimizer::topDownImplementBuffering(BufferedOption *buf_opt, Net *net
 
     // increase design area
     idb::IdbCellMaster *idb_master = idb_adapter->staToDb(insert_buf_cell);
-    Master *            master = new Master(idb_master);
+    Master             *master = new Master(idb_master);
 
     float area = DesignCalculator::calcMasterArea(master, _dbu);
     _violation_fixer->increDesignArea(area);
@@ -640,10 +632,10 @@ void SetupOptimizer::topDownImplementBuffering(BufferedOption *buf_opt, Net *net
   }
   case BufferedOptionType::kLoad: {
     TimingIDBAdapter *idb_adapter = dynamic_cast<TimingIDBAdapter *>(_db_adapter);
-    Pin *             load_pin = buf_opt->get_load_pin();
-    Net *             load_net = load_pin->get_net();
+    Pin              *load_pin = buf_opt->get_load_pin();
+    Net              *load_net = load_pin->get_net();
     if (load_net != net) {
-      Instance *load_inst = load_pin->get_own_instance();
+      Instance    *load_inst = load_pin->get_own_instance();
       idb_adapter->disattachPin(load_pin);
       auto debug = idb_adapter->attach(load_inst, load_pin->get_name(), net);
       LOG_ERROR_IF(!debug);
@@ -669,35 +661,34 @@ void SetupOptimizer::topDownImplementBuffering(BufferedOption *buf_opt, Net *net
   }
 }
 
-void SetupOptimizer::insertBufferSeparateLoads(StaVertex *drvr_vertex, Slack drvr_slack) {
-  // Sort fanouts of the drvr on the critical path by slack margin
-  // wrt the critical path slack.
-  vector<pair<StaVertex *, Slack>> fanout_slacks;
-  VertexSeq fanout_vertexes = _timing_engine->getFanoutVertexs(drvr_vertex);
+void SetupOptimizer::insertBufferSeparateLoads(StaVertex *drvr_vertex, TOSlack drvr_slack) {
+  // Sort the fanouts of the driver vertex according to their slack margins.
+  vector<pair<StaVertex *, TOSlack>> fanout_vertex_2_slack_marginp;
+  TOVertexSeq fanout_vertexes = _timing_engine->getFanoutVertexs(drvr_vertex);
   for (auto fanout_vertex : fanout_vertexes) {
     auto fanout_vertex_slack =
         fanout_vertex->getSlackNs(AnalysisMode::kMax, TransType::kRise);
-    Slack fanout_slack = fanout_vertex_slack ? *fanout_vertex_slack : kInf;
-    Slack slack_margin = fanout_slack - drvr_slack;
-    fanout_slacks.push_back(pair<StaVertex *, Slack>(fanout_vertex, slack_margin));
+    TOSlack fanout_slack = fanout_vertex_slack ? *fanout_vertex_slack : kInf;
+    TOSlack slack_margin = fanout_slack - drvr_slack;
+    fanout_vertex_2_slack_marginp.push_back(pair<StaVertex *, TOSlack>(fanout_vertex, slack_margin));
   }
 
-  sort(fanout_slacks.begin(), fanout_slacks.end(),
-       [](pair<StaVertex *, Slack> pair1, pair<StaVertex *, Slack> pair2) {
+  sort(fanout_vertex_2_slack_marginp.begin(), fanout_vertex_2_slack_marginp.end(),
+       [](pair<StaVertex *, TOSlack> pair1, pair<StaVertex *, TOSlack> pair2) {
          return pair1.second > pair2.second;
        });
 
   DesignObject *drvr_pin = drvr_vertex->get_design_obj();
-  Net *         net = drvr_pin->get_net();
+  Net          *net = drvr_pin->get_net();
 
   // make instance name
   std::string buffer_name = ("setup_split_buffer_" + to_string(_insert_instance_index));
   _insert_instance_index++;
 
   TimingIDBAdapter *idb_adapter = dynamic_cast<TimingIDBAdapter *>(_db_adapter);
-  LibertyCell *     insert_buf_cell = _db_interface->get_lowest_drive_buffer();
+  LibertyCell      *insert_buf_cell = _db_interface->get_lowest_drive_buffer();
 
-  Instance *   buffer = idb_adapter->createInstance(insert_buf_cell, buffer_name.c_str());
+  Instance    *buffer = idb_adapter->createInstance(insert_buf_cell, buffer_name.c_str());
   LibertyPort *input, *output;
   insert_buf_cell->bufferPorts(input, output);
 
@@ -706,25 +697,25 @@ void SetupOptimizer::insertBufferSeparateLoads(StaVertex *drvr_vertex, Slack drv
   _make_net_index++;
   Net *out_net = idb_adapter->createNet(net_name.c_str(), nullptr);
 
-  // before
-  // drvr_pin -> net -> load_pins
-  // after
-  // drvr_pin -> net -> load_pins with low slack
-  //                 -> buffer_in -> setup_split_net_ -> rest of loads
+  // before re-connect
+  // drvr pin -> net -> {all load pins}
+  // after re-connect
+  // drvr pin -> net -> {low slack load pins}
+  //                 -> buffer_in -> setup_split_net_ -> {the remained load pins}
   auto debug_buf_in = idb_adapter->attach(buffer, input->get_port_name(), net);
   auto debug_buf_out = idb_adapter->attach(buffer, output->get_port_name(), out_net);
   LOG_ERROR_IF(!debug_buf_in);
   LOG_ERROR_IF(!debug_buf_out);
 
-  int split_index = fanout_slacks.size() / 2;
+  int split_index = fanout_vertex_2_slack_marginp.size() / 2;
   for (int i = 0; i < split_index; i++) {
-    pair<StaVertex *, Slack> fanout_slack = fanout_slacks[i];
-    StaVertex *              load_vertex = fanout_slack.first;
-    auto *                   load_obj = load_vertex->get_design_obj();
+    pair<StaVertex *, TOSlack> fanout_slack = fanout_vertex_2_slack_marginp[i];
+    StaVertex               *load_vertex = fanout_slack.first;
+    auto                    *load_obj = load_vertex->get_design_obj();
 
     if (load_obj->isPin()) {
-      Pin *     load_pin = dynamic_cast<Pin *>(load_obj);
-      Instance *load_inst = load_pin->get_own_instance();
+      Pin         *load_pin = dynamic_cast<Pin *>(load_obj);
+      Instance    *load_inst = load_pin->get_own_instance();
 
       idb_adapter->disattachPin(load_pin);
       auto debug = idb_adapter->attach(load_inst, load_pin->get_name(), out_net);
@@ -747,35 +738,35 @@ void SetupOptimizer::insertBufferSeparateLoads(StaVertex *drvr_vertex, Slack drv
   // _parasitics_estimator->estimateInvalidNetParasitics(out_net->getDriver(), out_net);
 }
 
-float SetupOptimizer::calcBufferDelay(LibertyCell *buffer_cell, float load_cap) {
-  auto delay_rise = calcBufferDelay(buffer_cell, load_cap, TransType::kRise);
-  auto delay_fall = calcBufferDelay(buffer_cell, load_cap, TransType::kFall);
+float SetupOptimizer::calcDelayOfBuffer(LibertyCell *buffer_cell, float load_cap) {
+  auto delay_rise = calcDelayOfBuffer(buffer_cell, load_cap, TransType::kRise);
+  auto delay_fall = calcDelayOfBuffer(buffer_cell, load_cap, TransType::kFall);
   return max(delay_rise, delay_fall);
 }
 
-float SetupOptimizer::calcBufferDelay(LibertyCell *buffer_cell, float load_cap,
+float SetupOptimizer::calcDelayOfBuffer(LibertyCell *buffer_cell, float load_cap,
                                       TransType rf) {
   LibertyPort *input, *output;
   buffer_cell->bufferPorts(input, output);
-  Delay delays[2];
-  Slew  slews[2];
+  TODelay delays[2];
+  TOSlew  slews[2];
   _violation_fixer->calcGateRiseFallDelays(output, load_cap, delays, slews);
   int rise_fall = (int)rf - 1;
   return delays[rise_fall];
 }
 
-float SetupOptimizer::calcGateDelay(LibertyPort *drvr_port, float load_cap,
+float SetupOptimizer::calcDelayOfGate(LibertyPort *drvr_port, float load_cap,
                                     TransType rf) {
-  Delay delays[2];
-  Slew  slews[2];
+  TODelay delays[2];
+  TOSlew  slews[2];
   _violation_fixer->calcGateRiseFallDelays(drvr_port, load_cap, delays, slews);
   int rise_fall = (int)rf - 1;
   return delays[rise_fall];
 }
 
-float SetupOptimizer::calcGateDelay(LibertyPort *drvr_port, float load_cap) {
-  Delay delays[2];
-  Slew  slews[2];
+float SetupOptimizer::calcDelayOfGate(LibertyPort *drvr_port, float load_cap) {
+  TODelay delays[2];
+  TOSlew  slews[2];
   _violation_fixer->calcGateRiseFallDelays(drvr_port, load_cap, delays, slews);
   return max(delays[_fall], delays[_rise]);
 }
@@ -785,7 +776,7 @@ int SetupOptimizer::getFanoutNumber(Pin *pin) {
   return net->getFanouts();
 }
 
-bool SetupOptimizer::hasTopLevelOutputPort(Net *net) {
+bool SetupOptimizer::netConnectToOutputPort(Net *net) {
   DesignObject *pin;
   FOREACH_NET_PIN(net, pin) {
     if (pin->isOutput()) {
@@ -815,15 +806,15 @@ void SetupOptimizer::setLocation(Instance *inst, int x, int y) {
   _db_interface->placer()->updateRow(master_width, loc.first, loc.second);
 }
 
-LibertyCell *SetupOptimizer::upsizeCell(LibertyPort *in_port, LibertyPort *drvr_port,
-                                        float load_cap, float prev_drive) {
-  LibertyCell *          cell = drvr_port->get_ower_cell();
-  Vector<LibertyCell *> *equiv_cells = _timing_engine->equivCells(cell);
-  if (equiv_cells) {
+LibertyCell *SetupOptimizer::repowerCell(LibertyPort *in_port, LibertyPort *drvr_port,
+                                        float load_cap, float prev_drive_resis) {
+  LibertyCell           *drvr_lib_cell = drvr_port->get_ower_cell();
+  Vector<LibertyCell *> *equiv_lib_cells = _timing_engine->equivCells(drvr_lib_cell);
+  if (equiv_lib_cells) {
     const char *in_port_name = in_port->get_port_name();
     const char *drvr_port_name = drvr_port->get_port_name();
 
-    sort(equiv_cells->begin(), equiv_cells->end(),
+    sort(equiv_lib_cells->begin(), equiv_lib_cells->end(),
          [=](LibertyCell *cell1, LibertyCell *cell2) {
            LibertyPort *port1 = cell1->get_cell_port_or_port_bus(drvr_port_name);
            LibertyPort *port2 = cell2->get_cell_port_or_port_bus(drvr_port_name);
@@ -832,27 +823,25 @@ LibertyCell *SetupOptimizer::upsizeCell(LibertyPort *in_port, LibertyPort *drvr_
 
     // float drive = drvr_port->driveResistance();
     float delay =
-        calcGateDelay(drvr_port, load_cap) + prev_drive * in_port->get_port_cap();
+        calcDelayOfGate(drvr_port, load_cap) + prev_drive_resis * in_port->get_port_cap();
 
-    for (LibertyCell *equiv : *equiv_cells) {
+    for (LibertyCell *equiv : *equiv_lib_cells) {
       if (strstr(equiv->get_cell_name(), "CLK") != NULL) {
         continue;
       }
-      LibertyPort *equiv_drvr = equiv->get_cell_port_or_port_bus(drvr_port_name);
-      LibertyPort *equiv_input = equiv->get_cell_port_or_port_bus(in_port_name);
+      LibertyPort *eq_drvr_port = equiv->get_cell_port_or_port_bus(drvr_port_name);
+      LibertyPort *eq_input_port = equiv->get_cell_port_or_port_bus(in_port_name);
 
-      // Include delay of previous driver into equiv gate.
-      float equiv_delay;
-      if (equiv_input) {
-        equiv_delay = calcGateDelay(
-            equiv_drvr, load_cap); // +
-                                   // prev_drive * equiv_input->get_port_cap();
+      float eq_cell_delay;
+      if (eq_input_port) {
+        eq_cell_delay = calcDelayOfGate(eq_drvr_port, load_cap);// +
+                      // prev_drive_resis * eq_input_port->get_port_cap();
       } else {
-        equiv_delay = calcGateDelay(equiv_drvr,
-                                    load_cap); // + prev_drive * in_port->get_port_cap();
+        eq_cell_delay =
+            calcDelayOfGate(eq_drvr_port, load_cap);// + prev_drive_resis * in_port->get_port_cap();
       }
 
-      if (equiv_delay < 0.5 * delay) {
+      if (eq_cell_delay < 0.5*delay) {
         return equiv;
       }
     }
@@ -862,8 +851,8 @@ LibertyCell *SetupOptimizer::upsizeCell(LibertyPort *in_port, LibertyPort *drvr_
 
 StaSeqPathData *SetupOptimizer::worstRequiredPath() {
   vector<TransType> rise_fall = {TransType::kRise, TransType::kFall};
-  StaSeqPathData *  worst_path = nullptr;
-  Slack             wns = kInf;
+  StaSeqPathData *worst_path = nullptr;
+  TOSlack wns = kInf;
   for (auto rf : rise_fall) {
     auto path = _timing_engine->vertexWorstRequiredPath(AnalysisMode::kMax, rf);
     if (path->getSlackNs() < wns) {
@@ -884,32 +873,31 @@ bool SetupOptimizer::netConnectToPort(Net *net) {
   return false;
 }
 
-Slack SetupOptimizer::getWorstSlack(StaVertex *vertex, AnalysisMode mode) {
+TOSlack SetupOptimizer::getWorstSlack(StaVertex *vertex, AnalysisMode mode) {
   auto  rise_slack = vertex->getSlackNs(mode, TransType::kRise);
-  Slack rise = rise_slack ? *rise_slack : kInf;
+  TOSlack rise = rise_slack ? *rise_slack : kInf;
   auto  fall_slack = vertex->getSlackNs(mode, TransType::kFall);
-  Slack fall = fall_slack ? *fall_slack : kInf;
-  Slack slack = min(rise, fall);
+  TOSlack fall = fall_slack ? *fall_slack : kInf;
+  TOSlack slack = min(rise, fall);
   return slack;
 }
 
-VertexSet SetupOptimizer::getEndPoints() {
-  VertexSet  end_points;
-  auto *     ista = _timing_engine->get_ista();
-  StaGraph * the_graph = &(ista->get_graph());
+TOVertexSet SetupOptimizer::getEndPoints() {
+  TOVertexSet  end_points;
+  auto      *ista = _timing_engine->get_ista();
+  StaGraph  *the_graph = &(ista->get_graph());
   StaVertex *vertex;
   FOREACH_END_VERTEX(the_graph, vertex) { end_points.insert(vertex); }
   return end_points;
 }
 
-void SetupOptimizer::findEndpointsWithSetupViolation(VertexSet end_points,
-                                                     Slack     slack_margin,
-                                                     // return values
-                                                     VertexSeq &setup_violations) {
+void SetupOptimizer::findEndpointsWithSetupViolation(TOVertexSet  end_points,
+                                                     TOSlack      slack_margin,
+                                                     TOVertexSeq &setup_violations) {
   setup_violations.clear();
 
   for (auto *end : end_points) {
-    Slack slack = getWorstSlack(end, AnalysisMode::kMax);
+    TOSlack slack = getWorstSlack(end, AnalysisMode::kMax);
     if (slack < slack_margin) {
       setup_violations.emplace_back(end);
     }

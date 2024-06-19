@@ -36,12 +36,12 @@ EstimateParasitics::EstimateParasitics(TimingEngine *timing_engine, int dbu)
 
 /**
  * @brief If parasitics have been evaluated, update the changed net stored in
- * _parasitics_invalid. else update rc tree for all net
+ * _parasitics_invalid_nets. else update rc tree for all net
  *
  */
 void EstimateParasitics::excuteParasiticsEstimate() {
   if (_have_estimated_parasitics) {
-    for (Net *net : _parasitics_invalid) {
+    for (Net *net : _parasitics_invalid_nets) {
       DesignObject *driver = net->getDriver();
       if (driver) {
         if (_timing_engine->get_ista()->getRcNet(net)) {
@@ -50,7 +50,7 @@ void EstimateParasitics::excuteParasiticsEstimate() {
         excuteWireParasitic(driver, net, _db_adapter);
       }
     }
-    _parasitics_invalid.clear();
+    _parasitics_invalid_nets.clear();
   } else {
     estimateAllNetParasitics();
   }
@@ -68,7 +68,7 @@ void EstimateParasitics::estimateAllNetParasitics() {
     estimateNetParasitics(net);
   }
   _have_estimated_parasitics = true;
-  _parasitics_invalid.clear();
+  _parasitics_invalid_nets.clear();
   LOG_INFO << "estimate all net parasitics end";
 }
 
@@ -94,13 +94,13 @@ void EstimateParasitics::estimateNetParasitics(Net *net) {
 void EstimateParasitics::estimateInvalidNetParasitics(DesignObject *drvr_pin_port,
                                                       Net *         net) {
 
-  if (_parasitics_invalid.find(net) != _parasitics_invalid.end() && net) {
+  if (_parasitics_invalid_nets.find(net) != _parasitics_invalid_nets.end() && net) {
     if (_timing_engine->get_ista()->getRcNet(net)) {
       _timing_engine->resetRcTree(net);
     }
     excuteWireParasitic(drvr_pin_port, net, _db_adapter);
 
-    _parasitics_invalid.erase(net);
+    _parasitics_invalid_nets.erase(net);
   }
 }
 
@@ -176,7 +176,7 @@ void EstimateParasitics::RctNodeConnectPin(Net *net, int index, RctNode *rcnode,
 
 void EstimateParasitics::parasiticsInvalid(Net *net) {
   // printf("EstimateParasitics | parasitics invalid {%s}\n", net->get_name());
-  _parasitics_invalid.insert(net);
+  _parasitics_invalid_nets.insert(net);
 }
 
 } // namespace ito
