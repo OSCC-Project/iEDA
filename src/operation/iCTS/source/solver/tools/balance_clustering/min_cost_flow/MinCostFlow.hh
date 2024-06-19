@@ -54,12 +54,12 @@ class MinCostFlow
     // requirement: meet the max_fanout constraint
 
     // Define the node and arc types
-    typedef ListDigraph::Node Node;
-    typedef ListDigraph::NodeMap<std::pair<int, int>> NodeMap;
-    typedef ListDigraph::Arc Arc;
-    typedef ListDigraph::ArcMap<int> ArcMap;
-    typedef ListDigraph::ArcIt ArcIt;
-    typedef NetworkSimplex<ListDigraph, int, int> MinCostFlowSolver;
+    using Node = ListDigraph::Node;
+    using NodeMap = ListDigraph::NodeMap<std::pair<int, int>>;
+    using Arc = ListDigraph::Arc;
+    using ArcMap = ListDigraph::ArcMap<int>;
+    using ArcIt = ListDigraph::ArcIt;
+    using MinCostFlowSolver = NetworkSimplex<ListDigraph, int, int>;
 
     // Define the network
     ListDigraph network;
@@ -74,7 +74,7 @@ class MinCostFlow
     // Add arcs to the network
     std::vector<Arc> source_sink_arcs, sink_buffer_arcs, buffer_target_arcs;
     // source sink arc
-    std::ranges::for_each(sinks, [&](auto& sink_node) { source_sink_arcs.emplace_back(network.addArc(source, sink_node)); });
+    std::ranges::for_each(sinks, [&](auto& sink) { source_sink_arcs.emplace_back(network.addArc(source, sink)); });
     // sink buffer arc, dist cost
     std::vector<float> dist_costs;
     for (size_t i = 0; i < sinks.size(); ++i) {
@@ -85,7 +85,7 @@ class MinCostFlow
       }
     }
     // buffer target arc
-    std::ranges::for_each(buffers, [&](auto& buffer_node) { buffer_target_arcs.emplace_back(network.addArc(buffer_node, target)); });
+    std::ranges::for_each(buffers, [&](auto& buffer) { buffer_target_arcs.emplace_back(network.addArc(buffer, target)); });
     ArcMap arc_cost(network), arc_capacity(network);
     std::ranges::for_each(source_sink_arcs, [&](auto& arc) { arc_capacity[arc] = 1; });
     for (size_t i = 0; i < sink_buffer_arcs.size(); ++i) {
