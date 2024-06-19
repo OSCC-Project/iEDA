@@ -50,6 +50,7 @@
 #include "model/mplHelper/MplHelper.hh"
 #include "model/python/PyToolBase.hh"
 #include "report/CtsReport.hh"
+#include "usage/usage.hh"
 #ifdef PY_MODEL
 #include "PyModel.h"
 #endif
@@ -976,7 +977,7 @@ void CTSAPI::slackLog() const
 // log
 void CTSAPI::checkFile(const std::string& dir, const std::string& file_name, const std::string& suffix) const
 {
-  std::string now_time = Time::getNowWallTime();
+  std::string now_time = ieda::Time::getNowWallTime();
   std::string tmp = Str::replace(now_time, ":", "_");
   std::string origin_file_name = Str::printf("%s/%s%s", dir.c_str(), file_name.c_str(), suffix.c_str());
   std::string copy_design_work_space = Str::printf("%s/%s_%s_%s%s", dir.c_str(), file_name.c_str(), tmp.c_str(), "_backup", suffix.c_str());

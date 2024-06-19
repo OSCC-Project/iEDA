@@ -68,7 +68,7 @@ bool readVerilog(const std::string& file_name)
 {
   auto* ista = ista::Sta::getOrCreateSta();
 
-  ista->readVerilog(file_name.c_str());
+  ista->readVerilogWithRustParser(file_name.c_str());
   return true;
 }
 
@@ -83,7 +83,7 @@ bool linkDesign(const std::string& cell_name)
 {
   auto* ista = ista::Sta::getOrCreateSta();
   ista->set_top_module_name(cell_name.c_str());
-  ista->linkDesign(cell_name.c_str());
+  ista->linkDesignWithRustParser(cell_name.c_str());
   return true;
 }
 

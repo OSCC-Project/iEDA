@@ -25,6 +25,7 @@
 #include "CTSAPI.hh"
 #include "Net.hh"
 #include "report/CtsReport.hh"
+#include "time/Time.hh"
 namespace icts {
 
 void Evaluator::init()

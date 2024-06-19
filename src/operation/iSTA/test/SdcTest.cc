@@ -42,8 +42,9 @@ class SdcTest : public testing::Test {
     EXPECT_TRUE(load_lib);
     ista->addLib(std::move(load_lib));
 
-    ista->readVerilog("/home/taosimin/iEDA/src/iSTA/examples/example1.v");
-    ista->linkDesign("top");
+    ista->readVerilogWithRustParser(
+        "/home/taosimin/iEDA/src/iSTA/examples/example1.v");
+    ista->linkDesignWithRustParser("top");
   }
   void TearDown() {
     Sta::destroySta();

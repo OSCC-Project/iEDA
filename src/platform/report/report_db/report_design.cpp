@@ -79,14 +79,14 @@ std::shared_ptr<ieda::ReportTable> ReportDesign::createInstanceTable(idb::IdbIns
   *tbl << "Type" << instProperty.get_type_str(inst.get_type()) << TABLE_ENDLINE;
   *tbl << "Status" << instProperty.get_status_str(inst.get_status()) << TABLE_ENDLINE;
   if (inst.is_placed() || inst.is_fixed()) {
-    *tbl << "Position" << Str::printf("(%d,%d)", inst.get_coordinate()->get_x(), inst.get_coordinate()->get_y()) << TABLE_ENDLINE;
+    *tbl << "Position" << ieda::Str::printf("(%d,%d)", inst.get_coordinate()->get_x(), inst.get_coordinate()->get_y()) << TABLE_ENDLINE;
   }
   *tbl << "Orient" << getInstOrient(inst.get_orient()) << TABLE_ENDLINE;
 
   auto* box = inst.get_bounding_box();
-  *tbl << "Box" << Str::printf("(%d, %d, %d, %d)", box->get_low_x(), box->get_low_y(), box->get_high_x(), box->get_high_y())
+  *tbl << "Box" << ieda::Str::printf("(%d, %d, %d, %d)", box->get_low_x(), box->get_low_y(), box->get_high_x(), box->get_high_y())
        << TABLE_ENDLINE;
-  *tbl << "Box Size" << Str::printf("%d, %d", box->get_width(), box->get_height()) << TABLE_ENDLINE;
+  *tbl << "Box Size" << ieda::Str::printf("%d, %d", box->get_width(), box->get_height()) << TABLE_ENDLINE;
   *tbl << "Pins Nums" << inst.get_pin_list()->get_pin_num() << TABLE_ENDLINE;
   
   return tbl;
@@ -98,7 +98,7 @@ std::shared_ptr<ieda::ReportTable> ReportDesign::createInstancePinTable(idb::Idb
   std::vector<std::string> header = {"Pin Name", "Coordinate", "Type", "Net Name"};
   auto tbl = std::make_shared<ieda::ReportTable>("Instance pin list", header, static_cast<int>(ReportDBType::kInstancePinList));
   for (auto* pin : inst_ptr->get_pin_list()->get_pin_list()) {
-    *tbl << pin->get_pin_name() << Str::printf("(%d, %d)", pin->get_average_coordinate()->get_x(), pin->get_average_coordinate()->get_y());
+    *tbl << pin->get_pin_name() << ieda::Str::printf("(%d, %d)", pin->get_average_coordinate()->get_x(), pin->get_average_coordinate()->get_y());
     if (pin->is_net_pin()) {
       *tbl << "net pin" << pin->get_net()->get_net_name();
     } else if (pin->is_special_net_pin()) {
