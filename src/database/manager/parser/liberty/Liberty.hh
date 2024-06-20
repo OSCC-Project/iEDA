@@ -54,9 +54,7 @@ class LibertyAxis;
 class LibertyLutTableTemplate;
 class LibertyVectorTable;
 class LibertyExpr;
-class LibertyCellPortIterator;
-class LibertyCellIterator;
-class LibertyCellTimingArcSetIterator;
+
 class LibertyCellPowerArcSetIterator;
 
 /**
@@ -979,8 +977,6 @@ class LibertyCell : public LibertyObject
   LibertyCell(const char* cell_name, LibertyLibrary* owner_lib);
   ~LibertyCell() override;
 
-  friend LibertyCellPortIterator;
-  friend LibertyCellTimingArcSetIterator;
   friend LibertyCellPowerArcSetIterator;
 
   LibertyCell(LibertyCell&& lib_cell) noexcept;
@@ -1082,26 +1078,6 @@ class LibertyCell : public LibertyObject
 };
 
 /**
- * @brief The cell port iterator.
- *
- */
-class LibertyCellPortIterator
-{
- public:
-  explicit LibertyCellPortIterator(LibertyCell* lib_cell);
-  ~LibertyCellPortIterator() = default;
-
-  bool hasNext() { return _iter != _lib_cell->_cell_ports.end(); }
-  LibertyPort* next() { return _iter++->get(); }
-
- private:
-  LibertyCell* _lib_cell;
-  std::vector<std::unique_ptr<LibertyPort>>::iterator _iter;
-
-  FORBIDDEN_COPY(LibertyCellPortIterator);
-};
-
-/**
  * @brief usage:
  * LibertyCell* lib_cell;
  * LibertyPort* port;
@@ -1111,7 +1087,9 @@ class LibertyCellPortIterator
  * }
  *
  */
-#define FOREACH_CELL_PORT(cell, port) for (ista::LibertyCellPortIterator iter(cell); iter.hasNext() ? port = (iter.next()), true : false;)
+#define FOREACH_CELL_PORT(cell, port)                                                                   \
+  for (std::vector<std::unique_ptr<ista::LibertyPort>>::iterator iter = cell->get_cell_ports().begin(); \
+       (iter != cell->get_cell_ports().end()) ? port = (iter++->get()), true : false;)
 
 /**
  * @brief The macro of foreach leakage power, usage:
@@ -1127,26 +1105,6 @@ class LibertyCellPortIterator
     for (auto p = leakage_powers.begin(); p != leakage_powers.end() ? leakage_power = p->get(), true : false; ++p)
 
 /**
- * @brief The cell timing arc iterator.
- *
- */
-class LibertyCellTimingArcSetIterator
-{
- public:
-  explicit LibertyCellTimingArcSetIterator(LibertyCell* lib_cell);
-  ~LibertyCellTimingArcSetIterator() = default;
-
-  bool hasNext() { return _iter != _lib_cell->_cell_arcs.end(); }
-  LibertyArcSet* next() { return _iter++->get(); }
-
- private:
-  LibertyCell* _lib_cell;
-  std::vector<std::unique_ptr<LibertyArcSet>>::iterator _iter;
-
-  FORBIDDEN_COPY(LibertyCellTimingArcSetIterator);
-};
-
-/**
  * @brief usage:
  * LibertyCell* lib_cell;
  * LibertyArcSet* timing_arc_set;
@@ -1156,8 +1114,9 @@ class LibertyCellTimingArcSetIterator
  * }
  *
  */
-#define FOREACH_CELL_TIMING_ARC_SET(cell, timing_arc_set) \
-  for (ista::LibertyCellTimingArcSetIterator iter(cell); iter.hasNext() ? timing_arc_set = (iter.next()), true : false;)
+#define FOREACH_CELL_TIMING_ARC_SET(cell, timing_arc_set)                                          \
+  for (std::vector<std::unique_ptr<LibertyArcSet>>::iterator iter = cell->get_cell_arcs().begin(); \
+       iter != cell->get_cell_arcs().end() ? timing_arc_set = iter++->get(), true : false;)
 
 /**
  * @brief The cell power arc iterator.
@@ -1338,8 +1297,6 @@ class LibertyLibrary : public LibertyObject
  public:
   explicit LibertyLibrary(const char* lib_name) : _lib_name(lib_name) {}
   ~LibertyLibrary() = default;
-
-  friend LibertyCellIterator;
 
   LibertyLibrary(LibertyLibrary&& other) noexcept : _lib_name(std::move(other._lib_name)), _cells(std::move(other._cells)) {}
 
@@ -1558,26 +1515,6 @@ class LibertyLibrary : public LibertyObject
 };
 
 /**
- * @brief The cell of liberty iterator.
- *
- */
-class LibertyCellIterator
-{
- public:
-  explicit LibertyCellIterator(LibertyLibrary* lib);
-  ~LibertyCellIterator() = default;
-
-  bool hasNext();
-  LibertyCell* next();
-
- private:
-  LibertyLibrary* _lib;
-  std::vector<std::unique_ptr<LibertyCell>>::iterator _iter;
-
-  FORBIDDEN_COPY(LibertyCellIterator);
-};
-
-/**
  * @brief usage:
  * LibertyLibrary* lib;
  * LibertyCell* cell;
@@ -1587,7 +1524,9 @@ class LibertyCellIterator
  * }
  *
  */
-#define FOREACH_LIB_CELL(lib, cell) for (ista::LibertyCellIterator iter(lib); iter.hasNext() ? cell = (iter.next()), true : false;)
+#define FOREACH_LIB_CELL(lib, cell)                                                         \
+  for (std::vector<std::unique_ptr<LibertyCell>>::iterator iter = lib->get_cells().begin(); \
+       iter != lib->get_cells().end() ? cell = (iter++->get()), true : false;)
 
 /**
  * @brief The base class for liberty syntax statement.

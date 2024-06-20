@@ -1271,21 +1271,6 @@ void LibertyCell::addLibertyPowerArc(std::unique_ptr<LibertyPowerArc>&& cell_pow
   }
 }
 
-LibertyCellIterator::LibertyCellIterator(LibertyLibrary* lib) : _lib(lib)
-{
-  _iter = _lib->_cells.begin();
-}
-
-bool LibertyCellIterator::hasNext()
-{
-  return _iter != _lib->_cells.end();
-}
-
-LibertyCell* LibertyCellIterator::next()
-{
-  return _iter++->get();
-}
-
 /**
  * @brief Get cell port or port bus.
  *
@@ -1531,16 +1516,6 @@ double LibertyCell::convertTablePowerToMw(double query_table_power)
   }
 
   return power_mw;
-}
-
-LibertyCellPortIterator::LibertyCellPortIterator(LibertyCell* lib_cell) : _lib_cell(lib_cell)
-{
-  _iter = _lib_cell->_cell_ports.begin();
-}
-
-LibertyCellTimingArcSetIterator::LibertyCellTimingArcSetIterator(LibertyCell* lib_cell) : _lib_cell(lib_cell)
-{
-  _iter = _lib_cell->_cell_arcs.begin();
 }
 
 LibertyCellPowerArcSetIterator::LibertyCellPowerArcSetIterator(LibertyCell* lib_cell)
