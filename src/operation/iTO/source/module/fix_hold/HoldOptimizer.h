@@ -46,7 +46,7 @@ class HoldOptimizer {
 
   LibertyCell *findBufferWithMaxDelay();
 
-  void findEndpointsWithHoldViolation(TOVertexSet end_points,
+  bool findEndpointsWithHoldViolation(TOVertexSet end_points,
                                       TOSlack &worst_slack, TOVertexSet &hold_violations);
 
   int  fixHoldVioPath(TOVertexSeq fanins, LibertyCell *insert_buffer_cell);
@@ -92,7 +92,7 @@ class HoldOptimizer {
   bool  _allow_setup_violation = true;
   int   _max_numb_insert_buf = 0;
 
-  int _inserted_buffer_count = 0;
+  int _number_insert_buffer = 0;
   int _inserted_load_buffer_count = 0;
 
   // to name the instance

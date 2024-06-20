@@ -28,7 +28,7 @@ int SetupOptimizer::_rise = (int)TransType::kRise - 1;
 int SetupOptimizer::_fall = (int)TransType::kFall - 1;
 
 SetupOptimizer::SetupOptimizer(DbInterface *dbinterface)
-    : _db_interface(dbinterface), _resize_instance_count(0), _inserted_buffer_count(0),
+    : _db_interface(dbinterface), _number_resized_instance(0), _number_insert_buffer(0),
       _insert_instance_index(1), _make_net_index(1) {
   _timing_engine = _db_interface->get_timing_engine();
   _dbu = _db_interface->get_dbu();
@@ -69,7 +69,6 @@ void SetupOptimizer::optimizeSetup() {
   LOG_ERROR_IF(_available_buffer_cells.empty()) << "Can not found specified buffers.\n";
 
   TOSlack prev_worst_slack = -kInf;
-  int   pass = 1;
   int   number_of_decreasing_slack_iter = 0;
 
   float slack_margin = _db_interface->get_setup_target_slack();
@@ -93,6 +92,11 @@ void SetupOptimizer::optimizeSetup() {
   _db_interface->report()->get_ofstream()
       << "TO: Total find " << (int)end_pts_setup_violation.size() << " endpoints with setup violation in current design.\n";
   _db_interface->report()->get_ofstream().close();
+
+  for (auto node : end_pts_setup_violation) {
+    optimizeSetup(node, worst_slack, true);
+  }
+  _parasitics_estimator->excuteParasiticsEstimate();
 
   // slack violation
   for (auto node : end_pts_setup_violation) {
@@ -148,21 +152,17 @@ void SetupOptimizer::optimizeSetup() {
         number_of_decreasing_slack_iter = 0;
       }
     }
-    // if (_db_interface->overMaxArea()) {
-    //   break;
-    // }
-    pass++;
   }
   _db_interface->report()->reportSetupResult(slack_store);
 
   _parasitics_estimator->estimateAllNetParasitics();
   _timing_engine->updateTiming();
 
-  printf("TO: Total insert {%d} buffers when fix setup.\n", _inserted_buffer_count);
-  printf("TO: Total resize {%d} instances when fix setup.\n", _resize_instance_count);
+  printf("TO: Total insert {%d} buffers when fix setup.\n", _number_insert_buffer);
+  printf("TO: Total resize {%d} instances when fix setup.\n", _number_resized_instance);
   _db_interface->report()->get_ofstream()
-      << "TO: Total insert " << _inserted_buffer_count << " buffers when fix setup.\n"
-      << "TO: Total resize " << _resize_instance_count << " instances when fix setup.\n";
+      << "TO: Total insert " << _number_insert_buffer << " buffers when fix setup.\n"
+      << "TO: Total resize " << _number_resized_instance << " instances when fix setup.\n";
   _db_interface->report()->get_ofstream().close();
 
   if (worst_slack < slack_margin) {
@@ -170,7 +170,7 @@ void SetupOptimizer::optimizeSetup() {
     _db_interface->report()->get_ofstream() << "TO: Failed to fix all setup violations in current design.\n";
     _db_interface->report()->get_ofstream().close();
   }
-  if (_db_interface->overMaxArea()) {
+  if (_db_interface->reachMaxArea()) {
     printf("TO: Reach the maximum utilization of current design.\n");
     _db_interface->report()->get_ofstream() << "TO: Reach the maximum utilization of current design.\n";
     _db_interface->report()->get_ofstream().close();
@@ -180,7 +180,7 @@ void SetupOptimizer::optimizeSetup() {
   _db_interface->report()->reportTime(false);
 }
 
-void SetupOptimizer::optimizeSetup(StaSeqPathData *worst_path, TOSlack path_slack) {
+void SetupOptimizer::optimizeSetup(StaSeqPathData *worst_path, TOSlack path_slack, bool only_gs) {
   vector<TimingEngine::PathNet> path_driver_vertexs =
       _timing_engine->getPathDriverVertexs(worst_path);
   int path_length = path_driver_vertexs.size();
@@ -229,17 +229,21 @@ void SetupOptimizer::optimizeSetup(StaSeqPathData *worst_path, TOSlack path_slac
         if (upsized_lib_cell) {
           Instance *drvr_inst = drvr_pin->get_own_instance();
           if (_violation_fixer->repowerInstance(drvr_inst, upsized_lib_cell)) {
-            _resize_instance_count++;
+            _number_resized_instance++;
             _parasitics_estimator->estimateNetParasitics(drvr_pin->get_net());
           }
           break;
         }
       }
 
+      if (only_gs) {
+        break;
+      }
+
       if (fanout > 1 && fanout < _rebuffer_max_fanout) {
-        int count_before = _inserted_buffer_count;
-        performBuffering(drvr_pin); // _inserted_buffer_count++
-        int insert_count = _inserted_buffer_count - count_before;
+        int count_before = _number_insert_buffer;
+        performBuffering(drvr_pin); // _number_insert_buffer++
+        int insert_count = _number_insert_buffer - count_before;
 
         if (insert_count > 0) {
           break;
@@ -256,7 +260,7 @@ void SetupOptimizer::optimizeSetup(StaSeqPathData *worst_path, TOSlack path_slac
   }
 }
 
-void SetupOptimizer::optimizeSetup(StaVertex *vertex, TOSlack path_slack) {
+void SetupOptimizer::optimizeSetup(StaVertex *vertex, TOSlack path_slack, bool only_gs) {
   StaSeqPathData *worst_path_rise = _timing_engine->vertexWorstRequiredPath(
       vertex, AnalysisMode::kMax, TransType::kRise);
   StaSeqPathData *worst_path_fall = _timing_engine->vertexWorstRequiredPath(
@@ -314,17 +318,21 @@ void SetupOptimizer::optimizeSetup(StaVertex *vertex, TOSlack path_slack) {
         if (upsized_lib_cell) {
           Instance *drvr_inst = drvr_pin->get_own_instance();
           if (_violation_fixer->repowerInstance(drvr_inst, upsized_lib_cell)) {
-            _resize_instance_count++;
-            _parasitics_estimator->parasiticsInvalid(drvr_pin->get_net());
+            _number_resized_instance++;
+            _parasitics_estimator->invalidNetRC(drvr_pin->get_net());
           }
           break;
         }
       }
 
+      if (only_gs) {
+        break;
+      }
+
       if (fanout > 1 && fanout < _rebuffer_max_fanout) {
-        int count_before = _inserted_buffer_count;
-        performBuffering(drvr_pin); // _inserted_buffer_count++
-        int insert_count = _inserted_buffer_count - count_before;
+        int count_before = _number_insert_buffer;
+        performBuffering(drvr_pin); // _number_insert_buffer++
+        int insert_count = _number_insert_buffer - count_before;
 
         if (insert_count > 0) {
           break;
@@ -603,13 +611,13 @@ void SetupOptimizer::topDownImplementBuffering(BufferedOption *buf_opt, Net *net
     Point loc = buf_opt->get_location();
     setLocation(buffer, loc.get_x(), loc.get_y());
 
-    _parasitics_estimator->parasiticsInvalid(net);
-    _parasitics_estimator->parasiticsInvalid(net2);
+    _parasitics_estimator->invalidNetRC(net);
+    _parasitics_estimator->invalidNetRC(net2);
 
     // _parasitics_estimator->estimateInvalidNetParasitics(net->getDriver(), net);
     // _parasitics_estimator->estimateInvalidNetParasitics(net2->getDriver(), net2);
 
-    _inserted_buffer_count++;
+    _number_insert_buffer++;
 
     // increase design area
     idb::IdbCellMaster *idb_master = idb_adapter->staToDb(insert_buf_cell);
@@ -643,8 +651,8 @@ void SetupOptimizer::topDownImplementBuffering(BufferedOption *buf_opt, Net *net
       _timing_engine->insertBuffer(load_inst->get_name());
       // _timing_engine->updateTiming();
 
-      _parasitics_estimator->parasiticsInvalid(load_net);
-      _parasitics_estimator->parasiticsInvalid(net);
+      _parasitics_estimator->invalidNetRC(load_net);
+      _parasitics_estimator->invalidNetRC(net);
 
       // _parasitics_estimator->estimateInvalidNetParasitics(net->getDriver(), net);
       // _parasitics_estimator->estimateInvalidNetParasitics(load_net->getDriver(),
@@ -731,10 +739,10 @@ void SetupOptimizer::insertBufferSeparateLoads(StaVertex *drvr_vertex, TOSlack d
   _violation_fixer->repowerInstance(buffer_out_pin);
   setLocation(buffer, drvr_loc.get_x(), drvr_loc.get_y());
 
-  _parasitics_estimator->parasiticsInvalid(net);
+  _parasitics_estimator->invalidNetRC(net);
   // _parasitics_estimator->estimateInvalidNetParasitics(net->getDriver(), net);
 
-  _parasitics_estimator->parasiticsInvalid(out_net);
+  _parasitics_estimator->invalidNetRC(out_net);
   // _parasitics_estimator->estimateInvalidNetParasitics(out_net->getDriver(), out_net);
 }
 
@@ -810,40 +818,42 @@ LibertyCell *SetupOptimizer::repowerCell(LibertyPort *in_port, LibertyPort *drvr
                                         float load_cap, float prev_drive_resis) {
   LibertyCell           *drvr_lib_cell = drvr_port->get_ower_cell();
   Vector<LibertyCell *> *equiv_lib_cells = _timing_engine->equivCells(drvr_lib_cell);
-  if (equiv_lib_cells) {
-    const char *in_port_name = in_port->get_port_name();
-    const char *drvr_port_name = drvr_port->get_port_name();
+  if (!equiv_lib_cells) {
+    return nullptr;
+  }
 
-    sort(equiv_lib_cells->begin(), equiv_lib_cells->end(),
-         [=](LibertyCell *cell1, LibertyCell *cell2) {
-           LibertyPort *port1 = cell1->get_cell_port_or_port_bus(drvr_port_name);
-           LibertyPort *port2 = cell2->get_cell_port_or_port_bus(drvr_port_name);
-           return (port1->driveResistance() > port2->driveResistance());
-         });
+  const char *in_port_name = in_port->get_port_name();
+  const char *drvr_port_name = drvr_port->get_port_name();
 
-    // float drive = drvr_port->driveResistance();
-    float delay =
-        calcDelayOfGate(drvr_port, load_cap) + prev_drive_resis * in_port->get_port_cap();
+  sort(equiv_lib_cells->begin(), equiv_lib_cells->end(),
+        [=](LibertyCell *cell1, LibertyCell *cell2) {
+          LibertyPort *port1 = cell1->get_cell_port_or_port_bus(drvr_port_name);
+          LibertyPort *port2 = cell2->get_cell_port_or_port_bus(drvr_port_name);
+          return (port1->driveResistance() > port2->driveResistance());
+        });
 
-    for (LibertyCell *equiv : *equiv_lib_cells) {
-      if (strstr(equiv->get_cell_name(), "CLK") != NULL) {
-        continue;
-      }
-      LibertyPort *eq_drvr_port = equiv->get_cell_port_or_port_bus(drvr_port_name);
-      LibertyPort *eq_input_port = equiv->get_cell_port_or_port_bus(in_port_name);
+  // float drive = drvr_port->driveResistance();
+  float delay =
+      calcDelayOfGate(drvr_port, load_cap) + prev_drive_resis * in_port->get_port_cap();
 
-      float eq_cell_delay;
-      if (eq_input_port) {
-        eq_cell_delay = calcDelayOfGate(eq_drvr_port, load_cap);// +
-                      // prev_drive_resis * eq_input_port->get_port_cap();
-      } else {
-        eq_cell_delay =
-            calcDelayOfGate(eq_drvr_port, load_cap);// + prev_drive_resis * in_port->get_port_cap();
-      }
+  for (LibertyCell *equiv_lib_cell : *equiv_lib_cells) {
+    if (strstr(equiv_lib_cell->get_cell_name(), "CLK") != NULL) {
+      continue;
+    }
+    LibertyPort *eq_drvr_port = equiv_lib_cell->get_cell_port_or_port_bus(drvr_port_name);
+    LibertyPort *eq_input_port = equiv_lib_cell->get_cell_port_or_port_bus(in_port_name);
 
-      if (eq_cell_delay < 0.5*delay) {
-        return equiv;
-      }
+    float eq_cell_delay;
+    if (eq_input_port) {
+      eq_cell_delay = calcDelayOfGate(eq_drvr_port, load_cap);// +
+                    // prev_drive_resis * eq_input_port->get_port_cap();
+    } else {
+      eq_cell_delay =
+          calcDelayOfGate(eq_drvr_port, load_cap);// + prev_drive_resis * in_port->get_port_cap();
+    }
+
+    if (eq_cell_delay < 0.5*delay) {
+      return equiv_lib_cell;
     }
   }
   return nullptr;

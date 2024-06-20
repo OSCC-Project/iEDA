@@ -60,14 +60,14 @@ void HoldOptimizer::optimizeHold() {
   TOVertexSet end_points = getEndPoints();
 
   TOSlack worst_slack;
-  // endpoints with hold violation.
+  // Identify hold violation endpoints.
   TOVertexSet end_pts_hold_violation;
 
   TOSlack worst_hold_slack = getWorstSlack(AnalysisMode::kMin);
   int     iteration = 1;
-  int     insert_buf_count = 1;
-  while (insert_buf_count > 0 && worst_hold_slack < _target_slack) {
-    insert_buf_count = checkAndOptimizeHold(end_points, insert_buf_cell);
+  int     number_insert_buffer = 1;
+  while (number_insert_buffer > 0 && worst_hold_slack < _target_slack) {
+    number_insert_buffer = checkAndOptimizeHold(end_points, insert_buf_cell);
     _parasitics_estimator->estimateAllNetParasitics();
     _timing_engine->updateTiming();
     worst_hold_slack = getWorstSlack(AnalysisMode::kMin);
@@ -84,12 +84,12 @@ void HoldOptimizer::optimizeHold() {
         << end_pts_hold_violation.size() << " endpoints with hold violation." << endl;
   }
 
-  if (_inserted_buffer_count > _max_numb_insert_buf) {
+  if (_number_insert_buffer > _max_numb_insert_buf) {
     printf("TO: Reach the maximum number of buffers that can be inserted.\n");
     _db_interface->report()->report(
         "TO: Reach the maximum number of buffers that can be inserted.\n");
   }
-  if (_db_interface->overMaxArea()) {
+  if (_db_interface->reachMaxArea()) {
     printf("TO: Reach the maximum utilization of current design.\n");
     _db_interface->report()->report(
         "TO: Reach the maximum utilization of current design.\n");
@@ -97,7 +97,7 @@ void HoldOptimizer::optimizeHold() {
 
   _db_interface->report()->get_ofstream()
       << "\nTO: Finish hold optimization!\n"
-      << "TO: Total inserted " << _inserted_buffer_count << " hold buffers and "
+      << "TO: Total insert " << _number_insert_buffer << " hold buffers and "
       << _inserted_load_buffer_count << " load buffers when fix hold.\n";
 
   reportWNSAndTNS();
@@ -116,57 +116,55 @@ int HoldOptimizer::checkAndOptimizeHold(TOVertexSet  end_points,
   // store inserted hold buffer number
   vector<int> insert_buf_num;
 
-  int insert_buf_count = 0;
+  int number_insert_buffer = 0;
 
   TOSlack worst_slack;
   // endpoints with hold violation.
   TOVertexSet end_pts_hold_violation;
-  findEndpointsWithHoldViolation(end_points, worst_slack, end_pts_hold_violation);
+  bool exit_vioaltion = findEndpointsWithHoldViolation(end_points, worst_slack, end_pts_hold_violation);
   hold_slacks.push_back(worst_slack);
   hold_vio_num.push_back(end_pts_hold_violation.size());
 
   _db_interface->report()->get_ofstream()
       << "\nTO: Beign hold optimization! Hold target slack -> " << _target_slack << endl;
-  if (!end_pts_hold_violation.empty()) {
+  if (exit_vioaltion) {
     _db_interface->report()->get_ofstream()
-        << "\nTO: Total found " << end_pts_hold_violation.size()
+        << "\nTO: Total find " << end_pts_hold_violation.size()
         << " endpoints with hold violations in current design.\n";
     _db_interface->report()->get_ofstream().close();
     int repair_count = 1;
-    int pass = 1;
 
-    while (!end_pts_hold_violation.empty() &&
-           _inserted_buffer_count < _max_numb_insert_buf &&
-           !_db_interface->overMaxArea() && repair_count > 0) {
+    while (exit_vioaltion &&
+           _number_insert_buffer < _max_numb_insert_buf &&
+           !_db_interface->reachMaxArea() && repair_count > 0) {
       TOVertexSet fanins = getFanins(end_pts_hold_violation);
 
       TOVertexSeq sorted_fanins = sortFanins(fanins);
 
       repair_count = fixHoldVioPath(sorted_fanins, insert_buf_cell);
 
-      insert_buf_count += repair_count;
+      number_insert_buffer += repair_count;
       insert_buf_num.push_back(repair_count);
       if (repair_count > 0) {
         _parasitics_estimator->excuteParasiticsEstimate();
         _timing_engine->updateTiming();
       }
 
-      findEndpointsWithHoldViolation(end_points, worst_slack, end_pts_hold_violation);
+      exit_vioaltion = findEndpointsWithHoldViolation(end_points, worst_slack, end_pts_hold_violation);
       hold_slacks.push_back(worst_slack);
       hold_vio_num.push_back(end_pts_hold_violation.size());
-      pass++;
     }
   } else {
     _db_interface->report()->get_ofstream()
         << "TO: There are no hold violations found in current design.\n";
   }
   _db_interface->report()->reportHoldResult(hold_slacks, hold_vio_num, insert_buf_num,
-                                            worst_slack, _inserted_buffer_count);
+                                            worst_slack, _number_insert_buffer);
 
   _db_interface->report()->get_ofstream()
-      << "TO: Total inserted " << insert_buf_count << " hold buffers when fix hold.\n";
+      << "TO: Total insert " << number_insert_buffer << " hold buffers when fix hold.\n";
   _db_interface->report()->get_ofstream().close();
-  return insert_buf_count;
+  return number_insert_buffer;
 }
 
 void HoldOptimizer::initBufferCell() {
@@ -289,7 +287,7 @@ int HoldOptimizer::fixHoldVioPath(TOVertexSeq fanins, LibertyCell *insert_buffer
       insert_buffer_count += insert_number;
       insertBufferDelay(vertex, insert_number, load_pins, insert_buffer_cell);
 
-      if (_inserted_buffer_count > _max_numb_insert_buf || _db_interface->overMaxArea()) {
+      if (_number_insert_buffer > _max_numb_insert_buf || _db_interface->reachMaxArea()) {
         // return repair_pass_count;
         return insert_buffer_count;
       }
@@ -344,7 +342,7 @@ void HoldOptimizer::insertLoadBuffer(LibertyCell *load_buffer, StaVertex *drvr_v
     _timing_engine->insertBuffer(buffer->get_name());
   }
 
-  _parasitics_estimator->parasiticsInvalid(drvr->get_net());
+  _parasitics_estimator->invalidNetRC(drvr->get_net());
 }
 
 void HoldOptimizer::insertBufferDelay(StaVertex *drvr_vertex, int insert_number,
@@ -385,7 +383,7 @@ void HoldOptimizer::insertBufferDelay(StaVertex *drvr_vertex, int insert_number,
     }
   }
 
-  _parasitics_estimator->parasiticsInvalid(in_net);
+  _parasitics_estimator->invalidNetRC(in_net);
   // Spread buffers between driver and load center.
   IdbCoordinate<int32_t> *loc = idb_adapter->idbLocation(drvr_obj);
   Point                   drvr_pin_loc = Point(loc->get_x(), loc->get_y());
@@ -430,7 +428,7 @@ void HoldOptimizer::insertBufferDelay(StaVertex *drvr_vertex, int insert_number,
     _insert_instance_index++;
     buffer = idb_adapter->createInstance(insert_buffer_cell, buffer_name.c_str());
 
-    _inserted_buffer_count++;
+    _number_insert_buffer++;
 
     auto debug_buf_in = idb_adapter->attach(buffer, input->get_port_name(), buf_in_net);
     auto debug_buf_out =
@@ -458,7 +456,7 @@ void HoldOptimizer::insertBufferDelay(StaVertex *drvr_vertex, int insert_number,
     // update in net
     buf_in_net = buf_out_net;
 
-    _parasitics_estimator->parasiticsInvalid(buf_out_net);
+    _parasitics_estimator->invalidNetRC(buf_out_net);
 
     _timing_engine->insertBuffer(buffer->get_name());
     insert_inst_name.push_back(buffer->get_name());
@@ -506,20 +504,22 @@ float HoldOptimizer::calcHoldDelayOfBuffer(LibertyCell *buffer) {
   return min(delays[_rise], delays[_fall]);
 }
 
-void HoldOptimizer::findEndpointsWithHoldViolation(TOVertexSet end_points,
-                                                   // return values
+bool HoldOptimizer::findEndpointsWithHoldViolation(TOVertexSet end_points,
                                                    TOSlack     &worst_slack,
                                                    TOVertexSet &hold_violations) {
   worst_slack = kInf;
   hold_violations.clear();
+  bool is_find = false;
 
   for (auto *end : end_points) {
     TOSlack slack = getWorstSlack(end, AnalysisMode::kMin);
     worst_slack = min(worst_slack, slack);
     if (approximatelyLess(slack, _target_slack)) {
       hold_violations.insert(end);
+      is_find = true;
     }
   }
+  return is_find;
 }
 
 /**
@@ -728,7 +728,7 @@ void HoldOptimizer::insertHoldDelay(string insert_buf_name, string pin_name,
     _db_interface->make_instance_index()++;
     Instance *buffer = idb_adapter->createInstance(insert_buffer_cell, buffer_name.c_str());
 
-    _inserted_buffer_count++;
+    _number_insert_buffer++;
 
     auto debug_buf_in = idb_adapter->attach(buffer, input->get_port_name(), buf_in_net);
     auto debug_buf_out =

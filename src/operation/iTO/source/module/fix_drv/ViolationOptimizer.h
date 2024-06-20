@@ -91,16 +91,14 @@ class ViolationOptimizer {
   TimingEngine    *_timing_engine;
   TimingDBAdapter *_db_adapter;
 
-  bool _check_fanout = true;
   bool _check_cap = true;
   bool _check_slew = true;
-  bool _check_length = true;
 
   vector<float>        _slew_record;
   vector<const char *> _fanout_vio_net;
 
-  int _resize_instance_count;
-  int _inserted_buffer_count;
+  int _number_resized_instance;
+  int _number_insert_buffer;
 
   // to name the instance
   int _insert_instance_index = 1;

@@ -261,14 +261,14 @@ void DbInterface::calcTargetLoad(LibertyCell *cell) {
             (arc->get_timing_type() == LibertyArc::TimingType::kCombRise) ||
             (arc->get_timing_type() == LibertyArc::TimingType::kRisingEdge) ||
             (arc->get_timing_type() == LibertyArc::TimingType::kDefault)) {
-          calcTargetLoad(cell, arc.get(), TransType::kRise, target_load_sum, arc_count);
+          calcTargetLoad(arc.get(), TransType::kRise, target_load_sum, arc_count);
         }
 
         if ((arc->get_timing_type() == LibertyArc::TimingType::kComb) ||
             (arc->get_timing_type() == LibertyArc::TimingType::kCombFall) ||
             (arc->get_timing_type() == LibertyArc::TimingType::kFallingEdge) ||
             (arc->get_timing_type() == LibertyArc::TimingType::kDefault)) {
-          calcTargetLoad(cell, arc.get(), TransType::kFall, target_load_sum, arc_count);
+          calcTargetLoad(arc.get(), TransType::kFall, target_load_sum, arc_count);
         }
       }
     }
@@ -278,20 +278,20 @@ void DbInterface::calcTargetLoad(LibertyCell *cell) {
   (*_cell_target_load_map)[cell] = target_load;
 }
 
-void DbInterface::calcTargetLoad(LibertyCell *cell, LibertyArc *arc, TransType rf,
+void DbInterface::calcTargetLoad(LibertyArc *arc, TransType rf,
                                  float &target_load_sum, int &arc_count) {
   float arc_target_load;
   if (arc->isNegativeArc()) {
     if (rf == TransType::kRise) {
-      arc_target_load = calcTargetLoad(cell, arc, rf, TransType::kFall);
+      arc_target_load = calcTargetLoad(arc, rf, TransType::kFall);
     } else {
-      arc_target_load = calcTargetLoad(cell, arc, rf, rf);
+      arc_target_load = calcTargetLoad(arc, rf, rf);
     }
   } else {
     if (rf == TransType::kRise) {
-      arc_target_load = calcTargetLoad(cell, arc, rf, rf);
+      arc_target_load = calcTargetLoad(arc, rf, rf);
     } else {
-      arc_target_load = calcTargetLoad(cell, arc, rf, TransType::kFall);
+      arc_target_load = calcTargetLoad(arc, rf, TransType::kFall);
     }
   }
   target_load_sum += arc_target_load;
@@ -307,11 +307,11 @@ void DbInterface::calcTargetLoad(LibertyCell *cell, LibertyArc *arc, TransType r
  * @param out_type
  * @return float
  */
-float DbInterface::calcTargetLoad(LibertyCell *cell, LibertyArc *arc, TransType in_type,
+float DbInterface::calcTargetLoad(LibertyArc *arc, TransType in_type,
                                   TransType out_type) {
   if (arc && arc->isDelayArc()) {
-    int  in_rf_index = (int)in_type - 1;
-    int  out_rf_index = (int)out_type - 1;
+    int    in_rf_index = (int)in_type - 1;
+    int    out_rf_index = (int)out_type - 1;
     TOSlew in_slew = _target_slews[in_rf_index];
     TOSlew out_slew = _target_slews[out_rf_index];
 
@@ -319,20 +319,25 @@ float DbInterface::calcTargetLoad(LibertyCell *cell, LibertyArc *arc, TransType 
     double upper_bound_cap = 1.0e-12;
     double tolerate = 0.01; // 1%
 
-    double slew_diff_1 = gateSlewDiff(in_type, cell, low_bound_cap, in_slew, out_slew, arc);
+    double slew_diff_1 =
+        calcSlewDiffOfGate(in_type, low_bound_cap, in_slew, out_slew, arc);
     if (slew_diff_1 > 0.0) {
       return 0.0;
     }
-    double slew_diff_2 = gateSlewDiff(in_type, cell, upper_bound_cap, in_slew, out_slew, arc);
+    double slew_diff_2 =
+        calcSlewDiffOfGate(in_type, upper_bound_cap, in_slew, out_slew, arc);
     // calc diff = 0 by binary search.
-    while (abs(low_bound_cap - upper_bound_cap) > max(low_bound_cap, upper_bound_cap) * tolerate) {
+    while (abs(low_bound_cap - upper_bound_cap) >
+           max(low_bound_cap, upper_bound_cap) * tolerate) {
       if (slew_diff_2 < 0.0) {
         low_bound_cap = upper_bound_cap;
         upper_bound_cap *= 2;
-        slew_diff_2 = gateSlewDiff(in_type, cell, upper_bound_cap, in_slew, out_slew, arc);
+        slew_diff_2 =
+            calcSlewDiffOfGate(in_type, upper_bound_cap, in_slew, out_slew, arc);
       } else {
         double load_cap3 = (low_bound_cap + upper_bound_cap) / 2.0;
-        double slew_diff_3 = gateSlewDiff(in_type, cell, load_cap3, in_slew, out_slew, arc);
+        double slew_diff_3 =
+            calcSlewDiffOfGate(in_type, load_cap3, in_slew, out_slew, arc);
         if (slew_diff_3 < 0.0) {
           low_bound_cap = load_cap3;
         } else {
@@ -346,13 +351,13 @@ float DbInterface::calcTargetLoad(LibertyCell *cell, LibertyArc *arc, TransType 
   return 0.0;
 }
 
-TOSlew DbInterface::gateSlewDiff(TransType in_type, LibertyCell *cell, float load_cap,
-                               TOSlew in_slew, TOSlew out_slew, LibertyArc *arc) {
+TOSlew DbInterface::calcSlewDiffOfGate(TransType in_type, float load_cap, TOSlew in_slew,
+                                       TOSlew out_slew, LibertyArc *arc) {
   TOSlew slew = arc->getSlewNs(in_type, in_slew, load_cap);
   return slew - out_slew;
 }
 
-bool DbInterface::overMaxArea() {
+bool DbInterface::reachMaxArea() {
   double max_utilization = _config->get_max_utilization();
   // initBlock();
   double core_area = DesignCalculator::calculateCoreArea(_core, _dbu);
