@@ -60,6 +60,11 @@ std::optional<PwrToggleSPCalcFunc> PwrCalcToggleSP::getCombineLogicProcessFunc(
           double input_port_sp0 = input_port_toggle_sp[0]._sp_value;
           double input_port_sp1 = input_port_toggle_sp[1]._sp_value;
 
+          /**
+           * @ref Ref book R. Chadha and J. Bhasker, An ASIC low power primer
+           * analysis, techniques and specification. Springer Science & Business
+           * Media, 2012, P59
+           */
           double p0 = 1.0 - input_port_sp0;
           double p1 = 1.0 - input_port_sp1;
 
@@ -84,6 +89,11 @@ std::optional<PwrToggleSPCalcFunc> PwrCalcToggleSP::getCombineLogicProcessFunc(
           double output_port_toggle = (input_port_toggle0 * input_port_sp1) +
                                       (input_port_toggle1 * input_port_sp0);
 
+          /**
+           * @ref Ref book R. Chadha and J. Bhasker, An ASIC low power primer
+           * analysis, techniques and specification. Springer Science & Business
+           * Media, 2012, P59
+           */
           double output_port_sp = input_port_sp0 * input_port_sp1;
 
           return {._toggle_rate_value = output_port_toggle,
