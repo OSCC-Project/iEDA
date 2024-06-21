@@ -330,12 +330,12 @@ class TimingEngine {
   double getLibertyCellPinCapacitance(const char *cell_pin_name);
   std::vector<std::string> getLibertyCellInputpin(const char *cell_name);
   StaClock *getPropClock(const char *clock_pin_name);
-  StaSeqPathData *vertexWorstRequiredPath(StaVertex *vertex, AnalysisMode mode,
+  StaSeqPathData *getWorstSeqData(StaVertex *vertex, AnalysisMode mode,
                                           TransType trans_type) {
     return _ista->getWorstSeqData(vertex, mode, trans_type);
   }
 
-  StaSeqPathData *vertexWorstRequiredPath(AnalysisMode mode,
+  StaSeqPathData *getWorstSeqData(AnalysisMode mode,
                                           TransType trans_type) {
     return _ista->getWorstSeqData(std::nullopt, mode, trans_type);
   }

@@ -108,7 +108,7 @@ TEST_F(TimingEngineTest, resizer) {
     // AnalysisMode::kMax, TransType::kRise);
 
     StaVertex* vertex = timing_engine->findVertex("inst_6:D");
-    StaSeqPathData* seq_path_data = timing_engine->vertexWorstRequiredPath(
+    StaSeqPathData* seq_path_data = timing_engine->getWorstSeqData(
         vertex, AnalysisMode::kMax, TransType::kRise);
     int path_slack = seq_path_data->getSlack();
 
@@ -191,7 +191,7 @@ TEST_F(TimingEngineTest, resizer) {
     network_latency = timing_engine->getClockNetworkLatency(
         "inst_7:CK", AnalysisMode::kMax, TransType::kRise);
 
-    seq_path_data = timing_engine->vertexWorstRequiredPath(
+    seq_path_data = timing_engine->getWorstSeqData(
         vertex, AnalysisMode::kMax, TransType::kRise);
     path_slack = seq_path_data->getSlack();
     is_clock = timing_engine->isClock("inst_6:CK");

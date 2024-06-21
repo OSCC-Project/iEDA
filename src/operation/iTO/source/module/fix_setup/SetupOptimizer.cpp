@@ -161,9 +161,9 @@ void SetupOptimizer::optimizeSetup() {
       _parasitics_estimator->excuteParasiticsEstimate();
       _timing_engine->incrUpdateTiming();
 
-      StaSeqPathData *worst_path_rise = _timing_engine->vertexWorstRequiredPath(
+      StaSeqPathData *worst_path_rise = _timing_engine->getWorstSeqData(
           node, AnalysisMode::kMax, TransType::kRise);
-      StaSeqPathData *worst_path_fall = _timing_engine->vertexWorstRequiredPath(
+      StaSeqPathData *worst_path_fall = _timing_engine->getWorstSeqData(
           node, AnalysisMode::kMax, TransType::kFall);
       if (!worst_path_fall || !worst_path_rise) {
         break;
@@ -305,9 +305,9 @@ void SetupOptimizer::optimizeSetup(StaSeqPathData *worst_path, TOSlack path_slac
 }
 
 void SetupOptimizer::optimizeSetup(StaVertex *vertex, TOSlack path_slack, bool only_gs) {
-  StaSeqPathData *worst_path_rise = _timing_engine->vertexWorstRequiredPath(
+  StaSeqPathData *worst_path_rise = _timing_engine->getWorstSeqData(
       vertex, AnalysisMode::kMax, TransType::kRise);
-  StaSeqPathData *worst_path_fall = _timing_engine->vertexWorstRequiredPath(
+  StaSeqPathData *worst_path_fall = _timing_engine->getWorstSeqData(
       vertex, AnalysisMode::kMax, TransType::kFall);
   TOSlack         worst_slack_rise = worst_path_rise->getSlackNs();
   TOSlack         worst_slack_fall = worst_path_fall->getSlackNs();
@@ -910,7 +910,7 @@ StaSeqPathData *SetupOptimizer::worstRequiredPath() {
   StaSeqPathData *  worst_path = nullptr;
   TOSlack           wns = kInf;
   for (auto rf : rise_fall) {
-    auto path = _timing_engine->vertexWorstRequiredPath(AnalysisMode::kMax, rf);
+    auto path = _timing_engine->getWorstSeqData(AnalysisMode::kMax, rf);
     if (path->getSlackNs() < wns) {
       wns = path->getSlackNs();
       worst_path = path;

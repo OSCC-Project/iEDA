@@ -655,9 +655,9 @@ TOVertexSeq HoldOptimizer::sortFanins(TOVertexSet fanins) {
 
 TOSlack HoldOptimizer::getWorstSlack(AnalysisMode mode) {
   StaSeqPathData *worst_path_rise =
-      _timing_engine->vertexWorstRequiredPath(mode, TransType::kRise);
+      _timing_engine->getWorstSeqData(mode, TransType::kRise);
   StaSeqPathData *worst_path_fall =
-      _timing_engine->vertexWorstRequiredPath(mode, TransType::kFall);
+      _timing_engine->getWorstSeqData(mode, TransType::kFall);
   TOSlack worst_slack_rise = worst_path_rise->getSlackNs();
   TOSlack worst_slack_fall = worst_path_fall->getSlackNs();
   TOSlack slack = min(worst_slack_rise, worst_slack_fall);

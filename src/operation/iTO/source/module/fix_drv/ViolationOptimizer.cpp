@@ -120,9 +120,9 @@ void ViolationOptimizer::fixViolations() {
   _db_interface->set_eval_data();
 
   StaSeqPathData *worst_path_rise =
-      _timing_engine->vertexWorstRequiredPath(AnalysisMode::kMax, TransType::kRise);
+      _timing_engine->getWorstSeqData(AnalysisMode::kMax, TransType::kRise);
   StaSeqPathData *worst_path_fall =
-      _timing_engine->vertexWorstRequiredPath(AnalysisMode::kMax, TransType::kFall);
+      _timing_engine->getWorstSeqData(AnalysisMode::kMax, TransType::kFall);
 
   TOSlack worst_slack_rise = worst_path_rise->getSlackNs();
   TOSlack worst_slack_fall = worst_path_fall->getSlackNs();
@@ -130,7 +130,7 @@ void ViolationOptimizer::fixViolations() {
        << worst_slack_fall << endl;
 
   StaSeqPathData *worst_path =
-      _timing_engine->vertexWorstRequiredPath(AnalysisMode::kMax, TransType::kRise);
+      _timing_engine->getWorstSeqData(AnalysisMode::kMax, TransType::kRise);
   TOSlack worst_slack = worst_path->getSlackNs();
   _db_interface->report()->get_ofstream() << "Worst Slack: " << worst_slack << endl;
   _db_interface->report()->get_ofstream().close();
