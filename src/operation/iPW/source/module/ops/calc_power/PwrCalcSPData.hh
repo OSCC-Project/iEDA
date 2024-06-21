@@ -25,7 +25,7 @@
 
 #include "core/PwrGraph.hh"
 #include "include/PwrConfig.hh"
-#include "liberty/Liberty.hh"
+#include "liberty/Lib.hh"
 #include "netlist/Instance.hh"
 
 namespace ipower {

@@ -1,16 +1,16 @@
 // ***************************************************************************************
 // Copyright (c) 2023-2025 Peng Cheng Laboratory
-// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of Sciences
-// Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
+// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of
+// Sciences Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
 //
 // iEDA is licensed under Mulan PSL v2.
-// You can use this software according to the terms and conditions of the Mulan PSL v2.
-// You may obtain a copy of Mulan PSL v2 at:
+// You can use this software according to the terms and conditions of the Mulan
+// PSL v2. You may obtain a copy of Mulan PSL v2 at:
 // http://license.coscl.org.cn/MulanPSL2
 //
-// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
-// EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
-// MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY
+// KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+// NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
@@ -25,7 +25,7 @@
 #pragma once
 
 #include "PwrVertex.hh"
-#include "liberty/Liberty.hh"
+#include "liberty/Lib.hh"
 #include "netlist/Net.hh"
 
 namespace ipower {
@@ -63,13 +63,13 @@ class PwrInstArc : public PwrArc {
   ~PwrInstArc() override = default;
 
   unsigned isInstArc() override { return 1; }
-  void set_power_arc_set(LibertyPowerArcSet* power_arc_set) {
+  void set_power_arc_set(LibPowerArcSet* power_arc_set) {
     _power_arc_set = power_arc_set;
   }
   auto* get_power_arc_set() { return _power_arc_set; }
 
  private:
-  LibertyPowerArcSet* _power_arc_set =
+  LibPowerArcSet* _power_arc_set =
       nullptr;  //!< The cell internal power set of different when condition.
 };
 
@@ -82,8 +82,8 @@ class PwrNetArc : public PwrArc {
   PwrNetArc(PwrVertex* src, PwrVertex* snk) : PwrArc(src, snk) {}
   ~PwrNetArc() override = default;
   unsigned isNetArc() override { return 1; }
-  
-  void set_net(Net* net) {_net = net;}
+
+  void set_net(Net* net) { _net = net; }
   auto* get_net() { return _net; }
 
  private:

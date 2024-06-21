@@ -22,11 +22,12 @@
  * @date 2021-02-10
  */
 
+#include "StaVertex.hh"
+
 #include <ranges>
 
 #include "StaDump.hh"
 #include "StaFunc.hh"
-#include "StaVertex.hh"
 #include "delay/ElmoreDelayCalc.hh"
 #include "log/Log.hh"
 
@@ -211,7 +212,7 @@ void StaVertex::clearSnkNetArcs() {
  *
  * @return LibertyCell*
  */
-LibertyCell* StaVertex::getOwnCell() {
+LibCell* StaVertex::getOwnCell() {
   if (auto* pin = dynamic_cast<Pin*>(_obj); pin) {
     return pin->get_own_instance()->get_inst_cell();
   }

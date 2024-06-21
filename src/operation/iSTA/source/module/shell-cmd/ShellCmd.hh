@@ -92,7 +92,7 @@ class CmdTESTSLL : public TclCmd {
 };
 
 /**
- * @brief Reads in one Liberty files.
+ * @brief Reads in one Lib files.
  *
  */
 class CmdReadLiberty : public TclCmd {

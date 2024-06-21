@@ -91,7 +91,7 @@ void HoldOptimizer::optimizeHold() {
   float max_buffer_percent = _db_interface->get_max_buffer_percent();
   int   instance_num = _timing_engine->get_netlist()->getInstanceNum();
   _max_numb_insert_buf = max_buffer_percent * instance_num;
-  LibertyCell *insert_buf_cell = findBufferWithMaxDelay();
+  LibCell *insert_buf_cell = findBufferWithMaxDelay();
 
   // get end points
   TOVertexSet end_points = getEndPoints();
@@ -144,8 +144,8 @@ void HoldOptimizer::optimizeHold() {
   // _timing_engine->reportTiming();
 }
 
-int HoldOptimizer::checkAndOptimizeHold(TOVertexSet  end_points,
-                                        LibertyCell *insert_buf_cell) {
+int HoldOptimizer::checkAndOptimizeHold(TOVertexSet end_points,
+                                        LibCell *   insert_buf_cell) {
   // store worst hold slack
   vector<TOSlack> hold_slacks;
   // store end's number with hold violation
@@ -158,7 +158,8 @@ int HoldOptimizer::checkAndOptimizeHold(TOVertexSet  end_points,
   TOSlack worst_slack;
   // endpoints with hold violation.
   TOVertexSet end_pts_hold_violation;
-  bool exit_vioaltion = findEndpointsWithHoldViolation(end_points, worst_slack, end_pts_hold_violation);
+  bool        exit_vioaltion =
+      findEndpointsWithHoldViolation(end_points, worst_slack, end_pts_hold_violation);
   hold_slacks.push_back(worst_slack);
   hold_vio_num.push_back(end_pts_hold_violation.size());
 
@@ -171,8 +172,7 @@ int HoldOptimizer::checkAndOptimizeHold(TOVertexSet  end_points,
     _db_interface->report()->get_ofstream().close();
     int repair_count = 1;
 
-    while (exit_vioaltion &&
-           _number_insert_buffer < _max_numb_insert_buf &&
+    while (exit_vioaltion && _number_insert_buffer < _max_numb_insert_buf &&
            !_db_interface->reachMaxArea() && repair_count > 0) {
       TOVertexSet fanins = getFanins(end_pts_hold_violation);
 
@@ -187,7 +187,8 @@ int HoldOptimizer::checkAndOptimizeHold(TOVertexSet  end_points,
         _timing_engine->updateTiming();
       }
 
-      exit_vioaltion = findEndpointsWithHoldViolation(end_points, worst_slack, end_pts_hold_violation);
+      exit_vioaltion =
+          findEndpointsWithHoldViolation(end_points, worst_slack, end_pts_hold_violation);
       hold_slacks.push_back(worst_slack);
       hold_vio_num.push_back(end_pts_hold_violation.size());
     }
@@ -221,16 +222,14 @@ void HoldOptimizer::initBufferCell() {
 
 void HoldOptimizer::calcBufferCap() {
   for (auto buf : _available_buffer_cells) {
-    LibertyPort *input, *output;
+    LibPort *input, *output;
     buf->bufferPorts(input, output);
     double buf_in_cap = input->get_port_cap();
     _buffer_cap_pair.emplace_back(make_pair(buf_in_cap, buf));
   }
   sort(_buffer_cap_pair.begin(), _buffer_cap_pair.end(),
-       [=, this](std::pair<double, ista::LibertyCell *> v1,
-                 std::pair<double, ista::LibertyCell *> v2) {
-         return v1.first > v2.first;
-       });
+       [=, this](std::pair<double, ista::LibCell *> v1,
+                 std::pair<double, ista::LibCell *> v2) { return v1.first > v2.first; });
 }
 
 void HoldOptimizer::insertLoadBuffer(TOVertexSeq fanins) {
@@ -254,13 +253,13 @@ void HoldOptimizer::insertLoadBuffer(TOVertexSeq fanins) {
     double max_fanout = max_fanout1 ? *(max_fanout1) : 10;
     auto   fanout = vertex->get_design_obj()->get_net()->getFanouts();
 
-    LibertyCell *insert_load_buffer = nullptr;
-    auto         buffer_cells = _db_interface->get_buffer_cells();
+    LibCell *insert_load_buffer = nullptr;
+    auto     buffer_cells = _db_interface->get_buffer_cells();
     if (load_cap < cap_limit && fanout < max_fanout) {
       double cap_slack = cap_limit - load_cap;
 
       auto iter = find_if(_buffer_cap_pair.begin(), _buffer_cap_pair.end(),
-                          [&cap_slack](std::pair<double, ista::LibertyCell *> item) {
+                          [&cap_slack](std::pair<double, ista::LibCell *> item) {
                             return item.first <= cap_slack;
                           });
 
@@ -281,7 +280,7 @@ void HoldOptimizer::insertLoadBuffer(TOVertexSeq fanins) {
   }
 }
 
-int HoldOptimizer::fixHoldVioPath(TOVertexSeq fanins, LibertyCell *insert_buffer_cell) {
+int HoldOptimizer::fixHoldVioPath(TOVertexSeq fanins, LibCell *insert_buffer_cell) {
   int repair_pass_count = 0;
   int insert_buffer_count = 0;
   for (size_t i = 0; i < fanins.size(); i++) {
@@ -333,7 +332,7 @@ int HoldOptimizer::fixHoldVioPath(TOVertexSeq fanins, LibertyCell *insert_buffer
   return insert_buffer_count;
 }
 
-void HoldOptimizer::insertLoadBuffer(LibertyCell *load_buffer, StaVertex *drvr_vtx,
+void HoldOptimizer::insertLoadBuffer(LibCell *load_buffer, StaVertex *drvr_vtx,
                                      int insert_num) {
   auto              drvr = drvr_vtx->get_design_obj();
   TimingIDBAdapter *idb_adapter = dynamic_cast<TimingIDBAdapter *>(_db_adapter);
@@ -352,7 +351,7 @@ void HoldOptimizer::insertLoadBuffer(LibertyCell *load_buffer, StaVertex *drvr_v
     _insert_instance_index++;
     auto buffer = idb_adapter->createInstance(load_buffer, buffer_name.c_str());
 
-    LibertyPort *input, *output;
+    LibPort *input, *output;
     load_buffer->bufferPorts(input, output);
     auto debug_buf_in =
         idb_adapter->attach(buffer, input->get_port_name(), drvr->get_net());
@@ -384,9 +383,9 @@ void HoldOptimizer::insertLoadBuffer(LibertyCell *load_buffer, StaVertex *drvr_v
 
 void HoldOptimizer::insertBufferDelay(StaVertex *drvr_vertex, int insert_number,
                                       TODesignObjSeq &load_pins,
-                                      LibertyCell    *insert_buffer_cell) {
+                                      LibCell *       insert_buffer_cell) {
   auto *drvr_obj = drvr_vertex->get_design_obj();
-  Net  *drvr_net = drvr_obj->get_net();
+  Net * drvr_net = drvr_obj->get_net();
 
   TimingIDBAdapter *idb_adapter = dynamic_cast<TimingIDBAdapter *>(_db_adapter);
 
@@ -406,7 +405,7 @@ void HoldOptimizer::insertBufferDelay(StaVertex *drvr_vertex, int insert_number,
 
   for (auto *pin_port : load_pins) {
     if (pin_port->isPin()) {
-      Pin      *load_pin = dynamic_cast<Pin *>(pin_port);
+      Pin *     load_pin = dynamic_cast<Pin *>(pin_port);
       Instance *load_inst = load_pin->get_own_instance();
       // idb_adapter->disattachPin(load_pin);
       idb_adapter->disattachPinPort(pin_port);
@@ -440,9 +439,9 @@ void HoldOptimizer::insertBufferDelay(StaVertex *drvr_vertex, int insert_number,
   int dx = (drvr_pin_loc.get_x() - center_x) / (insert_number + 1);
   int dy = (drvr_pin_loc.get_y() - center_y) / (insert_number + 1);
 
-  Net         *buf_in_net = in_net;
-  Instance    *buffer = nullptr;
-  LibertyPort *input, *output;
+  Net *     buf_in_net = in_net;
+  Instance *buffer = nullptr;
+  LibPort * input, *output;
   insert_buffer_cell->bufferPorts(input, output);
 
   std::vector<const char *> insert_inst_name;
@@ -500,18 +499,18 @@ void HoldOptimizer::insertBufferDelay(StaVertex *drvr_vertex, int insert_number,
 
     // increase design area
     idb::IdbCellMaster *idb_master = idb_adapter->staToDb(insert_buffer_cell);
-    Master             *master = new Master(idb_master);
+    Master *            master = new Master(idb_master);
 
     float area = DesignCalculator::calcMasterArea(master, _dbu);
     _violation_fixer->increDesignArea(area);
   }
 }
 
-LibertyCell *HoldOptimizer::findBufferWithMaxDelay() {
-  LibertyCell *max_delay_buf = nullptr;
-  float        max_delay = 0.0;
+LibCell *HoldOptimizer::findBufferWithMaxDelay() {
+  LibCell *max_delay_buf = nullptr;
+  float    max_delay = 0.0;
 
-  for (LibertyCell *buffer : _available_buffer_cells) {
+  for (LibCell *buffer : _available_buffer_cells) {
     if (strstr(buffer->get_cell_name(), "CLK") != NULL) {
       continue;
     }
@@ -524,10 +523,10 @@ LibertyCell *HoldOptimizer::findBufferWithMaxDelay() {
   return max_delay_buf;
 }
 
-float HoldOptimizer::calcHoldDelayOfBuffer(LibertyCell *buffer) {
+float HoldOptimizer::calcHoldDelayOfBuffer(LibCell *buffer) {
   TODelay delays[2] = {kInf, kInf};
 
-  LibertyPort *input_port, *output_port;
+  LibPort *input_port, *output_port;
   buffer->bufferPorts(input_port, output_port);
 
   float   load_cap = input_port->get_port_cap();
@@ -541,8 +540,8 @@ float HoldOptimizer::calcHoldDelayOfBuffer(LibertyCell *buffer) {
   return min(delays[_rise], delays[_fall]);
 }
 
-bool HoldOptimizer::findEndpointsWithHoldViolation(TOVertexSet end_points,
-                                                   TOSlack     &worst_slack,
+bool HoldOptimizer::findEndpointsWithHoldViolation(TOVertexSet  end_points,
+                                                   TOSlack &    worst_slack,
                                                    TOVertexSet &hold_violations) {
   worst_slack = kInf;
   hold_violations.clear();
@@ -609,9 +608,9 @@ void HoldOptimizer::setLocation(Instance *inst, int x, int y) {
 
 TOVertexSet HoldOptimizer::getEndPoints() {
   TOVertexSet end_points;
-  auto       *ista = _timing_engine->get_ista();
-  StaGraph   *the_graph = &(ista->get_graph());
-  StaVertex  *vertex;
+  auto *      ista = _timing_engine->get_ista();
+  StaGraph *  the_graph = &(ista->get_graph());
+  StaVertex * vertex;
   FOREACH_END_VERTEX(the_graph, vertex) { end_points.insert(vertex); }
   return end_points;
 }
@@ -689,19 +688,19 @@ TOSlack HoldOptimizer::getWorstSlack(StaVertex *vertex, AnalysisMode mode) {
 
 void HoldOptimizer::insertHoldDelay(string insert_buf_name, string pin_name,
                                     int insert_number) {
-  ista::Sta   *ista = _timing_engine->get_ista();
-  LibertyCell *insert_buffer_cell = ista->findLibertyCell(insert_buf_name.c_str());
-  LibertyPort *input, *output;
+  ista::Sta *ista = _timing_engine->get_ista();
+  LibCell *  insert_buffer_cell = ista->findLibertyCell(insert_buf_name.c_str());
+  LibPort *  input, *output;
   insert_buffer_cell->bufferPorts(input, output);
 
   // iSta ->findPin
-  StaVertex    *vertex = ista->findVertex(pin_name.c_str());
+  StaVertex *   vertex = ista->findVertex(pin_name.c_str());
   DesignObject *load_obj = vertex->get_design_obj();
-  Net          *net = load_obj->get_net();
+  Net *         net = load_obj->get_net();
 
   DesignObject *drvr_obj = net->getDriver();
 
-  Net              *drvr_net = net;
+  Net *             drvr_net = net;
   TimingIDBAdapter *idb_adapter = dynamic_cast<TimingIDBAdapter *>(_db_adapter);
 
   // make net
@@ -720,7 +719,7 @@ void HoldOptimizer::insertHoldDelay(string insert_buf_name, string pin_name,
    * @brief re-connect load pin to outnet
    */
   if (load_obj->isPin()) {
-    Pin      *load_pin = dynamic_cast<Pin *>(load_obj);
+    Pin *     load_pin = dynamic_cast<Pin *>(load_obj);
     Instance *load_inst = load_pin->get_own_instance();
     idb_adapter->disattachPinPort(load_pin);
     auto debug = idb_adapter->attach(load_inst, load_pin->get_name(), out_net);
@@ -763,7 +762,8 @@ void HoldOptimizer::insertHoldDelay(string insert_buf_name, string pin_name,
     std::string buffer_name =
         ("hold_buf_byhand_" + to_string(_db_interface->make_instance_index()));
     _db_interface->make_instance_index()++;
-    Instance *buffer = idb_adapter->createInstance(insert_buffer_cell, buffer_name.c_str());
+    Instance *buffer =
+        idb_adapter->createInstance(insert_buffer_cell, buffer_name.c_str());
 
     _number_insert_buffer++;
 

@@ -54,9 +54,9 @@ void DbInterface::set_eval_data() {
   auto clk_list = _timing_engine->getClockList();
   for (auto clk : clk_list) {
     auto clk_name = clk->get_clock_name();
-    auto  wns = _timing_engine->reportWNS(clk_name, AnalysisMode::kMax);
-    auto  tns = _timing_engine->reportTNS(clk_name, AnalysisMode::kMax);
-    auto  freq = 1000.0 / (clk->getPeriodNs() - wns);
+    auto wns = _timing_engine->reportWNS(clk_name, AnalysisMode::kMax);
+    auto tns = _timing_engine->reportTNS(clk_name, AnalysisMode::kMax);
+    auto freq = 1000.0 / (clk->getPeriodNs() - wns);
     _eval_data.push_back({clk_name, wns, tns, freq});
   }
 }
@@ -98,8 +98,8 @@ void DbInterface::initDbData() {
 }
 
 void DbInterface::findEquivLibCells() {
-  vector<LibertyLibrary *> equiv_libs;
-  auto &                   all_libs = _timing_engine->getAllLib();
+  vector<LibLibrary *> equiv_libs;
+  auto &               all_libs = _timing_engine->getAllLib();
   for (auto &lib : all_libs) {
     for (auto &cell : lib->get_cells()) {
       if (canFindLibertyCell(cell.get())) {
@@ -112,7 +112,7 @@ void DbInterface::findEquivLibCells() {
   _timing_engine->makeEquivCells(equiv_libs);
 }
 
-bool DbInterface::canFindLibertyCell(LibertyCell *cell) {
+bool DbInterface::canFindLibertyCell(LibCell *cell) {
   return _timing_engine->findLibertyCell(cell->get_cell_name()) == cell;
 }
 
@@ -144,8 +144,8 @@ void DbInterface::findBufferCells() {
       if (cell->isBuffer() && canFindLibertyCell(cell.get())) {
         _available_buffer_cells.push_back(cell.get());
 
-        LibertyPort *in_port;
-        LibertyPort *out_port;
+        LibPort *in_port;
+        LibPort *out_port;
         cell->bufferPorts(in_port, out_port);
         float drvr_res = out_port->driveResistance();
         if (drvr_res > low_drive) {
@@ -165,8 +165,8 @@ void DbInterface::calcTargetSlewsForBuffer() {
   _target_slews = {0.0};
 
   TOSlew slews[2]{0.0}; // TransType: kFall / kRise;
-  int  counts[2]{0};
-  for (LibertyCell *buffer : _available_buffer_cells) {
+  int    counts[2]{0};
+  for (LibCell *buffer : _available_buffer_cells) {
     calcTargetSlewsForBuffer(buffer, slews, counts);
   }
 
@@ -178,30 +178,30 @@ void DbInterface::calcTargetSlewsForBuffer() {
   }
 }
 
-void DbInterface::calcTargetSlewsForBuffer(LibertyCell *buffer,
-                                           TOSlew slews[], int counts[]) {
-  LibertyPort *input;
-  LibertyPort *output;
+void DbInterface::calcTargetSlewsForBuffer(LibCell *buffer, TOSlew slews[],
+                                           int counts[]) {
+  LibPort *input;
+  LibPort *output;
   buffer->bufferPorts(input, output);
 
   // get timing arc of (input, output)
   const char *in_name = input->get_port_name();
   const char *out_name = output->get_port_name();
 
-  std::optional<LibertyArcSet *> arcset =
-      buffer->findLibertyArcSet(in_name, out_name, LibertyArc::TimingType::kDefault);
+  std::optional<LibArcSet *> arcset =
+      buffer->findLibertyArcSet(in_name, out_name, LibArc::TimingType::kDefault);
 
   if (arcset.has_value()) {
     auto &arcs = (*arcset)->get_arcs();
     for (auto &arc : arcs) {
-      // LibertyTableModel *model = arc->get_table_model();
+      // LibTableModel *model = arc->get_table_model();
       getGateSlew(input, TransType::kFall, arc.get(), slews, counts);
       getGateSlew(input, TransType::kRise, arc.get(), slews, counts);
     }
   }
 }
 
-void DbInterface::getGateSlew(LibertyPort *port, TransType trans_type, LibertyArc *arc,
+void DbInterface::getGateSlew(LibPort *port, TransType trans_type, LibArc *arc,
                               TOSlew slews[], int counts[]) {
   auto  cap_value = port->get_port_cap(ista::AnalysisMode::kMaxMin, trans_type);
   float in_cap = cap_value ? *cap_value : port->get_port_cap();
@@ -234,7 +234,7 @@ void DbInterface::calcCellTargetLoads() {
   int   cell_count = 0;
   for (auto &lib : all_libs) {               // lib
     for (auto &libcell : lib->get_cells()) { // lib cells
-      LibertyCell *cell = libcell.get();
+      LibCell *cell = libcell.get();
 
       if (canFindLibertyCell(cell)) {
         cell_count++;
@@ -244,30 +244,30 @@ void DbInterface::calcCellTargetLoads() {
   }
 }
 
-void DbInterface::calcTargetLoad(LibertyCell *cell) {
+void DbInterface::calcTargetLoad(LibCell *cell) {
   float target_load_sum = 0.0;
   int   arc_count = 0;
   // get cell all arcset
   auto &cell_arcset = cell->get_cell_arcs();
   for (auto &arcset : cell_arcset) { // arcset
-    ieda::Vector<std::unique_ptr<ista::LibertyArc>> &arcs = arcset->get_arcs();
+    ieda::Vector<std::unique_ptr<ista::LibArc>> &arcs = arcset->get_arcs();
     for (auto &arc : arcs) {
       if (arc->isDelayArc() &&
-          !((arc->get_timing_type() == LibertyArc::TimingType::kNonSeqHoldRising) ||
-            (arc->get_timing_type() == LibertyArc::TimingType::kNonSeqHoldFalling) ||
-            (arc->get_timing_type() == LibertyArc::TimingType::kNonSeqSetupRising) ||
-            (arc->get_timing_type() == LibertyArc::TimingType::kNonSeqSetupFalling))) {
-        if ((arc->get_timing_type() == LibertyArc::TimingType::kComb) ||
-            (arc->get_timing_type() == LibertyArc::TimingType::kCombRise) ||
-            (arc->get_timing_type() == LibertyArc::TimingType::kRisingEdge) ||
-            (arc->get_timing_type() == LibertyArc::TimingType::kDefault)) {
+          !((arc->get_timing_type() == LibArc::TimingType::kNonSeqHoldRising) ||
+            (arc->get_timing_type() == LibArc::TimingType::kNonSeqHoldFalling) ||
+            (arc->get_timing_type() == LibArc::TimingType::kNonSeqSetupRising) ||
+            (arc->get_timing_type() == LibArc::TimingType::kNonSeqSetupFalling))) {
+        if ((arc->get_timing_type() == LibArc::TimingType::kComb) ||
+            (arc->get_timing_type() == LibArc::TimingType::kCombRise) ||
+            (arc->get_timing_type() == LibArc::TimingType::kRisingEdge) ||
+            (arc->get_timing_type() == LibArc::TimingType::kDefault)) {
           calcTargetLoad(arc.get(), TransType::kRise, target_load_sum, arc_count);
         }
 
-        if ((arc->get_timing_type() == LibertyArc::TimingType::kComb) ||
-            (arc->get_timing_type() == LibertyArc::TimingType::kCombFall) ||
-            (arc->get_timing_type() == LibertyArc::TimingType::kFallingEdge) ||
-            (arc->get_timing_type() == LibertyArc::TimingType::kDefault)) {
+        if ((arc->get_timing_type() == LibArc::TimingType::kComb) ||
+            (arc->get_timing_type() == LibArc::TimingType::kCombFall) ||
+            (arc->get_timing_type() == LibArc::TimingType::kFallingEdge) ||
+            (arc->get_timing_type() == LibArc::TimingType::kDefault)) {
           calcTargetLoad(arc.get(), TransType::kFall, target_load_sum, arc_count);
         }
       }
@@ -278,8 +278,8 @@ void DbInterface::calcTargetLoad(LibertyCell *cell) {
   (*_cell_target_load_map)[cell] = target_load;
 }
 
-void DbInterface::calcTargetLoad(LibertyArc *arc, TransType rf,
-                                 float &target_load_sum, int &arc_count) {
+void DbInterface::calcTargetLoad(LibArc *arc, TransType rf, float &target_load_sum,
+                                 int &arc_count) {
   float arc_target_load;
   if (arc->isNegativeArc()) {
     if (rf == TransType::kRise) {
@@ -307,8 +307,7 @@ void DbInterface::calcTargetLoad(LibertyArc *arc, TransType rf,
  * @param out_type
  * @return float
  */
-float DbInterface::calcTargetLoad(LibertyArc *arc, TransType in_type,
-                                  TransType out_type) {
+float DbInterface::calcTargetLoad(LibArc *arc, TransType in_type, TransType out_type) {
   if (arc && arc->isDelayArc()) {
     int    in_rf_index = (int)in_type - 1;
     int    out_rf_index = (int)out_type - 1;
@@ -352,7 +351,7 @@ float DbInterface::calcTargetLoad(LibertyArc *arc, TransType in_type,
 }
 
 TOSlew DbInterface::calcSlewDiffOfGate(TransType in_type, float load_cap, TOSlew in_slew,
-                                       TOSlew out_slew, LibertyArc *arc) {
+                                       TOSlew out_slew, LibArc *arc) {
   TOSlew slew = arc->getSlewNs(in_type, in_slew, load_cap);
   return slew - out_slew;
 }

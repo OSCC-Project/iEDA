@@ -18,42 +18,29 @@
 
 #pragma once
 
+#include "DbInterface.h"
 #include "Point.h"
 #include "ids.hpp"
-#include "DbInterface.h"
 
 namespace ito {
+using ista::LibCell;
 using ista::Pin;
 using ista::StaSeqPathData;
-using ista::LibertyCell;
 
 class BufferedOption;
 
-using BufferedOptionSeq = vector<BufferedOption*>;
+using BufferedOptionSeq = vector<BufferedOption *>;
 
 enum class BufferedOptionType { kBuffer, kJunction, kLoad, kWire };
 
 class BufferedOption {
  public:
-  BufferedOption(BufferedOptionType type,
-                 Point location,
-                 float cap,
-                 ista::Pin *load_pin,
-                 TODelay required_delay,
-                 LibertyCell *buffer,
-                 BufferedOption *left,
-                 BufferedOption *right,
-                 double req)
-   : _type(type),
-     _location(location),
-     _cap(cap),
-     _load_pin(load_pin),
-     _required_delay(required_delay),
-     _buffer_cell(buffer),
-     _left(left),
-     _right(right),
-     _req(req) {
-  }
+  BufferedOption(BufferedOptionType type, Point location, float cap, ista::Pin *load_pin,
+                 TODelay required_delay, LibCell *buffer, BufferedOption *left,
+                 BufferedOption *right, double req)
+      : _type(type), _location(location), _cap(cap), _load_pin(load_pin),
+        _required_delay(required_delay), _buffer_cell(buffer), _left(left), _right(right),
+        _req(req) {}
   ~BufferedOption() = default;
 
   BufferedOptionType get_type() const { return _type; }
@@ -68,7 +55,7 @@ class BufferedOption {
 
   Point get_location() const { return _location; }
 
-  LibertyCell *get_buffer_cell() const { return _buffer_cell; }
+  LibCell *get_buffer_cell() const { return _buffer_cell; }
 
   Pin *get_load_pin() const { return _load_pin; }
 
@@ -89,7 +76,7 @@ class BufferedOption {
 
   TODelay _required_delay = 0.0;
 
-  LibertyCell    *_buffer_cell = nullptr;
+  LibCell *       _buffer_cell = nullptr;
   BufferedOption *_left = nullptr;
   BufferedOption *_right = nullptr;
 

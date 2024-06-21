@@ -101,8 +101,8 @@ class ArnoldiNet : public RcNet {
     _nodal_caps = std::move(nodal_caps);
   }
 
-  LibertyArc* get_lib_arc() { return _lib_arc; }
-  void set_lib_arc(LibertyArc* lib_arc) { _lib_arc = lib_arc; }
+  LibArc* get_lib_arc() { return _lib_arc; }
+  void set_lib_arc(LibArc* lib_arc) { _lib_arc = lib_arc; }
 
   std::optional<double> calcDelay(const VectorXd& driver_waveform,
                                   const VectorXd& load_waveform,
@@ -128,10 +128,10 @@ class ArnoldiNet : public RcNet {
 
   std::optional<std::pair<double, MatrixXd>> delay(
       DesignObject& to, double from_slew,
-      std::optional<LibetyCurrentData*> output_current, AnalysisMode mode,
+      std::optional<LibCurrentData*> output_current, AnalysisMode mode,
       TransType trans_type) override;
   std::optional<double> slew(Pin& to, double from_slew,
-                             std::optional<LibetyCurrentData*> output_current,
+                             std::optional<LibCurrentData*> output_current,
                              AnalysisMode mode, TransType trans_type) override;
 
   void set_is_debug(bool is_debug) { _is_debug = is_debug; }
@@ -175,7 +175,7 @@ class ArnoldiNet : public RcNet {
   std::unordered_map<RctNode*, unsigned> _node_to_id;
   std::unordered_map<unsigned, RctNode*> _id_to_node;
 
-  LibertyArc* _lib_arc{nullptr};
+  LibArc* _lib_arc{nullptr};
 
   std::vector<double> _nodal_caps;  //!< The nodal cap matrix.
   MatrixXd _conductances_matrix;    //!< The conductance matrix.

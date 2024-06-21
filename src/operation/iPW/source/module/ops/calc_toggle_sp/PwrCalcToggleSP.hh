@@ -27,7 +27,7 @@
 #include "core/PwrCell.hh"
 #include "core/PwrFunc.hh"
 #include "include/PwrType.hh"
-#include "liberty/Liberty.hh"
+#include "liberty/Lib.hh"
 #include "sta/StaVertex.hh"
 
 namespace ipower {
@@ -64,7 +64,7 @@ class PwrCalcToggleSP : public PwrFunc {
   PwrToggleSPValue calcToggleSP(RustLibertyExpr* expr,
                                 ieda::Vector<PwrVertex*>& input_vertexes);
 
-  unsigned calcToggleSP(LibertyCell* lib_cell,
+  unsigned calcToggleSP(LibCell* lib_cell,
                         ieda::Vector<PwrVertex*>& input_vertexes,
                         ieda::Vector<PwrVertex*>& output_vertexes);
 };
