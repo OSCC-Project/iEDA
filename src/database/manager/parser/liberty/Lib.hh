@@ -1571,7 +1571,7 @@ class LibStrValue : public LibAttrValue
  * @brief The library builder from the liberty to the sta analysis lib.
  *
  */
-class LibertyBuilder
+class LibBuilder
 {
  public:
   enum class LibertyOwnPortType
@@ -1584,8 +1584,8 @@ class LibertyBuilder
     kLibertyLeakagePower = 1,
     kPowerArc = 2
   };
-  explicit LibertyBuilder(const char* lib_name) : _lib(std::make_unique<LibLibrary>(lib_name)) {}
-  ~LibertyBuilder() = default;
+  explicit LibBuilder(const char* lib_name) : _lib(std::make_unique<LibLibrary>(lib_name)) {}
+  ~LibBuilder() = default;
 
   LibLibrary* get_lib() { return _lib.get(); }
   std::unique_ptr<LibLibrary> takeLib() { return std::move(_lib); }
@@ -1646,7 +1646,7 @@ class LibertyBuilder
   LibertyOwnPortType _own_port_type;            //!< The flag of port own timing arc or power arc.
   LibertyOwnPgOrWhenType _own_pg_or_when_type;  //!< The flag of pg port/when own leakage power
                                                 //!< or power arc.
-  FORBIDDEN_COPY(LibertyBuilder);
+  FORBIDDEN_COPY(LibBuilder);
 };
 
 /**

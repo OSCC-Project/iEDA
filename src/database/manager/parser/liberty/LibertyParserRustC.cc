@@ -51,7 +51,7 @@ void RustLibertyExprBuilder::execute()
  */
 unsigned RustLibertyReader::visitSimpleAttri(RustLibertySimpleAttrStmt* attri)
 {
-  LibertyBuilder* lib_builder = get_library_builder();
+  LibBuilder* lib_builder = get_library_builder();
   LibLibrary* current_lib = lib_builder->get_lib();
   LibPort* lib_port = lib_builder->get_port();
   if (!lib_port) {
@@ -62,8 +62,8 @@ unsigned RustLibertyReader::visitSimpleAttri(RustLibertySimpleAttrStmt* attri)
   LibArc* lib_arc = lib_builder->get_arc();
   LibPowerArc* lib_power_arc = lib_builder->get_power_arc();
   auto* lib_obj = lib_builder->get_obj();
-  LibertyBuilder::LibertyOwnPortType own_port_type = lib_builder->get_own_port_type();
-  LibertyBuilder::LibertyOwnPgOrWhenType own_pg_or_when_type = lib_builder->get_own_pg_or_when_type();
+  LibBuilder::LibertyOwnPortType own_port_type = lib_builder->get_own_port_type();
+  LibBuilder::LibertyOwnPgOrWhenType own_pg_or_when_type = lib_builder->get_own_pg_or_when_type();
 
   double cap_unit_convert = 1.0;  // sta use pf internal
   if (CapacitiveUnit::kFF == current_lib->get_cap_unit()) {
@@ -365,9 +365,9 @@ unsigned RustLibertyReader::visitSimpleAttri(RustLibertySimpleAttrStmt* attri)
           [=]() {
             auto* rust_attri_value = rust_convert_string_value(attri_value);
             const char* pin_name = rust_attri_value->value;
-            if (own_port_type == LibertyBuilder::LibertyOwnPortType::kTimingArc) {
+            if (own_port_type == LibBuilder::LibertyOwnPortType::kTimingArc) {
               lib_arc->set_src_port(pin_name);
-            } else if (own_port_type == LibertyBuilder::LibertyOwnPortType::kPowerArc) {
+            } else if (own_port_type == LibBuilder::LibertyOwnPortType::kPowerArc) {
               lib_power_arc->set_src_port(pin_name);
             }
             rust_free_string_value(rust_attri_value);
@@ -376,9 +376,9 @@ unsigned RustLibertyReader::visitSimpleAttri(RustLibertySimpleAttrStmt* attri)
           [=]() {
             auto* rust_attri_value = rust_convert_string_value(attri_value);
             const char* pg_pin_name = rust_attri_value->value;
-            if (own_pg_or_when_type == LibertyBuilder::LibertyOwnPgOrWhenType::kLibertyLeakagePower) {
+            if (own_pg_or_when_type == LibBuilder::LibertyOwnPgOrWhenType::kLibertyLeakagePower) {
               leakage_power->set_related_pg_port(pg_pin_name);
-            } else if (own_pg_or_when_type == LibertyBuilder::LibertyOwnPgOrWhenType::kPowerArc) {
+            } else if (own_pg_or_when_type == LibBuilder::LibertyOwnPgOrWhenType::kPowerArc) {
               lib_power_arc->set_related_pg_port(pg_pin_name);
             }
             rust_free_string_value(rust_attri_value);
@@ -387,9 +387,9 @@ unsigned RustLibertyReader::visitSimpleAttri(RustLibertySimpleAttrStmt* attri)
           [=]() {
             auto* rust_attri_value = rust_convert_string_value(attri_value);
             const char* when = rust_attri_value->value;
-            if (own_pg_or_when_type == LibertyBuilder::LibertyOwnPgOrWhenType::kLibertyLeakagePower) {
+            if (own_pg_or_when_type == LibBuilder::LibertyOwnPgOrWhenType::kLibertyLeakagePower) {
               leakage_power->set_when(when);
-            } else if (own_pg_or_when_type == LibertyBuilder::LibertyOwnPgOrWhenType::kPowerArc) {
+            } else if (own_pg_or_when_type == LibBuilder::LibertyOwnPgOrWhenType::kPowerArc) {
               if (lib_power_arc) {
                 lib_power_arc->set_when(when);
               }
@@ -515,7 +515,7 @@ unsigned RustLibertyReader::visitSimpleAttri(RustLibertySimpleAttrStmt* attri)
  */
 unsigned RustLibertyReader::visitAxisOrValues(RustLibertyComplexAttrStmt* attri)
 {
-  LibertyBuilder* lib_builder = get_library_builder();
+  LibBuilder* lib_builder = get_library_builder();
 
   const char* attri_name = attri->attri_name;
   auto& attribute_values = attri->attri_values;
@@ -585,7 +585,7 @@ unsigned RustLibertyReader::visitAxisOrValues(RustLibertyComplexAttrStmt* attri)
 unsigned RustLibertyReader::visitComplexAttri(RustLibertyComplexAttrStmt* attri)
 {
   const char* attri_name = attri->attri_name;
-  LibertyBuilder* lib_builder = get_library_builder();
+  LibBuilder* lib_builder = get_library_builder();
   auto* the_lib = lib_builder->get_lib();
   auto* lib_obj = lib_builder->get_obj();
   auto* lib_port = lib_builder->get_port();
@@ -700,7 +700,7 @@ unsigned RustLibertyReader::visitLibrary(RustLibertyGroupStmt* group)
 {
   const char* lib_name = getGroupAttriName(group);
 
-  auto* library_builder = new LibertyBuilder(lib_name);
+  auto* library_builder = new LibBuilder(lib_name);
   set_library_builder(library_builder);
 
   auto* curr_lib = library_builder->get_lib();
@@ -719,7 +719,7 @@ unsigned RustLibertyReader::visitLibrary(RustLibertyGroupStmt* group)
  */
 unsigned RustLibertyReader::visitWireLoad(RustLibertyGroupStmt* group)
 {
-  LibertyBuilder* lib_builder = get_library_builder();
+  LibBuilder* lib_builder = get_library_builder();
   LibLibrary* lib = lib_builder->get_lib();
 
   const char* wire_load_name = getGroupAttriName(group);
@@ -741,7 +741,7 @@ unsigned RustLibertyReader::visitWireLoad(RustLibertyGroupStmt* group)
  */
 unsigned RustLibertyReader::visitLuTableTemplate(RustLibertyGroupStmt* group)
 {
-  LibertyBuilder* lib_builder = get_library_builder();
+  LibBuilder* lib_builder = get_library_builder();
   LibLibrary* lib = lib_builder->get_lib();
 
   const char* template_name = getGroupAttriName(group);
@@ -767,7 +767,7 @@ unsigned RustLibertyReader::visitLuTableTemplate(RustLibertyGroupStmt* group)
  */
 unsigned RustLibertyReader::visitType(RustLibertyGroupStmt* group)
 {
-  LibertyBuilder* lib_builder = get_library_builder();
+  LibBuilder* lib_builder = get_library_builder();
   LibLibrary* lib = lib_builder->get_lib();
 
   const char* type_name = getGroupAttriName(group);
@@ -793,7 +793,7 @@ unsigned RustLibertyReader::visitType(RustLibertyGroupStmt* group)
  */
 unsigned RustLibertyReader::visitOutputCurrentTemplate(RustLibertyGroupStmt* group)
 {
-  LibertyBuilder* lib_builder = get_library_builder();
+  LibBuilder* lib_builder = get_library_builder();
   LibLibrary* lib = lib_builder->get_lib();
 
   const char* template_name = getGroupAttriName(group);
@@ -818,7 +818,7 @@ unsigned RustLibertyReader::visitOutputCurrentTemplate(RustLibertyGroupStmt* gro
  */
 unsigned RustLibertyReader::visitCell(RustLibertyGroupStmt* group)
 {
-  LibertyBuilder* lib_builder = get_library_builder();
+  LibBuilder* lib_builder = get_library_builder();
   LibLibrary* lib = lib_builder->get_lib();
 
   const char* cell_name = getGroupAttriName(group);
@@ -843,10 +843,10 @@ unsigned RustLibertyReader::visitCell(RustLibertyGroupStmt* group)
  */
 unsigned RustLibertyReader::visitLeakagePower(RustLibertyGroupStmt* group)
 {
-  LibertyBuilder* lib_builder = get_library_builder();
+  LibBuilder* lib_builder = get_library_builder();
   LibCell* lib_cell = lib_builder->get_cell();
 
-  lib_builder->set_own_pg_or_when_type(LibertyBuilder::LibertyOwnPgOrWhenType::kLibertyLeakagePower);
+  lib_builder->set_own_pg_or_when_type(LibBuilder::LibertyOwnPgOrWhenType::kLibertyLeakagePower);
   auto leakage_power = std::make_unique<LibLeakagePower>();
   lib_builder->set_leakage_power(leakage_power.get());
   leakage_power->set_owner_cell(lib_cell);
@@ -868,7 +868,7 @@ unsigned RustLibertyReader::visitLeakagePower(RustLibertyGroupStmt* group)
  */
 unsigned RustLibertyReader::visitBus(RustLibertyGroupStmt* group)
 {
-  LibertyBuilder* lib_builder = get_library_builder();
+  LibBuilder* lib_builder = get_library_builder();
   LibCell* cell = lib_builder->get_cell();
 
   const char* bus_port_name = getGroupAttriName(group);
@@ -894,7 +894,7 @@ unsigned RustLibertyReader::visitBus(RustLibertyGroupStmt* group)
  */
 unsigned RustLibertyReader::visitPin(RustLibertyGroupStmt* group)
 {
-  LibertyBuilder* lib_builder = get_library_builder();
+  LibBuilder* lib_builder = get_library_builder();
   LibCell* cell = lib_builder->get_cell();
 
   const char* port_name = getGroupAttriName(group);
@@ -942,14 +942,14 @@ unsigned RustLibertyReader::visitPin(RustLibertyGroupStmt* group)
  */
 unsigned RustLibertyReader::visitTiming(RustLibertyGroupStmt* group)
 {
-  LibertyBuilder* lib_builder = get_library_builder();
+  LibBuilder* lib_builder = get_library_builder();
   LibPort* lib_port = lib_builder->get_port();
   LibPortBus* lib_port_bus;
   if (!lib_port) {
     lib_port_bus = lib_builder->get_port_bus();
   }
   LibCell* lib_cell = lib_builder->get_cell();
-  lib_builder->set_own_port_type(LibertyBuilder::LibertyOwnPortType::kTimingArc);
+  lib_builder->set_own_port_type(LibBuilder::LibertyOwnPortType::kTimingArc);
   auto lib_arc = std::make_unique<LibArc>();
   lib_builder->set_arc(lib_arc.get());
   lib_builder->set_table_model(nullptr);  // reset table model.
@@ -971,15 +971,15 @@ unsigned RustLibertyReader::visitTiming(RustLibertyGroupStmt* group)
  */
 unsigned RustLibertyReader::visitInternalPower(RustLibertyGroupStmt* group)
 {
-  LibertyBuilder* lib_builder = get_library_builder();
+  LibBuilder* lib_builder = get_library_builder();
   LibPort* lib_port = lib_builder->get_port();
   LibPortBus* lib_port_bus;
   if (!lib_port) {
     lib_port_bus = lib_builder->get_port_bus();
   }
   LibCell* lib_cell = lib_builder->get_cell();
-  lib_builder->set_own_port_type(LibertyBuilder::LibertyOwnPortType::kPowerArc);
-  lib_builder->set_own_pg_or_when_type(LibertyBuilder::LibertyOwnPgOrWhenType::kPowerArc);
+  lib_builder->set_own_port_type(LibBuilder::LibertyOwnPortType::kPowerArc);
+  lib_builder->set_own_pg_or_when_type(LibBuilder::LibertyOwnPgOrWhenType::kPowerArc);
   auto lib_power_arc = std::make_unique<LibPowerArc>();
   lib_builder->set_power_arc(lib_power_arc.get());
   lib_builder->set_table_model(nullptr);  // reset table model.
@@ -1043,7 +1043,7 @@ unsigned RustLibertyReader::visitInternalPower(RustLibertyGroupStmt* group)
  */
 unsigned RustLibertyReader::visitCurrentTable(RustLibertyGroupStmt* group)
 {
-  LibertyBuilder* lib_builder = get_library_builder();
+  LibBuilder* lib_builder = get_library_builder();
   auto* lib_model = lib_builder->get_table_model();
   auto* lib_delay_model = dynamic_cast<LibDelayTableModel*>(lib_model);
 
@@ -1068,7 +1068,7 @@ unsigned RustLibertyReader::visitCurrentTable(RustLibertyGroupStmt* group)
  */
 unsigned RustLibertyReader::visitVector(RustLibertyGroupStmt* group)
 {
-  LibertyBuilder* lib_builder = get_library_builder();
+  LibBuilder* lib_builder = get_library_builder();
 
   const char* table_template_name = getGroupAttriName(group);
   auto* the_lib = lib_builder->get_lib();
@@ -1101,7 +1101,7 @@ unsigned RustLibertyReader::visitVector(RustLibertyGroupStmt* group)
  */
 unsigned RustLibertyReader::visitTable(RustLibertyGroupStmt* group)
 {
-  LibertyBuilder* lib_builder = get_library_builder();
+  LibBuilder* lib_builder = get_library_builder();
 
   const auto* const table_name = group->group_name;
   auto table_type = STR_TO_TABLE_TYPE(table_name);
@@ -1147,7 +1147,7 @@ unsigned RustLibertyReader::visitTable(RustLibertyGroupStmt* group)
  */
 unsigned RustLibertyReader::visitPowerTable(RustLibertyGroupStmt* group)
 {
-  LibertyBuilder* lib_builder = get_library_builder();
+  LibBuilder* lib_builder = get_library_builder();
 
   const auto* const table_name = group->group_name;
   auto table_type = STR_TO_TABLE_TYPE(table_name);

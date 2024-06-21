@@ -36,7 +36,8 @@ extern "C" {
  * @brief liberty expression operation.
  *
  */
-enum RustLibertyExprOp {
+enum RustLibertyExprOp
+{
   kBuffer,
   kNot,
   kOr,
@@ -52,7 +53,8 @@ enum RustLibertyExprOp {
  * @brief liberty expr.
  *
  */
-typedef struct RustLibertyExpr {
+typedef struct RustLibertyExpr
+{
   enum RustLibertyExprOp op;
   struct RustLibertyExpr* left;
   struct RustLibertyExpr* right;
@@ -86,7 +88,8 @@ void rust_free_expr(struct RustLibertyExpr* c_expr);
  * @param c_expr
  * @return LibertyExpr*
  */
-inline RustLibertyExpr* rust_get_expr_left(RustLibertyExpr* c_expr) {
+inline RustLibertyExpr* rust_get_expr_left(RustLibertyExpr* c_expr)
+{
   return c_expr->left ? rust_convert_expr(c_expr->left) : nullptr;
 }
 
@@ -96,7 +99,8 @@ inline RustLibertyExpr* rust_get_expr_left(RustLibertyExpr* c_expr) {
  * @param c_expr
  * @return LibertyExpr*
  */
-inline RustLibertyExpr* rust_get_expr_right(RustLibertyExpr* c_expr) {
+inline RustLibertyExpr* rust_get_expr_right(RustLibertyExpr* c_expr)
+{
   return c_expr->right ? rust_convert_expr(c_expr->right) : nullptr;
 }
 
@@ -107,7 +111,8 @@ inline RustLibertyExpr* rust_get_expr_right(RustLibertyExpr* c_expr) {
  * @return true
  * @return false
  */
-inline bool rust_expr_func_is_one(RustLibertyExpr* c_expr) {
+inline bool rust_expr_func_is_one(RustLibertyExpr* c_expr)
+{
   return c_expr->op == RustLibertyExprOp::kOne;
 }
 
@@ -118,14 +123,16 @@ inline bool rust_expr_func_is_one(RustLibertyExpr* c_expr) {
  * @return true
  * @return false
  */
-inline bool rust_expr_func_is_zero(RustLibertyExpr* c_expr) {
+inline bool rust_expr_func_is_zero(RustLibertyExpr* c_expr)
+{
   return c_expr->op == RustLibertyExprOp::kZero;
 }
 /**
  * @brief Rust liberty group stmt for C.
  *
  */
-typedef struct RustLibertyGroupStmt {
+typedef struct RustLibertyGroupStmt
+{
   char* file_name;
   uintptr_t line_no;
   char* group_name;
@@ -137,7 +144,8 @@ typedef struct RustLibertyGroupStmt {
  * @brief Rust liberty simple attribute stmt for C.
  *
  */
-typedef struct RustLibertySimpleAttrStmt {
+typedef struct RustLibertySimpleAttrStmt
+{
   char* file_name;
   uintptr_t line_no;
   char* attri_name;
@@ -148,7 +156,8 @@ typedef struct RustLibertySimpleAttrStmt {
  * @brief Rust liberty complex attribute stmt for C.
  *
  */
-typedef struct RustLibertyComplexAttrStmt {
+typedef struct RustLibertyComplexAttrStmt
+{
   char* file_name;
   uintptr_t line_no;
   char* attri_name;
@@ -159,7 +168,8 @@ typedef struct RustLibertyComplexAttrStmt {
  * @brief Rust liberty string value for C.
  *
  */
-typedef struct RustLibertyStringValue {
+typedef struct RustLibertyStringValue
+{
   char* value;
 } RustLibertyStringValue;
 
@@ -167,7 +177,8 @@ typedef struct RustLibertyStringValue {
  * @brief Rust liberty float value for C.
  *
  */
-typedef struct RustLibertyFloatValue {
+typedef struct RustLibertyFloatValue
+{
   double value;
 } RustLibertyFloatValue;
 
@@ -254,11 +265,9 @@ void rust_free_group_stmt(struct RustLibertyGroupStmt* c_group_stmt);
  * @param simple_attri_stmt
  * @return struct RustLibertySimpleAttrStmt*
  */
-struct RustLibertySimpleAttrStmt* rust_convert_simple_attribute_stmt(
-    void* simple_attri_stmt);
+struct RustLibertySimpleAttrStmt* rust_convert_simple_attribute_stmt(void* simple_attri_stmt);
 
-void rust_free_simple_attribute_stmt(
-    struct RustLibertySimpleAttrStmt* c_simple_attri_stmt);
+void rust_free_simple_attribute_stmt(struct RustLibertySimpleAttrStmt* c_simple_attri_stmt);
 
 /**
  * @brief Rust convert complex attribute stmt to C struct.
@@ -266,11 +275,9 @@ void rust_free_simple_attribute_stmt(
  * @param complex_attri_stmt
  * @return struct RustLibertyComplexAttrStmt*
  */
-struct RustLibertyComplexAttrStmt* rust_convert_complex_attribute_stmt(
-    void* complex_attri_stmt);
+struct RustLibertyComplexAttrStmt* rust_convert_complex_attribute_stmt(void* complex_attri_stmt);
 
-void rust_free_complex_attribute_stmt(
-    struct RustLibertyComplexAttrStmt* c_complex_attri_stmt);
+void rust_free_complex_attribute_stmt(struct RustLibertyComplexAttrStmt* c_complex_attri_stmt);
 
 /**
  * @brief Judge Rust attribue whether is float value.
@@ -316,13 +323,14 @@ void rust_free_float_value(struct RustLibertyFloatValue* c_float_value);
 
 namespace ista {
 
-class LibertyBuilder;
+class LibBuilder;
 
 /**
  * @brief The liberty expression builder for parser function string.
  *
  */
-class RustLibertyExprBuilder {
+class RustLibertyExprBuilder
+{
  public:
   RustLibertyExprBuilder(const char* expr_str) : _expr_str(expr_str) {}
   ~RustLibertyExprBuilder() = default;
@@ -339,7 +347,8 @@ class RustLibertyExprBuilder {
  * @brief The liberty reader is used to read rust data.
  *
  */
-class RustLibertyReader {
+class RustLibertyReader
+{
  public:
   explicit RustLibertyReader(const char* file_name) : _file_name(file_name) {}
   ~RustLibertyReader() = default;
@@ -371,17 +380,15 @@ class RustLibertyReader {
   unsigned visitGroup(RustLibertyGroupStmt* group);
   unsigned readLib();
 
-  void set_library_builder(LibertyBuilder* library_builder) {
-    _library_builder = library_builder;
-  }
+  void set_library_builder(LibBuilder* library_builder) { _library_builder = library_builder; }
   auto* get_library_builder() { return _library_builder; }
 
  private:
   const char* getGroupAttriName(RustLibertyGroupStmt* group);
   unsigned visitStmtInGroup(RustLibertyGroupStmt* group);
 
-  std::string _file_name;            //!< The liberty file name.
-  LibertyBuilder* _library_builder;  //!< The liberty library builder.
+  std::string _file_name;        //!< The liberty file name.
+  LibBuilder* _library_builder;  //!< The liberty library builder.
 };
 
 }  // namespace ista
