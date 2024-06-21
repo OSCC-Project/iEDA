@@ -760,7 +760,7 @@ void Sta::makeEquivCells(std::vector<LibLibrary *> &equiv_libs) {
     _equiv_cells.reset();
   }
 
-  _equiv_cells = std::make_unique<LibertyClassifyCell>();
+  _equiv_cells = std::make_unique<LibClassifyCell>();
   _equiv_cells->classifyLibCell(equiv_libs);
 }
 

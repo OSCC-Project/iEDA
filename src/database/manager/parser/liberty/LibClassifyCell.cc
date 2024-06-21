@@ -1,5 +1,5 @@
 /**
- * @file LibertyClassifyCell.cc
+ * @file LibClassifyCell.cc
  * @author simin tao (taosm@pcl.ac.cn)
  * @brief classify the liberty cell according the liberty
  * cell、port、arc、function.
@@ -9,7 +9,7 @@
  * @copyright Copyright (c) 2023
  *
  */
-#include "LibertyClassifyCell.hh"
+#include "LibClassifyCell.hh"
 
 #include <concepts>
 #include <functional>
@@ -58,7 +58,7 @@ std::size_t CombineHash(T1 value1, T2 value2)
  * @param port
  * @return std::size_t
  */
-std::size_t LibertyClassifyCell::hashCellPort(LibPort* port)
+std::size_t LibClassifyCell::hashCellPort(LibPort* port)
 {
   std::string port_name = port->get_port_name();
   int port_type = static_cast<int>(port->get_port_type());
@@ -72,7 +72,7 @@ std::size_t LibertyClassifyCell::hashCellPort(LibPort* port)
  * @param expr
  * @return std::size_t
  */
-std::size_t LibertyClassifyCell::hashCellPortFuncExpr(RustLibertyExpr* expr)
+std::size_t LibClassifyCell::hashCellPortFuncExpr(RustLibertyExpr* expr)
 {
   if (!expr) {
     return 0;
@@ -108,7 +108,7 @@ std::size_t LibertyClassifyCell::hashCellPortFuncExpr(RustLibertyExpr* expr)
  * @param the_cell
  * @return std::size_t
  */
-std::size_t LibertyClassifyCell::calculateCellHash(LibCell* the_cell)
+std::size_t LibClassifyCell::calculateCellHash(LibCell* the_cell)
 {
   std::size_t hash = 0;
 
@@ -129,7 +129,7 @@ std::size_t LibertyClassifyCell::calculateCellHash(LibCell* the_cell)
  * @return true
  * @return false
  */
-bool LibertyClassifyCell::comparePort(LibPort* port1, LibPort* port2)
+bool LibClassifyCell::comparePort(LibPort* port1, LibPort* port2)
 {
   return (port1 == nullptr && port2 == nullptr)
          || (port1 != nullptr && port2 != nullptr && Str::equal(port1->get_port_name(), port2->get_port_name())
@@ -144,7 +144,7 @@ bool LibertyClassifyCell::comparePort(LibPort* port1, LibPort* port2)
  * @return true
  * @return false
  */
-bool LibertyClassifyCell::comparePortFunc(RustLibertyExpr* expr1, RustLibertyExpr* expr2)
+bool LibClassifyCell::comparePortFunc(RustLibertyExpr* expr1, RustLibertyExpr* expr2)
 {
   if (expr1 == nullptr && expr2 == nullptr) {
     return true;
@@ -199,7 +199,7 @@ bool LibertyClassifyCell::comparePortFunc(RustLibertyExpr* expr1, RustLibertyExp
  * @return true
  * @return false
  */
-bool LibertyClassifyCell::compareCellPortsAndFuncs(LibCell* cell1, LibCell* cell2)
+bool LibClassifyCell::comparePorts(LibCell* cell1, LibCell* cell2)
 {
   bool ret_value = true;
   if (cell1->get_num_port() != cell2->get_num_port()) {
@@ -226,7 +226,7 @@ bool LibertyClassifyCell::compareCellPortsAndFuncs(LibCell* cell1, LibCell* cell
  * @return true
  * @return false
  */
-bool LibertyClassifyCell::compareCellTimingArc(LibArcSet* set1, LibArcSet* set2)
+bool LibClassifyCell::compareTimingArc(LibArcSet* set1, LibArcSet* set2)
 {
   return Str::equal(set1->front()->get_src_port(), set2->front()->get_src_port())
          && Str::equal(set1->front()->get_snk_port(), set2->front()->get_snk_port())
@@ -241,7 +241,7 @@ bool LibertyClassifyCell::compareCellTimingArc(LibArcSet* set1, LibArcSet* set2)
  * @return true
  * @return false
  */
-bool LibertyClassifyCell::compareCellTimingArcSets(LibCell* cell1, LibCell* cell2)
+bool LibClassifyCell::compareTimingArcSets(LibCell* cell1, LibCell* cell2)
 {
   bool ret_value = true;
   if (cell1->getCellArcSetCount() != cell2->getCellArcSetCount()) {
@@ -251,7 +251,7 @@ bool LibertyClassifyCell::compareCellTimingArcSets(LibCell* cell1, LibCell* cell
     FOREACH_CELL_TIMING_ARC_SET(cell1, set1)
     {
       auto set2 = cell2->findLibertyArcSet(set1->front()->get_src_port(), set1->front()->get_snk_port(), set1->front()->get_timing_type());
-      if (!(set2 && compareCellTimingArc(set1, *set2))) {
+      if (!(set2 && compareTimingArc(set1, *set2))) {
         ret_value = false;
       }
     }
@@ -267,9 +267,9 @@ bool LibertyClassifyCell::compareCellTimingArcSets(LibCell* cell1, LibCell* cell
  * @return true
  * @return false
  */
-bool LibertyClassifyCell::compareCellFunction(LibCell* the_cell1, LibCell* the_cell2)
+bool LibClassifyCell::compareFunction(LibCell* the_cell1, LibCell* the_cell2)
 {
-  return compareCellPortsAndFuncs(the_cell1, the_cell2) && compareCellTimingArcSets(the_cell1, the_cell2);
+  return comparePorts(the_cell1, the_cell2) && compareTimingArcSets(the_cell1, the_cell2);
 }
 
 /**
@@ -278,7 +278,7 @@ bool LibertyClassifyCell::compareCellFunction(LibCell* the_cell1, LibCell* the_c
  * @param the_lib
  * @param hash_to_cells
  */
-void LibertyClassifyCell::classifyOneLibCell(LibLibrary* the_lib, std::unordered_map<u_int64_t, Vector<LibCell*>>& hash_to_cells)
+void LibClassifyCell::classifyOneLibCell(LibLibrary* the_lib, std::unordered_map<u_int64_t, Vector<LibCell*>>& hash_to_cells)
 {
   LibCell* cell;
   FOREACH_LIB_CELL(the_lib, cell)
@@ -290,7 +290,7 @@ void LibertyClassifyCell::classifyOneLibCell(LibLibrary* the_lib, std::unordered
     unsigned hash = calculateCellHash(cell);
     auto& the_hash_cells = hash_to_cells[hash];
     for (auto* the_cell : the_hash_cells) {
-      if (compareCellFunction(the_cell, cell)) {
+      if (compareFunction(the_cell, cell)) {
         auto& the_cell_class = _func_same_cells[the_cell];
         the_cell_class.push_back(cell);
 
@@ -307,7 +307,7 @@ void LibertyClassifyCell::classifyOneLibCell(LibLibrary* the_lib, std::unordered
  *
  * @param the_libs
  */
-void LibertyClassifyCell::classifyLibCell(std::vector<LibLibrary*>& the_libs)
+void LibClassifyCell::classifyLibCell(std::vector<LibLibrary*>& the_libs)
 {
   std::unordered_map<std::size_t, Vector<LibCell*>> hash_to_cells;
   for (auto* the_lib : the_libs) {

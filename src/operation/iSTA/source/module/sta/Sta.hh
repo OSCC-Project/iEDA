@@ -42,7 +42,7 @@
 #include "aocv/AocvParser.hh"
 #include "delay/ElmoreDelayCalc.hh"
 #include "liberty/Lib.hh"
-#include "liberty/LibertyClassifyCell.hh"
+#include "liberty/LibClassifyCell.hh"
 #include "netlist/Netlist.hh"
 #include "sdc/SdcSetIODelay.hh"
 #include "verilog/VerilogParserRustC.hh"
@@ -521,7 +521,7 @@ class Sta {
   Vector<std::unique_ptr<LibLibrary>>
       _libs;  //!< The design libs of different corners.
 
-  std::unique_ptr<LibertyClassifyCell>
+  std::unique_ptr<LibClassifyCell>
       _equiv_cells;  //!< The function equivalently liberty cell.
 
   AnalysisMode _analysis_mode;  //!< The analysis max/min mode.

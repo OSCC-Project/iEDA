@@ -1,5 +1,5 @@
 /**
- * @file LibertyClassifyCell.hh
+ * @file LibClassifyCell.hh
  * @author simin tao (taosm@pcl.ac.cn)
  * @brief classify the liberty cell according the liberty
  * cell、port、arc、function.
@@ -23,7 +23,7 @@ namespace ista {
  * @brief class for classify the lib cell.
  *
  */
-class LibertyClassifyCell
+class LibClassifyCell
 {
  public:
   void classifyLibCell(std::vector<LibLibrary*>& the_libs);
@@ -43,12 +43,12 @@ class LibertyClassifyCell
 
   bool comparePort(LibPort* port1, LibPort* port2);
   bool comparePortFunc(RustLibertyExpr* expr1, RustLibertyExpr* expr2);
-  bool compareCellPortsAndFuncs(LibCell* cell1, LibCell* cell2);
+  bool comparePorts(LibCell* cell1, LibCell* cell2);
 
-  bool compareCellTimingArc(LibArcSet* set1, LibArcSet* set2);
-  bool compareCellTimingArcSets(LibCell* cell1, LibCell* cell2);
+  bool compareTimingArc(LibArcSet* set1, LibArcSet* set2);
+  bool compareTimingArcSets(LibCell* cell1, LibCell* cell2);
 
-  bool compareCellFunction(LibCell* the_cell1, LibCell* the_cell2);
+  bool compareFunction(LibCell* the_cell1, LibCell* the_cell2);
 
   void classifyOneLibCell(LibLibrary* the_lib, std::unordered_map<std::size_t, Vector<LibCell*>>& hash_to_cells);
 
