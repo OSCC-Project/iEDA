@@ -12,8 +12,8 @@ add_library(ito_module
         
         ${ITO_MODULE_PATH}/fix_hold/HoldOptimizer.cpp 
         ${ITO_MODULE_PATH}/fix_drv/ViolationOptimizer.cpp
-        ${ITO_MODULE_PATH}/fix_drv/CTSViolationFixer.cpp
-        ${ITO_MODULE_PATH}/fix_drv/FixWireLength.cpp
+        # ${ITO_MODULE_PATH}/fix_drv/CTSViolationFixer.cpp
+        # ${ITO_MODULE_PATH}/fix_drv/FixWireLength.cpp
         ${ITO_MODULE_PATH}/fix_setup/BufferedOption.cpp
         ${ITO_MODULE_PATH}/fix_setup/SetupOptimizer.cpp
         

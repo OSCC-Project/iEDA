@@ -107,54 +107,56 @@ void EstimateParasitics::estimateInvalidNetParasitics(DesignObject *drvr_pin_por
 void EstimateParasitics::excuteWireParasitic(DesignObject *drvr_pin_port, Net *curr_net,
                                              TimingDBAdapter *db_adapter) {
   RoutingTree *tree = makeRoutingTree(curr_net, db_adapter, RoutingType::kSteiner);
-
-  if (tree) {
-    vector<int> segment_idx;
-    vector<int> length_wire;
-    tree->drvrToLoadLength(tree->get_root(), segment_idx, length_wire, 0);
-
-    std::vector<std::pair<int, int>> wire_segment_idx;
-    std::vector<int>                 length_per_wire;
-
-    tree->segmentIndexAndLength(tree->get_root(), wire_segment_idx, length_per_wire);
-
-    int numb = wire_segment_idx.size();
-    for (int i = 0; i != numb; ++i) {
-      int      index1 = wire_segment_idx[i].first;
-      int      index2 = wire_segment_idx[i].second;
-      RctNode *n1 = _timing_engine->makeOrFindRCTreeNode(curr_net, index1);
-      RctNode *n2 = _timing_engine->makeOrFindRCTreeNode(curr_net, index2);
-
-      int length_dbu = length_per_wire[i];
-      if (length_dbu == 0) {
-        _timing_engine->makeResistor(curr_net, n1, n2, 1.0e-3);
-      } else {
-        std::optional<double> width = std::nullopt;
-        double                cap = dynamic_cast<TimingIDBAdapter *>(db_adapter)
-                         ->getCapacitance(1, (double)length_dbu / _dbu, width);
-        double res = dynamic_cast<TimingIDBAdapter *>(db_adapter)
-                         ->getResistance(1, (double)length_dbu / _dbu, width);
-
-        if (curr_net->isClockNet()) {
-          cap /= 10.0;
-          res /= 10.0;
-        // } else {
-        //   cap /= 2.0;
-        //   res /= 2.0;
-        }
-
-        _timing_engine->incrCap(n1, cap / 2.0, true);
-        _timing_engine->makeResistor(curr_net, n1, n2, res);
-        _timing_engine->incrCap(n2, cap / 2.0, true);
-      }
-      RctNodeConnectPin(curr_net, index1, n1, tree);
-      RctNodeConnectPin(curr_net, index2, n2, tree);
-    }
-
-    _timing_engine->updateRCTreeInfo(curr_net);
-
-    delete tree;
+  if (!tree) {
+    return;
   }
+
+  vector<int> segment_idx;
+  vector<int> length_wire;
+  tree->drvrToLoadLength(tree->get_root(), segment_idx, length_wire, 0);
+
+  std::vector<std::pair<int, int>> wire_segment_idx;
+  std::vector<int>                 length_per_wire;
+
+  tree->segmentIndexAndLength(tree->get_root(), wire_segment_idx, length_per_wire);
+
+  int numb = wire_segment_idx.size();
+  for (int i = 0; i != numb; ++i) {
+    int      index1 = wire_segment_idx[i].first;
+    int      index2 = wire_segment_idx[i].second;
+    RctNode *n1 = _timing_engine->makeOrFindRCTreeNode(curr_net, index1);
+    RctNode *n2 = _timing_engine->makeOrFindRCTreeNode(curr_net, index2);
+
+    int length_dbu = length_per_wire[i];
+    if (length_dbu == 0) {
+      _timing_engine->makeResistor(curr_net, n1, n2, 1.0e-3);
+    } else {
+      std::optional<double> width = std::nullopt;
+      double                cap = dynamic_cast<TimingIDBAdapter *>(db_adapter)
+                        ->getCapacitance(1, (double)length_dbu / _dbu, width);
+      double res = dynamic_cast<TimingIDBAdapter *>(db_adapter)
+                        ->getResistance(1, (double)length_dbu / _dbu, width);
+
+      if (curr_net->isClockNet()) {
+        cap /= 10.0;
+        res /= 10.0;
+      // } else {
+      //   cap /= 2.0;
+      //   res /= 2.0;
+      }
+
+      _timing_engine->incrCap(n1, cap / 2.0, true);
+      _timing_engine->makeResistor(curr_net, n1, n2, res);
+      _timing_engine->incrCap(n2, cap / 2.0, true);
+    }
+    RctNodeConnectPin(curr_net, index1, n1, tree);
+    RctNodeConnectPin(curr_net, index2, n2, tree);
+  }
+
+  _timing_engine->updateRCTreeInfo(curr_net);
+
+  delete tree;
+
 }
 
 void EstimateParasitics::RctNodeConnectPin(Net *net, int index, RctNode *rcnode,
@@ -174,7 +176,7 @@ void EstimateParasitics::RctNodeConnectPin(Net *net, int index, RctNode *rcnode,
   }
 }
 
-void EstimateParasitics::parasiticsInvalid(Net *net) {
+void EstimateParasitics::invalidNetRC(Net *net) {
   // printf("EstimateParasitics | parasitics invalid {%s}\n", net->get_name());
   _parasitics_invalid_nets.insert(net);
 }

@@ -1029,14 +1029,13 @@ void IDBWrapper::initInstancesForFragmentedRow()
   int32_t site_count_x = ipl_layout->get_core_width() / site_width;
   int32_t site_count_y = ipl_layout->get_core_height() / row_height;
 
-  enum PlaceInfo
+  enum SiteRecord
   {
     kEmpty,
     kRowHolding,
     kFixedInst
   };
-  // initialize site_grid as empty.
-  std::vector<PlaceInfo> site_grid(site_count_x * site_count_y, PlaceInfo::kEmpty);
+  std::vector<SiteRecord> site_grid(site_count_x * site_count_y, SiteRecord::kEmpty);
 
   // fill in rows area.
   std::vector<Row*> row_list = ipl_layout->get_row_list();
@@ -1081,11 +1080,9 @@ void IDBWrapper::initInstancesForFragmentedRow()
     }
   }
 
-  // search the "Empty" coordinates on site-grid, and arrange it as dummyInstance.
   int dummy_count = 0;
   for (int j = 0; j < site_count_y; ++j) {
     for (int i = 0; i < site_count_x; ++i) {
-      // if empty spot found.
       if (site_grid.at(j * site_count_x + i) == kEmpty) {
         int start_x = i;
         while (i < site_count_x && site_grid.at(j * site_count_x + i) == kEmpty) {

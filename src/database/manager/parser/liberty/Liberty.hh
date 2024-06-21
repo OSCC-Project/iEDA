@@ -54,9 +54,7 @@ class LibertyAxis;
 class LibertyLutTableTemplate;
 class LibertyVectorTable;
 class LibertyExpr;
-class LibertyCellPortIterator;
-class LibertyCellIterator;
-class LibertyCellTimingArcSetIterator;
+
 class LibertyCellPowerArcSetIterator;
 
 /**
@@ -979,15 +977,12 @@ class LibertyCell : public LibertyObject
   LibertyCell(const char* cell_name, LibertyLibrary* owner_lib);
   ~LibertyCell() override;
 
-  friend LibertyCellPortIterator;
-  friend LibertyCellTimingArcSetIterator;
-  friend LibertyCellPowerArcSetIterator;
-
   LibertyCell(LibertyCell&& lib_cell) noexcept;
   LibertyCell& operator=(LibertyCell&& rhs) noexcept;
 
   const char* get_cell_name() const { return _cell_name.c_str(); }
   auto& get_cell_arcs() { return _cell_arcs; }
+  auto& get_cell_power_arcs() { return _cell_power_arcs; }
 
   double get_cell_area() const { return _cell_area; }
   void set_cell_area(double cell_area) { _cell_area = cell_area; }
@@ -1082,26 +1077,6 @@ class LibertyCell : public LibertyObject
 };
 
 /**
- * @brief The cell port iterator.
- *
- */
-class LibertyCellPortIterator
-{
- public:
-  explicit LibertyCellPortIterator(LibertyCell* lib_cell);
-  ~LibertyCellPortIterator() = default;
-
-  bool hasNext() { return _iter != _lib_cell->_cell_ports.end(); }
-  LibertyPort* next() { return _iter++->get(); }
-
- private:
-  LibertyCell* _lib_cell;
-  std::vector<std::unique_ptr<LibertyPort>>::iterator _iter;
-
-  FORBIDDEN_COPY(LibertyCellPortIterator);
-};
-
-/**
  * @brief usage:
  * LibertyCell* lib_cell;
  * LibertyPort* port;
@@ -1111,7 +1086,9 @@ class LibertyCellPortIterator
  * }
  *
  */
-#define FOREACH_CELL_PORT(cell, port) for (ista::LibertyCellPortIterator iter(cell); iter.hasNext() ? port = (iter.next()), true : false;)
+#define FOREACH_CELL_PORT(cell, port)                                                                   \
+  for (std::vector<std::unique_ptr<ista::LibertyPort>>::iterator iter = cell->get_cell_ports().begin(); \
+       (iter != cell->get_cell_ports().end()) ? port = (iter++->get()), true : false;)
 
 /**
  * @brief The macro of foreach leakage power, usage:
@@ -1127,26 +1104,6 @@ class LibertyCellPortIterator
     for (auto p = leakage_powers.begin(); p != leakage_powers.end() ? leakage_power = p->get(), true : false; ++p)
 
 /**
- * @brief The cell timing arc iterator.
- *
- */
-class LibertyCellTimingArcSetIterator
-{
- public:
-  explicit LibertyCellTimingArcSetIterator(LibertyCell* lib_cell);
-  ~LibertyCellTimingArcSetIterator() = default;
-
-  bool hasNext() { return _iter != _lib_cell->_cell_arcs.end(); }
-  LibertyArcSet* next() { return _iter++->get(); }
-
- private:
-  LibertyCell* _lib_cell;
-  std::vector<std::unique_ptr<LibertyArcSet>>::iterator _iter;
-
-  FORBIDDEN_COPY(LibertyCellTimingArcSetIterator);
-};
-
-/**
  * @brief usage:
  * LibertyCell* lib_cell;
  * LibertyArcSet* timing_arc_set;
@@ -1156,29 +1113,9 @@ class LibertyCellTimingArcSetIterator
  * }
  *
  */
-#define FOREACH_CELL_TIMING_ARC_SET(cell, timing_arc_set) \
-  for (ista::LibertyCellTimingArcSetIterator iter(cell); iter.hasNext() ? timing_arc_set = (iter.next()), true : false;)
-
-/**
- * @brief The cell power arc iterator.
- *
- */
-class LibertyCellPowerArcSetIterator
-{
- public:
-  explicit LibertyCellPowerArcSetIterator(LibertyCell* lib_cell);
-  ~LibertyCellPowerArcSetIterator() = default;
-
-  bool hasNext() { return _iter != _lib_cell->_cell_power_arcs.end(); }
-  LibertyPowerArcSet* next() { return _iter++->get(); }
-
- private:
-  LibertyCell* _lib_cell;
-
-  std::vector<std::unique_ptr<LibertyPowerArcSet>>::iterator _iter;
-
-  FORBIDDEN_COPY(LibertyCellPowerArcSetIterator);
-};
+#define FOREACH_CELL_TIMING_ARC_SET(cell, timing_arc_set)                                          \
+  for (std::vector<std::unique_ptr<LibertyArcSet>>::iterator iter = cell->get_cell_arcs().begin(); \
+       iter != cell->get_cell_arcs().end() ? timing_arc_set = iter++->get(), true : false;)
 
 /**
  * @brief usage:
@@ -1189,8 +1126,9 @@ class LibertyCellPowerArcSetIterator
  *    do_something_for_power_arc_set();
  * }
  */
-#define FOREACH_POWER_ARC_SET(cell, power_arc_set) \
-  for (ista::LibertyCellPowerArcSetIterator iter(cell); iter.hasNext() ? power_arc_set = (iter.next()), true : false;)
+#define FOREACH_POWER_ARC_SET(cell, power_arc_set)                                                                  \
+  for (std::vector<std::unique_ptr<ista::LibertyPowerArcSet>>::iterator iter = cell->get_cell_power_arcs().begin(); \
+       iter != cell->get_cell_power_arcs().end() ? power_arc_set = iter++->get(), true : false;)
 
 /**
  * @brief The liberty wire load model, such as:
@@ -1338,8 +1276,6 @@ class LibertyLibrary : public LibertyObject
  public:
   explicit LibertyLibrary(const char* lib_name) : _lib_name(lib_name) {}
   ~LibertyLibrary() = default;
-
-  friend LibertyCellIterator;
 
   LibertyLibrary(LibertyLibrary&& other) noexcept : _lib_name(std::move(other._lib_name)), _cells(std::move(other._cells)) {}
 
@@ -1558,26 +1494,6 @@ class LibertyLibrary : public LibertyObject
 };
 
 /**
- * @brief The cell of liberty iterator.
- *
- */
-class LibertyCellIterator
-{
- public:
-  explicit LibertyCellIterator(LibertyLibrary* lib);
-  ~LibertyCellIterator() = default;
-
-  bool hasNext();
-  LibertyCell* next();
-
- private:
-  LibertyLibrary* _lib;
-  std::vector<std::unique_ptr<LibertyCell>>::iterator _iter;
-
-  FORBIDDEN_COPY(LibertyCellIterator);
-};
-
-/**
  * @brief usage:
  * LibertyLibrary* lib;
  * LibertyCell* cell;
@@ -1587,35 +1503,9 @@ class LibertyCellIterator
  * }
  *
  */
-#define FOREACH_LIB_CELL(lib, cell) for (ista::LibertyCellIterator iter(lib); iter.hasNext() ? cell = (iter.next()), true : false;)
-
-/**
- * @brief The base class for liberty syntax statement.
- *
- */
-class LibertyStmt
-{
- public:
-  LibertyStmt(const char* file_name, unsigned line_no);
-  virtual ~LibertyStmt() = default;
-
-  LibertyStmt(LibertyStmt&& other) noexcept = default;
-  LibertyStmt& operator=(LibertyStmt&& rhs) noexcept = default;
-
-  virtual unsigned isSimpleAttrStmt() { return 0; }
-  virtual unsigned isComplexAttrStmt() { return 0; }
-  virtual unsigned isAttributeStmt() { return 0; }
-  virtual unsigned isGroupStmt() { return 0; }
-
-  const char* get_file_name() { return _file_name.c_str(); }
-  [[nodiscard]] unsigned get_line_no() const { return _line_no; }
-
- private:
-  std::string _file_name;
-  unsigned _line_no = 0;
-
-  FORBIDDEN_COPY(LibertyStmt);
-};
+#define FOREACH_LIB_CELL(lib, cell)                                                         \
+  for (std::vector<std::unique_ptr<LibertyCell>>::iterator iter = lib->get_cells().begin(); \
+       iter != lib->get_cells().end() ? cell = (iter++->get()), true : false;)
 
 /**
  * @brief The base class of liberty attribute value.
@@ -1675,111 +1565,6 @@ class LibertyStringValue : public LibertyAttrValue
 
  private:
   std::string _val;
-};
-
-/**
- * @brief The simple attribute statement.
- * For example, drive_strength      : 1;
- */
-class LibertySimpleAttrStmt : public LibertyStmt
-{
- public:
-  explicit LibertySimpleAttrStmt(const char* attri_name, const char* file_name, unsigned line_no)
-      : LibertyStmt(file_name, line_no), _attri_name(attri_name), _attribute_value(nullptr)
-  {
-  }
-  ~LibertySimpleAttrStmt() override = default;
-
-  LibertySimpleAttrStmt(LibertySimpleAttrStmt&& other) noexcept = default;
-
-  LibertySimpleAttrStmt& operator=(LibertySimpleAttrStmt&& rhs) noexcept = default;
-
-  unsigned isSimpleAttrStmt() override { return 1; }
-  unsigned isAttributeStmt() override { return 1; }
-
-  const char* get_attri_name() { return _attri_name.c_str(); }
-
-  void set_attribute_value(std::unique_ptr<LibertyAttrValue>&& attribute_value) { _attribute_value = std::move(attribute_value); }
-  LibertyAttrValue* get_attribute_value() { return _attribute_value.get(); }
-
- private:
-  std::string _attri_name;
-  std::unique_ptr<LibertyAttrValue> _attribute_value;
-
-  FORBIDDEN_COPY(LibertySimpleAttrStmt);
-};
-
-/**
- * @brief The complex attribute statement.
- * For example, index_1
- * ("0.000932129,0.00354597,0.0127211,0.0302424,0.0575396,0.0958408,0.146240");
- */
-class LibertyComplexAttrStmt : public LibertyStmt
-{
- public:
-  explicit LibertyComplexAttrStmt(const char* attri_name, const char* file_name, unsigned line_no)
-      : LibertyStmt(file_name, line_no), _attri_name(attri_name)
-  {
-  }
-  ~LibertyComplexAttrStmt() override = default;
-
-  LibertyComplexAttrStmt(LibertyComplexAttrStmt&& other) = default;
-
-  LibertyComplexAttrStmt& operator=(LibertyComplexAttrStmt&& rhs) noexcept = default;
-
-  unsigned isComplexAttrStmt() override { return 1; }
-  unsigned isAttributeStmt() override { return 1; }
-
-  const char* get_attri_name() { return _attri_name.c_str(); }
-
-  void set_attribute_values(std::vector<std::unique_ptr<LibertyAttrValue>>&& attri_values) { _attri_values = std::move(attri_values); }
-  auto& get_attribute_values() { return _attri_values; }
-
- private:
-  std::string _attri_name;
-  std::vector<std::unique_ptr<LibertyAttrValue>> _attri_values;
-
-  FORBIDDEN_COPY(LibertyComplexAttrStmt);
-};
-
-/**
- * @brief The liberty group statement.
- * For example
- * cell (AND2_X1) {
- * drive_strength       : 1;
- * area                 : 1.064000;
- *  ...
- *  }
- */
-class LibertyGroupStmt : public LibertyStmt
-{
- public:
-  LibertyGroupStmt(const char* group_name, const char* file_name, unsigned line_no)
-      : LibertyStmt(file_name, line_no), _group_name(group_name)
-  {
-  }
-  ~LibertyGroupStmt() override = default;
-
-  LibertyGroupStmt(LibertyGroupStmt&& other) noexcept = default;
-
-  LibertyGroupStmt& operator=(LibertyGroupStmt&& rhs) noexcept = default;
-
-  unsigned isGroupStmt() override { return 1; }
-
-  const char* get_group_name() { return _group_name.c_str(); }
-
-  std::vector<std::unique_ptr<LibertyStmt>>& get_stmts() { return _stmts; }
-  void set_stmts(std::vector<std::unique_ptr<LibertyStmt>>&& stmts) { _stmts = std::move(stmts); }
-
-  std::vector<std::unique_ptr<LibertyAttrValue>>& get_attri_values() { return _attri_values; }
-  void set_attri_values(std::vector<std::unique_ptr<LibertyAttrValue>>&& attri_values) { _attri_values = std::move(attri_values); }
-
- private:
-  std::string _group_name;
-  std::vector<std::unique_ptr<LibertyAttrValue>> _attri_values;
-  std::vector<std::unique_ptr<LibertyStmt>> _stmts;
-
-  FORBIDDEN_COPY(LibertyGroupStmt);
 };
 
 /**
