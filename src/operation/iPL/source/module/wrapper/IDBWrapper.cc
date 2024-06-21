@@ -490,6 +490,9 @@ void IDBWrapper::wrapIdbInstance(IdbInstance* idb_inst)
   if(cell_ptr->isIOCell()){
     if(!inst_ptr->isOutsideInstance()){
        LOG_WARNING << "Inst: " << inst_ptr->get_name() << " is io_cell but it is not fixed outside. " << "Shape: " 
+                   << " (" << bbox->get_low_x() << "," << bbox->get_low_y() << ") "
+                   << " (" << bbox->get_high_x() << "," << bbox->get_high_y() << ")"
+                   << " iPL regard as " 
                    << " (" << inst_ptr->get_coordi().get_x() << "," << inst_ptr->get_coordi().get_y() << ") "
                    << " (" << inst_ptr->get_shape().get_ur_x() << "," << inst_ptr->get_shape().get_ur_y() << ")"; 
     }
@@ -755,6 +758,11 @@ void IDBWrapper::writeBackSourceDatabase()
 {
   for (auto* inst : _idbw_database->_design->get_instance_list()) {
     if (inst->isFakeInstance()) {
+      continue;
+    }
+
+    // iPL should not change fixed instances.
+    if(inst->isFixed()){
       continue;
     }
 
