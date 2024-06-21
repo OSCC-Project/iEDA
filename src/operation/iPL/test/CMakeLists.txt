@@ -23,7 +23,6 @@ add_executable(iPLTest
     # ${iPL_TEST}/CongEvalAPITest.cc
     ${iPL_TEST}/NetworkFlowTest.cc
     # ${iPL_TEST}/GridManagerTest.cc
-    # ${iPL_TEST}/MPTest.cc
 )
 set(OPENMP ON)
 if(OPENMP)
@@ -54,26 +53,3 @@ target_link_libraries(iPLTest
     tool_manager
     file_manager_placement
 )
-
-add_executable(MacroPlacer
-    ${iPL_TEST}/MP.cc)
-
-target_link_libraries(MacroPlacer
-    PUBLIC
-    ipl-api
-    ipl-source
-    ipl-api_external_libs
-)
-
-add_executable(MPLseTest
-    ${iPL_TEST}/MPLseTest.cc)
-
-
-target_link_libraries(MPLseTest
-    PUBLIC
-    ipl-api
-    ipl-source
-    ipl-api_external_libs
-)
-add_executable(ployclip
-    ${iPL_TEST}/ploygonclip.cc)

@@ -490,6 +490,9 @@ void IDBWrapper::wrapIdbInstance(IdbInstance* idb_inst)
   if(cell_ptr->isIOCell()){
     if(!inst_ptr->isOutsideInstance()){
        LOG_WARNING << "Inst: " << inst_ptr->get_name() << " is io_cell but it is not fixed outside. " << "Shape: " 
+                   << " (" << bbox->get_low_x() << "," << bbox->get_low_y() << ") "
+                   << " (" << bbox->get_high_x() << "," << bbox->get_high_y() << ")"
+                   << " iPL regard as " 
                    << " (" << inst_ptr->get_coordi().get_x() << "," << inst_ptr->get_coordi().get_y() << ") "
                    << " (" << inst_ptr->get_shape().get_ur_x() << "," << inst_ptr->get_shape().get_ur_y() << ")"; 
     }
@@ -755,6 +758,11 @@ void IDBWrapper::writeBackSourceDatabase()
 {
   for (auto* inst : _idbw_database->_design->get_instance_list()) {
     if (inst->isFakeInstance()) {
+      continue;
+    }
+
+    // iPL should not change fixed instances.
+    if(inst->isFixed()){
       continue;
     }
 
@@ -1029,14 +1037,13 @@ void IDBWrapper::initInstancesForFragmentedRow()
   int32_t site_count_x = ipl_layout->get_core_width() / site_width;
   int32_t site_count_y = ipl_layout->get_core_height() / row_height;
 
-  enum PlaceInfo
+  enum SiteRecord
   {
     kEmpty,
     kRowHolding,
     kFixedInst
   };
-  // initialize site_grid as empty.
-  std::vector<PlaceInfo> site_grid(site_count_x * site_count_y, PlaceInfo::kEmpty);
+  std::vector<SiteRecord> site_grid(site_count_x * site_count_y, SiteRecord::kEmpty);
 
   // fill in rows area.
   std::vector<Row*> row_list = ipl_layout->get_row_list();
@@ -1081,11 +1088,9 @@ void IDBWrapper::initInstancesForFragmentedRow()
     }
   }
 
-  // search the "Empty" coordinates on site-grid, and arrange it as dummyInstance.
   int dummy_count = 0;
   for (int j = 0; j < site_count_y; ++j) {
     for (int i = 0; i < site_count_x; ++i) {
-      // if empty spot found.
       if (site_grid.at(j * site_count_x + i) == kEmpty) {
         int start_x = i;
         while (i < site_count_x && site_grid.at(j * site_count_x + i) == kEmpty) {

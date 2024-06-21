@@ -16,7 +16,6 @@
 // ***************************************************************************************
 #include "iTO.h"
 #include "DbInterface.h"
-#include "CTSViolationFixer.h"
 #include "HoldOptimizer.h"
 #include "JsonParser.h"
 #include "SetupOptimizer.h"
@@ -32,7 +31,6 @@ iTO::iTO(const std::string &config_file) {
 }
 
 iTO::~iTO() {
-  CTSViolationFixer::get_cts_violation_fixer(_db_interface)->destroyCTSViolationFixer();
   _db_interface->destroyDbInterface();
 }
 
@@ -63,11 +61,9 @@ void iTO::initialization(idb::IdbBuilder *idb_build, ista::TimingEngine *timing)
 
 void iTO::resetInitialization(idb::IdbBuilder    *idb_build,
                               ista::TimingEngine *timing_engine) {
-  CTSViolationFixer::get_cts_violation_fixer(_db_interface)->destroyCTSViolationFixer();
   DbInterface::destroyDbInterface();
   _db_interface =
       ito::DbInterface::get_db_interface(_to_config, idb_build, timing_engine);
-  CTSViolationFixer::get_cts_violation_fixer(_db_interface);
 }
 
 void iTO::optimizeDesignViolation() {
@@ -135,12 +131,6 @@ void iTO::optimizeSetup() {
   cout << "\033[0m" << endl;
   SetupOptimizer *setup_optimizer = new SetupOptimizer(_db_interface);
   setup_optimizer->optimizeSetup();
-}
-
-std::vector<idb::IdbNet *> iTO::optimizeCTSDesignViolation(IdbNet *idb_net, Tree *topo) {
-  CTSViolationFixer *cts_drv_opt =
-      CTSViolationFixer::get_cts_violation_fixer(_db_interface);
-  return cts_drv_opt->fixTiming(idb_net, topo);
 }
 
 } // namespace ito

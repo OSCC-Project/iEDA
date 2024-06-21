@@ -8,7 +8,7 @@ else()
   )
 endif()
 
-target_link_libraries(lef_service idb tech_db)
+target_link_libraries(lef_service idb)
 
 target_include_directories(lef_service 
     PUBLIC 
@@ -16,5 +16,4 @@ target_include_directories(lef_service
         ${HOME_DATABASE}/data/design
         ${HOME_DATABASE}/data/design/db_design
         ${HOME_DATABASE}/data/design/db_layout
-        ${HOME_DATABASE}/data/tech
 )

@@ -48,12 +48,10 @@ class iTO {
                            ista::TimingEngine *timing_engine = nullptr);
 
   void runTO();
-  // void fixFanout();
   void optimizeDesignViolation();
   void optimizeSetup();
   void optimizeHold();
 
-  std::vector<idb::IdbNet *> optimizeCTSDesignViolation(idb::IdbNet *idb_net, Tree *topo);
 
  private:
   DbInterface *_db_interface = nullptr;

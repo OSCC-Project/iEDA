@@ -111,6 +111,7 @@ class IdbPin : public IdbObject
   // operator
   bool isConnected() { return is_net_pin(); }
   void adjustIOStripe(IdbCoordinate<int32_t>* start, IdbCoordinate<int32_t>* end);
+  bool isIntersected(int x, int y, IdbLayer* layer);
 
  private:
   std::string _pin_name;

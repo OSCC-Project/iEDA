@@ -33,7 +33,7 @@
 #include "api/TimingIDBAdapter.hh"
 #include "include/Version.hh"
 #include "include/cxxopts.hpp"
-#include "liberty/Liberty.hh"
+#include "liberty/Lib.hh"
 #include "log/Log.hh"
 #include "netlist/Netlist.hh"
 #include "sdc-cmd/Cmd.hh"

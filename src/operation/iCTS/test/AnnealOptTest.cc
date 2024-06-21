@@ -72,9 +72,9 @@ class AnnealOptTest : public testing::Test
   {
     char config[] = "AnnealOptTest";
     char* argv[] = {config};
-    Log::init(argv);
+    ieda::Log::init(argv);
   }
-  void TearDown() { Log::end(); }
+  void TearDown() { ieda::Log::end(); }
 };
 
 TEST_F(AnnealOptTest, LatencyCostTest)

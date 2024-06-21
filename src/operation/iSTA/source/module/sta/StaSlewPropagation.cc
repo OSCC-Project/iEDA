@@ -26,7 +26,7 @@
 #include <optional>
 
 #include "ThreadPool/ThreadPool.h"
-#include "delay/ArnoldiDelayCal.hh"
+#include "delay/ReduceDelayCal.hh"
 #include "netlist/Pin.hh"
 #include "netlist/Port.hh"
 
@@ -46,7 +46,7 @@ unsigned StaSlewPropagation::operator()(StaArc* the_arc) {
   auto construct_slew_data =
       [this](AnalysisMode delay_type, TransType trans_type,
              StaVertex* own_vertex, int slew,
-             std::unique_ptr<LibetyCurrentData> output_current_data,
+             std::unique_ptr<LibCurrentData> output_current_data,
              StaData* src_slew_data) -> void {
     StaSlewData* slew_data = nullptr;
     if (isIncremental()) {

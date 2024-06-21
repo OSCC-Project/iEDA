@@ -2,7 +2,7 @@
 #include <string>
 #include <string_view>
 
-#include "Liberty.hh"
+#include "Lib.hh"
 
 extern "C" {
 
@@ -61,7 +61,7 @@ int main() {
   // std::string_view sv((const char*)str_view.data, str_view.len);
   // std::cout << sv << "\n";
 
-  ista::Liberty lib;
+  ista::Lib lib;
   lib.loadLibertyWithRustParser(
       "/home/taosimin/T28/ccslib/"
       "tcbn28hpcplusbwp30p140lvtssg0p81v125c_ccs.lib");

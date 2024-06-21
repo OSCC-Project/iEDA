@@ -283,12 +283,14 @@ void StaClockPropagation::updateSdcGeneratedClock() {
         the_generated_clock->set_source_name(source_clock->get_clock_name());
       }
 
-      the_generated_clock->set_period(source_clock->get_period() *
-                                      divide_by_value);
+      int generate_clock_period = source_clock->get_period() *
+                                      divide_by_value;
+      the_generated_clock->set_period(PS_TO_NS(generate_clock_period));
       auto& wave_form = source_clock->get_wave_form();
       ieda::Vector<double> edges;
       for (auto& wave_edge : wave_form.get_wave_edges()) {
-        edges.push_back(divide_by_value * wave_edge);
+        int edge = divide_by_value * wave_edge;
+        edges.push_back(PS_TO_NS(edge));
       }
 
       if (the_generated_clock->isWaveformInv()) {

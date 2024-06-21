@@ -54,10 +54,9 @@ struct Utility
   bool isFloatPairApproximatelyEqual(float num_1, float num_2);
 };
 
-// https://stackoverflow.com/questions/33333363/built-in-mod-vs-custom-mod-function-improve-the-performance-of-modulus-op
-inline int Utility::fastModulo(const int input, const int ceil)
+inline int Utility::fastModulo(const int data, const int top)
 {
-  return input >= ceil ? input % ceil : input;
+  return data >= top ? data % top : data;
 }
 
 inline std::pair<int, int> Utility::obtainMinMaxIdx(int border_bottom, int interval, int inquiry_bottom, int inquiry_top)

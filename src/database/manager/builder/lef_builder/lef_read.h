@@ -67,7 +67,6 @@ class LefRead
   // getter
   IdbLefService* get_service() { return _lef_service; }
   bool createDb(const char* file);
-  bool createTechDb();
 
  private:
   string _file_name;

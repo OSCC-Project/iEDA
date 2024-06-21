@@ -203,5 +203,147 @@ void IdbOrientTransform::transform_my90(IdbCoordinate<int32_t>* coordinate_trans
 
   coordinate_transform->set_xy(x_new, y_new);
 }
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// transform coordinate in instance to cellmaster coordinate
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+bool IdbOrientTransform::cellMasterCoordinate(IdbCoordinate<int32_t>* coordinate_transform)
+{
+  if (coordinate_transform == nullptr) {
+    std::cout << "Error : coordinate is null..." << std::endl;
+    return false;
+    ;
+  }
+
+  switch (_orient) {
+    case IdbOrient::kNone:
+    case IdbOrient::kMax: {
+      break;
+    }
+    case IdbOrient::kN_R0: {
+      cellMaster_r0(coordinate_transform);
+      break;
+    }
+    case IdbOrient::kS_R180: {
+      cellMaster_r180(coordinate_transform);
+      break;
+    }
+    case IdbOrient::kW_R90: {
+      cellMaster_r90(coordinate_transform);
+      break;
+    }
+    case IdbOrient::kE_R270: {
+      cellMaster_r270(coordinate_transform);
+      break;
+    }
+    case IdbOrient::kFN_MY: {
+      cellMaster_my(coordinate_transform);
+      break;
+    }
+    case IdbOrient::kFS_MX: {
+      cellMaster_mx(coordinate_transform);
+      break;
+    }
+    case IdbOrient::kFW_MX90: {
+      cellMaster_mx90(coordinate_transform);
+      break;
+    }
+    case IdbOrient::kFE_MY90: {
+      cellMaster_my90(coordinate_transform);
+      break;
+    }
+    default:
+      break;
+  }
+
+  return true;
+}
+
+// no rotation
+void IdbOrientTransform::cellMaster_r0(IdbCoordinate<int32_t>* coordinate_transform)
+{
+  int32_t x = coordinate_transform->get_x() - _original->get_x();
+  int32_t y = coordinate_transform->get_y() - _original->get_y();
+
+  coordinate_transform->set_xy(x, y);
+  return;
+}
+/*
+ */
+void IdbOrientTransform::cellMaster_r90(IdbCoordinate<int32_t>* coordinate_transform)
+{
+  int32_t x = coordinate_transform->get_x() - _original->get_x();
+  int32_t y = coordinate_transform->get_y() - _original->get_y();
+
+  int32_t x_new = y;
+  int32_t y_new = _height - x;
+
+  coordinate_transform->set_xy(x_new, y_new);
+}
+
+void IdbOrientTransform::cellMaster_r180(IdbCoordinate<int32_t>* coordinate_transform)
+{
+  int32_t x = coordinate_transform->get_x() - _original->get_x();
+  int32_t y = coordinate_transform->get_y() - _original->get_y();
+
+  int32_t x_new = _width - x;
+  int32_t y_new = _height - y;
+
+  coordinate_transform->set_xy(x_new, y_new);
+}
+
+void IdbOrientTransform::cellMaster_r270(IdbCoordinate<int32_t>* coordinate_transform)
+{
+  int32_t x = coordinate_transform->get_x() - _original->get_x();
+  int32_t y = coordinate_transform->get_y() - _original->get_y();
+
+  int32_t x_new = _width - y;
+  int32_t y_new = x;
+
+  coordinate_transform->set_xy(x_new, y_new);
+}
+
+void IdbOrientTransform::cellMaster_my(IdbCoordinate<int32_t>* coordinate_transform)
+{
+  int32_t x = coordinate_transform->get_x() - _original->get_x();
+  int32_t y = coordinate_transform->get_y() - _original->get_y();
+
+  int32_t x_new = _width - x;
+  int32_t y_new = y;
+
+  coordinate_transform->set_xy(x_new, y_new);
+}
+
+void IdbOrientTransform::cellMaster_mx(IdbCoordinate<int32_t>* coordinate_transform)
+{
+  int32_t x = coordinate_transform->get_x() - _original->get_x();
+  int32_t y = coordinate_transform->get_y() - _original->get_y();
+
+  int32_t x_new = x;
+  int32_t y_new = _height - y;
+
+  coordinate_transform->set_xy(x_new, y_new);
+}
+
+void IdbOrientTransform::cellMaster_mx90(IdbCoordinate<int32_t>* coordinate_transform)
+{
+  int32_t x = coordinate_transform->get_x() - _original->get_x();
+  int32_t y = coordinate_transform->get_y() - _original->get_y();
+
+  int32_t x_new = y;
+  int32_t y_new = x;
+
+  coordinate_transform->set_xy(x_new, y_new);
+}
+
+void IdbOrientTransform::cellMaster_my90(IdbCoordinate<int32_t>* coordinate_transform)
+{
+  int32_t x = coordinate_transform->get_x() - _original->get_x();
+  int32_t y = coordinate_transform->get_y() - _original->get_y();
+
+  int32_t x_new = _width - y;
+  int32_t y_new = _height - x;
+
+  coordinate_transform->set_xy(x_new, y_new);
+}
 
 }  // namespace idb

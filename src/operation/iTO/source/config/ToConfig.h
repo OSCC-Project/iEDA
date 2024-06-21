@@ -43,8 +43,8 @@ class ToConfig {
   void set_report_file(const string report) { _report_path = report; }
   void set_gds_file(const string gds) { _gds_path = gds; }
 
-  void set_setup_slack_margin(float slack_m) { this->_setup_slack_margin = slack_m; }
-  void set_hold_slack_margin(float slack_m) { this->_hold_slack_margin = slack_m; }
+  void set_setup_target_slack(float slack_m) { this->_setup_target_slack = slack_m; }
+  void set_hold_target_slack(float slack_m) { this->_hold_target_slack = slack_m; }
   void set_max_buffer_percent(float percent) { _max_buffer_percent = percent; }
   void set_max_utilization(float util) { _max_utilization = util; }
 
@@ -60,7 +60,7 @@ class ToConfig {
   void set_hold_insert_buffers(const vector<string> bufs) { _hold_insert_buffers = bufs; }
 
   void set_number_passes_allowed_decreasing_slack(int num) {
-    _number_passes_allowed_decreasing_slack = num;
+    _number_iter_allowed_decreasing_slack = num;
   }
   void set_rebuffer_max_fanout(int num) { _rebuffer_max_fanout = num; }
   void set_split_load_min_fanout(int num) { _split_load_min_fanout = num; }
@@ -75,8 +75,8 @@ class ToConfig {
   const string         &get_report_file() const { return _report_path; }
   const string         &get_gds_file() const { return _gds_path; }
 
-  float get_setup_slack_margin() const { return _setup_slack_margin; }
-  float get_hold_slack_margin() const { return _hold_slack_margin; }
+  float get_setup_target_slack() const { return _setup_target_slack; }
+  float get_hold_target_slack() const { return _hold_target_slack; }
   float get_max_buffer_percent() const { return _max_buffer_percent; }
   float get_max_utilization() const { return _max_utilization; }
 
@@ -90,7 +90,7 @@ class ToConfig {
   const vector<string> &get_hold_insert_buffers() const { return _hold_insert_buffers; }
 
   int get_number_passes_allowed_decreasing_slack() {
-    return _number_passes_allowed_decreasing_slack;
+    return _number_iter_allowed_decreasing_slack;
   }
   int get_rebuffer_max_fanout() { return _rebuffer_max_fanout; }
   int get_split_load_min_fanout() { return _split_load_min_fanout; }
@@ -102,8 +102,8 @@ class ToConfig {
   string         _design_work_space;
   string         _sdc_file_path;
   vector<string> _lib_files_path;
-  float          _setup_slack_margin = 0.0;
-  float          _hold_slack_margin = 0.0;
+  float          _setup_target_slack = 0.0;
+  float          _hold_target_slack = 0.0;
   float          _max_buffer_percent = 0.2;
   float          _max_utilization = 0.8;
 
@@ -117,9 +117,9 @@ class ToConfig {
   vector<string> _hold_insert_buffers;  // buffer for optimize Hold Violation
 
   // the maximum number of times slack is allowed to get worse when fix setup
-  int _number_passes_allowed_decreasing_slack = 50;
+  int _number_iter_allowed_decreasing_slack = 50;
   int _rebuffer_max_fanout = 20;
-  int _split_load_min_fanout = 8; // Don't split loads on low fanout nets.
+  int _split_load_min_fanout = 8; // Nets with low fanout don't need to split loads.
 
   // output
   string _out_def_path;

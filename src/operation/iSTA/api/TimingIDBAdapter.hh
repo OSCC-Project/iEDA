@@ -128,31 +128,31 @@ class TimingIDBAdapter : public TimingDBAdapter {
     return _sta2dbPin.contains(pin) ? _sta2dbPin[pin] : nullptr;
   }
 
-  LibertyCell* dbToSta(IdbCellMaster* master);
-  IdbCellMaster* staToDb(const LibertyCell* cell) const;
+  LibCell* dbToSta(IdbCellMaster* master);
+  IdbCellMaster* staToDb(const LibCell* cell) const;
 
-  LibertyPort* dbToSta(IdbTerm* idb_term);
-  IdbTerm* staToDb(LibertyPort* port) const;
+  LibPort* dbToSta(IdbTerm* idb_term);
+  IdbTerm* staToDb(LibPort* port) const;
 
   ////////////////////////Edit functions////////////////////////////////
 
-  virtual Instance* makeInstance(LibertyCell* cell, const char* name);
-  void removeInstance(const char* instance_name);
-  virtual void replaceCell(Instance* inst, LibertyCell* cell);
+  virtual Instance* createInstance(LibCell* cell, const char* name);
+  void deleteInstance(const char* instance_name);
+  virtual void substituteCell(Instance* inst, LibCell* cell);
 
-  Pin* connect(Instance* inst, const char* port_name, Net* net);
-  Port* connect(Port* port, const char* port_name, Net* net);
-  void disconnectPin(Pin* pin);
-  void disconnectPinPort(DesignObject* pin_or_port);
-  void reconnectPin(Net* net, Pin* old_connect_pin,
-                    std::vector<Pin*> new_connect_pins);
+  Pin* attach(Instance* inst, const char* port_name, Net* net);
+  Port* attach(Port* port, const char* port_name, Net* net);
+  void disattachPin(Pin* pin);
+  void disattachPinPort(DesignObject* pin_or_port);
+  void reattachPin(Net* net, Pin* old_connect_pin,
+                   std::vector<Pin*> new_connect_pins);
 
-  Net* makeNet(const char* name, Instance* parent);
-  Net* makeNet(const char* name, Instance* parent,
-               idb::IdbConnectType connect_type);
-  Net* makeNet(const char* name, std::vector<std::string>& sink_pin_list,
-               idb::IdbConnectType connect_type);
-  void removeNet(Net* sta_net);
+  Net* createNet(const char* name, Instance* parent);
+  Net* createNet(const char* name, Instance* parent,
+                 idb::IdbConnectType connect_type);
+  Net* createNet(const char* name, std::vector<std::string>& sink_pin_list,
+                 idb::IdbConnectType connect_type);
+  void deleteNet(Net* sta_net);
 
   void crossRef(Instance* sta_inst, IdbInstance* db_inst) {
     _sta2dbInst[sta_inst] = db_inst;

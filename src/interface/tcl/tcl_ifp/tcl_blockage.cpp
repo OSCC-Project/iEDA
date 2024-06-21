@@ -43,7 +43,7 @@ unsigned TclFpAddPlacementBlockage::exec()
   TclOption* box = getOptionOrArg("-box");
 
   auto box_shape = box->getStringVal();
-  Str str = Str();
+  ieda::Str str = ieda::Str();
   std::vector<int32_t> blk = str.splitInt(box_shape, " ");
 
   int32_t llx = blk[0];
@@ -84,7 +84,7 @@ unsigned TclFpAddPlacementHalo::exec()
 
   auto inst_name_val = inst_name->getStringVal();
 
-  Str str = Str();
+  ieda::Str str = ieda::Str();
   std::vector<int32_t> distance_val = str.splitInt(distance->getStringVal(), " ");
 
   int32_t left = distance_val[0];
@@ -133,7 +133,7 @@ unsigned TclFpAddRoutingBlockage::exec()
   TclOption* box = getOptionOrArg("-box");
   TclOption* pg = getOptionOrArg("-exceptpgnet");
 
-  Str str = Str();
+  ieda::Str str = ieda::Str();
 
   std::vector<std::string> layer_result = str.split(layer->getStringVal(), " ");
   std::vector<int32_t> box_result = str.splitInt(box->getStringVal(), " ");
@@ -189,7 +189,7 @@ unsigned TclFpAddRoutingHalo::exec()
   TclOption* pg = getOptionOrArg("-exceptpgnet");
   TclOption* inst_name = getOptionOrArg("-inst_name");
 
-  Str str = Str();
+  ieda::Str str = ieda::Str();
 
   std::string inst_name_val = inst_name->getStringVal();
 

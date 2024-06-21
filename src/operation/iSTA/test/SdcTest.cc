@@ -15,7 +15,7 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 #include "gtest/gtest.h"
-#include "liberty/Liberty.hh"
+#include "liberty/Lib.hh"
 #include "log/Log.hh"
 #include "sdc-cmd/Cmd.hh"
 #include "sta/Sta.hh"
@@ -34,7 +34,7 @@ class SdcTest : public testing::Test {
     Log::init(argv);
 
     Sta* ista = Sta::getOrCreateSta();
-    Liberty lib;
+    Lib lib;
 
     auto load_lib = lib.loadLibertyWithRustParser(
         "/home/taosimin/iEDA/src/iSTA/examples/example1_fast.lib");
@@ -42,8 +42,9 @@ class SdcTest : public testing::Test {
     EXPECT_TRUE(load_lib);
     ista->addLib(std::move(load_lib));
 
-    ista->readVerilog("/home/taosimin/iEDA/src/iSTA/examples/example1.v");
-    ista->linkDesign("top");
+    ista->readVerilogWithRustParser(
+        "/home/taosimin/iEDA/src/iSTA/examples/example1.v");
+    ista->linkDesignWithRustParser("top");
   }
   void TearDown() {
     Sta::destroySta();

@@ -124,7 +124,7 @@ class DataManager
   bool isSkipping(idb::IdbNet* idb_net);
   void wrapPinList(Net& net, idb::IdbNet* idb_net);
   void wrapPinShapeList(Pin& pin, idb::IdbPin* idb_pin);
-  void wrapDrivingPin(Net& net, idb::IdbNet* idb_net);
+  void wrapDrivenPin(Net& net, idb::IdbNet* idb_net);
   Direction getRTDirectionByDB(idb::IdbLayerDirection idb_direction);
   ConnectType getRTConnectTypeByDB(idb::IdbConnectType idb_connect_type);
   void buildConfig();

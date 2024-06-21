@@ -47,7 +47,6 @@ unsigned CmdLinkDesign::exec() {
   Sta* ista = Sta::getOrCreateSta();
   ista->set_top_module_name(cell_name);
 
-  // ista->linkDesign(cell_name);
   ista->linkDesignWithRustParser(cell_name);
 
   return 1;

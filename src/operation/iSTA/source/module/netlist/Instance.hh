@@ -31,7 +31,7 @@
 #include "DesignObject.hh"
 #include "Pin.hh"
 #include "Vector.hh"
-#include "liberty/Liberty.hh"
+#include "liberty/Lib.hh"
 #include "string/Str.hh"
 
 namespace ista {
@@ -45,7 +45,7 @@ class PinBusIterator;
  */
 class Instance : public DesignObject {
  public:
-  Instance(const char* name, LibertyCell* cell_name);
+  Instance(const char* name, LibCell* cell_name);
   Instance(Instance&& other);
   Instance& operator=(Instance&& rhs);
   ~Instance() override = default;
@@ -57,13 +57,13 @@ class Instance : public DesignObject {
 
   unsigned isInstance() override { return 1; }
 
-  Pin* addPin(const char* name, LibertyPort* cell_port);
+  Pin* addPin(const char* name, LibPort* cell_port);
   Pin* getLastPin() { return _pins.back().get(); }
   std::optional<Pin*> getPin(const char* pin_name);
-  LibertyCell* get_inst_cell() { return _inst_cell; }
-  void set_inst_cell(LibertyCell* inst_cell) { _inst_cell = inst_cell; }
+  LibCell* get_inst_cell() { return _inst_cell; }
+  void set_inst_cell(LibCell* inst_cell) { _inst_cell = inst_cell; }
 
-  Pin* findPin(LibertyPort* port);
+  Pin* findPin(LibPort* port);
   std::string getFullName() override { return get_name(); }
 
   void addPinBus(std::unique_ptr<PinBus> pin_bus) {
@@ -83,7 +83,7 @@ class Instance : public DesignObject {
   auto get_coordinate() { return _coordinate; }
 
  private:
-  LibertyCell* _inst_cell;
+  LibCell* _inst_cell;
   Vector<std::unique_ptr<Pin>> _pins;
   StrMap<Pin*> _str2pin;
   Vector<std::unique_ptr<PinBus>> _pin_buses;

@@ -70,12 +70,12 @@ bool InitDesign::initCore(double core_lx, double core_ly, double core_ux, double
   int core_uy_int = (transUnitDB(core_uy) / site_dy) * site_dy;
 
   /// make enough space for io cell
-  int32_t io_height = io_site != nullptr ? io_site->get_height() : 0;
-  if ((core_lx_int - idb_die->get_llx() < io_height) || (core_ly_int - idb_die->get_lly()) < io_height
-      || (idb_die->get_urx() - core_ux_int) < io_height || (idb_die->get_ury() - core_uy_int) < io_height) {
-    /// error report, tbd
-    return false;
-  }
+  //   int32_t io_height = io_site != nullptr ? io_site->get_height() : 0;
+  //   if ((core_lx_int - idb_die->get_llx() < io_height) || (core_ly_int - idb_die->get_lly()) < io_height
+  //       || (idb_die->get_urx() - core_ux_int) < io_height || (idb_die->get_ury() - core_uy_int) < io_height) {
+  //     /// error report, tbd
+  //     return false;
+  //   }
 
   /// reset rows
   idb_layout->get_rows()->reset();
