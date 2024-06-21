@@ -1518,11 +1518,6 @@ double LibertyCell::convertTablePowerToMw(double query_table_power)
   return power_mw;
 }
 
-LibertyCellPowerArcSetIterator::LibertyCellPowerArcSetIterator(LibertyCell* lib_cell)
-    : _lib_cell(lib_cell), _iter(_lib_cell->_cell_power_arcs.begin())
-{
-}
-
 LibertyWireLoad::LibertyWireLoad(const char* wire_load_name) : _wire_load_name(wire_load_name)
 {
 }
@@ -1545,10 +1540,6 @@ const std::map<std::string_view, LibertyLutTableTemplate::Variable> LibertyLutTa
        {"normalized_voltage", LibertyLutTableTemplate::Variable::NORMALIZED_VOLTAGE}};
 
 LibertyCurrentTemplate::LibertyCurrentTemplate(const char* template_name) : LibertyLutTableTemplate(template_name)
-{
-}
-
-LibertyStmt::LibertyStmt(const char* file_name, unsigned line_no) : _file_name(file_name), _line_no(line_no)
 {
 }
 
