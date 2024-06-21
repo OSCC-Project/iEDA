@@ -328,7 +328,7 @@ PortDir TimingIDBAdapter::dbToSta(IdbConnectType sig_type,
   }
 }
 
-LibertyCell* TimingIDBAdapter::dbToSta(IdbCellMaster* master) {
+LibCell* TimingIDBAdapter::dbToSta(IdbCellMaster* master) {
   std::string liberty_cell_name = master->get_name();
   return _ista->findLibertyCell(liberty_cell_name.c_str());
 }
@@ -339,20 +339,20 @@ LibertyCell* TimingIDBAdapter::dbToSta(IdbCellMaster* master) {
  * @param cell
  * @return dbMaster*
  */
-IdbCellMaster* TimingIDBAdapter::staToDb(const LibertyCell* cell) const {
+IdbCellMaster* TimingIDBAdapter::staToDb(const LibCell* cell) const {
   IdbLayout* idb_layout = _idb_lef_service->get_layout();
   IdbCellMasterList* idb_master_list = idb_layout->get_cell_master_list();
   return idb_master_list->find_cell_master(cell->get_cell_name());
 }
 
-LibertyPort* TimingIDBAdapter::dbToSta(IdbTerm* idb_term) {
+LibPort* TimingIDBAdapter::dbToSta(IdbTerm* idb_term) {
   IdbCellMaster* idb_master = idb_term->get_cell_master();
   auto* liberty_cell = dbToSta(idb_master);
   return liberty_cell->get_cell_port_or_port_bus(idb_term->get_name().c_str());
 }
 
-IdbTerm* TimingIDBAdapter::staToDb(LibertyPort* port) const {
-  const LibertyCell* cell = port->get_ower_cell();
+IdbTerm* TimingIDBAdapter::staToDb(LibPort* port) const {
+  const LibCell* cell = port->get_ower_cell();
   IdbCellMaster* master = staToDb(cell);
   vector<IdbTerm*> terms = master->get_term_list();
   for (IdbTerm* term : terms) {
@@ -367,8 +367,7 @@ IdbTerm* TimingIDBAdapter::staToDb(LibertyPort* port) const {
  * @brief Create instance in db and timing netlist.
  *
  */
-Instance* TimingIDBAdapter::createInstance(LibertyCell* cell,
-                                           const char* name) {
+Instance* TimingIDBAdapter::createInstance(LibCell* cell, const char* name) {
   const char* cell_name = cell->get_cell_name();
   IdbLayout* idb_layout = _idb_lef_service->get_layout();
   IdbCellMasterList* master_list = idb_layout->get_cell_master_list();
@@ -381,7 +380,7 @@ Instance* TimingIDBAdapter::createInstance(LibertyCell* cell,
     idb_design->get_instance_list()->add_instance(idb_inst);
 
     Instance sta_inst(name, cell);
-    LibertyPort* library_port;
+    LibPort* library_port;
     FOREACH_CELL_PORT(cell, library_port) {
       const char* pin_name = library_port->get_port_name();
       // May be need add pin bus, fixme.
@@ -428,7 +427,7 @@ void TimingIDBAdapter::deleteInstance(const char* instance_name) {
  * @param inst
  * @param cell
  */
-void TimingIDBAdapter::substituteCell(Instance* inst, LibertyCell* cell) {
+void TimingIDBAdapter::substituteCell(Instance* inst, LibCell* cell) {
   IdbCellMaster* idb_master = staToDb(cell);
   IdbInstance* idb_inst = staToDb(inst);
   idb_inst->set_cell_master(idb_master);  // TODO: dinst->swapMaster(master)
@@ -760,21 +759,21 @@ unsigned TimingIDBAdapter::convertDBToTimingNetlist() {
         std::unique_ptr<PinBus> pin_bus;
         PinBus* found_pin_bus = nullptr;
         if (library_port_or_port_bus) {
-          LibertyPort* library_port = nullptr;
+          LibPort* library_port = nullptr;
 
           if (!library_port_or_port_bus->isLibertyPortBus()) {
             library_port = library_port_or_port_bus;
           } else {
             // port bus
             auto* library_port_bus =
-                dynamic_cast<LibertyPortBus*>(library_port_or_port_bus);
+                dynamic_cast<LibPortBus*>(library_port_or_port_bus);
             library_port = (*library_port_bus)[index.value()];
 
             found_pin_bus = sta_inst.findPinBus(port_base_name);
 
             if (!found_pin_bus) {
               auto bus_size =
-                  dynamic_cast<LibertyPortBus*>(library_port_bus)->getBusSize();
+                  dynamic_cast<LibPortBus*>(library_port_bus)->getBusSize();
               LOG_FATAL_IF(!bus_size)
                   << library_port_bus->get_port_name() << " bus size is empty.";
               pin_bus = std::make_unique<PinBus>(port_base_name.c_str(),

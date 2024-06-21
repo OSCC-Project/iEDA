@@ -112,7 +112,7 @@ unsigned CmdSetDrivingCell::exec() {
   auto* input_transition_rise_option = getOptionOrArg("-input_transition_rise");
   auto* input_transition_fall_option = getOptionOrArg("-input_transition_fall");
   // as the lib cell is buffer, only one cell arc set. if problem, fix me.
-  LibertyArc* cell_arc = nullptr;
+  LibArc* cell_arc = nullptr;
   for (auto& cell_arc_set : lib_cell->get_cell_arcs()) {
     for (auto& arc : cell_arc_set.get()->get_arcs()) {
       if (strcmp(arc.get()->get_snk_port(), outpin_name) == 0) {
@@ -120,7 +120,7 @@ unsigned CmdSetDrivingCell::exec() {
       }
     }
   }
-  LibertyArc::TimingSense timing_sense = cell_arc->get_timing_sense();
+  LibArc::TimingSense timing_sense = cell_arc->get_timing_sense();
 
   SdcConstrain* the_constrain = ista->getConstrain();
 
@@ -160,24 +160,24 @@ unsigned CmdSetDrivingCell::exec() {
   bool is_rise_need_assign = true;
   bool is_fall_need_assign = true;
   while (!the_existed_constrains.empty()) {
-      auto* the_existed_constrain = the_existed_constrains.top();
-      if (timing_sense == LibertyArc::TimingSense::kNegativeUnate) {
-        the_existed_constrain->set_clock_fall();
-      }
+    auto* the_existed_constrain = the_existed_constrains.top();
+    if (timing_sense == LibArc::TimingSense::kNegativeUnate) {
+      the_existed_constrain->set_clock_fall();
+    }
 
-      if (the_existed_constrain->isRise() && is_rise_need_assign) {
-        the_existed_constrain->set_delay_value(delay_value_rise);
-        the_existed_constrain->set_fall(false);
-        is_rise_need_assign = false;
-      }
+    if (the_existed_constrain->isRise() && is_rise_need_assign) {
+      the_existed_constrain->set_delay_value(delay_value_rise);
+      the_existed_constrain->set_fall(false);
+      is_rise_need_assign = false;
+    }
 
-      if (the_existed_constrain->isFall() && is_fall_need_assign) {
-        the_existed_constrain->set_delay_value(delay_value_fall);
-        the_existed_constrain->set_rise(false);
-        is_fall_need_assign = false;
-      }
+    if (the_existed_constrain->isFall() && is_fall_need_assign) {
+      the_existed_constrain->set_delay_value(delay_value_fall);
+      the_existed_constrain->set_rise(false);
+      is_fall_need_assign = false;
+    }
 
-      the_existed_constrains.pop();
+    the_existed_constrains.pop();
   }
 
   return 1;

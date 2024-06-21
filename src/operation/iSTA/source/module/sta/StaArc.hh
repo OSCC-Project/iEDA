@@ -24,7 +24,7 @@
 #pragma once
 
 #include "StaData.hh"
-#include "liberty/Liberty.hh"
+#include "liberty/Lib.hh"
 #include "netlist/Instance.hh"
 #include "netlist/Net.hh"
 
@@ -188,14 +188,13 @@ class StaNetArc : public StaArc {
  */
 class StaInstArc : public StaArc {
  public:
-  StaInstArc(StaVertex* src, StaVertex* snk, LibertyArc* lib_arc,
-             Instance* inst);
+  StaInstArc(StaVertex* src, StaVertex* snk, LibArc* lib_arc, Instance* inst);
   ~StaInstArc() override = default;
 
   unsigned isInstArc() const override { return 1; }
 
-  LibertyArc* get_lib_arc() { return _lib_arc; }
-  void set_lib_arc(LibertyArc* lib_arc) { _lib_arc = lib_arc; }
+  LibArc* get_lib_arc() { return _lib_arc; }
+  void set_lib_arc(LibArc* lib_arc) { _lib_arc = lib_arc; }
 
   unsigned isDelayArc() const override { return _lib_arc->isDelayArc(); }
   unsigned isCheckArc() const override { return _lib_arc->isCheckArc(); }
@@ -228,13 +227,13 @@ class StaInstArc : public StaArc {
     return _lib_arc->isFallingTriggerArc();
   }
 
-  LibertyArc::TimingType getTimingType() { return _lib_arc->get_timing_type(); }
+  LibArc::TimingType getTimingType() { return _lib_arc->get_timing_type(); }
 
   auto* get_inst() { return _inst; }
 
  private:
-  LibertyArc* _lib_arc;  //!< The mapped to lib arc.
-  Instance* _inst;       //!< The owned inst.
+  LibArc* _lib_arc;  //!< The mapped to lib arc.
+  Instance* _inst;   //!< The owned inst.
 
   FORBIDDEN_COPY(StaInstArc);
 };

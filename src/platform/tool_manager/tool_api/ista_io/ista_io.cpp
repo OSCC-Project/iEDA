@@ -432,9 +432,9 @@ bool StaIO::insertBuffer(std::pair<std::string, std::string>& source_sink_net, s
   }
 
   // step 2: make instance
-  LibertyCell* insert_buf_cell = timing_engine->findLibertyCell(master_inst_buffer.first.c_str());
+  LibCell* insert_buf_cell = timing_engine->findLibertyCell(master_inst_buffer.first.c_str());
   Instance* buffer = idb_adapter->createInstance(insert_buf_cell, master_inst_buffer.second.c_str());
-  LibertyPort *input, *output;
+  LibPort *input, *output;
   insert_buf_cell->bufferPorts(input, output);
 
   // step 3: make net

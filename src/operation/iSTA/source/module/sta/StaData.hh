@@ -49,7 +49,7 @@ class StaSlewData;
 class StaClockData;
 class StaPathDelayData;
 class StaDataBucketIterator;
-class LibetyCurrentData;
+class LibCurrentData;
 
 /**
  * @brief The base class of sta data.
@@ -174,20 +174,20 @@ class StaSlewData : public StaData {
   unsigned compareSignature(const StaData* data) const override;
 
   void set_output_current_data(
-      std::unique_ptr<LibetyCurrentData> output_current_data) {
+      std::unique_ptr<LibCurrentData> output_current_data) {
     if (output_current_data) {
       _output_current_data = std::move(output_current_data);
     }
   }
-  std::optional<LibetyCurrentData*> get_output_current_data() {
+  std::optional<LibCurrentData*> get_output_current_data() {
     return _output_current_data
-               ? std::optional<LibetyCurrentData*>(_output_current_data->get())
+               ? std::optional<LibCurrentData*>(_output_current_data->get())
                : std::nullopt;
   }
 
  private:
   int _slew;  //!< The slew value, unit is fs.
-  std::optional<std::unique_ptr<LibetyCurrentData>> _output_current_data =
+  std::optional<std::unique_ptr<LibCurrentData>> _output_current_data =
       std::nullopt;  //!< The output current data of driving point.
 };
 

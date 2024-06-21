@@ -302,7 +302,7 @@ PwrToggleSPValue PwrCalcToggleSP::calcToggleSP(
  * @param output_vertexes
  */
 unsigned PwrCalcToggleSP::calcToggleSP(
-    LibertyCell* lib_cell, ieda::Vector<PwrVertex*>& input_vertexes,
+    LibCell* lib_cell, ieda::Vector<PwrVertex*>& input_vertexes,
     ieda::Vector<PwrVertex*>& output_vertexes) {
   auto convert_toggle_from_clock_to_ns = [this](auto* pwr_vertex,
                                                 double toggle_rate) -> double {
