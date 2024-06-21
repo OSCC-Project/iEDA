@@ -58,11 +58,11 @@ void DbInterface::set_eval_data() {
   auto clk_list = _timing_engine->getClockList();
   for (auto clk : clk_list) {
     auto clk_name = clk->get_clock_name();
-    auto  setup_wns = _timing_engine->reportWNS(clk_name, ista::AnalysisMode::kMax);
-    auto  setup_tns = _timing_engine->reportTNS(clk_name, ista::AnalysisMode::kMax);
-    auto  hold_wns = _timing_engine->reportWNS(clk_name, ista::AnalysisMode::kMin);
-    auto  hold_tns = _timing_engine->reportTNS(clk_name, ista::AnalysisMode::kMin);
-    auto  freq = 1000.0 / (clk->getPeriodNs() - setup_wns);
+    auto setup_wns = _timing_engine->getWNS(clk_name, ista::AnalysisMode::kMax);
+    auto setup_tns = _timing_engine->getTNS(clk_name, ista::AnalysisMode::kMax);
+    auto hold_wns = _timing_engine->getWNS(clk_name, ista::AnalysisMode::kMin);
+    auto hold_tns = _timing_engine->getTNS(clk_name, ista::AnalysisMode::kMin);
+    auto freq = 1000.0 / (clk->getPeriodNs() - setup_wns);
     _eval_data.push_back({clk_name, setup_wns, setup_tns, hold_wns, hold_tns, freq});
   }
 }

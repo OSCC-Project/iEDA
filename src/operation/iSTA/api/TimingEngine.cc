@@ -961,10 +961,10 @@ void TimingEngine::setNetDelay(double wl, double ucap, const char* net_name,
  * @param trans_type
  * @return double instance delay.
  */
-double TimingEngine::reportInstDelay(const char* inst_name,
-                                     const char* src_port_name,
-                                     const char* snk_port_name,
-                                     AnalysisMode mode, TransType trans_type) {
+double TimingEngine::getInstDelay(const char* inst_name,
+                                  const char* src_port_name,
+                                  const char* snk_port_name, AnalysisMode mode,
+                                  TransType trans_type) {
   auto* ista = _ista;
   auto* design_netlist = ista->get_netlist();
   auto* instance = design_netlist->findInstance(inst_name);
@@ -1003,9 +1003,9 @@ double TimingEngine::reportInstDelay(const char* inst_name,
  * @param trans_type
  * @return double (the worst arc delay for the specified instance.)
  */
-double TimingEngine::reportInstWorstArcDelay(const char* inst_name,
-                                             AnalysisMode mode,
-                                             TransType trans_type) {
+double TimingEngine::getInstWorstArcDelay(const char* inst_name,
+                                          AnalysisMode mode,
+                                          TransType trans_type) {
   auto* ista = _ista;
   auto* design_netlist = ista->get_netlist();
   auto* instance = design_netlist->findInstance(inst_name);
@@ -1038,9 +1038,9 @@ double TimingEngine::reportInstWorstArcDelay(const char* inst_name,
  * @param trans_type
  * @return double
  */
-double TimingEngine::reportNetDelay(const char* net_name,
-                                    const char* load_pin_name,
-                                    AnalysisMode mode, TransType trans_type) {
+double TimingEngine::getNetDelay(const char* net_name,
+                                 const char* load_pin_name, AnalysisMode mode,
+                                 TransType trans_type) {
   auto* ista = _ista;
   auto* design_netlist = ista->get_netlist();
   auto* net = design_netlist->findNet(net_name);
@@ -1070,8 +1070,8 @@ double TimingEngine::reportNetDelay(const char* net_name,
  * @param trans_type
  * @return double slew.
  */
-double TimingEngine::reportSlew(const char* pin_name, AnalysisMode mode,
-                                TransType trans_type) {
+double TimingEngine::getSlew(const char* pin_name, AnalysisMode mode,
+                             TransType trans_type) {
   auto* ista = _ista;
   auto* design_netlist = ista->get_netlist();
   std::vector<DesignObject*> match_pins =
@@ -1095,9 +1095,9 @@ double TimingEngine::reportSlew(const char* pin_name, AnalysisMode mode,
  * @param trans_type
  * @return double arrive_time.
  */
-std::optional<double> TimingEngine::reportAT(const char* pin_name,
-                                             AnalysisMode mode,
-                                             TransType trans_type) {
+std::optional<double> TimingEngine::getAT(const char* pin_name,
+                                          AnalysisMode mode,
+                                          TransType trans_type) {
   auto* ista = _ista;
   auto* design_netlist = ista->get_netlist();
 
@@ -1130,7 +1130,7 @@ std::optional<double> TimingEngine::reportAT(const char* pin_name,
  * @param trans_type
  * @return double clock_arrive_time.
  */
-std::optional<double> TimingEngine::reportClockAT(
+std::optional<double> TimingEngine::getClockAT(
     const char* pin_name, AnalysisMode mode, TransType trans_type,
     std::optional<std::string> clock_name) {
   auto* ista = _ista;
@@ -1166,9 +1166,9 @@ std::optional<double> TimingEngine::reportClockAT(
  * @param trans_type
  * @return double
  */
-std::optional<double> TimingEngine::reportRT(const char* pin_name,
-                                             AnalysisMode mode,
-                                             TransType trans_type) {
+std::optional<double> TimingEngine::getRT(const char* pin_name,
+                                          AnalysisMode mode,
+                                          TransType trans_type) {
   auto* ista = _ista;
   auto* design_netlist = ista->get_netlist();
 
@@ -1296,9 +1296,9 @@ std::optional<double> TimingEngine::getWorstSlackBetweenTwoSinks(
  * @param trans_type
  * @return double
  */
-std::optional<double> TimingEngine::reportSlack(const char* pin_name,
-                                                AnalysisMode mode,
-                                                TransType trans_type) {
+std::optional<double> TimingEngine::getSlack(const char* pin_name,
+                                             AnalysisMode mode,
+                                             TransType trans_type) {
   auto* ista = _ista;
   auto* design_netlist = ista->get_netlist();
 
@@ -1332,9 +1332,9 @@ std::optional<double> TimingEngine::reportSlack(const char* pin_name,
  * @return worst_vertex
  * @return worst_slack
  */
-void TimingEngine::reportWorstSlack(AnalysisMode mode, TransType trans_type,
-                                    StaVertex*& worst_vertex,
-                                    std::optional<double>& worst_slack) {
+void TimingEngine::getWorstSlack(AnalysisMode mode, TransType trans_type,
+                                 StaVertex*& worst_vertex,
+                                 std::optional<double>& worst_slack) {
   auto* ista = _ista;
   StaGraph* the_graph = &(ista->get_graph());
   StaVertex* vertex;
@@ -1358,9 +1358,9 @@ void TimingEngine::reportWorstSlack(AnalysisMode mode, TransType trans_type,
  * @param trans_type
  * @return double network latency.
  */
-double TimingEngine::reportClockNetworkLatency(const char* clock_pin_name,
-                                               AnalysisMode mode,
-                                               TransType trans_type) {
+double TimingEngine::getClockNetworkLatency(const char* clock_pin_name,
+                                            AnalysisMode mode,
+                                            TransType trans_type) {
   auto* ista = _ista;
   auto* design_netlist = ista->get_netlist();
   std::vector<DesignObject*> match_clock_pins =
@@ -1385,13 +1385,13 @@ double TimingEngine::reportClockNetworkLatency(const char* clock_pin_name,
  * @param trans_type
  * @return double skew.
  */
-double TimingEngine::reportClockSkew(const char* src_clock_pin_name,
-                                     const char* snk_clock_pin_name,
-                                     AnalysisMode mode, TransType trans_type) {
+double TimingEngine::getClockSkew(const char* src_clock_pin_name,
+                                  const char* snk_clock_pin_name,
+                                  AnalysisMode mode, TransType trans_type) {
   double src_network_latency =
-      reportClockNetworkLatency(src_clock_pin_name, mode, trans_type);
+      getClockNetworkLatency(src_clock_pin_name, mode, trans_type);
   double snk_network_latency =
-      reportClockNetworkLatency(snk_clock_pin_name, mode, trans_type);
+      getClockNetworkLatency(snk_clock_pin_name, mode, trans_type);
   double skew = snk_network_latency - src_network_latency;
   return skew;
 }
@@ -1402,7 +1402,7 @@ double TimingEngine::reportClockSkew(const char* src_clock_pin_name,
  * @param pin_name
  * @return double
  */
-double TimingEngine::reportInstPinCapacitance(const char* pin_name) {
+double TimingEngine::getInstPinCapacitance(const char* pin_name) {
   auto* ista = _ista;
   auto* design_netlist = ista->get_netlist();
   std::vector<DesignObject*> match_pins =
@@ -1422,9 +1422,9 @@ double TimingEngine::reportInstPinCapacitance(const char* pin_name) {
  * @param trans_type
  * @return double
  */
-double TimingEngine::reportInstPinCapacitance(const char* pin_name,
-                                              AnalysisMode mode,
-                                              TransType trans_type) {
+double TimingEngine::getInstPinCapacitance(const char* pin_name,
+                                           AnalysisMode mode,
+                                           TransType trans_type) {
   auto* ista = _ista;
   auto* design_netlist = ista->get_netlist();
   std::vector<DesignObject*> match_pins =
@@ -1442,8 +1442,7 @@ double TimingEngine::reportInstPinCapacitance(const char* pin_name,
  * @param cell_pin_name
  * @return double
  */
-double TimingEngine::reportLibertyCellPinCapacitance(
-    const char* cell_pin_name) {
+double TimingEngine::getLibertyCellPinCapacitance(const char* cell_pin_name) {
   const char* sep = "/:";
   auto [cell_name, pin_name] = Str::splitTwoPart(cell_pin_name, sep);
   LibCell* lib_cell = _ista->findLibertyCell(cell_name.c_str());
@@ -1687,10 +1686,11 @@ unsigned TimingEngine::isLoad(const char* pin_name) const {
  * @param limit may be has not limit.
  * @param slack
  */
-void TimingEngine::checkCapacitance(const char* pin_name, AnalysisMode mode,
-                                    TransType trans_type, double& capacitance,
-                                    std::optional<double>& limit,
-                                    double& slack) {
+void TimingEngine::validateCapacitance(const char* pin_name, AnalysisMode mode,
+                                       TransType trans_type,
+                                       double& capacitance,
+                                       std::optional<double>& limit,
+                                       double& slack) {
   auto* the_vertex = findVertex(pin_name);
   if (!the_vertex) {
     return;
@@ -1715,9 +1715,9 @@ void TimingEngine::checkCapacitance(const char* pin_name, AnalysisMode mode,
  * @return limit
  * @return slack
  */
-void TimingEngine::checkFanout(const char* pin_name, AnalysisMode mode,
-                               double& fanout, std::optional<double>& limit,
-                               double& slack) {
+void TimingEngine::validateFanout(const char* pin_name, AnalysisMode mode,
+                                  double& fanout, std::optional<double>& limit,
+                                  double& slack) {
   auto* the_vertex = findVertex(pin_name);
   if (!the_vertex) {
     return;
@@ -1747,9 +1747,9 @@ void TimingEngine::checkFanout(const char* pin_name, AnalysisMode mode,
  * @return limit
  * @return slack
  */
-void TimingEngine::checkSlew(const char* pin_name, AnalysisMode mode,
-                             TransType trans_type, double& slew,
-                             std::optional<double>& limit, double& slack) {
+void TimingEngine::validateSlew(const char* pin_name, AnalysisMode mode,
+                                TransType trans_type, double& slew,
+                                std::optional<double>& limit, double& slack) {
   auto* the_vertex = findVertex(pin_name);
   if (!the_vertex) {
     return;

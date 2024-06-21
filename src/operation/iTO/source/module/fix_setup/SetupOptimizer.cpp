@@ -862,7 +862,7 @@ void SetupOptimizer::setLocation(Instance *inst, int x, int y) {
 LibCell *SetupOptimizer::repowerCell(LibPort *in_port, LibPort *drvr_port, float load_cap,
                                      float prev_drive_resis) {
   LibCell *          drvr_lib_cell = drvr_port->get_ower_cell();
-  Vector<LibCell *> *equiv_lib_cells = _timing_engine->equivCells(drvr_lib_cell);
+  Vector<LibCell *> *equiv_lib_cells = _timing_engine->classifyCells(drvr_lib_cell);
   if (!equiv_lib_cells) {
     return nullptr;
   }

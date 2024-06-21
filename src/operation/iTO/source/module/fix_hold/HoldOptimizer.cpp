@@ -798,8 +798,8 @@ void HoldOptimizer::reportWNSAndTNS() {
   auto clk_list = _timing_engine->getClockList();
   for (auto clk : clk_list) {
     auto clk_name = clk->get_clock_name();
-    auto tns1 = _timing_engine->reportTNS(clk_name, AnalysisMode::kMin);
-    auto wns1 = _timing_engine->reportWNS(clk_name, AnalysisMode::kMin);
+    auto tns1 = _timing_engine->getTNS(clk_name, AnalysisMode::kMin);
+    auto wns1 = _timing_engine->getWNS(clk_name, AnalysisMode::kMin);
     _db_interface->report()->get_ofstream()
         << setiosflags(ios::left) << setw(35) << clk_name << resetiosflags(ios::left)
         << setiosflags(ios::right) << setw(20) << tns1 << setw(20) << wns1

@@ -82,7 +82,7 @@ idb::IdbBuilder *ToApi::initIDB() {
   // }
   auto idb_builder = new IdbBuilder();
 
-  ToConfig      *to_config = _ito->get_config();
+  ToConfig *     to_config = _ito->get_config();
   string         def_file = to_config->get_def_file();
   vector<string> lef_files = to_config->get_lef_files();
 
@@ -96,8 +96,8 @@ ista::TimingEngine *ToApi::initISTA(idb::IdbBuilder *idb) {
 
   auto timing_engine = ista::TimingEngine::getOrCreateTimingEngine();
 
-  ToConfig            *to_config = _ito->get_config();
-  const char          *design_work_space = to_config->get_design_work_space().c_str();
+  ToConfig *           to_config = _ito->get_config();
+  const char *         design_work_space = to_config->get_design_work_space().c_str();
   vector<const char *> lib_files;
   for (auto &lib : to_config->get_lib_files()) {
     lib_files.push_back(lib.c_str());
@@ -190,8 +190,8 @@ ieda_feature::TimingOptSummary ToApi::outputSummary() {
 
   std::ranges::for_each(clk_list, [&](ista::StaClock *clk) {
     auto clk_name = clk->get_clock_name();
-    auto drv_tns = _timing_engine->reportTNS(clk_name, AnalysisMode::kMax);
-    auto drv_wns = _timing_engine->reportWNS(clk_name, AnalysisMode::kMax);
+    auto drv_tns = _timing_engine->getTNS(clk_name, AnalysisMode::kMax);
+    auto drv_wns = _timing_engine->getWNS(clk_name, AnalysisMode::kMax);
     auto suggest_freq = 1000.0 / (clk->getPeriodNs() - drv_wns);
 
     ieda_feature::TONetTiming net_timing;

@@ -702,7 +702,7 @@ void Sta::resetConstraint() { _constrains.reset(); }
  * @brief Find the liberty cell from the lib.
  *
  * @param cell_name
- * @return LibertyCell*
+ * @return LibCell*
  */
 LibCell *Sta::findLibertyCell(const char *cell_name) {
   LibCell *found_cell = nullptr;
@@ -755,24 +755,24 @@ std::optional<AocvObjectSpecSet *> Sta::findClockAocvObjectSpecSet(
  *
  * @param equiv_libs
  */
-void Sta::makeEquivCells(std::vector<LibLibrary *> &equiv_libs) {
-  if (_equiv_cells) {
-    _equiv_cells.reset();
+void Sta::makeClassifiedCells(std::vector<LibLibrary *> &equiv_libs) {
+  if (_classified_cells) {
+    _classified_cells.reset();
   }
 
-  _equiv_cells = std::make_unique<LibClassifyCell>();
-  _equiv_cells->classifyLibCell(equiv_libs);
+  _classified_cells = std::make_unique<LibClassifyCell>();
+  _classified_cells->classifyLibCell(equiv_libs);
 }
 
 /**
  * @brief Get the equivalently liberty cell.
  *
  * @param cell
- * @return Vector<LibertyCell *>*
+ * @return Vector<LibCell *>*
  */
-Vector<LibCell *> *Sta::equivCells(LibCell *cell) {
-  if (_equiv_cells)
-    return _equiv_cells->getClassOfCell(cell);
+Vector<LibCell *> *Sta::classifyCells(LibCell *cell) {
+  if (_classified_cells)
+    return _classified_cells->getClassOfCell(cell);
   else
     return nullptr;
 }

@@ -80,29 +80,29 @@ TEST_F(TimingEngineTest, resizer) {
 
     // report the timing//power/area
     double inst_delay =
-        timing_engine->reportInstDelay("inst_3", "inst_3:A2", "inst_3:ZN",
-                                       AnalysisMode::kMax, TransType::kRise);
+        timing_engine->getInstDelay("inst_3", "inst_3:A2", "inst_3:ZN",
+                                    AnalysisMode::kMax, TransType::kRise);
 
     // timing_engine->setNetDelay(wl, ucap, "net_1", "inst_3:A2", mode_trans);
 
-    double net_delay = timing_engine->reportNetDelay(
+    double net_delay = timing_engine->getNetDelay(
         "net_1", "inst_3:A2", AnalysisMode::kMax, TransType::kRise);
-    double slew = timing_engine->reportSlew("inst_3:A2", AnalysisMode::kMax,
-                                            TransType::kRise);
-    auto arrive_time = timing_engine->reportAT("inst_3:A2", AnalysisMode::kMax,
-                                               TransType::kFall);
-    auto req_time = timing_engine->reportRT("inst_3:A2", AnalysisMode::kMax,
-                                            TransType::kFall);
-    auto slack = timing_engine->reportSlack("inst_3:A2", AnalysisMode::kMax,
-                                            TransType::kRise);
+    double slew = timing_engine->getSlew("inst_3:A2", AnalysisMode::kMax,
+                                         TransType::kRise);
+    auto arrive_time =
+        timing_engine->getAT("inst_3:A2", AnalysisMode::kMax, TransType::kFall);
+    auto req_time =
+        timing_engine->getRT("inst_3:A2", AnalysisMode::kMax, TransType::kFall);
+    auto slack = timing_engine->getSlack("inst_3:A2", AnalysisMode::kMax,
+                                         TransType::kRise);
     StaVertex* worst_vertex = nullptr;
     std::optional<double> worst_slack;
-    timing_engine->reportWorstSlack(AnalysisMode::kMax, TransType::kRise,
-                                    worst_vertex, worst_slack);
+    timing_engine->getWorstSlack(AnalysisMode::kMax, TransType::kRise,
+                                 worst_vertex, worst_slack);
 
-    double WNS = timing_engine->reportWNS("clk", AnalysisMode::kMax);
-    double TNS = timing_engine->reportTNS("clk", AnalysisMode::kMax);
-    double network_latency = timing_engine->reportClockNetworkLatency(
+    double WNS = timing_engine->getWNS("clk", AnalysisMode::kMax);
+    double TNS = timing_engine->getTNS("clk", AnalysisMode::kMax);
+    double network_latency = timing_engine->getClockNetworkLatency(
         "inst_7:CK", AnalysisMode::kMax, TransType::kRise);
     // double skew= timing_engine->reportClockSkew("inst_6:CK","inst_x:CK",
     // AnalysisMode::kMax, TransType::kRise);
@@ -118,13 +118,14 @@ TEST_F(TimingEngineTest, resizer) {
     double check_slew = 0;
     std::optional<double> slew_limit;
     double slew_slack = 0;
-    timing_engine->checkSlew("inst_3:A2", AnalysisMode::kMax, TransType::kRise,
-                             check_slew, slew_limit, slew_slack);
+    timing_engine->validateSlew("inst_3:A2", AnalysisMode::kMax,
+                                TransType::kRise, check_slew, slew_limit,
+                                slew_slack);
     double check_fanout = 0;
     std::optional<double> fanout_limit;
     double fanout_slack = 0;
-    timing_engine->checkFanout("inst_3:A2", AnalysisMode::kMax, check_fanout,
-                               fanout_limit, fanout_slack);
+    timing_engine->validateFanout("inst_3:A2", AnalysisMode::kMax, check_fanout,
+                                  fanout_limit, fanout_slack);
 
     auto& all_libs = timing_engine->getAllLib();
     std::vector<LibLibrary*> equiv_libs;
@@ -132,9 +133,9 @@ TEST_F(TimingEngineTest, resizer) {
       equiv_libs.push_back(lib.get());
     }
 
-    timing_engine->makeEquivCells(equiv_libs);
+    timing_engine->makeClassifiedCells(equiv_libs);
     auto* liberty_cell = timing_engine->findLibertyCell("NAND2_X1");
-    auto* equiv_cells = timing_engine->equivCells(liberty_cell);
+    auto* equiv_cells = timing_engine->classifyCells(liberty_cell);
     auto num_equiv_cells = equiv_cells->size();
     std::map<std::pair<StaVertex*, StaVertex*>, double> twosinks2worstslack =
         timing_engine->getWorstSlackBetweenTwoSinks(AnalysisMode::kMin);
@@ -173,21 +174,21 @@ TEST_F(TimingEngineTest, resizer) {
     timing_engine->reportTiming();
 
     inst_delay =
-        timing_engine->reportInstDelay("inst_3", "inst_3:A2", "inst_3:ZN",
-                                       AnalysisMode::kMax, TransType::kRise);
-    net_delay = timing_engine->reportNetDelay(
+        timing_engine->getInstDelay("inst_3", "inst_3:A2", "inst_3:ZN",
+                                    AnalysisMode::kMax, TransType::kRise);
+    net_delay = timing_engine->getNetDelay(
         "net_1", "inst_3:A2", AnalysisMode::kMax, TransType::kRise);
-    slew = timing_engine->reportSlew("inst_3:A2", AnalysisMode::kMax,
-                                     TransType::kRise);
-    arrive_time = timing_engine->reportAT("inst_3:A2", AnalysisMode::kMax,
-                                          TransType::kFall);
-    req_time = timing_engine->reportRT("inst_3:A2", AnalysisMode::kMax,
-                                       TransType::kFall);
-    slack = timing_engine->reportSlack("inst_3:A2", AnalysisMode::kMax,
-                                       TransType::kRise);
-    WNS = timing_engine->reportWNS("clk", AnalysisMode::kMax);
-    TNS = timing_engine->reportTNS("clk", AnalysisMode::kMax);
-    network_latency = timing_engine->reportClockNetworkLatency(
+    slew = timing_engine->getSlew("inst_3:A2", AnalysisMode::kMax,
+                                  TransType::kRise);
+    arrive_time =
+        timing_engine->getAT("inst_3:A2", AnalysisMode::kMax, TransType::kFall);
+    req_time =
+        timing_engine->getRT("inst_3:A2", AnalysisMode::kMax, TransType::kFall);
+    slack = timing_engine->getSlack("inst_3:A2", AnalysisMode::kMax,
+                                    TransType::kRise);
+    WNS = timing_engine->getWNS("clk", AnalysisMode::kMax);
+    TNS = timing_engine->getTNS("clk", AnalysisMode::kMax);
+    network_latency = timing_engine->getClockNetworkLatency(
         "inst_7:CK", AnalysisMode::kMax, TransType::kRise);
 
     seq_path_data = timing_engine->vertexWorstRequiredPath(
@@ -281,7 +282,7 @@ TEST_F(TimingEngineTest, equiv_lib) {
     equiv_libs.push_back(lib.get());
   }
 
-  timing_engine->makeEquivCells(equiv_libs);
+  timing_engine->makeClassifiedCells(equiv_libs);
 }
 
 }  // namespace

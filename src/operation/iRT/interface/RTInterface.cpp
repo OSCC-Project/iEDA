@@ -513,8 +513,8 @@ std::map<std::string, std::vector<double>> RTInterface::getTiming(
   auto clk_list = timing_engine->getClockList();
   std::ranges::for_each(clk_list, [&](ista::StaClock* clk) {
     auto clk_name = clk->get_clock_name();
-    auto setup_tns = timing_engine->reportTNS(clk_name, AnalysisMode::kMax);
-    auto setup_wns = timing_engine->reportWNS(clk_name, AnalysisMode::kMax);
+    auto setup_tns = timing_engine->getTNS(clk_name, AnalysisMode::kMax);
+    auto setup_wns = timing_engine->getWNS(clk_name, AnalysisMode::kMax);
     auto suggest_freq = 1000.0 / (clk->getPeriodNs() - setup_wns);
     timing_map[clk_name] = {setup_tns, setup_wns, suggest_freq};
   });

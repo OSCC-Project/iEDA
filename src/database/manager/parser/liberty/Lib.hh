@@ -55,8 +55,6 @@ class LibLutTableTemplate;
 class LibVectorTable;
 class LibertyExpr;
 
-class LibertyCellPowerArcSetIterator;
-
 /**
  * @brief The base object of the library.
  *
@@ -593,7 +591,7 @@ class LibPort : public LibObject
 
 /**
  * @brief The macro of foreach internal power, usage:
- * LibertyPort* port;
+ * LibPort* port;
  * LibInternalPowerInfo* internal_power;
  * FOREACH_INTERNAL_POWER(port, internal_power)
  * {

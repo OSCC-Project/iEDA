@@ -706,7 +706,7 @@ bool ViolationOptimizer::repowerInstance(Pin *drvr_pin) {
   Instance *inst = drvr_pin->get_own_instance();
   LibCell * cell = inst->get_inst_cell();
   if (cell) {
-    Vector<LibCell *> *lib_equiv_cells = _timing_engine->equivCells(cell);
+    Vector<LibCell *> *lib_equiv_cells = _timing_engine->classifyCells(cell);
     if (lib_equiv_cells) {
       bool is_buf_or_invert = cell->isBuffer() || cell->isInverter();
 
@@ -814,8 +814,8 @@ void ViolationOptimizer::checkCapacitanceViolation(DesignObject *drvr_pin,
   double                cap_slack1;
 
   TransType rf = TransType::kRise;
-  _timing_engine->checkCapacitance(drvr_pin->getFullName().c_str(), AnalysisMode::kMax,
-                                   rf, cap1, max_cap1, cap_slack1);
+  _timing_engine->validateCapacitance(drvr_pin->getFullName().c_str(), AnalysisMode::kMax,
+                                      rf, cap1, max_cap1, cap_slack1);
   if (max_cap1) {
     max_drvr_cap = *max_cap1;
     if (cap_slack1 < 0) {
@@ -839,8 +839,8 @@ void ViolationOptimizer::checkSlewViolation(DesignObject *drvr_pin, double &max_
     double                slack_tmp;
     TransType             rf = TransType::kRise;
 
-    _timing_engine->checkSlew(pin->getFullName().c_str(), AnalysisMode::kMax, rf,
-                              slew_tmp, limit_tmp, slack_tmp);
+    _timing_engine->validateSlew(pin->getFullName().c_str(), AnalysisMode::kMax, rf,
+                                 slew_tmp, limit_tmp, slack_tmp);
     if (limit_tmp) {
       if (slack_tmp < slew_slack1) {
         slew_slack1 = slack_tmp;

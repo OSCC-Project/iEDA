@@ -210,7 +210,7 @@ void StaVertex::clearSnkNetArcs() {
 /**
  * @brief Get the owner cell.
  *
- * @return LibertyCell*
+ * @return LibCell*
  */
 LibCell* StaVertex::getOwnCell() {
   if (auto* pin = dynamic_cast<Pin*>(_obj); pin) {

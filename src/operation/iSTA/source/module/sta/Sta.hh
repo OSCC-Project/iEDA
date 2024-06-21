@@ -253,9 +253,9 @@ class Sta {
       const char* object_name);
   std::optional<AocvObjectSpecSet*> findClockAocvObjectSpecSet(
       const char* object_name);
-  void makeEquivCells(std::vector<LibLibrary*>& equiv_libs);
+  void makeClassifiedCells(std::vector<LibLibrary*>& equiv_libs);
 
-  Vector<LibCell*>* equivCells(LibCell* cell);
+  Vector<LibCell*>* classifyCells(LibCell* cell);
 
   static void initSdcCmd();
 
@@ -522,7 +522,7 @@ class Sta {
       _libs;  //!< The design libs of different corners.
 
   std::unique_ptr<LibClassifyCell>
-      _equiv_cells;  //!< The function equivalently liberty cell.
+      _classified_cells;  //!< The function equivalently liberty cell.
 
   AnalysisMode _analysis_mode;  //!< The analysis max/min mode.
 
