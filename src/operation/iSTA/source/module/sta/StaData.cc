@@ -150,7 +150,7 @@ StaSlewData::StaSlewData(const StaSlewData& orig)
     : StaData(orig), _slew(orig._slew) {
   if (orig._output_current_data) {
     auto* new_current_data = (*(orig._output_current_data))->copy();
-    _output_current_data = std::unique_ptr<LibetyCurrentData>(new_current_data);
+    _output_current_data = std::unique_ptr<LibCurrentData>(new_current_data);
   }
 }
 
@@ -161,8 +161,7 @@ StaSlewData& StaSlewData::operator=(const StaSlewData& rhs) {
 
     if (rhs._output_current_data) {
       auto* new_current_data = (*(rhs._output_current_data))->copy();
-      _output_current_data =
-          std::unique_ptr<LibetyCurrentData>(new_current_data);
+      _output_current_data = std::unique_ptr<LibCurrentData>(new_current_data);
     }
   }
   return *this;

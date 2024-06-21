@@ -23,7 +23,7 @@
  */
 #include "PwrBuildGraph.hh"
 
-#include "liberty/Liberty.hh"
+#include "liberty/Lib.hh"
 #include "netlist/Instance.hh"
 #include "string/Str.hh"
 
@@ -50,7 +50,7 @@ unsigned PwrBuildGraph::annotateInternalPower(PwrInstArc* inst_power_arc,
 
   // build inst power arc
   auto* lib_cell = inst->get_inst_cell();
-  LibertyPowerArcSet* power_arc_set;
+  LibPowerArcSet* power_arc_set;
   FOREACH_POWER_ARC_SET(lib_cell, power_arc_set) {
     auto* power_arc = power_arc_set->front();
     auto [src_port_name, src_port_index] =

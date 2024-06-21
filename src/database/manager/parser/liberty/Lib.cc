@@ -15,14 +15,14 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 /**
- * @file Liberty.cc
+ * @file Lib.cc
  * @author simin tao (taosm@pcl.ac.cn)
  * @brief This is the implemention of liberty module.
  * @version 0.1
  * @date 2020-11-28
  */
 
-#include "Liberty.hh"
+#include "Lib.hh"
 
 #include <fstream>
 #include <functional>
@@ -34,16 +34,16 @@
 
 namespace ista {
 
-LibertyAxis::LibertyAxis(const char* axis_name) : _axis_name(axis_name)
+LibAxis::LibAxis(const char* axis_name) : _axis_name(axis_name)
 {
 }
 
-LibertyAxis::LibertyAxis(LibertyAxis&& other) noexcept : _axis_name(other._axis_name), _axis_values(std::move(other._axis_values))
+LibAxis::LibAxis(LibAxis&& other) noexcept : _axis_name(other._axis_name), _axis_values(std::move(other._axis_values))
 {
   other._axis_name = nullptr;
 }
 
-LibertyAxis& LibertyAxis::operator=(LibertyAxis&& rhs) noexcept
+LibAxis& LibAxis::operator=(LibAxis&& rhs) noexcept
 {
   if (this != &rhs) {
     _axis_name = rhs._axis_name;
@@ -55,33 +55,32 @@ LibertyAxis& LibertyAxis::operator=(LibertyAxis&& rhs) noexcept
   return *this;
 }
 
-double LibertyAxis::operator[](std::size_t index)
+double LibAxis::operator[](std::size_t index)
 {
   return _axis_values[index]->getFloatValue();
 }
 
-const std::map<std::string, LibertyTable::TableType> LibertyTable::_str2TableType = {{"cell_rise", TableType::kCellRise},
-                                                                                     {"cell_fall", TableType::kCellFall},
-                                                                                     {"rise_transition", TableType::kRiseTransition},
-                                                                                     {"fall_transition", TableType::kFallTransition},
-                                                                                     {"rise_constraint", TableType::kRiseConstrain},
-                                                                                     {"fall_constraint", TableType::kFallConstrain},
-                                                                                     {"output_current_rise", TableType::kRiseCurrent},
-                                                                                     {"output_current_fall", TableType::kFallCurrent},
-                                                                                     {"rise_power", TableType::kRisePower},
-                                                                                     {"fall_power", TableType::kFallPower}};
+const std::map<std::string, LibTable::TableType> LibTable::_str2TableType = {{"cell_rise", TableType::kCellRise},
+                                                                             {"cell_fall", TableType::kCellFall},
+                                                                             {"rise_transition", TableType::kRiseTransition},
+                                                                             {"fall_transition", TableType::kFallTransition},
+                                                                             {"rise_constraint", TableType::kRiseConstrain},
+                                                                             {"fall_constraint", TableType::kFallConstrain},
+                                                                             {"output_current_rise", TableType::kRiseCurrent},
+                                                                             {"output_current_fall", TableType::kFallCurrent},
+                                                                             {"rise_power", TableType::kRisePower},
+                                                                             {"fall_power", TableType::kFallPower}};
 
-LibertyTable::LibertyTable(TableType table_type, LibertyLutTableTemplate* table_template)
-    : _table_type(table_type), _table_template(table_template)
+LibTable::LibTable(TableType table_type, LibLutTableTemplate* table_template) : _table_type(table_type), _table_template(table_template)
 {
 }
 
-LibertyTable::LibertyTable(LibertyTable&& other) noexcept
+LibTable::LibTable(LibTable&& other) noexcept
     : _axes(std::move(other._axes)), _table_values(std::move(other._table_values)), _table_type(other._table_type)
 {
 }
 
-LibertyTable& LibertyTable::operator=(LibertyTable&& rhs) noexcept
+LibTable& LibTable::operator=(LibTable&& rhs) noexcept
 {
   if (this != &rhs) {
     _axes = std::move(rhs._axes);
@@ -96,7 +95,7 @@ LibertyTable& LibertyTable::operator=(LibertyTable&& rhs) noexcept
  * @Brief : get axes or template axes.
  * @return auto&
  */
-Vector<std::unique_ptr<LibertyAxis>>& LibertyTable::get_axes()
+Vector<std::unique_ptr<LibAxis>>& LibTable::get_axes()
 {
   if (_axes.empty()) {
     auto* table_template = get_table_template();
@@ -109,9 +108,9 @@ Vector<std::unique_ptr<LibertyAxis>>& LibertyTable::get_axes()
 /**
  * @Brief : get axes according index.
  * @param  index
- * @return LibertyAxis&
+ * @return LibAxis&
  */
-LibertyAxis& LibertyTable::getAxis(unsigned int index)
+LibAxis& LibTable::getAxis(unsigned int index)
 {
   return *(get_axes()[index]);
 }
@@ -123,7 +122,7 @@ LibertyAxis& LibertyTable::getAxis(unsigned int index)
  * @param constrain_slew_or_load
  * @return double The delay or slew value.
  */
-double LibertyTable::findValue(double slew, double constrain_slew_or_load)
+double LibTable::findValue(double slew, double constrain_slew_or_load)
 {
   auto* table_template = get_table_template();
   if (!table_template) {
@@ -134,25 +133,25 @@ double LibertyTable::findValue(double slew, double constrain_slew_or_load)
   double val1;
   double val2;
   switch (*(table_template->get_template_variable1())) {
-    case LibertyLutTableTemplate::Variable::INPUT_NET_TRANSITION:
-    case LibertyLutTableTemplate::Variable::RELATED_PIN_TRANSITION:
+    case LibLutTableTemplate::Variable::INPUT_NET_TRANSITION:
+    case LibLutTableTemplate::Variable::RELATED_PIN_TRANSITION:
     // power
-    case LibertyLutTableTemplate::Variable::INPUT_TRANSITION_TIME:
+    case LibLutTableTemplate::Variable::INPUT_TRANSITION_TIME:
       if (auto variable2 = table_template->get_template_variable2(); variable2) {
-        LOG_FATAL_IF(*variable2 != LibertyLutTableTemplate::Variable::TOTAL_OUTPUT_NET_CAPACITANCE
-                     && *variable2 != LibertyLutTableTemplate::Variable::CONSTRAINED_PIN_TRANSITION);
+        LOG_FATAL_IF(*variable2 != LibLutTableTemplate::Variable::TOTAL_OUTPUT_NET_CAPACITANCE
+                     && *variable2 != LibLutTableTemplate::Variable::CONSTRAINED_PIN_TRANSITION);
       }
 
       val1 = slew;
       val2 = constrain_slew_or_load;
       break;
 
-    case LibertyLutTableTemplate::Variable::TOTAL_OUTPUT_NET_CAPACITANCE:
-    case LibertyLutTableTemplate::Variable::CONSTRAINED_PIN_TRANSITION:
+    case LibLutTableTemplate::Variable::TOTAL_OUTPUT_NET_CAPACITANCE:
+    case LibLutTableTemplate::Variable::CONSTRAINED_PIN_TRANSITION:
       if (auto variable2 = table_template->get_template_variable2(); variable2) {
-        LOG_FATAL_IF(*variable2 != LibertyLutTableTemplate::Variable::INPUT_NET_TRANSITION
-                     && *variable2 != LibertyLutTableTemplate::Variable::RELATED_PIN_TRANSITION
-                     && *variable2 != LibertyLutTableTemplate::Variable::INPUT_TRANSITION_TIME);
+        LOG_FATAL_IF(*variable2 != LibLutTableTemplate::Variable::INPUT_NET_TRANSITION
+                     && *variable2 != LibLutTableTemplate::Variable::RELATED_PIN_TRANSITION
+                     && *variable2 != LibLutTableTemplate::Variable::INPUT_TRANSITION_TIME);
       }
 
       val1 = constrain_slew_or_load;
@@ -249,7 +248,7 @@ double LibertyTable::findValue(double slew, double constrain_slew_or_load)
  *
  * @return double
  */
-double LibertyTable::driveResistance()
+double LibTable::driveResistance()
 {
   double out_cap = 1.0;
   double out_slew = 0.0;
@@ -258,11 +257,11 @@ double LibertyTable::driveResistance()
   if (table_template) {
     auto var1 = table_template->get_template_variable1();
     auto var2 = table_template->get_template_variable2();
-    if (var1 && *var1 == LibertyLutTableTemplate::Variable::TOTAL_OUTPUT_NET_CAPACITANCE) {
+    if (var1 && *var1 == LibLutTableTemplate::Variable::TOTAL_OUTPUT_NET_CAPACITANCE) {
       auto num_val1 = getAxis(0).get_axis_size();
       out_cap = getAxis(0)[num_val1 - 1];
       out_slew = findValue(0.0, out_cap);
-    } else if (var2 && *var2 == LibertyLutTableTemplate::Variable::TOTAL_OUTPUT_NET_CAPACITANCE) {
+    } else if (var2 && *var2 == LibLutTableTemplate::Variable::TOTAL_OUTPUT_NET_CAPACITANCE) {
       auto num_val2 = getAxis(1).get_axis_size();
       out_cap = getAxis(1)[num_val2 - 1];
       out_slew = findValue(0.0, out_cap);
@@ -276,19 +275,18 @@ double LibertyTable::driveResistance()
   return out_slew / out_cap;
 }
 
-LibertyVectorTable::LibertyVectorTable(TableType table_type, LibertyLutTableTemplate* table_template)
-    : LibertyTable(table_type, table_template)
+LibVectorTable::LibVectorTable(TableType table_type, LibLutTableTemplate* table_template) : LibTable(table_type, table_template)
 {
 }
 
-LibertyVectorTable::LibertyVectorTable(LibertyVectorTable&& other) noexcept : LibertyTable(std::move(other)), _ref_time(other._ref_time)
+LibVectorTable::LibVectorTable(LibVectorTable&& other) noexcept : LibTable(std::move(other)), _ref_time(other._ref_time)
 {
 }
 
-LibertyVectorTable& LibertyVectorTable::operator=(LibertyVectorTable&& rhs) noexcept
+LibVectorTable& LibVectorTable::operator=(LibVectorTable&& rhs) noexcept
 {
   if (this != &rhs) {
-    LibertyTable::operator=(std::move(rhs));
+    LibTable::operator=(std::move(rhs));
     _ref_time = rhs._ref_time;
   }
   return *this;
@@ -299,9 +297,9 @@ LibertyVectorTable& LibertyVectorTable::operator=(LibertyVectorTable&& rhs) noex
  *
  * @return double
  */
-std::tuple<double, int> LibertyVectorTable::getSimulationTotalTimeAndNumPoints()
+std::tuple<double, int> LibVectorTable::getSimulationTotalTimeAndNumPoints()
 {
-  LibertyAxis& time_axis = getAxis(_time_index);
+  LibAxis& time_axis = getAxis(_time_index);
   auto num_points = time_axis.get_axis_size();
   double last_simultaion_time_point = time_axis[num_points - 1];
   return {last_simultaion_time_point - _ref_time, num_points};
@@ -314,15 +312,15 @@ std::tuple<double, int> LibertyVectorTable::getSimulationTotalTimeAndNumPoints()
  * @param interval
  * @return std::vector<double>
  */
-std::vector<double> LibertyVectorTable::getOutputCurrent(std::optional<LibertyCurrentSimuInfo>& simu_info)
+std::vector<double> LibVectorTable::getOutputCurrent(std::optional<LibCurrentSimuInfo>& simu_info)
 {
-  LibertyAxis& time_axis = getAxis(_time_index);
+  LibAxis& time_axis = getAxis(_time_index);
   auto& time_axis_value = time_axis.get_axis_values();
   auto& table_values = get_table_values();
 
   double ref_time = _ref_time;
   if (!simu_info) {
-    simu_info = LibertyCurrentSimuInfo{0, time_axis[time_axis.get_axis_size() - 1] - ref_time, static_cast<int>(time_axis.get_axis_size())};
+    simu_info = LibCurrentSimuInfo{0, time_axis[time_axis.get_axis_size() - 1] - ref_time, static_cast<int>(time_axis.get_axis_size())};
   }
 
   auto get_time_index = [&time_axis_value](double current_time, int start_index) -> int {
@@ -363,8 +361,8 @@ std::vector<double> LibertyVectorTable::getOutputCurrent(std::optional<LibertyCu
   return output_currents;
 }
 
-LibetyCurrentData::LibetyCurrentData(LibertyVectorTable* low_low, LibertyVectorTable* low_high, LibertyVectorTable* high_low,
-                                     LibertyVectorTable* high_high, double slew, double load)
+LibCurrentData::LibCurrentData(LibVectorTable* low_low, LibVectorTable* low_high, LibVectorTable* high_low, LibVectorTable* high_high,
+                               double slew, double load)
     : _low_low(low_low), _low_high(low_high), _high_low(high_low), _high_high(high_high), _slew(slew), _load(load)
 {
 }
@@ -374,7 +372,7 @@ LibetyCurrentData::LibetyCurrentData(LibertyVectorTable* low_low, LibertyVectorT
  *
  * @return std::tuple<double, int> total time and point
  */
-std::tuple<double, int> LibetyCurrentData::getSimulationTotalTimeAndNumPoints()
+std::tuple<double, int> LibCurrentData::getSimulationTotalTimeAndNumPoints()
 {
   BTreeMap<double, int> total_simulation_times;
 
@@ -392,14 +390,14 @@ std::tuple<double, int> LibetyCurrentData::getSimulationTotalTimeAndNumPoints()
  * @brief Get the output current use interpolation method.
  *
  */
-std::vector<double> LibetyCurrentData::getOutputCurrent(std::optional<LibertyCurrentSimuInfo>& simu_info)
+std::vector<double> LibCurrentData::getOutputCurrent(std::optional<LibCurrentSimuInfo>& simu_info)
 {
   auto get_output_currents = [&, this]() {
     return std::make_tuple(_low_low->getOutputCurrent(simu_info), _low_high->getOutputCurrent(simu_info),
                            _high_low->getOutputCurrent(simu_info), _high_high->getOutputCurrent(simu_info));
   };
 
-  auto get_slew_cap = [](LibertyVectorTable* current_table) {
+  auto get_slew_cap = [](LibVectorTable* current_table) {
     // assume the first dimension is slew, the second dimension is load,fixme
     double slew = current_table->getAxis(0)[0];
     double load = current_table->getAxis(1)[0];
@@ -429,15 +427,15 @@ std::vector<double> LibetyCurrentData::getOutputCurrent(std::optional<LibertyCur
   return output_currents;
 }
 
-LibertyCCSTable::LibertyCCSTable(LibertyTable::TableType table_type) : _table_type(table_type)
+LibCCSTable::LibCCSTable(LibTable::TableType table_type) : _table_type(table_type)
 {
 }
 
-LibertyDelayTableModel::LibertyDelayTableModel(LibertyDelayTableModel&& other) noexcept : _tables(std::move(other._tables))
+LibDelayTableModel::LibDelayTableModel(LibDelayTableModel&& other) noexcept : _tables(std::move(other._tables))
 {
 }
 
-LibertyDelayTableModel& LibertyDelayTableModel::operator=(LibertyDelayTableModel&& rhs) noexcept
+LibDelayTableModel& LibDelayTableModel::operator=(LibDelayTableModel&& rhs) noexcept
 {
   if (this != &rhs) {
     _tables = std::move(rhs._tables);
@@ -454,13 +452,13 @@ LibertyDelayTableModel& LibertyDelayTableModel::operator=(LibertyDelayTableModel
  * @param load The constrain_slew_or_load.
  * @return double The delay.
  */
-std::optional<double> LibertyDelayTableModel::gateDelay(TransType trans_type, double slew, double load)
+std::optional<double> LibDelayTableModel::gateDelay(TransType trans_type, double slew, double load)
 {
-  LibertyTable* table = nullptr;
+  LibTable* table = nullptr;
   if (trans_type == TransType::kRise) {
-    table = getTable(CAST_TYPE_TO_INDEX(LibertyTable::TableType::kCellRise));
+    table = getTable(CAST_TYPE_TO_INDEX(LibTable::TableType::kCellRise));
   } else {
-    table = getTable(CAST_TYPE_TO_INDEX(LibertyTable::TableType::kCellFall));
+    table = getTable(CAST_TYPE_TO_INDEX(LibTable::TableType::kCellFall));
   }
 
   if (!table) {
@@ -478,13 +476,13 @@ std::optional<double> LibertyDelayTableModel::gateDelay(TransType trans_type, do
  * @param load The constrain_slew_or_load.
  * @return std::optional<double> The slew.
  */
-std::optional<double> LibertyDelayTableModel::gateSlew(TransType trans_type, double slew, double load)
+std::optional<double> LibDelayTableModel::gateSlew(TransType trans_type, double slew, double load)
 {
-  LibertyTable* table = nullptr;
+  LibTable* table = nullptr;
   if (trans_type == TransType::kRise) {
-    table = getTable(CAST_TYPE_TO_INDEX(LibertyTable::TableType::kRiseTransition));
+    table = getTable(CAST_TYPE_TO_INDEX(LibTable::TableType::kRiseTransition));
   } else {
-    table = getTable(CAST_TYPE_TO_INDEX(LibertyTable::TableType::kFallTransition));
+    table = getTable(CAST_TYPE_TO_INDEX(LibTable::TableType::kFallTransition));
   }
 
   if (!table) {
@@ -502,13 +500,13 @@ std::optional<double> LibertyDelayTableModel::gateSlew(TransType trans_type, dou
  * @param load
  * @return double
  */
-std::unique_ptr<LibetyCurrentData> LibertyDelayTableModel::gateOutputCurrent(TransType trans_type, double slew, double load)
+std::unique_ptr<LibCurrentData> LibDelayTableModel::gateOutputCurrent(TransType trans_type, double slew, double load)
 {
   int table_index;
   if (trans_type == TransType::kRise) {
-    table_index = CAST_CURRENT_TYPE_TO_INDEX(LibertyTable::TableType::kRiseCurrent);
+    table_index = CAST_CURRENT_TYPE_TO_INDEX(LibTable::TableType::kRiseCurrent);
   } else {
-    table_index = CAST_CURRENT_TYPE_TO_INDEX(LibertyTable::TableType::kFallCurrent);
+    table_index = CAST_CURRENT_TYPE_TO_INDEX(LibTable::TableType::kFallCurrent);
   }
 
   auto* current_table = _current_tables.at(table_index).get();
@@ -567,7 +565,7 @@ std::unique_ptr<LibetyCurrentData> LibertyDelayTableModel::gateOutputCurrent(Tra
   auto* high_low = get_vector_table(slew_high, load_low);
   auto* high_high = get_vector_table(slew_high, load_high);
 
-  auto current_data = std::make_unique<LibetyCurrentData>(low_low, low_high, high_low, high_high, slew, load);
+  auto current_data = std::make_unique<LibCurrentData>(low_low, low_high, high_low, high_high, slew, load);
 
   return current_data;
 }
@@ -577,17 +575,17 @@ std::unique_ptr<LibetyCurrentData> LibertyDelayTableModel::gateOutputCurrent(Tra
  *
  * @return double
  */
-double LibertyDelayTableModel::driveResistance()
+double LibDelayTableModel::driveResistance()
 {
   double rise_resistance = 0.0;
   double fall_resistance = 0.0;
 
-  LibertyTable* rise_table = getTable(CAST_TYPE_TO_INDEX(LibertyTable::TableType::kRiseTransition));
+  LibTable* rise_table = getTable(CAST_TYPE_TO_INDEX(LibTable::TableType::kRiseTransition));
   if (rise_table) {
     rise_resistance = rise_table->driveResistance();
   }
 
-  LibertyTable* fall_table = getTable(CAST_TYPE_TO_INDEX(LibertyTable::TableType::kFallTransition));
+  LibTable* fall_table = getTable(CAST_TYPE_TO_INDEX(LibTable::TableType::kFallTransition));
   if (fall_table) {
     fall_resistance = fall_table->driveResistance();
   }
@@ -603,13 +601,13 @@ double LibertyDelayTableModel::driveResistance()
  * @param constrain_slew The constrain_slew.
  * @return double The slew.
  */
-std::optional<double> LibertyCheckTableModel::gateCheckConstrain(TransType trans_type, double slew, double constrain_slew)
+std::optional<double> LibCheckTableModel::gateCheckConstrain(TransType trans_type, double slew, double constrain_slew)
 {
-  LibertyTable* table = nullptr;
+  LibTable* table = nullptr;
   if (trans_type == TransType::kRise) {
-    table = getTable(CAST_TYPE_TO_INDEX(LibertyTable::TableType::kRiseConstrain));
+    table = getTable(CAST_TYPE_TO_INDEX(LibTable::TableType::kRiseConstrain));
   } else {
-    table = getTable(CAST_TYPE_TO_INDEX(LibertyTable::TableType::kFallConstrain));
+    table = getTable(CAST_TYPE_TO_INDEX(LibTable::TableType::kFallConstrain));
   }
 
   if (!table) {
@@ -619,11 +617,11 @@ std::optional<double> LibertyCheckTableModel::gateCheckConstrain(TransType trans
   return table->findValue(slew, constrain_slew);
 }
 
-LibertyCheckTableModel::LibertyCheckTableModel(LibertyCheckTableModel&& other) noexcept : _tables(std::move(other._tables))
+LibCheckTableModel::LibCheckTableModel(LibCheckTableModel&& other) noexcept : _tables(std::move(other._tables))
 {
 }
 
-LibertyCheckTableModel& LibertyCheckTableModel::operator=(LibertyCheckTableModel&& rhs) noexcept
+LibCheckTableModel& LibCheckTableModel::operator=(LibCheckTableModel&& rhs) noexcept
 {
   if (this != &rhs) {
     _tables = std::move(rhs._tables);
@@ -632,11 +630,11 @@ LibertyCheckTableModel& LibertyCheckTableModel::operator=(LibertyCheckTableModel
   return *this;
 }
 
-LibertyPowerTableModel::LibertyPowerTableModel(LibertyPowerTableModel&& other) noexcept : _tables(std::move(other._tables))
+LibPowerTableModel::LibPowerTableModel(LibPowerTableModel&& other) noexcept : _tables(std::move(other._tables))
 {
 }
 
-LibertyPowerTableModel& LibertyPowerTableModel::operator=(LibertyPowerTableModel&& rhs) noexcept
+LibPowerTableModel& LibPowerTableModel::operator=(LibPowerTableModel&& rhs) noexcept
 {
   if (this != &rhs) {
     _tables = std::move(rhs._tables);
@@ -653,28 +651,28 @@ LibertyPowerTableModel& LibertyPowerTableModel::operator=(LibertyPowerTableModel
  * @param load The constrain_slew_or_load.
  * @return double The power.
  */
-double LibertyPowerTableModel::gatePower(TransType trans_type, double slew, std::optional<double> load)
+double LibPowerTableModel::gatePower(TransType trans_type, double slew, std::optional<double> load)
 {
-  LibertyTable* table = nullptr;
+  LibTable* table = nullptr;
   if (trans_type == TransType::kRise) {
-    table = getTable(CAST_POWER_TYPE_TO_INDEX(LibertyTable::TableType::kRisePower));
+    table = getTable(CAST_POWER_TYPE_TO_INDEX(LibTable::TableType::kRisePower));
   } else {
-    table = getTable(CAST_POWER_TYPE_TO_INDEX(LibertyTable::TableType::kFallPower));
+    table = getTable(CAST_POWER_TYPE_TO_INDEX(LibTable::TableType::kFallPower));
   }
 
   return table->findValue(slew, load.value_or(0.0));
 }
 
-LibertyPort::LibertyPort(const char* port_name) : _port_name(port_name)
+LibPort::LibPort(const char* port_name) : _port_name(port_name)
 {
 }
 
-LibertyPort::LibertyPort(LibertyPort&& other) noexcept
+LibPort::LibPort(LibPort&& other) noexcept
     : _port_name(std::move(other._port_name)), _ower_cell(other._ower_cell), _port_type(other._port_type)
 {
 }
 
-LibertyPort& LibertyPort::operator=(LibertyPort&& rhs) noexcept
+LibPort& LibPort::operator=(LibPort&& rhs) noexcept
 {
   if (this != &rhs) {
     _port_name = std::move(rhs._port_name);
@@ -692,7 +690,7 @@ LibertyPort& LibertyPort::operator=(LibertyPort&& rhs) noexcept
  * @param trans_type
  * @param cap
  */
-void LibertyPort::set_port_cap(AnalysisMode mode, TransType trans_type, double cap)
+void LibPort::set_port_cap(AnalysisMode mode, TransType trans_type, double cap)
 {
   if (IS_MAX(mode)) {
     if (IS_RISE(trans_type)) {
@@ -718,7 +716,7 @@ void LibertyPort::set_port_cap(AnalysisMode mode, TransType trans_type, double c
  * @param trans_type
  * @return double
  */
-std::optional<double> LibertyPort::get_port_cap(AnalysisMode mode, TransType trans_type)
+std::optional<double> LibPort::get_port_cap(AnalysisMode mode, TransType trans_type)
 {
   if (IS_MAX(mode)) {
     if (IS_RISE(trans_type)) {
@@ -741,7 +739,7 @@ std::optional<double> LibertyPort::get_port_cap(AnalysisMode mode, TransType tra
  * @param mode
  * @param cap
  */
-void LibertyPort::set_port_cap_limit(AnalysisMode mode, double cap_limit)
+void LibPort::set_port_cap_limit(AnalysisMode mode, double cap_limit)
 {
   if (IS_MAX(mode)) {
     _cap_limits[static_cast<int>(LibertyMaxMinLimitIndex::kMax)] = cap_limit;
@@ -758,7 +756,7 @@ void LibertyPort::set_port_cap_limit(AnalysisMode mode, double cap_limit)
  * @param mode
  * @return std::optional<double>
  */
-std::optional<double> LibertyPort::get_port_cap_limit(AnalysisMode mode)
+std::optional<double> LibPort::get_port_cap_limit(AnalysisMode mode)
 {
   if (IS_MAX(mode)) {
     return _cap_limits[static_cast<int>(LibertyMaxMinLimitIndex::kMax)];
@@ -773,7 +771,7 @@ std::optional<double> LibertyPort::get_port_cap_limit(AnalysisMode mode)
  * @param mode
  * @param cap
  */
-void LibertyPort::set_port_slew_limit(AnalysisMode mode, double slew_limit)
+void LibPort::set_port_slew_limit(AnalysisMode mode, double slew_limit)
 {
   if (IS_MAX(mode)) {
     _slew_limits[static_cast<int>(LibertyMaxMinLimitIndex::kMax)] = slew_limit;
@@ -790,7 +788,7 @@ void LibertyPort::set_port_slew_limit(AnalysisMode mode, double slew_limit)
  * @param mode
  * @return std::optional<double>
  */
-std::optional<double> LibertyPort::get_port_slew_limit(AnalysisMode mode)
+std::optional<double> LibPort::get_port_slew_limit(AnalysisMode mode)
 {
   if (IS_MAX(mode)) {
     return _slew_limits[static_cast<int>(LibertyMaxMinLimitIndex::kMax)];
@@ -804,7 +802,7 @@ std::optional<double> LibertyPort::get_port_slew_limit(AnalysisMode mode)
  *
  * @return double
  */
-double LibertyPort::driveResistance()
+double LibPort::driveResistance()
 {
   auto to_arc_sets = _ower_cell->findLibertyArcSet(get_port_name());
   double max_resistance = 0.0;
@@ -838,7 +836,7 @@ double LibertyPort::driveResistance()
  * @return true
  * @return false
  */
-bool LibertyPort::isSeqDataIn()
+bool LibPort::isSeqDataIn()
 {
   auto* liberty_cell = get_ower_cell();
   for (auto& liberty_arc_set : liberty_cell->get_cell_arcs()) {
@@ -852,14 +850,14 @@ bool LibertyPort::isSeqDataIn()
   return true;
 }
 
-LibertyPortBus::LibertyPortBus(const char* port_bus_name) : LibertyPort(port_bus_name)
+LibPortBus::LibPortBus(const char* port_bus_name) : LibPort(port_bus_name)
 {
 }
 
-LibertyLeakagePower::LibertyLeakagePower() : _owner_cell(nullptr)
+LibLeakagePower::LibLeakagePower() : _owner_cell(nullptr)
 {
 }
-LibertyLeakagePower::LibertyLeakagePower(LibertyLeakagePower&& other) noexcept
+LibLeakagePower::LibLeakagePower(LibLeakagePower&& other) noexcept
     : _related_pg_port(std::move(other._related_pg_port)),
       _when(std::move(other._when)),
       _value(std::move(other._value)),
@@ -867,7 +865,7 @@ LibertyLeakagePower::LibertyLeakagePower(LibertyLeakagePower&& other) noexcept
 {
 }
 
-LibertyLeakagePower& LibertyLeakagePower::operator=(LibertyLeakagePower&& rhs) noexcept
+LibLeakagePower& LibLeakagePower::operator=(LibLeakagePower&& rhs) noexcept
 {
   if (this != &rhs) {
     _related_pg_port = std::move(rhs._related_pg_port);
@@ -883,48 +881,48 @@ LibertyLeakagePower& LibertyLeakagePower::operator=(LibertyLeakagePower&& rhs) n
   return *this;
 }
 
-BTreeMap<std::string, LibertyArc::TimingType> LibertyArc::_str_to_type = {{"setup_rising", TimingType::kSetupRising},
-                                                                          {"hold_rising", TimingType::kHoldRising},
-                                                                          {"recovery_rising", TimingType::kRecoveryRising},
-                                                                          {"removal_rising", TimingType::kRemovalRising},
-                                                                          {"rising_edge", TimingType::kRisingEdge},
-                                                                          {"preset", TimingType::kPreset},
-                                                                          {"clear", TimingType::kClear},
-                                                                          {"three_state_enable", TimingType::kThreeStateEnable},
-                                                                          {"three_state_enable_rise", TimingType::kThreeStateEnableRise},
-                                                                          {"three_state_enable_fall", TimingType::kThreeStateEnableFall},
-                                                                          {"three_state_disable", TimingType::kThreeStateDisable},
-                                                                          {"three_state_disable_rise", TimingType::kThreeStateDisableRise},
-                                                                          {"three_state_disable_fall", TimingType::kThreeStateDisableFall},
-                                                                          {"setup_falling", TimingType::kSetupFalling},
-                                                                          {"hold_falling", TimingType::kHoldFalling},
-                                                                          {"recovery_falling", TimingType::kRecoveryFalling},
-                                                                          {"removal_falling", TimingType::kRemovalFalling},
-                                                                          {"falling_edge", TimingType::kFallingEdge},
-                                                                          {"min_pulse_width", TimingType::kMinPulseWidth},
-                                                                          {"combinational", TimingType::kComb},
-                                                                          {"combinational_rise", TimingType::kCombRise},
-                                                                          {"combinational_fall", TimingType::kCombFall},
-                                                                          {"non_seq_setup_rising", TimingType::kNonSeqSetupRising},
-                                                                          {"non_seq_setup_falling", TimingType::kNonSeqSetupFalling},
-                                                                          {"non_seq_hold_falling", TimingType::kNonSeqHoldFalling},
-                                                                          {"non_seq_hold_rising", TimingType::kNonSeqHoldRising},
-                                                                          {"non_seq_hold_falling", TimingType::kNonSeqHoldFalling},
-                                                                          {"skew_rising", TimingType::kSkewRising},
-                                                                          {"skew_falling", TimingType::kSkewFalling},
-                                                                          {"minimum_period", TimingType::kMinimunPeriod},
-                                                                          {"max_clock_tree_path", TimingType::kMaxClockTree},
-                                                                          {"min_clock_tree_path", TimingType::kMinClockTree},
-                                                                          {"nochange_high_high", TimingType::kNoChangeHighHigh},
-                                                                          {"nochange_high_low", TimingType::kNoChangeHighLow},
-                                                                          {"nochange_low_high", TimingType::kNoChangeLowHigh},
-                                                                          {"nochange_low_low", TimingType::kNoChangeLowLow}};
+BTreeMap<std::string, LibArc::TimingType> LibArc::_str_to_type = {{"setup_rising", TimingType::kSetupRising},
+                                                                  {"hold_rising", TimingType::kHoldRising},
+                                                                  {"recovery_rising", TimingType::kRecoveryRising},
+                                                                  {"removal_rising", TimingType::kRemovalRising},
+                                                                  {"rising_edge", TimingType::kRisingEdge},
+                                                                  {"preset", TimingType::kPreset},
+                                                                  {"clear", TimingType::kClear},
+                                                                  {"three_state_enable", TimingType::kThreeStateEnable},
+                                                                  {"three_state_enable_rise", TimingType::kThreeStateEnableRise},
+                                                                  {"three_state_enable_fall", TimingType::kThreeStateEnableFall},
+                                                                  {"three_state_disable", TimingType::kThreeStateDisable},
+                                                                  {"three_state_disable_rise", TimingType::kThreeStateDisableRise},
+                                                                  {"three_state_disable_fall", TimingType::kThreeStateDisableFall},
+                                                                  {"setup_falling", TimingType::kSetupFalling},
+                                                                  {"hold_falling", TimingType::kHoldFalling},
+                                                                  {"recovery_falling", TimingType::kRecoveryFalling},
+                                                                  {"removal_falling", TimingType::kRemovalFalling},
+                                                                  {"falling_edge", TimingType::kFallingEdge},
+                                                                  {"min_pulse_width", TimingType::kMinPulseWidth},
+                                                                  {"combinational", TimingType::kComb},
+                                                                  {"combinational_rise", TimingType::kCombRise},
+                                                                  {"combinational_fall", TimingType::kCombFall},
+                                                                  {"non_seq_setup_rising", TimingType::kNonSeqSetupRising},
+                                                                  {"non_seq_setup_falling", TimingType::kNonSeqSetupFalling},
+                                                                  {"non_seq_hold_falling", TimingType::kNonSeqHoldFalling},
+                                                                  {"non_seq_hold_rising", TimingType::kNonSeqHoldRising},
+                                                                  {"non_seq_hold_falling", TimingType::kNonSeqHoldFalling},
+                                                                  {"skew_rising", TimingType::kSkewRising},
+                                                                  {"skew_falling", TimingType::kSkewFalling},
+                                                                  {"minimum_period", TimingType::kMinimunPeriod},
+                                                                  {"max_clock_tree_path", TimingType::kMaxClockTree},
+                                                                  {"min_clock_tree_path", TimingType::kMinClockTree},
+                                                                  {"nochange_high_high", TimingType::kNoChangeHighHigh},
+                                                                  {"nochange_high_low", TimingType::kNoChangeHighLow},
+                                                                  {"nochange_low_high", TimingType::kNoChangeLowHigh},
+                                                                  {"nochange_low_low", TimingType::kNoChangeLowLow}};
 
-LibertyArc::LibertyArc() : _owner_cell(nullptr), _timing_sense(TimingSense::kDefault), _timing_type(TimingType::kDefault)
+LibArc::LibArc() : _owner_cell(nullptr), _timing_sense(TimingSense::kDefault), _timing_type(TimingType::kDefault)
 {
 }
 
-LibertyArc::LibertyArc(LibertyArc&& other) noexcept
+LibArc::LibArc(LibArc&& other) noexcept
     : _src_port(std::move(other._src_port)),
       _snk_port(std::move(other._snk_port)),
       _owner_cell(other._owner_cell),
@@ -935,7 +933,7 @@ LibertyArc::LibertyArc(LibertyArc&& other) noexcept
   other._table_model = nullptr;
 }
 
-LibertyArc& LibertyArc::operator=(LibertyArc&& rhs) noexcept
+LibArc& LibArc::operator=(LibArc&& rhs) noexcept
 {
   if (this != &rhs) {
     _src_port = std::move(rhs._src_port);
@@ -958,7 +956,7 @@ LibertyArc& LibertyArc::operator=(LibertyArc&& rhs) noexcept
  *
  * @param timing_sense
  */
-void LibertyArc::set_timing_sense(const char* timing_sense)
+void LibArc::set_timing_sense(const char* timing_sense)
 {
   if (Str::equal(timing_sense, "positive_unate")) {
     _timing_sense = TimingSense::kPositiveUnate;
@@ -974,7 +972,7 @@ void LibertyArc::set_timing_sense(const char* timing_sense)
  *
  * @param timing_type
  */
-void LibertyArc::set_timing_type(const char* timing_type)
+void LibArc::set_timing_type(const char* timing_type)
 {
   std::string timing_type_str = timing_type;
   if (_str_to_type.contains(timing_type)) {
@@ -989,7 +987,7 @@ void LibertyArc::set_timing_type(const char* timing_type)
  * @return true
  * @return false
  */
-bool LibertyArc::isMatchTimingType(TransType trans_type)
+bool LibArc::isMatchTimingType(TransType trans_type)
 {
   bool is_match = true;
   auto timing_type = get_timing_type();
@@ -1009,7 +1007,7 @@ bool LibertyArc::isMatchTimingType(TransType trans_type)
  *
  * @return unsigned 1 if true, else 0.
  */
-unsigned LibertyArc::isCheckArc()
+unsigned LibArc::isCheckArc()
 {
   static std::set<TimingType> check_types{TimingType::kSetupRising,     TimingType::kHoldRising,    TimingType::kRecoveryRising,
                                           TimingType::kRemovalRising,   TimingType::kSetupFalling,  TimingType::kHoldFalling,
@@ -1023,7 +1021,7 @@ unsigned LibertyArc::isCheckArc()
  *
  * @return unsigned 1 if true, else 0.
  */
-unsigned LibertyArc::isDelayArc()
+unsigned LibArc::isDelayArc()
 {
   static std::set<TimingType> delay_types{TimingType::kRisingEdge, TimingType::kFallingEdge, TimingType::kCombRise,
                                           TimingType::kCombFall,   TimingType::kComb,        TimingType::kDefault};
@@ -1036,7 +1034,7 @@ unsigned LibertyArc::isDelayArc()
  *
  * @return unsigned 1 if true, else 0.
  */
-unsigned LibertyArc::isMpwArc()
+unsigned LibArc::isMpwArc()
 {
   return _timing_type == TimingType::kMinPulseWidth;
 }
@@ -1046,7 +1044,7 @@ unsigned LibertyArc::isMpwArc()
  *
  * @return unsigned
  */
-unsigned LibertyArc::isClockGateCheckArc()
+unsigned LibArc::isClockGateCheckArc()
 {
   const char* src_port_name = this->get_src_port();
   const char* snk_port_name = this->get_snk_port();
@@ -1066,7 +1064,7 @@ unsigned LibertyArc::isClockGateCheckArc()
  * @param index2 The second axis value.
  * @return double The delay or constrain value in ns.
  */
-double LibertyArc::getDelayOrConstrainCheckNs(TransType trans_type, double slew, double load_or_constrain_slew)
+double LibArc::getDelayOrConstrainCheckNs(TransType trans_type, double slew, double load_or_constrain_slew)
 {
   // get/set time unit of liberty and derate
   TimeUnit input_time_unit = TimeUnit::kNS;
@@ -1106,7 +1104,7 @@ double LibertyArc::getDelayOrConstrainCheckNs(TransType trans_type, double slew,
  * @param load The second axis value.
  * @return double The slew value in ns.
  */
-double LibertyArc::getSlewNs(TransType trans_type, double slew, double load)
+double LibArc::getSlewNs(TransType trans_type, double slew, double load)
 {
   if (!isDelayArc()) {
     LOG_FATAL << "check arc has not output slew.";
@@ -1146,9 +1144,9 @@ double LibertyArc::getSlewNs(TransType trans_type, double slew, double load)
  * @param trans_type The transtion type, rise/fall.
  * @param slew The first axis value.
  * @param load The second axis value.
- * @return std::unique_ptr<LibetyCurrentData> The current values.
+ * @return std::unique_ptr<LibCurrentData> The current values.
  */
-std::unique_ptr<LibetyCurrentData> LibertyArc::getOutputCurrent(TransType trans_type, double slew, double load)
+std::unique_ptr<LibCurrentData> LibArc::getOutputCurrent(TransType trans_type, double slew, double load)
 {
   if (!isDelayArc()) {
     LOG_FATAL << "check arc has not output current.";
@@ -1157,11 +1155,11 @@ std::unique_ptr<LibetyCurrentData> LibertyArc::getOutputCurrent(TransType trans_
   return current_data;
 }
 
-LibertyArcSet::LibertyArcSet(LibertyArcSet&& other) noexcept : _arcs(std::move(other._arcs))
+LibArcSet::LibArcSet(LibArcSet&& other) noexcept : _arcs(std::move(other._arcs))
 {
 }
 
-LibertyArcSet& LibertyArcSet::operator=(LibertyArcSet&& rhs) noexcept
+LibArcSet& LibArcSet::operator=(LibArcSet&& rhs) noexcept
 {
   if (this != &rhs) {
     _arcs = std::move(rhs._arcs);
@@ -1169,11 +1167,11 @@ LibertyArcSet& LibertyArcSet::operator=(LibertyArcSet&& rhs) noexcept
   return *this;
 }
 
-LibertyPowerArc::LibertyPowerArc() : _owner_cell(nullptr)
+LibPowerArc::LibPowerArc() : _owner_cell(nullptr)
 {
 }
 
-LibertyPowerArc::LibertyPowerArc(LibertyPowerArc&& other) noexcept
+LibPowerArc::LibPowerArc(LibPowerArc&& other) noexcept
     : _src_port(std::move(other._src_port)),
       _snk_port(std::move(other._snk_port)),
       _owner_cell(other._owner_cell),
@@ -1181,7 +1179,7 @@ LibertyPowerArc::LibertyPowerArc(LibertyPowerArc&& other) noexcept
 {
 }
 
-LibertyPowerArc& LibertyPowerArc::operator=(LibertyPowerArc&& rhs) noexcept
+LibPowerArc& LibPowerArc::operator=(LibPowerArc&& rhs) noexcept
 {
   if (this != &rhs) {
     _src_port = std::move(rhs._src_port);
@@ -1196,11 +1194,11 @@ LibertyPowerArc& LibertyPowerArc::operator=(LibertyPowerArc&& rhs) noexcept
   return *this;
 }
 
-LibertyPowerArcSet::LibertyPowerArcSet(LibertyPowerArcSet&& other) noexcept : _power_arcs(std::move(other._power_arcs))
+LibPowerArcSet::LibPowerArcSet(LibPowerArcSet&& other) noexcept : _power_arcs(std::move(other._power_arcs))
 {
 }
 
-LibertyPowerArcSet& LibertyPowerArcSet::operator=(LibertyPowerArcSet&& rhs) noexcept
+LibPowerArcSet& LibPowerArcSet::operator=(LibPowerArcSet&& rhs) noexcept
 {
   if (this != &rhs) {
     _power_arcs = std::move(rhs._power_arcs);
@@ -1208,15 +1206,15 @@ LibertyPowerArcSet& LibertyPowerArcSet::operator=(LibertyPowerArcSet&& rhs) noex
   return *this;
 }
 
-LibertyCell::LibertyCell(const char* cell_name, LibertyLibrary* owner_lib) : _cell_name(cell_name), _owner_lib(owner_lib), _is_dont_use(0)
+LibCell::LibCell(const char* cell_name, LibLibrary* owner_lib) : _cell_name(cell_name), _owner_lib(owner_lib), _is_dont_use(0)
 {
 }
 
-LibertyCell::~LibertyCell()
+LibCell::~LibCell()
 {
 }
 
-LibertyCell::LibertyCell(LibertyCell&& other) noexcept
+LibCell::LibCell(LibCell&& other) noexcept
     : _cell_name(std::move(other._cell_name)),
       _cell_ports(std::move(other._cell_ports)),
       _cell_arcs(std::move(other._cell_arcs)),
@@ -1224,7 +1222,7 @@ LibertyCell::LibertyCell(LibertyCell&& other) noexcept
 {
 }
 
-LibertyCell& LibertyCell::operator=(LibertyCell&& rhs) noexcept
+LibCell& LibCell::operator=(LibCell&& rhs) noexcept
 {
   if (this != &rhs) {
     _cell_name = std::move(rhs._cell_name);
@@ -1236,36 +1234,36 @@ LibertyCell& LibertyCell::operator=(LibertyCell&& rhs) noexcept
   return *this;
 }
 
-std::vector<LibertyLeakagePower*> LibertyCell::getLeakagePowerList()
+std::vector<LibLeakagePower*> LibCell::getLeakagePowerList()
 {
-  std::vector<LibertyLeakagePower*> leakage_power_list;
+  std::vector<LibLeakagePower*> leakage_power_list;
   for (auto& leakage_power : _leakage_power_list) {
     leakage_power_list.push_back(leakage_power.get());
   }
   return leakage_power_list;
 }
 
-void LibertyCell::addLibertyArc(std::unique_ptr<LibertyArc>&& cell_arc)
+void LibCell::addLibertyArc(std::unique_ptr<LibArc>&& cell_arc)
 {
   auto arc_set = findLibertyArcSet(cell_arc->get_src_port(), cell_arc->get_snk_port(), cell_arc->get_timing_type());
 
   if (arc_set) {
     (*arc_set)->addLibertyArc(std::move(cell_arc));
   } else {
-    auto* new_arc_set = new LibertyArcSet();
+    auto* new_arc_set = new LibArcSet();
     _cell_arcs.emplace_back(new_arc_set);
     new_arc_set->addLibertyArc(std::move(cell_arc));
   }
 }
 
-void LibertyCell::addLibertyPowerArc(std::unique_ptr<LibertyPowerArc>&& cell_power_arc)
+void LibCell::addLibertyPowerArc(std::unique_ptr<LibPowerArc>&& cell_power_arc)
 {
   auto power_arc_set = findLibertyPowerArcSet(cell_power_arc->get_src_port(), cell_power_arc->get_snk_port());
 
   if (power_arc_set) {
     (*power_arc_set)->addLibertyPowerArc(std::move(cell_power_arc));
   } else {
-    auto* new_power_arc_set = new LibertyPowerArcSet();
+    auto* new_power_arc_set = new LibPowerArcSet();
     _cell_power_arcs.emplace_back(new_power_arc_set);
     new_power_arc_set->addLibertyPowerArc(std::move(cell_power_arc));
   }
@@ -1275,9 +1273,9 @@ void LibertyCell::addLibertyPowerArc(std::unique_ptr<LibertyPowerArc>&& cell_pow
  * @brief Get cell port or port bus.
  *
  * @param port_name
- * @return LibertyObject* The port or the port bus.
+ * @return LibObject* The port or the port bus.
  */
-LibertyPort* LibertyCell::get_cell_port_or_port_bus(const char* port_name)
+LibPort* LibCell::get_cell_port_or_port_bus(const char* port_name)
 {
   // find the port.
   if (auto p = _str2ports.find(port_name); p != _str2ports.end()) {
@@ -1291,7 +1289,7 @@ LibertyPort* LibertyCell::get_cell_port_or_port_bus(const char* port_name)
     if (!index) {
       return p->second;
     } else {
-      return (*(dynamic_cast<LibertyPortBus*>(p->second)))[index.value()];
+      return (*(dynamic_cast<LibPortBus*>(p->second)))[index.value()];
     }
   }
 
@@ -1306,8 +1304,7 @@ LibertyPort* LibertyCell::get_cell_port_or_port_bus(const char* port_name)
  * @param timing_type
  * @return unsigned 1 if success, 0 else fail.
  */
-std::optional<LibertyArcSet*> LibertyCell::findLibertyArcSet(const char* from_port_name, const char* to_port_name,
-                                                             LibertyArc::TimingType timing_type)
+std::optional<LibArcSet*> LibCell::findLibertyArcSet(const char* from_port_name, const char* to_port_name, LibArc::TimingType timing_type)
 {
   for (auto& cell_arc_set : _cell_arcs) {
     auto* cell_arc = cell_arc_set->front();
@@ -1328,7 +1325,7 @@ std::optional<LibertyArcSet*> LibertyCell::findLibertyArcSet(const char* from_po
  * @param to_port_name
  * @return unsigned 1 if success, 0 else fail.
  */
-std::optional<LibertyArcSet*> LibertyCell::findLibertyArcSet(const char* from_port_name, const char* to_port_name)
+std::optional<LibArcSet*> LibCell::findLibertyArcSet(const char* from_port_name, const char* to_port_name)
 {
   for (auto& cell_arc_set : _cell_arcs) {
     auto* cell_arc = cell_arc_set->front();
@@ -1345,11 +1342,11 @@ std::optional<LibertyArcSet*> LibertyCell::findLibertyArcSet(const char* from_po
  * @brief Find the liberty arc set of to port name.
  *
  * @param to_port_name
- * @return std::vector<LibertyArcSet*>
+ * @return std::vector<LibArcSet*>
  */
-std::vector<LibertyArcSet*> LibertyCell::findLibertyArcSet(const char* to_port_name)
+std::vector<LibArcSet*> LibCell::findLibertyArcSet(const char* to_port_name)
 {
-  std::vector<LibertyArcSet*> ret_value;
+  std::vector<LibArcSet*> ret_value;
   for (auto& cell_arc_set : _cell_arcs) {
     auto* cell_arc = cell_arc_set->front();
 
@@ -1368,7 +1365,7 @@ std::vector<LibertyArcSet*> LibertyCell::findLibertyArcSet(const char* to_port_n
  * @param to_port_name
  * @return unsigned 1 if success, 0 else fail.
  */
-std::optional<LibertyPowerArcSet*> LibertyCell::findLibertyPowerArcSet(const char* from_port_name, const char* to_port_name)
+std::optional<LibPowerArcSet*> LibCell::findLibertyPowerArcSet(const char* from_port_name, const char* to_port_name)
 {
   for (auto& cell_power_arc_set : _cell_power_arcs) {
     auto* cell_power_arc = cell_power_arc_set->front();
@@ -1387,7 +1384,7 @@ std::optional<LibertyPowerArcSet*> LibertyCell::findLibertyPowerArcSet(const cha
  * @param input
  * @param output
  */
-void LibertyCell::bufferPorts(LibertyPort*& input, LibertyPort*& output)
+void LibCell::bufferPorts(LibPort*& input, LibPort*& output)
 {
   input = nullptr;
   output = nullptr;
@@ -1420,7 +1417,7 @@ void LibertyCell::bufferPorts(LibertyPort*& input, LibertyPort*& output)
  * @return true
  * @return false
  */
-bool LibertyCell::hasBufferFunc(LibertyPort* input, LibertyPort* output)
+bool LibCell::hasBufferFunc(LibPort* input, LibPort* output)
 {
   auto* func_expr = output->get_func_expr();
   return func_expr && func_expr->op == RustLibertyExprOp::kBuffer;
@@ -1434,7 +1431,7 @@ bool LibertyCell::hasBufferFunc(LibertyPort* input, LibertyPort* output)
  * @return true
  * @return false
  */
-bool LibertyCell::hasInverterFunc(LibertyPort* input, LibertyPort* output)
+bool LibCell::hasInverterFunc(LibPort* input, LibPort* output)
 {
   auto* func_expr = output->get_func_expr();
   return func_expr && func_expr->op == RustLibertyExprOp::kNot;
@@ -1446,10 +1443,10 @@ bool LibertyCell::hasInverterFunc(LibertyPort* input, LibertyPort* output)
  * @return true
  * @return false
  */
-bool LibertyCell::isBuffer()
+bool LibCell::isBuffer()
 {
-  LibertyPort* input;
-  LibertyPort* output;
+  LibPort* input;
+  LibPort* output;
   bufferPorts(input, output);
   return input && output && hasBufferFunc(input, output);
 }
@@ -1460,10 +1457,10 @@ bool LibertyCell::isBuffer()
  * @return true
  * @return false
  */
-bool LibertyCell::isInverter()
+bool LibCell::isInverter()
 {
-  LibertyPort* input;
-  LibertyPort* output;
+  LibPort* input;
+  LibPort* output;
   bufferPorts(input, output);
   return input && output && hasInverterFunc(input, output);
 }
@@ -1473,7 +1470,7 @@ bool LibertyCell::isInverter()
  * @return true
  * @return false
  */
-bool LibertyCell::isSequentialCell()
+bool LibCell::isSequentialCell()
 {
   for (auto& liberty_arc_set : _cell_arcs) {
     auto& lib_arc = liberty_arc_set->get_arcs().front();
@@ -1489,7 +1486,7 @@ bool LibertyCell::isSequentialCell()
  * @return true
  * @return false
  */
-bool LibertyCell::isICG()
+bool LibCell::isICG()
 {
   for (auto& liberty_arc_set : _cell_arcs) {
     auto& lib_arc = liberty_arc_set->get_arcs().front();
@@ -1506,7 +1503,7 @@ bool LibertyCell::isICG()
  * @param query_table_power
  * @return double
  */
-double LibertyCell::convertTablePowerToMw(double query_table_power)
+double LibCell::convertTablePowerToMw(double query_table_power)
 {
   auto* the_lib = get_owner_lib();
 
@@ -1518,28 +1515,28 @@ double LibertyCell::convertTablePowerToMw(double query_table_power)
   return power_mw;
 }
 
-LibertyWireLoad::LibertyWireLoad(const char* wire_load_name) : _wire_load_name(wire_load_name)
+LibWireLoad::LibWireLoad(const char* wire_load_name) : _wire_load_name(wire_load_name)
 {
 }
 
-LibertyLutTableTemplate::LibertyLutTableTemplate(const char* template_name) : _template_name(template_name)
+LibLutTableTemplate::LibLutTableTemplate(const char* template_name) : _template_name(template_name)
 {
 }
 
-const std::map<std::string_view, LibertyLutTableTemplate::Variable> LibertyLutTableTemplate::_str2var
-    = {{"total_output_net_capacitance", LibertyLutTableTemplate::Variable::TOTAL_OUTPUT_NET_CAPACITANCE},
-       {"input_net_transition", LibertyLutTableTemplate::Variable::INPUT_NET_TRANSITION},
-       {"related_pin_transition", LibertyLutTableTemplate::Variable::RELATED_PIN_TRANSITION},
-       {"constrained_pin_transition", LibertyLutTableTemplate::Variable::CONSTRAINED_PIN_TRANSITION},
-       {"input_transition_time", LibertyLutTableTemplate::Variable::INPUT_TRANSITION_TIME},
-       {"time", LibertyLutTableTemplate::Variable::TIME},
-       {"input_voltage", LibertyLutTableTemplate::Variable::INPUT_VOLTAGE},
-       {"output_voltage", LibertyLutTableTemplate::Variable::OUTPUT_VOLTAGE},
-       {"input_noise_height", LibertyLutTableTemplate::Variable::INPUT_NOISE_HEIGHT},
-       {"input_noise_width", LibertyLutTableTemplate::Variable::INPUT_NOISE_WIDTH},
-       {"normalized_voltage", LibertyLutTableTemplate::Variable::NORMALIZED_VOLTAGE}};
+const std::map<std::string_view, LibLutTableTemplate::Variable> LibLutTableTemplate::_str2var
+    = {{"total_output_net_capacitance", LibLutTableTemplate::Variable::TOTAL_OUTPUT_NET_CAPACITANCE},
+       {"input_net_transition", LibLutTableTemplate::Variable::INPUT_NET_TRANSITION},
+       {"related_pin_transition", LibLutTableTemplate::Variable::RELATED_PIN_TRANSITION},
+       {"constrained_pin_transition", LibLutTableTemplate::Variable::CONSTRAINED_PIN_TRANSITION},
+       {"input_transition_time", LibLutTableTemplate::Variable::INPUT_TRANSITION_TIME},
+       {"time", LibLutTableTemplate::Variable::TIME},
+       {"input_voltage", LibLutTableTemplate::Variable::INPUT_VOLTAGE},
+       {"output_voltage", LibLutTableTemplate::Variable::OUTPUT_VOLTAGE},
+       {"input_noise_height", LibLutTableTemplate::Variable::INPUT_NOISE_HEIGHT},
+       {"input_noise_width", LibLutTableTemplate::Variable::INPUT_NOISE_WIDTH},
+       {"normalized_voltage", LibLutTableTemplate::Variable::NORMALIZED_VOLTAGE}};
 
-LibertyCurrentTemplate::LibertyCurrentTemplate(const char* template_name) : LibertyLutTableTemplate(template_name)
+LibCurrentTemplate::LibCurrentTemplate(const char* template_name) : LibLutTableTemplate(template_name)
 {
 }
 
@@ -1547,9 +1544,9 @@ LibertyCurrentTemplate::LibertyCurrentTemplate(const char* template_name) : Libe
  * @brief Load liberty with rust parse API.
  *
  * @param file_name
- * @return std::unique_ptr<LibertyLibrary>
+ * @return std::unique_ptr<LibLibrary>
  */
-std::unique_ptr<LibertyLibrary> Liberty::loadLibertyWithRustParser(const char* file_name)
+std::unique_ptr<LibLibrary> Lib::loadLibertyWithRustParser(const char* file_name)
 {
   RustLibertyReader lib_rust_reader(file_name);
 

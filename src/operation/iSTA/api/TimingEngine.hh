@@ -122,31 +122,31 @@ class TimingEngine {
     return *this;
   }
 
-  void makeEquivCells(std::vector<LibertyLibrary *> &equiv_libs) {
+  void makeEquivCells(std::vector<LibLibrary *> &equiv_libs) {
     return _ista->makeEquivCells(equiv_libs);
   }
 
-  Vector<LibertyCell *> *equivCells(LibertyCell *cell) {
+  Vector<LibCell *> *equivCells(LibCell *cell) {
     return _ista->equivCells(cell);
   }
 
-  Vector<std::unique_ptr<LibertyLibrary>> &getAllLib() {
+  Vector<std::unique_ptr<LibLibrary>> &getAllLib() {
     return _ista->getAllLib();
   }
 
-  LibertyCell *findLibertyCell(const char *cell_name) {
+  LibCell *findLibertyCell(const char *cell_name) {
     return _ista->findLibertyCell(cell_name);
   }
 
-  LibertyTable *getCellLibertyTable(const char *cell_name,
-                                    LibertyTable::TableType table_type);
-  LibertyTable *getCellLibertyTable(const char *cell_name,
-                                    const char *from_port_name,
-                                    const char *to_port_name,
-                                    LibertyTable::TableType table_type);
-  LibertyTable *getCellLibertyTable(const char *cell_name,
-                                    LibertyArc::TimingType timing_type,
-                                    LibertyTable::TableType table_type);
+  LibTable *getCellLibertyTable(const char *cell_name,
+                                LibTable::TableType table_type);
+  LibTable *getCellLibertyTable(const char *cell_name,
+                                const char *from_port_name,
+                                const char *to_port_name,
+                                LibTable::TableType table_type);
+  LibTable *getCellLibertyTable(const char *cell_name,
+                                LibArc::TimingType timing_type,
+                                LibTable::TableType table_type);
 
   StaVertex *findVertex(const char *pin_name) {
     return _ista->findVertex(pin_name);

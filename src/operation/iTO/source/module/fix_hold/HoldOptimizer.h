@@ -75,29 +75,28 @@ class HoldOptimizer {
   void insertHoldDelay(string insert_buf_name, string pin_name, int insert_number = 1);
 
  private:
-  int checkAndOptimizeHold(TOVertexSet end_points, LibertyCell *insert_buf_cell);
+  int checkAndOptimizeHold(TOVertexSet end_points, LibCell *insert_buf_cell);
 
   void initBufferCell();
 
   void calcBufferCap();
 
-  LibertyCell *findBufferWithMaxDelay();
+  LibCell *findBufferWithMaxDelay();
 
-  bool findEndpointsWithHoldViolation(TOVertexSet end_points,
-                                      TOSlack &worst_slack, TOVertexSet &hold_violations);
+  bool findEndpointsWithHoldViolation(TOVertexSet end_points, TOSlack &worst_slack,
+                                      TOVertexSet &hold_violations);
 
-  int  fixHoldVioPath(TOVertexSeq fanins, LibertyCell *insert_buffer_cell);
+  int fixHoldVioPath(TOVertexSeq fanins, LibCell *insert_buffer_cell);
 
   void insertBufferDelay(StaVertex *drvr_vertex, int insert_number,
-                         TODesignObjSeq &load_pins, LibertyCell *insert_buffer_cell);
+                         TODesignObjSeq &load_pins, LibCell *insert_buffer_cell);
 
-  void  calcStaVertexSlacks(StaVertex *vertex,
-                     TOSlacks slacks);
+  void    calcStaVertexSlacks(StaVertex *vertex, TOSlacks slacks);
   TOSlack calcSlackGap(StaVertex *vertex);
 
   void setLocation(Instance *inst, int x, int y);
 
-  float calcHoldDelayOfBuffer(LibertyCell *buffer);
+  float calcHoldDelayOfBuffer(LibCell *buffer);
 
   TOVertexSet getEndPoints();
 
@@ -108,14 +107,14 @@ class HoldOptimizer {
   TOSlack getWorstSlack(AnalysisMode mode);
   TOSlack getWorstSlack(StaVertex *vertex, AnalysisMode mode);
 
-  void insertLoadBuffer(LibertyCell *load_buffer, StaVertex *drvr_vtx, int insert_num);
+  void insertLoadBuffer(LibCell *load_buffer, StaVertex *drvr_vtx, int insert_num);
   void insertLoadBuffer(TOVertexSeq fanins);
 
   void reportWNSAndTNS();
 
   // data
-  DbInterface     *_db_interface;
-  TimingEngine    *_timing_engine;
+  DbInterface *    _db_interface;
+  TimingEngine *   _timing_engine;
   TimingDBAdapter *_db_adapter;
 
   EstimateParasitics *_parasitics_estimator;
@@ -144,7 +143,7 @@ class HoldOptimizer {
   static int _rise;
   static int _fall;
 
-  vector<pair<double, LibertyCell *>> _buffer_cap_pair;
+  vector<pair<double, LibCell *>> _buffer_cap_pair;
 };
 
 } // namespace ito

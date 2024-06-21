@@ -30,7 +30,7 @@
 #include "FlatSet.hh"
 #include "TimingIDBAdapter.hh"
 #include "delay/ElmoreDelayCalc.hh"
-#include "liberty/Liberty.hh"
+#include "liberty/Lib.hh"
 #include "log/Log.hh"
 #include "netlist/Instance.hh"
 #include "netlist/Netlist.hh"
@@ -103,17 +103,17 @@ void TimingEngine::set_db_adapter(std::unique_ptr<TimingDBAdapter> db_adapter) {
 }
 
 /**
- * @brief get the LibertyTable of a cell.
+ * @brief get the LibTable of a cell.
  * table.
  *
  * @param cell_name
  * @param TableType(kCellRise = 0,kCellFall = 1,kRiseTransition =
  * 2,kFallTransition = 3)
- * @return LibertyTable*
+ * @return LibTable*
  */
-LibertyTable* TimingEngine::getCellLibertyTable(
-    const char* cell_name, LibertyTable::TableType table_type) {
-  LibertyCell* lib_cell = _ista->findLibertyCell(cell_name);
+LibTable* TimingEngine::getCellLibertyTable(const char* cell_name,
+                                            LibTable::TableType table_type) {
+  LibCell* lib_cell = _ista->findLibertyCell(cell_name);
   const char* from_port_name = nullptr;
   const char* to_port_name = nullptr;
 
@@ -125,23 +125,23 @@ LibertyTable* TimingEngine::getCellLibertyTable(
       to_port_name = port_name;
     }
   }
-  std::optional<LibertyArcSet*> timing_arc_set =
+  std::optional<LibArcSet*> timing_arc_set =
       lib_cell->findLibertyArcSet(from_port_name, to_port_name);
-  LibertyArc* the_timing_arc = nullptr;
+  LibArc* the_timing_arc = nullptr;
   if (timing_arc_set) {
     the_timing_arc = (*timing_arc_set)->front();
 
     LOG_FATAL_IF(!the_timing_arc);
-    LibertyTableModel* table_model = the_timing_arc->get_table_model();
-    LibertyTable* table = dynamic_cast<LibertyDelayTableModel*>(table_model)
-                              ->getTable(int(table_type));
+    LibTableModel* table_model = the_timing_arc->get_table_model();
+    LibTable* table = dynamic_cast<LibDelayTableModel*>(table_model)
+                          ->getTable(int(table_type));
     return table;
   }
   return nullptr;
 }
 
 /**
- * @brief get the LibertyTable of a cell.
+ * @brief get the LibTable of a cell.
  * table.
  *
  * @param cell_name
@@ -149,30 +149,31 @@ LibertyTable* TimingEngine::getCellLibertyTable(
  * @param to_port_name
  * @param TableType(kCellRise = 0,kCellFall = 1,kRiseTransition =
  * 2,kFallTransition = 3)
- * @return LibertyTable*
+ * @return LibTable*
  */
-LibertyTable* TimingEngine::getCellLibertyTable(
-    const char* cell_name, const char* from_port_name, const char* to_port_name,
-    LibertyTable::TableType table_type) {
-  LibertyCell* lib_cell = _ista->findLibertyCell(cell_name);
+LibTable* TimingEngine::getCellLibertyTable(const char* cell_name,
+                                            const char* from_port_name,
+                                            const char* to_port_name,
+                                            LibTable::TableType table_type) {
+  LibCell* lib_cell = _ista->findLibertyCell(cell_name);
 
-  std::optional<LibertyArcSet*> timing_arc_set =
+  std::optional<LibArcSet*> timing_arc_set =
       lib_cell->findLibertyArcSet(from_port_name, to_port_name);
-  LibertyArc* the_timing_arc = nullptr;
+  LibArc* the_timing_arc = nullptr;
   if (timing_arc_set) {
     the_timing_arc = (*timing_arc_set)->front();
 
     LOG_FATAL_IF(!the_timing_arc);
-    LibertyTableModel* table_model = the_timing_arc->get_table_model();
-    LibertyTable* table = dynamic_cast<LibertyDelayTableModel*>(table_model)
-                              ->getTable(int(table_type));
+    LibTableModel* table_model = the_timing_arc->get_table_model();
+    LibTable* table = dynamic_cast<LibDelayTableModel*>(table_model)
+                          ->getTable(int(table_type));
     return table;
   }
   return nullptr;
 }
 
 /**
- * @brief get the LibertyTable of a cell.
+ * @brief get the LibTable of a cell.
  * table.
  *
  * @param cell_name
@@ -180,12 +181,12 @@ LibertyTable* TimingEngine::getCellLibertyTable(
  * timing_type(TimingType::kRisingEdge,TimingType::kFallingEdge,TimingType::kComb)
  * @param TableType(kCellRise = 0,kCellFall = 1,kRiseTransition =
  * 2,kFallTransition = 3)
- * @return LibertyTable*
+ * @return LibTable*
  */
-LibertyTable* TimingEngine::getCellLibertyTable(
-    const char* cell_name, LibertyArc::TimingType timing_type,
-    LibertyTable::TableType table_type) {
-  LibertyCell* lib_cell = _ista->findLibertyCell(cell_name);
+LibTable* TimingEngine::getCellLibertyTable(const char* cell_name,
+                                            LibArc::TimingType timing_type,
+                                            LibTable::TableType table_type) {
+  LibCell* lib_cell = _ista->findLibertyCell(cell_name);
   const char* from_port_name = nullptr;
   const char* to_port_name = nullptr;
 
@@ -200,16 +201,16 @@ LibertyTable* TimingEngine::getCellLibertyTable(
     }
   }
 
-  std::optional<LibertyArcSet*> timing_arc_set = lib_cell->findLibertyArcSet(
-      from_port_name, to_port_name, LibertyArc::TimingType::kComb);
-  LibertyArc* the_timing_arc = nullptr;
+  std::optional<LibArcSet*> timing_arc_set = lib_cell->findLibertyArcSet(
+      from_port_name, to_port_name, LibArc::TimingType::kComb);
+  LibArc* the_timing_arc = nullptr;
   if (timing_arc_set) {
     the_timing_arc = (*timing_arc_set)->front();
 
     LOG_FATAL_IF(!the_timing_arc);
-    LibertyTableModel* table_model = the_timing_arc->get_table_model();
-    LibertyTable* table = dynamic_cast<LibertyDelayTableModel*>(table_model)
-                              ->getTable(int(table_type));
+    LibTableModel* table_model = the_timing_arc->get_table_model();
+    LibTable* table = dynamic_cast<LibDelayTableModel*>(table_model)
+                          ->getTable(int(table_type));
     return table;
   }
   return nullptr;
@@ -834,7 +835,7 @@ void TimingEngine::repowerInstance(const char* instance_name,
     auto* liberty_port =
         inst_liberty_cell->get_cell_port_or_port_bus(pin->get_name());
     LOG_FATAL_IF(liberty_port->isLibertyPortBus());
-    pin->set_cell_port(dynamic_cast<LibertyPort*>(liberty_port));
+    pin->set_cell_port(dynamic_cast<LibPort*>(liberty_port));
     if (pin->isInput()) {
       auto the_vertex = the_graph.findVertex(pin);
       LOG_FATAL_IF(!the_vertex);
@@ -1445,7 +1446,7 @@ double TimingEngine::reportLibertyCellPinCapacitance(
     const char* cell_pin_name) {
   const char* sep = "/:";
   auto [cell_name, pin_name] = Str::splitTwoPart(cell_pin_name, sep);
-  LibertyCell* lib_cell = _ista->findLibertyCell(cell_name.c_str());
+  LibCell* lib_cell = _ista->findLibertyCell(cell_name.c_str());
   auto& cell_ports = lib_cell->get_cell_ports();
 
   double cap = 0;
@@ -1467,7 +1468,7 @@ double TimingEngine::reportLibertyCellPinCapacitance(
  */
 std::vector<std::string> TimingEngine::getLibertyCellInputpin(
     const char* cell_name) {
-  LibertyCell* lib_cell = _ista->findLibertyCell(cell_name);
+  LibCell* lib_cell = _ista->findLibertyCell(cell_name);
   auto& cell_ports = lib_cell->get_cell_ports();
 
   std::vector<std::string> input_pin_names;

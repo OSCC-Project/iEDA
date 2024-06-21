@@ -175,7 +175,7 @@ LaplaceMoments WaveformApproximation::propagateY(RctEdge* the_edge) {
 double WaveformApproximation::calInputWaveformThresholdByCeff(
     RcTree& rc_tree, double load_nodes_pin_cap_sum, Eigen::MatrixXd& current,
     Eigen::MatrixXd& time, int step_num, TransType trans_type,
-    double input_slew, LibertyArc* lib_arc) {
+    double input_slew, LibArc* lib_arc) {
   WaveformApproximation waveform;
   PiModel pi_model = waveform.reduceRCTreeToPIModel(rc_tree.get_root(),
                                                     load_nodes_pin_cap_sum);

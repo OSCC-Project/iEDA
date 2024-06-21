@@ -41,7 +41,7 @@
 #include "Type.hh"
 #include "aocv/AocvParser.hh"
 #include "delay/ElmoreDelayCalc.hh"
-#include "liberty/Liberty.hh"
+#include "liberty/Lib.hh"
 #include "liberty/LibertyClassifyCell.hh"
 #include "netlist/Netlist.hh"
 #include "sdc/SdcSetIODelay.hh"
@@ -219,18 +219,18 @@ class Sta {
   Netlist* get_netlist() { return &_netlist; }
   void resetNetlist() { _netlist.reset(); }
 
-  void addLib(std::unique_ptr<LibertyLibrary> lib) {
+  void addLib(std::unique_ptr<LibLibrary> lib) {
     std::unique_lock<std::mutex> lk(_mt);
     _libs.emplace_back(std::move(lib));
   }
 
-  LibertyLibrary* getOneLib() {
+  LibLibrary* getOneLib() {
     return _libs.empty() ? nullptr : _libs.back().get();
   }
 
-  std::set<LibertyLibrary*> getUsedLibs();
+  std::set<LibLibrary*> getUsedLibs();
 
-  Vector<std::unique_ptr<LibertyLibrary>>& getAllLib() { return _libs; }
+  Vector<std::unique_ptr<LibLibrary>>& getAllLib() { return _libs; }
 
   void resetRcNet(Net* the_net) {
     if (_net_to_rc_net.contains(the_net)) {
@@ -248,14 +248,14 @@ class Sta {
   }
   void resetAllRcNet() { _net_to_rc_net.clear(); }
 
-  LibertyCell* findLibertyCell(const char* cell_name);
+  LibCell* findLibertyCell(const char* cell_name);
   std::optional<AocvObjectSpecSet*> findDataAocvObjectSpecSet(
       const char* object_name);
   std::optional<AocvObjectSpecSet*> findClockAocvObjectSpecSet(
       const char* object_name);
-  void makeEquivCells(std::vector<LibertyLibrary*>& equiv_libs);
+  void makeEquivCells(std::vector<LibLibrary*>& equiv_libs);
 
-  Vector<LibertyCell*>* equivCells(LibertyCell* cell);
+  Vector<LibCell*>* equivCells(LibCell* cell);
 
   static void initSdcCmd();
 
@@ -518,7 +518,7 @@ class Sta {
   RustVerilogModule* _rust_top_module =
       nullptr;       //!< The design top module of rust version.
   Netlist _netlist;  //!< The current top netlist for sta analysis.
-  Vector<std::unique_ptr<LibertyLibrary>>
+  Vector<std::unique_ptr<LibLibrary>>
       _libs;  //!< The design libs of different corners.
 
   std::unique_ptr<LibertyClassifyCell>

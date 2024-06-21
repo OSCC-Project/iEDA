@@ -127,7 +127,7 @@ TEST_F(TimingEngineTest, resizer) {
                                fanout_limit, fanout_slack);
 
     auto& all_libs = timing_engine->getAllLib();
-    std::vector<LibertyLibrary*> equiv_libs;
+    std::vector<LibLibrary*> equiv_libs;
     for (auto& lib : all_libs) {
       equiv_libs.push_back(lib.get());
     }
@@ -275,7 +275,7 @@ TEST_F(TimingEngineTest, equiv_lib) {
 
   timing_engine->readLiberty(lib_files);
 
-  std::vector<LibertyLibrary*> equiv_libs;
+  std::vector<LibLibrary*> equiv_libs;
   auto& all_libs = timing_engine->getAllLib();
   for (auto& lib : all_libs) {
     equiv_libs.push_back(lib.get());

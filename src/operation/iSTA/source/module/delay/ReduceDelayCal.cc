@@ -44,7 +44,7 @@
 
 #include "Reduce.hh"
 #include "Type.hh"
-#include "liberty/Liberty.hh"
+#include "liberty/Lib.hh"
 #include "log/Log.hh"
 #include "netlist/Instance.hh"
 #include "solver/Interpolation.hh"
@@ -825,7 +825,7 @@ std::optional<double> ArnoldiNet::getSlew(
  */
 std::optional<std::pair<double, MatrixXd>> ArnoldiNet::delay(
     DesignObject& to, double from_slew,
-    std::optional<LibetyCurrentData*> output_current, AnalysisMode mode,
+    std::optional<LibCurrentData*> output_current, AnalysisMode mode,
     TransType trans_type) {
   if (output_current) {
     auto [total_time, num_points] =
@@ -834,8 +834,8 @@ std::optional<std::pair<double, MatrixXd>> ArnoldiNet::delay(
     auto get_current = [&output_current](
                            double start_time, double end_time,
                            int num_sim_point) -> std::vector<double> {
-      std::optional<LibertyCurrentSimuInfo> simu_info =
-          LibertyCurrentSimuInfo{start_time, end_time, num_sim_point};
+      std::optional<LibCurrentSimuInfo> simu_info =
+          LibCurrentSimuInfo{start_time, end_time, num_sim_point};
 
       return (*output_current)->getOutputCurrent(simu_info);
     };
@@ -858,7 +858,7 @@ std::optional<std::pair<double, MatrixXd>> ArnoldiNet::delay(
  * @return std::optional<double>
  */
 std::optional<double> ArnoldiNet::slew(
-    Pin& to, double from_slew, std::optional<LibetyCurrentData*> output_current,
+    Pin& to, double from_slew, std::optional<LibCurrentData*> output_current,
     AnalysisMode mode, TransType trans_type) {
   // static int prof_count = 0;
   // if (prof_count == 0) {
@@ -872,8 +872,8 @@ std::optional<double> ArnoldiNet::slew(
     auto get_current = [&output_current](
                            double start_time, double end_time,
                            int num_sim_point) -> std::vector<double> {
-      std::optional<LibertyCurrentSimuInfo> simu_info =
-          LibertyCurrentSimuInfo{start_time, end_time, num_sim_point};
+      std::optional<LibCurrentSimuInfo> simu_info =
+          LibCurrentSimuInfo{start_time, end_time, num_sim_point};
 
       return (*output_current)->getOutputCurrent(simu_info);
     };

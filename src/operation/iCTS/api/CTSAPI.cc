@@ -461,19 +461,19 @@ bool CTSAPI::cellLibExist(const std::string& cell_master, const std::string& que
                           const std::string& to_port)
 {
   std::vector<std::vector<double>> index_list;
-  ista::LibertyTable::TableType table_type;
+  ista::LibTable::TableType table_type;
   if (query_field == "cell_rise") {
-    table_type = ista::LibertyTable::TableType::kCellRise;
+    table_type = ista::LibTable::TableType::kCellRise;
   } else if (query_field == "cell_fall") {
-    table_type = ista::LibertyTable::TableType::kCellFall;
+    table_type = ista::LibTable::TableType::kCellFall;
   } else if (query_field == "rise_transition") {
-    table_type = ista::LibertyTable::TableType::kRiseTransition;
+    table_type = ista::LibTable::TableType::kRiseTransition;
   } else if (query_field == "fall_transition") {
-    table_type = ista::LibertyTable::TableType::kFallTransition;
+    table_type = ista::LibTable::TableType::kFallTransition;
   } else {
     LOG_FATAL << "buffer lib query field not supported";
   }
-  ista::LibertyTable* table = nullptr;
+  ista::LibTable* table = nullptr;
   if (from_port.empty() && to_port.empty()) {
     table = _timing_engine->getCellLibertyTable(cell_master.c_str(), table_type);
   } else {
@@ -486,19 +486,19 @@ std::vector<std::vector<double>> CTSAPI::queryCellLibIndex(const std::string& ce
                                                            const std::string& from_port, const std::string& to_port)
 {
   std::vector<std::vector<double>> index_list;
-  ista::LibertyTable::TableType table_type;
+  ista::LibTable::TableType table_type;
   if (query_field == "cell_rise") {
-    table_type = ista::LibertyTable::TableType::kCellRise;
+    table_type = ista::LibTable::TableType::kCellRise;
   } else if (query_field == "cell_fall") {
-    table_type = ista::LibertyTable::TableType::kCellFall;
+    table_type = ista::LibTable::TableType::kCellFall;
   } else if (query_field == "rise_transition") {
-    table_type = ista::LibertyTable::TableType::kRiseTransition;
+    table_type = ista::LibTable::TableType::kRiseTransition;
   } else if (query_field == "fall_transition") {
-    table_type = ista::LibertyTable::TableType::kFallTransition;
+    table_type = ista::LibTable::TableType::kFallTransition;
   } else {
     LOG_FATAL << "buffer lib query field not supported";
   }
-  ista::LibertyTable* table = nullptr;
+  ista::LibTable* table = nullptr;
   if (from_port.empty() && to_port.empty()) {
     table = _timing_engine->getCellLibertyTable(cell_master.c_str(), table_type);
   } else {
@@ -520,19 +520,19 @@ std::vector<double> CTSAPI::queryCellLibValue(const std::string& cell_master, co
                                               const std::string& to_port)
 {
   std::vector<double> values;
-  ista::LibertyTable::TableType table_type;
+  ista::LibTable::TableType table_type;
   if (query_field == "cell_rise") {
-    table_type = ista::LibertyTable::TableType::kCellRise;
+    table_type = ista::LibTable::TableType::kCellRise;
   } else if (query_field == "cell_fall") {
-    table_type = ista::LibertyTable::TableType::kCellFall;
+    table_type = ista::LibTable::TableType::kCellFall;
   } else if (query_field == "rise_transition") {
-    table_type = ista::LibertyTable::TableType::kRiseTransition;
+    table_type = ista::LibTable::TableType::kRiseTransition;
   } else if (query_field == "fall_transition") {
-    table_type = ista::LibertyTable::TableType::kFallTransition;
+    table_type = ista::LibTable::TableType::kFallTransition;
   } else {
     LOG_FATAL << "buffer lib query field not supported";
   }
-  ista::LibertyTable* table = nullptr;
+  ista::LibTable* table = nullptr;
   if (from_port.empty() && to_port.empty()) {
     table = _timing_engine->getCellLibertyTable(cell_master.c_str(), table_type);
   } else {

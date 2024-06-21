@@ -63,7 +63,7 @@
 #include <variant>
 
 #include "WaveformApproximation.hh"
-#include "liberty/Liberty.hh"
+#include "liberty/Lib.hh"
 #include "netlist/Net.hh"
 #include "netlist/Pin.hh"
 #include "netlist/Port.hh"
@@ -73,7 +73,7 @@ namespace ista {
 class RctEdge;
 class RctNode;
 class RcTree;
-class LibetyCurrentData;
+class LibCurrentData;
 
 /**
  * @brief The RC tree node, that has ground capacitance.
@@ -580,13 +580,12 @@ class RcNet {
 
   virtual std::optional<std::pair<double, Eigen::MatrixXd>> delay(
       DesignObject& to, double from_slew,
-      std::optional<LibetyCurrentData*> output_current, AnalysisMode mode,
+      std::optional<LibCurrentData*> output_current, AnalysisMode mode,
       TransType trans_type);
 
   virtual std::optional<double> slew(
-      Pin& to, double from_slew,
-      std::optional<LibetyCurrentData*> output_current, AnalysisMode mode,
-      TransType trans_type);
+      Pin& to, double from_slew, std::optional<LibCurrentData*> output_current,
+      AnalysisMode mode, TransType trans_type);
 
   void printRctInfo();
 

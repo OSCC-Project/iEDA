@@ -18,7 +18,7 @@
 #include <vector>
 
 #include "Type.hh"
-#include "liberty/Liberty.hh"
+#include "liberty/Lib.hh"
 
 namespace ista {
 
@@ -69,7 +69,7 @@ class WaveformApproximation {
   double calInputWaveformThresholdByCeff(
       RcTree& rc_tree, double load_nodes_pin_cap_sum, Eigen::MatrixXd& current,
       Eigen::MatrixXd& time, int input_step_num, TransType trans_type,
-      double input_slew, LibertyArc* lib_arc);
+      double input_slew, LibArc* lib_arc);
   double calInputWaveformThresholdByCtotal(double C_total,
                                            Eigen::MatrixXd& current,
                                            Eigen::MatrixXd& time,

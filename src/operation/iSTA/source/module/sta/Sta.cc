@@ -55,7 +55,7 @@
 #include "ThreadPool/ThreadPool.h"
 #include "include/Version.hh"
 #include "json/json.hpp"
-#include "liberty/Liberty.hh"
+#include "liberty/Lib.hh"
 #include "log/Log.hh"
 #include "netlist/NetlistWriter.hh"
 #include "netlist/Pin.hh"
@@ -271,7 +271,7 @@ unsigned Sta::readLiberty(const char *lib_file) {
   if (!IsFileExists(lib_file)) {
     return 0;
   }
-  Liberty lib;
+  Lib lib;
   auto load_lib = lib.loadLibertyWithRustParser(lib_file);
   addLib(std::move(load_lib));
 
@@ -511,7 +511,7 @@ void Sta::linkDesignWithRustParser(const char *top_cell_name) {
           return inst_pin;
         };
 
-        LibertyPort *library_port = nullptr;
+        LibPort *library_port = nullptr;
         std::string pin_name;
         std::string net_name;
 
@@ -539,7 +539,7 @@ void Sta::linkDesignWithRustParser(const char *top_cell_name) {
         }
 
         if (!library_port_or_port_bus->isLibertyPortBus()) {
-          library_port = dynamic_cast<LibertyPort *>(library_port_or_port_bus);
+          library_port = dynamic_cast<LibPort *>(library_port_or_port_bus);
           pin_name = cell_port_name;
           auto *inst_pin =
               add_pin_to_inst(pin_name.c_str(), library_port, std::nullopt);
@@ -548,7 +548,7 @@ void Sta::linkDesignWithRustParser(const char *top_cell_name) {
 
         } else {
           auto *library_port_bus =
-              dynamic_cast<LibertyPortBus *>(library_port_or_port_bus);
+              dynamic_cast<LibPortBus *>(library_port_or_port_bus);
           if (index) {
             library_port = (*library_port_bus)[index.value()];
             pin_name = Str::printf("%s[%d]", cell_port_name, index.value());
@@ -641,7 +641,7 @@ void Sta::linkDesignWithRustParser(const char *top_cell_name) {
         std::unique_ptr<PinBus> pin_bus;
         if (library_port_bus->isLibertyPortBus()) {
           auto bus_size =
-              dynamic_cast<LibertyPortBus *>(library_port_bus)->getBusSize();
+              dynamic_cast<LibPortBus *>(library_port_bus)->getBusSize();
           pin_bus = std::make_unique<PinBus>(cell_port_name, bus_size - 1, 0,
                                              bus_size);
         }
@@ -680,10 +680,10 @@ void Sta::linkDesignWithRustParser(const char *top_cell_name) {
 /**
  * @brief get the design used libs.
  *
- * @return std::set<LibertyLibrary *>
+ * @return std::set<LibLibrary *>
  */
-std::set<LibertyLibrary *> Sta::getUsedLibs() {
-  std::set<LibertyLibrary *> used_libs;
+std::set<LibLibrary *> Sta::getUsedLibs() {
+  std::set<LibLibrary *> used_libs;
   Instance *inst;
   FOREACH_INSTANCE(&_netlist, inst) {
     auto *used_lib = inst->get_inst_cell()->get_owner_lib();
@@ -704,8 +704,8 @@ void Sta::resetConstraint() { _constrains.reset(); }
  * @param cell_name
  * @return LibertyCell*
  */
-LibertyCell *Sta::findLibertyCell(const char *cell_name) {
-  LibertyCell *found_cell = nullptr;
+LibCell *Sta::findLibertyCell(const char *cell_name) {
+  LibCell *found_cell = nullptr;
   for (auto &lib : _libs) {
     if (found_cell = lib->findCell(cell_name); found_cell) {
       break;
@@ -755,7 +755,7 @@ std::optional<AocvObjectSpecSet *> Sta::findClockAocvObjectSpecSet(
  *
  * @param equiv_libs
  */
-void Sta::makeEquivCells(std::vector<LibertyLibrary *> &equiv_libs) {
+void Sta::makeEquivCells(std::vector<LibLibrary *> &equiv_libs) {
   if (_equiv_cells) {
     _equiv_cells.reset();
   }
@@ -770,7 +770,7 @@ void Sta::makeEquivCells(std::vector<LibertyLibrary *> &equiv_libs) {
  * @param cell
  * @return Vector<LibertyCell *>*
  */
-Vector<LibertyCell *> *Sta::equivCells(LibertyCell *cell) {
+Vector<LibCell *> *Sta::equivCells(LibCell *cell) {
   if (_equiv_cells)
     return _equiv_cells->getClassOfCell(cell);
   else
