@@ -20,7 +20,7 @@
 #include "GPLYPLayer.hpp"
 #include "MTree.hpp"
 #include "Monitor.hpp"
-#include "RTUtil.hpp"
+#include "Utility.hpp"
 
 namespace irt {
 
@@ -61,7 +61,7 @@ void GDSPlotter::plot(GPGDS& gp_gds, std::string gds_file_path)
 int32_t GDSPlotter::getGDSIdxByRouting(int32_t routing_layer_idx)
 {
   int32_t gds_layer_idx = 0;
-  if (RTUtil::exist(_routing_layer_gds_map, routing_layer_idx)) {
+  if (RTUTIL.exist(_routing_layer_gds_map, routing_layer_idx)) {
     gds_layer_idx = _routing_layer_gds_map[routing_layer_idx];
   } else {
     RTLOG.warn(Loc::current(), "The routing_layer_idx '", routing_layer_idx, "' have not gds_layer_idx!");
@@ -72,7 +72,7 @@ int32_t GDSPlotter::getGDSIdxByRouting(int32_t routing_layer_idx)
 int32_t GDSPlotter::getGDSIdxByCut(int32_t cut_layer_idx)
 {
   int32_t gds_layer_idx = 0;
-  if (RTUtil::exist(_cut_layer_gds_map, cut_layer_idx)) {
+  if (RTUTIL.exist(_cut_layer_gds_map, cut_layer_idx)) {
     gds_layer_idx = _cut_layer_gds_map[cut_layer_idx];
   } else {
     RTLOG.warn(Loc::current(), "The cut_layer_idx '", cut_layer_idx, "' have not gds_layer_idx!");
@@ -149,19 +149,19 @@ void GDSPlotter::buildGraphLypFile()
       lyp_layer_list.emplace_back(color, pattern, true, "base_region", gds_layer_idx, 0);
       lyp_layer_list.emplace_back(color, pattern, false, "gcell", gds_layer_idx, 1);
       lyp_layer_list.emplace_back(color, pattern, false, "bounding_box", gds_layer_idx, 2);
-    } else if (RTUtil::exist(_gds_routing_layer_map, gds_layer_idx)) {
+    } else if (RTUTIL.exist(_gds_routing_layer_map, gds_layer_idx)) {
       // routing
       std::string routing_layer_name = routing_layer_list[_gds_routing_layer_map[gds_layer_idx]].get_layer_name();
       for (auto& [routing_data_type, visible] : routing_data_type_visible_map) {
         lyp_layer_list.emplace_back(color, pattern, visible,
-                                    RTUtil::getString(routing_layer_name, "_", GetGPDataTypeName()(routing_data_type)), gds_layer_idx,
+                                    RTUTIL.getString(routing_layer_name, "_", GetGPDataTypeName()(routing_data_type)), gds_layer_idx,
                                     static_cast<int32_t>(routing_data_type));
       }
-    } else if (RTUtil::exist(_gds_cut_layer_map, gds_layer_idx)) {
+    } else if (RTUTIL.exist(_gds_cut_layer_map, gds_layer_idx)) {
       // cut
       std::string cut_layer_name = cut_layer_list[_gds_cut_layer_map[gds_layer_idx]].get_layer_name();
       for (auto& [cut_data_type, visible] : cut_data_type_visible_map) {
-        lyp_layer_list.emplace_back(color, pattern, visible, RTUtil::getString(cut_layer_name, "_", GetGPDataTypeName()(cut_data_type)),
+        lyp_layer_list.emplace_back(color, pattern, visible, RTUTIL.getString(cut_layer_name, "_", GetGPDataTypeName()(cut_data_type)),
                                     gds_layer_idx, static_cast<int32_t>(cut_data_type));
       }
     }
@@ -171,37 +171,37 @@ void GDSPlotter::buildGraphLypFile()
 
 void GDSPlotter::writeLypFile(std::string lyp_file_path, std::vector<GPLYPLayer>& lyp_layer_list)
 {
-  std::ofstream* lyp_file = RTUtil::getOutputFileStream(lyp_file_path);
-  RTUtil::pushStream(lyp_file, "<?xml version=\"1.0\" encoding=\"utf-8\"?>", "\n");
-  RTUtil::pushStream(lyp_file, "<layer-properties>", "\n");
+  std::ofstream* lyp_file = RTUTIL.getOutputFileStream(lyp_file_path);
+  RTUTIL.pushStream(lyp_file, "<?xml version=\"1.0\" encoding=\"utf-8\"?>", "\n");
+  RTUTIL.pushStream(lyp_file, "<layer-properties>", "\n");
 
   for (size_t i = 0; i < lyp_layer_list.size(); i++) {
     GPLYPLayer& lyp_layer = lyp_layer_list[i];
-    RTUtil::pushStream(lyp_file, "<properties>", "\n");
-    RTUtil::pushStream(lyp_file, "<frame-color>", lyp_layer.get_color(), "</frame-color>", "\n");
-    RTUtil::pushStream(lyp_file, "<fill-color>", lyp_layer.get_color(), "</fill-color>", "\n");
-    RTUtil::pushStream(lyp_file, "<frame-brightness>0</frame-brightness>", "\n");
-    RTUtil::pushStream(lyp_file, "<fill-brightness>0</fill-brightness>", "\n");
-    RTUtil::pushStream(lyp_file, "<dither-pattern>", lyp_layer.get_pattern(), "</dither-pattern>", "\n");
-    RTUtil::pushStream(lyp_file, "<line-style/>", "\n");
-    RTUtil::pushStream(lyp_file, "<valid>true</valid>", "\n");
+    RTUTIL.pushStream(lyp_file, "<properties>", "\n");
+    RTUTIL.pushStream(lyp_file, "<frame-color>", lyp_layer.get_color(), "</frame-color>", "\n");
+    RTUTIL.pushStream(lyp_file, "<fill-color>", lyp_layer.get_color(), "</fill-color>", "\n");
+    RTUTIL.pushStream(lyp_file, "<frame-brightness>0</frame-brightness>", "\n");
+    RTUTIL.pushStream(lyp_file, "<fill-brightness>0</fill-brightness>", "\n");
+    RTUTIL.pushStream(lyp_file, "<dither-pattern>", lyp_layer.get_pattern(), "</dither-pattern>", "\n");
+    RTUTIL.pushStream(lyp_file, "<line-style/>", "\n");
+    RTUTIL.pushStream(lyp_file, "<valid>true</valid>", "\n");
     if (lyp_layer.get_visible()) {
-      RTUtil::pushStream(lyp_file, "<visible>true</visible>", "\n");
+      RTUTIL.pushStream(lyp_file, "<visible>true</visible>", "\n");
     } else {
-      RTUtil::pushStream(lyp_file, "<visible>false</visible>", "\n");
+      RTUTIL.pushStream(lyp_file, "<visible>false</visible>", "\n");
     }
-    RTUtil::pushStream(lyp_file, "<transparent>false</transparent>", "\n");
-    RTUtil::pushStream(lyp_file, "<width/>", "\n");
-    RTUtil::pushStream(lyp_file, "<marked>false</marked>", "\n");
-    RTUtil::pushStream(lyp_file, "<xfill>false</xfill>", "\n");
-    RTUtil::pushStream(lyp_file, "<animation>0</animation>", "\n");
-    RTUtil::pushStream(lyp_file, "<name>", lyp_layer.get_layer_name(), " ", lyp_layer.get_layer_idx(), "/", lyp_layer.get_data_type(),
-                       "</name>", "\n");
-    RTUtil::pushStream(lyp_file, "<source>", lyp_layer.get_layer_idx(), "/", lyp_layer.get_data_type(), "@1</source>", "\n");
-    RTUtil::pushStream(lyp_file, "</properties>", "\n");
+    RTUTIL.pushStream(lyp_file, "<transparent>false</transparent>", "\n");
+    RTUTIL.pushStream(lyp_file, "<width/>", "\n");
+    RTUTIL.pushStream(lyp_file, "<marked>false</marked>", "\n");
+    RTUTIL.pushStream(lyp_file, "<xfill>false</xfill>", "\n");
+    RTUTIL.pushStream(lyp_file, "<animation>0</animation>", "\n");
+    RTUTIL.pushStream(lyp_file, "<name>", lyp_layer.get_layer_name(), " ", lyp_layer.get_layer_idx(), "/", lyp_layer.get_data_type(),
+                      "</name>", "\n");
+    RTUTIL.pushStream(lyp_file, "<source>", lyp_layer.get_layer_idx(), "/", lyp_layer.get_data_type(), "@1</source>", "\n");
+    RTUTIL.pushStream(lyp_file, "</properties>", "\n");
   }
-  RTUtil::pushStream(lyp_file, "</layer-properties>", "\n");
-  RTUtil::closeFileStream(lyp_file);
+  RTUTIL.pushStream(lyp_file, "</layer-properties>", "\n");
+  RTUTIL.closeFileStream(lyp_file);
 }
 
 void GDSPlotter::buildTopStruct(GPGDS& gp_gds)
@@ -255,25 +255,25 @@ void GDSPlotter::plotGDS(GPGDS& gp_gds, std::string gds_file_path)
 
   RTLOG.info(Loc::current(), "The gds file is being saved...");
 
-  std::ofstream* gds_file = RTUtil::getOutputFileStream(gds_file_path);
-  RTUtil::pushStream(gds_file, "HEADER 600", "\n");
-  RTUtil::pushStream(gds_file, "BGNLIB", "\n");
-  RTUtil::pushStream(gds_file, "LIBNAME ", gp_gds.get_top_name(), "\n");
-  RTUtil::pushStream(gds_file, "UNITS 0.001 1e-9", "\n");
+  std::ofstream* gds_file = RTUTIL.getOutputFileStream(gds_file_path);
+  RTUTIL.pushStream(gds_file, "HEADER 600", "\n");
+  RTUTIL.pushStream(gds_file, "BGNLIB", "\n");
+  RTUTIL.pushStream(gds_file, "LIBNAME ", gp_gds.get_top_name(), "\n");
+  RTUTIL.pushStream(gds_file, "UNITS 0.001 1e-9", "\n");
   std::vector<GPStruct>& struct_list = gp_gds.get_struct_list();
   for (size_t i = 0; i < struct_list.size(); i++) {
     plotStruct(gds_file, struct_list[i]);
   }
-  RTUtil::pushStream(gds_file, "ENDLIB", "\n");
-  RTUtil::closeFileStream(gds_file);
+  RTUTIL.pushStream(gds_file, "ENDLIB", "\n");
+  RTUTIL.closeFileStream(gds_file);
 
   RTLOG.info(Loc::current(), "The gds file has been saved in '", gds_file_path, "'!", monitor.getStatsInfo());
 }
 
 void GDSPlotter::plotStruct(std::ofstream* gds_file, GPStruct& gp_struct)
 {
-  RTUtil::pushStream(gds_file, "BGNSTR", "\n");
-  RTUtil::pushStream(gds_file, "STRNAME ", gp_struct.get_name(), "\n");
+  RTUTIL.pushStream(gds_file, "BGNSTR", "\n");
+  RTUTIL.pushStream(gds_file, "STRNAME ", gp_struct.get_name(), "\n");
   // boundary
   for (GPBoundary& gp_boundary : gp_struct.get_boundary_list()) {
     plotBoundary(gds_file, gp_boundary);
@@ -290,7 +290,7 @@ void GDSPlotter::plotStruct(std::ofstream* gds_file, GPStruct& gp_struct)
   for (std::string& sref_name : gp_struct.get_sref_name_list()) {
     plotSref(gds_file, sref_name);
   }
-  RTUtil::pushStream(gds_file, "ENDSTR", "\n");
+  RTUTIL.pushStream(gds_file, "ENDSTR", "\n");
 }
 
 void GDSPlotter::plotBoundary(std::ofstream* gds_file, GPBoundary& gp_boundary)
@@ -300,16 +300,16 @@ void GDSPlotter::plotBoundary(std::ofstream* gds_file, GPBoundary& gp_boundary)
   int32_t ur_x = gp_boundary.get_ur_x();
   int32_t ur_y = gp_boundary.get_ur_y();
 
-  RTUtil::pushStream(gds_file, "BOUNDARY", "\n");
-  RTUtil::pushStream(gds_file, "LAYER ", gp_boundary.get_layer_idx(), "\n");
-  RTUtil::pushStream(gds_file, "DATATYPE ", static_cast<int32_t>(gp_boundary.get_data_type()), "\n");
-  RTUtil::pushStream(gds_file, "XY", "\n");
-  RTUtil::pushStream(gds_file, ll_x, " : ", ll_y, "\n");
-  RTUtil::pushStream(gds_file, ur_x, " : ", ll_y, "\n");
-  RTUtil::pushStream(gds_file, ur_x, " : ", ur_y, "\n");
-  RTUtil::pushStream(gds_file, ll_x, " : ", ur_y, "\n");
-  RTUtil::pushStream(gds_file, ll_x, " : ", ll_y, "\n");
-  RTUtil::pushStream(gds_file, "ENDEL", "\n");
+  RTUTIL.pushStream(gds_file, "BOUNDARY", "\n");
+  RTUTIL.pushStream(gds_file, "LAYER ", gp_boundary.get_layer_idx(), "\n");
+  RTUTIL.pushStream(gds_file, "DATATYPE ", static_cast<int32_t>(gp_boundary.get_data_type()), "\n");
+  RTUTIL.pushStream(gds_file, "XY", "\n");
+  RTUTIL.pushStream(gds_file, ll_x, " : ", ll_y, "\n");
+  RTUTIL.pushStream(gds_file, ur_x, " : ", ll_y, "\n");
+  RTUTIL.pushStream(gds_file, ur_x, " : ", ur_y, "\n");
+  RTUTIL.pushStream(gds_file, ll_x, " : ", ur_y, "\n");
+  RTUTIL.pushStream(gds_file, ll_x, " : ", ll_y, "\n");
+  RTUTIL.pushStream(gds_file, "ENDEL", "\n");
 }
 
 void GDSPlotter::plotPath(std::ofstream* gds_file, GPPath& gp_path)
@@ -320,14 +320,14 @@ void GDSPlotter::plotPath(std::ofstream* gds_file, GPPath& gp_path)
   int32_t second_x = segment.get_second().get_x();
   int32_t second_y = segment.get_second().get_y();
 
-  RTUtil::pushStream(gds_file, "PATH", "\n");
-  RTUtil::pushStream(gds_file, "LAYER ", gp_path.get_layer_idx(), "\n");
-  RTUtil::pushStream(gds_file, "DATATYPE ", static_cast<int32_t>(gp_path.get_data_type()), "\n");
-  RTUtil::pushStream(gds_file, "WIDTH ", gp_path.get_width(), "\n");
-  RTUtil::pushStream(gds_file, "XY", "\n");
-  RTUtil::pushStream(gds_file, first_x, " : ", first_y, "\n");
-  RTUtil::pushStream(gds_file, second_x, " : ", second_y, "\n");
-  RTUtil::pushStream(gds_file, "ENDEL", "\n");
+  RTUTIL.pushStream(gds_file, "PATH", "\n");
+  RTUTIL.pushStream(gds_file, "LAYER ", gp_path.get_layer_idx(), "\n");
+  RTUTIL.pushStream(gds_file, "DATATYPE ", static_cast<int32_t>(gp_path.get_data_type()), "\n");
+  RTUTIL.pushStream(gds_file, "WIDTH ", gp_path.get_width(), "\n");
+  RTUTIL.pushStream(gds_file, "XY", "\n");
+  RTUTIL.pushStream(gds_file, first_x, " : ", first_y, "\n");
+  RTUTIL.pushStream(gds_file, second_x, " : ", second_y, "\n");
+  RTUTIL.pushStream(gds_file, "ENDEL", "\n");
 }
 
 void GDSPlotter::plotText(std::ofstream* gds_file, GPText& gp_text)
@@ -336,22 +336,22 @@ void GDSPlotter::plotText(std::ofstream* gds_file, GPText& gp_text)
   int32_t x = coord.get_x();
   int32_t y = coord.get_y();
 
-  RTUtil::pushStream(gds_file, "TEXT", "\n");
-  RTUtil::pushStream(gds_file, "LAYER ", gp_text.get_layer_idx(), "\n");
-  RTUtil::pushStream(gds_file, "TEXTTYPE ", gp_text.get_text_type(), "\n");
-  RTUtil::pushStream(gds_file, "PRESENTATION ", static_cast<int32_t>(gp_text.get_presentation()), "\n");
-  RTUtil::pushStream(gds_file, "XY", "\n");
-  RTUtil::pushStream(gds_file, x, " : ", y, "\n");
-  RTUtil::pushStream(gds_file, "STRING ", gp_text.get_message(), "\n");
-  RTUtil::pushStream(gds_file, "ENDEL", "\n");
+  RTUTIL.pushStream(gds_file, "TEXT", "\n");
+  RTUTIL.pushStream(gds_file, "LAYER ", gp_text.get_layer_idx(), "\n");
+  RTUTIL.pushStream(gds_file, "TEXTTYPE ", gp_text.get_text_type(), "\n");
+  RTUTIL.pushStream(gds_file, "PRESENTATION ", static_cast<int32_t>(gp_text.get_presentation()), "\n");
+  RTUTIL.pushStream(gds_file, "XY", "\n");
+  RTUTIL.pushStream(gds_file, x, " : ", y, "\n");
+  RTUTIL.pushStream(gds_file, "STRING ", gp_text.get_message(), "\n");
+  RTUTIL.pushStream(gds_file, "ENDEL", "\n");
 }
 
 void GDSPlotter::plotSref(std::ofstream* gds_file, std::string& sref_name)
 {
-  RTUtil::pushStream(gds_file, "SREF", "\n");
-  RTUtil::pushStream(gds_file, "SNAME ", sref_name, "\n");
-  RTUtil::pushStream(gds_file, "XY 0:0", "\n");
-  RTUtil::pushStream(gds_file, "ENDEL", "\n");
+  RTUTIL.pushStream(gds_file, "SREF", "\n");
+  RTUTIL.pushStream(gds_file, "SNAME ", sref_name, "\n");
+  RTUTIL.pushStream(gds_file, "XY 0:0", "\n");
+  RTUTIL.pushStream(gds_file, "ENDEL", "\n");
 }
 
 }  // namespace irt

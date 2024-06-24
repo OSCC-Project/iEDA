@@ -14,6 +14,43 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Copyright (c) 2019, The Regents of the University of California
+// All rights reserved.
+//
+// BSD 3-Clause License
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are met:
+//
+// * Redistributions of source code must retain the above copyright notice, this
+//   list of conditions and the following disclaimer.
+//
+// * Redistributions in binary form must reproduce the above copyright notice,
+//   this list of conditions and the following disclaimer in the documentation
+//   and/or other materials provided with the distribution.
+//
+// * Neither the name of the copyright holder nor the names of its
+//   contributors may be used to endorse or promote products derived from
+//   this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
+//
+///////////////////////////////////////////////////////////////////////////////
+
 #include "EstimateParasitics.h"
 #include "api/TimingEngine.hh"
 #include "api/TimingIDBAdapter.hh"
@@ -36,12 +73,12 @@ EstimateParasitics::EstimateParasitics(TimingEngine *timing_engine, int dbu)
 
 /**
  * @brief If parasitics have been evaluated, update the changed net stored in
- * _parasitics_invalid. else update rc tree for all net
+ * _parasitics_invalid_nets. else update rc tree for all net
  *
  */
 void EstimateParasitics::excuteParasiticsEstimate() {
   if (_have_estimated_parasitics) {
-    for (Net *net : _parasitics_invalid) {
+    for (Net *net : _parasitics_invalid_nets) {
       DesignObject *driver = net->getDriver();
       if (driver) {
         if (_timing_engine->get_ista()->getRcNet(net)) {
@@ -50,7 +87,7 @@ void EstimateParasitics::excuteParasiticsEstimate() {
         excuteWireParasitic(driver, net, _db_adapter);
       }
     }
-    _parasitics_invalid.clear();
+    _parasitics_invalid_nets.clear();
   } else {
     estimateAllNetParasitics();
   }
@@ -68,7 +105,7 @@ void EstimateParasitics::estimateAllNetParasitics() {
     estimateNetParasitics(net);
   }
   _have_estimated_parasitics = true;
-  _parasitics_invalid.clear();
+  _parasitics_invalid_nets.clear();
   LOG_INFO << "estimate all net parasitics end";
 }
 
@@ -94,67 +131,69 @@ void EstimateParasitics::estimateNetParasitics(Net *net) {
 void EstimateParasitics::estimateInvalidNetParasitics(DesignObject *drvr_pin_port,
                                                       Net *         net) {
 
-  if (_parasitics_invalid.find(net) != _parasitics_invalid.end() && net) {
+  if (_parasitics_invalid_nets.find(net) != _parasitics_invalid_nets.end() && net) {
     if (_timing_engine->get_ista()->getRcNet(net)) {
       _timing_engine->resetRcTree(net);
     }
     excuteWireParasitic(drvr_pin_port, net, _db_adapter);
 
-    _parasitics_invalid.erase(net);
+    _parasitics_invalid_nets.erase(net);
   }
 }
 
 void EstimateParasitics::excuteWireParasitic(DesignObject *drvr_pin_port, Net *curr_net,
                                              TimingDBAdapter *db_adapter) {
   RoutingTree *tree = makeRoutingTree(curr_net, db_adapter, RoutingType::kSteiner);
-
-  if (tree) {
-    vector<int> segment_idx;
-    vector<int> length_wire;
-    tree->drvrToLoadLength(tree->get_root(), segment_idx, length_wire, 0);
-
-    std::vector<std::pair<int, int>> wire_segment_idx;
-    std::vector<int>                 length_per_wire;
-
-    tree->segmentIndexAndLength(tree->get_root(), wire_segment_idx, length_per_wire);
-
-    int numb = wire_segment_idx.size();
-    for (int i = 0; i != numb; ++i) {
-      int      index1 = wire_segment_idx[i].first;
-      int      index2 = wire_segment_idx[i].second;
-      RctNode *n1 = _timing_engine->makeOrFindRCTreeNode(curr_net, index1);
-      RctNode *n2 = _timing_engine->makeOrFindRCTreeNode(curr_net, index2);
-
-      int length_dbu = length_per_wire[i];
-      if (length_dbu == 0) {
-        _timing_engine->makeResistor(curr_net, n1, n2, 1.0e-3);
-      } else {
-        std::optional<double> width = std::nullopt;
-        double                cap = dynamic_cast<TimingIDBAdapter *>(db_adapter)
-                         ->getCapacitance(1, (double)length_dbu / _dbu, width);
-        double res = dynamic_cast<TimingIDBAdapter *>(db_adapter)
-                         ->getResistance(1, (double)length_dbu / _dbu, width);
-
-        if (curr_net->isClockNet()) {
-          cap /= 10.0;
-          res /= 10.0;
-        // } else {
-        //   cap /= 2.0;
-        //   res /= 2.0;
-        }
-
-        _timing_engine->incrCap(n1, cap / 2.0, true);
-        _timing_engine->makeResistor(curr_net, n1, n2, res);
-        _timing_engine->incrCap(n2, cap / 2.0, true);
-      }
-      RctNodeConnectPin(curr_net, index1, n1, tree);
-      RctNodeConnectPin(curr_net, index2, n2, tree);
-    }
-
-    _timing_engine->updateRCTreeInfo(curr_net);
-
-    delete tree;
+  if (!tree) {
+    return;
   }
+
+  vector<int> segment_idx;
+  vector<int> length_wire;
+  tree->drvrToLoadLength(tree->get_root(), segment_idx, length_wire, 0);
+
+  std::vector<std::pair<int, int>> wire_segment_idx;
+  std::vector<int>                 length_per_wire;
+
+  tree->segmentIndexAndLength(tree->get_root(), wire_segment_idx, length_per_wire);
+
+  int numb = wire_segment_idx.size();
+  for (int i = 0; i != numb; ++i) {
+    int      index1 = wire_segment_idx[i].first;
+    int      index2 = wire_segment_idx[i].second;
+    RctNode *n1 = _timing_engine->makeOrFindRCTreeNode(curr_net, index1);
+    RctNode *n2 = _timing_engine->makeOrFindRCTreeNode(curr_net, index2);
+
+    int length_dbu = length_per_wire[i];
+    if (length_dbu == 0) {
+      _timing_engine->makeResistor(curr_net, n1, n2, 1.0e-3);
+    } else {
+      std::optional<double> width = std::nullopt;
+      double                cap = dynamic_cast<TimingIDBAdapter *>(db_adapter)
+                        ->getCapacitance(1, (double)length_dbu / _dbu, width);
+      double res = dynamic_cast<TimingIDBAdapter *>(db_adapter)
+                        ->getResistance(1, (double)length_dbu / _dbu, width);
+
+      if (curr_net->isClockNet()) {
+        cap /= 10.0;
+        res /= 10.0;
+      // } else {
+      //   cap /= 2.0;
+      //   res /= 2.0;
+      }
+
+      _timing_engine->incrCap(n1, cap / 2.0, true);
+      _timing_engine->makeResistor(curr_net, n1, n2, res);
+      _timing_engine->incrCap(n2, cap / 2.0, true);
+    }
+    RctNodeConnectPin(curr_net, index1, n1, tree);
+    RctNodeConnectPin(curr_net, index2, n2, tree);
+  }
+
+  _timing_engine->updateRCTreeInfo(curr_net);
+
+  delete tree;
+
 }
 
 void EstimateParasitics::RctNodeConnectPin(Net *net, int index, RctNode *rcnode,
@@ -174,9 +213,9 @@ void EstimateParasitics::RctNodeConnectPin(Net *net, int index, RctNode *rcnode,
   }
 }
 
-void EstimateParasitics::parasiticsInvalid(Net *net) {
+void EstimateParasitics::invalidNetRC(Net *net) {
   // printf("EstimateParasitics | parasitics invalid {%s}\n", net->get_name());
-  _parasitics_invalid.insert(net);
+  _parasitics_invalid_nets.insert(net);
 }
 
 } // namespace ito

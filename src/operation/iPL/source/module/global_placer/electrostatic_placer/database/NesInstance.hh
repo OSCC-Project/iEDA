@@ -95,7 +95,6 @@ class NesInstance
 
   unsigned char _is_fixed : 1;
   unsigned char _is_filler : 1;
-  // need to be stored for MS place.
   unsigned char _is_macro : 1;
 
   void updateNesPinListLocation();
@@ -160,4 +159,4 @@ inline void NesInstance::changeSize(int width, int height)
 
 }  // namespace ipl
 
-#endif  // SRC_OPERATION_IPL_SOURCE_MODULE_GLOBAL_PLACER_electrostatic_placer_DATABASE_NESINSTANCE_HH_
+#endif

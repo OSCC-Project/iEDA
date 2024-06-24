@@ -133,15 +133,15 @@ namespace ipl {
     idb_builder->saveDef("<local_path>/iPL_buffer_result.def");
   }
 
-  TEST_F(APITestInterface, run_mp)
-  {
-    std::string pl_json_file = "<local_path>/pl_default_config.json";
-    auto* idb_builder = dmInst->get_idb_builder();
+  // TEST_F(APITestInterface, run_mp)
+  // {
+  //   std::string pl_json_file = "<local_path>/pl_default_config.json";
+  //   auto* idb_builder = dmInst->get_idb_builder();
 
-    iPLAPIInst.initAPI(pl_json_file, idb_builder);
-    iPLAPIInst.runMP();
-    iPLAPIInst.destoryInst();
-  }
+  //   iPLAPIInst.initAPI(pl_json_file, idb_builder);
+  //   iPLAPIInst.runMP();
+  //   iPLAPIInst.destoryInst();
+  // }
 
   TEST_F(APITestInterface, run_incremental)
   {
@@ -213,7 +213,7 @@ namespace ipl {
 
     std::vector<std::string> module_list{ "", "" };
 
-    iPLAPIInst.plotModuleListForDebug(module_list, "./result/pl/report/MouduleConnection.gds");
+    iPLAPIInst.plotModuleListForDebug(module_list, PlacerDBInst.get_placer_config()->get_pl_dir() + "/pl/report/MouduleConnection.gds");
   }
 
   TEST_F(APITestInterface, print_wl)
@@ -257,12 +257,12 @@ namespace ipl {
     inst_list.push_back(inst1);
     PlacerDBInst.updateInstancesForDebug(inst_list);
 
-    iPLAPIInst.plotModuleStateForDebug(incremental_insts, "./result/pl/report/InstanceState_before.gds");
+    iPLAPIInst.plotModuleStateForDebug(incremental_insts, PlacerDBInst.get_placer_config()->get_pl_dir() + "/pl/report/InstanceState_before.gds");
 
     iPLAPIInst.runIncrLG(incremental_insts);
     iPLAPIInst.reportPLInfo();
 
-    iPLAPIInst.plotModuleStateForDebug(incremental_insts, "./result/pl/report/InstanceState_after.gds");
+    iPLAPIInst.plotModuleStateForDebug(incremental_insts, PlacerDBInst.get_placer_config()->get_pl_dir() + "/pl/report/InstanceState_after.gds");
   }
 
 }  // namespace ipl

@@ -14,6 +14,43 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Copyright (c) 2019, The Regents of the University of California
+// All rights reserved.
+//
+// BSD 3-Clause License
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are met:
+//
+// * Redistributions of source code must retain the above copyright notice, this
+//   list of conditions and the following disclaimer.
+//
+// * Redistributions in binary form must reproduce the above copyright notice,
+//   this list of conditions and the following disclaimer in the documentation
+//   and/or other materials provided with the distribution.
+//
+// * Neither the name of the copyright holder nor the names of its
+//   contributors may be used to endorse or promote products derived from
+//   this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+
 #include "HoldOptimizer.h"
 
 #include "api/TimingEngine.hh"
@@ -35,40 +72,39 @@ HoldOptimizer::HoldOptimizer(DbInterface *dbinterface) : _db_interface(dbinterfa
   _parasitics_estimator = new EstimateParasitics(_db_interface);
   _violation_fixer = new ViolationOptimizer(_db_interface);
 
-  _slack_margin = _db_interface->get_hold_slack_margin();
+  _target_slack = _db_interface->get_hold_target_slack();
 }
 
 void HoldOptimizer::optimizeHold() {
   _parasitics_estimator->estimateAllNetParasitics();
 
   _timing_engine->updateTiming();
-  _timing_engine->reportTiming();
   _db_interface->set_eval_data();
 
   reportWNSAndTNS();
 
   initBufferCell();
-  LOG_ERROR_IF(_buffer_cells.empty()) << "Can not found specified buffers.\n";
+  LOG_ERROR_IF(_available_buffer_cells.empty()) << "Can not found specified buffers.\n";
   calcBufferCap();
 
   // Preparation
   float max_buffer_percent = _db_interface->get_max_buffer_percent();
   int   instance_num = _timing_engine->get_netlist()->getInstanceNum();
   _max_numb_insert_buf = max_buffer_percent * instance_num;
-  LibertyCell *insert_buf_cell = findBufferWithMaxDelay();
+  LibCell *insert_buf_cell = findBufferWithMaxDelay();
 
   // get end points
-  VertexSet end_points = getEndPoints();
+  TOVertexSet end_points = getEndPoints();
 
-  Slack worst_slack;
-  // endpoints with hold violation.
-  VertexSet end_pts_hold_violation;
+  TOSlack worst_slack;
+  // Identify hold violation endpoints.
+  TOVertexSet end_pts_hold_violation;
 
-  Slack worst_hold_slack = getWorstSlack(AnalysisMode::kMin);
-  int   iteration = 1;
-  int   insert_buf_count = 1;
-  while (insert_buf_count > 0 && worst_hold_slack < _slack_margin) {
-    insert_buf_count = checkAndOptimizeHold(end_points, insert_buf_cell);
+  TOSlack worst_hold_slack = getWorstSlack(AnalysisMode::kMin);
+  int     iteration = 1;
+  int     number_insert_buffer = 1;
+  while (number_insert_buffer > 0 && worst_hold_slack < _target_slack) {
+    number_insert_buffer = checkAndOptimizeHold(end_points, insert_buf_cell);
     _parasitics_estimator->estimateAllNetParasitics();
     _timing_engine->updateTiming();
     worst_hold_slack = getWorstSlack(AnalysisMode::kMin);
@@ -78,26 +114,28 @@ void HoldOptimizer::optimizeHold() {
     iteration++;
   }
 
-  if (fuzzyLess(worst_hold_slack, _slack_margin)) {
+  if (approximatelyLess(worst_hold_slack, _target_slack)) {
     findEndpointsWithHoldViolation(end_points, worst_slack, end_pts_hold_violation);
     _db_interface->report()->get_ofstream()
-        << "Unable to repair all hold violations. There are still "
+        << "TO: Failed to fix all hold violations in current design. There are still "
         << end_pts_hold_violation.size() << " endpoints with hold violation." << endl;
   }
 
-  if (_inserted_buffer_count > _max_numb_insert_buf) {
-    printf("Max buffer count reached.\n");
-    _db_interface->report()->report("Max buffer count reached.\n");
+  if (_number_insert_buffer > _max_numb_insert_buf) {
+    printf("TO: Reach the maximum number of buffers that can be inserted.\n");
+    _db_interface->report()->report(
+        "TO: Reach the maximum number of buffers that can be inserted.\n");
   }
-  if (_db_interface->overMaxArea()) {
-    printf("Max utilization reached.\n");
-    _db_interface->report()->report("Max utilization reached.\n");
+  if (_db_interface->reachMaxArea()) {
+    printf("TO: Reach the maximum utilization of current design.\n");
+    _db_interface->report()->report(
+        "TO: Reach the maximum utilization of current design.\n");
   }
 
   _db_interface->report()->get_ofstream()
-      << "\nFinish hold optimization!\n"
-      << "Total inserted " << _inserted_buffer_count << " hold buffers and "
-      << _inserted_load_buffer_count << " load buffers.\n";
+      << "\nTO: Finish hold optimization!\n"
+      << "TO: Total insert " << _number_insert_buffer << " hold buffers and "
+      << _inserted_load_buffer_count << " load buffers when fix hold.\n";
 
   reportWNSAndTNS();
 
@@ -106,96 +144,95 @@ void HoldOptimizer::optimizeHold() {
   // _timing_engine->reportTiming();
 }
 
-int HoldOptimizer::checkAndOptimizeHold(VertexSet    end_points,
-                                        LibertyCell *insert_buf_cell) {
+int HoldOptimizer::checkAndOptimizeHold(TOVertexSet end_points,
+                                        LibCell *   insert_buf_cell) {
   // store worst hold slack
-  vector<Slack> hold_slacks;
+  vector<TOSlack> hold_slacks;
   // store end's number with hold violation
   vector<int> hold_vio_num;
   // store inserted hold buffer number
   vector<int> insert_buf_num;
 
-  int insert_buf_count = 0;
+  int number_insert_buffer = 0;
 
-  Slack worst_slack;
+  TOSlack worst_slack;
   // endpoints with hold violation.
-  VertexSet end_pts_hold_violation;
-  findEndpointsWithHoldViolation(end_points, worst_slack, end_pts_hold_violation);
+  TOVertexSet end_pts_hold_violation;
+  bool        exit_vioaltion =
+      findEndpointsWithHoldViolation(end_points, worst_slack, end_pts_hold_violation);
   hold_slacks.push_back(worst_slack);
   hold_vio_num.push_back(end_pts_hold_violation.size());
 
   _db_interface->report()->get_ofstream()
-      << "\nBeign hold optimization! Hold target slack -> " << _slack_margin << endl;
-  if (!end_pts_hold_violation.empty()) {
-    _db_interface->report()->get_ofstream() << "\nFound " << end_pts_hold_violation.size()
-                                            << " endpoints with hold violations.\n";
+      << "\nTO: Beign hold optimization! Hold target slack -> " << _target_slack << endl;
+  if (exit_vioaltion) {
+    _db_interface->report()->get_ofstream()
+        << "\nTO: Total find " << end_pts_hold_violation.size()
+        << " endpoints with hold violations in current design.\n";
     _db_interface->report()->get_ofstream().close();
     int repair_count = 1;
-    int pass = 1;
 
-    while (!end_pts_hold_violation.empty() &&
-           _inserted_buffer_count < _max_numb_insert_buf &&
-           !_db_interface->overMaxArea() && repair_count > 0) {
-      VertexSet fanins = getFanins(end_pts_hold_violation);
+    while (exit_vioaltion && _number_insert_buffer < _max_numb_insert_buf &&
+           !_db_interface->reachMaxArea() && repair_count > 0) {
+      TOVertexSet fanins = getFanins(end_pts_hold_violation);
 
-      VertexSeq sorted_fanins = sortFanins(fanins);
+      TOVertexSeq sorted_fanins = sortFanins(fanins);
 
-      repair_count = fixHoldPass(sorted_fanins, insert_buf_cell);
+      repair_count = fixHoldVioPath(sorted_fanins, insert_buf_cell);
 
-      insert_buf_count += repair_count;
+      number_insert_buffer += repair_count;
       insert_buf_num.push_back(repair_count);
       if (repair_count > 0) {
         _parasitics_estimator->excuteParasiticsEstimate();
         _timing_engine->updateTiming();
       }
 
-      findEndpointsWithHoldViolation(end_points, worst_slack, end_pts_hold_violation);
+      exit_vioaltion =
+          findEndpointsWithHoldViolation(end_points, worst_slack, end_pts_hold_violation);
       hold_slacks.push_back(worst_slack);
       hold_vio_num.push_back(end_pts_hold_violation.size());
-      pass++;
     }
   } else {
-    _db_interface->report()->get_ofstream() << "No hold violations found.\n";
+    _db_interface->report()->get_ofstream()
+        << "TO: There are no hold violations found in current design.\n";
   }
   _db_interface->report()->reportHoldResult(hold_slacks, hold_vio_num, insert_buf_num,
-                                            worst_slack, _inserted_buffer_count);
+                                            worst_slack, _number_insert_buffer);
 
   _db_interface->report()->get_ofstream()
-      << "Inserted " << insert_buf_count << " hold buffers.\n";
+      << "TO: Total insert " << number_insert_buffer << " hold buffers when fix hold.\n";
   _db_interface->report()->get_ofstream().close();
-  return insert_buf_count;
+  return number_insert_buffer;
 }
 
 void HoldOptimizer::initBufferCell() {
   bool not_specified_buffer = _db_interface->get_hold_insert_buffers().empty();
   if (not_specified_buffer) {
-    LibertyCellSeq buf_cells = _db_interface->get_buffer_cells();
-    _buffer_cells = std::move(buf_cells);
+    TOLibertyCellSeq buf_cells = _db_interface->get_buffer_cells();
+    _available_buffer_cells = std::move(buf_cells);
     return;
   }
 
   auto bufs = _db_interface->get_hold_insert_buffers();
   for (auto buf : bufs) {
     auto buffer = _timing_engine->findLibertyCell(buf.c_str());
-    _buffer_cells.emplace_back(buffer);
+    _available_buffer_cells.emplace_back(buffer);
   }
 }
 
 void HoldOptimizer::calcBufferCap() {
-  for (auto buf : _buffer_cells) {
-    LibertyPort *input, *output;
+  for (auto buf : _available_buffer_cells) {
+    LibPort *input, *output;
     buf->bufferPorts(input, output);
     double buf_in_cap = input->get_port_cap();
     _buffer_cap_pair.emplace_back(make_pair(buf_in_cap, buf));
   }
   sort(_buffer_cap_pair.begin(), _buffer_cap_pair.end(),
-       [=, this](std::pair<double, ista::LibertyCell *> v1,
-                 std::pair<double, ista::LibertyCell *> v2) {
-         return v1.first > v2.first;
-       });
+       [=, this](std::pair<double, ista::LibCell *> v1,
+                 std::pair<double, ista::LibCell *> v2) { return v1.first > v2.first; });
 }
 
-void HoldOptimizer::insertLoadBuffer(VertexSeq fanins) {
+void HoldOptimizer::insertLoadBuffer(TOVertexSeq fanins) {
   for (auto vertex : fanins) {
     auto rise_cap = _timing_engine->get_ista()->getVertexCapacitanceLimit(
         vertex, AnalysisMode::kMax, TransType::kRise);
@@ -216,13 +253,13 @@ void HoldOptimizer::insertLoadBuffer(VertexSeq fanins) {
     double max_fanout = max_fanout1 ? *(max_fanout1) : 10;
     auto   fanout = vertex->get_design_obj()->get_net()->getFanouts();
 
-    LibertyCell *insert_load_buffer = nullptr;
-    auto         buffer_cells = _db_interface->get_buffer_cells();
+    LibCell *insert_load_buffer = nullptr;
+    auto     buffer_cells = _db_interface->get_buffer_cells();
     if (load_cap < cap_limit && fanout < max_fanout) {
       double cap_slack = cap_limit - load_cap;
 
       auto iter = find_if(_buffer_cap_pair.begin(), _buffer_cap_pair.end(),
-                          [&cap_slack](std::pair<double, ista::LibertyCell *> item) {
+                          [&cap_slack](std::pair<double, ista::LibCell *> item) {
                             return item.first <= cap_slack;
                           });
 
@@ -243,18 +280,18 @@ void HoldOptimizer::insertLoadBuffer(VertexSeq fanins) {
   }
 }
 
-int HoldOptimizer::fixHoldPass(VertexSeq fanins, LibertyCell *insert_buffer_cell) {
+int HoldOptimizer::fixHoldVioPath(TOVertexSeq fanins, LibCell *insert_buffer_cell) {
   int repair_pass_count = 0;
   int insert_buffer_count = 0;
   for (size_t i = 0; i < fanins.size(); i++) {
     StaVertex *vertex = fanins[i];
 
     // loads with hold violation.
-    DesignObjSeq load_pins;
+    TODesignObjSeq load_pins;
 
-    Delay max_insert_delay = 1e+30;
+    TODelay max_insert_delay = 1e+30;
 
-    DesignObjSeq loads = vertex->get_design_obj()->get_net()->getLoads();
+    TODesignObjSeq loads = vertex->get_design_obj()->get_net()->getLoads();
     for (auto load_obj : loads) {
       StaVertex *fanout_vertex =
           _timing_engine->findVertex(load_obj->getFullName().c_str());
@@ -263,12 +300,12 @@ int HoldOptimizer::fixHoldPass(VertexSeq fanins, LibertyCell *insert_buffer_cell
         continue;
       }
 
-      Slack hold_slack = getWorstSlack(fanout_vertex, AnalysisMode::kMin);
-      Slack setup_slack = getWorstSlack(fanout_vertex, AnalysisMode::kMax);
-      if (hold_slack < _slack_margin) {
-        Delay delay = _allow_setup_violation
-                          ? _slack_margin - hold_slack
-                          : min(_slack_margin - hold_slack, setup_slack);
+      TOSlack hold_slack = getWorstSlack(fanout_vertex, AnalysisMode::kMin);
+      TOSlack setup_slack = getWorstSlack(fanout_vertex, AnalysisMode::kMax);
+      if (hold_slack < _target_slack) {
+        TODelay delay = _allow_setup_violation
+                            ? _target_slack - hold_slack
+                            : min(_target_slack - hold_slack, setup_slack);
 
         if (delay > 0.0) {
           max_insert_delay = min(max_insert_delay, delay);
@@ -279,14 +316,14 @@ int HoldOptimizer::fixHoldPass(VertexSeq fanins, LibertyCell *insert_buffer_cell
     } // for all loads
 
     if (!load_pins.empty()) {
-      Delay buffer_hold_delay = getBufferHoldDelay(insert_buffer_cell);
-      int   insert_number = std::ceil(max_insert_delay / buffer_hold_delay);
+      TODelay buffer_hold_delay = calcHoldDelayOfBuffer(insert_buffer_cell);
+      int     insert_number = std::ceil(max_insert_delay / buffer_hold_delay);
 
       repair_pass_count += 1;
       insert_buffer_count += insert_number;
       insertBufferDelay(vertex, insert_number, load_pins, insert_buffer_cell);
 
-      if (_inserted_buffer_count > _max_numb_insert_buf || _db_interface->overMaxArea()) {
+      if (_number_insert_buffer > _max_numb_insert_buf || _db_interface->reachMaxArea()) {
         // return repair_pass_count;
         return insert_buffer_count;
       }
@@ -295,12 +332,12 @@ int HoldOptimizer::fixHoldPass(VertexSeq fanins, LibertyCell *insert_buffer_cell
   return insert_buffer_count;
 }
 
-void HoldOptimizer::insertLoadBuffer(LibertyCell *load_buffer, StaVertex *drvr_vtx,
+void HoldOptimizer::insertLoadBuffer(LibCell *load_buffer, StaVertex *drvr_vtx,
                                      int insert_num) {
   auto              drvr = drvr_vtx->get_design_obj();
   TimingIDBAdapter *idb_adapter = dynamic_cast<TimingIDBAdapter *>(_db_adapter);
 
-  DesignObjSeq loads = drvr_vtx->get_design_obj()->get_net()->getLoads();
+  TODesignObjSeq loads = drvr_vtx->get_design_obj()->get_net()->getLoads();
   if (loads.empty()) {
     return;
   }
@@ -312,12 +349,12 @@ void HoldOptimizer::insertLoadBuffer(LibertyCell *load_buffer, StaVertex *drvr_v
   for (int i = 0; i < insert_num; i++) {
     std::string buffer_name = ("hold_load_buf_" + to_string(_insert_instance_index));
     _insert_instance_index++;
-    auto buffer = idb_adapter->makeInstance(load_buffer, buffer_name.c_str());
+    auto buffer = idb_adapter->createInstance(load_buffer, buffer_name.c_str());
 
-    LibertyPort *input, *output;
+    LibPort *input, *output;
     load_buffer->bufferPorts(input, output);
     auto debug_buf_in =
-        idb_adapter->connect(buffer, input->get_port_name(), drvr->get_net());
+        idb_adapter->attach(buffer, input->get_port_name(), drvr->get_net());
     LOG_ERROR_IF(!debug_buf_in);
 
     int loc_x = drvr_pin_loc.get_x();
@@ -341,14 +378,14 @@ void HoldOptimizer::insertLoadBuffer(LibertyCell *load_buffer, StaVertex *drvr_v
     _timing_engine->insertBuffer(buffer->get_name());
   }
 
-  _parasitics_estimator->parasiticsInvalid(drvr->get_net());
+  _parasitics_estimator->invalidNetRC(drvr->get_net());
 }
 
 void HoldOptimizer::insertBufferDelay(StaVertex *drvr_vertex, int insert_number,
-                                      DesignObjSeq &load_pins,
-                                      LibertyCell  *insert_buffer_cell) {
+                                      TODesignObjSeq &load_pins,
+                                      LibCell *       insert_buffer_cell) {
   auto *drvr_obj = drvr_vertex->get_design_obj();
-  Net  *drvr_net = drvr_obj->get_net();
+  Net * drvr_net = drvr_obj->get_net();
 
   TimingIDBAdapter *idb_adapter = dynamic_cast<TimingIDBAdapter *>(_db_adapter);
 
@@ -360,29 +397,29 @@ void HoldOptimizer::insertBufferDelay(StaVertex *drvr_vertex, int insert_number,
   std::string net_name = ("hold_net_" + to_string(_make_net_index));
   _make_net_index++;
 
-  out_net = idb_adapter->makeNet(net_name.c_str(), nullptr);
-  // Copy signal type to new net.
+  out_net = idb_adapter->createNet(net_name.c_str(), nullptr);
+
   idb::IdbNet *out_net_db = idb_adapter->staToDb(out_net);
   idb::IdbNet *in_net_db = idb_adapter->staToDb(in_net);
   out_net_db->set_connect_type(in_net_db->get_connect_type());
 
   for (auto *pin_port : load_pins) {
     if (pin_port->isPin()) {
-      Pin      *load_pin = dynamic_cast<Pin *>(pin_port);
+      Pin *     load_pin = dynamic_cast<Pin *>(pin_port);
       Instance *load_inst = load_pin->get_own_instance();
-      // idb_adapter->disconnectPin(load_pin);
-      idb_adapter->disconnectPinPort(pin_port);
-      auto debug = idb_adapter->connect(load_inst, load_pin->get_name(), out_net);
+      // idb_adapter->disattachPin(load_pin);
+      idb_adapter->disattachPinPort(pin_port);
+      auto debug = idb_adapter->attach(load_inst, load_pin->get_name(), out_net);
       LOG_ERROR_IF(!debug);
     } else if (pin_port->isPort()) {
       Port *load_port = dynamic_cast<Port *>(pin_port);
-      idb_adapter->disconnectPinPort(pin_port);
-      auto debug = idb_adapter->connect(load_port, load_port->get_name(), out_net);
+      idb_adapter->disattachPinPort(pin_port);
+      auto debug = idb_adapter->attach(load_port, load_port->get_name(), out_net);
       LOG_ERROR_IF(!debug);
     }
   }
 
-  _parasitics_estimator->parasiticsInvalid(in_net);
+  _parasitics_estimator->invalidNetRC(in_net);
   // Spread buffers between driver and load center.
   IdbCoordinate<int32_t> *loc = idb_adapter->idbLocation(drvr_obj);
   Point                   drvr_pin_loc = Point(loc->get_x(), loc->get_y());
@@ -402,9 +439,9 @@ void HoldOptimizer::insertBufferDelay(StaVertex *drvr_vertex, int insert_number,
   int dx = (drvr_pin_loc.get_x() - center_x) / (insert_number + 1);
   int dy = (drvr_pin_loc.get_y() - center_y) / (insert_number + 1);
 
-  Net         *buf_in_net = in_net;
-  Instance    *buffer = nullptr;
-  LibertyPort *input, *output;
+  Net *     buf_in_net = in_net;
+  Instance *buffer = nullptr;
+  LibPort * input, *output;
   insert_buffer_cell->bufferPorts(input, output);
 
   std::vector<const char *> insert_inst_name;
@@ -417,22 +454,21 @@ void HoldOptimizer::insertBufferDelay(StaVertex *drvr_vertex, int insert_number,
       std::string net_name = ("hold_net_" + to_string(_make_net_index));
       _make_net_index++;
 
-      buf_out_net = idb_adapter->makeNet(net_name.c_str(), nullptr);
+      buf_out_net = idb_adapter->createNet(net_name.c_str(), nullptr);
     }
 
-    // Copy signal type to new net.
     idb::IdbNet *buf_out_net_db = idb_adapter->staToDb(buf_out_net);
     buf_out_net_db->set_connect_type(in_net_db->get_connect_type());
 
     std::string buffer_name = ("hold_buf_" + to_string(_insert_instance_index));
     _insert_instance_index++;
-    buffer = idb_adapter->makeInstance(insert_buffer_cell, buffer_name.c_str());
+    buffer = idb_adapter->createInstance(insert_buffer_cell, buffer_name.c_str());
 
-    _inserted_buffer_count++;
+    _number_insert_buffer++;
 
-    auto debug_buf_in = idb_adapter->connect(buffer, input->get_port_name(), buf_in_net);
+    auto debug_buf_in = idb_adapter->attach(buffer, input->get_port_name(), buf_in_net);
     auto debug_buf_out =
-        idb_adapter->connect(buffer, output->get_port_name(), buf_out_net);
+        idb_adapter->attach(buffer, output->get_port_name(), buf_out_net);
     LOG_ERROR_IF(!debug_buf_in);
     LOG_ERROR_IF(!debug_buf_out);
 
@@ -456,29 +492,29 @@ void HoldOptimizer::insertBufferDelay(StaVertex *drvr_vertex, int insert_number,
     // update in net
     buf_in_net = buf_out_net;
 
-    _parasitics_estimator->parasiticsInvalid(buf_out_net);
+    _parasitics_estimator->invalidNetRC(buf_out_net);
 
     _timing_engine->insertBuffer(buffer->get_name());
     insert_inst_name.push_back(buffer->get_name());
 
     // increase design area
     idb::IdbCellMaster *idb_master = idb_adapter->staToDb(insert_buffer_cell);
-    Master             *master = new Master(idb_master);
+    Master *            master = new Master(idb_master);
 
     float area = DesignCalculator::calcMasterArea(master, _dbu);
     _violation_fixer->increDesignArea(area);
   }
 }
 
-LibertyCell *HoldOptimizer::findBufferWithMaxDelay() {
-  LibertyCell *max_delay_buf = nullptr;
-  float        max_delay = 0.0;
+LibCell *HoldOptimizer::findBufferWithMaxDelay() {
+  LibCell *max_delay_buf = nullptr;
+  float    max_delay = 0.0;
 
-  for (LibertyCell *buffer : _buffer_cells) {
+  for (LibCell *buffer : _available_buffer_cells) {
     if (strstr(buffer->get_cell_name(), "CLK") != NULL) {
       continue;
     }
-    float buffer_delay = getBufferHoldDelay(buffer);
+    float buffer_delay = calcHoldDelayOfBuffer(buffer);
     if (max_delay_buf == nullptr || buffer_delay > max_delay) {
       max_delay_buf = buffer;
       max_delay = buffer_delay;
@@ -487,15 +523,15 @@ LibertyCell *HoldOptimizer::findBufferWithMaxDelay() {
   return max_delay_buf;
 }
 
-float HoldOptimizer::getBufferHoldDelay(LibertyCell *buffer) {
-  Delay delays[2] = {kInf, kInf};
+float HoldOptimizer::calcHoldDelayOfBuffer(LibCell *buffer) {
+  TODelay delays[2] = {kInf, kInf};
 
-  LibertyPort *input_port, *output_port;
+  LibPort *input_port, *output_port;
   buffer->bufferPorts(input_port, output_port);
 
-  float load_cap = input_port->get_port_cap();
-  Delay gate_delays[2];
-  Slew  slews[2];
+  float   load_cap = input_port->get_port_cap();
+  TODelay gate_delays[2];
+  TOSlew  slews[2];
   _violation_fixer->calcGateRiseFallDelays(output_port, load_cap, gate_delays, slews);
   for (int rf_index = 0; rf_index < 2; rf_index++) {
     delays[rf_index] = min(delays[rf_index], gate_delays[rf_index]);
@@ -504,20 +540,22 @@ float HoldOptimizer::getBufferHoldDelay(LibertyCell *buffer) {
   return min(delays[_rise], delays[_fall]);
 }
 
-void HoldOptimizer::findEndpointsWithHoldViolation(VertexSet end_points,
-                                                   // return values
-                                                   Slack     &worst_slack,
-                                                   VertexSet &hold_violations) {
+bool HoldOptimizer::findEndpointsWithHoldViolation(TOVertexSet  end_points,
+                                                   TOSlack &    worst_slack,
+                                                   TOVertexSet &hold_violations) {
   worst_slack = kInf;
   hold_violations.clear();
+  bool is_find = false;
 
   for (auto *end : end_points) {
-    Slack slack = getWorstSlack(end, AnalysisMode::kMin);
+    TOSlack slack = getWorstSlack(end, AnalysisMode::kMin);
     worst_slack = min(worst_slack, slack);
-    if (fuzzyLess(slack, _slack_margin)) {
+    if (approximatelyLess(slack, _target_slack)) {
       hold_violations.insert(end);
+      is_find = true;
     }
   }
+  return is_find;
 }
 
 /**
@@ -526,26 +564,26 @@ void HoldOptimizer::findEndpointsWithHoldViolation(VertexSet end_points,
  * @param vertex
  * @param slacks
  */
-void HoldOptimizer::vertexSlacks(StaVertex *vertex,
-                                 // return value
-                                 Slacks slacks) {
+void HoldOptimizer::calcStaVertexSlacks(StaVertex *vertex,
+                                        // return value
+                                        TOSlacks slacks) {
   vector<AnalysisMode> analy_mode = {AnalysisMode::kMax, AnalysisMode::kMin};
   vector<TransType>    rise_fall = {TransType::kRise, TransType::kFall};
 
   for (auto mode : analy_mode) {
     for (auto rf : rise_fall) {
-      auto  pin_slack = vertex->getSlackNs(mode, rf);
-      Slack slack = pin_slack ? *pin_slack : kInf;
-      int   mode_idx = (int)mode - 1;
-      int   rf_idx = (int)rf - 1;
+      auto    pin_slack = vertex->getSlackNs(mode, rf);
+      TOSlack slack = pin_slack ? *pin_slack : kInf;
+      int     mode_idx = (int)mode - 1;
+      int     rf_idx = (int)rf - 1;
       slacks[rf_idx][mode_idx] = slack;
     }
   }
 }
 
-Slack HoldOptimizer::calcSlackGap(StaVertex *vertex) {
-  Slacks slacks;
-  vertexSlacks(vertex, slacks);
+TOSlack HoldOptimizer::calcSlackGap(StaVertex *vertex) {
+  TOSlacks slacks;
+  calcStaVertexSlacks(vertex, slacks);
 
   return min(slacks[_rise][_mode_max] - slacks[_rise][_mode_min],
              slacks[_fall][_mode_max] - slacks[_fall][_mode_min]);
@@ -568,17 +606,17 @@ void HoldOptimizer::setLocation(Instance *inst, int x, int y) {
   _db_interface->placer()->updateRow(master_width, loc.first, loc.second);
 }
 
-VertexSet HoldOptimizer::getEndPoints() {
-  VertexSet  end_points;
-  auto      *ista = _timing_engine->get_ista();
-  StaGraph  *the_graph = &(ista->get_graph());
-  StaVertex *vertex;
+TOVertexSet HoldOptimizer::getEndPoints() {
+  TOVertexSet end_points;
+  auto *      ista = _timing_engine->get_ista();
+  StaGraph *  the_graph = &(ista->get_graph());
+  StaVertex * vertex;
   FOREACH_END_VERTEX(the_graph, vertex) { end_points.insert(vertex); }
   return end_points;
 }
 
-VertexSet HoldOptimizer::getFanins(VertexSet end_points) {
-  VertexSet fanins;
+TOVertexSet HoldOptimizer::getFanins(TOVertexSet end_points) {
+  TOVertexSet fanins;
   fanins.clear();
   for (auto *end_point : end_points) {
     auto net = end_point->get_design_obj()->get_net();
@@ -589,23 +627,23 @@ VertexSet HoldOptimizer::getFanins(VertexSet end_points) {
   return fanins;
 };
 
-VertexSeq HoldOptimizer::sortFanins(VertexSet fanins) {
+TOVertexSeq HoldOptimizer::sortFanins(TOVertexSet fanins) {
   // sort fanins
-  VertexSeq sorted_fanins;
+  TOVertexSeq sorted_fanins;
   for (auto *vertex : fanins) {
     sorted_fanins.push_back(vertex);
   }
   sort(sorted_fanins.begin(), sorted_fanins.end(),
        [=, this](StaVertex *v1, StaVertex *v2) {
-         auto  v1_slack = v1->getSlack(AnalysisMode::kMin, TransType::kRise);
-         auto  v2_slack = v2->getSlack(AnalysisMode::kMin, TransType::kRise);
-         Slack s1 = v1_slack ? *v1_slack : kInf;
-         Slack s2 = v2_slack ? *v2_slack : kInf;
-         if (fuzzyEqual(s1, s2)) {
+         auto    v1_slack = v1->getSlack(AnalysisMode::kMin, TransType::kRise);
+         auto    v2_slack = v2->getSlack(AnalysisMode::kMin, TransType::kRise);
+         TOSlack s1 = v1_slack ? *v1_slack : kInf;
+         TOSlack s2 = v2_slack ? *v2_slack : kInf;
+         if (approximatelyEqual(s1, s2)) {
            float gap1 = calcSlackGap(v1);
            float gap2 = calcSlackGap(v2);
            // Break ties based on the hold/setup gap.
-           if (fuzzyEqual(gap1, gap2))
+           if (approximatelyEqual(gap1, gap2))
              return v1->get_level() > v2->get_level();
            else
              return gap1 > gap2;
@@ -615,14 +653,14 @@ VertexSeq HoldOptimizer::sortFanins(VertexSet fanins) {
   return sorted_fanins;
 }
 
-Slack HoldOptimizer::getWorstSlack(AnalysisMode mode) {
+TOSlack HoldOptimizer::getWorstSlack(AnalysisMode mode) {
   StaSeqPathData *worst_path_rise =
-      _timing_engine->vertexWorstRequiredPath(mode, TransType::kRise);
+      _timing_engine->getWorstSeqData(mode, TransType::kRise);
   StaSeqPathData *worst_path_fall =
-      _timing_engine->vertexWorstRequiredPath(mode, TransType::kFall);
-  Slack worst_slack_rise = worst_path_rise->getSlackNs();
-  Slack worst_slack_fall = worst_path_fall->getSlackNs();
-  Slack slack = min(worst_slack_rise, worst_slack_fall);
+      _timing_engine->getWorstSeqData(mode, TransType::kFall);
+  TOSlack worst_slack_rise = worst_path_rise->getSlackNs();
+  TOSlack worst_slack_fall = worst_path_fall->getSlackNs();
+  TOSlack slack = min(worst_slack_rise, worst_slack_fall);
 
   StaSeqPathData *worst_path =
       worst_slack_rise > worst_slack_fall ? worst_path_fall : worst_path_rise;
@@ -639,30 +677,30 @@ Slack HoldOptimizer::getWorstSlack(AnalysisMode mode) {
   return slack;
 }
 
-Slack HoldOptimizer::getWorstSlack(StaVertex *vertex, AnalysisMode mode) {
-  auto  rise_slack = vertex->getSlackNs(mode, TransType::kRise);
-  Slack rise = rise_slack ? *rise_slack : kInf;
-  auto  fall_slack = vertex->getSlackNs(mode, TransType::kFall);
-  Slack fall = fall_slack ? *fall_slack : kInf;
-  Slack slack = min(rise, fall);
+TOSlack HoldOptimizer::getWorstSlack(StaVertex *vertex, AnalysisMode mode) {
+  auto    rise_slack = vertex->getSlackNs(mode, TransType::kRise);
+  TOSlack rise = rise_slack ? *rise_slack : kInf;
+  auto    fall_slack = vertex->getSlackNs(mode, TransType::kFall);
+  TOSlack fall = fall_slack ? *fall_slack : kInf;
+  TOSlack slack = min(rise, fall);
   return slack;
 }
 
 void HoldOptimizer::insertHoldDelay(string insert_buf_name, string pin_name,
                                     int insert_number) {
-  ista::Sta   *ista = _timing_engine->get_ista();
-  LibertyCell *insert_buffer_cell = ista->findLibertyCell(insert_buf_name.c_str());
-  LibertyPort *input, *output;
+  ista::Sta *ista = _timing_engine->get_ista();
+  LibCell *  insert_buffer_cell = ista->findLibertyCell(insert_buf_name.c_str());
+  LibPort *  input, *output;
   insert_buffer_cell->bufferPorts(input, output);
 
   // iSta ->findPin
-  StaVertex    *vertex = ista->findVertex(pin_name.c_str());
+  StaVertex *   vertex = ista->findVertex(pin_name.c_str());
   DesignObject *load_obj = vertex->get_design_obj();
-  Net          *net = load_obj->get_net();
+  Net *         net = load_obj->get_net();
 
   DesignObject *drvr_obj = net->getDriver();
 
-  Net              *drvr_net = net;
+  Net *             drvr_net = net;
   TimingIDBAdapter *idb_adapter = dynamic_cast<TimingIDBAdapter *>(_db_adapter);
 
   // make net
@@ -671,26 +709,25 @@ void HoldOptimizer::insertHoldDelay(string insert_buf_name, string pin_name,
   std::string net_name =
       ("hold_net_byhand_" + to_string(_db_interface->make_net_index()));
   _db_interface->make_net_index()++;
-  out_net = idb_adapter->makeNet(net_name.c_str(), nullptr);
+  out_net = idb_adapter->createNet(net_name.c_str(), nullptr);
 
-  // Copy signal type to new net.
   idb::IdbNet *out_net_db = idb_adapter->staToDb(out_net);
   idb::IdbNet *in_net_db = idb_adapter->staToDb(in_net);
   out_net_db->set_connect_type(in_net_db->get_connect_type());
 
   /**
-   * @brief move load pin to outnet
+   * @brief re-connect load pin to outnet
    */
   if (load_obj->isPin()) {
-    Pin      *load_pin = dynamic_cast<Pin *>(load_obj);
+    Pin *     load_pin = dynamic_cast<Pin *>(load_obj);
     Instance *load_inst = load_pin->get_own_instance();
-    idb_adapter->disconnectPinPort(load_pin);
-    auto debug = idb_adapter->connect(load_inst, load_pin->get_name(), out_net);
+    idb_adapter->disattachPinPort(load_pin);
+    auto debug = idb_adapter->attach(load_inst, load_pin->get_name(), out_net);
     LOG_ERROR_IF(!debug);
   } else if (load_obj->isPort()) {
     Port *load_port = dynamic_cast<Port *>(load_obj);
-    idb_adapter->disconnectPinPort(load_port);
-    auto debug = idb_adapter->connect(load_port, load_port->get_name(), out_net);
+    idb_adapter->disattachPinPort(load_port);
+    auto debug = idb_adapter->attach(load_port, load_port->get_name(), out_net);
     LOG_ERROR_IF(!debug);
   }
 
@@ -715,10 +752,9 @@ void HoldOptimizer::insertHoldDelay(string insert_buf_name, string pin_name,
           ("hold_net_byhand_" + to_string(_db_interface->make_net_index()));
       _db_interface->make_net_index()++;
 
-      buf_out_net = idb_adapter->makeNet(net_name.c_str(), nullptr);
+      buf_out_net = idb_adapter->createNet(net_name.c_str(), nullptr);
     }
 
-    // Copy signal type to new net.
     idb::IdbNet *buf_out_net_db = idb_adapter->staToDb(buf_out_net);
     buf_out_net_db->set_connect_type(in_net_db->get_connect_type());
 
@@ -726,13 +762,14 @@ void HoldOptimizer::insertHoldDelay(string insert_buf_name, string pin_name,
     std::string buffer_name =
         ("hold_buf_byhand_" + to_string(_db_interface->make_instance_index()));
     _db_interface->make_instance_index()++;
-    Instance *buffer = idb_adapter->makeInstance(insert_buffer_cell, buffer_name.c_str());
+    Instance *buffer =
+        idb_adapter->createInstance(insert_buffer_cell, buffer_name.c_str());
 
-    _inserted_buffer_count++;
+    _number_insert_buffer++;
 
-    auto debug_buf_in = idb_adapter->connect(buffer, input->get_port_name(), buf_in_net);
+    auto debug_buf_in = idb_adapter->attach(buffer, input->get_port_name(), buf_in_net);
     auto debug_buf_out =
-        idb_adapter->connect(buffer, output->get_port_name(), buf_out_net);
+        idb_adapter->attach(buffer, output->get_port_name(), buf_out_net);
     LOG_ERROR_IF(!debug_buf_in);
     LOG_ERROR_IF(!debug_buf_out);
 
@@ -761,8 +798,8 @@ void HoldOptimizer::reportWNSAndTNS() {
   auto clk_list = _timing_engine->getClockList();
   for (auto clk : clk_list) {
     auto clk_name = clk->get_clock_name();
-    auto tns1 = _timing_engine->reportTNS(clk_name, AnalysisMode::kMin);
-    auto wns1 = _timing_engine->reportWNS(clk_name, AnalysisMode::kMin);
+    auto tns1 = _timing_engine->getTNS(clk_name, AnalysisMode::kMin);
+    auto wns1 = _timing_engine->getWNS(clk_name, AnalysisMode::kMin);
     _db_interface->report()->get_ofstream()
         << setiosflags(ios::left) << setw(35) << clk_name << resetiosflags(ios::left)
         << setiosflags(ios::right) << setw(20) << tns1 << setw(20) << wns1

@@ -31,6 +31,11 @@
 
 #include "../../../database/interaction/ids.hpp"
 
+namespace ieda_feature {
+    class CTSSummary;
+    class NetTiming;
+}// namespace
+
 namespace icts {
 
 #define CTSAPIInst (icts::CTSAPI::getInst())
@@ -112,6 +117,7 @@ class CTSAPI
   double getSlewIn(const std::string& pin_name) const;
   double getCapOut(const std::string& pin_name) const;
   std::vector<double> solvePolynomialRealRoots(const std::vector<double>& coeffs);
+  ieda_feature::CTSSummary outputSummary();
 
   // synthesis
   int32_t getDbUnit() const;

@@ -33,13 +33,11 @@ namespace tcl {
 
 int registerCmdFeature()
 {
-  registerTclCmd(CmdFeatureGenerateLayout, "feature_layout");
-  registerTclCmd(CmdFeatureGenerateInstances, "feature_instances");
-  registerTclCmd(CmdFeatureGenerateNets, "feature_nets");
-
   registerTclCmd(CmdFeatureSummary, "feature_summary");
-  registerTclCmd(CmdFeatureSummaryMap, "feature_summary_map");
-
+  registerTclCmd(CmdFeatureTool, "feature_tool");
+  registerTclCmd(CmdFeatureEvalMap, "feature_eval_map");
+  registerTclCmd(CmdFeatureRoute, "feature_route");
+  registerTclCmd(CmdFeatureRouteRead, "feature_route_read");
 
   return EXIT_SUCCESS;
 }

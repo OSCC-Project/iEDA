@@ -519,8 +519,6 @@ Point<float> WAWirelengthGradient::obtainPinWirelengthGradient(Node* pin, float 
   return Point<float>(gradient_min_x - gradient_max_x, gradient_min_y - gradient_max_y);
 }
 
-//
-// https://codingforspeed.com/using-faster-exponential-approximation/
 static float fastExp(float a)
 {
   a = 1.0 + a / 1024.0;

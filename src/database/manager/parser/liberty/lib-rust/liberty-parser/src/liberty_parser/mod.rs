@@ -14,8 +14,6 @@ use std::os::raw::c_char;
 
 use self::liberty_data::{LibertyAttrValue, LibertyGroupStmt};
 
-use std::time::Instant;
-
 #[derive(Parser)]
 #[grammar = "liberty_parser/grammar/liberty.pest"]
 pub struct LibertyParser;
@@ -207,7 +205,7 @@ fn process_group_attribute(
                 liberty_data::LibertyParserData::SimpleStmt(simple_stmt) => stmts.push(Box::new(simple_stmt)),
                 liberty_data::LibertyParserData::ComplexStmt(complex_stmt) => stmts.push(Box::new(complex_stmt)),
                 liberty_data::LibertyParserData::GroupStmt(group_stmt) => stmts.push(Box::new(group_stmt)),
-                _ => todo!(),
+                // _ => todo!(),
             }
         }
         // for group and complex stmt, may be complex stmt parsed by group pair, because not used semicolon as end.
@@ -322,7 +320,7 @@ pub extern "C" fn rust_free_lib_group(c_lib_group: *mut LibertyGroupStmt) {
 
 #[cfg(test)]
 mod tests {
-    use pest::error;
+
     use pest::iterators::Pair;
     use pest::iterators::Pairs;
 
@@ -354,7 +352,7 @@ mod tests {
             }
         }
 
-        assert!(!parse_result_clone.is_err());
+        assert!(parse_result_clone.is_ok());
     }
 
     fn test_process_parse_result(parse_result: Result<Pairs<Rule>, pest::error::Error<Rule>>) {

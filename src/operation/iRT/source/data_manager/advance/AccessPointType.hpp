@@ -20,15 +20,11 @@
 
 namespace irt {
 
-/**
- * TrackGrid包含PrefTrackGrid和CurrTrackGrid
- */
 enum class AccessPointType
 {
   kNone,
-  kPrefTrackGrid,
-  kCurrTrackGrid,
-  kTrackCenter,
+  kTrackGrid,
+  kOnTrack,
   kShapeCenter
 };
 
@@ -41,14 +37,11 @@ struct GetAccessPointTypeName
       case AccessPointType::kNone:
         access_point_name = "none";
         break;
-      case AccessPointType::kPrefTrackGrid:
-        access_point_name = "pref_track_grid";
+      case AccessPointType::kTrackGrid:
+        access_point_name = "track_grid";
         break;
-      case AccessPointType::kCurrTrackGrid:
-        access_point_name = "curr_track_grid";
-        break;
-      case AccessPointType::kTrackCenter:
-        access_point_name = "track_center";
+      case AccessPointType::kOnTrack:
+        access_point_name = "on_track";
         break;
       case AccessPointType::kShapeCenter:
         access_point_name = "shape_center";

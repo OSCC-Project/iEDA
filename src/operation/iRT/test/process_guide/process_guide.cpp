@@ -18,7 +18,7 @@ void readGuide(const std::string& guide_file_path, std::vector<Net>& net_list)
 
   std::string net_name, layer_name;
   while (getline(*guide_file_stream, new_line)) {
-    int ll_x, ll_y, ur_x, ur_y;
+    int32_t ll_x, ll_y, ur_x, ur_y;
     if (is_new_net) {
       net_name = new_line;
       is_new_net = false;
@@ -33,7 +33,7 @@ void readGuide(const std::string& guide_file_path, std::vector<Net>& net_list)
           net.set_guide_list(guide_list);
           net_list.push_back(net);
 
-          static int net_num = 0;
+          static int32_t net_num = 0;
           net_num++;
           if (net_num % 10000 == 0) {
             std::cout << "read " << net_num << " nets" << std::endl;
@@ -77,7 +77,7 @@ void writeGuide(std::vector<Net>& net_list, const std::string& guide_file_path)
   std::cout << "write end" << std::endl;
 }
 
-int main()
+int32_t main()
 {
   const std::string& guide_file_path_read = "";
   const std::string& guide_file_path_write = "";

@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include "ConflictGroup.hpp"
 #include "PANet.hpp"
 #include "RTHeader.hpp"
 
@@ -29,11 +30,14 @@ class PAModel
   ~PAModel() = default;
   // getter
   std::vector<PANet>& get_pa_net_list() { return _pa_net_list; }
+  std::vector<ConflictGroup>& get_conflict_group_list() { return _conflict_group_list; }
   // setter
   void set_pa_net_list(const std::vector<PANet>& pa_net_list) { _pa_net_list = pa_net_list; }
+  void set_conflict_group_list(const std::vector<ConflictGroup>& conflict_group_list) { _conflict_group_list = conflict_group_list; }
 
  private:
   std::vector<PANet> _pa_net_list;
+  std::vector<ConflictGroup> _conflict_group_list;
 };
 
 }  // namespace irt

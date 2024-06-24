@@ -36,15 +36,16 @@ def_init -path $::env(RESULT_DIR)/iRT_result.def
 #===========================================================
 ##   run STA
 #===========================================================
+init_sta -output $::env(RESULT_DIR)/rt/sta/
 
 init_rt -temp_directory_path "$::env(RESULT_DIR)/rt/" \
         -bottom_routing_layer "met1" \
-        -top_routing_layer "met4"
+        -top_routing_layer "met4" \
+        -enable_timing 1
 
 # run_rt -flow vr
 run_rt
 
-init_sta -output $::env(RESULT_DIR)/rt/sta/
 report_timing -stage "dr"
 
 destroy_rt

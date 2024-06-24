@@ -36,6 +36,7 @@ void register_ista(py::module& m)
   m.def("read_spef", readSpef, ("file_name"));
   m.def("read_sdc", readSdc, py::arg("file_name"));
   m.def("report_timing", reportTiming, py::arg("digits"), py::arg("delay_type"), py::arg("exclude_cell_names"), py::arg("derate"));
-  // m.def("report_constraint") incomplete
+
+  m.def("get_used_libs", get_used_libs);
 }
 }  // namespace python_interface

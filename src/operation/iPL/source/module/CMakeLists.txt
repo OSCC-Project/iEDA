@@ -1,4 +1,4 @@
-set(iPL_MP ${iPL_MODULE}/macro_placer)
+# set(iPL_MP ${iPL_MODULE}/macro_placer)
 set(iPL_IP ${iPL_MODULE}/initial_placer)
 set(iPL_GP ${iPL_MODULE}/global_placer)
 set(iPL_POSTGP ${iPL_MODULE}/post_global_placer)
@@ -13,7 +13,7 @@ set(iPL_LOGGER ${iPL_MODULE}/logger)
 set(iPL_TOPOLOGY_MANAGER ${iPL_MODULE}/topology_manager)
 set(iPL_WRAPPER ${iPL_MODULE}/wrapper)
 
-add_subdirectory(${iPL_MP})
+# add_subdirectory(${iPL_MP})
 add_subdirectory(${iPL_IP})
 add_subdirectory(${iPL_GP})
 add_subdirectory(${iPL_POSTGP})
@@ -42,7 +42,7 @@ target_link_libraries(ipl-module
     ipl-module-grid_manager
     ipl-module-legalizer
     ipl-module-logger
-    ipl-module-macro_placer
+    # ipl-module-macro_placer
     ipl-module-initial_placer
     ipl-module-topology_manager
     ipl-module-wrapper

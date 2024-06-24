@@ -56,5 +56,3 @@ target_include_directories(idm
         ${HOME_OPERATION}
 
 )
-
-SET(CMAKE_BUILD_TYPE "Debug")

@@ -27,57 +27,14 @@
 #include <iostream>
 
 #include "ScriptEngine.hh"
-#include "tcl_definition.h"
+#include "../tcl_definition.h"
 
 using ieda::TclCmd;
+using ieda::TclIntOption;
 using ieda::TclOption;
 using ieda::TclStringOption;
-using ieda::TclIntOption;
 
 namespace tcl {
-
-class CmdFeatureGenerateLayout : public TclCmd
-{
- public:
-  explicit CmdFeatureGenerateLayout(const char* cmd_name);
-  ~CmdFeatureGenerateLayout() override = default;
-
-  unsigned check() override;
-  unsigned exec() override;
-
- private:
-  // private function
-  // private data
-};
-
-class CmdFeatureGenerateInstances : public TclCmd
-{
- public:
-  explicit CmdFeatureGenerateInstances(const char* cmd_name);
-  ~CmdFeatureGenerateInstances() override = default;
-
-  unsigned check() override;
-  unsigned exec() override;
-
- private:
-  // private function
-  // private data
-};
-
-class CmdFeatureGenerateNets : public TclCmd
-{
- public:
-  explicit CmdFeatureGenerateNets(const char* cmd_name);
-  ~CmdFeatureGenerateNets() override = default;
-
-  unsigned check() override;
-  unsigned exec() override;
-
- private:
-  // private function
-  // private data
-};
-
 class CmdFeatureSummary : public TclCmd
 {
  public:
@@ -92,11 +49,53 @@ class CmdFeatureSummary : public TclCmd
   // private data
 };
 
-class CmdFeatureSummaryMap : public TclCmd
+class CmdFeatureTool : public TclCmd
 {
  public:
-  explicit CmdFeatureSummaryMap(const char* cmd_name);
-  ~CmdFeatureSummaryMap() override = default;
+  explicit CmdFeatureTool(const char* cmd_name);
+  ~CmdFeatureTool() override = default;
+
+  unsigned check() override;
+  unsigned exec() override;
+
+ private:
+  // private function
+  // private data
+};
+
+class CmdFeatureEvalMap : public TclCmd
+{
+ public:
+  explicit CmdFeatureEvalMap(const char* cmd_name);
+  ~CmdFeatureEvalMap() override = default;
+
+  unsigned check() override;
+  unsigned exec() override;
+
+ private:
+  // private function
+  // private data
+};
+
+class CmdFeatureRoute : public TclCmd
+{
+ public:
+  explicit CmdFeatureRoute(const char* cmd_name);
+  ~CmdFeatureRoute() override = default;
+
+  unsigned check() override;
+  unsigned exec() override;
+
+ private:
+  // private function
+  // private data
+};
+
+class CmdFeatureRouteRead : public TclCmd
+{
+ public:
+  explicit CmdFeatureRouteRead(const char* cmd_name);
+  ~CmdFeatureRouteRead() override = default;
 
   unsigned check() override;
   unsigned exec() override;

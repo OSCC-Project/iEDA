@@ -54,15 +54,15 @@ class SupplyAnalyzer
   std::vector<LayerRect> getCrossingWireList(EXTLayerRect& search_rect);
   bool isAccess(LayerRect& wire, std::vector<EXTLayerRect>& fixed_rect_list);
 
-#if 1  // debug
-  void debugPlotSAModel(SAModel& sa_model);
-#endif
-
 #if 1  // exhibit
   void updateSummary(SAModel& sa_model);
   void printSummary(SAModel& sa_model);
   void writePlanarSupplyCSV(SAModel& sa_model);
   void writeLayerSupplyCSV(SAModel& sa_model);
+#endif
+
+#if 1  // debug
+  void debugPlotSAModel(SAModel& sa_model);
 #endif
 };
 

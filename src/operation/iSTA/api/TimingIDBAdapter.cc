@@ -328,7 +328,7 @@ PortDir TimingIDBAdapter::dbToSta(IdbConnectType sig_type,
   }
 }
 
-LibertyCell* TimingIDBAdapter::dbToSta(IdbCellMaster* master) {
+LibCell* TimingIDBAdapter::dbToSta(IdbCellMaster* master) {
   std::string liberty_cell_name = master->get_name();
   return _ista->findLibertyCell(liberty_cell_name.c_str());
 }
@@ -339,20 +339,20 @@ LibertyCell* TimingIDBAdapter::dbToSta(IdbCellMaster* master) {
  * @param cell
  * @return dbMaster*
  */
-IdbCellMaster* TimingIDBAdapter::staToDb(const LibertyCell* cell) const {
+IdbCellMaster* TimingIDBAdapter::staToDb(const LibCell* cell) const {
   IdbLayout* idb_layout = _idb_lef_service->get_layout();
   IdbCellMasterList* idb_master_list = idb_layout->get_cell_master_list();
   return idb_master_list->find_cell_master(cell->get_cell_name());
 }
 
-LibertyPort* TimingIDBAdapter::dbToSta(IdbTerm* idb_term) {
+LibPort* TimingIDBAdapter::dbToSta(IdbTerm* idb_term) {
   IdbCellMaster* idb_master = idb_term->get_cell_master();
   auto* liberty_cell = dbToSta(idb_master);
   return liberty_cell->get_cell_port_or_port_bus(idb_term->get_name().c_str());
 }
 
-IdbTerm* TimingIDBAdapter::staToDb(LibertyPort* port) const {
-  const LibertyCell* cell = port->get_ower_cell();
+IdbTerm* TimingIDBAdapter::staToDb(LibPort* port) const {
+  const LibCell* cell = port->get_ower_cell();
   IdbCellMaster* master = staToDb(cell);
   vector<IdbTerm*> terms = master->get_term_list();
   for (IdbTerm* term : terms) {
@@ -367,7 +367,7 @@ IdbTerm* TimingIDBAdapter::staToDb(LibertyPort* port) const {
  * @brief Create instance in db and timing netlist.
  *
  */
-Instance* TimingIDBAdapter::makeInstance(LibertyCell* cell, const char* name) {
+Instance* TimingIDBAdapter::createInstance(LibCell* cell, const char* name) {
   const char* cell_name = cell->get_cell_name();
   IdbLayout* idb_layout = _idb_lef_service->get_layout();
   IdbCellMasterList* master_list = idb_layout->get_cell_master_list();
@@ -380,7 +380,7 @@ Instance* TimingIDBAdapter::makeInstance(LibertyCell* cell, const char* name) {
     idb_design->get_instance_list()->add_instance(idb_inst);
 
     Instance sta_inst(name, cell);
-    LibertyPort* library_port;
+    LibPort* library_port;
     FOREACH_CELL_PORT(cell, library_port) {
       const char* pin_name = library_port->get_port_name();
       // May be need add pin bus, fixme.
@@ -402,7 +402,7 @@ Instance* TimingIDBAdapter::makeInstance(LibertyCell* cell, const char* name) {
  *
  * @param instance_name
  */
-void TimingIDBAdapter::removeInstance(const char* instance_name) {
+void TimingIDBAdapter::deleteInstance(const char* instance_name) {
   auto* design_netlist = getNetlist();
   auto* the_instance = design_netlist->findInstance(instance_name);
 
@@ -427,7 +427,7 @@ void TimingIDBAdapter::removeInstance(const char* instance_name) {
  * @param inst
  * @param cell
  */
-void TimingIDBAdapter::replaceCell(Instance* inst, LibertyCell* cell) {
+void TimingIDBAdapter::substituteCell(Instance* inst, LibCell* cell) {
   IdbCellMaster* idb_master = staToDb(cell);
   IdbInstance* idb_inst = staToDb(inst);
   idb_inst->set_cell_master(idb_master);  // TODO: dinst->swapMaster(master)
@@ -441,8 +441,7 @@ void TimingIDBAdapter::replaceCell(Instance* inst, LibertyCell* cell) {
  * @param net
  * @return Pin*
  */
-Pin* TimingIDBAdapter::connect(Instance* inst, const char* port_name,
-                               Net* net) {
+Pin* TimingIDBAdapter::attach(Instance* inst, const char* port_name, Net* net) {
   IdbNet* dnet = staToDb(net);
   if (!dnet) {
     dnet = _idb_design->get_net_list()->find_net(net->get_name());
@@ -486,7 +485,7 @@ Pin* TimingIDBAdapter::connect(Instance* inst, const char* port_name,
  * @param net
  * @return Port*
  */
-Port* TimingIDBAdapter::connect(Port* port, const char* port_name, Net* net) {
+Port* TimingIDBAdapter::attach(Port* port, const char* port_name, Net* net) {
   IdbNet* dnet = staToDb(net);
   if (!dnet) {
     dnet = _idb_design->get_net_list()->find_net(net->get_name());
@@ -508,7 +507,7 @@ Port* TimingIDBAdapter::connect(Port* port, const char* port_name, Net* net) {
  *
  * @param pin
  */
-void TimingIDBAdapter::disconnectPin(Pin* pin) {
+void TimingIDBAdapter::disattachPin(Pin* pin) {
   auto* sta_net = pin->get_net();
   sta_net->removePinPort(pin);
   IdbPin* dpin = staToDb(pin);
@@ -538,9 +537,9 @@ void TimingIDBAdapter::disconnectPin(Pin* pin) {
  *
  * @param pin
  */
-void TimingIDBAdapter::disconnectPinPort(DesignObject* pin_or_port) {
+void TimingIDBAdapter::disattachPinPort(DesignObject* pin_or_port) {
   if (pin_or_port->isPin()) {
-    disconnectPin(dynamic_cast<Pin*>(pin_or_port));
+    disattachPin(dynamic_cast<Pin*>(pin_or_port));
   } else {
     // port
     IdbPin* dpin = staToDb(dynamic_cast<Port*>(pin_or_port));
@@ -565,8 +564,8 @@ void TimingIDBAdapter::disconnectPinPort(DesignObject* pin_or_port) {
  * @param pin
  * @param net
  */
-void TimingIDBAdapter::reconnectPin(Net* net, Pin* old_connect_pin,
-                                    std::vector<Pin*> new_connect_pins) {
+void TimingIDBAdapter::reattachPin(Net* net, Pin* old_connect_pin,
+                                   std::vector<Pin*> new_connect_pins) {
   IdbNet* dnet = staToDb(net);
   IdbPin* old_dpin = staToDb(old_connect_pin);
   old_dpin->set_net(nullptr);
@@ -596,7 +595,7 @@ void TimingIDBAdapter::reconnectPin(Net* net, Pin* old_connect_pin,
  * @param parent
  * @return Net*
  */
-Net* TimingIDBAdapter::makeNet(const char* name, Instance* /*parent*/) {
+Net* TimingIDBAdapter::createNet(const char* name, Instance* /*parent*/) {
   std::string str_name = name;
   IdbNetList* dbnet_list = _idb_design->get_net_list();
   IdbNet* dnet = dbnet_list->add_net(str_name, idb::IdbConnectType::kClock);
@@ -613,8 +612,8 @@ Net* TimingIDBAdapter::makeNet(const char* name, Instance* /*parent*/) {
  * @param parent
  * @return Net*
  */
-Net* TimingIDBAdapter::makeNet(const char* name, Instance* /*parent*/,
-                               idb::IdbConnectType connect_type) {
+Net* TimingIDBAdapter::createNet(const char* name, Instance* /*parent*/,
+                                 idb::IdbConnectType connect_type) {
   std::string str_name = name;
   IdbNetList* dbnet_list = _idb_design->get_net_list();
   IdbNet* dnet = dbnet_list->add_net(str_name, connect_type);
@@ -632,9 +631,9 @@ Net* TimingIDBAdapter::makeNet(const char* name, Instance* /*parent*/,
  * @param connect_type
  * @return Net*
  */
-Net* TimingIDBAdapter::makeNet(const char* name,
-                               std::vector<std::string>& sink_pin_list,
-                               idb::IdbConnectType connect_type) {
+Net* TimingIDBAdapter::createNet(const char* name,
+                                 std::vector<std::string>& sink_pin_list,
+                                 idb::IdbConnectType connect_type) {
   std::string str_name = name;
   IdbNetList* dbnet_list = _idb_design->get_net_list();
   IdbNet* dnet = dbnet_list->add_net(str_name, connect_type);
@@ -677,7 +676,7 @@ Net* TimingIDBAdapter::makeNet(const char* name,
  *
  * @param sta_net
  */
-void TimingIDBAdapter::removeNet(Net* sta_net) {
+void TimingIDBAdapter::deleteNet(Net* sta_net) {
   IdbNetList* dbnet_list = _idb_design->get_net_list();
   IdbNet* dnet = dbnet_list->find_net(sta_net->get_name());
 
@@ -697,6 +696,8 @@ void TimingIDBAdapter::removeNet(Net* sta_net) {
 unsigned TimingIDBAdapter::convertDBToTimingNetlist() {
   // reset all net to rc net
   _ista->resetAllRcNet();
+
+  _ista->resetNetlist();
   Netlist& design_netlist = *(_ista->get_netlist());
 
   auto* def_service = _idb->get_def_service();
@@ -758,21 +759,21 @@ unsigned TimingIDBAdapter::convertDBToTimingNetlist() {
         std::unique_ptr<PinBus> pin_bus;
         PinBus* found_pin_bus = nullptr;
         if (library_port_or_port_bus) {
-          LibertyPort* library_port = nullptr;
+          LibPort* library_port = nullptr;
 
           if (!library_port_or_port_bus->isLibertyPortBus()) {
             library_port = library_port_or_port_bus;
           } else {
             // port bus
             auto* library_port_bus =
-                dynamic_cast<LibertyPortBus*>(library_port_or_port_bus);
+                dynamic_cast<LibPortBus*>(library_port_or_port_bus);
             library_port = (*library_port_bus)[index.value()];
 
             found_pin_bus = sta_inst.findPinBus(port_base_name);
 
             if (!found_pin_bus) {
               auto bus_size =
-                  dynamic_cast<LibertyPortBus*>(library_port_bus)->getBusSize();
+                  dynamic_cast<LibPortBus*>(library_port_bus)->getBusSize();
               LOG_FATAL_IF(!bus_size)
                   << library_port_bus->get_port_name() << " bus size is empty.";
               pin_bus = std::make_unique<PinBus>(port_base_name.c_str(),

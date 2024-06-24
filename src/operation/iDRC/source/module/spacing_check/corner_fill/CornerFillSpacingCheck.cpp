@@ -216,12 +216,13 @@ void CornerFillSpacingCheck::checkSpacing(DrcRect* result_rect)
   if (!isParallelOverlap(result_rect)) {
     // case no Parallel Overlap between two rect ,need check corner spacing
     // if corner spacing is not meet require_spacing,it is a violation
-    //如果两个矩形不存在平行交叠则检查角间距
+    // If the two rectangles do not have parallel overlap, check the corner spacing
+
     checkCornerSpacing(result_rect);
   } else {
     // There is  Parallel Overlap between two rect
     // need check span box is covered by exited rect
-    //存在平行交叠检查X或Y方向上的间距
+    // If there is parallel overlap, check the spacing in the X or Y direction
     checkXYSpacing(result_rect);
   }
 }

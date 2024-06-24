@@ -1,4 +1,31 @@
 // ***************************************************************************************
+// MIT License
+//
+// Copyright (c) 2018-2021 Tsung-Wei Huang and Martin D. F. Wong
+//
+// The University of Utah, UT, USA
+//
+// The University of Illinois at Urbana-Champaign, IL, USA
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+// ***************************************************************************************
+// ***************************************************************************************
 // Copyright (c) 2023-2025 Peng Cheng Laboratory
 // Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of
 // Sciences Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
@@ -767,6 +794,11 @@ void RcNet::updateRcTreeInfo() {
   auto* driver = _net->getDriver();
   auto pin_ports = _net->get_pin_ports();
 
+  // fix for net is only driver
+  if (pin_ports.size() < 2) {
+    return;
+  }
+
   if (_rct.index() == 0) {
     std::get<EmptyRct>(_rct).load =
         std::accumulate(pin_ports.begin(), pin_ports.end(), 0.0,
@@ -795,7 +827,8 @@ void RcNet::updateRcTreeInfo() {
     // if (name() == "fanout_buf_215") {
     //   rct.printGraphViz();
     // }
-    LOG_FATAL_IF(!rct._root) << "not found rct root.";
+    LOG_FATAL_IF(!rct._root)
+        << "not found rct root for net " << _net->get_name();
   }
 
   // printRctInfo();
@@ -932,7 +965,7 @@ std::optional<double> RcNet::delay(DesignObject& to, DelayMethod delay_method) {
 
 std::optional<std::pair<double, Eigen::MatrixXd>> RcNet::delay(
     DesignObject& to, double /* from_slew */,
-    std::optional<LibetyCurrentData*> /* output_current */, AnalysisMode mode,
+    std::optional<LibCurrentData*> /* output_current */, AnalysisMode mode,
     TransType trans_type) {
   if (_rct.index() == 0) {
     return std::nullopt;
@@ -945,7 +978,7 @@ std::optional<std::pair<double, Eigen::MatrixXd>> RcNet::delay(
 
 std::optional<double> RcNet::slew(
     Pin& to, double from_slew,
-    std::optional<LibetyCurrentData*> /* output_current */, AnalysisMode mode,
+    std::optional<LibCurrentData*> /* output_current */, AnalysisMode mode,
     TransType trans_type) {
   if (_rct.index() == 0) {
     return std::nullopt;

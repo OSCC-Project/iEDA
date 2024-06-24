@@ -146,6 +146,31 @@ class IdbRegularWire
   // getter
   vector<IdbRegularWireSegment*>& get_segment_list() { return _segment_list; }
   int32_t get_num() { return _segment_list.size(); }
+  uint get_via_num();
+  uint64_t get_wire_num()
+  {
+    uint64_t number = 0;
+    for (auto seg : _segment_list) {
+      if (seg->is_wire()) {
+        number++;
+      }
+    }
+
+    return number;
+  }
+
+  uint64_t get_patch_num()
+  {
+    uint64_t number = 0;
+    for (auto seg : _segment_list) {
+      if (seg->is_rect()) {
+        number++;
+      }
+    }
+
+    return number;
+  }
+
   IdbWiringStatement get_wire_statement() { return _wire_state; }
   string& get_shiled_name() { return _shiled_name; }
 

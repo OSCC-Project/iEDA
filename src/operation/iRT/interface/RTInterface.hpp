@@ -24,6 +24,10 @@
 
 #include "../../../database/interaction/ids.hpp"
 
+namespace ieda_feature {
+class RTSummary;
+}  // namespace ieda_feature
+
 namespace irt {
 
 #define RTI (irt::RTInterface::getInst())
@@ -53,7 +57,7 @@ class RTInterface
   std::map<std::string, std::vector<double>> getTiming(std::vector<std::map<std::string, std::vector<LayerCoord>>>& real_pin_coord_map_list,
                                                        std::vector<std::vector<Segment<LayerCoord>>>& routing_segment_list_list);
   // 输出summary
-  void outputSummary();
+  ieda_feature::RTSummary outputSummary();
 #endif
 
  private:

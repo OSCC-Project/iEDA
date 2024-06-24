@@ -28,32 +28,31 @@ using ito::ToConfig;
 
 using namespace ista;
 
-using Delay = double;
-using Slew = Delay;
-using Slack = Delay;
-using Slacks = Slack[2][2];
-using Required = Delay;
-using ArcDelay = Delay;
+using TODelay = double;
+using TOSlew = TODelay;
+using TOSlack = TODelay;
+using TOSlacks = TOSlack[2][2];
+using TORequired = TODelay;
+using TOArcDelay = TODelay;
 
-using Level = int;
-using VertexSeq = vector<StaVertex *>;
-using LibertyCellSeq = vector<LibertyCell *>;
-using DesignObjSeq = vector<ista::DesignObject *>;
-using VertexSet = std::set<StaVertex *>;
+using TOLevel = int;
+using TOVertexSeq = vector<StaVertex *>;
+using TOLibertyCellSeq = vector<LibCell *>;
+using TODesignObjSeq = vector<ista::DesignObject *>;
+using TOVertexSet = std::set<StaVertex *>;
 
-using TgtSlews = std::array<Slew, 2>; // TransType: kFall / kRise;
+using TOSlewTarget = std::array<TOSlew, 2>; // TransType: kFall / kRise;
 
-using CellTargetLoadMap = std::map<LibertyCell *, float>;
+using TOLibCellLoadMap = std::map<LibCell *, float>;
 
 const float kInf = 1E+30F;
 #define REPORT_TO_TXT ;
 
-struct EvalData
-{
+struct EvalData {
   std::string name;
-  double initial_wns;
-  double initial_tns;
-  double initial_freq;
+  double      initial_wns;
+  double      initial_tns;
+  double      initial_freq;
 };
 
 class DbInterface {
@@ -68,11 +67,11 @@ class DbInterface {
   int         get_dbu() { return _dbu; }
   Rectangle   get_core() { return _core; }
 
-  LibertyCellSeq get_buffer_cells() { return _buffer_cells; }
-  VertexSeq      get_drvr_vertices() { return _drvr_vertices; }
+  TOLibertyCellSeq get_buffer_cells() { return _available_buffer_cells; }
+  TOVertexSeq      get_drvr_vertices() { return _drvr_vertices; }
 
-  float  get_hold_slack_margin() { return _config->get_hold_slack_margin(); }
-  float  get_setup_slack_margin() { return _config->get_setup_slack_margin(); }
+  float  get_hold_target_slack() { return _config->get_hold_target_slack(); }
+  float  get_setup_target_slack() { return _config->get_setup_target_slack(); }
   float  get_max_buffer_percent() { return _config->get_max_buffer_percent(); }
   float  get_max_utilization() { return _config->get_max_utilization(); }
   string get_output_def_file() { return _config->get_output_def_file(); }
@@ -94,25 +93,25 @@ class DbInterface {
   int get_rebuffer_max_fanout() { return _config->get_rebuffer_max_fanout(); }
   int get_split_load_min_fanout() { return _config->get_split_load_min_fanout(); }
 
-  TgtSlews get_target_slews() { return _target_slews; }
+  TOSlewTarget get_target_slews() { return _target_slews; }
 
   Reporter *report() { return _reporter; }
-  Placer   *placer() { return _placer; }
+  Placer *  placer() { return _placer; }
 
   void increDesignArea(float delta) { _design_area += delta; }
 
-  bool overMaxArea();
+  bool reachMaxArea();
 
-  bool isLinkCell(LibertyCell *cell);
+  bool canFindLibertyCell(LibCell *cell);
 
-  CellTargetLoadMap *get_cell_target_load_map() { return _cell_target_load_map; }
+  TOLibCellLoadMap *get_cell_target_load_map() { return _cell_target_load_map; }
 
-  LibertyCell *get_lowest_drive_buffer() { return _lowest_drive_buffer; }
+  LibCell *get_lowest_drive_buffer() { return _lowest_drive_buffer; }
 
   int &make_net_index() { return _make_net_index; }
   int &make_instance_index() { return _make_instance_index; }
 
-  void set_eval_data();
+  void                  set_eval_data();
   std::vector<EvalData> eval_data() { return _eval_data; }
 
  private:
@@ -123,55 +122,49 @@ class DbInterface {
 
   void initDbData();
 
-  void makeEquivCells();
+  void findEquivLibCells();
 
   void findDrvrVertices();
 
   void findBufferCells();
 
-  void findCellTargetLoads();
-  void findBufferTargetSlews();
-  void findBufferTargetSlews(LibertyCell *buffer,
-                             // Return values.
-                             Slew slews[], int counts[]);
-  void getGateSlew(LibertyPort *port, TransType trans_type, LibertyArc *arc,
-                   // Return values.
-                   Slew slews[], int counts[]);
+  void calcCellTargetLoads();
+  void calcTargetSlewsForBuffer();
+  void calcTargetSlewsForBuffer(LibCell *buffer, TOSlew slews[], int counts[]);
+  void getGateSlew(LibPort *port, TransType trans_type, LibArc *arc, TOSlew slews[],
+                   int counts[]);
 
-  void  findTargetLoad(LibertyCell *cell);
-  void  findTargetLoad(LibertyCell *cell, LibertyArc *arc, TransType rf,
-                       // return values
-                       float &target_load_sum, int &arc_count);
-  float findTargetLoad(LibertyCell *cell, LibertyArc *arc, TransType in_type,
-                       TransType out_type);
-  Slew  gateSlewDiff(TransType in_type, LibertyCell *cell, float load_cap, Slew in_slew,
-                     Slew out_slew, LibertyArc *arc);
+  void  calcTargetLoad(LibCell *cell);
+  void  calcTargetLoad(LibArc *arc, TransType rf, float &target_load_sum, int &arc_count);
+  float calcTargetLoad(LibArc *arc, TransType in_type, TransType out_type);
+  TOSlew calcSlewDiffOfGate(TransType in_type, float load_cap, TOSlew in_slew,
+                            TOSlew out_slew, LibArc *arc);
 
   static DbInterface *_db_interface;
 
-  ToConfig     *_config = nullptr;
-  IdbBuilder   *_idb = nullptr;
+  ToConfig *    _config = nullptr;
+  IdbBuilder *  _idb = nullptr;
   TimingEngine *_timing_engine = nullptr;
 
   Reporter *_reporter = nullptr;
-  Placer   *_placer = nullptr;
+  Placer *  _placer = nullptr;
 
   int            _dbu;
   ito::Rectangle _core;
   double         _design_area = 0;
-  Layout        *_layout = nullptr;
+  Layout *       _layout = nullptr;
 
-  VertexSeq      _drvr_vertices;
-  LibertyCellSeq _buffer_cells;
-  LibertyCell   *_lowest_drive_buffer;
+  TOVertexSeq      _drvr_vertices;
+  TOLibertyCellSeq _available_buffer_cells;
+  LibCell *        _lowest_drive_buffer;
 
-  TgtSlews           _target_slews;
-  CellTargetLoadMap *_cell_target_load_map{nullptr};
+  TOSlewTarget      _target_slews;
+  TOLibCellLoadMap *_cell_target_load_map{nullptr};
 
   static int _rise;
   static int _fall;
 
-  static constexpr float _tgt_slew_load_cap_factor = 10.0;
+  static constexpr float _slew_2_load_cap_factor = 10.0;
 
   int _make_net_index = 0;
   int _make_instance_index = 0;

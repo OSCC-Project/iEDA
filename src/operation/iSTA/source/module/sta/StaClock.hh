@@ -65,15 +65,15 @@ class StaClock {
   enum class ClockType { kIdeal, kPropagated };
 
   StaClock(const char* clock_name, ClockType clock_type, int period);
-  ~StaClock();
+  ~StaClock() = default;
 
-  StaClock(StaClock&& other);
-  StaClock& operator=(StaClock&& rhs);
+  StaClock(StaClock&& other) = default;
+  StaClock& operator=(StaClock&& rhs) = default;
 
   void addVertex(StaVertex* the_vertex) { _clock_vertexes.insert(the_vertex); }
   auto& get_clock_vertexes() { return _clock_vertexes; }
 
-  const char* get_clock_name() { return _clock_name; }
+  const char* get_clock_name() { return _clock_name.c_str(); }
 
   void set_wave_form(StaWaveForm&& wave_form) {
     _wave_form = std::move(wave_form);
@@ -95,6 +95,7 @@ class StaClock {
     return _is_need_update_period_waveform;
   }
 
+  void set_period(int period_ps) { _period = period_ps; }
   [[nodiscard]] int get_period() const { return _period; }
   double getPeriodNs() const { return PS_TO_NS(_period); }
 
@@ -112,7 +113,7 @@ class StaClock {
   unsigned exec(StaFunc& func);
 
  private:
-  const char* _clock_name;
+  std::string _clock_name;
   BTreeSet<StaVertex*>
       _clock_vertexes;  //!< The graph vertex which is clock point.
   ClockType _clock_type;

@@ -111,6 +111,7 @@ class IdbPin : public IdbObject
   // operator
   bool isConnected() { return is_net_pin(); }
   void adjustIOStripe(IdbCoordinate<int32_t>* start, IdbCoordinate<int32_t>* end);
+  bool isIntersected(int x, int y, IdbLayer* layer);
 
  private:
   std::string _pin_name;
@@ -141,6 +142,7 @@ class IdbPins
   std::vector<IdbPin*>& get_pin_list() { return _pin_list; }
   const uint32_t get_pin_num() { return _pin_list.size(); }
   uint32_t get_net_pin_num();
+  uint get_connected_pin_num();
   IdbPin* find_pin(IdbPin* pin);
   IdbPin* find_pin(std::string pin_name, std::string instance_name = "");
   IdbPin* find_pin_by_term(std::string term_name);

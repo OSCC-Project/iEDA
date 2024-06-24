@@ -49,7 +49,7 @@ class StaSlewData;
 class StaClockData;
 class StaPathDelayData;
 class StaDataBucketIterator;
-class LibetyCurrentData;
+class LibCurrentData;
 
 /**
  * @brief The base class of sta data.
@@ -174,20 +174,20 @@ class StaSlewData : public StaData {
   unsigned compareSignature(const StaData* data) const override;
 
   void set_output_current_data(
-      std::unique_ptr<LibetyCurrentData> output_current_data) {
+      std::unique_ptr<LibCurrentData> output_current_data) {
     if (output_current_data) {
       _output_current_data = std::move(output_current_data);
     }
   }
-  std::optional<LibetyCurrentData*> get_output_current_data() {
+  std::optional<LibCurrentData*> get_output_current_data() {
     return _output_current_data
-               ? std::optional<LibetyCurrentData*>(_output_current_data->get())
+               ? std::optional<LibCurrentData*>(_output_current_data->get())
                : std::nullopt;
   }
 
  private:
   int _slew;  //!< The slew value, unit is fs.
-  std::optional<std::unique_ptr<LibetyCurrentData>> _output_current_data =
+  std::optional<std::unique_ptr<LibCurrentData>> _output_current_data =
       std::nullopt;  //!< The output current data of driving point.
 };
 
@@ -277,13 +277,17 @@ class StaPathDelayData : public StaData {
 
   StaPathDelayData* copy() override { return new StaPathDelayData(*this); }
 
-  int64_t get_arrive_time() const override { return _arrive_time; }
+  unsigned isPathDelayData() const override { return 1; }
+
+  int64_t get_arrive_time() const override {
+    return _calibrated_derate ? _arrive_time * _calibrated_derate.value()
+                              : _arrive_time;
+  }
   void set_arrive_time(int64_t arrive_time) override {
     _arrive_time = arrive_time;
   }
   void incrArriveTime(int delta) override { _arrive_time += delta; }
 
-  unsigned isPathDelayData() const override { return 1; }
   std::optional<int> get_req_time() const override { return _req_time; }
   void set_req_time(int req_time) override { _req_time = req_time; }
 
@@ -292,8 +296,15 @@ class StaPathDelayData : public StaData {
   unsigned compareSignature(const StaData* data) const override;
   int64_t getCompareValue() const override { return _arrive_time; }
 
+  void set_calibrated_derate(float calibrated_derate) {
+    _calibrated_derate = calibrated_derate;
+  }
+  auto get_calibrated_derate() const { return _calibrated_derate; }
+
  private:
   int64_t _arrive_time;  //!< The arrive time value, unit is fs.
+  std::optional<float>
+      _calibrated_derate;  //!< The AI predicted calibrated derate
   std::optional<int> _req_time =
       std::nullopt;  //!< The req time value, unit is fs.
   StaClockData* _launch_clock_data;

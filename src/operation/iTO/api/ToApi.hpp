@@ -25,6 +25,10 @@
 #include "../source/io/DbInterface.h"
 #include "../iTO.h"
 
+namespace ieda_feature {
+    class TimingOptSummary;
+}// namespace
+
 namespace ito {
 
 #define ToApiInst (ito::ToApi::getInst())
@@ -43,21 +47,16 @@ class ToApi {
   void optimizeSetup();
   void optimizeHold();
 
-  void initCTSDesignViolation(idb::IdbBuilder *idb, ista::TimingEngine *timing);
-  std::vector<idb::IdbNet *> optimizeCTSDesignViolation(idb::IdbNet *idb_net, Tree *topo);
-
   void saveDef(std::string saved_def_path = "");
 
   ToConfig *get_to_config();
   void resetConfigLibs(std::vector<std::string>& paths);
   void resetConfigSdc(std::string& path);
-  Tree     *get_tree(const int&size);
-  void addTopoEdge(Tree *topo, const int &first_id, const int &second_id, const int &x1,
-                   const int &y1, const int &x2, const int &y2);
-  void topoIdToDesignObject(ito::Tree *topo, const int &id, ista::DesignObject *sta_pin);
-  void topoSetDriverId(ito::Tree *topo, const int &id);
+
   void reportTiming();
   std::vector<EvalData> getEvalData() { return _ito->get_db_interface()->eval_data(); }
+
+  ieda_feature::TimingOptSummary outputSummary();
 
  private:
   static ToApi *_to_api_instance;

@@ -17,43 +17,32 @@
 #include "py_feature.h"
 
 #include "feature_manager.h"
-#include "idm.h"
 
 namespace python_interface {
-bool feature_layout(const std::string& path)
-{
-  iplf::FeatureManager feature_parser(dmInst->get_idb_layout(), dmInst->get_idb_design());
 
-  return feature_parser.save_layout(path);
+bool feature_summary(const std::string& path)
+{
+  return featureInst->save_summary(path);
 }
 
-bool feature_instances(const std::string& path)
+bool feature_tool(const std::string& path, const std::string& step)
 {
-  iplf::FeatureManager feature_parser(dmInst->get_idb_layout(), dmInst->get_idb_design());
-
-  return feature_parser.save_instances(path);
+  return featureInst->save_tools(path, step);
 }
 
-bool feature_nets(const std::string& path)
+bool feature_eval_map(const std::string& path, const int& bin_cnt_x, const int& bin_cnt_y)
 {
-  iplf::FeatureManager feature_parser(dmInst->get_idb_layout(), dmInst->get_idb_design());
-
-  return feature_parser.save_nets(path);
+  return featureInst->save_eval_map(path, bin_cnt_x, bin_cnt_y);
 }
 
-bool feature_summary(const std::string& path, const std::string& step)
+bool feature_route(const std::string& path)
 {
-  iplf::FeatureManager feature_parser(dmInst->get_idb_layout(), dmInst->get_idb_design());
-
-  return feature_parser.save_reportSummary(path, step);
+  return featureInst->save_route_data(path);
 }
 
-bool feature_summary_map(const std::string& path,  const int& bin_cnt_x, const int& bin_cnt_y)
+bool feature_route_read(const std::string& path)
 {
-  iplf::FeatureManager feature_parser(dmInst->get_idb_layout(), dmInst->get_idb_design());
-
-  return feature_parser.save_reportSummary_map(path, bin_cnt_x, bin_cnt_y);
+  return featureInst->read_route_data(path);
 }
-
 
 }  // namespace python_interface

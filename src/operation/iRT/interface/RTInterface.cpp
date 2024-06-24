@@ -22,14 +22,15 @@
 #include "GDSPlotter.hpp"
 #include "GlobalRouter.hpp"
 #include "InitialRouter.hpp"
-#include "LayerAssigner.hpp"
 #include "Monitor.hpp"
 #include "PinAccessor.hpp"
-#include "PlanarRouter.hpp"
 #include "SupplyAnalyzer.hpp"
 #include "TimingEval.hpp"
+#include "TopologyGenerator.hpp"
 #include "TrackAssigner.hpp"
 #include "builder.h"
+#include "feature_irt.h"
+#include "feature_ista.h"
 #include "flow_config.h"
 #include "icts_fm/file_cts.h"
 #include "icts_io.h"
@@ -97,9 +98,17 @@ void RTInterface::runEGR()
   RTSA.analyze();
   SupplyAnalyzer::destroyInst();
 
+  TopologyGenerator::initInst();
+  RTTG.generate();
+  TopologyGenerator::destroyInst();
+
   InitialRouter::initInst();
   RTIR.route();
   InitialRouter::destroyInst();
+
+  GlobalRouter::initInst();
+  RTGR.route();
+  GlobalRouter::destroyInst();
 
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
@@ -117,29 +126,13 @@ void RTInterface::runRT()
   RTSA.analyze();
   SupplyAnalyzer::destroyInst();
 
-  // PlanarRouter::initInst();
-  // RTPR.route();
-  // PlanarRouter::destroyInst();
-
-  // LayerAssigner::initInst();
-  // RTLA.assign();
-  // LayerAssigner::destroyInst();
-
-  // // 临时代码
-  // for (Net& net : RTDM.getDatabase().get_net_list()) {
-  //   net.set_gr_result_tree(net.get_la_result_tree());
-  // }
-
-  // return;
+  TopologyGenerator::initInst();
+  RTTG.generate();
+  TopologyGenerator::destroyInst();
 
   InitialRouter::initInst();
   RTIR.route();
   InitialRouter::destroyInst();
-
-  // 临时代码
-  for (Net& net : RTDM.getDatabase().get_net_list()) {
-    net.set_gr_result_tree(net.get_ir_result_tree());
-  }
 
   GlobalRouter::initInst();
   RTGR.route();
@@ -154,6 +147,8 @@ void RTInterface::runRT()
   DetailedRouter::destroyInst();
 
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
+
+  RTDM.output();
 }
 
 void RTInterface::destroyRT()
@@ -162,7 +157,7 @@ void RTInterface::destroyRT()
   RTLOG.info(Loc::current(), "Starting...");
 
   GDSPlotter::destroyInst();
-  RTDM.output();
+  //   RTDM.output();
   DataManager::destroyInst();
 
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
@@ -245,7 +240,7 @@ void RTInterface::clearDef()
   std::vector<idb::IdbPin*> remove_pin_list;
   for (idb::IdbPin* io_pin : idb_pin_list->get_pin_list()) {
     if (io_pin->get_port_box_list().empty()) {
-      std::cout << io_pin->get_pin_name() << std::endl;
+      RTLOG.info(Loc::current(), io_pin->get_pin_name());
       remove_pin_list.push_back(io_pin);
     }
   }
@@ -279,19 +274,25 @@ std::vector<Violation> RTInterface::getViolationList(std::vector<idb::IdbLayerSh
    * net_idb_segment_map 存储 wire via patch
    */
   ScaleAxis& gcell_axis = RTDM.getDatabase().get_gcell_axis();
-  Helper& helper = RTDM.getHelper();
+  std::map<std::string, int32_t>& routing_layer_name_to_idx_map = RTDM.getDatabase().get_routing_layer_name_to_idx_map();
+  std::map<std::string, int32_t>& cut_layer_name_to_idx_map = RTDM.getDatabase().get_cut_layer_name_to_idx_map();
 
   std::vector<Violation> violation_list;
   idrc::DrcApi drc_api;
   drc_api.init();
   for (auto& [type, idrc_violation_list] : drc_api.check(env_shape_list, net_pin_shape_map, net_wire_via_map, check_select)) {
     for (idrc::DrcViolation* idrc_violation : idrc_violation_list) {
+      // self的drc违例先过滤
       if (idrc_violation->get_net_ids().size() < 2) {
         continue;
       }
-
+      // 由于pin_shape之间的drc违例存在，第一布线层的drc违例先过滤
       idb::IdbLayer* idb_layer = idrc_violation->get_layer();
-
+      if (idb_layer->is_routing()) {
+        if (routing_layer_name_to_idx_map[idb_layer->get_name()] == 0) {
+          continue;
+        }
+      }
       EXTLayerRect ext_layer_rect;
       if (idrc_violation->is_rect()) {
         idrc::DrcViolationRect* idrc_violation_rect = static_cast<idrc::DrcViolationRect*>(idrc_violation);
@@ -300,9 +301,9 @@ std::vector<Violation> RTInterface::getViolationList(std::vector<idb::IdbLayerSh
       } else {
         RTLOG.error(Loc::current(), "Type not supported!");
       }
-      ext_layer_rect.set_grid_rect(RTUtil::getClosedGCellGridRect(ext_layer_rect.get_real_rect(), gcell_axis));
-      ext_layer_rect.set_layer_idx(idb_layer->is_routing() ? helper.getRoutingLayerIdxByName(idb_layer->get_name())
-                                                           : helper.getCutLayerIdxByName(idb_layer->get_name()));
+      ext_layer_rect.set_grid_rect(RTUTIL.getClosedGCellGridRect(ext_layer_rect.get_real_rect(), gcell_axis));
+      ext_layer_rect.set_layer_idx(idb_layer->is_routing() ? routing_layer_name_to_idx_map[idb_layer->get_name()]
+                                                           : cut_layer_name_to_idx_map[idb_layer->get_name()]);
 
       Violation violation;
       violation.set_violation_shape(ext_layer_rect);
@@ -346,10 +347,12 @@ std::map<std::string, std::vector<double>> RTInterface::getTiming(
 #if 1  // 函数定义
   auto initTimingEngine = [](idb::IdbBuilder* idb_builder, int32_t thread_number) {
     ista::TimingEngine* timing_engine = ista::TimingEngine::getOrCreateTimingEngine();
-    auto db_adapter = std::make_unique<ista::TimingIDBAdapter>(timing_engine->get_ista());
-    db_adapter->set_idb(idb_builder);
-    db_adapter->convertDBToTimingNetlist();
-    timing_engine->set_db_adapter(std::move(db_adapter));
+    if (!timing_engine->get_db_adapter()) {
+      auto db_adapter = std::make_unique<ista::TimingIDBAdapter>(timing_engine->get_ista());
+      db_adapter->set_idb(idb_builder);
+      db_adapter->convertDBToTimingNetlist();
+      timing_engine->set_db_adapter(std::move(db_adapter));
+    }
     timing_engine->set_num_threads(thread_number);
     timing_engine->buildGraph();
     timing_engine->initRcTree();
@@ -370,10 +373,10 @@ std::map<std::string, std::vector<double>> RTInterface::getTiming(
         LayerCoord& first_coord = routing_segment.get_first();
         LayerCoord& second_coord = routing_segment.get_second();
 
-        if (!RTUtil::exist(coord_real_pin_map, first_coord) && !RTUtil::exist(coord_fake_pin_map, first_coord)) {
+        if (!RTUTIL.exist(coord_real_pin_map, first_coord) && !RTUTIL.exist(coord_fake_pin_map, first_coord)) {
           coord_fake_pin_map[first_coord] = fake_id++;
         }
-        if (!RTUtil::exist(coord_real_pin_map, second_coord) && !RTUtil::exist(coord_fake_pin_map, second_coord)) {
+        if (!RTUTIL.exist(coord_real_pin_map, second_coord) && !RTUTIL.exist(coord_fake_pin_map, second_coord)) {
           coord_fake_pin_map[second_coord] = fake_id++;
         }
       }
@@ -383,8 +386,8 @@ std::map<std::string, std::vector<double>> RTInterface::getTiming(
       // 生成线长为0的线段
       for (auto& [coord, real_pin_list] : coord_real_pin_map) {
         for (size_t i = 1; i < real_pin_list.size(); i++) {
-          RCPin first_rc_pin(coord, true, RTUtil::escapeBackslash(real_pin_list[i - 1]));
-          RCPin second_rc_pin(coord, true, RTUtil::escapeBackslash(real_pin_list[i]));
+          RCPin first_rc_pin(coord, true, RTUTIL.escapeBackslash(real_pin_list[i - 1]));
+          RCPin second_rc_pin(coord, true, RTUTIL.escapeBackslash(real_pin_list[i]));
           rc_segment_list.emplace_back(first_rc_pin, second_rc_pin);
         }
       }
@@ -392,9 +395,9 @@ std::map<std::string, std::vector<double>> RTInterface::getTiming(
       for (Segment<LayerCoord>& routing_segment : routing_segment_list) {
         auto getRCPin = [&](LayerCoord& coord) {
           RCPin rc_pin;
-          if (RTUtil::exist(coord_real_pin_map, coord)) {
-            rc_pin = RCPin(coord, true, RTUtil::escapeBackslash(coord_real_pin_map[coord].front()));
-          } else if (RTUtil::exist(coord_fake_pin_map, coord)) {
+          if (RTUTIL.exist(coord_real_pin_map, coord)) {
+            rc_pin = RCPin(coord, true, RTUTIL.escapeBackslash(coord_real_pin_map[coord].front()));
+          } else if (RTUTIL.exist(coord_fake_pin_map, coord)) {
             rc_pin = RCPin(coord, false, coord_fake_pin_map[coord]);
           } else {
             RTLOG.error(Loc::current(), "The coord is not exist!");
@@ -471,11 +474,11 @@ std::map<std::string, std::vector<double>> RTInterface::getTiming(
   std::vector<Net>& net_list = RTDM.getDatabase().get_net_list();
   int32_t thread_number = RTDM.getConfig().thread_number;
 
-  ista::TimingEngine* timing_engine = initTimingEngine(RTDM.getHelper().get_idb_builder(), thread_number);
+  ista::TimingEngine* timing_engine = initTimingEngine(RTDM.getDatabase().get_idb_builder(), thread_number);
   ista::Netlist* sta_net_list = timing_engine->get_netlist();
 
   for (size_t net_idx = 0; net_idx < coord_real_pin_map_list.size(); net_idx++) {
-    ista::Net* ista_net = sta_net_list->findNet(RTUtil::escapeBackslash(net_list[net_idx].get_net_name()).c_str());
+    ista::Net* ista_net = sta_net_list->findNet(RTUTIL.escapeBackslash(net_list[net_idx].get_net_name()).c_str());
     for (Segment<RCPin>& segment : getRCSegmentList(coord_real_pin_map_list[net_idx], routing_segment_list_list[net_idx])) {
       RCPin& first_rc_pin = segment.get_first();
       RCPin& second_rc_pin = segment.get_second();
@@ -483,8 +486,8 @@ std::map<std::string, std::vector<double>> RTInterface::getTiming(
       double cap = 0;
       double res = 0;
       if (first_rc_pin._coord.get_layer_idx() == second_rc_pin._coord.get_layer_idx()) {
-        int32_t distance = RTUtil::getManhattanDistance(first_rc_pin._coord, second_rc_pin._coord);
-        int32_t unit = RTDM.getHelper().get_idb_builder()->get_def_service()->get_design()->get_units()->get_micron_dbu();
+        int32_t distance = RTUTIL.getManhattanDistance(first_rc_pin._coord, second_rc_pin._coord);
+        int32_t unit = RTDM.getDatabase().get_idb_builder()->get_def_service()->get_design()->get_units()->get_micron_dbu();
         std::optional<double> width = std::nullopt;
         cap = dynamic_cast<ista::TimingIDBAdapter*>(timing_engine->get_db_adapter())
                   ->getCapacitance(first_rc_pin._coord.get_layer_idx() + 1, distance / 1.0 / unit, width);
@@ -510,8 +513,8 @@ std::map<std::string, std::vector<double>> RTInterface::getTiming(
   auto clk_list = timing_engine->getClockList();
   std::ranges::for_each(clk_list, [&](ista::StaClock* clk) {
     auto clk_name = clk->get_clock_name();
-    auto setup_tns = timing_engine->reportTNS(clk_name, AnalysisMode::kMax);
-    auto setup_wns = timing_engine->reportWNS(clk_name, AnalysisMode::kMax);
+    auto setup_tns = timing_engine->getTNS(clk_name, AnalysisMode::kMax);
+    auto setup_wns = timing_engine->getWNS(clk_name, AnalysisMode::kMax);
     auto suggest_freq = 1000.0 / (clk->getPeriodNs() - setup_wns);
     timing_map[clk_name] = {setup_tns, setup_wns, suggest_freq};
   });
@@ -519,10 +522,12 @@ std::map<std::string, std::vector<double>> RTInterface::getTiming(
 #endif
 }
 
-void RTInterface::outputSummary()
+ieda_feature::RTSummary RTInterface::outputSummary()
 {
+  ieda_feature::RTSummary top_rt_summary;
+
   Summary& rt_summary = RTDM.getSummary();
-  idb::RTSummary& top_rt_summary = dmInst->get_feature_summary().getRTSummary();
+
   // pa_summary
   top_rt_summary.pa_summary.routing_access_point_num_map = rt_summary.pa_summary.routing_access_point_num_map;
   for (auto& [type, access_point_num] : rt_summary.pa_summary.type_access_point_num_map) {
@@ -541,10 +546,19 @@ void RTInterface::outputSummary()
   top_rt_summary.ir_summary.total_wire_length = rt_summary.ir_summary.total_wire_length;
   top_rt_summary.ir_summary.cut_via_num_map = rt_summary.ir_summary.cut_via_num_map;
   top_rt_summary.ir_summary.total_via_num = rt_summary.ir_summary.total_via_num;
-  top_rt_summary.ir_summary.timing = rt_summary.ir_summary.timing;
+
+  for (auto timing : rt_summary.ir_summary.timing) {
+    ieda_feature::NetTiming net_timing;
+    net_timing.net_name = timing.first;
+    auto timing_array = timing.second;
+    net_timing.setup_tns = timing_array[0];
+    net_timing.setup_wns = timing_array[1];
+    net_timing.suggest_freq = timing_array[2];
+    top_rt_summary.ir_summary.nets_timing.push_back(net_timing);
+  }
   // gr_summary
   for (auto& [iter, gr_summary] : rt_summary.iter_gr_summary_map) {
-    idb::GRSummary& top_gr_summary = top_rt_summary.iter_gr_summary_map[iter];
+    ieda_feature::GRSummary& top_gr_summary = top_rt_summary.iter_gr_summary_map[iter];
     top_gr_summary.routing_demand_map = gr_summary.routing_demand_map;
     top_gr_summary.total_demand = gr_summary.total_demand;
     top_gr_summary.routing_overflow_map = gr_summary.routing_overflow_map;
@@ -553,7 +567,16 @@ void RTInterface::outputSummary()
     top_gr_summary.total_wire_length = gr_summary.total_wire_length;
     top_gr_summary.cut_via_num_map = gr_summary.cut_via_num_map;
     top_gr_summary.total_via_num = gr_summary.total_via_num;
-    top_gr_summary.timing = gr_summary.timing;
+
+    for (auto timing : gr_summary.timing) {
+      ieda_feature::NetTiming net_timing;
+      net_timing.net_name = timing.first;
+      auto timing_array = timing.second;
+      net_timing.setup_tns = timing_array[0];
+      net_timing.setup_wns = timing_array[1];
+      net_timing.suggest_freq = timing_array[2];
+      top_gr_summary.nets_timing.push_back(net_timing);
+    }
   }
   // ta_summary
   top_rt_summary.ta_summary.routing_wire_length_map = rt_summary.ta_summary.routing_wire_length_map;
@@ -562,7 +585,7 @@ void RTInterface::outputSummary()
   top_rt_summary.ta_summary.total_violation_num = rt_summary.ta_summary.total_violation_num;
   // dr_summary
   for (auto& [iter, dr_summary] : rt_summary.iter_dr_summary_map) {
-    idb::DRSummary& top_dr_summary = top_rt_summary.iter_dr_summary_map[iter];
+    ieda_feature::DRSummary& top_dr_summary = top_rt_summary.iter_dr_summary_map[iter];
     top_dr_summary.routing_wire_length_map = dr_summary.routing_wire_length_map;
     top_dr_summary.total_wire_length = dr_summary.total_wire_length;
     top_dr_summary.cut_via_num_map = dr_summary.cut_via_num_map;
@@ -571,8 +594,19 @@ void RTInterface::outputSummary()
     top_dr_summary.total_patch_num = dr_summary.total_patch_num;
     top_dr_summary.routing_violation_num_map = dr_summary.routing_violation_num_map;
     top_dr_summary.total_violation_num = dr_summary.total_violation_num;
-    top_dr_summary.timing = dr_summary.timing;
+
+    for (auto timing : dr_summary.timing) {
+      ieda_feature::NetTiming net_timing;
+      net_timing.net_name = timing.first;
+      auto timing_array = timing.second;
+      net_timing.setup_tns = timing_array[0];
+      net_timing.setup_wns = timing_array[1];
+      net_timing.suggest_freq = timing_array[2];
+      top_dr_summary.nets_timing.push_back(net_timing);
+    }
   }
+
+  return top_rt_summary;
 }
 
 #endif

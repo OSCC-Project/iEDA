@@ -20,6 +20,7 @@
 #include "flow_config.h"
 #include "iNO/api/NoApi.hpp"
 #include "idm.h"
+#include "usage/usage.hh"
 
 namespace iplf {
 NoIO* NoIO::_instance = nullptr;

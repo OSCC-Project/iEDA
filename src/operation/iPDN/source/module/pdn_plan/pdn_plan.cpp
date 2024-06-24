@@ -285,7 +285,7 @@ std::vector<idb::IdbSpecialWireSegment*> PdnPlan::createSpecialWireSegmentWithIn
   int32_t blk_urx;
   int32_t blk_ury;
 
-  /// 获取所有当层的绕线障碍
+  /// obtain all routing blockage on this layer
   for (auto blk : blockage_list->get_blockage_list()) {
     if (blk->get_type() == idb::IdbBlockage::IdbBlockageType::kRoutingBlockage) {
       if (dynamic_cast<idb::IdbRoutingBlockage*>(blk)->get_layer()->get_name() == wire_layer->get_name()) {

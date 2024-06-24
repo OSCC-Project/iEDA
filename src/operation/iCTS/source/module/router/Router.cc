@@ -24,6 +24,7 @@
 #include "CtsDBWrapper.hh"
 #include "Solver.hh"
 #include "TimingPropagator.hh"
+#include "usage/usage.hh"
 namespace icts {
 void Router::init()
 {

@@ -15,11 +15,11 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 #include "ToApi.hpp"
-#include "CTSViolationFixer.h"
 #include "ToConfig.h"
 #include "api/TimingEngine.hh"
 #include "api/TimingIDBAdapter.hh"
 #include "builder.h"
+#include "feature_ito.h"
 #include "iTO.h"
 #include "idm.h"
 
@@ -27,19 +27,6 @@ namespace ito {
 
 ToApi *ToApi::_to_api_instance = nullptr;
 
-Tree *ToApi::get_tree(const int &size) { return new Tree(size); }
-
-void ToApi::addTopoEdge(Tree *topo, const int &first_id, const int &second_id,
-                        const int &x1, const int &y1, const int &x2, const int &y2) {
-  topo->idToLocation(first_id, Point(x1, y1));
-  topo->idToLocation(second_id, Point(x2, y2));
-  topo->add_edge(ito::Edge(first_id, second_id));
-}
-void ToApi::topoIdToDesignObject(ito::Tree *topo, const int &id,
-                                 ista::DesignObject *sta_pin) {
-  topo->idToDesignObject(id, sta_pin);
-}
-void   ToApi::topoSetDriverId(ito::Tree *topo, const int &id) { topo->set_drvr_id(id); }
 ToApi &ToApi::getInst() {
   if (_to_api_instance == nullptr) {
     _to_api_instance = new ToApi();
@@ -95,7 +82,7 @@ idb::IdbBuilder *ToApi::initIDB() {
   // }
   auto idb_builder = new IdbBuilder();
 
-  ToConfig      *to_config = _ito->get_config();
+  ToConfig *     to_config = _ito->get_config();
   string         def_file = to_config->get_def_file();
   vector<string> lef_files = to_config->get_lef_files();
 
@@ -109,8 +96,8 @@ ista::TimingEngine *ToApi::initISTA(idb::IdbBuilder *idb) {
 
   auto timing_engine = ista::TimingEngine::getOrCreateTimingEngine();
 
-  ToConfig            *to_config = _ito->get_config();
-  const char          *design_work_space = to_config->get_design_work_space().c_str();
+  ToConfig *           to_config = _ito->get_config();
+  const char *         design_work_space = to_config->get_design_work_space().c_str();
   vector<const char *> lib_files;
   for (auto &lib : to_config->get_lib_files()) {
     lib_files.push_back(lib.c_str());
@@ -143,15 +130,15 @@ void ToApi::optimizeSetup() { _ito->optimizeSetup(); }
 
 void ToApi::optimizeHold() { _ito->optimizeHold(); }
 
-void ToApi::initCTSDesignViolation(idb::IdbBuilder *idb, ista::TimingEngine *timing) {
-  CTSViolationFixer::get_cts_violation_fixer(idb, timing);
-}
+// void ToApi::initCTSDesignViolation(idb::IdbBuilder *idb, ista::TimingEngine *timing) {
+//   CTSViolationFixer::get_cts_violation_fixer(idb, timing);
+// }
 
-std::vector<idb::IdbNet *> ToApi::optimizeCTSDesignViolation(idb::IdbNet *idb_net,
-                                                             Tree        *topo) {
-  CTSViolationFixer *cts_drv_opt = CTSViolationFixer::get_cts_violation_fixer();
-  return cts_drv_opt->fixTiming(idb_net, topo);
-}
+// std::vector<idb::IdbNet *> ToApi::optimizeCTSDesignViolation(idb::IdbNet *idb_net,
+//                                                              Tree        *topo) {
+//   CTSViolationFixer *cts_drv_opt = CTSViolationFixer::get_cts_violation_fixer();
+//   return cts_drv_opt->fixTiming(idb_net, topo);
+// }
 
 void ToApi::saveDef(string saved_def_path) {
   if (saved_def_path.empty()) {
@@ -177,4 +164,57 @@ void ToApi::resetConfigSdc(std::string &path) {
 }
 
 void ToApi::reportTiming() { _timing_engine->reportTiming(); }
+
+ieda_feature::TimingOptSummary ToApi::outputSummary() {
+  ieda_feature::TimingOptSummary to_summary;
+
+  std::map<std::string, ieda_feature::TONetTimingCmp> summary_map;
+
+  // origin data，tns，wns，freq
+  auto to_eval_data = getEvalData();
+  for (auto eval_data : to_eval_data) {
+    ieda_feature::TONetTiming net_timing;
+    std::string               net_name = eval_data.name;
+    net_timing.tns = eval_data.initial_tns;
+    net_timing.wns = eval_data.initial_wns;
+    net_timing.suggest_freq = eval_data.initial_freq;
+
+    ieda_feature::TONetTimingCmp net_cmp;
+    memset(&net_cmp, 0, sizeof(ieda_feature::TONetTimingCmp));
+    net_cmp.origin = net_timing;
+    summary_map[net_name] = net_cmp;
+  }
+
+  // after optimize timing
+  auto clk_list = _timing_engine->getClockList();
+
+  std::ranges::for_each(clk_list, [&](ista::StaClock *clk) {
+    auto clk_name = clk->get_clock_name();
+    auto drv_tns = _timing_engine->getTNS(clk_name, AnalysisMode::kMax);
+    auto drv_wns = _timing_engine->getWNS(clk_name, AnalysisMode::kMax);
+    auto suggest_freq = 1000.0 / (clk->getPeriodNs() - drv_wns);
+
+    ieda_feature::TONetTiming net_timing;
+    std::string               net_name = clk_name;
+    net_timing.tns = drv_tns;
+    net_timing.wns = drv_wns;
+    net_timing.suggest_freq = suggest_freq;
+
+    summary_map[net_name].opt = net_timing;
+  });
+
+  for (auto [net_name, net_timings] : summary_map) {
+    net_timings.net_name = net_name;
+
+    net_timings.delta.tns = net_timings.opt.tns - net_timings.origin.tns;
+    net_timings.delta.wns = net_timings.opt.wns - net_timings.origin.wns;
+    net_timings.delta.suggest_freq =
+        net_timings.opt.suggest_freq - net_timings.origin.suggest_freq;
+
+    to_summary.net_timings.push_back(net_timings);
+  }
+
+  return to_summary;
+}
+
 } // namespace ito

@@ -28,8 +28,7 @@ bool staInit(const std::string& output);
 bool staReport(const std::string& output);
 bool setDesignWorkSpace(const std::string& design_workspace);
 
-bool read_lef_def(std::vector<std::string>& lef_files,
-                  const std::string& def_file);
+bool read_lef_def(std::vector<std::string>& lef_files, const std::string& def_file);
 bool readVerilog(const std::string& file_name);
 
 bool readLiberty(std::vector<std::string>& lib_files);
@@ -40,5 +39,7 @@ bool readSpef(const std::string& file_name);
 
 bool readSdc(const std::string& file_name);
 bool reportTiming(int digits, const std::string& delay_type, std::set<std::string> exclude_cell_names, bool derate);
+
+std::vector<std::string> get_used_libs();
 
 }  // namespace python_interface

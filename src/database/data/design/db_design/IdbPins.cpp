@@ -471,6 +471,18 @@ void IdbPin::adjustIOStripe(IdbCoordinate<int32_t>* start, IdbCoordinate<int32_t
   }
 }
 
+bool IdbPin::isIntersected(int x, int y, IdbLayer* layer)
+{
+  for (IdbLayerShape* layer_shape : get_port_box_list()) {
+    auto is_intersected = layer_shape->isIntersected(x, y, layer);
+    if (is_intersected) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -488,6 +500,20 @@ uint32_t IdbPins::get_net_pin_num()
   uint32_t num = 0;
   for (auto pin : _pin_list) {
     if (pin->get_term()->is_pdn()) {
+      continue;
+    }
+
+    num++;
+  }
+
+  return num;
+}
+
+uint IdbPins::get_connected_pin_num()
+{
+  uint32_t num = 0;
+  for (auto pin : _pin_list) {
+    if (pin->get_net() == nullptr) {
       continue;
     }
 

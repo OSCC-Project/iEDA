@@ -113,7 +113,7 @@ void CongestionEval::initCongInst()
 
     if (idb_inst->is_flip_flop()) {
       inst_ptr->set_flip_flop(true);
-      std::cout << "flip flop " << std::endl;
+    //   std::cout << "flip flop " << std::endl;
     }
 
     if ((bbox->get_low_x() >= die_lx && bbox->get_high_x() <= core_lx) || (bbox->get_low_x() >= core_ux && bbox->get_high_x() <= die_ux)
@@ -175,7 +175,7 @@ void CongestionEval::initCongNetList()
 
 void CongestionEval::mapInst2Bin()
 {
-  // 清空bin 内的inst, 否则 每次调用会不断增加
+  // Empty the 'inst' in the 'bin', otherwise, it will keep increasing with each call.
   for (auto& bin: _cong_grid->get_bin_list()){
     bin->clear_inst_list();
   }
@@ -209,7 +209,8 @@ void CongestionEval::mapInst2Bin()
 
 void CongestionEval::mapNetCoord2Grid()
 {
-  // 清空bin 内的net, 否则 每次调用会不断增加
+  // Empty the 'net' in the 'bin', otherwise, it will keep increasing with each call.
+
   for (auto& bin: _cong_grid->get_bin_list()){
     bin->clear_net_list();
   }
@@ -769,32 +770,32 @@ double CongestionEval::evalMacroChannelUtil(float dist_ratio)
       for (size_t j = i + 1; j < macro_list.size(); j++) {
         auto x_dist = std::abs(macro_list[i]->get_lx() - macro_list[j]->get_lx());
         auto y_dist = std::abs(macro_list[i]->get_ly() - macro_list[j]->get_ly());
-        // 确保在沟道空间内
+        // Ensure within the channel space.
         if ((x_dist < check_width) && (y_dist < check_height)) {
-          // 确定模块的位置相对关系
+          // Ensure the locations of modules
           if (x_dist < y_dist) {
-            // 模块是上下沟道
+            // The module is the top and bottom channels.
             auto lx = std::max(macro_list[i]->get_lx(), macro_list[j]->get_lx());
             auto ux = std::min(macro_list[i]->get_ux(), macro_list[j]->get_ux());
             int64_t height = 0;
             if (macro_list[i]->get_ly() < macro_list[j]->get_ly()) {
-              // i在下，j在上
+              // i is bottom，j is top
               height = std::max((macro_list[j]->get_ly() - macro_list[i]->get_ly() - macro_list[i]->get_height()), (long)0);
             } else {
-              // i在上，j在下
+              // i is top，j is bottom
               height = std::max((macro_list[i]->get_ly() - macro_list[j]->get_ly() - macro_list[j]->get_height()), (long)0);
             }
             channel_area += (ux - lx) * height;
           } else {
-            // 模块是左右沟道
+            // The module is the left and right channels.
             auto ly = std::max(macro_list[i]->get_ly(), macro_list[j]->get_ly());
             auto uy = std::min(macro_list[i]->get_uy(), macro_list[j]->get_uy());
             int64_t width = 0;
             if (macro_list[i]->get_lx() < macro_list[j]->get_lx()) {
-              // i在左，j在右
+              // i is left，j is right
               width = std::max((macro_list[j]->get_lx() - macro_list[i]->get_lx() - macro_list[i]->get_width()), (long)0 );
             } else {
-              // i在右，j在左
+              // i is right，j is left
               width = std::max((macro_list[i]->get_lx() - macro_list[j]->get_lx() - macro_list[j]->get_width()), (long)0);
             }
             channel_area += (uy - ly) * width;
@@ -980,7 +981,7 @@ double CongestionEval::evalMaxContinuousSpace()
   int width = _cong_grid->get_bin_cnt_x();
   vector<vector<int>> left(height, vector<int>(width, 0));
 
-  // 寻找连续为 1 的最大网格数（密度<0.2时设为1）
+  // Find the maximum number of consecutive grids with a value of 1 (set to 1 when density is less than 0.2).
   for (int i = 0; i < height; i++) {
     for (int j = 0; j < width; j++) {
       if (_cong_grid->get_bin_list()[i *width + j ]->get_inst_density() < 0.2){
@@ -995,7 +996,7 @@ double CongestionEval::evalMaxContinuousSpace()
   int bottom_right_row = 0;
   int bottom_right_col = 0;
 
-  for (int j = 0; j < width; j++) { // 对于每一列，使用基于柱状图的方法
+  for (int j = 0; j < width; j++) { // For each column, use a histogram-based method.
       vector<int> up(height, 0), down(height, 0);
       std::stack<int> stk;
 
@@ -1022,7 +1023,7 @@ double CongestionEval::evalMaxContinuousSpace()
           int area = rect_height * rect_width;
           if (area > max_area) {
               max_area = area;
-              // 更新最大矩形的位置信息
+              // Update the position information of the maximum rectangle.
               top_left_row = up[i] + 1;
               top_left_col = j - rect_width + 1;
               bottom_right_row = down[i] - 1;
@@ -1106,6 +1107,7 @@ double CongestionEval::evalMacroChannelPinRatio(float dist_ratio)
     }
   }
 
+
   if (macro_list.size() == 0) {
     return 0;
   } else {
@@ -1113,15 +1115,15 @@ double CongestionEval::evalMacroChannelPinRatio(float dist_ratio)
       for (size_t j = i + 1; j < macro_list.size(); j++) {
         auto x_dist = std::abs(macro_list[i]->get_lx() - macro_list[j]->get_lx());
         auto y_dist = std::abs(macro_list[i]->get_ly() - macro_list[j]->get_ly());
-        // 确保在沟道空间内
+        // Ensure within the channel space.
         if ((x_dist < check_width) && (y_dist < check_height)) {
-          // 确定模块的位置相对关系
+          // Ensure the locations of modules
           if (x_dist < y_dist) {
-            // 模块是上下沟道
+            // The module is the top and bottom channels.
             auto lx = std::max(macro_list[i]->get_lx(), macro_list[j]->get_lx());
             auto ux = std::min(macro_list[i]->get_ux(), macro_list[j]->get_ux());
             if (macro_list[i]->get_ly() < macro_list[j]->get_ly()) {
-              // i在下，j在上
+              // i bottom，j top
               for (auto& pin : macro_list[i]->get_pin_list()) {
                 auto pin_x = pin->get_x();
                 auto pin_y = pin->get_y();
@@ -1137,7 +1139,7 @@ double CongestionEval::evalMacroChannelPinRatio(float dist_ratio)
                 }
               }
             } else {
-              // i在上，j在下
+              // i top，j bottom
               for (auto& pin : macro_list[j]->get_pin_list()) {
                 auto pin_x = pin->get_x();
                 auto pin_y = pin->get_y();
@@ -1155,11 +1157,11 @@ double CongestionEval::evalMacroChannelPinRatio(float dist_ratio)
             }
 
           } else {
-            // 模块是左右沟道
+            // The module is the left and right channels.
             auto ly = std::max(macro_list[i]->get_ly(), macro_list[j]->get_ly());
             auto uy = std::min(macro_list[i]->get_uy(), macro_list[j]->get_uy());
             if (macro_list[i]->get_lx() < macro_list[j]->get_lx()) {
-              // i在左，j在右
+              // i left，j right
               for (auto& pin : macro_list[j]->get_pin_list()) {
                 auto pin_x = pin->get_x();
                 auto pin_y = pin->get_y();
@@ -1175,7 +1177,7 @@ double CongestionEval::evalMacroChannelPinRatio(float dist_ratio)
                 }
               }
             } else {
-              // i在右，j在左
+              // i right，j left
               for (auto& pin : macro_list[i]->get_pin_list()) {
                 auto pin_x = pin->get_x();
                 auto pin_y = pin->get_y();

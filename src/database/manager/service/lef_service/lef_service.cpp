@@ -77,12 +77,4 @@ IdbLayout* IdbLefService::get_layout()
   return _layout.get();
 }
 
-IdbCheck* IdbLefService::get_check()
-{
-  if (!_check) {
-    _check = std::make_shared<IdbCheck>();
-  }
-  return _check.get();
-}
-
 }  // namespace idb

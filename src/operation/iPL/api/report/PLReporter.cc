@@ -29,7 +29,7 @@ namespace ipl {
 
     // std::string design_name = PlacerDBInst.get_design()->get_design_name();
     // std::string output_dir = "./evaluation_task/benchmark/" + design_name + "/pl_reports/";
-    std::string output_dir = "./result/pl/report/";
+    std::string output_dir = PlacerDBInst.get_placer_config()->get_pl_dir() + "/pl/report/";
 
     std::string summary_file = "summary_report.txt";
     std::ofstream summary_stream;
@@ -73,7 +73,7 @@ namespace ipl {
 
   void PLReporter::reportViolationInfo(std::ofstream& feed)
   {
-    std::string output_dir = "./result/pl/report/";
+    std::string output_dir = PlacerDBInst.get_placer_config()->get_pl_dir() + "/pl/report/";
     std::string violation_detail_file = "violation_detail_report.txt";
     std::ofstream violation_detail_stream;
     violation_detail_stream.open(output_dir + violation_detail_file);
@@ -171,7 +171,7 @@ namespace ipl {
       // int32_t dbu = PlacerDBInst.get_layout()->get_database_unit();
 
       std::ofstream file_stream;
-      file_stream.open("./result/pl/WhiteSites.txt");
+      file_stream.open(PlacerDBInst.get_placer_config()->get_pl_dir() + "/pl/WhiteSites.txt");
       if (!file_stream.good()) {
         LOG_WARNING << "Cannot open file for white sites !";
       }
@@ -676,7 +676,7 @@ namespace ipl {
 
   void PLReporter::reportWLInfo(std::ofstream& feed)
   {
-    std::string output_dir = "./result/pl/report/";
+    std::string output_dir = PlacerDBInst.get_placer_config()->get_pl_dir() + "/pl/report/";
     std::string wl_detail_file = "wl_detail_report.txt";
     std::ofstream wl_detail_stream;
     wl_detail_stream.open(output_dir + wl_detail_file);
@@ -913,7 +913,7 @@ namespace ipl {
     feed << (*report_tbl).to_string() << std::endl;
 
     //** plot congestion map which format is csv
-    // std::string plot_path = "./result/pl/report/";
+    // std::string plot_path = PlacerDBInst.get_placer_config()->get_pl_dir() + "/pl/report/";
     // std::string output_file_name = "CongMap";
     // _external_api->plotCongMap(plot_path, output_file_name);
 

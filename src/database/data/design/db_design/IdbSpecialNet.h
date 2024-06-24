@@ -98,6 +98,16 @@ class IdbSpecialNet
     return number;
   }
 
+  int32_t get_via_num()
+  {
+    int number = 0;
+    for (auto* wire : _wire_list->get_wire_list()) {
+      number += wire->get_via_num();
+    }
+
+    return number;
+  }
+
   // bool is_vdd() { return 0 == _net_name.compare("VDD") ? true : false; }
   // bool is_vss() { return 0 == _net_name.compare("VSS") ? true : false; }
   bool is_vdd() { return _connect_type == IdbConnectType::kPower ? true : false; }
@@ -167,10 +177,21 @@ class IdbSpecialNetList
   size_t get_segment_array_num() { return _edge_segment_list.size(); }
   uint64_t get_segment_num()
   {
-    uint number = 0;
+    uint64_t number = 0;
 
     for (auto* net : _net_list) {
       number += net->get_segment_num();
+    }
+
+    return number;
+  }
+
+  uint get_via_num()
+  {
+    uint number = 0;
+
+    for (auto* net : _net_list) {
+      number += net->get_via_num();
     }
 
     return number;

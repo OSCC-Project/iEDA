@@ -70,7 +70,7 @@ bool read_lef_def(std::vector<std::string>& lef_files,
 bool read_netlist(const std::string& file_name) {
   auto* ista = ista::Sta::getOrCreateSta();
 
-  ista->readVerilog(file_name.c_str());
+  ista->readVerilogWithRustParser(file_name.c_str());
   return true;
 }
 
@@ -97,7 +97,7 @@ bool read_liberty(std::vector<std::string>& lib_files) {
 bool link_design(const std::string& cell_name) {
   auto* ista = ista::Sta::getOrCreateSta();
   ista->set_top_module_name(cell_name.c_str());
-  ista->linkDesign(cell_name.c_str());
+  ista->linkDesignWithRustParser(cell_name.c_str());
   return true;
 }
 
@@ -205,6 +205,23 @@ std::map<std::pair<double, double>, double> display_slew_map(
   }
 
   return ista->displayTransitionMap(AnalysisMode::kMin);
+}
+
+/**
+ * @brief Get the used libs in netlist.
+ *
+ * @return std::vector<std::string>
+ */
+std::vector<std::string> get_used_libs() {
+  auto* ista = ista::Sta::getOrCreateSta();
+  auto used_libs = ista->getUsedLibs();
+
+  std::vector<std::string> ret;
+  for (auto& lib : used_libs) {
+    ret.push_back(lib->get_file_name());
+  }
+
+  return ret;
 }
 
 }  // namespace ista

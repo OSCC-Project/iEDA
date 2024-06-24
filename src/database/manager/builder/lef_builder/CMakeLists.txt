@@ -13,7 +13,6 @@ target_include_directories(lef_builder
         ${HOME_DATABASE}/data/design
         ${HOME_DATABASE}/data/design/db_design
         ${HOME_DATABASE}/data/design/db_layout
-        ${HOME_DATABASE}/data/tech
         ${HOME_DATABASE}/manager/service/def_service
         ${HOME_DATABASE}/manager/service/lef_service
 )
@@ -23,7 +22,7 @@ target_include_directories(lef_builder
         ${HOME_THIRDPARTY}/lefdef/lef
 )
 
-target_link_libraries(lef_builder PRIVATE lef geometry_db tech_db)
+target_link_libraries(lef_builder PRIVATE lef geometry_db)
 target_link_libraries(lef_builder PUBLIC absl::strings)
 
 option(TEST_LEFPARSER "If ON, test db." OFF)

@@ -54,9 +54,9 @@ void DbInterface::set_eval_data() {
   auto clk_list = _timing_engine->getClockList();
   for (auto clk : clk_list) {
     auto clk_name = clk->get_clock_name();
-    auto  wns = _timing_engine->reportTNS(clk_name, AnalysisMode::kMax);
-    auto  tns = _timing_engine->reportTNS(clk_name, AnalysisMode::kMax);
-    auto  freq = 1000.0 / (clk->getPeriodNs() - wns);
+    auto wns = _timing_engine->getWNS(clk_name, AnalysisMode::kMax);
+    auto tns = _timing_engine->getTNS(clk_name, AnalysisMode::kMax);
+    auto freq = 1000.0 / (clk->getPeriodNs() - wns);
     _eval_data.push_back({clk_name, wns, tns, freq});
   }
 }
@@ -73,11 +73,11 @@ void DbInterface::initData() {
   _placer = new Placer(_idb);
 
   initDbData();
-  makeEquivCells();
+  findEquivLibCells();
 
   findDrvrVertices();
   findBufferCells();
-  findCellTargetLoads();
+  calcCellTargetLoads();
 }
 
 void DbInterface::initDbData() {
@@ -97,22 +97,22 @@ void DbInterface::initDbData() {
   _design_area = DesignCalculator::calculateDesignArea(_layout, _dbu);
 }
 
-void DbInterface::makeEquivCells() {
-  vector<LibertyLibrary *> equiv_libs;
-  auto &                   all_libs = _timing_engine->getAllLib();
+void DbInterface::findEquivLibCells() {
+  vector<LibLibrary *> equiv_libs;
+  auto &               all_libs = _timing_engine->getAllLib();
   for (auto &lib : all_libs) {
     for (auto &cell : lib->get_cells()) {
-      if (isLinkCell(cell.get())) {
+      if (canFindLibertyCell(cell.get())) {
         equiv_libs.push_back(lib.get());
         break;
       }
     }
   }
 
-  _timing_engine->makeEquivCells(equiv_libs);
+  _timing_engine->makeClassifiedCells(equiv_libs);
 }
 
-bool DbInterface::isLinkCell(LibertyCell *cell) {
+bool DbInterface::canFindLibertyCell(LibCell *cell) {
   return _timing_engine->findLibertyCell(cell->get_cell_name()) == cell;
 }
 
@@ -128,8 +128,8 @@ void DbInterface::findDrvrVertices() {
   }
 
   sort(_drvr_vertices.begin(), _drvr_vertices.end(), [](StaVertex *v1, StaVertex *v2) {
-    Level level1 = v1->get_level();
-    Level level2 = v2->get_level();
+    TOLevel level1 = v1->get_level();
+    TOLevel level2 = v2->get_level();
     return (level1 < level2);
   });
 }
@@ -141,11 +141,11 @@ void DbInterface::findBufferCells() {
   auto &all_libs = _timing_engine->getAllLib();
   for (auto &lib : all_libs) {
     for (auto &cell : lib->get_cells()) {
-      if (cell->isBuffer() && isLinkCell(cell.get())) {
-        _buffer_cells.push_back(cell.get());
+      if (cell->isBuffer() && canFindLibertyCell(cell.get())) {
+        _available_buffer_cells.push_back(cell.get());
 
-        LibertyPort *in_port;
-        LibertyPort *out_port;
+        LibPort *in_port;
+        LibPort *out_port;
         cell->bufferPorts(in_port, out_port);
         float drvr_res = out_port->driveResistance();
         if (drvr_res > low_drive) {
@@ -155,62 +155,60 @@ void DbInterface::findBufferCells() {
       }
     }
   }
-  if (_buffer_cells.empty()) {
-    std::cout << "No buffers found." << std::endl;
+  if (_available_buffer_cells.empty()) {
+    std::cout << "Can't find buffers in liberty file." << std::endl;
     exit(1);
   }
 }
 
-void DbInterface::findBufferTargetSlews() {
+void DbInterface::calcTargetSlewsForBuffer() {
   _target_slews = {0.0};
 
-  Slew slews[2]{0.0}; // TransType: kFall / kRise;
-  int  counts[2]{0};
-  for (LibertyCell *buffer : _buffer_cells) {
-    findBufferTargetSlews(buffer, slews, counts);
+  TOSlew slews[2]{0.0}; // TransType: kFall / kRise;
+  int    counts[2]{0};
+  for (LibCell *buffer : _available_buffer_cells) {
+    calcTargetSlewsForBuffer(buffer, slews, counts);
   }
 
-  Slew slew_rise = slews[_rise] / counts[_rise];
-  Slew slew_fall = slews[_fall] / counts[_fall];
+  TOSlew slew_rise = slews[_rise] / counts[_rise];
+  TOSlew slew_fall = slews[_fall] / counts[_fall];
   if (slew_rise > _target_slews[_rise]) {
     _target_slews[_rise] = slew_rise;
     _target_slews[_fall] = slew_fall;
   }
 }
 
-void DbInterface::findBufferTargetSlews(LibertyCell *buffer,
-                                        // Return values.
-                                        Slew slews[], int counts[]) {
-  LibertyPort *input;
-  LibertyPort *output;
+void DbInterface::calcTargetSlewsForBuffer(LibCell *buffer, TOSlew slews[],
+                                           int counts[]) {
+  LibPort *input;
+  LibPort *output;
   buffer->bufferPorts(input, output);
 
   // get timing arc of (input, output)
   const char *in_name = input->get_port_name();
   const char *out_name = output->get_port_name();
 
-  std::optional<LibertyArcSet *> arcset =
-      buffer->findLibertyArcSet(in_name, out_name, LibertyArc::TimingType::kDefault);
+  std::optional<LibArcSet *> arcset =
+      buffer->findLibertyArcSet(in_name, out_name, LibArc::TimingType::kDefault);
 
   if (arcset.has_value()) {
     auto &arcs = (*arcset)->get_arcs();
     for (auto &arc : arcs) {
-      // LibertyTableModel *model = arc->get_table_model();
+      // LibTableModel *model = arc->get_table_model();
       getGateSlew(input, TransType::kFall, arc.get(), slews, counts);
       getGateSlew(input, TransType::kRise, arc.get(), slews, counts);
     }
   }
 }
 
-void DbInterface::getGateSlew(LibertyPort *port, TransType trans_type, LibertyArc *arc,
-                              // Return values.
-                              Slew slews[], int counts[]) {
+void DbInterface::getGateSlew(LibPort *port, TransType trans_type, LibArc *arc,
+                              TOSlew slews[], int counts[]) {
   auto  cap_value = port->get_port_cap(ista::AnalysisMode::kMaxMin, trans_type);
   float in_cap = cap_value ? *cap_value : port->get_port_cap();
-  float load_cap = in_cap * _tgt_slew_load_cap_factor;
+  float load_cap = in_cap * _slew_2_load_cap_factor;
 
-  Slew slew1 = arc->getSlewNs(trans_type, 0.01, load_cap);
-  Slew slew = arc->getSlewNs(trans_type, slew1, load_cap);
+  TOSlew slew1 = arc->getSlewNs(trans_type, 0.01, load_cap);
+  TOSlew slew = arc->getSlewNs(trans_type, slew1, load_cap);
 
   if (trans_type == TransType::kFall) {
     slews[_fall] += slew;
@@ -223,54 +221,54 @@ void DbInterface::getGateSlew(LibertyPort *port, TransType trans_type, LibertyAr
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
-void DbInterface::findCellTargetLoads() {
-  // Find target slew across all buffers in the libraries.
-  findBufferTargetSlews();
+void DbInterface::calcCellTargetLoads() {
+  // Calc the target slew for all buffers in the libraries.
+  calcTargetSlewsForBuffer();
   if (_cell_target_load_map == nullptr) {
-    _cell_target_load_map = new CellTargetLoadMap;
+    _cell_target_load_map = new TOLibCellLoadMap;
   }
   _cell_target_load_map->clear();
 
-  // Find target loads
+  // Calc target loads
   auto &all_libs = _timing_engine->getAllLib();
   int   cell_count = 0;
   for (auto &lib : all_libs) {               // lib
     for (auto &libcell : lib->get_cells()) { // lib cells
-      LibertyCell *cell = libcell.get();
+      LibCell *cell = libcell.get();
 
-      if (isLinkCell(cell)) {
+      if (canFindLibertyCell(cell)) {
         cell_count++;
-        findTargetLoad(cell);
+        calcTargetLoad(cell);
       }
     }
   }
 }
 
-void DbInterface::findTargetLoad(LibertyCell *cell) {
+void DbInterface::calcTargetLoad(LibCell *cell) {
   float target_load_sum = 0.0;
   int   arc_count = 0;
   // get cell all arcset
   auto &cell_arcset = cell->get_cell_arcs();
   for (auto &arcset : cell_arcset) { // arcset
-    ieda::Vector<std::unique_ptr<ista::LibertyArc>> &arcs = arcset->get_arcs();
+    ieda::Vector<std::unique_ptr<ista::LibArc>> &arcs = arcset->get_arcs();
     for (auto &arc : arcs) {
       if (arc->isDelayArc() &&
-          !((arc->get_timing_type() == LibertyArc::TimingType::kNonSeqHoldRising) ||
-            (arc->get_timing_type() == LibertyArc::TimingType::kNonSeqHoldFalling) ||
-            (arc->get_timing_type() == LibertyArc::TimingType::kNonSeqSetupRising) ||
-            (arc->get_timing_type() == LibertyArc::TimingType::kNonSeqSetupFalling))) {
-        if ((arc->get_timing_type() == LibertyArc::TimingType::kComb) ||
-            (arc->get_timing_type() == LibertyArc::TimingType::kCombRise) ||
-            (arc->get_timing_type() == LibertyArc::TimingType::kRisingEdge) ||
-            (arc->get_timing_type() == LibertyArc::TimingType::kDefault)) {
-          findTargetLoad(cell, arc.get(), TransType::kRise, target_load_sum, arc_count);
+          !((arc->get_timing_type() == LibArc::TimingType::kNonSeqHoldRising) ||
+            (arc->get_timing_type() == LibArc::TimingType::kNonSeqHoldFalling) ||
+            (arc->get_timing_type() == LibArc::TimingType::kNonSeqSetupRising) ||
+            (arc->get_timing_type() == LibArc::TimingType::kNonSeqSetupFalling))) {
+        if ((arc->get_timing_type() == LibArc::TimingType::kComb) ||
+            (arc->get_timing_type() == LibArc::TimingType::kCombRise) ||
+            (arc->get_timing_type() == LibArc::TimingType::kRisingEdge) ||
+            (arc->get_timing_type() == LibArc::TimingType::kDefault)) {
+          calcTargetLoad(arc.get(), TransType::kRise, target_load_sum, arc_count);
         }
 
-        if ((arc->get_timing_type() == LibertyArc::TimingType::kComb) ||
-            (arc->get_timing_type() == LibertyArc::TimingType::kCombFall) ||
-            (arc->get_timing_type() == LibertyArc::TimingType::kFallingEdge) ||
-            (arc->get_timing_type() == LibertyArc::TimingType::kDefault)) {
-          findTargetLoad(cell, arc.get(), TransType::kFall, target_load_sum, arc_count);
+        if ((arc->get_timing_type() == LibArc::TimingType::kComb) ||
+            (arc->get_timing_type() == LibArc::TimingType::kCombFall) ||
+            (arc->get_timing_type() == LibArc::TimingType::kFallingEdge) ||
+            (arc->get_timing_type() == LibArc::TimingType::kDefault)) {
+          calcTargetLoad(arc.get(), TransType::kFall, target_load_sum, arc_count);
         }
       }
     }
@@ -280,21 +278,20 @@ void DbInterface::findTargetLoad(LibertyCell *cell) {
   (*_cell_target_load_map)[cell] = target_load;
 }
 
-void DbInterface::findTargetLoad(LibertyCell *cell, LibertyArc *arc, TransType rf,
-                                 // return values
-                                 float &target_load_sum, int &arc_count) {
+void DbInterface::calcTargetLoad(LibArc *arc, TransType rf, float &target_load_sum,
+                                 int &arc_count) {
   float arc_target_load;
   if (arc->isNegativeArc()) {
     if (rf == TransType::kRise) {
-      arc_target_load = findTargetLoad(cell, arc, rf, TransType::kFall);
+      arc_target_load = calcTargetLoad(arc, rf, TransType::kFall);
     } else {
-      arc_target_load = findTargetLoad(cell, arc, rf, rf);
+      arc_target_load = calcTargetLoad(arc, rf, rf);
     }
   } else {
     if (rf == TransType::kRise) {
-      arc_target_load = findTargetLoad(cell, arc, rf, rf);
+      arc_target_load = calcTargetLoad(arc, rf, rf);
     } else {
-      arc_target_load = findTargetLoad(cell, arc, rf, TransType::kFall);
+      arc_target_load = calcTargetLoad(arc, rf, TransType::kFall);
     }
   }
   target_load_sum += arc_target_load;
@@ -302,8 +299,7 @@ void DbInterface::findTargetLoad(LibertyCell *cell, LibertyArc *arc, TransType r
 }
 
 /**
- * @brief Find the load capacitance that will cause the output slew to be equal
- * to out_slew.
+ * @brief Calc the load capacitance that will result in the output slew matching out_slew.
  *
  * @param cell
  * @param model
@@ -311,58 +307,61 @@ void DbInterface::findTargetLoad(LibertyCell *cell, LibertyArc *arc, TransType r
  * @param out_type
  * @return float
  */
-float DbInterface::findTargetLoad(LibertyCell *cell, LibertyArc *arc, TransType in_type,
-                                  TransType out_type) {
+float DbInterface::calcTargetLoad(LibArc *arc, TransType in_type, TransType out_type) {
   if (arc && arc->isDelayArc()) {
-    int  in_rf_index = (int)in_type - 1;
-    int  out_rf_index = (int)out_type - 1;
-    Slew in_slew = _target_slews[in_rf_index];
-    Slew out_slew = _target_slews[out_rf_index];
+    int    in_rf_index = (int)in_type - 1;
+    int    out_rf_index = (int)out_type - 1;
+    TOSlew in_slew = _target_slews[in_rf_index];
+    TOSlew out_slew = _target_slews[out_rf_index];
 
-    double load_cap1 = 0.0;
-    double load_cap2 = 1.0e-12; // 1pF
-    double tol = .01;           // 1%
+    double low_bound_cap = 0.0;
+    double upper_bound_cap = 1.0e-12;
+    double tolerate = 0.01; // 1%
 
-    double diff1 = gateSlewDiff(in_type, cell, load_cap1, in_slew, out_slew, arc);
-    if (diff1 > 0.0) {
-      // Zero load cap out_slew is higher than the target.
+    double slew_diff_1 =
+        calcSlewDiffOfGate(in_type, low_bound_cap, in_slew, out_slew, arc);
+    if (slew_diff_1 > 0.0) {
       return 0.0;
     }
-    double diff2 = gateSlewDiff(in_type, cell, load_cap2, in_slew, out_slew, arc);
-    // binary search for diff = 0.
-    while (abs(load_cap1 - load_cap2) > max(load_cap1, load_cap2) * tol) {
-      if (diff2 < 0.0) {
-        load_cap1 = load_cap2;
-        load_cap2 *= 2;
-        diff2 = gateSlewDiff(in_type, cell, load_cap2, in_slew, out_slew, arc);
+    double slew_diff_2 =
+        calcSlewDiffOfGate(in_type, upper_bound_cap, in_slew, out_slew, arc);
+    // calc diff = 0 by binary search.
+    while (abs(low_bound_cap - upper_bound_cap) >
+           max(low_bound_cap, upper_bound_cap) * tolerate) {
+      if (slew_diff_2 < 0.0) {
+        low_bound_cap = upper_bound_cap;
+        upper_bound_cap *= 2;
+        slew_diff_2 =
+            calcSlewDiffOfGate(in_type, upper_bound_cap, in_slew, out_slew, arc);
       } else {
-        double load_cap3 = (load_cap1 + load_cap2) / 2.0;
-        double diff3 = gateSlewDiff(in_type, cell, load_cap3, in_slew, out_slew, arc);
-        if (diff3 < 0.0) {
-          load_cap1 = load_cap3;
+        double load_cap3 = (low_bound_cap + upper_bound_cap) / 2.0;
+        double slew_diff_3 =
+            calcSlewDiffOfGate(in_type, load_cap3, in_slew, out_slew, arc);
+        if (slew_diff_3 < 0.0) {
+          low_bound_cap = load_cap3;
         } else {
-          load_cap2 = load_cap3;
-          diff2 = diff3;
+          upper_bound_cap = load_cap3;
+          slew_diff_2 = slew_diff_3;
         }
       }
     } // end while
-    return load_cap1;
+    return low_bound_cap;
   }
   return 0.0;
 }
 
-Slew DbInterface::gateSlewDiff(TransType in_type, LibertyCell *cell, float load_cap,
-                               Slew in_slew, Slew out_slew, LibertyArc *arc) {
-  Slew slew = arc->getSlewNs(in_type, in_slew, load_cap);
+TOSlew DbInterface::calcSlewDiffOfGate(TransType in_type, float load_cap, TOSlew in_slew,
+                                       TOSlew out_slew, LibArc *arc) {
+  TOSlew slew = arc->getSlewNs(in_type, in_slew, load_cap);
   return slew - out_slew;
 }
 
-bool DbInterface::overMaxArea() {
+bool DbInterface::reachMaxArea() {
   double max_utilization = _config->get_max_utilization();
   // initBlock();
   double core_area = DesignCalculator::calculateCoreArea(_core, _dbu);
   double max_area_utilize = core_area * max_utilization;
-  return fuzzyGreaterEqual(_design_area, max_area_utilize);
+  return approximatelyGreaterEqual(_design_area, max_area_utilize);
 }
 
 } // namespace ito

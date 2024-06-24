@@ -22,6 +22,12 @@
 #include <vector>
 
 #include "ids.hpp"
+#include "../source/io/DbInterface.h"
+#include "../iNO.h"
+
+namespace ieda_feature {
+  struct NetOptSummary;
+}// namespace
 
 namespace ino {
 
@@ -43,6 +49,9 @@ class NoApi {
   NoConfig *get_no_config();
 
   void reportTiming();
+
+  std::vector<EvalData> getEvalData() { return _ino->get_db_interface()->eval_data(); }
+  ieda_feature::NetOptSummary outputSummary();
 
  private:
   static NoApi *_no_api_instance;
