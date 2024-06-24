@@ -782,128 +782,35 @@ Vector<LibCell *> *Sta::classifyCells(LibCell *cell) {
  *
  */
 void Sta::initSdcCmd() {
-  auto cmd_create_clock = std::make_unique<CmdCreateClock>("create_clock");
-  LOG_FATAL_IF(!cmd_create_clock);
-  TclCmds::addTclCmd(std::move(cmd_create_clock));
-
-  auto cmd_create_generated_clock =
-      std::make_unique<CmdCreateGeneratedClock>("create_generated_clock");
-  LOG_FATAL_IF(!cmd_create_generated_clock);
-  TclCmds::addTclCmd(std::move(cmd_create_generated_clock));
-
-  auto cmd_set_input_transition =
-      std::make_unique<CmdSetInputTransition>("set_input_transition");
-  LOG_FATAL_IF(!cmd_set_input_transition);
-  TclCmds::addTclCmd(std::move(cmd_set_input_transition));
-
-  auto cmd_set_driving_cell =
-      std::make_unique<CmdSetDrivingCell>("set_driving_cell");
-  LOG_FATAL_IF(!cmd_set_driving_cell);
-  TclCmds::addTclCmd(std::move(cmd_set_driving_cell));
-
-  auto cmd_set_load = std::make_unique<CmdSetLoad>("set_load");
-  LOG_FATAL_IF(!cmd_set_load);
-  TclCmds::addTclCmd(std::move(cmd_set_load));
-
-  auto cmd_set_input_delay =
-      std::make_unique<CmdSetInputDelay>("set_input_delay");
-  LOG_FATAL_IF(!cmd_set_input_delay);
-  TclCmds::addTclCmd(std::move(cmd_set_input_delay));
-
-  auto cmd_set_output_delay =
-      std::make_unique<CmdSetOutputDelay>("set_output_delay");
-  LOG_FATAL_IF(!cmd_set_output_delay);
-  TclCmds::addTclCmd(std::move(cmd_set_output_delay));
-
-  auto cmd_set_max_fanout = std::make_unique<CmdSetMaxFanout>("set_max_fanout");
-  LOG_FATAL_IF(!cmd_set_max_fanout);
-  TclCmds::addTclCmd(std::move(cmd_set_max_fanout));
-
-  auto cmd_set_max_transition =
-      std::make_unique<CmdSetMaxTransition>("set_max_transition");
-  LOG_FATAL_IF(!cmd_set_max_transition);
-  TclCmds::addTclCmd(std::move(cmd_set_max_transition));
-
-  auto cmd_set_max_capacitance =
-      std::make_unique<CmdSetMaxCapacitance>("set_max_capacitance");
-  LOG_FATAL_IF(!cmd_set_max_capacitance);
-  TclCmds::addTclCmd(std::move(cmd_set_max_capacitance));
-
-  auto cmd_current_design =
-      std::make_unique<CmdCurrentDesign>("current_design");
-  LOG_FATAL_IF(!cmd_current_design);
-  TclCmds::addTclCmd(std::move(cmd_current_design));
-
-  auto get_clocks = std::make_unique<CmdGetClocks>("get_clocks");
-  LOG_FATAL_IF(!get_clocks);
-  TclCmds::addTclCmd(std::move(get_clocks));
-
-  auto get_pins = std::make_unique<CmdGetPins>("get_pins");
-  LOG_FATAL_IF(!get_pins);
-  TclCmds::addTclCmd(std::move(get_pins));
-
-  auto get_ports = std::make_unique<CmdGetPorts>("get_ports");
-  LOG_FATAL_IF(!get_ports);
-  TclCmds::addTclCmd(std::move(get_ports));
-
-  auto get_libs = std::make_unique<CmdGetLibs>("get_libs");
-  LOG_FATAL_IF(!get_libs);
-  TclCmds::addTclCmd(std::move(get_libs));
-
-  auto all_clocks = std::make_unique<CmdAllClocks>("all_clocks");
-  LOG_FATAL_IF(!all_clocks);
-  TclCmds::addTclCmd(std::move(all_clocks));
-
-  auto all_inputs = std::make_unique<CmdAllInputs>("all_inputs");
-  LOG_FATAL_IF(!all_inputs);
-  TclCmds::addTclCmd(std::move(all_inputs));
-
-  auto all_outputs = std::make_unique<CmdAllOutputs>("all_outputs");
-  LOG_FATAL_IF(!all_outputs);
-  TclCmds::addTclCmd(std::move(all_outputs));
-
-  auto set_propagated_clock =
-      std::make_unique<CmdSetPropagatedClock>("set_propagated_clock");
-  LOG_FATAL_IF(!set_propagated_clock);
-  TclCmds::addTclCmd(std::move(set_propagated_clock));
-
-  auto set_clock_groups =
-      std::make_unique<CmdSetClockGroups>("set_clock_groups");
-  LOG_FATAL_IF(!set_clock_groups);
-  TclCmds::addTclCmd(std::move(set_clock_groups));
-
-  auto set_multicycle_path =
-      std::make_unique<CmdSetMulticyclePath>("set_multicycle_path");
-  LOG_FATAL_IF(!set_multicycle_path);
-  TclCmds::addTclCmd(std::move(set_multicycle_path));
-
-  auto set_timing_derate =
-      std::make_unique<CmdSetTimingDerate>("set_timing_derate");
-  LOG_FATAL_IF(!set_timing_derate);
-  TclCmds::addTclCmd(std::move(set_timing_derate));
-
-  auto set_clock_uncertainty =
-      std::make_unique<CmdSetClockUncertainty>("set_clock_uncertainty");
-  LOG_FATAL_IF(!set_clock_uncertainty);
-  TclCmds::addTclCmd(std::move(set_clock_uncertainty));
-
-  auto set_units = std::make_unique<CmdSetUnits>("set_units");
-  LOG_FATAL_IF(!set_units);
-  TclCmds::addTclCmd(std::move(set_units));
-
-  auto group_path = std::make_unique<CmdGroupPath>("group_path");
-  LOG_FATAL_IF(!group_path);
-  TclCmds::addTclCmd(std::move(group_path));
-
-  auto set_operating_conditions =
-      std::make_unique<CmdSetOperatingConditions>("set_operating_conditions");
-  LOG_FATAL_IF(!set_operating_conditions);
-  TclCmds::addTclCmd(std::move(set_operating_conditions));
-
-  auto set_wire_load_mode =
-      std::make_unique<CmdSetWireLoadMode>("set_wire_load_mode");
-  LOG_FATAL_IF(!set_wire_load_mode);
-  TclCmds::addTclCmd(std::move(set_wire_load_mode));
+  registerTclCmd(CmdCreateClock, "create_clock");
+  registerTclCmd(CmdCreateGeneratedClock, "create_generated_clock");
+  registerTclCmd(CmdSetInputTransition, "set_input_transition");
+  registerTclCmd(CmdSetDrivingCell, "set_driving_cell");
+  registerTclCmd(CmdSetLoad, "set_load");
+  registerTclCmd(CmdSetInputDelay, "set_input_delay");
+  registerTclCmd(CmdSetOutputDelay, "set_output_delay");
+  registerTclCmd(CmdSetMaxFanout, "set_max_fanout");
+  registerTclCmd(CmdSetMaxTransition, "set_max_transition");
+  registerTclCmd(CmdSetMaxCapacitance, "set_max_capacitance");
+  registerTclCmd(CmdCurrentDesign, "current_design");
+  registerTclCmd(CmdGetClocks, "get_clocks");
+  registerTclCmd(CmdGetPins, "get_pins");
+  registerTclCmd(CmdGetPorts, "get_ports");
+  registerTclCmd(CmdGetCells, "get_cells");
+  registerTclCmd(CmdGetLibs, "get_libs");
+  registerTclCmd(CmdAllClocks, "all_clocks");
+  registerTclCmd(CmdAllInputs, "all_inputs");
+  registerTclCmd(CmdAllOutputs, "all_outputs");
+  registerTclCmd(CmdSetPropagatedClock, "set_propagated_clock");
+  registerTclCmd(CmdSetClockGroups, "set_clock_groups");
+  registerTclCmd(CmdSetMulticyclePath, "set_multicycle_path");
+  registerTclCmd(CmdSetTimingDerate, "set_timing_derate");
+  registerTclCmd(CmdSetClockUncertainty, "set_clock_uncertainty");
+  registerTclCmd(CmdSetUnits, "set_units");
+  registerTclCmd(CmdGroupPath, "group_path");
+  registerTclCmd(CmdSetOperatingConditions, "set_operating_conditions");
+  registerTclCmd(CmdSetWireLoadMode, "set_wire_load_mode");
+  registerTclCmd(CmdSetDisableTiming, "set_disable_timing");
 }
 
 /**

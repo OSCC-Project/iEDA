@@ -295,8 +295,27 @@ void CmdCreateGeneratedClock::set_master_clock(
   if (master_clock_option->is_set_val()) {
     const char* master_clock_name = master_clock_option->getStringVal();
     _source_sdc_clock = _the_constrain->findClock(master_clock_name);
-    LOG_FATAL_IF(!_source_sdc_clock)
-        << "not found master clock " << master_clock_name;
+    if (!_source_sdc_clock) {
+      Sta* ista = Sta::getOrCreateSta();
+      Netlist* design_nl = ista->get_netlist();
+      auto object_list = FindObjOfSdc(master_clock_name, design_nl);
+
+      for (auto& object : object_list) {
+        std::visit(overloaded{
+                       [this](SdcCommandObj* sdc_obj) {
+                         _source_sdc_clock = dynamic_cast<SdcClock*>(sdc_obj);
+                       },
+                       [](DesignObject* design_obj) {
+                         LOG_FATAL << "not support design obj.";
+                       },
+
+                   },
+                   object);
+      }
+
+      LOG_FATAL_IF(!_source_sdc_clock)
+          << "not found master clock " << master_clock_name;
+    }
   }
 }
 
@@ -358,9 +377,10 @@ void CmdCreateGeneratedClock::set_generate_clock(
 
 // set generate clock period
 // If a generated clock is specified with a divide_factor value that is a
-// power of 2 (1, 2, 4, ...), the rising edges of the master clock are used to
-// determine the edges of the generated clock. If the divide_factor value is
-// not a power of two, the edges are scaled from the master clock edges. ?
+// power of 2 (1, 2, 4, ...), the rising edges of the master clock are used
+// to determine the edges of the generated clock. If the divide_factor value
+// is not a power of two, the edges are scaled from the master clock edges.
+// ?
 void CmdCreateGeneratedClock::set_period_and_edges(
     std::vector<const char*> options) {
   if (_source_sdc_clock) {
