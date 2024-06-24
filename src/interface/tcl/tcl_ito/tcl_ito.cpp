@@ -166,16 +166,13 @@ unsigned CmdTOApiInitConfig::check()
   }
   return 1;
 }
-CMD_CLASS_DEFAULT_EXEC(CmdTOApiInitConfig, 
-ToApiInst.initTO(getOptionOrArg(TCL_CONFIG)->getStringVal());
-ToApiInst.iTODataInit();
-)
+CMD_CLASS_DEFAULT_EXEC(CmdTOApiInitConfig, ToApiInst.init(getOptionOrArg(TCL_CONFIG)->getStringVal());)
 
 CMD_CLASS_DEFAULT_DEFINITION(CmdTOApiRunFlow)
 CMD_CLASS_DEFAULT_EXEC(CmdTOApiRunFlow, ToApiInst.runTO())
 
 CMD_CLASS_DEFAULT_DEFINITION(CmdTOApiOptDRV);
-CMD_CLASS_DEFAULT_EXEC(CmdTOApiOptDRV, ToApiInst.optimizeDesignViolation());
+CMD_CLASS_DEFAULT_EXEC(CmdTOApiOptDRV, ToApiInst.optimizeDrv());
 
 CMD_CLASS_DEFAULT_DEFINITION(CmdTOApiOptHold);
 CMD_CLASS_DEFAULT_EXEC(CmdTOApiOptHold, ToApiInst.optimizeHold());
@@ -197,7 +194,6 @@ unsigned CmdTOApiSaveDef::check()
   return 1;
 }
 CMD_CLASS_DEFAULT_EXEC(CmdTOApiSaveDef, ToApiInst.saveDef(getOptionOrArg(TCL_PATH)->getStringVal()));
-
 
 CMD_CLASS_DEFAULT_DEFINITION(CmdTOApiReportTiming);
 CMD_CLASS_DEFAULT_EXEC(CmdTOApiReportTiming, ToApiInst.reportTiming())

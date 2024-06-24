@@ -16,30 +16,26 @@
 // ***************************************************************************************
 #pragma once
 
-#include "Inst.h"
-#include "Master.h"
-#include "Rect.h"
-#include "Utility.h"
+#include <fstream>
+#include <mutex>
+
+#include "ToConfig.h"
+#include "json.hpp"
 
 namespace ito {
-class Layout;
+using Json = nlohmann::json;
 
-class DesignCalculator {
+class JsonParser
+{
  public:
-  DesignCalculator() = default;
-  ~DesignCalculator() = default;
-  // open functions
-  void calculateDesign();
+  JsonParser(const std::string& json_file) { _json_file = json_file; }
+  ~JsonParser() = default;
 
-  static double calculateDesignArea(Layout *layout, int dbu);
-
-  static double calculateCoreArea(ito::Rectangle core, int dbu);
-
-  static double calcMasterArea(Master *master, int dbu);
+  bool parse();
 
  private:
-  // init
-  void initCore();
-};
+  std::string _json_file;
 
-} // namespace ito
+  void jsonToConfig(Json* json);
+};
+}  // namespace ito

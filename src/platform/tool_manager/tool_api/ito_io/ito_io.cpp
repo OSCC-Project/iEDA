@@ -38,11 +38,11 @@ bool ToIO::runTO(std::string config)
   ieda::Stats stats;
 
   /// set data config
-  ToApiInst.initTO(config);
+  ToApiInst.init(config);
   /// reset lib & sdc
   resetConfig();
 
-  ToApiInst.iTODataInit(dmInst->get_idb_builder(), nullptr);
+  ToApiInst.initEngine();
   ToApiInst.runTO();
 
   flowConfigInst->add_status_runtime(stats.elapsedRunTime());
@@ -63,11 +63,11 @@ bool ToIO::runTOFixFanout(std::string config)
   ieda::Stats stats;
 
   /// set data config
-  ToApiInst.initTO(config);
+  ToApiInst.init(config);
   /// reset lib & sdc
   resetConfig();
 
-  ToApiInst.iTODataInit(dmInst->get_idb_builder(), nullptr);
+  ToApiInst.initEngine();
 
   flowConfigInst->add_status_runtime(stats.elapsedRunTime());
   flowConfigInst->set_status_memmory(stats.memoryDelta());
@@ -87,12 +87,12 @@ bool ToIO::runTODrv(std::string config)
   ieda::Stats stats;
 
   /// set data config
-  ToApiInst.initTO(config);
+  ToApiInst.init(config);
   /// reset lib & sdc
   resetConfig();
 
-  ToApiInst.iTODataInit(dmInst->get_idb_builder(), nullptr);
-  ToApiInst.optimizeDesignViolation();
+  ToApiInst.initEngine();
+  ToApiInst.optimizeDrv();
 
   flowConfigInst->add_status_runtime(stats.elapsedRunTime());
   flowConfigInst->set_status_memmory(stats.memoryDelta());
@@ -112,11 +112,11 @@ bool ToIO::runTOHold(std::string config)
   ieda::Stats stats;
 
   /// set data config
-  ToApiInst.initTO(config);
+  ToApiInst.init(config);
   /// reset lib & sdc
   resetConfig();
 
-  ToApiInst.iTODataInit(dmInst->get_idb_builder(), nullptr);
+  ToApiInst.initEngine();
   ToApiInst.optimizeHold();
 
   flowConfigInst->add_status_runtime(stats.elapsedRunTime());
@@ -137,11 +137,11 @@ bool ToIO::runTOSetup(std::string config)
   ieda::Stats stats;
 
   /// set data config
-  ToApiInst.initTO(config);
+  ToApiInst.init(config);
   /// reset lib & sdc
   resetConfig();
 
-  ToApiInst.iTODataInit(dmInst->get_idb_builder(), nullptr);
+  ToApiInst.initEngine();
   ToApiInst.optimizeSetup();
 
   flowConfigInst->add_status_runtime(stats.elapsedRunTime());
