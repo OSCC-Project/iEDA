@@ -20,6 +20,7 @@ namespace ito {
 bool JsonParser::parse()
 {
   std::ifstream reader(_json_file);
+  cout << "[ToConfig Info] begin config, path = " << _json_file << endl;
   if (!reader) {
     std::cout << "[JsonParser Error] Failed to read json file '" << _json_file << "'!" << std::endl;
     return false;
@@ -77,7 +78,7 @@ void JsonParser::jsonToConfig(Json* json)
   }
   toConfig->set_drv_insert_buffers(buffers);
   if (toConfig->get_drv_insert_buffers().empty()) {
-    cout << "[ToConfig Info] DRV_insert_buffers is Null" << endl;
+    cout << "[ToConfig Info] DRV insert buffers is Null" << endl;
   }
   buffers.clear();
 
@@ -87,7 +88,7 @@ void JsonParser::jsonToConfig(Json* json)
   }
   toConfig->set_setup_insert_buffers(buffers);
   if (toConfig->get_setup_insert_buffers().empty()) {
-    cout << "[ToConfig Info] setup_insert_buffers is Null" << endl;
+    cout << "[ToConfig Info] setup insert buffers is Null" << endl;
   }
   buffers.clear();
 
@@ -97,7 +98,7 @@ void JsonParser::jsonToConfig(Json* json)
   }
   toConfig->set_hold_insert_buffers(buffers);
   if (toConfig->get_hold_insert_buffers().empty()) {
-    cout << "[ToConfig Info] hold_insert_buffers is Null" << endl;
+    cout << "[ToConfig Info] hold insert buffers is Null" << endl;
   }
   buffers.clear();
 
@@ -106,7 +107,22 @@ void JsonParser::jsonToConfig(Json* json)
   toConfig->set_min_divide_fanout(json->at("min_divide_fanout").get<int>());
   toConfig->set_optimize_endpoints_percent(json->at("optimize_endpoints_percent").get<float>());
 
-  cout << "[ToConfig Info] hold_target_slack:\n\t\t" << toConfig->get_hold_target_slack() << endl;
+  cout << "[ToConfig Info] output report file path = " << toConfig->get_report_file() << endl;
+  cout << "[ToConfig Info] output gds file path = " << toConfig->get_gds_file() << endl;
+  cout << "[ToConfig Info] hold target slack = " << toConfig->get_hold_target_slack() << endl;
+  cout << "[ToConfig Info] setup target slack = " << toConfig->get_setup_target_slack() << endl;
+  auto outStrings = [&](std::vector<std::string> names) {
+    for (auto name : names) {
+      cout << name << ", ";
+    }
+    cout << endl;
+  };
+  cout << "[ToConfig Info] DRV insert buffer = ";
+  outStrings(toConfig->get_drv_insert_buffers());
+  cout << "[ToConfig Info] hold insert buffer = ";
+  outStrings(toConfig->get_hold_insert_buffers());
+  cout << "[ToConfig Info] setup insert buffer = ";
+  outStrings(toConfig->get_setup_insert_buffers());
 }
 
 }  // namespace ito
