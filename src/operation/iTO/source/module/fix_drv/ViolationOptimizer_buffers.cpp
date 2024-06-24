@@ -71,14 +71,14 @@ void ViolationOptimizer::insertBuffer(int x, int y, ista::Net* net, ista::LibCel
                                       TODesignObjSeq& pins_loaded)
 {
   // make ista::Instance name
-  std::string buffer_created_name = ("DRV_buffer_" + to_string(toDmInst->add_buffer_num()));
+  std::string buffer_created_name = (toConfig->get_drv_buffer_prefix() + to_string(toDmInst->add_buffer_num()));
 
   TimingIDBAdapter* db_adapter = timingEngine->get_sta_adapter();
 
   ista::Net *net_signal_input, *net_signal_output;
   net_signal_input = net;
   // make net name
-  std::string net_created_name = ("DRV_net_" + to_string(toDmInst->add_net_num()));
+  std::string net_created_name = (toConfig->get_drv_net_prefix() + to_string(toDmInst->add_net_num()));
   net_signal_output = db_adapter->createNet(net_created_name.c_str(), nullptr);
 
   idb::IdbNet* db_net_signal_output = db_adapter->staToDb(net_signal_output);

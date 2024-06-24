@@ -107,6 +107,19 @@ void JsonParser::jsonToConfig(Json* json)
   toConfig->set_min_divide_fanout(json->at("min_divide_fanout").get<int>());
   toConfig->set_optimize_endpoints_percent(json->at("optimize_endpoints_percent").get<float>());
 
+  // Set specific names prefixes
+  auto specific_prefix = json->at("specific_prefix");
+
+  toConfig->set_drv_buffer_prefix(specific_prefix.at("drv").at("make_buffer").get<string>());
+  toConfig->set_drv_net_prefix(specific_prefix.at("drv").at("make_net").get<string>());
+  
+  toConfig->set_hold_buffer_prefix(specific_prefix.at("hold").at("make_buffer").get<string>());
+  toConfig->set_hold_net_prefix(specific_prefix.at("hold").at("make_net").get<string>());
+  
+  toConfig->set_setup_buffer_prefix(specific_prefix.at("setup").at("make_buffer").get<string>());
+  toConfig->set_setup_net_prefix(specific_prefix.at("setup").at("make_net").get<string>());
+
+
   cout << "[ToConfig Info] output report file path = " << toConfig->get_report_file() << endl;
   cout << "[ToConfig Info] output gds file path = " << toConfig->get_gds_file() << endl;
   cout << "[ToConfig Info] hold target slack = " << toConfig->get_hold_target_slack() << endl;

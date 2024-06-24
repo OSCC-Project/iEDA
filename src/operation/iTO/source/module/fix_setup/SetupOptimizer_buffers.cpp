@@ -260,10 +260,10 @@ void SetupOptimizer::implementVGSolution(BufferedOption* buf_opt, Net* net)
 
   TimingIDBAdapter* idb_adapter = timingEngine->get_sta_adapter();
   auto handleBuffer = [&](LibCell* insert_buf_cell, Net* current_net, Point loc) {
-    std::string buffer_created_name = "setup_buffer_" + std::to_string(toDmInst->add_buffer_num());
+    std::string buffer_created_name = toConfig->get_setup_buffer_prefix() + std::to_string(toDmInst->add_buffer_num());
     Instance* buffer = idb_adapter->createInstance(insert_buf_cell, buffer_created_name.c_str());
 
-    std::string net_created_name = "setup_net_" + std::to_string(toDmInst->add_net_num());
+    std::string net_created_name = toConfig->get_setup_net_prefix() + std::to_string(toDmInst->add_net_num());
     Net* net_out = idb_adapter->createNet(net_created_name.c_str(), nullptr);
 
     LibPort *input, *output;
@@ -362,9 +362,8 @@ void SetupOptimizer::insertBufferSeparateLoads(StaVertex *driver_vertex) {
         ->createNet(name.c_str(), nullptr);
   };
 
-  std::string buffer_created_name =
-      "setup_split_buffer_" + std::to_string(toDmInst->add_buffer_num());
-  std::string net_name = "setup_split_net_" + std::to_string(toDmInst->add_net_num());
+  std::string buffer_created_name = toConfig->get_setup_buffer_prefix() + std::to_string(toDmInst->add_buffer_num());
+  std::string net_name = toConfig->get_setup_net_prefix() + std::to_string(toDmInst->add_net_num());
 
   auto insert_buf_cell = timingEngine->get_buf_lowest_driver_res();
   auto buffer = createBufferInstance(insert_buf_cell, buffer_created_name);
