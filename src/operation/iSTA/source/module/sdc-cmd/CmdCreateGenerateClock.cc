@@ -157,24 +157,26 @@ unsigned CmdCreateGeneratedClock::check() {
     }
   }
 
+  // generate clock may be update source later, need refactor check later.
+
   //  Use -add option to capture the case where multiple generated clocks must
   //  be specified on the same source
-  if (add_option->is_set_val()) {
-    bool error_occur = true;
-    for (const auto& clock : _the_constrain->get_sdc_clocks()) {
-      if ((clock.second->isGenerateClock()) &&
-          (dynamic_cast<const SdcGenerateCLock&>(*clock.second)
-               .isSameSource(source_name))) {
-        error_occur = false;
-      }
-    }
+  // if (add_option->is_set_val()) {
+  //   bool error_occur = true;
+  //   for (const auto& clock : _the_constrain->get_sdc_clocks()) {
+  //     if ((clock.second->isGenerateClock()) &&
+  //         (dynamic_cast<const SdcGenerateCLock&>(*clock.second)
+  //              .isSameSource(source_name))) {
+  //       error_occur = false;
+  //     }
+  //   }
 
-    if (error_occur) {
-      LOG_ERROR << "Use -add option to capture the case where multiple "
-                   "generated clocks must be specified on the same source";
-      return 0;
-    }
-  }
+  //   if (error_occur) {
+  //     LOG_ERROR << "Use -add option to capture the case where multiple "
+  //                  "generated clocks must be specified on the same source";
+  //     return 0;
+  //   }
+  // }
 
   // edges are odd number and not less than 3
   if (edges_option->is_set_val()) {
@@ -293,7 +295,8 @@ void CmdCreateGeneratedClock::set_master_clock(
   if (master_clock_option->is_set_val()) {
     const char* master_clock_name = master_clock_option->getStringVal();
     _source_sdc_clock = _the_constrain->findClock(master_clock_name);
-    LOG_FATAL_IF(!_source_sdc_clock);
+    LOG_FATAL_IF(!_source_sdc_clock)
+        << "not found master clock " << master_clock_name;
   }
 }
 
