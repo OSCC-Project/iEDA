@@ -179,9 +179,6 @@ TclStringOption::~TclStringOption()
 {
   Str::free(_default_val);
   _default_val = nullptr;
-
-  Str::free(_val);
-  _val = nullptr;
 }
 
 TclStringListListOption::TclStringListListOption(const char* option_name, unsigned is_arg, std::vector<StrList>&& default_val)

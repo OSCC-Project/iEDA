@@ -1,16 +1,16 @@
 // ***************************************************************************************
 // Copyright (c) 2023-2025 Peng Cheng Laboratory
-// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of Sciences
-// Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
+// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of
+// Sciences Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
 //
 // iEDA is licensed under Mulan PSL v2.
-// You can use this software according to the terms and conditions of the Mulan PSL v2.
-// You may obtain a copy of Mulan PSL v2 at:
+// You can use this software according to the terms and conditions of the Mulan
+// PSL v2. You may obtain a copy of Mulan PSL v2 at:
 // http://license.coscl.org.cn/MulanPSL2
 //
-// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
-// EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
-// MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY
+// KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+// NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
@@ -31,34 +31,7 @@
 namespace ista {
 
 StaClock::StaClock(const char* clock_name, ClockType clock_type, int period)
-    : _clock_name(Str::copy(clock_name)),
-      _clock_type(clock_type),
-      _period(period) {}
-StaClock::~StaClock() {
-  Str::free(_clock_name);
-  _clock_name = nullptr;
-}
-StaClock::StaClock(StaClock&& other)
-    : _clock_name(other._clock_name),
-      _clock_vertexes(std::move(other._clock_vertexes)),
-      _clock_type(other._clock_type),
-      _period(other._period),
-      _wave_form(std::move(other._wave_form)) {
-  other._clock_name = nullptr;
-}
-StaClock& StaClock::operator=(StaClock&& rhs) {
-  if (this != &rhs) {
-    _clock_name = rhs._clock_name;
-    _clock_vertexes = std::move(rhs._clock_vertexes);
-    _clock_type = rhs._clock_type;
-    _period = rhs._period;
-    _wave_form = std::move(rhs._wave_form);
-
-    rhs._clock_name = nullptr;
-  }
-
-  return *this;
-}
+    : _clock_name(clock_name), _clock_type(clock_type), _period(period) {}
 
 unsigned StaClock::exec(StaFunc& func) { return func(this); }
 

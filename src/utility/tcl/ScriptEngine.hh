@@ -257,26 +257,18 @@ class TclStringOption : public TclOption
 
   unsigned isStringOption() override { return 1; }
 
-  char* getStringVal() override { return _is_set_val ? _val : _default_val; }
+  char* getStringVal() override { return _is_set_val ? (char*) (_val.c_str()) : _default_val; }
   void setVal(const char* val) override
   {
-    _val = Str::copy(val);
+    _val = val;
     _is_set_val = 1;
   }
-  void resetVal() override
-  {
-    if (_val) {
-      Str::free(_val);
-      _val = nullptr;
-    }
-
-    _is_set_val = 0;
-  }
+  void resetVal() override { _is_set_val = 0; }
   char* getDefaultStringVal() override { return _default_val; }
 
  private:
   char* _default_val = nullptr;
-  char* _val = nullptr;
+  std::string _val;
 };
 
 /**
