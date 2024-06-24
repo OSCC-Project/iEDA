@@ -19,17 +19,42 @@
 #include <string>
 #include <vector>
 
-#include "Utility.h"
+#include "../utility/Utility.h"
 namespace ito {
 using ito::increaseHash;
-class Point {
+class Point
+{
  public:
   Point() = default;
   Point(int x, int y) : _x(x), _y(y) {}
 
-  inline bool operator==(const Point &p) const { return (_x == p._x) && (_y == p._y); }
+  inline bool operator==(const Point& p) const { return (_x == p._x) && (_y == p._y); }
 
-  friend inline std::ostream& operator<<(std::ostream& os, const Point& pt) {
+  // 重构加法
+  Point operator+(const Point& other) const { return Point(_x + other._x, _y + other._y); }
+
+  // 重构减法
+  Point operator-(const Point& other) const { return Point(_x - other._x, _y - other._y); }
+
+  // 重构除法
+  template <typename T>
+  Point operator/(T divisor) const
+  {
+    if (divisor == 0) {
+      throw std::invalid_argument("Division by zero is not allowed.");
+    }
+    return Point(static_cast<int>(_x / divisor), static_cast<int>(_y / divisor));
+  }
+
+  // 重构乘法
+  template <typename T>
+  Point operator*(T multiplier) const
+  {
+    return Point(static_cast<int>(_x * multiplier), static_cast<int>(_y * multiplier));
+  }
+
+  friend inline std::ostream& operator<<(std::ostream& os, const Point& pt)
+  {
     os << "(" << pt._x << ", " << pt._y << ")";
     return os;
   }
@@ -37,7 +62,8 @@ class Point {
   int get_x() const { return _x; }
   int get_y() const { return _y; }
 
-  static int64_t manhattanDistance(Point p1, Point p2) {
+  static int64_t manhattanDistance(Point p1, Point p2)
+  {
     int64_t x0 = p1._x;
     int64_t x1 = p2._x;
     int64_t y0 = p1._y;
@@ -49,14 +75,16 @@ class Point {
   void set_is_visit() { _is_visit = true; }
 
  private:
-  int  _x;
-  int  _y;
+  int _x;
+  int _y;
   bool _is_visit = false;
 };
 
-class PointHash {
+class PointHash
+{
  public:
-  size_t operator()(const Point &pt) const {
+  size_t operator()(const Point& pt) const
+  {
     size_t hash = 5381;
     increaseHash(hash, pt.get_x());
     increaseHash(hash, pt.get_y());
@@ -64,10 +92,9 @@ class PointHash {
   }
 };
 
-class PointEqual {
+class PointEqual
+{
  public:
-  bool operator()(const Point &pt1, const Point &pt2) const {
-    return pt1.get_x() == pt2.get_x() && pt1.get_y() == pt2.get_y();
-  }
+  bool operator()(const Point& pt1, const Point& pt2) const { return pt1.get_x() == pt2.get_x() && pt1.get_y() == pt2.get_y(); }
 };
-} // namespace ito
+}  // namespace ito

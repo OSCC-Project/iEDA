@@ -16,23 +16,29 @@
 // ***************************************************************************************
 #pragma once
 
+#include "IdbCellMaster.h"
+#include "IdbDesign.h"
+#include "IdbInstance.h"
 #include "Inst.h"
-#include "ids.hpp"
-
 namespace ito {
-using idb::IdbDesign;
-using idb::IdbInstance;
-using idb::IdbInstanceList;
-
-class Layout {
+class Layout
+{
  public:
   Layout() = default;
-  Layout(IdbDesign *idb_design);
+  Layout(idb::IdbDesign* idb_design)
+  {
+    idb::IdbInstanceList* idb_insts = idb_design->get_instance_list();
+    vector<idb::IdbInstance*> insts = idb_insts->get_instance_list();
+    for (idb::IdbInstance* idb_inst : insts) {
+      Inst* inst = new Inst(idb_inst);
+      _insts.push_back(inst);
+    }
+  }
   ~Layout() = default;
 
-  std::vector<Inst *> get_insts() { return _insts; }
+  std::vector<Inst*> get_insts() { return _insts; }
 
  private:
-  std::vector<Inst *> _insts;
+  std::vector<Inst*> _insts;
 };
-} // namespace ito
+}  // namespace ito

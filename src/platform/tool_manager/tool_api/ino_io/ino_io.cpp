@@ -44,7 +44,6 @@ bool NoIO::runNOFixFanout(std::string config)
   /// reset lib & sdc
   resetConfig(NoApiInst.get_no_config());
 
-  // ToApiInst.iTODataInit(dmInst->get_idb_builder(), nullptr);
   NoApiInst.iNODataInit(dmInst->get_idb_builder(), nullptr);
   NoApiInst.fixFanout();
 

@@ -9,10 +9,10 @@
         "report_file": "${RESULT_DIR}/to/report.txt",
         "gds_file": "${RESULT_DIR}/to/to.gds"
     },
-    "setup_slack_margin": 0.0,
-    "hold_slack_margin": 0.4,
-    "max_buffer_percent": 0.2,
-    "max_utilization": 0.8,
+    "setup_target_slack": 0.0,
+    "hold_target_slack": 0.4,
+    "max_insert_instance_percent": 0.2,
+    "max_core_utilization": 0.8,
     "fix_fanout": false,
     "optimize_drv": true,
     "optimize_hold": false,
@@ -26,7 +26,8 @@
     "hold_insert_buffers": [
         "sky130_fd_sc_hs__buf_8"
     ],
-    "number_passes_allowed_decreasing_slack": 5,
-    "rebuffer_max_fanout": 20,
-    "split_load_min_fanout": 8
+    "number_of_decreasing_slack_iter": 5,
+    "max_allowed_buffering_fanout": 20,
+    "min_divide_fanout": 8,
+    "optimize_endpoints_percent": 1.0
 }
