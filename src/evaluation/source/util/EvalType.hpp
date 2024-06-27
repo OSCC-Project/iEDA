@@ -97,7 +97,9 @@ enum class CONGESTION_TYPE
   kGRCong = 4,
   kMacroMarginH = 5,
   kMacroMarginV = 6,
-  kContinuousWS = 7
+  kContinuousWS = 7,
+  kMacroMargin = 8,
+  kMacroChannel = 9
 };
 
 enum class CHIP_REGION_TYPE

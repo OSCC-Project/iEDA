@@ -162,6 +162,37 @@ void EvalAPI::evalInstDens(INSTANCE_STATUS inst_status, bool eval_flip_flop)
   _congestion_eval_inst->evalInstDens(inst_status, eval_flip_flop);
 }
 
+void EvalAPI::evalMacroDens()
+{
+  _congestion_eval_inst->evalMacroDens();
+}
+
+void EvalAPI::evalMacroPinDens()
+{
+  _congestion_eval_inst->evalMacroPinDens();
+}
+
+void EvalAPI::evalCellPinDens()
+{
+  _congestion_eval_inst->evalCellPinDens();
+}
+
+void EvalAPI::evalMacroChannel(float die_size_ratio)
+{
+  _congestion_eval_inst->evalMacroChannel(die_size_ratio);
+}
+
+void EvalAPI::evalCellHierarchy(const std::string& plot_path, int level, int forward)
+{
+  _congestion_eval_inst->evalCellHierarchy(plot_path, level, forward);
+}
+
+void EvalAPI::evalMacroHierarchy(const std::string& plot_path, int level, int forward)
+{
+  _congestion_eval_inst->evalMacroHierarchy(plot_path, level, forward);
+}
+
+
 void EvalAPI::evalPinDens(INSTANCE_STATUS inst_status, int level)
 {
   _congestion_eval_inst->evalPinDens(inst_status, level);
@@ -308,7 +339,6 @@ void EvalAPI::evalIOPinAccess(const std::string& filename)
 ///////////////////////////////////////////////////////////////////////////////
 vector<float> EvalAPI::evalPinDens()
 {
-  // _congestion_eval_inst->mapInst2Bin();
   return _congestion_eval_inst->evalPinDens();
 }
 

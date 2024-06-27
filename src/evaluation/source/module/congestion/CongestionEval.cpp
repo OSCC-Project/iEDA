@@ -24,6 +24,8 @@
 #include <omp.h>
 #include <mutex>
 #include <stack>
+#include <queue>
+
 
 #include "../manager.hpp"
 #include "EvalLog.hpp"
@@ -36,10 +38,17 @@ void CongestionEval::initCongGrid(const int bin_cnt_x, const int bin_cnt_y)
   idb::IdbLayout* idb_layout = idb_builder->get_def_service()->get_layout();
   idb::IdbLayers* idb_layers = idb_layout->get_layers();
   idb::IdbRect* core_bbox = idb_layout->get_core()->get_bounding_box();
+  int32_t row_height = idb_layout->get_rows()->get_row_list()[0]->get_site()->get_height();
   int32_t lx = core_bbox->get_low_x();
   int32_t ly = core_bbox->get_low_y();
   int32_t width = core_bbox->get_width();
   int32_t height = core_bbox->get_height();
+
+  // idb::IdbRect* die_bbox = idb_layout->get_die()->get_bounding_box();
+  // int32_t lx = die_bbox->get_low_x();
+  // int32_t ly = die_bbox->get_low_y();
+  // int32_t width = die_bbox->get_width();
+  // int32_t height = die_bbox->get_height();
 
   _cong_grid->set_lx(lx);
   _cong_grid->set_ly(ly);
@@ -50,6 +59,7 @@ void CongestionEval::initCongGrid(const int bin_cnt_x, const int bin_cnt_y)
   _cong_grid->set_routing_layers_number(idb_layers->get_routing_layers_number());
   _cong_grid->initBins(idb_layers);
   _cong_grid->initTracksNum(idb_layers);
+  _cong_grid->set_row_height(row_height);
 }
 
 void CongestionEval::initCongInst()
@@ -461,6 +471,32 @@ void CongestionEval::plotBinValue(const string& plot_path, const string& output_
       }
       feed << std::endl;
     }
+  }else if (cong_type == CONGESTION_TYPE::kMacroMargin) {
+    for (int i = y_cnt - 1; i >= 0; i--) {
+      for (int j = 0; j < x_cnt; j++) {
+        double h_margin = _cong_grid->get_bin_list()[i * x_cnt + j]->get_h_margin();
+        double v_margin = _cong_grid->get_bin_list()[i * x_cnt + j]->get_v_margin();
+        double merge_margin = h_margin + v_margin;
+        if (j == x_cnt - 1) {
+          feed << merge_margin;
+        } else {
+          feed << merge_margin << ",";
+        }
+      }
+      feed << std::endl;
+    }
+  }else if (cong_type == CONGESTION_TYPE::kMacroChannel) {
+    for (int i = y_cnt - 1; i >= 0; i--) {
+      for (int j = 0; j < x_cnt; j++) {
+        int channel = _cong_grid->get_bin_list()[i * x_cnt + j]->isMacroChannel();
+        if (j == x_cnt - 1) {
+          feed << channel;
+        } else {
+          feed << channel << ",";
+        }
+      }
+      feed << std::endl;
+    }
   }
 
   plot << feed.str();
@@ -673,7 +709,7 @@ std::vector<int64_t> CongestionEval::evalMacroPeriBias()
   auto core_width = core_info[0];
   auto core_height = core_info[1];
   for (auto& inst : _cong_inst_list) {
-    if (inst->get_status() == INSTANCE_STATUS::kFixed) {
+    if (inst->get_loc_type() == INSTANCE_LOC_TYPE::kNormal && inst->get_status() == INSTANCE_STATUS::kFixed && inst->get_height() > _cong_grid->get_row_height()) {
       auto left = inst->get_lx();
       auto bottom = inst->get_ly();
       auto right = core_width - left - inst->get_width();
@@ -758,7 +794,7 @@ double CongestionEval::evalMacroChannelUtil(float dist_ratio)
 
   std::vector<CongInst*> macro_list;
   for (auto& inst : _cong_inst_list) {
-    if (inst->get_status() == INSTANCE_STATUS::kFixed) {
+    if (inst->get_loc_type() == INSTANCE_LOC_TYPE::kNormal && inst->get_status() == INSTANCE_STATUS::kFixed && inst->get_height() > _cong_grid->get_row_height()) {
       macro_list.emplace_back(inst);
     }
   }
@@ -829,7 +865,7 @@ void CongestionEval::plotMacroChannel(float dist_ratio,  const std::string& file
 
   std::vector<MacroInfo> macro_infos;
   for (auto& inst : _cong_inst_list) {
-      if (inst->get_status() == INSTANCE_STATUS::kFixed) {
+      if (inst->get_loc_type() == INSTANCE_LOC_TYPE::kNormal && inst->get_status() == INSTANCE_STATUS::kFixed && inst->get_height() > _cong_grid->get_row_height()) {
         MacroInfo macro_info;
         macro_info.lx = inst->get_lx();
         macro_info.ly = inst->get_ly();
@@ -897,11 +933,11 @@ void CongestionEval::plotMacroChannel(float dist_ratio,  const std::string& file
                 << channel_infos[i].width << "," << channel_infos[i].height << "\n";
       }
 
-      file << "\nMacro ID,LX,LY,Width,Height\n";
-      for (size_t i = 0; i < macro_infos.size(); ++i) {
-          file << i + 1 << "," << macro_infos[i].lx << "," << macro_infos[i].ly << ","
-                << macro_infos[i].width << "," << macro_infos[i].height << "\n";
-      }
+      // file << "\nMacro ID,LX,LY,Width,Height\n";
+      // for (size_t i = 0; i < macro_infos.size(); ++i) {
+      //     file << i + 1 << "," << macro_infos[i].lx << "," << macro_infos[i].ly << ","
+      //           << macro_infos[i].width << "," << macro_infos[i].height << "\n";
+      // }
 
       file.close();
   } else {
@@ -922,7 +958,7 @@ void CongestionEval::evalMacroMargin()
 
   std::vector<CongInst*> macros;
   for (auto& inst : _cong_inst_list) {
-      if (inst->get_status() == INSTANCE_STATUS::kFixed) {
+      if (inst->get_loc_type() == INSTANCE_LOC_TYPE::kNormal && inst->get_status() == INSTANCE_STATUS::kFixed && inst->get_height() > _cong_grid->get_row_height()) {
         macros.push_back(inst);
       }
   }
@@ -940,6 +976,11 @@ void CongestionEval::evalMacroMargin()
     int64_t v_down = v_min_coord;
     auto& bin = _cong_grid->get_bin_list()[i];
     bool overlap = false;
+
+    // 只考虑在 core 内的 bin
+    if (bin->get_ux() <= h_min_coord || bin->get_lx() >= h_max_coord || bin->get_ly() >= v_max_coord || bin->get_uy() <= v_min_coord){
+      continue;
+    }
 
     for (size_t j = 0; j < macros.size(); j++){
       if (getOverlapArea(bin, macros[j]) != 0){
@@ -976,15 +1017,27 @@ void CongestionEval::evalMacroMargin()
 
 double CongestionEval::evalMaxContinuousSpace()
 {
-  evalInstDens(INSTANCE_STATUS::kFixed);
+  evalMacroDens();
   int height = _cong_grid->get_bin_cnt_y();
   int width = _cong_grid->get_bin_cnt_x();
+
+  auto* idb_builder = dmInst->get_idb_builder();
+  idb::IdbLayout* idb_layout = idb_builder->get_def_service()->get_layout();
+  idb::IdbRect* idb_core = idb_layout->get_core()->get_bounding_box();
+  int64_t h_max_coord = idb_core->get_high_x();
+  int64_t h_min_coord = idb_core->get_low_x();
+  int64_t v_max_coord = idb_core->get_high_y();
+  int64_t v_min_coord = idb_core->get_low_y();
+
   vector<vector<int>> left(height, vector<int>(width, 0));
 
-  // Find the maximum number of consecutive grids with a value of 1 (set to 1 when density is less than 0.2).
+  // 寻找连续为 1 的最大网格数（密度<0.2时设为1）
   for (int i = 0; i < height; i++) {
     for (int j = 0; j < width; j++) {
-      if (_cong_grid->get_bin_list()[i *width + j ]->get_inst_density() < 0.2){
+      auto bin = _cong_grid->get_bin_list()[i *width + j ];
+      // 只考虑在 core 内的 bin
+      bool outside_core = (bin->get_ux() <= h_min_coord || bin->get_lx() >= h_max_coord || bin->get_ly() >= v_max_coord || bin->get_uy() <= v_min_coord);
+      if ((bin->get_inst_density() < 0.2) && (!outside_core)){
           left[i][j] = (j == 0 ? 0: left[i][j - 1]) + 1;
       }
     }
@@ -1034,7 +1087,7 @@ double CongestionEval::evalMaxContinuousSpace()
 
   for (int i = top_left_row; i < bottom_right_row; i++) {
     for (int j = top_left_col; j < bottom_right_col ; j++) {
-      _cong_grid->get_bin_list()[i * width + j]->set_ContinousWhiteSpace(1);
+      _cong_grid->get_bin_list()[i * width + j]->set_continuous_white_space(1);
     }
   }
 
@@ -1850,24 +1903,30 @@ std::vector<MacroVariant> CongestionEval::evalMacrosInfo()
 {
   std::vector<MacroVariant> macro_list;
 
-  auto core_info = evalChipWidthHeightArea(CHIP_REGION_TYPE::kCore);
-  auto core_width = core_info[0];
-  auto core_height = core_info[1];
-  auto core_area = core_info[2];
+  // auto core_info = evalChipWidthHeightArea(CHIP_REGION_TYPE::kCore);
+  // auto core_width = core_info[0];
+  // auto core_height = core_info[1];
+  // auto core_area = core_info[2];
+
+  auto die_info = evalChipWidthHeightArea(CHIP_REGION_TYPE::kDie);
+  auto die_width = die_info[0];
+  auto die_height = die_info[1];
+  auto die_area = die_info[2];
+
   for (auto& inst : _cong_inst_list) {
-    if (inst->get_status() == INSTANCE_STATUS::kFixed) {
+    if (inst->get_loc_type() == INSTANCE_LOC_TYPE::kNormal && inst->get_status() == INSTANCE_STATUS::kFixed && inst->get_height() > _cong_grid->get_row_height() ) {
       MacroVariant macro;
   
       float area = inst->get_shape().get_area();
-      float area_ratio = area / core_area;
+      float area_ratio = area / die_area;
       float left = inst->get_lx();
       float bottom = inst->get_ly();
       float width = inst->get_width();
       float height = inst->get_height();
       float pin_cnt = inst->get_pin_list().size();
 
-      float right = core_width - left - width;
-      float top = core_height - bottom - height;
+      float right = die_width - left - width;
+      float top = die_height - bottom - height;
       float min_bias =  std::min(std::min(left, bottom), std::min(right, top));
       min_bias = min_bias * min_bias;
 
@@ -2809,5 +2868,240 @@ float CongestionEval::getUsageCapacityRatio(Tile* tile)
   // return usage (used routing track + blockage + via number) / total capacity
   return static_cast<float>(curUse) / curCap;
 }
+
+
+// refactor
+void CongestionEval::evalMacroDens()
+{
+  for (auto& bin : _cong_grid->get_bin_list()) {
+    double overlap_area = 0.0;
+    double density = 0.0;
+    for (auto& inst : bin->get_inst_list()) {
+      auto status = inst->get_status();
+      if (status == INSTANCE_STATUS::kFixed && inst->get_height() > _cong_grid->get_row_height()) {
+          overlap_area += getOverlapArea(bin, inst);
+      }
+    }
+      density = overlap_area / bin->get_area();
+      bin->set_inst_density(density);
+  }
+}
+
+void CongestionEval::evalMacroPinDens()
+{
+  // Reset pin numbers for all bins
+  for (auto& bin : _cong_grid->get_bin_list()) {
+    bin->set_pin_num(0);
+  }
+
+  // Calculate pin numbers for each bin
+  for (auto& bin : _cong_grid->get_bin_list()) {
+    for (auto& inst : bin->get_inst_list()) {
+      auto status = inst->get_status();
+      if (status == INSTANCE_STATUS::kFixed && inst->get_height() > _cong_grid->get_row_height()) {
+        for (auto& pin : inst->get_pin_list()) {
+          auto pin_x = pin->get_x();
+          auto pin_y = pin->get_y();
+          if (pin_x > bin->get_lx() && pin_x < bin->get_ux() && pin_y > bin->get_ly() && pin_y < bin->get_uy()) {
+            bin->increPinNum();
+          }
+        }
+      }
+    }
+  }
+}
+
+void CongestionEval::evalCellPinDens()
+{
+  // Reset pin numbers for all bins
+  for (auto& bin : _cong_grid->get_bin_list()) {
+    bin->set_pin_num(0);
+  }
+
+  // Calculate pin numbers for each bin
+  for (auto& bin : _cong_grid->get_bin_list()) {
+    for (auto& inst : bin->get_inst_list()) {
+        for (auto& pin : inst->get_pin_list()) {
+          auto pin_x = pin->get_x();
+          auto pin_y = pin->get_y();
+          if (pin_x > bin->get_lx() && pin_x < bin->get_ux() && pin_y > bin->get_ly() && pin_y < bin->get_uy()) {
+            bin->increPinNum();
+          }
+        }
+    }
+  }
+}
+
+void CongestionEval::evalMacroChannel(float die_size_ratio)
+{
+  struct MacroInfo {
+      int lx;
+      int ly;
+      int width;
+      int height;
+  };
+
+  auto die_info = evalChipWidthHeightArea(CHIP_REGION_TYPE::kDie);
+  int32_t check_width = die_info[0] * die_size_ratio;
+  int32_t check_height = die_info[1] * die_size_ratio;
+
+  std::vector<MacroInfo> macro_infos;
+  for (auto& inst : _cong_inst_list) {
+      if (inst->get_loc_type() == INSTANCE_LOC_TYPE::kNormal && inst->get_status() == INSTANCE_STATUS::kFixed && inst->get_height() > _cong_grid->get_row_height()) {
+        MacroInfo macro_info;
+        macro_info.lx = inst->get_lx();
+        macro_info.ly = inst->get_ly();
+        macro_info.width = inst->get_width();
+        macro_info.height = inst->get_height();
+        macro_infos.push_back(macro_info);
+      }
+  }
+
+  std::vector<CongInst*> channel_infos;
+  if (macro_infos.size() != 0) {
+      for (size_t i = 0; i < macro_infos.size(); i++) {
+          for (size_t j = i + 1; j < macro_infos.size(); j++) {
+              auto x_dist = std::abs(macro_infos[i].lx - macro_infos[j].lx);
+              auto y_dist = std::abs(macro_infos[i].ly - macro_infos[j].ly);
+              if ((x_dist < check_width) && (y_dist < check_height)) {
+                  CongInst* channel_info = new CongInst();
+                  if (x_dist < y_dist) {
+                      auto lx = std::max(macro_infos[i].lx, macro_infos[j].lx);
+                      auto ux = std::min(macro_infos[i].lx + macro_infos[i].width, macro_infos[j].lx + macro_infos[j].width);
+                      int64_t height = 0;
+                      int64_t ly = 0;
+                      if (macro_infos[i].ly < macro_infos[j].ly) {
+                          height = std::max((macro_infos[j].ly - macro_infos[i].ly - macro_infos[i].height), 0);
+                          ly = macro_infos[i].ly + macro_infos[i].height;
+                      } else {
+                          height = std::max((macro_infos[i].ly - macro_infos[j].ly - macro_infos[j].height), 0);
+                          ly = macro_infos[j].ly + macro_infos[j].height;
+                      }
+                      channel_info->set_shape(lx,ly,ux,ly+height);
+                  } else {
+                      auto ly = std::max(macro_infos[i].ly, macro_infos[j].ly);
+                      auto uy = std::min(macro_infos[i].ly + macro_infos[i].height, macro_infos[j].ly+macro_infos[j].height);
+                      int64_t width = 0;
+                      int64_t lx = 0;
+                      if (macro_infos[i].lx < macro_infos[j].lx) {
+                          width = std::max((macro_infos[j].lx - macro_infos[i].lx - macro_infos[i].width), 0);
+                          lx = macro_infos[i].lx + macro_infos[i].width;
+                      } else {
+                          width = std::max((macro_infos[i].lx - macro_infos[j].lx - macro_infos[j].width), 0);
+                          lx = macro_infos[j].lx + macro_infos[j].width;
+                      }
+                      channel_info->set_shape(lx,ly,lx+width,uy);
+                  }
+                  channel_infos.push_back(channel_info);
+              }
+          }
+      }
+
+      for (auto& inst : channel_infos) {
+        std::pair<int, int> pair_x = _cong_grid->getMinMaxX(inst);
+        std::pair<int, int> pair_y = _cong_grid->getMinMaxY(inst);
+        if (pair_x.second >= _cong_grid->get_bin_cnt_x()) {
+          pair_x.second = _cong_grid->get_bin_cnt_x() - 1;
+        }
+        if (pair_y.second >= _cong_grid->get_bin_cnt_y()) {
+          pair_y.second = _cong_grid->get_bin_cnt_y() - 1;
+        }
+        if (pair_x.first < 0) {
+          pair_x.first = 0;
+        }
+        if (pair_y.first < 0) {
+          pair_y.first = 0;
+        }
+        for (int i = pair_x.first; i <= pair_x.second; ++i) {
+          for (int j = pair_y.first; j <= pair_y.second; ++j) {
+            CongBin* bin = _cong_grid->get_bin_list()[j * _cong_grid->get_bin_cnt_x() + i];
+            double overlap_area = getOverlapArea(bin, inst);
+            double density = overlap_area / bin->get_area();
+            if (density > 0.2){
+              bin->set_macro_channel(true);
+            }
+          }
+        }
+      }
+  }
+}
+
+void CongestionEval::evalCellHierarchy(const std::string& plot_path, int level, int forward)
+{
+  std::ofstream file(plot_path);
+  file << "Group,LX,LY,Width,Height\n";
+  for (auto& inst : _cong_inst_list) {
+      if (inst->get_status() == INSTANCE_STATUS::kPlaced || (inst->get_loc_type() == INSTANCE_LOC_TYPE::kNormal && 
+      inst->get_status() == INSTANCE_STATUS::kFixed && inst->get_height() > _cong_grid->get_row_height())) {
+        std::string hier = inst->get_name();
+        std::string result = getHierByLevel(hier, level, forward);
+        file << result << "," << inst->get_lx() << "," << inst->get_ly() << ","
+             << inst->get_width() << "," << inst->get_height() << "\n";
+      }
+  }
+  file.close();
+}
+
+void CongestionEval::evalMacroHierarchy(const std::string& plot_path, int level, int forward)
+{
+  std::ofstream file(plot_path);
+  file << "Group,LX,LY,Width,Height\n";
+  for (auto& inst : _cong_inst_list) {
+      if (inst->get_loc_type() == INSTANCE_LOC_TYPE::kNormal && inst->get_status() == INSTANCE_STATUS::kFixed && inst->get_height() > _cong_grid->get_row_height()) {
+        std::string hier = inst->get_name();
+        std::string result = getHierByLevel(hier, level, forward);
+        file << result << "," << inst->get_lx() << "," << inst->get_ly() << ","
+             << inst->get_width() << "," << inst->get_height() << "\n";
+      }
+  }
+  file.close();
+}
+
+
+
+// 用于分割字符串的private函数
+std::vector<std::string> CongestionEval::splitHier(const std::string& str, char delimiter) {
+    std::vector<std::string> tokens;
+    std::string token;
+    size_t start = 0, end = 0;
+
+    while ((end = str.find(delimiter, start)) != std::string::npos) {
+        token = str.substr(start, end - start);
+        tokens.push_back(token);
+        start = end + 1;
+    }
+    tokens.push_back(str.substr(start));
+    return tokens;
+}
+
+// 实现根据level截取层次
+std::string CongestionEval::getHierByLevel(const std::string& hier, int level, int forward) {
+    std::vector<std::string> parts = splitHier(hier, '/');
+    if (level >= parts.size()) {
+        // 如果 level 超过了路径部分的数量，返回完整路径
+        return hier;
+    }
+    
+    std::string result;
+    if (forward == 0) {
+      // 从后往前截取，例如 A/B/C，当level = 0, forward = 0时，截取值为C
+      for (size_t i = 0; i < parts.size() - level; ++i) {
+          result += parts[i];
+          if (i < parts.size() - level - 1) {
+              result += '/';
+          }
+      }
+    } else {
+        // 从前往后截取，例如 A/B/C，当level = 0, forward = 1时，截取值为A
+        for (size_t i = 0; i <= level; ++i) {
+            result += parts[i];
+            if (i < level) {
+                result += '/';
+            }
+        }
+    }
+    return result;
+}
+
 
 }  // namespace eval

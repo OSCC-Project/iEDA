@@ -26,6 +26,16 @@ int64_t eval_total_wirelength(int wirelength_type);
 
 // congestion evaluation
 void init_cong_eval(int bin_cnt_x, int bin_cnt_y);
+void eval_macro_density();
+void eval_macro_pin_density();
+void eval_cell_pin_density();
+void eval_macro_margin();
+void eval_macro_channel(float die_size_ratio = 0.5);
+void eval_continuous_white_space();
+void eval_cell_hierarchy(const std::string& plot_path , int level = 1, int forward = 1);
+void eval_macro_hierarchy(const std::string& plot_path,  int level = 1, int forward = 1);
+
+
 void eval_inst_density(int inst_status, int eval_flip_flop = 0);
 void eval_pin_density(int inst_status, int level = 0);
 void eval_rudy_cong(int rudy_type, int direction);
