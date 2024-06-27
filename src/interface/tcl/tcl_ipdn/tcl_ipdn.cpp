@@ -396,7 +396,7 @@ unsigned TclPdnConnectMacro::exec()
   TclOption* tcl_ground_pins = getOptionOrArg("-ground_pins");
   TclOption* tcl_orient = getOptionOrArg("-orient");
 
-  Str str = Str();
+  ieda::Str str = ieda::Str();
 
   std::string pin_layer = tcl_pin_layer->getStringVal();
   std::string pdn_layer = tcl_pdn_layer->getStringVal();
@@ -440,7 +440,7 @@ unsigned TclPdnConnectIOPin::exec()
 
   TclOption* point_list = getOptionOrArg("-point_list");
   TclOption* layer_name = getOptionOrArg("-layer");
-  Str str = Str();
+  ieda::Str str = ieda::Str();
   string layer = layer_name->getStringVal();
   vector<double> points = str.splitDouble(point_list->getStringVal(), " ");
 
@@ -491,7 +491,7 @@ unsigned TclPdnConnectStripe::exec()
   TclOption* tcl_layer = getOptionOrArg("-layer");
   TclOption* tcl_witdh = getOptionOrArg("-width");
 
-  Str str = Str();
+  ieda::Str str = ieda::Str();
 
   std::vector<double> points = str.splitDouble(tcl_points->getStringVal(), " ");
   std::string net_name = tcl_net->getStringVal();
@@ -586,7 +586,7 @@ unsigned TclPdnAddSegmentStripe::exec()
   TclOption* tcl_via_width = getOptionOrArg("-via_width");
   TclOption* tcl_via_height = getOptionOrArg("-via_height");
 
-  Str str = Str();
+  ieda::Str str = ieda::Str();
 
   auto point_list_str = tcl_point_list->getStringVal();
   if (point_list_str != nullptr) {

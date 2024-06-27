@@ -14,82 +14,70 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
+
 #pragma once
 
-#include "Point.h"
-#include "ids.hpp"
 #include "DbInterface.h"
+#include "Point.h"
+#include "define.h"
 
 namespace ito {
+using ista::LibCell;
 using ista::Pin;
 using ista::StaSeqPathData;
-using ista::LibertyCell;
 
 class BufferedOption;
 
-using BufferedOptionSeq = vector<BufferedOption*>;
+using BufferedOptionSeq = vector<BufferedOption *>;
 
-enum class BufferedOptionType { kBuffer, kJunction, kLoad, kWire };
+enum class BufferedOptionType { kBuffer, kBranch, kLoad, kWire };
 
 class BufferedOption {
  public:
-  BufferedOption(BufferedOptionType type,
-                 Point location,
-                 float cap,
-                 ista::Pin *load_pin,
-                 Delay required_delay,
-                 LibertyCell *buffer,
-                 BufferedOption *left,
-                 BufferedOption *right,
-                 double req)
-   : _type(type),
-     _location(location),
-     _cap(cap),
-     _load_pin(load_pin),
-     _required_delay(required_delay),
-     _buffer_cell(buffer),
-     _left(left),
-     _right(right),
-     _req(req) {
-  }
+  BufferedOption(BufferedOptionType option_type) : _option_type(option_type) {}
   ~BufferedOption() = default;
 
-  BufferedOptionType get_type() const { return _type; }
+  BufferedOptionType get_type() const { return _option_type; }
 
   float get_cap() const { return _cap; }
+  void set_cap(float cap) { _cap = cap; }
 
   double get_req() { return _req; }
+  void set_req(double req) { _req = req; }
 
-  Required get_required_arrival_time();
+  TORequired get_required_arrival_time();
 
-  Delay get_required_delay() const { return _required_delay; }
+  TODelay get_delay_required() const { return _delay_required; }
+  void set_delay_required(TODelay required_delay) { _delay_required = required_delay; }
 
   Point get_location() const { return _location; }
+  void set_location(Point loc) { _location = loc; }
 
-  LibertyCell *get_buffer_cell() const { return _buffer_cell; }
+  LibCell* get_lib_cell_size() const { return _lib_cell_size; }
+  void set_lib_cell_size(LibCell* cell) { _lib_cell_size = cell; }
 
-  Pin *get_load_pin() const { return _load_pin; }
-  // junction  left
-  // buffer    wire
-  // wire      end of wire
-  BufferedOption *get_left() const { return _left; }
-  // junction  right
-  BufferedOption *get_right() const { return _right; }
+  Pin* get_pin_loaded() const { return _pin_loaded; }
+  void set_pin_loaded(Pin* pin) { _pin_loaded = pin; }
+  BufferedOption* get_left() const { return _left; }
+  void set_left(BufferedOption* left) { _left = left; }
+
+  BufferedOption* get_right() const { return _left; }
+  void set_right(BufferedOption* right) { _right = right; }
 
   void printBuffered(int level);
   void printTree(int level);
- private:
-  BufferedOptionType _type;
-  Point _location;
-  // Capacitance looking into Net.
-  float _cap = 0.0;
-  // Type load.
-  Pin *_load_pin = nullptr;
 
-  // Delay from this BufferedOption to the load.
-  Delay _required_delay = 0.0;
-  // Type buffer.
-  LibertyCell *_buffer_cell = nullptr;
+ private:
+  BufferedOptionType _option_type;
+  Point              _location;
+
+  float _cap = 0.0;
+
+  Pin *_pin_loaded = nullptr;
+
+  TODelay _delay_required = 0.0;
+
+  LibCell    *_lib_cell_size = nullptr;
   BufferedOption *_left = nullptr;
   BufferedOption *_right = nullptr;
 

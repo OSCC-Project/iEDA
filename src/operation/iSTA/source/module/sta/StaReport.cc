@@ -812,12 +812,12 @@ std::unique_ptr<StaReportTable> StaReportTrans::createReportTable(
 
   (*report_tbl) << TABLE_HEAD;
   /* Fill each cell with operator[] */
-  (*report_tbl)[0][0] = "Net / InstPin";
-  (*report_tbl)[0][1] = "MaxTranTime";
-  (*report_tbl)[0][2] = "TranTime";
-  (*report_tbl)[0][3] = "TranSlack";
-  (*report_tbl)[0][4] = "CellPort";
-  (*report_tbl)[0][5] = "Remark";
+  (*report_tbl)[0][0] = "Net / Pin";
+  (*report_tbl)[0][1] = "MaxSlewTime";
+  (*report_tbl)[0][2] = "SlewTime";
+  (*report_tbl)[0][3] = "SlewSlack";
+  (*report_tbl)[0][4] = "LibCellPort";
+  (*report_tbl)[0][5] = "Note";
 
   (*report_tbl) << TABLE_ENDLINE;
 
@@ -927,10 +927,10 @@ unsigned StaReportTrans::operator()(Sta* ista) {
       cell_port_name += port_name;
     }
 
-    std::string remark = (rise_slack && (*rise_slack < 0.0)) ? "R" : "";
+    std::string note = (rise_slack && (*rise_slack < 0.0)) ? "R" : "";
 
     (*report_tbl) << vertex_name << limit_str << slew_str << slack_str
-                  << cell_port_name << remark << TABLE_ENDLINE;
+                  << cell_port_name << note << TABLE_ENDLINE;
   };
 
   unsigned i = 0;
@@ -979,12 +979,12 @@ std::unique_ptr<StaReportTable> StaReportCap::createReportTable(
 
   (*report_tbl) << TABLE_HEAD;
   /* Fill each cell with operator[] */
-  (*report_tbl)[0][0] = "Net / InstPin";
-  (*report_tbl)[0][1] = "MaxCap";
-  (*report_tbl)[0][2] = "Cap";
-  (*report_tbl)[0][3] = "CapSlack";
-  (*report_tbl)[0][4] = "CellPort";
-  (*report_tbl)[0][5] = "Remark";
+  (*report_tbl)[0][0] = "Net / Pin";
+  (*report_tbl)[0][1] = "MaxCapacitance";
+  (*report_tbl)[0][2] = "Capacitance";
+  (*report_tbl)[0][3] = "CapacitanceSlack";
+  (*report_tbl)[0][4] = "LibCellPort";
+  (*report_tbl)[0][5] = "Note";
 
   (*report_tbl) << TABLE_ENDLINE;
 
@@ -1105,10 +1105,10 @@ unsigned StaReportCap::operator()(Sta* ista) {
       cell_port_name += port_name;
     }
 
-    std::string remark = (rise_slack && (*rise_slack < 0.0)) ? "R" : "";
+    std::string note = (rise_slack && (*rise_slack < 0.0)) ? "R" : "";
 
     (*report_tbl) << vertex_name << limit_str << cap_str << slack_str
-                  << cell_port_name << remark << TABLE_ENDLINE;
+                  << cell_port_name << note << TABLE_ENDLINE;
   };
 
   unsigned i = 0;
@@ -1155,12 +1155,12 @@ std::unique_ptr<StaReportTable> StaReportFanout::createReportTable(
 
   (*report_tbl) << TABLE_HEAD;
   /* Fill each cell with operator[] */
-  (*report_tbl)[0][0] = "Net / InstPin";
+  (*report_tbl)[0][0] = "Net / Pin";
   (*report_tbl)[0][1] = "MaxFanout";
-  (*report_tbl)[0][2] = "FanLoad";
-  (*report_tbl)[0][3] = "FanLoadSlack";
-  (*report_tbl)[0][4] = "CellPort";
-  (*report_tbl)[0][5] = "Remark";
+  (*report_tbl)[0][2] = "Fanout";
+  (*report_tbl)[0][3] = "FanoutSlack";
+  (*report_tbl)[0][4] = "LibCellPort";
+  (*report_tbl)[0][5] = "Note";
 
   (*report_tbl) << TABLE_ENDLINE;
 
@@ -1255,10 +1255,10 @@ unsigned StaReportFanout::operator()(Sta* ista) {
       cell_port_name += port_name;
     }
 
-    std::string remark = (fanout_slack && (*fanout_slack < 0.0)) ? "R" : "";
+    std::string note = (fanout_slack && (*fanout_slack < 0.0)) ? "R" : "";
 
     (*report_tbl) << vertex_name << limit_str << fanout_str << slack_str
-                  << cell_port_name << remark << TABLE_ENDLINE;
+                  << cell_port_name << note << TABLE_ENDLINE;
   };
 
   unsigned i = 0;

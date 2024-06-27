@@ -54,11 +54,11 @@ void PinAccessor::access()
   RTLOG.info(Loc::current(), "Starting...");
   PAModel pa_model = initPAModel();
   initAccessPointList(pa_model);
-  buildAccessPointList(pa_model);
-  uploadAccessPoint(pa_model);
+  uploadAccessPointList(pa_model);
   // debugPlotPAModel(pa_model, "before_eliminate");
   buildConflictGroupList(pa_model);
   eliminateConflict(pa_model);
+  uploadKeyAccessPoint(pa_model);
   updatePAModel(pa_model);
   // debugPlotPAModel(pa_model, "after_eliminate");
   updateSummary(pa_model);
@@ -355,14 +355,20 @@ std::vector<AccessPoint> PinAccessor::getAccessPointListByShapeCenter(int32_t pi
   return access_point_list;
 }
 
-void PinAccessor::buildAccessPointList(PAModel& pa_model)
+void PinAccessor::uploadAccessPointList(PAModel& pa_model)
 {
+  Monitor monitor;
+  RTLOG.info(Loc::current(), "Starting...");
+
   ScaleAxis& gcell_axis = RTDM.getDatabase().get_gcell_axis();
+  Die& die = RTDM.getDatabase().get_die();
 
-  std::vector<PANet>& pa_net_list = pa_model.get_pa_net_list();
-
-#pragma omp parallel for
-  for (PANet& pa_net : pa_net_list) {
+  for (auto& [net_idx, access_point_set] : RTDM.getNetAccessPointMap(die)) {
+    for (AccessPoint* access_point : access_point_set) {
+      RTDM.updateAccessPointToGCellMap(ChangeType::kDel, net_idx, access_point);
+    }
+  }
+  for (PANet& pa_net : pa_model.get_pa_net_list()) {
     std::vector<PlanarCoord> coord_list;
     for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
       for (AccessPoint& access_point : pa_pin.get_access_point_list()) {
@@ -375,21 +381,11 @@ void PinAccessor::buildAccessPointList(PAModel& pa_model)
     for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
       for (AccessPoint& access_point : pa_pin.get_access_point_list()) {
         access_point.set_grid_coord(RTUTIL.getGCellGridCoordByBBox(access_point.get_real_coord(), gcell_axis, bounding_box));
-      }
-    }
-  }
-}
-
-void PinAccessor::uploadAccessPoint(PAModel& pa_model)
-{
-  // 更新到gcell_map
-  for (PANet& pa_net : pa_model.get_pa_net_list()) {
-    for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
-      for (AccessPoint& access_point : pa_pin.get_access_point_list()) {
         RTDM.updateAccessPointToGCellMap(ChangeType::kAdd, pa_net.get_net_idx(), &access_point);
       }
     }
   }
+  RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
 void PinAccessor::buildConflictGroupList(PAModel& pa_model)
@@ -598,6 +594,36 @@ std::vector<ConflictAccessPoint> PinAccessor::getBestPointList(ConflictGroup& co
   return curr_ap_list;
 }
 
+void PinAccessor::uploadKeyAccessPoint(PAModel& pa_model)
+{
+  Monitor monitor;
+  RTLOG.info(Loc::current(), "Starting...");
+
+  ScaleAxis& gcell_axis = RTDM.getDatabase().get_gcell_axis();
+  Die& die = RTDM.getDatabase().get_die();
+
+  for (auto& [net_idx, access_point_set] : RTDM.getNetAccessPointMap(die)) {
+    for (AccessPoint* access_point : access_point_set) {
+      RTDM.updateAccessPointToGCellMap(ChangeType::kDel, net_idx, access_point);
+    }
+  }
+  for (PANet& pa_net : pa_model.get_pa_net_list()) {
+    std::vector<PlanarCoord> coord_list;
+    for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
+      coord_list.push_back(pa_pin.get_key_access_point().get_real_coord());
+    }
+    BoundingBox& bounding_box = pa_net.get_bounding_box();
+    bounding_box.set_real_rect(RTUTIL.getBoundingBox(coord_list));
+    bounding_box.set_grid_rect(RTUTIL.getOpenGCellGridRect(bounding_box.get_real_rect(), gcell_axis));
+    for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
+      AccessPoint& key_access_point = pa_pin.get_key_access_point();
+      key_access_point.set_grid_coord(RTUTIL.getGCellGridCoordByBBox(key_access_point.get_real_coord(), gcell_axis, bounding_box));
+      RTDM.updateAccessPointToGCellMap(ChangeType::kAdd, pa_net.get_net_idx(), &key_access_point);
+    }
+  }
+  RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
+}
+
 void PinAccessor::updatePAModel(PAModel& pa_model)
 {
   Monitor monitor;
@@ -612,26 +638,28 @@ void PinAccessor::updatePAModel(PAModel& pa_model)
     }
   }
   for (PANet& pa_net : pa_model.get_pa_net_list()) {
-    BoundingBox bounding_box;
-    {
-      std::vector<PlanarCoord> coord_list;
-      for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
-        coord_list.push_back(pa_pin.get_key_access_point().get_real_coord());
-      }
-      bounding_box.set_real_rect(RTUTIL.getBoundingBox(coord_list));
-      bounding_box.set_grid_rect(RTUTIL.getOpenGCellGridRect(bounding_box.get_real_rect(), gcell_axis));
+    Net* origin_net = pa_net.get_origin_net();
+    if (origin_net->get_net_idx() != pa_net.get_net_idx()) {
+      RTLOG.error(Loc::current(), "The net idx is not equal!");
     }
+    std::vector<PlanarCoord> coord_list;
     for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
-      Pin& origin_pin = pa_net.get_origin_net()->get_pin_list()[pa_pin.get_pin_idx()];
+      coord_list.push_back(pa_pin.get_key_access_point().get_real_coord());
+    }
+    BoundingBox& bounding_box = pa_net.get_bounding_box();
+    bounding_box.set_real_rect(RTUTIL.getBoundingBox(coord_list));
+    bounding_box.set_grid_rect(RTUTIL.getOpenGCellGridRect(bounding_box.get_real_rect(), gcell_axis));
+    origin_net->set_bounding_box(bounding_box);
+    for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
+      Pin& origin_pin = origin_net->get_pin_list()[pa_pin.get_pin_idx()];
       if (origin_pin.get_pin_idx() != pa_pin.get_pin_idx()) {
         RTLOG.error(Loc::current(), "The pin idx is not equal!");
       }
-      AccessPoint& access_point = origin_pin.get_key_access_point();
-      access_point = pa_pin.get_key_access_point();
-      access_point.set_grid_coord(RTUTIL.getGCellGridCoordByBBox(access_point.get_real_coord(), gcell_axis, bounding_box));
-      RTDM.updateAccessPointToGCellMap(ChangeType::kAdd, pa_net.get_net_idx(), &access_point);
+      AccessPoint& key_access_point = pa_pin.get_key_access_point();
+      key_access_point.set_grid_coord(RTUTIL.getGCellGridCoordByBBox(key_access_point.get_real_coord(), gcell_axis, bounding_box));
+      origin_pin.set_key_access_point(key_access_point);
+      RTDM.updateAccessPointToGCellMap(ChangeType::kAdd, pa_net.get_net_idx(), &origin_pin.get_key_access_point());
     }
-    pa_net.get_origin_net()->set_bounding_box(bounding_box);
   }
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }

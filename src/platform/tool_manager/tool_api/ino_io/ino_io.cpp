@@ -20,6 +20,7 @@
 #include "flow_config.h"
 #include "iNO/api/NoApi.hpp"
 #include "idm.h"
+#include "usage/usage.hh"
 
 namespace iplf {
 NoIO* NoIO::_instance = nullptr;
@@ -43,7 +44,6 @@ bool NoIO::runNOFixFanout(std::string config)
   /// reset lib & sdc
   resetConfig(NoApiInst.get_no_config());
 
-  // ToApiInst.iTODataInit(dmInst->get_idb_builder(), nullptr);
   NoApiInst.iNODataInit(dmInst->get_idb_builder(), nullptr);
   NoApiInst.fixFanout();
 

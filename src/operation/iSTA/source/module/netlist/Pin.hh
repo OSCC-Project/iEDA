@@ -35,7 +35,7 @@
 namespace ista {
 class Net;
 class Instance;
-class LibertyPort;
+class LibPort;
 class PinBus;
 
 /**
@@ -46,7 +46,7 @@ class Pin : public DesignObject {
  public:
   using mode_trans = std::pair<AnalysisMode, TransType>;
 
-  explicit Pin(const char* name, LibertyPort* cell_port);
+  explicit Pin(const char* name, LibPort* cell_port);
   Pin(Pin&& other) noexcept;
   Pin& operator=(Pin&& rhs) noexcept;
   ~Pin() override = default;
@@ -70,8 +70,8 @@ class Pin : public DesignObject {
 
   Instance* get_own_instance() override { return _own_instance; }
 
-  void set_cell_port(LibertyPort* cell_port) { _cell_port = cell_port; }
-  LibertyPort* get_cell_port() { return _cell_port; }
+  void set_cell_port(LibPort* cell_port) { _cell_port = cell_port; }
+  LibPort* get_cell_port() { return _cell_port; }
 
   void set_pin_bus(PinBus* pin_bus) { _pin_bus = pin_bus; }
   auto* get_pin_bus() { return _pin_bus; }
@@ -80,7 +80,7 @@ class Pin : public DesignObject {
 
  private:
   Net* _net = nullptr;                //!< The pin connected net.
-  LibertyPort* _cell_port = nullptr;  //!< The pin corresponding to cell port.
+  LibPort* _cell_port = nullptr;      //!< The pin corresponding to cell port.
   Instance* _own_instance = nullptr;  //!< The pin owned by the instance.
   PinBus* _pin_bus = nullptr;         //!< The pin owned by the pin bus.
 

@@ -14,15 +14,14 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
+
 #pragma once
 
 #include <set>
 #include <string>
+#include <unordered_set>
 #include <vector>
 
-#include <unordered_set>
-
-#include "DbInterface.h"
 #include "RoutingTree.h"
 #include "Utility.h"
 
@@ -30,42 +29,31 @@ namespace ito {
 using ito::dbuToMeters;
 using ito::metersToDbu;
 
-class EstimateParasitics {
+#define toEvalInst EstimateParasitics::get_instance()
+class EstimateParasitics
+{
  public:
-  EstimateParasitics(DbInterface *dbintreface);
-
-  EstimateParasitics(TimingEngine *timing_engine, int dbu);
-  EstimateParasitics() = default;
-  ~EstimateParasitics() = default;
+  static EstimateParasitics* get_instance();
+  static void destroy_instance();
 
   void excuteParasiticsEstimate();
-
   void estimateAllNetParasitics();
-
-  void estimateNetParasitics(Net *net);
-
-  void parasiticsInvalid(Net *net);
-
-  void estimateInvalidNetParasitics(DesignObject *drvr_pin_port, Net *net);
-
-  void excuteWireParasitic(DesignObject *drvr_pin_port, Net *curr_net,
-                           TimingDBAdapter *db_adapter);
-
-  std::unordered_set<ista::Net *> get_parasitics_invalid_net() {
-    return _parasitics_invalid;
-  }
+  void estimateNetParasitics(Net* net);
+  void invalidNetRC(Net* net);
+  void estimateInvalidNetParasitics(Net* net, DesignObject* driver_pin_port);
+  void excuteWireParasitic(Net* curr_net);
+  std::unordered_set<ista::Net*> get_parasitics_invalid_net() { return _parasitics_invalid_nets; }
 
  private:
-  void RctNodeConnectPin(Net *net, int index, RctNode *rcnode, RoutingTree *tree);
-
-  DbInterface     *_db_interface = nullptr;
-  TimingEngine    *_timing_engine = nullptr;
-  TimingDBAdapter *_db_adapter = nullptr;
-  int              _dbu;
-
-  std::unordered_set<ista::Net *> _parasitics_invalid;
-
+  static EstimateParasitics* _instance;
   bool _have_estimated_parasitics = false;
+  std::unordered_set<ista::Net*> _parasitics_invalid_nets;
+
+  EstimateParasitics();
+  ~EstimateParasitics() = default;
+
+  void RctNodeConnectPins(int index1, RctNode* node1, int index2, RctNode* node2, Net* net, RoutingTree* tree);
+  void updateParastic(Net* curr_net, int index1, int index2, int length_per_wire, RoutingTree* tree);
 };
 
-} // namespace ito
+}  // namespace ito

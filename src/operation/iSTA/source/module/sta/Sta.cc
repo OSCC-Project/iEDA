@@ -22,6 +22,8 @@
  * @date 2020-11-27
  */
 
+#include "Sta.hh"
+
 #include <algorithm>
 #include <filesystem>
 #include <map>
@@ -31,7 +33,6 @@
 #include <tuple>
 #include <utility>
 
-#include "Sta.hh"
 #include "StaAnalyze.hh"
 #include "StaApplySdc.hh"
 #include "StaBuildClockTree.hh"
@@ -54,7 +55,7 @@
 #include "ThreadPool/ThreadPool.h"
 #include "include/Version.hh"
 #include "json/json.hpp"
-#include "liberty/Liberty.hh"
+#include "liberty/Lib.hh"
 #include "log/Log.hh"
 #include "netlist/NetlistWriter.hh"
 #include "netlist/Pin.hh"
@@ -70,6 +71,16 @@
 // }
 
 namespace ista {
+
+static bool IsFileExists(const char *name) {
+  std::ifstream f(name);
+  bool is_exit = f.good();
+  if (!is_exit) {
+    LOG_WARNING << "Can't read file:" << name << ".";
+  }
+  f.close();
+  return is_exit;
+}
 
 Sta *Sta::_sta = nullptr;
 
@@ -132,42 +143,21 @@ SdcConstrain *Sta::getConstrain() {
   return _constrains.get();
 }
 
-// /**
-//  * @brief Init the script engine for sdc tcl file interpretion.
-//  *
-//  */
-// void Sta::initScriptEngine() {
-//   ScriptEngine *the_script_engine = ScriptEngine::getOrCreateInstance();
-//   Tcl_Interp *the_interp = the_script_engine->get_interp();
-
-//   Tcl_Init(the_interp);
-//   // registe the swig tcl cmd
-//   Ista_Init(the_interp);
-
-//   // we direct source the tcl file now, in the future we need
-//   // encode the tcl file to code memory TODO fix me
-//   int result = the_script_engine->evalScriptFile(
-//       "/home/smtao/peda/iEDA/src/iSTA/cmd/sdc.tcl");
-//   DLOG_FATAL_IF(result == TCL_ERROR);
-
-//   result = the_script_engine->evalString("namespace import ista::*");
-//   DLOG_FATAL_IF(result == TCL_ERROR);
-// }
-
 /**
- * @brief Read the design verilog file.
+ * @brief the read design verilog netlist file.
  *
  * @param verilog_file
  * @return unsigned
  */
-unsigned Sta::readDesign(const char *verilog_file) {
-  readVerilog(verilog_file);
+unsigned Sta::readDesignWithRustParser(const char *verilog_file) {
+  if (!IsFileExists(verilog_file)) {
+    return 0;
+  }
+  readVerilogWithRustParser(verilog_file);
   auto &top_module_name = get_top_module_name();
-  linkDesign(top_module_name.c_str());
+  linkDesignWithRustParser(top_module_name.c_str());
   return 1;
 }
-
-unsigned Sta::readDesignWithRustParser(const char *file_name) { return 1; }
 
 /**
  * @brief read the sdc file.
@@ -176,6 +166,9 @@ unsigned Sta::readDesignWithRustParser(const char *file_name) { return 1; }
  * @return unsigned
  */
 unsigned Sta::readSdc(const char *sdc_file) {
+  if (!IsFileExists(sdc_file)) {
+    return 0;
+  }
   LOG_INFO << "read sdc " << sdc_file << " start ";
   Sta::initSdcCmd();
 
@@ -201,6 +194,9 @@ unsigned Sta::readSdc(const char *sdc_file) {
  * @return unsigned
  */
 unsigned Sta::readSpef(const char *spef_file) {
+  if (!IsFileExists(spef_file)) {
+    return 0;
+  }
   StaGraph &the_graph = get_graph();
 
   StaBuildRCTree func(spef_file, DelayCalcMethod::kElmore);
@@ -216,6 +212,9 @@ unsigned Sta::readSpef(const char *spef_file) {
  * @return unsigned
  */
 unsigned Sta::readAocv(const char *aocv_file) {
+  if (!IsFileExists(aocv_file)) {
+    return 0;
+  }
   AocvReader aocv_reader(aocv_file);
   auto load_aocv = aocv_reader.readAocvLibrary();
   addAocv(std::move(load_aocv));
@@ -229,6 +228,15 @@ unsigned Sta::readAocv(const char *aocv_file) {
  * @return unsigned
  */
 unsigned Sta::readAocv(std::vector<std::string> &aocv_files) {
+  bool is_exit = true;
+  for (auto &aocv_file : aocv_files) {
+    if (!IsFileExists(aocv_file.c_str())) {
+      is_exit = false;
+    }
+  }
+  if (!is_exit) {
+    return 0;
+  }
   LOG_INFO << "load aocv start";
 
 #if 0
@@ -260,7 +268,10 @@ unsigned Sta::readAocv(std::vector<std::string> &aocv_files) {
  * @return unsigned
  */
 unsigned Sta::readLiberty(const char *lib_file) {
-  Liberty lib;
+  if (!IsFileExists(lib_file)) {
+    return 0;
+  }
+  Lib lib;
   auto load_lib = lib.loadLibertyWithRustParser(lib_file);
   addLib(std::move(load_lib));
 
@@ -274,6 +285,15 @@ unsigned Sta::readLiberty(const char *lib_file) {
  * @return unsigned
  */
 unsigned Sta::readLiberty(std::vector<std::string> &lib_files) {
+  bool is_exit = true;
+  for (auto &lib_file : lib_files) {
+    if (!IsFileExists(lib_file.c_str())) {
+      is_exit = false;
+    }
+  }
+  if (!is_exit) {
+    return 0;
+  }
   LOG_INFO << "load lib start";
 
 #if 0
@@ -303,345 +323,16 @@ unsigned Sta::readLiberty(std::vector<std::string> &lib_files) {
  *
  * @param verilog_file
  */
-void Sta::readVerilogWithRustParser(const char *verilog_file) {
+unsigned Sta::readVerilogWithRustParser(const char *verilog_file) {
+  if (!IsFileExists(verilog_file)) {
+    return 0;
+  }
   LOG_INFO << "read verilog file " << verilog_file << " start";
   bool is_ok = _rust_verilog_reader.readVerilog(verilog_file);
   _rust_verilog_file_ptr = _rust_verilog_reader.get_verilog_file_ptr();
-  LOG_FATAL_IF(!is_ok) << "read verilog file " << verilog_file << " failed.";
+  LOG_WARNING_IF(!is_ok) << "read verilog file " << verilog_file << " failed.";
   LOG_INFO << "read verilog end";
-}
-
-/**
- * @brief Read the verilog file.
- *
- * @param verilog_file
- */
-void Sta::readVerilog(const char *verilog_file) {
-  LOG_INFO << "read verilog file " << verilog_file << " start";
-  bool is_ok = _verilog_reader.read(verilog_file);
-  LOG_FATAL_IF(!is_ok) << "read verilog file " << verilog_file << " failed.";
-
-  LOG_INFO << "read verilog end";
-}
-
-/**
- * @brief find the module.
- *
- * @param module_name
- * @return VerilogModule*
- */
-VerilogModule *Sta::findModule(const char *module_name) {
-  auto found_module = std::find_if(
-      std::begin(_verilog_modules), std::end(_verilog_modules),
-      [=](std::unique_ptr<VerilogModule> &verilog_module) -> bool {
-        return Str::equal(verilog_module->get_module_name(), module_name);
-      });
-
-  if (found_module != _verilog_modules.end()) {
-    return found_module->get();
-  }
-  return nullptr;
-}
-
-/**
- * @brief Link the design file to design netlist .
- *
- */
-void Sta::linkDesign(const char *top_cell_name) {
-  LOG_INFO << "link design " << top_cell_name << " start";
-
-  _verilog_reader.flattenModule(top_cell_name);
-  auto &verilog_modules = _verilog_reader.get_verilog_modules();
-  _verilog_modules = std::move(verilog_modules);
-
-  _top_module = findModule(top_cell_name);
-  LOG_FATAL_IF(!_top_module) << "top module not found.";
-  set_design_name(_top_module->get_module_name());
-
-  auto &top_module_stmts = _top_module->get_module_stmts();
-  Netlist &design_netlist = _netlist;
-  design_netlist.set_name(_top_module->get_module_name());
-
-  /*The verilog decalre statement process lookup table.*/
-  std::map<VerilogDcl::DclType,
-           std::function<DesignObject *(VerilogDcl::DclType, const char *)>>
-      dcl_process = {
-          {VerilogDcl::DclType::kInput,
-           [&design_netlist](VerilogDcl::DclType dcl_type,
-                             const char *dcl_name) {
-             Port in_port(dcl_name, PortDir::kIn);
-             auto &ret_val = design_netlist.addPort(std::move(in_port));
-             return &ret_val;
-           }},
-          {VerilogDcl::DclType::kOutput,
-           [&design_netlist](VerilogDcl::DclType dcl_type,
-                             const char *dcl_name) {
-             Port out_port(dcl_name, PortDir::kOut);
-             auto &ret_val = design_netlist.addPort(std::move(out_port));
-             return &ret_val;
-           }},
-          {VerilogDcl::DclType::kInout,
-           [&design_netlist](VerilogDcl::DclType dcl_type,
-                             const char *dcl_name) {
-             Port out_port(dcl_name, PortDir::kInOut);
-             auto &ret_val = design_netlist.addPort(std::move(out_port));
-             return &ret_val;
-           }},
-          {VerilogDcl::DclType::kWire,
-           [&design_netlist](VerilogDcl::DclType dcl_type,
-                             const char *dcl_name) {
-             Net net(dcl_name);
-             auto &ret_val = design_netlist.addNet(std::move(net));
-             return &ret_val;
-           }}};
-
-  /*process the verilog declare statement.*/
-  auto process_dcl_stmt = [&dcl_process, &design_netlist](auto *dcl_stmt) {
-    auto dcl_type = dcl_stmt->get_dcl_type();
-    const auto *dcl_name = dcl_stmt->get_dcl_name();
-    auto dcl_range = dcl_stmt->get_range();
-
-    if (!dcl_range) {
-      if (dcl_process.contains(dcl_type)) {
-        dcl_process[dcl_type](dcl_type, dcl_name);
-      } else {
-        LOG_INFO << "not support the declaration " << dcl_name;
-      }
-    } else {
-      auto bus_range = *(dcl_range);
-      for (int index = bus_range.second; index <= bus_range.first; index++) {
-        // for port or wire bus, we split to one bye one port.
-        const char *one_name = Str::printf("%s[%d]", dcl_name, index);
-        if (dcl_process.contains(dcl_type)) {
-          auto *design_obj = dcl_process[dcl_type](dcl_type, one_name);
-          if (design_obj->isPort()) {
-            auto *port = dynamic_cast<Port *>(design_obj);
-            if (index == bus_range.second) {
-              unsigned bus_size = bus_range.first + 1;
-              PortBus port_bus(dcl_name, bus_range.first, bus_range.second,
-                               bus_size, port->get_port_dir());
-              port_bus.addPort(index, port);
-              auto &ret_val = design_netlist.addPortBus(std::move(port_bus));
-              port->set_port_bus(&ret_val);
-            } else {
-              auto *found_port_bus = design_netlist.findPortBus(dcl_name);
-              found_port_bus->addPort(index, port);
-              port->set_port_bus(found_port_bus);
-            }
-          }
-
-        } else {
-          LOG_INFO << "not support the declaration " << one_name;
-        }
-      }
-    }
-  };
-
-  for (auto &stmt : top_module_stmts) {
-    if (stmt->isVerilogDclsStmt()) {
-      auto *dcls_stmt = dynamic_cast<VerilogDcls *>(stmt.get());
-      auto &dcls = dcls_stmt->get_verilog_dcls();
-      for (auto &dcl_stmt : dcls) {
-        process_dcl_stmt(dcl_stmt.get());
-      }
-    } else if (stmt->isVerilogDclStmt()) {
-      auto *dcl_stmt = dynamic_cast<VerilogDcl *>(stmt.get());
-      process_dcl_stmt(dcl_stmt);
-    } else if (stmt->isModuleInstStmt()) {
-      auto *inst_stmt = dynamic_cast<VerilogInst *>(stmt.get());
-      const char *liberty_cell_name = inst_stmt->get_cell_name();
-      auto &port_connections = inst_stmt->get_port_connections();
-      const char *inst_name = inst_stmt->get_inst_name();
-
-      auto *inst_cell = findLibertyCell(liberty_cell_name);
-      if (!inst_cell) {
-        LOG_INFO << "liberty cell " << liberty_cell_name << " is not exist.";
-        continue;
-      }
-
-      Instance inst(inst_name, inst_cell);
-
-      /*lambda function create net for connect instance pin*/
-      auto create_net_connection = [inst_stmt, inst_cell, &inst,
-                                    &design_netlist](auto *cell_port_id,
-                                                     auto *net_expr,
-                                                     std::optional<int> index,
-                                                     PinBus *pin_bus) {
-        const char *cell_port_name = cell_port_id->getName();
-
-        auto *library_port_or_port_bus =
-            inst_cell->get_cell_port_or_port_bus(cell_port_name);
-        LOG_INFO_IF(!library_port_or_port_bus)
-            << cell_port_name << " port is not found.";
-        if (!library_port_or_port_bus) {
-          return;
-        }
-
-        auto add_pin_to_net = [&design_netlist](Pin *inst_pin,
-                                                std::string &net_name) {
-          if (net_name.empty()) {
-            return;
-          }
-
-          Net *the_net = design_netlist.findNet(net_name.c_str());
-          if (the_net) {
-            the_net->addPinPort(inst_pin);
-          } else {
-            // DLOG_INFO << "create net " << net_name;
-            auto &created_net = design_netlist.addNet(Net(net_name.c_str()));
-
-            created_net.addPinPort(inst_pin);
-            the_net = &created_net;
-          }
-          // The same name port is default connect to net.
-          if (auto *design_port = design_netlist.findPort(net_name.c_str());
-              design_port && !the_net->isNetPinPort(design_port)) {
-            the_net->addPinPort(design_port);
-          }
-        };
-
-        auto add_pin_to_inst = [&inst, &add_pin_to_net, pin_bus](
-                                   auto *pin_name, auto *library_port,
-                                   std::optional<int> pin_index) -> Pin * {
-          auto *inst_pin = inst.addPin(pin_name, library_port);
-          if (pin_bus) {
-            pin_bus->addPin(pin_index.value(), inst_pin);
-          }
-
-          return inst_pin;
-        };
-
-        LibertyPort *library_port = nullptr;
-        std::string pin_name;
-        std::string net_name;
-
-        if (net_expr) {
-          if (net_expr->isIDExpr()) {
-            auto *net_id = net_expr->get_verilog_id();
-            LOG_FATAL_IF(!net_id)
-                << "The port connection " << cell_port_id->getName()
-                << " net id is not exist "
-                << "at line " << inst_stmt->get_line();
-            net_name = net_id->getName();
-            // fix net name contain backslash
-            net_name = Str::trimBackslash(net_name);
-          } else if (net_expr->isConstant()) {
-            LOG_INFO_FIRST_N(5) << "for the constant net need TODO.";
-          }
-        }
-
-        if (!library_port_or_port_bus->isLibertyPortBus()) {
-          library_port = dynamic_cast<LibertyPort *>(library_port_or_port_bus);
-          pin_name = cell_port_name;
-          auto *inst_pin =
-              add_pin_to_inst(pin_name.c_str(), library_port, std::nullopt);
-
-          add_pin_to_net(inst_pin, net_name);
-
-        } else {
-          auto *library_port_bus =
-              dynamic_cast<LibertyPortBus *>(library_port_or_port_bus);
-          if (index) {
-            library_port = (*library_port_bus)[index.value()];
-            pin_name = Str::printf("%s[%d]", cell_port_name, index.value());
-            auto *inst_pin =
-                add_pin_to_inst(pin_name.c_str(), library_port, index.value());
-
-            add_pin_to_net(inst_pin, net_name);
-
-          } else {
-            for (size_t i = 0; i < library_port_bus->getBusSize(); ++i) {
-              library_port = (*library_port_bus)[i];
-              pin_name = Str::printf("%s[%d]", cell_port_name, i);
-              auto *inst_pin =
-                  add_pin_to_inst(pin_name.c_str(), library_port, i);
-
-              std::string net_index_name;
-              if (net_expr->get_verilog_id()->isBusSliceID()) {
-                auto *net_slice_id =
-                    dynamic_cast<VerilogSliceID *>(net_expr->get_verilog_id());
-
-                net_index_name =
-                    net_slice_id->getName(i + net_slice_id->get_range_base());
-              } else {
-                net_index_name = Str::printf("%s[%d]", net_name.c_str(), i);
-              }
-
-              add_pin_to_net(inst_pin, net_index_name);
-            }
-          }
-        }
-      };
-
-      /*lambda function flatten concate net, which maybe nested.*/
-      std::function<void(VerilogNetConcatExpr *,
-                         std::vector<VerilogNetExpr *> &)>
-          flatten_concat_net_expr =
-              [&flatten_concat_net_expr](
-                  VerilogNetConcatExpr *net_concat_expr,
-                  std::vector<VerilogNetExpr *> &net_concat_vec) {
-                auto &verilog_id_concat =
-                    net_concat_expr->get_verilog_id_concat();
-                for (auto &verilog_id_net_expr : verilog_id_concat) {
-                  if (verilog_id_net_expr->isConcatExpr()) {
-                    flatten_concat_net_expr(
-                        dynamic_cast<VerilogNetConcatExpr *>(
-                            verilog_id_net_expr.get()),
-                        net_concat_vec);
-                  } else {
-                    net_concat_vec.push_back(verilog_id_net_expr.get());
-                  }
-                }
-              };
-
-      // create net
-      for (auto &port_connection : port_connections) {
-        LOG_FATAL_IF(!port_connection)
-            << "The inst " << inst_name << " at line " << inst_stmt->get_line()
-            << " port connection is null";
-        auto *cell_port_id = port_connection->get_port_id();
-        auto *net_expr = port_connection->get_net_expr();
-
-        // create pin bus
-        const char *cell_port_name = cell_port_id->getName();
-        auto *library_port_bus =
-            inst_cell->get_cell_port_or_port_bus(cell_port_name);
-        std::unique_ptr<PinBus> pin_bus;
-        if (library_port_bus->isLibertyPortBus()) {
-          auto bus_size =
-              dynamic_cast<LibertyPortBus *>(library_port_bus)->getBusSize();
-          pin_bus = std::make_unique<PinBus>(cell_port_name, bus_size - 1, 0,
-                                             bus_size);
-        }
-
-        if (!net_expr || net_expr->isIDExpr() || net_expr->isConstant()) {
-          create_net_connection(cell_port_id, net_expr, std::nullopt,
-                                pin_bus.get());
-        } else {
-          LOG_FATAL_IF(!pin_bus) << "pin bus is null.";
-
-          auto *net_concat_expr =
-              (dynamic_cast<VerilogNetConcatExpr *>(net_expr));
-          std::vector<VerilogNetExpr *> verilog_id_concat_vec;
-          flatten_concat_net_expr(net_concat_expr, verilog_id_concat_vec);
-
-          for (int i = (verilog_id_concat_vec.size() - 1);
-               auto *verilog_id_net_expr : verilog_id_concat_vec) {
-            create_net_connection(cell_port_id, verilog_id_net_expr, i--,
-                                  pin_bus.get());
-          }
-        }
-
-        if (pin_bus) {
-          inst.addPinBus(std::move(pin_bus));
-        }
-      }
-
-      design_netlist.addInstance(std::move(inst));
-    }
-  }
-
-  LOG_INFO << "link design " << top_cell_name << " end";
+  return is_ok;
 }
 
 /**
@@ -820,7 +511,7 @@ void Sta::linkDesignWithRustParser(const char *top_cell_name) {
           return inst_pin;
         };
 
-        LibertyPort *library_port = nullptr;
+        LibPort *library_port = nullptr;
         std::string pin_name;
         std::string net_name;
 
@@ -848,7 +539,7 @@ void Sta::linkDesignWithRustParser(const char *top_cell_name) {
         }
 
         if (!library_port_or_port_bus->isLibertyPortBus()) {
-          library_port = dynamic_cast<LibertyPort *>(library_port_or_port_bus);
+          library_port = dynamic_cast<LibPort *>(library_port_or_port_bus);
           pin_name = cell_port_name;
           auto *inst_pin =
               add_pin_to_inst(pin_name.c_str(), library_port, std::nullopt);
@@ -857,7 +548,7 @@ void Sta::linkDesignWithRustParser(const char *top_cell_name) {
 
         } else {
           auto *library_port_bus =
-              dynamic_cast<LibertyPortBus *>(library_port_or_port_bus);
+              dynamic_cast<LibPortBus *>(library_port_or_port_bus);
           if (index) {
             library_port = (*library_port_bus)[index.value()];
             pin_name = Str::printf("%s[%d]", cell_port_name, index.value());
@@ -950,7 +641,7 @@ void Sta::linkDesignWithRustParser(const char *top_cell_name) {
         std::unique_ptr<PinBus> pin_bus;
         if (library_port_bus->isLibertyPortBus()) {
           auto bus_size =
-              dynamic_cast<LibertyPortBus *>(library_port_bus)->getBusSize();
+              dynamic_cast<LibPortBus *>(library_port_bus)->getBusSize();
           pin_bus = std::make_unique<PinBus>(cell_port_name, bus_size - 1, 0,
                                              bus_size);
         }
@@ -989,10 +680,10 @@ void Sta::linkDesignWithRustParser(const char *top_cell_name) {
 /**
  * @brief get the design used libs.
  *
- * @return std::set<LibertyLibrary *>
+ * @return std::set<LibLibrary *>
  */
-std::set<LibertyLibrary *> Sta::getUsedLibs() {
-  std::set<LibertyLibrary *> used_libs;
+std::set<LibLibrary *> Sta::getUsedLibs() {
+  std::set<LibLibrary *> used_libs;
   Instance *inst;
   FOREACH_INSTANCE(&_netlist, inst) {
     auto *used_lib = inst->get_inst_cell()->get_owner_lib();
@@ -1011,10 +702,10 @@ void Sta::resetConstraint() { _constrains.reset(); }
  * @brief Find the liberty cell from the lib.
  *
  * @param cell_name
- * @return LibertyCell*
+ * @return LibCell*
  */
-LibertyCell *Sta::findLibertyCell(const char *cell_name) {
-  LibertyCell *found_cell = nullptr;
+LibCell *Sta::findLibertyCell(const char *cell_name) {
+  LibCell *found_cell = nullptr;
   for (auto &lib : _libs) {
     if (found_cell = lib->findCell(cell_name); found_cell) {
       break;
@@ -1064,24 +755,24 @@ std::optional<AocvObjectSpecSet *> Sta::findClockAocvObjectSpecSet(
  *
  * @param equiv_libs
  */
-void Sta::makeEquivCells(std::vector<LibertyLibrary *> &equiv_libs) {
-  if (_equiv_cells) {
-    _equiv_cells.reset();
+void Sta::makeClassifiedCells(std::vector<LibLibrary *> &equiv_libs) {
+  if (_classified_cells) {
+    _classified_cells.reset();
   }
 
-  _equiv_cells = std::make_unique<LibertyClassifyCell>();
-  _equiv_cells->classifyLibCell(equiv_libs);
+  _classified_cells = std::make_unique<LibClassifyCell>();
+  _classified_cells->classifyLibCell(equiv_libs);
 }
 
 /**
  * @brief Get the equivalently liberty cell.
  *
  * @param cell
- * @return Vector<LibertyCell *>*
+ * @return Vector<LibCell *>*
  */
-Vector<LibertyCell *> *Sta::equivCells(LibertyCell *cell) {
-  if (_equiv_cells)
-    return _equiv_cells->getClassOfCell(cell);
+Vector<LibCell *> *Sta::classifyCells(LibCell *cell) {
+  if (_classified_cells)
+    return _classified_cells->getClassOfCell(cell);
   else
     return nullptr;
 }
@@ -1091,128 +782,35 @@ Vector<LibertyCell *> *Sta::equivCells(LibertyCell *cell) {
  *
  */
 void Sta::initSdcCmd() {
-  auto cmd_create_clock = std::make_unique<CmdCreateClock>("create_clock");
-  LOG_FATAL_IF(!cmd_create_clock);
-  TclCmds::addTclCmd(std::move(cmd_create_clock));
-
-  auto cmd_create_generated_clock =
-      std::make_unique<CmdCreateGeneratedClock>("create_generated_clock");
-  LOG_FATAL_IF(!cmd_create_generated_clock);
-  TclCmds::addTclCmd(std::move(cmd_create_generated_clock));
-
-  auto cmd_set_input_transition =
-      std::make_unique<CmdSetInputTransition>("set_input_transition");
-  LOG_FATAL_IF(!cmd_set_input_transition);
-  TclCmds::addTclCmd(std::move(cmd_set_input_transition));
-
-  auto cmd_set_driving_cell =
-      std::make_unique<CmdSetDrivingCell>("set_driving_cell");
-  LOG_FATAL_IF(!cmd_set_driving_cell);
-  TclCmds::addTclCmd(std::move(cmd_set_driving_cell));
-
-  auto cmd_set_load = std::make_unique<CmdSetLoad>("set_load");
-  LOG_FATAL_IF(!cmd_set_load);
-  TclCmds::addTclCmd(std::move(cmd_set_load));
-
-  auto cmd_set_input_delay =
-      std::make_unique<CmdSetInputDelay>("set_input_delay");
-  LOG_FATAL_IF(!cmd_set_input_delay);
-  TclCmds::addTclCmd(std::move(cmd_set_input_delay));
-
-  auto cmd_set_output_delay =
-      std::make_unique<CmdSetOutputDelay>("set_output_delay");
-  LOG_FATAL_IF(!cmd_set_output_delay);
-  TclCmds::addTclCmd(std::move(cmd_set_output_delay));
-
-  auto cmd_set_max_fanout = std::make_unique<CmdSetMaxFanout>("set_max_fanout");
-  LOG_FATAL_IF(!cmd_set_max_fanout);
-  TclCmds::addTclCmd(std::move(cmd_set_max_fanout));
-
-  auto cmd_set_max_transition =
-      std::make_unique<CmdSetMaxTransition>("set_max_transition");
-  LOG_FATAL_IF(!cmd_set_max_transition);
-  TclCmds::addTclCmd(std::move(cmd_set_max_transition));
-
-  auto cmd_set_max_capacitance =
-      std::make_unique<CmdSetMaxCapacitance>("set_max_capacitance");
-  LOG_FATAL_IF(!cmd_set_max_capacitance);
-  TclCmds::addTclCmd(std::move(cmd_set_max_capacitance));
-
-  auto cmd_current_design =
-      std::make_unique<CmdCurrentDesign>("current_design");
-  LOG_FATAL_IF(!cmd_current_design);
-  TclCmds::addTclCmd(std::move(cmd_current_design));
-
-  auto get_clocks = std::make_unique<CmdGetClocks>("get_clocks");
-  LOG_FATAL_IF(!get_clocks);
-  TclCmds::addTclCmd(std::move(get_clocks));
-
-  auto get_pins = std::make_unique<CmdGetPins>("get_pins");
-  LOG_FATAL_IF(!get_pins);
-  TclCmds::addTclCmd(std::move(get_pins));
-
-  auto get_ports = std::make_unique<CmdGetPorts>("get_ports");
-  LOG_FATAL_IF(!get_ports);
-  TclCmds::addTclCmd(std::move(get_ports));
-
-  auto get_libs = std::make_unique<CmdGetLibs>("get_libs");
-  LOG_FATAL_IF(!get_libs);
-  TclCmds::addTclCmd(std::move(get_libs));
-
-  auto all_clocks = std::make_unique<CmdAllClocks>("all_clocks");
-  LOG_FATAL_IF(!all_clocks);
-  TclCmds::addTclCmd(std::move(all_clocks));
-
-  auto all_inputs = std::make_unique<CmdAllInputs>("all_inputs");
-  LOG_FATAL_IF(!all_inputs);
-  TclCmds::addTclCmd(std::move(all_inputs));
-
-  auto all_outputs = std::make_unique<CmdAllOutputs>("all_outputs");
-  LOG_FATAL_IF(!all_outputs);
-  TclCmds::addTclCmd(std::move(all_outputs));
-
-  auto set_propagated_clock =
-      std::make_unique<CmdSetPropagatedClock>("set_propagated_clock");
-  LOG_FATAL_IF(!set_propagated_clock);
-  TclCmds::addTclCmd(std::move(set_propagated_clock));
-
-  auto set_clock_groups =
-      std::make_unique<CmdSetClockGroups>("set_clock_groups");
-  LOG_FATAL_IF(!set_clock_groups);
-  TclCmds::addTclCmd(std::move(set_clock_groups));
-
-  auto set_multicycle_path =
-      std::make_unique<CmdSetMulticyclePath>("set_multicycle_path");
-  LOG_FATAL_IF(!set_multicycle_path);
-  TclCmds::addTclCmd(std::move(set_multicycle_path));
-
-  auto set_timing_derate =
-      std::make_unique<CmdSetTimingDerate>("set_timing_derate");
-  LOG_FATAL_IF(!set_timing_derate);
-  TclCmds::addTclCmd(std::move(set_timing_derate));
-
-  auto set_clock_uncertainty =
-      std::make_unique<CmdSetClockUncertainty>("set_clock_uncertainty");
-  LOG_FATAL_IF(!set_clock_uncertainty);
-  TclCmds::addTclCmd(std::move(set_clock_uncertainty));
-
-  auto set_units = std::make_unique<CmdSetUnits>("set_units");
-  LOG_FATAL_IF(!set_units);
-  TclCmds::addTclCmd(std::move(set_units));
-
-  auto group_path = std::make_unique<CmdGroupPath>("group_path");
-  LOG_FATAL_IF(!group_path);
-  TclCmds::addTclCmd(std::move(group_path));
-
-  auto set_operating_conditions =
-      std::make_unique<CmdSetOperatingConditions>("set_operating_conditions");
-  LOG_FATAL_IF(!set_operating_conditions);
-  TclCmds::addTclCmd(std::move(set_operating_conditions));
-
-  auto set_wire_load_mode =
-      std::make_unique<CmdSetWireLoadMode>("set_wire_load_mode");
-  LOG_FATAL_IF(!set_wire_load_mode);
-  TclCmds::addTclCmd(std::move(set_wire_load_mode));
+  registerTclCmd(CmdCreateClock, "create_clock");
+  registerTclCmd(CmdCreateGeneratedClock, "create_generated_clock");
+  registerTclCmd(CmdSetInputTransition, "set_input_transition");
+  registerTclCmd(CmdSetDrivingCell, "set_driving_cell");
+  registerTclCmd(CmdSetLoad, "set_load");
+  registerTclCmd(CmdSetInputDelay, "set_input_delay");
+  registerTclCmd(CmdSetOutputDelay, "set_output_delay");
+  registerTclCmd(CmdSetMaxFanout, "set_max_fanout");
+  registerTclCmd(CmdSetMaxTransition, "set_max_transition");
+  registerTclCmd(CmdSetMaxCapacitance, "set_max_capacitance");
+  registerTclCmd(CmdCurrentDesign, "current_design");
+  registerTclCmd(CmdGetClocks, "get_clocks");
+  registerTclCmd(CmdGetPins, "get_pins");
+  registerTclCmd(CmdGetPorts, "get_ports");
+  registerTclCmd(CmdGetCells, "get_cells");
+  registerTclCmd(CmdGetLibs, "get_libs");
+  registerTclCmd(CmdAllClocks, "all_clocks");
+  registerTclCmd(CmdAllInputs, "all_inputs");
+  registerTclCmd(CmdAllOutputs, "all_outputs");
+  registerTclCmd(CmdSetPropagatedClock, "set_propagated_clock");
+  registerTclCmd(CmdSetClockGroups, "set_clock_groups");
+  registerTclCmd(CmdSetMulticyclePath, "set_multicycle_path");
+  registerTclCmd(CmdSetTimingDerate, "set_timing_derate");
+  registerTclCmd(CmdSetClockUncertainty, "set_clock_uncertainty");
+  registerTclCmd(CmdSetUnits, "set_units");
+  registerTclCmd(CmdGroupPath, "group_path");
+  registerTclCmd(CmdSetOperatingConditions, "set_operating_conditions");
+  registerTclCmd(CmdSetWireLoadMode, "set_wire_load_mode");
+  registerTclCmd(CmdSetDisableTiming, "set_disable_timing");
 }
 
 /**

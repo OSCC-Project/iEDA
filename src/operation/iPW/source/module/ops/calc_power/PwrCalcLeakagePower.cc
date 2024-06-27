@@ -35,7 +35,7 @@ using ieda::Stats;
  * @param leakage_power
  * @return double
  */
-double PwrCalcLeakagePower::calcLeakagePower(LibertyLeakagePower* leakage_power,
+double PwrCalcLeakagePower::calcLeakagePower(LibLeakagePower* leakage_power,
                                              Instance* inst) {
   std::string when = leakage_power->get_when();
   double leakage_power_value = leakage_power->get_value();
@@ -91,7 +91,7 @@ unsigned PwrCalcLeakagePower::operator()(PwrGraph* the_graph) {
     auto* design_inst = cell->get_design_inst();
     auto* inst_cell = design_inst->get_inst_cell();
 
-    LibertyLeakagePower* leakage_power;
+    LibLeakagePower* leakage_power;
     double leakage_power_sum_data = 0;
     FOREACH_LEAKAGE_POWER(inst_cell, leakage_power) {
       double leakage_power_data = calcLeakagePower(leakage_power, design_inst);

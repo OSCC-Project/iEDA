@@ -15,19 +15,18 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 #pragma once
-
-#include "DbInterface.h"
 #include "flute3/flute.h"
 
-#include "ids.hpp"
+#include "define.h"
 
 #include "Point.h"
+#include "Rects.h"
+#include <iostream>
+#include <map>
+#include <vector>
 
 namespace ito {
-using std::multimap;
-using std::map;
 
-using namespace ista;
 using XCord = int; // x-axis coordinates
 using YCord = int; // y-axis coordinates
 
@@ -36,18 +35,16 @@ class Node;
 
 enum class RoutingType : int { kHVTree = 0, kSteiner = 1 };
 
-RoutingTree *makeRoutingTree(Net *net, ista::TimingDBAdapter *db_adapter,
+RoutingTree *makeRoutingTree(ista::Net *net, ista::TimingDBAdapter *db_adapter,
                              RoutingType rout_type);
 
-void getConnectedPins(Net *net,
-                      // Return value.
-                      DesignObjSeq &pins);
+void getConnectedPins(ista::Net *net, TODesignObjSeq &pins);
 
 void printTree(Node *root);
 
 void findMaxDistfromDrvr(Node *root, int curr_dist, int &max_dist);
 
-void drvrToLoadLength();
+void driverToLoadLength();
 
 class Node {
  public:
@@ -69,12 +66,10 @@ class Node {
   Point get_location() { return _pt; }
 
   bool operator==(const Node n2) { return this->_pt == n2._pt; }
-    int get_child_num() const {
-    return get_children().size();
-  }
+  int  get_child_num() const { return get_children().size(); }
 
-  vector<Node*> get_children() const {
-    vector<Node*> children;
+  std::vector<Node *> get_children() const {
+    std::vector<Node *> children;
     if (!_first_child) {
       return children;
     }
@@ -87,23 +82,24 @@ class Node {
     return children;
   }
 
-  void PrintRecursive(std::ostream& os) const {
-    vector<bool> prefix;  // prefix indicates whether an ancestor is a last child or not
+  void PrintRecursive(std::ostream &os) const {
+    std::vector<bool>
+        prefix; // prefix indicates whether an ancestor is a last child or not
     PrintRecursiveHelp(os, prefix);
   }
 
-  void PrintSingle(std::ostream& os) const {
+  void PrintSingle(std::ostream &os) const {
     int child_num = get_child_num();
     os << "Node " << _id << ": " << _pt << ", " << child_num << " children";
   }
 
-  void PrintRecursiveHelp(std::ostream &os, vector<bool> &prefix) const {
+  void PrintRecursiveHelp(std::ostream &os, std::vector<bool> &prefix) const {
     for (auto pre : prefix)
       os << (pre ? "  |" : "   ");
     if (!prefix.empty())
       os << "-> ";
     PrintSingle(os);
-    os << endl;
+    os << std::endl;
     auto children = get_children();
     if (children.size() > 0) {
       prefix.push_back(true);
@@ -111,7 +107,7 @@ class Node {
         if (children[i])
           children[i]->PrintRecursiveHelp(os, prefix);
         else
-          os << "<null>" << endl;
+          os << "<null>" << std::endl;
       }
       prefix.back() = false;
       children.back()->PrintRecursiveHelp(os, prefix);
@@ -130,44 +126,41 @@ class Node {
 
 class RoutingTree {
  public:
-  RoutingTree(DbInterface *dbinterface) {}
-  RoutingTree() = default;
+  RoutingTree() {}
   ~RoutingTree() = default;
 
   // set
   void set_root(Node *root) { this->_root = root; }
-  void set_points(vector<Point> pts) { this->_points = pts; }
+  void set_points(std::vector<Point> pts) { this->_points = pts; }
 
   // get
-  DesignObjSeq &get_pins() { return _pins; }
-  Node         *get_root() const { return _root; }
-  vector<Point> get_points() const { return _points; }
-  Point         get_location(int idx) const { return _points[idx]; }
-  unsigned int  get_pins_count() { return _pins.size(); }
+  TODesignObjSeq    &get_pins() { return _pins; }
+  Node              *get_root() const { return _root; }
+  std::vector<Point> get_points() const { return _points; }
+  Point              get_location(int idx) const { return _points[idx]; }
+  unsigned int       get_pins_count() { return _pins.size(); }
 
   DesignObject *get_pin(int idx) const;
 
   void makeHVTree(int x[], int y[]);
 
   void makeSteinerTree(int x[], int y[]);
-  void findLeftRight(Node *father, int father_id, int child_id, vector<vector<int>> &adj,
-                     Flute::Tree stTree);
+  void findLeftRight(Node *father, int father_id, int child_id,
+                     std::vector<std::vector<int>> &adj, Flute::Tree stTree);
 
-  void segmentIndexAndLength(Node *root,
-                             // return values
-                             vector<pair<int, int>> &wire_segment_idx,
-                             vector<int>            &length);
-  void drvrToLoadLength(Node *root, vector<int> &load_index, vector<int> &length,
-                        int curr_dist);
+  void segmentIndexAndLength(Node                             *root,
+                             std::vector<std::pair<int, int>> &wire_segment_idx,
+                             std::vector<int>                 &length);
+  void driverToLoadLength(Node *root, std::vector<int> &load_index,
+                        std::vector<int> &length, int curr_dist);
   void updateBranch();
   // require updateBranch
   int left(int idx) const { return _left_branch[idx]; }
   int middle(int idx) const { return _middle_branch[idx]; }
   int right(int idx) const { return _right_branch[idx]; }
 
-  vector<vector<int>> findPathOverMaxLength(Node *root, int sum, int max_length,
-                                            // return values
-                                            vector<vector<int>> &res);
+  std::vector<std::vector<int>> findPathOverMaxLength(Node *root, int sum, int max_length,
+                                                      std::vector<std::vector<int>> &res);
 
   void set_pin_visit(int idx) { _is_visit_pin[idx] = 1; }
   int  get_pin_visit(int idx) { return _is_visit_pin[idx]; }
@@ -175,13 +168,9 @@ class RoutingTree {
   void plotConectionInfo(const std::string file_name, const std::string net_name,
                          RoutingTree *tree, Rectangle core);
 
-  //   void clusterTreeToRoutingTree(cluster_tree::ClusterTree* Ctree);
-  //   void findLeftRight(Node *father,
-  //   cluster_tree::BinaryTreeNode<cluster_tree::Point<int> *>* BTNode);
-
-  static int _null_pt;
-  void Print(std::ostream& os = cout) const;
-  friend std::ostream& operator<<(std::ostream& os, const RoutingTree* tree) {
+  static int           _null_pt;
+  void                 Print(std::ostream &os = std::cout) const;
+  friend std::ostream &operator<<(std::ostream &os, const RoutingTree *tree) {
     tree->Print(os);
     return os;
   }
@@ -191,7 +180,7 @@ class RoutingTree {
   void insertTree(Node *father, Node *child, int id);
 
   void updateTree(int index, XCord x_coordinate, Node *&parent,
-                  std::vector<int>       cordinate_vec,
+                  std::vector<int>            cordinate_vec,
                   std::multimap<YCord, XCord> cordinate_to_x_map);
 
   int findIndexInPoints(Node *n);
@@ -199,24 +188,24 @@ class RoutingTree {
 
   void preOrderTraversal(Node *root);
 
-  void deepFirstSearch(Node *root, int sum, vector<vector<int>> &res, vector<int> vec,
-                       int max_length);
+  void deepFirstSearch(Node *root, int sum, std::vector<std::vector<int>> &res,
+                       std::vector<int> vec, int max_length);
 
   void plotPinName(std::stringstream &feed, const std::string net_name, RoutingTree *tree,
                    int id);
   // _root always cooresponds to the driver pin.
-  Node        *_root = nullptr;
-  DesignObjSeq _pins;
+  Node          *_root = nullptr;
+  TODesignObjSeq _pins;
 
   // pin pts + steiner pts, the index of steiner pts is behind of the pin pts.
   std::vector<Point> _points;
 
   // Since each node has at most three branches, due to the way of RoutingTree is
   // constructed. _left_branch[i] = j means: node j is the left child of node i.
-  vector<int> _left_branch;
-  vector<int> _middle_branch;
-  vector<int> _right_branch;
+  std::vector<int> _left_branch;
+  std::vector<int> _middle_branch;
+  std::vector<int> _right_branch;
 
-  vector<int> _is_visit_pin;
+  std::vector<int> _is_visit_pin;
 };
 } // namespace ito

@@ -16,14 +16,17 @@
 // ***************************************************************************************
 #pragma once
 
-#include "ids.hpp"
-
+#include "IdbCellMaster.h"
 namespace ito {
 
-class Master {
+class Master
+{
  public:
-  Master() = default;
-  Master(idb::IdbCellMaster *idb_master);
+  Master(idb::IdbCellMaster* idb_master)
+  {
+    _width = idb_master->get_width();
+    _height = idb_master->get_height();
+  }
 
   ~Master() = default;
 
@@ -39,4 +42,4 @@ class Master {
   // bool _is_auto_placeable = false;
 };
 
-} // namespace ito
+}  // namespace ito

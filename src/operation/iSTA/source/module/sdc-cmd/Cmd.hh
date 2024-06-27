@@ -310,6 +310,19 @@ class CmdGetPins : public TclCmd {
 };
 
 /**
+ * @brief get_cells get the matched instances.
+ *
+ */
+class CmdGetCells : public TclCmd {
+ public:
+  explicit CmdGetCells(const char* cmd_name);
+  ~CmdGetCells() override = default;
+
+  unsigned check() override;
+  unsigned exec() override;
+};
+
+/**
  * @brief get_libs get the matched libs.
  *
  */
@@ -434,6 +447,19 @@ class CmdSetWireLoadMode : public TclCmd {
  public:
   explicit CmdSetWireLoadMode(const char* cmd_name);
   ~CmdSetWireLoadMode() override = default;
+
+  unsigned check() override;
+  unsigned exec() override;
+};
+
+/**
+ * @brief set_disable_timing cmd
+ *
+ */
+class CmdSetDisableTiming : public TclCmd {
+ public:
+  explicit CmdSetDisableTiming(const char* cmd_name);
+  ~CmdSetDisableTiming() override = default;
 
   unsigned check() override;
   unsigned exec() override;

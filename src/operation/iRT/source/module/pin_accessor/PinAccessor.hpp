@@ -56,13 +56,13 @@ class PinAccessor
   std::vector<AccessPoint> getAccessPointListByTrackGrid(int32_t pin_idx, std::vector<LayerRect>& legal_shape_list);
   std::vector<AccessPoint> getAccessPointListByOnTrack(int32_t pin_idx, std::vector<LayerRect>& legal_shape_list);
   std::vector<AccessPoint> getAccessPointListByShapeCenter(int32_t pin_idx, std::vector<LayerRect>& legal_shape_list);
-  void buildAccessPointList(PAModel& pa_model);
-  void uploadAccessPoint(PAModel& pa_model);
+  void uploadAccessPointList(PAModel& pa_model);
   void buildConflictGroupList(PAModel& pa_model);
   std::vector<std::pair<PAPin*, std::set<PAPin*>>> getPinConlictMap(PAModel& pa_model);
   bool hasConflict(PAModel& pa_model, AccessPoint& access_point_a, AccessPoint& access_point_b);
   void eliminateConflict(PAModel& pa_model);
   std::vector<ConflictAccessPoint> getBestPointList(ConflictGroup& conflict_group);
+  void uploadKeyAccessPoint(PAModel& pa_model);
   void updatePAModel(PAModel& pa_model);
 
 #if 1  // exhibit

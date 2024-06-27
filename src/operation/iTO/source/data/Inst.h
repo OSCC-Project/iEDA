@@ -16,28 +16,30 @@
 // ***************************************************************************************
 #pragma once
 
-#include "Master.h"
-#include "ids.hpp"
 #include <string>
 #include <vector>
 
-using idb::IdbCellMaster;
-using idb::IdbInstance;
-using ito::Master;
+#include "Master.h"
+#include "IdbInstance.h"
 
+namespace idb {
+class IdbCellMaster;
+class IdbInstance;
+}  // namespace idb
 namespace ito {
-class Inst {
+class Inst
+{
  public:
   Inst() = default;
-  Inst(IdbInstance *inst);
+  Inst(idb::IdbInstance* inst){_master = new Master(inst->get_cell_master());}
   ~Inst() = default;
-  Inst(const Inst &inst) = delete;
-  Inst(Inst &&inst) = delete;
+  Inst(const Inst& inst) = delete;
+  Inst(Inst&& inst) = delete;
 
-  Master *get_master() { return _master; }
+  Master* get_master() { return _master; }
 
  protected:
-  Master *_master = nullptr;
+  Master* _master = nullptr;
 };
 
-} // namespace ito
+}  // namespace ito

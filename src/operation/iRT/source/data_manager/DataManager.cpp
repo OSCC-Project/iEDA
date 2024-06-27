@@ -901,21 +901,16 @@ void DataManager::wrapDrivenPin(Net& net, idb::IdbNet* idb_net)
 {
   idb::IdbPin* idb_driving_pin = idb_net->get_driving_pin();
   if (idb_driving_pin == nullptr) {
-    idb_driving_pin = idb_net->get_instance_pin_list()->get_pin_list().front();
+    return;
   }
   std::string driven_pin_name = idb_driving_pin->get_pin_name();
   if (!idb_driving_pin->is_io_pin()) {
     driven_pin_name = RTUTIL.getString(idb_driving_pin->get_instance()->get_name(), ":", driven_pin_name);
   }
-  bool has_driven = false;
   for (Pin& pin : net.get_pin_list()) {
     if (pin.get_pin_name() == driven_pin_name) {
       pin.set_is_driven(true);
-      has_driven = true;
     }
-  }
-  if (!has_driven) {
-    net.get_pin_list().front().set_is_driven(true);
   }
 }
 
@@ -1702,9 +1697,10 @@ void DataManager::buildGCellMap()
   }
   struct Shape
   {
-    int32_t net_idx;
-    EXTLayerRect* rect;
-    bool is_routing;
+    int32_t net_idx = -1;
+    EXTLayerRect* rect = nullptr;
+    bool is_routing = true;
+    bool is_save = false;
   };
   std::vector<Shape> shape_list;
   {
@@ -1736,53 +1732,47 @@ void DataManager::buildGCellMap()
       }
     }
   }
-  int32_t interval_length = 50;
-  interval_length = std::min(interval_length, die.get_grid_ur_y() - die.get_grid_ll_y());
-  interval_length = std::min(interval_length, die.get_grid_ur_x() - die.get_grid_ll_x());
-  if (interval_length > 2) {
+  int32_t interval_length = 6;
+  if (interval_length <= (die.get_grid_ur_y() - die.get_grid_ll_y())) {
+    std::map<int32_t, std::vector<std::vector<Shape>>> start_shape_list_list_map;
     for (int32_t interval_start : {0, interval_length / 2}) {
-      int32_t x_interval_num = (die.get_grid_ur_x() - interval_start) / interval_length + 1;
-      int32_t y_interval_num = (die.get_grid_ur_y() - interval_start) / interval_length + 1;
-
-      GridMap<std::vector<Shape>> shape_list_map;
-      shape_list_map.init(x_interval_num, y_interval_num);
-      std::vector<Shape> shape_list_temp;
-
+      std::vector<std::vector<Shape>>& shape_list_list = start_shape_list_list_map[interval_start];
+      shape_list_list.resize((die.get_grid_ur_y() - interval_start) / interval_length + 1);
       for (Shape& shape : shape_list) {
+        if (shape.is_save) {
+          continue;
+        }
         PlanarRect& grid_rect = shape.rect->get_grid_rect();
-
-        int32_t x_interval_idx
-            = getIntervalIdx(grid_rect.get_ll_x(), grid_rect.get_ur_x(), interval_start, die.get_grid_ur_x(), interval_length);
         int32_t y_interval_idx
             = getIntervalIdx(grid_rect.get_ll_y(), grid_rect.get_ur_y(), interval_start, die.get_grid_ur_y(), interval_length);
-
-        if (x_interval_idx != -1 && y_interval_idx != -1) {
-          shape_list_map[x_interval_idx][y_interval_idx].push_back(shape);
-        } else {
-          shape_list_temp.push_back(shape);
+        if (y_interval_idx != -1) {
+          shape_list_list[y_interval_idx].push_back(shape);
+          shape.is_save = true;
         }
       }
-#pragma omp parallel for collapse(2)
-      for (int32_t x = 0; x < shape_list_map.get_x_size(); x++) {
-        for (int32_t y = 0; y < shape_list_map.get_y_size(); y++) {
-          for (Shape& shape : shape_list_map[x][y]) {
-            int32_t net_idx = shape.net_idx;
-            EXTLayerRect* ext_layer_rect = shape.rect;
-            int32_t layer_idx = ext_layer_rect->get_layer_idx();
-            bool is_routing = shape.is_routing;
+    }
+    for (auto& [interval_start, shape_list_list] : start_shape_list_list_map) {
+#pragma omp parallel for
+      for (std::vector<Shape>& shape_list : shape_list_list) {
+        for (Shape& shape : shape_list) {
+          int32_t net_idx = shape.net_idx;
+          EXTLayerRect* ext_layer_rect = shape.rect;
+          int32_t layer_idx = ext_layer_rect->get_layer_idx();
+          bool is_routing = shape.is_routing;
 
-            for (int32_t x = ext_layer_rect->get_grid_ll_x(); x <= ext_layer_rect->get_grid_ur_x(); x++) {
-              for (int32_t y = ext_layer_rect->get_grid_ll_y(); y <= ext_layer_rect->get_grid_ur_y(); y++) {
-                gcell_map[x][y].get_type_layer_net_fixed_rect_map()[is_routing][layer_idx][net_idx].insert(ext_layer_rect);
-              }
+          for (int32_t x = ext_layer_rect->get_grid_ll_x(); x <= ext_layer_rect->get_grid_ur_x(); x++) {
+            for (int32_t y = ext_layer_rect->get_grid_ll_y(); y <= ext_layer_rect->get_grid_ur_y(); y++) {
+              gcell_map[x][y].get_type_layer_net_fixed_rect_map()[is_routing][layer_idx][net_idx].insert(ext_layer_rect);
             }
           }
         }
       }
-      shape_list = shape_list_temp;
     }
   }
   for (Shape& shape : shape_list) {
+    if (shape.is_save) {
+      continue;
+    }
     int32_t net_idx = shape.net_idx;
     EXTLayerRect* ext_layer_rect = shape.rect;
     int32_t layer_idx = ext_layer_rect->get_layer_idx();

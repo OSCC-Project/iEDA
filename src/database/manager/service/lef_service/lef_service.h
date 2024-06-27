@@ -37,7 +37,6 @@
 #include <string>
 #include <vector>
 
-#include "../../../data/tech/IdbCheck.h"
 #include "IdbLayout.h"
 
 namespace idb {
@@ -62,7 +61,6 @@ class IdbLefService
 
   // getter
   IdbLayout* get_layout();
-  IdbCheck* get_check();
   vector<string> get_lef_files() { return _lef_files; }
 
   // LEF Reader
@@ -75,7 +73,6 @@ class IdbLefService
   // <<---tbd--->>
   // db structure
   std::shared_ptr<IdbLayout> _layout;  //!< changeable data package.
-  std::shared_ptr<IdbCheck> _check;    // tech add
 };
 
 }  // namespace idb

@@ -1,16 +1,16 @@
 // ***************************************************************************************
 // Copyright (c) 2023-2025 Peng Cheng Laboratory
-// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of Sciences
-// Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
+// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of
+// Sciences Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
 //
 // iEDA is licensed under Mulan PSL v2.
-// You can use this software according to the terms and conditions of the Mulan PSL v2.
-// You may obtain a copy of Mulan PSL v2 at:
+// You can use this software according to the terms and conditions of the Mulan
+// PSL v2. You may obtain a copy of Mulan PSL v2 at:
 // http://license.coscl.org.cn/MulanPSL2
 //
-// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
-// EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
-// MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY
+// KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+// NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
@@ -19,7 +19,7 @@
 #include "api/TimingEngine.hh"
 #include "api/TimingIDBAdapter.hh"
 #include "gtest/gtest.h"
-#include "liberty/Liberty.hh"
+#include "liberty/Lib.hh"
 #include "log/Log.hh"
 #include "netlist/Netlist.hh"
 #include "sdc-cmd/Cmd.hh"
@@ -69,13 +69,14 @@ TEST_F(StaTest, simple_design) {
     std::string lib_name =
         Str::printf("%s/%s", design_work_space, "osu018_stdcells.lib");
 
-    Liberty lib;
+    Lib lib;
     auto load_lib = lib.loadLibertyWithRustParser(lib_name.c_str());
 
     ista->addLib(std::move(load_lib));
 
     ista->set_top_module_name("simple");
-    ista->readVerilog("/home/taosimin/i-eda/src/iSTA/example/simple/simple.v");
+    ista->readVerilogWithRustParser(
+        "/home/taosimin/i-eda/src/iSTA/example/simple/simple.v");
     std::set<std::string> exclude_cell_names = {};
     ista->writeVerilog(verilog_file_name, exclude_cell_names);
 
@@ -101,6 +102,20 @@ TEST_F(StaTest, simple_design) {
     ista->reportTiming();
 
     LOG_INFO << "The ista run success.";
+  }
+}
+
+TEST_F(StaTest, read_error_file) {
+  Sta* ista = Sta::getOrCreateSta();
+  if (ista) {
+    ista->readDesignWithRustParser("1.txt");
+    ista->readLiberty("1.txt");
+    ista->readSdc("1.txt");
+    ista->readSpef("1.txt");
+    ista->readAocv("1.txt");
+    std::vector<std::string> error_files{"1.txt", "2.txt"};
+    ista->readLiberty(error_files);
+    ista->readAocv(error_files);
   }
 }
 

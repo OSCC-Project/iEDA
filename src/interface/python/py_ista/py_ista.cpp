@@ -20,6 +20,7 @@
 
 #include "api/TimingEngine.hh"
 #include "api/TimingIDBAdapter.hh"
+#include "log/Log.hh"
 #include "sta/Sta.hh"
 
 namespace python_interface {
@@ -68,7 +69,7 @@ bool readVerilog(const std::string& file_name)
 {
   auto* ista = ista::Sta::getOrCreateSta();
 
-  ista->readVerilog(file_name.c_str());
+  ista->readVerilogWithRustParser(file_name.c_str());
   return true;
 }
 
@@ -83,7 +84,7 @@ bool linkDesign(const std::string& cell_name)
 {
   auto* ista = ista::Sta::getOrCreateSta();
   ista->set_top_module_name(cell_name.c_str());
-  ista->linkDesign(cell_name.c_str());
+  ista->linkDesignWithRustParser(cell_name.c_str());
   return true;
 }
 
@@ -120,6 +121,15 @@ std::vector<std::string> get_used_libs()
   }
 
   return ret;
+}
+
+bool initLog(std::string log_dir)
+{
+  char config[] = "test";
+  char* argv[] = {config};
+  ieda::Log::init(argv, log_dir);
+
+  return true;
 }
 
 }  // namespace python_interface

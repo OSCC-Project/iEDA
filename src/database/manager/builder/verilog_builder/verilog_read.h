@@ -38,7 +38,7 @@
 
 #include "def_service.h"
 #include "verilog/VerilogParserRustC.hh"
-#include "verilog/VerilogReader.hh"
+#include "string/Str.hh"
 
 namespace ista {
 
@@ -65,32 +65,6 @@ using namespace ista;
 
 #define CLOCKS_PER_MS 1000
 
-class VerilogRead
-{
- public:
-  VerilogRead(IdbDefService* def_service);
-  ~VerilogRead();
-
-  // getter
-  IdbDefService* get_service() { return _def_service; }
-  bool createDb(std::string file, std::string top_module_name);
-
-  IdbConnectDirection netlistToIdb(ista::VerilogDcl::DclType port_direction) const;
-
-  // parser
-  //   int32_t parse_version(const char* version);
-  //   int32_t parse_design(const char* name);
-  //   int32_t parse_units(double microns);
-  int32_t build_components();
-  int32_t build_nets();
-  int32_t build_pins();
-
- private:
-  IdbDesign* _idb_design = nullptr;
-  IdbDefService* _def_service = nullptr;
-  ista::VerilogReader* _verilog_read = nullptr;
-  ista::VerilogModule* _top_module = nullptr;
-};
 
 class RustVerilogRead
 {

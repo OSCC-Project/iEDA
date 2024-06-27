@@ -14,102 +14,74 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
+
 #pragma once
 
-#include "ViolationOptimizer.h"
-#include "ids.hpp"
+#include "api/TimingEngine.hh"
+#include "api/TimingIDBAdapter.hh"
+#include "define.h"
 
 namespace ito {
 
-class HoldOptimizer {
+const int _mode_max = (int) AnalysisMode::kMax - 1;
+const int _mode_min = (int) AnalysisMode::kMin - 1;
+class HoldOptimizer
+{
  public:
-  HoldOptimizer(DbInterface *dbinterface);
+  HoldOptimizer();
 
-  ~HoldOptimizer() {
-    delete _parasitics_estimator;
-    delete _violation_fixer;
-  }
-  HoldOptimizer(const HoldOptimizer &other) = delete;
-  HoldOptimizer(HoldOptimizer &&other) = delete;
+  ~HoldOptimizer() {}
+  HoldOptimizer(const HoldOptimizer& other) = delete;
+  HoldOptimizer(HoldOptimizer&& other) = delete;
 
   // open functions
   void optimizeHold();
 
-  void insertHoldDelay(string insert_buf_name, string pin_name, int insert_number = 1);
-
  private:
-  int checkAndOptimizeHold(VertexSet end_points, LibertyCell *insert_buf_cell);
+  float _target_slack = 0.0;
 
+  /// init
+  void init();
+
+
+  /// buffer operation
   void initBufferCell();
-
+  void insertHoldDelay(string insert_buf_name, string pin_name, int insert_number = 1);
   void calcBufferCap();
+  void insertBufferOptHold(StaVertex* driver_vertex, int insert_number, TODesignObjSeq& pins_loaded);
+  void insertLoadBuffer(LibCell* load_buffer, StaVertex* driver_vtx, int insert_num);
+  void insertLoadBuffer(TOVertexSeq fanins);
+  LibCell *ensureInsertBufferSize();
 
-  LibertyCell *findBufferWithMaxDelay();
+  /// process
+  void process();
+  int checkAndOptimizeHold();
+  bool checkAndFindVioaltion();
+  int performOptimization();
+  bool findEndpointsWithHoldViolation(TOVertexSet end_points, TOSlack& worst_slack, TOVertexSet& hold_violations);
+  int optHoldViolationEnd(TOVertexSeq fanins);
+  void calcStaVertexSlacks(StaVertex* vertex, TOSlacks slacks);
+  TOSlack calcSlackGap(StaVertex* vertex);
+  float calcHoldDelayOfBuffer(LibCell* buffer);
+  TOVertexSet getEndPoints();
+  TOVertexSeq getFanins(TOVertexSet end_points);
+  bool isFindEndpointsWithHoldViolation(TOSlack &worst_slack);
 
-  void findEndpointsWithHoldViolation(VertexSet end_points,
-                                      // return values
-                                      Slack &worst_slack, VertexSet &hold_violations);
-
-  int  fixHoldPass(VertexSeq fanins, LibertyCell *insert_buffer_cell);
-
-  void insertBufferDelay(StaVertex *drvr_vertex, int insert_number,
-                         DesignObjSeq &load_pins, LibertyCell *insert_buffer_cell);
-
-  void  vertexSlacks(StaVertex *vertex,
-                     // return value
-                     Slacks slacks);
-  Slack calcSlackGap(StaVertex *vertex);
-
-  void setLocation(Instance *inst, int x, int y);
-
-  float getBufferHoldDelay(LibertyCell *buffer);
-
-  VertexSet getEndPoints();
-
-  VertexSet getFanins(VertexSet end_points);
-
-  VertexSeq sortFanins(VertexSet fanins);
-
-  Slack getWorstSlack(AnalysisMode mode);
-  Slack getWorstSlack(StaVertex *vertex, AnalysisMode mode);
-
-  void insertLoadBuffer(LibertyCell *load_buffer, StaVertex *drvr_vtx, int insert_num);
-  void insertLoadBuffer(VertexSeq fanins);
-
+  /// report
+  void report(int begin_buffer_num);
   void reportWNSAndTNS();
 
-  // data
-  DbInterface     *_db_interface;
-  TimingEngine    *_timing_engine;
-  TimingDBAdapter *_db_adapter;
+  TOLibertyCellSeq _available_buffer_cells;
+  LibCell *_hold_insert_buf_cell;
+  TODelay _hold_insert_buf_cell_delay = 0.0;
 
-  EstimateParasitics *_parasitics_estimator;
-  ViolationOptimizer *_violation_fixer;
+  TOVertexSet _all_end_points;
+  TOVertexSet _end_pts_hold_violation;
 
-  LibertyCellSeq _buffer_cells;
+  bool _allow_setup_violation = true;
+  int _max_numb_insert_buf = 0;
 
-  int _dbu;
-
-  float _slack_margin = 0.0;
-  bool  _allow_setup_violation = true;
-  int   _max_numb_insert_buf = 0;
-
-  int _inserted_buffer_count = 0;
-  int _inserted_load_buffer_count = 0;
-
-  // to name the instance
-  int _insert_instance_index = 1;
-  int _insert_load_instance_index = 1;
-  // to name the net
-  int _make_net_index = 1;
-  int _make_load_net_index = 1;
-
-  static int _mode_max;
-  static int _mode_min;
-  static int _rise;
-  static int _fall;
-
-  vector<pair<double, LibertyCell *>> _buffer_cap_pair;
+  std::vector<std::pair<double, LibCell*>> _buffer_cap_pair;
 };
 
-} // namespace ito
+}  // namespace ito

@@ -96,7 +96,7 @@ unsigned StaBuildGraph::buildInst(StaGraph* the_graph, Instance* inst) {
 
   // lambda function, build one inst arc.
   auto build_inst_arc = [the_graph, inst](Pin* src_pin, Pin* snk_pin,
-                                          LibertyArc* cell_arc) {
+                                          LibArc* cell_arc) {
     auto src_vertex = the_graph->findVertex(src_pin);
     LOG_FATAL_IF(!src_vertex);
 
@@ -129,7 +129,7 @@ unsigned StaBuildGraph::buildInst(StaGraph* the_graph, Instance* inst) {
   };
 
   // build inst timing arc
-  LibertyCell* lib_cell = inst->get_inst_cell();
+  LibCell* lib_cell = inst->get_inst_cell();
   for (auto& cell_arc_set : lib_cell->get_cell_arcs()) {
     auto* cell_arc = cell_arc_set->front();
     const char* src_port_name = cell_arc->get_src_port();
@@ -145,7 +145,7 @@ unsigned StaBuildGraph::buildInst(StaGraph* the_graph, Instance* inst) {
 
     if (src_port->isLibertyPortBus()) {
       auto src_port_bus_size =
-          dynamic_cast<LibertyPortBus*>(src_port)->getBusSize();
+          dynamic_cast<LibPortBus*>(src_port)->getBusSize();
       for (unsigned src_index = 0; src_index < src_port_bus_size; ++src_index) {
         std::string one_src_port =
             Str::printf("%s[%d]", src_port_name, src_index);
@@ -157,7 +157,7 @@ unsigned StaBuildGraph::buildInst(StaGraph* the_graph, Instance* inst) {
 
     if (snk_port->isLibertyPortBus()) {
       auto snk_port_bus_size =
-          dynamic_cast<LibertyPortBus*>(snk_port)->getBusSize();
+          dynamic_cast<LibPortBus*>(snk_port)->getBusSize();
 
       for (unsigned snk_index = 0; snk_index < snk_port_bus_size; ++snk_index) {
         std::string one_snk_port =

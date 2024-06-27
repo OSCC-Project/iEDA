@@ -14,43 +14,62 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
+
 #include "EstimateParasitics.h"
+
+#include "ToConfig.h"
 #include "api/TimingEngine.hh"
 #include "api/TimingIDBAdapter.hh"
+#include "data_manager.h"
+#include "timing_engine.h"
 
 namespace ito {
-EstimateParasitics::EstimateParasitics(DbInterface *dbintreface)
-    : _db_interface(dbintreface) {
-  _timing_engine = _db_interface->get_timing_engine();
-  _db_adapter = _timing_engine->get_db_adapter();
-  _dbu = _db_interface->get_dbu();
-  Flute::readLUT();
+
+EstimateParasitics* EstimateParasitics::_instance = nullptr;
+
+EstimateParasitics* EstimateParasitics::get_instance()
+{
+  static std::mutex mt;
+  if (_instance == nullptr) {
+    std::lock_guard<std::mutex> lock(mt);
+    if (_instance == nullptr) {
+      _instance = new EstimateParasitics();
+    }
+  }
+  return _instance;
 }
 
-EstimateParasitics::EstimateParasitics(TimingEngine *timing_engine, int dbu)
-    : _timing_engine(timing_engine) {
-  _db_adapter = _timing_engine->get_db_adapter();
-  _dbu = dbu;
+void EstimateParasitics::destroy_instance()
+{
+  if (_instance != nullptr) {
+    delete _instance;
+    _instance = nullptr;
+  }
+}
+
+EstimateParasitics::EstimateParasitics()
+{
   Flute::readLUT();
 }
 
 /**
  * @brief If parasitics have been evaluated, update the changed net stored in
- * _parasitics_invalid. else update rc tree for all net
+ * _parasitics_invalid_nets. else update rc tree for all net
  *
  */
-void EstimateParasitics::excuteParasiticsEstimate() {
+void EstimateParasitics::excuteParasiticsEstimate()
+{
   if (_have_estimated_parasitics) {
-    for (Net *net : _parasitics_invalid) {
-      DesignObject *driver = net->getDriver();
+    for (Net* net : _parasitics_invalid_nets) {
+      DesignObject* driver = net->getDriver();
       if (driver) {
-        if (_timing_engine->get_ista()->getRcNet(net)) {
-          _timing_engine->resetRcTree(net);
+        if (timingEngine->get_sta_engine()->get_ista()->getRcNet(net)) {
+          timingEngine->get_sta_engine()->resetRcTree(net);
         }
-        excuteWireParasitic(driver, net, _db_adapter);
+        excuteWireParasitic(net);
       }
     }
-    _parasitics_invalid.clear();
+    _parasitics_invalid_nets.clear();
   } else {
     estimateAllNetParasitics();
   }
@@ -60,15 +79,17 @@ void EstimateParasitics::excuteParasiticsEstimate() {
  * @brief update rc tree for all net
  *
  */
-void EstimateParasitics::estimateAllNetParasitics() {
+void EstimateParasitics::estimateAllNetParasitics()
+{
   LOG_INFO << "estimate all net parasitics start";
-  Netlist *design_nl = _timing_engine->get_netlist();
-  Net *    net;
-  FOREACH_NET(design_nl, net) {
+  Netlist* design_nl = timingEngine->get_sta_engine()->get_netlist();
+  Net* net;
+  FOREACH_NET(design_nl, net)
+  {
     estimateNetParasitics(net);
   }
   _have_estimated_parasitics = true;
-  _parasitics_invalid.clear();
+  _parasitics_invalid_nets.clear();
   LOG_INFO << "estimate all net parasitics end";
 }
 
@@ -77,106 +98,109 @@ void EstimateParasitics::estimateAllNetParasitics() {
  *
  * @param net
  */
-void EstimateParasitics::estimateNetParasitics(Net *net) {
-  if (_timing_engine->get_ista()->getRcNet(net)) {
-    _timing_engine->resetRcTree(net);
+void EstimateParasitics::estimateNetParasitics(Net* net)
+{
+  if (timingEngine->get_sta_engine()->get_ista()->getRcNet(net)) {
+    timingEngine->get_sta_engine()->resetRcTree(net);
   }
-  DesignObject *drvr_pin_port = net->getDriver();
-  excuteWireParasitic(drvr_pin_port, net, _db_adapter);
+
+  excuteWireParasitic(net);
 }
 
 /**
  * @brief Re-estimate net with invalid RC values
  *
- * @param drvr_pin_port
+ * @param driver_pin_port
  * @param net
  */
-void EstimateParasitics::estimateInvalidNetParasitics(DesignObject *drvr_pin_port,
-                                                      Net *         net) {
-
-  if (_parasitics_invalid.find(net) != _parasitics_invalid.end() && net) {
-    if (_timing_engine->get_ista()->getRcNet(net)) {
-      _timing_engine->resetRcTree(net);
+void EstimateParasitics::estimateInvalidNetParasitics(Net* net, DesignObject* driver_pin_port)
+{
+  if (_parasitics_invalid_nets.find(net) != _parasitics_invalid_nets.end() && net) {
+    if (timingEngine->get_sta_engine()->get_ista()->getRcNet(net)) {
+      timingEngine->get_sta_engine()->resetRcTree(net);
     }
-    excuteWireParasitic(drvr_pin_port, net, _db_adapter);
+    excuteWireParasitic(net);
 
-    _parasitics_invalid.erase(net);
+    _parasitics_invalid_nets.erase(net);
   }
 }
 
-void EstimateParasitics::excuteWireParasitic(DesignObject *drvr_pin_port, Net *curr_net,
-                                             TimingDBAdapter *db_adapter) {
-  RoutingTree *tree = makeRoutingTree(curr_net, db_adapter, RoutingType::kSteiner);
-
-  if (tree) {
-    vector<int> segment_idx;
-    vector<int> length_wire;
-    tree->drvrToLoadLength(tree->get_root(), segment_idx, length_wire, 0);
-
-    std::vector<std::pair<int, int>> wire_segment_idx;
-    std::vector<int>                 length_per_wire;
-
-    tree->segmentIndexAndLength(tree->get_root(), wire_segment_idx, length_per_wire);
-
-    int numb = wire_segment_idx.size();
-    for (int i = 0; i != numb; ++i) {
-      int      index1 = wire_segment_idx[i].first;
-      int      index2 = wire_segment_idx[i].second;
-      RctNode *n1 = _timing_engine->makeOrFindRCTreeNode(curr_net, index1);
-      RctNode *n2 = _timing_engine->makeOrFindRCTreeNode(curr_net, index2);
-
-      int length_dbu = length_per_wire[i];
-      if (length_dbu == 0) {
-        _timing_engine->makeResistor(curr_net, n1, n2, 1.0e-3);
-      } else {
-        std::optional<double> width = std::nullopt;
-        double                cap = dynamic_cast<TimingIDBAdapter *>(db_adapter)
-                         ->getCapacitance(1, (double)length_dbu / _dbu, width);
-        double res = dynamic_cast<TimingIDBAdapter *>(db_adapter)
-                         ->getResistance(1, (double)length_dbu / _dbu, width);
-
-        if (curr_net->isClockNet()) {
-          cap /= 10.0;
-          res /= 10.0;
-        // } else {
-        //   cap /= 2.0;
-        //   res /= 2.0;
-        }
-
-        _timing_engine->incrCap(n1, cap / 2.0, true);
-        _timing_engine->makeResistor(curr_net, n1, n2, res);
-        _timing_engine->incrCap(n2, cap / 2.0, true);
-      }
-      RctNodeConnectPin(curr_net, index1, n1, tree);
-      RctNodeConnectPin(curr_net, index2, n2, tree);
-    }
-
-    _timing_engine->updateRCTreeInfo(curr_net);
-
-    delete tree;
-  }
-}
-
-void EstimateParasitics::RctNodeConnectPin(Net *net, int index, RctNode *rcnode,
-                                           RoutingTree *tree) {
-  int num_pins = tree->get_pins().size();
-  if (tree->get_pin_visit(index) == 1) {
+void EstimateParasitics::excuteWireParasitic(Net* curr_net)
+{
+  TimingDBAdapter* db_adapter = timingEngine->get_sta_adapter();
+  RoutingTree* tree = makeRoutingTree(curr_net, db_adapter, RoutingType::kSteiner);
+  if (!tree) {
     return;
   }
-  if (index < num_pins) {
-    tree->set_pin_visit(index);
-    RctNode *pin_node = _timing_engine->makeOrFindRCTreeNode(tree->get_pin(index));
-    if (index == tree->get_root()->get_id()) {
-      _timing_engine->makeResistor(net, pin_node, rcnode, 1.0e-3);
-    } else {
-      _timing_engine->makeResistor(net, rcnode, pin_node, 1.0e-3);
-    }
+
+  vector<int> segment_idx;
+  vector<int> length_wire;
+  tree->driverToLoadLength(tree->get_root(), segment_idx, length_wire, 0);
+
+  std::vector<std::pair<int, int>> wire_segment_idx;
+  std::vector<int> length_per_wire;
+
+  tree->segmentIndexAndLength(tree->get_root(), wire_segment_idx, length_per_wire);
+
+  for (int i = 0; i < (int) wire_segment_idx.size(); ++i) {
+    updateParastic(curr_net, wire_segment_idx[i].first, wire_segment_idx[i].second, length_per_wire[i], tree);
   }
+
+  timingEngine->get_sta_engine()->updateRCTreeInfo(curr_net);
+
+  delete tree;
 }
 
-void EstimateParasitics::parasiticsInvalid(Net *net) {
+void EstimateParasitics::updateParastic(Net* curr_net, int index1, int index2, int length_per_wire, RoutingTree* tree)
+{
+  RctNode* node1 = timingEngine->get_sta_engine()->makeOrFindRCTreeNode(curr_net, index1);
+  RctNode* node2 = timingEngine->get_sta_engine()->makeOrFindRCTreeNode(curr_net, index2);
+
+  if (length_per_wire == 0) {
+    timingEngine->refineRes(node1, node2, curr_net);
+  } else {
+    std::optional<double> width = std::nullopt;
+    double wire_len_cap = timingEngine->get_sta_adapter()->getCapacitance(1, (double) length_per_wire / toDmInst->get_dbu(), width);
+    double wire_len_res = timingEngine->get_sta_adapter()->getResistance(1, (double) length_per_wire / toDmInst->get_dbu(), width);
+
+    if (curr_net->isClockNet()) {
+      wire_len_cap /= 10.0;
+      wire_len_res /= 10.0;
+    }
+
+    timingEngine->refineRes(node1, node2, curr_net, wire_len_res, true, wire_len_cap);
+  }
+
+  /// reconnect pins
+  RctNodeConnectPins(index1, node1, index2, node2, curr_net, tree);
+}
+
+void EstimateParasitics::RctNodeConnectPins(int index1, RctNode* node1, int index2, RctNode* node2, Net* net, RoutingTree* tree)
+{
+  auto pin_con = [](Net* net, int index, RctNode* rcnode, RoutingTree* tree) {
+    int num_pins = tree->get_pins().size();
+    if (tree->get_pin_visit(index) == 1) {
+      return;
+    }
+    if (index < num_pins) {
+      tree->set_pin_visit(index);
+      RctNode* pin_node = timingEngine->get_sta_engine()->makeOrFindRCTreeNode(tree->get_pin(index));
+      if (index == tree->get_root()->get_id()) {
+        timingEngine->refineRes(pin_node, rcnode, net);
+      } else {
+        timingEngine->refineRes(rcnode, pin_node, net);
+      }
+    }
+  };
+
+  pin_con(net, index1, node1, tree);
+  pin_con(net, index2, node2, tree);
+}
+
+void EstimateParasitics::invalidNetRC(Net* net)
+{
   // printf("EstimateParasitics | parasitics invalid {%s}\n", net->get_name());
-  _parasitics_invalid.insert(net);
+  _parasitics_invalid_nets.insert(net);
 }
 
-} // namespace ito
+}  // namespace ito

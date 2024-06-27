@@ -57,18 +57,11 @@ struct WAPinInfo
 
   void reset();
 
-  // maxExpSum_: holds exp(x_i/gamma)
-  // minExpSum_: holds exp(-x_i/gamma)
-  // the x_i is equal to cx_ variable.
-  //
   float max_ExpSum_x = 0;
   float max_ExpSum_y = 0;
   float min_ExpSum_x = 0;
   float min_ExpSum_y = 0;
-  // flag variables
-  // check whether
-  // this pin is considered in a WA models.
-  //
+
   unsigned char has_MaxExpSum_x : 1;
   unsigned char has_MaxExpSum_y : 1;
 
@@ -115,22 +108,11 @@ struct WANetInfo
 
   void reset();
 
-  // X forces
-  // waExpMinSumX_: store sigma {exp(x_i/gamma)}
-  // waXExpMinSumX_: store signa {x_i*exp(e_i/gamma)}
-  // waExpMaxSumX_ : store sigma {exp(-x_i/gamma)}
-  // waXExpMaxSumX_: store sigma {x_i*exp(-x_i/gamma)}
-  //
   float wa_ExpMinSum_x = 0;
   float wa_X_ExpMinSum_x = 0;
   float wa_ExpMaxSum_x = 0;
   float wa_X_ExpMaxSum_x = 0;
-  // Y forces
-  // waExpMinSumY_: store sigma {exp(y_i/gamma)}
-  // waYExpMinSumY_: store signa {y_i*exp(e_i/gamma)}
-  // waExpMaxSumY_ : store sigma {exp(-y_i/gamma)}
-  // waYExpMaxSumY_: store sigma {y_i*exp(-y_i/gamma)}
-  //
+
   float wa_ExpMinSum_y = 0;
   float wa_Y_ExpMinSum_y = 0;
   float wa_ExpMaxSum_y = 0;

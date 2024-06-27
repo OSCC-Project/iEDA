@@ -1219,9 +1219,9 @@ void InitialRouter::debugOutputGuide(IRModel& ir_model)
     return;
   }
   RTUTIL.pushStream(guide_file_stream, "guide net_name\n");
-  RTUTIL.pushStream(guide_file_stream, "pin g_x g_y r_x r_y l c\n");
-  RTUTIL.pushStream(guide_file_stream, "wire g1_x g1_y g2_x g2_y r1_x r1_y r2_x r2_y l\n");
-  RTUTIL.pushStream(guide_file_stream, "via g_x g_y r_x r_y l1 l2\n");
+  RTUTIL.pushStream(guide_file_stream, "pin grid_x grid_y real_x real_y layer energy name\n");
+  RTUTIL.pushStream(guide_file_stream, "wire grid1_x grid1_y grid2_x grid2_y real1_x real1_y real2_x real2_y layer\n");
+  RTUTIL.pushStream(guide_file_stream, "via grid_x grid_y real_x real_y layer1 layer2\n");
 
   for (auto& [net_idx, segment_set] : RTDM.getGlobalNetResultMap(die)) {
     IRNet& ir_net = ir_net_list[net_idx];
@@ -1240,7 +1240,8 @@ void InitialRouter::debugOutputGuide(IRModel& ir_model)
       } else {
         connnect = "load";
       }
-      RTUTIL.pushStream(guide_file_stream, "pin ", grid_x, " ", grid_y, " ", real_x, " ", real_y, " ", layer, " ", connnect, "\n");
+      RTUTIL.pushStream(guide_file_stream, "pin ", grid_x, " ", grid_y, " ", real_x, " ", real_y, " ", layer, " ", connnect, " ",
+                        ir_pin.get_pin_name(), "\n");
     }
     for (Segment<LayerCoord>* segment : segment_set) {
       LayerCoord first_layer_coord = segment->get_first();

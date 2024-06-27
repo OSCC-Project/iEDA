@@ -16,11 +16,11 @@
 // ***************************************************************************************
 #include "ToApi.hpp"
 
-int main() {
+int main()
+{
   std::string config_file = " ";
 
-  ToApiInst.initTO(config_file);
-  ToApiInst.iTODataInit();
+  ToApiInst.init(config_file);
   ToApiInst.runTO();
 
   ToApiInst.destroyInst();

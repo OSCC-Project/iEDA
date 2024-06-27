@@ -20,6 +20,7 @@
 #include "builder.h"
 #include "flow_config.h"
 #include "idm.h"
+#include "usage/usage.hh"
 
 namespace iplf {
 PlacerIO* PlacerIO::_instance = nullptr;
@@ -144,13 +145,13 @@ bool PlacerIO::runFillerInsertion(std::string config)
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 bool PlacerIO::runMacroPlacement()
 {
-  if (!iPLAPIInst.isPlacerDBStarted()) {
-    this->initPlacer("");
-  } else {
-    iPLAPIInst.updatePlacerDB();
-  }
+  // if (!iPLAPIInst.isPlacerDBStarted()) {
+  //   this->initPlacer("");
+  // } else {
+  //   iPLAPIInst.updatePlacerDB();
+  // }
 
-  iPLAPIInst.runMP();
+  // iPLAPIInst.runMP();
 
   return true;
 }

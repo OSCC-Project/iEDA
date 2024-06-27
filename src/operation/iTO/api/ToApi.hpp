@@ -21,65 +21,54 @@
 #include <string>
 #include <vector>
 
-#include "ids.hpp"
-#include "../source/io/DbInterface.h"
 #include "../iTO.h"
+#include "define.h"
+#include "ids.hpp"
 
 namespace ieda_feature {
-    class TimingOptSummary;
-}// namespace
+class TimingOptSummary;
+}  // namespace ieda_feature
 
 namespace ito {
 
 #define ToApiInst (ito::ToApi::getInst())
 
-class ToApi {
+class ToApi
+{
  public:
-  static ToApi &getInst();
-  static void   destroyInst();
+  static ToApi& getInst()
+  {
+    if (_instance == nullptr) {
+      _instance = new ToApi();
+    }
 
-  void initTO(const std::string &ITO_CONFIG_PATH);
-  void iTODataInit(idb::IdbBuilder *idb = nullptr, ista::TimingEngine *timing = nullptr);
-  void resetiTOData(idb::IdbBuilder *idb, ista::TimingEngine *timing = nullptr);
+    return *_instance;
+  }
+  static void destroyInst();
+
+  void init(const std::string& ITO_CONFIG_PATH);
+  void initEngine();
   // function API
   void runTO();
-  void optimizeDesignViolation();
+  void optimizeDrv();
   void optimizeSetup();
   void optimizeHold();
 
-  void initCTSDesignViolation(idb::IdbBuilder *idb, ista::TimingEngine *timing);
-  std::vector<idb::IdbNet *> optimizeCTSDesignViolation(idb::IdbNet *idb_net, Tree *topo);
-
   void saveDef(std::string saved_def_path = "");
 
-  ToConfig *get_to_config();
   void resetConfigLibs(std::vector<std::string>& paths);
   void resetConfigSdc(std::string& path);
-  Tree     *get_tree(const int&size);
-  void addTopoEdge(Tree *topo, const int &first_id, const int &second_id, const int &x1,
-                   const int &y1, const int &x2, const int &y2);
-  void topoIdToDesignObject(ito::Tree *topo, const int &id, ista::DesignObject *sta_pin);
-  void topoSetDriverId(ito::Tree *topo, const int &id);
+
   void reportTiming();
-  std::vector<EvalData> getEvalData() { return _ito->get_db_interface()->eval_data(); }
 
   ieda_feature::TimingOptSummary outputSummary();
 
  private:
-  static ToApi *_to_api_instance;
-  ToApi() = default;
-  ToApi(const ToApi &other) = delete;
-  ToApi(ToApi &&other) = delete;
-  ~ToApi() = default;
-  ToApi &operator=(const ToApi &other) = delete;
-  ToApi &operator=(ToApi &&other) = delete;
+  static ToApi* _instance;
+  ToApi();
+  ~ToApi();
 
-  idb::IdbBuilder    *initIDB();
-  ista::TimingEngine *initISTA(idb::IdbBuilder *idb);
-
-  ito::iTO           *_ito = nullptr;
-  idb::IdbBuilder    *_idb = nullptr;
-  ista::TimingEngine *_timing_engine = nullptr;
+  ito::iTO* _ito = nullptr;
 };
 
-} // namespace ito
+}  // namespace ito
