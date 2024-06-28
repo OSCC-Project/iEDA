@@ -14,12 +14,34 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-#include "Master.h"
-#include "IdbCellMaster.h"
+#include "Utility.h"
+#include "data_manager.h"
+#include "idm.h"
 
 namespace ito {
-Master::Master(idb::IdbCellMaster *idb_master) {
-  _width = idb_master->get_width();
-  _height = idb_master->get_height();
+
+double ToDataManager::calculateDesignArea(Layout* layout, int dbu)
+{
+  double design_area = 0.0;
+  for (auto inst : layout->get_insts()) {
+    Master* master = inst->get_master();
+    design_area += calcMasterArea(master, dbu);
+  }
+  return design_area;
 }
-} // namespace ito
+
+double ToDataManager::calculateCoreArea(Rectangle core, int dbu)
+{
+  double core_x = dbuToMeters(core.get_dx(), dbu);
+  double core_y = dbuToMeters(core.get_dy(), dbu);
+  return core_x * core_y;
+}
+
+double ToDataManager::calcMasterArea(Master* master, int dbu)
+{
+  double width = dbuToMeters(master->get_width(), dbu);
+  double height = dbuToMeters(master->get_height(), dbu);
+  return width * height;
+}
+
+}  // namespace ito

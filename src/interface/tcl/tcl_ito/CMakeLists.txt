@@ -11,6 +11,7 @@ target_link_libraries(tcl_ito
         shell-cmd
         str
         tcl_util
+        ito_api
 )
 
 target_include_directories(tcl_ito

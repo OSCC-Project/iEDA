@@ -15,42 +15,46 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 #pragma once
-
+#include <map>
+#include <set>
 #include <string>
 #include <vector>
 
+namespace ista {
+class TimingEngine;
+class TimingIDBAdapter;
+class TimingDBAdapter;
+class DesignObject;
+class RctNode;
+class Net;
+class Pin;
+class Instance;
+class StaVertex;
+class LibCell;
+class LibPort;
+class LibArc;
+class StaSeqPathData;
+enum class AnalysisMode;
+enum class TransType;
+}  // namespace ista
+
 namespace ito {
-class Rectangle {
- public:
-  Rectangle() : _min_x(0), _max_x(0), _min_y(0), _max_y(0){};
-  Rectangle(const int lx, const int hx, const int ly, const int hy)
-      : _min_x(lx), _max_x(hx), _min_y(ly), _max_y(hy){};
-  ~Rectangle() = default;
 
-  int get_x_min() const { return _min_x; }
-  int get_x_max() const { return _max_x; }
-  int get_y_min() const { return _min_y; }
-  int get_y_max() const { return _max_y; }
+using namespace ista;
 
-  int get_dx() { return abs(_max_x - _min_x); }
-  int get_dy() { return abs(_max_y - _min_y); }
+using TODelay = double;
+using TOSlew = TODelay;
+using TOSlack = TODelay;
+using TOSlacks = TOSlack[2][2];
+using TORequired = TODelay;
+using TOArcDelay = TODelay;
 
-  /**
-   * @brief A point intersects the interior of this rectangle
-   *
-   * @param x
-   * @param y
-   * @return true
-   * @return false
-   */
-  bool overlaps(int x, int y) {
-    return (x >= _min_x) && (x <= _max_x) && (y >= _min_y) && (y <= _max_y);
-  }
+using TOLevel = int;
+using TOVertexSeq = std::vector<StaVertex*>;
+using TOLibertyCellSeq = std::vector<LibCell*>;
+using TODesignObjSeq = std::vector<ista::DesignObject*>;
+using TOVertexSet = std::set<StaVertex*>;
 
- private:
-  int _min_x;
-  int _max_x;
-  int _min_y;
-  int _max_y;
-};
-} // namespace ito
+using TOSlewTarget = std::array<TOSlew, 2>;  // TransType: kFall / kRise;
+
+}  // namespace ito

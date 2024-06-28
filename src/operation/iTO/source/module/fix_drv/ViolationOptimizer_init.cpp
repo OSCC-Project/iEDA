@@ -14,31 +14,30 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-#pragma once
-
-#include "../config/ToConfig.h"
-#include "json.hpp"
-#include <fstream>
-#include <mutex>
+#include "Master.h"
+#include "Placer.h"
+#include "Reporter.h"
+#include "ToConfig.h"
+#include "ViolationOptimizer.h"
+#include "api/TimingEngine.hh"
+#include "api/TimingIDBAdapter.hh"
+#include "timing_engine.h"
 
 namespace ito {
-using Json = nlohmann::json;
 
-class JsonParser {
- public:
-  static JsonParser *get_json_parser();
+bool ViolationOptimizer::init()
+{
+  /// init buffer
+  if (false == initBuffer()) {
+    LOG_ERROR_IF(!_insert_buffer_cell) << "Can not found specified buffer.\n";
+    return false;
+  }
 
-  void parse(const string &json_file, ToConfig *config) const;
+  // update timing
+  toEvalInst->estimateAllNetParasitics();
+  timingEngine->get_sta_engine()->updateTiming();
 
- private:
-  JsonParser() = default;
-  JsonParser(const JsonParser &parser) = delete;
-  JsonParser &operator=(const JsonParser &) = default;
+  return true;
+}
 
-  void jsonToConfig(Json *json, ToConfig *config) const;
-
-  void printConfig(ToConfig *config) const;
-
-  static JsonParser *_json_parser;
-};
-} // namespace ito
+}  // namespace ito

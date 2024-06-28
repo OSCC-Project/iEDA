@@ -90,6 +90,13 @@ class CongestionEval
   double evalMaxContinuousSpace();
   void evalIOPinAccess(const std::string& filename);
 
+  // refactor
+  void evalMacroDens();
+  void evalMacroPinDens();
+  void evalCellPinDens();
+  void evalMacroChannel(float die_size_ratio = 0.5);
+  void evalCellHierarchy(const std::string& plot_path, int level = 1, int forward = 1);
+  void evalMacroHierarchy(const std::string& plot_path, int level = 1, int forward = 1);
 
   /////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////
@@ -173,6 +180,9 @@ class CongestionEval
   float getUsageCapacityRatio(Tile* tile);
   CongPin* wrapCongPin(idb::IdbPin* idb_pin);
   std::string fixSlash(std::string raw_str);
+  std::vector<std::string> splitHier(const std::string& str, char delimiter);
+  std::string getHierByLevel(const std::string& hier, int level, int forward);
+
 };
 
 }  // namespace eval

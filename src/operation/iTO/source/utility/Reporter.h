@@ -28,6 +28,10 @@
 using std::string;
 using std::vector;
 
+namespace ista {
+class Net;
+}
+
 namespace ito {
 using std::endl;
 using std::ios;
@@ -36,25 +40,29 @@ using std::setw;
 using std::string;
 using std::vector;
 
-class Reporter {
+#define toRptInst Reporter::get_instance()
+
+class Reporter
+{
  public:
-  Reporter() = default;
-  Reporter(const string path) : _output_path(path) {}
-  ~Reporter() = default;
+  static Reporter* get_instance();
+  static void destroy_instance();
+
+  void init(std::string path) { _output_path = path; }
 
   void reportTime(bool begin);
 
-  void reportDRVResult(int repair_count, int slew_violations, int length_violations,
-                       int cap_violations, int fanout_violations, bool before);
+  void reportDRVResult(int slew_violations, int cap_violations, bool before);
   void reportSetupResult(std::vector<double> slack_store);
-  void reportHoldResult(vector<double> hold_slacks, vector<int> hold_vio_num,
-                        vector<int> insert_buf_num, double slack, int insert_buf);
+  void reportHoldResult(std::vector<double> timing_slacks_hold, std::vector<int> hold_vio_num, std::vector<int> insert_buf_num, double slack,
+                        int insert_buf);
 
-  void reportNetInfo(ista::Net *net, double max_cap);
+  void reportNetInfo(ista::Net* net, double cap_load_allowed_max);
 
   void report(const string info);
 
-  ofstream &get_ofstream() {
+  std::ofstream& get_ofstream()
+  {
     if (!_outfile.is_open()) {
       _outfile.open(_output_path, std::ios::app);
     }
@@ -62,9 +70,14 @@ class Reporter {
   }
 
  private:
-  string   _output_path;
-  ofstream _outfile;
+  static Reporter* _instance;
+
+  std::string _output_path;
+  std::ofstream _outfile;
 
   int _check_count = 1;
+
+  Reporter() = default;
+  ~Reporter() = default;
 };
-} // namespace ito
+}  // namespace ito

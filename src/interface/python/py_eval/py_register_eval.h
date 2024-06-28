@@ -30,6 +30,15 @@ void register_eval(py::module& m)
   
   // congestion evalation
   m.def("init_cong_eval", init_cong_eval, py::arg("bin_cnt_x"), py::arg("bin_cnt_y"));
+  m.def("eval_macro_density", eval_macro_density);
+  m.def("eval_macro_pin_density", eval_macro_pin_density);
+  m.def("eval_cell_pin_density", eval_cell_pin_density);
+  m.def("eval_macro_margin", eval_macro_margin);
+  m.def("eval_continuous_white_space", eval_continuous_white_space);
+  m.def("eval_macro_channel", eval_macro_channel, py::arg("die_size_ratio"));
+  m.def("eval_cell_hierarchy", eval_cell_hierarchy,py::arg("plot_path"), py::arg("level"), py::arg("forward") );
+  m.def("eval_macro_hierarchy", eval_macro_hierarchy, py::arg("plot_path"), py::arg("level"),py::arg("forward"));
+
   m.def("eval_inst_density", eval_inst_density, py::arg("inst_status"), py::arg("eval_flip_flop"));
   m.def("eval_pin_density", eval_pin_density, py::arg("inst_status"), py::arg("level"));
   m.def("eval_rudy_cong", eval_rudy_cong, py::arg("rudy_type"), py::arg("direction"));
