@@ -439,8 +439,9 @@ void Sta::linkDesignWithRustParser(const char *top_cell_name) {
       }
     } else if (rust_is_module_inst_stmt(stmt)) {
       RustVerilogInst *verilog_inst = rust_convert_verilog_inst(stmt);
-      const char *inst_name = verilog_inst->inst_name;
-      inst_name = Str::trimmed(inst_name);
+      std::string inst_name = verilog_inst->inst_name;
+      inst_name = Str::trimmed(inst_name.c_str());
+      inst_name = Str::replace(inst_name, " ", "");
 
       const char *liberty_cell_name = verilog_inst->cell_name;
       auto port_connections = verilog_inst->port_connections;
@@ -452,7 +453,7 @@ void Sta::linkDesignWithRustParser(const char *top_cell_name) {
         continue;
       }
 
-      Instance inst(inst_name, inst_cell);
+      Instance inst(inst_name.c_str(), inst_cell);
 
       /*lambda function create net for connect instance pin*/
       auto create_net_connection = [verilog_inst, inst_cell, &inst,
