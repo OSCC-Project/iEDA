@@ -190,6 +190,11 @@ class Sta {
 
   auto& get_clock_groups() const { return _clock_groups; }
 
+  void set_link_cells(std::set<std::string>&& link_cells) {
+    _link_cells = std::move(link_cells);
+  }
+  auto& get_link_cells() { return _link_cells; }
+
   // void initScriptEngine();
   SdcConstrain* getConstrain();
 
@@ -521,6 +526,7 @@ class Sta {
   Vector<std::unique_ptr<LibLibrary>>
       _libs;  //!< The design libs of different corners.
 
+  std::set<std::string> _link_cells; //!< The linked cell names for liberty load.
   std::unique_ptr<LibClassifyCell>
       _classified_cells;  //!< The function equivalently liberty cell.
 

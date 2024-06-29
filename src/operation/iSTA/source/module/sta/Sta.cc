@@ -271,7 +271,9 @@ unsigned Sta::readLiberty(const char *lib_file) {
   if (!IsFileExists(lib_file)) {
     return 0;
   }
+  auto& link_cells = get_link_cells();
   Lib lib;
+  lib.set_build_cells(link_cells);
   auto load_lib = lib.loadLibertyWithRustParser(lib_file);
   addLib(std::move(load_lib));
 

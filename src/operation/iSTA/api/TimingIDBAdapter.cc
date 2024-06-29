@@ -689,6 +689,21 @@ void TimingIDBAdapter::deleteNet(Net* sta_net) {
 }
 
 /**
+ * @brief config sta the need link cell to speed up load liberty.
+ *
+ */
+void TimingIDBAdapter::configStaLinkCells() {
+  std::set<std::string> link_cells;
+  auto db_inst_list = _idb_design->get_instance_list()->get_instance_list();
+  for (auto* db_inst : db_inst_list) {
+    std::string liberty_cell_name = db_inst->get_cell_master()->get_name();
+    link_cells.insert(std::move(liberty_cell_name));
+  }
+
+  _ista->set_link_cells(std::move(link_cells));
+}
+
+/**
  * @brief convert the idb to timing netlist.
  *
  * @return unsigned

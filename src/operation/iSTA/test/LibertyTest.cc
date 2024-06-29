@@ -40,9 +40,11 @@ class LibertyTest : public testing::Test {
 
 TEST_F(LibertyTest, rust_reader) {
   const char* lib_path =
-      "/home/taosimin/iEDA/src/database/manager/parser/liberty/lib-rust/"
-      "liberty-parser/example/example1_slow.lib";
+      "/home/ieda/ssta-data/lib/lib/tcbn28hpcplusbwp30p140ulvtssg0p81v125c.lib";
   Lib lib;
+
+  std::set<std::string> build_cells{"AN2D0BWP30P140ULVT"};
+  lib.set_build_cells(std::move(build_cells));
   auto library = lib.loadLibertyWithRustParser(lib_path);
 }
 
@@ -55,10 +57,3 @@ TEST_F(LibertyTest, rust_expr_builder) {
 
 }  // namespace
 
-int main(int argc, char** argv) {
-  ::testing::InitGoogleTest(&argc, argv);
-
-  testing::GTEST_FLAG(filter) = "LibertyTest.rust_expr_builder*";
-  testing::GTEST_FLAG(filter) = "StaTest.read_error_file*";
-  return RUN_ALL_TESTS();
-}
