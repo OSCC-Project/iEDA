@@ -720,6 +720,10 @@ unsigned TimingIDBAdapter::convertDBToTimingNetlist() {
     return 0;
   }
 
+  // link liberty lazy to build netlist.
+  configStaLinkCells();
+  _ista->linkLibertys();
+
   _ista->set_design_name(_idb_design->get_design_name().c_str());
   int dbu = _idb_design->get_units()->get_micron_dbu();
   double width = _idb_design->get_layout()->get_die()->get_width() /

@@ -42,7 +42,6 @@ void RustLibertyExprBuilder::execute() {
   _result_expr = rust_convert_expr(rust_expr_result);
 }
 
-
 /**
  * @brief Visit the liberty simple attribute statement.
  *
@@ -1269,17 +1268,36 @@ unsigned RustLibertyReader::visitGroup(RustLibertyGroupStmt* group) {
 unsigned RustLibertyReader::readLib() {
   LOG_INFO << "load liberty file " << _file_name;
 
-  auto* lib_file = rust_parse_lib(_file_name.c_str());
-  if (lib_file) {
-    auto* lib_group = rust_convert_raw_group_stmt(lib_file);
-    unsigned result = visitGroup(lib_group);
-    rust_free_lib_group(lib_file);
+  _lib_file = rust_parse_lib(_file_name.c_str());
 
-    LOG_INFO << "load liberty file " << _file_name << " success.";
+  if (!_lib_file) {
+    LOG_INFO << "load liberty file " << _file_name << " failed.";
+    return 0;
+  }
+
+  LOG_INFO << "load liberty file " << _file_name << " success.";
+  return 1;
+
+}
+
+/**
+ * @brief link the lib to construct the data.
+ * 
+ * @return unsigned 
+ */
+unsigned RustLibertyReader::linkLib() {
+  LOG_INFO << "link liberty file " << _file_name << " start.";
+  if (_lib_file) {
+    auto* lib_group = rust_convert_raw_group_stmt(_lib_file);
+    unsigned result = visitGroup(lib_group);
+    rust_free_lib_group(_lib_file);
+
+    LOG_INFO << "link liberty file " << _file_name << " success.";
     return result;
   }
 
-  LOG_INFO << "load liberty file " << _file_name << " failed.";
+  LOG_INFO << "link liberty file " << _file_name << " failed.";
   return 0;
 }
+
 }  // namespace ista

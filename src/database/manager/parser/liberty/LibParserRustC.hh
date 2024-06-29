@@ -390,7 +390,9 @@ class RustLibertyReader
   unsigned visitPowerTable(RustLibertyGroupStmt* group);
 
   unsigned visitGroup(RustLibertyGroupStmt* group);
+
   unsigned readLib();
+  unsigned linkLib();
 
   void set_library_builder(LibBuilder* library_builder) { _library_builder = library_builder; }
   auto* get_library_builder() { return _library_builder; }
@@ -399,7 +401,8 @@ class RustLibertyReader
   const char* getGroupAttriName(RustLibertyGroupStmt* group);
   unsigned visitStmtInGroup(RustLibertyGroupStmt* group);
 
-  std::set<std::string> _build_cells; //!< The needed cells.
+  void* _lib_file = nullptr; //!< The parsered lib file.
+  std::set<std::string> _build_cells; //!< The needed cells.  
 
   std::string _file_name;        //!< The liberty file name.
   LibBuilder* _library_builder;  //!< The liberty library builder.

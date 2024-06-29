@@ -212,6 +212,7 @@ class Sta {
   auto& get_top_module_name() { return _top_module_name; }
 
   unsigned readVerilogWithRustParser(const char* verilog_file);
+  void collectLinkedCell();
   void linkDesignWithRustParser(const char* top_cell_name);
   void set_design_name(const char* design_name) {
     _netlist.set_name(design_name);
@@ -223,6 +224,12 @@ class Sta {
 
   Netlist* get_netlist() { return &_netlist; }
   void resetNetlist() { _netlist.reset(); }
+
+  void addLibReaders(RustLibertyReader lib_reader) {
+    std::unique_lock<std::mutex> lk(_mt);
+    _lib_readers.emplace_back(std::move(lib_reader));
+  }
+  auto& get_lib_readers() { return _lib_readers; }
 
   void addLib(std::unique_ptr<LibLibrary> lib) {
     std::unique_lock<std::mutex> lk(_mt);
@@ -237,6 +244,7 @@ class Sta {
 
   Vector<std::unique_ptr<LibLibrary>>& getAllLib() { return _libs; }
 
+  unsigned linkLibertys();
   void resetRcNet(Net* the_net) {
     if (_net_to_rc_net.contains(the_net)) {
       _net_to_rc_net.erase(the_net);
@@ -523,10 +531,14 @@ class Sta {
   RustVerilogModule* _rust_top_module =
       nullptr;       //!< The design top module of rust version.
   Netlist _netlist;  //!< The current top netlist for sta analysis.
+
+  std::vector<RustLibertyReader>
+      _lib_readers;  //!< The design lib parsed files.
   Vector<std::unique_ptr<LibLibrary>>
       _libs;  //!< The design libs of different corners.
 
-  std::set<std::string> _link_cells; //!< The linked cell names for liberty load.
+  std::set<std::string>
+      _link_cells;  //!< The linked cell names for liberty load.
   std::unique_ptr<LibClassifyCell>
       _classified_cells;  //!< The function equivalently liberty cell.
 

@@ -1789,15 +1789,9 @@ class Lib {
   Lib() = default;
   ~Lib() = default;
 
-  void set_build_cells(std::set<std::string> build_cells) {
-    _build_cells = std::move(build_cells);
-  }
-  auto& get_build_cells() { return _build_cells; }
-
-  std::unique_ptr<LibLibrary> loadLibertyWithRustParser(const char* file_name);
+  RustLibertyReader loadLibertyWithRustParser(const char* file_name);
 
  private:
-  std::set<std::string> _build_cells;  //! The cells to be build.
   FORBIDDEN_COPY(Lib);
 };
 

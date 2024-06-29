@@ -76,7 +76,7 @@ static bool IsFileExists(const char *name) {
   std::ifstream f(name);
   bool is_exit = f.good();
   if (!is_exit) {
-    LOG_WARNING << "Can't read file:" << name << ".";
+    LOG_FATAL << "File:" << name << " is not exist.";
   }
   f.close();
   return is_exit;
@@ -271,11 +271,10 @@ unsigned Sta::readLiberty(const char *lib_file) {
   if (!IsFileExists(lib_file)) {
     return 0;
   }
-  auto& link_cells = get_link_cells();
+  
   Lib lib;
-  lib.set_build_cells(link_cells);
   auto load_lib = lib.loadLibertyWithRustParser(lib_file);
-  addLib(std::move(load_lib));
+  addLibReaders(std::move(load_lib));
 
   return 1;
 }
@@ -321,6 +320,45 @@ unsigned Sta::readLiberty(std::vector<std::string> &lib_files) {
 }
 
 /**
+ * @brief Link liberty according the builded cells to construct the lib data, if
+ * build cell is empty, link all.
+ *
+ * @return unsigned
+ */
+unsigned Sta::linkLibertys() {
+  auto link_lib = [this](auto& lib_rust_reader) {
+    auto &link_cells = get_link_cells();
+    lib_rust_reader.set_build_cells(link_cells);
+    lib_rust_reader.linkLib();
+    auto lib = lib_rust_reader.get_library_builder()->takeLib();
+
+    auto *lib_builder = lib_rust_reader.get_library_builder();
+    delete lib_builder;
+
+    addLib(std::move(lib));
+
+  };
+
+#if 0
+  for (auto &lib_rust_reader : _lib_readers) {
+    link_lib(lib_rust_reader);
+  }
+
+#else
+  {
+    ThreadPool pool(get_num_threads());
+
+    for (auto &lib_rust_reader : _lib_readers) {
+      pool.enqueue([link_lib, &lib_rust_reader]() { link_lib(lib_rust_reader); });
+    }
+  }
+
+#endif
+
+  return 1;
+}
+
+/**
  * @brief Read the verilog file.
  *
  * @param verilog_file
@@ -338,6 +376,22 @@ unsigned Sta::readVerilogWithRustParser(const char *verilog_file) {
 }
 
 /**
+ * @brief collect linked cell to speed up liberty load.
+ *
+ */
+void Sta::collectLinkedCell() {
+  auto top_module_stmts = _rust_top_module->module_stmts;
+  void *stmt;
+  FOREACH_VEC_ELEM(&top_module_stmts, void, stmt) {
+   if (rust_is_module_inst_stmt(stmt)) {
+      RustVerilogInst *verilog_inst = rust_convert_verilog_inst(stmt);
+      const char *liberty_cell_name = verilog_inst->cell_name;
+      _link_cells.insert(std::string(liberty_cell_name));
+   }
+  }
+}
+
+/**
  * @brief Link the design file to design netlist use rust parser.
  *
  * @param top_cell_name
@@ -352,6 +406,11 @@ void Sta::linkDesignWithRustParser(const char *top_cell_name) {
   _rust_top_module = _rust_verilog_reader.get_top_module();
   LOG_FATAL_IF(!_rust_top_module) << "top module not found.";
   set_design_name(_rust_top_module->module_name);
+
+  // collect linked cell for lib load.
+  collectLinkedCell();
+  // then link libs.
+  linkLibertys();
 
   auto top_module_stmts = _rust_top_module->module_stmts;
   Netlist &design_netlist = _netlist;
