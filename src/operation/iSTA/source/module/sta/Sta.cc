@@ -326,6 +326,12 @@ unsigned Sta::readLiberty(std::vector<std::string> &lib_files) {
  * @return unsigned
  */
 unsigned Sta::linkLibertys() {
+
+  // if linked library, not repeat link.
+  if (!_libs.empty()) {
+    return 1;
+  }
+
   auto link_lib = [this](auto& lib_rust_reader) {
     auto &link_cells = get_link_cells();
     lib_rust_reader.set_build_cells(link_cells);

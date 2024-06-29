@@ -700,7 +700,7 @@ void TimingIDBAdapter::configStaLinkCells() {
     link_cells.insert(std::move(liberty_cell_name));
   }
 
-  _ista->set_link_cells(std::move(link_cells));
+  _ista->addLinkCells(std::move(link_cells));
 }
 
 /**
@@ -708,7 +708,7 @@ void TimingIDBAdapter::configStaLinkCells() {
  *
  * @return unsigned
  */
-unsigned TimingIDBAdapter::convertDBToTimingNetlist() {
+unsigned TimingIDBAdapter::convertDBToTimingNetlist(bool link_all_cell) {
   // reset all net to rc net
   _ista->resetAllRcNet();
 
@@ -721,7 +721,10 @@ unsigned TimingIDBAdapter::convertDBToTimingNetlist() {
   }
 
   // link liberty lazy to build netlist.
-  configStaLinkCells();
+  if (!link_all_cell) {
+    configStaLinkCells();
+  }
+  
   _ista->linkLibertys();
 
   _ista->set_design_name(_idb_design->get_design_name().c_str());

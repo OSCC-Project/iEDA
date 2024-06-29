@@ -188,7 +188,7 @@ class TimingIDBAdapter : public TimingDBAdapter {
   }
 
   void configStaLinkCells();
-  unsigned convertDBToTimingNetlist() override;
+  unsigned convertDBToTimingNetlist(bool link_all_cell = false) override;
 
  private:
   unsigned makeTopCell();  // to do

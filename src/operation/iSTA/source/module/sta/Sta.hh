@@ -190,12 +190,11 @@ class Sta {
 
   auto& get_clock_groups() const { return _clock_groups; }
 
-  void set_link_cells(std::set<std::string>&& link_cells) {
-    _link_cells = std::move(link_cells);
+  void addLinkCells(std::set<std::string> link_cells) {
+    _link_cells.insert(link_cells.begin(), link_cells.end());
   }
   auto& get_link_cells() { return _link_cells; }
 
-  // void initScriptEngine();
   SdcConstrain* getConstrain();
 
   unsigned readDesignWithRustParser(const char* verilog_file);

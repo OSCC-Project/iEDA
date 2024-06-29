@@ -52,7 +52,7 @@ class TimingDBAdapter {
     LOG_FATAL << "The function is not implemented.";
   }
 
-  virtual unsigned convertDBToTimingNetlist() {
+  virtual unsigned convertDBToTimingNetlist(bool link_all_cell = false) {
     LOG_FATAL << "The function is not implemented.";
     return 1;
   }
