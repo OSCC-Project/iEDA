@@ -28,6 +28,7 @@
 #include <vector>
 
 #include "Config.hh"
+#include "idm.h"
 #include "module/logger/Log.hh"
 
 namespace ipl {
@@ -61,7 +62,7 @@ void Config::initConfigByJson(nlohmann::json json)
   int32_t is_congestion_effort = getDataByJson(json, {"PL", "is_congestion_effort"});
   int32_t ignore_net_degree = getDataByJson(json, {"PL", "ignore_net_degree"});
   int32_t num_threads = getDataByJson(json, {"PL", "num_threads"});
-  std::string pl_dir = getDataByJson(json, {"PL", "pl_dir"});
+  std::string pl_dir = dmInst->get_config().get_output_path();
 
   // Global Placer
   float init_wirelength_coef = getDataByJson(json, {"PL", "GP", "Wirelength", "init_wirelength_coef"});
@@ -166,14 +167,14 @@ void Config::initConfigByJson(nlohmann::json json)
     _nes_config.set_is_opt_max_wirelength(false);
     _nes_config.set_max_net_wirelength(-1);
   }
-  if(is_timing_effort){
+  if (is_timing_effort) {
     _nes_config.set_is_opt_timing(true);
-  }else{
+  } else {
     _nes_config.set_is_opt_timing(false);
   }
-  if(is_congestion_effort){
+  if (is_congestion_effort) {
     _nes_config.set_is_opt_congestion(true);
-  }else{
+  } else {
     _nes_config.set_is_opt_congestion(false);
   }
 

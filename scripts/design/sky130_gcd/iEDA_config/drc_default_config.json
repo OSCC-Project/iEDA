@@ -5,6 +5,6 @@
         "def_path": ""
     },
     "OUTPUT": {
-        "output_dir_path": "${RESULT_DIR}/drc"
+        "output_dir_path": "./drc"
     }
 }

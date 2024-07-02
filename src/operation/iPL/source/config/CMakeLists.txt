@@ -13,3 +13,8 @@ target_include_directories(ipl-configurator
 )
 
 target_include_directories(ipl-configurator PUBLIC ${iPL_CONFIG})
+
+target_link_libraries(ipl-configurator
+    PRIVATE
+        idm
+)

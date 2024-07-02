@@ -16,6 +16,8 @@
 // ***************************************************************************************
 #include "JsonParser.h"
 
+#include "idm.h"
+
 namespace ito {
 bool JsonParser::parse()
 {
@@ -48,7 +50,8 @@ void JsonParser::jsonToConfig(Json* json)
   }
   toConfig->set_lef_files(paths);
   toConfig->set_def_file(file_path.at("def_file").get<string>());
-  toConfig->set_design_work_space(file_path.at("design_work_space").get<string>());
+  //   toConfig->set_design_work_space(file_path.at("design_work_space").get<string>());
+  toConfig->set_design_work_space(dmInst->get_config().get_output_path() + "./to");
   toConfig->set_sdc_file(file_path.at("sdc_file").get<string>());
   paths.clear();
 
@@ -58,9 +61,9 @@ void JsonParser::jsonToConfig(Json* json)
   }
   toConfig->set_lib_files(paths);
   paths.clear();
-  toConfig->set_output_def_file(file_path.at("output_def").get<string>());
-  toConfig->set_report_file(file_path.at("report_file").get<string>());
-  toConfig->set_gds_file(file_path.at("gds_file").get<string>());
+  toConfig->set_output_def_file(dmInst->get_config().get_output_path() + "./to/ito_result.def");
+  toConfig->set_report_file(dmInst->get_config().get_output_path() + "./to/report.txt");
+  toConfig->set_gds_file(dmInst->get_config().get_output_path() + "./to/to.gds");
 
   toConfig->set_setup_target_slack(json->at("setup_target_slack").get<float>());
   toConfig->set_hold_target_slack(json->at("hold_target_slack").get<float>());
@@ -112,13 +115,12 @@ void JsonParser::jsonToConfig(Json* json)
 
   toConfig->set_drv_buffer_prefix(specific_prefix.at("drv").at("make_buffer").get<string>());
   toConfig->set_drv_net_prefix(specific_prefix.at("drv").at("make_net").get<string>());
-  
+
   toConfig->set_hold_buffer_prefix(specific_prefix.at("hold").at("make_buffer").get<string>());
   toConfig->set_hold_net_prefix(specific_prefix.at("hold").at("make_net").get<string>());
-  
+
   toConfig->set_setup_buffer_prefix(specific_prefix.at("setup").at("make_buffer").get<string>());
   toConfig->set_setup_net_prefix(specific_prefix.at("setup").at("make_net").get<string>());
-
 
   cout << "[ToConfig Info] output report file path = " << toConfig->get_report_file() << endl;
   cout << "[ToConfig Info] output gds file path = " << toConfig->get_gds_file() << endl;
