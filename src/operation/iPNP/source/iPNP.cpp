@@ -74,7 +74,8 @@ void iPNP::optimize()
 }
 
 void iPNP::synthesizeNetwork(){
-
+  NetworkSynthesis network("optimizer", _current_opt_network);
+  network.writeDef();
 }
 
 void iPNP::run()
