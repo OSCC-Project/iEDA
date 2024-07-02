@@ -45,17 +45,19 @@ iPNP::~iPNP()
 void iPNP::initSynthesize()
 {
   //TODO: 使用fastplacer后决定region摆放，但哪个region上放哪个Template用随机
+  //v1.0先不考虑不规则region(fastplacer)
   //should include writeDef().
   
   /*
   FastPlacer fast_placer;
   fast_placer.fastPlace(_input_netlist);
   idb::IdbLayer* fast_place_result = fast_placer.getPlaceResult();
-
-  NetworkSynthesis network_synthesizer;
-  network_synthesizer.synthesizeNetwork(fast_place_result);
-  _initialized_network = network_synthesizer.getNetwork();
   */
+  
+  GridManager empty_grid;
+  NetworkSynthesis network_synthesizer("default", empty_grid);
+  network_synthesizer.synthesizeNetwork();
+  _initialized_network = network_synthesizer.getNetwork();
 }
 
 void iPNP::optimize()
