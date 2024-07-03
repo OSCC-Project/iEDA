@@ -14,10 +14,11 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
+#include "tcl_plconfig.h"
+
 #include <any>
 #include <iomanip>
 
-#include "tcl_plconfig.h"
 #include "tcl_util.h"
 
 namespace tcl {
@@ -51,20 +52,20 @@ CmdPLConfig::CmdPLConfig(const char* cmd_name) : TclCmd(cmd_name)
     // enable_networkflow int
     _config_list.push_back(std::make_pair("-enable_networkflow", ValueType::kInt));
 
-    TclUtil::addOption(this, _config_list);
+  TclUtil::addOption(this, _config_list);
 }
 
 unsigned CmdPLConfig::exec()
 {
-    std::map<std::string, std::any> config_map = TclUtil::getConfigMap(this, _config_list);
-    
-    if (config_map.empty()) {
-        return 0;
-    }
-    std::string config_json_path = std::any_cast<std::string>(config_map["-config_json_path"]);
-    config_map.erase("-config_json_path");
-    TclUtil::alterJsonConfig(config_json_path, config_map);
-    return 1;
+  std::map<std::string, std::any> config_map = TclUtil::getConfigMap(this, _config_list);
+
+  if (config_map.empty()) {
+    return 0;
+  }
+  std::string config_json_path = std::any_cast<std::string>(config_map["-config_json_path"]);
+  config_map.erase("-config_json_path");
+  TclUtil::alterJsonConfig(config_json_path, config_map);
+  return 1;
 }
 
 }  // namespace tcl

@@ -165,14 +165,14 @@ void Config::initConfigByJson(nlohmann::json json)
     _nes_config.set_is_opt_max_wirelength(false);
     _nes_config.set_max_net_wirelength(-1);
   }
-  if(is_timing_effort){
+  if (is_timing_effort) {
     _nes_config.set_is_opt_timing(true);
-  }else{
+  } else {
     _nes_config.set_is_opt_timing(false);
   }
-  if(is_congestion_effort){
+  if (is_congestion_effort) {
     _nes_config.set_is_opt_congestion(true);
-  }else{
+  } else {
     _nes_config.set_is_opt_congestion(false);
   }
 

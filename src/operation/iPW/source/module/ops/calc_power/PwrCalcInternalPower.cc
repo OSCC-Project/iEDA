@@ -88,7 +88,7 @@ double PwrCalcInternalPower::calcCombInputPinPower(Instance* inst,
   auto* cell_port = input_pin->get_cell_port();
   auto* lib_cell = cell_port->get_ower_cell();
 
-  LibertyInternalPowerInfo* internal_power;
+  LibInternalPowerInfo* internal_power;
   FOREACH_INTERNAL_POWER(cell_port, internal_power) {
     /*get internal power of this condition.*/
     // rise power
@@ -163,7 +163,7 @@ double PwrCalcInternalPower::calcOutputPinPower(Instance* inst,
   }
 
   // lambda function, convert load to power lib unit.
-  auto convert_load_to_lib_unit = [](LibertyPowerArc* power_arc,
+  auto convert_load_to_lib_unit = [](LibPowerArc* power_arc,
                                      double load_pf) -> double {
     auto* the_lib = power_arc->get_owner_cell()->get_owner_lib();
 
@@ -191,7 +191,7 @@ double PwrCalcInternalPower::calcOutputPinPower(Instance* inst,
 
     auto query_power =
         [sta_arc, convert_load_to_lib_unit](
-            LibertyPowerArc* power_arc,
+            LibPowerArc* power_arc,
             TransType trans_type) -> std::tuple<double, double, double> {
       auto* internal_power_info = power_arc->get_internal_power_info().get();
       auto input_slew_ns = sta_arc->get_src()->getSlewNs(
@@ -217,7 +217,7 @@ double PwrCalcInternalPower::calcOutputPinPower(Instance* inst,
 
     auto* power_arc_set =
         dynamic_cast<PwrInstArc*>(snk_arc)->get_power_arc_set();
-    LibertyPowerArc* power_arc;
+    LibPowerArc* power_arc;
     FOREACH_POWER_LIB_ARC(power_arc_set, power_arc) {
       auto [rise_power_mw, rise_input_slew_ns, rise_output_load] =
           query_power(power_arc, TransType::kRise);
@@ -291,7 +291,7 @@ double PwrCalcInternalPower::calcClockPinPower(Instance* inst, Pin* clock_pin,
   auto* cell_port = clock_pin->get_cell_port();
   auto* lib_cell = cell_port->get_ower_cell();
 
-  LibertyInternalPowerInfo* internal_power;
+  LibInternalPowerInfo* internal_power;
   FOREACH_INTERNAL_POWER(cell_port, internal_power) {
     /*get internal power of this condition.*/
     // rise power
@@ -366,7 +366,7 @@ double PwrCalcInternalPower::calcSeqInputPinPower(Instance* inst,
   auto* cell_port = input_pin->get_cell_port();
   auto* lib_cell = cell_port->get_ower_cell();
 
-  LibertyInternalPowerInfo* internal_power;
+  LibInternalPowerInfo* internal_power;
   FOREACH_INTERNAL_POWER(cell_port, internal_power) {
     /*get internal power of this condition.*/
     // rise power

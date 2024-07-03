@@ -20,7 +20,7 @@
 
 #include "delay/ElmoreDelayCalc.hh"
 #include "gtest/gtest.h"
-#include "liberty/Liberty.hh"
+#include "liberty/Lib.hh"
 #include "log/Log.hh"
 #include "netlist/Net.hh"
 #include "netlist/Netlist.hh"
@@ -28,7 +28,7 @@
 
 using ieda::Log;
 using ista::DesignObject;
-using ista::Liberty;
+using ista::Lib;
 using ista::Net;
 using ista::NetIterator;
 using ista::Netlist;

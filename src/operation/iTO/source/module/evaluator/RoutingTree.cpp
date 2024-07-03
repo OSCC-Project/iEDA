@@ -22,23 +22,24 @@
 namespace ito {
 int RoutingTree::_null_pt = -1;
 
-void getConnectedPins(Net *net,
-                      // Return value.
-                      TODesignObjSeq &pins) {
+void getConnectedPins(ista::Net* net,
+                      TODesignObjSeq& pins)
+{
   pins.clear();
-  DesignObject *obj;
-  FOREACH_NET_PIN(net, obj) { pins.push_back(obj); }
+  DesignObject* obj;
+  FOREACH_NET_PIN(net, obj)
+  {
+    pins.push_back(obj);
+  }
 }
 
-void RoutingTree::plotConectionInfo(const std::string file_name,
-                                    const std::string net_name, RoutingTree *tree,
-                                    Rectangle core) {
+void RoutingTree::plotConectionInfo(const std::string file_name, const std::string net_name, RoutingTree* tree, Rectangle core)
+{
   std::string path = "/output/";
 
   std::ofstream dot_connection(path + file_name + ".gds");
   if (!dot_connection.good()) {
-    std::cerr << "write_connection:: cannot open `" << file_name << "' for writing."
-              << std::endl;
+    std::cerr << "write_connection:: cannot open `" << file_name << "' for writing." << std::endl;
     exit(1);
   }
 
@@ -67,7 +68,7 @@ void RoutingTree::plotConectionInfo(const std::string file_name,
   int64_t wire_width = 160;
 
   std::vector<std::pair<int, int>> wire_segment_idx;
-  std::vector<int>                 length_per_wire;
+  std::vector<int> length_per_wire;
 
   tree->segmentIndexAndLength(tree->get_root(), wire_segment_idx, length_per_wire);
   int numb = wire_segment_idx.size();
@@ -83,10 +84,8 @@ void RoutingTree::plotConectionInfo(const std::string file_name,
     feed << "DATATYPE 0" << std::endl;
     feed << "WIDTH " + std::to_string(wire_width) << std::endl;
     feed << "XY" << std::endl;
-    feed << tree->get_location(index1).get_x() << " : "
-         << tree->get_location(index1).get_y() << std::endl;
-    feed << tree->get_location(index2).get_x() << " : "
-         << tree->get_location(index2).get_y() << std::endl;
+    feed << tree->get_location(index1).get_x() << " : " << tree->get_location(index1).get_y() << std::endl;
+    feed << tree->get_location(index2).get_x() << " : " << tree->get_location(index2).get_y() << std::endl;
     feed << "ENDEL" << std::endl;
   }
   feed << "ENDSTR" << std::endl;
@@ -96,8 +95,8 @@ void RoutingTree::plotConectionInfo(const std::string file_name,
   dot_connection.close();
 }
 
-void RoutingTree::plotPinName(std::stringstream &feed, const std::string net_name,
-                              RoutingTree *tree, int id) {
+void RoutingTree::plotPinName(std::stringstream& feed, const std::string net_name, RoutingTree* tree, int id)
+{
   feed << "TEXT" << std::endl;
   feed << "LAYER 1" << std::endl;
   feed << "TEXTTYPE 0" << std::endl;
@@ -107,60 +106,59 @@ void RoutingTree::plotPinName(std::stringstream &feed, const std::string net_nam
   feed << "MAG 1875" << std::endl;
   feed << "XY" << std::endl;
   auto loc = tree->get_location(id);
-  int  pin_x = loc.get_x();
-  int  pin_y = loc.get_y();
+  int pin_x = loc.get_x();
+  int pin_y = loc.get_y();
   feed << pin_x << " : " << pin_y << std::endl;
 
-  if (tree->get_pin(id)) { // the real pin.
-    const char *name = tree->get_pin(id)->get_name();
-    string      str(name);
+  if (tree->get_pin(id)) {  // the real pin.
+    const char* name = tree->get_pin(id)->get_name();
+    string str(name);
     feed << "STRING " + str << std::endl;
-  } else { // the stainer pin.
+  } else {  // the stainer pin.
     feed << "STRING " + net_name + " : " + std::to_string(id) << std::endl;
   }
   feed << "ENDEL" << std::endl;
 }
 
-RoutingTree *makeRoutingTree(Net *net, TimingDBAdapter *db_adapter,
-                             RoutingType rout_type) {
-  RoutingTree  *tree = new RoutingTree();
-  TODesignObjSeq &pins = tree->get_pins();
-  vector<Point> points;
-  // get drvr
-  DesignObject *drvr_pin_port = net->getDriver();
-  if (!drvr_pin_port) {
+RoutingTree* makeRoutingTree(ista::Net* net, ista::TimingDBAdapter* db_adapter, RoutingType rout_type)
+{
+  RoutingTree* tree = new RoutingTree();
+  TODesignObjSeq& pins = tree->get_pins();
+  std::vector<Point> points;
+  // get driver
+  DesignObject* driver_pin_port = net->getDriver();
+  if (!driver_pin_port) {
     delete tree;
     return nullptr;
   }
 
-  TimingIDBAdapter       *idb_adapter = dynamic_cast<TimingIDBAdapter *>(db_adapter);
-  IdbCoordinate<int32_t> *loc = idb_adapter->idbLocation(drvr_pin_port);
-  Point                   drvr_loc = Point(loc->get_x(), loc->get_y());
+  ista::TimingIDBAdapter* idb_adapter = dynamic_cast<ista::TimingIDBAdapter*>(db_adapter);
+  idb::IdbCoordinate<int32_t>* loc = idb_adapter->idbLocation(driver_pin_port);
+  Point driver_loc = Point(loc->get_x(), loc->get_y());
 
   getConnectedPins(net, pins);
   int pin_count = pins.size();
   if (pin_count >= 2) {
-    int *x = new int[pin_count];
-    int *y = new int[pin_count];
+    int* x = new int[pin_count];
+    int* y = new int[pin_count];
 
-    bool  have_set_root = false;
-    Node *root = nullptr;
+    bool have_set_root = false;
+    Node* root = nullptr;
 
     Point before;
-    int   pin_idx = 0;
+    int pin_idx = 0;
     for (int i = 0; i < pin_count; i++) {
-      DesignObject     *pin = pins[i];
-      TimingIDBAdapter *idb_adapter = dynamic_cast<TimingIDBAdapter *>(db_adapter);
+      DesignObject* pin = pins[i];
 
-      IdbCoordinate<int32_t> *loc = idb_adapter->idbLocation(pin);
-      Point                   pin_loc = Point(loc->get_x(), loc->get_y());
+      idb::IdbCoordinate<int32_t>* loc = idb_adapter->idbLocation(pin);
+      Point pin_loc = Point(loc->get_x(), loc->get_y());
 
       points.push_back(pin_loc);
 
-      // Designate drvr_pin_port as root
-      if (drvr_loc == pin_loc) {
-        Node *root_drvr = new Node(drvr_loc);
-        tree->set_root(root_drvr);
+      // Designate driver_pin_port as root
+      if (driver_loc == pin_loc) {
+        Node* root_driver = new Node(driver_loc);
+        tree->set_root(root_driver);
         have_set_root = true;
       }
 
@@ -176,8 +174,12 @@ RoutingTree *makeRoutingTree(Net *net, TimingDBAdapter *db_adapter,
     }
     tree->set_points(points);
     switch (rout_type) {
-    case RoutingType::kHVTree: tree->makeHVTree(x, y); break;
-    case RoutingType::kSteiner: tree->makeSteinerTree(x, y); break;
+      case RoutingType::kHVTree:
+        tree->makeHVTree(x, y);
+        break;
+      case RoutingType::kSteiner:
+        tree->makeSteinerTree(x, y);
+        break;
     }
     // tree->makeSteinerTree(x, y);
     // tree->makeHVTree(x, y);
@@ -192,11 +194,12 @@ RoutingTree *makeRoutingTree(Net *net, TimingDBAdapter *db_adapter,
   return nullptr;
 }
 
-static int manhattanDistance(Node *n0, Node *n1) {
+static int manhattanDistance(Node* n0, Node* n1)
+{
   Point p0 = n0->get_location();
   Point p1 = n1->get_location();
-  int   x0 = p0.get_x();
-  int   x1 = p1.get_x();
+  int x0 = p0.get_x();
+  int x1 = p1.get_x();
 
   int y0 = p0.get_y();
   int y1 = p1.get_y();
@@ -207,8 +210,9 @@ static int manhattanDistance(Node *n0, Node *n1) {
 /**
  * @brief return max distance from driver pin to load pins.
  */
-void findMaxDistfromDrvr(Node *root, int curr_dist, int &max_dist) {
-  Node *first_child = root->get_first_child();
+void findMaxDistfromDrvr(Node* root, int curr_dist, int& max_dist)
+{
+  Node* first_child = root->get_first_child();
 
   if (first_child) {
     int dis = manhattanDistance(first_child, first_child->get_father_node());
@@ -218,10 +222,10 @@ void findMaxDistfromDrvr(Node *root, int curr_dist, int &max_dist) {
     max_dist = curr_dist > max_dist ? curr_dist : max_dist;
   }
 
-  Node *child = nullptr;
+  Node* child = nullptr;
   if (root->get_next_sibling()) {
     child = root->get_next_sibling();
-    int dis1 = manhattanDistance(child, child->get_father_node()); /////
+    int dis1 = manhattanDistance(child, child->get_father_node());  /////
     int dis = manhattanDistance(root, root->get_father_node());
     int sum2 = curr_dist - dis + dis1;
     findMaxDistfromDrvr(child, sum2, max_dist);
@@ -231,37 +235,37 @@ void findMaxDistfromDrvr(Node *root, int curr_dist, int &max_dist) {
 /**
  * @brief length from driver pin to all load pins
  */
-void RoutingTree::drvrToLoadLength(Node *root, vector<int> &load_index,
-                                   vector<int> &length, int curr_dist) {
-  Node *first_child = root->get_first_child();
+void RoutingTree::driverToLoadLength(Node* root, std::vector<int>& load_index, std::vector<int>& length, int curr_dist)
+{
+  Node* first_child = root->get_first_child();
   if (first_child) {
     int dis = manhattanDistance(first_child, first_child->get_father_node());
     int sum = curr_dist + dis;
-    if (first_child->get_id() < (int)_pins.size()) {
+    if (first_child->get_id() < (int) _pins.size()) {
       load_index.push_back(first_child->get_id());
       length.push_back(sum);
     }
-    drvrToLoadLength(first_child, load_index, length, sum);
+    driverToLoadLength(first_child, load_index, length, sum);
   }
 
-  Node *child = nullptr;
+  Node* child = nullptr;
   if (root->get_next_sibling()) {
     child = root->get_next_sibling();
-    int dis1 = manhattanDistance(child, child->get_father_node()); /////
+    int dis1 = manhattanDistance(child, child->get_father_node());  /////
     int dis = manhattanDistance(root, root->get_father_node());
     int sum = curr_dist - dis + dis1;
-    if (child->get_id() < (int)_pins.size()) {
+    if (child->get_id() < (int) _pins.size()) {
       load_index.push_back(child->get_id());
       length.push_back(sum);
     }
-    drvrToLoadLength(child, load_index, length, sum);
+    driverToLoadLength(child, load_index, length, sum);
   }
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
-void printTree(Node *root) {
-  printf("Id:%-2d    loc:(%-5d, %-5d)    neighbor:%-2d", root->get_id(),
-         root->get_location().get_x(), root->get_location().get_y(),
+void printTree(Node* root)
+{
+  printf("Id:%-2d    loc:(%-5d, %-5d)    neighbor:%-2d", root->get_id(), root->get_location().get_x(), root->get_location().get_y(),
          root->get_neighbor());
   // father
   if (root->get_father_node()) {
@@ -293,11 +297,9 @@ void printTree(Node *root) {
 void RoutingTree::Print(std::ostream& os) const
 {
   os << "Tree ";
-  os << "#pins=" << _pins.size() << endl;
-
+  os << "#pins=" << _pins.size() << std::endl;
 
   _root->PrintRecursive(os);
-
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -305,7 +307,8 @@ void RoutingTree::Print(std::ostream& os) const
  * @brief make RoutinTree by using FLUTE
  *
  */
-void RoutingTree::makeSteinerTree(int x[], int y[]) {
+void RoutingTree::makeSteinerTree(int x[], int y[])
+{
   // steiner tree
   Flute::Tree stTree;
   // int flute_accuracy = 3;
@@ -314,25 +317,25 @@ void RoutingTree::makeSteinerTree(int x[], int y[]) {
   stTree = Flute::flute(pin_count, x, y, FLUTE_ACCURACY);
   // Flute::printtree(stTree);
   // Find driver steiner point.
-  XCord drvr_x_coordinate = _root->get_location().get_x();
-  YCord drvr_y_coordinate = _root->get_location().get_y();
+  XCord driver_x_coordinate = _root->get_location().get_x();
+  YCord driver_y_coordinate = _root->get_location().get_y();
 
-  int                 drvr_steiner_pt{0};
-  int                 branch_count = stTree.deg * 2 - 2;
-  bool                find_drvr = true;
-  vector<vector<int>> adj(branch_count);
+  int driver_steiner_pt{0};
+  int branch_count = stTree.deg * 2 - 2;
+  bool find_driver = true;
+  std::vector<std::vector<int>> adj(branch_count);
   for (int i = 0; i < branch_count; i++) {
-    Flute::Branch &branch_pt = stTree.branch[i];
-    int            j = branch_pt.n;
+    Flute::Branch& branch_pt = stTree.branch[i];
+    int j = branch_pt.n;
     // printf("(%d, %d)\n", i, j);
     if (i != j) {
       adj[i].push_back(j);
       adj[j].push_back(i);
     }
-    if (find_drvr) {
-      if (branch_pt.x == drvr_x_coordinate && branch_pt.y == drvr_y_coordinate) {
-        drvr_steiner_pt = i;
-        find_drvr = false;
+    if (find_driver) {
+      if (branch_pt.x == driver_x_coordinate && branch_pt.y == driver_y_coordinate) {
+        driver_steiner_pt = i;
+        find_driver = false;
       }
     }
   }
@@ -345,14 +348,14 @@ void RoutingTree::makeSteinerTree(int x[], int y[]) {
   int root_id = findIndexInPoints(_root);
   _root->set_id(root_id);
 
-  findLeftRight(_root, -1, drvr_steiner_pt, adj, stTree);
+  findLeftRight(_root, -1, driver_steiner_pt, adj, stTree);
 
   _is_visit_pin.resize(_points.size(), 0);
 }
 
-void RoutingTree::findLeftRight(Node *father, int father_id, int child_id,
-                                vector<vector<int>> &adj, Flute::Tree stTree) {
-  Node *child = nullptr;
+void RoutingTree::findLeftRight(Node* father, int father_id, int child_id, std::vector<std::vector<int>>& adj, Flute::Tree stTree)
+{
+  Node* child = nullptr;
   for (int j : adj[child_id]) {
     Point pt = Point(stTree.branch[j].x, stTree.branch[j].y);
     if (j != father_id) {
@@ -365,8 +368,9 @@ void RoutingTree::findLeftRight(Node *father, int father_id, int child_id,
   }
 }
 
-void RoutingTree::insertTree(Node *father, Node *child, int id_child) {
-  Node *first_child = father->get_first_child();
+void RoutingTree::insertTree(Node* father, Node* child, int id_child)
+{
+  Node* first_child = father->get_first_child();
   if (first_child == nullptr) {
     father->set_first_child(child);
     int neighbor = findIndexInPoints(father);
@@ -390,7 +394,8 @@ void RoutingTree::insertTree(Node *father, Node *child, int id_child) {
   }
 }
 
-int RoutingTree::findIndexInPoints(Node *n, int id) {
+int RoutingTree::findIndexInPoints(Node* n, int id)
+{
   int pin_size = _pins.size();
   if (id < pin_size) {
     return findIndexInPoints(n);
@@ -399,7 +404,7 @@ int RoutingTree::findIndexInPoints(Node *n, int id) {
       return n->get_id();
     }
     auto target_pt = n->get_location();
-    int  num_of_pt = _points.size();
+    int num_of_pt = _points.size();
     for (int i = _pins.size(); i < num_of_pt; ++i) {
       if (target_pt == _points[i] && !_points[i].isVisit()) {
         n->set_id(i);
@@ -408,13 +413,14 @@ int RoutingTree::findIndexInPoints(Node *n, int id) {
       }
     }
   }
-  cout << "Can't find target pt in Points" << endl;
+  std::cout << "Can't find target pt in Points" << std::endl;
   exit(1);
   return 0;
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
-void RoutingTree::makeHVTree(int x[], int y[]) {
+void RoutingTree::makeHVTree(int x[], int y[])
+{
   /*
        (x1,y3)    (x_g,y3)          (x2,y3)                                           drv
           o-----------o-pt3------------o                                               |
@@ -432,7 +438,7 @@ void RoutingTree::makeHVTree(int x[], int y[]) {
   */
 
   int pin_count = _points.size();
-  assert(pin_count == (int)_pins.size());
+  assert(pin_count == (int) _pins.size());
 
   std::multimap<YCord, XCord> y_to_x_map;
   // Determine how many intermediate nodes should be inserted.
@@ -440,7 +446,7 @@ void RoutingTree::makeHVTree(int x[], int y[]) {
   for (int i = 0; i != pin_count; ++i) {
     coordinate_set.insert(y[i]);
 
-    pair<YCord, XCord> tmp(y[i], x[i]);
+    std::pair<YCord, XCord> tmp(y[i], x[i]);
     y_to_x_map.insert(tmp);
   }
 
@@ -453,20 +459,20 @@ void RoutingTree::makeHVTree(int x[], int y[]) {
 
   std::vector<YCord> y_cordinate_vec;
   for (YCord coordinate : coordinate_set) {
-    _points.push_back(Point(x_gravity, coordinate)); // add steiner point behind "_points"
+    _points.push_back(Point(x_gravity, coordinate));  // add steiner point behind "_points"
     y_cordinate_vec.push_back(coordinate);
   }
 
-  XCord drvr_x_coordinate = _root->get_location().get_x();
-  YCord drvr_y_coordinate = _root->get_location().get_y();
+  XCord driver_x_coordinate = _root->get_location().get_x();
+  YCord driver_y_coordinate = _root->get_location().get_y();
 
-  int pin_count_curr_y = y_to_x_map.count(drvr_y_coordinate);
+  int pin_count_curr_y = y_to_x_map.count(driver_y_coordinate);
   std::multimap<int, int>::iterator iter_curr;
-  iter_curr = y_to_x_map.find(drvr_y_coordinate);
+  iter_curr = y_to_x_map.find(driver_y_coordinate);
 
   // "x_gravity" is exactly the x-coordinate of a pin
-  bool          x_gravity_at_pin = false;
-  vector<XCord> pin_x_cord;
+  bool x_gravity_at_pin = false;
+  std::vector<XCord> pin_x_cord;
   for (int i = 0; i < pin_count_curr_y; i++, ++iter_curr) {
     pin_x_cord.push_back(iter_curr->second);
     if (x_gravity == iter_curr->second) {
@@ -479,36 +485,34 @@ void RoutingTree::makeHVTree(int x[], int y[]) {
     pin_count_curr_y += 1;
   }
 
-  // find the index of drvr pin
-  vector<XCord>::iterator itr =
-      find(pin_x_cord.begin(), pin_x_cord.end(), drvr_x_coordinate);
-  int   drvr_idx = distance(pin_x_cord.begin(), itr);
-  int   idx_begin_right = drvr_idx + 1;
-  int   idx_begin_left = drvr_idx - 1;
-  Node *first_steiner_pt = nullptr;
+  // find the index of driver pin
+  std::vector<XCord>::iterator itr = find(pin_x_cord.begin(), pin_x_cord.end(), driver_x_coordinate);
+  int driver_idx = distance(pin_x_cord.begin(), itr);
+  int idx_begin_right = driver_idx + 1;
+  int idx_begin_left = driver_idx - 1;
+  Node* first_steiner_pt = nullptr;
 
   // go right
-  Node *parent1 = _root;
+  Node* parent1 = _root;
   while (idx_begin_right < pin_count_curr_y) {
-    Point p_child = Point(pin_x_cord[idx_begin_right], drvr_y_coordinate);
-    Node *child = new Node(p_child);
+    Point p_child = Point(pin_x_cord[idx_begin_right], driver_y_coordinate);
+    Node* child = new Node(p_child);
     insertTree(parent1, child);
     if (pin_x_cord[idx_begin_right] == x_gravity
-        // steiner pt not at drvr pin location
-        && x_gravity != drvr_x_coordinate) {
+        // steiner pt not at driver pin location
+        && x_gravity != driver_x_coordinate) {
       first_steiner_pt = child;
     }
     parent1 = child;
     idx_begin_right++;
   }
   // go left
-  Node *parent2 = _root;
+  Node* parent2 = _root;
   while (idx_begin_left >= 0) {
-    Point p_child2 = Point(pin_x_cord[idx_begin_left], drvr_y_coordinate);
-    Node *child2 = new Node(p_child2);
+    Point p_child2 = Point(pin_x_cord[idx_begin_left], driver_y_coordinate);
+    Node* child2 = new Node(p_child2);
     insertTree(parent2, child2);
-    if (pin_x_cord[idx_begin_left] == x_gravity && x_gravity != drvr_x_coordinate &&
-        first_steiner_pt == nullptr) {
+    if (pin_x_cord[idx_begin_left] == x_gravity && x_gravity != driver_x_coordinate && first_steiner_pt == nullptr) {
       first_steiner_pt = child2;
     }
     parent2 = child2;
@@ -528,19 +532,18 @@ void RoutingTree::makeHVTree(int x[], int y[]) {
     _root->set_id(id);
   }
 
-  vector<int>::iterator it =
-      find(y_cordinate_vec.begin(), y_cordinate_vec.end(), drvr_y_coordinate);
+  std::vector<int>::iterator it = find(y_cordinate_vec.begin(), y_cordinate_vec.end(), driver_y_coordinate);
   auto index = std::distance(std::begin(y_cordinate_vec), it);
-  int  index2 = index;
+  int index2 = index;
 
   ///////////////////////////////////////////////////
-  Node *temp_node = first_steiner_pt;
+  Node* temp_node = first_steiner_pt;
   while (index > 0) {
     index--;
     updateTree(index, x_gravity, temp_node, y_cordinate_vec, y_to_x_map);
   }
-  Node *temp_node2 = first_steiner_pt;
-  int   number_of_intermediate_points = y_cordinate_vec.size() - 1;
+  Node* temp_node2 = first_steiner_pt;
+  int number_of_intermediate_points = y_cordinate_vec.size() - 1;
   while (index2 < number_of_intermediate_points) {
     index2++;
     updateTree(index2, x_gravity, temp_node2, y_cordinate_vec, y_to_x_map);
@@ -555,8 +558,9 @@ void RoutingTree::makeHVTree(int x[], int y[]) {
  * @param father
  * @param child
  */
-void RoutingTree::insertTree(Node *father, Node *child) {
-  Node *first_child = father->get_first_child();
+void RoutingTree::insertTree(Node* father, Node* child)
+{
+  Node* first_child = father->get_first_child();
   if (first_child == nullptr) {
     father->set_first_child(child);
     int neighbor = findIndexInPoints(father);
@@ -589,23 +593,23 @@ void RoutingTree::insertTree(Node *father, Node *child) {
  * @param cordinate_vec y-coordinate of all Steiner point
  * @param cordinate_to_x_map x-coordinate of nodes with the same y-coordinate
  */
-void RoutingTree::updateTree(int index, XCord x_coordinate, Node *&parent,
-                             std::vector<int>            cordinate_vec,
-                             std::multimap<YCord, XCord> cordinate_to_x_map) {
+void RoutingTree::updateTree(int index, XCord x_coordinate, Node*& parent, std::vector<int> cordinate_vec,
+                             std::multimap<YCord, XCord> cordinate_to_x_map)
+{
   YCord cur_y = cordinate_vec[index];
-  Node *father = new Node(Point(x_coordinate, cur_y));
+  Node* father = new Node(Point(x_coordinate, cur_y));
   insertTree(parent, father);
   parent = father;
 
-  int                               pin_count_curr_y = cordinate_to_x_map.count(cur_y);
+  int pin_count_curr_y = cordinate_to_x_map.count(cur_y);
   std::multimap<int, int>::iterator iter_curr;
   iter_curr = cordinate_to_x_map.find(cur_y);
 
   bool excute_once = true;
   // "x_gravity" is exactly the x-coordinate of a pin
-  bool          x_gravity_at_pin = false;
-  int           idx_begin_right = pin_count_curr_y - 1;
-  vector<XCord> pin_x_cord;
+  bool x_gravity_at_pin = false;
+  int idx_begin_right = pin_count_curr_y - 1;
+  std::vector<XCord> pin_x_cord;
   for (int i = 0; i < pin_count_curr_y; i++, ++iter_curr) {
     pin_x_cord.push_back(iter_curr->second);
     if (excute_once) {
@@ -624,11 +628,11 @@ void RoutingTree::updateTree(int index, XCord x_coordinate, Node *&parent,
   if (x_gravity_at_pin) {
     idx_begin_right = idx_begin_right + 1;
   }
-  Node *parent2 = father;
+  Node* parent2 = father;
   // go right
   while (idx_begin_right < pin_count_curr_y) {
     Point p_child = Point(pin_x_cord[idx_begin_right], cur_y);
-    Node *child = new Node(p_child);
+    Node* child = new Node(p_child);
     insertTree(father, child);
 
     father = child;
@@ -637,7 +641,7 @@ void RoutingTree::updateTree(int index, XCord x_coordinate, Node *&parent,
   // go left
   while (idx_begin_left >= 0) {
     Point p_child = Point(pin_x_cord[idx_begin_left], cur_y);
-    Node *child = new Node(p_child);
+    Node* child = new Node(p_child);
     insertTree(parent2, child);
 
     parent2 = child;
@@ -645,7 +649,8 @@ void RoutingTree::updateTree(int index, XCord x_coordinate, Node *&parent,
   }
 }
 
-DesignObject *RoutingTree::get_pin(int idx) const {
+DesignObject* RoutingTree::get_pin(int idx) const
+{
   int pin_count = _pins.size();
   if (idx < pin_count) {
     return _pins[idx];
@@ -657,12 +662,13 @@ DesignObject *RoutingTree::get_pin(int idx) const {
 /**
  * @brief Return the index of node in the member "_points"
  */
-int RoutingTree::findIndexInPoints(Node *n) {
+int RoutingTree::findIndexInPoints(Node* n)
+{
   if (n->get_id() != -1) {
     return n->get_id();
   }
   auto target_pt = n->get_location();
-  int  num_of_pt = _points.size();
+  int num_of_pt = _points.size();
   for (int i = 0; i < num_of_pt; ++i) {
     if (target_pt == _points[i] && !_points[i].isVisit()) {
       n->set_id(i);
@@ -670,7 +676,7 @@ int RoutingTree::findIndexInPoints(Node *n) {
       return i;
     }
   }
-  cout << "Can't find target pt in Points" << endl;
+  std::cout << "Can't find target pt in Points" << std::endl;
   exit(1);
   return 0;
 }
@@ -680,7 +686,8 @@ int RoutingTree::findIndexInPoints(Node *n) {
  *
  * This function needs to be executed before using each branch of the node
  */
-void RoutingTree::updateBranch() {
+void RoutingTree::updateBranch()
+{
   int numb_pts = _points.size();
   _left_branch.resize(numb_pts, _null_pt);
   _middle_branch.resize(numb_pts, _null_pt);
@@ -710,11 +717,12 @@ void RoutingTree::updateBranch() {
  *
  * @param root
  */
-void RoutingTree::preOrderTraversal(Node *root) {
+void RoutingTree::preOrderTraversal(Node* root)
+{
   int father_id = root->get_id();
 
   // since each node has at most three branches.
-  Node *first_child = root->get_first_child();
+  Node* first_child = root->get_first_child();
   if (first_child) {
     int first_child_id = first_child->get_id();
     _left_branch[father_id] = first_child_id;
@@ -726,8 +734,8 @@ void RoutingTree::preOrderTraversal(Node *root) {
     }
 
     if (first_child->get_next_sibling()) {
-      Node *third_child = first_child->get_next_sibling();
-      int   third_child_id = third_child->get_id();
+      Node* third_child = first_child->get_next_sibling();
+      int third_child_id = third_child->get_id();
       _right_branch[father_id] = third_child_id;
     }
   }
@@ -743,19 +751,18 @@ void RoutingTree::preOrderTraversal(Node *root) {
 /**
  * @brief Find all paths whose length is greater than the 'max_length'.
  */
-vector<vector<int>> RoutingTree::findPathOverMaxLength(Node *root, int sum,
-                                                       int max_length,
-                                                       // return values
-                                                       vector<vector<int>> &res) {
-  vector<int> vec;
+std::vector<std::vector<int>> RoutingTree::findPathOverMaxLength(Node* root, int sum, int max_length,
+                                                                 std::vector<std::vector<int>>& res)
+{
+  std::vector<int> vec;
   deepFirstSearch(root, sum, res, vec, max_length);
   return res;
 }
 
-void RoutingTree::deepFirstSearch(Node *root, int sum, vector<vector<int>> &res,
-                                  vector<int> vec, int max_length) {
-  Node *first_child = root->get_first_child();
-  int   id = root->get_id();
+void RoutingTree::deepFirstSearch(Node* root, int sum, std::vector<std::vector<int>>& res, std::vector<int> vec, int max_length)
+{
+  Node* first_child = root->get_first_child();
+  int id = root->get_id();
   vec.push_back(id);
 
   if (first_child) {
@@ -773,13 +780,13 @@ void RoutingTree::deepFirstSearch(Node *root, int sum, vector<vector<int>> &res,
     }
   }
 
-  Node *child = nullptr;
+  Node* child = nullptr;
   if (root->get_next_sibling()) {
     child = root->get_next_sibling();
   }
   if (child) {
     int dis1 = manhattanDistance(root, root->get_father_node());
-    int dis2 = manhattanDistance(child, child->get_father_node()); /////
+    int dis2 = manhattanDistance(child, child->get_father_node());  /////
     int sum2 = sum - dis1 + dis2;
     vec.pop_back();
     deepFirstSearch(child, sum2, res, vec, max_length);
@@ -789,20 +796,17 @@ void RoutingTree::deepFirstSearch(Node *root, int sum, vector<vector<int>> &res,
 /**
  * @brief Returns the index of the endpoint of each segment and it's wire length.
  */
-void RoutingTree::segmentIndexAndLength(Node *root,
-                                        // return values
-                                        vector<pair<int, int>> &wire_segment_idx,
-                                        vector<int>            &length) {
-  // the point at pts[index1] and pts[index2] are connected.
+void RoutingTree::segmentIndexAndLength(Node* root, std::vector<std::pair<int, int>>& wire_segment_idx, std::vector<int>& length)
+{
   int child_id = root->get_id();
 
   if (root->get_father_node()) {
     int fathe_id = root->get_father_node()->get_id();
-    int length_dbu = abs(_points[child_id].get_x() - _points[fathe_id].get_x()) +
-                     abs(_points[child_id].get_y() - _points[fathe_id].get_y());
+    int length_dbu
+        = abs(_points[child_id].get_x() - _points[fathe_id].get_x()) + abs(_points[child_id].get_y() - _points[fathe_id].get_y());
 
     // printf("ID: %d \t neirhbor:%d\n", fathe_id, child_id);
-    wire_segment_idx.push_back(pair(fathe_id, child_id));
+    wire_segment_idx.push_back(std::pair(fathe_id, child_id));
 
     length.push_back(length_dbu);
   }
@@ -814,4 +818,4 @@ void RoutingTree::segmentIndexAndLength(Node *root,
     segmentIndexAndLength(root->get_next_sibling(), wire_segment_idx, length);
   }
 }
-} // namespace ito
+}  // namespace ito

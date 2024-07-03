@@ -68,7 +68,7 @@ idb::IdbBuilder *NoApi::initIDB() {
   // }
   auto idb_builder = new IdbBuilder();
 
-  NoConfig      *no_config = _ino->get_config();
+  NoConfig *     no_config = _ino->get_config();
   string         def_file = no_config->get_def_file();
   vector<string> lef_files = no_config->get_lef_files();
 
@@ -80,8 +80,8 @@ idb::IdbBuilder *NoApi::initIDB() {
 ista::TimingEngine *NoApi::initISTA(idb::IdbBuilder *idb) {
   auto timing_engine = ista::TimingEngine::getOrCreateTimingEngine();
 
-  NoConfig            *no_config = _ino->get_config();
-  const char          *design_work_space = no_config->get_design_work_space().c_str();
+  NoConfig *           no_config = _ino->get_config();
+  const char *         design_work_space = no_config->get_design_work_space().c_str();
   vector<const char *> lib_files;
   for (auto &lib : no_config->get_lib_files()) {
     lib_files.push_back(lib.c_str());
@@ -150,11 +150,11 @@ ieda_feature::NetOptSummary NoApi::outputSummary() {
 
   std::ranges::for_each(clk_list, [&](ista::StaClock *clk) {
     auto clk_name = clk->get_clock_name();
-    auto  setup_wns = _timing_engine->reportWNS(clk_name, ista::AnalysisMode::kMax);
-    auto  setup_tns = _timing_engine->reportTNS(clk_name, ista::AnalysisMode::kMax);
-    auto  hold_wns = _timing_engine->reportWNS(clk_name, ista::AnalysisMode::kMin);
-    auto  hold_tns = _timing_engine->reportTNS(clk_name, ista::AnalysisMode::kMin);
-    auto  freq = 1000.0 / (clk->getPeriodNs() - setup_wns);
+    auto setup_wns = _timing_engine->getWNS(clk_name, ista::AnalysisMode::kMax);
+    auto setup_tns = _timing_engine->getTNS(clk_name, ista::AnalysisMode::kMax);
+    auto hold_wns = _timing_engine->getWNS(clk_name, ista::AnalysisMode::kMin);
+    auto hold_tns = _timing_engine->getTNS(clk_name, ista::AnalysisMode::kMin);
+    auto freq = 1000.0 / (clk->getPeriodNs() - setup_wns);
 
     ieda_feature::NONetTiming net_timing;
     std::string               net_name = clk_name;
@@ -171,8 +171,10 @@ ieda_feature::NetOptSummary NoApi::outputSummary() {
   for (auto [net_name, net_timings] : summary_map) {
 
     net_timings.net_name = net_name;
-    net_timings.delta.setup_tns = net_timings.opt.setup_tns - net_timings.origin.setup_tns;
-    net_timings.delta.setup_wns = net_timings.opt.setup_wns - net_timings.origin.setup_wns;
+    net_timings.delta.setup_tns =
+        net_timings.opt.setup_tns - net_timings.origin.setup_tns;
+    net_timings.delta.setup_wns =
+        net_timings.opt.setup_wns - net_timings.origin.setup_wns;
     net_timings.delta.hold_tns = net_timings.opt.hold_tns - net_timings.origin.hold_tns;
     net_timings.delta.hold_wns = net_timings.opt.hold_wns - net_timings.origin.hold_wns;
     net_timings.delta.suggest_freq =

@@ -31,7 +31,7 @@
 #include "core/PwrAnalysisData.hh"
 #include "core/PwrGraph.hh"
 #include "include/PwrConfig.hh"
-#include "liberty/Liberty.hh"
+#include "liberty/Lib.hh"
 
 namespace ipower {
 
@@ -45,7 +45,7 @@ class PwrCalcLeakagePower : public PwrFunc {
   auto& takeLeakagePowers() { return _leakage_powers; }
 
  private:
-  double calcLeakagePower(LibertyLeakagePower* leakage_power, Instance* inst);
+  double calcLeakagePower(LibLeakagePower* leakage_power, Instance* inst);
 
   void addLeakagePower(std::unique_ptr<PwrLeakageData> power_data) {
     _leakage_powers.emplace_back(std::move(power_data));

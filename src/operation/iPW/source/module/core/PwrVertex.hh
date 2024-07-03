@@ -81,7 +81,7 @@ class PwrVertex {
   }
   unsigned isSeqClockPin() { return isPin() && (_sta_vertex->is_clock()); }
 
-  LibertyPort* getLibertyPort() {
+  LibPort* getLibertyPort() {
     return isPin() ? dynamic_cast<ista::Pin*>(getDesignObj())->get_cell_port()
                    : nullptr;
   }

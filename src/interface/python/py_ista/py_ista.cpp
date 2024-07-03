@@ -20,6 +20,7 @@
 
 #include "api/TimingEngine.hh"
 #include "api/TimingIDBAdapter.hh"
+#include "log/Log.hh"
 #include "sta/Sta.hh"
 
 namespace python_interface {
@@ -120,6 +121,15 @@ std::vector<std::string> get_used_libs()
   }
 
   return ret;
+}
+
+bool initLog(std::string log_dir)
+{
+  char config[] = "test";
+  char* argv[] = {config};
+  ieda::Log::init(argv, log_dir);
+
+  return true;
 }
 
 }  // namespace python_interface

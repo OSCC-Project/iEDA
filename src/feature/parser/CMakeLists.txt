@@ -2,6 +2,7 @@ add_library(feature_parser
     feature_parser.cpp
     feature_parser_summary.cpp
     feature_parser_tools.cpp
+    feature_parser_eval.cpp
 )
 
 target_include_directories(feature_parser 

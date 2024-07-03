@@ -41,8 +41,8 @@
 #include "Type.hh"
 #include "aocv/AocvParser.hh"
 #include "delay/ElmoreDelayCalc.hh"
-#include "liberty/Liberty.hh"
-#include "liberty/LibertyClassifyCell.hh"
+#include "liberty/Lib.hh"
+#include "liberty/LibClassifyCell.hh"
 #include "netlist/Netlist.hh"
 #include "sdc/SdcSetIODelay.hh"
 #include "verilog/VerilogParserRustC.hh"
@@ -190,7 +190,11 @@ class Sta {
 
   auto& get_clock_groups() const { return _clock_groups; }
 
-  // void initScriptEngine();
+  void addLinkCells(std::set<std::string> link_cells) {
+    _link_cells.insert(link_cells.begin(), link_cells.end());
+  }
+  auto& get_link_cells() { return _link_cells; }
+
   SdcConstrain* getConstrain();
 
   unsigned readDesignWithRustParser(const char* verilog_file);
@@ -207,6 +211,7 @@ class Sta {
   auto& get_top_module_name() { return _top_module_name; }
 
   unsigned readVerilogWithRustParser(const char* verilog_file);
+  void collectLinkedCell();
   void linkDesignWithRustParser(const char* top_cell_name);
   void set_design_name(const char* design_name) {
     _netlist.set_name(design_name);
@@ -219,19 +224,26 @@ class Sta {
   Netlist* get_netlist() { return &_netlist; }
   void resetNetlist() { _netlist.reset(); }
 
-  void addLib(std::unique_ptr<LibertyLibrary> lib) {
+  void addLibReaders(RustLibertyReader lib_reader) {
+    std::unique_lock<std::mutex> lk(_mt);
+    _lib_readers.emplace_back(std::move(lib_reader));
+  }
+  auto& get_lib_readers() { return _lib_readers; }
+
+  void addLib(std::unique_ptr<LibLibrary> lib) {
     std::unique_lock<std::mutex> lk(_mt);
     _libs.emplace_back(std::move(lib));
   }
 
-  LibertyLibrary* getOneLib() {
+  LibLibrary* getOneLib() {
     return _libs.empty() ? nullptr : _libs.back().get();
   }
 
-  std::set<LibertyLibrary*> getUsedLibs();
+  std::set<LibLibrary*> getUsedLibs();
 
-  Vector<std::unique_ptr<LibertyLibrary>>& getAllLib() { return _libs; }
+  Vector<std::unique_ptr<LibLibrary>>& getAllLib() { return _libs; }
 
+  unsigned linkLibertys();
   void resetRcNet(Net* the_net) {
     if (_net_to_rc_net.contains(the_net)) {
       _net_to_rc_net.erase(the_net);
@@ -248,14 +260,14 @@ class Sta {
   }
   void resetAllRcNet() { _net_to_rc_net.clear(); }
 
-  LibertyCell* findLibertyCell(const char* cell_name);
+  LibCell* findLibertyCell(const char* cell_name);
   std::optional<AocvObjectSpecSet*> findDataAocvObjectSpecSet(
       const char* object_name);
   std::optional<AocvObjectSpecSet*> findClockAocvObjectSpecSet(
       const char* object_name);
-  void makeEquivCells(std::vector<LibertyLibrary*>& equiv_libs);
+  void makeClassifiedCells(std::vector<LibLibrary*>& equiv_libs);
 
-  Vector<LibertyCell*>* equivCells(LibertyCell* cell);
+  Vector<LibCell*>* classifyCells(LibCell* cell);
 
   static void initSdcCmd();
 
@@ -462,7 +474,7 @@ class Sta {
   std::set<std::string> findStartOrEnd(StaVertex* the_vertex, bool is_find_end);
   unsigned reportTiming(std::set<std::string>&& exclude_cell_names = {},
                         bool is_derate = false, bool is_clock_cap = false,
-                        bool is_copy = false);
+                        bool is_copy = true);
 
   void dumpVertexData(std::vector<std::string> vertex_names);
   void dumpNetlistData();
@@ -518,11 +530,16 @@ class Sta {
   RustVerilogModule* _rust_top_module =
       nullptr;       //!< The design top module of rust version.
   Netlist _netlist;  //!< The current top netlist for sta analysis.
-  Vector<std::unique_ptr<LibertyLibrary>>
+
+  std::vector<RustLibertyReader>
+      _lib_readers;  //!< The design lib parsed files.
+  Vector<std::unique_ptr<LibLibrary>>
       _libs;  //!< The design libs of different corners.
 
-  std::unique_ptr<LibertyClassifyCell>
-      _equiv_cells;  //!< The function equivalently liberty cell.
+  std::set<std::string>
+      _link_cells;  //!< The linked cell names for liberty load.
+  std::unique_ptr<LibClassifyCell>
+      _classified_cells;  //!< The function equivalently liberty cell.
 
   AnalysisMode _analysis_mode;  //!< The analysis max/min mode.
 

@@ -128,17 +128,17 @@ class TimingIDBAdapter : public TimingDBAdapter {
     return _sta2dbPin.contains(pin) ? _sta2dbPin[pin] : nullptr;
   }
 
-  LibertyCell* dbToSta(IdbCellMaster* master);
-  IdbCellMaster* staToDb(const LibertyCell* cell) const;
+  LibCell* dbToSta(IdbCellMaster* master);
+  IdbCellMaster* staToDb(const LibCell* cell) const;
 
-  LibertyPort* dbToSta(IdbTerm* idb_term);
-  IdbTerm* staToDb(LibertyPort* port) const;
+  LibPort* dbToSta(IdbTerm* idb_term);
+  IdbTerm* staToDb(LibPort* port) const;
 
   ////////////////////////Edit functions////////////////////////////////
 
-  virtual Instance* createInstance(LibertyCell* cell, const char* name);
+  virtual Instance* createInstance(LibCell* cell, const char* name);
   void deleteInstance(const char* instance_name);
-  virtual void substituteCell(Instance* inst, LibertyCell* cell);
+  virtual void substituteCell(Instance* inst, LibCell* cell);
 
   Pin* attach(Instance* inst, const char* port_name, Net* net);
   Port* attach(Port* port, const char* port_name, Net* net);
@@ -186,7 +186,9 @@ class TimingIDBAdapter : public TimingDBAdapter {
     _sta2dbPin.erase(sta_pin);
     _db2staPin.erase(db_pin);
   }
-  unsigned convertDBToTimingNetlist() override;
+
+  void configStaLinkCells();
+  unsigned convertDBToTimingNetlist(bool link_all_cell = false) override;
 
  private:
   unsigned makeTopCell();  // to do

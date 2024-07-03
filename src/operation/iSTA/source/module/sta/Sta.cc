@@ -55,7 +55,7 @@
 #include "ThreadPool/ThreadPool.h"
 #include "include/Version.hh"
 #include "json/json.hpp"
-#include "liberty/Liberty.hh"
+#include "liberty/Lib.hh"
 #include "log/Log.hh"
 #include "netlist/NetlistWriter.hh"
 #include "netlist/Pin.hh"
@@ -76,7 +76,7 @@ static bool IsFileExists(const char *name) {
   std::ifstream f(name);
   bool is_exit = f.good();
   if (!is_exit) {
-    LOG_WARNING << "Can't read file:" << name << ".";
+    LOG_FATAL << "File:" << name << " is not exist.";
   }
   f.close();
   return is_exit;
@@ -271,9 +271,10 @@ unsigned Sta::readLiberty(const char *lib_file) {
   if (!IsFileExists(lib_file)) {
     return 0;
   }
-  Liberty lib;
+  
+  Lib lib;
   auto load_lib = lib.loadLibertyWithRustParser(lib_file);
-  addLib(std::move(load_lib));
+  addLibReaders(std::move(load_lib));
 
   return 1;
 }
@@ -319,6 +320,51 @@ unsigned Sta::readLiberty(std::vector<std::string> &lib_files) {
 }
 
 /**
+ * @brief Link liberty according the builded cells to construct the lib data, if
+ * build cell is empty, link all.
+ *
+ * @return unsigned
+ */
+unsigned Sta::linkLibertys() {
+
+  // if linked library, not repeat link.
+  if (!_libs.empty()) {
+    return 1;
+  }
+
+  auto link_lib = [this](auto& lib_rust_reader) {
+    auto &link_cells = get_link_cells();
+    lib_rust_reader.set_build_cells(link_cells);
+    lib_rust_reader.linkLib();
+    auto lib = lib_rust_reader.get_library_builder()->takeLib();
+
+    auto *lib_builder = lib_rust_reader.get_library_builder();
+    delete lib_builder;
+
+    addLib(std::move(lib));
+
+  };
+
+#if 0
+  for (auto &lib_rust_reader : _lib_readers) {
+    link_lib(lib_rust_reader);
+  }
+
+#else
+  {
+    ThreadPool pool(get_num_threads());
+
+    for (auto &lib_rust_reader : _lib_readers) {
+      pool.enqueue([link_lib, &lib_rust_reader]() { link_lib(lib_rust_reader); });
+    }
+  }
+
+#endif
+
+  return 1;
+}
+
+/**
  * @brief Read the verilog file.
  *
  * @param verilog_file
@@ -336,6 +382,22 @@ unsigned Sta::readVerilogWithRustParser(const char *verilog_file) {
 }
 
 /**
+ * @brief collect linked cell to speed up liberty load.
+ *
+ */
+void Sta::collectLinkedCell() {
+  auto top_module_stmts = _rust_top_module->module_stmts;
+  void *stmt;
+  FOREACH_VEC_ELEM(&top_module_stmts, void, stmt) {
+   if (rust_is_module_inst_stmt(stmt)) {
+      RustVerilogInst *verilog_inst = rust_convert_verilog_inst(stmt);
+      const char *liberty_cell_name = verilog_inst->cell_name;
+      _link_cells.insert(std::string(liberty_cell_name));
+   }
+  }
+}
+
+/**
  * @brief Link the design file to design netlist use rust parser.
  *
  * @param top_cell_name
@@ -350,6 +412,11 @@ void Sta::linkDesignWithRustParser(const char *top_cell_name) {
   _rust_top_module = _rust_verilog_reader.get_top_module();
   LOG_FATAL_IF(!_rust_top_module) << "top module not found.";
   set_design_name(_rust_top_module->module_name);
+
+  // collect linked cell for lib load.
+  collectLinkedCell();
+  // then link libs.
+  linkLibertys();
 
   auto top_module_stmts = _rust_top_module->module_stmts;
   Netlist &design_netlist = _netlist;
@@ -439,8 +506,9 @@ void Sta::linkDesignWithRustParser(const char *top_cell_name) {
       }
     } else if (rust_is_module_inst_stmt(stmt)) {
       RustVerilogInst *verilog_inst = rust_convert_verilog_inst(stmt);
-      const char *inst_name = verilog_inst->inst_name;
-      inst_name = Str::trimmed(inst_name);
+      std::string inst_name = verilog_inst->inst_name;
+      inst_name = Str::trimmed(inst_name.c_str());
+      inst_name = Str::replace(inst_name, " ", "");
 
       const char *liberty_cell_name = verilog_inst->cell_name;
       auto port_connections = verilog_inst->port_connections;
@@ -452,7 +520,7 @@ void Sta::linkDesignWithRustParser(const char *top_cell_name) {
         continue;
       }
 
-      Instance inst(inst_name, inst_cell);
+      Instance inst(inst_name.c_str(), inst_cell);
 
       /*lambda function create net for connect instance pin*/
       auto create_net_connection = [verilog_inst, inst_cell, &inst,
@@ -511,7 +579,7 @@ void Sta::linkDesignWithRustParser(const char *top_cell_name) {
           return inst_pin;
         };
 
-        LibertyPort *library_port = nullptr;
+        LibPort *library_port = nullptr;
         std::string pin_name;
         std::string net_name;
 
@@ -539,7 +607,7 @@ void Sta::linkDesignWithRustParser(const char *top_cell_name) {
         }
 
         if (!library_port_or_port_bus->isLibertyPortBus()) {
-          library_port = dynamic_cast<LibertyPort *>(library_port_or_port_bus);
+          library_port = dynamic_cast<LibPort *>(library_port_or_port_bus);
           pin_name = cell_port_name;
           auto *inst_pin =
               add_pin_to_inst(pin_name.c_str(), library_port, std::nullopt);
@@ -548,7 +616,7 @@ void Sta::linkDesignWithRustParser(const char *top_cell_name) {
 
         } else {
           auto *library_port_bus =
-              dynamic_cast<LibertyPortBus *>(library_port_or_port_bus);
+              dynamic_cast<LibPortBus *>(library_port_or_port_bus);
           if (index) {
             library_port = (*library_port_bus)[index.value()];
             pin_name = Str::printf("%s[%d]", cell_port_name, index.value());
@@ -641,7 +709,7 @@ void Sta::linkDesignWithRustParser(const char *top_cell_name) {
         std::unique_ptr<PinBus> pin_bus;
         if (library_port_bus->isLibertyPortBus()) {
           auto bus_size =
-              dynamic_cast<LibertyPortBus *>(library_port_bus)->getBusSize();
+              dynamic_cast<LibPortBus *>(library_port_bus)->getBusSize();
           pin_bus = std::make_unique<PinBus>(cell_port_name, bus_size - 1, 0,
                                              bus_size);
         }
@@ -680,10 +748,10 @@ void Sta::linkDesignWithRustParser(const char *top_cell_name) {
 /**
  * @brief get the design used libs.
  *
- * @return std::set<LibertyLibrary *>
+ * @return std::set<LibLibrary *>
  */
-std::set<LibertyLibrary *> Sta::getUsedLibs() {
-  std::set<LibertyLibrary *> used_libs;
+std::set<LibLibrary *> Sta::getUsedLibs() {
+  std::set<LibLibrary *> used_libs;
   Instance *inst;
   FOREACH_INSTANCE(&_netlist, inst) {
     auto *used_lib = inst->get_inst_cell()->get_owner_lib();
@@ -702,10 +770,10 @@ void Sta::resetConstraint() { _constrains.reset(); }
  * @brief Find the liberty cell from the lib.
  *
  * @param cell_name
- * @return LibertyCell*
+ * @return LibCell*
  */
-LibertyCell *Sta::findLibertyCell(const char *cell_name) {
-  LibertyCell *found_cell = nullptr;
+LibCell *Sta::findLibertyCell(const char *cell_name) {
+  LibCell *found_cell = nullptr;
   for (auto &lib : _libs) {
     if (found_cell = lib->findCell(cell_name); found_cell) {
       break;
@@ -755,24 +823,24 @@ std::optional<AocvObjectSpecSet *> Sta::findClockAocvObjectSpecSet(
  *
  * @param equiv_libs
  */
-void Sta::makeEquivCells(std::vector<LibertyLibrary *> &equiv_libs) {
-  if (_equiv_cells) {
-    _equiv_cells.reset();
+void Sta::makeClassifiedCells(std::vector<LibLibrary *> &equiv_libs) {
+  if (_classified_cells) {
+    _classified_cells.reset();
   }
 
-  _equiv_cells = std::make_unique<LibertyClassifyCell>();
-  _equiv_cells->classifyLibCell(equiv_libs);
+  _classified_cells = std::make_unique<LibClassifyCell>();
+  _classified_cells->classifyLibCell(equiv_libs);
 }
 
 /**
  * @brief Get the equivalently liberty cell.
  *
  * @param cell
- * @return Vector<LibertyCell *>*
+ * @return Vector<LibCell *>*
  */
-Vector<LibertyCell *> *Sta::equivCells(LibertyCell *cell) {
-  if (_equiv_cells)
-    return _equiv_cells->getClassOfCell(cell);
+Vector<LibCell *> *Sta::classifyCells(LibCell *cell) {
+  if (_classified_cells)
+    return _classified_cells->getClassOfCell(cell);
   else
     return nullptr;
 }
@@ -782,128 +850,35 @@ Vector<LibertyCell *> *Sta::equivCells(LibertyCell *cell) {
  *
  */
 void Sta::initSdcCmd() {
-  auto cmd_create_clock = std::make_unique<CmdCreateClock>("create_clock");
-  LOG_FATAL_IF(!cmd_create_clock);
-  TclCmds::addTclCmd(std::move(cmd_create_clock));
-
-  auto cmd_create_generated_clock =
-      std::make_unique<CmdCreateGeneratedClock>("create_generated_clock");
-  LOG_FATAL_IF(!cmd_create_generated_clock);
-  TclCmds::addTclCmd(std::move(cmd_create_generated_clock));
-
-  auto cmd_set_input_transition =
-      std::make_unique<CmdSetInputTransition>("set_input_transition");
-  LOG_FATAL_IF(!cmd_set_input_transition);
-  TclCmds::addTclCmd(std::move(cmd_set_input_transition));
-
-  auto cmd_set_driving_cell =
-      std::make_unique<CmdSetDrivingCell>("set_driving_cell");
-  LOG_FATAL_IF(!cmd_set_driving_cell);
-  TclCmds::addTclCmd(std::move(cmd_set_driving_cell));
-
-  auto cmd_set_load = std::make_unique<CmdSetLoad>("set_load");
-  LOG_FATAL_IF(!cmd_set_load);
-  TclCmds::addTclCmd(std::move(cmd_set_load));
-
-  auto cmd_set_input_delay =
-      std::make_unique<CmdSetInputDelay>("set_input_delay");
-  LOG_FATAL_IF(!cmd_set_input_delay);
-  TclCmds::addTclCmd(std::move(cmd_set_input_delay));
-
-  auto cmd_set_output_delay =
-      std::make_unique<CmdSetOutputDelay>("set_output_delay");
-  LOG_FATAL_IF(!cmd_set_output_delay);
-  TclCmds::addTclCmd(std::move(cmd_set_output_delay));
-
-  auto cmd_set_max_fanout = std::make_unique<CmdSetMaxFanout>("set_max_fanout");
-  LOG_FATAL_IF(!cmd_set_max_fanout);
-  TclCmds::addTclCmd(std::move(cmd_set_max_fanout));
-
-  auto cmd_set_max_transition =
-      std::make_unique<CmdSetMaxTransition>("set_max_transition");
-  LOG_FATAL_IF(!cmd_set_max_transition);
-  TclCmds::addTclCmd(std::move(cmd_set_max_transition));
-
-  auto cmd_set_max_capacitance =
-      std::make_unique<CmdSetMaxCapacitance>("set_max_capacitance");
-  LOG_FATAL_IF(!cmd_set_max_capacitance);
-  TclCmds::addTclCmd(std::move(cmd_set_max_capacitance));
-
-  auto cmd_current_design =
-      std::make_unique<CmdCurrentDesign>("current_design");
-  LOG_FATAL_IF(!cmd_current_design);
-  TclCmds::addTclCmd(std::move(cmd_current_design));
-
-  auto get_clocks = std::make_unique<CmdGetClocks>("get_clocks");
-  LOG_FATAL_IF(!get_clocks);
-  TclCmds::addTclCmd(std::move(get_clocks));
-
-  auto get_pins = std::make_unique<CmdGetPins>("get_pins");
-  LOG_FATAL_IF(!get_pins);
-  TclCmds::addTclCmd(std::move(get_pins));
-
-  auto get_ports = std::make_unique<CmdGetPorts>("get_ports");
-  LOG_FATAL_IF(!get_ports);
-  TclCmds::addTclCmd(std::move(get_ports));
-
-  auto get_libs = std::make_unique<CmdGetLibs>("get_libs");
-  LOG_FATAL_IF(!get_libs);
-  TclCmds::addTclCmd(std::move(get_libs));
-
-  auto all_clocks = std::make_unique<CmdAllClocks>("all_clocks");
-  LOG_FATAL_IF(!all_clocks);
-  TclCmds::addTclCmd(std::move(all_clocks));
-
-  auto all_inputs = std::make_unique<CmdAllInputs>("all_inputs");
-  LOG_FATAL_IF(!all_inputs);
-  TclCmds::addTclCmd(std::move(all_inputs));
-
-  auto all_outputs = std::make_unique<CmdAllOutputs>("all_outputs");
-  LOG_FATAL_IF(!all_outputs);
-  TclCmds::addTclCmd(std::move(all_outputs));
-
-  auto set_propagated_clock =
-      std::make_unique<CmdSetPropagatedClock>("set_propagated_clock");
-  LOG_FATAL_IF(!set_propagated_clock);
-  TclCmds::addTclCmd(std::move(set_propagated_clock));
-
-  auto set_clock_groups =
-      std::make_unique<CmdSetClockGroups>("set_clock_groups");
-  LOG_FATAL_IF(!set_clock_groups);
-  TclCmds::addTclCmd(std::move(set_clock_groups));
-
-  auto set_multicycle_path =
-      std::make_unique<CmdSetMulticyclePath>("set_multicycle_path");
-  LOG_FATAL_IF(!set_multicycle_path);
-  TclCmds::addTclCmd(std::move(set_multicycle_path));
-
-  auto set_timing_derate =
-      std::make_unique<CmdSetTimingDerate>("set_timing_derate");
-  LOG_FATAL_IF(!set_timing_derate);
-  TclCmds::addTclCmd(std::move(set_timing_derate));
-
-  auto set_clock_uncertainty =
-      std::make_unique<CmdSetClockUncertainty>("set_clock_uncertainty");
-  LOG_FATAL_IF(!set_clock_uncertainty);
-  TclCmds::addTclCmd(std::move(set_clock_uncertainty));
-
-  auto set_units = std::make_unique<CmdSetUnits>("set_units");
-  LOG_FATAL_IF(!set_units);
-  TclCmds::addTclCmd(std::move(set_units));
-
-  auto group_path = std::make_unique<CmdGroupPath>("group_path");
-  LOG_FATAL_IF(!group_path);
-  TclCmds::addTclCmd(std::move(group_path));
-
-  auto set_operating_conditions =
-      std::make_unique<CmdSetOperatingConditions>("set_operating_conditions");
-  LOG_FATAL_IF(!set_operating_conditions);
-  TclCmds::addTclCmd(std::move(set_operating_conditions));
-
-  auto set_wire_load_mode =
-      std::make_unique<CmdSetWireLoadMode>("set_wire_load_mode");
-  LOG_FATAL_IF(!set_wire_load_mode);
-  TclCmds::addTclCmd(std::move(set_wire_load_mode));
+  registerTclCmd(CmdCreateClock, "create_clock");
+  registerTclCmd(CmdCreateGeneratedClock, "create_generated_clock");
+  registerTclCmd(CmdSetInputTransition, "set_input_transition");
+  registerTclCmd(CmdSetDrivingCell, "set_driving_cell");
+  registerTclCmd(CmdSetLoad, "set_load");
+  registerTclCmd(CmdSetInputDelay, "set_input_delay");
+  registerTclCmd(CmdSetOutputDelay, "set_output_delay");
+  registerTclCmd(CmdSetMaxFanout, "set_max_fanout");
+  registerTclCmd(CmdSetMaxTransition, "set_max_transition");
+  registerTclCmd(CmdSetMaxCapacitance, "set_max_capacitance");
+  registerTclCmd(CmdCurrentDesign, "current_design");
+  registerTclCmd(CmdGetClocks, "get_clocks");
+  registerTclCmd(CmdGetPins, "get_pins");
+  registerTclCmd(CmdGetPorts, "get_ports");
+  registerTclCmd(CmdGetCells, "get_cells");
+  registerTclCmd(CmdGetLibs, "get_libs");
+  registerTclCmd(CmdAllClocks, "all_clocks");
+  registerTclCmd(CmdAllInputs, "all_inputs");
+  registerTclCmd(CmdAllOutputs, "all_outputs");
+  registerTclCmd(CmdSetPropagatedClock, "set_propagated_clock");
+  registerTclCmd(CmdSetClockGroups, "set_clock_groups");
+  registerTclCmd(CmdSetMulticyclePath, "set_multicycle_path");
+  registerTclCmd(CmdSetTimingDerate, "set_timing_derate");
+  registerTclCmd(CmdSetClockUncertainty, "set_clock_uncertainty");
+  registerTclCmd(CmdSetUnits, "set_units");
+  registerTclCmd(CmdGroupPath, "group_path");
+  registerTclCmd(CmdSetOperatingConditions, "set_operating_conditions");
+  registerTclCmd(CmdSetWireLoadMode, "set_wire_load_mode");
+  registerTclCmd(CmdSetDisableTiming, "set_disable_timing");
 }
 
 /**

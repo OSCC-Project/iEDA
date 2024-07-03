@@ -118,7 +118,7 @@ unsigned StaBuildRCTree::operator()(StaGraph* the_graph) {
       }
 
       if (rust_spef_net->_caps.len > 100) {
-        LOG_INFO << "beyond node num 100 net name " << rust_spef_net->_name
+        LOG_INFO_FIRST_N(10) << "beyond node num 100 net name " << rust_spef_net->_name
                  << " node num " << rust_spef_net->_caps.len;
       }
 

@@ -432,9 +432,9 @@ bool StaIO::insertBuffer(std::pair<std::string, std::string>& source_sink_net, s
   }
 
   // step 2: make instance
-  LibertyCell* insert_buf_cell = timing_engine->findLibertyCell(master_inst_buffer.first.c_str());
+  LibCell* insert_buf_cell = timing_engine->findLibertyCell(master_inst_buffer.first.c_str());
   Instance* buffer = idb_adapter->createInstance(insert_buf_cell, master_inst_buffer.second.c_str());
-  LibertyPort *input, *output;
+  LibPort *input, *output;
   insert_buf_cell->bufferPorts(input, output);
 
   // step 3: make net
@@ -464,7 +464,7 @@ float StaIO::obtainInstPinCap(std::string inst_pin_name)
 {
   auto* timing_engine = ista::TimingEngine::getOrCreateTimingEngine();
 
-  float pin_cap = timing_engine->reportInstPinCapacitance(inst_pin_name.c_str());
+  float pin_cap = timing_engine->getInstPinCapacitance(inst_pin_name.c_str());
   return pin_cap;
 }
 
@@ -476,7 +476,7 @@ float StaIO::obtainPinCap(std::string inst_pin_name)
   auto [instance_name, pin_name] = Str::splitTwoPart(inst_pin_name.c_str(), "/:");
   if (!pin_name.empty()) {
     // instance pin
-    pin_cap = timing_engine->reportInstPinCapacitance(inst_pin_name.c_str());
+    pin_cap = timing_engine->getInstPinCapacitance(inst_pin_name.c_str());
   } else {
     auto* port = design_netlist->findPort(inst_pin_name.c_str());
     pin_cap = port->cap();

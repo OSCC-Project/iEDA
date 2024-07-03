@@ -28,6 +28,7 @@ void register_ista(py::module& m)
   m.def("init_sta", staInit, py::arg("output"));
   m.def("report_sta", staReport, ("output"));
 
+  m.def("init_log", initLog, ("log_dir"));
   m.def("set_design_workspace", setDesignWorkSpace, ("design_workspace"));
   m.def("read_lef_def", read_lef_def, ("lef_files"), ("def_file"));
   m.def("read_netlist", readVerilog, ("file_name"));

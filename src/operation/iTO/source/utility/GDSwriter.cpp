@@ -16,12 +16,16 @@
 // ***************************************************************************************
 #include "GDSwriter.h"
 
+#include "IdbBlockages.h"
+#include "IdbDesign.h"
+#include "IdbInstance.h"
 #include "ToApi.hpp"
 #include "builder.h"
 
 namespace ito {
-void GDSwriter::writeGDS(idb::IdbBuilder *idb_builder, std::string path) {
-  IdbDesign *idb_design = idb_builder->get_def_service()->get_design();
+void GDSwriter::writeGDS(idb::IdbBuilder* idb_builder, std::string path)
+{
+  idb::IdbDesign* idb_design = idb_builder->get_def_service()->get_design();
 
   // IdbLayout *idb_layout = idb_builder->get_lef_service()->get_layout();
 
@@ -38,7 +42,8 @@ void GDSwriter::writeGDS(idb::IdbBuilder *idb_builder, std::string path) {
   }
 }
 
-void GDSwriter::writeAllInstance(ofstream &gds_file, IdbDesign *idb_design) {
+void GDSwriter::writeAllInstance(ofstream& gds_file, idb::IdbDesign* idb_design)
+{
   cout << "Write instance to GDS starting" << endl;
   if (gds_file.is_open()) {
     int count = 0;
@@ -59,7 +64,7 @@ void GDSwriter::writeAllInstance(ofstream &gds_file, IdbDesign *idb_design) {
     gds_file << "BGNSTR" << std::endl;
     gds_file << "STRNAME top" << std::endl;
 
-    for (IdbInstance *instance : idb_design->get_instance_list()->get_instance_list()) {
+    for (idb::IdbInstance* instance : idb_design->get_instance_list()->get_instance_list()) {
       gds_file << "SREF" << std::endl;
       gds_file << "SNAME " << instance->get_name() << std::endl;
       gds_file << "XY 0:0" << std::endl;
@@ -85,7 +90,8 @@ void GDSwriter::writeAllInstance(ofstream &gds_file, IdbDesign *idb_design) {
   }
 }
 
-void GDSwriter::writeInstance(ofstream &gds_file, IdbInstance *instance, int layer) {
+void GDSwriter::writeInstance(ofstream& gds_file, idb::IdbInstance* instance, int layer)
+{
   int factor = 1;
   int llx = instance->get_bounding_box()->get_low_x() * factor;
   int lly = instance->get_bounding_box()->get_low_y() * factor;
@@ -115,10 +121,10 @@ void GDSwriter::writeInstance(ofstream &gds_file, IdbInstance *instance, int lay
   gds_file << "ENDSTR" << std::endl;
 }
 
-void GDSwriter::writeBlockage(ofstream &gds_file, IdbBlockage *block, int layer,
-                              int named) {
-  int           factor = 1;
-  idb::IdbRect *rect = block->get_rect_list()[0];
+void GDSwriter::writeBlockage(ofstream& gds_file, idb::IdbBlockage* block, int layer, int named)
+{
+  int factor = 1;
+  idb::IdbRect* rect = block->get_rect_list()[0];
 
   int llx = rect->get_low_x() * factor;
   int lly = rect->get_low_y() * factor;
@@ -140,4 +146,4 @@ void GDSwriter::writeBlockage(ofstream &gds_file, IdbBlockage *block, int layer,
   gds_file << "ENDEL" << std::endl;
   gds_file << "ENDSTR" << std::endl;
 }
-} // namespace ito
+}  // namespace ito

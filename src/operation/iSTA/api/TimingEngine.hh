@@ -122,31 +122,31 @@ class TimingEngine {
     return *this;
   }
 
-  void makeEquivCells(std::vector<LibertyLibrary *> &equiv_libs) {
-    return _ista->makeEquivCells(equiv_libs);
+  void makeClassifiedCells(std::vector<LibLibrary *> &equiv_libs) {
+    return _ista->makeClassifiedCells(equiv_libs);
   }
 
-  Vector<LibertyCell *> *equivCells(LibertyCell *cell) {
-    return _ista->equivCells(cell);
+  Vector<LibCell *> *classifyCells(LibCell *cell) {
+    return _ista->classifyCells(cell);
   }
 
-  Vector<std::unique_ptr<LibertyLibrary>> &getAllLib() {
+  Vector<std::unique_ptr<LibLibrary>> &getAllLib() {
     return _ista->getAllLib();
   }
 
-  LibertyCell *findLibertyCell(const char *cell_name) {
+  LibCell *findLibertyCell(const char *cell_name) {
     return _ista->findLibertyCell(cell_name);
   }
 
-  LibertyTable *getCellLibertyTable(const char *cell_name,
-                                    LibertyTable::TableType table_type);
-  LibertyTable *getCellLibertyTable(const char *cell_name,
-                                    const char *from_port_name,
-                                    const char *to_port_name,
-                                    LibertyTable::TableType table_type);
-  LibertyTable *getCellLibertyTable(const char *cell_name,
-                                    LibertyArc::TimingType timing_type,
-                                    LibertyTable::TableType table_type);
+  LibTable *getCellLibertyTable(const char *cell_name,
+                                LibTable::TableType table_type);
+  LibTable *getCellLibertyTable(const char *cell_name,
+                                const char *from_port_name,
+                                const char *to_port_name,
+                                LibTable::TableType table_type);
+  LibTable *getCellLibertyTable(const char *cell_name,
+                                LibArc::TimingType timing_type,
+                                LibTable::TableType table_type);
 
   StaVertex *findVertex(const char *pin_name) {
     return _ista->findVertex(pin_name);
@@ -272,71 +272,70 @@ class TimingEngine {
                    const char *load_pin_name, ModeTransPair mode_trans);
 
   // reporter
-  double reportInstDelay(const char *inst_name, const char *src_port_name,
-                         const char *snk_port_name, AnalysisMode mode,
-                         TransType trans_type);
-  double reportInstWorstArcDelay(const char *inst_name, AnalysisMode mode,
-                                 TransType trans_type);
-  double reportNetDelay(const char *net_name, const char *load_pin_name,
-                        AnalysisMode mode, TransType trans_type);
-  double reportSlew(const char *pin_name, AnalysisMode mode,
-                    TransType trans_type);
-  std::optional<double> reportAT(const char *pin_name, AnalysisMode mode,
-                                 TransType trans_type);
-  std::optional<double> reportClockAT(
+  double getInstDelay(const char *inst_name, const char *src_port_name,
+                      const char *snk_port_name, AnalysisMode mode,
+                      TransType trans_type);
+  double getInstWorstArcDelay(const char *inst_name, AnalysisMode mode,
+                              TransType trans_type);
+  double getNetDelay(const char *net_name, const char *load_pin_name,
+                     AnalysisMode mode, TransType trans_type);
+  double getSlew(const char *pin_name, AnalysisMode mode, TransType trans_type);
+  std::optional<double> getAT(const char *pin_name, AnalysisMode mode,
+                              TransType trans_type);
+  std::optional<double> getClockAT(
       const char *pin_name, AnalysisMode mode, TransType trans_type,
       std::optional<std::string> clock_name = std::nullopt);
-  std::optional<double> reportRT(const char *pin_name, AnalysisMode mode,
-                                 TransType trans_type);
+  std::optional<double> getRT(const char *pin_name, AnalysisMode mode,
+                              TransType trans_type);
   StaClock *getPropClock(const char *pin_name, AnalysisMode mode,
                          TransType trans_type);
-  std::optional<double> reportSlack(const char *pin_name, AnalysisMode mode,
-                                    TransType trans_type);
-  void reportWorstSlack(AnalysisMode mode, TransType trans_type,
-                        StaVertex *&worst_vertex,
-                        std::optional<double> &worst_slack);
-  double reportWNS(const char *clock_name, AnalysisMode mode) {
+  std::optional<double> getSlack(const char *pin_name, AnalysisMode mode,
+                                 TransType trans_type);
+  void getWorstSlack(AnalysisMode mode, TransType trans_type,
+                     StaVertex *&worst_vertex,
+                     std::optional<double> &worst_slack);
+  double getWNS(const char *clock_name, AnalysisMode mode) {
     return _ista->getWNS(clock_name, mode);
   }
-  double reportTNS(const char *clock_name, AnalysisMode mode) {
+  double getTNS(const char *clock_name, AnalysisMode mode) {
     return _ista->getTNS(clock_name, mode);
   }
-  double reportLocalSkew(const char *clock_name, AnalysisMode mode,
-                         TransType trans_type) {
+  double getLocalSkew(const char *clock_name, AnalysisMode mode,
+                      TransType trans_type) {
     return _ista->getLocalSkew(clock_name, mode, trans_type);
   }
-  double reportGlobalSkew(AnalysisMode mode, TransType trans_type) {
+  double getGlobalSkew(AnalysisMode mode, TransType trans_type) {
     return _ista->getGlobalSkew(mode, trans_type);
   }
-  std::map<StaVertex *, int> reportFFMaxSkew(AnalysisMode mode,
-                                             TransType trans_type) {
+  std::map<StaVertex *, int> getFFMaxSkew(AnalysisMode mode,
+                                          TransType trans_type) {
     return _ista->getFFMaxSkew(mode, trans_type);
   }
-  std::map<StaVertex *, int> reportFFTotalSkew(AnalysisMode mode,
-                                               TransType trans_type) {
+  std::map<StaVertex *, int> getFFTotalSkew(AnalysisMode mode,
+                                            TransType trans_type) {
     return _ista->getFFTotalSkew(mode, trans_type);
   }
-  std::multimap<std::string, std::string> reportSkewRelatedSink(
+  std::multimap<std::string, std::string> getSkewRelatedSink(
       AnalysisMode mode, TransType trans_type) {
     return _ista->getSkewRelatedSink(mode, trans_type);
   }
-  double reportClockNetworkLatency(const char *clock_pin_name,
-                                   AnalysisMode mode, TransType trans_type);
-  double reportClockSkew(const char *src_clock_pin_name,
-                         const char *snk_clock_pin_name, AnalysisMode mode,
-                         TransType trans_type);
-  double reportInstPinCapacitance(const char *inst_pin_name);
-  double reportInstPinCapacitance(const char *inst_pin_name, AnalysisMode mode,
-                                  TransType trans_type);
-  double reportLibertyCellPinCapacitance(const char *cell_pin_name);
+  double getClockNetworkLatency(const char *clock_pin_name, AnalysisMode mode,
+                                TransType trans_type);
+  double getClockSkew(const char *src_clock_pin_name,
+                      const char *snk_clock_pin_name, AnalysisMode mode,
+                      TransType trans_type);
+  double getInstPinCapacitance(const char *inst_pin_name);
+  double getInstPinCapacitance(const char *inst_pin_name, AnalysisMode mode,
+                               TransType trans_type);
+  double getLibertyCellPinCapacitance(const char *cell_pin_name);
   std::vector<std::string> getLibertyCellInputpin(const char *cell_name);
   StaClock *getPropClock(const char *clock_pin_name);
-  StaSeqPathData *vertexWorstRequiredPath(StaVertex *vertex, AnalysisMode mode,
+  StaSeqPathData *getWorstSeqData(StaVertex *vertex, AnalysisMode mode,
                                           TransType trans_type) {
     return _ista->getWorstSeqData(vertex, mode, trans_type);
   }
 
-  StaSeqPathData *vertexWorstRequiredPath(AnalysisMode mode,
+  StaSeqPathData *getWorstSeqData(AnalysisMode mode,
                                           TransType trans_type) {
     return _ista->getWorstSeqData(std::nullopt, mode, trans_type);
   }
@@ -360,13 +359,14 @@ class TimingEngine {
   double getCellArea(const char *cell_name);
   unsigned isClock(const char *pin_name) const;
   unsigned isLoad(const char *pin_name) const;
-  void checkCapacitance(const char *pin_name, AnalysisMode mode,
-                        TransType trans_type, double &capacitance,
-                        std::optional<double> &limit, double &slack);
-  void checkFanout(const char *pin_name, AnalysisMode mode, double &fanout,
-                   std::optional<double> &limit, double &slack);
-  void checkSlew(const char *pin_name, AnalysisMode mode, TransType trans_type,
-                 double &slew, std::optional<double> &limit, double &slack);
+  void validateCapacitance(const char *pin_name, AnalysisMode mode,
+                           TransType trans_type, double &capacitance,
+                           std::optional<double> &limit, double &slack);
+  void validateFanout(const char *pin_name, AnalysisMode mode, double &fanout,
+                      std::optional<double> &limit, double &slack);
+  void validateSlew(const char *pin_name, AnalysisMode mode,
+                    TransType trans_type, double &slew,
+                    std::optional<double> &limit, double &slack);
 
  private:
   TimingEngine();

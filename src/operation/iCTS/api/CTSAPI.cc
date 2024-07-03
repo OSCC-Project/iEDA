@@ -345,7 +345,7 @@ double CTSAPI::getSinkCap(const std::string& load_pin_full_name) const
   // remove all "\" in inst_name
   auto name = load_pin_full_name;
   name.erase(std::remove(name.begin(), name.end(), '\\'), name.end());
-  return _timing_engine->reportInstPinCapacitance(name.c_str());
+  return _timing_engine->getInstPinCapacitance(name.c_str());
 }
 
 bool CTSAPI::isFlipFlop(const std::string& inst_name) const
@@ -461,19 +461,19 @@ bool CTSAPI::cellLibExist(const std::string& cell_master, const std::string& que
                           const std::string& to_port)
 {
   std::vector<std::vector<double>> index_list;
-  ista::LibertyTable::TableType table_type;
+  ista::LibTable::TableType table_type;
   if (query_field == "cell_rise") {
-    table_type = ista::LibertyTable::TableType::kCellRise;
+    table_type = ista::LibTable::TableType::kCellRise;
   } else if (query_field == "cell_fall") {
-    table_type = ista::LibertyTable::TableType::kCellFall;
+    table_type = ista::LibTable::TableType::kCellFall;
   } else if (query_field == "rise_transition") {
-    table_type = ista::LibertyTable::TableType::kRiseTransition;
+    table_type = ista::LibTable::TableType::kRiseTransition;
   } else if (query_field == "fall_transition") {
-    table_type = ista::LibertyTable::TableType::kFallTransition;
+    table_type = ista::LibTable::TableType::kFallTransition;
   } else {
     LOG_FATAL << "buffer lib query field not supported";
   }
-  ista::LibertyTable* table = nullptr;
+  ista::LibTable* table = nullptr;
   if (from_port.empty() && to_port.empty()) {
     table = _timing_engine->getCellLibertyTable(cell_master.c_str(), table_type);
   } else {
@@ -486,19 +486,19 @@ std::vector<std::vector<double>> CTSAPI::queryCellLibIndex(const std::string& ce
                                                            const std::string& from_port, const std::string& to_port)
 {
   std::vector<std::vector<double>> index_list;
-  ista::LibertyTable::TableType table_type;
+  ista::LibTable::TableType table_type;
   if (query_field == "cell_rise") {
-    table_type = ista::LibertyTable::TableType::kCellRise;
+    table_type = ista::LibTable::TableType::kCellRise;
   } else if (query_field == "cell_fall") {
-    table_type = ista::LibertyTable::TableType::kCellFall;
+    table_type = ista::LibTable::TableType::kCellFall;
   } else if (query_field == "rise_transition") {
-    table_type = ista::LibertyTable::TableType::kRiseTransition;
+    table_type = ista::LibTable::TableType::kRiseTransition;
   } else if (query_field == "fall_transition") {
-    table_type = ista::LibertyTable::TableType::kFallTransition;
+    table_type = ista::LibTable::TableType::kFallTransition;
   } else {
     LOG_FATAL << "buffer lib query field not supported";
   }
-  ista::LibertyTable* table = nullptr;
+  ista::LibTable* table = nullptr;
   if (from_port.empty() && to_port.empty()) {
     table = _timing_engine->getCellLibertyTable(cell_master.c_str(), table_type);
   } else {
@@ -520,19 +520,19 @@ std::vector<double> CTSAPI::queryCellLibValue(const std::string& cell_master, co
                                               const std::string& to_port)
 {
   std::vector<double> values;
-  ista::LibertyTable::TableType table_type;
+  ista::LibTable::TableType table_type;
   if (query_field == "cell_rise") {
-    table_type = ista::LibertyTable::TableType::kCellRise;
+    table_type = ista::LibTable::TableType::kCellRise;
   } else if (query_field == "cell_fall") {
-    table_type = ista::LibertyTable::TableType::kCellFall;
+    table_type = ista::LibTable::TableType::kCellFall;
   } else if (query_field == "rise_transition") {
-    table_type = ista::LibertyTable::TableType::kRiseTransition;
+    table_type = ista::LibTable::TableType::kRiseTransition;
   } else if (query_field == "fall_transition") {
-    table_type = ista::LibertyTable::TableType::kFallTransition;
+    table_type = ista::LibTable::TableType::kFallTransition;
   } else {
     LOG_FATAL << "buffer lib query field not supported";
   }
-  ista::LibertyTable* table = nullptr;
+  ista::LibTable* table = nullptr;
   if (from_port.empty() && to_port.empty()) {
     table = _timing_engine->getCellLibertyTable(cell_master.c_str(), table_type);
   } else {
@@ -648,7 +648,7 @@ std::vector<std::string> CTSAPI::getMasterClocks(icts::CtsNet* net) const
 
 double CTSAPI::getClockAT(const std::string& pin_name, const std::string& belong_clock_name) const
 {
-  auto clk_at = _timing_engine->reportClockAT(pin_name.c_str(), ista::AnalysisMode::kMax, ista::TransType::kRise, belong_clock_name);
+  auto clk_at = _timing_engine->getClockAT(pin_name.c_str(), ista::AnalysisMode::kMax, ista::TransType::kRise, belong_clock_name);
   if (clk_at == std::nullopt) {
     LOG_WARNING << "get " << pin_name << " clock arrival time failed, which belong clock " << belong_clock_name;
     return 0.0;
@@ -670,18 +670,18 @@ double CTSAPI::getCellCap(const std::string& cell_master) const
 {
   auto input_pin_names = _timing_engine->getLibertyCellInputpin(cell_master.c_str());
   auto cell_pin_name = CTSAPIInst.toString(cell_master.c_str(), ":", input_pin_names[0].c_str());
-  auto init_cap = _timing_engine->reportLibertyCellPinCapacitance(cell_pin_name.c_str());
+  auto init_cap = _timing_engine->getLibertyCellPinCapacitance(cell_pin_name.c_str());
   return init_cap;
 }
 
 double CTSAPI::getSlewIn(const std::string& pin_name) const
 {
-  return _timing_engine->reportSlew(pin_name.c_str(), ista::AnalysisMode::kMin, ista::TransType::kRise);
+  return _timing_engine->getSlew(pin_name.c_str(), ista::AnalysisMode::kMin, ista::TransType::kRise);
 }
 
 double CTSAPI::getCapOut(const std::string& pin_name) const
 {
-  return _timing_engine->reportInstPinCapacitance(pin_name.c_str(), ista::AnalysisMode::kMin, ista::TransType::kRise);
+  return _timing_engine->getInstPinCapacitance(pin_name.c_str(), ista::AnalysisMode::kMin, ista::TransType::kRise);
 }
 
 std::vector<double> CTSAPI::solvePolynomialRealRoots(const std::vector<double>& coeffs)
@@ -959,10 +959,10 @@ void CTSAPI::slackLog() const
   auto clk_list = _timing_engine->getClockList();
   std::ranges::for_each(clk_list, [&](ista::StaClock* clk) {
     auto clk_name = clk->get_clock_name();
-    auto setup_tns = _timing_engine->reportTNS(clk_name, AnalysisMode::kMax);
-    auto setup_wns = _timing_engine->reportWNS(clk_name, AnalysisMode::kMax);
-    auto hold_tns = _timing_engine->reportTNS(clk_name, AnalysisMode::kMin);
-    auto hold_wns = _timing_engine->reportWNS(clk_name, AnalysisMode::kMin);
+    auto setup_tns = _timing_engine->getTNS(clk_name, AnalysisMode::kMax);
+    auto setup_wns = _timing_engine->getWNS(clk_name, AnalysisMode::kMax);
+    auto hold_tns = _timing_engine->getTNS(clk_name, AnalysisMode::kMin);
+    auto hold_wns = _timing_engine->getWNS(clk_name, AnalysisMode::kMin);
     auto suggest_freq = 1000.0 / (clk->getPeriodNs() - setup_wns);
     CTSAPIInst.saveToLog("Clk name: ", clk_name);
     CTSAPIInst.saveToLog("\tSetup (Max) WNS: ", fix_point_str(setup_wns), " (ns)");
@@ -1191,10 +1191,10 @@ ieda_feature::CTSSummary CTSAPI::outputSummary()
     auto clk_name = clk->get_clock_name();
 
     net_timing.net_name = clk_name;
-    net_timing.setup_tns = _timing_engine->reportTNS(clk_name, AnalysisMode::kMax);
-    net_timing.setup_wns = _timing_engine->reportWNS(clk_name, AnalysisMode::kMax);
-    net_timing.hold_tns = _timing_engine->reportTNS(clk_name, AnalysisMode::kMin);
-    net_timing.hold_wns = _timing_engine->reportWNS(clk_name, AnalysisMode::kMin);
+    net_timing.setup_tns = _timing_engine->getTNS(clk_name, AnalysisMode::kMax);
+    net_timing.setup_wns = _timing_engine->getWNS(clk_name, AnalysisMode::kMax);
+    net_timing.hold_tns = _timing_engine->getTNS(clk_name, AnalysisMode::kMin);
+    net_timing.hold_wns = _timing_engine->getWNS(clk_name, AnalysisMode::kMin);
     net_timing.suggest_freq = 1000.0 / (clk->getPeriodNs() - net_timing.setup_wns);
 
     summary.nets_timing.push_back(net_timing);

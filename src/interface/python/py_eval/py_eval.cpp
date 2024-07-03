@@ -44,6 +44,54 @@ void init_cong_eval(int bin_cnt_x, int bin_cnt_y)
   eval_api.initCongDataFromIDB(bin_cnt_x, bin_cnt_y);
 }
 
+void eval_macro_density()
+{
+  EvalAPI& eval_api = EvalAPI::getInst();
+  eval_api.evalMacroDens();
+}
+
+void eval_macro_pin_density()
+{
+  EvalAPI& eval_api = EvalAPI::getInst();
+  eval_api.evalMacroPinDens();
+}
+
+void eval_cell_pin_density()
+{
+  EvalAPI& eval_api = EvalAPI::getInst();
+  eval_api.evalCellPinDens();
+}
+
+void eval_macro_margin()
+{
+  EvalAPI& eval_api = EvalAPI::getInst();
+  eval_api.evalMacroMargin();
+}
+
+void eval_continuous_white_space()
+{
+  EvalAPI& eval_api = EvalAPI::getInst();
+  double unused_value = eval_api.evalMaxContinuousSpace();
+}
+
+void eval_macro_channel(float die_size_ratio)
+{
+  EvalAPI& eval_api = EvalAPI::getInst();
+  eval_api.evalMacroChannel(die_size_ratio);
+}
+
+void eval_cell_hierarchy(const std::string& plot_path, int level, int forward)
+{
+  EvalAPI& eval_api = EvalAPI::getInst();
+  eval_api.evalCellHierarchy(plot_path , level, forward);
+}
+
+void eval_macro_hierarchy(const std::string& plot_path, int level, int forward)
+{
+  EvalAPI& eval_api = EvalAPI::getInst();
+  eval_api.evalMacroHierarchy(plot_path, level, forward);
+}
+
 void eval_inst_density(int inst_status, int eval_flip_flop)
 {
   EvalAPI& eval_api = EvalAPI::getInst();

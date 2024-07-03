@@ -19,7 +19,7 @@
 #include "api/TimingEngine.hh"
 #include "api/TimingIDBAdapter.hh"
 #include "gtest/gtest.h"
-#include "liberty/Liberty.hh"
+#include "liberty/Lib.hh"
 #include "log/Log.hh"
 #include "netlist/Netlist.hh"
 #include "sdc-cmd/Cmd.hh"
@@ -69,10 +69,7 @@ TEST_F(StaTest, simple_design) {
     std::string lib_name =
         Str::printf("%s/%s", design_work_space, "osu018_stdcells.lib");
 
-    Liberty lib;
-    auto load_lib = lib.loadLibertyWithRustParser(lib_name.c_str());
-
-    ista->addLib(std::move(load_lib));
+    ista->readLiberty(lib_name.c_str());
 
     ista->set_top_module_name("simple");
     ista->readVerilogWithRustParser(

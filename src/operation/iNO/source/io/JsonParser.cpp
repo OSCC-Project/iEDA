@@ -16,6 +16,8 @@
 // ***************************************************************************************
 #include "JsonParser.h"
 
+#include "idm.h"
+
 namespace ino {
 JsonParser *JsonParser::get_json_parser() {
   static JsonParser *parser;
@@ -50,7 +52,7 @@ void JsonParser::jsonToConfig(Json *json, NoConfig *config) const {
   }
   config->set_lef_files(paths);
   config->set_def_file(file_path.at("def_file").get<string>());
-  config->set_design_work_space(file_path.at("design_work_space").get<string>());
+  config->set_design_work_space(dmInst->get_config().get_output_path() + "./no");
   config->set_sdc_file(file_path.at("sdc_file").get<string>());
   paths.clear();
 
@@ -60,8 +62,9 @@ void JsonParser::jsonToConfig(Json *json, NoConfig *config) const {
   }
   config->set_lib_files(paths);
   paths.clear();
-  config->set_output_def_file(file_path.at("output_def").get<string>());
-  config->set_report_file(file_path.at("report_file").get<string>());
+  config->set_output_def_file(dmInst->get_config().get_output_path() +
+                              "./no/ino_result.def");
+  config->set_report_file(dmInst->get_config().get_output_path() + "./no/report.txt");
 
   config->set_insert_buffer(json->at("insert_buffer").get<string>());
   if (config->get_insert_buffer().empty()) {

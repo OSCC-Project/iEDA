@@ -85,7 +85,13 @@ class EvalAPI
   void evalMacroMargin();
   double evalMaxContinuousSpace();
   void evalIOPinAccess(const std::string& filename);
-
+  void evalMacroDens();
+  void evalMacroPinDens();
+  void evalCellPinDens();
+  void evalMacroChannel(float die_size_ratio = 0.5);
+  void evalCellHierarchy(const std::string& plot_path, int level = 1, int forward = 1);
+  void evalMacroHierarchy(const std::string& plot_path, int level = 1, int forward = 1);
+  
   vector<float> evalPinDens();
   vector<float> evalPinDens(CongGrid* grid, const vector<CongInst*>& inst_list);
   vector<float> evalInstDens();
