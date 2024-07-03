@@ -38,6 +38,7 @@
 #include "omp.h"
 #include "tool_manager.h"
 #include "usage/usage.hh"
+#include "PLAPI.hh"
 
 #ifdef BUILD_QT
 #include "utility/Image.hh"
@@ -1268,7 +1269,7 @@ namespace ipl {
       float layout_ratio = 0.5;
       long_width = core_shape.get_width() * layout_ratio;
       long_height = core_shape.get_height() * layout_ratio;
-      long_net_stream.open(_nes_database->_placer_db->get_placer_config()->get_pl_dir() + "/pl/AcrossLongNet_process.txt");
+      long_net_stream.open(iPLAPIInst.obtainTargetDir() + "/pl/AcrossLongNet_process.txt");
       if (!long_net_stream.good()) {
         LOG_WARNING << "Cannot open file for recording across long net !";
       }
@@ -1277,7 +1278,7 @@ namespace ipl {
     // prepare for iter info record
     std::ofstream info_stream;
     if (RECORD_ITER_INFO) {
-      info_stream.open(_nes_database->_placer_db->get_placer_config()->get_pl_dir() + "/pl/plIterInfo.csv");
+      info_stream.open(iPLAPIInst.obtainTargetDir() + "/pl/plIterInfo.csv");
       if (!info_stream.good()) {
         LOG_WARNING << "Cannot open file for iter info record !";
       }
@@ -1603,7 +1604,7 @@ namespace ipl {
       }
     }
 
-    image_ploter.save(_nes_database->_placer_db.get_placer_config()->get_pl_dir() + "/pl/plot/" + file_name + ".jpg");
+    image_ploter.save(iPLAPIInst.obtainTargetDir() + "/pl/plot/" + file_name + ".jpg");
 #endif
   }
 
@@ -1663,7 +1664,7 @@ namespace ipl {
         image_ploter.drawArc(cx, cy, cx + dx, cy + dy);
       }
     }
-    image_ploter.save(_nes_database->_placer_db.get_placer_config()->get_pl_dir() + "/pl/plot/" + file_name + ".jpg");
+    image_ploter.save(iPLAPIInst.obtainTargetDir() + "/pl/plot/" + file_name + ".jpg");
 #endif
   }
 
@@ -1677,7 +1678,7 @@ namespace ipl {
   void NesterovPlace::printDensityMapToCsv(std::string file_name)
   {
     std::ofstream file_stream;
-    file_stream.open(_nes_database->_placer_db->get_placer_config()->get_pl_dir() + "/pl/" + file_name + ".csv");
+    file_stream.open(iPLAPIInst.obtainTargetDir() + "/pl/" + file_name + ".csv");
     if (!file_stream.good()) {
       LOG_WARNING << "Cannot open file for density map calculation!";
     }
@@ -1908,7 +1909,7 @@ namespace ipl {
       iplf::plInst->addFileInstance(nes_inst->get_name(), coordi_x, coordi_y, (int8_t)inst->get_orient());
     }
 
-    iplf::plInst->saveInstanceDataToDirectory(_nes_database->_placer_db->get_placer_config()->get_pl_dir() + "/pl/gui/");
+    iplf::plInst->saveInstanceDataToDirectory(iPLAPIInst.obtainTargetDir() + "/pl/gui/");
   }
 
   void NesterovPlace::printIterationCoordi(std::ofstream& long_net_stream, int32_t cur_iter)

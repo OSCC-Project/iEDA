@@ -11,3 +11,4 @@
 iEDA
 iEDA_gui
 ${RESULT_PATH}
+${RESULT_DIR}

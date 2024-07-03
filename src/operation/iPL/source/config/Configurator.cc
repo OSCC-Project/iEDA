@@ -61,7 +61,6 @@ void Config::initConfigByJson(nlohmann::json json)
   int32_t is_congestion_effort = getDataByJson(json, {"PL", "is_congestion_effort"});
   int32_t ignore_net_degree = getDataByJson(json, {"PL", "ignore_net_degree"});
   int32_t num_threads = getDataByJson(json, {"PL", "num_threads"});
-  std::string pl_dir = getDataByJson(json, {"PL", "pl_dir"});
 
   // Global Placer
   float init_wirelength_coef = getDataByJson(json, {"PL", "GP", "Wirelength", "init_wirelength_coef"});
@@ -220,7 +219,6 @@ void Config::initConfigByJson(nlohmann::json json)
   _ignore_net_degree = ignore_net_degree;
   _is_timing_effort = (is_timing_effort == 1);
   _is_congestion_effort = (is_congestion_effort == 1);
-  _pl_dir = pl_dir;
 }
 
 nlohmann::json Config::getDataByJson(nlohmann::json value, std::vector<std::string> flag_list)

@@ -14,16 +14,16 @@ class PLReporter
   PLReporter& operator=(const PLReporter&) = delete;
   PLReporter& operator=(PLReporter&&) = delete;
 
-  void reportPLInfo();
+  void reportPLInfo(std::string target_dir);
   void reportTopoInfo();
-  void reportWLInfo(std::ofstream& feed);
+  void reportWLInfo(std::ofstream& feed, std::string target_dir);
   void reportSTWLInfo(std::ofstream& feed);
   void reportHPWLInfo(std::ofstream& feed);
   void reportLongNetInfo(std::ofstream& feed);
-  void reportViolationInfo(std::ofstream& feed);
+  void reportViolationInfo(std::ofstream& feed, std::string target_dir);
   void reportBinDensity(std::ofstream& feed);
   int32_t reportOverlapInfo(std::ofstream& feed);
-  void reportLayoutWhiteInfo();
+  void reportLayoutWhiteInfo(std::string target_dir);
   void reportTimingInfo(std::ofstream& feed);
   void reportCongestionInfo(std::ofstream& feed);
   void reportPLBaseInfo(std::ofstream& feed);

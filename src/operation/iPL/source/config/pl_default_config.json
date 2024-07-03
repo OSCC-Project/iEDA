@@ -6,7 +6,6 @@
         "is_congestion_effort": 0,
         "ignore_net_degree": 100,
         "num_threads": 8,
-        "pl_dir:" : "./result",
         "GP": {
             "Wirelength": {
                 "init_wirelength_coef": 0.25,
@@ -46,25 +45,6 @@
             "first_iter": [],
             "second_iter": [],
             "min_filler_width": 1
-        },
-        "MP": {
-            "fixed_macro": [],
-            "fixed_macro_coordinate": [],
-            "blockage": [],
-            "guidance_macro": [],
-            "guidance": [],
-            "solution_type": "BStarTree",
-            "SimulateAnneal": {
-                "perturb_per_step": 100,
-                "cool_rate": 0.92
-            },
-            "Partition": {
-                "parts": 66,
-                "ufactor": 100,
-                "new_macro_density": 0.6
-            },
-            "halo_x": 0,
-            "halo_y": 0
         }
     }
 }

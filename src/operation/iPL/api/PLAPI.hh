@@ -60,6 +60,8 @@ class PLAPI
   void runBufferInsertion();
   void writeBackSourceDataBase();
 
+  std::string obtainTargetDir();
+
   void updatePlacerDB();
   void updatePlacerDB(std::vector<std::string> inst_list);
 
