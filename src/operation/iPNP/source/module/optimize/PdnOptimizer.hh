@@ -20,6 +20,7 @@
 #include <map>
 #include <string>
 #include <vector>
+#include "DataManager.hh"
 
 namespace idb {
 class IdbLayer;
@@ -54,14 +55,15 @@ class PdnOptimizer{
   PdnOptimizer();
   ~PdnOptimizer();
   
-  idb::IdbRegularWireSegment* optimize(idb::IdbRegularWireSegment* initial_pdn); //整个优化流程，包括评估器预测、调整网络;调用具体算法
+  GridManager* optimize(GridManager* initial_pdn); //整个优化流程，包括评估器预测、调整网络;调用具体算法
 
  private:
-  idb::IdbRegularWireSegment* input_pdn_grid;
-  idb::IdbRegularWireSegment* output_pdn_grid;
-  idb::IdbLayer* output_def; //整个优化完成后的输出DEF文件
+  GridManager* input_pdn_grid;
+  GridManager* output_pdn_grid;
+  file* output_def; //整个优化完成后的输出DEF文件
   double opt_score;
 
 };
+
 }
 

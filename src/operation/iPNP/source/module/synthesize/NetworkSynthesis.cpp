@@ -25,7 +25,7 @@
 
 namespace ipnp {
 
-NetworkSynthesis::NetworkSynthesis(std::string type, GridManager grid_info)
+NetworkSynthesis::NetworkSynthesis(std::string type, GridManager grid_info) //list initial
 {
   _nework_sys_type = type;
   _input_grid_info = grid_info;

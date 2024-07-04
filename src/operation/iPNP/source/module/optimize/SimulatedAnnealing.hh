@@ -31,8 +31,5 @@ class SimulatedAnnealing : public PdnOptMethod{
  
 
 };
-}
 
-
-
-
+}   //namespace ipnp

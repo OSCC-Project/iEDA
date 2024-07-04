@@ -30,7 +30,8 @@ iPNP::iPNP(){
 iPNP::iPNP(const std::string& config_file)
 {
   //TODO: add config
-  
+  //need json module
+
   /*
   _pnp_config = new PNPConfig;
   JsonParser *json = JsonParser::get_json_parser();
@@ -84,6 +85,5 @@ void iPNP::run()
   optimize();
   synthesizeNetwork();
 }
-
 
 }  // namespace ipnp

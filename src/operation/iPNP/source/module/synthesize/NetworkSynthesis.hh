@@ -43,9 +43,11 @@ class NetworkSynthesis
 
   void randomSys();
 
-  GridManager* getNetwork() { return &_synthesized_network; }  //返回值用指针还是类本身？
+  //GridManager* getNetwork() { return &_synthesized_network; }  //返回值用指针还是类本身？
+  GridManager &getNetwork() { return _synthesized_network; }  //返回值用指针还是类本身？
 
   file* writeDef(); //retrun type?
+  //using iDB segment, refer to iPDN, iRT. SpecialNet?
 
  private:
   GridManager _input_grid_info; //用指针类型GridManager*还是类本身？

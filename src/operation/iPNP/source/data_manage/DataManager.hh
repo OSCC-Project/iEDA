@@ -69,10 +69,12 @@ class GridManager
  public:
   int get_ho_region_num() { return _ho_region_num; }
   int get_ver_region_num() { return _ver_region_num; }
-  std::vector<std::vector<PDNGridRegion>> get_grid_data() { return _grid_data; }
+  //std::vector<std::vector<PDNGridRegion>> get_grid_data() { return _grid_data; }
+  auto &get_grid_data() { return _grid_data; }
   std::vector<std::vector<int>> get_template_data() { return _template_data; }
   std::vector<PDNGridTemplate> get_template_libs() { return _template_libs; }
 
+  //use "set"
   void write_ho_region_num(int ho_region_num) { _ho_region_num = ho_region_num; }
   void write_ver_region_num(int ver_region_num) { _ver_region_num = ver_region_num; }
   void write_grid_data(std::vector<std::vector<PDNGridRegion>> grid_data) { _grid_data = grid_data; }

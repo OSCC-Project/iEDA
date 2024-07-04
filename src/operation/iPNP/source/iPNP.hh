@@ -52,7 +52,7 @@ class PNPConfig;
 class iPNP
 {
  public:
-  iPNP();
+  iPNP() = delete;
   iPNP(const std::string &config_file);
   ~iPNP();
 
