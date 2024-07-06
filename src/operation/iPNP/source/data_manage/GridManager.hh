@@ -45,7 +45,7 @@ class PDNGridRegion
  private:
   std::string _type;  // e.g. rectangle, irregular(coverd by Macro)
   std::vector<int> _region_position;  // e.g. {0,0}, {0,1}...{1,0}, {1,1}
-                                      // If DataManager contains GridRegion position information, this member variable can be omitted.
+                                      // If GridManager contains GridRegion position information, this member variable can be omitted.
 };
 
 class PDNRectanGridRegion : public PDNGridRegion
@@ -74,12 +74,11 @@ class GridManager
   std::vector<std::vector<int>> get_template_data() { return _template_data; }
   std::vector<PDNGridTemplate> get_template_libs() { return _template_libs; }
 
-  //use "set"
-  void write_ho_region_num(int ho_region_num) { _ho_region_num = ho_region_num; }
-  void write_ver_region_num(int ver_region_num) { _ver_region_num = ver_region_num; }
-  void write_grid_data(std::vector<std::vector<PDNGridRegion>> grid_data) { _grid_data = grid_data; }
-  void write_template_data(std::vector<std::vector<int>> template_data) { _template_data = template_data; }
-  void write_template_libs(std::vector<PDNGridTemplate> template_libs) { _template_libs = template_libs; }
+  void set_ho_region_num(int ho_region_num) { _ho_region_num = ho_region_num; }
+  void set_ver_region_num(int ver_region_num) { _ver_region_num = ver_region_num; }
+  void set_grid_data(std::vector<std::vector<PDNGridRegion>> grid_data) { _grid_data = grid_data; }
+  void set_template_data(std::vector<std::vector<int>> template_data) { _template_data = template_data; }
+  void set_template_libs(std::vector<PDNGridTemplate> template_libs) { _template_libs = template_libs; }
 
  private:
   int _ho_region_num;

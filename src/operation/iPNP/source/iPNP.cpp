@@ -45,20 +45,20 @@ iPNP::~iPNP()
 
 void iPNP::initSynthesize()
 {
-  //TODO: 使用fastplacer后决定region摆放，但哪个region上放哪个Template用随机
-  //v1.0先不考虑不规则region(fastplacer)
-  //should include writeDef().
-  
+  //TODO: using fastplacer and decide which region to place, and place templates on regions randomly
   /*
   FastPlacer fast_placer;
   fast_placer.fastPlace(_input_netlist);
   idb::IdbLayer* fast_place_result = fast_placer.getPlaceResult();
   */
   
+  //version1.0: needn't consider regions with irregular shapes (determined by fastplacer)
   GridManager empty_grid;
   NetworkSynthesis network_synthesizer("default", empty_grid);
   network_synthesizer.synthesizeNetwork();
-  _initialized_network = network_synthesizer.getNetwork();
+  _initialized_network = network_synthesizer.get_network();
+  
+  //TODO: should include NetworkSynthesis::writeDef() because DEF will be used by evaluator
 }
 
 void iPNP::optimize()
@@ -70,7 +70,6 @@ void iPNP::optimize()
   optimizer -> middle data -> syn(optimizer) , set_syn(middle data)
 
   // TODO:
-  void evaluate();  // 整个评估，包括IR、congestion，后续可拓展EM，也可整个被ML Model代替
 
 }
 

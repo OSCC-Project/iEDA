@@ -14,26 +14,15 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-/**
- * @brief Generate template blocks. Upper interface is GenPdnTemplate.py
- */
-#pragma once
-
-#include "GridManager.hh"
+#include "FastPlacer.hh"
 
 namespace ipnp {
 
-class TemplateLib
+void FastPlacer::fastPlace(idb::IdbSpecialNet* netlist)
 {
- public:
-  TemplateLib() = default;
-  ~TemplateLib() = default;
+  // TODO: call placer API
 
-  PDNGridTemplate gen_pdn_template(double width, double space) { /* TODO: synthesize _curr_template */ }
-
- private:
-  PDNGridTemplate _curr_template;
-  std::vector<PDNGridTemplate> _template_libs;
-};
+  // TODO: Save the placement result in _place_result
+}
 
 }  // namespace ipnp

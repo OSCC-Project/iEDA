@@ -16,20 +16,22 @@
 // ***************************************************************************************
 #pragma once
 
-#include "iPNP.hh"
+#include <iostream>
+#include <map>
+#include <string>
+#include <vector>
+#include "GridManager.hh"
 
 namespace ipnp {
-class FastPlacer
+
+class SimulatedAnnealing : public PdnOptMethod
 {
  public:
-  FastPlacer();
-  ~FastPlacer();
+  void radomSearch();
 
-  void fastPlace(idb::IdbSpecialNet* netlist);  //place结果存在place_result
-  idb::IdbLayer* getPlaceResult() { return place_result; }  // 返回DEF文件，用idb::IdbLayer*？
+  void renewPdnGrid();
 
  private:
-  idb::IdbLayer* place_result = nullptr;
 };
 
 }  // namespace ipnp

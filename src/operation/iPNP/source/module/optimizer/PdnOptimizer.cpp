@@ -14,30 +14,25 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-/**
- * @brief 不一定需要此文件。与TemlateLib.hh、GenPdnTemplate.py功能重复。
- */
 
-#pragma once
-
-#include "iPNP.hh"
-#include "TemplateLib.hh"
+#include "PdnOptimizer.hh"
+#include "SimulatedAnnealing.hh"
 
 namespace ipnp {
-class TemplateSynthesis
+PdnOptimizer::PdnOptimizer()
 {
- public:
-  TemplateSynthesis();
-  ~TemplateSynthesis();
+}
 
-  void synthesizeTemplate();
-  GridMap<TCell>& getTemplate() { return tcell_map; }  // 返回一个3D模板瓷砖块
+PdnOptimizer::~PdnOptimizer()
+{
+}
 
+void PdnOptimizer::evaluate()
+{
+}
 
-
- private:
-  GridMap<TCell>& tcell_map;
-  //GridMap<TCell>& tcell_map = _database.get_tcell_map();
-};
+GridManager* PdnOptimizer::optimize(GridManager* initial_pdn)
+{
+}
 
 }  // namespace ipnp

@@ -25,13 +25,12 @@
 
 namespace ipnp {
 
-NetworkSynthesis::NetworkSynthesis(std::string type, GridManager grid_info) //list initial
+NetworkSynthesis::NetworkSynthesis(std::string type, GridManager grid_info)
+    : _nework_sys_type(type), _input_grid_info(grid_info), _synthesized_network(grid_info)  // list initial
 {
-  _nework_sys_type = type;
-  _input_grid_info = grid_info;
-  _synthesized_network.write_ho_region_num(_input_grid_info.get_ho_region_num());
-  _synthesized_network.write_ver_region_num(_input_grid_info.get_ver_region_num());
-  _synthesized_network.write_template_libs(_input_grid_info.get_template_libs());
+  // _synthesized_network.set_ho_region_num(_input_grid_info.get_ho_region_num());
+  // _synthesized_network.set_ver_region_num(_input_grid_info.get_ver_region_num());
+  // _synthesized_network.set_template_libs(_input_grid_info.get_template_libs());
 }
 
 NetworkSynthesis::~NetworkSynthesis()
@@ -44,18 +43,18 @@ void NetworkSynthesis::synthesizeNetwork()
     randomSys();
   }
   if (_nework_sys_type == "optimizer") {
-    // std::vector<std::vector<PDNGridRegion>> grid_data;
-    std::vector<std::vector<PDNGridRegion>> input_grid_data = _input_grid_info.get_grid_data();
-    // std::vector<std::vector<int>> template_data;
-    std::vector<std::vector<int>> input_template_data = _input_grid_info.get_template_data();
-    // for (int i = 0; i < _input_grid_info.getHoRegionNum(); i++) {
-    //   for (int j = 0; j < _input_grid_info.getVerRegionNum(); j++) {
-    //     grid_data[i][j] = input_grid_data[i][j];
-    //     template_data[i][j] = input_template_data[i][j];
-    //   }
-    // }
-    _synthesized_network.write_grid_data(input_grid_data);
-    _synthesized_network.write_template_data(input_template_data);
+    // // std::vector<std::vector<PDNGridRegion>> grid_data;
+    // std::vector<std::vector<PDNGridRegion>> input_grid_data = _input_grid_info.get_grid_data();
+    // // std::vector<std::vector<int>> template_data;
+    // std::vector<std::vector<int>> input_template_data = _input_grid_info.get_template_data();
+    // // for (int i = 0; i < _input_grid_info.getHoRegionNum(); i++) {
+    // //   for (int j = 0; j < _input_grid_info.getVerRegionNum(); j++) {
+    // //     grid_data[i][j] = input_grid_data[i][j];
+    // //     template_data[i][j] = input_template_data[i][j];
+    // //   }
+    // // }
+    _synthesized_network.set_grid_data(_input_grid_info.get_grid_data());
+    _synthesized_network.set_template_data(_input_grid_info.get_template_data());
   }
   if (_nework_sys_type == "best") {
     // TODO
@@ -71,7 +70,7 @@ void NetworkSynthesis::randomSys()
     for (int j = 0; j < _input_grid_info.ver_region_num; j++) {
       _synthesized_network._grid_data[i][j] = Random(PDNGridRegion);  // TODO
       _synthesized_network._template_data[i][j]
-          = std::uniform_int_distribution<> distrib(0, _synthesized_network._template_libs.size() - 1);  // TODO: random Template. 
+          = std::uniform_int_distribution<> distrib(0, _synthesized_network._template_libs.size() - 1);  // TODO: random Template.
     }
   }
 }

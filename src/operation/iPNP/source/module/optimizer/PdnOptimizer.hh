@@ -20,7 +20,12 @@
 #include <map>
 #include <string>
 #include <vector>
-#include "DataManager.hh"
+
+#include "GridManager.hh"
+#include "FastPlacer.hh"
+#include "EarlyGlobalRoute.hh"
+#include "IREval.hh"
+#include "CongestionEval.hh"
 
 namespace idb {
 class IdbLayer;
@@ -44,26 +49,26 @@ template <typename T>
 class IdbCoordinate;
 }  // namespace idb
 
-namespace ipnp{
+namespace ipnp {
 
-class PdnOptMethod {
-  
+class PdnOptMethod
+{
 };
 
-class PdnOptimizer{
+class PdnOptimizer
+{
  public:
   PdnOptimizer();
   ~PdnOptimizer();
-  
-  GridManager* optimize(GridManager* initial_pdn); //整个优化流程，包括评估器预测、调整网络;调用具体算法
+
+  void evaluate();  // The entire evaluation process, including IR and Congestion, can add EM or be replaced by ML models in the future
+
+  GridManager* optimize(GridManager* initial_pdn);  // including calling evaluator and modify PDN by calling algorithm module
 
  private:
   GridManager* input_pdn_grid;
   GridManager* output_pdn_grid;
-  file* output_def; //整个优化完成后的输出DEF文件
   double opt_score;
-
 };
 
-}
-
+}  // namespace ipnp

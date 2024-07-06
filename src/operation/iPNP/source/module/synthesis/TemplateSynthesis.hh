@@ -14,21 +14,28 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
+/**
+ * @brief This file may not be necessary. Repeats the functions of TemlateLib.hh and GenPdnTemplate.py.
+ */
 
-#include "PdnOptimizer.hh"
-#include "SimulatedAnnealing.hh"
+#pragma once
+
+#include "GridManager.hh"
+#include "TemplateLib.hh"
 
 namespace ipnp {
-PdnOptimizer::PdnOptimizer(){
+class TemplateSynthesis
+{
+ public:
+  TemplateSynthesis() = default;
+  ~TemplateSynthesis() = default;
 
-}
+  void synthesizeTemplate() {}
+  GridManager& getTemplate() { return _tcell_map; }  // return a 3D Template block
 
-PdnOptimizer::~PdnOptimizer(){
+ private:
+  GridManager _tcell_map;
+  // GridMap<TCell>& tcell_map = _database.get_tcell_map();
+};
 
-}
-
-idb::IdbRegularWireSegment* optimize(idb::IdbRegularWireSegment* initial_pdn){
-
-}
-
-}
+}  // namespace ipnp

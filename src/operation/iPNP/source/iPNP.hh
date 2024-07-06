@@ -21,7 +21,7 @@
 #include <string>
 #include <vector>
 
-#include "DataManager.hh"
+#include "GridManager.hh"
 
 namespace idb {
 class IdbLayer;

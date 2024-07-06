@@ -26,7 +26,7 @@
 
 #include "iPNP.hh"
 #include "TemplateSynthesis.hh"
-#include "DataManager.hh"
+#include "GridManager.hh"
 
 namespace ipnp {
 
@@ -39,18 +39,17 @@ class NetworkSynthesis
   
   ~NetworkSynthesis();
 
-  void synthesizeNetwork() { /* _synthesized_network = xxx */};
+  void synthesizeNetwork(); //update _synthesized_network iteratively.
 
   void randomSys();
 
-  //GridManager* getNetwork() { return &_synthesized_network; }  //返回值用指针还是类本身？
-  GridManager &getNetwork() { return _synthesized_network; }  //返回值用指针还是类本身？
+  //GridManager* getNetwork() { return &_synthesized_network; }
+  GridManager &get_network() { return _synthesized_network; }
 
-  file* writeDef(); //retrun type?
-  //using iDB segment, refer to iPDN, iRT. SpecialNet?
-
+  file* writeDef(); //retrun type? using iDB segment, refer to iPDN, iRT. SpecialNet?
+  
  private:
-  GridManager _input_grid_info; //用指针类型GridManager*还是类本身？
+  GridManager _input_grid_info; // use GridManager* or GridManager?
   GridManager _synthesized_network; //the whole PDN consist of Templates
   std::string _nework_sys_type; //{default, best, worst, optimizer}
 
