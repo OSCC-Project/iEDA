@@ -41,6 +41,22 @@ std::vector<Node*> Node::get_children() const
   return children;
 }
 
+void Node::set_father_node(Node* f_n)
+{
+  _father_node = f_n;
+  if (_father_node->get_first_child() != nullptr) {
+    Node* tmp = _father_node->get_first_child();
+    if (tmp->get_id() == _id) return;
+    while (tmp->get_next_sibling() != nullptr) {
+      tmp = tmp->get_next_sibling();
+      if (tmp->get_id() == _id) return;
+    }
+    tmp->set_next_sibling(this);
+  } else {
+    _father_node->set_first_child(this);
+  }
+}
+
 void Node::print_recursive(std::ostream& os) const
 {
   std::vector<bool> prefix;
@@ -83,9 +99,6 @@ bool TreeBuild::makeRoutingTree(ista::Net* net, RoutingType rout_type)
     }
   };
 
-  // TreeBuild* tree = new TreeBuild();
-  // TODesignObjSeq& pins = tree->get_pins();
-  // std::vector<Point> points;
   getConnectedPins(net, _pins);
   int pin_num = _pins.size();
   if (pin_num < 2) {
@@ -100,7 +113,6 @@ bool TreeBuild::makeRoutingTree(ista::Net* net, RoutingType rout_type)
 
     auto idb_loc = timingEngine->get_sta_adapter()->idbLocation(pin);
     Point pin_loc = Point(idb_loc->get_x(), idb_loc->get_y());
-    // points.push_back(pin_loc);
     x[i] = pin_loc.get_x();
     y[i] = pin_loc.get_y();
 
@@ -489,17 +501,10 @@ void TreeBuild::convertToBinaryTree(Node* root)
   if (!root || children.empty())
     return;
 
-  // 第一个子节点作为左子节点
-  // root->set_first_child(children[0]);
-  // children[0]->set_father_node(root);
   convertToBinaryTree(children[0]);
 
   if (children.size() == 2) {
-    // children[0]->set_next_sibling(children[1]);
-    // children[1]->set_father_node(root);
-
     convertToBinaryTree(children[1]);
-
   } else if (children.size() > 2) {
     // 遍历其余的兄弟节点，并连接斯坦纳点
     auto current = root;
@@ -511,7 +516,7 @@ void TreeBuild::convertToBinaryTree(Node* root)
         int steiner_id = _points.size();
         steinerPoint->set_id(steiner_id);
         _points.push_back(p);
-        // current->get_first_child()->set_next_sibling(steinerPoint);
+        current->get_first_child()->set_next_sibling(steinerPoint);
         steinerPoint->set_father_node(current);
 
         // steinerPoint->set_first_child(children[i]);
