@@ -14,17 +14,36 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-#include "ToConfig.h"
 
+#pragma once
+
+#include <algorithm>
+#include <boost/functional/hash.hpp>
+#include <cassert>
+#include <iostream>
+#include <map>
+#include <set>
+#include <unordered_map>
+#include <vector>
+
+#include "../TreeBuild.h"
+#include "salt/salt.h"
 namespace ito {
 
-ToConfig *ToConfig::_instance = nullptr;
+class ShallowLightTree
+{
+ public:
+  ShallowLightTree() = default;
+  ~ShallowLightTree() = default;
 
-ToConfig *ToConfig::getInstance() {
-    if (nullptr == _instance) {
-      _instance = new ToConfig();
-    }
-    return _instance;
-  }
+  Node* makeShallowLightTree(int x[], int y[], int pin_count, int driver_id);
 
-} // namespace ito
+  std::vector<Point> getPoints() { return _points; }
+
+ private:
+  void findLeftRight(Node *father, const std::shared_ptr<salt::TreeNode>& salt_node);
+
+  std::vector<Point> _points;
+};
+
+}  // namespace ito

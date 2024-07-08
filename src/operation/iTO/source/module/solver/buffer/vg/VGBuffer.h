@@ -14,17 +14,30 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-#include "ToConfig.h"
+
+#pragma once
+
+#include <iostream>
+
+#include "BufferedOption.h"
+#include "TreeBuild.h"
 
 namespace ito {
+class VGBuffer
+{
+ public:
+  VGBuffer() = default;
+  VGBuffer(TOLibertyCellSeq cells) : _available_lib_cell_sizes(cells){}
+  ~VGBuffer() = default;
 
-ToConfig *ToConfig::_instance = nullptr;
+  BufferedOptionSeq VGBuffering(TreeBuild* tree);
 
-ToConfig *ToConfig::getInstance() {
-    if (nullptr == _instance) {
-      _instance = new ToConfig();
-    }
-    return _instance;
-  }
+ private:
+  TOLibertyCellSeq _available_lib_cell_sizes;
+  BufferedOptionSeq findBufferSolution(TreeBuild* tree, int curr_id, int prev_id);
+  BufferedOptionSeq mergeBranch(BufferedOptionSeq buf_opt_left, BufferedOptionSeq buf_opt_right, Point curr_loc);
+  BufferedOptionSeq addWire(BufferedOptionSeq buf_opt_seq, Point curr_loc, Point prev_loc);
+  BufferedOptionSeq addBuffer(BufferedOptionSeq buf_opt_seq, Point prev_loc);
+};
 
-} // namespace ito
+}  // namespace ito

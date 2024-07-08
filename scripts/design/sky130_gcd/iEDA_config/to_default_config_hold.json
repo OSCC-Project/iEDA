@@ -23,6 +23,7 @@
             "make_net": "setup_net_"
         }
     },
+    "routing_tree": "flute",
     "setup_target_slack": 0.0,
     "hold_target_slack": 0.0,
     "max_insert_instance_percent": 0.4,

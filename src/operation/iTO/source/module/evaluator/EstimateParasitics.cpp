@@ -127,11 +127,12 @@ void EstimateParasitics::estimateInvalidNetParasitics(Net* net, DesignObject* dr
 
 void EstimateParasitics::excuteWireParasitic(Net* curr_net)
 {
-  TimingDBAdapter* db_adapter = timingEngine->get_sta_adapter();
-  RoutingTree* tree = makeRoutingTree(curr_net, db_adapter, RoutingType::kSteiner);
-  if (!tree) {
+  TreeBuild* tree = new TreeBuild();
+  bool make_tree = tree->makeRoutingTree(curr_net, toConfig->get_routing_tree());
+  if (!make_tree) {
     return;
   }
+  // cout << tree;
 
   vector<int> segment_idx;
   vector<int> length_wire;
@@ -151,7 +152,7 @@ void EstimateParasitics::excuteWireParasitic(Net* curr_net)
   delete tree;
 }
 
-void EstimateParasitics::updateParastic(Net* curr_net, int index1, int index2, int length_per_wire, RoutingTree* tree)
+void EstimateParasitics::updateParastic(Net* curr_net, int index1, int index2, int length_per_wire, TreeBuild* tree)
 {
   RctNode* node1 = timingEngine->get_sta_engine()->makeOrFindRCTreeNode(curr_net, index1);
   RctNode* node2 = timingEngine->get_sta_engine()->makeOrFindRCTreeNode(curr_net, index2);
@@ -175,9 +176,9 @@ void EstimateParasitics::updateParastic(Net* curr_net, int index1, int index2, i
   RctNodeConnectPins(index1, node1, index2, node2, curr_net, tree);
 }
 
-void EstimateParasitics::RctNodeConnectPins(int index1, RctNode* node1, int index2, RctNode* node2, Net* net, RoutingTree* tree)
+void EstimateParasitics::RctNodeConnectPins(int index1, RctNode* node1, int index2, RctNode* node2, Net* net, TreeBuild* tree)
 {
-  auto pin_con = [](Net* net, int index, RctNode* rcnode, RoutingTree* tree) {
+  auto pin_con = [](Net* net, int index, RctNode* rcnode, TreeBuild* tree) {
     int num_pins = tree->get_pins().size();
     if (tree->get_pin_visit(index) == 1) {
       return;

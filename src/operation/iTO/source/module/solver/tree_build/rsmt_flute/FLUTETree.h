@@ -14,17 +14,37 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-#include "ToConfig.h"
+
+#pragma once
+
+#include <algorithm>
+#include <boost/functional/hash.hpp>
+#include <cassert>
+#include <iostream>
+#include <map>
+#include <set>
+#include <unordered_map>
+#include <vector>
+
+#include "../TreeBuild.h"
 
 namespace ito {
 
-ToConfig *ToConfig::_instance = nullptr;
+class FLUTETree
+{
+ public:
+  FLUTETree() = default;
+  ~FLUTETree() = default;
 
-ToConfig *ToConfig::getInstance() {
-    if (nullptr == _instance) {
-      _instance = new ToConfig();
-    }
-    return _instance;
-  }
+  Node* makeFLUTETree(int x[], int y[], int pin_count, int driver_id);
 
-} // namespace ito
+  std::vector<Point> getPoints() { return _points; }
+
+ private:
+  void findLeftRight(Node* father, int father_id, int child_id, std::vector<std::vector<int>>& adj, Flute::Tree stTree);
+
+  std::vector<Point> _points;
+  std::unordered_map<std::pair<int, int>, int, boost::hash<std::pair<int, int>>> _pin_location_2_id;
+};
+
+}  // namespace ito

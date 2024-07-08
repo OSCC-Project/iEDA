@@ -34,6 +34,8 @@ CmdTOConfig::CmdTOConfig(const char* cmd_name) : TclCmd(cmd_name)
     _config_list.push_back(std::make_pair("-max_insert_instance_percent", ValueType::kDouble));
     // max_core_utilization double
     _config_list.push_back(std::make_pair("-max_core_utilization", ValueType::kDouble));
+    // routing_tree string
+    _config_list.push_back(std::make_pair("-routing_tree", ValueType::kString));
     // fix_fanout bool
 
     //optimize_drv bool

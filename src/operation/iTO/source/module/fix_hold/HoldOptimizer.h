@@ -57,9 +57,10 @@ class HoldOptimizer
   void process();
   int checkAndOptimizeHold();
   bool checkAndFindVioaltion();
-  int performOptimization();
-  bool findEndpointsWithHoldViolation(TOVertexSet end_points, TOSlack& worst_slack, TOVertexSet& hold_violations);
+  int performOptimizationProcess();
+  void optimizeHoldViolation();// main optimization function
   int optHoldViolationEnd(TOVertexSeq fanins);
+  bool findEndpointsWithHoldViolation(TOVertexSet end_points, TOSlack& worst_slack, TOVertexSet& hold_violations);
   void calcStaVertexSlacks(StaVertex* vertex, TOSlacks slacks);
   TOSlack calcSlackGap(StaVertex* vertex);
   float calcHoldDelayOfBuffer(LibCell* buffer);

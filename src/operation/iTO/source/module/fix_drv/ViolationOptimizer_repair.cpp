@@ -41,13 +41,14 @@ void ViolationOptimizer::optimizeViolationNet(ista::Net* net, double cap_load_al
   float pin_cap;
   TODesignObjSeq pins_loaded;
 
-  RoutingTree* tree = makeRoutingTree(net, timingEngine->get_sta_adapter(), RoutingType::kSteiner);
-  if (!tree) {
+  TreeBuild* tree = new TreeBuild();
+  bool make_tree = tree->makeRoutingTree(net, toConfig->get_routing_tree());
+  if (!make_tree) {
     return;
   }
   int root_id = tree->get_root()->get_id();
   tree->updateBranch();
-  repairViolationNetByDP(tree, root_id, RoutingTree::_null_pt, net, cap_load_allowed_max, wire_length, pin_cap, pins_loaded);
+  repairViolationNetByDP(tree, root_id, TreeBuild::_null_pt, net, cap_load_allowed_max, wire_length, pin_cap, pins_loaded);
 
   delete tree;
 
@@ -63,14 +64,14 @@ void ViolationOptimizer::optimizeViolationNet(ista::Net* net, double cap_load_al
   }
 }
 
-void ViolationOptimizer::repairViolationNetByDP(RoutingTree* tree, int curr_pt, int father_pt, ista::Net* net, float cap_load_allowed_max,
+void ViolationOptimizer::repairViolationNetByDP(TreeBuild* tree, int curr_pt, int father_pt, ista::Net* net, float cap_load_allowed_max,
                                                 int& wire_length, float& pin_cap, TODesignObjSeq& pins_loaded)
 {
   int left_branch = tree->left(curr_pt);
   int left_wire_length = 0;
   float left_pin_cap = 0.0;
   TODesignObjSeq left_pins_loaded;
-  if (left_branch != RoutingTree::_null_pt) {
+  if (left_branch != TreeBuild::_null_pt) {
     repairViolationNetByDP(tree, left_branch, curr_pt, net, cap_load_allowed_max, left_wire_length, left_pin_cap, left_pins_loaded);
   }
 
@@ -78,7 +79,7 @@ void ViolationOptimizer::repairViolationNetByDP(RoutingTree* tree, int curr_pt, 
   int middle_wire_length = 0;
   float middle_pin_cap = 0.0;
   TODesignObjSeq middle_pins_loaded;
-  if (middle_branch != RoutingTree::_null_pt) {
+  if (middle_branch != TreeBuild::_null_pt) {
     repairViolationNetByDP(tree, middle_branch, curr_pt, net, cap_load_allowed_max, middle_wire_length, middle_pin_cap, middle_pins_loaded);
   }
 
@@ -86,7 +87,7 @@ void ViolationOptimizer::repairViolationNetByDP(RoutingTree* tree, int curr_pt, 
   int right_wire_length = 0;
   float right_pin_cap = 0.0;
   TODesignObjSeq right_pins_loaded;
-  if (right_branch != RoutingTree::_null_pt) {
+  if (right_branch != TreeBuild::_null_pt) {
     repairViolationNetByDP(tree, right_branch, curr_pt, net, cap_load_allowed_max, right_wire_length, right_pin_cap, right_pins_loaded);
   }
 
@@ -135,7 +136,7 @@ void ViolationOptimizer::repairViolationNetByDP(RoutingTree* tree, int curr_pt, 
     pins_loaded.push_back(load_pin);
   }
 
-  if (father_pt == RoutingTree::_null_pt) {
+  if (father_pt == TreeBuild::_null_pt) {
     return;
   }
 

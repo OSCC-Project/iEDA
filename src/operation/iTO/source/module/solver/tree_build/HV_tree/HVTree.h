@@ -14,17 +14,37 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-#include "ToConfig.h"
+
+#pragma once
+
+#include <algorithm>
+#include <cassert>
+#include <iostream>
+#include <map>
+#include <set>
+#include <vector>
+
+#include "../TreeBuild.h"
 
 namespace ito {
 
-ToConfig *ToConfig::_instance = nullptr;
+class HVTree
+{
+ public:
+  HVTree() = default;
+  ~HVTree() = default;
 
-ToConfig *ToConfig::getInstance() {
-    if (nullptr == _instance) {
-      _instance = new ToConfig();
-    }
-    return _instance;
-  }
+  Node* makeHVTree(int x[], int y[], int pin_count, int driver_id);
 
-} // namespace ito
+  std::vector<Point> getPoints() { return _points; }
+
+ private:
+  void insertTree(Node* father, Node* child);
+  int findIndexInPoints(Node* n);
+  void updateTree(int index, XCord x_coordinate, Node*& parent, std::vector<int> cordinate_vec,
+                  std::multimap<YCord, XCord> cordinate_to_x_map);
+
+  std::vector<Point> _points;
+};
+
+}  // namespace ito

@@ -43,7 +43,7 @@ void SetupOptimizer::optimizeSetup()
   // step 2. find violation endpoints
   checkAndFindVioaltion(end_pts_setup_violation);
   // step 3. optimization
-  optimizeViolation(end_pts_setup_violation);
+  optimizeViolationProcess(end_pts_setup_violation);
   // step 4. report
   report(begin_buffer_num, begin_resize_num);
 }
