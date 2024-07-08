@@ -6,7 +6,7 @@ flow_init -config $::env(CONFIG_DIR)/flow_config.json
 #===========================================================
 ##   read db config
 #===========================================================
-db_init -config $::env(CONFIG_DIR)/db_default_config.json
+db_init -config $::env(CONFIG_DIR)/db_default_config.json -output_dir_path $::env(RESULT_DIR)
 
 #===========================================================
 ##   reset data path

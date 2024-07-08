@@ -1,12 +1,12 @@
 {
     "file_path": {
-        "design_work_space": "${RESULT_DIR}/no",
+        "design_work_space": "./no",
         "sdc_file": "",
         "lib_files": "",
         "lef_files": "",
         "def_file": "path",
-        "output_def": "${RESULT_DIR}/no/ino_result.def",
-        "report_file": "${RESULT_DIR}/no/report.txt"
+        "output_def": "./no/ino_result.def",
+        "report_file": "./no/report.txt"
     },
     "insert_buffer": "sky130_fd_sc_hs__buf_8",
     "max_fanout": 30

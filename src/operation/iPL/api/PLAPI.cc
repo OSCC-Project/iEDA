@@ -84,14 +84,16 @@ PLAPI::~PLAPI()
 
 void PLAPI::initAPI(std::string pl_json_path, idb::IdbBuilder* idb_builder)
 {
-  PlacerDBInst.updatePlacerConfig(pl_json_path);
+  _external_api = new ExternalAPI();
+  _reporter = new PLReporter(_external_api);
 
+  // create external_api and reporter ptr
   createPLDirectory();
 
   char config[] = "info_ipl_glog";
   char* argv[] = {config};
 
-  std::string log_home_path = PlacerDBInst.get_placer_config()->get_pl_dir() +  "/pl/log/";
+  std::string log_home_path = this->obtainTargetDir() +  "/pl/log/";
   // std::string design_name = idb_builder->get_def_service()->get_design()->get_design_name();
   // std::string home_path = "./evaluation_task/benchmark/" + design_name + "/pl_reports/";
 
@@ -105,7 +107,7 @@ void PLAPI::initAPI(std::string pl_json_path, idb::IdbBuilder* idb_builder)
     if (!this->isSTAStarted()) {
       LOG_INFO << "Try to apply to start iSTA";
       // apply to start sta
-      std::string sta_home_path = PlacerDBInst.get_placer_config()->get_pl_dir() + "/sta";
+      std::string sta_home_path = this->obtainTargetDir() + "/sta";
       this->initSTA(sta_home_path, false);
 
       // tmp for evalution.
@@ -124,14 +126,10 @@ void PLAPI::initAPI(std::string pl_json_path, idb::IdbBuilder* idb_builder)
     PlacerDBInst.printInstanceInfo();
     PlacerDBInst.printNetInfo();
   }
-
-  // create external_api and reporter ptr
-  _external_api = new ExternalAPI();
-  _reporter = new PLReporter(_external_api);
 }
 
 void PLAPI::createPLDirectory(){
-  std::string pl_dir = PlacerDBInst.get_placer_config()->get_pl_dir();
+  std::string pl_dir = this->obtainTargetDir();
   // create log and report folder
   if (!std::filesystem::exists(pl_dir + "/pl/log")) {
     if (std::filesystem::create_directories(pl_dir + "/pl/log")) {
@@ -722,6 +720,10 @@ void PLAPI::writeBackSourceDataBase()
   PlacerDBInst.writeBackSourceDataBase();
 }
 
+std::string PLAPI::obtainTargetDir(){
+  return _external_api->obtainTargetDir();
+}
+
 std::vector<Rectangle<int32_t>> PLAPI::obtainAvailableWhiteSpaceList(std::pair<int32_t, int32_t> row_range,
                                                                      std::pair<int32_t, int32_t> site_range)
 {
@@ -783,7 +785,7 @@ void PLAPI::reportPLInfo()
 
   ieda::Stats report_status;
 
-  std::string output_dir = PlacerDBInst.get_placer_config()->get_pl_dir() + "/pl/report/";
+  std::string output_dir = this->obtainTargetDir() + "/pl/report/";
 
   // std::string design_name = PlacerDBInst.get_design()->get_design_name();
   // std::string output_dir = "./evaluation_task/benchmark/" + design_name + "/pl_reports/";
@@ -832,7 +834,7 @@ void PLAPI::reportTopoInfo()
 
 void PLAPI::reportWLInfo(std::ofstream& feed)
 {
-  _reporter->reportWLInfo(feed);
+  _reporter->reportWLInfo(feed, this->obtainTargetDir() + "/pl/report");
 }
 
 void PLAPI::reportSTWLInfo(std::ofstream& feed)
@@ -852,7 +854,7 @@ void PLAPI::reportLongNetInfo(std::ofstream& feed)
 
 void PLAPI::reportViolationInfo(std::ofstream& feed)
 {
-  _reporter->reportViolationInfo(feed);
+  _reporter->reportViolationInfo(feed, this->obtainTargetDir() + "/pl/report");
 }
 
 void PLAPI::reportBinDensity(std::ofstream& feed)
@@ -867,7 +869,7 @@ int32_t PLAPI::reportOverlapInfo(std::ofstream& feed)
 
 void PLAPI::reportLayoutWhiteInfo()
 {
-  _reporter->reportLayoutWhiteInfo();
+  _reporter->reportLayoutWhiteInfo(this->obtainTargetDir() + "/pl/report");
 }
 
 void PLAPI::reportTimingInfo(std::ofstream& feed)

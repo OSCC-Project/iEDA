@@ -113,4 +113,34 @@ void SetupOptimizer::findEndpointsWithSetupViolation(TOVertexSet  end_points,
   }
 }
 
+
+int SetupOptimizer::getFanoutNumber(Pin* pin)
+{
+  auto* net = pin->get_net();
+  return net->getFanouts();
+}
+
+bool SetupOptimizer::netConnectToOutputPort(Net* net)
+{
+  DesignObject* pin;
+  FOREACH_NET_PIN(net, pin)
+  {
+    if (pin->isOutput()) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool SetupOptimizer::netConnectToPort(Net* net)
+{
+  auto load_pin_ports = net->getLoads();
+  for (auto pin_port : load_pin_ports) {
+    if (pin_port->isPort()) {
+      return true;
+    }
+  }
+  return false;
+}
+
 }  // namespace ito

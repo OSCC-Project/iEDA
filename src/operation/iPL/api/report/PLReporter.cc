@@ -21,7 +21,7 @@ namespace ipl {
     //
   }
 
-  void PLReporter::reportPLInfo()
+  void PLReporter::reportPLInfo(std::string target_dir)
   {
     LOG_INFO << "-----------------Start iPL Report Generation-----------------";
 
@@ -29,11 +29,11 @@ namespace ipl {
 
     // std::string design_name = PlacerDBInst.get_design()->get_design_name();
     // std::string output_dir = "./evaluation_task/benchmark/" + design_name + "/pl_reports/";
-    std::string output_dir = PlacerDBInst.get_placer_config()->get_pl_dir() + "/pl/report/";
+    std::string output_dir = target_dir;
 
     std::string summary_file = "summary_report.txt";
     std::ofstream summary_stream;
-    summary_stream.open(output_dir + summary_file);
+    summary_stream.open(output_dir + "/" + summary_file);
     if (!summary_stream.good()) {
       LOG_WARNING << "Cannot open file for summary report !";
     }
@@ -43,10 +43,10 @@ namespace ipl {
     reportPLBaseInfo(summary_stream);
 
     // report violation info
-    reportViolationInfo(summary_stream);
+    reportViolationInfo(summary_stream, target_dir);
 
     // report wirelength info
-    reportWLInfo(summary_stream);
+    reportWLInfo(summary_stream, target_dir);
 
     // report density info
     reportBinDensity(summary_stream);
@@ -71,12 +71,12 @@ namespace ipl {
     //
   }
 
-  void PLReporter::reportViolationInfo(std::ofstream& feed)
+  void PLReporter::reportViolationInfo(std::ofstream& feed, std::string target_dir)
   {
-    std::string output_dir = PlacerDBInst.get_placer_config()->get_pl_dir() + "/pl/report/";
+    std::string output_dir = target_dir;
     std::string violation_detail_file = "violation_detail_report.txt";
     std::ofstream violation_detail_stream;
-    violation_detail_stream.open(output_dir + violation_detail_file);
+    violation_detail_stream.open(output_dir + "/" + violation_detail_file);
     if (!violation_detail_stream.good()) {
       LOG_WARNING << "Cannot open file for violation detail report !";
     }
@@ -160,7 +160,7 @@ namespace ipl {
       << "'" << output_dir << "'";
   }
 
-  void PLReporter::reportLayoutWhiteInfo()
+  void PLReporter::reportLayoutWhiteInfo(std::string target_dir)
   {
     LayoutChecker* checker = new LayoutChecker(&PlacerDBInst);
 
@@ -171,7 +171,7 @@ namespace ipl {
       // int32_t dbu = PlacerDBInst.get_layout()->get_database_unit();
 
       std::ofstream file_stream;
-      file_stream.open(PlacerDBInst.get_placer_config()->get_pl_dir() + "/pl/WhiteSites.txt");
+      file_stream.open(target_dir + "/WhiteSites.txt");
       if (!file_stream.good()) {
         LOG_WARNING << "Cannot open file for white sites !";
       }
@@ -674,12 +674,12 @@ namespace ipl {
     file_stream.close();
   }
 
-  void PLReporter::reportWLInfo(std::ofstream& feed)
+  void PLReporter::reportWLInfo(std::ofstream& feed, std::string target_dir)
   {
-    std::string output_dir = PlacerDBInst.get_placer_config()->get_pl_dir() + "/pl/report/";
+    std::string output_dir = target_dir;
     std::string wl_detail_file = "wl_detail_report.txt";
     std::ofstream wl_detail_stream;
-    wl_detail_stream.open(output_dir + wl_detail_file);
+    wl_detail_stream.open(output_dir + "/" + wl_detail_file);
     if (!wl_detail_stream.good()) {
       LOG_WARNING << "Cannot open file for wl detail report !";
     }
@@ -913,7 +913,7 @@ namespace ipl {
     feed << (*report_tbl).to_string() << std::endl;
 
     //** plot congestion map which format is csv
-    // std::string plot_path = PlacerDBInst.get_placer_config()->get_pl_dir() + "/pl/report/";
+    // std::string plot_path = this->obtainTargetDir() + "/pl/report/";
     // std::string output_file_name = "CongMap";
     // _external_api->plotCongMap(plot_path, output_file_name);
 
@@ -1126,6 +1126,8 @@ namespace ipl {
     if (!report_stream.good()) {
       LOG_WARNING << "Cannot open file for evaluation report ! ";
     }
+
+    net_cnt = PlacerDBInst.get_design()->get_net_list().size();
 
     std::string design_name = PlacerDBInst.get_design()->get_design_name();
     report_stream << design_name << "," << fix_inst_cnt << "," << net_cnt << "," << inst_cnt << "," << filler_cnt << std::endl;

@@ -29,15 +29,12 @@ using std::vector;
 
 namespace ito {
 
+enum class RoutingType : int { kHVTree = 0, kSteiner = 1, kShallowLight = 2 };
+
 #define toConfig ToConfig::getInstance()
 class ToConfig {
  public:
-  static ToConfig *getInstance() {
-    if (nullptr == _instance) {
-      _instance = new ToConfig();
-    }
-    return _instance;
-  }
+  static ToConfig *getInstance();
 
   // setter
   void set_lef_files(const vector<string> lefs) { _lef_files_path = lefs; }
@@ -48,6 +45,16 @@ class ToConfig {
   void set_output_def_file(const string out) { _out_def_path = out; }
   void set_report_file(const string report) { _report_path = report; }
   void set_gds_file(const string gds) { _gds_path = gds; }
+  void set_routing_tree(const string tree)
+  {
+    if (tree == "flute") {
+      _routing_tree = RoutingType::kSteiner;
+    } else if (tree == "hvtree") {
+      _routing_tree = RoutingType::kHVTree;
+    } else if (tree == "shallow-light") {
+      _routing_tree = RoutingType::kShallowLight;
+    }
+  }
 
   void set_setup_target_slack(float slack_m) { this->_setup_target_slack = slack_m; }
   void set_hold_target_slack(float slack_m) { this->_hold_target_slack = slack_m; }
@@ -88,6 +95,7 @@ class ToConfig {
   const string         &get_output_def_file() const { return _out_def_path; }
   const string         &get_report_file() const { return _report_path; }
   const string         &get_gds_file() const { return _gds_path; }
+  const RoutingType    &get_routing_tree() const { return _routing_tree; }
 
   float get_setup_target_slack() const { return _setup_target_slack; }
   float get_hold_target_slack() const { return _hold_target_slack; }
@@ -136,6 +144,7 @@ class ToConfig {
   bool _opti_hold;
   bool _opti_setup;
 
+  RoutingType _routing_tree = RoutingType::kSteiner;
   vector<string> _drv_insert_buffers;   // buffer for optimize Design Rule Violation
   vector<string> _setup_insert_buffers; // buffer for optimize Setup Violation
   vector<string> _hold_insert_buffers;  // buffer for optimize Hold Violation

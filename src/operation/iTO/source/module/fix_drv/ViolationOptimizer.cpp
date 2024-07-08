@@ -110,15 +110,33 @@ void ViolationOptimizer::checkAndRepair()
 
 void ViolationOptimizer::iterCheckAndRepair()
 {
+  auto getHighestDigit = [](int number) {
+    int digits = static_cast<int>(log10(number));
+    int divisor = static_cast<int>(pow(10, digits));
+    int highestDigit = number / divisor;
+    return highestDigit;
+  };
+
   checkViolations();
 
-  if (!_violation_nets_map.empty()) {
+  int max_iter = 6;
+  int iter = 1;
+  int prev_violation_num = _violation_nets_map.size();
+  while (!_violation_nets_map.empty()) {
     // If there are still a violation nets, the secondary fix is performed.
     for (auto [net, cap_load_allowed_max] : _violation_nets_map) {
       optimizeViolationNet(net, cap_load_allowed_max);
     }
+    int last_violation_num = _violation_nets_map.size();
     _violation_nets_map.clear();
     checkViolations();
+    double factor = (prev_violation_num - last_violation_num + 1) / static_cast<double>(getHighestDigit(prev_violation_num));
+    factor = std::clamp(factor, 0.3, 1.0);
+    _slew_2_cap_factor *= factor;
+    prev_violation_num = last_violation_num;
+    if (++iter >= max_iter) {
+      break;
+    }
   }
 }
 

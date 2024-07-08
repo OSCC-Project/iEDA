@@ -21,8 +21,13 @@
 #include "report/ReportTable.hh"
 #include "timing/TimingEval.hpp"
 #include "tool_api/ista_io/ista_io.h"
+#include "idm.h"
 
 namespace ipl {
+
+std::string ExternalAPI::obtainTargetDir(){
+  return dmInst->get_config().get_output_path();
+}
 
 bool ExternalAPI::isSTAStarted()
 {

@@ -24,6 +24,7 @@ iTO提供了4个Tcl命令：
 
 部分Config说明
 ```
+"routing_tree": "flute",  // 连接线网所有引脚的topology，主要用于RC树构建，DRV优化，以及Setup优化。可选flute：flute构建的rsmt、hvtree：HV tree、shallow-light：通过SALT构建的shallow-light tree
 "setup_target_slack": 0.0, // setup slack小于该值时认为违例，也是slack优化的目标
 "hold_target_slack": 0.4,  // hold slack小于该值时认为违例，也是slack优化的目标
 "max_insert_instance_percent": 0.2,  // 缓冲器插入的面积占芯片面积的最大比例

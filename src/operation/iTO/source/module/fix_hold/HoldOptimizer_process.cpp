@@ -50,6 +50,12 @@ void HoldOptimizer::process()
   }
 }
 
+/**
+ * @brief step .1: check and find all hold violation endpoins;
+ * step .2: optimize hold violation path.
+ * 
+ * @return int, the number of insert buffer
+ */
 int HoldOptimizer::checkAndOptimizeHold()
 {
   int number_insert_buffer = 0;
@@ -57,7 +63,7 @@ int HoldOptimizer::checkAndOptimizeHold()
   bool exit_vioaltion = checkAndFindVioaltion();
 
   if (exit_vioaltion) {
-    number_insert_buffer = performOptimization();
+    number_insert_buffer = performOptimizationProcess();
   } else {
     toRptInst->get_ofstream() << "TO: There are no hold violations found in current design.\n";
   }
@@ -67,6 +73,12 @@ int HoldOptimizer::checkAndOptimizeHold()
   return number_insert_buffer;
 }
 
+/**
+ * @brief step .1: check and find all hold violation endpoins;
+ * 
+ * @return true, find violation
+ * @return false, no violation
+ */
 bool HoldOptimizer::checkAndFindVioaltion()
 {
   TOSlack worst_slack;
@@ -91,7 +103,12 @@ bool HoldOptimizer::isFindEndpointsWithHoldViolation(TOSlack& worst_slack)
   return is_find;
 }
 
-int HoldOptimizer::performOptimization()
+/**
+ * @brief step .2: optimize hold violation path. Include optimization process.
+ * 
+ * @return int, the number of insert buffer 
+ */
+int HoldOptimizer::performOptimizationProcess()
 {
   int number_insert_buffer = 0;
   toRptInst->get_ofstream() << "\nTO: >>>>>>>>> Beign hold optimization! \n\t\t\tHold target slack -> " << _target_slack << endl
@@ -105,10 +122,8 @@ int HoldOptimizer::performOptimization()
 
   bool exit_vioaltion = true;
   while (exit_vioaltion) {
-    TOVertexSeq fanins = getFanins(_end_pts_hold_violation);
-
     int old = toDmInst->get_buffer_num();
-    optHoldViolationEnd(fanins);
+    optimizeHoldViolation();
     int number_insert_buf_this_opt = toDmInst->get_buffer_num() - old;
 
     number_insert_buffer += number_insert_buf_this_opt;
@@ -132,6 +147,11 @@ int HoldOptimizer::performOptimization()
     }
   }
   return number_insert_buffer;
+}
+
+void HoldOptimizer::optimizeHoldViolation() {
+  TOVertexSeq fanins = getFanins(_end_pts_hold_violation);
+  optHoldViolationEnd(fanins);
 }
 
 bool HoldOptimizer::findEndpointsWithHoldViolation(TOVertexSet end_points, TOSlack& worst_slack, TOVertexSet& hold_violations)
