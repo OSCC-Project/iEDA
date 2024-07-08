@@ -29,17 +29,30 @@ namespace ito {
 using ito::approximatelyLess;
 using ito::approximatelyLessEqual;
 using ito::BufferedOptionSeq;
+
+#define toOptSetup SetupOptimizer::getInstance()
+
 class SetupOptimizer
 {
  public:
-  SetupOptimizer() {}
-  ~SetupOptimizer() {}
+  static SetupOptimizer* getInstance()
+  {
+    if (nullptr == _instance) {
+      _instance = new SetupOptimizer();
+    }
+    return _instance;
+  }
 
   // open functions
   void optimizeSetup();
 
+  void performBuffering(const char* net_name);
+
  private:
+  static SetupOptimizer* _instance;
   TOLibertyCellSeq _available_lib_cell_sizes;
+
+  bool _has_estimate_all_net = false;
 
   /// init
   void init();
@@ -64,7 +77,7 @@ class SetupOptimizer
 
   // heuristic buffer insertion function
   bool performSplitBufferingIfNecessary(StaVertex *driver_vertex, int fanout);
-  void insertBufferSeparateLoads(StaVertex *driver_vertex);
+  void insertBufferDivideFanout(StaVertex *driver_vertex);
 
   // buffer insertion function
   bool performBufferingIfNecessary(Pin* driver_pin, int fanout);
@@ -75,6 +88,10 @@ class SetupOptimizer
   /// report
   void report(int begin_buffer_num, int begin_resize_num);
   void reportWNSAndTNS();
+
+  /// constuctor
+  SetupOptimizer() {}
+  ~SetupOptimizer() {}
 };
 
 }  // namespace ito

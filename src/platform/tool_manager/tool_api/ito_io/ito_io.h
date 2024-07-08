@@ -38,8 +38,10 @@ class ToIO
   bool runTO(std::string config = "");
   bool runTOFixFanout(std::string config = "");
   bool runTODrv(std::string config = "");
+  bool runTODrvSpecialNet(std::string config = "", std::string net_name = "");
   bool runTOHold(std::string config = "");
   bool runTOSetup(std::string config = "");
+  bool runTOBuffering(std::string config = "", std::string net_name = "");
 
  private:
   static ToIO* _instance;
