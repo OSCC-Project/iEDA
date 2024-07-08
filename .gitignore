@@ -25,9 +25,3 @@ rpt*/
 target/
 *-stamp/
 tmp/
-
-fix_setup_back_1
-src/operation/iTO/source/module/fix_setup_git
-scripts/design/sky130_gcd_git
-scripts/design/sky130_gcd_copy
-scripts/design/sky130_gcd_test
