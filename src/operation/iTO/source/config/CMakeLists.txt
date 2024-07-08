@@ -11,10 +11,10 @@ JsonParser.cpp
 ToConfig.cpp
 )
 
-# target_link_libraries(ito_config
-#     PUBLIC
-#     idm
-# )
+target_link_libraries(ito_config
+    PUBLIC
+    idm
+)
 
 target_include_directories(ito_config 
     PUBLIC
