@@ -48,7 +48,7 @@ void HoldOptimizer::insertHoldDelay(string insert_buf_name, string pin_name, int
   // make net
   Net *net_signal_input, *net_signal_output;
   net_signal_input = driver_net;
-  std::string net_created_name = ("hold_net_byhand_" + to_string(toDmInst->add_net_num()));
+  std::string net_created_name = (toConfig->get_hold_net_prefix() + "byhand_" + to_string(toDmInst->add_net_num()));
   net_signal_output = idb_adapter->createNet(net_created_name.c_str(), nullptr);
 
   idb::IdbNet* db_net_signal_output = idb_adapter->staToDb(net_signal_output);
@@ -271,7 +271,7 @@ void HoldOptimizer::insertBufferOptHold(StaVertex* driver_vertex, int insert_num
 
   net_signal_input = driver_net;
 
-  std::string net_name = ("hold_net_" + to_string(toDmInst->add_net_num()));
+  std::string net_name = (toConfig->get_hold_net_prefix() + to_string(toDmInst->add_net_num()));
   net_signal_output = createBufferNet(net_name);
 
   idb::IdbNet* db_net_signal_output = idb_adapter->staToDb(net_signal_output);
