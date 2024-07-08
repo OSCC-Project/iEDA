@@ -168,6 +168,38 @@ fn process_inner_wire_declaration(
     }
 }
 
+fn process_assign_declaration(
+    pair: Pair<Rule>,
+) -> Result<Box<dyn verilog_data::VerilogVirtualBaseStmt>, pest::error::Error<Rule>> {
+    let line_no = pair.line_col().0;
+    let pair_clone = pair.clone();
+    match pair.as_rule() {
+        Rule::assign_declaration => {
+            let mut inner_pair = pair.into_inner();
+            let left_net_str = inner_pair.next().unwrap().as_str();
+            let left_net_base_id: Box<dyn verilog_data::VerilogVirtualBaseID> =
+                build_verilog_virtual_base_id(left_net_str);
+            // assign lhs=rhs;(only consider lhs/rhs is VerilogNetIDExpr)
+            let left_net_id_expr = verilog_data::VerilogNetIDExpr::new(line_no, left_net_base_id);
+            let left_net_expr: Box<dyn verilog_data::VerilogVirtualBaseNetExpr> = Box::new(left_net_id_expr);
+
+            let right_net_str = inner_pair.next().unwrap().as_str();
+            let right_net_base_id: Box<dyn verilog_data::VerilogVirtualBaseID> =
+                build_verilog_virtual_base_id(right_net_str);
+            // assign lhs=rhs;(only consider lhs/rhs is VerilogNetIDExpr)
+            let right_net_id_expr = verilog_data::VerilogNetIDExpr::new(line_no, right_net_base_id);
+            let right_net_expr: Box<dyn verilog_data::VerilogVirtualBaseNetExpr> = Box::new(right_net_id_expr);
+
+            let verilog_assign = verilog_data::VerilogAssign::new(line_no, left_net_expr, right_net_expr);
+            Ok(Box::new(verilog_assign) as Box<dyn verilog_data::VerilogVirtualBaseStmt>)
+        }
+        _ => Err(pest::error::Error::new_from_span(
+            pest::error::ErrorVariant::CustomError { message: "Unknown rule".into() },
+            pair_clone.as_span(),
+        )),
+    }
+}
+
 fn extract_range(input: &str) -> Option<(&str, i32, i32)> {
     if let Some(open_bracket) = input.find('[') {
         if let Some(close_bracket) = input.find(']') {
@@ -684,6 +716,12 @@ pub fn parse_verilog_file(verilog_file_path: &str) -> verilog_data::VerilogFile 
                                 module_stmts.push(verilog_dcls);
                             }
                         }
+                        Rule::assign_block_declaration => {
+                            for inner_inner_pair in inner_pair.into_inner() {
+                                let verilog_assign = process_assign_declaration(inner_inner_pair).unwrap();
+                                module_stmts.push(verilog_assign);
+                            }
+                        }
                         Rule::inst_block_declaration => {
                             for inner_inner_pair in inner_pair.into_inner() {
                                 let verilog_inst = process_inst_declaration(inner_inner_pair).unwrap();
@@ -934,6 +972,24 @@ mod tests {
         let input_str = "wire \\vga_b[0] ;";
         let _input_str = "wire ps2_dat;";
         let parse_result = VerilogParser::parse(Rule::wire_declaration, input_str);
+
+        print_parse_result(parse_result);
+    }
+
+    #[test]
+    fn test_parse_assign_port_or_wire_id() {
+        let _input_str = "DATA_9_31";
+        let input_str = "WX1010";
+        let parse_result = VerilogParser::parse(Rule::assign_port_or_wire_id, input_str);
+
+        print_parse_result(parse_result);
+    }
+
+    #[test]
+    fn test_parse_assign_declaration() {
+        let _input_str = "assign DATA_9_31 = WX1010 ;";
+        let input_str = "assign DATA_9_31 = WX1010;";
+        let parse_result = VerilogParser::parse(Rule::assign_declaration, input_str);
 
         print_parse_result(parse_result);
     }
