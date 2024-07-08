@@ -21,6 +21,7 @@
 #include "GDSwriter.h"
 #include "data_manager.h"
 #include "define.h"
+#include "tree_build/TreeBuild.h"
 
 namespace ito {
 
@@ -40,6 +41,7 @@ class ViolationOptimizer
   int _number_slew_violation_net = 0;
   int _number_cap_violation_net = 0;
   double _max_buf_load_cap = 0.0;
+  double _slew_2_cap_factor = 1.0;
 
   /// init
   bool init();
@@ -60,7 +62,7 @@ class ViolationOptimizer
 
   /// repair
   void optimizeViolationNet(ista::Net* net, double cap_load_allowed_max);
-  void repairViolationNetByDP(RoutingTree* tree, int curr_pt, int father_pt, ista::Net* net, float cap_load_allowed_max, int& wire_length,
+  void repairViolationNetByDP(TreeBuild* tree, int curr_pt, int father_pt, ista::Net* net, float cap_load_allowed_max, int& wire_length,
                               float& pin_cap, TODesignObjSeq& pins_loaded);
   template <class T1, class T2>
   void determineFixSide(T1 max_numb, T2 left, T2 middle, T2 right, bool& fix_left, bool& fix_middle, bool& fix_right);
