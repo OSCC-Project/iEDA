@@ -49,10 +49,6 @@ Node* ShallowLightTree::makeShallowLightTree(int x[], int y[], int pin_count, in
 {
   std::vector<std::shared_ptr<salt::Pin>> salt_pins;
 
-  // auto copy_x = x;
-  // auto copy_y = y;
-  // std::swap(x[0], x[driver_id]);
-  // std::swap(y[0], y[driver_id]);
   XCord driver_x_coordinate = x[driver_id];
   YCord driver_y_coordinate = y[driver_id];
   Node* _root = new Node(Point(driver_x_coordinate, driver_y_coordinate));
@@ -64,8 +60,6 @@ Node* ShallowLightTree::makeShallowLightTree(int x[], int y[], int pin_count, in
 
   for (int i = 0; i < pin_count; ++i) {
     auto salt_pin = std::make_shared<salt::Pin>(x[i], y[i], i, 0);
-    // auto salt_pin = std::make_shared<salt::Pin>(loc.get_x(), loc.get_y(), i, pin->cap());
-    // id_to_node[i] = pin;
     salt_pins.push_back(salt_pin);
   }
 
@@ -80,30 +74,19 @@ Node* ShallowLightTree::makeShallowLightTree(int x[], int y[], int pin_count, in
   int source_id = source->id;
   _root->set_id(source_id);
 
-  // _points.clear();
-  // _pins.clear();
   _points.resize(2 * pin_count);
 
   findLeftRight(_root, source);
-  // _is_visit_pin.resize(_points.size(), 0);
 
   return _root;
 }
 
 void ShallowLightTree::findLeftRight(Node* father, const std::shared_ptr<salt::TreeNode>& salt_node)
 {
-  // debug
-  // if (salt_node->id < _pins.size()) {
-  //   assert(_points[salt_node->id].get_x()== salt_node->loc.x);
-  //   assert(_points[salt_node->id].get_y()== salt_node->loc.y);
-  // }
-
   auto insert_tree = [&](Node* father, Node* child, int id_child) {
     Node* first_child = father->get_first_child();
     if (first_child == nullptr) {
-      // father->set_first_child(child);
       child->set_father_node(father);
-
 
       child->set_id(id_child);
 
@@ -111,9 +94,7 @@ void ShallowLightTree::findLeftRight(Node* father, const std::shared_ptr<salt::T
       while (first_child->get_next_sibling()) {
         first_child = first_child->get_next_sibling();
       }
-      // first_child->set_next_sibling(child);
       child->set_father_node(father);
-
 
       child->set_id(id_child);
     }
@@ -128,7 +109,6 @@ void ShallowLightTree::findLeftRight(Node* father, const std::shared_ptr<salt::T
     child = new Node(pt);
 
     insert_tree(father, child, child_node->id);
-    // cout << child_id << " , " << j << endl;
     findLeftRight(child, child_node);
   }
 }

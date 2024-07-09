@@ -64,6 +64,8 @@ void VerilogWriter::writeModule()
   fprintf(_stream, "\n");
   writeWire();
   fprintf(_stream, "\n");
+  writeAssign();
+  fprintf(_stream, "\n");
   writeInstances();
   fprintf(_stream, "\n");
   fprintf(_stream, "endmodule\n");
@@ -276,6 +278,23 @@ void VerilogWriter::writeWire()
     std::string escape_bus_net_name = escapeName(net_bus_name);
 
     fprintf(_stream, "wire [%d:%d] %s ;\n", bus_left, bus_right, escape_bus_net_name.c_str());
+  }
+}
+
+/**
+ * @brief write assign declarations(assign net=port(such as assign g6265 = 983 ;))
+ *
+ */
+void VerilogWriter::writeAssign()
+{
+  vector<IdbNet*> net_list = _idb_design.get_net_list()->get_net_list();
+  for (const auto& net : net_list) {
+    std::string net_name = net->get_net_name();
+    for (const auto& io_pin : net->get_io_pins()->get_pin_list()) {
+      if (io_pin->get_term()->get_direction() == IdbConnectDirection::kInput && io_pin->get_pin_name() != net_name) {
+        fprintf(_stream, "assign %s = %s ;\n", net_name.c_str(), io_pin->get_pin_name().c_str());
+      }
+    }
   }
 }
 

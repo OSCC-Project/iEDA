@@ -229,6 +229,10 @@ bool ToolManager::RunTODrv(std::string config)
 {
   return iTOInst->runTODrv(config);
 }
+bool ToolManager::RunTODrvSpecialNet(std::string config, std::string net_name)
+{
+  return iTOInst->runTODrvSpecialNet(config, net_name);
+}
 bool ToolManager::RunTOHold(std::string config)
 {
   return iTOInst->runTOHold(config);
@@ -236,6 +240,10 @@ bool ToolManager::RunTOHold(std::string config)
 bool ToolManager::RunTOSetup(std::string config)
 {
   return iTOInst->runTOSetup(config);
+}
+bool ToolManager::RunTOBuffering(std::string config, std::string net_name)
+{
+  return iTOInst->runTOBuffering(config, net_name);
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

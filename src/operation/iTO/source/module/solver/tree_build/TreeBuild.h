@@ -43,18 +43,7 @@ class Node {
   Node(Point pt) : _pt(pt) {}
   ~Node() = default;
 
-  void set_father_node(Node *f_n) { 
-    _father_node = f_n;
-    if (_father_node->get_first_child() != nullptr) {
-      Node *tmp = _father_node->get_first_child();
-      while (tmp->get_next_sibling() != nullptr) {
-        tmp = tmp->get_next_sibling();
-      }
-      tmp->set_next_sibling(this);
-    } else {
-      _father_node->set_first_child(this);
-    }   
-  }
+  void set_father_node(Node *f_n);
   void set_first_child(Node *f_c) { _first_child = f_c; }
   void set_next_sibling(Node *n_s) { _next_sibling = n_s; }
   void set_id(int id) { _id = id; }

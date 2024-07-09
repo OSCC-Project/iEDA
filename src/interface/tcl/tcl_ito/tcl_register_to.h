@@ -35,8 +35,10 @@ int registerCmdTO()
 {
   registerTclCmd(CmdTOAutoRun, "run_to");
   registerTclCmd(CmdTORunDrv, "run_to_drv");
+  registerTclCmd(CmdTORunDrvSpecialNet, "run_to_drv_special_net");
   registerTclCmd(CmdTORunHold, "run_to_hold");
   registerTclCmd(CmdTORunSetup, "run_to_setup");
+  registerTclCmd(CmdTOBuffering, "run_to_buffering");
   registerTclCmd(CmdTOConfig, "to_config");
 
   return EXIT_SUCCESS;

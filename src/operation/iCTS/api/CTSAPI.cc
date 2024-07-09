@@ -624,10 +624,11 @@ std::vector<icts::CtsCellLib*> CTSAPI::getAllBufferLibs()
 {
   auto buffer_types = _config->get_buffer_types();
   std::vector<icts::CtsCellLib*> all_buf_libs;
-  for (auto buf_cell : buffer_types) {
+  std::ranges::for_each(buffer_types, [&](const std::string& buf_cell) {
+    _timing_engine->get_ista()->addLinkCells(buf_cell.c_str());
     auto* buf_lib = getCellLib(buf_cell);
     all_buf_libs.emplace_back(buf_lib);
-  }
+  });
   auto cmp = [](CtsCellLib* lib_1, CtsCellLib* lib_2) { return lib_1->getDelayIntercept() < lib_1->getDelayIntercept(); };
   std::ranges::sort(all_buf_libs, cmp);
   return all_buf_libs;
@@ -921,7 +922,10 @@ void CTSAPI::latencySkewLog() const
       ista::StaPathEnd* path_end;
       ista::StaPathData* path_data;
       FOREACH_PATH_GROUP_END(seq_path_group.get(), path_end)
-      FOREACH_PATH_END_DATA(path_end, mode, path_data) { seq_data_queue.push(path_data); }
+      FOREACH_PATH_END_DATA(path_end, mode, path_data)
+      {
+        seq_data_queue.push(path_data);
+      }
       auto* worst_seq_data = seq_data_queue.top();
       auto* launch_clock_data = worst_seq_data->get_launch_clock_data();
       auto* capture_clock_data = worst_seq_data->get_capture_clock_data();

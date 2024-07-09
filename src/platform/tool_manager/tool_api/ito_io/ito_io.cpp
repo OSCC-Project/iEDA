@@ -100,6 +100,31 @@ bool ToIO::runTODrv(std::string config)
   return true;
 }
 
+bool ToIO::runTODrvSpecialNet(std::string config, std::string net_name)
+{
+  if (config.empty()) {
+    /// set config path
+    config = flowConfigInst->get_ito_path();
+  }
+
+  flowConfigInst->set_status_stage("iTO - Fix DRV");
+
+  ieda::Stats stats;
+
+  /// set data config
+  ToApiInst.init(config);
+  /// reset lib & sdc
+  resetConfig();
+
+  ToApiInst.initEngine();
+  ToApiInst.optimizeDrvSpecialNet(net_name.c_str());
+
+  flowConfigInst->add_status_runtime(stats.elapsedRunTime());
+  flowConfigInst->set_status_memmory(stats.memoryDelta());
+
+  return true;
+}
+
 bool ToIO::runTOHold(std::string config)
 {
   if (config.empty()) {
@@ -143,6 +168,31 @@ bool ToIO::runTOSetup(std::string config)
 
   ToApiInst.initEngine();
   ToApiInst.optimizeSetup();
+
+  flowConfigInst->add_status_runtime(stats.elapsedRunTime());
+  flowConfigInst->set_status_memmory(stats.memoryDelta());
+
+  return true;
+}
+
+bool ToIO::runTOBuffering(std::string config, std::string net_name)
+{
+  if (config.empty()) {
+    /// set config path
+    config = flowConfigInst->get_ito_path();
+  }
+
+  flowConfigInst->set_status_stage("iTO - Fix Setup");
+
+  ieda::Stats stats;
+
+  /// set data config
+  ToApiInst.init(config);
+  /// reset lib & sdc
+  resetConfig();
+
+  ToApiInst.initEngine();
+  ToApiInst.performBuffering(net_name.c_str());
 
   flowConfigInst->add_status_runtime(stats.elapsedRunTime());
   flowConfigInst->set_status_memmory(stats.memoryDelta());
