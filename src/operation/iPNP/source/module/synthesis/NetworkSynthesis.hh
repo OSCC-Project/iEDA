@@ -15,8 +15,9 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 /**
- * @brief Synthesize the whole PDN consisting of 3D Template and write DEF file. 
- * It doesn't include the function of deciding which template to place in which location. This is determined by the optimizer, or randomly, etc.
+ * @brief Synthesize the whole PDN consisting of 3D Template and write DEF file.
+ * It doesn't include the function of deciding which template to place in which location. This is determined by the optimizer, or randomly,
+ * etc.
  */
 
 #pragma once
@@ -24,35 +25,38 @@
 #include <fstream>
 #include <iostream>
 
-#include "iPNP.hh"
-#include "TemplateSynthesis.hh"
 #include "GridManager.hh"
+#include "TemplateSynthesis.hh"
+#include "iPNP.hh"
+
+namespace idb {
+class IdbRegularWire;
+}
 
 namespace ipnp {
 
 class NetworkSynthesis
 {
  public:
-  NetworkSynthesis(std::string type, GridManager grid_info); //default is Random Synthesis.
-  //NetworkSynthesis network(default, empty_grid_info);
-  //NetworkSynthesis network(optimizer, optimizer_output_info);
-  
+  NetworkSynthesis(std::string type, GridManager grid_info);  // default is Random Synthesis.
+  // NetworkSynthesis network(default, empty_grid_info);
+  // NetworkSynthesis network(optimizer, optimizer_output_info);
+
   ~NetworkSynthesis();
 
-  void synthesizeNetwork(); //update _synthesized_network iteratively.
+  void synthesizeNetwork();  // update _synthesized_network iteratively.
 
   void randomSys();
 
-  //GridManager* getNetwork() { return &_synthesized_network; }
-  GridManager &get_network() { return _synthesized_network; }
+  GridManager& get_network() { return _synthesized_network; }
+  // GridManager* getNetwork() { return &_synthesized_network; }
 
-  file* writeDef(); //retrun type? using iDB segment, refer to iPDN, iRT. SpecialNet?
-  
+  idb::IdbRegularWire* writeDef();  // retrun type? using iDB segment, refer to iPDN, iRT. SpecialNet?
+
  private:
-  GridManager _input_grid_info; // use GridManager* or GridManager?
-  GridManager _synthesized_network; //the whole PDN consist of Templates
-  std::string _nework_sys_type; //{default, best, worst, optimizer}
-
+  GridManager _input_grid_info;      // use GridManager* or GridManager?
+  GridManager _synthesized_network;  // the whole PDN consist of Templates
+  std::string _nework_sys_type;      //{default, best, worst, optimizer}
 };
 
 }  // namespace ipnp

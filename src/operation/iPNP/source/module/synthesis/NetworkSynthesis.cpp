@@ -16,21 +16,23 @@
 // ***************************************************************************************
 #include "NetworkSynthesis.hh"
 
+#include <cstdlib>
+#include <ctime>
 #include <fstream>
 #include <iostream>
 #include <map>
-#include <random>
 #include <string>
 #include <vector>
+
+namespace idb {
+class IdbRegularWire;
+}
 
 namespace ipnp {
 
 NetworkSynthesis::NetworkSynthesis(std::string type, GridManager grid_info)
     : _nework_sys_type(type), _input_grid_info(grid_info), _synthesized_network(grid_info)  // list initial
 {
-  // _synthesized_network.set_ho_region_num(_input_grid_info.get_ho_region_num());
-  // _synthesized_network.set_ver_region_num(_input_grid_info.get_ver_region_num());
-  // _synthesized_network.set_template_libs(_input_grid_info.get_template_libs());
 }
 
 NetworkSynthesis::~NetworkSynthesis()
@@ -66,19 +68,37 @@ void NetworkSynthesis::synthesizeNetwork()
 
 void NetworkSynthesis::randomSys()
 {
-  for (int i = 0; i < _input_grid_info.ho_region_num; i++) {
-    for (int j = 0; j < _input_grid_info.ver_region_num; j++) {
-      _synthesized_network._grid_data[i][j] = Random(PDNGridRegion);  // TODO
-      _synthesized_network._template_data[i][j]
-          = std::uniform_int_distribution<> distrib(0, _synthesized_network._template_libs.size() - 1);  // TODO: random Template.
+  std::vector<std::vector<PDNRectanGridRegion>> grid_data;
+  std::vector<std::vector<int>> template_data;
+  PDNRectanGridRegion random_grid_region;
+
+  std::srand(std::time(NULL));
+  int ho_region_num = 3 + std::rand() % (9 - 3 + 1);
+  int ver_region_num = 3 + std::rand() % (9 - 3 + 1);
+  random_grid_region.set_width(_synthesized_network.get_chip_width() / ho_region_num);
+  random_grid_region.set_height(_synthesized_network.get_chip_height() / ver_region_num);
+  _synthesized_network.set_ho_region_num(ho_region_num);
+  _synthesized_network.set_ver_region_num(ver_region_num);
+
+  for (int i = 0; i < _input_grid_info.get_ho_region_num(); i++) {
+    for (int j = 0; j < _input_grid_info.get_ver_region_num(); j++) {
+      grid_data[i][j] = random_grid_region;
+      std::srand(std::time(NULL));
+      template_data[i][j] = 1 + std::rand() % (_input_grid_info.get_template_libs().size() - 1);
     }
   }
+
+  _synthesized_network.set_grid_data(grid_data);
+  _synthesized_network.set_template_data(template_data);
 }
 
-file* NetworkSynthesis::writeDef()
+idb::IdbRegularWire* NetworkSynthesis::writeDef()
 {
+  // TODO: _synthesized_network --> def_file
   // Consider the situation that the region is irregular
-  def_file < -_synthesized_network;  // TODO
+
+  idb::IdbRegularWire* DEF;
+  return DEF;
 }
 
 }  // namespace ipnp

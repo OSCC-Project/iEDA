@@ -54,6 +54,7 @@ class iPNP
  public:
   iPNP() = delete;
   iPNP(const std::string &config_file);
+  //iPNP(const std::string &config_file, idb::idbBuilder def_file); //TODO
   ~iPNP();
 
   PNPConfig* get_config() { return _pnp_config; }
@@ -69,6 +70,7 @@ class iPNP
   idb::IdbSpecialNet* _input_netlist;
   GridManager _initialized_network;
   GridManager _current_opt_network;
+  idb::IdbRegularWire* _final_def;
 };
 
 }  // namespace ipnp

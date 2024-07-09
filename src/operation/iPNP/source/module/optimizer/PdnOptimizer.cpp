@@ -16,6 +16,7 @@
 // ***************************************************************************************
 
 #include "PdnOptimizer.hh"
+
 #include "SimulatedAnnealing.hh"
 
 namespace ipnp {
@@ -29,10 +30,12 @@ PdnOptimizer::~PdnOptimizer()
 
 void PdnOptimizer::evaluate()
 {
+  // TODO
 }
 
-GridManager* PdnOptimizer::optimize(GridManager* initial_pdn)
-{
+void PdnOptimizer::optimize(GridManager initial_pdn){
+  //TODO
 }
+
 
 }  // namespace ipnp

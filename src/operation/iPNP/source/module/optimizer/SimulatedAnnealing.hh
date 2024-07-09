@@ -21,6 +21,7 @@
 #include <string>
 #include <vector>
 #include "GridManager.hh"
+#include "PdnOptimizer.hh"
 
 namespace ipnp {
 

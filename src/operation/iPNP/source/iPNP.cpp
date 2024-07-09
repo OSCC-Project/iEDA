@@ -24,13 +24,14 @@ namespace ipnp {
 
 class PndOptimizer;
 
-iPNP::iPNP(){
+iPNP::iPNP()
+{
 }
 
 iPNP::iPNP(const std::string& config_file)
 {
-  //TODO: add config
-  //need json module
+  // TODO: add config
+  // need json module
 
   /*
   _pnp_config = new PNPConfig;
@@ -45,37 +46,33 @@ iPNP::~iPNP()
 
 void iPNP::initSynthesize()
 {
-  //TODO: using fastplacer and decide which region to place, and place templates on regions randomly
+  // TODO: using fastplacer and decide which region to place, and place templates on regions randomly
   /*
   FastPlacer fast_placer;
   fast_placer.fastPlace(_input_netlist);
   idb::IdbLayer* fast_place_result = fast_placer.getPlaceResult();
   */
-  
-  //version1.0: needn't consider regions with irregular shapes (determined by fastplacer)
+
+  // version1.0: needn't consider regions with irregular shapes (determined by fastplacer)
   GridManager empty_grid;
   NetworkSynthesis network_synthesizer("default", empty_grid);
   network_synthesizer.synthesizeNetwork();
   _initialized_network = network_synthesizer.get_network();
-  
-  //TODO: should include NetworkSynthesis::writeDef() because DEF will be used by evaluator
+
+  // TODO: should include NetworkSynthesis::writeDef() because DEF will be used by evaluator
 }
 
 void iPNP::optimize()
 {
   PdnOptimizer pdn_optimizer;
-  _current_opt_network = pdn_optimizer.optimize(_initialized_network);
-
-
-  optimizer -> middle data -> syn(optimizer) , set_syn(middle data)
-
-  // TODO:
-
+  pdn_optimizer.optimize(_initialized_network);
+  _current_opt_network = pdn_optimizer.get_out_put_grid();
 }
 
-void iPNP::synthesizeNetwork(){
+void iPNP::synthesizeNetwork()
+{
   NetworkSynthesis network("optimizer", _current_opt_network);
-  network.writeDef();
+  _final_def = network.writeDef();
 }
 
 void iPNP::run()

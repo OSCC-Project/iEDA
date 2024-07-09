@@ -30,13 +30,12 @@ class CongestionEval
   CongestionEval();
   ~CongestionEval();
 
-  <type> getMapOverflow();
-  double getCongValue() {return cong_value;};
+  std::vector<std::vector<double>> get_map_overflow() { return _map_overflow; }
+  double get_cong_value() { return _cong_value; }
 
  private:
-  <type> cong_map_overflow;
-  double cong_value;
-  
+  std::vector<std::vector<double>> _map_overflow;
+  double _cong_value;
 };
 
 }  // namespace ipnp

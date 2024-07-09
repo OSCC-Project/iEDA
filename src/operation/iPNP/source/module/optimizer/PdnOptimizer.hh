@@ -21,11 +21,11 @@
 #include <string>
 #include <vector>
 
-#include "GridManager.hh"
-#include "FastPlacer.hh"
-#include "EarlyGlobalRoute.hh"
-#include "IREval.hh"
 #include "CongestionEval.hh"
+#include "EarlyGlobalRoute.hh"
+#include "FastPlacer.hh"
+#include "GridManager.hh"
+#include "IREval.hh"
 
 namespace idb {
 class IdbLayer;
@@ -63,11 +63,18 @@ class PdnOptimizer
 
   void evaluate();  // The entire evaluation process, including IR and Congestion, can add EM or be replaced by ML models in the future
 
-  GridManager* optimize(GridManager* initial_pdn);  // including calling evaluator and modify PDN by calling algorithm module
+  /**
+   * @brief The entire optimization process.
+   * @attention Including calling evaluator and modify PDN by calling algorithm module.
+   * Should include all optimization cycles of simulated annealing, not just one cycle.
+   */
+  void optimize(GridManager initial_pdn);
+
+  GridManager get_out_put_grid() { return _output_pdn_grid; }
 
  private:
-  GridManager* input_pdn_grid;
-  GridManager* output_pdn_grid;
+  GridManager _input_pdn_grid;
+  GridManager _output_pdn_grid;
   double opt_score;
 };
 
