@@ -625,9 +625,9 @@ std::vector<icts::CtsCellLib*> CTSAPI::getAllBufferLibs()
   auto buffer_types = _config->get_buffer_types();
   std::vector<icts::CtsCellLib*> all_buf_libs;
   std::ranges::for_each(buffer_types, [&](const std::string& buf_cell) {
+    _timing_engine->get_ista()->addLinkCells(buf_cell.c_str());
     auto* buf_lib = getCellLib(buf_cell);
     all_buf_libs.emplace_back(buf_lib);
-    _timing_engine->get_ista()->addLinkCells(buf_cell.c_str());
   });
   auto cmp = [](CtsCellLib* lib_1, CtsCellLib* lib_2) { return lib_1->getDelayIntercept() < lib_1->getDelayIntercept(); };
   std::ranges::sort(all_buf_libs, cmp);
