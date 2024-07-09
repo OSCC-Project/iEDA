@@ -1081,8 +1081,9 @@ void CTSAPI::readSTAFile()
   std::ranges::for_each(DBCONFIG.get_lib_paths(), [&](const std::string& lib_path) { lib_paths.push_back(lib_path.c_str()); });
   _timing_engine->set_num_threads(80);
   _timing_engine->set_design_work_space(sta_work_dir.c_str());
-  std::ranges::for_each(_config->get_buffer_types(),
-                        [&](const std::string& buf_cell) { _timing_engine->get_ista()->addLinkCells(buf_cell.c_str()); });
+  std::set<std::string> cell_set;
+  std::ranges::for_each(_config->get_buffer_types(), [&](const std::string& buf_cell) { cell_set.insert(buf_cell); });
+  _timing_engine->get_ista()->addLinkCells(cell_set);
   _timing_engine->readLiberty(lib_paths);
   convertDBToTimingEngine();
 
