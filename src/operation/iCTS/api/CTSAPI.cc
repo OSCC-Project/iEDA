@@ -625,7 +625,6 @@ std::vector<icts::CtsCellLib*> CTSAPI::getAllBufferLibs()
   auto buffer_types = _config->get_buffer_types();
   std::vector<icts::CtsCellLib*> all_buf_libs;
   std::ranges::for_each(buffer_types, [&](const std::string& buf_cell) {
-    _timing_engine->get_ista()->addLinkCells(buf_cell.c_str());
     auto* buf_lib = getCellLib(buf_cell);
     all_buf_libs.emplace_back(buf_lib);
   });
@@ -1079,11 +1078,11 @@ void CTSAPI::readSTAFile()
     std::filesystem::create_directories(sta_work_dir);
   }
   std::vector<const char*> lib_paths;
-  for (auto& lib_path : DBCONFIG.get_lib_paths()) {
-    lib_paths.push_back(lib_path.c_str());
-  }
+  std::ranges::for_each(DBCONFIG.get_lib_paths(), [&](const std::string& lib_path) { lib_paths.push_back(lib_path.c_str()); });
   _timing_engine->set_num_threads(80);
   _timing_engine->set_design_work_space(sta_work_dir.c_str());
+  std::ranges::for_each(_config->get_buffer_types(),
+                        [&](const std::string& buf_cell) { _timing_engine->get_ista()->addLinkCells(buf_cell.c_str()); });
   _timing_engine->readLiberty(lib_paths);
   convertDBToTimingEngine();
 
