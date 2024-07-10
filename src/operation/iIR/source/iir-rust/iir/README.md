@@ -6,4 +6,4 @@ The iIR tool is belong to iEDA project and analyze the IR Drop of power delivery
 
 ## dependence
 
-The spef parser use pest crate to build syntax tree.
+The iIR depend on iEDA spef parser.
