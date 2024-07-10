@@ -14,7 +14,7 @@ cbindgen = "0.26"
 
 [lib]
 name = "iir"
-#crate-type = ["staticlib"]
+crate-type = ["staticlib"]
 #crate-type = ["cdylib"]
 
 [build]
