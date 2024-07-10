@@ -25,7 +25,7 @@ impl RCNode {
     pub fn get_node_name(&self) -> &String {
         &self.name
     }
-
+    #[allow(dead_code)]
     pub fn get_cap(&self) -> f64 {
         self.cap
     }
@@ -182,6 +182,9 @@ pub fn read_rc_data_from_spef(spef_file_path: &str) -> RCData {
 
         // build the cap node.
         for cap_entry in spef_net.get_caps() {
+            if !cap_entry.node2.is_empty() {
+                continue;
+            }
             let name_index = &cap_entry.node1;
             let node_name = spef_index_to_string(name_index);
             let cap_value = cap_entry.res_or_cap;

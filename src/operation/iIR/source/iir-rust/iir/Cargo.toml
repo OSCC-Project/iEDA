@@ -1,6 +1,6 @@
 [package]
 name = "iir"
-version = "0.1.2"
+version = "0.1.3"
 edition = "2021"
 rust-version = "1.70"
 authors = ["taosimin <taosm@pcl.ac.cn>"]
@@ -14,7 +14,7 @@ cbindgen = "0.26"
 
 [lib]
 name = "iir"
-crate-type = ["staticlib"]
+#crate-type = ["staticlib"]
 #crate-type = ["cdylib"]
 
 [build]
