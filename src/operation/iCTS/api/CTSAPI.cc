@@ -624,10 +624,10 @@ std::vector<icts::CtsCellLib*> CTSAPI::getAllBufferLibs()
 {
   auto buffer_types = _config->get_buffer_types();
   std::vector<icts::CtsCellLib*> all_buf_libs;
-  for (auto buf_cell : buffer_types) {
+  std::ranges::for_each(buffer_types, [&](const std::string& buf_cell) {
     auto* buf_lib = getCellLib(buf_cell);
     all_buf_libs.emplace_back(buf_lib);
-  }
+  });
   auto cmp = [](CtsCellLib* lib_1, CtsCellLib* lib_2) { return lib_1->getDelayIntercept() < lib_1->getDelayIntercept(); };
   std::ranges::sort(all_buf_libs, cmp);
   return all_buf_libs;
@@ -921,7 +921,10 @@ void CTSAPI::latencySkewLog() const
       ista::StaPathEnd* path_end;
       ista::StaPathData* path_data;
       FOREACH_PATH_GROUP_END(seq_path_group.get(), path_end)
-      FOREACH_PATH_END_DATA(path_end, mode, path_data) { seq_data_queue.push(path_data); }
+      FOREACH_PATH_END_DATA(path_end, mode, path_data)
+      {
+        seq_data_queue.push(path_data);
+      }
       auto* worst_seq_data = seq_data_queue.top();
       auto* launch_clock_data = worst_seq_data->get_launch_clock_data();
       auto* capture_clock_data = worst_seq_data->get_capture_clock_data();
@@ -1075,11 +1078,12 @@ void CTSAPI::readSTAFile()
     std::filesystem::create_directories(sta_work_dir);
   }
   std::vector<const char*> lib_paths;
-  for (auto& lib_path : DBCONFIG.get_lib_paths()) {
-    lib_paths.push_back(lib_path.c_str());
-  }
+  std::ranges::for_each(DBCONFIG.get_lib_paths(), [&](const std::string& lib_path) { lib_paths.push_back(lib_path.c_str()); });
   _timing_engine->set_num_threads(80);
   _timing_engine->set_design_work_space(sta_work_dir.c_str());
+  std::set<std::string> cell_set;
+  std::ranges::for_each(_config->get_buffer_types(), [&](const std::string& buf_cell) { cell_set.insert(buf_cell); });
+  _timing_engine->get_ista()->addLinkCells(cell_set);
   _timing_engine->readLiberty(lib_paths);
   convertDBToTimingEngine();
 

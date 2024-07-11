@@ -25,16 +25,27 @@
 
 namespace ito {
 
+#define toOptDrv ViolationOptimizer::getInstance()
+
 class ViolationOptimizer
 {
  public:
-  ViolationOptimizer() {}
-  ~ViolationOptimizer() {}
+  static ViolationOptimizer* getInstance()
+  {
+    if (nullptr == _instance) {
+      _instance = new ViolationOptimizer();
+    }
+    return _instance;
+  }
 
   void fixViolations();
   void fixSpecialNet(const char* net_name);
 
  private:
+  static ViolationOptimizer* _instance;
+
+  bool _has_estimate_all_net = false;
+
   ista::LibCell* _insert_buffer_cell;
   // If there are still a violation nets, the secondary fix is performed.
   std::map<ista::Net*, double> _violation_nets_map;
@@ -55,10 +66,12 @@ class ViolationOptimizer
   bool isNeedRepair(ista::Net* net, double& cap_load_allowed_max);
   bool checkCapacitanceViolation(double &max_driver_cap, DesignObject *driver_pin);
   bool checkSlewViolation(double &max_driver_cap, DesignObject *driver_pin);
+
   double calcLoadCap(ista::LibPort* driver_port, double slew);
   double calcSlew(ista::LibPort* driver_port, double cap_load);
   bool netConnectToPort(ista::Net* net);
   int portFanoutLoadNum(ista::LibPort* port);
+  void dereaseSlewCapFactor(int prev_violation_num, int last_violation_num);
 
   /// repair
   void optimizeViolationNet(ista::Net* net, double cap_load_allowed_max);
@@ -71,6 +84,10 @@ class ViolationOptimizer
   bool initBuffer();
   void insertBuffer(int x, int y, ista::Net* net, ista::LibCell* insert_buf_cell, int& wire_length, float& cap,
                     TODesignObjSeq& pins_loaded);
+
+  /// constuctor
+  ViolationOptimizer() {};
+  ~ViolationOptimizer() {};
 };
 
 }  // namespace ito

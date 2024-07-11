@@ -143,6 +143,8 @@ struct SummaryPin
   uint64_t pin_num;
   uint64_t net_num;
   double net_ratio;
+  uint64_t inst_num;
+  double inst_ratio;
 };
 
 struct SummaryPins

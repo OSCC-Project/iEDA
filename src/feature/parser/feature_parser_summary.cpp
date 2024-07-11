@@ -210,7 +210,6 @@ json FeatureParser::buildSummaryMacros()
 {
   json summary_macro;
 
-  int64_t block_num = _design->get_instance_list()->get_num_block();
   int dbu = _design->get_units()->get_micron_dbu() < 0 ? _layout->get_units()->get_micron_dbu() : _design->get_units()->get_micron_dbu();
 
   eval::EvalAPI& eval_api = eval::EvalAPI::initInst();
@@ -218,7 +217,7 @@ json FeatureParser::buildSummaryMacros()
 
   auto macro_list = eval_api.evalMacrosInfo();
 
-  for (int i = 0; i < block_num; i++) {
+  for (int i = 0; i < (int)macro_list.size(); i++) {
     summary_macro[i]["Type"] = std::get<std::string>(macro_list[i]["Type"]);
     summary_macro[i]["Orient"] = std::get<std::string>(macro_list[i]["Orient"]);
     summary_macro[i]["Area"] = std::get<float>(macro_list[i]["Area"]) / dbu / dbu;
@@ -290,6 +289,8 @@ json FeatureParser::buildSummaryPins()
     }
     json_distribution[i]["net_num"] = db_summary.pins.pin_distribution[i].net_num;
     json_distribution[i]["net_ratio"] = db_summary.pins.pin_distribution[i].net_ratio;
+    json_distribution[i]["inst_num"] = db_summary.pins.pin_distribution[i].inst_num;
+    json_distribution[i]["inst_ratio"] = db_summary.pins.pin_distribution[i].inst_ratio;
   }
 
   json_pins["pin_distribution"] = json_distribution;

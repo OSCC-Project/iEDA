@@ -30,11 +30,18 @@ class iTO
 {
  public:
   iTO(const std::string& config_file);
-  ~iTO();
+  ~iTO() = default;
 
   void runTO();
+  // opt DRV functions
   void optimizeDrv();
+  void optimizeDrvSpecialNet(const char* net_name);
+
+  // opt setup functions
   void optimizeSetup();
+  void performBuffering(const char* net_name);
+
+  // opt hold functions
   void optimizeHold();
 
  private:

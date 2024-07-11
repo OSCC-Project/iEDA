@@ -27,6 +27,8 @@
 
 namespace ito {
 
+ViolationOptimizer* ViolationOptimizer::_instance = nullptr;
+
 void ViolationOptimizer::fixViolations()
 {
   // step 1. init
@@ -58,15 +60,17 @@ void ViolationOptimizer::fixSpecialNet(const char* net_name)
   Netlist* design_nl = timingEngine->get_sta_engine()->get_netlist();
   ista::Net* net = design_nl->findNet(net_name);
 
+  LOG_ERROR_IF(!net) << "Cannot find net: " << net_name << " in design.\n";
+
   double cap_load_allowed_max = kInf;
-  if (isNeedRepair(net, cap_load_allowed_max)) {
-    toRptInst->get_ofstream() << "Exit " << _number_cap_violation_net << " cap violation, and " << _number_slew_violation_net
-                              << " slew violation in NET: " << net_name << endl;
+  while (isNeedRepair(net, cap_load_allowed_max)) {
     optimizeViolationNet(net, cap_load_allowed_max);
+    _slew_2_cap_factor *= 0.5;
   }
   timingEngine->get_sta_engine()->updateTiming();
   if (isNeedRepair(net, cap_load_allowed_max)) {
     toRptInst->get_ofstream() << "Failed optimize DRV in NET: " << net_name << endl;
+    toRptInst->get_ofstream().close();
   }
 }
 
@@ -110,13 +114,6 @@ void ViolationOptimizer::checkAndRepair()
 
 void ViolationOptimizer::iterCheckAndRepair()
 {
-  auto getHighestDigit = [](int number) {
-    int digits = static_cast<int>(log10(number));
-    int divisor = static_cast<int>(pow(10, digits));
-    int highestDigit = number / divisor;
-    return highestDigit;
-  };
-
   checkViolations();
 
   int max_iter = 6;
@@ -130,14 +127,26 @@ void ViolationOptimizer::iterCheckAndRepair()
     int last_violation_num = _violation_nets_map.size();
     _violation_nets_map.clear();
     checkViolations();
-    double factor = (prev_violation_num - last_violation_num + 1) / static_cast<double>(getHighestDigit(prev_violation_num));
-    factor = std::clamp(factor, 0.3, 1.0);
-    _slew_2_cap_factor *= factor;
+
+    dereaseSlewCapFactor(prev_violation_num, last_violation_num);
     prev_violation_num = last_violation_num;
     if (++iter >= max_iter) {
       break;
     }
   }
+}
+
+void ViolationOptimizer::dereaseSlewCapFactor(int prev_violation_num, int last_violation_num) {
+  auto getHighestDigit = [](int number) {
+    int digits = static_cast<int>(log10(number));
+    int divisor = static_cast<int>(pow(10, digits));
+    int highestDigit = number / divisor;
+    return highestDigit;
+  };
+
+  double factor = (prev_violation_num - last_violation_num + 1) / static_cast<double>(getHighestDigit(prev_violation_num));
+  factor = std::clamp(factor, 0.3, 1.0);
+  _slew_2_cap_factor *= factor;
 }
 
 }  // namespace ito

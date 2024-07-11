@@ -47,8 +47,24 @@ void iTO::runTO()
 
 void iTO::optimizeDrv()
 {
-  ViolationOptimizer* drv_optimizer = new ViolationOptimizer();
-  drv_optimizer->fixViolations();
+  cout << "\033[1;32m" << endl;
+  cout << R"(    ____        _   _           _           _____  _______      __ )" << endl;
+  cout << R"(   / __ \      | | (_)         (_)         |  __ \|  __ \ \    / / )" << endl;
+  cout << R"(  | |  | |_ __ | |_ _ _ __ ___  _ _______  | |  | | |__) \ \  / /  )" << endl;
+  cout << R"(  | |  | | '_ \| __| | '_ ` _ \| |_  / _ \ | |  | |  _  / \ \/ /   )" << endl;
+  cout << R"(  | |__| | |_) | |_| | | | | | | |/ /  __/ | |__| | | \ \  \  /    )" << endl;
+  cout << R"(   \____/| .__/ \__|_|_| |_| |_|_/___\___| |_____/|_|  \_\  \/     )" << endl;
+  cout << R"(         | |                                                       )" << endl;
+  cout << R"(         |_|                                                       )" << endl;
+  cout << R"(                                                                   )" << endl;
+  cout << "\033[0m" << endl;
+
+  toOptDrv->fixViolations();
+}
+
+void iTO::optimizeDrvSpecialNet(const char* net_name)
+{
+  toOptDrv->fixSpecialNet(net_name);
 }
 
 void iTO::optimizeHold()
@@ -65,8 +81,8 @@ void iTO::optimizeHold()
   cout << R"(                                                                 )" << endl;
   cout << "\033[0m" << endl;
 
-  HoldOptimizer* hold_optimizer = new HoldOptimizer();
-  hold_optimizer->optimizeHold();
+  // HoldOptimizer* hold_optimizer = new HoldOptimizer();
+  toOptHold->optimizeHold();
 }
 
 void iTO::optimizeSetup()
@@ -83,8 +99,11 @@ void iTO::optimizeSetup()
   cout << R"(                                                                         )" << endl;
   cout << "\033[0m" << endl;
 
-  SetupOptimizer* setup_optimizer = new SetupOptimizer();
-  setup_optimizer->optimizeSetup();
+  toOptSetup->optimizeSetup();
+}
+
+void iTO::performBuffering(const char* net_name) {
+  toOptSetup->performBuffering(net_name);
 }
 
 }  // namespace ito

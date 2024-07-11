@@ -155,13 +155,13 @@ bool SetupOptimizer::performSplitBufferingIfNecessary(StaVertex *driver_vertex,
                                                       int        fanout) {
   int min_divide_fanout = toConfig->get_min_divide_fanout();
   if (fanout > min_divide_fanout) {
-    insertBufferSeparateLoads(driver_vertex);
+    insertBufferDivideFanout(driver_vertex);
     return true;
   }
   return false;
 }
 
-void SetupOptimizer::insertBufferSeparateLoads(StaVertex *driver_vertex) {
+void SetupOptimizer::insertBufferDivideFanout(StaVertex *driver_vertex) {
   // 获取并排序驱动器的扇出顶点，根据它们的松弛进行排序
   auto fanout_vertexes = timingEngine->get_sta_engine()->getFanoutVertexs(driver_vertex);
   std::vector<std::pair<StaVertex *, TOSlack>> fanout_slacks;
