@@ -76,6 +76,7 @@ class IdbInstance : public IdbObject
 
     return nullptr;
   }
+  int get_connected_pin_number();
 
   IdbInstanceType& get_type() { return _type; }
   bool has_type() { return (_type > IdbInstanceType::kNone && _type < IdbInstanceType::kMax ? true : false); }
