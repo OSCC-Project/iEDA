@@ -271,7 +271,7 @@ unsigned Sta::readLiberty(const char *lib_file) {
   if (!IsFileExists(lib_file)) {
     return 0;
   }
-  
+
   Lib lib;
   auto load_lib = lib.loadLibertyWithRustParser(lib_file);
   addLibReaders(std::move(load_lib));
@@ -326,13 +326,12 @@ unsigned Sta::readLiberty(std::vector<std::string> &lib_files) {
  * @return unsigned
  */
 unsigned Sta::linkLibertys() {
-
   // if linked library, not repeat link.
   if (!_libs.empty()) {
     return 1;
   }
 
-  auto link_lib = [this](auto& lib_rust_reader) {
+  auto link_lib = [this](auto &lib_rust_reader) {
     auto &link_cells = get_link_cells();
     lib_rust_reader.set_build_cells(link_cells);
     lib_rust_reader.linkLib();
@@ -342,7 +341,6 @@ unsigned Sta::linkLibertys() {
     delete lib_builder;
 
     addLib(std::move(lib));
-
   };
 
 #if 0
@@ -355,7 +353,8 @@ unsigned Sta::linkLibertys() {
     ThreadPool pool(get_num_threads());
 
     for (auto &lib_rust_reader : _lib_readers) {
-      pool.enqueue([link_lib, &lib_rust_reader]() { link_lib(lib_rust_reader); });
+      pool.enqueue(
+          [link_lib, &lib_rust_reader]() { link_lib(lib_rust_reader); });
     }
   }
 
@@ -389,11 +388,11 @@ void Sta::collectLinkedCell() {
   auto top_module_stmts = _rust_top_module->module_stmts;
   void *stmt;
   FOREACH_VEC_ELEM(&top_module_stmts, void, stmt) {
-   if (rust_is_module_inst_stmt(stmt)) {
+    if (rust_is_module_inst_stmt(stmt)) {
       RustVerilogInst *verilog_inst = rust_convert_verilog_inst(stmt);
       const char *liberty_cell_name = verilog_inst->cell_name;
       _link_cells.insert(std::string(liberty_cell_name));
-   }
+    }
   }
 }
 
@@ -504,6 +503,52 @@ void Sta::linkDesignWithRustParser(const char *top_cell_name) {
       FOREACH_VEC_ELEM(&verilog_dcls, void, verilog_dcl) {
         process_dcl_stmt(rust_convert_verilog_dcl(verilog_dcl));
       }
+    } else if (rust_is_module_assign_stmt(stmt)) {
+      RustVerilogAssign *verilog_assign = rust_convert_verilog_assign(stmt);
+      auto *left_net_expr = const_cast<void *>(verilog_assign->left_net_expr);
+      auto *right_net_expr = const_cast<void *>(verilog_assign->right_net_expr);
+      std::string left_net_name;
+      std::string right_net_name;
+      if (rust_is_id_expr(left_net_expr) && rust_is_id_expr(right_net_expr)) {
+        // get left_net_name.
+        auto *left_net_id = const_cast<void *>(
+            rust_convert_verilog_net_id_expr(left_net_expr)->verilog_id);
+        if (rust_is_id(left_net_id)) {
+          left_net_name = rust_convert_verilog_id(left_net_id)->id;
+        } else if (rust_is_bus_index_id(left_net_id)) {
+          left_net_name = rust_convert_verilog_index_id(left_net_id)->id;
+        } else {
+          left_net_name = rust_convert_verilog_slice_id(left_net_id)->id;
+        }
+        // get right_net_name.
+        auto *right_net_id = const_cast<void *>(
+            rust_convert_verilog_net_id_expr(right_net_expr)->verilog_id);
+        if (rust_is_id(right_net_id)) {
+          right_net_name = rust_convert_verilog_id(right_net_id)->id;
+        } else if (rust_is_bus_index_id(right_net_id)) {
+          right_net_name = rust_convert_verilog_index_id(right_net_id)->id;
+        } else {
+          right_net_name = rust_convert_verilog_slice_id(right_net_id)->id;
+        }
+      } else {
+        LOG_INFO
+            << "assign declaration's lhs/rhs is not VerilogNetIDExpr class.";
+      }
+
+      Net *the_left_net_or_port = design_netlist.findNet(left_net_name.c_str());
+      Net *the_right_net_or_port =
+          design_netlist.findNet(right_net_name.c_str());
+      LOG_FATAL_IF(!the_left_net_or_port && !the_right_net_or_port)
+          << "assign declaration cannot find Net "
+          << "at line " << verilog_assign->line_no;
+      if (the_left_net_or_port) {
+        auto *the_right_port = design_netlist.findPort(right_net_name.c_str());
+        the_left_net_or_port->addPinPort(the_right_port);
+      } else {
+        auto *the_left_port = design_netlist.findPort(left_net_name.c_str());
+        the_right_net_or_port->addPinPort(the_left_port);
+      }
+
     } else if (rust_is_module_inst_stmt(stmt)) {
       RustVerilogInst *verilog_inst = rust_convert_verilog_inst(stmt);
       std::string inst_name = verilog_inst->inst_name;

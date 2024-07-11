@@ -390,6 +390,34 @@ pub extern "C" fn rust_convert_verilog_inst(c_verilog_inst: *mut c_void) -> *mut
 }
 
 #[repr(C)]
+pub struct RustVerilogAssign {
+    line_no: usize,
+    left_net_expr: *const c_void,
+    right_net_expr: *const c_void,
+}
+
+#[no_mangle]
+pub extern "C" fn rust_convert_verilog_assign(c_verilog_assign: *mut c_void) -> *mut RustVerilogAssign {
+    let verilog_stmt = unsafe { &mut *(c_verilog_assign as *mut Box<dyn verilog_data::VerilogVirtualBaseStmt>) };
+    let verilog_assign = (*verilog_stmt).as_any().downcast_ref::<verilog_data::VerilogAssign>().unwrap();
+
+    // get value in verilog_assign.
+    let line_no = (*verilog_assign).get_stmt().get_line_no();
+    let left_net_expr_box = (*verilog_assign).get_left_net_expr();
+    let right_net_expr_box = (*verilog_assign).get_right_net_expr();
+
+    let c_left_net_expr = &*left_net_expr_box as *const _ as *const c_void;
+    let c_right_net_expr = &*right_net_expr_box as *const _ as *const c_void;
+
+    let rust_verilog_assign =
+        RustVerilogAssign { line_no, left_net_expr: c_left_net_expr, right_net_expr: c_right_net_expr };
+
+    let rust_verilog_assign_pointer = Box::new(rust_verilog_assign);
+    let raw_pointer = Box::into_raw(rust_verilog_assign_pointer);
+    raw_pointer
+}
+
+#[repr(C)]
 pub struct RustVerilogPortRefPortConnect {
     port_id: *const c_void,
     net_expr: *mut c_void,

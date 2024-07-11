@@ -103,6 +103,12 @@ typedef struct RustVerilogInst {
     struct RustVec port_connections;
 } RustVerilogInst;
 
+typedef struct RustVerilogAssign {
+    uintptr_t line_no;
+    const void *left_net_expr;
+    const void *right_net_expr;
+} RustVerilogAssign;
+
 typedef struct RustVerilogPortRefPortConnect {
     const void *port_id;
     void *net_expr;
@@ -155,6 +161,8 @@ struct RustVerilogDcl *rust_convert_verilog_dcl(void *c_verilog_dcl_struct);
 struct RustVerilogDcls *rust_convert_verilog_dcls(void *c_verilog_dcls_struct);
 
 struct RustVerilogInst *rust_convert_verilog_inst(void *c_verilog_inst);
+
+struct RustVerilogAssign *rust_convert_verilog_assign(void *c_verilog_assign);
 
 struct RustVerilogPortRefPortConnect *rust_convert_verilog_port_ref_port_connect(void *c_port_connect);
 
