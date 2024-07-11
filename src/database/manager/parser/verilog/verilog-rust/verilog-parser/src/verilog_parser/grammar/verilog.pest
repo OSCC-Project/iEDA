@@ -12,6 +12,9 @@ COMMENT = _{ line_comment | multiline_comment }
 
 char = _{ ASCII_ALPHANUMERIC | "_" | "\\" | "[" | "]" | "/" | ":" | "$" | "=" | "." | "'" }
 
+// Donnot deal with yosys with (* top =  1  *)
+yosys_hierarchy_declaration = {"(* top =" ~ decimal_digits ~ "*)" }
+
 //(assign_port_or_wire_id donnot contain the whitespace.)
 assign_port_or_wire_id = @{ char+ } 
 port_or_wire_id = @{ (char+ ~ " " ~ char+) | char+ }
@@ -38,7 +41,6 @@ port_or_wire_declaration = _{ port_declaration | wire_declaration }
 port_or_wire_block_declaration = { port_or_wire_declaration* }
 
 assign_declaration =  {"assign" ~  assign_port_or_wire_id ~ "=" ~ assign_port_or_wire_id ~ semicolon_opt }
-assign_block_declaration = { assign_declaration* }
 
 //(ps:first_port_connection) first rule adapt to .REN(n_Logic1_ ) or .REN( ) or .io_interrupt(1'b0)
 //(ps:first_port_connection) second rule adapt to .FBDIV({  \u0_rcg/n33 ,  \u0_rcg/n33 ,  \u0_rcg/n33 })
@@ -50,11 +52,13 @@ first_port_connection = _{ first_port_connection_single_connect | first_port_con
 port_connection = _{ "," ~ first_port_connection }
 port_block_connection = !{ "(" ~ first_port_connection? ~ port_connection* ~ ")"  ~ semicolon_opt }
 
-inst_declaration = ${ cell_id ~ WHITESPACE+ ~ inst_id ~ WHITESPACE+ ~ port_block_connection }
-inst_block_declaration = { inst_declaration+ }
+inst_declaration = ${ cell_id ~ WHITESPACE+ ~ inst_id ~ WHITESPACE* ~ port_block_connection }
 
-module_declaration = { "module" ~ module_id ~ "(" ~ port_list ~ ");" ~ port_or_wire_block_declaration 
-~ assign_block_declaration ~ inst_block_declaration ~ "endmodule"}
+assign_or_inst_declaration = _{ assign_declaration | inst_declaration }
+assign_or_inst_block_declaration = { assign_or_inst_declaration* }
+
+module_declaration = { yosys_hierarchy_declaration? ~ "module" ~ module_id ~ "(" ~ port_list ~ ");" ~ port_or_wire_block_declaration 
+~ assign_or_inst_block_declaration ~ "endmodule" }
 
 verilog_file = _{ SOI ~ module_declaration+ ~ EOI }
 

@@ -45,6 +45,38 @@ fn process_port_or_wire_id(
     }
 }
 
+fn process_port_or_wire_declaration(
+    pair: Pair<Rule>,
+) -> Result<Box<dyn verilog_data::VerilogVirtualBaseStmt>, pest::error::Error<Rule>> {
+    let pair_clone = pair.clone();
+    match pair.as_rule() {
+        Rule::input_declaration => {
+            let dcl_type = verilog_data::DclType::KInput;
+            let verilog_dcls = process_inner_port_declaration(pair, dcl_type);
+            verilog_dcls
+        }
+        Rule::output_declaration => {
+            let dcl_type = verilog_data::DclType::KOutput;
+            let verilog_dcls = process_inner_port_declaration(pair, dcl_type);
+            verilog_dcls
+        }
+        Rule::inout_declaration => {
+            let dcl_type = verilog_data::DclType::KInout;
+            let verilog_dcls = process_inner_port_declaration(pair, dcl_type);
+            verilog_dcls
+        }
+        Rule::wire_declaration => {
+            let dcl_type = verilog_data::DclType::KWire;
+            let verilog_dcls = process_inner_wire_declaration(pair, dcl_type);
+            verilog_dcls
+        }
+        _ => Err(pest::error::Error::new_from_span(
+            pest::error::ErrorVariant::CustomError { message: "Unknown rule".into() },
+            pair_clone.as_span(),
+        )),
+    }
+}
+
 fn process_inner_port_declaration(
     pair: Pair<Rule>,
     dcl_type: verilog_data::DclType,
@@ -91,38 +123,6 @@ fn process_inner_port_declaration(
     }
 }
 
-fn process_port_or_wire_declaration(
-    pair: Pair<Rule>,
-) -> Result<Box<dyn verilog_data::VerilogVirtualBaseStmt>, pest::error::Error<Rule>> {
-    let pair_clone = pair.clone();
-    match pair.as_rule() {
-        Rule::input_declaration => {
-            let dcl_type = verilog_data::DclType::KInput;
-            let verilog_dcls = process_inner_port_declaration(pair, dcl_type);
-            verilog_dcls
-        }
-        Rule::output_declaration => {
-            let dcl_type = verilog_data::DclType::KOutput;
-            let verilog_dcls = process_inner_port_declaration(pair, dcl_type);
-            verilog_dcls
-        }
-        Rule::inout_declaration => {
-            let dcl_type = verilog_data::DclType::KInout;
-            let verilog_dcls = process_inner_port_declaration(pair, dcl_type);
-            verilog_dcls
-        }
-        Rule::wire_declaration => {
-            let dcl_type = verilog_data::DclType::KWire;
-            let verilog_dcls = process_inner_wire_declaration(pair, dcl_type);
-            verilog_dcls
-        }
-        _ => Err(pest::error::Error::new_from_span(
-            pest::error::ErrorVariant::CustomError { message: "Unknown rule".into() },
-            pair_clone.as_span(),
-        )),
-    }
-}
-
 fn process_inner_wire_declaration(
     pair: Pair<Rule>,
     dcl_type: verilog_data::DclType,
@@ -160,6 +160,26 @@ fn process_inner_wire_declaration(
             }
             let verilog_dcls = verilog_data::VerilogDcls::new(line_no, verilog_dcl_vec);
             Ok(Box::new(verilog_dcls) as Box<dyn verilog_data::VerilogVirtualBaseStmt>)
+        }
+        _ => Err(pest::error::Error::new_from_span(
+            pest::error::ErrorVariant::CustomError { message: "Unknown rule".into() },
+            pair_clone.as_span(),
+        )),
+    }
+}
+
+fn process_assign_or_inst_declaration(
+    pair: Pair<Rule>,
+) -> Result<Box<dyn verilog_data::VerilogVirtualBaseStmt>, pest::error::Error<Rule>> {
+    let pair_clone = pair.clone();
+    match pair.as_rule() {
+        Rule::assign_declaration => {
+            let verilog_assign = process_assign_declaration(pair);
+            verilog_assign
+        }
+        Rule::inst_declaration => {
+            let verilog_inst = process_inst_declaration(pair);
+            verilog_inst
         }
         _ => Err(pest::error::Error::new_from_span(
             pest::error::ErrorVariant::CustomError { message: "Unknown rule".into() },
@@ -701,6 +721,8 @@ pub fn parse_verilog_file(verilog_file_path: &str) -> verilog_data::VerilogFile 
                 let mut module_stmts: Vec<Box<dyn verilog_data::VerilogVirtualBaseStmt>> = Vec::new();
                 for inner_pair in inner_pairs {
                     match inner_pair.as_rule() {
+                        // Just read not deal with Rule::yosys_hierarchy_declaration.
+                        Rule::yosys_hierarchy_declaration => {}
                         Rule::module_id => {
                             module_name = process_module_id(inner_pair).unwrap();
                         }
@@ -716,16 +738,11 @@ pub fn parse_verilog_file(verilog_file_path: &str) -> verilog_data::VerilogFile 
                                 module_stmts.push(verilog_dcls);
                             }
                         }
-                        Rule::assign_block_declaration => {
+                        Rule::assign_or_inst_block_declaration => {
                             for inner_inner_pair in inner_pair.into_inner() {
-                                let verilog_assign = process_assign_declaration(inner_inner_pair).unwrap();
-                                module_stmts.push(verilog_assign);
-                            }
-                        }
-                        Rule::inst_block_declaration => {
-                            for inner_inner_pair in inner_pair.into_inner() {
-                                let verilog_inst = process_inst_declaration(inner_inner_pair).unwrap();
-                                module_stmts.push(verilog_inst);
+                                let verilog_assign_or_inst =
+                                    process_assign_or_inst_declaration(inner_inner_pair).unwrap();
+                                module_stmts.push(verilog_assign_or_inst);
                             }
                         }
                         _ => unreachable!(),
@@ -903,6 +920,13 @@ mod tests {
     }
 
     #[test]
+    fn test_parse_yosys_hierarchy_declaration() {
+        let input_str = "(* top =  1  *)";
+        let parse_result = VerilogParser::parse(Rule::yosys_hierarchy_declaration, input_str);
+        print_parse_result(parse_result);
+    }
+
+    #[test]
     fn test_parse_port_or_wire_id() {
         let _input_str = "q\n        ";
         let input_str = "q        ";
@@ -987,8 +1011,8 @@ mod tests {
 
     #[test]
     fn test_parse_assign_declaration() {
-        let _input_str = "assign DATA_9_31 = WX1010 ;";
-        let input_str = "assign DATA_9_31 = WX1010;";
+        let input_str = "assign _01_ = b_pad;";
+        let _input_str = "assign DATA_9_31 = WX1010;";
         let parse_result = VerilogParser::parse(Rule::assign_declaration, input_str);
 
         print_parse_result(parse_result);
@@ -1146,7 +1170,7 @@ mod tests {
 
     #[test]
     fn test_parse_module_declaration() {
-        let input_str = r#"module nic400_cdc_capt_sync_bus1_87 ( clk, resetn, d_async, sync_en, q
+        let _input_str = r#"module nic400_cdc_capt_sync_bus1_87 ( clk, resetn, d_async, sync_en, q
         );
          input [0:0] d_async;
          output [0:0] q;
@@ -1160,6 +1184,19 @@ mod tests {
        endmodule
        
     "#;
+        let input_str = r#"(* top =  1  *)
+module b1_comb.aig (b_pad, d_pad, e_pad, f_pad, g_pad, a_pad);
+  wire _00_;
+  output g_pad;
+  wire g_pad;
+  sky130_fd_sc_hs__clkinv_1 _26_ (
+    .A(_02_),
+    .Y(_05_)
+  );
+  assign _01_ = b_pad;
+  assign f_pad = _04_;
+endmodule
+"#;
         let parse_result = VerilogParser::parse(Rule::module_declaration, input_str);
         println!("{:#?}", parse_result);
         // print_parse_result(parse_result);
