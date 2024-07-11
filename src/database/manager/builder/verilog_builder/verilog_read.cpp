@@ -171,6 +171,7 @@ int32_t RustVerilogRead::build_pins()
       }
       idb_io_pin->set_pin_name(pin_name);
       idb_io_pin->set_term();
+      idb_io_pin->get_term()->set_name(pin_name);
       idb_io_pin->get_term()->set_direction(netlistToIdb(dcl_type));
       idb_io_pin->get_term()->set_type(IdbConnectType::kSignal);
       idb_io_pin->set_as_io();
