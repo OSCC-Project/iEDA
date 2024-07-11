@@ -924,7 +924,7 @@ mod tests {
     fn test_parse_port_or_wire_id1() {
         let _input_str = "clk ";
         let input_str = "\\in_$002 [0]"; //(wire)
-        let _input_str = "sky130_fd_sc_hs__nor2_1 _17_"; //(cell inst)
+        let _input_str = "_fd_sc_hs__nor2_1 _17_"; //(cell inst)
         let parse_result = VerilogParser::parse(Rule::port_or_wire_id, input_str);
         println!("{:#?}", parse_result);
         print_parse_result(parse_result);
@@ -1082,7 +1082,7 @@ mod tests {
 
     #[test]
     fn test_parse_inst_declaration() {
-        let _input_str = r#"PLLTS28HPMLAINT \u0_rcg/u0_pll  (.BYPASS(\u0_rcg/u0_pll_bp ),
+        let _input_str = r#"PLLHPMLAINT \u0_rcg/u0_pll  (.BYPASS(\u0_rcg/u0_pll_bp ),
         .REFDIV({ DRV_net_6,
                 DRV_net_6,
                 DRV_net_6,
@@ -1146,16 +1146,16 @@ mod tests {
 
     #[test]
     fn test_parse_module_declaration() {
-        let input_str = r#"module nic400_cdc_capt_sync_bus_WIDTH1_87 ( clk, resetn, d_async, sync_en, q
+        let input_str = r#"module nic400_cdc_capt_sync_bus1_87 ( clk, resetn, d_async, sync_en, q
         );
          input [0:0] d_async;
          output [0:0] q;
          input clk, resetn, sync_en;
          wire   d_sync1_0_;
        
-         DFCNQD1BWP40P140LVT d_sync1_reg_0_ ( .D(d_async[0]), .CP(clk), .CDN(resetn),
+         DFCNQDP40P140LVT d_sync1_reg_0_ ( .D(d_async[0]), .CP(clk), .CDN(resetn),
                .Q(d_sync1_0_) );
-         DFCNQD1BWP40P140LVT q_reg_0_ ( .D(d_sync1_0_), .CP(clk), .CDN(resetn), .Q(
+         DFCNQDP40P140LVT q_reg_0_ ( .D(d_sync1_0_), .CP(clk), .CDN(resetn), .Q(
                q[0]) );
        endmodule
        
