@@ -25,13 +25,30 @@
 #include <fstream>
 #include <iostream>
 
+#include "idm.h"
 #include "GridManager.hh"
 #include "TemplateSynthesis.hh"
 #include "iPNP.hh"
 
 namespace idb {
-class IdbRegularWire;
-}
+class IdbSpecialNet;
+class IdbSpecialNetList;
+class IdbSpecialWireList;
+class IdbSpecialWire;
+class IdbSpecialWireSegment;
+class IdbLayer;
+class IdbVia;
+class IdbPin;
+class IdbRect;
+class IdbInstance;
+
+enum class SegmentType : int8_t;
+enum class IdbWireShapeType : uint8_t;
+enum class IdbOrient : uint8_t;
+
+template <typename T>
+class IdbCoordinate;
+}  // namespace idb
 
 namespace ipnp {
 
@@ -51,7 +68,7 @@ class NetworkSynthesis
   GridManager& get_network() { return _synthesized_network; }
   // GridManager* getNetwork() { return &_synthesized_network; }
 
-  idb::IdbRegularWire* writeDef();  // retrun type? using iDB segment, refer to iPDN, iRT. SpecialNet?
+  void writeDef();  // retrun type? using iDB segment, refer to iPDN, iRT. SpecialNet?
 
  private:
   GridManager _input_grid_info;      // use GridManager* or GridManager?

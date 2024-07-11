@@ -15,30 +15,16 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 
-#include "PdnOptimizer.hh"
-
-#include "SimulatedAnnealing.hh"
+#include "PNPConfig.hh"
 
 namespace ipnp {
-PdnOptimizer::PdnOptimizer()
+
+PNPConfig::PNPConfig()
 {
 }
 
-PdnOptimizer::~PdnOptimizer()
+PNPConfig::~PNPConfig()
 {
 }
-
-void PdnOptimizer::evaluate()
-{
-  // TODO
-}
-
-void PdnOptimizer::optimize(GridManager initial_pdn){
-  _input_pdn_grid = initial_pdn;
-
-  //TODO: _input_pdn_grid --> Optimize --> _output_pdn_grid
-  _output_pdn_grid = _input_pdn_grid;
-}
-
 
 }  // namespace ipnp

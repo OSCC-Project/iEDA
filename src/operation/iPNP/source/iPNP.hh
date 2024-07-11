@@ -53,15 +53,17 @@ class iPNP
 {
  public:
   iPNP() = delete;
-  iPNP(const std::string &config_file);
-  //iPNP(const std::string &config_file, idb::idbBuilder def_file); //TODO
+  iPNP(const std::string& config_file);
+  // iPNP(const std::string &config_file, idb::idbBuilder def_file); //TODO
   ~iPNP();
 
   PNPConfig* get_config() { return _pnp_config; }
-  
-  void initSynthesize();   //Generate initial solution. Based on fastplacer.
-  void optimize();  // including calling Evaluator and modify PDN
-  void synthesizeNetwork(); //Generate the final PDN for future flow( CTS, routing) to use
+  GridManager get_current_opt_network() { return _current_opt_network; }
+  idb::IdbSpecialNet* get_final_def() { return _final_def; }
+
+  void initSynthesize();     // Generate initial solution. Based on fastplacer.
+  void optimize();           // including calling Evaluator and modify PDN
+  void synthesizeNetwork();  // Generate the final PDN for future flow( CTS, routing) to use
 
   void run();  // According to the config. e.g. which Evaluator, which opt algorithm.
 
@@ -70,7 +72,7 @@ class iPNP
   idb::IdbSpecialNet* _input_netlist;
   GridManager _initialized_network;
   GridManager _current_opt_network;
-  idb::IdbRegularWire* _final_def;
+  idb::IdbSpecialNet* _final_def;
 };
 
 }  // namespace ipnp

@@ -1,4 +1,4 @@
-add_subdirectory(pdn_plan)
-add_subdirectory(pdn_router)
-add_subdirectory(pdn_sim)
-add_subdirectory(pdn_via)
+add_subdirectory(evaluator)
+add_subdirectory(optimizer)
+add_subdirectory(placer_router)
+add_subdirectory(synthesis)

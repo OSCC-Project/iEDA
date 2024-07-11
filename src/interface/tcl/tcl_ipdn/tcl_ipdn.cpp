@@ -20,6 +20,7 @@
 #include "idm.h"
 #include "ipdn_api.h"
 #include "tool_manager.h"
+#include "iPNPApi.hh"
 
 namespace tcl {
 
@@ -712,6 +713,32 @@ unsigned TclPdnAddSegmentVia::exec()
     pdnApiInst->addSegmentVia(net_name, top_layer_name, bottom_layer_name, offset_x, offset_y, width, height);
     return 1;
   }
+  return 1;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+TclRunPNP::TclRunPNP(const char* cmd_name) : TclCmd(cmd_name)
+{
+  
+}
+
+unsigned TclRunPNP::check()
+{
+  
+
+  return 1;
+}
+
+unsigned TclRunPNP::exec()
+{
+  if (!check()) {
+    return 0;
+  }
+
+  
+
   return 1;
 }
 

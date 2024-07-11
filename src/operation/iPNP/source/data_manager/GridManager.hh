@@ -26,10 +26,15 @@ namespace ipnp {
 class PDNGridTemplate
 {
  public:
+  PDNGridTemplate();
+  ~PDNGridTemplate() = default;
+
   struct GridPerLayer
   {
-    std::string direction;
-    double offset, width, space;
+    std::string direction = "horizontal";  // horizontal, vertical
+    double offset = 1.0;
+    double width = 5.0;
+    double space = 5.0;
   };
 
  private:
@@ -42,6 +47,9 @@ class PDNGridRegion
 {
  public:
   // TODO: Constructor function; get function...
+  PDNGridRegion();
+  ~PDNGridRegion() = default;
+
  private:
   std::string _type;  // e.g. rectangle, irregular(coverd by Macro)
   // std::vector<int> _region_position;  // e.g. {0,0}, {0,1}...{1,0}, {1,1}
@@ -51,6 +59,9 @@ class PDNGridRegion
 class PDNRectanGridRegion : public PDNGridRegion
 {
  public:
+  PDNRectanGridRegion();
+  ~PDNRectanGridRegion() = default;
+
   double get_height() { return _height; }
   double get_width() { return _width; }
 
@@ -70,7 +81,7 @@ class PDNRectanGridRegion : public PDNGridRegion
 };
 
 // class GridNetwork{
-//  private://public? 方便GridManager调用?
+//  private:
 //   int ho_region_num, ver_region_num;
 //   std::vector<std::vector<PDNGridRegion>> _grid_data; //which GridRegion is on position[][].
 //   std::vector<std::vector<int>> _template_data; //which GridTemplate is on position[][]. Just need the template number.
@@ -79,6 +90,9 @@ class PDNRectanGridRegion : public PDNGridRegion
 class GridManager
 {
  public:
+  GridManager();
+  ~GridManager() = default;
+
   int get_ho_region_num() { return _ho_region_num; }
   int get_ver_region_num() { return _ver_region_num; }
   double get_chip_width() { return _chip_width; }

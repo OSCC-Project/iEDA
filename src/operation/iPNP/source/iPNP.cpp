@@ -55,6 +55,7 @@ void iPNP::initSynthesize()
 
   // version1.0: needn't consider regions with irregular shapes (determined by fastplacer)
   GridManager empty_grid;
+  //TODO: empty_grid should include template_lib infomation.
   NetworkSynthesis network_synthesizer("default", empty_grid);
   network_synthesizer.synthesizeNetwork();
   _initialized_network = network_synthesizer.get_network();
@@ -72,14 +73,17 @@ void iPNP::optimize()
 void iPNP::synthesizeNetwork()
 {
   NetworkSynthesis network("optimizer", _current_opt_network);
+  network.synthesizeNetwork();
   _final_def = network.writeDef();
 }
 
 void iPNP::run()
 {
+  // TODO: readFromIdb();
   initSynthesize();
   optimize();
   synthesizeNetwork();
+  //writeToIdb();
 }
 
 }  // namespace ipnp

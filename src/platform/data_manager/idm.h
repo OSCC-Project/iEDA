@@ -47,7 +47,7 @@ using std::vector;
 
 using namespace idb;
 
-#define dmInst idm::DataManager::getInstance()
+#define dmInst idm::DataManager::getInstance()  //dmInst is DataManager*
 
 namespace idm {
 

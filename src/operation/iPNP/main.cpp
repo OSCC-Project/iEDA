@@ -28,9 +28,11 @@
 
 int main(int argc, char** argv) {
   using namespace ipnp;
+  using namespace idb;
   std::string config_file = "config file path";
   iPNP pnp_object = iPNP(config_file);
   pnp_object.run();
+  idb::IdbSpecialNet* final_def = pnp_object.get_final_def();
 
   // Log::init(argv);
 

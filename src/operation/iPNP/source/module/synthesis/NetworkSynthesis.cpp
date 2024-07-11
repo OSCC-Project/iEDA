@@ -23,10 +23,7 @@
 #include <map>
 #include <string>
 #include <vector>
-
-namespace idb {
-class IdbRegularWire;
-}
+#include "idm.h"
 
 namespace ipnp {
 
@@ -92,13 +89,18 @@ void NetworkSynthesis::randomSys()
   _synthesized_network.set_template_data(template_data);
 }
 
-idb::IdbRegularWire* NetworkSynthesis::writeDef()
+void NetworkSynthesis::writeDef()  //IdbRegularWire*
 {
   // TODO: _synthesized_network --> def_file
   // Consider the situation that the region is irregular
+  
+  idb::IdbSpecialWireSegment* idb_special_wire_segment = new idb::IdbSpecialWireSegment;
+  // PSEUDO CODE: idb_special_wire_segment -> _route_width = _synthesized_network.wire_width;
 
-  idb::IdbRegularWire* DEF;
-  return DEF;
+  //TODO: How does idm interact with idb that saves data?
+  auto* idb_builder = dmInst->get_idb_builder();
+  idb_builder->saveDef("../../../test/result/ipnp_result.def");
+
 }
 
 }  // namespace ipnp
