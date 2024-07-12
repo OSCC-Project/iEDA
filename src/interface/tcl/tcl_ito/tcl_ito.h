@@ -77,11 +77,39 @@ class CmdTORunHold : public TclCmd
   // private data
 };
 
+class CmdTORunDrvSpecialNet : public TclCmd
+{
+ public:
+  explicit CmdTORunDrvSpecialNet(const char* cmd_name);
+  ~CmdTORunDrvSpecialNet() override = default;
+
+  unsigned check() override;
+  unsigned exec() override;
+
+ private:
+  // private function
+  // private data
+};
+
 class CmdTORunSetup : public TclCmd
 {
  public:
   explicit CmdTORunSetup(const char* cmd_name);
   ~CmdTORunSetup() override = default;
+
+  unsigned check() override;
+  unsigned exec() override;
+
+ private:
+  // private function
+  // private data
+};
+
+class CmdTOBuffering : public TclCmd
+{
+ public:
+  explicit CmdTOBuffering(const char* cmd_name);
+  ~CmdTOBuffering() override = default;
 
   unsigned check() override;
   unsigned exec() override;

@@ -33,7 +33,13 @@ void SetupOptimizer::init() {
   initBufferCell();
   LOG_ERROR_IF(_available_lib_cell_sizes.empty()) << "Can not found specified buffers.\n";
 
-  toEvalInst->estimateAllNetParasitics();
+  if (!_has_estimate_all_net) {
+    toEvalInst->estimateAllNetParasitics();
+    _has_estimate_all_net = true;
+  } else {
+    toEvalInst->excuteParasiticsEstimate();
+  }
+
   timingEngine->get_sta_engine()->updateTiming();
   timingEngine->set_eval_data();
 }
@@ -111,6 +117,36 @@ void SetupOptimizer::findEndpointsWithSetupViolation(TOVertexSet  end_points,
       setup_violations.emplace_back(end);
     }
   }
+}
+
+
+int SetupOptimizer::getFanoutNumber(Pin* pin)
+{
+  auto* net = pin->get_net();
+  return net->getFanouts();
+}
+
+bool SetupOptimizer::netConnectToOutputPort(Net* net)
+{
+  DesignObject* pin;
+  FOREACH_NET_PIN(net, pin)
+  {
+    if (pin->isOutput()) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool SetupOptimizer::netConnectToPort(Net* net)
+{
+  auto load_pin_ports = net->getLoads();
+  for (auto pin_port : load_pin_ports) {
+    if (pin_port->isPort()) {
+      return true;
+    }
+  }
+  return false;
 }
 
 }  // namespace ito

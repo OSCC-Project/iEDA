@@ -76,10 +76,10 @@ void NFSpread::computeAbu()
 	double abu_20 = 0.0;
 	double abu_overfilled = 0.0;
 	double abu_penalty = 0.0;
-	double abu_npa = 0.0;
+	// double abu_npa = 0.0;
 	double abu_max_npa = 0.0;
 
-	int num_abu_bins = 0;
+	// int num_abu_bins = 0;
 	int num_abu1_bins = 0;
 	int num_abu2_bins = 0;
 	int num_abu5_bins = 0;
@@ -124,7 +124,7 @@ void NFSpread::computeAbu()
 			return ratio1 > ratio2;
 		}); 
 
-	num_abu_bins = num_bins;
+	// num_abu_bins = num_bins;
 
 	const int index1 = static_cast<int> (0.01 * num_bins);
 	const int index2 = static_cast<int> (0.02 * num_bins);
@@ -181,7 +181,7 @@ void NFSpread::computeAbu()
 	abu_10 = (index10) ? abu_10 / index10 : 0.0;
 	abu_20 = (index20) ? abu_20 / index20 : 0.0;
 	abu_overfilled = num_abu100_bins ? abu_overfilled / num_abu100_bins  :0.0;
-	abu_npa = num_abu_npa_bins ? total_npa / static_cast<double>(total_bin_area) : 0.0;
+	// abu_npa = num_abu_npa_bins ? total_npa / static_cast<double>(total_bin_area) : 0.0;
 
 	const double abu2_weight = 10.0;
 	const double abu5_weight = 4.0;
@@ -426,7 +426,7 @@ void NFSpread::connectVerticalSegmentsBinsThroughBlockages()
 		DPSegment * lower = lower_row->getFrontSegment();
 		const std::deque<Rectangle<int64_t>> & blocks = upper_row->allBlockages();
 		int block_id = 0;
-		while (lower && block_id < blocks.size()) {
+		while (lower && block_id < static_cast<int>(blocks.size())) {
 			const Rectangle<int64_t> & lower_bds = lower->get_bound();
 			const Rectangle<int64_t> & block_bds = blocks[block_id];
 			const bool left_condition = block_bds.get_ll_x() > lower_bds.get_ll_x() && block_bds.get_ll_x() < lower_bds.get_ur_x();
@@ -1011,7 +1011,7 @@ bool NFSpread::moveCells(TNode* leaf)
 {
 	TNode * node_sink = leaf;
 	TNode * node_src = leaf->_parent;
-	int64_t last_flow = node_sink->_flow;
+	// int64_t last_flow = node_sink->_flow;
 	while (node_src) {
 		DPBin * sink = node_sink->_bin;
 		DPBin * src = node_src->_bin;
@@ -1019,9 +1019,11 @@ bool NFSpread::moveCells(TNode* leaf)
 		const bool isNeighbor = isHorizontalNeighbor(src, sink);
 
 		if (isNeighbor) { // horizontal and partial moves 
-			last_flow = moveHorizontalNeighborFlow(src, sink, flow);
+			// last_flow = moveHorizontalNeighborFlow(src, sink, flow);
+			moveHorizontalNeighborFlow(src, sink, flow);
 		} else { // vertical moves
-			last_flow = moveFullCellFlow(src, sink, flow);
+			// last_flow = moveFullCellFlow(src, sink, flow);
+			moveFullCellFlow(src, sink, flow);
 		}
 
 		node_sink = node_src;

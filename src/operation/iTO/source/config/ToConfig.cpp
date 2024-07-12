@@ -20,4 +20,11 @@ namespace ito {
 
 ToConfig *ToConfig::_instance = nullptr;
 
+ToConfig *ToConfig::getInstance() {
+    if (nullptr == _instance) {
+      _instance = new ToConfig();
+    }
+    return _instance;
+  }
+
 } // namespace ito

@@ -955,6 +955,10 @@ int32_t DefRead::parse_component(defiComponent* def_component)
     }
   }
 
+  /// clear def_component
+  def_component->clear();
+  def_component->setPlacementLocation(0, 0, 0);
+
   return kDbSuccess;
 }
 

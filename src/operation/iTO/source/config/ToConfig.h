@@ -29,15 +29,12 @@ using std::vector;
 
 namespace ito {
 
+enum class RoutingType : int { kHVTree = 0, kSteiner = 1, kShallowLight = 2 };
+
 #define toConfig ToConfig::getInstance()
 class ToConfig {
  public:
-  static ToConfig *getInstance() {
-    if (nullptr == _instance) {
-      _instance = new ToConfig();
-    }
-    return _instance;
-  }
+  static ToConfig *getInstance();
 
   // setter
   void set_lef_files(const vector<string> lefs) { _lef_files_path = lefs; }
@@ -48,6 +45,16 @@ class ToConfig {
   void set_output_def_file(const string out) { _out_def_path = out; }
   void set_report_file(const string report) { _report_path = report; }
   void set_gds_file(const string gds) { _gds_path = gds; }
+  void set_routing_tree(const string tree)
+  {
+    if (tree == "flute") {
+      _routing_tree = RoutingType::kSteiner;
+    } else if (tree == "hvtree") {
+      _routing_tree = RoutingType::kHVTree;
+    } else if (tree == "shallow-light") {
+      _routing_tree = RoutingType::kShallowLight;
+    }
+  }
 
   void set_setup_target_slack(float slack_m) { this->_setup_target_slack = slack_m; }
   void set_hold_target_slack(float slack_m) { this->_hold_target_slack = slack_m; }
@@ -72,6 +79,13 @@ class ToConfig {
   void set_min_divide_fanout(int num) { _min_divide_fanout = num; }
   void set_optimize_endpoints_percent(float num) { _optimize_endpoints_percent = num; }
 
+  void set_drv_buffer_prefix(const string& prefix) { _drv_buffer_prefix = prefix; }
+  void set_drv_net_prefix(const string& prefix) { _drv_net_prefix = prefix; }
+  void set_hold_buffer_prefix(const string& prefix) { _hold_buffer_prefix = prefix; }
+  void set_hold_net_prefix(const string& prefix) { _hold_net_prefix = prefix;}
+  void set_setup_buffer_prefix(const string& prefix) { _setup_buffer_prefix = prefix;}
+  void set_setup_net_prefix(const string& prefix) { _setup_net_prefix = prefix;}
+
   // getter
   const vector<string> &get_lef_files() const { return _lef_files_path; }
   const string         &get_def_file() const { return _def_file_path; }
@@ -81,6 +95,7 @@ class ToConfig {
   const string         &get_output_def_file() const { return _out_def_path; }
   const string         &get_report_file() const { return _report_path; }
   const string         &get_gds_file() const { return _gds_path; }
+  const RoutingType    &get_routing_tree() const { return _routing_tree; }
 
   float get_setup_target_slack() const { return _setup_target_slack; }
   float get_hold_target_slack() const { return _hold_target_slack; }
@@ -103,6 +118,13 @@ class ToConfig {
   int get_min_divide_fanout() { return _min_divide_fanout; }
   float get_optimize_endpoints_percent() { return _optimize_endpoints_percent; }
 
+  string get_drv_buffer_prefix() const { return _drv_buffer_prefix; }
+  string get_drv_net_prefix() const { return _drv_net_prefix; }
+  string get_hold_buffer_prefix() const { return _hold_buffer_prefix; }
+  string get_hold_net_prefix() const { return _hold_net_prefix;}
+  string get_setup_buffer_prefix() const { return _setup_buffer_prefix;}
+  string get_setup_net_prefix() const { return _setup_net_prefix;}
+
  private:
   static ToConfig *_instance;
 
@@ -122,9 +144,18 @@ class ToConfig {
   bool _opti_hold;
   bool _opti_setup;
 
+  RoutingType _routing_tree = RoutingType::kSteiner;
   vector<string> _drv_insert_buffers;   // buffer for optimize Design Rule Violation
   vector<string> _setup_insert_buffers; // buffer for optimize Setup Violation
   vector<string> _hold_insert_buffers;  // buffer for optimize Hold Violation
+
+  // specific names prefixes
+  string _drv_buffer_prefix = "DRV_buffer_";
+  string _drv_net_prefix = "DRV_net_";
+  string _hold_buffer_prefix  = "hold_buffer_";
+  string _hold_net_prefix = "hold_net_";
+  string _setup_buffer_prefix = "setup_buffer_";
+  string _setup_net_prefix = "setup_net_";
 
   // the maximum number of times slack is allowed to get worse when fix setup
   int _number_iter_allowed_decreasing_slack = 50;

@@ -76,7 +76,7 @@ static bool IsFileExists(const char *name) {
   std::ifstream f(name);
   bool is_exit = f.good();
   if (!is_exit) {
-    LOG_WARNING << "Can't read file:" << name << ".";
+    LOG_FATAL << "File:" << name << " is not exist.";
   }
   f.close();
   return is_exit;
@@ -271,9 +271,10 @@ unsigned Sta::readLiberty(const char *lib_file) {
   if (!IsFileExists(lib_file)) {
     return 0;
   }
+
   Lib lib;
   auto load_lib = lib.loadLibertyWithRustParser(lib_file);
-  addLib(std::move(load_lib));
+  addLibReaders(std::move(load_lib));
 
   return 1;
 }
@@ -319,6 +320,50 @@ unsigned Sta::readLiberty(std::vector<std::string> &lib_files) {
 }
 
 /**
+ * @brief Link liberty according the builded cells to construct the lib data, if
+ * build cell is empty, link all.
+ *
+ * @return unsigned
+ */
+unsigned Sta::linkLibertys() {
+  // if linked library, not repeat link.
+  if (!_libs.empty()) {
+    return 1;
+  }
+
+  auto link_lib = [this](auto &lib_rust_reader) {
+    auto &link_cells = get_link_cells();
+    lib_rust_reader.set_build_cells(link_cells);
+    lib_rust_reader.linkLib();
+    auto lib = lib_rust_reader.get_library_builder()->takeLib();
+
+    auto *lib_builder = lib_rust_reader.get_library_builder();
+    delete lib_builder;
+
+    addLib(std::move(lib));
+  };
+
+#if 0
+  for (auto &lib_rust_reader : _lib_readers) {
+    link_lib(lib_rust_reader);
+  }
+
+#else
+  {
+    ThreadPool pool(get_num_threads());
+
+    for (auto &lib_rust_reader : _lib_readers) {
+      pool.enqueue(
+          [link_lib, &lib_rust_reader]() { link_lib(lib_rust_reader); });
+    }
+  }
+
+#endif
+
+  return 1;
+}
+
+/**
  * @brief Read the verilog file.
  *
  * @param verilog_file
@@ -336,6 +381,22 @@ unsigned Sta::readVerilogWithRustParser(const char *verilog_file) {
 }
 
 /**
+ * @brief collect linked cell to speed up liberty load.
+ *
+ */
+void Sta::collectLinkedCell() {
+  auto top_module_stmts = _rust_top_module->module_stmts;
+  void *stmt;
+  FOREACH_VEC_ELEM(&top_module_stmts, void, stmt) {
+    if (rust_is_module_inst_stmt(stmt)) {
+      RustVerilogInst *verilog_inst = rust_convert_verilog_inst(stmt);
+      const char *liberty_cell_name = verilog_inst->cell_name;
+      _link_cells.insert(std::string(liberty_cell_name));
+    }
+  }
+}
+
+/**
  * @brief Link the design file to design netlist use rust parser.
  *
  * @param top_cell_name
@@ -350,6 +411,11 @@ void Sta::linkDesignWithRustParser(const char *top_cell_name) {
   _rust_top_module = _rust_verilog_reader.get_top_module();
   LOG_FATAL_IF(!_rust_top_module) << "top module not found.";
   set_design_name(_rust_top_module->module_name);
+
+  // collect linked cell for lib load.
+  collectLinkedCell();
+  // then link libs.
+  linkLibertys();
 
   auto top_module_stmts = _rust_top_module->module_stmts;
   Netlist &design_netlist = _netlist;
@@ -437,10 +503,57 @@ void Sta::linkDesignWithRustParser(const char *top_cell_name) {
       FOREACH_VEC_ELEM(&verilog_dcls, void, verilog_dcl) {
         process_dcl_stmt(rust_convert_verilog_dcl(verilog_dcl));
       }
+    } else if (rust_is_module_assign_stmt(stmt)) {
+      RustVerilogAssign *verilog_assign = rust_convert_verilog_assign(stmt);
+      auto *left_net_expr = const_cast<void *>(verilog_assign->left_net_expr);
+      auto *right_net_expr = const_cast<void *>(verilog_assign->right_net_expr);
+      std::string left_net_name;
+      std::string right_net_name;
+      if (rust_is_id_expr(left_net_expr) && rust_is_id_expr(right_net_expr)) {
+        // get left_net_name.
+        auto *left_net_id = const_cast<void *>(
+            rust_convert_verilog_net_id_expr(left_net_expr)->verilog_id);
+        if (rust_is_id(left_net_id)) {
+          left_net_name = rust_convert_verilog_id(left_net_id)->id;
+        } else if (rust_is_bus_index_id(left_net_id)) {
+          left_net_name = rust_convert_verilog_index_id(left_net_id)->id;
+        } else {
+          left_net_name = rust_convert_verilog_slice_id(left_net_id)->id;
+        }
+        // get right_net_name.
+        auto *right_net_id = const_cast<void *>(
+            rust_convert_verilog_net_id_expr(right_net_expr)->verilog_id);
+        if (rust_is_id(right_net_id)) {
+          right_net_name = rust_convert_verilog_id(right_net_id)->id;
+        } else if (rust_is_bus_index_id(right_net_id)) {
+          right_net_name = rust_convert_verilog_index_id(right_net_id)->id;
+        } else {
+          right_net_name = rust_convert_verilog_slice_id(right_net_id)->id;
+        }
+      } else {
+        LOG_INFO
+            << "assign declaration's lhs/rhs is not VerilogNetIDExpr class.";
+      }
+
+      Net *the_left_net_or_port = design_netlist.findNet(left_net_name.c_str());
+      Net *the_right_net_or_port =
+          design_netlist.findNet(right_net_name.c_str());
+      LOG_FATAL_IF(!the_left_net_or_port && !the_right_net_or_port)
+          << "assign declaration cannot find Net "
+          << "at line " << verilog_assign->line_no;
+      if (the_left_net_or_port) {
+        auto *the_right_port = design_netlist.findPort(right_net_name.c_str());
+        the_left_net_or_port->addPinPort(the_right_port);
+      } else {
+        auto *the_left_port = design_netlist.findPort(left_net_name.c_str());
+        the_right_net_or_port->addPinPort(the_left_port);
+      }
+
     } else if (rust_is_module_inst_stmt(stmt)) {
       RustVerilogInst *verilog_inst = rust_convert_verilog_inst(stmt);
-      const char *inst_name = verilog_inst->inst_name;
-      inst_name = Str::trimmed(inst_name);
+      std::string inst_name = verilog_inst->inst_name;
+      inst_name = Str::trimmed(inst_name.c_str());
+      inst_name = Str::replace(inst_name, " ", "");
 
       const char *liberty_cell_name = verilog_inst->cell_name;
       auto port_connections = verilog_inst->port_connections;
@@ -452,7 +565,7 @@ void Sta::linkDesignWithRustParser(const char *top_cell_name) {
         continue;
       }
 
-      Instance inst(inst_name, inst_cell);
+      Instance inst(inst_name.c_str(), inst_cell);
 
       /*lambda function create net for connect instance pin*/
       auto create_net_connection = [verilog_inst, inst_cell, &inst,

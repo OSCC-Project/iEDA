@@ -36,7 +36,7 @@ void PLAPI::reportPLInfo()
 
   ieda::Stats report_status;
 
-  std::string output_dir = PlacerDBInst.get_placer_config()->get_pl_dir() + "/pl/report/";
+  std::string output_dir = this->obtainTargetDir() + "/pl/report/";
 
   std::string summary_file = "summary_report.txt";
   std::ofstream summary_stream;
@@ -76,7 +76,7 @@ void PLAPI::reportPLInfo()
 
 void PLAPI::reportViolationInfo(std::ofstream& feed)
 {
-  std::string output_dir = PlacerDBInst.get_placer_config()->get_pl_dir() + "/pl/report/";
+  std::string output_dir = this->obtainTargetDir() + "/pl/report/";
   std::string violation_detail_file = "violation_detail_report.txt";
   std::ofstream violation_detail_stream;
   violation_detail_stream.open(output_dir + violation_detail_file);
@@ -174,7 +174,7 @@ void PLAPI::reportLayoutWhiteInfo()
     // int32_t dbu = PlacerDBInst.get_layout()->get_database_unit();
 
     std::ofstream file_stream;
-    file_stream.open(PlacerDBInst.get_placer_config()->get_pl_dir() + "/pl/WhiteSites.txt");
+    file_stream.open(this->obtainTargetDir() + "/pl/WhiteSites.txt");
     if (!file_stream.good()) {
       LOG_WARNING << "Cannot open file for white sites !";
     }
@@ -677,7 +677,7 @@ void PLAPI::savePinListInfoForDebug(std::string path)
 
 void PLAPI::reportWLInfo(std::ofstream& feed)
 {
-  std::string output_dir = PlacerDBInst.get_placer_config()->get_pl_dir() + "/pl/report/";
+  std::string output_dir = this->obtainTargetDir() + "/pl/report/";
   std::string wl_detail_file = "wl_detail_report.txt";
   std::ofstream wl_detail_stream;
   wl_detail_stream.open(output_dir + wl_detail_file);
@@ -902,7 +902,7 @@ void PLAPI::reportCongestionInfo(std::ofstream& feed)
   feed << (*report_tbl).to_string() << std::endl;
 
   //** plot congestion map which format is csv
-  // std::string plot_path = PlacerDBInst.get_placer_config()->get_pl_dir() + "/pl/report/";
+  // std::string plot_path = this->obtainTargetDir() + "/pl/report/";
   // std::string output_file_name = "CongMap";
   // iPLAPIInst.plotCongMap(plot_path, output_file_name);
 

@@ -31,6 +31,33 @@ using namespace std;
 
 namespace ito {
 
+SetupOptimizer* SetupOptimizer::_instance = nullptr;
+
+void SetupOptimizer::performBuffering(const char* net_name)
+{
+  init();
+  int begin_buffer_num = toDmInst->get_buffer_num();
+
+  Netlist* design_nl = timingEngine->get_sta_engine()->get_netlist();
+  ista::Net* net = design_nl->findNet(net_name);
+
+  LOG_ERROR_IF(!net) << "Cannot find net: " << net_name << " in design.\n";
+
+  auto driver = net->getDriver();
+  Pin* driver_pin = dynamic_cast<Pin*>(driver);
+
+  int fanout = getFanoutNumber(driver_pin);
+
+  bool buffering_success = performBufferingIfNecessary(driver_pin, fanout);
+
+  if (buffering_success) {
+    toRptInst->get_ofstream() << "Net : " << net_name << " insert " << toDmInst->get_buffer_num() - begin_buffer_num << " buffers.\n";
+  } else {
+    toRptInst->get_ofstream() << "No buffers inserted in Net: " << net_name << endl;
+  }
+  toRptInst->get_ofstream().close();
+}
+
 void SetupOptimizer::optimizeSetup()
 {
   int begin_buffer_num = toDmInst->get_buffer_num();
@@ -43,7 +70,7 @@ void SetupOptimizer::optimizeSetup()
   // step 2. find violation endpoints
   checkAndFindVioaltion(end_pts_setup_violation);
   // step 3. optimization
-  optimizeViolation(end_pts_setup_violation);
+  optimizeViolationProcess(end_pts_setup_violation);
   // step 4. report
   report(begin_buffer_num, begin_resize_num);
 }

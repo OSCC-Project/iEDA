@@ -48,6 +48,7 @@ class CongBin
   double get_h_margin() const { return _h_margin; }
   double get_v_margin() const { return _v_margin; }
   bool isContinuousWhiteSpace() const {return _continuous_white_space;}
+  bool isMacroChannel() const {return _macro_channel;}
 
   int get_average_wire_width() const { return _average_wire_width; }
   int get_horizontal_capacity() const { return _horizontal_capacity; }
@@ -64,7 +65,8 @@ class CongBin
   void set_v_net_cong(const double& bbox_cong) { _v_net_cong = bbox_cong; }
   void set_h_margin(const double& h_margin) { _h_margin = h_margin; }
   void set_v_margin(const double& v_margin) { _v_margin = v_margin; }
-  void set_ContinousWhiteSpace(bool continuous_white_space) { _continuous_white_space = continuous_white_space;}
+  void set_continuous_white_space(bool continuous_white_space) { _continuous_white_space = continuous_white_space;}
+  void set_macro_channel(bool channel) { _macro_channel = channel; }
 
 
   void set_average_wire_width(const int& average_wire_width) { _average_wire_width = average_wire_width; }
@@ -94,7 +96,8 @@ class CongBin
   double _v_net_cong;
   double _h_margin;
   double _v_margin;
-  bool _continuous_white_space;
+  bool _continuous_white_space = false;
+  bool _macro_channel = false;
 
   int _average_wire_width;
   int _horizontal_capacity;
@@ -114,6 +117,7 @@ inline void CongBin::reset()
   _h_margin = 0.0;
   _v_margin = 0.0;
   _continuous_white_space = false;
+  _macro_channel = false;
 }
 
 class CongGrid
@@ -146,6 +150,8 @@ class CongGrid
   const std::vector<CongBin*>& get_bin_list() const { return _bin_list; }
   int get_track_num_h() const { return _track_num_h; }
   int get_track_num_v() const { return _track_num_v; }
+  int32_t get_row_height() const {return _row_height; }
+  
 
   // setter
   void set_lx(const int& lx) { _lx = lx; }
@@ -161,6 +167,7 @@ class CongGrid
   void set_bin_size_y(const int& binSizeY) { _bin_size_y = binSizeY; }
   void set_binSize(const int& binSizeX, const int& binSizeY) { _bin_size_x = binSizeX, _bin_size_y = binSizeY; }
   void set_routing_layers_number(const int& routing_layers_number) { _routing_layers_number = routing_layers_number; }
+  void set_row_height(int32_t row_height) {_row_height = row_height;}
 
   void initBins();
   void initBins(idb::IdbLayers* idb_layer);
@@ -186,6 +193,7 @@ class CongGrid
   std::vector<CongBin*> _bin_list;
   int32_t _track_num_h = 0;
   int32_t _track_num_v = 0;
+  int32_t _row_height = 0;
 };
 
 }  // namespace eval

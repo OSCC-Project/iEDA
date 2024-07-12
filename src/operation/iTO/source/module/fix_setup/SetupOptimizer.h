@@ -22,24 +22,37 @@
 #include <vector>
 
 #include "BufferedOption.h"
-#include "RoutingTree.h"
 #include "define.h"
+#include "tree_build/TreeBuild.h"
 
 namespace ito {
 using ito::approximatelyLess;
 using ito::approximatelyLessEqual;
 using ito::BufferedOptionSeq;
+
+#define toOptSetup SetupOptimizer::getInstance()
+
 class SetupOptimizer
 {
  public:
-  SetupOptimizer() {}
-  ~SetupOptimizer() {}
+  static SetupOptimizer* getInstance()
+  {
+    if (nullptr == _instance) {
+      _instance = new SetupOptimizer();
+    }
+    return _instance;
+  }
 
   // open functions
   void optimizeSetup();
 
+  void performBuffering(const char* net_name);
+
  private:
+  static SetupOptimizer* _instance;
   TOLibertyCellSeq _available_lib_cell_sizes;
+
+  bool _has_estimate_all_net = false;
 
   /// init
   void init();
@@ -50,13 +63,12 @@ class SetupOptimizer
   void findEndpointsWithSetupViolation(TOVertexSet end_points, TOVertexSeq &setup_violations);
 
   /// process
-  void optimizeViolation(TOVertexSeq& end_pts_setup_violation);
-  void optimizeSetup(StaVertex *vertex, bool perform_gs, bool perform_buf);
+  void optimizeViolationProcess(TOVertexSeq& end_pts_setup_violation);
+  void optimizeSetupViolation(StaVertex *vertex, bool perform_gs, bool perform_buf); // main optimzation function
   int getFanoutNumber(Pin* pin);
   bool netConnectToOutputPort(Net* net);
   bool netConnectToPort(Net* net);
   void incrUpdateRCAndTiming();
-  // std::optional<TOSlack> getNodeWorstSlack(StaVertex* node);
   bool checkSlackDecrease(TOSlack& current_slack, TOSlack& last_slack, int& number_of_decreasing_slack_iter);
 
   // gate sizing function
@@ -65,22 +77,21 @@ class SetupOptimizer
 
   // heuristic buffer insertion function
   bool performSplitBufferingIfNecessary(StaVertex *driver_vertex, int fanout);
-  void insertBufferSeparateLoads(StaVertex *driver_vertex);
+  void insertBufferDivideFanout(StaVertex *driver_vertex);
 
-  // VG style buffer insertion function
-  bool              performBufferingIfNecessary(Pin *driver_pin, int fanout);
-  void              performVGBuffering(Pin *pin, int &num_insert_buf);
-  BufferedOptionSeq findBufferSolution(RoutingTree *tree, int curr_id, int prev_id);
-  BufferedOptionSeq mergeBranch(BufferedOptionSeq buf_opt_left,
-                                BufferedOptionSeq buf_opt_right, Point curr_loc);
-  BufferedOptionSeq addWire(BufferedOptionSeq buf_opt_seq, Point curr_loc,
-                            Point prev_loc);
-  BufferedOptionSeq addBuffer(BufferedOptionSeq buf_opt_seq, Point prev_loc);
-  void              implementVGSolution(BufferedOption *buf_opt, Net *net);
+  // buffer insertion function
+  bool performBufferingIfNecessary(Pin* driver_pin, int fanout);
+  // for VG style buffer insertion
+  void performVGBuffering(Pin* pin, int& num_insert_buf);
+  void implementVGSolution(BufferedOption* buf_opt, Net* net);
 
   /// report
   void report(int begin_buffer_num, int begin_resize_num);
   void reportWNSAndTNS();
+
+  /// constuctor
+  SetupOptimizer() {}
+  ~SetupOptimizer() {}
 };
 
 }  // namespace ito

@@ -28,6 +28,8 @@ bool staInit(const std::string& output);
 bool staReport(const std::string& output);
 bool setDesignWorkSpace(const std::string& design_workspace);
 
+bool initLog(std::string log_path);
+
 bool read_lef_def(std::vector<std::string>& lef_files, const std::string& def_file);
 bool readVerilog(const std::string& file_name);
 

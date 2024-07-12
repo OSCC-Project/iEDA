@@ -1,17 +1,20 @@
 [package]
 name = "iir"
-version = "0.1.0"
+version = "0.1.3"
 edition = "2021"
-exclude = ["build"]
 rust-version = "1.70"
 authors = ["taosimin <taosm@pcl.ac.cn>"]
+include = ["**/*.rs", "*.toml", "LICENSE", "README.md"]
+
+description = "iEDA IR Drop analysis tool"
+license-file = "LICENSE"
 
 [build-dependencies]
 cbindgen = "0.26"
 
 [lib]
 name = "iir"
-crate-type = ["staticlib"]
+#crate-type = ["staticlib"]
 #crate-type = ["cdylib"]
 
 [build]

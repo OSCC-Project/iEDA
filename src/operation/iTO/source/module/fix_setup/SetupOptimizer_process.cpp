@@ -29,7 +29,12 @@ using namespace std;
 
 namespace ito {
 
-void SetupOptimizer::optimizeViolation(TOVertexSeq& end_pts_setup_violation)
+/**
+ * @brief optimize the setup violation, including optimization process and report.
+ * 
+ * @param end_pts_setup_violation 
+ */
+void SetupOptimizer::optimizeViolationProcess(TOVertexSeq& end_pts_setup_violation)
 {
   StaSeqPathData* worst_path = worstRequiredPath();
   TOSlack worst_slack = worst_path->getSlackNs();
@@ -41,18 +46,18 @@ void SetupOptimizer::optimizeViolation(TOVertexSeq& end_pts_setup_violation)
 
   int number_of_decreasing_slack_iter = 0;
   int iter = 0;
-
+  int max_iter = max((int) (end_pts_setup_violation.size() * toConfig->get_optimize_endpoints_percent()), 10);
   for (auto node : end_pts_setup_violation) {
     iter++;
     cout << ">>>>>>>>>>>>>>>>>>>>>>>> optimize the " << iter << "-th endpoints, max optimized number is "
-         << (int) (end_pts_setup_violation.size() * toConfig->get_optimize_endpoints_percent()) << "." << endl;
-    if (iter > (int) (end_pts_setup_violation.size() * toConfig->get_optimize_endpoints_percent())) {
+         << max_iter << "." << endl;
+    if (iter > max_iter) {
       break;
     }
 
     TOSlack prev_worst_slack = -kInf;
     while (worst_slack < toConfig->get_setup_target_slack()) {
-      optimizeSetup(node, true, false);
+      optimizeSetupViolation(node, true, false);
 
       incrUpdateRCAndTiming();
 
@@ -113,7 +118,15 @@ bool SetupOptimizer::checkSlackDecrease(TOSlack& current_slack, TOSlack& last_sl
   return false;
 }
 
-void SetupOptimizer::optimizeSetup(StaVertex *vertex, bool perform_gs, bool perform_buf) {
+/**
+ * @brief net-based optimization. 
+ * TODO: vertex can induce timing path, thus perform path-based optimization
+ * 
+ * @param vertex violation endpoint
+ * @param perform_gs whether perform gate sizing
+ * @param perform_buf whether perform buffer insertion
+ */
+void SetupOptimizer::optimizeSetupViolation(StaVertex *vertex, bool perform_gs, bool perform_buf) {
   auto shouldGateSize = [&](vector<TimingEngine::PathNet> init,
                             TimingEngine::PathNet path_net, int &idx) {
     vector<TimingEngine::PathNet>::iterator itr =
@@ -187,35 +200,6 @@ void SetupOptimizer::optimizeSetup(StaVertex *vertex, bool perform_gs, bool perf
       break;
     }
   }
-}
-
-int SetupOptimizer::getFanoutNumber(Pin* pin)
-{
-  auto* net = pin->get_net();
-  return net->getFanouts();
-}
-
-bool SetupOptimizer::netConnectToOutputPort(Net* net)
-{
-  DesignObject* pin;
-  FOREACH_NET_PIN(net, pin)
-  {
-    if (pin->isOutput()) {
-      return true;
-    }
-  }
-  return false;
-}
-
-bool SetupOptimizer::netConnectToPort(Net* net)
-{
-  auto load_pin_ports = net->getLoads();
-  for (auto pin_port : load_pin_ports) {
-    if (pin_port->isPort()) {
-      return true;
-    }
-  }
-  return false;
 }
 
 }  // namespace ito

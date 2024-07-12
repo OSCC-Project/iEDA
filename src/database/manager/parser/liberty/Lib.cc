@@ -236,7 +236,8 @@ double LibTable::findValue(double slew, double constrain_slew_or_load)
 
     auto result = BilinearInterpolation(q11, q12, q21, q22, x1, x2, y1, y2, val1, val2);
 
-    // LOG_ERROR_IF_EVERY_N(result < 0.0, 100) << "table " << get_file_name() << " " << get_line_no() << " "
+    // LOG_ERROR_IF_EVERY_N(result < 0.0, 100) << "table " << get_file_name() <<
+    // " " << get_line_no() << " "
     //                                         << "delay value less zero.";
     return result;
   }
@@ -1546,22 +1547,16 @@ LibCurrentTemplate::LibCurrentTemplate(const char* template_name) : LibLutTableT
  * @param file_name
  * @return std::unique_ptr<LibLibrary>
  */
-std::unique_ptr<LibLibrary> Lib::loadLibertyWithRustParser(const char* file_name)
+RustLibertyReader Lib::loadLibertyWithRustParser(const char* file_name)
 {
+  // LOG_INFO << "Load lib " << file_name << " start.";
+
   RustLibertyReader lib_rust_reader(file_name);
-
   unsigned is_success = lib_rust_reader.readLib();
+  LOG_FATAL_IF(!is_success) << "read lib " << file_name << " failed.";
 
-  if (is_success) {
-    auto lib = lib_rust_reader.get_library_builder()->takeLib();
-
-    auto* lib_builder = lib_rust_reader.get_library_builder();
-    delete lib_builder;
-
-    return lib;
-  }
-
-  return nullptr;
+  // LOG_INFO << "Load lib " << file_name << " finish.";
+  return lib_rust_reader;
 }
 
 }  // namespace ista

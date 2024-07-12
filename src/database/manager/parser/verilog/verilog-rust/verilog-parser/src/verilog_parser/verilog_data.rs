@@ -384,12 +384,6 @@ impl VerilogVirtualBaseNetExpr for VerilogConstantExpr {
     }
 }
 
-// pub enum NetExprType {
-//     VerilogNetIDExpr,
-//     VerilogNetConcatExpr,
-//     VerilogConstantExpr
-// }
-
 /// The port connection such as .port_id(net_id).
 #[derive(Debug)]
 #[derive(Clone)]
@@ -460,7 +454,7 @@ impl Clone for Box<dyn VerilogVirtualBaseStmt> {
     }
 }
 
-/// The base class for verilog stmt,include module dcl, module instance, module assign.
+/// The base class for verilog stmt,include module dcl,module dcls,module instance, module assign.
 /// maybe dont need the base class***************************************
 #[derive(Debug)]
 #[derive(Clone)]

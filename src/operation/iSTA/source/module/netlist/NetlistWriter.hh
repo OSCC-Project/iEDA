@@ -53,6 +53,7 @@ class NetlistWriter {
   void writePorts();
   void writePortDcls();
   void writeWire();
+  void writeAssign();
   void writeInstances();
   void writeInstance(Instance *inst);
   // void writeInstPin(Instance *inst, Port *port, bool &first_port);

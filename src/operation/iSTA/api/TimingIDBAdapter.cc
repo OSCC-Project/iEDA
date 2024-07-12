@@ -689,11 +689,26 @@ void TimingIDBAdapter::deleteNet(Net* sta_net) {
 }
 
 /**
+ * @brief config sta the need link cell to speed up load liberty.
+ *
+ */
+void TimingIDBAdapter::configStaLinkCells() {
+  std::set<std::string> link_cells;
+  auto db_inst_list = _idb_design->get_instance_list()->get_instance_list();
+  for (auto* db_inst : db_inst_list) {
+    std::string liberty_cell_name = db_inst->get_cell_master()->get_name();
+    link_cells.insert(std::move(liberty_cell_name));
+  }
+
+  _ista->addLinkCells(std::move(link_cells));
+}
+
+/**
  * @brief convert the idb to timing netlist.
  *
  * @return unsigned
  */
-unsigned TimingIDBAdapter::convertDBToTimingNetlist() {
+unsigned TimingIDBAdapter::convertDBToTimingNetlist(bool link_all_cell) {
   // reset all net to rc net
   _ista->resetAllRcNet();
 
@@ -704,6 +719,13 @@ unsigned TimingIDBAdapter::convertDBToTimingNetlist() {
   if (!def_service) {
     return 0;
   }
+
+  // link liberty lazy to build netlist.
+  if (!link_all_cell) {
+    configStaLinkCells();
+  }
+  
+  _ista->linkLibertys();
 
   _ista->set_design_name(_idb_design->get_design_name().c_str());
   int dbu = _idb_design->get_units()->get_micron_dbu();

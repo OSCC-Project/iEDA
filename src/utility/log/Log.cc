@@ -53,24 +53,21 @@ void SignalHandle(const char* data, int size)
  *
  * @param argv The gflag config from main function.
  */
-void Log::init(char* argv[])
+void Log::init(char* argv[], std::string log_dir)
 {
   /*init google logging.*/
   google::InitGoogleLogging(argv[0]);
 
-  /*config the log path.*/
-  string home = "/var/tmp/";
-
-  string info_log = home + "info_";
+  string info_log = log_dir + "info_";
   google::SetLogDestination(google::INFO, info_log.c_str());
 
-  string warning_log = home + "warning_";
+  string warning_log = log_dir + "warning_";
   google::SetLogDestination(google::WARNING, warning_log.c_str());
 
-  string error_log = home + "error_";
+  string error_log = log_dir + "error_";
   google::SetLogDestination(google::ERROR, error_log.c_str());
 
-  string fatal_log = home + "fatal_";
+  string fatal_log = log_dir + "fatal_";
   google::SetLogDestination(google::FATAL, fatal_log.c_str());
 
   FLAGS_alsologtostderr = 1;

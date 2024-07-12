@@ -16,10 +16,13 @@
 // ***************************************************************************************
 #include "JsonParser.h"
 
+#include "idm.h"
+
 namespace ito {
 bool JsonParser::parse()
 {
   std::ifstream reader(_json_file);
+  cout << "[ToConfig Info] begin config, path = " << _json_file << endl;
   if (!reader) {
     std::cout << "[JsonParser Error] Failed to read json file '" << _json_file << "'!" << std::endl;
     return false;
@@ -47,7 +50,8 @@ void JsonParser::jsonToConfig(Json* json)
   }
   toConfig->set_lef_files(paths);
   toConfig->set_def_file(file_path.at("def_file").get<string>());
-  toConfig->set_design_work_space(file_path.at("design_work_space").get<string>());
+  //   toConfig->set_design_work_space(file_path.at("design_work_space").get<string>());
+  toConfig->set_design_work_space(dmInst->get_config().get_output_path() + "./to");
   toConfig->set_sdc_file(file_path.at("sdc_file").get<string>());
   paths.clear();
 
@@ -57,10 +61,11 @@ void JsonParser::jsonToConfig(Json* json)
   }
   toConfig->set_lib_files(paths);
   paths.clear();
-  toConfig->set_output_def_file(file_path.at("output_def").get<string>());
-  toConfig->set_report_file(file_path.at("report_file").get<string>());
-  toConfig->set_gds_file(file_path.at("gds_file").get<string>());
+  toConfig->set_output_def_file(dmInst->get_config().get_output_path() + "./to/ito_result.def");
+  toConfig->set_report_file(dmInst->get_config().get_output_path() + "./to/report.txt");
+  toConfig->set_gds_file(dmInst->get_config().get_output_path() + "./to/to.gds");
 
+  toConfig->set_routing_tree(json->at("routing_tree").get<string>());
   toConfig->set_setup_target_slack(json->at("setup_target_slack").get<float>());
   toConfig->set_hold_target_slack(json->at("hold_target_slack").get<float>());
   toConfig->set_max_insert_instance_percent(json->at("max_insert_instance_percent").get<float>());
@@ -77,7 +82,7 @@ void JsonParser::jsonToConfig(Json* json)
   }
   toConfig->set_drv_insert_buffers(buffers);
   if (toConfig->get_drv_insert_buffers().empty()) {
-    cout << "[ToConfig Info] DRV_insert_buffers is Null" << endl;
+    cout << "[ToConfig Info] DRV insert buffers is Null" << endl;
   }
   buffers.clear();
 
@@ -87,7 +92,7 @@ void JsonParser::jsonToConfig(Json* json)
   }
   toConfig->set_setup_insert_buffers(buffers);
   if (toConfig->get_setup_insert_buffers().empty()) {
-    cout << "[ToConfig Info] setup_insert_buffers is Null" << endl;
+    cout << "[ToConfig Info] setup insert buffers is Null" << endl;
   }
   buffers.clear();
 
@@ -97,7 +102,7 @@ void JsonParser::jsonToConfig(Json* json)
   }
   toConfig->set_hold_insert_buffers(buffers);
   if (toConfig->get_hold_insert_buffers().empty()) {
-    cout << "[ToConfig Info] hold_insert_buffers is Null" << endl;
+    cout << "[ToConfig Info] hold insert buffers is Null" << endl;
   }
   buffers.clear();
 
@@ -106,7 +111,35 @@ void JsonParser::jsonToConfig(Json* json)
   toConfig->set_min_divide_fanout(json->at("min_divide_fanout").get<int>());
   toConfig->set_optimize_endpoints_percent(json->at("optimize_endpoints_percent").get<float>());
 
-  cout << "[ToConfig Info] hold_target_slack:\n\t\t" << toConfig->get_hold_target_slack() << endl;
+  // Set specific names prefixes
+  auto specific_prefix = json->at("specific_prefix");
+
+  toConfig->set_drv_buffer_prefix(specific_prefix.at("drv").at("make_buffer").get<string>());
+  toConfig->set_drv_net_prefix(specific_prefix.at("drv").at("make_net").get<string>());
+
+  toConfig->set_hold_buffer_prefix(specific_prefix.at("hold").at("make_buffer").get<string>());
+  toConfig->set_hold_net_prefix(specific_prefix.at("hold").at("make_net").get<string>());
+
+  toConfig->set_setup_buffer_prefix(specific_prefix.at("setup").at("make_buffer").get<string>());
+  toConfig->set_setup_net_prefix(specific_prefix.at("setup").at("make_net").get<string>());
+
+  cout << "[ToConfig Info] output report file path = " << toConfig->get_report_file() << endl;
+  cout << "[ToConfig Info] output gds file path = " << toConfig->get_gds_file() << endl;
+  cout << "[ToConfig Info] hold target slack = " << toConfig->get_hold_target_slack() << endl;
+  cout << "[ToConfig Info] setup target slack = " << toConfig->get_setup_target_slack() << endl;
+  auto outStrings = [&](std::vector<std::string> names) {
+    for (auto name : names) {
+      cout << name << ", ";
+    }
+    cout << endl;
+  };
+  cout << "[ToConfig Info] routing tree = " << json->at("routing_tree").get<string>() << endl;
+  cout << "[ToConfig Info] DRV insert buffer = ";
+  outStrings(toConfig->get_drv_insert_buffers());
+  cout << "[ToConfig Info] hold insert buffer = ";
+  outStrings(toConfig->get_hold_insert_buffers());
+  cout << "[ToConfig Info] setup insert buffer = ";
+  outStrings(toConfig->get_setup_insert_buffers());
 }
 
 }  // namespace ito

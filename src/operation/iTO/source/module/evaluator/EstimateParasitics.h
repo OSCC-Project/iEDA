@@ -22,8 +22,8 @@
 #include <unordered_set>
 #include <vector>
 
-#include "RoutingTree.h"
 #include "Utility.h"
+#include "tree_build/TreeBuild.h"
 
 namespace ito {
 using ito::dbuToMeters;
@@ -52,8 +52,8 @@ class EstimateParasitics
   EstimateParasitics();
   ~EstimateParasitics() = default;
 
-  void RctNodeConnectPins(int index1, RctNode* node1, int index2, RctNode* node2, Net* net, RoutingTree* tree);
-  void updateParastic(Net* curr_net, int index1, int index2, int length_per_wire, RoutingTree* tree);
+  void RctNodeConnectPins(int index1, RctNode* node1, int index2, RctNode* node2, Net* net, TreeBuild* tree);
+  void updateParastic(Net* curr_net, int index1, int index2, int length_per_wire, TreeBuild* tree);
 };
 
 }  // namespace ito
