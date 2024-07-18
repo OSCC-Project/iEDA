@@ -14,6 +14,14 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
+/**
+ * @file GridManager.hh
+ * @author Xinhao li
+ * @brief
+ * @version 0.1
+ * @date 2024-07-15
+ */
+
 #pragma once
 
 #include <map>
@@ -22,38 +30,53 @@
 
 namespace ipnp {
 
-// 3D Template block
+enum class StripeDirection
+{
+  horizontal,
+  vertical
+};
+
+enum class GridRegionShape
+{
+  rectangle,
+  irregular  // caused by macro block
+};
+
+/**
+ * @brief 3D Template block
+ */
 class PDNGridTemplate
 {
  public:
   PDNGridTemplate();
   ~PDNGridTemplate() = default;
 
-  struct GridPerLayer
+  struct SingleLayerGrid
   {
-    std::string direction = "horizontal";  // horizontal, vertical
+    StripeDirection direction = StripeDirection::horizontal;
     double offset = 1.0;
     double width = 5.0;
     double space = 5.0;
   };
 
  private:
-  std::vector<int> _layers_occupied;           // e.g. {1,2,6,7,8,9}
-  std::map<int, GridPerLayer> _layer_to_grid;  // 2D network per layer
+  std::vector<int> _layers_occupied;  // e.g. {1,2,6,7,8,9}
+  std::map<int, SingleLayerGrid> _grid_per_layer;
 };
 
-// Base class
+/**
+ * @brief Bass class. Have derived class representing regions of different shapes.
+ */
 class PDNGridRegion
 {
  public:
-  // TODO: Constructor function; get function...
   PDNGridRegion();
   ~PDNGridRegion() = default;
 
+  GridRegionShape get_shape() { return _shape; }
+
  private:
-  std::string _type;  // e.g. rectangle, irregular(coverd by Macro)
-  // std::vector<int> _region_position;  // e.g. {0,0}, {0,1}...{1,0}, {1,1}
-  //                                     // If GridManager contains GridRegion position information, this member variable can be omitted.
+  GridRegionShape _shape;
 };
 
 class PDNRectanGridRegion : public PDNGridRegion
@@ -69,6 +92,9 @@ class PDNRectanGridRegion : public PDNGridRegion
   void set_width(double width) { _width = width; }
 
  private:
+  double _height;
+  double _width;
+
   /**
    *don't need position information, which is included in GridManager.
    */
@@ -76,16 +102,7 @@ class PDNRectanGridRegion : public PDNGridRegion
   // double y_left_bottom;
   // double x_right_top;
   // double y_right_top;
-  double _height;
-  double _width;
 };
-
-// class GridNetwork{
-//  private:
-//   int ho_region_num, ver_region_num;
-//   std::vector<std::vector<PDNGridRegion>> _grid_data; //which GridRegion is on position[][].
-//   std::vector<std::vector<int>> _template_data; //which GridTemplate is on position[][]. Just need the template number.
-// };
 
 class GridManager
 {
@@ -97,10 +114,9 @@ class GridManager
   int get_ver_region_num() { return _ver_region_num; }
   double get_chip_width() { return _chip_width; }
   double get_chip_height() { return _chip_height; }
-  // std::vector<std::vector<PDNGridRegion>> get_grid_data() { return _grid_data; }
-  auto& get_grid_data() { return _grid_data; }
-  std::vector<std::vector<int>> get_template_data() { return _template_data; }
-  std::vector<PDNGridTemplate> get_template_libs() { return _template_libs; }
+  auto get_grid_data() { return _grid_data; }
+  auto get_template_data() { return _template_data; }
+  auto get_template_libs() { return _template_libs; }
 
   void set_ho_region_num(int ho_region_num) { _ho_region_num = ho_region_num; }
   void set_ver_region_num(int ver_region_num) { _ver_region_num = ver_region_num; }
@@ -115,10 +131,11 @@ class GridManager
   int _ver_region_num;
   double _chip_width;
   double _chip_height;
-  // std::vector<std::vector<PDNGridRegion>> _grid_data;  // which GridRegion is on position[][].
-  std::vector<std::vector<PDNRectanGridRegion>> _grid_data;  // which GridRegion is on position[][].
-  std::vector<std::vector<int>> _template_data;              // which GridTemplate is on position[][].
-  std::vector<PDNGridTemplate> _template_libs;               // Starting from 1
+
+  std::vector<std::pair<std::string, std::string>> _power_nets;  // only VDD VSS / VDD GND
+  std::vector<std::vector<PDNRectanGridRegion>> _grid_data;      // which GridRegion is on position[][].
+  std::vector<std::vector<int>> _template_data;                  // which GridTemplate is on position[][].
+  std::vector<PDNGridTemplate> _template_libs;                   // Starting from 1
 };
 
 }  // namespace ipnp

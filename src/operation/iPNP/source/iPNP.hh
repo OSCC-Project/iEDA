@@ -14,6 +14,14 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
+/**
+ * @file iPNP.hh
+ * @author Xinhao li
+ * @brief Top level file of iPNP module.
+ * @version 0.1
+ * @date 2024-07-15
+ */
+
 #pragma once
 
 #include <iostream>
@@ -52,27 +60,27 @@ class PNPConfig;
 class iPNP
 {
  public:
-  iPNP() = delete;
+  iPNP() = default;
   iPNP(const std::string& config_file);
-  // iPNP(const std::string &config_file, idb::idbBuilder def_file); //TODO
-  ~iPNP();
+  ~iPNP() = default;
 
   PNPConfig* get_config() { return _pnp_config; }
+  GridManager get_input_network() { return _input_network; }
+  GridManager get_initialized_network() { return _initialized_network; }
   GridManager get_current_opt_network() { return _current_opt_network; }
-  idb::IdbSpecialNet* get_final_def() { return _final_def; }
 
-  void initSynthesize();     // Generate initial solution. Based on fastplacer.
-  void optimize();           // including calling Evaluator and modify PDN
-  void synthesizeNetwork();  // Generate the final PDN for future flow( CTS, routing) to use
+  void readFromIdb(std::string input_def);
+  void initSynthesize();
+  void optimize();  // including calling Evaluator and modify PDN
+  void writeToIdb();
 
   void run();  // According to the config. e.g. which Evaluator, which opt algorithm.
 
  private:
   PNPConfig* _pnp_config = nullptr;
-  idb::IdbSpecialNet* _input_netlist;
+  GridManager _input_network;
   GridManager _initialized_network;
   GridManager _current_opt_network;
-  idb::IdbSpecialNet* _final_def;
 };
 
 }  // namespace ipnp

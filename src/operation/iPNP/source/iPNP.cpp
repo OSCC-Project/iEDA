@@ -14,53 +14,57 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
+/**
+ * @file iPNP.cpp
+ * @author Xinhao li
+ * @brief
+ * @version 0.1
+ * @date 2024-07-15
+ */
+
 #include "iPNP.hh"
 
 #include "FastPlacer.hh"
 #include "NetworkSynthesis.hh"
 #include "PdnOptimizer.hh"
+#include "iPNPIdbWrapper.hh"
 
 namespace ipnp {
 
 class PndOptimizer;
 
-iPNP::iPNP()
-{
-}
-
 iPNP::iPNP(const std::string& config_file)
 {
-  // TODO: add config
-  // need json module
-
-  /*
-  _pnp_config = new PNPConfig;
-  JsonParser *json = JsonParser::get_json_parser();
-  json->parse(config_file, _pnp_config);
-  */
+  /**
+   * @todo add config
+   * @brief need json module
+   */
+  // _pnp_config = new PNPConfig;
+  // JsonParser* json = JsonParser::get_json_parser();
+  // json->parse(config_file, _pnp_config);
 }
 
-iPNP::~iPNP()
-{
-}
-
+/**
+ * @brief Generate initial solution. Decide which region to place, and place templates on regions randomly.
+ * @attention Version_1.0 only consider rectangular grid region.
+ */
 void iPNP::initSynthesize()
 {
-  // TODO: using fastplacer and decide which region to place, and place templates on regions randomly
-  /*
-  FastPlacer fast_placer;
-  fast_placer.fastPlace(_input_netlist);
-  idb::IdbLayer* fast_place_result = fast_placer.getPlaceResult();
-  */
+  /**
+   * @todo add template_lib infomation to _input_network
+   */
 
-  // version1.0: needn't consider regions with irregular shapes (determined by fastplacer)
-  GridManager empty_grid;
-  //TODO: empty_grid should include template_lib infomation.
-  NetworkSynthesis network_synthesizer("default", empty_grid);
+  NetworkSynthesis network_synthesizer(SysnType::Default, _input_network);
   network_synthesizer.synthesizeNetwork();
   _initialized_network = network_synthesizer.get_network();
 
-  // TODO: should include NetworkSynthesis::writeDef() because DEF will be used by evaluator
+  /**
+   * @todo version_2.0: Add result of fastplacer
+   * @brief consider regions with irregular shapes
+   */
+  // FastPlacer fast_placer;
+  // fast_placer.fastPlace(_input_netlist);
+  // idb::IdbLayer* fast_place_result = fast_placer.getPlaceResult();
 }
 
 void iPNP::optimize()
@@ -70,20 +74,25 @@ void iPNP::optimize()
   _current_opt_network = pdn_optimizer.get_out_put_grid();
 }
 
-void iPNP::synthesizeNetwork()
+void iPNP::readFromIdb(std::string input_def)
 {
-  NetworkSynthesis network("optimizer", _current_opt_network);
-  network.synthesizeNetwork();
-  _final_def = network.writeDef();
+  iPNPIdbWrapper ipnp_idb_wrapper;
+  ipnp_idb_wrapper.readFromIdb(input_def);
+  _input_network = ipnp_idb_wrapper.get_input_db_pdn();
+}
+
+void iPNP::writeToIdb()
+{
+  iPNPIdbWrapper ipnp_idb_wrapper;
+  ipnp_idb_wrapper.writeToIdb(_current_opt_network);
 }
 
 void iPNP::run()
 {
-  // TODO: readFromIdb();
+  readFromIdb("<input def path>");
   initSynthesize();
   optimize();
-  synthesizeNetwork();
-  //writeToIdb();
+  writeToIdb();
 }
 
 }  // namespace ipnp

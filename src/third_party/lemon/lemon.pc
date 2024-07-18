@@ -1,0 +1,10 @@
+prefix=/usr/local
+exec_prefix=/usr/local/bin
+libdir=/usr/local/lib
+includedir=/usr/local/include
+
+Name: iEDA
+Description: Library for Efficient Modeling and Optimization in Networks
+Version: 
+Libs: -L${libdir} -lemon     
+Cflags: -I${includedir}

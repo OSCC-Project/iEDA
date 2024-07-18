@@ -14,15 +14,26 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
+/**
+ * @file FastPlacer.cpp
+ * @author Xinhao li
+ * @brief
+ * @version 0.1
+ * @date 2024-07-15
+ */
+
 #include "FastPlacer.hh"
+
+#include "idm.h"
 
 namespace ipnp {
 
 void FastPlacer::fastPlace(idb::IdbSpecialNet* netlist)
 {
-  // TODO: call placer API
-
-  // TODO: Save the placement result in _place_result
+  /**
+   * @todo Call placer AP, and ave the placement result in _place_result
+   *
+   */
 }
 
 }  // namespace ipnp

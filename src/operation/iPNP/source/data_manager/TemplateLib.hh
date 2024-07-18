@@ -15,8 +15,13 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 /**
+ * @file TemplateLib.hh
+ * @author Xinhao li
  * @brief Generate template blocks. Upper interface is GenPdnTemplate.py
+ * @version 0.1
+ * @date 2024-07-15
  */
+
 #pragma once
 
 #include "GridManager.hh"
@@ -29,7 +34,20 @@ class TemplateLib
   TemplateLib() = default;
   ~TemplateLib() = default;
 
-  PDNGridTemplate gen_pdn_template(double width, double space) { /* TODO: synthesize _curr_template */ }
+  auto gen_pdn_template(double width, double space, StripeDirection direction)
+  {
+    /**
+     * @todo generate pdn template according to GenPdnTemplate.py
+     * @brief _curr_template = xxx
+     */
+  }
+
+  auto gen_template_libs()
+  {
+    /**
+     * @todo _curr_template --> _template_libs
+     */
+  }
 
  private:
   PDNGridTemplate _curr_template;

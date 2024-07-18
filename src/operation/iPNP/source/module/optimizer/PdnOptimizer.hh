@@ -14,6 +14,14 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
+/**
+ * @file PdnOptimizer.hh
+ * @author Xinhao li
+ * @brief
+ * @version 0.1
+ * @date 2024-07-15
+ */
+
 #pragma once
 
 #include <iostream>
@@ -58,19 +66,13 @@ class PdnOptMethod
 class PdnOptimizer
 {
  public:
-  PdnOptimizer();
-  ~PdnOptimizer();
-
-  void evaluate();  // The entire evaluation process, including IR and Congestion, can add EM or be replaced by ML models in the future
-
-  /**
-   * @brief The entire optimization process.
-   * @attention Including calling evaluator and modify PDN by calling algorithm module.
-   * Should include all optimization cycles of simulated annealing, not just one cycle.
-   */
-  void optimize(GridManager initial_pdn);
+  PdnOptimizer() = default;
+  ~PdnOptimizer() = default;
 
   GridManager get_out_put_grid() { return _output_pdn_grid; }
+
+  void evaluate();
+  void optimize(GridManager initial_pdn);
 
  private:
   GridManager _input_pdn_grid;

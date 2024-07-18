@@ -14,31 +14,45 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
+/**
+ * @file PdnOptimizer.cpp
+ * @author Xinhao li
+ * @brief
+ * @version 0.1
+ * @date 2024-07-15
+ */
 
 #include "PdnOptimizer.hh"
 
 #include "SimulatedAnnealing.hh"
 
 namespace ipnp {
-PdnOptimizer::PdnOptimizer()
-{
-}
 
-PdnOptimizer::~PdnOptimizer()
-{
-}
-
+/**
+ * @brief The entire evaluation process.
+ * @attention including IR and Congestion, can add EM or be replaced by ML models in the future
+ */
 void PdnOptimizer::evaluate()
 {
-  // TODO
+  /**
+   * @todo
+   */
 }
 
-void PdnOptimizer::optimize(GridManager initial_pdn){
+/**
+ * @brief The entire optimization process.
+ * @attention Including calling evaluator and modify PDN by calling algorithm module.
+ * Should include all optimization cycles of simulated annealing, not just one cycle.
+ */
+void PdnOptimizer::optimize(GridManager initial_pdn)
+{
   _input_pdn_grid = initial_pdn;
 
-  //TODO: _input_pdn_grid --> Optimize --> _output_pdn_grid
+  /**
+   * @todo _input_pdn_grid --> Optimize --> _output_pdn_grid
+   */
+
   _output_pdn_grid = _input_pdn_grid;
 }
-
 
 }  // namespace ipnp

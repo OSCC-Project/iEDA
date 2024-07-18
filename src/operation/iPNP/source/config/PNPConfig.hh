@@ -14,6 +14,14 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
+/**
+ * @file PNPConfig.hh
+ * @author Xinhao li
+ * @brief
+ * @version 0.1
+ * @date 2024-07-15
+ */
+
 #pragma once
 
 #include <iostream>
@@ -21,23 +29,23 @@
 #include <string>
 #include <vector>
 
-namespace ipnp{
+namespace ipnp {
 
-class PNPConfig{
+class PNPConfig
+{
  public:
   PNPConfig() = default;
   ~PNPConfig() = default;
-  
-  /*
-  **operate config parameter
-  */
- 
- private:
-  /*
-  **config parameter
-  */
 
+  /**
+   * @todo operate config parameter
+   */
+
+ private:
+  /**
+   * @todo
+   * @param
+   */
 };
 
-}   //namespace ipnp
-
+}  // namespace ipnp

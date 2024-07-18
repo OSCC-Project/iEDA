@@ -1,13 +1,30 @@
+// ***************************************************************************************
+// Copyright (c) 2023-2025 Peng Cheng Laboratory
+// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of Sciences
+// Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
+//
+// iEDA is licensed under Mulan PSL v2.
+// You can use this software according to the terms and conditions of the Mulan PSL v2.
+// You may obtain a copy of Mulan PSL v2 at:
+// http://license.coscl.org.cn/MulanPSL2
+//
+// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
+// EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
+// MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+//
+// See the Mulan PSL v2 for more details.
+// ***************************************************************************************
 /**
  * @file main.cpp
- * @brief The main function of iPNP. Refer to iSTA/main.cc. 
- * function: Launch the tcl console and interact with the user.
+ * @author Xinhao li
+ * @brief The main function of iPNP. function: Launch the tcl console and interact with the user. Refer to iSTA/main.cc.
  * @version 0.1
- * @date 2024-06-20
+ * @date 2024-07-15
  */
 
 #include <iostream>
 #include <string>
+
 #include "iPNP.hh"
 
 // int registerCommands() {
@@ -26,13 +43,13 @@
 //   return EXIT_SUCCESS;
 // }
 
-int main(int argc, char** argv) {
+int main(int argc, char** argv)
+{
   using namespace ipnp;
   using namespace idb;
   std::string config_file = "config file path";
   iPNP pnp_object = iPNP(config_file);
   pnp_object.run();
-  idb::IdbSpecialNet* final_def = pnp_object.get_final_def();
 
   // Log::init(argv);
 

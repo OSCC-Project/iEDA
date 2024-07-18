@@ -14,9 +14,17 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
+/**
+ * @file FastPlacer.hh
+ * @author Xinhao li
+ * @brief
+ * @version 0.1
+ * @date 2024-07-15
+ */
+
 #pragma once
 
-#include "iPNP.hh"
+#include "iPNPCommon.hh"
 
 namespace ipnp {
 class FastPlacer
@@ -27,7 +35,7 @@ class FastPlacer
 
   void fastPlace(idb::IdbSpecialNet* netlist);
 
-  idb::IdbLayer* get_place_result() { return _place_result; }  // return DEF. using iDB data structure.
+  idb::IdbLayer* get_place_result() { return _place_result; }
 
  private:
   idb::IdbLayer* _place_result = nullptr;

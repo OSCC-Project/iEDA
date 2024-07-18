@@ -1,6 +1,6 @@
 add_library(data_manager
     GridManager.cpp
-    
+    iPNPIdbWrapper.cpp
 )
 
 target_link_libraries(data_manager

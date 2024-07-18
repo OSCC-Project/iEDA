@@ -3,3 +3,8 @@ add_library(optimizer
     SimulatedAnnealing.cpp
     
 )
+
+target_link_libraries(optimizer
+    PUBLIC
+    evaluator
+)

@@ -14,23 +14,29 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
+/**
+ * @file IREval.hh
+ * @author Xinhao li
+ * @brief
+ * @version 0.1
+ * @date 2024-07-15
+ */
+
 #pragma once
 
-#include "iPNP.hh"
-
-namespace ipnp{
-class IREval{
+namespace ipnp {
+class IREval
+{
  public:
-  IREval();
-  ~IREval();
-  
-  <type> getIRMap() {return ir_map;};
-  double getIRValue() {return ir_value;}
+  IREval() = default;
+  ~IREval() = default;
+
+  double get_ir_value() { return ir_value; }
+  std::vector<std::vector<double>> get_ir_map() { return ir_map; }
 
  private:
-  <type> ir_map;
+  std::vector<std::vector<double>> ir_map;
   double ir_value;
-
 };
 
-}   //namespace ipnp
+}  // namespace ipnp

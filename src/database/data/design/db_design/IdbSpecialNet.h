@@ -154,8 +154,8 @@ class IdbSpecialNet
   IdbInstanceType _source_type;
   int32_t _weight;
 
-  IdbPins* _io_pin_list;  //Pins around the chip
-  IdbPins* _instance_pin_list;  //Pins around the Macro
+  IdbPins* _io_pin_list;        // Pins around the chip
+  IdbPins* _instance_pin_list;  // Pins around the Macro
   IdbInstanceList* _instance_list;
   IdbSpecialWireList* _wire_list;
 

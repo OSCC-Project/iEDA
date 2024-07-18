@@ -14,20 +14,33 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
+/**
+ * @file SimulatedAnnealing.cpp
+ * @author Xinhao li
+ * @brief
+ * @version 0.1
+ * @date 2024-07-15
+ */
+
+#include "SimulatedAnnealing.hh"
 
 #include "GridManager.hh"
 #include "PdnOptimizer.hh"
-#include "SimulatedAnnealing.hh"
 
+namespace ipnp {
 
-namespace ipnp{
-
-void SimulatedAnnealing::radomSearch(){
-  //TODO
+void SimulatedAnnealing::radomSearch()
+{
+  /**
+   * @todo
+   */
 }
 
-void SimulatedAnnealing::renewPdnGrid(){
-  //TODO
+void SimulatedAnnealing::renewPdnGrid()
+{
+  /**
+   * @todo
+   */
 }
 
-}   //namespace ipnp
+}  // namespace ipnp

@@ -15,9 +15,12 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 /**
- * @brief Synthesize the whole PDN consisting of 3D Template and write DEF file.
- * It doesn't include the function of deciding which template to place in which location. This is determined by the optimizer, or randomly,
- * etc.
+ * @file NetworkSynthesis.hh
+ * @author Xinhao li
+ * @brief Synthesize the whole PDN consisting of 3D Template and write DEF file. It doesn't include the function of deciding which template
+ * to place in which location. This is determined by the optimizer, or randomly, etc.
+ * @version 0.1
+ * @date 2024-07-15
  */
 
 #pragma once
@@ -25,10 +28,8 @@
 #include <fstream>
 #include <iostream>
 
-#include "idm.h"
 #include "GridManager.hh"
-#include "TemplateSynthesis.hh"
-#include "iPNP.hh"
+#include "iPNPCommon.hh"
 
 namespace idb {
 class IdbSpecialNet;
@@ -52,28 +53,29 @@ class IdbCoordinate;
 
 namespace ipnp {
 
+enum class SysnType
+{
+  Default,  // synthesize randomly
+  Optimizer,
+  Best,
+  Worst
+};
+
 class NetworkSynthesis
 {
  public:
-  NetworkSynthesis(std::string type, GridManager grid_info);  // default is Random Synthesis.
-  // NetworkSynthesis network(default, empty_grid_info);
-  // NetworkSynthesis network(optimizer, optimizer_output_info);
+  NetworkSynthesis(SysnType sysn_type, GridManager grid_info);
+  ~NetworkSynthesis() = default;
 
-  ~NetworkSynthesis();
+  GridManager get_network() { return _synthesized_network; }
 
-  void synthesizeNetwork();  // update _synthesized_network iteratively.
-
+  void synthesizeNetwork();
   void randomSys();
 
-  GridManager& get_network() { return _synthesized_network; }
-  // GridManager* getNetwork() { return &_synthesized_network; }
-
-  void writeDef();  // retrun type? using iDB segment, refer to iPDN, iRT. SpecialNet?
-
  private:
-  GridManager _input_grid_info;      // use GridManager* or GridManager?
-  GridManager _synthesized_network;  // the whole PDN consist of Templates
-  std::string _nework_sys_type;      //{default, best, worst, optimizer}
+  GridManager _input_grid_info;
+  GridManager _synthesized_network;
+  SysnType _nework_sys_type;
 };
 
 }  // namespace ipnp

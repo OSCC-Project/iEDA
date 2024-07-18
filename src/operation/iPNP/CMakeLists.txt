@@ -2,12 +2,16 @@ cmake_minimum_required(VERSION 3.0)
 project(iPNP)
 set (CMAKE_CXX_STANDARD 20)
 
-set(IPNP_PROJECT_SOURCE_DIR ${HOME_OPERATION}/iPNP)
-
 include_directories(${HOME_DATABASE}/manager)
 include_directories(${HOME_PLATFORM}/data_manager)
+
+set(IPNP_PROJECT_SOURCE_DIR ${HOME_OPERATION}/iPNP)
+
+include_directories(${IPNP_PROJECT_SOURCE_DIR}/source)
+
 include_directories(${IPNP_PROJECT_SOURCE_DIR}/api)
 include_directories(${IPNP_PROJECT_SOURCE_DIR}/source/config)
+include_directories(${IPNP_PROJECT_SOURCE_DIR}/source/include)
 include_directories(${IPNP_PROJECT_SOURCE_DIR}/source/data_manager)
 include_directories(${IPNP_PROJECT_SOURCE_DIR}/source/module/evaluator)
 include_directories(${IPNP_PROJECT_SOURCE_DIR}/source/module/optimizer)
@@ -26,4 +30,4 @@ add_subdirectory(test)
 
 add_executable(iPNP main.cpp)
 
-# target_link_libraries(iPNP optimizer synthesis idb tcl usage pthread stdc++fs IdbBuilder def_service lef_service)
+target_link_libraries(iPNP pnp)

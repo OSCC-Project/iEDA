@@ -14,6 +14,14 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
+/**
+ * @file NetworkSynthesis.cpp
+ * @author Xinhao li
+ * @brief
+ * @version 0.1
+ * @date 2024-07-15
+ */
+
 #include "NetworkSynthesis.hh"
 
 #include <cstdlib>
@@ -23,43 +31,38 @@
 #include <map>
 #include <string>
 #include <vector>
+
 #include "idm.h"
 
 namespace ipnp {
 
-NetworkSynthesis::NetworkSynthesis(std::string type, GridManager grid_info)
-    : _nework_sys_type(type), _input_grid_info(grid_info), _synthesized_network(grid_info)  // list initial
-{
-}
-
-NetworkSynthesis::~NetworkSynthesis()
+NetworkSynthesis::NetworkSynthesis(SysnType sysn_type, GridManager grid_info)
+    : _nework_sys_type(sysn_type), _input_grid_info(grid_info), _synthesized_network(grid_info)
 {
 }
 
 void NetworkSynthesis::synthesizeNetwork()
 {
-  if (_nework_sys_type == "default") {
-    randomSys();
-  }
-  if (_nework_sys_type == "optimizer") {
-    // // std::vector<std::vector<PDNGridRegion>> grid_data;
-    // std::vector<std::vector<PDNGridRegion>> input_grid_data = _input_grid_info.get_grid_data();
-    // // std::vector<std::vector<int>> template_data;
-    // std::vector<std::vector<int>> input_template_data = _input_grid_info.get_template_data();
-    // // for (int i = 0; i < _input_grid_info.getHoRegionNum(); i++) {
-    // //   for (int j = 0; j < _input_grid_info.getVerRegionNum(); j++) {
-    // //     grid_data[i][j] = input_grid_data[i][j];
-    // //     template_data[i][j] = input_template_data[i][j];
-    // //   }
-    // // }
-    _synthesized_network.set_grid_data(_input_grid_info.get_grid_data());
-    _synthesized_network.set_template_data(_input_grid_info.get_template_data());
-  }
-  if (_nework_sys_type == "best") {
-    // TODO
-  }
-  if (_nework_sys_type == "worst") {
-    // TODO
+  switch (_nework_sys_type) {
+    case SysnType::Default:
+      randomSys();
+      break;
+    case SysnType::Optimizer:
+      _synthesized_network.set_grid_data(_input_grid_info.get_grid_data());
+      _synthesized_network.set_template_data(_input_grid_info.get_template_data());
+      break;
+    case SysnType::Best:
+      /**
+       * @todo
+       */
+      break;
+    case SysnType::Worst:
+      /**
+       * @todo
+       */
+      break;
+    default:
+      break;
   }
 }
 
@@ -87,20 +90,6 @@ void NetworkSynthesis::randomSys()
 
   _synthesized_network.set_grid_data(grid_data);
   _synthesized_network.set_template_data(template_data);
-}
-
-void NetworkSynthesis::writeDef()  //IdbRegularWire*
-{
-  // TODO: _synthesized_network --> def_file
-  // Consider the situation that the region is irregular
-  
-  idb::IdbSpecialWireSegment* idb_special_wire_segment = new idb::IdbSpecialWireSegment;
-  // PSEUDO CODE: idb_special_wire_segment -> _route_width = _synthesized_network.wire_width;
-
-  //TODO: How does idm interact with idb that saves data?
-  auto* idb_builder = dmInst->get_idb_builder();
-  idb_builder->saveDef("../../../test/result/ipnp_result.def");
-
 }
 
 }  // namespace ipnp
