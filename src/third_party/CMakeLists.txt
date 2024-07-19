@@ -1,5 +1,6 @@
 add_compile_options(-w)
 add_subdirectory(libfort)
+add_subdirectory(LSAssigner4iEDA)
 add_subdirectory(fft)
 add_subdirectory(flute3)
 add_subdirectory(pybind11)
