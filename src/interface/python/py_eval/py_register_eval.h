@@ -27,7 +27,7 @@ void register_eval(py::module& m)
   // wirelength evaluation
   m.def("init_wirelength_eval", init_wirelength_eval);
   m.def("eval_total_wirelength", eval_total_wirelength, py::arg("wirelength_type"));
-  
+
   // congestion evalation
   m.def("init_cong_eval", init_cong_eval, py::arg("bin_cnt_x"), py::arg("bin_cnt_y"));
   m.def("eval_macro_density", eval_macro_density);
@@ -36,8 +36,11 @@ void register_eval(py::module& m)
   m.def("eval_macro_margin", eval_macro_margin);
   m.def("eval_continuous_white_space", eval_continuous_white_space);
   m.def("eval_macro_channel", eval_macro_channel, py::arg("die_size_ratio"));
-  m.def("eval_cell_hierarchy", eval_cell_hierarchy,py::arg("plot_path"), py::arg("level"), py::arg("forward") );
-  m.def("eval_macro_hierarchy", eval_macro_hierarchy, py::arg("plot_path"), py::arg("level"),py::arg("forward"));
+  m.def("eval_cell_hierarchy", eval_cell_hierarchy, py::arg("plot_path"), py::arg("level"), py::arg("forward"));
+  m.def("eval_macro_hierarchy", eval_macro_hierarchy, py::arg("plot_path"), py::arg("level"), py::arg("forward"));
+  m.def("eval_macro_connection", eval_macro_connection, py::arg("plot_path"), py::arg("level"), py::arg("forward"));
+  m.def("eval_macro_pin_connection", eval_macro_pin_connection, py::arg("plot_path"), py::arg("level"), py::arg("forward"));
+  m.def("eval_macro_io_pin_connection", eval_macro_io_pin_connection, py::arg("plot_path"), py::arg("level"), py::arg("forward"));
 
   m.def("eval_inst_density", eval_inst_density, py::arg("inst_status"), py::arg("eval_flip_flop"));
   m.def("eval_pin_density", eval_pin_density, py::arg("inst_status"), py::arg("level"));
@@ -69,8 +72,6 @@ void register_eval(py::module& m)
   // m.def("eval_area_util", eval_area_util, py::arg("inst_status"));
   // m.def("eval_macro_channel_util", eval_macro_channel_util, py::arg("dist_ratio"));
   // m.def("eval_macro_channel_pin_util", eval_macro_channel_pin_util, py::arg("dist_ratio"));
-
-
 }
 
 }  // namespace python_interface

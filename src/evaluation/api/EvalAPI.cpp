@@ -17,7 +17,6 @@
 
 #include "EvalAPI.hpp"
 
-#include <iostream>
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -81,11 +80,11 @@ void EvalAPI::plotFlowValue(const string& plot_path, const string& output_file_n
   if (!is_file_exists) {
     std::ofstream csv_file(csv_file_path);
     if (csv_file.is_open()) {
-        csv_file << "Step,Value\n";
-        csv_file.close();
+      csv_file << "Step,Value\n";
+      csv_file.close();
     } else {
-        std::cout << "Unable to open csv file: " << csv_file_path << std::endl;
-        return;
+      std::cout << "Unable to open csv file: " << csv_file_path << std::endl;
+      return;
     }
   }
 
@@ -97,7 +96,6 @@ void EvalAPI::plotFlowValue(const string& plot_path, const string& output_file_n
     std::cout << "Unable to open csv file: " << csv_file_path << std::endl;
   }
 }
-
 
 int64_t EvalAPI::evalTotalWL(const string& wl_type, const vector<WLNet*>& net_list)
 {
@@ -192,6 +190,20 @@ void EvalAPI::evalMacroHierarchy(const std::string& plot_path, int level, int fo
   _congestion_eval_inst->evalMacroHierarchy(plot_path, level, forward);
 }
 
+void EvalAPI::evalMacroConnection(const std::string& plot_path, int level, int forward)
+{
+  _congestion_eval_inst->evalMacroConnection(plot_path, level, forward);
+}
+
+void EvalAPI::evalMacroPinConnection(const std::string& plot_path, int level, int forward)
+{
+  _congestion_eval_inst->evalMacroPinConnection(plot_path, level, forward);
+}
+
+void EvalAPI::evalMacroIOPinConnection(const std::string& plot_path, int level, int forward)
+{
+  _congestion_eval_inst->evalMacroIOPinConnection(plot_path, level, forward);
+}
 
 void EvalAPI::evalPinDens(INSTANCE_STATUS inst_status, int level)
 {
@@ -314,7 +326,7 @@ vector<MacroVariant> EvalAPI::evalMacrosInfo()
   return _congestion_eval_inst->evalMacrosInfo();
 }
 
-void EvalAPI::plotMacroChannel(float dist_ratio,  const std::string& filename)
+void EvalAPI::plotMacroChannel(float dist_ratio, const std::string& filename)
 {
   _congestion_eval_inst->plotMacroChannel(dist_ratio, filename);
 }
@@ -333,7 +345,6 @@ void EvalAPI::evalIOPinAccess(const std::string& filename)
 {
   return _congestion_eval_inst->evalIOPinAccess(filename);
 }
-
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -446,7 +457,6 @@ void EvalAPI::initTimingDataFromIDB()
 {
   _timing_eval_inst->initTimingDataFromIDB();
 }
-
 
 void EvalAPI::initTimingEval(idb::IdbBuilder* idb_builder, const char* sta_workspace_path, vector<const char*> lib_file_path_list,
                              const char* sdc_file_path)

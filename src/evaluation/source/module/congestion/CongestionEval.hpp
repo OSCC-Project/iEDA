@@ -85,7 +85,7 @@ class CongestionEval
   double evalMacroChannelPinRatio(float dist_ratio);
 
   std::vector<MacroVariant> evalMacrosInfo();
-  void plotMacroChannel(float dist_ratio,  const std::string& filename);
+  void plotMacroChannel(float dist_ratio, const std::string& filename);
   void evalMacroMargin();
   double evalMaxContinuousSpace();
   void evalIOPinAccess(const std::string& filename);
@@ -97,6 +97,9 @@ class CongestionEval
   void evalMacroChannel(float die_size_ratio = 0.5);
   void evalCellHierarchy(const std::string& plot_path, int level = 1, int forward = 1);
   void evalMacroHierarchy(const std::string& plot_path, int level = 1, int forward = 1);
+  void evalMacroConnection(const std::string& plot_path, int level = 1, int forward = 1);
+  void evalMacroPinConnection(const std::string& plot_path, int level = 1, int forward = 1);
+  void evalMacroIOPinConnection(const std::string& plot_path, int level = 1, int forward = 1);
 
   /////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////
@@ -182,7 +185,9 @@ class CongestionEval
   std::string fixSlash(std::string raw_str);
   std::vector<std::string> splitHier(const std::string& str, char delimiter);
   std::string getHierByLevel(const std::string& hier, int level, int forward);
+  std::string getPrefix(const std::string& pin_name);
 
+  std::string instanceStatusToString(INSTANCE_STATUS inst_status);
 };
 
 }  // namespace eval
