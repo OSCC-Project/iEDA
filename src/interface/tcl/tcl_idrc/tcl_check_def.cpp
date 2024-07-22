@@ -38,6 +38,11 @@ unsigned TclDrcCheckDef::exec()
   idrc::DrcApi drc_api;
   drc_api.init();
   auto violations = drc_api.checkDef();
+
+  for (auto& [enum_type, violation_list] : violations) {
+    std::cout << idrc::GetViolationTypeName()(enum_type) << ": " << violation_list.size() << std::endl;
+  }
+
   return 1;
 }
 

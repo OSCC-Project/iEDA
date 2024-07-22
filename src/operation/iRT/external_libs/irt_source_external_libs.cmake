@@ -9,6 +9,7 @@ target_link_libraries(irt_source_external_libs
         lef_builder
         def_service
         lef_service
+        ls_assigner
 )
 
 target_include_directories(irt_source_external_libs
