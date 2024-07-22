@@ -17,6 +17,7 @@
 #include "TrackAssigner.hpp"
 
 #include "GDSPlotter.hpp"
+#include "LSAssigner4iEDA/ls_assigner/LSAssigner.h"
 #include "LayerCoord.hpp"
 #include "Monitor.hpp"
 #include "RTInterface.hpp"
@@ -190,6 +191,8 @@ void TrackAssigner::assignTAPanelMap(TAModel& ta_model)
   Monitor monitor;
   RTLOG.info(Loc::current(), "Starting...");
 
+  int32_t enable_lsa = RTDM.getConfig().enable_lsa;
+
   std::vector<std::vector<TAPanel>>& layer_panel_list = ta_model.get_layer_panel_list();
 
   size_t total_panel_num = 0;
@@ -212,7 +215,11 @@ void TrackAssigner::assignTAPanelMap(TAModel& ta_model)
         buildOrientNetMap(ta_panel);
         // debugCheckTAPanel(ta_panel);
         // debugPlotTAPanel(ta_panel, -1, "before_routing");
-        routeTAPanel(ta_panel);
+        if (!enable_lsa) {
+          routeTAPanel(ta_panel);
+        } else {
+          routeByThirdParty(ta_panel);
+        }
         // debugPlotTAPanel(ta_panel, -1, "after_routing");
         uploadNetResult(ta_panel);
         uploadViolation(ta_panel);
@@ -990,6 +997,122 @@ std::vector<TATask*> TrackAssigner::getTaskScheduleByViolation(TAPanel& ta_panel
     ta_task_list.push_back(ta_task);
   }
   return ta_task_list;
+}
+
+void TrackAssigner::routeByThirdParty(TAPanel& ta_panel)
+{
+  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
+
+  TAPanelId& ta_panel_id = ta_panel.get_ta_panel_id();
+  RoutingLayer& routing_layer = routing_layer_list[ta_panel_id.get_layer_idx()];
+  int32_t half_width = routing_layer.get_min_width() / 2;
+
+  // 构造ls_panel
+  lsa::LSPanel ls_panel;
+  {
+    ls_panel.layer_id = ta_panel_id.get_layer_idx();
+    ls_panel.panel_id = ta_panel_id.get_panel_idx();
+    ls_panel.ll_x = ta_panel.get_panel_rect().get_real_ll_x();
+    ls_panel.ll_y = ta_panel.get_panel_rect().get_real_ll_y();
+    ls_panel.ur_x = ta_panel.get_panel_rect().get_real_ur_x();
+    ls_panel.ur_y = ta_panel.get_panel_rect().get_real_ur_y();
+    ls_panel.prefer_direction = (routing_layer.isPreferH() ? "H" : "V");
+
+    // track_list
+    for (ScaleGrid& x_grid : ta_panel.get_panel_track_axis().get_x_grid_list()) {
+      lsa::LSTrack ls_track;
+      ls_track.axis = "X";
+      ls_track.start = x_grid.get_start_line();
+      ls_track.step_length = x_grid.get_step_length();
+      ls_track.end = x_grid.get_end_line();
+      ls_panel.track_list.push_back(ls_track);
+    }
+    for (ScaleGrid& y_grid : ta_panel.get_panel_track_axis().get_y_grid_list()) {
+      lsa::LSTrack ls_track;
+      ls_track.axis = "Y";
+      ls_track.start = y_grid.get_start_line();
+      ls_track.step_length = y_grid.get_step_length();
+      ls_track.end = y_grid.get_end_line();
+      ls_panel.track_list.push_back(ls_track);
+    }
+    // wire_list
+    for (TATask* ta_task : ta_panel.get_ta_task_list()) {
+      std::vector<TAGroup>& ta_group_list = ta_task->get_ta_group_list();
+      LayerCoord first_coord = ta_group_list.front().get_coord_list().front();
+      LayerCoord second_coord = ta_group_list.back().get_coord_list().front();
+      if (routing_layer.isPreferH()) {
+        first_coord.set_y(half_width);
+        second_coord.set_y(half_width);
+      } else {
+        first_coord.set_x(half_width);
+        second_coord.set_x(half_width);
+      }
+      LayerRect rect(RTUTIL.getEnlargedRect(first_coord, second_coord, half_width), ta_panel_id.get_layer_idx());
+      lsa::LSShape ls_shape;
+      ls_shape.net_id = ta_task->get_net_idx();
+      ls_shape.task_id = ta_task->get_task_idx();
+      ls_shape.ll_x = rect.get_ll_x();
+      ls_shape.ll_y = rect.get_ll_y();
+      ls_shape.ur_x = rect.get_ur_x();
+      ls_shape.ur_y = rect.get_ur_y();
+      ls_panel.wire_list.push_back(ls_shape);
+    }
+    // hard_shape_list
+    for (const auto& [net_idx, rect_set] : ta_panel.get_net_fixed_rect_map()) {
+      for (EXTLayerRect* rect : rect_set) {
+        lsa::LSShape ls_shape;
+        ls_shape.net_id = net_idx;
+        ls_shape.ll_x = rect->get_real_ll_x();
+        ls_shape.ll_y = rect->get_real_ll_y();
+        ls_shape.ur_x = rect->get_real_ur_x();
+        ls_shape.ur_y = rect->get_real_ur_y();
+        ls_panel.hard_shape_list.push_back(ls_shape);
+      }
+    }
+  }
+  // 将结果存回ls_panel
+  {
+    lsa::LSAssigner ls_assigner;
+    ls_panel = ls_assigner.getResult(ls_panel);
+  }
+  // 写回ta_panel
+  {
+    std::map<int32_t, std::vector<Segment<LayerCoord>>> task_segment_map;
+    for (lsa::LSShape& wire : ls_panel.wire_list) {
+      Segment<LayerCoord> routing_segment(LayerCoord(wire.ll_x + half_width, wire.ll_y + half_width, ls_panel.layer_id),
+                                          LayerCoord(wire.ur_x - half_width, wire.ur_y - half_width, ls_panel.layer_id));
+      if (RTUTIL.isOblique(routing_segment.get_first(), routing_segment.get_second())) {
+        RTLOG.error(Loc::current(), "The segment is oblique");
+      }
+      task_segment_map[wire.task_id].push_back(routing_segment);
+    }
+    std::vector<TATask*>& ta_task_list = ta_panel.get_ta_task_list();
+    std::sort(ta_task_list.begin(), ta_task_list.end(), [](TATask* a, TATask* b) { return a->get_task_idx() < b->get_task_idx(); });
+    for (auto& [task_idx, routing_segment_list] : task_segment_map) {
+      TATask* ta_task = ta_task_list[task_idx];
+      if (ta_task->get_task_idx() != task_idx) {
+        RTLOG.error(Loc::current(), "The task idx is not equal!");
+      }
+      std::vector<LayerCoord> candidate_root_coord_list;
+      std::map<LayerCoord, std::set<int32_t>, CmpLayerCoordByXASC> key_coord_pin_map;
+      std::vector<TAGroup>& ta_group_list = ta_task->get_ta_group_list();
+      for (size_t i = 0; i < ta_group_list.size(); i++) {
+        for (LayerCoord& coord : ta_group_list[i].get_coord_list()) {
+          candidate_root_coord_list.push_back(coord);
+          key_coord_pin_map[coord].insert(static_cast<int32_t>(i));
+        }
+      }
+      MTree<LayerCoord> coord_tree = RTUTIL.getTreeByFullFlow(candidate_root_coord_list, routing_segment_list, key_coord_pin_map);
+      for (Segment<TNode<LayerCoord>*>& coord_segment : RTUTIL.getSegListByTree(coord_tree)) {
+        ta_panel.get_net_task_result_map()[ta_task->get_net_idx()][task_idx].emplace_back(coord_segment.get_first()->value(),
+                                                                                          coord_segment.get_second()->value());
+      }
+    }
+  }
+  // 计算violation
+  {
+    updateViolationList(ta_panel);
+  }
 }
 
 void TrackAssigner::uploadNetResult(TAPanel& ta_panel)

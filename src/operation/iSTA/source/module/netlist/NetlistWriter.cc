@@ -62,6 +62,8 @@ void NetlistWriter::writeModule() {
   fprintf(_stream, "\n");
   writeWire();
   fprintf(_stream, "\n");
+  writeAssign();
+  fprintf(_stream, "\n");
   writeInstances();
   fprintf(_stream, "\n");
   fprintf(_stream, "endmodule\n");
@@ -159,6 +161,35 @@ void NetlistWriter::writeWire() {
     std::string escape_net_name = escapeName(new_net_name);
     fprintf(_stream, "wire %s ;", escape_net_name.c_str());
     fprintf(_stream, "\n");
+  }
+}
+
+/**
+ * @brief write the assign of the verilog design.
+ *
+ */
+void NetlistWriter::writeAssign() {
+  Net *net;
+  FOREACH_NET(&_netlist, net) {
+    std::string net_name = net->getFullName();
+    std::string new_net_name = Str::replace(net_name, R"(\\)", "");
+    std::string escape_net_name = escapeName(new_net_name);
+    for (const auto &pin_port : net->get_pin_ports()) {
+      // assign net = input_port;
+      if (pin_port->isPort() && pin_port->isInput() &&
+          !Str::equal(pin_port->get_name(), escape_net_name.c_str())) {
+        fprintf(_stream, "assign %s = %s ;\n", escape_net_name.c_str(),
+                pin_port->get_name());
+      }
+
+      // assign output_port = net;
+      // assign output_port = input_port;
+      if (pin_port->isPort() && pin_port->isOutput() &&
+          !Str::equal(pin_port->get_name(), escape_net_name.c_str())) {
+        fprintf(_stream, "assign %s = %s ;\n", pin_port->get_name(),
+                escape_net_name.c_str());
+      }
+    }
   }
 }
 

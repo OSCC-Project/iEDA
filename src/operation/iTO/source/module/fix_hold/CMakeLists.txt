@@ -1,3 +1,11 @@
+if(DEBUG_ITO_FIX_HOLD)
+  message(STATUS "TO: DEBUG_ITO_FIX_HOLD")
+  set(CMAKE_BUILD_TYPE "Debug")
+else()
+  message(STATUS "TO: RELEASE_ITO_FIX_HOLD")
+  set(CMAKE_BUILD_TYPE "Release")
+endif()
+
 add_library(ito_fix_hold
 HoldOptimizer.cpp
 HoldOptimizer_buffers.cpp

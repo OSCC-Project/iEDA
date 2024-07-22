@@ -34,6 +34,8 @@ class ExternalAPI
   ExternalAPI& operator=(const ExternalAPI&) = delete;
   ExternalAPI& operator=(ExternalAPI&&) = delete;
 
+  std::string obtainTargetDir();
+
   /*****************************Timing Interface: START*****************************/
   bool isSTAStarted();
   void modifySTAOutputDir(std::string path);

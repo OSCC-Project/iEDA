@@ -7,16 +7,19 @@ fn main() {
     let verilog_file_str =
         // "/home/longshuaiying/iEDA/src/database/manager/parser/verilog/verilog-rust/verilog-parser/example/example1.v";
     // "/home/taosimin/T28/ieda_1208/asic_top_1208.syn.v";
-    // "/home/longshuaiying/iEDA/scripts/design/sky130_gcd/result/verilog/cpu.netlist.v";
-    "/home/longshuaiying/iEDA/scripts/design/sky130_gcd/result/verilog/gcd.v";
+    // "/home/longshuaiying/iEDA/scripts/design/sky130_gcd/result/verilog/cpu.netlist.v"; (top_module_name:cpu)
+    // "/home/longshuaiying/iEDA/scripts/design/sky130_gcd/result/verilog/gcd.v";
+    // "/data/yexinyu/iEDA/src/operation/iSTA/source/data/s35932/s35932.v";
+    "/data/project_share/dataset_baseline/s35932/syn_netlist/s35932.v";
 
-    let top_module_name = "gcd";
+    let top_module_name = "s35932";
     let mut verilog_file = verilog_parser::parse_verilog_file(verilog_file_str);
     verilog_parser::flatten_module(&mut verilog_file, top_module_name);
+    println!("Test ok!!!");
     let top_verilog_module_option = verilog_file.get_module(top_module_name);
     let top_module = top_verilog_module_option.unwrap().borrow();
     // println!("{:#?}", top_module);
-    let inst_stmt = top_module.find_inst_stmt("dpath/b_mux/_113_", "sky130_fd_sc_hs__buf_1");
+    let inst_stmt = top_module.find_inst_stmt("_19559_", "sky130_fd_sc_hs__buf_1"); //use the function:find_inst_stmt
     if let Some(inst_stmt_value) = inst_stmt {
         println!("{:#?}", inst_stmt_value);
     }

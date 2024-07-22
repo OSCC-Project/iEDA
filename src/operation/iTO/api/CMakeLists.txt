@@ -1,3 +1,11 @@
+if(DEBUG_ITO_API)
+  message(STATUS "TO: DEBUG_ITO_API")
+  set(CMAKE_BUILD_TYPE "Debug")
+else()
+  message(STATUS "TO: RELEASE_ITO_API")
+  set(CMAKE_BUILD_TYPE "Release")
+endif()
+
 add_library(ito_api
     ToApi.cpp
 )

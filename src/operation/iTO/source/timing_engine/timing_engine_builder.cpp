@@ -79,7 +79,7 @@ void TimingEngineBuilder::initISTA()
 
   idb::IdbBuilder* idb = dmInst->get_idb_builder();
   idb_adapter->set_idb(idb);
-  idb_adapter->convertDBToTimingNetlist();
+  idb_adapter->convertDBToTimingNetlist(true);
   timing_engine->set_db_adapter(std::move(idb_adapter));
 
   const char* sdc_file = toConfig->get_sdc_file().c_str();

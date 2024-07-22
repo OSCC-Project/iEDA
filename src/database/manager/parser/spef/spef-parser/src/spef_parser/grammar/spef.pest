@@ -46,7 +46,7 @@ xy_coordinates   =  { num{2} }
 dnet_entry     = { "*D_NET" ~ (str_name | index_name) ~ cap_or_res_val }
 cap_or_res_val = { num{1} }
 
-conn_entry = { conn_type ~ pin_port ~ direction? ~ (coordinate_param ~ xy_coordinates)? ~ (load_param ~ cap_or_res_val)? ~ (drive_param ~ str_name)? }
+conn_entry = { conn_type ~ pin_port ~ direction? ~ ((coordinate_param ~ xy_coordinates) | (load_param ~ cap_or_res_val) | (drive_param ~ str_name))* }
 conn_type  = { "*P" | "*I" | "*N" | "*S" | "*C" | "*R" | "*L" }
 // !TODO, Add str_name to pin_port because it's legal too.
 // Noting that str_name may wrongly matches cap_or_res_value, which leading to wrong paring.

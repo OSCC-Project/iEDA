@@ -34,13 +34,9 @@ class SdcTest : public testing::Test {
     Log::init(argv);
 
     Sta* ista = Sta::getOrCreateSta();
-    Lib lib;
 
-    auto load_lib = lib.loadLibertyWithRustParser(
+    ista->readLiberty(
         "/home/taosimin/iEDA/src/iSTA/examples/example1_fast.lib");
-    LOG_INFO << "build lib test";
-    EXPECT_TRUE(load_lib);
-    ista->addLib(std::move(load_lib));
 
     ista->readVerilogWithRustParser(
         "/home/taosimin/iEDA/src/iSTA/examples/example1.v");

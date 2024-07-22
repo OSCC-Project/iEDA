@@ -186,7 +186,9 @@ class TimingIDBAdapter : public TimingDBAdapter {
     _sta2dbPin.erase(sta_pin);
     _db2staPin.erase(db_pin);
   }
-  unsigned convertDBToTimingNetlist() override;
+
+  void configStaLinkCells();
+  unsigned convertDBToTimingNetlist(bool link_all_cell = false) override;
 
  private:
   unsigned makeTopCell();  // to do

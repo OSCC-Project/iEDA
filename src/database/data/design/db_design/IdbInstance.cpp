@@ -182,6 +182,18 @@ IdbPin* IdbInstance::get_pin_by_term(string term_name)
   return _pin_list->find_pin_by_term(term_name);
 }
 
+int IdbInstance::get_connected_pin_number()
+{
+  int number = 0;
+  for (auto pin : _pin_list->get_pin_list()) {
+    if (pin->get_net() != nullptr) {
+      ++number;
+    }
+  }
+
+  return number;
+}
+
 IdbHalo* IdbInstance::set_halo(IdbHalo* halo)
 {
   if (halo != nullptr) {

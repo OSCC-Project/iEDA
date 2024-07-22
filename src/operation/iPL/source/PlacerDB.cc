@@ -75,7 +75,7 @@ namespace ipl {
   void PlacerDB::initPlacerDB(std::string pl_json_path, DBWrapper* db_wrapper)
   {
     _db_wrapper = db_wrapper;
-    // updatePlacerConfig(pl_json_path); // need init outside.
+    updatePlacerConfig(pl_json_path);
     // sortDataForParallel();
     initTopoManager();
     initGridManager();

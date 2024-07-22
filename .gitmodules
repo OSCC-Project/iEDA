@@ -2,3 +2,6 @@
 	url  = https://gitee.com/i-eda/mt-kahypar
 	path = src/third_party/mt-kahypar
 
+[submodule "src/third_party/LSAssigner4iEDA"]
+	path = src/third_party/LSAssigner4iEDA
+	url = https://github.com/shaowei-cai-group/LSAssigner4iEDA

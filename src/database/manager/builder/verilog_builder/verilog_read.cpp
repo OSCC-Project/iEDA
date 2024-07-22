@@ -116,6 +116,7 @@ bool RustVerilogRead::createDb(std::string file, std::string top_module_name)
 
   build_pins();
   build_nets();
+  build_assign();
   build_components();
 
   return true;
@@ -171,6 +172,7 @@ int32_t RustVerilogRead::build_pins()
       }
       idb_io_pin->set_pin_name(pin_name);
       idb_io_pin->set_term();
+      idb_io_pin->get_term()->set_name(pin_name);
       idb_io_pin->get_term()->set_direction(netlistToIdb(dcl_type));
       idb_io_pin->get_term()->set_type(IdbConnectType::kSignal);
       idb_io_pin->set_as_io();
@@ -358,6 +360,91 @@ int32_t RustVerilogRead::build_nets()
   return kVerilogSuccess;
 }
 
+/**
+ * @brief build assign.
+ *
+ * @return int32_t
+ */
+int32_t RustVerilogRead::build_assign()
+{
+  auto& top_module_stmts = _rust_top_module->module_stmts;
+  void* stmt;
+  FOREACH_VEC_ELEM(&top_module_stmts, void, stmt)
+  {
+    if (rust_is_module_assign_stmt(stmt)) {
+      RustVerilogAssign* verilog_assign = rust_convert_verilog_assign(stmt);
+      auto* left_net_expr = const_cast<void*>(verilog_assign->left_net_expr);
+      auto* right_net_expr = const_cast<void*>(verilog_assign->right_net_expr);
+      std::string left_net_name;
+      std::string right_net_name;
+      if (rust_is_id_expr(left_net_expr) && rust_is_id_expr(right_net_expr)) {
+        // get left_net_name.
+        auto* left_net_id = const_cast<void*>(rust_convert_verilog_net_id_expr(left_net_expr)->verilog_id);
+        if (rust_is_id(left_net_id)) {
+          left_net_name = rust_convert_verilog_id(left_net_id)->id;
+        } else if (rust_is_bus_index_id(left_net_id)) {
+          left_net_name = rust_convert_verilog_index_id(left_net_id)->id;
+        } else {
+          left_net_name = rust_convert_verilog_slice_id(left_net_id)->id;
+        }
+        // get right_net_name.
+        auto* right_net_id = const_cast<void*>(rust_convert_verilog_net_id_expr(right_net_expr)->verilog_id);
+        if (rust_is_id(right_net_id)) {
+          right_net_name = rust_convert_verilog_id(right_net_id)->id;
+        } else if (rust_is_bus_index_id(right_net_id)) {
+          right_net_name = rust_convert_verilog_index_id(right_net_id)->id;
+        } else {
+          right_net_name = rust_convert_verilog_slice_id(right_net_id)->id;
+        }
+      } else {
+        std::cout << "assign declaration's lhs/rhs is not VerilogNetIDExpr class." << std::endl;
+      }
+
+      // according to assign's lhs/rhs to connect port to net.
+      IdbDesign* idb_design = _def_service->get_design();
+      IdbPins* idb_io_pin_list = idb_design->get_io_pin_list();
+      IdbNetList* idb_net_list = idb_design->get_net_list();
+      auto* the_left_idb_net = idb_net_list->find_net(left_net_name);
+      auto* the_right_idb_net = idb_net_list->find_net(right_net_name);
+      if (the_left_idb_net) {
+        // assign net = input_port;
+        auto* the_right_io_pin = idb_io_pin_list->find_pin(right_net_name.c_str());
+        if (the_right_io_pin->is_io_pin()) {
+          the_left_idb_net->add_io_pin(the_right_io_pin);
+          the_right_io_pin->set_net(the_left_idb_net);
+          the_right_io_pin->set_net_name(the_left_idb_net->get_net_name());
+        }
+      } else if (the_right_idb_net) {
+        // assign output_port = net;
+        auto* the_left_io_pin = idb_io_pin_list->find_pin(left_net_name.c_str());
+        if (the_left_io_pin->is_io_pin()) {
+          the_right_idb_net->add_io_pin(the_left_io_pin);
+          the_left_io_pin->set_net(the_right_idb_net);
+          the_left_io_pin->set_net_name(the_right_idb_net->get_net_name());
+        }
+      } else {
+        // assign output_port = input_port;
+        auto* the_left_io_pin = idb_io_pin_list->find_pin(left_net_name.c_str());
+        auto* the_right_io_pin = idb_io_pin_list->find_pin(right_net_name.c_str());
+        IdbNet* idb_net = new IdbNet();
+        idb_net->set_net_name(right_net_name.c_str());
+        idb_net->set_connect_type(IdbConnectType::kSignal);
+        if (the_left_io_pin->is_io_pin()) {
+          idb_net->add_io_pin(the_left_io_pin);
+          the_left_io_pin->set_net(idb_net);
+          the_left_io_pin->set_net_name(idb_net->get_net_name());
+        }
+        if (the_right_io_pin->is_io_pin()) {
+          idb_net->add_io_pin(the_right_io_pin);
+          the_right_io_pin->set_net(idb_net);
+          the_right_io_pin->set_net_name(idb_net->get_net_name());
+        }
+        idb_net_list->add_net(idb_net);
+      }
+    }
+  }
+  return kVerilogSuccess;
+}
 /**
  * @brief build components.
  *

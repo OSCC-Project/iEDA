@@ -60,10 +60,9 @@ void ToDataManager::initData()
 
   // log report
   std::string report_path = toConfig->get_report_file();
-  cout << "Report file: " << report_path << endl;
   toRptInst->init(report_path);
   toRptInst->reportTime(true);
-  toRptInst->get_ofstream() << toConfig->get_def_file() << endl;
+  toRptInst->get_ofstream() << "Report file: " << report_path << endl << endl;
   toRptInst->get_ofstream().close();
 }
 

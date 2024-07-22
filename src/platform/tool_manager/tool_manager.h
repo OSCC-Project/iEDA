@@ -93,8 +93,10 @@ class ToolManager
   /// iTO
   bool autoRunTO(std::string config = "");
   bool RunTODrv(std::string config = "");
+  bool RunTODrvSpecialNet(std::string config = "", std::string net_name = "");
   bool RunTOHold(std::string config = "");
   bool RunTOSetup(std::string config = "");
+  bool RunTOBuffering(std::string config = "", std::string net_name = "");
 
   /// iCTS
   bool autoRunCTS(std::string config = "", std::string work_dir="");

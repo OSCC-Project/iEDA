@@ -68,9 +68,19 @@ void ToApi::optimizeDrv()
   _ito->optimizeDrv();
 }
 
+void ToApi::optimizeDrvSpecialNet(const char* net_name)
+{
+  _ito->optimizeDrvSpecialNet(net_name);
+}
+
 void ToApi::optimizeSetup()
 {
   _ito->optimizeSetup();
+}
+
+void ToApi::performBuffering(const char* net_name)
+{
+  _ito->performBuffering(net_name);
 }
 
 void ToApi::optimizeHold()

@@ -50,7 +50,7 @@ void BufferedOption::printTree(int level)
   string specificStr = "---";
 
   switch (_option_type) {
-    case BufferedOptionType::kLoad: {
+    case BufferedOptionType::kSink: {
       typeStr = "load";
       specificStr = _pin_loaded->getFullName();
       break;

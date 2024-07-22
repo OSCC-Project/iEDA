@@ -14,11 +14,11 @@ use std::time::Instant;
 #[grammar = "spef_parser/grammar/spef.pest"]
 struct SpefParser;
 
-fn measure_elapsed_time(start_time: Instant) -> u128 {
+fn measure_elapsed_time(start_time: Instant) -> f64 {
     let end_time = Instant::now();
     let elapsed_time = end_time.duration_since(start_time);
     
-    elapsed_time.as_micros()
+    elapsed_time.as_secs_f64()
 }
 
 /// process float pairs, returing a f64 or an Err.
@@ -491,7 +491,7 @@ pub fn parse_spef_file(spef_file_path: &str) -> spef_data::SpefExchange {
     }
 
     let elapsed_us = measure_elapsed_time(start_time);
-    println!("read spef file {} elapsed time: {} us", spef_file_path, elapsed_us);
+    println!("read spef file {} elapsed time: {} s", spef_file_path, elapsed_us);
 
     exchange_data
 }

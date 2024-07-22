@@ -212,7 +212,7 @@ pub extern "C" fn get_bump_node_ids(c_rc_data: *const c_void, c_net_name: *const
 
     let nodes = one_net_rc_data.get_nodes();
     let mut bump_node_ids = Box::new(Vec::new());
-    for node in nodes {
+    for node in nodes.borrow().iter() {
         if node.get_is_bump() {
             let node_name = node.get_node_name();
             let node_id = one_net_rc_data.get_node_id(&node_name).unwrap();
@@ -233,7 +233,7 @@ pub extern "C" fn get_instance_node_ids(c_rc_data: *const c_void, c_net_name: *c
 
     let nodes = one_net_rc_data.get_nodes();
     let mut instance_node_ids = Box::new(Vec::new());
-    for node in nodes {
+    for node in nodes.borrow().iter() {
         if node.get_is_inst_pin() {
             let node_name = node.get_node_name();
             let node_id = one_net_rc_data.get_node_id(&node_name).unwrap();
@@ -262,7 +262,7 @@ pub extern "C" fn build_matrix_from_raw_data(
 
     let mut net_matrix_data: Vec<RustNetEquationData> = Vec::new();
     // Secondly, construct matrix data.
-    for (net_name, one_net_data) in rc_data.get_power_nets_data() {
+    for (net_name, one_net_data) in rc_data.get_nets_data() {
         log::info!("construct power net {} matrix start", net_name);
 
         // Build rc matrix
@@ -308,7 +308,7 @@ mod tests {
 
         let rc_data = ir_rc::read_rc_data_from_spef(spef_file_path);
 
-        for (net_name, one_net_data) in rc_data.get_power_nets_data() {
+        for (net_name, one_net_data) in rc_data.get_nets_data() {
             log::info!("construct power net {} matrix start", net_name);
 
             // Build rc matrix

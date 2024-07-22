@@ -69,10 +69,7 @@ TEST_F(StaTest, simple_design) {
     std::string lib_name =
         Str::printf("%s/%s", design_work_space, "osu018_stdcells.lib");
 
-    Lib lib;
-    auto load_lib = lib.loadLibertyWithRustParser(lib_name.c_str());
-
-    ista->addLib(std::move(load_lib));
+    ista->readLiberty(lib_name.c_str());
 
     ista->set_top_module_name("simple");
     ista->readVerilogWithRustParser(

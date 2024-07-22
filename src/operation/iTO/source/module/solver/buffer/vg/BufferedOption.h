@@ -30,7 +30,7 @@ class BufferedOption;
 
 using BufferedOptionSeq = vector<BufferedOption *>;
 
-enum class BufferedOptionType { kBuffer, kBranch, kLoad, kWire };
+enum class BufferedOptionType { kBuffer, kBranch, kSink, kWire };
 
 class BufferedOption {
  public:

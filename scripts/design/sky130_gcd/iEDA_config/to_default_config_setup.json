@@ -1,28 +1,29 @@
 {
     "file_path": {
-        "design_work_space": "${RESULT_DIR}/to",
+        "design_work_space": "./to",
         "sdc_file": "",
         "lib_files": "",
         "lef_files": "",
         "def_file": "path",
-        "output_def": "${RESULT_DIR}/to/ito_result.def",
-        "report_file": "${RESULT_DIR}/to/report.txt",
-        "gds_file": "${RESULT_DIR}/to/to.gds"
+        "output_def": "./to/ito_result.def",
+        "report_file": "./to/report.txt",
+        "gds_file": "./to/to.gds"
     },
-    "specific_prefix" : {
-        "drv" : {
+    "specific_prefix": {
+        "drv": {
             "make_buffer": "drv_buffer_",
             "make_net": "drv_net_"
         },
-        "hold" : {
+        "hold": {
             "make_buffer": "hold_buffer_",
             "make_net": "hold_net_"
         },
-        "setup" : {
+        "setup": {
             "make_buffer": "setup_buffer_",
             "make_net": "setup_net_"
         }
     },
+    "routing_tree": "flute",
     "setup_target_slack": 0.0,
     "hold_target_slack": 0.4,
     "max_insert_instance_percent": 0.2,

@@ -34,7 +34,12 @@ void HoldOptimizer::init()
   LOG_ERROR_IF(_available_buffer_cells.empty()) << "Can not found specified buffers.\n";
   calcBufferCap();
 
-  toEvalInst->estimateAllNetParasitics();
+  if (!_has_estimate_all_net) {
+    toEvalInst->estimateAllNetParasitics();
+    _has_estimate_all_net = true;
+  } else {
+    toEvalInst->excuteParasiticsEstimate();
+  }
 
   timingEngine->get_sta_engine()->updateTiming();
   timingEngine->set_eval_data();

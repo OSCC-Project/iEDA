@@ -352,6 +352,22 @@ SummaryPins FeatureBuilder::buildSummaryPins()
     summary_pins.pin_distribution[i].net_ratio = ((double) summary_pins.pin_distribution[i].net_num) / net_total;
   }
 
+  int inst_total = idb_design->get_instance_list()->get_instance_list().size();
+
+  for (auto inst : idb_design->get_instance_list()->get_instance_list()) {
+    auto pin_num = inst->get_connected_pin_number();
+    if (pin_num >= 0 && pin_num <= summary_pins.max_fanout) {
+      summary_pins.pin_distribution[pin_num].inst_num += 1;
+    } else {
+      /// add to last item
+      summary_pins.pin_distribution[summary_pins.max_fanout + 1].inst_num += 1;
+    }
+  }
+
+  for (int i = 0; i < (int) summary_pins.pin_distribution.size(); i++) {
+    summary_pins.pin_distribution[i].inst_ratio = ((double) summary_pins.pin_distribution[i].inst_num) / inst_total;
+  }
+
   return summary_pins;
 }
 

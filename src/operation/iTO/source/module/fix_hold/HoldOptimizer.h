@@ -25,14 +25,19 @@ namespace ito {
 
 const int _mode_max = (int) AnalysisMode::kMax - 1;
 const int _mode_min = (int) AnalysisMode::kMin - 1;
+
+#define toOptHold HoldOptimizer::getInstance()
+
 class HoldOptimizer
 {
  public:
-  HoldOptimizer();
-
-  ~HoldOptimizer() {}
-  HoldOptimizer(const HoldOptimizer& other) = delete;
-  HoldOptimizer(HoldOptimizer&& other) = delete;
+  static HoldOptimizer* getInstance()
+  {
+    if (nullptr == _instance) {
+      _instance = new HoldOptimizer();
+    }
+    return _instance;
+  }
 
   // open functions
   void optimizeHold();
@@ -57,9 +62,10 @@ class HoldOptimizer
   void process();
   int checkAndOptimizeHold();
   bool checkAndFindVioaltion();
-  int performOptimization();
-  bool findEndpointsWithHoldViolation(TOVertexSet end_points, TOSlack& worst_slack, TOVertexSet& hold_violations);
+  int performOptimizationProcess();
+  void optimizeHoldViolation();// main optimization function
   int optHoldViolationEnd(TOVertexSeq fanins);
+  bool findEndpointsWithHoldViolation(TOVertexSet end_points, TOSlack& worst_slack, TOVertexSet& hold_violations);
   void calcStaVertexSlacks(StaVertex* vertex, TOSlacks slacks);
   TOSlack calcSlackGap(StaVertex* vertex);
   float calcHoldDelayOfBuffer(LibCell* buffer);
@@ -71,6 +77,13 @@ class HoldOptimizer
   void report(int begin_buffer_num);
   void reportWNSAndTNS();
 
+  /// constuctor
+  HoldOptimizer();
+  ~HoldOptimizer() {}
+
+  static HoldOptimizer* _instance;
+
+  bool _has_estimate_all_net = false;
   TOLibertyCellSeq _available_buffer_cells;
   LibCell *_hold_insert_buf_cell;
   TODelay _hold_insert_buf_cell_delay = 0.0;
