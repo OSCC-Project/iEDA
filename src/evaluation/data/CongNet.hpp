@@ -17,6 +17,7 @@
 #ifndef SRC_EVALUATOR_SOURCE_CONGESTION_DATABASE_CONGNET_HPP_
 #define SRC_EVALUATOR_SOURCE_CONGESTION_DATABASE_CONGNET_HPP_
 
+#include "CongInst.hpp"
 #include "CongPin.hpp"
 
 namespace eval {
@@ -30,6 +31,7 @@ class CongNet
   // getter
   std::string get_name() const { return _name; }
   std::vector<CongPin*> get_pin_list() const { return _pin_list; }
+  std::vector<CongInst*> get_inst_list() const { return _inst_list; }
   int64_t get_lx();
   int64_t get_ly();
   int64_t get_ux();
@@ -46,11 +48,13 @@ class CongNet
   // adder
   void add_pin(const int64_t& x, const int64_t& y, const std::string& name);
   void add_pin(CongPin* pin) { _pin_list.push_back(pin); }
+  void add_inst(CongInst* inst) { _inst_list.push_back(inst); }
 
  private:
   std::string _name;
   NET_CONNECT_TYPE _connect_type;
   std::vector<CongPin*> _pin_list;
+  std::vector<CongInst*> _inst_list;
 
   int64_t _lx;
   int64_t _ly;

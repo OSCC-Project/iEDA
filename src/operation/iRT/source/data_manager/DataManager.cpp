@@ -458,6 +458,7 @@ void DataManager::wrapConfig(std::map<std::string, std::any>& config_map)
   _config.top_routing_layer = RTUTIL.getConfigValue<std::string>(config_map, "-top_routing_layer", "");
   _config.output_csv = RTUTIL.getConfigValue<int32_t>(config_map, "-output_csv", 0);
   _config.enable_timing = RTUTIL.getConfigValue<int32_t>(config_map, "-enable_timing", 0);
+  _config.enable_lsa = RTUTIL.getConfigValue<int32_t>(config_map, "-enable_lsa", 0);
   /////////////////////////////////////////////
 }
 
@@ -1817,6 +1818,8 @@ void DataManager::printConfig()
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), _config.output_csv);
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "enable_timing");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), _config.enable_timing);
+  RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "enable_lsa");
+  RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), _config.enable_lsa);
   // **********        RT         ********** //
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(0), "RT_CONFIG_BUILD");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "log_file_path");

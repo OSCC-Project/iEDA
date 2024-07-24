@@ -191,6 +191,8 @@ void TrackAssigner::assignTAPanelMap(TAModel& ta_model)
   Monitor monitor;
   RTLOG.info(Loc::current(), "Starting...");
 
+  int32_t enable_lsa = RTDM.getConfig().enable_lsa;
+
   std::vector<std::vector<TAPanel>>& layer_panel_list = ta_model.get_layer_panel_list();
 
   size_t total_panel_num = 0;
@@ -213,7 +215,7 @@ void TrackAssigner::assignTAPanelMap(TAModel& ta_model)
         buildOrientNetMap(ta_panel);
         // debugCheckTAPanel(ta_panel);
         // debugPlotTAPanel(ta_panel, -1, "before_routing");
-        if (false) {
+        if (!enable_lsa) {
           routeTAPanel(ta_panel);
         } else {
           routeByThirdParty(ta_panel);

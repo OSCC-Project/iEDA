@@ -81,7 +81,7 @@ class EvalAPI
   double evalMacroChannelUtil(float dist_ratio);
   double evalMacroChannelPinRatio(float dist_ratio);
   vector<MacroVariant> evalMacrosInfo();
-  void plotMacroChannel(float dist_ratio,  const std::string& filename);
+  void plotMacroChannel(float dist_ratio, const std::string& filename);
   void evalMacroMargin();
   double evalMaxContinuousSpace();
   void evalIOPinAccess(const std::string& filename);
@@ -91,7 +91,10 @@ class EvalAPI
   void evalMacroChannel(float die_size_ratio = 0.5);
   void evalCellHierarchy(const std::string& plot_path, int level = 1, int forward = 1);
   void evalMacroHierarchy(const std::string& plot_path, int level = 1, int forward = 1);
-  
+  void evalMacroConnection(const std::string& plot_path, int level = 1, int forward = 1);
+  void evalMacroPinConnection(const std::string& plot_path, int level = 1, int forward = 1);
+  void evalMacroIOPinConnection(const std::string& plot_path, int level = 1, int forward = 1);
+
   vector<float> evalPinDens();
   vector<float> evalPinDens(CongGrid* grid, const vector<CongInst*>& inst_list);
   vector<float> evalInstDens();

@@ -32,9 +32,11 @@ void eval_cell_pin_density();
 void eval_macro_margin();
 void eval_macro_channel(float die_size_ratio = 0.5);
 void eval_continuous_white_space();
-void eval_cell_hierarchy(const std::string& plot_path , int level = 1, int forward = 1);
-void eval_macro_hierarchy(const std::string& plot_path,  int level = 1, int forward = 1);
-
+void eval_cell_hierarchy(const std::string& plot_path, int level = 1, int forward = 1);
+void eval_macro_hierarchy(const std::string& plot_path, int level = 1, int forward = 1);
+void eval_macro_connection(const std::string& plot_path, int level = 1, int forward = 1);
+void eval_macro_pin_connection(const std::string& plot_path, int level = 1, int forward = 1);
+void eval_macro_io_pin_connection(const std::string& plot_path, int level = 1, int forward = 1);
 
 void eval_inst_density(int inst_status, int eval_flip_flop = 0);
 void eval_pin_density(int inst_status, int level = 0);
@@ -67,6 +69,5 @@ void plot_flow_value(const std::string& plot_path, const std::string& file_name,
 // float eval_area_util(int inst_status);
 // double eval_macro_channel_util(float dist_ratio);
 // double eval_macro_channel_pin_util(float dist_ratio);
-
 
 }  // namespace python_interface

@@ -296,6 +296,7 @@ void VerilogWriter::writeAssign()
         fprintf(_stream, "assign %s = %s ;\n", net_name.c_str(), io_pin->get_pin_name().c_str());
       }
       // assign net=input_port;
+      // assign output_port = input_port;
       if (io_pin->get_term()->get_direction() == IdbConnectDirection::kOutput && io_pin->get_pin_name() != net_name) {
         fprintf(_stream, "assign %s = %s ;\n", io_pin->get_pin_name().c_str(), net_name.c_str());
       }
