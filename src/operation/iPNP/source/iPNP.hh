@@ -69,7 +69,7 @@ class iPNP
   GridManager get_initialized_network() { return _initialized_network; }
   GridManager get_current_opt_network() { return _current_opt_network; }
 
-  void readFromIdb(std::string input_def);
+  void readFromIdb(std::string input_def_path);
   void initSynthesize();
   void optimize();  // including calling Evaluator and modify PDN
   void writeToIdb();

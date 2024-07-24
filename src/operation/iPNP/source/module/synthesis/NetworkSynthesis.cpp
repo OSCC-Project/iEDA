@@ -75,8 +75,12 @@ void NetworkSynthesis::randomSys()
   std::srand(std::time(NULL));
   int ho_region_num = 3 + std::rand() % (9 - 3 + 1);
   int ver_region_num = 3 + std::rand() % (9 - 3 + 1);
-  random_grid_region.set_width(_synthesized_network.get_chip_width() / ho_region_num);
-  random_grid_region.set_height(_synthesized_network.get_chip_height() / ver_region_num);
+
+  /**
+   * @todo grid coordinate
+   */
+  // random_grid_region.set_width(_synthesized_network.get_chip_width() / ho_region_num);
+  // random_grid_region.set_height(_synthesized_network.get_chip_height() / ver_region_num);
   _synthesized_network.set_ho_region_num(ho_region_num);
   _synthesized_network.set_ver_region_num(ver_region_num);
 

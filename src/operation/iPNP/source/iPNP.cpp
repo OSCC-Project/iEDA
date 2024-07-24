@@ -74,10 +74,10 @@ void iPNP::optimize()
   _current_opt_network = pdn_optimizer.get_out_put_grid();
 }
 
-void iPNP::readFromIdb(std::string input_def)
+void iPNP::readFromIdb(std::string input_def_path)
 {
   iPNPIdbWrapper ipnp_idb_wrapper;
-  ipnp_idb_wrapper.readFromIdb(input_def);
+  ipnp_idb_wrapper.readFromIdb(input_def_path);
   _input_network = ipnp_idb_wrapper.get_input_db_pdn();
 }
 

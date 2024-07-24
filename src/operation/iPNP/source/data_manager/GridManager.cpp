@@ -26,31 +26,33 @@
 
 namespace ipnp {
 
+SingleLayerGrid::SingleLayerGrid(StripeDirection direction, PowerType first_stripe_power_type, double width, double pg_offset, double space,
+                                 double offset)
+    : _direction(direction),
+      _first_stripe_power_type(first_stripe_power_type),
+      _width(width),
+      _pg_offset(pg_offset),
+      _space(space),
+      _offset(offset)
+{
+}
+
 /**
  * @brief Randomly initialize Templates when construct object.
  */
 PDNGridTemplate::PDNGridTemplate() : _layers_occupied({1, 2, 6, 7, 8, 9})
 {
-  SingleLayerGrid layer1_grid = {StripeDirection::horizontal, 1.0, 1.0, 5.0};
-  SingleLayerGrid layer2_grid = {StripeDirection::vertical, 1.0, 1.0, 5.0};
-  SingleLayerGrid layer6_grid = {StripeDirection::horizontal, 1.0, 5.0, 5.0};
-  SingleLayerGrid layer7_grid = {StripeDirection::vertical, 1.0, 5.0, 5.0};
-  SingleLayerGrid layer8_grid = {StripeDirection::horizontal, 5.0, 10.0, 5.0};
-  SingleLayerGrid layer9_grid = {StripeDirection::vertical, 5.0, 10.0, 5.0};
-
-  _grid_per_layer.insert({1, layer1_grid});
-  _grid_per_layer.insert({2, layer2_grid});
-  _grid_per_layer.insert({6, layer6_grid});
-  _grid_per_layer.insert({7, layer7_grid});
-  _grid_per_layer.insert({8, layer8_grid});
-  _grid_per_layer.insert({9, layer9_grid});
+  for (int layer : _layers_occupied) {
+    SingleLayerGrid layer_grid = SingleLayerGrid();
+    _grid_per_layer.insert({layer, layer_grid});
+  }
 }
 
 PDNGridRegion::PDNGridRegion() : _shape(GridRegionShape::rectangle)
 {
 }
 
-PDNRectanGridRegion::PDNRectanGridRegion() : _height(15.0), _width(15.0)
+PDNRectanGridRegion::PDNRectanGridRegion() : _x_left_bottom(10.0), _y_left_bottom(10.0), _x_right_top(40.0), _y_right_top(40.0)
 {
 }
 

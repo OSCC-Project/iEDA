@@ -30,16 +30,59 @@
 
 namespace ipnp {
 
+enum class GridRegionShape
+{
+  rectangle,
+  irregular  // caused by macro block
+};
+
+enum class PowerType
+{
+  VDD,
+  VSS,
+  GROUND
+};
+
 enum class StripeDirection
 {
   horizontal,
   vertical
 };
 
-enum class GridRegionShape
+/**
+ * @brief a single layer Template in 3D Template block
+ */
+class SingleLayerGrid
 {
-  rectangle,
-  irregular  // caused by macro block
+ public:
+  SingleLayerGrid(StripeDirection direction = StripeDirection::horizontal, PowerType first_stripe_power_type = PowerType::VDD,
+                  double width = 2.0, double pg_offset = 3.0, double space = 10.0, double offset = 1.0);
+  ~SingleLayerGrid() = default;
+
+  StripeDirection get_direction() { return _direction; }
+  PowerType get_first_stripe_power_type() { return _first_stripe_power_type; }
+  double get_width() { return _width; }
+  double get_pg_offset() { return _pg_offset; }
+  double get_space() { return _space; }
+  double get_offset() { return _offset; }
+
+  void set_direction(StripeDirection direction) { _direction = direction; }
+  void set_first_stripe_power_type(PowerType first_stripe_power_type) { _first_stripe_power_type = first_stripe_power_type; }
+  void set_width(double width) { _width = width; }
+  void set_pg_offset(double pg_offset) { _pg_offset = pg_offset; }
+  void set_space(double space) { _space = space; }
+  void set_offset(double offset) { _offset = offset; }
+
+ private:
+  StripeDirection _direction = StripeDirection::horizontal;
+  PowerType _first_stripe_power_type = PowerType::VDD;
+  /**
+   * @attention DRC: width + pg_offset < space
+   */
+  double _width = 2.0;
+  double _pg_offset = 3.0;  // offset between the first power and ground wire
+  double _space = 10.0;     // distance between edges of two VDD wire
+  double _offset = 1.0;     // if direction is horizontal, offset from bottom; if direction is vertical, offset from left.
 };
 
 /**
@@ -51,13 +94,8 @@ class PDNGridTemplate
   PDNGridTemplate();
   ~PDNGridTemplate() = default;
 
-  struct SingleLayerGrid
-  {
-    StripeDirection direction = StripeDirection::horizontal;
-    double offset = 1.0;
-    double width = 5.0;
-    double space = 5.0;
-  };
+  auto get_layers_occupied() { return _layers_occupied; }
+  auto get_grid_per_layer() { return _grid_per_layer; }
 
  private:
   std::vector<int> _layers_occupied;  // e.g. {1,2,6,7,8,9}
@@ -85,23 +123,29 @@ class PDNRectanGridRegion : public PDNGridRegion
   PDNRectanGridRegion();
   ~PDNRectanGridRegion() = default;
 
-  double get_height() { return _height; }
-  double get_width() { return _width; }
+  double get_height() { return _y_right_top - _y_left_bottom; }
+  double get_width() { return _x_right_top - _x_left_bottom; }
+  std::pair<double, double> get_left_bottom_coordinate()
+  {
+    std::pair<double, double> left_bottom_coordinate(_x_left_bottom, _y_left_bottom);
+    return left_bottom_coordinate;
+  }
+  std::pair<double, double> get_right_top_coordinate()
+  {
+    std::pair<double, double> right_top_coordinate(_x_right_top, _y_right_top);
+    return right_top_coordinate;
+  }
 
-  void set_height(double height) { _height = height; }
-  void set_width(double width) { _width = width; }
+  double set_x_left_bottom(double x) { _x_left_bottom = x; }
+  double set_y_left_bottom(double y) { _y_left_bottom = y; }
+  double set_x_right_top(double x) { _x_right_top = x; }
+  double set_y_right_top(double y) { _y_right_top = y; }
 
  private:
-  double _height;
-  double _width;
-
-  /**
-   *don't need position information, which is included in GridManager.
-   */
-  // double x_left_bottom;
-  // double y_left_bottom;
-  // double x_right_top;
-  // double y_right_top;
+  double _x_left_bottom;
+  double _y_left_bottom;
+  double _x_right_top;
+  double _y_right_top;
 };
 
 class GridManager

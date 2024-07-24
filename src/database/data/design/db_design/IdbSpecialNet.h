@@ -127,6 +127,10 @@ class IdbSpecialNet
 
   void set_source_type(string type);
   void set_weight(int32_t weight) { _weight = weight; }
+  /**
+   * @brief Add function set_wire_list()
+   */
+  void set_wire_list(IdbSpecialWireList* wire_list) { _wire_list = wire_list; }
 
   void add_io_pin(IdbPin* io_pin);
   void add_instance_pin(IdbPin* inst_pin);

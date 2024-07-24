@@ -59,8 +59,10 @@ class iPNPIdbWrapper
   iPNPIdbWrapper() = default;
   ~iPNPIdbWrapper() = default;
 
+  idb::IdbSpecialNet* writeNet(GridManager pnp_network, ipnp::PowerType net_type);
+
   void readFromIdb(std::string input_def);
-  void writeToIdb(const GridManager pnp_network);
+  void writeToIdb(GridManager pnp_network);
 
   GridManager get_input_db_pdn() { return _input_db_pdn; }
 
