@@ -147,8 +147,6 @@ void RTInterface::runRT()
   DetailedRouter::destroyInst();
 
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
-
-  RTDM.output();
 }
 
 void RTInterface::destroyRT()
@@ -157,7 +155,7 @@ void RTInterface::destroyRT()
   RTLOG.info(Loc::current(), "Starting...");
 
   GDSPlotter::destroyInst();
-  //   RTDM.output();
+  RTDM.output();
   DataManager::destroyInst();
 
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());

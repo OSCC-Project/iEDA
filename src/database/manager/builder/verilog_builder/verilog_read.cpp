@@ -406,24 +406,39 @@ int32_t RustVerilogRead::build_assign()
       IdbNetList* idb_net_list = idb_design->get_net_list();
       auto* the_left_idb_net = idb_net_list->find_net(left_net_name);
       auto* the_right_idb_net = idb_net_list->find_net(right_net_name);
-      if (!the_left_idb_net && !the_right_idb_net) {
-        std::cout << "assign declaration cannot find Net "
-                  << "at line " << verilog_assign->line_no << std::endl;
-      }
-      if (the_left_idb_net) {
-        auto* the_right_io_pin = idb_io_pin_list->find_pin(right_net_name.c_str());
+      auto* the_right_io_pin = idb_io_pin_list->find_pin(right_net_name.c_str());
+      auto* the_left_io_pin = idb_io_pin_list->find_pin(left_net_name.c_str());
+
+      if (the_left_idb_net && !the_left_io_pin) {
+        // assign net = input_port;
         if (the_right_io_pin->is_io_pin()) {
           the_left_idb_net->add_io_pin(the_right_io_pin);
           the_right_io_pin->set_net(the_left_idb_net);
           the_right_io_pin->set_net_name(the_left_idb_net->get_net_name());
         }
-      } else {
-        auto* the_left_io_pin = idb_io_pin_list->find_pin(left_net_name.c_str());
+      } else if (the_right_idb_net && !the_right_io_pin) {
+        // assign output_port = net;
         if (the_left_io_pin->is_io_pin()) {
           the_right_idb_net->add_io_pin(the_left_io_pin);
           the_left_io_pin->set_net(the_right_idb_net);
           the_left_io_pin->set_net_name(the_right_idb_net->get_net_name());
         }
+      } else if (!the_left_idb_net && !the_right_idb_net) {
+        // assign output_port = input_port;
+        IdbNet* idb_net = new IdbNet();
+        idb_net->set_net_name(right_net_name.c_str());
+        idb_net->set_connect_type(IdbConnectType::kSignal);
+        if (the_left_io_pin->is_io_pin()) {
+          idb_net->add_io_pin(the_left_io_pin);
+          the_left_io_pin->set_net(idb_net);
+          the_left_io_pin->set_net_name(idb_net->get_net_name());
+        }
+        if (the_right_io_pin->is_io_pin()) {
+          idb_net->add_io_pin(the_right_io_pin);
+          the_right_io_pin->set_net(idb_net);
+          the_right_io_pin->set_net_name(idb_net->get_net_name());
+        }
+        idb_net_list->add_net(idb_net);
       }
     }
   }

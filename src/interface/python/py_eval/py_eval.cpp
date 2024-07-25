@@ -83,13 +83,31 @@ void eval_macro_channel(float die_size_ratio)
 void eval_cell_hierarchy(const std::string& plot_path, int level, int forward)
 {
   EvalAPI& eval_api = EvalAPI::getInst();
-  eval_api.evalCellHierarchy(plot_path , level, forward);
+  eval_api.evalCellHierarchy(plot_path, level, forward);
 }
 
 void eval_macro_hierarchy(const std::string& plot_path, int level, int forward)
 {
   EvalAPI& eval_api = EvalAPI::getInst();
   eval_api.evalMacroHierarchy(plot_path, level, forward);
+}
+
+void eval_macro_connection(const std::string& plot_path, int level, int forward)
+{
+  EvalAPI& eval_api = EvalAPI::getInst();
+  eval_api.evalMacroConnection(plot_path, level, forward);
+}
+
+void eval_macro_pin_connection(const std::string& plot_path, int level, int forward)
+{
+  EvalAPI& eval_api = EvalAPI::getInst();
+  eval_api.evalMacroPinConnection(plot_path, level, forward);
+}
+
+void eval_macro_io_pin_connection(const std::string& plot_path, int level, int forward)
+{
+  EvalAPI& eval_api = EvalAPI::getInst();
+  eval_api.evalMacroIOPinConnection(plot_path, level, forward);
 }
 
 void eval_inst_density(int inst_status, int eval_flip_flop)
@@ -123,7 +141,6 @@ void init_timing_eval()
   eval_api.initTimingDataFromIDB();
 }
 
-
 // plot API
 void plot_bin_value(const std::string& plot_path, const std::string& file_name, int value_type)
 {
@@ -140,7 +157,6 @@ void plot_flow_value(const std::string& plot_path, const std::string& file_name,
   EvalAPI& eval_api = EvalAPI::getInst();
   eval_api.plotFlowValue(plot_path, file_name, step, value);
 }
-
 
 // void eval_net_density(int inst_status)
 // {

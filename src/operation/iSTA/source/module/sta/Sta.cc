@@ -534,19 +534,22 @@ void Sta::linkDesignWithRustParser(const char *top_cell_name) {
         LOG_INFO
             << "assign declaration's lhs/rhs is not VerilogNetIDExpr class.";
       }
+      Net *the_left_net = design_netlist.findNet(left_net_name.c_str());
+      Net *the_right_net = design_netlist.findNet(right_net_name.c_str());
+      auto *the_left_port = design_netlist.findPort(left_net_name.c_str());
+      auto *the_right_port = design_netlist.findPort(right_net_name.c_str());
 
-      Net *the_left_net_or_port = design_netlist.findNet(left_net_name.c_str());
-      Net *the_right_net_or_port =
-          design_netlist.findNet(right_net_name.c_str());
-      LOG_FATAL_IF(!the_left_net_or_port && !the_right_net_or_port)
-          << "assign declaration cannot find Net "
-          << "at line " << verilog_assign->line_no;
-      if (the_left_net_or_port) {
-        auto *the_right_port = design_netlist.findPort(right_net_name.c_str());
-        the_left_net_or_port->addPinPort(the_right_port);
-      } else {
-        auto *the_left_port = design_netlist.findPort(left_net_name.c_str());
-        the_right_net_or_port->addPinPort(the_left_port);
+      if (the_left_net && !the_left_port) {
+        // assign net = input_port;
+        the_left_net->addPinPort(the_right_port);
+      } else if (the_right_net && !the_right_port) {
+        // assign output_port = net;
+        the_right_net->addPinPort(the_left_port);
+      } else if (!the_right_net && !the_left_net) {
+        // assign output_port = input_port;
+        auto &created_net = design_netlist.addNet(Net(right_net_name.c_str()));
+        created_net.addPinPort(the_left_port);
+        created_net.addPinPort(the_right_port);
       }
 
     } else if (rust_is_module_inst_stmt(stmt)) {
