@@ -74,11 +74,13 @@ void iPNP::optimize()
   _current_opt_network = pdn_optimizer.get_out_put_grid();
 }
 
-void iPNP::readFromIdb(std::string input_def_path)
+void iPNP::readDef(std::vector<std::string> lef_files, std::string def_path)
 {
-  iPNPIdbWrapper ipnp_idb_wrapper;
-  ipnp_idb_wrapper.readFromIdb(input_def_path);
-  _input_network = ipnp_idb_wrapper.get_input_db_pdn();
+  auto* db_builder = new idb::IdbBuilder();
+  db_builder->buildLef(lef_files);
+  db_builder->buildDef(def_path);
+
+  _idb_wrapper.set_idb_design(db_builder->get_def_service()->get_design());
 }
 
 void iPNP::writeToIdb()
@@ -89,10 +91,13 @@ void iPNP::writeToIdb()
 
 void iPNP::run()
 {
-  readFromIdb("<input def path>");
-  initSynthesize();
-  optimize();
-  writeToIdb();
+  if (_idb_wrapper.get_idb_design()) {
+    initSynthesize();
+    optimize();
+    writeToIdb();
+  } else {
+    // warning idb design is empty.
+  }
 }
 
 }  // namespace ipnp

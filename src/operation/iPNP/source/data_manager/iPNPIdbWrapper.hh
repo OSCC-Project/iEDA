@@ -56,18 +56,33 @@ namespace ipnp {
 class iPNPIdbWrapper
 {
  public:
+  iPNPIdbWrapper(IdbDesign* idb_design) : _idb_design(idb_design) {}
+
   iPNPIdbWrapper() = default;
   ~iPNPIdbWrapper() = default;
 
-  idb::IdbSpecialNet* writeNet(GridManager pnp_network, ipnp::PowerType net_type);
+  unsigned createNet(GridManager pnp_network, ipnp::PowerType net_type);
 
-  void readFromIdb(std::string input_def);
+  void readFromIdb();
   void writeToIdb(GridManager pnp_network);
+  void set_idb_design(IdbDesign* idb_design) { _idb_design = idb_design; }
+  auto* get_idb_design() { return _idb_design; }
 
-  GridManager get_input_db_pdn() { return _input_db_pdn; }
+  int32_t get_input_die_llx() { return _idb_design->get_layout()->get_die()->get_llx(); }
+  int32_t get_input_die_lly() { return _input_die_lly; }
+  int32_t get_input_die_urx() { return _input_die_urx; }
+  int32_t get_input_die_ury() { return _input_die_ury; }
+  int32_t get_input_die_width() { return std::abs(_input_die_urx - _input_die_llx); }
+  int32_t get_input_die_height() { return std::abs(_input_die_ury - _input_die_lly); }
+  uint64_t get_input_die_area() { return (uint64_t) get_input_die_width() * (uint64_t) get_input_die_height(); }
 
  private:
-  GridManager _input_db_pdn;
+  int32_t _input_die_llx;
+  int32_t _input_die_lly;
+  int32_t _input_die_urx;
+  int32_t _input_die_ury;
+
+  IdbDesign* _idb_design = nullptr;
 };
 
 }  // namespace ipnp

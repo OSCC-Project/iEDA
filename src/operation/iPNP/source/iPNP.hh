@@ -30,6 +30,7 @@
 #include <vector>
 
 #include "GridManager.hh"
+#include "iPNPIdbWrapper.hh"
 
 namespace idb {
 class IdbLayer;
@@ -44,6 +45,7 @@ class IdbPin;
 class IdbSpecialNet;
 class IdbLayerRouting;
 class IdbSpecialWire;
+class IdbDesign;
 
 enum class SegmentType : int8_t;
 enum class IdbWireShapeType : uint8_t;
@@ -69,7 +71,9 @@ class iPNP
   GridManager get_initialized_network() { return _initialized_network; }
   GridManager get_current_opt_network() { return _current_opt_network; }
 
-  void readFromIdb(std::string input_def_path);
+  void readDef(std::vector<std::string> lef_files, std::string def_path);
+  void setIdb(idb::IdbDesign* idb_design) { _idb_wrapper.set_idb_design(idb_design); }
+
   void initSynthesize();
   void optimize();  // including calling Evaluator and modify PDN
   void writeToIdb();
@@ -81,6 +85,8 @@ class iPNP
   GridManager _input_network;
   GridManager _initialized_network;
   GridManager _current_opt_network;
+
+  iPNPIdbWrapper _idb_wrapper;
 };
 
 }  // namespace ipnp

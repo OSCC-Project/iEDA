@@ -69,7 +69,7 @@ GridManager::GridManager() : _ho_region_num(9), _ver_region_num(9), _chip_width(
   std::vector<std::vector<int>> template_data(9, std::vector<int>(9, 1));
   _template_data = template_data;
 
-  PDNGridTemplate pdn_grid_template = PDNGridTemplate();
+  PDNGridTemplate pdn_grid_template;
   std::vector<PDNGridTemplate> template_libs(3, pdn_grid_template);
   _template_libs = template_libs;
 }
