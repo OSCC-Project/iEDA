@@ -4,4 +4,4 @@
 
 [submodule "src/third_party/LSAssigner4iEDA"]
 	path = src/third_party/LSAssigner4iEDA
-	url = https://github.com/shaowei-cai-group/LSAssigner4iEDA
+	url = https://gitee.com/li-jinyuan/LSAssigner4iEDA
