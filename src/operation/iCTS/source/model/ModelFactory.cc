@@ -84,7 +84,7 @@ std::pair<double, double> ModelFactory::criticalSteinerWireLen(const double& alp
     return {0, 0};
   }
   /**
-   * f(x,l) = 1/2*r*c*[(2+alpha*ln9)*x^2-2x]*l^2+{r*c*[(1+alpha*ln9)*cap_pin-cap_load]+gamma <= 0
+   * f(x,l) = 1/2*r*c*[(2+alpha*ln9)*x^2-2x]*l^2 + r*x*[(1+alpha*ln9)*cap_pin-cap_load]*l + gamma <= 0
    *
    */
   double critical_wl = std::numeric_limits<double>::max();
@@ -96,7 +96,7 @@ std::pair<double, double> ModelFactory::criticalSteinerWireLen(const double& alp
       break;
     }
     double a = 0.5 * r * c * ((2 + alpha * std::log(9)) * x * x - 2 * x);
-    double b = r * c * ((1 + alpha * std::log(9)) * cap_pin - cap_load);
+    double b = r * x * ((1 + alpha * std::log(9)) * cap_pin - cap_load);
     double c = gamma;
     double delta = b * b - 4 * a * c;
     if (delta < 0) {
