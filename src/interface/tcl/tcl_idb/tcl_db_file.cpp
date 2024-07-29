@@ -64,8 +64,8 @@ CmdInitTechLef::CmdInitTechLef(const char* cmd_name) : TclCmd(cmd_name)
 
 unsigned CmdInitTechLef::check()
 {
-  TclOption* option = getOptionOrArg(TCL_PATH);
-  LOG_FATAL_IF(!option);
+  //   TclOption* option = getOptionOrArg(TCL_PATH);
+  //   LOG_FATAL_IF(!option);
   return 1;
 }
 
@@ -83,6 +83,12 @@ unsigned CmdInitTechLef::exec()
     dmInst->get_config().set_tech_lef_path(path);
     dmInst->readLef(path_list, true);
     return 1;
+  } else {
+    if (dmInst->get_config().get_tech_lef_path() != "") {
+      vector<string> path_list;
+      path_list.push_back(dmInst->get_config().get_tech_lef_path());
+      dmInst->readLef(path_list, true);
+    }
   }
 
   return 1;
@@ -96,8 +102,8 @@ CmdInitLef::CmdInitLef(const char* cmd_name) : TclCmd(cmd_name)
 
 unsigned CmdInitLef::check()
 {
-  TclOption* name_list = getOptionOrArg(TCL_PATH);
-  LOG_FATAL_IF(!name_list);
+  //   TclOption* name_list = getOptionOrArg(TCL_PATH);
+  //   LOG_FATAL_IF(!name_list);
   return 1;
 }
 
@@ -113,6 +119,10 @@ unsigned CmdInitLef::exec()
     dmInst->get_config().set_lef_paths(lef_path);
     dmInst->readLef(lef_path);
     return 1;
+  } else {
+    if (dmInst->get_config().get_lef_paths().size() > 0) {
+      dmInst->readLef(dmInst->get_config().get_lef_paths());
+    }
   }
 
   return 1;
@@ -383,7 +393,7 @@ unsigned CmdSaveJSON::exec()
   auto str_option = discard->getStringVal();
   // std::cout<<str_path<<std::endl;
   if (str_path != nullptr) {
-    dmInst->saveJSON(str_path,str_option);
+    dmInst->saveJSON(str_path, str_option);
     return 1;
   }
 
