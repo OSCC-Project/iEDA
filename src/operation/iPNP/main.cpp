@@ -49,6 +49,7 @@ int main(int argc, char** argv)
   using namespace idb;
   std::string config_file = "config file path";
   iPNP pnp_object = iPNP(config_file);
+
   pnp_object.run();
 
   // Log::init(argv);

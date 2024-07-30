@@ -40,7 +40,6 @@ enum class PowerType
 {
   VDD,
   VSS,
-  GROUND
 };
 
 enum class StripeDirection

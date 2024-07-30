@@ -30,10 +30,4 @@ iPNPApi::iPNPApi(const std::string& config_file_path) : _config_file_path(config
 {
 }
 
-void iPNPApi::runiPNP(std::string config_file)
-{
-  iPNP ipnp(_config_file_path);
-  return ipnp.run();
-}
-
 }  // namespace ipnp

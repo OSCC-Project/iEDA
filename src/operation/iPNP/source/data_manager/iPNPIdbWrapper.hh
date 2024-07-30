@@ -30,8 +30,11 @@
 #include <vector>
 
 #include "GridManager.hh"
+#include "PowerRouter.hh"
+#include "iPNPCommon.hh"
 
 namespace idb {
+class IdbDesign;
 class IdbSpecialNet;
 class IdbSpecialNetList;
 class IdbSpecialWireList;
@@ -56,33 +59,37 @@ namespace ipnp {
 class iPNPIdbWrapper
 {
  public:
-  iPNPIdbWrapper(IdbDesign* idb_design) : _idb_design(idb_design) {}
-
+  iPNPIdbWrapper(idb::IdbDesign* idb_design) : _idb_design(idb_design) {}
   iPNPIdbWrapper() = default;
   ~iPNPIdbWrapper() = default;
 
-  unsigned createNet(GridManager pnp_network, ipnp::PowerType net_type);
-
-  void readFromIdb();
-  void writeToIdb(GridManager pnp_network);
-  void set_idb_design(IdbDesign* idb_design) { _idb_design = idb_design; }
-  auto* get_idb_design() { return _idb_design; }
-
-  int32_t get_input_die_llx() { return _idb_design->get_layout()->get_die()->get_llx(); }
-  int32_t get_input_die_lly() { return _input_die_lly; }
-  int32_t get_input_die_urx() { return _input_die_urx; }
-  int32_t get_input_die_ury() { return _input_die_ury; }
-  int32_t get_input_die_width() { return std::abs(_input_die_urx - _input_die_llx); }
-  int32_t get_input_die_height() { return std::abs(_input_die_ury - _input_die_lly); }
+  // get die and macro infomation from iDB
+  int32_t get_input_die_llx() { return _idb_design->get_layout()->get_die()->get_llx(); }  // The smallest x-coordinate of the die rectangle
+  int32_t get_input_die_lly() { return _idb_design->get_layout()->get_die()->get_lly(); }  // The smallest y-coordinate of the die rectangle
+  int32_t get_input_die_urx() { return _idb_design->get_layout()->get_die()->get_urx(); }  // The largest x-coordinate of the die rectangle
+  int32_t get_input_die_ury() { return _idb_design->get_layout()->get_die()->get_ury(); }  // The largest y-coordinate of the die rectangle
+  int32_t get_input_die_width() { return std::abs(get_input_die_urx() - get_input_die_llx()); }
+  int32_t get_input_die_height() { return std::abs(get_input_die_ury() - get_input_die_lly()); }
   uint64_t get_input_die_area() { return (uint64_t) get_input_die_width() * (uint64_t) get_input_die_height(); }
 
- private:
-  int32_t _input_die_llx;
-  int32_t _input_die_lly;
-  int32_t _input_die_urx;
-  int32_t _input_die_ury;
+  // Question: there is only one IdbCore in IdbLayout?
+  int get_input_macro_nums() { return 1; }  // todo
+  int32_t get_input_macro_lx() { return _idb_design->get_layout()->get_core()->get_bounding_box()->get_low_x(); }
+  int32_t get_input_macro_ly() { return _idb_design->get_layout()->get_core()->get_bounding_box()->get_low_y(); }
+  int32_t get_input_macro_hx() { return _idb_design->get_layout()->get_core()->get_bounding_box()->get_high_x(); }
+  int32_t get_input_macro_hy() { return _idb_design->get_layout()->get_core()->get_bounding_box()->get_high_y(); }
+  int32_t get_input_macro_width() { return std::abs(get_input_macro_hx() - get_input_macro_lx()); }
+  int32_t get_input_macro_height() { return std::abs(get_input_macro_hy() - get_input_macro_ly()); }
+  uint64_t get_input_macro_area() { return (uint64_t) get_input_macro_width() * (uint64_t) get_input_macro_height(); }
 
-  IdbDesign* _idb_design = nullptr;
+  auto* get_idb_design() { return _idb_design; }
+  void set_idb_design(idb::IdbDesign* idb_design) { _idb_design = idb_design; }
+
+  void saveToIdb(GridManager pnp_network);
+  void writeIdbToDef(std::string def_file_path);
+
+ private:
+  idb::IdbDesign* _idb_design = nullptr;
 };
 
 }  // namespace ipnp

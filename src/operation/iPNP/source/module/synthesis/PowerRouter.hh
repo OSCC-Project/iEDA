@@ -15,9 +15,53 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 /**
- * @file PowerRoute.cpp
+ * @file PowerRouter.hh
  * @author Xinhao li
  * @brief
  * @version 0.1
  * @date 2024-07-15
  */
+
+#pragma once
+
+#include <iostream>
+#include <map>
+#include <string>
+#include <vector>
+
+#include "GridManager.hh"
+#include "iPNPCommon.hh"
+
+namespace idb {
+class IdbDesign;
+class IdbSpecialNet;
+class IdbSpecialNetList;
+class IdbSpecialWireList;
+class IdbSpecialWire;
+class IdbSpecialWireSegment;
+class IdbLayer;
+class IdbVia;
+class IdbPin;
+class IdbRect;
+class IdbInstance;
+
+enum class SegmentType : int8_t;
+enum class IdbWireShapeType : uint8_t;
+enum class IdbOrient : uint8_t;
+
+template <typename T>
+class IdbCoordinate;
+}  // namespace idb
+
+namespace ipnp {
+
+class PowerRouter
+{
+ public:
+  PowerRouter() = default;
+  ~PowerRouter() = default;
+
+  idb::IdbSpecialNet* createNet(GridManager pnp_network, ipnp::PowerType net_type);
+};
+
+}  // namespace ipnp

@@ -27,6 +27,7 @@
 #include <iostream>
 #include <map>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "GridManager.hh"
@@ -67,16 +68,17 @@ class iPNP
   ~iPNP() = default;
 
   PNPConfig* get_config() { return _pnp_config; }
-  GridManager get_input_network() { return _input_network; }
   GridManager get_initialized_network() { return _initialized_network; }
   GridManager get_current_opt_network() { return _current_opt_network; }
 
   void readDef(std::vector<std::string> lef_files, std::string def_path);
-  void setIdb(idb::IdbDesign* idb_design) { _idb_wrapper.set_idb_design(idb_design); }
+  void setIdb(idb::IdbDesign* input_idb_design) { _idb_wrapper.set_idb_design(input_idb_design); }
 
+  void getIdbDesignInfo();
   void initSynthesize();
   void optimize();  // including calling Evaluator and modify PDN
-  void writeToIdb();
+  void saveToIdb() { _idb_wrapper.saveToIdb(_current_opt_network); }
+  void writeIdbToDef(std::string def_path) { _idb_wrapper.writeIdbToDef(def_path); }
 
   void run();  // According to the config. e.g. which Evaluator, which opt algorithm.
 
@@ -85,6 +87,10 @@ class iPNP
   GridManager _input_network;
   GridManager _initialized_network;
   GridManager _current_opt_network;
+
+  int32_t _input_die_width;
+  int32_t _input_die_height;
+  std::vector<std::pair<std::pair<int32_t, int32_t>, std::pair<int32_t, int32_t>>> _input_macro_coordinate;
 
   iPNPIdbWrapper _idb_wrapper;
 };

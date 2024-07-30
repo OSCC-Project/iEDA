@@ -7,6 +7,8 @@ target_link_libraries(data_manager
     PUBLIC
     idb
     idm
+    synthesis
+    
 )
 
 # target_include_directories(

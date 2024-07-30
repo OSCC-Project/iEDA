@@ -54,10 +54,15 @@ class iPNPApi
     }
   }
 
-  void runiPNP(std::string config_file);
+  void initializeiPNP(std::string config_file) { ipnp = new iPNP(config_file); }
+  void readDeftoiPNP(std::vector<std::string> lef_files, std::string def_path) { ipnp->readDef(lef_files, def_path); }
+  void setIdbtoiPNP(idb::IdbDesign* idb_design) { ipnp->setIdb(idb_design); }
+
+  void runiPNP() { ipnp->run(); }
 
  private:
   std::string _config_file_path;
+  iPNP* ipnp;
   static iPNPApi* _instance;
 };
 
