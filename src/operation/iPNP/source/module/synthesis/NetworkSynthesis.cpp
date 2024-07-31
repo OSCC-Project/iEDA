@@ -44,19 +44,19 @@ NetworkSynthesis::NetworkSynthesis(SysnType sysn_type, GridManager grid_info)
 void NetworkSynthesis::synthesizeNetwork()
 {
   switch (_nework_sys_type) {
-    case SysnType::Default:
+    case SysnType::kDefault:
       randomSys();
       break;
-    case SysnType::Optimizer:
+    case SysnType::kOptimizer:
       _synthesized_network.set_grid_data(_input_grid_info.get_grid_data());
       _synthesized_network.set_template_data(_input_grid_info.get_template_data());
       break;
-    case SysnType::Best:
+    case SysnType::kBest:
       /**
        * @todo
        */
       break;
-    case SysnType::Worst:
+    case SysnType::kWorst:
       /**
        * @todo
        */

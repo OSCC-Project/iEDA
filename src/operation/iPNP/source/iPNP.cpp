@@ -53,7 +53,7 @@ void iPNP::initSynthesize()
   /**
    * @todo add template_lib infomation to _initialized_network
    */
-  NetworkSynthesis network_synthesizer(SysnType::Default, _input_network);
+  NetworkSynthesis network_synthesizer(SysnType::kDefault, _input_network);
   network_synthesizer.synthesizeNetwork();
   _initialized_network = network_synthesizer.get_network();
 

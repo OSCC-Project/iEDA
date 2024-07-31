@@ -9,6 +9,6 @@ target_link_libraries(iPNPApi
 
 target_include_directories(iPNPApi
     PUBLIC
-        ${CMAKE_CURRENT_SOURCE_DIR}    
+        ${CMAKE_CURRENT_SOURCE_DIR}
 )
 

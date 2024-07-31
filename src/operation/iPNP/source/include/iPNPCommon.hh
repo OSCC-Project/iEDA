@@ -36,3 +36,4 @@
 #include "builder.h"
 #include "def_service.h"
 #include "lef_service.h"
+#include "log/Log.hh"

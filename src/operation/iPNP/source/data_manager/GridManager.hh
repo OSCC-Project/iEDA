@@ -32,20 +32,20 @@ namespace ipnp {
 
 enum class GridRegionShape
 {
-  rectangle,
-  irregular  // caused by macro block
+  kRectangle,
+  kIrregular  // caused by macro block
 };
 
 enum class PowerType
 {
-  VDD,
-  VSS,
+  kVDD,
+  kVSS,
 };
 
 enum class StripeDirection
 {
-  horizontal,
-  vertical
+  kHorizontal,
+  kVertical
 };
 
 /**
@@ -54,7 +54,7 @@ enum class StripeDirection
 class SingleLayerGrid
 {
  public:
-  SingleLayerGrid(StripeDirection direction = StripeDirection::horizontal, PowerType first_stripe_power_type = PowerType::VDD,
+  SingleLayerGrid(StripeDirection direction = StripeDirection::kHorizontal, PowerType first_stripe_power_type = PowerType::kVDD,
                   double width = 2.0, double pg_offset = 3.0, double space = 10.0, double offset = 1.0);
   ~SingleLayerGrid() = default;
 
@@ -73,8 +73,8 @@ class SingleLayerGrid
   void set_offset(double offset) { _offset = offset; }
 
  private:
-  StripeDirection _direction = StripeDirection::horizontal;
-  PowerType _first_stripe_power_type = PowerType::VDD;
+  StripeDirection _direction = StripeDirection::kHorizontal;
+  PowerType _first_stripe_power_type = PowerType::kVDD;
   /**
    * @attention DRC: width + pg_offset < space
    */

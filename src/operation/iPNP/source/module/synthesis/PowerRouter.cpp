@@ -40,10 +40,10 @@ idb::IdbSpecialNet* PowerRouter::createNet(GridManager pnp_network, ipnp::PowerT
 {
   std::string net_name = "VDD";
   bool is_power = true;  // is VDD or VSS
-  if (net_type == ipnp::PowerType::VDD) {
+  if (net_type == ipnp::PowerType::kVDD) {
     net_name = "VDD";
     is_power = true;
-  } else if (net_type == ipnp::PowerType::VSS) {
+  } else if (net_type == ipnp::PowerType::kVSS) {
     net_name = "VSS";
     is_power = false;
   } else {
@@ -93,9 +93,9 @@ idb::IdbSpecialNet* PowerRouter::createNet(GridManager pnp_network, ipnp::PowerT
 
         int is_first_contrary_stripe_type;  // is True if the first stripe in the region is of the opposite type of the net_type.
         if (net_name == "VDD") {
-          is_first_contrary_stripe_type = first_stripe_power_type == PowerType::VSS ? 1 : 0;
+          is_first_contrary_stripe_type = first_stripe_power_type == PowerType::kVSS ? 1 : 0;
         } else {  // net_name == VSS
-          is_first_contrary_stripe_type = first_stripe_power_type == PowerType::VDD ? 1 : 0;
+          is_first_contrary_stripe_type = first_stripe_power_type == PowerType::kVDD ? 1 : 0;
         }
 
         int count = 0;
@@ -104,7 +104,7 @@ idb::IdbSpecialNet* PowerRouter::createNet(GridManager pnp_network, ipnp::PowerT
         double current_segment_outermost
             = offset + (count + 1) * stripe_width + count * stripe_space + is_first_contrary_stripe_type * (pg_offset + stripe_width);
         // Convert single_layer_grid to segment
-        if (single_layer_grid.get_direction() == StripeDirection::horizontal) {
+        if (single_layer_grid.get_direction() == StripeDirection::kHorizontal) {
           // Termination conditions: the (count+1)'th wire segment cannot be fully placed in the region.
           while (current_segment_outermost < y_base + grid_data[i][j].get_height()) {
             idb::IdbLayer* layer = new idb::IdbLayer();

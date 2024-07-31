@@ -15,36 +15,29 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 /**
- * @file iPNPIdbWrapper.cpp
+ * @file CongestionEval.cpp
  * @author Xinhao li
  * @brief
  * @version 0.1
  * @date 2024-07-15
  */
 
-#include "iPNPIdbWrapper.hh"
-
-#include <iostream>
-#include <map>
-#include <string>
-#include <vector>
+#include "CongestionEval.hh"
 
 namespace ipnp {
-
-void iPNPIdbWrapper::saveToIdb(GridManager pnp_network)
+void CongestionEval::rudy_routing()
 {
-  PowerRouter* power_router = new PowerRouter();
-  _idb_design->get_special_net_list()->add_net(power_router->createNet(pnp_network, ipnp::PowerType::kVDD));
-  _idb_design->get_special_net_list()->add_net(power_router->createNet(pnp_network, ipnp::PowerType::kVSS));
+  auto& eval_api = eval::EvalAPI::initInst();
 
-  std::cout << "[iPNP info]: Added iPNP net." << std::endl;
+  int32_t bin_cnt_x = 512;  // Grid size
+  int32_t bin_cnt_y = 512;
+  eval_api.initCongDataFromIDB(bin_cnt_x, bin_cnt_y);
+
+  string eval_method = "RUDY";
+  _net_cong_rudy = eval_api.evalNetCong(eval_method);  // using RUDY
 }
 
-void iPNPIdbWrapper::writeIdbToDef(std::string def_file_path)
+void CongestionEval::global_routing()
 {
-  auto* db_builder = new idb::IdbBuilder();
-  db_builder->get_def_service()->set_layout(_idb_design->get_layout());
-  db_builder->saveDef(def_file_path);
 }
-
 }  // namespace ipnp

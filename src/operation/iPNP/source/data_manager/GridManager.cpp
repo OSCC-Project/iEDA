@@ -48,7 +48,7 @@ PDNGridTemplate::PDNGridTemplate() : _layers_occupied({1, 2, 6, 7, 8, 9})
   }
 }
 
-PDNGridRegion::PDNGridRegion() : _shape(GridRegionShape::rectangle)
+PDNGridRegion::PDNGridRegion() : _shape(GridRegionShape::kRectangle)
 {
 }
 

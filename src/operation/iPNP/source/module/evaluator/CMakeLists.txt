@@ -1,4 +1,9 @@
 add_library(evaluator
-    CongestionEval.hh
-    IREval.hh
+    CongestionEval.cpp
+    IREval.cpp
+)
+
+target_link_libraries(evaluator
+    PUBLIC
+    eval_api
 )

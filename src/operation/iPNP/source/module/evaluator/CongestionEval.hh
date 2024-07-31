@@ -15,7 +15,7 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 /**
- * @file Congestion.hh
+ * @file CongestionEval.hh
  * @author Xinhao li
  * @brief
  * @version 0.1
@@ -29,6 +29,9 @@
 #include <string>
 #include <vector>
 
+#include "EvalAPI.hpp"
+#include "iPNPCommon.hh"
+
 namespace ipnp {
 class CongestionEval
 {
@@ -37,11 +40,14 @@ class CongestionEval
   ~CongestionEval() = default;
 
   std::vector<std::vector<double>> get_map_overflow() { return _map_overflow; }
-  double get_cong_value() { return _cong_value; }
+  auto get_cong_rudy_value() { return _net_cong_rudy; }
+
+  void rudy_routing();
+  void global_routing();
 
  private:
   std::vector<std::vector<double>> _map_overflow;
-  double _cong_value;
+  std::vector<float> _net_cong_rudy;
 };
 
 }  // namespace ipnp

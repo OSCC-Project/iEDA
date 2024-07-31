@@ -38,14 +38,14 @@ class CongAPITest : public testing::Test
   void TearDown() final {}
 };
 
-TEST_F(CongAPITest, sample)   //评估器调用位置
+TEST_F(CongAPITest, sample)  // call evaluator
 {
   EvalAPI& eval_api = EvalAPI::initInst();
 
   int32_t bin_cnt_x = 512;
   int32_t bin_cnt_y = 512;
-  eval_api.initCongDataFromIDB(bin_cnt_x, bin_cnt_y); //底层数据到评估器
-  eval_api.evalNetCong('RUDY');  //用RUDY
+  eval_api.initCongDataFromIDB(bin_cnt_x, bin_cnt_y);  // key point: get data
+  eval_api.evalNetCong('RUDY');                        // key point: get Congestion value by RUDY algorithm
 
   eval_api.evalInstDens(INSTANCE_STATUS::kPlaced);
   std::string plot_path = "/DREAMPlace/iEDA/bin/";
@@ -67,7 +67,6 @@ TEST_F(CongAPITest, sample)   //评估器调用位置
   // auto value2 = eval_api.evalTotalWL(WIRELENGTH_TYPE::kB2B);
   // eval_api.plotFlowValue(plot_path, "wirelength", step1, std::to_string(value1));
   // eval_api.plotFlowValue(plot_path, "wirelength", step2, std::to_string(value2));
-
 
   auto inst_status = INSTANCE_STATUS::kFixed;
   eval_api.evalInstDens(inst_status);
@@ -146,7 +145,6 @@ TEST_F(CongAPITest, sample)   //评估器调用位置
 
   // LOG_INFO << "macro channel utilization is " << eval_api.evalMacroChannelUtil(0.3);
   // LOG_INFO << "macro channel pin ratio is " << eval_api.evalMacroChannelPinRatio(0.3);
-
 
   EvalAPI::destroyInst();
 }

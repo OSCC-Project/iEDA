@@ -4,6 +4,8 @@ set (CMAKE_CXX_STANDARD 20)
 
 include_directories(${HOME_DATABASE}/manager)
 include_directories(${HOME_PLATFORM}/data_manager)
+include_directories(${HOME_EVALUATION})
+include_directories(${HOME_EVALUATION}/api)
 
 set(IPNP_PROJECT_SOURCE_DIR ${HOME_OPERATION}/iPNP)
 
@@ -17,8 +19,10 @@ include_directories(${IPNP_PROJECT_SOURCE_DIR}/source/module/evaluator)
 include_directories(${IPNP_PROJECT_SOURCE_DIR}/source/module/optimizer)
 include_directories(${IPNP_PROJECT_SOURCE_DIR}/source/module/placer_router)
 include_directories(${IPNP_PROJECT_SOURCE_DIR}/source/module/synthesis)
+include_directories(SYSTEM ${HOME_THIRDPARTY})
 
 include(${HOME_CMAKE}/operation/idb.cmake)
+include(${HOME_CMAKE}/operation/irt.cmake)
 include(${HOME_CMAKE}/operation/iplf.cmake)
 
 link_directories(${CMAKE_BINARY_DIR}/lib)

@@ -24,6 +24,11 @@
 
 #pragma once
 
+#include <iostream>
+#include <vector>
+
+#include "iPNPCommon.hh"
+
 namespace ipnp {
 class IREval
 {

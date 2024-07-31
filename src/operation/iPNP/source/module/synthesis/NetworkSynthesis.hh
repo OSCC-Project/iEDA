@@ -55,10 +55,10 @@ namespace ipnp {
 
 enum class SysnType
 {
-  Default,  // synthesize randomly
-  Optimizer,
-  Best,
-  Worst
+  kDefault,  // synthesize randomly
+  kOptimizer,
+  kBest,
+  kWorst
 };
 
 class NetworkSynthesis
