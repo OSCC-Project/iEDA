@@ -10,7 +10,7 @@ line_comment      = _{ "//" ~ (!("\n") ~ ASCII)* ~ ("\n" | EOI) }
 multiline_comment = _{ "/*" ~ (!"*/" ~ ANY)* ~ "*/" }
 COMMENT = _{ line_comment | multiline_comment }
 
-char = _{ ASCII_ALPHANUMERIC | "_" | "\\" | "[" | "]" | "/" | ":" | "$" | "=" | "." | "'" }
+char = _{ ASCII_ALPHANUMERIC | "_" | "\\" | "[" | "]" | "/" | ":" | "$" | "=" | "." | "'" | "-" }
 
 // Donnot deal with yosys with (* top =  1  *)
 yosys_hierarchy_declaration = {"(* top =" ~ decimal_digits ~ "*)" }
