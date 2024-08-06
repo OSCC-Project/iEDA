@@ -358,6 +358,7 @@ class RustVerilogReader
   auto& get_verilog_modules() { return _verilog_modules; }
 
   unsigned readVerilog(const char* verilog_file);
+  bool autoTopModule();
   unsigned flattenModule(const char* top_module_name);
 
  private:

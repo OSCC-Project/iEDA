@@ -59,6 +59,37 @@ unsigned RustVerilogReader::readVerilog(const char* verilog_file_path)
 }
 
 /**
+ * @brief auto set the top module without the specific module name
+ * @note only support the flatten module
+ */
+bool RustVerilogReader::autoTopModule()
+{
+  LOG_INFO << "auto set top module ";
+  if (_verilog_file_ptr == nullptr)
+    return false;
+  RustVerilogFile* rust_verilog_file = rust_convert_verilog_file(_verilog_file_ptr);
+  auto verilog_modules = rust_verilog_file->verilog_modules;
+  if (verilog_modules.len != 1u) {
+    return false;
+  }
+
+  void* verilog_module;
+  int count = 1;
+  FOREACH_VEC_ELEM(&verilog_modules, void, verilog_module)
+  {
+    if (count-- > 0) {
+      void* verilog_module_ptr = rust_convert_rc_ref_cell_module(verilog_module);
+      RustVerilogModule* rust_verilog_module = rust_convert_raw_verilog_module(verilog_module_ptr);
+      _top_module = rust_verilog_module;
+      _top_module_name = rust_verilog_module->module_name;  // auto set the module name
+    } else {
+      break;
+    }
+  }
+  return true;
+}
+
+/**
  * @brief Flatten module use rust parser.
  *
  * @param top_module_name

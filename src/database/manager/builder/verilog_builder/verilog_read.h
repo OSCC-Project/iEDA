@@ -74,6 +74,7 @@ class RustVerilogRead
   // getter
   IdbDefService* get_service() { return _def_service; }
   bool createDb(std::string file, std::string top_module_name);
+  bool createDbAutoTop(std::string file);
 
   IdbConnectDirection netlistToIdb(DclType port_direction) const;
 
