@@ -30,14 +30,34 @@ void DrcConditionManager::checkOverlap(std::string layer, DrcEngineLayout* layou
   DEBUGOUTPUT("layer " << layer);
 #ifndef DEBUGCLOSE_OVERLAP
   ieda::Stats states;
-  auto& overlap = layout->get_layout()->get_engine()->getOverlap();
-  for (auto& overlap_polygon : overlap) {
-    ieda_solver::GeometryRect overlap_violation_rect;
-    ieda_solver::envelope(overlap_violation_rect, overlap_polygon);
-    addViolation(overlap_violation_rect, layer, ViolationEnumType::kShort);
+  int total = 0;
+  //   auto& overlap = layout->get_layout_engine()->getOverlap();
+  //   for (auto& overlap_polygon : overlap) {
+  //     ieda_solver::GeometryRect overlap_violation_rect;
+  //     ieda_solver::envelope(overlap_violation_rect, overlap_polygon);
+  //     addViolation(overlap_violation_rect, layer, ViolationEnumType::kShort);
+  //     total++;
+  //   }
+
+  auto& sub_layouts = layout->get_sub_layouts();
+  for (auto it1 = sub_layouts.begin(); it1 != sub_layouts.end(); ++it1) {
+    for (auto it2 = std::next(it1); it2 != sub_layouts.end(); ++it2) {
+      if (it1->first == it2->first) {
+        continue;
+      }
+
+      auto& overlap = it1->second->get_engine()->getOverlap(it2->second->get_engine());
+      for (auto& overlap_polygon : overlap) {
+        ieda_solver::GeometryRect overlap_violation_rect;
+        ieda_solver::envelope(overlap_violation_rect, overlap_polygon);
+        addViolation(overlap_violation_rect, layer, ViolationEnumType::kShort);
+      }
+
+      total += overlap.size();
+    }
   }
-  DEBUGOUTPUT(DEBUGHIGHLIGHT("Metal Short:\t") << overlap.size() << "\ttime = " << states.elapsedRunTime()
-                                               << "\tmemory = " << states.memoryDelta());
+
+  DEBUGOUTPUT(DEBUGHIGHLIGHT("Metal Short:\t") << total << "\ttime = " << states.elapsedRunTime() << "\tmemory = " << states.memoryDelta());
 #endif
 }
 

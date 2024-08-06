@@ -34,6 +34,9 @@ void GeometryBoost::addRect(int llx, int lly, int urx, int ury)
   GtlRect rect(llx, lly, urx, ury);
 
   _polyset += rect;
+
+  /// update bounding box
+  updateBoundingBox(llx, lly, urx, ury);
 }
 
 /**
@@ -105,15 +108,25 @@ std::vector<GeometryPolygon>& GeometryBoost::getLayoutPolygons()
   return _polygon_list;
 }
 
-std::vector<GeometryPolygon>& GeometryBoost::getOverlap()
+std::vector<GeometryPolygon>& GeometryBoost::getOverlap(EngineGeometry* other)
 {
-  if (!_overlap_initialized) {
+  _overlap_list.clear();
+  std::vector<GeometryPolygon>().swap(_overlap_list);
+
+  if (other == nullptr) {
+    /// check self overlap
     GtlPolygon90Set set(_polyset);
     set.self_intersect();
     set.get(_overlap_list);
-    // _overlap_set.get(_overlap_list);
-    _overlap_initialized = true;
+  } else {
+    /// check overlap with other geometry
+    GtlPolygon90Set self_set(_polyset);  /// self polyset
+
+    auto* boost_geometry = dynamic_cast<GeometryBoost*>(other);
+    auto& interact_poly = self_set.interact(boost_geometry->get_polyset());
+    interact_poly.get(_overlap_list);
   }
+
   return _overlap_list;
 }
 

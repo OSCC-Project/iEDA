@@ -26,10 +26,11 @@ void DrcConditionManager::checkMinSpacing(std::string layer, DrcEngineLayout* la
   if (_check_select.find(ViolationEnumType::kDefaultSpacing) == _check_select.end()) {
     return;
   }
+
 #ifndef DEBUGCLOSE_MINSPACING
   ieda::Stats states;
   int min_spacing_count = 0;
-  auto& layer_polyset = layout->get_layout()->get_engine()->get_polyset();
+  auto& layer_polyset = layout->get_layout_engine()->get_polyset();
   int min_spacing = DrcTechRuleInst->getMinSpacing(layer);
   if (min_spacing > 0) {
     auto violation_position_set = layer_polyset;

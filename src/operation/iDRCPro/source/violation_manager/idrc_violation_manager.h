@@ -71,7 +71,8 @@ class DrcViolationManager
   {
     idb::IdbLayer* layer = DrcTechRuleInst->findLayer(layer_name);
 
-    DrcViolationRect* violation_rect = new DrcViolationRect(layer, net_id, type, llx, lly, urx, ury);
+    DrcViolationRect* violation_rect = new DrcViolationRect(layer, type, llx, lly, urx, ury);
+    violation_rect->set_net_ids(net_id);
     auto& violation_list = get_violation_list(type);
     violation_list.emplace_back(static_cast<DrcViolation*>(violation_rect));
   }

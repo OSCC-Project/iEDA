@@ -44,7 +44,7 @@ struct GetViolationTypeName
   {
     switch (type) {
       case ViolationEnumType::kArea:
-        return "Minimal Area";
+        return "Minimum Area";
       case ViolationEnumType::kAreaEnclosed:
         return "Encolsed Area";
       case ViolationEnumType::kShort:
@@ -67,6 +67,38 @@ struct GetViolationTypeName
         return "Corner Fill";
       default:
         return "None";
+    }
+  }
+};
+
+struct GetViolationType
+{
+  ViolationEnumType operator()(const std::string& type_name) const
+  {
+    if (type_name == "Minimum Area") {
+      return ViolationEnumType::kArea;
+    } else if (type_name == "Encolsed Area") {
+      return ViolationEnumType::kAreaEnclosed;
+    } else if (type_name == "Metal Short") {
+      return ViolationEnumType::kDefaultSpacing;
+    } else if (type_name == "Default Spacing") {
+      return ViolationEnumType::kPRLSpacing;
+    } else if (type_name == "Metal Parallel Run Length Spacing") {
+      return ViolationEnumType::kJogToJog;
+    } else if (type_name == "JogToJog Spacing") {
+      return ViolationEnumType::kEOL;
+    } else if (type_name == "Metal EOL Spacing") {
+      return ViolationEnumType::kWidth;
+    } else if (type_name == "Wire Width") {
+      return ViolationEnumType::kMinStep;
+    } else if (type_name == "MinStep") {
+      return ViolationEnumType::kNotch;
+    } else if (type_name == "Metal Notch Spacing") {
+      return ViolationEnumType::kCornerFill;
+    } else if (type_name == "Corner Fill") {
+      return ViolationEnumType::kShort;
+    } else {
+      return ViolationEnumType::kNone;
     }
   }
 };

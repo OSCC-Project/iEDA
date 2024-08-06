@@ -16,6 +16,7 @@
 // ***************************************************************************************
 #pragma once
 #include "engine_geometry.h"
+#include "geometry_boost.h"
 
 namespace idrc {
 class DrcEngineSubLayout
@@ -25,8 +26,8 @@ class DrcEngineSubLayout
   ~DrcEngineSubLayout();
 
   int get_id() { return _id; }
-  ieda_solver::EngineGeometry* get_engine() { return _engine; }
-
+//   ieda_solver::EngineGeometry* get_engine() { return _engine; }
+  ieda_solver::GeometryBoost* get_engine() { return (ieda_solver::GeometryBoost*)_engine; }
  private:
   /**
    * _id : net id

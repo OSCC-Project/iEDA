@@ -21,6 +21,7 @@
 
 #include "engine_geometry.h"
 #include "engine_sublayout.h"
+#include "geometry_boost.h"
 
 namespace idb {
 class IdbLayer;
@@ -36,15 +37,17 @@ class DrcDataManager;
 class DrcEngineLayout
 {
  public:
-  DrcEngineLayout(std::string layer) : _layer(layer) { _layout = new DrcEngineSubLayout(0); }
+  DrcEngineLayout(std::string layer);
   ~DrcEngineLayout();
 
   std::map<int, DrcEngineSubLayout*>& get_sub_layouts() { return _sub_layouts; }
   DrcEngineSubLayout* get_sub_layout(int net_id);
-  ieda_solver::EngineGeometry* get_net_engine(int net_id);
-  DrcEngineSubLayout* get_layout() { return _layout; }
+//   ieda_solver::EngineGeometry* get_net_engine(int net_id);
+//   ieda_solver::EngineGeometry* get_layout_engine() { return _engine; }
+  ieda_solver::GeometryBoost* get_net_engine(int net_id);
+  ieda_solver::GeometryBoost* get_layout_engine() { return (ieda_solver::GeometryBoost*)_engine; }
 
-  uint64_t pointCount();
+//   uint64_t pointCount();
 
   bool addRect(int llx, int lly, int urx, int ury, int net_id);
 
@@ -60,7 +63,8 @@ class DrcEngineLayout
    * DrcEngineSubLayout* : sub layout ptr describe the net shapes
    */
   std::map<int, DrcEngineSubLayout*> _sub_layouts;
-  DrcEngineSubLayout* _layout;
+  //   DrcEngineSubLayout* _layout;
+  ieda_solver::EngineGeometry* _engine = nullptr;
 };
 
 }  // namespace idrc

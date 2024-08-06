@@ -170,7 +170,7 @@ void DrcApi::diagnosis(std::string third_json_file, std::string idrc_json_file, 
                                                                   {"EndOfLine", ViolationEnumType::kEOL},
                                                                   {"MINHOLE", ViolationEnumType::kAreaEnclosed}};
   std::map<std::string, ViolationEnumType> idrc_name_to_type_map{{"Corner Fill", ViolationEnumType::kCornerFill},
-                                                                 {"Default Spacing", ViolationEnumType::kPRLSpacing},
+                                                                 {"Default Spacing", ViolationEnumType::kDefaultSpacing},
                                                                  {"Enclosed Area", ViolationEnumType::kAreaEnclosed},
                                                                  {"JogToJog Spacing", ViolationEnumType::kJogToJog},
                                                                  {"Metal EOL Spacing", ViolationEnumType::kEOL},
@@ -178,7 +178,7 @@ void DrcApi::diagnosis(std::string third_json_file, std::string idrc_json_file, 
                                                                  {"Metal Parallel Run Length Spacing", ViolationEnumType::kPRLSpacing},
                                                                  {"Metal Short", ViolationEnumType::kShort},
                                                                  {"MinStep", ViolationEnumType::kMinStep},
-                                                                 {"Minimal Area", ViolationEnumType::kArea}};
+                                                                 {"Minimum Area", ViolationEnumType::kArea}};
   std::map<std::string, int32_t> layer_name_to_id_map{{"M1", 1}, {"M2", 2}, {"M3", 3}, {"M4", 4}, {"M5", 5},
                                                       {"M6", 6}, {"M7", 7}, {"M8", 8}, {"M9", 9}};
 

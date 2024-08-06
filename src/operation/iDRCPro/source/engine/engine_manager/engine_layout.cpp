@@ -16,11 +16,19 @@
 // ***************************************************************************************
 #include "engine_layout.h"
 
+#include "engine_geometry_creator.h"
 #include "geometry_boost.h"
 #include "idrc_dm.h"
 #include "idrc_region_query.h"
 
 namespace idrc {
+DrcEngineLayout::DrcEngineLayout(std::string layer) : _layer(layer)
+{
+  _layer = layer;
+  ieda_solver::EngineGeometryCreator geo_creator;
+  _engine = geo_creator.create();
+}
+
 DrcEngineLayout::~DrcEngineLayout()
 {
   for (auto& [id, sub_layout] : _sub_layouts) {
@@ -29,7 +37,10 @@ DrcEngineLayout::~DrcEngineLayout()
       sub_layout = nullptr;
     }
   }
-  delete _layout;
+  if (_engine != nullptr) {
+    delete _engine;
+    _engine = nullptr;
+  }
 
   _sub_layouts.clear();
 }
@@ -57,11 +68,11 @@ DrcEngineSubLayout* DrcEngineLayout::get_sub_layout(int net_id)
   return sub_layout;
 }
 
-ieda_solver::EngineGeometry* DrcEngineLayout::get_net_engine(int net_id)
+ieda_solver::GeometryBoost* DrcEngineLayout::get_net_engine(int net_id)
 {
   auto* sub_layout = get_sub_layout(net_id);
 
-  return sub_layout == nullptr ? nullptr : sub_layout->get_engine();
+  return sub_layout == nullptr ? nullptr : (ieda_solver::GeometryBoost*) sub_layout->get_engine();
 }
 
 // uint64_t DrcEngineLayout::pointCount()
@@ -80,7 +91,7 @@ ieda_solver::EngineGeometry* DrcEngineLayout::get_net_engine(int net_id)
 void DrcEngineLayout::combineLayout(DrcDataManager* data_manager)
 {
   for (auto& [net_id, sub_layout] : _sub_layouts) {
-    _layout->get_engine()->addGeometry(sub_layout->get_engine());
+    _engine->addGeometry(sub_layout->get_engine());
     auto net_id_rects = sub_layout->get_engine()->getRects();
     for (auto& rect : net_id_rects) {
       data_manager->get_region_query()->addRect(rect, _layer, net_id);

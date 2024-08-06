@@ -20,6 +20,7 @@
 
 void IdbSpeedUpSetup::showDrc(std::map<std::string, std::vector<idrc::DrcViolation*>>& drc_db, int max_num) {
   for (auto drc : drc_db) {
+    std::cout << "drc rule=" << drc.first << " number=" << drc.second.size() << std::endl;
     auto container = _gui_design->get_drc_container(drc.first);
     if (container != nullptr) {
       auto drc_spot_list = drc.second;
@@ -41,6 +42,8 @@ void IdbSpeedUpSetup::showDrc(std::map<std::string, std::vector<idrc::DrcViolati
           createDrc(drc_list, drc_spot);
         }
       }
+    } else {
+      std::cout << "find no drc container view : " << drc.first << std::endl;
     }
   }
 }

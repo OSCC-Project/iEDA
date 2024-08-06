@@ -62,7 +62,7 @@ namespace igui {
     _drc_tree.add_option("Metal Parallel Run Length Spacing");
     _drc_tree.add_option("Metal Notch Spacing");
     _drc_tree.add_option("MinStep");
-    _drc_tree.add_option("Minimal Area");
+    _drc_tree.add_option("Minimum Area");
   }
 
   void GuiConfig::UpdateLayerTree(vector<string> layer_name_list) {

@@ -38,10 +38,21 @@
 #include "IdbLayer.h"
 #include "idm.h"
 #include "idrc_io/idrc_io.h"
+#include "json_parser.h"
 
 using namespace std;
 
 namespace iplf {
+
+bool FileDrcManager::readFile()
+{
+  auto path = get_data_path();
+  if (path.substr(path.length() - 4) == "json" || path.substr(path.length() - 7) == "json.gz") {
+    return readJson();
+  } else {
+    return FileManager::readFile();
+  }
+}
 
 void FileDrcManager::wrapDrcStruct(idrc::DrcViolation* spot, DrcDetailResult& detail_result)
 {
@@ -66,8 +77,9 @@ void FileDrcManager::wrapDrcStruct(idrc::DrcViolation* spot, DrcDetailResult& de
 idrc::DrcViolation* FileDrcManager::parseDrcStruct(DrcDetailResult& detail_result)
 {
   auto* idb_layer = dmInst->get_idb_layout()->get_layers()->find_routing_layer(detail_result.layer_id);
-  auto* violation = new idrc::DrcViolationRect(idb_layer, {detail_result.net_id}, (idrc::ViolationEnumType) detail_result.violation_type,
-                                               detail_result.min_x, detail_result.min_y, detail_result.max_x, detail_result.max_y);
+  auto* violation = new idrc::DrcViolationRect(idb_layer, (idrc::ViolationEnumType) detail_result.violation_type, detail_result.min_x,
+                                               detail_result.min_y, detail_result.max_x, detail_result.max_y);
+  violation->set_net_ids({detail_result.net_id});
   return violation;
 }
 
@@ -142,7 +154,7 @@ int32_t FileDrcManager::getBufferSize()
 
 bool FileDrcManager::saveFileData()
 {
-  if (saveFileDataByJson() == true) {
+  if (saveJson() == true) {
     return true;
   }
   //   int size = getBufferSize();
@@ -204,8 +216,19 @@ bool FileDrcManager::saveFileData()
   return true;
 }
 
-bool FileDrcManager::saveFileDataByJson()
+bool FileDrcManager::saveJson()
 {
+  auto get_layer_dict = [](std::string layer, std::map<std::string, json>& layer_dict) -> json& {
+    if (layer_dict.find(layer) == layer_dict.end()) {
+      json json_layer;
+      json_layer["number"] = 0;
+      json json_list = json::array();
+      json_layer["list"] = json_list;
+      layer_dict[layer] = json_layer;
+    }
+
+    return layer_dict[layer];
+  };
   auto path = get_data_path();
   std::string tail_str = path.substr(path.length() - 4);
   if (tail_str != "json") {
@@ -213,29 +236,45 @@ bool FileDrcManager::saveFileDataByJson()
   }
 
   json drc_json;
-  json drc_json_list = json::array();
+  drc_json["file_path"] = path;
+  drc_json["drc"]["number"] = 0;
+  int total = 0;  /// drc total number
+  auto dub = dmInst->get_idb_design()->get_units()->get_micron_dbu();
+
+  json json_distribution = json::array();
   auto& detail_rule_map = drcInst->get_detail_drc();
 
   for (auto [rule_name, drc_list] : detail_rule_map) {
-    json temp;
-    temp["type"] = rule_name;
-    temp["nums"] = drc_list.size();
-    json json_list = json::array();
+    json json_rule;
+    json_rule[rule_name]["number"] = drc_list.size();
+    total += drc_list.size();
+
+    std::map<std::string, json> layer_dict;
     for (auto drc_spot : drc_list) {
       DrcDetailResult detail_result;
       wrapDrcStruct(drc_spot, detail_result);
-      json json_obs;
-      json_obs["tech_DRCs"]["layer"] = detail_result.layer_name;
-      json_obs["tech_DRCs"]["llx"] = detail_result.min_x;
-      json_obs["tech_DRCs"]["lly"] = detail_result.min_y;
-      json_obs["tech_DRCs"]["urx"] = detail_result.max_x;
-      json_obs["tech_DRCs"]["ury"] = detail_result.max_y;
-      json_list.push_back(json_obs);
+
+      auto& json_layer = get_layer_dict(detail_result.layer_name, layer_dict);
+
+      json json_drc;
+      json_drc["llx"] = detail_result.min_x;
+      json_drc["lly"] = detail_result.min_y;
+      json_drc["urx"] = detail_result.max_x;
+      json_drc["ury"] = detail_result.max_y;
+      json_layer["list"].push_back(json_drc);
+      int number = json_layer["number"];
+      json_layer["number"] = number + 1;
     }
-    temp["tech_DRCs_list"] = json_list;
-    drc_json_list.push_back(temp);
-    drc_json["type_sorted_tech_DRCs_list"] = drc_json_list;
+
+    for (auto& [layer, node] : layer_dict) {
+      json_rule[rule_name]["layers"][layer] = node;
+    }
+
+    json_distribution.push_back(json_rule);
   }
+
+  drc_json["drc"]["number"] = total;
+  drc_json["drc"]["distribution"] = json_distribution;
 
   std::ofstream file_stream(path);
   file_stream << std::setw(4) << drc_json;
@@ -243,6 +282,97 @@ bool FileDrcManager::saveFileDataByJson()
   file_stream.close();
 
   std::cout << std::endl << "Save feature json success, path = " << path << std::endl;
+  return true;
+}
+
+bool FileDrcManager::readJson()
+{
+  auto path = get_data_path();
+  //   std::ifstream& config_stream = ieda::getInputFileStream(path);
+
+  nlohmann::json json;
+
+  ieda::initJson(path, json);
+  //   config_stream >> json;
+
+  auto& detail_rule_map = drcInst->get_detail_drc();
+  detail_rule_map.clear();
+
+  /// total number
+  auto total_drc = ieda::getJsonData(json, {"drc", "number"});
+  auto json_distribution = ieda::getJsonData(json, {"drc", "distribution"});
+
+  /// drc distribution
+  for (auto& json_drc_type : json_distribution.items()) {
+    /// drc type
+    auto drc_type = json_drc_type.key();
+    // /// check metal short pnly
+    // if (drc_type != "Metal Short") {
+    //   continue;
+    // } else {
+    //   /// change to "Minimum Area" in order to control drc views
+    //   drc_type = "Minimum Area";
+    // }
+
+    idrc::ViolationEnumType enum_type = idrc::GetViolationType()(drc_type);
+
+    /// drc number for all layers
+    auto number = json_drc_type.value()["number"];
+    vector<idrc::DrcViolation*> spot_list;
+    spot_list.reserve(number);
+
+    /// drc in each layer
+    auto& json_layers = json_drc_type.value()["layers"];
+
+    for (auto& json_layer : json_layers.items()) {
+      /// layer name
+      auto layer = json_layer.key();
+      /// layer drc number
+      auto number = json_layer.value()["number"];
+
+      /// drc list
+      auto& json_drc_list = json_layer.value()["list"];
+
+      for (auto& json_drc : json_drc_list.items()) {
+        std::set<int> net_ids;
+        auto json_nets = json_drc.value()["net"];
+        for (auto& json_net : json_nets.items()) {
+          std::string net_name = json_net.value();
+          std::cout << net_name << std::endl;
+          auto net = dmInst->get_idb_design()->get_net_list()->find_net(net_name);
+          if (net != nullptr) {
+            net_ids.insert(net->get_id());
+          }
+        }
+
+        std::set<int> inst_ids;
+        auto json_insts = json_drc.value()["inst"];
+        for (auto& json_inst : json_insts.items()) {
+          std::string inst_name = json_inst.value();
+          auto inst = dmInst->get_idb_design()->get_instance_list()->find_instance(inst_name);
+          if (inst != nullptr) {
+            inst_ids.insert(inst->get_id());
+          }
+        }
+
+        auto* idb_layer = dmInst->get_idb_layout()->get_layers()->find_layer(layer);
+
+        auto llx = dmInst->get_idb_design()->transUnitDB(json_drc.value()["llx"]);
+        auto lly = dmInst->get_idb_design()->transUnitDB(json_drc.value()["lly"]);
+        auto urx = dmInst->get_idb_design()->transUnitDB(json_drc.value()["urx"]);
+        auto ury = dmInst->get_idb_design()->transUnitDB(json_drc.value()["ury"]);
+        auto* violation = new idrc::DrcViolationRect(idb_layer, enum_type, llx, lly, urx, ury);
+        violation->set_net_ids(net_ids);
+        violation->set_inst_ids(inst_ids);
+
+        /// add to spot list
+        spot_list.push_back(violation);
+      }
+    }
+
+    detail_rule_map.insert(std::make_pair(drc_type, spot_list));
+  }
+
   return true;
 }
 

@@ -17,6 +17,8 @@
 #pragma once
 #include <stdint.h>
 
+#include <climits>
+#include <tuple>
 #include <vector>
 
 #include "geometry_point.h"
@@ -31,6 +33,9 @@ class EngineGeometry
  public:
   EngineGeometry() {}
   virtual ~EngineGeometry() {}
+
+  std::tuple<int, int, int, int> bounding_box() { return std::make_tuple(_min_x, _min_y, _max_x, _max_y); }
+
   /**
    * add rect to engine
    */
@@ -42,23 +47,24 @@ class EngineGeometry
    * std::vector<std::pair<int, int>> : define point list
    * std::vector<std::vector<std::pair<int, int>>> : define polygon list
    */
-  // virtual std::vector<std::vector<std::pair<int, int>>> get_polygons_points() = 0;
+  //   virtual std::vector<std::vector<std::pair<int, int>>> get_polygons_points() = 0;
 
   virtual void addGeometry(EngineGeometry* geometry) = 0;
 
-  GeometryPolygonSet& get_polyset() { return _polyset; }
-
-  virtual std::vector<GeometryPolygon>& getLayoutPolygons() = 0;
-  virtual std::vector<GeometryPolygon>& getOverlap() = 0;
-  virtual std::vector<GeometryRect>& getWires() = 0;
-  virtual std::vector<GeometryRect>& getRects() = 0;
-
  protected:
-  GeometryPolygonSet _polyset;
-  std::vector<GeometryPolygon> _polygon_list;
-  std::vector<GeometryPolygon> _overlap_list;
-  std::vector<GeometryRect> _wire_list;
-  std::vector<GeometryRect> _rect_list;
+  void updateBoundingBox(int llx, int lly, int urx, int ury)
+  {
+    _min_x = std::min(_min_x, llx);
+    _min_y = std::min(_min_y, lly);
+    _max_x = std::max(_max_x, urx);
+    _max_y = std::max(_max_y, ury);
+  }
+
+ private:
+  int _min_x = INT_MAX;
+  int _min_y = INT_MAX;
+  int _max_x = INT_MIN;
+  int _max_y = INT_MIN;
 };
 
 }  // namespace ieda_solver
