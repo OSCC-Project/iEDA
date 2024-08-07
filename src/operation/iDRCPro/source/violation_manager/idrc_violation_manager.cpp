@@ -16,8 +16,8 @@
 // ***************************************************************************************
 #include "idrc_violation_manager.h"
 
-#include "idrc_engine_manager.h"
 #include "DRCViolationType.h"
+#include "idrc_engine_manager.h"
 
 namespace idrc {
 
@@ -42,11 +42,13 @@ void DrcViolationManager::set_net_ids(DrcEngineManager* engine_manager)
   for (auto& [type, violation_list] : _violation_list) {
     for (auto* violation : violation_list) {
       auto* violation_rect = static_cast<DrcViolationRect*>(violation);
-      auto layer = violation_rect->get_layer()->get_name();
-      auto* layout = engine_manager->get_layout(layer);
-      auto net_ids = layout->querySubLayoutNetId(violation_rect->get_llx(), violation_rect->get_lly(), violation_rect->get_urx(),
-                                                 violation_rect->get_ury());
-      violation_rect->set_net_ids(net_ids);
+      if (violation_rect->get_net_ids().size() <= 0) {
+        auto layer = violation_rect->get_layer()->get_name();
+        auto* layout = engine_manager->get_layout(layer);
+        auto net_ids = layout->querySubLayoutNetId(violation_rect->get_llx(), violation_rect->get_lly(), violation_rect->get_urx(),
+                                                   violation_rect->get_ury());
+        violation_rect->set_net_ids(net_ids);
+      }
     }
   }
 }

@@ -71,16 +71,7 @@ class DrcConditionManager
 
   DrcViolationManager* get_violation_manager() { return _violation_manager; }
 
-  void set_check_select(std::set<ViolationEnumType> check_select)
-  {
-    if (check_select.empty()) {
-      for (int type = (int) ViolationEnumType::kNone; type < (int) ViolationEnumType::kMax; ++type) {
-        _check_select.insert((ViolationEnumType) type);
-      }
-    } else {
-      _check_select = check_select;
-    }
-  }
+  void set_check_select(std::set<ViolationEnumType> check_select);
 
   void checkOverlap(std::string layer, DrcEngineLayout* layout);
   void checkMinSpacing(std::string layer, DrcEngineLayout* layout);

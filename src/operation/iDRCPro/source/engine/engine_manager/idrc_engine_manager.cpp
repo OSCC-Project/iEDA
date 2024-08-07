@@ -32,6 +32,11 @@ namespace idrc {
 DrcEngineManager::DrcEngineManager(DrcDataManager* data_manager, DrcConditionManager* condition_manager)
     : _data_manager(data_manager), _condition_manager(condition_manager)
 {
+  std::set<std::string> routing_layers;
+  std::set<std::string> cut_layers;
+  _layers.insert(std::make_pair(LayoutType::kRouting, routing_layers));
+  _layers.insert(std::make_pair(LayoutType::kCut, cut_layers));
+
   std::map<std::string, DrcEngineLayout*> routing_map;
   std::map<std::string, DrcEngineLayout*> cut_map;
   _layouts.insert(std::make_pair(LayoutType::kRouting, routing_map));
@@ -45,6 +50,11 @@ DrcEngineManager::DrcEngineManager(DrcDataManager* data_manager, DrcConditionMan
 
 DrcEngineManager::~DrcEngineManager()
 {
+  for (auto& [type, layers] : _layers) {
+    layers.clear();
+  }
+  _layers.clear();
+
   for (auto& [type, layout_arrays] : _layouts) {
     for (auto& [layer, layout] : layout_arrays) {
       if (layout != nullptr) {
@@ -97,6 +107,33 @@ DrcEngineLayout* DrcEngineManager::get_layout(std::string layer, LayoutType type
     return engine_layout;
   }
 }
+
+std::set<std::string>& DrcEngineManager::get_layers(LayoutType type)
+{
+  auto it = _layers.find(type);
+  if (it != _layers.end()) {
+    return it->second;
+  } else {
+    auto layers = std::make_pair(type, std::set<std::string>{});
+    _layers.insert(layers);
+
+    return _layers.find(type)->second;
+  }
+}
+
+bool DrcEngineManager::needChecking(std::string layer, LayoutType type)
+{
+  auto& layers = get_layers(type);
+
+  return layers.find(layer) != layers.end() ? true : false;
+}
+
+void DrcEngineManager::addLayer(std::string layer, LayoutType type)
+{
+  auto& layers = get_layers(type);
+  layers.insert(layer);
+}
+
 // add rect to engine
 bool DrcEngineManager::addRect(int llx, int lly, int urx, int ury, std::string layer, int net_id, LayoutType type)
 {
@@ -104,6 +141,9 @@ bool DrcEngineManager::addRect(int llx, int lly, int urx, int ury, std::string l
   auto engine_layout = get_layout(layer, type);
   if (engine_layout == nullptr) {
     return false;
+  }
+  if (net_id >= 0) {
+    addLayer(layer, type);
   }
 
   return engine_layout->addRect(llx, lly, urx, ury, net_id);
@@ -119,11 +159,10 @@ void DrcEngineManager::dataPreprocess()
 void DrcEngineManager::filterData()
 {
   for (auto& [layer, layout] : get_engine_layouts(LayoutType::kRouting)) {
-    // std::cout << "\nidrc : layer " << layer << std::endl;
-    // only for routing layers
-    // if (!DrcTechRuleInst->isLayerRouting(layer)) {
-    //   continue;
-    // }
+    if (false == needChecking(layer, LayoutType::kRouting)) {
+      continue;
+    }
+    DEBUGOUTPUT("Need to check layer:\t" << layer);
 
     // overlap
     _condition_manager->checkOverlap(layer, layout);

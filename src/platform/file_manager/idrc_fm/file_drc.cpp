@@ -235,11 +235,13 @@ bool FileDrcManager::saveJson()
     return false;
   }
 
+  auto idb_insts = dmInst->get_idb_design()->get_instance_list();
+  auto idb_nets = dmInst->get_idb_design()->get_net_list();
+
   json drc_json;
   drc_json["file_path"] = path;
   drc_json["drc"]["number"] = 0;
   int total = 0;  /// drc total number
-  auto dub = dmInst->get_idb_design()->get_units()->get_micron_dbu();
 
   json json_distribution = json::array();
   auto& detail_rule_map = drcInst->get_detail_drc();
@@ -250,20 +252,43 @@ bool FileDrcManager::saveJson()
     total += drc_list.size();
 
     std::map<std::string, json> layer_dict;
-    for (auto drc_spot : drc_list) {
-      DrcDetailResult detail_result;
-      wrapDrcStruct(drc_spot, detail_result);
+    for (auto* drc_spot : drc_list) {
+      if (drc_spot->is_rect()) {
+        idrc::DrcViolationRect* drc_rect = (idrc::DrcViolationRect*) (drc_spot);
+        auto& json_layer = get_layer_dict(drc_rect->get_layer()->get_name(), layer_dict);
 
-      auto& json_layer = get_layer_dict(detail_result.layer_name, layer_dict);
+        json json_drc;
+        json_drc["llx"] = drc_rect->get_llx();
+        json_drc["lly"] = drc_rect->get_lly();
+        json_drc["urx"] = drc_rect->get_urx();
+        json_drc["ury"] = drc_rect->get_ury();
 
-      json json_drc;
-      json_drc["llx"] = detail_result.min_x;
-      json_drc["lly"] = detail_result.min_y;
-      json_drc["urx"] = detail_result.max_x;
-      json_drc["ury"] = detail_result.max_y;
-      json_layer["list"].push_back(json_drc);
-      int number = json_layer["number"];
-      json_layer["number"] = number + 1;
+        json_drc["net"] = json::array();
+        json_drc["inst"] = json::array();
+
+        for (auto net_id : drc_rect->get_net_ids()) {
+          auto net = idb_nets->find_net(net_id);
+          if (net != nullptr) {
+            json_drc["net"].push_back(net->get_net_name());
+          } else {
+            json_drc["net"].push_back("-1");  /// save -1 as a blockage
+          }
+        }
+
+        for (auto inst_id : drc_rect->get_inst_ids()) {
+          auto inst = idb_insts->find_instance(inst_id);
+          if (inst != nullptr) {
+            auto inst_name = inst->get_name();
+            json_drc["inst"].push_back(inst_name);
+          } else {
+            json_drc["inst"].push_back("-1");  /// save -1 as a blockage
+          }
+        }
+
+        json_layer["list"].push_back(json_drc);
+        int number = json_layer["number"];
+        json_layer["number"] = number + 1;
+      }
     }
 
     for (auto& [layer, node] : layer_dict) {
@@ -342,6 +367,8 @@ bool FileDrcManager::readJson()
           auto net = dmInst->get_idb_design()->get_net_list()->find_net(net_name);
           if (net != nullptr) {
             net_ids.insert(net->get_id());
+          } else {
+            net_ids.insert(-1);  /// blockage
           }
         }
 
@@ -349,9 +376,12 @@ bool FileDrcManager::readJson()
         auto json_insts = json_drc.value()["inst"];
         for (auto& json_inst : json_insts.items()) {
           std::string inst_name = json_inst.value();
+
           auto inst = dmInst->get_idb_design()->get_instance_list()->find_instance(inst_name);
           if (inst != nullptr) {
             inst_ids.insert(inst->get_id());
+          } else {
+            inst_ids.insert(-1);  /// blockage
           }
         }
 

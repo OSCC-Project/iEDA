@@ -41,14 +41,19 @@ void DrcConditionManager::checkOverlap(std::string layer, DrcEngineLayout* layou
       if (query_id == -1 || query_id == net_id || true == sub_layout->hasCheckIntersect(query_id)) {
         continue;
       }
-      auto& overlap = sub_layout->get_engine()->getOverlap(query_sub_layout->get_engine());
-      for (auto& overlap_polygon : overlap) {
+      auto& overlaps = sub_layout->get_engine()->getOverlap(query_sub_layout->get_engine());
+      std::set<int> net_ids = {};
+      if (overlaps.size() > 0) {
+        net_ids.insert(net_id);
+        net_ids.insert(query_id);
+      }
+      for (auto& overlap_polygon : overlaps) {
         ieda_solver::GeometryRect overlap_violation_rect;
         ieda_solver::envelope(overlap_violation_rect, overlap_polygon);
-        addViolation(overlap_violation_rect, layer, ViolationEnumType::kShort);
+        addViolation(overlap_violation_rect, layer, ViolationEnumType::kShort, net_ids);
       }
 
-      total += overlap.size();
+      total += overlaps.size();
       sub_layout->addIntersectNet(query_id);
       query_sub_layout->addIntersectNet(net_id);
       check_size++;

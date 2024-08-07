@@ -33,4 +33,15 @@ void DrcConditionManager::addViolation(ieda_solver::GeometryRect& rect, std::str
   }
 }
 
+void DrcConditionManager::set_check_select(std::set<ViolationEnumType> check_select)
+{
+  if (check_select.empty()) {
+    for (int type = (int) ViolationEnumType::kNone; type < (int) ViolationEnumType::kMax; ++type) {
+      _check_select.insert((ViolationEnumType) type);
+    }
+  } else {
+    _check_select = check_select;
+  }
+}
+
 }  // namespace idrc
