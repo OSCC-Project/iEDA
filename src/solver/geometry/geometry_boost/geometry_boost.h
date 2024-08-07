@@ -46,6 +46,7 @@ class GeometryBoost : public EngineGeometry
   // std::vector<std::vector<std::pair<int, int>>> get_polygons_points() override;
 
   virtual void addGeometry(EngineGeometry* geometry) override;
+  virtual bool isIntersect(int llx, int lly, int urx, int ury) override;
 
   std::vector<GeometryPolygon>& getLayoutPolygons();
   std::vector<GeometryPolygon>& getOverlap(EngineGeometry* other = nullptr);

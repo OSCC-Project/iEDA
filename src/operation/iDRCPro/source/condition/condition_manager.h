@@ -28,7 +28,7 @@
 
 namespace idrc {
 
-#define DEBUGCONDITION 0
+#define DEBUGCONDITION 1
 
 #if DEBUGCONDITION
 #define DEBUGPRINT 1

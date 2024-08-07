@@ -50,6 +50,7 @@ class EngineGeometry
   //   virtual std::vector<std::vector<std::pair<int, int>>> get_polygons_points() = 0;
 
   virtual void addGeometry(EngineGeometry* geometry) = 0;
+  virtual bool isIntersect(int llx, int lly, int urx, int ury) = 0;
 
  protected:
   void updateBoundingBox(int llx, int lly, int urx, int ury)

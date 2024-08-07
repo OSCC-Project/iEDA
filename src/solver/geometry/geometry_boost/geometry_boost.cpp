@@ -39,6 +39,19 @@ void GeometryBoost::addRect(int llx, int lly, int urx, int ury)
   updateBoundingBox(llx, lly, urx, ury);
 }
 
+bool GeometryBoost::isIntersect(int llx, int lly, int urx, int ury)
+{
+  GtlPolygon90Set self_set(_polyset);  /// self polyset
+  GtlPolygon90Set target_set;
+  GtlRect rect(llx, lly, urx, ury);
+  target_set += rect;
+
+  auto& interact_poly = self_set.interact(target_set);
+  std::vector<GeometryPolygon> overlap_list;
+  interact_poly.get(overlap_list);
+  return overlap_list.size() > 0 ? true : false;
+}
+
 /**
  * get points from polygon list
  * @param

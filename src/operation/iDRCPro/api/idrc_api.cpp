@@ -107,7 +107,7 @@ std::map<ViolationEnumType, std::vector<DrcViolation*>> DrcApi::check(std::vecto
   }
 #endif
 
-  return violation_manager->get_violation_map();
+  return violation_manager->get_violation_map(drc_manager.get_engine()->get_engine_manager());
 }
 /**
  * check DRC violation for DEF file

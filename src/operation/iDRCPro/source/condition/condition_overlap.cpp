@@ -26,27 +26,22 @@ void DrcConditionManager::checkOverlap(std::string layer, DrcEngineLayout* layou
   if (_check_select.find(ViolationEnumType::kShort) == _check_select.end()) {
     return;
   }
-  DEBUGOUTPUT("");
-  DEBUGOUTPUT("layer " << layer);
-#ifndef DEBUGCLOSE_OVERLAP
+
+  DEBUGOUTPUT(DEBUGHIGHLIGHT("Metal Short:\t") << " Begin checking drc for layer " << layer);
+
   ieda::Stats states;
   int total = 0;
-  //   auto& overlap = layout->get_layout_engine()->getOverlap();
-  //   for (auto& overlap_polygon : overlap) {
-  //     ieda_solver::GeometryRect overlap_violation_rect;
-  //     ieda_solver::envelope(overlap_violation_rect, overlap_polygon);
-  //     addViolation(overlap_violation_rect, layer, ViolationEnumType::kShort);
-  //     total++;
-  //   }
+  for (auto& [net_id, sub_layout] : layout->get_sub_layouts()) {
+    auto [llx, lly, urx, ury] = sub_layout->get_engine()->bounding_box();
 
-  auto& sub_layouts = layout->get_sub_layouts();
-  for (auto it1 = sub_layouts.begin(); it1 != sub_layouts.end(); ++it1) {
-    for (auto it2 = std::next(it1); it2 != sub_layouts.end(); ++it2) {
-      if (it1->first == it2->first) {
+    auto query_sub_layouts = layout->querySubLayouts(llx, lly, urx, ury);
+    int check_size = 0;
+    for (auto* query_sub_layout : query_sub_layouts) {
+      auto query_id = query_sub_layout->get_id();
+      if (query_id == -1 || query_id == net_id || true == sub_layout->hasCheckIntersect(query_id)) {
         continue;
       }
-
-      auto& overlap = it1->second->get_engine()->getOverlap(it2->second->get_engine());
+      auto& overlap = sub_layout->get_engine()->getOverlap(query_sub_layout->get_engine());
       for (auto& overlap_polygon : overlap) {
         ieda_solver::GeometryRect overlap_violation_rect;
         ieda_solver::envelope(overlap_violation_rect, overlap_polygon);
@@ -54,11 +49,21 @@ void DrcConditionManager::checkOverlap(std::string layer, DrcEngineLayout* layou
       }
 
       total += overlap.size();
+      sub_layout->addIntersectNet(query_id);
+      query_sub_layout->addIntersectNet(net_id);
+      check_size++;
     }
+#ifdef DEBUGCLOSE_OVERLAP
+    DEBUGOUTPUT(DEBUGHIGHLIGHT("net_id:\t") << net_id << "\tlayer " << layer << "\tllx = " << llx << "\tlly = " << lly << "\turx = " << urx
+                                            << "\tllx = " << ury << "\tquery_sub_layouts = " << query_sub_layouts.size()
+                                            << "\tcheck size = " << check_size << "\ttotal = " << total);
+#else
+
+#endif
   }
 
-  DEBUGOUTPUT(DEBUGHIGHLIGHT("Metal Short:\t") << total << "\ttime = " << states.elapsedRunTime() << "\tmemory = " << states.memoryDelta());
-#endif
+  DEBUGOUTPUT(DEBUGHIGHLIGHT("Metal Short:\t") << total << "\tlayer " << layer << "\tnets = " << layout->get_sub_layouts().size()
+                                               << "\ttime = " << states.elapsedRunTime() << "\tmemory = " << states.memoryDelta());
 }
 
 }  // namespace idrc

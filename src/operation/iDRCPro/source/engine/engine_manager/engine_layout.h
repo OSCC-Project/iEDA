@@ -19,6 +19,7 @@
 
 #include <map>
 
+#include "boost_definition.h"
 #include "engine_geometry.h"
 #include "engine_sublayout.h"
 #include "geometry_boost.h"
@@ -31,6 +32,7 @@ namespace idrc {
 /**
  *  DrcEngineLayout definition : describe all shapes for all nets in one layer
  */
+typedef bg::index::rtree<std::pair<ieda_solver::BgRect, DrcEngineSubLayout*>, bg::index::quadratic<16>> EngineRTree;
 
 class DrcDataManager;
 
@@ -42,16 +44,21 @@ class DrcEngineLayout
 
   std::map<int, DrcEngineSubLayout*>& get_sub_layouts() { return _sub_layouts; }
   DrcEngineSubLayout* get_sub_layout(int net_id);
-//   ieda_solver::EngineGeometry* get_net_engine(int net_id);
-//   ieda_solver::EngineGeometry* get_layout_engine() { return _engine; }
+  //   ieda_solver::EngineGeometry* get_net_engine(int net_id);
+  //   ieda_solver::EngineGeometry* get_layout_engine() { return _engine; }
   ieda_solver::GeometryBoost* get_net_engine(int net_id);
-  ieda_solver::GeometryBoost* get_layout_engine() { return (ieda_solver::GeometryBoost*)_engine; }
+  ieda_solver::GeometryBoost* get_layout_engine() { return (ieda_solver::GeometryBoost*) _engine; }
 
-//   uint64_t pointCount();
+  //   uint64_t pointCount();
 
   bool addRect(int llx, int lly, int urx, int ury, int net_id);
 
   void combineLayout(DrcDataManager* data_manager);
+
+  /// engine RTree
+  void addRTreeSubLayout(DrcEngineSubLayout* sub_layout);
+  std::set<DrcEngineSubLayout*> querySubLayouts(int llx, int lly, int urx, int ury);
+  std::set<int> querySubLayoutNetId(int llx, int lly, int urx, int ury);
 
  private:
   /**
@@ -63,7 +70,12 @@ class DrcEngineLayout
    * DrcEngineSubLayout* : sub layout ptr describe the net shapes
    */
   std::map<int, DrcEngineSubLayout*> _sub_layouts;
-  //   DrcEngineSubLayout* _layout;
+  /**
+   * region query
+   */
+  EngineRTree _query_tree;
+
+  /// whole design
   ieda_solver::EngineGeometry* _engine = nullptr;
 };
 

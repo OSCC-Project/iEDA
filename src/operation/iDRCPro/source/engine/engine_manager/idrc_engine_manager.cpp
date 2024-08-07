@@ -32,11 +32,15 @@ namespace idrc {
 DrcEngineManager::DrcEngineManager(DrcDataManager* data_manager, DrcConditionManager* condition_manager)
     : _data_manager(data_manager), _condition_manager(condition_manager)
 {
-  _layouts
-      = {{LayoutType::kRouting, std::map<std::string, DrcEngineLayout*>{}}, {LayoutType::kCut, std::map<std::string, DrcEngineLayout*>{}}};
-  _scanline_matrix = {{LayoutType::kRouting, std::map<std::string, DrcEngineScanline*>{}},
-                      {LayoutType::kCut, std::map<std::string, DrcEngineScanline*>{}}};
-  // _engine_check = new DrcEngineCheck();
+  std::map<std::string, DrcEngineLayout*> routing_map;
+  std::map<std::string, DrcEngineLayout*> cut_map;
+  _layouts.insert(std::make_pair(LayoutType::kRouting, routing_map));
+  _layouts.insert(std::make_pair(LayoutType::kCut, cut_map));
+
+  std::map<std::string, DrcEngineScanline*> routing_matrix_map;
+  std::map<std::string, DrcEngineScanline*> cut_matrix_map;
+  _scanline_matrix.insert(std::make_pair(LayoutType::kRouting, routing_matrix_map));
+  _scanline_matrix.insert(std::make_pair(LayoutType::kCut, cut_matrix_map));
 }
 
 DrcEngineManager::~DrcEngineManager()
@@ -65,18 +69,33 @@ DrcEngineManager::~DrcEngineManager()
   _scanline_matrix.clear();
 }
 
+std::map<std::string, DrcEngineLayout*>& DrcEngineManager::get_engine_layouts(LayoutType type)
+{
+  auto it = _layouts.find(type);
+  if (it != _layouts.end()) {
+    return it->second;
+  } else {
+    auto layout = std::make_pair(type, std::map<std::string, DrcEngineLayout*>{});
+    _layouts.insert(layout);
+
+    return layout.second;
+  }
+}
+
 // get or create layout engine for each layer
 DrcEngineLayout* DrcEngineManager::get_layout(std::string layer, LayoutType type)
 {
   auto& layouts = get_engine_layouts(type);
 
-  auto* engine_layout = layouts[layer];
-  if (engine_layout == nullptr) {
-    engine_layout = new DrcEngineLayout(layer);
-    layouts[layer] = engine_layout;
-  }
+  auto it = layouts.find(layer);
+  if (it != layouts.end()) {
+    return it->second;
+  } else {
+    DrcEngineLayout* engine_layout = new DrcEngineLayout(layer);
+    layouts.insert(std::make_pair(layer, engine_layout));
 
-  return engine_layout;
+    return engine_layout;
+  }
 }
 // add rect to engine
 bool DrcEngineManager::addRect(int llx, int lly, int urx, int ury, std::string layer, int net_id, LayoutType type)
@@ -109,7 +128,7 @@ void DrcEngineManager::filterData()
     // overlap
     _condition_manager->checkOverlap(layer, layout);
 
-    // min spacing
+    // // min spacing
     _condition_manager->checkMinSpacing(layer, layout);
 
     // jog and prl

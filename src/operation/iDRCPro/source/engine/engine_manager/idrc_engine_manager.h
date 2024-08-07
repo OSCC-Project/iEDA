@@ -39,7 +39,7 @@ class DrcEngineManager
   ~DrcEngineManager();
 
   /// data manager
-  std::map<std::string, DrcEngineLayout*>& get_engine_layouts(LayoutType type = LayoutType::kRouting) { return _layouts[type]; }
+  std::map<std::string, DrcEngineLayout*>& get_engine_layouts(LayoutType type = LayoutType::kRouting);
   DrcEngineLayout* get_layout(std::string layer, LayoutType type = LayoutType::kRouting);
 
   /// scanline manager

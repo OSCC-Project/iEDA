@@ -16,7 +16,7 @@
 // ***************************************************************************************
 #include "idrc_violation_manager.h"
 
-// #include "idrc_violation.h"
+#include "idrc_engine_manager.h"
 #include "DRCViolationType.h"
 
 namespace idrc {
@@ -35,6 +35,44 @@ DrcViolationManager::~DrcViolationManager()
     std::vector<DrcViolation*>().swap(violations);
   }
   _violation_list.clear();
+}
+
+void DrcViolationManager::set_net_ids(DrcEngineManager* engine_manager)
+{
+  for (auto& [type, violation_list] : _violation_list) {
+    for (auto* violation : violation_list) {
+      auto* violation_rect = static_cast<DrcViolationRect*>(violation);
+      auto layer = violation_rect->get_layer()->get_name();
+      auto* layout = engine_manager->get_layout(layer);
+      auto net_ids = layout->querySubLayoutNetId(violation_rect->get_llx(), violation_rect->get_lly(), violation_rect->get_urx(),
+                                                 violation_rect->get_ury());
+      violation_rect->set_net_ids(net_ids);
+    }
+  }
+}
+
+std::map<ViolationEnumType, std::vector<DrcViolation*>> DrcViolationManager::get_violation_map(DrcEngineManager* engine_manager)
+{
+  set_net_ids(engine_manager);
+  return std::move(_violation_list);
+}
+
+std::vector<DrcViolation*>& DrcViolationManager::get_violation_list(ViolationEnumType type)
+{
+  if (false == _violation_list.contains(type)) {
+    _violation_list[type] = std::vector<DrcViolation*>{};
+  }
+  return _violation_list[type];
+}
+
+void DrcViolationManager::addViolation(int llx, int lly, int urx, int ury, ViolationEnumType type, std::set<int> net_id,
+                                       std::string layer_name)
+{
+  idb::IdbLayer* layer = DrcTechRuleInst->findLayer(layer_name);
+  DrcViolationRect* violation_rect = new DrcViolationRect(layer, type, llx, lly, urx, ury);
+  violation_rect->set_net_ids(net_id);
+  auto& violation_list = get_violation_list(type);
+  violation_list.emplace_back(static_cast<DrcViolation*>(violation_rect));
 }
 
 }  // namespace idrc
