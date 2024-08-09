@@ -31,6 +31,7 @@ class DrcEngineSubLayout
   bool isIntersect(int llx, int lly, int urx, int ury);
   void markChecked(int net_id);
   bool hasChecked(int net_id);
+  bool clearChecked();
 
  private:
   /**

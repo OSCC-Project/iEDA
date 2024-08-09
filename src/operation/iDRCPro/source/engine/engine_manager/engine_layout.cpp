@@ -67,6 +67,15 @@ DrcEngineSubLayout* DrcEngineLayout::get_sub_layout(int net_id)
     return sub_layout;
   }
 }
+/**
+ * clear sub layout marked net id
+ */
+void DrcEngineLayout::clearSublayoutMark()
+{
+  for (auto& [net_id, sub_layout] : _sub_layouts) {
+    sub_layout->clearChecked();
+  }
+}
 
 ieda_solver::GeometryBoost* DrcEngineLayout::get_net_engine(int net_id)
 {

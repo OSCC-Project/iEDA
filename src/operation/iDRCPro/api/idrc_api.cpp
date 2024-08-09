@@ -66,6 +66,8 @@ std::map<ViolationEnumType, std::vector<DrcViolation*>> DrcApi::check(std::vecto
 
   auto check_type = (env_shape_list.size() + pin_data.size() + routing_data.size()) > 0 ? DrcCheckerType::kRT : DrcCheckerType::kDef;
 
+  condition_manager->set_check_type(check_type);
+
 #ifdef DEBUG_IDRC_API
   if (DrcCheckerType::kDef == check_type) {
     std::cout << "idrc : check def" << std::endl;

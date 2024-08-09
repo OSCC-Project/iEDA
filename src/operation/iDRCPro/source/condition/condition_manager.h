@@ -22,6 +22,7 @@
 #include <vector>
 
 #include "engine_geometry.h"
+#include "idrc_data.h"
 #include "idrc_util.h"
 #include "idrc_violation_manager.h"
 #include "tech_rules.h"
@@ -71,6 +72,7 @@ class DrcConditionManager
   DrcViolationManager* get_violation_manager() { return _violation_manager; }
 
   void set_check_select(std::set<ViolationEnumType> check_select);
+  void set_check_type(DrcCheckerType check_type);
 
   void checkOverlap(std::string layer, DrcEngineLayout* layout);
   void checkMinSpacing(std::string layer, DrcEngineLayout* layout);
@@ -79,6 +81,7 @@ class DrcConditionManager
 
  private:
   DrcViolationManager* _violation_manager;
+  DrcCheckerType _check_type;
 
   std::set<ViolationEnumType> _check_select;
 

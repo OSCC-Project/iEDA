@@ -165,10 +165,6 @@ void DrcEngineManager::filterData()
     }
 
     DEBUGOUTPUT("Need to check layer:\t" << layer);
-    if (layer != "M5" && layer != "M4") {
-      continue;
-    }
-
     // overlap
     _condition_manager->checkOverlap(layer, layout);
 
@@ -176,10 +172,10 @@ void DrcEngineManager::filterData()
     _condition_manager->checkMinSpacing(layer, layout);
 
     // jog and prl
-    // _condition_manager->checkWires(layer, layout);
+    _condition_manager->checkWires(layer, layout);
 
-    // // edge
-    // _condition_manager->checkPolygons(layer, layout);
+    // edge
+    _condition_manager->checkPolygons(layer, layout);
   }
 
   for (auto& [layer, layout] : get_engine_layouts(LayoutType::kCut)) {

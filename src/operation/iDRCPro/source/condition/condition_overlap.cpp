@@ -33,12 +33,21 @@ void DrcConditionManager::checkOverlap(std::string layer, DrcEngineLayout* layou
   int total_overlaps = 0;
 
   for (auto& [net_id, sub_layout] : layout->get_sub_layouts()) {
+    /// skip environment checking for RT result
+    if (_check_type == DrcCheckerType::kRT && net_id < 0) {
+      continue;
+    }
+    /// VDD & VSS must be check for def
+    if (net_id < 0 && (net_id != NET_ID_VDD || net_id != NET_ID_VSS)) {
+      continue;
+    }
+
     auto [llx, lly, urx, ury] = sub_layout->get_engine()->bounding_box();
 
     auto query_sub_layouts = layout->querySubLayouts(llx, lly, urx, ury);
     for (auto* query_sub_layout : query_sub_layouts) {
       auto query_id = query_sub_layout->get_id();
-      if (query_id == -1 || query_id == net_id || true == sub_layout->hasChecked(query_id)) {
+      if (query_id == net_id || true == sub_layout->hasChecked(query_id)) {
         continue;
       }
       auto& overlaps = sub_layout->get_engine()->getOverlap(query_sub_layout->get_engine());

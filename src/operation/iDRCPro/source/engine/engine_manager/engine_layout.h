@@ -44,6 +44,7 @@ class DrcEngineLayout
 
   std::map<int, DrcEngineSubLayout*>& get_sub_layouts() { return _sub_layouts; }
   DrcEngineSubLayout* get_sub_layout(int net_id);
+  void clearSublayoutMark();// clear all sub layout marked net
   //   ieda_solver::EngineGeometry* get_net_engine(int net_id);
   //   ieda_solver::EngineGeometry* get_layout_engine() { return _engine; }
   ieda_solver::GeometryBoost* get_net_engine(int net_id);

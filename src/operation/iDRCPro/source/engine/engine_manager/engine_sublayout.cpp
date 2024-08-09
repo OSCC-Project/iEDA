@@ -53,4 +53,8 @@ bool DrcEngineSubLayout::hasChecked(int net_id)
   return _check_nets.find(net_id) != _check_nets.end() ? true : false;
 }
 
+bool DrcEngineSubLayout::clearChecked(){
+    _check_nets.clear();
+}
+
 }  // namespace idrc

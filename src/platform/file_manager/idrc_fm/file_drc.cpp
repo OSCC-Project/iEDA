@@ -37,6 +37,7 @@
 
 #include "IdbLayer.h"
 #include "idm.h"
+#include "idrc_data.h"
 #include "idrc_io/idrc_io.h"
 #include "json_parser.h"
 
@@ -266,11 +267,18 @@ bool FileDrcManager::saveJson()
         json_drc["inst"] = json::array();
 
         for (auto net_id : drc_rect->get_net_ids()) {
-          auto net = idb_nets->find_net(net_id);
-          if (net != nullptr) {
-            json_drc["net"].push_back(net->get_net_name());
+          if (net_id == NET_ID_VDD || net_id == NET_ID_VSS) {
+            /// pdn net
+            std::string net_name = net_id == NET_ID_VDD ? "VDD" : "VSS";
+            json_drc["net"].push_back(net_name);
           } else {
-            json_drc["net"].push_back("-1");  /// save -1 as a blockage
+            /// regular net
+            auto net = idb_nets->find_net(net_id);
+            if (net != nullptr) {
+              json_drc["net"].push_back(net->get_net_name());
+            } else {
+              json_drc["net"].push_back("-1");  /// save -1 as a blockage
+            }
           }
         }
 
