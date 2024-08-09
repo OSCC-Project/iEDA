@@ -29,7 +29,7 @@ void DrcConditionManager::checkPolygons(std::string layer, DrcEngineLayout* layo
   int enclosed_area_count = 0;
   int area_count = 0;
 
-  auto& layer_polyset = layout->get_layout()->get_engine()->get_polyset();
+  auto& layer_polyset = layout->get_layout_engine()->get_polyset();
 
 #ifdef DEBUG_IDRC_CONDITION
   std::vector<ieda_solver::GeometryViewPolygon> polygons;
@@ -128,7 +128,7 @@ void DrcConditionManager::checkPolygons(std::string layer, DrcEngineLayout* layo
   };
 
   // filter polygon edges
-  auto& polygon_with_holes = layout->get_layout()->get_engine()->getLayoutPolygons();
+  auto& polygon_with_holes = layout->get_layout_engine()->getLayoutPolygons();
   for (auto& polygon : polygon_with_holes) {
     int polygon_point_number = polygon.size();
     if (polygon_point_number < 4) {
@@ -489,7 +489,7 @@ void DrcConditionManager::checkPolygons(std::string layer, DrcEngineLayout* layo
     ieda_solver::shrink(par_shrink_horizontal, ieda_solver::HORIZONTAL, shrink_size);
     ieda_solver::GeometryPolygonSet par_shrink = par_shrink_vertical | par_shrink_horizontal;
     auto par_regions_to_remove = regions_to_remove;
-    ieda_solver::interact(par_regions_to_remove, par_shrink);
+    ieda_solver::get_interact(par_regions_to_remove, par_shrink);
     regions_to_remove -= par_regions_to_remove;
   };
   for (auto& rule_eol : rule_eol_list) {
@@ -513,29 +513,29 @@ void DrcConditionManager::checkPolygons(std::string layer, DrcEngineLayout* layo
         if (rule_parallel_edge.is_two_edges()) {
           ieda_solver::GeometryPolygonSet check_regions_left(check_regions);
           ieda_solver::GeometryPolygonSet check_regions_right(check_regions);
-          ieda_solver::interact(check_regions_left, eol_par_space_regions_left[rule_eol]);
-          ieda_solver::interact(check_regions_right, eol_par_space_regions_right[rule_eol]);
+          ieda_solver::get_interact(check_regions_left, eol_par_space_regions_left[rule_eol]);
+          ieda_solver::get_interact(check_regions_right, eol_par_space_regions_right[rule_eol]);
           check_regions = check_regions_left & check_regions_right;
         }
 
         // remain polygons could be same metal
         par_space_regions = eol_par_space_regions_left[rule_eol] | eol_par_space_regions_right[rule_eol];
-        ieda_solver::interact(data_to_check, par_space_regions);
+        ieda_solver::get_interact(data_to_check, par_space_regions);
       } else {
         par_space_regions = eol_par_space_regions_left[rule_eol] | eol_par_space_regions_right[rule_eol];
       }
 
       // remove detect regions that not contain any par edges
       ieda_solver::GeometryPolygonSet detected_wires = par_space_regions & data_to_check;
-      ieda_solver::interact(par_space_regions, detected_wires);
+      ieda_solver::get_interact(par_space_regions, detected_wires);
 
       // remain check regions contain par edges
-      ieda_solver::interact(check_regions, par_space_regions);
+      ieda_solver::get_interact(check_regions, par_space_regions);
     }
 
     // remain check regions contain eol spacing violations
     ieda_solver::GeometryPolygonSet violation_wires = check_regions & data_to_check;
-    ieda_solver::interact(check_regions, violation_wires);
+    ieda_solver::get_interact(check_regions, violation_wires);
     ieda_solver::GeometryPolygonSet violation_regions = check_regions - violation_wires;
 
     // create violations
@@ -567,7 +567,7 @@ void DrcConditionManager::checkPolygons(std::string layer, DrcEngineLayout* layo
   int corner_fill_count = 0;
   if (rule_corner_fill) {
     ieda_solver::GeometryPolygonSet violation_wires = corner_fill_check_regions & layer_polyset;
-    ieda_solver::interact(corner_fill_check_regions, violation_wires);
+    ieda_solver::get_interact(corner_fill_check_regions, violation_wires);
     // ieda_solver::GeometryPolygonSet result_regions = corner_fill_check_regions - violation_wires;
 
     std::vector<ieda_solver::GeometryRect> violation_rects;
@@ -590,8 +590,8 @@ void DrcConditionManager::checkPolygons(std::string layer, DrcEngineLayout* layo
     if (rule_notch->get_concave_ends_side_of_notch_width().has_value()) {
       auto detect_regions = notch_width_detect_regions & layer_polyset;
       ieda_solver::GeometryPolygonSet remained_detect_regions = notch_width_detect_regions ^ detect_regions;
-      ieda_solver::interact(notch_width_detect_regions, remained_detect_regions);
-      ieda_solver::interact(notch_spacing_check_regions, notch_width_detect_regions);
+      ieda_solver::get_interact(notch_width_detect_regions, remained_detect_regions);
+      ieda_solver::get_interact(notch_spacing_check_regions, notch_width_detect_regions);
     }
 
     std::vector<ieda_solver::GeometryRect> notch_violations;

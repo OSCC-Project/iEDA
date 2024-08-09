@@ -36,11 +36,6 @@ class IdbCoordinate;
 
 namespace idrc {
 
-#define NET_ID_ENVIRONMENT -1
-#define NET_ID_OBS -2
-// #define NET_ID_POWER -3
-// #define NET_ID_GROUND -4
-
 class DrcEngineManager;
 enum class LayoutType;
 

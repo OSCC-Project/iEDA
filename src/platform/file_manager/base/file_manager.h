@@ -66,7 +66,7 @@ class FileManager
   void set_data_size(uint64_t data_size) { _file_header._data_size = data_size; }
 
   /// file operator
-  bool readFile();
+  virtual bool readFile();
   bool writeFile();
 
   fstream& get_fstream() { return _fstream; }

@@ -76,6 +76,8 @@ class FileDrcManager : public FileManager
   explicit FileDrcManager(string data_path, int32_t object_id) : FileManager(data_path, FileModuleId::kDRC, object_id) {}
   ~FileDrcManager() = default;
 
+  virtual bool readFile() override;
+
  private:
   /// file parser
   virtual bool parseFileData() override;
@@ -83,7 +85,8 @@ class FileDrcManager : public FileManager
   /// file save
   virtual int32_t getBufferSize() override;
   virtual bool saveFileData() override;
-  bool saveFileDataByJson();
+  bool saveJson();
+  bool readJson();
 
   /// pa data
 
@@ -93,6 +96,8 @@ class FileDrcManager : public FileManager
 
   void wrapDrcStruct(idrc::DrcViolation* spot, DrcDetailResult& detail_result);
   idrc::DrcViolation* parseDrcStruct(DrcDetailResult& detail_result);
+
+  std::map<std::string, std::vector<idrc::DrcViolation*>> parseJson(std::string path = "");
 };
 
 }  // namespace iplf

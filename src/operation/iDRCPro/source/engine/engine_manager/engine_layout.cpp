@@ -16,11 +16,18 @@
 // ***************************************************************************************
 #include "engine_layout.h"
 
+#include "engine_geometry_creator.h"
 #include "geometry_boost.h"
 #include "idrc_dm.h"
-#include "idrc_region_query.h"
 
 namespace idrc {
+DrcEngineLayout::DrcEngineLayout(std::string layer) : _layer(layer)
+{
+  _layer = layer;
+  ieda_solver::EngineGeometryCreator geo_creator;
+  _engine = geo_creator.create();
+}
+
 DrcEngineLayout::~DrcEngineLayout()
 {
   for (auto& [id, sub_layout] : _sub_layouts) {
@@ -29,7 +36,10 @@ DrcEngineLayout::~DrcEngineLayout()
       sub_layout = nullptr;
     }
   }
-  delete _layout;
+  if (_engine != nullptr) {
+    delete _engine;
+    _engine = nullptr;
+  }
 
   _sub_layouts.clear();
 }
@@ -48,20 +58,30 @@ bool DrcEngineLayout::addRect(int llx, int lly, int urx, int ury, int net_id)
 
 DrcEngineSubLayout* DrcEngineLayout::get_sub_layout(int net_id)
 {
-  auto* sub_layout = _sub_layouts[net_id];
-  if (sub_layout == nullptr) {
-    sub_layout = new DrcEngineSubLayout(net_id);
-    _sub_layouts[net_id] = sub_layout;
+  auto it = _sub_layouts.find(net_id);
+  if (it != _sub_layouts.end()) {
+    return it->second;
+  } else {
+    DrcEngineSubLayout* sub_layout = new DrcEngineSubLayout(net_id);
+    _sub_layouts.insert(std::make_pair(net_id, sub_layout));
+    return sub_layout;
   }
-
-  return sub_layout;
+}
+/**
+ * clear sub layout marked net id
+ */
+void DrcEngineLayout::clearSublayoutMark()
+{
+  for (auto& [net_id, sub_layout] : _sub_layouts) {
+    sub_layout->clearChecked();
+  }
 }
 
-ieda_solver::EngineGeometry* DrcEngineLayout::get_net_engine(int net_id)
+ieda_solver::GeometryBoost* DrcEngineLayout::get_net_engine(int net_id)
 {
   auto* sub_layout = get_sub_layout(net_id);
 
-  return sub_layout == nullptr ? nullptr : sub_layout->get_engine();
+  return sub_layout == nullptr ? nullptr : (ieda_solver::GeometryBoost*) sub_layout->get_engine();
 }
 
 // uint64_t DrcEngineLayout::pointCount()
@@ -80,12 +100,47 @@ ieda_solver::EngineGeometry* DrcEngineLayout::get_net_engine(int net_id)
 void DrcEngineLayout::combineLayout(DrcDataManager* data_manager)
 {
   for (auto& [net_id, sub_layout] : _sub_layouts) {
-    _layout->get_engine()->addGeometry(sub_layout->get_engine());
-    auto net_id_rects = sub_layout->get_engine()->getRects();
-    for (auto& rect : net_id_rects) {
-      data_manager->get_region_query()->addRect(rect, _layer, net_id);
+    _engine->addGeometry(sub_layout->get_engine());
+
+    /// build engine sublayout RTree
+    addRTreeSubLayout(sub_layout);
+  }
+}
+
+void DrcEngineLayout::addRTreeSubLayout(DrcEngineSubLayout* sub_layout)
+{
+  auto bounding_box = sub_layout->get_engine()->bounding_box();
+  ieda_solver::BgRect rtree_rect(ieda_solver::BgPoint(std::get<0>(bounding_box), std::get<1>(bounding_box)),
+                                 ieda_solver::BgPoint(std::get<2>(bounding_box), std::get<3>(bounding_box)));
+  _query_tree.insert(std::make_pair(rtree_rect, sub_layout));
+}
+
+std::set<DrcEngineSubLayout*> DrcEngineLayout::querySubLayouts(int llx, int lly, int urx, int ury)
+{
+  std::set<DrcEngineSubLayout*> sub_layouts;
+
+  std::vector<std::pair<ieda_solver::BgRect, DrcEngineSubLayout*>> result;
+  ieda_solver::BgRect rect(ieda_solver::BgPoint(llx, lly), ieda_solver::BgPoint(urx, ury));
+  _query_tree.query(bg::index::intersects(rect), std::back_inserter(result));
+  for (auto& [bg_rect, sub_layout] : result) {
+    sub_layouts.insert(sub_layout);
+  }
+
+  return sub_layouts;
+}
+
+std::set<int> DrcEngineLayout::querySubLayoutNetId(int llx, int lly, int urx, int ury)
+{
+  std::set<int> net_ids;
+
+  auto sub_layouts = querySubLayouts(llx, lly, urx, ury);
+  for (auto sub_layout : sub_layouts) {
+    if (sub_layout->isIntersect(llx, lly, urx, ury)) {
+      net_ids.insert(sub_layout->get_id());
     }
   }
+
+  return net_ids;
 }
 
 }  // namespace idrc

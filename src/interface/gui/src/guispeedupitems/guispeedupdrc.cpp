@@ -130,7 +130,7 @@ bool GuiSpeedupDrc::is_visible() {
   }
 
   if (get_type() == GuiSpeedupItemType::kDrcMinArea) {
-    return tree_node.isChecked("Minimal Area") && guiConfig->isLayerVisible(_z_order);
+    return tree_node.isChecked("Minimum Area") && guiConfig->isLayerVisible(_z_order);
   }
 
   return false;

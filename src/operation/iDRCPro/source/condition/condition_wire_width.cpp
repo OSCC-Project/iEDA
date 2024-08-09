@@ -31,7 +31,7 @@ void DrcConditionManager::checkWires(std::string layer, DrcEngineLayout* layout)
   auto rule_jog_to_jog = DrcTechRuleInst->getJogToJog(layer);
   auto rule_spacing_table = DrcTechRuleInst->getSpacingTable(layer);
 
-  auto& wires = layout->get_layout()->get_engine()->getWires();
+  auto& wires = layout->get_layout_engine()->getWires();
   for (auto& wire : wires) {
     // jog
     auto wire_direction = ieda_solver::getWireDirection(wire);
@@ -85,7 +85,7 @@ void DrcConditionManager::checkJog(std::string layer, DrcEngineLayout* layout, s
   int jog_count = 0;
   auto rule_jog_to_jog = DrcTechRuleInst->getJogToJog(layer);
   if (rule_jog_to_jog) {
-    auto& layer_polyset = layout->get_layout()->get_engine()->get_polyset();
+    auto& layer_polyset = layout->get_layout_engine()->get_polyset();
     std::vector<ieda_solver::GeometryRect> jog_violations;
     for (auto& [rule_width, jog_wires] : jog_wire_map) {
       int rule_short_jog_spacing = rule_jog_to_jog->get_short_jog_spacing();
@@ -103,7 +103,7 @@ void DrcConditionManager::checkJog(std::string layer, DrcEngineLayout* layout, s
             auto expand_wires = jog_wires;
             ieda_solver::bloat(expand_wires, spacing_direction, rule_within);
             auto wire_with_jogs = layer_polyset;
-            ieda_solver::interact(wire_with_jogs, jog_wires);
+            ieda_solver::get_interact(wire_with_jogs, jog_wires);
             auto jogs_attach_to_wire = wire_with_jogs - jog_wires;
             auto check_region = expand_wires - layer_polyset;
             auto within_region = check_region + jogs_attach_to_wire;
@@ -117,7 +117,7 @@ void DrcConditionManager::checkJog(std::string layer, DrcEngineLayout* layout, s
                 split_check_rects_set += rect;
               }
             }
-            ieda_solver::interact(split_check_rects_set, wire_with_jogs);
+            ieda_solver::get_interact(split_check_rects_set, wire_with_jogs);
             ieda_solver::bloat(split_check_rects_set, prl_direction, 1);
             ieda_solver::GeometryPolygonSet region_b = split_check_rects_set - jogs_attach_to_wire;
             std::vector<ieda_solver::GeometryPolygon> region_b_polygons;
@@ -187,7 +187,7 @@ void DrcConditionManager::checkSpacingTable(std::string layer, DrcEngineLayout* 
   int prl_count = 0;
   auto rule_spacing_table = DrcTechRuleInst->getSpacingTable(layer);
   if (rule_spacing_table && rule_spacing_table->is_parallel()) {
-    auto& layer_polyset = layout->get_layout()->get_engine()->get_polyset();
+    auto& layer_polyset = layout->get_layout_engine()->get_polyset();
     auto idb_table_prl = rule_spacing_table->get_parallel();
 
     auto& idb_prl_length_list = idb_table_prl->get_parallel_length_list();
@@ -205,7 +205,7 @@ void DrcConditionManager::checkSpacingTable(std::string layer, DrcEngineLayout* 
         auto expand_wires = wire_set;
         ieda_solver::bloat(expand_wires, direction, expand_size);
         auto wire_with_jogs = layer_polyset;
-        ieda_solver::interact(wire_with_jogs, wire_set);
+        ieda_solver::get_interact(wire_with_jogs, wire_set);
         auto expand_region = expand_wires - wire_with_jogs;
         auto check_region = expand_region & layer_polyset;
 
@@ -223,7 +223,7 @@ void DrcConditionManager::checkSpacingTable(std::string layer, DrcEngineLayout* 
         }
 
         ieda_solver::GeometryPolygonSet touch_wire_region(violation_region_set - check_region);
-        ieda_solver::interact(touch_wire_region, wire_set);
+        ieda_solver::get_interact(touch_wire_region, wire_set);
 
         std::vector<ieda_solver::GeometryRect> current_violations;
         touch_wire_region.get(current_violations);

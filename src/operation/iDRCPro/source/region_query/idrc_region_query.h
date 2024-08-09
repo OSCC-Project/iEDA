@@ -49,7 +49,11 @@ class DrcRegionQuery
 
  private:
   DrcDataManager* _data_manager = nullptr;
-
+  /** build rtree for rects in same layer
+   * std::string : layer
+   * ieda_solver::BgRect : range rect
+   * int : net id
+  */ 
   std::map<std::string, bg::index::rtree<std::pair<ieda_solver::BgRect, int>, bg::index::quadratic<16>>> _query_tree;
 };
 
