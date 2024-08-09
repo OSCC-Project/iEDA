@@ -35,7 +35,7 @@ DrcEngineSubLayout::~DrcEngineSubLayout()
     _engine = nullptr;
   }
 
-  _touch_nets.clear();
+  _check_nets.clear();
 }
 
 bool DrcEngineSubLayout::isIntersect(int llx, int lly, int urx, int ury)
@@ -43,14 +43,14 @@ bool DrcEngineSubLayout::isIntersect(int llx, int lly, int urx, int ury)
   return _engine->isIntersect(llx, lly, urx, ury);
 }
 
-void DrcEngineSubLayout::addIntersectNet(int intersect_net)
+void DrcEngineSubLayout::markChecked(int net_id)
 {
-  _touch_nets.insert(intersect_net);
+  _check_nets.insert(net_id);
 }
 
-bool DrcEngineSubLayout::hasCheckIntersect(int net_id)
+bool DrcEngineSubLayout::hasChecked(int net_id)
 {
-  return _touch_nets.find(net_id) != _touch_nets.end() ? true : false;
+  return _check_nets.find(net_id) != _check_nets.end() ? true : false;
 }
 
 }  // namespace idrc

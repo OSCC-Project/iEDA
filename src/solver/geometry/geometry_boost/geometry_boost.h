@@ -40,6 +40,7 @@ class GeometryBoost : public EngineGeometry
   ~GeometryBoost();
 
   GeometryPolygonSet& get_polyset() { return _polyset; }
+  GeometryPolygonSet copyPolyset() { return _polyset; }
 
   void addRect(int llx, int lly, int urx, int ury) override;
   // std::pair<uint64_t, std::vector<std::vector<GtlPoint>>> get_boost_polygons_points();

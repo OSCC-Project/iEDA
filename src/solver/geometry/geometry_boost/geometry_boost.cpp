@@ -47,9 +47,10 @@ bool GeometryBoost::isIntersect(int llx, int lly, int urx, int ury)
   target_set += rect;
 
   auto& interact_poly = self_set.interact(target_set);
-  std::vector<GeometryPolygon> overlap_list;
-  interact_poly.get(overlap_list);
-  return overlap_list.size() > 0 ? true : false;
+
+  //   std::vector<GeometryPolygon> overlap_list;
+  //   interact_poly.get(overlap_list);
+  return interact_poly.empty() ? false : true;
 }
 
 /**

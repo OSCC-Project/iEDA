@@ -19,7 +19,6 @@
 #include "engine_geometry_creator.h"
 #include "geometry_boost.h"
 #include "idrc_dm.h"
-#include "idrc_region_query.h"
 
 namespace idrc {
 DrcEngineLayout::DrcEngineLayout(std::string layer) : _layer(layer)
@@ -92,11 +91,7 @@ ieda_solver::GeometryBoost* DrcEngineLayout::get_net_engine(int net_id)
 void DrcEngineLayout::combineLayout(DrcDataManager* data_manager)
 {
   for (auto& [net_id, sub_layout] : _sub_layouts) {
-    // _engine->addGeometry(sub_layout->get_engine());
-    // auto net_id_rects = sub_layout->get_engine()->getRects();
-    // for (auto& rect : net_id_rects) {
-    //   data_manager->get_region_query()->addRect(rect, _layer, net_id);
-    // }
+    _engine->addGeometry(sub_layout->get_engine());
 
     /// build engine sublayout RTree
     addRTreeSubLayout(sub_layout);

@@ -10,7 +10,6 @@ target_link_libraries(idrc_engine_manager
     idrc_pro_data
     idrc_pro_tech_rules
     idrc_pro_violation
-    idrc_pro_region_query
     idm
 )
 
@@ -19,3 +18,10 @@ target_include_directories(idrc_engine_manager
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
+if(DEBUG_IDRC_ENGINE_MANAGER)
+  message(STATUS "iDRC: DEBUG_IDRC_ENGINE_MANAGER")
+  set(CMAKE_BUILD_TYPE "Debug")
+else()
+  message(STATUS "iDRC: RELEASE_IDRC_ENGINE_MANAGER")
+  set(CMAKE_BUILD_TYPE "Release")
+endif()

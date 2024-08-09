@@ -40,6 +40,7 @@ DrcViolationManager::~DrcViolationManager()
 void DrcViolationManager::set_net_ids(DrcEngineManager* engine_manager)
 {
   for (auto& [type, violation_list] : _violation_list) {
+#pragma omp parallel for
     for (auto* violation : violation_list) {
       auto* violation_rect = static_cast<DrcViolationRect*>(violation);
       if (violation_rect->get_net_ids().size() <= 0) {

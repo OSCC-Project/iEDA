@@ -26,20 +26,20 @@ class DrcEngineSubLayout
   ~DrcEngineSubLayout();
 
   int get_id() { return _id; }
-//   ieda_solver::EngineGeometry* get_engine() { return _engine; }
-  ieda_solver::GeometryBoost* get_engine() { return (ieda_solver::GeometryBoost*)_engine; }
+  //   ieda_solver::EngineGeometry* get_engine() { return _engine; }
+  ieda_solver::GeometryBoost* get_engine() { return (ieda_solver::GeometryBoost*) _engine; }
   bool isIntersect(int llx, int lly, int urx, int ury);
-  void addIntersectNet(int intersect_net);
-  bool hasCheckIntersect(int net_id);
+  void markChecked(int net_id);
+  bool hasChecked(int net_id);
+
  private:
   /**
    * _id : net id
    * _engine : a geometry ptr including all shapes in one net
    */
   int _id = -1;
-  std::set<int> _touch_nets; /// nets in other sublayouts that intersect with this sublayout
+  std::set<int> _check_nets;  /// net ids in other sublayouts that has been checked with this sublayout
   ieda_solver::EngineGeometry* _engine = nullptr;
-  
 };
 
 }  // namespace idrc

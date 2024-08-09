@@ -26,7 +26,6 @@
 #include "boost_definition.h"
 #include "idm.h"
 #include "idrc_dm.h"
-#include "idrc_region_query.h"
 #include "idrc_violation.h"
 #include "tech_rules.h"
 

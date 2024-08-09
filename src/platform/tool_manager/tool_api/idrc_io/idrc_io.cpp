@@ -27,6 +27,21 @@ DrcIO* DrcIO::_instance = nullptr;
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void DrcIO::clear()
+{
+  for (auto& [drc_rule, drc_list] : _detail_drc) {
+    for (auto* drc : drc_list) {
+      if (drc != nullptr) {
+        delete drc;
+        drc = nullptr;
+      }
+      drc_list.clear();
+      std::vector<idrc::DrcViolation*>().swap(drc_list);
+    }
+  }
+
+  _detail_drc.clear();
+}
 bool DrcIO::runDRC(std::string config, std::string report_path)
 {
   if (config.empty()) {
@@ -91,6 +106,12 @@ void DrcIO::get_def_drc()
 
     _detail_drc.insert(std::make_pair(name, violation_list));
   }
+}
+
+void DrcIO::set_detail_drc(std::map<std::string, std::vector<idrc::DrcViolation*>>& detail_drc)
+{
+  clear();
+  _detail_drc = detail_drc;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

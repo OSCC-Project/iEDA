@@ -234,6 +234,7 @@ bool FileDrcManager::saveJson()
   if (tail_str != "json") {
     return false;
   }
+  std::cout << std::endl << "Begin save feature json, path = " << path << std::endl;
 
   auto idb_insts = dmInst->get_idb_design()->get_instance_list();
   auto idb_nets = dmInst->get_idb_design()->get_net_list();
@@ -243,12 +244,14 @@ bool FileDrcManager::saveJson()
   drc_json["drc"]["number"] = 0;
   int total = 0;  /// drc total number
 
-  json json_distribution = json::array();
+  json json_distribution;
   auto& detail_rule_map = drcInst->get_detail_drc();
 
   for (auto [rule_name, drc_list] : detail_rule_map) {
     json json_rule;
-    json_rule[rule_name]["number"] = drc_list.size();
+    json_rule["number"] = drc_list.size();
+    json_rule["layers"] = {};
+
     total += drc_list.size();
 
     std::map<std::string, json> layer_dict;
@@ -258,10 +261,6 @@ bool FileDrcManager::saveJson()
         auto& json_layer = get_layer_dict(drc_rect->get_layer()->get_name(), layer_dict);
 
         json json_drc;
-        json_drc["llx"] = drc_rect->get_llx();
-        json_drc["lly"] = drc_rect->get_lly();
-        json_drc["urx"] = drc_rect->get_urx();
-        json_drc["ury"] = drc_rect->get_ury();
 
         json_drc["net"] = json::array();
         json_drc["inst"] = json::array();
@@ -285,6 +284,11 @@ bool FileDrcManager::saveJson()
           }
         }
 
+        json_drc["llx"] = drc_rect->get_llx();
+        json_drc["lly"] = drc_rect->get_lly();
+        json_drc["urx"] = drc_rect->get_urx();
+        json_drc["ury"] = drc_rect->get_ury();
+
         json_layer["list"].push_back(json_drc);
         int number = json_layer["number"];
         json_layer["number"] = number + 1;
@@ -292,10 +296,10 @@ bool FileDrcManager::saveJson()
     }
 
     for (auto& [layer, node] : layer_dict) {
-      json_rule[rule_name]["layers"][layer] = node;
+      json_rule["layers"][layer] = node;
     }
 
-    json_distribution.push_back(json_rule);
+    json_distribution[rule_name] = json_rule;
   }
 
   drc_json["drc"]["number"] = total;
@@ -306,22 +310,27 @@ bool FileDrcManager::saveJson()
 
   file_stream.close();
 
-  std::cout << std::endl << "Save feature json success, path = " << path << std::endl;
+  std::cout << std::endl << "Save feature json success, path = " << path << " total violation : " << total << std::endl;
   return true;
 }
 
 bool FileDrcManager::readJson()
 {
   auto path = get_data_path();
-  //   std::ifstream& config_stream = ieda::getInputFileStream(path);
+
+  auto detail_rule_map = parseJson(path);
+  drcInst->set_detail_drc(detail_rule_map);
+
+  return true;
+}
+
+std::map<std::string, std::vector<idrc::DrcViolation*>> FileDrcManager::parseJson(std::string path)
+{
+  std::map<std::string, std::vector<idrc::DrcViolation*>> detail_rule_map;
 
   nlohmann::json json;
 
   ieda::initJson(path, json);
-  //   config_stream >> json;
-
-  auto& detail_rule_map = drcInst->get_detail_drc();
-  detail_rule_map.clear();
 
   /// total number
   auto total_drc = ieda::getJsonData(json, {"drc", "number"});
@@ -403,7 +412,7 @@ bool FileDrcManager::readJson()
     detail_rule_map.insert(std::make_pair(drc_type, spot_list));
   }
 
-  return true;
+  return detail_rule_map;
 }
 
 }  // namespace iplf

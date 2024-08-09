@@ -49,7 +49,6 @@ namespace idrc {
 #if DEBUGCLOSE
 #if 1
 // #define DEBUGCLOSE_OVERLAP
-// #define DEBUGCLOSE_MINSPACING
 // #define DEBUGCLOSE_JOG
 // #define DEBUGCLOSE_PRL
 #define DEBUGCLOSE_STEP

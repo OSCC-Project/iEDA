@@ -96,6 +96,8 @@ class FileDrcManager : public FileManager
 
   void wrapDrcStruct(idrc::DrcViolation* spot, DrcDetailResult& detail_result);
   idrc::DrcViolation* parseDrcStruct(DrcDetailResult& detail_result);
+
+  std::map<std::string, std::vector<idrc::DrcViolation*>> parseJson(std::string path = "");
 };
 
 }  // namespace iplf
