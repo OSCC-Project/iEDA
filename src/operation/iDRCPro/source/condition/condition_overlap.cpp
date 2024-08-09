@@ -27,8 +27,6 @@ void DrcConditionManager::checkOverlap(std::string layer, DrcEngineLayout* layou
     return;
   }
 
-  DEBUGOUTPUT(DEBUGHIGHLIGHT("Metal Short:\t") << " Begin checking drc for layer " << layer);
-
   ieda::Stats states;
   int total_overlaps = 0;
 

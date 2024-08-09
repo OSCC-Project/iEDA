@@ -27,7 +27,7 @@ def_init -path $::env(RESULT_DIR)/iRT_result.def
 ##   run DRC
 #===========================================================
 run_drc -config $::env(CONFIG_DIR)/drc_default_config.json -path $::env(RESULT_DIR)/report/drc.rpt
-save_drc -path $::env(RESULT_DIR)/drc/detail.drc
+save_drc -path $::env(RESULT_DIR)/drc/detail.json
 
 #read_drc -path $::env(RESULT_DIR)/drc/detail.drc
 

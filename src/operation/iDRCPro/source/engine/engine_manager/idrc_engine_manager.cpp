@@ -141,7 +141,7 @@ bool DrcEngineManager::addRect(int llx, int lly, int urx, int ury, std::string l
   if (engine_layout == nullptr) {
     return false;
   }
-  if (net_id >= 0) {
+  if (net_id >= 0 || net_id == NET_ID_VDD || net_id == NET_ID_VSS) {
     addLayer(layer, type);
   }
 
