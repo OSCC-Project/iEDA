@@ -130,7 +130,7 @@ bash build.sh
 
 ```bash
 # 下载iEDA仓库
-git clone https://gitee.com/oscc-project/iEDA.git iEDA && cd iEDA
+git clone --recursive https://gitee.com/oscc-project/iEDA.git iEDA && cd iEDA
 # 通过apt安装编译依赖，需要root权限
 sudo bash build.sh -i apt
 # 编译 iEDA
