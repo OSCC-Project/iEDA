@@ -1163,7 +1163,7 @@ mod tests {
         .Z(hold_net_52163));
         DEL150MD1BWP40P140HVT hold_buf_52164 (.I(\u0_soc_top/u0_ysyx_210539/icache/Ram_bw_3_io_wdata[123] ),
         .Z(hold_net_52164));"#;
-        let parse_result = VerilogParser::parse(Rule::inst_block_declaration, input_str);
+        let parse_result = VerilogParser::parse(Rule::assign_or_inst_block_declaration, input_str);
         println!("{:#?}", parse_result);
         // print_parse_result(parse_result);
     }

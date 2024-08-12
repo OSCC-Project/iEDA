@@ -22,11 +22,39 @@
 #include <string>
 #include <vector>
 
-#include "../../../database/interaction/ids.hpp"
+#if 1  // 前向声明
+
+namespace idb {
+class IdbLayerRouting;
+class IdbNet;
+class IdbPin;
+enum class IdbLayerDirection : uint8_t;
+enum class IdbConnectType : uint8_t;
+class IdbLayerShape;
+class IdbRegularWireSegment;
+}  // namespace idb
+
+namespace irt {
+class RoutingLayer;
+class Violation;
+class LayerCoord;
+template <typename T>
+class Segment;
+class Net;
+class Pin;
+enum class Direction;
+enum class ConnectType;
+class EXTLayerRect;
+class TAPanel;
+class DRBox;
+class PlanarCoord;
+}  // namespace irt
 
 namespace ieda_feature {
 class RTSummary;
 }  // namespace ieda_feature
+
+#endif
 
 namespace irt {
 
@@ -39,25 +67,82 @@ class RTInterface
   static void destroyInst();
 
 #if 1  // 外部调用RT的API
-  // RT主要函数
   void initRT(std::map<std::string, std::any> config_map);
   void runEGR();
   void runRT();
   void destroyRT();
-  // 清理def
   void clearDef();
 #endif
 
 #if 1  // RT调用外部的API
-  // 调用iDRC 计算版图的DRC违例
+
+#if 1  // iDB
+
+#if 1  // input
+  void input(std::map<std::string, std::any>& config_map);
+  void wrapConfig(std::map<std::string, std::any>& config_map);
+  void wrapDatabase();
+  void wrapDBInfo();
+  void wrapMicronDBU();
+  void wrapDie();
+  void wrapRow();
+  void wrapLayerList();
+  void wrapTrackAxis(RoutingLayer& routing_layer, idb::IdbLayerRouting* idb_layer);
+  void wrapSpacingTable(RoutingLayer& routing_layer, idb::IdbLayerRouting* idb_layer);
+  void wrapLayerInfo();
+  void wrapLayerViaMasterList();
+  void wrapObstacleList();
+  void wrapNetList();
+  bool isSkipping(idb::IdbNet* idb_net);
+  void wrapPinList(Net& net, idb::IdbNet* idb_net);
+  void wrapPinShapeList(Pin& pin, idb::IdbPin* idb_pin);
+  void wrapDrivenPin(Net& net, idb::IdbNet* idb_net);
+  Direction getRTDirectionByDB(idb::IdbLayerDirection idb_direction);
+  ConnectType getRTConnectTypeByDB(idb::IdbConnectType idb_connect_type);
+#endif
+
+#if 1  // output
+  void output();
+  void outputTrackGrid();
+  void outputGCellGrid();
+  void outputNetList();
+#endif
+
+#if 1  // 获得IdbSegment
+  idb::IdbLayerShape* getIDBLayerShapeByFixedRect(EXTLayerRect* fixed_rect, bool is_routing);
+  idb::IdbRegularWireSegment* getIDBSegmentByNetResult(int32_t net_idx, Segment<LayerCoord>& segment);
+  idb::IdbRegularWireSegment* getIDBSegmentByNetPatch(int32_t net_idx, EXTLayerRect& ext_layer_rect);
+  idb::IdbRegularWireSegment* getIDBWire(int32_t net_idx, Segment<LayerCoord>& segment);
+  idb::IdbRegularWireSegment* getIDBVia(int32_t net_idx, Segment<LayerCoord>& segment);
+#endif
+
+#endif
+
+#if 1  // iDRC
+  std::vector<Violation> getViolationList(TAPanel& ta_panel);
+  std::vector<Violation> getViolationList(DRBox& dr_box);
   std::vector<Violation> getViolationList(std::vector<idb::IdbLayerShape*>& env_shape_list,
                                           std::map<int32_t, std::vector<idb::IdbLayerShape*>>& net_pin_shape_map,
                                           std::map<int32_t, std::vector<idb::IdbRegularWireSegment*>>& net_wire_via_map, std::string stage);
-  // 调用iSTA 计算时序
+#endif
+
+#if 1  // iSTA
   std::map<std::string, std::vector<double>> getTiming(std::vector<std::map<std::string, std::vector<LayerCoord>>>& real_pin_coord_map_list,
                                                        std::vector<std::vector<Segment<LayerCoord>>>& routing_segment_list_list);
-  // 输出summary
+#endif
+
+#if 1  // ieda_feature
   ieda_feature::RTSummary outputSummary();
+#endif
+
+#if 1  // flute
+std::vector<Segment<PlanarCoord>> getPlanarTopoList(std::vector<PlanarCoord> planar_coord_list);
+#endif
+
+#if 1  // lsa
+  void routeTAPanel(TAPanel& ta_panel);
+#endif
+
 #endif
 
  private:

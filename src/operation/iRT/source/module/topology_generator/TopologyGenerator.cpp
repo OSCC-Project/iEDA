@@ -218,7 +218,7 @@ void TopologyGenerator::generateTGModel(TGModel& tg_model)
 void TopologyGenerator::routeTGNet(TGModel& tg_model, TGNet* tg_net)
 {
   std::vector<Segment<PlanarCoord>> routing_segment_list;
-  for (Segment<PlanarCoord>& planar_topo : getPlanarTopoListByFlute(tg_model, tg_net)) {
+  for (Segment<PlanarCoord>& planar_topo : getPlanarTopoList(tg_model, tg_net)) {
     for (Segment<PlanarCoord>& routing_segment : getRoutingSegmentList(tg_model, planar_topo)) {
       routing_segment_list.push_back(routing_segment);
     }
@@ -228,7 +228,7 @@ void TopologyGenerator::routeTGNet(TGModel& tg_model, TGNet* tg_net)
   uploadNetResult(tg_net, coord_tree);
 }
 
-std::vector<Segment<PlanarCoord>> TopologyGenerator::getPlanarTopoListByFlute(TGModel& tg_model, TGNet* tg_net)
+std::vector<Segment<PlanarCoord>> TopologyGenerator::getPlanarTopoList(TGModel& tg_model, TGNet* tg_net)
 {
   int32_t topo_spilt_length = tg_model.get_tg_parameter().get_topo_spilt_length();
 
@@ -240,33 +240,10 @@ std::vector<Segment<PlanarCoord>> TopologyGenerator::getPlanarTopoListByFlute(TG
     std::sort(planar_coord_list.begin(), planar_coord_list.end(), CmpPlanarCoordByXASC());
     planar_coord_list.erase(std::unique(planar_coord_list.begin(), planar_coord_list.end()), planar_coord_list.end());
   }
-  std::vector<Segment<PlanarCoord>> flute_planar_topo_list;
-  if (planar_coord_list.size() > 1) {
-    size_t point_num = planar_coord_list.size();
-    Flute::DTYPE* x_list = (Flute::DTYPE*) malloc(sizeof(Flute::DTYPE) * (point_num));
-    Flute::DTYPE* y_list = (Flute::DTYPE*) malloc(sizeof(Flute::DTYPE) * (point_num));
-    for (size_t i = 0; i < point_num; i++) {
-      x_list[i] = planar_coord_list[i].get_x();
-      y_list[i] = planar_coord_list[i].get_y();
-    }
-    Flute::Tree flute_tree = Flute::flute(point_num, x_list, y_list, FLUTE_ACCURACY);
-    free(x_list);
-    free(y_list);
-
-    for (int32_t i = 0; i < 2 * flute_tree.deg - 2; i++) {
-      int32_t n_id = flute_tree.branch[i].n;
-      PlanarCoord first_coord(flute_tree.branch[i].x, flute_tree.branch[i].y);
-      PlanarCoord second_coord(flute_tree.branch[n_id].x, flute_tree.branch[n_id].y);
-      if (first_coord != second_coord) {
-        flute_planar_topo_list.emplace_back(first_coord, second_coord);
-      }
-    }
-    Flute::free_tree(flute_tree);
-  }
   std::vector<Segment<PlanarCoord>> planar_topo_list;
-  for (Segment<PlanarCoord>& flute_planar_topo : flute_planar_topo_list) {
-    PlanarCoord& first_coord = flute_planar_topo.get_first();
-    PlanarCoord& second_coord = flute_planar_topo.get_second();
+  for (Segment<PlanarCoord>& planar_topo : RTI.getPlanarTopoList(planar_coord_list)) {
+    PlanarCoord& first_coord = planar_topo.get_first();
+    PlanarCoord& second_coord = planar_topo.get_second();
     int32_t span_x = std::abs(first_coord.get_x() - second_coord.get_x());
     int32_t span_y = std::abs(first_coord.get_y() - second_coord.get_y());
     if (span_x > 1 && span_y > 1 && (span_x > topo_spilt_length || span_y > topo_spilt_length)) {
