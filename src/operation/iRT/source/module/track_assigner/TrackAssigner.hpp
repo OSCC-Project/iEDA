@@ -63,6 +63,7 @@ class TrackAssigner
   void buildTANodeNeighbor(TAPanel& ta_panel);
   void buildOrientNetMap(TAPanel& ta_panel);
   void routeTAPanel(TAPanel& ta_panel);
+  void routeTAPanelBySelf(TAPanel& ta_panel);
   std::vector<TATask*> initTaskSchedule(TAPanel& ta_panel);
   void routeTATask(TAPanel& ta_panel, TATask* ta_task);
   void initSingleTask(TAPanel& ta_panel, TATask* ta_task);
@@ -96,7 +97,7 @@ class TrackAssigner
   void updateViolationList(TAPanel& ta_panel);
   std::vector<Violation> getViolationList(TAPanel& ta_panel);
   std::vector<TATask*> getTaskScheduleByViolation(TAPanel& ta_panel);
-  void routeByThirdParty(TAPanel& ta_panel);
+  void routeTAPanelByOther(TAPanel& ta_panel);
   void uploadNetResult(TAPanel& ta_panel);
   void uploadViolation(TAPanel& ta_panel);
   void freeTAPanel(TAPanel& ta_panel);

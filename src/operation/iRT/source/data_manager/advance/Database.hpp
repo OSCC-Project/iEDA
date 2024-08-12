@@ -27,9 +27,6 @@
 #include "Row.hpp"
 #include "Utility.hpp"
 #include "ViaMaster.hpp"
-#include "builder.h"
-#include "def_service.h"
-#include "lef_service.h"
 
 namespace irt {
 
@@ -39,7 +36,6 @@ class Database
   Database() = default;
   ~Database() = default;
   // getter
-  idb::IdbBuilder* get_idb_builder() { return _idb_builder; }
   std::string& get_design_name() { return _design_name; }
   std::vector<std::string>& get_lef_file_path_list() { return _lef_file_path_list; }
   std::string& get_def_file_path() { return _def_file_path; }
@@ -61,7 +57,6 @@ class Database
   std::vector<Net>& get_net_list() { return _net_list; }
   GridMap<GCell>& get_gcell_map() { return _gcell_map; }
   // setter
-  void set_idb_builder(idb::IdbBuilder* idb_builder) { _idb_builder = idb_builder; }
   void set_design_name(const std::string& design_name) { _design_name = design_name; }
   void set_lef_file_path_list(const std::vector<std::string>& lef_file_path_list) { _lef_file_path_list = lef_file_path_list; }
   void set_def_file_path(const std::string& def_file_path) { _def_file_path = def_file_path; }
@@ -69,7 +64,6 @@ class Database
   // function
 
  private:
-  idb::IdbBuilder* _idb_builder;
   std::string _design_name;
   std::vector<std::string> _lef_file_path_list;
   std::string _def_file_path;

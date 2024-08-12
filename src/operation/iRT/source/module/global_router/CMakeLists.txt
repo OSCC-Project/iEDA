@@ -22,5 +22,4 @@ target_include_directories(irt_global_router
     PUBLIC
         ${IRT_MODULE}/global_router/gr_data_manager
         ${IRT_MODULE}/global_router
-        
 )

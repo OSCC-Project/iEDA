@@ -1,3 +1,4 @@
+add_subdirectory(${IRT_MODULE}/drc_engine)
 add_subdirectory(${IRT_MODULE}/gds_plotter)
 add_subdirectory(${IRT_MODULE}/pin_accessor)
 add_subdirectory(${IRT_MODULE}/supply_analyzer)
@@ -11,6 +12,7 @@ add_library(irt_module INTERFACE)
 
 target_link_libraries(irt_module 
     INTERFACE
+        irt_drc_engine
         irt_gds_plotter
         irt_pin_accessor
         irt_supply_analyzer
