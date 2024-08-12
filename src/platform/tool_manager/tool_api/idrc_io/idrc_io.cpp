@@ -35,9 +35,10 @@ void DrcIO::clear()
         delete drc;
         drc = nullptr;
       }
-      drc_list.clear();
-      std::vector<idrc::DrcViolation*>().swap(drc_list);
     }
+
+    drc_list.clear();
+    std::vector<idrc::DrcViolation*>().swap(drc_list);
   }
 
   _detail_drc.clear();
@@ -80,7 +81,7 @@ std::tuple<bool, std::vector<std::string>, std::vector<std::string>, int> DrcIO:
 
 std::map<std::string, std::vector<idrc::DrcViolation*>> DrcIO::getDetailCheckResult(std::string path)
 {
-  // _detail_drc.clear();
+  _detail_drc.clear();
   if (!_detail_drc.empty()) {
     return _detail_drc;
   }

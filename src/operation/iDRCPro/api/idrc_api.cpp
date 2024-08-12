@@ -177,7 +177,7 @@ void DrcApi::diagnosis(std::string third_json_file, std::string idrc_json_file, 
                                                                  {"JogToJog Spacing", ViolationEnumType::kJogToJog},
                                                                  {"Metal EOL Spacing", ViolationEnumType::kEOL},
                                                                  {"Metal Notch Spacing", ViolationEnumType::kNotch},
-                                                                 {"Metal Parallel Run Length Spacing", ViolationEnumType::kPRLSpacing},
+                                                                 {"ParallelRunLength Spacing", ViolationEnumType::kPRLSpacing},
                                                                  {"Metal Short", ViolationEnumType::kShort},
                                                                  {"MinStep", ViolationEnumType::kMinStep},
                                                                  {"Minimum Area", ViolationEnumType::kArea}};
