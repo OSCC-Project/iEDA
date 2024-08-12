@@ -482,7 +482,7 @@ double VioAnnealOpt::cost(Net* net)
   }
   return _correct_coef
          * (_cap_coef * capVioCost(net) + _wirelength_coef * wireLengthVioCost(net) + _skew_coef * skewVioCost(net)
-            + _fanout_coef * fanoutVioCost(net));
+            + _skew_coef * slewCost(net) + _fanout_coef * fanoutVioCost(net));
 }
 /**
  * @brief design cost of the net
@@ -560,10 +560,10 @@ double VioAnnealOpt::fanoutVioCost(const Net* net)
   double fanout_cost = 0.0;
   auto fanout = net->getFanout();
   if (fanout > _max_fanout) {
-    fanout_cost += (fanout - _max_fanout) * (wireLengthVioCost(net) + capVioCost(net) + skewVioCost(net));
+    fanout_cost += (fanout - _max_fanout) * _max_cap;
   }
   if (fanout == 1) {
-    fanout_cost += 2 * (_max_cap);
+    fanout_cost += _max_cap;
   }
   return fanout_cost;
 }
@@ -603,10 +603,27 @@ double VioAnnealOpt::skewVioCost(const Net* net)
 {
   auto* driver_pin = net->get_driver_pin();
   auto skew = driver_pin->get_max_delay() - driver_pin->get_min_delay();
+  double cost = std::max(0.0, skew - _skew_bound) / TimingPropagator::getUnitRes();
+  return cost;
+}
+/**
+ * @brief slew cost of the net
+ *
+ * @param net
+ * @return double
+ */
+double VioAnnealOpt::slewCost(const Net* net)
+{
   double cost = 0;
-  if (skew > _skew_bound) {
-    cost = (skew - _skew_bound) / TimingPropagator::getUnitRes();
-  }
+  auto* driver_pin = net->get_driver_pin();
+  driver_pin->preOrder([&](Node* node) {
+    auto slew = node->get_slew_in();
+    cost += node->isSinkPin() ? std::max(0.0, slew - TimingPropagator::getMaxSinkTran())
+                              : std::max(0.0, slew - TimingPropagator::getMaxBufTran());
+  });
+  cost /= TimingPropagator::getUnitRes() * TimingPropagator::getUnitCap();
+  cost = std::sqrt(cost);
+  cost *= TimingPropagator::getUnitCap();
   return cost;
 }
 /**

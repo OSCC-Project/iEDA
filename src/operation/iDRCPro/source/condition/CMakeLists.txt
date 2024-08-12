@@ -12,6 +12,7 @@ target_link_libraries(idrc_condition_manager
     idrc_pro_violation
     idrc_pro_tech_rules
     idrc_engine_manager
+    idrc_pro_data
 )
 
 target_include_directories(idrc_condition_manager

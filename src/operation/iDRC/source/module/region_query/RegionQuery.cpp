@@ -498,7 +498,7 @@ void RegionQuery::getRegionDetailReport(std::map<std::string, std::vector<DrcVio
   vio_map.insert(std::make_pair("Metal Parallel Run Length Spacing", _prl_run_length_spacing_spot_list));
   vio_map.insert(std::make_pair("Metal Notch Spacing", _metal_notch_spacing_spot_list));
   vio_map.insert(std::make_pair("MinStep", _min_step_spot_list));
-  vio_map.insert(std::make_pair("Minimal Area", _min_area_spot_list));
+  vio_map.insert(std::make_pair("Minimum Area", _min_area_spot_list));
 
   vio_map.insert(std::make_pair("Cut Diff Layer Spacing", _cut_diff_layer_spacing_spot_list));
 
@@ -559,7 +559,7 @@ void RegionQuery::getRegionReport(std::map<std::string, int>& viotype_to_nums_ma
   viotype_to_nums_map.insert(std::make_pair("Metal Notch Spacing", _notch_spacing_count));
   viotype_to_nums_map.insert(std::make_pair("MinStep", _minstep_count));
   viotype_to_nums_map.insert(std::make_pair("MinHole", _min_hole_count));
-  viotype_to_nums_map.insert(std::make_pair("Minimal Area", _area_count));
+  viotype_to_nums_map.insert(std::make_pair("Minimum Area", _area_count));
 }
 
 ////////////////////////////////////////////////////////////////////////

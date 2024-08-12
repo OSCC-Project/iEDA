@@ -135,7 +135,7 @@ class AnnealOptInterface
 
   bool _auto_temp = false;
 
-  const double _correct_coef = 1e6;
+  const double _correct_coef = 1e2;
   size_t _max_iter = 0;
   double _cooling_rate = 0;
   double _temperature = 0;
@@ -190,6 +190,7 @@ class VioAnnealOpt : public AnnealOptInterface
   double latencyCost(const Net* net);
   double skewCost(const Net* net);
   double skewVioCost(const Net* net);
+  double slewCost(const Net* net);
   double levelCapLoadCost(const Net* net);
 
   int _max_fanout = 0;

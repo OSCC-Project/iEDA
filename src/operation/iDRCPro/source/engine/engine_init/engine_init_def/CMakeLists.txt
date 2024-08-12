@@ -12,6 +12,7 @@ target_link_libraries(idrc_engine_init_def
     idrc_pro_tech_rules
     idrc_engine_manager    
     solver_geometry_boost
+    idrc_pro_data
 )
 
 target_include_directories(idrc_engine_init_def

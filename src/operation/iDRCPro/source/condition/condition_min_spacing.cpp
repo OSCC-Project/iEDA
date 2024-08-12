@@ -26,41 +26,44 @@ void DrcConditionManager::checkMinSpacing(std::string layer, DrcEngineLayout* la
   if (_check_select.find(ViolationEnumType::kDefaultSpacing) == _check_select.end()) {
     return;
   }
-#ifndef DEBUGCLOSE_MINSPACING
-  ieda::Stats states;
-  int min_spacing_count = 0;
-  auto& layer_polyset = layout->get_layout()->get_engine()->get_polyset();
+  /// get min spacing for this layer
   int min_spacing = DrcTechRuleInst->getMinSpacing(layer);
-  if (min_spacing > 0) {
-    auto violation_position_set = layer_polyset;
-    int half_min_spacing = min_spacing / 2;
-    ieda_solver::growAnd(violation_position_set, half_min_spacing);
-    std::vector<ieda_solver::GeometryRect> results;
-    violation_position_set.get(results);
-
-    auto get_new_interval = [&](ieda_solver::GeometryOrientation direction, ieda_solver::GeometryRect& rect) {
-      int length = ieda_solver::getWireWidth(rect, direction);
-      if (length <= half_min_spacing) {
-        int expand_length = std::abs(half_min_spacing - length);
-        ieda_solver::bloat(rect, direction, expand_length);
-      } else if (length > min_spacing) {
-        ieda_solver::shrink(rect, direction, half_min_spacing);
-      } else {
-        int shrink_length = std::abs(half_min_spacing - length);
-        ieda_solver::shrink(rect, direction, shrink_length);
-      }
-    };
-
-    for (auto& rect : results) {
-      get_new_interval(ieda_solver::HORIZONTAL, rect);
-      get_new_interval(ieda_solver::VERTICAL, rect);
-      addViolation(rect, layer, ViolationEnumType::kDefaultSpacing);
-    }
-    min_spacing_count = results.size();
+  if (min_spacing <= 0) {
+    return;
   }
-  DEBUGOUTPUT(DEBUGHIGHLIGHT("Min Spacing:\t") << min_spacing_count << "\ttime = " << states.elapsedRunTime()
+  int half_min_spacing = min_spacing / 2;
+
+  auto get_new_interval = [&](ieda_solver::GeometryOrientation direction, ieda_solver::GeometryRect& rect) {
+    int length = ieda_solver::getWireWidth(rect, direction);
+    if (length <= half_min_spacing) {
+      int expand_length = std::abs(half_min_spacing - length);
+      ieda_solver::bloat(rect, direction, expand_length);
+    } else if (length > min_spacing) {
+      /// means wire length
+      ieda_solver::shrink(rect, direction, half_min_spacing);
+    } else {
+      /// half_min_spacing < length <= min_spacing
+      int shrink_length = std::abs(half_min_spacing - length);
+      ieda_solver::shrink(rect, direction, shrink_length);
+    }
+  };
+
+  ieda::Stats states;
+  std::vector<ieda_solver::GeometryRect> results;
+
+  auto violation_position_set = layout->get_layout_engine()->copyPolyset();  /// copy polyset
+  violation_position_set.clean();                                            /// eliminate overlaps
+  ieda_solver::growAnd(violation_position_set, half_min_spacing);
+  violation_position_set.get(results);
+  for (auto& rect : results) {
+    get_new_interval(ieda_solver::HORIZONTAL, rect);
+    get_new_interval(ieda_solver::VERTICAL, rect);
+
+    addViolation(rect, layer, ViolationEnumType::kDefaultSpacing);
+  }
+
+  DEBUGOUTPUT(DEBUGHIGHLIGHT("Min Spacing:\t") << results.size() << "\ttime = " << states.elapsedRunTime()
                                                << "\tmemory = " << states.memoryDelta());
-#endif
 }
 
 }  // namespace idrc

@@ -112,13 +112,25 @@ TEST_F(TreeBuilderTest, ParetoFrontTest)
   ofs.close();
 }
 
-TEST_F(TreeBuilderTest, CellLinearDelayModelTest)
+TEST_F(TreeBuilderTest, PolynomialRealRootsTest)
 {
-  TreeBuilderAux tree_builder("/home/liweiguo/project/iEDA/scripts/salsa20/iEDA_config/db_default_config.json",
-                              "/home/liweiguo/project/iEDA/scripts/salsa20/iEDA_config/cts_default_config.json");
+  auto* model_factory = new icts::ModelFactory();
+  auto coeffs = std::vector<double>{1, 2, 1};
+  auto roots = model_factory->solvePolynomialRealRoots(coeffs);
+  for (auto root : roots) {
+    LOG_INFO << "Root: " << root;
+  }
+}
+
+TEST_F(TreeBuilderTest, CriticalWireLenTest)
+{
+  TreeBuilderAux tree_builder("/home/liweiguo/project/iEDA/scripts/design/eval/iEDA_config/db_default_config.json",
+                              "/home/liweiguo/project/iEDA/scripts/design/eval/iEDA_config/cts_default_config.json");
   auto libs = CTSAPIInst.getAllBufferLibs();
   auto* model_factory = new icts::ModelFactory();
-  auto cap_load = TimingPropagator::getMaxCap() * 0.25;
+  auto slew_in = 0.025;
+  auto cap_load = TimingPropagator::getMaxCap() * 0.5;
+  size_t fanout = 4;
   auto r = TimingPropagator::getUnitRes();
   auto c = TimingPropagator::getUnitCap();
   for (auto lib : libs) {
@@ -127,18 +139,25 @@ TEST_F(TreeBuilderTest, CellLinearDelayModelTest)
     auto cap_pin = lib->get_init_cap();
     auto crit_buf_wl = model_factory->criticalBufWireLen(coeffs[2], coeffs[1], coeffs[0], r, c, cap_pin);
     auto crit_est_wl = model_factory->criticalBufWireLen(coeffs[2], coeffs[1], coeffs[0], r, c, cap_load);
-    auto crit_pair = model_factory->criticalSteinerWireLen(coeffs[2], coeffs[1], coeffs[0], r, c, cap_pin, cap_load);
+    auto crit_pair = model_factory->criticalSteinerWireLen(coeffs[2], coeffs[1], coeffs[0], r, c, cap_pin, slew_in, fanout);
     LOG_INFO << "Critical Buffer Wirelength: " << crit_buf_wl;
     LOG_INFO << "Critical EstSteiner Wirelength: " << crit_est_wl;
-    LOG_INFO << "Critical Steiner Wirelength: " << crit_pair.first;
-    LOG_INFO << "Critical Steiner x: " << crit_pair.second;
+    if (crit_pair.first.second > 0) {
+      LOG_INFO << "CWE_WL_1: " << crit_pair.first.first;
+      LOG_INFO << "CWE_x_1: " << crit_pair.first.second;
+    }
+    if (crit_pair.second.second > 0) {
+      LOG_INFO << "CWE_WL_2: " << crit_pair.second.first;
+      LOG_INFO << "CWE_x_2: " << crit_pair.second.second;
+    }
+    LOG_INFO << "--------------------------------";
   }
 }
 
-TEST_F(TreeBuilderTest, CriticalWireLenTest)
+TEST_F(TreeBuilderTest, CellLinearDelayModelTest)
 {
-  TreeBuilderAux tree_builder("/home/liweiguo/project/iEDA/scripts/salsa20/iEDA_config/db_default_config.json",
-                              "/home/liweiguo/project/iEDA/scripts/salsa20/iEDA_config/cts_default_config.json");
+  TreeBuilderAux tree_builder("/home/liweiguo/project/iEDA/scripts/design/eval/iEDA_config/db_default_config.json",
+                              "/home/liweiguo/project/iEDA/scripts/design/eval/iEDA_config/cts_default_config.json");
   auto libs = CTSAPIInst.getAllBufferLibs();
   auto dir = CTSAPIInst.get_config()->get_work_dir() + "/file/";
   if (!std::filesystem::exists(dir)) {
@@ -162,6 +181,26 @@ TEST_F(TreeBuilderTest, CriticalWireLenTest)
     ofs.close();
   }
   LOG_INFO << "cell data write done";
+}
+
+TEST_F(TreeBuilderTest, SALTTest)
+{
+  std::vector<double> load_x
+      = {193124, 193123, 193123, 193124, 193111, 193113, 193122, 193117, 193124, 193123, 193121, 193125, 204960, 193123, 213639,
+         193130, 193129, 210840, 193135, 193134, 193132, 193131, 193123, 193123, 193128, 193126, 193123, 193126, 193123, 193124,
+         174160, 193120, 193123, 193123, 193123, 193123, 193133, 193123, 213640, 193127, 213641, 193123, 213640, 192628, 192631};
+  std::vector<double> load_y
+      = {209000, 195703, 195702, 223400, 195698, 195698, 182000, 195698, 195692, 195694, 195698, 195698, 195698, 195689, 195698,
+         195698, 195698, 195698, 195698, 195698, 195698, 195698, 195691, 195693, 195698, 195699, 195696, 195698, 195697, 195698,
+         195698, 195698, 195705, 195704, 195701, 195700, 195698, 195690, 195697, 195698, 195698, 195698, 195698, 183849, 205500};
+
+  auto* driver = TreeBuilder::genBufInst("driver", Point(195161, 196258));
+  std::vector<Pin*> load_pins;
+  for (size_t i = 0; i < load_x.size(); ++i) {
+    auto* load = TreeBuilder::genBufInst("load_" + std::to_string(i), Point(load_x[i], load_y[i]));
+    load_pins.push_back(load->get_load_pin());
+  }
+  TreeBuilder::shallowLightTree("net", driver->get_driver_pin(), load_pins);
 }
 
 TEST_F(TreeBuilderTest, LocalLegalizationTest)

@@ -789,6 +789,8 @@ impl VerilogInst {
                             let slice_concat_connect_net = VerilogNetConcatExpr::new(0, slice_concat);
                             port_connect_net = Box::new(slice_concat_connect_net);
                             port_connect_net_option = Some(port_connect_net);
+                        } else {
+                            port_connect_net_option = Some(port_connect_net);
                         }
                     } else if port_connect_net.is_constant() {
                         println!("port {} connect net is constant", port_connection.get_port_id().get_name());

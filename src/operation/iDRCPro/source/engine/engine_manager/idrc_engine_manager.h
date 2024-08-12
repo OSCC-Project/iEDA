@@ -39,8 +39,10 @@ class DrcEngineManager
   ~DrcEngineManager();
 
   /// data manager
-  std::map<std::string, DrcEngineLayout*>& get_engine_layouts(LayoutType type = LayoutType::kRouting) { return _layouts[type]; }
+  std::map<std::string, DrcEngineLayout*>& get_engine_layouts(LayoutType type = LayoutType::kRouting);
   DrcEngineLayout* get_layout(std::string layer, LayoutType type = LayoutType::kRouting);
+  std::set<std::string>& get_layers(LayoutType type = LayoutType::kRouting);
+  bool needChecking( std::string layer, LayoutType type = LayoutType::kRouting);
 
   /// scanline manager
   std::map<LayoutType, std::map<std::string, DrcEngineScanline*>>& get_scanline_matrix() { return _scanline_matrix; }
@@ -50,6 +52,7 @@ class DrcEngineManager
   // DrcEngineCheck* get_engine_check() { return _engine_check; }
 
   /// operator
+  void addLayer(std::string layer, LayoutType type = LayoutType::kRouting);
   bool addRect(int llx, int lly, int urx, int ury, std::string layer, int net_id = 0, LayoutType type = LayoutType::kRouting);
 
   void dataPreprocess();
@@ -59,6 +62,7 @@ class DrcEngineManager
  private:
   DrcDataManager* _data_manager;
   DrcConditionManager* _condition_manager;
+  std::map<LayoutType, std::set<std::string>> _layers;  /// nets layers which need to check
   /**
    * @definition
    *  _layouts : describe all shapes for all nets in all layers

@@ -20,12 +20,10 @@ namespace idrc {
 
 DrcDataManager::DrcDataManager()
 {
-  _region_query = new DrcRegionQuery(this);
 }
 
 DrcDataManager::~DrcDataManager()
 {
-  delete _region_query;
 }
 
 }  // namespace idrc

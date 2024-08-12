@@ -264,7 +264,6 @@ IdbNet* IdbNetList::add_net(IdbNet* net)
   pNet->set_id(_mutex_index++);
   _net_list.emplace_back(pNet);
   _net_map.insert(make_pair(pNet->get_net_name(), pNet));
-  _mutex_index++;
 
   return pNet;
 }

@@ -29,7 +29,7 @@ bool flow_init(const std::string& flow_config)
 }
 
 bool db_init(const std::string& config_path, const std::string& tech_lef_path, const std::vector<std::string>& lef_paths,
-             const std::string& def_path, const std::string& verilog_path, const std::string& output_dir_path,
+             const std::string& def_path, const std::string& verilog_path, const std::string& output_path,
              const std::vector<std::string>& lib_paths, const std::string& sdc_path)
 {
   idm::DataConfig& dm_config = dmInst->get_config();
@@ -51,8 +51,8 @@ bool db_init(const std::string& config_path, const std::string& tech_lef_path, c
   if (not verilog_path.empty()) {
     dm_config.set_verilog_path(verilog_path);
   }
-  if (not output_dir_path.empty()) {
-    dm_config.set_output_path(output_dir_path);
+  if (not output_path.empty()) {
+    dm_config.set_output_path(output_path);
   }
   if (not lib_paths.empty()) {
     dm_config.set_lib_paths(lib_paths);
