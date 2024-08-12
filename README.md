@@ -131,7 +131,7 @@ installing command on Ubuntu 20.04:
 
 ```bash
 # download iEDA repo
-git clone https://gitee.com/oscc-project/iEDA.git iEDA && cd iEDA
+git clone --recursive https://gitee.com/oscc-project/iEDA.git iEDA && cd iEDA
 # compile dependencies with an apt installation requires root permission
 sudo bash build.sh -i apt
 # comple iEDA
