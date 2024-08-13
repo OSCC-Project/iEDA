@@ -30,17 +30,14 @@
 
 **简体中文** | [English][README-en-path]
 
+<h2> 
+Open-source is not a goal but a way 
+
+开源不是目的，而是实现方式
+<h2>
 </div>
 
 
-<center>
-  <strong>
-    <span style="font-size:24px;">
-      Open-source is not a goal but a way
-      开源不是目的，而是实现方式
-    </span>
-  </strong>
-</center>
 
 ### **iEDA Homepage：[ieda.oscc.cc](https://ieda.oscc.cc)**
 
@@ -52,7 +49,6 @@
 
 <div align="center">
  <img src="docs/resources/iEDA-ov.png" width="550" height="55%"  alt="iEDA_tapeout" />
-  <h2>iEDA overview</h2>
 </div>
 
 ## **iEDA 基础平台和工具**
@@ -62,14 +58,12 @@
 
 <div align="center">
  <img src="docs/resources/iEDA-if.png" width="550" height="55%"  alt="iEDA_tapeout" />
-  <h2>iEDA infrastrucutre and tool</h2>
 </div>
 
 ## **iEDA 流片**
 
 <div align="center">
  <img src="docs/resources/iEDA-tapeout.png" width="550" height="55%"  alt="iEDA_tapeout" />
-   <h2>iEDA tapeout</h2>
 </div>
 
 
