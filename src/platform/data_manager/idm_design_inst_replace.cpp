@@ -70,6 +70,7 @@ bool DataManager::place_macro_loc_rand(std::string tcl_path)
   auto compareByArea
       = [](const Macro& macro1, const Macro& macro2) { return (macro1.width * macro1.height) > (macro2.width * macro2.height); };
 
+
   auto isOverlap = [](const Macro& macro1, const Macro& macro2) {
     // 判断两个矩形是否重叠
     double left1 = macro1.center_x - macro1.width / 2;
