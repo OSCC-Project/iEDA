@@ -32,66 +32,64 @@
 
 </div>
 
-iEDA 主页：[ieda.oscc.cc][iEDA-OSCC-url]
 
----
+<center>
+  <strong>
+    <span style="font-size:24px;">
+      Open-source is not a goal but a way
+      开源不是目的，而是实现方式
+    </span>
+  </strong>
+</center>
 
-🎉 **最新消息:**
+### **iEDA Homepage：[ieda.oscc.cc](https://ieda.oscc.cc)**
 
-我们的论文 [iEDA: An Open-Source Intelligent Physical lmplementation Toolkit and Library](https://arxiv.org/abs/2308.01857) \[[paper][iEDA-paper], [slides][iEDA-slides]\] 获得 “**Best Paper of ISEDA 2023**”
+## **iEDA 介绍总览**
+- **1 EDA Infrastructure、11 EDA Tools、4 times tape-out design by iEDA**
+  - Level 1: Open-source EDA, RTL, PDK, supporting chip design；
+  - Level 2:  Open-source Infrastructure supports EDA development and research
 
----
-
-## 关于iEDA
-
-- **About “i”in iEDA**
-  - Meaning 1: Infrastructure
-  - Meaning 2: Intelligent
-- **The goal of the iEDA project**
-  - EDA Infrastructure
-  - High quality and performance EDA tool
-- **Open-source is not a goal but a way**
-
-## iEDA主要内容和规划
-
-- Enhance the **infrastructure** to support more design requirement
-- Complete the EDA tool chain from **RTL-GDS II**
-- Improve the **quality and performance** of all EDA tool operations
-- Construct **AI for EDA** platform and introduce trained **AI model** to the EDA platform
-- Build **data system** with enough chip design and labeling process data
-- Achieve the adaptability of the EDA platform for **cloud-native**
 
 <div align="center">
- <img src="docs/resources/iEDA_framework_new.png" width="550" height="50%" alt="iEDA_framework" />
+ <img src="docs/resources/iEDA-ov.png" width="550" height="55%"  alt="iEDA_tapeout" />
+  <h2>iEDA overview</h2>
 </div>
 
-## **iEDA Structure**
+## **iEDA 基础平台和工具**
+- To fast develop high-quality EDA tool, we need a Software Development Kit (SDK)  
+- iEDA can be used to support developing EDA tool or algorithm
+- Infrastructure: Database, Manager, Operator, Interface 
 
 <div align="center">
- <img src="docs/resources/iEDA-structure.png" width="650" height="65%"  alt="iEDA_structure" />
+ <img src="docs/resources/iEDA-if.png" width="550" height="55%"  alt="iEDA_tapeout" />
+  <h2>iEDA infrastrucutre and tool</h2>
 </div>
 
-## **iEDA Infrastructure**
-
-<div align="center">
- <img src="docs/resources/iEDA-infrastructure.png" width="650" height="60%" alt="iEDA_infrastructure" />
-</div>
-
-## **iEDA Operations (Tools)**
-
-<div align="center">
- <img src="docs/resources/iEDA-operation.png" width="650" height="60%"  alt="iEDA_operation" />
-</div>
-
-## **iEDA Tapeout**
+## **iEDA 流片**
 
 <div align="center">
  <img src="docs/resources/iEDA-tapeout.png" width="550" height="55%"  alt="iEDA_tapeout" />
+   <h2>iEDA tapeout</h2>
 </div>
 
-## 论文和报告
 
-- ISEDA 2023: iEDA：An Open-Source Intelligent Physical Implementation Toolkit and Library \[[paper][iEDA-paper], [slides][iEDA-slides]\]
+🎉 **News:**
+
+**https://ieda.oscc.cc/en/publicity/news/**
+
+---
+
+## **论文和报告**
+- iRT: Net Resource Allocation: A Desirable Initial Routing Step, DAC, 2024
+- iCTS: Toward Controllable Hierarchical Clock Tree Synthesis with Skew-Latency-Load Tree, DAC, 2024
+- AiEDA: An Open-source AI-native EDA Library, ISEDA, 2024
+- iEDA: An Open-source infrastructure of EDA (invited), ASPDAC, 2024.
+- iPD: An Open-source intelligent Physical Design Tool Chain (invited), ASPDAC, 2024.
+- AiMap: Learning to Improve Technology Mapping for ASICs via Delay Prediction, ICCD, 2023
+- iPL-3D: A Novel Bilevel Programming Model for Die-to-Die Placement, ICCAD, 2023.
+- iEDA: An Open-source Intelligent Physical Implementation Toolkit and Library, ISEDA, 2023. (BPA) \[[paper][iEDA-paper], [slides][iEDA-slides]\]
+
+
 
 # iEDA 使用指导
 

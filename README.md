@@ -2,10 +2,12 @@
 
 <!-- <img src="docs/resources/iEDA-logo-new.png" width="15%" height="15%" alt="iEDA-logo" /> -->
 
+<!-- <img src="docs/resources/ieda_logo_b_2.png" width="15%" height="15%" alt="iEDA-logo" /> -->
+
 <img src="docs/resources/iEDA.png" width="15%" height="15%" alt="iEDA-logo" />
  <h1>iEDA</h1>
 
-<h3> An open-source  EDA infracstrucutre and tools from netlist to GDS for ASIC design.</h3>
+<h3> An open-source  EDA infracstructure and tools from Netlist to GDS for ASIC design.</h3>
 
 <p align="center">
     <a title="Project Version">
@@ -33,66 +35,61 @@
 
 </div>
 
-iEDA Homepage：[ieda.oscc.cc][iEDA-OSCC-url]
+<center>
+  <strong>
+    <span style="font-size:24px;">
+      Open-source is not a goal but a way
+    </span>
+  </strong>
+</center>
 
-## **About iEDA**
+### **iEDA Homepage：[ieda.oscc.cc/en/](https://ieda.oscc.cc/en/)**
 
-- **About “i”in iEDA**
-  - Meaning 1: Infrastructure
-  - Meaning 2: Intelligent
-- **The goal of the iEDA project**
-  - EDA Infrastructure
-  - High quality and performance EDA tool
-- **Open-source is not a goal but a way**
+## **iEDA Overview**
+- **1 EDA Infrastructure、11 EDA Tools、4 times tape-out design by iEDA**
+  - Level 1: Open-source EDA, RTL, PDK, supporting chip design；
+  - Level 2:  Open-source Infrastructure supports EDA development and research
 
-## **Main Contents and Plans**
-
-- Enhance the **infrastructure** to support more design requirement
-- Complete the EDA tool chain from **RTL-GDS II**
-- Improve the **quality and performance** of all EDA tool operations
-- Construct **AI for EDA** platform and introduce trained **AI model** to the EDA platform
-- Build **data system** with enough chip design and labeling process data
-- Achieve the adaptability of the EDA platform for **cloud-native**
 
 <div align="center">
- <img src="docs/resources/iEDA_framework_new.png" width="550" height="50%" alt="iEDA_framework" />
+ <img src="docs/resources/iEDA-ov.png" width="550" height="55%"  alt="iEDA_tapeout" />
+  <h2>iEDA overview</h2>
 </div>
 
-## **iEDA Structure**
+## **iEDA Infrastructure and tool**
+- To fast develop high-quality EDA tool, we need a Software Development Kit (SDK)  
+- iEDA can be used to support developing EDA tool or algorithm
+- Infrastructure: Database, Manager, Operator, Interface 
 
 <div align="center">
- <img src="docs/resources/iEDA-structure.png" width="650" height="65%"  alt="iEDA_structure" />
-</div>
-
-## **iEDA Infrastructure**
-
-<div align="center">
- <img src="docs/resources/iEDA-infrastructure.png" width="650" height="60%" alt="iEDA_infrastructure" />
-</div>
-
-## **iEDA Operations (Tools)**
-
-<div align="center">
- <img src="docs/resources/iEDA-operation.png" width="650" height="60%"  alt="iEDA_operation" />
+ <img src="docs/resources/iEDA-if.png" width="550" height="55%"  alt="iEDA_tapeout" />
+  <h2>iEDA infrastrucutre and tool</h2>
 </div>
 
 ## **iEDA Tapeout**
 
 <div align="center">
  <img src="docs/resources/iEDA-tapeout.png" width="550" height="55%"  alt="iEDA_tapeout" />
+   <h2>iEDA tapeout</h2>
 </div>
 
----
 
 🎉 **News:**
 
-Presentation in ISEDA-2023, May-09 2023, Nanjing, China, Session 2: [iEDA: An Open-Source Intelligent Physical lmplementation Toolkit and Library][ISEDA-2023-iEDA-url] \[[paper][iEDA-paper], [slides][iEDA-slides]\]，and Panel 4 [Is ML a real cure for modern design automation?][ISEDA-2023-panel4-url], and Panel 6 [Open-source EDA and Standards][ISEDA-2023-panel6-url]
+**https://ieda.oscc.cc/en/publicity/news/**
 
 ---
 
 ## **Papers and Presentations**
+- iRT: Net Resource Allocation: A Desirable Initial Routing Step, DAC, 2024
+- iCTS: Toward Controllable Hierarchical Clock Tree Synthesis with Skew-Latency-Load Tree, DAC, 2024
+- AiEDA: An Open-source AI-native EDA Library, ISEDA, 2024
+- iEDA: An Open-source infrastructure of EDA (invited), ASPDAC, 2024.
+- iPD: An Open-source intelligent Physical Design Tool Chain (invited), ASPDAC, 2024.
+- AiMap: Learning to Improve Technology Mapping for ASICs via Delay Prediction, ICCD, 2023
+- iPL-3D: A Novel Bilevel Programming Model for Die-to-Die Placement, ICCAD, 2023.
+- iEDA: An Open-source Intelligent Physical Implementation Toolkit and Library, ISEDA, 2023. (BPA) \[[paper][iEDA-paper], [slides][iEDA-slides]\]
 
-- ISEDA 2023: iEDA：An Open-Source Intelligent Physical Implementation Toolkit and Library \[[paper][iEDA-paper], [slides][iEDA-slides]\]
 
 # **iEDA User Guide**
 
