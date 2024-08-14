@@ -47,7 +47,7 @@
 
 
 <div align="center">
- <img src="docs/resources/iEDA-ov.png" width="550" height="55%"  alt="iEDA_tapeout" />
+ <img src="docs/resources/iEDA-ov.png" width="70%" height="70%" alt="iEDA_tapeout" />
 </div>
 
 ## **iEDA Infrastructure and tool**
@@ -56,13 +56,13 @@
 - Infrastructure: Database, Manager, Operator, Interface 
 
 <div align="center">
- <img src="docs/resources/iEDA-if.png" width="550" height="55%"  alt="iEDA_tapeout" />
+ <img src="docs/resources/iEDA-if.png" width="70%" height="70%"  alt="iEDA_tapeout" />
 </div>
 
 ## **iEDA Tapeout**
 
 <div align="center">
- <img src="docs/resources/iEDA-tapeout.png" width="550" height="55%"  alt="iEDA_tapeout" />
+ <img src="docs/resources/iEDA-tapeout.png" width="60%" height="60%"  alt="iEDA_tapeout" />
 </div>
 
 

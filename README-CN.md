@@ -48,7 +48,7 @@ Open-source is not a goal but a way
 
 
 <div align="center">
- <img src="docs/resources/iEDA-ov.png" width="550" height="55%"  alt="iEDA_tapeout" />
+ <img src="docs/resources/iEDA-ov.png" width="70%" height="70%"  alt="iEDA_tapeout" />
 </div>
 
 ## **iEDA 基础平台和工具**
@@ -57,13 +57,13 @@ Open-source is not a goal but a way
 - Infrastructure: Database, Manager, Operator, Interface 
 
 <div align="center">
- <img src="docs/resources/iEDA-if.png" width="550" height="55%"  alt="iEDA_tapeout" />
+ <img src="docs/resources/iEDA-if.png" width="70%" height="70%"  alt="iEDA_tapeout" />
 </div>
 
 ## **iEDA 流片**
 
 <div align="center">
- <img src="docs/resources/iEDA-tapeout.png" width="550" height="55%"  alt="iEDA_tapeout" />
+ <img src="docs/resources/iEDA-tapeout.png" width="60%" height="60%"  alt="iEDA_tapeout" />
 </div>
 
 
