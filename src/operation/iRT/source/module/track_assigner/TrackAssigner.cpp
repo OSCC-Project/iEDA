@@ -16,6 +16,7 @@
 // ***************************************************************************************
 #include "TrackAssigner.hpp"
 
+#include "DRCEngine.hpp"
 #include "GDSPlotter.hpp"
 #include "LayerCoord.hpp"
 #include "Monitor.hpp"
@@ -419,7 +420,7 @@ void TrackAssigner::buildOrientNetMap(TAPanel& ta_panel)
 void TrackAssigner::routeTAPanel(TAPanel& ta_panel)
 {
   int32_t enable_lsa = RTDM.getConfig().enable_lsa;
-  
+
   if (!enable_lsa) {
     routeTAPanelBySelf(ta_panel);
   } else {
@@ -936,7 +937,31 @@ void TrackAssigner::updateViolationList(TAPanel& ta_panel)
 
 std::vector<Violation> TrackAssigner::getViolationList(TAPanel& ta_panel)
 {
-  return RTI.getViolationList(ta_panel);
+  std::string top_name
+      = RTUTIL.getString("ta_panel_", ta_panel.get_ta_panel_id().get_layer_idx(), "_", ta_panel.get_ta_panel_id().get_panel_idx());
+  std::vector<std::pair<EXTLayerRect*, bool>> env_shape_list;
+  std::map<int32_t, std::vector<std::pair<EXTLayerRect*, bool>>> net_pin_shape_map;
+  for (auto& [net_idx, fixed_rect_set] : ta_panel.get_net_fixed_rect_map()) {
+    if (net_idx == -1) {
+      for (auto& fixed_rect : fixed_rect_set) {
+        env_shape_list.emplace_back(fixed_rect, true);
+      }
+    } else {
+      for (auto& fixed_rect : fixed_rect_set) {
+        net_pin_shape_map[net_idx].emplace_back(fixed_rect, true);
+      }
+    }
+  }
+  std::map<int32_t, std::vector<Segment<LayerCoord>>> net_result_map;
+  for (auto& [net_idx, task_result_map] : ta_panel.get_net_task_result_map()) {
+    for (auto& [task_idx, segment_list] : task_result_map) {
+      for (Segment<LayerCoord>& segment : segment_list) {
+        net_result_map[net_idx].emplace_back(segment);
+      }
+    }
+  }
+  std::string stage = "TA";
+  return RTDE.getViolationList(top_name, env_shape_list, net_pin_shape_map, net_result_map, stage);
 }
 
 std::vector<TATask*> TrackAssigner::getTaskScheduleByViolation(TAPanel& ta_panel)

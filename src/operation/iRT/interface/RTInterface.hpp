@@ -119,11 +119,12 @@ class RTInterface
 #endif
 
 #if 1  // iDRC
-  std::vector<Violation> getViolationList(TAPanel& ta_panel);
-  std::vector<Violation> getViolationList(DRBox& dr_box);
+  std::vector<Violation> getViolationList(std::vector<std::pair<EXTLayerRect*, bool>>& env_shape_list,
+                                          std::map<int32_t, std::vector<std::pair<EXTLayerRect*, bool>>>& net_pin_shape_map,
+                                          std::map<int32_t, std::vector<Segment<LayerCoord>>>& net_result_map, std::string stage);
   std::vector<Violation> getViolationList(std::vector<idb::IdbLayerShape*>& env_shape_list,
                                           std::map<int32_t, std::vector<idb::IdbLayerShape*>>& net_pin_shape_map,
-                                          std::map<int32_t, std::vector<idb::IdbRegularWireSegment*>>& net_wire_via_map, std::string stage);
+                                          std::map<int32_t, std::vector<idb::IdbRegularWireSegment*>>& net_result_map, std::string stage);
 #endif
 
 #if 1  // iSTA
@@ -136,7 +137,7 @@ class RTInterface
 #endif
 
 #if 1  // flute
-std::vector<Segment<PlanarCoord>> getPlanarTopoList(std::vector<PlanarCoord> planar_coord_list);
+  std::vector<Segment<PlanarCoord>> getPlanarTopoList(std::vector<PlanarCoord> planar_coord_list);
 #endif
 
 #if 1  // lsa

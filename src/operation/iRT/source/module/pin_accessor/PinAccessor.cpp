@@ -165,7 +165,6 @@ std::vector<LayerRect> PinAccessor::getLegalShapeList(PAModel& pa_model, int32_t
   if (!legal_rect_list.empty()) {
     return legal_rect_list;
   }
-  RTLOG.warn(Loc::current(), "The pin ", pin->get_pin_name(), " without legal shape!");
   for (EXTLayerRect& routing_shape : pin->get_routing_shape_list()) {
     legal_rect_list.emplace_back(routing_shape.getRealLayerRect());
   }
@@ -195,8 +194,14 @@ std::vector<PlanarRect> PinAccessor::getPlanarLegalRectList(PAModel& pa_model, i
     for (EXTLayerRect& pin_shape : pin_shape_list) {
       origin_pin_shape_list.push_back(pin_shape.get_real_rect());
     }
-    int32_t reduced_size = routing_layer_list[curr_layer_idx].get_min_width() / 2;
-    for (PlanarRect& real_rect : RTUTIL.getClosedReducedRectListByBoost(origin_pin_shape_list, reduced_size)) {
+    PlanarRect& enclosure = layer_enclosure_map[curr_layer_idx];
+    int32_t enclosure_half_x_span = enclosure.getXSpan() / 2;
+    int32_t enclosure_half_y_span = enclosure.getYSpan() / 2;
+    int32_t half_min_width = routing_layer_list[curr_layer_idx].get_min_width() / 2;
+    int32_t reduced_x_size = std::max(half_min_width, enclosure_half_x_span);
+    int32_t reduced_y_size = std::max(half_min_width, enclosure_half_y_span);
+    for (PlanarRect& real_rect :
+         RTUTIL.getClosedReducedRectListByBoost(origin_pin_shape_list, reduced_x_size, reduced_y_size, reduced_x_size, reduced_y_size)) {
       EXTLayerRect reduced_rect;
       reduced_rect.set_real_rect(real_rect);
       reduced_rect.set_grid_rect(RTUTIL.getClosedGCellGridRect(reduced_rect.get_real_rect(), gcell_axis));

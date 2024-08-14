@@ -17,6 +17,7 @@
 #include "DRCEngine.hpp"
 
 #include "GDSPlotter.hpp"
+#include "RTInterface.hpp"
 #include "Utility.hpp"
 
 namespace irt {
@@ -48,70 +49,12 @@ void DRCEngine::destroyInst()
 
 // function
 
-std::vector<Violation> DRCEngine::getViolationList()
+std::vector<Violation> DRCEngine::getViolationList(std::string top_name, std::vector<std::pair<EXTLayerRect*, bool>>& env_shape_list,
+                                                   std::map<int32_t, std::vector<std::pair<EXTLayerRect*, bool>>>& net_pin_shape_map,
+                                                   std::map<int32_t, std::vector<Segment<LayerCoord>>>& net_result_map, std::string stage)
 {
-  return std::vector<Violation>();
+  return RTI.getViolationList(env_shape_list, net_pin_shape_map, net_result_map, stage);
 }
-
-// std::vector<Violation> DRCEngine::getViolationList(std::vector<idb::IdbLayerShape*>& env_shape_list,
-//                                                      std::map<int32_t, std::vector<idb::IdbLayerShape*>>& net_pin_shape_map,
-//                                                      std::map<int32_t, std::vector<idb::IdbRegularWireSegment*>>& net_wire_via_map,
-//                                                      std::string stage)
-// {
-//   std::set<idrc::ViolationEnumType> check_select;
-//   if (stage == "TA") {
-//     check_select.insert(idrc::ViolationEnumType::kShort);
-//   } else if (stage == "DR") {
-//     check_select.insert(idrc::ViolationEnumType::kShort);
-//     check_select.insert(idrc::ViolationEnumType::kDefaultSpacing);
-//   } else {
-//     RTLOG.error(Loc::current(), "Currently not supporting other stages");
-//   }
-//   /**
-//    * env_shape_list 存储 obstacle obs pin_shape
-//    * net_idb_segment_map 存储 wire via patch
-//    */
-//   ScaleAxis& gcell_axis = RTDM.getDatabase().get_gcell_axis();
-//   std::map<std::string, int32_t>& routing_layer_name_to_idx_map = RTDM.getDatabase().get_routing_layer_name_to_idx_map();
-//   std::map<std::string, int32_t>& cut_layer_name_to_idx_map = RTDM.getDatabase().get_cut_layer_name_to_idx_map();
-
-//   std::vector<Violation> violation_list;
-//   idrc::DrcApi drc_api;
-//   drc_api.init();
-//   for (auto& [type, idrc_violation_list] : drc_api.check(env_shape_list, net_pin_shape_map, net_wire_via_map, check_select)) {
-//     for (idrc::DrcViolation* idrc_violation : idrc_violation_list) {
-//       // self的drc违例先过滤
-//       if (idrc_violation->get_net_ids().size() < 2) {
-//         continue;
-//       }
-//       // 由于pin_shape之间的drc违例存在，第一布线层的drc违例先过滤
-//       idb::IdbLayer* idb_layer = idrc_violation->get_layer();
-//       if (idb_layer->is_routing()) {
-//         if (routing_layer_name_to_idx_map[idb_layer->get_name()] == 0) {
-//           continue;
-//         }
-//       }
-//       EXTLayerRect ext_layer_rect;
-//       if (idrc_violation->is_rect()) {
-//         idrc::DrcViolationRect* idrc_violation_rect = static_cast<idrc::DrcViolationRect*>(idrc_violation);
-//         ext_layer_rect.set_real_ll(idrc_violation_rect->get_llx(), idrc_violation_rect->get_lly());
-//         ext_layer_rect.set_real_ur(idrc_violation_rect->get_urx(), idrc_violation_rect->get_ury());
-//       } else {
-//         RTLOG.error(Loc::current(), "Type not supported!");
-//       }
-//       ext_layer_rect.set_grid_rect(RTUTIL.getClosedGCellGridRect(ext_layer_rect.get_real_rect(), gcell_axis));
-//       ext_layer_rect.set_layer_idx(idb_layer->is_routing() ? routing_layer_name_to_idx_map[idb_layer->get_name()]
-//                                                            : cut_layer_name_to_idx_map[idb_layer->get_name()]);
-
-//       Violation violation;
-//       violation.set_violation_shape(ext_layer_rect);
-//       violation.set_is_routing(idb_layer->is_routing());
-//       violation.set_violation_net_set(idrc_violation->get_net_ids());
-//       violation_list.push_back(violation);
-//     }
-//   }
-//   return violation_list;
-// }
 
 // private
 

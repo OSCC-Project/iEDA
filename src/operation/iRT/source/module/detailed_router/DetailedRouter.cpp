@@ -18,6 +18,7 @@
 
 #include "DRBox.hpp"
 #include "DRBoxId.hpp"
+#include "DRCEngine.hpp"
 #include "DRNet.hpp"
 #include "DRNode.hpp"
 #include "DRParameter.hpp"
@@ -278,6 +279,9 @@ void DetailedRouter::buildNetResultMap(DRBox& dr_box)
 void DetailedRouter::buildViolationList(DRBox& dr_box)
 {
   for (Violation* violation : RTDM.getViolationSet(dr_box.get_box_rect())) {
+    if (!RTUTIL.isInside(dr_box.get_box_rect().get_real_rect(), violation->get_violation_shape().get_real_rect())) {
+      continue;
+    }
     dr_box.get_violation_list().push_back(*violation);
     RTDM.updateViolationToGCellMap(ChangeType::kDel, violation);
   }
@@ -1188,7 +1192,32 @@ void DetailedRouter::updateViolationList(DRBox& dr_box)
 
 std::vector<Violation> DetailedRouter::getViolationList(DRBox& dr_box)
 {
-  return RTI.getViolationList(dr_box);
+  std::string top_name = RTUTIL.getString("dr_box_", dr_box.get_dr_box_id().get_x(), "_", dr_box.get_dr_box_id().get_y());
+  std::vector<std::pair<EXTLayerRect*, bool>> env_shape_list;
+  std::map<int32_t, std::vector<std::pair<EXTLayerRect*, bool>>> net_pin_shape_map;
+  for (auto& [is_routing, layer_net_fixed_rect_map] : dr_box.get_type_layer_net_fixed_rect_map()) {
+    for (auto& [layer_idx, net_fixed_rect_map] : layer_net_fixed_rect_map) {
+      for (auto& [net_idx, fixed_rect_set] : net_fixed_rect_map) {
+        if (net_idx == -1) {
+          for (auto& fixed_rect : fixed_rect_set) {
+            env_shape_list.emplace_back(fixed_rect, is_routing);
+          }
+        } else {
+          for (auto& fixed_rect : fixed_rect_set) {
+            net_pin_shape_map[net_idx].emplace_back(fixed_rect, is_routing);
+          }
+        }
+      }
+    }
+  }
+  std::map<int32_t, std::vector<Segment<LayerCoord>>> net_result_map;
+  for (auto& [net_idx, segment_list] : dr_box.get_net_result_map()) {
+    for (Segment<LayerCoord>& segment : segment_list) {
+      net_result_map[net_idx].emplace_back(segment);
+    }
+  }
+  std::string stage = "DR";
+  return RTDE.getViolationList(top_name, env_shape_list, net_pin_shape_map, net_result_map, stage);
 }
 
 void DetailedRouter::uploadViolation(DRBox& dr_box)
