@@ -135,6 +135,9 @@ std::set<int> DrcEngineLayout::querySubLayoutNetId(int llx, int lly, int urx, in
 
   auto sub_layouts = querySubLayouts(llx, lly, urx, ury);
   for (auto sub_layout : sub_layouts) {
+    if (sub_layout == nullptr) {
+      continue;
+    }
     if (sub_layout->isIntersect(llx, lly, urx, ury)) {
       net_ids.insert(sub_layout->get_id());
     }

@@ -49,9 +49,8 @@ namespace idrc {
 
 #if DEBUGCLOSE
 #if 1
-// #define DEBUGCLOSE_OVERLAP
+#define DEBUGCLOSE_OVERLAP
 // #define DEBUGCLOSE_JOG
-// #define DEBUGCLOSE_PRL
 #define DEBUGCLOSE_STEP
 #define DEBUGCLOSE_HOLE
 #define DEBUGCLOSE_AREA
@@ -76,9 +75,10 @@ class DrcConditionManager
 
   void checkOverlap(std::string layer, DrcEngineLayout* layout);
   void checkMinSpacing(std::string layer, DrcEngineLayout* layout);
-  void checkWires(std::string layer, DrcEngineLayout* layout);
+
   void checkPolygons(std::string layer, DrcEngineLayout* layout);
   void checkParallelLengthSpacing(std::string layer, DrcEngineLayout* layout);
+  void checkJogToJogSpacing(std::string layer, DrcEngineLayout* layout);
 
  private:
   DrcViolationManager* _violation_manager;
@@ -87,7 +87,9 @@ class DrcConditionManager
   std::set<ViolationEnumType> _check_select;
 
   void addViolation(ieda_solver::GeometryRect& rect, std::string layer, ViolationEnumType type, std::set<int> net_id = {});
+  void buildMapOfJog(std::string layer, DrcEngineLayout* layout, std::map<int, ieda_solver::GeometryPolygonSet>& jog_wire_map);
   void checkJog(std::string layer, DrcEngineLayout* layout, std::map<int, ieda_solver::GeometryPolygonSet>& jog_wire_map);
+  void buildMapOfSpacingTable(std::string layer, DrcEngineLayout* layout, std::map<int, ieda_solver::GeometryPolygonSet>& prl_wire_map);
   void checkSpacingTable(std::string layer, DrcEngineLayout* layout, std::map<int, ieda_solver::GeometryPolygonSet>& prl_wire_map);
 };
 
