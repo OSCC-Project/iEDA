@@ -118,7 +118,7 @@ bool GuiSpeedupDrc::is_visible() {
   }
 
   if (get_type() == GuiSpeedupItemType::kDrcPRL) {
-    return tree_node.isChecked("Metal Parallel Run Length Spacing") && guiConfig->isLayerVisible(_z_order);
+    return tree_node.isChecked("ParallelRunLength Spacing") && guiConfig->isLayerVisible(_z_order);
   }
 
   if (get_type() == GuiSpeedupItemType::kDrcNotchSpacing) {

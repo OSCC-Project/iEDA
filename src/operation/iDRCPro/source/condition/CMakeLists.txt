@@ -4,6 +4,7 @@ add_library(idrc_condition_manager
   condition_overlap.cpp
   condition_wire_width.cpp
   condition_polygon.cpp
+  condition_paralle_length.cpp
 )
 
 target_link_libraries(idrc_condition_manager

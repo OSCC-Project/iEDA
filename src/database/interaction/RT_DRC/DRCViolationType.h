@@ -52,7 +52,7 @@ struct GetViolationTypeName
       case ViolationEnumType::kDefaultSpacing:
         return "Default Spacing";
       case ViolationEnumType::kPRLSpacing:
-        return "Metal Parallel Run Length Spacing";
+        return "ParallelRunLength Spacing";
       case ViolationEnumType::kJogToJog:
         return "JogToJog Spacing";
       case ViolationEnumType::kEOL:
@@ -80,23 +80,23 @@ struct GetViolationType
     } else if (type_name == "Encolsed Area") {
       return ViolationEnumType::kAreaEnclosed;
     } else if (type_name == "Metal Short") {
-      return ViolationEnumType::kDefaultSpacing;
-    } else if (type_name == "Default Spacing") {
-      return ViolationEnumType::kPRLSpacing;
-    } else if (type_name == "Metal Parallel Run Length Spacing") {
-      return ViolationEnumType::kJogToJog;
-    } else if (type_name == "JogToJog Spacing") {
-      return ViolationEnumType::kEOL;
-    } else if (type_name == "Metal EOL Spacing") {
-      return ViolationEnumType::kWidth;
-    } else if (type_name == "Wire Width") {
-      return ViolationEnumType::kMinStep;
-    } else if (type_name == "MinStep") {
-      return ViolationEnumType::kNotch;
-    } else if (type_name == "Metal Notch Spacing") {
-      return ViolationEnumType::kCornerFill;
-    } else if (type_name == "Corner Fill") {
       return ViolationEnumType::kShort;
+    } else if (type_name == "Default Spacing") {
+      return ViolationEnumType::kDefaultSpacing;
+    } else if (type_name == "ParallelRunLength Spacing") {
+      return ViolationEnumType::kPRLSpacing;
+    } else if (type_name == "JogToJog Spacing") {
+      return ViolationEnumType::kJogToJog;
+    } else if (type_name == "Metal EOL Spacing") {
+      return ViolationEnumType::kEOL;
+    } else if (type_name == "Wire Width") {
+      return ViolationEnumType::kWidth;
+    } else if (type_name == "MinStep") {
+      return ViolationEnumType::kMinStep;
+    } else if (type_name == "Metal Notch Spacing") {
+      return ViolationEnumType::kNotch;
+    } else if (type_name == "Corner Fill") {
+      return ViolationEnumType::kCornerFill;
     } else {
       return ViolationEnumType::kNone;
     }

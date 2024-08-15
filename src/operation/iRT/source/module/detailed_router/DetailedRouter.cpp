@@ -1188,50 +1188,7 @@ void DetailedRouter::updateViolationList(DRBox& dr_box)
 
 std::vector<Violation> DetailedRouter::getViolationList(DRBox& dr_box)
 {
-  std::vector<idb::IdbLayerShape*> env_shape_list;
-  std::map<int32_t, std::vector<idb::IdbLayerShape*>> net_pin_shape_map;
-  for (auto& [is_routing, layer_net_fixed_rect_map] : dr_box.get_type_layer_net_fixed_rect_map()) {
-    for (auto& [layer_idx, net_fixed_rect_map] : layer_net_fixed_rect_map) {
-      for (auto& [net_idx, fixed_rect_set] : net_fixed_rect_map) {
-        if (net_idx == -1) {
-          for (auto& fixed_rect : fixed_rect_set) {
-            env_shape_list.push_back(RTDM.getIDBLayerShapeByFixedRect(fixed_rect, is_routing));
-          }
-        } else {
-          for (auto& fixed_rect : fixed_rect_set) {
-            net_pin_shape_map[net_idx].push_back(RTDM.getIDBLayerShapeByFixedRect(fixed_rect, is_routing));
-          }
-        }
-      }
-    }
-  }
-  std::map<int32_t, std::vector<idb::IdbRegularWireSegment*>> net_wire_via_map;
-  for (auto& [net_idx, segment_list] : dr_box.get_net_result_map()) {
-    for (Segment<LayerCoord>& segment : segment_list) {
-      net_wire_via_map[net_idx].push_back(RTDM.getIDBSegmentByNetResult(net_idx, segment));
-    }
-  }
-  std::vector<Violation> violation_list = RTI.getViolationList(env_shape_list, net_pin_shape_map, net_wire_via_map, "DR");
-  // free memory
-  {
-    for (idb::IdbLayerShape* env_shape : env_shape_list) {
-      delete env_shape;
-      env_shape = nullptr;
-    }
-    for (auto& [net_idx, pin_shape_list] : net_pin_shape_map) {
-      for (idb::IdbLayerShape* pin_shape : pin_shape_list) {
-        delete pin_shape;
-        pin_shape = nullptr;
-      }
-    }
-    for (auto& [net_idx, wire_via_list] : net_wire_via_map) {
-      for (idb::IdbRegularWireSegment* wire_via : wire_via_list) {
-        delete wire_via;
-        wire_via = nullptr;
-      }
-    }
-  }
-  return violation_list;
+  return RTI.getViolationList(dr_box);
 }
 
 void DetailedRouter::uploadViolation(DRBox& dr_box)

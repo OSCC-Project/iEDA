@@ -348,13 +348,6 @@ std::map<std::string, std::vector<idrc::DrcViolation*>> FileDrcManager::parseJso
   for (auto& json_drc_type : json_distribution.items()) {
     /// drc type
     auto drc_type = json_drc_type.key();
-    // /// check metal short pnly
-    // if (drc_type != "Metal Short") {
-    //   continue;
-    // } else {
-    //   /// change to "Minimum Area" in order to control drc views
-    //   drc_type = "Minimum Area";
-    // }
 
     idrc::ViolationEnumType enum_type = idrc::GetViolationType()(drc_type);
 
@@ -380,7 +373,6 @@ std::map<std::string, std::vector<idrc::DrcViolation*>> FileDrcManager::parseJso
         auto json_nets = json_drc.value()["net"];
         for (auto& json_net : json_nets.items()) {
           std::string net_name = json_net.value();
-          std::cout << net_name << std::endl;
           auto net = dmInst->get_idb_design()->get_net_list()->find_net(net_name);
           if (net != nullptr) {
             net_ids.insert(net->get_id());
@@ -404,10 +396,10 @@ std::map<std::string, std::vector<idrc::DrcViolation*>> FileDrcManager::parseJso
 
         auto* idb_layer = dmInst->get_idb_layout()->get_layers()->find_layer(layer);
 
-        auto llx = dmInst->get_idb_design()->transUnitDB(json_drc.value()["llx"]);
-        auto lly = dmInst->get_idb_design()->transUnitDB(json_drc.value()["lly"]);
-        auto urx = dmInst->get_idb_design()->transUnitDB(json_drc.value()["urx"]);
-        auto ury = dmInst->get_idb_design()->transUnitDB(json_drc.value()["ury"]);
+        auto llx = json_drc.value()["llx"];
+        auto lly = json_drc.value()["lly"];
+        auto urx = json_drc.value()["urx"];
+        auto ury = json_drc.value()["ury"];
         auto* violation = new idrc::DrcViolationRect(idb_layer, enum_type, llx, lly, urx, ury);
         violation->set_net_ids(net_ids);
         violation->set_inst_ids(inst_ids);

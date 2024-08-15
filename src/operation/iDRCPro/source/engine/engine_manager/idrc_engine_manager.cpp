@@ -172,10 +172,11 @@ void DrcEngineManager::filterData()
     _condition_manager->checkMinSpacing(layer, layout);
 
     // jog and prl
-    _condition_manager->checkWires(layer, layout);
+    // _condition_manager->checkWires(layer, layout);
+    _condition_manager->checkParallelLengthSpacing(layer, layout);
 
     // edge
-    _condition_manager->checkPolygons(layer, layout);
+    // _condition_manager->checkPolygons(layer, layout);
   }
 
   for (auto& [layer, layout] : get_engine_layouts(LayoutType::kCut)) {

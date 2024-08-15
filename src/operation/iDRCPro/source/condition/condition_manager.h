@@ -78,6 +78,7 @@ class DrcConditionManager
   void checkMinSpacing(std::string layer, DrcEngineLayout* layout);
   void checkWires(std::string layer, DrcEngineLayout* layout);
   void checkPolygons(std::string layer, DrcEngineLayout* layout);
+  void checkParallelLengthSpacing(std::string layer, DrcEngineLayout* layout);
 
  private:
   DrcViolationManager* _violation_manager;
