@@ -105,6 +105,36 @@ void DrcEngineLayout::combineLayout(DrcDataManager* data_manager)
     /// build engine sublayout RTree
     addRTreeSubLayout(sub_layout);
   }
+
+  /// save intersect layout for each sublayout
+  std::vector<DrcEngineSubLayout*> sub_layouts;
+  /// init sublayout drc map & sublayout list
+  for (auto& [net_id, sub_layout] : _sub_layouts) {
+    sub_layouts.push_back(sub_layout);
+  }
+
+  /// sort by bounding box area
+  std::sort(sub_layouts.begin(), sub_layouts.end(), [](DrcEngineSubLayout* a, DrcEngineSubLayout* b) {
+    auto [llx_a, lly_a, urx_a, ury_a] = a->get_engine()->bounding_box();
+    auto [llx_b, lly_b, urx_b, ury_b] = b->get_engine()->bounding_box();
+    double area_a = (((double) (urx_a - llx_a)) / 1000) * (((double) (ury_a - lly_a)) / 1000);
+    double area_b = (((double) (urx_b - llx_b)) / 1000) * (((double) (ury_b - lly_b)) / 1000);
+    return area_a < area_b;
+  });
+
+  // #pragma omp parallel for schedule(dynamic)
+  for (auto sub_layout : sub_layouts) {
+    auto [llx, lly, urx, ury] = sub_layout->get_engine()->bounding_box();
+    auto query_sub_layouts = querySubLayouts(llx, lly, urx, ury);
+
+    auto& intersect_layouts = sub_layout->get_intersect_layouts();
+    for (auto query_sub_layout : query_sub_layouts) {
+      intersect_layouts.insert(std::make_pair(query_sub_layout->get_id(), query_sub_layout));
+      if (false == query_sub_layout->hasChecked(sub_layout->get_id()) && false == sub_layout->hasChecked(query_sub_layout->get_id())) {
+        query_sub_layout->markChecked(sub_layout->get_id());
+      }
+    }
+  }
 }
 
 void DrcEngineLayout::addRTreeSubLayout(DrcEngineSubLayout* sub_layout)
