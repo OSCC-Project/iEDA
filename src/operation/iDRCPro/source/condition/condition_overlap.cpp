@@ -30,25 +30,25 @@ void DrcConditionManager::checkOverlap(std::string layer, DrcEngineLayout* layou
 
   ieda::Stats states;
 
-  typedef struct DrcShortInfo
+  struct DrcShortInfo
   {
     ieda_solver::GeometryRect rect;
     std::set<int> net_ids;
   };
 
-  std::vector<DrcShortInfo> drc_list;
+  std::map<int, std::vector<DrcShortInfo>> drc_map;  /// save violation for each sublayout
+  std::vector<DrcEngineSubLayout*> sub_layouts;
+  /// init sublayout drc map & sublayout list
+  for (auto& [net_id, sub_layout] : layout->get_sub_layouts()) {
+    drc_map.insert(std::make_pair(net_id, std::vector<DrcShortInfo>{}));
+    sub_layouts.push_back(sub_layout);
+  }
 
-  omp_lock_t lck;
-  omp_init_lock(&lck);
-
-  auto& layouts = layout->get_sub_layouts();
-  //   for (auto& [net_id, sub_layout] : layout->get_sub_layouts()) {
+/// lock-free parallel
 #pragma omp parallel for schedule(dynamic)
-  for (int i = 0; i < (int) layouts.size(); i++) {
-    auto it = layouts.begin();
-    std::advance(it, i);
-    auto net_id = it->first;
-    auto sub_layout = it->second;
+  for (auto sub_layout : sub_layouts) {
+    auto net_id = sub_layout->get_id();
+
     /// skip environment checking for RT result
     if (_check_type == DrcCheckerType::kRT && net_id < 0) {
       continue;
@@ -64,20 +64,15 @@ void DrcConditionManager::checkOverlap(std::string layer, DrcEngineLayout* layou
 
     std::vector<DrcShortInfo> this_drc_list;  /// violation for this sublayout
 
-    auto [llx, lly, urx, ury] = sub_layout->get_engine()->bounding_box();
-
-    auto query_sub_layouts = layout->querySubLayouts(llx, lly, urx, ury);
-    for (auto* query_sub_layout : query_sub_layouts) {
-      auto query_id = query_sub_layout->get_id();
+    int checking_size = 0;
+    for (auto& [query_id, query_sub_layout] : sub_layout->get_intersect_layouts()) {
       if (query_id == net_id || true == sub_layout->hasChecked(query_id)) {
         continue;
       }
 
       /// mark as checked
-      omp_set_lock(&lck);
-      sub_layout->markChecked(query_id);
-      query_sub_layout->markChecked(net_id);
-      omp_unset_lock(&lck);
+      //   sub_layout->markChecked(query_id);
+      //   query_sub_layout->markChecked(net_id);
 
       auto& overlaps = sub_layout->get_engine()->getOverlap(query_sub_layout->get_engine());
       std::set<int> net_ids = {};
@@ -97,22 +92,28 @@ void DrcConditionManager::checkOverlap(std::string layer, DrcEngineLayout* layou
 
         this_drc_list.push_back(drc_info);
       }
+
+      checking_size++;
     }
 
-    omp_set_lock(&lck);
-    std::copy(this_drc_list.begin(), this_drc_list.end(), std::back_inserter(drc_list));
-    omp_unset_lock(&lck);
+    drc_map[net_id] = this_drc_list;
+    // omp_set_lock(&lck);
+    // std::copy(this_drc_list.begin(), this_drc_list.end(), std::back_inserter(drc_list));
+    // omp_unset_lock(&lck);
 
-    DEBUGOUTPUT(DEBUGHIGHLIGHT("net_id:\t") << net_id << "\tlayer " << layer << "\tquery_sub_layouts = " << query_sub_layouts.size()
-                                            << "\toverlaps = " << this_drc_list.size());
-  }
-  omp_destroy_lock(&lck);
-
-  for (auto drc : drc_list) {
-    addViolation(drc.rect, layer, ViolationEnumType::kShort, drc.net_ids);
+    DEBUGOUTPUT(DEBUGHIGHLIGHT("net_id:\t") << net_id << "\tlayer " << layer << "\tquery_sub_layouts = "
+                                            << sub_layout->get_intersect_layouts().size() << "\toverlaps = " << this_drc_list.size());
   }
 
-  DEBUGOUTPUT(DEBUGHIGHLIGHT("Metal Short:\t") << drc_list.size() << "\tlayer " << layer << "\tnets = " << layout->get_sub_layouts().size()
+  int total_drc = 0;
+  for (auto& [net_id, drc_list] : drc_map) {
+    for (auto drc : drc_list) {
+      addViolation(drc.rect, layer, ViolationEnumType::kShort, drc.net_ids);
+      total_drc++;
+    }
+  }
+
+  DEBUGOUTPUT(DEBUGHIGHLIGHT("Metal Short:\t") << total_drc << "\tlayer " << layer << "\tnets = " << layout->get_sub_layouts().size()
                                                << "\ttime = " << states.elapsedRunTime() << "\tmemory = " << states.memoryDelta());
 }
 
