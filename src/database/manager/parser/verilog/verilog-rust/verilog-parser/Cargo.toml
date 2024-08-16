@@ -5,6 +5,12 @@ edition = "2021"
 exclude = ["build"]
 rust-version = "1.66"
 authors = ["longshuaiying <longshy@pcl.ac.cn>"]
+include = ["**/*.rs", "*.toml", "*.pest", "LICENSE", "README.md"]
+git = "https://gitee.com/oscc-project/parser.git"
+
+description = "iEDA verilog netlist parser"
+license-file = "LICENSE"
+repository = "https://gitee.com/oscc-project/"
 
 [build-dependencies]
 cbindgen = "0.26"
