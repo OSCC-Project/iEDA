@@ -222,7 +222,8 @@ void TrackAssigner::assignTAPanelMap(TAModel& ta_model)
     }
     assigned_panel_num += ta_panel_id_list.size();
     RTLOG.info(Loc::current(), "Assigned ", assigned_panel_num, "/", total_panel_num, "(",
-               RTUTIL.getPercentage(assigned_panel_num, total_panel_num), ") panels", stage_monitor.getStatsInfo());
+               RTUTIL.getPercentage(assigned_panel_num, total_panel_num), ") panels with ", getViolationNum(), " violations",
+               stage_monitor.getStatsInfo());
   }
 
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
@@ -1019,6 +1020,13 @@ void TrackAssigner::freeTAPanel(TAPanel& ta_panel)
   }
   ta_panel.get_ta_task_list().clear();
   ta_panel.get_ta_node_map().free();
+}
+
+int32_t TrackAssigner::getViolationNum()
+{
+  Die& die = RTDM.getDatabase().get_die();
+
+  return static_cast<int32_t>(RTDM.getViolationSet(die).size());
 }
 
 #if 1  // update env

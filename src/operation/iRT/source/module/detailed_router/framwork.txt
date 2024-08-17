@@ -16,7 +16,7 @@ iterativeDRModel:迭代DRModel
         routeDRBox:
             initTaskSchedule:初始化task布线调度表
                 routeDRTask:给task布线，在此函数末尾，布线结果从graph中删除，再加入新的结果
-            updateViolationList:首先通过idrc得到Violation存到Box下面，然后Violation结果从graph中删除，再加入新的结果
+            updateViolationList:首先得到Violation存到Box下面，然后Violation结果从graph中删除，再加入新的结果
             getTaskScheduleByViolation:通过Violation得到新的布线调度
         uploadViolation:将violation加入gcell_map
         freeDRBox:析构

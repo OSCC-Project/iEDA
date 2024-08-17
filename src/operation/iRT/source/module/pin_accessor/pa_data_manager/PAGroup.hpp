@@ -16,25 +16,27 @@
 // ***************************************************************************************
 #pragma once
 
-#include "PAPin.hpp"
+#include "Direction.hpp"
+#include "LayerCoord.hpp"
 
 namespace irt {
 
-class ConflictAccessPoint : public PlanarCoord
+class PAGroup
 {
  public:
-  ConflictAccessPoint() = default;
-  ~ConflictAccessPoint() = default;
+  PAGroup() = default;
+  ~PAGroup() = default;
   // getter
-  PAPin* get_pa_pin() { return _pa_pin; }
-  AccessPoint* get_access_point() { return _access_point; }
+  bool get_is_target() const { return _is_target; }
+  std::vector<LayerCoord>& get_coord_list() { return _coord_list; }
   // setter
-  void set_pa_pin(PAPin* pa_pin) { _pa_pin = pa_pin; }
-  void set_access_point(AccessPoint* access_point) { _access_point = access_point; }
+  void set_is_target(const bool is_target) { _is_target = is_target; }
+  void set_coord_list(const std::vector<LayerCoord>& coord_list) { _coord_list = coord_list; }
   // function
+
  private:
-  PAPin* _pa_pin = nullptr;
-  AccessPoint* _access_point = nullptr;
+  bool _is_target;
+  std::vector<LayerCoord> _coord_list;
 };
 
 }  // namespace irt

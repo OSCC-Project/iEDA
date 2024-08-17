@@ -316,33 +316,33 @@ std::set<Violation*> DataManager::getViolationSet(EXTPlanarRect& region)
 
 std::vector<NetShape> DataManager::getNetShapeList(int32_t net_idx, std::vector<Segment<LayerCoord>>& segment_list)
 {
-  std::vector<NetShape> drc_shape_list;
+  std::vector<NetShape> net_shape_list;
   for (Segment<LayerCoord>& segment : segment_list) {
-    for (NetShape& drc_shape : getNetShapeList(net_idx, segment)) {
-      drc_shape_list.push_back(drc_shape);
+    for (NetShape& net_shape : getNetShapeList(net_idx, segment)) {
+      net_shape_list.push_back(net_shape);
     }
   }
-  return drc_shape_list;
+  return net_shape_list;
 }
 
 std::vector<NetShape> DataManager::getNetShapeList(int32_t net_idx, Segment<LayerCoord>& segment)
 {
-  std::vector<NetShape> drc_shape_list;
-  for (NetShape& drc_shape : getNetShapeList(net_idx, segment.get_first(), segment.get_second())) {
-    drc_shape_list.push_back(drc_shape);
+  std::vector<NetShape> net_shape_list;
+  for (NetShape& net_shape : getNetShapeList(net_idx, segment.get_first(), segment.get_second())) {
+    net_shape_list.push_back(net_shape);
   }
-  return drc_shape_list;
+  return net_shape_list;
 }
 
 std::vector<NetShape> DataManager::getNetShapeList(int32_t net_idx, MTree<LayerCoord>& coord_tree)
 {
-  std::vector<NetShape> drc_shape_list;
+  std::vector<NetShape> net_shape_list;
   for (Segment<TNode<LayerCoord>*>& coord_segment : RTUTIL.getSegListByTree(coord_tree)) {
-    for (NetShape& drc_shape : getNetShapeList(net_idx, coord_segment.get_first()->value(), coord_segment.get_second()->value())) {
-      drc_shape_list.push_back(drc_shape);
+    for (NetShape& net_shape : getNetShapeList(net_idx, coord_segment.get_first()->value(), coord_segment.get_second()->value())) {
+      net_shape_list.push_back(net_shape);
     }
   }
-  return drc_shape_list;
+  return net_shape_list;
 }
 
 std::vector<NetShape> DataManager::getNetShapeList(int32_t net_idx, LayerCoord& first_coord, LayerCoord& second_coord)
@@ -350,7 +350,7 @@ std::vector<NetShape> DataManager::getNetShapeList(int32_t net_idx, LayerCoord& 
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
   std::vector<std::vector<ViaMaster>>& layer_via_master_list = RTDM.getDatabase().get_layer_via_master_list();
 
-  std::vector<NetShape> drc_shape_list;
+  std::vector<NetShape> net_shape_list;
   int32_t first_layer_idx = first_coord.get_layer_idx();
   int32_t second_layer_idx = second_coord.get_layer_idx();
   if (first_layer_idx != second_layer_idx) {
@@ -360,23 +360,23 @@ std::vector<NetShape> DataManager::getNetShapeList(int32_t net_idx, LayerCoord& 
 
       LayerRect& above_enclosure = via_master.get_above_enclosure();
       LayerRect offset_above_enclosure(RTUTIL.getOffsetRect(above_enclosure, first_coord), above_enclosure.get_layer_idx());
-      drc_shape_list.emplace_back(net_idx, offset_above_enclosure, true);
+      net_shape_list.emplace_back(net_idx, offset_above_enclosure, true);
 
       LayerRect& below_enclosure = via_master.get_below_enclosure();
       LayerRect offset_below_enclosure(RTUTIL.getOffsetRect(below_enclosure, first_coord), below_enclosure.get_layer_idx());
-      drc_shape_list.emplace_back(net_idx, offset_below_enclosure, true);
+      net_shape_list.emplace_back(net_idx, offset_below_enclosure, true);
 
       for (PlanarRect& cut_shape : via_master.get_cut_shape_list()) {
         LayerRect offset_cut_shape(RTUTIL.getOffsetRect(cut_shape, first_coord), via_master.get_cut_layer_idx());
-        drc_shape_list.emplace_back(net_idx, offset_cut_shape, false);
+        net_shape_list.emplace_back(net_idx, offset_cut_shape, false);
       }
     }
   } else {
     int32_t half_width = routing_layer_list[first_layer_idx].get_min_width() / 2;
     LayerRect wire_rect(RTUTIL.getEnlargedRect(first_coord, second_coord, half_width), first_layer_idx);
-    drc_shape_list.emplace_back(net_idx, wire_rect, true);
+    net_shape_list.emplace_back(net_idx, wire_rect, true);
   }
-  return drc_shape_list;
+  return net_shape_list;
 }
 
 #endif
@@ -999,11 +999,17 @@ void DataManager::makeObstacleList()
 
 #pragma omp parallel for
   for (Obstacle& routing_obstacle : routing_obstacle_list) {
+    if (!RTUTIL.hasRegularRect(routing_obstacle.get_real_rect(), die.get_real_rect())) {
+      RTLOG.error(Loc::current(), "This shape is outside the die!");
+    }
     routing_obstacle.set_real_rect(RTUTIL.getRegularRect(routing_obstacle.get_real_rect(), die.get_real_rect()));
     routing_obstacle.set_grid_rect(RTUTIL.getClosedGCellGridRect(routing_obstacle.get_real_rect(), gcell_axis));
   }
 #pragma omp parallel for
   for (Obstacle& cut_obstacle : cut_obstacle_list) {
+    if (!RTUTIL.hasRegularRect(cut_obstacle.get_real_rect(), die.get_real_rect())) {
+      RTLOG.error(Loc::current(), "This shape is outside the die!");
+    }
     cut_obstacle.set_real_rect(RTUTIL.getRegularRect(cut_obstacle.get_real_rect(), die.get_real_rect()));
     cut_obstacle.set_grid_rect(RTUTIL.getClosedGCellGridRect(cut_obstacle.get_real_rect(), gcell_axis));
   }
@@ -1083,10 +1089,16 @@ void DataManager::makePinList(Net& net)
     Pin& pin = pin_list[pin_idx];
     pin.set_pin_idx(static_cast<int32_t>(pin_idx));
     for (EXTLayerRect& routing_shape : pin.get_routing_shape_list()) {
+      if (!RTUTIL.hasRegularRect(routing_shape.get_real_rect(), die.get_real_rect())) {
+        RTLOG.error(Loc::current(), "This shape is outside the die!");
+      }
       routing_shape.set_real_rect(RTUTIL.getRegularRect(routing_shape.get_real_rect(), die.get_real_rect()));
       routing_shape.set_grid_rect(RTUTIL.getClosedGCellGridRect(routing_shape.get_real_rect(), gcell_axis));
     }
     for (EXTLayerRect& cut_shape : pin.get_cut_shape_list()) {
+      if (!RTUTIL.hasRegularRect(cut_shape.get_real_rect(), die.get_real_rect())) {
+        RTLOG.error(Loc::current(), "This shape is outside the die!");
+      }
       cut_shape.set_real_rect(RTUTIL.getRegularRect(cut_shape.get_real_rect(), die.get_real_rect()));
       cut_shape.set_grid_rect(RTUTIL.getClosedGCellGridRect(cut_shape.get_real_rect(), gcell_axis));
     }

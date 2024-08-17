@@ -16,28 +16,45 @@
 // ***************************************************************************************
 #pragma once
 
-#include "ConflictAccessPoint.hpp"
+#include "RTHeader.hpp"
 
 namespace irt {
 
-class ConflictGroup
+class PABoxId
 {
  public:
-  ConflictGroup() = default;
-  ~ConflictGroup() = default;
-  // getter
-  std::vector<std::vector<ConflictAccessPoint>>& get_conflict_ap_list_list() { return _conflict_ap_list_list; }
-  std::map<int32_t, std::vector<int32_t>>& get_conflict_map() { return _conflict_map; }
-  // setter
-  void set_conflict_ap_list_list(const std::vector<std::vector<ConflictAccessPoint>>& conflict_ap_list_list)
+  PABoxId() = default;
+  PABoxId(const int32_t x, const int32_t y)
   {
-    _conflict_ap_list_list = conflict_ap_list_list;
+    _x = x;
+    _y = y;
   }
-  void set_conflict_map(const std::map<int32_t, std::vector<int32_t>>& conflict_map) { _conflict_map = conflict_map; }
+  ~PABoxId() = default;
+  bool operator==(const PABoxId& other) { return this->_x == other._x && this->_y == other._y; }
+  bool operator!=(const PABoxId& other) { return !((*this) == other); }
+  // getter
+  int32_t get_x() const { return _x; }
+  int32_t get_y() const { return _y; }
+  // setter
+  void set_x(const int32_t x) { _x = x; }
+  void set_y(const int32_t y) { _y = y; }
   // function
+
  private:
-  std::vector<std::vector<ConflictAccessPoint>> _conflict_ap_list_list;
-  std::map<int32_t, std::vector<int32_t>> _conflict_map;
+  int32_t _x = -1;
+  int32_t _y = -1;
+};
+
+struct CmpPABoxId
+{
+  bool operator()(const PABoxId& a, const PABoxId& b) const
+  {
+    if (a.get_x() != b.get_x()) {
+      return a.get_x() < b.get_x();
+    } else {
+      return a.get_y() < b.get_y();
+    }
+  }
 };
 
 }  // namespace irt

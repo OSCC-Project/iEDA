@@ -235,7 +235,7 @@ std::vector<Segment<PlanarCoord>> TopologyGenerator::getPlanarTopoList(TGModel& 
   std::vector<PlanarCoord> planar_coord_list;
   {
     for (TGPin& tg_pin : tg_net->get_tg_pin_list()) {
-      planar_coord_list.push_back(tg_pin.get_key_access_point().get_grid_coord());
+      planar_coord_list.push_back(tg_pin.get_access_point().get_grid_coord());
     }
     std::sort(planar_coord_list.begin(), planar_coord_list.end(), CmpPlanarCoordByXASC());
     planar_coord_list.erase(std::unique(planar_coord_list.begin(), planar_coord_list.end()), planar_coord_list.end());
@@ -401,7 +401,7 @@ MTree<LayerCoord> TopologyGenerator::getCoordTree(TGNet* tg_net, std::vector<Seg
   std::map<LayerCoord, std::set<int32_t>, CmpLayerCoordByXASC> key_coord_pin_map;
   std::vector<TGPin>& tg_pin_list = tg_net->get_tg_pin_list();
   for (size_t i = 0; i < tg_pin_list.size(); i++) {
-    LayerCoord coord(tg_pin_list[i].get_key_access_point().get_grid_coord(), 0);
+    LayerCoord coord(tg_pin_list[i].get_access_point().get_grid_coord(), 0);
     candidate_root_coord_list.push_back(coord);
     key_coord_pin_map[coord].insert(static_cast<int32_t>(i));
   }
@@ -525,7 +525,7 @@ void TopologyGenerator::updateSummary(TGModel& tg_model)
     routing_segment_list_list.resize(tg_net_list.size());
     for (TGNet& tg_net : tg_net_list) {
       for (TGPin& tg_pin : tg_net.get_tg_pin_list()) {
-        LayerCoord layer_coord = tg_pin.get_key_access_point().getGridLayerCoord();
+        LayerCoord layer_coord = tg_pin.get_access_point().getGridLayerCoord();
         real_pin_coord_map_list[tg_net.get_net_idx()][tg_pin.get_pin_name()].emplace_back(
             RTUTIL.getRealRectByGCell(layer_coord, gcell_axis).getMidPoint(), 0);
       }

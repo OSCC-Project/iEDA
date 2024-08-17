@@ -249,7 +249,7 @@ void InitialRouter::buildTopoTree(IRModel& ir_model)
     std::map<LayerCoord, std::set<int32_t>, CmpLayerCoordByXASC> key_coord_pin_map;
     std::vector<IRPin>& ir_pin_list = ir_net.get_ir_pin_list();
     for (size_t i = 0; i < ir_pin_list.size(); i++) {
-      LayerCoord coord(ir_pin_list[i].get_key_access_point().get_grid_coord(), 0);
+      LayerCoord coord(ir_pin_list[i].get_access_point().get_grid_coord(), 0);
       candidate_root_coord_list.push_back(coord);
       key_coord_pin_map[coord].insert(static_cast<int32_t>(i));
     }
@@ -312,7 +312,7 @@ void InitialRouter::makeIRTopoList(IRModel& ir_model, IRNet* ir_net, std::vector
     IRTopo ir_topo;
     for (IRPin& ir_pin : ir_net->get_ir_pin_list()) {
       IRGroup ir_group;
-      ir_group.get_coord_list().push_back(ir_pin.get_key_access_point().getGridLayerCoord());
+      ir_group.get_coord_list().push_back(ir_pin.get_access_point().getGridLayerCoord());
       ir_topo.get_ir_group_list().push_back(ir_group);
     }
     ir_topo_list.push_back(ir_topo);
@@ -362,7 +362,7 @@ void InitialRouter::makeIRTopoList(IRModel& ir_model, IRNet* ir_net, std::vector
     std::map<PlanarCoord, std::vector<IRGroup>, CmpPlanarCoordByXASC> planar_pin_group_map;
     {
       for (IRPin& ir_pin : ir_net->get_ir_pin_list()) {
-        LayerCoord grid_coord = ir_pin.get_key_access_point().getGridLayerCoord();
+        LayerCoord grid_coord = ir_pin.get_access_point().getGridLayerCoord();
 
         IRGroup ir_group;
         ir_group.get_coord_list().push_back(grid_coord);
@@ -871,7 +871,7 @@ MTree<LayerCoord> InitialRouter::getCoordTree(IRNet* ir_net, std::vector<Segment
   std::map<LayerCoord, std::set<int32_t>, CmpLayerCoordByXASC> key_coord_pin_map;
   std::vector<IRPin>& ir_pin_list = ir_net->get_ir_pin_list();
   for (size_t i = 0; i < ir_pin_list.size(); i++) {
-    LayerCoord coord = ir_pin_list[i].get_key_access_point().getGridLayerCoord();
+    LayerCoord coord = ir_pin_list[i].get_access_point().getGridLayerCoord();
     candidate_root_coord_list.push_back(coord);
     key_coord_pin_map[coord].insert(static_cast<int32_t>(i));
   }
@@ -882,7 +882,7 @@ void InitialRouter::updateDemand(IRModel& ir_model, IRNet* ir_net, MTree<LayerCo
 {
   std::set<LayerCoord, CmpLayerCoordByXASC> key_coord_set;
   for (IRPin& ir_pin : ir_net->get_ir_pin_list()) {
-    key_coord_set.insert(ir_pin.get_key_access_point().getGridLayerCoord());
+    key_coord_set.insert(ir_pin.get_access_point().getGridLayerCoord());
   }
   std::vector<Segment<LayerCoord>> routing_segment_list;
   for (Segment<TNode<LayerCoord>*>& coord_segment : RTUTIL.getSegListByTree(coord_tree)) {
@@ -1029,7 +1029,7 @@ void InitialRouter::updateSummary(IRModel& ir_model)
     routing_segment_list_list.resize(ir_net_list.size());
     for (IRNet& ir_net : ir_net_list) {
       for (IRPin& ir_pin : ir_net.get_ir_pin_list()) {
-        LayerCoord layer_coord = ir_pin.get_key_access_point().getGridLayerCoord();
+        LayerCoord layer_coord = ir_pin.get_access_point().getGridLayerCoord();
         real_pin_coord_map_list[ir_net.get_net_idx()][ir_pin.get_pin_name()].emplace_back(
             RTUTIL.getRealRectByGCell(layer_coord, gcell_axis).getMidPoint(), layer_coord.get_layer_idx());
       }
@@ -1228,12 +1228,12 @@ void InitialRouter::debugOutputGuide(IRModel& ir_model)
     RTUTIL.pushStream(guide_file_stream, "guide ", ir_net.get_origin_net()->get_net_name(), "\n");
 
     for (IRPin& ir_pin : ir_net.get_ir_pin_list()) {
-      AccessPoint& key_access_point = ir_pin.get_key_access_point();
-      double grid_x = key_access_point.get_grid_x();
-      double grid_y = key_access_point.get_grid_y();
-      double real_x = key_access_point.get_real_x() / 1.0 / micron_dbu;
-      double real_y = key_access_point.get_real_y() / 1.0 / micron_dbu;
-      std::string layer = routing_layer_list[key_access_point.get_layer_idx()].get_layer_name();
+      AccessPoint& access_point = ir_pin.get_access_point();
+      double grid_x = access_point.get_grid_x();
+      double grid_y = access_point.get_grid_y();
+      double real_x = access_point.get_real_x() / 1.0 / micron_dbu;
+      double real_y = access_point.get_real_y() / 1.0 / micron_dbu;
+      std::string layer = routing_layer_list[access_point.get_layer_idx()].get_layer_name();
       std::string connnect;
       if (ir_pin.get_is_driven()) {
         connnect = "driven";

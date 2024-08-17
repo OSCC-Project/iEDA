@@ -839,6 +839,15 @@ void RTInterface::outputNetList()
   std::vector<Net>& net_list = RTDM.getDatabase().get_net_list();
 
   std::map<int32_t, std::vector<idb::IdbRegularWireSegment*>> net_idb_segment_map;
+  {
+    for (Net& net : net_list) {
+      for (Pin& pin : net.get_pin_list()) {
+        for (Segment<LayerCoord>& access_segment : pin.get_access_segment_list()) {
+          net_idb_segment_map[net.get_net_idx()].push_back(getIDBSegmentByNetResult(net.get_net_idx(), access_segment));
+        }
+      }
+    }
+  }
   for (auto& [net_idx, segment_set] : RTDM.getDetailedNetResultMap(die)) {
     for (Segment<LayerCoord>* segment : segment_set) {
       net_idb_segment_map[net_idx].push_back(getIDBSegmentByNetResult(net_idx, *segment));
@@ -1050,7 +1059,9 @@ std::vector<Violation> RTInterface::getViolationList(std::vector<idb::IdbLayerSh
                                                      std::string stage)
 {
   std::set<idrc::ViolationEnumType> check_select;
-  if (stage == "TA") {
+  if (stage == "PA") {
+    check_select.insert(idrc::ViolationEnumType::kShort);
+  } else if (stage == "TA") {
     check_select.insert(idrc::ViolationEnumType::kShort);
   } else if (stage == "DR") {
     check_select.insert(idrc::ViolationEnumType::kShort);
