@@ -59,6 +59,14 @@ void IdbSpeedUpSetup::createDrc(GuiSpeedupDrcList* drc_list, idrc::DrcViolation*
   int max_x       = spot_rect->get_urx();
   int max_y       = spot_rect->get_ury();
 
+  if (min_x == max_x) {
+    max_x += 2;
+  }
+
+  if (min_y == max_y) {
+    max_y += 2;
+  }
+
   /// if line
   if (min_x == max_x || min_y == max_y) {
     qreal q_min_x       = _transform.db_to_guidb(min_x);

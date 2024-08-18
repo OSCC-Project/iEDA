@@ -42,6 +42,7 @@ void GeometryBoost::addRect(int llx, int lly, int urx, int ury)
 bool GeometryBoost::isIntersect(int llx, int lly, int urx, int ury)
 {
   GtlPolygon90Set self_set(_polyset);  /// self polyset
+  self_set.clean();
   GtlPolygon90Set target_set;
   GtlRect rect(llx, lly, urx, ury);
   target_set += rect;
@@ -51,6 +52,15 @@ bool GeometryBoost::isIntersect(int llx, int lly, int urx, int ury)
   //   std::vector<GeometryPolygon> overlap_list;
   //   interact_poly.get(overlap_list);
   return interact_poly.empty() ? false : true;
+
+  //   GeometryPolygonSet target_set;
+  //   GtlRect rect(llx - 1, lly - 1, urx + 1, ury + 1);
+  //   target_set += rect;
+  //   get_interact(target_set, _polyset);
+
+  //   //   std::vector<GeometryPolygon> overlap_list;
+  //   //   target_set.get(overlap_list);
+  //   return target_set.empty() ? false : true;
 }
 
 /**
@@ -102,10 +112,10 @@ bool GeometryBoost::isIntersect(int llx, int lly, int urx, int ury)
 
 void GeometryBoost::addGeometry(EngineGeometry* geometry)
 {
-  auto* boost_geometry = dynamic_cast<GeometryBoost*>(geometry);
-  if (boost_geometry == nullptr) {
+  if (geometry == nullptr) {
     return;
   }
+  auto* boost_geometry = dynamic_cast<GeometryBoost*>(geometry);
 
   boost_geometry->get_polyset().clean();
 

@@ -18,6 +18,7 @@
 #include "condition_manager.h"
 #include "engine_layout.h"
 #include "idm.h"
+#include "omp.h"
 
 namespace idrc {
 
@@ -28,9 +29,26 @@ void DrcConditionManager::checkOverlap(std::string layer, DrcEngineLayout* layou
   }
 
   ieda::Stats states;
-  int total_overlaps = 0;
 
+  struct DrcShortInfo
+  {
+    ieda_solver::GeometryRect rect;
+    std::set<int> net_ids;
+  };
+
+  std::map<int, std::vector<DrcShortInfo>> drc_map;  /// save violation for each sublayout
+  std::vector<DrcEngineSubLayout*> sub_layouts;
+  /// init sublayout drc map & sublayout list
   for (auto& [net_id, sub_layout] : layout->get_sub_layouts()) {
+    drc_map.insert(std::make_pair(net_id, std::vector<DrcShortInfo>{}));
+    sub_layouts.push_back(sub_layout);
+  }
+
+/// lock-free parallel
+#pragma omp parallel for schedule(dynamic)
+  for (auto sub_layout : sub_layouts) {
+    auto net_id = sub_layout->get_id();
+
     /// skip environment checking for RT result
     if (_check_type == DrcCheckerType::kRT && net_id < 0) {
       continue;
@@ -40,41 +58,62 @@ void DrcConditionManager::checkOverlap(std::string layer, DrcEngineLayout* layou
       continue;
     }
 
-    auto [llx, lly, urx, ury] = sub_layout->get_engine()->bounding_box();
+    if (sub_layout == nullptr) {
+      continue;
+    }
 
-    auto query_sub_layouts = layout->querySubLayouts(llx, lly, urx, ury);
-    for (auto* query_sub_layout : query_sub_layouts) {
-      auto query_id = query_sub_layout->get_id();
+    std::vector<DrcShortInfo> this_drc_list;  /// violation for this sublayout
+
+    int checking_size = 0;
+    for (auto& [query_id, query_sub_layout] : sub_layout->get_intersect_layouts()) {
       if (query_id == net_id || true == sub_layout->hasChecked(query_id)) {
         continue;
       }
+
+      /// mark as checked
+      //   sub_layout->markChecked(query_id);
+      //   query_sub_layout->markChecked(net_id);
+
       auto& overlaps = sub_layout->get_engine()->getOverlap(query_sub_layout->get_engine());
       std::set<int> net_ids = {};
       if (overlaps.size() > 0) {
         net_ids.insert(net_id);
         net_ids.insert(query_id);
       }
+
       for (auto& overlap_polygon : overlaps) {
         ieda_solver::GeometryRect overlap_violation_rect;
         ieda_solver::envelope(overlap_violation_rect, overlap_polygon);
 
-        addViolation(overlap_violation_rect, layer, ViolationEnumType::kShort, net_ids);
+        // addViolation(overlap_violation_rect, layer, ViolationEnumType::kShort, net_ids);
+        DrcShortInfo drc_info;
+        drc_info.rect = overlap_violation_rect;
+        drc_info.net_ids = net_ids;
+
+        this_drc_list.push_back(drc_info);
       }
 
-      total_overlaps += overlaps.size();
-      sub_layout->markChecked(query_id);
-      query_sub_layout->markChecked(net_id);
+      checking_size++;
     }
-#ifdef DEBUGCLOSE_OVERLAP
-    DEBUGOUTPUT(DEBUGHIGHLIGHT("net_id:\t") << net_id << "\tlayer " << layer << "\tllx = " << llx << "\tlly = " << lly << "\turx = " << urx
-                                            << "\tllx = " << ury << "\tquery_sub_layouts = " << query_sub_layouts.size()
-                                            << "\toverlaps = " << total_overlaps);
-#else
 
-#endif
+    drc_map[net_id] = this_drc_list;
+    // omp_set_lock(&lck);
+    // std::copy(this_drc_list.begin(), this_drc_list.end(), std::back_inserter(drc_list));
+    // omp_unset_lock(&lck);
+
+    DEBUGOUTPUT(DEBUGHIGHLIGHT("net_id:\t") << net_id << "\tlayer " << layer << "\tquery_sub_layouts = "
+                                            << sub_layout->get_intersect_layouts().size() << "\toverlaps = " << this_drc_list.size());
   }
 
-  DEBUGOUTPUT(DEBUGHIGHLIGHT("Metal Short:\t") << total_overlaps << "\tlayer " << layer << "\tnets = " << layout->get_sub_layouts().size()
+  int total_drc = 0;
+  for (auto& [net_id, drc_list] : drc_map) {
+    for (auto drc : drc_list) {
+      addViolation(drc.rect, layer, ViolationEnumType::kShort, drc.net_ids);
+      total_drc++;
+    }
+  }
+
+  DEBUGOUTPUT(DEBUGHIGHLIGHT("Metal Short:\t") << total_drc << "\tlayer " << layer << "\tnets = " << layout->get_sub_layouts().size()
                                                << "\ttime = " << states.elapsedRunTime() << "\tmemory = " << states.memoryDelta());
 }
 

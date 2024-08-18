@@ -42,7 +42,7 @@ PowerIO* PowerIO::_instance = nullptr;
  */
 bool PowerIO::autoRunPower(std::string path)
 {
-  flowConfigInst->set_status_stage("iSTA - Static Timing Analysis");
+  flowConfigInst->set_status_stage("iPA - Power Analysis");
 
   ieda::Stats stats;
 

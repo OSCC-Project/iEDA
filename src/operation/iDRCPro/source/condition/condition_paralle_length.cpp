@@ -23,15 +23,22 @@ namespace idrc {
 
 void DrcConditionManager::checkParallelLengthSpacing(std::string layer, DrcEngineLayout* layout)
 {
-  ieda::Stats states;
   using WidthToPolygonSetMap = std::map<int, ieda_solver::GeometryPolygonSet>;
   WidthToPolygonSetMap prl_wire_map;
+
+  buildMapOfSpacingTable(layer, layout, prl_wire_map);
+  checkSpacingTable(layer, layout, prl_wire_map);
+}
+
+void DrcConditionManager::buildMapOfSpacingTable(std::string layer, DrcEngineLayout* layout,
+                                                 std::map<int, ieda_solver::GeometryPolygonSet>& prl_wire_map)
+{
+  ieda::Stats states;
 
   auto rule_spacing_table = DrcTechRuleInst->getSpacingTable(layer);
 
   auto& wires = layout->get_layout_engine()->getWires();
   for (auto& wire : wires) {
-    // jog
     auto wire_direction = ieda_solver::getWireDirection(wire);
     auto width_direction = wire_direction.get_perpendicular();
     int wire_width = ieda_solver::getWireWidth(wire, width_direction);
@@ -55,9 +62,6 @@ void DrcConditionManager::checkParallelLengthSpacing(std::string layer, DrcEngin
   }
   DEBUGOUTPUT(DEBUGHIGHLIGHT("Wire Filter:\t") << "-\ttime = " << states.elapsedRunTime() << "\tmemory = " << states.memoryDelta()
                                                << "\twire count = " << wires.size());
-#ifndef DEBUGCLOSE_PRL
-  checkSpacingTable(layer, layout, prl_wire_map);
-#endif
 }
 
 void DrcConditionManager::checkSpacingTable(std::string layer, DrcEngineLayout* layout,

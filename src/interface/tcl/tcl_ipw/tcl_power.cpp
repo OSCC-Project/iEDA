@@ -15,6 +15,7 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 #include "tcl_power.h"
+
 #include "tool_manager.h"
 
 namespace tcl {
@@ -42,7 +43,7 @@ unsigned CmdPowerRun::exec()
   auto path = option->getStringVal() != nullptr ? option->getStringVal() : "";
 
   if (iplf::tmInst->autoRunPower(path)) {
-    std::cout << "iSTA run successfully." << std::endl;
+    std::cout << "iPA run successfully." << std::endl;
   }
 
   return 1;
