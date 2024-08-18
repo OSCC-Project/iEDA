@@ -17,10 +17,10 @@
 
 #pragma once
 
-#include "PANet.hpp"
-#include "RTHeader.hpp"
-#include "PAParameter.hpp"
 #include "PABox.hpp"
+#include "PANet.hpp"
+#include "PAParameter.hpp"
+#include "RTHeader.hpp"
 
 namespace irt {
 

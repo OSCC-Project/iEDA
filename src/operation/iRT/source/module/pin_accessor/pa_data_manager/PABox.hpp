@@ -16,12 +16,12 @@
 // ***************************************************************************************
 #pragma once
 
+#include "LayerCoord.hpp"
+#include "LayerRect.hpp"
 #include "PABoxId.hpp"
 #include "PANode.hpp"
 #include "PAParameter.hpp"
 #include "PATask.hpp"
-#include "LayerCoord.hpp"
-#include "LayerRect.hpp"
 #include "PriorityQueue.hpp"
 #include "ScaleAxis.hpp"
 #include "Violation.hpp"
@@ -56,7 +56,10 @@ class PABox
   {
     _type_layer_net_fixed_rect_map = type_layer_net_fixed_rect_map;
   }
-  void set_net_task_result_map(const std::map<int32_t, std::map<int32_t, std::vector<Segment<LayerCoord>>>>& net_task_result_map) { _net_task_result_map = net_task_result_map; }
+  void set_net_task_result_map(const std::map<int32_t, std::map<int32_t, std::vector<Segment<LayerCoord>>>>& net_task_result_map)
+  {
+    _net_task_result_map = net_task_result_map;
+  }
   void set_violation_list(const std::vector<Violation>& violation_list) { _violation_list = violation_list; }
   void set_box_track_axis(const ScaleAxis& box_track_axis) { _box_track_axis = box_track_axis; }
   void set_layer_node_map(const std::vector<GridMap<PANode>>& layer_node_map) { _layer_node_map = layer_node_map; }
