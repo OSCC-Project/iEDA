@@ -20,6 +20,7 @@
 #include "LayerCoord.hpp"
 #include "LayerRect.hpp"
 #include "PAGroup.hpp"
+#include "PAPin.hpp"
 #include "SortStatus.hpp"
 
 namespace irt {
