@@ -22,4 +22,7 @@ namespace ieda_solver {
 
 typedef GtlPoint GeometryPoint;
 
+namespace bg = boost::geometry;
+#define ptEuclideanDistance(a_x, a_y, b_x, b_y) bg::distance(bg::model::d2::point_xy<int>(a_x, a_y), bg::model::d2::point_xy<int>(b_x, b_y))
+
 }  // namespace ieda_solver

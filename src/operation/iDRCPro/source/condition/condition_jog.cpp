@@ -130,7 +130,7 @@ void DrcConditionManager::checkJog(std::string layer, DrcEngineLayout* layout, s
                 }
                 for (size_t i = 1; i < region_a_rects.size(); ++i) {
                   // distance
-                  int distance = ieda_solver::manhattanDistance(region_a_rects[i], region_a_rects[i - 1]);
+                  int distance = ieda_solver::rectManhattanDistance(region_a_rects[i], region_a_rects[i - 1]);
                   if (distance < rule_jog_to_jog_spacing) {
                     auto vio_rect = region_a_rects[i - 1];
                     ieda_solver::oppositeRegion(vio_rect, region_a_rects[i]);

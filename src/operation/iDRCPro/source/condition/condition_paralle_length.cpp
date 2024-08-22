@@ -23,6 +23,10 @@ namespace idrc {
 
 void DrcConditionManager::checkParallelLengthSpacing(std::string layer, DrcEngineLayout* layout)
 {
+  if (_check_select.find(ViolationEnumType::kPRLSpacing) == _check_select.end()) {
+    return;
+  }
+
   using WidthToPolygonSetMap = std::map<int, ieda_solver::GeometryPolygonSet>;
   WidthToPolygonSetMap prl_wire_map;
 
@@ -67,9 +71,6 @@ void DrcConditionManager::buildMapOfSpacingTable(std::string layer, DrcEngineLay
 void DrcConditionManager::checkSpacingTable(std::string layer, DrcEngineLayout* layout,
                                             std::map<int, ieda_solver::GeometryPolygonSet>& prl_wire_map)
 {
-  if (_check_select.find(ViolationEnumType::kPRLSpacing) == _check_select.end()) {
-    return;
-  }
   ieda::Stats states;
   int prl_count = 0;
   auto rule_spacing_table = DrcTechRuleInst->getSpacingTable(layer);
