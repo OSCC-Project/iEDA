@@ -16,38 +16,61 @@
 // ***************************************************************************************
 #pragma once
 
-#include "AccessPoint.hpp"
-#include "LayerRect.hpp"
-#include "RTHeader.hpp"
-
 namespace irt {
 
 class PAParameter
 {
  public:
   PAParameter() = default;
-  PAParameter(int32_t enlarged_pitch_num, bool try_adjacent_layer,
-              std::function<std::vector<AccessPoint>(int32_t, std::vector<LayerRect>&)> func)
-
+  PAParameter(int32_t size, int32_t offset, int32_t fixed_rect_unit, int32_t routed_rect_unit, int32_t violation_unit,
+              int32_t max_routed_times)
   {
-    _enlarged_pitch_num = enlarged_pitch_num;
-    _try_adjacent_layer = try_adjacent_layer;
-    _func = func;
+    _prefer_wire_unit = 1;
+    _non_prefer_wire_unit = 2;
+    _via_unit = 1;
+    _corner_unit = 1;
+    _size = size;
+    _offset = offset;
+    _fixed_rect_unit = fixed_rect_unit;
+    _routed_rect_unit = routed_rect_unit;
+    _violation_unit = violation_unit;
+    _max_routed_times = max_routed_times;
   }
   ~PAParameter() = default;
   // getter
-  int32_t get_enlarged_pitch_num() const { return _enlarged_pitch_num; }
-  bool get_try_adjacent_layer() const { return _try_adjacent_layer; }
-  std::function<std::vector<AccessPoint>(int32_t, std::vector<LayerRect>&)>& get_func() { return _func; }
+  double get_prefer_wire_unit() const { return _prefer_wire_unit; }
+  double get_non_prefer_wire_unit() const { return _non_prefer_wire_unit; }
+  double get_via_unit() const { return _via_unit; }
+  double get_corner_unit() const { return _corner_unit; }
+  int32_t get_size() const { return _size; }
+  int32_t get_offset() const { return _offset; }
+  double get_fixed_rect_unit() const { return _fixed_rect_unit; }
+  double get_routed_rect_unit() const { return _routed_rect_unit; }
+  double get_violation_unit() const { return _violation_unit; }
+  int32_t get_max_routed_times() const { return _max_routed_times; }
   // setter
-  void set_enlarged_pitch_num(const int32_t enlarged_pitch_num) { _enlarged_pitch_num = enlarged_pitch_num; }
-  void set_try_adjacent_layer(const bool try_adjacent_layer) { _try_adjacent_layer = try_adjacent_layer; }
-  void set_func(const std::function<std::vector<AccessPoint>(int32_t, std::vector<LayerRect>&)>& func) { _func = func; }
-  // function
+  void set_prefer_wire_unit(const double prefer_wire_unit) { _prefer_wire_unit = prefer_wire_unit; }
+  void set_non_prefer_wire_unit(const double non_prefer_wire_unit) { _non_prefer_wire_unit = non_prefer_wire_unit; }
+  void set_via_unit(const double via_unit) { _via_unit = via_unit; }
+  void set_corner_unit(const double corner_unit) { _corner_unit = corner_unit; }
+  void set_size(const int32_t size) { _size = size; }
+  void set_offset(const int32_t offset) { _offset = offset; }
+  void set_fixed_rect_unit(const double fixed_rect_unit) { _fixed_rect_unit = fixed_rect_unit; }
+  void set_routed_rect_unit(const double routed_rect_unit) { _routed_rect_unit = routed_rect_unit; }
+  void set_violation_unit(const double violation_unit) { _violation_unit = violation_unit; }
+  void set_max_routed_times(const int32_t max_routed_times) { _max_routed_times = max_routed_times; }
+
  private:
-  int32_t _enlarged_pitch_num = 0;
-  bool _try_adjacent_layer = 0;
-  std::function<std::vector<AccessPoint>(int32_t, std::vector<LayerRect>&)> _func;
+  double _prefer_wire_unit = 0;
+  double _non_prefer_wire_unit = 0;
+  double _via_unit = 0;
+  double _corner_unit = 0;
+  int32_t _size = -1;
+  int32_t _offset = -1;
+  double _fixed_rect_unit = 0;
+  double _routed_rect_unit = 0;
+  double _violation_unit = 0;
+  int32_t _max_routed_times = 0;
 };
 
 }  // namespace irt

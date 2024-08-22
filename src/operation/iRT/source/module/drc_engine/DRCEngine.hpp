@@ -32,7 +32,9 @@ class DRCEngine
   static DRCEngine& getInst();
   static void destroyInst();
   // function
-  void route();
+  std::vector<Violation> getViolationList(std::string top_name, std::vector<std::pair<EXTLayerRect*, bool>>& env_shape_list,
+                                          std::map<int32_t, std::vector<std::pair<EXTLayerRect*, bool>>>& net_pin_shape_map,
+                                          std::map<int32_t, std::vector<Segment<LayerCoord>>>& net_result_map, std::string stage);
 
  private:
   // self
@@ -45,7 +47,6 @@ class DRCEngine
   DRCEngine& operator=(const DRCEngine& other) = delete;
   DRCEngine& operator=(DRCEngine&& other) = delete;
   // function
-  std::vector<Violation> getViolationList();
 };
 
 }  // namespace irt

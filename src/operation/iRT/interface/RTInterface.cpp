@@ -77,10 +77,9 @@ void RTInterface::initRT(std::map<std::string, std::any> config_map)
   RTLOG.info(Loc::current(), "Starting...");
 
   DataManager::initInst();
+  RTDM.input(config_map);
   DRCEngine::initInst();
   GDSPlotter::initInst();
-
-  RTDM.input(config_map);
 
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
@@ -154,10 +153,9 @@ void RTInterface::destroyRT()
   Monitor monitor;
   RTLOG.info(Loc::current(), "Starting...");
 
-  RTDM.output();
-
   GDSPlotter::destroyInst();
   DRCEngine::destroyInst();
+  RTDM.output();
   DataManager::destroyInst();
 
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
@@ -436,6 +434,9 @@ void RTInterface::wrapLayerViaMasterList()
     idb::IdbVia* idb_via = idb_via_list[i];
     if (idb_via == nullptr) {
       RTLOG.error(Loc::current(), "The via is empty!");
+    }
+    if (!idb_via->get_instance()->is_default()) {
+      continue;
     }
     ViaMaster via_master;
     via_master.set_via_name(idb_via->get_name());
@@ -838,6 +839,15 @@ void RTInterface::outputNetList()
   std::vector<Net>& net_list = RTDM.getDatabase().get_net_list();
 
   std::map<int32_t, std::vector<idb::IdbRegularWireSegment*>> net_idb_segment_map;
+  {
+    for (Net& net : net_list) {
+      for (Pin& pin : net.get_pin_list()) {
+        for (Segment<LayerCoord>& access_segment : pin.get_access_segment_list()) {
+          net_idb_segment_map[net.get_net_idx()].push_back(getIDBSegmentByNetResult(net.get_net_idx(), access_segment));
+        }
+      }
+    }
+  }
   for (auto& [net_idx, segment_set] : RTDM.getDetailedNetResultMap(die)) {
     for (Segment<LayerCoord>* segment : segment_set) {
       net_idb_segment_map[net_idx].push_back(getIDBSegmentByNetResult(net_idx, *segment));
@@ -1000,94 +1010,43 @@ idb::IdbRegularWireSegment* RTInterface::getIDBVia(int32_t net_idx, Segment<Laye
 
 #if 1  // iDRC
 
-std::vector<Violation> RTInterface::getViolationList(TAPanel& ta_panel)
+std::vector<Violation> RTInterface::getViolationList(std::vector<std::pair<EXTLayerRect*, bool>>& env_shape_list,
+                                                     std::map<int32_t, std::vector<std::pair<EXTLayerRect*, bool>>>& net_pin_shape_map,
+                                                     std::map<int32_t, std::vector<Segment<LayerCoord>>>& net_result_map, std::string stage)
 {
-  std::vector<idb::IdbLayerShape*> env_shape_list;
-  std::map<int32_t, std::vector<idb::IdbLayerShape*>> net_pin_shape_map;
-  for (auto& [net_idx, fixed_rect_set] : ta_panel.get_net_fixed_rect_map()) {
-    if (net_idx == -1) {
-      for (auto& fixed_rect : fixed_rect_set) {
-        env_shape_list.push_back(RTI.getIDBLayerShapeByFixedRect(fixed_rect, true));
-      }
-    } else {
-      for (auto& fixed_rect : fixed_rect_set) {
-        net_pin_shape_map[net_idx].push_back(RTI.getIDBLayerShapeByFixedRect(fixed_rect, true));
-      }
+  std::vector<idb::IdbLayerShape*> idb_env_shape_list;
+  for (std::pair<EXTLayerRect*, bool>& env_shape : env_shape_list) {
+    idb_env_shape_list.push_back(RTI.getIDBLayerShapeByFixedRect(env_shape.first, env_shape.second));
+  }
+  std::map<int32_t, std::vector<idb::IdbLayerShape*>> idb_net_pin_shape_map;
+  for (auto& [net_idx, pin_shape_list] : net_pin_shape_map) {
+    for (std::pair<EXTLayerRect*, bool>& pin_shape : pin_shape_list) {
+      idb_net_pin_shape_map[net_idx].push_back(RTI.getIDBLayerShapeByFixedRect(pin_shape.first, pin_shape.second));
     }
   }
-  std::map<int32_t, std::vector<idb::IdbRegularWireSegment*>> net_wire_via_map;
-  for (auto& [net_idx, task_result_map] : ta_panel.get_net_task_result_map()) {
-    for (auto& [task_idx, segment_list] : task_result_map) {
-      for (Segment<LayerCoord>& segment : segment_list) {
-        net_wire_via_map[net_idx].push_back(RTI.getIDBSegmentByNetResult(net_idx, segment));
-      }
-    }
-  }
-  std::vector<Violation> violation_list = RTI.getViolationList(env_shape_list, net_pin_shape_map, net_wire_via_map, "TA");
-  // free memory
-  {
-    for (idb::IdbLayerShape* env_shape : env_shape_list) {
-      delete env_shape;
-      env_shape = nullptr;
-    }
-    for (auto& [net_idx, pin_shape_list] : net_pin_shape_map) {
-      for (idb::IdbLayerShape* pin_shape : pin_shape_list) {
-        delete pin_shape;
-        pin_shape = nullptr;
-      }
-    }
-    for (auto& [net_idx, wire_via_list] : net_wire_via_map) {
-      for (idb::IdbRegularWireSegment* wire_via : wire_via_list) {
-        delete wire_via;
-        wire_via = nullptr;
-      }
-    }
-  }
-  return violation_list;
-}
-
-std::vector<Violation> RTInterface::getViolationList(DRBox& dr_box)
-{
-  std::vector<idb::IdbLayerShape*> env_shape_list;
-  std::map<int32_t, std::vector<idb::IdbLayerShape*>> net_pin_shape_map;
-  for (auto& [is_routing, layer_net_fixed_rect_map] : dr_box.get_type_layer_net_fixed_rect_map()) {
-    for (auto& [layer_idx, net_fixed_rect_map] : layer_net_fixed_rect_map) {
-      for (auto& [net_idx, fixed_rect_set] : net_fixed_rect_map) {
-        if (net_idx == -1) {
-          for (auto& fixed_rect : fixed_rect_set) {
-            env_shape_list.push_back(RTI.getIDBLayerShapeByFixedRect(fixed_rect, is_routing));
-          }
-        } else {
-          for (auto& fixed_rect : fixed_rect_set) {
-            net_pin_shape_map[net_idx].push_back(RTI.getIDBLayerShapeByFixedRect(fixed_rect, is_routing));
-          }
-        }
-      }
-    }
-  }
-  std::map<int32_t, std::vector<idb::IdbRegularWireSegment*>> net_wire_via_map;
-  for (auto& [net_idx, segment_list] : dr_box.get_net_result_map()) {
+  std::map<int32_t, std::vector<idb::IdbRegularWireSegment*>> idb_net_result_map;
+  for (auto& [net_idx, segment_list] : net_result_map) {
     for (Segment<LayerCoord>& segment : segment_list) {
-      net_wire_via_map[net_idx].push_back(RTI.getIDBSegmentByNetResult(net_idx, segment));
+      idb_net_result_map[net_idx].push_back(RTI.getIDBSegmentByNetResult(net_idx, segment));
     }
   }
-  std::vector<Violation> violation_list = RTI.getViolationList(env_shape_list, net_pin_shape_map, net_wire_via_map, "DR");
+  std::vector<Violation> violation_list = RTI.getViolationList(idb_env_shape_list, idb_net_pin_shape_map, idb_net_result_map, stage);
   // free memory
   {
-    for (idb::IdbLayerShape* env_shape : env_shape_list) {
-      delete env_shape;
-      env_shape = nullptr;
+    for (idb::IdbLayerShape* idb_env_shape : idb_env_shape_list) {
+      delete idb_env_shape;
+      idb_env_shape = nullptr;
     }
-    for (auto& [net_idx, pin_shape_list] : net_pin_shape_map) {
+    for (auto& [net_idx, pin_shape_list] : idb_net_pin_shape_map) {
       for (idb::IdbLayerShape* pin_shape : pin_shape_list) {
         delete pin_shape;
         pin_shape = nullptr;
       }
     }
-    for (auto& [net_idx, wire_via_list] : net_wire_via_map) {
-      for (idb::IdbRegularWireSegment* wire_via : wire_via_list) {
-        delete wire_via;
-        wire_via = nullptr;
+    for (auto& [net_idx, segment_list] : idb_net_result_map) {
+      for (idb::IdbRegularWireSegment* segment : segment_list) {
+        delete segment;
+        segment = nullptr;
       }
     }
   }
@@ -1096,15 +1055,18 @@ std::vector<Violation> RTInterface::getViolationList(DRBox& dr_box)
 
 std::vector<Violation> RTInterface::getViolationList(std::vector<idb::IdbLayerShape*>& env_shape_list,
                                                      std::map<int32_t, std::vector<idb::IdbLayerShape*>>& net_pin_shape_map,
-                                                     std::map<int32_t, std::vector<idb::IdbRegularWireSegment*>>& net_wire_via_map,
+                                                     std::map<int32_t, std::vector<idb::IdbRegularWireSegment*>>& net_result_map,
                                                      std::string stage)
 {
   std::set<idrc::ViolationEnumType> check_select;
-  if (stage == "TA") {
+  if (stage == "PA") {
+    check_select.insert(idrc::ViolationEnumType::kShort);
+  } else if (stage == "TA") {
     check_select.insert(idrc::ViolationEnumType::kShort);
   } else if (stage == "DR") {
     check_select.insert(idrc::ViolationEnumType::kShort);
     check_select.insert(idrc::ViolationEnumType::kDefaultSpacing);
+    check_select.insert(idrc::ViolationEnumType::kPRLSpacing);
   } else {
     RTLOG.error(Loc::current(), "Currently not supporting other stages");
   }
@@ -1119,7 +1081,7 @@ std::vector<Violation> RTInterface::getViolationList(std::vector<idb::IdbLayerSh
   std::vector<Violation> violation_list;
   idrc::DrcApi drc_api;
   drc_api.init();
-  for (auto& [type, idrc_violation_list] : drc_api.check(env_shape_list, net_pin_shape_map, net_wire_via_map, check_select)) {
+  for (auto& [type, idrc_violation_list] : drc_api.check(env_shape_list, net_pin_shape_map, net_result_map, check_select)) {
     for (idrc::DrcViolation* idrc_violation : idrc_violation_list) {
       // self的drc违例先过滤
       if (idrc_violation->get_net_ids().size() < 2) {
