@@ -1416,12 +1416,9 @@ void PinAccessor::updatePAModel(PAModel& pa_model)
       if (origin_pin.get_pin_idx() != pa_pin.get_pin_idx()) {
         RTLOG.error(Loc::current(), "The pin idx is not equal!");
       }
-      for (EXTLayerRect& access_routing_shape : pa_pin.get_access_routing_shape_list()) {
-        origin_pin.get_access_routing_shape_list().push_back(access_routing_shape);
-      }
-      for (EXTLayerRect& access_cut_shape : pa_pin.get_access_cut_shape_list()) {
-        origin_pin.get_access_cut_shape_list().push_back(access_cut_shape);
-      }
+      origin_pin.set_access_segment_list(pa_pin.get_access_segment_list());
+      origin_pin.set_access_routing_shape_list(pa_pin.get_access_routing_shape_list());
+      origin_pin.set_access_cut_shape_list(pa_pin.get_access_cut_shape_list());
       for (EXTLayerRect& access_routing_shape : origin_pin.get_access_routing_shape_list()) {
         RTDM.updateFixedRectToGCellMap(ChangeType::kAdd, pa_net.get_net_idx(), &access_routing_shape, true);
       }
