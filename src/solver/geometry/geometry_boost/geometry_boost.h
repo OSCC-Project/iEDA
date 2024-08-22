@@ -31,6 +31,8 @@ namespace ieda_solver {
  * GeometryBoost describes the geometry data for a region in only one layer
  */
 
+typedef bg::index::rtree<std::pair<ieda_solver::BgRect, GeometryPolygon*>, bg::index::quadratic<16>> PolygonRTree;
+
 class PolygonProperty;
 
 class GeometryBoost : public EngineGeometry
@@ -50,19 +52,22 @@ class GeometryBoost : public EngineGeometry
   virtual bool isIntersect(int llx, int lly, int urx, int ury) override;
 
   std::vector<GeometryPolygon>& getLayoutPolygons();
-  std::vector<GeometryPolygon>& getOverlap(EngineGeometry* other = nullptr);
+  std::vector<GeometryPolygon> getOverlap(EngineGeometry* other = nullptr);
   std::vector<GeometryRect>& getWires();
   std::vector<GeometryRect>& getRects();
+  std::vector<GeometryRect> getRectsGrowAnd(int value, GeometryOrientation direction);
 
  private:
   GeometryPolygonSet _polyset;
   std::vector<GeometryPolygon> _polygon_list;
-  std::vector<GeometryPolygon> _overlap_list;
+  PolygonRTree _polygon_rtree;
   std::vector<GeometryRect> _wire_list;
   std::vector<GeometryRect> _rect_list;
 
   bool _wires_initialized = false;
   bool _rect_initialized = false;
+
+  void initPolygonRTree();
 };
 
 }  // namespace ieda_solver

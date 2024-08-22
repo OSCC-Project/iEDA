@@ -35,6 +35,7 @@
 #include <iomanip>
 #include <iostream>
 
+#include "DRCViolationType.h"
 #include "IdbLayer.h"
 #include "idm.h"
 #include "idrc_data.h"

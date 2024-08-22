@@ -44,7 +44,7 @@ class DrcEngineLayout
 
   std::map<int, DrcEngineSubLayout*>& get_sub_layouts() { return _sub_layouts; }
   DrcEngineSubLayout* get_sub_layout(int net_id);
-  void clearSublayoutMark();// clear all sub layout marked net
+  void clearSublayoutMark();  // clear all sub layout marked net
   //   ieda_solver::EngineGeometry* get_net_engine(int net_id);
   //   ieda_solver::EngineGeometry* get_layout_engine() { return _engine; }
   ieda_solver::GeometryBoost* get_net_engine(int net_id);
@@ -58,7 +58,7 @@ class DrcEngineLayout
 
   /// engine RTree
   void addRTreeSubLayout(DrcEngineSubLayout* sub_layout);
-  std::set<DrcEngineSubLayout*> querySubLayouts(int llx, int lly, int urx, int ury);
+  std::vector<std::pair<ieda_solver::BgRect, DrcEngineSubLayout*>> querySubLayouts(int llx, int lly, int urx, int ury);
   std::set<int> querySubLayoutNetId(int llx, int lly, int urx, int ury);
 
  private:
