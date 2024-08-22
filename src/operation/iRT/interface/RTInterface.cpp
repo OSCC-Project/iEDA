@@ -80,6 +80,7 @@ void RTInterface::initRT(std::map<std::string, std::any> config_map)
   RTDM.input(config_map);
   DRCEngine::initInst();
   GDSPlotter::initInst();
+  initFlute();
 
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
@@ -153,6 +154,7 @@ void RTInterface::destroyRT()
   Monitor monitor;
   RTLOG.info(Loc::current(), "Starting...");
 
+  destroyFlute();
   GDSPlotter::destroyInst();
   DRCEngine::destroyInst();
   RTDM.output();
@@ -1422,15 +1424,18 @@ ieda_feature::RTSummary RTInterface::outputSummary()
 
 #if 1  // flute
 
+void RTInterface::initFlute()
+{
+  Flute::readLUT();
+}
+
+void RTInterface::destroyFlute()
+{
+  Flute::deleteLUT();
+}
+
 std::vector<Segment<PlanarCoord>> RTInterface::getPlanarTopoList(std::vector<PlanarCoord> planar_coord_list)
 {
-  static bool init_flute = false;
-
-  if (!init_flute) {
-    Flute::readLUT();
-    init_flute = true;
-  }
-
   std::vector<Segment<PlanarCoord>> planar_topo_list;
   if (planar_coord_list.size() > 1) {
     size_t point_num = planar_coord_list.size();

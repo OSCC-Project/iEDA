@@ -137,6 +137,8 @@ class RTInterface
 #endif
 
 #if 1  // flute
+  void initFlute();
+  void destroyFlute();
   std::vector<Segment<PlanarCoord>> getPlanarTopoList(std::vector<PlanarCoord> planar_coord_list);
 #endif
 
