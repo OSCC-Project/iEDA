@@ -3,6 +3,8 @@ add_library(ipl-api_external_libs INTERFACE)
 find_package(OpenMP REQUIRED)
 target_link_libraries(ipl-api_external_libs
     INTERFACE
+        eval_pro_congestion_api
+        eval_pro_wirelength_api
         eval_api
         tool_manager
         idm
@@ -17,4 +19,7 @@ target_include_directories(ipl-api_external_libs
         ${HOME_PLATFORM}/tool_manager
         ${HOME_PLATFORM}/data_manager
         ${HOME_EVALUATION}
+        ${HOME_EVALUATION_PRO}/api
+        ${HOME_EVALUATION_PRO}/database
+
 )

@@ -61,7 +61,8 @@ class ExternalAPI
   double obtainTNS(const char* clock_name, ista::AnalysisMode mode);
   double obtainTargetClockPeriodNS(std::string clock_name);
   void updateEvalTiming(const std::vector<eval::TimingNet*>& timing_net_list);
-  void updateEvalTiming(const std::vector<eval::TimingNet*>& timing_net_list, const std::vector<std::string>& name_list, const int& propagation_level);
+  void updateEvalTiming(const std::vector<eval::TimingNet*>& timing_net_list, const std::vector<std::string>& name_list,
+                        const int& propagation_level);
   float obtainPinCap(std::string inst_pin_name);
   float obtainAvgWireResUnitLengthUm();
   float obtainAvgWireCapUnitLengthUm();
@@ -74,6 +75,9 @@ class ExternalAPI
   std::vector<float> obtainNetCong(std::string rudy_type);
   std::vector<float> evalGRCong();
   int64_t evalEGRWL();
+  void evalproCongestion();
+  int32_t evalprohpWL();
+  int32_t evalproflute();
 
   std::vector<float> getUseCapRatioList();
   void plotCongMap(const std::string& plot_path, const std::string& output_file_name);

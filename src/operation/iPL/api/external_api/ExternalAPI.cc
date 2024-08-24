@@ -18,14 +18,17 @@
 #include "ExternalAPI.hh"
 
 #include "EvalAPI.hpp"
+#include "congestion_api.h"
+#include "idm.h"
 #include "report/ReportTable.hh"
 #include "timing/TimingEval.hpp"
 #include "tool_api/ista_io/ista_io.h"
-#include "idm.h"
+#include "wirelength_api.h"
 
 namespace ipl {
 
-std::string ExternalAPI::obtainTargetDir(){
+std::string ExternalAPI::obtainTargetDir()
+{
   return dmInst->get_config().get_output_path();
 }
 
@@ -34,7 +37,8 @@ bool ExternalAPI::isSTAStarted()
   return staInst->isInitSTA();
 }
 
-void ExternalAPI::modifySTAOutputDir(std::string path){
+void ExternalAPI::modifySTAOutputDir(std::string path)
+{
   staInst->setStaWorkDirectory(path);
 }
 
@@ -130,7 +134,8 @@ double ExternalAPI::obtainTNS(const char* clock_name, ista::AnalysisMode mode)
   return eval::EvalAPI::getInst().reportTNS(clock_name, mode);
 }
 
-double ExternalAPI::obtainTargetClockPeriodNS(std::string clock_name){
+double ExternalAPI::obtainTargetClockPeriodNS(std::string clock_name)
+{
   return staInst->getPeriodNS(clock_name);
 }
 
@@ -139,23 +144,29 @@ void ExternalAPI::updateEvalTiming(const std::vector<eval::TimingNet*>& timing_n
   EvalInst.updateTiming(timing_net_list);
 }
 
-void ExternalAPI::updateEvalTiming(const std::vector<eval::TimingNet*>& timing_net_list, const std::vector<std::string>& name_list, const int& propagation_level){
-  EvalInst.updateTiming(timing_net_list,name_list,propagation_level);
+void ExternalAPI::updateEvalTiming(const std::vector<eval::TimingNet*>& timing_net_list, const std::vector<std::string>& name_list,
+                                   const int& propagation_level)
+{
+  EvalInst.updateTiming(timing_net_list, name_list, propagation_level);
 }
 
-float ExternalAPI::obtainPinCap(std::string inst_pin_name){
+float ExternalAPI::obtainPinCap(std::string inst_pin_name)
+{
   return staInst->obtainPinCap(inst_pin_name);
 }
 
-float ExternalAPI::obtainAvgWireResUnitLengthUm(){
+float ExternalAPI::obtainAvgWireResUnitLengthUm()
+{
   return staInst->obtainAvgWireResUnitLengthUm();
 }
 
-float ExternalAPI::obtainAvgWireCapUnitLengthUm(){
+float ExternalAPI::obtainAvgWireCapUnitLengthUm()
+{
   return staInst->obtainAvgWireCapUnitLengthUm();
 }
 
-float ExternalAPI::obtainInstOutPinRes(std::string cell_name, std::string port_name){
+float ExternalAPI::obtainInstOutPinRes(std::string cell_name, std::string port_name)
+{
   return staInst->obtainInstOutPinRes(cell_name, port_name);
 }
 
@@ -180,6 +191,56 @@ std::vector<float> ExternalAPI::evalGRCong()
   return gr_congestion;
 }
 
+void ExternalAPI::evalproCongestion()
+{
+  ieval::CongestionAPI congestion_api;
+  int32_t total_overflow = congestion_api.getOverflowSummary().total_overflow;
+}
+
+int32_t ExternalAPI::evalprohpWL()
+{
+  ieval::WirelengthAPI wirelength_api;
+  std::vector<std::pair<int32_t, int32_t>> point_set;
+  std::pair<int32_t, int32_t> point1(0, 0);
+  std::pair<int32_t, int32_t> point2(3, 6);
+  std::pair<int32_t, int32_t> point3(4, 4);
+  std::pair<int32_t, int32_t> point4(6, 3);
+
+  point_set.push_back(point1);
+  point_set.push_back(point2);
+  point_set.push_back(point3);
+  point_set.push_back(point4);
+
+  std::vector<std::vector<std::pair<int32_t, int32_t>>> point_sets;
+  point_sets.push_back(point_set);
+
+  ieval::TotalWLSummary total_wl = wirelength_api.totalWL(point_sets);
+
+  return total_wl.HPWL;
+}
+
+int32_t ExternalAPI::evalproflute()
+{
+  ieval::WirelengthAPI wirelength_api;
+  std::vector<std::pair<int32_t, int32_t>> point_set;
+  std::pair<int32_t, int32_t> point1(0, 0);
+  std::pair<int32_t, int32_t> point2(3, 6);
+  std::pair<int32_t, int32_t> point3(4, 4);
+  std::pair<int32_t, int32_t> point4(6, 3);
+
+  point_set.push_back(point1);
+  point_set.push_back(point2);
+  point_set.push_back(point3);
+  point_set.push_back(point4);
+
+  std::vector<std::vector<std::pair<int32_t, int32_t>>> point_sets;
+  point_sets.push_back(point_set);
+
+  ieval::TotalWLSummary total_wl = wirelength_api.totalWL(point_sets);
+
+  return total_wl.FLUTE;
+}
+
 int64_t ExternalAPI::evalEGRWL()
 {
   eval::EvalAPI& eval_api = eval::EvalAPI::initInst();
@@ -190,7 +251,6 @@ int64_t ExternalAPI::evalEGRWL()
 
   return egr_wl;
 }
-
 
 /**
  * @brief compute each gcellgrid routing demand/resource, and return a 2D route util map
@@ -239,7 +299,7 @@ std::vector<float> ExternalAPI::obtainPinDens(int32_t grid_cnt_x, int32_t grid_c
 
   auto max_element_ptr = std::max_element(pin_num_list.begin(), pin_num_list.end());
 
-  result.push_back((*max_element_ptr) / average );
+  result.push_back((*max_element_ptr) / average);
 
   eval::EvalAPI::destroyInst();
   return result;
