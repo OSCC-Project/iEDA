@@ -1,3 +1,7 @@
+# SET(CMAKE_BUILD_TYPE "Release")
+SET(CMAKE_BUILD_TYPE "Debug")
+
+
 # 拥塞评估API
 add_library(eval_pro_congestion_api
     ${EVAL_PRO_API}/congestion_api.cpp
