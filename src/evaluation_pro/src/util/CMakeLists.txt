@@ -29,5 +29,18 @@ target_include_directories(eval_pro_util_init_flute
         ${HOME_THIRDPARTY}/flute3
 )
 
+# iSTA
+add_library(eval_pro_util_init_ista
+    ${EVAL_PRO_UTIL}/init_sta.cpp
+)
 
+target_link_libraries(eval_pro_util_init_ista
+    PRIVATE
+        idm
+        ista-engine
+)
 
+target_include_directories(eval_pro_util_init_ista
+    PUBLIC
+        ${EVAL_PRO_UTIL}
+)
