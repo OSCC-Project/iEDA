@@ -12,9 +12,9 @@ class InitEGR
 
   void runEGR();
 
-  int32_t getEGRWL();
-  int32_t getNetEGRWL(std::string net_name);
-  int32_t getPathEGRWL(std::string net_name, std::string point_name1, std::string point_name2);
+  float parseEGRWL(std::string guide_path);
+  float parseNetEGRWL(std::string guide_path, std::string net_name);
+  float parsePathEGRWL(std::string guide_path, std::string net_name, std::string load_name);
 };
 
 }  // namespace ieval

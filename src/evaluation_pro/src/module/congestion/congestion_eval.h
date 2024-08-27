@@ -14,6 +14,7 @@ class CongestionEval
 
   void runEGR();
   void runRUDY();
+  void runNCTUgr();
 
   void computeOverflow();
 

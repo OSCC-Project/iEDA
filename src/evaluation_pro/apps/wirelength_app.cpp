@@ -5,12 +5,14 @@
 void test_total_wirelength();
 void test_net_wirelength();
 void test_path_wirelength();
+void test_egr_wirelength(std::string guide_path);
 
 int main()
 {
-  test_total_wirelength();
-  test_net_wirelength();
-  test_path_wirelength();
+  // test_total_wirelength();
+  // test_net_wirelength();
+  // test_path_wirelength();
+  test_egr_wirelength("/home/yhqiu/benchmark/AiEDA/application/benchmark/28nm/gcd/output/iEDA/data/rt/initial_router/route.guide");
   return 0;
 }
 
@@ -87,4 +89,18 @@ void test_path_wirelength()
   std::cout << "Path FLUTE: " << path_wl.FLUTE << std::endl;
   std::cout << "Path HTree: " << path_wl.HTree << std::endl;
   std::cout << "Path VTree: " << path_wl.VTree << std::endl;
+}
+
+void test_egr_wirelength(std::string guide_path)
+{
+  ieval::WirelengthAPI wirelength_api;
+
+  float total_egr_wl = wirelength_api.totalEGRWL(guide_path);
+  std::cout << "Total EGR WL: " << total_egr_wl << std::endl;
+
+  float net_egr_wl = wirelength_api.netEGRWL(guide_path, "clk");
+  std::cout << "Net EGR WL: " << net_egr_wl << std::endl;
+
+  float path_egr_wl = wirelength_api.pathEGRWL(guide_path, "clk", "clk_0_buf:I");
+  std::cout << "Path EGR WL: " << path_egr_wl << std::endl;
 }

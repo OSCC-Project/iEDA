@@ -306,32 +306,32 @@ int32_t WirelengthEval::evalPathVTree(PointSet point_set, PointPair point_pair)
   return path_vtree;
 }
 
-int32_t WirelengthEval::evalTotalEGRWL()
+float WirelengthEval::evalTotalEGRWL(std::string guide_path)
 {
-  int32_t total_egrwl = 0;
+  float total_egrwl = 0;
 
   InitEGR init_EGR;
-  total_egrwl = init_EGR.getEGRWL();
+  total_egrwl = init_EGR.parseEGRWL(guide_path);
 
   return total_egrwl;
 }
 
-int32_t WirelengthEval::evalNetEGRWL(std::string net_name)
+float WirelengthEval::evalNetEGRWL(std::string guide_path, std::string net_name)
 {
-  int32_t net_egrwl = 0;
+  float net_egrwl = 0;
 
   InitEGR init_EGR;
-  net_egrwl = init_EGR.getNetEGRWL(net_name);
+  net_egrwl = init_EGR.parseNetEGRWL(guide_path, net_name);
 
   return net_egrwl;
 }
 
-int32_t WirelengthEval::evalPathEGRWL(std::string net_name, std::string point_name1, std::string point_name2)
+float WirelengthEval::evalPathEGRWL(std::string guide_path, std::string net_name, std::string load_name)
 {
-  int32_t path_egrwl = 0;
+  float path_egrwl = 0;
 
   InitEGR init_EGR;
-  path_egrwl = init_EGR.getPathEGRWL(net_name, point_name1, point_name2);
+  path_egrwl = init_EGR.parsePathEGRWL(guide_path, net_name, load_name);
 
   return path_egrwl;
 }

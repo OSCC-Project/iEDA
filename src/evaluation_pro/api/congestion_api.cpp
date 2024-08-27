@@ -27,9 +27,9 @@ OverflowSummary CongestionAPI::getOverflowSummary()
   return overflow_summary;
 }
 
-MapPathSummary CongestionAPI::getMapPathSummary()
+CongestionMapPathSummary CongestionAPI::getMapPathSummary()
 {
-  MapPathSummary map_path_summary;
+  CongestionMapPathSummary map_path_summary;
 
   CongestionEval congestion_eval;
   congestion_eval.runEGR();

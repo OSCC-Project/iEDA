@@ -33,3 +33,20 @@ target_include_directories(eval_pro_wirelength_api
     PUBLIC
         ${EVAL_PRO_API}
 )
+
+
+# 密度评估API  
+add_library(eval_pro_density_api
+    ${EVAL_PRO_API}/density_api.cpp
+)
+
+target_link_libraries(eval_pro_density_api 
+    PRIVATE 
+        eval_pro_db
+        eval_pro_density_eval
+)
+
+target_include_directories(eval_pro_density_api 
+    PUBLIC
+        ${EVAL_PRO_API}
+)

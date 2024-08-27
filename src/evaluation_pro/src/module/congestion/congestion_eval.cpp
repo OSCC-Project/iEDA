@@ -22,6 +22,10 @@ void CongestionEval::runRUDY()
 {
 }
 
+void CongestionEval::runNCTUgr()
+{
+}
+
 void CongestionEval::computeOverflow()
 {
 }

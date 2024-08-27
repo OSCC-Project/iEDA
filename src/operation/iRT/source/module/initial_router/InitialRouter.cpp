@@ -63,7 +63,7 @@ void InitialRouter::route()
   // debugCheckIRModel(ir_model);
   buildTopoTree(ir_model);
   routeIRModel(ir_model);
-  // debugOutputGuide(ir_model);
+  debugOutputGuide(ir_model);
   updateSummary(ir_model);
   printSummary(ir_model);
   writeDemandCSV(ir_model);

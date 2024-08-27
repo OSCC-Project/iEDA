@@ -24,9 +24,9 @@ class WirelengthEval
   int32_t evalPathHTree(PointSet point_set, PointPair point_pair);
   int32_t evalPathVTree(PointSet point_set, PointPair point_pair);
 
-  int32_t evalTotalEGRWL();
-  int32_t evalNetEGRWL(std::string net_name);
-  int32_t evalPathEGRWL(std::string net_name, std::string point_name1, std::string point_name2);
+  float evalTotalEGRWL(std::string guide_path);
+  float evalNetEGRWL(std::string guide_path, std::string net_name);
+  float evalPathEGRWL(std::string guide_path, std::string net_name, std::string load_name);
 };
 
 }  // namespace ieval

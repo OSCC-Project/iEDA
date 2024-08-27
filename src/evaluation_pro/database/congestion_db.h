@@ -16,7 +16,7 @@ struct OverflowSummary
   int32_t average_overflow;
 };
 
-struct MapPathSummary
+struct CongestionMapPathSummary
 {
   string egr_path;
   string rudy_path;

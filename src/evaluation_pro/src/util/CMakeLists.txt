@@ -1,3 +1,6 @@
+# SET(CMAKE_BUILD_TYPE "Release")
+SET(CMAKE_BUILD_TYPE "Debug")
+
 # iRT-egr
 add_library(eval_pro_util_init_egr
     ${EVAL_PRO_UTIL}/init_egr.cpp

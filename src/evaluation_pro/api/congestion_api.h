@@ -11,7 +11,7 @@ class CongestionAPI
   ~CongestionAPI();
 
   OverflowSummary getOverflowSummary();
-  MapPathSummary getMapPathSummary();
+  CongestionMapPathSummary getMapPathSummary();
 };
 
 }  // namespace ieval
