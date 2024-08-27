@@ -28,12 +28,14 @@
 #include "SupplyAnalyzer.hpp"
 #include "TopologyGenerator.hpp"
 #include "TrackAssigner.hpp"
+#include "api/PowerEngine.hh"
 #include "api/TimingEngine.hh"
 #include "api/TimingIDBAdapter.hh"
 #include "feature_irt.h"
 #include "flute3/flute.h"
 #include "idm.h"
 #include "idrc_api.h"
+#include "tool_api/ista_io/ista_io.h"
 
 namespace irt {
 
@@ -1122,9 +1124,10 @@ std::vector<Violation> RTInterface::getViolationList(std::vector<idb::IdbLayerSh
 
 #if 1  // iSTA
 
-std::map<std::string, std::vector<double>> RTInterface::getTiming(
-    std::vector<std::map<std::string, std::vector<LayerCoord>>>& real_pin_coord_map_list,
-    std::vector<std::vector<Segment<LayerCoord>>>& routing_segment_list_list)
+void RTInterface::updateTimingAndPower(std::vector<std::map<std::string, std::vector<LayerCoord>>>& real_pin_coord_map_list,
+                                       std::vector<std::vector<Segment<LayerCoord>>>& routing_segment_list_list,
+                                       std::map<std::string, std::map<std::string, double>>& clock_timing,
+                                       std::map<std::string, double>& power)
 {
 #if 1  // 数据结构定义
   struct RCPin
@@ -1152,18 +1155,29 @@ std::map<std::string, std::vector<double>> RTInterface::getTiming(
 #endif
 
 #if 1  // 函数定义
-  auto initTimingEngine = [](idb::IdbBuilder* idb_builder, int32_t thread_number) {
+  auto initTimingEngine = [](std::string sta_workspace, int32_t thread_number) {
     ista::TimingEngine* timing_engine = ista::TimingEngine::getOrCreateTimingEngine();
-    if (!timing_engine->get_db_adapter()) {
+    if (!timing_engine->isBuildGraph()) {
+      timing_engine->set_design_work_space(sta_workspace.c_str());
+      timing_engine->readLiberty(dmInst->get_config().get_lib_paths());
       auto db_adapter = std::make_unique<ista::TimingIDBAdapter>(timing_engine->get_ista());
-      db_adapter->set_idb(idb_builder);
+      db_adapter->set_idb(dmInst->get_idb_builder());
       db_adapter->convertDBToTimingNetlist();
       timing_engine->set_db_adapter(std::move(db_adapter));
+      timing_engine->readSdc(dmInst->get_config().get_sdc_path().c_str());
+      timing_engine->initRcTree();
+      timing_engine->buildGraph();
+      timing_engine->updateTiming();
     }
-    timing_engine->set_num_threads(thread_number);
-    timing_engine->buildGraph();
-    timing_engine->initRcTree();
     return timing_engine;
+  };
+  auto initPowerEngine = []() {
+    auto* power_engine = ipower::PowerEngine::getOrCreatePowerEngine();
+    if (true) {
+      power_engine->get_power()->initPowerGraphData();
+      power_engine->get_power()->initToggleSPData();
+    }
+    return power_engine;
   };
   auto getRCSegmentList = [](std::map<LayerCoord, std::vector<std::string>, CmpLayerCoordByXASC>& coord_real_pin_map,
                              std::vector<Segment<LayerCoord>>& routing_segment_list) {
@@ -1279,9 +1293,10 @@ std::map<std::string, std::vector<double>> RTInterface::getTiming(
 
 #if 1  // 主流程
   std::vector<Net>& net_list = RTDM.getDatabase().get_net_list();
+  std::string& temp_directory_path = RTDM.getConfig().temp_directory_path;
   int32_t thread_number = RTDM.getConfig().thread_number;
 
-  ista::TimingEngine* timing_engine = initTimingEngine(dmInst->get_idb_builder(), thread_number);
+  ista::TimingEngine* timing_engine = initTimingEngine(RTUTIL.getString(temp_directory_path, "sta/"), thread_number);
   ista::Netlist* sta_net_list = timing_engine->get_netlist();
 
   for (size_t net_idx = 0; net_idx < coord_real_pin_map_list.size(); net_idx++) {
@@ -1311,21 +1326,38 @@ std::map<std::string, std::vector<double>> RTInterface::getTiming(
     timing_engine->updateRCTreeInfo(ista_net);
     // auto* rc_tree = timing_engine->get_ista()->getRcNet(ista_net)->rct();
     // rc_tree->printGraphViz();
+    // int a = 0;
     // dot -Tpdf tree.dot -o tree.pdf
   }
   timing_engine->updateTiming();
   timing_engine->reportTiming();
 
-  std::map<std::string, std::vector<double>> timing_map;
   auto clk_list = timing_engine->getClockList();
   std::ranges::for_each(clk_list, [&](ista::StaClock* clk) {
     auto clk_name = clk->get_clock_name();
     auto setup_tns = timing_engine->getTNS(clk_name, AnalysisMode::kMax);
     auto setup_wns = timing_engine->getWNS(clk_name, AnalysisMode::kMax);
     auto suggest_freq = 1000.0 / (clk->getPeriodNs() - setup_wns);
-    timing_map[clk_name] = {setup_tns, setup_wns, suggest_freq};
+    clock_timing[clk_name]["TNS"] = setup_tns;
+    clock_timing[clk_name]["WNS"] = setup_wns;
+    clock_timing[clk_name]["Freq(MHz)"] = suggest_freq;
   });
-  return timing_map;
+  ipower::PowerEngine* power_engine = initPowerEngine();
+  power_engine->get_power()->updatePower();
+
+  double static_power = 0;
+  for (const auto& data : power_engine->get_power()->get_leakage_powers()) {
+    static_power += data->get_leakage_power();
+  }
+  double dynamic_power = 0;
+  for (const auto& data : power_engine->get_power()->get_internal_powers()) {
+    dynamic_power += data->get_internal_power();
+  }
+  for (const auto& data : power_engine->get_power()->get_switch_powers()) {
+    dynamic_power += data->get_switch_power();
+  }
+  power["static_power"] = static_power;
+  power["dynamic_power"] = dynamic_power;
 #endif
 }
 
@@ -1336,6 +1368,7 @@ std::map<std::string, std::vector<double>> RTInterface::getTiming(
 ieda_feature::RTSummary RTInterface::outputSummary()
 {
   ieda_feature::RTSummary top_rt_summary;
+#if 0
 
   Summary& rt_summary = RTDM.getSummary();
 
@@ -1358,7 +1391,7 @@ ieda_feature::RTSummary RTInterface::outputSummary()
   top_rt_summary.ir_summary.cut_via_num_map = rt_summary.ir_summary.cut_via_num_map;
   top_rt_summary.ir_summary.total_via_num = rt_summary.ir_summary.total_via_num;
 
-  for (auto timing : rt_summary.ir_summary.timing) {
+  for (auto timing : rt_summary.ir_summary.clock_timing) {
     ieda_feature::NetTiming net_timing;
     net_timing.net_name = timing.first;
     auto timing_array = timing.second;
@@ -1379,7 +1412,7 @@ ieda_feature::RTSummary RTInterface::outputSummary()
     top_gr_summary.cut_via_num_map = gr_summary.cut_via_num_map;
     top_gr_summary.total_via_num = gr_summary.total_via_num;
 
-    for (auto timing : gr_summary.timing) {
+    for (auto timing : gr_summary.clock_timing) {
       ieda_feature::NetTiming net_timing;
       net_timing.net_name = timing.first;
       auto timing_array = timing.second;
@@ -1406,7 +1439,7 @@ ieda_feature::RTSummary RTInterface::outputSummary()
     top_dr_summary.routing_violation_num_map = dr_summary.routing_violation_num_map;
     top_dr_summary.total_violation_num = dr_summary.total_violation_num;
 
-    for (auto timing : dr_summary.timing) {
+    for (auto timing : dr_summary.clock_timing) {
       ieda_feature::NetTiming net_timing;
       net_timing.net_name = timing.first;
       auto timing_array = timing.second;
@@ -1416,7 +1449,7 @@ ieda_feature::RTSummary RTInterface::outputSummary()
       top_dr_summary.nets_timing.push_back(net_timing);
     }
   }
-
+#endif
   return top_rt_summary;
 }
 

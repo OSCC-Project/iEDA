@@ -476,7 +476,8 @@ void TopologyGenerator::updateSummary(TGModel& tg_model)
   int32_t& total_demand = RTDM.getSummary().tg_summary.total_demand;
   int32_t& total_overflow = RTDM.getSummary().tg_summary.total_overflow;
   double& total_wire_length = RTDM.getSummary().tg_summary.total_wire_length;
-  std::map<std::string, std::vector<double>>& timing = RTDM.getSummary().tg_summary.timing;
+  std::map<std::string, std::map<std::string, double>>& clock_timing = RTDM.getSummary().tg_summary.clock_timing;
+  std::map<std::string, double>& power_map = RTDM.getSummary().tg_summary.power_map;
 
   std::vector<TGNet>& tg_net_list = tg_model.get_tg_net_list();
   GridMap<TGNode>& tg_node_map = tg_model.get_tg_node_map();
@@ -542,7 +543,7 @@ void TopologyGenerator::updateSummary(TGModel& tg_model)
         routing_segment_list_list[net_idx].emplace_back(first_real_coord, second_real_coord);
       }
     }
-    timing = RTI.getTiming(real_pin_coord_map_list, routing_segment_list_list);
+    RTI.updateTimingAndPower(real_pin_coord_map_list, routing_segment_list_list, clock_timing, power_map);
   }
 }
 
@@ -552,7 +553,8 @@ void TopologyGenerator::printSummary(TGModel& tg_model)
   int32_t& total_demand = RTDM.getSummary().tg_summary.total_demand;
   int32_t& total_overflow = RTDM.getSummary().tg_summary.total_overflow;
   double& total_wire_length = RTDM.getSummary().tg_summary.total_wire_length;
-  std::map<std::string, std::vector<double>>& timing = RTDM.getSummary().tg_summary.timing;
+  std::map<std::string, std::map<std::string, double>>& clock_timing = RTDM.getSummary().tg_summary.clock_timing;
+  std::map<std::string, double>& power_map = RTDM.getSummary().tg_summary.power_map;
 
   fort::char_table summary_table;
   {
@@ -560,16 +562,19 @@ void TopologyGenerator::printSummary(TGModel& tg_model)
     summary_table << fort::header << "total_overflow" << total_overflow << fort::endr;
     summary_table << fort::header << "total_wire_length" << total_wire_length << fort::endr;
   }
-  fort::char_table timing_table;
+  fort::char_table timing_and_power_table;
   if (enable_timing) {
-    timing_table << fort::header << "Clock" << "TNS" << "WNS" << "Freq(MHz)" << fort::endr;
-    for (auto& [clock_name, timing_list] : timing) {
-      timing_table << clock_name << timing_list[0] << timing_list[1] << timing_list[2] << fort::endr;
+    timing_and_power_table << fort::header << "Clock" << "TNS" << "WNS" << "Freq(MHz)" << fort::endr;
+    for (auto& [clock_name, timing_map] : clock_timing) {
+      timing_and_power_table << clock_name << timing_map["TNS"] << timing_map["WNS"] << timing_map["Freq(MHz)"] << fort::endr;
+    }
+    for (auto& [type, power] : power_map) {
+      timing_and_power_table << fort::header << type << power << fort::endr;
     }
   }
   std::vector<fort::char_table> table_list;
   table_list.push_back(summary_table);
-  table_list.push_back(timing_table);
+  table_list.push_back(timing_and_power_table);
   RTUTIL.printTableList(table_list);
 }
 

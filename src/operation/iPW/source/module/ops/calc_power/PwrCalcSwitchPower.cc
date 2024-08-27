@@ -96,7 +96,15 @@ unsigned PwrCalcSwitchPower::operator()(PwrGraph* the_graph) {
   Net* net;
   /*Calc switch power for power net arc.*/
   FOREACH_NET(nl, net) {
+    if (net->getLoads().empty()) {
+      continue;
+    }
+
     auto* driver_obj = net->getDriver();
+
+    if (driver_obj->isPort() && ((net->getLoads().size() == 1) && net->getLoads().front()->isPort())) {
+      continue;
+    }    
 
     auto* the_sta_graph = the_graph->get_sta_graph();
     auto driver_sta_vertex = the_sta_graph->findVertex(driver_obj);

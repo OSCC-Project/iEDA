@@ -68,12 +68,17 @@ class Power {
   unsigned setupClock(PwrClock&& fastest_clock, Vector<StaClock*>&& sta_clocks);
   unsigned annotateToggleSP();
 
+  unsigned initPowerGraphData();
+
   unsigned checkPipelineLoop();
   unsigned levelizeSeqGraph();
 
   unsigned propagateClock();
   unsigned propagateConst();
   unsigned propagateToggleSP();
+
+  unsigned initToggleSPData();
+
   unsigned calcLeakagePower();
   unsigned calcInternalPower();
   unsigned calcSwitchPower();
@@ -84,6 +89,7 @@ class Power {
   unsigned reportInstancePower(const char* rpt_file_name,
                                PwrAnalysisMode pwr_analysis_mode);
   unsigned reportInstancePowerCSV(const char* rpt_file_name);
+
   unsigned runCompleteFlow();
 
   auto& get_leakage_powers() { return _leakage_powers; }

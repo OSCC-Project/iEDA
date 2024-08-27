@@ -958,7 +958,8 @@ void InitialRouter::updateSummary(IRModel& ir_model)
   double& total_wire_length = RTDM.getSummary().ir_summary.total_wire_length;
   std::map<int32_t, int32_t>& cut_via_num_map = RTDM.getSummary().ir_summary.cut_via_num_map;
   int32_t& total_via_num = RTDM.getSummary().ir_summary.total_via_num;
-  std::map<std::string, std::vector<double>>& timing = RTDM.getSummary().ir_summary.timing;
+  std::map<std::string, std::map<std::string, double>>& clock_timing = RTDM.getSummary().ir_summary.clock_timing;
+  std::map<std::string, double>& power_map = RTDM.getSummary().ir_summary.power_map;
 
   std::vector<GridMap<IRNode>>& layer_node_map = ir_model.get_layer_node_map();
   std::vector<IRNet>& ir_net_list = ir_model.get_ir_net_list();
@@ -1046,7 +1047,7 @@ void InitialRouter::updateSummary(IRModel& ir_model)
         routing_segment_list_list[net_idx].emplace_back(first_real_coord, second_real_coord);
       }
     }
-    timing = RTI.getTiming(real_pin_coord_map_list, routing_segment_list_list);
+    RTI.updateTimingAndPower(real_pin_coord_map_list, routing_segment_list_list, clock_timing, power_map);
   }
 }
 
@@ -1054,6 +1055,7 @@ void InitialRouter::printSummary(IRModel& ir_model)
 {
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
   std::vector<CutLayer>& cut_layer_list = RTDM.getDatabase().get_cut_layer_list();
+  int32_t enable_timing = RTDM.getConfig().enable_timing;
   std::map<int32_t, int32_t>& routing_demand_map = RTDM.getSummary().ir_summary.routing_demand_map;
   int32_t& total_demand = RTDM.getSummary().ir_summary.total_demand;
   std::map<int32_t, int32_t>& routing_overflow_map = RTDM.getSummary().ir_summary.routing_overflow_map;
@@ -1062,6 +1064,8 @@ void InitialRouter::printSummary(IRModel& ir_model)
   double& total_wire_length = RTDM.getSummary().ir_summary.total_wire_length;
   std::map<int32_t, int32_t>& cut_via_num_map = RTDM.getSummary().ir_summary.cut_via_num_map;
   int32_t& total_via_num = RTDM.getSummary().ir_summary.total_via_num;
+  std::map<std::string, std::map<std::string, double>>& clock_timing = RTDM.getSummary().ir_summary.clock_timing;
+  std::map<std::string, double>& power_map = RTDM.getSummary().ir_summary.power_map;
 
   fort::char_table routing_demand_map_table;
   {
@@ -1102,7 +1106,24 @@ void InitialRouter::printSummary(IRModel& ir_model)
     }
     cut_via_num_map_table << fort::header << "Total" << total_via_num << RTUTIL.getPercentage(total_via_num, total_via_num) << fort::endr;
   }
-  RTUTIL.printTableList({routing_demand_map_table, routing_overflow_map_table, routing_wire_length_map_table, cut_via_num_map_table});
+  fort::char_table timing_and_power_table;
+  if (enable_timing) {
+    timing_and_power_table << fort::header << "Clock" << "TNS" << "WNS" << "Freq(MHz)" << fort::endr;
+    for (auto& [clock_name, timing_map] : clock_timing) {
+      timing_and_power_table << clock_name << timing_map["TNS"] << timing_map["WNS"] << timing_map["Freq(MHz)"] << fort::endr;
+    }
+    for (auto& [type, power] : power_map) {
+      timing_and_power_table << fort::header << "type" << type << fort::endr;
+      timing_and_power_table << fort::header << "power" << power << fort::endr;
+    }
+  }
+  std::vector<fort::char_table> table_list;
+  table_list.push_back(routing_demand_map_table);
+  table_list.push_back(routing_overflow_map_table);
+  table_list.push_back(routing_wire_length_map_table);
+  table_list.push_back(cut_via_num_map_table);
+  table_list.push_back(timing_and_power_table);
+  RTUTIL.printTableList(table_list);
 }
 
 void InitialRouter::writeDemandCSV(IRModel& ir_model)
