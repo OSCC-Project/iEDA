@@ -75,7 +75,7 @@ class ExternalAPI
   std::vector<float> obtainNetCong(std::string rudy_type);
   std::vector<float> evalGRCong();
   int64_t evalEGRWL();
-  void evalproCongestion();
+  float evalproCongestion();
   int32_t evalprohpWL();
   int32_t evalproflute();
 

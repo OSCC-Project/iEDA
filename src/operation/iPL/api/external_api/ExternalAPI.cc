@@ -191,10 +191,10 @@ std::vector<float> ExternalAPI::evalGRCong()
   return gr_congestion;
 }
 
-void ExternalAPI::evalproCongestion()
+float ExternalAPI::evalproCongestion()
 {
-  ieval::CongestionAPI congestion_api;
-  int32_t total_overflow = congestion_api.getOverflowSummary().total_overflow;
+  ieval::WirelengthAPI wirelength_api;
+  return wirelength_api.totalEGRWL("./rt_temp_directory/initial_router/route.guide");
 }
 
 int32_t ExternalAPI::evalprohpWL()

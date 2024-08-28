@@ -29,6 +29,7 @@ void InitEGR::runEGR()
   config_map.insert({"-output_csv", 1});
   rtInterface.initRT(config_map);
   rtInterface.runEGR();
+  rtInterface.destroyRT();
 }
 
 float InitEGR::parseEGRWL(std::string guide_path)
@@ -47,7 +48,6 @@ float InitEGR::parseEGRWL(std::string guide_path)
     std::string layer;
   };
 
-  // 跳过前四行格式说明
   for (int i = 0; i < 4; ++i) {
     std::getline(file, line);
   }
@@ -94,7 +94,6 @@ float InitEGR::parseNetEGRWL(std::string guide_path, std::string net_name)
     std::string layer;
   };
 
-  // 跳过前四行格式说明
   for (int i = 0; i < 4; ++i) {
     std::getline(file, line);
   }
@@ -142,7 +141,6 @@ float InitEGR::parsePathEGRWL(std::string guide_path, std::string net_name, std:
   Pin loadPin;
   std::stack<Wire> wireStack;
 
-  // 跳过前四行格式说明
   for (int i = 0; i < 4; ++i) {
     std::getline(file, line);
   }
@@ -189,21 +187,19 @@ float InitEGR::parsePathEGRWL(std::string guide_path, std::string net_name, std:
         wireFound = true;
 
         if (currentX == loadPin.gx && currentY == loadPin.gy) {
-          return path_egr_wl;  // 找到目标pin，结束计算
+          return path_egr_wl;
         }
-        break;  // 找到匹配的wire，跳出内部循环
+        break;
       } else {
         tempStack.push(wire);
       }
     }
 
     if (!wireFound) {
-      // 如果没有找到匹配的wire，说明路径中断
       std::cout << "Error: Path interrupted. Unable to reach load pin." << std::endl;
-      return -1;  // 或者其他错误标识
+      return -1;
     }
 
-    // 将临时栈中的wire放回主栈
     while (!tempStack.empty()) {
       wireStack.push(tempStack.top());
       tempStack.pop();

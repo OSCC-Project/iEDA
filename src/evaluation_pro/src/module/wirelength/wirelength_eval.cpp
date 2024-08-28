@@ -205,7 +205,6 @@ int32_t WirelengthEval::evalPathFLUTE(PointSet point_set, PointPair point_pair)
     std::pair<int32_t, int32_t> point1 = point_pair.first;
     std::pair<int32_t, int32_t> point2 = point_pair.second;
 
-    // 找到指定点对在树中的索引
     int start_index = -1, end_index = -1;
     for (int i = 0; i < flute_tree.deg; i++) {
       if (flute_tree.branch[i].x == point1.first && flute_tree.branch[i].y == point1.second) {
@@ -224,7 +223,6 @@ int32_t WirelengthEval::evalPathFLUTE(PointSet point_set, PointPair point_pair)
       std::vector<int> parent(2 * flute_tree.deg - 2, -1);
       std::queue<int> q;
 
-      // 广度优先搜索
       q.push(start_index);
       visited[start_index] = true;
 
@@ -233,10 +231,9 @@ int32_t WirelengthEval::evalPathFLUTE(PointSet point_set, PointPair point_pair)
         q.pop();
 
         if (current == end_index) {
-          break;  // 找到终点，结束搜索
+          break;
         }
 
-        // 检查所有相邻的点
         for (int i = 0; i < 2 * flute_tree.deg - 2; i++) {
           if (!visited[i] && (flute_tree.branch[i].n == current || flute_tree.branch[current].n == i)) {
             visited[i] = true;
@@ -246,7 +243,6 @@ int32_t WirelengthEval::evalPathFLUTE(PointSet point_set, PointPair point_pair)
         }
       }
 
-      // 如果找到路径，计算长度
       if (visited[end_index]) {
         int current = end_index;
         while (current != start_index) {
@@ -311,6 +307,8 @@ float WirelengthEval::evalTotalEGRWL(std::string guide_path)
   float total_egrwl = 0;
 
   InitEGR init_EGR;
+  init_EGR.runEGR();
+
   total_egrwl = init_EGR.parseEGRWL(guide_path);
 
   return total_egrwl;
@@ -321,6 +319,8 @@ float WirelengthEval::evalNetEGRWL(std::string guide_path, std::string net_name)
   float net_egrwl = 0;
 
   InitEGR init_EGR;
+  init_EGR.runEGR();
+
   net_egrwl = init_EGR.parseNetEGRWL(guide_path, net_name);
 
   return net_egrwl;
@@ -331,6 +331,8 @@ float WirelengthEval::evalPathEGRWL(std::string guide_path, std::string net_name
   float path_egrwl = 0;
 
   InitEGR init_EGR;
+  init_EGR.runEGR();
+
   path_egrwl = init_EGR.parsePathEGRWL(guide_path, net_name, load_name);
 
   return path_egrwl;
