@@ -23,19 +23,45 @@
  */
 
 #pragma once
+#include <map>
 #include <string>
-
 namespace ieval {
+enum class RoutingType
+{
+  WLM,
+  HPWL,
+  FLUTE,
+  EGR,
+  DR
+}
 
 class InitSTA
 {
  public:
-  InitSTA(const std::string& work_dir);
+  InitSTA(const std::string& work_dir, const RoutingType& routing_type, const unsigned& num_threads = 1, const unsigned& n_worst = 10)
+      : _work_dir(work_dir), _num_threads(num_threads), _n_worst(n_worst)
+  {
+  }
   ~InitSTA();
 
   void runSTA();
 
+  std::map<std::string, std::map<std::string, double>> getTiming() { return _timing; }
+  std::map<std::string, double> getPower() { return _power; }
+
  private:
+  void embeddingSTA();
+  void initStaEngine();
+  void initPowerEngine();
+  void getInfoFromSTA();
+  void getInfoFromPW();
+  std::string _work_dir = "";
+  RoutingType _routing_type = RoutingType::WLM;
+  unsigned _num_threads = 1;
+  unsigned _n_worst = 10;
+
+  std::map<std::string, std::map<std::string, double>> _timing;
+  std::map<std::string, double> _power;
 };
 
 }  // namespace ieval

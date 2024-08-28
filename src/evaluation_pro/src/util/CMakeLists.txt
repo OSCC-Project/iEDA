@@ -41,6 +41,7 @@ target_link_libraries(eval_pro_util_init_ista
     PRIVATE
         idm
         ista-engine
+        power
 )
 
 target_include_directories(eval_pro_util_init_ista
