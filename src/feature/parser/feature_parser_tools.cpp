@@ -84,9 +84,9 @@ json FeatureParser::buildSummaryRT()
     json_ir["cut_via_num_map"][std::to_string(cut_via_num.first)] = cut_via_num.second;
   }
 
-  for (int i = 0; i < (int) rt_sum.ir_summary.nets_timing.size(); i++) {
-    auto net_timing = rt_sum.ir_summary.nets_timing[i];
-    json_ir["nets_timing"][i]["net_name"] = net_timing.net_name;
+  for (int i = 0; i < (int) rt_sum.ir_summary.clocks_timing.size(); i++) {
+    auto net_timing = rt_sum.ir_summary.clocks_timing[i];
+    json_ir["nets_timing"][i]["net_name"] = net_timing.clock_name;
     json_ir["nets_timing"][i]["setup_tns"] = net_timing.setup_tns;
     json_ir["nets_timing"][i]["setup_wns"] = net_timing.setup_wns;
     json_ir["nets_timing"][i]["suggest_freq"] = net_timing.suggest_freq;
@@ -118,9 +118,9 @@ json FeatureParser::buildSummaryRT()
       json_gr["cut_via_num_map"][std::to_string(cut_via_num.first)] = cut_via_num.second;
     }
 
-    for (int i = 0; i < (int) gr_sum.nets_timing.size(); i++) {
-      auto net_timing = gr_sum.nets_timing[i];
-      json_gr["nets_timing"][i]["net_name"] = net_timing.net_name;
+    for (int i = 0; i < (int) gr_sum.clocks_timing.size(); i++) {
+      auto net_timing = gr_sum.clocks_timing[i];
+      json_gr["nets_timing"][i]["net_name"] = net_timing.clock_name;
       json_gr["nets_timing"][i]["setup_tns"] = net_timing.setup_tns;
       json_gr["nets_timing"][i]["setup_wns"] = net_timing.setup_wns;
       json_gr["nets_timing"][i]["suggest_freq"] = net_timing.suggest_freq;
@@ -170,9 +170,9 @@ json FeatureParser::buildSummaryRT()
       json_dr["routing_violation_num_map"][std::to_string(routing_violation.first)] = routing_violation.second;
     }
 
-    for (int i = 0; i < (int) dr_sum.nets_timing.size(); i++) {
-      auto net_timing = dr_sum.nets_timing[i];
-      json_dr["nets_timing"][i]["net_name"] = net_timing.net_name;
+    for (int i = 0; i < (int) dr_sum.clocks_timing.size(); i++) {
+      auto net_timing = dr_sum.clocks_timing[i];
+      json_dr["nets_timing"][i]["net_name"] = net_timing.clock_name;
       json_dr["nets_timing"][i]["setup_tns"] = net_timing.setup_tns;
       json_dr["nets_timing"][i]["setup_wns"] = net_timing.setup_wns;
       json_dr["nets_timing"][i]["suggest_freq"] = net_timing.suggest_freq;
@@ -259,7 +259,7 @@ json FeatureParser::buildSummaryCTS()
   for (int i = 0; i < (int) summary.nets_timing.size(); ++i) {
     auto net_timing = summary.nets_timing[i];
 
-    json_timing[i]["net_name"] = net_timing.net_name;
+    json_timing[i]["net_name"] = net_timing.clock_name;
     json_timing[i]["setup_tns"] = net_timing.setup_tns;
     json_timing[i]["setup_wns"] = net_timing.setup_wns;
     json_timing[i]["hold_tns"] = net_timing.hold_tns;

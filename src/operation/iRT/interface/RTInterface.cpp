@@ -1367,8 +1367,6 @@ void RTInterface::updateTimingAndPower(std::vector<std::map<std::string, std::ve
 ieda_feature::RTSummary RTInterface::outputSummary()
 {
   ieda_feature::RTSummary top_rt_summary;
-#if 0
-
   Summary& rt_summary = RTDM.getSummary();
 
   // pa_summary
@@ -1390,15 +1388,17 @@ ieda_feature::RTSummary RTInterface::outputSummary()
   top_rt_summary.ir_summary.cut_via_num_map = rt_summary.ir_summary.cut_via_num_map;
   top_rt_summary.ir_summary.total_via_num = rt_summary.ir_summary.total_via_num;
 
-  for (auto timing : rt_summary.ir_summary.clock_timing) {
-    ieda_feature::NetTiming net_timing;
-    net_timing.net_name = timing.first;
-    auto timing_array = timing.second;
-    net_timing.setup_tns = timing_array[0];
-    net_timing.setup_wns = timing_array[1];
-    net_timing.suggest_freq = timing_array[2];
-    top_rt_summary.ir_summary.nets_timing.push_back(net_timing);
+  for (auto [clock_name, timing_map] : rt_summary.ir_summary.clock_timing) {
+    ieda_feature::ClockTiming clock_timing;
+    clock_timing.clock_name = clock_name;
+    clock_timing.setup_tns = timing_map["TNS"];
+    clock_timing.setup_wns = timing_map["WNS"];
+    clock_timing.suggest_freq = timing_map["Freq(MHz)"];
+    top_rt_summary.ir_summary.clocks_timing.push_back(clock_timing);
   }
+
+  top_rt_summary.ir_summary.power_info
+      = {rt_summary.ir_summary.power_map["static_power"], rt_summary.ir_summary.power_map["dynamic_power"]};
   // gr_summary
   for (auto& [iter, gr_summary] : rt_summary.iter_gr_summary_map) {
     ieda_feature::GRSummary& top_gr_summary = top_rt_summary.iter_gr_summary_map[iter];
@@ -1411,15 +1411,15 @@ ieda_feature::RTSummary RTInterface::outputSummary()
     top_gr_summary.cut_via_num_map = gr_summary.cut_via_num_map;
     top_gr_summary.total_via_num = gr_summary.total_via_num;
 
-    for (auto timing : gr_summary.clock_timing) {
-      ieda_feature::NetTiming net_timing;
-      net_timing.net_name = timing.first;
-      auto timing_array = timing.second;
-      net_timing.setup_tns = timing_array[0];
-      net_timing.setup_wns = timing_array[1];
-      net_timing.suggest_freq = timing_array[2];
-      top_gr_summary.nets_timing.push_back(net_timing);
+    for (auto [clock_name, timing_map] : gr_summary.clock_timing) {
+      ieda_feature::ClockTiming clock_timing;
+      clock_timing.clock_name = clock_name;
+      clock_timing.setup_tns = timing_map["TNS"];
+      clock_timing.setup_wns = timing_map["WNS"];
+      clock_timing.suggest_freq = timing_map["Freq(MHz)"];
+      top_gr_summary.clocks_timing.push_back(clock_timing);
     }
+    top_gr_summary.power_info = {gr_summary.power_map["static_power"], gr_summary.power_map["dynamic_power"]};
   }
   // ta_summary
   top_rt_summary.ta_summary.routing_wire_length_map = rt_summary.ta_summary.routing_wire_length_map;
@@ -1438,17 +1438,16 @@ ieda_feature::RTSummary RTInterface::outputSummary()
     top_dr_summary.routing_violation_num_map = dr_summary.routing_violation_num_map;
     top_dr_summary.total_violation_num = dr_summary.total_violation_num;
 
-    for (auto timing : dr_summary.clock_timing) {
-      ieda_feature::NetTiming net_timing;
-      net_timing.net_name = timing.first;
-      auto timing_array = timing.second;
-      net_timing.setup_tns = timing_array[0];
-      net_timing.setup_wns = timing_array[1];
-      net_timing.suggest_freq = timing_array[2];
-      top_dr_summary.nets_timing.push_back(net_timing);
+    for (auto [clock_name, timing_map] : dr_summary.clock_timing) {
+      ieda_feature::ClockTiming clock_timing;
+      clock_timing.clock_name = clock_name;
+      clock_timing.setup_tns = timing_map["TNS"];
+      clock_timing.setup_wns = timing_map["WNS"];
+      clock_timing.suggest_freq = timing_map["Freq(MHz)"];
+      top_dr_summary.clocks_timing.push_back(clock_timing);
     }
+    top_dr_summary.power_info = {dr_summary.power_map["static_power"], dr_summary.power_map["dynamic_power"]};
   }
-#endif
   return top_rt_summary;
 }
 

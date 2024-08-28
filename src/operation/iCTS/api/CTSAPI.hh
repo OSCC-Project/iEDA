@@ -32,9 +32,9 @@
 #include "../../../database/interaction/ids.hpp"
 
 namespace ieda_feature {
-    class CTSSummary;
-    class NetTiming;
-}// namespace
+class CTSSummary;
+class ClockTiming;
+}  // namespace ieda_feature
 
 namespace icts {
 
@@ -46,12 +46,8 @@ using ieda::Time;
 using SkewConstraintsMap = std::map<std::pair<std::string, std::string>, std::pair<double, double>>;
 
 template <typename T>
-concept StringAble = requires(const T& t)
-{
-  {
-    std::to_string(t)
-  }
-  ->std::convertible_to<std::string>;
+concept StringAble = requires(const T& t) {
+  { std::to_string(t) } -> std::convertible_to<std::string>;
 };
 
 class CTSAPI
@@ -75,7 +71,7 @@ class CTSAPI
 
   // flow API
   void resetAPI();
-  void init(const std::string& config_file, const std::string& work_dir="");
+  void init(const std::string& config_file, const std::string& work_dir = "");
   void readData();
   void routing();
   void evaluate();

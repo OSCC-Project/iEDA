@@ -1193,11 +1193,11 @@ ieda_feature::CTSSummary CTSAPI::outputSummary()
   // 可能有多个clk_name，每一个时钟都需要报告tns、wns、freq
   auto clk_list = _timing_engine->getClockList();
   for (auto* clk : clk_list) {
-    ieda_feature::NetTiming net_timing;
+    ieda_feature::ClockTiming net_timing;
 
     auto clk_name = clk->get_clock_name();
 
-    net_timing.net_name = clk_name;
+    net_timing.clock_name = clk_name;
     net_timing.setup_tns = _timing_engine->getTNS(clk_name, AnalysisMode::kMax);
     net_timing.setup_wns = _timing_engine->getWNS(clk_name, AnalysisMode::kMax);
     net_timing.hold_tns = _timing_engine->getTNS(clk_name, AnalysisMode::kMin);
