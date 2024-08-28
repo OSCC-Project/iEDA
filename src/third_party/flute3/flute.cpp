@@ -36,6 +36,7 @@
 #include <limits.h>
 #include <math.h>
 #include <string>
+#include <set>
 #include <algorithm>
 #include "flute.h"
 
@@ -228,7 +229,7 @@ void readLUT() {
 
 #elif LUT_SOURCE==LUT_VAR
   // Only init to d=8 on startup because d=9 is big and slow.
-  initLUT(lut_initial_d, LUT, numsoln);
+  initLUT(FLUTE_D, LUT, numsoln);
 
 #elif LUT_SOURCE==LUT_VAR_CHECK
   readLUTfiles(LUT, numsoln);
@@ -249,6 +250,9 @@ makeLUT(LUT_TYPE &LUT,
   numsoln = new int*[FLUTE_D + 1];
   for (int d = 4; d <= FLUTE_D; d++) {
     LUT[d] = new struct csoln *[MGROUP];
+    for (int k = 0; k < MGROUP; k++) {
+      LUT[d][k] = nullptr;
+    }
     numsoln[d] = new int[MGROUP];
   }
 }
@@ -263,6 +267,18 @@ static void
 deleteLUT(LUT_TYPE &LUT,
 	  NUMSOLN_TYPE &numsoln)
 {
+  std::set<struct csoln*> ref_set;
+  for (int d = 4; d <= FLUTE_D; d++) {
+    for (int k = 0; k < MGROUP; k++) {
+      if (LUT[d][k] != nullptr) {
+        ref_set.insert(LUT[d][k]);
+      }
+    }
+  }
+  for (struct csoln* ref : ref_set) {
+    delete [] ref;
+  }
+
   for (int d = 4; d <= FLUTE_D; d++) {
     delete [] LUT[d];
     delete [] numsoln[d];

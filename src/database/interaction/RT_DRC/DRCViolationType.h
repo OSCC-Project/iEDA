@@ -38,6 +38,12 @@ enum class ViolationEnumType
   kMax
 };
 
+#define NET_ID_ENVIRONMENT -1
+#define NET_ID_OBS -2
+#define NET_ID_PDN -3
+#define NET_ID_VDD -4
+#define NET_ID_VSS -5
+
 struct GetViolationTypeName
 {
   std::string operator()(const ViolationEnumType& type) const

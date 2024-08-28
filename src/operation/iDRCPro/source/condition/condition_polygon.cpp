@@ -150,7 +150,7 @@ void DrcConditionManager::checkPolygons(std::string layer, DrcEngineLayout* layo
     auto it_prev = it_next++;
     auto it_current = it_next++;
     do {
-      int edge_length = ieda_solver::manhattanDistance(*it_current, *it_prev);
+      int edge_length = ieda_solver::rectManhattanDistance(*it_current, *it_prev);
       bool is_current_convex = is_convex(get_edge_direction(*it_prev, *it_current), get_edge_direction(*it_current, *it_next));
       ieda_solver::GeometryOrientation edge_orientation = get_edge_orientation(*it_prev, *it_current);
       ieda_solver::GeometryDirection2D edge_direction = get_edge_direction(*it_prev, *it_current);

@@ -4,6 +4,7 @@ add_library(idrc_engine_manager ${DRC_ENGINE_MANAGER})
 
 target_link_libraries(idrc_engine_manager
     PUBLIC
+    idrc_pro_util
     solver_geometry
     solver_geometry_boost
     idrc_engine_scanline

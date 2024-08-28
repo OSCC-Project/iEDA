@@ -70,11 +70,7 @@ void DrcConditionManager::checkOverlap(std::string layer, DrcEngineLayout* layou
         continue;
       }
 
-      /// mark as checked
-      //   sub_layout->markChecked(query_id);
-      //   query_sub_layout->markChecked(net_id);
-
-      auto& overlaps = sub_layout->get_engine()->getOverlap(query_sub_layout->get_engine());
+      auto overlaps = sub_layout->get_engine()->getOverlap(query_sub_layout->get_engine());
       std::set<int> net_ids = {};
       if (overlaps.size() > 0) {
         net_ids.insert(net_id);
@@ -97,12 +93,9 @@ void DrcConditionManager::checkOverlap(std::string layer, DrcEngineLayout* layou
     }
 
     drc_map[net_id] = this_drc_list;
-    // omp_set_lock(&lck);
-    // std::copy(this_drc_list.begin(), this_drc_list.end(), std::back_inserter(drc_list));
-    // omp_unset_lock(&lck);
 
-    DEBUGOUTPUT(DEBUGHIGHLIGHT("net_id:\t") << net_id << "\tlayer " << layer << "\tquery_sub_layouts = "
-                                            << sub_layout->get_intersect_layouts().size() << "\toverlaps = " << this_drc_list.size());
+    DEBUGOUTPUT(DEBUGHIGHLIGHT("net_id:\t") << net_id << "\tlayer " << layer << "\tchecking_size = " << checking_size
+                                            << "\toverlaps = " << this_drc_list.size());
   }
 
   int total_drc = 0;

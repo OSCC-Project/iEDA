@@ -260,33 +260,6 @@ unsigned Power::calcSwitchPower() {
 unsigned Power::updatePower() {
   {
     ieda::Stats stats;
-    LOG_INFO << "power propagation start";
-
-    // firstly levelization.
-    Vector<std::function<unsigned(PwrSeqGraph*)>> seq_funcs = {
-        PwrCheckPipelineLoop(), PwrLevelizeSeq()};
-    auto& the_seq_graph = get_power_seq_graph();
-    for (auto& func : seq_funcs) {
-      the_seq_graph.exec(func);
-    }
-
-    // secondly propagation toggle and sp.
-    Vector<std::function<unsigned(PwrGraph*)>> prop_funcs = {
-        PwrPropagateConst(), PwrPropagateToggleSP(), PwrPropagateClock()};
-    auto& the_pwr_graph = get_power_graph();
-    for (auto& func : prop_funcs) {
-      the_pwr_graph.exec(func);
-    }
-
-    LOG_INFO << "power propagation end";
-    double memory_delta = stats.memoryDelta();
-    LOG_INFO << "power propagation memory usage " << memory_delta << "MB";
-    double time_delta = stats.elapsedRunTime();
-    LOG_INFO << "power propagation time elapsed " << time_delta << "s";
-  }
-
-  {
-    ieda::Stats stats;
     LOG_INFO << "power calculation start";
 
     // thirdly analyze power.
@@ -590,12 +563,14 @@ unsigned Power::reportInstancePowerCSV(const char* rpt_file_name) {
   csv_file.close();
   return 1;
 }
+
 /**
- * @brief run report ipower
+ * @brief init power graph data
  *
+ * @param 
  * @return unsigned
  */
-unsigned Power::runCompleteFlow() {
+unsigned Power::initPowerGraphData() {
   Sta* ista = Sta::getOrCreateSta();
   Power* ipower = Power::getOrCreatePower(&(ista->get_graph()));
 
@@ -642,8 +617,59 @@ unsigned Power::runCompleteFlow() {
     LOG_INFO << "power vcd annotate time elapsed " << time_delta << "s";
   }
 
+  return 1;
+}
+
+/**
+ * @brief init toggle sp data.
+ *
+ * @return unsigned
+ */
+unsigned Power::initToggleSPData() {
+  {
+    ieda::Stats stats;
+    LOG_INFO << "power propagation start";
+
+    // firstly levelization.
+    Vector<std::function<unsigned(PwrSeqGraph*)>> seq_funcs = {
+        PwrCheckPipelineLoop(), PwrLevelizeSeq()};
+    auto& the_seq_graph = get_power_seq_graph();
+    for (auto& func : seq_funcs) {
+      the_seq_graph.exec(func);
+    }
+
+    // secondly propagation toggle and sp.
+    Vector<std::function<unsigned(PwrGraph*)>> prop_funcs = {
+        PwrPropagateConst(), PwrPropagateToggleSP(), PwrPropagateClock()};
+    auto& the_pwr_graph = get_power_graph();
+    for (auto& func : prop_funcs) {
+      the_pwr_graph.exec(func);
+    }
+
+    LOG_INFO << "power propagation end";
+    double memory_delta = stats.memoryDelta();
+    LOG_INFO << "power propagation memory usage " << memory_delta << "MB";
+    double time_delta = stats.elapsedRunTime();
+    LOG_INFO << "power propagation time elapsed " << time_delta << "s";
+  }
+
+  return 1;
+}
+
+/**
+ * @brief run report ipower
+ *
+ * @return unsigned
+ */
+unsigned Power::runCompleteFlow() {
+  Sta* ista = Sta::getOrCreateSta();
+  Power::getOrCreatePower(&(ista->get_graph()));
+
+  initPowerGraphData();
+  initToggleSPData();
+
   // update power.
-  ipower->updatePower();
+  updatePower();
 
   {
     // report power.

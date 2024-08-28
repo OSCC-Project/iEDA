@@ -127,31 +127,43 @@ void GeometryBoost::addGeometry(EngineGeometry* geometry)
 std::vector<GeometryPolygon>& GeometryBoost::getLayoutPolygons()
 {
   if (_polygon_list.empty()) {
+    _polyset.clean();
     _polyset.get(_polygon_list);
   }
   return _polygon_list;
 }
 
-std::vector<GeometryPolygon>& GeometryBoost::getOverlap(EngineGeometry* other)
+void GeometryBoost::initPolygonRTree()
 {
-  _overlap_list.clear();
-  std::vector<GeometryPolygon>().swap(_overlap_list);
+  //   auto& polygon_list = getLayoutPolygons();
+  //   for (auto polygon : polygon_list) {
+  //     ieda_solver::GeometryRect rect;
+  //     ieda_solver::envelope(rect, polygon);
+
+  //     ieda_solver::BgRect rtree_rect(gtl::ll(rect).x(), gtl::ll(rect).y(), gtl::ur(rect).x(), gtl::ur(rect).y());
+  //     _polygon_rtree.insert(std::make_pair(rtree_rect, polygon));
+  //   }
+}
+
+std::vector<GeometryPolygon> GeometryBoost::getOverlap(EngineGeometry* other)
+{
+  std::vector<GeometryPolygon> overlap_list;
 
   if (other == nullptr) {
     /// check self overlap
     GtlPolygon90Set set(_polyset);
     set.self_intersect();
-    set.get(_overlap_list);
+    set.get(overlap_list);
   } else {
     /// check overlap with other geometry
     GtlPolygon90Set self_set(_polyset);  /// self polyset
 
     auto* boost_geometry = dynamic_cast<GeometryBoost*>(other);
     auto& interact_poly = self_set.interact(boost_geometry->get_polyset());
-    interact_poly.get(_overlap_list);
+    interact_poly.get(overlap_list);
   }
 
-  return _overlap_list;
+  return overlap_list;
 }
 
 std::vector<GeometryRect>& GeometryBoost::getWires()
@@ -166,10 +178,38 @@ std::vector<GeometryRect>& GeometryBoost::getWires()
 std::vector<GeometryRect>& GeometryBoost::getRects()
 {
   if (!_rect_initialized) {
+    _polyset.clean();
     gtl::get_rectangles(_rect_list, _polyset);
     _rect_initialized = true;
   }
   return _rect_list;
+}
+
+std::vector<GeometryRect> GeometryBoost::getRectsGrowAnd(int value, GeometryOrientation direction)
+{
+  std::vector<GeometryRect> grow_rects;
+
+  GeometryPolygonSet polyset;
+
+  auto& polygon_list = getLayoutPolygons();
+  for (auto& polygon : polygon_list) {
+    GeometryPolygonSet polyset_temp;
+    std::vector<GeometryRect> poly_rects;
+    gtl::get_rectangles(poly_rects, polygon);
+    for (auto rect : poly_rects) {
+      bloat(rect, direction, value);
+      polyset_temp += rect;
+    }
+
+    polyset_temp.clean();
+
+    polyset += polyset_temp;
+  }
+
+  polyset.self_intersect();
+  polyset.get(grow_rects);
+
+  return grow_rects;
 }
 
 }  // namespace ieda_solver
