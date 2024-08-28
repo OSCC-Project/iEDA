@@ -18,6 +18,7 @@
 
 #include "DRCViolationType.h"
 #include "idrc_engine_manager.h"
+#include "idrc_util.h"
 
 namespace idrc {
 
@@ -40,6 +41,11 @@ DrcViolationManager::~DrcViolationManager()
 void DrcViolationManager::set_net_ids(DrcEngineManager* engine_manager)
 {
   for (auto& [type, violation_list] : _violation_list) {
+    ieda::Stats states;
+
+    std::string rule_name = idrc::GetViolationTypeName()(type);
+    DEBUGOUTPUT(DEBUGHIGHLIGHT("rule_name:\t") << rule_name << ("\tsize:\t") << violation_list.size());
+
 #pragma omp parallel for
     for (auto* violation : violation_list) {
       if (violation == nullptr) {
@@ -53,15 +59,21 @@ void DrcViolationManager::set_net_ids(DrcEngineManager* engine_manager)
           auto net_ids = layout->querySubLayoutNetId(violation_rect->get_llx(), violation_rect->get_lly(), violation_rect->get_urx(),
                                                      violation_rect->get_ury());
           violation_rect->set_net_ids(net_ids);
+
+          DEBUGOUTPUT(DEBUGHIGHLIGHT("net_ids:\t") << net_ids.size());
         }
       }
     }
+
+    DEBUGOUTPUT(DEBUGHIGHLIGHT("rule_name:\t") << rule_name << "\ttime = " << states.elapsedRunTime()
+                                               << "\tmemory = " << states.memoryDelta());
   }
 }
 
 std::map<ViolationEnumType, std::vector<DrcViolation*>> DrcViolationManager::get_violation_map(DrcEngineManager* engine_manager)
 {
-  set_net_ids(engine_manager);
+    set_net_ids(engine_manager);
+    refineViolation();
   return std::move(_violation_list);
 }
 
@@ -81,6 +93,15 @@ void DrcViolationManager::addViolation(int llx, int lly, int urx, int ury, Viola
   violation_rect->set_net_ids(net_id);
   auto& violation_list = get_violation_list(type);
   violation_list.emplace_back(static_cast<DrcViolation*>(violation_rect));
+}
+
+void DrcViolationManager::refineViolation()
+{
+  for (auto& [type, violation_list] : _violation_list) {
+    violation_list.erase(
+        std::remove_if(violation_list.begin(), violation_list.end(), [](DrcViolation* violation) { return violation->ignored(); }),
+        violation_list.end());
+  }
 }
 
 }  // namespace idrc

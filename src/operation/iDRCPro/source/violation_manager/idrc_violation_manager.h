@@ -48,6 +48,7 @@ class DrcViolationManager
   std::map<ViolationEnumType, std::vector<DrcViolation*>> _violation_list;
 
   void set_net_ids(DrcEngineManager* engine_manager);
+  void refineViolation();
 };
 
 }  // namespace idrc

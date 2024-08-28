@@ -538,6 +538,8 @@ void PinAccessor::buildFixedRectList(PABox& pa_box)
 void PinAccessor::initPATaskList(PAModel& pa_model, PABox& pa_box)
 {
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
+  int32_t bottom_routing_layer_idx = RTDM.getConfig().bottom_routing_layer_idx;
+  int32_t top_routing_layer_idx = RTDM.getConfig().top_routing_layer_idx;
 
   std::vector<PANet>& pa_net_list = pa_model.get_pa_net_list();
   std::vector<PATask*>& pa_task_list = pa_box.get_pa_task_list();
@@ -564,7 +566,20 @@ void PinAccessor::initPATaskList(PAModel& pa_model, PABox& pa_box)
         std::set<LayerCoord, CmpLayerCoordByXASC> coord_set;
         for (EXTLayerRect& routing_shape : pa_pin.get_routing_shape_list()) {
           int32_t curr_layer_idx = routing_shape.get_layer_idx();
-
+          // 构建目标层
+          std::vector<int32_t> point_layer_idx_list;
+          if (curr_layer_idx < bottom_routing_layer_idx) {
+            point_layer_idx_list.push_back(bottom_routing_layer_idx);
+          } else if (top_routing_layer_idx < curr_layer_idx) {
+            point_layer_idx_list.push_back(top_routing_layer_idx);
+          } else if (curr_layer_idx < top_routing_layer_idx) {
+            point_layer_idx_list.push_back(curr_layer_idx);
+            point_layer_idx_list.push_back(curr_layer_idx + 1);
+          } else {
+            point_layer_idx_list.push_back(curr_layer_idx);
+            point_layer_idx_list.push_back(curr_layer_idx - 1);
+          }
+          // 构建有效形状
           std::vector<ScaleGrid>& x_track_grid_list = routing_layer_list[curr_layer_idx].getXTrackGridList();
           std::vector<ScaleGrid>& y_track_grid_list = routing_layer_list[curr_layer_idx].getYTrackGridList();
           int32_t enlarged_x_size = x_track_grid_list.front().get_step_num();
@@ -575,12 +590,7 @@ void PinAccessor::initPATaskList(PAModel& pa_model, PABox& pa_box)
             continue;
           }
           real_rect = RTUTIL.getRegularRect(real_rect, box_real_rect);
-          std::vector<int32_t> point_layer_idx_list;
-          if (curr_layer_idx < (static_cast<int32_t>(routing_layer_list.size()) - 1)) {
-            point_layer_idx_list = {curr_layer_idx, curr_layer_idx + 1};
-          } else {
-            point_layer_idx_list = {curr_layer_idx, curr_layer_idx - 1};
-          }
+          // 构建点
           for (int32_t x : RTUTIL.getScaleList(real_rect.get_ll_x(), real_rect.get_ur_x(), x_track_grid_list)) {
             for (int32_t y : RTUTIL.getScaleList(real_rect.get_ll_y(), real_rect.get_ur_y(), y_track_grid_list)) {
               for (int32_t point_layer_idx : point_layer_idx_list) {
@@ -1326,16 +1336,26 @@ void PinAccessor::buildAccessInfo(PABox& pa_box)
     }
     std::vector<LayerCoord> origin_coord_list;
     std::vector<LayerCoord> target_coord_list;
-    for (Segment<LayerCoord>& segment : segment_list) {
-      origin_coord_list.push_back(segment.get_first());
-      origin_coord_list.push_back(segment.get_second());
-    }
-    for (PAGroup& pa_group : pa_task->get_pa_group_list()) {
-      for (LayerCoord& coord : pa_group.get_coord_list()) {
-        if (!pa_group.get_is_target()) {
-          origin_coord_list.push_back(coord);
-        } else {
-          target_coord_list.push_back(coord);
+    if (segment_list.empty()) {
+      for (PAGroup& pa_group : pa_task->get_pa_group_list()) {
+        for (LayerCoord& coord : pa_group.get_coord_list()) {
+          if (!pa_group.get_is_target()) {
+            origin_coord_list.push_back(coord);
+          } else {
+            target_coord_list.push_back(coord);
+          }
+        }
+      }
+    } else {
+      for (Segment<LayerCoord>& segment : segment_list) {
+        origin_coord_list.push_back(segment.get_first());
+        origin_coord_list.push_back(segment.get_second());
+      }
+      for (PAGroup& pa_group : pa_task->get_pa_group_list()) {
+        if (pa_group.get_is_target()) {
+          for (LayerCoord& coord : pa_group.get_coord_list()) {
+            target_coord_list.push_back(coord);
+          }
         }
       }
     }
@@ -1416,12 +1436,9 @@ void PinAccessor::updatePAModel(PAModel& pa_model)
       if (origin_pin.get_pin_idx() != pa_pin.get_pin_idx()) {
         RTLOG.error(Loc::current(), "The pin idx is not equal!");
       }
-      for (EXTLayerRect& access_routing_shape : pa_pin.get_access_routing_shape_list()) {
-        origin_pin.get_access_routing_shape_list().push_back(access_routing_shape);
-      }
-      for (EXTLayerRect& access_cut_shape : pa_pin.get_access_cut_shape_list()) {
-        origin_pin.get_access_cut_shape_list().push_back(access_cut_shape);
-      }
+      origin_pin.set_access_segment_list(pa_pin.get_access_segment_list());
+      origin_pin.set_access_routing_shape_list(pa_pin.get_access_routing_shape_list());
+      origin_pin.set_access_cut_shape_list(pa_pin.get_access_cut_shape_list());
       for (EXTLayerRect& access_routing_shape : origin_pin.get_access_routing_shape_list()) {
         RTDM.updateFixedRectToGCellMap(ChangeType::kAdd, pa_net.get_net_idx(), &access_routing_shape, true);
       }

@@ -128,7 +128,7 @@ void DrcEngineLayout::combineLayout(DrcDataManager* data_manager)
     auto query_sub_layouts = querySubLayouts(llx, lly, urx, ury);
 
     auto& intersect_layouts = sub_layout->get_intersect_layouts();
-    for (auto query_sub_layout : query_sub_layouts) {
+    for (auto& [bg_rect, query_sub_layout] : query_sub_layouts) {
       intersect_layouts.insert(std::make_pair(query_sub_layout->get_id(), query_sub_layout));
       if (false == query_sub_layout->hasChecked(sub_layout->get_id()) && false == sub_layout->hasChecked(query_sub_layout->get_id())) {
         query_sub_layout->markChecked(sub_layout->get_id());
@@ -145,18 +145,13 @@ void DrcEngineLayout::addRTreeSubLayout(DrcEngineSubLayout* sub_layout)
   _query_tree.insert(std::make_pair(rtree_rect, sub_layout));
 }
 
-std::set<DrcEngineSubLayout*> DrcEngineLayout::querySubLayouts(int llx, int lly, int urx, int ury)
+std::vector<std::pair<ieda_solver::BgRect, DrcEngineSubLayout*>> DrcEngineLayout::querySubLayouts(int llx, int lly, int urx, int ury)
 {
-  std::set<DrcEngineSubLayout*> sub_layouts;
-
   std::vector<std::pair<ieda_solver::BgRect, DrcEngineSubLayout*>> result;
   ieda_solver::BgRect rect(ieda_solver::BgPoint(llx, lly), ieda_solver::BgPoint(urx, ury));
   _query_tree.query(bg::index::intersects(rect), std::back_inserter(result));
-  for (auto& [bg_rect, sub_layout] : result) {
-    sub_layouts.insert(sub_layout);
-  }
 
-  return sub_layouts;
+  return result;
 }
 
 std::set<int> DrcEngineLayout::querySubLayoutNetId(int llx, int lly, int urx, int ury)
@@ -164,7 +159,7 @@ std::set<int> DrcEngineLayout::querySubLayoutNetId(int llx, int lly, int urx, in
   std::set<int> net_ids;
 
   auto sub_layouts = querySubLayouts(llx, lly, urx, ury);
-  for (auto sub_layout : sub_layouts) {
+  for (auto& [bg_rect, sub_layout] : sub_layouts) {
     if (sub_layout == nullptr) {
       continue;
     }

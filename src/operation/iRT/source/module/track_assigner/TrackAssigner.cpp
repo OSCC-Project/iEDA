@@ -1194,7 +1194,10 @@ void TrackAssigner::printSummary(TAModel& ta_model)
     routing_violation_num_map_table << fort::header << "Total" << total_violation_num
                                     << RTUTIL.getPercentage(total_violation_num, total_violation_num) << fort::endr;
   }
-  RTUTIL.printTableList({routing_wire_length_map_table, routing_violation_num_map_table});
+  std::vector<fort::char_table> table_list;
+  table_list.push_back(routing_wire_length_map_table);
+  table_list.push_back(routing_violation_num_map_table);
+  RTUTIL.printTableList(table_list);
 }
 
 void TrackAssigner::writeNetCSV(TAModel& ta_model)

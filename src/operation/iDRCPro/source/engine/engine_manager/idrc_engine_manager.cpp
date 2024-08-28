@@ -163,18 +163,19 @@ void DrcEngineManager::filterData()
     }
 
     DEBUGOUTPUT("Need to check layer:\t" << layer);
+
     // overlap
     _condition_manager->checkOverlap(layer, layout);
 
-    // // min spacing
+    // min spacing
     _condition_manager->checkMinSpacing(layer, layout);
 
-    // // jog and prl
+    // jog and prl
     _condition_manager->checkParallelLengthSpacing(layer, layout);
-    // _condition_manager->checkJogToJogSpacing(layer, layout);
+    _condition_manager->checkJogToJogSpacing(layer, layout);
 
     // edge
-    // _condition_manager->checkPolygons(layer, layout);
+    _condition_manager->checkPolygons(layer, layout);
   }
 
   for (auto& [layer, layout] : get_engine_layouts(LayoutType::kCut)) {

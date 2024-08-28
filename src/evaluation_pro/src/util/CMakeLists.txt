@@ -34,13 +34,16 @@ target_include_directories(eval_pro_util_init_flute
 
 # iSTA
 add_library(eval_pro_util_init_ista
-    ${EVAL_PRO_UTIL}/init_sta.cpp
+    ${EVAL_PRO_UTIL}/init_sta.cc
 )
 
 target_link_libraries(eval_pro_util_init_ista
     PRIVATE
+        ieda_feature
         idm
+        irt_interface
         ista-engine
+        power
 )
 
 target_include_directories(eval_pro_util_init_ista

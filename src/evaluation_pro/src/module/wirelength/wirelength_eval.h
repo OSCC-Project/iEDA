@@ -21,7 +21,7 @@ class WirelengthEval
   int32_t evalNetVTree(PointSet point_set);
 
   int32_t evalPathHPWL(PointSet point_set, PointPair point_pair);
-  int32_t evalPathFLUTE(PointSet point_set, PointPair point_pair);
+  int32_t evalPathFLUTE(PointSet runEGRpoint_set, PointPair point_pair);
   int32_t evalPathHTree(PointSet point_set, PointPair point_pair);
   int32_t evalPathVTree(PointSet point_set, PointPair point_pair);
 

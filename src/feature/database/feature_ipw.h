@@ -16,14 +16,12 @@
 // ***************************************************************************************
 #pragma once
 
-#include <tcl_util.h>
+namespace ieda_feature {
 
-namespace python_interface {
+struct PowerInfo
+{
+  double static_power = 0.0;
+  double dynamic_power = 0.0;
+};
 
-bool destroyRT();
-bool initRT(std::string& config, std::map<std::string, std::string>& config_dict);
-bool runDR();
-bool runEGR();
-bool runRT();
-
-}  // namespace python_interface
+}  // namespace ieda_feature
