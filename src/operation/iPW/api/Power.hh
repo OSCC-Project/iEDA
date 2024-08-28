@@ -45,7 +45,7 @@ class Power {
   static Power* getOrCreatePower(StaGraph* sta_graph);
   static void destroyPower();
 
-  void set_design_work_space(const char* design_work_space);
+  void set_design_work_space(const char* design_work_space) { _design_work_space = design_work_space; }
   const char* get_design_work_space() { return _design_work_space.c_str(); }
 
   auto& get_fastest_clock() { return _power_graph.get_fastest_clock(); }

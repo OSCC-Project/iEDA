@@ -10,6 +10,7 @@ target_link_libraries(tcl_ipw
         tcl
         shell-cmd
         str
+        pwr-cmd
 )
 
 target_include_directories(tcl_ipw
