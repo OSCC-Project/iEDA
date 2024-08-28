@@ -1,5 +1,5 @@
 /**
- * @file timing_db.h
+ * @file timing_db.hh
  * @author Dawn Li (dawnli619215645@gmail.com)
  * @version 1.0
  * @date 2024-08-28
@@ -10,6 +10,7 @@
 
 #include <map>
 #include <string>
+#include <vector>
 
 namespace ieval {
 struct ClockTiming

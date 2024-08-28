@@ -39,7 +39,7 @@ enum class RoutingType
 class InitSTA
 {
  public:
-  InitSTA(const RoutingType& routing_type) {}
+  InitSTA(const RoutingType& routing_type) : _routing_type(routing_type) {}
   ~InitSTA();
 
   void runSTA();
