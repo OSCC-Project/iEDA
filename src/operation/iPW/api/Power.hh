@@ -45,6 +45,9 @@ class Power {
   static Power* getOrCreatePower(StaGraph* sta_graph);
   static void destroyPower();
 
+  void set_design_work_space(const char* design_work_space);
+  const char* get_design_work_space() { return _design_work_space.c_str(); }
+
   auto& get_fastest_clock() { return _power_graph.get_fastest_clock(); }
   void setFastestClock(const char* clock_name, double clock_period_ns) {
     _power_graph.setFastestClock(clock_name, clock_period_ns);
@@ -84,11 +87,14 @@ class Power {
   unsigned calcSwitchPower();
   unsigned analyzeGroupPower();
   unsigned updatePower();
+
   unsigned reportSummaryPower(const char* rpt_file_name,
                               PwrAnalysisMode pwr_analysis_mode);
   unsigned reportInstancePower(const char* rpt_file_name,
                                PwrAnalysisMode pwr_analysis_mode);
   unsigned reportInstancePowerCSV(const char* rpt_file_name);
+
+  unsigned reportPower(bool is_copy = true);
 
   unsigned runCompleteFlow();
 
@@ -96,10 +102,13 @@ class Power {
   auto& get_internal_powers() { return _internal_powers; }
   auto& get_switch_powers() { return _switch_powers; }
   auto& get_obj_to_datas() { return _obj_to_datas; }
+  auto* getObjData(DesignObject* design_obj) {
+    return _obj_to_datas.contains(design_obj) ? _obj_to_datas[design_obj].get()
+                                              : nullptr;
+  }
 
   auto& get_type_to_group_data() { return _type_to_group_data; }
 
- private:
   std::optional<PwrGroupData::PwrGroupType> getInstPowerGroup(
       Instance* the_inst);
   void addGroupData(std::unique_ptr<PwrGroupData> group_data) {
@@ -107,6 +116,9 @@ class Power {
         group_data.get());
     _obj_to_datas[group_data->get_obj()] = std::move(group_data);
   }
+
+ private:
+  std::string _design_work_space; // The power report work space.
 
   PwrGraph _power_graph;         //< The power graph, mapped to sta graph.
   PwrSeqGraph _power_seq_graph;  //!< The power sequential graph, vertex is
@@ -121,8 +133,6 @@ class Power {
       _switch_powers;  //!< The switch power.
 
   std::map<DesignObject*, std::unique_ptr<PwrGroupData>> _obj_to_datas;
-  // std::vector<std::unique_ptr<PwrGroupData>> _group_datas;  //!< The group
-  // data.
   std::map<PwrGroupData::PwrGroupType, std::vector<PwrGroupData*>>
       _type_to_group_data;  //!< The mapping of type to group data.
 
