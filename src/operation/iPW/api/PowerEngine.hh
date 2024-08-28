@@ -68,6 +68,8 @@ class PowerEngine {
     return _timing_engine;
   }
 
+  bool isBuildGraph() { return _ipower->isBuildGraph(); }
+
   // api for dataflow, first is create seq graph, second is get cluster
   // connection for the max hop.
   unsigned creatDataflow();

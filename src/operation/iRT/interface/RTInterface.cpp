@@ -1173,7 +1173,7 @@ void RTInterface::updateTimingAndPower(std::vector<std::map<std::string, std::ve
   };
   auto initPowerEngine = []() {
     auto* power_engine = ipower::PowerEngine::getOrCreatePowerEngine();
-    if (true) {
+    if (!power_engine->isBuildGraph()) {
       power_engine->get_power()->initPowerGraphData();
       power_engine->get_power()->initToggleSPData();
     }
