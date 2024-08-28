@@ -1165,10 +1165,9 @@ void RTInterface::updateTimingAndPower(std::vector<std::map<std::string, std::ve
       db_adapter->convertDBToTimingNetlist();
       timing_engine->set_db_adapter(std::move(db_adapter));
       timing_engine->readSdc(dmInst->get_config().get_sdc_path().c_str());
-      timing_engine->initRcTree();
       timing_engine->buildGraph();
-      timing_engine->updateTiming();
     }
+    timing_engine->initRcTree();
     return timing_engine;
   };
   auto initPowerEngine = []() {
