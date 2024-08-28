@@ -1155,10 +1155,10 @@ void RTInterface::updateTimingAndPower(std::vector<std::map<std::string, std::ve
 #endif
 
 #if 1  // 函数定义
-  auto initTimingEngine = [](std::string sta_workspace, int32_t thread_number) {
+  auto initTimingEngine = [](std::string workspace) {
     ista::TimingEngine* timing_engine = ista::TimingEngine::getOrCreateTimingEngine();
     if (!timing_engine->isBuildGraph()) {
-      timing_engine->set_design_work_space(sta_workspace.c_str());
+      timing_engine->set_design_work_space(workspace.c_str());
       timing_engine->readLiberty(dmInst->get_config().get_lib_paths());
       auto db_adapter = std::make_unique<ista::TimingIDBAdapter>(timing_engine->get_ista());
       db_adapter->set_idb(dmInst->get_idb_builder());
@@ -1170,9 +1170,10 @@ void RTInterface::updateTimingAndPower(std::vector<std::map<std::string, std::ve
     timing_engine->initRcTree();
     return timing_engine;
   };
-  auto initPowerEngine = []() {
+  auto initPowerEngine = [](std::string workspace) {
     auto* power_engine = ipower::PowerEngine::getOrCreatePowerEngine();
     if (!power_engine->isBuildGraph()) {
+      // power_engine->set_design_work_space(workspace.c_str());
       power_engine->get_power()->initPowerGraphData();
       power_engine->get_power()->initToggleSPData();
     }
@@ -1293,9 +1294,8 @@ void RTInterface::updateTimingAndPower(std::vector<std::map<std::string, std::ve
 #if 1  // 主流程
   std::vector<Net>& net_list = RTDM.getDatabase().get_net_list();
   std::string& temp_directory_path = RTDM.getConfig().temp_directory_path;
-  int32_t thread_number = RTDM.getConfig().thread_number;
 
-  ista::TimingEngine* timing_engine = initTimingEngine(RTUTIL.getString(temp_directory_path, "sta/"), thread_number);
+  ista::TimingEngine* timing_engine = initTimingEngine(RTUTIL.getString(temp_directory_path, "ista/"));
   ista::Netlist* sta_net_list = timing_engine->get_netlist();
 
   for (size_t net_idx = 0; net_idx < coord_real_pin_map_list.size(); net_idx++) {
@@ -1341,7 +1341,7 @@ void RTInterface::updateTimingAndPower(std::vector<std::map<std::string, std::ve
     clock_timing[clk_name]["WNS"] = setup_wns;
     clock_timing[clk_name]["Freq(MHz)"] = suggest_freq;
   });
-  ipower::PowerEngine* power_engine = initPowerEngine();
+  ipower::PowerEngine* power_engine = initPowerEngine(RTUTIL.getString(temp_directory_path, "ipower/"));
   power_engine->get_power()->updatePower();
 
   double static_power = 0;
