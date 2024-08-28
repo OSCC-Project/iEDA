@@ -37,7 +37,6 @@ InitSTA::~InitSTA()
 
 void InitSTA::runSTA()
 {
-
 }
 
 void InitSTA::embeddingSTA()
@@ -71,9 +70,8 @@ void InitSTA::initStaEngine()
   sta_db_adapter->convertDBToTimingNetlist();
   STA_INST->set_db_adapter(std::move(sta_db_adapter));
   STA_INST->readSdc(dmInst->get_config().get_sdc_path().c_str());
-  STA_INST->initRcTree();
   STA_INST->buildGraph();
-  STA_INST->updateTiming();
+  STA_INST->initRcTree();
 }
 
 void InitSTA::initPowerEngine()
