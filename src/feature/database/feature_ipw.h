@@ -16,19 +16,12 @@
 // ***************************************************************************************
 #pragma once
 
-#include <cstdint>
-#include <string>
-
 namespace ieda_feature {
 
-struct ClockTiming
+struct PowerInfo
 {
-  std::string clock_name;
-  double setup_tns;
-  double setup_wns;
-  double hold_tns;
-  double hold_wns;
-  double suggest_freq;
+  double static_power = 0.0;
+  double dynamic_power = 0.0;
 };
 
 }  // namespace ieda_feature
