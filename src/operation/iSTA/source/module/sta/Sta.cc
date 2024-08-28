@@ -2408,7 +2408,7 @@ unsigned Sta::reportTiming(std::set<std::string> &&exclude_cell_names /*= {}*/,
   std::string now_time = Time::getNowWallTime();
   std::string tmp = Str::replace(now_time, ":", "_");
   std::string copy_design_work_space =
-      Str::printf("%s_%s", design_work_space, tmp.c_str());
+      Str::printf("%s_sta_%s", design_work_space, tmp.c_str());
 
   LOG_INFO << "start write sta report.";
   LOG_INFO << "output sta report path: " << design_work_space;

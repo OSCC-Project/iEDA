@@ -31,7 +31,7 @@
 
 #ifdef TCL_USERSHELL
 // #include "sdc-cmd/Cmd.hh"
-#include "shell-cmd/ShellCmd.hh"
+#include "shell-cmd/PowerShellCmd.hh"
 #endif
 
 using namespace ieda;
@@ -40,6 +40,8 @@ namespace tcl {
 int registerCmdPower()
 {
   registerTclCmd(CmdPowerRun, "run_power");
+
+  registerTclCmd(ipower::CmdSetPwrDesignWorkSpace, "set_pwr_design_workspace");
 
   return EXIT_SUCCESS;
 }

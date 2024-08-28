@@ -23,7 +23,6 @@
  */
 
 #include "PwrCalcSwitchPower.hh"
-
 #include "core/PwrSeqGraph.hh"
 
 namespace ipower {
@@ -102,9 +101,10 @@ unsigned PwrCalcSwitchPower::operator()(PwrGraph* the_graph) {
 
     auto* driver_obj = net->getDriver();
 
-    if (driver_obj->isPort() && ((net->getLoads().size() == 1) && net->getLoads().front()->isPort())) {
+    if (driver_obj->isPort() &&
+        ((net->getLoads().size() == 1) && net->getLoads().front()->isPort())) {
       continue;
-    }    
+    }
 
     auto* the_sta_graph = the_graph->get_sta_graph();
     auto driver_sta_vertex = the_sta_graph->findVertex(driver_obj);
