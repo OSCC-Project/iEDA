@@ -15,7 +15,7 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 /**
- * @file init_sta.h
+ * @file init_sta.hh
  * @author Dawn Li (dawnli619215645@gmail.com)
  * @version 1.0
  * @date 2024-08-25
@@ -28,20 +28,18 @@
 namespace ieval {
 enum class RoutingType
 {
-  WLM,
-  HPWL,
-  FLUTE,
-  EGR,
-  DR
-}
+  kNone,
+  kWLM,
+  kHPWL,
+  kFLUTE,
+  kEGR,
+  kDR
+};
 
 class InitSTA
 {
  public:
-  InitSTA(const std::string& work_dir, const RoutingType& routing_type, const unsigned& num_threads = 1, const unsigned& n_worst = 10)
-      : _work_dir(work_dir), _num_threads(num_threads), _n_worst(n_worst)
-  {
-  }
+  InitSTA(const RoutingType& routing_type) {}
   ~InitSTA();
 
   void runSTA();
@@ -49,16 +47,19 @@ class InitSTA
   std::map<std::string, std::map<std::string, double>> getTiming() { return _timing; }
   std::map<std::string, double> getPower() { return _power; }
 
+  double evalNetPower(const std::string& net_name) const;
+  std::map<std::string, double> evalAllNetPower() const;
+
  private:
+  void callRT();
+  void getInfoFromRT();
   void embeddingSTA();
   void initStaEngine();
+  void buildRCTree();
   void initPowerEngine();
   void getInfoFromSTA();
   void getInfoFromPW();
-  std::string _work_dir = "";
-  RoutingType _routing_type = RoutingType::WLM;
-  unsigned _num_threads = 1;
-  unsigned _n_worst = 10;
+  RoutingType _routing_type = RoutingType::kWLM;
 
   std::map<std::string, std::map<std::string, double>> _timing;
   std::map<std::string, double> _power;

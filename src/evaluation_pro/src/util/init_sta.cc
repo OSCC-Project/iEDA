@@ -15,20 +15,24 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 /**
- * @file init_sta.cpp
+ * @file init_sta.cc
  * @author Dawn Li (dawnli619215645@gmail.com)
  * @version 1.0
  * @date 2024-08-25
  */
 
-#include "init_sta.h"
+#include "init_sta.hh"
 
-#include "TimingEngine.hh"
+#include "RTInterface.hpp"
+#include "api/PowerEngine.hh"
+#include "api/TimingEngine.hh"
+#include "api/TimingIDBAdapter.hh"
+#include "feature_irt.h"
 #include "idm.h"
-
 namespace ieval {
-#define STA_INST ista::TimingEngine::getOrCreateTimingEngine()
-#define PW_INST ipower::PowerEngine::getOrCreatePowerEngine()
+#define STA_INST (ista::TimingEngine::getOrCreateTimingEngine())
+#define RT_INST (irt::RTInterface::getInst())
+#define PW_INST (ipower::PowerEngine::getOrCreatePowerEngine())
 InitSTA::~InitSTA()
 {
   PW_INST->destroyPowerEngine();
@@ -37,17 +41,73 @@ InitSTA::~InitSTA()
 
 void InitSTA::runSTA()
 {
+  if (_routing_type == RoutingType::kEGR || _routing_type == RoutingType::kDR) {
+    callRT();
+    return;
+  }
+  embeddingSTA();
+}
+
+double InitSTA::evalNetPower(const std::string& net_name) const
+{
+  for (const auto& data : PW_INST->get_power()->get_switch_powers()) {
+    auto* net = dynamic_cast<ista::Net*>(data->get_design_obj());
+    if (net->get_name() != net_name) {
+      continue;
+    }
+    return data->get_switch_power();
+  }
+  return 0;
+}
+
+std::map<std::string, double> InitSTA::evalAllNetPower() const
+{
+  std::map<std::string, double> power_map;
+  for (const auto& data : PW_INST->get_power()->get_switch_powers()) {
+    auto* net = dynamic_cast<ista::Net*>(data->get_design_obj());
+    power_map[net->get_name()] = data->get_switch_power();
+  }
+  return power_map;
+}
+
+void InitSTA::callRT()
+{
+  LOG_FATAL_IF(_routing_type != RoutingType::kEGR && _routing_type != RoutingType::kDR) << "Unsupported routing type";
+  std::map<std::string, std::any> config_map;
+  config_map.insert({"-enable_timing", 1});
+  RT_INST.initRT(config_map);
+
+  if (_routing_type == RoutingType::kEGR) {
+    RT_INST.runEGR();
+  } else if (_routing_type == RoutingType::kDR) {
+    RT_INST.runRT();
+  }
+
+  getInfoFromRT();
+}
+
+void InitSTA::getInfoFromRT()
+{
+  LOG_FATAL_IF(_routing_type != RoutingType::kEGR && _routing_type != RoutingType::kDR) << "Unsupported routing type";
+  auto summary = RT_INST.outputSummary();
+  auto clocks_timing
+      = _routing_type == RoutingType::kEGR ? summary.ir_summary.clocks_timing : summary.iter_dr_summary_map.rbegin()->second.clocks_timing;
+  auto power_info
+      = _routing_type == RoutingType::kEGR ? summary.ir_summary.power_info : summary.iter_dr_summary_map.rbegin()->second.power_info;
+  for (auto clock_timing : clocks_timing) {
+    auto clk_name = clock_timing.clock_name;
+    _timing[clk_name]["TNS"] = clock_timing.setup_tns;
+    _timing[clk_name]["WNS"] = clock_timing.setup_wns;
+    _timing[clk_name]["Freq(MHz)"] = clock_timing.suggest_freq;
+  }
+  _power["static_power"] = power_info.static_power;
+  _power["dynamic_power"] = power_info.dynamic_power;
 }
 
 void InitSTA::embeddingSTA()
 {
   initStaEngine();
-  // TODO: build rc tree for each net
-
-  // report timing
-  STA_INST->updateTiming();
-
-  // report power
+  buildRCTree();
   initPowerEngine();
 
   // get timing and power
@@ -57,10 +117,6 @@ void InitSTA::embeddingSTA()
 
 void InitSTA::initStaEngine()
 {
-  STA_INST->set_design_work_space(_work_dir.c_str());
-  STA_INST->set_num_threads(_num_threads);
-  STA_INST->get_ista()->set_n_worst_path_per_clock(_n_worst);
-
   if (STA_INST->isBuildGraph()) {
     return;
   }
@@ -72,6 +128,13 @@ void InitSTA::initStaEngine()
   STA_INST->readSdc(dmInst->get_config().get_sdc_path().c_str());
   STA_INST->buildGraph();
   STA_INST->initRcTree();
+}
+
+void InitSTA::buildRCTree()
+{
+  LOG_FATAL_IF(_routing_type != RoutingType::kWLM && _routing_type != RoutingType::kHPWL && _routing_type != RoutingType::kFLUTE)
+      << "Unsupported routing type";
+  STA_INST->updateTiming();
 }
 
 void InitSTA::initPowerEngine()
