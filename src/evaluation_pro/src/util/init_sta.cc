@@ -194,7 +194,6 @@ void InitSTA::buildRCTree()
     }
 
     if (_routing_type == RoutingType::kHPWL) {
-      LOG_ERROR << "STA does not support WLM, TBD...";
       auto* driver = sta_net->getDriver();
       auto driver_loc = idb_adapter->idbLocation(driver);
       auto front_node = STA_INST->makeOrFindRCTreeNode(driver);
