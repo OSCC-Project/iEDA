@@ -48,7 +48,7 @@ NetMapSummary DensityAPI::netDensityMap(DensityNets nets, DensityRegion region, 
   return net_map_summary;
 }
 
-CellReportSummary DensityAPI::cellDensityReport(int32_t threshold)
+CellReportSummary DensityAPI::cellDensityReport(float threshold)
 {
   CellReportSummary cell_report_summary;
 
@@ -60,7 +60,7 @@ CellReportSummary DensityAPI::cellDensityReport(int32_t threshold)
   return cell_report_summary;
 }
 
-PinReportSummary DensityAPI::pinDensityReport(int32_t threshold)
+PinReportSummary DensityAPI::pinDensityReport(float threshold)
 {
   PinReportSummary pin_report_summary;
 
@@ -72,14 +72,14 @@ PinReportSummary DensityAPI::pinDensityReport(int32_t threshold)
   return pin_report_summary;
 }
 
-NetReportSummary DensityAPI::netDensityReport(int32_t threshold)
+NetReportSummary DensityAPI::netDensityReport(float threshold)
 {
   NetReportSummary net_report_summary;
 
   DensityEval density_eval;
   net_report_summary.local_net_density = density_eval.reportLocalNetDensity(threshold);
   net_report_summary.global_net_density = density_eval.reportGlobalNetDensity(threshold);
-  net_report_summary.all_net_density = density_eval.reportAllNetDensity(threshold);
+  net_report_summary.allnet_density = density_eval.reportAllNetDensity(threshold);
 
   return net_report_summary;
 }

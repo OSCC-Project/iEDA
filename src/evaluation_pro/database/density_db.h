@@ -84,7 +84,7 @@ struct NetReportSummary
 {
   string local_net_density;
   string global_net_density;
-  string all_net_density;
+  string allnet_density;
 };
 
 }  // namespace ieval

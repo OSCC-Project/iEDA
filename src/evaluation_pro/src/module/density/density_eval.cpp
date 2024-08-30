@@ -65,49 +65,49 @@ std::string DensityEval::evalAllNetDensity(DensityNets nets, DensityRegion regio
   return evalNetDensity(nets, region, grid_size, "all", "allnet_density.csv");
 }
 
-std::string DensityEval::reportMacroDensity(int32_t threshold)
+std::string DensityEval::reportMacroDensity(float threshold)
 {
   return "macro_density_report.csv";
 }
 
-std::string DensityEval::reportStdCellDensity(int32_t threshold)
+std::string DensityEval::reportStdCellDensity(float threshold)
 {
   return "stdcell_density_report.csv";
 }
 
-std::string DensityEval::reportAllCellDensity(int32_t threshold)
+std::string DensityEval::reportAllCellDensity(float threshold)
 {
   return "allcell_density_report.csv";
 }
 
-std::string DensityEval::reportMacroPinDensity(int32_t threshold)
+std::string DensityEval::reportMacroPinDensity(float threshold)
 {
   return "macro_pin_density_report.csv";
 }
 
-std::string DensityEval::reportStdCellPinDensity(int32_t threshold)
+std::string DensityEval::reportStdCellPinDensity(float threshold)
 {
   return "stdcell_pin_density_report.csv";
 }
 
-std::string DensityEval::reportAllCellPinDensity(int32_t threshold)
+std::string DensityEval::reportAllCellPinDensity(float threshold)
 {
   return "allcell_pin_density_report.csv";
 }
 
-std::string DensityEval::reportLocalNetDensity(int32_t threshold)
+std::string DensityEval::reportLocalNetDensity(float threshold)
 {
   return "local_net_density_report.csv";
 }
 
-std::string DensityEval::reportGlobalNetDensity(int32_t threshold)
+std::string DensityEval::reportGlobalNetDensity(float threshold)
 {
   return "global_net_density_report.csv";
 }
 
-std::string DensityEval::reportAllNetDensity(int32_t threshold)
+std::string DensityEval::reportAllNetDensity(float threshold)
 {
-  return "all_net_density_report.csv";
+  return "allnet_density_report.csv";
 }
 
 std::string DensityEval::evalDensity(DensityCells cells, DensityRegion region, int32_t grid_size, std::string cell_type,
@@ -150,7 +150,8 @@ std::string DensityEval::evalDensity(DensityCells cells, DensityRegion region, i
 
   std::ofstream csv_file(output_filename);
 
-  for (const auto& row : density_grid) {
+  for (size_t row_index = density_grid.size(); row_index-- > 0;) {
+    const auto& row = density_grid[row_index];
     for (size_t i = 0; i < row.size(); ++i) {
       csv_file << std::fixed << std::setprecision(6) << row[i];
       if (i < row.size() - 1)
@@ -200,9 +201,10 @@ std::string DensityEval::evalPinDensity(DensityPins pins, DensityRegion region, 
 
   ofstream csv_file(output_filename);
 
-  for (const auto& row : density_grid) {
+  for (size_t row_index = density_grid.size(); row_index-- > 0;) {
+    const auto& row = density_grid[row_index];
     for (size_t i = 0; i < row.size(); ++i) {
-      csv_file << fixed << setprecision(6) << row[i];
+      csv_file << std::fixed << std::setprecision(6) << row[i];
       if (i < row.size() - 1)
         csv_file << ",";
     }
@@ -245,7 +247,7 @@ std::string DensityEval::evalNetDensity(DensityNets nets, DensityRegion region, 
 
   ofstream csv_file(output_filename);
 
-  for (int32_t row = 0; row < grid_rows; ++row) {
+  for (int32_t row = grid_rows - 1; row >= 0; --row) {
     for (int32_t col = 0; col < grid_cols; ++col) {
       int32_t grid_lx = region.lx + col * grid_size;
       int32_t grid_ly = region.ly + row * grid_size;

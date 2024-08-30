@@ -13,9 +13,9 @@ class DensityAPI
   PinMapSummary pinDensityMap(DensityPins pins, DensityRegion region, int32_t grid_size);
   NetMapSummary netDensityMap(DensityNets nets, DensityRegion region, int32_t grid_size);
 
-  CellReportSummary cellDensityReport(int32_t threshold);
-  PinReportSummary pinDensityReport(int32_t threshold);
-  NetReportSummary netDensityReport(int32_t threshold);
+  CellReportSummary cellDensityReport(float threshold);
+  PinReportSummary pinDensityReport(float threshold);
+  NetReportSummary netDensityReport(float threshold);
 };
 
 }  // namespace ieval
