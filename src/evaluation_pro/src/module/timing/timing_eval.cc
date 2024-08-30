@@ -13,7 +13,7 @@ namespace ieval {
 TimingSummary TimingEval::evalDesign()
 {
   TimingSummary summary;
-  auto timing_map = _init_sta.getTiming();
+  auto timing_map = _init_sta->getTiming();
   for (const auto& [clock_name, timing_info] : timing_map) {
     ClockTiming clock_timing;
     clock_timing.clock_name = clock_name;
@@ -22,7 +22,7 @@ TimingSummary TimingEval::evalDesign()
     clock_timing.suggest_freq = timing_info.at("Freq(MHz)");
     summary.timing.push_back(clock_timing);
   }
-  auto power_map = _init_sta.getPower();
+  auto power_map = _init_sta->getPower();
   summary.static_power = power_map.at("static_power");
   summary.dynamic_power = power_map.at("dynamic_power");
   return summary;
@@ -30,10 +30,10 @@ TimingSummary TimingEval::evalDesign()
 
 double TimingEval::evalNetPower(const std::string& net_name) const
 {
-  return _init_sta.evalNetPower(net_name);
+  return _init_sta->evalNetPower(net_name);
 }
 std::map<std::string, double> TimingEval::evalAllNetPower() const
 {
-  return _init_sta.evalAllNetPower();
+  return _init_sta->evalAllNetPower();
 }
 }  // namespace ieval

@@ -5,10 +5,11 @@
  * @date 2024-08-28
  * @brief evaluation with timing & power
  */
+#include <memory>
 #include <vector>
 
 #include "init_sta.hh"
-#include "timing_db.h"
+#include "timing_db.hh"
 namespace ieval {
 
 class TimingEval
@@ -16,16 +17,16 @@ class TimingEval
  public:
   TimingEval(const std::string& routing_type) : _routing_type(routing_type)
   {
-    auto type = _routing_type == "WLM"     ? RoutingType::kWLM
-                : _routing_type == "HPWL"  ? RoutingType::kHPWL
-                : _routing_type == "FLUTE" ? RoutingType::kFLUTE
-                : _routing_type == "EGR"   ? RoutingType::kEGR
-                : _routing_type == "DR"    ? RoutingType::kDR
-                                           : RoutingType::kNone;
-    _init_sta = InitSTA(type);
-    _init_sta.runSTA();
+    RoutingType type = _routing_type == "WLM"     ? RoutingType::kWLM
+                       : _routing_type == "HPWL"  ? RoutingType::kHPWL
+                       : _routing_type == "FLUTE" ? RoutingType::kFLUTE
+                       : _routing_type == "EGR"   ? RoutingType::kEGR
+                       : _routing_type == "DR"    ? RoutingType::kDR
+                                                  : RoutingType::kNone;
+    _init_sta = std::make_unique<InitSTA>(type);
+    _init_sta->runSTA();
   }
-  ~TimingEval();
+  ~TimingEval() = default;
 
   TimingSummary evalDesign();
 
@@ -34,7 +35,7 @@ class TimingEval
 
  private:
   std::string _routing_type = "WLM";  // RoutingType::kWLM, kHPWL, kFLUTE, kEGR, kDR
-  InitSTA _init_sta;
+  std::unique_ptr<InitSTA> _init_sta;
 };
 
 }  // namespace ieval

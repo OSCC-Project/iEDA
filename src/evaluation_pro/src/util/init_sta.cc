@@ -29,6 +29,8 @@
 #include "api/TimingIDBAdapter.hh"
 #include "feature_irt.h"
 #include "idm.h"
+#include "salt/base/flute.h"
+#include "salt/salt.h"
 namespace ieval {
 #define STA_INST (ista::TimingEngine::getOrCreateTimingEngine())
 #define RT_INST (irt::RTInterface::getInst())
@@ -134,6 +136,132 @@ void InitSTA::buildRCTree()
 {
   LOG_FATAL_IF(_routing_type != RoutingType::kWLM && _routing_type != RoutingType::kHPWL && _routing_type != RoutingType::kFLUTE)
       << "Unsupported routing type";
+
+  auto* idb_adapter = dynamic_cast<ista::TimingIDBAdapter*>(STA_INST->get_db_adapter());
+
+  // init
+  // 1. wirelength calculation
+  auto* idb = dmInst->get_idb_builder();
+  auto* idb_design = idb->get_def_service()->get_design();
+  auto dbu = idb_design->get_units()->get_micron_dbu();
+
+  auto calc_length = [&](const int64_t& x1, const int64_t& y1, const int64_t& x2, const int64_t& y2) {
+    // Manhattan distance
+    auto dist = std::abs(x1 - x2) + std::abs(y1 - y2);
+    return 1.0 * dist / dbu;
+  };
+
+  // 2. cap and res calculation, if is clock net, return the last layer, otherwise return the first layer
+
+  std::optional<double> width = std::nullopt;
+  auto* idb_layout = dmInst->get_idb_lef_service()->get_layout();
+  auto routing_layers = idb_layout->get_layers()->get_routing_layers();
+  auto calc_res = [&](const bool& is_clock, const double& wirelength) {
+    if (!is_clock) {
+      return idb_adapter->getResistance(1, wirelength, width);
+    }
+    return idb_adapter->getResistance(routing_layers.size(), wirelength, width);
+  };
+  auto calc_cap = [&](const bool& is_clock, const double& wirelength) {
+    if (!is_clock) {
+      return idb_adapter->getCapacitance(1, wirelength, width);
+    }
+    return idb_adapter->getCapacitance(routing_layers.size(), wirelength, width);
+  };
+
+  // main flow
+  auto* netlist = STA_INST->get_netlist();
+  ista::Net* sta_net = nullptr;
+  FOREACH_NET(netlist, sta_net)
+  {
+    STA_INST->resetRcTree(sta_net);
+    // WLM
+    if (_routing_type == RoutingType::kWLM) {
+      LOG_ERROR << "STA does not support WLM, TBD...";
+      auto* driver = sta_net->getDriver();
+      auto front_node = STA_INST->makeOrFindRCTreeNode(driver);
+
+      double res = 0;  // rc TBD
+      double cap = 0;  // rc TBD
+
+      auto loads = sta_net->getLoads();
+      for (auto load : loads) {
+        auto back_node = STA_INST->makeOrFindRCTreeNode(load);
+        STA_INST->makeResistor(sta_net, front_node, back_node, res);
+        STA_INST->incrCap(front_node, cap / 2, true);
+        STA_INST->incrCap(back_node, cap / 2, true);
+      }
+    }
+
+    if (_routing_type == RoutingType::kHPWL) {
+      auto* driver = sta_net->getDriver();
+      auto driver_loc = idb_adapter->idbLocation(driver);
+      auto front_node = STA_INST->makeOrFindRCTreeNode(driver);
+
+      auto loads = sta_net->getLoads();
+      for (auto load : loads) {
+        auto load_loc = idb_adapter->idbLocation(load);
+        auto wirelength = calc_length(driver_loc->get_x(), driver_loc->get_y(), load_loc->get_x(), load_loc->get_y());
+        double res = calc_res(sta_net->isClockNet(), wirelength);
+        double cap = calc_cap(sta_net->isClockNet(), wirelength);
+        auto back_node = STA_INST->makeOrFindRCTreeNode(load);
+        STA_INST->makeResistor(sta_net, front_node, back_node, res);
+        STA_INST->incrCap(front_node, cap / 2, true);
+        STA_INST->incrCap(back_node, cap / 2, true);
+      }
+    }
+
+    if (_routing_type == RoutingType::kFLUTE) {
+      // Flute
+      std::vector<ista::DesignObject*> pin_ports = {sta_net->getDriver()};
+      pin_ports.insert(pin_ports.end(), sta_net->getLoads().begin(), sta_net->getLoads().end());
+
+      // makr rc node
+      auto make_rc_node = [&](const std::shared_ptr<salt::TreeNode>& salt_node) {
+        if (salt_node->pin) {
+          return STA_INST->makeOrFindRCTreeNode(pin_ports[salt_node->id]);
+        }
+        // steiner node
+        return STA_INST->makeOrFindRCTreeNode(sta_net, salt_node->id);
+      };
+
+      std::vector<std::shared_ptr<salt::Pin>> salt_pins;
+      for (size_t i = 0; i < pin_ports.size(); ++i) {
+        auto pin_port = pin_ports[i];
+        auto* idb_loc = idb_adapter->idbLocation(pin_port);
+        LOG_ERROR_IF(idb_loc == nullptr) << "The location of pin port is not found.";
+        LOG_ERROR_IF(idb_loc->is_negative()) << "The location of pin port is negative.";
+        auto pin = std::make_shared<salt::Pin>(i, idb_loc->get_x(), idb_loc->get_y());
+      }
+      salt::Net salt_net;
+      salt_net.init(0, "net", salt_pins);
+
+      salt::Tree salt_tree;
+      salt::FluteBuilder flute_builder;
+      flute_builder.Run(salt_net, salt_tree);
+      salt_tree.UpdateId();
+
+      auto source = salt_tree.source;
+      auto build_rc_tree = [&](const std::shared_ptr<salt::TreeNode>& salt_node) {
+        if (salt_node->id == source->id) {
+          return;
+        }
+        auto parent_salt_node = salt_node->parent;
+        auto front_node = make_rc_node(parent_salt_node);
+        auto back_node = make_rc_node(salt_node);
+        auto wirelength = calc_length(parent_salt_node->loc.x, parent_salt_node->loc.y, salt_node->loc.x, salt_node->loc.y);
+        auto res = calc_res(sta_net->isClockNet(), wirelength);
+        auto cap = calc_cap(sta_net->isClockNet(), wirelength);
+
+        STA_INST->makeResistor(sta_net, front_node, back_node, res);
+        STA_INST->incrCap(front_node, cap / 2, true);
+        STA_INST->incrCap(back_node, cap / 2, true);
+      };
+      salt::TreeNode::postOrder(source, build_rc_tree);
+    }
+    // update rc tree
+    STA_INST->updateRCTreeInfo(sta_net);
+  }
   STA_INST->updateTiming();
 }
 

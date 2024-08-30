@@ -11,4 +11,5 @@ target_include_directories(eval_pro_timing_eval
     PUBLIC
     ${EVAL_PRO_MODULE}/timing
     ${EVAL_PRO_DATA}
+    ${EVAL_PRO_UTIL}
 )
