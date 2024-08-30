@@ -1,3 +1,9 @@
+/*
+ * @FilePath: congestion_app.cpp
+ * @Author: Yihang Qiu (qiuyihang23@mails.ucas.ac.cn)
+ * @Date: 2024-08-24 15:37:27
+ * @Description:
+ */
 #include <iostream>
 
 #include "congestion_api.h"
@@ -8,9 +14,9 @@ void test_congestion_report();
 
 int main()
 {
-  // test_egr_map();
+  test_egr_map();
   test_rudy_map();
-  // test_congestion_report();
+  test_congestion_report();
   return 0;
 }
 

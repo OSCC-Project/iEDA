@@ -6,6 +6,7 @@ target_link_libraries(eval_pro_congestion_eval
     PRIVATE 
         eval_pro_util_init_egr     
         eval_pro_util_wirelength_lut
+        eval_pro_util_general_ops 
 )
 
 target_include_directories(eval_pro_congestion_eval

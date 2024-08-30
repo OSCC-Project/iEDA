@@ -1,3 +1,10 @@
+/*
+ * @FilePath: wirelength_app.cpp
+ * @Author: Yihang Qiu (qiuyihang23@mails.ucas.ac.cn)
+ * @Date: 2024-08-24 15:37:27
+ * @Description:
+ */
+
 #include <iostream>
 
 #include "wirelength_api.h"
@@ -9,9 +16,9 @@ void test_egr_wirelength(std::string guide_path);
 
 int main()
 {
-  // test_total_wirelength();
-  // test_net_wirelength();
-  // test_path_wirelength();
+  test_total_wirelength();
+  test_net_wirelength();
+  test_path_wirelength();
   test_egr_wirelength("/home/yhqiu/benchmark/AiEDA/application/benchmark/28nm/gcd/output/iEDA/data/rt/initial_router/route.guide");
   return 0;
 }

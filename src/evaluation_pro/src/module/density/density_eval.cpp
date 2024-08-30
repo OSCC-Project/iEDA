@@ -1,14 +1,18 @@
+/*
+ * @FilePath: density_eval.cpp
+ * @Author: Yihang Qiu (qiuyihang23@mails.ucas.ac.cn)
+ * @Date: 2024-08-24 15:37:27
+ * @Description:
+ */
+
 #include "density_eval.h"
 
-#include <unistd.h>
-
-#include <climits>
 #include <cmath>
-#include <cstdlib>
-#include <cstring>
 #include <fstream>
 #include <iomanip>
 #include <sstream>
+
+#include "general_ops.h"
 
 namespace ieval {
 
@@ -268,26 +272,6 @@ std::string DensityEval::evalNetDensity(DensityNets nets, DensityRegion region, 
   csv_file.close();
 
   return getAbsoluteFilePath(output_filename);
-}
-
-std::string DensityEval::getAbsoluteFilePath(std::string filename)
-{
-  char currentPath[PATH_MAX];
-  if (getcwd(currentPath, sizeof(currentPath)) != nullptr) {
-    std::string workingDir(currentPath);
-
-    if (filename[0] == '/') {
-      return filename;
-    }
-
-    return workingDir + "/" + filename;
-  }
-
-  char resolvedPath[PATH_MAX];
-  if (realpath(filename.c_str(), resolvedPath) != nullptr) {
-    return std::string(resolvedPath);
-  }
-  return filename;
 }
 
 }  // namespace ieval

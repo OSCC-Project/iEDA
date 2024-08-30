@@ -1,5 +1,15 @@
-# SET(CMAKE_BUILD_TYPE "Release")
-SET(CMAKE_BUILD_TYPE "Debug")
+# set(CMAKE_BUILD_TYPE "Release")
+set(CMAKE_BUILD_TYPE "Debug")
+
+# general ops
+add_library(eval_pro_util_general_ops
+    ${EVAL_PRO_UTIL}/general_ops.cpp
+)
+
+target_include_directories(eval_pro_util_general_ops
+    PUBLIC
+        ${EVAL_PRO_UTIL}
+)
 
 # iRT-egr
 add_library(eval_pro_util_init_egr
@@ -8,12 +18,12 @@ add_library(eval_pro_util_init_egr
 
 target_link_libraries(eval_pro_util_init_egr
     PRIVATE
-    irt_interface
+        irt_interface
 )
 
 target_include_directories(eval_pro_util_init_egr
     PUBLIC
-    ${EVAL_PRO_UTIL}
+        ${EVAL_PRO_UTIL}
 )
 
 # FLUTE
@@ -23,13 +33,13 @@ add_library(eval_pro_util_init_flute
 
 target_link_libraries(eval_pro_util_init_flute
     PRIVATE
-    flute
+        flute
 )
 
 target_include_directories(eval_pro_util_init_flute
     PUBLIC
-    ${EVAL_PRO_UTIL}
-    ${HOME_THIRDPARTY}/flute3
+        ${EVAL_PRO_UTIL}
+        ${HOME_THIRDPARTY}/flute3
 )
 
 # iSTA
@@ -39,12 +49,12 @@ add_library(eval_pro_util_init_ista
 
 target_link_libraries(eval_pro_util_init_ista
     PRIVATE
-    ieda_feature
-    idm
-    irt_interface
-    ista-engine
-    power
-    salt
+        ieda_feature
+        idm
+        irt_interface
+        ista-engine
+        power
+        salt
 )
 
 target_include_directories(eval_pro_util_init_ista

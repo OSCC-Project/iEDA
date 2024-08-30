@@ -1,3 +1,10 @@
+/*
+ * @FilePath: congestion_eval.h
+ * @Author: Yihang Qiu (qiuyihang23@mails.ucas.ac.cn)
+ * @Date: 2024-08-24 15:37:27
+ * @Description:
+ */
+
 #pragma once
 
 #include "congestion_db.h"
@@ -38,7 +45,6 @@ class CongestionEval
   string evalEGR(string map_path, string egr_type, string output_filename);
   string evalRUDY(CongestionNets nets, CongestionRegion region, int32_t grid_size, string rudy_type, string output_filename);
   string evalLUTRUDY(CongestionNets nets, CongestionRegion region, int32_t grid_size, string lutrudy_type, string output_filename);
-  string getAbsoluteFilePath(string filename);
   float calculateLness(std::vector<std::pair<int32_t, int32_t>> point_set, int32_t net_lx, int32_t net_ux, int32_t net_ly, int32_t net_uy);
   int32_t calcLowerLeftRP(std::vector<std::pair<int32_t, int32_t>> point_set, int32_t x_min, int32_t y_min);
   int32_t calcLowerRightRP(std::vector<std::pair<int32_t, int32_t>> point_set, int32_t x_max, int32_t y_min);

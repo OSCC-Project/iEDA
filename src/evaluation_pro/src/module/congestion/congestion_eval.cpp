@@ -1,16 +1,20 @@
-#include "congestion_eval.h"
+/*
+ * @FilePath: congestion_eval.cpp
+ * @Author: Yihang Qiu (qiuyihang23@mails.ucas.ac.cn)
+ * @Date: 2024-08-24 15:37:27
+ * @Description:
+ */
 
-#include <unistd.h>
+#include "congestion_eval.h"
 
 #include <climits>
 #include <cmath>
-#include <cstdlib>
-#include <cstring>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <sstream>
 
+#include "general_ops.h"
 #include "init_egr.h"
 #include "wirelength_lut.h"
 
@@ -385,26 +389,6 @@ string CongestionEval::evalLUTRUDY(CongestionNets nets, CongestionRegion region,
   csv_file.close();
 
   return getAbsoluteFilePath(output_filename);
-}
-
-std::string CongestionEval::getAbsoluteFilePath(std::string filename)
-{
-  char currentPath[PATH_MAX];
-  if (getcwd(currentPath, sizeof(currentPath)) != nullptr) {
-    std::string workingDir(currentPath);
-
-    if (filename[0] == '/') {
-      return filename;
-    }
-
-    return workingDir + "/" + filename;
-  }
-
-  char resolvedPath[PATH_MAX];
-  if (realpath(filename.c_str(), resolvedPath) != nullptr) {
-    return std::string(resolvedPath);
-  }
-  return filename;
 }
 
 float CongestionEval::calculateLness(std::vector<std::pair<int32_t, int32_t>> point_set, int32_t net_lx, int32_t net_ux, int32_t net_ly,

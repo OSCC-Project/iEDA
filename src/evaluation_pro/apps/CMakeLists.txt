@@ -1,7 +1,7 @@
-# SET(CMAKE_BUILD_TYPE "Release")
-SET(CMAKE_BUILD_TYPE "Debug")
+# set(CMAKE_BUILD_TYPE "Release")
+set(CMAKE_BUILD_TYPE "Debug")
 
-# 拥塞评估app
+# Congestion Evaluation APP
 add_executable(congestion_app
     congestion_app.cpp
 )
@@ -11,14 +11,13 @@ target_link_libraries(congestion_app
         eval_pro_congestion_api
 )    
 
-
 target_include_directories(congestion_app 
     PRIVATE 
         ${HOME_EVALUATION_PRO}/api
         ${HOME_EVALUATION_PRO}/database
 )
 
-# 密度评估app
+# Density Evaluation APP
 add_executable(density_app
     density_app.cpp
 )
@@ -28,15 +27,29 @@ target_link_libraries(density_app
         eval_pro_density_api
 )    
 
-
 target_include_directories(density_app 
     PRIVATE 
         ${HOME_EVALUATION_PRO}/api
         ${HOME_EVALUATION_PRO}/database
 )
 
+# Timing & Power Evaluation APP
+add_executable(timing_app
+    timing_app.cpp
+)
 
-# 线长评估app
+target_link_libraries(timing_app 
+    PRIVATE
+        eval_pro_timing_api
+)    
+
+target_include_directories(timing_app 
+    PRIVATE 
+        ${HOME_EVALUATION_PRO}/api
+        ${HOME_EVALUATION_PRO}/database
+)
+
+# Wirelength Evaluation APP
 add_executable(wirelength_app
     wirelength_app.cpp
 )
@@ -45,7 +58,6 @@ target_link_libraries(wirelength_app
     PRIVATE
         eval_pro_wirelength_api
 )    
-
 
 target_include_directories(wirelength_app 
     PRIVATE 

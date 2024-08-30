@@ -1,8 +1,13 @@
+/*
+ * @FilePath: density_eval.h
+ * @Author: Yihang Qiu (qiuyihang23@mails.ucas.ac.cn)
+ * @Date: 2024-08-24 15:37:27
+ * @Description:
+ */
 
 #pragma once
 
 #include "density_db.h"
-
 namespace ieval {
 class DensityEval
 {
@@ -38,6 +43,5 @@ class DensityEval
   std::string evalDensity(DensityCells cells, DensityRegion region, int32_t grid_size, std::string cell_type, std::string output_filename);
   std::string evalPinDensity(DensityPins pins, DensityRegion region, int32_t grid_size, std::string pin_type, std::string output_filename);
   std::string evalNetDensity(DensityNets nets, DensityRegion region, int32_t grid_size, std::string net_type, std::string output_filename);
-  std::string getAbsoluteFilePath(std::string filename);
 };
 }  // namespace ieval
