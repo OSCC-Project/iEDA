@@ -22,26 +22,26 @@
 
 namespace ieda_feature {
 
-struct TONetTiming
+struct TOClockTiming
 {
   double tns;
   double wns;
   double suggest_freq;
 };
 
-struct TONetTimingCmp
+struct TOClockTimingCmp
 {
-  std::string net_name;
-  TONetTiming origin;
-  TONetTiming opt;
-  TONetTiming delta;
+  std::string clock_name;
+  TOClockTiming origin;
+  TOClockTiming opt;
+  TOClockTiming delta;
 };
 
 struct TimingOptSummary
 {
   double HPWL;
   double STWL;
-  std::vector<TONetTimingCmp> net_timings;
+  std::vector<TOClockTimingCmp> clock_timings;
 };
 
 }  // namespace ieda_feature
