@@ -210,4 +210,41 @@ float InitEGR::parsePathEGRWL(std::string guide_path, std::string net_name, std:
   return -1;
 }
 
+std::unordered_map<std::string, LayerDirection> InitEGR::parseLayerDirection(std::string guide_path)
+{
+  std::ifstream file(guide_path);
+  std::string line;
+  std::unordered_map<std::string, LayerDirection> layerDirections;
+
+  struct Wire
+  {
+    int gx1, gy1, gx2, gy2;
+    float rx1, ry1, rx2, ry2;
+    std::string layer;
+  };
+
+  for (int i = 0; i < 4; ++i) {
+    std::getline(file, line);
+  }
+
+  while (std::getline(file, line)) {
+    std::istringstream iss(line);
+    std::string type;
+    iss >> type;
+
+    if (type == "wire") {
+      Wire wire;
+      iss >> wire.gx1 >> wire.gy1 >> wire.gx2 >> wire.gy2 >> wire.rx1 >> wire.ry1 >> wire.rx2 >> wire.ry2 >> wire.layer;
+      if (layerDirections.find(wire.layer) == layerDirections.end()) {
+        if (wire.gx1 == wire.gx2) {
+          layerDirections[wire.layer] = LayerDirection::Vertical;
+        } else if (wire.gy1 == wire.gy2) {
+          layerDirections[wire.layer] = LayerDirection::Horizontal;
+        }
+      }
+    }
+  }
+  return layerDirections;
+}
+
 }  // namespace ieval

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <string>
+#include "congestion_db.h"
 
 namespace ieval {
 
@@ -12,22 +12,38 @@ class CongestionEval
   CongestionEval();
   ~CongestionEval();
 
-  void runEGR();
-  void runRUDY();
-  void runNCTUgr();
+  string evalHoriEGR(string map_path);
+  string evalVertiEGR(string map_path);
+  string evalUnionEGR(string map_path);
 
-  void computeOverflow();
+  string evalHoriRUDY(CongestionNets nets, CongestionRegion region, int32_t grid_size);
+  string evalVertiRUDY(CongestionNets nets, CongestionRegion region, int32_t grid_size);
+  string evalUnionRUDY(CongestionNets nets, CongestionRegion region, int32_t grid_size);
 
-  string plotEGR();
-  string plotRUDY();
+  string evalHoriLUTRUDY(CongestionNets nets, CongestionRegion region, int32_t grid_size);
+  string evalVertiLUTRUDY(CongestionNets nets, CongestionRegion region, int32_t grid_size);
+  string evalUnionLUTRUDY(CongestionNets nets, CongestionRegion region, int32_t grid_size);
 
-  int32_t get_total_overflow() { return _total_overflow; }
-  int32_t get_max_overflow() { return _max_overflow; }
-  int32_t get_average_overflow() { return _average_overflow; }
+  int32_t evalTotalOverflow(string map_path);
+  int32_t evalMaxOverflow(string map_path);
+  float evalAvgOverflow(string map_path);
+
+  float evalMaxUtilization(string map_path);
+  float evalAvgUtilization(string map_path);
+
+  string reportHotspot(float threshold);
+  string reportOverflow(float threshold);
 
  private:
-  int32_t _total_overflow = -1;
-  int32_t _max_overflow = -1;
-  int32_t _average_overflow = -1;
+  string evalEGR(string map_path, string egr_type, string output_filename);
+  string evalRUDY(CongestionNets nets, CongestionRegion region, int32_t grid_size, string rudy_type, string output_filename);
+  string evalLUTRUDY(CongestionNets nets, CongestionRegion region, int32_t grid_size, string lutrudy_type, string output_filename);
+  string getAbsoluteFilePath(string filename);
+  float calculateLness(std::vector<std::pair<int32_t, int32_t>> point_set, int32_t net_lx, int32_t net_ux, int32_t net_ly, int32_t net_uy);
+  int32_t calcLowerLeftRP(std::vector<std::pair<int32_t, int32_t>> point_set, int32_t x_min, int32_t y_min);
+  int32_t calcLowerRightRP(std::vector<std::pair<int32_t, int32_t>> point_set, int32_t x_max, int32_t y_min);
+  int32_t calcUpperLeftRP(std::vector<std::pair<int32_t, int32_t>> point_set, int32_t x_min, int32_t y_max);
+  int32_t calcUpperRightRP(std::vector<std::pair<int32_t, int32_t>> point_set, int32_t x_max, int32_t y_max);
+  double getLUT(int32_t pin_num, int32_t aspect_ratio, float l_ness);
 };
 }  // namespace ieval

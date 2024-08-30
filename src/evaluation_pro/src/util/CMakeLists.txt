@@ -50,3 +50,14 @@ target_include_directories(eval_pro_util_init_ista
     PUBLIC
         ${EVAL_PRO_UTIL}
 )
+
+
+# Wirelength LUT
+add_library(eval_pro_util_wirelength_lut
+    ${EVAL_PRO_UTIL}/wirelength_lut.cpp
+)
+
+target_include_directories(eval_pro_util_wirelength_lut
+    PUBLIC
+        ${EVAL_PRO_UTIL}
+)

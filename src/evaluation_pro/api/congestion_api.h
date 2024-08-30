@@ -10,8 +10,13 @@ class CongestionAPI
   CongestionAPI();
   ~CongestionAPI();
 
-  OverflowSummary getOverflowSummary();
-  CongestionMapPathSummary getMapPathSummary();
+  EGRMapSummary egrMap(std::string map_path);
+  RUDYMapSummary rudyMap(CongestionNets congestion_nets, CongestionRegion region, int32_t grid_size);
+
+  OverflowSummary egrOverflow(std::string map_path);
+  UtilzationSummary rudyUtilzation(std::string map_path);
+
+  EGRReportSummary egrReport(float threshold);
 };
 
 }  // namespace ieval

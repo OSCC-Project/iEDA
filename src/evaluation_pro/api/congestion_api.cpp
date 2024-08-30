@@ -12,33 +12,66 @@ CongestionAPI::~CongestionAPI()
 {
 }
 
-OverflowSummary CongestionAPI::getOverflowSummary()
+EGRMapSummary CongestionAPI::egrMap(std::string map_path)
+{
+  EGRMapSummary egr_map_summary;
+
+  CongestionEval congestion_eval;
+  egr_map_summary.horizontal_sum = congestion_eval.evalHoriEGR(map_path);
+  egr_map_summary.vertical_sum = congestion_eval.evalVertiEGR(map_path);
+  egr_map_summary.union_sum = congestion_eval.evalUnionEGR(map_path);
+
+  return egr_map_summary;
+}
+
+RUDYMapSummary CongestionAPI::rudyMap(CongestionNets nets, CongestionRegion region, int32_t grid_size)
+{
+  RUDYMapSummary rudy_map_summary;
+
+  CongestionEval congestion_eval;
+  rudy_map_summary.rudy_horizontal = congestion_eval.evalHoriRUDY(nets, region, grid_size);
+  rudy_map_summary.rudy_vertical = congestion_eval.evalVertiRUDY(nets, region, grid_size);
+  rudy_map_summary.rudy_union = congestion_eval.evalUnionRUDY(nets, region, grid_size);
+
+  rudy_map_summary.lutrudy_horizontal = congestion_eval.evalHoriLUTRUDY(nets, region, grid_size);
+  rudy_map_summary.lutrudy_vertical = congestion_eval.evalVertiLUTRUDY(nets, region, grid_size);
+  rudy_map_summary.lutrudy_union = congestion_eval.evalUnionLUTRUDY(nets, region, grid_size);
+
+  return rudy_map_summary;
+}
+
+OverflowSummary CongestionAPI::egrOverflow(std::string map_path)
 {
   OverflowSummary overflow_summary;
 
   CongestionEval congestion_eval;
-  congestion_eval.runEGR();
-  congestion_eval.computeOverflow();
-
-  overflow_summary.total_overflow = congestion_eval.get_total_overflow();
-  overflow_summary.max_overflow = congestion_eval.get_max_overflow();
-  overflow_summary.average_overflow = congestion_eval.get_average_overflow();
+  overflow_summary.total_overflow = congestion_eval.evalTotalOverflow(map_path);
+  overflow_summary.max_overflow = congestion_eval.evalMaxOverflow(map_path);
+  overflow_summary.weighted_average_overflow = congestion_eval.evalAvgOverflow(map_path);
 
   return overflow_summary;
 }
 
-CongestionMapPathSummary CongestionAPI::getMapPathSummary()
+UtilzationSummary CongestionAPI::rudyUtilzation(std::string map_path)
 {
-  CongestionMapPathSummary map_path_summary;
+  UtilzationSummary utilzation_summary;
 
   CongestionEval congestion_eval;
-  congestion_eval.runEGR();
-  congestion_eval.runRUDY();
+  utilzation_summary.max_utilization = congestion_eval.evalMaxUtilization(map_path);
+  utilzation_summary.weighted_average_utilization = congestion_eval.evalAvgUtilization(map_path);
 
-  map_path_summary.egr_path = congestion_eval.plotEGR();
-  map_path_summary.rudy_path = congestion_eval.plotRUDY();
+  return utilzation_summary;
+}
 
-  return map_path_summary;
+EGRReportSummary CongestionAPI::egrReport(float threshold)
+{
+  EGRReportSummary egr_report_summary;
+
+  CongestionEval congestion_eval;
+  egr_report_summary.hotspot = congestion_eval.reportHotspot(threshold);
+  egr_report_summary.overflow = congestion_eval.reportOverflow(threshold);
+
+  return egr_report_summary;
 }
 
 }  // namespace ieval

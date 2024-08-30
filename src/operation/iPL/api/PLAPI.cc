@@ -383,9 +383,9 @@ void PLAPI::runFlow()
   runGP();
   printHPWLInfo();
   printTimingInfo();
+  notifyPLCongestionInfo(0);
   if (isSTAStarted()) {
     notifyPLWLInfo(0);
-    notifyPLCongestionInfo(0);
     notifyPLTimingInfo(0);
   }
 
@@ -570,8 +570,8 @@ void PLAPI::notifyPLCongestionInfo(int stage)
   // // special operator
   // _external_api->initTimingEval(PlacerDBInst.get_layout()->get_database_unit());
 
-  // this->writeBackSourceDataBase();
-  // _external_api->evalproCongestion();
+  this->writeBackSourceDataBase();
+  _external_api->evalproCongestion();
 
   // PlacerDBInst.egr_tof[stage] = this->totalOverflow();
   // PlacerDBInst.egr_mof[stage] = this->MaxOverflow();
@@ -728,7 +728,8 @@ void PLAPI::writeBackSourceDataBase()
   PlacerDBInst.writeBackSourceDataBase();
 }
 
-std::string PLAPI::obtainTargetDir(){
+std::string PLAPI::obtainTargetDir()
+{
   return _external_api->obtainTargetDir();
 }
 
