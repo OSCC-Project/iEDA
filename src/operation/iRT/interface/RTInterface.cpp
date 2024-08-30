@@ -1173,7 +1173,7 @@ void RTInterface::updateTimingAndPower(std::vector<std::map<std::string, std::ve
   auto initPowerEngine = [](std::string workspace) {
     auto* power_engine = ipower::PowerEngine::getOrCreatePowerEngine();
     if (!power_engine->isBuildGraph()) {
-      // power_engine->set_design_work_space(workspace.c_str());
+      power_engine->get_power()->set_design_work_space(workspace.c_str());
       power_engine->get_power()->initPowerGraphData();
       power_engine->get_power()->initToggleSPData();
     }
@@ -1295,7 +1295,7 @@ void RTInterface::updateTimingAndPower(std::vector<std::map<std::string, std::ve
   std::vector<Net>& net_list = RTDM.getDatabase().get_net_list();
   std::string& temp_directory_path = RTDM.getConfig().temp_directory_path;
 
-  ista::TimingEngine* timing_engine = initTimingEngine(RTUTIL.getString(temp_directory_path, "ista/"));
+  ista::TimingEngine* timing_engine = initTimingEngine(RTUTIL.getString(temp_directory_path, "sta/"));
   ista::Netlist* sta_net_list = timing_engine->get_netlist();
 
   for (size_t net_idx = 0; net_idx < coord_real_pin_map_list.size(); net_idx++) {
@@ -1341,8 +1341,9 @@ void RTInterface::updateTimingAndPower(std::vector<std::map<std::string, std::ve
     clock_timing[clk_name]["WNS"] = setup_wns;
     clock_timing[clk_name]["Freq(MHz)"] = suggest_freq;
   });
-  ipower::PowerEngine* power_engine = initPowerEngine(RTUTIL.getString(temp_directory_path, "ipower/"));
+  ipower::PowerEngine* power_engine = initPowerEngine(RTUTIL.getString(temp_directory_path, "pwr/"));
   power_engine->get_power()->updatePower();
+  power_engine->get_power()->reportPower();
 
   double static_power = 0;
   for (const auto& data : power_engine->get_power()->get_leakage_powers()) {
