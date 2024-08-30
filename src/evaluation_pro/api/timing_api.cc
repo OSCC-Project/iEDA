@@ -8,9 +8,21 @@
 
 #include "timing_api.hh"
 
+#include "timing_eval.hh"
+
 namespace ieval {
+
+#define EVAL_STA_INST (ieval::TimingEval::getInst())
 TimingAPI::TimingAPI(const std::string& routing_type)
 {
-  _timing_eval = std::make_unique<TimingEval>(routing_type);
+  ieval::TimingEval::initRoutingType(routing_type);
+}
+TimingSummary TimingAPI::evalDesign()
+{
+  return EVAL_STA_INST->evalDesign();
+}
+double TimingAPI::evalNetPower(const std::string& net_name) const
+{
+  return EVAL_STA_INST->evalNetPower(net_name);
 }
 }  // namespace ieval

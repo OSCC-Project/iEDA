@@ -25,6 +25,7 @@
 #pragma once
 #include <map>
 #include <string>
+#include <unordered_map>
 namespace ieval {
 enum class RoutingType
 {
@@ -39,9 +40,11 @@ enum class RoutingType
 class InitSTA
 {
  public:
-  InitSTA(const RoutingType& routing_type) : _routing_type(routing_type) {}
+  InitSTA() = default;
   ~InitSTA();
-
+  static void initRoutingType(const RoutingType& routing_type);
+  static InitSTA* getInst();
+  static void destroyInst();
   void runSTA();
 
   std::map<std::string, std::map<std::string, double>> getTiming() { return _timing; }
@@ -59,10 +62,13 @@ class InitSTA
   void initPowerEngine();
   void getInfoFromSTA();
   void getInfoFromPW();
-  RoutingType _routing_type = RoutingType::kWLM;
+
+  static InitSTA* _init_sta;
+  static RoutingType _routing_type;
 
   std::map<std::string, std::map<std::string, double>> _timing;
   std::map<std::string, double> _power;
+  std::unordered_map<std::string, double> _net_power;
 };
 
 }  // namespace ieval

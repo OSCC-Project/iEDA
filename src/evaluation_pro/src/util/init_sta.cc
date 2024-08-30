@@ -35,31 +35,51 @@ namespace ieval {
 #define STA_INST (ista::TimingEngine::getOrCreateTimingEngine())
 #define RT_INST (irt::RTInterface::getInst())
 #define PW_INST (ipower::PowerEngine::getOrCreatePowerEngine())
+
+InitSTA* InitSTA::_init_sta = nullptr;
+RoutingType InitSTA::_routing_type = RoutingType::kNone;
+
 InitSTA::~InitSTA()
 {
   PW_INST->destroyPowerEngine();
   STA_INST->destroyTimingEngine();
 }
 
+void InitSTA::initRoutingType(const RoutingType& routing_type)
+{
+  _routing_type = routing_type;
+}
+
+InitSTA* InitSTA::getInst()
+{
+  if (_init_sta == nullptr) {
+    _init_sta = new InitSTA();
+  }
+  return _init_sta;
+}
+
+void InitSTA::destroyInst()
+{
+  delete _init_sta;
+  _init_sta = nullptr;
+}
+
 void InitSTA::runSTA()
 {
   if (_routing_type == RoutingType::kEGR || _routing_type == RoutingType::kDR) {
     callRT();
-    return;
+  } else {
+    embeddingSTA();
   }
-  embeddingSTA();
+
+  // get timing and power
+  getInfoFromSTA();
+  getInfoFromPW();
 }
 
 double InitSTA::evalNetPower(const std::string& net_name) const
 {
-  for (const auto& data : PW_INST->get_power()->get_switch_powers()) {
-    auto* net = dynamic_cast<ista::Net*>(data->get_design_obj());
-    if (net->get_name() != net_name) {
-      continue;
-    }
-    return data->get_switch_power();
-  }
-  return 0;
+  return _net_power.at(net_name);
 }
 
 std::map<std::string, double> InitSTA::evalAllNetPower() const
@@ -111,10 +131,6 @@ void InitSTA::embeddingSTA()
   initStaEngine();
   buildRCTree();
   initPowerEngine();
-
-  // get timing and power
-  getInfoFromSTA();
-  getInfoFromPW();
 }
 
 void InitSTA::initStaEngine()
@@ -156,17 +172,18 @@ void InitSTA::buildRCTree()
   std::optional<double> width = std::nullopt;
   auto* idb_layout = dmInst->get_idb_lef_service()->get_layout();
   auto routing_layers = idb_layout->get_layers()->get_routing_layers();
+  auto clock_layer = routing_layers.size() - 1;
   auto calc_res = [&](const bool& is_clock, const double& wirelength) {
     if (!is_clock) {
       return idb_adapter->getResistance(1, wirelength, width);
     }
-    return idb_adapter->getResistance(routing_layers.size(), wirelength, width);
+    return idb_adapter->getResistance(clock_layer, wirelength, width);
   };
   auto calc_cap = [&](const bool& is_clock, const double& wirelength) {
     if (!is_clock) {
       return idb_adapter->getCapacitance(1, wirelength, width);
     }
-    return idb_adapter->getCapacitance(routing_layers.size(), wirelength, width);
+    return idb_adapter->getCapacitance(clock_layer, wirelength, width);
   };
 
   // main flow
@@ -214,7 +231,7 @@ void InitSTA::buildRCTree()
     if (_routing_type == RoutingType::kFLUTE) {
       // Flute
       std::vector<ista::DesignObject*> pin_ports = {sta_net->getDriver()};
-      pin_ports.insert(pin_ports.end(), sta_net->getLoads().begin(), sta_net->getLoads().end());
+      std::ranges::copy(sta_net->getLoads(), std::back_inserter(pin_ports));
 
       // makr rc node
       auto make_rc_node = [&](const std::shared_ptr<salt::TreeNode>& salt_node) {
@@ -226,15 +243,17 @@ void InitSTA::buildRCTree()
       };
 
       std::vector<std::shared_ptr<salt::Pin>> salt_pins;
+      salt_pins.reserve(pin_ports.size());
       for (size_t i = 0; i < pin_ports.size(); ++i) {
         auto pin_port = pin_ports[i];
         auto* idb_loc = idb_adapter->idbLocation(pin_port);
-        LOG_ERROR_IF(idb_loc == nullptr) << "The location of pin port is not found.";
-        LOG_ERROR_IF(idb_loc->is_negative()) << "The location of pin port is negative.";
-        auto pin = std::make_shared<salt::Pin>(i, idb_loc->get_x(), idb_loc->get_y());
+        LOG_ERROR_IF(idb_loc == nullptr) << "The location of pin port: " << pin_port->getFullName() << " is not found.";
+        LOG_ERROR_IF(idb_loc->is_negative()) << "The location of pin port: " << pin_port->getFullName() << " is negative.";
+        auto pin = std::make_shared<salt::Pin>(idb_loc->get_x(), idb_loc->get_y(), i);
+        salt_pins.push_back(pin);
       }
       salt::Net salt_net;
-      salt_net.init(0, "net", salt_pins);
+      salt_net.init(0, sta_net->get_name(), salt_pins);
 
       salt::Tree salt_tree;
       salt::FluteBuilder flute_builder;
@@ -301,6 +320,8 @@ void InitSTA::getInfoFromPW()
   }
   for (const auto& data : PW_INST->get_power()->get_switch_powers()) {
     dynamic_power += data->get_switch_power();
+    auto* net = dynamic_cast<ista::Net*>(data->get_design_obj());
+    _net_power[net->get_name()] = data->get_switch_power();
   }
   _power["static_power"] = static_power;
   _power["dynamic_power"] = dynamic_power;

@@ -8,25 +8,18 @@
 #include <memory>
 #include <vector>
 
-#include "init_sta.hh"
 #include "timing_db.hh"
 namespace ieval {
 
 class TimingEval
 {
  public:
-  TimingEval(const std::string& routing_type) : _routing_type(routing_type)
-  {
-    RoutingType type = _routing_type == "WLM"     ? RoutingType::kWLM
-                       : _routing_type == "HPWL"  ? RoutingType::kHPWL
-                       : _routing_type == "FLUTE" ? RoutingType::kFLUTE
-                       : _routing_type == "EGR"   ? RoutingType::kEGR
-                       : _routing_type == "DR"    ? RoutingType::kDR
-                                                  : RoutingType::kNone;
-    _init_sta = std::make_unique<InitSTA>(type);
-    _init_sta->runSTA();
-  }
+  TimingEval();
   ~TimingEval() = default;
+  static void initRoutingType(const std::string& routing_type);
+  static TimingEval* getInst();
+
+  static void destroyInst();
 
   TimingSummary evalDesign();
 
@@ -34,8 +27,8 @@ class TimingEval
   std::map<std::string, double> evalAllNetPower() const;
 
  private:
+  static TimingEval* _timing_eval;
   std::string _routing_type = "WLM";  // RoutingType::kWLM, kHPWL, kFLUTE, kEGR, kDR
-  std::unique_ptr<InitSTA> _init_sta;
 };
 
 }  // namespace ieval

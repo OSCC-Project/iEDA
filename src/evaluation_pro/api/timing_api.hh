@@ -8,7 +8,6 @@
 
 #pragma once
 #include "timing_db.hh"
-#include "timing_eval.hh"
 namespace ieval {
 
 class TimingAPI
@@ -18,7 +17,8 @@ class TimingAPI
 
   ~TimingAPI() = default;
 
- private:
-  std::unique_ptr<TimingEval> _timing_eval;
+  TimingSummary evalDesign();
+
+  double evalNetPower(const std::string& net_name) const;
 };
 }  // namespace ieval

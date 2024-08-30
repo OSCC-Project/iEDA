@@ -8,13 +8,13 @@ add_library(eval_pro_congestion_api
 
 target_link_libraries(eval_pro_congestion_api
     PRIVATE
-        eval_pro_db
-        eval_pro_congestion_eval
+    eval_pro_db
+    eval_pro_congestion_eval
 )
 
 target_include_directories(eval_pro_congestion_api
     PUBLIC
-        ${EVAL_PRO_API}
+    ${EVAL_PRO_API}
 )
 
 # Density Evaluation API  
@@ -24,13 +24,13 @@ add_library(eval_pro_density_api
 
 target_link_libraries(eval_pro_density_api
     PRIVATE
-        eval_pro_db
-        eval_pro_density_eval
+    eval_pro_db
+    eval_pro_density_eval
 )
 
 target_include_directories(eval_pro_density_api
     PUBLIC
-        ${EVAL_PRO_API}
+    ${EVAL_PRO_API}
 )
 
 
@@ -41,13 +41,15 @@ add_library(eval_pro_timing_api
 
 target_link_libraries(eval_pro_timing_api
     PRIVATE
-        eval_pro_db
-        eval_pro_timing_eval
+    eval_pro_db
+    eval_pro_timing_eval
 )
 
 target_include_directories(eval_pro_timing_api
     PUBLIC
-        ${EVAL_PRO_API}
+    ${EVAL_PRO_API}
+    ${EVAL_PRO_DATA}
+    ${EVAL_PRO_MODULE}/timing
 )
 
 
@@ -58,12 +60,11 @@ add_library(eval_pro_wirelength_api
 
 target_link_libraries(eval_pro_wirelength_api
     PRIVATE
-        eval_pro_db
-        eval_pro_wirelength_eval
+    eval_pro_db
+    eval_pro_wirelength_eval
 )
 
 target_include_directories(eval_pro_wirelength_api
     PUBLIC
-        ${EVAL_PRO_API}
+    ${EVAL_PRO_API}
 )
-

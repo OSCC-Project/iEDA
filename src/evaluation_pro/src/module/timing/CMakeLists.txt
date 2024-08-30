@@ -5,6 +5,7 @@ add_library(eval_pro_timing_eval
 target_link_libraries(eval_pro_timing_eval
     PRIVATE
     eval_pro_util_init_ista
+    eval_pro_db
 )
 
 target_include_directories(eval_pro_timing_eval

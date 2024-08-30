@@ -8,12 +8,45 @@
 
 #include "timing_eval.hh"
 
+#include "init_sta.hh"
 namespace ieval {
+#define EVAL_INIT_STA_INST (ieval::InitSTA::getInst())
+TimingEval* TimingEval::_timing_eval = nullptr;
+
+TimingEval::TimingEval()
+{
+  EVAL_INIT_STA_INST->runSTA();
+}
+
+void TimingEval::initRoutingType(const std::string& routing_type)
+{
+  RoutingType type = routing_type == "WLM"     ? RoutingType::kWLM
+                     : routing_type == "HPWL"  ? RoutingType::kHPWL
+                     : routing_type == "FLUTE" ? RoutingType::kFLUTE
+                     : routing_type == "EGR"   ? RoutingType::kEGR
+                     : routing_type == "DR"    ? RoutingType::kDR
+                                               : RoutingType::kNone;
+  InitSTA::initRoutingType(type);
+}
+
+TimingEval* TimingEval::getInst()
+{
+  if (_timing_eval == nullptr) {
+    _timing_eval = new TimingEval();
+  }
+  return _timing_eval;
+}
+
+void TimingEval::destroyInst()
+{
+  delete _timing_eval;
+  _timing_eval = nullptr;
+}
 
 TimingSummary TimingEval::evalDesign()
 {
   TimingSummary summary;
-  auto timing_map = _init_sta->getTiming();
+  auto timing_map = EVAL_INIT_STA_INST->getTiming();
   for (const auto& [clock_name, timing_info] : timing_map) {
     ClockTiming clock_timing;
     clock_timing.clock_name = clock_name;
@@ -22,7 +55,7 @@ TimingSummary TimingEval::evalDesign()
     clock_timing.suggest_freq = timing_info.at("Freq(MHz)");
     summary.timing.push_back(clock_timing);
   }
-  auto power_map = _init_sta->getPower();
+  auto power_map = EVAL_INIT_STA_INST->getPower();
   summary.static_power = power_map.at("static_power");
   summary.dynamic_power = power_map.at("dynamic_power");
   return summary;
@@ -30,10 +63,10 @@ TimingSummary TimingEval::evalDesign()
 
 double TimingEval::evalNetPower(const std::string& net_name) const
 {
-  return _init_sta->evalNetPower(net_name);
+  return EVAL_INIT_STA_INST->evalNetPower(net_name);
 }
 std::map<std::string, double> TimingEval::evalAllNetPower() const
 {
-  return _init_sta->evalAllNetPower();
+  return EVAL_INIT_STA_INST->evalAllNetPower();
 }
 }  // namespace ieval
