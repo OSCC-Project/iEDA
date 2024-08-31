@@ -68,7 +68,7 @@ idb::IdbBuilder *NoApi::initIDB() {
   // }
   auto idb_builder = new IdbBuilder();
 
-  NoConfig *     no_config = _ino->get_config();
+  NoConfig      *no_config = _ino->get_config();
   string         def_file = no_config->get_def_file();
   vector<string> lef_files = no_config->get_lef_files();
 
@@ -80,8 +80,8 @@ idb::IdbBuilder *NoApi::initIDB() {
 ista::TimingEngine *NoApi::initISTA(idb::IdbBuilder *idb) {
   auto timing_engine = ista::TimingEngine::getOrCreateTimingEngine();
 
-  NoConfig *           no_config = _ino->get_config();
-  const char *         design_work_space = no_config->get_design_work_space().c_str();
+  NoConfig            *no_config = _ino->get_config();
+  const char          *design_work_space = no_config->get_design_work_space().c_str();
   vector<const char *> lib_files;
   for (auto &lib : no_config->get_lib_files()) {
     lib_files.push_back(lib.c_str());
@@ -123,24 +123,24 @@ void NoApi::reportTiming() { _timing_engine->reportTiming(); }
 ieda_feature::NetOptSummary NoApi::outputSummary() {
   ieda_feature::NetOptSummary no_summary;
 
-  std::map<std::string, ieda_feature::NONetTimingCmp> summary_map;
+  std::map<std::string, ieda_feature::NOClockTimingCmp> summary_map;
 
   // origin data，tns，wns，freq
   auto no_eval_data = getEvalData();
   for (auto eval_data : no_eval_data) {
-    ieda_feature::NONetTiming net_timing;
-    std::string               net_name = eval_data.name;
-    net_timing.net_name = net_name;
-    net_timing.setup_tns = eval_data.setup_tns;
-    net_timing.setup_wns = eval_data.setup_wns;
-    net_timing.hold_tns = eval_data.hold_tns;
-    net_timing.hold_wns = eval_data.hold_wns;
-    net_timing.suggest_freq = eval_data.freq;
+    ieda_feature::NOClockTiming clock_timing;
+    std::string                 clock_name = eval_data.name;
+    clock_timing.clock_name = clock_name;
+    clock_timing.setup_tns = eval_data.setup_tns;
+    clock_timing.setup_wns = eval_data.setup_wns;
+    clock_timing.hold_tns = eval_data.hold_tns;
+    clock_timing.hold_wns = eval_data.hold_wns;
+    clock_timing.suggest_freq = eval_data.freq;
 
-    ieda_feature::NONetTimingCmp net_cmp;
-    memset(&net_cmp, 0, sizeof(ieda_feature::NONetTimingCmp));
-    net_cmp.origin = net_timing;
-    summary_map[net_name] = net_cmp;
+    ieda_feature::NOClockTimingCmp clock_cmp;
+    memset(&clock_cmp, 0, sizeof(ieda_feature::NOClockTimingCmp));
+    clock_cmp.origin = clock_timing;
+    summary_map[clock_name] = clock_cmp;
   }
 
   // after optimize timing
@@ -156,31 +156,33 @@ ieda_feature::NetOptSummary NoApi::outputSummary() {
     auto hold_tns = _timing_engine->getTNS(clk_name, ista::AnalysisMode::kMin);
     auto freq = 1000.0 / (clk->getPeriodNs() - setup_wns);
 
-    ieda_feature::NONetTiming net_timing;
-    std::string               net_name = clk_name;
-    net_timing.net_name = net_name;
-    net_timing.setup_tns = setup_tns;
-    net_timing.setup_wns = setup_wns;
-    net_timing.hold_tns = hold_tns;
-    net_timing.hold_wns = hold_wns;
-    net_timing.suggest_freq = freq;
+    ieda_feature::NOClockTiming clock_timing;
+    std::string                 clock_name = clk_name;
+    clock_timing.clock_name = clock_name;
+    clock_timing.setup_tns = setup_tns;
+    clock_timing.setup_wns = setup_wns;
+    clock_timing.hold_tns = hold_tns;
+    clock_timing.hold_wns = hold_wns;
+    clock_timing.suggest_freq = freq;
 
-    summary_map[net_name].opt = net_timing;
+    summary_map[clock_name].opt = clock_timing;
   });
 
-  for (auto [net_name, net_timings] : summary_map) {
+  for (auto [clock_name, clock_timings] : summary_map) {
 
-    net_timings.net_name = net_name;
-    net_timings.delta.setup_tns =
-        net_timings.opt.setup_tns - net_timings.origin.setup_tns;
-    net_timings.delta.setup_wns =
-        net_timings.opt.setup_wns - net_timings.origin.setup_wns;
-    net_timings.delta.hold_tns = net_timings.opt.hold_tns - net_timings.origin.hold_tns;
-    net_timings.delta.hold_wns = net_timings.opt.hold_wns - net_timings.origin.hold_wns;
-    net_timings.delta.suggest_freq =
-        net_timings.opt.suggest_freq - net_timings.origin.suggest_freq;
+    clock_timings.clock_name = clock_name;
+    clock_timings.delta.setup_tns =
+        clock_timings.opt.setup_tns - clock_timings.origin.setup_tns;
+    clock_timings.delta.setup_wns =
+        clock_timings.opt.setup_wns - clock_timings.origin.setup_wns;
+    clock_timings.delta.hold_tns =
+        clock_timings.opt.hold_tns - clock_timings.origin.hold_tns;
+    clock_timings.delta.hold_wns =
+        clock_timings.opt.hold_wns - clock_timings.origin.hold_wns;
+    clock_timings.delta.suggest_freq =
+        clock_timings.opt.suggest_freq - clock_timings.origin.suggest_freq;
 
-    no_summary.net_timings.push_back(net_timings);
+    no_summary.clock_timings.push_back(clock_timings);
   }
 
   return no_summary;
