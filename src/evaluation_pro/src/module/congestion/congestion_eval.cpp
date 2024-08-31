@@ -7,6 +7,7 @@
 
 #include "congestion_eval.h"
 
+#include <algorithm>
 #include <climits>
 #include <cmath>
 #include <filesystem>
@@ -73,34 +74,79 @@ string CongestionEval::evalUnionLUTRUDY(CongestionNets nets, CongestionRegion re
   return evalLUTRUDY(nets, region, grid_size, "union", "lut_rudy_union.csv");
 }
 
-int32_t CongestionEval::evalTotalOverflow(string map_path)
+int32_t CongestionEval::evalHoriTotalOverflow(string map_path)
 {
-  int32_t total_overflow = 0;
-  return total_overflow;
+  return evalTotalOverflow(map_path, "horizontal");
 }
 
-int32_t CongestionEval::evalMaxOverflow(string map_path)
+int32_t CongestionEval::evalVertiTotalOverflow(string map_path)
 {
-  int32_t max_overflow = 0;
-  return max_overflow;
+  return evalTotalOverflow(map_path, "vertical");
 }
 
-float CongestionEval::evalAvgOverflow(string map_path)
+int32_t CongestionEval::evalUnionTotalOverflow(string map_path)
 {
-  float avg_overflow = 0;
-  return avg_overflow;
+  return evalTotalOverflow(map_path, "union");
 }
 
-float CongestionEval::evalMaxUtilization(string map_path)
+int32_t CongestionEval::evalHoriMaxOverflow(string map_path)
 {
-  float max_utilization = 0;
-  return max_utilization;
+  return evalMaxOverflow(map_path, "horizontal");
 }
 
-float CongestionEval::evalAvgUtilization(string map_path)
+int32_t CongestionEval::evalVertiMaxOverflow(string map_path)
 {
-  float avg_utilization = 0;
-  return avg_utilization;
+  return evalMaxOverflow(map_path, "vertical");
+}
+
+int32_t CongestionEval::evalUnionMaxOverflow(string map_path)
+{
+  return evalMaxOverflow(map_path, "union");
+}
+
+float CongestionEval::evalHoriAvgOverflow(string map_path)
+{
+  return evalAvgOverflow(map_path, "horizontal");
+}
+
+float CongestionEval::evalVertiAvgOverflow(string map_path)
+{
+  return evalAvgOverflow(map_path, "vertical");
+}
+
+float CongestionEval::evalUnionAvgOverflow(string map_path)
+{
+  return evalAvgOverflow(map_path, "union");
+}
+
+float CongestionEval::evalHoriMaxUtilization(string map_path, bool use_lut)
+{
+  return evalMaxUtilization(map_path, "horizontal", use_lut);
+}
+
+float CongestionEval::evalVertiMaxUtilization(string map_path, bool use_lut)
+{
+  return evalMaxUtilization(map_path, "vertical", use_lut);
+}
+
+float CongestionEval::evalUnionMaxUtilization(string map_path, bool use_lut)
+{
+  return evalMaxUtilization(map_path, "union", use_lut);
+}
+
+float CongestionEval::evalHoriAvgUtilization(string map_path, bool use_lut)
+{
+  return evalAvgUtilization(map_path, "horizontal", use_lut);
+}
+
+float CongestionEval::evalVertiAvgUtilization(string map_path, bool use_lut)
+{
+  return evalAvgUtilization(map_path, "vertical", use_lut);
+}
+
+float CongestionEval::evalUnionAvgUtilization(string map_path, bool use_lut)
+{
+  return evalAvgUtilization(map_path, "union", use_lut);
 }
 
 string CongestionEval::reportHotspot(float threshold)
@@ -495,6 +541,285 @@ double CongestionEval::getLUT(int32_t pin_num, int32_t aspect_ratio, float l_nes
     l_index = 3;
 
   return WIRELENGTH_LUT[ar_index][pin_index][l_index];
+}
+
+int32_t CongestionEval::evalTotalOverflow(string map_path, string overflow_type)
+{
+  int32_t total_overflow = 0;
+  std::string file_path;
+
+  if (overflow_type == "horizontal") {
+    file_path = map_path + "/initial_router/egr_horizontal.csv";
+  } else if (overflow_type == "vertical") {
+    file_path = map_path + "/initial_router/egr_vertical.csv";
+  } else if (overflow_type == "union") {
+    file_path = map_path + "/topology_generator/overflow_map_planar.csv";
+  } else {
+    return -1;
+  }
+
+  std::ifstream file(file_path);
+  if (!file.is_open()) {
+    return -1;
+  }
+
+  std::string line;
+  while (std::getline(file, line)) {
+    std::istringstream iss(line);
+    std::string value;
+    while (std::getline(iss, value, ',')) {
+      total_overflow += std::stoi(value);
+    }
+  }
+
+  file.close();
+  return total_overflow;
+}
+
+int32_t CongestionEval::evalMaxOverflow(string map_path, string overflow_type)
+{
+  int32_t max_overflow = -1;
+  std::string file_path;
+
+  if (overflow_type == "horizontal") {
+    file_path = map_path + "/initial_router/egr_horizontal.csv";
+  } else if (overflow_type == "vertical") {
+    file_path = map_path + "/initial_router/egr_vertical.csv";
+  } else if (overflow_type == "union") {
+    file_path = map_path + "/topology_generator/overflow_map_planar.csv";
+  } else {
+    return -1;
+  }
+
+  std::ifstream file(file_path);
+  if (!file.is_open()) {
+    return -1;
+  }
+
+  std::string line;
+  while (std::getline(file, line)) {
+    std::istringstream iss(line);
+    std::string value;
+    while (std::getline(iss, value, ',')) {
+      int32_t current_value = std::stoi(value);
+      max_overflow = std::max(max_overflow, current_value);
+    }
+  }
+
+  file.close();
+  return max_overflow;
+}
+
+float CongestionEval::evalAvgOverflow(string map_path, string overflow_type)
+{
+  float avg_overflow = 0.0f;
+  std::string file_path;
+
+  if (overflow_type == "horizontal") {
+    file_path = map_path + "/initial_router/egr_horizontal.csv";
+  } else if (overflow_type == "vertical") {
+    file_path = map_path + "/initial_router/egr_vertical.csv";
+  } else if (overflow_type == "union") {
+    file_path = map_path + "/topology_generator/overflow_map_planar.csv";
+  } else {
+    return -1;
+  }
+
+  std::ifstream file(file_path);
+  if (!file.is_open()) {
+    return -1;
+  }
+
+  std::vector<int32_t> values;
+
+  std::string line;
+  while (std::getline(file, line)) {
+    std::istringstream iss(line);
+    std::string value;
+    while (std::getline(iss, value, ',')) {
+      int32_t current_value = std::stoi(value);
+      values.push_back(current_value);
+    }
+  }
+
+  file.close();
+
+  std::sort(values.begin(), values.end(), std::greater<int32_t>());
+
+  size_t size = values.size();
+  size_t idx_0_5_percent = std::max(size_t(1), static_cast<size_t>(std::ceil(size * 0.005)));
+  size_t idx_1_percent = std::max(size_t(1), static_cast<size_t>(std::ceil(size * 0.01)));
+  size_t idx_2_percent = std::max(size_t(1), static_cast<size_t>(std::ceil(size * 0.02)));
+  size_t idx_5_percent = std::max(size_t(1), static_cast<size_t>(std::ceil(size * 0.05)));
+
+  float sum_05 = 0.0f;
+  float sum_1 = 0.0f;
+  float sum_2 = 0.0f;
+  float sum_5 = 0.0f;
+
+  float weight_05 = 0.4f;
+  float weight_1 = 0.3f;
+  float weight_2 = 0.2f;
+  float weight_5 = 0.1f;
+
+  // 0-0.5%
+  for (size_t i = 0; i < idx_0_5_percent; ++i) {
+    sum_05 += values[i];
+  }
+  sum_1 = sum_05;
+
+  // 0.5%-1%
+  for (size_t i = idx_0_5_percent; i < idx_1_percent; ++i) {
+    sum_1 += values[i];
+  }
+  sum_2 = sum_1;
+
+  // 1%-2%
+  for (size_t i = idx_1_percent; i < idx_2_percent; ++i) {
+    sum_2 += values[i];
+  }
+  sum_5 = sum_2;
+
+  // 2%-5%
+  for (size_t i = idx_2_percent; i < idx_5_percent; ++i) {
+    sum_5 += values[i];
+  }
+
+  avg_overflow = (sum_05 * weight_05 + sum_1 * weight_1 + sum_2 * weight_2 + sum_5 * weight_5) / 4.0;
+
+  return avg_overflow;
+}
+
+float CongestionEval::evalMaxUtilization(string map_path, string utilization_type, bool use_lut)
+{
+  float max_util = -1.0;
+  std::string file_path;
+  std::string file_name;
+
+  if (use_lut == true) {
+    file_name = "/lut_rudy_";
+  } else {
+    file_name = "/rudy_";
+  }
+
+  if (utilization_type == "horizontal") {
+    file_path = map_path + file_name + "horizontal.csv";
+  } else if (utilization_type == "vertical") {
+    file_path = map_path + file_name + "vertical.csv";
+  } else if (utilization_type == "union") {
+    file_path = map_path + file_name + "union.csv";
+  } else {
+    return -1.0;
+  }
+
+  std::ifstream file(file_path);
+  if (!file.is_open()) {
+    return -1.0;
+  }
+
+  std::string line;
+  while (std::getline(file, line)) {
+    std::istringstream iss(line);
+    std::string value;
+    while (std::getline(iss, value, ',')) {
+      float current_value = std::stof(value);
+      max_util = std::fmax(max_util, current_value);
+    }
+  }
+
+  file.close();
+  return max_util;
+}
+
+float CongestionEval::evalAvgUtilization(string map_path, string utilization_type, bool use_lut)
+{
+  float avg_util = 0.0f;
+  std::string file_path;
+  std::string file_name;
+
+  if (use_lut == true) {
+    file_name = "/lut_rudy_";
+  } else {
+    file_name = "/rudy_";
+  }
+
+  if (utilization_type == "horizontal") {
+    file_path = map_path + file_name + "horizontal.csv";
+  } else if (utilization_type == "vertical") {
+    file_path = map_path + file_name + "vertical.csv";
+  } else if (utilization_type == "union") {
+    file_path = map_path + file_name + "union.csv";
+  } else {
+    return -1.0;
+  }
+
+  std::ifstream file(file_path);
+  if (!file.is_open()) {
+    return -1.0;
+  }
+
+  std::vector<float> values;
+
+  std::string line;
+  while (std::getline(file, line)) {
+    std::istringstream iss(line);
+    std::string value;
+    while (std::getline(iss, value, ',')) {
+      float current_value = std::stof(value);
+      values.push_back(current_value);
+    }
+  }
+
+  file.close();
+
+  std::sort(values.begin(), values.end(), std::greater<float>());
+
+  size_t size = values.size();
+  size_t idx_0_5_percent = std::max(size_t(1), static_cast<size_t>(std::ceil(size * 0.005)));
+  size_t idx_1_percent = std::max(size_t(1), static_cast<size_t>(std::ceil(size * 0.01)));
+  size_t idx_2_percent = std::max(size_t(1), static_cast<size_t>(std::ceil(size * 0.02)));
+  size_t idx_5_percent = std::max(size_t(1), static_cast<size_t>(std::ceil(size * 0.05)));
+  // size_t idx_0_5_percent = std::max(size_t(1), static_cast<size_t>(std::ceil(size * 0.1)));
+  // size_t idx_1_percent = std::max(size_t(1), static_cast<size_t>(std::ceil(size * 0.2)));
+  // size_t idx_2_percent = std::max(size_t(1), static_cast<size_t>(std::ceil(size * 0.3)));
+  // size_t idx_5_percent = std::max(size_t(1), static_cast<size_t>(std::ceil(size * 0.4)));
+
+  float sum_05 = 0.0f;
+  float sum_1 = 0.0f;
+  float sum_2 = 0.0f;
+  float sum_5 = 0.0f;
+
+  float weight_05 = 0.4f;
+  float weight_1 = 0.3f;
+  float weight_2 = 0.2f;
+  float weight_5 = 0.1f;
+
+  // 0-0.5%
+  for (size_t i = 0; i < idx_0_5_percent; ++i) {
+    sum_05 += values[i];
+  }
+  sum_1 = sum_05;
+
+  // 0.5%-1%
+  for (size_t i = idx_0_5_percent; i < idx_1_percent; ++i) {
+    sum_1 += values[i];
+  }
+  sum_2 = sum_1;
+
+  // 1%-2%
+  for (size_t i = idx_1_percent; i < idx_2_percent; ++i) {
+    sum_2 += values[i];
+  }
+  sum_5 = sum_2;
+
+  // 2%-5%
+  for (size_t i = idx_2_percent; i < idx_5_percent; ++i) {
+    sum_5 += values[i];
+  }
+
+  avg_util = (sum_05 * weight_05 + sum_1 * weight_1 + sum_2 * weight_2 + sum_5 * weight_5) / 4.0;
+
+  return avg_util;
 }
 
 }  // namespace ieval

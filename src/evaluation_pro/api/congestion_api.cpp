@@ -52,22 +52,35 @@ OverflowSummary CongestionAPI::egrOverflow(std::string map_path)
   OverflowSummary overflow_summary;
 
   CongestionEval congestion_eval;
-  overflow_summary.total_overflow = congestion_eval.evalTotalOverflow(map_path);
-  overflow_summary.max_overflow = congestion_eval.evalMaxOverflow(map_path);
-  overflow_summary.weighted_average_overflow = congestion_eval.evalAvgOverflow(map_path);
+  overflow_summary.total_overflow_horizontal = congestion_eval.evalHoriTotalOverflow(map_path);
+  overflow_summary.total_overflow_vertical = congestion_eval.evalVertiTotalOverflow(map_path);
+  overflow_summary.total_overflow_union = congestion_eval.evalUnionTotalOverflow(map_path);
+
+  overflow_summary.max_overflow_horizontal = congestion_eval.evalHoriMaxOverflow(map_path);
+  overflow_summary.max_overflow_vertical = congestion_eval.evalVertiMaxOverflow(map_path);
+  overflow_summary.max_overflow_union = congestion_eval.evalUnionMaxOverflow(map_path);
+
+  overflow_summary.weighted_average_overflow_horizontal = congestion_eval.evalHoriAvgOverflow(map_path);
+  overflow_summary.weighted_average_overflow_vertical = congestion_eval.evalVertiAvgOverflow(map_path);
+  overflow_summary.weighted_average_overflow_union = congestion_eval.evalUnionAvgOverflow(map_path);
 
   return overflow_summary;
 }
 
-UtilzationSummary CongestionAPI::rudyUtilzation(std::string map_path)
+UtilizationSummary CongestionAPI::rudyUtilization(std::string map_path, bool use_lut)
 {
-  UtilzationSummary utilzation_summary;
+  UtilizationSummary utilization_summary;
 
   CongestionEval congestion_eval;
-  utilzation_summary.max_utilization = congestion_eval.evalMaxUtilization(map_path);
-  utilzation_summary.weighted_average_utilization = congestion_eval.evalAvgUtilization(map_path);
+  utilization_summary.max_utilization_horizontal = congestion_eval.evalHoriMaxUtilization(map_path, use_lut);
+  utilization_summary.max_utilization_vertical = congestion_eval.evalVertiMaxUtilization(map_path, use_lut);
+  utilization_summary.max_utilization_union = congestion_eval.evalUnionMaxUtilization(map_path, use_lut);
 
-  return utilzation_summary;
+  utilization_summary.weighted_average_utilization_horizontal = congestion_eval.evalHoriAvgUtilization(map_path, use_lut);
+  utilization_summary.weighted_average_utilization_vertical = congestion_eval.evalVertiAvgUtilization(map_path, use_lut);
+  utilization_summary.weighted_average_utilization_union = congestion_eval.evalUnionAvgUtilization(map_path, use_lut);
+
+  return utilization_summary;
 }
 
 EGRReportSummary CongestionAPI::egrReport(float threshold)

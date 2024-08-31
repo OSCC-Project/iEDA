@@ -10,13 +10,17 @@
 
 void TestEgrMap();
 void TestRudyMap();
+void TestEgrOverflow();
+void TestRudyUtilization();
 void TestCongestionReport();
 
 int main()
 {
-  TestEgrMap();
-  TestRudyMap();
-  TestCongestionReport();
+  // TestEgrMap();
+  // TestRudyMap();
+  // TestCongestionReport();
+  TestEgrOverflow();
+  TestRudyUtilization();
   return 0;
 }
 
@@ -77,6 +81,48 @@ void TestRudyMap()
   std::cout << "lut rudy horizontal: " << rudy_map_summary.lutrudy_horizontal << std::endl;
   std::cout << "lut rudy vertical: " << rudy_map_summary.lutrudy_vertical << std::endl;
   std::cout << "lut rudy union: " << rudy_map_summary.lutrudy_union << std::endl;
+}
+
+void TestEgrOverflow()
+{
+  ieval::CongestionAPI congestion_api;
+
+  std::string map_path = "/home/yhqiu/benchmark/AiEDA/application/test/iEDA/rt_temp_directory";
+
+  ieval::OverflowSummary overflow_summary;
+  overflow_summary = congestion_api.egrOverflow(map_path);
+  std::cout << "total overflow horizontal: " << overflow_summary.total_overflow_horizontal << std::endl;
+  std::cout << "total overflow vertical: " << overflow_summary.total_overflow_vertical << std::endl;
+  std::cout << "total overflow union: " << overflow_summary.total_overflow_union << std::endl;
+  std::cout << "max overflow horizontal: " << overflow_summary.max_overflow_horizontal << std::endl;
+  std::cout << "max overflow vertical: " << overflow_summary.max_overflow_vertical << std::endl;
+  std::cout << "max overflow union: " << overflow_summary.max_overflow_union << std::endl;
+  std::cout << "weighted average overflow horizontal: " << overflow_summary.weighted_average_overflow_horizontal << std::endl;
+  std::cout << "weighted average overflow vertical: " << overflow_summary.weighted_average_overflow_vertical << std::endl;
+  std::cout << "weighted average overflow union: " << overflow_summary.weighted_average_overflow_union << std::endl;
+}
+
+void TestRudyUtilization()
+{
+  ieval::CongestionAPI congestion_api;
+
+  std::string map_path = "/home/yhqiu/benchmark/AiEDA/third_party/iEDA/bin";
+  ieval::UtilizationSummary utilization_summary;
+  utilization_summary = congestion_api.rudyUtilization(map_path, false);
+  std::cout << "max utilization horizontal: " << utilization_summary.max_utilization_horizontal << std::endl;
+  std::cout << "max utilization vertical: " << utilization_summary.max_utilization_vertical << std::endl;
+  std::cout << "max utilization union: " << utilization_summary.max_utilization_union << std::endl;
+  std::cout << "average utilization horizontal: " << utilization_summary.weighted_average_utilization_horizontal << std::endl;
+  std::cout << "average utilization vertical: " << utilization_summary.weighted_average_utilization_vertical << std::endl;
+  std::cout << "average utilization union: " << utilization_summary.weighted_average_utilization_union << std::endl;
+
+  utilization_summary = congestion_api.rudyUtilization(map_path, true);
+  std::cout << "max utilization horizontal: " << utilization_summary.max_utilization_horizontal << std::endl;
+  std::cout << "max utilization vertical: " << utilization_summary.max_utilization_vertical << std::endl;
+  std::cout << "max utilization union: " << utilization_summary.max_utilization_union << std::endl;
+  std::cout << "average utilization horizontal: " << utilization_summary.weighted_average_utilization_horizontal << std::endl;
+  std::cout << "average utilization vertical: " << utilization_summary.weighted_average_utilization_vertical << std::endl;
+  std::cout << "average utilization union: " << utilization_summary.weighted_average_utilization_union << std::endl;
 }
 
 void TestCongestionReport()
