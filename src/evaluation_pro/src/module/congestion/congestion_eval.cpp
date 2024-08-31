@@ -118,31 +118,31 @@ string CongestionEval::evalEGR(string map_path, string egr_type, string output_f
   InitEGR init_egr;
   // init_egr.runEGR();
 
-  std::unordered_map<std::string, LayerDirection> LayerDirections = init_egr.parseLayerDirection(map_path + "/initial_router/route.guide");
+  std::unordered_map<std::string, LayerDirection> layer_directions = init_egr.parseLayerDirection(map_path + "/initial_router/route.guide");
 
   // for (const auto& [layer, direction] : LayerDirections) {
   //   std::cout << "Layer: " << layer << ", Direction: " << (direction == LayerDirection::Horizontal ? "Horizontal" : "Vertical")
   //             << std::endl;
   // }
-  std::vector<std::string> targetLayers;
-  std::string dirPath = map_path + "/initial_router/";
+  std::vector<std::string> target_layers;
+  std::string dir_path = map_path + "/initial_router/";
 
   if (egr_type == "horizontal" || egr_type == "vertical") {
-    LayerDirection targetDirection = (egr_type == "horizontal") ? LayerDirection::Horizontal : LayerDirection::Vertical;
+    LayerDirection target_direction = (egr_type == "horizontal") ? LayerDirection::Horizontal : LayerDirection::Vertical;
 
-    for (const auto& [layer, direction] : LayerDirections) {
-      if (direction == targetDirection) {
-        targetLayers.push_back(layer);
+    for (const auto& [layer, direction] : layer_directions) {
+      if (direction == target_direction) {
+        target_layers.push_back(layer);
       }
     }
 
-    std::vector<std::vector<double>> sumMatrix;
-    bool isFirstFile = true;
+    std::vector<std::vector<double>> sum_matrix;
+    bool is_first_file = true;
 
-    for (const auto& entry : std::filesystem::directory_iterator(dirPath)) {
+    for (const auto& entry : std::filesystem::directory_iterator(dir_path)) {
       std::string filename = entry.path().filename().string();
       if (filename.find("overflow_map_") != std::string::npos) {
-        for (const auto& layer : targetLayers) {
+        for (const auto& layer : target_layers) {
           if (filename.find(layer) != std::string::npos) {
             std::ifstream file(entry.path());
             std::string line;
@@ -152,41 +152,41 @@ string CongestionEval::evalEGR(string map_path, string egr_type, string output_f
               std::string value;
               int col = 0;
               while (std::getline(iss, value, ',')) {
-                double numValue = std::stod(value);
-                if (isFirstFile) {
-                  if (row >= sumMatrix.size()) {
-                    sumMatrix.push_back(std::vector<double>());
+                double num_value = std::stod(value);
+                if (is_first_file) {
+                  if (row >= sum_matrix.size()) {
+                    sum_matrix.push_back(std::vector<double>());
                   }
-                  sumMatrix[row].push_back(numValue);
+                  sum_matrix[row].push_back(num_value);
                 } else {
-                  sumMatrix[row][col] += numValue;
+                  sum_matrix[row][col] += num_value;
                 }
                 col++;
               }
               row++;
             }
-            isFirstFile = false;
+            is_first_file = false;
             break;
           }
         }
       }
     }
 
-    std::ofstream outFile(dirPath + output_filename);
-    for (const auto& row : sumMatrix) {
+    std::ofstream out_file(dir_path + output_filename);
+    for (const auto& row : sum_matrix) {
       for (size_t i = 0; i < row.size(); ++i) {
-        outFile << row[i];
+        out_file << row[i];
         if (i < row.size() - 1) {
-          outFile << ",";
+          out_file << ",";
         }
       }
-      outFile << "\n";
+      out_file << "\n";
     }
-    outFile.close();
-    return dirPath + output_filename;
+    out_file.close();
+    return dir_path + output_filename;
   } else if (egr_type == "union") {
-    dirPath = map_path + "/topology_generator/";
-    return dirPath + "overflow_map_planar.csv";
+    dir_path = map_path + "/topology_generator/";
+    return dir_path + "overflow_map_planar.csv";
   }
 
   return "";
@@ -395,14 +395,14 @@ float CongestionEval::calculateLness(std::vector<std::pair<int32_t, int32_t>> po
                                      int32_t net_uy)
 {
   int32_t bbox = (net_ux - net_lx) * (net_uy - net_ly);
-  int32_t R1 = calcLowerLeftRP(point_set, net_lx, net_ly);
-  int32_t R2 = calcLowerRightRP(point_set, net_ux, net_ly);
-  int32_t R3 = calcUpperLeftRP(point_set, net_lx, net_uy);
-  int32_t R4 = calcUpperRightRP(point_set, net_ux, net_uy);
-  int32_t R = std::max({R1, R2, R3, R4});
+  int32_t r1 = calcLowerLeftRP(point_set, net_lx, net_ly);
+  int32_t r2 = calcLowerRightRP(point_set, net_ux, net_ly);
+  int32_t r3 = calcUpperLeftRP(point_set, net_lx, net_uy);
+  int32_t r4 = calcUpperRightRP(point_set, net_ux, net_uy);
+  int32_t r = std::max({r1, r2, r3, r4});
   float l_ness;
   if (bbox != 0) {
-    l_ness = R / bbox;
+    l_ness = r / bbox;
   } else {
     l_ness = 1.0;
   }
@@ -412,30 +412,30 @@ float CongestionEval::calculateLness(std::vector<std::pair<int32_t, int32_t>> po
 int32_t CongestionEval::calcLowerLeftRP(std::vector<std::pair<int32_t, int32_t>> point_set, int32_t x_min, int32_t y_min)
 {
   std::sort(point_set.begin(), point_set.end());  // Sort point_set with x-coordinates in ascending order
-  int32_t R = 0, y0 = point_set[0].second;
+  int32_t r = 0, y0 = point_set[0].second;
   for (size_t i = 1; i < point_set.size(); i++) {
     int32_t xi = point_set[i].first;
     if (point_set[i].second <= y0) {
-      R = std::max(R, (xi - x_min) * (y0 - y_min));
+      r = std::max(r, (xi - x_min) * (y0 - y_min));
       y0 = point_set[i].second;
     }
   }
-  return R;
+  return r;
 }
 
 int32_t CongestionEval::calcLowerRightRP(std::vector<std::pair<int32_t, int32_t>> point_set, int32_t x_max, int32_t y_min)
 {
   std::sort(point_set.begin(), point_set.end(), std::greater<std::pair<int32_t, int32_t>>());  // Sort point_set with x-coordinates in
                                                                                                // descending order
-  int32_t R = 0, y0 = point_set[0].second, xi;
+  int32_t r = 0, y0 = point_set[0].second, xi;
   for (size_t i = 1; i < point_set.size(); i++) {
     xi = point_set[i].first;
     if (point_set[i].second <= y0) {
-      R = std::max(R, (x_max - xi) * (y0 - y_min));
+      r = std::max(r, (x_max - xi) * (y0 - y_min));
       y0 = point_set[i].second;
     }
   }
-  return R;
+  return r;
 }
 
 int32_t CongestionEval::calcUpperLeftRP(std::vector<std::pair<int32_t, int32_t>> point_set, int32_t x_min, int32_t y_max)
@@ -443,30 +443,30 @@ int32_t CongestionEval::calcUpperLeftRP(std::vector<std::pair<int32_t, int32_t>>
   std::sort(point_set.begin(), point_set.end(), [](const std::pair<int32_t, int32_t>& a, const std::pair<int32_t, int32_t>& b) {
     return a.second > b.second;
   });  // Sort point_set with y-coordinates in descending order
-  int32_t R = 0, x0 = point_set[0].first, yi;
+  int32_t r = 0, x0 = point_set[0].first, yi;
   for (size_t i = 1; i < point_set.size(); i++) {
     yi = point_set[i].second;
     if (point_set[i].first <= x0) {
-      R = std::max(R, (y_max - yi) * (x0 - x_min));
+      r = std::max(r, (y_max - yi) * (x0 - x_min));
       x0 = point_set[i].first;
     }
   }
-  return R;
+  return r;
 }
 
 int32_t CongestionEval::calcUpperRightRP(std::vector<std::pair<int32_t, int32_t>> point_set, int32_t x_max, int32_t y_max)
 {
   std::sort(point_set.begin(), point_set.end(), std::greater<std::pair<int32_t, int32_t>>());  // Sort point_set with x-coordinates in
                                                                                                // descending order
-  int32_t R = 0, y0 = point_set[0].second, xi;
+  int32_t r = 0, y0 = point_set[0].second, xi;
   for (size_t i = 1; i < point_set.size(); i++) {
     xi = point_set[i].first;
     if (point_set[i].second >= y0) {
-      R = std::max(R, (y_max - y0) * (x_max - xi));
+      r = std::max(r, (y_max - y0) * (x_max - xi));
       y0 = point_set[i].second;
     }
   }
-  return R;
+  return r;
 }
 
 double CongestionEval::getLUT(int32_t pin_num, int32_t aspect_ratio, float l_ness)

@@ -31,12 +31,12 @@ InitEGR::~InitEGR()
 
 void InitEGR::runEGR()
 {
-  irt::RTInterface& rtInterface = irt::RTInterface::getInst();
+  irt::RTInterface& rt_interface = irt::RTInterface::getInst();
   std::map<std::string, std::any> config_map;
   config_map.insert({"-output_csv", 1});
-  rtInterface.initRT(config_map);
-  rtInterface.runEGR();
-  rtInterface.destroyRT();
+  rt_interface.initRT(config_map);
+  rt_interface.runEGR();
+  rt_interface.destroyRT();
 }
 
 float InitEGR::parseEGRWL(std::string guide_path)
@@ -45,8 +45,8 @@ float InitEGR::parseEGRWL(std::string guide_path)
 
   std::ifstream file(guide_path);
   std::string line;
-  std::map<std::string, float> netLengths;
-  std::string currentNet;
+  std::map<std::string, float> net_lengths;
+  std::string current_net;
 
   struct Wire
   {
@@ -65,19 +65,19 @@ float InitEGR::parseEGRWL(std::string guide_path)
     iss >> type;
 
     if (type == "guide") {
-      iss >> currentNet;
-      if (netLengths.find(currentNet) == netLengths.end()) {
-        netLengths[currentNet] = 0.0;
+      iss >> current_net;
+      if (net_lengths.find(current_net) == net_lengths.end()) {
+        net_lengths[current_net] = 0.0;
       }
     } else if (type == "wire") {
       Wire wire;
       iss >> wire.gx1 >> wire.gy1 >> wire.gx2 >> wire.gy2 >> wire.rx1 >> wire.ry1 >> wire.rx2 >> wire.ry2 >> wire.layer;
-      float wireLength = fabs(wire.rx1 - wire.rx2) + fabs(wire.ry1 - wire.ry2);
-      netLengths[currentNet] += wireLength;
+      float wire_length = fabs(wire.rx1 - wire.rx2) + fabs(wire.ry1 - wire.ry2);
+      net_lengths[current_net] += wire_length;
     }
   }
 
-  for (const auto& net : netLengths) {
+  for (const auto& net : net_lengths) {
     // std::cout << "Net " << net.first << " wire length: " << net.second << std::endl;
     egr_wl += net.second;
   }
@@ -92,7 +92,7 @@ float InitEGR::parseNetEGRWL(std::string guide_path, std::string net_name)
 
   std::ifstream file(guide_path);
   std::string line;
-  std::string currentNet;
+  std::string current_net;
 
   struct Wire
   {
@@ -111,12 +111,12 @@ float InitEGR::parseNetEGRWL(std::string guide_path, std::string net_name)
     iss >> type;
 
     if (type == "guide") {
-      iss >> currentNet;
-    } else if (type == "wire" && currentNet == net_name) {
+      iss >> current_net;
+    } else if (type == "wire" && current_net == net_name) {
       Wire wire;
       iss >> wire.gx1 >> wire.gy1 >> wire.gx2 >> wire.gy2 >> wire.rx1 >> wire.ry1 >> wire.rx2 >> wire.ry2 >> wire.layer;
-      float wireLength = fabs(wire.rx1 - wire.rx2) + fabs(wire.ry1 - wire.ry2);
-      net_egr_wl += wireLength;
+      float wire_length = fabs(wire.rx1 - wire.rx2) + fabs(wire.ry1 - wire.ry2);
+      net_egr_wl += wire_length;
     }
   }
   return net_egr_wl;
@@ -128,8 +128,8 @@ float InitEGR::parsePathEGRWL(std::string guide_path, std::string net_name, std:
 
   std::ifstream file(guide_path);
   std::string line;
-  std::string targetNet = net_name;
-  bool isTargetNet = false;
+  std::string target_net = net_name;
+  bool is_target_net = false;
   struct Pin
   {
     int gx, gy;
@@ -144,9 +144,9 @@ float InitEGR::parsePathEGRWL(std::string guide_path, std::string net_name, std:
     float rx1, ry1, rx2, ry2;
     std::string layer;
   };
-  Pin drivenPin;
-  Pin loadPin;
-  std::stack<Wire> wireStack;
+  Pin driven_pin;
+  Pin load_pin;
+  std::stack<Wire> wire_stack;
 
   for (int i = 0; i < 4; ++i) {
     std::getline(file, line);
@@ -158,58 +158,58 @@ float InitEGR::parsePathEGRWL(std::string guide_path, std::string net_name, std:
     iss >> type;
 
     if (type == "guide") {
-      std::string netName;
-      iss >> netName;
-      isTargetNet = (netName == targetNet);
-    } else if (isTargetNet) {
+      std::string net_name;
+      iss >> net_name;
+      is_target_net = (net_name == target_net);
+    } else if (is_target_net) {
       if (type == "pin") {
         Pin pin;
         iss >> pin.gx >> pin.gy >> pin.rx >> pin.ry >> pin.layer >> pin.energy >> pin.name;
         if (pin.energy == "driven") {
-          drivenPin = pin;
+          driven_pin = pin;
         } else if (pin.energy == "load" && pin.name == load_name) {
-          loadPin = pin;
+          load_pin = pin;
         }
       } else if (type == "wire") {
         Wire wire;
         iss >> wire.gx1 >> wire.gy1 >> wire.gx2 >> wire.gy2 >> wire.rx1 >> wire.ry1 >> wire.rx2 >> wire.ry2 >> wire.layer;
-        wireStack.push(wire);
+        wire_stack.push(wire);
       }
     }
   }
 
-  int currentX = drivenPin.gx, currentY = drivenPin.gy;
-  std::stack<Wire> tempStack;
+  int current_x = driven_pin.gx, current_y = driven_pin.gy;
+  std::stack<Wire> temp_stack;
 
-  while (!wireStack.empty()) {
-    bool wireFound = false;
-    while (!wireStack.empty()) {
-      Wire wire = wireStack.top();
-      wireStack.pop();
+  while (!wire_stack.empty()) {
+    bool wire_found = false;
+    while (!wire_stack.empty()) {
+      Wire wire = wire_stack.top();
+      wire_stack.pop();
 
-      if (wire.gx1 == currentX && wire.gy1 == currentY) {
+      if (wire.gx1 == current_x && wire.gy1 == current_y) {
         path_egr_wl += std::fabs(wire.rx1 - wire.rx2) + std::fabs(wire.ry1 - wire.ry2);
-        currentX = wire.gx2;
-        currentY = wire.gy2;
-        wireFound = true;
+        current_x = wire.gx2;
+        current_y = wire.gy2;
+        wire_found = true;
 
-        if (currentX == loadPin.gx && currentY == loadPin.gy) {
+        if (current_x == load_pin.gx && current_y == load_pin.gy) {
           return path_egr_wl;
         }
         break;
       } else {
-        tempStack.push(wire);
+        temp_stack.push(wire);
       }
     }
 
-    if (!wireFound) {
+    if (!wire_found) {
       std::cout << "Error: Path interrupted. Unable to reach load pin." << std::endl;
       return -1;
     }
 
-    while (!tempStack.empty()) {
-      wireStack.push(tempStack.top());
-      tempStack.pop();
+    while (!temp_stack.empty()) {
+      wire_stack.push(temp_stack.top());
+      temp_stack.pop();
     }
   }
 
@@ -221,7 +221,7 @@ std::unordered_map<std::string, LayerDirection> InitEGR::parseLayerDirection(std
 {
   std::ifstream file(guide_path);
   std::string line;
-  std::unordered_map<std::string, LayerDirection> layerDirections;
+  std::unordered_map<std::string, LayerDirection> layer_directions;
 
   struct Wire
   {
@@ -242,16 +242,16 @@ std::unordered_map<std::string, LayerDirection> InitEGR::parseLayerDirection(std
     if (type == "wire") {
       Wire wire;
       iss >> wire.gx1 >> wire.gy1 >> wire.gx2 >> wire.gy2 >> wire.rx1 >> wire.ry1 >> wire.rx2 >> wire.ry2 >> wire.layer;
-      if (layerDirections.find(wire.layer) == layerDirections.end()) {
+      if (layer_directions.find(wire.layer) == layer_directions.end()) {
         if (wire.gx1 == wire.gx2) {
-          layerDirections[wire.layer] = LayerDirection::Vertical;
+          layer_directions[wire.layer] = LayerDirection::Vertical;
         } else if (wire.gy1 == wire.gy2) {
-          layerDirections[wire.layer] = LayerDirection::Horizontal;
+          layer_directions[wire.layer] = LayerDirection::Horizontal;
         }
       }
     }
   }
-  return layerDirections;
+  return layer_directions;
 }
 
 }  // namespace ieval

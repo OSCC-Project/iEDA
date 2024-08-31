@@ -17,20 +17,20 @@ namespace ieval {
 
 std::string getAbsoluteFilePath(std::string filename)
 {
-  char currentPath[PATH_MAX];
-  if (getcwd(currentPath, sizeof(currentPath)) != nullptr) {
-    std::string workingDir(currentPath);
+  char current_path[PATH_MAX];
+  if (getcwd(current_path, sizeof(current_path)) != nullptr) {
+    std::string working_dir(current_path);
 
     if (filename[0] == '/') {
       return filename;
     }
 
-    return workingDir + "/" + filename;
+    return working_dir + "/" + filename;
   }
 
-  char resolvedPath[PATH_MAX];
-  if (realpath(filename.c_str(), resolvedPath) != nullptr) {
-    return std::string(resolvedPath);
+  char resolved_path[PATH_MAX];
+  if (realpath(filename.c_str(), resolved_path) != nullptr) {
+    return std::string(resolved_path);
   }
   return filename;
 }

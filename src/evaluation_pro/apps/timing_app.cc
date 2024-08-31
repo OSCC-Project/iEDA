@@ -10,15 +10,15 @@
 #include "idm.h"
 #include "log/Log.hh"
 #include "timing_api.hh"
-void test_timing();
+void TestTiming();
 
 int main()
 {
-  test_timing();
+  TestTiming();
   return 0;
 }
 
-void test_timing()
+void TestTiming()
 {
   dmInst->init("/data/project_share/dataset_baseline/gcd/workspace/config/iEDA_config/db_default_config.json");
   auto config = dmInst->get_config();

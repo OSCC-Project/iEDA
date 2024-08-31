@@ -9,21 +9,21 @@
 
 #include "wirelength_api.h"
 
-void test_total_wirelength();
-void test_net_wirelength();
-void test_path_wirelength();
-void test_egr_wirelength(std::string guide_path);
+void TestTotalWirelength();
+void TestNetWirelength();
+void TestPathWirelength();
+void TestEgrWirelength(std::string guide_path);
 
 int main()
 {
-  test_total_wirelength();
-  test_net_wirelength();
-  test_path_wirelength();
-  test_egr_wirelength("/home/yhqiu/benchmark/AiEDA/application/benchmark/28nm/gcd/output/iEDA/data/rt/initial_router/route.guide");
+  TestTotalWirelength();
+  TestNetWirelength();
+  TestPathWirelength();
+  TestEgrWirelength("/home/yhqiu/benchmark/AiEDA/application/benchmark/28nm/gcd/output/iEDA/data/rt/initial_router/route.guide");
   return 0;
 }
 
-void test_total_wirelength()
+void TestTotalWirelength()
 {
   ieval::WirelengthAPI wirelength_api;
 
@@ -49,7 +49,7 @@ void test_total_wirelength()
   std::cout << "Total VTree: " << total_wl.VTree << std::endl;
 }
 
-void test_net_wirelength()
+void TestNetWirelength()
 {
   ieval::WirelengthAPI wirelength_api;
 
@@ -72,7 +72,7 @@ void test_net_wirelength()
   std::cout << "Net VTree: " << net_wl.VTree << std::endl;
 }
 
-void test_path_wirelength()
+void TestPathWirelength()
 {
   ieval::WirelengthAPI wirelength_api;
 
@@ -98,7 +98,7 @@ void test_path_wirelength()
   std::cout << "Path VTree: " << path_wl.VTree << std::endl;
 }
 
-void test_egr_wirelength(std::string guide_path)
+void TestEgrWirelength(std::string guide_path)
 {
   ieval::WirelengthAPI wirelength_api;
 

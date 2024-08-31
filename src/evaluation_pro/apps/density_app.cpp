@@ -9,17 +9,17 @@
 
 #include "density_api.h"
 
-void test_density_map();
-void test_density_report();
+void TestDensityMap();
+void TestDensityReport();
 
 int main()
 {
-  test_density_map();
-  test_density_report();
+  TestDensityMap();
+  TestDensityReport();
   return 0;
 }
 
-void test_density_map()
+void TestDensityMap()
 {
   ieval::DensityAPI density_api;
 
@@ -89,6 +89,6 @@ void test_density_map()
   std::cout << "All net density: " << net_map_summary.allnet_density << std::endl;
 }
 
-void test_density_report()
+void TestDensityReport()
 {
 }

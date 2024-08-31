@@ -8,19 +8,19 @@
 
 #include "congestion_api.h"
 
-void test_egr_map();
-void test_rudy_map();
-void test_congestion_report();
+void TestEgrMap();
+void TestRudyMap();
+void TestCongestionReport();
 
 int main()
 {
-  test_egr_map();
-  test_rudy_map();
-  test_congestion_report();
+  TestEgrMap();
+  TestRudyMap();
+  TestCongestionReport();
   return 0;
 }
 
-void test_egr_map()
+void TestEgrMap()
 {
   ieval::CongestionAPI congestion_api;
 
@@ -32,7 +32,7 @@ void test_egr_map()
   std::cout << "egr union sum: " << egr_map_summary.union_sum << std::endl;
 }
 
-void test_rudy_map()
+void TestRudyMap()
 {
   ieval::CongestionAPI congestion_api;
 
@@ -79,6 +79,6 @@ void test_rudy_map()
   std::cout << "lut rudy union: " << rudy_map_summary.lutrudy_union << std::endl;
 }
 
-void test_congestion_report()
+void TestCongestionReport()
 {
 }
