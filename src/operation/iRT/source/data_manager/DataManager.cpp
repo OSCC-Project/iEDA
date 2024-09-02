@@ -405,6 +405,10 @@ void DataManager::buildConfig()
   if (_config.bottom_routing_layer_idx >= _config.top_routing_layer_idx) {
     RTLOG.error(Loc::current(), "The routing layer should be at least two layers!");
   }
+  // **********     DRCEngine     ********** //
+  _config.de_temp_directory_path = _config.temp_directory_path + "drc_engine/";
+  // **********     GDSPlotter     ********** //
+  _config.gp_temp_directory_path = _config.temp_directory_path + "gds_plotter/";
   // **********   PinAccessor     ********** //
   _config.pa_temp_directory_path = _config.temp_directory_path + "pin_accessor/";
   // ********     SupplyAnalyzer    ******** //
@@ -423,6 +427,10 @@ void DataManager::buildConfig()
   // **********        RT         ********** //
   RTUTIL.createDir(_config.temp_directory_path);
   RTUTIL.createDirByFile(_config.log_file_path);
+  // **********     DRCEngine     ********** //
+  RTUTIL.createDir(_config.de_temp_directory_path);
+  // **********     GDSPlotter     ********** //
+  RTUTIL.createDir(_config.gp_temp_directory_path);
   // **********   PinAccessor     ********** //
   RTUTIL.createDir(_config.pa_temp_directory_path);
   // **********   SupplyAnalyzer     ********** //
@@ -481,7 +489,7 @@ int32_t DataManager::getRecommendedPitch()
   }
   int32_t recommended_pitch = -1;
   int32_t max_count = INT32_MIN;
-  for (auto [pitch, count] : pitch_count_map) {
+  for (auto& [pitch, count] : pitch_count_map) {
     if (count > max_count) {
       max_count = count;
       recommended_pitch = pitch;
@@ -489,7 +497,7 @@ int32_t DataManager::getRecommendedPitch()
   }
   if (max_count == 1) {
     int32_t min_pitch = INT32_MAX;
-    for (auto [pitch, count] : pitch_count_map) {
+    for (auto& [pitch, count] : pitch_count_map) {
       min_pitch = std::min(min_pitch, pitch);
     }
     recommended_pitch = min_pitch;
@@ -1287,6 +1295,14 @@ void DataManager::printConfig()
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), _config.bottom_routing_layer_idx);
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "top_routing_layer_idx");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), _config.top_routing_layer_idx);
+  // **********     DRCEngine     ********** //
+  RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "DRCEngine");
+  RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), "de_temp_directory_path");
+  RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(3), _config.de_temp_directory_path);
+  // **********     GDSPlotter     ********** //
+  RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "GDSPlotter");
+  RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), "gp_temp_directory_path");
+  RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(3), _config.gp_temp_directory_path);
   // **********   PinAccessor     ********** //
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "PinAccessor");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), "pa_temp_directory_path");
@@ -1421,7 +1437,7 @@ void DataManager::printDatabase()
   for (Net& net : net_list) {
     pin_net_map[std::min(net.get_pin_list().size(), pin_num_upper_limit)]++;
   }
-  for (auto [pin_num, net_num] : pin_net_map) {
+  for (auto& [pin_num, net_num] : pin_net_map) {
     std::string head_info = "net with ";
     if (pin_num == pin_num_upper_limit) {
       head_info += ">=";

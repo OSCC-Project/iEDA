@@ -1325,7 +1325,7 @@ void RTInterface::updateTimingAndPower(std::vector<std::map<std::string, std::ve
     timing_engine->updateRCTreeInfo(ista_net);
     // auto* rc_tree = timing_engine->get_ista()->getRcNet(ista_net)->rct();
     // rc_tree->printGraphViz();
-    // int a = 0;
+    // int32_t a = 0;
     // dot -Tpdf tree.dot -o tree.pdf
   }
   timing_engine->updateTiming();
@@ -1389,7 +1389,7 @@ ieda_feature::RTSummary RTInterface::outputSummary()
   top_rt_summary.ir_summary.cut_via_num_map = rt_summary.ir_summary.cut_via_num_map;
   top_rt_summary.ir_summary.total_via_num = rt_summary.ir_summary.total_via_num;
 
-  for (auto [clock_name, timing_map] : rt_summary.ir_summary.clock_timing) {
+  for (auto& [clock_name, timing_map] : rt_summary.ir_summary.clock_timing) {
     ieda_feature::ClockTiming clock_timing;
     clock_timing.clock_name = clock_name;
     clock_timing.setup_tns = timing_map["TNS"];
@@ -1412,7 +1412,7 @@ ieda_feature::RTSummary RTInterface::outputSummary()
     top_gr_summary.cut_via_num_map = gr_summary.cut_via_num_map;
     top_gr_summary.total_via_num = gr_summary.total_via_num;
 
-    for (auto [clock_name, timing_map] : gr_summary.clock_timing) {
+    for (auto& [clock_name, timing_map] : gr_summary.clock_timing) {
       ieda_feature::ClockTiming clock_timing;
       clock_timing.clock_name = clock_name;
       clock_timing.setup_tns = timing_map["TNS"];
@@ -1439,7 +1439,7 @@ ieda_feature::RTSummary RTInterface::outputSummary()
     top_dr_summary.routing_violation_num_map = dr_summary.routing_violation_num_map;
     top_dr_summary.total_violation_num = dr_summary.total_violation_num;
 
-    for (auto [clock_name, timing_map] : dr_summary.clock_timing) {
+    for (auto& [clock_name, timing_map] : dr_summary.clock_timing) {
       ieda_feature::ClockTiming clock_timing;
       clock_timing.clock_name = clock_name;
       clock_timing.setup_tns = timing_map["TNS"];

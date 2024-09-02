@@ -351,7 +351,7 @@ void DetailedRouter::initDRTaskList(DRModel& dr_model, DRBox& dr_box)
       }
     }
   }
-  for (auto [net_idx, dr_group_list] : net_group_list_map) {
+  for (auto& [net_idx, dr_group_list] : net_group_list_map) {
     if (dr_group_list.size() < 2) {
       continue;
     }
