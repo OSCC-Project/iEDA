@@ -8,4 +8,4 @@ AUX_SOURCE_DIRECTORY(./ SRC)
 
 ADD_LIBRARY(aocv-parser STATIC ${SRC})
 
-TARGET_LINK_LIBRARIES(aocv-parser  utility)
+TARGET_LINK_LIBRARIES(aocv-parser  ista_utility)

@@ -18,7 +18,7 @@ target_include_directories(verilog_builder
 target_link_libraries(verilog_builder 
     PRIVATE
         verilog 
-        utility 
+        ista_utility 
         def_service 
         idb
         time
