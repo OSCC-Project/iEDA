@@ -23,6 +23,8 @@ class InitEGR
  public:
   InitEGR();
   ~InitEGR();
+  static InitEGR* getInst();
+  static void destroyInst();
 
   void runEGR();
 
@@ -31,6 +33,9 @@ class InitEGR
   float parsePathEGRWL(std::string guide_path, std::string net_name, std::string load_name);
 
   std::unordered_map<std::string, LayerDirection> parseLayerDirection(std::string guide_path);
+
+ private:
+  static InitEGR* _init_egr;
 };
 
 }  // namespace ieval

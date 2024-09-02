@@ -27,10 +27,14 @@ struct PLCommonSummary
   int64_t HPWL;
   int64_t STWL;
   int64_t GRWL;
+
   float congestion;
   float tns;
   float wns;
   float suggest_freq;
+  int64_t hpwl_eval;
+  int64_t stwl_eval;
+  int64_t grwl_eval;
 };
 
 struct LGSummary

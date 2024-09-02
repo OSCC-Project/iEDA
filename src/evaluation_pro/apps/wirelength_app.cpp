@@ -7,19 +7,23 @@
 
 #include <iostream>
 
+#include "idm.h"
 #include "wirelength_api.h"
 
 void TestTotalWirelength();
 void TestNetWirelength();
 void TestPathWirelength();
 void TestEgrWirelength(std::string guide_path);
+void TestWirelengthEvalFromIDB();
 
 int main()
 {
-  TestTotalWirelength();
-  TestNetWirelength();
-  TestPathWirelength();
-  TestEgrWirelength("/home/yhqiu/benchmark/AiEDA/application/benchmark/28nm/gcd/output/iEDA/data/rt/initial_router/route.guide");
+  // TestTotalWirelength();
+  // TestNetWirelength();
+  // TestPathWirelength();
+  // TestEgrWirelength("./rt_temp_directory/initial_router/route.guide");
+  TestWirelengthEvalFromIDB();
+
   return 0;
 }
 
@@ -110,4 +114,18 @@ void TestEgrWirelength(std::string guide_path)
 
   float path_egr_wl = wirelength_api.pathEGRWL(guide_path, "clk", "clk_0_buf:I");
   std::cout << "Path EGR WL: " << path_egr_wl << std::endl;
+}
+
+void TestWirelengthEvalFromIDB()
+{
+  dmInst->init("/data/yhqiu/benchmark/AiEDA/application/benchmark/28nm/gcd/config/db_default_config_test.json");
+
+  ieval::WirelengthAPI wirelength_api;
+  ieval::TotalWLSummary wl_summary = wirelength_api.totalWL();
+
+  std::cout << "Total HPWL: " << wl_summary.HPWL << std::endl;
+  std::cout << "Total FLUTE: " << wl_summary.FLUTE << std::endl;
+  std::cout << "Total HTree: " << wl_summary.HTree << std::endl;
+  std::cout << "Total VTree: " << wl_summary.VTree << std::endl;
+  std::cout << "Total GRWL: " << wl_summary.GRWL << std::endl;
 }

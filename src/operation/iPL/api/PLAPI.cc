@@ -42,6 +42,7 @@
 #include "SteinerWirelength.hh"
 #include "feature_ipl.h"
 #include "src/MapFiller.h"
+#include "wirelength_db.h"
 
 namespace ipl {
 
@@ -383,9 +384,9 @@ void PLAPI::runFlow()
   runGP();
   printHPWLInfo();
   printTimingInfo();
-  notifyPLCongestionInfo(0);
+  notifyPLWLInfo(0);
   if (isSTAStarted()) {
-    notifyPLWLInfo(0);
+    notifyPLCongestionInfo(0);
     notifyPLTimingInfo(0);
   }
 
@@ -404,8 +405,8 @@ void PLAPI::runFlow()
   runLG();
   printHPWLInfo();
   printTimingInfo();
+  notifyPLWLInfo(1);
   if (isSTAStarted()) {
-    notifyPLWLInfo(1);
     notifyPLCongestionInfo(1);
     notifyPLTimingInfo(1);
   }
@@ -419,8 +420,8 @@ void PLAPI::runFlow()
   printHPWLInfo();
   printTimingInfo();
 
+  notifyPLWLInfo(2);
   if (isSTAStarted()) {
-    notifyPLWLInfo(2);
     notifyPLCongestionInfo(2);
     notifyPLTimingInfo(2);
   }
@@ -548,6 +549,22 @@ void PLAPI::notifyPLWLInfo(int stage)
 
   PlacerDBInst.PL_HPWL[stage] = hpwl.obtainTotalWirelength();
   PlacerDBInst.PL_STWL[stage] = stwl.obtainTotalWirelength();
+
+  // method 1, most work in eval tool, from iDB data to eval tool
+  this->writeBackSourceDataBase();
+  ieval::TotalWLSummary wl_summary = _external_api->evalproIDBWL();
+  PlacerDBInst.hpwl_eval[stage] = wl_summary.HPWL;
+  PlacerDBInst.stwl_eval[stage] = wl_summary.FLUTE;
+  PlacerDBInst.grwl_eval[stage] = wl_summary.GRWL;
+
+  // // method 2, most work in point tool
+  // std::vector<std::vector<std::pair<int32_t, int32_t>>> point_sets;
+  // point_sets = hpwl.constructPointSets();
+  // ieval::TotalWLSummary wl_summary = _external_api->evalproWL(point_sets);
+  // PlacerDBInst.hpwl_eval[stage] = wl_summary.HPWL;
+  // PlacerDBInst.stwl_eval[stage] = wl_summary.FLUTE;
+  // this->writeBackSourceDataBase();
+  // PlacerDBInst.grwl_eval[stage] = _external_api->evalproGRWL() * PlacerDBInst.get_layout()->get_database_unit();
 }
 
 void PLAPI::notifyPLCongestionInfo(int stage)
@@ -1029,6 +1046,11 @@ ieda_feature::PlaceSummary PLAPI::outputSummary(std::string step)
   auto HPWL = PlacerDBInst.PL_HPWL;
   auto STWL = PlacerDBInst.PL_STWL;
   auto GRWL = PlacerDBInst.PL_GRWL;
+
+  auto hpwl_eval = PlacerDBInst.hpwl_eval;
+  auto stwl_eval = PlacerDBInst.stwl_eval;
+  auto grwl_eval = PlacerDBInst.grwl_eval;
+
   auto congestion = PlacerDBInst.congestion;
   auto tns = PlacerDBInst.tns;
   auto wns = PlacerDBInst.wns;
@@ -1041,6 +1063,11 @@ ieda_feature::PlaceSummary PLAPI::outputSummary(std::string step)
     summary.gplace.HPWL = HPWL[0];
     summary.gplace.STWL = STWL[0];
     summary.gplace.GRWL = GRWL[0];
+
+    summary.gplace.hpwl_eval = hpwl_eval[0];
+    summary.gplace.stwl_eval = stwl_eval[0];
+    summary.gplace.grwl_eval = grwl_eval[0];
+
     summary.gplace.congestion = congestion[0];
     summary.gplace.tns = tns[0];
     summary.gplace.wns = wns[0];
@@ -1051,6 +1078,10 @@ ieda_feature::PlaceSummary PLAPI::outputSummary(std::string step)
     summary.dplace.HPWL = HPWL[1];
     summary.dplace.STWL = STWL[1];
     summary.dplace.GRWL = GRWL[1];
+
+    summary.dplace.hpwl_eval = hpwl_eval[1];
+    summary.dplace.stwl_eval = stwl_eval[1];
+    summary.dplace.grwl_eval = grwl_eval[1];
     summary.dplace.congestion = congestion[1];
     summary.dplace.tns = tns[1];
     summary.dplace.wns = wns[1];
@@ -1083,6 +1114,10 @@ ieda_feature::PlaceSummary PLAPI::outputSummary(std::string step)
     summary.lg_summary.pl_common_summary.HPWL = HPWL[2];
     summary.lg_summary.pl_common_summary.STWL = STWL[2];
     summary.lg_summary.pl_common_summary.GRWL = GRWL[2];
+
+    summary.lg_summary.pl_common_summary.hpwl_eval = hpwl_eval[2];
+    summary.lg_summary.pl_common_summary.stwl_eval = stwl_eval[2];
+    summary.lg_summary.pl_common_summary.grwl_eval = grwl_eval[2];
     summary.lg_summary.pl_common_summary.congestion = congestion[2];
     summary.lg_summary.pl_common_summary.tns = tns[2];
     summary.lg_summary.pl_common_summary.wns = wns[2];

@@ -64,6 +64,10 @@ class CongPin;
 
 }  // namespace eval
 
+namespace ieval {
+struct TotalWLSummary;
+}
+
 namespace ista {
 enum class AnalysisMode;
 }

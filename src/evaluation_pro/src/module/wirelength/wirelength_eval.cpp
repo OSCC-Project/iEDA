@@ -12,17 +12,39 @@
 
 #include "init_egr.h"
 #include "init_flute.h"
+#include "init_idb.h"
 
 namespace ieval {
 
+#define EVAL_INIT_IDB_INST (ieval::InitIDB::getInst())
+#define EVAL_INIT_FLUTE_INST (ieval::InitFlute::getInst())
+#define EVAL_INIT_EGR_INST (ieval::InitEGR::getInst())
+
+WirelengthEval* WirelengthEval::_wirelength_eval = nullptr;
+
 WirelengthEval::WirelengthEval()
 {
-  InitFlute init_flute;
-  init_flute.readLUT();
 }
 
 WirelengthEval::~WirelengthEval()
 {
+}
+
+WirelengthEval* WirelengthEval::getInst()
+{
+  if (_wirelength_eval == nullptr) {
+    _wirelength_eval = new WirelengthEval();
+  }
+
+  return _wirelength_eval;
+}
+
+void WirelengthEval::destroyInst()
+{
+  if (_wirelength_eval != nullptr) {
+    delete _wirelength_eval;
+    _wirelength_eval = nullptr;
+  }
 }
 
 int32_t WirelengthEval::evalTotalHPWL(PointSets point_sets)
@@ -69,6 +91,31 @@ int32_t WirelengthEval::evalTotalVTree(PointSets point_sets)
   return total_vtree;
 }
 
+int32_t WirelengthEval::evalTotalHPWL()
+{
+  return evalTotalHPWL(EVAL_INIT_IDB_INST->getPointSets());
+}
+
+int32_t WirelengthEval::evalTotalFLUTE()
+{
+  return evalTotalFLUTE(EVAL_INIT_IDB_INST->getPointSets());
+}
+
+int32_t WirelengthEval::evalTotalHTree()
+{
+  return evalTotalHTree(EVAL_INIT_IDB_INST->getPointSets());
+}
+
+int32_t WirelengthEval::evalTotalVTree()
+{
+  return evalTotalVTree(EVAL_INIT_IDB_INST->getPointSets());
+}
+
+int32_t WirelengthEval::evalTotalEGRWL()
+{
+  return evalTotalEGRWL("./rt_temp_directory/initial_router/route.guide");
+}
+
 int32_t WirelengthEval::evalNetHPWL(PointSet point_set)
 {
   int32_t net_hpwl = 0;
@@ -106,14 +153,13 @@ int32_t WirelengthEval::evalNetFLUTE(PointSet point_set)
       j++;
     }
 
-    InitFlute init_flute;
-    Flute::Tree flute_tree = init_flute.flute(num_pin, x, y, 8);
+    Flute::Tree flute_tree = EVAL_INIT_FLUTE_INST->flute(num_pin, x, y, 8);
 
     net_stwl = flute_tree.length;
 
     delete[] x;
     delete[] y;
-    init_flute.freeTree(flute_tree);
+    EVAL_INIT_FLUTE_INST->freeTree(flute_tree);
   }
 
   return net_stwl;
@@ -205,8 +251,7 @@ int32_t WirelengthEval::evalPathFLUTE(PointSet point_set, PointPair point_pair)
       j++;
     }
 
-    InitFlute init_flute;
-    Flute::Tree flute_tree = init_flute.flute(num_pin, x, y, 8);
+    Flute::Tree flute_tree = EVAL_INIT_FLUTE_INST->flute(num_pin, x, y, 8);
 
     std::pair<int32_t, int32_t> point1 = point_pair.first;
     std::pair<int32_t, int32_t> point2 = point_pair.second;
@@ -262,7 +307,7 @@ int32_t WirelengthEval::evalPathFLUTE(PointSet point_set, PointPair point_pair)
 
     delete[] x;
     delete[] y;
-    init_flute.freeTree(flute_tree);
+    EVAL_INIT_FLUTE_INST->freeTree(flute_tree);
   }
 
   return path_stwl;
@@ -310,38 +355,52 @@ int32_t WirelengthEval::evalPathVTree(PointSet point_set, PointPair point_pair)
 
 float WirelengthEval::evalTotalEGRWL(std::string guide_path)
 {
-  float total_egrwl = 0;
-
-  InitEGR init_EGR;
-  init_EGR.runEGR();
-
-  total_egrwl = init_EGR.parseEGRWL(guide_path);
-
-  return total_egrwl;
+  return EVAL_INIT_EGR_INST->parseEGRWL(guide_path);
 }
 
 float WirelengthEval::evalNetEGRWL(std::string guide_path, std::string net_name)
 {
-  float net_egrwl = 0;
-
-  InitEGR init_EGR;
-  init_EGR.runEGR();
-
-  net_egrwl = init_EGR.parseNetEGRWL(guide_path, net_name);
-
-  return net_egrwl;
+  return EVAL_INIT_EGR_INST->parseNetEGRWL(guide_path, net_name);
 }
 
 float WirelengthEval::evalPathEGRWL(std::string guide_path, std::string net_name, std::string load_name)
 {
-  float path_egrwl = 0;
+  return EVAL_INIT_EGR_INST->parsePathEGRWL(guide_path, net_name, load_name);
+}
 
-  InitEGR init_EGR;
-  init_EGR.runEGR();
+int32_t WirelengthEval::getDesignUnit()
+{
+  return EVAL_INIT_IDB_INST->getDesignUnit();
+}
 
-  path_egrwl = init_EGR.parsePathEGRWL(guide_path, net_name, load_name);
+void WirelengthEval::initIDB()
+{
+  EVAL_INIT_IDB_INST->initPointSets();
+}
 
-  return path_egrwl;
+void WirelengthEval::destroyIDB()
+{
+  EVAL_INIT_IDB_INST->destroyInst();
+}
+
+void WirelengthEval::initEGR()
+{
+  EVAL_INIT_EGR_INST->runEGR();
+}
+
+void WirelengthEval::destroyEGR()
+{
+  EVAL_INIT_EGR_INST->destroyInst();
+}
+
+void WirelengthEval::initFlute()
+{
+  EVAL_INIT_FLUTE_INST->readLUT();
+}
+
+void WirelengthEval::destroyFlute()
+{
+  EVAL_INIT_FLUTE_INST->destroyInst();
 }
 
 }  // namespace ieval

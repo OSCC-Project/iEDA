@@ -78,6 +78,9 @@ class ExternalAPI
   float evalproCongestion();
   int32_t evalprohpWL();
   int32_t evalproflute();
+  ieval::TotalWLSummary evalproWL(std::vector<std::vector<std::pair<int32_t, int32_t>>> point_sets);
+  int32_t evalproGRWL();
+  ieval::TotalWLSummary evalproIDBWL();
 
   std::vector<float> getUseCapRatioList();
   void plotCongMap(const std::string& plot_path, const std::string& output_file_name);

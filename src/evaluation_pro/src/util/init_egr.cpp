@@ -21,12 +21,30 @@
 
 namespace ieval {
 
+InitEGR* InitEGR::_init_egr = nullptr;
+
 InitEGR::InitEGR()
 {
 }
 
 InitEGR::~InitEGR()
 {
+}
+
+InitEGR* InitEGR::getInst()
+{
+  if (_init_egr == nullptr) {
+    _init_egr = new InitEGR();
+  }
+  return _init_egr;
+}
+
+void InitEGR::destroyInst()
+{
+  if (_init_egr != nullptr) {
+    delete _init_egr;
+    _init_egr = nullptr;
+  }
 }
 
 void InitEGR::runEGR()

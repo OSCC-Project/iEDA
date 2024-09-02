@@ -73,3 +73,19 @@ target_include_directories(eval_pro_util_wirelength_lut
     PUBLIC
         ${EVAL_PRO_UTIL}
 )
+
+
+# iDB
+add_library(eval_pro_util_init_idb
+    ${EVAL_PRO_UTIL}/init_idb.cpp
+)
+
+target_link_libraries(eval_pro_util_init_idb
+    PRIVATE
+        idm
+)
+
+target_include_directories(eval_pro_util_init_idb
+    PUBLIC
+        ${EVAL_PRO_UTIL}
+)

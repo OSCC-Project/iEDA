@@ -197,6 +197,26 @@ float ExternalAPI::evalproCongestion()
   return wirelength_api.totalEGRWL("./rt_temp_directory/initial_router/route.guide");
 }
 
+ieval::TotalWLSummary ExternalAPI::evalproWL(std::vector<std::vector<std::pair<int32_t, int32_t>>> point_sets)
+{
+  ieval::WirelengthAPI wirelength_api;
+  ieval::TotalWLSummary total_wl = wirelength_api.totalWL(point_sets);
+  return total_wl;
+}
+
+int32_t ExternalAPI::evalproGRWL()
+{
+  ieval::WirelengthAPI wirelength_api;
+  return wirelength_api.totalEGRWL("./rt_temp_directory/initial_router/route.guide");
+}
+
+ieval::TotalWLSummary ExternalAPI::evalproIDBWL()
+{
+  ieval::WirelengthAPI wirelength_api;
+  ieval::TotalWLSummary total_wl = wirelength_api.totalWL();
+  return total_wl;
+}
+
 int32_t ExternalAPI::evalprohpWL()
 {
   ieval::WirelengthAPI wirelength_api;

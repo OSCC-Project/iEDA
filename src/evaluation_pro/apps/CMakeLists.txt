@@ -60,6 +60,7 @@ add_executable(wirelength_app
 target_link_libraries(wirelength_app
     PRIVATE
     eval_pro_wirelength_api
+    idm
 )
 
 target_include_directories(wirelength_app

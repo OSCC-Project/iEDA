@@ -18,6 +18,7 @@ class WirelengthAPI
   ~WirelengthAPI();
 
   TotalWLSummary totalWL(PointSets point_sets);
+  TotalWLSummary totalWL();
   NetWLSummary netWL(PointSet point_set);
   PathWLSummary pathWL(PointSet point_set, PointPair point_pair);
 
