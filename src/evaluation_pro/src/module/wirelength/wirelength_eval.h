@@ -45,6 +45,7 @@ class WirelengthEval
   float evalPathEGRWL(std::string guide_path, std::string net_name, std::string load_name);
 
   int32_t getDesignUnit();
+  std::vector<std::pair<int32_t, int32_t>> getNetPointSet(std::string net_name);
 
   void initIDB();
   void destroyIDB();

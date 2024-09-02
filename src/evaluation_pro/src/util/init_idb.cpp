@@ -43,6 +43,7 @@ void InitIDB::initPointSets()
 
   for (auto* idb_net : idb_design->get_net_list()->get_net_list()) {
     std::vector<std::pair<int32_t, int32_t>> point_set;
+    std::string net_name = idb_net->get_net_name();
 
     auto* idb_driving_pin = idb_net->get_driving_pin();
     if (idb_driving_pin) {
@@ -57,6 +58,7 @@ void InitIDB::initPointSets()
       point_set.emplace_back(std::make_pair(x, y));
     }
 
+    _name_point_set[net_name] = point_set;
     _point_sets.emplace_back(point_set);
   }
 }

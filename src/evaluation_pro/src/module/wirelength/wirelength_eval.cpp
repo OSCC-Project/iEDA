@@ -8,6 +8,7 @@
 #include "wirelength_eval.h"
 
 #include <cmath>
+#include <iostream>
 #include <queue>
 
 #include "init_egr.h"
@@ -371,6 +372,17 @@ float WirelengthEval::evalPathEGRWL(std::string guide_path, std::string net_name
 int32_t WirelengthEval::getDesignUnit()
 {
   return EVAL_INIT_IDB_INST->getDesignUnit();
+}
+
+std::vector<std::pair<int32_t, int32_t>> WirelengthEval::getNetPointSet(std::string net_name)
+{
+  auto name_point_set = EVAL_INIT_IDB_INST->getNamePointSet();
+  if (name_point_set.find(net_name) != name_point_set.end()) {
+    return name_point_set[net_name];
+  } else {
+    std::cout << "Net " << net_name << " not found!" << std::endl;
+    return {};
+  }
 }
 
 void WirelengthEval::initIDB()

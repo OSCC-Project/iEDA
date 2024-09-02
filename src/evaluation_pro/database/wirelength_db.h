@@ -34,6 +34,7 @@ struct NetWLSummary
   int32_t FLUTE;
   int32_t HTree;
   int32_t VTree;
+  int32_t GRWL;
 };
 
 struct PathWLSummary

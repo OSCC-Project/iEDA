@@ -17,8 +17,10 @@ class WirelengthAPI
   WirelengthAPI();
   ~WirelengthAPI();
 
-  TotalWLSummary totalWL(PointSets point_sets);
   TotalWLSummary totalWL();
+  NetWLSummary netWL(std::string net_name);
+
+  TotalWLSummary totalWL(PointSets point_sets);
   NetWLSummary netWL(PointSet point_set);
   PathWLSummary pathWL(PointSet point_set, PointPair point_pair);
 
