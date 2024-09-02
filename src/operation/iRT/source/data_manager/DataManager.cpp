@@ -99,13 +99,13 @@ void DataManager::updateAccessPointToGCellMap(ChangeType change_type, int32_t ne
 {
   GridMap<GCell>& gcell_map = _database.get_gcell_map();
 
-  auto& net_access_point_map = gcell_map[access_point->get_grid_x()][access_point->get_grid_y()].get_net_access_point_map();
+  auto& access_net_point_map = gcell_map[access_point->get_grid_x()][access_point->get_grid_y()].get_access_net_point_map();
   if (change_type == ChangeType::kAdd) {
-    net_access_point_map[net_idx].insert(access_point);
+    access_net_point_map[net_idx].insert(access_point);
   } else {
-    net_access_point_map[net_idx].erase(access_point);
-    if (net_access_point_map[net_idx].empty()) {
-      net_access_point_map.erase(net_idx);
+    access_net_point_map[net_idx].erase(access_point);
+    if (access_net_point_map[net_idx].empty()) {
+      access_net_point_map.erase(net_idx);
     }
   }
   if (change_type == ChangeType::kDel) {
@@ -237,19 +237,19 @@ std::map<bool, std::map<int32_t, std::map<int32_t, std::set<EXTLayerRect*>>>> Da
   return type_layer_net_fixed_rect_map;
 }
 
-std::map<int32_t, std::set<AccessPoint*>> DataManager::getNetAccessPointMap(EXTPlanarRect& region)
+std::map<int32_t, std::set<AccessPoint*>> DataManager::getAccessNetPointMap(EXTPlanarRect& region)
 {
   GridMap<GCell>& gcell_map = _database.get_gcell_map();
 
-  std::map<int32_t, std::set<AccessPoint*>> net_access_point_map;
+  std::map<int32_t, std::set<AccessPoint*>> access_net_point_map;
   for (int32_t x = region.get_grid_ll_x(); x <= region.get_grid_ur_x(); x++) {
     for (int32_t y = region.get_grid_ll_y(); y <= region.get_grid_ur_y(); y++) {
-      for (auto& [net_idx, access_point_set] : gcell_map[x][y].get_net_access_point_map()) {
-        net_access_point_map[net_idx].insert(access_point_set.begin(), access_point_set.end());
+      for (auto& [net_idx, access_point_set] : gcell_map[x][y].get_access_net_point_map()) {
+        access_net_point_map[net_idx].insert(access_point_set.begin(), access_point_set.end());
       }
     }
   }
-  return net_access_point_map;
+  return access_net_point_map;
 }
 
 std::map<int32_t, std::set<Segment<LayerCoord>*>> DataManager::getGlobalNetResultMap(EXTPlanarRect& region)

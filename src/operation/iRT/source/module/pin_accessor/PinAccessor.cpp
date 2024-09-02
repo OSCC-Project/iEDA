@@ -377,7 +377,7 @@ void PinAccessor::uploadAccessPointList(PAModel& pa_model)
   ScaleAxis& gcell_axis = RTDM.getDatabase().get_gcell_axis();
   Die& die = RTDM.getDatabase().get_die();
 
-  for (auto& [net_idx, access_point_set] : RTDM.getNetAccessPointMap(die)) {
+  for (auto& [net_idx, access_point_set] : RTDM.getAccessNetPointMap(die)) {
     for (AccessPoint* access_point : access_point_set) {
       RTDM.updateAccessPointToGCellMap(ChangeType::kDel, net_idx, access_point);
     }
@@ -546,9 +546,9 @@ void PinAccessor::initPATaskList(PAModel& pa_model, PABox& pa_box)
 
   EXTPlanarRect& box_rect = pa_box.get_box_rect();
   PlanarRect& box_real_rect = box_rect.get_real_rect();
-  std::map<int32_t, std::set<AccessPoint*>> net_access_point_map = RTDM.getNetAccessPointMap(box_rect);
+  std::map<int32_t, std::set<AccessPoint*>> access_net_point_map = RTDM.getAccessNetPointMap(box_rect);
 
-  for (auto& [net_idx, access_point_set] : net_access_point_map) {
+  for (auto& [net_idx, access_point_set] : access_net_point_map) {
     PANet& pa_net = pa_net_list[net_idx];
 
     std::map<int32_t, std::set<AccessPoint*>> pin_access_point_map;
@@ -1413,7 +1413,7 @@ void PinAccessor::updatePAModel(PAModel& pa_model)
   ScaleAxis& gcell_axis = RTDM.getDatabase().get_gcell_axis();
   Die& die = RTDM.getDatabase().get_die();
 
-  for (auto& [net_idx, access_point_set] : RTDM.getNetAccessPointMap(die)) {
+  for (auto& [net_idx, access_point_set] : RTDM.getAccessNetPointMap(die)) {
     for (AccessPoint* access_point : access_point_set) {
       RTDM.updateAccessPointToGCellMap(ChangeType::kDel, net_idx, access_point);
     }
@@ -1600,7 +1600,7 @@ void PinAccessor::updateSummary(PAModel& pa_model)
       = {{AccessPointType::kNone, 0}, {AccessPointType::kTrackGrid, 0}, {AccessPointType::kOnTrack, 0}, {AccessPointType::kShapeCenter, 0}};
   total_access_point_num = 0;
 
-  for (auto& [net_idx, access_point_list] : RTDM.getNetAccessPointMap(die)) {
+  for (auto& [net_idx, access_point_list] : RTDM.getAccessNetPointMap(die)) {
     for (AccessPoint* access_point : access_point_list) {
       routing_access_point_num_map[access_point->get_layer_idx()]++;
       type_access_point_num_map[access_point->get_type()]++;
@@ -1656,7 +1656,7 @@ void PinAccessor::writePlanarPinCSV(PAModel& pa_model)
   planar_pin_map.init(gcell_map.get_x_size(), gcell_map.get_y_size());
   for (int32_t x = 0; x < gcell_map.get_x_size(); x++) {
     for (int32_t y = 0; y < gcell_map.get_y_size(); y++) {
-      for (auto& [net_idx, access_point_list] : gcell_map[x][y].get_net_access_point_map()) {
+      for (auto& [net_idx, access_point_list] : gcell_map[x][y].get_access_net_point_map()) {
         planar_pin_map[x][y] += static_cast<int32_t>(access_point_list.size());
       }
     }
@@ -1687,7 +1687,7 @@ void PinAccessor::writeLayerPinCSV(PAModel& pa_model)
   }
   for (int32_t x = 0; x < gcell_map.get_x_size(); x++) {
     for (int32_t y = 0; y < gcell_map.get_y_size(); y++) {
-      for (auto& [net_idx, access_point_list] : gcell_map[x][y].get_net_access_point_map()) {
+      for (auto& [net_idx, access_point_list] : gcell_map[x][y].get_access_net_point_map()) {
         for (AccessPoint* access_point : access_point_list) {
           layer_pin_map[access_point->get_layer_idx()][x][y]++;
         }
@@ -1785,7 +1785,7 @@ void PinAccessor::debugPlotPAModel(PAModel& pa_model, std::string flag)
   gp_gds.addStruct(gcell_axis_struct);
 
   // access_point
-  for (auto& [net_idx, access_point_set] : RTDM.getNetAccessPointMap(die)) {
+  for (auto& [net_idx, access_point_set] : RTDM.getAccessNetPointMap(die)) {
     GPStruct access_point_struct(RTUTIL.getString("access_point(net_", net_idx, ")"));
     for (AccessPoint* access_point : access_point_set) {
       int32_t x = access_point->get_real_x();

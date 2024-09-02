@@ -294,12 +294,12 @@ void DetailedRouter::initDRTaskList(DRModel& dr_model, DRBox& dr_box)
 
   EXTPlanarRect& box_rect = dr_box.get_box_rect();
   PlanarRect& box_real_rect = box_rect.get_real_rect();
-  std::map<int32_t, std::set<AccessPoint*>> net_access_point_map = RTDM.getNetAccessPointMap(box_rect);
+  std::map<int32_t, std::set<AccessPoint*>> access_net_point_map = RTDM.getAccessNetPointMap(box_rect);
   std::map<int32_t, std::vector<Segment<LayerCoord>>>& net_result_map = dr_box.get_net_result_map();
 
   std::map<int32_t, std::vector<DRGroup>> net_group_list_map;
   {
-    for (auto& [net_idx, access_point_set] : net_access_point_map) {
+    for (auto& [net_idx, access_point_set] : access_net_point_map) {
       std::map<int32_t, DRGroup> pin_group_map;
       for (AccessPoint* access_point : access_point_set) {
         pin_group_map[access_point->get_pin_idx()].get_coord_direction_map()[access_point->getRealLayerCoord()];
