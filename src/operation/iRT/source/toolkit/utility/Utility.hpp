@@ -776,12 +776,12 @@ class Utility
   static bool hasRegularRect(const PlanarRect& rect, const PlanarRect& border)
   {
     // 计算新的左下角坐标
-    int new_ll_x = std::max(rect.get_ll_x(), border.get_ll_x());
-    int new_ll_y = std::max(rect.get_ll_y(), border.get_ll_y());
+    int32_t new_ll_x = std::max(rect.get_ll_x(), border.get_ll_x());
+    int32_t new_ll_y = std::max(rect.get_ll_y(), border.get_ll_y());
 
     // 计算新的右上角坐标
-    int new_ur_x = std::min(rect.get_ur_x(), border.get_ur_x());
-    int new_ur_y = std::min(rect.get_ur_y(), border.get_ur_y());
+    int32_t new_ur_x = std::min(rect.get_ur_x(), border.get_ur_x());
+    int32_t new_ur_y = std::min(rect.get_ur_y(), border.get_ur_y());
 
     // 检查新的坐标是否有效
     return new_ll_x <= new_ur_x && new_ll_y <= new_ur_y;
@@ -1965,7 +1965,7 @@ class Utility
       }
     }
     bool is_connectivity = true;
-    for (auto [pin_idx, is_visited] : visited_map) {
+    for (auto& [pin_idx, is_visited] : visited_map) {
       if (is_visited == false) {
         RTLOG.warn(Loc::current(), "The pin idx ", pin_idx, " unreachable!");
         is_connectivity = false;
@@ -3101,7 +3101,6 @@ class Utility
   static void createDir(std::string dir_path)
   {
     if (0 != access(dir_path.c_str(), F_OK)) {
-      RTLOG.info(Loc::current(), "Create directory ", dir_path);
       std::error_code system_error;
       if (!std::filesystem::create_directories(dir_path, system_error)) {
         if (!std::filesystem::exists(dir_path)) {

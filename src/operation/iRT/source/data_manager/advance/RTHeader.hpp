@@ -18,6 +18,7 @@
 
 #include <assert.h>
 #include <libgen.h>
+#include <omp.h>
 #include <sys/resource.h>
 #include <sys/stat.h>
 #include <sys/time.h>
@@ -30,8 +31,10 @@
 #include <array>
 #include <cassert>
 #include <cfloat>
+#include <chrono>
 #include <climits>
 #include <cmath>
+#include <condition_variable>
 #include <cstdint>
 #include <cstdio>
 #include <ctime>
@@ -42,12 +45,14 @@
 #include <iomanip>
 #include <iostream>
 #include <list>
+#include <mutex>
 #include <ostream>
 #include <queue>
 #include <regex>
 #include <set>
 #include <sstream>
 #include <string>
+#include <thread>
 #include <tuple>
 #include <type_traits>
 #include <unordered_map>
