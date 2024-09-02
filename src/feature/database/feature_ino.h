@@ -21,9 +21,9 @@
 
 namespace ieda_feature {
 
-struct NONetTiming
+struct NOClockTiming
 {
-  std::string net_name;
+  std::string clock_name;
   double setup_tns;
   double setup_wns;
   double hold_tns;
@@ -31,17 +31,17 @@ struct NONetTiming
   double suggest_freq;
 };
 
-struct NONetTimingCmp
+struct NOClockTimingCmp
 {
-  std::string net_name;
-  NONetTiming origin;
-  NONetTiming opt;
-  NONetTiming delta;
+  std::string clock_name;
+  NOClockTiming origin;
+  NOClockTiming opt;
+  NOClockTiming delta;
 };
 
 struct NetOptSummary
 {
-  std::vector<NONetTimingCmp> net_timings;
+  std::vector<NOClockTimingCmp> clock_timings;
 };
 
 }  // namespace ieda_feature
