@@ -9,6 +9,7 @@ add_executable(congestion_app
 target_link_libraries(congestion_app
     PRIVATE
     eval_pro_congestion_api
+    idm
 )
 
 target_include_directories(congestion_app

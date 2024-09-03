@@ -17,11 +17,15 @@ class CongestionAPI
   CongestionAPI();
   ~CongestionAPI();
 
-  EGRMapSummary egrMap(std::string map_path);
-  RUDYMapSummary rudyMap(CongestionNets congestion_nets, CongestionRegion region, int32_t grid_size);
+  EGRMapSummary egrMap();
+  OverflowSummary egrOverflow();
+  RUDYMapSummary rudyMap(int32_t grid_size);
+  UtilizationSummary rudyUtilization(bool use_lut = false);
 
-  OverflowSummary egrOverflow(std::string map_path);
-  UtilizationSummary rudyUtilization(std::string map_path, bool use_lut = false);
+  EGRMapSummary egrMap(std::string rt_dir_path);
+  OverflowSummary egrOverflow(std::string rt_dir_path);
+  RUDYMapSummary rudyMap(CongestionNets congestion_nets, CongestionRegion region, int32_t grid_size);
+  UtilizationSummary rudyUtilization(std::string rudy_dir_path, bool use_lut = false);
 
   EGRReportSummary egrReport(float threshold);
 };

@@ -83,6 +83,7 @@ add_library(eval_pro_util_init_idb
 target_link_libraries(eval_pro_util_init_idb
     PRIVATE
         idm
+        eval_pro_db
 )
 
 target_include_directories(eval_pro_util_init_idb

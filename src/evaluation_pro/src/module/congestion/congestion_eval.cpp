@@ -17,9 +17,15 @@
 
 #include "general_ops.h"
 #include "init_egr.h"
+#include "init_idb.h"
 #include "wirelength_lut.h"
 
 namespace ieval {
+
+#define EVAL_INIT_EGR_INST (ieval::InitEGR::getInst())
+#define EVAL_INIT_IDB_INST (ieval::InitIDB::getInst())
+
+CongestionEval* CongestionEval::_congestion_eval = nullptr;
 
 CongestionEval::CongestionEval()
 {
@@ -29,19 +35,36 @@ CongestionEval::~CongestionEval()
 {
 }
 
-string CongestionEval::evalHoriEGR(string map_path)
+CongestionEval* CongestionEval::getInst()
 {
-  return evalEGR(map_path, "horizontal", "egr_horizontal.csv");
+  if (_congestion_eval == nullptr) {
+    _congestion_eval = new CongestionEval();
+  }
+
+  return _congestion_eval;
 }
 
-string CongestionEval::evalVertiEGR(string map_path)
+void CongestionEval::destroyInst()
 {
-  return evalEGR(map_path, "vertical", "egr_vertical.csv");
+  if (_congestion_eval != nullptr) {
+    delete _congestion_eval;
+    _congestion_eval = nullptr;
+  }
 }
 
-string CongestionEval::evalUnionEGR(string map_path)
+string CongestionEval::evalHoriEGR(string rt_dir_path)
 {
-  return evalEGR(map_path, "union", "egr_union.csv");
+  return evalEGR(rt_dir_path, "horizontal", "egr_horizontal.csv");
+}
+
+string CongestionEval::evalVertiEGR(string rt_dir_path)
+{
+  return evalEGR(rt_dir_path, "vertical", "egr_vertical.csv");
+}
+
+string CongestionEval::evalUnionEGR(string rt_dir_path)
+{
+  return evalEGR(rt_dir_path, "union", "egr_union.csv");
 }
 
 string CongestionEval::evalHoriRUDY(CongestionNets nets, CongestionRegion region, int32_t grid_size)
@@ -74,79 +97,79 @@ string CongestionEval::evalUnionLUTRUDY(CongestionNets nets, CongestionRegion re
   return evalLUTRUDY(nets, region, grid_size, "union", "lut_rudy_union.csv");
 }
 
-int32_t CongestionEval::evalHoriTotalOverflow(string map_path)
+int32_t CongestionEval::evalHoriTotalOverflow(string rt_dir_path)
 {
-  return evalTotalOverflow(map_path, "horizontal");
+  return evalTotalOverflow(rt_dir_path, "horizontal");
 }
 
-int32_t CongestionEval::evalVertiTotalOverflow(string map_path)
+int32_t CongestionEval::evalVertiTotalOverflow(string rt_dir_path)
 {
-  return evalTotalOverflow(map_path, "vertical");
+  return evalTotalOverflow(rt_dir_path, "vertical");
 }
 
-int32_t CongestionEval::evalUnionTotalOverflow(string map_path)
+int32_t CongestionEval::evalUnionTotalOverflow(string rt_dir_path)
 {
-  return evalTotalOverflow(map_path, "union");
+  return evalTotalOverflow(rt_dir_path, "union");
 }
 
-int32_t CongestionEval::evalHoriMaxOverflow(string map_path)
+int32_t CongestionEval::evalHoriMaxOverflow(string rt_dir_path)
 {
-  return evalMaxOverflow(map_path, "horizontal");
+  return evalMaxOverflow(rt_dir_path, "horizontal");
 }
 
-int32_t CongestionEval::evalVertiMaxOverflow(string map_path)
+int32_t CongestionEval::evalVertiMaxOverflow(string rt_dir_path)
 {
-  return evalMaxOverflow(map_path, "vertical");
+  return evalMaxOverflow(rt_dir_path, "vertical");
 }
 
-int32_t CongestionEval::evalUnionMaxOverflow(string map_path)
+int32_t CongestionEval::evalUnionMaxOverflow(string rt_dir_path)
 {
-  return evalMaxOverflow(map_path, "union");
+  return evalMaxOverflow(rt_dir_path, "union");
 }
 
-float CongestionEval::evalHoriAvgOverflow(string map_path)
+float CongestionEval::evalHoriAvgOverflow(string rt_dir_path)
 {
-  return evalAvgOverflow(map_path, "horizontal");
+  return evalAvgOverflow(rt_dir_path, "horizontal");
 }
 
-float CongestionEval::evalVertiAvgOverflow(string map_path)
+float CongestionEval::evalVertiAvgOverflow(string rt_dir_path)
 {
-  return evalAvgOverflow(map_path, "vertical");
+  return evalAvgOverflow(rt_dir_path, "vertical");
 }
 
-float CongestionEval::evalUnionAvgOverflow(string map_path)
+float CongestionEval::evalUnionAvgOverflow(string rt_dir_path)
 {
-  return evalAvgOverflow(map_path, "union");
+  return evalAvgOverflow(rt_dir_path, "union");
 }
 
-float CongestionEval::evalHoriMaxUtilization(string map_path, bool use_lut)
+float CongestionEval::evalHoriMaxUtilization(string rudy_dir_path, bool use_lut)
 {
-  return evalMaxUtilization(map_path, "horizontal", use_lut);
+  return evalMaxUtilization(rudy_dir_path, "horizontal", use_lut);
 }
 
-float CongestionEval::evalVertiMaxUtilization(string map_path, bool use_lut)
+float CongestionEval::evalVertiMaxUtilization(string rudy_dir_path, bool use_lut)
 {
-  return evalMaxUtilization(map_path, "vertical", use_lut);
+  return evalMaxUtilization(rudy_dir_path, "vertical", use_lut);
 }
 
-float CongestionEval::evalUnionMaxUtilization(string map_path, bool use_lut)
+float CongestionEval::evalUnionMaxUtilization(string rudy_dir_path, bool use_lut)
 {
-  return evalMaxUtilization(map_path, "union", use_lut);
+  return evalMaxUtilization(rudy_dir_path, "union", use_lut);
 }
 
-float CongestionEval::evalHoriAvgUtilization(string map_path, bool use_lut)
+float CongestionEval::evalHoriAvgUtilization(string rudy_dir_path, bool use_lut)
 {
-  return evalAvgUtilization(map_path, "horizontal", use_lut);
+  return evalAvgUtilization(rudy_dir_path, "horizontal", use_lut);
 }
 
-float CongestionEval::evalVertiAvgUtilization(string map_path, bool use_lut)
+float CongestionEval::evalVertiAvgUtilization(string rudy_dir_path, bool use_lut)
 {
-  return evalAvgUtilization(map_path, "vertical", use_lut);
+  return evalAvgUtilization(rudy_dir_path, "vertical", use_lut);
 }
 
-float CongestionEval::evalUnionAvgUtilization(string map_path, bool use_lut)
+float CongestionEval::evalUnionAvgUtilization(string rudy_dir_path, bool use_lut)
 {
-  return evalAvgUtilization(map_path, "union", use_lut);
+  return evalAvgUtilization(rudy_dir_path, "union", use_lut);
 }
 
 string CongestionEval::reportHotspot(float threshold)
@@ -159,19 +182,17 @@ string CongestionEval::reportOverflow(float threshold)
   return "overflow_report.csv";
 }
 
-string CongestionEval::evalEGR(string map_path, string egr_type, string output_filename)
+string CongestionEval::evalEGR(string rt_dir_path, string egr_type, string output_filename)
 {
-  InitEGR init_egr;
-  // init_egr.runEGR();
-
-  std::unordered_map<std::string, LayerDirection> layer_directions = init_egr.parseLayerDirection(map_path + "/initial_router/route.guide");
+  std::unordered_map<std::string, LayerDirection> layer_directions
+      = EVAL_INIT_EGR_INST->parseLayerDirection(rt_dir_path + "/initial_router/route.guide");
 
   // for (const auto& [layer, direction] : LayerDirections) {
   //   std::cout << "Layer: " << layer << ", Direction: " << (direction == LayerDirection::Horizontal ? "Horizontal" : "Vertical")
   //             << std::endl;
   // }
   std::vector<std::string> target_layers;
-  std::string dir_path = map_path + "/initial_router/";
+  std::string dir_path = rt_dir_path + "/initial_router/";
 
   if (egr_type == "horizontal" || egr_type == "vertical") {
     LayerDirection target_direction = (egr_type == "horizontal") ? LayerDirection::Horizontal : LayerDirection::Vertical;
@@ -231,7 +252,7 @@ string CongestionEval::evalEGR(string map_path, string egr_type, string output_f
     out_file.close();
     return dir_path + output_filename;
   } else if (egr_type == "union") {
-    dir_path = map_path + "/topology_generator/";
+    dir_path = rt_dir_path + "/topology_generator/";
     return dir_path + "overflow_map_planar.csv";
   }
 
@@ -543,17 +564,17 @@ double CongestionEval::getLUT(int32_t pin_num, int32_t aspect_ratio, float l_nes
   return WIRELENGTH_LUT[ar_index][pin_index][l_index];
 }
 
-int32_t CongestionEval::evalTotalOverflow(string map_path, string overflow_type)
+int32_t CongestionEval::evalTotalOverflow(string rt_dir_path, string overflow_type)
 {
   int32_t total_overflow = 0;
   std::string file_path;
 
   if (overflow_type == "horizontal") {
-    file_path = map_path + "/initial_router/egr_horizontal.csv";
+    file_path = rt_dir_path + "/initial_router/egr_horizontal.csv";
   } else if (overflow_type == "vertical") {
-    file_path = map_path + "/initial_router/egr_vertical.csv";
+    file_path = rt_dir_path + "/initial_router/egr_vertical.csv";
   } else if (overflow_type == "union") {
-    file_path = map_path + "/topology_generator/overflow_map_planar.csv";
+    file_path = rt_dir_path + "/topology_generator/overflow_map_planar.csv";
   } else {
     return -1;
   }
@@ -576,17 +597,17 @@ int32_t CongestionEval::evalTotalOverflow(string map_path, string overflow_type)
   return total_overflow;
 }
 
-int32_t CongestionEval::evalMaxOverflow(string map_path, string overflow_type)
+int32_t CongestionEval::evalMaxOverflow(string rt_dir_path, string overflow_type)
 {
   int32_t max_overflow = -1;
   std::string file_path;
 
   if (overflow_type == "horizontal") {
-    file_path = map_path + "/initial_router/egr_horizontal.csv";
+    file_path = rt_dir_path + "/initial_router/egr_horizontal.csv";
   } else if (overflow_type == "vertical") {
-    file_path = map_path + "/initial_router/egr_vertical.csv";
+    file_path = rt_dir_path + "/initial_router/egr_vertical.csv";
   } else if (overflow_type == "union") {
-    file_path = map_path + "/topology_generator/overflow_map_planar.csv";
+    file_path = rt_dir_path + "/topology_generator/overflow_map_planar.csv";
   } else {
     return -1;
   }
@@ -610,17 +631,17 @@ int32_t CongestionEval::evalMaxOverflow(string map_path, string overflow_type)
   return max_overflow;
 }
 
-float CongestionEval::evalAvgOverflow(string map_path, string overflow_type)
+float CongestionEval::evalAvgOverflow(string rt_dir_path, string overflow_type)
 {
   float avg_overflow = 0.0f;
   std::string file_path;
 
   if (overflow_type == "horizontal") {
-    file_path = map_path + "/initial_router/egr_horizontal.csv";
+    file_path = rt_dir_path + "/initial_router/egr_horizontal.csv";
   } else if (overflow_type == "vertical") {
-    file_path = map_path + "/initial_router/egr_vertical.csv";
+    file_path = rt_dir_path + "/initial_router/egr_vertical.csv";
   } else if (overflow_type == "union") {
-    file_path = map_path + "/topology_generator/overflow_map_planar.csv";
+    file_path = rt_dir_path + "/topology_generator/overflow_map_planar.csv";
   } else {
     return -1;
   }
@@ -731,7 +752,7 @@ float CongestionEval::evalMaxUtilization(string map_path, string utilization_typ
   return max_util;
 }
 
-float CongestionEval::evalAvgUtilization(string map_path, string utilization_type, bool use_lut)
+float CongestionEval::evalAvgUtilization(string rudy_dir_path, string utilization_type, bool use_lut)
 {
   float avg_util = 0.0f;
   std::string file_path;
@@ -744,11 +765,11 @@ float CongestionEval::evalAvgUtilization(string map_path, string utilization_typ
   }
 
   if (utilization_type == "horizontal") {
-    file_path = map_path + file_name + "horizontal.csv";
+    file_path = rudy_dir_path + file_name + "horizontal.csv";
   } else if (utilization_type == "vertical") {
-    file_path = map_path + file_name + "vertical.csv";
+    file_path = rudy_dir_path + file_name + "vertical.csv";
   } else if (utilization_type == "union") {
-    file_path = map_path + file_name + "union.csv";
+    file_path = rudy_dir_path + file_name + "union.csv";
   } else {
     return -1.0;
   }
@@ -820,6 +841,36 @@ float CongestionEval::evalAvgUtilization(string map_path, string utilization_typ
   avg_util = (sum_05 * weight_05 + sum_1 * weight_1 + sum_2 * weight_2 + sum_5 * weight_5) / 4.0;
 
   return avg_util;
+}
+
+void CongestionEval::initEGR()
+{
+  EVAL_INIT_EGR_INST->runEGR();
+}
+
+void CongestionEval::destroyEGR()
+{
+  EVAL_INIT_EGR_INST->destroyInst();
+}
+
+void CongestionEval::initIDB()
+{
+  EVAL_INIT_IDB_INST->initCongestionDB();
+}
+
+void CongestionEval::destroyIDB()
+{
+  EVAL_INIT_IDB_INST->destroyInst();
+}
+
+CongestionNets CongestionEval::getCongestionNets()
+{
+  return EVAL_INIT_IDB_INST->getCongestionNets();
+}
+
+CongestionRegion CongestionEval::getCongestionRegion()
+{
+  return EVAL_INIT_IDB_INST->getCongestionRegion();
 }
 
 }  // namespace ieval

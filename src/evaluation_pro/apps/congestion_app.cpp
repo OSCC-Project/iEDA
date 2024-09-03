@@ -7,20 +7,26 @@
 #include <iostream>
 
 #include "congestion_api.h"
+#include "idm.h"
 
 void TestEgrMap();
 void TestRudyMap();
 void TestEgrOverflow();
 void TestRudyUtilization();
 void TestCongestionReport();
+void TestRudyMapFromIDB();
+void TestEgrMapFromIDB();
 
 int main()
 {
   // TestEgrMap();
   // TestRudyMap();
   // TestCongestionReport();
-  TestEgrOverflow();
-  TestRudyUtilization();
+  // TestEgrOverflow();
+  // TestRudyUtilization();
+  // TestRudyMapFromIDB();
+  TestEgrMapFromIDB();
+
   return 0;
 }
 
@@ -28,7 +34,7 @@ void TestEgrMap()
 {
   ieval::CongestionAPI congestion_api;
 
-  std::string map_path = "/home/yhqiu/benchmark/AiEDA/application/test/iEDA/rt_temp_directory";
+  std::string map_path = "./rt_temp_directory";
 
   ieval::EGRMapSummary egr_map_summary = congestion_api.egrMap(map_path);
   std::cout << "egr horizontal sum: " << egr_map_summary.horizontal_sum << std::endl;
@@ -127,4 +133,63 @@ void TestRudyUtilization()
 
 void TestCongestionReport()
 {
+}
+
+void TestRudyMapFromIDB()
+{
+  dmInst->init("/data/yhqiu/benchmark/AiEDA/application/benchmark/28nm/gcd/config/db_default_config_test.json");
+
+  ieval::CongestionAPI congestion_api;
+  int32_t grid_size = 2000;
+  ieval::RUDYMapSummary rudy_map_summary = congestion_api.rudyMap(grid_size);
+
+  std::cout << "rudy horizontal: " << rudy_map_summary.rudy_horizontal << std::endl;
+  std::cout << "rudy vertical: " << rudy_map_summary.rudy_vertical << std::endl;
+  std::cout << "rudy union: " << rudy_map_summary.rudy_union << std::endl;
+  std::cout << "lut rudy horizontal: " << rudy_map_summary.lutrudy_horizontal << std::endl;
+  std::cout << "lut rudy vertical: " << rudy_map_summary.lutrudy_vertical << std::endl;
+  std::cout << "lut rudy union: " << rudy_map_summary.lutrudy_union << std::endl;
+
+  ieval::UtilizationSummary utilization_summary;
+  utilization_summary = congestion_api.rudyUtilization(false);
+  std::cout << ">>  RUDY " << std::endl;
+  std::cout << "max utilization horizontal: " << utilization_summary.max_utilization_horizontal << std::endl;
+  std::cout << "max utilization vertical: " << utilization_summary.max_utilization_vertical << std::endl;
+  std::cout << "max utilization union: " << utilization_summary.max_utilization_union << std::endl;
+  std::cout << "average utilization horizontal: " << utilization_summary.weighted_average_utilization_horizontal << std::endl;
+  std::cout << "average utilization vertical: " << utilization_summary.weighted_average_utilization_vertical << std::endl;
+  std::cout << "average utilization union: " << utilization_summary.weighted_average_utilization_union << std::endl;
+
+  utilization_summary = congestion_api.rudyUtilization(true);
+  std::cout << ">>  LUTRUDY " << std::endl;
+  std::cout << "max utilization horizontal: " << utilization_summary.max_utilization_horizontal << std::endl;
+  std::cout << "max utilization vertical: " << utilization_summary.max_utilization_vertical << std::endl;
+  std::cout << "max utilization union: " << utilization_summary.max_utilization_union << std::endl;
+  std::cout << "average utilization horizontal: " << utilization_summary.weighted_average_utilization_horizontal << std::endl;
+  std::cout << "average utilization vertical: " << utilization_summary.weighted_average_utilization_vertical << std::endl;
+  std::cout << "average utilization union: " << utilization_summary.weighted_average_utilization_union << std::endl;
+}
+
+void TestEgrMapFromIDB()
+{
+  dmInst->init("/data/yhqiu/benchmark/AiEDA/application/benchmark/28nm/gcd/config/db_default_config_test.json");
+
+  ieval::CongestionAPI congestion_api;
+  ieval::OverflowSummary overflow_summary;
+  ieval::EGRMapSummary egr_map_summary = congestion_api.egrMap();
+  overflow_summary = congestion_api.egrOverflow();
+
+  std::cout << "egr horizontal sum: " << egr_map_summary.horizontal_sum << std::endl;
+  std::cout << "egr vertical sum: " << egr_map_summary.vertical_sum << std::endl;
+  std::cout << "egr union sum: " << egr_map_summary.union_sum << std::endl;
+
+  std::cout << "total overflow horizontal: " << overflow_summary.total_overflow_horizontal << std::endl;
+  std::cout << "total overflow vertical: " << overflow_summary.total_overflow_vertical << std::endl;
+  std::cout << "total overflow union: " << overflow_summary.total_overflow_union << std::endl;
+  std::cout << "max overflow horizontal: " << overflow_summary.max_overflow_horizontal << std::endl;
+  std::cout << "max overflow vertical: " << overflow_summary.max_overflow_vertical << std::endl;
+  std::cout << "max overflow union: " << overflow_summary.max_overflow_union << std::endl;
+  std::cout << "weighted average overflow horizontal: " << overflow_summary.weighted_average_overflow_horizontal << std::endl;
+  std::cout << "weighted average overflow vertical: " << overflow_summary.weighted_average_overflow_vertical << std::endl;
+  std::cout << "weighted average overflow union: " << overflow_summary.weighted_average_overflow_union << std::endl;
 }
