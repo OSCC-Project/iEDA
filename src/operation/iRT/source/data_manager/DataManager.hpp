@@ -41,13 +41,15 @@ class DataManager
 
 #if 1  // 更新GCellMap
   void updateFixedRectToGCellMap(ChangeType change_type, int32_t net_idx, EXTLayerRect* ext_layer_rect, bool is_routing);
-  void updateAccessPointToGCellMap(ChangeType change_type, int32_t net_idx, AccessPoint* access_point);
+  void updateAccessNetPointToGCellMap(ChangeType change_type, int32_t net_idx, AccessPoint* access_point);
+  void updateNetAccessResultToGCellMap(ChangeType change_type, int32_t net_idx, Segment<LayerCoord>* segment);
   void updateGlobalNetResultToGCellMap(ChangeType change_type, int32_t net_idx, Segment<LayerCoord>* segment);
   void updateDetailedNetResultToGCellMap(ChangeType change_type, int32_t net_idx, Segment<LayerCoord>* segment);
   void updateNetPatchToGCellMap(ChangeType change_type, int32_t net_idx, EXTLayerRect* ext_layer_rect);
   void updateViolationToGCellMap(ChangeType change_type, Violation* violation);
   std::map<bool, std::map<int32_t, std::map<int32_t, std::set<EXTLayerRect*>>>> getTypeLayerNetFixedRectMap(EXTPlanarRect& region);
   std::map<int32_t, std::set<AccessPoint*>> getNetAccessPointMap(EXTPlanarRect& region);
+  std::map<int32_t, std::set<Segment<LayerCoord>*>> getNetAccessResultMap(EXTPlanarRect& region);
   std::map<int32_t, std::set<Segment<LayerCoord>*>> getGlobalNetResultMap(EXTPlanarRect& region);
   std::map<int32_t, std::set<Segment<LayerCoord>*>> getDetailedNetResultMap(EXTPlanarRect& region);
   std::map<int32_t, std::set<EXTLayerRect*>> getNetPatchMap(EXTPlanarRect& region);
@@ -138,6 +140,7 @@ class DataManager
   void checkPinList(Net& net);
   void buildGCellMap();
   int32_t getIntervalIdx(int32_t scale_start, int32_t scale_end, int32_t interval_start, int32_t interval_end, int32_t interval_length);
+  void buildDetectionDistance();
   void printConfig();
   void printDatabase();
   void writePYScript();

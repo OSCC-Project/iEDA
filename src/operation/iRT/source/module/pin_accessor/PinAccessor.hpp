@@ -66,7 +66,8 @@ class PinAccessor
   void initPABoxMap(PAModel& pa_model);
   void buildBoxSchedule(PAModel& pa_model);
   void routePABoxMap(PAModel& pa_model);
-  void buildFixedRectList(PABox& pa_box);
+  void buildFixedRect(PABox& pa_box);
+  void buildAccessResult(PABox& pa_box);
   void initPATaskList(PAModel& pa_model, PABox& pa_box);
   bool needRouting(PABox& pa_box);
   void buildBoxTrackAxis(PABox& pa_box);
@@ -107,7 +108,7 @@ class PinAccessor
   double getEstimateViaCost(PABox& pa_box, PANode* start_node, PANode* end_node);
   void updateViolationList(PABox& pa_box);
   std::vector<Violation> getViolationList(PABox& pa_box);
-  void buildAccessInfo(PABox& pa_box);
+  void uploadAccessResult(PABox& pa_box);
   void uploadViolation(PABox& pa_box);
   void freePABox(PABox& pa_box);
   int32_t getViolationNum();
