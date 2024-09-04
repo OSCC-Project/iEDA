@@ -26,6 +26,7 @@ add_executable(density_app
 target_link_libraries(density_app
     PRIVATE
     eval_pro_density_api
+    idm
 )
 
 target_include_directories(density_app

@@ -11,12 +11,60 @@
 
 namespace ieval {
 
+#define EVAL_DENSITY_INST (ieval::DensityEval::getInst())
+
 DensityAPI::DensityAPI()
 {
 }
 
 DensityAPI::~DensityAPI()
 {
+}
+
+DensityMapSummary DensityAPI::densityMap(int32_t grid_size)
+{
+  DensityMapSummary density_map_summary;
+
+  EVAL_DENSITY_INST->initIDB();
+  density_map_summary.cell_map_summary = cellDensityMap(grid_size);
+  density_map_summary.pin_map_summary = pinDensityMap(grid_size);
+  density_map_summary.net_map_summary = netDensityMap(grid_size);
+  EVAL_DENSITY_INST->destroyIDB();
+
+  return density_map_summary;
+}
+
+CellMapSummary DensityAPI::cellDensityMap(int32_t grid_size)
+{
+  CellMapSummary cell_map_summary;
+
+  EVAL_DENSITY_INST->initIDBRegion();
+  EVAL_DENSITY_INST->initIDBCells();
+  cell_map_summary = cellDensityMap(EVAL_DENSITY_INST->getDensityCells(), EVAL_DENSITY_INST->getDensityRegion(), grid_size);
+
+  return cell_map_summary;
+}
+
+PinMapSummary DensityAPI::pinDensityMap(int32_t grid_size)
+{
+  PinMapSummary pin_map_summary;
+
+  EVAL_DENSITY_INST->initIDBRegion();
+  EVAL_DENSITY_INST->initIDBCells();
+  pin_map_summary = pinDensityMap(EVAL_DENSITY_INST->getDensityPins(), EVAL_DENSITY_INST->getDensityRegion(), grid_size);
+
+  return pin_map_summary;
+}
+
+NetMapSummary DensityAPI::netDensityMap(int32_t grid_size)
+{
+  NetMapSummary net_map_summary;
+
+  EVAL_DENSITY_INST->initIDBRegion();
+  EVAL_DENSITY_INST->initIDBNets();
+  net_map_summary = netDensityMap(EVAL_DENSITY_INST->getDensityNets(), EVAL_DENSITY_INST->getDensityRegion(), grid_size);
+
+  return net_map_summary;
 }
 
 CellMapSummary DensityAPI::cellDensityMap(DensityCells cells, DensityRegion region, int32_t grid_size)
@@ -53,42 +101,6 @@ NetMapSummary DensityAPI::netDensityMap(DensityNets nets, DensityRegion region, 
   net_map_summary.allnet_density = density_eval.evalAllNetDensity(nets, region, grid_size);
 
   return net_map_summary;
-}
-
-CellReportSummary DensityAPI::cellDensityReport(float threshold)
-{
-  CellReportSummary cell_report_summary;
-
-  DensityEval density_eval;
-  cell_report_summary.macro_density = density_eval.reportMacroDensity(threshold);
-  cell_report_summary.stdcell_density = density_eval.reportStdCellDensity(threshold);
-  cell_report_summary.allcell_density = density_eval.reportAllCellDensity(threshold);
-
-  return cell_report_summary;
-}
-
-PinReportSummary DensityAPI::pinDensityReport(float threshold)
-{
-  PinReportSummary pin_report_summary;
-
-  DensityEval density_eval;
-  pin_report_summary.macro_pin_density = density_eval.reportMacroPinDensity(threshold);
-  pin_report_summary.stdcell_pin_density = density_eval.reportStdCellPinDensity(threshold);
-  pin_report_summary.allcell_pin_density = density_eval.reportAllCellPinDensity(threshold);
-
-  return pin_report_summary;
-}
-
-NetReportSummary DensityAPI::netDensityReport(float threshold)
-{
-  NetReportSummary net_report_summary;
-
-  DensityEval density_eval;
-  net_report_summary.local_net_density = density_eval.reportLocalNetDensity(threshold);
-  net_report_summary.global_net_density = density_eval.reportGlobalNetDensity(threshold);
-  net_report_summary.allnet_density = density_eval.reportAllNetDensity(threshold);
-
-  return net_report_summary;
 }
 
 }  // namespace ieval

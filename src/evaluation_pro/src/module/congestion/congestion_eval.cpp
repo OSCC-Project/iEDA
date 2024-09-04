@@ -172,16 +172,6 @@ float CongestionEval::evalUnionAvgUtilization(string rudy_dir_path, bool use_lut
   return evalAvgUtilization(rudy_dir_path, "union", use_lut);
 }
 
-string CongestionEval::reportHotspot(float threshold)
-{
-  return "hotspot_report.csv";
-}
-
-string CongestionEval::reportOverflow(float threshold)
-{
-  return "overflow_report.csv";
-}
-
 string CongestionEval::evalEGR(string rt_dir_path, string egr_type, string output_filename)
 {
   std::unordered_map<std::string, LayerDirection> layer_directions

@@ -73,25 +73,11 @@ struct NetMapSummary
   string allnet_density;
 };
 
-struct CellReportSummary
+struct DensityMapSummary
 {
-  string macro_density;
-  string stdcell_density;
-  string allcell_density;
-};
-
-struct PinReportSummary
-{
-  string macro_pin_density;
-  string stdcell_pin_density;
-  string allcell_pin_density;
-};
-
-struct NetReportSummary
-{
-  string local_net_density;
-  string global_net_density;
-  string allnet_density;
+  CellMapSummary cell_map_summary;
+  PinMapSummary pin_map_summary;
+  NetMapSummary net_map_summary;
 };
 
 }  // namespace ieval

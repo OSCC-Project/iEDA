@@ -124,14 +124,4 @@ UtilizationSummary CongestionAPI::rudyUtilization(std::string rudy_dir_path, boo
   return utilization_summary;
 }
 
-EGRReportSummary CongestionAPI::egrReport(float threshold)
-{
-  EGRReportSummary egr_report_summary;
-
-  egr_report_summary.hotspot = EVAL_CONGESTION_INST->reportHotspot(threshold);
-  egr_report_summary.overflow = EVAL_CONGESTION_INST->reportOverflow(threshold);
-
-  return egr_report_summary;
-}
-
 }  // namespace ieval

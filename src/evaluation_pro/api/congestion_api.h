@@ -26,8 +26,6 @@ class CongestionAPI
   OverflowSummary egrOverflow(std::string rt_dir_path);
   RUDYMapSummary rudyMap(CongestionNets congestion_nets, CongestionRegion region, int32_t grid_size);
   UtilizationSummary rudyUtilization(std::string rudy_dir_path, bool use_lut = false);
-
-  EGRReportSummary egrReport(float threshold);
 };
 
 }  // namespace ieval

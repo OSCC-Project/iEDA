@@ -81,10 +81,4 @@ struct UtilizationSummary
   float weighted_average_utilization_union;
 };
 
-struct EGRReportSummary
-{
-  string hotspot;
-  string overflow;
-};
-
 }  // namespace ieval

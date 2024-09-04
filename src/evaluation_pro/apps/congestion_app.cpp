@@ -13,7 +13,6 @@ void TestEgrMap();
 void TestRudyMap();
 void TestEgrOverflow();
 void TestRudyUtilization();
-void TestCongestionReport();
 void TestRudyMapFromIDB();
 void TestEgrMapFromIDB();
 
@@ -21,7 +20,6 @@ int main()
 {
   // TestEgrMap();
   // TestRudyMap();
-  // TestCongestionReport();
   // TestEgrOverflow();
   // TestRudyUtilization();
   // TestRudyMapFromIDB();
@@ -129,10 +127,6 @@ void TestRudyUtilization()
   std::cout << "average utilization horizontal: " << utilization_summary.weighted_average_utilization_horizontal << std::endl;
   std::cout << "average utilization vertical: " << utilization_summary.weighted_average_utilization_vertical << std::endl;
   std::cout << "average utilization union: " << utilization_summary.weighted_average_utilization_union << std::endl;
-}
-
-void TestCongestionReport()
-{
 }
 
 void TestRudyMapFromIDB()

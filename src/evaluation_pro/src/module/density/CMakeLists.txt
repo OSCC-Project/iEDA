@@ -4,7 +4,8 @@ add_library(eval_pro_density_eval
 
 target_link_libraries(eval_pro_density_eval 
     PRIVATE 
-        eval_pro_util_general_ops             
+        eval_pro_util_general_ops     
+        eval_pro_util_init_idb        
 )
 
 target_include_directories(eval_pro_density_eval

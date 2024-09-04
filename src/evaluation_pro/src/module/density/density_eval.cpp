@@ -13,8 +13,13 @@
 #include <sstream>
 
 #include "general_ops.h"
+#include "init_idb.h"
 
 namespace ieval {
+
+#define EVAL_INIT_IDB_INST (ieval::InitIDB::getInst())
+
+DensityEval* DensityEval::_density_eval = nullptr;
 
 DensityEval::DensityEval()
 {
@@ -22,6 +27,23 @@ DensityEval::DensityEval()
 
 DensityEval::~DensityEval()
 {
+}
+
+DensityEval* DensityEval::getInst()
+{
+  if (_density_eval == nullptr) {
+    _density_eval = new DensityEval();
+  }
+
+  return _density_eval;
+}
+
+void DensityEval::destroyInst()
+{
+  if (_density_eval != nullptr) {
+    delete _density_eval;
+    _density_eval = nullptr;
+  }
 }
 
 std::string DensityEval::evalMacroDensity(DensityCells cells, DensityRegion region, int32_t grid_size)
@@ -67,51 +89,6 @@ std::string DensityEval::evalGlobalNetDensity(DensityNets nets, DensityRegion re
 std::string DensityEval::evalAllNetDensity(DensityNets nets, DensityRegion region, int32_t grid_size)
 {
   return evalNetDensity(nets, region, grid_size, "all", "allnet_density.csv");
-}
-
-std::string DensityEval::reportMacroDensity(float threshold)
-{
-  return "macro_density_report.csv";
-}
-
-std::string DensityEval::reportStdCellDensity(float threshold)
-{
-  return "stdcell_density_report.csv";
-}
-
-std::string DensityEval::reportAllCellDensity(float threshold)
-{
-  return "allcell_density_report.csv";
-}
-
-std::string DensityEval::reportMacroPinDensity(float threshold)
-{
-  return "macro_pin_density_report.csv";
-}
-
-std::string DensityEval::reportStdCellPinDensity(float threshold)
-{
-  return "stdcell_pin_density_report.csv";
-}
-
-std::string DensityEval::reportAllCellPinDensity(float threshold)
-{
-  return "allcell_pin_density_report.csv";
-}
-
-std::string DensityEval::reportLocalNetDensity(float threshold)
-{
-  return "local_net_density_report.csv";
-}
-
-std::string DensityEval::reportGlobalNetDensity(float threshold)
-{
-  return "global_net_density_report.csv";
-}
-
-std::string DensityEval::reportAllNetDensity(float threshold)
-{
-  return "allnet_density_report.csv";
 }
 
 std::string DensityEval::evalDensity(DensityCells cells, DensityRegion region, int32_t grid_size, std::string cell_type,
@@ -193,13 +170,14 @@ std::string DensityEval::evalPinDensity(DensityPins pins, DensityRegion region, 
 
   for (int32_t row = 0; row < grid_rows; ++row) {
     for (int32_t col = 0; col < grid_cols; ++col) {
-      int32_t grid_lx = region.lx + col * grid_size;
-      int32_t grid_ly = region.ly + row * grid_size;
-      int32_t grid_ux = std::min(region.lx + (col + 1) * grid_size, region.ux);
-      int32_t grid_uy = std::min(region.ly + (row + 1) * grid_size, region.uy);
+      // int32_t grid_lx = region.lx + col * grid_size;
+      // int32_t grid_ly = region.ly + row * grid_size;
+      // int32_t grid_ux = std::min(region.lx + (col + 1) * grid_size, region.ux);
+      // int32_t grid_uy = std::min(region.ly + (row + 1) * grid_size, region.uy);
 
-      double grid_area = static_cast<double>((grid_ux - grid_lx) * (grid_uy - grid_ly));
-      density_grid[row][col] = static_cast<double>(pin_count[row][col]) / grid_area;
+      // double grid_area = static_cast<double>((grid_ux - grid_lx) * (grid_uy - grid_ly));
+      // density_grid[row][col] = static_cast<double>(pin_count[row][col]) / grid_area;
+      density_grid[row][col] = static_cast<double>(pin_count[row][col]);
     }
   }
 
@@ -253,14 +231,15 @@ std::string DensityEval::evalNetDensity(DensityNets nets, DensityRegion region, 
 
   for (int32_t row = grid_rows - 1; row >= 0; --row) {
     for (int32_t col = 0; col < grid_cols; ++col) {
-      int32_t grid_lx = region.lx + col * grid_size;
-      int32_t grid_ly = region.ly + row * grid_size;
-      int32_t grid_ux = std::min(region.lx + (col + 1) * grid_size, region.ux);
-      int32_t grid_uy = std::min(region.ly + (row + 1) * grid_size, region.uy);
+      // int32_t grid_lx = region.lx + col * grid_size;
+      // int32_t grid_ly = region.ly + row * grid_size;
+      // int32_t grid_ux = std::min(region.lx + (col + 1) * grid_size, region.ux);
+      // int32_t grid_uy = std::min(region.ly + (row + 1) * grid_size, region.uy);
 
-      double grid_area = static_cast<double>((grid_ux - grid_lx) * (grid_uy - grid_ly));
+      // double grid_area = static_cast<double>((grid_ux - grid_lx) * (grid_uy - grid_ly));
 
-      double density = net_count[row][col] / grid_area;
+      // double density = net_count[row][col] / grid_area;
+      double density = net_count[row][col];
 
       csv_file << fixed << setprecision(6) << density;
       if (col < grid_cols - 1)
@@ -272,6 +251,51 @@ std::string DensityEval::evalNetDensity(DensityNets nets, DensityRegion region, 
   csv_file.close();
 
   return getAbsoluteFilePath(output_filename);
+}
+
+void DensityEval::initIDB()
+{
+  EVAL_INIT_IDB_INST->initDensityDB();
+}
+
+void DensityEval::destroyIDB()
+{
+  EVAL_INIT_IDB_INST->destroyInst();
+}
+
+void DensityEval::initIDBRegion()
+{
+  EVAL_INIT_IDB_INST->initDensityDBRegion();
+}
+
+void DensityEval::initIDBCells()
+{
+  EVAL_INIT_IDB_INST->initDensityDBCells();
+}
+
+void DensityEval::initIDBNets()
+{
+  EVAL_INIT_IDB_INST->initDensityDBNets();
+}
+
+DensityRegion DensityEval::getDensityRegion()
+{
+  return EVAL_INIT_IDB_INST->getDensityRegion();
+}
+
+DensityCells DensityEval::getDensityCells()
+{
+  return EVAL_INIT_IDB_INST->getDensityCells();
+}
+
+DensityPins DensityEval::getDensityPins()
+{
+  return EVAL_INIT_IDB_INST->getDensityPins();
+}
+
+DensityNets DensityEval::getDensityNets()
+{
+  return EVAL_INIT_IDB_INST->getDensityNets();
 }
 
 }  // namespace ieval

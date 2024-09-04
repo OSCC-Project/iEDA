@@ -8,14 +8,15 @@
 #include <iostream>
 
 #include "density_api.h"
+#include "idm.h"
 
 void TestDensityMap();
-void TestDensityReport();
+void TestDensityMapFromIDB();
 
 int main()
 {
-  TestDensityMap();
-  TestDensityReport();
+  // TestDensityMap();
+  TestDensityMapFromIDB();
   return 0;
 }
 
@@ -89,6 +90,26 @@ void TestDensityMap()
   std::cout << "All net density: " << net_map_summary.allnet_density << std::endl;
 }
 
-void TestDensityReport()
+void TestDensityMapFromIDB()
 {
+  dmInst->init("/data/yhqiu/benchmark/AiEDA/application/benchmark/28nm/gcd/config/db_default_config_test.json");
+  int32_t grid_size = 2000;
+
+  ieval::DensityAPI density_api;
+  ieval::DensityMapSummary density_map_summary = density_api.densityMap(grid_size);
+
+  std::cout << "Macro density: " << density_map_summary.cell_map_summary.macro_density << std::endl;
+  std::cout << "StdCell density: " << density_map_summary.cell_map_summary.stdcell_density << std::endl;
+  std::cout << "AllCell density: " << density_map_summary.cell_map_summary.allcell_density << std::endl;
+  std::cout << "Macro pin density: " << density_map_summary.pin_map_summary.macro_pin_density << std::endl;
+  std::cout << "StdCell pin density: " << density_map_summary.pin_map_summary.stdcell_pin_density << std::endl;
+  std::cout << "AllCell pin density: " << density_map_summary.pin_map_summary.allcell_pin_density << std::endl;
+  std::cout << "Local net density: " << density_map_summary.net_map_summary.local_net_density << std::endl;
+  std::cout << "Global net density: " << density_map_summary.net_map_summary.global_net_density << std::endl;
+  std::cout << "All net density: " << density_map_summary.net_map_summary.allnet_density << std::endl;
+
+  ieval::NetMapSummary net_map = density_api.netDensityMap(grid_size);
+  std::cout << "Local net density: " << net_map.local_net_density << std::endl;
+  std::cout << "Global net density: " << net_map.global_net_density << std::endl;
+  std::cout << "All net density: " << net_map.allnet_density << std::endl;
 }

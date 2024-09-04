@@ -53,9 +53,6 @@ class CongestionEval
   float evalVertiAvgUtilization(string rudy_dir_path, bool use_lut = false);
   float evalUnionAvgUtilization(string rudy_dir_path, bool use_lut = false);
 
-  string reportHotspot(float threshold);
-  string reportOverflow(float threshold);
-
   void initEGR();
   void destroyEGR();
   void initIDB();

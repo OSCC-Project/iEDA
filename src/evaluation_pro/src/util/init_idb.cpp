@@ -76,14 +76,10 @@ void InitIDB::initCongestionDB()
 
   // Init CongestionRegion
   idb::IdbRect* die_bbox = idb_layout->get_die()->get_bounding_box();
-  int32_t lx = die_bbox->get_low_x();
-  int32_t ly = die_bbox->get_low_y();
-  int32_t width = die_bbox->get_width();
-  int32_t height = die_bbox->get_height();
-  _region.lx = lx;
-  _region.ly = ly;
-  _region.ux = lx + width;
-  _region.uy = ly + height;
+  _congestion_region.lx = die_bbox->get_low_x();
+  _congestion_region.ly = die_bbox->get_low_y();
+  _congestion_region.ux = die_bbox->get_high_x();
+  _congestion_region.uy = die_bbox->get_high_y();
 
   // Init CongestionNets
   for (size_t i = 0; i < idb_design->get_net_list()->get_net_list().size(); i++) {
@@ -103,7 +99,116 @@ void InitIDB::initCongestionDB()
       pin.ly = idb_load_pin->get_average_coordinate()->get_y();
       net.pins.emplace_back(pin);
     }
-    _nets.emplace_back(net);
+    _congestion_nets.emplace_back(net);
+  }
+}
+
+void InitIDB::initDensityDB()
+{
+  initDensityDBRegion();
+  initDensityDBCells();
+  initDensityDBNets();
+  _density_db_initialized = true;
+}
+
+void InitIDB::initDensityDBRegion()
+{
+  if (_density_db_initialized) {
+    return;
+  }
+  auto* idb_builder = dmInst->get_idb_builder();
+  idb::IdbLayout* idb_layout = idb_builder->get_def_service()->get_layout();
+
+  idb::IdbRect* die_bbox = idb_layout->get_die()->get_bounding_box();
+  _density_region.lx = die_bbox->get_low_x();
+  _density_region.ly = die_bbox->get_low_y();
+  _density_region.ux = die_bbox->get_high_x();
+  _density_region.uy = die_bbox->get_high_y();
+}
+
+void InitIDB::initDensityDBCells()
+{
+  if (_density_db_initialized) {
+    return;
+  }
+  auto* idb_builder = dmInst->get_idb_builder();
+  idb::IdbDesign* idb_design = idb_builder->get_def_service()->get_design();
+  idb::IdbLayout* idb_layout = idb_builder->get_def_service()->get_layout();
+
+  idb::IdbRect* core_bbox = idb_layout->get_core()->get_bounding_box();
+  int32_t core_lx = core_bbox->get_low_x();
+  int32_t core_ly = core_bbox->get_low_y();
+  int32_t core_ux = core_bbox->get_high_x();
+  int32_t core_uy = core_bbox->get_high_y();
+
+  int32_t row_height = idb_layout->get_rows()->get_row_list()[0]->get_site()->get_height();
+
+  for (auto* idb_inst : idb_design->get_instance_list()->get_instance_list()) {
+    auto cell_bbox = idb_inst->get_bounding_box();
+
+    DensityCell cell;
+    cell.lx = cell_bbox->get_low_x();
+    cell.ly = cell_bbox->get_low_y();
+    cell.width = cell_bbox->get_width();
+    cell.height = cell_bbox->get_height();
+
+    bool is_all_in_core = true;
+    if (cell.lx < core_lx || cell.ly < core_ly || cell.lx + cell.width > core_ux || cell.ly + cell.height > core_uy) {
+      is_all_in_core = false;
+    }
+    auto inst_status = idb_inst->get_status();
+    if (inst_status == IdbPlacementStatus::kFixed && is_all_in_core && cell.height > row_height) {
+      cell.type = "macro";
+    } else if (inst_status == IdbPlacementStatus::kPlaced && is_all_in_core) {
+      cell.type = "stdcell";
+    }
+
+    for (auto* inst_pin : idb_inst->get_pin_list()->get_pin_list()) {
+      DensityPin pin;
+      pin.type = cell.type;
+      pin.lx = inst_pin->get_average_coordinate()->get_x();
+      pin.ly = inst_pin->get_average_coordinate()->get_y();
+      _density_pins.emplace_back(pin);
+    }
+
+    _density_cells.emplace_back(cell);
+  }
+}
+
+void InitIDB::initDensityDBNets()
+{
+  if (_density_db_initialized) {
+    return;
+  }
+  auto* idb_builder = dmInst->get_idb_builder();
+  idb::IdbDesign* idb_design = idb_builder->get_def_service()->get_design();
+
+  for (size_t i = 0; i < idb_design->get_net_list()->get_net_list().size(); i++) {
+    auto* idb_net = idb_design->get_net_list()->get_net_list()[i];
+    DensityNet net;
+    int32_t min_lx = INT32_MAX;
+    int32_t min_ly = INT32_MAX;
+    int32_t max_ux = INT32_MIN;
+    int32_t max_uy = INT32_MIN;
+
+    auto* idb_driving_pin = idb_net->get_driving_pin();
+    if (idb_driving_pin) {
+      min_lx = idb_driving_pin->get_average_coordinate()->get_x();
+      min_ly = idb_driving_pin->get_average_coordinate()->get_y();
+      max_ux = idb_driving_pin->get_average_coordinate()->get_x();
+      max_uy = idb_driving_pin->get_average_coordinate()->get_y();
+    }
+    for (auto* idb_load_pin : idb_net->get_load_pins()) {
+      min_lx = std::min(min_lx, idb_load_pin->get_average_coordinate()->get_x());
+      min_ly = std::min(min_ly, idb_load_pin->get_average_coordinate()->get_y());
+      max_ux = std::max(max_ux, idb_load_pin->get_average_coordinate()->get_x());
+      max_uy = std::max(max_uy, idb_load_pin->get_average_coordinate()->get_y());
+    }
+    net.lx = min_lx;
+    net.ly = min_ly;
+    net.ux = max_ux;
+    net.uy = max_uy;
+    _density_nets.emplace_back(net);
   }
 }
 
