@@ -31,7 +31,8 @@ class GCell : public PlanarRect
   {
     return _type_layer_net_fixed_rect_map;
   }
-  std::map<int32_t, std::set<AccessPoint*>>& get_access_net_point_map() { return _access_net_point_map; }
+  std::map<int32_t, std::set<AccessPoint*>>& get_net_access_point_map() { return _net_access_point_map; }
+  std::map<int32_t, std::set<Segment<LayerCoord>*>>& get_net_access_result_map() { return _net_access_result_map; }
   std::map<int32_t, std::map<Orientation, int32_t>>& get_routing_orient_supply_map() { return _routing_orient_supply_map; }
   std::map<int32_t, std::set<Segment<LayerCoord>*>>& get_global_net_result_map() { return _global_net_result_map; }
   std::map<int32_t, std::set<Segment<LayerCoord>*>>& get_detailed_net_result_map() { return _detailed_net_result_map; }
@@ -43,9 +44,13 @@ class GCell : public PlanarRect
   {
     _type_layer_net_fixed_rect_map = type_layer_net_fixed_rect_map;
   }
-  void set_access_net_point_map(const std::map<int32_t, std::set<AccessPoint*>>& access_net_point_map)
+  void set_net_access_point_map(const std::map<int32_t, std::set<AccessPoint*>>& net_access_point_map)
   {
-    _access_net_point_map = access_net_point_map;
+    _net_access_point_map = net_access_point_map;
+  }
+  void set_net_access_result_map(const std::map<int32_t, std::set<Segment<LayerCoord>*>>& net_access_result_map)
+  {
+    _net_access_result_map = net_access_result_map;
   }
   void set_routing_orient_supply_map(const std::map<int32_t, std::map<Orientation, int32_t>>& routing_orient_supply_map)
   {
@@ -67,7 +72,9 @@ class GCell : public PlanarRect
   // obstacle & pin_shape 如果是routing则true，cut则false
   std::map<bool, std::map<int32_t, std::map<int32_t, std::set<EXTLayerRect*>>>> _type_layer_net_fixed_rect_map;
   // access point 只有routing层有
-  std::map<int32_t, std::set<AccessPoint*>> _access_net_point_map;
+  std::map<int32_t, std::set<AccessPoint*>> _net_access_point_map;
+  // access routing result
+  std::map<int32_t, std::set<Segment<LayerCoord>*>> _net_access_result_map;
   // global supply 三维 只有routing层有
   std::map<int32_t, std::map<Orientation, int32_t>> _routing_orient_supply_map;
   // global routing result

@@ -1557,15 +1557,23 @@ void RTInterface::routeTAPanel(TAPanel& ta_panel)
       ls_panel.wire_list.push_back(ls_shape);
     }
     // hard_shape_list
-    for (const auto& [net_idx, rect_set] : ta_panel.get_net_fixed_rect_map()) {
-      for (EXTLayerRect* rect : rect_set) {
-        lsa::LSShape ls_shape;
-        ls_shape.net_id = net_idx;
-        ls_shape.ll_x = rect->get_real_ll_x();
-        ls_shape.ll_y = rect->get_real_ll_y();
-        ls_shape.ur_x = rect->get_real_ur_x();
-        ls_shape.ur_y = rect->get_real_ur_y();
-        ls_panel.hard_shape_list.push_back(ls_shape);
+    for (auto& [is_routing, layer_net_fixed_rect_map] : ta_panel.get_type_layer_net_fixed_rect_map()) {
+      for (auto& [layer_idx, net_fixed_rect_map] : layer_net_fixed_rect_map) {
+        if (is_routing != true || layer_idx != ta_panel.get_panel_rect().get_layer_idx()) {
+          continue;
+        }
+        for (auto& [net_idx, fixed_rect_set] : net_fixed_rect_map) {
+          for (auto& fixed_rect : fixed_rect_set) {
+            lsa::LSShape ls_shape;
+            ls_shape.net_id = net_idx;
+            ls_shape.ll_x = fixed_rect->get_real_ll_x();
+            ls_shape.ll_y = fixed_rect->get_real_ll_y();
+            ls_shape.ur_x = fixed_rect->get_real_ur_x();
+            ls_shape.ur_y = fixed_rect->get_real_ur_y();
+            ls_panel.hard_shape_list.push_back(ls_shape);
+          }
+        }
+        break;
       }
     }
   }

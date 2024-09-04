@@ -51,10 +51,12 @@ void DRCEngine::destroyInst()
 
 std::vector<Violation> DRCEngine::getViolationList(std::string top_name, std::vector<std::pair<EXTLayerRect*, bool>>& env_shape_list,
                                                    std::map<int32_t, std::vector<std::pair<EXTLayerRect*, bool>>>& net_pin_shape_map,
-                                                   std::map<int32_t, std::vector<Segment<LayerCoord>>>& net_result_map, std::string stage)
+                                                   std::map<int32_t, std::vector<Segment<LayerCoord>>>& net_fixed_result_map,
+                                                   std::map<int32_t, std::vector<Segment<LayerCoord>>>& net_routing_result_map,
+                                                   std::string stage)
 {
-  return RTI.getViolationList(env_shape_list, net_pin_shape_map, net_result_map, stage);
-  // return getViolationListBySelf(top_name, env_shape_list, net_pin_shape_map, net_result_map, stage);
+  // return getViolationListBySelf(top_name, env_shape_list, net_pin_shape_map, net_fixed_result_map, net_routing_result_map, stage);
+  return getViolationListByOther(top_name, env_shape_list, net_pin_shape_map, net_fixed_result_map, net_routing_result_map, stage);
 }
 
 // private
@@ -63,7 +65,8 @@ DRCEngine* DRCEngine::_de_instance = nullptr;
 
 std::vector<Violation> DRCEngine::getViolationListBySelf(std::string top_name, std::vector<std::pair<EXTLayerRect*, bool>>& env_shape_list,
                                                          std::map<int32_t, std::vector<std::pair<EXTLayerRect*, bool>>>& net_pin_shape_map,
-                                                         std::map<int32_t, std::vector<Segment<LayerCoord>>>& net_result_map,
+                                                         std::map<int32_t, std::vector<Segment<LayerCoord>>>& net_fixed_result_map,
+                                                         std::map<int32_t, std::vector<Segment<LayerCoord>>>& net_routing_result_map,
                                                          std::string stage)
 {
   int32_t micron_dbu = RTDM.getDatabase().get_micron_dbu();
@@ -82,7 +85,7 @@ std::vector<Violation> DRCEngine::getViolationListBySelf(std::string top_name, s
   for (auto& [net_idx, pin_shape_list] : net_pin_shape_map) {
     net_idx_set.insert(net_idx);
   }
-  for (auto& [net_idx, segment_list] : net_result_map) {
+  for (auto& [net_idx, segment_list] : net_routing_result_map) {
     net_idx_set.insert(net_idx);
   }
 
@@ -154,8 +157,38 @@ std::vector<Violation> DRCEngine::getViolationListBySelf(std::string top_name, s
             flag = "    NEW";
           }
         }
-        if (RTUTIL.exist(net_result_map, net_idx)) {
-          for (Segment<LayerCoord> segment : net_result_map[net_idx]) {
+        if (RTUTIL.exist(net_fixed_result_map, net_idx)) {
+          for (Segment<LayerCoord> segment : net_fixed_result_map[net_idx]) {
+            LayerCoord& first_coord = segment.get_first();
+            LayerCoord& second_coord = segment.get_second();
+            int32_t first_layer_idx = first_coord.get_layer_idx();
+            int32_t second_layer_idx = second_coord.get_layer_idx();
+            if (first_layer_idx != second_layer_idx) {
+              RTUTIL.swapByASC(first_layer_idx, second_layer_idx);
+              for (int32_t layer_idx = first_layer_idx; layer_idx < second_layer_idx; layer_idx++) {
+                ViaMaster& via_master = layer_via_master_list[layer_idx].front();
+                std::string layer_name = routing_layer_list[via_master.get_above_enclosure().get_layer_idx()].get_layer_name();
+                RTUTIL.pushStream(def_file, flag, " ", layer_name, " ( ", first_coord.get_x(), " ", first_coord.get_y(), " ) ",
+                                  via_master.get_via_name(), "\n");
+                flag = "    NEW";
+              }
+            } else {
+              if (RTUTIL.isHorizontal(first_coord, second_coord)) {
+                std::string layer_name = routing_layer_list[first_layer_idx].get_layer_name();
+                RTUTIL.pushStream(def_file, flag, " ", layer_name, " ( ", first_coord.get_x(), " ", first_coord.get_y(), " ) ( ",
+                                  second_coord.get_x(), " * )", "\n");
+                flag = "    NEW";
+              } else if (RTUTIL.isVertical(first_coord, second_coord)) {
+                std::string layer_name = routing_layer_list[first_layer_idx].get_layer_name();
+                RTUTIL.pushStream(def_file, flag, " ", layer_name, " ( ", first_coord.get_x(), " ", first_coord.get_y(), " ) ( * ",
+                                  second_coord.get_y(), " )", "\n");
+                flag = "    NEW";
+              }
+            }
+          }
+        }
+        if (RTUTIL.exist(net_routing_result_map, net_idx)) {
+          for (Segment<LayerCoord> segment : net_routing_result_map[net_idx]) {
             LayerCoord& first_coord = segment.get_first();
             LayerCoord& second_coord = segment.get_second();
             int32_t first_layer_idx = first_coord.get_layer_idx();
@@ -252,6 +285,26 @@ std::vector<Violation> DRCEngine::getViolationListBySelf(std::string top_name, s
 
   std::vector<Violation> voilation_list;
   return voilation_list;
+}
+
+std::vector<Violation> DRCEngine::getViolationListByOther(std::string top_name, std::vector<std::pair<EXTLayerRect*, bool>>& env_shape_list,
+                                                          std::map<int32_t, std::vector<std::pair<EXTLayerRect*, bool>>>& net_pin_shape_map,
+                                                          std::map<int32_t, std::vector<Segment<LayerCoord>>>& net_fixed_result_map,
+                                                          std::map<int32_t, std::vector<Segment<LayerCoord>>>& net_routing_result_map,
+                                                          std::string stage)
+{
+  std::map<int32_t, std::vector<Segment<LayerCoord>>> net_result_map;
+  for (auto& [net_idx, segment_list] : net_fixed_result_map) {
+    for (Segment<LayerCoord>& segment : segment_list) {
+      net_result_map[net_idx].push_back(segment);
+    }
+  }
+  for (auto& [net_idx, segment_list] : net_routing_result_map) {
+    for (Segment<LayerCoord>& segment : segment_list) {
+      net_result_map[net_idx].push_back(segment);
+    }
+  }
+  return RTI.getViolationList(env_shape_list, net_pin_shape_map, net_result_map, stage);
 }
 
 }  // namespace irt

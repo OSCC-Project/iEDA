@@ -56,11 +56,13 @@ class Database
   std::vector<Obstacle>& get_cut_obstacle_list() { return _cut_obstacle_list; }
   std::vector<Net>& get_net_list() { return _net_list; }
   GridMap<GCell>& get_gcell_map() { return _gcell_map; }
+  int32_t get_detection_distance() const { return _detection_distance; }
   // setter
   void set_design_name(const std::string& design_name) { _design_name = design_name; }
   void set_lef_file_path_list(const std::vector<std::string>& lef_file_path_list) { _lef_file_path_list = lef_file_path_list; }
   void set_def_file_path(const std::string& def_file_path) { _def_file_path = def_file_path; }
   void set_micron_dbu(const int32_t micron_dbu) { _micron_dbu = micron_dbu; }
+  void set_detection_distance(const int32_t detection_distance) { _detection_distance = detection_distance; }
   // function
 
  private:
@@ -84,6 +86,7 @@ class Database
   std::vector<Obstacle> _cut_obstacle_list;
   std::vector<Net> _net_list;
   GridMap<GCell> _gcell_map;
+  int32_t _detection_distance = -1;
 };
 
 }  // namespace irt
