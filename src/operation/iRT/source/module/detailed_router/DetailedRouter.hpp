@@ -60,9 +60,10 @@ class DetailedRouter
   void initDRBoxMap(DRModel& dr_model);
   void buildBoxSchedule(DRModel& dr_model);
   void routeDRBoxMap(DRModel& dr_model);
-  void buildFixedRectList(DRBox& dr_box);
-  void buildNetResultMap(DRBox& dr_box);
-  void buildViolationList(DRBox& dr_box);
+  void buildFixedRect(DRBox& dr_box);
+  void buildAccessResult(DRBox& dr_box);
+  void buildNetResult(DRBox& dr_box);
+  void buildViolation(DRBox& dr_box);
   void initDRTaskList(DRModel& dr_model, DRBox& dr_box);
   bool needRouting(DRBox& dr_box);
   void buildBoxTrackAxis(DRBox& dr_box);
@@ -127,6 +128,7 @@ class DetailedRouter
 #endif
 
 #if 1  // debug
+  void debugPlotDRModel(DRModel& dr_model, std::string flag);
   void debugCheckDRBox(DRBox& dr_box);
   void debugPlotDRBox(DRBox& dr_box, int32_t curr_task_idx, std::string flag);
 #endif
