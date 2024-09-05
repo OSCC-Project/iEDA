@@ -367,18 +367,18 @@ json FeatureParser::buildSummaryCongestion()
   congestion_info["utilization"]["rudy"]["max"]["horizontal"] = eval_summary.rudy_utilization_summary.max_utilization_horizontal;
   congestion_info["utilization"]["rudy"]["max"]["vertical"] = eval_summary.rudy_utilization_summary.max_utilization_vertical;
   congestion_info["utilization"]["rudy"]["max"]["union"] = eval_summary.rudy_utilization_summary.max_utilization_union;
-  congesiton_info["utilization"]["rudy"]["top average"]["horizontal"]
+  congestion_info["utilization"]["rudy"]["top average"]["horizontal"]
       = eval_summary.rudy_utilization_summary.weighted_average_utilization_horizontal;
-  congesiton_info["utilization"]["rudy"]["top average"]["vertical"]
+  congestion_info["utilization"]["rudy"]["top average"]["vertical"]
       = eval_summary.rudy_utilization_summary.weighted_average_utilization_vertical;
-  congesiton_info["utilization"]["rudy"]["top average"]["union"] = eval_summary.rudy_utilization_summary.weighted_average_utilization_union;
+  congestion_info["utilization"]["rudy"]["top average"]["union"] = eval_summary.rudy_utilization_summary.weighted_average_utilization_union;
 
   congestion_info["utilization"]["lutrudy"]["max"]["horizontal"] = eval_summary.lutrudy_utilization_summary.max_utilization_horizontal;
   congestion_info["utilization"]["lutrudy"]["max"]["vertical"] = eval_summary.lutrudy_utilization_summary.max_utilization_vertical;
   congestion_info["utilization"]["lutrudy"]["max"]["union"] = eval_summary.lutrudy_utilization_summary.max_utilization_union;
-  congesiton_info["utilization"]["lutrudy"]["top average"]["horizontal"]
+  congestion_info["utilization"]["lutrudy"]["top average"]["horizontal"]
       = eval_summary.lutrudy_utilization_summary.weighted_average_utilization_horizontal;
-  congesiton_info["utilization"]["lutrudy"]["top average"]["vertical"]
+  congestion_info["utilization"]["lutrudy"]["top average"]["vertical"]
       = eval_summary.lutrudy_utilization_summary.weighted_average_utilization_vertical;
   congestion_info["utilization"]["lutrudy"]["top average"]["union"]
       = eval_summary.lutrudy_utilization_summary.weighted_average_utilization_union;

@@ -17,6 +17,8 @@
 
 namespace ieval {
 
+using namespace std;
+
 #define EVAL_INIT_IDB_INST (ieval::InitIDB::getInst())
 
 DensityEval* DensityEval::_density_eval = nullptr;
