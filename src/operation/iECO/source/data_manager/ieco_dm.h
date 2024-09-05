@@ -16,23 +16,23 @@
 // ***************************************************************************************
 #pragma once
 
-#include "boost_definition.h"
+#include <map>
+#include <vector>
 
-namespace ieda_solver {
+#include "ieco_data.h"
 
-typedef GtlPolygon90Set GeometryPolygonSet;
+namespace ieco {
 
-#define get_interact(polygon_set1, polygon_set2) gtl::interact(polygon_set1, polygon_set2)
+class EcoDataManager
+{
+ public:
+  EcoDataManager();
+  ~EcoDataManager();
 
-#define getDefaultRectangles(output, polygon_set) gtl::get_rectangles(output, polygon_set)
-#define getRectangles(output, polygon_set, direction) gtl::get_rectangles(output, polygon_set, direction)
-#define getMaxRectangles(output, polygon_set) gtl::get_max_rectangles(output, polygon_set)
-#define getPolygons(output, polygon_set) gtl::get_polygons(output, polygon_set)
+  EcoData& get_eco_data() { return _eco_data; }
 
-#define envelope(rect, polygon_set) gtl::extents(rect, polygon_set)
+ private:
+  EcoData _eco_data;
+};
 
-#define growAnd(polygon_set, value) gtl::grow_and(polygon_set, value)
-
-#define getArea(polygon_set) gtl::area(polygon_set)
-
-}  // namespace ieda_solver
+}  // namespace ieco

@@ -14,25 +14,30 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-#pragma once
+#include "ieco.h"
 
-#include "boost_definition.h"
+#include "ieco_via.h"
 
-namespace ieda_solver {
+namespace ieco {
 
-typedef GtlPolygon90Set GeometryPolygonSet;
+ECOManager::ECOManager()
+{
+  _data_manager = new EcoDataManager();
+}
 
-#define get_interact(polygon_set1, polygon_set2) gtl::interact(polygon_set1, polygon_set2)
+ECOManager::~ECOManager()
+{
+  if (_data_manager != nullptr) {
+    delete _data_manager;
+    _data_manager = nullptr;
+  }
+}
 
-#define getDefaultRectangles(output, polygon_set) gtl::get_rectangles(output, polygon_set)
-#define getRectangles(output, polygon_set, direction) gtl::get_rectangles(output, polygon_set, direction)
-#define getMaxRectangles(output, polygon_set) gtl::get_max_rectangles(output, polygon_set)
-#define getPolygons(output, polygon_set) gtl::get_polygons(output, polygon_set)
+void ECOManager::ecoVia(std::string type)
+{
+  ECOVia eco_via(_data_manager);
+  eco_via.init();
+  eco_via.repair(type);
+}
 
-#define envelope(rect, polygon_set) gtl::extents(rect, polygon_set)
-
-#define growAnd(polygon_set, value) gtl::grow_and(polygon_set, value)
-
-#define getArea(polygon_set) gtl::area(polygon_set)
-
-}  // namespace ieda_solver
+}  // namespace ieco

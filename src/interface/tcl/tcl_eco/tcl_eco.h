@@ -15,24 +15,39 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 #pragma once
+/**
+ * @File Name: tcl_eco.h
+ * @Brief :
+ * @Author : Yell (12112088@qq.com)
+ * @Version : 1.0
+ * @Creat Date : 2024-08-26
+ *
+ */
 
-#include "boost_definition.h"
+#include <iostream>
 
-namespace ieda_solver {
+#include "ScriptEngine.hh"
+#include "tcl_definition.h"
 
-typedef GtlPolygon90Set GeometryPolygonSet;
+using ieda::TclCmd;
+using ieda::TclIntOption;
+using ieda::TclOption;
+using ieda::TclStringOption;
 
-#define get_interact(polygon_set1, polygon_set2) gtl::interact(polygon_set1, polygon_set2)
+namespace tcl {
 
-#define getDefaultRectangles(output, polygon_set) gtl::get_rectangles(output, polygon_set)
-#define getRectangles(output, polygon_set, direction) gtl::get_rectangles(output, polygon_set, direction)
-#define getMaxRectangles(output, polygon_set) gtl::get_max_rectangles(output, polygon_set)
-#define getPolygons(output, polygon_set) gtl::get_polygons(output, polygon_set)
+class CmdEcoRepairVia : public TclCmd
+{
+ public:
+  explicit CmdEcoRepairVia(const char* cmd_name);
+  ~CmdEcoRepairVia() override = default;
 
-#define envelope(rect, polygon_set) gtl::extents(rect, polygon_set)
+  unsigned check() override;
+  unsigned exec() override;
 
-#define growAnd(polygon_set, value) gtl::grow_and(polygon_set, value)
+ private:
+  // private function
+  // private data
+};
 
-#define getArea(polygon_set) gtl::area(polygon_set)
-
-}  // namespace ieda_solver
+}  // namespace tcl

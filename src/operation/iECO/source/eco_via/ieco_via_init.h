@@ -16,23 +16,38 @@
 // ***************************************************************************************
 #pragma once
 
-#include "boost_definition.h"
+#include <map>
+#include <vector>
 
-namespace ieda_solver {
+#include "IdbGeometry.h"
+#include "IdbNet.h"
+#include "IdbRegularWire.h"
+#include "ieco_data_via.h"
 
-typedef GtlPolygon90Set GeometryPolygonSet;
+namespace ieco {
 
-#define get_interact(polygon_set1, polygon_set2) gtl::interact(polygon_set1, polygon_set2)
+class EcoDataManager;
 
-#define getDefaultRectangles(output, polygon_set) gtl::get_rectangles(output, polygon_set)
-#define getRectangles(output, polygon_set, direction) gtl::get_rectangles(output, polygon_set, direction)
-#define getMaxRectangles(output, polygon_set) gtl::get_max_rectangles(output, polygon_set)
-#define getPolygons(output, polygon_set) gtl::get_polygons(output, polygon_set)
+class ECOViaInit
+{
+ public:
+  ECOViaInit(EcoDataManager* data_manager);
+  ~ECOViaInit();
 
-#define envelope(rect, polygon_set) gtl::extents(rect, polygon_set)
+  void initData();
 
-#define growAnd(polygon_set, value) gtl::grow_and(polygon_set, value)
+ private:
+  EcoDataManager* _data_manager;
 
-#define getArea(polygon_set) gtl::area(polygon_set)
+  void init_via_masters();
+  void init_nets();
+  void init_segment_rect(EcoDataVia& eco_via, idb::IdbRegularWireSegment* idb_segment, int cut_layer_order);
+  void init_segment_via(EcoDataVia& eco_via, idb::IdbRegularWireSegment* idb_segment, int cut_layer_order);
+  void init_pin(EcoDataVia& eco_via, idb::IdbNet* idb_net, int cut_layer_order);
 
-}  // namespace ieda_solver
+  std::map<int, std::vector<EcoDataVia>> get_net_vias(idb::IdbNet* idb_net);
+
+  idb::IdbRect get_segment_rect(idb::IdbRegularWireSegment* idb_segment);
+};
+
+}  // namespace ieco

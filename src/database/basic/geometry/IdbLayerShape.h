@@ -101,7 +101,9 @@ class IdbLayerShape
     return nullptr;
   }
 
-  bool isIntersected(int x, int y, IdbLayer* layer);
+  bool isIntersected(int x, int y, IdbLayer* layer = nullptr);
+  bool isIntersected(int llx, int lly, int urx, int ury, IdbLayer* layer = nullptr);
+  bool isIntersected(IdbRect* rect_check, IdbLayer* layer = nullptr);
 
  private:
   IdbLayerShapeType _type;
