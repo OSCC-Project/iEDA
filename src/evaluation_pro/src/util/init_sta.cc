@@ -96,6 +96,10 @@ void InitSTA::callRT()
 {
   LOG_FATAL_IF(_routing_type != RoutingType::kEGR && _routing_type != RoutingType::kDR) << "Unsupported routing type";
   std::map<std::string, std::any> config_map;
+  auto* idb_layout = dmInst->get_idb_lef_service()->get_layout();
+  auto routing_layers = idb_layout->get_layers()->get_routing_layers();
+  config_map.insert({"-bottom_routing_layer", routing_layers.front()->get_name()});
+  config_map.insert({"-top_routing_layer", routing_layers.back()->get_name()});
   config_map.insert({"-enable_timing", 1});
   RT_INST.initRT(config_map);
 
