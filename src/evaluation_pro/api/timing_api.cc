@@ -13,7 +13,23 @@
 namespace ieval {
 
 #define EVAL_STA_INST (ieval::TimingEval::getInst())
-TimingAPI::TimingAPI(const std::string& routing_type)
+
+TimingAPI* TimingAPI::_timing_api = nullptr;
+
+TimingAPI* TimingAPI::getInst()
+{
+  if (_timing_api == nullptr) {
+    _timing_api = new TimingAPI();
+  }
+  return _timing_api;
+}
+
+void TimingAPI::destroyInst()
+{
+  ieval::TimingEval::destroyInst();
+}
+
+void TimingAPI::initRoutingType(const std::string& routing_type)
 {
   ieval::TimingEval::initRoutingType(routing_type);
 }
@@ -24,5 +40,9 @@ TimingSummary TimingAPI::evalDesign()
 double TimingAPI::evalNetPower(const std::string& net_name) const
 {
   return EVAL_STA_INST->evalNetPower(net_name);
+}
+std::map<std::string, double> TimingAPI::evalAllNetPower() const
+{
+  return EVAL_STA_INST->evalAllNetPower();
 }
 }  // namespace ieval

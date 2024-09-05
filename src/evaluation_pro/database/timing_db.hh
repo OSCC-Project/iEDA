@@ -22,7 +22,7 @@ struct ClockTiming
 };
 struct TimingSummary
 {
-  std::vector<ClockTiming> timing;
+  std::vector<ClockTiming> clock_timings;
   double static_power;
   double dynamic_power;
 };

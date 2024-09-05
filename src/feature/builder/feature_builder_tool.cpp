@@ -48,13 +48,13 @@ EvalSummary FeatureBuilder::buildEvalSummary()
   int32_t grid_size = 2000;
 
   EvalSummary summary;
-  summary.total_wl_summary = WIRELENGTH_API_INST->totalWL();
-  summary.density_map_summary = DENSITY_API_INST->densityMap(grid_size);
-  summary.egr_map_summary = CONGESTION_API_INST->egrMap();
-  summary.overflow_summary = CONGESTION_API_INST->egrOverflow();
-  summary.rudy_map_summary = CONGESTION_API_INST->rudyMap(grid_size);
-  summary.rudy_utilization_summary = CONGESTION_API_INST->rudyUtilization(false);
-  summary.lutrudy_utilization_summary = CONGESTION_API_INST->rudyUtilization(true);
+  // summary.total_wl_summary = WIRELENGTH_API_INST->totalWL();
+  // summary.density_map_summary = DENSITY_API_INST->densityMap(grid_size);
+  // summary.egr_map_summary = CONGESTION_API_INST->egrMap();
+  // summary.overflow_summary = CONGESTION_API_INST->egrOverflow();
+  // summary.rudy_map_summary = CONGESTION_API_INST->rudyMap(grid_size);
+  // summary.rudy_utilization_summary = CONGESTION_API_INST->rudyUtilization(false);
+  // summary.lutrudy_utilization_summary = CONGESTION_API_INST->rudyUtilization(true);
 
   return summary;
 }
