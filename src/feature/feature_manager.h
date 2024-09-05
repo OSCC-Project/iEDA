@@ -59,6 +59,8 @@ class FeatureManager
   /// route data
   bool save_route_data(std::string path);
   bool read_route_data(std::string path);
+  // evaluation
+  bool save_eval_summary(std::string path);
 
  private:
   static FeatureManager* _instance;

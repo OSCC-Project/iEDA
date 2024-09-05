@@ -45,4 +45,9 @@ bool feature_route_read(const std::string& path)
   return featureInst->read_route_data(path);
 }
 
+bool feature_eval_summary(const std::string& path)
+{
+  return featureInst->save_eval_summary(path);
+}
+
 }  // namespace python_interface

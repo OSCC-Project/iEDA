@@ -36,6 +36,7 @@
 #include <vector>
 
 #include "feature_db.h"
+#include "feature_eval.h"
 #include "feature_icts.h"
 #include "feature_ino.h"
 #include "feature_ipl.h"
@@ -52,6 +53,7 @@ class FeatureSummary
 
   // getter
   DBSummary& get_db() { return _db; }
+  EvalSummary& get_summary_eval() { return _summary_eval; }
   PlaceSummary& get_summary_ipl() { return _summary_ipl; }
   RTSummary& get_summary_irt() { return _summary_irt; }
   CTSSummary& get_summary_icts() { return _summary_icts; }
@@ -61,6 +63,7 @@ class FeatureSummary
   TimingOptSummary& get_summary_ito_optsetup() { return _summary_ito_optsetup; }
 
   void set_db(DBSummary db) { _db = db; }
+  void set_eval(EvalSummary db) { _summary_eval = db; }
   void set_ipl(PlaceSummary db) { _summary_ipl = db; }
   void set_irt(RTSummary db) { _summary_irt = db; }
   void set_icts(CTSSummary db) { _summary_icts = db; }
@@ -71,6 +74,7 @@ class FeatureSummary
 
  private:
   DBSummary _db;
+  EvalSummary _summary_eval;
   PlaceSummary _summary_ipl;
   RTSummary _summary_irt;
   CTSSummary _summary_icts;

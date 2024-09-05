@@ -38,6 +38,7 @@ int registerCmdFeature()
   registerTclCmd(CmdFeatureEvalMap, "feature_eval_map");
   registerTclCmd(CmdFeatureRoute, "feature_route");
   registerTclCmd(CmdFeatureRouteRead, "feature_route_read");
+  registerTclCmd(CmdFeatureEvalSummary, "feature_eval_summary");
 
   return EXIT_SUCCESS;
 }

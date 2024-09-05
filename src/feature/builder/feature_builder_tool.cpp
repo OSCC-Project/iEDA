@@ -33,12 +33,31 @@
 #include "PLAPI.hh"
 #include "RTInterface.hpp"
 #include "ToApi.hpp"
+#include "congestion_api.h"
+#include "density_api.h"
 #include "feature_builder.h"
 #include "idm.h"
 #include "report_evaluator.h"
 #include "route_builder.h"
+#include "wirelength_api.h"
 
 namespace ieda_feature {
+
+EvalSummary FeatureBuilder::buildEvalSummary()
+{
+  int32_t grid_size = 2000;
+
+  EvalSummary summary;
+  summary.total_wl_summary = WIRELENGTH_API_INST->totalWL();
+  summary.density_map_summary = DENSITY_API_INST->densityMap(grid_size);
+  summary.egr_map_summary = CONGESTION_API_INST->egrMap();
+  summary.overflow_summary = CONGESTION_API_INST->egrOverflow();
+  summary.rudy_map_summary = CONGESTION_API_INST->rudyMap(grid_size);
+  summary.rudy_utilization_summary = CONGESTION_API_INST->rudyUtilization(false);
+  summary.lutrudy_utilization_summary = CONGESTION_API_INST->rudyUtilization(true);
+
+  return summary;
+}
 
 PlaceSummary FeatureBuilder::buildPLSummary(std::string step)
 {

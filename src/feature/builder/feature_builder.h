@@ -37,6 +37,7 @@
 
 #include "feature_db.h"
 #include "feature_icts.h"
+#include "feature_ieval.h"
 #include "feature_ino.h"
 #include "feature_ipl.h"
 #include "feature_irt.h"
@@ -52,6 +53,7 @@ class FeatureBuilder
 
   // builder
   DBSummary buildDBSummary();
+  EvalSummary buildEvalSummary();
   PlaceSummary buildPLSummary(std::string step);
   RTSummary buildRTSummary();
   CTSSummary buildCTSSummary();

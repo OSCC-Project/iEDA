@@ -68,6 +68,8 @@ class FeatureParser
   bool buildRouteData(std::string json_path, RouteAnalyseData* data);
   bool readRouteData(std::string json_path, RouteAnalyseData* data);
 
+  bool buildSummaryEval(std::string json_path);
+
  private:
   IdbLayout* _layout = nullptr;
   IdbDesign* _design = nullptr;
@@ -91,5 +93,9 @@ class FeatureParser
   json buildSummaryRT();
   json buildSummarySTA();
   json buildSummaryDRC();
+
+  json buildSummaryWirelength();
+  json buildSummaryDensity();
+  json buildSummaryCongestion();
 };
 }  // namespace ieda_feature

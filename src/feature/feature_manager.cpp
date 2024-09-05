@@ -45,6 +45,17 @@ bool FeatureManager::save_summary(std::string path)
   return feature_parser.buildSummary(path);
 }
 
+boool FeatureManager::save_eval_summary(std::string path)
+{
+  FeatureBuilder builder;
+  auto eval_db = builder.buildEvalSummary();
+
+  _summary->set_eval(eval_db);
+
+  FeatureParser feature_parser(_summary);
+  return feature_parser.buildSummaryEval(path);
+}
+
 bool FeatureManager::save_tools(std::string path, std::string step)
 {
   FeatureBuilder builder;
