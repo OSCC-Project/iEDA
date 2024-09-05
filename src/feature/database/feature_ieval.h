@@ -10,6 +10,8 @@
 #include <string>
 #include <vector>
 
+#include "feature_ipw.h"
+#include "feature_ista.h"
 namespace ieda_feature {
 
 // Wirelength
@@ -105,6 +107,12 @@ struct EvalSummary
   OverflowSummary overflow_summary;
   UtilizationSummary rudy_utilization_summary;
   UtilizationSummary lutrudy_utilization_summary;
+};
+
+struct TimingEvalSummary
+{
+  std::vector<ClockTiming> clock_timings;
+  PowerInfo power_info;
 };
 
 }  // namespace ieda_feature

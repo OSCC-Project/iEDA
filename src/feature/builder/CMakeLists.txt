@@ -1,6 +1,7 @@
 add_library(feature_builder
     feature_builder.cpp
     feature_builder_tool.cpp
+    feature_timing_eval.cc
     route_builder.cpp
 )
 
@@ -24,4 +25,5 @@ target_link_libraries(feature_builder
         eval_pro_congestion_api
         eval_pro_density_api
         eval_pro_wirelength_api
+        eval_pro_timing_api
 )

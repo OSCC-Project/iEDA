@@ -386,4 +386,36 @@ json FeatureParser::buildSummaryCongestion()
   return congestion_info;
 }
 
+json FeatureParser::buildSummaryTiming()
+{
+  json timing_info;
+
+  auto timing_summary = _summary->get_summary_timing_eval();
+  auto clock_timings = timing_summary.clock_timings;
+
+  for (size_t i = 0; i < clock_timings.size(); i++) {
+    timing_info[i]["clock_name"] = clock_timings[i].clock_name;
+    timing_info[i]["setup_tns"] = clock_timings[i].setup_tns;
+    timing_info[i]["setup_wns"] = clock_timings[i].setup_wns;
+    timing_info[i]["hold_tns"] = clock_timings[i].hold_tns;
+    timing_info[i]["hold_wns"] = clock_timings[i].hold_wns;
+    timing_info[i]["suggest_freq"] = clock_timings[i].suggest_freq;
+  }
+
+  return timing_info;
+}
+
+json FeatureParser::buildSummaryPower()
+{
+  json power_info;
+
+  auto timing_summary = _summary->get_summary_timing_eval();
+  auto power = timing_summary.power_info;
+
+  power_info["static_power"] = power.static_power;
+  power_info["dynamic_power"] = power.dynamic_power;
+
+  return power_info;
+}
+
 }  // namespace ieda_feature

@@ -9,16 +9,26 @@
 #pragma once
 #include "timing_db.hh"
 namespace ieval {
-
 class TimingAPI
 {
  public:
-  TimingAPI(const std::string& routing_type);
+  TimingAPI() = default;
 
   ~TimingAPI() = default;
+
+  static TimingAPI* getInst();
+
+  static void destroyInst();
+
+  static void initRoutingType(const std::string& routing_type);
 
   TimingSummary evalDesign();
 
   double evalNetPower(const std::string& net_name) const;
+
+  std::map<std::string, double> evalAllNetPower() const;
+
+ private:
+  static TimingAPI* _timing_api;
 };
 }  // namespace ieval

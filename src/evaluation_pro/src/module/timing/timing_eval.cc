@@ -53,7 +53,7 @@ TimingSummary TimingEval::evalDesign()
     clock_timing.wns = timing_info.at("WNS");
     clock_timing.tns = timing_info.at("TNS");
     clock_timing.suggest_freq = timing_info.at("Freq(MHz)");
-    summary.timing.push_back(clock_timing);
+    summary.clock_timings.push_back(clock_timing);
   }
   auto power_map = EVAL_INIT_STA_INST->getPower();
   summary.static_power = power_map.at("static_power");

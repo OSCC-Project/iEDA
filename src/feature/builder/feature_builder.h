@@ -54,6 +54,7 @@ class FeatureBuilder
   // builder
   DBSummary buildDBSummary();
   EvalSummary buildEvalSummary();
+  TimingEvalSummary buildTimingEvalSummary(const std::string& routing_type);
   PlaceSummary buildPLSummary(std::string step);
   RTSummary buildRTSummary();
   CTSSummary buildCTSSummary();

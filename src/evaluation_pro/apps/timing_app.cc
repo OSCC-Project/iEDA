@@ -28,15 +28,16 @@ void TestTiming()
                      dmInst->get_idb_builder());
   iPLAPIInst.runFlow();
   auto routing_type = "FLUTE";  // "WLM", "HPWL", "FLUTE", "EGR", "DR"
-  ieval::TimingAPI timing_api(routing_type);
-  auto summary = timing_api.evalDesign();
+  ieval::TimingAPI::initRoutingType(routing_type);
+  auto timing_api = ieval::TimingAPI::getInst();
+  auto summary = timing_api->evalDesign();
   LOG_INFO << ">> Design Timing Evaluation: ";
-  for (auto& clock_timing : summary.timing) {
+  for (auto& clock_timing : summary.clock_timings) {
     LOG_INFO << "Clock: " << clock_timing.clock_name << " WNS: " << clock_timing.wns << " TNS: " << clock_timing.tns
              << " Suggest freq: " << clock_timing.suggest_freq;
   }
   LOG_INFO << "Static power: " << summary.static_power;
   LOG_INFO << "Dynamic power: " << summary.dynamic_power;
   LOG_INFO << ">> Net Power Evaluation: ";
-  LOG_INFO << "Net: clk, Power: " << timing_api.evalNetPower("clk");
+  LOG_INFO << "Net: clk, Power: " << timing_api->evalNetPower("clk");
 }
