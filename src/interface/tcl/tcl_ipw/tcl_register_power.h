@@ -42,6 +42,7 @@ int registerCmdPower()
   registerTclCmd(CmdPowerRun, "run_power");
 
   registerTclCmd(ipower::CmdSetPwrDesignWorkSpace, "set_pwr_design_workspace");
+  registerTclCmd(ipower::CmdReportPower, "report_power");
 
   return EXIT_SUCCESS;
 }
