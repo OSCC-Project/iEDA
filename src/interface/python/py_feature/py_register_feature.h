@@ -30,6 +30,7 @@ void register_feature(py::module& m)
   m.def("feature_route", feature_route, py::arg("path"));
   m.def("feature_route_read", feature_route_read, py::arg("path"));
   m.def("feature_eval_summary", feature_eval_summary, py::arg("path"));
+  m.def("feature_timing_eval_summary", feature_timing_eval_summary, py::arg("path"), py::arg("routing_type"));
 }
 
 }  // namespace python_interface

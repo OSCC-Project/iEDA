@@ -50,4 +50,9 @@ bool feature_eval_summary(const std::string& path)
   return featureInst->save_eval_summary(path);
 }
 
+bool feature_timing_eval_summary(const std::string& path, const std::string& routing_type)
+{
+  return featureInst->save_timing_eval_summary(path, routing_type);
+}
+
 }  // namespace python_interface
