@@ -551,11 +551,11 @@ void PLAPI::notifyPLWLInfo(int stage)
   PlacerDBInst.PL_STWL[stage] = stwl.obtainTotalWirelength();
 
   // method 1, most work in eval tool, from iDB data to eval tool
-  this->writeBackSourceDataBase();
-  ieval::TotalWLSummary wl_summary = _external_api->evalproIDBWL();
-  PlacerDBInst.hpwl_eval[stage] = wl_summary.HPWL;
-  PlacerDBInst.stwl_eval[stage] = wl_summary.FLUTE;
-  PlacerDBInst.grwl_eval[stage] = wl_summary.GRWL;
+  // this->writeBackSourceDataBase();
+  // ieval::TotalWLSummary wl_summary = _external_api->evalproIDBWL();
+  // PlacerDBInst.hpwl_eval[stage] = wl_summary.HPWL;
+  // PlacerDBInst.stwl_eval[stage] = wl_summary.FLUTE;
+  // PlacerDBInst.grwl_eval[stage] = wl_summary.GRWL;
 
   // // method 2, most work in point tool
   // std::vector<std::vector<std::pair<int32_t, int32_t>>> point_sets;
