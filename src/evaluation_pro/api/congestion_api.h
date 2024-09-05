@@ -11,11 +11,15 @@
 
 namespace ieval {
 
+#define CONGESTION_API_INST (ieval::CongestionAPI::getInst())
+
 class CongestionAPI
 {
  public:
   CongestionAPI();
   ~CongestionAPI();
+  static CongestionAPI* getInst();
+  static void destroyInst();
 
   EGRMapSummary egrMap();
   OverflowSummary egrOverflow();
@@ -26,6 +30,9 @@ class CongestionAPI
   OverflowSummary egrOverflow(std::string rt_dir_path);
   RUDYMapSummary rudyMap(CongestionNets congestion_nets, CongestionRegion region, int32_t grid_size);
   UtilizationSummary rudyUtilization(std::string rudy_dir_path, bool use_lut = false);
+
+ private:
+  static CongestionAPI* _congestion_api_inst;
 };
 
 }  // namespace ieval

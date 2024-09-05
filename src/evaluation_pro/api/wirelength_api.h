@@ -11,11 +11,15 @@
 
 namespace ieval {
 
+#define WIRELENGTH_API_INST (ieval::WirelengthAPI::getInst())
+
 class WirelengthAPI
 {
  public:
   WirelengthAPI();
   ~WirelengthAPI();
+  static WirelengthAPI* getInst();
+  static void destroyInst();
 
   TotalWLSummary totalWL();
   NetWLSummary netWL(std::string net_name);
@@ -27,5 +31,8 @@ class WirelengthAPI
   float totalEGRWL(std::string guide_path);
   float netEGRWL(std::string guide_path, std::string net_name);
   float pathEGRWL(std::string guide_path, std::string net_name, std::string load_name);
+
+ private:
+  static WirelengthAPI* _wirelength_api_inst;
 };
 }  // namespace ieval

@@ -12,12 +12,31 @@ namespace ieval {
 
 #define EVAL_WIRELENGTH_INST (ieval::WirelengthEval::getInst())
 
+WirelengthAPI* WirelengthAPI::_wirelength_api_inst = nullptr;
+
 WirelengthAPI::WirelengthAPI()
 {
 }
 
 WirelengthAPI::~WirelengthAPI()
 {
+}
+
+WirelengthAPI* WirelengthAPI::getInst()
+{
+  if (_wirelength_api_inst == nullptr) {
+    _wirelength_api_inst = new WirelengthAPI();
+  }
+
+  return _wirelength_api_inst;
+}
+
+void WirelengthAPI::destroyInst()
+{
+  if (_wirelength_api_inst != nullptr) {
+    delete _wirelength_api_inst;
+    _wirelength_api_inst = nullptr;
+  }
 }
 
 TotalWLSummary WirelengthAPI::totalWL(PointSets point_sets)

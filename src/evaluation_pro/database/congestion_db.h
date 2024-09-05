@@ -13,9 +13,6 @@
 #include <vector>
 
 namespace ieval {
-
-using namespace ::std;
-
 struct CongestionPin
 {
   int32_t lx;
@@ -24,7 +21,7 @@ struct CongestionPin
 
 struct CongestionNet
 {
-  vector<CongestionPin> pins;
+  std::vector<CongestionPin> pins;
 };
 
 struct CongestionRegion
@@ -35,24 +32,24 @@ struct CongestionRegion
   int32_t uy;
 };
 
-using CongestionNets = vector<CongestionNet>;
+using CongestionNets = std::vector<CongestionNet>;
 
 struct EGRMapSummary
 {
-  string horizontal_sum;
-  string vertical_sum;
-  string union_sum;
+  std::string horizontal_sum;
+  std::string vertical_sum;
+  std::string union_sum;
 };
 
 struct RUDYMapSummary
 {
-  string rudy_horizontal;
-  string rudy_vertical;
-  string rudy_union;
+  std::string rudy_horizontal;
+  std::string rudy_vertical;
+  std::string rudy_union;
 
-  string lutrudy_horizontal;
-  string lutrudy_vertical;
-  string lutrudy_union;
+  std::string lutrudy_horizontal;
+  std::string lutrudy_vertical;
+  std::string lutrudy_union;
 };
 
 struct OverflowSummary

@@ -13,12 +13,31 @@ namespace ieval {
 
 #define EVAL_CONGESTION_INST (ieval::CongestionEval::getInst())
 
+CongestionAPI* CongestionAPI::_congestion_api_inst = nullptr;
+
 CongestionAPI::CongestionAPI()
 {
 }
 
 CongestionAPI::~CongestionAPI()
 {
+}
+
+CongestionAPI* CongestionAPI::getInst()
+{
+  if (_congestion_api_inst == nullptr) {
+    _congestion_api_inst = new CongestionAPI();
+  }
+
+  return _congestion_api_inst;
+}
+
+void CongestionAPI::destroyInst()
+{
+  if (_congestion_api_inst != nullptr) {
+    delete _congestion_api_inst;
+    _congestion_api_inst = nullptr;
+  }
 }
 
 EGRMapSummary CongestionAPI::egrMap()

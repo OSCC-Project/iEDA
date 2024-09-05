@@ -14,18 +14,16 @@
 
 namespace ieval {
 
-using namespace ::std;
-
 struct DensityPin
 {
-  string type;
+  std::string type;
   int32_t lx;
   int32_t ly;
 };
 
 struct DensityCell
 {
-  string type;
+  std::string type;
   int32_t lx;
   int32_t ly;
   int32_t width;
@@ -48,29 +46,29 @@ struct DensityRegion
   int32_t uy;
 };
 
-using DensityPins = vector<DensityPin>;
-using DensityCells = vector<DensityCell>;
-using DensityNets = vector<DensityNet>;
+using DensityPins = std::vector<DensityPin>;
+using DensityCells = std::vector<DensityCell>;
+using DensityNets = std::vector<DensityNet>;
 
 struct CellMapSummary
 {
-  string macro_density;
-  string stdcell_density;
-  string allcell_density;
+  std::string macro_density;
+  std::string stdcell_density;
+  std::string allcell_density;
 };
 
 struct PinMapSummary
 {
-  string macro_pin_density;
-  string stdcell_pin_density;
-  string allcell_pin_density;
+  std::string macro_pin_density;
+  std::string stdcell_pin_density;
+  std::string allcell_pin_density;
 };
 
 struct NetMapSummary
 {
-  string local_net_density;
-  string global_net_density;
-  string allnet_density;
+  std::string local_net_density;
+  std::string global_net_density;
+  std::string allnet_density;
 };
 
 struct DensityMapSummary

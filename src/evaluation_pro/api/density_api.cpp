@@ -13,12 +13,31 @@ namespace ieval {
 
 #define EVAL_DENSITY_INST (ieval::DensityEval::getInst())
 
+DensityAPI* DensityAPI::_density_api_inst = nullptr;
+
 DensityAPI::DensityAPI()
 {
 }
 
 DensityAPI::~DensityAPI()
 {
+}
+
+DensityAPI* DensityAPI::getInst()
+{
+  if (_density_api_inst == nullptr) {
+    _density_api_inst = new DensityAPI();
+  }
+
+  return _density_api_inst;
+}
+
+void DensityAPI::destroyInst()
+{
+  if (_density_api_inst != nullptr) {
+    delete _density_api_inst;
+    _density_api_inst = nullptr;
+  }
 }
 
 DensityMapSummary DensityAPI::densityMap(int32_t grid_size)
