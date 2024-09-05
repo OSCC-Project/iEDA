@@ -181,7 +181,7 @@ std::string DensityEval::evalPinDensity(DensityPins pins, DensityRegion region, 
     }
   }
 
-  ofstream csv_file(output_filename);
+  std::ofstream csv_file(output_filename);
 
   for (size_t row_index = density_grid.size(); row_index-- > 0;) {
     const auto& row = density_grid[row_index];
@@ -204,7 +204,7 @@ std::string DensityEval::evalNetDensity(DensityNets nets, DensityRegion region, 
   int32_t grid_cols = (region.ux - region.lx + grid_size - 1) / grid_size;
   int32_t grid_rows = (region.uy - region.ly + grid_size - 1) / grid_size;
 
-  vector<vector<int>> net_count(grid_rows, vector<int>(grid_cols, 0));
+  std::vector<std::vector<int>> net_count(grid_rows, std::vector<int>(grid_cols, 0));
 
   for (const auto& net : nets) {
     int32_t start_col = std::max(0, (net.lx - region.lx) / grid_size);
@@ -227,7 +227,7 @@ std::string DensityEval::evalNetDensity(DensityNets nets, DensityRegion region, 
     }
   }
 
-  ofstream csv_file(output_filename);
+  std::ofstream csv_file(output_filename);
 
   for (int32_t row = grid_rows - 1; row >= 0; --row) {
     for (int32_t col = 0; col < grid_cols; ++col) {
@@ -241,7 +241,7 @@ std::string DensityEval::evalNetDensity(DensityNets nets, DensityRegion region, 
       // double density = net_count[row][col] / grid_area;
       double density = net_count[row][col];
 
-      csv_file << fixed << setprecision(6) << density;
+      csv_file << std::fixed << std::setprecision(6) << density;
       if (col < grid_cols - 1)
         csv_file << ",";
     }
