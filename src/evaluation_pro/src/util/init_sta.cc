@@ -98,8 +98,11 @@ void InitSTA::callRT()
   std::map<std::string, std::any> config_map;
   auto* idb_layout = dmInst->get_idb_lef_service()->get_layout();
   auto routing_layers = idb_layout->get_layers()->get_routing_layers();
-  config_map.insert({"-bottom_routing_layer", routing_layers.front()->get_name()});
-  config_map.insert({"-top_routing_layer", routing_layers.back()->get_name()});
+  auto logic_layer_name = routing_layers.front()->get_name();
+  auto clock_layer_name = routing_layers.size() >= 3 ? routing_layers[routing_layers.size() - 3]->get_name() : logic_layer_name;
+  // Hard Code, consider the clock layer is the last 3rd layer
+  config_map.insert({"-bottom_routing_layer", logic_layer_name});
+  config_map.insert({"-top_routing_layer", clock_layer_name});
   config_map.insert({"-enable_timing", 1});
   RT_INST.initRT(config_map);
 
@@ -176,7 +179,8 @@ void InitSTA::buildRCTree()
   std::optional<double> width = std::nullopt;
   auto* idb_layout = dmInst->get_idb_lef_service()->get_layout();
   auto routing_layers = idb_layout->get_layers()->get_routing_layers();
-  auto clock_layer = routing_layers.size() - 1;
+  auto clock_layer
+      = routing_layers.size() >= 3 ? routing_layers.size() - 3 : 1;  // Hard Code, consider the clock layer is the last 3rd layer
   auto calc_res = [&](const bool& is_clock, const double& wirelength) {
     if (!is_clock) {
       return idb_adapter->getResistance(1, wirelength, width);
