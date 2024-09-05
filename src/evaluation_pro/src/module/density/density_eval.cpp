@@ -8,6 +8,7 @@
 #include "density_eval.h"
 
 #include <cmath>
+#include <filesystem>
 #include <fstream>
 #include <iomanip>
 #include <sstream>
@@ -131,7 +132,11 @@ std::string DensityEval::evalDensity(DensityCells cells, DensityRegion region, i
     }
   }
 
-  std::ofstream csv_file(output_filename);
+  std::filesystem::path density_folder = "density_map";
+  std::filesystem::create_directory(density_folder);
+  std::filesystem::path output_path = density_folder / output_filename;
+
+  std::ofstream csv_file(output_path);
 
   for (size_t row_index = density_grid.size(); row_index-- > 0;) {
     const auto& row = density_grid[row_index];
@@ -145,7 +150,7 @@ std::string DensityEval::evalDensity(DensityCells cells, DensityRegion region, i
 
   csv_file.close();
 
-  return getAbsoluteFilePath(output_filename);
+  return getAbsoluteFilePath(output_path);
 }
 
 std::string DensityEval::evalPinDensity(DensityPins pins, DensityRegion region, int32_t grid_size, std::string pin_type,
@@ -183,7 +188,11 @@ std::string DensityEval::evalPinDensity(DensityPins pins, DensityRegion region, 
     }
   }
 
-  std::ofstream csv_file(output_filename);
+  std::filesystem::path density_folder = "density_map";
+  std::filesystem::create_directory(density_folder);
+  std::filesystem::path output_path = density_folder / output_filename;
+
+  std::ofstream csv_file(output_path);
 
   for (size_t row_index = density_grid.size(); row_index-- > 0;) {
     const auto& row = density_grid[row_index];
@@ -197,7 +206,7 @@ std::string DensityEval::evalPinDensity(DensityPins pins, DensityRegion region, 
 
   csv_file.close();
 
-  return getAbsoluteFilePath(output_filename);
+  return getAbsoluteFilePath(output_path);
 }
 
 std::string DensityEval::evalNetDensity(DensityNets nets, DensityRegion region, int32_t grid_size, std::string net_type,
@@ -229,7 +238,11 @@ std::string DensityEval::evalNetDensity(DensityNets nets, DensityRegion region, 
     }
   }
 
-  std::ofstream csv_file(output_filename);
+  std::filesystem::path density_folder = "density_map";
+  std::filesystem::create_directory(density_folder);
+  std::filesystem::path output_path = density_folder / output_filename;
+
+  std::ofstream csv_file(output_path);
 
   for (int32_t row = grid_rows - 1; row >= 0; --row) {
     for (int32_t col = 0; col < grid_cols; ++col) {
@@ -252,7 +265,7 @@ std::string DensityEval::evalNetDensity(DensityNets nets, DensityRegion region, 
 
   csv_file.close();
 
-  return getAbsoluteFilePath(output_filename);
+  return getAbsoluteFilePath(output_path);
 }
 
 void DensityEval::initIDB()

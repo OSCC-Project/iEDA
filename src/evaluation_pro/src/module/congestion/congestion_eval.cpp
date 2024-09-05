@@ -320,7 +320,11 @@ string CongestionEval::evalRUDY(CongestionNets nets, CongestionRegion region, in
     }
   }
 
-  std::ofstream csv_file(output_filename);
+  std::filesystem::path congestion_folder = "RUDY_map";
+  std::filesystem::create_directory(congestion_folder);
+  std::filesystem::path output_path = congestion_folder / output_filename;
+
+  std::ofstream csv_file(output_path);
 
   for (size_t row_index = density_grid.size(); row_index-- > 0;) {
     const auto& row = density_grid[row_index];
@@ -334,7 +338,7 @@ string CongestionEval::evalRUDY(CongestionNets nets, CongestionRegion region, in
 
   csv_file.close();
 
-  return getAbsoluteFilePath(output_filename);
+  return getAbsoluteFilePath(output_path);
 }
 
 string CongestionEval::evalLUTRUDY(CongestionNets nets, CongestionRegion region, int32_t grid_size, string lutrudy_type,
@@ -431,7 +435,11 @@ string CongestionEval::evalLUTRUDY(CongestionNets nets, CongestionRegion region,
     }
   }
 
-  std::ofstream csv_file(output_filename);
+  std::filesystem::path congestion_folder = "RUDY_map";
+  std::filesystem::create_directory(congestion_folder);
+  std::filesystem::path output_path = congestion_folder / output_filename;
+
+  std::ofstream csv_file(output_path);
 
   for (size_t row_index = density_grid.size(); row_index-- > 0;) {
     const auto& row = density_grid[row_index];
@@ -445,7 +453,7 @@ string CongestionEval::evalLUTRUDY(CongestionNets nets, CongestionRegion region,
 
   csv_file.close();
 
-  return getAbsoluteFilePath(output_filename);
+  return getAbsoluteFilePath(output_path);
 }
 
 float CongestionEval::calculateLness(std::vector<std::pair<int32_t, int32_t>> point_set, int32_t net_lx, int32_t net_ux, int32_t net_ly,
