@@ -45,7 +45,7 @@ bool FeatureManager::save_summary(std::string path)
   return feature_parser.buildSummary(path);
 }
 
-boool FeatureManager::save_eval_summary(std::string path)
+bool FeatureManager::save_eval_summary(std::string path)
 {
   FeatureBuilder builder;
   auto eval_db = builder.buildEvalSummary();
@@ -54,6 +54,17 @@ boool FeatureManager::save_eval_summary(std::string path)
 
   FeatureParser feature_parser(_summary);
   return feature_parser.buildSummaryEval(path);
+}
+
+bool FeatureManager::save_timing_eval_summary(std::string path, const std::string& routing_type)
+{
+  FeatureBuilder builder;
+  auto eval_db = builder.buildTimingEvalSummary(routing_type);
+
+  _summary->set_timing_eval(eval_db);
+
+  FeatureParser feature_parser(_summary);
+  return feature_parser.buildSummaryTimingEval(path);
 }
 
 bool FeatureManager::save_tools(std::string path, std::string step)

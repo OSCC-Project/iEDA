@@ -224,4 +224,21 @@ bool FeatureParser::buildSummaryEval(std::string json_path)
   return true;
 }
 
+bool FeatureParser::buildSummaryTimingEval(std::string json_path)
+{
+  std::ofstream& file_stream = ieda::getOutputFileStream(json_path);
+  json root;
+
+  root["clocks_timing"] = buildSummaryTiming();
+
+  root["power_info"] = buildSummaryPower();
+
+  file_stream << std::setw(4) << root;
+
+  ieda::closeFileStream(file_stream);
+
+  std::cout << std::endl << "Save eval json success, path = " << json_path << std::endl;
+  return true;
+}
+
 }  // namespace ieda_feature
