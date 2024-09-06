@@ -45,9 +45,9 @@ bool feature_route_read(const std::string& path)
   return featureInst->read_route_data(path);
 }
 
-bool feature_eval_summary(const std::string& path)
+bool feature_eval_summary(const std::string& path, int32_t grid_size, const std::string& routing_type)
 {
-  return featureInst->save_eval_summary(path);
+  return featureInst->save_eval_summary(path, grid_size, routing_type);
 }
 
 bool feature_timing_eval_summary(const std::string& path, const std::string& routing_type)

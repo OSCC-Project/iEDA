@@ -98,7 +98,6 @@ class FeatureParser
   json buildSummaryWirelength();
   json buildSummaryDensity();
   json buildSummaryCongestion();
-
   json buildSummaryTiming();
   json buildSummaryPower();
 };

@@ -1,8 +1,12 @@
 add_library(feature_builder
     feature_builder.cpp
     feature_builder_tool.cpp
-    feature_timing_eval.cc
     route_builder.cpp
+
+    feature_eval_wirelength.cpp
+    feature_eval_congestion.cpp
+    feature_eval_density.cpp
+    feature_eval_timing.cc
 )
 
 target_include_directories(feature_builder 

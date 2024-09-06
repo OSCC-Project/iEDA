@@ -122,7 +122,7 @@ UtilizationSummary CongestionAPI::rudyUtilization(bool use_lut)
 {
   UtilizationSummary utilization_summary;
 
-  std::string rudy_dir_path = "./";
+  std::string rudy_dir_path = "./RUDY_map";
   utilization_summary = rudyUtilization(rudy_dir_path, use_lut);
 
   return utilization_summary;

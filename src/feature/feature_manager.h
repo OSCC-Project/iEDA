@@ -60,7 +60,7 @@ class FeatureManager
   bool save_route_data(std::string path);
   bool read_route_data(std::string path);
   // evaluation
-  bool save_eval_summary(std::string path);
+  bool save_eval_summary(std::string path, int32_t grid_size, const std::string& routing_type);
   bool save_timing_eval_summary(std::string path, const std::string& routing_type);
 
  private:

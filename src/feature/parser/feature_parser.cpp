@@ -216,6 +216,10 @@ bool FeatureParser::buildSummaryEval(std::string json_path)
 
   root["Congestion"] = buildSummaryCongestion();
 
+  root["clocks_timing"] = buildSummaryTiming();
+
+  root["power_info"] = buildSummaryPower();
+
   file_stream << std::setw(4) << root;
 
   ieda::closeFileStream(file_stream);

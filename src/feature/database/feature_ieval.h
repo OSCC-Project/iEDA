@@ -98,10 +98,8 @@ struct UtilizationSummary
   float weighted_average_utilization_union;
 };
 
-struct EvalSummary
+struct CongestionSummary
 {
-  TotalWLSummary total_wl_summary;
-  DensityMapSummary density_map_summary;
   EGRMapSummary egr_map_summary;
   RUDYMapSummary rudy_map_summary;
   OverflowSummary overflow_summary;

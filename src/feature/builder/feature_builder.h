@@ -53,13 +53,16 @@ class FeatureBuilder
 
   // builder
   DBSummary buildDBSummary();
-  EvalSummary buildEvalSummary();
-  TimingEvalSummary buildTimingEvalSummary(const std::string& routing_type);
   PlaceSummary buildPLSummary(std::string step);
   RTSummary buildRTSummary();
   CTSSummary buildCTSSummary();
   NetOptSummary buildNetOptSummary();
   TimingOptSummary buildTimingOptSummary();
+
+  TotalWLSummary buildWirelengthEvalSummary();
+  DensityMapSummary buildDensityEvalSummary(int32_t grid_size);
+  CongestionSummary buildCongestionEvalSummary(int32_t grid_size);
+  TimingEvalSummary buildTimingEvalSummary(const std::string& routing_type);
 
   bool buildRouteData(RouteAnalyseData* data);
 

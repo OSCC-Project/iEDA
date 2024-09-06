@@ -68,4 +68,126 @@ bool FeatureParser::buildSummaryMap(std::string csv_path, int bin_cnt_x, int bin
   return true;
 }
 
+json FeatureParser::buildSummaryWirelength()
+{
+  json wirelength_info;
+
+  auto& total_wl_summary = _summary->get_summary_wirelength_eval();
+
+  wirelength_info["HPWL"] = total_wl_summary.HPWL;
+  wirelength_info["FLUTE"] = total_wl_summary.FLUTE;
+  wirelength_info["HTree"] = total_wl_summary.HTree;
+  wirelength_info["VTree"] = total_wl_summary.VTree;
+  wirelength_info["GRWL"] = total_wl_summary.GRWL;
+
+  return wirelength_info;
+}
+
+json FeatureParser::buildSummaryDensity()
+{
+  json density_info;
+
+  auto& density_map_summary = _summary->get_summary_density_eval();
+
+  density_info["cell"]["macro_density"] = density_map_summary.cell_map_summary.macro_density;
+  density_info["cell"]["stdcell_density"] = density_map_summary.cell_map_summary.stdcell_density;
+  density_info["cell"]["allcell_density"] = density_map_summary.cell_map_summary.allcell_density;
+
+  density_info["pin"]["macro_pin_density"] = density_map_summary.pin_map_summary.macro_pin_density;
+  density_info["pin"]["stdcell_pin_density"] = density_map_summary.pin_map_summary.stdcell_pin_density;
+  density_info["pin"]["allcell_pin_density"] = density_map_summary.pin_map_summary.allcell_pin_density;
+
+  density_info["net"]["local_net_density"] = density_map_summary.net_map_summary.local_net_density;
+  density_info["net"]["global_net_density"] = density_map_summary.net_map_summary.global_net_density;
+  density_info["net"]["allnet_density"] = density_map_summary.net_map_summary.allnet_density;
+
+  return density_info;
+}
+
+json FeatureParser::buildSummaryCongestion()
+{
+  json congestion_info;
+
+  auto& congestion_summary = _summary->get_summary_congestion_eval();
+
+  congestion_info["map"]["egr"]["horizontal"] = congestion_summary.egr_map_summary.horizontal_sum;
+  congestion_info["map"]["egr"]["vertical"] = congestion_summary.egr_map_summary.vertical_sum;
+  congestion_info["map"]["egr"]["union"] = congestion_summary.egr_map_summary.union_sum;
+
+  congestion_info["map"]["rudy"]["horizontal"] = congestion_summary.rudy_map_summary.rudy_horizontal;
+  congestion_info["map"]["rudy"]["vertical"] = congestion_summary.rudy_map_summary.rudy_vertical;
+  congestion_info["map"]["rudy"]["union"] = congestion_summary.rudy_map_summary.rudy_union;
+
+  congestion_info["map"]["lutrudy"]["horizontal"] = congestion_summary.rudy_map_summary.lutrudy_horizontal;
+  congestion_info["map"]["lutrudy"]["vertical"] = congestion_summary.rudy_map_summary.lutrudy_vertical;
+  congestion_info["map"]["lutrudy"]["union"] = congestion_summary.rudy_map_summary.lutrudy_union;
+
+  congestion_info["overflow"]["total"]["horizontal"] = congestion_summary.overflow_summary.total_overflow_horizontal;
+  congestion_info["overflow"]["total"]["vertical"] = congestion_summary.overflow_summary.total_overflow_vertical;
+  congestion_info["overflow"]["total"]["union"] = congestion_summary.overflow_summary.total_overflow_union;
+
+  congestion_info["overflow"]["max"]["horizontal"] = congestion_summary.overflow_summary.max_overflow_horizontal;
+  congestion_info["overflow"]["max"]["vertical"] = congestion_summary.overflow_summary.max_overflow_vertical;
+  congestion_info["overflow"]["max"]["union"] = congestion_summary.overflow_summary.max_overflow_union;
+
+  congestion_info["overflow"]["top average"]["horizontal"] = congestion_summary.overflow_summary.weighted_average_overflow_horizontal;
+  congestion_info["overflow"]["top average"]["vertical"] = congestion_summary.overflow_summary.weighted_average_overflow_vertical;
+  congestion_info["overflow"]["top average"]["union"] = congestion_summary.overflow_summary.weighted_average_overflow_union;
+
+  congestion_info["utilization"]["rudy"]["max"]["horizontal"] = congestion_summary.rudy_utilization_summary.max_utilization_horizontal;
+  congestion_info["utilization"]["rudy"]["max"]["vertical"] = congestion_summary.rudy_utilization_summary.max_utilization_vertical;
+  congestion_info["utilization"]["rudy"]["max"]["union"] = congestion_summary.rudy_utilization_summary.max_utilization_union;
+  congestion_info["utilization"]["rudy"]["top average"]["horizontal"]
+      = congestion_summary.rudy_utilization_summary.weighted_average_utilization_horizontal;
+  congestion_info["utilization"]["rudy"]["top average"]["vertical"]
+      = congestion_summary.rudy_utilization_summary.weighted_average_utilization_vertical;
+  congestion_info["utilization"]["rudy"]["top average"]["union"]
+      = congestion_summary.rudy_utilization_summary.weighted_average_utilization_union;
+
+  congestion_info["utilization"]["lutrudy"]["max"]["horizontal"]
+      = congestion_summary.lutrudy_utilization_summary.max_utilization_horizontal;
+  congestion_info["utilization"]["lutrudy"]["max"]["vertical"] = congestion_summary.lutrudy_utilization_summary.max_utilization_vertical;
+  congestion_info["utilization"]["lutrudy"]["max"]["union"] = congestion_summary.lutrudy_utilization_summary.max_utilization_union;
+  congestion_info["utilization"]["lutrudy"]["top average"]["horizontal"]
+      = congestion_summary.lutrudy_utilization_summary.weighted_average_utilization_horizontal;
+  congestion_info["utilization"]["lutrudy"]["top average"]["vertical"]
+      = congestion_summary.lutrudy_utilization_summary.weighted_average_utilization_vertical;
+  congestion_info["utilization"]["lutrudy"]["top average"]["union"]
+      = congestion_summary.lutrudy_utilization_summary.weighted_average_utilization_union;
+
+  return congestion_info;
+}
+
+json FeatureParser::buildSummaryTiming()
+{
+  json timing_info;
+
+  auto timing_summary = _summary->get_summary_timing_eval();
+  auto clock_timings = timing_summary.clock_timings;
+
+  for (size_t i = 0; i < clock_timings.size(); i++) {
+    timing_info[i]["clock_name"] = clock_timings[i].clock_name;
+    timing_info[i]["setup_tns"] = clock_timings[i].setup_tns;
+    timing_info[i]["setup_wns"] = clock_timings[i].setup_wns;
+    timing_info[i]["hold_tns"] = clock_timings[i].hold_tns;
+    timing_info[i]["hold_wns"] = clock_timings[i].hold_wns;
+    timing_info[i]["suggest_freq"] = clock_timings[i].suggest_freq;
+  }
+
+  return timing_info;
+}
+
+json FeatureParser::buildSummaryPower()
+{
+  json power_info;
+
+  auto timing_summary = _summary->get_summary_timing_eval();
+  auto power = timing_summary.power_info;
+
+  power_info["static_power"] = power.static_power;
+  power_info["dynamic_power"] = power.dynamic_power;
+
+  return power_info;
+}
+
 }  // namespace ieda_feature
