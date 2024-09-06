@@ -270,7 +270,7 @@ void InitSTA::updateResult(const std::string& routing_type)
     _timing[routing_type][clk_name]["setup_wns"] = setup_wns;
     _timing[routing_type][clk_name]["hold_tns"] = hold_tns;
     _timing[routing_type][clk_name]["hold_wns"] = hold_wns;
-    _timing[routing_type][clk_name]["suggest_freq(MHz)"] = suggest_freq;
+    _timing[routing_type][clk_name]["suggest_freq"] = suggest_freq;
   });
 
   // update power
