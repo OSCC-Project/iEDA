@@ -16,8 +16,10 @@ namespace ieval {
 struct ClockTiming
 {
   std::string clock_name;
-  double wns;
-  double tns;
+  double setup_wns;
+  double setup_tns;
+  double hold_wns;
+  double hold_tns;
   double suggest_freq;
 };
 struct TimingSummary

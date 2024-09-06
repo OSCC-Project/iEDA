@@ -263,10 +263,14 @@ void InitSTA::updateResult(const std::string& routing_type)
     auto clk_name = clk->get_clock_name();
     auto setup_tns = STA_INST->getTNS(clk_name, AnalysisMode::kMax);
     auto setup_wns = STA_INST->getWNS(clk_name, AnalysisMode::kMax);
+    auto hold_tns = STA_INST->getTNS(clk_name, AnalysisMode::kMin);
+    auto hold_wns = STA_INST->getWNS(clk_name, AnalysisMode::kMin);
     auto suggest_freq = 1000.0 / (clk->getPeriodNs() - setup_wns);
-    _timing[routing_type][clk_name]["TNS"] = setup_tns;
-    _timing[routing_type][clk_name]["WNS"] = setup_wns;
-    _timing[routing_type][clk_name]["Freq(MHz)"] = suggest_freq;
+    _timing[routing_type][clk_name]["setup_tns"] = setup_tns;
+    _timing[routing_type][clk_name]["setup_wns"] = setup_wns;
+    _timing[routing_type][clk_name]["hold_tns"] = hold_tns;
+    _timing[routing_type][clk_name]["hold_wns"] = hold_wns;
+    _timing[routing_type][clk_name]["suggest_freq(MHz)"] = suggest_freq;
   });
 
   // update power
