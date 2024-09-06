@@ -20,14 +20,14 @@ TimingEvalSummary FeatureBuilder::buildTimingEvalSummary()
   TimingEvalSummary timing_eval_summary;
   auto timing_summary = EVAL_STA_API_INST->evalDesign();
   // TBD
-  WlmTimingEvalSummary wlm_timing_eval_summary;
-  auto wlm_timing_summary = timing_summary.at("WLM");
-  std::ranges::for_each(wlm_timing_summary.clock_timings, [&wlm_timing_eval_summary](const auto& clock_timing) {
-    wlm_timing_eval_summary.clock_timings.push_back({clock_timing.clock_name, clock_timing.setup_tns, clock_timing.setup_wns,
-                                                     clock_timing.hold_tns, clock_timing.hold_wns, clock_timing.suggest_freq});
-  });
-  wlm_timing_eval_summary.power_info = {wlm_timing_summary.static_power, wlm_timing_summary.dynamic_power};
-  timing_eval_summary.wlm_timing_eval_summary = wlm_timing_eval_summary;
+  // WlmTimingEvalSummary wlm_timing_eval_summary;
+  // auto wlm_timing_summary = timing_summary.at("WLM");
+  // std::ranges::for_each(wlm_timing_summary.clock_timings, [&wlm_timing_eval_summary](const auto& clock_timing) {
+  //   wlm_timing_eval_summary.clock_timings.push_back({clock_timing.clock_name, clock_timing.setup_tns, clock_timing.setup_wns,
+  //                                                    clock_timing.hold_tns, clock_timing.hold_wns, clock_timing.suggest_freq});
+  // });
+  // wlm_timing_eval_summary.power_info = {wlm_timing_summary.static_power, wlm_timing_summary.dynamic_power};
+  // timing_eval_summary.wlm_timing_eval_summary = wlm_timing_eval_summary;
 
   HpwlTimingEvalSummary hpwl_timing_eval_summary;
   auto hpwl_timing_summary = timing_summary.at("HPWL");
