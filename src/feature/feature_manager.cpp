@@ -60,7 +60,7 @@ bool FeatureManager::save_eval_summary(std::string path, int32_t grid_size, cons
   _summary->set_timing_eval(timing_db);
 
   FeatureParser feature_parser(_summary);
-  return feature_parser.buildSummaryEval(path);
+  return feature_parser.buildSummaryEvalJsonl(path);
 }
 
 bool FeatureManager::save_timing_eval_summary(std::string path, const std::string& routing_type)
