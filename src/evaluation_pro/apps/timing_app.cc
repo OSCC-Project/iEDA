@@ -30,12 +30,13 @@ void TestTiming()
   auto timing_api = ieval::TimingAPI::getInst();
   auto summary = timing_api->evalDesign();
   LOG_INFO << ">> Design Timing Evaluation: ";
-  for(auto routing_type : {"HPWL", "FLUTE", "EGR", "DR"}) {
+  for (auto routing_type : {"HPWL", "FLUTE", "EGR", "DR"}) {
     auto timing_summary = summary[routing_type];
     LOG_INFO << "Routing type: " << routing_type;
-    for(auto& clock_timing : timing_summary.clock_timings) {
-      LOG_INFO << "Clock: " << clock_timing.clock_name << " WNS: " << clock_timing.wns << " TNS: " << clock_timing.tns
-               << " Suggest freq: " << clock_timing.suggest_freq;
+    for (auto& clock_timing : timing_summary.clock_timings) {
+      LOG_INFO << "Clock: " << clock_timing.clock_name << " Setup WNS: " << clock_timing.setup_wns
+               << " Setup TNS: " << clock_timing.setup_tns << " Hold WNS: " << clock_timing.hold_wns
+               << " Hold TNS: " << clock_timing.hold_tns << " Suggest freq: " << clock_timing.suggest_freq;
     }
     LOG_INFO << "Static power: " << timing_summary.static_power;
     LOG_INFO << "Dynamic power: " << timing_summary.dynamic_power;

@@ -42,9 +42,11 @@ std::map<std::string, TimingSummary> TimingEval::evalDesign()
     for (const auto& [clock_name, timing_info] : timing_map) {
       ClockTiming clock_timing;
       clock_timing.clock_name = clock_name;
-      clock_timing.wns = timing_info.at("WNS");
-      clock_timing.tns = timing_info.at("TNS");
-      clock_timing.suggest_freq = timing_info.at("Freq(MHz)");
+      clock_timing.setup_tns = timing_info.at("setup_tns");
+      clock_timing.setup_wns = timing_info.at("setup_wns");
+      clock_timing.hold_tns = timing_info.at("hold_tns");
+      clock_timing.hold_wns = timing_info.at("hold_wns");
+      clock_timing.suggest_freq = timing_info.at("suggest_freq");
       summary[routing_type].clock_timings.push_back(clock_timing);
     }
     summary[routing_type].static_power = type_power_map[routing_type].at("static_power");
