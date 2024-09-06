@@ -160,34 +160,47 @@ json FeatureParser::buildSummaryCongestion()
 
 json FeatureParser::buildSummaryTiming()
 {
-  json timing_info;
+  json timing;
+  auto add_routing_timing = [&](const std::string& routing_type, const std::vector<ClockTiming>& clock_timings) {
+    for (size_t i = 0; i < clock_timings.size(); i++) {
+      timing[routing_type][i]["clock_name"] = clock_timings[i].clock_name;
+      timing[routing_type][i]["setup_tns"] = clock_timings[i].setup_tns;
+      timing[routing_type][i]["setup_wns"] = clock_timings[i].setup_wns;
+      timing[routing_type][i]["hold_tns"] = clock_timings[i].hold_tns;
+      timing[routing_type][i]["hold_wns"] = clock_timings[i].hold_wns;
+      timing[routing_type][i]["suggest_freq"] = clock_timings[i].suggest_freq;
+    }
+  };
 
-  auto timing_summary = _summary->get_summary_timing_eval();
-  auto clock_timings = timing_summary.clock_timings;
+  auto routing_timing_summary = _summary->get_summary_timing_eval();
+  // TBD
+  // add_routing_timing("WLM", routing_timing_summary.wlm_timing_eval_summary.clock_timings);
+  add_routing_timing("HPWL", routing_timing_summary.hpwl_timing_eval_summary.clock_timings);
+  add_routing_timing("FLUTE", routing_timing_summary.flute_timing_eval_summary.clock_timings);
+  add_routing_timing("EGR", routing_timing_summary.egr_timing_eval_summary.clock_timings);
+  add_routing_timing("DR", routing_timing_summary.dr_timing_eval_summary.clock_timings);
 
-  for (size_t i = 0; i < clock_timings.size(); i++) {
-    timing_info[i]["clock_name"] = clock_timings[i].clock_name;
-    timing_info[i]["setup_tns"] = clock_timings[i].setup_tns;
-    timing_info[i]["setup_wns"] = clock_timings[i].setup_wns;
-    timing_info[i]["hold_tns"] = clock_timings[i].hold_tns;
-    timing_info[i]["hold_wns"] = clock_timings[i].hold_wns;
-    timing_info[i]["suggest_freq"] = clock_timings[i].suggest_freq;
-  }
-
-  return timing_info;
+  return timing;
 }
 
 json FeatureParser::buildSummaryPower()
 {
-  json power_info;
+  json power;
+  auto add_routing_power = [&](const std::string& routing_type, const PowerInfo& power_info) {
+    power[routing_type]["static_power"] = power_info.static_power;
+    power[routing_type]["dynamic_power"] = power_info.dynamic_power;
+  };
 
   auto timing_summary = _summary->get_summary_timing_eval();
-  auto power = timing_summary.power_info;
 
-  power_info["static_power"] = power.static_power;
-  power_info["dynamic_power"] = power.dynamic_power;
+  // TBD
+  // add_routing_power("WLM", timing_summary.wlm_timing_eval_summary.power_info);
+  add_routing_power("HPWL", timing_summary.hpwl_timing_eval_summary.power_info);
+  add_routing_power("FLUTE", timing_summary.flute_timing_eval_summary.power_info);
+  add_routing_power("EGR", timing_summary.egr_timing_eval_summary.power_info);
+  add_routing_power("DR", timing_summary.dr_timing_eval_summary.power_info);
 
-  return power_info;
+  return power;
 }
 
 }  // namespace ieda_feature

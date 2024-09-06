@@ -6,6 +6,7 @@
  * @brief evaluation with timing & power
  */
 #include <memory>
+#include <unordered_map>
 #include <vector>
 
 #include "timing_db.hh"
@@ -16,19 +17,16 @@ class TimingEval
  public:
   TimingEval();
   ~TimingEval() = default;
-  static void initRoutingType(const std::string& routing_type);
   static TimingEval* getInst();
 
   static void destroyInst();
 
-  TimingSummary evalDesign();
+  std::map<std::string, TimingSummary> evalDesign();
 
-  double evalNetPower(const std::string& net_name) const;
-  std::map<std::string, double> evalAllNetPower() const;
+  std::map<std::string, std::unordered_map<std::string, double>> evalNetPower() const;
 
  private:
   static TimingEval* _timing_eval;
-  std::string _routing_type = "WLM";  // RoutingType::kWLM, kHPWL, kFLUTE, kEGR, kDR
 };
 
 }  // namespace ieval

@@ -29,20 +29,12 @@ void TimingAPI::destroyInst()
   ieval::TimingEval::destroyInst();
 }
 
-void TimingAPI::initRoutingType(const std::string& routing_type)
-{
-  ieval::TimingEval::initRoutingType(routing_type);
-}
-TimingSummary TimingAPI::evalDesign()
+std::map<std::string, TimingSummary> TimingAPI::evalDesign()
 {
   return EVAL_STA_INST->evalDesign();
 }
-double TimingAPI::evalNetPower(const std::string& net_name) const
+std::map<std::string, std::unordered_map<std::string, double>> TimingAPI::evalNetPower() const
 {
-  return EVAL_STA_INST->evalNetPower(net_name);
-}
-std::map<std::string, double> TimingAPI::evalAllNetPower() const
-{
-  return EVAL_STA_INST->evalAllNetPower();
+  return EVAL_STA_INST->evalNetPower();
 }
 }  // namespace ieval

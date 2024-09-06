@@ -18,17 +18,6 @@ TimingEval::TimingEval()
   EVAL_INIT_STA_INST->runSTA();
 }
 
-void TimingEval::initRoutingType(const std::string& routing_type)
-{
-  RoutingType type = routing_type == "WLM"     ? RoutingType::kWLM
-                     : routing_type == "HPWL"  ? RoutingType::kHPWL
-                     : routing_type == "FLUTE" ? RoutingType::kFLUTE
-                     : routing_type == "EGR"   ? RoutingType::kEGR
-                     : routing_type == "DR"    ? RoutingType::kDR
-                                               : RoutingType::kNone;
-  InitSTA::initRoutingType(type);
-}
-
 TimingEval* TimingEval::getInst()
 {
   if (_timing_eval == nullptr) {
@@ -43,30 +32,29 @@ void TimingEval::destroyInst()
   _timing_eval = nullptr;
 }
 
-TimingSummary TimingEval::evalDesign()
+std::map<std::string, TimingSummary> TimingEval::evalDesign()
 {
-  TimingSummary summary;
-  auto timing_map = EVAL_INIT_STA_INST->getTiming();
-  for (const auto& [clock_name, timing_info] : timing_map) {
-    ClockTiming clock_timing;
-    clock_timing.clock_name = clock_name;
-    clock_timing.wns = timing_info.at("WNS");
-    clock_timing.tns = timing_info.at("TNS");
-    clock_timing.suggest_freq = timing_info.at("Freq(MHz)");
-    summary.clock_timings.push_back(clock_timing);
+  std::map<std::string, TimingSummary> summary;
+  auto type_timing_map = EVAL_INIT_STA_INST->getTiming();
+  auto type_power_map = EVAL_INIT_STA_INST->getPower();
+  for (const auto& [routing_type, timing_map] : type_timing_map) {
+    summary[routing_type] = TimingSummary();
+    for (const auto& [clock_name, timing_info] : timing_map) {
+      ClockTiming clock_timing;
+      clock_timing.clock_name = clock_name;
+      clock_timing.wns = timing_info.at("WNS");
+      clock_timing.tns = timing_info.at("TNS");
+      clock_timing.suggest_freq = timing_info.at("Freq(MHz)");
+      summary[routing_type].clock_timings.push_back(clock_timing);
+    }
+    summary[routing_type].static_power = type_power_map[routing_type].at("static_power");
+    summary[routing_type].dynamic_power = type_power_map[routing_type].at("dynamic_power");
   }
-  auto power_map = EVAL_INIT_STA_INST->getPower();
-  summary.static_power = power_map.at("static_power");
-  summary.dynamic_power = power_map.at("dynamic_power");
   return summary;
 }
 
-double TimingEval::evalNetPower(const std::string& net_name) const
+std::map<std::string, std::unordered_map<std::string, double>> TimingEval::evalNetPower() const
 {
-  return EVAL_INIT_STA_INST->evalNetPower(net_name);
-}
-std::map<std::string, double> TimingEval::evalAllNetPower() const
-{
-  return EVAL_INIT_STA_INST->evalAllNetPower();
+  return EVAL_INIT_STA_INST->getNetPower();
 }
 }  // namespace ieval
