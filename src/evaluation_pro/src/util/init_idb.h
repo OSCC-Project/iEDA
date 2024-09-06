@@ -28,6 +28,7 @@ class InitIDB
   // for wirelength evaluation
   void initPointSets();
   int32_t getDesignUnit();
+  int32_t getRowHeight();
   std::vector<std::vector<std::pair<int32_t, int32_t>>> getPointSets() { return _point_sets; }
   std::map<std::string, std::vector<std::pair<int32_t, int32_t>>> getNamePointSet() { return _name_point_set; }
 

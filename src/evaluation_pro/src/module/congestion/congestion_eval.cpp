@@ -871,4 +871,9 @@ CongestionRegion CongestionEval::getCongestionRegion()
   return EVAL_INIT_IDB_INST->getCongestionRegion();
 }
 
+int32_t CongestionEval::getRowHeight()
+{
+  return EVAL_INIT_IDB_INST->getRowHeight();
+}
+
 }  // namespace ieval

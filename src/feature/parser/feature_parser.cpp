@@ -216,9 +216,9 @@ bool FeatureParser::buildSummaryEval(std::string json_path)
 
   root["Congestion"] = buildSummaryCongestion();
 
-  root["clocks_timing"] = buildSummaryTiming();
+  root["Timing"] = buildSummaryTiming();
 
-  root["power_info"] = buildSummaryPower();
+  root["Power"] = buildSummaryPower();
 
   file_stream << std::setw(4) << root;
 

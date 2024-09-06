@@ -313,4 +313,9 @@ DensityNets DensityEval::getDensityNets()
   return EVAL_INIT_IDB_INST->getDensityNets();
 }
 
+int32_t DensityEval::getRowHeight()
+{
+  return EVAL_INIT_IDB_INST->getRowHeight();
+}
+
 }  // namespace ieval

@@ -68,6 +68,11 @@ int32_t InitIDB::getDesignUnit()
   return dmInst->get_idb_layout()->get_units()->get_micron_dbu();
 }
 
+int32_t InitIDB::getRowHeight()
+{
+  return dmInst->get_idb_layout()->get_rows()->get_row_height();
+}
+
 void InitIDB::initCongestionDB()
 {
   auto* idb_builder = dmInst->get_idb_builder();

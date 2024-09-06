@@ -23,7 +23,7 @@ class CongestionAPI
 
   EGRMapSummary egrMap();
   OverflowSummary egrOverflow();
-  RUDYMapSummary rudyMap(int32_t grid_size);
+  RUDYMapSummary rudyMap(int32_t grid_size = 1);
   UtilizationSummary rudyUtilization(bool use_lut = false);
 
   EGRMapSummary egrMap(std::string rt_dir_path);

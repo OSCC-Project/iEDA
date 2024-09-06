@@ -68,7 +68,8 @@ RUDYMapSummary CongestionAPI::rudyMap(int32_t grid_size)
   RUDYMapSummary rudy_map_summary;
 
   EVAL_CONGESTION_INST->initIDB();
-  rudy_map_summary = rudyMap(EVAL_CONGESTION_INST->getCongestionNets(), EVAL_CONGESTION_INST->getCongestionRegion(), grid_size);
+  rudy_map_summary = rudyMap(EVAL_CONGESTION_INST->getCongestionNets(), EVAL_CONGESTION_INST->getCongestionRegion(),
+                             grid_size * EVAL_CONGESTION_INST->getRowHeight());
   EVAL_CONGESTION_INST->destroyIDB();
 
   return rudy_map_summary;

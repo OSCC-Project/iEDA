@@ -20,10 +20,10 @@ class DensityAPI
   static DensityAPI* getInst();
   static void destroyInst();
 
-  DensityMapSummary densityMap(int32_t grid_size);
-  CellMapSummary cellDensityMap(int32_t grid_size);
-  PinMapSummary pinDensityMap(int32_t grid_size);
-  NetMapSummary netDensityMap(int32_t grid_size);
+  DensityMapSummary densityMap(int32_t grid_size = 1);
+  CellMapSummary cellDensityMap(int32_t grid_size = 1);
+  PinMapSummary pinDensityMap(int32_t grid_size = 1);
+  NetMapSummary netDensityMap(int32_t grid_size = 1);
 
   CellMapSummary cellDensityMap(DensityCells cells, DensityRegion region, int32_t grid_size);
   PinMapSummary pinDensityMap(DensityPins pins, DensityRegion region, int32_t grid_size);

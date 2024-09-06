@@ -61,6 +61,8 @@ class CongestionEval
   CongestionNets getCongestionNets();
   CongestionRegion getCongestionRegion();
 
+  int32_t getRowHeight();
+
  private:
   static CongestionEval* _congestion_eval;
 

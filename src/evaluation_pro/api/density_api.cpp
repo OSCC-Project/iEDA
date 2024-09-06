@@ -59,7 +59,8 @@ CellMapSummary DensityAPI::cellDensityMap(int32_t grid_size)
 
   EVAL_DENSITY_INST->initIDBRegion();
   EVAL_DENSITY_INST->initIDBCells();
-  cell_map_summary = cellDensityMap(EVAL_DENSITY_INST->getDensityCells(), EVAL_DENSITY_INST->getDensityRegion(), grid_size);
+  cell_map_summary = cellDensityMap(EVAL_DENSITY_INST->getDensityCells(), EVAL_DENSITY_INST->getDensityRegion(),
+                                    grid_size * EVAL_DENSITY_INST->getRowHeight());
 
   return cell_map_summary;
 }
@@ -70,7 +71,8 @@ PinMapSummary DensityAPI::pinDensityMap(int32_t grid_size)
 
   EVAL_DENSITY_INST->initIDBRegion();
   EVAL_DENSITY_INST->initIDBCells();
-  pin_map_summary = pinDensityMap(EVAL_DENSITY_INST->getDensityPins(), EVAL_DENSITY_INST->getDensityRegion(), grid_size);
+  pin_map_summary = pinDensityMap(EVAL_DENSITY_INST->getDensityPins(), EVAL_DENSITY_INST->getDensityRegion(),
+                                  grid_size * EVAL_DENSITY_INST->getRowHeight());
 
   return pin_map_summary;
 }
@@ -81,7 +83,8 @@ NetMapSummary DensityAPI::netDensityMap(int32_t grid_size)
 
   EVAL_DENSITY_INST->initIDBRegion();
   EVAL_DENSITY_INST->initIDBNets();
-  net_map_summary = netDensityMap(EVAL_DENSITY_INST->getDensityNets(), EVAL_DENSITY_INST->getDensityRegion(), grid_size);
+  net_map_summary = netDensityMap(EVAL_DENSITY_INST->getDensityNets(), EVAL_DENSITY_INST->getDensityRegion(),
+                                  grid_size * EVAL_DENSITY_INST->getRowHeight());
 
   return net_map_summary;
 }

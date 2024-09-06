@@ -40,6 +40,8 @@ class DensityEval
   DensityNets getDensityNets();
   DensityRegion getDensityRegion();
 
+  int32_t getRowHeight();
+
  private:
   static DensityEval* _density_eval;
 
