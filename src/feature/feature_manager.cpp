@@ -45,14 +45,14 @@ bool FeatureManager::save_summary(std::string path)
   return feature_parser.buildSummary(path);
 }
 
-bool FeatureManager::save_eval_summary(std::string path, int32_t grid_size, const std::string& routing_type)
+bool FeatureManager::save_eval_summary(std::string path, int32_t grid_size)
 {
   FeatureBuilder builder;
 
   auto wirelength_db = builder.buildWirelengthEvalSummary();
   auto density_db = builder.buildDensityEvalSummary(grid_size);
   auto congestion_db = builder.buildCongestionEvalSummary(grid_size);
-  auto timing_db = builder.buildTimingEvalSummary(routing_type);
+  auto timing_db = builder.buildTimingEvalSummary();
 
   _summary->set_wirelength_eval(wirelength_db);
   _summary->set_density_eval(density_db);
@@ -63,10 +63,10 @@ bool FeatureManager::save_eval_summary(std::string path, int32_t grid_size, cons
   return feature_parser.buildSummaryEvalJsonl(path);
 }
 
-bool FeatureManager::save_timing_eval_summary(std::string path, const std::string& routing_type)
+bool FeatureManager::save_timing_eval_summary(std::string path)
 {
   FeatureBuilder builder;
-  auto eval_db = builder.buildTimingEvalSummary(routing_type);
+  auto eval_db = builder.buildTimingEvalSummary();
 
   _summary->set_timing_eval(eval_db);
 

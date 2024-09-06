@@ -106,11 +106,38 @@ struct CongestionSummary
   UtilizationSummary rudy_utilization_summary;
   UtilizationSummary lutrudy_utilization_summary;
 };
-
-struct TimingEvalSummary
+struct WlmTimingEvalSummary
 {
   std::vector<ClockTiming> clock_timings;
   PowerInfo power_info;
+};
+struct HpwlTimingEvalSummary
+{
+  std::vector<ClockTiming> clock_timings;
+  PowerInfo power_info;
+};
+struct FluteTimingEvalSummary
+{
+  std::vector<ClockTiming> clock_timings;
+  PowerInfo power_info;
+};
+struct EgrTimingEvalSummary
+{
+  std::vector<ClockTiming> clock_timings;
+  PowerInfo power_info;
+};
+struct DrTimingEvalSummary
+{
+  std::vector<ClockTiming> clock_timings;
+  PowerInfo power_info;
+};
+struct TimingEvalSummary
+{
+  WlmTimingEvalSummary wlm_timing_eval_summary;
+  HpwlTimingEvalSummary hpwl_timing_eval_summary;
+  FluteTimingEvalSummary flute_timing_eval_summary;
+  EgrTimingEvalSummary egr_timing_eval_summary;
+  DrTimingEvalSummary dr_timing_eval_summary;
 };
 
 }  // namespace ieda_feature

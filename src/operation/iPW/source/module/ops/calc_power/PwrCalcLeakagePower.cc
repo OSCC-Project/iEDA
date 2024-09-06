@@ -101,7 +101,7 @@ unsigned PwrCalcLeakagePower::operator()(PwrGraph* the_graph) {
     // add power analysis data.
     double nom_voltage = inst_cell->get_owner_lib()->get_nom_voltage();
     auto leakage_data =
-        std::make_unique<PwrLeakageData>(design_inst, leakage_power_sum_data);
+        std::make_unique<PwrLeakageData>(design_inst, NW_TO_W(leakage_power_sum_data));
     leakage_data->set_nom_voltage(nom_voltage);
 
     addLeakagePower(std::move(leakage_data));

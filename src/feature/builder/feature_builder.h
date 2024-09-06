@@ -62,7 +62,7 @@ class FeatureBuilder
   TotalWLSummary buildWirelengthEvalSummary();
   DensityMapSummary buildDensityEvalSummary(int32_t grid_size);
   CongestionSummary buildCongestionEvalSummary(int32_t grid_size);
-  TimingEvalSummary buildTimingEvalSummary(const std::string& routing_type);
+  TimingEvalSummary buildTimingEvalSummary();
 
   bool buildRouteData(RouteAnalyseData* data);
 

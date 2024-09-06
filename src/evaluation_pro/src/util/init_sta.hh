@@ -27,48 +27,33 @@
 #include <string>
 #include <unordered_map>
 namespace ieval {
-enum class RoutingType
-{
-  kNone,
-  kWLM,
-  kHPWL,
-  kFLUTE,
-  kEGR,
-  kDR
-};
 
 class InitSTA
 {
  public:
   InitSTA() = default;
   ~InitSTA();
-  static void initRoutingType(const RoutingType& routing_type);
   static InitSTA* getInst();
   static void destroyInst();
   void runSTA();
 
-  std::map<std::string, std::map<std::string, double>> getTiming() { return _timing; }
-  std::map<std::string, double> getPower() { return _power; }
+  std::map<std::string, std::map<std::string, std::map<std::string, double>>> getTiming() const { return _timing; }
+  std::map<std::string, std::map<std::string, double>> getPower() const { return _power; }
 
-  double evalNetPower(const std::string& net_name) const;
-  std::map<std::string, double> evalAllNetPower() const;
+  std::map<std::string, std::unordered_map<std::string, double>> getNetPower() const { return _net_power; }
 
  private:
-  void callRT();
-  void getInfoFromRT();
-  void embeddingSTA();
-  void initStaEngine();
-  void buildRCTree();
-  void initPowerEngine();
-  void getInfoFromSTA();
-  void getInfoFromPW();
+ void initStaEngine();
+  void callRT(const std::string& routing_type);
+  void buildRCTree(const std::string& routing_type); void initPowerEngine();
+
+  void updateResult(const std::string& routing_type);
 
   static InitSTA* _init_sta;
-  static RoutingType _routing_type;
 
-  std::map<std::string, std::map<std::string, double>> _timing;
-  std::map<std::string, double> _power;
-  std::unordered_map<std::string, double> _net_power;
+  std::map<std::string, std::map<std::string, std::map<std::string, double>>> _timing;
+  std::map<std::string, std::map<std::string, double>> _power;
+  std::map<std::string, std::unordered_map<std::string, double>> _net_power;
 };
 
 }  // namespace ieval

@@ -7,6 +7,8 @@
  */
 
 #pragma once
+#include <unordered_map>
+
 #include "timing_db.hh"
 namespace ieval {
 class TimingAPI
@@ -20,13 +22,9 @@ class TimingAPI
 
   static void destroyInst();
 
-  static void initRoutingType(const std::string& routing_type);
+  std::map<std::string, TimingSummary> evalDesign();
 
-  TimingSummary evalDesign();
-
-  double evalNetPower(const std::string& net_name) const;
-
-  std::map<std::string, double> evalAllNetPower() const;
+  std::map<std::string, std::unordered_map<std::string, double>> evalNetPower() const;
 
  private:
   static TimingAPI* _timing_api;
