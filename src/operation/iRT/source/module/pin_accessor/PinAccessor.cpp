@@ -1549,7 +1549,7 @@ std::map<PANode*, std::set<Orientation>> PinAccessor::getRoutingNodeOrientationM
 
   GridMap<PANode>& pa_node_map = pa_box.get_layer_node_map()[layer_idx];
   std::map<PANode*, std::set<Orientation>> node_orientation_map;
-  // wire
+  // wire 与 net_shape
   {
     // 膨胀size为 min_spacing + half_wire_width
     int32_t enlarged_size = min_spacing + half_wire_width;
@@ -1570,7 +1570,7 @@ std::map<PANode*, std::set<Orientation>> PinAccessor::getRoutingNodeOrientationM
       }
     }
   }
-  // via
+  // enclosure 与 net_shape
   {
     // 膨胀size为 min_spacing + enclosure_half_span
     int32_t enlarged_x_size = min_spacing + enclosure_half_x_span;
@@ -1600,7 +1600,48 @@ std::map<PANode*, std::set<Orientation>> PinAccessor::getRoutingNodeOrientationM
 
 std::map<PANode*, std::set<Orientation>> PinAccessor::getCutNodeOrientationMap(PABox& pa_box, NetShape& net_shape)
 {
-  return {};
+  std::vector<CutLayer>& cut_layer_list = RTDM.getDatabase().get_cut_layer_list();
+  std::map<int32_t, std::vector<int32_t>>& cut_to_adjacent_routing_map = RTDM.getDatabase().get_cut_to_adjacent_routing_map();
+  std::vector<std::vector<ViaMaster>>& layer_via_master_list = RTDM.getDatabase().get_layer_via_master_list();
+  if (net_shape.get_is_routing()) {
+    RTLOG.error(Loc::current(), "The type of net_shape is routing!");
+  }
+  std::vector<int32_t> adjacent_routing_layer_idx_list = cut_to_adjacent_routing_map[net_shape.get_layer_idx()];
+  if (adjacent_routing_layer_idx_list.size() != 2) {
+    // 如果相邻层只有一个,将不会在那一层打via
+    return {};
+  }
+  int32_t below_routing_layer_idx = adjacent_routing_layer_idx_list.front();
+  int32_t above_routing_layer_idx = adjacent_routing_layer_idx_list.back();
+  RTUTIL.swapByASC(below_routing_layer_idx, above_routing_layer_idx);
+
+  std::vector<GridMap<PANode>>& layer_node_map = pa_box.get_layer_node_map();
+  std::map<PANode*, std::set<Orientation>> node_orientation_map;
+
+  // 膨胀size为 min_spacing + cut_shape_half_span
+  int32_t cut_spacing = cut_layer_list[net_shape.get_layer_idx()].getMinSpacing();
+  PlanarRect& cut_shape = layer_via_master_list[below_routing_layer_idx].front().get_cut_shape_list().front();
+  int32_t enlarged_x_size = cut_spacing + cut_shape.getXSpan() / 2;
+  int32_t enlarged_y_size = cut_spacing + cut_shape.getYSpan() / 2;
+  // 贴合的也不算违例
+  enlarged_x_size -= 1;
+  enlarged_y_size -= 1;
+  PlanarRect space_enlarged_rect
+      = RTUTIL.getEnlargedRect(net_shape.get_rect(), enlarged_x_size, enlarged_y_size, enlarged_x_size, enlarged_y_size);
+  for (auto& [grid_coord, orientation_set] : RTUTIL.getTrackGridOrientationMap(space_enlarged_rect, pa_box.get_box_track_axis())) {
+    if (!RTUTIL.exist(orientation_set, Orientation::kAbove) && !RTUTIL.exist(orientation_set, Orientation::kBelow)) {
+      continue;
+    }
+    PANode& below_node = layer_node_map[below_routing_layer_idx][grid_coord.get_x()][grid_coord.get_y()];
+    if (RTUTIL.exist(below_node.get_neighbor_node_map(), Orientation::kAbove)) {
+      node_orientation_map[&below_node].insert(Orientation::kAbove);
+    }
+    PANode& above_node = layer_node_map[above_routing_layer_idx][grid_coord.get_x()][grid_coord.get_y()];
+    if (RTUTIL.exist(above_node.get_neighbor_node_map(), Orientation::kBelow)) {
+      node_orientation_map[&above_node].insert(Orientation::kBelow);
+    }
+  }
+  return node_orientation_map;
 }
 
 #endif
