@@ -552,7 +552,7 @@ void DetailedRouter::buildOrientNetMap(DRBox& dr_box)
   }
   for (auto& [net_idx, segment_set] : dr_box.get_net_access_result_map()) {
     for (Segment<LayerCoord>* segment : segment_set) {
-      updateNetResultToGraph(dr_box, ChangeType::kAdd, net_idx, *segment);
+      updateFixedRectToGraph(dr_box, ChangeType::kAdd, net_idx, *segment);
     }
   }
   for (auto& [net_idx, segment_list] : dr_box.get_net_result_map()) {
@@ -1229,6 +1229,21 @@ void DetailedRouter::updateFixedRectToGraph(DRBox& dr_box, ChangeType change_typ
         dr_node->get_orient_fixed_rect_map()[orientation].insert(net_shape.get_net_idx());
       } else if (change_type == ChangeType::kDel) {
         dr_node->get_orient_fixed_rect_map()[orientation].erase(net_shape.get_net_idx());
+      }
+    }
+  }
+}
+
+void DetailedRouter::updateFixedRectToGraph(DRBox& dr_box, ChangeType change_type, int32_t net_idx, Segment<LayerCoord>& segment)
+{
+  for (NetShape& net_shape : RTDM.getNetShapeList(net_idx, segment)) {
+    for (auto& [dr_node, orientation_set] : getNodeOrientationMap(dr_box, net_shape)) {
+      for (Orientation orientation : orientation_set) {
+        if (change_type == ChangeType::kAdd) {
+          dr_node->get_orient_fixed_rect_map()[orientation].insert(net_shape.get_net_idx());
+        } else if (change_type == ChangeType::kDel) {
+          dr_node->get_orient_fixed_rect_map()[orientation].erase(net_shape.get_net_idx());
+        }
       }
     }
   }

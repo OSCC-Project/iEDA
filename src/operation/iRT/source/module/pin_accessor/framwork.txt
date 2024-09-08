@@ -10,7 +10,7 @@ routePABoxMap:
     buildBoxTrackAxis:构建Box内的track_axis
     buildLayerNodeMap:构建Box的Graph，只有节点，其他信息后续构建
     buildPANodeNeighbor:将所有节点连接
-    buildOrientNetMap:构建Graph的cost，fix_rect从Box中得到
+    buildOrientNetMap:构建Graph的cost，fix_rect从Box中得到，在pa阶段net_access_result为布线结果
     routePABox:
         initTaskSchedule:初始化task布线调度表
             routePATask:给task布线，在此函数末尾，布线结果从graph中删除，再加入新的结果
