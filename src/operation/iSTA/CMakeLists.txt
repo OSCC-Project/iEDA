@@ -21,6 +21,7 @@ include_directories(${HOME_OPERATION}/iSTA)
 include_directories(${HOME_OPERATION}/iSTA/source/module)
 include_directories(${HOME_OPERATION}/iSTA/source/module/include)
 include_directories(${HOME_THIRDPARTY}/onnxruntime/include)
+include_directories(${HOME_THIRDPARTY}/yaml-cpp/include)
 
 include(${HOME_CMAKE}/operation/idb.cmake)
 
