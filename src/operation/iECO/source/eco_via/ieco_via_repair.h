@@ -15,26 +15,27 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 #pragma once
+#include <map>
+#include <vector>
+#include "ieco_data_via.h"
 
-#include "PAPin.hpp"
+namespace ieco {
 
-namespace irt {
+class EcoDataManager;
 
-class ConflictAccessPoint : public PlanarCoord
+class ECOViaRepair
 {
  public:
-  ConflictAccessPoint() = default;
-  ~ConflictAccessPoint() = default;
-  // getter
-  PAPin* get_pa_pin() { return _pa_pin; }
-  AccessPoint* get_access_point() { return _access_point; }
-  // setter
-  void set_pa_pin(PAPin* pa_pin) { _pa_pin = pa_pin; }
-  void set_access_point(AccessPoint* access_point) { _access_point = access_point; }
-  // function
+  ECOViaRepair(EcoDataManager* data_manager);
+  ~ECOViaRepair();
+
+  int repairByShape();
+  int repairByPattern();
+
  private:
-  PAPin* _pa_pin = nullptr;
-  AccessPoint* _access_point = nullptr;
+  EcoDataManager* _data_manager;
+
+  bool changeViaMaster(EcoDataVia& via,std::vector<EcoDataViaMaster>& via_masters);
 };
 
-}  // namespace irt
+}  // namespace ieco

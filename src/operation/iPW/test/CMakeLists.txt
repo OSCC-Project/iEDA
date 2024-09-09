@@ -20,5 +20,5 @@ target_link_libraries(
   vcd_wrapper
   log
   power
-  utility usage ista-engine core calc_power plot_power
+  usage ista-engine core calc_power plot_power
 )

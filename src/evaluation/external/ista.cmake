@@ -12,7 +12,7 @@ target_link_libraries(eval_ista_libs
         ista-engine
         sdc
         sdc-cmd
-        utility
+        ista_utility
         tcl
         str
         time

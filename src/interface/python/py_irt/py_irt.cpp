@@ -30,6 +30,12 @@ bool destroyRT()
   return true;
 }
 
+bool runEGR()
+{
+  RTI.runEGR();
+  return true;
+}
+
 bool runRT()
 {
   RTI.runRT();

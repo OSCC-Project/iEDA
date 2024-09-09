@@ -12,6 +12,10 @@ set(CMAKE_CXX_STANDARD 20)
 
 # set(DEBUG_IRT_INTERFACE ON)
 
+############################ debug source data_manager ############################
+
+# set(DEBUG_IRT_DATA_MANAGER ON)
+
 ############################ debug source module ############################
 
 # set(DEBUG_IRT_DRC_ENGINE ON)
@@ -23,10 +27,6 @@ set(CMAKE_CXX_STANDARD 20)
 # set(DEBUG_IRT_GLOBAL_ROUTER ON)
 # set(DEBUG_IRT_TRACK_ASSIGNER ON) 
 # set(DEBUG_IRT_DETAILED_ROUTER ON)
-
-############################ debug source data_manager ############################
-
-# set(DEBUG_IRT_DATA_MANAGER ON)
 
 ############################ debug source utility ############################
 

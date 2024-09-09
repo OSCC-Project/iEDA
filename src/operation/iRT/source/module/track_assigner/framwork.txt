@@ -3,7 +3,8 @@ setTAParameter:设置ta_model的参数
 initTAPanelMap:构建TAPanel框架，里面主要数据为空
 buildPanelSchedule:构建时间表
 assignTAPanelMap:
-    buildFixedRectList:将GCellmap中的fix_rect（与此Panel覆盖）以指针的方式拷贝到Panel内，不需要对GCellmap删除或添加
+    buildFixedRect:将GCellmap中的fix_rect（与此Panel覆盖）以指针的方式拷贝到Panel内，不需要对GCellmap删除或添加
+    buildAccessResult:将GCellmap中的access_result（与此Panel覆盖）以指针的方式拷贝到Panel内，不需要对GCellmap删除或添加
     initTATaskList:构建task任务
     buildPanelTrackAxis:构建Panel内的track_axis
     buildTANodeMap:构建Panel的Graph，只有节点，其他信息后续构建
@@ -12,9 +13,9 @@ assignTAPanelMap:
     routeTAPanel:
         initTaskSchedule:初始化task布线调度表
             routeTATask:给task布线，在此函数末尾，布线结果从graph中删除，再加入新的结果
-        updateViolationList:首先通过idrc得到Violation存到Box下面，然后Violation结果从graph中删除，再加入新的结果
+        updateViolationList:首先得到Violation存到Box下面，然后Violation结果从graph中删除，再加入新的结果
         getTaskScheduleByViolation:通过Violation得到新的布线调度
-    uploadNetResult：将布线结果加入gcell_map
+    uploadNetResult:将布线结果加入gcell_map
     uploadViolation:将violation加入gcell_map
     freeTAPanel:析构task_list和node_map
 

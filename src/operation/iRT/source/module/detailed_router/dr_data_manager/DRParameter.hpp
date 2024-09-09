@@ -16,23 +16,13 @@
 // ***************************************************************************************
 #pragma once
 
-#include "ConnectType.hpp"
-#include "DRBox.hpp"
-#include "DRPin.hpp"
-#include "GridMap.hpp"
-#include "Guide.hpp"
-#include "MTree.hpp"
-#include "Net.hpp"
-#include "Pin.hpp"
-#include "TNode.hpp"
-
 namespace irt {
 
 class DRParameter
 {
  public:
   DRParameter() = default;
-  DRParameter(int32_t size, int32_t offset, int32_t fixed_rect_unit, int32_t routed_rect_unit, int32_t violation_unit, bool complete_rip_up,
+  DRParameter(int32_t size, int32_t offset, int32_t fixed_rect_unit, int32_t routed_rect_unit, int32_t violation_unit, bool initial_rip_up,
               int32_t max_routed_times)
   {
     _prefer_wire_unit = 1;
@@ -44,8 +34,7 @@ class DRParameter
     _fixed_rect_unit = fixed_rect_unit;
     _routed_rect_unit = routed_rect_unit;
     _violation_unit = violation_unit;
-    _max_neighbor_range = 2;
-    _complete_rip_up = complete_rip_up;
+    _initial_rip_up = initial_rip_up;
     _max_routed_times = max_routed_times;
   }
   ~DRParameter() = default;
@@ -59,8 +48,7 @@ class DRParameter
   double get_fixed_rect_unit() const { return _fixed_rect_unit; }
   double get_routed_rect_unit() const { return _routed_rect_unit; }
   double get_violation_unit() const { return _violation_unit; }
-  int32_t get_max_neighbor_range() const { return _max_neighbor_range; }
-  bool get_complete_rip_up() const { return _complete_rip_up; }
+  bool get_initial_rip_up() const { return _initial_rip_up; }
   int32_t get_max_routed_times() const { return _max_routed_times; }
   // setter
   void set_prefer_wire_unit(const double prefer_wire_unit) { _prefer_wire_unit = prefer_wire_unit; }
@@ -72,8 +60,7 @@ class DRParameter
   void set_fixed_rect_unit(const double fixed_rect_unit) { _fixed_rect_unit = fixed_rect_unit; }
   void set_routed_rect_unit(const double routed_rect_unit) { _routed_rect_unit = routed_rect_unit; }
   void set_violation_unit(const double violation_unit) { _violation_unit = violation_unit; }
-  void set_max_neighbor_range(const double max_neighbor_range) { _max_neighbor_range = max_neighbor_range; }
-  void set_complete_rip_up(const bool complete_rip_up) { _complete_rip_up = complete_rip_up; }
+  void set_initial_rip_up(const bool initial_rip_up) { _initial_rip_up = initial_rip_up; }
   void set_max_routed_times(const int32_t max_routed_times) { _max_routed_times = max_routed_times; }
 
  private:
@@ -86,8 +73,7 @@ class DRParameter
   double _fixed_rect_unit = 0;
   double _routed_rect_unit = 0;
   double _violation_unit = 0;
-  int32_t _max_neighbor_range = 0;
-  bool _complete_rip_up = true;
+  bool _initial_rip_up = true;
   int32_t _max_routed_times = 0;
 };
 

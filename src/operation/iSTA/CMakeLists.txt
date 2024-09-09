@@ -69,5 +69,5 @@ add_executable(iSTA main.cc)
 
 target_link_libraries(iSTA sdc ista-engine inference
 sdc-cmd shell-cmd sta log str time netlist liberty
-delay utility sta-solver verilog graph idb
+delay ista_utility sta-solver verilog graph idb
 tcl usage pthread stdc++fs IdbBuilder def_service lef_service)

@@ -21,9 +21,9 @@
 
 namespace ieda_feature {
 
-struct NetTiming
+struct ClockTiming
 {
-  std::string net_name;
+  std::string clock_name;
   double setup_tns;
   double setup_wns;
   double hold_tns;

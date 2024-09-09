@@ -35,6 +35,19 @@ using ieda::TclOption;
 using ieda::TclStringOption;
 
 /**
+ * @brief set the design workspace.
+ *
+ */
+class CmdSetPwrDesignWorkSpace : public TclCmd {
+ public:
+  explicit CmdSetPwrDesignWorkSpace(const char* cmd_name);
+  ~CmdSetPwrDesignWorkSpace() override = default;
+
+  unsigned check();
+  unsigned exec();
+};
+
+/**
  * @brief The class of read in a VCD file.
  *
  */

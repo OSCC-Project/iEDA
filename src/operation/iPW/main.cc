@@ -52,6 +52,7 @@ int registerCommands() {
   registerTclCmd(CmdReadSdc, "read_sdc");
   registerTclCmd(CmdReportTiming, "report_timing");
   registerTclCmd(CmdReportConstraint, "report_constraint");
+  registerTclCmd(CmdSetPwrDesignWorkSpace, "set_pwr_design_workspace");
   registerTclCmd(CmdReadVcd, "read_vcd");
   registerTclCmd(CmdReportPower, "report_power");
 

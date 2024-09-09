@@ -773,24 +773,18 @@ class Utility
     return getEnlargedRect(segment.get_first(), segment.get_second(), enlarge_size);
   }
 
-  // 在有最大外边界约束下扩大矩形
-  static PlanarRect getEnlargedRect(PlanarRect rect, int32_t enlarge_size, PlanarRect border)
+  static bool hasRegularRect(const PlanarRect& rect, const PlanarRect& border)
   {
-    PlanarRect enlarged_rect = getEnlargedRect(rect, enlarge_size);
+    // 计算新的左下角坐标
+    int32_t new_ll_x = std::max(rect.get_ll_x(), border.get_ll_x());
+    int32_t new_ll_y = std::max(rect.get_ll_y(), border.get_ll_y());
 
-    enlarged_rect.set_ll(std::max(enlarged_rect.get_ll_x(), border.get_ll_x()), std::max(enlarged_rect.get_ll_y(), border.get_ll_y()));
-    enlarged_rect.set_ur(std::min(enlarged_rect.get_ur_x(), border.get_ur_x()), std::min(enlarged_rect.get_ur_y(), border.get_ur_y()));
+    // 计算新的右上角坐标
+    int32_t new_ur_x = std::min(rect.get_ur_x(), border.get_ur_x());
+    int32_t new_ur_y = std::min(rect.get_ur_y(), border.get_ur_y());
 
-    return enlarged_rect;
-  }
-
-  // 在有最大外边界约束下扩大矩形
-  static PlanarRect getEnlargedRect(PlanarRect rect, int32_t ll_x_minus_offset, int32_t ll_y_minus_offset, int32_t ur_x_add_offset,
-                                    int32_t ur_y_add_offset, PlanarRect border)
-  {
-    PlanarRect enlarged_rect = getEnlargedRect(rect, ll_x_minus_offset, ll_y_minus_offset, ur_x_add_offset, ur_y_add_offset);
-    enlarged_rect = getRegularRect(enlarged_rect, border);
-    return enlarged_rect;
+    // 检查新的坐标是否有效
+    return new_ll_x <= new_ur_x && new_ll_y <= new_ur_y;
   }
 
   static PlanarRect getRegularRect(PlanarRect rect, PlanarRect border)
@@ -1104,11 +1098,19 @@ class Utility
   // 能取到边缘上
   static PlanarRect getClosedGCellGridRect(const PlanarRect& real_rect, ScaleAxis& gcell_axis)
   {
+    PlanarRect border;
     int32_t min_x = gcell_axis.get_x_grid_list().front().get_start_line();
     int32_t max_x = gcell_axis.get_x_grid_list().back().get_end_line();
     int32_t min_y = gcell_axis.get_y_grid_list().front().get_start_line();
     int32_t max_y = gcell_axis.get_y_grid_list().back().get_end_line();
-    PlanarRect new_rect = getEnlargedRect(real_rect, 1, PlanarRect(min_x, min_y, max_x, max_y));
+    border.set_ll(min_x, min_y);
+    border.set_ur(max_x, max_y);
+
+    PlanarRect new_rect = getEnlargedRect(real_rect, 1);
+    if (!RTUTIL.hasRegularRect(new_rect, border)) {
+      RTLOG.error(Loc::current(), "This shape is outside the border!");
+    }
+    new_rect = getRegularRect(new_rect, border);
     return getOpenGCellGridRect(new_rect, gcell_axis);
   }
 
@@ -1390,8 +1392,8 @@ class Utility
     return grid_orientation_map;
   }
 
-  static void getTrackIndexSet(std::vector<ScaleGrid>& scale_grid_list, int32_t ll_scale, int32_t ur_scale, std::set<int32_t>& pre_index_set,
-                              std::set<int32_t>& mid_index_set, std::set<int32_t>& post_index_set)
+  static void getTrackIndexSet(std::vector<ScaleGrid>& scale_grid_list, int32_t ll_scale, int32_t ur_scale,
+                               std::set<int32_t>& pre_index_set, std::set<int32_t>& mid_index_set, std::set<int32_t>& post_index_set)
   {
     int32_t pre_index = -1;
     int32_t post_index = -1;
@@ -1434,8 +1436,8 @@ class Utility
     }
   }
 
-  static void getTrackScaleSet(std::vector<ScaleGrid>& scale_grid_list, int32_t ll_scale, int32_t ur_scale, std::set<int32_t>& pre_scale_set,
-                              std::set<int32_t>& mid_scale_set, std::set<int32_t>& post_scale_set)
+  static void getTrackScaleSet(std::vector<ScaleGrid>& scale_grid_list, int32_t ll_scale, int32_t ur_scale,
+                               std::set<int32_t>& pre_scale_set, std::set<int32_t>& mid_scale_set, std::set<int32_t>& post_scale_set)
   {
     int32_t pre_scale = INT32_MIN;
     int32_t post_scale = INT32_MAX;
@@ -1506,15 +1508,6 @@ class Utility
       bounding_box.set_ll(ll_x, ll_y);
       bounding_box.set_ur(ur_x, ur_y);
     }
-    return bounding_box;
-  }
-
-  // 获得多个矩形的外接矩形
-  static PlanarRect getBoundingBox(const std::vector<PlanarRect>& rect_list, PlanarRect border)
-  {
-    PlanarRect bounding_box = getBoundingBox(rect_list);
-    bounding_box.set_ll(std::max(bounding_box.get_ll_x(), border.get_ll_x()), std::max(bounding_box.get_ll_y(), border.get_ll_y()));
-    bounding_box.set_ur(std::min(bounding_box.get_ur_x(), border.get_ur_x()), std::min(bounding_box.get_ur_y(), border.get_ur_y()));
     return bounding_box;
   }
 
@@ -1972,7 +1965,7 @@ class Utility
       }
     }
     bool is_connectivity = true;
-    for (auto [pin_idx, is_visited] : visited_map) {
+    for (auto& [pin_idx, is_visited] : visited_map) {
       if (is_visited == false) {
         RTLOG.warn(Loc::current(), "The pin idx ", pin_idx, " unreachable!");
         is_connectivity = false;
@@ -3108,7 +3101,6 @@ class Utility
   static void createDir(std::string dir_path)
   {
     if (0 != access(dir_path.c_str(), F_OK)) {
-      RTLOG.info(Loc::current(), "Create directory ", dir_path);
       std::error_code system_error;
       if (!std::filesystem::create_directories(dir_path, system_error)) {
         if (!std::filesystem::exists(dir_path)) {

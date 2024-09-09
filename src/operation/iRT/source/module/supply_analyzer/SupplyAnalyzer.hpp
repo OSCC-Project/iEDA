@@ -52,7 +52,7 @@ class SupplyAnalyzer
   void analyzeSupply(SAModel& sa_model);
   EXTLayerRect getSearchRect(LayerCoord& first_coord, LayerCoord& second_coord);
   std::vector<LayerRect> getCrossingWireList(EXTLayerRect& search_rect);
-  bool isAccess(LayerRect& wire, std::vector<EXTLayerRect>& fixed_rect_list);
+  bool isAccess(LayerRect& wire, std::vector<PlanarRect>& obs_rect_list);
 
 #if 1  // exhibit
   void updateSummary(SAModel& sa_model);

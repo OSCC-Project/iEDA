@@ -28,12 +28,14 @@
 #include "SupplyAnalyzer.hpp"
 #include "TopologyGenerator.hpp"
 #include "TrackAssigner.hpp"
+#include "api/PowerEngine.hh"
 #include "api/TimingEngine.hh"
 #include "api/TimingIDBAdapter.hh"
 #include "feature_irt.h"
 #include "flute3/flute.h"
 #include "idm.h"
 #include "idrc_api.h"
+#include "tool_api/ista_io/ista_io.h"
 
 namespace irt {
 
@@ -77,10 +79,10 @@ void RTInterface::initRT(std::map<std::string, std::any> config_map)
   RTLOG.info(Loc::current(), "Starting...");
 
   DataManager::initInst();
+  RTDM.input(config_map);
   DRCEngine::initInst();
   GDSPlotter::initInst();
-
-  RTDM.input(config_map);
+  initFlute();
 
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
@@ -154,10 +156,10 @@ void RTInterface::destroyRT()
   Monitor monitor;
   RTLOG.info(Loc::current(), "Starting...");
 
-  RTDM.output();
-
+  destroyFlute();
   GDSPlotter::destroyInst();
   DRCEngine::destroyInst();
+  RTDM.output();
   DataManager::destroyInst();
 
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
@@ -341,7 +343,7 @@ void RTInterface::wrapLayerList()
       routing_layer.set_min_area(idb_routing_layer->get_area());
       routing_layer.set_prefer_direction(getRTDirectionByDB(idb_routing_layer->get_direction()));
       wrapTrackAxis(routing_layer, idb_routing_layer);
-      wrapSpacingTable(routing_layer, idb_routing_layer);
+      wrapRoutingSpacingTable(routing_layer, idb_routing_layer);
       routing_layer_list.push_back(std::move(routing_layer));
     } else if (idb_layer->is_cut()) {
       idb::IdbLayerCut* idb_cut_layer = dynamic_cast<idb::IdbLayerCut*>(idb_layer);
@@ -349,7 +351,7 @@ void RTInterface::wrapLayerList()
       cut_layer.set_layer_idx(idb_cut_layer->get_id());
       cut_layer.set_layer_order(idb_cut_layer->get_order());
       cut_layer.set_layer_name(idb_cut_layer->get_name());
-      cut_layer.set_spacing(0);
+      wrapCutSpacingTable(cut_layer, idb_cut_layer);
       cut_layer_list.push_back(std::move(cut_layer));
     }
   }
@@ -375,7 +377,7 @@ void RTInterface::wrapTrackAxis(RoutingLayer& routing_layer, idb::IdbLayerRoutin
   }
 }
 
-void RTInterface::wrapSpacingTable(RoutingLayer& routing_layer, idb::IdbLayerRouting* idb_layer)
+void RTInterface::wrapRoutingSpacingTable(RoutingLayer& routing_layer, idb::IdbLayerRouting* idb_layer)
 {
   std::shared_ptr<idb::IdbParallelSpacingTable> idb_spacing_table;
   if (idb_layer->get_spacing_table().get()->get_parallel().get() != nullptr && idb_layer->get_spacing_table().get()->is_parallel()) {
@@ -383,7 +385,11 @@ void RTInterface::wrapSpacingTable(RoutingLayer& routing_layer, idb::IdbLayerRou
   } else if (idb_layer->get_spacing_list() != nullptr && !idb_layer->get_spacing_table().get()->is_parallel()) {
     idb_spacing_table = idb_layer->get_spacing_table_from_spacing_list()->get_parallel();
   } else {
-    RTLOG.error(Loc::current(), "The idb spacing table is error!");
+    idb_spacing_table = std::make_shared<idb::IdbParallelSpacingTable>(1, 1);
+    idb_spacing_table.get()->set_parallel_length(0, 0);
+    idb_spacing_table.get()->set_width(0, 0);
+    idb_spacing_table.get()->set_spacing(0, 0, 0);
+    RTLOG.warn(Loc::current(), "The idb layer ", idb_layer->get_name(), " spacing table is empty!");
   }
 
   SpacingTable& spacing_table = routing_layer.get_spacing_table();
@@ -398,6 +404,20 @@ void RTInterface::wrapSpacingTable(RoutingLayer& routing_layer, idb::IdbLayerRou
     for (int32_t y = 0; y < width_parallel_length_map.get_y_size(); y++) {
       width_parallel_length_map[x][y] = idb_spacing_table->get_spacing_table()[x][y];
     }
+  }
+}
+
+void RTInterface::wrapCutSpacingTable(CutLayer& cut_layer, idb::IdbLayerCut* idb_layer)
+{
+  if (!idb_layer->get_spacings().empty()) {
+    cut_layer.set_spacing(idb_layer->get_spacings().front()->get_spacing());
+  } else if (!idb_layer->get_lef58_spacing_table().empty()) {
+    idb::cutlayer::Lef58SpacingTable::CutSpacing cut_spacing
+        = idb_layer->get_lef58_spacing_table().front()->get_cutclass().get_cut_spacing(0, 0);
+    cut_layer.set_spacing(std::max(cut_spacing.get_cut_spacing1().value(), cut_spacing.get_cut_spacing2().value()));
+  } else {
+    cut_layer.set_spacing(0);
+    RTLOG.warn(Loc::current(), "The idb layer ", idb_layer->get_name(), " spacing table is empty!");
   }
 }
 
@@ -436,6 +456,9 @@ void RTInterface::wrapLayerViaMasterList()
     idb::IdbVia* idb_via = idb_via_list[i];
     if (idb_via == nullptr) {
       RTLOG.error(Loc::current(), "The via is empty!");
+    }
+    if (!idb_via->get_instance()->is_default()) {
+      continue;
     }
     ViaMaster via_master;
     via_master.set_via_name(idb_via->get_name());
@@ -838,6 +861,15 @@ void RTInterface::outputNetList()
   std::vector<Net>& net_list = RTDM.getDatabase().get_net_list();
 
   std::map<int32_t, std::vector<idb::IdbRegularWireSegment*>> net_idb_segment_map;
+  {
+    for (Net& net : net_list) {
+      for (Pin& pin : net.get_pin_list()) {
+        for (Segment<LayerCoord>& access_segment : pin.get_access_segment_list()) {
+          net_idb_segment_map[net.get_net_idx()].push_back(getIDBSegmentByNetResult(net.get_net_idx(), access_segment));
+        }
+      }
+    }
+  }
   for (auto& [net_idx, segment_set] : RTDM.getDetailedNetResultMap(die)) {
     for (Segment<LayerCoord>* segment : segment_set) {
       net_idb_segment_map[net_idx].push_back(getIDBSegmentByNetResult(net_idx, *segment));
@@ -1000,94 +1032,43 @@ idb::IdbRegularWireSegment* RTInterface::getIDBVia(int32_t net_idx, Segment<Laye
 
 #if 1  // iDRC
 
-std::vector<Violation> RTInterface::getViolationList(TAPanel& ta_panel)
+std::vector<Violation> RTInterface::getViolationList(std::vector<std::pair<EXTLayerRect*, bool>>& env_shape_list,
+                                                     std::map<int32_t, std::vector<std::pair<EXTLayerRect*, bool>>>& net_pin_shape_map,
+                                                     std::map<int32_t, std::vector<Segment<LayerCoord>>>& net_result_map, std::string stage)
 {
-  std::vector<idb::IdbLayerShape*> env_shape_list;
-  std::map<int32_t, std::vector<idb::IdbLayerShape*>> net_pin_shape_map;
-  for (auto& [net_idx, fixed_rect_set] : ta_panel.get_net_fixed_rect_map()) {
-    if (net_idx == -1) {
-      for (auto& fixed_rect : fixed_rect_set) {
-        env_shape_list.push_back(RTI.getIDBLayerShapeByFixedRect(fixed_rect, true));
-      }
-    } else {
-      for (auto& fixed_rect : fixed_rect_set) {
-        net_pin_shape_map[net_idx].push_back(RTI.getIDBLayerShapeByFixedRect(fixed_rect, true));
-      }
+  std::vector<idb::IdbLayerShape*> idb_env_shape_list;
+  for (std::pair<EXTLayerRect*, bool>& env_shape : env_shape_list) {
+    idb_env_shape_list.push_back(RTI.getIDBLayerShapeByFixedRect(env_shape.first, env_shape.second));
+  }
+  std::map<int32_t, std::vector<idb::IdbLayerShape*>> idb_net_pin_shape_map;
+  for (auto& [net_idx, pin_shape_list] : net_pin_shape_map) {
+    for (std::pair<EXTLayerRect*, bool>& pin_shape : pin_shape_list) {
+      idb_net_pin_shape_map[net_idx].push_back(RTI.getIDBLayerShapeByFixedRect(pin_shape.first, pin_shape.second));
     }
   }
-  std::map<int32_t, std::vector<idb::IdbRegularWireSegment*>> net_wire_via_map;
-  for (auto& [net_idx, task_result_map] : ta_panel.get_net_task_result_map()) {
-    for (auto& [task_idx, segment_list] : task_result_map) {
-      for (Segment<LayerCoord>& segment : segment_list) {
-        net_wire_via_map[net_idx].push_back(RTI.getIDBSegmentByNetResult(net_idx, segment));
-      }
-    }
-  }
-  std::vector<Violation> violation_list = RTI.getViolationList(env_shape_list, net_pin_shape_map, net_wire_via_map, "TA");
-  // free memory
-  {
-    for (idb::IdbLayerShape* env_shape : env_shape_list) {
-      delete env_shape;
-      env_shape = nullptr;
-    }
-    for (auto& [net_idx, pin_shape_list] : net_pin_shape_map) {
-      for (idb::IdbLayerShape* pin_shape : pin_shape_list) {
-        delete pin_shape;
-        pin_shape = nullptr;
-      }
-    }
-    for (auto& [net_idx, wire_via_list] : net_wire_via_map) {
-      for (idb::IdbRegularWireSegment* wire_via : wire_via_list) {
-        delete wire_via;
-        wire_via = nullptr;
-      }
-    }
-  }
-  return violation_list;
-}
-
-std::vector<Violation> RTInterface::getViolationList(DRBox& dr_box)
-{
-  std::vector<idb::IdbLayerShape*> env_shape_list;
-  std::map<int32_t, std::vector<idb::IdbLayerShape*>> net_pin_shape_map;
-  for (auto& [is_routing, layer_net_fixed_rect_map] : dr_box.get_type_layer_net_fixed_rect_map()) {
-    for (auto& [layer_idx, net_fixed_rect_map] : layer_net_fixed_rect_map) {
-      for (auto& [net_idx, fixed_rect_set] : net_fixed_rect_map) {
-        if (net_idx == -1) {
-          for (auto& fixed_rect : fixed_rect_set) {
-            env_shape_list.push_back(RTI.getIDBLayerShapeByFixedRect(fixed_rect, is_routing));
-          }
-        } else {
-          for (auto& fixed_rect : fixed_rect_set) {
-            net_pin_shape_map[net_idx].push_back(RTI.getIDBLayerShapeByFixedRect(fixed_rect, is_routing));
-          }
-        }
-      }
-    }
-  }
-  std::map<int32_t, std::vector<idb::IdbRegularWireSegment*>> net_wire_via_map;
-  for (auto& [net_idx, segment_list] : dr_box.get_net_result_map()) {
+  std::map<int32_t, std::vector<idb::IdbRegularWireSegment*>> idb_net_result_map;
+  for (auto& [net_idx, segment_list] : net_result_map) {
     for (Segment<LayerCoord>& segment : segment_list) {
-      net_wire_via_map[net_idx].push_back(RTI.getIDBSegmentByNetResult(net_idx, segment));
+      idb_net_result_map[net_idx].push_back(RTI.getIDBSegmentByNetResult(net_idx, segment));
     }
   }
-  std::vector<Violation> violation_list = RTI.getViolationList(env_shape_list, net_pin_shape_map, net_wire_via_map, "DR");
+  std::vector<Violation> violation_list = RTI.getViolationList(idb_env_shape_list, idb_net_pin_shape_map, idb_net_result_map, stage);
   // free memory
   {
-    for (idb::IdbLayerShape* env_shape : env_shape_list) {
-      delete env_shape;
-      env_shape = nullptr;
+    for (idb::IdbLayerShape* idb_env_shape : idb_env_shape_list) {
+      delete idb_env_shape;
+      idb_env_shape = nullptr;
     }
-    for (auto& [net_idx, pin_shape_list] : net_pin_shape_map) {
+    for (auto& [net_idx, pin_shape_list] : idb_net_pin_shape_map) {
       for (idb::IdbLayerShape* pin_shape : pin_shape_list) {
         delete pin_shape;
         pin_shape = nullptr;
       }
     }
-    for (auto& [net_idx, wire_via_list] : net_wire_via_map) {
-      for (idb::IdbRegularWireSegment* wire_via : wire_via_list) {
-        delete wire_via;
-        wire_via = nullptr;
+    for (auto& [net_idx, segment_list] : idb_net_result_map) {
+      for (idb::IdbRegularWireSegment* segment : segment_list) {
+        delete segment;
+        segment = nullptr;
       }
     }
   }
@@ -1096,15 +1077,18 @@ std::vector<Violation> RTInterface::getViolationList(DRBox& dr_box)
 
 std::vector<Violation> RTInterface::getViolationList(std::vector<idb::IdbLayerShape*>& env_shape_list,
                                                      std::map<int32_t, std::vector<idb::IdbLayerShape*>>& net_pin_shape_map,
-                                                     std::map<int32_t, std::vector<idb::IdbRegularWireSegment*>>& net_wire_via_map,
+                                                     std::map<int32_t, std::vector<idb::IdbRegularWireSegment*>>& net_result_map,
                                                      std::string stage)
 {
   std::set<idrc::ViolationEnumType> check_select;
-  if (stage == "TA") {
+  if (stage == "PA") {
+    check_select.insert(idrc::ViolationEnumType::kShort);
+  } else if (stage == "TA") {
     check_select.insert(idrc::ViolationEnumType::kShort);
   } else if (stage == "DR") {
     check_select.insert(idrc::ViolationEnumType::kShort);
     check_select.insert(idrc::ViolationEnumType::kDefaultSpacing);
+    check_select.insert(idrc::ViolationEnumType::kPRLSpacing);
   } else {
     RTLOG.error(Loc::current(), "Currently not supporting other stages");
   }
@@ -1119,7 +1103,7 @@ std::vector<Violation> RTInterface::getViolationList(std::vector<idb::IdbLayerSh
   std::vector<Violation> violation_list;
   idrc::DrcApi drc_api;
   drc_api.init();
-  for (auto& [type, idrc_violation_list] : drc_api.check(env_shape_list, net_pin_shape_map, net_wire_via_map, check_select)) {
+  for (auto& [type, idrc_violation_list] : drc_api.check(env_shape_list, net_pin_shape_map, net_result_map, check_select)) {
     for (idrc::DrcViolation* idrc_violation : idrc_violation_list) {
       // self的drc违例先过滤
       if (idrc_violation->get_net_ids().size() < 2) {
@@ -1158,9 +1142,10 @@ std::vector<Violation> RTInterface::getViolationList(std::vector<idb::IdbLayerSh
 
 #if 1  // iSTA
 
-std::map<std::string, std::vector<double>> RTInterface::getTiming(
-    std::vector<std::map<std::string, std::vector<LayerCoord>>>& real_pin_coord_map_list,
-    std::vector<std::vector<Segment<LayerCoord>>>& routing_segment_list_list)
+void RTInterface::updateTimingAndPower(std::vector<std::map<std::string, std::vector<LayerCoord>>>& real_pin_coord_map_list,
+                                       std::vector<std::vector<Segment<LayerCoord>>>& routing_segment_list_list,
+                                       std::map<std::string, std::map<std::string, double>>& clock_timing,
+                                       std::map<std::string, double>& power)
 {
 #if 1  // 数据结构定义
   struct RCPin
@@ -1188,18 +1173,29 @@ std::map<std::string, std::vector<double>> RTInterface::getTiming(
 #endif
 
 #if 1  // 函数定义
-  auto initTimingEngine = [](idb::IdbBuilder* idb_builder, int32_t thread_number) {
+  auto initTimingEngine = [](std::string workspace) {
     ista::TimingEngine* timing_engine = ista::TimingEngine::getOrCreateTimingEngine();
-    if (!timing_engine->get_db_adapter()) {
+    if (!timing_engine->isBuildGraph()) {
+      timing_engine->set_design_work_space(workspace.c_str());
+      timing_engine->readLiberty(dmInst->get_config().get_lib_paths());
       auto db_adapter = std::make_unique<ista::TimingIDBAdapter>(timing_engine->get_ista());
-      db_adapter->set_idb(idb_builder);
+      db_adapter->set_idb(dmInst->get_idb_builder());
       db_adapter->convertDBToTimingNetlist();
       timing_engine->set_db_adapter(std::move(db_adapter));
+      timing_engine->readSdc(dmInst->get_config().get_sdc_path().c_str());
+      timing_engine->buildGraph();
     }
-    timing_engine->set_num_threads(thread_number);
-    timing_engine->buildGraph();
     timing_engine->initRcTree();
     return timing_engine;
+  };
+  auto initPowerEngine = [](std::string workspace) {
+    auto* power_engine = ipower::PowerEngine::getOrCreatePowerEngine();
+    if (!power_engine->isBuildGraph()) {
+      power_engine->get_power()->set_design_work_space(workspace.c_str());
+      power_engine->get_power()->initPowerGraphData();
+      power_engine->get_power()->initToggleSPData();
+    }
+    return power_engine;
   };
   auto getRCSegmentList = [](std::map<LayerCoord, std::vector<std::string>, CmpLayerCoordByXASC>& coord_real_pin_map,
                              std::vector<Segment<LayerCoord>>& routing_segment_list) {
@@ -1315,9 +1311,9 @@ std::map<std::string, std::vector<double>> RTInterface::getTiming(
 
 #if 1  // 主流程
   std::vector<Net>& net_list = RTDM.getDatabase().get_net_list();
-  int32_t thread_number = RTDM.getConfig().thread_number;
+  std::string& temp_directory_path = RTDM.getConfig().temp_directory_path;
 
-  ista::TimingEngine* timing_engine = initTimingEngine(dmInst->get_idb_builder(), thread_number);
+  ista::TimingEngine* timing_engine = initTimingEngine(RTUTIL.getString(temp_directory_path, "sta/"));
   ista::Netlist* sta_net_list = timing_engine->get_netlist();
 
   for (size_t net_idx = 0; net_idx < coord_real_pin_map_list.size(); net_idx++) {
@@ -1347,21 +1343,39 @@ std::map<std::string, std::vector<double>> RTInterface::getTiming(
     timing_engine->updateRCTreeInfo(ista_net);
     // auto* rc_tree = timing_engine->get_ista()->getRcNet(ista_net)->rct();
     // rc_tree->printGraphViz();
+    // int32_t a = 0;
     // dot -Tpdf tree.dot -o tree.pdf
   }
   timing_engine->updateTiming();
   timing_engine->reportTiming();
 
-  std::map<std::string, std::vector<double>> timing_map;
   auto clk_list = timing_engine->getClockList();
   std::ranges::for_each(clk_list, [&](ista::StaClock* clk) {
     auto clk_name = clk->get_clock_name();
     auto setup_tns = timing_engine->getTNS(clk_name, AnalysisMode::kMax);
     auto setup_wns = timing_engine->getWNS(clk_name, AnalysisMode::kMax);
     auto suggest_freq = 1000.0 / (clk->getPeriodNs() - setup_wns);
-    timing_map[clk_name] = {setup_tns, setup_wns, suggest_freq};
+    clock_timing[clk_name]["TNS"] = setup_tns;
+    clock_timing[clk_name]["WNS"] = setup_wns;
+    clock_timing[clk_name]["Freq(MHz)"] = suggest_freq;
   });
-  return timing_map;
+  ipower::PowerEngine* power_engine = initPowerEngine(RTUTIL.getString(temp_directory_path, "pwr/"));
+  power_engine->get_power()->updatePower();
+  power_engine->get_power()->reportPower();
+
+  double static_power = 0;
+  for (const auto& data : power_engine->get_power()->get_leakage_powers()) {
+    static_power += data->get_leakage_power();
+  }
+  double dynamic_power = 0;
+  for (const auto& data : power_engine->get_power()->get_internal_powers()) {
+    dynamic_power += data->get_internal_power();
+  }
+  for (const auto& data : power_engine->get_power()->get_switch_powers()) {
+    dynamic_power += data->get_switch_power();
+  }
+  power["static_power"] = static_power;
+  power["dynamic_power"] = dynamic_power;
 #endif
 }
 
@@ -1372,7 +1386,6 @@ std::map<std::string, std::vector<double>> RTInterface::getTiming(
 ieda_feature::RTSummary RTInterface::outputSummary()
 {
   ieda_feature::RTSummary top_rt_summary;
-
   Summary& rt_summary = RTDM.getSummary();
 
   // pa_summary
@@ -1394,15 +1407,17 @@ ieda_feature::RTSummary RTInterface::outputSummary()
   top_rt_summary.ir_summary.cut_via_num_map = rt_summary.ir_summary.cut_via_num_map;
   top_rt_summary.ir_summary.total_via_num = rt_summary.ir_summary.total_via_num;
 
-  for (auto timing : rt_summary.ir_summary.timing) {
-    ieda_feature::NetTiming net_timing;
-    net_timing.net_name = timing.first;
-    auto timing_array = timing.second;
-    net_timing.setup_tns = timing_array[0];
-    net_timing.setup_wns = timing_array[1];
-    net_timing.suggest_freq = timing_array[2];
-    top_rt_summary.ir_summary.nets_timing.push_back(net_timing);
+  for (auto& [clock_name, timing_map] : rt_summary.ir_summary.clock_timing) {
+    ieda_feature::ClockTiming clock_timing;
+    clock_timing.clock_name = clock_name;
+    clock_timing.setup_tns = timing_map["TNS"];
+    clock_timing.setup_wns = timing_map["WNS"];
+    clock_timing.suggest_freq = timing_map["Freq(MHz)"];
+    top_rt_summary.ir_summary.clocks_timing.push_back(clock_timing);
   }
+
+  top_rt_summary.ir_summary.power_info
+      = {rt_summary.ir_summary.power_map["static_power"], rt_summary.ir_summary.power_map["dynamic_power"]};
   // gr_summary
   for (auto& [iter, gr_summary] : rt_summary.iter_gr_summary_map) {
     ieda_feature::GRSummary& top_gr_summary = top_rt_summary.iter_gr_summary_map[iter];
@@ -1415,15 +1430,15 @@ ieda_feature::RTSummary RTInterface::outputSummary()
     top_gr_summary.cut_via_num_map = gr_summary.cut_via_num_map;
     top_gr_summary.total_via_num = gr_summary.total_via_num;
 
-    for (auto timing : gr_summary.timing) {
-      ieda_feature::NetTiming net_timing;
-      net_timing.net_name = timing.first;
-      auto timing_array = timing.second;
-      net_timing.setup_tns = timing_array[0];
-      net_timing.setup_wns = timing_array[1];
-      net_timing.suggest_freq = timing_array[2];
-      top_gr_summary.nets_timing.push_back(net_timing);
+    for (auto& [clock_name, timing_map] : gr_summary.clock_timing) {
+      ieda_feature::ClockTiming clock_timing;
+      clock_timing.clock_name = clock_name;
+      clock_timing.setup_tns = timing_map["TNS"];
+      clock_timing.setup_wns = timing_map["WNS"];
+      clock_timing.suggest_freq = timing_map["Freq(MHz)"];
+      top_gr_summary.clocks_timing.push_back(clock_timing);
     }
+    top_gr_summary.power_info = {gr_summary.power_map["static_power"], gr_summary.power_map["dynamic_power"]};
   }
   // ta_summary
   top_rt_summary.ta_summary.routing_wire_length_map = rt_summary.ta_summary.routing_wire_length_map;
@@ -1442,17 +1457,16 @@ ieda_feature::RTSummary RTInterface::outputSummary()
     top_dr_summary.routing_violation_num_map = dr_summary.routing_violation_num_map;
     top_dr_summary.total_violation_num = dr_summary.total_violation_num;
 
-    for (auto timing : dr_summary.timing) {
-      ieda_feature::NetTiming net_timing;
-      net_timing.net_name = timing.first;
-      auto timing_array = timing.second;
-      net_timing.setup_tns = timing_array[0];
-      net_timing.setup_wns = timing_array[1];
-      net_timing.suggest_freq = timing_array[2];
-      top_dr_summary.nets_timing.push_back(net_timing);
+    for (auto& [clock_name, timing_map] : dr_summary.clock_timing) {
+      ieda_feature::ClockTiming clock_timing;
+      clock_timing.clock_name = clock_name;
+      clock_timing.setup_tns = timing_map["TNS"];
+      clock_timing.setup_wns = timing_map["WNS"];
+      clock_timing.suggest_freq = timing_map["Freq(MHz)"];
+      top_dr_summary.clocks_timing.push_back(clock_timing);
     }
+    top_dr_summary.power_info = {dr_summary.power_map["static_power"], dr_summary.power_map["dynamic_power"]};
   }
-
   return top_rt_summary;
 }
 
@@ -1460,15 +1474,18 @@ ieda_feature::RTSummary RTInterface::outputSummary()
 
 #if 1  // flute
 
+void RTInterface::initFlute()
+{
+  Flute::readLUT();
+}
+
+void RTInterface::destroyFlute()
+{
+  Flute::deleteLUT();
+}
+
 std::vector<Segment<PlanarCoord>> RTInterface::getPlanarTopoList(std::vector<PlanarCoord> planar_coord_list)
 {
-  static bool init_flute = false;
-
-  if (!init_flute) {
-    Flute::readLUT();
-    init_flute = true;
-  }
-
   std::vector<Segment<PlanarCoord>> planar_topo_list;
   if (planar_coord_list.size() > 1) {
     size_t point_num = planar_coord_list.size();
@@ -1558,15 +1575,23 @@ void RTInterface::routeTAPanel(TAPanel& ta_panel)
       ls_panel.wire_list.push_back(ls_shape);
     }
     // hard_shape_list
-    for (const auto& [net_idx, rect_set] : ta_panel.get_net_fixed_rect_map()) {
-      for (EXTLayerRect* rect : rect_set) {
-        lsa::LSShape ls_shape;
-        ls_shape.net_id = net_idx;
-        ls_shape.ll_x = rect->get_real_ll_x();
-        ls_shape.ll_y = rect->get_real_ll_y();
-        ls_shape.ur_x = rect->get_real_ur_x();
-        ls_shape.ur_y = rect->get_real_ur_y();
-        ls_panel.hard_shape_list.push_back(ls_shape);
+    for (auto& [is_routing, layer_net_fixed_rect_map] : ta_panel.get_type_layer_net_fixed_rect_map()) {
+      for (auto& [layer_idx, net_fixed_rect_map] : layer_net_fixed_rect_map) {
+        if (is_routing != true || layer_idx != ta_panel.get_panel_rect().get_layer_idx()) {
+          continue;
+        }
+        for (auto& [net_idx, fixed_rect_set] : net_fixed_rect_map) {
+          for (auto& fixed_rect : fixed_rect_set) {
+            lsa::LSShape ls_shape;
+            ls_shape.net_id = net_idx;
+            ls_shape.ll_x = fixed_rect->get_real_ll_x();
+            ls_shape.ll_y = fixed_rect->get_real_ll_y();
+            ls_shape.ur_x = fixed_rect->get_real_ur_x();
+            ls_shape.ur_y = fixed_rect->get_real_ur_y();
+            ls_panel.hard_shape_list.push_back(ls_shape);
+          }
+        }
+        break;
       }
     }
   }
