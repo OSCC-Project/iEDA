@@ -11,8 +11,7 @@ iterativeDRModel:迭代DRModel
         initDRTaskList:构建DRTask
         buildBoxTrackAxis:构建Box内的track_axis
         buildLayerNodeMap:构建Box的Graph，只有节点，其他信息后续构建
-        buildDRNodeValid:初始化节点有效性
-        buildDRNodeNeighbor:将有效节点连接
+        buildDRNodeNeighbor:将所有节点连接
         buildOrientNetMap:构建Graph的cost，环境从Box中得到
         routeDRBox:
             initTaskSchedule:初始化task布线调度表

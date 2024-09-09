@@ -37,8 +37,7 @@ class CutLayer
   void set_layer_name(const std::string& layer_name) { _layer_name = layer_name; }
   void set_spacing(const int32_t spacing) { _spacing = spacing; }
   // function
-  int32_t getMinSpacing(const PlanarRect& rect) { return _spacing; }
-  int32_t getMaxSpacing(const PlanarRect& rect) { return _spacing; }
+  int32_t getMinSpacing() { return _spacing; }
 
  private:
   int32_t _layer_idx = -1;

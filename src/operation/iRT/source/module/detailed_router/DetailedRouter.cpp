@@ -246,7 +246,6 @@ void DetailedRouter::routeDRBoxMap(DRModel& dr_model)
       if (needRouting(dr_box)) {
         buildBoxTrackAxis(dr_box);
         buildLayerNodeMap(dr_box);
-        buildDRNodeValid(dr_box);
         buildDRNodeNeighbor(dr_box);
         buildOrientNetMap(dr_box);
         // debugCheckDRBox(dr_box);
@@ -459,86 +458,81 @@ void DetailedRouter::buildLayerNodeMap(DRBox& dr_box)
   }
 }
 
-void DetailedRouter::buildDRNodeValid(DRBox& dr_box)
+void DetailedRouter::buildDRNodeNeighbor(DRBox& dr_box)
 {
+  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
   int32_t bottom_routing_layer_idx = RTDM.getConfig().bottom_routing_layer_idx;
   int32_t top_routing_layer_idx = RTDM.getConfig().top_routing_layer_idx;
 
-  ScaleAxis& box_track_axis = dr_box.get_box_track_axis();
   std::vector<GridMap<DRNode>>& layer_node_map = dr_box.get_layer_node_map();
-
-  // 将在可布线层内的都设为有效
   for (int32_t layer_idx = 0; layer_idx < static_cast<int32_t>(layer_node_map.size()); layer_idx++) {
+    bool routing_hv = true;
     if (layer_idx < bottom_routing_layer_idx || top_routing_layer_idx < layer_idx) {
-      continue;
+      routing_hv = false;
     }
     GridMap<DRNode>& dr_node_map = layer_node_map[layer_idx];
     for (int32_t x = 0; x < dr_node_map.get_x_size(); x++) {
       for (int32_t y = 0; y < dr_node_map.get_y_size(); y++) {
-        dr_node_map[x][y].set_is_valid(true);
+        std::map<Orientation, DRNode*>& neighbor_node_map = dr_node_map[x][y].get_neighbor_node_map();
+        if (routing_hv) {
+          if (x != 0) {
+            neighbor_node_map[Orientation::kWest] = &dr_node_map[x - 1][y];
+          }
+          if (x != (dr_node_map.get_x_size() - 1)) {
+            neighbor_node_map[Orientation::kEast] = &dr_node_map[x + 1][y];
+          }
+          if (y != 0) {
+            neighbor_node_map[Orientation::kSouth] = &dr_node_map[x][y - 1];
+          }
+          if (y != (dr_node_map.get_y_size() - 1)) {
+            neighbor_node_map[Orientation::kNorth] = &dr_node_map[x][y + 1];
+          }
+        }
+        if (layer_idx != 0) {
+          neighbor_node_map[Orientation::kBelow] = &layer_node_map[layer_idx - 1][x][y];
+        }
+        if (layer_idx != static_cast<int32_t>(layer_node_map.size()) - 1) {
+          neighbor_node_map[Orientation::kAbove] = &layer_node_map[layer_idx + 1][x][y];
+        }
       }
     }
-  }
-  // 将所有group的同xy的所有层上都设置为有效
-  for (DRTask* dr_task : dr_box.get_dr_task_list()) {
-    for (DRGroup& dr_group : dr_task->get_dr_group_list()) {
-      for (auto& [real_coord, direction_set] : dr_group.get_coord_direction_map()) {
-        for (int32_t layer_idx = 0; layer_idx < static_cast<int32_t>(layer_node_map.size()); layer_idx++) {
-          if (!RTUTIL.existTrackGrid(real_coord, box_track_axis)) {
-            RTLOG.error(Loc::current(), "There is no grid coord for real coord(", real_coord.get_x(), ",", real_coord.get_y(), ")!");
-          }
-          PlanarCoord grid_coord = RTUTIL.getTrackGrid(real_coord, box_track_axis);
-          layer_node_map[layer_idx][grid_coord.get_x()][grid_coord.get_y()].set_is_valid(true);
+    // 对在graph边缘的，进行非track_grid上处理邻居，防止offgrid
+    {
+      std::vector<PlanarCoord> coord_list;
+      coord_list.push_back(dr_node_map[0][0]);
+      coord_list.push_back(dr_node_map[dr_node_map.get_x_size() - 1][dr_node_map.get_y_size() - 1]);
+      PlanarRect graph_rect = RTUTIL.getBoundingBox(coord_list);
+
+      ScaleAxis& track_axis = routing_layer_list[layer_idx].get_track_axis();
+
+      std::vector<int32_t> empty_x_list;
+      if (RTUTIL.getScaleList(graph_rect.get_ll_x(), graph_rect.get_ll_x(), track_axis.get_x_grid_list()).empty()) {
+        empty_x_list.push_back(0);
+      }
+      if (RTUTIL.getScaleList(graph_rect.get_ur_x(), graph_rect.get_ur_x(), track_axis.get_x_grid_list()).empty()) {
+        empty_x_list.push_back(dr_node_map.get_x_size() - 1);
+      }
+      for (int32_t x : empty_x_list) {
+        for (int32_t y = 0; y < dr_node_map.get_y_size(); y++) {
+          dr_node_map[x][y].get_neighbor_node_map().erase(Orientation::kAbove);
+          dr_node_map[x][y].get_neighbor_node_map().erase(Orientation::kBelow);
+          dr_node_map[x][y].get_neighbor_node_map().erase(Orientation::kNorth);
+          dr_node_map[x][y].get_neighbor_node_map().erase(Orientation::kSouth);
         }
       }
-    }
-  }
-}
-
-void DetailedRouter::buildDRNodeNeighbor(DRBox& dr_box)
-{
-  int32_t bottom_routing_layer_idx = RTDM.getConfig().bottom_routing_layer_idx;
-  int32_t top_routing_layer_idx = RTDM.getConfig().top_routing_layer_idx;
-
-  std::vector<GridMap<DRNode>>& layer_node_map = dr_box.get_layer_node_map();
-
-  for (int32_t curr_layer_idx = 0; curr_layer_idx < static_cast<int32_t>(layer_node_map.size()); curr_layer_idx++) {
-    for (int32_t curr_x = 0; curr_x < layer_node_map[curr_layer_idx].get_x_size(); curr_x++) {
-      for (int32_t curr_y = 0; curr_y < layer_node_map[curr_layer_idx].get_y_size(); curr_y++) {
-        DRNode& curr_node = layer_node_map[curr_layer_idx][curr_x][curr_y];
-        if (!curr_node.get_is_valid()) {
-          continue;
-        }
-        // 向上寻找，如果上邻居是有效结果，设置空间邻居关系
-        if (curr_layer_idx + 1 < static_cast<int32_t>(layer_node_map.size())) {
-          DRNode& above_node = layer_node_map[curr_layer_idx + 1][curr_x][curr_y];
-          if (above_node.get_is_valid()) {
-            curr_node.get_neighbor_node_map()[Orientation::kAbove] = &above_node;
-            above_node.get_neighbor_node_map()[Orientation::kBelow] = &curr_node;
-          }
-        }
-        if (curr_layer_idx < bottom_routing_layer_idx || curr_layer_idx > top_routing_layer_idx) {
-          continue;
-        }
-        // 向东寻找，找到第一个有效结点即为东邻居，并将东邻居的西邻居设为自己
-        for (int32_t east_x = curr_x + 1; east_x < layer_node_map[curr_layer_idx].get_x_size(); east_x++) {
-          DRNode& east_node = layer_node_map[curr_layer_idx][east_x][curr_y];
-          if (!east_node.get_is_valid()) {
-            continue;
-          }
-          curr_node.get_neighbor_node_map()[Orientation::kEast] = &east_node;
-          east_node.get_neighbor_node_map()[Orientation::kWest] = &curr_node;
-          break;
-        }
-        // 向北寻找，找到第一个有效结点即为北邻居，并将北邻居的南邻居设为自己
-        for (int32_t north_y = curr_y + 1; north_y < layer_node_map[curr_layer_idx].get_y_size(); north_y++) {
-          DRNode& north_node = layer_node_map[curr_layer_idx][curr_x][north_y];
-          if (!north_node.get_is_valid()) {
-            continue;
-          }
-          curr_node.get_neighbor_node_map()[Orientation::kNorth] = &north_node;
-          north_node.get_neighbor_node_map()[Orientation::kSouth] = &curr_node;
-          break;
+      std::vector<int32_t> empty_y_list;
+      if (RTUTIL.getScaleList(graph_rect.get_ll_y(), graph_rect.get_ll_y(), track_axis.get_y_grid_list()).empty()) {
+        empty_y_list.push_back(0);
+      }
+      if (RTUTIL.getScaleList(graph_rect.get_ur_y(), graph_rect.get_ur_y(), track_axis.get_y_grid_list()).empty()) {
+        empty_y_list.push_back(dr_node_map.get_y_size() - 1);
+      }
+      for (int32_t y : empty_y_list) {
+        for (int32_t x = 0; x < dr_node_map.get_x_size(); x++) {
+          dr_node_map[x][y].get_neighbor_node_map().erase(Orientation::kAbove);
+          dr_node_map[x][y].get_neighbor_node_map().erase(Orientation::kBelow);
+          dr_node_map[x][y].get_neighbor_node_map().erase(Orientation::kWest);
+          dr_node_map[x][y].get_neighbor_node_map().erase(Orientation::kEast);
         }
       }
     }
@@ -1230,9 +1224,6 @@ void DetailedRouter::updateFixedRectToGraph(DRBox& dr_box, ChangeType change_typ
 {
   NetShape net_shape(net_idx, fixed_rect->getRealLayerRect(), is_routing);
   for (auto& [dr_node, orientation_set] : getNodeOrientationMap(dr_box, net_shape)) {
-    if (!dr_node->get_is_valid()) {
-      continue;
-    }
     for (Orientation orientation : orientation_set) {
       if (change_type == ChangeType::kAdd) {
         dr_node->get_orient_fixed_rect_map()[orientation].insert(net_shape.get_net_idx());
@@ -1247,9 +1238,6 @@ void DetailedRouter::updateNetResultToGraph(DRBox& dr_box, ChangeType change_typ
 {
   for (NetShape& net_shape : RTDM.getNetShapeList(net_idx, segment)) {
     for (auto& [dr_node, orientation_set] : getNodeOrientationMap(dr_box, net_shape)) {
-      if (!dr_node->get_is_valid()) {
-        continue;
-      }
       for (Orientation orientation : orientation_set) {
         if (change_type == ChangeType::kAdd) {
           dr_node->get_orient_routed_rect_map()[orientation].insert(net_shape.get_net_idx());
@@ -1265,9 +1253,6 @@ void DetailedRouter::updateViolationToGraph(DRBox& dr_box, ChangeType change_typ
 {
   NetShape net_shape(-1, violation.get_violation_shape().getRealLayerRect(), violation.get_is_routing());
   for (auto& [dr_node, orientation_set] : getNodeOrientationMap(dr_box, net_shape)) {
-    if (!dr_node->get_is_valid()) {
-      continue;
-    }
     for (Orientation orientation : orientation_set) {
       if (change_type == ChangeType::kAdd) {
         dr_node->get_orient_violation_number_map()[orientation]++;
@@ -1306,7 +1291,7 @@ std::map<DRNode*, std::set<Orientation>> DetailedRouter::getRoutingNodeOrientati
 
   GridMap<DRNode>& dr_node_map = dr_box.get_layer_node_map()[layer_idx];
   std::map<DRNode*, std::set<Orientation>> node_orientation_map;
-  // wire
+  // wire 与 net_shape
   {
     // 膨胀size为 min_spacing + half_wire_width
     int32_t enlarged_size = min_spacing + half_wire_width;
@@ -1327,7 +1312,7 @@ std::map<DRNode*, std::set<Orientation>> DetailedRouter::getRoutingNodeOrientati
       }
     }
   }
-  // via
+  // enclosure 与 net_shape
   {
     // 膨胀size为 min_spacing + enclosure_half_span
     int32_t enlarged_x_size = min_spacing + enclosure_half_x_span;
@@ -1357,9 +1342,6 @@ std::map<DRNode*, std::set<Orientation>> DetailedRouter::getRoutingNodeOrientati
 
 std::map<DRNode*, std::set<Orientation>> DetailedRouter::getCutNodeOrientationMap(DRBox& dr_box, NetShape& net_shape)
 {
-  return {};
-#if 0
-  // 暂时关闭
   std::vector<CutLayer>& cut_layer_list = RTDM.getDatabase().get_cut_layer_list();
   std::map<int32_t, std::vector<int32_t>>& cut_to_adjacent_routing_map = RTDM.getDatabase().get_cut_to_adjacent_routing_map();
   std::vector<std::vector<ViaMaster>>& layer_via_master_list = RTDM.getDatabase().get_layer_via_master_list();
@@ -1368,34 +1350,40 @@ std::map<DRNode*, std::set<Orientation>> DetailedRouter::getCutNodeOrientationMa
   }
   std::vector<int32_t> adjacent_routing_layer_idx_list = cut_to_adjacent_routing_map[net_shape.get_layer_idx()];
   if (adjacent_routing_layer_idx_list.size() != 2) {
-    // 如果相邻层只有一个，那么将不会在此构建graph
+    // 如果相邻层只有一个,将不会在那一层打via
     return {};
   }
   int32_t below_routing_layer_idx = adjacent_routing_layer_idx_list.front();
   int32_t above_routing_layer_idx = adjacent_routing_layer_idx_list.back();
   RTUTIL.swapByASC(below_routing_layer_idx, above_routing_layer_idx);
 
-  // 膨胀size为 min_spacing + 当前cut层的half_length和half_width
-  int32_t cut_spacing = cut_layer_list[net_shape.get_layer_idx()].getMinSpacing(net_shape.get_rect());
-  PlanarRect& cut_shape = layer_via_master_list[below_routing_layer_idx].front().get_cut_shape_list().front();
-  int32_t enlarge_x_size = cut_spacing + cut_shape.getXSpan() / 2;
-  int32_t enlarge_y_size = cut_spacing + cut_shape.getYSpan() / 2;
-  PlanarRect enlarged_rect = RTUTIL.getEnlargedRect(net_shape.get_rect(), enlarge_x_size, enlarge_y_size, enlarge_x_size, enlarge_y_size);
-
   std::vector<GridMap<DRNode>>& layer_node_map = dr_box.get_layer_node_map();
-
   std::map<DRNode*, std::set<Orientation>> node_orientation_map;
-  if (RTUTIL.existTrackGrid(enlarged_rect, dr_box.get_box_track_axis())) {
-    PlanarRect grid_rect = RTUTIL.getTrackGridRect(enlarged_rect, dr_box.get_box_track_axis());
-    for (int32_t grid_x = grid_rect.get_ll_x(); grid_x <= grid_rect.get_ur_x(); grid_x++) {
-      for (int32_t grid_y = grid_rect.get_ll_y(); grid_y <= grid_rect.get_ur_y(); grid_y++) {
-        node_orientation_map[&layer_node_map[below_routing_layer_idx][grid_x][grid_y]].insert(Orientation::kAbove);
-        node_orientation_map[&layer_node_map[above_routing_layer_idx][grid_x][grid_y]].insert(Orientation::kBelow);
-      }
+
+  // 膨胀size为 min_spacing + cut_shape_half_span
+  int32_t cut_spacing = cut_layer_list[net_shape.get_layer_idx()].getMinSpacing();
+  PlanarRect& cut_shape = layer_via_master_list[below_routing_layer_idx].front().get_cut_shape_list().front();
+  int32_t enlarged_x_size = cut_spacing + cut_shape.getXSpan() / 2;
+  int32_t enlarged_y_size = cut_spacing + cut_shape.getYSpan() / 2;
+  // 贴合的也不算违例
+  enlarged_x_size -= 1;
+  enlarged_y_size -= 1;
+  PlanarRect space_enlarged_rect
+      = RTUTIL.getEnlargedRect(net_shape.get_rect(), enlarged_x_size, enlarged_y_size, enlarged_x_size, enlarged_y_size);
+  for (auto& [grid_coord, orientation_set] : RTUTIL.getTrackGridOrientationMap(space_enlarged_rect, dr_box.get_box_track_axis())) {
+    if (!RTUTIL.exist(orientation_set, Orientation::kAbove) && !RTUTIL.exist(orientation_set, Orientation::kBelow)) {
+      continue;
+    }
+    DRNode& below_node = layer_node_map[below_routing_layer_idx][grid_coord.get_x()][grid_coord.get_y()];
+    if (RTUTIL.exist(below_node.get_neighbor_node_map(), Orientation::kAbove)) {
+      node_orientation_map[&below_node].insert(Orientation::kAbove);
+    }
+    DRNode& above_node = layer_node_map[above_routing_layer_idx][grid_coord.get_x()][grid_coord.get_y()];
+    if (RTUTIL.exist(above_node.get_neighbor_node_map(), Orientation::kBelow)) {
+      node_orientation_map[&above_node].insert(Orientation::kBelow);
     }
   }
   return node_orientation_map;
-#endif
 }
 
 #endif
