@@ -47,6 +47,15 @@ TimingEvalSummary FeatureBuilder::buildTimingEvalSummary()
   flute_timing_eval_summary.power_info = {flute_timing_summary.static_power, flute_timing_summary.dynamic_power};
   timing_eval_summary.flute_timing_eval_summary = flute_timing_eval_summary;
 
+  SaltTimingEvalSummary salt_timing_eval_summary;
+  auto salt_timing_summary = timing_summary.at("SALT");
+  std::ranges::for_each(salt_timing_summary.clock_timings, [&salt_timing_eval_summary](const auto& clock_timing) {
+    salt_timing_eval_summary.clock_timings.push_back({clock_timing.clock_name, clock_timing.setup_tns, clock_timing.setup_wns,
+                                                      clock_timing.hold_tns, clock_timing.hold_wns, clock_timing.suggest_freq});
+  });
+  salt_timing_eval_summary.power_info = {salt_timing_summary.static_power, salt_timing_summary.dynamic_power};
+  timing_eval_summary.salt_timing_eval_summary = salt_timing_eval_summary;
+
   EgrTimingEvalSummary egr_timing_eval_summary;
   auto egr_timing_summary = timing_summary.at("EGR");
   std::ranges::for_each(egr_timing_summary.clock_timings, [&egr_timing_eval_summary](const auto& clock_timing) {

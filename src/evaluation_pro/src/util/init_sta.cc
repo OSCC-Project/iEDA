@@ -60,9 +60,9 @@ void InitSTA::destroyInst()
 
 void InitSTA::runSTA()
 {
-  // auto routing_type_list = {"WLM", "HPWL", "FLUTE", "EGR", "DR"};
+  // auto routing_type_list = {"WLM", "HPWL", "FLUTE", "SALT", "EGR", "DR"}
   initStaEngine();
-  auto routing_type_list = {"HPWL", "FLUTE", "EGR", "DR"};
+  auto routing_type_list = {"HPWL", "FLUTE", "SALT", "EGR", "DR"};
   std::ranges::for_each(routing_type_list, [&](const std::string& routing_type) {
     if (routing_type == "EGR" || routing_type == "DR") {
       callRT(routing_type);
@@ -111,7 +111,8 @@ void InitSTA::callRT(const std::string& routing_type)
 
 void InitSTA::buildRCTree(const std::string& routing_type)
 {
-  LOG_FATAL_IF(routing_type != "WLM" && routing_type != "HPWL" && routing_type != "FLUTE") << "Unsupported routing type";
+  LOG_FATAL_IF(routing_type != "WLM" && routing_type != "HPWL" && routing_type != "FLUTE" && routing_type != "SALT")
+      << "The routing type: " << routing_type << " is not supported.";
 
   auto* idb_adapter = dynamic_cast<ista::TimingIDBAdapter*>(STA_INST->get_db_adapter());
 
@@ -190,8 +191,7 @@ void InitSTA::buildRCTree(const std::string& routing_type)
       }
     }
 
-    if (routing_type == "FLUTE") {
-      // Flute
+    if (routing_type == "FLUTE" || routing_type == "SALT") {
       std::vector<ista::DesignObject*> pin_ports = {sta_net->getDriver()};
       std::ranges::copy(sta_net->getLoads(), std::back_inserter(pin_ports));
 
@@ -218,8 +218,13 @@ void InitSTA::buildRCTree(const std::string& routing_type)
       salt_net.init(0, sta_net->get_name(), salt_pins);
 
       salt::Tree salt_tree;
-      salt::FluteBuilder flute_builder;
-      flute_builder.Run(salt_net, salt_tree);
+      if (routing_type == "FLUTE") {
+        salt::FluteBuilder flute_builder;
+        flute_builder.Run(salt_net, salt_tree);
+      } else {
+        salt::SaltBuilder salt_builder;
+        salt_builder.Run(salt_net, salt_tree, 0);
+      }
       salt_tree.UpdateId();
 
       auto source = salt_tree.source;
