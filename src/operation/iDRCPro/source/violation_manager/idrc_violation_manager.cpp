@@ -56,8 +56,20 @@ void DrcViolationManager::set_net_ids(DrcEngineManager* engine_manager)
         auto layer = violation_rect->get_layer()->get_name();
         auto* layout = engine_manager->get_layout(layer);
         if (layout != nullptr) {
-          auto net_ids = layout->querySubLayoutNetId(violation_rect->get_llx(), violation_rect->get_lly(), violation_rect->get_urx(),
-                                                     violation_rect->get_ury());
+          /// if rect is line, enlarge line as a rect to make rtree interact
+          int llx = violation_rect->get_llx();
+          int lly = violation_rect->get_lly();
+          int urx = violation_rect->get_urx();
+          int ury = violation_rect->get_ury();
+          if (llx == urx) {
+            llx -= 2;
+            urx += 2;
+          }
+          if (lly == ury) {
+            lly -= 2;
+            ury += 2;
+          }
+          auto net_ids = layout->querySubLayoutNetId(llx, lly, urx, ury);
           violation_rect->set_net_ids(net_ids);
 
           DEBUGOUTPUT(DEBUGHIGHLIGHT("net_ids:\t") << net_ids.size());
@@ -72,8 +84,8 @@ void DrcViolationManager::set_net_ids(DrcEngineManager* engine_manager)
 
 std::map<ViolationEnumType, std::vector<DrcViolation*>> DrcViolationManager::get_violation_map(DrcEngineManager* engine_manager)
 {
-    set_net_ids(engine_manager);
-    refineViolation();
+  set_net_ids(engine_manager);
+  refineViolation();
   return std::move(_violation_list);
 }
 

@@ -57,6 +57,8 @@ class GeometryBoost : public EngineGeometry
   std::vector<GeometryRect>& getRects();
   std::vector<GeometryRect> getRectsGrowAnd(int value, GeometryOrientation direction);
 
+  int64_t getMergeRectArea(int llx, int lly, int urx, int ury);
+
  private:
   GeometryPolygonSet _polyset;
   std::vector<GeometryPolygon> _polygon_list;

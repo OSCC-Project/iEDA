@@ -212,4 +212,17 @@ std::vector<GeometryRect> GeometryBoost::getRectsGrowAnd(int value, GeometryOrie
   return grow_rects;
 }
 
+int64_t GeometryBoost::getMergeRectArea(int llx, int lly, int urx, int ury)
+{
+  int64_t area;
+
+  GtlPolygon90Set set(_polyset);
+  GtlRect rect(llx, lly, urx, ury);
+
+  set += rect;
+
+  area = (int64_t) getArea(set);
+
+  return area;
+}
 }  // namespace ieda_solver

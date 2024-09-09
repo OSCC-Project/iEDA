@@ -39,13 +39,11 @@ class DRNode : public LayerCoord
   DRNode() = default;
   ~DRNode() = default;
   // getter
-  bool get_is_valid() const { return _is_valid; }
   std::map<Orientation, DRNode*>& get_neighbor_node_map() { return _neighbor_node_map; }
   std::map<Orientation, std::set<int32_t>>& get_orient_fixed_rect_map() { return _orient_fixed_rect_map; }
   std::map<Orientation, std::set<int32_t>>& get_orient_routed_rect_map() { return _orient_routed_rect_map; }
   std::map<Orientation, int32_t>& get_orient_violation_number_map() { return _orient_violation_number_map; }
   // setter
-  void set_is_valid(const bool is_valid) { _is_valid = is_valid; }
   void set_neighbor_node_map(const std::map<Orientation, DRNode*>& neighbor_node_map) { _neighbor_node_map = neighbor_node_map; }
   void set_orient_fixed_rect_map(const std::map<Orientation, std::set<int32_t>>& orient_fixed_rect_map)
   {
@@ -139,7 +137,6 @@ class DRNode : public LayerCoord
 #endif
 
  private:
-  bool _is_valid = false;
   std::map<Orientation, DRNode*> _neighbor_node_map;
   // obstacle & pin_shape
   std::map<Orientation, std::set<int32_t>> _orient_fixed_rect_map;

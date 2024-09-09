@@ -33,4 +33,6 @@ typedef GtlPolygon90Set GeometryPolygonSet;
 
 #define growAnd(polygon_set, value) gtl::grow_and(polygon_set, value)
 
+#define getArea(polygon_set) gtl::area(polygon_set)
+
 }  // namespace ieda_solver

@@ -26,6 +26,7 @@
 
 namespace idb {
 class IdbLayerRouting;
+class IdbLayerCut;
 class IdbNet;
 class IdbPin;
 enum class IdbLayerDirection : uint8_t;
@@ -36,6 +37,7 @@ class IdbRegularWireSegment;
 
 namespace irt {
 class RoutingLayer;
+class CutLayer;
 class Violation;
 class LayerCoord;
 template <typename T>
@@ -88,7 +90,8 @@ class RTInterface
   void wrapRow();
   void wrapLayerList();
   void wrapTrackAxis(RoutingLayer& routing_layer, idb::IdbLayerRouting* idb_layer);
-  void wrapSpacingTable(RoutingLayer& routing_layer, idb::IdbLayerRouting* idb_layer);
+  void wrapRoutingSpacingTable(RoutingLayer& routing_layer, idb::IdbLayerRouting* idb_layer);
+  void wrapCutSpacingTable(CutLayer& cut_layer, idb::IdbLayerCut* idb_layer);
   void wrapLayerInfo();
   void wrapLayerViaMasterList();
   void wrapObstacleList();

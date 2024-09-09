@@ -172,6 +172,13 @@ void IdbNet::remove_pin(IdbPin* pin)
   _instance_pin_list->remove_pin(pin);
 }
 
+void IdbNet::remove_segment(IdbRegularWireSegment* seg_del)
+{
+  for (auto* wire : _wire_list->get_wire_list()) {
+    wire->delete_seg(seg_del);
+  }
+}
+
 bool IdbNet::checkConnection()
 {
   bool b_result = false;

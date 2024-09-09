@@ -51,6 +51,7 @@ int registerCmdDB()
 
   /// idb operator
   registerTclCmd(CmdIdbSetNet, "set_net");
+  registerTclCmd(CmdIdbMergeNets, "merge_nets");
 
   registerTclCmd(CmdIdbClearBlockageExceptPgNet, "remove_except_pg_net");
   registerTclCmd(CmdIdbClearBlockage, "clear_blockage");

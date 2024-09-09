@@ -175,6 +175,7 @@ class IdbNet : public IdbObject
 
   // Delete
   void remove_pin(IdbPin* pin);
+  void remove_segment(IdbRegularWireSegment* seg_del);
 
   // operator
   void clear_wire_list();
