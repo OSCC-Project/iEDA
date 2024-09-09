@@ -52,38 +52,6 @@ void ECOViaInit::init_via_masters()
   }
 }
 
-idb::IdbRect ECOViaInit::get_segment_rect(idb::IdbRegularWireSegment* idb_segment)
-{
-  if (idb_segment->is_rect()) {
-    return *idb_segment->get_delta_rect();
-  } else {
-    auto* segment_layer = idb_segment->get_layer();
-    int32_t routing_width = dynamic_cast<IdbLayerRouting*>(segment_layer)->get_width();
-    IdbCoordinate<int32_t>* point_1 = idb_segment->get_point_start();
-    IdbCoordinate<int32_t>* point_2 = idb_segment->get_point_second();
-
-    int32_t ll_x = 0;
-    int32_t ll_y = 0;
-    int32_t ur_x = 0;
-    int32_t ur_y = 0;
-    if (point_1->get_y() == point_2->get_y()) {
-      // horizontal
-      ll_x = std::min(point_1->get_x(), point_2->get_x()) - routing_width / 2;
-      ll_y = std::min(point_1->get_y(), point_2->get_y()) - routing_width / 2;
-      ur_x = std::max(point_1->get_x(), point_2->get_x()) + routing_width / 2;
-      ur_y = ll_y + routing_width;
-    } else {
-      // vertical
-      ll_x = std::min(point_1->get_x(), point_2->get_x()) - routing_width / 2;
-      ll_y = std::min(point_1->get_y(), point_2->get_y()) - routing_width / 2;
-      ur_x = ll_x + routing_width;
-      ur_y = std::max(point_1->get_y(), point_2->get_y()) + routing_width / 2;
-    }
-
-    return idb::IdbRect(ll_x, ll_y, ur_x, ur_y);
-  }
-}
-
 std::map<int, std::vector<EcoDataVia>> ECOViaInit::get_net_vias(idb::IdbNet* idb_net)
 {
   std::map<int, std::vector<EcoDataVia>> eco_vias;  // int : layer order
@@ -118,7 +86,7 @@ void ECOViaInit::init_segment_rect(EcoDataVia& eco_via, idb::IdbRegularWireSegme
     return;
   }
 
-  auto idb_rect = get_segment_rect(idb_segment);
+  auto idb_rect = idb_segment->get_segment_rect();
   /// is bottom
   if (cut_layer_order - 1 == segment_layer->get_order()) {
     /// check intersection

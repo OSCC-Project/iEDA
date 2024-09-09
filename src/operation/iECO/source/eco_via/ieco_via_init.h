@@ -46,8 +46,6 @@ class ECOViaInit
   void init_pin(EcoDataVia& eco_via, idb::IdbNet* idb_net, int cut_layer_order);
 
   std::map<int, std::vector<EcoDataVia>> get_net_vias(idb::IdbNet* idb_net);
-
-  idb::IdbRect get_segment_rect(idb::IdbRegularWireSegment* idb_segment);
 };
 
 }  // namespace ieco

@@ -44,8 +44,9 @@ void DrcConditionManager::set_check_select(std::set<ViolationEnumType> check_sel
   }
 }
 
-void DrcConditionManager::set_check_type(DrcCheckerType check_type){
-    _check_type = check_type;
+void DrcConditionManager::set_check_type(DrcCheckerType check_type)
+{
+  _check_type = check_type;
 }
 
 }  // namespace idrc
