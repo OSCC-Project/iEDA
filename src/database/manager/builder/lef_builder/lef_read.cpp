@@ -336,6 +336,11 @@ int LefRead::parse_layer(lefiLayer* lef_layer)
 
   IdbLayout* layout = _lef_service->get_layout();
   IdbLayers* layers = layout->get_layers();
+  if (layers->find_layer(lef_layer->name()) != nullptr) {
+    std::cout << "Warning, layer is exist, name = " << lef_layer->name() << std::endl;
+    return kDbFail;
+  }
+
   IdbLayer* layer = nullptr;
 
   if (lef_layer->hasType()) {
@@ -749,7 +754,7 @@ int LefRead::parse_macro_new(const char* macro_name)
 
   if (nullptr != master_list->find_cell_master(macro_name)) {
     _this_cell_master = nullptr;
-    std::cout << "[idb warning] Macro is existed, name = " << macro_name << std::endl;
+    std::cout << "[idb warning] Macro is exist, name = " << macro_name << std::endl;
     return kDbFail;
   }
 
@@ -1158,8 +1163,14 @@ int LefRead::parse_via(lefiVia* lef_via)
   IdbLayout* layout = _lef_service->get_layout();
   IdbLayers* layer_list = layout->get_layers();
   IdbVias* via_list = layout->get_via_list();
+  if (via_list->find_via(lef_via->name()) != nullptr) {
+    std::cout << "Warning, Via is exist, name = " << lef_via->name() << std::endl;
+    return kDbFail;
+  }
+
   IdbVia* via_instance = via_list->add_via(lef_via->name());
   IdbViaMaster* via_master = via_instance->get_instance();
+  via_master->set_name(lef_via->name());
 
   if (lef_via->hasDefault()) {
     via_master->set_default(true);
@@ -1206,6 +1217,11 @@ int LefRead::parse_via(lefiVia* lef_via)
     }
     via_master->set_cut_rect(min_x, min_y, max_x, max_y);
     via_master->set_via_shape();
+
+    /// rows and cols
+    if (lef_via->hasRowCol()) {
+      via_master->set_cut_row_col(lef_via->numCutRows(), lef_via->numCutCols());
+    }
   }
 
   return kDbSuccess;

@@ -88,11 +88,17 @@ IdbVia* IdbVia::clone()
 
 void IdbVia::set_instance(IdbViaMaster* instance)
 {
-  if (_master_instance != nullptr) {
+  if (_master_instance != nullptr && _b_master_clone == false) {
     delete _master_instance;
     _master_instance = nullptr;
   }
   _master_instance = instance;
+  _name = instance->get_name();
+}
+
+void IdbVia::reset_instance(IdbViaMaster* instance)
+{
+  set_instance(instance);
 }
 
 void IdbVia::set_coordinate(IdbCoordinate<int32_t>* point)
@@ -333,6 +339,7 @@ IdbVia* IdbVias::createVia(string via_name, IdbLayerCut* layer_cut, int32_t widt
   master_generate->set_cut_spacing(cut_spacing_x, cut_spacing_y);
 
   master_generate->set_cut_row_col(rows, cols);
+  master_instance->set_cut_row_col(rows, cols);
   /// generate pattern string if rows > cutarray size and cols > cutarray size
   string pattern_string = createViaPatternString(rows, cols, layer_cut->get_array_spacing());
   if (!pattern_string.empty()) {

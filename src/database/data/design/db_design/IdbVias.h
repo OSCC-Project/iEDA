@@ -71,9 +71,10 @@ class IdbVia : public IdbObject
   // setter
   void set_name(string name) { _name = name; }
   void set_instance(IdbViaMaster* instance);
+  void reset_instance(IdbViaMaster* instance);
   void set_coordinate(IdbCoordinate<int32_t>* point);
   void set_coordinate(int32_t x, int32_t y) { _coordinate->set_xy(x, y); }
-
+  
   // operator
   IdbVia* clone();
   void clear();

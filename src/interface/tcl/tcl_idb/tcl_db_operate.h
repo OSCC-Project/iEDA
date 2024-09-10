@@ -50,6 +50,20 @@ class CmdIdbSetNet : public TclCmd
   // private data
 };
 
+class CmdIdbMergeNets : public TclCmd
+{
+ public:
+  explicit CmdIdbMergeNets(const char* cmd_name);
+  ~CmdIdbMergeNets() override = default;
+
+  unsigned check() override;
+  unsigned exec() override;
+
+ private:
+  // private function
+  // private data
+};
+
 ////Blockage operate
 class CmdIdbClearBlockage : public TclCmd
 {
@@ -78,7 +92,6 @@ class CmdIdbClearBlockageExceptPgNet : public TclCmd
   // private function
   // private data
 };
-
 
 DEFINE_CMD_CLASS(IdbDeleteInstance);
 DEFINE_CMD_CLASS(IdbDeleteNet);

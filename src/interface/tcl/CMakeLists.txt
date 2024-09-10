@@ -19,6 +19,7 @@ add_subdirectory(tcl_report)
 add_subdirectory(tcl_ino)
 add_subdirectory(tcl_feature)
 add_subdirectory(tcl_eval)
+add_subdirectory(tcl_eco)
 
 if(CONTEST)
 add_subdirectory(tcl_contest)
@@ -51,6 +52,7 @@ target_link_libraries(ieda_tcl
         tcl_ino
         tcl_feature
         tcl_eval
+        tcl_eco
 )
 
 target_include_directories(ieda_tcl 
