@@ -427,7 +427,7 @@ void TrackAssigner::buildOrientNetMap(TAPanel& ta_panel)
   }
   for (auto& [net_idx, segment_set] : ta_panel.get_net_access_result_map()) {
     for (Segment<LayerCoord>* segment : segment_set) {
-      updateNetResultToGraph(ta_panel, ChangeType::kAdd, net_idx, *segment);
+      updateFixedRectToGraph(ta_panel, ChangeType::kAdd, net_idx, *segment);
     }
   }
 }
@@ -1072,6 +1072,24 @@ void TrackAssigner::updateFixedRectToGraph(TAPanel& ta_panel, ChangeType change_
         ta_node->get_orient_fixed_rect_map()[orientation].insert(net_shape.get_net_idx());
       } else if (change_type == ChangeType::kDel) {
         ta_node->get_orient_fixed_rect_map()[orientation].erase(net_shape.get_net_idx());
+      }
+    }
+  }
+}
+
+void TrackAssigner::updateFixedRectToGraph(TAPanel& ta_panel, ChangeType change_type, int32_t net_idx, Segment<LayerCoord>& segment)
+{
+  for (NetShape& net_shape : RTDM.getNetShapeList(net_idx, segment)) {
+    if (!net_shape.get_is_routing() || (ta_panel.get_ta_panel_id().get_layer_idx() != net_shape.get_layer_idx())) {
+      continue;
+    }
+    for (auto& [ta_node, orientation_set] : getNodeOrientationMap(ta_panel, net_shape)) {
+      for (Orientation orientation : orientation_set) {
+        if (change_type == ChangeType::kAdd) {
+          ta_node->get_orient_fixed_rect_map()[orientation].insert(net_shape.get_net_idx());
+        } else if (change_type == ChangeType::kDel) {
+          ta_node->get_orient_fixed_rect_map()[orientation].erase(net_shape.get_net_idx());
+        }
       }
     }
   }
