@@ -1318,6 +1318,7 @@ void RTInterface::updateTimingAndPower(std::vector<std::map<std::string, std::ve
 
   for (size_t net_idx = 0; net_idx < coord_real_pin_map_list.size(); net_idx++) {
     ista::Net* ista_net = sta_net_list->findNet(RTUTIL.escapeBackslash(net_list[net_idx].get_net_name()).c_str());
+    timing_engine->resetRcTree(ista_net);
     for (Segment<RCPin>& segment : getRCSegmentList(coord_real_pin_map_list[net_idx], routing_segment_list_list[net_idx])) {
       RCPin& first_rc_pin = segment.get_first();
       RCPin& second_rc_pin = segment.get_second();
@@ -1337,8 +1338,8 @@ void RTInterface::updateTimingAndPower(std::vector<std::map<std::string, std::ve
       ista::RctNode* first_node = getRctNode(timing_engine, sta_net_list, ista_net, first_rc_pin);
       ista::RctNode* second_node = getRctNode(timing_engine, sta_net_list, ista_net, second_rc_pin);
       timing_engine->makeResistor(ista_net, first_node, second_node, res);
-      timing_engine->incrCap(first_node, cap / 2);
-      timing_engine->incrCap(second_node, cap / 2);
+      timing_engine->incrCap(first_node, cap / 2, true);
+      timing_engine->incrCap(second_node, cap / 2, true);
     }
     timing_engine->updateRCTreeInfo(ista_net);
     // auto* rc_tree = timing_engine->get_ista()->getRcNet(ista_net)->rct();
