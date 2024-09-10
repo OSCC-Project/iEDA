@@ -7,6 +7,8 @@
 
 #pragma once
 
+#include <map>
+
 #include "wirelength_db.h"
 
 namespace ieval {
@@ -45,6 +47,7 @@ class WirelengthEval
   float evalPathEGRWL(std::string guide_path, std::string net_name, std::string load_name);
 
   int32_t getDesignUnit();
+  std::map<std::string, std::vector<std::pair<int32_t, int32_t>>> getNamePointSet();
   std::vector<std::pair<int32_t, int32_t>> getNetPointSet(std::string net_name);
 
   void initIDB();
@@ -54,8 +57,17 @@ class WirelengthEval
   void initFlute();
   void destroyFlute();
 
+  void evalNetInfo();
+  int32_t findHPWL(std::string net_name);
+  int32_t findFLUTE(std::string net_name);
+  int32_t findGRWL(std::string net_name);
+
  private:
   static WirelengthEval* _wirelength_eval;
+
+  std::map<std::string, int32_t> _name_hpwl;
+  std::map<std::string, int32_t> _name_flute;
+  std::map<std::string, int32_t> _name_grwl;
 };
 
 }  // namespace ieval

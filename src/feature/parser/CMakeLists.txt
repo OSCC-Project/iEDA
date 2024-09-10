@@ -34,5 +34,6 @@ target_link_libraries(feature_parser
         # idrc_pro_api
         # eval_api
         # ieda_report_evaluator
-    
+        eval_pro_wirelength_api
+        eval_pro_congestion_api    
 )

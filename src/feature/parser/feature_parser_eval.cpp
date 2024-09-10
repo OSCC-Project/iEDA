@@ -40,6 +40,11 @@
 #include "iomanip"
 #include "json_parser.h"
 // #include "report_evaluator.h"
+#include <fstream>
+#include <sstream>
+
+#include "congestion_api.h"
+#include "wirelength_api.h"
 
 namespace ieda_feature {
 
@@ -65,6 +70,37 @@ bool FeatureParser::buildSummaryMap(std::string csv_path, int bin_cnt_x, int bin
   eval_api.evalIOPinAccess(csv_path + "io_pin_access.csv");
 
   std::cout << std::endl << "Save feature map success, path = " << csv_path << std::endl;
+  return true;
+}
+
+bool FeatureParser::buildNetEval(std::string csv_path)
+{
+  auto* idb_builder = dmInst->get_idb_builder();
+  idb::IdbDesign* idb_design = idb_builder->get_def_service()->get_design();
+
+  CONGESTION_API_INST->evalNetInfo();
+  WIRELENGTH_API_INST->evalNetInfo();
+
+  std::ofstream csv_file(csv_path);
+  csv_file << "net_name,pin_num,aspect_ratio,lness,hpwl,rsmt,grwl\n";
+
+  for (size_t i = 0; i < idb_design->get_net_list()->get_net_list().size(); i++) {
+    auto* idb_net = idb_design->get_net_list()->get_net_list()[i];
+    std::string net_name = idb_net->get_net_name();
+    int pin_num = CONGESTION_API_INST->findPinNumber(net_name);
+    if (pin_num < 4) {
+      continue;
+    }
+    int aspect_ratio = CONGESTION_API_INST->findAspectRatio(net_name);
+    float l_ness = CONGESTION_API_INST->findLness(net_name);
+    int32_t hpwl = WIRELENGTH_API_INST->findNetHPWL(net_name);
+    int32_t flute = WIRELENGTH_API_INST->findNetFLUTE(net_name);
+    int32_t grwl = WIRELENGTH_API_INST->findNetGRWL(net_name);
+
+    csv_file << net_name << ',' << pin_num << ',' << aspect_ratio << ',' << l_ness << ',' << hpwl << "," << flute << "," << grwl << '\n';
+  }
+
+  csv_file.close();
   return true;
 }
 

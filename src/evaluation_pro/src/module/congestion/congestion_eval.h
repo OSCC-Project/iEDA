@@ -8,6 +8,7 @@
 #pragma once
 
 #include "congestion_db.h"
+#include "map"
 
 namespace ieval {
 
@@ -61,10 +62,19 @@ class CongestionEval
   CongestionNets getCongestionNets();
   CongestionRegion getCongestionRegion();
 
+  void evalNetInfo();
+  int findPinNumber(std::string net_name);
+  int findAspectRatio(std::string net_name);
+  float findLness(std::string net_name);
+
   int32_t getRowHeight();
 
  private:
   static CongestionEval* _congestion_eval;
+
+  std::map<std::string, int> _name_pin_numer;
+  std::map<std::string, int> _name_aspect_ratio;
+  std::map<std::string, float> _name_lness;
 
   string evalEGR(string rt_dir_path, string egr_type, string output_filename);
   string evalRUDY(CongestionNets nets, CongestionRegion region, int32_t grid_size, string rudy_type, string output_filename);

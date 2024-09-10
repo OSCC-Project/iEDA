@@ -144,4 +144,26 @@ UtilizationSummary CongestionAPI::rudyUtilization(std::string rudy_dir_path, boo
   return utilization_summary;
 }
 
+void CongestionAPI::evalNetInfo()
+{
+  EVAL_CONGESTION_INST->initIDB();
+  EVAL_CONGESTION_INST->evalNetInfo();
+  EVAL_CONGESTION_INST->destroyIDB();
+}
+
+int CongestionAPI::findPinNumber(std::string net_name)
+{
+  return EVAL_CONGESTION_INST->findPinNumber(net_name);
+}
+
+int CongestionAPI::findAspectRatio(std::string net_name)
+{
+  return EVAL_CONGESTION_INST->findAspectRatio(net_name);
+}
+
+float CongestionAPI::findLness(std::string net_name)
+{
+  return EVAL_CONGESTION_INST->findLness(net_name);
+}
+
 }  // namespace ieval

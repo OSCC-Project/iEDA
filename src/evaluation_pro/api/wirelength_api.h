@@ -32,6 +32,11 @@ class WirelengthAPI
   float netEGRWL(std::string guide_path, std::string net_name);
   float pathEGRWL(std::string guide_path, std::string net_name, std::string load_name);
 
+  void evalNetInfo();
+  int32_t findNetHPWL(std::string net_name);
+  int32_t findNetFLUTE(std::string net_name);
+  int32_t findNetGRWL(std::string net_name);
+
  private:
   static WirelengthAPI* _wirelength_api_inst;
 };

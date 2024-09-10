@@ -21,6 +21,7 @@ struct CongestionPin
 
 struct CongestionNet
 {
+  std::string name;
   std::vector<CongestionPin> pins;
 };
 

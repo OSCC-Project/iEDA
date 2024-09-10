@@ -10,6 +10,7 @@
 #include <cmath>
 #include <iostream>
 #include <queue>
+#include <stdexcept>
 
 #include "init_egr.h"
 #include "init_flute.h"
@@ -385,6 +386,11 @@ std::vector<std::pair<int32_t, int32_t>> WirelengthEval::getNetPointSet(std::str
   }
 }
 
+std::map<std::string, std::vector<std::pair<int32_t, int32_t>>> WirelengthEval::getNamePointSet()
+{
+  return EVAL_INIT_IDB_INST->getNamePointSet();
+}
+
 void WirelengthEval::initIDB()
 {
   EVAL_INIT_IDB_INST->initPointSets();
@@ -413,6 +419,43 @@ void WirelengthEval::initFlute()
 void WirelengthEval::destroyFlute()
 {
   EVAL_INIT_FLUTE_INST->destroyInst();
+}
+
+void WirelengthEval::evalNetInfo()
+{
+  auto name_pointset = getNamePointSet();
+  for (const auto& [net_name, point_set] : name_pointset) {
+    _name_hpwl[net_name] = evalNetHPWL(point_set);
+    _name_flute[net_name] = evalNetFLUTE(point_set);
+    _name_grwl[net_name] = evalNetEGRWL("./rt_temp_directory/initial_router/route.guide", net_name) * getDesignUnit();
+  }
+}
+
+int32_t WirelengthEval::findHPWL(std::string net_name)
+{
+  auto it = _name_hpwl.find(net_name);
+  if (it != _name_hpwl.end()) {
+    return it->second;
+  }
+  throw std::runtime_error("HPWL not found for net: Net " + net_name);
+}
+
+int32_t WirelengthEval::findFLUTE(std::string net_name)
+{
+  auto it = _name_flute.find(net_name);
+  if (it != _name_flute.end()) {
+    return it->second;
+  }
+  throw std::runtime_error("FLUTE not found for net: Net " + net_name);
+}
+
+int32_t WirelengthEval::findGRWL(std::string net_name)
+{
+  auto it = _name_grwl.find(net_name);
+  if (it != _name_grwl.end()) {
+    return it->second;
+  }
+  throw std::runtime_error("GRWL not found for net: Net " + net_name);
 }
 
 }  // namespace ieval

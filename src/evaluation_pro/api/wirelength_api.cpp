@@ -128,4 +128,32 @@ float WirelengthAPI::pathEGRWL(std::string guide_path, std::string net_name, std
   return EVAL_WIRELENGTH_INST->evalPathEGRWL(guide_path, net_name, load_name);
 }
 
+void WirelengthAPI::evalNetInfo()
+{
+  EVAL_WIRELENGTH_INST->initIDB();
+  EVAL_WIRELENGTH_INST->initEGR();
+  EVAL_WIRELENGTH_INST->initFlute();
+
+  EVAL_WIRELENGTH_INST->evalNetInfo();
+
+  EVAL_WIRELENGTH_INST->destroyIDB();
+  EVAL_WIRELENGTH_INST->destroyEGR();
+  EVAL_WIRELENGTH_INST->destroyFlute();
+}
+
+int32_t WirelengthAPI::findNetHPWL(std::string net_name)
+{
+  return EVAL_WIRELENGTH_INST->findHPWL(net_name);
+}
+
+int32_t WirelengthAPI::findNetFLUTE(std::string net_name)
+{
+  return EVAL_WIRELENGTH_INST->findFLUTE(net_name);
+}
+
+int32_t WirelengthAPI::findNetGRWL(std::string net_name)
+{
+  return EVAL_WIRELENGTH_INST->findGRWL(net_name);
+}
+
 }  // namespace ieval

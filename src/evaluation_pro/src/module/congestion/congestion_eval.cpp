@@ -14,6 +14,7 @@
 #include <fstream>
 #include <iostream>
 #include <sstream>
+#include <stdexcept>
 
 #include "general_ops.h"
 #include "init_egr.h"
@@ -874,6 +875,76 @@ CongestionRegion CongestionEval::getCongestionRegion()
 int32_t CongestionEval::getRowHeight()
 {
   return EVAL_INIT_IDB_INST->getRowHeight();
+}
+
+void CongestionEval::evalNetInfo()
+{
+  CongestionNets nets = getCongestionNets();
+
+  for (const auto& net : nets) {
+    int32_t net_lx = INT32_MAX;
+    int32_t net_ly = INT32_MAX;
+    int32_t net_ux = INT32_MIN;
+    int32_t net_uy = INT32_MIN;
+    for (const auto& pin : net.pins) {
+      net_lx = std::min(net_lx, pin.lx);
+      net_ly = std::min(net_ly, pin.ly);
+      net_ux = std::max(net_ux, pin.lx);
+      net_uy = std::max(net_uy, pin.ly);
+    }
+    int pin_num = net.pins.size();
+
+    int aspect_ratio = 1;
+    if (net_ux - net_lx >= net_uy - net_ly && net_uy - net_ly != 0) {
+      aspect_ratio = std::round((net_ux - net_lx) / (net_uy - net_ly));
+    } else if (net_ux - net_lx < net_uy - net_ly && net_ux - net_lx != 0) {
+      aspect_ratio = std::round((net_uy - net_ly) / (net_ux - net_lx));
+    }
+
+    float l_ness = 0.f;
+    if (pin_num < 3) {
+      l_ness = 1.f;
+    } else if (pin_num <= 15) {
+      std::vector<std::pair<int32_t, int32_t>> point_set;
+      for (const auto& pin : net.pins) {
+        point_set.push_back(std::make_pair(pin.lx, pin.ly));
+      }
+      l_ness = calculateLness(point_set, net_lx, net_ux, net_ly, net_uy);
+    } else {
+      l_ness = 0.5f;
+    }
+
+    _name_pin_numer.emplace(net.name, pin_num);
+    _name_aspect_ratio.emplace(net.name, aspect_ratio);
+    _name_lness.emplace(net.name, l_ness);
+  }
+}
+
+int CongestionEval::findPinNumber(std::string net_name)
+{
+  auto it = _name_pin_numer.find(net_name);
+  if (it != _name_pin_numer.end()) {
+    return it->second;
+  }
+  throw std::runtime_error("Pin number not found for net: " + net_name);
+}
+
+int CongestionEval::findAspectRatio(std::string net_name)
+{
+  auto it = _name_aspect_ratio.find(net_name);
+  if (it != _name_aspect_ratio.end()) {
+    return it->second;
+  }
+  throw std::runtime_error("Aspect ratio not found for net: " + net_name);
+}
+
+float CongestionEval::findLness(std::string net_name)
+{
+  auto it = _name_lness.find(net_name);
+  if (it != _name_lness.end()) {
+    return it->second;
+  }
+  throw std::runtime_error("Lness not found for net: " + net_name);
 }
 
 }  // namespace ieval

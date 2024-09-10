@@ -118,6 +118,12 @@ bool FeatureManager::save_eval_map(std::string path, int bin_cnt_x, int bin_cnt_
   return feature_parser.buildSummaryMap(path, bin_cnt_x, bin_cnt_y);
 }
 
+bool FeatureManager::save_net_eval(std::string path)
+{
+  FeatureParser feature_parser;
+  return feature_parser.buildNetEval(path);
+}
+
 bool FeatureManager::save_route_data(std::string path)
 {
   FeatureBuilder builder;

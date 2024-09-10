@@ -35,6 +35,11 @@ bool feature_eval_map(const std::string& path, const int& bin_cnt_x, const int& 
   return featureInst->save_eval_map(path, bin_cnt_x, bin_cnt_y);
 }
 
+bool feature_net_eval(const std::string& path)
+{
+  return featureInst->save_net_eval(path);
+}
+
 bool feature_route(const std::string& path)
 {
   return featureInst->save_route_data(path);

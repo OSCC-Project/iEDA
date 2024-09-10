@@ -89,7 +89,9 @@ void InitIDB::initCongestionDB()
   // Init CongestionNets
   for (size_t i = 0; i < idb_design->get_net_list()->get_net_list().size(); i++) {
     auto* idb_net = idb_design->get_net_list()->get_net_list()[i];
+    std::string net_name = idb_net->get_net_name();
     CongestionNet net;
+    net.name = net_name;
 
     auto* idb_driving_pin = idb_net->get_driving_pin();
     if (idb_driving_pin) {
