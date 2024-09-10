@@ -121,6 +121,11 @@ struct FluteTimingEvalSummary
   std::vector<ClockTiming> clock_timings;
   PowerInfo power_info;
 };
+struct SaltTimingEvalSummary
+{
+  std::vector<ClockTiming> clock_timings;
+  PowerInfo power_info;
+};
 struct EgrTimingEvalSummary
 {
   std::vector<ClockTiming> clock_timings;
@@ -136,6 +141,7 @@ struct TimingEvalSummary
   WlmTimingEvalSummary wlm_timing_eval_summary;
   HpwlTimingEvalSummary hpwl_timing_eval_summary;
   FluteTimingEvalSummary flute_timing_eval_summary;
+  SaltTimingEvalSummary salt_timing_eval_summary;
   EgrTimingEvalSummary egr_timing_eval_summary;
   DrTimingEvalSummary dr_timing_eval_summary;
 };

@@ -30,7 +30,7 @@ void TestTiming()
   auto timing_api = ieval::TimingAPI::getInst();
   auto summary = timing_api->evalDesign();
   LOG_INFO << ">> Design Timing Evaluation: ";
-  for (auto routing_type : {"HPWL", "FLUTE", "EGR", "DR"}) {
+  for (auto routing_type : {"HPWL", "FLUTE","SALT", "EGR", "DR"}) {
     auto timing_summary = summary[routing_type];
     LOG_INFO << "Routing type: " << routing_type;
     for (auto& clock_timing : timing_summary.clock_timings) {

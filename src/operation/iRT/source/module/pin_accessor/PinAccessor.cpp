@@ -1492,6 +1492,21 @@ void PinAccessor::updateFixedRectToGraph(PABox& pa_box, ChangeType change_type, 
   }
 }
 
+void PinAccessor::updateFixedRectToGraph(PABox& pa_box, ChangeType change_type, int32_t net_idx, Segment<LayerCoord>& segment)
+{
+  for (NetShape& net_shape : RTDM.getNetShapeList(net_idx, segment)) {
+    for (auto& [pa_node, orientation_set] : getNodeOrientationMap(pa_box, net_shape)) {
+      for (Orientation orientation : orientation_set) {
+        if (change_type == ChangeType::kAdd) {
+          pa_node->get_orient_fixed_rect_map()[orientation].insert(net_shape.get_net_idx());
+        } else if (change_type == ChangeType::kDel) {
+          pa_node->get_orient_fixed_rect_map()[orientation].erase(net_shape.get_net_idx());
+        }
+      }
+    }
+  }
+}
+
 void PinAccessor::updateNetResultToGraph(PABox& pa_box, ChangeType change_type, int32_t net_idx, Segment<LayerCoord>& segment)
 {
   for (NetShape& net_shape : RTDM.getNetShapeList(net_idx, segment)) {

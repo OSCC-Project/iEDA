@@ -106,6 +106,7 @@ class TrackAssigner
 
 #if 1  // update env
   void updateFixedRectToGraph(TAPanel& ta_panel, ChangeType change_type, int32_t net_idx, EXTLayerRect* fixed_rect, bool is_routing);
+  void updateFixedRectToGraph(TAPanel& ta_panel, ChangeType change_type, int32_t net_idx, Segment<LayerCoord>& segment);
   void updateNetResultToGraph(TAPanel& ta_panel, ChangeType change_type, int32_t net_idx, Segment<LayerCoord>& segment);
   void updateViolationToGraph(TAPanel& ta_panel, ChangeType change_type, Violation& violation);
   std::map<TANode*, std::set<Orientation>> getNodeOrientationMap(TAPanel& ta_panel, NetShape& net_shape);
