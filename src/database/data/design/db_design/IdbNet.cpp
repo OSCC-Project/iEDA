@@ -172,6 +172,13 @@ void IdbNet::remove_pin(IdbPin* pin)
   _instance_pin_list->remove_pin(pin);
 }
 
+void IdbNet::remove_segment(IdbRegularWireSegment* seg_del)
+{
+  for (auto* wire : _wire_list->get_wire_list()) {
+    wire->delete_seg(seg_del);
+  }
+}
+
 bool IdbNet::checkConnection()
 {
   bool b_result = false;
@@ -264,7 +271,6 @@ IdbNet* IdbNetList::add_net(IdbNet* net)
   pNet->set_id(_mutex_index++);
   _net_list.emplace_back(pNet);
   _net_map.insert(make_pair(pNet->get_net_name(), pNet));
-  _mutex_index++;
 
   return pNet;
 }

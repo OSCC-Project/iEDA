@@ -116,7 +116,7 @@ class GuiSpeedupDesign {
       return _metal_short_container;
     }
 
-    if (drc_rule == "Metal Parallel Run Length Spacing") {
+    if (drc_rule == "ParallelRunLength Spacing") {
       return _prl_container;
     }
 
@@ -128,7 +128,7 @@ class GuiSpeedupDesign {
       return _min_step_container;
     }
 
-    if (drc_rule == "Minimal Area") {
+    if (drc_rule == "Minimum Area") {
       return _min_area_container;
     }
 

@@ -123,7 +123,7 @@ bool DataManager::place_macro_loc_rand(std::string tcl_path)
   //           << " Avaliable_area = " << Avaliable_area << std::endl;
 
   string orientations[] = {"R0", "MX", "R180", "MY"};
-  for (int i = 0; i < Avaliable_macro.size(); i++) {
+  for (size_t i = 0; i < Avaliable_macro.size(); i++) {
     // 随机一个角度，如果是90或270，交换宽高
     if (orientations[int(std::rand() % 4)] == "R0")
       Avaliable_macro[i].orient = IdbOrient::kN_R0;
@@ -182,8 +182,8 @@ bool DataManager::place_macro_loc_rand(std::string tcl_path)
       }
     }
     std::vector<std::pair<int, int>> falseGridPoints;  // 存储为false的格点坐标
-    for (int ii = 0; ii < mask_map.size(); ii++) {
-      for (int jj = 0; jj < mask_map[ii].size(); jj++) {
+    for (size_t ii = 0; ii < mask_map.size(); ii++) {
+      for (size_t jj = 0; jj < mask_map[ii].size(); jj++) {
         if (!mask_map[ii][jj]) {
           falseGridPoints.push_back(std::make_pair(ii, jj));
         }
@@ -202,19 +202,19 @@ bool DataManager::place_macro_loc_rand(std::string tcl_path)
     }
   }
 
-  for (int i = 0; i < Avaliable_macro.size(); i++) {
+  for (size_t i = 0; i < Avaliable_macro.size(); i++) {
     Avaliable_macro[i].center_x += llx;
     Avaliable_macro[i].center_y += lly;
   }
 
-  for (int i = 0; i < Avaliable_macro.size(); i++) {
+  for (size_t i = 0; i < Avaliable_macro.size(); i++) {
     if (Avaliable_macro[i].center_x < 0.1 || Avaliable_macro[i].center_y < 0.1) {
       std::cout << " error: exist unplaced macro" << std::endl;
       return false;
     }
   }
 
-  for (int i = 0; i < Avaliable_macro.size(); i++) {
+  for (size_t i = 0; i < Avaliable_macro.size(); i++) {
     if (Avaliable_macro[i].center_x - Avaliable_macro[i].width / 2 < llx
         || Avaliable_macro[i].center_y - Avaliable_macro[i].height / 2 < lly
         || Avaliable_macro[i].center_x + Avaliable_macro[i].width / 2 > urx

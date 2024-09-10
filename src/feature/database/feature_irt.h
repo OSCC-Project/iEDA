@@ -21,8 +21,8 @@
 #include <string>
 #include <vector>
 
+#include "feature_ipw.h"
 #include "feature_ista.h"
-
 namespace ieda_feature {
 /// ###################################################################################///
 ///  summary
@@ -50,7 +50,8 @@ struct IRSummary
   double total_wire_length = 0;
   std::map<int32_t, int32_t> cut_via_num_map;
   int32_t total_via_num = 0;
-  std::vector<NetTiming> nets_timing;
+  std::vector<ClockTiming> clocks_timing;
+  PowerInfo power_info;
 };
 
 struct GRSummary
@@ -63,7 +64,8 @@ struct GRSummary
   double total_wire_length = 0;
   std::map<int32_t, int32_t> cut_via_num_map;
   int32_t total_via_num = 0;
-  std::vector<NetTiming> nets_timing;
+  std::vector<ClockTiming> clocks_timing;
+  PowerInfo power_info;
 };
 
 struct TASummary
@@ -84,7 +86,8 @@ struct DRSummary
   int32_t total_patch_num = 0;
   std::map<int32_t, int32_t> routing_violation_num_map;
   int32_t total_violation_num = 0;
-  std::vector<NetTiming> nets_timing;
+  std::vector<ClockTiming> clocks_timing;
+  PowerInfo power_info;
 };
 
 struct RTSummary

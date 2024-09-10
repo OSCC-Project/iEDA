@@ -598,6 +598,13 @@ fn flatten_the_module(
                         module_inst_stmt.get_cell_name(),
                         module_inst_stmt.get_inst_name()
                     );
+                    // for debugging purpose
+                    // if module_inst_stmt.get_cell_name() == "xxx" && module_inst_stmt.get_inst_name() == "xxx" {
+                    //     println!("Debug");
+                    // }
+                    // if !(module_inst_stmt.get_cell_name() == "xxx" && module_inst_stmt.get_inst_name() == "xxx") {
+                    //     flatten_the_module(sub_module, cur_module, module_inst_stmt, module_map);
+                    // }
 
                     flatten_the_module(sub_module, cur_module, module_inst_stmt, module_map);
 
@@ -632,6 +639,7 @@ fn flatten_the_module(
             // name(for port), next change the inst name to parent inst name /
             // current inst name.
             let module_inst_stmt = (*stmt).as_any().downcast_ref::<verilog_data::VerilogInst>().unwrap();
+            // for debugging purpose
             // if module_inst_stmt.get_cell_name() == "sky130_fd_sc_hs__buf_1"
             //     && module_inst_stmt.get_inst_name().contains("_113_")
             // {
@@ -641,6 +649,7 @@ fn flatten_the_module(
             let mut new_module_inst_connection: Vec<Box<verilog_data::VerilogPortRefPortConnect>> = Vec::new();
             for port_connect in module_inst_stmt.get_port_connections() {
                 let net_expr_option = port_connect.get_net_expr();
+                // for debugging purpose
                 // let port_id = port_connect.get_port_id().get_name();
                 // if port_id == "A" {
                 //     println!("Debug");
@@ -1163,7 +1172,7 @@ mod tests {
         .Z(hold_net_52163));
         DEL150MD1BWP40P140HVT hold_buf_52164 (.I(\u0_soc_top/u0_ysyx_210539/icache/Ram_bw_3_io_wdata[123] ),
         .Z(hold_net_52164));"#;
-        let parse_result = VerilogParser::parse(Rule::inst_block_declaration, input_str);
+        let parse_result = VerilogParser::parse(Rule::assign_or_inst_block_declaration, input_str);
         println!("{:#?}", parse_result);
         // print_parse_result(parse_result);
     }

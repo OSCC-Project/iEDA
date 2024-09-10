@@ -67,18 +67,6 @@ class RoutingLayer
     }
     return width_parallel_length_map.back().front();
   }
-  int32_t getMaxSpacing(const PlanarRect& rect)
-  {
-    std::vector<int32_t>& width_list = _spacing_table.get_width_list();
-    GridMap<int32_t>& width_parallel_length_map = _spacing_table.get_width_parallel_length_map();
-
-    for (size_t i = 0; (i + 1) < width_list.size(); i++) {
-      if (width_list[i] <= rect.getWidth() && rect.getWidth() < width_list[i + 1]) {
-        return width_parallel_length_map[i].back();
-      }
-    }
-    return width_parallel_length_map.back().back();
-  }
   std::vector<Orientation> getPreferOrientationList()
   {
     std::vector<Orientation> orientation_list;

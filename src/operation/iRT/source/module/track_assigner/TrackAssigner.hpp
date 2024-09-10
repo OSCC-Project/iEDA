@@ -55,14 +55,16 @@ class TrackAssigner
   void initTAPanelMap(TAModel& ta_model);
   void buildPanelSchedule(TAModel& ta_model);
   void assignTAPanelMap(TAModel& ta_model);
+  void buildAccessResult(TAPanel& ta_panel);
   void initTATaskList(TAModel& ta_model, TAPanel& ta_panel);
   bool needRouting(TAPanel& ta_panel);
-  void buildFixedRectList(TAPanel& ta_panel);
+  void buildFixedRect(TAPanel& ta_panel);
   void buildPanelTrackAxis(TAPanel& ta_panel);
   void buildTANodeMap(TAPanel& ta_panel);
   void buildTANodeNeighbor(TAPanel& ta_panel);
   void buildOrientNetMap(TAPanel& ta_panel);
   void routeTAPanel(TAPanel& ta_panel);
+  void routeTAPanelBySelf(TAPanel& ta_panel);
   std::vector<TATask*> initTaskSchedule(TAPanel& ta_panel);
   void routeTATask(TAPanel& ta_panel, TATask* ta_task);
   void initSingleTask(TAPanel& ta_panel, TATask* ta_task);
@@ -96,12 +98,15 @@ class TrackAssigner
   void updateViolationList(TAPanel& ta_panel);
   std::vector<Violation> getViolationList(TAPanel& ta_panel);
   std::vector<TATask*> getTaskScheduleByViolation(TAPanel& ta_panel);
-  void routeByThirdParty(TAPanel& ta_panel);
+  void routeTAPanelByOther(TAPanel& ta_panel);
   void uploadNetResult(TAPanel& ta_panel);
   void uploadViolation(TAPanel& ta_panel);
   void freeTAPanel(TAPanel& ta_panel);
+  int32_t getViolationNum();
+
 #if 1  // update env
   void updateFixedRectToGraph(TAPanel& ta_panel, ChangeType change_type, int32_t net_idx, EXTLayerRect* fixed_rect, bool is_routing);
+  void updateFixedRectToGraph(TAPanel& ta_panel, ChangeType change_type, int32_t net_idx, Segment<LayerCoord>& segment);
   void updateNetResultToGraph(TAPanel& ta_panel, ChangeType change_type, int32_t net_idx, Segment<LayerCoord>& segment);
   void updateViolationToGraph(TAPanel& ta_panel, ChangeType change_type, Violation& violation);
   std::map<TANode*, std::set<Orientation>> getNodeOrientationMap(TAPanel& ta_panel, NetShape& net_shape);
@@ -116,6 +121,7 @@ class TrackAssigner
 #endif
 
 #if 1  // debug
+  void debugPlotTAModel(TAModel& ta_model, std::string flag);
   void debugCheckTAPanel(TAPanel& ta_panel);
   void debugPlotTAPanel(TAPanel& ta_panel, int32_t curr_task_idx, std::string flag);
 #endif

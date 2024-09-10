@@ -20,6 +20,7 @@
 
 void IdbSpeedUpSetup::showDrc(std::map<std::string, std::vector<idrc::DrcViolation*>>& drc_db, int max_num) {
   for (auto drc : drc_db) {
+    std::cout << "drc rule=" << drc.first << " number=" << drc.second.size() << std::endl;
     auto container = _gui_design->get_drc_container(drc.first);
     if (container != nullptr) {
       auto drc_spot_list = drc.second;
@@ -41,6 +42,8 @@ void IdbSpeedUpSetup::showDrc(std::map<std::string, std::vector<idrc::DrcViolati
           createDrc(drc_list, drc_spot);
         }
       }
+    } else {
+      std::cout << "find no drc container view : " << drc.first << std::endl;
     }
   }
 }
@@ -55,6 +58,14 @@ void IdbSpeedUpSetup::createDrc(GuiSpeedupDrcList* drc_list, idrc::DrcViolation*
   int min_y       = spot_rect->get_lly();
   int max_x       = spot_rect->get_urx();
   int max_y       = spot_rect->get_ury();
+
+  if (min_x == max_x) {
+    max_x += 2;
+  }
+
+  if (min_y == max_y) {
+    max_y += 2;
+  }
 
   /// if line
   if (min_x == max_x || min_y == max_y) {

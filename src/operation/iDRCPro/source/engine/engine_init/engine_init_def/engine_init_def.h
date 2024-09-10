@@ -19,6 +19,7 @@
 #include <stdint.h>
 
 #include "engine_init.h"
+#include "DRCViolationType.h"
 
 /**
  * check geometry overlap method
@@ -35,11 +36,6 @@ class IdbCoordinate;
 }  // namespace idb
 
 namespace idrc {
-
-#define NET_ID_ENVIRONMENT -1
-#define NET_ID_OBS -2
-// #define NET_ID_POWER -3
-// #define NET_ID_GROUND -4
 
 class DrcEngineManager;
 enum class LayoutType;

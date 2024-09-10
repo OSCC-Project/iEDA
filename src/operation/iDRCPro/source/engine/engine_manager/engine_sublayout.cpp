@@ -34,6 +34,28 @@ DrcEngineSubLayout::~DrcEngineSubLayout()
     delete _engine;
     _engine = nullptr;
   }
+
+  _check_nets.clear();
+}
+
+bool DrcEngineSubLayout::isIntersect(int llx, int lly, int urx, int ury)
+{
+  return _engine->isIntersect(llx, lly, urx, ury);
+}
+
+void DrcEngineSubLayout::markChecked(int net_id)
+{
+  _check_nets.insert(net_id);
+}
+
+bool DrcEngineSubLayout::hasChecked(int net_id)
+{
+  return _check_nets.find(net_id) != _check_nets.end() ? true : false;
+}
+
+bool DrcEngineSubLayout::clearChecked()
+{
+  _check_nets.clear();
 }
 
 }  // namespace idrc

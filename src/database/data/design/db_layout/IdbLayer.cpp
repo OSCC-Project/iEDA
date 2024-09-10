@@ -195,9 +195,9 @@ IdbLayer* IdbLayers::find_layer(const string& src_name, bool new_layer)
     }
   }
 
-  if (!new_layer) {
-    std::cout << "[IdbLayer Error] : can not find layer = " << src_name << std::endl;
-  }
+  //   if (!new_layer) {
+  //     std::cout << "[IdbLayer Error] : can not find layer = " << src_name << std::endl;
+  //   }
 
   return nullptr;
 }

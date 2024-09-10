@@ -21,7 +21,6 @@
 #include "Database.hpp"
 #include "Monitor.hpp"
 #include "TGModel.hpp"
-#include "flute3/flute.h"
 
 namespace irt {
 
@@ -40,10 +39,10 @@ class TopologyGenerator
   // self
   static TopologyGenerator* _tg_instance;
 
-  TopologyGenerator() { Flute::readLUT(); }
+  TopologyGenerator() = default;
   TopologyGenerator(const TopologyGenerator& other) = delete;
   TopologyGenerator(TopologyGenerator&& other) = delete;
-  ~TopologyGenerator() { Flute::deleteLUT(); }
+  ~TopologyGenerator() = default;
   TopologyGenerator& operator=(const TopologyGenerator& other) = delete;
   TopologyGenerator& operator=(TopologyGenerator&& other) = delete;
   // function
@@ -57,7 +56,7 @@ class TopologyGenerator
   void buildOrientSupply(TGModel& tg_model);
   void generateTGModel(TGModel& tg_model);
   void routeTGNet(TGModel& tg_model, TGNet* tg_net);
-  std::vector<Segment<PlanarCoord>> getPlanarTopoListByFlute(TGModel& tg_model, TGNet* tg_net);
+  std::vector<Segment<PlanarCoord>> getPlanarTopoList(TGModel& tg_model, TGNet* tg_net);
   std::vector<Segment<PlanarCoord>> getRoutingSegmentList(TGModel& tg_model, Segment<PlanarCoord>& planar_topo);
   std::vector<Segment<PlanarCoord>> getRoutingSegmentListByStraight(TGModel& tg_model, Segment<PlanarCoord>& planar_topo);
   std::vector<Segment<PlanarCoord>> getRoutingSegmentListByLPattern(TGModel& tg_model, Segment<PlanarCoord>& planar_topo);
@@ -65,6 +64,7 @@ class TopologyGenerator
   MTree<LayerCoord> getCoordTree(TGNet* tg_net, std::vector<Segment<PlanarCoord>>& routing_segment_list);
   void updateDemand(TGModel& tg_model, MTree<LayerCoord>& coord_tree);
   void uploadNetResult(TGNet* tg_net, MTree<LayerCoord>& coord_tree);
+  void outputGuide(TGModel& tg_model);
 
 #if 1  // exhibit
   void updateSummary(TGModel& tg_model);

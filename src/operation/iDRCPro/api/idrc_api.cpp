@@ -66,6 +66,8 @@ std::map<ViolationEnumType, std::vector<DrcViolation*>> DrcApi::check(std::vecto
 
   auto check_type = (env_shape_list.size() + pin_data.size() + routing_data.size()) > 0 ? DrcCheckerType::kRT : DrcCheckerType::kDef;
 
+  condition_manager->set_check_type(check_type);
+
 #ifdef DEBUG_IDRC_API
   if (DrcCheckerType::kDef == check_type) {
     std::cout << "idrc : check def" << std::endl;
@@ -107,7 +109,7 @@ std::map<ViolationEnumType, std::vector<DrcViolation*>> DrcApi::check(std::vecto
   }
 #endif
 
-  return violation_manager->get_violation_map();
+  return violation_manager->get_violation_map(drc_manager.get_engine()->get_engine_manager());
 }
 /**
  * check DRC violation for DEF file
@@ -170,15 +172,15 @@ void DrcApi::diagnosis(std::string third_json_file, std::string idrc_json_file, 
                                                                   {"EndOfLine", ViolationEnumType::kEOL},
                                                                   {"MINHOLE", ViolationEnumType::kAreaEnclosed}};
   std::map<std::string, ViolationEnumType> idrc_name_to_type_map{{"Corner Fill", ViolationEnumType::kCornerFill},
-                                                                 {"Default Spacing", ViolationEnumType::kPRLSpacing},
+                                                                 {"Default Spacing", ViolationEnumType::kDefaultSpacing},
                                                                  {"Enclosed Area", ViolationEnumType::kAreaEnclosed},
                                                                  {"JogToJog Spacing", ViolationEnumType::kJogToJog},
                                                                  {"Metal EOL Spacing", ViolationEnumType::kEOL},
                                                                  {"Metal Notch Spacing", ViolationEnumType::kNotch},
-                                                                 {"Metal Parallel Run Length Spacing", ViolationEnumType::kPRLSpacing},
+                                                                 {"ParallelRunLength Spacing", ViolationEnumType::kPRLSpacing},
                                                                  {"Metal Short", ViolationEnumType::kShort},
                                                                  {"MinStep", ViolationEnumType::kMinStep},
-                                                                 {"Minimal Area", ViolationEnumType::kArea}};
+                                                                 {"Minimum Area", ViolationEnumType::kArea}};
   std::map<std::string, int32_t> layer_name_to_id_map{{"M1", 1}, {"M2", 2}, {"M3", 3}, {"M4", 4}, {"M5", 5},
                                                       {"M6", 6}, {"M7", 7}, {"M8", 8}, {"M9", 9}};
 

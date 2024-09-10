@@ -42,16 +42,19 @@ PowerIO* PowerIO::_instance = nullptr;
  */
 bool PowerIO::autoRunPower(std::string path)
 {
-  flowConfigInst->set_status_stage("iSTA - Static Timing Analysis");
+  flowConfigInst->set_status_stage("iPA - Power Analysis");
 
   ieda::Stats stats;
 
-  /// init
-  staInst->setStaWorkDirectory(path);
-  std::vector<std::string> paths;
-  staInst->runLiberty(paths);
-  staInst->readIdb();
-  staInst->runSDC();
+  if (!staInst->isInitSTA()) {
+    /// init
+    staInst->setStaWorkDirectory(path);
+    std::vector<std::string> paths;
+    staInst->runLiberty(paths);
+    staInst->readIdb();
+    staInst->runSDC();
+  }
+
   /// run
   reportSummaryPower();
 
@@ -71,8 +74,10 @@ bool PowerIO::reportSummaryPower()
 {
   auto* timing_engine = ista::TimingEngine::getOrCreateTimingEngine();
 
-  timing_engine->buildGraph();
-  timing_engine->updateTiming();
+  if (!timing_engine->isBuildGraph()) {
+    timing_engine->buildGraph();
+    timing_engine->updateTiming();
+  }
 
   ista::Sta* ista = ista::Sta::getOrCreateSta();
   ipower::Power* ipower = ipower::Power::getOrCreatePower(&(ista->get_graph()));

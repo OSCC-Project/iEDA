@@ -137,7 +137,7 @@ bool FeatureParser::buildRouteData(std::string json_path, RouteAnalyseData* data
     for (auto [term_name, term_pa] : cell_master.term_list) {
       json json_term;
 
-      for (int i = 0; i < term_pa.pa_list.size(); i++) {
+      for (size_t i = 0; i < term_pa.pa_list.size(); i++) {
         json json_pa;
         json_pa["layer"] = term_pa.pa_list[i].layer;
         json_pa["x"] = term_pa.pa_list[i].x;

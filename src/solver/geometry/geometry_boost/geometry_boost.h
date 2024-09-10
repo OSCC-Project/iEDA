@@ -31,6 +31,8 @@ namespace ieda_solver {
  * GeometryBoost describes the geometry data for a region in only one layer
  */
 
+typedef bg::index::rtree<std::pair<ieda_solver::BgRect, GeometryPolygon*>, bg::index::quadratic<16>> PolygonRTree;
+
 class PolygonProperty;
 
 class GeometryBoost : public EngineGeometry
@@ -40,31 +42,34 @@ class GeometryBoost : public EngineGeometry
   ~GeometryBoost();
 
   GeometryPolygonSet& get_polyset() { return _polyset; }
+  GeometryPolygonSet copyPolyset() { return _polyset; }
+
   void addRect(int llx, int lly, int urx, int ury) override;
   // std::pair<uint64_t, std::vector<std::vector<GtlPoint>>> get_boost_polygons_points();
   // std::vector<std::vector<std::pair<int, int>>> get_polygons_points() override;
 
-  void addGeometry(EngineGeometry* geometry) override;
+  virtual void addGeometry(EngineGeometry* geometry) override;
+  virtual bool isIntersect(int llx, int lly, int urx, int ury) override;
 
-  std::vector<GeometryPolygon>& getLayoutPolygons() override;
-  std::vector<GeometryPolygon>& getOverlap() override;
-  std::vector<GeometryRect>& getWires() override;
-  std::vector<GeometryRect>& getRects() override;
+  std::vector<GeometryPolygon>& getLayoutPolygons();
+  std::vector<GeometryPolygon> getOverlap(EngineGeometry* other = nullptr);
+  std::vector<GeometryRect>& getWires();
+  std::vector<GeometryRect>& getRects();
+  std::vector<GeometryRect> getRectsGrowAnd(int value, GeometryOrientation direction);
+
+  int64_t getMergeRectArea(int llx, int lly, int urx, int ury);
 
  private:
-  // GeometryPolygonSet _overlap_set;
-  bool _overlap_initialized = false;
+  GeometryPolygonSet _polyset;
+  std::vector<GeometryPolygon> _polygon_list;
+  PolygonRTree _polygon_rtree;
+  std::vector<GeometryRect> _wire_list;
+  std::vector<GeometryRect> _rect_list;
+
   bool _wires_initialized = false;
   bool _rect_initialized = false;
-};
 
-class PolygonProperty
-{
- public:
-  PolygonProperty() = default;
-  ~PolygonProperty() = default;
-
- private:
+  void initPolygonRTree();
 };
 
 }  // namespace ieda_solver

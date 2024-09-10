@@ -122,6 +122,36 @@ bool RustVerilogRead::createDb(std::string file, std::string top_module_name)
   return true;
 }
 
+
+bool RustVerilogRead::createDbAutoTop(std::string file)
+{
+  if (!_rust_verilog_reader) {
+    _rust_verilog_reader = new ista::RustVerilogReader();
+  }
+  _rust_verilog_reader->readVerilog(file.c_str());
+
+  // auto set top module
+  if (!_rust_verilog_reader->autoTopModule()) {
+    std::cerr << "auto top module is wrong!\n";
+    return false;
+  }
+  _rust_top_module = _rust_verilog_reader->get_top_module();
+
+  if (_rust_top_module == nullptr) {
+    return false;
+  }
+
+  IdbDesign* idb_design = _def_service->get_design();
+  idb_design->set_design_name(_rust_top_module->module_name);
+
+  build_pins();
+  build_nets();
+  build_assign();
+  build_components();
+
+  return true;
+}
+
 /**
  * @brief convert netlist port_direction to idb port_direction.
  *

@@ -10,4 +10,4 @@ aux_source_directory(./ SRC)
 
 add_library(delay ${SRC})
 
-target_link_libraries(delay spef str utility liberty netlist Eigen3::Eigen log) 
+target_link_libraries(delay spef str ista_utility liberty netlist Eigen3::Eigen log) 
