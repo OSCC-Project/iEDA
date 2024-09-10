@@ -148,7 +148,7 @@ void CongestionEval::initCongNetList()
   auto* idb_builder = dmInst->get_idb_builder();
   idb::IdbDesign* idb_design = idb_builder->get_def_service()->get_design();
 
-  for (int i = 0; i < idb_design->get_net_list()->get_net_list().size(); i++) {
+  for (size_t i = 0; i < idb_design->get_net_list()->get_net_list().size(); i++) {
     auto* idb_net = idb_design->get_net_list()->get_net_list()[i];
     std::string net_name = fixSlash(idb_net->get_net_name());
     CongNet* net_ptr = new CongNet();
@@ -231,7 +231,7 @@ void CongestionEval::mapNetCoord2Grid()
     bin->clear_net_list();
   }
 
-  for (int k = 0; k < _cong_net_list.size(); k++) {
+  for (size_t k = 0; k < _cong_net_list.size(); k++) {
     auto& net = _cong_net_list[k];
     if (net->get_pin_list().size() == 1) {
       continue;
@@ -620,14 +620,14 @@ vector<pair<string, pair<int32_t, int32_t>>> CongestionEval::evalNetSize()
 
 void CongestionEval::evalNetCong(RUDY_TYPE rudy_type, DIRECTION direction)
 {
-  for (int i = 0; i < _cong_grid->get_bin_list().size(); i++) {
+  for (size_t i = 0; i < _cong_grid->get_bin_list().size(); i++) {
     auto& bin = _cong_grid->get_bin_list()[i];
     bin->set_net_cong(0.0);
     bin->set_h_net_cong(0.0);
     bin->set_v_net_cong(0.0);
   }
 
-  for (int i = 0; i < _cong_grid->get_bin_list().size(); i++) {
+  for (size_t i = 0; i < _cong_grid->get_bin_list().size(); i++) {
     auto& bin = _cong_grid->get_bin_list()[i];
     int32_t overlap_area = 0;
     double congestion = 0.0;
