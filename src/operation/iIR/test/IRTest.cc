@@ -47,8 +47,7 @@ TEST_F(IRTest, ir_api) {
 }
 
 TEST_F(IRTest, ir_small) {
-  const char* spef_file_path =
-      "/home/taosimin/ir_example/aes/aes_vdd_vss.spef";
+  const char* spef_file_path = "/home/taosimin/ir_example/aes/aes_vdd_vss.spef";
   const char* instance_power_path =
       "/home/taosimin/ir_example/aes/aes_instance.csv";
 
