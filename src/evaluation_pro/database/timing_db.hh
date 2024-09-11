@@ -10,6 +10,7 @@
 
 #include <map>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace ieval {
@@ -28,4 +29,20 @@ struct TimingSummary
   double static_power;
   double dynamic_power;
 };
+
+struct TimingPin
+{
+  std::string pin_name;
+  int pin_id;
+  bool is_real_pin;
+  int32_t x;
+  int32_t y;
+};
+
+struct TimingNet
+{
+  std::string net_name;
+  std::vector<std::pair<TimingPin*, TimingPin*>> pin_pair_list;
+};
+
 }  // namespace ieval

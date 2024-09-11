@@ -106,10 +106,6 @@ class PlacerDB
   int64_t PL_HPWL[3] = {0, 0, 0};
   int64_t PL_STWL[3] = {0, 0, 0};
   int64_t PL_GRWL[3] = {0, 0, 0};
-  int64_t hpwl_eval[3] = {0, 0, 0};
-  int64_t stwl_eval[3] = {0, 0, 0};
-  int64_t grwl_eval[3] = {0, 0, 0};
-
   float congestion[3] = {0.0f, 0.0f, 0.0f};
   int32_t egr_tof[3] = {0, 0, 0};
   int32_t egr_mof[3] = {0, 0, 0};

@@ -15,7 +15,7 @@ TimingEval* TimingEval::_timing_eval = nullptr;
 
 TimingEval::TimingEval()
 {
-  EVAL_INIT_STA_INST->runSTA();
+  // EVAL_INIT_STA_INST->runSTA();  // TODO: adjust its location
 }
 
 TimingEval* TimingEval::getInst()
@@ -59,4 +59,56 @@ std::map<std::string, std::unordered_map<std::string, double>> TimingEval::evalN
 {
   return EVAL_INIT_STA_INST->getNetPower();
 }
+
+double TimingEval::getEarlySlack(const std::string& pin_name) const
+{
+  return EVAL_INIT_STA_INST->getEarlySlack(pin_name);
+}
+
+double TimingEval::getLateSlack(const std::string& pin_name) const
+{
+  return EVAL_INIT_STA_INST->getLateSlack(pin_name);
+}
+
+double TimingEval::getArrivalEarlyTime(const std::string& pin_name) const
+{
+  return EVAL_INIT_STA_INST->getArrivalEarlyTime(pin_name);
+}
+
+double TimingEval::getArrivalLateTime(const std::string& pin_name) const
+{
+  return EVAL_INIT_STA_INST->getArrivalLateTime(pin_name);
+}
+
+double TimingEval::getRequiredEarlyTime(const std::string& pin_name) const
+{
+  return EVAL_INIT_STA_INST->getRequiredEarlyTime(pin_name);
+}
+
+double TimingEval::getRequiredLateTime(const std::string& pin_name) const
+{
+  return EVAL_INIT_STA_INST->getRequiredLateTime(pin_name);
+}
+
+double TimingEval::reportWNS(const char* clock_name, ista::AnalysisMode mode)
+{
+  return EVAL_INIT_STA_INST->reportWNS(clock_name, mode);
+}
+
+double TimingEval::reportTNS(const char* clock_name, ista::AnalysisMode mode)
+{
+  return EVAL_INIT_STA_INST->reportTNS(clock_name, mode);
+}
+
+void TimingEval::updateTiming(const std::vector<TimingNet*>& timing_net_list, int32_t dbu_unit)
+{
+  EVAL_INIT_STA_INST->updateTiming(timing_net_list, dbu_unit);
+}
+
+void TimingEval::updateTiming(const std::vector<TimingNet*>& timing_net_list, const std::vector<std::string>& name_list,
+                              const int& propagation_level, int32_t dbu_unit)
+{
+  EVAL_INIT_STA_INST->updateTiming(timing_net_list, name_list, propagation_level, dbu_unit);
+}
+
 }  // namespace ieval

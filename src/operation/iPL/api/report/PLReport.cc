@@ -19,7 +19,6 @@
 #include <set>
 
 #include "PLAPI.hh"
-#include "TimingEval.hpp"
 #include "module/checker/layout_checker/LayoutChecker.hh"
 #include "module/evaluator/density/Density.hh"
 #include "module/evaluator/wirelength/HPWirelength.hh"
@@ -27,6 +26,9 @@
 #include "module/logger/Log.hh"
 #include "time/Time.hh"
 #include "usage/usage.hh"
+
+#include <fstream>
+#include "report/ReportTable.hh"
 
 namespace ipl {
 

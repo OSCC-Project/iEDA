@@ -26,7 +26,14 @@
 #include <map>
 #include <string>
 #include <unordered_map>
+#include <vector>
+
+namespace ista {
+enum class AnalysisMode;
+}
 namespace ieval {
+
+struct TimingNet;
 
 class InitSTA
 {
@@ -42,10 +49,24 @@ class InitSTA
 
   std::map<std::string, std::unordered_map<std::string, double>> getNetPower() const { return _net_power; }
 
+  double getEarlySlack(const std::string& pin_name) const;
+  double getLateSlack(const std::string& pin_name) const;
+  double getArrivalEarlyTime(const std::string& pin_name) const;
+  double getArrivalLateTime(const std::string& pin_name) const;
+  double getRequiredEarlyTime(const std::string& pin_name) const;
+  double getRequiredLateTime(const std::string& pin_name) const;
+  double reportWNS(const char* clock_name, ista::AnalysisMode mode);
+  double reportTNS(const char* clock_name, ista::AnalysisMode mode);
+
+  void updateTiming(const std::vector<TimingNet*>& timing_net_list, int32_t dbu_unit);
+  void updateTiming(const std::vector<TimingNet*>& timing_net_list, const std::vector<std::string>& name_list, const int& propagation_level,
+                    int32_t dbu_unit);
+
  private:
- void initStaEngine();
+  void initStaEngine();
   void callRT(const std::string& routing_type);
-  void buildRCTree(const std::string& routing_type); void initPowerEngine();
+  void buildRCTree(const std::string& routing_type);
+  void initPowerEngine();
 
   void updateResult(const std::string& routing_type);
 

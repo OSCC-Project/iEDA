@@ -29,7 +29,6 @@
 #include "BufferInserter.hh"
 #include "CenterPlace.hh"
 #include "DetailPlacer.hh"
-#include "EvalAPI.hpp"
 #include "IDBWrapper.hh"
 #include "LayoutChecker.hh"
 #include "Legalizer.hh"
@@ -44,12 +43,14 @@
 #include "src/MapFiller.h"
 #include "wirelength_db.h"
 
+#include "netlist/Net.hh"
+#include "timing_db.hh"
+
 namespace ipl {
 
 // NOLINTBEGIN
-eval::TimingPin* wrapTimingTruePin(Node* node);
-eval::TimingPin* wrapTimingFakePin(int id, Point<int32_t> coordi);
-eval::CongPin* wrapCongPin(ipl::Pin* ipl_pin);
+ieval::TimingPin* wrapTimingTruePin(Node* node);
+ieval::TimingPin* wrapTimingFakePin(int id, Point<int32_t> coordi);
 // NOLINTEND
 
 PLAPI& PLAPI::getInst()
@@ -117,7 +118,6 @@ void PLAPI::initAPI(std::string pl_json_path, idb::IdbBuilder* idb_builder)
       // this->modifySTAOutputDir(sta_path);
 
       this->updateSTATiming();
-      this->initTimingEval();
       PlacerDBInst.get_topo_manager()->updateALLNodeTopoId();
     }
 
@@ -171,11 +171,6 @@ void PLAPI::runIncrementalFlow()
 }
 
 /*****************************Timing-driven Placement: Start*****************************/
-void PLAPI::initTimingEval()
-{
-  _external_api->initTimingEval(PlacerDBInst.get_layout()->get_database_unit());
-}
-
 double PLAPI::obtainPinEarlySlack(std::string pin_name)
 {
   return _external_api->obtainPinEarlySlack(pin_name);
@@ -241,45 +236,45 @@ void PLAPI::updateTiming(TopologyManager* topo_manager)
   SteinerWirelength steiner_wl(topo_manager);
   steiner_wl.updateAllNetWorkPointPair();
 
-  std::vector<eval::TimingNet*> timing_net_list;
+  std::vector<ieval::TimingNet*> timing_net_list;
   timing_net_list.reserve(topo_manager->get_network_list().size());
   for (auto* network : topo_manager->get_network_list()) {
     const auto& point_pair_list = steiner_wl.obtainPointPairList(network);
-    eval::TimingNet* timing_net = generateTimingNet(network, point_pair_list);
+    ieval::TimingNet* timing_net = generateTimingNet(network, point_pair_list);
     timing_net_list.push_back(timing_net);
   }
-  _external_api->updateEvalTiming(timing_net_list);
+  _external_api->updateEvalTiming(timing_net_list, PlacerDBInst.get_layout()->get_database_unit());
 }
 
 void PLAPI::updatePartOfTiming(TopologyManager* topo_manager,
                                std::map<int32_t, std::vector<std::pair<Point<int32_t>, Point<int32_t>>>>& net_id_to_points_map)
 {
-  std::vector<eval::TimingNet*> timing_net_list;
+  std::vector<ieval::TimingNet*> timing_net_list;
   timing_net_list.reserve(net_id_to_points_map.size());
 
   for (auto net_pair : net_id_to_points_map) {
     NetWork* network = topo_manager->findNetworkById(net_pair.first);
-    eval::TimingNet* timing_net = generateTimingNet(network, net_pair.second);
+    ieval::TimingNet* timing_net = generateTimingNet(network, net_pair.second);
     timing_net_list.push_back(timing_net);
   }
 
-  _external_api->updateEvalTiming(timing_net_list);
+  _external_api->updateEvalTiming(timing_net_list, PlacerDBInst.get_layout()->get_database_unit());
 }
 
 void PLAPI::updateTimingInstMovement(TopologyManager* topo_manager,
                                      std::map<int32_t, std::vector<std::pair<Point<int32_t>, Point<int32_t>>>> net_id_to_points_map,
                                      std::vector<std::string> moved_inst_list)
 {
-  std::vector<eval::TimingNet*> timing_net_list;
+  std::vector<ieval::TimingNet*> timing_net_list;
   timing_net_list.reserve(net_id_to_points_map.size());
 
   for (auto net_pair : net_id_to_points_map) {
     NetWork* network = topo_manager->findNetworkById(net_pair.first);
-    eval::TimingNet* timing_net = generateTimingNet(network, net_pair.second);
+    ieval::TimingNet* timing_net = generateTimingNet(network, net_pair.second);
     timing_net_list.push_back(timing_net);
   }
 
-  _external_api->updateEvalTiming(timing_net_list, moved_inst_list, 3);
+  _external_api->updateEvalTiming(timing_net_list, moved_inst_list, 3, PlacerDBInst.get_layout()->get_database_unit());
 }
 
 float PLAPI::obtainPinCap(std::string inst_pin_name)
@@ -305,20 +300,20 @@ float PLAPI::obtainInstOutPinRes(std::string inst_name, std::string port_name)
   return _external_api->obtainInstOutPinRes(cell_name, port_name);
 }
 
-eval::TimingNet* PLAPI::generateTimingNet(NetWork* network,
-                                          const std::vector<std::pair<ipl::Point<int32_t>, ipl::Point<int32_t>>>& point_pair_list)
+ieval::TimingNet* PLAPI::generateTimingNet(NetWork* network,
+                                           const std::vector<std::pair<ipl::Point<int32_t>, ipl::Point<int32_t>>>& point_pair_list)
 {
-  eval::TimingNet* timing_net = new eval::TimingNet();
-  timing_net->set_name(network->get_name());
+  ieval::TimingNet* timing_net = new ieval::TimingNet();
+  timing_net->net_name = network->get_name();
   std::map<Point<int32_t>, Node*, PointCMP> point_to_node;
-  std::map<Point<int32_t>, eval::TimingPin*, PointCMP> point_to_timing_pin;
+  std::map<Point<int32_t>, ieval::TimingPin*, PointCMP> point_to_timing_pin;
   for (auto* node : network->get_node_list()) {
     const auto& node_loc = node->get_location();
     auto iter = point_to_node.find(node_loc);
     if (iter != point_to_node.end()) {
       auto* timing_pin_1 = wrapTimingTruePin(node);
       auto* timing_pin_2 = wrapTimingTruePin(iter->second);
-      timing_net->add_pin_pair(timing_pin_1, timing_pin_2);
+      timing_net->pin_pair_list.push_back(std::make_pair(timing_pin_1, timing_pin_2));
     } else {
       point_to_node.emplace(node_loc, node);
     }
@@ -329,8 +324,8 @@ eval::TimingNet* PLAPI::generateTimingNet(NetWork* network,
     if (point_pair.first == point_pair.second) {
       continue;
     }
-    eval::TimingPin* timing_pin_1 = nullptr;
-    eval::TimingPin* timing_pin_2 = nullptr;
+    ieval::TimingPin* timing_pin_1 = nullptr;
+    ieval::TimingPin* timing_pin_2 = nullptr;
     auto iter_1 = point_to_node.find(point_pair.first);
     if (iter_1 != point_to_node.end()) {
       auto iter_1_1 = point_to_timing_pin.find(point_pair.first);
@@ -367,7 +362,7 @@ eval::TimingNet* PLAPI::generateTimingNet(NetWork* network,
         point_to_timing_pin.emplace(point_pair.second, timing_pin_2);
       }
     }
-    timing_net->add_pin_pair(timing_pin_1, timing_pin_2);
+    timing_net->pin_pair_list.push_back(std::make_pair(timing_pin_1, timing_pin_2));
   }
   return timing_net;
 }
@@ -632,10 +627,6 @@ void PLAPI::initSTA(std::string path, bool init_log)
   _external_api->initSTA(path, init_log);
 }
 
-void PLAPI::initEval()
-{
-  _external_api->initEval();
-}
 void PLAPI::updateSTATiming()
 {
   _external_api->updateSTATiming();
@@ -1003,37 +994,29 @@ std::vector<float> PLAPI::obtainNetCong(std::string rudy_type)
   return _external_api->obtainNetCong(rudy_type);
 }
 
-eval::TimingPin* wrapTimingTruePin(Node* node)
+ieval::TimingPin* wrapTimingTruePin(Node* node)
 {
-  eval::TimingPin* timing_pin = new eval::TimingPin();
-  timing_pin->set_name(node->get_name());
-  timing_pin->set_coord(eval::Point<int64_t>(node->get_location().get_x(), node->get_location().get_y()));
-  timing_pin->set_is_real_pin(true);
+  ieval::TimingPin* timing_pin = new ieval::TimingPin();
+  timing_pin->pin_name = node->get_name();
+  timing_pin->x = node->get_location().get_x();
+  timing_pin->y = node->get_location().get_y();
+  timing_pin->is_real_pin = true;
 
   return timing_pin;
 }
 
-eval::TimingPin* wrapTimingFakePin(int id, Point<int32_t> coordi)
+ieval::TimingPin* wrapTimingFakePin(int id, Point<int32_t> coordi)
 {
-  eval::TimingPin* timing_pin = new eval::TimingPin();
-  timing_pin->set_name("fake_" + std::to_string(id));
-  timing_pin->set_id(id);
-  timing_pin->set_coord(eval::Point<int64_t>(coordi.get_x(), coordi.get_y()));
-  timing_pin->set_is_real_pin(false);
+  ieval::TimingPin* timing_pin = new ieval::TimingPin();
+  timing_pin->pin_name = "fake_" + std::to_string(id);
+  timing_pin->pin_id = id;
+  timing_pin->x = coordi.get_x();
+  timing_pin->y = coordi.get_y();
+  timing_pin->is_real_pin = false;
+
+
 
   return timing_pin;
-}
-
-eval::CongPin* wrapCongPin(ipl::Pin* ipl_pin)
-{
-  eval::CongPin* cong_pin = new eval::CongPin();
-  cong_pin->set_name(ipl_pin->get_name());
-  int64_t x = ipl_pin->get_center_coordi().get_x();
-  int64_t y = ipl_pin->get_center_coordi().get_y();
-  cong_pin->set_x(x);
-  cong_pin->set_y(y);
-  cong_pin->set_coord(eval::Point<int64_t>(x, y));
-  return cong_pin;
 }
 
 ieda_feature::PlaceSummary PLAPI::outputSummary(std::string step)
@@ -1046,10 +1029,6 @@ ieda_feature::PlaceSummary PLAPI::outputSummary(std::string step)
   auto HPWL = PlacerDBInst.PL_HPWL;
   auto STWL = PlacerDBInst.PL_STWL;
   auto GRWL = PlacerDBInst.PL_GRWL;
-
-  auto hpwl_eval = PlacerDBInst.hpwl_eval;
-  auto stwl_eval = PlacerDBInst.stwl_eval;
-  auto grwl_eval = PlacerDBInst.grwl_eval;
 
   auto congestion = PlacerDBInst.congestion;
   auto tns = PlacerDBInst.tns;
@@ -1064,10 +1043,6 @@ ieda_feature::PlaceSummary PLAPI::outputSummary(std::string step)
     summary.gplace.STWL = STWL[0];
     summary.gplace.GRWL = GRWL[0];
 
-    summary.gplace.hpwl_eval = hpwl_eval[0];
-    summary.gplace.stwl_eval = stwl_eval[0];
-    summary.gplace.grwl_eval = grwl_eval[0];
-
     summary.gplace.congestion = congestion[0];
     summary.gplace.tns = tns[0];
     summary.gplace.wns = wns[0];
@@ -1079,9 +1054,6 @@ ieda_feature::PlaceSummary PLAPI::outputSummary(std::string step)
     summary.dplace.STWL = STWL[1];
     summary.dplace.GRWL = GRWL[1];
 
-    summary.dplace.hpwl_eval = hpwl_eval[1];
-    summary.dplace.stwl_eval = stwl_eval[1];
-    summary.dplace.grwl_eval = grwl_eval[1];
     summary.dplace.congestion = congestion[1];
     summary.dplace.tns = tns[1];
     summary.dplace.wns = wns[1];
@@ -1115,9 +1087,6 @@ ieda_feature::PlaceSummary PLAPI::outputSummary(std::string step)
     summary.lg_summary.pl_common_summary.STWL = STWL[2];
     summary.lg_summary.pl_common_summary.GRWL = GRWL[2];
 
-    summary.lg_summary.pl_common_summary.hpwl_eval = hpwl_eval[2];
-    summary.lg_summary.pl_common_summary.stwl_eval = stwl_eval[2];
-    summary.lg_summary.pl_common_summary.grwl_eval = grwl_eval[2];
     summary.lg_summary.pl_common_summary.congestion = congestion[2];
     summary.lg_summary.pl_common_summary.tns = tns[2];
     summary.lg_summary.pl_common_summary.wns = wns[2];

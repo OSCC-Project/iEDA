@@ -201,9 +201,6 @@ json FeatureParser::buildSummaryPL(std::string step)
     summary_pl["gplace"]["HPWL"] = pl_summary.gplace.HPWL;
     summary_pl["gplace"]["STWL"] = pl_summary.gplace.STWL;
     summary_pl["gplace"]["GRWL"] = pl_summary.gplace.GRWL;
-    summary_pl["gplace"]["HPWL_eval"] = pl_summary.gplace.hpwl_eval;
-    summary_pl["gplace"]["STWL_eval"] = pl_summary.gplace.stwl_eval;
-    summary_pl["gplace"]["GRWL_eval"] = pl_summary.gplace.grwl_eval;
 
     summary_pl["gplace"]["congestion"] = pl_summary.gplace.congestion;
     summary_pl["gplace"]["tns"] = pl_summary.gplace.tns;
@@ -215,10 +212,6 @@ json FeatureParser::buildSummaryPL(std::string step)
     summary_pl["dplace"]["HPWL"] = pl_summary.dplace.HPWL;
     summary_pl["dplace"]["STWL"] = pl_summary.dplace.STWL;
     summary_pl["dplace"]["GRWL"] = pl_summary.dplace.GRWL;
-
-    summary_pl["dplace"]["HPWL_eval"] = pl_summary.dplace.hpwl_eval;
-    summary_pl["dplace"]["STWL_eval"] = pl_summary.dplace.stwl_eval;
-    summary_pl["dplace"]["GRWL_eval"] = pl_summary.dplace.grwl_eval;
 
     summary_pl["dplace"]["congestion"] = pl_summary.dplace.congestion;
     summary_pl["dplace"]["tns"] = pl_summary.dplace.tns;
@@ -242,10 +235,6 @@ json FeatureParser::buildSummaryPL(std::string step)
     summary_pl["legalization"]["HPWL"] = pl_summary.lg_summary.pl_common_summary.HPWL;
     summary_pl["legalization"]["STWL"] = pl_summary.lg_summary.pl_common_summary.STWL;
     summary_pl["legalization"]["GRWL"] = pl_summary.lg_summary.pl_common_summary.GRWL;
-
-    summary_pl["legalization"]["HPWL_eval"] = pl_summary.lg_summary.pl_common_summary.hpwl_eval;
-    summary_pl["legalization"]["STWL_eval"] = pl_summary.lg_summary.pl_common_summary.stwl_eval;
-    summary_pl["legalization"]["GRWL_eval"] = pl_summary.lg_summary.pl_common_summary.grwl_eval;
 
     summary_pl["legalization"]["congestion"] = pl_summary.lg_summary.pl_common_summary.congestion;
     summary_pl["legalization"]["tns"] = pl_summary.lg_summary.pl_common_summary.tns;

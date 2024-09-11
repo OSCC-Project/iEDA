@@ -54,19 +54,14 @@ class Point;
 class TopologyManager;
 }  // namespace ipl
 
-namespace eval {
-class EvalAPI;
-class TimingPin;
-class TimingNet;
-class CongGrid;
-class CongInst;
-class CongPin;
-
-}  // namespace eval
 
 namespace ieval {
+
 struct TotalWLSummary;
-}
+struct TimingNet;
+struct TimingPin;
+
+}  // namespace ieval
 
 namespace ista {
 enum class AnalysisMode;

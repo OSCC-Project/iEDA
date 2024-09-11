@@ -40,7 +40,6 @@ class ExternalAPI
   bool isSTAStarted();
   void modifySTAOutputDir(std::string path);
   void initSTA(std::string path, bool init_log);
-  void initEval();
   void updateSTATiming();
   std::vector<std::string> obtainClockNameList();
   bool isClockNet(std::string net_name);
@@ -50,7 +49,6 @@ class ExternalAPI
   bool insertSignalBuffer(std::pair<std::string, std::string> source_sink_net, std::vector<std::string> sink_pin_list,
                           std::pair<std::string, std::string> master_inst_buffer, std::pair<int, int> buffer_center_loc);
 
-  void initTimingEval(int32_t unit);
   double obtainPinEarlySlack(std::string pin_name);
   double obtainPinLateSlack(std::string pin_name);
   double obtainPinEarlyArrivalTime(std::string pin_name);
@@ -60,9 +58,9 @@ class ExternalAPI
   double obtainWNS(const char* clock_name, ista::AnalysisMode mode);
   double obtainTNS(const char* clock_name, ista::AnalysisMode mode);
   double obtainTargetClockPeriodNS(std::string clock_name);
-  void updateEvalTiming(const std::vector<eval::TimingNet*>& timing_net_list);
-  void updateEvalTiming(const std::vector<eval::TimingNet*>& timing_net_list, const std::vector<std::string>& name_list,
-                        const int& propagation_level);
+  void updateEvalTiming(const std::vector<ieval::TimingNet*>& timing_net_list, int32_t dbu_unit);
+  void updateEvalTiming(const std::vector<ieval::TimingNet*>& timing_net_list, const std::vector<std::string>& name_list,
+                        const int& propagation_level, int32_t dbu_unit);
   float obtainPinCap(std::string inst_pin_name);
   float obtainAvgWireResUnitLengthUm();
   float obtainAvgWireCapUnitLengthUm();

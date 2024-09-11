@@ -31,6 +31,8 @@
 #include "idm.h"
 #include "salt/base/flute.h"
 #include "salt/salt.h"
+#include "timing_db.hh"
+
 namespace ieval {
 #define STA_INST (ista::TimingEngine::getOrCreateTimingEngine())
 #define RT_INST (irt::RTInterface::getInst())
@@ -298,6 +300,260 @@ void InitSTA::updateResult(const std::string& routing_type)
   }
   _power[routing_type]["static_power"] = static_power;
   _power[routing_type]["dynamic_power"] = dynamic_power;
+}
+
+double InitSTA::getEarlySlack(const std::string& pin_name) const
+{
+  double early_slack = 0;
+
+  auto rise_value = STA_INST->getSlack(pin_name.c_str(), ista::AnalysisMode::kMin, ista::TransType::kRise);
+  auto fall_value = STA_INST->getSlack(pin_name.c_str(), ista::AnalysisMode::kMin, ista::TransType::kFall);
+
+  if (rise_value == std::nullopt || fall_value == std::nullopt) {
+    return DBL_MAX;
+  }
+
+  early_slack = std::min(rise_value.value(), fall_value.value());
+
+  return early_slack;
+}
+
+double InitSTA::getLateSlack(const std::string& pin_name) const
+{
+  double late_slack = 0;
+
+  auto rise_value = STA_INST->getSlack(pin_name.c_str(), ista::AnalysisMode::kMax, ista::TransType::kRise);
+  auto fall_value = STA_INST->getSlack(pin_name.c_str(), ista::AnalysisMode::kMax, ista::TransType::kFall);
+
+  if (rise_value == std::nullopt || fall_value == std::nullopt) {
+    return DBL_MAX;
+  }
+
+  late_slack = std::min(rise_value.value(), fall_value.value());
+
+  return late_slack;
+}
+
+double InitSTA::getArrivalEarlyTime(const std::string& pin_name) const
+{
+  double arrival_early_time = 0;
+
+  auto rise_value = STA_INST->getAT(pin_name.c_str(), ista::AnalysisMode::kMin, ista::TransType::kRise);
+  auto fall_value = STA_INST->getAT(pin_name.c_str(), ista::AnalysisMode::kMin, ista::TransType::kFall);
+
+  if (rise_value == std::nullopt || fall_value == std::nullopt) {
+    return DBL_MIN;
+  }
+
+  arrival_early_time = std::min(rise_value.value(), fall_value.value());
+
+  return arrival_early_time;
+}
+
+double InitSTA::getArrivalLateTime(const std::string& pin_name) const
+{
+  double arrival_late_time = 0;
+
+  auto rise_value = STA_INST->getAT(pin_name.c_str(), ista::AnalysisMode::kMax, ista::TransType::kRise);
+  auto fall_value = STA_INST->getAT(pin_name.c_str(), ista::AnalysisMode::kMax, ista::TransType::kFall);
+
+  if (rise_value == std::nullopt || fall_value == std::nullopt) {
+    return DBL_MIN;
+  }
+
+  arrival_late_time = std::max(rise_value.value(), fall_value.value());
+
+  return arrival_late_time;
+}
+
+double InitSTA::getRequiredEarlyTime(const std::string& pin_name) const
+{
+  double required_early_time = 0;
+
+  auto rise_value = STA_INST->getRT(pin_name.c_str(), ista::AnalysisMode::kMin, ista::TransType::kRise);
+  auto fall_value = STA_INST->getRT(pin_name.c_str(), ista::AnalysisMode::kMin, ista::TransType::kFall);
+
+  if (rise_value == std::nullopt || fall_value == std::nullopt) {
+    return DBL_MAX;
+  }
+
+  required_early_time = std::max(rise_value.value(), fall_value.value());
+
+  return required_early_time;
+}
+
+double InitSTA::getRequiredLateTime(const std::string& pin_name) const
+{
+  double required_late_time = 0;
+
+  auto rise_value = STA_INST->getRT(pin_name.c_str(), ista::AnalysisMode::kMax, ista::TransType::kRise);
+  auto fall_value = STA_INST->getRT(pin_name.c_str(), ista::AnalysisMode::kMax, ista::TransType::kFall);
+
+  if (rise_value == std::nullopt || fall_value == std::nullopt) {
+    return DBL_MAX;
+  }
+
+  required_late_time = std::min(rise_value.value(), fall_value.value());
+
+  return required_late_time;
+}
+
+double InitSTA::reportWNS(const char* clock_name, ista::AnalysisMode mode)
+{
+  return STA_INST->getWNS(clock_name, mode);
+}
+
+double InitSTA::reportTNS(const char* clock_name, ista::AnalysisMode mode)
+{
+  return STA_INST->getTNS(clock_name, mode);
+}
+
+void InitSTA::updateTiming(const std::vector<TimingNet*>& timing_net_list, int32_t dbu_unit)
+{
+  // get sta_netlist
+  auto netlist = STA_INST->get_netlist();
+
+  // reset rc info in timing graph
+  STA_INST->get_ista()->resetAllRcNet();
+
+  for (auto& eval_net : timing_net_list) {
+    ista::Net* ista_net = netlist->findNet(eval_net->net_name.c_str());
+
+    std::vector<std::pair<TimingPin*, TimingPin*>> pin_pair_list = eval_net->pin_pair_list;
+
+    for (auto pin_pair : pin_pair_list) {
+      TimingPin* first_pin = pin_pair.first;
+      TimingPin* second_pin = pin_pair.second;
+
+      ista::RctNode* first_node = nullptr;
+      ista::RctNode* second_node = nullptr;
+
+      if (first_pin->is_real_pin) {
+        ista::DesignObject* pin_port = nullptr;
+        auto pin_port_list = netlist->findPin(first_pin->pin_name.c_str(), false, false);
+        if (!pin_port_list.empty()) {
+          pin_port = pin_port_list.front();
+        } else {
+          pin_port = netlist->findPort(first_pin->pin_name.c_str());
+        }
+        first_node = STA_INST->makeOrFindRCTreeNode(pin_port);
+      } else {
+        first_node = STA_INST->makeOrFindRCTreeNode(ista_net, first_pin->pin_id);
+      }
+
+      if (second_pin->is_real_pin) {
+        ista::DesignObject* pin_port = nullptr;
+        auto pin_port_list = netlist->findPin(second_pin->pin_name.c_str(), false, false);
+        if (!pin_port_list.empty()) {
+          pin_port = pin_port_list.front();
+        } else {
+          pin_port = netlist->findPort(second_pin->pin_name.c_str());
+        }
+        second_node = STA_INST->makeOrFindRCTreeNode(pin_port);
+      } else {
+        second_node = STA_INST->makeOrFindRCTreeNode(ista_net, second_pin->pin_id);
+      }
+
+      int64_t wire_length = 0;
+      wire_length = std::abs(first_pin->x - second_pin->x) + std::abs(first_pin->y - second_pin->y);
+      // wire_length = first_pin->get_coord().computeDist(second_pin->get_coord());
+
+      std::optional<double> width = std::nullopt;
+
+      // if (_unit == -1) {
+      //   _unit = 1000;
+      //   std::cout << "Setting the default unit as 1000" << std::endl;
+      // }
+
+      double cap
+          = dynamic_cast<ista::TimingIDBAdapter*>(STA_INST->get_db_adapter())->getCapacitance(1, wire_length / 1.0 / dbu_unit, width);
+      double res = dynamic_cast<ista::TimingIDBAdapter*>(STA_INST->get_db_adapter())->getResistance(1, wire_length / 1.0 / dbu_unit, width);
+
+      // // tmp for test
+      // double cap = (wire_length / 1.0 / _unit) * 1.6e-16;
+      // double res = (wire_length / 1.0 / _unit) * 2.535;
+
+      STA_INST->makeResistor(ista_net, first_node, second_node, res);
+      STA_INST->incrCap(first_node, cap / 2);
+      STA_INST->incrCap(second_node, cap / 2);
+    }
+    STA_INST->updateRCTreeInfo(ista_net);
+  }
+  STA_INST->updateTiming();
+  STA_INST->reportTiming();
+}
+
+void InitSTA::updateTiming(const std::vector<TimingNet*>& timing_net_list, const std::vector<std::string>& name_list,
+                           const int& propagation_level, int32_t dbu_unit)
+{
+  // get sta_netlist
+  auto netlist = STA_INST->get_netlist();
+
+  for (auto& eval_net : timing_net_list) {
+    ista::Net* ista_net = netlist->findNet(eval_net->net_name.c_str());
+
+    // reset rc info in timing graph
+    STA_INST->get_ista()->resetRcNet(ista_net);
+
+    std::vector<std::pair<TimingPin*, TimingPin*>> pin_pair_list = eval_net->pin_pair_list;
+
+    for (auto pin_pair : pin_pair_list) {
+      TimingPin* first_pin = pin_pair.first;
+      TimingPin* second_pin = pin_pair.second;
+
+      ista::RctNode* first_node = nullptr;
+      ista::RctNode* second_node = nullptr;
+
+      if (first_pin->is_real_pin) {
+        ista::DesignObject* pin_port = nullptr;
+        auto pin_port_list = netlist->findPin(first_pin->pin_name.c_str(), false, false);
+        if (!pin_port_list.empty()) {
+          pin_port = pin_port_list.front();
+        } else {
+          pin_port = netlist->findPort(first_pin->pin_name.c_str());
+        }
+        first_node = STA_INST->makeOrFindRCTreeNode(pin_port);
+      } else {
+        first_node = STA_INST->makeOrFindRCTreeNode(ista_net, first_pin->pin_id);
+      }
+
+      if (second_pin->is_real_pin) {
+        ista::DesignObject* pin_port = nullptr;
+        auto pin_port_list = netlist->findPin(second_pin->pin_name.c_str(), false, false);
+        if (!pin_port_list.empty()) {
+          pin_port = pin_port_list.front();
+        } else {
+          pin_port = netlist->findPort(second_pin->pin_name.c_str());
+        }
+        second_node = STA_INST->makeOrFindRCTreeNode(pin_port);
+      } else {
+        second_node = STA_INST->makeOrFindRCTreeNode(ista_net, second_pin->pin_id);
+      }
+
+      // int64_t wire_length = 0;
+      // wire_length = first_pin->get_coord().computeDist(second_pin->get_coord());
+      int64_t wire_length = 0;
+      wire_length = std::abs(first_pin->x - second_pin->x) + std::abs(first_pin->y - second_pin->y);
+
+      std::optional<double> width = std::nullopt;
+
+      double cap
+          = dynamic_cast<ista::TimingIDBAdapter*>(STA_INST->get_db_adapter())->getCapacitance(1, wire_length / 1.0 / dbu_unit, width);
+      double res = dynamic_cast<ista::TimingIDBAdapter*>(STA_INST->get_db_adapter())->getResistance(1, wire_length / 1.0 / dbu_unit, width);
+
+      STA_INST->makeResistor(ista_net, first_node, second_node, res);
+      STA_INST->incrCap(first_node, cap / 2);
+      STA_INST->incrCap(second_node, cap / 2);
+    }
+    STA_INST->updateRCTreeInfo(ista_net);
+  }
+
+  for (auto& name : name_list) {
+    STA_INST->moveInstance(name.c_str(), propagation_level);
+  }
+
+  // STA_INST->incrUpdateTiming();
+  STA_INST->updateTiming();
 }
 
 }  // namespace ieval
