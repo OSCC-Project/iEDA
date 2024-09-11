@@ -31,7 +31,8 @@ source $::env(TCL_SCRIPT_DIR)/DB_script/db_init_lef.tcl
 #===========================================================
 ##   read def
 #===========================================================
-def_init -path $::env(RESULT_DIR)/iTO_fix_fanout_result.def
+set DEFAULT_INPUT_DEF "$::env(RESULT_DIR)/iTO_fix_fanout_result.def"
+def_init -path [expr {[info exists ::env(INPUT_DEF)]? $::env(INPUT_DEF) : $DEFAULT_INPUT_DEF}]
 
 #===========================================================
 ##   run Placer
@@ -41,12 +42,13 @@ run_placer -config $::env(CONFIG_DIR)/pl_default_config.json
 #===========================================================
 ##   save def 
 #===========================================================
-def_save -path $::env(RESULT_DIR)/iPL_result.def
+set DEFAULT_OUTPUT_DEF "$::env(RESULT_DIR)/iPL_result.def"
+def_save -path [expr {[info exists ::env(OUTPUT_DEF)] ? $::env(OUTPUT_DEF) : $DEFAULT_OUTPUT_DEF}]
 
 #===========================================================
 ##   save netlist 
 #===========================================================
-netlist_save -path $::env(RESULT_DIR)/iPL_result.v -exclude_cell_names {}
+# netlist_save -path $::env(RESULT_DIR)/iPL_result.v -exclude_cell_names {}
 
 #===========================================================
 ##   report 
