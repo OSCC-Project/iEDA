@@ -23,9 +23,6 @@ set(HOME_OPERATION ${PROJECT_SOURCE_DIR}/src/operation)
 set(HOME_PLATFORM ${PROJECT_SOURCE_DIR}/src/platform)
 
 #evaluation settings
-set(HOME_EVALUATION ${PROJECT_SOURCE_DIR}/src/evaluation)
-
-#evaluation settings
 set(HOME_EVALUATION_PRO ${PROJECT_SOURCE_DIR}/src/evaluation_pro)
 
 #analysis settings
