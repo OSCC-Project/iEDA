@@ -31,7 +31,6 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#include "EvalAPI.hpp"
 #include "Evaluator.hh"
 #include "feature_parser.h"
 #include "feature_summary.h"
@@ -50,26 +49,26 @@ namespace ieda_feature {
 
 bool FeatureParser::buildSummaryMap(std::string csv_path, int bin_cnt_x, int bin_cnt_y)
 {
-  eval::EvalAPI& eval_api = eval::EvalAPI::initInst();
-  eval_api.initCongDataFromIDB(bin_cnt_x, bin_cnt_y);
+  // eval::EvalAPI& eval_api = eval::EvalAPI::initInst();
+  // eval_api.initCongDataFromIDB(bin_cnt_x, bin_cnt_y);
 
-  auto inst_status = eval::INSTANCE_STATUS::kFixed;
-  eval_api.evalInstDens(inst_status);
-  eval_api.plotBinValue(csv_path, "macro_density", eval::CONGESTION_TYPE::kInstDens);
-  eval_api.evalPinDens(inst_status);
-  eval_api.plotBinValue(csv_path, "macro_pin_density", eval::CONGESTION_TYPE::kPinDens);
-  eval_api.evalNetDens(inst_status);
-  eval_api.plotBinValue(csv_path, "macro_net_density", eval::CONGESTION_TYPE::kNetCong);
+  // auto inst_status = eval::INSTANCE_STATUS::kFixed;
+  // eval_api.evalInstDens(inst_status);
+  // eval_api.plotBinValue(csv_path, "macro_density", eval::CONGESTION_TYPE::kInstDens);
+  // eval_api.evalPinDens(inst_status);
+  // eval_api.plotBinValue(csv_path, "macro_pin_density", eval::CONGESTION_TYPE::kPinDens);
+  // eval_api.evalNetDens(inst_status);
+  // eval_api.plotBinValue(csv_path, "macro_net_density", eval::CONGESTION_TYPE::kNetCong);
 
-  eval_api.plotMacroChannel(0.5, csv_path + "macro_channel.csv");
-  eval_api.evalMacroMargin();
-  eval_api.plotBinValue(csv_path, "macro_margin_h", eval::CONGESTION_TYPE::kMacroMarginH);
-  eval_api.plotBinValue(csv_path, "macro_margin_v", eval::CONGESTION_TYPE::kMacroMarginV);
-  double space_ratio = eval_api.evalMaxContinuousSpace();
-  eval_api.plotBinValue(csv_path, "macro_continuous_white_space", eval::CONGESTION_TYPE::kContinuousWS);
-  eval_api.evalIOPinAccess(csv_path + "io_pin_access.csv");
+  // eval_api.plotMacroChannel(0.5, csv_path + "macro_channel.csv");
+  // eval_api.evalMacroMargin();
+  // eval_api.plotBinValue(csv_path, "macro_margin_h", eval::CONGESTION_TYPE::kMacroMarginH);
+  // eval_api.plotBinValue(csv_path, "macro_margin_v", eval::CONGESTION_TYPE::kMacroMarginV);
+  // double space_ratio = eval_api.evalMaxContinuousSpace();
+  // eval_api.plotBinValue(csv_path, "macro_continuous_white_space", eval::CONGESTION_TYPE::kContinuousWS);
+  // eval_api.evalIOPinAccess(csv_path + "io_pin_access.csv");
 
-  std::cout << std::endl << "Save feature map success, path = " << csv_path << std::endl;
+  // std::cout << std::endl << "Save feature map success, path = " << csv_path << std::endl;
   return true;
 }
 

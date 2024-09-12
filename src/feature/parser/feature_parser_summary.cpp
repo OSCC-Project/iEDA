@@ -31,7 +31,6 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#include "EvalAPI.hpp"
 #include "IdbCore.h"
 #include "IdbDesign.h"
 #include "IdbDie.h"
@@ -197,12 +196,12 @@ json FeatureParser::buildSummaryMacrosStatis()
 {
   json summary_macro;
 
-  eval::EvalAPI& eval_api = eval::EvalAPI::initInst();
-  eval_api.initCongDataFromIDB(256, 256);
+  // eval::EvalAPI& eval_api = eval::EvalAPI::initInst();
+  // eval_api.initCongDataFromIDB(256, 256);
 
-  summary_macro["Channel Util"] = eval_api.evalMacroChannelUtil(0.5);
-  summary_macro["Channel Pin Util"] = eval_api.evalMacroChannelPinRatio(0.5);
-  summary_macro["Max Continuous White Space Ratio"] = eval_api.evalMaxContinuousSpace();
+  // summary_macro["Channel Util"] = eval_api.evalMacroChannelUtil(0.5);
+  // summary_macro["Channel Pin Util"] = eval_api.evalMacroChannelPinRatio(0.5);
+  // summary_macro["Max Continuous White Space Ratio"] = eval_api.evalMaxContinuousSpace();
   return summary_macro;
 }
 
@@ -210,25 +209,25 @@ json FeatureParser::buildSummaryMacros()
 {
   json summary_macro;
 
-  int dbu = _design->get_units()->get_micron_dbu() < 0 ? _layout->get_units()->get_micron_dbu() : _design->get_units()->get_micron_dbu();
+  // int dbu = _design->get_units()->get_micron_dbu() < 0 ? _layout->get_units()->get_micron_dbu() : _design->get_units()->get_micron_dbu();
 
-  eval::EvalAPI& eval_api = eval::EvalAPI::initInst();
-  // eval_api.initCongDataFromIDB(256, 256);
+  // eval::EvalAPI& eval_api = eval::EvalAPI::initInst();
+  // // eval_api.initCongDataFromIDB(256, 256);
 
-  auto macro_list = eval_api.evalMacrosInfo();
+  // auto macro_list = eval_api.evalMacrosInfo();
 
-  for (int i = 0; i < (int) macro_list.size(); i++) {
-    summary_macro[i]["Type"] = std::get<std::string>(macro_list[i]["Type"]);
-    summary_macro[i]["Orient"] = std::get<std::string>(macro_list[i]["Orient"]);
-    summary_macro[i]["Area"] = std::get<float>(macro_list[i]["Area"]) / dbu / dbu;
-    summary_macro[i]["Area Ratio"] = std::get<float>(macro_list[i]["Area Ratio"]);
-    summary_macro[i]["Lx"] = std::get<float>(macro_list[i]["Lx"]) / dbu;
-    summary_macro[i]["Ly"] = std::get<float>(macro_list[i]["Ly"]) / dbu;
-    summary_macro[i]["Width"] = std::get<float>(macro_list[i]["Width"]) / dbu;
-    summary_macro[i]["Height"] = std::get<float>(macro_list[i]["Height"]) / dbu;
-    summary_macro[i]["#Pins"] = std::get<float>(macro_list[i]["#Pins"]);
-    summary_macro[i]["Peri Bias"] = std::get<float>(macro_list[i]["Peri Bias"]) / dbu / dbu;
-  }
+  // for (int i = 0; i < (int) macro_list.size(); i++) {
+  //   summary_macro[i]["Type"] = std::get<std::string>(macro_list[i]["Type"]);
+  //   summary_macro[i]["Orient"] = std::get<std::string>(macro_list[i]["Orient"]);
+  //   summary_macro[i]["Area"] = std::get<float>(macro_list[i]["Area"]) / dbu / dbu;
+  //   summary_macro[i]["Area Ratio"] = std::get<float>(macro_list[i]["Area Ratio"]);
+  //   summary_macro[i]["Lx"] = std::get<float>(macro_list[i]["Lx"]) / dbu;
+  //   summary_macro[i]["Ly"] = std::get<float>(macro_list[i]["Ly"]) / dbu;
+  //   summary_macro[i]["Width"] = std::get<float>(macro_list[i]["Width"]) / dbu;
+  //   summary_macro[i]["Height"] = std::get<float>(macro_list[i]["Height"]) / dbu;
+  //   summary_macro[i]["#Pins"] = std::get<float>(macro_list[i]["#Pins"]);
+  //   summary_macro[i]["Peri Bias"] = std::get<float>(macro_list[i]["Peri Bias"]) / dbu / dbu;
+  // }
 
   return summary_macro;
 }
