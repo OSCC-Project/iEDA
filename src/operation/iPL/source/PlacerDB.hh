@@ -106,9 +106,9 @@ class PlacerDB
   int64_t PL_HPWL[3] = {0, 0, 0};
   int64_t PL_STWL[3] = {0, 0, 0};
   int64_t PL_GRWL[3] = {0, 0, 0};
-  float congestion[3] = {0.0f, 0.0f, 0.0f};
-  int32_t egr_tof[3] = {0, 0, 0};
-  int32_t egr_mof[3] = {0, 0, 0};
+  int32_t egr_tof[3] = {0,0,0};
+  int32_t egr_mof[3] = {0,0,0};
+  float egr_ace[3] = {0.0f, 0.0f, 0.0f};
   float tns[3] = {0.0f, 0.0f, 0.0f};
   float wns[3] = {0.0f, 0.0f, 0.0f};
   float suggest_freq[3] = {0.0f, 0.0f, 0.0f};

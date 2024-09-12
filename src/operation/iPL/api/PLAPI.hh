@@ -149,15 +149,6 @@ class PLAPI
 
   /*****************************Timing-driven Placement: END*****************************/
 
-  /*****************************Congestion-driven Placement: START*****************************/
-  std::vector<float> obtainPinDens(int32_t grid_cnt_x, int32_t grid_cnt_y);
-  std::vector<float> obtainNetCong(std::string rudy_type);
-  std::vector<float> evalGRCong();
-  int64_t evalEGRWL();
-  std::vector<float> getUseCapRatioList();
-  void plotCongMap(const std::string& plot_path, const std::string& output_file_name);
-  void destroyCongEval();
-  /*****************************Congestion-driven Placement: END*****************************/
   ieda_feature::PlaceSummary outputSummary(std::string step);
 
  private:

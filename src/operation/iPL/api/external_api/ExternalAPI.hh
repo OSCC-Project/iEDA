@@ -68,22 +68,12 @@ class ExternalAPI
   void destroyTimingEval();
   /*****************************Timing Interface: END*******************************/
 
-  /*****************************Routing Interface: START*****************************/
-  std::vector<float> obtainPinDens(int32_t grid_cnt_x, int32_t grid_cnt_y);
-  std::vector<float> obtainNetCong(std::string rudy_type);
-  std::vector<float> evalGRCong();
-  int64_t evalEGRWL();
-  float evalproCongestion();
-  int32_t evalprohpWL();
-  int32_t evalproflute();
-  ieval::TotalWLSummary evalproWL(std::vector<std::vector<std::pair<int32_t, int32_t>>> point_sets);
-  int32_t evalproGRWL();
+  /*****************************Congestion Interface: START*****************************/
   ieval::TotalWLSummary evalproIDBWL();
-
-  std::vector<float> getUseCapRatioList();
-  void plotCongMap(const std::string& plot_path, const std::string& output_file_name);
+  ieval::OverflowSummary evalproCongestion();
+  float obtainPeakAvgPinDens();  // return max/average
   void destroyCongEval();
-  /*****************************Routing Interface: END*******************************/
+  /*****************************Congestion Interface: END*******************************/
 
   /*****************************Report Interface: START*****************************/
   std::unique_ptr<ieda::ReportTable> generateTable(const std::string& name);

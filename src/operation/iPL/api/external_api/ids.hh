@@ -54,12 +54,14 @@ class Point;
 class TopologyManager;
 }  // namespace ipl
 
-
 namespace ieval {
-
+// wirelength
 struct TotalWLSummary;
+// timing
 struct TimingNet;
 struct TimingPin;
+// congestion
+struct OverflowSummary;
 
 }  // namespace ieval
 

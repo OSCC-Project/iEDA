@@ -39,12 +39,12 @@
 #include "PostGP.hh"
 #include "RandomPlace.hh"
 #include "SteinerWirelength.hh"
+#include "congestion_db.h"
 #include "feature_ipl.h"
-#include "src/MapFiller.h"
-#include "wirelength_db.h"
-
 #include "netlist/Net.hh"
+#include "src/MapFiller.h"
 #include "timing_db.hh"
+#include "wirelength_db.h"
 
 namespace ipl {
 
@@ -538,56 +538,31 @@ void PLAPI::runNetworkFlowSpread()
 
 void PLAPI::notifyPLWLInfo(int stage)
 {
-  HPWirelength hpwl(PlacerDBInst.get_topo_manager());
-  SteinerWirelength stwl(PlacerDBInst.get_topo_manager());
-  stwl.updateAllNetWorkPointPair();
+  // 1. origin method
+  // HPWirelength hpwl(PlacerDBInst.get_topo_manager());
+  // SteinerWirelength stwl(PlacerDBInst.get_topo_manager());
+  // stwl.updateAllNetWorkPointPair();
+  // PlacerDBInst.PL_HPWL[stage] = hpwl.obtainTotalWirelength();
+  // PlacerDBInst.PL_STWL[stage] = stwl.obtainTotalWirelength();
 
-  PlacerDBInst.PL_HPWL[stage] = hpwl.obtainTotalWirelength();
-  PlacerDBInst.PL_STWL[stage] = stwl.obtainTotalWirelength();
-
-  // method 1, most work in eval tool, from iDB data to eval tool
-  // this->writeBackSourceDataBase();
-  // ieval::TotalWLSummary wl_summary = _external_api->evalproIDBWL();
-  // PlacerDBInst.hpwl_eval[stage] = wl_summary.HPWL;
-  // PlacerDBInst.stwl_eval[stage] = wl_summary.FLUTE;
-  // PlacerDBInst.grwl_eval[stage] = wl_summary.GRWL;
-
-  // // method 2, most work in point tool
-  // std::vector<std::vector<std::pair<int32_t, int32_t>>> point_sets;
-  // point_sets = hpwl.constructPointSets();
-  // ieval::TotalWLSummary wl_summary = _external_api->evalproWL(point_sets);
-  // PlacerDBInst.hpwl_eval[stage] = wl_summary.HPWL;
-  // PlacerDBInst.stwl_eval[stage] = wl_summary.FLUTE;
-  // this->writeBackSourceDataBase();
-  // PlacerDBInst.grwl_eval[stage] = _external_api->evalproGRWL() * PlacerDBInst.get_layout()->get_database_unit();
+  // 2. most work in evalpro
+  this->writeBackSourceDataBase();
+  ieval::TotalWLSummary wl_summary = _external_api->evalproIDBWL();
+  PlacerDBInst.PL_HPWL[stage] = wl_summary.HPWL;
+  PlacerDBInst.PL_STWL[stage] = wl_summary.FLUTE;
+  PlacerDBInst.PL_GRWL[stage] = wl_summary.GRWL;
 }
 
 void PLAPI::notifyPLCongestionInfo(int stage)
 {
-  // // special operator
-  // _external_api->destroyCongEval();
-
-  // this->writeBackSourceDataBase();
-
-  // std::vector<float> gr_congestion = this->evalGRCong();  // return <ACE, TOF, MOF, egr-Wirelength>
-  // PlacerDBInst.congestion[stage] = gr_congestion[1];
-  // PlacerDBInst.PL_GRWL[stage] = gr_congestion[3];
-
-  // int32_t grid_cnt_x = PlacerDBInst.get_placer_config()->get_nes_config().get_bin_cnt_x();
-  // int32_t grid_cnt_y = PlacerDBInst.get_placer_config()->get_nes_config().get_bin_cnt_y();
-  // std::vector<float> pin_dens
-  //     = this->obtainPinDens(grid_cnt_x, grid_cnt_y);  // return <average, peak> , average = sum / bin_cnt, peak = max / average
-  // PlacerDBInst.pin_density[stage] = pin_dens[1];
-
-  // // special operator
-  // _external_api->initTimingEval(PlacerDBInst.get_layout()->get_database_unit());
-
   this->writeBackSourceDataBase();
-  _external_api->evalproCongestion();
+  ieval::OverflowSummary overflow_summary = _external_api->evalproCongestion();
+  PlacerDBInst.egr_tof[stage] = overflow_summary.total_overflow_union;
+  PlacerDBInst.egr_mof[stage] = overflow_summary.max_overflow_union;
+  PlacerDBInst.egr_ace[stage] = overflow_summary.weighted_average_overflow_union;
 
-  // PlacerDBInst.egr_tof[stage] = this->totalOverflow();
-  // PlacerDBInst.egr_mof[stage] = this->MaxOverflow();
-  // PlacerDBInst.PL_GRWL[stage] = this->totalEGRWL();
+  float peak_average_pin_dens = _external_api->obtainPeakAvgPinDens();
+  PlacerDBInst.pin_density[stage] = peak_average_pin_dens;
 }
 
 void PLAPI::notifyPLTimingInfo(int stage)
@@ -946,54 +921,6 @@ void PLAPI::plotModuleStateForDebug(std::vector<std::string> special_inst_list, 
   _reporter->plotModuleStateForDebug(special_inst_list, path);
 }
 
-/**
- * @brief run GR based on dmInst data, evaluate 3D congestion, and return <ACE,TOF,MOF> vector
- * @return std::vector<float>
- */
-std::vector<float> PLAPI::evalGRCong()
-{
-  return _external_api->evalGRCong();
-}
-
-/**
- * @brief compute each gcellgrid routing demand/resource, and return a 2D route util map
- * @return std::vector<float>
- */
-std::vector<float> PLAPI::getUseCapRatioList()
-{
-  return _external_api->getUseCapRatioList();
-}
-
-int64_t PLAPI::evalEGRWL()
-{
-  return _external_api->evalEGRWL();
-}
-
-/**
- * @brief draw congesiton map based on GR result
- * @param  plot_path
- * @param  output_file_name
- */
-void PLAPI::plotCongMap(const std::string& plot_path, const std::string& output_file_name)
-{
-  _external_api->plotCongMap(plot_path, output_file_name);
-}
-
-void PLAPI::destroyCongEval()
-{
-  _external_api->destroyCongEval();
-}
-
-std::vector<float> PLAPI::obtainPinDens(int32_t grid_cnt_x, int32_t grid_cnt_y)
-{
-  return _external_api->obtainPinDens(grid_cnt_x, grid_cnt_y);
-}
-
-std::vector<float> PLAPI::obtainNetCong(std::string rudy_type)
-{
-  return _external_api->obtainNetCong(rudy_type);
-}
-
 ieval::TimingPin* wrapTimingTruePin(Node* node)
 {
   ieval::TimingPin* timing_pin = new ieval::TimingPin();
@@ -1014,8 +941,6 @@ ieval::TimingPin* wrapTimingFakePin(int id, Point<int32_t> coordi)
   timing_pin->y = coordi.get_y();
   timing_pin->is_real_pin = false;
 
-
-
   return timing_pin;
 }
 
@@ -1030,7 +955,10 @@ ieda_feature::PlaceSummary PLAPI::outputSummary(std::string step)
   auto STWL = PlacerDBInst.PL_STWL;
   auto GRWL = PlacerDBInst.PL_GRWL;
 
-  auto congestion = PlacerDBInst.congestion;
+  auto egr_tof = PlacerDBInst.egr_tof;
+  auto egr_mof = PlacerDBInst.egr_mof;
+  auto egr_ace = PlacerDBInst.egr_ace;
+
   auto tns = PlacerDBInst.tns;
   auto wns = PlacerDBInst.wns;
   auto suggest_freq = PlacerDBInst.suggest_freq;
@@ -1043,7 +971,9 @@ ieda_feature::PlaceSummary PLAPI::outputSummary(std::string step)
     summary.gplace.STWL = STWL[0];
     summary.gplace.GRWL = GRWL[0];
 
-    summary.gplace.congestion = congestion[0];
+    summary.gplace.egr_tof = egr_tof[0];
+    summary.gplace.egr_mof = egr_mof[0];
+    summary.gplace.egr_ace = egr_ace[0];
     summary.gplace.tns = tns[0];
     summary.gplace.wns = wns[0];
     summary.gplace.suggest_freq = suggest_freq[0];
@@ -1054,7 +984,9 @@ ieda_feature::PlaceSummary PLAPI::outputSummary(std::string step)
     summary.dplace.STWL = STWL[1];
     summary.dplace.GRWL = GRWL[1];
 
-    summary.dplace.congestion = congestion[1];
+    summary.dplace.egr_tof = egr_tof[1];
+    summary.dplace.egr_mof = egr_mof[1];
+    summary.dplace.egr_ace = egr_ace[1];
     summary.dplace.tns = tns[1];
     summary.dplace.wns = wns[1];
     summary.dplace.suggest_freq = suggest_freq[1];
@@ -1087,7 +1019,9 @@ ieda_feature::PlaceSummary PLAPI::outputSummary(std::string step)
     summary.lg_summary.pl_common_summary.STWL = STWL[2];
     summary.lg_summary.pl_common_summary.GRWL = GRWL[2];
 
-    summary.lg_summary.pl_common_summary.congestion = congestion[2];
+    summary.lg_summary.pl_common_summary.egr_tof = egr_tof[2];
+    summary.lg_summary.pl_common_summary.egr_mof = egr_mof[2];
+    summary.lg_summary.pl_common_summary.egr_ace = egr_ace[2];
     summary.lg_summary.pl_common_summary.tns = tns[2];
     summary.lg_summary.pl_common_summary.wns = wns[2];
     summary.lg_summary.pl_common_summary.suggest_freq = suggest_freq[2];

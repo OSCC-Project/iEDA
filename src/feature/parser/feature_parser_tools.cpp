@@ -202,7 +202,10 @@ json FeatureParser::buildSummaryPL(std::string step)
     summary_pl["gplace"]["STWL"] = pl_summary.gplace.STWL;
     summary_pl["gplace"]["GRWL"] = pl_summary.gplace.GRWL;
 
-    summary_pl["gplace"]["congestion"] = pl_summary.gplace.congestion;
+    summary_pl["gplace"]["egr_tof"] = pl_summary.gplace.egr_tof;
+    summary_pl["gplace"]["egr_mof"] = pl_summary.gplace.egr_mof;
+    summary_pl["gplace"]["egr_ace"] = pl_summary.gplace.egr_ace;
+
     summary_pl["gplace"]["tns"] = pl_summary.gplace.tns;
     summary_pl["gplace"]["wns"] = pl_summary.gplace.wns;
     summary_pl["gplace"]["suggest_freq"] = pl_summary.gplace.suggest_freq;
@@ -213,7 +216,10 @@ json FeatureParser::buildSummaryPL(std::string step)
     summary_pl["dplace"]["STWL"] = pl_summary.dplace.STWL;
     summary_pl["dplace"]["GRWL"] = pl_summary.dplace.GRWL;
 
-    summary_pl["dplace"]["congestion"] = pl_summary.dplace.congestion;
+    summary_pl["dplace"]["egr_tof"] = pl_summary.dplace.egr_tof;
+    summary_pl["dplace"]["egr_mof"] = pl_summary.dplace.egr_mof;
+    summary_pl["dplace"]["egr_ace"] = pl_summary.dplace.egr_ace;
+
     summary_pl["dplace"]["tns"] = pl_summary.dplace.tns;
     summary_pl["dplace"]["wns"] = pl_summary.dplace.wns;
     summary_pl["dplace"]["suggest_freq"] = pl_summary.dplace.suggest_freq;
@@ -236,7 +242,10 @@ json FeatureParser::buildSummaryPL(std::string step)
     summary_pl["legalization"]["STWL"] = pl_summary.lg_summary.pl_common_summary.STWL;
     summary_pl["legalization"]["GRWL"] = pl_summary.lg_summary.pl_common_summary.GRWL;
 
-    summary_pl["legalization"]["congestion"] = pl_summary.lg_summary.pl_common_summary.congestion;
+    summary_pl["legalization"]["egr_tof"] = pl_summary.lg_summary.pl_common_summary.egr_tof;
+    summary_pl["legalization"]["egr_mof"] = pl_summary.lg_summary.pl_common_summary.egr_mof;
+    summary_pl["legalization"]["egr_ace"] = pl_summary.lg_summary.pl_common_summary.egr_ace;
+
     summary_pl["legalization"]["tns"] = pl_summary.lg_summary.pl_common_summary.tns;
     summary_pl["legalization"]["wns"] = pl_summary.lg_summary.pl_common_summary.wns;
     summary_pl["legalization"]["suggest_freq"] = pl_summary.lg_summary.pl_common_summary.suggest_freq;
