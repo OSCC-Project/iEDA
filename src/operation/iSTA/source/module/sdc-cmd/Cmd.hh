@@ -413,6 +413,45 @@ class CmdSetMulticyclePath : public TclCmd {
   unsigned exec() override;
 };
 
+/**
+ * @brief set_false_path cmd.
+ *
+ */
+class CmdSetFalsePath : public TclCmd {
+ public:
+  explicit CmdSetFalsePath(const char* cmd_name);
+  ~CmdSetFalsePath() override = default;
+
+  unsigned check() override;
+  unsigned exec() override;
+};
+
+/**
+ * @brief set_max_delay cmd.
+ *
+ */
+class CmdSetMaxDelay : public TclCmd {
+ public:
+  explicit CmdSetMaxDelay(const char* cmd_name);
+  ~CmdSetMaxDelay() override = default;
+
+  unsigned check() override;
+  unsigned exec() override;
+};
+
+/**
+ * @brief set_min_delay cmd.
+ *
+ */
+class CmdSetMinDelay : public TclCmd {
+ public:
+  explicit CmdSetMinDelay(const char* cmd_name);
+  ~CmdSetMinDelay() override = default;
+
+  unsigned check() override;
+  unsigned exec() override;
+};
+
 class CmdSetUnits : public TclCmd {
  public:
   explicit CmdSetUnits(const char* cmd_name);

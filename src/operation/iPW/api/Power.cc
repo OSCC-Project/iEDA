@@ -22,10 +22,11 @@
  * @date 2023-01-02
  */
 
+#include "Power.hh"
+
 #include <array>
 #include <filesystem>
 
-#include "Power.hh"
 #include "ops/annotate_toggle_sp/AnnotateToggleSP.hh"
 #include "ops/build_graph/PwrBuildGraph.hh"
 #include "ops/calc_power/PwrCalcInternalPower.hh"
@@ -696,7 +697,8 @@ unsigned Power::reportPower(bool is_copy) {
         "%s/%s_%s%s", copy_design_work_space->first.c_str(), base_name.c_str(),
         copy_design_work_space->second.c_str(), extension.c_str());
 
-    std::string src_file = Str::printf("%s/%s", output_dir.c_str(), file_to_be_copy.c_str());
+    std::string src_file =
+        Str::printf("%s/%s", output_dir.c_str(), file_to_be_copy.c_str());
     if (std::filesystem::exists(src_file)) {
       std::filesystem::copy_file(
           src_file, dest_file_name,
