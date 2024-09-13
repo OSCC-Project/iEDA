@@ -21,6 +21,7 @@
 #include "engine_layout.h"
 #include "engine_scanline.h"
 #include "idrc_data.h"
+#include "idrc_util.h"
 
 namespace idb {
 class IdbLayer;
@@ -42,7 +43,7 @@ class DrcEngineManager
   std::map<std::string, DrcEngineLayout*>& get_engine_layouts(LayoutType type = LayoutType::kRouting);
   DrcEngineLayout* get_layout(std::string layer, LayoutType type = LayoutType::kRouting);
   std::set<std::string>& get_layers(LayoutType type = LayoutType::kRouting);
-  bool needChecking( std::string layer, LayoutType type = LayoutType::kRouting);
+  bool needChecking(std::string layer, LayoutType type = LayoutType::kRouting);
 
   /// scanline manager
   std::map<LayoutType, std::map<std::string, DrcEngineScanline*>>& get_scanline_matrix() { return _scanline_matrix; }

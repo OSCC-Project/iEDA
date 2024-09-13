@@ -18,12 +18,6 @@
 
 namespace idrc {
 
-#define NET_ID_ENVIRONMENT -1
-#define NET_ID_OBS -2
-#define NET_ID_PDN -3
-#define NET_ID_VDD -4
-#define NET_ID_VSS -5
-
 enum class DrcCheckerType
 {
   kNone,

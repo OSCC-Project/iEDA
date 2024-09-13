@@ -86,7 +86,8 @@ source $::env(TCL_SCRIPT_DIR)/iFP_script/module/set_clocknet.tcl
 #===========================================================
 ##   save def 
 #===========================================================
-def_save -path $::env(RESULT_DIR)/iFP_result.def
+set DEFAULT_OUTPUT_DEF "$::env(RESULT_DIR)/iFP_result.def"
+def_save -path [expr {[info exists ::env(OUTPUT_DEF)] ? $::env(OUTPUT_DEF) : $DEFAULT_OUTPUT_DEF}]
 
 #===========================================================
 ##   report db summary

@@ -8,5 +8,4 @@ set(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -Wall")
 aux_source_directory(./ SRC)
 add_library(propagate_toggle_sp ${SRC})
 
-find_package(yaml-cpp REQUIRED)
 target_link_libraries(propagate_toggle_sp core calc_toggle_sp dump)

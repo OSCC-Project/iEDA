@@ -62,9 +62,7 @@ int main() {
   // std::cout << sv << "\n";
 
   ista::Lib lib;
-  lib.loadLibertyWithRustParser(
-      "/home/taosimin/T28/ccslib/"
-      "tcbn28hpcplusbwp30p140lvtssg0p81v125c_ccs.lib");
+  lib.loadLibertyWithRustParser("");
 
   return 0;
 }

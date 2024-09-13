@@ -41,7 +41,8 @@ typedef GtlRect GeometryRect;
 #define bloat(rect_to_change, direction, value) gtl::bloat(rect_to_change, direction, value)
 #define shrink(rect_to_change, direction, value) gtl::shrink(rect_to_change, direction, value)
 
-#define manhattanDistance(rect1, rect2) gtl::manhattan_distance(rect1, rect2)
+#define rectManhattanDistance(rect1, rect2) gtl::manhattan_distance(rect1, rect2)
+#define rectEuclideanDistance(rect1, rect2) gtl::square_euclidean_distance(rect1, rect2)
 
 #define oppositeRegion(rect1, rect2) gtl::generalized_intersect(rect1, rect2)
 

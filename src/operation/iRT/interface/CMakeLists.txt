@@ -15,6 +15,7 @@ target_link_libraries(irt_interface
         irt_source
         idrc_pro_api
         ls_assigner
+        power
 )
 
 target_include_directories(irt_interface

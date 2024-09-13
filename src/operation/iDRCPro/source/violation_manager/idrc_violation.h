@@ -56,6 +56,7 @@ class DrcViolation
   Type get_type() { return _type; }
   bool is_rect() { return _type == Type::kRect; }
   bool is_polygon() { return _type == Type::kPolygon; }
+  bool ignored();
   ViolationEnumType get_violation_type() { return _violation_type; }
 
  private:

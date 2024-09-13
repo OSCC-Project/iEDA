@@ -81,7 +81,6 @@ std::tuple<bool, std::vector<std::string>, std::vector<std::string>, int> DrcIO:
 
 std::map<std::string, std::vector<idrc::DrcViolation*>> DrcIO::getDetailCheckResult(std::string path)
 {
-  _detail_drc.clear();
   if (!_detail_drc.empty()) {
     return _detail_drc;
   }

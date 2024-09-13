@@ -89,6 +89,7 @@ class IdbRegularWireSegment
   vector<IdbVia*> get_via_list() { return _via_list; }
   const bool is_rect() { return _is_rect; }
   IdbRect* get_delta_rect() { return _delta_rect; }
+  IdbRect get_segment_rect();
 
   // setter
   void set_layer_status(bool is_new) { _is_new_layer = is_new; }
@@ -99,6 +100,7 @@ class IdbRegularWireSegment
   IdbCoordinate<int32_t>* add_point(int32_t x, int32_t y);
   IdbCoordinate<int32_t>* add_virtual_point(int32_t x, int32_t y);
   void set_is_via(bool is_via) { _is_via = is_via; }
+  void set_via_list(vector<IdbVia*> via_list);
   void set_via(IdbVia* via) { _via_list.emplace_back(via); }
   IdbVia* copy_via(IdbVia* via);
   void init_via_list(int32_t size) { _via_list.reserve(size); }
@@ -106,6 +108,7 @@ class IdbRegularWireSegment
   void set_delta_rect(int32_t ll_x, int32_t ll_y, int32_t ur_x, int32_t ur_y);
   bool is_virtual(IdbCoordinate<int32_t>* point) { return _virtual_points.contains(point); }
   // operator
+  void clearPoints();
   void clear();
   uint64_t length();
   bool isIntersection(IdbLayerShape* layer_shape);
@@ -180,6 +183,7 @@ class IdbRegularWire
   void set_shield_name(string shield_name) { _shiled_name = shield_name; }
   IdbRegularWireSegment* add_segment(IdbRegularWireSegment* segment = nullptr);
   IdbRegularWireSegment* add_segment(string layer_name);
+  void delete_seg(IdbRegularWireSegment* seg_del);
   void reset();
 
   // operator
@@ -200,7 +204,7 @@ class IdbRegularWireList
   ~IdbRegularWireList();
 
   // getter
-  vector<IdbRegularWire*> get_wire_list() { return _wire_list; }
+  vector<IdbRegularWire*>& get_wire_list() { return _wire_list; }
   int32_t get_num() { return _wire_list.size(); }
   IdbRegularWire* find_wire(size_t index) { return _wire_list.size() > index ? _wire_list.at(index) : nullptr; }
 

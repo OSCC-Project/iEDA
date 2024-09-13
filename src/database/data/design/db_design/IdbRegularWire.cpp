@@ -63,7 +63,7 @@ IdbRegularWireSegment::~IdbRegularWireSegment()
   }
 }
 
-void IdbRegularWireSegment::clear()
+void IdbRegularWireSegment::clearPoints()
 {
   for (auto* point : _point_list) {
     if (point != nullptr) {
@@ -73,6 +73,11 @@ void IdbRegularWireSegment::clear()
   }
   _point_list.clear();
   std::vector<IdbCoordinate<int32_t>*>().swap(_point_list);
+}
+
+void IdbRegularWireSegment::clear()
+{
+  clearPoints();
 
   if (_via_list.size() > 0) {
     for (auto* via : _via_list) {
@@ -127,6 +132,39 @@ IdbCoordinate<int32_t>* IdbRegularWireSegment::get_point_end()
 
   return size > 0 ? get_point(size - 1) : nullptr;
 }
+/**
+ * get rect shape for wire & delta rect
+ */
+idb::IdbRect IdbRegularWireSegment::get_segment_rect()
+{
+  if (is_rect()) {
+    return get_delta_rect();
+  } else {
+    int32_t routing_width = dynamic_cast<IdbLayerRouting*>(_layer)->get_width();
+    IdbCoordinate<int32_t>* point_1 = get_point_start();
+    IdbCoordinate<int32_t>* point_2 = get_point_second();
+
+    int32_t ll_x = 0;
+    int32_t ll_y = 0;
+    int32_t ur_x = 0;
+    int32_t ur_y = 0;
+    if (point_1->get_y() == point_2->get_y()) {
+      // horizontal
+      ll_x = std::min(point_1->get_x(), point_2->get_x()) - routing_width / 2;
+      ll_y = std::min(point_1->get_y(), point_2->get_y()) - routing_width / 2;
+      ur_x = std::max(point_1->get_x(), point_2->get_x()) + routing_width / 2;
+      ur_y = ll_y + routing_width;
+    } else {
+      // vertical
+      ll_x = std::min(point_1->get_x(), point_2->get_x()) - routing_width / 2;
+      ll_y = std::min(point_1->get_y(), point_2->get_y()) - routing_width / 2;
+      ur_x = ll_x + routing_width;
+      ur_y = std::max(point_1->get_y(), point_2->get_y()) + routing_width / 2;
+    }
+
+    return idb::IdbRect(ll_x, ll_y, ur_x, ur_y);
+  }
+}
 
 IdbCoordinate<int32_t>* IdbRegularWireSegment::add_point(int32_t x, int32_t y)
 {
@@ -151,6 +189,16 @@ IdbVia* IdbRegularWireSegment::copy_via(IdbVia* via)
   }
 
   return nullptr;
+}
+
+void IdbRegularWireSegment::set_via_list(vector<IdbVia*> via_list)
+{
+  if (_via_list.size() > 0) {
+    set_is_via(true);
+  } else {
+    set_is_via(false);
+  }
+  _via_list = via_list;
 }
 
 void IdbRegularWireSegment::set_delta_rect(int32_t ll_x, int32_t ll_y, int32_t ur_x, int32_t ur_y)
@@ -561,6 +609,13 @@ IdbRegularWireSegment* IdbRegularWire::add_segment(string layer_name)
   _segment_list.emplace_back(segment);
 
   return segment;
+}
+
+void IdbRegularWire::delete_seg(IdbRegularWireSegment* seg_del)
+{
+  _segment_list.erase(std::find(_segment_list.begin(), _segment_list.end(), seg_del));
+  delete seg_del;
+  seg_del = nullptr;
 }
 
 void IdbRegularWire::clear_segment()

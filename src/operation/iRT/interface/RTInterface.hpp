@@ -26,6 +26,7 @@
 
 namespace idb {
 class IdbLayerRouting;
+class IdbLayerCut;
 class IdbNet;
 class IdbPin;
 enum class IdbLayerDirection : uint8_t;
@@ -36,6 +37,7 @@ class IdbRegularWireSegment;
 
 namespace irt {
 class RoutingLayer;
+class CutLayer;
 class Violation;
 class LayerCoord;
 template <typename T>
@@ -88,7 +90,8 @@ class RTInterface
   void wrapRow();
   void wrapLayerList();
   void wrapTrackAxis(RoutingLayer& routing_layer, idb::IdbLayerRouting* idb_layer);
-  void wrapSpacingTable(RoutingLayer& routing_layer, idb::IdbLayerRouting* idb_layer);
+  void wrapRoutingSpacingTable(RoutingLayer& routing_layer, idb::IdbLayerRouting* idb_layer);
+  void wrapCutSpacingTable(CutLayer& cut_layer, idb::IdbLayerCut* idb_layer);
   void wrapLayerInfo();
   void wrapLayerViaMasterList();
   void wrapObstacleList();
@@ -119,16 +122,18 @@ class RTInterface
 #endif
 
 #if 1  // iDRC
-  std::vector<Violation> getViolationList(TAPanel& ta_panel);
-  std::vector<Violation> getViolationList(DRBox& dr_box);
+  std::vector<Violation> getViolationList(std::vector<std::pair<EXTLayerRect*, bool>>& env_shape_list,
+                                          std::map<int32_t, std::vector<std::pair<EXTLayerRect*, bool>>>& net_pin_shape_map,
+                                          std::map<int32_t, std::vector<Segment<LayerCoord>>>& net_result_map, std::string stage);
   std::vector<Violation> getViolationList(std::vector<idb::IdbLayerShape*>& env_shape_list,
                                           std::map<int32_t, std::vector<idb::IdbLayerShape*>>& net_pin_shape_map,
-                                          std::map<int32_t, std::vector<idb::IdbRegularWireSegment*>>& net_wire_via_map, std::string stage);
+                                          std::map<int32_t, std::vector<idb::IdbRegularWireSegment*>>& net_result_map, std::string stage);
 #endif
 
 #if 1  // iSTA
-  std::map<std::string, std::vector<double>> getTiming(std::vector<std::map<std::string, std::vector<LayerCoord>>>& real_pin_coord_map_list,
-                                                       std::vector<std::vector<Segment<LayerCoord>>>& routing_segment_list_list);
+  void updateTimingAndPower(std::vector<std::map<std::string, std::vector<LayerCoord>>>& real_pin_coord_map_list,
+                            std::vector<std::vector<Segment<LayerCoord>>>& routing_segment_list_list,
+                            std::map<std::string, std::map<std::string, double>>& clock_timing, std::map<std::string, double>& power);
 #endif
 
 #if 1  // ieda_feature
@@ -136,7 +141,9 @@ class RTInterface
 #endif
 
 #if 1  // flute
-std::vector<Segment<PlanarCoord>> getPlanarTopoList(std::vector<PlanarCoord> planar_coord_list);
+  void initFlute();
+  void destroyFlute();
+  std::vector<Segment<PlanarCoord>> getPlanarTopoList(std::vector<PlanarCoord> planar_coord_list);
 #endif
 
 #if 1  // lsa

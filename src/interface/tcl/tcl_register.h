@@ -34,6 +34,7 @@
 #include "tcl_register_config.h"
 #include "tcl_register_cts.h"
 #include "tcl_register_drc.h"
+#include "tcl_register_eco.h"
 #include "tcl_register_eval.h"
 #include "tcl_register_feature.h"
 #include "tcl_register_flow.h"
@@ -110,6 +111,8 @@ int registerCommands()
   registerCmdFeature();
 
   registerCmdEval();
+
+  registerCmdECO();
 
 #ifdef CONTEST
   registerCmdContest();
