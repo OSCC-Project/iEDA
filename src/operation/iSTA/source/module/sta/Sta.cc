@@ -22,6 +22,8 @@
  * @date 2020-11-27
  */
 
+#include "Sta.hh"
+
 #include <algorithm>
 #include <filesystem>
 #include <map>
@@ -31,7 +33,6 @@
 #include <tuple>
 #include <utility>
 
-#include "Sta.hh"
 #include "StaAnalyze.hh"
 #include "StaApplySdc.hh"
 #include "StaBuildClockTree.hh"
@@ -153,7 +154,7 @@ unsigned Sta::readDesignWithRustParser(const char *verilog_file) {
   if (!IsFileExists(verilog_file)) {
     return 0;
   }
-  
+
   readVerilogWithRustParser(verilog_file);
   auto &top_module_name = get_top_module_name();
   linkDesignWithRustParser(top_module_name.c_str());
@@ -375,7 +376,7 @@ unsigned Sta::readVerilogWithRustParser(const char *verilog_file) {
   if (!IsFileExists(verilog_file)) {
     return 0;
   }
-  
+
   bool is_ok = _rust_verilog_reader.readVerilog(verilog_file);
   _rust_verilog_file_ptr = _rust_verilog_reader.get_verilog_file_ptr();
   LOG_WARNING_IF(!is_ok) << "read verilog file " << verilog_file << " failed.";
@@ -923,6 +924,9 @@ void Sta::initSdcCmd() {
   registerTclCmd(CmdSetPropagatedClock, "set_propagated_clock");
   registerTclCmd(CmdSetClockGroups, "set_clock_groups");
   registerTclCmd(CmdSetMulticyclePath, "set_multicycle_path");
+  registerTclCmd(CmdSetFalsePath, "set_false_path");
+  registerTclCmd(CmdSetMaxDelay, "set_max_delay");
+  registerTclCmd(CmdSetMinDelay, "set_min_delay");
   registerTclCmd(CmdSetTimingDerate, "set_timing_derate");
   registerTclCmd(CmdSetClockUncertainty, "set_clock_uncertainty");
   registerTclCmd(CmdSetUnits, "set_units");
