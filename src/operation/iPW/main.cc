@@ -29,8 +29,8 @@
 #include "api/Power.hh"
 #include "api/TimingEngine.hh"
 #include "include/PwrConfig.hh"
-#include "include/cxxopts.hpp"
 #include "include/Version.hh"
+#include "include/cxxopts.hpp"
 #include "log/Log.hh"
 #include "ops/build_graph/PwrBuildGraph.hh"
 #include "shell-cmd/PowerShellCmd.hh"
@@ -106,7 +106,7 @@ int main(int argc, char** argv) {
   cxxopts::Options options("iPW", "iPW command line help.");
   options.add_options()("v,version", "Print Git Version")(
       "h,help", "iPW command usage.")("script", "Tcl script file",
-                                       cxxopts::value<std::string>());
+                                      cxxopts::value<std::string>());
 
   try {
     options.parse_positional("script");
@@ -119,8 +119,6 @@ int main(int argc, char** argv) {
       std::cout << options.help() << std::endl;
       return 0;
     }
-
-    shell->displayHello(hello_info);
 
     if (argv_parse_result.count("version")) {
       std::cout << "\033[49;32mGit Version: " << GIT_VERSION << "\033[0m"
