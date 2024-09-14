@@ -57,10 +57,10 @@ namespace igui {
     _drc_tree.add_option("Cut EOL Spacing");
     _drc_tree.add_option("Cut Spacing");
     _drc_tree.add_option("Cut Enclosure");
-    _drc_tree.add_option("Metal EOL Spacing");
+    _drc_tree.add_option("EndOfLine Spacing");
     _drc_tree.add_option("Metal Short");
     _drc_tree.add_option("ParallelRunLength Spacing");
-    _drc_tree.add_option("Metal Notch Spacing");
+    _drc_tree.add_option("Notch Spacing");
     _drc_tree.add_option("MinStep");
     _drc_tree.add_option("Minimum Area");
   }

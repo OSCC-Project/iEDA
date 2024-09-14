@@ -62,15 +62,15 @@ struct GetViolationTypeName
       case ViolationEnumType::kJogToJog:
         return "JogToJog Spacing";
       case ViolationEnumType::kEOL:
-        return "Metal EOL Spacing";
+        return "EndOfLine Spacing";
       case ViolationEnumType::kWidth:
         return "Wire Width";
       case ViolationEnumType::kMinStep:
         return "MinStep";
       case ViolationEnumType::kNotch:
-        return "Metal Notch Spacing";
+        return "Notch Spacing";
       case ViolationEnumType::kCornerFill:
-        return "Corner Fill";
+        return "Corner Fill Spacing";
       default:
         return "None";
     }
@@ -93,15 +93,15 @@ struct GetViolationType
       return ViolationEnumType::kPRLSpacing;
     } else if (type_name == "JogToJog Spacing") {
       return ViolationEnumType::kJogToJog;
-    } else if (type_name == "Metal EOL Spacing") {
+    } else if (type_name == "EndOfLine Spacing") {
       return ViolationEnumType::kEOL;
     } else if (type_name == "Wire Width") {
       return ViolationEnumType::kWidth;
     } else if (type_name == "MinStep") {
       return ViolationEnumType::kMinStep;
-    } else if (type_name == "Metal Notch Spacing") {
+    } else if (type_name == "Notch Spacing") {
       return ViolationEnumType::kNotch;
-    } else if (type_name == "Corner Fill") {
+    } else if (type_name == "Corner Fill Spacing") {
       return ViolationEnumType::kCornerFill;
     } else {
       return ViolationEnumType::kNone;

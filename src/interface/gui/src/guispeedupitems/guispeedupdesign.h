@@ -108,7 +108,7 @@ class GuiSpeedupDesign {
       return _cut_enclosure_container;
     }
 
-    if (drc_rule == "Metal EOL Spacing") {
+    if (drc_rule == "EndOfLine Spacing") {
       return _eol_container;
     }
 
@@ -120,7 +120,7 @@ class GuiSpeedupDesign {
       return _prl_container;
     }
 
-    if (drc_rule == "Metal Notch Spacing") {
+    if (drc_rule == "Notch Spacing") {
       return _notch_container;
     }
 
