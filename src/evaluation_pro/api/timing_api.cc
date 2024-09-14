@@ -24,6 +24,11 @@ TimingAPI* TimingAPI::getInst()
   return _timing_api;
 }
 
+void TimingAPI::runSTA()
+{
+  EVAL_STA_INST->runSTA();
+}
+
 void TimingAPI::destroyInst()
 {
   ieval::TimingEval::destroyInst();

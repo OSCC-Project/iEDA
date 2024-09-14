@@ -24,6 +24,8 @@ class TimingAPI
 
   static TimingAPI* getInst();
 
+  static void runSTA();
+
   static void destroyInst();
 
   std::map<std::string, TimingSummary> evalDesign();
