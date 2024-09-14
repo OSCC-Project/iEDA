@@ -72,6 +72,7 @@ class InitSTA
 
   static InitSTA* _init_sta;
 
+  bool _sta_init = false;
   std::map<std::string, std::map<std::string, std::map<std::string, double>>> _timing;
   std::map<std::string, std::map<std::string, double>> _power;
   std::map<std::string, std::unordered_map<std::string, double>> _net_power;

@@ -62,6 +62,10 @@ void InitSTA::destroyInst()
 
 void InitSTA::runSTA()
 {
+  if (_sta_init) {
+    return;
+  }
+  _sta_init = true;
   // auto routing_type_list = {"WLM", "HPWL", "FLUTE", "SALT", "EGR", "DR"}
   initStaEngine();
   auto routing_type_list = {"HPWL", "FLUTE", "SALT", "EGR", "DR"};
