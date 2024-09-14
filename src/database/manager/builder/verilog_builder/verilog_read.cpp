@@ -122,7 +122,6 @@ bool RustVerilogRead::createDb(std::string file, std::string top_module_name)
   return true;
 }
 
-
 bool RustVerilogRead::createDbAutoTop(std::string file)
 {
   if (!_rust_verilog_reader) {
@@ -453,7 +452,7 @@ int32_t RustVerilogRead::build_assign()
           the_left_io_pin->set_net(the_right_idb_net);
           the_left_io_pin->set_net_name(the_right_idb_net->get_net_name());
         }
-      } else if (!the_left_idb_net && !the_right_idb_net) {
+      } else if (!the_left_idb_net && !the_right_idb_net && the_right_io_pin) {
         // assign output_port = input_port;
         IdbNet* idb_net = new IdbNet();
         idb_net->set_net_name(right_net_name.c_str());
@@ -469,6 +468,16 @@ int32_t RustVerilogRead::build_assign()
           the_right_io_pin->set_net_name(idb_net->get_net_name());
         }
         idb_net_list->add_net(idb_net);
+      } else if (!the_left_idb_net && !the_right_idb_net && !the_right_io_pin) {
+        // assign output_port = 1'b0(1'b1);
+        IdbNet* idb_net = new IdbNet();
+        idb_net->set_net_name(left_net_name.c_str());
+        idb_net->set_connect_type(IdbConnectType::kSignal);
+        if (the_left_io_pin->is_io_pin()) {
+          idb_net->add_io_pin(the_left_io_pin);
+          the_left_io_pin->set_net(idb_net);
+          the_left_io_pin->set_net_name(idb_net->get_net_name());
+        }
       }
     }
   }
