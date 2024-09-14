@@ -190,6 +190,8 @@ class IdbTerm
   bool is_instance_pin() { return _is_instance; }
   bool is_multi_layer();
   bool is_pdn();
+  bool is_power();
+  bool is_ground();
 
   vector<IdbCoordinate<int32_t>*>& get_pa_list() { return _pa_list; }
 

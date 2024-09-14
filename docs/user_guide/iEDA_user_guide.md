@@ -621,9 +621,9 @@ Drc Summary
 | Cut EnclosureEdge                 | 1159733280 |
 | Cut Spacing                       | 0          |
 | Metal Corner Filling Spacing      | 892941358  |
-| Metal EOL Spacing                 | 0          |
+| EndOfLine Spacing                 | 0          |
 | Metal JogToJog Spacing            | 540357424  |
-| Metal Notch Spacing               | 775040288  |
+| Notch Spacing                     | 775040288  |
 | Metal Parallel Run Length Spacing | 1663       |
 | Metal Short                       | 747        |
 | MinHole                           | 173298255  |
@@ -647,9 +647,9 @@ Drc Summary
 - Cut EnclosureEdge :　
 - Cut Spacing :　
 - Metal Corner Filling Spacing :　
-- Metal EOL Spacing :　
+- EndOfLine Spacing :　
 - Metal JogToJog Spacing :　
-- Metal Notch Spacing :　
+- Notch Spacing :　
 - Metal Parallel Run Length Spacing :　
 - Metal Short :　
 - MinHole :　
