@@ -15,7 +15,7 @@ TimingEval* TimingEval::_timing_eval = nullptr;
 
 TimingEval::TimingEval()
 {
-  // EVAL_INIT_STA_INST->runSTA();  // TODO: adjust its location
+  EVAL_INIT_STA_INST->runSTA();  // TODO: adjust its location when being called by iPL
 }
 
 TimingEval* TimingEval::getInst()

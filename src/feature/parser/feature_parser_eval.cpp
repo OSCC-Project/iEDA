@@ -43,6 +43,7 @@
 #include <sstream>
 
 #include "congestion_api.h"
+#include "timing_api.hh"
 #include "wirelength_api.h"
 
 namespace ieda_feature {
@@ -79,9 +80,10 @@ bool FeatureParser::buildNetEval(std::string csv_path)
 
   CONGESTION_API_INST->evalNetInfo();
   WIRELENGTH_API_INST->evalNetInfo();
+  auto net_power_data = ieval::TimingAPI::getInst()->evalNetPower();
 
   std::ofstream csv_file(csv_path);
-  csv_file << "net_name,pin_num,aspect_ratio,lness,hpwl,rsmt,grwl\n";
+  csv_file << "net_name,pin_num,aspect_ratio,lness,hpwl,rsmt,grwl,hpwl_power,flute_power,egr_power\n";
 
   for (size_t i = 0; i < idb_design->get_net_list()->get_net_list().size(); i++) {
     auto* idb_net = idb_design->get_net_list()->get_net_list()[i];
@@ -96,7 +98,19 @@ bool FeatureParser::buildNetEval(std::string csv_path)
     int32_t flute = WIRELENGTH_API_INST->findNetFLUTE(net_name);
     int32_t grwl = WIRELENGTH_API_INST->findNetGRWL(net_name);
 
-    csv_file << net_name << ',' << pin_num << ',' << aspect_ratio << ',' << l_ness << ',' << hpwl << "," << flute << "," << grwl << '\n';
+    if (net_power_data["HPWL"].find(net_name) == net_power_data["HPWL"].end()
+        || net_power_data["FLUTE"].find(net_name) == net_power_data["FLUTE"].end()
+        || net_power_data["EGR"].find(net_name) == net_power_data["EGR"].end()) {
+      std::cerr << "Error: net_name '" << net_name << "' not found in net_power_data.\n";
+      std::exit(EXIT_FAILURE);
+    }
+
+    double hpwl_power = net_power_data["HPWL"][net_name];
+    double flute_power = net_power_data["FLUTE"][net_name];
+    double egr_power = net_power_data["EGR"][net_name];
+
+    csv_file << net_name << ',' << pin_num << ',' << aspect_ratio << ',' << l_ness << ',' << hpwl << ',' << flute << ',' << grwl << ','
+             << hpwl_power << ',' << flute_power << ',' << egr_power << '\n';
   }
 
   csv_file.close();
