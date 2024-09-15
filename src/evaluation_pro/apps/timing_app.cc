@@ -20,17 +20,28 @@ int main()
 
 void TestTiming()
 {
-  dmInst->init("/data/project_share/dataset_baseline/gcd/workspace/config/iEDA_config/db_default_config.json");
+  // dmInst->init("/data/project_share/dataset_baseline/gcd/workspace/config/iEDA_config/db_default_config.json");
+  // auto config = dmInst->get_config();
+  // config.set_output_path("/home/liweiguo/project/iEDA/scripts/design/eval/result");
+
+  // iPLAPIInst.initAPI("/data/project_share/dataset_baseline/gcd/workspace/config/iEDA_config/pl_default_config.json",
+  //                    dmInst->get_idb_builder());
+  // iPLAPIInst.runFlow();
+
+
+  dmInst->init("/home/liweiguo/project/AiEDA/application/benchmark/28nm/gcd/config/iEDA_config/db_default_config.json");
   auto config = dmInst->get_config();
   config.set_output_path("/home/liweiguo/project/iEDA/scripts/design/eval/result");
+  dmInst->readLef(std::vector<std::string>{config.get_tech_lef_path()}, true);
+  dmInst->readLef(config.get_lef_paths());
+  dmInst->readDef("/home/liweiguo/project/AiEDA/application/benchmark/28nm/gcd/output/iEDA/result/gcd_place.def");
 
-  iPLAPIInst.initAPI("/data/project_share/dataset_baseline/gcd/workspace/config/iEDA_config/pl_default_config.json",
-                     dmInst->get_idb_builder());
-  iPLAPIInst.runFlow();
+
   auto timing_api = ieval::TimingAPI::getInst();
+  timing_api->runSTA();
   auto summary = timing_api->evalDesign();
   LOG_INFO << ">> Design Timing Evaluation: ";
-  for (auto routing_type : {"HPWL", "FLUTE","SALT", "EGR", "DR"}) {
+  for (auto routing_type : {"HPWL", "FLUTE", "SALT", "EGR", "DR"}) {
     auto timing_summary = summary[routing_type];
     LOG_INFO << "Routing type: " << routing_type;
     for (auto& clock_timing : timing_summary.clock_timings) {

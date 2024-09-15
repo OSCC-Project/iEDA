@@ -18,6 +18,7 @@ namespace ieda_feature {
 TimingEvalSummary FeatureBuilder::buildTimingEvalSummary()
 {
   TimingEvalSummary timing_eval_summary;
+  EVAL_STA_API_INST->runSTA();
   auto timing_summary = EVAL_STA_API_INST->evalDesign();
   // TBD
   // WlmTimingEvalSummary wlm_timing_eval_summary;

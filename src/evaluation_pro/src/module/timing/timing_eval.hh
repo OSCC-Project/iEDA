@@ -19,9 +19,11 @@ namespace ieval {
 class TimingEval
 {
  public:
-  TimingEval();
+  TimingEval() = default;
   ~TimingEval() = default;
   static TimingEval* getInst();
+
+  static void runSTA();
 
   static void destroyInst();
 

@@ -80,6 +80,7 @@ bool FeatureParser::buildNetEval(std::string csv_path)
 
   CONGESTION_API_INST->evalNetInfo();
   WIRELENGTH_API_INST->evalNetInfo();
+  ieval::TimingAPI::getInst()->runSTA();
   auto net_power_data = ieval::TimingAPI::getInst()->evalNetPower();
 
   std::ofstream csv_file(csv_path);
