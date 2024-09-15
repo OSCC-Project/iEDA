@@ -18,13 +18,14 @@
 #include <vector>
 
 #include "RTInterface.hpp"
-
+#include "idm.h"
 namespace ieval {
 
 InitEGR* InitEGR::_init_egr = nullptr;
 
 InitEGR::InitEGR()
 {
+  _egr_dir_path = dmInst->get_config().get_output_path() + "rt/rt_temp_directory";
 }
 
 InitEGR::~InitEGR()
@@ -51,6 +52,7 @@ void InitEGR::runEGR()
 {
   irt::RTInterface& rt_interface = irt::RTInterface::getInst();
   std::map<std::string, std::any> config_map;
+  config_map.insert({"-temp_directory_path", _egr_dir_path});
   config_map.insert({"-output_csv", 1});
   rt_interface.initRT(config_map);
   rt_interface.runEGR();

@@ -7,11 +7,14 @@
 
 #include "general_ops.h"
 
+#include <sys/stat.h>
 #include <unistd.h>
 
 #include <climits>
 #include <cstdlib>
 #include <cstring>
+
+#include "idm.h"
 
 namespace ieval {
 
@@ -34,4 +37,28 @@ std::string getAbsoluteFilePath(std::string filename)
   }
   return filename;
 }
+
+std::string createDirPath(std::string dir_path)
+{
+  const std::string base_path = dmInst->get_config().get_output_path();
+  std::string full_path = base_path + dir_path;
+
+  struct stat info;
+  if (stat(full_path.c_str(), &info) == 0 && (info.st_mode & S_IFDIR)) {
+    return full_path;
+  }
+
+  if (mkdir(full_path.c_str(), 0777) == 0) {
+    return full_path;
+  }
+
+  return "";
+}
+
+std::string getDefaultOutputPath()
+{
+  std::string base_path = dmInst->get_config().get_output_path();
+  return base_path;
+}
+
 }  // namespace ieval

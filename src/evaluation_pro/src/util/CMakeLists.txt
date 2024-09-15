@@ -1,9 +1,14 @@
-# set(CMAKE_BUILD_TYPE "Release")
-set(CMAKE_BUILD_TYPE "Debug")
+set(CMAKE_BUILD_TYPE "Release")
+# set(CMAKE_BUILD_TYPE "Debug")
 
 # general ops
 add_library(eval_pro_util_general_ops
     ${EVAL_PRO_UTIL}/general_ops.cpp
+)
+
+target_link_libraries(eval_pro_util_general_ops
+    PRIVATE
+        idm
 )
 
 target_include_directories(eval_pro_util_general_ops
@@ -19,6 +24,7 @@ add_library(eval_pro_util_init_egr
 target_link_libraries(eval_pro_util_init_egr
     PRIVATE
         irt_interface
+        idm
 )
 
 target_include_directories(eval_pro_util_init_egr

@@ -79,8 +79,9 @@ NetWLSummary WirelengthAPI::netWL(std::string net_name)
   EVAL_WIRELENGTH_INST->initFlute();
 
   net_wirelength_summary = netWL(EVAL_WIRELENGTH_INST->getNetPointSet(net_name));
-  net_wirelength_summary.GRWL = EVAL_WIRELENGTH_INST->evalNetEGRWL("./rt_temp_directory/initial_router/route.guide", net_name)
-                                * EVAL_WIRELENGTH_INST->getDesignUnit();
+  net_wirelength_summary.GRWL
+      = EVAL_WIRELENGTH_INST->evalNetEGRWL(EVAL_WIRELENGTH_INST->getEGRDirPath() + "/initial_router/route.guide", net_name)
+        * EVAL_WIRELENGTH_INST->getDesignUnit();
 
   EVAL_WIRELENGTH_INST->destroyIDB();
   EVAL_WIRELENGTH_INST->destroyEGR();

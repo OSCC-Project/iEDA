@@ -42,12 +42,7 @@ void CongestionAPI::destroyInst()
 
 EGRMapSummary CongestionAPI::egrMap()
 {
-  EGRMapSummary egr_map_summary;
-
-  std::string rt_dir_path = "./rt_temp_directory";
-  egr_map_summary = egrMap(rt_dir_path);
-
-  return egr_map_summary;
+  return egrMap(EVAL_CONGESTION_INST->getEGRDirPath());
 }
 
 EGRMapSummary CongestionAPI::egrMap(std::string rt_dir_path)
@@ -92,12 +87,7 @@ RUDYMapSummary CongestionAPI::rudyMap(CongestionNets nets, CongestionRegion regi
 
 OverflowSummary CongestionAPI::egrOverflow()
 {
-  OverflowSummary overflow_summary;
-
-  std::string rt_dir_path = "./rt_temp_directory";
-  overflow_summary = egrOverflow(rt_dir_path);
-
-  return overflow_summary;
+  return egrOverflow(EVAL_CONGESTION_INST->getEGRDirPath());
 }
 
 OverflowSummary CongestionAPI::egrOverflow(std::string rt_dir_path)
@@ -123,7 +113,7 @@ UtilizationSummary CongestionAPI::rudyUtilization(bool use_lut)
 {
   UtilizationSummary utilization_summary;
 
-  std::string rudy_dir_path = "./RUDY_map";
+  std::string rudy_dir_path = EVAL_CONGESTION_INST->getDefaultOutputDir() + "/RUDY_map";
   utilization_summary = rudyUtilization(rudy_dir_path, use_lut);
 
   return utilization_summary;

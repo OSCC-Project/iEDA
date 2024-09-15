@@ -12,5 +12,7 @@
 namespace ieval {
 
 std::string getAbsoluteFilePath(std::string filename);
+std::string createDirPath(std::string dir_path);
+std::string getDefaultOutputPath();
 
 }  // namespace ieval

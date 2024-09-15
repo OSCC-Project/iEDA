@@ -321,10 +321,7 @@ string CongestionEval::evalRUDY(CongestionNets nets, CongestionRegion region, in
     }
   }
 
-  std::filesystem::path congestion_folder = "RUDY_map";
-  std::filesystem::create_directory(congestion_folder);
-  std::filesystem::path output_path = congestion_folder / output_filename;
-
+  std::string output_path = createDirPath("RUDY_map") + "/" + output_filename;
   std::ofstream csv_file(output_path);
 
   for (size_t row_index = density_grid.size(); row_index-- > 0;) {
@@ -436,10 +433,7 @@ string CongestionEval::evalLUTRUDY(CongestionNets nets, CongestionRegion region,
     }
   }
 
-  std::filesystem::path congestion_folder = "RUDY_map";
-  std::filesystem::create_directory(congestion_folder);
-  std::filesystem::path output_path = congestion_folder / output_filename;
-
+  std::string output_path = createDirPath("RUDY_map") + "/" + output_filename;
   std::ofstream csv_file(output_path);
 
   for (size_t row_index = density_grid.size(); row_index-- > 0;) {
@@ -945,6 +939,16 @@ float CongestionEval::findLness(std::string net_name)
     return it->second;
   }
   throw std::runtime_error("Lness not found for net: " + net_name);
+}
+
+std::string CongestionEval::getEGRDirPath()
+{
+  return EVAL_INIT_EGR_INST->getEGRDirPath();
+}
+
+std::string CongestionEval::getDefaultOutputDir()
+{
+  return getDefaultOutputPath();
 }
 
 }  // namespace ieval

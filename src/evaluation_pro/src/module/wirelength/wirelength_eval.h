@@ -62,6 +62,8 @@ class WirelengthEval
   int32_t findFLUTE(std::string net_name);
   int32_t findGRWL(std::string net_name);
 
+  std::string getEGRDirPath();
+
  private:
   static WirelengthEval* _wirelength_eval;
 

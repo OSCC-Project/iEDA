@@ -132,10 +132,7 @@ std::string DensityEval::evalDensity(DensityCells cells, DensityRegion region, i
     }
   }
 
-  std::filesystem::path density_folder = "density_map";
-  std::filesystem::create_directory(density_folder);
-  std::filesystem::path output_path = density_folder / output_filename;
-
+  std::string output_path = createDirPath("density_map") + "/" + output_filename;
   std::ofstream csv_file(output_path);
 
   for (size_t row_index = density_grid.size(); row_index-- > 0;) {
@@ -188,10 +185,7 @@ std::string DensityEval::evalPinDensity(DensityPins pins, DensityRegion region, 
     }
   }
 
-  std::filesystem::path density_folder = "density_map";
-  std::filesystem::create_directory(density_folder);
-  std::filesystem::path output_path = density_folder / output_filename;
-
+  std::string output_path = createDirPath("density_map") + "/" + output_filename;
   std::ofstream csv_file(output_path);
 
   for (size_t row_index = density_grid.size(); row_index-- > 0;) {
@@ -237,11 +231,7 @@ std::string DensityEval::evalNetDensity(DensityNets nets, DensityRegion region, 
       }
     }
   }
-
-  std::filesystem::path density_folder = "density_map";
-  std::filesystem::create_directory(density_folder);
-  std::filesystem::path output_path = density_folder / output_filename;
-
+  std::string output_path = createDirPath("density_map") + "/" + output_filename;
   std::ofstream csv_file(output_path);
 
   for (int32_t row = grid_rows - 1; row >= 0; --row) {

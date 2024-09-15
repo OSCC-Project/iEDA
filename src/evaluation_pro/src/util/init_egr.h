@@ -27,6 +27,7 @@ class InitEGR
   static void destroyInst();
 
   void runEGR();
+  std::string getEGRDirPath() { return _egr_dir_path; }
 
   float parseEGRWL(std::string guide_path);
   float parseNetEGRWL(std::string guide_path, std::string net_name);
@@ -36,6 +37,8 @@ class InitEGR
 
  private:
   static InitEGR* _init_egr;
+
+  std::string _egr_dir_path;
 };
 
 }  // namespace ieval

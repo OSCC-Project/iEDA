@@ -1,5 +1,5 @@
-# set(CMAKE_BUILD_TYPE "Release")
-set(CMAKE_BUILD_TYPE "Debug")
+set(CMAKE_BUILD_TYPE "Release")
+# set(CMAKE_BUILD_TYPE "Debug")
 
 # Congestion Evaluation API
 add_library(eval_pro_congestion_api

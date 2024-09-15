@@ -68,6 +68,8 @@ class CongestionEval
   float findLness(std::string net_name);
 
   int32_t getRowHeight();
+  std::string getEGRDirPath();
+  std::string getDefaultOutputDir();
 
  private:
   static CongestionEval* _congestion_eval;

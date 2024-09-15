@@ -115,7 +115,7 @@ int32_t WirelengthEval::evalTotalVTree()
 
 int32_t WirelengthEval::evalTotalEGRWL()
 {
-  return evalTotalEGRWL("./rt_temp_directory/initial_router/route.guide");
+  return evalTotalEGRWL(EVAL_INIT_EGR_INST->getEGRDirPath() + "/initial_router/route.guide");
 }
 
 int32_t WirelengthEval::evalNetHPWL(PointSet point_set)
@@ -411,6 +411,11 @@ void WirelengthEval::destroyEGR()
   EVAL_INIT_EGR_INST->destroyInst();
 }
 
+std::string WirelengthEval::getEGRDirPath()
+{
+  return EVAL_INIT_EGR_INST->getEGRDirPath();
+}
+
 void WirelengthEval::initFlute()
 {
   EVAL_INIT_FLUTE_INST->readLUT();
@@ -427,7 +432,7 @@ void WirelengthEval::evalNetInfo()
   for (const auto& [net_name, point_set] : name_pointset) {
     _name_hpwl[net_name] = evalNetHPWL(point_set);
     _name_flute[net_name] = evalNetFLUTE(point_set);
-    _name_grwl[net_name] = evalNetEGRWL("./rt_temp_directory/initial_router/route.guide", net_name) * getDesignUnit();
+    _name_grwl[net_name] = evalNetEGRWL(EVAL_INIT_EGR_INST->getEGRDirPath() + "/initial_router/route.guide", net_name) * getDesignUnit();
   }
 }
 
