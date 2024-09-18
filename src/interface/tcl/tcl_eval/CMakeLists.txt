@@ -8,7 +8,10 @@ target_link_libraries(tcl_eval
     PUBLIC
         tcl
         shell-cmd
-        eval_api
+        eval_pro_wirelength_api
+        eval_pro_congestion_api
+        eval_pro_density_api
+        eval_pro_timing_api
         idm
         idb
 )

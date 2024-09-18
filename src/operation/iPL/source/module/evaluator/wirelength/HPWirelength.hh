@@ -46,6 +46,7 @@ class HPWirelength : public Wirelength
   int64_t obtainTotalWirelength();
   int64_t obtainNetWirelength(int32_t net_id);
   int64_t obtainPartOfNetWirelength(int32_t net_id, int32_t sink_pin_id);
+  std::vector<std::vector<std::pair<int32_t, int32_t>>> constructPointSets();
 };
 inline HPWirelength::HPWirelength(TopologyManager* topology_manager) : Wirelength(topology_manager)
 {

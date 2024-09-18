@@ -37,6 +37,7 @@
 
 #include "feature_db.h"
 #include "feature_icts.h"
+#include "feature_ieval.h"
 #include "feature_ino.h"
 #include "feature_ipl.h"
 #include "feature_irt.h"
@@ -57,6 +58,11 @@ class FeatureBuilder
   CTSSummary buildCTSSummary();
   NetOptSummary buildNetOptSummary();
   TimingOptSummary buildTimingOptSummary();
+
+  TotalWLSummary buildWirelengthEvalSummary();
+  DensityMapSummary buildDensityEvalSummary(int32_t grid_size);
+  CongestionSummary buildCongestionEvalSummary(int32_t grid_size);
+  TimingEvalSummary buildTimingEvalSummary();
 
   bool buildRouteData(RouteAnalyseData* data);
 

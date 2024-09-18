@@ -10,7 +10,7 @@ target_include_directories(tool_api_ieval
 target_link_libraries(tool_api_ieval
     PRIVATE
     idm
-    eval_data
-    eval_wirelength
-    eval_timing
+    # eval_data
+    # eval_wirelength
+    # eval_timing
 )

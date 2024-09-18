@@ -2,6 +2,11 @@ add_library(feature_builder
     feature_builder.cpp
     feature_builder_tool.cpp
     route_builder.cpp
+
+    feature_eval_wirelength.cpp
+    feature_eval_congestion.cpp
+    feature_eval_density.cpp
+    feature_eval_timing.cc
 )
 
 target_include_directories(feature_builder 
@@ -21,4 +26,8 @@ target_link_libraries(feature_builder
         # ista-engine
         # idrc_pro_api
         ieda_report_evaluator
+        eval_pro_congestion_api
+        eval_pro_density_api
+        eval_pro_wirelength_api
+        eval_pro_timing_api
 )

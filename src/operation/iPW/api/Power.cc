@@ -717,6 +717,11 @@ unsigned Power::reportPower(bool is_copy) {
 
   LOG_INFO << "power report start, output dir: " << output_dir;
 
+  if (output_dir.empty()) {
+    LOG_ERROR << "The design work space is not set.";
+    return 0;
+  }
+
   auto backup_work_space = backup_pwr_files(output_dir);
   std::filesystem::create_directories(output_dir);
 

@@ -26,10 +26,12 @@
 
 #include <iostream>
 
-#include "EvalAPI.hpp"
-#include "EvalType.hpp"
+#include "congestion_api.h"
+#include "density_api.h"
+#include "timing_api.hh"
+#include "wirelength_api.h"
 
-using namespace eval;
+using namespace ieval;
 
 namespace tcl {
 
@@ -62,8 +64,6 @@ unsigned CmdEvalInit::exec()
   auto bin_cnt_y = opt_bin_cnt_y->getIntVal();
 
   std::cout << "bin_cnt_x=" << bin_cnt_x << " bin_cnt_y=" << bin_cnt_y << std::endl;
-  EvalAPI& eval_api = EvalAPI::initInst();
-  eval_api.initCongDataFromIDB(bin_cnt_x, bin_cnt_y);
 
   return 1;
 }
