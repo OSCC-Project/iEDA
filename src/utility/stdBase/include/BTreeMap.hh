@@ -26,6 +26,7 @@
 
 #include <functional>
 #include <list>
+#include <set>
 #include <utility>
 
 #include "absl/container/btree_map.h"
