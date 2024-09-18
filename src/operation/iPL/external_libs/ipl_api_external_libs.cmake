@@ -19,7 +19,7 @@ target_include_directories(ipl-api_external_libs
         ${HOME_PLATFORM}
         ${HOME_PLATFORM}/tool_manager
         ${HOME_PLATFORM}/data_manager
-        ${HOME_EVALUATION_PRO}/api
-        ${HOME_EVALUATION_PRO}/database
+        ${HOME_EVALUATION}/api
+        ${HOME_EVALUATION}/database
 
 )
