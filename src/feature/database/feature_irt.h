@@ -15,7 +15,6 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 #pragma once
-#pragma once
 
 #include <map>
 #include <string>

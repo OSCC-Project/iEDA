@@ -2424,6 +2424,11 @@ unsigned Sta::reportTiming(std::set<std::string> &&exclude_cell_names /*= {}*/,
   LOG_INFO << "start write sta report.";
   LOG_INFO << "output sta report path: " << design_work_space;
 
+  if (design_work_space == nullptr || design_work_space[0] == '\0') {
+    LOG_ERROR << "The design work space is not set.";
+    return 0;
+  }
+
   if (std::filesystem::exists(design_work_space) && is_copy) {
     std::filesystem::create_directories(copy_design_work_space);
   }
