@@ -33,7 +33,7 @@ target_link_libraries(feature_parser
         # ista-engine
         # idrc_pro_api
         # ieda_report_evaluator
-        eval_pro_wirelength_api
-        eval_pro_congestion_api    
-        eval_pro_timing_api
+        eval_wirelength_api
+        eval_congestion_api    
+        eval_timing_api
 )

@@ -8,7 +8,7 @@ add_executable(congestion_app
 
 target_link_libraries(congestion_app
     PRIVATE
-    eval_pro_congestion_api
+    eval_congestion_api
     idm
 )
 
@@ -25,7 +25,7 @@ add_executable(density_app
 
 target_link_libraries(density_app
     PRIVATE
-    eval_pro_density_api
+    eval_density_api
     idm
 )
 
@@ -42,7 +42,7 @@ add_executable(timing_app
 
 target_link_libraries(timing_app
     PRIVATE
-    eval_pro_timing_api
+    eval_timing_api
     idm
     ipl-api
     ipl-external_api
@@ -61,7 +61,7 @@ add_executable(wirelength_app
 
 target_link_libraries(wirelength_app
     PRIVATE
-    eval_pro_wirelength_api
+    eval_wirelength_api
     idm
 )
 

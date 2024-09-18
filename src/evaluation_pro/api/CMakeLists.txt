@@ -2,69 +2,69 @@ set(CMAKE_BUILD_TYPE "Release")
 # set(CMAKE_BUILD_TYPE "Debug")
 
 # Congestion Evaluation API
-add_library(eval_pro_congestion_api
-    ${EVAL_PRO_API}/congestion_api.cpp
+add_library(eval_congestion_api
+    ${EVAL_API}/congestion_api.cpp
 )
 
-target_link_libraries(eval_pro_congestion_api
+target_link_libraries(eval_congestion_api
     PRIVATE
-    eval_pro_db
-    eval_pro_congestion_eval
+    eval_db
+    eval_congestion_eval
 )
 
-target_include_directories(eval_pro_congestion_api
+target_include_directories(eval_congestion_api
     PUBLIC
-    ${EVAL_PRO_API}
+    ${EVAL_API}
 )
 
 # Density Evaluation API  
-add_library(eval_pro_density_api
-    ${EVAL_PRO_API}/density_api.cpp
+add_library(eval_density_api
+    ${EVAL_API}/density_api.cpp
 )
 
-target_link_libraries(eval_pro_density_api
+target_link_libraries(eval_density_api
     PRIVATE
-    eval_pro_db
-    eval_pro_density_eval
+    eval_db
+    eval_density_eval
 )
 
-target_include_directories(eval_pro_density_api
+target_include_directories(eval_density_api
     PUBLIC
-    ${EVAL_PRO_API}
+    ${EVAL_API}
 )
 
 
 # Timing & Power Evaluation API  
-add_library(eval_pro_timing_api
-    ${EVAL_PRO_API}/timing_api.cc
+add_library(eval_timing_api
+    ${EVAL_API}/timing_api.cc
 )
 
-target_link_libraries(eval_pro_timing_api
+target_link_libraries(eval_timing_api
     PRIVATE
-    eval_pro_db
-    eval_pro_timing_eval
+    eval_db
+    eval_timing_eval
 )
 
-target_include_directories(eval_pro_timing_api
+target_include_directories(eval_timing_api
     PUBLIC
-    ${EVAL_PRO_API}
-    ${EVAL_PRO_DATA}
-    ${EVAL_PRO_MODULE}/timing
+    ${EVAL_API}
+    ${EVAL_DATA}
+    ${EVAL_MODULE}/timing
 )
 
 
 # Wirelength Evaluation API
-add_library(eval_pro_wirelength_api
-    ${EVAL_PRO_API}/wirelength_api.cpp
+add_library(eval_wirelength_api
+    ${EVAL_API}/wirelength_api.cpp
 )
 
-target_link_libraries(eval_pro_wirelength_api
+target_link_libraries(eval_wirelength_api
     PRIVATE
-    eval_pro_db
-    eval_pro_wirelength_eval
+    eval_db
+    eval_wirelength_eval
 )
 
-target_include_directories(eval_pro_wirelength_api
+target_include_directories(eval_wirelength_api
     PUBLIC
-    ${EVAL_PRO_API}
+    ${EVAL_API}
 )

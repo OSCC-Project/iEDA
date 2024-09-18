@@ -1,17 +1,17 @@
-add_library(eval_pro_congestion_eval
+add_library(eval_congestion_eval
     congestion_eval.cpp
 )
 
-target_link_libraries(eval_pro_congestion_eval 
+target_link_libraries(eval_congestion_eval 
     PRIVATE 
-        eval_pro_util_init_egr     
-        eval_pro_util_wirelength_lut
-        eval_pro_util_general_ops 
-        eval_pro_util_init_idb
+        eval_util_init_egr     
+        eval_util_wirelength_lut
+        eval_util_general_ops 
+        eval_util_init_idb
 )
 
-target_include_directories(eval_pro_congestion_eval
+target_include_directories(eval_congestion_eval
     PUBLIC
-        ${EVAL_PRO_MODULE}/congestion
-        ${EVAL_PRO_DATA}
+        ${EVAL_MODULE}/congestion
+        ${EVAL_DATA}
 )
