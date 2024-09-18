@@ -29,6 +29,10 @@
 
 #include "absl/container/btree_set.h"
 
+#ifdef USE_CPP_STD
+#include <set>
+#endif
+
 namespace ieda {
 
 /**
@@ -40,10 +44,19 @@ namespace ieda {
  * more efficient.
  */
 template <class KEY, class CMP = std::less<KEY>>
+#ifndef USE_CPP_STD
 class BTreeSet : public absl::btree_set<KEY, CMP>
+#else
+class BTreeSet : public std::set<KEY, CMP>
+#endif
 {
  public:
+#ifndef USE_CPP_STD
   using Base = typename BTreeSet::btree_set;
+#else
+  using Base = typename BTreeSet::set;
+#endif
+
   using key_type = typename Base::key_type;
   using size_type = typename Base::value_type;
   using iterator = typename Base::iterator;
@@ -103,10 +116,18 @@ class BTreeSet : public absl::btree_set<KEY, CMP>
  * The btree set implemented using B-trees is more efficent than binary tree.
  */
 template <class KEY, class CMP = std::less<KEY>>
+#ifndef USE_CPP_STD
 class Multiset : public absl::btree_multiset<KEY, CMP>
+#else
+class Multiset : public std::multiset<KEY, CMP>
+#endif
 {
  public:
+#ifndef USE_CPP_STD
   using Base = typename Multiset::btree_multiset;
+#else
+  using Base = typename Multiset::multiset;
+#endif
   using key_type = typename Base::key_type;
   using size_type = typename Base::value_type;
   using iterator = typename Base::iterator;
