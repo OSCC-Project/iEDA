@@ -55,6 +55,9 @@ class DrcConditionManager
 
   std::set<ViolationEnumType> _check_select;
 
+  void checkOverlapByInteract(std::string layer, DrcEngineLayout* layout);
+  void checkOverlapBySelfIntersect(std::string layer, DrcEngineLayout* layout);
+
   void addViolation(ieda_solver::GeometryRect& rect, std::string layer, ViolationEnumType type, std::set<int> net_id = {});
   void buildMapOfJog(std::string layer, DrcEngineLayout* layout, std::map<int, ieda_solver::GeometryPolygonSet>& jog_wire_map);
   void checkJog(std::string layer, DrcEngineLayout* layout, std::map<int, ieda_solver::GeometryPolygonSet>& jog_wire_map);

@@ -7,3 +7,5 @@ SET(CMAKE_BUILD_TYPE "Release")
 AUX_SOURCE_DIRECTORY(./ SRC)
 
 ADD_LIBRARY(aocv-parser STATIC ${SRC})
+
+TARGET_LINK_LIBRARIES(aocv-parser PUBLIC absl::btree)

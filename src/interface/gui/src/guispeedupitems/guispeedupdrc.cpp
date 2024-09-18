@@ -110,7 +110,7 @@ bool GuiSpeedupDrc::is_visible() {
   }
 
   if (get_type() == GuiSpeedupItemType::kDrcEOL) {
-    return tree_node.isChecked("Metal EOL Spacing") && guiConfig->isLayerVisible(_z_order);
+    return tree_node.isChecked("EndOfLine Spacing") && guiConfig->isLayerVisible(_z_order);
   }
 
   if (get_type() == GuiSpeedupItemType::kDrcMetalShort) {
@@ -122,7 +122,7 @@ bool GuiSpeedupDrc::is_visible() {
   }
 
   if (get_type() == GuiSpeedupItemType::kDrcNotchSpacing) {
-    return tree_node.isChecked("Metal Notch Spacing") && guiConfig->isLayerVisible(_z_order);
+    return tree_node.isChecked("Notch Spacing") && guiConfig->isLayerVisible(_z_order);
   }
 
   if (get_type() == GuiSpeedupItemType::kDrcMinStep) {

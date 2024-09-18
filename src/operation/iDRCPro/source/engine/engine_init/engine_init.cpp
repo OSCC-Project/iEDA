@@ -92,7 +92,14 @@ void DrcEngineInit::initDataFromPoints(idb::IdbCoordinate<int>* point_1, idb::Id
  */
 void DrcEngineInit::initDataFromPin(idb::IdbPin* idb_pin, int default_id)
 {
-  int net_id = idb_pin->get_net() == nullptr ? default_id : idb_pin->get_net()->get_id();
+  int net_id = default_id;
+  if (idb_pin->get_net() != nullptr) {
+    net_id = idb_pin->get_net()->get_id();
+  } else {
+    auto idb_term = idb_pin->get_term();
+    net_id = idb_term->is_power() ? NET_ID_VDD : (idb_term->is_ground() ? NET_ID_VSS : default_id);
+  }
+
   for (IdbLayerShape* layer_shape : idb_pin->get_port_box_list()) {
     initDataFromShape(layer_shape, net_id);
   }

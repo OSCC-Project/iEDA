@@ -49,9 +49,9 @@ TEST_F(AnnotateToggleSPTest, calc_tc_sp) {
   const char* design_work_space = "";
   timing_engine->set_design_work_space(design_work_space);
 
-  std::vector<const char*> t28_lib_files = {};
+  std::vector<const char*> lib_files = {};
 
-  timing_engine->readLiberty(t28_lib_files);
+  timing_engine->readLiberty(lib_files);
 
   timing_engine->get_ista()->set_analysis_mode(ista::AnalysisMode::kMaxMin);
   timing_engine->get_ista()->set_n_worst_path_per_clock(1);
