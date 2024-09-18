@@ -49,7 +49,7 @@ def_save -path [expr {[info exists ::env(OUTPUT_DEF)] ? $::env(OUTPUT_DEF) : $DE
 #===========================================================
 ##   save netlist 
 #===========================================================
-# netlist_save -path $::env(RESULT_DIR)/iTO_fix_fanout_result.v -exclude_cell_names {}
+netlist_save -path $::env(RESULT_DIR)/iTO_fix_fanout_result.v -exclude_cell_names {}
 
 #===========================================================
 ##   report db summary
