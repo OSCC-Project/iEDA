@@ -335,8 +335,6 @@ unsigned Sta::linkLibertys() {
   }
 
   auto link_lib = [this](auto &lib_rust_reader) {
-    auto &link_cells = get_link_cells();
-    lib_rust_reader.set_build_cells(link_cells);
     lib_rust_reader.linkLib();
     auto lib = lib_rust_reader.get_library_builder()->takeLib();
 
