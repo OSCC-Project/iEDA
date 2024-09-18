@@ -25,7 +25,7 @@ InitEGR* InitEGR::_init_egr = nullptr;
 
 InitEGR::InitEGR()
 {
-  _egr_dir_path = dmInst->get_config().get_output_path() + "rt/rt_temp_directory";
+  _egr_dir_path = dmInst->get_config().get_output_path() + "/rt/rt_temp_directory";
 }
 
 InitEGR::~InitEGR()
