@@ -22,10 +22,11 @@
  * @date 2023-01-02
  */
 
+#include "Power.hh"
+
 #include <array>
 #include <filesystem>
 
-#include "Power.hh"
 #include "ops/annotate_toggle_sp/AnnotateToggleSP.hh"
 #include "ops/build_graph/PwrBuildGraph.hh"
 #include "ops/calc_power/PwrCalcInternalPower.hh"
@@ -292,11 +293,11 @@ unsigned Power::analyzeGroupPower() {
     auto set_power_data = [this, &power_data](PwrGroupData* group_data) {
       double power_data_value = power_data->getPowerDataValue();
       if (power_data->isLeakageData()) {
-        group_data->set_leakage_power(NW_TO_W(power_data_value));
+        group_data->set_leakage_power(power_data_value);
       } else if (power_data->isInternalData()) {
-        group_data->set_internal_power(MW_TO_W(power_data_value));
+        group_data->set_internal_power(power_data_value);
       } else {
-        group_data->set_switch_power(MW_TO_W(power_data_value));
+        group_data->set_switch_power(power_data_value);
       }
       group_data->set_nom_voltage(power_data->get_nom_voltage());
     };
@@ -696,7 +697,8 @@ unsigned Power::reportPower(bool is_copy) {
         "%s/%s_%s%s", copy_design_work_space->first.c_str(), base_name.c_str(),
         copy_design_work_space->second.c_str(), extension.c_str());
 
-    std::string src_file = Str::printf("%s/%s", output_dir.c_str(), file_to_be_copy.c_str());
+    std::string src_file =
+        Str::printf("%s/%s", output_dir.c_str(), file_to_be_copy.c_str());
     if (std::filesystem::exists(src_file)) {
       std::filesystem::copy_file(
           src_file, dest_file_name,
@@ -714,6 +716,11 @@ unsigned Power::reportPower(bool is_copy) {
   }
 
   LOG_INFO << "power report start, output dir: " << output_dir;
+
+  if (output_dir.empty()) {
+    LOG_ERROR << "The design work space is not set.";
+    return 0;
+  }
 
   auto backup_work_space = backup_pwr_files(output_dir);
   std::filesystem::create_directories(output_dir);
@@ -807,6 +814,14 @@ std::optional<PwrGroupData::PwrGroupType> Power::getInstPowerGroup(
           },
           [this, lib_cell](
               Instance* the_inst) -> std::optional<PwrGroupData::PwrGroupType> {
+            // judge whether register.
+            if (lib_cell->isSequentialCell()) {
+              return PwrGroupData::PwrGroupType::kSeq;
+            }
+            return std::nullopt;
+          },
+          [this, lib_cell](
+              Instance* the_inst) -> std::optional<PwrGroupData::PwrGroupType> {
             // judge whether clock network.
             Pin* pin;
             FOREACH_INSTANCE_PIN(the_inst, pin) {
@@ -822,14 +837,6 @@ std::optional<PwrGroupData::PwrGroupType> Power::getInstPowerGroup(
             // judge whether register.
             if (!lib_cell->isSequentialCell()) {
               return PwrGroupData::PwrGroupType::kComb;
-            }
-            return std::nullopt;
-          },
-          [this, lib_cell](
-              Instance* the_inst) -> std::optional<PwrGroupData::PwrGroupType> {
-            // judge whether register.
-            if (lib_cell->isSequentialCell()) {
-              return PwrGroupData::PwrGroupType::kSeq;
             }
             return std::nullopt;
           }};

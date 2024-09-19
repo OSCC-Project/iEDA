@@ -26,8 +26,8 @@
 
 #include <iostream>
 
-#include "ScriptEngine.hh"
 #include "../tcl_definition.h"
+#include "ScriptEngine.hh"
 
 using ieda::TclCmd;
 using ieda::TclIntOption;
@@ -96,6 +96,20 @@ class CmdFeatureRouteRead : public TclCmd
  public:
   explicit CmdFeatureRouteRead(const char* cmd_name);
   ~CmdFeatureRouteRead() override = default;
+
+  unsigned check() override;
+  unsigned exec() override;
+
+ private:
+  // private function
+  // private data
+};
+
+class CmdFeatureEvalSummary : public TclCmd
+{
+ public:
+  explicit CmdFeatureEvalSummary(const char* cmd_name);
+  ~CmdFeatureEvalSummary() override = default;
 
   unsigned check() override;
   unsigned exec() override;

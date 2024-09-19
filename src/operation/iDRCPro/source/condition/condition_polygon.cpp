@@ -53,7 +53,7 @@ void DrcConditionManager::checkPolygons(std::string layer, DrcEngineLayout* layo
     rule_eol_list.clear();
   }
 
-  // corner fill
+  // Corner Fill Spacing
   auto rule_corner_fill = DrcTechRuleInst->getCornerFillSpacing(layer);
   std::map<unsigned, std::vector<int>> rule_corner_fill_pattern{{0b1011, {-2, -2, -1, 0}}, {0b1101, {-1, 0, -1, -2}}};
   unsigned rule_corner_fill_mask = 0b1111;
@@ -262,7 +262,7 @@ void DrcConditionManager::checkPolygons(std::string layer, DrcEngineLayout* layo
         }
       }
 
-      // corner fill
+      // Corner Fill Spacing
       if (rule_corner_fill) {
         for (auto [pattern, offset] : rule_corner_fill_pattern) {
           if ((corner_pattern_4 & rule_corner_fill_mask) == pattern) {
@@ -561,7 +561,7 @@ void DrcConditionManager::checkPolygons(std::string layer, DrcEngineLayout* layo
                                                << "\tmemory = " << states_eol.memoryDelta());
 #endif
 
-// corner fill
+// Corner Fill Spacing
 #ifndef DEBUGCLOSE_CORNER_FILL
   ieda::Stats states_corner_fill;
   int corner_fill_count = 0;
@@ -578,8 +578,8 @@ void DrcConditionManager::checkPolygons(std::string layer, DrcEngineLayout* layo
       ++corner_fill_count;
     }
   }
-  DEBUGOUTPUT(DEBUGHIGHLIGHT("Corner Fill:\t") << corner_fill_count << "\ttime = " << states_corner_fill.elapsedRunTime()
-                                               << "\tmemory = " << states_corner_fill.memoryDelta());
+  DEBUGOUTPUT(DEBUGHIGHLIGHT("Corner Fill Spacing:\t") << corner_fill_count << "\ttime = " << states_corner_fill.elapsedRunTime()
+                                                       << "\tmemory = " << states_corner_fill.memoryDelta());
 #endif
 
 // notch

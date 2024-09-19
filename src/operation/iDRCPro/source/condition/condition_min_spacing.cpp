@@ -65,7 +65,7 @@ void DrcConditionManager::checkMinSpacing(std::string layer, DrcEngineLayout* la
   std::vector<ieda_solver::GeometryRect> results;
   ieda_solver::growAnd(violation_position_set, half_min_spacing);
   violation_position_set.get(results);
-  DEBUGOUTPUT(DEBUGHIGHLIGHT("Min Spacing checking results:\t") << results.size());
+
   std::vector<bool> mark_save(results.size(), true);  /// mark violation need to be saved
 
   for (int i = 0; i < (int) results.size(); i++) {

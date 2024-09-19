@@ -16,6 +16,7 @@
 // ***************************************************************************************
 
 #include "condition_manager.h"
+#include "engine_geometry_creator.h"
 #include "engine_layout.h"
 #include "idm.h"
 #include "omp.h"
@@ -28,6 +29,12 @@ void DrcConditionManager::checkOverlap(std::string layer, DrcEngineLayout* layou
     return;
   }
 
+  //   checkOverlapByInteract(layer, layout);
+  checkOverlapBySelfIntersect(layer, layout);
+}
+
+void DrcConditionManager::checkOverlapByInteract(std::string layer, DrcEngineLayout* layout)
+{
   ieda::Stats states;
 
   struct DrcShortInfo
@@ -108,6 +115,54 @@ void DrcConditionManager::checkOverlap(std::string layer, DrcEngineLayout* layou
 
   DEBUGOUTPUT(DEBUGHIGHLIGHT("Metal Short:\t") << total_drc << "\tlayer " << layer << "\tnets = " << layout->get_sub_layouts().size()
                                                << "\ttime = " << states.elapsedRunTime() << "\tmemory = " << states.memoryDelta());
+}
+
+void DrcConditionManager::checkOverlapBySelfIntersect(std::string layer, DrcEngineLayout* layout)
+{
+  auto shrink_rect = [](ieda_solver::GeometryRect& rect, int value) -> bool {
+    ieda_solver::GeometryRect result;
+    int with = ieda_solver::getWireWidth(rect, ieda_solver::HORIZONTAL);
+    int height = ieda_solver::getWireWidth(rect, ieda_solver::HORIZONTAL);
+    if (with < 2 * value || height < 2 * value) {
+      return false;
+    }
+
+    ieda_solver::shrink(rect, ieda_solver::HORIZONTAL, value);
+    ieda_solver::shrink(rect, ieda_solver::VERTICAL, value);
+
+    return true;
+  };
+
+  ieda::Stats states;
+
+  ieda_solver::EngineGeometryCreator geo_creator;
+  auto* engine = dynamic_cast<ieda_solver::GeometryBoost*>(geo_creator.create());
+
+  for (auto& [net_id, sub_layout] : layout->get_sub_layouts()) {
+    auto sub_polyset = sub_layout->get_engine()->copyPolyset();
+    sub_polyset.clean();
+    sub_polyset.bloat2(1, 1, 1, 1);
+    engine->addPolyset(sub_polyset);
+  }
+
+  int total_drc = 0;
+  auto overlaps = engine->getOverlap();
+  for (auto& overlap : overlaps) {
+    std::vector<ieda_solver::GeometryRect> results;
+    ieda_solver::getDefaultRectangles(results, overlap);
+
+    for (auto rect : results) {
+      if (shrink_rect(rect, 1)) {
+        addViolation(rect, layer, ViolationEnumType::kShort);
+        total_drc++;
+      }
+    }
+  }
+
+  DEBUGOUTPUT(DEBUGHIGHLIGHT("Metal Short:\t") << total_drc << "\tlayer " << layer << "\tnets = " << layout->get_sub_layouts().size()
+                                               << "\ttime = " << states.elapsedRunTime() << "\tmemory = " << states.memoryDelta());
+
+  delete engine;
 }
 
 }  // namespace idrc

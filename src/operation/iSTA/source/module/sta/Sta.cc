@@ -22,6 +22,8 @@
  * @date 2020-11-27
  */
 
+#include "Sta.hh"
+
 #include <algorithm>
 #include <filesystem>
 #include <map>
@@ -31,7 +33,6 @@
 #include <tuple>
 #include <utility>
 
-#include "Sta.hh"
 #include "StaAnalyze.hh"
 #include "StaApplySdc.hh"
 #include "StaBuildClockTree.hh"
@@ -153,7 +154,7 @@ unsigned Sta::readDesignWithRustParser(const char *verilog_file) {
   if (!IsFileExists(verilog_file)) {
     return 0;
   }
-  
+
   readVerilogWithRustParser(verilog_file);
   auto &top_module_name = get_top_module_name();
   linkDesignWithRustParser(top_module_name.c_str());
@@ -334,8 +335,6 @@ unsigned Sta::linkLibertys() {
   }
 
   auto link_lib = [this](auto &lib_rust_reader) {
-    auto &link_cells = get_link_cells();
-    lib_rust_reader.set_build_cells(link_cells);
     lib_rust_reader.linkLib();
     auto lib = lib_rust_reader.get_library_builder()->takeLib();
 
@@ -375,7 +374,7 @@ unsigned Sta::readVerilogWithRustParser(const char *verilog_file) {
   if (!IsFileExists(verilog_file)) {
     return 0;
   }
-  
+
   bool is_ok = _rust_verilog_reader.readVerilog(verilog_file);
   _rust_verilog_file_ptr = _rust_verilog_reader.get_verilog_file_ptr();
   LOG_WARNING_IF(!is_ok) << "read verilog file " << verilog_file << " failed.";
@@ -548,11 +547,15 @@ void Sta::linkDesignWithRustParser(const char *top_cell_name) {
       } else if (the_right_net && !the_right_port) {
         // assign output_port = net;
         the_right_net->addPinPort(the_left_port);
-      } else if (!the_right_net && !the_left_net) {
+      } else if (!the_right_net && !the_left_net && the_right_port) {
         // assign output_port = input_port;
         auto &created_net = design_netlist.addNet(Net(right_net_name.c_str()));
         created_net.addPinPort(the_left_port);
         created_net.addPinPort(the_right_port);
+      } else if (!the_right_net && !the_left_net && !the_right_port) {
+        // assign output_port = 1'b0(1'b1);
+        auto &created_net = design_netlist.addNet(Net(left_net_name.c_str()));
+        created_net.addPinPort(the_left_port);
       }
 
     } else if (rust_is_module_inst_stmt(stmt)) {
@@ -923,6 +926,9 @@ void Sta::initSdcCmd() {
   registerTclCmd(CmdSetPropagatedClock, "set_propagated_clock");
   registerTclCmd(CmdSetClockGroups, "set_clock_groups");
   registerTclCmd(CmdSetMulticyclePath, "set_multicycle_path");
+  registerTclCmd(CmdSetFalsePath, "set_false_path");
+  registerTclCmd(CmdSetMaxDelay, "set_max_delay");
+  registerTclCmd(CmdSetMinDelay, "set_min_delay");
   registerTclCmd(CmdSetTimingDerate, "set_timing_derate");
   registerTclCmd(CmdSetClockUncertainty, "set_clock_uncertainty");
   registerTclCmd(CmdSetUnits, "set_units");
@@ -2415,6 +2421,11 @@ unsigned Sta::reportTiming(std::set<std::string> &&exclude_cell_names /*= {}*/,
 
   LOG_INFO << "start write sta report.";
   LOG_INFO << "output sta report path: " << design_work_space;
+
+  if (design_work_space == nullptr || design_work_space[0] == '\0') {
+    LOG_ERROR << "The design work space is not set.";
+    return 0;
+  }
 
   if (std::filesystem::exists(design_work_space) && is_copy) {
     std::filesystem::create_directories(copy_design_work_space);

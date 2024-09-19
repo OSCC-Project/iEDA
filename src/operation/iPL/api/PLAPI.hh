@@ -30,8 +30,8 @@
 #include "report/PLReporter.hh"
 
 namespace ieda_feature {
-    class PlaceSummary;
-}// namespace
+class PlaceSummary;
+}  // namespace ieda_feature
 
 namespace ipl {
 
@@ -110,7 +110,6 @@ class PLAPI
 
   void modifySTAOutputDir(std::string path);
   void initSTA(std::string path, bool init_log);
-  void initEval();
   void updateSTATiming();
   std::vector<std::string> obtainClockNameList();
   bool isClockNet(std::string net_name);
@@ -122,7 +121,6 @@ class PLAPI
                           std::pair<std::string, std::string> master_inst_buffer, std::pair<int, int> buffer_center_loc);
 
   /*****************************Timing-driven Placement: START*****************************/
-  void initTimingEval();
   double obtainPinEarlySlack(std::string pin_name);
   double obtainPinLateSlack(std::string pin_name);
   double obtainPinEarlyArrivalTime(std::string pin_name);
@@ -145,21 +143,12 @@ class PLAPI
   float obtainAvgWireResUnitLengthUm();
   float obtainAvgWireCapUnitLengthUm();
   float obtainInstOutPinRes(std::string cell_name, std::string port_name);
-  eval::TimingNet* generateTimingNet(NetWork* network,
-                                     const std::vector<std::pair<ipl::Point<int32_t>, ipl::Point<int32_t>>>& point_pair_list);
+  ieval::TimingNet* generateTimingNet(NetWork* network,
+                                      const std::vector<std::pair<ipl::Point<int32_t>, ipl::Point<int32_t>>>& point_pair_list);
   void destroyTimingEval();
 
   /*****************************Timing-driven Placement: END*****************************/
 
-  /*****************************Congestion-driven Placement: START*****************************/
-  std::vector<float> obtainPinDens(int32_t grid_cnt_x, int32_t grid_cnt_y);
-  std::vector<float> obtainNetCong(std::string rudy_type);
-  std::vector<float> evalGRCong();
-  int64_t evalEGRWL();
-  std::vector<float> getUseCapRatioList();
-  void plotCongMap(const std::string& plot_path, const std::string& output_file_name);
-  void destroyCongEval();
-  /*****************************Congestion-driven Placement: END*****************************/
   ieda_feature::PlaceSummary outputSummary(std::string step);
 
  private:

@@ -243,6 +243,16 @@ bool IdbTerm::is_pdn()
   return false;
 }
 
+bool IdbTerm::is_power()
+{
+  return _type == IdbConnectType::kPower;
+}
+
+bool IdbTerm::is_ground()
+{
+  return _type == IdbConnectType::kGround;
+}
+
 uint8_t IdbTerm::get_top_order()
 {
   uint8_t top_oder = 0;
