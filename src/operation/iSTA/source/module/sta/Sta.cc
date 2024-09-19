@@ -335,8 +335,6 @@ unsigned Sta::linkLibertys() {
   }
 
   auto link_lib = [this](auto &lib_rust_reader) {
-    auto &link_cells = get_link_cells();
-    lib_rust_reader.set_build_cells(link_cells);
     lib_rust_reader.linkLib();
     auto lib = lib_rust_reader.get_library_builder()->takeLib();
 
@@ -549,11 +547,15 @@ void Sta::linkDesignWithRustParser(const char *top_cell_name) {
       } else if (the_right_net && !the_right_port) {
         // assign output_port = net;
         the_right_net->addPinPort(the_left_port);
-      } else if (!the_right_net && !the_left_net) {
+      } else if (!the_right_net && !the_left_net && the_right_port) {
         // assign output_port = input_port;
         auto &created_net = design_netlist.addNet(Net(right_net_name.c_str()));
         created_net.addPinPort(the_left_port);
         created_net.addPinPort(the_right_port);
+      } else if (!the_right_net && !the_left_net && !the_right_port) {
+        // assign output_port = 1'b0(1'b1);
+        auto &created_net = design_netlist.addNet(Net(left_net_name.c_str()));
+        created_net.addPinPort(the_left_port);
       }
 
     } else if (rust_is_module_inst_stmt(stmt)) {

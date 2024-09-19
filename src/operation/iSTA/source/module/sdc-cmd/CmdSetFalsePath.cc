@@ -52,6 +52,6 @@ CmdSetFalsePath::CmdSetFalsePath(const char* cmd_name) : TclCmd(cmd_name) {
 
 unsigned CmdSetFalsePath::check() { return 1; }
 
-unsigned CmdSetFalsePath::exec() {}
+unsigned CmdSetFalsePath::exec() { return 1; }
 
 }  // namespace ista

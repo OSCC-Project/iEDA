@@ -8,14 +8,14 @@ add_executable(congestion_app
 
 target_link_libraries(congestion_app
     PRIVATE
-    eval_pro_congestion_api
+    eval_congestion_api
     idm
 )
 
 target_include_directories(congestion_app
     PRIVATE
-    ${HOME_EVALUATION_PRO}/api
-    ${HOME_EVALUATION_PRO}/database
+    ${HOME_EVALUATION}/api
+    ${HOME_EVALUATION}/database
 )
 
 # Density Evaluation APP
@@ -25,14 +25,14 @@ add_executable(density_app
 
 target_link_libraries(density_app
     PRIVATE
-    eval_pro_density_api
+    eval_density_api
     idm
 )
 
 target_include_directories(density_app
     PRIVATE
-    ${HOME_EVALUATION_PRO}/api
-    ${HOME_EVALUATION_PRO}/database
+    ${HOME_EVALUATION}/api
+    ${HOME_EVALUATION}/database
 )
 
 # Timing & Power Evaluation APP
@@ -42,7 +42,7 @@ add_executable(timing_app
 
 target_link_libraries(timing_app
     PRIVATE
-    eval_pro_timing_api
+    eval_timing_api
     idm
     ipl-api
     ipl-external_api
@@ -50,8 +50,8 @@ target_link_libraries(timing_app
 
 target_include_directories(timing_app
     PRIVATE
-    ${HOME_EVALUATION_PRO}/api
-    ${HOME_EVALUATION_PRO}/database
+    ${HOME_EVALUATION}/api
+    ${HOME_EVALUATION}/database
 )
 
 # Wirelength Evaluation APP
@@ -61,13 +61,13 @@ add_executable(wirelength_app
 
 target_link_libraries(wirelength_app
     PRIVATE
-    eval_pro_wirelength_api
+    eval_wirelength_api
     idm
 )
 
 target_include_directories(wirelength_app
     PRIVATE
-    ${HOME_EVALUATION_PRO}/api
-    ${HOME_EVALUATION_PRO}/database
+    ${HOME_EVALUATION}/api
+    ${HOME_EVALUATION}/database
 )
 

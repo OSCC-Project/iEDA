@@ -48,5 +48,5 @@ CmdSetMinDelay::CmdSetMinDelay(const char* cmd_name) : TclCmd(cmd_name) {
 
 unsigned CmdSetMinDelay::check() { return 1; }
 
-unsigned CmdSetMinDelay::exec() {}
+unsigned CmdSetMinDelay::exec() { return 1; }
 }  // namespace ista
