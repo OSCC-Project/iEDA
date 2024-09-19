@@ -64,7 +64,6 @@ class TopologyGenerator
   MTree<LayerCoord> getCoordTree(TGNet* tg_net, std::vector<Segment<PlanarCoord>>& routing_segment_list);
   void updateDemand(TGModel& tg_model, MTree<LayerCoord>& coord_tree);
   void uploadNetResult(TGNet* tg_net, MTree<LayerCoord>& coord_tree);
-  void outputGuide(TGModel& tg_model);
 
 #if 1  // exhibit
   void updateSummary(TGModel& tg_model);
@@ -72,6 +71,11 @@ class TopologyGenerator
   void writePlanarSupplyCSV(TGModel& tg_model);
   void writePlanarDemandCSV(TGModel& tg_model);
   void writePlanarOverflowCSV(TGModel& tg_model);
+#endif
+
+#if 1  // debug
+  void debugCheckTGModel(TGModel& tg_model);
+  void debugOutputGuide(TGModel& tg_model);
 #endif
 };
 

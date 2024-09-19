@@ -55,8 +55,8 @@ std::vector<Violation> DRCEngine::getViolationList(std::string top_name, std::ve
                                                    std::map<int32_t, std::vector<Segment<LayerCoord>>>& net_routing_result_map,
                                                    std::string stage)
 {
-  // return getViolationListBySelf(top_name, env_shape_list, net_pin_shape_map, net_fixed_result_map, net_routing_result_map, stage);
-  return getViolationListByOther(top_name, env_shape_list, net_pin_shape_map, net_fixed_result_map, net_routing_result_map, stage);
+  return getViolationListBySelf(top_name, env_shape_list, net_pin_shape_map, net_fixed_result_map, net_routing_result_map, stage);
+  // return getViolationListByOther(top_name, env_shape_list, net_pin_shape_map, net_fixed_result_map, net_routing_result_map, stage);
 }
 
 // private
@@ -70,15 +70,21 @@ std::vector<Violation> DRCEngine::getViolationListBySelf(std::string top_name, s
                                                          std::string stage)
 {
   int32_t micron_dbu = RTDM.getDatabase().get_micron_dbu();
+  ScaleAxis& gcell_axis = RTDM.getDatabase().get_gcell_axis();
   Die& die = RTDM.getDatabase().get_die();
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
   std::vector<CutLayer>& cut_layer_list = RTDM.getDatabase().get_cut_layer_list();
+  std::map<std::string, int32_t>& routing_layer_name_to_idx_map = RTDM.getDatabase().get_routing_layer_name_to_idx_map();
+  std::map<std::string, int32_t>& cut_layer_name_to_idx_map = RTDM.getDatabase().get_cut_layer_name_to_idx_map();
   std::vector<std::vector<ViaMaster>>& layer_via_master_list = RTDM.getDatabase().get_layer_via_master_list();
   std::string& de_temp_directory_path = RTDM.getConfig().de_temp_directory_path;
 
   std::string top_dir_path = RTUTIL.getString(de_temp_directory_path, top_name);
   std::string def_file_path = RTUTIL.getString(top_dir_path, "/clean.def");
   std::string netlist_file_path = RTUTIL.getString(top_dir_path, "/clean.v");
+  std::string prepared_file_path = RTUTIL.getString(top_dir_path, "/prepared");
+  std::string finished_file_path = RTUTIL.getString(top_dir_path, "/finished");
+  std::string violation_file_path = RTUTIL.getString(top_dir_path, "/drc.txt");
 
   // 获取所有net
   std::set<int> net_idx_set;
@@ -88,9 +94,9 @@ std::vector<Violation> DRCEngine::getViolationListBySelf(std::string top_name, s
   for (auto& [net_idx, segment_list] : net_routing_result_map) {
     net_idx_set.insert(net_idx);
   }
-
-  // 构建top文件夹
+  // 删除再构建top文件夹
   {
+    RTUTIL.removeDirectory(top_dir_path);
     RTUTIL.createDir(top_dir_path);
   }
   // 构建def
@@ -251,39 +257,113 @@ std::vector<Violation> DRCEngine::getViolationListBySelf(std::string top_name, s
     }
     RTUTIL.closeFileStream(netlist_file);
   }
-#if 1
-  // 定义局部静态变量
-  static std::mutex mtx;
-  static std::condition_variable cv;
-  static int32_t active_threads = 0;
-  static const int32_t max_threads = 5;
-
-  // 获取锁并等待，直到 active_threads < max_threads
+  // 构建任务状态文件
   {
-    std::unique_lock<std::mutex> lock(mtx);
-    cv.wait(lock, [] { return active_threads < max_threads; });
-    ++active_threads;
+    std::ofstream* prepared_file = RTUTIL.getOutputFileStream(prepared_file_path);
+    RTUTIL.pushStream(prepared_file, " ");
+    RTUTIL.closeFileStream(prepared_file);
   }
-#endif
-
-  // 执行命令
-  std::string command
-      = RTUTIL.getString("cd /home/zengzhisheng/debug_workspace/drc_engine && ./run_case.sh ", de_temp_directory_path, " ", top_name);
-  int32_t command_result = std::system(command.c_str());
-  if (command_result != 0) {
-    RTLOG.error(Loc::current(), "Unable to execute '", command, "' return '", command_result, "'");
-  }
-
-#if 1
-  // 释放锁并减少 active_threads 计数
+  // 修改文件夹权限
   {
-    std::lock_guard<std::mutex> lock(mtx);
-    --active_threads;
-    cv.notify_one();
+    std::filesystem::perms permissions
+        = std::filesystem::perms::owner_all | std::filesystem::perms::group_all | std::filesystem::perms::others_all;
+    RTUTIL.changePermissions(top_dir_path, permissions);
   }
-#endif
-
+  // 等待直到任务结束
+  {
+    int waiting_time = 0;
+    while (!RTUTIL.existFile(finished_file_path)) {
+      std::this_thread::sleep_for(std::chrono::seconds(1));
+      waiting_time++;
+      if (waiting_time % 500 == 0) {
+        RTLOG.warn(Loc::current(), "The task ", top_name, " waited for ", waiting_time, " seconds");
+      }
+    }
+  }
+  // 从中得到违例信息
   std::vector<Violation> voilation_list;
+  {
+    std::regex geometric_regex(R"(^(.+?): \( (.+?) \) (.+?)  \( (.+?) \)$)");
+    std::regex single_net_regex(R"(^Regular Wire of Net ([^&\n]+)$)");
+    std::regex double_net_regex(R"(^Regular Wire of Net (.+?) & Regular Wire of Net (.+?)$)");
+    std::regex net_env_regex(R"(^Regular Wire of Net (.+?) & Routing Blockage$)");
+    std::regex bounds_regex(R"(^Bounds : \( (.+?), (.+?) \) \( (.+?), (.+?) \)$)");
+
+    std::ifstream* violation_file = RTUTIL.getInputFileStream(violation_file_path);
+
+    std::string new_line;
+    while (getline(*violation_file, new_line)) {
+      std::smatch geometric_match;
+      if (std::regex_search(new_line, geometric_match, geometric_regex)) {
+        std::string drc_type;
+        std::set<std::string> net_name_set;
+        std::string layer_name;
+        std::string ll_x_string;
+        std::string ll_y_string;
+        std::string ur_x_string;
+        std::string ur_y_string;
+        // 读取
+        {
+          drc_type = geometric_match[2];
+          std::string net_line = geometric_match[3];
+          std::smatch net_match;
+          if (std::regex_search(net_line, net_match, single_net_regex)) {
+            net_name_set.insert(net_match[1]);
+          } else if (std::regex_search(net_line, net_match, double_net_regex)) {
+            net_name_set.insert(net_match[1]);
+            net_name_set.insert(net_match[2]);
+          } else if (std::regex_search(net_line, net_match, net_env_regex)) {
+            net_name_set.insert("net_-1");
+            net_name_set.insert(net_match[1]);
+          } else {
+            RTLOG.error(Loc::current(), "The net regex did not match!");
+          }
+          layer_name = geometric_match[4];
+          if (getline(*violation_file, new_line)) {
+            std::smatch bounds_match;
+            if (std::regex_search(new_line, bounds_match, bounds_regex)) {
+              ll_x_string = bounds_match[1];
+              ll_y_string = bounds_match[2];
+              ur_x_string = bounds_match[3];
+              ur_y_string = bounds_match[4];
+            } else {
+              RTLOG.error(Loc::current(), "The bounds regex did not match!");
+            }
+          } else {
+            RTLOG.error(Loc::current(), "Failed to read the next line for bounds!");
+          }
+        }
+        // 过滤
+        {
+        }
+        // 解析
+        {
+          bool is_routing = RTUTIL.exist(routing_layer_name_to_idx_map, layer_name);
+          EXTLayerRect ext_layer_rect;
+          ext_layer_rect.set_real_ll_x(std::stod(ll_x_string) * micron_dbu);
+          ext_layer_rect.set_real_ll_y(std::stod(ll_y_string) * micron_dbu);
+          ext_layer_rect.set_real_ur_x(std::stod(ur_x_string) * micron_dbu);
+          ext_layer_rect.set_real_ur_y(std::stod(ur_y_string) * micron_dbu);
+          ext_layer_rect.set_grid_rect(RTUTIL.getClosedGCellGridRect(ext_layer_rect.get_real_rect(), gcell_axis));
+          ext_layer_rect.set_layer_idx(is_routing ? routing_layer_name_to_idx_map[layer_name] : cut_layer_name_to_idx_map[layer_name]);
+          std::set<int32_t> violation_net_set;
+          for (const std::string& net_name : net_name_set) {
+            violation_net_set.insert(std::stoi(RTUTIL.splitString(net_name, '_').back()));
+          }
+          Violation violation;
+          violation.set_violation_shape(ext_layer_rect);
+          violation.set_is_routing(is_routing);
+          violation.set_violation_net_set(violation_net_set);
+          voilation_list.push_back(violation);
+        }
+      }
+    }
+    RTUTIL.closeFileStream(violation_file);
+  }
+  // 删除文件夹
+  {
+    RTUTIL.removeDirectory(top_dir_path);
+  }
   return voilation_list;
 }
 

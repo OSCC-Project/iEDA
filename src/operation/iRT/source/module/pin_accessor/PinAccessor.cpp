@@ -1949,9 +1949,7 @@ void PinAccessor::debugCheckPABox(PABox& pa_box)
           if (neighbor->get_neighbor_node_map()[opposite_orient] != &pa_node) {
             RTLOG.error(Loc::current(), "The pa_node neighbor is not bidirectional!");
           }
-          LayerCoord node_coord(pa_node.get_planar_coord(), pa_node.get_layer_idx());
-          LayerCoord neighbor_coord(neighbor->get_planar_coord(), neighbor->get_layer_idx());
-          if (RTUTIL.getOrientation(node_coord, neighbor_coord) == orient) {
+          if (RTUTIL.getOrientation(LayerCoord(pa_node), LayerCoord(*neighbor)) == orient) {
             continue;
           }
           RTLOG.error(Loc::current(), "The neighbor orient is different with real region!");

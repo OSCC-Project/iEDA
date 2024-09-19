@@ -77,29 +77,7 @@ class DataManager
   DataManager() = default;
   DataManager(const DataManager& other) = delete;
   DataManager(DataManager&& other) = delete;
-  ~DataManager()
-  {
-    Die& die = _database.get_die();
-
-    for (auto& [net_idx, segment_set] : getGlobalNetResultMap(die)) {
-      for (Segment<LayerCoord>* segment : segment_set) {
-        RTDM.updateGlobalNetResultToGCellMap(ChangeType::kDel, net_idx, segment);
-      }
-    }
-    for (auto& [net_idx, segment_set] : getDetailedNetResultMap(die)) {
-      for (Segment<LayerCoord>* segment : segment_set) {
-        RTDM.updateDetailedNetResultToGCellMap(ChangeType::kDel, net_idx, segment);
-      }
-    }
-    for (auto& [net_idx, patch_set] : getNetPatchMap(die)) {
-      for (EXTLayerRect* patch : patch_set) {
-        RTDM.updateNetPatchToGCellMap(ChangeType::kDel, net_idx, patch);
-      }
-    }
-    for (Violation* violation : getViolationSet(die)) {
-      RTDM.updateViolationToGCellMap(ChangeType::kDel, violation);
-    }
-  }
+  ~DataManager() = default;
   DataManager& operator=(const DataManager& other) = delete;
   DataManager& operator=(DataManager&& other) = delete;
 
@@ -144,6 +122,10 @@ class DataManager
   void printConfig();
   void printDatabase();
   void writePYScript();
+#endif
+
+#if 1  // destroy
+  void destroyGCellMap();
 #endif
 };
 

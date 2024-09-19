@@ -17,26 +17,9 @@
 #pragma once
 
 #include "LayerRect.hpp"
+#include "ViaMasterIdx.hpp"
 
 namespace irt {
-
-class ViaMasterIdx
-{
- public:
-  ViaMasterIdx() = default;
-  ~ViaMasterIdx() = default;
-  // getter
-  int32_t get_below_layer_idx() const { return _below_layer_idx; }
-  int32_t get_via_idx() const { return _via_idx; }
-  // setter
-  void set_below_layer_idx(const int32_t below_layer_idx) { _below_layer_idx = below_layer_idx; }
-  void set_via_idx(const int32_t via_idx) { _via_idx = via_idx; }
-  // function
-
- private:
-  int32_t _below_layer_idx = -1;
-  int32_t _via_idx = -1;
-};
 
 class ViaMaster
 {

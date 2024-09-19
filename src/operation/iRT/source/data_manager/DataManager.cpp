@@ -68,6 +68,7 @@ void DataManager::output()
   Monitor monitor;
   RTLOG.info(Loc::current(), "Starting...");
   RTI.output();
+  destroyGCellMap();
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
@@ -1558,6 +1559,34 @@ void DataManager::writePYScript()
   RTUTIL.pushStream(python_file, "with Pool() as pool:", "\n");
   RTUTIL.pushStream(python_file, "    pool.map(process_csv, csv_files)", "\n");
   RTUTIL.closeFileStream(python_file);
+}
+
+#endif
+
+#if 1  // destroy
+
+void DataManager::destroyGCellMap()
+{
+  Die& die = _database.get_die();
+
+  for (auto& [net_idx, segment_set] : getGlobalNetResultMap(die)) {
+    for (Segment<LayerCoord>* segment : segment_set) {
+      RTDM.updateGlobalNetResultToGCellMap(ChangeType::kDel, net_idx, segment);
+    }
+  }
+  for (auto& [net_idx, segment_set] : getDetailedNetResultMap(die)) {
+    for (Segment<LayerCoord>* segment : segment_set) {
+      RTDM.updateDetailedNetResultToGCellMap(ChangeType::kDel, net_idx, segment);
+    }
+  }
+  for (auto& [net_idx, patch_set] : getNetPatchMap(die)) {
+    for (EXTLayerRect* patch : patch_set) {
+      RTDM.updateNetPatchToGCellMap(ChangeType::kDel, net_idx, patch);
+    }
+  }
+  for (Violation* violation : getViolationSet(die)) {
+    RTDM.updateViolationToGCellMap(ChangeType::kDel, violation);
+  }
 }
 
 #endif

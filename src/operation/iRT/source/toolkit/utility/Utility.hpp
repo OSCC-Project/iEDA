@@ -3091,7 +3091,7 @@ class Utility
 
   static void checkFile(std::string file_path)
   {
-    if (0 != access(file_path.c_str(), F_OK)) {
+    if (!std::filesystem::exists(file_path)) {
       RTLOG.error(Loc::current(), "The file ", file_path, " does not exist!");
     }
   }
@@ -3100,12 +3100,34 @@ class Utility
 
   static void createDir(std::string dir_path)
   {
-    if (0 != access(dir_path.c_str(), F_OK)) {
+    if (!std::filesystem::exists(dir_path)) {
       std::error_code system_error;
       if (!std::filesystem::create_directories(dir_path, system_error)) {
-        if (!std::filesystem::exists(dir_path)) {
-          RTLOG.error(Loc::current(), "Failed to create directory '", dir_path, "', system_error:", system_error.message());
-        }
+        RTLOG.error(Loc::current(), "Failed to create directory '", dir_path, "', system_error:", system_error.message());
+      }
+    }
+  }
+
+  static bool existFile(const std::string& file_path) { return std::filesystem::exists(file_path); }
+
+  static void changePermissions(const std::string& dir_path, std::filesystem::perms permissions)
+  {
+    std::error_code system_error;
+    std::filesystem::permissions(dir_path, permissions);
+    if (system_error) {
+      RTLOG.error(Loc::current(), "Failed to change permissions for '", dir_path, "', system_error: ", system_error.message());
+    }
+  }
+
+  static void removeDirectory(const std::string& dir_path)
+  {
+    std::error_code system_error;
+
+    // 检查文件夹是否存在
+    if (std::filesystem::exists(dir_path, system_error)) {
+      // 尝试删除文件夹
+      if (!std::filesystem::remove_all(dir_path, system_error)) {
+        RTLOG.error(Loc::current(), "Failed to remove directory '", dir_path, "'. Error: ", system_error.message());
       }
     }
   }

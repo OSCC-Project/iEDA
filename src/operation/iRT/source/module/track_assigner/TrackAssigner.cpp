@@ -1517,9 +1517,7 @@ void TrackAssigner::debugCheckTAPanel(TAPanel& ta_panel)
         if (neighbor->get_neighbor_node_map()[opposite_orient] != &ta_node) {
           RTLOG.error(Loc::current(), "The ta_node neighbor is not bidirectional!");
         }
-        LayerCoord node_coord(ta_node.get_planar_coord(), ta_node.get_layer_idx());
-        LayerCoord neighbor_coord(neighbor->get_planar_coord(), neighbor->get_layer_idx());
-        if (RTUTIL.getOrientation(node_coord, neighbor_coord) == orient) {
+        if (RTUTIL.getOrientation(LayerCoord(ta_node), LayerCoord(*neighbor)) == orient) {
           continue;
         }
         RTLOG.error(Loc::current(), "The neighbor orient is different with real region!");
