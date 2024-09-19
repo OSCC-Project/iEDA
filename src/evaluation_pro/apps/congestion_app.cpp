@@ -140,8 +140,7 @@ void TestRudyMapFromIDB(const std::string& file_path)
   dmInst->init(file_path);
 
   ieval::CongestionAPI congestion_api;
-  int32_t grid_size = 2000;
-  ieval::RUDYMapSummary rudy_map_summary = congestion_api.rudyMap(grid_size);
+  ieval::RUDYMapSummary rudy_map_summary = congestion_api.rudyMap();
 
   std::cout << "rudy horizontal: " << rudy_map_summary.rudy_horizontal << std::endl;
   std::cout << "rudy vertical: " << rudy_map_summary.rudy_vertical << std::endl;
