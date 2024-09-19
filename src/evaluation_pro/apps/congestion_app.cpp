@@ -13,18 +13,24 @@ void TestEgrMap();
 void TestRudyMap();
 void TestEgrOverflow();
 void TestRudyUtilization();
-void TestRudyMapFromIDB();
+//void TestRudyMapFromIDB();
+void TestRudyMapFromIDB(const std::string& file_path);
 void TestEgrMapFromIDB();
 
-int main()
+int main(int argc, char *argv[])
 {
   // TestEgrMap();
   // TestRudyMap();
   // TestEgrOverflow();
   // TestRudyUtilization();
-  // TestRudyMapFromIDB();
-  TestEgrMapFromIDB();
+  
+  if (argc > 1) {
+    std::string map_path(argv[1]);
+    std::cout << "map_path: " << map_path << std::endl;
+    TestRudyMapFromIDB(map_path);
+  }
 
+  // TestEgrMapFromIDB();
   return 0;
 }
 
@@ -129,9 +135,9 @@ void TestRudyUtilization()
   std::cout << "average utilization union: " << utilization_summary.weighted_average_utilization_union << std::endl;
 }
 
-void TestRudyMapFromIDB()
+void TestRudyMapFromIDB(const std::string& file_path)
 {
-  dmInst->init("/data/yhqiu/benchmark/AiEDA/application/benchmark/28nm/gcd/config/db_default_config_test.json");
+  dmInst->init(file_path);
 
   ieval::CongestionAPI congestion_api;
   int32_t grid_size = 2000;
