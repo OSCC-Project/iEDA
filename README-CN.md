@@ -188,7 +188,6 @@ Fork 此 iEDA 仓库，修改代码后提交 [Pull Request](https://gitee.com/os
 | lemon          | [lemon](https://lemon.cs.elte.hu/trac/lemon)                                                             | 图、网络中的高效建模和优化.                                       |
 | SALT           | [SALT]([SALT](https://github.com/chengengjie/salt))                                                      | 生成VLSI路由拓扑，在路径长度(浅度)和总线长(亮度)之间进行权衡.     |
 | scipoptsuite   | [SCIP](https://scipopt.org/index.php#welcome)                                                            | 用于快速求解混合整数规划 (MIP) 和混合整数非线性规划 (MINLP) .     |
-| parser/verilog | [OpenROAD/OpenSTA/verilog](https://github.com/The-OpenROAD-Project/OpenSTA/tree/master/verilog)          | 解析netlist文件 .                                                 |
 | mt-kahypar | [mt-kahypar]([mt-kahypar]https://github.com/kahypar/mt-kahypar.git)          | 多线程超图划分器.                                                                                         |
 
 我们深深地感谢来自开源社区的支持，我们也鼓励其他开源项目在[木兰宽松许可证](LICENSE)的范围下复用我们的代码。
@@ -201,11 +200,7 @@ Fork 此 iEDA 仓库，修改代码后提交 [Pull Request](https://gitee.com/os
 
 [License-url]: LICENSE
 [README-en-path]: README.md
-[README-cn-path]: README-CN.md
 [Code-conduct-md]: docs/tbd/CodeConduct.md
-[Tcl-menu-xls]: docs/tbd/TclMenu.xls
 [iEDA-OSCC-url]: https://ieda.oscc.cc/
-[ISEDA-2023-iEDA-url]: https://www.eda2.com/conferenceHome/program/detail?key=s2
-[ISEDA-2023-panel6-url]: https://www.eda2.com/conferenceHome/program/detail?key=panel6
 [iEDA-paper]: docs/paper/ISEDA'23-iEDA-final.pdf
 [iEDA-slides]: docs/ppt/ISEDA'23-iEDA-lxq-v8.pptx
