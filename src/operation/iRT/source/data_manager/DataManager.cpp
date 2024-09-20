@@ -501,6 +501,7 @@ void DataManager::buildConfig()
   _config.dr_temp_directory_path = _config.temp_directory_path + "detailed_router/";
   /////////////////////////////////////////////
   // **********        RT         ********** //
+  RTUTIL.removeDir(_config.temp_directory_path);
   RTUTIL.createDir(_config.temp_directory_path);
   RTUTIL.createDirByFile(_config.log_file_path);
   // **********     DRCEngine     ********** //

@@ -96,7 +96,7 @@ std::vector<Violation> DRCEngine::getViolationListBySelf(std::string top_name, s
   }
   // 删除再构建top文件夹
   {
-    RTUTIL.removeDirectory(top_dir_path);
+    RTUTIL.removeDir(top_dir_path);
     RTUTIL.createDir(top_dir_path);
   }
   // 构建def
@@ -362,7 +362,7 @@ std::vector<Violation> DRCEngine::getViolationListBySelf(std::string top_name, s
   }
   // 删除文件夹
   {
-    RTUTIL.removeDirectory(top_dir_path);
+    RTUTIL.removeDir(top_dir_path);
   }
   return voilation_list;
 }

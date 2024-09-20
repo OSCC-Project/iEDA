@@ -3119,7 +3119,7 @@ class Utility
     }
   }
 
-  static void removeDirectory(const std::string& dir_path)
+  static void removeDir(const std::string& dir_path)
   {
     std::error_code system_error;
 
