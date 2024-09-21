@@ -14,7 +14,7 @@ void TestTotalWirelength();
 void TestNetWirelength();
 void TestPathWirelength();
 void TestEgrWirelength(std::string guide_path);
-void TestWirelengthEvalFromIDB();
+void TestWirelengthEvalFromIDB(const std::sting& workspace_path);
 
 int main()
 {
@@ -22,7 +22,11 @@ int main()
   // TestNetWirelength();
   // TestPathWirelength();
   // TestEgrWirelength("./rt_temp_directory/initial_router/route.guide");
-  TestWirelengthEvalFromIDB();
+  if (argc > 1) {
+    std::string workspace_path(argv[1]);
+    std::cout << "workspace_path: " << workspace_path << std::endl;
+    TestWirelengthEvalFromIDB(workspace_path);
+  }
 
   return 0;
 }
@@ -116,9 +120,9 @@ void TestEgrWirelength(std::string guide_path)
   std::cout << "Path EGR WL: " << path_egr_wl << std::endl;
 }
 
-void TestWirelengthEvalFromIDB()
+void TestWirelengthEvalFromIDB(const std::sting& workspace_path)
 {
-  dmInst->init("/data/yhqiu/benchmark/AiEDA/application/benchmark/28nm/gcd/config/db_default_config_test.json");
+  dmInst->init(workspace_path);
   ieval::WirelengthAPI wirelength_api;
   ieval::TotalWLSummary wl_summary = wirelength_api.totalWL();
   std::cout << "Total HPWL: " << wl_summary.HPWL << std::endl;
