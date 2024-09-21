@@ -20,14 +20,14 @@ class DensityAPI
   static DensityAPI* getInst();
   static void destroyInst();
 
-  DensityMapSummary densityMap(int32_t grid_size = 1);
+  DensityMapSummary densityMap(int32_t grid_size = 1, bool neighbor = false);
   CellMapSummary cellDensityMap(int32_t grid_size = 1);
-  PinMapSummary pinDensityMap(int32_t grid_size = 1);
-  NetMapSummary netDensityMap(int32_t grid_size = 1);
+  PinMapSummary pinDensityMap(int32_t grid_size = 1, bool neighbor = false);
+  NetMapSummary netDensityMap(int32_t grid_size = 1, bool neighbor = false);
 
   CellMapSummary cellDensityMap(DensityCells cells, DensityRegion region, int32_t grid_size);
-  PinMapSummary pinDensityMap(DensityPins pins, DensityRegion region, int32_t grid_size);
-  NetMapSummary netDensityMap(DensityNets nets, DensityRegion region, int32_t grid_size);
+  PinMapSummary pinDensityMap(DensityPins pins, DensityRegion region, int32_t grid_size, bool neighbor);
+  NetMapSummary netDensityMap(DensityNets nets, DensityRegion region, int32_t grid_size, bool neighbor);
 
  private:
   static DensityAPI* _density_api_inst;

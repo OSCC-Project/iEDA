@@ -64,34 +64,34 @@ std::string DensityEval::evalAllCellDensity(DensityCells cells, DensityRegion re
   return evalDensity(cells, region, grid_size, "all", "allcell_density.csv");
 }
 
-std::string DensityEval::evalMacroPinDensity(DensityPins pins, DensityRegion region, int32_t grid_size)
+std::string DensityEval::evalMacroPinDensity(DensityPins pins, DensityRegion region, int32_t grid_size, bool neighbor)
 {
-  return evalPinDensity(pins, region, grid_size, "macro", "macro_pin_density.csv");
+  return evalPinDensity(pins, region, grid_size, neighbor, "macro", "macro_pin_density.csv");
 }
 
-std::string DensityEval::evalStdCellPinDensity(DensityPins pins, DensityRegion region, int32_t grid_size)
+std::string DensityEval::evalStdCellPinDensity(DensityPins pins, DensityRegion region, int32_t grid_size, bool neighbor)
 {
-  return evalPinDensity(pins, region, grid_size, "stdcell", "stdcell_pin_density.csv");
+  return evalPinDensity(pins, region, grid_size, neighbor, "stdcell", "stdcell_pin_density.csv");
 }
 
-std::string DensityEval::evalAllCellPinDensity(DensityPins pins, DensityRegion region, int32_t grid_size)
+std::string DensityEval::evalAllCellPinDensity(DensityPins pins, DensityRegion region, int32_t grid_size, bool neighbor)
 {
-  return evalPinDensity(pins, region, grid_size, "all", "allcell_pin_density.csv");
+  return evalPinDensity(pins, region, grid_size, neighbor, "all", "allcell_pin_density.csv");
 }
 
-std::string DensityEval::evalLocalNetDensity(DensityNets nets, DensityRegion region, int32_t grid_size)
+std::string DensityEval::evalLocalNetDensity(DensityNets nets, DensityRegion region, int32_t grid_size, bool neighbor)
 {
-  return evalNetDensity(nets, region, grid_size, "local", "local_net_density.csv");
+  return evalNetDensity(nets, region, grid_size, neighbor, "local", "local_net_density.csv");
 }
 
-std::string DensityEval::evalGlobalNetDensity(DensityNets nets, DensityRegion region, int32_t grid_size)
+std::string DensityEval::evalGlobalNetDensity(DensityNets nets, DensityRegion region, int32_t grid_size, bool neighbor)
 {
-  return evalNetDensity(nets, region, grid_size, "global", "global_net_density.csv");
+  return evalNetDensity(nets, region, grid_size, neighbor, "global", "global_net_density.csv");
 }
 
-std::string DensityEval::evalAllNetDensity(DensityNets nets, DensityRegion region, int32_t grid_size)
+std::string DensityEval::evalAllNetDensity(DensityNets nets, DensityRegion region, int32_t grid_size, bool neighbor)
 {
-  return evalNetDensity(nets, region, grid_size, "all", "allnet_density.csv");
+  return evalNetDensity(nets, region, grid_size, neighbor, "all", "allnet_density.csv");
 }
 
 std::string DensityEval::evalDensity(DensityCells cells, DensityRegion region, int32_t grid_size, std::string cell_type,
@@ -150,7 +150,7 @@ std::string DensityEval::evalDensity(DensityCells cells, DensityRegion region, i
   return getAbsoluteFilePath(output_path);
 }
 
-std::string DensityEval::evalPinDensity(DensityPins pins, DensityRegion region, int32_t grid_size, std::string pin_type,
+std::string DensityEval::evalPinDensity(DensityPins pins, DensityRegion region, int32_t grid_size, bool neighbor, std::string pin_type,
                                         std::string output_filename)
 {
   int32_t grid_cols = (region.ux - region.lx + grid_size - 1) / grid_size;
@@ -172,20 +172,53 @@ std::string DensityEval::evalPinDensity(DensityPins pins, DensityRegion region, 
     }
   }
 
-  for (int32_t row = 0; row < grid_rows; ++row) {
-    for (int32_t col = 0; col < grid_cols; ++col) {
-      // int32_t grid_lx = region.lx + col * grid_size;
-      // int32_t grid_ly = region.ly + row * grid_size;
-      // int32_t grid_ux = std::min(region.lx + (col + 1) * grid_size, region.ux);
-      // int32_t grid_uy = std::min(region.ly + (row + 1) * grid_size, region.uy);
+  if (neighbor) {
+    const std::vector<std::vector<int>> kernel = {{1, 1, 1}, {1, 1, 1}, {1, 1, 1}};
+    std::vector<std::vector<int32_t>> padded_matrix(grid_rows + 2, std::vector<int32_t>(grid_cols + 2, 0));
+    for (int32_t row = 0; row < grid_rows; ++row) {
+      for (int32_t col = 0; col < grid_cols; ++col) {
+        padded_matrix[row + 1][col + 1] = pin_count[row][col];
+      }
+    }
+    std::vector<std::vector<int32_t>> neighbor_pin_count(grid_rows, std::vector<int32_t>(grid_cols, 0));
+    for (int32_t row = 0; row < grid_rows; ++row) {
+      for (int32_t col = 0; col < grid_cols; ++col) {
+        int32_t sum = 0;
+        for (int32_t ker_i = 0; ker_i < 3; ++ker_i) {
+          for (int32_t ker_j = 0; ker_j < 3; ++ker_j) {
+            sum += kernel[ker_i][ker_j] * padded_matrix[row + ker_i][col + ker_j];
+          }
+        }
+        neighbor_pin_count[row][col] = sum;
+      }
+    }
+    for (int32_t row = 0; row < grid_rows; ++row) {
+      for (int32_t col = 0; col < grid_cols; ++col) {
+        density_grid[row][col] = static_cast<double>(neighbor_pin_count[row][col]);
+      }
+    }
+  } else {
+    for (int32_t row = 0; row < grid_rows; ++row) {
+      for (int32_t col = 0; col < grid_cols; ++col) {
+        // int32_t grid_lx = region.lx + col * grid_size;
+        // int32_t grid_ly = region.ly + row * grid_size;
+        // int32_t grid_ux = std::min(region.lx + (col + 1) * grid_size, region.ux);
+        // int32_t grid_uy = std::min(region.ly + (row + 1) * grid_size, region.uy);
 
-      // double grid_area = static_cast<double>((grid_ux - grid_lx) * (grid_uy - grid_ly));
-      // density_grid[row][col] = static_cast<double>(pin_count[row][col]) / grid_area;
-      density_grid[row][col] = static_cast<double>(pin_count[row][col]);
+        // double grid_area = static_cast<double>((grid_ux - grid_lx) * (grid_uy - grid_ly));
+        // density_grid[row][col] = static_cast<double>(pin_count[row][col]) / grid_area;
+        density_grid[row][col] = static_cast<double>(pin_count[row][col]);
+      }
     }
   }
 
-  std::string output_path = createDirPath("density_map") + "/" + output_filename;
+  std::string output_path;
+  if (neighbor) {
+    output_path = createDirPath("density_map") + "/" + "neighbor_" + output_filename;
+  } else {
+    output_path = createDirPath("density_map") + "/" + output_filename;
+  }
+
   std::ofstream csv_file(output_path);
 
   for (size_t row_index = density_grid.size(); row_index-- > 0;) {
@@ -203,7 +236,7 @@ std::string DensityEval::evalPinDensity(DensityPins pins, DensityRegion region, 
   return getAbsoluteFilePath(output_path);
 }
 
-std::string DensityEval::evalNetDensity(DensityNets nets, DensityRegion region, int32_t grid_size, std::string net_type,
+std::string DensityEval::evalNetDensity(DensityNets nets, DensityRegion region, int32_t grid_size, bool neighbor, std::string net_type,
                                         std::string output_filename)
 {
   int32_t grid_cols = (region.ux - region.lx + grid_size - 1) / grid_size;
@@ -231,29 +264,65 @@ std::string DensityEval::evalNetDensity(DensityNets nets, DensityRegion region, 
       }
     }
   }
-  std::string output_path = createDirPath("density_map") + "/" + output_filename;
-  std::ofstream csv_file(output_path);
 
-  for (int32_t row = grid_rows - 1; row >= 0; --row) {
-    for (int32_t col = 0; col < grid_cols; ++col) {
-      // int32_t grid_lx = region.lx + col * grid_size;
-      // int32_t grid_ly = region.ly + row * grid_size;
-      // int32_t grid_ux = std::min(region.lx + (col + 1) * grid_size, region.ux);
-      // int32_t grid_uy = std::min(region.ly + (row + 1) * grid_size, region.uy);
-
-      // double grid_area = static_cast<double>((grid_ux - grid_lx) * (grid_uy - grid_ly));
-
-      // double density = net_count[row][col] / grid_area;
-      double density = net_count[row][col];
-
-      csv_file << std::fixed << std::setprecision(6) << density;
-      if (col < grid_cols - 1)
-        csv_file << ",";
+  std::string output_path;
+  if (neighbor) {
+    const std::vector<std::vector<int>> kernel = {{1, 1, 1}, {1, 1, 1}, {1, 1, 1}};
+    std::vector<std::vector<int32_t>> padded_matrix(grid_rows + 2, std::vector<int32_t>(grid_cols + 2, 0));
+    for (int32_t row = 0; row < grid_rows; ++row) {
+      for (int32_t col = 0; col < grid_cols; ++col) {
+        padded_matrix[row + 1][col + 1] = net_count[row][col];
+      }
     }
-    csv_file << "\n";
+    std::vector<std::vector<int32_t>> neighbor_net_count(grid_rows, std::vector<int32_t>(grid_cols, 0));
+    for (int32_t row = 0; row < grid_rows; ++row) {
+      for (int32_t col = 0; col < grid_cols; ++col) {
+        int32_t sum = 0;
+        for (int32_t ker_i = 0; ker_i < 3; ++ker_i) {
+          for (int32_t ker_j = 0; ker_j < 3; ++ker_j) {
+            sum += kernel[ker_i][ker_j] * padded_matrix[row + ker_i][col + ker_j];
+          }
+        }
+        neighbor_net_count[row][col] = sum;
+      }
+    }
+    output_path = createDirPath("density_map") + "/" + "neighbor_" + output_filename;
+    std::ofstream csv_file(output_path);
+    for (int32_t row = grid_rows - 1; row >= 0; --row) {
+      for (int32_t col = 0; col < grid_cols; ++col) {
+        double density = neighbor_net_count[row][col];
+        csv_file << std::fixed << std::setprecision(6) << density;
+        if (col < grid_cols - 1)
+          csv_file << ",";
+      }
+      csv_file << "\n";
+    }
+    csv_file.close();
   }
 
-  csv_file.close();
+  else {
+    output_path = createDirPath("density_map") + "/" + output_filename;
+    std::ofstream csv_file(output_path);
+    for (int32_t row = grid_rows - 1; row >= 0; --row) {
+      for (int32_t col = 0; col < grid_cols; ++col) {
+        // int32_t grid_lx = region.lx + col * grid_size;
+        // int32_t grid_ly = region.ly + row * grid_size;
+        // int32_t grid_ux = std::min(region.lx + (col + 1) * grid_size, region.ux);
+        // int32_t grid_uy = std::min(region.ly + (row + 1) * grid_size, region.uy);
+
+        // double grid_area = static_cast<double>((grid_ux - grid_lx) * (grid_uy - grid_ly));
+
+        // double density = net_count[row][col] / grid_area;
+        double density = net_count[row][col];
+
+        csv_file << std::fixed << std::setprecision(6) << density;
+        if (col < grid_cols - 1)
+          csv_file << ",";
+      }
+      csv_file << "\n";
+    }
+    csv_file.close();
+  }
 
   return getAbsoluteFilePath(output_path);
 }

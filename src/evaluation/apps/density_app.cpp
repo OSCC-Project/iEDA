@@ -15,8 +15,8 @@ void TestDensityMapFromIDB();
 
 int main()
 {
-  // TestDensityMap();
-  TestDensityMapFromIDB();
+  TestDensityMap();
+  // TestDensityMapFromIDB();
   return 0;
 }
 
@@ -39,7 +39,7 @@ void TestDensityMap()
   cell1.height = 6;
   ieval::DensityCell cell2;
   cell2.type = "stdcell";
-  cell2.lx = 1;
+  cell2.lx = 7;
   cell2.ly = 3;
   cell2.width = 2;
   cell2.height = 2;
@@ -47,6 +47,7 @@ void TestDensityMap()
   cells.push_back(cell2);
 
   int32_t grid_size = 2;
+  bool neighbor = true;
 
   ieval::DensityPins pins;
   ieval::DensityPin pin1;
@@ -55,8 +56,8 @@ void TestDensityMap()
   pin1.ly = 1;
   ieval::DensityPin pin2;
   pin2.type = "stdcell";
-  pin2.lx = 1;
-  pin2.ly = 7;
+  pin2.lx = 3;
+  pin2.ly = 3;
   pins.push_back(pin1);
   pins.push_back(pin2);
 
@@ -79,12 +80,12 @@ void TestDensityMap()
   std::cout << "StdCell density: " << cell_map_summary.stdcell_density << std::endl;
   std::cout << "AllCell density: " << cell_map_summary.allcell_density << std::endl;
 
-  ieval::PinMapSummary pin_map_summary = density_api.pinDensityMap(pins, region, grid_size);
+  ieval::PinMapSummary pin_map_summary = density_api.pinDensityMap(pins, region, grid_size, neighbor);
   std::cout << "Macro pin density: " << pin_map_summary.macro_pin_density << std::endl;
   std::cout << "StdCell pin density: " << pin_map_summary.stdcell_pin_density << std::endl;
   std::cout << "AllCell pin density: " << pin_map_summary.allcell_pin_density << std::endl;
 
-  ieval::NetMapSummary net_map_summary = density_api.netDensityMap(nets, region, grid_size);
+  ieval::NetMapSummary net_map_summary = density_api.netDensityMap(nets, region, grid_size, neighbor);
   std::cout << "Local net density: " << net_map_summary.local_net_density << std::endl;
   std::cout << "Global net density: " << net_map_summary.global_net_density << std::endl;
   std::cout << "All net density: " << net_map_summary.allnet_density << std::endl;
