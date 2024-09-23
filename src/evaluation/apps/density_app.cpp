@@ -12,11 +12,14 @@
 
 void TestDensityMap();
 void TestDensityMapFromIDB();
+void TestMarginMap();
 
 int main()
 {
-  TestDensityMap();
+  // TestDensityMap();
   // TestDensityMapFromIDB();
+  TestMarginMap();
+
   return 0;
 }
 
@@ -113,4 +116,44 @@ void TestDensityMapFromIDB()
   std::cout << "Local net density: " << net_map.local_net_density << std::endl;
   std::cout << "Global net density: " << net_map.global_net_density << std::endl;
   std::cout << "All net density: " << net_map.allnet_density << std::endl;
+}
+
+void TestMarginMap()
+{
+  ieval::DensityAPI density_api;
+
+  ieval::DensityRegion die;
+  die.lx = 0;
+  die.ly = 0;
+  die.ux = 250;
+  die.uy = 150;
+
+  ieval::DensityRegion core;
+  core.lx = 25;
+  core.ly = 25;
+  core.ux = 175;
+  core.uy = 125;
+
+  ieval::DensityCells cells;
+  ieval::DensityCell cell1;
+  cell1.type = "macro";
+  cell1.lx = 40;
+  cell1.ly = 50;
+  cell1.width = 90;
+  cell1.height = 60;
+  ieval::DensityCell cell2;
+  cell2.type = "macro";
+  cell2.lx = 140;
+  cell2.ly = 30;
+  cell2.width = 20;
+  cell2.height = 40;
+  cells.push_back(cell1);
+  cells.push_back(cell2);
+
+  int32_t grid_size = 25;
+
+  ieval::MacroMarginSummary macro_margin_summary = density_api.macroMarginMap(cells, die, core, grid_size);
+  std::cout << "Horizontal margin: " << macro_margin_summary.horizontal_margin << std::endl;
+  std::cout << "Vertical margin: " << macro_margin_summary.vertical_margin << std::endl;
+  std::cout << "Union margin: " << macro_margin_summary.union_margin << std::endl;
 }
