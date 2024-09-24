@@ -1083,12 +1083,16 @@ std::vector<Violation> RTInterface::getViolationList(std::vector<idb::IdbLayerSh
   std::set<idrc::ViolationEnumType> check_select;
   if (stage == "PA") {
     check_select.insert(idrc::ViolationEnumType::kShort);
+    check_select.insert(idrc::ViolationEnumType::kDefaultSpacing);
+    check_select.insert(idrc::ViolationEnumType::kPRLSpacing);
+    check_select.insert(idrc::ViolationEnumType::kEOL);
   } else if (stage == "TA") {
     check_select.insert(idrc::ViolationEnumType::kShort);
   } else if (stage == "DR") {
     check_select.insert(idrc::ViolationEnumType::kShort);
     check_select.insert(idrc::ViolationEnumType::kDefaultSpacing);
     check_select.insert(idrc::ViolationEnumType::kPRLSpacing);
+    check_select.insert(idrc::ViolationEnumType::kEOL);
   } else {
     RTLOG.error(Loc::current(), "Currently not supporting other stages");
   }
@@ -1105,17 +1109,7 @@ std::vector<Violation> RTInterface::getViolationList(std::vector<idb::IdbLayerSh
   drc_api.init();
   for (auto& [type, idrc_violation_list] : drc_api.check(env_shape_list, net_pin_shape_map, net_result_map, check_select)) {
     for (idrc::DrcViolation* idrc_violation : idrc_violation_list) {
-      // self的drc违例先过滤
-      if (idrc_violation->get_net_ids().size() < 2) {
-        continue;
-      }
-      // 由于pin_shape之间的drc违例存在，第一布线层的drc违例先过滤
       idb::IdbLayer* idb_layer = idrc_violation->get_layer();
-      if (idb_layer->is_routing()) {
-        if (routing_layer_name_to_idx_map[idb_layer->get_name()] == 0) {
-          continue;
-        }
-      }
       EXTLayerRect ext_layer_rect;
       if (idrc_violation->is_rect()) {
         idrc::DrcViolationRect* idrc_violation_rect = static_cast<idrc::DrcViolationRect*>(idrc_violation);

@@ -584,57 +584,42 @@ void DataManager::makeLayerList()
     }
     return frequent_num;
   };
-  // zzs
-  int32_t step_length = 400;
-  // {
-  //   std::vector<int32_t> width_list;
-  //   std::vector<int32_t> routing_spacing_list;
-  //   std::vector<int32_t> cut_spacing_list;
-  //   for (RoutingLayer& routing_layer : routing_layer_list) {
-  //     width_list.push_back(routing_layer.get_min_width());
-  //     routing_spacing_list.push_back(routing_layer.getMinSpacing(PlanarRect(0, 0, 0, 0)));
-  //   }
-  //   for (CutLayer& cut_layer : cut_layer_list) {
-  //     cut_spacing_list.push_back(cut_layer.getMinSpacing());
-  //   }
-  //   step_length = getFrequentNum(width_list) + std::max(getFrequentNum(routing_spacing_list), getFrequentNum(cut_spacing_list));
-  // }
+  int32_t step_length;
+  {
+    std::vector<int32_t> width_list;
+    std::vector<int32_t> routing_spacing_list;
+    std::vector<int32_t> cut_spacing_list;
+    for (RoutingLayer& routing_layer : routing_layer_list) {
+      width_list.push_back(routing_layer.get_min_width());
+      routing_spacing_list.push_back(routing_layer.getMinSpacing(PlanarRect(0, 0, 0, 0)));
+    }
+    for (CutLayer& cut_layer : cut_layer_list) {
+      cut_spacing_list.push_back(cut_layer.getMinSpacing());
+    }
+    step_length = getFrequentNum(width_list) + std::min(getFrequentNum(routing_spacing_list), getFrequentNum(cut_spacing_list));
+  }
+  auto getScaleGrid = [](int32_t real_ll_scale, int32_t real_ur_scale, int32_t step_length) {
+    int32_t start_line = real_ll_scale + step_length;
+    int32_t step_num = (real_ur_scale - start_line) / step_length;
+    int32_t end_line = start_line + step_num * step_length;
+    if (end_line > real_ur_scale) {
+      step_num -= 1;
+      end_line = start_line + step_num * step_length;
+    } else if (std::abs(end_line - real_ur_scale) < step_length) {
+      step_num -= 1;
+      end_line = start_line + step_num * step_length;
+    }
+    ScaleGrid scale_grid;
+    scale_grid.set_start_line(start_line);
+    scale_grid.set_step_length(step_length);
+    scale_grid.set_step_num(step_num);
+    scale_grid.set_end_line(end_line);
+    return scale_grid;
+  };
   ScaleAxis track_axis;
   {
-    {
-      int32_t real_ll_x = die.get_real_ll_x();
-      int32_t real_ur_x = die.get_real_ur_x();
-      int32_t start_line = real_ll_x + step_length / 2;
-      int32_t step_num = (real_ur_x - start_line) / step_length;
-      int32_t end_line = start_line + step_num * step_length;
-      if (end_line >= real_ur_x) {
-        step_num -= 1;
-        end_line = start_line + step_num * step_length;
-      }
-      ScaleGrid x_grid;
-      x_grid.set_start_line(start_line);
-      x_grid.set_step_length(step_length);
-      x_grid.set_step_num(step_num);
-      x_grid.set_end_line(end_line);
-      track_axis.get_x_grid_list().push_back(x_grid);
-    }
-    {
-      int32_t real_ll_y = die.get_real_ll_y();
-      int32_t real_ur_y = die.get_real_ur_y();
-      int32_t start_line = real_ll_y + step_length / 2;
-      int32_t step_num = (real_ur_y - start_line) / step_length;
-      int32_t end_line = start_line + step_num * step_length;
-      if (end_line >= real_ur_y) {
-        step_num -= 1;
-        end_line = start_line + step_num * step_length;
-      }
-      ScaleGrid y_grid;
-      y_grid.set_start_line(start_line);
-      y_grid.set_step_length(step_length);
-      y_grid.set_step_num(step_num);
-      y_grid.set_end_line(end_line);
-      track_axis.get_y_grid_list().push_back(y_grid);
-    }
+    track_axis.get_x_grid_list().push_back(getScaleGrid(die.get_real_ll_x(), die.get_real_ur_x(), step_length));
+    track_axis.get_y_grid_list().push_back(getScaleGrid(die.get_real_ll_y(), die.get_real_ur_y(), step_length));
   }
   for (RoutingLayer& routing_layer : routing_layer_list) {
     routing_layer.set_track_axis(track_axis);
@@ -821,7 +806,6 @@ void DataManager::makeGCellAxis()
 {
   ScaleAxis& gcell_axis = _database.get_gcell_axis();
 
-  // zzs
   int32_t recommended_pitch = getRecommendedPitch();
   gcell_axis.set_x_grid_list(makeGCellGridList(Direction::kVertical, recommended_pitch));
   gcell_axis.set_y_grid_list(makeGCellGridList(Direction::kHorizontal, recommended_pitch));
