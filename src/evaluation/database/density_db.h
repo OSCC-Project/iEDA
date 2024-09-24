@@ -78,4 +78,19 @@ struct DensityMapSummary
   NetMapSummary net_map_summary;
 };
 
+struct MacroMarginSummary
+{
+  std::string horizontal_margin;
+  std::string vertical_margin;
+  std::string union_margin;
+};
+
+struct MacroCustomizedSummary
+{
+  MacroMarginSummary margin_summary;
+  std::string macro_channel;
+  std::string max_continuous_space;
+  std::string macro_hierarchy;
+};
+
 }  // namespace ieval

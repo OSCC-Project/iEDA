@@ -46,11 +46,19 @@ struct NetMapSummary
   std::string allnet_density;
 };
 
+struct MacroMarginSummary
+{
+  std::string horizontal_margin;
+  std::string vertical_margin;
+  std::string union_margin;
+};
+
 struct DensityMapSummary
 {
   CellMapSummary cell_map_summary;
   PinMapSummary pin_map_summary;
   NetMapSummary net_map_summary;
+  MacroMarginSummary macro_margin_summary;
 };
 
 // Congestion

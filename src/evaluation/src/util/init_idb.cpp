@@ -131,6 +131,12 @@ void InitIDB::initDensityDBRegion()
   _density_region.ly = die_bbox->get_low_y();
   _density_region.ux = die_bbox->get_high_x();
   _density_region.uy = die_bbox->get_high_y();
+
+  idb::IdbRect* core_bbox = idb_layout->get_core()->get_bounding_box();
+  _density_region_core.lx = core_bbox->get_low_x();
+  _density_region_core.ly = core_bbox->get_low_y();
+  _density_region_core.ux = core_bbox->get_high_x();
+  _density_region_core.uy = core_bbox->get_high_y();
 }
 
 void InitIDB::initDensityDBCells()

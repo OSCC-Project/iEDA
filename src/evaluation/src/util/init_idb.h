@@ -43,6 +43,7 @@ class InitIDB
   void initDensityDBCells();
   void initDensityDBNets();
   DensityRegion getDensityRegion() { return _density_region; }
+  DensityRegion getDensityRegionCore() { return _density_region_core; }
   DensityCells getDensityCells() { return _density_cells; }
   DensityPins getDensityPins() { return _density_pins; }
   DensityNets getDensityNets() { return _density_nets; }
@@ -60,6 +61,7 @@ class InitIDB
 
   // for density evaluation
   DensityRegion _density_region;
+  DensityRegion _density_region_core;
   DensityCells _density_cells;
   DensityPins _density_pins;
   DensityNets _density_nets;
