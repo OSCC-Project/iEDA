@@ -55,8 +55,8 @@ std::vector<Violation> DRCEngine::getViolationList(std::string top_name, std::ve
                                                    std::map<int32_t, std::vector<Segment<LayerCoord>>>& net_routing_result_map,
                                                    std::string stage)
 {
-  return getViolationListBySelf(top_name, env_shape_list, net_pin_shape_map, net_fixed_result_map, net_routing_result_map, stage);
-  // return getViolationListByOther(top_name, env_shape_list, net_pin_shape_map, net_fixed_result_map, net_routing_result_map, stage);
+  // return getViolationListBySelf(top_name, env_shape_list, net_pin_shape_map, net_fixed_result_map, net_routing_result_map, stage);
+  return getViolationListByOther(top_name, env_shape_list, net_pin_shape_map, net_fixed_result_map, net_routing_result_map, stage);
 }
 
 // private
@@ -75,10 +75,10 @@ std::vector<Violation> DRCEngine::getViolationListBySelf(std::string top_name, s
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
   std::vector<CutLayer>& cut_layer_list = RTDM.getDatabase().get_cut_layer_list();
   std::map<std::string, int32_t>& routing_layer_name_to_idx_map = RTDM.getDatabase().get_routing_layer_name_to_idx_map();
-  std::map<std::string, int32_t>& cut_layer_name_to_idx_map = RTDM.getDatabase().get_cut_layer_name_to_idx_map();
   std::vector<std::vector<ViaMaster>>& layer_via_master_list = RTDM.getDatabase().get_layer_via_master_list();
   std::string& de_temp_directory_path = RTDM.getConfig().de_temp_directory_path;
 
+  // 定义路径
   std::string top_dir_path = RTUTIL.getString(de_temp_directory_path, top_name);
   std::string def_file_path = RTUTIL.getString(top_dir_path, "/clean.def");
   std::string netlist_file_path = RTUTIL.getString(top_dir_path, "/clean.v");
@@ -98,6 +98,10 @@ std::vector<Violation> DRCEngine::getViolationListBySelf(std::string top_name, s
   {
     RTUTIL.removeDir(top_dir_path);
     RTUTIL.createDir(top_dir_path);
+    // 修改文件夹权限
+    std::filesystem::perms permissions
+        = std::filesystem::perms::owner_all | std::filesystem::perms::group_all | std::filesystem::perms::others_all;
+    RTUTIL.changePermissions(top_dir_path, permissions);
   }
   // 构建def
   {
@@ -263,12 +267,6 @@ std::vector<Violation> DRCEngine::getViolationListBySelf(std::string top_name, s
     RTUTIL.pushStream(prepared_file, " ");
     RTUTIL.closeFileStream(prepared_file);
   }
-  // 修改文件夹权限
-  {
-    std::filesystem::perms permissions
-        = std::filesystem::perms::owner_all | std::filesystem::perms::group_all | std::filesystem::perms::others_all;
-    RTUTIL.changePermissions(top_dir_path, permissions);
-  }
   // 等待直到任务结束
   {
     int waiting_time = 0;
@@ -282,7 +280,7 @@ std::vector<Violation> DRCEngine::getViolationListBySelf(std::string top_name, s
   }
   // 从中得到违例信息
   std::vector<Violation> voilation_list;
-  {
+  if (RTUTIL.existFile(violation_file_path)) {
     std::regex geometric_regex(R"(^(.+?): \( (.+?) \) (.+?)  \( (.+?) \)$)");
     std::regex single_net_regex(R"(^Regular Wire of Net ([^&\n]+)$)");
     std::regex double_net_regex(R"(^Regular Wire of Net (.+?) & Regular Wire of Net (.+?)$)");
@@ -333,19 +331,58 @@ std::vector<Violation> DRCEngine::getViolationListBySelf(std::string top_name, s
             RTLOG.error(Loc::current(), "Failed to read the next line for bounds!");
           }
         }
-        // 过滤
-        {
-        }
         // 解析
         {
-          bool is_routing = RTUTIL.exist(routing_layer_name_to_idx_map, layer_name);
+          std::map<std::string, std::string> rule_layer_map;
+          // skip
+          rule_layer_map["Floating Patch"] = "skip";         // 由于cell没有加载,所以pin shape属于漂浮
+          rule_layer_map["Off Grid or Wrong Way"] = "skip";  // 不在track上的布线结果
+          rule_layer_map["Minimum Width"] = "skip";          // 最小宽度违例,实际上是Floating Patch的最小宽度
+          rule_layer_map["MinStep"] = "skip";                // 金属层min step
+          rule_layer_map["Minimum Area"] = "skip";           // 金属层面积过小
+          rule_layer_map["Minimum Cut"] = "skip";            // 对一些时钟树net需要多cut
+          rule_layer_map["Enclosure Parallel"] = "skip";     // enclosure与merge的shepe的spacing
+          rule_layer_map["EnclosureEdge"] = "skip";          // enclosure与merge的shepe的spacing
+          rule_layer_map["Enclosure"] = "skip";              // enclosure与merge的shepe的spacing
+          // metal 表示本层违例
+          rule_layer_map["Metal Short"] = "metal";                   // 短路,不同一个net
+          rule_layer_map["Non-sufficient Metal Overlap"] = "metal";  // 同net的wire边碰一起
+          rule_layer_map["ParallelRunLength Spacing"] = "metal";     // 平行线spacing
+          rule_layer_map["EndOfLine Spacing"] = "metal";             // EOL spacing
+          // cut 以below的metal层举例
+          rule_layer_map["Cut EolSpacing"] = "cut";               // EOL spacing
+          rule_layer_map["Cut Short"] = "cut";                    // 短路
+          rule_layer_map["Different Layer Cut Spacing"] = "cut";  // 不同层的cut spacing问题
+          rule_layer_map["Same Layer Cut Spacing"] = "cut";       // 同层的cut spacing问题
+          rule_layer_map["MaxViaStack"] = "cut";                  // 叠的通孔太多了
+
+          if (!RTUTIL.exist(rule_layer_map, drc_type)) {
+            RTLOG.warn(Loc::current(), "Unknow rule! '", drc_type, "'");
+            drc_type = "Metal Short";
+          }
+          std::string layer_type = rule_layer_map[drc_type];
+          if (layer_type == "skip") {
+            continue;
+          }
+          int32_t layer_idx = -1;
+          bool is_routing = true;
+          if (layer_type == "metal") {
+            layer_idx = routing_layer_name_to_idx_map[layer_name];
+            is_routing = true;
+          } else if (layer_type == "cut") {
+            int32_t below_layer_idx = routing_layer_name_to_idx_map[layer_name];
+            layer_idx = layer_via_master_list[below_layer_idx].front().get_cut_layer_idx();
+            is_routing = false;
+          } else {
+            RTLOG.error(Loc::current(), "Unknow layer type!");
+          }
           EXTLayerRect ext_layer_rect;
           ext_layer_rect.set_real_ll_x(std::stod(ll_x_string) * micron_dbu);
           ext_layer_rect.set_real_ll_y(std::stod(ll_y_string) * micron_dbu);
           ext_layer_rect.set_real_ur_x(std::stod(ur_x_string) * micron_dbu);
           ext_layer_rect.set_real_ur_y(std::stod(ur_y_string) * micron_dbu);
           ext_layer_rect.set_grid_rect(RTUTIL.getClosedGCellGridRect(ext_layer_rect.get_real_rect(), gcell_axis));
-          ext_layer_rect.set_layer_idx(is_routing ? routing_layer_name_to_idx_map[layer_name] : cut_layer_name_to_idx_map[layer_name]);
+          ext_layer_rect.set_layer_idx(layer_idx);
           std::set<int32_t> violation_net_set;
           for (const std::string& net_name : net_name_set) {
             violation_net_set.insert(std::stoi(RTUTIL.splitString(net_name, '_').back()));
@@ -359,6 +396,8 @@ std::vector<Violation> DRCEngine::getViolationListBySelf(std::string top_name, s
       }
     }
     RTUTIL.closeFileStream(violation_file);
+  } else {
+    RTLOG.warn(Loc::current(), "The task ", top_name, " violation_file_path is not exist!");
   }
   // 删除文件夹
   {

@@ -84,6 +84,15 @@ class DataManager
 #if 1  // build
   void buildConfig();
   void buildDatabase();
+  void buildLayerList();
+  void transLayerList();
+  void makeLayerList();
+  void checkLayerList();
+  void buildLayerInfo();
+  void buildLayerViaMasterList();
+  void transLayerViaMasterList();
+  void makeLayerViaMasterList();
+  void buildLayerViaMasterInfo();
   void buildGCellAxis();
   void makeGCellAxis();
   int32_t getRecommendedPitch();
@@ -93,20 +102,6 @@ class DataManager
   void buildDie();
   void makeDie();
   void checkDie();
-  void buildLayerList();
-  void transLayerList();
-  void makeLayerList();
-  void checkLayerList();
-  void buildLayerInfo();
-  void buildLayerViaMasterList();
-  void transLayerViaMasterList();
-  void makeLayerViaMasterList();
-  bool sortByMultiLevel(ViaMaster& via_master1, ViaMaster& via_master2);
-  SortStatus sortByLayerDirectionPriority(ViaMaster& via_master1, ViaMaster& via_master2);
-  SortStatus sortByWidthASC(ViaMaster& via_master1, ViaMaster& via_master2);
-  SortStatus sortByLengthASC(ViaMaster& via_master1, ViaMaster& via_master2);
-  SortStatus sortBySymmetryPriority(ViaMaster& via_master1, ViaMaster& via_master2);
-  void buildLayerViaMasterInfo();
   void buildObstacleList();
   void transObstacleList();
   void makeObstacleList();

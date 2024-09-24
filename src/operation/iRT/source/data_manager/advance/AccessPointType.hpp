@@ -24,8 +24,7 @@ enum class AccessPointType
 {
   kNone,
   kTrackGrid,
-  kOnTrack,
-  kShapeCenter
+  kOnShape
 };
 
 struct GetAccessPointTypeName
@@ -40,11 +39,8 @@ struct GetAccessPointTypeName
       case AccessPointType::kTrackGrid:
         access_point_name = "track_grid";
         break;
-      case AccessPointType::kOnTrack:
-        access_point_name = "on_track";
-        break;
-      case AccessPointType::kShapeCenter:
-        access_point_name = "shape_center";
+      case AccessPointType::kOnShape:
+        access_point_name = "on_shape";
         break;
       default:
         RTLOG.error(Loc::current(), "Unrecognized type!");

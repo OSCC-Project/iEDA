@@ -528,189 +528,16 @@ void DataManager::buildConfig()
 
 void DataManager::buildDatabase()
 {
-  buildGCellAxis();
-  buildDie();
   buildLayerList();
   buildLayerInfo();
   buildLayerViaMasterList();
   buildLayerViaMasterInfo();
+  buildGCellAxis();
+  buildDie();
   buildObstacleList();
   buildNetList();
   buildGCellMap();
   buildDetectionDistance();
-}
-
-void DataManager::buildGCellAxis()
-{
-  makeGCellAxis();
-  checkGCellAxis();
-}
-
-void DataManager::makeGCellAxis()
-{
-  ScaleAxis& gcell_axis = _database.get_gcell_axis();
-
-  int32_t recommended_pitch = getRecommendedPitch();
-  gcell_axis.set_x_grid_list(makeGCellGridList(Direction::kVertical, recommended_pitch));
-  gcell_axis.set_y_grid_list(makeGCellGridList(Direction::kHorizontal, recommended_pitch));
-}
-
-int32_t DataManager::getRecommendedPitch()
-{
-  std::vector<RoutingLayer>& routing_layer_list = _database.get_routing_layer_list();
-
-  std::map<int32_t, int32_t> pitch_count_map;
-  for (RoutingLayer& routing_layer : routing_layer_list) {
-    for (ScaleGrid& track_grid : routing_layer.getPreferTrackGridList()) {
-      pitch_count_map[track_grid.get_step_length()]++;
-    }
-  }
-  int32_t recommended_pitch = -1;
-  int32_t max_count = INT32_MIN;
-  for (auto& [pitch, count] : pitch_count_map) {
-    if (count > max_count) {
-      max_count = count;
-      recommended_pitch = pitch;
-    }
-  }
-  if (max_count == 1) {
-    int32_t min_pitch = INT32_MAX;
-    for (auto& [pitch, count] : pitch_count_map) {
-      min_pitch = std::min(min_pitch, pitch);
-    }
-    recommended_pitch = min_pitch;
-  }
-  if (recommended_pitch == -1) {
-    RTLOG.error(Loc::current(), "The recommended_pitch is -1!");
-  }
-  return recommended_pitch;
-}
-
-std::vector<ScaleGrid> DataManager::makeGCellGridList(Direction direction, int32_t recommended_pitch)
-{
-  Die& die = _database.get_die();
-  Row& row = _database.get_row();
-
-  int32_t die_start_scale = (direction == Direction::kVertical ? die.get_real_ll_x() : die.get_real_ll_y());
-  int32_t die_end_scale = (direction == Direction::kVertical ? die.get_real_ur_x() : die.get_real_ur_y());
-  int32_t row_mid_scale = (direction == Direction::kVertical ? row.get_start_x() : row.get_start_y());
-  // 为了防止与track重合，减去一个recommended_pitch的一半
-  row_mid_scale -= (recommended_pitch / 2);
-  int32_t step_length = row.get_height();
-
-  std::vector<int32_t> gcell_scale_list;
-  gcell_scale_list.push_back(die_start_scale);
-  for (int32_t gcell_scale = row_mid_scale; gcell_scale >= die_start_scale; gcell_scale -= step_length) {
-    gcell_scale_list.push_back(gcell_scale);
-  }
-  for (int32_t gcell_scale = row_mid_scale; gcell_scale <= die_end_scale; gcell_scale += step_length) {
-    gcell_scale_list.push_back(gcell_scale);
-  }
-  gcell_scale_list.push_back(die_end_scale);
-
-  std::sort(gcell_scale_list.begin(), gcell_scale_list.end());
-  // 删除小于step_length的
-  for (int32_t i = 2; i < static_cast<int32_t>(gcell_scale_list.size()); i++) {
-    if (std::abs(gcell_scale_list[i - 2] - gcell_scale_list[i - 1]) < step_length
-        || std::abs(gcell_scale_list[i - 1] - gcell_scale_list[i]) < step_length) {
-      gcell_scale_list[i - 1] = gcell_scale_list[i - 2];
-    }
-  }
-  gcell_scale_list.erase(std::unique(gcell_scale_list.begin(), gcell_scale_list.end()), gcell_scale_list.end());
-  return makeGCellGridList(gcell_scale_list);
-}
-
-std::vector<ScaleGrid> DataManager::makeGCellGridList(std::vector<int32_t>& gcell_scale_list)
-{
-  std::vector<ScaleGrid> gcell_grid_list;
-
-  for (size_t i = 1; i < gcell_scale_list.size(); i++) {
-    int32_t pre_scale = gcell_scale_list[i - 1];
-    int32_t curr_scale = gcell_scale_list[i];
-
-    ScaleGrid gcell_grid;
-    gcell_grid.set_start_line(pre_scale);
-    gcell_grid.set_step_length(curr_scale - pre_scale);
-    gcell_grid.set_step_num(1);
-    gcell_grid.set_end_line(curr_scale);
-    gcell_grid_list.push_back(gcell_grid);
-  }
-  // merge
-  RTUTIL.merge(gcell_grid_list, [](ScaleGrid& sentry, ScaleGrid& soldier) {
-    if (sentry.get_step_length() != soldier.get_step_length()) {
-      return false;
-    }
-    sentry.set_start_line(std::min(sentry.get_start_line(), soldier.get_start_line()));
-    sentry.set_step_num(sentry.get_step_num() + 1);
-    sentry.set_end_line(std::max(sentry.get_end_line(), soldier.get_end_line()));
-    return true;
-  });
-
-  return gcell_grid_list;
-}
-
-void DataManager::checkGCellAxis()
-{
-  ScaleAxis& gcell_axis = _database.get_gcell_axis();
-  std::vector<ScaleGrid>& x_grid_list = gcell_axis.get_x_grid_list();
-  std::vector<ScaleGrid>& y_grid_list = gcell_axis.get_y_grid_list();
-
-  if (x_grid_list.empty() || y_grid_list.empty()) {
-    RTLOG.error(Loc::current(), "The gcell grid list is empty!");
-  }
-  for (size_t i = 0; i < x_grid_list.size(); i++) {
-    if (x_grid_list[i].get_step_length() <= 0) {
-      RTLOG.error(Loc::current(), "The step length of x grid '", x_grid_list[i].get_step_length(), "' is wrong!");
-    }
-  }
-  for (size_t i = 0; i < y_grid_list.size(); i++) {
-    if (y_grid_list[i].get_step_length() <= 0) {
-      RTLOG.error(Loc::current(), "The step length of y grid '", y_grid_list[i].get_step_length(), "' is wrong!");
-    }
-  }
-  for (size_t i = 1; i < x_grid_list.size(); i++) {
-    if (x_grid_list[i - 1].get_end_line() < x_grid_list[i].get_start_line()) {
-      RTLOG.error(Loc::current(), "The x grid with gap '", x_grid_list[i - 1].get_end_line(), " < ", x_grid_list[i].get_start_line(), "'!");
-    } else if (x_grid_list[i - 1].get_end_line() > x_grid_list[i].get_start_line()) {
-      RTLOG.error(Loc::current(), "The x grid with overlapping '", x_grid_list[i - 1].get_end_line(), " < ",
-                  x_grid_list[i].get_start_line(), "'!");
-    }
-  }
-  for (size_t i = 1; i < y_grid_list.size(); i++) {
-    if (y_grid_list[i - 1].get_end_line() < y_grid_list[i].get_start_line()) {
-      RTLOG.error(Loc::current(), "The y grid with gap '", y_grid_list[i - 1].get_end_line(), " < ", y_grid_list[i].get_start_line(), "'!");
-    } else if (y_grid_list[i - 1].get_end_line() > y_grid_list[i].get_start_line()) {
-      RTLOG.error(Loc::current(), "The y grid with overlapping '", y_grid_list[i - 1].get_end_line(), " > ",
-                  y_grid_list[i].get_start_line(), "'!");
-    }
-  }
-}
-
-void DataManager::buildDie()
-{
-  makeDie();
-  checkDie();
-}
-
-void DataManager::makeDie()
-{
-  Die& die = _database.get_die();
-  ScaleAxis& gcell_axis = _database.get_gcell_axis();
-  die.set_grid_rect(RTUTIL.getOpenGCellGridRect(die.get_real_rect(), gcell_axis));
-}
-
-void DataManager::checkDie()
-{
-  Die& die = _database.get_die();
-
-  if (die.get_real_ll_x() < 0 || die.get_real_ll_y() < 0 || die.get_real_ur_x() < 0 || die.get_real_ur_y() < 0) {
-    RTLOG.error(Loc::current(), "The die '(", die.get_real_ll_x(), " , ", die.get_real_ll_y(), ") - (", die.get_real_ur_x(), " , ",
-                die.get_real_ur_y(), ")' is wrong!");
-  }
-  if ((die.get_real_ur_x() <= die.get_real_ll_x()) || (die.get_real_ur_y() <= die.get_real_ll_y())) {
-    RTLOG.error(Loc::current(), "The die '(", die.get_real_ll_x(), " , ", die.get_real_ll_y(), ") - (", die.get_real_ur_x(), " , ",
-                die.get_real_ur_y(), ")' is wrong!");
-  }
 }
 
 void DataManager::buildLayerList()
@@ -735,22 +562,82 @@ void DataManager::transLayerList()
 
 void DataManager::makeLayerList()
 {
+  Die& die = _database.get_die();
   std::vector<RoutingLayer>& routing_layer_list = _database.get_routing_layer_list();
+  std::vector<CutLayer>& cut_layer_list = _database.get_cut_layer_list();
 
-  for (RoutingLayer& routing_layer : routing_layer_list) {
-    for (ScaleGrid& x_track_grid : routing_layer.getXTrackGridList()) {
-      x_track_grid.set_end_line(x_track_grid.get_start_line() + x_track_grid.get_step_length() * x_track_grid.get_step_num());
+  auto getFrequentNum = [](const std::vector<int32_t>& num_list) {
+    if (num_list.empty()) {
+      RTLOG.error(Loc::current(), "The num_list is empty!");
     }
-    for (ScaleGrid& y_track_grid : routing_layer.getYTrackGridList()) {
-      y_track_grid.set_end_line(y_track_grid.get_start_line() + y_track_grid.get_step_length() * y_track_grid.get_step_num());
+    std::map<int32_t, int32_t> num_count_map;
+    for (int32_t num : num_list) {
+      num_count_map[num]++;
+    }
+    std::map<int32_t, std::vector<int32_t>, std::greater<int32_t>> count_num_list_map;
+    for (auto& [num, count] : num_count_map) {
+      count_num_list_map[count].push_back(num);
+    }
+    int32_t frequent_num = INT32_MAX;
+    for (int32_t num : count_num_list_map.begin()->second) {
+      frequent_num = std::min(frequent_num, num);
+    }
+    return frequent_num;
+  };
+  // zzs
+  int32_t step_length = 400;
+  // {
+  //   std::vector<int32_t> width_list;
+  //   std::vector<int32_t> routing_spacing_list;
+  //   std::vector<int32_t> cut_spacing_list;
+  //   for (RoutingLayer& routing_layer : routing_layer_list) {
+  //     width_list.push_back(routing_layer.get_min_width());
+  //     routing_spacing_list.push_back(routing_layer.getMinSpacing(PlanarRect(0, 0, 0, 0)));
+  //   }
+  //   for (CutLayer& cut_layer : cut_layer_list) {
+  //     cut_spacing_list.push_back(cut_layer.getMinSpacing());
+  //   }
+  //   step_length = getFrequentNum(width_list) + std::max(getFrequentNum(routing_spacing_list), getFrequentNum(cut_spacing_list));
+  // }
+  ScaleAxis track_axis;
+  {
+    {
+      int32_t real_ll_x = die.get_real_ll_x();
+      int32_t real_ur_x = die.get_real_ur_x();
+      int32_t start_line = real_ll_x + step_length / 2;
+      int32_t step_num = (real_ur_x - start_line) / step_length;
+      int32_t end_line = start_line + step_num * step_length;
+      if (end_line >= real_ur_x) {
+        step_num -= 1;
+        end_line = start_line + step_num * step_length;
+      }
+      ScaleGrid x_grid;
+      x_grid.set_start_line(start_line);
+      x_grid.set_step_length(step_length);
+      x_grid.set_step_num(step_num);
+      x_grid.set_end_line(end_line);
+      track_axis.get_x_grid_list().push_back(x_grid);
+    }
+    {
+      int32_t real_ll_y = die.get_real_ll_y();
+      int32_t real_ur_y = die.get_real_ur_y();
+      int32_t start_line = real_ll_y + step_length / 2;
+      int32_t step_num = (real_ur_y - start_line) / step_length;
+      int32_t end_line = start_line + step_num * step_length;
+      if (end_line >= real_ur_y) {
+        step_num -= 1;
+        end_line = start_line + step_num * step_length;
+      }
+      ScaleGrid y_grid;
+      y_grid.set_start_line(start_line);
+      y_grid.set_step_length(step_length);
+      y_grid.set_step_num(step_num);
+      y_grid.set_end_line(end_line);
+      track_axis.get_y_grid_list().push_back(y_grid);
     }
   }
-  if (routing_layer_list.size() < 2) {
-    RTLOG.error(Loc::current(), "The size of routing_layer < 2!");
-  }
-  ScaleAxis& standard_track_axis = routing_layer_list[1].get_track_axis();
   for (RoutingLayer& routing_layer : routing_layer_list) {
-    routing_layer.set_track_axis(standard_track_axis);
+    routing_layer.set_track_axis(track_axis);
   }
 }
 
@@ -898,137 +785,9 @@ void DataManager::makeLayerViaMasterList()
       via_master.set_below_direction(below_enclosure.getRectDirection(below_layer_direction));
     }
     std::sort(via_master_list.begin(), via_master_list.end(),
-              [&](ViaMaster& via_master1, ViaMaster& via_master2) { return sortByMultiLevel(via_master1, via_master2); });
+              [&routing_layer_list](const ViaMaster& a, const ViaMaster& b) { return CmpViaMaster()(a, b, routing_layer_list); });
     for (size_t i = 0; i < via_master_list.size(); i++) {
       via_master_list[i].set_via_master_idx(layer_idx, i);
-    }
-  }
-}
-
-bool DataManager::sortByMultiLevel(ViaMaster& via_master1, ViaMaster& via_master2)
-{
-  SortStatus sort_status = SortStatus::kNone;
-
-  sort_status = sortByLayerDirectionPriority(via_master1, via_master2);
-  if (sort_status == SortStatus::kTrue) {
-    return true;
-  } else if (sort_status == SortStatus::kFalse) {
-    return false;
-  }
-  sort_status = sortByWidthASC(via_master1, via_master2);
-  if (sort_status == SortStatus::kTrue) {
-    return true;
-  } else if (sort_status == SortStatus::kFalse) {
-    return false;
-  }
-  sort_status = sortByLengthASC(via_master1, via_master2);
-  if (sort_status == SortStatus::kTrue) {
-    return true;
-  } else if (sort_status == SortStatus::kFalse) {
-    return false;
-  }
-  sort_status = sortBySymmetryPriority(via_master1, via_master2);
-  if (sort_status == SortStatus::kTrue) {
-    return true;
-  } else if (sort_status == SortStatus::kFalse) {
-    return false;
-  }
-  return false;
-}
-
-// 层方向优先
-SortStatus DataManager::sortByLayerDirectionPriority(ViaMaster& via_master1, ViaMaster& via_master2)
-{
-  std::vector<RoutingLayer>& routing_layer_list = _database.get_routing_layer_list();
-
-  Direction above_layer_direction = routing_layer_list[via_master1.get_above_enclosure().get_layer_idx()].get_prefer_direction();
-  Direction below_layer_direction = routing_layer_list[via_master1.get_below_enclosure().get_layer_idx()].get_prefer_direction();
-
-  if (via_master1.get_above_direction() == above_layer_direction && via_master2.get_above_direction() != above_layer_direction) {
-    return SortStatus::kTrue;
-  } else if (via_master1.get_above_direction() != above_layer_direction && via_master2.get_above_direction() == above_layer_direction) {
-    return SortStatus::kFalse;
-  } else {
-    if (via_master1.get_below_direction() == below_layer_direction && via_master2.get_below_direction() != below_layer_direction) {
-      return SortStatus::kTrue;
-    } else if (via_master1.get_below_direction() != below_layer_direction && via_master2.get_below_direction() == below_layer_direction) {
-      return SortStatus::kFalse;
-    } else {
-      return SortStatus::kEqual;
-    }
-  }
-}
-
-// 宽度升序
-SortStatus DataManager::sortByWidthASC(ViaMaster& via_master1, ViaMaster& via_master2)
-{
-  LayerRect& via_master1_above = via_master1.get_above_enclosure();
-  LayerRect& via_master1_below = via_master1.get_below_enclosure();
-  LayerRect& via_master2_above = via_master2.get_above_enclosure();
-  LayerRect& via_master2_below = via_master2.get_below_enclosure();
-
-  if (via_master1_above.getWidth() < via_master2_above.getWidth()) {
-    return SortStatus::kTrue;
-  } else if (via_master1_above.getWidth() > via_master2_above.getWidth()) {
-    return SortStatus::kFalse;
-  } else {
-    if (via_master1_below.getWidth() < via_master2_below.getWidth()) {
-      return SortStatus::kTrue;
-    } else if (via_master1_below.getWidth() > via_master2_below.getWidth()) {
-      return SortStatus::kFalse;
-    } else {
-      return SortStatus::kEqual;
-    }
-  }
-}
-
-// 长度升序
-SortStatus DataManager::sortByLengthASC(ViaMaster& via_master1, ViaMaster& via_master2)
-{
-  LayerRect& via_master1_above = via_master1.get_above_enclosure();
-  LayerRect& via_master1_below = via_master1.get_below_enclosure();
-  LayerRect& via_master2_above = via_master2.get_above_enclosure();
-  LayerRect& via_master2_below = via_master2.get_below_enclosure();
-
-  if (via_master1_above.getLength() < via_master2_above.getLength()) {
-    return SortStatus::kTrue;
-  } else if (via_master1_above.getLength() > via_master2_above.getLength()) {
-    return SortStatus::kFalse;
-  } else {
-    if (via_master1_below.getLength() < via_master2_below.getLength()) {
-      return SortStatus::kTrue;
-    } else if (via_master1_below.getLength() > via_master2_below.getLength()) {
-      return SortStatus::kFalse;
-    } else {
-      return SortStatus::kEqual;
-    }
-  }
-}
-
-// 对称优先
-SortStatus DataManager::sortBySymmetryPriority(ViaMaster& via_master1, ViaMaster& via_master2)
-{
-  LayerRect& via_master1_above = via_master1.get_above_enclosure();
-  LayerRect& via_master1_below = via_master1.get_below_enclosure();
-  LayerRect& via_master2_above = via_master2.get_above_enclosure();
-  LayerRect& via_master2_below = via_master2.get_below_enclosure();
-
-  // via_master的ll为负数，ur为正数
-  int32_t via_master1_above_center_diff = std::abs(via_master1_above.get_ll_x() + via_master1_above.get_ur_x());
-  int32_t via_master2_above_center_diff = std::abs(via_master2_above.get_ll_x() + via_master2_above.get_ur_x());
-  int32_t via_master1_below_center_diff = std::abs(via_master1_below.get_ll_x() + via_master1_below.get_ur_x());
-  int32_t via_master2_below_center_diff = std::abs(via_master2_below.get_ll_x() + via_master2_below.get_ur_x());
-  if (via_master1_above_center_diff < via_master2_above_center_diff) {
-    return SortStatus::kTrue;
-  } else if (via_master1_above_center_diff > via_master2_above_center_diff) {
-    return SortStatus::kFalse;
-  } else {
-    if (via_master1_below_center_diff < via_master2_below_center_diff) {
-      return SortStatus::kTrue;
-    } else if (via_master1_below_center_diff > via_master2_below_center_diff) {
-      return SortStatus::kFalse;
-    } else {
-      return SortStatus::kEqual;
     }
   }
 }
@@ -1050,6 +809,170 @@ void DataManager::buildLayerViaMasterInfo()
     layer_enclosure_map[layer_idx] = RTUTIL.getBoundingBox(rect_list);
   }
   layer_enclosure_map[end_layer_idx] = layer_via_master_list[end_layer_idx - 1].front().get_above_enclosure();
+}
+
+void DataManager::buildGCellAxis()
+{
+  makeGCellAxis();
+  checkGCellAxis();
+}
+
+void DataManager::makeGCellAxis()
+{
+  ScaleAxis& gcell_axis = _database.get_gcell_axis();
+
+  // zzs
+  int32_t recommended_pitch = getRecommendedPitch();
+  gcell_axis.set_x_grid_list(makeGCellGridList(Direction::kVertical, recommended_pitch));
+  gcell_axis.set_y_grid_list(makeGCellGridList(Direction::kHorizontal, recommended_pitch));
+}
+
+int32_t DataManager::getRecommendedPitch()
+{
+  std::vector<RoutingLayer>& routing_layer_list = _database.get_routing_layer_list();
+
+  std::vector<int32_t> pitch_list;
+  for (RoutingLayer& routing_layer : routing_layer_list) {
+    for (ScaleGrid& x_grid : routing_layer.get_track_axis().get_x_grid_list()) {
+      pitch_list.push_back(x_grid.get_step_length());
+    }
+    for (ScaleGrid& y_grid : routing_layer.get_track_axis().get_y_grid_list()) {
+      pitch_list.push_back(y_grid.get_step_length());
+    }
+  }
+  for (int32_t pitch : pitch_list) {
+    if (pitch_list.front() != pitch) {
+      RTLOG.error(Loc::current(), "The pitch is not equal!");
+    }
+  }
+  return pitch_list.front();
+}
+
+std::vector<ScaleGrid> DataManager::makeGCellGridList(Direction direction, int32_t recommended_pitch)
+{
+  Die& die = _database.get_die();
+  Row& row = _database.get_row();
+
+  int32_t die_start_scale = (direction == Direction::kVertical ? die.get_real_ll_x() : die.get_real_ll_y());
+  int32_t die_end_scale = (direction == Direction::kVertical ? die.get_real_ur_x() : die.get_real_ur_y());
+  int32_t row_mid_scale = (direction == Direction::kVertical ? row.get_start_x() : row.get_start_y());
+  // 为了防止与track重合，减去一个recommended_pitch的一半
+  row_mid_scale -= (recommended_pitch / 2);
+  int32_t step_length = row.get_height();
+
+  std::vector<int32_t> gcell_scale_list;
+  gcell_scale_list.push_back(die_start_scale);
+  for (int32_t gcell_scale = row_mid_scale; gcell_scale >= die_start_scale; gcell_scale -= step_length) {
+    gcell_scale_list.push_back(gcell_scale);
+  }
+  for (int32_t gcell_scale = row_mid_scale; gcell_scale <= die_end_scale; gcell_scale += step_length) {
+    gcell_scale_list.push_back(gcell_scale);
+  }
+  gcell_scale_list.push_back(die_end_scale);
+
+  std::sort(gcell_scale_list.begin(), gcell_scale_list.end());
+  // 删除小于step_length的
+  for (int32_t i = 2; i < static_cast<int32_t>(gcell_scale_list.size()); i++) {
+    if (std::abs(gcell_scale_list[i - 2] - gcell_scale_list[i - 1]) < step_length
+        || std::abs(gcell_scale_list[i - 1] - gcell_scale_list[i]) < step_length) {
+      gcell_scale_list[i - 1] = gcell_scale_list[i - 2];
+    }
+  }
+  gcell_scale_list.erase(std::unique(gcell_scale_list.begin(), gcell_scale_list.end()), gcell_scale_list.end());
+  return makeGCellGridList(gcell_scale_list);
+}
+
+std::vector<ScaleGrid> DataManager::makeGCellGridList(std::vector<int32_t>& gcell_scale_list)
+{
+  std::vector<ScaleGrid> gcell_grid_list;
+
+  for (size_t i = 1; i < gcell_scale_list.size(); i++) {
+    int32_t pre_scale = gcell_scale_list[i - 1];
+    int32_t curr_scale = gcell_scale_list[i];
+
+    ScaleGrid gcell_grid;
+    gcell_grid.set_start_line(pre_scale);
+    gcell_grid.set_step_length(curr_scale - pre_scale);
+    gcell_grid.set_step_num(1);
+    gcell_grid.set_end_line(curr_scale);
+    gcell_grid_list.push_back(gcell_grid);
+  }
+  // merge
+  RTUTIL.merge(gcell_grid_list, [](ScaleGrid& sentry, ScaleGrid& soldier) {
+    if (sentry.get_step_length() != soldier.get_step_length()) {
+      return false;
+    }
+    sentry.set_start_line(std::min(sentry.get_start_line(), soldier.get_start_line()));
+    sentry.set_step_num(sentry.get_step_num() + 1);
+    sentry.set_end_line(std::max(sentry.get_end_line(), soldier.get_end_line()));
+    return true;
+  });
+
+  return gcell_grid_list;
+}
+
+void DataManager::checkGCellAxis()
+{
+  ScaleAxis& gcell_axis = _database.get_gcell_axis();
+  std::vector<ScaleGrid>& x_grid_list = gcell_axis.get_x_grid_list();
+  std::vector<ScaleGrid>& y_grid_list = gcell_axis.get_y_grid_list();
+
+  if (x_grid_list.empty() || y_grid_list.empty()) {
+    RTLOG.error(Loc::current(), "The gcell grid list is empty!");
+  }
+  for (size_t i = 0; i < x_grid_list.size(); i++) {
+    if (x_grid_list[i].get_step_length() <= 0) {
+      RTLOG.error(Loc::current(), "The step length of x grid '", x_grid_list[i].get_step_length(), "' is wrong!");
+    }
+  }
+  for (size_t i = 0; i < y_grid_list.size(); i++) {
+    if (y_grid_list[i].get_step_length() <= 0) {
+      RTLOG.error(Loc::current(), "The step length of y grid '", y_grid_list[i].get_step_length(), "' is wrong!");
+    }
+  }
+  for (size_t i = 1; i < x_grid_list.size(); i++) {
+    if (x_grid_list[i - 1].get_end_line() < x_grid_list[i].get_start_line()) {
+      RTLOG.error(Loc::current(), "The x grid with gap '", x_grid_list[i - 1].get_end_line(), " < ", x_grid_list[i].get_start_line(), "'!");
+    } else if (x_grid_list[i - 1].get_end_line() > x_grid_list[i].get_start_line()) {
+      RTLOG.error(Loc::current(), "The x grid with overlapping '", x_grid_list[i - 1].get_end_line(), " < ",
+                  x_grid_list[i].get_start_line(), "'!");
+    }
+  }
+  for (size_t i = 1; i < y_grid_list.size(); i++) {
+    if (y_grid_list[i - 1].get_end_line() < y_grid_list[i].get_start_line()) {
+      RTLOG.error(Loc::current(), "The y grid with gap '", y_grid_list[i - 1].get_end_line(), " < ", y_grid_list[i].get_start_line(), "'!");
+    } else if (y_grid_list[i - 1].get_end_line() > y_grid_list[i].get_start_line()) {
+      RTLOG.error(Loc::current(), "The y grid with overlapping '", y_grid_list[i - 1].get_end_line(), " > ",
+                  y_grid_list[i].get_start_line(), "'!");
+    }
+  }
+}
+
+void DataManager::buildDie()
+{
+  makeDie();
+  checkDie();
+}
+
+void DataManager::makeDie()
+{
+  Die& die = _database.get_die();
+  ScaleAxis& gcell_axis = _database.get_gcell_axis();
+  die.set_grid_rect(RTUTIL.getOpenGCellGridRect(die.get_real_rect(), gcell_axis));
+}
+
+void DataManager::checkDie()
+{
+  Die& die = _database.get_die();
+
+  if (die.get_real_ll_x() < 0 || die.get_real_ll_y() < 0 || die.get_real_ur_x() < 0 || die.get_real_ur_y() < 0) {
+    RTLOG.error(Loc::current(), "The die '(", die.get_real_ll_x(), " , ", die.get_real_ll_y(), ") - (", die.get_real_ur_x(), " , ",
+                die.get_real_ur_y(), ")' is wrong!");
+  }
+  if ((die.get_real_ur_x() <= die.get_real_ll_x()) || (die.get_real_ur_y() <= die.get_real_ll_y())) {
+    RTLOG.error(Loc::current(), "The die '(", die.get_real_ll_x(), " , ", die.get_real_ll_y(), ") - (", die.get_real_ur_x(), " , ",
+                die.get_real_ur_y(), ")' is wrong!");
+  }
 }
 
 void DataManager::buildObstacleList()
