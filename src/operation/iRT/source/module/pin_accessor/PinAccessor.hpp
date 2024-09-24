@@ -87,7 +87,6 @@ class PinAccessor
   void resetSinglePath(PABox& pa_box);
   void updatePathResult(PABox& pa_box);
   std::vector<Segment<LayerCoord>> getRoutingSegmentListByNode(PANode* node);
-  void updateDirectionSet(PABox& pa_box);
   void resetStartAndEnd(PABox& pa_box);
   void updateTaskResult(PABox& pa_box);
   std::vector<Segment<LayerCoord>> getRoutingSegmentList(PABox& pa_box);
@@ -97,12 +96,10 @@ class PinAccessor
   double getKnowCost(PABox& pa_box, PANode* start_node, PANode* end_node);
   double getNodeCost(PABox& pa_box, PANode* curr_node, Orientation orientation);
   double getKnowWireCost(PABox& pa_box, PANode* start_node, PANode* end_node);
-  double getKnowCornerCost(PABox& pa_box, PANode* start_node, PANode* end_node);
   double getKnowViaCost(PABox& pa_box, PANode* start_node, PANode* end_node);
   double getEstimateCostToEnd(PABox& pa_box, PANode* curr_node);
   double getEstimateCost(PABox& pa_box, PANode* start_node, PANode* end_node);
   double getEstimateWireCost(PABox& pa_box, PANode* start_node, PANode* end_node);
-  double getEstimateCornerCost(PABox& pa_box, PANode* start_node, PANode* end_node);
   double getEstimateViaCost(PABox& pa_box, PANode* start_node, PANode* end_node);
   void updateViolationList(PABox& pa_box);
   std::vector<Violation> getViolationList(PABox& pa_box);

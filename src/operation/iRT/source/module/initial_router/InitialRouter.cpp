@@ -114,7 +114,6 @@ void InitialRouter::setIRParameter(IRModel& ir_model)
   RTLOG.info(Loc::current(), "congestion_unit: ", ir_parameter.get_congestion_unit());
   RTLOG.info(Loc::current(), "prefer_wire_unit: ", ir_parameter.get_prefer_wire_unit());
   RTLOG.info(Loc::current(), "via_unit: ", ir_parameter.get_via_unit());
-  RTLOG.info(Loc::current(), "corner_unit: ", ir_parameter.get_corner_unit());
   ir_model.set_ir_parameter(ir_parameter);
 }
 
@@ -422,7 +421,6 @@ void InitialRouter::routeIRTopo(IRModel& ir_model, IRTopo* ir_topo)
   while (!isConnectedAllEnd(ir_model)) {
     routeSinglePath(ir_model);
     updatePathResult(ir_model);
-    updateDirectionSet(ir_model);
     resetStartAndEnd(ir_model);
     resetSinglePath(ir_model);
   }
@@ -603,20 +601,6 @@ std::vector<Segment<LayerCoord>> InitialRouter::getRoutingSegmentListByNode(IRNo
   return routing_segment_list;
 }
 
-void InitialRouter::updateDirectionSet(IRModel& ir_model)
-{
-  IRNode* path_head_node = ir_model.get_path_head_node();
-
-  IRNode* curr_node = path_head_node;
-  IRNode* pre_node = curr_node->get_parent_node();
-  while (pre_node != nullptr) {
-    curr_node->get_direction_set().insert(RTUTIL.getDirection(*curr_node, *pre_node));
-    pre_node->get_direction_set().insert(RTUTIL.getDirection(*pre_node, *curr_node));
-    curr_node = pre_node;
-    pre_node = curr_node->get_parent_node();
-  }
-}
-
 void InitialRouter::resetStartAndEnd(IRModel& ir_model)
 {
   std::vector<std::vector<IRNode*>>& start_node_list_list = ir_model.get_start_node_list_list();
@@ -684,13 +668,7 @@ void InitialRouter::resetSingleTask(IRModel& ir_model)
   ir_model.get_start_node_list_list().clear();
   ir_model.get_end_node_list_list().clear();
   ir_model.get_path_node_list().clear();
-
-  std::vector<IRNode*>& single_topo_visited_node_list = ir_model.get_single_topo_visited_node_list();
-  for (IRNode* single_topo_visited_node : single_topo_visited_node_list) {
-    single_topo_visited_node->get_direction_set().clear();
-  }
-  single_topo_visited_node_list.clear();
-
+  ir_model.get_single_topo_visited_node_list().clear();
   ir_model.get_routing_segment_list().clear();
 }
 
@@ -741,7 +719,6 @@ double InitialRouter::getKnowCost(IRModel& ir_model, IRNode* start_node, IRNode*
   cost += getNodeCost(ir_model, start_node, RTUTIL.getOrientation(*start_node, *end_node));
   cost += getNodeCost(ir_model, end_node, RTUTIL.getOrientation(*end_node, *start_node));
   cost += getKnowWireCost(ir_model, start_node, end_node);
-  cost += getKnowCornerCost(ir_model, start_node, end_node);
   cost += getKnowViaCost(ir_model, start_node, end_node);
   return cost;
 }
@@ -770,35 +747,6 @@ double InitialRouter::getKnowWireCost(IRModel& ir_model, IRNode* start_node, IRN
     }
   }
   return wire_cost;
-}
-
-double InitialRouter::getKnowCornerCost(IRModel& ir_model, IRNode* start_node, IRNode* end_node)
-{
-  double corner_unit = ir_model.get_ir_parameter().get_corner_unit();
-
-  double corner_cost = 0;
-  if (start_node->get_layer_idx() == end_node->get_layer_idx()) {
-    std::set<Direction> direction_set;
-    // 添加start direction
-    std::set<Direction>& start_direction_set = start_node->get_direction_set();
-    direction_set.insert(start_direction_set.begin(), start_direction_set.end());
-    // 添加start到parent的direction
-    if (start_node->get_parent_node() != nullptr) {
-      direction_set.insert(RTUTIL.getDirection(*start_node->get_parent_node(), *start_node));
-    }
-    // 添加end direction
-    std::set<Direction>& end_direction_set = end_node->get_direction_set();
-    direction_set.insert(end_direction_set.begin(), end_direction_set.end());
-    // 添加start到end的direction
-    direction_set.insert(RTUTIL.getDirection(*start_node, *end_node));
-
-    if (direction_set.size() == 2) {
-      corner_cost += corner_unit;
-    } else if (direction_set.size() == 2) {
-      RTLOG.error(Loc::current(), "Direction set is error!");
-    }
-  }
-  return corner_cost;
 }
 
 double InitialRouter::getKnowViaCost(IRModel& ir_model, IRNode* start_node, IRNode* end_node)
@@ -830,7 +778,6 @@ double InitialRouter::getEstimateCost(IRModel& ir_model, IRNode* start_node, IRN
 {
   double estimate_cost = 0;
   estimate_cost += getEstimateWireCost(ir_model, start_node, end_node);
-  estimate_cost += getEstimateCornerCost(ir_model, start_node, end_node);
   estimate_cost += getEstimateViaCost(ir_model, start_node, end_node);
   return estimate_cost;
 }
@@ -843,19 +790,6 @@ double InitialRouter::getEstimateWireCost(IRModel& ir_model, IRNode* start_node,
   wire_cost += RTUTIL.getManhattanDistance(start_node->get_planar_coord(), end_node->get_planar_coord());
   wire_cost *= prefer_wire_unit;
   return wire_cost;
-}
-
-double InitialRouter::getEstimateCornerCost(IRModel& ir_model, IRNode* start_node, IRNode* end_node)
-{
-  double corner_unit = ir_model.get_ir_parameter().get_corner_unit();
-
-  double corner_cost = 0;
-  if (start_node->get_layer_idx() == end_node->get_layer_idx()) {
-    if (RTUTIL.isOblique(*start_node, *end_node)) {
-      corner_cost += corner_unit;
-    }
-  }
-  return corner_cost;
 }
 
 double InitialRouter::getEstimateViaCost(IRModel& ir_model, IRNode* start_node, IRNode* end_node)

@@ -140,7 +140,6 @@ void DetailedRouter::setDRParameter(DRModel& dr_model, int32_t iter, DRParameter
   RTLOG.info(Loc::current(), "prefer_wire_unit: ", dr_parameter.get_prefer_wire_unit());
   RTLOG.info(Loc::current(), "non_prefer_wire_unit: ", dr_parameter.get_non_prefer_wire_unit());
   RTLOG.info(Loc::current(), "via_unit: ", dr_parameter.get_via_unit());
-  RTLOG.info(Loc::current(), "corner_unit: ", dr_parameter.get_corner_unit());
   RTLOG.info(Loc::current(), "size: ", dr_parameter.get_size());
   RTLOG.info(Loc::current(), "offset: ", dr_parameter.get_offset());
   RTLOG.info(Loc::current(), "fixed_rect_unit: ", dr_parameter.get_fixed_rect_unit());
@@ -309,14 +308,14 @@ void DetailedRouter::initDRTaskList(DRModel& dr_model, DRBox& dr_box)
     for (auto& [net_idx, access_point_set] : net_access_point_map) {
       std::map<int32_t, DRGroup> pin_group_map;
       for (AccessPoint* access_point : access_point_set) {
-        pin_group_map[access_point->get_pin_idx()].get_coord_direction_map()[access_point->getRealLayerCoord()];
+        pin_group_map[access_point->get_pin_idx()].get_coord_list().push_back(access_point->getRealLayerCoord());
       }
       for (auto& [pin_idx, group] : pin_group_map) {
         net_group_list_map[net_idx].push_back(group);
       }
     }
     for (auto& [net_idx, segment_list] : net_result_map) {
-      std::map<LayerCoord, std::set<Direction>, CmpLayerCoordByXASC> coord_direction_map;
+      std::vector<LayerCoord> coord_list;
       for (const Segment<LayerCoord>& segment : segment_list) {
         const LayerCoord& first = segment.get_first();
         const LayerCoord& second = segment.get_second();
@@ -331,12 +330,10 @@ void DetailedRouter::initDRTaskList(DRModel& dr_model, DRBox& dr_box)
           }
           RTUTIL.swapByASC(first_x, second_x);
           if (first_x <= box_real_rect.get_ll_x() && box_real_rect.get_ll_x() <= second_x) {
-            LayerCoord layer_coord(box_real_rect.get_ll_x(), first.get_y(), first.get_layer_idx());
-            coord_direction_map[layer_coord].insert(Direction::kHorizontal);
+            coord_list.emplace_back(box_real_rect.get_ll_x(), first.get_y(), first.get_layer_idx());
           }
           if (first_x <= box_real_rect.get_ur_x() && box_real_rect.get_ur_x() <= second_x) {
-            LayerCoord layer_coord(box_real_rect.get_ur_x(), first.get_y(), first.get_layer_idx());
-            coord_direction_map[layer_coord].insert(Direction::kHorizontal);
+            coord_list.emplace_back(box_real_rect.get_ur_x(), first.get_y(), first.get_layer_idx());
           }
         } else if (RTUTIL.isVertical(first, second)) {
           int32_t first_y = first.get_y();
@@ -346,20 +343,18 @@ void DetailedRouter::initDRTaskList(DRModel& dr_model, DRBox& dr_box)
           }
           RTUTIL.swapByASC(first_y, second_y);
           if (first_y <= box_real_rect.get_ll_y() && box_real_rect.get_ll_y() <= second_y) {
-            LayerCoord layer_coord(first.get_x(), box_real_rect.get_ll_y(), first.get_layer_idx());
-            coord_direction_map[layer_coord].insert(Direction::kVertical);
+            coord_list.emplace_back(first.get_x(), box_real_rect.get_ll_y(), first.get_layer_idx());
           }
           if (first_y <= box_real_rect.get_ur_y() && box_real_rect.get_ur_y() <= second_y) {
-            LayerCoord layer_coord(first.get_x(), box_real_rect.get_ur_y(), first.get_layer_idx());
-            coord_direction_map[layer_coord].insert(Direction::kVertical);
+            coord_list.emplace_back(first.get_x(), box_real_rect.get_ur_y(), first.get_layer_idx());
           }
         } else {
           RTLOG.error(Loc::current(), "The segment is oblique!");
         }
       }
-      for (auto& [coord, direction_set] : coord_direction_map) {
+      for (LayerCoord& coord : coord_list) {
         DRGroup dr_group;
-        dr_group.get_coord_direction_map()[coord] = direction_set;
+        dr_group.get_coord_list().push_back(coord);
         net_group_list_map[net_idx].push_back(dr_group);
       }
     }
@@ -375,7 +370,7 @@ void DetailedRouter::initDRTaskList(DRModel& dr_model, DRBox& dr_box)
     {
       std::vector<PlanarCoord> coord_list;
       for (DRGroup& dr_group : dr_task->get_dr_group_list()) {
-        for (auto& [coord, direction_set] : dr_group.get_coord_direction_map()) {
+        for (LayerCoord& coord : dr_group.get_coord_list()) {
           coord_list.push_back(coord);
         }
       }
@@ -416,7 +411,7 @@ void DetailedRouter::buildBoxTrackAxis(DRBox& dr_box)
   }
   for (DRTask* dr_task : dr_box.get_dr_task_list()) {
     for (DRGroup& dr_group : dr_task->get_dr_group_list()) {
-      for (auto& [coord, direction_set] : dr_group.get_coord_direction_map()) {
+      for (LayerCoord& coord : dr_group.get_coord_list()) {
         x_scale_list.push_back(coord.get_x());
         y_scale_list.push_back(coord.get_y());
       }
@@ -622,7 +617,6 @@ void DetailedRouter::routeDRTask(DRBox& dr_box, DRTask* dr_task)
   while (!isConnectedAllEnd(dr_box)) {
     routeSinglePath(dr_box);
     updatePathResult(dr_box);
-    updateDirectionSet(dr_box);
     resetStartAndEnd(dr_box);
     resetSinglePath(dr_box);
   }
@@ -642,13 +636,12 @@ void DetailedRouter::initSingleTask(DRBox& dr_box, DRTask* dr_task)
     std::vector<DRGroup>& dr_group_list = dr_task->get_dr_group_list();
     for (DRGroup& dr_group : dr_group_list) {
       std::vector<DRNode*> node_list;
-      for (auto& [coord, direction_set] : dr_group.get_coord_direction_map()) {
+      for (LayerCoord& coord : dr_group.get_coord_list()) {
         if (!RTUTIL.existTrackGrid(coord, box_track_axis)) {
           RTLOG.error(Loc::current(), "The coord can not find grid!");
         }
         PlanarCoord grid_coord = RTUTIL.getTrackGrid(coord, box_track_axis);
         DRNode& dr_node = layer_node_map[coord.get_layer_idx()][grid_coord.get_x()][grid_coord.get_y()];
-        dr_node.set_direction_set(direction_set);
         node_list.push_back(&dr_node);
       }
       node_list_list.push_back(node_list);
@@ -806,20 +799,6 @@ std::vector<Segment<LayerCoord>> DetailedRouter::getRoutingSegmentListByNode(DRN
   return routing_segment_list;
 }
 
-void DetailedRouter::updateDirectionSet(DRBox& dr_box)
-{
-  DRNode* path_head_node = dr_box.get_path_head_node();
-
-  DRNode* curr_node = path_head_node;
-  DRNode* pre_node = curr_node->get_parent_node();
-  while (pre_node != nullptr) {
-    curr_node->get_direction_set().insert(RTUTIL.getDirection(*curr_node, *pre_node));
-    pre_node->get_direction_set().insert(RTUTIL.getDirection(*pre_node, *curr_node));
-    curr_node = pre_node;
-    pre_node = curr_node->get_parent_node();
-  }
-}
-
 void DetailedRouter::resetStartAndEnd(DRBox& dr_box)
 {
   std::vector<std::vector<DRNode*>>& start_node_list_list = dr_box.get_start_node_list_list();
@@ -878,7 +857,7 @@ std::vector<Segment<LayerCoord>> DetailedRouter::getRoutingSegmentList(DRBox& dr
   std::map<LayerCoord, std::set<int32_t>, CmpLayerCoordByXASC> key_coord_pin_map;
   std::vector<DRGroup>& dr_group_list = curr_dr_task->get_dr_group_list();
   for (size_t i = 0; i < dr_group_list.size(); i++) {
-    for (auto& [coord, direction_set] : dr_group_list[i].get_coord_direction_map()) {
+    for (LayerCoord& coord : dr_group_list[i].get_coord_list()) {
       candidate_root_coord_list.push_back(coord);
       key_coord_pin_map[coord].insert(static_cast<int32_t>(i));
     }
@@ -898,13 +877,7 @@ void DetailedRouter::resetSingleTask(DRBox& dr_box)
   dr_box.get_start_node_list_list().clear();
   dr_box.get_end_node_list_list().clear();
   dr_box.get_path_node_list().clear();
-
-  std::vector<DRNode*>& single_task_visited_node_list = dr_box.get_single_task_visited_node_list();
-  for (DRNode* single_task_visited_node : single_task_visited_node_list) {
-    single_task_visited_node->get_direction_set().clear();
-  }
-  single_task_visited_node_list.clear();
-
+  dr_box.get_single_task_visited_node_list().clear();
   dr_box.get_routing_segment_list().clear();
 }
 
@@ -955,7 +928,6 @@ double DetailedRouter::getKnowCost(DRBox& dr_box, DRNode* start_node, DRNode* en
   cost += getNodeCost(dr_box, start_node, RTUTIL.getOrientation(*start_node, *end_node));
   cost += getNodeCost(dr_box, end_node, RTUTIL.getOrientation(*end_node, *start_node));
   cost += getKnowWireCost(dr_box, start_node, end_node);
-  cost += getKnowCornerCost(dr_box, start_node, end_node);
   cost += getKnowViaCost(dr_box, start_node, end_node);
   return cost;
 }
@@ -995,35 +967,6 @@ double DetailedRouter::getKnowWireCost(DRBox& dr_box, DRNode* start_node, DRNode
   return wire_cost;
 }
 
-double DetailedRouter::getKnowCornerCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node)
-{
-  double corner_unit = dr_box.get_dr_parameter()->get_corner_unit();
-
-  double corner_cost = 0;
-  if (start_node->get_layer_idx() == end_node->get_layer_idx()) {
-    std::set<Direction> direction_set;
-    // 添加start direction
-    std::set<Direction>& start_direction_set = start_node->get_direction_set();
-    direction_set.insert(start_direction_set.begin(), start_direction_set.end());
-    // 添加start到parent的direction
-    if (start_node->get_parent_node() != nullptr) {
-      direction_set.insert(RTUTIL.getDirection(*start_node->get_parent_node(), *start_node));
-    }
-    // 添加end direction
-    std::set<Direction>& end_direction_set = end_node->get_direction_set();
-    direction_set.insert(end_direction_set.begin(), end_direction_set.end());
-    // 添加start到end的direction
-    direction_set.insert(RTUTIL.getDirection(*start_node, *end_node));
-
-    if (direction_set.size() == 2) {
-      corner_cost += corner_unit;
-    } else if (direction_set.size() == 2) {
-      RTLOG.error(Loc::current(), "Direction set is error!");
-    }
-  }
-  return corner_cost;
-}
-
 double DetailedRouter::getKnowViaCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node)
 {
   double via_unit = dr_box.get_dr_parameter()->get_via_unit();
@@ -1053,7 +996,6 @@ double DetailedRouter::getEstimateCost(DRBox& dr_box, DRNode* start_node, DRNode
 {
   double estimate_cost = 0;
   estimate_cost += getEstimateWireCost(dr_box, start_node, end_node);
-  estimate_cost += getEstimateCornerCost(dr_box, start_node, end_node);
   estimate_cost += getEstimateViaCost(dr_box, start_node, end_node);
   return estimate_cost;
 }
@@ -1066,19 +1008,6 @@ double DetailedRouter::getEstimateWireCost(DRBox& dr_box, DRNode* start_node, DR
   wire_cost += RTUTIL.getManhattanDistance(start_node->get_planar_coord(), end_node->get_planar_coord());
   wire_cost *= prefer_wire_unit;
   return wire_cost;
-}
-
-double DetailedRouter::getEstimateCornerCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node)
-{
-  double corner_unit = dr_box.get_dr_parameter()->get_corner_unit();
-
-  double corner_cost = 0;
-  if (start_node->get_layer_idx() == end_node->get_layer_idx()) {
-    if (RTUTIL.isOblique(*start_node, *end_node)) {
-      corner_cost += corner_unit;
-    }
-  }
-  return corner_cost;
 }
 
 double DetailedRouter::getEstimateViaCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node)
@@ -1825,10 +1754,10 @@ void DetailedRouter::debugCheckDRBox(DRBox& dr_box)
       RTLOG.error(Loc::current(), "The idx of origin net is illegal!");
     }
     for (DRGroup& dr_group : dr_task->get_dr_group_list()) {
-      if (dr_group.get_coord_direction_map().empty()) {
-        RTLOG.error(Loc::current(), "The coord_direction_map is empty!");
+      if (dr_group.get_coord_list().empty()) {
+        RTLOG.error(Loc::current(), "The coord_list is empty!");
       }
-      for (auto& [coord, direction_set] : dr_group.get_coord_direction_map()) {
+      for (LayerCoord& coord : dr_group.get_coord_list()) {
         int32_t layer_idx = coord.get_layer_idx();
         if (routing_layer_list.back().get_layer_idx() < layer_idx || layer_idx < routing_layer_list.front().get_layer_idx()) {
           RTLOG.error(Loc::current(), "The layer idx of group coord is illegal!");
@@ -2032,30 +1961,6 @@ void DetailedRouter::debugPlotDRBox(DRBox& dr_box, int32_t curr_task_idx, std::s
             gp_text_orient_violation_number_map_info.set_presentation(GPTextPresentation::kLeftMiddle);
             dr_node_map_struct.push(gp_text_orient_violation_number_map_info);
           }
-
-          y -= y_reduced_span;
-          GPText gp_text_direction_set;
-          gp_text_direction_set.set_coord(real_rect.get_ll_x(), y);
-          gp_text_direction_set.set_text_type(static_cast<int32_t>(GPDataType::kInfo));
-          gp_text_direction_set.set_message("direction_set: ");
-          gp_text_direction_set.set_layer_idx(RTGP.getGDSIdxByRouting(dr_node.get_layer_idx()));
-          gp_text_direction_set.set_presentation(GPTextPresentation::kLeftMiddle);
-          dr_node_map_struct.push(gp_text_direction_set);
-
-          if (!dr_node.get_direction_set().empty()) {
-            y -= y_reduced_span;
-            GPText gp_text_direction_set_info;
-            gp_text_direction_set_info.set_coord(real_rect.get_ll_x(), y);
-            gp_text_direction_set_info.set_text_type(static_cast<int32_t>(GPDataType::kInfo));
-            std::string direction_set_info_message = "--";
-            for (Direction direction : dr_node.get_direction_set()) {
-              direction_set_info_message += RTUTIL.getString("(", GetDirectionName()(direction), ")");
-            }
-            gp_text_direction_set_info.set_message(direction_set_info_message);
-            gp_text_direction_set_info.set_layer_idx(RTGP.getGDSIdxByRouting(dr_node.get_layer_idx()));
-            gp_text_direction_set_info.set_presentation(GPTextPresentation::kLeftMiddle);
-            dr_node_map_struct.push(gp_text_direction_set_info);
-          }
         }
       }
     }
@@ -2189,7 +2094,7 @@ void DetailedRouter::debugPlotDRBox(DRBox& dr_box, int32_t curr_task_idx, std::s
 
     if (curr_task_idx == -1 || dr_task->get_net_idx() == curr_task_idx) {
       for (DRGroup& dr_group : dr_task->get_dr_group_list()) {
-        for (auto& [coord, direction_set] : dr_group.get_coord_direction_map()) {
+        for (LayerCoord& coord : dr_group.get_coord_list()) {
           GPBoundary gp_boundary;
           gp_boundary.set_data_type(static_cast<int32_t>(GPDataType::kKey));
           gp_boundary.set_rect(RTUTIL.getEnlargedRect(coord, width));

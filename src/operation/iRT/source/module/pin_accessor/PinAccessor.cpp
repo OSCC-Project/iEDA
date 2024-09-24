@@ -339,7 +339,6 @@ void PinAccessor::setPAParameter(PAModel& pa_model)
   RTLOG.info(Loc::current(), "prefer_wire_unit: ", pa_parameter.get_prefer_wire_unit());
   RTLOG.info(Loc::current(), "non_prefer_wire_unit: ", pa_parameter.get_non_prefer_wire_unit());
   RTLOG.info(Loc::current(), "via_unit: ", pa_parameter.get_via_unit());
-  RTLOG.info(Loc::current(), "corner_unit: ", pa_parameter.get_corner_unit());
   RTLOG.info(Loc::current(), "size: ", pa_parameter.get_size());
   RTLOG.info(Loc::current(), "offset: ", pa_parameter.get_offset());
   RTLOG.info(Loc::current(), "fixed_rect_unit: ", pa_parameter.get_fixed_rect_unit());
@@ -748,7 +747,6 @@ void PinAccessor::routePATask(PABox& pa_box, PATask* pa_task)
   while (!isConnectedAllEnd(pa_box)) {
     routeSinglePath(pa_box);
     updatePathResult(pa_box);
-    updateDirectionSet(pa_box);
     resetStartAndEnd(pa_box);
     resetSinglePath(pa_box);
   }
@@ -931,20 +929,6 @@ std::vector<Segment<LayerCoord>> PinAccessor::getRoutingSegmentListByNode(PANode
   return routing_segment_list;
 }
 
-void PinAccessor::updateDirectionSet(PABox& pa_box)
-{
-  PANode* path_head_node = pa_box.get_path_head_node();
-
-  PANode* curr_node = path_head_node;
-  PANode* pre_node = curr_node->get_parent_node();
-  while (pre_node != nullptr) {
-    curr_node->get_direction_set().insert(RTUTIL.getDirection(*curr_node, *pre_node));
-    pre_node->get_direction_set().insert(RTUTIL.getDirection(*pre_node, *curr_node));
-    curr_node = pre_node;
-    pre_node = curr_node->get_parent_node();
-  }
-}
-
 void PinAccessor::resetStartAndEnd(PABox& pa_box)
 {
   std::vector<std::vector<PANode*>>& start_node_list_list = pa_box.get_start_node_list_list();
@@ -1024,13 +1008,7 @@ void PinAccessor::resetSingleTask(PABox& pa_box)
   pa_box.get_start_node_list_list().clear();
   pa_box.get_end_node_list_list().clear();
   pa_box.get_path_node_list().clear();
-
-  std::vector<PANode*>& single_task_visited_node_list = pa_box.get_single_task_visited_node_list();
-  for (PANode* single_task_visited_node : single_task_visited_node_list) {
-    single_task_visited_node->get_direction_set().clear();
-  }
-  single_task_visited_node_list.clear();
-
+  pa_box.get_single_task_visited_node_list().clear();
   pa_box.get_routing_segment_list().clear();
 }
 
@@ -1081,7 +1059,6 @@ double PinAccessor::getKnowCost(PABox& pa_box, PANode* start_node, PANode* end_n
   cost += getNodeCost(pa_box, start_node, RTUTIL.getOrientation(*start_node, *end_node));
   cost += getNodeCost(pa_box, end_node, RTUTIL.getOrientation(*end_node, *start_node));
   cost += getKnowWireCost(pa_box, start_node, end_node);
-  cost += getKnowCornerCost(pa_box, start_node, end_node);
   cost += getKnowViaCost(pa_box, start_node, end_node);
   return cost;
 }
@@ -1121,35 +1098,6 @@ double PinAccessor::getKnowWireCost(PABox& pa_box, PANode* start_node, PANode* e
   return wire_cost;
 }
 
-double PinAccessor::getKnowCornerCost(PABox& pa_box, PANode* start_node, PANode* end_node)
-{
-  double corner_unit = pa_box.get_pa_parameter()->get_corner_unit();
-
-  double corner_cost = 0;
-  if (start_node->get_layer_idx() == end_node->get_layer_idx()) {
-    std::set<Direction> direction_set;
-    // 添加start direction
-    std::set<Direction>& start_direction_set = start_node->get_direction_set();
-    direction_set.insert(start_direction_set.begin(), start_direction_set.end());
-    // 添加start到parent的direction
-    if (start_node->get_parent_node() != nullptr) {
-      direction_set.insert(RTUTIL.getDirection(*start_node->get_parent_node(), *start_node));
-    }
-    // 添加end direction
-    std::set<Direction>& end_direction_set = end_node->get_direction_set();
-    direction_set.insert(end_direction_set.begin(), end_direction_set.end());
-    // 添加start到end的direction
-    direction_set.insert(RTUTIL.getDirection(*start_node, *end_node));
-
-    if (direction_set.size() == 2) {
-      corner_cost += corner_unit;
-    } else if (direction_set.size() == 2) {
-      RTLOG.error(Loc::current(), "Direction set is error!");
-    }
-  }
-  return corner_cost;
-}
-
 double PinAccessor::getKnowViaCost(PABox& pa_box, PANode* start_node, PANode* end_node)
 {
   double via_unit = pa_box.get_pa_parameter()->get_via_unit();
@@ -1179,7 +1127,6 @@ double PinAccessor::getEstimateCost(PABox& pa_box, PANode* start_node, PANode* e
 {
   double estimate_cost = 0;
   estimate_cost += getEstimateWireCost(pa_box, start_node, end_node);
-  estimate_cost += getEstimateCornerCost(pa_box, start_node, end_node);
   estimate_cost += getEstimateViaCost(pa_box, start_node, end_node);
   return estimate_cost;
 }
@@ -1192,19 +1139,6 @@ double PinAccessor::getEstimateWireCost(PABox& pa_box, PANode* start_node, PANod
   wire_cost += RTUTIL.getManhattanDistance(start_node->get_planar_coord(), end_node->get_planar_coord());
   wire_cost *= prefer_wire_unit;
   return wire_cost;
-}
-
-double PinAccessor::getEstimateCornerCost(PABox& pa_box, PANode* start_node, PANode* end_node)
-{
-  double corner_unit = pa_box.get_pa_parameter()->get_corner_unit();
-
-  double corner_cost = 0;
-  if (start_node->get_layer_idx() == end_node->get_layer_idx()) {
-    if (RTUTIL.isOblique(*start_node, *end_node)) {
-      corner_cost += corner_unit;
-    }
-  }
-  return corner_cost;
 }
 
 double PinAccessor::getEstimateViaCost(PABox& pa_box, PANode* start_node, PANode* end_node)
@@ -1893,7 +1827,7 @@ void PinAccessor::debugCheckPABox(PABox& pa_box)
     }
     for (PAGroup& pa_group : pa_task->get_pa_group_list()) {
       if (pa_group.get_coord_list().empty()) {
-        RTLOG.error(Loc::current(), "The coord_direction_map is empty!");
+        RTLOG.error(Loc::current(), "The coord_list is empty!");
       }
       for (LayerCoord& coord : pa_group.get_coord_list()) {
         int32_t layer_idx = coord.get_layer_idx();
@@ -2098,30 +2032,6 @@ void PinAccessor::debugPlotPABox(PABox& pa_box, int32_t curr_task_idx, std::stri
             gp_text_orient_violation_number_map_info.set_layer_idx(RTGP.getGDSIdxByRouting(pa_node.get_layer_idx()));
             gp_text_orient_violation_number_map_info.set_presentation(GPTextPresentation::kLeftMiddle);
             pa_node_map_struct.push(gp_text_orient_violation_number_map_info);
-          }
-
-          y -= y_reduced_span;
-          GPText gp_text_direction_set;
-          gp_text_direction_set.set_coord(real_rect.get_ll_x(), y);
-          gp_text_direction_set.set_text_type(static_cast<int32_t>(GPDataType::kInfo));
-          gp_text_direction_set.set_message("direction_set: ");
-          gp_text_direction_set.set_layer_idx(RTGP.getGDSIdxByRouting(pa_node.get_layer_idx()));
-          gp_text_direction_set.set_presentation(GPTextPresentation::kLeftMiddle);
-          pa_node_map_struct.push(gp_text_direction_set);
-
-          if (!pa_node.get_direction_set().empty()) {
-            y -= y_reduced_span;
-            GPText gp_text_direction_set_info;
-            gp_text_direction_set_info.set_coord(real_rect.get_ll_x(), y);
-            gp_text_direction_set_info.set_text_type(static_cast<int32_t>(GPDataType::kInfo));
-            std::string direction_set_info_message = "--";
-            for (Direction direction : pa_node.get_direction_set()) {
-              direction_set_info_message += RTUTIL.getString("(", GetDirectionName()(direction), ")");
-            }
-            gp_text_direction_set_info.set_message(direction_set_info_message);
-            gp_text_direction_set_info.set_layer_idx(RTGP.getGDSIdxByRouting(pa_node.get_layer_idx()));
-            gp_text_direction_set_info.set_presentation(GPTextPresentation::kLeftMiddle);
-            pa_node_map_struct.push(gp_text_direction_set_info);
           }
         }
       }

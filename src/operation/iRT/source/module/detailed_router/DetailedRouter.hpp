@@ -85,7 +85,6 @@ class DetailedRouter
   void resetSinglePath(DRBox& dr_box);
   void updatePathResult(DRBox& dr_box);
   std::vector<Segment<LayerCoord>> getRoutingSegmentListByNode(DRNode* node);
-  void updateDirectionSet(DRBox& dr_box);
   void resetStartAndEnd(DRBox& dr_box);
   void updateTaskResult(DRBox& dr_box);
   std::vector<Segment<LayerCoord>> getRoutingSegmentList(DRBox& dr_box);
@@ -95,12 +94,10 @@ class DetailedRouter
   double getKnowCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
   double getNodeCost(DRBox& dr_box, DRNode* curr_node, Orientation orientation);
   double getKnowWireCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
-  double getKnowCornerCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
   double getKnowViaCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
   double getEstimateCostToEnd(DRBox& dr_box, DRNode* curr_node);
   double getEstimateCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
   double getEstimateWireCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
-  double getEstimateCornerCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
   double getEstimateViaCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
   void updateViolationList(DRBox& dr_box);
   std::vector<Violation> getViolationList(DRBox& dr_box);

@@ -110,7 +110,6 @@ void TrackAssigner::setTAParameter(TAModel& ta_model)
   int32_t cost_unit = 8;
   TAParameter ta_parameter(128 * cost_unit, 32 * cost_unit, 32 * cost_unit, 4);
   RTLOG.info(Loc::current(), "prefer_wire_unit: ", ta_parameter.get_prefer_wire_unit());
-  RTLOG.info(Loc::current(), "corner_unit: ", ta_parameter.get_corner_unit());
   RTLOG.info(Loc::current(), "fixed_rect_unit: ", ta_parameter.get_fixed_rect_unit());
   RTLOG.info(Loc::current(), "routed_rect_unit: ", ta_parameter.get_routed_rect_unit());
   RTLOG.info(Loc::current(), "violation_unit: ", ta_parameter.get_violation_unit());
@@ -471,7 +470,6 @@ void TrackAssigner::routeTATask(TAPanel& ta_panel, TATask* ta_task)
   while (!isConnectedAllEnd(ta_panel)) {
     routeSinglePath(ta_panel);
     updatePathResult(ta_panel);
-    updateDirectionSet(ta_panel);
     resetStartAndEnd(ta_panel);
     resetSinglePath(ta_panel);
   }
@@ -657,20 +655,6 @@ std::vector<Segment<LayerCoord>> TrackAssigner::getRoutingSegmentListByNode(TANo
   return routing_segment_list;
 }
 
-void TrackAssigner::updateDirectionSet(TAPanel& ta_panel)
-{
-  TANode* path_head_node = ta_panel.get_path_head_node();
-
-  TANode* curr_node = path_head_node;
-  TANode* pre_node = curr_node->get_parent_node();
-  while (pre_node != nullptr) {
-    curr_node->get_direction_set().insert(RTUTIL.getDirection(*curr_node, *pre_node));
-    pre_node->get_direction_set().insert(RTUTIL.getDirection(*pre_node, *curr_node));
-    curr_node = pre_node;
-    pre_node = curr_node->get_parent_node();
-  }
-}
-
 void TrackAssigner::resetStartAndEnd(TAPanel& ta_panel)
 {
   std::vector<std::vector<TANode*>>& start_node_list_list = ta_panel.get_start_node_list_list();
@@ -751,13 +735,7 @@ void TrackAssigner::resetSingleTask(TAPanel& ta_panel)
   ta_panel.get_start_node_list_list().clear();
   ta_panel.get_end_node_list_list().clear();
   ta_panel.get_path_node_list().clear();
-
-  std::vector<TANode*>& single_task_visited_node_list = ta_panel.get_single_task_visited_node_list();
-  for (TANode* single_task_visited_node : single_task_visited_node_list) {
-    single_task_visited_node->get_direction_set().clear();
-  }
-  single_task_visited_node_list.clear();
-
+  ta_panel.get_single_task_visited_node_list().clear();
   ta_panel.get_routing_segment_list().clear();
 }
 
@@ -808,7 +786,6 @@ double TrackAssigner::getKnowCost(TAPanel& ta_panel, TANode* start_node, TANode*
   cost += getNodeCost(ta_panel, start_node, RTUTIL.getOrientation(*start_node, *end_node));
   cost += getNodeCost(ta_panel, end_node, RTUTIL.getOrientation(*end_node, *start_node));
   cost += getKnowWireCost(ta_panel, start_node, end_node);
-  cost += getKnowCornerCost(ta_panel, start_node, end_node);
   cost += getKnowViaCost(ta_panel, start_node, end_node);
   return cost;
 }
@@ -845,35 +822,6 @@ double TrackAssigner::getKnowWireCost(TAPanel& ta_panel, TANode* start_node, TAN
   return wire_cost;
 }
 
-double TrackAssigner::getKnowCornerCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node)
-{
-  double corner_unit = ta_panel.get_ta_parameter()->get_corner_unit();
-
-  double corner_cost = 0;
-  if (start_node->get_layer_idx() == end_node->get_layer_idx()) {
-    std::set<Direction> direction_set;
-    // 添加start direction
-    std::set<Direction>& start_direction_set = start_node->get_direction_set();
-    direction_set.insert(start_direction_set.begin(), start_direction_set.end());
-    // 添加start到parent的direction
-    if (start_node->get_parent_node() != nullptr) {
-      direction_set.insert(RTUTIL.getDirection(*start_node->get_parent_node(), *start_node));
-    }
-    // 添加end direction
-    std::set<Direction>& end_direction_set = end_node->get_direction_set();
-    direction_set.insert(end_direction_set.begin(), end_direction_set.end());
-    // 添加start到end的direction
-    direction_set.insert(RTUTIL.getDirection(*start_node, *end_node));
-
-    if (direction_set.size() == 2) {
-      corner_cost += corner_unit;
-    } else if (direction_set.size() == 2) {
-      RTLOG.error(Loc::current(), "Direction set is error!");
-    }
-  }
-  return corner_cost;
-}
-
 double TrackAssigner::getKnowViaCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node)
 {
   return 0;
@@ -901,7 +849,6 @@ double TrackAssigner::getEstimateCost(TAPanel& ta_panel, TANode* start_node, TAN
 {
   double estimate_cost = 0;
   estimate_cost += getEstimateWireCost(ta_panel, start_node, end_node);
-  estimate_cost += getEstimateCornerCost(ta_panel, start_node, end_node);
   estimate_cost += getEstimateViaCost(ta_panel, start_node, end_node);
   return estimate_cost;
 }
@@ -914,19 +861,6 @@ double TrackAssigner::getEstimateWireCost(TAPanel& ta_panel, TANode* start_node,
   wire_cost += RTUTIL.getManhattanDistance(start_node->get_planar_coord(), end_node->get_planar_coord());
   wire_cost *= prefer_wire_unit;
   return wire_cost;
-}
-
-double TrackAssigner::getEstimateCornerCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node)
-{
-  double corner_unit = ta_panel.get_ta_parameter()->get_corner_unit();
-
-  double corner_cost = 0;
-  if (start_node->get_layer_idx() == end_node->get_layer_idx()) {
-    if (RTUTIL.isOblique(*start_node, *end_node)) {
-      corner_cost += corner_unit;
-    }
-  }
-  return corner_cost;
 }
 
 double TrackAssigner::getEstimateViaCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node)
@@ -1531,7 +1465,7 @@ void TrackAssigner::debugCheckTAPanel(TAPanel& ta_panel)
     }
     for (TAGroup& ta_group : ta_task->get_ta_group_list()) {
       if (ta_group.get_coord_list().empty()) {
-        RTLOG.error(Loc::current(), "The coord_direction_map is empty!");
+        RTLOG.error(Loc::current(), "The coord_list is empty!");
       }
       for (LayerCoord& coord : ta_group.get_coord_list()) {
         int32_t layer_idx = coord.get_layer_idx();
@@ -1737,30 +1671,6 @@ void TrackAssigner::debugPlotTAPanel(TAPanel& ta_panel, int32_t curr_task_idx, s
           gp_text_orient_violation_number_map_info.set_layer_idx(RTGP.getGDSIdxByRouting(ta_node.get_layer_idx()));
           gp_text_orient_violation_number_map_info.set_presentation(GPTextPresentation::kLeftMiddle);
           ta_node_map_struct.push(gp_text_orient_violation_number_map_info);
-        }
-
-        y -= y_reduced_span;
-        GPText gp_text_direction_set;
-        gp_text_direction_set.set_coord(real_rect.get_ll_x(), y);
-        gp_text_direction_set.set_text_type(static_cast<int32_t>(GPDataType::kInfo));
-        gp_text_direction_set.set_message("direction_set: ");
-        gp_text_direction_set.set_layer_idx(RTGP.getGDSIdxByRouting(ta_node.get_layer_idx()));
-        gp_text_direction_set.set_presentation(GPTextPresentation::kLeftMiddle);
-        ta_node_map_struct.push(gp_text_direction_set);
-
-        if (!ta_node.get_direction_set().empty()) {
-          y -= y_reduced_span;
-          GPText gp_text_direction_set_info;
-          gp_text_direction_set_info.set_coord(real_rect.get_ll_x(), y);
-          gp_text_direction_set_info.set_text_type(static_cast<int32_t>(GPDataType::kInfo));
-          std::string direction_set_info_message = "--";
-          for (Direction direction : ta_node.get_direction_set()) {
-            direction_set_info_message += RTUTIL.getString("(", GetDirectionName()(direction), ")");
-          }
-          gp_text_direction_set_info.set_message(direction_set_info_message);
-          gp_text_direction_set_info.set_layer_idx(RTGP.getGDSIdxByRouting(ta_node.get_layer_idx()));
-          gp_text_direction_set_info.set_presentation(GPTextPresentation::kLeftMiddle);
-          ta_node_map_struct.push(gp_text_direction_set_info);
         }
       }
     }

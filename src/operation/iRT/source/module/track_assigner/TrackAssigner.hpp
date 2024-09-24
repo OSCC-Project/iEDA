@@ -78,7 +78,6 @@ class TrackAssigner
   void resetSinglePath(TAPanel& ta_panel);
   void updatePathResult(TAPanel& ta_panel);
   std::vector<Segment<LayerCoord>> getRoutingSegmentListByNode(TANode* node);
-  void updateDirectionSet(TAPanel& ta_panel);
   void resetStartAndEnd(TAPanel& ta_panel);
   void updateTaskResult(TAPanel& ta_panel);
   std::vector<Segment<LayerCoord>> getRoutingSegmentList(TAPanel& ta_panel);
@@ -88,12 +87,10 @@ class TrackAssigner
   double getKnowCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node);
   double getNodeCost(TAPanel& ta_panel, TANode* curr_node, Orientation orientation);
   double getKnowWireCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node);
-  double getKnowCornerCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node);
   double getKnowViaCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node);
   double getEstimateCostToEnd(TAPanel& ta_panel, TANode* curr_node);
   double getEstimateCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node);
   double getEstimateWireCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node);
-  double getEstimateCornerCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node);
   double getEstimateViaCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node);
   void updateViolationList(TAPanel& ta_panel);
   std::vector<Violation> getViolationList(TAPanel& ta_panel);
