@@ -14,9 +14,9 @@ void TestTotalWirelength();
 void TestNetWirelength();
 void TestPathWirelength();
 void TestEgrWirelength(std::string guide_path);
-void TestWirelengthEvalFromIDB(const std::sting& workspace_path);
+void TestWirelengthEvalFromIDB(const std::string& workspace_path="/data/yhqiu/benchmark/AiEDA/application/benchmark/28nm/gcd/config/db_default_config_test.json");
 
-int main()
+int main(int argc, char* argv[])
 {
   // TestTotalWirelength();
   // TestNetWirelength();
@@ -120,22 +120,22 @@ void TestEgrWirelength(std::string guide_path)
   std::cout << "Path EGR WL: " << path_egr_wl << std::endl;
 }
 
-void TestWirelengthEvalFromIDB(const std::sting& workspace_path)
+void TestWirelengthEvalFromIDB(const std::string& workspace_path)
 {
   dmInst->init(workspace_path);
   ieval::WirelengthAPI wirelength_api;
   ieval::TotalWLSummary wl_summary = wirelength_api.totalWL();
   std::cout << "Total HPWL: " << wl_summary.HPWL << std::endl;
-  std::cout << "Total FLUTE: " << wl_summary.FLUTE << std::endl;
-  std::cout << "Total HTree: " << wl_summary.HTree << std::endl;
-  std::cout << "Total VTree: " << wl_summary.VTree << std::endl;
-  std::cout << "Total GRWL: " << wl_summary.GRWL << std::endl;
+  // std::cout << "Total FLUTE: " << wl_summary.FLUTE << std::endl;
+  // std::cout << "Total HTree: " << wl_summary.HTree << std::endl;
+  // std::cout << "Total VTree: " << wl_summary.VTree << std::endl;
+  // std::cout << "Total GRWL: " << wl_summary.GRWL << std::endl;
 
-  ieval::NetWLSummary net_wl_summary = wirelength_api.netWL("req_msg[31]");
-  std::cout << ">> Net: req_msg[31], Wirelength: " << std::endl;
-  std::cout << "Net HPWL: " << net_wl_summary.HPWL << std::endl;
-  std::cout << "Net FLUTE: " << net_wl_summary.FLUTE << std::endl;
-  std::cout << "Net HTree: " << net_wl_summary.HTree << std::endl;
-  std::cout << "Net VTree: " << net_wl_summary.VTree << std::endl;
-  std::cout << "Net GRWL: " << net_wl_summary.GRWL << std::endl;
+  // ieval::NetWLSummary net_wl_summary = wirelength_api.netWL("req_msg[31]");
+  // std::cout << ">> Net: req_msg[31], Wirelength: " << std::endl;
+  // std::cout << "Net HPWL: " << net_wl_summary.HPWL << std::endl;
+  // std::cout << "Net FLUTE: " << net_wl_summary.FLUTE << std::endl;
+  // std::cout << "Net HTree: " << net_wl_summary.HTree << std::endl;
+  // std::cout << "Net VTree: " << net_wl_summary.VTree << std::endl;
+  // std::cout << "Net GRWL: " << net_wl_summary.GRWL << std::endl;
 }
