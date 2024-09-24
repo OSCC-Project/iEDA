@@ -151,6 +151,10 @@ json FeatureParser::buildSummaryDensity()
   density_info["net"]["global_net_density"] = density_map_summary.net_map_summary.global_net_density;
   density_info["net"]["allnet_density"] = density_map_summary.net_map_summary.allnet_density;
 
+  density_info["margin"]["horizontal"] = density_map_summary.macro_margin_summary.horizontal_margin;
+  density_info["margin"]["vertical"] = density_map_summary.macro_margin_summary.vertical_margin;
+  density_info["margin"]["union"] = density_map_summary.macro_margin_summary.union_margin;
+
   return density_info;
 }
 
