@@ -120,6 +120,9 @@ void InitIDB::initDensityDB()
 
 void InitIDB::initDensityDBRegion()
 {
+  if (_density_db_initialized) {
+    return;
+  }
   auto* idb_builder = dmInst->get_idb_builder();
   idb::IdbLayout* idb_layout = idb_builder->get_def_service()->get_layout();
 

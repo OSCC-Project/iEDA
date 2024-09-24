@@ -129,12 +129,12 @@ MacroCustomizedSummary DensityAPI::macroCustomizedMap(int32_t grid_size)
 {
   MacroCustomizedSummary macro_customized_summary;
 
-  // EVAL_DENSITY_INST->initIDB();
-  // macro_customized_summary.margin_summary = macroMarginMap(grid_size);
-  // macro_customized_summary.channel_summary = macroChannelMap(grid_size);
-  // macro_customized_summary.max_continuous_space = macroMaxContinuousSpaceMap(grid_size);
-  // macro_customized_summary.macro_hierarchy = macroHierarchyMap(grid_size);
-  // EVAL_DENSITY_INST->destroyIDB();
+  EVAL_DENSITY_INST->initIDB();
+  macro_customized_summary.margin_summary = macroMarginMap(grid_size);
+  macro_customized_summary.macro_channel = macroChannelMap(grid_size);
+  macro_customized_summary.max_continuous_space = macroMaxContinuousSpaceMap(grid_size);
+  macro_customized_summary.macro_hierarchy = macroHierarchyMap(grid_size);
+  EVAL_DENSITY_INST->destroyIDB();
 
   return macro_customized_summary;
 }
@@ -143,24 +143,24 @@ MacroMarginSummary DensityAPI::macroMarginMap(int32_t grid_size)
 {
   MacroMarginSummary macro_margin_summary;
 
-  // EVAL_DENSITY_INST->initIDBRegion();
-  // EVAL_DENSITY_INST->initIDBCells();
-  // macro_margin_summary = macroMarginMap(EVAL_DENSITY_INST->getDensityCells(), EVAL_DENSITY_INST->getDensityRegionCore(),
-  //                                       grid_size * EVAL_DENSITY_INST->getRowHeight());
+  EVAL_DENSITY_INST->initIDBRegion();
+  EVAL_DENSITY_INST->initIDBCells();
+  macro_margin_summary = macroMarginMap(EVAL_DENSITY_INST->getDensityCells(), EVAL_DENSITY_INST->getDensityRegion(),
+                                        EVAL_DENSITY_INST->getDensityRegionCore(), grid_size * EVAL_DENSITY_INST->getRowHeight());
 
   return macro_margin_summary;
 }
 
-MacroChannelSummary DensityAPI::macroChannelMap(int32_t grid_size)
+std::string DensityAPI::macroChannelMap(int32_t grid_size)
 {
-  MacroChannelSummary macro_channel_summary;
+  std::string macro_channel_map;
 
   // EVAL_DENSITY_INST->initIDBRegion();
   // EVAL_DENSITY_INST->initIDBCells();
-  // macro_channel_summary = macroMarginMap(EVAL_DENSITY_INST->getDensityCells(), EVAL_DENSITY_INST->getDensityRegion(),
+  // macro_channel_map = macroChannelMap(EVAL_DENSITY_INST->getDensityCells(), EVAL_DENSITY_INST->getDensityRegion(),
   //                                       grid_size * EVAL_DENSITY_INST->getRowHeight());
 
-  return macro_channel_summary;
+  return macro_channel_map;
 }
 
 std::string DensityAPI::macroMaxContinuousSpaceMap(int32_t grid_size)
@@ -187,6 +187,13 @@ MacroMarginSummary DensityAPI::macroMarginMap(DensityCells cells, DensityRegion 
   macro_margin_summary.union_margin = density_eval.evalAllMargin(cells, die, core, grid_size);
 
   return macro_margin_summary;
+}
+
+std::string DensityAPI::macroChannelMap(DensityCells cells, DensityRegion die, DensityRegion core)
+{
+  std::string macro_channel_map;
+
+  return macro_channel_map;
 }
 
 }  // namespace ieval

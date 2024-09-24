@@ -29,15 +29,14 @@ class DensityAPI
   PinMapSummary pinDensityMap(DensityPins pins, DensityRegion region, int32_t grid_size, bool neighbor);
   NetMapSummary netDensityMap(DensityNets nets, DensityRegion region, int32_t grid_size, bool neighbor);
 
-  MacroCustomizedSummary macroCustomizedMap(int32_t grid_size = 1);
   MacroMarginSummary macroMarginMap(int32_t grid_size = 1);
-  MacroChannelSummary macroChannelMap(int32_t grid_size = 1);
+  MacroMarginSummary macroMarginMap(DensityCells cells, DensityRegion die, DensityRegion core, int32_t grid_size);
+
+  MacroCustomizedSummary macroCustomizedMap(int32_t grid_size = 1);
+  std::string macroChannelMap(int32_t grid_size = 1);
+  std::string macroChannelMap(DensityCells cells, DensityRegion die, DensityRegion core);
   std::string macroMaxContinuousSpaceMap(int32_t grid_size = 1);
   std::string macroHierarchyMap(int32_t grid_size = 1);
-
-  MacroMarginSummary macroMarginMap(DensityCells cells, DensityRegion die, DensityRegion core,  int32_t grid_size);
-
-  
 
  private:
   static DensityAPI* _density_api_inst;

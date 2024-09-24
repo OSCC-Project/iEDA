@@ -85,17 +85,10 @@ struct MacroMarginSummary
   std::string union_margin;
 };
 
-struct MacroChannelSummary
-{
-  std::string horizontal_channel;
-  std::string vertical_channel;
-  std::string union_channel;
-};
-
 struct MacroCustomizedSummary
 {
   MacroMarginSummary margin_summary;
-  MacroChannelSummary channel_summary;
+  std::string macro_channel;
   std::string max_continuous_space;
   std::string macro_hierarchy;
 };
