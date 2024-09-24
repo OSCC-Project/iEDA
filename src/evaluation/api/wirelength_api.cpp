@@ -59,13 +59,13 @@ TotalWLSummary WirelengthAPI::totalWL()
   EVAL_WIRELENGTH_INST->initEGR();
   EVAL_WIRELENGTH_INST->initFlute();
   total_wirelength_summary.HPWL = EVAL_WIRELENGTH_INST->evalTotalHPWL();
-  // total_wirelength_summary.FLUTE = EVAL_WIRELENGTH_INST->evalTotalFLUTE();
-  // total_wirelength_summary.HTree = EVAL_WIRELENGTH_INST->evalTotalHTree();
-  // total_wirelength_summary.VTree = EVAL_WIRELENGTH_INST->evalTotalVTree();
-  // total_wirelength_summary.GRWL = EVAL_WIRELENGTH_INST->evalTotalEGRWL() * EVAL_WIRELENGTH_INST->getDesignUnit();
+  total_wirelength_summary.FLUTE = EVAL_WIRELENGTH_INST->evalTotalFLUTE();
+  total_wirelength_summary.HTree = EVAL_WIRELENGTH_INST->evalTotalHTree();
+  total_wirelength_summary.VTree = EVAL_WIRELENGTH_INST->evalTotalVTree();
+  total_wirelength_summary.GRWL = EVAL_WIRELENGTH_INST->evalTotalEGRWL() * EVAL_WIRELENGTH_INST->getDesignUnit();
   EVAL_WIRELENGTH_INST->destroyIDB();
-  // EVAL_WIRELENGTH_INST->destroyEGR();
-  // EVAL_WIRELENGTH_INST->destroyFlute();
+  EVAL_WIRELENGTH_INST->destroyEGR();
+  EVAL_WIRELENGTH_INST->destroyFlute();
 
   return total_wirelength_summary;
 }
