@@ -21,7 +21,8 @@ namespace irt {
 class IRParameter
 {
  public:
-  IRParameter()
+  IRParameter() = default;
+  IRParameter(int32_t topo_spilt_length, double congestion_unit, double prefer_wire_unit, double via_unit)
   {
     _topo_spilt_length = 10;
     _congestion_unit = 2;

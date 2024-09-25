@@ -108,7 +108,10 @@ TANet TrackAssigner::convertToTANet(Net& net)
 void TrackAssigner::setTAParameter(TAModel& ta_model)
 {
   int32_t cost_unit = 8;
-  TAParameter ta_parameter(128 * cost_unit, 32 * cost_unit, 32 * cost_unit, 4);
+  /**
+   * prefer_wire_unit, fixed_rect_unit, routed_rect_unit, violation_unit, max_routed_times
+   */
+  TAParameter ta_parameter(1, 128 * cost_unit, 32 * cost_unit, 32 * cost_unit, 4);
   RTLOG.info(Loc::current(), "prefer_wire_unit: ", ta_parameter.get_prefer_wire_unit());
   RTLOG.info(Loc::current(), "fixed_rect_unit: ", ta_parameter.get_fixed_rect_unit());
   RTLOG.info(Loc::current(), "routed_rect_unit: ", ta_parameter.get_routed_rect_unit());

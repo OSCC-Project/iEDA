@@ -109,7 +109,10 @@ IRNet InitialRouter::convertToIRNet(Net& net)
 
 void InitialRouter::setIRParameter(IRModel& ir_model)
 {
-  IRParameter ir_parameter;
+  /**
+   * topo_spilt_length, congestion_unit, prefer_wire_unit, via_unit
+   */
+  IRParameter ir_parameter(10, 2, 1, 1);
   RTLOG.info(Loc::current(), "topo_spilt_length: ", ir_parameter.get_topo_spilt_length());
   RTLOG.info(Loc::current(), "congestion_unit: ", ir_parameter.get_congestion_unit());
   RTLOG.info(Loc::current(), "prefer_wire_unit: ", ir_parameter.get_prefer_wire_unit());

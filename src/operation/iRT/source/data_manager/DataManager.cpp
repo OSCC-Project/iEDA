@@ -457,6 +457,31 @@ std::vector<NetShape> DataManager::getNetShapeList(int32_t net_idx, LayerCoord& 
 
 #endif
 
+#if 1  // 获得唯一的pitch
+
+int32_t DataManager::getOnlyPitch()
+{
+  std::vector<RoutingLayer>& routing_layer_list = _database.get_routing_layer_list();
+
+  std::vector<int32_t> pitch_list;
+  for (RoutingLayer& routing_layer : routing_layer_list) {
+    for (ScaleGrid& x_grid : routing_layer.get_track_axis().get_x_grid_list()) {
+      pitch_list.push_back(x_grid.get_step_length());
+    }
+    for (ScaleGrid& y_grid : routing_layer.get_track_axis().get_y_grid_list()) {
+      pitch_list.push_back(y_grid.get_step_length());
+    }
+  }
+  for (int32_t pitch : pitch_list) {
+    if (pitch_list.front() != pitch) {
+      RTLOG.error(Loc::current(), "The pitch is not equal!");
+    }
+  }
+  return pitch_list.front();
+}
+
+#endif
+
 // private
 
 DataManager* DataManager::_dm_instance = nullptr;
@@ -806,33 +831,11 @@ void DataManager::makeGCellAxis()
 {
   ScaleAxis& gcell_axis = _database.get_gcell_axis();
 
-  int32_t recommended_pitch = getRecommendedPitch();
-  gcell_axis.set_x_grid_list(makeGCellGridList(Direction::kVertical, recommended_pitch));
-  gcell_axis.set_y_grid_list(makeGCellGridList(Direction::kHorizontal, recommended_pitch));
+  gcell_axis.set_x_grid_list(makeGCellGridList(Direction::kVertical));
+  gcell_axis.set_y_grid_list(makeGCellGridList(Direction::kHorizontal));
 }
 
-int32_t DataManager::getRecommendedPitch()
-{
-  std::vector<RoutingLayer>& routing_layer_list = _database.get_routing_layer_list();
-
-  std::vector<int32_t> pitch_list;
-  for (RoutingLayer& routing_layer : routing_layer_list) {
-    for (ScaleGrid& x_grid : routing_layer.get_track_axis().get_x_grid_list()) {
-      pitch_list.push_back(x_grid.get_step_length());
-    }
-    for (ScaleGrid& y_grid : routing_layer.get_track_axis().get_y_grid_list()) {
-      pitch_list.push_back(y_grid.get_step_length());
-    }
-  }
-  for (int32_t pitch : pitch_list) {
-    if (pitch_list.front() != pitch) {
-      RTLOG.error(Loc::current(), "The pitch is not equal!");
-    }
-  }
-  return pitch_list.front();
-}
-
-std::vector<ScaleGrid> DataManager::makeGCellGridList(Direction direction, int32_t recommended_pitch)
+std::vector<ScaleGrid> DataManager::makeGCellGridList(Direction direction)
 {
   Die& die = _database.get_die();
   Row& row = _database.get_row();
@@ -841,7 +844,7 @@ std::vector<ScaleGrid> DataManager::makeGCellGridList(Direction direction, int32
   int32_t die_end_scale = (direction == Direction::kVertical ? die.get_real_ur_x() : die.get_real_ur_y());
   int32_t row_mid_scale = (direction == Direction::kVertical ? row.get_start_x() : row.get_start_y());
   // 为了防止与track重合，减去一个recommended_pitch的一半
-  row_mid_scale -= (recommended_pitch / 2);
+  row_mid_scale -= (getOnlyPitch() / 2);
   int32_t step_length = row.get_height();
 
   std::vector<int32_t> gcell_scale_list;

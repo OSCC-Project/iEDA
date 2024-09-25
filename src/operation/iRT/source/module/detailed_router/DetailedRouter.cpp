@@ -105,13 +105,17 @@ DRNet DetailedRouter::convertToDRNet(Net& net)
 void DetailedRouter::iterativeDRModel(DRModel& dr_model)
 {
   int32_t cost_unit = 8;
+  /**
+   * prefer_wire_unit, non_prefer_wire_unit, via_unit, size, offset, fixed_rect_unit, routed_rect_unit, violation_unit, initial_rip_up,
+   * max_routed_times
+   */
   std::vector<DRParameter> dr_parameter_list = {
-      /** format **/ {9, 0, 4 * cost_unit, 1 * cost_unit, 1 * cost_unit, true, 4},
-      /** format **/ {9, -3, 8 * cost_unit, 2 * cost_unit, 2 * cost_unit, false, 4},
-      /** format **/ {9, -6, 16 * cost_unit, 4 * cost_unit, 4 * cost_unit, false, 4},
-      /** format **/ {9, 0, 32 * cost_unit, 8 * cost_unit, 8 * cost_unit, false, 4},
-      /** format **/ {9, -3, 64 * cost_unit, 16 * cost_unit, 16 * cost_unit, false, 4},
-      /** format **/ {9, -6, 128 * cost_unit, 32 * cost_unit, 32 * cost_unit, false, 4},
+      DRParameter{1, 2.5, RTDM.getOnlyPitch(), 9, 0, 4 * cost_unit, 1 * cost_unit, 1 * cost_unit, true, 4},
+      DRParameter{1, 2.5, RTDM.getOnlyPitch(), 9, -3, 8 * cost_unit, 2 * cost_unit, 2 * cost_unit, false, 4},
+      DRParameter{1, 2.5, RTDM.getOnlyPitch(), 9, -6, 16 * cost_unit, 4 * cost_unit, 4 * cost_unit, false, 4},
+      DRParameter{1, 2.5, RTDM.getOnlyPitch(), 9, 0, 32 * cost_unit, 8 * cost_unit, 8 * cost_unit, false, 4},
+      DRParameter{1, 2.5, RTDM.getOnlyPitch(), 9, -3, 64 * cost_unit, 16 * cost_unit, 16 * cost_unit, false, 4},
+      DRParameter{1, 2.5, RTDM.getOnlyPitch(), 9, -6, 128 * cost_unit, 32 * cost_unit, 32 * cost_unit, false, 4},
   };
   for (size_t i = 0, iter = 1; i < dr_parameter_list.size(); i++, iter++) {
     Monitor iter_monitor;
@@ -166,8 +170,8 @@ void DetailedRouter::initDRBoxMap(DRModel& dr_model)
   DRParameter& dr_parameter = dr_model.get_dr_parameter();
   int32_t size = dr_parameter.get_size();
   int32_t offset = dr_parameter.get_offset();
-  int32_t x_box_num = std::ceil((x_gcell_num - offset) / 1.0 / size);
-  int32_t y_box_num = std::ceil((y_gcell_num - offset) / 1.0 / size);
+  int32_t x_box_num = static_cast<int32_t>(std::ceil((x_gcell_num - offset) / 1.0 / size));
+  int32_t y_box_num = static_cast<int32_t>(std::ceil((y_gcell_num - offset) / 1.0 / size));
 
   GridMap<DRBox>& dr_box_map = dr_model.get_dr_box_map();
   dr_box_map.init(x_box_num, y_box_num);

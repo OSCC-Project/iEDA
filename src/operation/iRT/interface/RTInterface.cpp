@@ -1599,8 +1599,9 @@ void RTInterface::routeTAPanel(TAPanel& ta_panel)
   {
     std::map<int32_t, std::vector<Segment<LayerCoord>>> task_segment_map;
     for (lsa::LSShape& wire : ls_panel.wire_list) {
-      Segment<LayerCoord> routing_segment(LayerCoord(wire.ll_x + half_width, wire.ll_y + half_width, ls_panel.layer_id),
-                                          LayerCoord(wire.ur_x - half_width, wire.ur_y - half_width, ls_panel.layer_id));
+      Segment<LayerCoord> routing_segment(
+          LayerCoord(static_cast<int32_t>(wire.ll_x + half_width), static_cast<int32_t>(wire.ll_y + half_width), ls_panel.layer_id),
+          LayerCoord(static_cast<int32_t>(wire.ur_x - half_width), static_cast<int32_t>(wire.ur_y - half_width), ls_panel.layer_id));
       if (RTUTIL.isOblique(routing_segment.get_first(), routing_segment.get_second())) {
         RTLOG.error(Loc::current(), "The segment is oblique");
       }

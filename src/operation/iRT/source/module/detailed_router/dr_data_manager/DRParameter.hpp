@@ -22,12 +22,12 @@ class DRParameter
 {
  public:
   DRParameter() = default;
-  DRParameter(int32_t size, int32_t offset, int32_t fixed_rect_unit, int32_t routed_rect_unit, int32_t violation_unit, bool initial_rip_up,
-              int32_t max_routed_times)
+  DRParameter(double prefer_wire_unit, double non_prefer_wire_unit, double via_unit, int32_t size, int32_t offset, double fixed_rect_unit,
+              double routed_rect_unit, double violation_unit, bool initial_rip_up, int32_t max_routed_times)
   {
-    _prefer_wire_unit = 1;
-    _non_prefer_wire_unit = 2;
-    _via_unit = 1;
+    _prefer_wire_unit = prefer_wire_unit;
+    _non_prefer_wire_unit = non_prefer_wire_unit;
+    _via_unit = via_unit;
     _size = size;
     _offset = offset;
     _fixed_rect_unit = fixed_rect_unit;

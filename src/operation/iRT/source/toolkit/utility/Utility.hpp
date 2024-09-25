@@ -2594,7 +2594,7 @@ class Utility
 
   static int32_t getIntScale(double double_scale)
   {
-    int32_t integer_scale = std::round(double_scale);
+    int32_t integer_scale = static_cast<int32_t>(std::round(double_scale));
     if (std::abs(double_scale - integer_scale) > RT_ERROR) {
       RTLOG.error(Loc::current(), "Exceeding the error range of a double!");
     }
@@ -3241,7 +3241,7 @@ class Utility
   {
     std::string sec_string;
 
-    int32_t integer_sec = std::round(sec);
+    int32_t integer_sec = static_cast<int32_t>(std::round(sec));
     int32_t h = integer_sec / 3600;
     int32_t m = (integer_sec % 3600) / 60;
     int32_t s = (integer_sec % 3600) % 60;

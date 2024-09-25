@@ -335,7 +335,10 @@ void PinAccessor::uploadAccessPointList(PAModel& pa_model)
 void PinAccessor::setPAParameter(PAModel& pa_model)
 {
   int32_t cost_unit = 8;
-  PAParameter pa_parameter(1, 0, 128 * cost_unit, 32 * cost_unit, 32 * cost_unit, 4);
+  /**
+   * prefer_wire_unit, non_prefer_wire_unit, via_unit, size, offset, fixed_rect_unit, routed_rect_unit, violation_unit, max_routed_times
+   */
+  PAParameter pa_parameter(1, 2.5, RTDM.getOnlyPitch(), 1, 0, 128 * cost_unit, 32 * cost_unit, 32 * cost_unit, 4);
   RTLOG.info(Loc::current(), "prefer_wire_unit: ", pa_parameter.get_prefer_wire_unit());
   RTLOG.info(Loc::current(), "non_prefer_wire_unit: ", pa_parameter.get_non_prefer_wire_unit());
   RTLOG.info(Loc::current(), "via_unit: ", pa_parameter.get_via_unit());
@@ -364,8 +367,8 @@ void PinAccessor::initPABoxMap(PAModel& pa_model)
   PAParameter& pa_parameter = pa_model.get_pa_parameter();
   int32_t size = pa_parameter.get_size();
   int32_t offset = pa_parameter.get_offset();
-  int32_t x_box_num = std::ceil((x_gcell_num - offset) / 1.0 / size);
-  int32_t y_box_num = std::ceil((y_gcell_num - offset) / 1.0 / size);
+  int32_t x_box_num = static_cast<int32_t>(std::ceil((x_gcell_num - offset) / 1.0 / size));
+  int32_t y_box_num = static_cast<int32_t>(std::ceil((y_gcell_num - offset) / 1.0 / size));
 
   GridMap<PABox>& pa_box_map = pa_model.get_pa_box_map();
   pa_box_map.init(x_box_num, y_box_num);

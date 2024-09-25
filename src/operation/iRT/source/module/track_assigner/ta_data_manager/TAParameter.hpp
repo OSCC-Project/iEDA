@@ -22,9 +22,9 @@ class TAParameter
 {
  public:
   TAParameter() = default;
-  TAParameter(double fixed_rect_unit, double routed_rect_unit, double violation_unit, int32_t max_routed_times)
+  TAParameter(double prefer_wire_unit, double fixed_rect_unit, double routed_rect_unit, double violation_unit, int32_t max_routed_times)
   {
-    _prefer_wire_unit = 1;
+    _prefer_wire_unit = prefer_wire_unit;
     _fixed_rect_unit = fixed_rect_unit;
     _routed_rect_unit = routed_rect_unit;
     _violation_unit = violation_unit;

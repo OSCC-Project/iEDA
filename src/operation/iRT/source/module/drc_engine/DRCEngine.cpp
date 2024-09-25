@@ -377,10 +377,10 @@ std::vector<Violation> DRCEngine::getViolationListBySelf(std::string top_name, s
             RTLOG.error(Loc::current(), "Unknow layer type!");
           }
           EXTLayerRect ext_layer_rect;
-          ext_layer_rect.set_real_ll_x(std::stod(ll_x_string) * micron_dbu);
-          ext_layer_rect.set_real_ll_y(std::stod(ll_y_string) * micron_dbu);
-          ext_layer_rect.set_real_ur_x(std::stod(ur_x_string) * micron_dbu);
-          ext_layer_rect.set_real_ur_y(std::stod(ur_y_string) * micron_dbu);
+          ext_layer_rect.set_real_ll_x(static_cast<int32_t>(std::stod(ll_x_string) * micron_dbu));
+          ext_layer_rect.set_real_ll_y(static_cast<int32_t>(std::stod(ll_y_string) * micron_dbu));
+          ext_layer_rect.set_real_ur_x(static_cast<int32_t>(std::stod(ur_x_string) * micron_dbu));
+          ext_layer_rect.set_real_ur_y(static_cast<int32_t>(std::stod(ur_y_string) * micron_dbu));
           ext_layer_rect.set_grid_rect(RTUTIL.getClosedGCellGridRect(ext_layer_rect.get_real_rect(), gcell_axis));
           ext_layer_rect.set_layer_idx(layer_idx);
           std::set<int32_t> violation_net_set;

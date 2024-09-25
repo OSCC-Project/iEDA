@@ -63,6 +63,10 @@ class DataManager
   std::vector<NetShape> getNetShapeList(int32_t net_idx, LayerCoord& first_coord, LayerCoord& second_coord);
 #endif
 
+#if 1  // 获得唯一的pitch
+  int32_t getOnlyPitch();
+#endif
+
   Config& getConfig() { return _config; }
   Database& getDatabase() { return _database; }
   Summary& getSummary() { return _summary; }
@@ -95,8 +99,7 @@ class DataManager
   void buildLayerViaMasterInfo();
   void buildGCellAxis();
   void makeGCellAxis();
-  int32_t getRecommendedPitch();
-  std::vector<ScaleGrid> makeGCellGridList(Direction direction, int32_t recommended_pitch);
+  std::vector<ScaleGrid> makeGCellGridList(Direction direction);
   std::vector<ScaleGrid> makeGCellGridList(std::vector<int32_t>& gcell_scale_list);
   void checkGCellAxis();
   void buildDie();
