@@ -17,6 +17,7 @@
 #pragma once
 
 #include "Config.hpp"
+#include "DETask.hpp"
 #include "DataManager.hpp"
 #include "Database.hpp"
 #include "Monitor.hpp"
@@ -32,10 +33,7 @@ class DRCEngine
   static DRCEngine& getInst();
   static void destroyInst();
   // function
-  std::vector<Violation> getViolationList(std::string top_name, std::vector<std::pair<EXTLayerRect*, bool>>& env_shape_list,
-                                          std::map<int32_t, std::vector<std::pair<EXTLayerRect*, bool>>>& net_pin_shape_map,
-                                          std::map<int32_t, std::vector<Segment<LayerCoord>>>& net_fixed_result_map,
-                                          std::map<int32_t, std::vector<Segment<LayerCoord>>>& net_routing_result_map, std::string stage);
+  std::vector<Violation> getViolationList(DETask& de_task);
 
  private:
   // self
@@ -48,16 +46,11 @@ class DRCEngine
   DRCEngine& operator=(const DRCEngine& other) = delete;
   DRCEngine& operator=(DRCEngine&& other) = delete;
   // function
-  std::vector<Violation> getViolationListBySelf(std::string top_name, std::vector<std::pair<EXTLayerRect*, bool>>& env_shape_list,
-                                                std::map<int32_t, std::vector<std::pair<EXTLayerRect*, bool>>>& net_pin_shape_map,
-                                                std::map<int32_t, std::vector<Segment<LayerCoord>>>& net_fixed_result_map,
-                                                std::map<int32_t, std::vector<Segment<LayerCoord>>>& net_routing_result_map,
-                                                std::string stage);
-  std::vector<Violation> getViolationListByOther(std::string top_name, std::vector<std::pair<EXTLayerRect*, bool>>& env_shape_list,
-                                                 std::map<int32_t, std::vector<std::pair<EXTLayerRect*, bool>>>& net_pin_shape_map,
-                                                 std::map<int32_t, std::vector<Segment<LayerCoord>>>& net_fixed_result_map,
-                                                 std::map<int32_t, std::vector<Segment<LayerCoord>>>& net_routing_result_map,
-                                                 std::string stage);
+  std::vector<Violation> getViolationListBySelf(DETask& de_task);
+  void buildTask(DETask& de_task);
+  void writeTask(DETask& de_task);
+  void readTask(DETask& de_task);
+  std::vector<Violation> getViolationListByOther(DETask& de_task);
 };
 
 }  // namespace irt

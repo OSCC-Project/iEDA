@@ -114,9 +114,9 @@ class DataManager
   void transPinList(Net& net);
   void makePinList(Net& net);
   void checkPinList(Net& net);
+  void buildDetectionDistance();
   void buildGCellMap();
   int32_t getIntervalIdx(int32_t scale_start, int32_t scale_end, int32_t interval_start, int32_t interval_end, int32_t interval_length);
-  void buildDetectionDistance();
   void printConfig();
   void printDatabase();
   void writePYScript();

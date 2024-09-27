@@ -80,7 +80,9 @@ void DataManager::updateFixedRectToGCellMap(ChangeType change_type, int32_t net_
   Die& die = _database.get_die();
   GridMap<GCell>& gcell_map = _database.get_gcell_map();
   int32_t detection_distance = _database.get_detection_distance();
-
+  if (detection_distance == -1) {
+    RTLOG.error(Loc::current(), "The detection_distance is not initialize!");
+  }
   PlanarRect real_rect = RTUTIL.getEnlargedRect(ext_layer_rect->get_real_rect(), detection_distance);
   if (!RTUTIL.hasRegularRect(real_rect, die.get_real_rect())) {
     return;
@@ -129,7 +131,9 @@ void DataManager::updateNetAccessResultToGCellMap(ChangeType change_type, int32_
   Die& die = _database.get_die();
   GridMap<GCell>& gcell_map = _database.get_gcell_map();
   int32_t detection_distance = _database.get_detection_distance();
-
+  if (detection_distance == -1) {
+    RTLOG.error(Loc::current(), "The detection_distance is not initialize!");
+  }
   for (NetShape& net_shape : getNetShapeList(net_idx, *segment)) {
     PlanarRect real_rect = RTUTIL.getEnlargedRect(net_shape, detection_distance);
     if (!RTUTIL.hasRegularRect(real_rect, die.get_real_rect())) {
@@ -196,7 +200,9 @@ void DataManager::updateDetailedNetResultToGCellMap(ChangeType change_type, int3
   Die& die = _database.get_die();
   GridMap<GCell>& gcell_map = _database.get_gcell_map();
   int32_t detection_distance = _database.get_detection_distance();
-
+  if (detection_distance == -1) {
+    RTLOG.error(Loc::current(), "The detection_distance is not initialize!");
+  }
   for (NetShape& net_shape : getNetShapeList(net_idx, *segment)) {
     PlanarRect real_rect = RTUTIL.getEnlargedRect(net_shape, detection_distance);
     if (!RTUTIL.hasRegularRect(real_rect, die.get_real_rect())) {
@@ -230,7 +236,9 @@ void DataManager::updateNetPatchToGCellMap(ChangeType change_type, int32_t net_i
   Die& die = _database.get_die();
   GridMap<GCell>& gcell_map = _database.get_gcell_map();
   int32_t detection_distance = _database.get_detection_distance();
-
+  if (detection_distance == -1) {
+    RTLOG.error(Loc::current(), "The detection_distance is not initialize!");
+  }
   PlanarRect real_rect = RTUTIL.getEnlargedRect(ext_layer_rect->get_real_rect(), detection_distance);
   if (!RTUTIL.hasRegularRect(real_rect, die.get_real_rect())) {
     return;
@@ -561,8 +569,8 @@ void DataManager::buildDatabase()
   buildDie();
   buildObstacleList();
   buildNetList();
-  buildGCellMap();
   buildDetectionDistance();
+  buildGCellMap();
 }
 
 void DataManager::buildLayerList()
@@ -707,35 +715,33 @@ void DataManager::checkLayerList()
 
 void DataManager::buildLayerInfo()
 {
+  std::map<int32_t, std::vector<int32_t>>& routing_to_adjacent_cut_map = _database.get_routing_to_adjacent_cut_map();
   std::map<int32_t, std::vector<int32_t>>& cut_to_adjacent_routing_map = _database.get_cut_to_adjacent_routing_map();
 
-  std::map<int32_t, std::pair<bool, int32_t>> layer_order_to_idx_map;
+  std::vector<std::tuple<int32_t, bool, int32_t>> order_routing_layer_list;
   for (RoutingLayer& routing_layer : _database.get_routing_layer_list()) {
-    layer_order_to_idx_map[routing_layer.get_layer_order()] = std::make_pair(false, routing_layer.get_layer_idx());
+    order_routing_layer_list.emplace_back(routing_layer.get_layer_order(), true, routing_layer.get_layer_idx());
   }
   for (CutLayer& cut_layer : _database.get_cut_layer_list()) {
-    layer_order_to_idx_map[cut_layer.get_layer_order()] = std::make_pair(true, cut_layer.get_layer_idx());
+    order_routing_layer_list.emplace_back(cut_layer.get_layer_order(), false, cut_layer.get_layer_idx());
   }
-  std::vector<std::pair<bool, int32_t>> layer_idx_pair_list;
-  for (auto& [layer_order, type_layer_idx_pair] : layer_order_to_idx_map) {
-    layer_idx_pair_list.push_back(type_layer_idx_pair);
-  }
-
-  for (int32_t i = 0; i < static_cast<int32_t>(layer_idx_pair_list.size()); i++) {
-    bool is_cut = layer_idx_pair_list[i].first;
-    int32_t cut_layer_idx = layer_idx_pair_list[i].second;
-    if (!is_cut) {
-      continue;
-    }
-    std::vector<int32_t> adj_routing_layer_idx_list;
-    if (i - 1 >= 0 && layer_idx_pair_list[i - 1].first == false) {
-      adj_routing_layer_idx_list.push_back(layer_idx_pair_list[i - 1].second);
-    }
-    if (i + 1 < static_cast<int32_t>(layer_idx_pair_list.size()) && layer_idx_pair_list[i + 1].first == false) {
-      adj_routing_layer_idx_list.push_back(layer_idx_pair_list[i + 1].second);
-    }
-    if (!adj_routing_layer_idx_list.empty()) {
-      cut_to_adjacent_routing_map[cut_layer_idx] = adj_routing_layer_idx_list;
+  std::sort(order_routing_layer_list.begin(), order_routing_layer_list.end(),
+            [](std::tuple<int32_t, bool, int32_t>& a, std::tuple<int32_t, bool, int32_t>& b) { return std::get<0>(a) < std::get<0>(b); });
+  for (int32_t i = 0; i < static_cast<int32_t>(order_routing_layer_list.size()); i++) {
+    if (std::get<1>(order_routing_layer_list[i]) == true) {
+      if (i - 1 >= 0) {
+        routing_to_adjacent_cut_map[std::get<2>(order_routing_layer_list[i])].push_back(std::get<2>(order_routing_layer_list[i - 1]));
+      }
+      if (i + 1 < static_cast<int32_t>(order_routing_layer_list.size())) {
+        routing_to_adjacent_cut_map[std::get<2>(order_routing_layer_list[i])].push_back(std::get<2>(order_routing_layer_list[i + 1]));
+      }
+    } else {
+      if (i - 1 >= 0) {
+        cut_to_adjacent_routing_map[std::get<2>(order_routing_layer_list[i])].push_back(std::get<2>(order_routing_layer_list[i - 1]));
+      }
+      if (i + 1 < static_cast<int32_t>(order_routing_layer_list.size())) {
+        cut_to_adjacent_routing_map[std::get<2>(order_routing_layer_list[i])].push_back(std::get<2>(order_routing_layer_list[i + 1]));
+      }
     }
   }
 }
@@ -795,7 +801,7 @@ void DataManager::makeLayerViaMasterList()
       via_master.set_below_direction(below_enclosure.getRectDirection(below_layer_direction));
     }
     std::sort(via_master_list.begin(), via_master_list.end(),
-              [&routing_layer_list](const ViaMaster& a, const ViaMaster& b) { return CmpViaMaster()(a, b, routing_layer_list); });
+              [&routing_layer_list](ViaMaster& a, ViaMaster& b) { return CmpViaMaster()(a, b, routing_layer_list); });
     for (size_t i = 0; i < via_master_list.size(); i++) {
       via_master_list[i].set_via_master_idx(layer_idx, i);
     }
@@ -1129,6 +1135,11 @@ void DataManager::checkPinList(Net& net)
   }
 }
 
+void DataManager::buildDetectionDistance()
+{
+  _database.set_detection_distance(2 * getOnlyPitch());
+}
+
 void DataManager::buildGCellMap()
 {
   Monitor monitor;
@@ -1211,16 +1222,7 @@ void DataManager::buildGCellMap()
 #pragma omp parallel for
       for (std::vector<Shape>& shape_list : shape_list_list) {
         for (Shape& shape : shape_list) {
-          int32_t net_idx = shape.net_idx;
-          EXTLayerRect* ext_layer_rect = shape.rect;
-          int32_t layer_idx = ext_layer_rect->get_layer_idx();
-          bool is_routing = shape.is_routing;
-
-          for (int32_t x = ext_layer_rect->get_grid_ll_x(); x <= ext_layer_rect->get_grid_ur_x(); x++) {
-            for (int32_t y = ext_layer_rect->get_grid_ll_y(); y <= ext_layer_rect->get_grid_ur_y(); y++) {
-              gcell_map[x][y].get_type_layer_net_fixed_rect_map()[is_routing][layer_idx][net_idx].insert(ext_layer_rect);
-            }
-          }
+          updateFixedRectToGCellMap(ChangeType::kAdd, shape.net_idx, shape.rect, shape.is_routing);
         }
       }
     }
@@ -1229,15 +1231,7 @@ void DataManager::buildGCellMap()
     if (shape.is_save) {
       continue;
     }
-    int32_t net_idx = shape.net_idx;
-    EXTLayerRect* ext_layer_rect = shape.rect;
-    int32_t layer_idx = ext_layer_rect->get_layer_idx();
-    bool is_routing = shape.is_routing;
-    for (int32_t x = ext_layer_rect->get_grid_ll_x(); x <= ext_layer_rect->get_grid_ur_x(); x++) {
-      for (int32_t y = ext_layer_rect->get_grid_ll_y(); y <= ext_layer_rect->get_grid_ur_y(); y++) {
-        gcell_map[x][y].get_type_layer_net_fixed_rect_map()[is_routing][layer_idx][net_idx].insert(ext_layer_rect);
-      }
-    }
+    updateFixedRectToGCellMap(ChangeType::kAdd, shape.net_idx, shape.rect, shape.is_routing);
   }
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
@@ -1254,11 +1248,6 @@ int32_t DataManager::getIntervalIdx(int32_t scale_start, int32_t scale_end, int3
     return -1;
   }
   return start_idx;
-}
-
-void DataManager::buildDetectionDistance()
-{
-  _database.set_detection_distance(500);
 }
 
 void DataManager::printConfig()
