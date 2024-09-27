@@ -24,30 +24,60 @@
 
 #pragma once
 
-/**
+#include <vector>
+#include <memory>
+#include <variant>
+
+namespace istagpu {
+
+    /**
  * @brief The rc node for rc tree, represent for capacitance.
  *
  */
-struct RctNode {
+struct DelayRcPoint {
+  const char* _node_name;
   float _cap;
   float _load;  //!< The load is sum of the node cap and downstream node cap.
 };
 
-typedef size_t RctNodeId;
+typedef size_t DelayRcPointId;
 
 /**
  * @brief The rc edge for rc tree, represent for resitance.
  *
  */
-struct RctEdge {
-  RctNodeId _from;  // The from node id.
-  RctNodeId _to;    // The to node id.
+struct DelayRcEdge {
+  DelayRcPointId _from;  // The from node id.
+  DelayRcPointId _to;    // The to node id.
 
   float _resistance;
 };
 
 /**
- * @brief The rc tree.
+ * @brief The rc tree of one net.
  *
  */
-struct RcTree {};
+struct DelayRcNetwork {
+    DelayRcPoint* _root{nullptr};
+    std::vector<std::unique_ptr<DelayRcPoint>> _nodes;
+    std::vector<DelayRcEdge> _edges;
+};
+
+
+
+/**
+ * @brief The rc net wrap for rc tree.
+ * 
+ */
+struct DelayRcNet {
+    DelayRcNetwork _rc_network;
+
+    float delay_update_point_load();
+
+};
+
+
+
+
+}
+
