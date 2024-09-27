@@ -60,6 +60,7 @@ add_subdirectory(source/module/python-api)
 add_subdirectory(source/module/shell-cmd)
 add_subdirectory(source/module/sta)
 add_subdirectory(source/module/delay)
+add_subdirectory(source/module/delay-cuda)
 add_subdirectory(source/solver)
 add_subdirectory(source/utility)
 
@@ -69,5 +70,5 @@ add_executable(iSTA main.cc)
 
 target_link_libraries(iSTA sdc ista-engine inference
 sdc-cmd shell-cmd sta log str time netlist liberty
-delay ista_utility sta-solver verilog graph idb
+delay delay-gpu ista_utility sta-solver verilog graph idb
 tcl usage pthread stdc++fs IdbBuilder def_service lef_service)
