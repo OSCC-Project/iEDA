@@ -60,6 +60,10 @@ class PinAccessor
   std::vector<PlanarRect> getPlanarLegalRectList(PAModel& pa_model, int32_t curr_net_idx, std::vector<EXTLayerRect>& pin_shape_list);
   std::vector<AccessPoint> getAccessPointList(int32_t pin_idx, std::vector<LayerRect>& legal_shape_list);
   void uploadAccessPointList(PAModel& pa_model);
+  void buildNonConflictPoint(PAModel& pa_model);
+  std::vector<Segment<PAPin*>> getPinSegmentList(PAModel& pa_model);
+  std::vector<std::vector<PAPin*>> getPinGroupList(std::vector<Segment<PAPin*>>& pin_segment_list);
+  std::map<PAPin*, PlanarCoord> getPinBestCoordMap(std::vector<PAPin*>& pin_group);
   void setPAParameter(PAModel& pa_model);
   void initPABoxMap(PAModel& pa_model);
   void buildBoxSchedule(PAModel& pa_model);

@@ -1583,6 +1583,8 @@ void DetailedRouter::debugPlotDRModel(DRModel& dr_model, std::string flag)
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
   std::string& dr_temp_directory_path = RTDM.getConfig().dr_temp_directory_path;
 
+  int32_t point_size = 5;
+
   GPGDS gp_gds;
 
   // gcell_axis
@@ -1681,7 +1683,7 @@ void DetailedRouter::debugPlotDRModel(DRModel& dr_model, std::string flag)
       GPBoundary access_point_boundary;
       access_point_boundary.set_layer_idx(RTGP.getGDSIdxByRouting(access_point->get_layer_idx()));
       access_point_boundary.set_data_type(static_cast<int32_t>(GPDataType::kAccessPoint));
-      access_point_boundary.set_rect(x - 10, y - 10, x + 10, y + 10);
+      access_point_boundary.set_rect(x - point_size, y - point_size, x + point_size, y + point_size);
       access_point_struct.push(access_point_boundary);
     }
     gp_gds.addStruct(access_point_struct);

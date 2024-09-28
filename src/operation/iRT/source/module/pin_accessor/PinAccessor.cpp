@@ -63,6 +63,7 @@ void PinAccessor::access()
   PAModel pa_model = initPAModel();
   initAccessPointList(pa_model);
   uploadAccessPointList(pa_model);
+  buildNonConflictPoint(pa_model);
   // debugPlotPAModel(pa_model, "before");
   setPAParameter(pa_model);
   initPABoxMap(pa_model);
@@ -133,6 +134,27 @@ void PinAccessor::initAccessPointList(PAModel& pa_model)
     std::vector<LayerRect> legal_shape_list = getLegalShapeList(pa_model, net_pin_pair.first, pin);
     for (AccessPoint& access_point : getAccessPointList(pin->get_pin_idx(), legal_shape_list)) {
       access_point_list.push_back(access_point);
+    }
+    // 对于分散在多个gcell内的ap,取最多的留下
+    {
+      std::vector<AccessPoint> max_access_point_list;
+      std::map<PlanarCoord, std::set<size_t>, CmpPlanarCoordByXASC> grid_access_point_idx_map;
+      for (size_t i = 0; i < access_point_list.size(); i++) {
+        grid_access_point_idx_map[access_point_list[i].get_grid_coord()].insert(i);
+      }
+      size_t max_point_num = 0;
+      std::set<size_t> max_access_point_idx_set;
+      for (auto& [coord, access_point_idx_set] : grid_access_point_idx_map) {
+        size_t point_num = access_point_idx_set.size();
+        if (max_point_num < point_num) {
+          max_point_num = point_num;
+          max_access_point_idx_set = access_point_idx_set;
+        }
+      }
+      for (size_t access_point_idx : max_access_point_idx_set) {
+        max_access_point_list.push_back(access_point_list[access_point_idx]);
+      }
+      access_point_list = max_access_point_list;
     }
     std::sort(access_point_list.begin(), access_point_list.end(),
               [](AccessPoint& a, AccessPoint& b) { return CmpLayerCoordByXASC()(a.getRealLayerCoord(), b.getRealLayerCoord()); });
@@ -332,13 +354,218 @@ void PinAccessor::uploadAccessPointList(PAModel& pa_model)
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
+void PinAccessor::buildNonConflictPoint(PAModel& pa_model)
+{
+  Monitor monitor;
+  RTLOG.info(Loc::current(), "Starting...");
+
+  std::vector<Segment<PAPin*>> pin_segment_list = getPinSegmentList(pa_model);
+  for (std::vector<PAPin*>& pin_group : getPinGroupList(pin_segment_list)) {
+    for (auto& [pa_pin, best_coord] : getPinBestCoordMap(pin_group)) {
+      pa_pin->set_best_coord(best_coord);
+    }
+  }
+  // 将没有conflict的pin设置best_coord
+  for (PANet& pa_net : pa_model.get_pa_net_list()) {
+    for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
+      if (pa_pin.get_best_coord().get_x() < 0 && pa_pin.get_best_coord().get_y() < 0) {
+        pa_pin.set_best_coord(pa_pin.get_access_point_list().front().get_real_coord());
+      }
+    }
+  }
+  RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
+}
+
+std::vector<Segment<PAPin*>> PinAccessor::getPinSegmentList(PAModel& pa_model)
+{
+  Die& die = RTDM.getDatabase().get_die();
+  GridMap<GCell>& gcell_map = RTDM.getDatabase().get_gcell_map();
+  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
+  std::vector<CutLayer>& cut_layer_list = RTDM.getDatabase().get_cut_layer_list();
+  std::vector<std::vector<ViaMaster>>& layer_via_master_list = RTDM.getDatabase().get_layer_via_master_list();
+  std::map<int32_t, PlanarRect>& layer_enclosure_map = RTDM.getDatabase().get_layer_enclosure_map();
+
+  std::vector<std::pair<PAPin*, std::set<PAPin*>>> pin_pin_set_pair_list;
+  for (PANet& pa_net : pa_model.get_pa_net_list()) {
+    for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
+      pin_pin_set_pair_list.emplace_back(&pa_pin, std::set<PAPin*>{});
+    }
+  }
+#pragma omp parallel for
+  for (std::pair<PAPin*, std::set<PAPin*>>& pin_pin_set_pair : pin_pin_set_pair_list) {
+    PAPin* curr_pin = pin_pin_set_pair.first;
+    std::vector<AccessPoint>& curr_access_point_list = curr_pin->get_access_point_list();
+    // 构建周围pin与周围access_point
+    {
+      std::map<PAPin*, std::vector<AccessPoint*>> gcell_pin_access_map;
+      for (AccessPoint& curr_access_point : curr_access_point_list) {
+        PlanarCoord& grid_coord = curr_access_point.get_grid_coord();
+        for (int32_t x : {grid_coord.get_x() - 1, grid_coord.get_x(), grid_coord.get_x() + 1}) {
+          for (int32_t y : {grid_coord.get_y() - 1, grid_coord.get_y(), grid_coord.get_y() + 1}) {
+            if (!RTUTIL.isInside(die.get_grid_rect(), PlanarCoord(x, y))) {
+              continue;
+            }
+            for (auto& [net_idx, access_point_set] : gcell_map[x][y].get_net_access_point_map()) {
+              for (AccessPoint* gcell_access_point : access_point_set) {
+                PAPin* gcell_pin = &pa_model.get_pa_net_list()[net_idx].get_pa_pin_list()[gcell_access_point->get_pin_idx()];
+                if (curr_pin == gcell_pin) {
+                  continue;
+                }
+                gcell_pin_access_map[gcell_pin].push_back(gcell_access_point);
+              }
+            }
+          }
+        }
+      }
+      // 查找具有冲突的gcell_pin
+      PlanarRect curr_searched_rect;
+      {
+        std::vector<PlanarCoord> curr_coord_list;
+        for (AccessPoint& curr_access_point : curr_access_point_list) {
+          curr_coord_list.push_back(curr_access_point.get_real_coord());
+        }
+        curr_searched_rect = RTUTIL.getBoundingBox(curr_coord_list);
+        int32_t x_distance = 0;
+        int32_t y_distance = 0;
+        std::set<int32_t> curr_layer_idx_set;
+        for (AccessPoint& curr_access_point : curr_access_point_list) {
+          int32_t curr_layer_idx = curr_access_point.get_layer_idx();
+          if (curr_layer_idx < (static_cast<int32_t>(routing_layer_list.size()) - 1)) {
+            curr_layer_idx_set.insert(curr_layer_idx);
+            curr_layer_idx_set.insert(curr_layer_idx + 1);
+          } else {
+            curr_layer_idx_set.insert(curr_layer_idx);
+            curr_layer_idx_set.insert(curr_layer_idx - 1);
+          }
+        }
+        for (int32_t curr_layer_idx : curr_layer_idx_set) {
+          {
+            PlanarRect& enclosure = layer_enclosure_map[curr_layer_idx];
+            int32_t min_spacing = routing_layer_list[curr_layer_idx].getMinSpacing(enclosure);
+            x_distance = std::max(x_distance, enclosure.getXSpan() + min_spacing);
+            y_distance = std::max(y_distance, enclosure.getYSpan() + min_spacing);
+          }
+          {
+            ViaMaster& via_master = layer_via_master_list[curr_layer_idx].front();
+            PlanarRect& cut_shape = via_master.get_cut_shape_list().front();
+            int32_t min_spacing = cut_layer_list[via_master.get_cut_layer_idx()].getMinSpacing();
+            x_distance = std::max(x_distance, cut_shape.getXSpan() + min_spacing);
+            y_distance = std::max(y_distance, cut_shape.getYSpan() + min_spacing);
+          }
+        }
+        curr_searched_rect = RTUTIL.getEnlargedRect(curr_searched_rect, x_distance, y_distance, x_distance, y_distance);
+      }
+      for (auto& [gcell_pin, gcell_access_point_list] : gcell_pin_access_map) {
+        std::vector<PlanarCoord> gcell_coord_list;
+        for (AccessPoint* gcell_access_point : gcell_access_point_list) {
+          gcell_coord_list.push_back(gcell_access_point->get_real_coord());
+        }
+        PlanarRect gcell_bounding_box = RTUTIL.getBoundingBox(gcell_coord_list);
+        if (RTUTIL.isOverlap(curr_searched_rect, gcell_bounding_box)) {
+          pin_pin_set_pair.second.insert(gcell_pin);
+        }
+      }
+    }
+  }
+  std::vector<Segment<PAPin*>> pin_segment_list;
+  for (std::pair<PAPin*, std::set<PAPin*>>& pin_pin_set_pair : pin_pin_set_pair_list) {
+    PAPin* curr_pin = pin_pin_set_pair.first;
+    for (PAPin* gcell_pin : pin_pin_set_pair.second) {
+      pin_segment_list.emplace_back(curr_pin, gcell_pin);
+    }
+  }
+  return pin_segment_list;
+}
+
+std::vector<std::vector<PAPin*>> PinAccessor::getPinGroupList(std::vector<Segment<PAPin*>>& pin_segment_list)
+{
+  std::map<PAPin*, std::vector<PAPin*>> pin_conflict_map;
+  std::set<PAPin*> visited_pin_set;
+
+  for (Segment<PAPin*>& pin_segment : pin_segment_list) {
+    pin_conflict_map[pin_segment.get_first()].push_back(pin_segment.get_second());
+    pin_conflict_map[pin_segment.get_second()].push_back(pin_segment.get_first());
+  }
+  auto dfs = [&](PAPin* pa_pin, std::vector<PAPin*>& pin_group) {
+    std::stack<PAPin*> stack;
+    stack.push(pa_pin);
+    while (!stack.empty()) {
+      PAPin* curr_pin = stack.top();
+      stack.pop();
+      if (visited_pin_set.count(curr_pin) == 0) {
+        visited_pin_set.insert(curr_pin);
+        pin_group.push_back(curr_pin);
+        for (PAPin* conflict_pin : pin_conflict_map[curr_pin]) {
+          if (visited_pin_set.count(conflict_pin) == 0) {
+            stack.push(conflict_pin);
+          }
+        }
+      }
+    }
+  };
+  std::vector<std::vector<PAPin*>> pin_group_list;
+  for (auto& [curr_pin, conflict_pin_set] : pin_conflict_map) {
+    if (visited_pin_set.count(curr_pin) == 0) {
+      std::vector<PAPin*> pin_group;
+      dfs(curr_pin, pin_group);
+      pin_group_list.push_back(pin_group);
+    }
+  }
+  return pin_group_list;
+}
+
+std::map<PAPin*, PlanarCoord> PinAccessor::getPinBestCoordMap(std::vector<PAPin*>& pin_group)
+{
+  std::vector<std::vector<PlanarCoord>> candidate_coord_list_list;
+  for (PAPin* pa_pin : pin_group) {
+    std::vector<PlanarCoord> candidate_coord_list;
+    for (AccessPoint& access_point : pa_pin->get_access_point_list()) {
+      candidate_coord_list.push_back(access_point.get_real_coord());
+    }
+    candidate_coord_list_list.push_back(candidate_coord_list);
+  }
+  std::vector<PlanarCoord> best_coord_list;
+  for (const auto& coord_list : candidate_coord_list_list) {
+    best_coord_list.push_back(coord_list.front());
+  }
+  bool improved = true;
+  while (improved) {
+    improved = false;
+    for (int32_t i = 0; i < static_cast<int32_t>(candidate_coord_list_list.size()); ++i) {
+      int32_t max_min_distance = INT32_MIN;
+      PlanarCoord best_coord = best_coord_list[i];
+      for (const PlanarCoord& candidate_coord : candidate_coord_list_list[i]) {
+        int32_t min_distance = INT32_MAX;
+        for (int32_t j = 0; j < static_cast<int32_t>(best_coord_list.size()); ++j) {
+          if (i != j) {
+            min_distance = std::min(min_distance, RTUTIL.getManhattanDistance(candidate_coord, best_coord_list[j]));
+          }
+        }
+        if (max_min_distance < min_distance) {
+          max_min_distance = min_distance;
+          best_coord = candidate_coord;
+        }
+      }
+      if (best_coord.get_x() != best_coord_list[i].get_x() || best_coord.get_y() != best_coord_list[i].get_y()) {
+        best_coord_list[i] = best_coord;
+        improved = true;
+      }
+    }
+  }
+  std::map<PAPin*, PlanarCoord> pin_coord_map;
+  for (size_t i = 0; i < pin_group.size(); ++i) {
+    pin_coord_map[pin_group[i]] = best_coord_list[i];
+  }
+  return pin_coord_map;
+}
+
 void PinAccessor::setPAParameter(PAModel& pa_model)
 {
   int32_t cost_unit = 8;
   /**
    * prefer_wire_unit, non_prefer_wire_unit, via_unit, size, offset, fixed_rect_unit, routed_rect_unit, violation_unit, max_routed_times
    */
-  PAParameter pa_parameter(1, 1, RTDM.getOnlyPitch(), 1, 0, 128 * cost_unit, 32 * cost_unit, 32 * cost_unit, 10);
+  PAParameter pa_parameter(1, 1, RTDM.getOnlyPitch(), 1, 0, 128 * cost_unit, 32 * cost_unit, 32 * cost_unit, 4);
   RTLOG.info(Loc::current(), "prefer_wire_unit: ", pa_parameter.get_prefer_wire_unit());
   RTLOG.info(Loc::current(), "non_prefer_wire_unit: ", pa_parameter.get_non_prefer_wire_unit());
   RTLOG.info(Loc::current(), "via_unit: ", pa_parameter.get_via_unit());
@@ -546,6 +773,14 @@ void PinAccessor::initPATaskList(PAModel& pa_model, PABox& pa_box)
         pa_group_list.back().set_is_target(true);
         for (const LayerCoord& coord : coord_set) {
           pa_group_list.back().get_coord_list().push_back(coord);
+        }
+        PlanarCoord& best_coord = pa_pin.get_best_coord();
+        for (PAGroup& pa_group : pa_group_list) {
+          std::vector<LayerCoord>& coord_list = pa_group.get_coord_list();
+          std::sort(coord_list.begin(), coord_list.end(), [best_coord](LayerCoord& a, LayerCoord& b) {
+            return RTUTIL.getManhattanDistance(a.get_planar_coord(), best_coord)
+                   < RTUTIL.getManhattanDistance(b.get_planar_coord(), best_coord);
+          });
         }
       }
       PATask* pa_task = new PATask();
@@ -1573,7 +1808,9 @@ void PinAccessor::printSummary(PAModel& pa_model)
 
   fort::char_table routing_access_point_num_map_table;
   {
-    routing_access_point_num_map_table << fort::header << "routing_layer" << "access_point_num" << "proportion" << fort::endr;
+    routing_access_point_num_map_table << fort::header << "routing_layer"
+                                       << "access_point_num"
+                                       << "proportion" << fort::endr;
     for (RoutingLayer& routing_layer : routing_layer_list) {
       routing_access_point_num_map_table << routing_layer.get_layer_name() << routing_access_point_num_map[routing_layer.get_layer_idx()]
                                          << RTUTIL.getPercentage(routing_access_point_num_map[routing_layer.get_layer_idx()],
@@ -1585,7 +1822,9 @@ void PinAccessor::printSummary(PAModel& pa_model)
   }
   fort::char_table type_access_point_num_map_table;
   {
-    type_access_point_num_map_table << fort::header << "type" << "access_point_num" << "proportion" << fort::endr;
+    type_access_point_num_map_table << fort::header << "type"
+                                    << "access_point_num"
+                                    << "proportion" << fort::endr;
     for (auto& [type, access_point_num] : type_access_point_num_map) {
       type_access_point_num_map_table << GetAccessPointTypeName()(type) << access_point_num
                                       << RTUTIL.getPercentage(access_point_num, total_access_point_num) << fort::endr;
@@ -1673,6 +1912,8 @@ void PinAccessor::debugPlotPAModel(PAModel& pa_model, std::string flag)
   Die& die = RTDM.getDatabase().get_die();
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
   std::string& pa_temp_directory_path = RTDM.getConfig().pa_temp_directory_path;
+
+  int32_t point_size = 5;
 
   GPGDS gp_gds;
 
@@ -1772,7 +2013,7 @@ void PinAccessor::debugPlotPAModel(PAModel& pa_model, std::string flag)
       GPBoundary access_point_boundary;
       access_point_boundary.set_layer_idx(RTGP.getGDSIdxByRouting(access_point->get_layer_idx()));
       access_point_boundary.set_data_type(static_cast<int32_t>(GPDataType::kAccessPoint));
-      access_point_boundary.set_rect(x - 10, y - 10, x + 10, y + 10);
+      access_point_boundary.set_rect(x - point_size, y - point_size, x + point_size, y + point_size);
       access_point_struct.push(access_point_boundary);
     }
     gp_gds.addStruct(access_point_struct);

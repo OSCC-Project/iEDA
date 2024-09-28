@@ -328,8 +328,8 @@ std::map<int32_t, std::set<Segment<LayerCoord>*>> DataManager::getNetAccessResul
   std::map<int32_t, std::set<Segment<LayerCoord>*>> net_access_result_map;
   for (int32_t x = region.get_grid_ll_x(); x <= region.get_grid_ur_x(); x++) {
     for (int32_t y = region.get_grid_ll_y(); y <= region.get_grid_ur_y(); y++) {
-      for (auto& [net_idx, result_set] : gcell_map[x][y].get_net_access_result_map()) {
-        net_access_result_map[net_idx].insert(result_set.begin(), result_set.end());
+      for (auto& [net_idx, segment_set] : gcell_map[x][y].get_net_access_result_map()) {
+        net_access_result_map[net_idx].insert(segment_set.begin(), segment_set.end());
       }
     }
   }
@@ -343,8 +343,8 @@ std::map<int32_t, std::set<Segment<LayerCoord>*>> DataManager::getGlobalNetResul
   std::map<int32_t, std::set<Segment<LayerCoord>*>> global_net_result_map;
   for (int32_t x = region.get_grid_ll_x(); x <= region.get_grid_ur_x(); x++) {
     for (int32_t y = region.get_grid_ll_y(); y <= region.get_grid_ur_y(); y++) {
-      for (auto& [net_idx, result_set] : gcell_map[x][y].get_global_net_result_map()) {
-        global_net_result_map[net_idx].insert(result_set.begin(), result_set.end());
+      for (auto& [net_idx, segment_set] : gcell_map[x][y].get_global_net_result_map()) {
+        global_net_result_map[net_idx].insert(segment_set.begin(), segment_set.end());
       }
     }
   }
@@ -358,8 +358,8 @@ std::map<int32_t, std::set<Segment<LayerCoord>*>> DataManager::getDetailedNetRes
   std::map<int32_t, std::set<Segment<LayerCoord>*>> detailed_net_result_map;
   for (int32_t x = region.get_grid_ll_x(); x <= region.get_grid_ur_x(); x++) {
     for (int32_t y = region.get_grid_ll_y(); y <= region.get_grid_ur_y(); y++) {
-      for (auto& [net_idx, result_set] : gcell_map[x][y].get_detailed_net_result_map()) {
-        detailed_net_result_map[net_idx].insert(result_set.begin(), result_set.end());
+      for (auto& [net_idx, segment_set] : gcell_map[x][y].get_detailed_net_result_map()) {
+        detailed_net_result_map[net_idx].insert(segment_set.begin(), segment_set.end());
       }
     }
   }
