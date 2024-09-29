@@ -119,6 +119,9 @@ void PinAccessor::initAccessPointList(PAModel& pa_model)
   Monitor monitor;
   RTLOG.info(Loc::current(), "Starting...");
 
+  ScaleAxis& gcell_axis = RTDM.getDatabase().get_gcell_axis();
+  Die& die = RTDM.getDatabase().get_die();
+
   std::vector<PANet>& pa_net_list = pa_model.get_pa_net_list();
 
   std::vector<std::pair<int32_t, PAPin*>> net_pin_pair_list;
@@ -140,7 +143,8 @@ void PinAccessor::initAccessPointList(PAModel& pa_model)
       std::vector<AccessPoint> max_access_point_list;
       std::map<PlanarCoord, std::set<size_t>, CmpPlanarCoordByXASC> grid_access_point_idx_map;
       for (size_t i = 0; i < access_point_list.size(); i++) {
-        grid_access_point_idx_map[access_point_list[i].get_grid_coord()].insert(i);
+        PlanarCoord grid_coord = RTUTIL.getGCellGridCoordByBBox(access_point_list[i].get_real_coord(), gcell_axis, die);
+        grid_access_point_idx_map[grid_coord].insert(i);
       }
       size_t max_point_num = 0;
       std::set<size_t> max_access_point_idx_set;
@@ -380,10 +384,6 @@ std::vector<Segment<PAPin*>> PinAccessor::getPinSegmentList(PAModel& pa_model)
 {
   Die& die = RTDM.getDatabase().get_die();
   GridMap<GCell>& gcell_map = RTDM.getDatabase().get_gcell_map();
-  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
-  std::vector<CutLayer>& cut_layer_list = RTDM.getDatabase().get_cut_layer_list();
-  std::vector<std::vector<ViaMaster>>& layer_via_master_list = RTDM.getDatabase().get_layer_via_master_list();
-  std::map<int32_t, PlanarRect>& layer_enclosure_map = RTDM.getDatabase().get_layer_enclosure_map();
 
   std::vector<std::pair<PAPin*, std::set<PAPin*>>> pin_pin_set_pair_list;
   for (PANet& pa_net : pa_model.get_pa_net_list()) {
@@ -424,36 +424,7 @@ std::vector<Segment<PAPin*>> PinAccessor::getPinSegmentList(PAModel& pa_model)
         for (AccessPoint& curr_access_point : curr_access_point_list) {
           curr_coord_list.push_back(curr_access_point.get_real_coord());
         }
-        curr_searched_rect = RTUTIL.getBoundingBox(curr_coord_list);
-        int32_t x_distance = 0;
-        int32_t y_distance = 0;
-        std::set<int32_t> curr_layer_idx_set;
-        for (AccessPoint& curr_access_point : curr_access_point_list) {
-          int32_t curr_layer_idx = curr_access_point.get_layer_idx();
-          if (curr_layer_idx < (static_cast<int32_t>(routing_layer_list.size()) - 1)) {
-            curr_layer_idx_set.insert(curr_layer_idx);
-            curr_layer_idx_set.insert(curr_layer_idx + 1);
-          } else {
-            curr_layer_idx_set.insert(curr_layer_idx);
-            curr_layer_idx_set.insert(curr_layer_idx - 1);
-          }
-        }
-        for (int32_t curr_layer_idx : curr_layer_idx_set) {
-          {
-            PlanarRect& enclosure = layer_enclosure_map[curr_layer_idx];
-            int32_t min_spacing = routing_layer_list[curr_layer_idx].getMinSpacing(enclosure);
-            x_distance = std::max(x_distance, enclosure.getXSpan() + min_spacing);
-            y_distance = std::max(y_distance, enclosure.getYSpan() + min_spacing);
-          }
-          {
-            ViaMaster& via_master = layer_via_master_list[curr_layer_idx].front();
-            PlanarRect& cut_shape = via_master.get_cut_shape_list().front();
-            int32_t min_spacing = cut_layer_list[via_master.get_cut_layer_idx()].getMinSpacing();
-            x_distance = std::max(x_distance, cut_shape.getXSpan() + min_spacing);
-            y_distance = std::max(y_distance, cut_shape.getYSpan() + min_spacing);
-          }
-        }
-        curr_searched_rect = RTUTIL.getEnlargedRect(curr_searched_rect, x_distance, y_distance, x_distance, y_distance);
+        curr_searched_rect = RTUTIL.getEnlargedRect(RTUTIL.getBoundingBox(curr_coord_list), 2 * RTDM.getOnlyPitch());
       }
       for (auto& [gcell_pin, gcell_access_point_list] : gcell_pin_access_map) {
         std::vector<PlanarCoord> gcell_coord_list;
@@ -774,13 +745,27 @@ void PinAccessor::initPATaskList(PAModel& pa_model, PABox& pa_box)
         for (const LayerCoord& coord : coord_set) {
           pa_group_list.back().get_coord_list().push_back(coord);
         }
-        PlanarCoord& best_coord = pa_pin.get_best_coord();
-        for (PAGroup& pa_group : pa_group_list) {
-          std::vector<LayerCoord>& coord_list = pa_group.get_coord_list();
-          std::sort(coord_list.begin(), coord_list.end(), [best_coord](LayerCoord& a, LayerCoord& b) {
-            return RTUTIL.getManhattanDistance(a.get_planar_coord(), best_coord)
-                   < RTUTIL.getManhattanDistance(b.get_planar_coord(), best_coord);
-          });
+        // 选取优先区域内的点作为布线点
+        {
+          PlanarCoord& best_coord = pa_pin.get_best_coord();
+          if (best_coord.get_x() == -1 || best_coord.get_y() == -1) {
+            RTLOG.error(Loc::current(), "The best_coord is not initialized!");
+          }
+          PlanarRect priority_area = RTUTIL.getEnlargedRect(best_coord, RTDM.getOnlyPitch());
+          for (PAGroup& pa_group : pa_group_list) {
+            std::vector<LayerCoord>& coord_list = pa_group.get_coord_list();
+            std::vector<LayerCoord> temp_coord_list;
+            for (LayerCoord& coord : coord_list) {
+              if (RTUTIL.isInside(priority_area, coord)) {
+                temp_coord_list.push_back(coord);
+              }
+            }
+            if (temp_coord_list.empty()) {
+              RTLOG.error(Loc::current(), "The coord_list in priority_area is empty!");
+            } else {
+              coord_list = temp_coord_list;
+            }
+          }
         }
       }
       PATask* pa_task = new PATask();
@@ -1459,12 +1444,8 @@ void PinAccessor::uploadAccessResult(PABox& pa_box)
   for (PATask* pa_task : pa_task_list) {
     PAPin* pa_pin = pa_task->get_pa_pin();
     std::vector<Segment<LayerCoord>>& segment_list = net_task_result_map[pa_task->get_net_idx()][pa_task->get_task_idx()];
-    // net_access_result
-    {
-      pa_pin->set_access_segment_list(segment_list);
-      for (Segment<LayerCoord>& access_segment : pa_pin->get_access_segment_list()) {
-        RTDM.updateNetAccessResultToGCellMap(ChangeType::kAdd, pa_task->get_net_idx(), &access_segment);
-      }
+    for (Segment<LayerCoord>& segment : segment_list) {
+      RTDM.updateNetAccessResultToGCellMap(ChangeType::kAdd, pa_task->get_net_idx(), new Segment<LayerCoord>(segment));
     }
     // access_point
     {
@@ -1553,11 +1534,6 @@ void PinAccessor::updatePAModel(PAModel& pa_model)
       RTDM.updateAccessNetPointToGCellMap(ChangeType::kDel, net_idx, access_point);
     }
   }
-  for (auto& [net_idx, segment_set] : RTDM.getNetAccessResultMap(die)) {
-    for (Segment<LayerCoord>* segment : segment_set) {
-      RTDM.updateNetAccessResultToGCellMap(ChangeType::kDel, net_idx, segment);
-    }
-  }
   for (PANet& pa_net : pa_model.get_pa_net_list()) {
     Net* origin_net = pa_net.get_origin_net();
     if (origin_net->get_net_idx() != pa_net.get_net_idx()) {
@@ -1575,10 +1551,6 @@ void PinAccessor::updatePAModel(PAModel& pa_model)
       Pin& origin_pin = origin_net->get_pin_list()[pa_pin.get_pin_idx()];
       if (origin_pin.get_pin_idx() != pa_pin.get_pin_idx()) {
         RTLOG.error(Loc::current(), "The pin idx is not equal!");
-      }
-      origin_pin.set_access_segment_list(pa_pin.get_access_segment_list());
-      for (Segment<LayerCoord>& access_segment : origin_pin.get_access_segment_list()) {
-        RTDM.updateNetAccessResultToGCellMap(ChangeType::kAdd, pa_net.get_net_idx(), &access_segment);
       }
       AccessPoint& access_point = pa_pin.get_access_point();
       access_point.set_grid_coord(RTUTIL.getGCellGridCoordByBBox(access_point.get_real_coord(), gcell_axis, bounding_box));
@@ -2017,6 +1989,24 @@ void PinAccessor::debugPlotPAModel(PAModel& pa_model, std::string flag)
       access_point_struct.push(access_point_boundary);
     }
     gp_gds.addStruct(access_point_struct);
+  }
+
+  // best_coord
+  for (PANet& pa_net : pa_model.get_pa_net_list()) {
+    GPStruct best_coord_struct(RTUTIL.getString("best_coord(net_", pa_net.get_net_idx(), ")"));
+    for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
+      PlanarCoord& best_coord = pa_pin.get_best_coord();
+
+      int32_t x = best_coord.get_x();
+      int32_t y = best_coord.get_y();
+
+      GPBoundary best_coord_boundary;
+      best_coord_boundary.set_layer_idx(RTGP.getGDSIdxByRouting(pa_pin.get_routing_shape_list().front().get_layer_idx()));
+      best_coord_boundary.set_data_type(static_cast<int32_t>(GPDataType::kBestCoord));
+      best_coord_boundary.set_rect(x - point_size, y - point_size, x + point_size, y + point_size);
+      best_coord_struct.push(best_coord_boundary);
+    }
+    gp_gds.addStruct(best_coord_struct);
   }
 
   // violation

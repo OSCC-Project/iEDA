@@ -507,7 +507,7 @@ void TopologyGenerator::updateSummary(TGModel& tg_model)
       total_overflow += node_overflow;
     }
   }
-  for (auto& [net_idx, segment_set] : RTDM.getGlobalNetResultMap(die)) {
+  for (auto& [net_idx, segment_set] : RTDM.getNetGlobalResultMap(die)) {
     for (Segment<LayerCoord>* segment : segment_set) {
       LayerCoord& first_coord = segment->get_first();
       int32_t first_layer_idx = first_coord.get_layer_idx();
@@ -536,7 +536,7 @@ void TopologyGenerator::updateSummary(TGModel& tg_model)
             RTUTIL.getRealRectByGCell(layer_coord, gcell_axis).getMidPoint(), 0);
       }
     }
-    for (auto& [net_idx, segment_set] : RTDM.getGlobalNetResultMap(die)) {
+    for (auto& [net_idx, segment_set] : RTDM.getNetGlobalResultMap(die)) {
       for (Segment<LayerCoord>* segment : segment_set) {
         LayerCoord first_layer_coord = segment->get_first();
         LayerCoord first_real_coord(RTUTIL.getRealRectByGCell(first_layer_coord, gcell_axis).getMidPoint(),
@@ -569,7 +569,10 @@ void TopologyGenerator::printSummary(TGModel& tg_model)
   }
   fort::char_table timing_and_power_table;
   if (enable_timing) {
-    timing_and_power_table << fort::header << "Clock" << "TNS" << "WNS" << "Freq(MHz)" << fort::endr;
+    timing_and_power_table << fort::header << "Clock"
+                           << "TNS"
+                           << "WNS"
+                           << "Freq(MHz)" << fort::endr;
     for (auto& [clock_name, timing_map] : clock_timing) {
       timing_and_power_table << clock_name << timing_map["TNS"] << timing_map["WNS"] << timing_map["Freq(MHz)"] << fort::endr;
     }
@@ -701,7 +704,7 @@ void TopologyGenerator::debugOutputGuide(TGModel& tg_model)
   RTUTIL.pushStream(guide_file_stream, "wire grid1_x grid1_y grid2_x grid2_y real1_x real1_y real2_x real2_y layer\n");
   RTUTIL.pushStream(guide_file_stream, "via grid_x grid_y real_x real_y layer1 layer2\n");
 
-  for (auto& [net_idx, segment_set] : RTDM.getGlobalNetResultMap(die)) {
+  for (auto& [net_idx, segment_set] : RTDM.getNetGlobalResultMap(die)) {
     TGNet& tg_net = tg_net_list[net_idx];
     RTUTIL.pushStream(guide_file_stream, "guide ", tg_net.get_origin_net()->get_net_name(), "\n");
 

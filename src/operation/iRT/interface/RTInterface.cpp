@@ -866,12 +866,17 @@ void RTInterface::outputNetList()
       net_idb_segment_map[net_idx].push_back(getIDBSegmentByNetResult(net_idx, *segment));
     }
   }
-  for (auto& [net_idx, segment_set] : RTDM.getDetailedNetResultMap(die)) {
+  for (auto& [net_idx, patch_set] : RTDM.getNetAccessPatchMap(die)) {
+    for (EXTLayerRect* patch : patch_set) {
+      net_idb_segment_map[net_idx].push_back(getIDBSegmentByNetPatch(net_idx, *patch));
+    }
+  }
+  for (auto& [net_idx, segment_set] : RTDM.getNetDetailedResultMap(die)) {
     for (Segment<LayerCoord>* segment : segment_set) {
       net_idb_segment_map[net_idx].push_back(getIDBSegmentByNetResult(net_idx, *segment));
     }
   }
-  for (auto& [net_idx, patch_set] : RTDM.getNetPatchMap(die)) {
+  for (auto& [net_idx, patch_set] : RTDM.getNetDetailedPatchMap(die)) {
     for (EXTLayerRect* patch : patch_set) {
       net_idb_segment_map[net_idx].push_back(getIDBSegmentByNetPatch(net_idx, *patch));
     }

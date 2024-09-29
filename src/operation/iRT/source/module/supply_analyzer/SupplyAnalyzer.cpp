@@ -278,7 +278,9 @@ void SupplyAnalyzer::printSummary(SAModel& sa_model)
 
   fort::char_table routing_supply_map_table;
   {
-    routing_supply_map_table << fort::header << "routing_layer" << "supply" << "proportion" << fort::endr;
+    routing_supply_map_table << fort::header << "routing_layer"
+                             << "supply"
+                             << "proportion" << fort::endr;
     for (RoutingLayer& routing_layer : routing_layer_list) {
       routing_supply_map_table << routing_layer.get_layer_name() << routing_supply_map[routing_layer.get_layer_idx()]
                                << RTUTIL.getPercentage(routing_supply_map[routing_layer.get_layer_idx()], total_supply) << fort::endr;

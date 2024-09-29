@@ -252,7 +252,7 @@ void TrackAssigner::initTATaskList(TAModel& ta_model, TAPanel& ta_panel)
   std::vector<TANet>& ta_net_list = ta_model.get_ta_net_list();
   std::vector<TATask*>& ta_task_list = ta_panel.get_ta_task_list();
 
-  for (auto& [net_idx, segment_set] : RTDM.getGlobalNetResultMap(ta_panel.get_panel_rect())) {
+  for (auto& [net_idx, segment_set] : RTDM.getNetGlobalResultMap(ta_panel.get_panel_rect())) {
     TANet& ta_net = ta_net_list[net_idx];
     for (Segment<LayerCoord>* segment : segment_set) {
       LayerCoord& first_coord = segment->get_first();
@@ -974,7 +974,7 @@ void TrackAssigner::uploadNetResult(TAPanel& ta_panel)
   for (auto& [net_idx, task_result_map] : ta_panel.get_net_task_result_map()) {
     for (auto& [task_idx, segment_list] : task_result_map) {
       for (Segment<LayerCoord>& segment : segment_list) {
-        RTDM.updateDetailedNetResultToGCellMap(ChangeType::kAdd, net_idx, new Segment<LayerCoord>(segment));
+        RTDM.updateNetDetailedResultToGCellMap(ChangeType::kAdd, net_idx, new Segment<LayerCoord>(segment));
       }
     }
   }
@@ -1149,7 +1149,7 @@ void TrackAssigner::updateSummary(TAModel& ta_model)
   total_wire_length = 0;
   total_violation_num = 0;
 
-  for (auto& [net_idx, segment_set] : RTDM.getDetailedNetResultMap(die)) {
+  for (auto& [net_idx, segment_set] : RTDM.getNetDetailedResultMap(die)) {
     for (Segment<LayerCoord>* segment : segment_set) {
       LayerCoord& first_coord = segment->get_first();
       LayerCoord& second_coord = segment->get_second();
@@ -1223,7 +1223,7 @@ void TrackAssigner::writeNetCSV(TAModel& ta_model)
   for (int32_t x = 0; x < gcell_map.get_x_size(); x++) {
     for (int32_t y = 0; y < gcell_map.get_y_size(); y++) {
       std::map<int32_t, std::set<int32_t>> net_layer_map;
-      for (auto& [net_idx, segment_set] : gcell_map[x][y].get_detailed_net_result_map()) {
+      for (auto& [net_idx, segment_set] : gcell_map[x][y].get_net_detailed_result_map()) {
         for (Segment<LayerCoord>* segment : segment_set) {
           int32_t first_layer_idx = segment->get_first().get_layer_idx();
           int32_t second_layer_idx = segment->get_second().get_layer_idx();
@@ -1407,7 +1407,7 @@ void TrackAssigner::debugPlotTAModel(TAModel& ta_model, std::string flag)
   }
 
   // routing result
-  for (auto& [net_idx, segment_set] : RTDM.getDetailedNetResultMap(die)) {
+  for (auto& [net_idx, segment_set] : RTDM.getNetDetailedResultMap(die)) {
     GPStruct detailed_result_struct(RTUTIL.getString("detailed_result(net_", net_idx, ")"));
     for (Segment<LayerCoord>* segment : segment_set) {
       for (NetShape& net_shape : RTDM.getNetShapeList(net_idx, *segment)) {

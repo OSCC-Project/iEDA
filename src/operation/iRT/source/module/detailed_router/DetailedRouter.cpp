@@ -278,7 +278,7 @@ void DetailedRouter::buildAccessResult(DRBox& dr_box)
 
 void DetailedRouter::buildNetResult(DRBox& dr_box)
 {
-  for (auto& [net_idx, segment_set] : RTDM.getDetailedNetResultMap(dr_box.get_box_rect())) {
+  for (auto& [net_idx, segment_set] : RTDM.getNetDetailedResultMap(dr_box.get_box_rect())) {
     for (Segment<LayerCoord>* segment : segment_set) {
       dr_box.get_net_result_map()[net_idx].push_back(*segment);
     }
@@ -1113,9 +1113,9 @@ void DetailedRouter::uploadNetResult(DRModel& dr_model)
   RTLOG.info(Loc::current(), "Starting...");
 
   Die& die = RTDM.getDatabase().get_die();
-  for (auto& [net_idx, segment_set] : RTDM.getDetailedNetResultMap(die)) {
+  for (auto& [net_idx, segment_set] : RTDM.getNetDetailedResultMap(die)) {
     for (Segment<LayerCoord>* segment : segment_set) {
-      RTDM.updateDetailedNetResultToGCellMap(ChangeType::kDel, net_idx, segment);
+      RTDM.updateNetDetailedResultToGCellMap(ChangeType::kDel, net_idx, segment);
     }
   }
   std::map<int32_t, std::vector<Segment<LayerCoord>>> net_result_map;
@@ -1145,7 +1145,7 @@ void DetailedRouter::uploadNetResult(DRModel& dr_model)
     MTree<LayerCoord> coord_tree = RTUTIL.getTreeByFullFlow(candidate_root_coord_list, routing_segment_list, key_coord_pin_map);
     for (Segment<TNode<LayerCoord>*>& coord_segment : RTUTIL.getSegListByTree(coord_tree)) {
       Segment<LayerCoord>* segment = new Segment<LayerCoord>(coord_segment.get_first()->value(), coord_segment.get_second()->value());
-      RTDM.updateDetailedNetResultToGCellMap(ChangeType::kAdd, net_idx, segment);
+      RTDM.updateNetDetailedResultToGCellMap(ChangeType::kAdd, net_idx, segment);
     }
   }
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
@@ -1380,7 +1380,7 @@ void DetailedRouter::updateSummary(DRModel& dr_model)
   }
   total_via_num = 0;
 
-  for (auto& [net_idx, segment_set] : RTDM.getDetailedNetResultMap(die)) {
+  for (auto& [net_idx, segment_set] : RTDM.getNetDetailedResultMap(die)) {
     for (Segment<LayerCoord>* segment : segment_set) {
       LayerCoord& first_coord = segment->get_first();
       int32_t first_layer_idx = first_coord.get_layer_idx();
@@ -1414,7 +1414,7 @@ void DetailedRouter::updateSummary(DRModel& dr_model)
         real_pin_coord_map_list[dr_net.get_net_idx()][dr_pin.get_pin_name()].push_back(dr_pin.get_access_point().getRealLayerCoord());
       }
     }
-    for (auto& [net_idx, segment_set] : RTDM.getDetailedNetResultMap(die)) {
+    for (auto& [net_idx, segment_set] : RTDM.getNetDetailedResultMap(die)) {
       for (Segment<LayerCoord>* segment : segment_set) {
         routing_segment_list_list[net_idx].emplace_back(segment->get_first(), segment->get_second());
       }
@@ -1441,7 +1441,9 @@ void DetailedRouter::printSummary(DRModel& dr_model)
 
   fort::char_table routing_wire_length_map_table;
   {
-    routing_wire_length_map_table << fort::header << "routing_layer" << "wire_length" << "proportion" << fort::endr;
+    routing_wire_length_map_table << fort::header << "routing_layer"
+                                  << "wire_length"
+                                  << "proportion" << fort::endr;
     for (RoutingLayer& routing_layer : routing_layer_list) {
       routing_wire_length_map_table << routing_layer.get_layer_name() << routing_wire_length_map[routing_layer.get_layer_idx()]
                                     << RTUTIL.getPercentage(routing_wire_length_map[routing_layer.get_layer_idx()], total_wire_length)
@@ -1452,7 +1454,9 @@ void DetailedRouter::printSummary(DRModel& dr_model)
   }
   fort::char_table cut_via_num_map_table;
   {
-    cut_via_num_map_table << fort::header << "cut_layer" << "via_num" << "proportion" << fort::endr;
+    cut_via_num_map_table << fort::header << "cut_layer"
+                          << "via_num"
+                          << "proportion" << fort::endr;
     for (CutLayer& cut_layer : cut_layer_list) {
       cut_via_num_map_table << cut_layer.get_layer_name() << cut_via_num_map[cut_layer.get_layer_idx()]
                             << RTUTIL.getPercentage(cut_via_num_map[cut_layer.get_layer_idx()], total_via_num) << fort::endr;
@@ -1461,7 +1465,9 @@ void DetailedRouter::printSummary(DRModel& dr_model)
   }
   fort::char_table routing_violation_num_map_table;
   {
-    routing_violation_num_map_table << fort::header << "routing_layer" << "violation_num" << "proportion" << fort::endr;
+    routing_violation_num_map_table << fort::header << "routing_layer"
+                                    << "violation_num"
+                                    << "proportion" << fort::endr;
     for (RoutingLayer& routing_layer : routing_layer_list) {
       routing_violation_num_map_table << routing_layer.get_layer_name() << routing_violation_num_map[routing_layer.get_layer_idx()]
                                       << RTUTIL.getPercentage(routing_violation_num_map[routing_layer.get_layer_idx()], total_violation_num)
@@ -1472,7 +1478,10 @@ void DetailedRouter::printSummary(DRModel& dr_model)
   }
   fort::char_table timing_and_power_table;
   if (enable_timing) {
-    timing_and_power_table << fort::header << "Clock" << "TNS" << "WNS" << "Freq(MHz)" << fort::endr;
+    timing_and_power_table << fort::header << "Clock"
+                           << "TNS"
+                           << "WNS"
+                           << "Freq(MHz)" << fort::endr;
     for (auto& [clock_name, timing_map] : clock_timing) {
       timing_and_power_table << clock_name << timing_map["TNS"] << timing_map["WNS"] << timing_map["Freq(MHz)"] << fort::endr;
     }
@@ -1506,7 +1515,7 @@ void DetailedRouter::writeNetCSV(DRModel& dr_model)
   for (int32_t x = 0; x < gcell_map.get_x_size(); x++) {
     for (int32_t y = 0; y < gcell_map.get_y_size(); y++) {
       std::map<int32_t, std::set<int32_t>> net_layer_map;
-      for (auto& [net_idx, segment_set] : gcell_map[x][y].get_detailed_net_result_map()) {
+      for (auto& [net_idx, segment_set] : gcell_map[x][y].get_net_detailed_result_map()) {
         for (Segment<LayerCoord>* segment : segment_set) {
           int32_t first_layer_idx = segment->get_first().get_layer_idx();
           int32_t second_layer_idx = segment->get_second().get_layer_idx();
@@ -1690,7 +1699,7 @@ void DetailedRouter::debugPlotDRModel(DRModel& dr_model, std::string flag)
   }
 
   // routing result
-  for (auto& [net_idx, segment_set] : RTDM.getDetailedNetResultMap(die)) {
+  for (auto& [net_idx, segment_set] : RTDM.getNetDetailedResultMap(die)) {
     GPStruct detailed_result_struct(RTUTIL.getString("detailed_result(net_", net_idx, ")"));
     for (Segment<LayerCoord>* segment : segment_set) {
       for (NetShape& net_shape : RTDM.getNetShapeList(net_idx, *segment)) {

@@ -51,7 +51,8 @@ void DRCEngine::destroyInst()
 
 std::vector<Violation> DRCEngine::getViolationList(DETask& de_task)
 {
-  return getViolationListBySelf(de_task);
+  return {};
+  // return getViolationListBySelf(de_task);
   // return getViolationListByOther(de_task);
 }
 
@@ -356,6 +357,7 @@ void DRCEngine::readTask(DETask& de_task)
           rule_layer_map["MinHole"] = "skip";                //
           rule_layer_map["Notch Spacing"] = "skip";          //
           rule_layer_map["Corner Fill Spacing"] = "skip";    //
+          rule_layer_map["Out Of Die"] = "skip";             //
           // routing 表示本层违例
           rule_layer_map["Metal Short"] = "routing";                   // 短路,不同一个net
           rule_layer_map["Non-sufficient Metal Overlap"] = "routing";  // 同net的wire边碰一起
