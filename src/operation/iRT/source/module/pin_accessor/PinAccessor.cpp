@@ -122,8 +122,12 @@ void PinAccessor::initAccessPointList(PAModel& pa_model)
   ScaleAxis& gcell_axis = RTDM.getDatabase().get_gcell_axis();
   Die& die = RTDM.getDatabase().get_die();
 
+  PlanarRect die_valid_rect = die.get_real_rect();
+  int32_t shrinked_size = RTDM.getOnlyPitch();
+  if (RTUTIL.hasShrinkedRect(die_valid_rect, shrinked_size)) {
+    die_valid_rect = RTUTIL.getShrinkedRect(die_valid_rect, shrinked_size);
+  }
   std::vector<PANet>& pa_net_list = pa_model.get_pa_net_list();
-
   std::vector<std::pair<int32_t, PAPin*>> net_pin_pair_list;
   for (PANet& pa_net : pa_net_list) {
     for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
@@ -136,6 +140,9 @@ void PinAccessor::initAccessPointList(PAModel& pa_model)
     std::vector<AccessPoint>& access_point_list = net_pin_pair.second->get_access_point_list();
     std::vector<LayerRect> legal_shape_list = getLegalShapeList(pa_model, net_pin_pair.first, pin);
     for (AccessPoint& access_point : getAccessPointList(pin->get_pin_idx(), legal_shape_list)) {
+      if (!RTUTIL.isInside(die_valid_rect, access_point.get_real_coord())) {
+        continue;
+      }
       access_point_list.push_back(access_point);
     }
     // 对于分散在多个gcell内的ap,取最多的留下
@@ -223,8 +230,8 @@ std::vector<PlanarRect> PinAccessor::getPlanarLegalRectList(PAModel& pa_model, i
     int32_t half_min_width = routing_layer_list[curr_layer_idx].get_min_width() / 2;
     int32_t shrinked_x_size = std::max(half_min_width, enclosure_half_x_span);
     int32_t shrinked_y_size = std::max(half_min_width, enclosure_half_y_span);
-    for (PlanarRect& real_rect :
-         RTUTIL.getClosedShrinkedRectListByBoost(origin_pin_shape_list, shrinked_x_size, shrinked_y_size, shrinked_x_size, shrinked_y_size)) {
+    for (PlanarRect& real_rect : RTUTIL.getClosedShrinkedRectListByBoost(origin_pin_shape_list, shrinked_x_size, shrinked_y_size,
+                                                                         shrinked_x_size, shrinked_y_size)) {
       EXTLayerRect shrinked_rect;
       shrinked_rect.set_real_rect(real_rect);
       shrinked_rect.set_grid_rect(RTUTIL.getClosedGCellGridRect(shrinked_rect.get_real_rect(), gcell_axis));

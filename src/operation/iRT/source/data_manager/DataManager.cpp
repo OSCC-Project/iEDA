@@ -687,7 +687,8 @@ void DataManager::makeLayerList()
     if (end_line > real_ur_scale) {
       step_num -= 1;
       end_line = start_line + step_num * step_length;
-    } else if (std::abs(end_line - real_ur_scale) < step_length) {
+    }
+    if (std::abs(end_line - real_ur_scale) < step_length) {
       step_num -= 1;
       end_line = start_line + step_num * step_length;
     }
