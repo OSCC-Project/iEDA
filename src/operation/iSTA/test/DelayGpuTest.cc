@@ -17,6 +17,7 @@
 #include "delay-cuda/rc_tree.cuh"
 #include "gtest/gtest.h"
 #include "log/Log.hh"
+#include <cuda_runtime.h>
 
 using namespace istagpu;
 using ieda::Log;
@@ -36,8 +37,11 @@ class DelayGPUTest : public testing::Test {
 TEST_F(DelayGPUTest, update_point_load) { 
     DelayRcNet rc_net;
 
-    rc_net.delay_update_point_load();
+    delay_update_point_load(&rc_net);
+}
 
+TEST_F(DelayGPUTest, traverse_tree) {
+   test();
 }
 
 

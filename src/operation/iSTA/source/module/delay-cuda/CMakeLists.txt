@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.15.0)
 
 cmake_policy(SET CMP0104 NEW)
-set(CMAKE_CUDA_ARCHITECTURES native)
+# set(CMAKE_CUDA_ARCHITECTURES native)
 
 find_package(CUDAToolkit)
 
@@ -18,6 +18,8 @@ if(NOT CUDAToolkit_FOUND)
 endif()
 
 set(lib_name "delay-gpu")
+
+add_compile_options("-fopenmp")
 
 if(${CMAKE_BUILD_TYPE} STREQUAL "RELEASE")
     set(NVCC_FLAGS -O3)

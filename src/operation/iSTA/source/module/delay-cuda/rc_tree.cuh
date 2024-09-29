@@ -28,27 +28,34 @@
 #include <memory>
 #include <variant>
 
+#include <cuda_runtime.h>
+#include <iostream>
+
 namespace istagpu {
+
+  struct DelayRcEdge;
 
     /**
  * @brief The rc node for rc tree, represent for capacitance.
  *
  */
 struct DelayRcPoint {
-  const char* _node_name;
-  float _cap;
-  float _load;  //!< The load is sum of the node cap and downstream node cap.
+  const char* _node_name = nullptr;
+  float _cap = 0.0;
+  float _load = 0.0;  //!< The load is sum of the node cap and downstream node cap.
+
+  std::vector<DelayRcEdge*> _fanin_edge; //!< The fanin edge to the rc point.
+  std::vector<DelayRcEdge*> _fanout_edge; //!< The fanout edge from the rc point.
 };
 
-typedef size_t DelayRcPointId;
 
 /**
  * @brief The rc edge for rc tree, represent for resitance.
  *
  */
 struct DelayRcEdge {
-  DelayRcPointId _from;  // The from node id.
-  DelayRcPointId _to;    // The to node id.
+  DelayRcPoint* _from;  // The from node id.
+  DelayRcPoint* _to;    // The to node id.
 
   float _resistance;
 };
@@ -72,11 +79,15 @@ struct DelayRcNetwork {
 struct DelayRcNet {
     DelayRcNetwork _rc_network;
 
-    float delay_update_point_load();
-
 };
 
 
+float delay_update_point_load(DelayRcPoint* rc_point);
+void delay_update_point_load(DelayRcNet* rc_net);
+
+////////////////////////////////////////////////////
+
+int test();
 
 
 }
