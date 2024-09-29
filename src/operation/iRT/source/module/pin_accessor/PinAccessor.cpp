@@ -211,7 +211,7 @@ std::vector<PlanarRect> PinAccessor::getPlanarLegalRectList(PAModel& pa_model, i
     curr_layer_idx = pin_shape_list.front().get_layer_idx();
   }
   // 当前层缩小后的结果
-  std::vector<EXTLayerRect> reduced_rect_list;
+  std::vector<EXTLayerRect> shrinked_rect_list;
   {
     std::vector<PlanarRect> origin_pin_shape_list;
     for (EXTLayerRect& pin_shape : pin_shape_list) {
@@ -221,15 +221,15 @@ std::vector<PlanarRect> PinAccessor::getPlanarLegalRectList(PAModel& pa_model, i
     int32_t enclosure_half_x_span = enclosure.getXSpan() / 2;
     int32_t enclosure_half_y_span = enclosure.getYSpan() / 2;
     int32_t half_min_width = routing_layer_list[curr_layer_idx].get_min_width() / 2;
-    int32_t reduced_x_size = std::max(half_min_width, enclosure_half_x_span);
-    int32_t reduced_y_size = std::max(half_min_width, enclosure_half_y_span);
+    int32_t shrinked_x_size = std::max(half_min_width, enclosure_half_x_span);
+    int32_t shrinked_y_size = std::max(half_min_width, enclosure_half_y_span);
     for (PlanarRect& real_rect :
-         RTUTIL.getClosedReducedRectListByBoost(origin_pin_shape_list, reduced_x_size, reduced_y_size, reduced_x_size, reduced_y_size)) {
-      EXTLayerRect reduced_rect;
-      reduced_rect.set_real_rect(real_rect);
-      reduced_rect.set_grid_rect(RTUTIL.getClosedGCellGridRect(reduced_rect.get_real_rect(), gcell_axis));
-      reduced_rect.set_layer_idx(curr_layer_idx);
-      reduced_rect_list.push_back(reduced_rect);
+         RTUTIL.getClosedShrinkedRectListByBoost(origin_pin_shape_list, shrinked_x_size, shrinked_y_size, shrinked_x_size, shrinked_y_size)) {
+      EXTLayerRect shrinked_rect;
+      shrinked_rect.set_real_rect(real_rect);
+      shrinked_rect.set_grid_rect(RTUTIL.getClosedGCellGridRect(shrinked_rect.get_real_rect(), gcell_axis));
+      shrinked_rect.set_layer_idx(curr_layer_idx);
+      shrinked_rect_list.push_back(shrinked_rect);
     }
   }
   // 要被剪裁的obstacle的集合 排序按照 本层 上层
@@ -252,8 +252,8 @@ std::vector<PlanarRect> PinAccessor::getPlanarLegalRectList(PAModel& pa_model, i
     int32_t enclosure_half_y_span = enclosure.getYSpan() / 2;
 
     std::vector<PlanarRect> routing_obs_shape_list;
-    for (EXTLayerRect& reduced_rect : reduced_rect_list) {
-      for (auto& [is_routing, layer_net_fixed_rect_map] : RTDM.getTypeLayerNetFixedRectMap(reduced_rect)) {
+    for (EXTLayerRect& shrinked_rect : shrinked_rect_list) {
+      for (auto& [is_routing, layer_net_fixed_rect_map] : RTDM.getTypeLayerNetFixedRectMap(shrinked_rect)) {
         if (!is_routing) {
           continue;
         }
@@ -271,7 +271,7 @@ std::vector<PlanarRect> PinAccessor::getPlanarLegalRectList(PAModel& pa_model, i
               int32_t enlarged_y_size = min_spacing + enclosure_half_y_span;
               PlanarRect enlarged_rect
                   = RTUTIL.getEnlargedRect(fixed_rect->get_real_rect(), enlarged_x_size, enlarged_y_size, enlarged_x_size, enlarged_y_size);
-              if (RTUTIL.isOpenOverlap(reduced_rect.get_real_rect(), enlarged_rect)) {
+              if (RTUTIL.isOpenOverlap(shrinked_rect.get_real_rect(), enlarged_rect)) {
                 routing_obs_shape_list.push_back(enlarged_rect);
               }
             }
@@ -284,8 +284,8 @@ std::vector<PlanarRect> PinAccessor::getPlanarLegalRectList(PAModel& pa_model, i
     }
   }
   std::vector<PlanarRect> legal_rect_list;
-  for (EXTLayerRect& reduced_rect : reduced_rect_list) {
-    legal_rect_list.push_back(reduced_rect.get_real_rect());
+  for (EXTLayerRect& shrinked_rect : shrinked_rect_list) {
+    legal_rect_list.push_back(shrinked_rect.get_real_rect());
   }
   for (std::vector<PlanarRect>& routing_obs_shape_list : routing_obs_shape_list_list) {
     std::vector<PlanarRect> legal_rect_list_temp = RTUTIL.getClosedCuttingRectListByBoost(legal_rect_list, routing_obs_shape_list);
