@@ -24,30 +24,38 @@
 
 #pragma once
 
-#include <vector>
+#include <cuda_runtime.h>
+
+#include <iostream>
 #include <memory>
 #include <variant>
-
-#include <cuda_runtime.h>
-#include <iostream>
+#include <vector>
 
 namespace istagpu {
 
-  struct DelayRcEdge;
+struct DelayRcEdge;
 
-    /**
+/**
  * @brief The rc node for rc tree, represent for capacitance.
  *
  */
 struct DelayRcPoint {
   const char* _node_name = nullptr;
   float _cap = 0.0;
-  float _load = 0.0;  //!< The load is sum of the node cap and downstream node cap.
+  float _load =
+      0.0;  //!< The load is sum of the node cap and downstream node cap.
+  float _delay = 0.0;  //!< The delay is the time from root to this node.
 
-  std::vector<DelayRcEdge*> _fanin_edge; //!< The fanin edge to the rc point.
-  std::vector<DelayRcEdge*> _fanout_edge; //!< The fanout edge from the rc point.
+  bool _is_update_load = false;
+  bool _is_update_delay = false;
+  bool _is_update_ldelay = false;
+  bool _reserved = false;
+
+  DelayRcPoint* _parent = nullptr;
+  std::vector<DelayRcEdge*> _fanin_edges;  //!< The fanin edge to the rc point.
+  std::vector<DelayRcEdge*>
+      _fanout_edges;  //!< The fanout edge from the rc point.
 };
-
 
 /**
  * @brief The rc edge for rc tree, represent for resitance.
@@ -65,30 +73,34 @@ struct DelayRcEdge {
  *
  */
 struct DelayRcNetwork {
-    DelayRcPoint* _root{nullptr};
-    std::vector<std::unique_ptr<DelayRcPoint>> _nodes;
-    std::vector<DelayRcEdge> _edges;
+  DelayRcPoint* _root{nullptr};
+  std::vector<std::unique_ptr<DelayRcPoint>> _nodes;
+  std::vector<DelayRcEdge> _edges;
 };
-
-
 
 /**
  * @brief The rc net wrap for rc tree.
- * 
+ *
  */
 struct DelayRcNet {
-    DelayRcNetwork _rc_network;
-
+  DelayRcNetwork _rc_network;
 };
 
+#if 1
+std::vector<std::vector<DelayRcPoint*>> delay_levelization(DelayRcNetwork* rc_network);
+void delay_update_point_load(std::vector<std::vector<DelayRcPoint*>>);
 
-float delay_update_point_load(DelayRcPoint* rc_point);
+#else
+float delay_update_point_load(DelayRcPoint* parent, DelayRcPoint* rc_point);
 void delay_update_point_load(DelayRcNet* rc_net);
+
+void delay_update_point_delay(DelayRcPoint* parent, DelayRcPoint* rc_net);
+void delay_update_point_delay(DelayRcNet* rc_net);
+
+#endif
 
 ////////////////////////////////////////////////////
 
 int test();
 
-
-}
-
+}  // namespace istagpu
