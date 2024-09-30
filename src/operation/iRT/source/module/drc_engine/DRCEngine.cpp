@@ -303,7 +303,7 @@ void DRCEngine::readTask(DETask& de_task)
     while (getline(*violation_file, new_line)) {
       std::smatch geometric_match;
       if (std::regex_search(new_line, geometric_match, geometric_regex)) {
-        std::string drc_type;
+        std::string drc_rule_name;
         std::set<std::string> net_name_set;
         std::string layer_name;
         std::string ll_x_string;
@@ -312,7 +312,7 @@ void DRCEngine::readTask(DETask& de_task)
         std::string ur_y_string;
         // 读取
         {
-          drc_type = geometric_match[2];
+          drc_rule_name = geometric_match[2];
           std::string net_line = geometric_match[3];
           std::smatch net_match;
           if (std::regex_search(net_line, net_match, single_net_regex)) {
@@ -343,46 +343,55 @@ void DRCEngine::readTask(DETask& de_task)
         }
         // 解析
         {
-          std::map<std::string, std::string> rule_layer_map;
-          // skip
-          rule_layer_map["Floating Patch"] = "skip";         // 由于cell没有加载,所以pin shape属于漂浮
-          rule_layer_map["Off Grid or Wrong Way"] = "skip";  // 不在track上的布线结果
-          rule_layer_map["Minimum Width"] = "skip";          // 最小宽度违例,实际上是Floating Patch的最小宽度
-          rule_layer_map["MinStep"] = "skip";                // 金属层min step
-          rule_layer_map["Minimum Area"] = "skip";           // 金属层面积过小
-          rule_layer_map["Minimum Cut"] = "skip";            // 对一些时钟树net需要多cut
-          rule_layer_map["Enclosure Parallel"] = "skip";     // enclosure与merge的shepe的spacing
-          rule_layer_map["EnclosureEdge"] = "skip";          // enclosure与merge的shepe的spacing
-          rule_layer_map["Enclosure"] = "skip";              // enclosure与merge的shepe的spacing
-          rule_layer_map["MinHole"] = "skip";                //
-          rule_layer_map["Notch Spacing"] = "skip";          //
-          rule_layer_map["Corner Fill Spacing"] = "skip";    //
-          rule_layer_map["Out Of Die"] = "skip";             //
-          // routing 表示本层违例
-          rule_layer_map["Metal Short"] = "routing";                   // 短路,不同一个net
-          rule_layer_map["Non-sufficient Metal Overlap"] = "routing";  // 同net的wire边碰一起
-          rule_layer_map["ParallelRunLength Spacing"] = "routing";     // 平行线spacing
-          rule_layer_map["EndOfLine Spacing"] = "routing";             // EOL spacing
-          // cut routing两侧的cut
-          rule_layer_map["Cut EolSpacing"] = "cut";               // EOL spacing
-          rule_layer_map["Cut Short"] = "cut";                    // 短路
-          rule_layer_map["Different Layer Cut Spacing"] = "cut";  // 不同层的cut spacing问题
-          rule_layer_map["Same Layer Cut Spacing"] = "cut";       // 同层的cut spacing问题
-          rule_layer_map["MaxViaStack"] = "cut";                  // 叠的通孔太多了
-          // 未知规则舍弃
-          if (!RTUTIL.exist(rule_layer_map, drc_type)) {
-            RTLOG.warn(Loc::current(), "Unknow rule! '", drc_type, "'");
+          DERule de_rule = GetDERule()(drc_rule_name);
+          std::string processing_type;
+          switch (de_rule) {
+            case DERule::kFloatingPatch:      // 由于cell没有加载,所以pin shape属于漂浮
+            case DERule::kOffGridorWrongWay:  // 不在track上的布线结果
+            case DERule::kMinimumWidth:       // 最小宽度违例,实际上是Floating Patch的最小宽度
+            case DERule::kMinStep:            // 金属层min step
+            case DERule::kMinimumArea:        // 金属层面积过小
+            case DERule::kMinimumCut:         // 对一些时钟树net需要多cut
+            case DERule::kEnclosureParallel:  // enclosure与merge的shepe的spacing
+            case DERule::kEnclosureEdge:      // enclosure与merge的shepe的spacing
+            case DERule::kEnclosure:          // enclosure与merge的shepe的spacing
+            case DERule::kMinHole:            // 围起的hole面积太小
+            case DERule::kNotchSpacing:       //
+            case DERule::kCornerFillSpacing:  //
+            case DERule::kOutOfDie:           // shape超出die
+              processing_type = "skip";
+              break;
+            case DERule::kMetalShort:                 // 短路,不同一个net
+            case DERule::kNonsufficientMetalOverlap:  // 同net的wire边碰一起
+            case DERule::kParallelRunLengthSpacing:   // 平行线spacing
+            case DERule::kEndOfLineSpacing:           // EOL spacing
+              processing_type = "routing";
+              break;
+            case DERule::kCutEolSpacing:             // EOL spacing
+            case DERule::kCutShort:                  // 短路
+            case DERule::kDifferentLayerCutSpacing:  // 不同层的cut spacing问题
+            case DERule::kSameLayerCutSpacing:       // 同层的cut spacing问题
+            case DERule::kMaxViaStack:               // 叠的通孔太多了
+              processing_type = "cut";
+              break;
+            default:
+              processing_type = "unknow";
+              break;
+          }
+          if (processing_type == "unknow") {
+            // 未知规则舍弃
+            RTLOG.warn(Loc::current(), "Unknow rule! '", drc_rule_name, "'");
             continue;
           }
-          // 加cost无法处理的舍弃
-          if (rule_layer_map[drc_type] == "skip") {
+          if (processing_type == "skip") {
+            // 无法处理的舍弃
             continue;
           }
           PlanarRect real_rect(
               static_cast<int32_t>(std::stod(ll_x_string) * micron_dbu), static_cast<int32_t>(std::stod(ll_y_string) * micron_dbu),
               static_cast<int32_t>(std::stod(ur_x_string) * micron_dbu), static_cast<int32_t>(std::stod(ur_y_string) * micron_dbu));
-          // 不在检查区域内的舍弃
           if (!RTUTIL.isOverlap(de_task.get_check_region(), real_rect)) {
+            // 不在检查区域内的舍弃
             continue;
           }
           std::set<int32_t> violation_net_set;
@@ -392,20 +401,20 @@ void DRCEngine::readTask(DETask& de_task)
               violation_net_set.insert(net_idx);
             }
           }
-          // net不是布线net的舍弃
           if (violation_net_set.empty() || (violation_net_set.size() == 1 && *violation_net_set.begin() == -1)) {
+            // net不是布线net的舍弃
             continue;
           }
           std::vector<std::pair<int32_t, bool>> layer_routing_list;
           int32_t routing_layer_idx = routing_layer_name_to_idx_map[layer_name];
           layer_routing_list.emplace_back(routing_layer_idx, true);
-          if (rule_layer_map[drc_type] == "cut") {
+          if (processing_type == "cut") {
             for (int32_t cut_layer_idx : routing_to_adjacent_cut_map[routing_layer_idx]) {
               layer_routing_list.emplace_back(cut_layer_idx, false);
             }
           }
-          // 因为不可布线层需要打via,对于不在可布线层的违例也有意义
           if (false) {
+            // 因为不可布线层需要打via,对于不在可布线层的违例也有意义
             continue;
           }
           for (std::pair<int32_t, bool> layer_routing : layer_routing_list) {
