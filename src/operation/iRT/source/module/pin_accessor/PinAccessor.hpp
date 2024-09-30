@@ -87,7 +87,6 @@ class PinAccessor
   bool searchEnded(PABox& pa_box);
   void expandSearching(PABox& pa_box);
   void resetPathHead(PABox& pa_box);
-  bool isRoutingFailed(PABox& pa_box);
   void resetSinglePath(PABox& pa_box);
   void updatePathResult(PABox& pa_box);
   std::vector<Segment<LayerCoord>> getRoutingSegmentListByNode(PANode* node);

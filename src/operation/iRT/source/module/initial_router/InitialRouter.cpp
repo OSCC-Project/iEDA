@@ -548,29 +548,6 @@ void InitialRouter::resetPathHead(IRModel& ir_model)
   ir_model.set_path_head_node(popFromOpenList(ir_model));
 }
 
-bool InitialRouter::isRoutingFailed(IRModel& ir_model)
-{
-  return ir_model.get_end_node_list_idx() == -1;
-}
-
-void InitialRouter::resetSinglePath(IRModel& ir_model)
-{
-  PriorityQueue<IRNode*, std::vector<IRNode*>, CmpIRNodeCost> empty_queue;
-  ir_model.set_open_queue(empty_queue);
-
-  std::vector<IRNode*>& single_path_visited_node_list = ir_model.get_single_path_visited_node_list();
-  for (IRNode* visited_node : single_path_visited_node_list) {
-    visited_node->set_state(IRNodeState::kNone);
-    visited_node->set_parent_node(nullptr);
-    visited_node->set_known_cost(0);
-    visited_node->set_estimated_cost(0);
-  }
-  single_path_visited_node_list.clear();
-
-  ir_model.set_path_head_node(nullptr);
-  ir_model.set_end_node_list_idx(-1);
-}
-
 void InitialRouter::updatePathResult(IRModel& ir_model)
 {
   for (Segment<LayerCoord>& routing_segment : getRoutingSegmentListByNode(ir_model.get_path_head_node())) {
@@ -635,6 +612,24 @@ void InitialRouter::resetStartAndEnd(IRModel& ir_model)
   }
   start_node_list_list.push_back(end_node_list_list[end_node_list_idx]);
   end_node_list_list.erase(end_node_list_list.begin() + end_node_list_idx);
+}
+
+void InitialRouter::resetSinglePath(IRModel& ir_model)
+{
+  PriorityQueue<IRNode*, std::vector<IRNode*>, CmpIRNodeCost> empty_queue;
+  ir_model.set_open_queue(empty_queue);
+
+  std::vector<IRNode*>& single_path_visited_node_list = ir_model.get_single_path_visited_node_list();
+  for (IRNode* visited_node : single_path_visited_node_list) {
+    visited_node->set_state(IRNodeState::kNone);
+    visited_node->set_parent_node(nullptr);
+    visited_node->set_known_cost(0);
+    visited_node->set_estimated_cost(0);
+  }
+  single_path_visited_node_list.clear();
+
+  ir_model.set_path_head_node(nullptr);
+  ir_model.set_end_node_list_idx(-1);
 }
 
 void InitialRouter::updateTaskResult(IRModel& ir_model)

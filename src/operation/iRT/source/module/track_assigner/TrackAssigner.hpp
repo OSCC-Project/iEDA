@@ -74,11 +74,10 @@ class TrackAssigner
   bool searchEnded(TAPanel& ta_panel);
   void expandSearching(TAPanel& ta_panel);
   void resetPathHead(TAPanel& ta_panel);
-  bool isRoutingFailed(TAPanel& ta_panel);
-  void resetSinglePath(TAPanel& ta_panel);
   void updatePathResult(TAPanel& ta_panel);
   std::vector<Segment<LayerCoord>> getRoutingSegmentListByNode(TANode* node);
   void resetStartAndEnd(TAPanel& ta_panel);
+  void resetSinglePath(TAPanel& ta_panel);
   void updateTaskResult(TAPanel& ta_panel);
   std::vector<Segment<LayerCoord>> getRoutingSegmentList(TAPanel& ta_panel);
   void resetSingleTask(TAPanel& ta_panel);

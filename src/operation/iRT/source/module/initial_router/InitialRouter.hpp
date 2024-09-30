@@ -68,11 +68,10 @@ class InitialRouter
   bool searchEnded(IRModel& ir_model);
   void expandSearching(IRModel& ir_model);
   void resetPathHead(IRModel& ir_model);
-  bool isRoutingFailed(IRModel& ir_model);
-  void resetSinglePath(IRModel& ir_model);
   void updatePathResult(IRModel& ir_model);
   std::vector<Segment<LayerCoord>> getRoutingSegmentListByNode(IRNode* node);
   void resetStartAndEnd(IRModel& ir_model);
+  void resetSinglePath(IRModel& ir_model);
   void updateTaskResult(IRModel& ir_model);
   std::vector<Segment<LayerCoord>> getRoutingSegmentList(IRModel& ir_model);
   void resetSingleTask(IRModel& ir_model);

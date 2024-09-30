@@ -81,11 +81,10 @@ class DetailedRouter
   bool searchEnded(DRBox& dr_box);
   void expandSearching(DRBox& dr_box);
   void resetPathHead(DRBox& dr_box);
-  bool isRoutingFailed(DRBox& dr_box);
-  void resetSinglePath(DRBox& dr_box);
   void updatePathResult(DRBox& dr_box);
   std::vector<Segment<LayerCoord>> getRoutingSegmentListByNode(DRNode* node);
   void resetStartAndEnd(DRBox& dr_box);
+  void resetSinglePath(DRBox& dr_box);
   void updateTaskResult(DRBox& dr_box);
   std::vector<Segment<LayerCoord>> getRoutingSegmentList(DRBox& dr_box);
   void resetSingleTask(DRBox& dr_box);

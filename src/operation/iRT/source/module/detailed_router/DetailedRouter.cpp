@@ -746,29 +746,6 @@ void DetailedRouter::resetPathHead(DRBox& dr_box)
   dr_box.set_path_head_node(popFromOpenList(dr_box));
 }
 
-bool DetailedRouter::isRoutingFailed(DRBox& dr_box)
-{
-  return dr_box.get_end_node_list_idx() == -1;
-}
-
-void DetailedRouter::resetSinglePath(DRBox& dr_box)
-{
-  PriorityQueue<DRNode*, std::vector<DRNode*>, CmpDRNodeCost> empty_queue;
-  dr_box.set_open_queue(empty_queue);
-
-  std::vector<DRNode*>& single_path_visited_node_list = dr_box.get_single_path_visited_node_list();
-  for (DRNode* visited_node : single_path_visited_node_list) {
-    visited_node->set_state(DRNodeState::kNone);
-    visited_node->set_parent_node(nullptr);
-    visited_node->set_known_cost(0);
-    visited_node->set_estimated_cost(0);
-  }
-  single_path_visited_node_list.clear();
-
-  dr_box.set_path_head_node(nullptr);
-  dr_box.set_end_node_list_idx(-1);
-}
-
 void DetailedRouter::updatePathResult(DRBox& dr_box)
 {
   for (Segment<LayerCoord>& routing_segment : getRoutingSegmentListByNode(dr_box.get_path_head_node())) {
@@ -835,13 +812,31 @@ void DetailedRouter::resetStartAndEnd(DRBox& dr_box)
   end_node_list_list.erase(end_node_list_list.begin() + end_node_list_idx);
 }
 
+void DetailedRouter::resetSinglePath(DRBox& dr_box)
+{
+  PriorityQueue<DRNode*, std::vector<DRNode*>, CmpDRNodeCost> empty_queue;
+  dr_box.set_open_queue(empty_queue);
+
+  std::vector<DRNode*>& single_path_visited_node_list = dr_box.get_single_path_visited_node_list();
+  for (DRNode* visited_node : single_path_visited_node_list) {
+    visited_node->set_state(DRNodeState::kNone);
+    visited_node->set_parent_node(nullptr);
+    visited_node->set_known_cost(0);
+    visited_node->set_estimated_cost(0);
+  }
+  single_path_visited_node_list.clear();
+
+  dr_box.set_path_head_node(nullptr);
+  dr_box.set_end_node_list_idx(-1);
+}
+
 void DetailedRouter::updateTaskResult(DRBox& dr_box)
 {
   std::vector<Segment<LayerCoord>> new_routing_segment_list = getRoutingSegmentList(dr_box);
 
   int32_t curr_net_idx = dr_box.get_curr_dr_task()->get_net_idx();
   std::vector<Segment<LayerCoord>>& routing_segment_list = dr_box.get_net_result_map()[curr_net_idx];
-  // 原结果从graph删除
+  // 原结果从graph删除,由于task有对应net_idx,所以不需要在布线前进行删除也不会影响结果
   for (Segment<LayerCoord>& routing_segment : routing_segment_list) {
     updateNetResultToGraph(dr_box, ChangeType::kDel, curr_net_idx, routing_segment);
   }

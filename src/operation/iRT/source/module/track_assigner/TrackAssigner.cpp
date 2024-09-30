@@ -602,29 +602,6 @@ void TrackAssigner::resetPathHead(TAPanel& ta_panel)
   ta_panel.set_path_head_node(popFromOpenList(ta_panel));
 }
 
-bool TrackAssigner::isRoutingFailed(TAPanel& ta_panel)
-{
-  return ta_panel.get_end_node_list_idx() == -1;
-}
-
-void TrackAssigner::resetSinglePath(TAPanel& ta_panel)
-{
-  PriorityQueue<TANode*, std::vector<TANode*>, CmpTANodeCost> empty_queue;
-  ta_panel.set_open_queue(empty_queue);
-
-  std::vector<TANode*>& single_path_visited_node_list = ta_panel.get_single_path_visited_node_list();
-  for (TANode* visited_node : single_path_visited_node_list) {
-    visited_node->set_state(TANodeState::kNone);
-    visited_node->set_parent_node(nullptr);
-    visited_node->set_known_cost(0);
-    visited_node->set_estimated_cost(0);
-  }
-  single_path_visited_node_list.clear();
-
-  ta_panel.set_path_head_node(nullptr);
-  ta_panel.set_end_node_list_idx(-1);
-}
-
 void TrackAssigner::updatePathResult(TAPanel& ta_panel)
 {
   for (Segment<LayerCoord>& routing_segment : getRoutingSegmentListByNode(ta_panel.get_path_head_node())) {
@@ -691,6 +668,24 @@ void TrackAssigner::resetStartAndEnd(TAPanel& ta_panel)
   end_node_list_list.erase(end_node_list_list.begin() + end_node_list_idx);
 }
 
+void TrackAssigner::resetSinglePath(TAPanel& ta_panel)
+{
+  PriorityQueue<TANode*, std::vector<TANode*>, CmpTANodeCost> empty_queue;
+  ta_panel.set_open_queue(empty_queue);
+
+  std::vector<TANode*>& single_path_visited_node_list = ta_panel.get_single_path_visited_node_list();
+  for (TANode* visited_node : single_path_visited_node_list) {
+    visited_node->set_state(TANodeState::kNone);
+    visited_node->set_parent_node(nullptr);
+    visited_node->set_known_cost(0);
+    visited_node->set_estimated_cost(0);
+  }
+  single_path_visited_node_list.clear();
+
+  ta_panel.set_path_head_node(nullptr);
+  ta_panel.set_end_node_list_idx(-1);
+}
+
 void TrackAssigner::updateTaskResult(TAPanel& ta_panel)
 {
   std::vector<Segment<LayerCoord>> new_routing_segment_list = getRoutingSegmentList(ta_panel);
@@ -698,7 +693,7 @@ void TrackAssigner::updateTaskResult(TAPanel& ta_panel)
   int32_t curr_net_idx = ta_panel.get_curr_ta_task()->get_net_idx();
   int32_t curr_task_idx = ta_panel.get_curr_ta_task()->get_task_idx();
   std::vector<Segment<LayerCoord>>& routing_segment_list = ta_panel.get_net_task_result_map()[curr_net_idx][curr_task_idx];
-  // 原结果从graph删除
+  // 原结果从graph删除,由于task有对应net_idx,所以不需要在布线前进行删除也不会影响结果
   for (Segment<LayerCoord>& routing_segment : routing_segment_list) {
     updateNetResultToGraph(ta_panel, ChangeType::kDel, curr_net_idx, routing_segment);
   }

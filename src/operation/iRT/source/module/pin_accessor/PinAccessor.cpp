@@ -1103,29 +1103,6 @@ void PinAccessor::resetPathHead(PABox& pa_box)
   pa_box.set_path_head_node(popFromOpenList(pa_box));
 }
 
-bool PinAccessor::isRoutingFailed(PABox& pa_box)
-{
-  return pa_box.get_end_node_list_idx() == -1;
-}
-
-void PinAccessor::resetSinglePath(PABox& pa_box)
-{
-  PriorityQueue<PANode*, std::vector<PANode*>, CmpPANodeCost> empty_queue;
-  pa_box.set_open_queue(empty_queue);
-
-  std::vector<PANode*>& single_path_visited_node_list = pa_box.get_single_path_visited_node_list();
-  for (PANode* visited_node : single_path_visited_node_list) {
-    visited_node->set_state(PANodeState::kNone);
-    visited_node->set_parent_node(nullptr);
-    visited_node->set_known_cost(0);
-    visited_node->set_estimated_cost(0);
-  }
-  single_path_visited_node_list.clear();
-
-  pa_box.set_path_head_node(nullptr);
-  pa_box.set_end_node_list_idx(-1);
-}
-
 void PinAccessor::updatePathResult(PABox& pa_box)
 {
   for (Segment<LayerCoord>& routing_segment : getRoutingSegmentListByNode(pa_box.get_path_head_node())) {
@@ -1192,6 +1169,24 @@ void PinAccessor::resetStartAndEnd(PABox& pa_box)
   end_node_list_list.erase(end_node_list_list.begin() + end_node_list_idx);
 }
 
+void PinAccessor::resetSinglePath(PABox& pa_box)
+{
+  PriorityQueue<PANode*, std::vector<PANode*>, CmpPANodeCost> empty_queue;
+  pa_box.set_open_queue(empty_queue);
+
+  std::vector<PANode*>& single_path_visited_node_list = pa_box.get_single_path_visited_node_list();
+  for (PANode* visited_node : single_path_visited_node_list) {
+    visited_node->set_state(PANodeState::kNone);
+    visited_node->set_parent_node(nullptr);
+    visited_node->set_known_cost(0);
+    visited_node->set_estimated_cost(0);
+  }
+  single_path_visited_node_list.clear();
+
+  pa_box.set_path_head_node(nullptr);
+  pa_box.set_end_node_list_idx(-1);
+}
+
 void PinAccessor::updateTaskResult(PABox& pa_box)
 {
   std::vector<Segment<LayerCoord>> new_routing_segment_list = getRoutingSegmentList(pa_box);
@@ -1199,7 +1194,7 @@ void PinAccessor::updateTaskResult(PABox& pa_box)
   int32_t curr_net_idx = pa_box.get_curr_pa_task()->get_net_idx();
   int32_t curr_task_idx = pa_box.get_curr_pa_task()->get_task_idx();
   std::vector<Segment<LayerCoord>>& routing_segment_list = pa_box.get_net_task_result_map()[curr_net_idx][curr_task_idx];
-  // 原结果从graph删除
+  // 原结果从graph删除,由于task有对应net_idx,所以不需要在布线前进行删除也不会影响结果
   for (Segment<LayerCoord>& routing_segment : routing_segment_list) {
     updateNetResultToGraph(pa_box, ChangeType::kDel, curr_net_idx, routing_segment);
   }
