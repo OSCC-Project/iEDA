@@ -93,7 +93,7 @@ class TrackAssigner
   double getEstimateWireCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node);
   double getEstimateViaCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node);
   void updateViolationList(TAPanel& ta_panel);
-  std::vector<Violation> getViolationList(TAPanel& ta_panel);
+  std::vector<Violation> getCostViolationList(TAPanel& ta_panel);
   std::vector<TATask*> getTaskScheduleByViolation(TAPanel& ta_panel);
   void routeTAPanelByOther(TAPanel& ta_panel);
   void uploadNetResult(TAPanel& ta_panel);

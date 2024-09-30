@@ -50,6 +50,7 @@ class DRCEngine
   void buildTask(DETask& de_task);
   void writeTask(DETask& de_task);
   void readTask(DETask& de_task);
+  std::map<ViolationType, DEProcessType>& getViolationProcessMap();
   std::vector<Violation> getViolationListByOther(DETask& de_task);
 };
 

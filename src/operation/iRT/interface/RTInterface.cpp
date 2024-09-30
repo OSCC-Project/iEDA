@@ -1035,7 +1035,7 @@ idb::IdbRegularWireSegment* RTInterface::getIDBVia(int32_t net_idx, Segment<Laye
 
 std::vector<Violation> RTInterface::getViolationList(std::vector<std::pair<EXTLayerRect*, bool>>& env_shape_list,
                                                      std::map<int32_t, std::vector<std::pair<EXTLayerRect*, bool>>>& net_pin_shape_map,
-                                                     std::map<int32_t, std::vector<Segment<LayerCoord>>>& net_result_map, std::string stage)
+                                                     std::map<int32_t, std::vector<Segment<LayerCoord>>>& net_result_map)
 {
   std::vector<idb::IdbLayerShape*> idb_env_shape_list;
   for (std::pair<EXTLayerRect*, bool>& env_shape : env_shape_list) {
@@ -1053,7 +1053,7 @@ std::vector<Violation> RTInterface::getViolationList(std::vector<std::pair<EXTLa
       idb_net_result_map[net_idx].push_back(RTI.getIDBSegmentByNetResult(net_idx, segment));
     }
   }
-  std::vector<Violation> violation_list = RTI.getViolationList(idb_env_shape_list, idb_net_pin_shape_map, idb_net_result_map, stage);
+  std::vector<Violation> violation_list = RTI.getViolationList(idb_env_shape_list, idb_net_pin_shape_map, idb_net_result_map);
   // free memory
   {
     for (idb::IdbLayerShape* idb_env_shape : idb_env_shape_list) {
@@ -1078,25 +1078,14 @@ std::vector<Violation> RTInterface::getViolationList(std::vector<std::pair<EXTLa
 
 std::vector<Violation> RTInterface::getViolationList(std::vector<idb::IdbLayerShape*>& env_shape_list,
                                                      std::map<int32_t, std::vector<idb::IdbLayerShape*>>& net_pin_shape_map,
-                                                     std::map<int32_t, std::vector<idb::IdbRegularWireSegment*>>& net_result_map,
-                                                     std::string stage)
+                                                     std::map<int32_t, std::vector<idb::IdbRegularWireSegment*>>& net_result_map)
 {
   std::set<idrc::ViolationEnumType> check_select;
-  if (stage == "PA") {
-    check_select.insert(idrc::ViolationEnumType::kShort);
-    check_select.insert(idrc::ViolationEnumType::kDefaultSpacing);
-    check_select.insert(idrc::ViolationEnumType::kPRLSpacing);
-    check_select.insert(idrc::ViolationEnumType::kEOL);
-  } else if (stage == "TA") {
-    check_select.insert(idrc::ViolationEnumType::kShort);
-  } else if (stage == "DR") {
-    check_select.insert(idrc::ViolationEnumType::kShort);
-    check_select.insert(idrc::ViolationEnumType::kDefaultSpacing);
-    check_select.insert(idrc::ViolationEnumType::kPRLSpacing);
-    check_select.insert(idrc::ViolationEnumType::kEOL);
-  } else {
-    RTLOG.error(Loc::current(), "Currently not supporting other stages");
-  }
+  check_select.insert(idrc::ViolationEnumType::kShort);
+  check_select.insert(idrc::ViolationEnumType::kDefaultSpacing);
+  check_select.insert(idrc::ViolationEnumType::kPRLSpacing);
+  check_select.insert(idrc::ViolationEnumType::kEOL);
+
   /**
    * env_shape_list 存储 obstacle obs pin_shape
    * net_idb_segment_map 存储 wire via patch

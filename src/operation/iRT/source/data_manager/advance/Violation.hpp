@@ -40,7 +40,7 @@ class Violation
   // function
 
  private:
-  ViolationType _violation_type;
+  ViolationType _violation_type = ViolationType::kNone;
   EXTLayerRect _violation_shape;
   bool _is_routing = true;
   std::set<int32_t> _violation_net_set;

@@ -100,7 +100,7 @@ class DetailedRouter
   double getEstimateWireCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
   double getEstimateViaCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
   void updateViolationList(DRBox& dr_box);
-  std::vector<Violation> getViolationList(DRBox& dr_box);
+  std::vector<Violation> getCostViolationList(DRBox& dr_box);
   void uploadViolation(DRBox& dr_box);
   void freeDRBox(DRBox& dr_box);
   int32_t getViolationNum();

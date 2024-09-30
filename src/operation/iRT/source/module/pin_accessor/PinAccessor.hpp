@@ -106,7 +106,7 @@ class PinAccessor
   double getEstimateWireCost(PABox& pa_box, PANode* start_node, PANode* end_node);
   double getEstimateViaCost(PABox& pa_box, PANode* start_node, PANode* end_node);
   void updateViolationList(PABox& pa_box);
-  std::vector<Violation> getViolationList(PABox& pa_box);
+  std::vector<Violation> getCostViolationList(PABox& pa_box);
   void uploadAccessResult(PABox& pa_box);
   void uploadViolation(PABox& pa_box);
   void freePABox(PABox& pa_box);

@@ -873,7 +873,7 @@ double TrackAssigner::getEstimateViaCost(TAPanel& ta_panel, TANode* start_node, 
 
 void TrackAssigner::updateViolationList(TAPanel& ta_panel)
 {
-  std::vector<Violation> new_violation_list = getViolationList(ta_panel);
+  std::vector<Violation> new_violation_list = getCostViolationList(ta_panel);
 
   std::vector<Violation>& violation_list = ta_panel.get_violation_list();
   // 原结果从graph删除
@@ -887,7 +887,7 @@ void TrackAssigner::updateViolationList(TAPanel& ta_panel)
   }
 }
 
-std::vector<Violation> TrackAssigner::getViolationList(TAPanel& ta_panel)
+std::vector<Violation> TrackAssigner::getCostViolationList(TAPanel& ta_panel)
 {
   std::string top_name
       = RTUTIL.getString("ta_panel_", ta_panel.get_ta_panel_id().get_layer_idx(), "_", ta_panel.get_ta_panel_id().get_panel_idx());
@@ -927,16 +927,14 @@ std::vector<Violation> TrackAssigner::getViolationList(TAPanel& ta_panel)
       }
     }
   }
-  std::string stage = "TA";
-
   DETask de_task;
+  de_task.set_process_type_set({DEProcessType::kRoutingCost, DEProcessType::kCutCost});
   de_task.set_top_name(top_name);
   de_task.set_check_region(check_region);
   de_task.set_env_shape_list(env_shape_list);
   de_task.set_net_pin_shape_map(net_pin_shape_map);
   de_task.set_net_access_result_map(net_access_result_map);
   de_task.set_net_routing_result_map(net_routing_result_map);
-  de_task.set_stage(stage);
   return RTDE.getViolationList(de_task);
 }
 

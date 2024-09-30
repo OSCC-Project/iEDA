@@ -274,6 +274,8 @@ void DRCEngine::readTask(DETask& de_task)
   std::map<std::string, int32_t>& routing_layer_name_to_idx_map = RTDM.getDatabase().get_routing_layer_name_to_idx_map();
   std::map<int32_t, std::vector<int32_t>>& routing_to_adjacent_cut_map = RTDM.getDatabase().get_routing_to_adjacent_cut_map();
 
+  std::map<ViolationType, DEProcessType>& violation_process_map = getViolationProcessMap();
+
   std::string& top_name = de_task.get_top_name();
   std::string& finished_file_path = de_task.get_finished_file_path();
   std::string& violation_file_path = de_task.get_violation_file_path();
@@ -301,7 +303,7 @@ void DRCEngine::readTask(DETask& de_task)
     std::string ll_y_string;
     std::string ur_x_string;
     std::string ur_y_string;
-    while (getline(*violation_file, new_line)) {
+    while (std::getline(*violation_file, new_line)) {
       if (new_line.empty()) {
         continue;
       }
@@ -323,47 +325,14 @@ void DRCEngine::readTask(DETask& de_task)
       // 解析
       {
         ViolationType violation_type = GetViolationTypeByName()(drc_rule_name);
-        std::string processing_type;
-        switch (violation_type) {
-          case ViolationType::kFloatingPatch:              // 由于cell没有加载,所以pin shape属于漂浮
-          case ViolationType::kOffGridOrWrongWay:          // 不在track上的布线结果
-          case ViolationType::kMinimumWidth:               // 最小宽度违例,实际上是Floating Patch的最小宽度
-          case ViolationType::kMinStep:                    // 金属层min step
-          case ViolationType::kMinimumArea:                // 金属层面积过小
-          case ViolationType::kMinimumCut:                 // 对一些时钟树net需要多cut
-          case ViolationType::kEnclosureParallel:          // enclosure与merge的shepe的spacing
-          case ViolationType::kEnclosureEdge:              // enclosure与merge的shepe的spacing
-          case ViolationType::kEnclosure:                  // enclosure与merge的shepe的spacing
-          case ViolationType::kMinHole:                    // 围起的hole面积太小
-          case ViolationType::kNotchSpacing:               //
-          case ViolationType::kCornerFillSpacing:          //
-          case ViolationType::kOutOfDie:                   // shape超出die
-          case ViolationType::kNonsufficientMetalOverlap:  // 同net的wire边碰一起
-            processing_type = "skip";
-            break;
-          case ViolationType::kMetalShort:                // 短路,不同一个net
-          case ViolationType::kParallelRunLengthSpacing:  // 平行线spacing
-          case ViolationType::kEndOfLineSpacing:          // EOL spacing
-            processing_type = "routing";
-            break;
-          case ViolationType::kCutEOLSpacing:             // EOL spacing
-          case ViolationType::kCutShort:                  // 短路
-          case ViolationType::kDifferentLayerCutSpacing:  // 不同层的cut spacing问题
-          case ViolationType::kSameLayerCutSpacing:       // 同层的cut spacing问题
-          case ViolationType::kMaxViaStack:               // 叠的通孔太多了
-            processing_type = "cut";
-            break;
-          default:
-            processing_type = "unknow";
-            break;
-        }
-        if (processing_type == "unknow") {
+        if (!RTUTIL.exist(violation_process_map, violation_type)) {
           // 未知规则舍弃
           RTLOG.warn(Loc::current(), "Unknow rule! '", drc_rule_name, "'");
           continue;
         }
-        if (processing_type == "skip") {
-          // 无法处理的舍弃
+        DEProcessType process_type = violation_process_map[violation_type];
+        if (!RTUTIL.exist(de_task.get_process_type_set(), process_type)) {
+          // 非处理类型舍弃
           continue;
         }
         PlanarRect real_rect(
@@ -387,7 +356,7 @@ void DRCEngine::readTask(DETask& de_task)
         std::vector<std::pair<int32_t, bool>> layer_routing_list;
         int32_t routing_layer_idx = routing_layer_name_to_idx_map[layer_name];
         layer_routing_list.emplace_back(routing_layer_idx, true);
-        if (processing_type == "cut") {
+        if (process_type == DEProcessType::kCutCost) {
           for (int32_t cut_layer_idx : routing_to_adjacent_cut_map[routing_layer_idx]) {
             layer_routing_list.emplace_back(cut_layer_idx, false);
           }
@@ -419,6 +388,50 @@ void DRCEngine::readTask(DETask& de_task)
   RTUTIL.removeDir(de_task.get_top_dir_path());
 }
 
+std::map<ViolationType, DEProcessType>& DRCEngine::getViolationProcessMap()
+{
+  static std::map<ViolationType, DEProcessType> violation_process_map;
+  static std::once_flag init_flag;
+
+  std::call_once(init_flag, []() {
+    /**
+     * skip             暂时无法处理的规则
+     * routing_cost     routing层加cost
+     * cut_cost         cut层及相邻两routing层加cost
+     * routing_patch    routing层加patch
+     */
+    // skip
+    violation_process_map[ViolationType::kFloatingPatch] = DEProcessType::kSkip;      // 由于cell没有加载,所以pin shape属于漂浮
+    violation_process_map[ViolationType::kOffGridOrWrongWay] = DEProcessType::kSkip;  // 不在track上的布线结果
+    violation_process_map[ViolationType::kMinimumWidth] = DEProcessType::kSkip;  // 最小宽度违例,实际上是Floating Patch的最小宽度
+    violation_process_map[ViolationType::kMinimumCut] = DEProcessType::kSkip;  // 对一些时钟树net需要多cut
+    violation_process_map[ViolationType::kOutOfDie] = DEProcessType::kSkip;    // shape超出die
+    //
+    violation_process_map[ViolationType::kEnclosureParallel] = DEProcessType::kSkip;          // enclosure与merge的shepe的spacing
+    violation_process_map[ViolationType::kEnclosureEdge] = DEProcessType::kSkip;              // enclosure与merge的shepe的spacing
+    violation_process_map[ViolationType::kEnclosure] = DEProcessType::kSkip;                  // enclosure与merge的shepe的spacing
+    violation_process_map[ViolationType::kMinHole] = DEProcessType::kSkip;                    // 围起的hole面积太小
+    violation_process_map[ViolationType::kNotchSpacing] = DEProcessType::kSkip;               //
+    violation_process_map[ViolationType::kCornerFillSpacing] = DEProcessType::kSkip;          //
+    violation_process_map[ViolationType::kNonsufficientMetalOverlap] = DEProcessType::kSkip;  // 同net的wire边碰一起
+    // routing_cost
+    violation_process_map[ViolationType::kMetalShort] = DEProcessType::kRoutingCost;                // 短路,不同一个net
+    violation_process_map[ViolationType::kParallelRunLengthSpacing] = DEProcessType::kRoutingCost;  // 平行线spacing
+    violation_process_map[ViolationType::kEndOfLineSpacing] = DEProcessType::kRoutingCost;          // EOL spacing
+    // cut_cost
+    violation_process_map[ViolationType::kCutEOLSpacing] = DEProcessType::kCutCost;             // EOL spacing
+    violation_process_map[ViolationType::kCutShort] = DEProcessType::kCutCost;                  // 短路
+    violation_process_map[ViolationType::kDifferentLayerCutSpacing] = DEProcessType::kCutCost;  // 不同层的cut spacing问题
+    violation_process_map[ViolationType::kSameLayerCutSpacing] = DEProcessType::kCutCost;       // 同层的cut spacing问题
+    violation_process_map[ViolationType::kMaxViaStack] = DEProcessType::kCutCost;               // 叠的通孔太多了
+    // routing_patch
+    violation_process_map[ViolationType::kMinStep] = DEProcessType::kRoutingPatch;      // 金属层min step
+    violation_process_map[ViolationType::kMinimumArea] = DEProcessType::kRoutingPatch;  // 金属层面积过小
+  });
+
+  return violation_process_map;
+}
+
 std::vector<Violation> DRCEngine::getViolationListByOther(DETask& de_task)
 {
   std::map<int32_t, std::vector<Segment<LayerCoord>>> net_result_map;
@@ -432,7 +445,7 @@ std::vector<Violation> DRCEngine::getViolationListByOther(DETask& de_task)
       net_result_map[net_idx].push_back(segment);
     }
   }
-  return RTI.getViolationList(de_task.get_env_shape_list(), de_task.get_net_pin_shape_map(), net_result_map, de_task.get_stage());
+  return RTI.getViolationList(de_task.get_env_shape_list(), de_task.get_net_pin_shape_map(), net_result_map);
 }
 
 }  // namespace irt

@@ -3181,7 +3181,7 @@ class Utility
 
     std::stringstream ss(a);
     std::string result_token;
-    while (getline(ss, result_token, tok)) {
+    while (std::getline(ss, result_token, tok)) {
       if (result_token == "") {
         continue;
       }

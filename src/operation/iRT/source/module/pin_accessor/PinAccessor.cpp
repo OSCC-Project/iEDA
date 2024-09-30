@@ -1381,7 +1381,7 @@ double PinAccessor::getEstimateViaCost(PABox& pa_box, PANode* start_node, PANode
 
 void PinAccessor::updateViolationList(PABox& pa_box)
 {
-  std::vector<Violation> new_violation_list = getViolationList(pa_box);
+  std::vector<Violation> new_violation_list = getCostViolationList(pa_box);
 
   std::vector<Violation>& violation_list = pa_box.get_violation_list();
   // 原结果从graph删除
@@ -1395,7 +1395,7 @@ void PinAccessor::updateViolationList(PABox& pa_box)
   }
 }
 
-std::vector<Violation> PinAccessor::getViolationList(PABox& pa_box)
+std::vector<Violation> PinAccessor::getCostViolationList(PABox& pa_box)
 {
   std::string top_name = RTUTIL.getString("pa_box_", pa_box.get_pa_box_id().get_x(), "_", pa_box.get_pa_box_id().get_y());
   PlanarRect check_region = pa_box.get_box_rect().get_real_rect();
@@ -1430,16 +1430,14 @@ std::vector<Violation> PinAccessor::getViolationList(PABox& pa_box)
       }
     }
   }
-  std::string stage = "PA";
-
   DETask de_task;
+  de_task.set_process_type_set({DEProcessType::kRoutingCost, DEProcessType::kCutCost});
   de_task.set_top_name(top_name);
   de_task.set_check_region(check_region);
   de_task.set_env_shape_list(env_shape_list);
   de_task.set_net_pin_shape_map(net_pin_shape_map);
   de_task.set_net_access_result_map(net_access_result_map);
   de_task.set_net_routing_result_map(net_routing_result_map);
-  de_task.set_stage(stage);
   return RTDE.getViolationList(de_task);
 }
 

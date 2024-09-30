@@ -1023,7 +1023,7 @@ double DetailedRouter::getEstimateViaCost(DRBox& dr_box, DRNode* start_node, DRN
 
 void DetailedRouter::updateViolationList(DRBox& dr_box)
 {
-  std::vector<Violation> new_violation_list = getViolationList(dr_box);
+  std::vector<Violation> new_violation_list = getCostViolationList(dr_box);
 
   std::vector<Violation>& violation_list = dr_box.get_violation_list();
   // 原结果从graph删除
@@ -1037,7 +1037,7 @@ void DetailedRouter::updateViolationList(DRBox& dr_box)
   }
 }
 
-std::vector<Violation> DetailedRouter::getViolationList(DRBox& dr_box)
+std::vector<Violation> DetailedRouter::getCostViolationList(DRBox& dr_box)
 {
   std::string top_name = RTUTIL.getString("dr_box_", dr_box.get_dr_box_id().get_x(), "_", dr_box.get_dr_box_id().get_y());
   PlanarRect check_region = dr_box.get_box_rect().get_real_rect();
@@ -1070,16 +1070,14 @@ std::vector<Violation> DetailedRouter::getViolationList(DRBox& dr_box)
       net_routing_result_map[net_idx].emplace_back(segment);
     }
   }
-  std::string stage = "DR";
-
   DETask de_task;
+  de_task.set_process_type_set({DEProcessType::kRoutingCost, DEProcessType::kCutCost});
   de_task.set_top_name(top_name);
   de_task.set_check_region(check_region);
   de_task.set_env_shape_list(env_shape_list);
   de_task.set_net_pin_shape_map(net_pin_shape_map);
   de_task.set_net_access_result_map(net_access_result_map);
   de_task.set_net_routing_result_map(net_routing_result_map);
-  de_task.set_stage(stage);
   return RTDE.getViolationList(de_task);
 }
 
