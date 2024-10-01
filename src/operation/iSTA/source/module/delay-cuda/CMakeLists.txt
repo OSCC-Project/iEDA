@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.15.0)
 
 cmake_policy(SET CMP0104 NEW)
-# set(CMAKE_CUDA_ARCHITECTURES native)
+set(CMAKE_CUDA_ARCHITECTURES native)
 
 find_package(CUDAToolkit)
 
@@ -33,7 +33,9 @@ file(GLOB_RECURSE source_file LIST_DIRECTORIES false *.cpp *.c *.cuh *.h *.cu)
 
 add_library(${lib_name}  STATIC ${source_file})
 
-target_include_directories(${lib_name} PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
+target_include_directories(${lib_name} PUBLIC ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
+
+message(${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
 
 set_property(TARGET ${lib_name} PROPERTY LANGUAGES CXX CUDA)
 set_target_properties(${lib_name} 
