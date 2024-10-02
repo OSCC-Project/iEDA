@@ -18,6 +18,8 @@ namespace istagpu {
 
 #if 1
 
+const int THREAD_PER_BLOCK_NUM = 64;
+
 /**
  * @brief levelization the rc tree.
  *
@@ -70,10 +72,56 @@ std::vector<std::vector<DelayRcPoint*>> delay_levelization(
   return level_to_points;
 }
 
-__global__ void update_load(DelayRcPoint* rc_points, size_t rc_point_num) {
-  int tid = blockIdx.x;
-  if (tid < rc_point_num) {
-    // DelayRcPoint* rc_point = rc_points[tid];
+/**
+ * @brief change the rc tree to the array, record the parent and children
+ * positions.
+ *
+ */
+void delay_change_rc_tree_to_array(
+    DelayRcNetwork* rc_network,
+    std::vector<std::vector<DelayRcPoint*>>& level_to_points,
+    std::size_t node_num) {
+  std::vector<float> cap_array;
+  std::vector<float> load_array(node_num, 0);
+  std::vector<std::size_t> parent_pos_array(node_num, 0);
+
+  // children use start and end pair to mark position.
+  std::vector<std::size_t> children_pos_array(node_num * 2, 0);
+
+  std::size_t flatten_pos = 0;
+  for (auto& points : level_to_points) {
+    for (auto* rc_point : points) {
+      rc_point->_flatten_pos = flatten_pos++;
+      cap_array.emplace_back(rc_point->_cap);
+
+      if (rc_point->_parent) {
+        std::size_t parent_pos = rc_point->_parent->_flatten_pos;
+        parent_pos_array[flatten_pos] = parent_pos;
+
+        if (children_pos_array[parent_pos * 2] == 0) {
+          children_pos_array[parent_pos * 2] = flatten_pos;
+        } else {
+          children_pos_array[parent_pos * 2 + 1] = flatten_pos;
+        }
+      }
+    }
+  }
+
+  std::swap(rc_network->_cap_array, cap_array);
+  std::swap(rc_network->_load_array, load_array);
+  std::swap(rc_network->_parent_pos_array, parent_pos_array);
+  std::swap(rc_network->_children_pos_array, children_pos_array);
+}
+
+__global__ void update_load(float* cap_array, float* load_array,
+                            std::size_t* parent_pos_array, int start_pos,
+                            int num_count) {
+  int tid = blockIdx.x * blockDim.x + threadIdx.x;
+  std::size_t current_pos = start_pos + tid;
+  if (tid < num_count) {
+    std::size_t parent_pos = parent_pos_array[current_pos];
+    float cap = cap_array[current_pos];
+    atomicAdd(&load_array[parent_pos], cap);
   }
 
   //   printf("thread id: %d \n", tid);
@@ -85,13 +133,50 @@ __global__ void update_load(DelayRcPoint* rc_points, size_t rc_point_num) {
  * @param level_to_points
  */
 void delay_update_point_load(
-    std::vector<std::vector<DelayRcPoint*>> level_to_points) {
-  for (int level = 0; level < level_to_points.size(); ++level) {
-    auto& points = level_to_points[level];
-    for (auto* rc_point : points) {
-      // delay_update_point_load(rc_point);
-    }
+    DelayRcNetwork* rc_network,
+    std::vector<std::vector<DelayRcPoint*>>& level_to_points) {
+  auto node_num = rc_network->get_node_num();
+
+  float* cap_array;
+  float* load_array;
+  std::size_t* parent_pos_array;
+
+  // malloc gpu memory.
+  cudaMalloc(&cap_array, node_num * sizeof(int));
+  cudaMalloc(&load_array, node_num * sizeof(int));
+  cudaMalloc(&parent_pos_array, node_num * sizeof(int));
+
+  // copy cpu data to gpu memory.
+  cudaMemcpy(cap_array, rc_network->_cap_array.data(), node_num * sizeof(float),
+             cudaMemcpyHostToDevice);
+  cudaMemcpy(load_array, rc_network->_load_array.data(),
+             node_num * sizeof(float), cudaMemcpyHostToDevice);
+  cudaMemcpy(parent_pos_array, rc_network->_parent_pos_array.data(),
+             node_num * sizeof(float), cudaMemcpyHostToDevice);
+
+  // update load of the rc node, sum the children cap.
+  for (int index = level_to_points.size() - 1; index >= 0; --index) {
+    int num_count = level_to_points[index].size();
+    int num_blocks =
+        (num_count + THREAD_PER_BLOCK_NUM - 1) / THREAD_PER_BLOCK_NUM;
+    int start_pos = node_num - num_count;
+    node_num -= num_count;
+
+    update_load<<<num_blocks, THREAD_PER_BLOCK_NUM>>>(
+        cap_array, load_array, parent_pos_array, start_pos, num_count);
+
+    cudaDeviceSynchronize();
   }
+
+  // set the node load.
+  for (auto& node : rc_network->_nodes) {
+    node->_load = load_array[node->_flatten_pos];
+  }
+
+  // free the gpu memory.
+  cudaFree(cap_array);
+  cudaFree(load_array);
+  cudaFree(parent_pos_array);
 }
 
 #else
