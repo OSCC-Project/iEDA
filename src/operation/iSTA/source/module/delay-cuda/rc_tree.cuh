@@ -46,14 +46,14 @@ struct DelayRcPoint {
       0.0;  //!< The load is sum of the node cap and downstream node cap.
   float _delay = 0.0;  //!< The delay is the time from root to this node.
 
-  std::size_t _flatten_pos;
+  std::size_t _flatten_pos = 0;
 
   bool _is_update_load = false;
   bool _is_update_delay = false;
   bool _is_update_ldelay = false;
   bool _reserved = false;
 
-  DelayRcPoint* _parent = nullptr;
+  DelayRcPoint* _parent = nullptr; //!< For the tree, the root is the top parent.
   std::vector<DelayRcEdge*> _fanin_edges;  //!< The fanin edge to the rc point.
   std::vector<DelayRcEdge*>
       _fanout_edges;  //!< The fanout edge from the rc point.
@@ -77,12 +77,12 @@ struct DelayRcEdge {
 struct DelayRcNetwork {
   DelayRcPoint* _root{nullptr};
   std::vector<std::unique_ptr<DelayRcPoint>> _nodes;
-  std::vector<DelayRcEdge> _edges;
+  std::vector<std::unique_ptr<DelayRcEdge>> _edges;
 
   std::vector<float> _cap_array;
   std::vector<float> _load_array;
-  std::vector<std::size_t> _parent_pos_array;
-  std::vector<std::size_t> _children_pos_array;
+  std::vector<int> _parent_pos_array;
+  std::vector<int> _children_pos_array;
 
   std::size_t get_node_num() { return _nodes.size(); }
 

@@ -6,10 +6,10 @@
  * @date 2024-09-25
  */
 
-#include <cuda_runtime.h>
-
+#include <iostream>
 #include <queue>
 
+#include "common_cuda.hh"
 #include "rc_tree.cuh"
 
 #define GPU_ACC
@@ -31,7 +31,7 @@ void delay_levelization(
     std::vector<std::vector<DelayRcPoint*>>& level_to_points) {
   std::queue<DelayRcPoint*> next_bfs_queue;
   std::vector<DelayRcPoint*> points;
-  while (bfs_queue.empty()) {
+  while (!bfs_queue.empty()) {
     auto* rc_point = bfs_queue.front();
     bfs_queue.pop();
 
@@ -44,7 +44,9 @@ void delay_levelization(
     }
   }
 
-  level_to_points.emplace_back(std::move(points));
+  if (!points.empty()) {
+    level_to_points.emplace_back(std::move(points));
+  }
 
   if (!next_bfs_queue.empty()) {
     delay_levelization(next_bfs_queue, level_to_points);
@@ -79,23 +81,23 @@ std::vector<std::vector<DelayRcPoint*>> delay_levelization(
  */
 void delay_change_rc_tree_to_array(
     DelayRcNetwork* rc_network,
-    std::vector<std::vector<DelayRcPoint*>>& level_to_points,
-    std::size_t node_num) {
+    std::vector<std::vector<DelayRcPoint*>>& level_to_points) {
+  int node_num = rc_network->get_node_num();
   std::vector<float> cap_array;
   std::vector<float> load_array(node_num, 0);
-  std::vector<std::size_t> parent_pos_array(node_num, 0);
+  std::vector<int> parent_pos_array(node_num, 0);
 
   // children use start and end pair to mark position.
-  std::vector<std::size_t> children_pos_array(node_num * 2, 0);
+  std::vector<int> children_pos_array(node_num * 2, 0);
 
-  std::size_t flatten_pos = 0;
+  int flatten_pos = 0;
   for (auto& points : level_to_points) {
     for (auto* rc_point : points) {
-      rc_point->_flatten_pos = flatten_pos++;
+      rc_point->_flatten_pos = flatten_pos;
       cap_array.emplace_back(rc_point->_cap);
 
       if (rc_point->_parent) {
-        std::size_t parent_pos = rc_point->_parent->_flatten_pos;
+        int parent_pos = rc_point->_parent->_flatten_pos;
         parent_pos_array[flatten_pos] = parent_pos;
 
         if (children_pos_array[parent_pos * 2] == 0) {
@@ -104,6 +106,8 @@ void delay_change_rc_tree_to_array(
           children_pos_array[parent_pos * 2 + 1] = flatten_pos;
         }
       }
+
+      ++flatten_pos;
     }
   }
 
@@ -114,17 +118,27 @@ void delay_change_rc_tree_to_array(
 }
 
 __global__ void update_load(float* cap_array, float* load_array,
-                            std::size_t* parent_pos_array, int start_pos,
+                            int* parent_pos_array, int start_pos,
                             int num_count) {
   int tid = blockIdx.x * blockDim.x + threadIdx.x;
-  std::size_t current_pos = start_pos + tid;
-  if (tid < num_count) {
-    std::size_t parent_pos = parent_pos_array[current_pos];
-    float cap = cap_array[current_pos];
-    atomicAdd(&load_array[parent_pos], cap);
-  }
 
-  //   printf("thread id: %d \n", tid);
+  if (tid < num_count) {
+    printf("thread id: %d, start pos %d\n", tid, start_pos);
+
+    int current_pos = start_pos + tid;
+    int parent_pos = parent_pos_array[current_pos];
+    float cap = cap_array[current_pos];
+
+    // update the current pos load and parent's load.
+    load_array[current_pos] += cap;
+    printf("current pos %d cap: %f \n", current_pos, cap);
+
+    if (parent_pos != current_pos) {
+      atomicAdd(&load_array[parent_pos], load_array[current_pos]);
+    }
+
+    printf("load array pos %d load: %f \n", parent_pos, load_array[parent_pos]);
+  }
 }
 
 /**
@@ -139,20 +153,18 @@ void delay_update_point_load(
 
   float* cap_array;
   float* load_array;
-  std::size_t* parent_pos_array;
+  int* parent_pos_array;
 
   // malloc gpu memory.
-  cudaMalloc(&cap_array, node_num * sizeof(int));
-  cudaMalloc(&load_array, node_num * sizeof(int));
+  cudaMalloc(&cap_array, node_num * sizeof(float));
+  cudaMalloc(&load_array, node_num * sizeof(float));
   cudaMalloc(&parent_pos_array, node_num * sizeof(int));
 
   // copy cpu data to gpu memory.
   cudaMemcpy(cap_array, rc_network->_cap_array.data(), node_num * sizeof(float),
              cudaMemcpyHostToDevice);
-  cudaMemcpy(load_array, rc_network->_load_array.data(),
-             node_num * sizeof(float), cudaMemcpyHostToDevice);
   cudaMemcpy(parent_pos_array, rc_network->_parent_pos_array.data(),
-             node_num * sizeof(float), cudaMemcpyHostToDevice);
+             node_num * sizeof(int), cudaMemcpyHostToDevice);
 
   // update load of the rc node, sum the children cap.
   for (int index = level_to_points.size() - 1; index >= 0; --index) {
@@ -168,9 +180,14 @@ void delay_update_point_load(
     cudaDeviceSynchronize();
   }
 
+  node_num = rc_network->get_node_num();
+
+  cudaMemcpy(rc_network->_load_array.data(), load_array,
+             node_num * sizeof(float), cudaMemcpyDeviceToHost);
+
   // set the node load.
   for (auto& node : rc_network->_nodes) {
-    node->_load = load_array[node->_flatten_pos];
+    node->_load = rc_network->_load_array[node->_flatten_pos];
   }
 
   // free the gpu memory.
@@ -248,58 +265,61 @@ void delay_update_point_delay(DelayRcNet* rc_net) {
 
 #endif
 
+// Helper function to create a new tree node
+DelayRcPoint* create_node(int cap, DelayRcNetwork* rc_network) {
+  DelayRcPoint* new_node = new DelayRcPoint();
+  new_node->_cap = cap;
+  rc_network->_nodes.emplace_back(new_node);
+  return new_node;
+}
+
+DelayRcEdge* create_edge(DelayRcPoint* from, DelayRcPoint* to, float resistance,
+                         DelayRcNetwork* rc_network) {
+  DelayRcEdge* new_edge = new DelayRcEdge();
+  new_edge->_from = from;
+  new_edge->_to = to;
+  from->_fanout_edges.push_back(new_edge);
+  to->_fanin_edges.push_back(new_edge);
+
+  new_edge->_resistance = resistance;
+  rc_network->_edges.emplace_back(new_edge);
+
+  return new_edge;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // for test code.
 
-// 定义树节点结构体
-struct TreeNode {
-  int value;
-  TreeNode* left;
-  TreeNode* right;
-
-  __host__ __device__ TreeNode(int v) : value(v), left(NULL), right(NULL) {}
-};
-
-// CUDA kernel for traversing the binary tree
-__global__ void traverseTree(TreeNode* node) {
-  printf("node %p \n", node);
-  if (node == NULL) return;
-
-  // Process the current node (for example, print its value)
-  printf("node value %d \n", node->value);
-}
-
-// Helper function to create a new tree node
-TreeNode* createNode(int value) {
-  TreeNode* newNode = (TreeNode*)malloc(sizeof(TreeNode));
-  newNode->value = value;
-  newNode->left = NULL;
-  newNode->right = NULL;
-  return newNode;
-}
-
 int test() {
   // Create a simple tree
-  TreeNode* root = createNode(1);
-  root->left = createNode(2);
-  root->right = createNode(3);
-  root->left->left = createNode(4);
-  root->left->right = createNode(5);
+  DelayRcNetwork rc_network;
+  auto* root_node = create_node(1.0, &rc_network);
+  rc_network._root = root_node;
+  auto* node1 = create_node(2.0, &rc_network);
+  auto* node2 = create_node(3.0, &rc_network);
+  create_edge(root_node, node1, 1.0, &rc_network);
+  create_edge(root_node, node2, 1.0, &rc_network);
 
-  // Allocate memory on the device
-  TreeNode* d_root;
-  cudaMalloc(&d_root, sizeof(TreeNode));
+  auto* node3 = create_node(4.0, &rc_network);
+  auto* node4 = create_node(5.0, &rc_network);
+  create_edge(node1, node3, 2.0, &rc_network);
+  create_edge(node1, node4, 2.0, &rc_network);
 
-  // Copy the root node to the device
-  cudaMemcpy(d_root, root, sizeof(TreeNode), cudaMemcpyHostToDevice);
+  auto* node5 = create_node(6.0, &rc_network);
+  auto* node6 = create_node(7.0, &rc_network);
 
-  // Launch the kernel
-  traverseTree<<<1, 1>>>(d_root);
-  cudaDeviceSynchronize();
+  create_edge(node2, node5, 3.0, &rc_network);
+  create_edge(node2, node6, 3.0, &rc_network);
 
-  // Clean up
-  cudaFree(d_root);
-  free(root);
+  auto level_to_points = delay_levelization(&rc_network);
+  delay_change_rc_tree_to_array(&rc_network, level_to_points);
+
+  delay_update_point_load(&rc_network, level_to_points);
+
+  for (auto& node : rc_network._nodes) {
+    std::cout << "node: " << node->_cap << ", load: " << node->_load
+              << ", delay: " << node->_delay << std::endl;
+  }
 
   return 0;
 }

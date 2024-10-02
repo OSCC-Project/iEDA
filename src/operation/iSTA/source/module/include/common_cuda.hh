@@ -22,7 +22,19 @@
 #include <string>
 #include <type_traits>      // std::bool_constant
 #include <cuda_runtime.h>
+#include <stdarg.h>
 
 #include <cuda_profiler_api.h>
 #include <cuda_bf16.h>
 #include <cuda_fp16.h>
+
+inline void print_with_newline(const char *format, ...) { \
+  va_list args; \
+  va_start(args, format); \
+  vfprintf(stderr, format, args); \
+  va_end(args); \
+  fprintf(stderr, " (file:%s, line:%d)\n", __FILE__, __LINE__); \
+};
+
+
+#define PRINTLN print_with_newline
