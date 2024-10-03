@@ -142,6 +142,43 @@ __global__ void update_load(float* cap_array, float* load_array,
 }
 
 /**
+ * @brief init gpu memory.
+ *
+ * @param rc_network
+ */
+void delay_init_gpu_memory(DelayRcNetwork* rc_network) {
+  auto node_num = rc_network->get_node_num();
+  // malloc gpu memory.
+  cudaMalloc(&rc_network->_gpu_cap_array, node_num * sizeof(float));
+  cudaMalloc(&rc_network->_gpu_load_array, node_num * sizeof(float));
+  cudaMalloc(&rc_network->_gpu_parent_pos_array, node_num * sizeof(int));
+  // for rc point children, use start and end pair to record the children.
+  cudaMalloc(&rc_network->_gpu_children_pos_array, 2 * node_num * sizeof(int));
+
+  // copy cpu data to gpu memory.
+  cudaMemcpy(rc_network->_gpu_cap_array, rc_network->_cap_array.data(),
+             node_num * sizeof(float), cudaMemcpyHostToDevice);
+  cudaMemcpy(rc_network->_gpu_parent_pos_array,
+             rc_network->_parent_pos_array.data(), node_num * sizeof(int),
+             cudaMemcpyHostToDevice);
+  cudaMemcpy(rc_network->_gpu_children_pos_array,
+             rc_network->_children_pos_array.data(), 2 * node_num * sizeof(int),
+             cudaMemcpyHostToDevice);
+}
+
+/**
+ * @brief free the gpu memory.
+ *
+ * @param rc_network
+ */
+void delay_free_gpu_memory(DelayRcNetwork* rc_network) {
+  cudaFree(rc_network->_gpu_cap_array);
+  cudaFree(rc_network->_gpu_load_array);
+  cudaFree(rc_network->_gpu_parent_pos_array);
+  cudaFree(rc_network->_gpu_children_pos_array);
+}
+
+/**
  * @brief update load level by level.
  *
  * @param level_to_points
@@ -150,21 +187,9 @@ void delay_update_point_load(
     DelayRcNetwork* rc_network,
     std::vector<std::vector<DelayRcPoint*>>& level_to_points) {
   auto node_num = rc_network->get_node_num();
-
-  float* cap_array;
-  float* load_array;
-  int* parent_pos_array;
-
-  // malloc gpu memory.
-  cudaMalloc(&cap_array, node_num * sizeof(float));
-  cudaMalloc(&load_array, node_num * sizeof(float));
-  cudaMalloc(&parent_pos_array, node_num * sizeof(int));
-
-  // copy cpu data to gpu memory.
-  cudaMemcpy(cap_array, rc_network->_cap_array.data(), node_num * sizeof(float),
-             cudaMemcpyHostToDevice);
-  cudaMemcpy(parent_pos_array, rc_network->_parent_pos_array.data(),
-             node_num * sizeof(int), cudaMemcpyHostToDevice);
+  float* cap_array = rc_network->_gpu_cap_array;
+  float* load_array = rc_network->_gpu_load_array;
+  int* parent_pos_array = rc_network->_gpu_parent_pos_array;
 
   // update load of the rc node, sum the children cap.
   for (int index = level_to_points.size() - 1; index >= 0; --index) {
@@ -189,12 +214,9 @@ void delay_update_point_load(
   for (auto& node : rc_network->_nodes) {
     node->_load = rc_network->_load_array[node->_flatten_pos];
   }
-
-  // free the gpu memory.
-  cudaFree(cap_array);
-  cudaFree(load_array);
-  cudaFree(parent_pos_array);
 }
+
+void delay_update_point_delay() {}
 
 #else
 
@@ -314,12 +336,16 @@ int test() {
   auto level_to_points = delay_levelization(&rc_network);
   delay_change_rc_tree_to_array(&rc_network, level_to_points);
 
+  delay_init_gpu_memory(&rc_network);
+
   delay_update_point_load(&rc_network, level_to_points);
 
   for (auto& node : rc_network._nodes) {
     std::cout << "node: " << node->_cap << ", load: " << node->_load
               << ", delay: " << node->_delay << std::endl;
   }
+
+  delay_free_gpu_memory(&rc_network);
 
   return 0;
 }

@@ -84,6 +84,11 @@ struct DelayRcNetwork {
   std::vector<int> _parent_pos_array;
   std::vector<int> _children_pos_array;
 
+  float* _gpu_cap_array = nullptr;
+  float* _gpu_load_array = nullptr;
+  int* _gpu_parent_pos_array = nullptr;
+  int* _gpu_children_pos_array= nullptr;
+
   std::size_t get_node_num() { return _nodes.size(); }
 
 };
