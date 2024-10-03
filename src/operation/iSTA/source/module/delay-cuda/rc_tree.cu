@@ -94,6 +94,7 @@ void delay_change_rc_tree_to_array(
   // resistance record the parent resistance with the children.The first one is
   // root, resistance is 0.
   std::vector<float> resistance_array{0.0};
+  std::vector<float> delay_array(node_num, 0);
 
   int flatten_pos = 0;
   for (auto& points : level_to_points) {
@@ -108,7 +109,7 @@ void delay_change_rc_tree_to_array(
                            return ((edge->_from == rc_point->_parent) &&
                                    (edge->_to == rc_point));
                          });
-        assert(it == rc_network->_edges.end());
+        assert(it != rc_network->_edges.end());
         resistance_array.emplace_back((*it)->_resistance);
 
         int parent_pos = rc_point->_parent->_flatten_pos;
@@ -130,6 +131,7 @@ void delay_change_rc_tree_to_array(
   std::swap(rc_network->_resistance_array, resistance_array);
   std::swap(rc_network->_parent_pos_array, parent_pos_array);
   std::swap(rc_network->_children_pos_array, children_pos_array);
+  std::swap(rc_network->_delay_array, delay_array);
 }
 
 /**
@@ -148,7 +150,7 @@ __global__ void update_load(float* cap_array, float* load_array,
   int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
   if (tid < num_count) {
-    printf("thread id: %d, start pos %d\n", tid, start_pos);
+    // printf("thread id: %d, start pos %d\n", tid, start_pos);
 
     int current_pos = start_pos + tid;
     int parent_pos = parent_pos_array[current_pos];
@@ -156,7 +158,7 @@ __global__ void update_load(float* cap_array, float* load_array,
 
     // update the current pos load and parent's load.
     load_array[current_pos] += cap;
-    printf("current pos %d cap: %f \n", current_pos, cap);
+    // printf("current pos %d cap: %f \n", current_pos, cap);
 
     if (parent_pos != current_pos) {
       atomicAdd(&load_array[parent_pos], load_array[current_pos]);
@@ -167,29 +169,26 @@ __global__ void update_load(float* cap_array, float* load_array,
 }
 
 __global__ void update_delay(float* resistance_array, float* load_array,
-                             float* delay_array, int* children_pos_array,
+                             float* delay_array, int* parent_pos_array,
                              int start_pos, int num_count) {
   int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
   if (tid < num_count) {
     int current_pos = start_pos + tid;
-    int children_start_pos = children_pos_array[current_pos * 2];
-    int children_end_pos = children_pos_array[current_pos * 2 + 1];
-    float current_delay = delay_array[current_pos];
+    if (current_pos == 0) {
+      delay_array[current_pos] = 0.0;  // root point delay is 0.0.
+    } else {
+      int parent_pos = parent_pos_array[current_pos];
+      float parent_delay = delay_array[parent_pos];
 
-    if (children_start_pos != 0) {
-      if (children_end_pos == 0) {
-        // may be only one child, so end pos is 0.
-        children_end_pos = children_start_pos;
-        for (int index = children_start_pos; index < children_end_pos;
-             ++index) {
-          float resistance = resistance_array[index];
-          float load = load_array[index];
-          float delay = current_delay + resistance * load;
-          atomicAdd(&delay_array[index], delay);
-        }
-      }
+      float resistance = resistance_array[current_pos];
+      float load = load_array[current_pos];
+      float delay = parent_delay + resistance * load;
+      atomicAdd(&delay_array[current_pos], delay);
     }
+
+    printf("resistance array pos %d resistance: %f delay: %f\n", current_pos,
+           resistance_array[current_pos], delay_array[current_pos]);
   }
 }
 
@@ -282,7 +281,6 @@ void delay_update_point_load(
 void delay_update_point_delay(
     DelayRcNetwork* rc_network,
     std::vector<std::vector<DelayRcPoint*>>& level_to_points) {
-  auto node_num = rc_network->get_node_num();
   float* resistance_array = rc_network->_gpu_resistance_array;
   float* load_array = rc_network->_gpu_load_array;
   float* delay_array = rc_network->_gpu_delay_array;
@@ -297,6 +295,15 @@ void delay_update_point_delay(
         resistance_array, load_array, delay_array, children_pos_array,
         start_pos, num_count);
     start_pos += num_count;
+  }
+
+  auto node_num = rc_network->get_node_num();
+  cudaMemcpy(rc_network->_delay_array.data(), delay_array,
+             node_num * sizeof(float), cudaMemcpyDeviceToHost);
+
+  // set the node load.
+  for (auto& node : rc_network->_nodes) {
+    node->_delay = rc_network->_delay_array[node->_flatten_pos];
   }
 }
 
@@ -421,6 +428,7 @@ int test() {
   delay_init_gpu_memory(&rc_network);
 
   delay_update_point_load(&rc_network, level_to_points);
+  delay_update_point_delay(&rc_network, level_to_points);
 
   for (auto& node : rc_network._nodes) {
     std::cout << "node: " << node->_cap << ", load: " << node->_load
