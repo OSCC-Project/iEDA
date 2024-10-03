@@ -80,12 +80,16 @@ struct DelayRcNetwork {
   std::vector<std::unique_ptr<DelayRcEdge>> _edges;
 
   std::vector<float> _cap_array;
-  std::vector<float> _load_array;
+  std::vector<float> _load_array; // TODO(to taosimin), load and delay may be use one array.
+  std::vector<float> _resistance_array;
+  std::vector<float> _delay_array;
   std::vector<int> _parent_pos_array;
   std::vector<int> _children_pos_array;
 
   float* _gpu_cap_array = nullptr;
   float* _gpu_load_array = nullptr;
+  float* _gpu_resistance_array = nullptr;
+  float* _gpu_delay_array = nullptr;
   int* _gpu_parent_pos_array = nullptr;
   int* _gpu_children_pos_array= nullptr;
 
