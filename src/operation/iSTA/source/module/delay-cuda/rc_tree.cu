@@ -185,9 +185,11 @@ __global__ void update_delay(float* resistance_array, float* load_array,
       float load = load_array[current_pos];
       float delay = parent_delay + resistance * load;
       atomicAdd(&delay_array[current_pos], delay);
+
+      printf("parent pos %d parent delay: %f\n", parent_pos, parent_delay);
     }
 
-    printf("resistance array pos %d resistance: %f delay: %f\n", current_pos,
+    printf("current pos %d resistance: %f delay: %f\n", current_pos,
            resistance_array[current_pos], delay_array[current_pos]);
   }
 }
@@ -284,7 +286,7 @@ void delay_update_point_delay(
   float* resistance_array = rc_network->_gpu_resistance_array;
   float* load_array = rc_network->_gpu_load_array;
   float* delay_array = rc_network->_gpu_delay_array;
-  int* children_pos_array = rc_network->_gpu_children_pos_array;
+  int* parent_pos_array = rc_network->_gpu_parent_pos_array;
 
   int start_pos = 0;
   for (int index = 0; index < level_to_points.size(); ++index) {
@@ -292,7 +294,7 @@ void delay_update_point_delay(
     int num_blocks =
         (num_count + THREAD_PER_BLOCK_NUM - 1) / THREAD_PER_BLOCK_NUM;
     update_delay<<<num_blocks, THREAD_PER_BLOCK_NUM>>>(
-        resistance_array, load_array, delay_array, children_pos_array,
+        resistance_array, load_array, delay_array, parent_pos_array,
         start_pos, num_count);
     start_pos += num_count;
   }
