@@ -30,7 +30,7 @@ namespace eval {
  * @param {int} size
  * @return {*}
  */
-void SignalHandle(const char* data, int size)
+void SignalHandle(const char* data, size_t size)
 {
   std::ofstream fs("glog_dump.log", std::ios::app);
   std::string str = std::string(data, size);
