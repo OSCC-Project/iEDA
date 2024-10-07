@@ -13,4 +13,5 @@ target_link_libraries(report_table fort)
 target_include_directories(report_table 
     PUBLIC 
         ${CMAKE_CURRENT_SOURCE_DIR}
+        ${HOME_THIRDPARTY}
 )

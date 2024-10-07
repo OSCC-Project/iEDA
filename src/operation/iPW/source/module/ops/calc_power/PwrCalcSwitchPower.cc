@@ -113,7 +113,9 @@ unsigned PwrCalcSwitchPower::operator()(PwrGraph* the_graph) {
     if (driver_sta_vertex) {
       driver_pwr_vertex = the_graph->staToPwrVertex(*driver_sta_vertex);
     } else {
-      LOG_FATAL << "not found driver sta vertex.";
+      // LOG_FATAL << "not found driver sta vertex.";
+      LOG_ERROR << "not found driver sta vertex.";
+      continue;
     }
 
     // get VDD

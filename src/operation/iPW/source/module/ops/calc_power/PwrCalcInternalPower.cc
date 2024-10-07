@@ -197,7 +197,7 @@ double PwrCalcInternalPower::calcOutputPinPower(Instance* inst,
       auto input_slew_ns = sta_arc->get_src()->getSlewNs(
           AnalysisMode::kMax,
           sta_arc->isPositiveArc() ? trans_type : FLIP_TRANS(trans_type));
-      LOG_ERROR_IF(!input_slew_ns)
+      LOG_ERROR_IF_EVERY_N(!input_slew_ns, 10)
           << sta_arc->get_src()->getName() << " input slew is not exist.";
 
       double output_load_pf =
@@ -368,6 +368,10 @@ double PwrCalcInternalPower::calcSeqInputPinPower(Instance* inst,
 
   LibInternalPowerInfo* internal_power;
   FOREACH_INTERNAL_POWER(cell_port, internal_power) {
+    if ((*the_input_sta_vertex)->getSlewBucket().empty()) {
+      // no slew data not need to calc power.
+      continue;
+    }
     /*get internal power of this condition.*/
     // rise power
     auto rise_slew = (*the_input_sta_vertex)

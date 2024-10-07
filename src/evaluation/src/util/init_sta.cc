@@ -102,6 +102,8 @@ void InitSTA::callRT(const std::string& routing_type)
   auto logic_layer_name = routing_layers.size() >= 2 ? routing_layers[1]->get_name() : routing_layers[0]->get_name();
   auto clock_layer_name = routing_layers.size() >= 3 ? routing_layers[routing_layers.size() - 3]->get_name() : logic_layer_name;
   // Hard Code, consider the clock layer is the last 3rd layer
+  const std::string temp_path = dmInst->get_config().get_output_path() + "/rt/rt_temp_directory";
+  config_map.insert({"-temp_directory_path", temp_path});
   config_map.insert({"-bottom_routing_layer", logic_layer_name});
   config_map.insert({"-top_routing_layer", clock_layer_name});
   config_map.insert({"-enable_timing", 1});
