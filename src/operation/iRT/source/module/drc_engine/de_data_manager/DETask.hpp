@@ -34,7 +34,9 @@ class DETask
   std::vector<std::pair<EXTLayerRect*, bool>>& get_env_shape_list() { return _env_shape_list; }
   std::map<int32_t, std::vector<std::pair<EXTLayerRect*, bool>>>& get_net_pin_shape_map() { return _net_pin_shape_map; }
   std::map<int32_t, std::vector<Segment<LayerCoord>*>>& get_net_access_result_map() { return _net_access_result_map; }
-  std::map<int32_t, std::vector<Segment<LayerCoord>>>& get_net_routing_result_map() { return _net_routing_result_map; }
+  std::map<int32_t, std::vector<EXTLayerRect*>>& get_net_access_patch_map() { return _net_access_patch_map; }
+  std::map<int32_t, std::vector<Segment<LayerCoord>>>& get_net_detailed_result_map() { return _net_detailed_result_map; }
+  std::map<int32_t, std::vector<EXTLayerRect>>& get_net_detailed_patch_map() { return _net_detailed_patch_map; }
   std::string& get_top_dir_path() { return _top_dir_path; }
   std::string& get_def_file_path() { return _def_file_path; }
   std::string& get_netlist_file_path() { return _netlist_file_path; }
@@ -55,9 +57,17 @@ class DETask
   {
     _net_access_result_map = net_access_result_map;
   }
-  void set_net_routing_result_map(const std::map<int32_t, std::vector<Segment<LayerCoord>>>& net_routing_result_map)
+  void set_net_access_patch_map(const std::map<int32_t, std::vector<EXTLayerRect*>>& net_access_patch_map)
   {
-    _net_routing_result_map = net_routing_result_map;
+    _net_access_patch_map = net_access_patch_map;
+  }
+  void set_net_detailed_result_map(const std::map<int32_t, std::vector<Segment<LayerCoord>>>& net_detailed_result_map)
+  {
+    _net_detailed_result_map = net_detailed_result_map;
+  }
+  void set_net_detailed_patch_map(const std::map<int32_t, std::vector<EXTLayerRect>>& net_detailed_patch_map)
+  {
+    _net_detailed_patch_map = net_detailed_patch_map;
   }
   void set_top_dir_path(const std::string& top_dir_path) { _top_dir_path = top_dir_path; }
   void set_def_file_path(const std::string& def_file_path) { _def_file_path = def_file_path; }
@@ -74,7 +84,9 @@ class DETask
   std::vector<std::pair<EXTLayerRect*, bool>> _env_shape_list;
   std::map<int32_t, std::vector<std::pair<EXTLayerRect*, bool>>> _net_pin_shape_map;
   std::map<int32_t, std::vector<Segment<LayerCoord>*>> _net_access_result_map;
-  std::map<int32_t, std::vector<Segment<LayerCoord>>> _net_routing_result_map;
+  std::map<int32_t, std::vector<EXTLayerRect*>> _net_access_patch_map;
+  std::map<int32_t, std::vector<Segment<LayerCoord>>> _net_detailed_result_map;
+  std::map<int32_t, std::vector<EXTLayerRect>> _net_detailed_patch_map;
   std::string _top_dir_path;
   std::string _def_file_path;
   std::string _netlist_file_path;

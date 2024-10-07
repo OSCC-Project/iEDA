@@ -124,29 +124,29 @@ void RTInterface::runRT()
   RTPA.access();
   PinAccessor::destroyInst();
 
-  // SupplyAnalyzer::initInst();
-  // RTSA.analyze();
-  // SupplyAnalyzer::destroyInst();
+  SupplyAnalyzer::initInst();
+  RTSA.analyze();
+  SupplyAnalyzer::destroyInst();
 
-  // TopologyGenerator::initInst();
-  // RTTG.generate();
-  // TopologyGenerator::destroyInst();
+  TopologyGenerator::initInst();
+  RTTG.generate();
+  TopologyGenerator::destroyInst();
 
-  // InitialRouter::initInst();
-  // RTIR.route();
-  // InitialRouter::destroyInst();
+  InitialRouter::initInst();
+  RTIR.route();
+  InitialRouter::destroyInst();
 
-  // GlobalRouter::initInst();
-  // RTGR.route();
-  // GlobalRouter::destroyInst();
+  GlobalRouter::initInst();
+  RTGR.route();
+  GlobalRouter::destroyInst();
 
-  // TrackAssigner::initInst();
-  // RTTA.assign();
-  // TrackAssigner::destroyInst();
+  TrackAssigner::initInst();
+  RTTA.assign();
+  TrackAssigner::destroyInst();
 
-  // DetailedRouter::initInst();
-  // RTDR.route();
-  // DetailedRouter::destroyInst();
+  DetailedRouter::initInst();
+  RTDR.route();
+  DetailedRouter::destroyInst();
 
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }

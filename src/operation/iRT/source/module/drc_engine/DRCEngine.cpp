@@ -52,8 +52,8 @@ void DRCEngine::destroyInst()
 std::vector<Violation> DRCEngine::getViolationList(DETask& de_task)
 {
   // return {};
-  return getViolationListBySelf(de_task);
-  // return getViolationListByOther(de_task);
+  // return getViolationListBySelf(de_task);
+  return getViolationListByOther(de_task);
 }
 
 // private
@@ -99,7 +99,9 @@ void DRCEngine::writeTask(DETask& de_task)
   std::vector<std::pair<EXTLayerRect*, bool>>& env_shape_list = de_task.get_env_shape_list();
   std::map<int32_t, std::vector<std::pair<EXTLayerRect*, bool>>>& net_pin_shape_map = de_task.get_net_pin_shape_map();
   std::map<int32_t, std::vector<Segment<LayerCoord>*>>& net_access_result_map = de_task.get_net_access_result_map();
-  std::map<int32_t, std::vector<Segment<LayerCoord>>>& net_routing_result_map = de_task.get_net_routing_result_map();
+  std::map<int32_t, std::vector<EXTLayerRect*>>& net_access_patch_map = de_task.get_net_access_patch_map();
+  std::map<int32_t, std::vector<Segment<LayerCoord>>>& net_detailed_result_map = de_task.get_net_detailed_result_map();
+  std::map<int32_t, std::vector<EXTLayerRect>>& net_detailed_patch_map = de_task.get_net_detailed_patch_map();
   std::string& def_file_path = de_task.get_def_file_path();
   std::string& netlist_file_path = de_task.get_netlist_file_path();
   std::string& prepared_file_path = de_task.get_prepared_file_path();
@@ -113,7 +115,13 @@ void DRCEngine::writeTask(DETask& de_task)
     for (auto& [net_idx, segment_list] : net_access_result_map) {
       net_idx_set.insert(net_idx);
     }
-    for (auto& [net_idx, segment_list] : net_routing_result_map) {
+    for (auto& [net_idx, patch_list] : net_access_patch_map) {
+      net_idx_set.insert(net_idx);
+    }
+    for (auto& [net_idx, segment_list] : net_detailed_result_map) {
+      net_idx_set.insert(net_idx);
+    }
+    for (auto& [net_idx, patch_list] : net_detailed_patch_map) {
       net_idx_set.insert(net_idx);
     }
   }
@@ -204,8 +212,19 @@ void DRCEngine::writeTask(DETask& de_task)
           }
         }
       }
-      if (RTUTIL.exist(net_routing_result_map, net_idx)) {
-        for (Segment<LayerCoord> segment : net_routing_result_map[net_idx]) {
+      if (RTUTIL.exist(net_access_patch_map, net_idx)) {
+        for (EXTLayerRect* patch : net_access_patch_map[net_idx]) {
+          std::string layer_name = routing_layer_list[patch->get_layer_idx()].get_layer_name();
+          PlanarRect& real_rect = patch->get_real_rect();
+          PlanarCoord mid_point = real_rect.getMidPoint();
+          RTUTIL.pushStream(def_file, flag, " ", layer_name, " ( ", mid_point.get_x(), " ", mid_point.get_y(), " ) RECT ( ",
+                            real_rect.get_ll_x() - mid_point.get_x(), " ", real_rect.get_ll_y() - mid_point.get_y(), " ",
+                            real_rect.get_ur_x() - mid_point.get_x(), " ", real_rect.get_ur_y() - mid_point.get_y(), " )", "\n");
+          flag = "    NEW";
+        }
+      }
+      if (RTUTIL.exist(net_detailed_result_map, net_idx)) {
+        for (Segment<LayerCoord> segment : net_detailed_result_map[net_idx]) {
           LayerCoord& first_coord = segment.get_first();
           LayerCoord& second_coord = segment.get_second();
           int32_t first_layer_idx = first_coord.get_layer_idx();
@@ -232,6 +251,17 @@ void DRCEngine::writeTask(DETask& de_task)
               flag = "    NEW";
             }
           }
+        }
+      }
+      if (RTUTIL.exist(net_detailed_patch_map, net_idx)) {
+        for (EXTLayerRect& patch : net_detailed_patch_map[net_idx]) {
+          std::string layer_name = routing_layer_list[patch.get_layer_idx()].get_layer_name();
+          PlanarRect& real_rect = patch.get_real_rect();
+          PlanarCoord mid_point = real_rect.getMidPoint();
+          RTUTIL.pushStream(def_file, flag, " ", layer_name, " ( ", mid_point.get_x(), " ", mid_point.get_y(), " ) RECT ( ",
+                            real_rect.get_ll_x() - mid_point.get_x(), " ", real_rect.get_ll_y() - mid_point.get_y(), " ",
+                            real_rect.get_ur_x() - mid_point.get_x(), " ", real_rect.get_ur_y() - mid_point.get_y(), " )", "\n");
+          flag = "    NEW";
         }
       }
       RTUTIL.pushStream(def_file, " ;\n");
@@ -345,7 +375,7 @@ void DRCEngine::readTask(DETask& de_task)
         std::set<int32_t> violation_net_set;
         for (const std::string& net_name : net_name_set) {
           int32_t net_idx = std::stoi(RTUTIL.splitString(net_name, '_').back());
-          if (net_idx == -1 || RTUTIL.exist(de_task.get_net_routing_result_map(), net_idx)) {
+          if (net_idx == -1 || RTUTIL.exist(de_task.get_net_detailed_result_map(), net_idx)) {
             violation_net_set.insert(net_idx);
           }
         }
@@ -440,7 +470,7 @@ std::vector<Violation> DRCEngine::getViolationListByOther(DETask& de_task)
       net_result_map[net_idx].push_back(*segment);
     }
   }
-  for (auto& [net_idx, segment_list] : de_task.get_net_routing_result_map()) {
+  for (auto& [net_idx, segment_list] : de_task.get_net_detailed_result_map()) {
     for (Segment<LayerCoord>& segment : segment_list) {
       net_result_map[net_idx].push_back(segment);
     }

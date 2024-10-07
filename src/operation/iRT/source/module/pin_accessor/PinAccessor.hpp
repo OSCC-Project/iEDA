@@ -70,6 +70,7 @@ class PinAccessor
   void routePABoxMap(PAModel& pa_model);
   void buildFixedRect(PABox& pa_box);
   void buildAccessResult(PABox& pa_box);
+  void buildViolation(PABox& pa_box);
   void initPATaskList(PAModel& pa_model, PABox& pa_box);
   bool needRouting(PABox& pa_box);
   void buildBoxTrackAxis(PABox& pa_box);
@@ -78,7 +79,6 @@ class PinAccessor
   void buildOrientNetMap(PABox& pa_box);
   void routePABox(PABox& pa_box);
   std::vector<PATask*> initTaskSchedule(PABox& pa_box);
-  std::vector<PATask*> getTaskScheduleByViolation(PABox& pa_box);
   void routePATask(PABox& pa_box, PATask* pa_task);
   void initSingleTask(PABox& pa_box, PATask* pa_task);
   bool isConnectedAllEnd(PABox& pa_box);
@@ -91,8 +91,10 @@ class PinAccessor
   void updatePathResult(PABox& pa_box);
   std::vector<Segment<LayerCoord>> getRoutingSegmentListByNode(PANode* node);
   void resetStartAndEnd(PABox& pa_box);
+  void patchSingleTask(PABox& pa_box);
   void updateTaskResult(PABox& pa_box);
   std::vector<Segment<LayerCoord>> getRoutingSegmentList(PABox& pa_box);
+  std::vector<EXTLayerRect> getRoutingPatchList(PABox& pa_box);
   void resetSingleTask(PABox& pa_box);
   void pushToOpenList(PABox& pa_box, PANode* curr_node);
   PANode* popFromOpenList(PABox& pa_box);
@@ -106,6 +108,7 @@ class PinAccessor
   double getEstimateViaCost(PABox& pa_box, PANode* start_node, PANode* end_node);
   void updateViolationList(PABox& pa_box);
   std::vector<Violation> getCostViolationList(PABox& pa_box);
+  std::vector<PATask*> getTaskScheduleByViolation(PABox& pa_box);
   void uploadAccessResult(PABox& pa_box);
   void uploadViolation(PABox& pa_box);
   void freePABox(PABox& pa_box);
@@ -115,7 +118,9 @@ class PinAccessor
 #if 1  // update env
   void updateFixedRectToGraph(PABox& pa_box, ChangeType change_type, int32_t net_idx, EXTLayerRect* fixed_rect, bool is_routing);
   void updateFixedRectToGraph(PABox& pa_box, ChangeType change_type, int32_t net_idx, Segment<LayerCoord>& segment);
+  void updateFixedRectToGraph(PABox& pa_box, ChangeType change_type, int32_t net_idx, EXTLayerRect& patch);
   void updateNetResultToGraph(PABox& pa_box, ChangeType change_type, int32_t net_idx, Segment<LayerCoord>& segment);
+  void updateNetResultToGraph(PABox& pa_box, ChangeType change_type, int32_t net_idx, EXTLayerRect& patch);
   void updateViolationToGraph(PABox& pa_box, ChangeType change_type, Violation& violation);
   std::map<PANode*, std::set<Orientation>> getNodeOrientationMap(PABox& pa_box, NetShape& net_shape);
   std::map<PANode*, std::set<Orientation>> getRoutingNodeOrientationMap(PABox& pa_box, NetShape& net_shape);

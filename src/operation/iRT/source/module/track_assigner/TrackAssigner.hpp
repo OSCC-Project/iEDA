@@ -56,6 +56,8 @@ class TrackAssigner
   void buildPanelSchedule(TAModel& ta_model);
   void assignTAPanelMap(TAModel& ta_model);
   void buildAccessResult(TAPanel& ta_panel);
+  void buildNetResult(TAPanel& ta_panel);
+  void buildViolation(TAPanel& ta_panel);
   void initTATaskList(TAModel& ta_model, TAPanel& ta_panel);
   bool needRouting(TAPanel& ta_panel);
   void buildFixedRect(TAPanel& ta_panel);
@@ -103,6 +105,7 @@ class TrackAssigner
 #if 1  // update env
   void updateFixedRectToGraph(TAPanel& ta_panel, ChangeType change_type, int32_t net_idx, EXTLayerRect* fixed_rect, bool is_routing);
   void updateFixedRectToGraph(TAPanel& ta_panel, ChangeType change_type, int32_t net_idx, Segment<LayerCoord>& segment);
+  void updateFixedRectToGraph(TAPanel& ta_panel, ChangeType change_type, int32_t net_idx, EXTLayerRect& patch);
   void updateNetResultToGraph(TAPanel& ta_panel, ChangeType change_type, int32_t net_idx, Segment<LayerCoord>& segment);
   void updateViolationToGraph(TAPanel& ta_panel, ChangeType change_type, Violation& violation);
   std::map<TANode*, std::set<Orientation>> getNodeOrientationMap(TAPanel& ta_panel, NetShape& net_shape);
