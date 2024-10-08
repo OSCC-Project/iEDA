@@ -190,7 +190,7 @@ CheckInfo CheckNet::isAllPinConnected()
 {
   for (auto net_graph : _graph_list) {
     if (_pin_num >= 0 && _pin_num == net_graph.get_pin_num()) {
-      std::cout << "[CheckNet Info] Net " << _net_name << " is connected." << std::endl;
+      // std::cout << "[CheckNet Info] Net " << _net_name << " is connected." << std::endl;
       return CheckInfo::kConnected;
     }
   }
