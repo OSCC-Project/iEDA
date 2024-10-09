@@ -543,7 +543,7 @@ void PinAccessor::setPAParameter(PAModel& pa_model)
   /**
    * prefer_wire_unit, non_prefer_wire_unit, via_unit, size, offset, fixed_rect_unit, routed_rect_unit, violation_unit, max_routed_times
    */
-  PAParameter pa_parameter(1, 1, RTDM.getOnlyPitch(), 1, 0, 128 * cost_unit, 32 * cost_unit, 32 * cost_unit, 4);
+  PAParameter pa_parameter(1, 2.5, RTDM.getOnlyPitch(), 1, 0, 128 * cost_unit, 32 * cost_unit, 32 * cost_unit, 4);
   RTLOG.info(Loc::current(), "prefer_wire_unit: ", pa_parameter.get_prefer_wire_unit());
   RTLOG.info(Loc::current(), "non_prefer_wire_unit: ", pa_parameter.get_non_prefer_wire_unit());
   RTLOG.info(Loc::current(), "via_unit: ", pa_parameter.get_via_unit());
@@ -1229,20 +1229,42 @@ void PinAccessor::patchSingleTask(PABox& pa_box)
 {
   ScaleAxis& gcell_axis = RTDM.getDatabase().get_gcell_axis();
 
-  std::vector<EXTLayerRect>& routing_patch_list = pa_box.get_routing_patch_list();
-  for (Violation patch_violation : getPatchViolationList(pa_box)) {
-    EXTLayerRect& violation_shape = patch_violation.get_violation_shape();
-
-    if (patch_violation.get_violation_type() == ViolationType::kMinStep) {
+  for (auto getRealPatchList : {std::bind(&PinAccessor::getMinimumAreaPatchList, this, std::placeholders::_1),
+                                std::bind(&PinAccessor::getMinStepPatchList, this, std::placeholders::_1)}) {
+    for (LayerRect real_patch : getRealPatchList(pa_box)) {
       EXTLayerRect routing_patch;
-      routing_patch.set_real_rect(violation_shape.get_real_rect());
-      routing_patch.set_layer_idx(violation_shape.get_layer_idx());
-      routing_patch_list.push_back(routing_patch);
+      routing_patch.set_real_rect(real_patch);
+      routing_patch.set_layer_idx(real_patch.get_layer_idx());
+      routing_patch.set_grid_rect(RTUTIL.getClosedGCellGridRect(routing_patch.get_real_rect(), gcell_axis));
+      pa_box.get_routing_patch_list().push_back(routing_patch);
     }
   }
-  for (EXTLayerRect& routing_patch : routing_patch_list) {
-    routing_patch.set_grid_rect(RTUTIL.getClosedGCellGridRect(routing_patch.get_real_rect(), gcell_axis));
+}
+
+std::vector<LayerRect> PinAccessor::getMinimumAreaPatchList(PABox& pa_box)
+{
+  return {};
+  std::vector<LayerRect> real_patch_list;
+  for (Violation patch_violation : getPatchViolationList(pa_box)) {
+    if (patch_violation.get_violation_type() != ViolationType::kMinimumArea) {
+      continue;
+    }
+    EXTLayerRect& violation_shape = patch_violation.get_violation_shape();
+    real_patch_list.push_back(violation_shape.get_real_rect());
   }
+  return real_patch_list;
+}
+
+std::vector<LayerRect> PinAccessor::getMinStepPatchList(PABox& pa_box)
+{
+  std::vector<LayerRect> real_patch_list;
+  for (Violation patch_violation : getPatchViolationList(pa_box)) {
+    if (patch_violation.get_violation_type() != ViolationType::kMinStep) {
+      continue;
+    }
+    real_patch_list.push_back(patch_violation.get_violation_shape().get_real_rect());
+  }
+  return real_patch_list;
 }
 
 std::vector<Violation> PinAccessor::getPatchViolationList(PABox& pa_box)
@@ -1440,7 +1462,7 @@ double PinAccessor::getEstimateWireCost(PABox& pa_box, PANode* start_node, PANod
 
   double wire_cost = 0;
   wire_cost += RTUTIL.getManhattanDistance(start_node->get_planar_coord(), end_node->get_planar_coord());
-  wire_cost *= std::max(prefer_wire_unit, non_prefer_wire_unit);
+  wire_cost *= std::min(prefer_wire_unit, non_prefer_wire_unit);
   return wire_cost;
 }
 

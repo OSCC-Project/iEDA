@@ -94,6 +94,8 @@ class PinAccessor
   void updateTaskResult(PABox& pa_box);
   std::vector<Segment<LayerCoord>> getRoutingSegmentList(PABox& pa_box);
   void patchSingleTask(PABox& pa_box);
+  std::vector<LayerRect> getMinimumAreaPatchList(PABox& pa_box);
+  std::vector<LayerRect> getMinStepPatchList(PABox& pa_box);
   std::vector<Violation> getPatchViolationList(PABox& pa_box);
   void updateTaskPatch(PABox& pa_box);
   std::vector<EXTLayerRect> getRoutingPatchList(PABox& pa_box);

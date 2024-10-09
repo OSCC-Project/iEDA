@@ -110,12 +110,12 @@ void DetailedRouter::iterativeDRModel(DRModel& dr_model)
    * max_routed_times
    */
   std::vector<DRParameter> dr_parameter_list;
-  dr_parameter_list.emplace_back(1, 1, RTDM.getOnlyPitch(), 9, 0, 4 * cost_unit, 1 * cost_unit, 1 * cost_unit, true, 4);
-  dr_parameter_list.emplace_back(1, 1, RTDM.getOnlyPitch(), 9, -3, 8 * cost_unit, 2 * cost_unit, 2 * cost_unit, false, 4);
-  dr_parameter_list.emplace_back(1, 1, RTDM.getOnlyPitch(), 9, -6, 16 * cost_unit, 4 * cost_unit, 4 * cost_unit, false, 4);
-  dr_parameter_list.emplace_back(1, 1, RTDM.getOnlyPitch(), 9, 0, 32 * cost_unit, 8 * cost_unit, 8 * cost_unit, false, 4);
-  dr_parameter_list.emplace_back(1, 1, RTDM.getOnlyPitch(), 9, -3, 64 * cost_unit, 16 * cost_unit, 16 * cost_unit, false, 4);
-  dr_parameter_list.emplace_back(1, 1, RTDM.getOnlyPitch(), 9, -6, 128 * cost_unit, 32 * cost_unit, 32 * cost_unit, false, 4);
+  dr_parameter_list.emplace_back(1, 2.5, RTDM.getOnlyPitch(), 9, 0, 4 * cost_unit, 1 * cost_unit, 1 * cost_unit, true, 4);
+  dr_parameter_list.emplace_back(1, 2.5, RTDM.getOnlyPitch(), 9, -3, 8 * cost_unit, 2 * cost_unit, 2 * cost_unit, false, 4);
+  dr_parameter_list.emplace_back(1, 2.5, RTDM.getOnlyPitch(), 9, -6, 16 * cost_unit, 4 * cost_unit, 4 * cost_unit, false, 4);
+  dr_parameter_list.emplace_back(1, 2.5, RTDM.getOnlyPitch(), 9, 0, 32 * cost_unit, 8 * cost_unit, 8 * cost_unit, false, 4);
+  dr_parameter_list.emplace_back(1, 2.5, RTDM.getOnlyPitch(), 9, -3, 64 * cost_unit, 16 * cost_unit, 16 * cost_unit, false, 4);
+  dr_parameter_list.emplace_back(1, 2.5, RTDM.getOnlyPitch(), 9, -6, 128 * cost_unit, 32 * cost_unit, 32 * cost_unit, false, 4);
   for (size_t i = 0, iter = 1; i < dr_parameter_list.size(); i++, iter++) {
     Monitor iter_monitor;
     RTLOG.info(Loc::current(), "***** Begin iteration ", iter, "/", dr_parameter_list.size(), "(",
@@ -1033,7 +1033,7 @@ double DetailedRouter::getEstimateWireCost(DRBox& dr_box, DRNode* start_node, DR
 
   double wire_cost = 0;
   wire_cost += RTUTIL.getManhattanDistance(start_node->get_planar_coord(), end_node->get_planar_coord());
-  wire_cost *= std::max(prefer_wire_unit, non_prefer_wire_unit);
+  wire_cost *= std::min(prefer_wire_unit, non_prefer_wire_unit);
   return wire_cost;
 }
 
