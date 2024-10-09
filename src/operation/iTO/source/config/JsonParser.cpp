@@ -65,6 +65,7 @@ void JsonParser::jsonToConfig(Json* json)
   toConfig->set_report_file(dmInst->get_config().get_output_path() + "./to/report.txt");
   toConfig->set_gds_file(dmInst->get_config().get_output_path() + "./to/to.gds");
 
+  toConfig->set_routing_tree(json->at("routing_tree").get<string>());
   toConfig->set_setup_target_slack(json->at("setup_target_slack").get<float>());
   toConfig->set_hold_target_slack(json->at("hold_target_slack").get<float>());
   toConfig->set_max_insert_instance_percent(json->at("max_insert_instance_percent").get<float>());
@@ -132,6 +133,7 @@ void JsonParser::jsonToConfig(Json* json)
     }
     cout << endl;
   };
+  cout << "[ToConfig Info] routing tree = " << json->at("routing_tree").get<string>() << endl;
   cout << "[ToConfig Info] DRV insert buffer = ";
   outStrings(toConfig->get_drv_insert_buffers());
   cout << "[ToConfig Info] hold insert buffer = ";

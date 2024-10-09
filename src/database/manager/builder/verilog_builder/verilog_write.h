@@ -52,6 +52,7 @@ class VerilogWriter
   void writePorts();
   void writePortDcls();
   void writeWire();
+  void writeAssign();
   void writeInstances();
   void writeInstance(IdbInstance* inst);
 

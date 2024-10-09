@@ -15,7 +15,10 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 #pragma once
+#include <map>
+
 #include "engine_geometry.h"
+#include "geometry_boost.h"
 
 namespace idrc {
 class DrcEngineSubLayout
@@ -25,7 +28,13 @@ class DrcEngineSubLayout
   ~DrcEngineSubLayout();
 
   int get_id() { return _id; }
-  ieda_solver::EngineGeometry* get_engine() { return _engine; }
+  std::map<int, DrcEngineSubLayout*>& get_intersect_layouts() { return _intersect_layouts; }
+  //   ieda_solver::EngineGeometry* get_engine() { return _engine; }
+  ieda_solver::GeometryBoost* get_engine() { return (ieda_solver::GeometryBoost*) _engine; }
+  bool isIntersect(int llx, int lly, int urx, int ury);
+  void markChecked(int net_id);
+  bool hasChecked(int net_id);
+  bool clearChecked();
 
  private:
   /**
@@ -33,7 +42,9 @@ class DrcEngineSubLayout
    * _engine : a geometry ptr including all shapes in one net
    */
   int _id = -1;
+  std::set<int> _check_nets;  /// net ids in other sublayouts that has been checked with this sublayout
   ieda_solver::EngineGeometry* _engine = nullptr;
+  std::map<int, DrcEngineSubLayout*> _intersect_layouts;
 };
 
 }  // namespace idrc

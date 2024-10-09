@@ -68,9 +68,19 @@ void ToApi::optimizeDrv()
   _ito->optimizeDrv();
 }
 
+void ToApi::optimizeDrvSpecialNet(const char* net_name)
+{
+  _ito->optimizeDrvSpecialNet(net_name);
+}
+
 void ToApi::optimizeSetup()
 {
   _ito->optimizeSetup();
+}
+
+void ToApi::performBuffering(const char* net_name)
+{
+  _ito->performBuffering(net_name);
 }
 
 void ToApi::optimizeHold()
@@ -105,21 +115,21 @@ ieda_feature::TimingOptSummary ToApi::outputSummary()
 {
   ieda_feature::TimingOptSummary to_summary;
 
-  std::map<std::string, ieda_feature::TONetTimingCmp> summary_map;
+  std::map<std::string, ieda_feature::TOClockTimingCmp> summary_map;
 
   // origin data，tns，wns，freq
   auto to_eval_data = timingEngine->eval_data();
   for (auto eval_data : to_eval_data) {
-    ieda_feature::TONetTiming net_timing;
-    std::string net_name = eval_data.name;
-    net_timing.tns = eval_data.initial_tns;
-    net_timing.wns = eval_data.initial_wns;
-    net_timing.suggest_freq = eval_data.initial_freq;
+    ieda_feature::TOClockTiming clock_timing;
+    std::string clock_name = eval_data.name;
+    clock_timing.tns = eval_data.initial_tns;
+    clock_timing.wns = eval_data.initial_wns;
+    clock_timing.suggest_freq = eval_data.initial_freq;
 
-    ieda_feature::TONetTimingCmp net_cmp;
-    memset(&net_cmp, 0, sizeof(ieda_feature::TONetTimingCmp));
-    net_cmp.origin = net_timing;
-    summary_map[net_name] = net_cmp;
+    ieda_feature::TOClockTimingCmp clock_cmp;
+    memset(&clock_cmp, 0, sizeof(ieda_feature::TOClockTimingCmp));
+    clock_cmp.origin = clock_timing;
+    summary_map[clock_name] = clock_cmp;
   }
 
   // after optimize timing
@@ -131,23 +141,23 @@ ieda_feature::TimingOptSummary ToApi::outputSummary()
     auto drv_wns = timingEngine->get_sta_engine()->getWNS(clk_name, AnalysisMode::kMax);
     auto suggest_freq = 1000.0 / (clk->getPeriodNs() - drv_wns);
 
-    ieda_feature::TONetTiming net_timing;
-    std::string net_name = clk_name;
-    net_timing.tns = drv_tns;
-    net_timing.wns = drv_wns;
-    net_timing.suggest_freq = suggest_freq;
+    ieda_feature::TOClockTiming clock_timing;
+    std::string clock_name = clk_name;
+    clock_timing.tns = drv_tns;
+    clock_timing.wns = drv_wns;
+    clock_timing.suggest_freq = suggest_freq;
 
-    summary_map[net_name].opt = net_timing;
+    summary_map[clock_name].opt = clock_timing;
   });
 
-  for (auto [net_name, net_timings] : summary_map) {
-    net_timings.net_name = net_name;
+  for (auto [clock_name, clock_timings] : summary_map) {
+    clock_timings.clock_name = clock_name;
 
-    net_timings.delta.tns = net_timings.opt.tns - net_timings.origin.tns;
-    net_timings.delta.wns = net_timings.opt.wns - net_timings.origin.wns;
-    net_timings.delta.suggest_freq = net_timings.opt.suggest_freq - net_timings.origin.suggest_freq;
+    clock_timings.delta.tns = clock_timings.opt.tns - clock_timings.origin.tns;
+    clock_timings.delta.wns = clock_timings.opt.wns - clock_timings.origin.wns;
+    clock_timings.delta.suggest_freq = clock_timings.opt.suggest_freq - clock_timings.origin.suggest_freq;
 
-    to_summary.net_timings.push_back(net_timings);
+    to_summary.clock_timings.push_back(clock_timings);
   }
 
   return to_summary;

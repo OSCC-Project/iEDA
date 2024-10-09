@@ -136,23 +136,12 @@ iDRC的默认配置文件格式如下：
 ```
 {
   "INPUT": {
-    "tech_lef_path": "/home/benchmark/lef/scc011u_8lm_1tm_thin_ALPA.lef",
+    "tech_lef_path": "./xxx_tech.lef",
     "lef_paths": [
-      "/home/benchmark/lef/scc011ums_hd_lvt.lef",
-      "/home/benchmark/lef/scc011ums_hd_rvt.lef",
-      "/home/benchmark/lef/scc011ums_hd_hvt.lef",
-      "/home/benchmark/lef/S013PLLFN_8m_V1_2_1.lef",
-      "/home/benchmark/lef/SP013D3WP_V1p7_8MT.lef",
-      "/home/benchmark/lef/S011HD1P256X32M2B0.lef",
-      "/home/benchmark/lef/S011HD1P512X58M2B0.lef",
-      "/home/benchmark/lef/S011HD1P1024X64M4B0.lef",
-      "/home/benchmark/lef/S011HD1P256X8M4B0.lef",
-      "/home/benchmark/lef/S011HD1P512X73M2B0.lef",
-      "/home/benchmark/lef/S011HD1P128X21M2B0.lef",
-      "/home/benchmark/lef/S011HD1P512X19M4B0.lef",
-      "/home/benchmark/lef/S011HDSP4096X64M8B0.lef"
+      "./xxx_cell_1.lef",
+      "./xxx_cell_2.lef"
     ],
-    "def_path": "/home/huangdaxiang/def2gds/source/RR.def"
+    "def_path": "./RR.def"
   },
   "OUTPUT": {
     "output_dir_path": "<output_dir_path>"

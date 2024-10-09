@@ -21,7 +21,6 @@
 #include "Database.hpp"
 #include "Monitor.hpp"
 #include "TGModel.hpp"
-#include "flute3/flute.h"
 
 namespace irt {
 
@@ -40,10 +39,10 @@ class TopologyGenerator
   // self
   static TopologyGenerator* _tg_instance;
 
-  TopologyGenerator() { Flute::readLUT(); }
+  TopologyGenerator() = default;
   TopologyGenerator(const TopologyGenerator& other) = delete;
   TopologyGenerator(TopologyGenerator&& other) = delete;
-  ~TopologyGenerator() { Flute::deleteLUT(); }
+  ~TopologyGenerator() = default;
   TopologyGenerator& operator=(const TopologyGenerator& other) = delete;
   TopologyGenerator& operator=(TopologyGenerator&& other) = delete;
   // function
@@ -57,7 +56,7 @@ class TopologyGenerator
   void buildOrientSupply(TGModel& tg_model);
   void generateTGModel(TGModel& tg_model);
   void routeTGNet(TGModel& tg_model, TGNet* tg_net);
-  std::vector<Segment<PlanarCoord>> getPlanarTopoListByFlute(TGModel& tg_model, TGNet* tg_net);
+  std::vector<Segment<PlanarCoord>> getPlanarTopoList(TGModel& tg_model, TGNet* tg_net);
   std::vector<Segment<PlanarCoord>> getRoutingSegmentList(TGModel& tg_model, Segment<PlanarCoord>& planar_topo);
   std::vector<Segment<PlanarCoord>> getRoutingSegmentListByStraight(TGModel& tg_model, Segment<PlanarCoord>& planar_topo);
   std::vector<Segment<PlanarCoord>> getRoutingSegmentListByLPattern(TGModel& tg_model, Segment<PlanarCoord>& planar_topo);
@@ -72,6 +71,11 @@ class TopologyGenerator
   void writePlanarSupplyCSV(TGModel& tg_model);
   void writePlanarDemandCSV(TGModel& tg_model);
   void writePlanarOverflowCSV(TGModel& tg_model);
+#endif
+
+#if 1  // debug
+  void debugCheckTGModel(TGModel& tg_model);
+  void debugOutputGuide(TGModel& tg_model);
 #endif
 };
 

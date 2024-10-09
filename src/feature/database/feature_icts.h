@@ -32,7 +32,7 @@ struct CTSSummary
   int32_t max_clock_wirelength;
   double total_clock_wirelength;
 
-  std::vector<NetTiming> nets_timing;
+  std::vector<ClockTiming> clocks_timing;
 };
 
 }  // namespace ieda_feature

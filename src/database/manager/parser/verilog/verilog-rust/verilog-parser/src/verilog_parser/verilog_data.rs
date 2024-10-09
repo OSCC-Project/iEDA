@@ -384,12 +384,6 @@ impl VerilogVirtualBaseNetExpr for VerilogConstantExpr {
     }
 }
 
-// pub enum NetExprType {
-//     VerilogNetIDExpr,
-//     VerilogNetConcatExpr,
-//     VerilogConstantExpr
-// }
-
 /// The port connection such as .port_id(net_id).
 #[derive(Debug)]
 #[derive(Clone)]
@@ -460,7 +454,7 @@ impl Clone for Box<dyn VerilogVirtualBaseStmt> {
     }
 }
 
-/// The base class for verilog stmt,include module dcl, module instance, module assign.
+/// The base class for verilog stmt,include module dcl,module dcls,module instance, module assign.
 /// maybe dont need the base class***************************************
 #[derive(Debug)]
 #[derive(Clone)]
@@ -722,7 +716,8 @@ impl VerilogInst {
                                     port_connect_net_struct_clone.set_verilog_id(dyn_port_connect_port_id);
                                     port_connect_net = Box::new(port_connect_net_struct_clone);
                                     port_connect_net_option = Some(port_connect_net);
-                                } else if port_connect_net.get_verilog_id().is_bus_index_id() {
+                                } else {
+                                    // the above used to be: else if port_connect_net.get_verilog_id().is_bus_index_id()
                                     port_connect_net_option = Some(port_connect_net);
                                 }
                             } else if port_id.is_bus_slice_id() {
@@ -751,6 +746,8 @@ impl VerilogInst {
                                     let mut port_connect_net_struct_clone = port_connect_net_struct.clone();
                                     port_connect_net_struct_clone.set_verilog_id(new_dyn_port_connect_port_id);
                                     port_connect_net = Box::new(port_connect_net_struct_clone);
+                                    port_connect_net_option = Some(port_connect_net);
+                                } else {
                                     port_connect_net_option = Some(port_connect_net);
                                 }
                             }
@@ -795,8 +792,11 @@ impl VerilogInst {
                             let slice_concat_connect_net = VerilogNetConcatExpr::new(0, slice_concat);
                             port_connect_net = Box::new(slice_concat_connect_net);
                             port_connect_net_option = Some(port_connect_net);
+                        } else {
+                            port_connect_net_option = Some(port_connect_net);
                         }
                     } else if port_connect_net.is_constant() {
+                        port_connect_net_option = Some(port_connect_net);
                         println!("port {} connect net is constant", port_connection.get_port_id().get_name());
                     } else {
                         panic!("not support.");

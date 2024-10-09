@@ -30,6 +30,10 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/node_hash_map.h"
 
+#ifdef USE_CPP_STD
+#include <unordered_map>
+#endif
+
 namespace ieda {
 
 /**
@@ -70,10 +74,18 @@ namespace ieda {
  */
 template <class KEY, class VALUE, class HASH = typename absl::flat_hash_map<KEY, VALUE>::hasher,
           class EQ = typename absl::flat_hash_map<KEY, VALUE>::key_equal>
+#ifndef USE_CPP_STD
 class FlatMap : public absl::flat_hash_map<KEY, VALUE, HASH, EQ>
+#else
+class FlatMap : public std::unordered_map<KEY, VALUE, HASH, EQ>
+#endif
 {
  public:
+#ifndef USE_CPP_STD
   using Base = typename FlatMap::flat_hash_map;
+#else
+  using Base = typename FlatMap::unordered_map;
+#endif
   using iterator = typename Base::iterator;
   using const_iterator = typename Base::const_iterator;
   using value_type = typename Base::value_type;

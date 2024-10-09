@@ -19,8 +19,6 @@
 #include <map>
 #include <vector>
 
-#include "idrc_region_query.h"
-
 namespace irt {
 class BaseRegion;
 class BaseShape;
@@ -48,15 +46,11 @@ class DrcDataManager
   std::vector<idb::IdbLayerShape*>* get_env_shapes() { return _env_shapes; }
   void set_env_shapes(std::vector<idb::IdbLayerShape*>* env_shapes) { _env_shapes = env_shapes; }
 
-  DrcRegionQuery* get_region_query() { return _region_query; }
-
  private:
   // data from rt
   std::map<int, std::vector<idb::IdbRegularWireSegment*>>* _routing_data;
   std::map<int, std::vector<idb::IdbLayerShape*>>* _pin_data;
   std::vector<idb::IdbLayerShape*>* _env_shapes;
-
-  DrcRegionQuery* _region_query;
 };
 
 }  // namespace idrc

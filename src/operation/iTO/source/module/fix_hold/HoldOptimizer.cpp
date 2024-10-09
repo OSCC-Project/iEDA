@@ -30,6 +30,8 @@ using namespace std;
 
 namespace ito {
 
+HoldOptimizer* HoldOptimizer::_instance = nullptr;
+
 HoldOptimizer::HoldOptimizer()
 {
   _target_slack = toConfig->get_hold_target_slack();

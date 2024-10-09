@@ -22,9 +22,11 @@
  * @date 2023-01-02
  */
 
-#include <array>
-
 #include "Power.hh"
+
+#include <array>
+#include <filesystem>
+
 #include "ops/annotate_toggle_sp/AnnotateToggleSP.hh"
 #include "ops/build_graph/PwrBuildGraph.hh"
 #include "ops/calc_power/PwrCalcInternalPower.hh"
@@ -260,33 +262,6 @@ unsigned Power::calcSwitchPower() {
 unsigned Power::updatePower() {
   {
     ieda::Stats stats;
-    LOG_INFO << "power propagation start";
-
-    // firstly levelization.
-    Vector<std::function<unsigned(PwrSeqGraph*)>> seq_funcs = {
-        PwrCheckPipelineLoop(), PwrLevelizeSeq()};
-    auto& the_seq_graph = get_power_seq_graph();
-    for (auto& func : seq_funcs) {
-      the_seq_graph.exec(func);
-    }
-
-    // secondly propagation toggle and sp.
-    Vector<std::function<unsigned(PwrGraph*)>> prop_funcs = {
-        PwrPropagateConst(), PwrPropagateToggleSP(), PwrPropagateClock()};
-    auto& the_pwr_graph = get_power_graph();
-    for (auto& func : prop_funcs) {
-      the_pwr_graph.exec(func);
-    }
-
-    LOG_INFO << "power propagation end";
-    double memory_delta = stats.memoryDelta();
-    LOG_INFO << "power propagation memory usage " << memory_delta << "MB";
-    double time_delta = stats.elapsedRunTime();
-    LOG_INFO << "power propagation time elapsed " << time_delta << "s";
-  }
-
-  {
-    ieda::Stats stats;
     LOG_INFO << "power calculation start";
 
     // thirdly analyze power.
@@ -312,28 +287,27 @@ unsigned Power::updatePower() {
  */
 unsigned Power::analyzeGroupPower() {
   auto add_group_data_from_analysis_data = [this](auto group_type,
+                                                  DesignObject* design_obj,
                                                   PwrAnalysisData* power_data) {
     /*the lambda of set power data*/
     auto set_power_data = [this, &power_data](PwrGroupData* group_data) {
       double power_data_value = power_data->getPowerDataValue();
       if (power_data->isLeakageData()) {
-        group_data->set_leakage_power(NW_TO_W(power_data_value));
+        group_data->set_leakage_power(power_data_value);
       } else if (power_data->isInternalData()) {
-        group_data->set_internal_power(MW_TO_W(power_data_value));
+        group_data->set_internal_power(power_data_value);
       } else {
-        group_data->set_switch_power(MW_TO_W(power_data_value));
+        group_data->set_switch_power(power_data_value);
       }
       group_data->set_nom_voltage(power_data->get_nom_voltage());
     };
 
     // find the design object of power data
-    auto* this_obj = power_data->get_design_obj();
-    auto this_data = _obj_to_datas.find(this_obj);
+    auto this_data = _obj_to_datas.find(design_obj);
     if (this_data != _obj_to_datas.end()) {
       set_power_data(this_data->second.get());
     } else {
-      auto group_data = std::make_unique<PwrGroupData>(
-          group_type, power_data->get_design_obj());
+      auto group_data = std::make_unique<PwrGroupData>(group_type, design_obj);
       set_power_data(group_data.get());
       addGroupData(std::move(group_data));
     }
@@ -345,7 +319,8 @@ unsigned Power::analyzeGroupPower() {
     LOG_FATAL_IF(!inst) << "leakage power instance is not exist.";
     auto group_type = getInstPowerGroup(inst);
     if (group_type) {
-      add_group_data_from_analysis_data(group_type.value(), leakage_power_data);
+      add_group_data_from_analysis_data(group_type.value(), inst,
+                                        leakage_power_data);
     } else {
       LOG_INFO << "can not find group type for" << inst->get_name();
     }
@@ -357,7 +332,7 @@ unsigned Power::analyzeGroupPower() {
     LOG_FATAL_IF(!inst) << "internal power instance is not exist.";
     auto group_type = getInstPowerGroup(inst);
     if (group_type) {
-      add_group_data_from_analysis_data(group_type.value(),
+      add_group_data_from_analysis_data(group_type.value(), inst,
                                         internal_power_data);
     } else {
       LOG_INFO << "can not find group type for" << inst->get_name();
@@ -391,7 +366,8 @@ unsigned Power::analyzeGroupPower() {
 
     auto group_type = getInstPowerGroup(driver_inst);
     if (group_type) {
-      add_group_data_from_analysis_data(group_type.value(), switch_power_data);
+      add_group_data_from_analysis_data(group_type.value(), driver_inst,
+                                        switch_power_data);
     } else {
       LOG_INFO << "can not find group type for" << driver_inst->get_name();
     }
@@ -494,9 +470,9 @@ unsigned Power::reportSummaryPower(const char* rpt_file_name,
   std::fprintf(f.get(), "Cell Leakage Power   ==    %.3e %s\n",
                summary_leakage_power, summary_leakage_power_percentage.c_str());
 
-  std::fprintf(f.get(), "Total Power   ==  %.3e\n", total_power);
+  std::fprintf(f.get(), "Total Power   ==  %.3e W\n", total_power);
 
-  LOG_INFO << "Total Power   ==  " << total_power << " mW";
+  LOG_INFO << "Total Power   ==  " << total_power << " W";
   return 1;
 };
 
@@ -519,10 +495,10 @@ unsigned Power::reportInstancePower(const char* rpt_file_name,
 
   PwrGroupData* group_data;
   FOREACH_PWR_GROUP_DATA(this, group_data) {
-    // TODO net
-    if (dynamic_cast<Net*>(group_data->get_obj())) {
-      continue;
-    }
+    // net add to driver instance.
+    LOG_FATAL_IF(dynamic_cast<Net*>(group_data->get_obj()))
+        << "net power should add to driver instance";
+
     auto* inst = dynamic_cast<Instance*>(group_data->get_obj());
     (*report_tbl) << inst->get_name()
                   << data_str(group_data->get_internal_power())
@@ -531,6 +507,7 @@ unsigned Power::reportInstancePower(const char* rpt_file_name,
                   << data_str(group_data->get_total_power()) << TABLE_ENDLINE;
   };
 
+  LOG_INFO << "Instance Power Report: \n";
   LOG_INFO << "\n" << report_tbl->c_str();
 
   auto close_file = [](std::FILE* fp) { std::fclose(fp); };
@@ -590,12 +567,14 @@ unsigned Power::reportInstancePowerCSV(const char* rpt_file_name) {
   csv_file.close();
   return 1;
 }
+
 /**
- * @brief run report ipower
+ * @brief init power graph data
  *
+ * @param
  * @return unsigned
  */
-unsigned Power::runCompleteFlow() {
+unsigned Power::initPowerGraphData() {
   Sta* ista = Sta::getOrCreateSta();
   Power* ipower = Power::getOrCreatePower(&(ista->get_graph()));
 
@@ -642,35 +621,166 @@ unsigned Power::runCompleteFlow() {
     LOG_INFO << "power vcd annotate time elapsed " << time_delta << "s";
   }
 
-  // update power.
-  ipower->updatePower();
+  return 1;
+}
+
+/**
+ * @brief init toggle sp data.
+ *
+ * @return unsigned
+ */
+unsigned Power::initToggleSPData() {
+  {
+    ieda::Stats stats;
+    LOG_INFO << "power propagation start";
+
+    // firstly levelization.
+    Vector<std::function<unsigned(PwrSeqGraph*)>> seq_funcs = {
+        PwrCheckPipelineLoop(), PwrLevelizeSeq()};
+    auto& the_seq_graph = get_power_seq_graph();
+    for (auto& func : seq_funcs) {
+      the_seq_graph.exec(func);
+    }
+
+    // secondly propagation toggle and sp.
+    Vector<std::function<unsigned(PwrGraph*)>> prop_funcs = {
+        PwrPropagateConst(), PwrPropagateToggleSP(), PwrPropagateClock()};
+    auto& the_pwr_graph = get_power_graph();
+    for (auto& func : prop_funcs) {
+      the_pwr_graph.exec(func);
+    }
+
+    LOG_INFO << "power propagation end";
+    double memory_delta = stats.memoryDelta();
+    LOG_INFO << "power propagation memory usage " << memory_delta << "MB";
+    double time_delta = stats.elapsedRunTime();
+    LOG_INFO << "power propagation time elapsed " << time_delta << "s";
+  }
+
+  return 1;
+}
+
+/**
+ * @brief report power
+ *
+ * @return unsigned
+ */
+unsigned Power::reportPower(bool is_copy) {
+  // create backup working directory.
+  auto backup_pwr_files = [this, is_copy](std::string output_dir)
+      -> std::optional<std::pair<std::string, std::string>> {
+    if (!is_copy) {
+      return std::nullopt;
+    }
+
+    std::string now_time = Time::getNowWallTime();
+    std::string tmp = Str::replace(now_time, ":", "_");
+    std::string copy_design_work_space =
+        Str::printf("%s_pwr_%s", output_dir.c_str(), tmp.c_str());
+
+    if (std::filesystem::exists(output_dir)) {
+      std::filesystem::create_directories(copy_design_work_space);
+    }
+
+    return std::pair{copy_design_work_space, tmp};
+  };
+
+  // copy file to copy directory
+  auto copy_file = [](std::optional<std::pair<std::string, std::string>>
+                          copy_design_work_space,
+                      std::string output_dir, std::string file_to_be_copy) {
+    auto base_name = std::filesystem::path(file_to_be_copy).stem().string();
+    auto extension =
+        std::filesystem::path(file_to_be_copy).extension().string();
+
+    std::string dest_file_name = Str::printf(
+        "%s/%s_%s%s", copy_design_work_space->first.c_str(), base_name.c_str(),
+        copy_design_work_space->second.c_str(), extension.c_str());
+
+    std::string src_file =
+        Str::printf("%s/%s", output_dir.c_str(), file_to_be_copy.c_str());
+    if (std::filesystem::exists(src_file)) {
+      std::filesystem::copy_file(
+          src_file, dest_file_name,
+          std::filesystem::copy_options::overwrite_existing);
+    }
+  };
+
+  Sta* ista = Sta::getOrCreateSta();
+
+  ieda::Stats stats;
+
+  std::string output_dir = get_design_work_space();
+  if (output_dir.empty()) {
+    output_dir = ista->get_design_work_space();
+  }
+
+  LOG_INFO << "power report start, output dir: " << output_dir;
+
+  if (output_dir.empty()) {
+    LOG_ERROR << "The design work space is not set.";
+    return 0;
+  }
+
+  auto backup_work_space = backup_pwr_files(output_dir);
+  std::filesystem::create_directories(output_dir);
 
   {
-    // report power.
-    ieda::Stats stats;
-
-    std::string output_dir = ista->get_design_work_space();
-    LOG_INFO << "power report start, output dir: " << output_dir;
-    
-    std::string output_path =
-        output_dir + Str::printf("/%s.pwr", ista->get_design_name().c_str());
+    std::string file_name =
+        Str::printf("%s.pwr", ista->get_design_name().c_str());
+    if (is_copy) {
+      copy_file(backup_work_space, output_dir, file_name);
+    }
+    std::string output_path = output_dir + "/" + file_name;
     reportSummaryPower(output_path.c_str(), PwrAnalysisMode::kAveraged);
-
-    output_path =
-        output_dir +
-        Str::printf("/%s_%s.pwr", ista->get_design_name().c_str(), "instance");
-    reportInstancePower(output_path.c_str(), PwrAnalysisMode::kAveraged);
-    output_path =
-        output_dir +
-        Str::printf("/%s_%s.csv", ista->get_design_name().c_str(), "instance");
-    reportInstancePowerCSV(output_path.c_str());
-
-    LOG_INFO << "power report end";
-    double memory_delta = stats.memoryDelta();
-    LOG_INFO << "power report memory usage " << memory_delta << "MB";
-    double time_delta = stats.elapsedRunTime();
-    LOG_INFO << "power report time elapsed " << time_delta << "s";
   }
+
+  {
+    std::string file_name =
+        Str::printf("%s_%s.pwr", ista->get_design_name().c_str(), "instance");
+
+    if (is_copy) {
+      copy_file(backup_work_space, output_dir, file_name);
+    }
+
+    std::string output_path = output_dir + "/" + file_name;
+    reportInstancePower(output_path.c_str(), PwrAnalysisMode::kAveraged);
+  }
+
+  {
+    std::string file_name =
+        Str::printf("%s_%s.csv", ista->get_design_name().c_str(), "instance");
+
+    if (is_copy) {
+      copy_file(backup_work_space, output_dir, file_name);
+    }
+    std::string output_path = output_dir + "/" + file_name;
+    reportInstancePowerCSV(output_path.c_str());
+  }
+
+  LOG_INFO << "power report end";
+  double memory_delta = stats.memoryDelta();
+  LOG_INFO << "power report memory usage " << memory_delta << "MB";
+  double time_delta = stats.elapsedRunTime();
+  LOG_INFO << "power report time elapsed " << time_delta << "s";
+
+  return 1;
+}
+
+/**
+ * @brief run report ipower
+ *
+ * @return unsigned
+ */
+unsigned Power::runCompleteFlow() {
+  Sta* ista = Sta::getOrCreateSta();
+  Power::getOrCreatePower(&(ista->get_graph()));
+
+  initPowerGraphData();
+  initToggleSPData();
+
+  updatePower();
+  reportPower();
   return 1;
 }
 
@@ -704,6 +814,14 @@ std::optional<PwrGroupData::PwrGroupType> Power::getInstPowerGroup(
           },
           [this, lib_cell](
               Instance* the_inst) -> std::optional<PwrGroupData::PwrGroupType> {
+            // judge whether register.
+            if (lib_cell->isSequentialCell()) {
+              return PwrGroupData::PwrGroupType::kSeq;
+            }
+            return std::nullopt;
+          },
+          [this, lib_cell](
+              Instance* the_inst) -> std::optional<PwrGroupData::PwrGroupType> {
             // judge whether clock network.
             Pin* pin;
             FOREACH_INSTANCE_PIN(the_inst, pin) {
@@ -719,14 +837,6 @@ std::optional<PwrGroupData::PwrGroupType> Power::getInstPowerGroup(
             // judge whether register.
             if (!lib_cell->isSequentialCell()) {
               return PwrGroupData::PwrGroupType::kComb;
-            }
-            return std::nullopt;
-          },
-          [this, lib_cell](
-              Instance* the_inst) -> std::optional<PwrGroupData::PwrGroupType> {
-            // judge whether register.
-            if (lib_cell->isSequentialCell()) {
-              return PwrGroupData::PwrGroupType::kSeq;
             }
             return std::nullopt;
           }};

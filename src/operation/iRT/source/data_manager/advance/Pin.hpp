@@ -34,14 +34,14 @@ class Pin
   std::vector<EXTLayerRect>& get_routing_shape_list() { return _routing_shape_list; }
   std::vector<EXTLayerRect>& get_cut_shape_list() { return _cut_shape_list; }
   bool get_is_driven() const { return _is_driven; }
-  AccessPoint& get_key_access_point() { return _key_access_point; }
+  AccessPoint& get_access_point() { return _access_point; }
   // setter
   void set_pin_idx(const int32_t pin_idx) { _pin_idx = pin_idx; }
   void set_pin_name(const std::string& pin_name) { _pin_name = pin_name; }
   void set_routing_shape_list(const std::vector<EXTLayerRect>& routing_shape_list) { _routing_shape_list = routing_shape_list; }
   void set_cut_shape_list(const std::vector<EXTLayerRect>& cut_shape_list) { _cut_shape_list = cut_shape_list; }
   void set_is_driven(const bool is_driven) { _is_driven = is_driven; }
-  void set_key_access_point(const AccessPoint& key_access_point) { _key_access_point = key_access_point; }
+  void set_access_point(const AccessPoint& access_point) { _access_point = access_point; }
   // function
 
  private:
@@ -50,7 +50,7 @@ class Pin
   std::vector<EXTLayerRect> _routing_shape_list;
   std::vector<EXTLayerRect> _cut_shape_list;
   bool _is_driven = false;
-  AccessPoint _key_access_point;
+  AccessPoint _access_point;
 };
 
 }  // namespace irt

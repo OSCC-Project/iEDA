@@ -32,9 +32,11 @@ void eval_cell_pin_density();
 void eval_macro_margin();
 void eval_macro_channel(float die_size_ratio = 0.5);
 void eval_continuous_white_space();
-void eval_cell_hierarchy(const std::string& plot_path , int level = 1, int forward = 1);
-void eval_macro_hierarchy(const std::string& plot_path,  int level = 1, int forward = 1);
-
+void eval_cell_hierarchy(const std::string& plot_path, int level = 1, int forward = 1);
+void eval_macro_hierarchy(const std::string& plot_path, int level = 1, int forward = 1);
+void eval_macro_connection(const std::string& plot_path, int level = 1, int forward = 1);
+void eval_macro_pin_connection(const std::string& plot_path, int level = 1, int forward = 1);
+void eval_macro_io_pin_connection(const std::string& plot_path, int level = 1, int forward = 1);
 
 void eval_inst_density(int inst_status, int eval_flip_flop = 0);
 void eval_pin_density(int inst_status, int level = 0);
@@ -48,25 +50,5 @@ void init_timing_eval();
 void plot_bin_value(const std::string& plot_path, const std::string& file_name, int value_type);
 void plot_tile_value(const std::string& plot_path, const std::string& file_name);
 void plot_flow_value(const std::string& plot_path, const std::string& file_name, const std::string& step, const std::string& value);
-
-// void eval_net_density(int inst_status);
-// void eval_local_net_density();
-// void eval_global_net_density();
-// int32_t eval_inst_num(int inst_status);
-// int32_t eval_net_num(int net_type);
-// int32_t eval_pin_num(int inst_status = 0);
-// int32_t eval_routing_layer_num();
-// int32_t eval_track_num(int direction = 0);
-// int32_t eval_track_remain_num();
-// int32_t eval_track_overflow_num();
-// std::vector<int64_t> eval_chip_size(int region_type);
-// std::vector<std::pair<string, std::pair<int32_t, int32_t>>> eval_inst_size(int inst_status);
-// std::vector<std::pair<string, std::pair<int32_t, int32_t>>> eval_net_size();
-// int64_t eval_area(int inst_status);
-// std::vector<int64_t> eval_macro_peri_area();
-// float eval_area_util(int inst_status);
-// double eval_macro_channel_util(float dist_ratio);
-// double eval_macro_channel_pin_util(float dist_ratio);
-
 
 }  // namespace python_interface

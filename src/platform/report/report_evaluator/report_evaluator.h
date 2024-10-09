@@ -19,18 +19,10 @@
 #include <future>
 #include <thread>
 
-#include "EvalAPI.hpp"
 #include "IdbEnum.h"
 #include "IdbInstance.h"
 #include "ReportTable.hh"
 #include "report_basic.h"
-
-// forward declaration
-namespace eval {
-class WLPin;
-class CongPin;
-enum class INSTANCE_TYPE;
-}  // namespace eval
 
 namespace iplf {
 
@@ -49,8 +41,6 @@ class ReportEvaluator : public ReportBase
   std::shared_ptr<ieda::ReportTable> createCongestionReport();
 
  private:
-  std::unique_ptr<eval::CongGrid> initCongGrid(int32_t bin_cnt_x = 256, int32_t bin_cnt_y = 256);
-
   template <typename NET, typename FUNC>
   static auto computeWireLength(std::vector<NET*> nets, FUNC fptr, const int threads = 16);
   static auto CongStats(float threshold, float step, vector<float>& data);
@@ -60,15 +50,6 @@ class EvalWrapper
 {
  public:
   EvalWrapper() = delete;
-
-  static eval::WLNet* wrapWLNet(idb::IdbNet* idb_net);
-  static eval::WLPin* wrapWLPin(idb::IdbPin* idb_pin);
-
-  static eval::CongInst* wrapCongInst(idb::IdbInstance* idb_inst);
-  static eval::CongNet* wrapCongNet(idb::IdbNet* idb_net);
-  static eval::CongPin* wrapCongPin(idb::IdbPin* idb_pin);
-
-  static eval::INSTANCE_LOC_TYPE computeInstType(idb::IdbInstance* idb_inst);
   template <typename TT, typename ST, typename F>
   static void wrapRange(std::vector<TT*>& target, const std::vector<ST*>& src, ssize_t begin, ssize_t end, F wrapper);
   template <typename TT, typename ST, typename F>

@@ -19,7 +19,6 @@
 #include <set>
 
 #include "PLAPI.hh"
-#include "TimingEval.hpp"
 #include "module/checker/layout_checker/LayoutChecker.hh"
 #include "module/evaluator/density/Density.hh"
 #include "module/evaluator/wirelength/HPWirelength.hh"
@@ -27,6 +26,9 @@
 #include "module/logger/Log.hh"
 #include "time/Time.hh"
 #include "usage/usage.hh"
+
+#include <fstream>
+#include "report/ReportTable.hh"
 
 namespace ipl {
 
@@ -858,7 +860,6 @@ int32_t PLAPI::reportOverlapInfo(std::ofstream& feed)
 void PLAPI::reportTimingInfo(std::ofstream& feed)
 {
   if (this->isSTAStarted()) {
-    iPLAPIInst.initTimingEval();
     iPLAPIInst.updateTiming(PlacerDBInst.get_topo_manager());
 
     auto report_tbl = _external_api->generateTable("table");
@@ -887,26 +888,19 @@ void PLAPI::reportTimingInfo(std::ofstream& feed)
 
 void PLAPI::reportCongestionInfo(std::ofstream& feed)
 {
-  std::vector<float> gr_congestion = iPLAPIInst.evalGRCong();
+  // std::vector<float> gr_congestion = iPLAPIInst.evalGRCong();
 
-  auto report_tbl = _external_api->generateTable("table");
-  (*report_tbl) << TABLE_HEAD;
-  (*report_tbl)[0][0] = "Congestion Info";
-  (*report_tbl)[1][0] = "Average Congestion of Edges";
-  (*report_tbl)[1][1] = std::to_string(gr_congestion[0]);
-  (*report_tbl)[2][0] = "Total Overflow";
-  (*report_tbl)[2][1] = std::to_string(gr_congestion[1]);
-  (*report_tbl)[3][0] = "Maximal Overflow";
-  (*report_tbl)[3][1] = std::to_string(gr_congestion[2]);
-  (*report_tbl) << TABLE_ENDLINE;
-  feed << (*report_tbl).to_string() << std::endl;
-
-  //** plot congestion map which format is csv
-  // std::string plot_path = this->obtainTargetDir() + "/pl/report/";
-  // std::string output_file_name = "CongMap";
-  // iPLAPIInst.plotCongMap(plot_path, output_file_name);
-
-  iPLAPIInst.destroyCongEval();
+  // auto report_tbl = _external_api->generateTable("table");
+  // (*report_tbl) << TABLE_HEAD;
+  // (*report_tbl)[0][0] = "Congestion Info";
+  // (*report_tbl)[1][0] = "Average Congestion of Edges";
+  // (*report_tbl)[1][1] = std::to_string(gr_congestion[0]);
+  // (*report_tbl)[2][0] = "Total Overflow";
+  // (*report_tbl)[2][1] = std::to_string(gr_congestion[1]);
+  // (*report_tbl)[3][0] = "Maximal Overflow";
+  // (*report_tbl)[3][1] = std::to_string(gr_congestion[2]);
+  // (*report_tbl) << TABLE_ENDLINE;
+  // feed << (*report_tbl).to_string() << std::endl;
 }
 
 void PLAPI::reportPLBaseInfo(std::ofstream& feed)

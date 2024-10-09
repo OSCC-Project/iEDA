@@ -60,14 +60,14 @@ class DetailedRouter
   void initDRBoxMap(DRModel& dr_model);
   void buildBoxSchedule(DRModel& dr_model);
   void routeDRBoxMap(DRModel& dr_model);
-  void buildFixedRectList(DRBox& dr_box);
-  void buildNetResultMap(DRBox& dr_box);
-  void buildViolationList(DRBox& dr_box);
+  void buildFixedRect(DRBox& dr_box);
+  void buildAccessResult(DRBox& dr_box);
+  void buildNetResult(DRBox& dr_box);
+  void buildViolation(DRBox& dr_box);
   void initDRTaskList(DRModel& dr_model, DRBox& dr_box);
   bool needRouting(DRBox& dr_box);
   void buildBoxTrackAxis(DRBox& dr_box);
   void buildLayerNodeMap(DRBox& dr_box);
-  void buildDRNodeValid(DRBox& dr_box);
   void buildDRNodeNeighbor(DRBox& dr_box);
   void buildOrientNetMap(DRBox& dr_box);
   void routeDRBox(DRBox& dr_box);
@@ -81,29 +81,27 @@ class DetailedRouter
   bool searchEnded(DRBox& dr_box);
   void expandSearching(DRBox& dr_box);
   void resetPathHead(DRBox& dr_box);
-  bool isRoutingFailed(DRBox& dr_box);
-  void resetSinglePath(DRBox& dr_box);
   void updatePathResult(DRBox& dr_box);
   std::vector<Segment<LayerCoord>> getRoutingSegmentListByNode(DRNode* node);
-  void updateDirectionSet(DRBox& dr_box);
   void resetStartAndEnd(DRBox& dr_box);
+  void resetSinglePath(DRBox& dr_box);
+  void patchSingleTask(DRBox& dr_box);
   void updateTaskResult(DRBox& dr_box);
   std::vector<Segment<LayerCoord>> getRoutingSegmentList(DRBox& dr_box);
+  std::vector<EXTLayerRect> getRoutingPatchList(DRBox& dr_box);
   void resetSingleTask(DRBox& dr_box);
   void pushToOpenList(DRBox& dr_box, DRNode* curr_node);
   DRNode* popFromOpenList(DRBox& dr_box);
   double getKnowCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
   double getNodeCost(DRBox& dr_box, DRNode* curr_node, Orientation orientation);
   double getKnowWireCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
-  double getKnowCornerCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
   double getKnowViaCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
   double getEstimateCostToEnd(DRBox& dr_box, DRNode* curr_node);
   double getEstimateCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
   double getEstimateWireCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
-  double getEstimateCornerCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
   double getEstimateViaCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
   void updateViolationList(DRBox& dr_box);
-  std::vector<Violation> getViolationList(DRBox& dr_box);
+  std::vector<Violation> getCostViolationList(DRBox& dr_box);
   void uploadViolation(DRBox& dr_box);
   void freeDRBox(DRBox& dr_box);
   int32_t getViolationNum();
@@ -112,11 +110,14 @@ class DetailedRouter
 
 #if 1  // update env
   void updateFixedRectToGraph(DRBox& dr_box, ChangeType change_type, int32_t net_idx, EXTLayerRect* fixed_rect, bool is_routing);
+  void updateFixedRectToGraph(DRBox& dr_box, ChangeType change_type, int32_t net_idx, Segment<LayerCoord>& segment);
+  void updateFixedRectToGraph(DRBox& dr_box, ChangeType change_type, int32_t net_idx, EXTLayerRect& patch);
   void updateNetResultToGraph(DRBox& dr_box, ChangeType change_type, int32_t net_idx, Segment<LayerCoord>& segment);
+  void updateNetResultToGraph(DRBox& dr_box, ChangeType change_type, int32_t net_idx, EXTLayerRect& patch);
+  void updateViolationToGraph(DRBox& dr_box, ChangeType change_type, Violation& violation);
   std::map<DRNode*, std::set<Orientation>> getNodeOrientationMap(DRBox& dr_box, NetShape& net_shape);
   std::map<DRNode*, std::set<Orientation>> getRoutingNodeOrientationMap(DRBox& dr_box, NetShape& net_shape);
   std::map<DRNode*, std::set<Orientation>> getCutNodeOrientationMap(DRBox& dr_box, NetShape& net_shape);
-  void updateViolationToGraph(DRBox& dr_box, ChangeType change_type, Violation& violation);
 #endif
 
 #if 1  // exhibit
@@ -127,6 +128,7 @@ class DetailedRouter
 #endif
 
 #if 1  // debug
+  void debugPlotDRModel(DRModel& dr_model, std::string flag);
   void debugCheckDRBox(DRBox& dr_box);
   void debugPlotDRBox(DRBox& dr_box, int32_t curr_task_idx, std::string flag);
 #endif

@@ -12,8 +12,13 @@ set(CMAKE_CXX_STANDARD 20)
 
 # set(DEBUG_IRT_INTERFACE ON)
 
+############################ debug source data_manager ############################
+
+# set(DEBUG_IRT_DATA_MANAGER ON)
+
 ############################ debug source module ############################
 
+# set(DEBUG_IRT_DRC_ENGINE ON)
 # set(DEBUG_IRT_GDS_PLOTTER ON)
 # set(DEBUG_IRT_PIN_ACCESSOR ON)
 # set(DEBUG_IRT_SUPPLY_ANALYZER ON) 
@@ -22,10 +27,6 @@ set(CMAKE_CXX_STANDARD 20)
 # set(DEBUG_IRT_GLOBAL_ROUTER ON)
 # set(DEBUG_IRT_TRACK_ASSIGNER ON) 
 # set(DEBUG_IRT_DETAILED_ROUTER ON)
-
-############################ debug source data_manager ############################
-
-# set(DEBUG_IRT_DATA_MANAGER ON)
 
 ############################ debug source utility ############################
 
@@ -36,15 +37,14 @@ set(CMAKE_CXX_STANDARD 20)
 ############################ setting path ############################
 
 set(HOME_IRT ${HOME_OPERATION}/iRT)
+
 set(IRT_INTERFACE ${HOME_IRT}/interface)
-set(IRT_EXTERNAL_LIBS ${HOME_IRT}/external_libs)
 set(IRT_SOURCE ${HOME_IRT}/source)
 set(IRT_TEST ${HOME_IRT}/test)
 
 ############################ cmake subdirectory ############################
 
 add_subdirectory(${IRT_INTERFACE})
-add_subdirectory(${IRT_EXTERNAL_LIBS})
 add_subdirectory(${IRT_SOURCE})
 add_subdirectory(${IRT_TEST})
 

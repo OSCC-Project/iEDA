@@ -157,7 +157,8 @@ IdbLayerShape& IdbLayerShape::operator=(const IdbLayerShape& other)
 
 bool IdbLayerShape::isIntersected(int x, int y, IdbLayer* layer)
 {
-  if (_layer != layer) {
+  /// check layer if needed
+  if (layer != nullptr && _layer != layer) {
     return false;
   }
 
@@ -165,6 +166,35 @@ bool IdbLayerShape::isIntersected(int x, int y, IdbLayer* layer)
 
   for (auto& rect : _rect_list) {
     if (nullptr != rect && rect->containPoint(&point)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+/// @brief check rect intersection
+/// @param llx
+/// @param lly
+/// @param urx
+/// @param ury
+/// @param layer
+/// @return
+bool IdbLayerShape::isIntersected(int llx, int lly, int urx, int ury, IdbLayer* layer)
+{
+  IdbRect rect_check(llx, lly, urx, ury);
+
+  return isIntersected(&rect_check, layer);
+}
+
+bool IdbLayerShape::isIntersected(IdbRect* rect_check, IdbLayer* layer)
+{
+  /// check layer if needed
+  if (layer != nullptr && _layer != layer) {
+    return false;
+  }
+
+  for (auto& rect : _rect_list) {
+    if (nullptr != rect && rect->isIntersection(rect_check)) {
       return true;
     }
   }

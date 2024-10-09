@@ -84,13 +84,15 @@ json FeatureParser::buildSummaryRT()
     json_ir["cut_via_num_map"][std::to_string(cut_via_num.first)] = cut_via_num.second;
   }
 
-  for (int i = 0; i < (int) rt_sum.ir_summary.nets_timing.size(); i++) {
-    auto net_timing = rt_sum.ir_summary.nets_timing[i];
-    json_ir["nets_timing"][i]["net_name"] = net_timing.net_name;
-    json_ir["nets_timing"][i]["setup_tns"] = net_timing.setup_tns;
-    json_ir["nets_timing"][i]["setup_wns"] = net_timing.setup_wns;
-    json_ir["nets_timing"][i]["suggest_freq"] = net_timing.suggest_freq;
+  for (int i = 0; i < (int) rt_sum.ir_summary.clocks_timing.size(); i++) {
+    auto clock_timing = rt_sum.ir_summary.clocks_timing[i];
+    json_ir["clocks_timing"][i]["clock_name"] = clock_timing.clock_name;
+    json_ir["clocks_timing"][i]["setup_tns"] = clock_timing.setup_tns;
+    json_ir["clocks_timing"][i]["setup_wns"] = clock_timing.setup_wns;
+    json_ir["clocks_timing"][i]["suggest_freq"] = clock_timing.suggest_freq;
   }
+  json_ir["static_power"] = rt_sum.ir_summary.power_info.static_power;
+  json_ir["dynamic_power"] = rt_sum.ir_summary.power_info.dynamic_power;
 
   json_rt["IR"] = json_ir;
 
@@ -118,14 +120,15 @@ json FeatureParser::buildSummaryRT()
       json_gr["cut_via_num_map"][std::to_string(cut_via_num.first)] = cut_via_num.second;
     }
 
-    for (int i = 0; i < (int) gr_sum.nets_timing.size(); i++) {
-      auto net_timing = gr_sum.nets_timing[i];
-      json_gr["nets_timing"][i]["net_name"] = net_timing.net_name;
-      json_gr["nets_timing"][i]["setup_tns"] = net_timing.setup_tns;
-      json_gr["nets_timing"][i]["setup_wns"] = net_timing.setup_wns;
-      json_gr["nets_timing"][i]["suggest_freq"] = net_timing.suggest_freq;
+    for (int i = 0; i < (int) gr_sum.clocks_timing.size(); i++) {
+      auto clock_timing = gr_sum.clocks_timing[i];
+      json_gr["clocks_timing"][i]["clock_name"] = clock_timing.clock_name;
+      json_gr["clocks_timing"][i]["setup_tns"] = clock_timing.setup_tns;
+      json_gr["clocks_timing"][i]["setup_wns"] = clock_timing.setup_wns;
+      json_gr["clocks_timing"][i]["suggest_freq"] = clock_timing.suggest_freq;
     }
-
+    json_gr["static_power"] = gr_sum.power_info.static_power;
+    json_gr["dynamic_power"] = gr_sum.power_info.dynamic_power;
     json_gr_list[std::to_string(id)] = json_gr;
   }
   json_rt["GR"] = json_gr_list;
@@ -170,14 +173,15 @@ json FeatureParser::buildSummaryRT()
       json_dr["routing_violation_num_map"][std::to_string(routing_violation.first)] = routing_violation.second;
     }
 
-    for (int i = 0; i < (int) dr_sum.nets_timing.size(); i++) {
-      auto net_timing = dr_sum.nets_timing[i];
-      json_dr["nets_timing"][i]["net_name"] = net_timing.net_name;
-      json_dr["nets_timing"][i]["setup_tns"] = net_timing.setup_tns;
-      json_dr["nets_timing"][i]["setup_wns"] = net_timing.setup_wns;
-      json_dr["nets_timing"][i]["suggest_freq"] = net_timing.suggest_freq;
+    for (int i = 0; i < (int) dr_sum.clocks_timing.size(); i++) {
+      auto clock_timing = dr_sum.clocks_timing[i];
+      json_dr["clocks_timing"][i]["clock_name"] = clock_timing.clock_name;
+      json_dr["clocks_timing"][i]["setup_tns"] = clock_timing.setup_tns;
+      json_dr["clocks_timing"][i]["setup_wns"] = clock_timing.setup_wns;
+      json_dr["clocks_timing"][i]["suggest_freq"] = clock_timing.suggest_freq;
     }
-
+    json_dr["static_power"] = dr_sum.power_info.static_power;
+    json_dr["dynamic_power"] = dr_sum.power_info.dynamic_power;
     json_dr_list[std::to_string(id)] = json_dr;
   }
   json_rt["DR"] = json_dr_list;
@@ -197,7 +201,11 @@ json FeatureParser::buildSummaryPL(std::string step)
     summary_pl["gplace"]["HPWL"] = pl_summary.gplace.HPWL;
     summary_pl["gplace"]["STWL"] = pl_summary.gplace.STWL;
     summary_pl["gplace"]["GRWL"] = pl_summary.gplace.GRWL;
-    summary_pl["gplace"]["congestion"] = pl_summary.gplace.congestion;
+
+    summary_pl["gplace"]["egr_tof"] = pl_summary.gplace.egr_tof;
+    summary_pl["gplace"]["egr_mof"] = pl_summary.gplace.egr_mof;
+    summary_pl["gplace"]["egr_ace"] = pl_summary.gplace.egr_ace;
+
     summary_pl["gplace"]["tns"] = pl_summary.gplace.tns;
     summary_pl["gplace"]["wns"] = pl_summary.gplace.wns;
     summary_pl["gplace"]["suggest_freq"] = pl_summary.gplace.suggest_freq;
@@ -207,7 +215,11 @@ json FeatureParser::buildSummaryPL(std::string step)
     summary_pl["dplace"]["HPWL"] = pl_summary.dplace.HPWL;
     summary_pl["dplace"]["STWL"] = pl_summary.dplace.STWL;
     summary_pl["dplace"]["GRWL"] = pl_summary.dplace.GRWL;
-    summary_pl["dplace"]["congestion"] = pl_summary.dplace.congestion;
+
+    summary_pl["dplace"]["egr_tof"] = pl_summary.dplace.egr_tof;
+    summary_pl["dplace"]["egr_mof"] = pl_summary.dplace.egr_mof;
+    summary_pl["dplace"]["egr_ace"] = pl_summary.dplace.egr_ace;
+
     summary_pl["dplace"]["tns"] = pl_summary.dplace.tns;
     summary_pl["dplace"]["wns"] = pl_summary.dplace.wns;
     summary_pl["dplace"]["suggest_freq"] = pl_summary.dplace.suggest_freq;
@@ -229,7 +241,11 @@ json FeatureParser::buildSummaryPL(std::string step)
     summary_pl["legalization"]["HPWL"] = pl_summary.lg_summary.pl_common_summary.HPWL;
     summary_pl["legalization"]["STWL"] = pl_summary.lg_summary.pl_common_summary.STWL;
     summary_pl["legalization"]["GRWL"] = pl_summary.lg_summary.pl_common_summary.GRWL;
-    summary_pl["legalization"]["congestion"] = pl_summary.lg_summary.pl_common_summary.congestion;
+
+    summary_pl["legalization"]["egr_tof"] = pl_summary.lg_summary.pl_common_summary.egr_tof;
+    summary_pl["legalization"]["egr_mof"] = pl_summary.lg_summary.pl_common_summary.egr_mof;
+    summary_pl["legalization"]["egr_ace"] = pl_summary.lg_summary.pl_common_summary.egr_ace;
+
     summary_pl["legalization"]["tns"] = pl_summary.lg_summary.pl_common_summary.tns;
     summary_pl["legalization"]["wns"] = pl_summary.lg_summary.pl_common_summary.wns;
     summary_pl["legalization"]["suggest_freq"] = pl_summary.lg_summary.pl_common_summary.suggest_freq;
@@ -256,18 +272,18 @@ json FeatureParser::buildSummaryCTS()
   json_cts["total_clock_wirelength"] = summary.total_clock_wirelength;
 
   json json_timing;
-  for (int i = 0; i < (int) summary.nets_timing.size(); ++i) {
-    auto net_timing = summary.nets_timing[i];
+  for (int i = 0; i < (int) summary.clocks_timing.size(); ++i) {
+    auto clock_timing = summary.clocks_timing[i];
 
-    json_timing[i]["net_name"] = net_timing.net_name;
-    json_timing[i]["setup_tns"] = net_timing.setup_tns;
-    json_timing[i]["setup_wns"] = net_timing.setup_wns;
-    json_timing[i]["hold_tns"] = net_timing.hold_tns;
-    json_timing[i]["hold_wns"] = net_timing.hold_wns;
-    json_timing[i]["suggest_freq"] = net_timing.suggest_freq;
+    json_timing[i]["clock_name"] = clock_timing.clock_name;
+    json_timing[i]["setup_tns"] = clock_timing.setup_tns;
+    json_timing[i]["setup_wns"] = clock_timing.setup_wns;
+    json_timing[i]["hold_tns"] = clock_timing.hold_tns;
+    json_timing[i]["hold_wns"] = clock_timing.hold_wns;
+    json_timing[i]["suggest_freq"] = clock_timing.suggest_freq;
   }
 
-  json_cts["nets_timing"] = json_timing;
+  json_cts["clocks_timing"] = json_timing;
 
   return json_cts;
 }
@@ -278,29 +294,29 @@ json FeatureParser::buildSummaryNetOpt()
 
   NetOptSummary& summary = _summary->get_summary_ino();
 
-  json json_net_timings;
-  for (int i = 0; i < (int) summary.net_timings.size(); ++i) {
-    NONetTimingCmp net_timing = summary.net_timings[i];
+  json json_clock_timings;
+  for (int i = 0; i < (int) summary.clock_timings.size(); ++i) {
+    NOClockTimingCmp clock_timing = summary.clock_timings[i];
 
-    json_net_timings[i]["net_name"] = net_timing.net_name;
-    json_net_timings[i]["origin_setup_tns"] = net_timing.origin.setup_tns;
-    json_net_timings[i]["origin_setup_wns"] = net_timing.origin.setup_wns;
-    json_net_timings[i]["origin_hold_tns"] = net_timing.origin.hold_tns;
-    json_net_timings[i]["origin_hold_wns"] = net_timing.origin.hold_wns;
-    json_net_timings[i]["origin_suggest_freq"] = net_timing.origin.suggest_freq;
-    json_net_timings[i]["opt_setup_tns"] = net_timing.opt.setup_tns;
-    json_net_timings[i]["opt_setup_wns"] = net_timing.opt.setup_wns;
-    json_net_timings[i]["opt_hold_tns"] = net_timing.opt.hold_tns;
-    json_net_timings[i]["opt_hold_wns"] = net_timing.opt.hold_wns;
-    json_net_timings[i]["opt_suggest_freq"] = net_timing.opt.suggest_freq;
-    json_net_timings[i]["delta_setup_tns"] = net_timing.delta.setup_tns;
-    json_net_timings[i]["delta_setup_wns"] = net_timing.delta.setup_wns;
-    json_net_timings[i]["delta_hold_tns"] = net_timing.delta.hold_tns;
-    json_net_timings[i]["delta_hold_wns"] = net_timing.delta.hold_wns;
-    json_net_timings[i]["delta_suggest_freq"] = net_timing.delta.suggest_freq;
+    json_clock_timings[i]["clock_name"] = clock_timing.clock_name;
+    json_clock_timings[i]["origin_setup_tns"] = clock_timing.origin.setup_tns;
+    json_clock_timings[i]["origin_setup_wns"] = clock_timing.origin.setup_wns;
+    json_clock_timings[i]["origin_hold_tns"] = clock_timing.origin.hold_tns;
+    json_clock_timings[i]["origin_hold_wns"] = clock_timing.origin.hold_wns;
+    json_clock_timings[i]["origin_suggest_freq"] = clock_timing.origin.suggest_freq;
+    json_clock_timings[i]["opt_setup_tns"] = clock_timing.opt.setup_tns;
+    json_clock_timings[i]["opt_setup_wns"] = clock_timing.opt.setup_wns;
+    json_clock_timings[i]["opt_hold_tns"] = clock_timing.opt.hold_tns;
+    json_clock_timings[i]["opt_hold_wns"] = clock_timing.opt.hold_wns;
+    json_clock_timings[i]["opt_suggest_freq"] = clock_timing.opt.suggest_freq;
+    json_clock_timings[i]["delta_setup_tns"] = clock_timing.delta.setup_tns;
+    json_clock_timings[i]["delta_setup_wns"] = clock_timing.delta.setup_wns;
+    json_clock_timings[i]["delta_hold_tns"] = clock_timing.delta.hold_tns;
+    json_clock_timings[i]["delta_hold_wns"] = clock_timing.delta.hold_wns;
+    json_clock_timings[i]["delta_suggest_freq"] = clock_timing.delta.suggest_freq;
   }
 
-  json_netopt["nets_timing"] = json_net_timings;
+  json_netopt["clocks_timing"] = json_clock_timings;
 
   return json_netopt;
 }
@@ -324,23 +340,23 @@ json FeatureParser::buildSummaryTO(std::string step)
   summary_to["HPWL"] = summary.HPWL;
   summary_to["STWL"] = summary.STWL;
 
-  json json_net_timings;
-  for (int i = 0; i < summary.net_timings.size(); ++i) {
-    TONetTimingCmp net_timing = summary.net_timings[i];
+  json json_clock_timings;
+  for (size_t i = 0; i < summary.clock_timings.size(); ++i) {
+    TOClockTimingCmp clock_timing = summary.clock_timings[i];
 
-    json_net_timings[i]["net_name"] = net_timing.net_name;
-    json_net_timings[i]["origin_tns"] = net_timing.origin.tns;
-    json_net_timings[i]["origin_wns"] = net_timing.origin.wns;
-    json_net_timings[i]["origin_suggest_freq"] = net_timing.origin.suggest_freq;
-    json_net_timings[i]["opt_tns"] = net_timing.opt.tns;
-    json_net_timings[i]["opt_wns"] = net_timing.opt.wns;
-    json_net_timings[i]["opt_suggest_freq"] = net_timing.opt.suggest_freq;
-    json_net_timings[i]["delta_tns"] = net_timing.delta.tns;
-    json_net_timings[i]["delta_wns"] = net_timing.delta.wns;
-    json_net_timings[i]["delta_suggest_freq"] = net_timing.delta.suggest_freq;
+    json_clock_timings[i]["clock_name"] = clock_timing.clock_name;
+    json_clock_timings[i]["origin_tns"] = clock_timing.origin.tns;
+    json_clock_timings[i]["origin_wns"] = clock_timing.origin.wns;
+    json_clock_timings[i]["origin_suggest_freq"] = clock_timing.origin.suggest_freq;
+    json_clock_timings[i]["opt_tns"] = clock_timing.opt.tns;
+    json_clock_timings[i]["opt_wns"] = clock_timing.opt.wns;
+    json_clock_timings[i]["opt_suggest_freq"] = clock_timing.opt.suggest_freq;
+    json_clock_timings[i]["delta_tns"] = clock_timing.delta.tns;
+    json_clock_timings[i]["delta_wns"] = clock_timing.delta.wns;
+    json_clock_timings[i]["delta_suggest_freq"] = clock_timing.delta.suggest_freq;
   }
 
-  summary_to["nets_timing"] = json_net_timings;
+  summary_to["clocks_timing"] = json_clock_timings;
 
   return summary_to;
 }

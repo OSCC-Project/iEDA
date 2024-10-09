@@ -58,7 +58,7 @@ TEST_F(CongEvalAPITest, run_cong_api)
   // std::string plot_path = "<local_path>";
   // std::string output_file_name = "CongestionMap";
   // iPLAPIInst.plotCongMap(plot_path, output_file_name);
-  iPLAPIInst.destroyCongEval();
+  // iPLAPIInst.destroyCongEval();
   iPLAPIInst.destoryInst();
 }
 

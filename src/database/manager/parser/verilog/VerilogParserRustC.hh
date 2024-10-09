@@ -161,6 +161,17 @@ typedef struct RustVerilogInst
 } RustVerilogInst;
 
 /**
+ * @brief Rust Verilog assign for C.
+ *
+ */
+typedef struct RustVerilogAssign
+{
+  uintptr_t line_no;
+  const void* left_net_expr;
+  const void* right_net_expr;
+} RustVerilogAssign;
+
+/**
  * @brief Rust verilog port ref portConnect for C.
  *
  */
@@ -260,6 +271,14 @@ struct RustVerilogDcls* rust_convert_verilog_dcls(void* verilog_dcls_struct);
 struct RustVerilogInst* rust_convert_verilog_inst(void* verilog_inst);
 
 /**
+ * @brief Rust convert verilog_assign to C struct.
+ *
+ * @param c_verilog_assign
+ * @return struct RustVerilogAssign*
+ */
+struct RustVerilogAssign* rust_convert_verilog_assign(void* c_verilog_assign);
+
+/**
  * @brief Rust convert verilog_port_ref_port_connect to C struct.
  *
  * @param c_port_connect
@@ -339,6 +358,7 @@ class RustVerilogReader
   auto& get_verilog_modules() { return _verilog_modules; }
 
   unsigned readVerilog(const char* verilog_file);
+  bool autoTopModule();
   unsigned flattenModule(const char* top_module_name);
 
  private:

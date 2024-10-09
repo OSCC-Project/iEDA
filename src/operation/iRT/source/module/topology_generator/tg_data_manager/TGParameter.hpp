@@ -21,21 +21,22 @@ namespace irt {
 class TGParameter
 {
  public:
-  TGParameter()
+  TGParameter() = default;
+  TGParameter(int32_t topo_spilt_length, double congestion_unit)
   {
-    _topo_spilt_length = 10;
-    _congestion_unit = 1;
+    _topo_spilt_length = topo_spilt_length;
+    _congestion_unit = congestion_unit;
   }
   ~TGParameter() = default;
   // getter
-  double get_topo_spilt_length() const { return _topo_spilt_length; }
+  int32_t get_topo_spilt_length() const { return _topo_spilt_length; }
   double get_congestion_unit() const { return _congestion_unit; }
   // setter
-  void set_topo_spilt_length(const double topo_spilt_length) { _topo_spilt_length = topo_spilt_length; }
+  void set_topo_spilt_length(const int32_t topo_spilt_length) { _topo_spilt_length = topo_spilt_length; }
   void set_congestion_unit(const double congestion_unit) { _congestion_unit = congestion_unit; }
 
  private:
-  double _topo_spilt_length = 0;
+  int32_t _topo_spilt_length = 0;
   double _congestion_unit = 0;
 };
 

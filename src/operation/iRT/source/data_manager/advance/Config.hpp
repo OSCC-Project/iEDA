@@ -33,11 +33,16 @@ class Config
   std::string top_routing_layer;     // optional
   int32_t output_csv;                // optional
   int32_t enable_timing;             // optional
+  int32_t enable_lsa;                // optional
   /////////////////////////////////////////////
   // **********        RT         ********** //
   std::string log_file_path;         // building
   int32_t bottom_routing_layer_idx;  // building
   int32_t top_routing_layer_idx;     // building
+  // **********     DRCEngine     ********** //
+  std::string de_temp_directory_path;  // building
+  // **********     GDSPlotter     ********** //
+  std::string gp_temp_directory_path;  // building
   // **********   PinAccessor     ********** //
   std::string pa_temp_directory_path;  // building
   // ********     SupplyAnalyzer    ******** //

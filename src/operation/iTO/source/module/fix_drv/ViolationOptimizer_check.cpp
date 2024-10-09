@@ -33,7 +33,7 @@ bool ViolationOptimizer::isNeedRepair(ista::Net* net, double& cap_load_allowed_m
   // check if exit slew violation
   bool is_slew_vio = checkSlewViolation(cap_load_allowed_max, driver);
   if (is_slew_vio) {
-    cap_load_allowed_max *= 0.05;
+    cap_load_allowed_max *= _slew_2_cap_factor; //0.05;
   }
 
   return (is_cap_vio || is_slew_vio);

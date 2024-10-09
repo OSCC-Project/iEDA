@@ -25,9 +25,8 @@ namespace py = pybind11;
 
 void register_idrc(py::module& m)
 {
-  m.def("run_drc", drcAutoRun, py::arg("config") = "");
+  m.def("run_drc", run_drc, py::arg("config") = "", py::arg("report") = "");
+  m.def("save_drc", save_drc, py::arg("path") = "");
 }
-
-
 
 }  // namespace python_interface

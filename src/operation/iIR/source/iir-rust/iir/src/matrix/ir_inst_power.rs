@@ -10,7 +10,8 @@ use serde::Deserialize;
 use crate::matrix::ir_inst_power;
 use crate::matrix::ir_rc::RCOneNetData;
 
-#[allow(dead_code)] #[derive(Deserialize)]
+#[allow(dead_code)]
+#[derive(Deserialize)]
 pub struct InstancePowerRecord {
     #[serde(rename = "Instance Name")]
     instance_name: String,
@@ -85,7 +86,7 @@ pub fn build_instance_current_vector(
     }
 
     let nodes = net_data.get_nodes();
-    for node in nodes {
+    for node in nodes.borrow().iter() {
         if node.get_is_bump() {
             let node_name = node.get_node_name();
             let node_index = net_data.get_node_id(node_name).unwrap();

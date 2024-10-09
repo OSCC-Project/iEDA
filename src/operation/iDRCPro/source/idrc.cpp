@@ -22,7 +22,7 @@ DrcManager::DrcManager()
 {
   _data_manager = new DrcDataManager();
   // _rule_manager = new DrcRuleManager(_engine);
-  _violation_manager = new DrcViolationManager(_data_manager);
+  _violation_manager = new DrcViolationManager();
   _condition_manager = new DrcConditionManager(_violation_manager);
   _engine = new DrcEngine(_data_manager, _condition_manager);
 }

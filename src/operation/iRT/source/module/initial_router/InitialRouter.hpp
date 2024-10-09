@@ -68,12 +68,10 @@ class InitialRouter
   bool searchEnded(IRModel& ir_model);
   void expandSearching(IRModel& ir_model);
   void resetPathHead(IRModel& ir_model);
-  bool isRoutingFailed(IRModel& ir_model);
-  void resetSinglePath(IRModel& ir_model);
   void updatePathResult(IRModel& ir_model);
   std::vector<Segment<LayerCoord>> getRoutingSegmentListByNode(IRNode* node);
-  void updateDirectionSet(IRModel& ir_model);
   void resetStartAndEnd(IRModel& ir_model);
+  void resetSinglePath(IRModel& ir_model);
   void updateTaskResult(IRModel& ir_model);
   std::vector<Segment<LayerCoord>> getRoutingSegmentList(IRModel& ir_model);
   void resetSingleTask(IRModel& ir_model);
@@ -82,12 +80,10 @@ class InitialRouter
   double getKnowCost(IRModel& ir_model, IRNode* start_node, IRNode* end_node);
   double getNodeCost(IRModel& ir_model, IRNode* curr_node, Orientation orientation);
   double getKnowWireCost(IRModel& ir_model, IRNode* start_node, IRNode* end_node);
-  double getKnowCornerCost(IRModel& ir_model, IRNode* start_node, IRNode* end_node);
   double getKnowViaCost(IRModel& ir_model, IRNode* start_node, IRNode* end_node);
   double getEstimateCostToEnd(IRModel& ir_model, IRNode* curr_node);
   double getEstimateCost(IRModel& ir_model, IRNode* start_node, IRNode* end_node);
   double getEstimateWireCost(IRModel& ir_model, IRNode* start_node, IRNode* end_node);
-  double getEstimateCornerCost(IRModel& ir_model, IRNode* start_node, IRNode* end_node);
   double getEstimateViaCost(IRModel& ir_model, IRNode* start_node, IRNode* end_node);
   MTree<LayerCoord> getCoordTree(IRNet* ir_net, std::vector<Segment<LayerCoord>>& routing_segment_list);
   void updateDemand(IRModel& ir_model, IRNet* ir_net, MTree<LayerCoord>& coord_tree);

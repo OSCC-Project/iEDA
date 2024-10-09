@@ -27,12 +27,26 @@
 
 #include "absl/container/inlined_vector.h"
 
+#ifdef USE_CPP_STD
+#include <vector>
+#endif
+
 namespace ieda {
+
 template <typename T, size_t N = 64, typename A = std::allocator<T>>
+#ifndef USE_CPP_STD
 class Vector : public absl::InlinedVector<T, N, A>
+#else
+class Vector : public std::vector<T, A>
+#endif
 {
  public:
+#ifndef USE_CPP_STD
   using Base = typename Vector::InlinedVector;
+#else
+  using Base = typename Vector::vector;
+#endif
+
   using iterator = typename Base::iterator;
   using const_iterator = typename Base::const_iterator;
   using pointer = typename Base::pointer;
@@ -74,5 +88,5 @@ class Vector : public absl::InlinedVector<T, N, A>
   using Base::swap;  // Swaps the contents of the Vector with the other
                      // Vector,for exampla:vector1.swap(vector2)
 };
-  
+
 }  // namespace ieda

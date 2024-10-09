@@ -50,8 +50,15 @@ class ToApi
   void initEngine();
   // function API
   void runTO();
+  // opt DRV functions
   void optimizeDrv();
+  void optimizeDrvSpecialNet(const char* net_name);
+
+  // opt setup functions
   void optimizeSetup();
+  void performBuffering(const char* net_name);
+
+  // opt hold functions
   void optimizeHold();
 
   void saveDef(std::string saved_def_path = "");

@@ -42,7 +42,10 @@ class DRBox
   {
     return _type_layer_net_fixed_rect_map;
   }
-  std::map<int32_t, std::vector<Segment<LayerCoord>>>& get_net_result_map() { return _net_result_map; }
+  std::map<int32_t, std::set<Segment<LayerCoord>*>>& get_net_access_result_map() { return _net_access_result_map; }
+  std::map<int32_t, std::set<EXTLayerRect*>>& get_net_access_patch_map() { return _net_access_patch_map; }
+  std::map<int32_t, std::vector<Segment<LayerCoord>>>& get_net_detailed_result_map() { return _net_detailed_result_map; }
+  std::map<int32_t, std::vector<EXTLayerRect>>& get_net_detailed_patch_map() { return _net_detailed_patch_map; }
   std::vector<Violation>& get_violation_list() { return _violation_list; }
   ScaleAxis& get_box_track_axis() { return _box_track_axis; }
   std::vector<GridMap<DRNode>>& get_layer_node_map() { return _layer_node_map; }
@@ -56,7 +59,22 @@ class DRBox
   {
     _type_layer_net_fixed_rect_map = type_layer_net_fixed_rect_map;
   }
-  void set_net_result_map(const std::map<int32_t, std::vector<Segment<LayerCoord>>>& net_result_map) { _net_result_map = net_result_map; }
+  void set_net_access_result_map(const std::map<int32_t, std::set<Segment<LayerCoord>*>>& net_access_result_map)
+  {
+    _net_access_result_map = net_access_result_map;
+  }
+  void set_net_access_patch_map(const std::map<int32_t, std::set<EXTLayerRect*>>& net_access_patch_map)
+  {
+    _net_access_patch_map = net_access_patch_map;
+  }
+  void set_net_detailed_result_map(const std::map<int32_t, std::vector<Segment<LayerCoord>>>& net_detailed_result_map)
+  {
+    _net_detailed_result_map = net_detailed_result_map;
+  }
+  void set_net_detailed_patch_map(const std::map<int32_t, std::vector<EXTLayerRect>>& net_detailed_patch_map)
+  {
+    _net_detailed_patch_map = net_detailed_patch_map;
+  }
   void set_violation_list(const std::vector<Violation>& violation_list) { _violation_list = violation_list; }
   void set_box_track_axis(const ScaleAxis& box_track_axis) { _box_track_axis = box_track_axis; }
   void set_layer_node_map(const std::vector<GridMap<DRNode>>& layer_node_map) { _layer_node_map = layer_node_map; }
@@ -69,6 +87,7 @@ class DRBox
   std::vector<DRNode*>& get_path_node_list() { return _path_node_list; }
   std::vector<DRNode*>& get_single_task_visited_node_list() { return _single_task_visited_node_list; }
   std::vector<Segment<LayerCoord>>& get_routing_segment_list() { return _routing_segment_list; }
+  std::vector<EXTLayerRect>& get_routing_patch_list() { return _routing_patch_list; }
   void set_curr_dr_task(DRTask* curr_dr_task) { _curr_dr_task = curr_dr_task; }
   void set_start_node_list_list(const std::vector<std::vector<DRNode*>>& start_node_list_list)
   {
@@ -84,6 +103,7 @@ class DRBox
   {
     _routing_segment_list = routing_segment_list;
   }
+  void set_routing_patch_list(const std::vector<EXTLayerRect>& routing_patch_list) { _routing_patch_list = routing_patch_list; }
   // single path
   PriorityQueue<DRNode*, std::vector<DRNode*>, CmpDRNodeCost>& get_open_queue() { return _open_queue; }
   std::vector<DRNode*>& get_single_path_visited_node_list() { return _single_path_visited_node_list; }
@@ -104,7 +124,10 @@ class DRBox
   DRParameter* _dr_parameter = nullptr;
   std::vector<DRTask*> _dr_task_list;
   std::map<bool, std::map<int32_t, std::map<int32_t, std::set<EXTLayerRect*>>>> _type_layer_net_fixed_rect_map;
-  std::map<int32_t, std::vector<Segment<LayerCoord>>> _net_result_map;
+  std::map<int32_t, std::set<Segment<LayerCoord>*>> _net_access_result_map;
+  std::map<int32_t, std::set<EXTLayerRect*>> _net_access_patch_map;
+  std::map<int32_t, std::vector<Segment<LayerCoord>>> _net_detailed_result_map;
+  std::map<int32_t, std::vector<EXTLayerRect>> _net_detailed_patch_map;
   std::vector<Violation> _violation_list;
   ScaleAxis _box_track_axis;
   std::vector<GridMap<DRNode>> _layer_node_map;
@@ -116,6 +139,7 @@ class DRBox
   std::vector<DRNode*> _path_node_list;
   std::vector<DRNode*> _single_task_visited_node_list;
   std::vector<Segment<LayerCoord>> _routing_segment_list;
+  std::vector<EXTLayerRect> _routing_patch_list;
   // single path
   PriorityQueue<DRNode*, std::vector<DRNode*>, CmpDRNodeCost> _open_queue;
   std::vector<DRNode*> _single_path_visited_node_list;

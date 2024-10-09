@@ -36,21 +36,25 @@ class DataManager
   static DataManager& getInst();
   static void destroyInst();
   // function
-  void input(std::map<std::string, std::any>& config_map, idb::IdbBuilder* idb_builder);
+  void input(std::map<std::string, std::any>& config_map);
   void output();
 
-#if 1  // 有关GCellMap操作
+#if 1  // 更新GCellMap
   void updateFixedRectToGCellMap(ChangeType change_type, int32_t net_idx, EXTLayerRect* ext_layer_rect, bool is_routing);
-  void updateAccessPointToGCellMap(ChangeType change_type, int32_t net_idx, AccessPoint* access_point);
+  void updateAccessNetPointToGCellMap(ChangeType change_type, int32_t net_idx, AccessPoint* access_point);
+  void updateNetAccessResultToGCellMap(ChangeType change_type, int32_t net_idx, Segment<LayerCoord>* segment);
+  void updateNetAccessPatchToGCellMap(ChangeType change_type, int32_t net_idx, EXTLayerRect* ext_layer_rect);
   void updateGlobalNetResultToGCellMap(ChangeType change_type, int32_t net_idx, Segment<LayerCoord>* segment);
-  void updateDetailedNetResultToGCellMap(ChangeType change_type, int32_t net_idx, Segment<LayerCoord>* segment);
-  void updateNetPatchToGCellMap(ChangeType change_type, int32_t net_idx, EXTLayerRect* ext_layer_rect);
+  void updateNetDetailedResultToGCellMap(ChangeType change_type, int32_t net_idx, Segment<LayerCoord>* segment);
+  void updateNetDetailedPatchToGCellMap(ChangeType change_type, int32_t net_idx, EXTLayerRect* ext_layer_rect);
   void updateViolationToGCellMap(ChangeType change_type, Violation* violation);
   std::map<bool, std::map<int32_t, std::map<int32_t, std::set<EXTLayerRect*>>>> getTypeLayerNetFixedRectMap(EXTPlanarRect& region);
   std::map<int32_t, std::set<AccessPoint*>> getNetAccessPointMap(EXTPlanarRect& region);
-  std::map<int32_t, std::set<Segment<LayerCoord>*>> getGlobalNetResultMap(EXTPlanarRect& region);
-  std::map<int32_t, std::set<Segment<LayerCoord>*>> getDetailedNetResultMap(EXTPlanarRect& region);
-  std::map<int32_t, std::set<EXTLayerRect*>> getNetPatchMap(EXTPlanarRect& region);
+  std::map<int32_t, std::set<Segment<LayerCoord>*>> getNetAccessResultMap(EXTPlanarRect& region);
+  std::map<int32_t, std::set<EXTLayerRect*>> getNetAccessPatchMap(EXTPlanarRect& region);
+  std::map<int32_t, std::set<Segment<LayerCoord>*>> getNetGlobalResultMap(EXTPlanarRect& region);
+  std::map<int32_t, std::set<Segment<LayerCoord>*>> getNetDetailedResultMap(EXTPlanarRect& region);
+  std::map<int32_t, std::set<EXTLayerRect*>> getNetDetailedPatchMap(EXTPlanarRect& region);
   std::set<Violation*> getViolationSet(EXTPlanarRect& region);
 #endif
 
@@ -61,10 +65,8 @@ class DataManager
   std::vector<NetShape> getNetShapeList(int32_t net_idx, LayerCoord& first_coord, LayerCoord& second_coord);
 #endif
 
-#if 1  // 获得IdbWireSegment
-  idb::IdbLayerShape* getIDBLayerShapeByFixedRect(EXTLayerRect* fixed_rect, bool is_routing);
-  idb::IdbRegularWireSegment* getIDBSegmentByNetResult(int32_t net_idx, Segment<LayerCoord>& segment);
-  idb::IdbRegularWireSegment* getIDBSegmentByNetPatch(int32_t net_idx, EXTLayerRect& ext_layer_rect);
+#if 1  // 获得唯一的pitch
+  int32_t getOnlyPitch();
 #endif
 
   Config& getConfig() { return _config; }
@@ -81,63 +83,13 @@ class DataManager
   DataManager() = default;
   DataManager(const DataManager& other) = delete;
   DataManager(DataManager&& other) = delete;
-  ~DataManager()
-  {
-    Die& die = _database.get_die();
-
-    for (auto& [net_idx, segment_set] : getGlobalNetResultMap(die)) {
-      for (Segment<LayerCoord>* segment : segment_set) {
-        RTDM.updateGlobalNetResultToGCellMap(ChangeType::kDel, net_idx, segment);
-      }
-    }
-    for (auto& [net_idx, segment_set] : getDetailedNetResultMap(die)) {
-      for (Segment<LayerCoord>* segment : segment_set) {
-        RTDM.updateDetailedNetResultToGCellMap(ChangeType::kDel, net_idx, segment);
-      }
-    }
-    for (auto& [net_idx, patch_set] : getNetPatchMap(die)) {
-      for (EXTLayerRect* patch : patch_set) {
-        RTDM.updateNetPatchToGCellMap(ChangeType::kDel, net_idx, patch);
-      }
-    }
-    for (Violation* violation : getViolationSet(die)) {
-      RTDM.updateViolationToGCellMap(ChangeType::kDel, violation);
-    }
-  }
+  ~DataManager() = default;
   DataManager& operator=(const DataManager& other) = delete;
   DataManager& operator=(DataManager&& other) = delete;
 
-#if 1  // input
-  void wrapConfig(std::map<std::string, std::any>& config_map);
-  void wrapDatabase(idb::IdbBuilder* idb_builder);
-  void wrapDBInfo(idb::IdbBuilder* idb_builder);
-  void wrapMicronDBU();
-  void wrapDie();
-  void wrapRow();
-  void wrapLayerList();
-  void wrapTrackAxis(RoutingLayer& routing_layer, idb::IdbLayerRouting* idb_layer);
-  void wrapSpacingTable(RoutingLayer& routing_layer, idb::IdbLayerRouting* idb_layer);
-  void wrapLayerInfo();
-  void wrapLayerViaMasterList();
-  void wrapObstacleList();
-  void wrapNetList();
-  bool isSkipping(idb::IdbNet* idb_net);
-  void wrapPinList(Net& net, idb::IdbNet* idb_net);
-  void wrapPinShapeList(Pin& pin, idb::IdbPin* idb_pin);
-  void wrapDrivenPin(Net& net, idb::IdbNet* idb_net);
-  Direction getRTDirectionByDB(idb::IdbLayerDirection idb_direction);
-  ConnectType getRTConnectTypeByDB(idb::IdbConnectType idb_connect_type);
+#if 1  // build
   void buildConfig();
   void buildDatabase();
-  void buildGCellAxis();
-  void makeGCellAxis();
-  int32_t getRecommendedPitch();
-  std::vector<ScaleGrid> makeGCellGridList(Direction direction, int32_t recommended_pitch);
-  std::vector<ScaleGrid> makeGCellGridList(std::vector<int32_t>& gcell_scale_list);
-  void checkGCellAxis();
-  void buildDie();
-  void makeDie();
-  void checkDie();
   void buildLayerList();
   void transLayerList();
   void makeLayerList();
@@ -146,12 +98,15 @@ class DataManager
   void buildLayerViaMasterList();
   void transLayerViaMasterList();
   void makeLayerViaMasterList();
-  bool sortByMultiLevel(ViaMaster& via_master1, ViaMaster& via_master2);
-  SortStatus sortByWidthASC(ViaMaster& via_master1, ViaMaster& via_master2);
-  SortStatus sortByLayerDirectionPriority(ViaMaster& via_master1, ViaMaster& via_master2);
-  SortStatus sortByLengthASC(ViaMaster& via_master1, ViaMaster& via_master2);
-  SortStatus sortBySymmetryPriority(ViaMaster& via_master1, ViaMaster& via_master2);
   void buildLayerViaMasterInfo();
+  void buildGCellAxis();
+  void makeGCellAxis();
+  std::vector<ScaleGrid> makeGCellGridList(Direction direction);
+  std::vector<ScaleGrid> makeGCellGridList(std::vector<int32_t>& gcell_scale_list);
+  void checkGCellAxis();
+  void buildDie();
+  void makeDie();
+  void checkDie();
   void buildObstacleList();
   void transObstacleList();
   void makeObstacleList();
@@ -161,6 +116,7 @@ class DataManager
   void transPinList(Net& net);
   void makePinList(Net& net);
   void checkPinList(Net& net);
+  void buildDetectionDistance();
   void buildGCellMap();
   int32_t getIntervalIdx(int32_t scale_start, int32_t scale_end, int32_t interval_start, int32_t interval_end, int32_t interval_length);
   void printConfig();
@@ -168,15 +124,8 @@ class DataManager
   void writePYScript();
 #endif
 
-#if 1  // output
-  void outputTrackGrid();
-  void outputGCellGrid();
-  void outputNetList();
-#endif
-
-#if 1  // 获得IdbWireSegment
-  idb::IdbRegularWireSegment* getIDBWire(int32_t net_idx, Segment<LayerCoord>& segment);
-  idb::IdbRegularWireSegment* getIDBVia(int32_t net_idx, Segment<LayerCoord>& segment);
+#if 1  // destroy
+  void destroyGCellMap();
 #endif
 };
 

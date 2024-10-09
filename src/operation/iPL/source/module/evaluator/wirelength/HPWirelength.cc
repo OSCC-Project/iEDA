@@ -25,6 +25,7 @@
  */
 
 #include "HPWirelength.hh"
+
 #include "omp.h"
 
 namespace ipl {
@@ -41,6 +42,24 @@ int64_t HPWirelength::obtainTotalWirelength()
     total_hpwl += network_shape.get_half_perimeter();
   }
   return total_hpwl;
+}
+
+std::vector<std::vector<std::pair<int32_t, int32_t>>> HPWirelength::constructPointSets()
+{
+  std::vector<std::vector<std::pair<int32_t, int32_t>>> point_sets;
+
+  for (auto* network : _topology_manager->get_network_list()) {
+    std::vector<std::pair<int32_t, int32_t>> point_set;
+
+    for (auto* node : network->get_node_list()) {
+      Point<int32_t> node_loc = node->get_location();
+      point_set.emplace_back(node_loc.get_x(), node_loc.get_y());
+    }
+
+    point_sets.push_back(point_set);
+  }
+
+  return point_sets;
 }
 
 int64_t HPWirelength::obtainNetWirelength(int32_t net_id)

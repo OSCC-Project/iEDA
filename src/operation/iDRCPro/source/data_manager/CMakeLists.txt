@@ -7,7 +7,6 @@ target_link_libraries(idrc_pro_dm
     idm
     idb
     idrc_pro_data
-    idrc_pro_region_query
 )
 
 target_include_directories(idrc_pro_dm

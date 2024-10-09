@@ -92,9 +92,6 @@ class IRNode : public LayerCoord
     }
   }
 #if 1  // astar
-  // single task
-  std::set<Direction>& get_direction_set() { return _direction_set; }
-  void set_direction_set(std::set<Direction>& direction_set) { _direction_set = direction_set; }
   // single path
   IRNodeState& get_state() { return _state; }
   IRNode* get_parent_node() const { return _parent_node; }
@@ -116,8 +113,6 @@ class IRNode : public LayerCoord
   std::map<Orientation, int32_t> _orient_supply_map;
   std::map<Orientation, int32_t> _orient_demand_map;
 #if 1  // astar
-  // single task
-  std::set<Direction> _direction_set;
   // single path
   IRNodeState _state = IRNodeState::kNone;
   IRNode* _parent_node = nullptr;

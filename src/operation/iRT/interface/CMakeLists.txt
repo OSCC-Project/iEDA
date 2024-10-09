@@ -13,7 +13,9 @@ add_library(irt_interface
 target_link_libraries(irt_interface
     PRIVATE
         irt_source
-        irt_interface_external_libs
+        idrc_pro_api
+        ls_assigner
+        power
 )
 
 target_include_directories(irt_interface

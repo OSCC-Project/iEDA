@@ -32,10 +32,12 @@ class GCell : public PlanarRect
     return _type_layer_net_fixed_rect_map;
   }
   std::map<int32_t, std::set<AccessPoint*>>& get_net_access_point_map() { return _net_access_point_map; }
+  std::map<int32_t, std::set<Segment<LayerCoord>*>>& get_net_access_result_map() { return _net_access_result_map; }
+  std::map<int32_t, std::set<EXTLayerRect*>>& get_net_access_patch_map() { return _net_access_patch_map; }
   std::map<int32_t, std::map<Orientation, int32_t>>& get_routing_orient_supply_map() { return _routing_orient_supply_map; }
-  std::map<int32_t, std::set<Segment<LayerCoord>*>>& get_global_net_result_map() { return _global_net_result_map; }
-  std::map<int32_t, std::set<Segment<LayerCoord>*>>& get_detailed_net_result_map() { return _detailed_net_result_map; }
-  std::map<int32_t, std::set<EXTLayerRect*>>& get_net_patch_map() { return _net_patch_map; }
+  std::map<int32_t, std::set<Segment<LayerCoord>*>>& get_net_global_result_map() { return _net_global_result_map; }
+  std::map<int32_t, std::set<Segment<LayerCoord>*>>& get_net_detailed_result_map() { return _net_detailed_result_map; }
+  std::map<int32_t, std::set<EXTLayerRect*>>& get_net_detailed_patch_map() { return _net_detailed_patch_map; }
   std::set<Violation*>& get_violation_set() { return _violation_set; }
   // setter
   void set_type_layer_net_fixed_rect_map(
@@ -47,19 +49,30 @@ class GCell : public PlanarRect
   {
     _net_access_point_map = net_access_point_map;
   }
+  void set_net_access_result_map(const std::map<int32_t, std::set<Segment<LayerCoord>*>>& net_access_result_map)
+  {
+    _net_access_result_map = net_access_result_map;
+  }
+  void set_net_access_patch_map(const std::map<int32_t, std::set<EXTLayerRect*>>& net_access_patch_map)
+  {
+    _net_access_patch_map = net_access_patch_map;
+  }
   void set_routing_orient_supply_map(const std::map<int32_t, std::map<Orientation, int32_t>>& routing_orient_supply_map)
   {
     _routing_orient_supply_map = routing_orient_supply_map;
   }
-  void set_global_net_result_map(const std::map<int32_t, std::set<Segment<LayerCoord>*>>& global_net_result_map)
+  void set_net_global_result_map(const std::map<int32_t, std::set<Segment<LayerCoord>*>>& net_global_result_map)
   {
-    _global_net_result_map = global_net_result_map;
+    _net_global_result_map = net_global_result_map;
   }
-  void set_detailed_net_result_map(const std::map<int32_t, std::set<Segment<LayerCoord>*>>& detailed_net_result_map)
+  void set_net_detailed_result_map(const std::map<int32_t, std::set<Segment<LayerCoord>*>>& net_detailed_result_map)
   {
-    _detailed_net_result_map = detailed_net_result_map;
+    _net_detailed_result_map = net_detailed_result_map;
   }
-  void set_net_patch_map(const std::map<int32_t, std::set<EXTLayerRect*>>& net_patch_map) { _net_patch_map = net_patch_map; }
+  void set_net_detailed_patch_map(const std::map<int32_t, std::set<EXTLayerRect*>>& net_detailed_patch_map)
+  {
+    _net_detailed_patch_map = net_detailed_patch_map;
+  }
   void set_violation_set(const std::set<Violation*>& violation_set) { _violation_set = violation_set; }
   // function
 
@@ -68,14 +81,18 @@ class GCell : public PlanarRect
   std::map<bool, std::map<int32_t, std::map<int32_t, std::set<EXTLayerRect*>>>> _type_layer_net_fixed_rect_map;
   // access point 只有routing层有
   std::map<int32_t, std::set<AccessPoint*>> _net_access_point_map;
+  // access routing result
+  std::map<int32_t, std::set<Segment<LayerCoord>*>> _net_access_result_map;
+  // access patch shape 只有routing层有
+  std::map<int32_t, std::set<EXTLayerRect*>> _net_access_patch_map;
   // global supply 三维 只有routing层有
   std::map<int32_t, std::map<Orientation, int32_t>> _routing_orient_supply_map;
   // global routing result
-  std::map<int32_t, std::set<Segment<LayerCoord>*>> _global_net_result_map;
+  std::map<int32_t, std::set<Segment<LayerCoord>*>> _net_global_result_map;
   // detail routing result
-  std::map<int32_t, std::set<Segment<LayerCoord>*>> _detailed_net_result_map;
+  std::map<int32_t, std::set<Segment<LayerCoord>*>> _net_detailed_result_map;
   // detail patch shape 只有routing层有
-  std::map<int32_t, std::set<EXTLayerRect*>> _net_patch_map;
+  std::map<int32_t, std::set<EXTLayerRect*>> _net_detailed_patch_map;
   // detail violation region
   std::set<Violation*> _violation_set;
 };

@@ -491,14 +491,14 @@ void RegionQuery::getRegionDetailReport(std::map<std::string, std::vector<DrcVio
   vio_map.insert(std::make_pair("Cut Diff Layer Spacing", _cut_diff_layer_spacing_spot_list));
   vio_map.insert(std::make_pair("Cut Enclosure", _cut_enclosure_spot_list));
   initMetalEOLVioSpot();
-  vio_map.insert(std::make_pair("Metal EOL Spacing", _metal_eol_spacing_spot_list));
+  vio_map.insert(std::make_pair("EndOfLine Spacing", _metal_eol_spacing_spot_list));
   initShortVioSpot();
   vio_map.insert(std::make_pair("Metal Short", _short_vio_spot_list));
   initPrlVioSpot();
-  vio_map.insert(std::make_pair("Metal Parallel Run Length Spacing", _prl_run_length_spacing_spot_list));
-  vio_map.insert(std::make_pair("Metal Notch Spacing", _metal_notch_spacing_spot_list));
+  vio_map.insert(std::make_pair("ParallelRunLength Spacing", _prl_run_length_spacing_spot_list));
+  vio_map.insert(std::make_pair("Notch Spacing", _metal_notch_spacing_spot_list));
   vio_map.insert(std::make_pair("MinStep", _min_step_spot_list));
-  vio_map.insert(std::make_pair("Minimal Area", _min_area_spot_list));
+  vio_map.insert(std::make_pair("Minimum Area", _min_area_spot_list));
 
   vio_map.insert(std::make_pair("Cut Diff Layer Spacing", _cut_diff_layer_spacing_spot_list));
 
@@ -550,16 +550,16 @@ void RegionQuery::getRegionReport(std::map<std::string, int>& viotype_to_nums_ma
   // viotype_to_nums_map.insert(std::make_pair("Cut EOL Enclosure", ));
 
   viotype_to_nums_map.insert(std::make_pair("Metal Corner Filling Spacing", _corner_fill_spacing_count));
-  viotype_to_nums_map.insert(std::make_pair("Metal EOL Spacing", get_metal_eol_vio_nums()));
+  viotype_to_nums_map.insert(std::make_pair("EndOfLine Spacing", get_metal_eol_vio_nums()));
   viotype_to_nums_map.insert(std::make_pair("Metal JogToJog Spacing", _jog_spacing_count));
   viotype_to_nums_map.insert(std::make_pair("Metal Short", get_short_vio_nums()));
-  viotype_to_nums_map.insert(std::make_pair("Metal Parallel Run Length Spacing", get_prl_spacing_vio_nums()));
+  viotype_to_nums_map.insert(std::make_pair("ParallelRunLength Spacing", get_prl_spacing_vio_nums()));
   // viotype_to_nums_map.insert(std::make_pair("Metal Short", _short_count));
-  // viotype_to_nums_map.insert(std::make_pair("Metal Parallel Run Length Spacing", _common_spacing_count));
-  viotype_to_nums_map.insert(std::make_pair("Metal Notch Spacing", _notch_spacing_count));
+  // viotype_to_nums_map.insert(std::make_pair("ParallelRunLength Spacing", _common_spacing_count));
+  viotype_to_nums_map.insert(std::make_pair("Notch Spacing", _notch_spacing_count));
   viotype_to_nums_map.insert(std::make_pair("MinStep", _minstep_count));
   viotype_to_nums_map.insert(std::make_pair("MinHole", _min_hole_count));
-  viotype_to_nums_map.insert(std::make_pair("Minimal Area", _area_count));
+  viotype_to_nums_map.insert(std::make_pair("Minimum Area", _area_count));
 }
 
 ////////////////////////////////////////////////////////////////////////
