@@ -92,13 +92,13 @@ class InitialRouter
 #if 1  // exhibit
   void updateSummary(IRModel& ir_model);
   void printSummary(IRModel& ir_model);
-  void writeDemandCSV(IRModel& ir_model);
-  void writeOverflowCSV(IRModel& ir_model);
+  void outputDemandCSV(IRModel& ir_model);
+  void outputOverflowCSV(IRModel& ir_model);
 #endif
 
 #if 1  // debug
   void debugCheckIRModel(IRModel& ir_model);
-  void debugOutputGuide(IRModel& ir_model);
+  void outputGuide(IRModel& ir_model);
 #endif
 };
 

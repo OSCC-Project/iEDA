@@ -65,8 +65,8 @@ void TrackAssigner::assign()
   // debugPlotTAModel(ta_model, "after");
   updateSummary(ta_model);
   printSummary(ta_model);
-  writeNetCSV(ta_model);
-  writeViolationCSV(ta_model);
+  outputNetCSV(ta_model);
+  outputViolationCSV(ta_model);
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
@@ -1260,13 +1260,13 @@ void TrackAssigner::printSummary(TAModel& ta_model)
   RTUTIL.printTableList(table_list);
 }
 
-void TrackAssigner::writeNetCSV(TAModel& ta_model)
+void TrackAssigner::outputNetCSV(TAModel& ta_model)
 {
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
   GridMap<GCell>& gcell_map = RTDM.getDatabase().get_gcell_map();
   std::string& ta_temp_directory_path = RTDM.getConfig().ta_temp_directory_path;
-  int32_t output_csv = RTDM.getConfig().output_csv;
-  if (!output_csv) {
+  int32_t output_inter_result = RTDM.getConfig().output_inter_result;
+  if (!output_inter_result) {
     return;
   }
   std::vector<GridMap<int32_t>> layer_net_map;
@@ -1308,13 +1308,13 @@ void TrackAssigner::writeNetCSV(TAModel& ta_model)
   }
 }
 
-void TrackAssigner::writeViolationCSV(TAModel& ta_model)
+void TrackAssigner::outputViolationCSV(TAModel& ta_model)
 {
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
   GridMap<GCell>& gcell_map = RTDM.getDatabase().get_gcell_map();
   std::string& ta_temp_directory_path = RTDM.getConfig().ta_temp_directory_path;
-  int32_t output_csv = RTDM.getConfig().output_csv;
-  if (!output_csv) {
+  int32_t output_inter_result = RTDM.getConfig().output_inter_result;
+  if (!output_inter_result) {
     return;
   }
   std::vector<GridMap<int32_t>> layer_violation_map;

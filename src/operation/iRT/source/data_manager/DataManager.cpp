@@ -1342,8 +1342,8 @@ void DataManager::printConfig()
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), _config.bottom_routing_layer);
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "top_routing_layer");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), _config.top_routing_layer);
-  RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "output_csv");
-  RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), _config.output_csv);
+  RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "output_inter_result");
+  RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), _config.output_inter_result);
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "enable_timing");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), _config.enable_timing);
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "enable_lsa");

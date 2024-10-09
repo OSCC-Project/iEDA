@@ -68,14 +68,14 @@ class TopologyGenerator
 #if 1  // exhibit
   void updateSummary(TGModel& tg_model);
   void printSummary(TGModel& tg_model);
-  void writePlanarSupplyCSV(TGModel& tg_model);
-  void writePlanarDemandCSV(TGModel& tg_model);
-  void writePlanarOverflowCSV(TGModel& tg_model);
+  void outputPlanarSupplyCSV(TGModel& tg_model);
+  void outputPlanarDemandCSV(TGModel& tg_model);
+  void outputPlanarOverflowCSV(TGModel& tg_model);
 #endif
 
 #if 1  // debug
   void debugCheckTGModel(TGModel& tg_model);
-  void debugOutputGuide(TGModel& tg_model);
+  void outputGuide(TGModel& tg_model);
 #endif
 };
 

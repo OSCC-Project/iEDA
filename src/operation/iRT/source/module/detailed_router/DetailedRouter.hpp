@@ -125,8 +125,8 @@ class DetailedRouter
 #if 1  // exhibit
   void updateSummary(DRModel& dr_model);
   void printSummary(DRModel& dr_model);
-  void writeNetCSV(DRModel& dr_model);
-  void writeViolationCSV(DRModel& dr_model);
+  void outputNetCSV(DRModel& dr_model);
+  void outputViolationCSV(DRModel& dr_model);
 #endif
 
 #if 1  // debug

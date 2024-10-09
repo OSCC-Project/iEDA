@@ -73,8 +73,8 @@ void PinAccessor::access()
   // debugPlotPAModel(pa_model, "after");
   updateSummary(pa_model);
   printSummary(pa_model);
-  writePlanarPinCSV(pa_model);
-  writeLayerPinCSV(pa_model);
+  outputPlanarPinCSV(pa_model);
+  outputLayerPinCSV(pa_model);
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
@@ -1981,12 +1981,12 @@ void PinAccessor::printSummary(PAModel& pa_model)
   RTUTIL.printTableList(table_list);
 }
 
-void PinAccessor::writePlanarPinCSV(PAModel& pa_model)
+void PinAccessor::outputPlanarPinCSV(PAModel& pa_model)
 {
   GridMap<GCell>& gcell_map = RTDM.getDatabase().get_gcell_map();
   std::string& pa_temp_directory_path = RTDM.getConfig().pa_temp_directory_path;
-  int32_t output_csv = RTDM.getConfig().output_csv;
-  if (!output_csv) {
+  int32_t output_inter_result = RTDM.getConfig().output_inter_result;
+  if (!output_inter_result) {
     return;
   }
   GridMap<int32_t> planar_pin_map;
@@ -2008,13 +2008,13 @@ void PinAccessor::writePlanarPinCSV(PAModel& pa_model)
   RTUTIL.closeFileStream(pin_csv_file);
 }
 
-void PinAccessor::writeLayerPinCSV(PAModel& pa_model)
+void PinAccessor::outputLayerPinCSV(PAModel& pa_model)
 {
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
   GridMap<GCell>& gcell_map = RTDM.getDatabase().get_gcell_map();
   std::string& pa_temp_directory_path = RTDM.getConfig().pa_temp_directory_path;
-  int32_t output_csv = RTDM.getConfig().output_csv;
-  if (!output_csv) {
+  int32_t output_inter_result = RTDM.getConfig().output_inter_result;
+  if (!output_inter_result) {
     return;
   }
   std::vector<GridMap<int32_t>> layer_pin_map;

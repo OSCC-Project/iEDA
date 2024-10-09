@@ -127,8 +127,8 @@ void DetailedRouter::iterativeDRModel(DRModel& dr_model)
     uploadNetResult(dr_model);
     updateSummary(dr_model);
     printSummary(dr_model);
-    writeNetCSV(dr_model);
-    writeViolationCSV(dr_model);
+    outputNetCSV(dr_model);
+    outputViolationCSV(dr_model);
     RTLOG.info(Loc::current(), "***** End Iteration ", iter, "/", dr_parameter_list.size(), "(",
                RTUTIL.getPercentage(iter, dr_parameter_list.size()), ")", iter_monitor.getStatsInfo(), "*****");
     if (stopIteration(dr_model)) {
@@ -871,6 +871,7 @@ void DetailedRouter::patchSingleTask(DRBox& dr_box)
 
 std::vector<Violation> DetailedRouter::getPatchViolationList(DRBox& dr_box)
 {
+  return {};
 }
 
 void DetailedRouter::updateTaskPatch(DRBox& dr_box)
@@ -1592,13 +1593,13 @@ void DetailedRouter::printSummary(DRModel& dr_model)
   RTUTIL.printTableList(table_list);
 }
 
-void DetailedRouter::writeNetCSV(DRModel& dr_model)
+void DetailedRouter::outputNetCSV(DRModel& dr_model)
 {
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
   GridMap<GCell>& gcell_map = RTDM.getDatabase().get_gcell_map();
   std::string& dr_temp_directory_path = RTDM.getConfig().dr_temp_directory_path;
-  int32_t output_csv = RTDM.getConfig().output_csv;
-  if (!output_csv) {
+  int32_t output_inter_result = RTDM.getConfig().output_inter_result;
+  if (!output_inter_result) {
     return;
   }
   std::vector<GridMap<int32_t>> layer_net_map;
@@ -1640,13 +1641,13 @@ void DetailedRouter::writeNetCSV(DRModel& dr_model)
   }
 }
 
-void DetailedRouter::writeViolationCSV(DRModel& dr_model)
+void DetailedRouter::outputViolationCSV(DRModel& dr_model)
 {
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
   GridMap<GCell>& gcell_map = RTDM.getDatabase().get_gcell_map();
   std::string& dr_temp_directory_path = RTDM.getConfig().dr_temp_directory_path;
-  int32_t output_csv = RTDM.getConfig().output_csv;
-  if (!output_csv) {
+  int32_t output_inter_result = RTDM.getConfig().output_inter_result;
+  if (!output_inter_result) {
     return;
   }
   std::vector<GridMap<int32_t>> layer_violation_map;

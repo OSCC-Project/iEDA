@@ -61,12 +61,12 @@ void TopologyGenerator::generate()
   buildOrientSupply(tg_model);
   // debugCheckTGModel(tg_model);
   generateTGModel(tg_model);
-  // debugOutputGuide(tg_model);
+  // outputGuide(tg_model);
   updateSummary(tg_model);
   printSummary(tg_model);
-  writePlanarSupplyCSV(tg_model);
-  writePlanarDemandCSV(tg_model);
-  writePlanarOverflowCSV(tg_model);
+  outputPlanarSupplyCSV(tg_model);
+  outputPlanarDemandCSV(tg_model);
+  outputPlanarOverflowCSV(tg_model);
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
@@ -586,11 +586,11 @@ void TopologyGenerator::printSummary(TGModel& tg_model)
   RTUTIL.printTableList(table_list);
 }
 
-void TopologyGenerator::writePlanarSupplyCSV(TGModel& tg_model)
+void TopologyGenerator::outputPlanarSupplyCSV(TGModel& tg_model)
 {
   std::string& tg_temp_directory_path = RTDM.getConfig().tg_temp_directory_path;
-  int32_t output_csv = RTDM.getConfig().output_csv;
-  if (!output_csv) {
+  int32_t output_inter_result = RTDM.getConfig().output_inter_result;
+  if (!output_inter_result) {
     return;
   }
   std::ofstream* supply_csv_file = RTUTIL.getOutputFileStream(RTUTIL.getString(tg_temp_directory_path, "supply_map_planar.csv"));
@@ -608,11 +608,11 @@ void TopologyGenerator::writePlanarSupplyCSV(TGModel& tg_model)
   RTUTIL.closeFileStream(supply_csv_file);
 }
 
-void TopologyGenerator::writePlanarDemandCSV(TGModel& tg_model)
+void TopologyGenerator::outputPlanarDemandCSV(TGModel& tg_model)
 {
   std::string& tg_temp_directory_path = RTDM.getConfig().tg_temp_directory_path;
-  int32_t output_csv = RTDM.getConfig().output_csv;
-  if (!output_csv) {
+  int32_t output_inter_result = RTDM.getConfig().output_inter_result;
+  if (!output_inter_result) {
     return;
   }
   std::ofstream* demand_csv_file = RTUTIL.getOutputFileStream(RTUTIL.getString(tg_temp_directory_path, "demand_map_planar.csv"));
@@ -630,11 +630,11 @@ void TopologyGenerator::writePlanarDemandCSV(TGModel& tg_model)
   RTUTIL.closeFileStream(demand_csv_file);
 }
 
-void TopologyGenerator::writePlanarOverflowCSV(TGModel& tg_model)
+void TopologyGenerator::outputPlanarOverflowCSV(TGModel& tg_model)
 {
   std::string& tg_temp_directory_path = RTDM.getConfig().tg_temp_directory_path;
-  int32_t output_csv = RTDM.getConfig().output_csv;
-  if (!output_csv) {
+  int32_t output_inter_result = RTDM.getConfig().output_inter_result;
+  if (!output_inter_result) {
     return;
   }
   std::ofstream* overflow_csv_file = RTUTIL.getOutputFileStream(RTUTIL.getString(tg_temp_directory_path, "overflow_map_planar.csv"));
@@ -682,7 +682,7 @@ void TopologyGenerator::debugCheckTGModel(TGModel& tg_model)
   }
 }
 
-void TopologyGenerator::debugOutputGuide(TGModel& tg_model)
+void TopologyGenerator::outputGuide(TGModel& tg_model)
 {
   Monitor monitor;
   RTLOG.info(Loc::current(), "Starting...");

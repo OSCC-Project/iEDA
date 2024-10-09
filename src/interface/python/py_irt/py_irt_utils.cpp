@@ -109,8 +109,8 @@ bool initConfigMapByJSON(const std::string& config, std::map<std::string, std::a
   config_map.insert(std::make_pair("-thread_number", std::stoi(value)));
   value = ieda::getJsonData(json, {"RT", "-enable_timing"});
   config_map.insert(std::make_pair("-enable_timing", std::stoi(value)));
-  value = ieda::getJsonData(json, {"RT", "-output_csv"});
-  config_map.insert(std::make_pair("-output_csv", std::stoi(value)));
+  value = ieda::getJsonData(json, {"RT", "-output_inter_result"});
+  config_map.insert(std::make_pair("-output_inter_result", std::stoi(value)));
 
   for (nlohmann::json::iterator item = rt_json.begin(); item != rt_json.end(); ++item) {
     config_map.insert(std::make_pair(item.key(), item.value()));
