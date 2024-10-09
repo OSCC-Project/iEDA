@@ -2351,7 +2351,12 @@ unsigned Sta::updateClockTiming() {
       StaCombLoopCheck(),
       StaSlewPropagation(),
       StaDelayPropagation(),
-      StaClockPropagation(StaClockPropagation::PropType::kNormalClockProp)};
+      StaClockPropagation(StaClockPropagation::PropType::kNormalClockProp),
+      StaApplySdc(StaApplySdc::PropType::kApplySdcPostNormalClockProp),
+      StaClockPropagation(
+          StaClockPropagation::PropType::kUpdateGeneratedClockProp),
+      StaApplySdc(StaApplySdc::PropType::kApplySdcPostClockProp)
+      };
 
   for (auto &func : funcs) {
     the_graph.exec(func);

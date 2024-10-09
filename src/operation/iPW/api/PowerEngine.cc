@@ -27,6 +27,7 @@
 
 #include "PowerEngine.hh"
 #include "ThreadPool/ThreadPool.h"
+#include "usage/usage.hh"
 
 namespace ipower {
 PowerEngine* PowerEngine::_power_engine = nullptr;
@@ -76,7 +77,7 @@ unsigned PowerEngine::creatDataflow() {
   // build timing graph.
   if (!_timing_engine->isBuildGraph()) {
     _timing_engine->buildGraph();
-    _timing_engine->updateTiming();
+    _timing_engine->updateClockTiming();
   }
 
   // build power graph & sequential graph.
@@ -225,6 +226,8 @@ PowerEngine::buildConnectionMap(std::vector<std::set<std::string>> clusters,
  */
 std::vector<MacroConnection> PowerEngine::buildMacroConnectionMap(
     unsigned max_hop) {
+  ieda::Stats stats;
+  LOG_INFO << "build macro connection map start";
   auto& seq_graph = _ipower->get_power_seq_graph();
   std::vector<MacroConnection> macro_connections;
   std::mutex connection_mutex;
@@ -284,6 +287,12 @@ std::vector<MacroConnection> PowerEngine::buildMacroConnectionMap(
   for (auto& macro_connection : macro_connections) {
     macro_connection._stages_each_hop.resize(macro_connection._hop);
   }
+
+  LOG_INFO << "build macro connection map end";
+  double memory_delta = stats.memoryDelta();
+  LOG_INFO << "build macro connection map memory usage " << memory_delta << "MB";
+  double time_delta = stats.elapsedRunTime();
+  LOG_INFO << "build macro connection map time elapsed " << time_delta << "s";
 
   return macro_connections;
 }
