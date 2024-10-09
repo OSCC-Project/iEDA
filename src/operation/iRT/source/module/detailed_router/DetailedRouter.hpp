@@ -85,9 +85,11 @@ class DetailedRouter
   std::vector<Segment<LayerCoord>> getRoutingSegmentListByNode(DRNode* node);
   void resetStartAndEnd(DRBox& dr_box);
   void resetSinglePath(DRBox& dr_box);
-  void patchSingleTask(DRBox& dr_box);
   void updateTaskResult(DRBox& dr_box);
   std::vector<Segment<LayerCoord>> getRoutingSegmentList(DRBox& dr_box);
+  void patchSingleTask(DRBox& dr_box);
+  std::vector<Violation> getPatchViolationList(DRBox& dr_box);
+  void updateTaskPatch(DRBox& dr_box);
   std::vector<EXTLayerRect> getRoutingPatchList(DRBox& dr_box);
   void resetSingleTask(DRBox& dr_box);
   void pushToOpenList(DRBox& dr_box, DRNode* curr_node);

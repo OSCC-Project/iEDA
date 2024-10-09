@@ -616,8 +616,9 @@ void DetailedRouter::routeDRTask(DRBox& dr_box, DRTask* dr_task)
     resetStartAndEnd(dr_box);
     resetSinglePath(dr_box);
   }
-  patchSingleTask(dr_box);
   updateTaskResult(dr_box);
+  patchSingleTask(dr_box);
+  updateTaskPatch(dr_box);
   resetSingleTask(dr_box);
 }
 
@@ -824,34 +825,21 @@ void DetailedRouter::resetSinglePath(DRBox& dr_box)
   dr_box.set_end_node_list_idx(-1);
 }
 
-void DetailedRouter::patchSingleTask(DRBox& dr_box)
-{
-}
-
 void DetailedRouter::updateTaskResult(DRBox& dr_box)
 {
   std::vector<Segment<LayerCoord>> new_routing_segment_list = getRoutingSegmentList(dr_box);
-  std::vector<EXTLayerRect> new_routing_patch_list = getRoutingPatchList(dr_box);
 
   int32_t curr_net_idx = dr_box.get_curr_dr_task()->get_net_idx();
   std::vector<Segment<LayerCoord>>& routing_segment_list = dr_box.get_net_detailed_result_map()[curr_net_idx];
-  std::vector<EXTLayerRect>& routing_patch_list = dr_box.get_net_detailed_patch_map()[curr_net_idx];
 
   // 原结果从graph删除,由于task有对应net_idx,所以不需要在布线前进行删除也不会影响结果
   for (Segment<LayerCoord>& routing_segment : routing_segment_list) {
     updateNetResultToGraph(dr_box, ChangeType::kDel, curr_net_idx, routing_segment);
   }
-  for (EXTLayerRect& routing_patch : routing_patch_list) {
-    updateNetResultToGraph(dr_box, ChangeType::kDel, curr_net_idx, routing_patch);
-  }
   routing_segment_list = new_routing_segment_list;
-  routing_patch_list = new_routing_patch_list;
   // 新结果添加到graph
   for (Segment<LayerCoord>& routing_segment : routing_segment_list) {
     updateNetResultToGraph(dr_box, ChangeType::kAdd, curr_net_idx, routing_segment);
-  }
-  for (EXTLayerRect& routing_patch : routing_patch_list) {
-    updateNetResultToGraph(dr_box, ChangeType::kAdd, curr_net_idx, routing_patch);
   }
 }
 
@@ -877,6 +865,32 @@ std::vector<Segment<LayerCoord>> DetailedRouter::getRoutingSegmentList(DRBox& dr
   return routing_segment_list;
 }
 
+void DetailedRouter::patchSingleTask(DRBox& dr_box)
+{
+}
+
+std::vector<Violation> DetailedRouter::getPatchViolationList(DRBox& dr_box)
+{
+}
+
+void DetailedRouter::updateTaskPatch(DRBox& dr_box)
+{
+  std::vector<EXTLayerRect> new_routing_patch_list = getRoutingPatchList(dr_box);
+
+  int32_t curr_net_idx = dr_box.get_curr_dr_task()->get_net_idx();
+  std::vector<EXTLayerRect>& routing_patch_list = dr_box.get_net_detailed_patch_map()[curr_net_idx];
+
+  // 原结果从graph删除,由于task有对应net_idx,所以不需要在布线前进行删除也不会影响结果
+  for (EXTLayerRect& routing_patch : routing_patch_list) {
+    updateNetResultToGraph(dr_box, ChangeType::kDel, curr_net_idx, routing_patch);
+  }
+  routing_patch_list = new_routing_patch_list;
+  // 新结果添加到graph
+  for (EXTLayerRect& routing_patch : routing_patch_list) {
+    updateNetResultToGraph(dr_box, ChangeType::kAdd, curr_net_idx, routing_patch);
+  }
+}
+
 std::vector<EXTLayerRect> DetailedRouter::getRoutingPatchList(DRBox& dr_box)
 {
   return dr_box.get_routing_patch_list();
@@ -890,6 +904,7 @@ void DetailedRouter::resetSingleTask(DRBox& dr_box)
   dr_box.get_path_node_list().clear();
   dr_box.get_single_task_visited_node_list().clear();
   dr_box.get_routing_segment_list().clear();
+  dr_box.get_routing_patch_list().clear();
 }
 
 // manager open list
@@ -1066,20 +1081,20 @@ std::vector<Violation> DetailedRouter::getCostViolationList(DRBox& dr_box)
       }
     }
   }
-  std::map<int32_t, std::vector<Segment<LayerCoord>*>> net_access_result_map;
+  std::map<int32_t, std::vector<Segment<LayerCoord>*>> net_env_result_map;
   for (auto& [net_idx, segment_set] : dr_box.get_net_access_result_map()) {
     for (Segment<LayerCoord>* segment : segment_set) {
-      net_access_result_map[net_idx].push_back(segment);
+      net_env_result_map[net_idx].push_back(segment);
     }
   }
-  std::map<int32_t, std::vector<EXTLayerRect*>> net_access_patch_map;
+  std::map<int32_t, std::vector<EXTLayerRect*>> net_env_patch_map;
   for (auto& [net_idx, patch_set] : dr_box.get_net_access_patch_map()) {
     for (EXTLayerRect* patch : patch_set) {
-      net_access_patch_map[net_idx].push_back(patch);
+      net_env_patch_map[net_idx].push_back(patch);
     }
   }
-  std::map<int32_t, std::vector<Segment<LayerCoord>>>& net_detailed_result_map = dr_box.get_net_detailed_result_map();
-  std::map<int32_t, std::vector<EXTLayerRect>>& net_detailed_patch_map = dr_box.get_net_detailed_patch_map();
+  std::map<int32_t, std::vector<Segment<LayerCoord>>>& net_check_result_map = dr_box.get_net_detailed_result_map();
+  std::map<int32_t, std::vector<EXTLayerRect>>& net_check_patch_map = dr_box.get_net_detailed_patch_map();
 
   DETask de_task;
   de_task.set_process_type_set({DEProcessType::kRoutingCost, DEProcessType::kCutCost});
@@ -1087,10 +1102,10 @@ std::vector<Violation> DetailedRouter::getCostViolationList(DRBox& dr_box)
   de_task.set_check_region(check_region);
   de_task.set_env_shape_list(env_shape_list);
   de_task.set_net_pin_shape_map(net_pin_shape_map);
-  de_task.set_net_access_result_map(net_access_result_map);
-  de_task.set_net_access_patch_map(net_access_patch_map);
-  de_task.set_net_detailed_result_map(net_detailed_result_map);
-  de_task.set_net_detailed_patch_map(net_detailed_patch_map);
+  de_task.set_net_env_result_map(net_env_result_map);
+  de_task.set_net_env_patch_map(net_env_patch_map);
+  de_task.set_net_check_result_map(net_check_result_map);
+  de_task.set_net_check_patch_map(net_check_patch_map);
   return RTDE.getViolationList(de_task);
 }
 

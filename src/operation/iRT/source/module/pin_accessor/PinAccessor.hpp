@@ -87,13 +87,15 @@ class PinAccessor
   bool searchEnded(PABox& pa_box);
   void expandSearching(PABox& pa_box);
   void resetPathHead(PABox& pa_box);
-  void resetSinglePath(PABox& pa_box);
   void updatePathResult(PABox& pa_box);
   std::vector<Segment<LayerCoord>> getRoutingSegmentListByNode(PANode* node);
   void resetStartAndEnd(PABox& pa_box);
-  void patchSingleTask(PABox& pa_box);
+  void resetSinglePath(PABox& pa_box);
   void updateTaskResult(PABox& pa_box);
   std::vector<Segment<LayerCoord>> getRoutingSegmentList(PABox& pa_box);
+  void patchSingleTask(PABox& pa_box);
+  std::vector<Violation> getPatchViolationList(PABox& pa_box);
+  void updateTaskPatch(PABox& pa_box);
   std::vector<EXTLayerRect> getRoutingPatchList(PABox& pa_box);
   void resetSingleTask(PABox& pa_box);
   void pushToOpenList(PABox& pa_box, PANode* curr_node);
