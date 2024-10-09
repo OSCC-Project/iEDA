@@ -1192,14 +1192,14 @@ void DataManager::buildDetectionDistance()
 
 void DataManager::buildGCellMap()
 {
-  Monitor monitor;
-  RTLOG.info(Loc::current(), "Starting...");
+  initGCellMap();
+  updateGCellMap();
+}
 
+void DataManager::initGCellMap()
+{
   ScaleAxis& gcell_axis = _database.get_gcell_axis();
   Die& die = _database.get_die();
-  std::vector<Obstacle>& routing_obstacle_list = _database.get_routing_obstacle_list();
-  std::vector<Obstacle>& cut_obstacle_list = _database.get_cut_obstacle_list();
-  std::vector<Net>& net_list = _database.get_net_list();
 
   GridMap<GCell>& gcell_map = _database.get_gcell_map();
   gcell_map.init(die.getXSize(), die.getYSize());
@@ -1212,14 +1212,33 @@ void DataManager::buildGCellMap()
       gcell_map[x][y].set_ur(real_rect.get_ur());
     }
   }
-  struct Shape
+}
+
+void DataManager::updateGCellMap()
+{
+  Monitor monitor;
+  RTLOG.info(Loc::current(), "Starting...");
+
+  ScaleAxis& gcell_axis = _database.get_gcell_axis();
+  Die& die = _database.get_die();
+  std::vector<Obstacle>& routing_obstacle_list = _database.get_routing_obstacle_list();
+  std::vector<Obstacle>& cut_obstacle_list = _database.get_cut_obstacle_list();
+  std::vector<Net>& net_list = _database.get_net_list();
+  int32_t detection_distance = _database.get_detection_distance();
+  if (detection_distance == -1) {
+    RTLOG.error(Loc::current(), "The detection_distance is not initialize!");
+  }
+  struct AUXShape
   {
+    // info
     int32_t net_idx = -1;
     EXTLayerRect* rect = nullptr;
     bool is_routing = true;
+    // process
+    PlanarRect grid_rect;
     bool is_save = false;
   };
-  std::vector<Shape> shape_list;
+  std::vector<AUXShape> aux_shape_list;
   {
     size_t total_shape_num = 0;
     total_shape_num += routing_obstacle_list.size();
@@ -1230,70 +1249,80 @@ void DataManager::buildGCellMap()
         total_shape_num += pin.get_cut_shape_list().size();
       }
     }
-    shape_list.reserve(total_shape_num);
-
+    aux_shape_list.reserve(total_shape_num);
+  }
+  {
     for (Obstacle& routing_obstacle : routing_obstacle_list) {
-      shape_list.emplace_back(-1, &routing_obstacle, true);
+      aux_shape_list.emplace_back(-1, &routing_obstacle, true);
     }
     for (Obstacle& cut_obstacle : cut_obstacle_list) {
-      shape_list.emplace_back(-1, &cut_obstacle, false);
+      aux_shape_list.emplace_back(-1, &cut_obstacle, false);
     }
     for (Net& net : net_list) {
       for (Pin& pin : net.get_pin_list()) {
         for (EXTLayerRect& routing_shape : pin.get_routing_shape_list()) {
-          shape_list.emplace_back(net.get_net_idx(), &routing_shape, true);
+          aux_shape_list.emplace_back(net.get_net_idx(), &routing_shape, true);
         }
         for (EXTLayerRect& cut_shape : pin.get_cut_shape_list()) {
-          shape_list.emplace_back(net.get_net_idx(), &cut_shape, false);
+          aux_shape_list.emplace_back(net.get_net_idx(), &cut_shape, false);
         }
       }
     }
+#pragma omp parallel for
+    for (AUXShape& aux_shape : aux_shape_list) {
+      PlanarRect real_rect = RTUTIL.getEnlargedRect(aux_shape.rect->get_real_rect(), detection_distance);
+      if (!RTUTIL.hasRegularRect(real_rect, die.get_real_rect())) {
+        continue;
+      }
+      real_rect = RTUTIL.getRegularRect(real_rect, die.get_real_rect());
+      aux_shape.grid_rect = RTUTIL.getClosedGCellGridRect(real_rect, gcell_axis);
+    }
   }
-  int32_t interval_length = 6;
-  if (interval_length <= (die.get_grid_ur_y() - die.get_grid_ll_y())) {
-    std::map<int32_t, std::vector<std::vector<Shape>>> start_shape_list_list_map;
-    for (int32_t interval_start : {0, interval_length / 2}) {
-      std::vector<std::vector<Shape>>& shape_list_list = start_shape_list_list_map[interval_start];
-      shape_list_list.resize((die.get_grid_ur_y() - interval_start) / interval_length + 1);
-      for (Shape& shape : shape_list) {
-        if (shape.is_save) {
+  // 以y方向分割,主要依据为第一层往往是横方向的shape
+  int32_t bucket_length = 6;
+  int32_t die_grid_ll_y = die.get_grid_ll_y();
+  int32_t die_grid_ur_y = die.get_grid_ur_y();
+  if (bucket_length <= (die_grid_ur_y - die_grid_ll_y)) {
+    for (int32_t bucket_start : {0, bucket_length / 2}) {
+      std::vector<std::vector<AUXShape>> aux_shape_list_list;
+      aux_shape_list_list.resize((die_grid_ur_y - bucket_start) / bucket_length + 1);
+
+      for (AUXShape& aux_shape : aux_shape_list) {
+        if (aux_shape.is_save) {
           continue;
         }
-        PlanarRect& grid_rect = shape.rect->get_grid_rect();
-        int32_t y_interval_idx
-            = getIntervalIdx(grid_rect.get_ll_y(), grid_rect.get_ur_y(), interval_start, die.get_grid_ur_y(), interval_length);
-        if (y_interval_idx != -1) {
-          shape_list_list[y_interval_idx].push_back(shape);
-          shape.is_save = true;
+        int32_t aux_shape_grid_ll_y = aux_shape.grid_rect.get_ll_y();
+        int32_t aux_shape_grid_ur_y = aux_shape.grid_rect.get_ur_y();
+        int32_t bucket_idx = getBucketIdx(aux_shape_grid_ll_y, aux_shape_grid_ur_y, bucket_start, die_grid_ur_y, bucket_length);
+        if (bucket_idx != -1) {
+          aux_shape_list_list[bucket_idx].push_back(aux_shape);
+          aux_shape.is_save = true;
         }
       }
-    }
-    for (auto& [interval_start, shape_list_list] : start_shape_list_list_map) {
 #pragma omp parallel for
-      for (std::vector<Shape>& shape_list : shape_list_list) {
-        for (Shape& shape : shape_list) {
-          updateFixedRectToGCellMap(ChangeType::kAdd, shape.net_idx, shape.rect, shape.is_routing);
+      for (std::vector<AUXShape>& aux_shape_list : aux_shape_list_list) {
+        for (AUXShape& aux_shape : aux_shape_list) {
+          updateFixedRectToGCellMap(ChangeType::kAdd, aux_shape.net_idx, aux_shape.rect, aux_shape.is_routing);
         }
       }
     }
   }
-  for (Shape& shape : shape_list) {
-    if (shape.is_save) {
+  for (AUXShape& aux_shape : aux_shape_list) {
+    if (aux_shape.is_save) {
       continue;
     }
-    updateFixedRectToGCellMap(ChangeType::kAdd, shape.net_idx, shape.rect, shape.is_routing);
+    updateFixedRectToGCellMap(ChangeType::kAdd, aux_shape.net_idx, aux_shape.rect, aux_shape.is_routing);
   }
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
-int32_t DataManager::getIntervalIdx(int32_t scale_start, int32_t scale_end, int32_t interval_start, int32_t interval_end,
-                                    int32_t interval_length)
+int32_t DataManager::getBucketIdx(int32_t scale_start, int32_t scale_end, int32_t bucket_start, int32_t bucket_end, int32_t bucket_length)
 {
-  if (scale_start < interval_start || scale_end > interval_end) {
+  if (scale_start < bucket_start || scale_end > bucket_end) {
     return -1;
   }
-  int32_t start_idx = (scale_start - interval_start) / interval_length;
-  int32_t end_idx = (scale_end - interval_start) / interval_length;
+  int32_t start_idx = (scale_start - bucket_start) / bucket_length;
+  int32_t end_idx = (scale_end - bucket_start) / bucket_length;
   if (start_idx != end_idx) {
     return -1;
   }
