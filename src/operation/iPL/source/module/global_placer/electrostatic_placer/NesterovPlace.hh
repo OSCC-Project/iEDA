@@ -75,6 +75,7 @@ class NesterovPlace
   bool checkLongTimeOverflowUnchanged(int32_t window, float threshold);
 
   void initNesConfig(Config* config);
+  void calculateAdaptiveBinCnt();
   void initNesDatabase(PlacerDB* placer_db);
   void wrapNesInstanceList();
   void wrapNesInstance(Instance* inst, NesInstance* nesInst);
