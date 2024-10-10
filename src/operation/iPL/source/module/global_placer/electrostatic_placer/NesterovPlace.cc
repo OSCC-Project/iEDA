@@ -33,7 +33,6 @@
 #include <cmath>
 #include <random>
 
-#include "EvalAPI.hpp"
 #include "ipl_io.h"
 #include "omp.h"
 #include "tool_manager.h"
@@ -76,6 +75,11 @@ namespace ipl {
     wrapNesPinList();
     completeConnection();
 
+    if (_nes_config.isAdaptiveBin()){
+      this->calculateAdaptiveBinCnt();
+      LOG_INFO << "Change to Adaptive Bin: (" << _nes_config.get_bin_cnt_x() << "," << _nes_config.get_bin_cnt_y() << ")" << std::endl;
+    }
+
     initGridManager();
     initTopologyManager();
     notifyPLBinSize();
@@ -84,6 +88,31 @@ namespace ipl {
     if (_nes_config.isOptTiming()) {
       initTimingAnnotation();
     }
+  }
+
+  void NesterovPlace::calculateAdaptiveBinCnt()
+  {
+      int32_t inst_cnt = _nes_database->_nInstances_range;
+      int32_t side_cnt = 2;
+      while(side_cnt*side_cnt < inst_cnt){
+        side_cnt *= 2;
+      }
+
+      int32_t bin_cnt_x = side_cnt;
+      int32_t bin_cnt_y = side_cnt;
+
+      const Layout* layout = _nes_database->_placer_db->get_layout();
+      int32_t core_width = layout->get_core_shape().get_width();
+      int32_t core_height = layout->get_core_shape().get_height();
+
+      if(core_width > core_height){
+        bin_cnt_x *= std::pow(2, static_cast<int32_t>(round(static_cast<float>(core_width)/core_height))-1);
+      }else{
+        bin_cnt_y *= std::pow(2, static_cast<int32_t>(round(static_cast<float>(core_height)/core_width))-1);
+      }
+
+      _nes_config.set_bin_cnt_x(bin_cnt_x);
+      _nes_config.set_bin_cnt_y(bin_cnt_y);
   }
 
   void NesterovPlace::notifyPLBinSize() {

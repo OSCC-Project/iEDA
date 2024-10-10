@@ -43,7 +43,9 @@ class PABox
     return _type_layer_net_fixed_rect_map;
   }
   std::map<int32_t, std::set<Segment<LayerCoord>*>>& get_net_access_result_map() { return _net_access_result_map; }
+  std::map<int32_t, std::set<EXTLayerRect*>>& get_net_access_patch_map() { return _net_access_patch_map; }
   std::map<int32_t, std::map<int32_t, std::vector<Segment<LayerCoord>>>>& get_net_task_result_map() { return _net_task_result_map; }
+  std::map<int32_t, std::map<int32_t, std::vector<EXTLayerRect>>>& get_net_task_patch_map() { return _net_task_patch_map; }
   std::vector<Violation>& get_violation_list() { return _violation_list; }
   ScaleAxis& get_box_track_axis() { return _box_track_axis; }
   std::vector<GridMap<PANode>>& get_layer_node_map() { return _layer_node_map; }
@@ -61,9 +63,17 @@ class PABox
   {
     _net_access_result_map = net_access_result_map;
   }
+  void set_net_access_patch_map(const std::map<int32_t, std::set<EXTLayerRect*>>& net_access_patch_map)
+  {
+    _net_access_patch_map = net_access_patch_map;
+  }
   void set_net_task_result_map(const std::map<int32_t, std::map<int32_t, std::vector<Segment<LayerCoord>>>>& net_task_result_map)
   {
     _net_task_result_map = net_task_result_map;
+  }
+  void set_net_task_patch_map(const std::map<int32_t, std::map<int32_t, std::vector<EXTLayerRect>>>& net_task_patch_map)
+  {
+    _net_task_patch_map = net_task_patch_map;
   }
   void set_violation_list(const std::vector<Violation>& violation_list) { _violation_list = violation_list; }
   void set_box_track_axis(const ScaleAxis& box_track_axis) { _box_track_axis = box_track_axis; }
@@ -77,6 +87,7 @@ class PABox
   std::vector<PANode*>& get_path_node_list() { return _path_node_list; }
   std::vector<PANode*>& get_single_task_visited_node_list() { return _single_task_visited_node_list; }
   std::vector<Segment<LayerCoord>>& get_routing_segment_list() { return _routing_segment_list; }
+  std::vector<EXTLayerRect>& get_routing_patch_list() { return _routing_patch_list; }
   void set_curr_pa_task(PATask* curr_pa_task) { _curr_pa_task = curr_pa_task; }
   void set_start_node_list_list(const std::vector<std::vector<PANode*>>& start_node_list_list)
   {
@@ -92,6 +103,7 @@ class PABox
   {
     _routing_segment_list = routing_segment_list;
   }
+  void set_routing_patch_list(const std::vector<EXTLayerRect>& routing_patch_list) { _routing_patch_list = routing_patch_list; }
   // single path
   PriorityQueue<PANode*, std::vector<PANode*>, CmpPANodeCost>& get_open_queue() { return _open_queue; }
   std::vector<PANode*>& get_single_path_visited_node_list() { return _single_path_visited_node_list; }
@@ -113,7 +125,9 @@ class PABox
   std::vector<PATask*> _pa_task_list;
   std::map<bool, std::map<int32_t, std::map<int32_t, std::set<EXTLayerRect*>>>> _type_layer_net_fixed_rect_map;
   std::map<int32_t, std::set<Segment<LayerCoord>*>> _net_access_result_map;
+  std::map<int32_t, std::set<EXTLayerRect*>> _net_access_patch_map;
   std::map<int32_t, std::map<int32_t, std::vector<Segment<LayerCoord>>>> _net_task_result_map;
+  std::map<int32_t, std::map<int32_t, std::vector<EXTLayerRect>>> _net_task_patch_map;
   std::vector<Violation> _violation_list;
   ScaleAxis _box_track_axis;
   std::vector<GridMap<PANode>> _layer_node_map;
@@ -125,6 +139,7 @@ class PABox
   std::vector<PANode*> _path_node_list;
   std::vector<PANode*> _single_task_visited_node_list;
   std::vector<Segment<LayerCoord>> _routing_segment_list;
+  std::vector<EXTLayerRect> _routing_patch_list;
   // single path
   PriorityQueue<PANode*, std::vector<PANode*>, CmpPANodeCost> _open_queue;
   std::vector<PANode*> _single_path_visited_node_list;

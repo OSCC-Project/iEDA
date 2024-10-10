@@ -70,7 +70,7 @@ class Instance : public DesignObject {
     _pin_buses.emplace_back(std::move(pin_bus));
   }
   PinBus* findPinBus(const std::string& bus_name) {
-    auto* it = std::find_if(
+    auto it = std::find_if(
         _pin_buses.begin(), _pin_buses.end(),
         [&bus_name](auto& pin_bus) { return bus_name == pin_bus->get_name(); });
     if (it != _pin_buses.end()) {

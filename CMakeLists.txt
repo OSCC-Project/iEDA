@@ -56,6 +56,7 @@ endif()
 
 set(SANITIZER OFF)
 if(SANITIZER)
+    add_definitions(-DUSE_CPP_STD)
     add_compile_options("-fsanitize=address")
     link_libraries("-fsanitize=address")
     message("address sanitizer load")

@@ -57,8 +57,8 @@ class SupplyAnalyzer
 #if 1  // exhibit
   void updateSummary(SAModel& sa_model);
   void printSummary(SAModel& sa_model);
-  void writePlanarSupplyCSV(SAModel& sa_model);
-  void writeLayerSupplyCSV(SAModel& sa_model);
+  void outputPlanarSupplyCSV(SAModel& sa_model);
+  void outputLayerSupplyCSV(SAModel& sa_model);
 #endif
 
 #if 1  // debug

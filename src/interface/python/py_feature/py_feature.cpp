@@ -35,6 +35,11 @@ bool feature_eval_map(const std::string& path, const int& bin_cnt_x, const int& 
   return featureInst->save_eval_map(path, bin_cnt_x, bin_cnt_y);
 }
 
+bool feature_net_eval(const std::string& path)
+{
+  return featureInst->save_net_eval(path);
+}
+
 bool feature_route(const std::string& path)
 {
   return featureInst->save_route_data(path);
@@ -43,6 +48,16 @@ bool feature_route(const std::string& path)
 bool feature_route_read(const std::string& path)
 {
   return featureInst->read_route_data(path);
+}
+
+bool feature_eval_summary(const std::string& path, int32_t grid_size)
+{
+  return featureInst->save_eval_summary(path, grid_size);
+}
+
+bool feature_timing_eval_summary(const std::string& path)
+{
+  return featureInst->save_timing_eval_summary(path);
 }
 
 }  // namespace python_interface

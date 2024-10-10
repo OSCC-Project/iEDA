@@ -48,6 +48,7 @@ class Database
   std::map<int32_t, int32_t>& get_routing_idb_layer_id_to_idx_map() { return _routing_idb_layer_id_to_idx_map; }
   std::map<int32_t, int32_t>& get_cut_idb_layer_id_to_idx_map() { return _cut_idb_layer_id_to_idx_map; }
   std::map<std::string, int32_t>& get_routing_layer_name_to_idx_map() { return _routing_layer_name_to_idx_map; }
+  std::map<int32_t, std::vector<int32_t>>& get_routing_to_adjacent_cut_map() { return _routing_to_adjacent_cut_map; }
   std::map<std::string, int32_t>& get_cut_layer_name_to_idx_map() { return _cut_layer_name_to_idx_map; }
   std::map<int32_t, std::vector<int32_t>>& get_cut_to_adjacent_routing_map() { return _cut_to_adjacent_routing_map; }
   std::vector<std::vector<ViaMaster>>& get_layer_via_master_list() { return _layer_via_master_list; }
@@ -78,6 +79,7 @@ class Database
   std::map<int32_t, int32_t> _routing_idb_layer_id_to_idx_map;
   std::map<int32_t, int32_t> _cut_idb_layer_id_to_idx_map;
   std::map<std::string, int32_t> _routing_layer_name_to_idx_map;
+  std::map<int32_t, std::vector<int32_t>> _routing_to_adjacent_cut_map;
   std::map<std::string, int32_t> _cut_layer_name_to_idx_map;
   std::map<int32_t, std::vector<int32_t>> _cut_to_adjacent_routing_map;
   std::vector<std::vector<ViaMaster>> _layer_via_master_list;

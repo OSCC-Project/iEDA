@@ -1,16 +1,16 @@
 // ***************************************************************************************
 // Copyright (c) 2023-2025 Peng Cheng Laboratory
-// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of Sciences
-// Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
+// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of
+// Sciences Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
 //
 // iEDA is licensed under Mulan PSL v2.
-// You can use this software according to the terms and conditions of the Mulan PSL v2.
-// You may obtain a copy of Mulan PSL v2 at:
+// You can use this software according to the terms and conditions of the Mulan
+// PSL v2. You may obtain a copy of Mulan PSL v2 at:
 // http://license.coscl.org.cn/MulanPSL2
 //
-// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
-// EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
-// MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY
+// KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+// NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
@@ -66,6 +66,9 @@ PwrToggleSPData PwrPropagateToggleSP::calcSeqDataOutToggleSP(
   LOG_INFO_IF(!launch_clock_domain)
       << "power vertex " << data_in_vertex->getName()
       << " not found launch clock domain.";
+  if (data_out_vertex->getName() == "bus/clint/_1098_:QN") {
+    LOG_INFO << "Debug";
+  }
   auto capcure_clock_domain = data_out_vertex->getOwnFastestClockDomain();
   LOG_FATAL_IF(!capcure_clock_domain) << " not found capture clock domain.";
   // calc toggle and sp for data out vertex.
@@ -216,23 +219,28 @@ unsigned PwrPropagateToggleSP::operator()(PwrGraph* the_graph) {
       /*Save the results to dataout vertex.*/
       if (!seq_vertex->isOutputPort()) {
         // TODO Disregard macro, (data in /data out) have only one vertex.
-        auto& data_out_vertexes = seq_vertex->get_seq_out_vertexes();
-        auto* data_out_vertex = (*data_out_vertexes.begin());
         auto* data_in_vertex = (*data_in_vertexes.begin());
+        auto& data_out_vertexes = seq_vertex->get_seq_out_vertexes();
+        for (auto* data_out_vertex : data_out_vertexes) {
+          auto* seq_data_out_net = data_out_vertex->getDesignObj()->get_net();
+          if (seq_data_out_net && seq_data_out_net->getLoads().empty()) {
+            continue;
+          }
 
-        // Get the data in vertex's data.
-        auto seq_toggle_sp_data = getToggleSPData(data_in_vertex);
+          // Get the data in vertex's data.
+          auto seq_toggle_sp_data = getToggleSPData(data_in_vertex);
 
-        // Convert the seq data in toggle sp data to data out toggle sp data.
-        auto seq_data_out_toggle_sp = calcSeqDataOutToggleSP(
-            data_in_vertex, data_out_vertex, seq_toggle_sp_data);
-        // get the fastest clock
-        auto* the_pwr_graph = get_the_pwr_graph();
-        auto& the_fastest_clock = the_pwr_graph->get_fastest_clock();
-        data_out_vertex->addData(seq_data_out_toggle_sp._toggle_value,
-                                 seq_data_out_toggle_sp._sp_value,
-                                 PwrDataSource::kDataPropagation,
-                                 &the_fastest_clock);
+          // Convert the seq data in toggle sp data to data out toggle sp data.
+          auto seq_data_out_toggle_sp = calcSeqDataOutToggleSP(
+              data_in_vertex, data_out_vertex, seq_toggle_sp_data);
+          // get the fastest clock
+          auto* the_pwr_graph = get_the_pwr_graph();
+          auto& the_fastest_clock = the_pwr_graph->get_fastest_clock();
+          data_out_vertex->addData(seq_data_out_toggle_sp._toggle_value,
+                                   seq_data_out_toggle_sp._sp_value,
+                                   PwrDataSource::kDataPropagation,
+                                   &the_fastest_clock);
+        }
       }
 
       return is_ok;

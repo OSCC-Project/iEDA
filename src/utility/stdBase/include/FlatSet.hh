@@ -29,6 +29,10 @@
 
 #include "absl/container/flat_hash_set.h"
 
+#ifdef USE_CPP_STD
+#include <unordered_set>
+#endif
+
 namespace ieda {
 
 /**
@@ -38,10 +42,18 @@ namespace ieda {
  * tables are knowns as "Swiss tables".
  */
 template <class KEY, class HASH = typename absl::flat_hash_set<KEY>::hasher, class EQ = typename absl::flat_hash_set<KEY>::key_equal>
+#ifndef USE_CPP_STD
 class FlatSet : public absl::flat_hash_set<KEY, HASH, EQ>
+#else
+class FlatSet : public std::unordered_set<KEY, HASH, EQ>
+#endif
 {
  public:
+#ifndef USE_CPP_STD
   using Base = typename FlatSet::flat_hash_set;
+#else
+  using Base = typename FlatSet::unordered_set;
+#endif
   using iterator = typename Base::iterator;
   using const_iterator = typename Base::const_iterator;
   using value_type = typename Base::value_type;

@@ -384,7 +384,8 @@ void CmdCreateGeneratedClock::set_generate_clock(
 void CmdCreateGeneratedClock::set_period_and_edges(
     std::vector<const char*> options) {
   if (_source_sdc_clock) {
-    auto the_generate_edges = _source_sdc_clock->get_edges();
+    auto source_edges = _source_sdc_clock->get_edges();
+    auto the_generate_edges = source_edges;  // copy to generate edges.
     double master_period = _source_sdc_clock->get_period();
     double generate_clock_period = master_period;
 
@@ -473,8 +474,6 @@ void CmdCreateGeneratedClock::set_edges_shift_and_invert(
       _the_generate_clock->set_is_waveform_inv();
     }
   }
-
-  _the_generate_clock->set_edges(std::move(the_generate_edges));
 }
 
 void CmdCreateGeneratedClock::set_source_objects(

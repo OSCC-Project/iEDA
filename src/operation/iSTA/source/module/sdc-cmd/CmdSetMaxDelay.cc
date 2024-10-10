@@ -49,6 +49,6 @@ CmdSetMaxDelay::CmdSetMaxDelay(const char* cmd_name) : TclCmd(cmd_name) {
 
 unsigned CmdSetMaxDelay::check() { return 1; }
 
-unsigned CmdSetMaxDelay::exec() {}
+unsigned CmdSetMaxDelay::exec() { return 1; }
 
 }  // namespace ista

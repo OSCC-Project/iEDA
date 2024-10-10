@@ -17,15 +17,22 @@
 
 #include "ExternalAPI.hh"
 
-#include "EvalAPI.hpp"
-#include "report/ReportTable.hh"
-#include "timing/TimingEval.hpp"
-#include "tool_api/ista_io/ista_io.h"
+#include <fstream>
+#include <iostream>
+#include <sstream>
+
+#include "congestion_api.h"
+#include "density_api.h"
 #include "idm.h"
+#include "report/ReportTable.hh"
+#include "timing_api.hh"
+#include "tool_api/ista_io/ista_io.h"
+#include "wirelength_api.h"
 
 namespace ipl {
 
-std::string ExternalAPI::obtainTargetDir(){
+std::string ExternalAPI::obtainTargetDir()
+{
   return dmInst->get_config().get_output_path();
 }
 
@@ -34,7 +41,8 @@ bool ExternalAPI::isSTAStarted()
   return staInst->isInitSTA();
 }
 
-void ExternalAPI::modifySTAOutputDir(std::string path){
+void ExternalAPI::modifySTAOutputDir(std::string path)
+{
   staInst->setStaWorkDirectory(path);
 }
 
@@ -42,11 +50,6 @@ void ExternalAPI::initSTA(std::string path, bool init_log)
 {
   staInst->initSTA(path, init_log);
   staInst->buildGraph();
-}
-
-void ExternalAPI::initEval()
-{
-  EvalInst.initInst();
 }
 
 void ExternalAPI::updateSTATiming()
@@ -84,170 +87,140 @@ bool ExternalAPI::insertSignalBuffer(std::pair<std::string, std::string> source_
   return flag;
 }
 
-void ExternalAPI::initTimingEval(int32_t unit)
-{
-  eval::EvalAPI& eval_api = eval::EvalAPI::initInst();
-  eval_api.initTimingEval(unit);
-}
-
 double ExternalAPI::obtainPinEarlySlack(std::string pin_name)
 {
-  return eval::EvalAPI::getInst().getEarlySlack(pin_name);
+  return ieval::TimingAPI::getInst()->getEarlySlack(pin_name);
 }
 
 double ExternalAPI::obtainPinLateSlack(std::string pin_name)
 {
-  return eval::EvalAPI::getInst().getLateSlack(pin_name);
+  return ieval::TimingAPI::getInst()->getLateSlack(pin_name);
 }
 
 double ExternalAPI::obtainPinEarlyArrivalTime(std::string pin_name)
 {
-  return eval::EvalAPI::getInst().getArrivalEarlyTime(pin_name);
+  return ieval::TimingAPI::getInst()->getArrivalEarlyTime(pin_name);
 }
 
 double ExternalAPI::obtainPinLateArrivalTime(std::string pin_name)
 {
-  return eval::EvalAPI::getInst().getArrivalLateTime(pin_name);
+  return ieval::TimingAPI::getInst()->getArrivalLateTime(pin_name);
 }
 
 double ExternalAPI::obtainPinEarlyRequiredTime(std::string pin_name)
 {
-  return eval::EvalAPI::getInst().getRequiredEarlyTime(pin_name);
+  return ieval::TimingAPI::getInst()->getRequiredEarlyTime(pin_name);
 }
 
 double ExternalAPI::obtainPinLateRequiredTime(std::string pin_name)
 {
-  return eval::EvalAPI::getInst().getRequiredLateTime(pin_name);
+  return ieval::TimingAPI::getInst()->getRequiredLateTime(pin_name);
 }
 
 double ExternalAPI::obtainWNS(const char* clock_name, ista::AnalysisMode mode)
 {
-  return eval::EvalAPI::getInst().reportWNS(clock_name, mode);
+  return ieval::TimingAPI::getInst()->reportWNS(clock_name, mode);
 }
 
 double ExternalAPI::obtainTNS(const char* clock_name, ista::AnalysisMode mode)
 {
-  return eval::EvalAPI::getInst().reportTNS(clock_name, mode);
+  return ieval::TimingAPI::getInst()->reportTNS(clock_name, mode);
 }
 
-double ExternalAPI::obtainTargetClockPeriodNS(std::string clock_name){
+double ExternalAPI::obtainTargetClockPeriodNS(std::string clock_name)
+{
   return staInst->getPeriodNS(clock_name);
 }
 
-void ExternalAPI::updateEvalTiming(const std::vector<eval::TimingNet*>& timing_net_list)
+void ExternalAPI::updateEvalTiming(const std::vector<ieval::TimingNet*>& timing_net_list, int32_t dbu_unit)
 {
-  EvalInst.updateTiming(timing_net_list);
+  ieval::TimingAPI::getInst()->updateTiming(timing_net_list, dbu_unit);
 }
 
-void ExternalAPI::updateEvalTiming(const std::vector<eval::TimingNet*>& timing_net_list, const std::vector<std::string>& name_list, const int& propagation_level){
-  EvalInst.updateTiming(timing_net_list,name_list,propagation_level);
+void ExternalAPI::updateEvalTiming(const std::vector<ieval::TimingNet*>& timing_net_list, const std::vector<std::string>& name_list,
+                                   const int& propagation_level, int32_t dbu_unit)
+{
+  ieval::TimingAPI::getInst()->updateTiming(timing_net_list, name_list, propagation_level, dbu_unit);
 }
 
-float ExternalAPI::obtainPinCap(std::string inst_pin_name){
+float ExternalAPI::obtainPinCap(std::string inst_pin_name)
+{
   return staInst->obtainPinCap(inst_pin_name);
 }
 
-float ExternalAPI::obtainAvgWireResUnitLengthUm(){
+float ExternalAPI::obtainAvgWireResUnitLengthUm()
+{
   return staInst->obtainAvgWireResUnitLengthUm();
 }
 
-float ExternalAPI::obtainAvgWireCapUnitLengthUm(){
+float ExternalAPI::obtainAvgWireCapUnitLengthUm()
+{
   return staInst->obtainAvgWireCapUnitLengthUm();
 }
 
-float ExternalAPI::obtainInstOutPinRes(std::string cell_name, std::string port_name){
+float ExternalAPI::obtainInstOutPinRes(std::string cell_name, std::string port_name)
+{
   return staInst->obtainInstOutPinRes(cell_name, port_name);
 }
 
 void ExternalAPI::destroyTimingEval()
 {
-  eval::EvalAPI::destroyInst();
+  ieval::TimingAPI::destroyInst();
 }
 
-/**
- * @brief run GR based on dmInst data, evaluate 3D congestion, and return <ACE,TOF,MOF> vector
- * @return std::vector<float>
- */
-std::vector<float> ExternalAPI::evalGRCong()
+ieval::TotalWLSummary ExternalAPI::evalproIDBWL()
 {
-  eval::EvalAPI& eval_api = eval::EvalAPI::initInst();
-  // eval::EvalAPI& eval_api = EvalInst;
-  std::vector<float> gr_congestion;
-  gr_congestion = eval_api.evalGRCong();
-
-  // eval::EvalAPI::destroyInst();
-
-  return gr_congestion;
+  return WIRELENGTH_API_INST->totalWL();
 }
 
-int64_t ExternalAPI::evalEGRWL()
+ieval::OverflowSummary ExternalAPI::evalproCongestion()
 {
-  eval::EvalAPI& eval_api = eval::EvalAPI::initInst();
+  CONGESTION_API_INST->egrMap();
 
-  int64_t egr_wl = static_cast<int64_t>(eval_api.evalEGRWL());
-
-  eval::EvalAPI::destroyInst();
-
-  return egr_wl;
+  return CONGESTION_API_INST->egrOverflow();
 }
 
-
-/**
- * @brief compute each gcellgrid routing demand/resource, and return a 2D route util map
- * @return std::vector<float>
- */
-std::vector<float> ExternalAPI::getUseCapRatioList()
+float ExternalAPI::obtainPeakAvgPinDens()
 {
-  eval::EvalAPI& eval_api = eval::EvalAPI::getInst();
-  return eval_api.getUseCapRatioList();
-}
+  ieval::PinMapSummary pin_map_summary = DENSITY_API_INST->pinDensityMap();
 
-/**
- * @brief draw congesiton map based on GR result
- * @param  plot_path
- * @param  output_file_name
- */
-void ExternalAPI::plotCongMap(const std::string& plot_path, const std::string& output_file_name)
-{
-  eval::EvalAPI& eval_api = eval::EvalAPI::getInst();
-  // layer by layer
-  eval_api.plotGRCong(plot_path, output_file_name);
-  // statistical TotalOverflow/MaximumOverflow
-  // eval_api.plotOverflow(plot_path, output_file_name);
+  std::string file_path = pin_map_summary.allcell_pin_density;
+  std::ifstream file(file_path);
+  if (!file.is_open()) {
+    std::cerr << "Error opening file: " << file_path << std::endl;
+    return -1;
+  }
+
+  std::string line;
+  std::vector<float> values;
+  float max_value = 0.f;
+  float average = 0.f;
+
+  while (std::getline(file, line)) {
+    std::stringstream ss(line);
+    std::string cell;
+    while (std::getline(ss, cell, ',')) {
+      float value = std::stof(cell);
+      values.push_back(value);
+      max_value = std::max(max_value, value);
+    }
+  }
+
+  file.close();
+
+  if (!values.empty()) {
+    float sum = std::accumulate(values.begin(), values.end(), 0.0f);
+    average = sum / values.size();
+  } else {
+    average = 0.0f;
+  }
+
+  return max_value / average;
 }
 
 void ExternalAPI::destroyCongEval()
 {
-  eval::EvalAPI::destroyInst();
-}
-
-std::vector<float> ExternalAPI::obtainPinDens(int32_t grid_cnt_x, int32_t grid_cnt_y)
-{
-  eval::EvalAPI& eval_api = eval::EvalAPI::initInst();
-  int32_t bin_cnt_x = grid_cnt_x;
-  int32_t bin_cnt_y = grid_cnt_y;
-
-  eval_api.initCongDataFromIDB(bin_cnt_x, bin_cnt_y);
-
-  std::vector<float> pin_num_list = eval_api.evalPinDens();
-
-  std::vector<float> result;
-
-  float sum = std::accumulate(pin_num_list.begin(), pin_num_list.end(), 0.0);
-  float average = sum / pin_num_list.size();
-  result.push_back(average);
-
-  auto max_element_ptr = std::max_element(pin_num_list.begin(), pin_num_list.end());
-
-  result.push_back((*max_element_ptr) / average );
-
-  eval::EvalAPI::destroyInst();
-  return result;
-}
-
-std::vector<float> ExternalAPI::obtainNetCong(std::string rudy_type)
-{
-  return eval::EvalAPI::getInst().evalNetCong(rudy_type);
+  ieval::CongestionAPI::destroyInst();
 }
 
 std::unique_ptr<ieda::ReportTable> ExternalAPI::generateTable(const std::string& name)

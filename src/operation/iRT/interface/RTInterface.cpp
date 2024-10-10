@@ -272,7 +272,7 @@ void RTInterface::wrapConfig(std::map<std::string, std::any>& config_map)
   omp_set_num_threads(std::max(RTDM.getConfig().thread_number, 1));
   RTDM.getConfig().bottom_routing_layer = RTUTIL.getConfigValue<std::string>(config_map, "-bottom_routing_layer", "");
   RTDM.getConfig().top_routing_layer = RTUTIL.getConfigValue<std::string>(config_map, "-top_routing_layer", "");
-  RTDM.getConfig().output_csv = RTUTIL.getConfigValue<int32_t>(config_map, "-output_csv", 0);
+  RTDM.getConfig().output_inter_result = RTUTIL.getConfigValue<int32_t>(config_map, "-output_inter_result", 0);
   RTDM.getConfig().enable_timing = RTUTIL.getConfigValue<int32_t>(config_map, "-enable_timing", 0);
   RTDM.getConfig().enable_lsa = RTUTIL.getConfigValue<int32_t>(config_map, "-enable_lsa", 0);
   /////////////////////////////////////////////
@@ -861,21 +861,22 @@ void RTInterface::outputNetList()
   std::vector<Net>& net_list = RTDM.getDatabase().get_net_list();
 
   std::map<int32_t, std::vector<idb::IdbRegularWireSegment*>> net_idb_segment_map;
-  {
-    for (Net& net : net_list) {
-      for (Pin& pin : net.get_pin_list()) {
-        for (Segment<LayerCoord>& access_segment : pin.get_access_segment_list()) {
-          net_idb_segment_map[net.get_net_idx()].push_back(getIDBSegmentByNetResult(net.get_net_idx(), access_segment));
-        }
-      }
-    }
-  }
-  for (auto& [net_idx, segment_set] : RTDM.getDetailedNetResultMap(die)) {
+  for (auto& [net_idx, segment_set] : RTDM.getNetAccessResultMap(die)) {
     for (Segment<LayerCoord>* segment : segment_set) {
       net_idb_segment_map[net_idx].push_back(getIDBSegmentByNetResult(net_idx, *segment));
     }
   }
-  for (auto& [net_idx, patch_set] : RTDM.getNetPatchMap(die)) {
+  for (auto& [net_idx, patch_set] : RTDM.getNetAccessPatchMap(die)) {
+    for (EXTLayerRect* patch : patch_set) {
+      net_idb_segment_map[net_idx].push_back(getIDBSegmentByNetPatch(net_idx, *patch));
+    }
+  }
+  for (auto& [net_idx, segment_set] : RTDM.getNetDetailedResultMap(die)) {
+    for (Segment<LayerCoord>* segment : segment_set) {
+      net_idb_segment_map[net_idx].push_back(getIDBSegmentByNetResult(net_idx, *segment));
+    }
+  }
+  for (auto& [net_idx, patch_set] : RTDM.getNetDetailedPatchMap(die)) {
     for (EXTLayerRect* patch : patch_set) {
       net_idb_segment_map[net_idx].push_back(getIDBSegmentByNetPatch(net_idx, *patch));
     }
@@ -1034,7 +1035,7 @@ idb::IdbRegularWireSegment* RTInterface::getIDBVia(int32_t net_idx, Segment<Laye
 
 std::vector<Violation> RTInterface::getViolationList(std::vector<std::pair<EXTLayerRect*, bool>>& env_shape_list,
                                                      std::map<int32_t, std::vector<std::pair<EXTLayerRect*, bool>>>& net_pin_shape_map,
-                                                     std::map<int32_t, std::vector<Segment<LayerCoord>>>& net_result_map, std::string stage)
+                                                     std::map<int32_t, std::vector<Segment<LayerCoord>>>& net_result_map)
 {
   std::vector<idb::IdbLayerShape*> idb_env_shape_list;
   for (std::pair<EXTLayerRect*, bool>& env_shape : env_shape_list) {
@@ -1052,7 +1053,7 @@ std::vector<Violation> RTInterface::getViolationList(std::vector<std::pair<EXTLa
       idb_net_result_map[net_idx].push_back(RTI.getIDBSegmentByNetResult(net_idx, segment));
     }
   }
-  std::vector<Violation> violation_list = RTI.getViolationList(idb_env_shape_list, idb_net_pin_shape_map, idb_net_result_map, stage);
+  std::vector<Violation> violation_list = RTI.getViolationList(idb_env_shape_list, idb_net_pin_shape_map, idb_net_result_map);
   // free memory
   {
     for (idb::IdbLayerShape* idb_env_shape : idb_env_shape_list) {
@@ -1077,21 +1078,14 @@ std::vector<Violation> RTInterface::getViolationList(std::vector<std::pair<EXTLa
 
 std::vector<Violation> RTInterface::getViolationList(std::vector<idb::IdbLayerShape*>& env_shape_list,
                                                      std::map<int32_t, std::vector<idb::IdbLayerShape*>>& net_pin_shape_map,
-                                                     std::map<int32_t, std::vector<idb::IdbRegularWireSegment*>>& net_result_map,
-                                                     std::string stage)
+                                                     std::map<int32_t, std::vector<idb::IdbRegularWireSegment*>>& net_result_map)
 {
   std::set<idrc::ViolationEnumType> check_select;
-  if (stage == "PA") {
-    check_select.insert(idrc::ViolationEnumType::kShort);
-  } else if (stage == "TA") {
-    check_select.insert(idrc::ViolationEnumType::kShort);
-  } else if (stage == "DR") {
-    check_select.insert(idrc::ViolationEnumType::kShort);
-    check_select.insert(idrc::ViolationEnumType::kDefaultSpacing);
-    check_select.insert(idrc::ViolationEnumType::kPRLSpacing);
-  } else {
-    RTLOG.error(Loc::current(), "Currently not supporting other stages");
-  }
+  check_select.insert(idrc::ViolationEnumType::kShort);
+  check_select.insert(idrc::ViolationEnumType::kDefaultSpacing);
+  check_select.insert(idrc::ViolationEnumType::kPRLSpacing);
+  check_select.insert(idrc::ViolationEnumType::kEOL);
+
   /**
    * env_shape_list 存储 obstacle obs pin_shape
    * net_idb_segment_map 存储 wire via patch
@@ -1105,17 +1099,7 @@ std::vector<Violation> RTInterface::getViolationList(std::vector<idb::IdbLayerSh
   drc_api.init();
   for (auto& [type, idrc_violation_list] : drc_api.check(env_shape_list, net_pin_shape_map, net_result_map, check_select)) {
     for (idrc::DrcViolation* idrc_violation : idrc_violation_list) {
-      // self的drc违例先过滤
-      if (idrc_violation->get_net_ids().size() < 2) {
-        continue;
-      }
-      // 由于pin_shape之间的drc违例存在，第一布线层的drc违例先过滤
       idb::IdbLayer* idb_layer = idrc_violation->get_layer();
-      if (idb_layer->is_routing()) {
-        if (routing_layer_name_to_idx_map[idb_layer->get_name()] == 0) {
-          continue;
-        }
-      }
       EXTLayerRect ext_layer_rect;
       if (idrc_violation->is_rect()) {
         idrc::DrcViolationRect* idrc_violation_rect = static_cast<idrc::DrcViolationRect*>(idrc_violation);
@@ -1605,8 +1589,9 @@ void RTInterface::routeTAPanel(TAPanel& ta_panel)
   {
     std::map<int32_t, std::vector<Segment<LayerCoord>>> task_segment_map;
     for (lsa::LSShape& wire : ls_panel.wire_list) {
-      Segment<LayerCoord> routing_segment(LayerCoord(wire.ll_x + half_width, wire.ll_y + half_width, ls_panel.layer_id),
-                                          LayerCoord(wire.ur_x - half_width, wire.ur_y - half_width, ls_panel.layer_id));
+      Segment<LayerCoord> routing_segment(
+          LayerCoord(static_cast<int32_t>(wire.ll_x + half_width), static_cast<int32_t>(wire.ll_y + half_width), ls_panel.layer_id),
+          LayerCoord(static_cast<int32_t>(wire.ur_x - half_width), static_cast<int32_t>(wire.ur_y - half_width), ls_panel.layer_id));
       if (RTUTIL.isOblique(routing_segment.get_first(), routing_segment.get_second())) {
         RTLOG.error(Loc::current(), "The segment is oblique");
       }

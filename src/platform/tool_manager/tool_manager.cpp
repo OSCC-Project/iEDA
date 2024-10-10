@@ -144,19 +144,19 @@ void ToolManager::guiCaptrueDesign(std::string path)
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// Eval
-int64_t ToolManager::evalTotalWL(const std::vector<eval::WLNet*>& net_list, const std::string& wl_type)
-{
-  EvalIO eval_io;
-  return eval_io.evalTotalWL(net_list, wl_type);
-}
+// int64_t ToolManager::evalTotalWL(const std::vector<eval::WLNet*>& net_list, const std::string& wl_type)
+// {
+//   EvalIO eval_io;
+//   return eval_io.evalTotalWL(net_list, wl_type);
+// }
 
-/// timing eval
-void ToolManager::estimateDelay(std::vector<eval::TimingNet*> timing_net_list, const char* sta_workspace_path, const char* sdc_file_path,
-                                std::vector<const char*> lib_file_path_list)
-{
-  EvalIO eval_io;
-  eval_io.estimateDelay(timing_net_list, sta_workspace_path, sdc_file_path, lib_file_path_list);
-}
+// /// timing eval
+// void ToolManager::estimateDelay(std::vector<eval::TimingNet*> timing_net_list, const char* sta_workspace_path, const char* sdc_file_path,
+//                                 std::vector<const char*> lib_file_path_list)
+// {
+//   EvalIO eval_io;
+//   eval_io.estimateDelay(timing_net_list, sta_workspace_path, sdc_file_path, lib_file_path_list);
+// }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
