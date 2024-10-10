@@ -248,12 +248,13 @@ std::vector<MacroConnection> PowerEngine::buildMacroConnectionMap(
             std::tuple<std::size_t, std::string, unsigned> one_connection;
             auto& src_arcs = current_macro_vertex->get_src_arcs();
             for (auto* src_arc : src_arcs) {
-              auto* snk_seq_vertex = src_arc->get_snk();              
+              auto* snk_seq_vertex = src_arc->get_snk();
               stages_each_hop[max_hop - hop] = src_arc->get_combine_depth();
               if (snk_seq_vertex->isMacro()) {
                 std::string snk_obj_name(snk_seq_vertex->get_obj_name());
                 MacroConnection one_connection(
-                    src_marco_vertex->get_obj_name().data(), snk_obj_name,
+                    src_marco_vertex->get_own_seq_inst()->get_name(),
+                    snk_seq_vertex->get_own_seq_inst()->get_name(),
                     stages_each_hop, max_hop - hop + 1);
                 {
                   // add connection.
@@ -290,7 +291,8 @@ std::vector<MacroConnection> PowerEngine::buildMacroConnectionMap(
 
   LOG_INFO << "build macro connection map end";
   double memory_delta = stats.memoryDelta();
-  LOG_INFO << "build macro connection map memory usage " << memory_delta << "MB";
+  LOG_INFO << "build macro connection map memory usage " << memory_delta
+           << "MB";
   double time_delta = stats.elapsedRunTime();
   LOG_INFO << "build macro connection map time elapsed " << time_delta << "s";
 
