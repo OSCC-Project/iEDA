@@ -63,11 +63,11 @@ void InitialRouter::route()
   // debugCheckIRModel(ir_model);
   buildTopoTree(ir_model);
   routeIRModel(ir_model);
-  // debugOutputGuide(ir_model);
   updateSummary(ir_model);
   printSummary(ir_model);
-  writeDemandCSV(ir_model);
-  writeOverflowCSV(ir_model);
+  outputGuide(ir_model);
+  outputDemandCSV(ir_model);
+  outputOverflowCSV(ir_model);
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
@@ -1069,111 +1069,17 @@ void InitialRouter::printSummary(IRModel& ir_model)
   RTUTIL.printTableList(table_list);
 }
 
-void InitialRouter::writeDemandCSV(IRModel& ir_model)
+void InitialRouter::outputGuide(IRModel& ir_model)
 {
-  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
-  std::string& ir_temp_directory_path = RTDM.getConfig().ir_temp_directory_path;
-  int32_t output_csv = RTDM.getConfig().output_csv;
-  if (!output_csv) {
-    return;
-  }
-  std::vector<GridMap<IRNode>>& layer_node_map = ir_model.get_layer_node_map();
-  for (RoutingLayer& routing_layer : routing_layer_list) {
-    std::ofstream* demand_csv_file
-        = RTUTIL.getOutputFileStream(RTUTIL.getString(ir_temp_directory_path, "demand_map_", routing_layer.get_layer_name(), ".csv"));
-
-    GridMap<IRNode>& ir_node_map = layer_node_map[routing_layer.get_layer_idx()];
-    for (int32_t y = ir_node_map.get_y_size() - 1; y >= 0; y--) {
-      for (int32_t x = 0; x < ir_node_map.get_x_size(); x++) {
-        std::map<Orientation, int32_t>& orient_demand_map = ir_node_map[x][y].get_orient_demand_map();
-        int32_t total_demand = 0;
-        if (routing_layer.isPreferH()) {
-          total_demand = (orient_demand_map[Orientation::kEast] + orient_demand_map[Orientation::kWest]);
-        } else {
-          total_demand = (orient_demand_map[Orientation::kSouth] + orient_demand_map[Orientation::kNorth]);
-        }
-        RTUTIL.pushStream(demand_csv_file, total_demand, ",");
-      }
-      RTUTIL.pushStream(demand_csv_file, "\n");
-    }
-    RTUTIL.closeFileStream(demand_csv_file);
-  }
-}
-
-void InitialRouter::writeOverflowCSV(IRModel& ir_model)
-{
-  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
-  std::string& ir_temp_directory_path = RTDM.getConfig().ir_temp_directory_path;
-  int32_t output_csv = RTDM.getConfig().output_csv;
-  if (!output_csv) {
-    return;
-  }
-  std::vector<GridMap<IRNode>>& layer_node_map = ir_model.get_layer_node_map();
-  for (RoutingLayer& routing_layer : routing_layer_list) {
-    std::ofstream* overflow_csv_file
-        = RTUTIL.getOutputFileStream(RTUTIL.getString(ir_temp_directory_path, "overflow_map_", routing_layer.get_layer_name(), ".csv"));
-
-    GridMap<IRNode>& ir_node_map = layer_node_map[routing_layer.get_layer_idx()];
-    for (int32_t y = ir_node_map.get_y_size() - 1; y >= 0; y--) {
-      for (int32_t x = 0; x < ir_node_map.get_x_size(); x++) {
-        std::map<Orientation, int32_t>& orient_supply_map = ir_node_map[x][y].get_orient_supply_map();
-        std::map<Orientation, int32_t>& orient_demand_map = ir_node_map[x][y].get_orient_demand_map();
-        int32_t total_overflow = 0;
-        if (routing_layer.isPreferH()) {
-          total_overflow = std::max(0, orient_demand_map[Orientation::kEast] - orient_supply_map[Orientation::kEast])
-                           + std::max(0, orient_demand_map[Orientation::kWest] - orient_supply_map[Orientation::kWest]);
-        } else {
-          total_overflow = std::max(0, orient_demand_map[Orientation::kSouth] - orient_supply_map[Orientation::kSouth])
-                           + std::max(0, orient_demand_map[Orientation::kNorth] - orient_supply_map[Orientation::kNorth]);
-        }
-        RTUTIL.pushStream(overflow_csv_file, total_overflow, ",");
-      }
-      RTUTIL.pushStream(overflow_csv_file, "\n");
-    }
-    RTUTIL.closeFileStream(overflow_csv_file);
-  }
-}
-
-#endif
-
-#if 1  // debug
-
-void InitialRouter::debugCheckIRModel(IRModel& ir_model)
-{
-  std::vector<GridMap<IRNode>>& layer_node_map = ir_model.get_layer_node_map();
-  for (GridMap<IRNode>& ir_node_map : layer_node_map) {
-    for (int32_t x = 0; x < ir_node_map.get_x_size(); x++) {
-      for (int32_t y = 0; y < ir_node_map.get_y_size(); y++) {
-        IRNode& ir_node = ir_node_map[x][y];
-        for (auto& [orient, neighbor] : ir_node.get_neighbor_node_map()) {
-          Orientation opposite_orient = RTUTIL.getOppositeOrientation(orient);
-          if (!RTUTIL.exist(neighbor->get_neighbor_node_map(), opposite_orient)) {
-            RTLOG.error(Loc::current(), "The ir_node neighbor is not bidirectional!");
-          }
-          if (neighbor->get_neighbor_node_map()[opposite_orient] != &ir_node) {
-            RTLOG.error(Loc::current(), "The ir_node neighbor is not bidirectional!");
-          }
-          if (RTUTIL.getOrientation(LayerCoord(ir_node), LayerCoord(*neighbor)) == orient) {
-            continue;
-          }
-          RTLOG.error(Loc::current(), "The neighbor orient is different with real region!");
-        }
-      }
-    }
-  }
-}
-
-void InitialRouter::debugOutputGuide(IRModel& ir_model)
-{
-  Monitor monitor;
-  RTLOG.info(Loc::current(), "Starting...");
-
   int32_t micron_dbu = RTDM.getDatabase().get_micron_dbu();
   ScaleAxis& gcell_axis = RTDM.getDatabase().get_gcell_axis();
   Die& die = RTDM.getDatabase().get_die();
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
   std::string& ir_temp_directory_path = RTDM.getConfig().ir_temp_directory_path;
-
+  int32_t output_inter_result = RTDM.getConfig().output_inter_result;
+  if (!output_inter_result) {
+    return;
+  }
   std::vector<IRNet>& ir_net_list = ir_model.get_ir_net_list();
 
   std::ofstream* guide_file_stream = RTUTIL.getOutputFileStream(ir_temp_directory_path + "route.guide");
@@ -1237,8 +1143,100 @@ void InitialRouter::debugOutputGuide(IRModel& ir_model)
     }
   }
   RTUTIL.closeFileStream(guide_file_stream);
+}
 
-  RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
+void InitialRouter::outputDemandCSV(IRModel& ir_model)
+{
+  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
+  std::string& ir_temp_directory_path = RTDM.getConfig().ir_temp_directory_path;
+  int32_t output_inter_result = RTDM.getConfig().output_inter_result;
+  if (!output_inter_result) {
+    return;
+  }
+  std::vector<GridMap<IRNode>>& layer_node_map = ir_model.get_layer_node_map();
+  for (RoutingLayer& routing_layer : routing_layer_list) {
+    std::ofstream* demand_csv_file
+        = RTUTIL.getOutputFileStream(RTUTIL.getString(ir_temp_directory_path, "demand_map_", routing_layer.get_layer_name(), ".csv"));
+
+    GridMap<IRNode>& ir_node_map = layer_node_map[routing_layer.get_layer_idx()];
+    for (int32_t y = ir_node_map.get_y_size() - 1; y >= 0; y--) {
+      for (int32_t x = 0; x < ir_node_map.get_x_size(); x++) {
+        std::map<Orientation, int32_t>& orient_demand_map = ir_node_map[x][y].get_orient_demand_map();
+        int32_t total_demand = 0;
+        if (routing_layer.isPreferH()) {
+          total_demand = (orient_demand_map[Orientation::kEast] + orient_demand_map[Orientation::kWest]);
+        } else {
+          total_demand = (orient_demand_map[Orientation::kSouth] + orient_demand_map[Orientation::kNorth]);
+        }
+        RTUTIL.pushStream(demand_csv_file, total_demand, ",");
+      }
+      RTUTIL.pushStream(demand_csv_file, "\n");
+    }
+    RTUTIL.closeFileStream(demand_csv_file);
+  }
+}
+
+void InitialRouter::outputOverflowCSV(IRModel& ir_model)
+{
+  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
+  std::string& ir_temp_directory_path = RTDM.getConfig().ir_temp_directory_path;
+  int32_t output_inter_result = RTDM.getConfig().output_inter_result;
+  if (!output_inter_result) {
+    return;
+  }
+  std::vector<GridMap<IRNode>>& layer_node_map = ir_model.get_layer_node_map();
+  for (RoutingLayer& routing_layer : routing_layer_list) {
+    std::ofstream* overflow_csv_file
+        = RTUTIL.getOutputFileStream(RTUTIL.getString(ir_temp_directory_path, "overflow_map_", routing_layer.get_layer_name(), ".csv"));
+
+    GridMap<IRNode>& ir_node_map = layer_node_map[routing_layer.get_layer_idx()];
+    for (int32_t y = ir_node_map.get_y_size() - 1; y >= 0; y--) {
+      for (int32_t x = 0; x < ir_node_map.get_x_size(); x++) {
+        std::map<Orientation, int32_t>& orient_supply_map = ir_node_map[x][y].get_orient_supply_map();
+        std::map<Orientation, int32_t>& orient_demand_map = ir_node_map[x][y].get_orient_demand_map();
+        int32_t total_overflow = 0;
+        if (routing_layer.isPreferH()) {
+          total_overflow = std::max(0, orient_demand_map[Orientation::kEast] - orient_supply_map[Orientation::kEast])
+                           + std::max(0, orient_demand_map[Orientation::kWest] - orient_supply_map[Orientation::kWest]);
+        } else {
+          total_overflow = std::max(0, orient_demand_map[Orientation::kSouth] - orient_supply_map[Orientation::kSouth])
+                           + std::max(0, orient_demand_map[Orientation::kNorth] - orient_supply_map[Orientation::kNorth]);
+        }
+        RTUTIL.pushStream(overflow_csv_file, total_overflow, ",");
+      }
+      RTUTIL.pushStream(overflow_csv_file, "\n");
+    }
+    RTUTIL.closeFileStream(overflow_csv_file);
+  }
+}
+
+#endif
+
+#if 1  // debug
+
+void InitialRouter::debugCheckIRModel(IRModel& ir_model)
+{
+  std::vector<GridMap<IRNode>>& layer_node_map = ir_model.get_layer_node_map();
+  for (GridMap<IRNode>& ir_node_map : layer_node_map) {
+    for (int32_t x = 0; x < ir_node_map.get_x_size(); x++) {
+      for (int32_t y = 0; y < ir_node_map.get_y_size(); y++) {
+        IRNode& ir_node = ir_node_map[x][y];
+        for (auto& [orient, neighbor] : ir_node.get_neighbor_node_map()) {
+          Orientation opposite_orient = RTUTIL.getOppositeOrientation(orient);
+          if (!RTUTIL.exist(neighbor->get_neighbor_node_map(), opposite_orient)) {
+            RTLOG.error(Loc::current(), "The ir_node neighbor is not bidirectional!");
+          }
+          if (neighbor->get_neighbor_node_map()[opposite_orient] != &ir_node) {
+            RTLOG.error(Loc::current(), "The ir_node neighbor is not bidirectional!");
+          }
+          if (RTUTIL.getOrientation(LayerCoord(ir_node), LayerCoord(*neighbor)) == orient) {
+            continue;
+          }
+          RTLOG.error(Loc::current(), "The neighbor orient is different with real region!");
+        }
+      }
+    }
+  }
 }
 
 #endif

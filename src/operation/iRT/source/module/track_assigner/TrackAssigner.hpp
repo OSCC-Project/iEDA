@@ -115,8 +115,8 @@ class TrackAssigner
 #if 1  // exhibit
   void updateSummary(TAModel& ta_model);
   void printSummary(TAModel& ta_model);
-  void writeNetCSV(TAModel& ta_model);
-  void writeViolationCSV(TAModel& ta_model);
+  void outputNetCSV(TAModel& ta_model);
+  void outputViolationCSV(TAModel& ta_model);
 #endif
 
 #if 1  // debug

@@ -53,7 +53,7 @@ void InitEGR::runEGR()
   irt::RTInterface& rt_interface = irt::RTInterface::getInst();
   std::map<std::string, std::any> config_map;
   config_map.insert({"-temp_directory_path", _egr_dir_path});
-  config_map.insert({"-output_csv", 1});
+  config_map.insert({"-output_inter_result", 1});
   rt_interface.initRT(config_map);
   rt_interface.runEGR();
   rt_interface.destroyRT();

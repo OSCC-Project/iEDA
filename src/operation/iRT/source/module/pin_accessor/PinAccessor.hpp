@@ -94,6 +94,8 @@ class PinAccessor
   void updateTaskResult(PABox& pa_box);
   std::vector<Segment<LayerCoord>> getRoutingSegmentList(PABox& pa_box);
   void patchSingleTask(PABox& pa_box);
+  std::vector<LayerRect> getMinimumAreaPatchList(PABox& pa_box);
+  std::vector<LayerRect> getMinStepPatchList(PABox& pa_box);
   std::vector<Violation> getPatchViolationList(PABox& pa_box);
   void updateTaskPatch(PABox& pa_box);
   std::vector<EXTLayerRect> getRoutingPatchList(PABox& pa_box);
@@ -132,8 +134,8 @@ class PinAccessor
 #if 1  // exhibit
   void updateSummary(PAModel& pa_model);
   void printSummary(PAModel& pa_model);
-  void writePlanarPinCSV(PAModel& pa_model);
-  void writeLayerPinCSV(PAModel& pa_model);
+  void outputPlanarPinCSV(PAModel& pa_model);
+  void outputLayerPinCSV(PAModel& pa_model);
 #endif
 
 #if 1  // debug
