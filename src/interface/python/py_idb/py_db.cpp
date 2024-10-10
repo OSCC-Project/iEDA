@@ -54,9 +54,10 @@ bool saveDef(const std::string& def_name)
   return dmInst->saveDef(def_name);
 }
 
-bool saveNetList(const std::string& netlist_path, std::set<std::string> exclude_cell_names /* = {} */)
+bool saveNetList(const std::string& netlist_path, std::set<std::string> exclude_cell_names /* = {} */,
+                 bool is_add_space_for_escape_name /* = false*/)
 {
-  dmInst->saveVerilog(netlist_path, std::move(exclude_cell_names));
+  dmInst->saveVerilog(netlist_path, std::move(exclude_cell_names), is_add_space_for_escape_name);
   return true;
 }
 
