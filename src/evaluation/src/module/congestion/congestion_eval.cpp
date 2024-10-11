@@ -55,17 +55,17 @@ void CongestionEval::destroyInst()
 
 string CongestionEval::evalHoriEGR(string rt_dir_path)
 {
-  return evalEGR(rt_dir_path, "horizontal", "egr_horizontal.csv");
+  return evalEGR(rt_dir_path, "horizontal", "egr_horizontal_overflow.csv");
 }
 
 string CongestionEval::evalVertiEGR(string rt_dir_path)
 {
-  return evalEGR(rt_dir_path, "vertical", "egr_vertical.csv");
+  return evalEGR(rt_dir_path, "vertical", "egr_vertical_overflow.csv");
 }
 
 string CongestionEval::evalUnionEGR(string rt_dir_path)
 {
-  return evalEGR(rt_dir_path, "union", "egr_union.csv");
+  return evalEGR(rt_dir_path, "union", "egr_union_overflow.csv");
 }
 
 string CongestionEval::evalHoriRUDY(CongestionNets nets, CongestionRegion region, int32_t grid_size)
@@ -184,6 +184,8 @@ string CongestionEval::evalEGR(string rt_dir_path, string egr_type, string outpu
   // }
   std::vector<std::string> target_layers;
   std::string dir_path = rt_dir_path + "/initial_router/";
+  std::filesystem::path parent_path = std::filesystem::path(rt_dir_path).parent_path();
+  std::filesystem::path out_file_path = parent_path / output_filename;
 
   if (egr_type == "horizontal" || egr_type == "vertical") {
     LayerDirection target_direction = (egr_type == "horizontal") ? LayerDirection::Horizontal : LayerDirection::Vertical;
@@ -229,8 +231,8 @@ string CongestionEval::evalEGR(string rt_dir_path, string egr_type, string outpu
         }
       }
     }
-
-    std::ofstream out_file(dir_path + output_filename);
+    
+    std::ofstream out_file(out_file_path);
     for (const auto& row : sum_matrix) {
       for (size_t i = 0; i < row.size(); ++i) {
         out_file << row[i];
@@ -241,13 +243,12 @@ string CongestionEval::evalEGR(string rt_dir_path, string egr_type, string outpu
       out_file << "\n";
     }
     out_file.close();
-    return dir_path + output_filename;
   } else if (egr_type == "union") {
     dir_path = rt_dir_path + "/topology_generator/";
-    return dir_path + "overflow_map_planar.csv";
+    std::string source_file = dir_path + "overflow_map_planar.csv";
+    std::filesystem::copy_file(source_file, out_file_path, std::filesystem::copy_options::overwrite_existing);
   }
-
-  return "";
+  return out_file_path.string();
 }
 
 string CongestionEval::evalRUDY(CongestionNets nets, CongestionRegion region, int32_t grid_size, string rudy_type, string output_filename)
@@ -560,19 +561,22 @@ double CongestionEval::getLUT(int32_t pin_num, int32_t aspect_ratio, float l_nes
 int32_t CongestionEval::evalTotalOverflow(string rt_dir_path, string overflow_type)
 {
   int32_t total_overflow = 0;
-  std::string file_path;
+  std::string file_name;
 
   if (overflow_type == "horizontal") {
-    file_path = rt_dir_path + "/initial_router/egr_horizontal.csv";
+    file_name =  "egr_horizontal_overflow.csv";
   } else if (overflow_type == "vertical") {
-    file_path = rt_dir_path + "/initial_router/egr_vertical.csv";
+    file_name =  "egr_vertical_overflow.csv";
   } else if (overflow_type == "union") {
-    file_path = rt_dir_path + "/topology_generator/overflow_map_planar.csv";
+    file_name =  "egr_union_overflow.csv";
   } else {
     return -1;
   }
+  std::filesystem::path parent_path =  std::filesystem::path(rt_dir_path).parent_path();
+  std::filesystem::path file_path = parent_path / file_name;
+  std::string file_path_str = file_path.string();
 
-  std::ifstream file(file_path);
+  std::ifstream file(file_path_str);
   if (!file.is_open()) {
     return -1;
   }
@@ -593,19 +597,22 @@ int32_t CongestionEval::evalTotalOverflow(string rt_dir_path, string overflow_ty
 int32_t CongestionEval::evalMaxOverflow(string rt_dir_path, string overflow_type)
 {
   int32_t max_overflow = -1;
-  std::string file_path;
+  std::string file_name;
 
   if (overflow_type == "horizontal") {
-    file_path = rt_dir_path + "/initial_router/egr_horizontal.csv";
+    file_name =  "egr_horizontal_overflow.csv";
   } else if (overflow_type == "vertical") {
-    file_path = rt_dir_path + "/initial_router/egr_vertical.csv";
+    file_name =  "egr_vertical_overflow.csv";
   } else if (overflow_type == "union") {
-    file_path = rt_dir_path + "/topology_generator/overflow_map_planar.csv";
+    file_name =  "egr_union_overflow.csv";
   } else {
     return -1;
   }
+  std::filesystem::path parent_path =  std::filesystem::path(rt_dir_path).parent_path();
+  std::filesystem::path file_path = parent_path / file_name;
+  std::string file_path_str = file_path.string();
 
-  std::ifstream file(file_path);
+  std::ifstream file(file_path_str);
   if (!file.is_open()) {
     return -1;
   }
@@ -627,19 +634,22 @@ int32_t CongestionEval::evalMaxOverflow(string rt_dir_path, string overflow_type
 float CongestionEval::evalAvgOverflow(string rt_dir_path, string overflow_type)
 {
   float avg_overflow = 0.0f;
-  std::string file_path;
+  std::string file_name;
 
   if (overflow_type == "horizontal") {
-    file_path = rt_dir_path + "/initial_router/egr_horizontal.csv";
+    file_name =  "egr_horizontal_overflow.csv";
   } else if (overflow_type == "vertical") {
-    file_path = rt_dir_path + "/initial_router/egr_vertical.csv";
+    file_name =  "egr_vertical_overflow.csv";
   } else if (overflow_type == "union") {
-    file_path = rt_dir_path + "/topology_generator/overflow_map_planar.csv";
+    file_name =  "egr_union_overflow.csv";
   } else {
     return -1;
   }
+  std::filesystem::path parent_path =  std::filesystem::path(rt_dir_path).parent_path();
+  std::filesystem::path file_path = parent_path / file_name;
+  std::string file_path_str = file_path.string();
 
-  std::ifstream file(file_path);
+  std::ifstream file(file_path_str);
   if (!file.is_open()) {
     return -1;
   }

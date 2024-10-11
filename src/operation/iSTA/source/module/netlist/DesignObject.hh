@@ -74,6 +74,8 @@ class DesignObject {
   const char* get_name() const { return _name.c_str(); }
   void set_name(const char* name) { _name = name; }
 
+  std::string& getObjName() { return _name; }
+
   virtual std::string getFullName() {
     LOG_FATAL << "The object do not have fullname.";
     return nullptr;
