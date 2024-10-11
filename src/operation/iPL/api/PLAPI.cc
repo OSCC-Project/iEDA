@@ -377,13 +377,13 @@ void PLAPI::runFlow()
 {
   // runMP();
   runGP();
-  printHPWLInfo();
-  printTimingInfo();
-  notifyPLWLInfo(0);
-  if (isSTAStarted()) {
-    notifyPLCongestionInfo(0);
-    notifyPLTimingInfo(0);
-  }
+  // printHPWLInfo();
+  // printTimingInfo();
+  // notifyPLWLInfo(0);
+  // if (isSTAStarted()) {
+  //   notifyPLCongestionInfo(0);
+  //   notifyPLTimingInfo(0);
+  // }
 
   if (PlacerDBInst.get_placer_config()->get_buffer_config().isMaxLengthOpt()) {
     std::cout << std::endl;
@@ -398,13 +398,13 @@ void PLAPI::runFlow()
 
   std::cout << std::endl;
   runLG();
-  printHPWLInfo();
-  printTimingInfo();
-  notifyPLWLInfo(1);
-  if (isSTAStarted()) {
-    notifyPLCongestionInfo(1);
-    notifyPLTimingInfo(1);
-  }
+  // printHPWLInfo();
+  // printTimingInfo();
+  // notifyPLWLInfo(1);
+  // if (isSTAStarted()) {
+  //   notifyPLCongestionInfo(1);
+  //   notifyPLTimingInfo(1);
+  // }
 
   std::cout << std::endl;
   if (isSTAStarted()) {
@@ -412,14 +412,14 @@ void PLAPI::runFlow()
   } else {
     runDP();
   }
-  printHPWLInfo();
-  printTimingInfo();
+  // printHPWLInfo();
+  // printTimingInfo();
 
-  notifyPLWLInfo(2);
-  if (isSTAStarted()) {
-    notifyPLCongestionInfo(2);
-    notifyPLTimingInfo(2);
-  }
+  // notifyPLWLInfo(2);
+  // if (isSTAStarted()) {
+  //   notifyPLCongestionInfo(2);
+  //   notifyPLTimingInfo(2);
+  // }
 
   std::cout << std::endl;
 
