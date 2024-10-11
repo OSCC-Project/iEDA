@@ -62,41 +62,92 @@ json FeatureParser::buildSummaryRT()
   }
   json_rt["SA"] = json_sa;
 
-  /// IR
-  json json_ir;
-  json_ir["total_demand"] = rt_sum.la_summary.total_demand;
+  // TG
+  json json_tg;
+  json_tg["total_demand"] = rt_sum.tg_summary.total_demand;
+  json_tg["total_overflow"] = rt_sum.tg_summary.total_overflow;
+  json_tg["total_wire_length"] = rt_sum.tg_summary.total_wire_length;
+
+  for (int i = 0; i < (int) rt_sum.tg_summary.clocks_timing.size(); i++) {
+    auto clock_timing = rt_sum.tg_summary.clocks_timing[i];
+    json_tg["clocks_timing"][i]["clock_name"] = clock_timing.clock_name;
+    json_tg["clocks_timing"][i]["setup_tns"] = clock_timing.setup_tns;
+    json_tg["clocks_timing"][i]["setup_wns"] = clock_timing.setup_wns;
+    json_tg["clocks_timing"][i]["suggest_freq"] = clock_timing.suggest_freq;
+  }
+  json_tg["static_power"] = rt_sum.tg_summary.power_info.static_power;
+  json_tg["dynamic_power"] = rt_sum.tg_summary.power_info.dynamic_power;
+  json_rt["TG"] = json_tg;
+
+  /// LA
+  json json_la;
+  json_la["total_demand"] = rt_sum.la_summary.total_demand;
   for (auto demand : rt_sum.la_summary.routing_demand_map) {
-    json_ir["routing_demand_map"][std::to_string(demand.first)] = demand.second;
+    json_la["routing_demand_map"][std::to_string(demand.first)] = demand.second;
   }
 
-  json_ir["total_overflow"] = rt_sum.la_summary.total_overflow;
+  json_la["total_overflow"] = rt_sum.la_summary.total_overflow;
   for (auto routing_overflow : rt_sum.la_summary.routing_overflow_map) {
-    json_ir["routing_overflow_map"][std::to_string(routing_overflow.first)] = routing_overflow.second;
+    json_la["routing_overflow_map"][std::to_string(routing_overflow.first)] = routing_overflow.second;
   }
 
-  json_ir["total_wire_length"] = rt_sum.la_summary.total_wire_length;
+  json_la["total_wire_length"] = rt_sum.la_summary.total_wire_length;
   for (auto routing_wire_length : rt_sum.la_summary.routing_wire_length_map) {
-    json_ir["routing_wire_length_map"][std::to_string(routing_wire_length.first)] = routing_wire_length.second;
+    json_la["routing_wire_length_map"][std::to_string(routing_wire_length.first)] = routing_wire_length.second;
   }
 
-  json_ir["total_via_num"] = rt_sum.la_summary.total_via_num;
+  json_la["total_via_num"] = rt_sum.la_summary.total_via_num;
   for (auto cut_via_num : rt_sum.la_summary.cut_via_num_map) {
-    json_ir["cut_via_num_map"][std::to_string(cut_via_num.first)] = cut_via_num.second;
+    json_la["cut_via_num_map"][std::to_string(cut_via_num.first)] = cut_via_num.second;
   }
 
   for (int i = 0; i < (int) rt_sum.la_summary.clocks_timing.size(); i++) {
     auto clock_timing = rt_sum.la_summary.clocks_timing[i];
-    json_ir["clocks_timing"][i]["clock_name"] = clock_timing.clock_name;
-    json_ir["clocks_timing"][i]["setup_tns"] = clock_timing.setup_tns;
-    json_ir["clocks_timing"][i]["setup_wns"] = clock_timing.setup_wns;
-    json_ir["clocks_timing"][i]["suggest_freq"] = clock_timing.suggest_freq;
+    json_la["clocks_timing"][i]["clock_name"] = clock_timing.clock_name;
+    json_la["clocks_timing"][i]["setup_tns"] = clock_timing.setup_tns;
+    json_la["clocks_timing"][i]["setup_wns"] = clock_timing.setup_wns;
+    json_la["clocks_timing"][i]["suggest_freq"] = clock_timing.suggest_freq;
   }
-  json_ir["static_power"] = rt_sum.la_summary.power_info.static_power;
-  json_ir["dynamic_power"] = rt_sum.la_summary.power_info.dynamic_power;
+  json_la["static_power"] = rt_sum.la_summary.power_info.static_power;
+  json_la["dynamic_power"] = rt_sum.la_summary.power_info.dynamic_power;
 
-  json_rt["IR"] = json_ir;
+  json_rt["LA"] = json_la;
 
-  // // GR
+  // ER
+  json json_er;
+  json_er["total_demand"] = rt_sum.la_summary.total_demand;
+  for (auto demand : rt_sum.la_summary.routing_demand_map) {
+    json_er["routing_demand_map"][std::to_string(demand.first)] = demand.second;
+  }
+
+  json_er["total_overflow"] = rt_sum.la_summary.total_overflow;
+  for (auto routing_overflow : rt_sum.la_summary.routing_overflow_map) {
+    json_er["routing_overflow_map"][std::to_string(routing_overflow.first)] = routing_overflow.second;
+  }
+
+  json_er["total_wire_length"] = rt_sum.la_summary.total_wire_length;
+  for (auto routing_wire_length : rt_sum.la_summary.routing_wire_length_map) {
+    json_er["routing_wire_length_map"][std::to_string(routing_wire_length.first)] = routing_wire_length.second;
+  }
+
+  json_er["total_via_num"] = rt_sum.la_summary.total_via_num;
+  for (auto cut_via_num : rt_sum.la_summary.cut_via_num_map) {
+    json_er["cut_via_num_map"][std::to_string(cut_via_num.first)] = cut_via_num.second;
+  }
+
+  for (int i = 0; i < (int) rt_sum.la_summary.clocks_timing.size(); i++) {
+    auto clock_timing = rt_sum.la_summary.clocks_timing[i];
+    json_er["clocks_timing"][i]["clock_name"] = clock_timing.clock_name;
+    json_er["clocks_timing"][i]["setup_tns"] = clock_timing.setup_tns;
+    json_er["clocks_timing"][i]["setup_wns"] = clock_timing.setup_wns;
+    json_er["clocks_timing"][i]["suggest_freq"] = clock_timing.suggest_freq;
+  }
+  json_er["static_power"] = rt_sum.la_summary.power_info.static_power;
+  json_er["dynamic_power"] = rt_sum.la_summary.power_info.dynamic_power;
+
+  json_rt["ER"] = json_er;
+
+  // GR
   json json_gr_list;
   for (auto [id, gr_sum] : rt_sum.iter_gr_summary_map) {
     json json_gr;

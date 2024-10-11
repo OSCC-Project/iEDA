@@ -39,6 +39,15 @@ struct SASummary
   int32_t total_supply = 0;
 };
 
+struct TGSummary
+{
+  int32_t total_demand = 0;
+  int32_t total_overflow = 0;
+  double total_wire_length = 0;
+  std::vector<ClockTiming> clocks_timing;
+  PowerInfo power_info;
+};
+
 struct LASummary
 {
   std::map<int32_t, int32_t> routing_demand_map;
@@ -107,6 +116,7 @@ struct RTSummary
 {
   PASummary pa_summary;
   SASummary sa_summary;
+  TGSummary tg_summary;
   LASummary la_summary;
   ERSummary er_summary;
   std::map<int32_t, GRSummary> iter_gr_summary_map;
