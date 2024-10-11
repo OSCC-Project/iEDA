@@ -113,6 +113,23 @@ class DRSummary
   std::map<std::string, double> power_map;
 };
 
+class ERSummary
+{
+ public:
+  ERSummary() = default;
+  ~ERSummary() = default;
+  std::map<int32_t, int32_t> routing_demand_map;
+  int32_t total_demand = 0;
+  std::map<int32_t, int32_t> routing_overflow_map;
+  int32_t total_overflow = 0;
+  std::map<int32_t, double> routing_wire_length_map;
+  double total_wire_length = 0;
+  std::map<int32_t, int32_t> cut_via_num_map;
+  int32_t total_via_num = 0;
+  std::map<std::string, std::map<std::string, double>> clock_timing;
+  std::map<std::string, double> power_map;
+};
+
 class Summary
 {
  public:
@@ -121,10 +138,11 @@ class Summary
   PASummary pa_summary;
   SASummary sa_summary;
   TGSummary tg_summary;
-  IRSummary ir_summary;
+  ERSummary ir_summary;
   std::map<int32_t, GRSummary> iter_gr_summary_map;
   TASummary ta_summary;
   std::map<int32_t, DRSummary> iter_dr_summary_map;
+  ERSummary er_summary;
 };
 
 }  // namespace irt

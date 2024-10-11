@@ -57,6 +57,8 @@ class Config
   std::string ta_temp_directory_path;  // building
   // **********   DetailedRouter  ********** //
   std::string dr_temp_directory_path;  // building
+  // **********   EarlyRouter    ********** //
+  std::string er_temp_directory_path;  // building
   /////////////////////////////////////////////
 };
 

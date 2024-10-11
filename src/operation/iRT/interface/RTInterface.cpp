@@ -18,6 +18,7 @@
 
 #include "DRCEngine.hpp"
 #include "DetailedRouter.hpp"
+#include "EarlyRouter.hpp"
 #include "GDSPlotter.hpp"
 #include "GlobalRouter.hpp"
 #include "InitialRouter.hpp"
@@ -92,25 +93,70 @@ void RTInterface::runEGR()
   Monitor monitor;
   RTLOG.info(Loc::current(), "Starting...");
 
-  PinAccessor::initInst();
-  RTPA.access();
-  PinAccessor::destroyInst();
-
   SupplyAnalyzer::initInst();
   RTSA.analyze();
   SupplyAnalyzer::destroyInst();
+
+  // 临时pa
+  {
+    Monitor monitor;
+    RTLOG.info(Loc::current(), "Starting...");
+
+    ScaleAxis& gcell_axis = RTDM.getDatabase().get_gcell_axis();
+    Die& die = RTDM.getDatabase().get_die();
+    std::vector<Net>& net_list = RTDM.getDatabase().get_net_list();
+
+    for (auto& [net_idx, access_point_set] : RTDM.getNetAccessPointMap(die)) {
+      for (AccessPoint* access_point : access_point_set) {
+        RTDM.updateAccessNetPointToGCellMap(ChangeType::kDel, net_idx, access_point);
+      }
+    }
+
+    for (Net& net : net_list) {
+      for (Pin& pin : net.get_pin_list()) {
+        std::vector<EXTLayerRect>& routing_shape_list = pin.get_routing_shape_list();
+
+        LayerCoord layer_coord;
+        {
+          int32_t max_area = INT32_MIN;
+          LayerRect max_area_shape = routing_shape_list.front().getRealLayerRect();
+          for (EXTLayerRect& routing_shape : pin.get_routing_shape_list()) {
+            PlanarRect& real_shape = routing_shape.get_real_rect();
+            if (max_area < real_shape.getArea()) {
+              max_area = real_shape.getArea();
+              max_area_shape.set_rect(real_shape);
+            }
+          }
+          layer_coord.set_coord(max_area_shape.getMidPoint());
+          layer_coord.set_layer_idx(max_area_shape.get_layer_idx());
+        }
+        pin.set_access_point(AccessPoint(pin.get_pin_idx(), layer_coord, AccessPointType::kNoAccess));
+      }
+
+      std::vector<PlanarCoord> coord_list;
+      for (Pin& pin : net.get_pin_list()) {
+        coord_list.push_back(pin.get_access_point().get_real_coord());
+      }
+      BoundingBox& bounding_box = net.get_bounding_box();
+      bounding_box.set_real_rect(RTUTIL.getBoundingBox(coord_list));
+      bounding_box.set_grid_rect(RTUTIL.getOpenGCellGridRect(bounding_box.get_real_rect(), gcell_axis));
+
+      for (Pin& pin : net.get_pin_list()) {
+        AccessPoint& access_point = pin.get_access_point();
+        access_point.set_grid_coord(RTUTIL.getGCellGridCoordByBBox(access_point.get_real_coord(), gcell_axis, bounding_box));
+        RTDM.updateAccessNetPointToGCellMap(ChangeType::kAdd, net.get_net_idx(), &access_point);
+      }
+    }
+    RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
+  }
 
   TopologyGenerator::initInst();
   RTTG.generate();
   TopologyGenerator::destroyInst();
 
-  InitialRouter::initInst();
-  RTIR.route();
-  InitialRouter::destroyInst();
-
-  GlobalRouter::initInst();
-  RTGR.route();
-  GlobalRouter::destroyInst();
+  EarlyRouter::initInst();
+  RTER.route();
+  EarlyRouter::destroyInst();
 
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
