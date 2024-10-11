@@ -12,4 +12,7 @@ target_link_libraries(ista-engine sta str sdc sdc-cmd tcl idb def_service lef_se
 target_include_directories(ista-engine 
     PUBLIC 
         ${CMAKE_CURRENT_SOURCE_DIR}
+        ${HOME_UTILITY}/stdBase/include
+        ${HOME_OPERATION}/iSTA/source/module
+        ${HOME_OPERATION}/iSTA/source/module/include
 )

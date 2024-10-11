@@ -68,6 +68,7 @@ void DataManager::output()
   Monitor monitor;
   RTLOG.info(Loc::current(), "Starting...");
   RTI.output();
+  destroyGCellMap();
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
@@ -79,7 +80,9 @@ void DataManager::updateFixedRectToGCellMap(ChangeType change_type, int32_t net_
   Die& die = _database.get_die();
   GridMap<GCell>& gcell_map = _database.get_gcell_map();
   int32_t detection_distance = _database.get_detection_distance();
-
+  if (detection_distance == -1) {
+    RTLOG.error(Loc::current(), "The detection_distance is not initialize!");
+  }
   PlanarRect real_rect = RTUTIL.getEnlargedRect(ext_layer_rect->get_real_rect(), detection_distance);
   if (!RTUTIL.hasRegularRect(real_rect, die.get_real_rect())) {
     return;
@@ -128,7 +131,9 @@ void DataManager::updateNetAccessResultToGCellMap(ChangeType change_type, int32_
   Die& die = _database.get_die();
   GridMap<GCell>& gcell_map = _database.get_gcell_map();
   int32_t detection_distance = _database.get_detection_distance();
-
+  if (detection_distance == -1) {
+    RTLOG.error(Loc::current(), "The detection_distance is not initialize!");
+  }
   for (NetShape& net_shape : getNetShapeList(net_idx, *segment)) {
     PlanarRect real_rect = RTUTIL.getEnlargedRect(net_shape, detection_distance);
     if (!RTUTIL.hasRegularRect(real_rect, die.get_real_rect())) {
@@ -150,9 +155,43 @@ void DataManager::updateNetAccessResultToGCellMap(ChangeType change_type, int32_
       }
     }
   }
-
   if (change_type == ChangeType::kDel) {
-    // 由于在pin内的access_segment_list引用过来，所以不需要delete，也不能delete
+    delete segment;
+    segment = nullptr;
+  }
+}
+
+void DataManager::updateNetAccessPatchToGCellMap(ChangeType change_type, int32_t net_idx, EXTLayerRect* ext_layer_rect)
+{
+  ScaleAxis& gcell_axis = _database.get_gcell_axis();
+  Die& die = _database.get_die();
+  GridMap<GCell>& gcell_map = _database.get_gcell_map();
+  int32_t detection_distance = _database.get_detection_distance();
+  if (detection_distance == -1) {
+    RTLOG.error(Loc::current(), "The detection_distance is not initialize!");
+  }
+  PlanarRect real_rect = RTUTIL.getEnlargedRect(ext_layer_rect->get_real_rect(), detection_distance);
+  if (!RTUTIL.hasRegularRect(real_rect, die.get_real_rect())) {
+    return;
+  }
+  real_rect = RTUTIL.getRegularRect(real_rect, die.get_real_rect());
+  PlanarRect grid_rect = RTUTIL.getClosedGCellGridRect(real_rect, gcell_axis);
+  for (int32_t x = grid_rect.get_ll_x(); x <= grid_rect.get_ur_x(); x++) {
+    for (int32_t y = grid_rect.get_ll_y(); y <= grid_rect.get_ur_y(); y++) {
+      auto& net_access_patch_map = gcell_map[x][y].get_net_access_patch_map();
+      if (change_type == ChangeType::kAdd) {
+        net_access_patch_map[net_idx].insert(ext_layer_rect);
+      } else if (change_type == ChangeType::kDel) {
+        net_access_patch_map[net_idx].erase(ext_layer_rect);
+        if (net_access_patch_map[net_idx].empty()) {
+          net_access_patch_map.erase(net_idx);
+        }
+      }
+    }
+  }
+  if (change_type == ChangeType::kDel) {
+    delete ext_layer_rect;
+    ext_layer_rect = nullptr;
   }
 }
 
@@ -172,13 +211,13 @@ void DataManager::updateGlobalNetResultToGCellMap(ChangeType change_type, int32_
 
   for (int32_t x = first_x; x <= second_x; x++) {
     for (int32_t y = first_y; y <= second_y; y++) {
-      auto& global_net_result_map = gcell_map[x][y].get_global_net_result_map();
+      auto& net_global_result_map = gcell_map[x][y].get_net_global_result_map();
       if (change_type == ChangeType::kAdd) {
-        global_net_result_map[net_idx].insert(segment);
+        net_global_result_map[net_idx].insert(segment);
       } else if (change_type == ChangeType::kDel) {
-        global_net_result_map[net_idx].erase(segment);
-        if (global_net_result_map[net_idx].empty()) {
-          global_net_result_map.erase(net_idx);
+        net_global_result_map[net_idx].erase(segment);
+        if (net_global_result_map[net_idx].empty()) {
+          net_global_result_map.erase(net_idx);
         }
       }
     }
@@ -189,13 +228,15 @@ void DataManager::updateGlobalNetResultToGCellMap(ChangeType change_type, int32_
   }
 }
 
-void DataManager::updateDetailedNetResultToGCellMap(ChangeType change_type, int32_t net_idx, Segment<LayerCoord>* segment)
+void DataManager::updateNetDetailedResultToGCellMap(ChangeType change_type, int32_t net_idx, Segment<LayerCoord>* segment)
 {
   ScaleAxis& gcell_axis = _database.get_gcell_axis();
   Die& die = _database.get_die();
   GridMap<GCell>& gcell_map = _database.get_gcell_map();
   int32_t detection_distance = _database.get_detection_distance();
-
+  if (detection_distance == -1) {
+    RTLOG.error(Loc::current(), "The detection_distance is not initialize!");
+  }
   for (NetShape& net_shape : getNetShapeList(net_idx, *segment)) {
     PlanarRect real_rect = RTUTIL.getEnlargedRect(net_shape, detection_distance);
     if (!RTUTIL.hasRegularRect(real_rect, die.get_real_rect())) {
@@ -205,13 +246,13 @@ void DataManager::updateDetailedNetResultToGCellMap(ChangeType change_type, int3
     PlanarRect grid_rect = RTUTIL.getClosedGCellGridRect(real_rect, gcell_axis);
     for (int32_t x = grid_rect.get_ll_x(); x <= grid_rect.get_ur_x(); x++) {
       for (int32_t y = grid_rect.get_ll_y(); y <= grid_rect.get_ur_y(); y++) {
-        auto& detailed_net_result_map = gcell_map[x][y].get_detailed_net_result_map();
+        auto& net_detailed_result_map = gcell_map[x][y].get_net_detailed_result_map();
         if (change_type == ChangeType::kAdd) {
-          detailed_net_result_map[net_idx].insert(segment);
+          net_detailed_result_map[net_idx].insert(segment);
         } else if (change_type == ChangeType::kDel) {
-          detailed_net_result_map[net_idx].erase(segment);
-          if (detailed_net_result_map[net_idx].empty()) {
-            detailed_net_result_map.erase(net_idx);
+          net_detailed_result_map[net_idx].erase(segment);
+          if (net_detailed_result_map[net_idx].empty()) {
+            net_detailed_result_map.erase(net_idx);
           }
         }
       }
@@ -223,13 +264,15 @@ void DataManager::updateDetailedNetResultToGCellMap(ChangeType change_type, int3
   }
 }
 
-void DataManager::updateNetPatchToGCellMap(ChangeType change_type, int32_t net_idx, EXTLayerRect* ext_layer_rect)
+void DataManager::updateNetDetailedPatchToGCellMap(ChangeType change_type, int32_t net_idx, EXTLayerRect* ext_layer_rect)
 {
   ScaleAxis& gcell_axis = _database.get_gcell_axis();
   Die& die = _database.get_die();
   GridMap<GCell>& gcell_map = _database.get_gcell_map();
   int32_t detection_distance = _database.get_detection_distance();
-
+  if (detection_distance == -1) {
+    RTLOG.error(Loc::current(), "The detection_distance is not initialize!");
+  }
   PlanarRect real_rect = RTUTIL.getEnlargedRect(ext_layer_rect->get_real_rect(), detection_distance);
   if (!RTUTIL.hasRegularRect(real_rect, die.get_real_rect())) {
     return;
@@ -238,13 +281,13 @@ void DataManager::updateNetPatchToGCellMap(ChangeType change_type, int32_t net_i
   PlanarRect grid_rect = RTUTIL.getClosedGCellGridRect(real_rect, gcell_axis);
   for (int32_t x = grid_rect.get_ll_x(); x <= grid_rect.get_ur_x(); x++) {
     for (int32_t y = grid_rect.get_ll_y(); y <= grid_rect.get_ur_y(); y++) {
-      auto& net_patch_map = gcell_map[x][y].get_net_patch_map();
+      auto& net_detailed_patch_map = gcell_map[x][y].get_net_detailed_patch_map();
       if (change_type == ChangeType::kAdd) {
-        net_patch_map[net_idx].insert(ext_layer_rect);
+        net_detailed_patch_map[net_idx].insert(ext_layer_rect);
       } else if (change_type == ChangeType::kDel) {
-        net_patch_map[net_idx].erase(ext_layer_rect);
-        if (net_patch_map[net_idx].empty()) {
-          net_patch_map.erase(net_idx);
+        net_detailed_patch_map[net_idx].erase(ext_layer_rect);
+        if (net_detailed_patch_map[net_idx].empty()) {
+          net_detailed_patch_map.erase(net_idx);
         }
       }
     }
@@ -319,57 +362,72 @@ std::map<int32_t, std::set<Segment<LayerCoord>*>> DataManager::getNetAccessResul
   std::map<int32_t, std::set<Segment<LayerCoord>*>> net_access_result_map;
   for (int32_t x = region.get_grid_ll_x(); x <= region.get_grid_ur_x(); x++) {
     for (int32_t y = region.get_grid_ll_y(); y <= region.get_grid_ur_y(); y++) {
-      for (auto& [net_idx, result_set] : gcell_map[x][y].get_net_access_result_map()) {
-        net_access_result_map[net_idx].insert(result_set.begin(), result_set.end());
+      for (auto& [net_idx, segment_set] : gcell_map[x][y].get_net_access_result_map()) {
+        net_access_result_map[net_idx].insert(segment_set.begin(), segment_set.end());
       }
     }
   }
   return net_access_result_map;
 }
 
-std::map<int32_t, std::set<Segment<LayerCoord>*>> DataManager::getGlobalNetResultMap(EXTPlanarRect& region)
+std::map<int32_t, std::set<EXTLayerRect*>> DataManager::getNetAccessPatchMap(EXTPlanarRect& region)
 {
   GridMap<GCell>& gcell_map = _database.get_gcell_map();
 
-  std::map<int32_t, std::set<Segment<LayerCoord>*>> global_net_result_map;
+  std::map<int32_t, std::set<EXTLayerRect*>> net_access_patch_map;
   for (int32_t x = region.get_grid_ll_x(); x <= region.get_grid_ur_x(); x++) {
     for (int32_t y = region.get_grid_ll_y(); y <= region.get_grid_ur_y(); y++) {
-      for (auto& [net_idx, result_set] : gcell_map[x][y].get_global_net_result_map()) {
-        global_net_result_map[net_idx].insert(result_set.begin(), result_set.end());
+      for (auto& [net_idx, patch_set] : gcell_map[x][y].get_net_access_patch_map()) {
+        net_access_patch_map[net_idx].insert(patch_set.begin(), patch_set.end());
       }
     }
   }
-  return global_net_result_map;
+  return net_access_patch_map;
 }
 
-std::map<int32_t, std::set<Segment<LayerCoord>*>> DataManager::getDetailedNetResultMap(EXTPlanarRect& region)
+std::map<int32_t, std::set<Segment<LayerCoord>*>> DataManager::getNetGlobalResultMap(EXTPlanarRect& region)
 {
   GridMap<GCell>& gcell_map = _database.get_gcell_map();
 
-  std::map<int32_t, std::set<Segment<LayerCoord>*>> detailed_net_result_map;
+  std::map<int32_t, std::set<Segment<LayerCoord>*>> net_global_result_map;
   for (int32_t x = region.get_grid_ll_x(); x <= region.get_grid_ur_x(); x++) {
     for (int32_t y = region.get_grid_ll_y(); y <= region.get_grid_ur_y(); y++) {
-      for (auto& [net_idx, result_set] : gcell_map[x][y].get_detailed_net_result_map()) {
-        detailed_net_result_map[net_idx].insert(result_set.begin(), result_set.end());
+      for (auto& [net_idx, segment_set] : gcell_map[x][y].get_net_global_result_map()) {
+        net_global_result_map[net_idx].insert(segment_set.begin(), segment_set.end());
       }
     }
   }
-  return detailed_net_result_map;
+  return net_global_result_map;
 }
 
-std::map<int32_t, std::set<EXTLayerRect*>> DataManager::getNetPatchMap(EXTPlanarRect& region)
+std::map<int32_t, std::set<Segment<LayerCoord>*>> DataManager::getNetDetailedResultMap(EXTPlanarRect& region)
 {
   GridMap<GCell>& gcell_map = _database.get_gcell_map();
 
-  std::map<int32_t, std::set<EXTLayerRect*>> net_patch_map;
+  std::map<int32_t, std::set<Segment<LayerCoord>*>> net_detailed_result_map;
   for (int32_t x = region.get_grid_ll_x(); x <= region.get_grid_ur_x(); x++) {
     for (int32_t y = region.get_grid_ll_y(); y <= region.get_grid_ur_y(); y++) {
-      for (auto& [net_idx, patch_set] : gcell_map[x][y].get_net_patch_map()) {
-        net_patch_map[net_idx].insert(patch_set.begin(), patch_set.end());
+      for (auto& [net_idx, segment_set] : gcell_map[x][y].get_net_detailed_result_map()) {
+        net_detailed_result_map[net_idx].insert(segment_set.begin(), segment_set.end());
       }
     }
   }
-  return net_patch_map;
+  return net_detailed_result_map;
+}
+
+std::map<int32_t, std::set<EXTLayerRect*>> DataManager::getNetDetailedPatchMap(EXTPlanarRect& region)
+{
+  GridMap<GCell>& gcell_map = _database.get_gcell_map();
+
+  std::map<int32_t, std::set<EXTLayerRect*>> net_detailed_patch_map;
+  for (int32_t x = region.get_grid_ll_x(); x <= region.get_grid_ur_x(); x++) {
+    for (int32_t y = region.get_grid_ll_y(); y <= region.get_grid_ur_y(); y++) {
+      for (auto& [net_idx, patch_set] : gcell_map[x][y].get_net_detailed_patch_map()) {
+        net_detailed_patch_map[net_idx].insert(patch_set.begin(), patch_set.end());
+      }
+    }
+  }
+  return net_detailed_patch_map;
 }
 
 std::set<Violation*> DataManager::getViolationSet(EXTPlanarRect& region)
@@ -456,6 +514,31 @@ std::vector<NetShape> DataManager::getNetShapeList(int32_t net_idx, LayerCoord& 
 
 #endif
 
+#if 1  // 获得唯一的pitch
+
+int32_t DataManager::getOnlyPitch()
+{
+  std::vector<RoutingLayer>& routing_layer_list = _database.get_routing_layer_list();
+
+  std::vector<int32_t> pitch_list;
+  for (RoutingLayer& routing_layer : routing_layer_list) {
+    for (ScaleGrid& x_grid : routing_layer.get_track_axis().get_x_grid_list()) {
+      pitch_list.push_back(x_grid.get_step_length());
+    }
+    for (ScaleGrid& y_grid : routing_layer.get_track_axis().get_y_grid_list()) {
+      pitch_list.push_back(y_grid.get_step_length());
+    }
+  }
+  for (int32_t pitch : pitch_list) {
+    if (pitch_list.front() != pitch) {
+      RTLOG.error(Loc::current(), "The pitch is not equal!");
+    }
+  }
+  return pitch_list.front();
+}
+
+#endif
+
 // private
 
 DataManager* DataManager::_dm_instance = nullptr;
@@ -500,6 +583,7 @@ void DataManager::buildConfig()
   _config.dr_temp_directory_path = _config.temp_directory_path + "detailed_router/";
   /////////////////////////////////////////////
   // **********        RT         ********** //
+  RTUTIL.removeDir(_config.temp_directory_path);
   RTUTIL.createDir(_config.temp_directory_path);
   RTUTIL.createDirByFile(_config.log_file_path);
   // **********     DRCEngine     ********** //
@@ -526,16 +610,271 @@ void DataManager::buildConfig()
 
 void DataManager::buildDatabase()
 {
-  buildGCellAxis();
-  buildDie();
   buildLayerList();
   buildLayerInfo();
   buildLayerViaMasterList();
   buildLayerViaMasterInfo();
+  buildGCellAxis();
+  buildDie();
   buildObstacleList();
   buildNetList();
-  buildGCellMap();
   buildDetectionDistance();
+  buildGCellMap();
+}
+
+void DataManager::buildLayerList()
+{
+  transLayerList();
+  makeLayerList();
+  checkLayerList();
+}
+
+void DataManager::transLayerList()
+{
+  std::map<int32_t, int32_t>& routing_idb_layer_id_to_idx_map = _database.get_routing_idb_layer_id_to_idx_map();
+  std::map<int32_t, int32_t>& cut_idb_layer_id_to_idx_map = _database.get_cut_idb_layer_id_to_idx_map();
+
+  for (RoutingLayer& routing_layer : _database.get_routing_layer_list()) {
+    routing_layer.set_layer_idx(routing_idb_layer_id_to_idx_map[routing_layer.get_layer_idx()]);
+  }
+  for (CutLayer& cut_layer_list : _database.get_cut_layer_list()) {
+    cut_layer_list.set_layer_idx(cut_idb_layer_id_to_idx_map[cut_layer_list.get_layer_idx()]);
+  }
+}
+
+void DataManager::makeLayerList()
+{
+  Die& die = _database.get_die();
+  std::vector<RoutingLayer>& routing_layer_list = _database.get_routing_layer_list();
+  std::vector<CutLayer>& cut_layer_list = _database.get_cut_layer_list();
+
+  auto getFrequentNum = [](const std::vector<int32_t>& num_list) {
+    if (num_list.empty()) {
+      RTLOG.error(Loc::current(), "The num_list is empty!");
+    }
+    std::map<int32_t, int32_t> num_count_map;
+    for (int32_t num : num_list) {
+      num_count_map[num]++;
+    }
+    std::map<int32_t, std::vector<int32_t>, std::greater<int32_t>> count_num_list_map;
+    for (auto& [num, count] : num_count_map) {
+      count_num_list_map[count].push_back(num);
+    }
+    int32_t frequent_num = INT32_MAX;
+    for (int32_t num : count_num_list_map.begin()->second) {
+      frequent_num = std::min(frequent_num, num);
+    }
+    return frequent_num;
+  };
+  int32_t step_length;
+  {
+    std::vector<int32_t> width_list;
+    std::vector<int32_t> routing_spacing_list;
+    std::vector<int32_t> cut_spacing_list;
+    for (RoutingLayer& routing_layer : routing_layer_list) {
+      width_list.push_back(routing_layer.get_min_width());
+      routing_spacing_list.push_back(routing_layer.getMinSpacing(PlanarRect(0, 0, 0, 0)));
+    }
+    for (CutLayer& cut_layer : cut_layer_list) {
+      cut_spacing_list.push_back(cut_layer.getMinSpacing());
+    }
+    step_length = getFrequentNum(width_list) + std::min(getFrequentNum(routing_spacing_list), getFrequentNum(cut_spacing_list));
+  }
+  auto getScaleGrid = [](int32_t real_ll_scale, int32_t real_ur_scale, int32_t step_length) {
+    int32_t start_line = real_ll_scale + step_length;
+    int32_t step_num = (real_ur_scale - start_line) / step_length;
+    int32_t end_line = start_line + step_num * step_length;
+    if (end_line > real_ur_scale) {
+      step_num -= 1;
+      end_line = start_line + step_num * step_length;
+    }
+    if (std::abs(end_line - real_ur_scale) < step_length) {
+      step_num -= 1;
+      end_line = start_line + step_num * step_length;
+    }
+    ScaleGrid scale_grid;
+    scale_grid.set_start_line(start_line);
+    scale_grid.set_step_length(step_length);
+    scale_grid.set_step_num(step_num);
+    scale_grid.set_end_line(end_line);
+    return scale_grid;
+  };
+  ScaleAxis track_axis;
+  {
+    track_axis.get_x_grid_list().push_back(getScaleGrid(die.get_real_ll_x(), die.get_real_ur_x(), step_length));
+    track_axis.get_y_grid_list().push_back(getScaleGrid(die.get_real_ll_y(), die.get_real_ur_y(), step_length));
+  }
+  for (RoutingLayer& routing_layer : routing_layer_list) {
+    routing_layer.set_track_axis(track_axis);
+  }
+}
+
+void DataManager::checkLayerList()
+{
+  std::vector<RoutingLayer>& routing_layer_list = _database.get_routing_layer_list();
+  std::vector<CutLayer>& cut_layer_list = _database.get_cut_layer_list();
+
+  if (routing_layer_list.empty()) {
+    RTLOG.error(Loc::current(), "The routing_layer_list is empty!");
+  }
+  if (cut_layer_list.empty()) {
+    RTLOG.error(Loc::current(), "The cut_layer_list is empty!");
+  }
+
+  for (RoutingLayer& routing_layer : routing_layer_list) {
+    std::string& layer_name = routing_layer.get_layer_name();
+    if (routing_layer.get_prefer_direction() == Direction::kNone) {
+      RTLOG.error(Loc::current(), "The layer '", layer_name, "' prefer_direction is none!");
+    }
+    for (ScaleGrid& x_track_grid : routing_layer.getXTrackGridList()) {
+      if (x_track_grid.get_step_length() <= 0) {
+        RTLOG.error(Loc::current(), "The layer '", layer_name, "' x_track_grid step length '", x_track_grid.get_step_length(),
+                    "' is wrong!");
+      }
+    }
+    for (ScaleGrid& y_track_grid : routing_layer.getYTrackGridList()) {
+      if (y_track_grid.get_step_length() <= 0) {
+        RTLOG.error(Loc::current(), "The layer '", layer_name, "' y_track_grid step length '", y_track_grid.get_step_length(),
+                    "' is wrong!");
+      }
+    }
+    SpacingTable& spacing_table = routing_layer.get_spacing_table();
+    if (spacing_table.get_width_list().empty()) {
+      RTLOG.error(Loc::current(), "The layer '", layer_name, "' spacing width list is empty!");
+    }
+    for (int32_t width : spacing_table.get_width_list()) {
+      if (width < 0) {
+        RTLOG.error(Loc::current(), "The layer '", layer_name, "' width < 0!");
+      }
+    }
+    for (int32_t parallel_length : spacing_table.get_parallel_length_list()) {
+      if (parallel_length < 0) {
+        RTLOG.error(Loc::current(), "The layer '", layer_name, "' parallel_length < 0!");
+      }
+    }
+    GridMap<int32_t>& width_parallel_length_map = spacing_table.get_width_parallel_length_map();
+    for (int32_t width_idx = 0; width_idx < width_parallel_length_map.get_x_size(); width_idx++) {
+      for (int32_t parallel_length_idx = 0; parallel_length_idx < width_parallel_length_map.get_y_size(); parallel_length_idx++) {
+        if (width_parallel_length_map[width_idx][parallel_length_idx] < 0) {
+          RTLOG.error(Loc::current(), "The layer '", layer_name, "' spacing < 0!");
+        }
+      }
+    }
+  }
+}
+
+void DataManager::buildLayerInfo()
+{
+  std::map<int32_t, std::vector<int32_t>>& routing_to_adjacent_cut_map = _database.get_routing_to_adjacent_cut_map();
+  std::map<int32_t, std::vector<int32_t>>& cut_to_adjacent_routing_map = _database.get_cut_to_adjacent_routing_map();
+
+  std::vector<std::tuple<int32_t, bool, int32_t>> order_routing_layer_list;
+  for (RoutingLayer& routing_layer : _database.get_routing_layer_list()) {
+    order_routing_layer_list.emplace_back(routing_layer.get_layer_order(), true, routing_layer.get_layer_idx());
+  }
+  for (CutLayer& cut_layer : _database.get_cut_layer_list()) {
+    order_routing_layer_list.emplace_back(cut_layer.get_layer_order(), false, cut_layer.get_layer_idx());
+  }
+  std::sort(order_routing_layer_list.begin(), order_routing_layer_list.end(),
+            [](std::tuple<int32_t, bool, int32_t>& a, std::tuple<int32_t, bool, int32_t>& b) { return std::get<0>(a) < std::get<0>(b); });
+  for (int32_t i = 0; i < static_cast<int32_t>(order_routing_layer_list.size()); i++) {
+    if (std::get<1>(order_routing_layer_list[i]) == true) {
+      if (i - 1 >= 0) {
+        routing_to_adjacent_cut_map[std::get<2>(order_routing_layer_list[i])].push_back(std::get<2>(order_routing_layer_list[i - 1]));
+      }
+      if (i + 1 < static_cast<int32_t>(order_routing_layer_list.size())) {
+        routing_to_adjacent_cut_map[std::get<2>(order_routing_layer_list[i])].push_back(std::get<2>(order_routing_layer_list[i + 1]));
+      }
+    } else {
+      if (i - 1 >= 0) {
+        cut_to_adjacent_routing_map[std::get<2>(order_routing_layer_list[i])].push_back(std::get<2>(order_routing_layer_list[i - 1]));
+      }
+      if (i + 1 < static_cast<int32_t>(order_routing_layer_list.size())) {
+        cut_to_adjacent_routing_map[std::get<2>(order_routing_layer_list[i])].push_back(std::get<2>(order_routing_layer_list[i + 1]));
+      }
+    }
+  }
+}
+
+void DataManager::buildLayerViaMasterList()
+{
+  transLayerViaMasterList();
+  makeLayerViaMasterList();
+}
+
+void DataManager::transLayerViaMasterList()
+{
+  std::map<int32_t, int32_t>& routing_idb_layer_id_to_idx_map = _database.get_routing_idb_layer_id_to_idx_map();
+  std::map<int32_t, int32_t>& cut_idb_layer_id_to_idx_map = _database.get_cut_idb_layer_id_to_idx_map();
+  std::vector<std::vector<ViaMaster>>& layer_via_master_list = _database.get_layer_via_master_list();
+
+  for (std::vector<ViaMaster>& via_master_list : layer_via_master_list) {
+    for (ViaMaster& via_master : via_master_list) {
+      // above
+      LayerRect& above_enclosure = via_master.get_above_enclosure();
+      above_enclosure.set_layer_idx(routing_idb_layer_id_to_idx_map[above_enclosure.get_layer_idx()]);
+      // below
+      LayerRect& below_enclosure = via_master.get_below_enclosure();
+      below_enclosure.set_layer_idx(routing_idb_layer_id_to_idx_map[below_enclosure.get_layer_idx()]);
+      // cut
+      via_master.set_cut_layer_idx(cut_idb_layer_id_to_idx_map[via_master.get_cut_layer_idx()]);
+    }
+  }
+}
+
+void DataManager::makeLayerViaMasterList()
+{
+  std::vector<std::vector<ViaMaster>>& layer_via_master_list = _database.get_layer_via_master_list();
+  std::vector<RoutingLayer>& routing_layer_list = _database.get_routing_layer_list();
+
+  std::vector<ViaMaster> first_via_master_list;
+  for (ViaMaster& via_master : layer_via_master_list.front()) {
+    int32_t below_layer_idx = via_master.get_below_enclosure().get_layer_idx();
+    if (below_layer_idx == 0) {
+      first_via_master_list.push_back(via_master);
+    } else {
+      layer_via_master_list[below_layer_idx].push_back(via_master);
+    }
+  }
+  layer_via_master_list[0] = first_via_master_list;
+
+  for (size_t layer_idx = 0; layer_idx < layer_via_master_list.size(); layer_idx++) {
+    std::vector<ViaMaster>& via_master_list = layer_via_master_list[layer_idx];
+    for (ViaMaster& via_master : via_master_list) {
+      // above
+      LayerRect& above_enclosure = via_master.get_above_enclosure();
+      Direction above_layer_direction = routing_layer_list[above_enclosure.get_layer_idx()].get_prefer_direction();
+      via_master.set_above_direction(above_enclosure.getRectDirection(above_layer_direction));
+      // below
+      LayerRect& below_enclosure = via_master.get_below_enclosure();
+      Direction below_layer_direction = routing_layer_list[below_enclosure.get_layer_idx()].get_prefer_direction();
+      via_master.set_below_direction(below_enclosure.getRectDirection(below_layer_direction));
+    }
+    std::sort(via_master_list.begin(), via_master_list.end(),
+              [&routing_layer_list](ViaMaster& a, ViaMaster& b) { return CmpViaMaster()(a, b, routing_layer_list); });
+    for (size_t i = 0; i < via_master_list.size(); i++) {
+      via_master_list[i].set_via_master_idx(layer_idx, i);
+    }
+  }
+}
+
+void DataManager::buildLayerViaMasterInfo()
+{
+  std::vector<RoutingLayer>& routing_layer_list = _database.get_routing_layer_list();
+  std::vector<std::vector<ViaMaster>>& layer_via_master_list = _database.get_layer_via_master_list();
+  std::map<int32_t, PlanarRect>& layer_enclosure_map = _database.get_layer_enclosure_map();
+
+  int32_t start_layer_idx = 0;
+  int32_t end_layer_idx = static_cast<int32_t>(routing_layer_list.size()) - 1;
+
+  layer_enclosure_map[start_layer_idx] = layer_via_master_list[start_layer_idx].front().get_below_enclosure();
+  for (int32_t layer_idx = 1; layer_idx < end_layer_idx; layer_idx++) {
+    std::vector<PlanarRect> rect_list;
+    rect_list.push_back(layer_via_master_list[layer_idx - 1].front().get_above_enclosure());
+    rect_list.push_back(layer_via_master_list[layer_idx].front().get_below_enclosure());
+    layer_enclosure_map[layer_idx] = RTUTIL.getBoundingBox(rect_list);
+  }
+  layer_enclosure_map[end_layer_idx] = layer_via_master_list[end_layer_idx - 1].front().get_above_enclosure();
 }
 
 void DataManager::buildGCellAxis()
@@ -548,43 +887,11 @@ void DataManager::makeGCellAxis()
 {
   ScaleAxis& gcell_axis = _database.get_gcell_axis();
 
-  int32_t recommended_pitch = getRecommendedPitch();
-  gcell_axis.set_x_grid_list(makeGCellGridList(Direction::kVertical, recommended_pitch));
-  gcell_axis.set_y_grid_list(makeGCellGridList(Direction::kHorizontal, recommended_pitch));
+  gcell_axis.set_x_grid_list(makeGCellGridList(Direction::kVertical));
+  gcell_axis.set_y_grid_list(makeGCellGridList(Direction::kHorizontal));
 }
 
-int32_t DataManager::getRecommendedPitch()
-{
-  std::vector<RoutingLayer>& routing_layer_list = _database.get_routing_layer_list();
-
-  std::map<int32_t, int32_t> pitch_count_map;
-  for (RoutingLayer& routing_layer : routing_layer_list) {
-    for (ScaleGrid& track_grid : routing_layer.getPreferTrackGridList()) {
-      pitch_count_map[track_grid.get_step_length()]++;
-    }
-  }
-  int32_t recommended_pitch = -1;
-  int32_t max_count = INT32_MIN;
-  for (auto& [pitch, count] : pitch_count_map) {
-    if (count > max_count) {
-      max_count = count;
-      recommended_pitch = pitch;
-    }
-  }
-  if (max_count == 1) {
-    int32_t min_pitch = INT32_MAX;
-    for (auto& [pitch, count] : pitch_count_map) {
-      min_pitch = std::min(min_pitch, pitch);
-    }
-    recommended_pitch = min_pitch;
-  }
-  if (recommended_pitch == -1) {
-    RTLOG.error(Loc::current(), "The recommended_pitch is -1!");
-  }
-  return recommended_pitch;
-}
-
-std::vector<ScaleGrid> DataManager::makeGCellGridList(Direction direction, int32_t recommended_pitch)
+std::vector<ScaleGrid> DataManager::makeGCellGridList(Direction direction)
 {
   Die& die = _database.get_die();
   Row& row = _database.get_row();
@@ -593,7 +900,7 @@ std::vector<ScaleGrid> DataManager::makeGCellGridList(Direction direction, int32
   int32_t die_end_scale = (direction == Direction::kVertical ? die.get_real_ur_x() : die.get_real_ur_y());
   int32_t row_mid_scale = (direction == Direction::kVertical ? row.get_start_x() : row.get_start_y());
   // 为了防止与track重合，减去一个recommended_pitch的一半
-  row_mid_scale -= (recommended_pitch / 2);
+  row_mid_scale -= (getOnlyPitch() / 2);
   int32_t step_length = row.get_height();
 
   std::vector<int32_t> gcell_scale_list;
@@ -709,345 +1016,6 @@ void DataManager::checkDie()
     RTLOG.error(Loc::current(), "The die '(", die.get_real_ll_x(), " , ", die.get_real_ll_y(), ") - (", die.get_real_ur_x(), " , ",
                 die.get_real_ur_y(), ")' is wrong!");
   }
-}
-
-void DataManager::buildLayerList()
-{
-  transLayerList();
-  makeLayerList();
-  checkLayerList();
-}
-
-void DataManager::transLayerList()
-{
-  std::map<int32_t, int32_t>& routing_idb_layer_id_to_idx_map = _database.get_routing_idb_layer_id_to_idx_map();
-  std::map<int32_t, int32_t>& cut_idb_layer_id_to_idx_map = _database.get_cut_idb_layer_id_to_idx_map();
-
-  for (RoutingLayer& routing_layer : _database.get_routing_layer_list()) {
-    routing_layer.set_layer_idx(routing_idb_layer_id_to_idx_map[routing_layer.get_layer_idx()]);
-  }
-  for (CutLayer& cut_layer_list : _database.get_cut_layer_list()) {
-    cut_layer_list.set_layer_idx(cut_idb_layer_id_to_idx_map[cut_layer_list.get_layer_idx()]);
-  }
-}
-
-void DataManager::makeLayerList()
-{
-  std::vector<RoutingLayer>& routing_layer_list = _database.get_routing_layer_list();
-
-  for (RoutingLayer& routing_layer : routing_layer_list) {
-    for (ScaleGrid& x_track_grid : routing_layer.getXTrackGridList()) {
-      x_track_grid.set_end_line(x_track_grid.get_start_line() + x_track_grid.get_step_length() * x_track_grid.get_step_num());
-    }
-    for (ScaleGrid& y_track_grid : routing_layer.getYTrackGridList()) {
-      y_track_grid.set_end_line(y_track_grid.get_start_line() + y_track_grid.get_step_length() * y_track_grid.get_step_num());
-    }
-  }
-  if (routing_layer_list.size() < 2) {
-    RTLOG.error(Loc::current(), "The size of routing_layer < 2!");
-  }
-  ScaleAxis& standard_track_axis = routing_layer_list[1].get_track_axis();
-  for (RoutingLayer& routing_layer : routing_layer_list) {
-    routing_layer.set_track_axis(standard_track_axis);
-  }
-}
-
-void DataManager::checkLayerList()
-{
-  std::vector<RoutingLayer>& routing_layer_list = _database.get_routing_layer_list();
-  std::vector<CutLayer>& cut_layer_list = _database.get_cut_layer_list();
-
-  if (routing_layer_list.empty()) {
-    RTLOG.error(Loc::current(), "The routing_layer_list is empty!");
-  }
-  if (cut_layer_list.empty()) {
-    RTLOG.error(Loc::current(), "The cut_layer_list is empty!");
-  }
-
-  for (RoutingLayer& routing_layer : routing_layer_list) {
-    std::string& layer_name = routing_layer.get_layer_name();
-    if (routing_layer.get_prefer_direction() == Direction::kNone) {
-      RTLOG.error(Loc::current(), "The layer '", layer_name, "' prefer_direction is none!");
-    }
-    for (ScaleGrid& x_track_grid : routing_layer.getXTrackGridList()) {
-      if (x_track_grid.get_step_length() <= 0) {
-        RTLOG.error(Loc::current(), "The layer '", layer_name, "' x_track_grid step length '", x_track_grid.get_step_length(),
-                    "' is wrong!");
-      }
-    }
-    for (ScaleGrid& y_track_grid : routing_layer.getYTrackGridList()) {
-      if (y_track_grid.get_step_length() <= 0) {
-        RTLOG.error(Loc::current(), "The layer '", layer_name, "' y_track_grid step length '", y_track_grid.get_step_length(),
-                    "' is wrong!");
-      }
-    }
-    SpacingTable& spacing_table = routing_layer.get_spacing_table();
-    if (spacing_table.get_width_list().empty()) {
-      RTLOG.error(Loc::current(), "The layer '", layer_name, "' spacing width list is empty!");
-    }
-    for (int32_t width : spacing_table.get_width_list()) {
-      if (width < 0) {
-        RTLOG.error(Loc::current(), "The layer '", layer_name, "' width < 0!");
-      }
-    }
-    for (int32_t parallel_length : spacing_table.get_parallel_length_list()) {
-      if (parallel_length < 0) {
-        RTLOG.error(Loc::current(), "The layer '", layer_name, "' parallel_length < 0!");
-      }
-    }
-    GridMap<int32_t>& width_parallel_length_map = spacing_table.get_width_parallel_length_map();
-    for (int32_t width_idx = 0; width_idx < width_parallel_length_map.get_x_size(); width_idx++) {
-      for (int32_t parallel_length_idx = 0; parallel_length_idx < width_parallel_length_map.get_y_size(); parallel_length_idx++) {
-        if (width_parallel_length_map[width_idx][parallel_length_idx] < 0) {
-          RTLOG.error(Loc::current(), "The layer '", layer_name, "' spacing < 0!");
-        }
-      }
-    }
-  }
-}
-
-void DataManager::buildLayerInfo()
-{
-  std::map<int32_t, std::vector<int32_t>>& cut_to_adjacent_routing_map = _database.get_cut_to_adjacent_routing_map();
-
-  std::map<int32_t, std::pair<bool, int32_t>> layer_order_to_idx_map;
-  for (RoutingLayer& routing_layer : _database.get_routing_layer_list()) {
-    layer_order_to_idx_map[routing_layer.get_layer_order()] = std::make_pair(false, routing_layer.get_layer_idx());
-  }
-  for (CutLayer& cut_layer : _database.get_cut_layer_list()) {
-    layer_order_to_idx_map[cut_layer.get_layer_order()] = std::make_pair(true, cut_layer.get_layer_idx());
-  }
-  std::vector<std::pair<bool, int32_t>> layer_idx_pair_list;
-  for (auto& [layer_order, type_layer_idx_pair] : layer_order_to_idx_map) {
-    layer_idx_pair_list.push_back(type_layer_idx_pair);
-  }
-
-  for (int32_t i = 0; i < static_cast<int32_t>(layer_idx_pair_list.size()); i++) {
-    bool is_cut = layer_idx_pair_list[i].first;
-    int32_t cut_layer_idx = layer_idx_pair_list[i].second;
-    if (!is_cut) {
-      continue;
-    }
-    std::vector<int32_t> adj_routing_layer_idx_list;
-    if (i - 1 >= 0 && layer_idx_pair_list[i - 1].first == false) {
-      adj_routing_layer_idx_list.push_back(layer_idx_pair_list[i - 1].second);
-    }
-    if (i + 1 < static_cast<int32_t>(layer_idx_pair_list.size()) && layer_idx_pair_list[i + 1].first == false) {
-      adj_routing_layer_idx_list.push_back(layer_idx_pair_list[i + 1].second);
-    }
-    if (!adj_routing_layer_idx_list.empty()) {
-      cut_to_adjacent_routing_map[cut_layer_idx] = adj_routing_layer_idx_list;
-    }
-  }
-}
-
-void DataManager::buildLayerViaMasterList()
-{
-  transLayerViaMasterList();
-  makeLayerViaMasterList();
-}
-
-void DataManager::transLayerViaMasterList()
-{
-  std::map<int32_t, int32_t>& routing_idb_layer_id_to_idx_map = _database.get_routing_idb_layer_id_to_idx_map();
-  std::map<int32_t, int32_t>& cut_idb_layer_id_to_idx_map = _database.get_cut_idb_layer_id_to_idx_map();
-  std::vector<std::vector<ViaMaster>>& layer_via_master_list = _database.get_layer_via_master_list();
-
-  for (std::vector<ViaMaster>& via_master_list : layer_via_master_list) {
-    for (ViaMaster& via_master : via_master_list) {
-      // above
-      LayerRect& above_enclosure = via_master.get_above_enclosure();
-      above_enclosure.set_layer_idx(routing_idb_layer_id_to_idx_map[above_enclosure.get_layer_idx()]);
-      // below
-      LayerRect& below_enclosure = via_master.get_below_enclosure();
-      below_enclosure.set_layer_idx(routing_idb_layer_id_to_idx_map[below_enclosure.get_layer_idx()]);
-      // cut
-      via_master.set_cut_layer_idx(cut_idb_layer_id_to_idx_map[via_master.get_cut_layer_idx()]);
-    }
-  }
-}
-
-void DataManager::makeLayerViaMasterList()
-{
-  std::vector<std::vector<ViaMaster>>& layer_via_master_list = _database.get_layer_via_master_list();
-  std::vector<RoutingLayer>& routing_layer_list = _database.get_routing_layer_list();
-
-  std::vector<ViaMaster> first_via_master_list;
-  for (ViaMaster& via_master : layer_via_master_list.front()) {
-    int32_t below_layer_idx = via_master.get_below_enclosure().get_layer_idx();
-    if (below_layer_idx == 0) {
-      first_via_master_list.push_back(via_master);
-    } else {
-      layer_via_master_list[below_layer_idx].push_back(via_master);
-    }
-  }
-  layer_via_master_list[0] = first_via_master_list;
-
-  for (size_t layer_idx = 0; layer_idx < layer_via_master_list.size(); layer_idx++) {
-    std::vector<ViaMaster>& via_master_list = layer_via_master_list[layer_idx];
-    for (ViaMaster& via_master : via_master_list) {
-      // above
-      LayerRect& above_enclosure = via_master.get_above_enclosure();
-      Direction above_layer_direction = routing_layer_list[above_enclosure.get_layer_idx()].get_prefer_direction();
-      via_master.set_above_direction(above_enclosure.getRectDirection(above_layer_direction));
-      // below
-      LayerRect& below_enclosure = via_master.get_below_enclosure();
-      Direction below_layer_direction = routing_layer_list[below_enclosure.get_layer_idx()].get_prefer_direction();
-      via_master.set_below_direction(below_enclosure.getRectDirection(below_layer_direction));
-    }
-    std::sort(via_master_list.begin(), via_master_list.end(),
-              [&](ViaMaster& via_master1, ViaMaster& via_master2) { return sortByMultiLevel(via_master1, via_master2); });
-    for (size_t i = 0; i < via_master_list.size(); i++) {
-      via_master_list[i].set_via_master_idx(layer_idx, i);
-    }
-  }
-}
-
-bool DataManager::sortByMultiLevel(ViaMaster& via_master1, ViaMaster& via_master2)
-{
-  SortStatus sort_status = SortStatus::kNone;
-
-  sort_status = sortByLayerDirectionPriority(via_master1, via_master2);
-  if (sort_status == SortStatus::kTrue) {
-    return true;
-  } else if (sort_status == SortStatus::kFalse) {
-    return false;
-  }
-  sort_status = sortByWidthASC(via_master1, via_master2);
-  if (sort_status == SortStatus::kTrue) {
-    return true;
-  } else if (sort_status == SortStatus::kFalse) {
-    return false;
-  }
-  sort_status = sortByLengthASC(via_master1, via_master2);
-  if (sort_status == SortStatus::kTrue) {
-    return true;
-  } else if (sort_status == SortStatus::kFalse) {
-    return false;
-  }
-  sort_status = sortBySymmetryPriority(via_master1, via_master2);
-  if (sort_status == SortStatus::kTrue) {
-    return true;
-  } else if (sort_status == SortStatus::kFalse) {
-    return false;
-  }
-  return false;
-}
-
-// 层方向优先
-SortStatus DataManager::sortByLayerDirectionPriority(ViaMaster& via_master1, ViaMaster& via_master2)
-{
-  std::vector<RoutingLayer>& routing_layer_list = _database.get_routing_layer_list();
-
-  Direction above_layer_direction = routing_layer_list[via_master1.get_above_enclosure().get_layer_idx()].get_prefer_direction();
-  Direction below_layer_direction = routing_layer_list[via_master1.get_below_enclosure().get_layer_idx()].get_prefer_direction();
-
-  if (via_master1.get_above_direction() == above_layer_direction && via_master2.get_above_direction() != above_layer_direction) {
-    return SortStatus::kTrue;
-  } else if (via_master1.get_above_direction() != above_layer_direction && via_master2.get_above_direction() == above_layer_direction) {
-    return SortStatus::kFalse;
-  } else {
-    if (via_master1.get_below_direction() == below_layer_direction && via_master2.get_below_direction() != below_layer_direction) {
-      return SortStatus::kTrue;
-    } else if (via_master1.get_below_direction() != below_layer_direction && via_master2.get_below_direction() == below_layer_direction) {
-      return SortStatus::kFalse;
-    } else {
-      return SortStatus::kEqual;
-    }
-  }
-}
-
-// 宽度升序
-SortStatus DataManager::sortByWidthASC(ViaMaster& via_master1, ViaMaster& via_master2)
-{
-  LayerRect& via_master1_above = via_master1.get_above_enclosure();
-  LayerRect& via_master1_below = via_master1.get_below_enclosure();
-  LayerRect& via_master2_above = via_master2.get_above_enclosure();
-  LayerRect& via_master2_below = via_master2.get_below_enclosure();
-
-  if (via_master1_above.getWidth() < via_master2_above.getWidth()) {
-    return SortStatus::kTrue;
-  } else if (via_master1_above.getWidth() > via_master2_above.getWidth()) {
-    return SortStatus::kFalse;
-  } else {
-    if (via_master1_below.getWidth() < via_master2_below.getWidth()) {
-      return SortStatus::kTrue;
-    } else if (via_master1_below.getWidth() > via_master2_below.getWidth()) {
-      return SortStatus::kFalse;
-    } else {
-      return SortStatus::kEqual;
-    }
-  }
-}
-
-// 长度升序
-SortStatus DataManager::sortByLengthASC(ViaMaster& via_master1, ViaMaster& via_master2)
-{
-  LayerRect& via_master1_above = via_master1.get_above_enclosure();
-  LayerRect& via_master1_below = via_master1.get_below_enclosure();
-  LayerRect& via_master2_above = via_master2.get_above_enclosure();
-  LayerRect& via_master2_below = via_master2.get_below_enclosure();
-
-  if (via_master1_above.getLength() < via_master2_above.getLength()) {
-    return SortStatus::kTrue;
-  } else if (via_master1_above.getLength() > via_master2_above.getLength()) {
-    return SortStatus::kFalse;
-  } else {
-    if (via_master1_below.getLength() < via_master2_below.getLength()) {
-      return SortStatus::kTrue;
-    } else if (via_master1_below.getLength() > via_master2_below.getLength()) {
-      return SortStatus::kFalse;
-    } else {
-      return SortStatus::kEqual;
-    }
-  }
-}
-
-// 对称优先
-SortStatus DataManager::sortBySymmetryPriority(ViaMaster& via_master1, ViaMaster& via_master2)
-{
-  LayerRect& via_master1_above = via_master1.get_above_enclosure();
-  LayerRect& via_master1_below = via_master1.get_below_enclosure();
-  LayerRect& via_master2_above = via_master2.get_above_enclosure();
-  LayerRect& via_master2_below = via_master2.get_below_enclosure();
-
-  // via_master的ll为负数，ur为正数
-  int32_t via_master1_above_center_diff = std::abs(via_master1_above.get_ll_x() + via_master1_above.get_ur_x());
-  int32_t via_master2_above_center_diff = std::abs(via_master2_above.get_ll_x() + via_master2_above.get_ur_x());
-  int32_t via_master1_below_center_diff = std::abs(via_master1_below.get_ll_x() + via_master1_below.get_ur_x());
-  int32_t via_master2_below_center_diff = std::abs(via_master2_below.get_ll_x() + via_master2_below.get_ur_x());
-  if (via_master1_above_center_diff < via_master2_above_center_diff) {
-    return SortStatus::kTrue;
-  } else if (via_master1_above_center_diff > via_master2_above_center_diff) {
-    return SortStatus::kFalse;
-  } else {
-    if (via_master1_below_center_diff < via_master2_below_center_diff) {
-      return SortStatus::kTrue;
-    } else if (via_master1_below_center_diff > via_master2_below_center_diff) {
-      return SortStatus::kFalse;
-    } else {
-      return SortStatus::kEqual;
-    }
-  }
-}
-
-void DataManager::buildLayerViaMasterInfo()
-{
-  std::vector<RoutingLayer>& routing_layer_list = _database.get_routing_layer_list();
-  std::vector<std::vector<ViaMaster>>& layer_via_master_list = _database.get_layer_via_master_list();
-  std::map<int32_t, PlanarRect>& layer_enclosure_map = _database.get_layer_enclosure_map();
-
-  int32_t start_layer_idx = 0;
-  int32_t end_layer_idx = static_cast<int32_t>(routing_layer_list.size()) - 1;
-
-  layer_enclosure_map[start_layer_idx] = layer_via_master_list[start_layer_idx].front().get_below_enclosure();
-  for (int32_t layer_idx = 1; layer_idx < end_layer_idx; layer_idx++) {
-    std::vector<PlanarRect> rect_list;
-    rect_list.push_back(layer_via_master_list[layer_idx - 1].front().get_above_enclosure());
-    rect_list.push_back(layer_via_master_list[layer_idx].front().get_below_enclosure());
-    layer_enclosure_map[layer_idx] = RTUTIL.getBoundingBox(rect_list);
-  }
-  layer_enclosure_map[end_layer_idx] = layer_via_master_list[end_layer_idx - 1].front().get_above_enclosure();
 }
 
 void DataManager::buildObstacleList()
@@ -1217,16 +1185,21 @@ void DataManager::checkPinList(Net& net)
   }
 }
 
+void DataManager::buildDetectionDistance()
+{
+  _database.set_detection_distance(2 * getOnlyPitch());
+}
+
 void DataManager::buildGCellMap()
 {
-  Monitor monitor;
-  RTLOG.info(Loc::current(), "Starting...");
+  initGCellMap();
+  updateGCellMap();
+}
 
+void DataManager::initGCellMap()
+{
   ScaleAxis& gcell_axis = _database.get_gcell_axis();
   Die& die = _database.get_die();
-  std::vector<Obstacle>& routing_obstacle_list = _database.get_routing_obstacle_list();
-  std::vector<Obstacle>& cut_obstacle_list = _database.get_cut_obstacle_list();
-  std::vector<Net>& net_list = _database.get_net_list();
 
   GridMap<GCell>& gcell_map = _database.get_gcell_map();
   gcell_map.init(die.getXSize(), die.getYSize());
@@ -1239,14 +1212,33 @@ void DataManager::buildGCellMap()
       gcell_map[x][y].set_ur(real_rect.get_ur());
     }
   }
-  struct Shape
+}
+
+void DataManager::updateGCellMap()
+{
+  Monitor monitor;
+  RTLOG.info(Loc::current(), "Starting...");
+
+  ScaleAxis& gcell_axis = _database.get_gcell_axis();
+  Die& die = _database.get_die();
+  std::vector<Obstacle>& routing_obstacle_list = _database.get_routing_obstacle_list();
+  std::vector<Obstacle>& cut_obstacle_list = _database.get_cut_obstacle_list();
+  std::vector<Net>& net_list = _database.get_net_list();
+  int32_t detection_distance = _database.get_detection_distance();
+  if (detection_distance == -1) {
+    RTLOG.error(Loc::current(), "The detection_distance is not initialize!");
+  }
+  struct AUXShape
   {
+    // info
     int32_t net_idx = -1;
     EXTLayerRect* rect = nullptr;
     bool is_routing = true;
+    // process
+    PlanarRect grid_rect;
     bool is_save = false;
   };
-  std::vector<Shape> shape_list;
+  std::vector<AUXShape> aux_shape_list;
   {
     size_t total_shape_num = 0;
     total_shape_num += routing_obstacle_list.size();
@@ -1257,96 +1249,84 @@ void DataManager::buildGCellMap()
         total_shape_num += pin.get_cut_shape_list().size();
       }
     }
-    shape_list.reserve(total_shape_num);
-
+    aux_shape_list.reserve(total_shape_num);
+  }
+  {
     for (Obstacle& routing_obstacle : routing_obstacle_list) {
-      shape_list.emplace_back(-1, &routing_obstacle, true);
+      aux_shape_list.emplace_back(-1, &routing_obstacle, true);
     }
     for (Obstacle& cut_obstacle : cut_obstacle_list) {
-      shape_list.emplace_back(-1, &cut_obstacle, false);
+      aux_shape_list.emplace_back(-1, &cut_obstacle, false);
     }
     for (Net& net : net_list) {
       for (Pin& pin : net.get_pin_list()) {
         for (EXTLayerRect& routing_shape : pin.get_routing_shape_list()) {
-          shape_list.emplace_back(net.get_net_idx(), &routing_shape, true);
+          aux_shape_list.emplace_back(net.get_net_idx(), &routing_shape, true);
         }
         for (EXTLayerRect& cut_shape : pin.get_cut_shape_list()) {
-          shape_list.emplace_back(net.get_net_idx(), &cut_shape, false);
+          aux_shape_list.emplace_back(net.get_net_idx(), &cut_shape, false);
         }
       }
     }
+#pragma omp parallel for
+    for (AUXShape& aux_shape : aux_shape_list) {
+      PlanarRect real_rect = RTUTIL.getEnlargedRect(aux_shape.rect->get_real_rect(), detection_distance);
+      if (!RTUTIL.hasRegularRect(real_rect, die.get_real_rect())) {
+        continue;
+      }
+      real_rect = RTUTIL.getRegularRect(real_rect, die.get_real_rect());
+      aux_shape.grid_rect = RTUTIL.getClosedGCellGridRect(real_rect, gcell_axis);
+    }
   }
-  int32_t interval_length = 6;
-  if (interval_length <= (die.get_grid_ur_y() - die.get_grid_ll_y())) {
-    std::map<int32_t, std::vector<std::vector<Shape>>> start_shape_list_list_map;
-    for (int32_t interval_start : {0, interval_length / 2}) {
-      std::vector<std::vector<Shape>>& shape_list_list = start_shape_list_list_map[interval_start];
-      shape_list_list.resize((die.get_grid_ur_y() - interval_start) / interval_length + 1);
-      for (Shape& shape : shape_list) {
-        if (shape.is_save) {
+  // 以y方向分割,主要依据为第一层往往是横方向的shape
+  int32_t bucket_length = 6;
+  int32_t die_grid_ll_y = die.get_grid_ll_y();
+  int32_t die_grid_ur_y = die.get_grid_ur_y();
+  if (bucket_length <= (die_grid_ur_y - die_grid_ll_y)) {
+    for (int32_t bucket_start : {0, bucket_length / 2}) {
+      std::vector<std::vector<AUXShape>> aux_shape_list_list;
+      aux_shape_list_list.resize((die_grid_ur_y - bucket_start) / bucket_length + 1);
+
+      for (AUXShape& aux_shape : aux_shape_list) {
+        if (aux_shape.is_save) {
           continue;
         }
-        PlanarRect& grid_rect = shape.rect->get_grid_rect();
-        int32_t y_interval_idx
-            = getIntervalIdx(grid_rect.get_ll_y(), grid_rect.get_ur_y(), interval_start, die.get_grid_ur_y(), interval_length);
-        if (y_interval_idx != -1) {
-          shape_list_list[y_interval_idx].push_back(shape);
-          shape.is_save = true;
+        int32_t aux_shape_grid_ll_y = aux_shape.grid_rect.get_ll_y();
+        int32_t aux_shape_grid_ur_y = aux_shape.grid_rect.get_ur_y();
+        int32_t bucket_idx = getBucketIdx(aux_shape_grid_ll_y, aux_shape_grid_ur_y, bucket_start, die_grid_ur_y, bucket_length);
+        if (bucket_idx != -1) {
+          aux_shape_list_list[bucket_idx].push_back(aux_shape);
+          aux_shape.is_save = true;
         }
       }
-    }
-    for (auto& [interval_start, shape_list_list] : start_shape_list_list_map) {
 #pragma omp parallel for
-      for (std::vector<Shape>& shape_list : shape_list_list) {
-        for (Shape& shape : shape_list) {
-          int32_t net_idx = shape.net_idx;
-          EXTLayerRect* ext_layer_rect = shape.rect;
-          int32_t layer_idx = ext_layer_rect->get_layer_idx();
-          bool is_routing = shape.is_routing;
-
-          for (int32_t x = ext_layer_rect->get_grid_ll_x(); x <= ext_layer_rect->get_grid_ur_x(); x++) {
-            for (int32_t y = ext_layer_rect->get_grid_ll_y(); y <= ext_layer_rect->get_grid_ur_y(); y++) {
-              gcell_map[x][y].get_type_layer_net_fixed_rect_map()[is_routing][layer_idx][net_idx].insert(ext_layer_rect);
-            }
-          }
+      for (std::vector<AUXShape>& aux_shape_list : aux_shape_list_list) {
+        for (AUXShape& aux_shape : aux_shape_list) {
+          updateFixedRectToGCellMap(ChangeType::kAdd, aux_shape.net_idx, aux_shape.rect, aux_shape.is_routing);
         }
       }
     }
   }
-  for (Shape& shape : shape_list) {
-    if (shape.is_save) {
+  for (AUXShape& aux_shape : aux_shape_list) {
+    if (aux_shape.is_save) {
       continue;
     }
-    int32_t net_idx = shape.net_idx;
-    EXTLayerRect* ext_layer_rect = shape.rect;
-    int32_t layer_idx = ext_layer_rect->get_layer_idx();
-    bool is_routing = shape.is_routing;
-    for (int32_t x = ext_layer_rect->get_grid_ll_x(); x <= ext_layer_rect->get_grid_ur_x(); x++) {
-      for (int32_t y = ext_layer_rect->get_grid_ll_y(); y <= ext_layer_rect->get_grid_ur_y(); y++) {
-        gcell_map[x][y].get_type_layer_net_fixed_rect_map()[is_routing][layer_idx][net_idx].insert(ext_layer_rect);
-      }
-    }
+    updateFixedRectToGCellMap(ChangeType::kAdd, aux_shape.net_idx, aux_shape.rect, aux_shape.is_routing);
   }
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
-int32_t DataManager::getIntervalIdx(int32_t scale_start, int32_t scale_end, int32_t interval_start, int32_t interval_end,
-                                    int32_t interval_length)
+int32_t DataManager::getBucketIdx(int32_t scale_start, int32_t scale_end, int32_t bucket_start, int32_t bucket_end, int32_t bucket_length)
 {
-  if (scale_start < interval_start || scale_end > interval_end) {
+  if (scale_start < bucket_start || scale_end > bucket_end) {
     return -1;
   }
-  int32_t start_idx = (scale_start - interval_start) / interval_length;
-  int32_t end_idx = (scale_end - interval_start) / interval_length;
+  int32_t start_idx = (scale_start - bucket_start) / bucket_length;
+  int32_t end_idx = (scale_end - bucket_start) / bucket_length;
   if (start_idx != end_idx) {
     return -1;
   }
   return start_idx;
-}
-
-void DataManager::buildDetectionDistance()
-{
-  _database.set_detection_distance(500);
 }
 
 void DataManager::printConfig()
@@ -1362,8 +1342,8 @@ void DataManager::printConfig()
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), _config.bottom_routing_layer);
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "top_routing_layer");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), _config.top_routing_layer);
-  RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "output_csv");
-  RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), _config.output_csv);
+  RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "output_inter_result");
+  RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), _config.output_inter_result);
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "enable_timing");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), _config.enable_timing);
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "enable_lsa");
@@ -1558,6 +1538,44 @@ void DataManager::writePYScript()
   RTUTIL.pushStream(python_file, "with Pool() as pool:", "\n");
   RTUTIL.pushStream(python_file, "    pool.map(process_csv, csv_files)", "\n");
   RTUTIL.closeFileStream(python_file);
+}
+
+#endif
+
+#if 1  // destroy
+
+void DataManager::destroyGCellMap()
+{
+  Die& die = _database.get_die();
+
+  for (auto& [net_idx, segment_set] : getNetAccessResultMap(die)) {
+    for (Segment<LayerCoord>* segment : segment_set) {
+      RTDM.updateNetAccessResultToGCellMap(ChangeType::kDel, net_idx, segment);
+    }
+  }
+  for (auto& [net_idx, patch_set] : getNetAccessPatchMap(die)) {
+    for (EXTLayerRect* patch : patch_set) {
+      RTDM.updateNetAccessPatchToGCellMap(ChangeType::kDel, net_idx, patch);
+    }
+  }
+  for (auto& [net_idx, segment_set] : getNetGlobalResultMap(die)) {
+    for (Segment<LayerCoord>* segment : segment_set) {
+      RTDM.updateGlobalNetResultToGCellMap(ChangeType::kDel, net_idx, segment);
+    }
+  }
+  for (auto& [net_idx, segment_set] : getNetDetailedResultMap(die)) {
+    for (Segment<LayerCoord>* segment : segment_set) {
+      RTDM.updateNetDetailedResultToGCellMap(ChangeType::kDel, net_idx, segment);
+    }
+  }
+  for (auto& [net_idx, patch_set] : getNetDetailedPatchMap(die)) {
+    for (EXTLayerRect* patch : patch_set) {
+      RTDM.updateNetDetailedPatchToGCellMap(ChangeType::kDel, net_idx, patch);
+    }
+  }
+  for (Violation* violation : getViolationSet(die)) {
+    RTDM.updateViolationToGCellMap(ChangeType::kDel, violation);
+  }
 }
 
 #endif

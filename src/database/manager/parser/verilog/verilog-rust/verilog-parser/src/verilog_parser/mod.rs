@@ -1020,8 +1020,9 @@ mod tests {
 
     #[test]
     fn test_parse_assign_declaration() {
-        let input_str = "assign _01_ = b_pad;";
+        let _input_str = "assign _01_ = b_pad;";
         let _input_str = "assign DATA_9_31 = WX1010;";
+        let input_str = "assign n10 = 1'b0;";
         let parse_result = VerilogParser::parse(Rule::assign_declaration, input_str);
 
         print_parse_result(parse_result);

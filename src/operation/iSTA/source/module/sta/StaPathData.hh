@@ -80,6 +80,7 @@ class StaPathData {
   virtual ~StaPathData() = default;
   virtual int64_t getArriveTime() = 0;
   virtual int64_t getRequireTime() = 0;
+  virtual double getArriveTimeNs() = 0;
   virtual int getSlack() = 0;
   virtual int getSkew() = 0;
   virtual double getSlackNs() = 0;
@@ -115,6 +116,7 @@ class StaSeqPathData : public StaPathData {
   int64_t getArriveTime() override;
   std::pair<int64_t, int64_t> getCellAndNetDelayOfArriveTime();
   int64_t getRequireTime() override;
+  double getArriveTimeNs() override { return FS_TO_NS(getArriveTime()); }
   [[nodiscard]] auto get_cppr() const { return _cppr; }
   [[nodiscard]] int get_constrain_value() const { return _constrain_value; }
   void set_check_arc(StaArc* check_arc) { _check_arc = check_arc; }

@@ -1,74 +1,70 @@
-#include <algorithm>
-#include <climits>
-#include <cmath>
 #include <iostream>
+#include <stack>
+#include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 using namespace std;
 
-struct Point
+// Function to find all connected components
+vector<vector<int>> findConnectedComponents(vector<pair<int, int>>& relations)
 {
-  int32_t x, y;
-};
+  unordered_map<int, vector<int>> graph;
+  unordered_set<int> visited;
 
-int32_t manhattanDistance(const Point& p1, const Point& p2)
-{
-  return abs(p1.x - p2.x) + abs(p1.y - p2.y);
-}
-
-int32_t minDistance(const vector<Point>& points)
-{
-  int32_t minDist = INT32_MAX;
-  for (size_t i = 0; i < points.size(); ++i) {
-    for (size_t j = i + 1; j < points.size(); ++j) {
-      int32_t dist = manhattanDistance(points[i], points[j]);
-      minDist = min(minDist, dist);
-    }
-  }
-  return minDist;
-}
-
-void branchAndBound(const vector<vector<Point>>& groups, vector<Point>& currentCombination, vector<Point>& bestCombination,
-                    int32_t& bestMinDist, size_t groupIndex)
-{
-  if (groupIndex == groups.size()) {
-    int32_t currentMinDist = minDistance(currentCombination);
-    if (currentMinDist > bestMinDist) {
-      bestMinDist = currentMinDist;
-      bestCombination = currentCombination;
-    }
-    return;
+  // Build the graph
+  for (const auto& relation : relations) {
+    graph[relation.first].push_back(relation.second);
+    graph[relation.second].push_back(relation.first);
   }
 
-  for (const auto& point : groups[groupIndex]) {
-    currentCombination.push_back(point);
-    if (groupIndex == 0 || minDistance(currentCombination) > bestMinDist) {
-      branchAndBound(groups, currentCombination, bestCombination, bestMinDist, groupIndex + 1);
+  vector<vector<int>> connectedComponents;
+
+  // Helper function to perform DFS and find all nodes in the current connected component
+  auto dfs = [&](int node, vector<int>& component) {
+    stack<int> s;
+    s.push(node);
+    while (!s.empty()) {
+      int current = s.top();
+      s.pop();
+      if (visited.count(current) == 0) {
+        visited.insert(current);
+        component.push_back(current);
+        for (int neighbor : graph[current]) {
+          if (visited.count(neighbor) == 0) {
+            s.push(neighbor);
+          }
+        }
+      }
     }
-    currentCombination.pop_back();
+  };
+
+  // Find all connected components
+  for (const auto& node : graph) {
+    if (visited.count(node.first) == 0) {
+      vector<int> component;
+      dfs(node.first, component);
+      connectedComponents.push_back(component);
+    }
   }
+
+  return connectedComponents;
 }
 
-vector<Point> selectPoints(const vector<vector<Point>>& groups)
+int main()
 {
-  vector<Point> bestCombination;
-  vector<Point> currentCombination;
-  int32_t bestMinDist = -1;
+  // Example input: vector of pairs representing the relations
+  vector<pair<int, int>> relations = {{8, 9}, {1, 2}, {2, 3}, {4, 5}, {7, 6}, {7, 8}};
 
-  branchAndBound(groups, currentCombination, bestCombination, bestMinDist, 0);
+  // Find all connected components
+  vector<vector<int>> connectedComponents = findConnectedComponents(relations);
 
-  return bestCombination;
-}
-
-int32_t main()
-{
-  vector<vector<Point>> groups = {{{1, 2}, {3, 4}, {5, 6}}, {{7, 8}, {9, 10}, {11, 12}}, {{13, 14}, {15, 16}, {17, 18}}};
-
-  vector<Point> bestCombination = selectPoints(groups);
-
-  cout << "Selected points:" << endl;
-  for (const auto& p : bestCombination) {
-    cout << "(" << p.x << ", " << p.y << ")" << endl;
+  // Print the connected components
+  for (const auto& component : connectedComponents) {
+    for (int node : component) {
+      cout << node << " ";
+    }
+    cout << endl;
   }
 
   return 0;

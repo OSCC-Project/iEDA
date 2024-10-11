@@ -20,5 +20,6 @@
 
 namespace python_interface {
 
-bool drcAutoRun(const std::string& config);
+bool run_drc(const std::string& config, const std::string& report);
+bool save_drc(const std::string& path);
 }  // namespace python_interface

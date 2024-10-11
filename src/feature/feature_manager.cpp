@@ -45,6 +45,35 @@ bool FeatureManager::save_summary(std::string path)
   return feature_parser.buildSummary(path);
 }
 
+bool FeatureManager::save_eval_summary(std::string path, int32_t grid_size)
+{
+  FeatureBuilder builder;
+
+  auto wirelength_db = builder.buildWirelengthEvalSummary();
+  auto density_db = builder.buildDensityEvalSummary(grid_size);
+  auto congestion_db = builder.buildCongestionEvalSummary(grid_size);
+  auto timing_db = builder.buildTimingEvalSummary();
+
+  _summary->set_wirelength_eval(wirelength_db);
+  _summary->set_density_eval(density_db);
+  _summary->set_congestion_eval(congestion_db);
+  _summary->set_timing_eval(timing_db);
+
+  FeatureParser feature_parser(_summary);
+  return feature_parser.buildSummaryEvalJsonl(path);
+}
+
+bool FeatureManager::save_timing_eval_summary(std::string path)
+{
+  FeatureBuilder builder;
+  auto eval_db = builder.buildTimingEvalSummary();
+
+  _summary->set_timing_eval(eval_db);
+
+  FeatureParser feature_parser(_summary);
+  return feature_parser.buildSummaryTimingEval(path);
+}
+
 bool FeatureManager::save_tools(std::string path, std::string step)
 {
   FeatureBuilder builder;
@@ -87,6 +116,12 @@ bool FeatureManager::save_eval_map(std::string path, int bin_cnt_x, int bin_cnt_
 {
   FeatureParser feature_parser(_summary);
   return feature_parser.buildSummaryMap(path, bin_cnt_x, bin_cnt_y);
+}
+
+bool FeatureManager::save_net_eval(std::string path)
+{
+  FeatureParser feature_parser;
+  return feature_parser.buildNetEval(path);
 }
 
 bool FeatureManager::save_route_data(std::string path)

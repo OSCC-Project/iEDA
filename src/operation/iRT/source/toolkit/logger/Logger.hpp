@@ -81,10 +81,9 @@ class Logger
   // config & database
   std::string _log_file_path;
   std::ofstream* _log_file = nullptr;
-  size_t _temp_storage_size = 1024;
-  std::vector<std::string> _temp_storage;
+  std::vector<std::string> _temp_log_list;
 
-  Logger() { _temp_storage.reserve(_temp_storage_size); }
+  Logger() = default;
   Logger(const Logger& other) = delete;
   Logger(Logger&& other) = delete;
   ~Logger() { closeLogFileStream(); }
@@ -132,18 +131,16 @@ class Logger
     std::string color_log = getString(prefix, log_color_start, log_level_char, log_color_end, suffix, "] ", message, "\n");
 
     if (_log_file != nullptr) {
-      if (!_temp_storage.empty()) {
-        for (std::string& origin_log : _temp_storage) {
-          pushStream(*_log_file, origin_log);
+      if (!_temp_log_list.empty()) {
+        for (std::string& temp_log : _temp_log_list) {
+          pushStream(*_log_file, temp_log);
         }
-        _temp_storage.clear();
+        _temp_log_list.clear();
       }
       pushStream(*_log_file, origin_log);
+      _log_file->flush();
     } else {
-      if (_temp_storage.size() >= _temp_storage_size) {
-        _temp_storage.clear();
-      }
-      _temp_storage.push_back(origin_log);
+      _temp_log_list.push_back(origin_log);
     }
     pushStream(std::cout, color_log);
   }

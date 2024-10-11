@@ -8,7 +8,9 @@ target_link_libraries(ieda_report_evaluator
         tool_manager 
         def_service
         log
-        eval_api  
+        eval_wirelength_api
+        eval_congestion_api
+        eval_density_api
 )
 
 target_include_directories(ieda_report_evaluator 

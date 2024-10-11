@@ -27,7 +27,11 @@ struct PLCommonSummary
   int64_t HPWL;
   int64_t STWL;
   int64_t GRWL;
-  float congestion;
+
+  int32_t egr_tof;
+  int32_t egr_mof;
+  float egr_ace;
+
   float tns;
   float wns;
   float suggest_freq;

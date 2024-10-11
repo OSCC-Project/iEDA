@@ -27,6 +27,7 @@
 
 #include "PowerEngine.hh"
 #include "ThreadPool/ThreadPool.h"
+#include "usage/usage.hh"
 
 namespace ipower {
 PowerEngine* PowerEngine::_power_engine = nullptr;
@@ -76,7 +77,7 @@ unsigned PowerEngine::creatDataflow() {
   // build timing graph.
   if (!_timing_engine->isBuildGraph()) {
     _timing_engine->buildGraph();
-    _timing_engine->updateTiming();
+    _timing_engine->updateClockTiming();
   }
 
   // build power graph & sequential graph.
@@ -225,6 +226,8 @@ PowerEngine::buildConnectionMap(std::vector<std::set<std::string>> clusters,
  */
 std::vector<MacroConnection> PowerEngine::buildMacroConnectionMap(
     unsigned max_hop) {
+  ieda::Stats stats;
+  LOG_INFO << "build macro connection map start";
   auto& seq_graph = _ipower->get_power_seq_graph();
   std::vector<MacroConnection> macro_connections;
   std::mutex connection_mutex;
@@ -246,16 +249,17 @@ std::vector<MacroConnection> PowerEngine::buildMacroConnectionMap(
             auto& src_arcs = current_macro_vertex->get_src_arcs();
             for (auto* src_arc : src_arcs) {
               auto* snk_seq_vertex = src_arc->get_snk();
-              std::string snk_obj_name(snk_seq_vertex->get_obj_name());
               stages_each_hop[max_hop - hop] = src_arc->get_combine_depth();
               if (snk_seq_vertex->isMacro()) {
+                std::string snk_obj_name(snk_seq_vertex->get_obj_name());
                 MacroConnection one_connection(
-                    src_marco_vertex->get_obj_name().data(), snk_obj_name,
+                    src_marco_vertex->get_own_seq_inst()->get_name(),
+                    snk_seq_vertex->get_own_seq_inst()->get_name(),
                     stages_each_hop, max_hop - hop + 1);
                 {
                   // add connection.
                   std::lock_guard lk(connection_mutex);
-                  macro_connections.push_back(one_connection);
+                  macro_connections.emplace_back(std::move(one_connection));
                 }
               }
 
@@ -284,6 +288,13 @@ std::vector<MacroConnection> PowerEngine::buildMacroConnectionMap(
   for (auto& macro_connection : macro_connections) {
     macro_connection._stages_each_hop.resize(macro_connection._hop);
   }
+
+  LOG_INFO << "build macro connection map end";
+  double memory_delta = stats.memoryDelta();
+  LOG_INFO << "build macro connection map memory usage " << memory_delta
+           << "MB";
+  double time_delta = stats.elapsedRunTime();
+  LOG_INFO << "build macro connection map time elapsed " << time_delta << "s";
 
   return macro_connections;
 }

@@ -62,6 +62,5 @@
 
 #include "../../../database/interaction/RT_DRC/Boost.hpp"
 #include "libfort/fort.hpp"
-#include "omp.h"
 
 #define RT_ERROR 1E-5

@@ -1,6 +1,5 @@
 #include "PLReporter.hh"
 
-#include "TimingEval.hpp"
 #include "module/checker/layout_checker/LayoutChecker.hh"
 #include "module/evaluator/density/Density.hh"
 #include "module/evaluator/wirelength/HPWirelength.hh"
@@ -8,6 +7,13 @@
 #include "module/logger/Log.hh"
 #include "time/Time.hh"
 #include "usage/usage.hh"
+
+#include <fstream>
+#include "report/ReportTable.hh"
+#include <set>
+#include "netlist/Net.hh"
+#include "congestion_db.h"
+
 
 namespace ipl {
 
@@ -898,26 +904,19 @@ namespace ipl {
 
   void PLReporter::reportCongestionInfo(std::ofstream& feed)
   {
-    std::vector<float> gr_congestion = _external_api->evalGRCong();
+    ieval::OverflowSummary overflow_summary = _external_api->evalproCongestion();
 
     auto report_tbl = _external_api->generateTable("table");
     (*report_tbl) << TABLE_HEAD;
     (*report_tbl)[0][0] = "Congestion Info";
     (*report_tbl)[1][0] = "Average Congestion of Edges";
-    (*report_tbl)[1][1] = std::to_string(gr_congestion[0]);
+    (*report_tbl)[1][1] = std::to_string(overflow_summary.weighted_average_overflow_union);
     (*report_tbl)[2][0] = "Total Overflow";
-    (*report_tbl)[2][1] = std::to_string(gr_congestion[1]);
+    (*report_tbl)[2][1] = std::to_string(overflow_summary.total_overflow_union);
     (*report_tbl)[3][0] = "Maximal Overflow";
-    (*report_tbl)[3][1] = std::to_string(gr_congestion[2]);
+    (*report_tbl)[3][1] = std::to_string(overflow_summary.max_overflow_union);
     (*report_tbl) << TABLE_ENDLINE;
     feed << (*report_tbl).to_string() << std::endl;
-
-    //** plot congestion map which format is csv
-    // std::string plot_path = this->obtainTargetDir() + "/pl/report/";
-    // std::string output_file_name = "CongMap";
-    // _external_api->plotCongMap(plot_path, output_file_name);
-
-    // _external_api->destroyCongEval();
   }
 
   void PLReporter::reportPLBaseInfo(std::ofstream& feed)
@@ -1027,7 +1026,9 @@ namespace ipl {
     int overflow_number;
     float overflow;
     float HPWL[3], STWL[3], GRWL[3]; // for gp,lg,dp
-    float congestion[3];
+    int32_t egr_tof[3];
+    int32_t egr_mof[3];
+    float egr_ace[3];
     float tns[3], wns[3];
     float suggest_freq[3];
     float total_movement, max_movement;
@@ -1070,7 +1071,9 @@ namespace ipl {
       HPWL[i] = PlacerDBInst.PL_HPWL[i] / 1.0 / dbu;
       STWL[i] = PlacerDBInst.PL_STWL[i] / 1.0 / dbu;
       GRWL[i] = PlacerDBInst.PL_GRWL[i];
-      congestion[i] = PlacerDBInst.congestion[i];
+      egr_tof[i] = PlacerDBInst.egr_tof[i];
+      egr_mof[i] = PlacerDBInst.egr_mof[i];
+      egr_ace[i] = PlacerDBInst.egr_ace[i];
       tns[i] = PlacerDBInst.tns[i];
       wns[i] = PlacerDBInst.wns[i];
       suggest_freq[i] = PlacerDBInst.suggest_freq[i];
@@ -1095,12 +1098,12 @@ namespace ipl {
     report_stream << design_name << "," << inst_cnt << "," << fix_inst_cnt << "," << net_cnt << "," << pin_cnt << ","
       << core_area << "," << place_density[0] << "," << pin_density[0] << "," << bin_number << ","
       << bin_size << "," << overflow_number << "," << overflow << "," << HPWL[0] << ","
-      << STWL[0] << "," << GRWL[0] << "," << congestion[0] << "," << tns[0] << "," << wns[0] << ","
+      << STWL[0] << "," << GRWL[0] << "," << egr_tof[0] << "," << egr_mof[0] << "," << egr_ace[0] << "," << tns[0] << "," << wns[0] << ","
       << suggest_freq[0] << "," << total_movement << "," << max_movement << "," << pin_density[1] << ","
-      << HPWL[1] << "," << STWL[1] << "," << GRWL[1] << "," << congestion[1] << "," << tns[1] << ","
+      << HPWL[1] << "," << STWL[1] << "," << GRWL[1] << "," << egr_tof[1] << "," << egr_mof[1] << "," << egr_ace[1]  << "," << tns[1] << ","
       << wns[1] << "," << suggest_freq[1] << "," << inst_cnt << "," << fix_inst_cnt << "," << net_cnt << ","
       << pin_cnt << "," << core_area << "," << place_density[2] << "," << pin_density[2] << "," << HPWL[2] << ","
-      << STWL[2] << "," << GRWL[2] << "," << congestion[2] << "," << tns[2] << "," << wns[2] << ","
+      << STWL[2] << "," << GRWL[2] << "," << egr_tof[2] << "," << egr_mof[2] << "," << egr_ace[2]  << "," << tns[2] << "," << wns[2] << ","
       << suggest_freq[2] << "," << sta_update_runtime << std::endl;
 
     report_stream.close();
@@ -1158,12 +1161,14 @@ namespace ipl {
     float lg_total_movement = PlacerDBInst.lg_total_movement / 1.0 / dbu;
     float lg_max_movement = PlacerDBInst.lg_max_movement / 1.0 / dbu;
 
-    float HPWL[3], STWL[3], pin_density[3], congestion[3], tns[3], wns[3], suggest_freq[3];
+    float HPWL[3], STWL[3], pin_density[3], egr_tof[3], egr_mof[3], egr_ace[3], tns[3], wns[3], suggest_freq[3];
     for (int i = 0; i < 3; i++) {
       pin_density[i] = PlacerDBInst.pin_density[i];
       HPWL[i] = PlacerDBInst.PL_HPWL[i] / 1.0 / dbu;
       STWL[i] = PlacerDBInst.PL_STWL[i] / 1.0 / dbu;
-      congestion[i] = PlacerDBInst.congestion[i];
+      egr_tof[i] = PlacerDBInst.egr_tof[i];
+      egr_mof[i] = PlacerDBInst.egr_mof[i];
+      egr_ace[i] = PlacerDBInst.egr_ace[i];
       tns[i] = PlacerDBInst.tns[i];
       wns[i] = PlacerDBInst.wns[i];
       suggest_freq[i] = PlacerDBInst.suggest_freq[i];
@@ -1181,10 +1186,10 @@ namespace ipl {
 
     report_stream << design_name << "," << inst_cnt << "," << fix_inst_cnt << "," << preset_period << ","
                   << target_density << "," << bin_num << "," << gp_overflow << "," << HPWL[0] << "," << STWL[0] << ","
-                  << pin_density[0] << "," << congestion[0] << "," << tns[0] << "," << wns[0] << "," << suggest_freq[0] << ","
+                  << pin_density[0] << "," << egr_tof[0] << "," << egr_mof[0] << "," << egr_ace[0] << "," << tns[0] << "," << wns[0] << "," << suggest_freq[0] << ","
                   << lg_total_movement << "," << lg_max_movement << "," << HPWL[1] << "," << STWL[1] << "," << pin_density[1] << ","
-                  << congestion[1] << "," << tns[1] << "," << wns[1] << "," << suggest_freq[1] << "," << HPWL[2] << "," << STWL[2] << ","
-                  << pin_density[2] << "," << congestion[2] << "," << tns[2] << "," << wns[2] << "," << suggest_freq[2] << std::endl;
+                  << egr_tof[0] << "," << egr_mof[0] << "," << egr_ace[0] << "," << tns[1] << "," << wns[1] << "," << suggest_freq[1] << "," << HPWL[2] << "," << STWL[2] << ","
+                  << pin_density[2] << "," << egr_tof[0] << "," << egr_mof[0] << "," << egr_ace[0] << "," << tns[2] << "," << wns[2] << "," << suggest_freq[2] << std::endl;
     
     report_stream.close();
   }

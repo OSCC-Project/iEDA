@@ -17,14 +17,14 @@ void readGuide(const std::string& guide_file_path, std::vector<Net>& net_list)
   bool is_new_net = true;
 
   std::string net_name, layer_name;
-  while (getline(*guide_file_stream, new_line)) {
+  while (std::getline(*guide_file_stream, new_line)) {
     int32_t ll_x, ll_y, ur_x, ur_y;
     if (is_new_net) {
       net_name = new_line;
       is_new_net = false;
     } else if (new_line == "(") {
       std::vector<Guide> guide_list;
-      while (getline(*guide_file_stream, new_line)) {
+      while (std::getline(*guide_file_stream, new_line)) {
         if (new_line == ")") {
           is_new_net = true;
 
