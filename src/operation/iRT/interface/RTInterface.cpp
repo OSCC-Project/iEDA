@@ -1430,6 +1430,22 @@ ieda_feature::RTSummary RTInterface::outputSummary()
   // sa_summary
   top_rt_summary.sa_summary.routing_supply_map = rt_summary.sa_summary.routing_supply_map;
   top_rt_summary.sa_summary.total_supply = rt_summary.sa_summary.total_supply;
+  // tg_summary
+  top_rt_summary.tg_summary.total_demand = rt_summary.tg_summary.total_demand;
+  top_rt_summary.tg_summary.total_overflow = rt_summary.tg_summary.total_overflow;
+  top_rt_summary.tg_summary.total_wire_length = rt_summary.tg_summary.total_wire_length;
+
+  for (auto& [clock_name, timing_map] : rt_summary.tg_summary.clock_timing) {
+    ieda_feature::ClockTiming clock_timing;
+    clock_timing.clock_name = clock_name;
+    clock_timing.setup_tns = timing_map["TNS"];
+    clock_timing.setup_wns = timing_map["WNS"];
+    clock_timing.suggest_freq = timing_map["Freq(MHz)"];
+    top_rt_summary.tg_summary.clocks_timing.push_back(clock_timing);
+  }
+
+  top_rt_summary.tg_summary.power_info
+      = {rt_summary.tg_summary.power_map["static_power"], rt_summary.tg_summary.power_map["dynamic_power"]};
   // la_summary
   top_rt_summary.la_summary.routing_demand_map = rt_summary.la_summary.routing_demand_map;
   top_rt_summary.la_summary.total_demand = rt_summary.la_summary.total_demand;
