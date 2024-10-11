@@ -107,11 +107,11 @@ TANet TrackAssigner::convertToTANet(Net& net)
 
 void TrackAssigner::setTAParameter(TAModel& ta_model)
 {
-  int32_t cost_unit = 8;
+  int32_t cost_unit = RTDM.getOnlyPitch();
   /**
    * prefer_wire_unit, fixed_rect_unit, routed_rect_unit, violation_unit, max_routed_times
    */
-  TAParameter ta_parameter(1, 128 * cost_unit, 32 * cost_unit, 32 * cost_unit, 4);
+  TAParameter ta_parameter(1, 8 * cost_unit, 2 * cost_unit, 4 * cost_unit, 4);
   RTLOG.info(Loc::current(), "prefer_wire_unit: ", ta_parameter.get_prefer_wire_unit());
   RTLOG.info(Loc::current(), "fixed_rect_unit: ", ta_parameter.get_fixed_rect_unit());
   RTLOG.info(Loc::current(), "routed_rect_unit: ", ta_parameter.get_routed_rect_unit());
@@ -255,6 +255,10 @@ void TrackAssigner::buildNetResult(TAPanel& ta_panel)
 void TrackAssigner::buildViolation(TAPanel& ta_panel)
 {
   for (Violation* violation : RTDM.getViolationSet(ta_panel.get_panel_rect())) {
+    if (violation->get_is_routing() != true
+        || violation->get_violation_shape().get_layer_idx() != ta_panel.get_panel_rect().get_layer_idx()) {
+      continue;
+    }
     if (!RTUTIL.isInside(ta_panel.get_panel_rect().get_real_rect(), violation->get_violation_shape().get_real_rect())) {
       continue;
     }
