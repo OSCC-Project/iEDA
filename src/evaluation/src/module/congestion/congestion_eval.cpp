@@ -176,14 +176,14 @@ float CongestionEval::evalUnionAvgUtilization(string rudy_dir_path, bool use_lut
 string CongestionEval::evalEGR(string rt_dir_path, string egr_type, string output_filename)
 {
   std::unordered_map<std::string, LayerDirection> layer_directions
-      = EVAL_INIT_EGR_INST->parseLayerDirection(rt_dir_path + "/initial_router/route.guide");
+      = EVAL_INIT_EGR_INST->parseLayerDirection(rt_dir_path + "/early_router/route.guide");
 
   // for (const auto& [layer, direction] : LayerDirections) {
   //   std::cout << "Layer: " << layer << ", Direction: " << (direction == LayerDirection::Horizontal ? "Horizontal" : "Vertical")
   //             << std::endl;
   // }
   std::vector<std::string> target_layers;
-  std::string dir_path = rt_dir_path + "/initial_router/";
+  std::string dir_path = rt_dir_path + "/early_router/";
   std::filesystem::path parent_path = std::filesystem::path(rt_dir_path).parent_path();
   std::filesystem::path out_file_path = parent_path / output_filename;
 
