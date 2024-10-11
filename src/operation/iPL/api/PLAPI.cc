@@ -377,13 +377,13 @@ void PLAPI::runFlow()
 {
   // runMP();
   runGP();
-  printHPWLInfo();
-  printTimingInfo();
-  notifyPLWLInfo(0);
-  if (isSTAStarted()) {
-    notifyPLCongestionInfo(0);
-    notifyPLTimingInfo(0);
-  }
+  //   printHPWLInfo();
+  //   printTimingInfo();
+  //   notifyPLWLInfo(0);
+  //   if (isSTAStarted()) {
+  //     notifyPLCongestionInfo(0);
+  //     notifyPLTimingInfo(0);
+  //   }
 
   if (PlacerDBInst.get_placer_config()->get_buffer_config().isMaxLengthOpt()) {
     std::cout << std::endl;
