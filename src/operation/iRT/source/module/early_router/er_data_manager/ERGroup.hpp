@@ -20,11 +20,11 @@
 
 namespace irt {
 
-class IRGroup
+class ERGroup
 {
  public:
-  IRGroup() = default;
-  ~IRGroup() = default;
+  ERGroup() = default;
+  ~ERGroup() = default;
   // getter
   std::vector<LayerCoord>& get_coord_list() { return _coord_list; }
   // setter

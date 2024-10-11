@@ -159,9 +159,9 @@ class GridManager
   Rectangle<int32_t> _shape;
   int32_t _grid_cnt_x = -1;
   int32_t _grid_cnt_y = -1;
-  float _available_ratio;
   int32_t _grid_size_x = -1;
   int32_t _grid_size_y = -1;
+  float _available_ratio = 0.f;
   float _h_util_max = 0.f;
   float _v_util_max = 0.f;
   float _h_util_sum = 0.f;

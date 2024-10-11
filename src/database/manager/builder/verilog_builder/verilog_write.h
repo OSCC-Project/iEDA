@@ -40,7 +40,7 @@ class IdbInstance;
 class VerilogWriter
 {
  public:
-  VerilogWriter(const char* file_name, std::set<std::string>& exclude_cell_names, IdbDesign& idb_design);
+  VerilogWriter(const char* file_name, std::set<std::string>& exclude_cell_names, IdbDesign& idb_design, bool is_add_space_for_escape_name);
   ~VerilogWriter();
 
   void writeModule();
@@ -62,5 +62,6 @@ class VerilogWriter
 
   FILE* _stream;
   IdbDesign& _idb_design;
+  bool _is_add_space_for_escape_name;
 };
 }  // namespace idb

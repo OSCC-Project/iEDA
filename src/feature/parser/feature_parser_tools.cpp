@@ -64,35 +64,35 @@ json FeatureParser::buildSummaryRT()
 
   /// IR
   json json_ir;
-  json_ir["total_demand"] = rt_sum.ir_summary.total_demand;
-  for (auto demand : rt_sum.ir_summary.routing_demand_map) {
+  json_ir["total_demand"] = rt_sum.la_summary.total_demand;
+  for (auto demand : rt_sum.la_summary.routing_demand_map) {
     json_ir["routing_demand_map"][std::to_string(demand.first)] = demand.second;
   }
 
-  json_ir["total_overflow"] = rt_sum.ir_summary.total_overflow;
-  for (auto routing_overflow : rt_sum.ir_summary.routing_overflow_map) {
+  json_ir["total_overflow"] = rt_sum.la_summary.total_overflow;
+  for (auto routing_overflow : rt_sum.la_summary.routing_overflow_map) {
     json_ir["routing_overflow_map"][std::to_string(routing_overflow.first)] = routing_overflow.second;
   }
 
-  json_ir["total_wire_length"] = rt_sum.ir_summary.total_wire_length;
-  for (auto routing_wire_length : rt_sum.ir_summary.routing_wire_length_map) {
+  json_ir["total_wire_length"] = rt_sum.la_summary.total_wire_length;
+  for (auto routing_wire_length : rt_sum.la_summary.routing_wire_length_map) {
     json_ir["routing_wire_length_map"][std::to_string(routing_wire_length.first)] = routing_wire_length.second;
   }
 
-  json_ir["total_via_num"] = rt_sum.ir_summary.total_via_num;
-  for (auto cut_via_num : rt_sum.ir_summary.cut_via_num_map) {
+  json_ir["total_via_num"] = rt_sum.la_summary.total_via_num;
+  for (auto cut_via_num : rt_sum.la_summary.cut_via_num_map) {
     json_ir["cut_via_num_map"][std::to_string(cut_via_num.first)] = cut_via_num.second;
   }
 
-  for (int i = 0; i < (int) rt_sum.ir_summary.clocks_timing.size(); i++) {
-    auto clock_timing = rt_sum.ir_summary.clocks_timing[i];
+  for (int i = 0; i < (int) rt_sum.la_summary.clocks_timing.size(); i++) {
+    auto clock_timing = rt_sum.la_summary.clocks_timing[i];
     json_ir["clocks_timing"][i]["clock_name"] = clock_timing.clock_name;
     json_ir["clocks_timing"][i]["setup_tns"] = clock_timing.setup_tns;
     json_ir["clocks_timing"][i]["setup_wns"] = clock_timing.setup_wns;
     json_ir["clocks_timing"][i]["suggest_freq"] = clock_timing.suggest_freq;
   }
-  json_ir["static_power"] = rt_sum.ir_summary.power_info.static_power;
-  json_ir["dynamic_power"] = rt_sum.ir_summary.power_info.dynamic_power;
+  json_ir["static_power"] = rt_sum.la_summary.power_info.static_power;
+  json_ir["dynamic_power"] = rt_sum.la_summary.power_info.dynamic_power;
 
   json_rt["IR"] = json_ir;
 

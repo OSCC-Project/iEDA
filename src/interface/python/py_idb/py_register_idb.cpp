@@ -32,7 +32,8 @@ void register_idb(py::module& m)
   m.def("def_init", initDef, py::arg("def_path"));
   m.def("verilog_init", initVerilog, py::arg("verilog_path"), py::arg("top_module"));
   m.def("def_save", saveDef, py::arg("def_name"));
-  m.def("netlist_save", saveNetList, py::arg("netlist_path"), py::arg("exclude_cell_names") = std::set<std::string>{});
+  m.def("netlist_save", saveNetList, py::arg("netlist_path"), py::arg("exclude_cell_names") = std::set<std::string>{},
+        py::arg("is_add_space_for_escape_name") = false);
   m.def("gds_save", saveGDSII, py::arg("gds_name"));
 }
 
