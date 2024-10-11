@@ -40,7 +40,6 @@ DrcViolationManager::~DrcViolationManager()
 
 void DrcViolationManager::set_net_ids(DrcEngineManager* engine_manager)
 {
-    return;
   for (auto& [type, violation_list] : _violation_list) {
     ieda::Stats states;
 
