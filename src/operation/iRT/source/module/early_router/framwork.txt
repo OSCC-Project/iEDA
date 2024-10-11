@@ -1,0 +1,12 @@
+initERModel:初始化er_net_list
+setERParameter:设置布线参数
+buildLayerNodeMap:初始化graph
+buildERNodeNeighbor:构建graph的邻居
+buildOrientSupply:从supply_analyzer获取supply的access
+sortERModel:对er_net进行排序
+routeERModel:
+    routeERNet:一个接一个的er_net进行布线
+        makeERTaskList:通过flute获取多个topo，并将每个topo构建成task，通过加入斯坦纳点的垂直线段
+        routeERTask:布线
+        updateDemand:将布线结果添加到graph上
+updateERModel:将结果更新到顶层

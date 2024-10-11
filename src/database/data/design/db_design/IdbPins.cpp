@@ -679,7 +679,7 @@ void IdbPins::checkPins()
 {
   std::set<std::string> pin_name_set;
   for (auto it = _pin_list.begin(); it != _pin_list.end();) {
-    int pin_num = pin_name_set.size();
+    size_t pin_num = pin_name_set.size();
     auto pin = *it;
     std::string name = pin->get_pin_name();
     if (pin->get_instance() != nullptr) {

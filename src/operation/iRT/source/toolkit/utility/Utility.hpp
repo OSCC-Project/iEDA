@@ -1324,6 +1324,41 @@ class Utility
     return scale_line_list;
   }
 
+  /**
+   * 反取begin_line和end_line之外的数据,比begin_line小的存pre_scale_list,比end_line大的存post_scale_set
+   */
+  static void getScaleList(int32_t begin_line, int32_t end_line, std::vector<ScaleGrid>& scale_grid_list,
+                           std::vector<int32_t>& pre_scale_list, std::vector<int32_t>& post_scale_set)
+  {
+    swapByASC(begin_line, end_line);
+
+    std::vector<int32_t> scale_line_list;
+    for (ScaleGrid& scale_grid : scale_grid_list) {
+      if (scale_grid.get_step_length() == 0) {
+        if (scale_grid.get_start_line() < begin_line) {
+          pre_scale_list.push_back(scale_grid.get_start_line());
+        }
+        if (end_line < scale_grid.get_start_line()) {
+          post_scale_set.push_back(scale_grid.get_start_line());
+        }
+      } else {
+        for (int32_t scale_line = scale_grid.get_start_line(); scale_line <= scale_grid.get_end_line();
+             scale_line += scale_grid.get_step_length()) {
+          if (scale_line < begin_line) {
+            pre_scale_list.push_back(scale_line);
+          }
+          if (end_line < scale_line) {
+            post_scale_set.push_back(scale_line);
+          }
+        }
+      }
+    }
+    std::sort(pre_scale_list.begin(), pre_scale_list.end());
+    pre_scale_list.erase(std::unique(pre_scale_list.begin(), pre_scale_list.end()), pre_scale_list.end());
+    std::sort(post_scale_set.begin(), post_scale_set.end());
+    post_scale_set.erase(std::unique(post_scale_set.begin(), post_scale_set.end()), post_scale_set.end());
+  }
+
   static bool existTrackGrid(const PlanarCoord& real_coord, ScaleAxis& track_axis)
   {
     PlanarCoord grid_coord = getTrackGrid(real_coord, track_axis);

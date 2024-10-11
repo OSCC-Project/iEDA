@@ -16,38 +16,26 @@
 // ***************************************************************************************
 #pragma once
 
-#include "Logger.hpp"
+#include "AccessPoint.hpp"
+#include "EXTLayerRect.hpp"
+#include "PlanarCoord.hpp"
+#include "RTHeader.hpp"
 
 namespace irt {
 
-enum class AccessPointType
+class LAPin : public Pin
 {
-  kNone,
-  kTrackGrid,
-  kNoAccess
-};
+ public:
+  LAPin() = default;
+  explicit LAPin(const Pin& pin) : Pin(pin) {}
+  ~LAPin() = default;
+  // getter
 
-struct GetAccessPointTypeName
-{
-  std::string operator()(const AccessPointType& access_point_type) const
-  {
-    std::string access_point_name;
-    switch (access_point_type) {
-      case AccessPointType::kNone:
-        access_point_name = "none";
-        break;
-      case AccessPointType::kNoAccess:
-        access_point_name = "no_access";
-        break;
-      case AccessPointType::kTrackGrid:
-        access_point_name = "track_grid";
-        break;
-      default:
-        RTLOG.error(Loc::current(), "Unrecognized type!");
-        break;
-    }
-    return access_point_name;
-  }
+  // setter
+
+  // function
+
+ private:
 };
 
 }  // namespace irt
