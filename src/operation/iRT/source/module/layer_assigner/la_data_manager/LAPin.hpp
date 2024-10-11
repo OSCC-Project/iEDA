@@ -16,23 +16,26 @@
 // ***************************************************************************************
 #pragma once
 
-#include "LayerCoord.hpp"
+#include "AccessPoint.hpp"
+#include "EXTLayerRect.hpp"
+#include "PlanarCoord.hpp"
+#include "RTHeader.hpp"
 
 namespace irt {
 
-class IRGroup
+class LAPin : public Pin
 {
  public:
-  IRGroup() = default;
-  ~IRGroup() = default;
+  LAPin() = default;
+  explicit LAPin(const Pin& pin) : Pin(pin) {}
+  ~LAPin() = default;
   // getter
-  std::vector<LayerCoord>& get_coord_list() { return _coord_list; }
+
   // setter
-  void set_coord_list(const std::vector<LayerCoord>& coord_list) { _coord_list = coord_list; }
+
   // function
 
  private:
-  std::vector<LayerCoord> _coord_list;
 };
 
 }  // namespace irt

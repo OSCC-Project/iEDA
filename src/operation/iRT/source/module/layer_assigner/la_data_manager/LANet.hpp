@@ -16,32 +16,32 @@
 // ***************************************************************************************
 #pragma once
 
-#include "IRPin.hpp"
+#include "LAPin.hpp"
 #include "Net.hpp"
 
 namespace irt {
 
-class IRNet
+class LANet
 {
  public:
-  IRNet() = default;
-  ~IRNet() = default;
+  LANet() = default;
+  ~LANet() = default;
   // getter
   Net* get_origin_net() { return _origin_net; }
   int32_t get_net_idx() const { return _net_idx; }
   ConnectType& get_connect_type() { return _connect_type; }
-  std::vector<IRPin>& get_ir_pin_list() { return _ir_pin_list; }
+  std::vector<LAPin>& get_la_pin_list() { return _la_pin_list; }
   BoundingBox& get_bounding_box() { return _bounding_box; }
   MTree<LayerCoord>& get_topo_tree() { return _topo_tree; }
   // const getter
   const ConnectType& get_connect_type() const { return _connect_type; }
-  const std::vector<IRPin>& get_ir_pin_list() const { return _ir_pin_list; }
+  const std::vector<LAPin>& get_la_pin_list() const { return _la_pin_list; }
   const BoundingBox& get_bounding_box() const { return _bounding_box; }
   // setter
   void set_origin_net(Net* origin_net) { _origin_net = origin_net; }
   void set_net_idx(const int32_t net_idx) { _net_idx = net_idx; }
   void set_connect_type(const ConnectType& connect_type) { _connect_type = connect_type; }
-  void set_ir_pin_list(const std::vector<IRPin>& ir_pin_list) { _ir_pin_list = ir_pin_list; }
+  void set_la_pin_list(const std::vector<LAPin>& la_pin_list) { _la_pin_list = la_pin_list; }
   void set_bounding_box(const BoundingBox& bounding_box) { _bounding_box = bounding_box; }
   void set_topo_tree(const MTree<LayerCoord>& topo_tree) { _topo_tree = topo_tree; }
   // function
@@ -50,14 +50,14 @@ class IRNet
   Net* _origin_net = nullptr;
   int32_t _net_idx = -1;
   ConnectType _connect_type = ConnectType::kNone;
-  std::vector<IRPin> _ir_pin_list;
+  std::vector<LAPin> _la_pin_list;
   BoundingBox _bounding_box;
   MTree<LayerCoord> _topo_tree;
 };
 
-struct CmpIRNet
+struct CmpLANet
 {
-  bool operator()(const IRNet* a, const IRNet* b) const
+  bool operator()(const LANet* a, const LANet* b) const
   {
     SortStatus sort_status = SortStatus::kEqual;
     // 时钟线网优先
@@ -104,8 +104,8 @@ struct CmpIRNet
     }
     // PinNum 降序
     if (sort_status == SortStatus::kEqual) {
-      int32_t a_pin_num = static_cast<int32_t>(a->get_ir_pin_list().size());
-      int32_t b_pin_num = static_cast<int32_t>(b->get_ir_pin_list().size());
+      int32_t a_pin_num = static_cast<int32_t>(a->get_la_pin_list().size());
+      int32_t b_pin_num = static_cast<int32_t>(b->get_la_pin_list().size());
       if (a_pin_num > b_pin_num) {
         sort_status = SortStatus::kTrue;
       } else if (a_pin_num == b_pin_num) {

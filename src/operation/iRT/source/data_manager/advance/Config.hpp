@@ -49,8 +49,8 @@ class Config
   std::string sa_temp_directory_path;  // building
   // ********   TopologyGenerator   ******** //
   std::string tg_temp_directory_path;  // building
-  // **********   InitialRouter   ********** //
-  std::string ir_temp_directory_path;  // building
+  // **********   LayerAssigner   ********** //
+  std::string la_temp_directory_path;  // building
   // **********   GlobalRouter    ********** //
   std::string gr_temp_directory_path;  // building
   // **********   TrackAssigner   ********** //

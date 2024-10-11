@@ -573,8 +573,8 @@ void DataManager::buildConfig()
   _config.sa_temp_directory_path = _config.temp_directory_path + "supply_analyzer/";
   // ********   TopologyGenerator   ******** //
   _config.tg_temp_directory_path = _config.temp_directory_path + "topology_generator/";
-  // **********   InitialRouter    ********** //
-  _config.ir_temp_directory_path = _config.temp_directory_path + "initial_router/";
+  // **********   LayerAssigner    ********** //
+  _config.la_temp_directory_path = _config.temp_directory_path + "layer_assigner/";
   // **********   GlobalRouter    ********** //
   _config.gr_temp_directory_path = _config.temp_directory_path + "global_router/";
   // **********   TrackAssigner   ********** //
@@ -598,8 +598,8 @@ void DataManager::buildConfig()
   RTUTIL.createDir(_config.sa_temp_directory_path);
   // *********  TopologyGenerator  ********* //
   RTUTIL.createDir(_config.tg_temp_directory_path);
-  // **********   InitialRouter    ********** //
-  RTUTIL.createDir(_config.ir_temp_directory_path);
+  // **********   LayerAssigner    ********** //
+  RTUTIL.createDir(_config.la_temp_directory_path);
   // **********   GlobalRouter    ********** //
   RTUTIL.createDir(_config.gr_temp_directory_path);
   // **********   TrackAssigner   ********** //
@@ -1380,10 +1380,10 @@ void DataManager::printConfig()
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "TopologyGenerator");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), "tg_temp_directory_path");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(3), _config.tg_temp_directory_path);
-  // **********   InitialRouter    ********** //
-  RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "InitialRouter");
-  RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), "ir_temp_directory_path");
-  RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(3), _config.ir_temp_directory_path);
+  // **********   LayerAssigner    ********** //
+  RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "LayerAssigner");
+  RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), "la_temp_directory_path");
+  RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(3), _config.la_temp_directory_path);
   // **********   GlobalRouter    ********** //
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "GlobalRouter");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), "gr_temp_directory_path");
