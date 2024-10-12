@@ -231,7 +231,7 @@ string CongestionEval::evalEGR(string rt_dir_path, string egr_type, string outpu
         }
       }
     }
-    
+
     std::ofstream out_file(out_file_path);
     for (const auto& row : sum_matrix) {
       for (size_t i = 0; i < row.size(); ++i) {
@@ -564,15 +564,15 @@ int32_t CongestionEval::evalTotalOverflow(string rt_dir_path, string overflow_ty
   std::string file_name;
 
   if (overflow_type == "horizontal") {
-    file_name =  "egr_horizontal_overflow.csv";
+    file_name = "egr_horizontal_overflow.csv";
   } else if (overflow_type == "vertical") {
-    file_name =  "egr_vertical_overflow.csv";
+    file_name = "egr_vertical_overflow.csv";
   } else if (overflow_type == "union") {
-    file_name =  "egr_union_overflow.csv";
+    file_name = "egr_union_overflow.csv";
   } else {
     return -1;
   }
-  std::filesystem::path parent_path =  std::filesystem::path(rt_dir_path).parent_path();
+  std::filesystem::path parent_path = std::filesystem::path(rt_dir_path).parent_path();
   std::filesystem::path file_path = parent_path / file_name;
   std::string file_path_str = file_path.string();
 
@@ -600,15 +600,15 @@ int32_t CongestionEval::evalMaxOverflow(string rt_dir_path, string overflow_type
   std::string file_name;
 
   if (overflow_type == "horizontal") {
-    file_name =  "egr_horizontal_overflow.csv";
+    file_name = "egr_horizontal_overflow.csv";
   } else if (overflow_type == "vertical") {
-    file_name =  "egr_vertical_overflow.csv";
+    file_name = "egr_vertical_overflow.csv";
   } else if (overflow_type == "union") {
-    file_name =  "egr_union_overflow.csv";
+    file_name = "egr_union_overflow.csv";
   } else {
     return -1;
   }
-  std::filesystem::path parent_path =  std::filesystem::path(rt_dir_path).parent_path();
+  std::filesystem::path parent_path = std::filesystem::path(rt_dir_path).parent_path();
   std::filesystem::path file_path = parent_path / file_name;
   std::string file_path_str = file_path.string();
 
@@ -637,15 +637,15 @@ float CongestionEval::evalAvgOverflow(string rt_dir_path, string overflow_type)
   std::string file_name;
 
   if (overflow_type == "horizontal") {
-    file_name =  "egr_horizontal_overflow.csv";
+    file_name = "egr_horizontal_overflow.csv";
   } else if (overflow_type == "vertical") {
-    file_name =  "egr_vertical_overflow.csv";
+    file_name = "egr_vertical_overflow.csv";
   } else if (overflow_type == "union") {
-    file_name =  "egr_union_overflow.csv";
+    file_name = "egr_union_overflow.csv";
   } else {
     return -1;
   }
-  std::filesystem::path parent_path =  std::filesystem::path(rt_dir_path).parent_path();
+  std::filesystem::path parent_path = std::filesystem::path(rt_dir_path).parent_path();
   std::filesystem::path file_path = parent_path / file_name;
   std::string file_path_str = file_path.string();
 

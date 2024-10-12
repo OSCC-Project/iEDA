@@ -55,6 +55,11 @@ bool feature_eval_summary(const std::string& path, int32_t grid_size)
   return featureInst->save_eval_summary(path, grid_size);
 }
 
+bool feature_eval_union(const std::string& jsonl_path, const std::string& csv_path, int32_t grid_size)
+{
+  return featureInst->save_eval_union(jsonl_path, csv_path, grid_size);
+}
+
 bool feature_timing_eval_summary(const std::string& path)
 {
   return featureInst->save_timing_eval_summary(path);

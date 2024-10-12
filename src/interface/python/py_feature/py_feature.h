@@ -28,5 +28,7 @@ bool feature_route_read(const std::string& path);
 bool feature_eval_summary(const std::string& path, int32_t grid_size);
 bool feature_timing_eval_summary(const std::string& path);
 bool feature_net_eval(const std::string& path);
+bool feature_eval_union(const std::string& jsonl_path, const std::string& csv_path, int32_t grid_size);
+
 
 }  // namespace python_interface

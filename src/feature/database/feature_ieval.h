@@ -154,4 +154,12 @@ struct TimingEvalSummary
   DrTimingEvalSummary dr_timing_eval_summary;
 };
 
+struct UnionEvalSummary
+{
+  TotalWLSummary total_wl_summary;
+  DensityMapSummary density_map_summary;
+  CongestionSummary congestion_summary;
+  // TimingEvalSummary timing_eval_summary;
+};
+
 }  // namespace ieda_feature

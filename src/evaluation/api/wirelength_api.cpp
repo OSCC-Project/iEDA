@@ -70,6 +70,19 @@ TotalWLSummary WirelengthAPI::totalWL()
   return total_wirelength_summary;
 }
 
+TotalWLSummary WirelengthAPI::totalWLPure()
+{
+  TotalWLSummary total_wirelength_summary;
+
+  total_wirelength_summary.HPWL = EVAL_WIRELENGTH_INST->evalTotalHPWL();
+  total_wirelength_summary.FLUTE = EVAL_WIRELENGTH_INST->evalTotalFLUTE();
+  total_wirelength_summary.HTree = EVAL_WIRELENGTH_INST->evalTotalHTree();
+  total_wirelength_summary.VTree = EVAL_WIRELENGTH_INST->evalTotalVTree();
+  total_wirelength_summary.GRWL = EVAL_WIRELENGTH_INST->evalTotalEGRWL() * EVAL_WIRELENGTH_INST->getDesignUnit();
+
+  return total_wirelength_summary;
+}
+
 NetWLSummary WirelengthAPI::netWL(std::string net_name)
 {
   NetWLSummary net_wirelength_summary;
@@ -140,6 +153,11 @@ void WirelengthAPI::evalNetInfo()
   EVAL_WIRELENGTH_INST->destroyIDB();
   EVAL_WIRELENGTH_INST->destroyEGR();
   EVAL_WIRELENGTH_INST->destroyFlute();
+}
+
+void WirelengthAPI::evalNetInfoPure()
+{
+  EVAL_WIRELENGTH_INST->evalNetInfo();
 }
 
 int32_t WirelengthAPI::findNetHPWL(std::string net_name)
