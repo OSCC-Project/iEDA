@@ -175,7 +175,7 @@ void TrackAssigner::buildPanelSchedule(TAModel& ta_model)
 {
   std::vector<std::vector<TAPanel>>& layer_panel_list = ta_model.get_layer_panel_list();
 
-  int32_t range = 2;
+  int32_t range = 3;
 
   std::vector<std::vector<TAPanelId>> ta_panel_id_list_list;
   for (int32_t layer_idx = 0; layer_idx < static_cast<int32_t>(layer_panel_list.size()); layer_idx++) {

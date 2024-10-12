@@ -304,7 +304,7 @@ void EarlyRouter::routeERNet(ERModel& er_model, ERNet* er_net)
 }
 
 void EarlyRouter::makeERTopoList(ERModel& er_model, ERNet* er_net, std::vector<ERTopo>& er_topo_list,
-                                   std::vector<Segment<LayerCoord>>& routing_segment_list)
+                                 std::vector<Segment<LayerCoord>>& routing_segment_list)
 {
   int32_t bottom_routing_layer_idx = RTDM.getConfig().bottom_routing_layer_idx;
   int32_t top_routing_layer_idx = RTDM.getConfig().top_routing_layer_idx;
