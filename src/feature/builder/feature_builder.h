@@ -64,6 +64,11 @@ class FeatureBuilder
   CongestionSummary buildCongestionEvalSummary(int32_t grid_size);
   TimingEvalSummary buildTimingEvalSummary();
 
+  bool initEvalTool();
+  UnionEvalSummary buildUnionEvalSummary(int32_t grid_size);
+  bool buildNetEval(std::string csv_path);
+  bool destroyEvalTool();
+
   bool buildRouteData(RouteAnalyseData* data);
 
  private:

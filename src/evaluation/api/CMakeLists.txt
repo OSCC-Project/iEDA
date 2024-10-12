@@ -68,3 +68,21 @@ target_include_directories(eval_wirelength_api
     PUBLIC
     ${EVAL_API}
 )
+
+
+# union API
+add_library(eval_union_api
+    ${EVAL_API}/union_api.cpp
+)
+
+target_link_libraries(eval_union_api
+    PRIVATE
+        eval_util_init_flute  
+        eval_util_init_egr   
+        eval_util_init_idb
+)
+
+target_include_directories(eval_union_api
+    PUBLIC
+        ${EVAL_DATA}
+)

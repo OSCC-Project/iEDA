@@ -195,6 +195,8 @@ void RTInterface::runRT()
   DetailedRouter::destroyInst();
 
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
+
+  RTDM.output();
 }
 
 void RTInterface::destroyRT()

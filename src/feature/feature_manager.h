@@ -63,6 +63,7 @@ class FeatureManager
   // evaluation
   bool save_eval_summary(std::string path, int32_t grid_size);
   bool save_timing_eval_summary(std::string path);
+  bool save_eval_union(std::string jsonl_path, std::string csv_path, int32_t grid_size);
 
  private:
   static FeatureManager* _instance;

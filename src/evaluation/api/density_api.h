@@ -21,6 +21,7 @@ class DensityAPI
   static void destroyInst();
 
   DensityMapSummary densityMap(int32_t grid_size = 1, bool neighbor = false);
+  DensityMapSummary densityMapPure(int32_t grid_size = 1, bool neighbor = false);
   CellMapSummary cellDensityMap(int32_t grid_size = 1);
   PinMapSummary pinDensityMap(int32_t grid_size = 1, bool neighbor = false);
   NetMapSummary netDensityMap(int32_t grid_size = 1, bool neighbor = false);
