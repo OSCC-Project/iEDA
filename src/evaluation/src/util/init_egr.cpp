@@ -61,18 +61,25 @@ void InitEGR::runEGR()
 
 float InitEGR::parseEGRWL(std::string guide_path)
 {
-  float egr_wl = 0;
+  parseGuideFile(guide_path);
+  float total_egr_wl = 0.0;
+  for (const auto& net : _net_lengths) {
+    total_egr_wl += net.second;
+  }
+  return total_egr_wl;
+}
+
+void InitEGR::parseGuideFile(const std::string& guide_path)
+{
+  _net_lengths.clear();
 
   std::ifstream file(guide_path);
   std::string line;
-  std::map<std::string, float> net_lengths;
   std::string current_net;
 
   struct Wire
   {
-    int gx1, gy1, gx2, gy2;
     float rx1, ry1, rx2, ry2;
-    std::string layer;
   };
 
   for (int i = 0; i < 4; ++i) {
@@ -86,24 +93,18 @@ float InitEGR::parseEGRWL(std::string guide_path)
 
     if (type == "guide") {
       iss >> current_net;
-      if (net_lengths.find(current_net) == net_lengths.end()) {
-        net_lengths[current_net] = 0.0;
+      if (_net_lengths.find(current_net) == _net_lengths.end()) {
+        _net_lengths[current_net] = 0.0;
       }
     } else if (type == "wire") {
       Wire wire;
-      iss >> wire.gx1 >> wire.gy1 >> wire.gx2 >> wire.gy2 >> wire.rx1 >> wire.ry1 >> wire.rx2 >> wire.ry2 >> wire.layer;
-      float wire_length = fabs(wire.rx1 - wire.rx2) + fabs(wire.ry1 - wire.ry2);
-      net_lengths[current_net] += wire_length;
+      int gx1, gy1, gx2, gy2;
+      std::string layer;
+      iss >> gx1 >> gy1 >> gx2 >> gy2 >> wire.rx1 >> wire.ry1 >> wire.rx2 >> wire.ry2 >> layer;
+      float wire_length = std::abs(wire.rx1 - wire.rx2) + std::abs(wire.ry1 - wire.ry2);
+      _net_lengths[current_net] += wire_length;
     }
   }
-
-  for (const auto& net : net_lengths) {
-    // std::cout << "Net " << net.first << " wire length: " << net.second << std::endl;
-    egr_wl += net.second;
-  }
-
-  // std::cout << "Total wire length for all nets: " << egr_wl << std::endl;
-  return egr_wl;
 }
 
 float InitEGR::parseNetEGRWL(std::string guide_path, std::string net_name)
@@ -272,6 +273,15 @@ std::unordered_map<std::string, LayerDirection> InitEGR::parseLayerDirection(std
     }
   }
   return layer_directions;
+}
+
+float InitEGR::getNetEGRWL(std::string net_name)
+{
+  auto it = _net_lengths.find(net_name);
+  if (it != _net_lengths.end()) {
+    return it->second;
+  }
+  return 0.0;
 }
 
 }  // namespace ieval
