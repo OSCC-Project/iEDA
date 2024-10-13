@@ -79,6 +79,7 @@ class PowerEngine {
 
   // api for build only macro connection.
   std::vector<MacroConnection> buildMacroConnectionMap(unsigned max_hop);
+  std::vector<MacroConnection> buildMacroConnectionMapWithGPU(unsigned max_hop);
 
  private:
   PowerEngine();

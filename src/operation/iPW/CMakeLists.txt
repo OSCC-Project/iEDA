@@ -45,6 +45,7 @@ add_subdirectory(source/module/ops/read_vcd)
 add_subdirectory(source/module/ops/plot_power)
 add_subdirectory(source/shell-cmd)
 add_subdirectory(source/python-api)
+add_subdirectory(source/gpu-kernel)
 add_subdirectory(test)
 
 add_executable(iPower main.cc)
