@@ -1,12 +1,10 @@
 initLAModel:初始化la_net_list
 setLAParameter:设置布线参数
+initLATaskList：构建task，有序
 buildLayerNodeMap:初始化graph
 buildLANodeNeighbor:构建graph的邻居
 buildOrientSupply:从supply_analyzer获取supply的access
-sortLAModel:对la_net进行排序
+buildTopoTree：从顶层拿取topo树
 routeLAModel:
     routeLANet:一个接一个的la_net进行布线
-        makeLATaskList:通过flute获取多个topo，并将每个topo构建成task，通过加入斯坦纳点的垂直线段
-        routeLATask:布线
-        updateDemand:将布线结果添加到graph上
 updateLAModel:将结果更新到顶层

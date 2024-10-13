@@ -2,10 +2,13 @@ initPAModel:初始化model
 setPAParameter:设置pa_model的参数
 initAccessPointList:用boost得到pinshape上的合法区域并生成ap
 uploadAccessPointList:将中间结果暂时存储至顶层
+buildNonConflictPoint：构建非冲突点，此点附近的点优先布线
 initPABoxMap:构建PABox框架，里面主要数据为空
 buildBoxSchedule:构建时间表
 routePABoxMap:
     buildFixedRect:将GCellmap中的fix_rect（与此Box覆盖）以指针的方式拷贝到Box内，不需要对GCellmap删除或添加
+    buildAccessResult:将GCellmap中的access结果（与此Box覆盖）以指针的方式拷贝到Box内，不需要对GCellmap删除或添加
+    buildViolation:将GCellMap中的violation以实体的方式拷贝到Box的violation_list，并在GCellMap中删除
     initPATaskList:构建task任务
     buildBoxTrackAxis:构建Box内的track_axis
     buildLayerNodeMap:构建Box的Graph，只有节点，其他信息后续构建
