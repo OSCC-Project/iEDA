@@ -1195,10 +1195,12 @@ void TrackAssigner::updateSummary(TAModel& ta_model)
   int32_t micron_dbu = RTDM.getDatabase().get_micron_dbu();
   Die& die = RTDM.getDatabase().get_die();
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
-  std::map<int32_t, double>& routing_wire_length_map = RTDM.getSummary().ta_summary.routing_wire_length_map;
-  double& total_wire_length = RTDM.getSummary().ta_summary.total_wire_length;
-  std::map<int32_t, int32_t>& routing_violation_num_map = RTDM.getSummary().ta_summary.routing_violation_num_map;
-  int32_t& total_violation_num = RTDM.getSummary().ta_summary.total_violation_num;
+  Summary& summary = RTDM.getDatabase().get_summary();
+
+  std::map<int32_t, double>& routing_wire_length_map = summary.ta_summary.routing_wire_length_map;
+  double& total_wire_length = summary.ta_summary.total_wire_length;
+  std::map<int32_t, int32_t>& routing_violation_num_map = summary.ta_summary.routing_violation_num_map;
+  int32_t& total_violation_num = summary.ta_summary.total_violation_num;
 
   for (RoutingLayer& routing_layer : routing_layer_list) {
     routing_wire_length_map[routing_layer.get_layer_idx()] = 0;
@@ -1227,10 +1229,12 @@ void TrackAssigner::updateSummary(TAModel& ta_model)
 void TrackAssigner::printSummary(TAModel& ta_model)
 {
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
-  std::map<int32_t, double>& routing_wire_length_map = RTDM.getSummary().ta_summary.routing_wire_length_map;
-  double& total_wire_length = RTDM.getSummary().ta_summary.total_wire_length;
-  std::map<int32_t, int32_t>& routing_violation_num_map = RTDM.getSummary().ta_summary.routing_violation_num_map;
-  int32_t& total_violation_num = RTDM.getSummary().ta_summary.total_violation_num;
+  Summary& summary = RTDM.getDatabase().get_summary();
+
+  std::map<int32_t, double>& routing_wire_length_map = summary.ta_summary.routing_wire_length_map;
+  double& total_wire_length = summary.ta_summary.total_wire_length;
+  std::map<int32_t, int32_t>& routing_violation_num_map = summary.ta_summary.routing_violation_num_map;
+  int32_t& total_violation_num = summary.ta_summary.total_violation_num;
 
   fort::char_table routing_wire_length_map_table;
   {

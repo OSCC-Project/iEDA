@@ -23,7 +23,6 @@
 #include "Monitor.hpp"
 #include "NetShape.hpp"
 #include "SortStatus.hpp"
-#include "Summary.hpp"
 
 namespace irt {
 
@@ -71,14 +70,12 @@ class DataManager
 
   Config& getConfig() { return _config; }
   Database& getDatabase() { return _database; }
-  Summary& getSummary() { return _summary; }
 
  private:
   static DataManager* _dm_instance;
-  // config & database & summary
+  // config & database
   Config _config;
   Database _database;
-  Summary _summary;
 
   DataManager() = default;
   DataManager(const DataManager& other) = delete;
