@@ -62,10 +62,6 @@ void InitSTA::destroyInst()
 
 void InitSTA::runSTA()
 {
-  if (_sta_init) {
-    return;
-  }
-  _sta_init = true;
   // auto routing_type_list = {"WLM", "HPWL", "FLUTE", "SALT", "EGR", "DR"}
   initStaEngine();
   auto routing_type_list = {"HPWL", "FLUTE", "SALT", "EGR", "DR"};
@@ -77,6 +73,16 @@ void InitSTA::runSTA()
     }
     updateResult(routing_type);
   });
+}
+
+void InitSTA::evalTiming(const std::string& routing_type, const bool& rt_done)
+{
+  if ((routing_type == "EGR" || routing_type == "DR") && !rt_done) {
+    callRT(routing_type);
+  } else {
+    buildRCTree(routing_type);
+  }
+  updateResult(routing_type);
 }
 
 void InitSTA::initStaEngine()

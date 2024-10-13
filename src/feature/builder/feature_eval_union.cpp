@@ -118,6 +118,8 @@ bool FeatureBuilder::destroyEvalTool()
 
 bool FeatureBuilder::buildNetEval(std::string csv_path)
 {
+  std::cout << "Building net evaluation data...\n";
+
   auto* idb_builder = dmInst->get_idb_builder();
   idb::IdbDesign* idb_design = idb_builder->get_def_service()->get_design();
 
