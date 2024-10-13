@@ -110,12 +110,12 @@ void DetailedRouter::iterativeDRModel(DRModel& dr_model)
    * max_routed_times
    */
   std::vector<DRParameter> dr_parameter_list;
-  dr_parameter_list.emplace_back(1, 2.5, cost_unit, 9, 0, 8 * cost_unit, 2 * cost_unit, 4 * cost_unit, true, 4);
-  dr_parameter_list.emplace_back(1, 2.5, cost_unit, 9, -3, 8 * cost_unit, 2 * cost_unit, 4 * cost_unit, false, 4);
-  dr_parameter_list.emplace_back(1, 2.5, cost_unit, 9, -6, 8 * cost_unit, 2 * cost_unit, 4 * cost_unit, false, 4);
-  dr_parameter_list.emplace_back(1, 2.5, cost_unit, 9, 0, 8 * cost_unit, 2 * cost_unit, 4 * cost_unit, false, 4);
-  dr_parameter_list.emplace_back(1, 2.5, cost_unit, 9, -3, 8 * cost_unit, 2 * cost_unit, 4 * cost_unit, false, 4);
-  dr_parameter_list.emplace_back(1, 2.5, cost_unit, 9, -6, 8 * cost_unit, 2 * cost_unit, 4 * cost_unit, false, 4);
+  dr_parameter_list.emplace_back(1, 1.5, cost_unit, 6, 0, 8 * cost_unit, 2 * cost_unit, 4 * cost_unit, true, 4);
+  dr_parameter_list.emplace_back(1, 1.5, cost_unit, 6, -2, 8 * cost_unit, 2 * cost_unit, 4 * cost_unit, false, 4);
+  dr_parameter_list.emplace_back(1, 1.5, cost_unit, 6, -4, 8 * cost_unit, 2 * cost_unit, 4 * cost_unit, false, 4);
+  dr_parameter_list.emplace_back(1, 1.5, cost_unit, 6, 0, 8 * cost_unit, 2 * cost_unit, 4 * cost_unit, false, 4);
+  dr_parameter_list.emplace_back(1, 1.5, cost_unit, 6, -2, 8 * cost_unit, 2 * cost_unit, 4 * cost_unit, false, 4);
+  dr_parameter_list.emplace_back(1, 1.5, cost_unit, 6, -4, 8 * cost_unit, 2 * cost_unit, 4 * cost_unit, false, 4);
   for (size_t i = 0, iter = 1; i < dr_parameter_list.size(); i++, iter++) {
     Monitor iter_monitor;
     RTLOG.info(Loc::current(), "***** Begin iteration ", iter, "/", dr_parameter_list.size(), "(",
@@ -205,7 +205,7 @@ void DetailedRouter::buildBoxSchedule(DRModel& dr_model)
 {
   GridMap<DRBox>& dr_box_map = dr_model.get_dr_box_map();
 
-  int32_t range = 2;
+  int32_t range = 3;
 
   std::vector<std::vector<DRBoxId>> dr_box_id_list_list;
   for (int32_t start_x = 0; start_x < range; start_x++) {

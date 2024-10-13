@@ -318,12 +318,17 @@ void LayerAssigner::makeLATopoList(LAModel& la_model, LANet* la_net, std::vector
       la_topo.get_la_group_list().push_back(la_group);
     }
     la_topo_list.push_back(la_topo);
-    LayerCoord& only_coord = la_topo_list.front().get_la_group_list().front().get_coord_list().front();
-    for (LAGroup& la_group : la_topo.get_la_group_list()) {
-      for (LayerCoord& coord : la_group.get_coord_list()) {
-        if (only_coord != coord) {
-          RTLOG.error(Loc::current(), "The topo_tree should not be empty!");
+    {
+      std::set<PlanarCoord, CmpPlanarCoordByXASC> coord_set;
+      for (LATopo& la_topo : la_topo_list) {
+        for (LAGroup& la_group : la_topo.get_la_group_list()) {
+          for (LayerCoord& coord : la_group.get_coord_list()) {
+            coord_set.insert(coord);
+          }
         }
+      }
+      if (coord_set.size() > 1) {
+        RTLOG.error(Loc::current(), "The topo_tree should not be empty!");
       }
     }
   } else {
