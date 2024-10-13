@@ -227,13 +227,26 @@ json FeatureParser::buildSummaryTiming()
   };
 
   auto routing_timing_summary = _summary->get_summary_timing_eval();
-  // TBD
-  // add_routing_timing("WLM", routing_timing_summary.wlm_timing_eval_summary.clock_timings);
-  add_routing_timing("HPWL", routing_timing_summary.hpwl_timing_eval_summary.clock_timings);
-  add_routing_timing("FLUTE", routing_timing_summary.flute_timing_eval_summary.clock_timings);
-  add_routing_timing("SALT", routing_timing_summary.salt_timing_eval_summary.clock_timings);
-  add_routing_timing("EGR", routing_timing_summary.egr_timing_eval_summary.clock_timings);
-  add_routing_timing("DR", routing_timing_summary.dr_timing_eval_summary.clock_timings);
+
+  if (routing_timing_summary.wlm_timing_eval_summary.clock_timings.size() > 0) {
+    add_routing_timing("WLM", routing_timing_summary.wlm_timing_eval_summary.clock_timings);
+  }
+  if (routing_timing_summary.hpwl_timing_eval_summary.clock_timings.size() > 0) {
+    add_routing_timing("HPWL", routing_timing_summary.hpwl_timing_eval_summary.clock_timings);
+  }
+  if (routing_timing_summary.flute_timing_eval_summary.clock_timings.size() > 0) {
+    add_routing_timing("FLUTE", routing_timing_summary.flute_timing_eval_summary.clock_timings);
+  }
+  if (routing_timing_summary.salt_timing_eval_summary.clock_timings.size() > 0) {
+    add_routing_timing("SALT", routing_timing_summary.salt_timing_eval_summary.clock_timings);
+  }
+  if (routing_timing_summary.egr_timing_eval_summary.clock_timings.size() > 0) {
+    add_routing_timing("EGR", routing_timing_summary.egr_timing_eval_summary.clock_timings);
+  }
+  if (routing_timing_summary.dr_timing_eval_summary.clock_timings.size() > 0) {
+    add_routing_timing("DR", routing_timing_summary.dr_timing_eval_summary.clock_timings);
+  }
+
   return timing;
 }
 
@@ -247,13 +260,24 @@ json FeatureParser::buildSummaryPower()
 
   auto timing_summary = _summary->get_summary_timing_eval();
 
-  // TBD
-  // add_routing_power("WLM", timing_summary.wlm_timing_eval_summary.power_info);
-  add_routing_power("HPWL", timing_summary.hpwl_timing_eval_summary.power_info);
-  add_routing_power("FLUTE", timing_summary.flute_timing_eval_summary.power_info);
-  add_routing_power("SALT", timing_summary.salt_timing_eval_summary.power_info);
-  add_routing_power("EGR", timing_summary.egr_timing_eval_summary.power_info);
-  add_routing_power("DR", timing_summary.dr_timing_eval_summary.power_info);
+  if (timing_summary.wlm_timing_eval_summary.power_info.static_power > 0) {
+    add_routing_power("WLM", timing_summary.wlm_timing_eval_summary.power_info);
+  }
+  if (timing_summary.hpwl_timing_eval_summary.power_info.static_power > 0) {
+    add_routing_power("HPWL", timing_summary.hpwl_timing_eval_summary.power_info);
+  }
+  if (timing_summary.flute_timing_eval_summary.power_info.static_power > 0) {
+    add_routing_power("FLUTE", timing_summary.flute_timing_eval_summary.power_info);
+  }
+  if (timing_summary.salt_timing_eval_summary.power_info.static_power > 0) {
+    add_routing_power("SALT", timing_summary.salt_timing_eval_summary.power_info);
+  }
+  if (timing_summary.egr_timing_eval_summary.power_info.static_power > 0) {
+    add_routing_power("EGR", timing_summary.egr_timing_eval_summary.power_info);
+  }
+  if (timing_summary.dr_timing_eval_summary.power_info.static_power > 0) {
+    add_routing_power("DR", timing_summary.dr_timing_eval_summary.power_info);
+  }
 
   return power;
 }

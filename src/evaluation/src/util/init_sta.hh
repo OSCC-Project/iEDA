@@ -43,6 +43,7 @@ class InitSTA
   static InitSTA* getInst();
   static void destroyInst();
   void runSTA();
+  void evalTiming(const std::string& routing_type, const bool& rt_done=false);
 
   std::map<std::string, std::map<std::string, std::map<std::string, double>>> getTiming() const { return _timing; }
   std::map<std::string, std::map<std::string, double>> getPower() const { return _power; }
@@ -72,7 +73,6 @@ class InitSTA
 
   static InitSTA* _init_sta;
 
-  bool _sta_init = false;
   std::map<std::string, std::map<std::string, std::map<std::string, double>>> _timing;
   std::map<std::string, std::map<std::string, double>> _power;
   std::map<std::string, std::unordered_map<std::string, double>> _net_power;
