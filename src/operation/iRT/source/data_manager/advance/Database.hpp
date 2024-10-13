@@ -25,6 +25,7 @@
 #include "RTHeader.hpp"
 #include "RoutingLayer.hpp"
 #include "Row.hpp"
+#include "Summary.hpp"
 #include "Utility.hpp"
 #include "ViaMaster.hpp"
 
@@ -58,6 +59,7 @@ class Database
   std::vector<Net>& get_net_list() { return _net_list; }
   GridMap<GCell>& get_gcell_map() { return _gcell_map; }
   int32_t get_detection_distance() const { return _detection_distance; }
+  Summary& get_summary() { return _summary; }
   // setter
   void set_design_name(const std::string& design_name) { _design_name = design_name; }
   void set_lef_file_path_list(const std::vector<std::string>& lef_file_path_list) { _lef_file_path_list = lef_file_path_list; }
@@ -89,6 +91,7 @@ class Database
   std::vector<Net> _net_list;
   GridMap<GCell> _gcell_map;
   int32_t _detection_distance = -1;
+  Summary _summary;
 };
 
 }  // namespace irt

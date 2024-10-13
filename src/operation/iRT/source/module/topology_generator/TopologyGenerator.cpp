@@ -477,12 +477,14 @@ void TopologyGenerator::updateSummary(TGModel& tg_model)
   ScaleAxis& gcell_axis = RTDM.getDatabase().get_gcell_axis();
   Die& die = RTDM.getDatabase().get_die();
   GridMap<GCell>& gcell_map = RTDM.getDatabase().get_gcell_map();
+  Summary& summary = RTDM.getDatabase().get_summary();
   int32_t enable_timing = RTDM.getConfig().enable_timing;
-  int32_t& total_demand = RTDM.getSummary().tg_summary.total_demand;
-  int32_t& total_overflow = RTDM.getSummary().tg_summary.total_overflow;
-  double& total_wire_length = RTDM.getSummary().tg_summary.total_wire_length;
-  std::map<std::string, std::map<std::string, double>>& clock_timing = RTDM.getSummary().tg_summary.clock_timing;
-  std::map<std::string, double>& power_map = RTDM.getSummary().tg_summary.power_map;
+
+  int32_t& total_demand = summary.tg_summary.total_demand;
+  int32_t& total_overflow = summary.tg_summary.total_overflow;
+  double& total_wire_length = summary.tg_summary.total_wire_length;
+  std::map<std::string, std::map<std::string, double>>& clock_timing = summary.tg_summary.clock_timing;
+  std::map<std::string, double>& power_map = summary.tg_summary.power_map;
 
   std::vector<TGNet>& tg_net_list = tg_model.get_tg_net_list();
   GridMap<TGNode>& tg_node_map = tg_model.get_tg_node_map();
@@ -554,12 +556,14 @@ void TopologyGenerator::updateSummary(TGModel& tg_model)
 
 void TopologyGenerator::printSummary(TGModel& tg_model)
 {
+  Summary& summary = RTDM.getDatabase().get_summary();
   int32_t enable_timing = RTDM.getConfig().enable_timing;
-  int32_t& total_demand = RTDM.getSummary().tg_summary.total_demand;
-  int32_t& total_overflow = RTDM.getSummary().tg_summary.total_overflow;
-  double& total_wire_length = RTDM.getSummary().tg_summary.total_wire_length;
-  std::map<std::string, std::map<std::string, double>>& clock_timing = RTDM.getSummary().tg_summary.clock_timing;
-  std::map<std::string, double>& power_map = RTDM.getSummary().tg_summary.power_map;
+
+  int32_t& total_demand = summary.tg_summary.total_demand;
+  int32_t& total_overflow = summary.tg_summary.total_overflow;
+  double& total_wire_length = summary.tg_summary.total_wire_length;
+  std::map<std::string, std::map<std::string, double>>& clock_timing = summary.tg_summary.clock_timing;
+  std::map<std::string, double>& power_map = summary.tg_summary.power_map;
 
   fort::char_table summary_table;
   {

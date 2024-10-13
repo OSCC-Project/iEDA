@@ -2065,9 +2065,11 @@ void PinAccessor::updateSummary(PAModel& pa_model)
 {
   Die& die = RTDM.getDatabase().get_die();
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
-  std::map<int32_t, int32_t>& routing_access_point_num_map = RTDM.getSummary().pa_summary.routing_access_point_num_map;
-  std::map<AccessPointType, int32_t>& type_access_point_num_map = RTDM.getSummary().pa_summary.type_access_point_num_map;
-  int32_t& total_access_point_num = RTDM.getSummary().pa_summary.total_access_point_num;
+  Summary& summary = RTDM.getDatabase().get_summary();
+
+  std::map<int32_t, int32_t>& routing_access_point_num_map = summary.pa_summary.routing_access_point_num_map;
+  std::map<AccessPointType, int32_t>& type_access_point_num_map = summary.pa_summary.type_access_point_num_map;
+  int32_t& total_access_point_num = summary.pa_summary.total_access_point_num;
 
   for (RoutingLayer& routing_layer : routing_layer_list) {
     routing_access_point_num_map[routing_layer.get_layer_idx()] = 0;
@@ -2087,9 +2089,11 @@ void PinAccessor::updateSummary(PAModel& pa_model)
 void PinAccessor::printSummary(PAModel& pa_model)
 {
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
-  std::map<int32_t, int32_t>& routing_access_point_num_map = RTDM.getSummary().pa_summary.routing_access_point_num_map;
-  std::map<AccessPointType, int32_t>& type_access_point_num_map = RTDM.getSummary().pa_summary.type_access_point_num_map;
-  int32_t& total_access_point_num = RTDM.getSummary().pa_summary.total_access_point_num;
+  Summary& summary = RTDM.getDatabase().get_summary();
+
+  std::map<int32_t, int32_t>& routing_access_point_num_map = summary.pa_summary.routing_access_point_num_map;
+  std::map<AccessPointType, int32_t>& type_access_point_num_map = summary.pa_summary.type_access_point_num_map;
+  int32_t& total_access_point_num = summary.pa_summary.total_access_point_num;
 
   fort::char_table routing_access_point_num_map_table;
   {

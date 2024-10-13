@@ -128,9 +128,7 @@ bool FeatureManager::save_tools(std::string path, std::string step)
 
     _summary->set_ito_optsetup(db);
   } else if (step == "route") {
-    auto db = builder.buildRTSummary();
-
-    _summary->set_irt(db);
+    // skip
   } else {
   }
 
