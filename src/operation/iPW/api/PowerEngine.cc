@@ -29,7 +29,9 @@
 
 #include "ThreadPool/ThreadPool.h"
 #include "gpu-kernel/kernel_common.h"
+#ifdef USE_GPU
 #include "gpu-kernel/power_kernel.cuh"
+#endif
 #include "usage/usage.hh"
 
 namespace ipower {
@@ -302,6 +304,7 @@ std::vector<MacroConnection> PowerEngine::buildMacroConnectionMap(
   return macro_connections;
 }
 
+#ifdef USE_GPU
 /**
  * @brief build macro connection map with gpu kernel.
  *
@@ -453,5 +456,6 @@ std::vector<MacroConnection> PowerEngine::buildMacroConnectionMapWithGPU(
 
   return macro_connections;
 }
+#endif
 
 }  // namespace ipower
