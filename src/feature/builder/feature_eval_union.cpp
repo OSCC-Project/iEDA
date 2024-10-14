@@ -100,7 +100,7 @@ UnionEvalSummary FeatureBuilder::buildUnionEvalSummary(int32_t grid_size)
 bool FeatureBuilder::initEvalTool()
 {
   UNION_API_INST->initIDB();
-  UNION_API_INST->initEGR();
+  UNION_API_INST->initEGR(true);
   UNION_API_INST->initFlute();
 
   return true;
@@ -125,16 +125,14 @@ bool FeatureBuilder::buildNetEval(std::string csv_path)
 
   CONGESTION_API_INST->evalNetInfoPure();
   WIRELENGTH_API_INST->evalNetInfoPure();
-  //   ieval::TimingAPI::getInst()->runSTA();
-  //   auto net_power_data = ieval::TimingAPI::getInst()->evalNetPower();
+  auto net_power_data = ieval::TimingAPI::getInst()->evalNetPower();
 
   std::ofstream csv_file(csv_path, std::ios::out | std::ios::binary);
   if (!csv_file) {
     return false;
   }
 
-  //   csv_file << "net_name,pin_num,aspect_ratio,lness,hpwl,rsmt,grwl,hpwl_power,flute_power,egr_power\n";
-  csv_file << "net_name,pin_num,aspect_ratio,lness,hpwl,rsmt,grwl\n";
+  csv_file << "net_name,pin_num,aspect_ratio,lness,hpwl,rsmt,grwl,hpwl_power,flute_power,egr_power\n";
 
   const size_t buffer_size = 1024 * 1024;  // 1MB buffer
   std::vector<char> buffer(buffer_size);
@@ -156,20 +154,19 @@ bool FeatureBuilder::buildNetEval(std::string csv_path)
     int32_t flute = WIRELENGTH_API_INST->findNetFLUTE(net_name);
     int32_t grwl = WIRELENGTH_API_INST->findNetGRWL(net_name);
 
-    // if (net_power_data["HPWL"].find(net_name) == net_power_data["HPWL"].end()
-    //     || net_power_data["FLUTE"].find(net_name) == net_power_data["FLUTE"].end()
-    //     || net_power_data["EGR"].find(net_name) == net_power_data["EGR"].end()) {
-    //   std::cerr << "Error: net_name '" << net_name << "' not found in net_power_data.\n";
-    //   std::exit(EXIT_FAILURE);
-    // }
+    if (net_power_data["HPWL"].find(net_name) == net_power_data["HPWL"].end()
+        || net_power_data["FLUTE"].find(net_name) == net_power_data["FLUTE"].end()
+        || net_power_data["EGR"].find(net_name) == net_power_data["EGR"].end()) {
+      std::cerr << "Error: net_name '" << net_name << "' not found in net_power_data.\n";
+      std::exit(EXIT_FAILURE);
+    }
 
-    // double hpwl_power = net_power_data["HPWL"][net_name];
-    // double flute_power = net_power_data["FLUTE"][net_name];
-    // double egr_power = net_power_data["EGR"][net_name];
+    double hpwl_power = net_power_data["HPWL"][net_name];
+    double flute_power = net_power_data["FLUTE"][net_name];
+    double egr_power = net_power_data["EGR"][net_name];
 
-    // csv_file << net_name << ',' << pin_num << ',' << aspect_ratio << ',' << l_ness << ',' << hpwl << ',' << flute << ',' << grwl << ','
-    //          << hpwl_power << ',' << flute_power << ',' << egr_power << '\n';
-    oss << net_name << ',' << pin_num << ',' << aspect_ratio << ',' << l_ness << ',' << hpwl << ',' << flute << ',' << grwl << '\n';
+    csv_file << net_name << ',' << pin_num << ',' << aspect_ratio << ',' << l_ness << ',' << hpwl << ',' << flute << ',' << grwl << ','
+             << hpwl_power << ',' << flute_power << ',' << egr_power << '\n';
 
     if (oss.tellp() >= buffer_size / 2) {
       csv_file << oss.str();

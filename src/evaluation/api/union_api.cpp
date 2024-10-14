@@ -51,9 +51,9 @@ void UnionAPI::initIDB()
   UNION_EVAL_INIT_IDB_INST->initCongestionDB();
 }
 
-void UnionAPI::initEGR()
+void UnionAPI::initEGR(bool enable_timing)
 {
-  UNION_EVAL_INIT_EGR_INST->runEGR();
+  UNION_EVAL_INIT_EGR_INST->runEGR(enable_timing);
 }
 
 void UnionAPI::initFlute()

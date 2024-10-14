@@ -189,65 +189,65 @@ string CongestionEval::evalEGR(string rt_dir_path, string egr_type, string outpu
 
   if (egr_type == "horizontal" || egr_type == "vertical") {
     LayerDirection target_direction = (egr_type == "horizontal") ? LayerDirection::Horizontal : LayerDirection::Vertical;
-
     for (const auto& [layer, direction] : layer_directions) {
       if (direction == target_direction) {
         target_layers.push_back(layer);
       }
     }
-
-    std::vector<std::vector<double>> sum_matrix;
-    bool is_first_file = true;
-
-    for (const auto& entry : std::filesystem::directory_iterator(dir_path)) {
-      std::string filename = entry.path().filename().string();
-      if (filename.find("overflow_map_") != std::string::npos) {
-        for (const auto& layer : target_layers) {
-          if (filename.find(layer) != std::string::npos) {
-            std::ifstream file(entry.path());
-            std::string line;
-            size_t row = 0;
-            while (std::getline(file, line)) {
-              std::istringstream iss(line);
-              std::string value;
-              int col = 0;
-              while (std::getline(iss, value, ',')) {
-                double num_value = std::stod(value);
-                if (is_first_file) {
-                  if (row >= sum_matrix.size()) {
-                    sum_matrix.push_back(std::vector<double>());
-                  }
-                  sum_matrix[row].push_back(num_value);
-                } else {
-                  sum_matrix[row][col] += num_value;
-                }
-                col++;
-              }
-              row++;
-            }
-            is_first_file = false;
-            break;
-          }
-        }
-      }
-    }
-
-    std::ofstream out_file(out_file_path);
-    for (const auto& row : sum_matrix) {
-      for (size_t i = 0; i < row.size(); ++i) {
-        out_file << row[i];
-        if (i < row.size() - 1) {
-          out_file << ",";
-        }
-      }
-      out_file << "\n";
-    }
-    out_file.close();
   } else if (egr_type == "union") {
-    dir_path = rt_dir_path + "/topology_generator/";
-    std::string source_file = dir_path + "overflow_map_planar.csv";
-    std::filesystem::copy_file(source_file, out_file_path, std::filesystem::copy_options::overwrite_existing);
+    for (const auto& [layer, direction] : layer_directions) {
+      target_layers.push_back(layer);
+    }
   }
+
+  std::vector<std::vector<double>> sum_matrix;
+  bool is_first_file = true;
+
+  for (const auto& entry : std::filesystem::directory_iterator(dir_path)) {
+    std::string filename = entry.path().filename().string();
+    if (filename.find("overflow_map_") != std::string::npos) {
+      for (const auto& layer : target_layers) {
+        if (filename.find(layer) != std::string::npos) {
+          std::ifstream file(entry.path());
+          std::string line;
+          size_t row = 0;
+          while (std::getline(file, line)) {
+            std::istringstream iss(line);
+            std::string value;
+            int col = 0;
+            while (std::getline(iss, value, ',')) {
+              double num_value = std::stod(value);
+              if (is_first_file) {
+                if (row >= sum_matrix.size()) {
+                  sum_matrix.push_back(std::vector<double>());
+                }
+                sum_matrix[row].push_back(num_value);
+              } else {
+                sum_matrix[row][col] += num_value;
+              }
+              col++;
+            }
+            row++;
+          }
+          is_first_file = false;
+          break;
+        }
+      }
+    }
+  }
+
+  std::ofstream out_file(out_file_path);
+  for (const auto& row : sum_matrix) {
+    for (size_t i = 0; i < row.size(); ++i) {
+      out_file << row[i];
+      if (i < row.size() - 1) {
+        out_file << ",";
+      }
+    }
+    out_file << "\n";
+  }
+  out_file.close();
+
   return out_file_path.string();
 }
 

@@ -77,11 +77,15 @@ void InitSTA::runSTA()
 
 void InitSTA::evalTiming(const std::string& routing_type, const bool& rt_done)
 {
-  if ((routing_type == "EGR" || routing_type == "DR") && !rt_done) {
-    callRT(routing_type);
+  initStaEngine();
+  if (routing_type == "EGR" || routing_type == "DR") {
+    if (!rt_done) {
+      callRT(routing_type);
+    }
   } else {
     buildRCTree(routing_type);
   }
+
   updateResult(routing_type);
 }
 
