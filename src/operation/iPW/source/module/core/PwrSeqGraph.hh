@@ -354,7 +354,7 @@ class PwrSeqGraph {
  *
  */
 #define FOREACH_SEQ_ARC(graph, arc)                  \
-  if (auto& arcs = graph->get_arcs(); !arcs.empty()) \
+  if (auto& arcs = (graph)->get_arcs(); !arcs.empty()) \
     for (auto p = arcs.begin();                      \
          p != arcs.end() ? arc = p->get(), true : false; ++p)
 }  // namespace ipower

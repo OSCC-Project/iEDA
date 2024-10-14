@@ -82,6 +82,10 @@ void ViolationOptimizer::checkAndRepair()
   int net_connect_port = 0;
 
   for (int i = number_driver_vertices - 1; i >= 0; --i) {
+    if ((number_driver_vertices - i) % 1000 == 0 || i == 0) {
+      LOG_INFO << "Check and repair: " << (number_driver_vertices - i) << "/" << number_driver_vertices << "("
+               << (double(number_driver_vertices - i) / number_driver_vertices) * 100 << "%) nets\n";
+    }
     StaVertex* driver = sorted_driver_vertices[i];
 
     auto* design_obj = driver->get_design_obj();
@@ -116,8 +120,11 @@ void ViolationOptimizer::iterCheckAndRepair()
 {
   checkViolations();
 
-  int max_iter = 6;
+  int max_iter = toConfig->get_drv_optimize_iter_number();
   int iter = 1;
+  if (iter == max_iter) {
+    return;
+  }
   int prev_violation_num = _violation_nets_map.size();
   while (!_violation_nets_map.empty()) {
     // If there are still a violation nets, the secondary fix is performed.
