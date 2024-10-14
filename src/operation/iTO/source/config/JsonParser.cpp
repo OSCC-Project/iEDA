@@ -110,6 +110,7 @@ void JsonParser::jsonToConfig(Json* json)
   toConfig->set_max_allowed_buffering_fanout(json->at("max_allowed_buffering_fanout").get<int>());
   toConfig->set_min_divide_fanout(json->at("min_divide_fanout").get<int>());
   toConfig->set_optimize_endpoints_percent(json->at("optimize_endpoints_percent").get<float>());
+  toConfig->set_drv_optimize_iter_number(json->at("drv_optimize_iter_number").get<int>());
 
   // Set specific names prefixes
   auto specific_prefix = json->at("specific_prefix");
