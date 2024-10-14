@@ -63,6 +63,13 @@ class FeatureBuilder
   DensityMapSummary buildDensityEvalSummary(int32_t grid_size);
   CongestionSummary buildCongestionEvalSummary(int32_t grid_size);
   TimingEvalSummary buildTimingEvalSummary();
+  TimingEvalSummary buildTimingUnionEvalSummary();
+  void evalTiming(const std::string& routing_type, const bool& rt_done = false);
+
+  bool initEvalTool();
+  UnionEvalSummary buildUnionEvalSummary(int32_t grid_size);
+  bool buildNetEval(std::string csv_path);
+  bool destroyEvalTool();
 
   bool buildRouteData(RouteAnalyseData* data);
 

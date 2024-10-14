@@ -61,9 +61,9 @@ void TopologyGenerator::generate()
   buildOrientSupply(tg_model);
   // debugCheckTGModel(tg_model);
   generateTGModel(tg_model);
-  // outputGuide(tg_model);
   updateSummary(tg_model);
   printSummary(tg_model);
+  outputGuide(tg_model);
   outputPlanarSupplyCSV(tg_model);
   outputPlanarDemandCSV(tg_model);
   outputPlanarOverflowCSV(tg_model);
@@ -477,12 +477,14 @@ void TopologyGenerator::updateSummary(TGModel& tg_model)
   ScaleAxis& gcell_axis = RTDM.getDatabase().get_gcell_axis();
   Die& die = RTDM.getDatabase().get_die();
   GridMap<GCell>& gcell_map = RTDM.getDatabase().get_gcell_map();
+  Summary& summary = RTDM.getDatabase().get_summary();
   int32_t enable_timing = RTDM.getConfig().enable_timing;
-  int32_t& total_demand = RTDM.getSummary().tg_summary.total_demand;
-  int32_t& total_overflow = RTDM.getSummary().tg_summary.total_overflow;
-  double& total_wire_length = RTDM.getSummary().tg_summary.total_wire_length;
-  std::map<std::string, std::map<std::string, double>>& clock_timing = RTDM.getSummary().tg_summary.clock_timing;
-  std::map<std::string, double>& power_map = RTDM.getSummary().tg_summary.power_map;
+
+  int32_t& total_demand = summary.tg_summary.total_demand;
+  int32_t& total_overflow = summary.tg_summary.total_overflow;
+  double& total_wire_length = summary.tg_summary.total_wire_length;
+  std::map<std::string, std::map<std::string, double>>& clock_timing = summary.tg_summary.clock_timing;
+  std::map<std::string, double>& power_map = summary.tg_summary.power_map;
 
   std::vector<TGNet>& tg_net_list = tg_model.get_tg_net_list();
   GridMap<TGNode>& tg_node_map = tg_model.get_tg_node_map();
@@ -554,12 +556,14 @@ void TopologyGenerator::updateSummary(TGModel& tg_model)
 
 void TopologyGenerator::printSummary(TGModel& tg_model)
 {
+  Summary& summary = RTDM.getDatabase().get_summary();
   int32_t enable_timing = RTDM.getConfig().enable_timing;
-  int32_t& total_demand = RTDM.getSummary().tg_summary.total_demand;
-  int32_t& total_overflow = RTDM.getSummary().tg_summary.total_overflow;
-  double& total_wire_length = RTDM.getSummary().tg_summary.total_wire_length;
-  std::map<std::string, std::map<std::string, double>>& clock_timing = RTDM.getSummary().tg_summary.clock_timing;
-  std::map<std::string, double>& power_map = RTDM.getSummary().tg_summary.power_map;
+
+  int32_t& total_demand = summary.tg_summary.total_demand;
+  int32_t& total_overflow = summary.tg_summary.total_overflow;
+  double& total_wire_length = summary.tg_summary.total_wire_length;
+  std::map<std::string, std::map<std::string, double>>& clock_timing = summary.tg_summary.clock_timing;
+  std::map<std::string, double>& power_map = summary.tg_summary.power_map;
 
   fort::char_table summary_table;
   {
@@ -584,6 +588,82 @@ void TopologyGenerator::printSummary(TGModel& tg_model)
   table_list.push_back(summary_table);
   table_list.push_back(timing_and_power_table);
   RTUTIL.printTableList(table_list);
+}
+
+void TopologyGenerator::outputGuide(TGModel& tg_model)
+{
+  int32_t micron_dbu = RTDM.getDatabase().get_micron_dbu();
+  ScaleAxis& gcell_axis = RTDM.getDatabase().get_gcell_axis();
+  Die& die = RTDM.getDatabase().get_die();
+  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
+  std::string& tg_temp_directory_path = RTDM.getConfig().tg_temp_directory_path;
+  int32_t output_inter_result = RTDM.getConfig().output_inter_result;
+  if (!output_inter_result) {
+    return;
+  }
+  std::vector<TGNet>& tg_net_list = tg_model.get_tg_net_list();
+
+  std::ofstream* guide_file_stream = RTUTIL.getOutputFileStream(tg_temp_directory_path + "route.guide");
+  if (guide_file_stream == nullptr) {
+    return;
+  }
+  RTUTIL.pushStream(guide_file_stream, "guide net_name\n");
+  RTUTIL.pushStream(guide_file_stream, "pin grid_x grid_y real_x real_y layer energy name\n");
+  RTUTIL.pushStream(guide_file_stream, "wire grid1_x grid1_y grid2_x grid2_y real1_x real1_y real2_x real2_y layer\n");
+  RTUTIL.pushStream(guide_file_stream, "via grid_x grid_y real_x real_y layer1 layer2\n");
+
+  for (auto& [net_idx, segment_set] : RTDM.getNetGlobalResultMap(die)) {
+    TGNet& tg_net = tg_net_list[net_idx];
+    RTUTIL.pushStream(guide_file_stream, "guide ", tg_net.get_origin_net()->get_net_name(), "\n");
+
+    for (TGPin& tg_pin : tg_net.get_tg_pin_list()) {
+      AccessPoint& access_point = tg_pin.get_access_point();
+      double grid_x = access_point.get_grid_x();
+      double grid_y = access_point.get_grid_y();
+      double real_x = access_point.get_real_x() / 1.0 / micron_dbu;
+      double real_y = access_point.get_real_y() / 1.0 / micron_dbu;
+      std::string layer = routing_layer_list[access_point.get_layer_idx()].get_layer_name();
+      std::string connnect;
+      if (tg_pin.get_is_driven()) {
+        connnect = "driven";
+      } else {
+        connnect = "load";
+      }
+      RTUTIL.pushStream(guide_file_stream, "pin ", grid_x, " ", grid_y, " ", real_x, " ", real_y, " ", layer, " ", connnect, " ",
+                        tg_pin.get_pin_name(), "\n");
+    }
+    for (Segment<LayerCoord>* segment : segment_set) {
+      LayerCoord first_layer_coord = segment->get_first();
+      double grid1_x = first_layer_coord.get_x();
+      double grid1_y = first_layer_coord.get_y();
+      int32_t first_layer_idx = first_layer_coord.get_layer_idx();
+
+      PlanarCoord first_mid_coord = RTUTIL.getRealRectByGCell(first_layer_coord, gcell_axis).getMidPoint();
+      double real1_x = first_mid_coord.get_x() / 1.0 / micron_dbu;
+      double real1_y = first_mid_coord.get_y() / 1.0 / micron_dbu;
+
+      LayerCoord second_layer_coord = segment->get_second();
+      double grid2_x = second_layer_coord.get_x();
+      double grid2_y = second_layer_coord.get_y();
+      int32_t second_layer_idx = second_layer_coord.get_layer_idx();
+
+      PlanarCoord second_mid_coord = RTUTIL.getRealRectByGCell(second_layer_coord, gcell_axis).getMidPoint();
+      double real2_x = second_mid_coord.get_x() / 1.0 / micron_dbu;
+      double real2_y = second_mid_coord.get_y() / 1.0 / micron_dbu;
+
+      if (first_layer_idx != second_layer_idx) {
+        RTUTIL.swapByASC(first_layer_idx, second_layer_idx);
+        std::string layer1 = routing_layer_list[first_layer_idx].get_layer_name();
+        std::string layer2 = routing_layer_list[second_layer_idx].get_layer_name();
+        RTUTIL.pushStream(guide_file_stream, "via ", grid1_x, " ", grid1_y, " ", real1_x, " ", real1_y, " ", layer1, " ", layer2, "\n");
+      } else {
+        std::string layer = routing_layer_list[first_layer_idx].get_layer_name();
+        RTUTIL.pushStream(guide_file_stream, "wire ", grid1_x, " ", grid1_y, " ", grid2_x, " ", grid2_y, " ", real1_x, " ", real1_y, " ",
+                          real2_x, " ", real2_y, " ", layer, "\n");
+      }
+    }
+  }
+  RTUTIL.closeFileStream(guide_file_stream);
 }
 
 void TopologyGenerator::outputPlanarSupplyCSV(TGModel& tg_model)
@@ -680,84 +760,6 @@ void TopologyGenerator::debugCheckTGModel(TGModel& tg_model)
       }
     }
   }
-}
-
-void TopologyGenerator::outputGuide(TGModel& tg_model)
-{
-  Monitor monitor;
-  RTLOG.info(Loc::current(), "Starting...");
-
-  int32_t micron_dbu = RTDM.getDatabase().get_micron_dbu();
-  ScaleAxis& gcell_axis = RTDM.getDatabase().get_gcell_axis();
-  Die& die = RTDM.getDatabase().get_die();
-  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
-  std::string& tg_temp_directory_path = RTDM.getConfig().tg_temp_directory_path;
-
-  std::vector<TGNet>& tg_net_list = tg_model.get_tg_net_list();
-
-  std::ofstream* guide_file_stream = RTUTIL.getOutputFileStream(tg_temp_directory_path + "route.guide");
-  if (guide_file_stream == nullptr) {
-    return;
-  }
-  RTUTIL.pushStream(guide_file_stream, "guide net_name\n");
-  RTUTIL.pushStream(guide_file_stream, "pin grid_x grid_y real_x real_y layer energy name\n");
-  RTUTIL.pushStream(guide_file_stream, "wire grid1_x grid1_y grid2_x grid2_y real1_x real1_y real2_x real2_y layer\n");
-  RTUTIL.pushStream(guide_file_stream, "via grid_x grid_y real_x real_y layer1 layer2\n");
-
-  for (auto& [net_idx, segment_set] : RTDM.getNetGlobalResultMap(die)) {
-    TGNet& tg_net = tg_net_list[net_idx];
-    RTUTIL.pushStream(guide_file_stream, "guide ", tg_net.get_origin_net()->get_net_name(), "\n");
-
-    for (TGPin& tg_pin : tg_net.get_tg_pin_list()) {
-      AccessPoint& access_point = tg_pin.get_access_point();
-      double grid_x = access_point.get_grid_x();
-      double grid_y = access_point.get_grid_y();
-      double real_x = access_point.get_real_x() / 1.0 / micron_dbu;
-      double real_y = access_point.get_real_y() / 1.0 / micron_dbu;
-      std::string layer = routing_layer_list[access_point.get_layer_idx()].get_layer_name();
-      std::string connnect;
-      if (tg_pin.get_is_driven()) {
-        connnect = "driven";
-      } else {
-        connnect = "load";
-      }
-      RTUTIL.pushStream(guide_file_stream, "pin ", grid_x, " ", grid_y, " ", real_x, " ", real_y, " ", layer, " ", connnect, " ",
-                        tg_pin.get_pin_name(), "\n");
-    }
-    for (Segment<LayerCoord>* segment : segment_set) {
-      LayerCoord first_layer_coord = segment->get_first();
-      double grid1_x = first_layer_coord.get_x();
-      double grid1_y = first_layer_coord.get_y();
-      int32_t first_layer_idx = first_layer_coord.get_layer_idx();
-
-      PlanarCoord first_mid_coord = RTUTIL.getRealRectByGCell(first_layer_coord, gcell_axis).getMidPoint();
-      double real1_x = first_mid_coord.get_x() / 1.0 / micron_dbu;
-      double real1_y = first_mid_coord.get_y() / 1.0 / micron_dbu;
-
-      LayerCoord second_layer_coord = segment->get_second();
-      double grid2_x = second_layer_coord.get_x();
-      double grid2_y = second_layer_coord.get_y();
-      int32_t second_layer_idx = second_layer_coord.get_layer_idx();
-
-      PlanarCoord second_mid_coord = RTUTIL.getRealRectByGCell(second_layer_coord, gcell_axis).getMidPoint();
-      double real2_x = second_mid_coord.get_x() / 1.0 / micron_dbu;
-      double real2_y = second_mid_coord.get_y() / 1.0 / micron_dbu;
-
-      if (first_layer_idx != second_layer_idx) {
-        RTUTIL.swapByASC(first_layer_idx, second_layer_idx);
-        std::string layer1 = routing_layer_list[first_layer_idx].get_layer_name();
-        std::string layer2 = routing_layer_list[second_layer_idx].get_layer_name();
-        RTUTIL.pushStream(guide_file_stream, "via ", grid1_x, " ", grid1_y, " ", real1_x, " ", real1_y, " ", layer1, " ", layer2, "\n");
-      } else {
-        std::string layer = routing_layer_list[first_layer_idx].get_layer_name();
-        RTUTIL.pushStream(guide_file_stream, "wire ", grid1_x, " ", grid1_y, " ", grid2_x, " ", grid2_y, " ", real1_x, " ", real1_y, " ",
-                          real2_x, " ", real2_y, " ", layer, "\n");
-      }
-    }
-  }
-  RTUTIL.closeFileStream(guide_file_stream);
-
-  RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
 #endif

@@ -43,6 +43,7 @@ iTO提供了4个Tcl命令：
 "max_allowed_buffering_fanout": 20,  // 针对setup，线网的fanout超过该值时不会对其进行缓冲器插入优化
 "min_divide_fanout": 8  // 针对setup，线网的fanout大于该值时通过插入缓冲器把fanout降低
 "optimize_endpoints_percent": 1.0 //针对setup，需要优化的违例端点占全部违例端点的比例 
+"drv_optimize_iter_number": 5  // 针对drv，drv优化的执行次数
 
 ```
 

@@ -18,10 +18,11 @@
 
 #include "DRCEngine.hpp"
 #include "DetailedRouter.hpp"
+#include "EarlyRouter.hpp"
 #include "GDSPlotter.hpp"
 #include "GlobalRouter.hpp"
-#include "InitialRouter.hpp"
 #include "LSAssigner4iEDA/ls_assigner/LSAssigner.h"
+#include "LayerAssigner.hpp"
 #include "Monitor.hpp"
 #include "PinAccessor.hpp"
 #include "RTInterface.hpp"
@@ -32,6 +33,7 @@
 #include "api/TimingEngine.hh"
 #include "api/TimingIDBAdapter.hh"
 #include "feature_irt.h"
+#include "feature_manager.h"
 #include "flute3/flute.h"
 #include "idm.h"
 #include "idrc_api.h"
@@ -58,6 +60,8 @@ void RTInterface::destroyInst()
 }
 
 #if 1  // 外部调用RT的API
+
+#if 1  // iRT
 
 void RTInterface::initRT(std::map<std::string, std::any> config_map)
 {
@@ -92,25 +96,13 @@ void RTInterface::runEGR()
   Monitor monitor;
   RTLOG.info(Loc::current(), "Starting...");
 
-  PinAccessor::initInst();
-  RTPA.access();
-  PinAccessor::destroyInst();
-
   SupplyAnalyzer::initInst();
   RTSA.analyze();
   SupplyAnalyzer::destroyInst();
 
-  TopologyGenerator::initInst();
-  RTTG.generate();
-  TopologyGenerator::destroyInst();
-
-  InitialRouter::initInst();
-  RTIR.route();
-  InitialRouter::destroyInst();
-
-  GlobalRouter::initInst();
-  RTGR.route();
-  GlobalRouter::destroyInst();
+  EarlyRouter::initInst();
+  RTER.route();
+  EarlyRouter::destroyInst();
 
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
@@ -132,9 +124,9 @@ void RTInterface::runRT()
   RTTG.generate();
   TopologyGenerator::destroyInst();
 
-  InitialRouter::initInst();
-  RTIR.route();
-  InitialRouter::destroyInst();
+  LayerAssigner::initInst();
+  RTLA.route();
+  LayerAssigner::destroyInst();
 
   GlobalRouter::initInst();
   RTGR.route();
@@ -252,9 +244,11 @@ void RTInterface::clearDef()
 
 #endif
 
+#endif
+
 #if 1  // RT调用外部的API
 
-#if 1  // iDB
+#if 1  // TopData
 
 #if 1  // input
 
@@ -783,6 +777,7 @@ void RTInterface::output()
   outputTrackGrid();
   outputGCellGrid();
   outputNetList();
+  outputSummary();
 }
 
 void RTInterface::outputTrackGrid()
@@ -908,6 +903,139 @@ void RTInterface::outputNetList()
         print_new = true;
       }
     }
+  }
+}
+
+void RTInterface::outputSummary()
+{
+  ieda_feature::RTSummary& top_rt_summary = featureInst->get_summary()->get_summary_irt();
+
+  Summary& rt_summary = RTDM.getDatabase().get_summary();
+
+  // pa_summary
+  {
+    top_rt_summary.pa_summary.routing_access_point_num_map = rt_summary.pa_summary.routing_access_point_num_map;
+    for (auto& [type, access_point_num] : rt_summary.pa_summary.type_access_point_num_map) {
+      top_rt_summary.pa_summary.type_access_point_num_map[GetAccessPointTypeName()(type)] = access_point_num;
+    }
+    top_rt_summary.pa_summary.total_access_point_num = rt_summary.pa_summary.total_access_point_num;
+  }
+  // sa_summary
+  {
+    top_rt_summary.sa_summary.routing_supply_map = rt_summary.sa_summary.routing_supply_map;
+    top_rt_summary.sa_summary.total_supply = rt_summary.sa_summary.total_supply;
+  }
+  // tg_summary
+  {
+    top_rt_summary.tg_summary.total_demand = rt_summary.tg_summary.total_demand;
+    top_rt_summary.tg_summary.total_overflow = rt_summary.tg_summary.total_overflow;
+    top_rt_summary.tg_summary.total_wire_length = rt_summary.tg_summary.total_wire_length;
+    for (auto& [clock_name, timing_map] : rt_summary.tg_summary.clock_timing) {
+      ieda_feature::ClockTiming clock_timing;
+      clock_timing.clock_name = clock_name;
+      clock_timing.setup_tns = timing_map["TNS"];
+      clock_timing.setup_wns = timing_map["WNS"];
+      clock_timing.suggest_freq = timing_map["Freq(MHz)"];
+      top_rt_summary.tg_summary.clocks_timing.push_back(clock_timing);
+    }
+    top_rt_summary.tg_summary.power_info
+        = {rt_summary.tg_summary.power_map["static_power"], rt_summary.tg_summary.power_map["dynamic_power"]};
+  }
+  // la_summary
+  {
+    top_rt_summary.la_summary.routing_demand_map = rt_summary.la_summary.routing_demand_map;
+    top_rt_summary.la_summary.total_demand = rt_summary.la_summary.total_demand;
+    top_rt_summary.la_summary.routing_overflow_map = rt_summary.la_summary.routing_overflow_map;
+    top_rt_summary.la_summary.total_overflow = rt_summary.la_summary.total_overflow;
+    top_rt_summary.la_summary.routing_wire_length_map = rt_summary.la_summary.routing_wire_length_map;
+    top_rt_summary.la_summary.total_wire_length = rt_summary.la_summary.total_wire_length;
+    top_rt_summary.la_summary.cut_via_num_map = rt_summary.la_summary.cut_via_num_map;
+    top_rt_summary.la_summary.total_via_num = rt_summary.la_summary.total_via_num;
+    for (auto& [clock_name, timing_map] : rt_summary.la_summary.clock_timing) {
+      ieda_feature::ClockTiming clock_timing;
+      clock_timing.clock_name = clock_name;
+      clock_timing.setup_tns = timing_map["TNS"];
+      clock_timing.setup_wns = timing_map["WNS"];
+      clock_timing.suggest_freq = timing_map["Freq(MHz)"];
+      top_rt_summary.la_summary.clocks_timing.push_back(clock_timing);
+    }
+    top_rt_summary.la_summary.power_info
+        = {rt_summary.la_summary.power_map["static_power"], rt_summary.la_summary.power_map["dynamic_power"]};
+  }
+  // gr_summary
+  {
+    for (auto& [iter, gr_summary] : rt_summary.iter_gr_summary_map) {
+      ieda_feature::GRSummary& top_gr_summary = top_rt_summary.iter_gr_summary_map[iter];
+      top_gr_summary.routing_demand_map = gr_summary.routing_demand_map;
+      top_gr_summary.total_demand = gr_summary.total_demand;
+      top_gr_summary.routing_overflow_map = gr_summary.routing_overflow_map;
+      top_gr_summary.total_overflow = gr_summary.total_overflow;
+      top_gr_summary.routing_wire_length_map = gr_summary.routing_wire_length_map;
+      top_gr_summary.total_wire_length = gr_summary.total_wire_length;
+      top_gr_summary.cut_via_num_map = gr_summary.cut_via_num_map;
+      top_gr_summary.total_via_num = gr_summary.total_via_num;
+      for (auto& [clock_name, timing_map] : gr_summary.clock_timing) {
+        ieda_feature::ClockTiming clock_timing;
+        clock_timing.clock_name = clock_name;
+        clock_timing.setup_tns = timing_map["TNS"];
+        clock_timing.setup_wns = timing_map["WNS"];
+        clock_timing.suggest_freq = timing_map["Freq(MHz)"];
+        top_gr_summary.clocks_timing.push_back(clock_timing);
+      }
+      top_gr_summary.power_info = {gr_summary.power_map["static_power"], gr_summary.power_map["dynamic_power"]};
+    }
+  }
+  // ta_summary
+  {
+    top_rt_summary.ta_summary.routing_wire_length_map = rt_summary.ta_summary.routing_wire_length_map;
+    top_rt_summary.ta_summary.total_wire_length = rt_summary.ta_summary.total_wire_length;
+    top_rt_summary.ta_summary.routing_violation_num_map = rt_summary.ta_summary.routing_violation_num_map;
+    top_rt_summary.ta_summary.total_violation_num = rt_summary.ta_summary.total_violation_num;
+  }
+  // dr_summary
+  {
+    for (auto& [iter, dr_summary] : rt_summary.iter_dr_summary_map) {
+      ieda_feature::DRSummary& top_dr_summary = top_rt_summary.iter_dr_summary_map[iter];
+      top_dr_summary.routing_wire_length_map = dr_summary.routing_wire_length_map;
+      top_dr_summary.total_wire_length = dr_summary.total_wire_length;
+      top_dr_summary.cut_via_num_map = dr_summary.cut_via_num_map;
+      top_dr_summary.total_via_num = dr_summary.total_via_num;
+      top_dr_summary.routing_patch_num_map = dr_summary.routing_patch_num_map;
+      top_dr_summary.total_patch_num = dr_summary.total_patch_num;
+      top_dr_summary.routing_violation_num_map = dr_summary.routing_violation_num_map;
+      top_dr_summary.total_violation_num = dr_summary.total_violation_num;
+
+      for (auto& [clock_name, timing_map] : dr_summary.clock_timing) {
+        ieda_feature::ClockTiming clock_timing;
+        clock_timing.clock_name = clock_name;
+        clock_timing.setup_tns = timing_map["TNS"];
+        clock_timing.setup_wns = timing_map["WNS"];
+        clock_timing.suggest_freq = timing_map["Freq(MHz)"];
+        top_dr_summary.clocks_timing.push_back(clock_timing);
+      }
+      top_dr_summary.power_info = {dr_summary.power_map["static_power"], dr_summary.power_map["dynamic_power"]};
+    }
+  }
+  // er_summary
+  {
+    top_rt_summary.er_summary.routing_demand_map = rt_summary.er_summary.routing_demand_map;
+    top_rt_summary.er_summary.total_demand = rt_summary.er_summary.total_demand;
+    top_rt_summary.er_summary.routing_overflow_map = rt_summary.er_summary.routing_overflow_map;
+    top_rt_summary.er_summary.total_overflow = rt_summary.er_summary.total_overflow;
+    top_rt_summary.er_summary.routing_wire_length_map = rt_summary.er_summary.routing_wire_length_map;
+    top_rt_summary.er_summary.total_wire_length = rt_summary.er_summary.total_wire_length;
+    top_rt_summary.er_summary.cut_via_num_map = rt_summary.er_summary.cut_via_num_map;
+    top_rt_summary.er_summary.total_via_num = rt_summary.er_summary.total_via_num;
+    for (auto& [clock_name, timing_map] : rt_summary.er_summary.clock_timing) {
+      ieda_feature::ClockTiming clock_timing;
+      clock_timing.clock_name = clock_name;
+      clock_timing.setup_tns = timing_map["TNS"];
+      clock_timing.setup_wns = timing_map["WNS"];
+      clock_timing.suggest_freq = timing_map["Freq(MHz)"];
+      top_rt_summary.er_summary.clocks_timing.push_back(clock_timing);
+    }
+    top_rt_summary.er_summary.power_info
+        = {rt_summary.er_summary.power_map["static_power"], rt_summary.er_summary.power_map["dynamic_power"]};
   }
 }
 
@@ -1362,97 +1490,6 @@ void RTInterface::updateTimingAndPower(std::vector<std::map<std::string, std::ve
   power["static_power"] = static_power;
   power["dynamic_power"] = dynamic_power;
 #endif
-}
-
-#endif
-
-#if 1  // ieda_feature
-
-ieda_feature::RTSummary RTInterface::outputSummary()
-{
-  ieda_feature::RTSummary top_rt_summary;
-  Summary& rt_summary = RTDM.getSummary();
-
-  // pa_summary
-  top_rt_summary.pa_summary.routing_access_point_num_map = rt_summary.pa_summary.routing_access_point_num_map;
-  for (auto& [type, access_point_num] : rt_summary.pa_summary.type_access_point_num_map) {
-    top_rt_summary.pa_summary.type_access_point_num_map[GetAccessPointTypeName()(type)] = access_point_num;
-  }
-  top_rt_summary.pa_summary.total_access_point_num = rt_summary.pa_summary.total_access_point_num;
-  // sa_summary
-  top_rt_summary.sa_summary.routing_supply_map = rt_summary.sa_summary.routing_supply_map;
-  top_rt_summary.sa_summary.total_supply = rt_summary.sa_summary.total_supply;
-  // ir_summary
-  top_rt_summary.ir_summary.routing_demand_map = rt_summary.ir_summary.routing_demand_map;
-  top_rt_summary.ir_summary.total_demand = rt_summary.ir_summary.total_demand;
-  top_rt_summary.ir_summary.routing_overflow_map = rt_summary.ir_summary.routing_overflow_map;
-  top_rt_summary.ir_summary.total_overflow = rt_summary.ir_summary.total_overflow;
-  top_rt_summary.ir_summary.routing_wire_length_map = rt_summary.ir_summary.routing_wire_length_map;
-  top_rt_summary.ir_summary.total_wire_length = rt_summary.ir_summary.total_wire_length;
-  top_rt_summary.ir_summary.cut_via_num_map = rt_summary.ir_summary.cut_via_num_map;
-  top_rt_summary.ir_summary.total_via_num = rt_summary.ir_summary.total_via_num;
-
-  for (auto& [clock_name, timing_map] : rt_summary.ir_summary.clock_timing) {
-    ieda_feature::ClockTiming clock_timing;
-    clock_timing.clock_name = clock_name;
-    clock_timing.setup_tns = timing_map["TNS"];
-    clock_timing.setup_wns = timing_map["WNS"];
-    clock_timing.suggest_freq = timing_map["Freq(MHz)"];
-    top_rt_summary.ir_summary.clocks_timing.push_back(clock_timing);
-  }
-
-  top_rt_summary.ir_summary.power_info
-      = {rt_summary.ir_summary.power_map["static_power"], rt_summary.ir_summary.power_map["dynamic_power"]};
-  // gr_summary
-  for (auto& [iter, gr_summary] : rt_summary.iter_gr_summary_map) {
-    ieda_feature::GRSummary& top_gr_summary = top_rt_summary.iter_gr_summary_map[iter];
-    top_gr_summary.routing_demand_map = gr_summary.routing_demand_map;
-    top_gr_summary.total_demand = gr_summary.total_demand;
-    top_gr_summary.routing_overflow_map = gr_summary.routing_overflow_map;
-    top_gr_summary.total_overflow = gr_summary.total_overflow;
-    top_gr_summary.routing_wire_length_map = gr_summary.routing_wire_length_map;
-    top_gr_summary.total_wire_length = gr_summary.total_wire_length;
-    top_gr_summary.cut_via_num_map = gr_summary.cut_via_num_map;
-    top_gr_summary.total_via_num = gr_summary.total_via_num;
-
-    for (auto& [clock_name, timing_map] : gr_summary.clock_timing) {
-      ieda_feature::ClockTiming clock_timing;
-      clock_timing.clock_name = clock_name;
-      clock_timing.setup_tns = timing_map["TNS"];
-      clock_timing.setup_wns = timing_map["WNS"];
-      clock_timing.suggest_freq = timing_map["Freq(MHz)"];
-      top_gr_summary.clocks_timing.push_back(clock_timing);
-    }
-    top_gr_summary.power_info = {gr_summary.power_map["static_power"], gr_summary.power_map["dynamic_power"]};
-  }
-  // ta_summary
-  top_rt_summary.ta_summary.routing_wire_length_map = rt_summary.ta_summary.routing_wire_length_map;
-  top_rt_summary.ta_summary.total_wire_length = rt_summary.ta_summary.total_wire_length;
-  top_rt_summary.ta_summary.routing_violation_num_map = rt_summary.ta_summary.routing_violation_num_map;
-  top_rt_summary.ta_summary.total_violation_num = rt_summary.ta_summary.total_violation_num;
-  // dr_summary
-  for (auto& [iter, dr_summary] : rt_summary.iter_dr_summary_map) {
-    ieda_feature::DRSummary& top_dr_summary = top_rt_summary.iter_dr_summary_map[iter];
-    top_dr_summary.routing_wire_length_map = dr_summary.routing_wire_length_map;
-    top_dr_summary.total_wire_length = dr_summary.total_wire_length;
-    top_dr_summary.cut_via_num_map = dr_summary.cut_via_num_map;
-    top_dr_summary.total_via_num = dr_summary.total_via_num;
-    top_dr_summary.routing_patch_num_map = dr_summary.routing_patch_num_map;
-    top_dr_summary.total_patch_num = dr_summary.total_patch_num;
-    top_dr_summary.routing_violation_num_map = dr_summary.routing_violation_num_map;
-    top_dr_summary.total_violation_num = dr_summary.total_violation_num;
-
-    for (auto& [clock_name, timing_map] : dr_summary.clock_timing) {
-      ieda_feature::ClockTiming clock_timing;
-      clock_timing.clock_name = clock_name;
-      clock_timing.setup_tns = timing_map["TNS"];
-      clock_timing.setup_wns = timing_map["WNS"];
-      clock_timing.suggest_freq = timing_map["Freq(MHz)"];
-      top_dr_summary.clocks_timing.push_back(clock_timing);
-    }
-    top_dr_summary.power_info = {dr_summary.power_map["static_power"], dr_summary.power_map["dynamic_power"]};
-  }
-  return top_rt_summary;
 }
 
 #endif

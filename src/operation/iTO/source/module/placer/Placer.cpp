@@ -106,6 +106,9 @@ std::pair<int, int> Placer::findNearestSpace(unsigned int master_width, int loc_
 
   if (best_opt) {
     update_loc_x = best_opt->begin();
+    if (update_loc_x == -1 || update_loc_y == -1) {
+      return make_pair(loc_x, loc_y);
+    }
     return make_pair(update_loc_x, update_loc_y);
   }
   cout << "[Placer::findNearestSpace] Can't find suitable space to place the buffer "

@@ -107,11 +107,11 @@ TANet TrackAssigner::convertToTANet(Net& net)
 
 void TrackAssigner::setTAParameter(TAModel& ta_model)
 {
-  int32_t cost_unit = 8;
+  int32_t cost_unit = RTDM.getOnlyPitch();
   /**
    * prefer_wire_unit, fixed_rect_unit, routed_rect_unit, violation_unit, max_routed_times
    */
-  TAParameter ta_parameter(1, 128 * cost_unit, 32 * cost_unit, 32 * cost_unit, 4);
+  TAParameter ta_parameter(1, 8 * cost_unit, 2 * cost_unit, 4 * cost_unit, 4);
   RTLOG.info(Loc::current(), "prefer_wire_unit: ", ta_parameter.get_prefer_wire_unit());
   RTLOG.info(Loc::current(), "fixed_rect_unit: ", ta_parameter.get_fixed_rect_unit());
   RTLOG.info(Loc::current(), "routed_rect_unit: ", ta_parameter.get_routed_rect_unit());
@@ -175,7 +175,7 @@ void TrackAssigner::buildPanelSchedule(TAModel& ta_model)
 {
   std::vector<std::vector<TAPanel>>& layer_panel_list = ta_model.get_layer_panel_list();
 
-  int32_t range = 2;
+  int32_t range = 3;
 
   std::vector<std::vector<TAPanelId>> ta_panel_id_list_list;
   for (int32_t layer_idx = 0; layer_idx < static_cast<int32_t>(layer_panel_list.size()); layer_idx++) {
@@ -255,6 +255,10 @@ void TrackAssigner::buildNetResult(TAPanel& ta_panel)
 void TrackAssigner::buildViolation(TAPanel& ta_panel)
 {
   for (Violation* violation : RTDM.getViolationSet(ta_panel.get_panel_rect())) {
+    if (violation->get_is_routing() != true
+        || violation->get_violation_shape().get_layer_idx() != ta_panel.get_panel_rect().get_layer_idx()) {
+      continue;
+    }
     if (!RTUTIL.isInside(ta_panel.get_panel_rect().get_real_rect(), violation->get_violation_shape().get_real_rect())) {
       continue;
     }
@@ -1191,10 +1195,12 @@ void TrackAssigner::updateSummary(TAModel& ta_model)
   int32_t micron_dbu = RTDM.getDatabase().get_micron_dbu();
   Die& die = RTDM.getDatabase().get_die();
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
-  std::map<int32_t, double>& routing_wire_length_map = RTDM.getSummary().ta_summary.routing_wire_length_map;
-  double& total_wire_length = RTDM.getSummary().ta_summary.total_wire_length;
-  std::map<int32_t, int32_t>& routing_violation_num_map = RTDM.getSummary().ta_summary.routing_violation_num_map;
-  int32_t& total_violation_num = RTDM.getSummary().ta_summary.total_violation_num;
+  Summary& summary = RTDM.getDatabase().get_summary();
+
+  std::map<int32_t, double>& routing_wire_length_map = summary.ta_summary.routing_wire_length_map;
+  double& total_wire_length = summary.ta_summary.total_wire_length;
+  std::map<int32_t, int32_t>& routing_violation_num_map = summary.ta_summary.routing_violation_num_map;
+  int32_t& total_violation_num = summary.ta_summary.total_violation_num;
 
   for (RoutingLayer& routing_layer : routing_layer_list) {
     routing_wire_length_map[routing_layer.get_layer_idx()] = 0;
@@ -1223,10 +1229,12 @@ void TrackAssigner::updateSummary(TAModel& ta_model)
 void TrackAssigner::printSummary(TAModel& ta_model)
 {
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
-  std::map<int32_t, double>& routing_wire_length_map = RTDM.getSummary().ta_summary.routing_wire_length_map;
-  double& total_wire_length = RTDM.getSummary().ta_summary.total_wire_length;
-  std::map<int32_t, int32_t>& routing_violation_num_map = RTDM.getSummary().ta_summary.routing_violation_num_map;
-  int32_t& total_violation_num = RTDM.getSummary().ta_summary.total_violation_num;
+  Summary& summary = RTDM.getDatabase().get_summary();
+
+  std::map<int32_t, double>& routing_wire_length_map = summary.ta_summary.routing_wire_length_map;
+  double& total_wire_length = summary.ta_summary.total_wire_length;
+  std::map<int32_t, int32_t>& routing_violation_num_map = summary.ta_summary.routing_violation_num_map;
+  int32_t& total_violation_num = summary.ta_summary.total_violation_num;
 
   fort::char_table routing_wire_length_map_table;
   {

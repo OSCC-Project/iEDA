@@ -228,7 +228,6 @@ bool FeatureParser::buildSummaryEval(std::string json_path)
   return true;
 }
 
-
 bool FeatureParser::buildSummaryEvalJsonl(std::string jsonl_path)
 {
   std::ofstream& file_stream = ieda::getOutputFileStream(jsonl_path);

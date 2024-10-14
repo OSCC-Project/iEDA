@@ -45,6 +45,11 @@ EGRMapSummary CongestionAPI::egrMap()
   return egrMap(EVAL_CONGESTION_INST->getEGRDirPath());
 }
 
+EGRMapSummary CongestionAPI::egrMapPure()
+{
+  return egrMapPure(EVAL_CONGESTION_INST->getEGRDirPath());
+}
+
 EGRMapSummary CongestionAPI::egrMap(std::string rt_dir_path)
 {
   EGRMapSummary egr_map_summary;
@@ -58,6 +63,17 @@ EGRMapSummary CongestionAPI::egrMap(std::string rt_dir_path)
   return egr_map_summary;
 }
 
+EGRMapSummary CongestionAPI::egrMapPure(std::string rt_dir_path)
+{
+  EGRMapSummary egr_map_summary;
+
+  egr_map_summary.horizontal_sum = EVAL_CONGESTION_INST->evalHoriEGR(rt_dir_path);
+  egr_map_summary.vertical_sum = EVAL_CONGESTION_INST->evalVertiEGR(rt_dir_path);
+  egr_map_summary.union_sum = EVAL_CONGESTION_INST->evalUnionEGR(rt_dir_path);
+
+  return egr_map_summary;
+}
+
 RUDYMapSummary CongestionAPI::rudyMap(int32_t grid_size)
 {
   RUDYMapSummary rudy_map_summary;
@@ -67,6 +83,14 @@ RUDYMapSummary CongestionAPI::rudyMap(int32_t grid_size)
                              grid_size * EVAL_CONGESTION_INST->getRowHeight());
   EVAL_CONGESTION_INST->destroyIDB();
 
+  return rudy_map_summary;
+}
+
+RUDYMapSummary CongestionAPI::rudyMapPure(int32_t grid_size)
+{
+  RUDYMapSummary rudy_map_summary;
+  rudy_map_summary = rudyMap(EVAL_CONGESTION_INST->getCongestionNets(), EVAL_CONGESTION_INST->getCongestionRegion(),
+                             grid_size * EVAL_CONGESTION_INST->getRowHeight());
   return rudy_map_summary;
 }
 
@@ -139,6 +163,11 @@ void CongestionAPI::evalNetInfo()
   EVAL_CONGESTION_INST->initIDB();
   EVAL_CONGESTION_INST->evalNetInfo();
   EVAL_CONGESTION_INST->destroyIDB();
+}
+
+void CongestionAPI::evalNetInfoPure()
+{
+  EVAL_CONGESTION_INST->evalNetInfo();
 }
 
 int CongestionAPI::findPinNumber(std::string net_name)

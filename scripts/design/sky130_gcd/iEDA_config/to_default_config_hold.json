@@ -44,5 +44,6 @@
     "number_of_decreasing_slack_iter": 5,
     "max_allowed_buffering_fanout": 20,
     "min_divide_fanout": 8,
-    "optimize_endpoints_percent": 1.0
+    "optimize_endpoints_percent": 1.0,
+    "drv_optimize_iter_number": 5
 }

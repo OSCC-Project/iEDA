@@ -26,6 +26,11 @@ void TimingEval::runSTA()
   EVAL_INIT_STA_INST->runSTA();
 }
 
+void TimingEval::evalTiming(const std::string& routing_type, const bool& rt_done)
+{
+  EVAL_INIT_STA_INST->evalTiming(routing_type, rt_done);
+}
+
 void TimingEval::destroyInst()
 {
   delete _timing_eval;

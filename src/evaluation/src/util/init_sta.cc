@@ -62,10 +62,6 @@ void InitSTA::destroyInst()
 
 void InitSTA::runSTA()
 {
-  if (_sta_init) {
-    return;
-  }
-  _sta_init = true;
   // auto routing_type_list = {"WLM", "HPWL", "FLUTE", "SALT", "EGR", "DR"}
   initStaEngine();
   auto routing_type_list = {"HPWL", "FLUTE", "SALT", "EGR", "DR"};
@@ -77,6 +73,20 @@ void InitSTA::runSTA()
     }
     updateResult(routing_type);
   });
+}
+
+void InitSTA::evalTiming(const std::string& routing_type, const bool& rt_done)
+{
+  initStaEngine();
+  if (routing_type == "EGR" || routing_type == "DR") {
+    if (!rt_done) {
+      callRT(routing_type);
+    }
+  } else {
+    buildRCTree(routing_type);
+  }
+
+  updateResult(routing_type);
 }
 
 void InitSTA::initStaEngine()
@@ -100,8 +110,8 @@ void InitSTA::callRT(const std::string& routing_type)
   auto* idb_layout = dmInst->get_idb_lef_service()->get_layout();
   auto routing_layers = idb_layout->get_layers()->get_routing_layers();
   auto logic_layer_name = routing_layers.size() >= 2 ? routing_layers[1]->get_name() : routing_layers[0]->get_name();
-  auto clock_layer_name = routing_layers.size() >= 3 ? routing_layers[routing_layers.size() - 3]->get_name() : logic_layer_name;
-  // Hard Code, consider the clock layer is the last 3rd layer
+  auto clock_layer_name = routing_layers.size() >= 4 ? routing_layers[routing_layers.size() - 4]->get_name() : logic_layer_name;
+  // Hard Code, consider the clock layer is the last 4rd layer
   const std::string temp_path = dmInst->get_config().get_output_path() + "/rt/rt_temp_directory";
   config_map.insert({"-temp_directory_path", temp_path});
   config_map.insert({"-bottom_routing_layer", logic_layer_name});
@@ -143,7 +153,7 @@ void InitSTA::buildRCTree(const std::string& routing_type)
   auto routing_layers = idb_layout->get_layers()->get_routing_layers();
   auto logic_layer = routing_layers.size() >= 2 ? 2 : 1;
   auto clock_layer
-      = routing_layers.size() >= 3 ? routing_layers.size() - 3 : logic_layer;  // Hard Code, consider the clock layer is the last 3rd layer
+      = routing_layers.size() >= 4 ? routing_layers.size() - 4 : logic_layer;  // Hard Code, consider the clock layer is the last 3rd layer
   auto calc_res = [&](const bool& is_clock, const double& wirelength) {
     if (!is_clock) {
       return idb_adapter->getResistance(logic_layer, wirelength, width);

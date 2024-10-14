@@ -53,6 +53,17 @@ DensityMapSummary DensityAPI::densityMap(int32_t grid_size, bool neighbor)
   return density_map_summary;
 }
 
+DensityMapSummary DensityAPI::densityMapPure(int32_t grid_size, bool neighbor)
+{
+  DensityMapSummary density_map_summary;
+
+  density_map_summary.cell_map_summary = cellDensityMap(grid_size);
+  density_map_summary.pin_map_summary = pinDensityMap(grid_size, neighbor);
+  density_map_summary.net_map_summary = netDensityMap(grid_size, neighbor);
+
+  return density_map_summary;
+}
+
 CellMapSummary DensityAPI::cellDensityMap(int32_t grid_size)
 {
   CellMapSummary cell_map_summary;
