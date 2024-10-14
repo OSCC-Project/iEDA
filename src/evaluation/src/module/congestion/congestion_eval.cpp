@@ -961,4 +961,9 @@ std::string CongestionEval::getDefaultOutputDir()
   return getDefaultOutputPath();
 }
 
+void CongestionEval::setEGRDirPath(std::string egr_dir_path)
+{
+  EVAL_INIT_EGR_INST->setEGRDirPath(egr_dir_path);
+}
+
 }  // namespace ieval

@@ -132,7 +132,7 @@ bool FeatureBuilder::buildNetEval(std::string csv_path)
     return false;
   }
 
-  csv_file << "net_name,pin_num,aspect_ratio,lness,hpwl,rsmt,grwl,hpwl_power,flute_power,egr_power\n";
+  csv_file << "net_name,pin_num,aspect_ratio,lness,hpwl,rsmt,grwl,hpwl_power,flute_power\n";
 
   const size_t buffer_size = 1024 * 1024;  // 1MB buffer
   std::vector<char> buffer(buffer_size);
@@ -163,10 +163,10 @@ bool FeatureBuilder::buildNetEval(std::string csv_path)
 
     double hpwl_power = net_power_data["HPWL"][net_name];
     double flute_power = net_power_data["FLUTE"][net_name];
-    double egr_power = net_power_data["EGR"][net_name];
+    // double egr_power = net_power_data["EGR"][net_name];
 
     csv_file << net_name << ',' << pin_num << ',' << aspect_ratio << ',' << l_ness << ',' << hpwl << ',' << flute << ',' << grwl << ','
-             << hpwl_power << ',' << flute_power << ',' << egr_power << '\n';
+             << hpwl_power << ',' << flute_power << '\n';
 
     if (oss.tellp() >= buffer_size / 2) {
       csv_file << oss.str();

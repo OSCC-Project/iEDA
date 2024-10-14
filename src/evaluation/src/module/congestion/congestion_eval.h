@@ -70,6 +70,7 @@ class CongestionEval
   int32_t getRowHeight();
   std::string getEGRDirPath();
   std::string getDefaultOutputDir();
+  void setEGRDirPath(std::string egr_dir_path);
 
  private:
   static CongestionEval* _congestion_eval;

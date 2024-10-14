@@ -9,6 +9,6 @@ set(EVAL_SOURCE ${HOME_EVALUATION}/src)
 
 ## build
 add_subdirectory(${EVAL_API})
-add_subdirectory(${EVAL_APPS})
+# add_subdirectory(${EVAL_APPS})
 add_subdirectory(${EVAL_DATA})
 add_subdirectory(${EVAL_SOURCE})

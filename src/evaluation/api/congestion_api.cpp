@@ -185,4 +185,14 @@ float CongestionAPI::findLness(std::string net_name)
   return EVAL_CONGESTION_INST->findLness(net_name);
 }
 
+std::string CongestionAPI::egrUnionMap(std::string rt_dir_path)
+{
+  EVAL_CONGESTION_INST->setEGRDirPath(rt_dir_path + "/rt/rt_temp_directory");
+  EVAL_CONGESTION_INST->initEGR();
+  std::string union_egr_map_path = EVAL_CONGESTION_INST->evalUnionEGR(rt_dir_path + "/rt/rt_temp_directory");
+  EVAL_CONGESTION_INST->destroyEGR();
+
+  return union_egr_map_path;
+}
+
 }  // namespace ieval

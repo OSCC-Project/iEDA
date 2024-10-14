@@ -40,6 +40,8 @@ class CongestionAPI
   int findAspectRatio(std::string net_name);
   float findLness(std::string net_name);
 
+  std::string egrUnionMap(std::string rt_dir_path);
+
  private:
   static CongestionAPI* _congestion_api_inst;
 };
