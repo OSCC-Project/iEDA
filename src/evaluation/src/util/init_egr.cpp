@@ -54,6 +54,8 @@ void InitEGR::runEGR()
   std::map<std::string, std::any> config_map;
   config_map.insert({"-temp_directory_path", _egr_dir_path});
   config_map.insert({"-output_inter_result", 1});
+  config_map.insert({"-bottom_routing_layer", "M2"});  // only for 28nm
+  config_map.insert({"-top_routing_layer", "M7"});     // only for 28nm
   rt_interface.initRT(config_map);
   rt_interface.runEGR();
   rt_interface.destroyRT();
