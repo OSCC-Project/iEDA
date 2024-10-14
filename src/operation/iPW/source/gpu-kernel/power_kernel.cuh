@@ -58,6 +58,6 @@ void build_macro_connection_map(GPUConnectionPoint* connection_points,
                                 unsigned* snk_depths, unsigned* snk_arcs,
                                 int connection_point_num, int num_seq_vertexes,
                                 int num_seq_arcs,
-                                GPUConnectionPoint* out_connection_points);
+                                GPUConnectionPoint* out_connection_points, bool is_free_memory);
 
 }

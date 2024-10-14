@@ -11,21 +11,21 @@
 
 namespace ipower {
 
-const int THREAD_PER_BLOCK_NUM = 2048;
+const int THREAD_PER_BLOCK_NUM = 1024;
 
 /**
- * @brief use gpu to do bfs.
- * 
- * @param connection_points 
- * @param is_macros 
- * @param seq_arcs 
- * @param combine_depths 
- * @param snk_arcs 
- * @param connection_point_num 
- * @param num_seq_vertexes 
- * @param num_seq_arcs 
- * @param out_connection_points 
- * @return __global__ 
+ * @brief use gpu to do seq graph bfs.
+ *
+ * @param connection_points the tranverse from connection point.
+ * @param is_macros judge whether the seq vertex is a macro, each element is map to a seq vertex.
+ * @param seq_arcs the snk point each seq vertex src arc reach to.
+ * @param combine_depths each seq vertex src arc combine logic depth.
+ * @param snk_arcs each seq vertex snk arc [start, end] pair.
+ * @param connection_point_num the input connection point number.
+ * @param num_seq_vertexes the seq graph vertex number.
+ * @param num_seq_arcs the seq graph arc number.
+ * @param out_connection_points out connection point number.
+ * @return __global__
  */
 __global__ void find_next_hop_macro(GPUConnectionPoint* connection_points,
                                     unsigned* is_macros, unsigned* seq_arcs,
@@ -40,11 +40,24 @@ __global__ void find_next_hop_macro(GPUConnectionPoint* connection_points,
     int seq_vertex_id = in_connection_point._snk_id;
     unsigned start = snk_arcs[seq_vertex_id * 2];
     unsigned end = snk_arcs[seq_vertex_id * 2 + 1];
-    for (unsigned j = start; j < end; ++j) {
+    for (unsigned j = start; j <= end; ++j) {
+      if (j >= num_seq_arcs) {
+        printf(
+            "thread %d seq vertex id %d seq index %d (start %d : end %d) "
+            "beyond seq arc index.\n",
+            i, seq_vertex_id, j, start, end);
+      }
       unsigned snk_vertex = seq_arcs[j];
       out_connection_points[j]._src_id = in_connection_point._src_id;
       out_connection_points[j]._snk_id = snk_vertex;
+      // printf(
+      //     "thread %d traverse next hop src id %d -> snk id %d with out "
+      //     "connection %d.\n",
+      //     i, in_connection_point._src_id, snk_vertex, j);
     }
+
+    // printf("thread %d traverse the connection point %d next hop.\n", i,
+    //        seq_vertex_id);
   }
 }
 
@@ -64,24 +77,23 @@ void build_macro_connection_map(GPUConnectionPoint* connection_points,
                                 unsigned* snk_depths, unsigned* snk_arcs,
                                 int connection_point_num, int num_seq_vertexes,
                                 int num_seq_arcs,
-                                GPUConnectionPoint* out_connection_points) {
+                                GPUConnectionPoint* out_connection_points, bool is_free_memory) {
   cudaStream_t stream1 = nullptr;
   cudaStreamCreate(&stream1);
 
   // for copy to gpu memrory.
-  GPUConnectionPoint* d_connection_points;
-  unsigned* d_is_macros;
-  unsigned* d_seq_arcs;
-  unsigned* d_snk_depths;
-  unsigned* d_snk_arcs;
-  GPUConnectionPoint* d_out_connection_points;
+  static GPUConnectionPoint* d_connection_points;
+  static unsigned* d_is_macros;
+  static unsigned* d_seq_arcs;
+  static unsigned* d_snk_depths;
+  static unsigned* d_snk_arcs;
+  static GPUConnectionPoint* d_out_connection_points;
 
   static bool is_init = false;
 
+  // init gpu memory.
   auto init_memory = [&]() {
-    cudaWithCheck(cudaMallocAsync(
-        (void**)&d_connection_points,
-        connection_point_num * sizeof(GPUConnectionPoint), stream1));
+
     cudaWithCheck(cudaMallocAsync(
         (void**)&d_is_macros, num_seq_vertexes * sizeof(unsigned), stream1));
     cudaWithCheck(cudaMallocAsync((void**)&d_seq_arcs,
@@ -89,19 +101,14 @@ void build_macro_connection_map(GPUConnectionPoint* connection_points,
     cudaWithCheck(cudaMallocAsync((void**)&d_snk_depths,
                                   num_seq_arcs * sizeof(unsigned), stream1));
     // each point has start and end pair snk arc.
-    cudaWithCheck(cudaMallocAsync((void**)&d_snk_arcs,
-                                  connection_point_num * 2 * sizeof(unsigned),
-                                  stream1));
+    cudaWithCheck(cudaMallocAsync(
+        (void**)&d_snk_arcs, num_seq_vertexes * 2 * sizeof(unsigned), stream1));
     cudaWithCheck(cudaMallocAsync((void**)&d_out_connection_points,
                                   num_seq_arcs * sizeof(GPUConnectionPoint),
                                   stream1));
 
     cudaStreamSynchronize(stream1);
 
-    cudaWithCheck(
-        cudaMemcpyAsync(d_connection_points, connection_points,
-                        connection_point_num * sizeof(GPUConnectionPoint),
-                        cudaMemcpyHostToDevice, stream1));
     cudaWithCheck(cudaMemcpyAsync(d_is_macros, is_macros,
                                   num_seq_vertexes * sizeof(unsigned),
                                   cudaMemcpyHostToDevice, stream1));
@@ -113,13 +120,8 @@ void build_macro_connection_map(GPUConnectionPoint* connection_points,
                                   cudaMemcpyHostToDevice, stream1));
     // each point has start and end pair snk arc.
     cudaWithCheck(cudaMemcpyAsync(d_snk_arcs, snk_arcs,
-                                  connection_point_num * 2 * sizeof(unsigned),
+                                  num_seq_vertexes * 2 * sizeof(unsigned),
                                   cudaMemcpyHostToDevice, stream1));
-    cudaWithCheck(cudaMemcpyAsync(d_out_connection_points,
-                                  out_connection_points,
-                                  num_seq_arcs * sizeof(GPUConnectionPoint),
-                                  cudaMemcpyHostToDevice, stream1));
-    cudaStreamSynchronize(stream1);
   };
 
   if (!is_init) {
@@ -127,16 +129,55 @@ void build_macro_connection_map(GPUConnectionPoint* connection_points,
     is_init = true;
   }
 
+  // need alloc memory every time.
+  cudaWithCheck(cudaMallocAsync(
+        (void**)&d_connection_points,
+        connection_point_num * sizeof(GPUConnectionPoint), stream1));
+
+  cudaWithCheck(
+      cudaMemcpyAsync(d_connection_points, connection_points,
+                      connection_point_num * sizeof(GPUConnectionPoint),
+                      cudaMemcpyHostToDevice, stream1));
+
+  cudaWithCheck(cudaMemcpyAsync(d_out_connection_points, out_connection_points,
+                                num_seq_arcs * sizeof(GPUConnectionPoint),
+                                cudaMemcpyHostToDevice, stream1));
+  cudaStreamSynchronize(stream1);
+
   int num_blocks =
       (connection_point_num + THREAD_PER_BLOCK_NUM - 1) / THREAD_PER_BLOCK_NUM;
+
+  printf("use block number %d per block num %d, start run gpu kernel.\n", num_blocks,
+         THREAD_PER_BLOCK_NUM);
 
   find_next_hop_macro<<<num_blocks, THREAD_PER_BLOCK_NUM>>>(
       d_connection_points, d_is_macros, d_seq_arcs, d_snk_depths, d_snk_arcs,
       connection_point_num, num_seq_vertexes, num_seq_arcs,
       d_out_connection_points);
 
-  // TODO free memory.
+  // wait to finish.
+  cudaDeviceSynchronize();
+
+  printf("run gpu kernel finished.\n");
+
+  // copy back to host.
+  cudaWithCheck(cudaMemcpyAsync(out_connection_points, d_out_connection_points,
+                                num_seq_arcs * sizeof(GPUConnectionPoint),
+                                cudaMemcpyDeviceToHost, stream1));
+
+  cudaDeviceSynchronize();
+
   cudaStreamDestroy(stream1);
+
+  // free memory.
+  cudaWithCheck(cudaFree(d_connection_points));
+  if (is_free_memory) {
+    cudaWithCheck(cudaFree(d_is_macros));
+    cudaWithCheck(cudaFree(d_seq_arcs));
+    cudaWithCheck(cudaFree(d_snk_depths));
+    cudaWithCheck(cudaFree(d_snk_arcs));
+    cudaWithCheck(cudaFree(d_out_connection_points));
+  }
 }
 
 }  // namespace ipower

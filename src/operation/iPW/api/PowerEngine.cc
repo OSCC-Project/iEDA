@@ -318,14 +318,14 @@ std::vector<MacroConnection> PowerEngine::buildMacroConnectionMapWithGPU(
   std::vector<GPUConnectionPoint> connection_points(num_macro);
 
   std::map<PwrSeqVertex*, unsigned> vertex_to_id;
-  int num_seq_vertexes = seq_graph.getSeqVertexNum();
+  int num_seq_vertexes = seq_graph.get_vertexes().size();
   std::vector<unsigned> is_macros(num_seq_vertexes, 0);
   PwrSeqVertex* seq_vertex;
   int i = 0;  // for seq vertex index.
   int j = 0;  // for connection point index.
   FOREACH_SEQ_VERTEX(&seq_graph, seq_vertex) {
     if (seq_vertex->isMacro()) {
-      connection_points[j++]._src_id = i;
+      connection_points[j]._src_id = i;
       connection_points[j++]._snk_id = i;
       is_macros[i] = 1;
     }
@@ -349,12 +349,17 @@ std::vector<MacroConnection> PowerEngine::buildMacroConnectionMapWithGPU(
       snk_depths.push_back(seq_arc->get_combine_depth());
 
       if (snk_arc_id_pair.first == -1) {
-        snk_arc_id_pair.first = seq_arcs.size() -1;
+        snk_arc_id_pair.first = seq_arcs.size() - 1;
       } else {
-        snk_arc_id_pair.second = seq_arcs.size() -1;
+        snk_arc_id_pair.second = seq_arcs.size() - 1;
       }
     }
+
+    // for only one arc.
     snk_arcs.emplace_back(snk_arc_id_pair.first);
+    if (snk_arc_id_pair.second == -1) {
+      snk_arc_id_pair.second = snk_arc_id_pair.first;
+    }
     snk_arcs.emplace_back(snk_arc_id_pair.second);
   }
 
@@ -372,45 +377,69 @@ std::vector<MacroConnection> PowerEngine::buildMacroConnectionMapWithGPU(
   auto calc_out_connection_num =
       [&seq_vertexes](auto& connection_points) -> int {
     int out_connection_point_num = 0;
+    std::set<int> connection_ids;
     for (auto& connection_point : connection_points) {
-      auto& seq_vertex = seq_vertexes[connection_point._src_id];
+      int connection_id = connection_point._snk_id;
+      if (connection_ids.contains(connection_id)) {
+        continue;
+      }
+      connection_ids.insert(connection_id);
+      // get src arc num.
+      auto& seq_vertex = seq_vertexes[connection_id];
       out_connection_point_num += seq_vertex->get_src_arcs().size();
     }
 
     return out_connection_point_num;
   };
 
+  // the actual number of out connection points.
   int out_connection_point_num = calc_out_connection_num(connection_points);
-  int num_seq_arcs = seq_arcs.size();  
 
   std::vector<MacroConnection> macro_connections;
+  bool is_free_memory = false;
   // call gpu function to bfs seq arc.
   for (unsigned i = 0; i < max_hop; ++i) {
+    is_free_memory = (i == max_hop - 1) ? true : false;
     build_macro_connection_map(
         connection_points.data(), is_macros.data(), seq_arcs.data(),
         snk_depths.data(), snk_arcs.data(), connection_point_num,
-        num_seq_vertexes, num_seq_arcs, out_connection_points.data());
+        num_seq_vertexes, output_connection_size, out_connection_points.data(), is_free_memory);
 
     // out connection give to connection and build connection map.
     connection_points.resize(out_connection_point_num);
-    for (int j = 0; j < output_connection_size; ++j) {
-      connection_points[j]._src_id = out_connection_points[j]._snk_id;
-      if (seq_vertexes[out_connection_points[j]._snk_id]->isMacro()) {
+    int connection_point_index = 0;
+    for (std::size_t j = 0; j < output_connection_size; ++j) {
+      int src_id = out_connection_points[j]._src_id;
+      int snk_id = out_connection_points[j]._snk_id;
+      // not tranversed, skip.
+      if (snk_id == -1) {
+        continue;
+      }
+      // set connection point
+      connection_points[connection_point_index]._src_id = src_id;
+      connection_points[connection_point_index++]._snk_id = snk_id;
+
+      if (seq_vertexes.at(snk_id)->isMacro()) {
+        // build macro connection.
         MacroConnection macro_connection;
         macro_connection._src_macro_name =
-            seq_vertexes[out_connection_points[j]._src_id]
-                ->get_own_seq_inst()
-                ->get_name();
+            seq_vertexes[src_id]->get_own_seq_inst()->get_name();
         macro_connection._dst_macro_name =
-            seq_vertexes[out_connection_points[j]._snk_id]
-                ->get_own_seq_inst()
-                ->get_name();
+            seq_vertexes[snk_id]->get_own_seq_inst()->get_name();
 
         macro_connections.emplace_back(std::move(macro_connection));
       }
+
+      // reset data.
+      out_connection_points[j]._src_id = -1;
+      out_connection_points[j]._snk_id = -1;
     }
 
-    // update out connetion point num.
+    LOG_FATAL_IF(connection_point_index != out_connection_point_num)
+        << "connection_point_index " << connection_point_index << " is not equal to out_connection_point_num " << out_connection_point_num;
+
+    // update connection num and out connetion point num.
+    connection_point_num = out_connection_point_num;
     out_connection_point_num = calc_out_connection_num(connection_points);
   }
 

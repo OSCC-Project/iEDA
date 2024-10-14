@@ -21,9 +21,9 @@ set(lib_name "power-gpu")
 
 add_compile_options("-fopenmp")
 
-set(CMAKE_BUILD_TYPE "Debug")
+set(CMAKE_BUILD_TYPE "Release")
 
-if(${CMAKE_BUILD_TYPE} STREQUAL "RELEASE")
+if(${CMAKE_BUILD_TYPE} STREQUAL "Release")
     set(NVCC_FLAGS -O3)
     message(STATUS "${lib_name} compile cuda code in release mode")
 else()
