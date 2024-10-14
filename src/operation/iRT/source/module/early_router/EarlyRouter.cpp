@@ -1583,7 +1583,30 @@ void EarlyRouter::outputOverflowCSV(ERModel& er_model)
 
 #if 1  // debug
 
-void EarlyRouter::debugCheckERModel(ERModel& er_model)
+void EarlyRouter::debugCheckPlanarNodeMap(ERModel& er_model)
+{
+  GridMap<ERNode>& er_node_map = er_model.get_planar_node_map();
+  for (int32_t x = 0; x < er_node_map.get_x_size(); x++) {
+    for (int32_t y = 0; y < er_node_map.get_y_size(); y++) {
+      ERNode& er_node = er_node_map[x][y];
+      for (auto& [orient, neighbor] : er_node.get_neighbor_node_map()) {
+        Orientation opposite_orient = RTUTIL.getOppositeOrientation(orient);
+        if (!RTUTIL.exist(neighbor->get_neighbor_node_map(), opposite_orient)) {
+          RTLOG.error(Loc::current(), "The er_node neighbor is not bidirectional!");
+        }
+        if (neighbor->get_neighbor_node_map()[opposite_orient] != &er_node) {
+          RTLOG.error(Loc::current(), "The er_node neighbor is not bidirectional!");
+        }
+        if (RTUTIL.getOrientation(PlanarCoord(er_node), PlanarCoord(*neighbor)) == orient) {
+          continue;
+        }
+        RTLOG.error(Loc::current(), "The neighbor orient is different with real region!");
+      }
+    }
+  }
+}
+
+void EarlyRouter::debugCheckLayerNodeMap(ERModel& er_model)
 {
   std::vector<GridMap<ERNode>>& layer_node_map = er_model.get_layer_node_map();
   for (GridMap<ERNode>& er_node_map : layer_node_map) {

@@ -104,13 +104,14 @@ class EarlyRouter
 #if 1  // exhibit
   void updateSummary(ERModel& er_model);
   void printSummary(ERModel& er_model);
+  void outputGuide(ERModel& er_model);
   void outputDemandCSV(ERModel& er_model);
   void outputOverflowCSV(ERModel& er_model);
 #endif
 
 #if 1  // debug
-  void debugCheckERModel(ERModel& er_model);
-  void outputGuide(ERModel& er_model);
+  void debugCheckPlanarNodeMap(ERModel& er_model);
+  void debugCheckLayerNodeMap(ERModel& er_model);
 #endif
 };
 
