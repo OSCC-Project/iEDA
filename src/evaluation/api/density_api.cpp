@@ -40,98 +40,96 @@ void DensityAPI::destroyInst()
   }
 }
 
-DensityMapSummary DensityAPI::densityMap(int32_t grid_size, bool neighbor)
+DensityMapSummary DensityAPI::densityMap(std::string stage, int32_t grid_size, bool neighbor)
 {
   DensityMapSummary density_map_summary;
 
   EVAL_DENSITY_INST->initIDB();
-  density_map_summary.cell_map_summary = cellDensityMap(grid_size);
-  density_map_summary.pin_map_summary = pinDensityMap(grid_size, neighbor);
-  density_map_summary.net_map_summary = netDensityMap(grid_size, neighbor);
+  density_map_summary.cell_map_summary = cellDensityMap(stage, grid_size);
+  density_map_summary.pin_map_summary = pinDensityMap(stage, grid_size, neighbor);
+  density_map_summary.net_map_summary = netDensityMap(stage, grid_size, neighbor);
   EVAL_DENSITY_INST->destroyIDB();
 
   return density_map_summary;
 }
 
-DensityMapSummary DensityAPI::densityMapPure(int32_t grid_size, bool neighbor)
+DensityMapSummary DensityAPI::densityMapPure(std::string stage, int32_t grid_size, bool neighbor)
 {
   DensityMapSummary density_map_summary;
-
-  density_map_summary.cell_map_summary = cellDensityMap(grid_size);
-  density_map_summary.pin_map_summary = pinDensityMap(grid_size, neighbor);
-  density_map_summary.net_map_summary = netDensityMap(grid_size, neighbor);
-
+  density_map_summary.cell_map_summary = cellDensityMap(stage, grid_size);
+  density_map_summary.pin_map_summary = pinDensityMap(stage, grid_size, neighbor);
+  density_map_summary.net_map_summary = netDensityMap(stage, grid_size, neighbor);
   return density_map_summary;
 }
 
-CellMapSummary DensityAPI::cellDensityMap(int32_t grid_size)
+CellMapSummary DensityAPI::cellDensityMap(std::string stage, int32_t grid_size)
 {
   CellMapSummary cell_map_summary;
 
   EVAL_DENSITY_INST->initIDBRegion();
   EVAL_DENSITY_INST->initIDBCells();
   cell_map_summary = cellDensityMap(EVAL_DENSITY_INST->getDensityCells(), EVAL_DENSITY_INST->getDensityRegion(),
-                                    grid_size * EVAL_DENSITY_INST->getRowHeight());
+                                    grid_size * EVAL_DENSITY_INST->getRowHeight(), stage);
 
   return cell_map_summary;
 }
 
-PinMapSummary DensityAPI::pinDensityMap(int32_t grid_size, bool neighbor)
+PinMapSummary DensityAPI::pinDensityMap(std::string stage, int32_t grid_size, bool neighbor)
 {
   PinMapSummary pin_map_summary;
 
   EVAL_DENSITY_INST->initIDBRegion();
   EVAL_DENSITY_INST->initIDBCells();
   pin_map_summary = pinDensityMap(EVAL_DENSITY_INST->getDensityPins(), EVAL_DENSITY_INST->getDensityRegion(),
-                                  grid_size * EVAL_DENSITY_INST->getRowHeight(), neighbor);
+                                  grid_size * EVAL_DENSITY_INST->getRowHeight(), stage, neighbor);
 
   return pin_map_summary;
 }
 
-NetMapSummary DensityAPI::netDensityMap(int32_t grid_size, bool neighbor)
+NetMapSummary DensityAPI::netDensityMap(std::string stage, int32_t grid_size, bool neighbor)
 {
   NetMapSummary net_map_summary;
 
   EVAL_DENSITY_INST->initIDBRegion();
   EVAL_DENSITY_INST->initIDBNets();
   net_map_summary = netDensityMap(EVAL_DENSITY_INST->getDensityNets(), EVAL_DENSITY_INST->getDensityRegion(),
-                                  grid_size * EVAL_DENSITY_INST->getRowHeight(), neighbor);
+                                  grid_size * EVAL_DENSITY_INST->getRowHeight(), stage, neighbor);
 
   return net_map_summary;
 }
 
-CellMapSummary DensityAPI::cellDensityMap(DensityCells cells, DensityRegion region, int32_t grid_size)
+CellMapSummary DensityAPI::cellDensityMap(DensityCells cells, DensityRegion region, int32_t grid_size, std::string stage)
 {
   CellMapSummary cell_map_summary;
 
   DensityEval density_eval;
-  cell_map_summary.macro_density = density_eval.evalMacroDensity(cells, region, grid_size);
-  cell_map_summary.stdcell_density = density_eval.evalStdCellDensity(cells, region, grid_size);
-  cell_map_summary.allcell_density = density_eval.evalAllCellDensity(cells, region, grid_size);
+  cell_map_summary.macro_density = density_eval.evalMacroDensity(cells, region, grid_size, stage);
+  cell_map_summary.stdcell_density = density_eval.evalStdCellDensity(cells, region, grid_size, stage);
+  cell_map_summary.allcell_density = density_eval.evalAllCellDensity(cells, region, grid_size, stage);
 
   return cell_map_summary;
 }
 
-PinMapSummary DensityAPI::pinDensityMap(DensityPins pins, DensityRegion region, int32_t grid_size, bool neighbor)
+PinMapSummary DensityAPI::pinDensityMap(DensityPins pins, DensityRegion region, int32_t grid_size, std::string stage, bool neighbor)
 {
   PinMapSummary pin_map_summary;
 
   DensityEval density_eval;
-  pin_map_summary.macro_pin_density = density_eval.evalMacroPinDensity(pins, region, grid_size, neighbor);
-  pin_map_summary.stdcell_pin_density = density_eval.evalStdCellPinDensity(pins, region, grid_size, neighbor);
-  pin_map_summary.allcell_pin_density = density_eval.evalAllCellPinDensity(pins, region, grid_size, neighbor);
+  pin_map_summary.macro_pin_density = density_eval.evalMacroPinDensity(pins, region, grid_size, stage, neighbor);
+  pin_map_summary.stdcell_pin_density = density_eval.evalStdCellPinDensity(pins, region, grid_size, stage, neighbor);
+  pin_map_summary.allcell_pin_density = density_eval.evalAllCellPinDensity(pins, region, grid_size, stage, neighbor);
 
   return pin_map_summary;
 }
 
-NetMapSummary DensityAPI::netDensityMap(DensityNets nets, DensityRegion region, int32_t grid_size, bool neighbor)
+NetMapSummary DensityAPI::netDensityMap(DensityNets nets, DensityRegion region, int32_t grid_size, std::string stage, bool neighbor)
 {
   NetMapSummary net_map_summary;
 
   DensityEval density_eval;
-  net_map_summary.local_net_density = density_eval.evalLocalNetDensity(nets, region, grid_size, neighbor);
-  net_map_summary.global_net_density = density_eval.evalGlobalNetDensity(nets, region, grid_size, neighbor);
-  net_map_summary.allnet_density = density_eval.evalAllNetDensity(nets, region, grid_size, neighbor);
+  net_map_summary.local_net_density = density_eval.evalLocalNetDensity(nets, region, grid_size, stage, neighbor);
+  net_map_summary.global_net_density = density_eval.evalGlobalNetDensity(nets, region, grid_size, stage, neighbor);
+  net_map_summary.allnet_density = density_eval.evalAllNetDensity(nets, region, grid_size, stage, neighbor);
 
   return net_map_summary;
 }

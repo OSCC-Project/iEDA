@@ -27,17 +27,17 @@ class DensityEval
   static DensityEval* getInst();
   static void destroyInst();
 
-  std::string evalMacroDensity(DensityCells cells, DensityRegion region, int32_t grid_size);
-  std::string evalStdCellDensity(DensityCells cells, DensityRegion region, int32_t grid_size);
-  std::string evalAllCellDensity(DensityCells cells, DensityRegion region, int32_t grid_size);
+  std::string evalMacroDensity(DensityCells cells, DensityRegion region, int32_t grid_size, std::string stage);
+  std::string evalStdCellDensity(DensityCells cells, DensityRegion region, int32_t grid_size, std::string stage);
+  std::string evalAllCellDensity(DensityCells cells, DensityRegion region, int32_t grid_size, std::string stage);
 
-  std::string evalMacroPinDensity(DensityPins pins, DensityRegion region, int32_t grid_size, bool neighbor);
-  std::string evalStdCellPinDensity(DensityPins pins, DensityRegion region, int32_t grid_size, bool neighbor);
-  std::string evalAllCellPinDensity(DensityPins pins, DensityRegion region, int32_t grid_size, bool neighbor);
+  std::string evalMacroPinDensity(DensityPins pins, DensityRegion region, int32_t grid_size, std::string stage, bool neighbor);
+  std::string evalStdCellPinDensity(DensityPins pins, DensityRegion region, int32_t grid_size, std::string stage, bool neighbor);
+  std::string evalAllCellPinDensity(DensityPins pins, DensityRegion region, int32_t grid_size, std::string stage, bool neighbor);
 
-  std::string evalLocalNetDensity(DensityNets nets, DensityRegion region, int32_t grid_size, bool neighbor);
-  std::string evalGlobalNetDensity(DensityNets nets, DensityRegion region, int32_t grid_size, bool neighbor);
-  std::string evalAllNetDensity(DensityNets nets, DensityRegion region, int32_t grid_size, bool neighbor);
+  std::string evalLocalNetDensity(DensityNets nets, DensityRegion region, int32_t grid_size, std::string stage, bool neighbor);
+  std::string evalGlobalNetDensity(DensityNets nets, DensityRegion region, int32_t grid_size, std::string stage, bool neighbor);
+  std::string evalAllNetDensity(DensityNets nets, DensityRegion region, int32_t grid_size, std::string stage, bool neighbor);
 
   std::string evalHorizonMargin(DensityCells cells, DensityRegion die, DensityRegion core, int32_t grid_size);
   std::string evalVerticalMargin(DensityCells cells, DensityRegion die, DensityRegion core, int32_t grid_size);

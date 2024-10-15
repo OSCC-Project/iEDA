@@ -72,7 +72,7 @@ class FeatureParser
   bool buildSummaryEvalJsonl(std::string jsonl_path);
   bool buildSummaryTimingEval(std::string json_path);
   bool buildNetEval(std::string csv_path);
-  bool buildCongMap(std::string csv_dir);
+  bool buildCongMap(std::string stage, std::string csv_dir);
 
  private:
   IdbLayout* _layout = nullptr;

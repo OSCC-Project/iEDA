@@ -40,120 +40,120 @@ void CongestionAPI::destroyInst()
   }
 }
 
-EGRMapSummary CongestionAPI::egrMap()
+EGRMapSummary CongestionAPI::egrMap(std::string stage)
 {
-  return egrMap(EVAL_CONGESTION_INST->getEGRDirPath());
+  return egrMap(stage, EVAL_CONGESTION_INST->getEGRDirPath());
 }
 
-EGRMapSummary CongestionAPI::egrMapPure()
+EGRMapSummary CongestionAPI::egrMapPure(std::string stage)
 {
-  return egrMapPure(EVAL_CONGESTION_INST->getEGRDirPath());
+  return egrMapPure(stage, EVAL_CONGESTION_INST->getEGRDirPath());
 }
 
-EGRMapSummary CongestionAPI::egrMap(std::string rt_dir_path)
+EGRMapSummary CongestionAPI::egrMap(std::string stage, std::string rt_dir_path)
 {
   EGRMapSummary egr_map_summary;
 
   EVAL_CONGESTION_INST->initEGR();
-  egr_map_summary.horizontal_sum = EVAL_CONGESTION_INST->evalHoriEGR(rt_dir_path);
-  egr_map_summary.vertical_sum = EVAL_CONGESTION_INST->evalVertiEGR(rt_dir_path);
-  egr_map_summary.union_sum = EVAL_CONGESTION_INST->evalUnionEGR(rt_dir_path);
+  egr_map_summary.horizontal_sum = EVAL_CONGESTION_INST->evalHoriEGR(stage, rt_dir_path);
+  egr_map_summary.vertical_sum = EVAL_CONGESTION_INST->evalVertiEGR(stage, rt_dir_path);
+  egr_map_summary.union_sum = EVAL_CONGESTION_INST->evalUnionEGR(stage, rt_dir_path);
   EVAL_CONGESTION_INST->destroyEGR();
 
   return egr_map_summary;
 }
 
-EGRMapSummary CongestionAPI::egrMapPure(std::string rt_dir_path)
+EGRMapSummary CongestionAPI::egrMapPure(std::string stage, std::string rt_dir_path)
 {
   EGRMapSummary egr_map_summary;
 
-  egr_map_summary.horizontal_sum = EVAL_CONGESTION_INST->evalHoriEGR(rt_dir_path);
-  egr_map_summary.vertical_sum = EVAL_CONGESTION_INST->evalVertiEGR(rt_dir_path);
-  egr_map_summary.union_sum = EVAL_CONGESTION_INST->evalUnionEGR(rt_dir_path);
+  egr_map_summary.horizontal_sum = EVAL_CONGESTION_INST->evalHoriEGR(stage, rt_dir_path);
+  egr_map_summary.vertical_sum = EVAL_CONGESTION_INST->evalVertiEGR(stage, rt_dir_path);
+  egr_map_summary.union_sum = EVAL_CONGESTION_INST->evalUnionEGR(stage, rt_dir_path);
 
   return egr_map_summary;
 }
 
-RUDYMapSummary CongestionAPI::rudyMap(int32_t grid_size)
+RUDYMapSummary CongestionAPI::rudyMap(std::string stage, int32_t grid_size)
 {
   RUDYMapSummary rudy_map_summary;
 
   EVAL_CONGESTION_INST->initIDB();
-  rudy_map_summary = rudyMap(EVAL_CONGESTION_INST->getCongestionNets(), EVAL_CONGESTION_INST->getCongestionRegion(),
+  rudy_map_summary = rudyMap(stage, EVAL_CONGESTION_INST->getCongestionNets(), EVAL_CONGESTION_INST->getCongestionRegion(),
                              grid_size * EVAL_CONGESTION_INST->getRowHeight());
   EVAL_CONGESTION_INST->destroyIDB();
 
   return rudy_map_summary;
 }
 
-RUDYMapSummary CongestionAPI::rudyMapPure(int32_t grid_size)
+RUDYMapSummary CongestionAPI::rudyMapPure(std::string stage, int32_t grid_size)
 {
   RUDYMapSummary rudy_map_summary;
-  rudy_map_summary = rudyMap(EVAL_CONGESTION_INST->getCongestionNets(), EVAL_CONGESTION_INST->getCongestionRegion(),
+  rudy_map_summary = rudyMap(stage, EVAL_CONGESTION_INST->getCongestionNets(), EVAL_CONGESTION_INST->getCongestionRegion(),
                              grid_size * EVAL_CONGESTION_INST->getRowHeight());
   return rudy_map_summary;
 }
 
-RUDYMapSummary CongestionAPI::rudyMap(CongestionNets nets, CongestionRegion region, int32_t grid_size)
+RUDYMapSummary CongestionAPI::rudyMap(std::string stage, CongestionNets nets, CongestionRegion region, int32_t grid_size)
 {
   RUDYMapSummary rudy_map_summary;
 
-  rudy_map_summary.rudy_horizontal = EVAL_CONGESTION_INST->evalHoriRUDY(nets, region, grid_size);
-  rudy_map_summary.rudy_vertical = EVAL_CONGESTION_INST->evalVertiRUDY(nets, region, grid_size);
-  rudy_map_summary.rudy_union = EVAL_CONGESTION_INST->evalUnionRUDY(nets, region, grid_size);
+  rudy_map_summary.rudy_horizontal = EVAL_CONGESTION_INST->evalHoriRUDY(stage, nets, region, grid_size);
+  rudy_map_summary.rudy_vertical = EVAL_CONGESTION_INST->evalVertiRUDY(stage, nets, region, grid_size);
+  rudy_map_summary.rudy_union = EVAL_CONGESTION_INST->evalUnionRUDY(stage, nets, region, grid_size);
 
-  rudy_map_summary.lutrudy_horizontal = EVAL_CONGESTION_INST->evalHoriLUTRUDY(nets, region, grid_size);
-  rudy_map_summary.lutrudy_vertical = EVAL_CONGESTION_INST->evalVertiLUTRUDY(nets, region, grid_size);
-  rudy_map_summary.lutrudy_union = EVAL_CONGESTION_INST->evalUnionLUTRUDY(nets, region, grid_size);
+  rudy_map_summary.lutrudy_horizontal = EVAL_CONGESTION_INST->evalHoriLUTRUDY(stage, nets, region, grid_size);
+  rudy_map_summary.lutrudy_vertical = EVAL_CONGESTION_INST->evalVertiLUTRUDY(stage, nets, region, grid_size);
+  rudy_map_summary.lutrudy_union = EVAL_CONGESTION_INST->evalUnionLUTRUDY(stage, nets, region, grid_size);
 
   return rudy_map_summary;
 }
 
-OverflowSummary CongestionAPI::egrOverflow()
+OverflowSummary CongestionAPI::egrOverflow(std::string stage)
 {
-  return egrOverflow(EVAL_CONGESTION_INST->getEGRDirPath());
+  return egrOverflow(stage, EVAL_CONGESTION_INST->getEGRDirPath());
 }
 
-OverflowSummary CongestionAPI::egrOverflow(std::string rt_dir_path)
+OverflowSummary CongestionAPI::egrOverflow(std::string stage, std::string rt_dir_path)
 {
   OverflowSummary overflow_summary;
 
-  overflow_summary.total_overflow_horizontal = EVAL_CONGESTION_INST->evalHoriTotalOverflow(rt_dir_path);
-  overflow_summary.total_overflow_vertical = EVAL_CONGESTION_INST->evalVertiTotalOverflow(rt_dir_path);
-  overflow_summary.total_overflow_union = EVAL_CONGESTION_INST->evalUnionTotalOverflow(rt_dir_path);
+  overflow_summary.total_overflow_horizontal = EVAL_CONGESTION_INST->evalHoriTotalOverflow(stage, rt_dir_path);
+  overflow_summary.total_overflow_vertical = EVAL_CONGESTION_INST->evalVertiTotalOverflow(stage, rt_dir_path);
+  overflow_summary.total_overflow_union = EVAL_CONGESTION_INST->evalUnionTotalOverflow(stage, rt_dir_path);
 
-  overflow_summary.max_overflow_horizontal = EVAL_CONGESTION_INST->evalHoriMaxOverflow(rt_dir_path);
-  overflow_summary.max_overflow_vertical = EVAL_CONGESTION_INST->evalVertiMaxOverflow(rt_dir_path);
-  overflow_summary.max_overflow_union = EVAL_CONGESTION_INST->evalUnionMaxOverflow(rt_dir_path);
+  overflow_summary.max_overflow_horizontal = EVAL_CONGESTION_INST->evalHoriMaxOverflow(stage, rt_dir_path);
+  overflow_summary.max_overflow_vertical = EVAL_CONGESTION_INST->evalVertiMaxOverflow(stage, rt_dir_path);
+  overflow_summary.max_overflow_union = EVAL_CONGESTION_INST->evalUnionMaxOverflow(stage, rt_dir_path);
 
-  overflow_summary.weighted_average_overflow_horizontal = EVAL_CONGESTION_INST->evalHoriAvgOverflow(rt_dir_path);
-  overflow_summary.weighted_average_overflow_vertical = EVAL_CONGESTION_INST->evalVertiAvgOverflow(rt_dir_path);
-  overflow_summary.weighted_average_overflow_union = EVAL_CONGESTION_INST->evalUnionAvgOverflow(rt_dir_path);
+  overflow_summary.weighted_average_overflow_horizontal = EVAL_CONGESTION_INST->evalHoriAvgOverflow(stage, rt_dir_path);
+  overflow_summary.weighted_average_overflow_vertical = EVAL_CONGESTION_INST->evalVertiAvgOverflow(stage, rt_dir_path);
+  overflow_summary.weighted_average_overflow_union = EVAL_CONGESTION_INST->evalUnionAvgOverflow(stage, rt_dir_path);
 
   return overflow_summary;
 }
 
-UtilizationSummary CongestionAPI::rudyUtilization(bool use_lut)
+UtilizationSummary CongestionAPI::rudyUtilization(std::string stage, bool use_lut)
 {
   UtilizationSummary utilization_summary;
 
   std::string rudy_dir_path = EVAL_CONGESTION_INST->getDefaultOutputDir() + "/RUDY_map";
-  utilization_summary = rudyUtilization(rudy_dir_path, use_lut);
+  utilization_summary = rudyUtilization(stage, rudy_dir_path, use_lut);
 
   return utilization_summary;
 }
 
-UtilizationSummary CongestionAPI::rudyUtilization(std::string rudy_dir_path, bool use_lut)
+UtilizationSummary CongestionAPI::rudyUtilization(std::string stage, std::string rudy_dir_path, bool use_lut)
 {
   UtilizationSummary utilization_summary;
 
-  utilization_summary.max_utilization_horizontal = EVAL_CONGESTION_INST->evalHoriMaxUtilization(rudy_dir_path, use_lut);
-  utilization_summary.max_utilization_vertical = EVAL_CONGESTION_INST->evalVertiMaxUtilization(rudy_dir_path, use_lut);
-  utilization_summary.max_utilization_union = EVAL_CONGESTION_INST->evalUnionMaxUtilization(rudy_dir_path, use_lut);
+  utilization_summary.max_utilization_horizontal = EVAL_CONGESTION_INST->evalHoriMaxUtilization(stage, rudy_dir_path, use_lut);
+  utilization_summary.max_utilization_vertical = EVAL_CONGESTION_INST->evalVertiMaxUtilization(stage, rudy_dir_path, use_lut);
+  utilization_summary.max_utilization_union = EVAL_CONGESTION_INST->evalUnionMaxUtilization(stage, rudy_dir_path, use_lut);
 
-  utilization_summary.weighted_average_utilization_horizontal = EVAL_CONGESTION_INST->evalHoriAvgUtilization(rudy_dir_path, use_lut);
-  utilization_summary.weighted_average_utilization_vertical = EVAL_CONGESTION_INST->evalVertiAvgUtilization(rudy_dir_path, use_lut);
-  utilization_summary.weighted_average_utilization_union = EVAL_CONGESTION_INST->evalUnionAvgUtilization(rudy_dir_path, use_lut);
+  utilization_summary.weighted_average_utilization_horizontal = EVAL_CONGESTION_INST->evalHoriAvgUtilization(stage, rudy_dir_path, use_lut);
+  utilization_summary.weighted_average_utilization_vertical = EVAL_CONGESTION_INST->evalVertiAvgUtilization(stage, rudy_dir_path, use_lut);
+  utilization_summary.weighted_average_utilization_union = EVAL_CONGESTION_INST->evalUnionAvgUtilization(stage, rudy_dir_path, use_lut);
 
   return utilization_summary;
 }
@@ -185,11 +185,11 @@ float CongestionAPI::findLness(std::string net_name)
   return EVAL_CONGESTION_INST->findLness(net_name);
 }
 
-std::string CongestionAPI::egrUnionMap(std::string rt_dir_path)
+std::string CongestionAPI::egrUnionMap(std::string stage, std::string rt_dir_path)
 {
   EVAL_CONGESTION_INST->setEGRDirPath(rt_dir_path + "/rt/rt_temp_directory");
   EVAL_CONGESTION_INST->initEGR();
-  std::string union_egr_map_path = EVAL_CONGESTION_INST->evalUnionEGR(rt_dir_path + "/rt/rt_temp_directory");
+  std::string union_egr_map_path = EVAL_CONGESTION_INST->evalUnionEGR(stage, rt_dir_path + "/rt/rt_temp_directory");
   EVAL_CONGESTION_INST->destroyEGR();
 
   return union_egr_map_path;

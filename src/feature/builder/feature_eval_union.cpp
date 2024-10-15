@@ -19,7 +19,7 @@
 
 namespace ieda_feature {
 
-UnionEvalSummary FeatureBuilder::buildUnionEvalSummary(int32_t grid_size)
+UnionEvalSummary FeatureBuilder::buildUnionEvalSummary(int32_t grid_size, std::string stage)
 {
   UnionEvalSummary union_eval_summary;
 
@@ -32,7 +32,7 @@ UnionEvalSummary FeatureBuilder::buildUnionEvalSummary(int32_t grid_size)
   total_wl_summary.GRWL = eval_total_wl_summary.GRWL;
 
   DensityMapSummary density_map_summary;
-  ieval::DensityMapSummary eval_density_map_summary = DENSITY_API_INST->densityMapPure(grid_size);
+  ieval::DensityMapSummary eval_density_map_summary = DENSITY_API_INST->densityMapPure(stage, grid_size);
   density_map_summary.cell_map_summary.macro_density = eval_density_map_summary.cell_map_summary.macro_density;
   density_map_summary.cell_map_summary.stdcell_density = eval_density_map_summary.cell_map_summary.stdcell_density;
   density_map_summary.cell_map_summary.allcell_density = eval_density_map_summary.cell_map_summary.allcell_density;
@@ -42,24 +42,26 @@ UnionEvalSummary FeatureBuilder::buildUnionEvalSummary(int32_t grid_size)
   density_map_summary.net_map_summary.local_net_density = eval_density_map_summary.net_map_summary.local_net_density;
   density_map_summary.net_map_summary.global_net_density = eval_density_map_summary.net_map_summary.global_net_density;
   density_map_summary.net_map_summary.allnet_density = eval_density_map_summary.net_map_summary.allnet_density;
-  ieval::MacroMarginSummary eval_macro_margin_summary = DENSITY_API_INST->macroMarginMap(grid_size);
-  density_map_summary.macro_margin_summary.horizontal_margin = eval_macro_margin_summary.horizontal_margin;
-  density_map_summary.macro_margin_summary.vertical_margin = eval_macro_margin_summary.vertical_margin;
-  density_map_summary.macro_margin_summary.union_margin = eval_macro_margin_summary.union_margin;
+  if (stage == "place") {
+    ieval::MacroMarginSummary eval_macro_margin_summary = DENSITY_API_INST->macroMarginMap(grid_size);
+    density_map_summary.macro_margin_summary.horizontal_margin = eval_macro_margin_summary.horizontal_margin;
+    density_map_summary.macro_margin_summary.vertical_margin = eval_macro_margin_summary.vertical_margin;
+    density_map_summary.macro_margin_summary.union_margin = eval_macro_margin_summary.union_margin;
+  }
 
   CongestionSummary congestion_summary;
-  ieval::EGRMapSummary eval_egr_map_summary = CONGESTION_API_INST->egrMapPure();
+  ieval::EGRMapSummary eval_egr_map_summary = CONGESTION_API_INST->egrMapPure(stage);
   congestion_summary.egr_map_summary.horizontal_sum = eval_egr_map_summary.horizontal_sum;
   congestion_summary.egr_map_summary.vertical_sum = eval_egr_map_summary.vertical_sum;
   congestion_summary.egr_map_summary.union_sum = eval_egr_map_summary.union_sum;
-  ieval::RUDYMapSummary eval_rudy_map_summary = CONGESTION_API_INST->rudyMapPure(grid_size);
+  ieval::RUDYMapSummary eval_rudy_map_summary = CONGESTION_API_INST->rudyMapPure(stage, grid_size);
   congestion_summary.rudy_map_summary.rudy_horizontal = eval_rudy_map_summary.rudy_horizontal;
   congestion_summary.rudy_map_summary.rudy_vertical = eval_rudy_map_summary.rudy_vertical;
   congestion_summary.rudy_map_summary.rudy_union = eval_rudy_map_summary.rudy_union;
   congestion_summary.rudy_map_summary.lutrudy_horizontal = eval_rudy_map_summary.lutrudy_horizontal;
   congestion_summary.rudy_map_summary.lutrudy_vertical = eval_rudy_map_summary.lutrudy_vertical;
   congestion_summary.rudy_map_summary.lutrudy_union = eval_rudy_map_summary.lutrudy_union;
-  ieval::OverflowSummary eval_overflow_summary = CONGESTION_API_INST->egrOverflow();
+  ieval::OverflowSummary eval_overflow_summary = CONGESTION_API_INST->egrOverflow(stage);
   congestion_summary.overflow_summary.total_overflow_horizontal = eval_overflow_summary.total_overflow_horizontal;
   congestion_summary.overflow_summary.total_overflow_vertical = eval_overflow_summary.total_overflow_vertical;
   congestion_summary.overflow_summary.total_overflow_union = eval_overflow_summary.total_overflow_union;
@@ -69,7 +71,7 @@ UnionEvalSummary FeatureBuilder::buildUnionEvalSummary(int32_t grid_size)
   congestion_summary.overflow_summary.weighted_average_overflow_horizontal = eval_overflow_summary.weighted_average_overflow_horizontal;
   congestion_summary.overflow_summary.weighted_average_overflow_vertical = eval_overflow_summary.weighted_average_overflow_vertical;
   congestion_summary.overflow_summary.weighted_average_overflow_union = eval_overflow_summary.weighted_average_overflow_union;
-  ieval::UtilizationSummary eval_utilization_summary = CONGESTION_API_INST->rudyUtilization(false);
+  ieval::UtilizationSummary eval_utilization_summary = CONGESTION_API_INST->rudyUtilization(stage, false);
   congestion_summary.rudy_utilization_summary.max_utilization_horizontal = eval_utilization_summary.max_utilization_horizontal;
   congestion_summary.rudy_utilization_summary.max_utilization_vertical = eval_utilization_summary.max_utilization_vertical;
   congestion_summary.rudy_utilization_summary.max_utilization_union = eval_utilization_summary.max_utilization_union;
@@ -79,7 +81,7 @@ UnionEvalSummary FeatureBuilder::buildUnionEvalSummary(int32_t grid_size)
       = eval_utilization_summary.weighted_average_utilization_vertical;
   congestion_summary.rudy_utilization_summary.weighted_average_utilization_union
       = eval_utilization_summary.weighted_average_utilization_union;
-  ieval::UtilizationSummary eval_lut_utilization_summary = CONGESTION_API_INST->rudyUtilization(true);
+  ieval::UtilizationSummary eval_lut_utilization_summary = CONGESTION_API_INST->rudyUtilization(stage, true);
   congestion_summary.lutrudy_utilization_summary.max_utilization_horizontal = eval_lut_utilization_summary.max_utilization_horizontal;
   congestion_summary.lutrudy_utilization_summary.max_utilization_vertical = eval_lut_utilization_summary.max_utilization_vertical;
   congestion_summary.lutrudy_utilization_summary.max_utilization_union = eval_lut_utilization_summary.max_utilization_union;
@@ -132,7 +134,7 @@ bool FeatureBuilder::buildNetEval(std::string csv_path)
     return false;
   }
 
-  csv_file << "net_name,pin_num,aspect_ratio,lness,hpwl,rsmt,grwl,hpwl_power,flute_power\n";
+  csv_file << "net_name,pin_num,aspect_ratio,lness,hpwl,rsmt,grwl,hpwl_power,flute_power,egr_power\n";
 
   const size_t buffer_size = 1024 * 1024;  // 1MB buffer
   std::vector<char> buffer(buffer_size);
@@ -163,10 +165,10 @@ bool FeatureBuilder::buildNetEval(std::string csv_path)
 
     double hpwl_power = net_power_data["HPWL"][net_name];
     double flute_power = net_power_data["FLUTE"][net_name];
-    // double egr_power = net_power_data["EGR"][net_name];
+    double egr_power = net_power_data["EGR"][net_name];
 
     csv_file << net_name << ',' << pin_num << ',' << aspect_ratio << ',' << l_ness << ',' << hpwl << ',' << flute << ',' << grwl << ','
-             << hpwl_power << ',' << flute_power << '\n';
+             << hpwl_power << ',' << flute_power << egr_power << '\n';
 
     if (oss.tellp() >= buffer_size / 2) {
       csv_file << oss.str();

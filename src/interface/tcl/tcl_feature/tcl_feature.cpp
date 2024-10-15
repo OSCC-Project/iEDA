@@ -235,14 +235,20 @@ unsigned CmdFeatureRouteRead::exec()
  */
 CmdFeatureCongMap::CmdFeatureCongMap(const char* cmd_name) : TclCmd(cmd_name)
 {
-  auto* path_option = new TclStringOption(TCL_DIRECTORY, 1, nullptr);
-  addOption(path_option);
+  auto* dir_option = new TclStringOption(TCL_DIRECTORY, 1, nullptr);
+  auto* step_option = new TclStringOption(TCL_STEP, 1, nullptr);
+  addOption(dir_option);
+  addOption(step_option);
 }
 
 unsigned CmdFeatureCongMap::check()
 {
-  TclOption* path_option = getOptionOrArg(TCL_DIRECTORY);
-  LOG_FATAL_IF(!path_option);
+  TclOption* dir_option = getOptionOrArg(TCL_DIRECTORY);
+  TclOption* step_option = getOptionOrArg(TCL_STEP);
+
+  LOG_FATAL_IF(!dir_option);
+  LOG_FATAL_IF(!step_option);
+
   return 1;
 }
 
@@ -255,7 +261,13 @@ unsigned CmdFeatureCongMap::exec()
   TclOption* option = getOptionOrArg(TCL_DIRECTORY);
   auto dir_path = option->getStringVal();
 
-  featureInst->save_cong_map(dir_path);
+  std::string stage = "";
+  TclOption* step_option = getOptionOrArg(TCL_STEP);
+  if (step_option->getStringVal() != nullptr) {
+    stage = step_option->getStringVal();
+  }
+
+  featureInst->save_cong_map(stage, dir_path);
 
   return 1;
 }

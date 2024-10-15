@@ -73,9 +73,9 @@ bool FeatureParser::buildSummaryMap(std::string csv_path, int bin_cnt_x, int bin
   return true;
 }
 
-bool FeatureParser::buildCongMap(std::string csv_dir)
+bool FeatureParser::buildCongMap(std::string stage, std::string csv_dir)
 {
-  if (CONGESTION_API_INST->egrUnionMap(csv_dir) != "") {
+  if (CONGESTION_API_INST->egrUnionMap(stage, csv_dir) != "") {
     return true;
   }
 
