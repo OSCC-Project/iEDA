@@ -108,10 +108,14 @@ TGNet TopologyGenerator::convertToTGNet(Net& net)
 
 void TopologyGenerator::setTGParameter(TGModel& tg_model)
 {
+  int32_t topo_spilt_length = 10;
+  double congestion_unit = 2;
   /**
    * topo_spilt_length, congestion_unit
    */
-  TGParameter tg_parameter(10, 2);
+  // clang-format off
+  TGParameter tg_parameter(topo_spilt_length, congestion_unit);
+  // clang-format on
   RTLOG.info(Loc::current(), "topo_spilt_length: ", tg_parameter.get_topo_spilt_length());
   RTLOG.info(Loc::current(), "congestion_unit: ", tg_parameter.get_congestion_unit());
   tg_model.set_tg_parameter(tg_parameter);

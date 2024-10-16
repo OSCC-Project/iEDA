@@ -117,11 +117,19 @@ PANet PinAccessor::convertToPANet(Net& net)
 void PinAccessor::setPAParameter(PAModel& pa_model)
 {
   int32_t cost_unit = RTDM.getOnlyPitch();
+  double prefer_wire_unit = 1;
+  double non_prefer_wire_unit = 1.5;
+  double via_unit = cost_unit;
+  double fixed_rect_unit = 4 * non_prefer_wire_unit * cost_unit;
+  double routed_rect_unit = 2 * via_unit;
+  double violation_unit = 4 * non_prefer_wire_unit * cost_unit;
   /**
    * prefer_wire_unit, non_prefer_wire_unit, via_unit, size, offset, fixed_rect_unit, routed_rect_unit, violation_unit, max_routed_times,
    * max_candidate_point_num
    */
-  PAParameter pa_parameter(1, 1.5, cost_unit, 1, 0, 8 * cost_unit, 2 * cost_unit, 4 * cost_unit, 4, 20);
+  // clang-format off
+  PAParameter pa_parameter(prefer_wire_unit, non_prefer_wire_unit, via_unit, 1, 0, fixed_rect_unit, routed_rect_unit, violation_unit, 4, 20);
+  // clang-format on
   RTLOG.info(Loc::current(), "prefer_wire_unit: ", pa_parameter.get_prefer_wire_unit());
   RTLOG.info(Loc::current(), "non_prefer_wire_unit: ", pa_parameter.get_non_prefer_wire_unit());
   RTLOG.info(Loc::current(), "via_unit: ", pa_parameter.get_via_unit());

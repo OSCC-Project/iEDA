@@ -105,17 +105,25 @@ DRNet DetailedRouter::convertToDRNet(Net& net)
 void DetailedRouter::iterativeDRModel(DRModel& dr_model)
 {
   int32_t cost_unit = RTDM.getOnlyPitch();
+  double prefer_wire_unit = 1;
+  double non_prefer_wire_unit = 1.5;
+  double via_unit = cost_unit;
+  double fixed_rect_unit = 4 * non_prefer_wire_unit * cost_unit;
+  double routed_rect_unit = 2 * via_unit;
+  double violation_unit = 4 * non_prefer_wire_unit * cost_unit;
   /**
    * prefer_wire_unit, non_prefer_wire_unit, via_unit, size, offset, fixed_rect_unit, routed_rect_unit, violation_unit, initial_rip_up,
    * max_routed_times
    */
   std::vector<DRParameter> dr_parameter_list;
-  dr_parameter_list.emplace_back(1, 1.5, cost_unit, 6, 0, 8 * cost_unit, 2 * cost_unit, 4 * cost_unit, true, 4);
-  dr_parameter_list.emplace_back(1, 1.5, cost_unit, 6, -2, 8 * cost_unit, 2 * cost_unit, 4 * cost_unit, false, 4);
-  dr_parameter_list.emplace_back(1, 1.5, cost_unit, 6, -4, 8 * cost_unit, 2 * cost_unit, 4 * cost_unit, false, 4);
-  dr_parameter_list.emplace_back(1, 1.5, cost_unit, 6, 0, 8 * cost_unit, 2 * cost_unit, 4 * cost_unit, false, 4);
-  dr_parameter_list.emplace_back(1, 1.5, cost_unit, 6, -2, 8 * cost_unit, 2 * cost_unit, 4 * cost_unit, false, 4);
-  dr_parameter_list.emplace_back(1, 1.5, cost_unit, 6, -4, 8 * cost_unit, 2 * cost_unit, 4 * cost_unit, false, 4);
+  // clang-format off
+  dr_parameter_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 6, 0, fixed_rect_unit, routed_rect_unit, violation_unit, true, 4);
+  dr_parameter_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 6, -2, fixed_rect_unit, routed_rect_unit, violation_unit, false, 4);
+  dr_parameter_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 6, -4, fixed_rect_unit, routed_rect_unit, violation_unit, false, 4);
+  dr_parameter_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 6, 0, fixed_rect_unit, routed_rect_unit, violation_unit, false, 4);
+  dr_parameter_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 6, -2, fixed_rect_unit, routed_rect_unit, violation_unit, false, 4);
+  dr_parameter_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 6, -4, fixed_rect_unit, routed_rect_unit, violation_unit, false, 4);
+  // clang-format on
   for (size_t i = 0, iter = 1; i < dr_parameter_list.size(); i++, iter++) {
     Monitor iter_monitor;
     RTLOG.info(Loc::current(), "***** Begin iteration ", iter, "/", dr_parameter_list.size(), "(",

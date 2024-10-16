@@ -114,10 +114,16 @@ ERNet EarlyRouter::convertToERNet(Net& net)
 
 void EarlyRouter::setERParameter(ERModel& er_model)
 {
+  int32_t topo_spilt_length = 10;
+  double congestion_unit = 2;
+  double prefer_wire_unit = 1;
+  double via_unit = 1;
   /**
    * topo_spilt_length, congestion_unit, prefer_wire_unit, via_unit
    */
-  ERParameter er_parameter(10, 2, 1, 1);
+  // clang-format off
+  ERParameter er_parameter(topo_spilt_length, congestion_unit, prefer_wire_unit, via_unit);
+  // clang-format on
   RTLOG.info(Loc::current(), "topo_spilt_length: ", er_parameter.get_topo_spilt_length());
   RTLOG.info(Loc::current(), "congestion_unit: ", er_parameter.get_congestion_unit());
   RTLOG.info(Loc::current(), "prefer_wire_unit: ", er_parameter.get_prefer_wire_unit());

@@ -109,10 +109,16 @@ LANet LayerAssigner::convertToLANet(Net& net)
 
 void LayerAssigner::setLAParameter(LAModel& la_model)
 {
+  int32_t topo_spilt_length = 10;
+  double congestion_unit = 2;
+  double prefer_wire_unit = 1;
+  double via_unit = 1;
   /**
    * topo_spilt_length, congestion_unit, prefer_wire_unit, via_unit
    */
-  LAParameter la_parameter(10, 2, 1, 1);
+  // clang-format off
+  LAParameter la_parameter(topo_spilt_length, congestion_unit, prefer_wire_unit, via_unit);
+  // clang-format on
   RTLOG.info(Loc::current(), "topo_spilt_length: ", la_parameter.get_topo_spilt_length());
   RTLOG.info(Loc::current(), "congestion_unit: ", la_parameter.get_congestion_unit());
   RTLOG.info(Loc::current(), "prefer_wire_unit: ", la_parameter.get_prefer_wire_unit());
