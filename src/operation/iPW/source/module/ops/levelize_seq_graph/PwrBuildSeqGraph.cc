@@ -63,7 +63,7 @@ unsigned PwrBuildSeqGraph::operator()(PwrVertex* the_vertex) {
       {
         std::unique_lock<std::shared_mutex> lock(rw_mutex);
         _macro_arcs.insert(std::make_pair(seq_vertex, fanout_seq_vertex));
-        LOG_INFO_EVERY_N(10000) << "macro arc size: " << _macro_arcs.size();
+        LOG_INFO_EVERY_N(100000) << "macro arc size: " << _macro_arcs.size();
       }
     }
 
