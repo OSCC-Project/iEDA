@@ -646,7 +646,7 @@ void EarlyRouter::generateGlobalTree(ERModel& er_model)
 
 void EarlyRouter::routeLayerNet(ERModel& er_model, ERNet* er_net)
 {
-  // 构建er_topo_list，并将通孔线段加入routing_segment_list
+  // 构建er_topo_list,并将通孔线段加入routing_segment_list
   std::vector<ERTopo> er_topo_list;
   std::vector<Segment<LayerCoord>> routing_segment_list;
   makeERTopoList(er_model, er_net, er_topo_list, routing_segment_list);
@@ -903,7 +903,7 @@ void EarlyRouter::expandSearching(ERModel& er_model)
     if (neighbor_node->isOpen() && know_cost < neighbor_node->get_known_cost()) {
       neighbor_node->set_known_cost(know_cost);
       neighbor_node->set_parent_node(path_head_node);
-      // 对优先队列中的值修改了，需要重新建堆
+      // 对优先队列中的值修改了,需要重新建堆
       std::make_heap(open_queue.begin(), open_queue.end(), CmpERNodeCost());
     } else if (neighbor_node->isNone()) {
       neighbor_node->set_known_cost(know_cost);
@@ -960,7 +960,7 @@ void EarlyRouter::resetStartAndEnd(ERModel& er_model)
   ERNode* path_head_node = er_model.get_path_head_node();
   int32_t end_node_list_idx = er_model.get_end_node_list_idx();
 
-  // 对于抵达的终点pin，只保留到达的node
+  // 对于抵达的终点pin,只保留到达的node
   end_node_list_list[end_node_list_idx].clear();
   end_node_list_list[end_node_list_idx].push_back(path_head_node);
 
@@ -976,7 +976,7 @@ void EarlyRouter::resetStartAndEnd(ERModel& er_model)
     }
   }
   if (start_node_list_list.size() == 1) {
-    // 初始化时，要把start_node_list_list的pin只留一个ap点
+    // 初始化时,要把start_node_list_list的pin只留一个ap点
     // 后续只要将end_node_list_list的pin保留一个ap点
     start_node_list_list.front().clear();
     start_node_list_list.front().push_back(path_node);

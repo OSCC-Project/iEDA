@@ -103,7 +103,7 @@ void DataManager::updateFixedRectToGCellMap(ChangeType change_type, int32_t net_
     }
   }
   if (change_type == ChangeType::kDel) {
-    // 由于在database内的obstacle_list引用过来，所以不需要delete，也不能delete
+    // 由于在database内的obstacle_list引用过来,所以不需要delete,也不能delete
   }
 }
 
@@ -121,7 +121,7 @@ void DataManager::updateAccessNetPointToGCellMap(ChangeType change_type, int32_t
     }
   }
   if (change_type == ChangeType::kDel) {
-    // 由于在pin内的access_point_list引用过来，所以不需要delete，也不能delete
+    // 由于在pin内的access_point_list引用过来,所以不需要delete,也不能delete
   }
 }
 
@@ -903,7 +903,7 @@ std::vector<ScaleGrid> DataManager::makeGCellGridList(Direction direction)
   int32_t die_start_scale = (direction == Direction::kVertical ? die.get_real_ll_x() : die.get_real_ll_y());
   int32_t die_end_scale = (direction == Direction::kVertical ? die.get_real_ur_x() : die.get_real_ur_y());
   int32_t row_mid_scale = (direction == Direction::kVertical ? row.get_start_x() : row.get_start_y());
-  // 为了防止与track重合，减去一个recommended_pitch的一半
+  // 为了防止与track重合,减去一个recommended_pitch的一半
   row_mid_scale -= (getOnlyPitch() / 2);
   int32_t step_length = row.get_height();
 

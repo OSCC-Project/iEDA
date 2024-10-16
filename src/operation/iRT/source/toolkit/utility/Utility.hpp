@@ -392,8 +392,8 @@ class Utility
 
   /**
    *  ！在检测DRC中
-   *  如果a与b中有膨胀矩形，那么则用isOpenOverlap
-   *  如果a与b中都是真实矩形，那么用isClosedOverlap
+   *  如果a与b中有膨胀矩形,那么则用isOpenOverlap
+   *  如果a与b中都是真实矩形,那么用isClosedOverlap
    *
    *  isOpenOverlap:不考虑边的overlap
    */
@@ -401,8 +401,8 @@ class Utility
 
   /**
    *  ！在检测DRC中
-   *  如果a与b中有膨胀矩形，那么则用isOpenOverlap
-   *  如果a与b中都是真实矩形，那么用isClosedOverlap
+   *  如果a与b中有膨胀矩形,那么则用isOpenOverlap
+   *  如果a与b中都是真实矩形,那么用isClosedOverlap
    *
    *  isClosedOverlap:考虑边的overlap
    */
@@ -462,7 +462,7 @@ class Utility
             && first_layer_idx <= coord.get_layer_idx() && coord.get_layer_idx() <= second_layer_idx);
   }
 
-  // 判断coord是否在rect内，可以选择是否包含边界
+  // 判断coord是否在rect内,可以选择是否包含边界
   static bool isInside(const PlanarRect& rect, const PlanarCoord& coord, bool boundary = true)
   {
     int32_t coord_x = coord.get_x(), coord_y = coord.get_y();
@@ -683,7 +683,7 @@ class Utility
   }
 
   /**
-   *  分开矩形，将master矩形用rect进行分开，并不是求差集
+   *  分开矩形,将master矩形用rect进行分开,并不是求差集
    *       ┌────────────────────────────────────┐  split  ┌────────────────────────────────────┐
    *       │ master                             │ ──────> │ c                                  │
    *       │           ┌─────────────────┐      │         └────────────────────────────────────┘
@@ -695,9 +695,9 @@ class Utility
    *       │           │                 │      │
    *       │     a     │                 │  b   │
    *       └───────────┘                 └──────┘
-   *  如上图所示，输入master和rect
-   *  若split方向为horizontal，将得到a和b，可以理解为在横向上分开
-   *  若split方向为vertical，将得到c
+   *  如上图所示,输入master和rect
+   *  若split方向为horizontal,将得到a和b,可以理解为在横向上分开
+   *  若split方向为vertical,将得到c
    */
   static std::vector<PlanarRect> getSplitRectList(const PlanarRect& master, const PlanarRect& rect, Direction split_direction)
   {
@@ -890,14 +890,14 @@ class Utility
     return node_list;
   }
 
-  // 以层序遍历获取树的所有结点，可以控制遍历最大深度
+  // 以层序遍历获取树的所有结点,可以控制遍历最大深度
   template <typename T>
   static std::vector<std::vector<TNode<T>*>> getLevelOrder(MTree<T>& tree, int32_t max_level = -1)
   {
     return getLevelOrder(tree.get_root(), max_level);
   }
 
-  // 以层序遍历获取树的所有结点，可以控制遍历最大深度
+  // 以层序遍历获取树的所有结点,可以控制遍历最大深度
   template <typename T>
   static std::vector<std::vector<TNode<T>*>> getLevelOrder(TNode<T>* root, int32_t max_level = -1)
   {
@@ -959,14 +959,14 @@ class Utility
     return false;
   }
 
-  // 对树结点内的值进行转换，需要自定义转换函数
+  // 对树结点内的值进行转换,需要自定义转换函数
   template <typename T, typename U, typename... Args>
   static MTree<U> convertTree(MTree<T>& old_tree, const std::function<U(T&, Args&...)>& convert, Args&... args)
   {
     return MTree<U>(convertTree(old_tree.get_root(), convert, args...));
   }
 
-  // 对树结点内的值进行转换，需要自定义转换函数
+  // 对树结点内的值进行转换,需要自定义转换函数
   template <typename T, typename U, typename... Args>
   static TNode<U>* convertTree(TNode<T>* old_root, const std::function<U(T&, Args&...)>& convert, Args&... args)
   {
@@ -1022,7 +1022,7 @@ class Utility
     return segment_list;
   }
 
-  // 通过树根节点和边集构建一棵树，也会消除多个连通分量
+  // 通过树根节点和边集构建一棵树,也会消除多个连通分量
   template <typename T>
   static MTree<T> getTreeBySegList(const T& root_value, const std::vector<Segment<T>>& segment_list)
   {
@@ -1083,7 +1083,7 @@ class Utility
 
 #if 1  // 与GCell有关的计算
 
-  // 如果与边缘相交，则取内的，不取边缘上
+  // 如果与边缘相交,则取内的,不取边缘上
   static PlanarRect getOpenGCellGridRect(const PlanarRect& real_rect, ScaleAxis& gcell_axis)
   {
     int32_t real_ll_x = real_rect.get_ll_x();
@@ -1298,7 +1298,7 @@ class Utility
 #if 1  // 与Track有关的计算
 
   /**
-   * 计算边界包含的刻度列表，如果边界与刻度重合，那么也会包含在内
+   * 计算边界包含的刻度列表,如果边界与刻度重合,那么也会包含在内
    */
   static std::vector<int32_t> getScaleList(int32_t begin_line, int32_t end_line, std::vector<ScaleGrid>& scale_grid_list)
   {
@@ -2026,8 +2026,8 @@ class Utility
 
   /**
    * curr_layer_idx在可布线层内
-   *    如果不是最高可布线层，向上打孔
-   *    是最高可布线层，向下打孔
+   *    如果不是最高可布线层,向上打孔
+   *    是最高可布线层,向下打孔
    *
    * curr_layer_idx在可布线层外
    *    打孔到最近的可布线层
@@ -2298,7 +2298,7 @@ class Utility
      * 下面每个字母表示一个独立的直角多边形
      * 求解(A ∪ B) - (D ∪ E ∪ F)
      * 转((A - D) ∩ (A - E) ∩ (A - F)) ∪ ((B - D) ∩ (B - E) ∩ (B - F))
-     * 其中利用(A - D)、(A - E)等式中结果不可能出现线，实现boost结果传递
+     * 其中利用(A - D)、(A - E)等式中结果不可能出现线,实现boost结果传递
      */
     // 将输入解析
     // 其中master_poly_list为(A ∪ B)
@@ -2324,7 +2324,7 @@ class Utility
             BGMultiPolyDBL diff_multi_poly;
             bg::difference(master_poly, rect_poly, diff_multi_poly);
             if (diff_multi_poly.empty()) {
-              // 当(A - D)为空，后续(A - D) ∩ (A - E) ∩ (A - F)结果为空，直接跳过
+              // 当(A - D)为空,后续(A - D) ∩ (A - E) ∩ (A - F)结果为空,直接跳过
               diff_multi_poly_list.clear();
               break;
             } else {
@@ -2513,7 +2513,7 @@ class Utility
       master_poly += convertToGTLRectInt(master);
     }
     if (!is_open) {
-      // 提取点矩形，线段矩形
+      // 提取点矩形,线段矩形
       std::vector<GTLRectInt> gtl_rect_list;
       gtl::get_rectangles(gtl_rect_list, master_poly, gtl::HORIZONTAL);
       gtl::get_rectangles(gtl_rect_list, master_poly, gtl::VERTICAL);

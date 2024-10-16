@@ -136,7 +136,7 @@ struct CmpViaMaster
     }
     // 对称升序(对称值越小越对称)
     if (sort_status == SortStatus::kEqual) {
-      // via_master的ll为负数，ur为正数
+      // via_master的ll为负数,ur为正数
       int32_t a_above_enclosure_symmetry = std::abs(a.get_above_enclosure().get_ll_x() + a.get_above_enclosure().get_ur_x());
       int32_t b_above_enclosure_symmetry = std::abs(b.get_above_enclosure().get_ll_x() + b.get_above_enclosure().get_ur_x());
       int32_t a_below_enclosure_symmetry = std::abs(a.get_below_enclosure().get_ll_x() + a.get_below_enclosure().get_ur_x());
