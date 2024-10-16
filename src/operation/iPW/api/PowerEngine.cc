@@ -22,11 +22,10 @@
  * @date 2024-02-26
  *
  */
-#include "PowerEngine.hh"
-
 #include <tuple>
 #include <vector>
 
+#include "PowerEngine.hh"
 #include "ThreadPool/ThreadPool.h"
 #include "gpu-kernel/kernel_common.h"
 #ifdef USE_GPU
@@ -240,49 +239,56 @@ std::vector<MacroConnection> PowerEngine::buildMacroConnectionMap(
   // dfs macro connecton from one seq vertex.
   std::function<void(PwrSeqVertex*, PwrSeqVertex*, std::vector<unsigned>&,
                      unsigned)>
-      dfs_from_src_seq_vertex =
-          [&macro_connections, &connection_mutex, &max_hop,
-           &dfs_from_src_seq_vertex](PwrSeqVertex* src_marco_vertex,
-                                     PwrSeqVertex* current_macro_vertex,
-                                     std::vector<unsigned> stages_each_hop,
-                                     unsigned hop) {
-            if (hop == 0) {
-              return;
-            }
+      dfs_from_src_seq_vertex = [&macro_connections, &connection_mutex,
+                                 &max_hop, &dfs_from_src_seq_vertex](
+                                    PwrSeqVertex* src_seq_vertex,
+                                    PwrSeqVertex* current_macro_vertex,
+                                    std::vector<unsigned> stages_each_hop,
+                                    unsigned hop) {
+        if (hop == 0) {
+          return;
+        }
 
-            std::tuple<std::size_t, std::string, unsigned> one_connection;
-            auto& src_arcs = current_macro_vertex->get_src_arcs();
-            for (auto* src_arc : src_arcs) {
-              auto* snk_seq_vertex = src_arc->get_snk();
-              stages_each_hop[max_hop - hop] = src_arc->get_combine_depth();
-              if (snk_seq_vertex->isMacro()) {
-                std::string snk_obj_name(snk_seq_vertex->get_obj_name());
-                MacroConnection one_connection(
-                    src_marco_vertex->get_own_seq_inst()->get_name(),
-                    snk_seq_vertex->get_own_seq_inst()->get_name(),
-                    stages_each_hop, max_hop - hop + 1);
-                {
-                  // add connection.
-                  std::lock_guard lk(connection_mutex);
-                  macro_connections.emplace_back(std::move(one_connection));
-                }
-              }
-
-              dfs_from_src_seq_vertex(src_marco_vertex, snk_seq_vertex,
-                                      stages_each_hop, hop - 1);
+        std::tuple<std::size_t, std::string, unsigned> one_connection;
+        auto& src_arcs = current_macro_vertex->get_src_arcs();
+        for (auto* src_arc : src_arcs) {
+          auto* snk_seq_vertex = src_arc->get_snk();
+          stages_each_hop[max_hop - hop] = src_arc->get_combine_depth();
+          if (snk_seq_vertex->isMacro() || snk_seq_vertex->isOutputPort()) {
+            const char* src_vertex_name =
+                src_seq_vertex->get_obj_name().data();
+            const char* snk_vertex_name = snk_seq_vertex->get_obj_name().data();
+            if (src_seq_vertex->isInputPort() ||
+                snk_seq_vertex->isOutputPort()) {
+              LOG_INFO_FIRST_N(100) << "port connection "
+                                   << "src_vertex_name " << src_vertex_name
+                                   << " snk_vertex_name " << snk_vertex_name;
             }
-          };
+            MacroConnection one_connection(src_vertex_name, snk_vertex_name,
+                                           stages_each_hop, max_hop - hop + 1);
+            {
+              // add connection.
+              std::lock_guard lk(connection_mutex);
+              macro_connections.emplace_back(std::move(one_connection));
+            }
+          }
+
+          dfs_from_src_seq_vertex(src_seq_vertex, snk_seq_vertex,
+                                  stages_each_hop, hop - 1);
+        }
+      };
 
   {
     ThreadPool thread_pool(48);
     PwrSeqVertex* seq_vertex;
     FOREACH_SEQ_VERTEX(&seq_graph, seq_vertex) {
-      if (seq_vertex->isMacro()) {
+      if (seq_vertex->isMacro() || seq_vertex->isInputPort()) {
+        // dfs from src seq vertex.
         thread_pool.enqueue(
-            [max_hop, &dfs_from_src_seq_vertex](auto* src_marco_vertex,
+            [max_hop, &dfs_from_src_seq_vertex](auto* src_seq_vertex,
                                                 auto* current_macro_vertex) {
               std::vector<unsigned> stages_each_hop(max_hop, 0);
-              dfs_from_src_seq_vertex(src_marco_vertex, current_macro_vertex,
+              dfs_from_src_seq_vertex(src_seq_vertex, current_macro_vertex,
                                       stages_each_hop, max_hop);
             },
             seq_vertex, seq_vertex);
@@ -295,6 +301,7 @@ std::vector<MacroConnection> PowerEngine::buildMacroConnectionMap(
   }
 
   LOG_INFO << "build macro connection map end";
+  LOG_INFO << "build macro connection num: " << macro_connections.size();
   double memory_delta = stats.memoryDelta();
   LOG_INFO << "build macro connection map memory usage " << memory_delta
            << "MB";
@@ -403,10 +410,11 @@ std::vector<MacroConnection> PowerEngine::buildMacroConnectionMapWithGPU(
   // call gpu function to bfs seq arc.
   for (unsigned i = 0; i < max_hop; ++i) {
     is_free_memory = (i == max_hop - 1) ? true : false;
-    build_macro_connection_map(
-        connection_points.data(), is_macros.data(), seq_arcs.data(),
-        snk_depths.data(), snk_arcs.data(), connection_point_num,
-        num_seq_vertexes, output_connection_size, out_connection_points.data(), is_free_memory);
+    build_macro_connection_map(connection_points.data(), is_macros.data(),
+                               seq_arcs.data(), snk_depths.data(),
+                               snk_arcs.data(), connection_point_num,
+                               num_seq_vertexes, output_connection_size,
+                               out_connection_points.data(), is_free_memory);
 
     // out connection give to connection and build connection map.
     connection_points.resize(out_connection_point_num);
@@ -439,7 +447,9 @@ std::vector<MacroConnection> PowerEngine::buildMacroConnectionMapWithGPU(
     }
 
     LOG_FATAL_IF(connection_point_index != out_connection_point_num)
-        << "connection_point_index " << connection_point_index << " is not equal to out_connection_point_num " << out_connection_point_num;
+        << "connection_point_index " << connection_point_index
+        << " is not equal to out_connection_point_num "
+        << out_connection_point_num;
 
     // update connection num and out connetion point num.
     connection_point_num = out_connection_point_num;
