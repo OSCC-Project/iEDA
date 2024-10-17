@@ -572,4 +572,9 @@ void InitSTA::updateTiming(const std::vector<TimingNet*>& timing_net_list, const
   STA_INST->updateTiming();
 }
 
+bool InitSTA::isClockNet(const std::string& net_name) const
+{
+  return STA_INST->isClockNet(net_name.c_str());
+}
+
 }  // namespace ieval

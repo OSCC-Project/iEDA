@@ -371,13 +371,13 @@ string CongestionEval::evalLUTRUDY(CongestionNets nets, CongestionRegion region,
     int pin_num = net.pins.size();
     int aspect_ratio = 1;
     if (net_ux - net_lx >= net_uy - net_ly && net_uy - net_ly != 0) {
-      aspect_ratio = std::round((net_ux - net_lx) / (net_uy - net_ly));
+      aspect_ratio = std::round((net_ux - net_lx) / static_cast<double>(net_uy - net_ly));
     } else if (net_ux - net_lx < net_uy - net_ly && net_ux - net_lx != 0) {
-      aspect_ratio = std::round((net_uy - net_ly) / (net_ux - net_lx));
+      aspect_ratio = std::round((net_uy - net_ly) / static_cast<double>(net_ux - net_lx));
     }
-    float l_ness = 0.f;
+    double l_ness = 0.0;
     if (pin_num < 3) {
-      l_ness = 1.f;
+      l_ness = 1.0;
     } else if (pin_num <= 15) {
       std::vector<std::pair<int32_t, int32_t>> point_set;
       for (const auto& pin : net.pins) {
@@ -385,7 +385,7 @@ string CongestionEval::evalLUTRUDY(CongestionNets nets, CongestionRegion region,
       }
       l_ness = calculateLness(point_set, net_lx, net_ux, net_ly, net_uy);
     } else {
-      l_ness = 0.5f;
+      l_ness = 0.5;
     }
 
     double hor_lutrudy = 0.0;
@@ -452,18 +452,18 @@ string CongestionEval::evalLUTRUDY(CongestionNets nets, CongestionRegion region,
   return getAbsoluteFilePath(output_path);
 }
 
-float CongestionEval::calculateLness(std::vector<std::pair<int32_t, int32_t>> point_set, int32_t net_lx, int32_t net_ux, int32_t net_ly,
-                                     int32_t net_uy)
+double CongestionEval::calculateLness(std::vector<std::pair<int32_t, int32_t>> point_set, int32_t net_lx, int32_t net_ux, int32_t net_ly,
+                                      int32_t net_uy)
 {
-  int32_t bbox = (net_ux - net_lx) * (net_uy - net_ly);
+  int64_t bbox = static_cast<int64_t>(net_ux - net_lx) * static_cast<int64_t>(net_uy - net_ly);
   int32_t r1 = calcLowerLeftRP(point_set, net_lx, net_ly);
   int32_t r2 = calcLowerRightRP(point_set, net_ux, net_ly);
   int32_t r3 = calcUpperLeftRP(point_set, net_lx, net_uy);
   int32_t r4 = calcUpperRightRP(point_set, net_ux, net_uy);
   int32_t r = std::max({r1, r2, r3, r4});
-  float l_ness;
+  double l_ness;
   if (bbox != 0) {
-    l_ness = r / bbox;
+    l_ness = static_cast<double>(r) / static_cast<double>(bbox);
   } else {
     l_ness = 1.0;
   }
@@ -530,7 +530,7 @@ int32_t CongestionEval::calcUpperRightRP(std::vector<std::pair<int32_t, int32_t>
   return r;
 }
 
-double CongestionEval::getLUT(int32_t pin_num, int32_t aspect_ratio, float l_ness)
+double CongestionEval::getLUT(int32_t pin_num, int32_t aspect_ratio, double l_ness)
 {
   int ar_index;
   if (aspect_ratio == 1) {
@@ -900,14 +900,14 @@ void CongestionEval::evalNetInfo()
 
     int aspect_ratio = 1;
     if (net_ux - net_lx >= net_uy - net_ly && net_uy - net_ly != 0) {
-      aspect_ratio = std::round((net_ux - net_lx) / (net_uy - net_ly));
+      aspect_ratio = std::round((net_ux - net_lx) / static_cast<double>(net_uy - net_ly));
     } else if (net_ux - net_lx < net_uy - net_ly && net_ux - net_lx != 0) {
-      aspect_ratio = std::round((net_uy - net_ly) / (net_ux - net_lx));
+      aspect_ratio = std::round((net_uy - net_ly) / static_cast<double>(net_ux - net_lx));
     }
 
-    float l_ness = 0.f;
+    double l_ness = 0.0;
     if (pin_num < 3) {
-      l_ness = 1.f;
+      l_ness = 1.0;
     } else if (pin_num <= 15) {
       std::vector<std::pair<int32_t, int32_t>> point_set;
       for (const auto& pin : net.pins) {
@@ -915,12 +915,27 @@ void CongestionEval::evalNetInfo()
       }
       l_ness = calculateLness(point_set, net_lx, net_ux, net_ly, net_uy);
     } else {
-      l_ness = 0.5f;
+      l_ness = 0.5;
     }
+
+    int32_t bbox_width = net_ux - net_lx;
+    int32_t bbox_height = net_uy - net_ly;
+    int64_t bbox_area = static_cast<int64_t>(bbox_width) * static_cast<int64_t>(bbox_height);
+    int32_t bbox_lx = net_lx;
+    int32_t bbox_ly = net_ly;
+    int32_t bbox_ux = net_ux;
+    int32_t bbox_uy = net_uy;
 
     _name_pin_numer.emplace(net.name, pin_num);
     _name_aspect_ratio.emplace(net.name, aspect_ratio);
     _name_lness.emplace(net.name, l_ness);
+    _name_bbox_width.emplace(net.name, bbox_width);
+    _name_bbox_height.emplace(net.name, bbox_height);
+    _name_bbox_area.emplace(net.name, bbox_area);
+    _name_bbox_lx.emplace(net.name, bbox_lx);
+    _name_bbox_ly.emplace(net.name, bbox_ly);
+    _name_bbox_ux.emplace(net.name, bbox_ux);
+    _name_bbox_uy.emplace(net.name, bbox_uy);
   }
 }
 
@@ -942,13 +957,76 @@ int CongestionEval::findAspectRatio(std::string net_name)
   throw std::runtime_error("Aspect ratio not found for net: " + net_name);
 }
 
-float CongestionEval::findLness(std::string net_name)
+double CongestionEval::findLness(std::string net_name)
 {
   auto it = _name_lness.find(net_name);
   if (it != _name_lness.end()) {
     return it->second;
   }
   throw std::runtime_error("Lness not found for net: " + net_name);
+}
+
+int32_t CongestionEval::findBBoxWidth(std::string net_name)
+{
+  auto it = _name_bbox_width.find(net_name);
+  if (it != _name_bbox_width.end()) {
+    return it->second;
+  }
+  throw std::runtime_error("BBox width not found for net: " + net_name);
+}
+
+int32_t CongestionEval::findBBoxHeight(std::string net_name)
+{
+  auto it = _name_bbox_height.find(net_name);
+  if (it != _name_bbox_height.end()) {
+    return it->second;
+  }
+  throw std::runtime_error("BBox height not found for net: " + net_name);
+}
+
+int64_t CongestionEval::findBBoxArea(std::string net_name)
+{
+  auto it = _name_bbox_area.find(net_name);
+  if (it != _name_bbox_area.end()) {
+    return it->second;
+  }
+  throw std::runtime_error("BBox area not found for net: " + net_name);
+}
+
+int32_t CongestionEval::findBBoxLx(std::string net_name)
+{
+  auto it = _name_bbox_lx.find(net_name);
+  if (it != _name_bbox_lx.end()) {
+    return it->second;
+  }
+  throw std::runtime_error("BBox lx not found for net: " + net_name);
+}
+
+int32_t CongestionEval::findBBoxLy(std::string net_name)
+{
+  auto it = _name_bbox_ly.find(net_name);
+  if (it != _name_bbox_ly.end()) {
+    return it->second;
+  }
+  throw std::runtime_error("BBox ly not found for net: " + net_name);
+}
+
+int32_t CongestionEval::findBBoxUx(std::string net_name)
+{
+  auto it = _name_bbox_ux.find(net_name);
+  if (it != _name_bbox_ux.end()) {
+    return it->second;
+  }
+  throw std::runtime_error("BBox ux not found for net: " + net_name);
+}
+
+int32_t CongestionEval::findBBoxUy(std::string net_name)
+{
+  auto it = _name_bbox_uy.find(net_name);
+  if (it != _name_bbox_uy.end()) {
+    return it->second;
+  }
+  throw std::runtime_error("BBox uy not found for net: " + net_name);
 }
 
 std::string CongestionEval::getEGRDirPath()
