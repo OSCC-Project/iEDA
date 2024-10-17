@@ -134,7 +134,8 @@ bool FeatureBuilder::buildNetEval(std::string csv_path)
     return false;
   }
 
-  csv_file << "net_name,pin_num,aspect_ratio,lness,hpwl,rsmt,grwl,hpwl_power,flute_power,egr_power\n";
+  csv_file << "net_name,net_type,pin_num,aspect_ratio,bbox_width,bbox_height,bbox_area,lx,ly,ux,uy,lness,hpwl,rsmt,grwl,hpwl_power,flute_"
+              "power,egr_power\n";
 
   const size_t buffer_size = 1024 * 1024;  // 1MB buffer
   std::vector<char> buffer(buffer_size);
@@ -146,12 +147,28 @@ bool FeatureBuilder::buildNetEval(std::string csv_path)
   for (size_t i = 0; i < idb_design->get_net_list()->get_net_list().size(); i++) {
     auto* idb_net = idb_design->get_net_list()->get_net_list()[i];
     std::string net_name = idb_net->get_net_name();
+    std::string net_type;
+
+    if (ieval::TimingAPI::getInst()->isClockNet(net_name)) {
+      net_type = "clock";
+    } else {
+      net_type = "signal";
+    }
+
     int pin_num = CONGESTION_API_INST->findPinNumber(net_name);
     if (pin_num < 4) {
       continue;
     }
     int aspect_ratio = CONGESTION_API_INST->findAspectRatio(net_name);
     float l_ness = CONGESTION_API_INST->findLness(net_name);
+    int32_t bbox_width = CONGESTION_API_INST->findBBoxWidth(net_name);
+    int32_t bbox_height = CONGESTION_API_INST->findBBoxHeight(net_name);
+    int64_t bbox_area = CONGESTION_API_INST->findBBoxArea(net_name);
+    int32_t bbox_lx = CONGESTION_API_INST->findBBoxLx(net_name);
+    int32_t bbox_ly = CONGESTION_API_INST->findBBoxLy(net_name);
+    int32_t bbox_ux = CONGESTION_API_INST->findBBoxUx(net_name);
+    int32_t bbox_uy = CONGESTION_API_INST->findBBoxUy(net_name);
+
     int32_t hpwl = WIRELENGTH_API_INST->findNetHPWL(net_name);
     int32_t flute = WIRELENGTH_API_INST->findNetFLUTE(net_name);
     int32_t grwl = WIRELENGTH_API_INST->findNetGRWL(net_name);
@@ -167,8 +184,9 @@ bool FeatureBuilder::buildNetEval(std::string csv_path)
     double flute_power = net_power_data["FLUTE"][net_name];
     double egr_power = net_power_data["EGR"][net_name];
 
-    csv_file << net_name << ',' << pin_num << ',' << aspect_ratio << ',' << l_ness << ',' << hpwl << ',' << flute << ',' << grwl << ','
-             << hpwl_power << ',' << flute_power << egr_power << '\n';
+    csv_file << net_name << ',' << net_type << "," << pin_num << ',' << aspect_ratio << ',' << bbox_width << "," << bbox_height << ","
+             << bbox_area << "," << bbox_lx << "," << bbox_ly << "," << bbox_ux << "," << bbox_uy << "," << l_ness << ',' << hpwl << ','
+             << flute << ',' << grwl << ',' << hpwl_power << ',' << flute_power << "," << egr_power << '\n';
 
     if (oss.tellp() >= buffer_size / 2) {
       csv_file << oss.str();

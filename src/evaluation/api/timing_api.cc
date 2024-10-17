@@ -99,4 +99,9 @@ void TimingAPI::updateTiming(const std::vector<TimingNet*>& timing_net_list, con
   EVAL_STA_INST->updateTiming(timing_net_list, name_list, propagation_level, dbu_unit);
 }
 
+bool TimingAPI::isClockNet(const std::string& net_name) const
+{
+  return EVAL_STA_INST->isClockNet(net_name);
+}
+
 }  // namespace ieval

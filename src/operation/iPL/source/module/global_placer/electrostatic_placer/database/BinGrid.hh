@@ -295,9 +295,9 @@ inline void BinGrid::evalRouteDem(const std::vector<NetWork*>& network_list,int3
 
     int32_t aspect_ratio = 1;
     if (net_width >= net_height && net_height != 0) {
-      aspect_ratio = std::round(net_width / net_height);
+      aspect_ratio = std::round(net_width / static_cast<double>(net_height));
     } else if (net_width < net_height && net_width != 0) {
-      aspect_ratio = std::round(net_height / net_width);
+      aspect_ratio = std::round(net_height / static_cast<double>(net_width));
     }
 
     float l_ness = 0.0;
@@ -361,14 +361,14 @@ inline void BinGrid::fastGaussianBlur()
 inline float BinGrid::calcLness(std::vector<std::pair<int32_t, int32_t>>& point_set, int32_t xmin, int32_t xmax, int32_t ymin, int32_t ymax)
 {
   int64_t bbox = (xmax - xmin) * (ymax - ymin);
-  int64_t R1 = calcLowerLeftRP(point_set, xmin, ymin);
-  int64_t R2 = calcLowerRightRP(point_set, xmax, ymin);
-  int64_t R3 = calcUpperLeftRP(point_set, xmin, ymax);
-  int64_t R4 = calcUpperRightRP(point_set, xmax, ymax);
-  int64_t R = std::max({R1, R2, R3, R4});
+  int64_t r1 = calcLowerLeftRP(point_set, xmin, ymin);
+  int64_t r2 = calcLowerRightRP(point_set, xmax, ymin);
+  int64_t r3 = calcUpperLeftRP(point_set, xmin, ymax);
+  int64_t r4 = calcUpperRightRP(point_set, xmax, ymax);
+  int64_t r = std::max({r1, r2, r3, r4});
   float l_ness;
   if (bbox != 0) {
-    l_ness = R / bbox;
+    l_ness = r / static_cast<float>(bbox);
   } else {
     l_ness = 1.0;
   }

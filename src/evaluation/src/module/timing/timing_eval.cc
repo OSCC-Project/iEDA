@@ -116,4 +116,9 @@ void TimingEval::updateTiming(const std::vector<TimingNet*>& timing_net_list, co
   EVAL_INIT_STA_INST->updateTiming(timing_net_list, name_list, propagation_level, dbu_unit);
 }
 
+bool TimingEval::isClockNet(const std::string& net_name) const
+{
+  return EVAL_INIT_STA_INST->isClockNet(net_name);
+}
+
 }  // namespace ieval

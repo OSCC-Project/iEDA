@@ -185,6 +185,41 @@ float CongestionAPI::findLness(std::string net_name)
   return EVAL_CONGESTION_INST->findLness(net_name);
 }
 
+int32_t CongestionAPI::findBBoxWidth(std::string net_name)
+{
+  return EVAL_CONGESTION_INST->findBBoxWidth(net_name);
+}
+
+int32_t CongestionAPI::findBBoxHeight(std::string net_name)
+{
+  return EVAL_CONGESTION_INST->findBBoxHeight(net_name);
+}
+
+int64_t CongestionAPI::findBBoxArea(std::string net_name)
+{
+  return EVAL_CONGESTION_INST->findBBoxArea(net_name);
+}
+
+int32_t CongestionAPI::findBBoxLx(std::string net_name)
+{
+  return EVAL_CONGESTION_INST->findBBoxLx(net_name);
+}
+
+int32_t CongestionAPI::findBBoxLy(std::string net_name)
+{
+  return EVAL_CONGESTION_INST->findBBoxLy(net_name);
+}
+
+int32_t CongestionAPI::findBBoxUx(std::string net_name)
+{
+  return EVAL_CONGESTION_INST->findBBoxUx(net_name);
+}
+
+int32_t CongestionAPI::findBBoxUy(std::string net_name)
+{
+  return EVAL_CONGESTION_INST->findBBoxUy(net_name);
+}
+
 std::string CongestionAPI::egrUnionMap(std::string stage, std::string rt_dir_path)
 {
   EVAL_CONGESTION_INST->setEGRDirPath(rt_dir_path + "/rt/rt_temp_directory");

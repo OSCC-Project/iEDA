@@ -66,6 +66,13 @@ class CongestionEval
   int findPinNumber(std::string net_name);
   int findAspectRatio(std::string net_name);
   float findLness(std::string net_name);
+  int32_t findBBoxWidth(std::string net_name);
+  int32_t findBBoxHeight(std::string net_name);
+  int64_t findBBoxArea(std::string net_name);
+  int32_t findBBoxLx(std::string net_name);
+  int32_t findBBoxLy(std::string net_name);
+  int32_t findBBoxUx(std::string net_name);
+  int32_t findBBoxUy(std::string net_name);
 
   int32_t getRowHeight();
   std::string getEGRDirPath();
@@ -78,6 +85,13 @@ class CongestionEval
   std::map<std::string, int> _name_pin_numer;
   std::map<std::string, int> _name_aspect_ratio;
   std::map<std::string, float> _name_lness;
+  std::map<std::string, int32_t> _name_bbox_width;
+  std::map<std::string, int32_t> _name_bbox_height;
+  std::map<std::string, int64_t> _name_bbox_area;
+  std::map<std::string, int32_t> _name_bbox_lx;
+  std::map<std::string, int32_t> _name_bbox_ly;
+  std::map<std::string, int32_t> _name_bbox_ux;
+  std::map<std::string, int32_t> _name_bbox_uy;
 
   string evalEGR(string rt_dir_path, string egr_type, string output_filename);
   string evalRUDY(CongestionNets nets, CongestionRegion region, int32_t grid_size, string rudy_type, string output_filename);

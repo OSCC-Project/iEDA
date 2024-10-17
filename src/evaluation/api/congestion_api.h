@@ -39,6 +39,13 @@ class CongestionAPI
   int findPinNumber(std::string net_name);
   int findAspectRatio(std::string net_name);
   float findLness(std::string net_name);
+  int32_t findBBoxWidth(std::string net_name);
+  int32_t findBBoxHeight(std::string net_name);
+  int64_t findBBoxArea(std::string net_name);
+  int32_t findBBoxLx(std::string net_name);
+  int32_t findBBoxLy(std::string net_name);
+  int32_t findBBoxUx(std::string net_name);
+  int32_t findBBoxUy(std::string net_name);
 
   std::string egrUnionMap(std::string stage, std::string rt_dir_path);
 
