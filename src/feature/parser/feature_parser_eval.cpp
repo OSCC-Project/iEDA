@@ -73,6 +73,15 @@ bool FeatureParser::buildSummaryMap(std::string csv_path, int bin_cnt_x, int bin
   return true;
 }
 
+bool FeatureParser::buildCongMap(std::string stage, std::string csv_dir)
+{
+  if (CONGESTION_API_INST->egrUnionMap(stage, csv_dir) != "") {
+    return true;
+  }
+
+  return false;
+}
+
 bool FeatureParser::buildNetEval(std::string csv_path)
 {
   auto* idb_builder = dmInst->get_idb_builder();

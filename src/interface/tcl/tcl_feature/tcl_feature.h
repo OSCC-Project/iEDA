@@ -119,4 +119,18 @@ class CmdFeatureEvalSummary : public TclCmd
   // private data
 };
 
+class CmdFeatureCongMap : public TclCmd
+{
+ public:
+  explicit CmdFeatureCongMap(const char* cmd_name);
+  ~CmdFeatureCongMap() override = default;
+
+  unsigned check() override;
+  unsigned exec() override;
+
+ private:
+  // private function
+  // private data
+};
+
 }  // namespace tcl

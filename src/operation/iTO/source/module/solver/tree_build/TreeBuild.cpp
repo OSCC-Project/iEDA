@@ -142,6 +142,10 @@ bool TreeBuild::makeRoutingTree(ista::Net* net, RoutingType rout_type)
     x[i] = pin_loc.get_x();
     y[i] = pin_loc.get_y();
 
+    if (pin_loc.get_x() == -1 && pin_loc.get_y() == -1) {
+      return false;
+    }
+
     if (pin->isOutput()) {
       driver_id = i;
     }
