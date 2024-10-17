@@ -60,7 +60,6 @@ void Placer::initRow()
   _row_space = toDmInst->init_placer();
   _row_height = toDmInst->get_site_height();
   _site_width = toDmInst->get_site_width();
-  int a = 0;
 }
 
 /**

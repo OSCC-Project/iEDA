@@ -175,7 +175,13 @@ int HoldOptimizer::optHoldViolationEnd(TOVertexSeq fanins)
 {
   int insert_buffer_count = 0;
 
-  for (auto vertex : fanins) {
+  int batch_size = fanins.size() / 10;
+  for (int i = 0; i < fanins.size(); i++) {
+    if ((i + 1) % batch_size == 0 || (i + 1) == fanins.size()) {
+      LOG_INFO << "Opt hold end: " << (i + 1) << "/" << fanins.size() << "(" << (double(i + 1) / fanins.size()) * 100 << "%)\n";
+    }
+
+    auto vertex = fanins[i];
     TODesignObjSeq load_vio_pins;
 
     TODelay max_insert_delay = std::numeric_limits<TODelay>::max();
@@ -212,6 +218,7 @@ int HoldOptimizer::optHoldViolationEnd(TOVertexSeq fanins)
     insertBufferOptHold(vertex, insert_number, load_vio_pins);
 
     if (toDmInst->get_buffer_num() > _max_numb_insert_buf || toDmInst->reachMaxArea()) {
+      LOG_INFO << "Reach the maximum number of buffers that can be inserted.\n";
       return insert_buffer_count;
     }
   }
