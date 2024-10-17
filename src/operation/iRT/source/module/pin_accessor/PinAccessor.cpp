@@ -1283,6 +1283,7 @@ void PinAccessor::patchSingleTask(PABox& pa_box)
   }
 }
 
+#if 1
 std::vector<LayerRect> PinAccessor::getMinimumAreaPatchList(PABox& pa_box)
 {
   Die& die = RTDM.getDatabase().get_die();
@@ -1404,6 +1405,25 @@ std::vector<LayerRect> PinAccessor::getMinimumAreaPatchList(PABox& pa_box)
   }
   return real_patch_list;
 }
+#else
+
+std::vector<LayerRect> PinAccessor::getMinimumAreaPatchList(PABox& pa_box)
+{
+  int32_t curr_net_idx = pa_box.get_curr_pa_task()->get_net_idx();
+  int32_t curr_task_idx = pa_box.get_curr_pa_task()->get_task_idx();
+
+  std::map<int32_t, GTLPolySetInt> layer_poly_list;
+  for (Segment<LayerCoord>& segment : pa_box.get_net_task_result_map()[curr_net_idx][curr_task_idx]) {
+    for (NetShape& net_shape : RTDM.getNetShapeList(curr_net_idx, segment)) {
+      layer_poly_list[net_shape.get_layer_idx()] += RTUTIL.convertToGTLRectInt(net_shape.get_rect());
+    }
+  }
+  for (EXTLayerRect& routing_patch : pa_box.get_routing_patch_list()) {
+    layer_poly_list[routing_patch.get_layer_idx()] += RTUTIL.convertToGTLRectInt(routing_patch.get_real_rect());
+  }
+}
+
+#endif
 
 std::vector<LayerRect> PinAccessor::getMinStepPatchList(PABox& pa_box)
 {
@@ -1438,16 +1458,25 @@ std::vector<Violation> PinAccessor::getPatchViolationList(PABox& pa_box)
       }
     }
   }
-  std::map<int32_t, std::vector<Segment<LayerCoord>>> net_check_result_map;
+  std::map<int32_t, std::vector<Segment<LayerCoord>*>> net_result_map;
   for (Segment<LayerCoord>& segment : pa_box.get_net_task_result_map()[curr_net_idx][curr_task_idx]) {
-    net_check_result_map[curr_net_idx].emplace_back(segment);
+    net_result_map[curr_net_idx].emplace_back(&segment);
   }
+  std::map<int32_t, std::vector<EXTLayerRect*>> net_patch_map;
+  for (EXTLayerRect& routing_patch : pa_box.get_routing_patch_list()) {
+    net_patch_map[curr_net_idx].emplace_back(&routing_patch);
+  }
+  std::set<int32_t> need_checked_net_set;
+  need_checked_net_set.insert(curr_net_idx);
+
   DETask de_task;
   de_task.set_process_type_set({DEProcessType::kRoutingPatch});
   de_task.set_top_name(top_name);
   de_task.set_check_region(check_region);
   de_task.set_net_pin_shape_map(net_pin_shape_map);
-  de_task.set_net_check_result_map(net_check_result_map);
+  de_task.set_net_result_map(net_result_map);
+  de_task.set_net_patch_map(net_patch_map);
+  de_task.set_need_checked_net_set(need_checked_net_set);
   return RTDE.getViolationList(de_task);
 }
 
@@ -1660,44 +1689,46 @@ std::vector<Violation> PinAccessor::getCostViolationList(PABox& pa_box)
       }
     }
   }
-  std::map<int32_t, std::vector<Segment<LayerCoord>*>> net_env_result_map;
+  std::map<int32_t, std::vector<Segment<LayerCoord>*>> net_result_map;
   for (auto& [net_idx, segment_set] : pa_box.get_net_access_result_map()) {
     for (Segment<LayerCoord>* segment : segment_set) {
-      net_env_result_map[net_idx].push_back(segment);
+      net_result_map[net_idx].push_back(segment);
     }
   }
-  std::map<int32_t, std::vector<EXTLayerRect*>> net_env_patch_map;
-  for (auto& [net_idx, patch_set] : pa_box.get_net_access_patch_map()) {
-    for (EXTLayerRect* patch : patch_set) {
-      net_env_patch_map[net_idx].push_back(patch);
-    }
-  }
-  std::map<int32_t, std::vector<Segment<LayerCoord>>> net_check_result_map;
   for (auto& [net_idx, task_result_map] : pa_box.get_net_task_result_map()) {
     for (auto& [task_idx, segment_list] : task_result_map) {
       for (Segment<LayerCoord>& segment : segment_list) {
-        net_check_result_map[net_idx].emplace_back(segment);
+        net_result_map[net_idx].emplace_back(&segment);
       }
     }
   }
-  std::map<int32_t, std::vector<EXTLayerRect>> net_check_patch_map;
+  std::map<int32_t, std::vector<EXTLayerRect*>> net_patch_map;
+  for (auto& [net_idx, patch_set] : pa_box.get_net_access_patch_map()) {
+    for (EXTLayerRect* patch : patch_set) {
+      net_patch_map[net_idx].push_back(patch);
+    }
+  }
   for (auto& [net_idx, task_patch_map] : pa_box.get_net_task_patch_map()) {
     for (auto& [task_idx, patch_list] : task_patch_map) {
       for (EXTLayerRect& patch : patch_list) {
-        net_check_patch_map[net_idx].emplace_back(patch);
+        net_patch_map[net_idx].emplace_back(&patch);
       }
     }
   }
+  std::set<int32_t> need_checked_net_set;
+  for (PATask* pa_task : pa_box.get_pa_task_list()) {
+    need_checked_net_set.insert(pa_task->get_net_idx());
+  }
+
   DETask de_task;
   de_task.set_process_type_set({DEProcessType::kRoutingCost, DEProcessType::kCutCost});
   de_task.set_top_name(top_name);
   de_task.set_check_region(check_region);
   de_task.set_env_shape_list(env_shape_list);
   de_task.set_net_pin_shape_map(net_pin_shape_map);
-  de_task.set_net_env_result_map(net_env_result_map);
-  de_task.set_net_env_patch_map(net_env_patch_map);
-  de_task.set_net_check_result_map(net_check_result_map);
-  de_task.set_net_check_patch_map(net_check_patch_map);
+  de_task.set_net_result_map(net_result_map);
+  de_task.set_net_patch_map(net_patch_map);
+  de_task.set_need_checked_net_set(need_checked_net_set);
   return RTDE.getViolationList(de_task);
 }
 
