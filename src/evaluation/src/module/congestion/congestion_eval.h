@@ -65,7 +65,7 @@ class CongestionEval
   void evalNetInfo();
   int findPinNumber(std::string net_name);
   int findAspectRatio(std::string net_name);
-  float findLness(std::string net_name);
+  double findLness(std::string net_name);
   int32_t findBBoxWidth(std::string net_name);
   int32_t findBBoxHeight(std::string net_name);
   int64_t findBBoxArea(std::string net_name);
@@ -84,7 +84,7 @@ class CongestionEval
 
   std::map<std::string, int> _name_pin_numer;
   std::map<std::string, int> _name_aspect_ratio;
-  std::map<std::string, float> _name_lness;
+  std::map<std::string, double> _name_lness;
   std::map<std::string, int32_t> _name_bbox_width;
   std::map<std::string, int32_t> _name_bbox_height;
   std::map<std::string, int64_t> _name_bbox_area;
@@ -96,12 +96,12 @@ class CongestionEval
   string evalEGR(string rt_dir_path, string egr_type, string output_filename);
   string evalRUDY(CongestionNets nets, CongestionRegion region, int32_t grid_size, string rudy_type, string output_filename);
   string evalLUTRUDY(CongestionNets nets, CongestionRegion region, int32_t grid_size, string lutrudy_type, string output_filename);
-  float calculateLness(std::vector<std::pair<int32_t, int32_t>> point_set, int32_t net_lx, int32_t net_ux, int32_t net_ly, int32_t net_uy);
+  double calculateLness(std::vector<std::pair<int32_t, int32_t>> point_set, int32_t net_lx, int32_t net_ux, int32_t net_ly, int32_t net_uy);
   int32_t calcLowerLeftRP(std::vector<std::pair<int32_t, int32_t>> point_set, int32_t x_min, int32_t y_min);
   int32_t calcLowerRightRP(std::vector<std::pair<int32_t, int32_t>> point_set, int32_t x_max, int32_t y_min);
   int32_t calcUpperLeftRP(std::vector<std::pair<int32_t, int32_t>> point_set, int32_t x_min, int32_t y_max);
   int32_t calcUpperRightRP(std::vector<std::pair<int32_t, int32_t>> point_set, int32_t x_max, int32_t y_max);
-  double getLUT(int32_t pin_num, int32_t aspect_ratio, float l_ness);
+  double getLUT(int32_t pin_num, int32_t aspect_ratio, double l_ness);
   int32_t evalTotalOverflow(string stage, string rt_dir_path, string overflow_type);
   int32_t evalMaxOverflow(string stage, string rt_dir_path, string overflow_type);
   float evalAvgOverflow(string stage, string rt_dir_path, string overflow_type);
