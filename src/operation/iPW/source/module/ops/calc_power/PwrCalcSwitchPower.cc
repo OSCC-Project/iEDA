@@ -100,6 +100,10 @@ unsigned PwrCalcSwitchPower::operator()(PwrGraph* the_graph) {
     }
 
     auto* driver_obj = net->getDriver();
+    
+    if (!driver_obj) {
+      continue;
+    }
 
     if (driver_obj->isPort() &&
         ((net->getLoads().size() == 1) && net->getLoads().front()->isPort())) {

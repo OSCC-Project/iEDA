@@ -96,7 +96,7 @@ unsigned PwrBuildSeqGraph::operator()(PwrVertex* the_vertex) {
     if (seq_vertex) {
       the_vertex->addFanoutSeqVertex(seq_vertex, 0);  // end vertex is level 0.
     } else {
-      LOG_ERROR << seq_instance->get_name() << " is not seq vertex.";
+      LOG_ERROR << seq_instance->get_name() << " is not seq vertex, may be no clock.";
     }
 
     the_vertex->set_is_seq_visited();
