@@ -96,12 +96,15 @@ unsigned PwrCalcSwitchPower::operator()(PwrGraph* the_graph) {
   /*Calc switch power for power net arc.*/
   FOREACH_NET(nl, net) {
     if (net->getLoads().empty()) {
+      LOG_INFO << "net " << net->get_name()
+               << " has no load, skip switch power calculation.";
       continue;
     }
 
     auto* driver_obj = net->getDriver();
-    
     if (!driver_obj) {
+      LOG_INFO << "net " << net->get_name()
+               << " has no driver, skip switch power calculation.";
       continue;
     }
 
@@ -138,7 +141,8 @@ unsigned PwrCalcSwitchPower::operator()(PwrGraph* the_graph) {
     // calc swich power of the arc.
     // swich_power = k*toggle*Cap*(VDD^2)
     double arc_swich_power = c_switch_power_K * toggle * cap * vdd * vdd;
-    auto switch_data = std::make_unique<PwrSwitchData>(net, MW_TO_W(arc_swich_power));
+    auto switch_data =
+        std::make_unique<PwrSwitchData>(net, MW_TO_W(arc_swich_power));
     switch_data->set_nom_voltage(vdd);
     // add power analysis data.
     addSwitchPower(std::move(switch_data));
