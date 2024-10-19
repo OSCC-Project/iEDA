@@ -54,8 +54,9 @@ unsigned PwrBuildSeqGraph::operator()(PwrVertex* the_vertex) {
       {
         std::shared_lock<std::shared_mutex> lock(rw_mutex);
         if (_macro_arcs.count(std::make_pair(seq_vertex, fanout_seq_vertex))) {
-          LOG_INFO_FIRST_N(10) << "Repeat macro arc: " << seq_vertex->get_obj_name()
-                                << " -> " << fanout_seq_vertex->get_obj_name();
+          LOG_INFO_FIRST_N(10)
+              << "Repeat macro arc: " << seq_vertex->get_obj_name() << " -> "
+              << fanout_seq_vertex->get_obj_name();
           return;
         }
       }
@@ -63,7 +64,8 @@ unsigned PwrBuildSeqGraph::operator()(PwrVertex* the_vertex) {
       {
         std::unique_lock<std::shared_mutex> lock(rw_mutex);
         _macro_arcs.insert(std::make_pair(seq_vertex, fanout_seq_vertex));
-        LOG_INFO_EVERY_N(100000) << "macro arc size: " << _macro_arcs.size();
+        LOG_INFO_EVERY_N(100000)
+            << "macro seq arc size: " << _macro_arcs.size();
       }
     }
 
@@ -72,6 +74,9 @@ unsigned PwrBuildSeqGraph::operator()(PwrVertex* the_vertex) {
     seq_vertex->addSrcArc(seq_arc);
     fanout_seq_vertex->addSnkArc(seq_arc);
     _seq_graph.addPwrSeqArc(seq_arc);
+
+    LOG_INFO_IF_EVERY_N(_seq_graph.get_arcs().size() > 100000, 10000000)
+        << "build seq arc size: " << _seq_graph.get_arcs().size();
   };
 
   auto* the_sta_vertex = the_vertex->get_sta_vertex();
@@ -96,7 +101,8 @@ unsigned PwrBuildSeqGraph::operator()(PwrVertex* the_vertex) {
     if (seq_vertex) {
       the_vertex->addFanoutSeqVertex(seq_vertex, 0);  // end vertex is level 0.
     } else {
-      LOG_ERROR << seq_instance->get_name() << " is not seq vertex, may be no clock.";
+      LOG_ERROR << seq_instance->get_name()
+                << " is not seq vertex, may be no clock.";
     }
 
     the_vertex->set_is_seq_visited();

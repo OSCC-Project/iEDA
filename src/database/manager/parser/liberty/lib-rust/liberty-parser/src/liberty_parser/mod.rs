@@ -138,6 +138,10 @@ fn process_simple_attribute(
                         liberty_data::LibertyParserData::String(more_str) => {
                             expr_value = expr_value + more_str.get_string_value();
                         }
+                        liberty_data::LibertyParserData::Float(more_str) => {
+                            let the_float_str_value = more_str.get_float_value().to_string();
+                            expr_value = expr_value + the_float_str_value.as_str();
+                        }
                         _ => panic!("should be string type"),
                     }
                 }

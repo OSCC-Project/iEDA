@@ -94,8 +94,12 @@ double PwrCalcInternalPower::calcCombInputPinPower(Instance* inst,
     // rise power
     auto rise_slew = (*the_input_sta_vertex)
                          ->getSlewNs(AnalysisMode::kMax, TransType::kRise);
-    LOG_FATAL_IF(!rise_slew)
-        << (*the_input_sta_vertex)->getName() << " rise slew is not exist.";
+    if (!rise_slew) {
+      LOG_ERROR_IF(!rise_slew)
+          << (*the_input_sta_vertex)->getName() << " rise slew is not exist.";
+      continue;
+    }
+
     double rise_power =
         internal_power->gatePower(TransType::kRise, *rise_slew, std ::nullopt);
     double rise_power_mw = lib_cell->convertTablePowerToMw(rise_power);
@@ -566,8 +570,8 @@ unsigned PwrCalcInternalPower::operator()(PwrGraph* the_graph) {
 
     double nom_voltage = inst_cell->get_owner_lib()->get_nom_voltage();
     // add power analysis data.
-    auto internal_data =
-        std::make_unique<PwrInternalData>(design_inst, MW_TO_W(inst_internal_power));
+    auto internal_data = std::make_unique<PwrInternalData>(
+        design_inst, MW_TO_W(inst_internal_power));
     internal_data->set_nom_voltage(nom_voltage);
 
     addInternalPower(std::move(internal_data));

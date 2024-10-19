@@ -83,7 +83,7 @@ void ViolationOptimizer::checkAndRepair()
 
   for (int i = number_driver_vertices - 1; i >= 0; --i) {
     if ((number_driver_vertices - i) % 1000 == 0 || i == 0) {
-      LOG_INFO << "Check and repair: " << (number_driver_vertices - i) << "/" << number_driver_vertices << "("
+      LOG_INFO << "The 1-th Check and repair: " << (number_driver_vertices - i) << "/" << number_driver_vertices << "("
                << (double(number_driver_vertices - i) / number_driver_vertices) * 100 << "%) nets\n";
     }
     StaVertex* driver = sorted_driver_vertices[i];
@@ -118,17 +118,24 @@ void ViolationOptimizer::checkAndRepair()
 
 void ViolationOptimizer::iterCheckAndRepair()
 {
-  checkViolations();
-
   int max_iter = toConfig->get_drv_optimize_iter_number();
   int iter = 1;
   if (iter == max_iter) {
     return;
   }
+
+  checkViolations();
+
   int prev_violation_num = _violation_nets_map.size();
   while (!_violation_nets_map.empty()) {
     // If there are still a violation nets, the secondary fix is performed.
+    int which_id = 1;
     for (auto [net, cap_load_allowed_max] : _violation_nets_map) {
+      int batch_size = prev_violation_num / 100;
+      if (which_id % batch_size == 0 || which_id == prev_violation_num) {
+        LOG_INFO << "The " << iter + 1 << "-th Check and repair: " << which_id << "/" << prev_violation_num << "("
+                 << (double(prev_violation_num) / prev_violation_num) * 100 << "%) nets\n";
+      }
       optimizeViolationNet(net, cap_load_allowed_max);
     }
     int last_violation_num = _violation_nets_map.size();
