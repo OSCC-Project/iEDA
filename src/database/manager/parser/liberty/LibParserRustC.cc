@@ -1236,6 +1236,7 @@ unsigned RustLibertyReader::visitGroup(RustLibertyGroupStmt* group) {
           {"leakage_power",
            std::bind(&RustLibertyReader::visitLeakagePower, this, _1)},
           {"bus", std::bind(&RustLibertyReader::visitBus, this, _1)},
+          {"bundle", std::bind(&RustLibertyReader::visitBus, this, _1)},
           {"pin", std::bind(&RustLibertyReader::visitPin, this, _1)},
           {"timing", std::bind(&RustLibertyReader::visitTiming, this, _1)},
           {"internal_power",
