@@ -657,7 +657,7 @@ unsigned RustLibertyReader::visitComplexAttri(
     is_ok = visitAxisOrValues(attri);
   }
   else {
-    LOG_INFO_FIRST_N(10) << "unkown attri name: " << attri_name << " in "
+    LOG_INFO_EVERY_N(10) << "unkown attri name: " << attri_name << " in "
                          << attri->file_name << " line no " << attri->line_no;
   }
   return is_ok;
