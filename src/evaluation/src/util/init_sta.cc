@@ -27,7 +27,6 @@
 #include "api/PowerEngine.hh"
 #include "api/TimingEngine.hh"
 #include "api/TimingIDBAdapter.hh"
-#include "feature_irt.h"
 #include "idm.h"
 #include "salt/base/flute.h"
 #include "salt/salt.h"
@@ -176,13 +175,17 @@ void InitSTA::buildRCTree(const std::string& routing_type)
     // WLM
     if (routing_type == "WLM") {
       LOG_ERROR << "STA does not support WLM, TBD...";
+      auto loads = sta_net->getLoads();
+
+      if (loads.empty()) {
+        continue;
+      }
       auto* driver = sta_net->getDriver();
       auto front_node = STA_INST->makeOrFindRCTreeNode(driver);
 
       double res = 0;  // rc TBD
       double cap = 0;  // rc TBD
 
-      auto loads = sta_net->getLoads();
       for (auto load : loads) {
         auto back_node = STA_INST->makeOrFindRCTreeNode(load);
         STA_INST->makeResistor(sta_net, front_node, back_node, res);
@@ -192,11 +195,16 @@ void InitSTA::buildRCTree(const std::string& routing_type)
     }
 
     if (routing_type == "HPWL") {
+      auto loads = sta_net->getLoads();
+
+      if (loads.empty()) {
+        continue;
+      }
+
       auto* driver = sta_net->getDriver();
       auto driver_loc = idb_adapter->idbLocation(driver);
       auto front_node = STA_INST->makeOrFindRCTreeNode(driver);
 
-      auto loads = sta_net->getLoads();
       for (auto load : loads) {
         auto load_loc = idb_adapter->idbLocation(load);
         auto wirelength = calc_length(driver_loc->get_x(), driver_loc->get_y(), load_loc->get_x(), load_loc->get_y());
@@ -212,7 +220,9 @@ void InitSTA::buildRCTree(const std::string& routing_type)
     if (routing_type == "FLUTE" || routing_type == "SALT") {
       std::vector<ista::DesignObject*> pin_ports = {sta_net->getDriver()};
       std::ranges::copy(sta_net->getLoads(), std::back_inserter(pin_ports));
-
+      if (pin_ports.size() < 2) {
+        continue;
+      }
       // makr rc node
       auto make_rc_node = [&](const std::shared_ptr<salt::TreeNode>& salt_node) {
         if (salt_node->pin) {
