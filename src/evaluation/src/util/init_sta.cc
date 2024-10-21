@@ -88,6 +88,122 @@ void InitSTA::evalTiming(const std::string& routing_type, const bool& rt_done)
   updateResult(routing_type);
 }
 
+void InitSTA::leaglization(const std::vector<std::shared_ptr<salt::Pin>>& pins)
+{
+  if (pins.empty()) {
+    return;
+  }
+
+  std::set<std::pair<double, double>> loc_set;
+  bool is_legal = true;
+  for (size_t i = 0; i < pins.size(); ++i) {
+    if (loc_set.contains(std::make_pair(pins[i]->loc.x, pins[i]->loc.y))) {
+      is_legal = false;
+      break;
+    }
+    loc_set.insert(std::make_pair(pins[i]->loc.x, pins[i]->loc.y));
+  }
+  if (is_legal) {
+    return;
+  }
+
+  // find all duplicated locations, and move them to a new location, objective: no duplicated locations and minimum total movement
+  // x: pin->loc.x
+  // y: pin->loc.y
+  // Step 1: Group pins by their (x, y) locations
+  std::map<std::pair<int, int>, std::vector<std::shared_ptr<salt::Pin>>> loc_map;
+  for (const auto& pin : pins) {
+    std::pair<int, int> coord = {pin->loc.x, pin->loc.y};
+    loc_map[coord].push_back(pin);
+  }
+
+  // Step 2: Initialize a set to keep track of occupied locations
+  std::unordered_set<long long> occupied;
+  // Helper lambda to encode (x, y) into a unique key
+  auto encode = [](int x, int y) -> long long {
+    // Assuming x and y are within reasonable bounds to prevent overflow
+    return static_cast<long long>(x) * 100000000 + y;
+  };
+
+  // Populate the occupied set with initial locations
+  for (const auto& [coord, pin_list] : loc_map) {
+    occupied.insert(encode(coord.first, coord.second));
+  }
+
+  // Step 3: Collect all pins that need to be moved
+  std::vector<std::shared_ptr<salt::Pin>> pins_to_move;
+  for (const auto& [coord, pin_list] : loc_map) {
+    if (pin_list.size() > 1) {
+      // Keep the first pin, move the rest
+      for (size_t i = 1; i < pin_list.size(); ++i) {
+        pins_to_move.push_back(pin_list[i]);
+      }
+    }
+  }
+
+  // Step 4: Define directions for BFS (8-connected grid)
+  const std::vector<std::pair<int, int>> directions = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}, {1, 1}, {1, -1}, {-1, 1}, {-1, -1}};
+
+  // Step 5: For each pin to move, find the nearest available location
+  for (const auto& pin : pins_to_move) {
+    int start_x = pin->loc.x;
+    int start_y = pin->loc.y;
+
+    // BFS initialization
+    std::queue<std::pair<int, int>> q;
+    std::unordered_set<long long> visited;
+    q.push({start_x, start_y});
+    visited.insert(encode(start_x, start_y));
+
+    bool found = false;
+    int new_x = start_x;
+    int new_y = start_y;
+
+    while (!q.empty() && !found) {
+      int current_level_size = q.size();
+      for (int i = 0; i < current_level_size; ++i) {
+        auto [x, y] = q.front();
+        q.pop();
+
+        // Explore all directions
+        for (const auto& [dx, dy] : directions) {
+          int nx = x + dx;
+          int ny = y + dy;
+          long long key = encode(nx, ny);
+
+          if (visited.find(key) == visited.end()) {
+            // Check if the location is free
+            if (occupied.find(key) == occupied.end()) {
+              // Found a free location
+              new_x = nx;
+              new_y = ny;
+              occupied.insert(key);
+              found = true;
+              break;
+            }
+            // Mark as visited and add to queue for further exploration
+            visited.insert(key);
+            q.push({nx, ny});
+          }
+        }
+        if (found)
+          break;
+      }
+    }
+
+    if (!found) {
+      // If no free location found in the immediate vicinity, expand the search
+      // This can be optimized or have a maximum search radius
+      // For simplicity, we'll assign a far away location
+      LOG_FATAL << "No free location found for pin x=" << start_x << ", y=" << start_y;
+    }
+
+    // Update the pin's location
+    pin->loc.x = new_x;
+    pin->loc.y = new_y;
+  }
+}
+
 void InitSTA::initStaEngine()
 {
   if (STA_INST->isBuildGraph()) {
@@ -242,6 +358,7 @@ void InitSTA::buildRCTree(const std::string& routing_type)
         auto pin = std::make_shared<salt::Pin>(idb_loc->get_x(), idb_loc->get_y(), i);
         salt_pins.push_back(pin);
       }
+      leaglization(salt_pins);
       salt::Net salt_net;
       salt_net.init(0, sta_net->get_name(), salt_pins);
 
