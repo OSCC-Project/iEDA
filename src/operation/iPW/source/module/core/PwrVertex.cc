@@ -55,8 +55,17 @@ std::optional<double> PwrVertex::getDriveVoltage() {
     // for port.
     auto* the_net = design_obj->get_net();
     auto the_loads = the_net->getLoads();
-    auto* one_load = the_loads.front();
-    design_obj = one_load;
+    for (auto* one_load : the_loads) {
+      if (one_load->isPin()) {
+        design_obj = one_load;
+        break;
+      }      
+    }
+  }
+
+  if (design_obj->isPort()) {
+    // TODO(to taosimin), fix io volatage.
+    return 0.0;
   }
 
   auto* liberty_port = dynamic_cast<Pin*>(design_obj)->get_cell_port();
