@@ -149,12 +149,6 @@ bool FeatureBuilder::buildNetEval(std::string csv_path)
     std::string net_name = idb_net->get_net_name();
     std::string net_type;
 
-    if (ieval::TimingAPI::getInst()->isClockNet(net_name)) {
-      net_type = "clock";
-    } else {
-      net_type = "signal";
-    }
-
     int pin_num = CONGESTION_API_INST->findPinNumber(net_name);
     if (pin_num < 4) {
       continue;
@@ -172,6 +166,15 @@ bool FeatureBuilder::buildNetEval(std::string csv_path)
     int32_t hpwl = WIRELENGTH_API_INST->findNetHPWL(net_name);
     int32_t flute = WIRELENGTH_API_INST->findNetFLUTE(net_name);
     int32_t grwl = WIRELENGTH_API_INST->findNetGRWL(net_name);
+
+    // Remove backslashes in net_name to match timing && power evaluation data
+    net_name.erase(std::remove(net_name.begin(), net_name.end(), '\\'), net_name.end());
+
+    if (ieval::TimingAPI::getInst()->isClockNet(net_name)) {
+      net_type = "clock";
+    } else {
+      net_type = "signal";
+    }
 
     if (net_power_data["HPWL"].find(net_name) == net_power_data["HPWL"].end()
         || net_power_data["FLUTE"].find(net_name) == net_power_data["FLUTE"].end()
