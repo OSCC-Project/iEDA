@@ -22,13 +22,12 @@
  * @date 2023-10-13
  *
  */
-#include "LibParserRustC.hh"
-
 #include <map>
 
 #include "BTreeMap.hh"
 #include "BTreeSet.hh"
 #include "Lib.hh"
+#include "LibParserRustC.hh"
 #include "log/Log.hh"
 
 namespace ista {
@@ -653,8 +652,13 @@ unsigned RustLibertyReader::visitComplexAttri(
 
   if (process_attri.contains(attri_name)) {
     process_attri[attri_name]();
-  } else {
+  } else if (Str::startWith(attri_name, "index") ||
+             Str::equal(attri_name, "values")) {
     is_ok = visitAxisOrValues(attri);
+  }
+  else {
+    LOG_INFO_EVERY_N(10) << "unkown attri name: " << attri_name << " in "
+                         << attri->file_name << " line no " << attri->line_no;
   }
   return is_ok;
 }
@@ -1236,6 +1240,7 @@ unsigned RustLibertyReader::visitGroup(RustLibertyGroupStmt* group) {
           {"leakage_power",
            std::bind(&RustLibertyReader::visitLeakagePower, this, _1)},
           {"bus", std::bind(&RustLibertyReader::visitBus, this, _1)},
+          {"bundle", std::bind(&RustLibertyReader::visitBus, this, _1)},
           {"pin", std::bind(&RustLibertyReader::visitPin, this, _1)},
           {"timing", std::bind(&RustLibertyReader::visitTiming, this, _1)},
           {"internal_power",
@@ -1277,13 +1282,12 @@ unsigned RustLibertyReader::readLib() {
 
   LOG_INFO << "load liberty file " << _file_name << " success.";
   return 1;
-
 }
 
 /**
  * @brief link the lib to construct the data.
- * 
- * @return unsigned 
+ *
+ * @return unsigned
  */
 unsigned RustLibertyReader::linkLib() {
   LOG_INFO << "link liberty file " << _file_name << " start.";

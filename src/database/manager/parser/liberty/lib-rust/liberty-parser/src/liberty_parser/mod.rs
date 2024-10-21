@@ -489,7 +489,7 @@ mod tests {
 
     #[test]
     fn test_parse_simple_attribute() {
-        let input_str = r#"power_down_function : !VDD+VSS;"#;
+        let input_str = r#"power_down_function : !VDD+!VDDD+VSSD;"#;
         let parse_result = LibertyParser::parse(Rule::simple_attribute, input_str);
 
         test_process_parse_result(parse_result);
