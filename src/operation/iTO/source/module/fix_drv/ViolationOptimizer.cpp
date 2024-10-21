@@ -134,8 +134,9 @@ void ViolationOptimizer::iterCheckAndRepair()
       int batch_size = prev_violation_num / 100;
       if (which_id % batch_size == 0 || which_id == prev_violation_num) {
         LOG_INFO << "The " << iter + 1 << "-th Check and repair: " << which_id << "/" << prev_violation_num << "("
-                 << (double(prev_violation_num) / prev_violation_num) * 100 << "%) nets\n";
+                 << (double(which_id) / prev_violation_num) * 100 << "%) nets\n";
       }
+      which_id++;
       optimizeViolationNet(net, cap_load_allowed_max);
     }
     int last_violation_num = _violation_nets_map.size();

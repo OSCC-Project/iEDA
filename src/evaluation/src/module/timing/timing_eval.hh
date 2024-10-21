@@ -23,8 +23,8 @@ class TimingEval
   ~TimingEval() = default;
   static TimingEval* getInst();
 
-  static void runSTA();
-  static void evalTiming(const std::string& routing_type, const bool& rt_done = false);
+  void runSTA();
+  void evalTiming(const std::string& routing_type, const bool& rt_done = false);
 
   static void destroyInst();
 
