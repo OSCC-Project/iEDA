@@ -24,12 +24,16 @@
 
 #pragma once
 #include <map>
+#include <memory>
 #include <string>
 #include <unordered_map>
 #include <vector>
 
 namespace ista {
 enum class AnalysisMode;
+}
+namespace salt {
+class Pin;
 }
 namespace ieval {
 
@@ -66,6 +70,7 @@ class InitSTA
   bool isClockNet(const std::string& net_name) const;
 
  private:
+  void leaglization(const std::vector<std::shared_ptr<salt::Pin>>& pins);
   void initStaEngine();
   void callRT(const std::string& routing_type);
   void buildRCTree(const std::string& routing_type);
