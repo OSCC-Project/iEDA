@@ -95,6 +95,9 @@ void delay_change_rc_tree_to_array(
   // root, resistance is 0.
   std::vector<float> resistance_array{0.0};
   std::vector<float> delay_array(node_num, 0);
+  std::vector<float> ldelay_array(node_num, 0);
+  std::vector<float> beta_array(node_num, 0);
+  std::vector<float> impulse_array(node_num, 0);
 
   int flatten_pos = 0;
   for (auto& points : level_to_points) {
@@ -132,6 +135,9 @@ void delay_change_rc_tree_to_array(
   std::swap(rc_network->_parent_pos_array, parent_pos_array);
   std::swap(rc_network->_children_pos_array, children_pos_array);
   std::swap(rc_network->_delay_array, delay_array);
+  std::swap(rc_network->_ldelay_array, ldelay_array);
+  std::swap(rc_network->_beta_array, beta_array);
+  std::swap(rc_network->_impulse_array, impulse_array);
 }
 
 /**
@@ -195,6 +201,74 @@ __global__ void update_delay(float* resistance_array, float* load_array,
 }
 
 /**
+ * @brief gpu speed up update the load delay of the rc point.
+ *
+ * @param cap_array
+ * @param delay_array
+ * @param ldelay_array
+ * @param parent_pos_array
+ * @param start_pos
+ * @param num_count
+ * @return __global__
+ */
+__global__ void update_ldelay(float* cap_array, float* delay_array,
+                              float* ldelay_array, int* parent_pos_array,
+                              int start_pos, int num_count) {
+  int tid = blockIdx.x * blockDim.x + threadIdx.x;
+
+  if (tid < num_count) {
+    // printf("thread id: %d, start pos %d\n", tid, start_pos);
+
+    int current_pos = start_pos + tid;
+    int parent_pos = parent_pos_array[current_pos];
+    float cap = cap_array[current_pos];
+    float delay = delay_array[current_pos];
+
+    // update the current pos load delay and parent's load delay.
+    ldelay_array[current_pos] += cap * delay;
+    // printf("current pos %d ldelay: %f \n", current_pos, cap * delay);
+
+    if (parent_pos != current_pos) {
+      atomicAdd(&ldelay_array[parent_pos], ldelay_array[current_pos]);
+    }
+
+    printf("ldelay array pos %d ldelay: %f \n", parent_pos,
+           ldelay_array[parent_pos]);
+  }
+}
+
+__global__ void update_response(float* resistance_array, float* ldelay_array,
+                                float* beta_array, float* delay_array,
+                                float* impulse_array, int* parent_pos_array,
+                                int start_pos, int num_count) {
+  int tid = blockIdx.x * blockDim.x + threadIdx.x;
+
+  if (tid < num_count) {
+    int current_pos = start_pos + tid;
+    if (current_pos == 0) {
+      beta_array[current_pos] = 0.0;     // root point beta is 0.0.
+      impulse_array[current_pos] = 0.0;  // root point impulse is 0.0.
+    } else {
+      int parent_pos = parent_pos_array[current_pos];
+      float parent_beta = beta_array[parent_pos];
+
+      float resistance = resistance_array[current_pos];
+      float ldelay = ldelay_array[current_pos];
+      float beta = parent_beta + resistance * ldelay;
+      atomicAdd(&beta_array[current_pos], beta);
+      printf("parent pos %d parent beta: %f\n", parent_pos, parent_beta);
+      float delay = delay_array[current_pos];
+      float impulse = 2 * beta - std::pow(delay, 2);
+      atomicAdd(&impulse_array[current_pos], impulse);
+    }
+
+    printf("current pos %d resistance: %f beta: %f impulse:%f\n", current_pos,
+           resistance_array[current_pos], beta_array[current_pos],
+           impulse_array[current_pos]);
+  }
+}
+
+/**
  * @brief init gpu memory.
  *
  * @param rc_network
@@ -206,6 +280,9 @@ void delay_init_gpu_memory(DelayRcNetwork* rc_network) {
   cudaMalloc(&rc_network->_gpu_load_array, node_num * sizeof(float));
   cudaMalloc(&rc_network->_gpu_resistance_array, node_num * sizeof(float));
   cudaMalloc(&rc_network->_gpu_delay_array, node_num * sizeof(float));
+  cudaMalloc(&rc_network->_gpu_ldelay_array, node_num * sizeof(float));
+  cudaMalloc(&rc_network->_gpu_beta_array, node_num * sizeof(float));
+  cudaMalloc(&rc_network->_gpu_impulse_array, node_num * sizeof(float));
   cudaMalloc(&rc_network->_gpu_parent_pos_array, node_num * sizeof(int));
   // for rc point children, use start and end pair to record the children.
   cudaMalloc(&rc_network->_gpu_children_pos_array, 2 * node_num * sizeof(int));
@@ -234,6 +311,9 @@ void delay_free_gpu_memory(DelayRcNetwork* rc_network) {
   cudaFree(rc_network->_gpu_load_array);
   cudaFree(rc_network->_gpu_resistance_array);
   cudaFree(rc_network->_gpu_delay_array);
+  cudaFree(rc_network->_gpu_delay_array);
+  cudaFree(rc_network->_gpu_ldelay_array);
+  cudaFree(rc_network->_gpu_impulse_array);
   cudaFree(rc_network->_gpu_parent_pos_array);
   cudaFree(rc_network->_gpu_children_pos_array);
 }
@@ -272,7 +352,7 @@ void delay_update_point_load(
 
   // set the node load.
   for (auto& node : rc_network->_nodes) {
-    node->_load = rc_network->_load_array[node->_flatten_pos];
+    node->_nload = rc_network->_load_array[node->_flatten_pos];
   }
 }
 
@@ -294,8 +374,8 @@ void delay_update_point_delay(
     int num_blocks =
         (num_count + THREAD_PER_BLOCK_NUM - 1) / THREAD_PER_BLOCK_NUM;
     update_delay<<<num_blocks, THREAD_PER_BLOCK_NUM>>>(
-        resistance_array, load_array, delay_array, parent_pos_array,
-        start_pos, num_count);
+        resistance_array, load_array, delay_array, parent_pos_array, start_pos,
+        num_count);
     start_pos += num_count;
   }
 
@@ -305,7 +385,86 @@ void delay_update_point_delay(
 
   // set the node load.
   for (auto& node : rc_network->_nodes) {
-    node->_delay = rc_network->_delay_array[node->_flatten_pos];
+    node->_ndelay = rc_network->_delay_array[node->_flatten_pos];
+  }
+}
+
+/**
+ * @brief update load delay level by level.
+ *
+ * @param level_to_points
+ */
+void delay_update_point_ldelay(
+    DelayRcNetwork* rc_network,
+    std::vector<std::vector<DelayRcPoint*>>& level_to_points) {
+  auto node_num = rc_network->get_node_num();
+  float* cap_array = rc_network->_gpu_cap_array;
+  float* delay_array = rc_network->_gpu_delay_array;
+  float* ldelay_array = rc_network->_gpu_ldelay_array;
+  int* parent_pos_array = rc_network->_gpu_parent_pos_array;
+
+  // update load of the rc node, sum the children cap.
+  for (int index = level_to_points.size() - 1; index >= 0; --index) {
+    int num_count = level_to_points[index].size();
+    int num_blocks =
+        (num_count + THREAD_PER_BLOCK_NUM - 1) / THREAD_PER_BLOCK_NUM;
+    int start_pos = node_num - num_count;
+    node_num -= num_count;
+
+    update_ldelay<<<num_blocks, THREAD_PER_BLOCK_NUM>>>(
+        cap_array, delay_array, ldelay_array, parent_pos_array, start_pos,
+        num_count);
+
+    cudaDeviceSynchronize();
+  }
+
+  node_num = rc_network->get_node_num();
+
+  cudaMemcpy(rc_network->_ldelay_array.data(), ldelay_array,
+             node_num * sizeof(float), cudaMemcpyDeviceToHost);
+
+  // set the node load delay.
+  for (auto& node : rc_network->_nodes) {
+    node->_ldelay = rc_network->_ldelay_array[node->_flatten_pos];
+  }
+}
+
+/**
+ * @brief the impulse and second moment of the input response for each rctree
+ * level by level.
+ *
+ */
+void delay_update_point_response(
+    DelayRcNetwork* rc_network,
+    std::vector<std::vector<DelayRcPoint*>>& level_to_points) {
+  float* resistance_array = rc_network->_gpu_resistance_array;
+  float* ldelay_array = rc_network->_gpu_ldelay_array;
+  float* beta_array = rc_network->_gpu_beta_array;
+  float* delay_array = rc_network->_gpu_delay_array;
+  float* impulse_array = rc_network->_gpu_impulse_array;
+  int* parent_pos_array = rc_network->_gpu_parent_pos_array;
+
+  int start_pos = 0;
+  for (int index = 0; index < level_to_points.size(); ++index) {
+    int num_count = level_to_points[index].size();
+    int num_blocks =
+        (num_count + THREAD_PER_BLOCK_NUM - 1) / THREAD_PER_BLOCK_NUM;
+    update_response<<<num_blocks, THREAD_PER_BLOCK_NUM>>>(
+        resistance_array, ldelay_array, beta_array, delay_array, impulse_array,
+        parent_pos_array, start_pos, num_count);
+    start_pos += num_count;
+  }
+
+  auto node_num = rc_network->get_node_num();
+  cudaMemcpy(rc_network->_beta_array.data(), beta_array,
+             node_num * sizeof(float), cudaMemcpyDeviceToHost);
+  cudaMemcpy(rc_network->_impulse_array.data(), impulse_array,
+             node_num * sizeof(float), cudaMemcpyDeviceToHost);
+
+  // set the node beta and impulse.
+  for (auto& node : rc_network->_nodes) {
+    node->_beta = rc_network->_beta_array[node->_flatten_pos];
+    node->_impulse = rc_network->_impulse_array[node->_flatten_pos];
   }
 }
 
@@ -318,19 +477,19 @@ void delay_update_point_delay(
  */
 float delay_update_point_load(DelayRcPoint* parent, DelayRcPoint* rc_point) {
   if (rc_point->_is_update_load) {
-    return rc_point->_load;
+    return rc_point->_nload;
   }
 
-  rc_point->_load += rc_point->_cap;
+  rc_point->_nload += rc_point->_cap;
   for (auto& edge : rc_point->_fanout_edges) {
     if (edge->_to != parent) {
-      rc_point->_load += delay_update_point_load(rc_point, edge->_to);
+      rc_point->_nload += delay_update_point_load(rc_point, edge->_to);
     }
   }
 
   rc_point->_is_update_load = true;
 
-  return rc_point->_load;
+  return rc_point->_nload;
 }
 
 /**
@@ -358,8 +517,8 @@ void delay_update_point_delay(DelayRcPoint* parent, DelayRcPoint* rc_point) {
   rc_point->_is_update_delay = true;
   for (auto& edge : rc_point->_fanout_edges) {
     if (edge->_to != parent) {
-      edge->_to->_delay =
-          rc_point->_delay + edge->_resistance * edge->_to->_load;
+      edge->_to->_ndelay =
+          rc_point->_ndelay + edge->_resistance * edge->_to->_nload;
       delay_update_point_delay(rc_point, edge->_to);
     }
   }
@@ -431,10 +590,14 @@ int test() {
 
   delay_update_point_load(&rc_network, level_to_points);
   delay_update_point_delay(&rc_network, level_to_points);
+  delay_update_point_ldelay(&rc_network, level_to_points);
+  delay_update_point_response(&rc_network, level_to_points);
 
   for (auto& node : rc_network._nodes) {
-    std::cout << "node: " << node->_cap << ", load: " << node->_load
-              << ", delay: " << node->_delay << std::endl;
+    std::cout << "node: " << node->_cap << ", load: " << node->_nload
+              << ", delay: " << node->_ndelay << ",ldelay: " << node->_ldelay
+              << ", beta: " << node->_beta << ", impulse: " << node->_impulse
+              << std::endl;
   }
 
   delay_free_gpu_memory(&rc_network);

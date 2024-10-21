@@ -42,9 +42,13 @@ struct DelayRcEdge;
 struct DelayRcPoint {
   const char* _node_name = nullptr;
   float _cap = 0.0;
-  float _load =
-      0.0;  //!< The load is sum of the node cap and downstream node cap.
-  float _delay = 0.0;  //!< The delay is the time from root to this node.
+  float _nload =
+      0.0;  //!< The nload is sum of the node cap and downstream node cap.
+  float _ndelay = 0.0;  //!< The ndelay is the time from root to this node.
+  float _ldelay = 0.0;  //!< The load is sum of the node cap*ndelay and
+  //!< downstream node cap*ndelay.
+  float _beta = 0.0;
+  float _impulse = 0.0;  //!< The delay is the output slew.
 
   std::size_t _flatten_pos = 0;
 
@@ -53,7 +57,8 @@ struct DelayRcPoint {
   bool _is_update_ldelay = false;
   bool _reserved = false;
 
-  DelayRcPoint* _parent = nullptr; //!< For the tree, the root is the top parent.
+  DelayRcPoint* _parent =
+      nullptr;  //!< For the tree, the root is the top parent.
   std::vector<DelayRcEdge*> _fanin_edges;  //!< The fanin edge to the rc point.
   std::vector<DelayRcEdge*>
       _fanout_edges;  //!< The fanout edge from the rc point.
@@ -80,9 +85,13 @@ struct DelayRcNetwork {
   std::vector<std::unique_ptr<DelayRcEdge>> _edges;
 
   std::vector<float> _cap_array;
-  std::vector<float> _load_array; // TODO(to taosimin), load and delay may be use one array.
+  std::vector<float>
+      _load_array;  // TODO(to taosimin), load and delay may be use one array.
   std::vector<float> _resistance_array;
   std::vector<float> _delay_array;
+  std::vector<float> _ldelay_array;
+  std::vector<float> _beta_array;
+  std::vector<float> _impulse_array;
   std::vector<int> _parent_pos_array;
   std::vector<int> _children_pos_array;
 
@@ -90,11 +99,13 @@ struct DelayRcNetwork {
   float* _gpu_load_array = nullptr;
   float* _gpu_resistance_array = nullptr;
   float* _gpu_delay_array = nullptr;
+  float* _gpu_ldelay_array = nullptr;
+  float* _gpu_beta_array = nullptr;
+  float* _gpu_impulse_array = nullptr;
   int* _gpu_parent_pos_array = nullptr;
-  int* _gpu_children_pos_array= nullptr;
+  int* _gpu_children_pos_array = nullptr;
 
   std::size_t get_node_num() { return _nodes.size(); }
-
 };
 
 /**
@@ -106,7 +117,8 @@ struct DelayRcNet {
 };
 
 #if 1
-std::vector<std::vector<DelayRcPoint*>> delay_levelization(DelayRcNetwork* rc_network);
+std::vector<std::vector<DelayRcPoint*>> delay_levelization(
+    DelayRcNetwork* rc_network);
 void delay_update_point_load(std::vector<std::vector<DelayRcPoint*>>);
 
 #else
