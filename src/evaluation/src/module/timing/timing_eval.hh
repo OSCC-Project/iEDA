@@ -5,6 +5,9 @@
  * @date 2024-08-28
  * @brief evaluation with timing & power
  */
+
+#pragma once
+
 #include <memory>
 #include <unordered_map>
 #include <vector>

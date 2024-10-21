@@ -40,7 +40,7 @@ void TestTiming()
   auto summary = timing_api->evalDesign();
   LOG_INFO << ">> Design Timing Evaluation: ";
   for (auto routing_type : {"HPWL", "FLUTE", "SALT", "EGR", "DR"}) {
-    if (!summary.contains(routing_type)) {
+    if (summary.contains(routing_type) == false) {
       continue;
     }
     auto timing_summary = summary[routing_type];
