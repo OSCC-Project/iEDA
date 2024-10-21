@@ -23,7 +23,6 @@
  */
 
 #include "PwrCalcInternalPower.hh"
-
 #include "PwrCalcSPData.hh"
 namespace ipower {
 using ieda::Stats;
@@ -380,11 +379,16 @@ double PwrCalcInternalPower::calcSeqInputPinPower(Instance* inst,
     // rise power
     auto rise_slew = (*the_input_sta_vertex)
                          ->getSlewNs(AnalysisMode::kMax, TransType::kRise);
-    LOG_FATAL_IF(!rise_slew)
+
+    double rise_power_mw = 0.0;
+    LOG_ERROR_IF(!rise_slew)
         << (*the_input_sta_vertex)->getName() << " rise slew is not exist.";
-    double rise_power =
-        internal_power->gatePower(TransType::kRise, *rise_slew, std ::nullopt);
-    double rise_power_mw = lib_cell->convertTablePowerToMw(rise_power);
+    if (rise_slew) {
+      double rise_power = internal_power->gatePower(TransType::kRise,
+                                                    *rise_slew, std ::nullopt);
+      rise_power_mw = lib_cell->convertTablePowerToMw(rise_power);
+    }
+
     // fall power
     auto fall_slew = (*the_input_sta_vertex)
                          ->getSlewNs(AnalysisMode::kMax, TransType::kFall);
