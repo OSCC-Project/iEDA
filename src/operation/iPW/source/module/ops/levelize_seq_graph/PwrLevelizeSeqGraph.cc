@@ -113,9 +113,9 @@ unsigned PwrLevelizeSeq::operator()(PwrSeqGraph* the_seq_graph) {
   }
 
   double memory_delta = stats.memoryDelta();
-  LOG_INFO << "check pipeline loop memory usage " << memory_delta << "MB";
+  LOG_INFO << "levelization memory usage " << memory_delta << "MB";
   double time_delta = stats.elapsedRunTime();
-  LOG_INFO << "check pipeline loop time elapsed " << time_delta << "s";
+  LOG_INFO << "levelization time elapsed " << time_delta << "s";
   return 1;
 }
 

@@ -20,7 +20,7 @@ class UnionAPI
   static void destroyInst();
 
   void initIDB();
-  void initEGR();
+  void initEGR(bool enable_timing = false);
   void initFlute();
 
   void destroyIDB();

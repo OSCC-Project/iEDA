@@ -71,3 +71,23 @@ target_include_directories(wirelength_app
     ${HOME_EVALUATION}/database
 )
 
+# Union Evaluation APP
+add_executable(union_app
+    union_app.cpp
+)
+
+target_link_libraries(union_app
+    PRIVATE
+    eval_wirelength_api
+    eval_timing_api
+    eval_congestion_api
+    eval_union_api
+    idm
+)
+
+target_include_directories(union_app
+    PRIVATE
+    ${HOME_EVALUATION}/api
+    ${HOME_EVALUATION}/database
+)
+

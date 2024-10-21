@@ -48,14 +48,21 @@ void InitEGR::destroyInst()
   }
 }
 
-void InitEGR::runEGR()
+void InitEGR::runEGR(bool enable_timing)
 {
   irt::RTInterface& rt_interface = irt::RTInterface::getInst();
+  auto* idb_layout = dmInst->get_idb_lef_service()->get_layout();
+  auto routing_layers = idb_layout->get_layers()->get_routing_layers();
+  auto logic_layer_name = routing_layers.size() >= 2 ? routing_layers[1]->get_name() : routing_layers[0]->get_name();
+  auto clock_layer_name = routing_layers.size() >= 4 ? routing_layers[routing_layers.size() - 4]->get_name() : logic_layer_name;
   std::map<std::string, std::any> config_map;
   config_map.insert({"-temp_directory_path", _egr_dir_path});
   config_map.insert({"-output_inter_result", 1});
-  config_map.insert({"-bottom_routing_layer", "M2"});  // only for 28nm
-  config_map.insert({"-top_routing_layer", "M7"});     // only for 28nm
+  config_map.insert({"-bottom_routing_layer", logic_layer_name});  // only for 28nm
+  config_map.insert({"-top_routing_layer", clock_layer_name});     // only for 28nm
+  if (enable_timing == true) {
+    config_map.insert({"-enable_timing", 1});
+  }
   rt_interface.initRT(config_map);
   rt_interface.runEGR();
   rt_interface.destroyRT();

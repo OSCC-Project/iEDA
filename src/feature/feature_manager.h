@@ -56,6 +56,7 @@ class FeatureManager
   bool save_summary(std::string path);
   bool save_tools(std::string path, std::string step);
   bool save_eval_map(std::string path, int bin_cnt_x, int bin_cnt_y);
+  bool save_cong_map(std::string stage, std::string csv_dir);
   bool save_net_eval(std::string path);
   // route data
   bool save_route_data(std::string path);

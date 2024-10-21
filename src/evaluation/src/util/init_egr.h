@@ -26,8 +26,9 @@ class InitEGR
   static InitEGR* getInst();
   static void destroyInst();
 
-  void runEGR();
+  void runEGR(bool enable_timing = false);
   std::string getEGRDirPath() { return _egr_dir_path; }
+  void setEGRDirPath(std::string egr_dir_path) { _egr_dir_path = egr_dir_path; }
   float getNetEGRWL(std::string net_name);
 
   void parseGuideFile(const std::string& guide_path);

@@ -434,7 +434,6 @@ void WirelengthEval::evalNetInfo()
     _name_hpwl[net_name] = evalNetHPWL(point_set);
     _name_flute[net_name] = evalNetFLUTE(point_set);
     _name_grwl[net_name] = EVAL_INIT_EGR_INST->getNetEGRWL(net_name) * getDesignUnit();
-    // _name_grwl[net_name] = evalNetEGRWL(EVAL_INIT_EGR_INST->getEGRDirPath() + "/early_router/route.guide", net_name) * getDesignUnit();
   }
 }
 

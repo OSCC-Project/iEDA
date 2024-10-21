@@ -16,7 +16,7 @@ message(STATUS "=================  TO: Debugging Options  =================")
 # set(DEBUG_ITO_EVALUATOR ON)
 
 # source/module/fix_drv
-set(DEBUG_ITO_FIX_DRV ON)
+# set(DEBUG_ITO_FIX_DRV ON)
 
 # source/module/fix_hold
 # set(DEBUG_ITO_FIX_HOLD ON)

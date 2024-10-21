@@ -99,7 +99,9 @@ bool FeatureManager::save_pl_eval_union(std::string jsonl_path, std::string csv_
     return false;
   }
 
-  auto union_db = builder.buildUnionEvalSummary(grid_size);
+  std::string stage = "place";
+
+  auto union_db = builder.buildUnionEvalSummary(grid_size, stage);
   _summary->set_wirelength_eval(union_db.total_wl_summary);
   _summary->set_density_eval(union_db.density_map_summary);
   _summary->set_congestion_eval(union_db.congestion_summary);
@@ -115,8 +117,11 @@ bool FeatureManager::save_pl_eval_union(std::string jsonl_path, std::string csv_
 
   FeatureParser feature_parser(_summary);
   bool jsonl_success = feature_parser.buildSummaryEvalJsonl(jsonl_path);
+  bool csv_success = builder.buildNetEval(csv_path);
 
-  return jsonl_success;
+  builder.destroyEvalTool();
+
+  return jsonl_success && csv_success;
 }
 
 bool FeatureManager::save_cts_eval_union(std::string jsonl_path, std::string csv_path, int32_t grid_size)
@@ -129,7 +134,9 @@ bool FeatureManager::save_cts_eval_union(std::string jsonl_path, std::string csv
     return false;
   }
 
-  auto union_db = builder.buildUnionEvalSummary(grid_size);
+  std::string stage = "cts";
+
+  auto union_db = builder.buildUnionEvalSummary(grid_size, stage);
   _summary->set_wirelength_eval(union_db.total_wl_summary);
   _summary->set_density_eval(union_db.density_map_summary);
   _summary->set_congestion_eval(union_db.congestion_summary);
@@ -146,7 +153,11 @@ bool FeatureManager::save_cts_eval_union(std::string jsonl_path, std::string csv
   FeatureParser feature_parser(_summary);
   bool jsonl_success = feature_parser.buildSummaryEvalJsonl(jsonl_path);
 
-  return jsonl_success;
+  bool csv_success = builder.buildNetEval(csv_path);
+
+  builder.destroyEvalTool();
+
+  return jsonl_success && csv_success;
 }
 
 bool FeatureManager::save_timing_eval_summary(std::string path)
@@ -223,4 +234,9 @@ bool FeatureManager::read_route_data(std::string path)
   return feature_parser.readRouteData(path, &_route_data);
 }
 
+bool FeatureManager::save_cong_map(std::string stage, std::string csv_dir)
+{
+  FeatureParser feature_parser;
+  return feature_parser.buildCongMap(stage, csv_dir);
+}
 }  // namespace ieda_feature

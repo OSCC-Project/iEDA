@@ -24,8 +24,8 @@ class TimingAPI
 
   static TimingAPI* getInst();
 
-  static void runSTA();
-  static void evalTiming(const std::string& routing_type, const bool& rt_done = false);
+  void runSTA();
+  void evalTiming(const std::string& routing_type, const bool& rt_done = false);
 
   static void destroyInst();
 
@@ -45,6 +45,8 @@ class TimingAPI
   void updateTiming(const std::vector<TimingNet*>& timing_net_list, int32_t dbu_unit);
   void updateTiming(const std::vector<TimingNet*>& timing_net_list, const std::vector<std::string>& name_list, const int& propagation_level,
                     int32_t dbu_unit);
+
+  bool isClockNet(const std::string& net_name) const;
 
  private:
   static TimingAPI* _timing_api;

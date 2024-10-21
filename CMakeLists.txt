@@ -62,6 +62,11 @@ if(SANITIZER)
     message("address sanitizer load")
 endif()
 
+set(USE_GPU OFF)
+if (USE_GPU)
+    add_definitions(-DUSE_GPU)
+endif()
+
 include(cmake/setting.cmake)
 include(cmake/third_party.cmake)
 include(cmake/operation/ista.cmake)
