@@ -2655,11 +2655,10 @@ void Sta::dumpNetlistData() {
  */
 void Sta::dumpGraphData(const char* graph_file) {
   StaDumpYaml dump_data;
+  dump_data.set_yaml_file_path(graph_file);
 
   auto& the_graph = get_graph();
   the_graph.exec(dump_data);
-
-  dump_data.printText(graph_file);
 }
 
 /**

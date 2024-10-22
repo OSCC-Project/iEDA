@@ -41,8 +41,14 @@ class StaDumpYaml : public StaFunc {
 
   void printText(const char* file_name);
 
+  void set_yaml_file_path(const char* yaml_file_path) {
+    _yaml_file_path = yaml_file_path;
+  }
+  auto& get_yaml_file_path() { return _yaml_file_path; }
+
  protected:
   YAML::Node _node;
+  std::string _yaml_file_path;
 };
 
 /**

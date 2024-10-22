@@ -206,16 +206,18 @@ unsigned StaDumpYaml::operator()(StaGraph* the_graph) {
   StaVertex* the_vertex;
   FOREACH_VERTEX(the_graph, the_vertex) { 
     the_vertex->exec(*this); 
-    LOG_INFO_EVERY_N(10000) << "dump 10000 vertexes";
+    LOG_INFO_EVERY_N(10000) << "dump 10000 vertexes ...";
+    break;
   }
 
   StaArc* the_arc;
   FOREACH_ARC(the_graph, the_arc) { 
     the_arc->exec(*this);
-    LOG_INFO_EVERY_N(10000) << "dump 10000 arcs";
+    LOG_INFO_EVERY_N(10000) << "dump 10000 arcs ...";
+    break;
   }
 
-  // printText("graph.yaml");
+  printText(_yaml_file_path.c_str());
 
   LOG_INFO << "dump graph yaml end";
   return 1;
@@ -230,6 +232,8 @@ void StaDumpYaml::printText(const char* file_name) {
   std::ofstream file(file_name, std::ios::trunc);
   file << _node << std::endl;
   file.close();
+
+  LOG_INFO << "output yaml file path: " << file_name;
 }
 
 /**
