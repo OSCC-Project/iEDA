@@ -190,15 +190,15 @@ void DRCEngine::writeTask(DETask& de_task)
               flag = "    NEW";
             }
           } else {
-            if (RTUTIL.isHorizontal(first_coord, second_coord)) {
-              std::string layer_name = routing_layer_list[first_layer_idx].get_layer_name();
-              RTUTIL.pushStream(def_file, flag, " ", layer_name, " ( ", first_coord.get_x(), " ", first_coord.get_y(), " ) ( ",
-                                second_coord.get_x(), " * )", "\n");
-              flag = "    NEW";
-            } else if (RTUTIL.isVertical(first_coord, second_coord)) {
-              std::string layer_name = routing_layer_list[first_layer_idx].get_layer_name();
-              RTUTIL.pushStream(def_file, flag, " ", layer_name, " ( ", first_coord.get_x(), " ", first_coord.get_y(), " ) ( * ",
-                                second_coord.get_y(), " )", "\n");
+            for (NetShape& net_shape : RTDM.getNetShapeList(net_idx, *segment)) {
+              if (!net_shape.get_is_routing()) {
+                RTLOG.error(Loc::current(), "The net_shape is not routing!");
+              }
+              std::string layer_name = routing_layer_list[net_shape.get_layer_idx()].get_layer_name();
+              PlanarCoord mid_point = net_shape.getMidPoint();
+              RTUTIL.pushStream(def_file, flag, " ", layer_name, " ( ", mid_point.get_x(), " ", mid_point.get_y(), " ) RECT ( ",
+                                net_shape.get_ll_x() - mid_point.get_x(), " ", net_shape.get_ll_y() - mid_point.get_y(), " ",
+                                net_shape.get_ur_x() - mid_point.get_x(), " ", net_shape.get_ur_y() - mid_point.get_y(), " )", "\n");
               flag = "    NEW";
             }
           }
