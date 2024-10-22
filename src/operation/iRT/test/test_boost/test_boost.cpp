@@ -391,7 +391,7 @@ class RTUtil
      * 下面每个字母表示一个独立的直角多边形
      * 求解(A ∪ B) - (D ∪ E ∪ F)
      * 转((A - D) ∩ (A - E) ∩ (A - F)) ∪ ((B - D) ∩ (B - E) ∩ (B - F))
-     * 其中利用(A - D)、(A - E)等式中结果不可能出现线，实现boost结果传递
+     * 其中利用(A - D)、(A - E)等式中结果不可能出现线,实现boost结果传递
      */
     // 将输入解析
     // 其中master_poly_list为(A ∪ B)
@@ -417,7 +417,7 @@ class RTUtil
             BGMultiPolyDBL diff_multi_poly;
             bg::difference(master_poly, rect_poly, diff_multi_poly);
             if (diff_multi_poly.empty()) {
-              // 当(A - D)为空，后续(A - D) ∩ (A - E) ∩ (A - F)结果为空，直接跳过
+              // 当(A - D)为空,后续(A - D) ∩ (A - E) ∩ (A - F)结果为空,直接跳过
               diff_multi_poly_list.clear();
               break;
             } else {
@@ -574,7 +574,7 @@ class RTUtil
       master_poly += gtl::rectangle_data<int32_t>(master.get_ll_x(), master.get_ll_y(), master.get_ur_x(), master.get_ur_y());
     }
     if (!is_open) {
-      // 提取点矩形，线段矩形
+      // 提取点矩形,线段矩形
       std::vector<gtl::rectangle_data<int32_t>> gtl_rect_list;
       gtl::get_rectangles(gtl_rect_list, master_poly, gtl::HORIZONTAL);
       gtl::get_rectangles(gtl_rect_list, master_poly, gtl::VERTICAL);

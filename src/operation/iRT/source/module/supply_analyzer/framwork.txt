@@ -1,5 +1,5 @@
 initSAModel:初始化model
 buildSupplySchedule:构建将要计算的Schedule
-analyzeSupply:分析GCell之间的形状等特征，确定supply
+analyzeSupply:分析GCell之间的形状等特征,确定supply
 
 

@@ -108,10 +108,18 @@ TANet TrackAssigner::convertToTANet(Net& net)
 void TrackAssigner::setTAParameter(TAModel& ta_model)
 {
   int32_t cost_unit = RTDM.getOnlyPitch();
+  double prefer_wire_unit = 1;
+  double non_prefer_wire_unit = 1.5;
+  double via_unit = cost_unit;
+  double fixed_rect_unit = 4 * non_prefer_wire_unit * cost_unit;
+  double routed_rect_unit = 2 * via_unit;
+  double violation_unit = 4 * non_prefer_wire_unit * cost_unit;
   /**
    * prefer_wire_unit, fixed_rect_unit, routed_rect_unit, violation_unit, max_routed_times
    */
-  TAParameter ta_parameter(1, 8 * cost_unit, 2 * cost_unit, 4 * cost_unit, 4);
+  // clang-format off
+    TAParameter ta_parameter(prefer_wire_unit, fixed_rect_unit, routed_rect_unit, violation_unit, 4);
+  // clang-format on
   RTLOG.info(Loc::current(), "prefer_wire_unit: ", ta_parameter.get_prefer_wire_unit());
   RTLOG.info(Loc::current(), "fixed_rect_unit: ", ta_parameter.get_fixed_rect_unit());
   RTLOG.info(Loc::current(), "routed_rect_unit: ", ta_parameter.get_routed_rect_unit());
@@ -622,7 +630,7 @@ void TrackAssigner::expandSearching(TAPanel& ta_panel)
     if (neighbor_node->isOpen() && know_cost < neighbor_node->get_known_cost()) {
       neighbor_node->set_known_cost(know_cost);
       neighbor_node->set_parent_node(path_head_node);
-      // 对优先队列中的值修改了，需要重新建堆
+      // 对优先队列中的值修改了,需要重新建堆
       std::make_heap(open_queue.begin(), open_queue.end(), CmpTANodeCost());
     } else if (neighbor_node->isNone()) {
       neighbor_node->set_known_cost(know_cost);
@@ -679,7 +687,7 @@ void TrackAssigner::resetStartAndEnd(TAPanel& ta_panel)
   TANode* path_head_node = ta_panel.get_path_head_node();
   int32_t end_node_list_idx = ta_panel.get_end_node_list_idx();
 
-  // 对于抵达的终点pin，只保留到达的node
+  // 对于抵达的终点pin,只保留到达的node
   end_node_list_list[end_node_list_idx].clear();
   end_node_list_list[end_node_list_idx].push_back(path_head_node);
 
@@ -695,7 +703,7 @@ void TrackAssigner::resetStartAndEnd(TAPanel& ta_panel)
     }
   }
   if (start_node_list_list.size() == 1) {
-    // 初始化时，要把start_node_list_list的pin只留一个ap点
+    // 初始化时,要把start_node_list_list的pin只留一个ap点
     // 后续只要将end_node_list_list的pin保留一个ap点
     start_node_list_list.front().clear();
     start_node_list_list.front().push_back(path_node);
@@ -944,40 +952,44 @@ std::vector<Violation> TrackAssigner::getCostViolationList(TAPanel& ta_panel)
       break;
     }
   }
-  std::map<int32_t, std::vector<Segment<LayerCoord>*>> net_env_result_map;
+  std::map<int32_t, std::vector<Segment<LayerCoord>*>> net_result_map;
   for (auto& [net_idx, segment_set] : ta_panel.get_net_access_result_map()) {
     for (Segment<LayerCoord>* segment : segment_set) {
-      net_env_result_map[net_idx].push_back(segment);
+      net_result_map[net_idx].push_back(segment);
     }
   }
   for (auto& [net_idx, segment_set] : ta_panel.get_net_detailed_result_map()) {
     for (Segment<LayerCoord>* segment : segment_set) {
-      net_env_result_map[net_idx].push_back(segment);
+      net_result_map[net_idx].push_back(segment);
     }
   }
-  std::map<int32_t, std::vector<EXTLayerRect*>> net_env_patch_map;
-  for (auto& [net_idx, patch_set] : ta_panel.get_net_access_patch_map()) {
-    for (EXTLayerRect* patch : patch_set) {
-      net_env_patch_map[net_idx].push_back(patch);
-    }
-  }
-  std::map<int32_t, std::vector<Segment<LayerCoord>>> net_check_result_map;
   for (auto& [net_idx, task_result_map] : ta_panel.get_net_task_result_map()) {
     for (auto& [task_idx, segment_list] : task_result_map) {
       for (Segment<LayerCoord>& segment : segment_list) {
-        net_check_result_map[net_idx].emplace_back(segment);
+        net_result_map[net_idx].emplace_back(&segment);
       }
     }
   }
+  std::map<int32_t, std::vector<EXTLayerRect*>> net_patch_map;
+  for (auto& [net_idx, patch_set] : ta_panel.get_net_access_patch_map()) {
+    for (EXTLayerRect* patch : patch_set) {
+      net_patch_map[net_idx].push_back(patch);
+    }
+  }
+  std::set<int32_t> need_checked_net_set;
+  for (TATask* ta_task : ta_panel.get_ta_task_list()) {
+    need_checked_net_set.insert(ta_task->get_net_idx());
+  }
+
   DETask de_task;
   de_task.set_process_type_set({DEProcessType::kRoutingCost, DEProcessType::kCutCost});
   de_task.set_top_name(top_name);
   de_task.set_check_region(check_region);
   de_task.set_env_shape_list(env_shape_list);
   de_task.set_net_pin_shape_map(net_pin_shape_map);
-  de_task.set_net_env_result_map(net_env_result_map);
-  de_task.set_net_env_patch_map(net_env_patch_map);
-  de_task.set_net_check_result_map(net_check_result_map);
+  de_task.set_net_result_map(net_result_map);
+  de_task.set_net_patch_map(net_patch_map);
+  de_task.set_need_checked_net_set(need_checked_net_set);
   return RTDE.getViolationList(de_task);
 }
 

@@ -89,6 +89,9 @@ class DetailedRouter
   std::vector<Segment<LayerCoord>> getRoutingSegmentList(DRBox& dr_box);
   void patchSingleTask(DRBox& dr_box);
   std::vector<LayerRect> getMinimumAreaPatchList(DRBox& dr_box);
+  std::vector<std::vector<LayerRect>> getCandidatePatchListList(DRBox& dr_box);
+  std::vector<LayerRect> getCandidatePatchList(LayerRect& object_rect, int32_t patch_area);
+  bool existViolation(DRBox& dr_box, LayerRect& candidate_patch);
   std::vector<LayerRect> getMinStepPatchList(DRBox& dr_box);
   std::vector<Violation> getPatchViolationList(DRBox& dr_box);
   void updateTaskPatch(DRBox& dr_box);
