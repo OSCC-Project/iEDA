@@ -119,7 +119,7 @@ unsigned StaDumpYaml::operator()(StaVertex* the_vertex) {
         src_clock_data ? src_clock_data : 0,
         clock_data->get_prop_clock()->get_clock_name());
 
-    node5.push_back(data_str);
+    node5.push_back(data_str); 
   }
 
   YAML::Node node6;
@@ -204,12 +204,18 @@ unsigned StaDumpYaml::operator()(StaGraph* the_graph) {
   LOG_INFO << "dump graph arc total arc " << the_graph->numArc();
 
   StaVertex* the_vertex;
-  FOREACH_VERTEX(the_graph, the_vertex) { the_vertex->exec(*this); }
+  FOREACH_VERTEX(the_graph, the_vertex) { 
+    the_vertex->exec(*this); 
+    LOG_INFO_EVERY_N(10000) << "dump 10000 vertexes";
+  }
 
   StaArc* the_arc;
-  FOREACH_ARC(the_graph, the_arc) { the_arc->exec(*this); }
+  FOREACH_ARC(the_graph, the_arc) { 
+    the_arc->exec(*this);
+    LOG_INFO_EVERY_N(10000) << "dump 10000 arcs";
+  }
 
-  printText("graph.yaml");
+  // printText("graph.yaml");
 
   LOG_INFO << "dump graph yaml end";
   return 1;

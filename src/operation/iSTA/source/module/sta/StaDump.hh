@@ -46,7 +46,7 @@ class StaDumpYaml : public StaFunc {
 };
 
 /**
- * @brief The class for dump delay data in yaml text file for traing data.
+ * @brief The class for dump delay data in yaml text file for training data.
  *
  */
 class StaDumpDelayYaml : public StaDumpYaml {

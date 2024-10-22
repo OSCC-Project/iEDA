@@ -2646,7 +2646,20 @@ void Sta::dumpNetlistData() {
   LOG_INFO << "cell_types.txt written to "
            << std::string(design_work_space) + std::string("/cell_types.txt")
            << std::endl;
-  outputJson.close();
+  outputTxt.close();
+}
+
+/**
+ * @brief dump timing graph data.
+ * 
+ */
+void Sta::dumpGraphData(const char* graph_file) {
+  StaDumpYaml dump_data;
+
+  auto& the_graph = get_graph();
+  the_graph.exec(dump_data);
+
+  dump_data.printText(graph_file);
 }
 
 /**
