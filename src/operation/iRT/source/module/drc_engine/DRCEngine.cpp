@@ -52,8 +52,8 @@ void DRCEngine::destroyInst()
 std::vector<Violation> DRCEngine::getViolationList(DETask& de_task)
 {
   // return {};
-  // return getViolationListBySelf(de_task);
-  return getViolationListByOther(de_task);
+  return getViolationListBySelf(de_task);
+  // return getViolationListByOther(de_task);
 }
 
 // private

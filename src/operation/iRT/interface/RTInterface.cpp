@@ -914,6 +914,9 @@ void RTInterface::outputNetList()
   if (idb_net_list == nullptr) {
     RTLOG.error(Loc::current(), "The idb net list is empty!");
   }
+  for (idb::IdbNet* idb_net : idb_net_list->get_net_list()) {
+    idb_net->clear_wire_list();
+  }
   for (auto& [net_idx, idb_segment_list] : net_idb_segment_map) {
     std::string net_name = net_list[net_idx].get_net_name();
     idb::IdbNet* idb_net = idb_net_list->find_net(net_name);
