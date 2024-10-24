@@ -18,22 +18,14 @@
 cmake_minimum_required(VERSION 3.11)
 project(iEDA)
 
-# option setting
-option(BUILD_PR_FLOW "If ON, build PR flow." ON)
 option(BUILD_STATIC_LIB "If ON, build static lib." ON)
 
-if(NOT BUILD_STATIC_LIB)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
-endif()
-
-option(BUILD_PYTHON "If ON, build python interface." OFF)
+# option(BUILD_PYTHON "If ON, build python lib." ON)
 if(BUILD_PYTHON)
     set(BUILD_STATIC_LIB OFF)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
 endif()
 option(BUILD_GUI "If ON, build GUI." OFF)
-
-# add_subdirectory(src/third_party/mt-kahypar)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_VERBOSE_MAKEFILE OFF)
@@ -42,12 +34,9 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(FORT_ENABLE_TESTING OFF CACHE INTERNAL "") # Disable building tests and examples in libfort project
 
-# SET(CMAKE_CXX_FLAGS "$ENV{CXXFLAGS} -fPIC")
 set(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -Wall")
 set(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -O0 -Wall -g2 -ggdb")
 set(CMAKE_BUILD_TYPE "Release")
-# set(CMAKE_BUILD_TYPE "Debug")
-#set(BUILD_SHARED_LIBS ON)
 
 if(NOT DEFINED CMD_BUILD)
     set(SANITIZER OFF)
