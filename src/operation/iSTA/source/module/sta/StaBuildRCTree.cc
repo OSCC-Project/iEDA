@@ -44,7 +44,6 @@ StaBuildRCTree::StaBuildRCTree(std::string&& spef_file_name,
 /**
  * @brief Create the rc net for delay calculation.
  *
- * @param rc_net_name net name.
  * @param net
  * @return std::unique_ptr<RcNet>
  */
@@ -58,6 +57,17 @@ std::unique_ptr<RcNet> StaBuildRCTree::createRcNet(Net* net) {
     rc_net = std::make_unique<RcNet>(net);
   }
   return rc_net;
+}
+
+/**
+ * @brief Create the delay rc net for delay calculation.
+ *
+ * @param net
+ * @return std::unique_ptr<DelayRcNet>
+ */
+std::unique_ptr<DelayRcNet> StaBuildRCTree::createDelayRcNet(Net* net) {
+  std::unique_ptr<DelayRcNet> delay_rc_net = std::make_unique<DelayRcNet>();
+  return delay_rc_net;
 }
 
 /**
@@ -118,8 +128,9 @@ unsigned StaBuildRCTree::operator()(StaGraph* the_graph) {
       }
 
       if (rust_spef_net->_caps.len > 100) {
-        LOG_INFO_FIRST_N(10) << "beyond node num 100 net name " << rust_spef_net->_name
-                 << " node num " << rust_spef_net->_caps.len;
+        LOG_INFO_FIRST_N(10)
+            << "beyond node num 100 net name " << rust_spef_net->_name
+            << " node num " << rust_spef_net->_caps.len;
       }
 
       // enqueue and store future

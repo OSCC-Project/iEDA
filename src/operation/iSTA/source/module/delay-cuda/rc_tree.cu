@@ -468,6 +468,30 @@ void delay_update_point_response(
   }
 }
 
+void update_rc_timing(DelayRcNet* rc_net) {
+  auto& rc_network = rc_net->_rc_network;
+  auto level_to_points = delay_levelization(&rc_network);
+  delay_change_rc_tree_to_array(&rc_network, level_to_points);
+  delay_init_gpu_memory(&rc_network);
+
+  delay_update_point_load(&rc_network, level_to_points);
+  delay_update_point_delay(&rc_network, level_to_points);
+  delay_update_point_ldelay(&rc_network, level_to_points);
+  delay_update_point_response(&rc_network, level_to_points);
+
+  //   // for debug
+  //   // for (auto& node : rc_network._nodes) {
+  //   //   std::cout << "node: " << node->_cap << ", load: " << node->_nload
+  //   //             << ", delay: " << node->_ndelay << ",ldelay: " <<
+  //   node->_ldelay
+  //   //             << ", beta: " << node->_beta << ", impulse: " <<
+  //   node->_impulse
+  //   //             << std::endl;
+  //   // }
+
+  delay_free_gpu_memory(&rc_network);
+}
+
 #else
 
 /**

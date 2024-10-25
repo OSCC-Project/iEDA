@@ -31,6 +31,14 @@
 #include <variant>
 #include <vector>
 
+#include "netlist/Net.hh"
+#include "string/Str.hh"
+
+using ieda::Str;
+using ista::CapacitiveUnit;
+using ista::Net;
+using ista::ResistanceUnit;
+
 namespace istagpu {
 
 struct DelayRcEdge;
@@ -109,17 +117,58 @@ struct DelayRcNetwork {
 };
 
 /**
+ * @brief The spef common head information.
+ *
+ */
+class DelayRcNetCommonInfo {
+ public:
+  void set_spef_cap_unit(const std::string& spef_cap_unit) {
+    // The unit is 1.0 FF, fix me
+    if (Str::contain(spef_cap_unit.c_str(), "1 FF") ||
+        Str::contain(spef_cap_unit.c_str(), "1.0 FF")) {
+      _spef_cap_unit = CapacitiveUnit::kFF;
+    } else {
+      _spef_cap_unit = CapacitiveUnit::kPF;
+    }
+  }
+  void set_spef_resistance_unit(const std::string& spef_resistance_unit) {
+    // The unit is 1.0 OHM, fix me
+    if (Str::contain(spef_resistance_unit.c_str(), "1 OHM") ||
+        Str::contain(spef_resistance_unit.c_str(), "1.0 OHM")) {
+      _spef_resistance_unit = ResistanceUnit::kOHM;
+    } else {
+      _spef_resistance_unit = ResistanceUnit::kOHM;
+    }
+  }
+  CapacitiveUnit get_spef_cap_unit() { return _spef_cap_unit; }
+  ResistanceUnit get_spef_resistance_unit() { return _spef_resistance_unit; }
+
+ private:
+  CapacitiveUnit _spef_cap_unit;
+  ResistanceUnit _spef_resistance_unit;
+};
+
+/**
  * @brief The rc net wrap for rc tree.
  *
  */
 struct DelayRcNet {
+  DelayRcNet() {};
+  explicit DelayRcNet(Net* net) : _net(net) {}
+
+  Net* _net;
   DelayRcNetwork _rc_network;
+  static std::unique_ptr<DelayRcNetCommonInfo> _rc_net_common_info;
 };
 
 #if 1
 std::vector<std::vector<DelayRcPoint*>> delay_levelization(
     DelayRcNetwork* rc_network);
 void delay_update_point_load(std::vector<std::vector<DelayRcPoint*>>);
+void delay_update_point_delay(std::vector<std::vector<DelayRcPoint*>>);
+void delay_update_point_ldelay(std::vector<std::vector<DelayRcPoint*>>);
+void delay_update_point_impulse(std::vector<std::vector<DelayRcPoint*>>);
+void update_rc_timing(DelayRcNet* rc_net);
 
 #else
 float delay_update_point_load(DelayRcPoint* parent, DelayRcPoint* rc_point);

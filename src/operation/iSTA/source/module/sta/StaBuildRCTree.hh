@@ -28,8 +28,10 @@
 #include <string>
 
 #include "StaFunc.hh"
+#include "delay-cuda/rc_tree.cuh"
 
 class RustSpefNet;
+using namespace istagpu;
 
 namespace ista {
 
@@ -47,6 +49,7 @@ class StaBuildRCTree : public StaFunc {
 
   std::unique_ptr<RcNet> createRcNet(Net* net);
   DelayCalcMethod get_calc_method() { return _calc_method; }
+  std::unique_ptr<DelayRcNet> createDelayRcNet(Net* net);
 
   void printYaml(RustSpefNet& spef_net);
   void printYamlText(const char* file_name);
