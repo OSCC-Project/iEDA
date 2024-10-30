@@ -982,7 +982,7 @@ std::vector<Violation> TrackAssigner::getCostViolationList(TAPanel& ta_panel)
   }
 
   DETask de_task;
-  de_task.set_process_type_set({DEProcessType::kRoutingCost, DEProcessType::kCutCost});
+  de_task.set_process_type_set({DEProcessType::kCost});
   de_task.set_top_name(top_name);
   de_task.set_check_region(check_region);
   de_task.set_env_shape_list(env_shape_list);

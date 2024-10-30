@@ -46,12 +46,14 @@ class DRCEngine
   DRCEngine& operator=(const DRCEngine& other) = delete;
   DRCEngine& operator=(DRCEngine&& other) = delete;
   // function
-  std::vector<Violation> getViolationListBySelf(DETask& de_task);
+  void getViolationListBySelf(DETask& de_task);
   void buildTask(DETask& de_task);
   void writeTask(DETask& de_task);
   void readTask(DETask& de_task);
-  std::map<ViolationType, DEProcessType>& getViolationProcessMap();
-  std::vector<Violation> getViolationListByOther(DETask& de_task);
+  void getViolationListByOther(DETask& de_task);
+  void filterViolationList(DETask& de_task);
+  DEProcessType getDEProcessType(Violation& violation);
+  std::vector<std::pair<int32_t, bool>> getLayerRoutingList(Violation& violation);
 };
 
 }  // namespace irt

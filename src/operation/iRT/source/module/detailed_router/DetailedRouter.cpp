@@ -938,7 +938,7 @@ std::vector<Violation> DetailedRouter::getPatchViolationList(DRBox& dr_box)
   need_checked_net_set.insert(curr_net_idx);
 
   DETask de_task;
-  de_task.set_process_type_set({DEProcessType::kRoutingPatch});
+  de_task.set_process_type_set({DEProcessType::kPatch});
   de_task.set_top_name(top_name);
   de_task.set_check_region(check_region);
   de_task.set_net_pin_shape_map(net_pin_shape_map);
@@ -1184,7 +1184,7 @@ std::vector<Violation> DetailedRouter::getCostViolationList(DRBox& dr_box)
   }
 
   DETask de_task;
-  de_task.set_process_type_set({DEProcessType::kRoutingCost, DEProcessType::kCutCost});
+  de_task.set_process_type_set({DEProcessType::kCost});
   de_task.set_top_name(top_name);
   de_task.set_check_region(check_region);
   de_task.set_env_shape_list(env_shape_list);

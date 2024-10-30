@@ -51,21 +51,23 @@ void DRCEngine::destroyInst()
 
 std::vector<Violation> DRCEngine::getViolationList(DETask& de_task)
 {
-  // return {};
-  return getViolationListBySelf(de_task);
-  // return getViolationListByOther(de_task);
+  // getViolationListByOther(de_task);
+
+  getViolationListBySelf(de_task);
+  filterViolationList(de_task);
+  
+  return de_task.get_violation_list();
 }
 
 // private
 
 DRCEngine* DRCEngine::_de_instance = nullptr;
 
-std::vector<Violation> DRCEngine::getViolationListBySelf(DETask& de_task)
+void DRCEngine::getViolationListBySelf(DETask& de_task)
 {
   buildTask(de_task);
   writeTask(de_task);
   readTask(de_task);
-  return de_task.get_violation_list();
 }
 
 void DRCEngine::buildTask(DETask& de_task)
@@ -253,9 +255,6 @@ void DRCEngine::readTask(DETask& de_task)
   int32_t micron_dbu = RTDM.getDatabase().get_micron_dbu();
   ScaleAxis& gcell_axis = RTDM.getDatabase().get_gcell_axis();
   std::map<std::string, int32_t>& routing_layer_name_to_idx_map = RTDM.getDatabase().get_routing_layer_name_to_idx_map();
-  std::map<int32_t, std::vector<int32_t>>& routing_to_adjacent_cut_map = RTDM.getDatabase().get_routing_to_adjacent_cut_map();
-
-  std::map<ViolationType, DEProcessType>& violation_process_map = getViolationProcessMap();
 
   std::string& top_name = de_task.get_top_name();
   std::string& finished_file_path = de_task.get_finished_file_path();
@@ -277,90 +276,57 @@ void DRCEngine::readTask(DETask& de_task)
     std::ifstream* violation_file = RTUTIL.getInputFileStream(violation_file_path);
 
     std::string new_line;
-    std::string drc_rule_name;
-    std::set<std::string> net_name_set;
-    std::string layer_name;
-    std::string ll_x_string;
-    std::string ll_y_string;
-    std::string ur_x_string;
-    std::string ur_y_string;
     while (std::getline(*violation_file, new_line)) {
       if (new_line.empty()) {
         continue;
       }
+      std::string drc_rule_name;
+      std::set<std::string> net_name_set;
+      std::string layer_name;
+      std::string ll_x_string;
+      std::string ll_y_string;
+      std::string ur_x_string;
+      std::string ur_y_string;
       // 读取
-      {
-        drc_rule_name = new_line;
-        std::getline(*violation_file, new_line);
-        std::istringstream net_name_set_stream(new_line);
-        std::string net_name;
-        while (std::getline(net_name_set_stream, net_name, ',')) {
-          if (!net_name.empty()) {
-            net_name_set.insert(net_name);
-          }
+      drc_rule_name = new_line;
+      std::getline(*violation_file, new_line);
+      std::istringstream net_name_set_stream(new_line);
+      std::string net_name;
+      while (std::getline(net_name_set_stream, net_name, ',')) {
+        if (!net_name.empty()) {
+          net_name_set.insert(net_name);
         }
-        std::getline(*violation_file, new_line);
-        std::istringstream layer_bound_stream(new_line);
-        layer_bound_stream >> layer_name >> ll_x_string >> ll_y_string >> ur_x_string >> ur_y_string;
       }
+      std::getline(*violation_file, new_line);
+      std::istringstream layer_bound_stream(new_line);
+      layer_bound_stream >> layer_name >> ll_x_string >> ll_y_string >> ur_x_string >> ur_y_string;
       // 解析
-      {
-        ViolationType violation_type = GetViolationTypeByName()(drc_rule_name);
-        if (!RTUTIL.exist(violation_process_map, violation_type)) {
-          // 未知规则舍弃
-          RTLOG.warn(Loc::current(), "Unknow rule! '", drc_rule_name, "'");
-          continue;
-        }
-        DEProcessType process_type = violation_process_map[violation_type];
-        if (!RTUTIL.exist(de_task.get_process_type_set(), process_type)) {
-          // 非处理类型舍弃
-          continue;
-        }
-        PlanarRect real_rect(static_cast<int32_t>(std::round(std::stod(ll_x_string) * micron_dbu)),
-                             static_cast<int32_t>(std::round(std::stod(ll_y_string) * micron_dbu)),
-                             static_cast<int32_t>(std::round(std::stod(ur_x_string) * micron_dbu)),
-                             static_cast<int32_t>(std::round(std::stod(ur_y_string) * micron_dbu)));
-        if (!RTUTIL.isOverlap(de_task.get_check_region(), real_rect)) {
-          // 不在检查区域内的舍弃
-          continue;
-        }
-        std::set<int32_t> violation_net_set;
-        for (const std::string& net_name : net_name_set) {
-          int32_t net_idx = std::stoi(RTUTIL.splitString(net_name, '_').back());
-          if (net_idx == -1 || RTUTIL.exist(de_task.get_need_checked_net_set(), net_idx)) {
-            violation_net_set.insert(net_idx);
-          }
-        }
-        if (violation_net_set.empty() || (violation_net_set.size() == 1 && *violation_net_set.begin() == -1)) {
-          // net不是布线net的舍弃
-          continue;
-        }
-        std::vector<std::pair<int32_t, bool>> layer_routing_list;
-        int32_t routing_layer_idx = routing_layer_name_to_idx_map[layer_name];
-        layer_routing_list.emplace_back(routing_layer_idx, true);
-        if (process_type == DEProcessType::kCutCost) {
-          for (int32_t cut_layer_idx : routing_to_adjacent_cut_map[routing_layer_idx]) {
-            layer_routing_list.emplace_back(cut_layer_idx, false);
-          }
-        }
-        if (false) {
-          // 因为不可布线层需要打via,对于不在可布线层的违例也有意义
-          continue;
-        }
-        for (std::pair<int32_t, bool> layer_routing : layer_routing_list) {
-          EXTLayerRect ext_layer_rect;
-          ext_layer_rect.set_real_rect(real_rect);
-          ext_layer_rect.set_grid_rect(RTUTIL.getClosedGCellGridRect(ext_layer_rect.get_real_rect(), gcell_axis));
-          ext_layer_rect.set_layer_idx(layer_routing.first);
-
-          Violation violation;
-          violation.set_violation_type(violation_type);
-          violation.set_violation_shape(ext_layer_rect);
-          violation.set_is_routing(layer_routing.second);
-          violation.set_violation_net_set(violation_net_set);
-          de_task.get_violation_list().push_back(violation);
-        }
+      ViolationType violation_type = GetViolationTypeByName()(drc_rule_name);
+      if (violation_type == ViolationType::kNone) {
+        RTLOG.warn(Loc::current(), "Unknow rule! '", drc_rule_name, "'");
       }
+      PlanarRect real_rect(static_cast<int32_t>(std::round(std::stod(ll_x_string) * micron_dbu)),
+                           static_cast<int32_t>(std::round(std::stod(ll_y_string) * micron_dbu)),
+                           static_cast<int32_t>(std::round(std::stod(ur_x_string) * micron_dbu)),
+                           static_cast<int32_t>(std::round(std::stod(ur_y_string) * micron_dbu)));
+      EXTLayerRect ext_layer_rect;
+      ext_layer_rect.set_real_rect(real_rect);
+      ext_layer_rect.set_grid_rect(RTUTIL.getClosedGCellGridRect(ext_layer_rect.get_real_rect(), gcell_axis));
+      ext_layer_rect.set_layer_idx(routing_layer_name_to_idx_map[layer_name]);
+
+      std::set<int32_t> violation_net_set;
+      for (const std::string& net_name : net_name_set) {
+        violation_net_set.insert(std::stoi(RTUTIL.splitString(net_name, '_').back()));
+      }
+      if (violation_net_set.size() > 2) {
+        RTLOG.error(Loc::current(), "The violation_net_set size > 2!");
+      }
+      Violation violation;
+      violation.set_violation_type(violation_type);
+      violation.set_violation_shape(ext_layer_rect);
+      violation.set_is_routing(true);
+      violation.set_violation_net_set(violation_net_set);
+      de_task.get_violation_list().push_back(violation);
     }
     RTUTIL.closeFileStream(violation_file);
   } else {
@@ -370,51 +336,7 @@ void DRCEngine::readTask(DETask& de_task)
   RTUTIL.removeDir(de_task.get_top_dir_path());
 }
 
-std::map<ViolationType, DEProcessType>& DRCEngine::getViolationProcessMap()
-{
-  static std::map<ViolationType, DEProcessType> violation_process_map;
-  static std::once_flag init_flag;
-
-  std::call_once(init_flag, []() {
-    /**
-     * skip             暂时无法处理的规则
-     * routing_cost     routing层加cost
-     * cut_cost         cut层及相邻两routing层加cost
-     * routing_patch    routing层加patch
-     */
-    // skip
-    violation_process_map[ViolationType::kFloatingPatch] = DEProcessType::kSkip;      // 由于cell没有加载,所以pin shape属于漂浮
-    violation_process_map[ViolationType::kOffGridOrWrongWay] = DEProcessType::kSkip;  // 不在track上的布线结果
-    violation_process_map[ViolationType::kMinimumWidth] = DEProcessType::kSkip;  // 最小宽度违例,实际上是Floating Patch的最小宽度
-    violation_process_map[ViolationType::kMinimumCut] = DEProcessType::kSkip;  // 对一些时钟树net需要多cut
-    violation_process_map[ViolationType::kOutOfDie] = DEProcessType::kSkip;    // shape超出die
-    //
-    violation_process_map[ViolationType::kEnclosureParallel] = DEProcessType::kSkip;          // enclosure与merge的shepe的spacing
-    violation_process_map[ViolationType::kEnclosureEdge] = DEProcessType::kSkip;              // enclosure与merge的shepe的spacing
-    violation_process_map[ViolationType::kEnclosure] = DEProcessType::kSkip;                  // enclosure与merge的shepe的spacing
-    violation_process_map[ViolationType::kMinHole] = DEProcessType::kSkip;                    // 围起的hole面积太小
-    violation_process_map[ViolationType::kNotchSpacing] = DEProcessType::kSkip;               //
-    violation_process_map[ViolationType::kCornerFillSpacing] = DEProcessType::kSkip;          //
-    violation_process_map[ViolationType::kNonsufficientMetalOverlap] = DEProcessType::kSkip;  // 同net的wire边碰一起
-    // routing_cost
-    violation_process_map[ViolationType::kMetalShort] = DEProcessType::kRoutingCost;                // 短路,不同一个net
-    violation_process_map[ViolationType::kParallelRunLengthSpacing] = DEProcessType::kRoutingCost;  // 平行线spacing
-    violation_process_map[ViolationType::kEndOfLineSpacing] = DEProcessType::kRoutingCost;          // EOL spacing
-    // cut_cost
-    violation_process_map[ViolationType::kCutEOLSpacing] = DEProcessType::kCutCost;             // EOL spacing
-    violation_process_map[ViolationType::kCutShort] = DEProcessType::kCutCost;                  // 短路
-    violation_process_map[ViolationType::kDifferentLayerCutSpacing] = DEProcessType::kCutCost;  // 不同层的cut spacing问题
-    violation_process_map[ViolationType::kSameLayerCutSpacing] = DEProcessType::kCutCost;       // 同层的cut spacing问题
-    violation_process_map[ViolationType::kMaxViaStack] = DEProcessType::kCutCost;               // 叠的通孔太多了
-    // routing_patch
-    violation_process_map[ViolationType::kMinStep] = DEProcessType::kRoutingPatch;      // 金属层min step
-    violation_process_map[ViolationType::kMinimumArea] = DEProcessType::kRoutingPatch;  // 金属层面积过小
-  });
-
-  return violation_process_map;
-}
-
-std::vector<Violation> DRCEngine::getViolationListByOther(DETask& de_task)
+void DRCEngine::getViolationListByOther(DETask& de_task)
 {
   std::map<int32_t, std::vector<Segment<LayerCoord>>> net_result_map;
   for (auto& [net_idx, segment_list] : de_task.get_net_result_map()) {
@@ -427,7 +349,167 @@ std::vector<Violation> DRCEngine::getViolationListByOther(DETask& de_task)
       net_result_map[net_idx].push_back(*segment);
     }
   }
-  return RTI.getViolationList(de_task.get_env_shape_list(), de_task.get_net_pin_shape_map(), net_result_map);
+  de_task.set_violation_list(RTI.getViolationList(de_task.get_env_shape_list(), de_task.get_net_pin_shape_map(), net_result_map));
+}
+
+void DRCEngine::filterViolationList(DETask& de_task)
+{
+  std::vector<Violation> new_violation_list;
+  for (Violation& violation : de_task.get_violation_list()) {
+    if (violation.get_violation_type() == ViolationType::kNone) {
+      // 未知规则舍弃
+      continue;
+    }
+    DEProcessType process_type = getDEProcessType(violation);
+    if (!RTUTIL.exist(de_task.get_process_type_set(), process_type)) {
+      // 非处理类型舍弃
+      continue;
+    }
+    PlanarRect& real_rect = violation.get_violation_shape().get_real_rect();
+    if (!RTUTIL.isOverlap(de_task.get_check_region(), real_rect)) {
+      // 不在检查区域内的舍弃
+      continue;
+    }
+    std::set<int32_t>& violation_net_set = violation.get_violation_net_set();
+    {
+      std::set<int32_t> new_violation_net_set;
+      for (int32_t violation_net_idx : violation_net_set) {
+        if (violation_net_idx == -1 || RTUTIL.exist(de_task.get_need_checked_net_set(), violation_net_idx)) {
+          new_violation_net_set.insert(violation_net_idx);
+        }
+      }
+      violation_net_set = new_violation_net_set;
+    }
+    if (violation_net_set.empty() || (violation_net_set.size() == 1 && *violation_net_set.begin() == -1)) {
+      // net不是布线net的舍弃
+      continue;
+    }
+    for (std::pair<int32_t, bool> layer_routing : getLayerRoutingList(violation)) {
+      Violation new_violation = violation;
+      new_violation.get_violation_shape().set_layer_idx(layer_routing.first);
+      new_violation.set_is_routing(layer_routing.second);
+      new_violation_list.push_back(new_violation);
+    }
+  }
+  de_task.set_violation_list(new_violation_list);
+}
+
+DEProcessType DRCEngine::getDEProcessType(Violation& violation)
+{
+  DEProcessType de_process_type;
+  /**
+   * skip     暂时无法处理的规则
+   * cost     加cost处理
+   * patch    加patch处理
+   */
+  switch (violation.get_violation_type()) {
+    case ViolationType::kFloatingPatch:
+    case ViolationType::kOffGridOrWrongWay:
+    case ViolationType::kMinimumWidth:
+    case ViolationType::kMinimumCut:
+    case ViolationType::kOutOfDie:
+    case ViolationType::kEnclosureParallel:
+    case ViolationType::kEnclosureEdge:
+    case ViolationType::kEnclosure:
+    case ViolationType::kMinHole:
+    case ViolationType::kNotchSpacing:
+    case ViolationType::kCornerFillSpacing:
+    case ViolationType::kNonsufficientMetalOverlap:
+      de_process_type = DEProcessType::kSkip;
+      break;
+    case ViolationType::kMetalShort:
+    case ViolationType::kParallelRunLengthSpacing:
+    case ViolationType::kEndOfLineSpacing:
+    case ViolationType::kCutEOLSpacing:
+    case ViolationType::kCutShort:
+    case ViolationType::kSameLayerCutSpacing:
+    case ViolationType::kMaxViaStack:
+    case ViolationType::kDifferentLayerCutSpacing:
+      de_process_type = DEProcessType::kCost;
+      break;
+    case ViolationType::kMinStep:
+    case ViolationType::kMinimumArea:
+      de_process_type = DEProcessType::kPatch;
+      break;
+    default:
+      RTLOG.error(Loc::current(), "No process type!");
+      break;
+  }
+  return de_process_type;
+}
+
+std::vector<std::pair<int32_t, bool>> DRCEngine::getLayerRoutingList(Violation& violation)
+{
+  std::vector<std::vector<ViaMaster>>& layer_via_master_list = RTDM.getDatabase().get_layer_via_master_list();
+
+  std::vector<std::pair<int32_t, bool>> layer_routing_list;
+  switch (violation.get_violation_type()) {
+    case ViolationType::kFloatingPatch:
+    case ViolationType::kOffGridOrWrongWay:
+    case ViolationType::kMinimumWidth:
+    case ViolationType::kMinimumCut:
+    case ViolationType::kOutOfDie:
+    case ViolationType::kEnclosureParallel:
+    case ViolationType::kEnclosureEdge:
+    case ViolationType::kEnclosure:
+    case ViolationType::kMinHole:
+    case ViolationType::kNotchSpacing:
+    case ViolationType::kCornerFillSpacing:
+    case ViolationType::kNonsufficientMetalOverlap:
+      break;
+    case ViolationType::kMetalShort:
+    case ViolationType::kParallelRunLengthSpacing:
+    case ViolationType::kEndOfLineSpacing:
+      //
+      {
+        int32_t routing_layer_idx = violation.get_violation_shape().get_layer_idx();
+        layer_routing_list.emplace_back(routing_layer_idx, true);
+      }
+      break;
+    case ViolationType::kCutEOLSpacing:
+    case ViolationType::kCutShort:
+    case ViolationType::kSameLayerCutSpacing:
+    case ViolationType::kMaxViaStack:
+      //
+      {
+        int32_t below_layer_idx = violation.get_violation_shape().get_layer_idx();
+        ViaMaster& via_master = layer_via_master_list[below_layer_idx].front();
+        layer_routing_list.emplace_back(via_master.get_below_enclosure().get_layer_idx(), true);
+        layer_routing_list.emplace_back(via_master.get_cut_layer_idx(), false);
+        layer_routing_list.emplace_back(via_master.get_above_enclosure().get_layer_idx(), true);
+      }
+      break;
+    case ViolationType::kDifferentLayerCutSpacing:
+      //
+      {
+        int32_t below_layer_idx = violation.get_violation_shape().get_layer_idx();
+        ViaMaster& via_master_1 = layer_via_master_list[below_layer_idx].front();
+        int32_t cut_layer_idx_1 = via_master_1.get_cut_layer_idx();
+        int32_t mid_layer_idx = via_master_1.get_above_enclosure().get_layer_idx();
+        ViaMaster& via_master_2 = layer_via_master_list[mid_layer_idx].front();
+        int32_t cut_layer_idx_2 = via_master_2.get_cut_layer_idx();
+        int32_t above_layer_idx = via_master_2.get_above_enclosure().get_layer_idx();
+
+        layer_routing_list.emplace_back(below_layer_idx, true);
+        layer_routing_list.emplace_back(cut_layer_idx_1, false);
+        layer_routing_list.emplace_back(mid_layer_idx, true);
+        layer_routing_list.emplace_back(cut_layer_idx_2, false);
+        layer_routing_list.emplace_back(above_layer_idx, true);
+      }
+      break;
+    case ViolationType::kMinStep:
+    case ViolationType::kMinimumArea:
+      //
+      {
+        int32_t routing_layer_idx = violation.get_violation_shape().get_layer_idx();
+        layer_routing_list.emplace_back(routing_layer_idx, true);
+      }
+      break;
+    default:
+      RTLOG.error(Loc::current(), "No process type!");
+      break;
+  }
+  return layer_routing_list;
 }
 
 }  // namespace irt
