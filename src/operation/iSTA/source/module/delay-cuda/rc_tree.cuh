@@ -32,6 +32,7 @@
 #include <vector>
 
 #include "netlist/Net.hh"
+#include "spef/SpefParserRustC.hh"
 #include "string/Str.hh"
 
 using ieda::Str;
@@ -155,10 +156,18 @@ class DelayRcNetCommonInfo {
 struct DelayRcNet {
   DelayRcNet() {};
   explicit DelayRcNet(Net* net) : _net(net) {}
+  static void set_rc_net_common_info(
+      std::unique_ptr<DelayRcNetCommonInfo>&& delay_rc_net_common_info) {
+    _delay_rc_net_common_info = std::move(delay_rc_net_common_info);
+  }
+
+  static DelayRcNetCommonInfo* get_rc_net_common_info() {
+    return _delay_rc_net_common_info.get();
+  }
 
   Net* _net;
   DelayRcNetwork _rc_network;
-  static std::unique_ptr<DelayRcNetCommonInfo> _rc_net_common_info;
+  static std::unique_ptr<DelayRcNetCommonInfo> _delay_rc_net_common_info;
 };
 
 #if 1
@@ -169,6 +178,7 @@ void delay_update_point_delay(std::vector<std::vector<DelayRcPoint*>>);
 void delay_update_point_ldelay(std::vector<std::vector<DelayRcPoint*>>);
 void delay_update_point_impulse(std::vector<std::vector<DelayRcPoint*>>);
 void update_rc_timing(DelayRcNet* rc_net);
+void make_delay_rct(DelayRcNet* delay_rc_net, RustSpefNet* rust_spef_net);
 
 #else
 float delay_update_point_load(DelayRcPoint* parent, DelayRcPoint* rc_point);

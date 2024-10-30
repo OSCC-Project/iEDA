@@ -34,6 +34,7 @@
 #include "log/Log.hh"
 #include "netlist/Netlist.hh"
 #include "spef/SpefParserRustC.hh"
+#define CUDA_DELAY 0
 
 namespace ista {
 
@@ -90,10 +91,18 @@ unsigned StaBuildRCTree::operator()(StaGraph* the_graph) {
 
   spef_parser.expandName();
 
+#if CUDA_DELAY
+  auto delay_rc_net_common_info = std::make_unique<DelayRcNetCommonInfo>();
+  delay_rc_net_common_info->set_spef_cap_unit(spef_parser.getSpefCapUnit());
+  delay_rc_net_common_info->set_spef_resistance_unit(
+      spef_parser.getSpefResUnit());
+  DelayRcNet::set_rc_net_common_info(std::move(delay_rc_net_common_info));
+#else
   auto rc_net_common_info = std::make_unique<RCNetCommonInfo>();
   rc_net_common_info->set_spef_cap_unit(spef_parser.getSpefCapUnit());
   rc_net_common_info->set_spef_resistance_unit(spef_parser.getSpefResUnit());
   RcNet::set_rc_net_common_info(std::move(rc_net_common_info));
+#endif
 
   // ProfilerStart("rc_tree.prof");
   unsigned is_ok = 1;
@@ -102,10 +111,15 @@ unsigned StaBuildRCTree::operator()(StaGraph* the_graph) {
   Netlist* design_nl = the_graph->get_nl();
   Net* net;
   FOREACH_NET(design_nl, net) {
+#if CUDA_DELAY
+    auto delay_rc_net = createDelayRcNet(net);
+    // DLOG_INFO << net->get_name() << "build rc tree";
+    getSta()->addDelayRcNet(net, std::move(delay_rc_net));
+#else
     auto rc_net = createRcNet(net);
-
     // DLOG_INFO << net->get_name() << "build rc tree";
     getSta()->addRcNet(net, std::move(rc_net));
+#endif
   }
 
   // rc net update timing information.
@@ -164,10 +178,18 @@ unsigned StaBuildRCTree::operator()(StaGraph* the_graph) {
     std::string spef_name = rust_spef_net->_name;
     auto* design_net = design_nl->findNet(spef_name.c_str());
     if (design_net) {
+#if CUDA_DELAY
+      auto* delay_rc_net = getSta()->getDelayRcNet(design_net);
+      // DLOG_INFO << "Update Rc tree timing " << spef_name;
+      // make_delay_rct(delay_rc_net, rust_spef_net);
+      // update_rc_timing(delay_rc_net);
+      // printYaml(spef_net);
+#else
       auto* rc_net = getSta()->getRcNet(design_net);
       // DLOG_INFO << "Update Rc tree timing " << spef_name;
       rc_net->updateRcTiming(rust_spef_net);
       // printYaml(spef_net);
+#endif
     } else {
       LOG_FATAL << "build rc tree not found design net " << spef_name;
     }

@@ -18,6 +18,8 @@
 
 namespace istagpu {
 
+std::unique_ptr<DelayRcNetCommonInfo> DelayRcNet::_delay_rc_net_common_info;
+
 #if 1
 
 const int THREAD_PER_BLOCK_NUM = 64;
@@ -491,6 +493,8 @@ void update_rc_timing(DelayRcNet* rc_net) {
 
   delay_free_gpu_memory(&rc_network);
 }
+
+// void make_delay_rct(DelayRcNet* delay_rc_net, RustSpefNet* rust_spef_net) {}
 
 #else
 

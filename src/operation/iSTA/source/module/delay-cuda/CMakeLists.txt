@@ -19,7 +19,7 @@ endif()
 
 set(lib_name "delay-gpu")
 
-add_compile_options("-fopenmp")
+add_compile_options("-fopenmp" "-fPIC")
 
 if(${CMAKE_BUILD_TYPE} STREQUAL "RELEASE")
     set(NVCC_FLAGS -O3)
