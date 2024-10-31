@@ -23,6 +23,7 @@ namespace irt {
 enum class ViolationType
 {
   kNone,
+  kAdjacentCutSpacing,
   kCornerFillSpacing,
   kCutEOLSpacing,
   kCutShort,
@@ -55,6 +56,9 @@ struct GetViolationTypeName
     switch (violation_rule) {
       case ViolationType::kNone:
         violation_rule_name = "none";
+        break;
+      case ViolationType::kAdjacentCutSpacing:
+        violation_rule_name = "adjacent_cut_spacing";
         break;
       case ViolationType::kCornerFillSpacing:
         violation_rule_name = "corner_fill_spacing";
@@ -135,7 +139,11 @@ struct GetViolationTypeByName
   ViolationType operator()(const std::string& violation_rule_name) const
   {
     ViolationType violation_rule;
-    if (violation_rule_name == "corner_fill_spacing") {
+    if (violation_rule_name == "adjacent_cut_spacing") {
+      violation_rule = ViolationType::kAdjacentCutSpacing;
+    } else if (violation_rule_name == "corner_fill_spacing") {
+      violation_rule = ViolationType::kCornerFillSpacing;
+    } else if (violation_rule_name == "corner_fill_spacing") {
       violation_rule = ViolationType::kCornerFillSpacing;
     } else if (violation_rule_name == "cut_eol_spacing") {
       violation_rule = ViolationType::kCutEOLSpacing;

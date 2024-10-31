@@ -2407,13 +2407,13 @@ class Utility
     for (const PlanarRect& special_rect : special_rect_list) {
       if (special_rect.get_ll() == special_rect.get_ur()) {
         /**
-         * 对于点矩形, 在其中一个rect内(包含边界)则被删除
+         * 对于点矩形, 在其中一个rect内(不包含边界)则被删除
          */
         PlanarCoord point = special_rect.get_ll();
         bool exist_inside = false;
         for (const PlanarRect& rect : rect_list) {
-          if (rect.get_ll_x() <= point.get_x() && point.get_x() <= rect.get_ur_x() && rect.get_ll_y() <= point.get_y()
-              && point.get_y() <= rect.get_ur_y()) {
+          if (rect.get_ll_x() < point.get_x() && point.get_x() < rect.get_ur_x() && rect.get_ll_y() < point.get_y()
+              && point.get_y() < rect.get_ur_y()) {
             exist_inside = true;
             break;
           }
@@ -2440,12 +2440,12 @@ class Utility
               int32_t seg_second_x = segment.get_second().get_x();
               int32_t seg_y = segment.get_first().get_y();
               if (rect_ll_y <= seg_y && seg_y <= rect_ur_y && seg_first_x < rect_ur_x && rect_ll_x < seg_second_x) {
-                if (seg_first_x < rect_ll_x) {
+                if (seg_first_x <= rect_ll_x) {
                   // 提出左突出
                   segment_list_temp.emplace_back(segment.get_first(), PlanarCoord(rect_ll_x, seg_y));
                 }
-                if (rect_ur_x < seg_second_x) {
-                  // 提出右突出的
+                if (rect_ur_x <= seg_second_x) {
+                  // 提出右突出
                   segment_list_temp.emplace_back(PlanarCoord(rect_ur_x, seg_y), segment.get_second());
                 }
               } else {
@@ -2456,12 +2456,12 @@ class Utility
               int32_t seg_second_y = segment.get_second().get_y();
               int32_t seg_x = segment.get_first().get_x();
               if (rect_ll_x <= seg_x && seg_x <= rect_ur_x && seg_first_y < rect_ur_y && rect_ll_y < seg_second_y) {
-                if (seg_first_y < rect_ll_y) {
+                if (seg_first_y <= rect_ll_y) {
                   // 提出下突出
                   segment_list_temp.emplace_back(segment.get_first(), PlanarCoord(seg_x, rect_ll_y));
                 }
-                if (rect_ur_y < seg_second_y) {
-                  // 提出上突出的
+                if (rect_ur_y <= seg_second_y) {
+                  // 提出上突出
                   segment_list_temp.emplace_back(PlanarCoord(seg_x, rect_ur_y), segment.get_second());
                 }
               } else {
