@@ -494,7 +494,63 @@ void update_rc_timing(DelayRcNet* rc_net) {
   delay_free_gpu_memory(&rc_network);
 }
 
-// void make_delay_rct(DelayRcNet* delay_rc_net, RustSpefNet* rust_spef_net) {}
+void make_delay_rct(DelayRcNet* delay_rc_net, RustSpefNet* rust_spef_net) {
+  auto& rc_network = delay_rc_net->_rc_network;
+
+  static auto* rc_net_common_info = delay_rc_net->get_rc_net_common_info();
+  static auto spef_cap_unit = rc_net_common_info->get_spef_cap_unit();
+  static auto uniform_cap_unit = CapacitiveUnit::kPF;
+
+  {
+    void* spef_net_conn;
+    FOREACH_VEC_ELEM(&(rust_spef_net->_conns), void, spef_net_conn) {
+      auto* rust_spef_conn = static_cast<RustSpefConnEntry*>(
+          rust_convert_spef_conn(spef_net_conn));
+
+      rc_network.insert_node(rust_spef_conn->_name,
+                             ConvertCapUnit(spef_cap_unit, uniform_cap_unit,
+                                            rust_spef_conn->_load));
+      rust_free_spef_conn(rust_spef_conn);
+    }
+  }
+
+  {
+    void* spef_net_cap;
+    FOREACH_VEC_ELEM(&(rust_spef_net->_caps), void, spef_net_cap) {
+      auto* rust_spef_cap = static_cast<RustSpefResCap*>(
+          rust_convert_spef_net_cap_res(spef_net_cap));
+
+      // Ground cap, otherwise couple cap
+      std::string node1 = rust_spef_cap->_node1;
+      std::string node2 = rust_spef_cap->_node2;
+      if (node2.empty()) {
+        rc_network.insert_node(node1,
+                               ConvertCapUnit(spef_cap_unit, uniform_cap_unit,
+                                              rust_spef_cap->_res_or_cap));
+      } else {
+        rc_network.insert_node(node1, node2, rust_spef_cap->_res_or_cap);
+      }
+
+      rust_free_spef_net_cap_res(rust_spef_cap);
+    }
+  }
+
+  {
+    void* spef_net_res;
+    FOREACH_VEC_ELEM(&(rust_spef_net->_ress), void, spef_net_res) {
+      auto* rust_spef_res = static_cast<RustSpefResCap*>(
+          rust_convert_spef_net_cap_res(spef_net_res));
+
+      std::string node1 = rust_spef_res->_node1;
+      std::string node2 = rust_spef_res->_node2;
+
+      rc_network.insert_segment(node1, node2, rust_spef_res->_res_or_cap);
+
+      rust_free_spef_net_cap_res(rust_spef_res);
+    }
+  }
+  rc_network.sync_nodes();
+}
 
 #else
 

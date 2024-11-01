@@ -31,16 +31,17 @@
 #include <variant>
 #include <vector>
 
+#include "include/Type.hh"
 #include "netlist/Net.hh"
 #include "spef/SpefParserRustC.hh"
 #include "string/Str.hh"
+
+namespace istagpu {
 
 using ieda::Str;
 using ista::CapacitiveUnit;
 using ista::Net;
 using ista::ResistanceUnit;
-
-namespace istagpu {
 
 struct DelayRcEdge;
 
@@ -73,11 +74,26 @@ struct DelayRcPoint {
       _fanout_edges;  //!< The fanout edge from the rc point.
 };
 
+struct CoupledDelayRcPoint {
+  CoupledDelayRcPoint(const std::string& aggressor_node,
+                      const std::string& victim_node, double coupled_cap)
+      : _local_node(aggressor_node.c_str()),
+        _remote_node(victim_node.c_str()),
+        _coupled_cap(coupled_cap) {}
+
+  const char* _local_node;
+  const char* _remote_node;
+  float _coupled_cap;
+};
+
 /**
  * @brief The rc edge for rc tree, represent for resitance.
  *
  */
 struct DelayRcEdge {
+  DelayRcEdge() {}
+  DelayRcEdge(DelayRcPoint* from, DelayRcPoint* to, float res)
+      : _from{from}, _to{to}, _resistance{res} {}
   DelayRcPoint* _from;  // The from node id.
   DelayRcPoint* _to;    // The to node id.
 
@@ -89,9 +105,65 @@ struct DelayRcEdge {
  *
  */
 struct DelayRcNetwork {
+  DelayRcPoint* insert_node(const std::string& name, double cap) {
+    if (_str2nodes.find(name) != _str2nodes.end() &&
+        ista::IsDoubleEqual(_str2nodes[name]->_cap, cap)) {
+      return _str2nodes[name].get();
+    }
+    auto& node = _str2nodes[name];
+    node->_node_name = name.c_str();
+    node->_cap = cap;
+    return node.get();
+  }
+
+  CoupledDelayRcPoint* insert_node(const std::string& local_node,
+                                   const std::string& remote_node,
+                                   float coupled_cap) {
+    auto coupled_node = std::make_unique<CoupledDelayRcPoint>(
+        local_node, remote_node, coupled_cap);
+    auto& ret_coupled_node =
+        _coupled_nodes.emplace_back(std::move(coupled_node));
+    return ret_coupled_node.get();
+  }
+
+  DelayRcEdge* insert_edge(const std::string& from, const std::string& to,
+                           double res) {
+    if (_str2nodes.end() == _str2nodes.find(from)) {
+      LOG_INFO_FIRST_N(10) << "spef from node " << from << " is not exist.";
+      insert_node(from, 0.0001);
+    }
+    if (_str2nodes.end() == _str2nodes.find(to)) {
+      LOG_INFO_FIRST_N(10) << "spef to node " << to << " is not exist.";
+      insert_node(to, 0.0001);
+    }
+
+    auto& tail = _str2nodes[from];
+    auto& head = _str2nodes[to];
+
+    auto& edge = _edges.emplace_back(
+        std::make_unique<DelayRcEdge>(tail.get(), head.get(), res));
+    tail->_fanout_edges.push_back(edge.get());
+    head->_fanin_edges.push_back(edge.get());
+    return edge.get();
+  }
+  void insert_segment(const std::string& name1, const std::string& name2,
+                      double res) {
+    insert_edge(name1, name2, res);
+    insert_edge(name2, name1, res);
+  }
+  void sync_nodes() {
+    for (auto& pair : _str2nodes) {
+      _nodes.push_back(std::move(pair.second));
+    }
+
+    _str2nodes.clear();
+  }
+
   DelayRcPoint* _root{nullptr};
   std::vector<std::unique_ptr<DelayRcPoint>> _nodes;
+  std::map<std::string, std::unique_ptr<DelayRcPoint>> _str2nodes;
   std::vector<std::unique_ptr<DelayRcEdge>> _edges;
+  std::vector<std::unique_ptr<CoupledDelayRcPoint>> _coupled_nodes;
 
   std::vector<float> _cap_array;
   std::vector<float>
