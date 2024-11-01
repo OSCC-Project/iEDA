@@ -33,6 +33,7 @@ enum class ViolationType
   kEnclosureEdge,
   kEnclosureParallel,
   kFloatingPatch,
+  kJogToJogSpacing,
   kMaxViaStack,
   kMetalShort,
   kMinHole,
@@ -86,6 +87,9 @@ struct GetViolationTypeName
         break;
       case ViolationType::kFloatingPatch:
         violation_rule_name = "floating_patch";
+        break;
+      case ViolationType::kJogToJogSpacing:
+        violation_rule_name = "jog_to_jog_spacing";
         break;
       case ViolationType::kMaxViaStack:
         violation_rule_name = "max_via_stack";
@@ -161,6 +165,8 @@ struct GetViolationTypeByName
       violation_rule = ViolationType::kEnclosureParallel;
     } else if (violation_rule_name == "floating_patch") {
       violation_rule = ViolationType::kFloatingPatch;
+    } else if (violation_rule_name == "jog_to_jog_spacing") {
+      violation_rule = ViolationType::kJogToJogSpacing;
     } else if (violation_rule_name == "max_via_stack") {
       violation_rule = ViolationType::kMaxViaStack;
     } else if (violation_rule_name == "metal_short") {

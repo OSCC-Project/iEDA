@@ -479,122 +479,117 @@ void DRCEngine::filterViolationList(DETask& de_task)
 
 DEProcessType DRCEngine::getDEProcessType(Violation& violation)
 {
-  DEProcessType de_process_type;
-  /**
-   * skip     暂时无法处理的规则
-   * cost     加cost处理
-   * patch    加patch处理
-   */
-  switch (violation.get_violation_type()) {
-    case ViolationType::kFloatingPatch:
-    case ViolationType::kOffGridOrWrongWay:
-    case ViolationType::kMinimumWidth:
-    case ViolationType::kMinimumCut:
-    case ViolationType::kOutOfDie:
-    case ViolationType::kEnclosureParallel:
-    case ViolationType::kEnclosureEdge:
-    case ViolationType::kEnclosure:
-    case ViolationType::kMinHole:
-    case ViolationType::kNotchSpacing:
-    case ViolationType::kCornerFillSpacing:
-    case ViolationType::kNonsufficientMetalOverlap:
-    case ViolationType::kAdjacentCutSpacing:
-      de_process_type = DEProcessType::kSkip;
-      break;
-    case ViolationType::kMetalShort:
-    case ViolationType::kParallelRunLengthSpacing:
-    case ViolationType::kEndOfLineSpacing:
-    case ViolationType::kCutEOLSpacing:
-    case ViolationType::kCutShort:
-    case ViolationType::kSameLayerCutSpacing:
-    case ViolationType::kMaxViaStack:
-    case ViolationType::kDifferentLayerCutSpacing:
-      de_process_type = DEProcessType::kCost;
-      break;
-    case ViolationType::kMinStep:
-    case ViolationType::kMinimumArea:
-      de_process_type = DEProcessType::kPatch;
-      break;
-    default:
-      RTLOG.error(Loc::current(), "No process type!");
-      break;
+  static std::map<ViolationType, DEProcessType> violation_process_map;
+  static std::once_flag init_flag;
+  std::call_once(init_flag, []() {
+    /**
+     * skip     暂时无法处理的规则
+     * cost     加cost处理
+     * patch    加patch处理
+     */
+    violation_process_map[ViolationType::kAdjacentCutSpacing] = DEProcessType::kSkip;
+    violation_process_map[ViolationType::kCornerFillSpacing] = DEProcessType::kSkip;
+    violation_process_map[ViolationType::kCutEOLSpacing] = DEProcessType::kCost;
+    violation_process_map[ViolationType::kCutShort] = DEProcessType::kCost;
+    violation_process_map[ViolationType::kDifferentLayerCutSpacing] = DEProcessType::kCost;
+    violation_process_map[ViolationType::kEndOfLineSpacing] = DEProcessType::kCost;
+    violation_process_map[ViolationType::kEnclosure] = DEProcessType::kSkip;
+    violation_process_map[ViolationType::kEnclosureEdge] = DEProcessType::kSkip;
+    violation_process_map[ViolationType::kEnclosureParallel] = DEProcessType::kSkip;
+    violation_process_map[ViolationType::kFloatingPatch] = DEProcessType::kSkip;
+    violation_process_map[ViolationType::kJogToJogSpacing] = DEProcessType::kSkip;
+    violation_process_map[ViolationType::kMaxViaStack] = DEProcessType::kCost;
+    violation_process_map[ViolationType::kMetalShort] = DEProcessType::kCost;
+    violation_process_map[ViolationType::kMinHole] = DEProcessType::kSkip;
+    violation_process_map[ViolationType::kMinimumArea] = DEProcessType::kPatch;
+    violation_process_map[ViolationType::kMinimumCut] = DEProcessType::kSkip;
+    violation_process_map[ViolationType::kMinimumWidth] = DEProcessType::kSkip;
+    violation_process_map[ViolationType::kMinStep] = DEProcessType::kPatch;
+    violation_process_map[ViolationType::kNonsufficientMetalOverlap] = DEProcessType::kSkip;
+    violation_process_map[ViolationType::kNotchSpacing] = DEProcessType::kSkip;
+    violation_process_map[ViolationType::kOffGridOrWrongWay] = DEProcessType::kSkip;
+    violation_process_map[ViolationType::kOutOfDie] = DEProcessType::kSkip;
+    violation_process_map[ViolationType::kParallelRunLengthSpacing] = DEProcessType::kCost;
+    violation_process_map[ViolationType::kSameLayerCutSpacing] = DEProcessType::kCost;
+  });
+  if (!RTUTIL.exist(violation_process_map, violation.get_violation_type())) {
+    RTLOG.error(Loc::current(), "No violation type!");
   }
-  return de_process_type;
+  return violation_process_map[violation.get_violation_type()];
 }
 
 std::vector<std::pair<int32_t, bool>> DRCEngine::getLayerRoutingList(Violation& violation)
 {
   std::vector<std::vector<ViaMaster>>& layer_via_master_list = RTDM.getDatabase().get_layer_via_master_list();
 
-  std::vector<std::pair<int32_t, bool>> layer_routing_list;
-  switch (violation.get_violation_type()) {
-    case ViolationType::kFloatingPatch:
-    case ViolationType::kOffGridOrWrongWay:
-    case ViolationType::kMinimumWidth:
-    case ViolationType::kMinimumCut:
-    case ViolationType::kOutOfDie:
-    case ViolationType::kEnclosureParallel:
-    case ViolationType::kEnclosureEdge:
-    case ViolationType::kEnclosure:
-    case ViolationType::kMinHole:
-    case ViolationType::kNotchSpacing:
-    case ViolationType::kCornerFillSpacing:
-    case ViolationType::kNonsufficientMetalOverlap:
-    case ViolationType::kAdjacentCutSpacing:
-      break;
-    case ViolationType::kMetalShort:
-    case ViolationType::kParallelRunLengthSpacing:
-    case ViolationType::kEndOfLineSpacing:
-      //
-      {
-        int32_t routing_layer_idx = violation.get_violation_shape().get_layer_idx();
-        layer_routing_list.emplace_back(routing_layer_idx, true);
-      }
-      break;
-    case ViolationType::kCutEOLSpacing:
-    case ViolationType::kCutShort:
-    case ViolationType::kSameLayerCutSpacing:
-    case ViolationType::kMaxViaStack:
-      //
-      {
-        int32_t below_layer_idx = violation.get_violation_shape().get_layer_idx();
-        ViaMaster& via_master = layer_via_master_list[below_layer_idx].front();
-        layer_routing_list.emplace_back(via_master.get_below_enclosure().get_layer_idx(), true);
-        layer_routing_list.emplace_back(via_master.get_cut_layer_idx(), false);
-        layer_routing_list.emplace_back(via_master.get_above_enclosure().get_layer_idx(), true);
-      }
-      break;
-    case ViolationType::kDifferentLayerCutSpacing:
-      //
-      {
-        int32_t below_layer_idx = violation.get_violation_shape().get_layer_idx();
-        ViaMaster& via_master_1 = layer_via_master_list[below_layer_idx].front();
-        int32_t cut_layer_idx_1 = via_master_1.get_cut_layer_idx();
-        int32_t mid_layer_idx = via_master_1.get_above_enclosure().get_layer_idx();
-        ViaMaster& via_master_2 = layer_via_master_list[mid_layer_idx].front();
-        int32_t cut_layer_idx_2 = via_master_2.get_cut_layer_idx();
-        int32_t above_layer_idx = via_master_2.get_above_enclosure().get_layer_idx();
+  auto no_layer = [&](Violation& violation) {
+    std::vector<std::pair<int32_t, bool>> layer_routing_list;
+    return layer_routing_list;
+  };
+  auto one_layer = [&](Violation& violation) {
+    std::vector<std::pair<int32_t, bool>> layer_routing_list;
+    int32_t routing_layer_idx = violation.get_violation_shape().get_layer_idx();
+    layer_routing_list.emplace_back(routing_layer_idx, true);
+    return layer_routing_list;
+  };
+  auto three_layer = [&](Violation& violation) {
+    std::vector<std::pair<int32_t, bool>> layer_routing_list;
+    int32_t below_layer_idx = violation.get_violation_shape().get_layer_idx();
+    ViaMaster& via_master = layer_via_master_list[below_layer_idx].front();
+    layer_routing_list.emplace_back(via_master.get_below_enclosure().get_layer_idx(), true);
+    layer_routing_list.emplace_back(via_master.get_cut_layer_idx(), false);
+    layer_routing_list.emplace_back(via_master.get_above_enclosure().get_layer_idx(), true);
+    return layer_routing_list;
+  };
+  auto five_layer = [&](Violation& violation) {
+    std::vector<std::pair<int32_t, bool>> layer_routing_list;
+    int32_t below_layer_idx = violation.get_violation_shape().get_layer_idx();
+    ViaMaster& via_master_1 = layer_via_master_list[below_layer_idx].front();
+    int32_t cut_layer_idx_1 = via_master_1.get_cut_layer_idx();
+    int32_t mid_layer_idx = via_master_1.get_above_enclosure().get_layer_idx();
+    ViaMaster& via_master_2 = layer_via_master_list[mid_layer_idx].front();
+    int32_t cut_layer_idx_2 = via_master_2.get_cut_layer_idx();
+    int32_t above_layer_idx = via_master_2.get_above_enclosure().get_layer_idx();
+    layer_routing_list.emplace_back(below_layer_idx, true);
+    layer_routing_list.emplace_back(cut_layer_idx_1, false);
+    layer_routing_list.emplace_back(mid_layer_idx, true);
+    layer_routing_list.emplace_back(cut_layer_idx_2, false);
+    layer_routing_list.emplace_back(above_layer_idx, true);
+    return layer_routing_list;
+  };
 
-        layer_routing_list.emplace_back(below_layer_idx, true);
-        layer_routing_list.emplace_back(cut_layer_idx_1, false);
-        layer_routing_list.emplace_back(mid_layer_idx, true);
-        layer_routing_list.emplace_back(cut_layer_idx_2, false);
-        layer_routing_list.emplace_back(above_layer_idx, true);
-      }
-      break;
-    case ViolationType::kMinStep:
-    case ViolationType::kMinimumArea:
-      //
-      {
-        int32_t routing_layer_idx = violation.get_violation_shape().get_layer_idx();
-        layer_routing_list.emplace_back(routing_layer_idx, true);
-      }
-      break;
-    default:
-      RTLOG.error(Loc::current(), "No process type!");
-      break;
+  static std::map<ViolationType, std::function<std::vector<std::pair<int32_t, bool>>(Violation&)>> violation_func_map;
+  static std::once_flag init_flag;
+  std::call_once(init_flag, [&]() {
+    violation_func_map[ViolationType::kAdjacentCutSpacing] = no_layer;
+    violation_func_map[ViolationType::kCornerFillSpacing] = no_layer;
+    violation_func_map[ViolationType::kCutEOLSpacing] = three_layer;
+    violation_func_map[ViolationType::kCutShort] = three_layer;
+    violation_func_map[ViolationType::kDifferentLayerCutSpacing] = five_layer;
+    violation_func_map[ViolationType::kEndOfLineSpacing] = one_layer;
+    violation_func_map[ViolationType::kEnclosure] = no_layer;
+    violation_func_map[ViolationType::kEnclosureEdge] = no_layer;
+    violation_func_map[ViolationType::kEnclosureParallel] = no_layer;
+    violation_func_map[ViolationType::kFloatingPatch] = no_layer;
+    violation_func_map[ViolationType::kJogToJogSpacing] = no_layer;
+    violation_func_map[ViolationType::kMaxViaStack] = three_layer;
+    violation_func_map[ViolationType::kMetalShort] = one_layer;
+    violation_func_map[ViolationType::kMinHole] = no_layer;
+    violation_func_map[ViolationType::kMinimumArea] = one_layer;
+    violation_func_map[ViolationType::kMinimumCut] = no_layer;
+    violation_func_map[ViolationType::kMinimumWidth] = no_layer;
+    violation_func_map[ViolationType::kMinStep] = one_layer;
+    violation_func_map[ViolationType::kNonsufficientMetalOverlap] = no_layer;
+    violation_func_map[ViolationType::kNotchSpacing] = no_layer;
+    violation_func_map[ViolationType::kOffGridOrWrongWay] = no_layer;
+    violation_func_map[ViolationType::kOutOfDie] = no_layer;
+    violation_func_map[ViolationType::kParallelRunLengthSpacing] = one_layer;
+    violation_func_map[ViolationType::kSameLayerCutSpacing] = three_layer;
+  });
+  if (!RTUTIL.exist(violation_func_map, violation.get_violation_type())) {
+    RTLOG.error(Loc::current(), "No violation type!");
   }
-  return layer_routing_list;
+  return violation_func_map[violation.get_violation_type()](violation);
 }
 
 }  // namespace irt
