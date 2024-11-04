@@ -181,8 +181,10 @@ unsigned StaBuildRCTree::operator()(StaGraph* the_graph) {
 #if CUDA_DELAY
       auto* delay_rc_net = getSta()->getDelayRcNet(design_net);
       // DLOG_INFO << "Update Rc tree timing " << spef_name;
-      // make_delay_rct(delay_rc_net, rust_spef_net);
-      // update_rc_timing(delay_rc_net);
+      make_delay_rct(delay_rc_net, rust_spef_net);
+      update_rc_tree_info(delay_rc_net);
+      update_rc_timing(delay_rc_net);
+      rust_free_spef_net(spef_net);
       // printYaml(spef_net);
 #else
       auto* rc_net = getSta()->getRcNet(design_net);

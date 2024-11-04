@@ -158,6 +158,14 @@ struct DelayRcNetwork {
 
     _str2nodes.clear();
   }
+  DelayRcPoint* rc_node(const std::string& name) {
+    for (const auto& node : _nodes) {
+      if (node && strcmp(node->_node_name, name.c_str()) == 0) {
+        return node.get();
+      }
+    }
+    return nullptr;
+  }
 
   DelayRcPoint* _root{nullptr};
   std::vector<std::unique_ptr<DelayRcPoint>> _nodes;
@@ -251,6 +259,7 @@ void delay_update_point_ldelay(std::vector<std::vector<DelayRcPoint*>>);
 void delay_update_point_impulse(std::vector<std::vector<DelayRcPoint*>>);
 void update_rc_timing(DelayRcNet* rc_net);
 void make_delay_rct(DelayRcNet* delay_rc_net, RustSpefNet* rust_spef_net);
+void update_rc_tree_info(DelayRcNet* delay_rc_net);
 
 #else
 float delay_update_point_load(DelayRcPoint* parent, DelayRcPoint* rc_point);

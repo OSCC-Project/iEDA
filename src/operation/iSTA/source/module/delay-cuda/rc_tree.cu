@@ -552,6 +552,36 @@ void make_delay_rct(DelayRcNet* delay_rc_net, RustSpefNet* rust_spef_net) {
   rc_network.sync_nodes();
 }
 
+void update_rc_tree_info(DelayRcNet* delay_rc_net) {
+  Net* net = delay_rc_net->_net;
+  auto* driver = net->getDriver();
+  auto pin_ports = net->get_pin_ports();
+
+  // fix for net is only driver
+  if (pin_ports.size() < 2) {
+    return;
+  }
+
+  auto& rc_network = delay_rc_net->_rc_network;
+  for (auto* pin : pin_ports) {
+    if (auto* node = rc_network.rc_node(pin->getFullName()); node) {
+      if (pin == driver) {
+        rc_network._root = node;
+        // node->set_is_root();
+      }
+      // node->set_obj(pin);
+    } else {
+      // const auto& nodes = rc_network.get_nodes();
+      for (const auto& node : rc_network._nodes) {
+        LOG_INFO << node->_node_name;
+      }
+
+      LOG_FATAL << "pin " << pin->getFullName() << " can not found in RCTree "
+                << net->get_name() << std::endl;
+    }
+  }
+}
+
 #else
 
 /**
