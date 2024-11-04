@@ -32,11 +32,13 @@ class Violation
   EXTLayerRect& get_violation_shape() { return _violation_shape; }
   bool get_is_routing() { return _is_routing; }
   std::set<int32_t>& get_violation_net_set() { return _violation_net_set; }
+  int32_t get_required_size() const { return _required_size; }
   // setter
   void set_violation_type(const ViolationType& violation_type) { _violation_type = violation_type; }
   void set_violation_shape(const EXTLayerRect& violation_shape) { _violation_shape = violation_shape; }
   void set_is_routing(const bool is_routing) { _is_routing = is_routing; }
   void set_violation_net_set(const std::set<int32_t>& violation_net_set) { _violation_net_set = violation_net_set; }
+  void set_required_size(const int32_t required_size) { _required_size = required_size; }
   // function
 
  private:
@@ -44,6 +46,7 @@ class Violation
   EXTLayerRect _violation_shape;
   bool _is_routing = true;
   std::set<int32_t> _violation_net_set;
+  int32_t _required_size;
 };
 
 }  // namespace irt

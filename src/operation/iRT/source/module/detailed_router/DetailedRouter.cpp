@@ -583,7 +583,7 @@ void DetailedRouter::buildOrientNetMap(DRBox& dr_box)
     }
   }
   for (Violation& violation : dr_box.get_violation_list()) {
-    updateViolationToGraph(dr_box, ChangeType::kAdd, violation);
+    addViolationToGraph(dr_box, violation);
   }
 }
 
@@ -1121,17 +1121,10 @@ double DetailedRouter::getEstimateViaCost(DRBox& dr_box, DRNode* start_node, DRN
 
 void DetailedRouter::updateViolationList(DRBox& dr_box)
 {
-  std::vector<Violation> new_violation_list = getCostViolationList(dr_box);
-
-  std::vector<Violation>& violation_list = dr_box.get_violation_list();
-  // 原结果从graph删除
-  for (Violation& violation : violation_list) {
-    updateViolationToGraph(dr_box, ChangeType::kDel, violation);
-  }
-  violation_list = new_violation_list;
+  dr_box.set_violation_list(getCostViolationList(dr_box));
   // 新结果添加到graph
-  for (Violation& violation : violation_list) {
-    updateViolationToGraph(dr_box, ChangeType::kAdd, violation);
+  for (Violation& violation : dr_box.get_violation_list()) {
+    addViolationToGraph(dr_box, violation);
   }
 }
 
@@ -1425,16 +1418,13 @@ void DetailedRouter::updateNetResultToGraph(DRBox& dr_box, ChangeType change_typ
   }
 }
 
-void DetailedRouter::updateViolationToGraph(DRBox& dr_box, ChangeType change_type, Violation& violation)
+void DetailedRouter::addViolationToGraph(DRBox& dr_box, Violation& violation)
 {
+  // 违例区域本身(不需要膨胀)被禁止布线
   NetShape net_shape(-1, violation.get_violation_shape().getRealLayerRect(), violation.get_is_routing());
-  for (auto& [dr_node, orientation_set] : getNodeOrientationMap(dr_box, net_shape, true)) {
+  for (auto& [dr_node, orientation_set] : getNodeOrientationMap(dr_box, net_shape, false)) {
     for (Orientation orientation : orientation_set) {
-      if (change_type == ChangeType::kAdd) {
-        dr_node->get_orient_violation_number_map()[orientation]++;
-      } else if (change_type == ChangeType::kDel) {
-        dr_node->get_orient_violation_number_map()[orientation]--;
-      }
+      dr_node->get_orient_violation_number_map()[orientation]++;
     }
   }
 }
@@ -1470,13 +1460,13 @@ std::map<DRNode*, std::set<Orientation>> DetailedRouter::getRoutingNodeOrientati
   std::map<DRNode*, std::set<Orientation>> node_orientation_map;
   // wire 与 net_shape
   {
-    int32_t enlarged_size = 0;
+    int32_t enlarged_size = half_wire_width;
     if (need_enlarged) {
-      // 膨胀size为 min_spacing + half_wire_width
-      enlarged_size = min_spacing + half_wire_width;
-      // 贴合的也不算违例
-      enlarged_size -= 1;
+      // 膨胀size为 min_spacing
+      enlarged_size += min_spacing;
     }
+    // 贴合的也不算违例
+    enlarged_size -= 1;
     PlanarRect planar_enlarged_rect = RTUTIL.getEnlargedRect(net_shape.get_rect(), enlarged_size);
     for (auto& [grid_coord, orientation_set] : RTUTIL.getTrackGridOrientationMap(planar_enlarged_rect, dr_box.get_box_track_axis())) {
       DRNode& node = dr_node_map[grid_coord.get_x()][grid_coord.get_y()];
@@ -1494,16 +1484,16 @@ std::map<DRNode*, std::set<Orientation>> DetailedRouter::getRoutingNodeOrientati
   }
   // enclosure 与 net_shape
   {
-    int32_t enlarged_x_size = 0;
-    int32_t enlarged_y_size = 0;
+    int32_t enlarged_x_size = enclosure_half_x_span;
+    int32_t enlarged_y_size = enclosure_half_y_span;
     if (need_enlarged) {
       // 膨胀size为 min_spacing + enclosure_half_span
-      enlarged_x_size = min_spacing + enclosure_half_x_span;
-      enlarged_y_size = min_spacing + enclosure_half_y_span;
-      // 贴合的也不算违例
-      enlarged_x_size -= 1;
-      enlarged_y_size -= 1;
+      enlarged_x_size += min_spacing;
+      enlarged_y_size += min_spacing;
     }
+    // 贴合的也不算违例
+    enlarged_x_size -= 1;
+    enlarged_y_size -= 1;
     PlanarRect space_enlarged_rect
         = RTUTIL.getEnlargedRect(net_shape.get_rect(), enlarged_x_size, enlarged_y_size, enlarged_x_size, enlarged_y_size);
     for (auto& [grid_coord, orientation_set] : RTUTIL.getTrackGridOrientationMap(space_enlarged_rect, dr_box.get_box_track_axis())) {
@@ -1546,17 +1536,19 @@ std::map<DRNode*, std::set<Orientation>> DetailedRouter::getCutNodeOrientationMa
 
   int32_t cut_spacing = cut_layer_list[net_shape.get_layer_idx()].getMinSpacing();
   PlanarRect& cut_shape = layer_via_master_list[below_routing_layer_idx].front().get_cut_shape_list().front();
+  int32_t cut_shape_half_x_span = cut_shape.getXSpan() / 2;
+  int32_t cut_shape_half_y_span = cut_shape.getYSpan() / 2;
 
-  int32_t enlarged_x_size = 0;
-  int32_t enlarged_y_size = 0;
+  int32_t enlarged_x_size = cut_shape_half_x_span;
+  int32_t enlarged_y_size = cut_shape_half_y_span;
   if (need_enlarged) {
     // 膨胀size为 min_spacing + cut_shape_half_span
-    enlarged_x_size = cut_spacing + cut_shape.getXSpan() / 2;
-    enlarged_y_size = cut_spacing + cut_shape.getYSpan() / 2;
-    // 贴合的也不算违例
-    enlarged_x_size -= 1;
-    enlarged_y_size -= 1;
+    enlarged_x_size += cut_spacing;
+    enlarged_y_size += cut_spacing;
   }
+  // 贴合的也不算违例
+  enlarged_x_size -= 1;
+  enlarged_y_size -= 1;
   PlanarRect space_enlarged_rect
       = RTUTIL.getEnlargedRect(net_shape.get_rect(), enlarged_x_size, enlarged_y_size, enlarged_x_size, enlarged_y_size);
   for (auto& [grid_coord, orientation_set] : RTUTIL.getTrackGridOrientationMap(space_enlarged_rect, dr_box.get_box_track_axis())) {

@@ -17,6 +17,7 @@
 #pragma once
 
 #include "Config.hpp"
+#include "DEFuncType.hpp"
 #include "DETask.hpp"
 #include "DataManager.hpp"
 #include "Database.hpp"
@@ -51,9 +52,16 @@ class DRCEngine
   void writeTask(DETask& de_task);
   void readTask(DETask& de_task);
   void getViolationListByOther(DETask& de_task);
-  void filterViolationList(DETask& de_task);
+  void buildViolationList(DETask& de_task);
   DEProcessType getDEProcessType(Violation& violation);
-  std::vector<std::pair<int32_t, bool>> getLayerRoutingList(Violation& violation);
+  std::vector<Violation> expandViolation(Violation& violation);
+  void buildByFunc(Violation& violation, const DEFuncType& de_func_type, DEProcessType& de_process_type,
+                   std::vector<Violation>& expanded_violation_list);
+  PlanarRect keepRect(Violation& violation);
+  PlanarRect enlargeRect(Violation& violation);
+  std::vector<std::pair<int32_t, bool>> keepLayer(Violation& violation);
+  std::vector<std::pair<int32_t, bool>> expandOneViaLayer(Violation& violation);
+  std::vector<std::pair<int32_t, bool>> expandTwoViaLayer(Violation& violation);
 };
 
 }  // namespace irt

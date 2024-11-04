@@ -5,7 +5,7 @@ iterativeDRModel:迭代DRModel
     buildBoxSchedule:构建Box布线的调度表
     routeDRBoxMap:
         buildFixedRect:将GCellMap中的fix_rect以指针的方式添加到Box的type_layer_net_fixed_rect_map
-        buildAccessResult:将GCellmap中的access_result（与此Box覆盖）以指针的方式拷贝到Box内,不需要对GCellmap删除或添加
+        buildAccessResult:将GCellmap中的access_result(与此Box覆盖)以指针的方式拷贝到Box内,不需要对GCellmap删除或添加
         buildNetResult:将GCellMap中的net_result以实体的方式拷贝到Box的net_result_map
         buildViolation:将GCellMap中的violation以实体的方式拷贝到Box的violation_list,并在GCellMap中删除
         initDRTaskList:构建DRTask

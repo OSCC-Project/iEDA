@@ -54,7 +54,7 @@ std::vector<Violation> DRCEngine::getViolationList(DETask& de_task)
   // getViolationListByOther(de_task);
 
   getViolationListBySelf(de_task);
-  filterViolationList(de_task);
+  buildViolationList(de_task);
 
   return de_task.get_violation_list();
 }
@@ -332,7 +332,6 @@ void DRCEngine::writeTask(DETask& de_task)
 void DRCEngine::readTask(DETask& de_task)
 {
   int32_t micron_dbu = RTDM.getDatabase().get_micron_dbu();
-  ScaleAxis& gcell_axis = RTDM.getDatabase().get_gcell_axis();
   std::map<std::string, int32_t>& routing_layer_name_to_idx_map = RTDM.getDatabase().get_routing_layer_name_to_idx_map();
 
   std::string& top_name = de_task.get_top_name();
@@ -359,16 +358,15 @@ void DRCEngine::readTask(DETask& de_task)
       if (new_line.empty()) {
         continue;
       }
-      std::string drc_rule_name;
       std::set<std::string> net_name_set;
+      std::string required;
+      std::string drc_rule_name;
       std::string layer_name;
       std::string ll_x_string;
       std::string ll_y_string;
       std::string ur_x_string;
       std::string ur_y_string;
       // 读取
-      drc_rule_name = new_line;
-      std::getline(*violation_file, new_line);
       std::istringstream net_name_set_stream(new_line);
       std::string net_name;
       while (std::getline(net_name_set_stream, net_name, ',')) {
@@ -377,22 +375,22 @@ void DRCEngine::readTask(DETask& de_task)
         }
       }
       std::getline(*violation_file, new_line);
-      std::istringstream layer_bound_stream(new_line);
-      layer_bound_stream >> layer_name >> ll_x_string >> ll_y_string >> ur_x_string >> ur_y_string;
+      std::istringstream drc_info_stream(new_line);
+      drc_info_stream >> required >> drc_rule_name;
+      std::getline(*violation_file, new_line);
+      std::istringstream shape_stream(new_line);
+      shape_stream >> layer_name >> ll_x_string >> ll_y_string >> ur_x_string >> ur_y_string;
       // 解析
       ViolationType violation_type = GetViolationTypeByName()(drc_rule_name);
       if (violation_type == ViolationType::kNone) {
         RTLOG.warn(Loc::current(), "Unknow rule! '", drc_rule_name, "'");
       }
-      PlanarRect real_rect(static_cast<int32_t>(std::round(std::stod(ll_x_string) * micron_dbu)),
-                           static_cast<int32_t>(std::round(std::stod(ll_y_string) * micron_dbu)),
-                           static_cast<int32_t>(std::round(std::stod(ur_x_string) * micron_dbu)),
-                           static_cast<int32_t>(std::round(std::stod(ur_y_string) * micron_dbu)));
       EXTLayerRect ext_layer_rect;
-      ext_layer_rect.set_real_rect(real_rect);
-      ext_layer_rect.set_grid_rect(RTUTIL.getClosedGCellGridRect(ext_layer_rect.get_real_rect(), gcell_axis));
+      ext_layer_rect.set_real_ll(static_cast<int32_t>(std::round(std::stod(ll_x_string) * micron_dbu)),
+                                 static_cast<int32_t>(std::round(std::stod(ll_y_string) * micron_dbu)));
+      ext_layer_rect.set_real_ur(static_cast<int32_t>(std::round(std::stod(ur_x_string) * micron_dbu)),
+                                 static_cast<int32_t>(std::round(std::stod(ur_y_string) * micron_dbu)));
       ext_layer_rect.set_layer_idx(routing_layer_name_to_idx_map[layer_name]);
-
       std::set<int32_t> violation_net_set;
       for (const std::string& net_name : net_name_set) {
         if (net_name == "net_blockage") {
@@ -404,11 +402,18 @@ void DRCEngine::readTask(DETask& de_task)
       if (violation_net_set.size() > 2) {
         RTLOG.error(Loc::current(), "The violation_net_set size > 2!");
       }
+      int32_t required_size;
+      if (required == "null") {
+        required_size = 0;
+      } else {
+        required_size = static_cast<int32_t>(std::round(std::stod(required) * micron_dbu));
+      }
       Violation violation;
       violation.set_violation_type(violation_type);
       violation.set_violation_shape(ext_layer_rect);
       violation.set_is_routing(true);
       violation.set_violation_net_set(violation_net_set);
+      violation.set_required_size(required_size);
       de_task.get_violation_list().push_back(violation);
     }
     RTUTIL.closeFileStream(violation_file);
@@ -435,8 +440,10 @@ void DRCEngine::getViolationListByOther(DETask& de_task)
   de_task.set_violation_list(RTI.getViolationList(de_task.get_env_shape_list(), de_task.get_net_pin_shape_map(), net_result_map));
 }
 
-void DRCEngine::filterViolationList(DETask& de_task)
+void DRCEngine::buildViolationList(DETask& de_task)
 {
+  ScaleAxis& gcell_axis = RTDM.getDatabase().get_gcell_axis();
+
   std::vector<Violation> new_violation_list;
   for (Violation& violation : de_task.get_violation_list()) {
     if (violation.get_violation_type() == ViolationType::kNone) {
@@ -455,6 +462,7 @@ void DRCEngine::filterViolationList(DETask& de_task)
     }
     std::set<int32_t>& violation_net_set = violation.get_violation_net_set();
     {
+      // 构建违例net
       std::set<int32_t> new_violation_net_set;
       for (int32_t violation_net_idx : violation_net_set) {
         if (violation_net_idx == -1 || RTUTIL.exist(de_task.get_need_checked_net_set(), violation_net_idx)) {
@@ -467,129 +475,309 @@ void DRCEngine::filterViolationList(DETask& de_task)
       // net不是布线net的舍弃
       continue;
     }
-    for (std::pair<int32_t, bool> layer_routing : getLayerRoutingList(violation)) {
-      Violation new_violation = violation;
-      new_violation.get_violation_shape().set_layer_idx(layer_routing.first);
-      new_violation.set_is_routing(layer_routing.second);
+    for (Violation new_violation : expandViolation(violation)) {
       new_violation_list.push_back(new_violation);
     }
+  }
+  for (Violation& new_violation : new_violation_list) {
+    EXTLayerRect& violation_shape = new_violation.get_violation_shape();
+    violation_shape.set_grid_rect(RTUTIL.getClosedGCellGridRect(violation_shape.get_real_rect(), gcell_axis));
   }
   de_task.set_violation_list(new_violation_list);
 }
 
 DEProcessType DRCEngine::getDEProcessType(Violation& violation)
 {
-  static std::map<ViolationType, DEProcessType> violation_process_map;
-  static std::once_flag init_flag;
-  std::call_once(init_flag, []() {
-    /**
-     * skip     暂时无法处理的规则
-     * cost     加cost处理
-     * patch    加patch处理
-     */
-    violation_process_map[ViolationType::kAdjacentCutSpacing] = DEProcessType::kSkip;
-    violation_process_map[ViolationType::kCornerFillSpacing] = DEProcessType::kSkip;
-    violation_process_map[ViolationType::kCutEOLSpacing] = DEProcessType::kCost;
-    violation_process_map[ViolationType::kCutShort] = DEProcessType::kCost;
-    violation_process_map[ViolationType::kDifferentLayerCutSpacing] = DEProcessType::kCost;
-    violation_process_map[ViolationType::kEndOfLineSpacing] = DEProcessType::kCost;
-    violation_process_map[ViolationType::kEnclosure] = DEProcessType::kSkip;
-    violation_process_map[ViolationType::kEnclosureEdge] = DEProcessType::kSkip;
-    violation_process_map[ViolationType::kEnclosureParallel] = DEProcessType::kSkip;
-    violation_process_map[ViolationType::kFloatingPatch] = DEProcessType::kSkip;
-    violation_process_map[ViolationType::kJogToJogSpacing] = DEProcessType::kSkip;
-    violation_process_map[ViolationType::kMaxViaStack] = DEProcessType::kCost;
-    violation_process_map[ViolationType::kMetalShort] = DEProcessType::kCost;
-    violation_process_map[ViolationType::kMinHole] = DEProcessType::kSkip;
-    violation_process_map[ViolationType::kMinimumArea] = DEProcessType::kPatch;
-    violation_process_map[ViolationType::kMinimumCut] = DEProcessType::kSkip;
-    violation_process_map[ViolationType::kMinimumWidth] = DEProcessType::kSkip;
-    violation_process_map[ViolationType::kMinStep] = DEProcessType::kPatch;
-    violation_process_map[ViolationType::kNonsufficientMetalOverlap] = DEProcessType::kSkip;
-    violation_process_map[ViolationType::kNotchSpacing] = DEProcessType::kSkip;
-    violation_process_map[ViolationType::kOffGridOrWrongWay] = DEProcessType::kSkip;
-    violation_process_map[ViolationType::kOutOfDie] = DEProcessType::kSkip;
-    violation_process_map[ViolationType::kParallelRunLengthSpacing] = DEProcessType::kCost;
-    violation_process_map[ViolationType::kSameLayerCutSpacing] = DEProcessType::kCost;
-  });
-  if (!RTUTIL.exist(violation_process_map, violation.get_violation_type())) {
-    RTLOG.error(Loc::current(), "No violation type!");
-  }
-  return violation_process_map[violation.get_violation_type()];
+  DEProcessType de_process_type;
+  std::vector<Violation> expanded_violation_list;
+  buildByFunc(violation, DEFuncType::kGetDEProcessType, de_process_type, expanded_violation_list);
+  return de_process_type;
 }
 
-std::vector<std::pair<int32_t, bool>> DRCEngine::getLayerRoutingList(Violation& violation)
+std::vector<Violation> DRCEngine::expandViolation(Violation& violation)
+{
+  DEProcessType de_process_type;
+  std::vector<Violation> expanded_violation_list;
+  buildByFunc(violation, DEFuncType::kExpandViolation, de_process_type, expanded_violation_list);
+  return expanded_violation_list;
+}
+
+void DRCEngine::buildByFunc(Violation& violation, const DEFuncType& de_func_type, DEProcessType& de_process_type,
+                            std::vector<Violation>& expanded_violation_list)
+{
+  if (de_func_type == DEFuncType::kNone) {
+    RTLOG.error(Loc::current(), "The de_func_type is none!");
+  }
+  PlanarRect enlarged_rect;
+  std::vector<std::pair<int32_t, bool>> layer_routing_list;
+  switch (violation.get_violation_type()) {
+    case ViolationType::kAdjacentCutSpacing:
+      if (de_func_type == DEFuncType::kGetDEProcessType) {
+        de_process_type = DEProcessType::kSkip;
+      } else if (de_func_type == DEFuncType::kExpandViolation) {
+        RTLOG.error(Loc::current(), "This is skipping!");
+      }
+      break;
+    case ViolationType::kCornerFillSpacing:
+      if (de_func_type == DEFuncType::kGetDEProcessType) {
+        de_process_type = DEProcessType::kSkip;
+      } else if (de_func_type == DEFuncType::kExpandViolation) {
+        RTLOG.error(Loc::current(), "This is skipping!");
+      }
+      break;
+    case ViolationType::kCutEOLSpacing:
+      if (de_func_type == DEFuncType::kGetDEProcessType) {
+        de_process_type = DEProcessType::kCost;
+      } else if (de_func_type == DEFuncType::kExpandViolation) {
+        enlarged_rect = enlargeRect(violation);
+        layer_routing_list = expandOneViaLayer(violation);
+      }
+      break;
+    case ViolationType::kCutShort:
+      if (de_func_type == DEFuncType::kGetDEProcessType) {
+        de_process_type = DEProcessType::kCost;
+      } else if (de_func_type == DEFuncType::kExpandViolation) {
+        enlarged_rect = enlargeRect(violation);
+        layer_routing_list = expandOneViaLayer(violation);
+      }
+      break;
+    case ViolationType::kDifferentLayerCutSpacing:
+      if (de_func_type == DEFuncType::kGetDEProcessType) {
+        de_process_type = DEProcessType::kCost;
+      } else if (de_func_type == DEFuncType::kExpandViolation) {
+        enlarged_rect = enlargeRect(violation);
+        layer_routing_list = expandTwoViaLayer(violation);
+      }
+      break;
+    case ViolationType::kEndOfLineSpacing:
+      if (de_func_type == DEFuncType::kGetDEProcessType) {
+        de_process_type = DEProcessType::kCost;
+      } else if (de_func_type == DEFuncType::kExpandViolation) {
+        enlarged_rect = enlargeRect(violation);
+        layer_routing_list = keepLayer(violation);
+      }
+      break;
+    case ViolationType::kEnclosure:
+      if (de_func_type == DEFuncType::kGetDEProcessType) {
+        de_process_type = DEProcessType::kSkip;
+      } else if (de_func_type == DEFuncType::kExpandViolation) {
+        RTLOG.error(Loc::current(), "This is skipping!");
+      }
+      break;
+    case ViolationType::kEnclosureEdge:
+      if (de_func_type == DEFuncType::kGetDEProcessType) {
+        de_process_type = DEProcessType::kSkip;
+      } else if (de_func_type == DEFuncType::kExpandViolation) {
+        RTLOG.error(Loc::current(), "This is skipping!");
+      }
+      break;
+    case ViolationType::kEnclosureParallel:
+      if (de_func_type == DEFuncType::kGetDEProcessType) {
+        de_process_type = DEProcessType::kSkip;
+      } else if (de_func_type == DEFuncType::kExpandViolation) {
+        RTLOG.error(Loc::current(), "This is skipping!");
+      }
+      break;
+    case ViolationType::kFloatingPatch:
+      if (de_func_type == DEFuncType::kGetDEProcessType) {
+        de_process_type = DEProcessType::kSkip;
+      } else if (de_func_type == DEFuncType::kExpandViolation) {
+        RTLOG.error(Loc::current(), "This is skipping!");
+      }
+      break;
+    case ViolationType::kJogToJogSpacing:
+      if (de_func_type == DEFuncType::kGetDEProcessType) {
+        de_process_type = DEProcessType::kSkip;
+      } else if (de_func_type == DEFuncType::kExpandViolation) {
+        RTLOG.error(Loc::current(), "This is skipping!");
+      }
+      break;
+    case ViolationType::kMaxViaStack:
+      if (de_func_type == DEFuncType::kGetDEProcessType) {
+        de_process_type = DEProcessType::kCost;
+      } else if (de_func_type == DEFuncType::kExpandViolation) {
+        enlarged_rect = keepRect(violation);
+        layer_routing_list = expandOneViaLayer(violation);
+      }
+      break;
+    case ViolationType::kMetalShort:
+      if (de_func_type == DEFuncType::kGetDEProcessType) {
+        de_process_type = DEProcessType::kCost;
+      } else if (de_func_type == DEFuncType::kExpandViolation) {
+        enlarged_rect = enlargeRect(violation);
+        layer_routing_list = keepLayer(violation);
+      }
+      break;
+    case ViolationType::kMinHole:
+      if (de_func_type == DEFuncType::kGetDEProcessType) {
+        de_process_type = DEProcessType::kSkip;
+      } else if (de_func_type == DEFuncType::kExpandViolation) {
+        RTLOG.error(Loc::current(), "This is skipping!");
+      }
+      break;
+    case ViolationType::kMinimumArea:
+      if (de_func_type == DEFuncType::kGetDEProcessType) {
+        de_process_type = DEProcessType::kPatch;
+      } else if (de_func_type == DEFuncType::kExpandViolation) {
+        enlarged_rect = keepRect(violation);
+        layer_routing_list = keepLayer(violation);
+      }
+      break;
+    case ViolationType::kMinimumCut:
+      if (de_func_type == DEFuncType::kGetDEProcessType) {
+        de_process_type = DEProcessType::kSkip;
+      } else if (de_func_type == DEFuncType::kExpandViolation) {
+        RTLOG.error(Loc::current(), "This is skipping!");
+      }
+      break;
+    case ViolationType::kMinimumWidth:
+      if (de_func_type == DEFuncType::kGetDEProcessType) {
+        de_process_type = DEProcessType::kSkip;
+      } else if (de_func_type == DEFuncType::kExpandViolation) {
+        RTLOG.error(Loc::current(), "This is skipping!");
+      }
+      break;
+    case ViolationType::kMinStep:
+      if (de_func_type == DEFuncType::kGetDEProcessType) {
+        de_process_type = DEProcessType::kPatch;
+      } else if (de_func_type == DEFuncType::kExpandViolation) {
+        enlarged_rect = keepRect(violation);
+        layer_routing_list = keepLayer(violation);
+      }
+      break;
+    case ViolationType::kNonsufficientMetalOverlap:
+      if (de_func_type == DEFuncType::kGetDEProcessType) {
+        de_process_type = DEProcessType::kSkip;
+      } else if (de_func_type == DEFuncType::kExpandViolation) {
+        RTLOG.error(Loc::current(), "This is skipping!");
+      }
+      break;
+    case ViolationType::kNotchSpacing:
+      if (de_func_type == DEFuncType::kGetDEProcessType) {
+        de_process_type = DEProcessType::kSkip;
+      } else if (de_func_type == DEFuncType::kExpandViolation) {
+        RTLOG.error(Loc::current(), "This is skipping!");
+      }
+      break;
+    case ViolationType::kOffGridOrWrongWay:
+      if (de_func_type == DEFuncType::kGetDEProcessType) {
+        de_process_type = DEProcessType::kSkip;
+      } else if (de_func_type == DEFuncType::kExpandViolation) {
+        RTLOG.error(Loc::current(), "This is skipping!");
+      }
+      break;
+    case ViolationType::kOutOfDie:
+      if (de_func_type == DEFuncType::kGetDEProcessType) {
+        de_process_type = DEProcessType::kSkip;
+      } else if (de_func_type == DEFuncType::kExpandViolation) {
+        RTLOG.error(Loc::current(), "This is skipping!");
+      }
+      break;
+    case ViolationType::kParallelRunLengthSpacing:
+      if (de_func_type == DEFuncType::kGetDEProcessType) {
+        de_process_type = DEProcessType::kCost;
+      } else if (de_func_type == DEFuncType::kExpandViolation) {
+        enlarged_rect = enlargeRect(violation);
+        layer_routing_list = keepLayer(violation);
+      }
+      break;
+    case ViolationType::kSameLayerCutSpacing:
+      if (de_func_type == DEFuncType::kGetDEProcessType) {
+        de_process_type = DEProcessType::kCost;
+      } else if (de_func_type == DEFuncType::kExpandViolation) {
+        enlarged_rect = enlargeRect(violation);
+        layer_routing_list = expandOneViaLayer(violation);
+      }
+      break;
+    default:
+      RTLOG.error(Loc::current(), "No violation type!");
+      break;
+  }
+  for (std::pair<int32_t, bool>& layer_routing : layer_routing_list) {
+    Violation expanded_violation = violation;
+    expanded_violation.get_violation_shape().set_real_rect(enlarged_rect);
+    expanded_violation.get_violation_shape().set_layer_idx(layer_routing.first);
+    expanded_violation.set_is_routing(layer_routing.second);
+    expanded_violation_list.push_back(expanded_violation);
+  }
+}
+
+PlanarRect DRCEngine::keepRect(Violation& violation)
+{
+  PlanarRect enlarged_rect;
+  enlarged_rect = violation.get_violation_shape().get_real_rect();
+  return enlarged_rect;
+}
+
+PlanarRect DRCEngine::enlargeRect(Violation& violation)
+{
+  PlanarRect enlarged_rect;
+  PlanarRect& real_rect = violation.get_violation_shape().get_real_rect();
+  if (RTUTIL.exist(violation.get_violation_net_set(), -1)) {
+    int32_t enlarged_x_size = 0;
+    if (real_rect.getXSpan() < violation.get_required_size()) {
+      enlarged_x_size = violation.get_required_size() - real_rect.getXSpan();
+    }
+    int32_t enlarged_y_size = 0;
+    if (real_rect.getYSpan() < violation.get_required_size()) {
+      enlarged_y_size = violation.get_required_size() - real_rect.getYSpan();
+    }
+    enlarged_rect = RTUTIL.getEnlargedRect(real_rect, enlarged_x_size, enlarged_y_size, enlarged_x_size, enlarged_y_size);
+  } else {
+    int32_t enlarged_x_size = 0;
+    if (real_rect.getXSpan() < violation.get_required_size()) {
+      enlarged_x_size = violation.get_required_size() - real_rect.getXSpan();
+      enlarged_x_size /= 2;
+    }
+    int32_t enlarged_y_size = 0;
+    if (real_rect.getYSpan() < violation.get_required_size()) {
+      enlarged_y_size = violation.get_required_size() - real_rect.getYSpan();
+      enlarged_y_size /= 2;
+    }
+    enlarged_rect = RTUTIL.getEnlargedRect(real_rect, enlarged_x_size, enlarged_y_size, enlarged_x_size, enlarged_y_size);
+  }
+  return enlarged_rect;
+}
+
+std::vector<std::pair<int32_t, bool>> DRCEngine::keepLayer(Violation& violation)
+{
+  std::vector<std::pair<int32_t, bool>> layer_routing_list;
+  int32_t routing_layer_idx = violation.get_violation_shape().get_layer_idx();
+  layer_routing_list.emplace_back(routing_layer_idx, true);
+  return layer_routing_list;
+}
+
+std::vector<std::pair<int32_t, bool>> DRCEngine::expandOneViaLayer(Violation& violation)
 {
   std::vector<std::vector<ViaMaster>>& layer_via_master_list = RTDM.getDatabase().get_layer_via_master_list();
 
-  auto no_layer = [&](Violation& violation) {
-    std::vector<std::pair<int32_t, bool>> layer_routing_list;
-    return layer_routing_list;
-  };
-  auto one_layer = [&](Violation& violation) {
-    std::vector<std::pair<int32_t, bool>> layer_routing_list;
-    int32_t routing_layer_idx = violation.get_violation_shape().get_layer_idx();
-    layer_routing_list.emplace_back(routing_layer_idx, true);
-    return layer_routing_list;
-  };
-  auto three_layer = [&](Violation& violation) {
-    std::vector<std::pair<int32_t, bool>> layer_routing_list;
-    int32_t below_layer_idx = violation.get_violation_shape().get_layer_idx();
-    ViaMaster& via_master = layer_via_master_list[below_layer_idx].front();
-    layer_routing_list.emplace_back(via_master.get_below_enclosure().get_layer_idx(), true);
-    layer_routing_list.emplace_back(via_master.get_cut_layer_idx(), false);
-    layer_routing_list.emplace_back(via_master.get_above_enclosure().get_layer_idx(), true);
-    return layer_routing_list;
-  };
-  auto five_layer = [&](Violation& violation) {
-    std::vector<std::pair<int32_t, bool>> layer_routing_list;
-    int32_t below_layer_idx = violation.get_violation_shape().get_layer_idx();
-    ViaMaster& via_master_1 = layer_via_master_list[below_layer_idx].front();
-    int32_t cut_layer_idx_1 = via_master_1.get_cut_layer_idx();
-    int32_t mid_layer_idx = via_master_1.get_above_enclosure().get_layer_idx();
-    ViaMaster& via_master_2 = layer_via_master_list[mid_layer_idx].front();
-    int32_t cut_layer_idx_2 = via_master_2.get_cut_layer_idx();
-    int32_t above_layer_idx = via_master_2.get_above_enclosure().get_layer_idx();
-    layer_routing_list.emplace_back(below_layer_idx, true);
-    layer_routing_list.emplace_back(cut_layer_idx_1, false);
-    layer_routing_list.emplace_back(mid_layer_idx, true);
-    layer_routing_list.emplace_back(cut_layer_idx_2, false);
-    layer_routing_list.emplace_back(above_layer_idx, true);
-    return layer_routing_list;
-  };
+  std::vector<std::pair<int32_t, bool>> layer_routing_list;
+  int32_t below_layer_idx = violation.get_violation_shape().get_layer_idx();
+  ViaMaster& via_master = layer_via_master_list[below_layer_idx].front();
+  layer_routing_list.emplace_back(via_master.get_below_enclosure().get_layer_idx(), true);
+  layer_routing_list.emplace_back(via_master.get_cut_layer_idx(), false);
+  layer_routing_list.emplace_back(via_master.get_above_enclosure().get_layer_idx(), true);
+  return layer_routing_list;
+}
 
-  static std::map<ViolationType, std::function<std::vector<std::pair<int32_t, bool>>(Violation&)>> violation_func_map;
-  static std::once_flag init_flag;
-  std::call_once(init_flag, [&]() {
-    violation_func_map[ViolationType::kAdjacentCutSpacing] = no_layer;
-    violation_func_map[ViolationType::kCornerFillSpacing] = no_layer;
-    violation_func_map[ViolationType::kCutEOLSpacing] = three_layer;
-    violation_func_map[ViolationType::kCutShort] = three_layer;
-    violation_func_map[ViolationType::kDifferentLayerCutSpacing] = five_layer;
-    violation_func_map[ViolationType::kEndOfLineSpacing] = one_layer;
-    violation_func_map[ViolationType::kEnclosure] = no_layer;
-    violation_func_map[ViolationType::kEnclosureEdge] = no_layer;
-    violation_func_map[ViolationType::kEnclosureParallel] = no_layer;
-    violation_func_map[ViolationType::kFloatingPatch] = no_layer;
-    violation_func_map[ViolationType::kJogToJogSpacing] = no_layer;
-    violation_func_map[ViolationType::kMaxViaStack] = three_layer;
-    violation_func_map[ViolationType::kMetalShort] = one_layer;
-    violation_func_map[ViolationType::kMinHole] = no_layer;
-    violation_func_map[ViolationType::kMinimumArea] = one_layer;
-    violation_func_map[ViolationType::kMinimumCut] = no_layer;
-    violation_func_map[ViolationType::kMinimumWidth] = no_layer;
-    violation_func_map[ViolationType::kMinStep] = one_layer;
-    violation_func_map[ViolationType::kNonsufficientMetalOverlap] = no_layer;
-    violation_func_map[ViolationType::kNotchSpacing] = no_layer;
-    violation_func_map[ViolationType::kOffGridOrWrongWay] = no_layer;
-    violation_func_map[ViolationType::kOutOfDie] = no_layer;
-    violation_func_map[ViolationType::kParallelRunLengthSpacing] = one_layer;
-    violation_func_map[ViolationType::kSameLayerCutSpacing] = three_layer;
-  });
-  if (!RTUTIL.exist(violation_func_map, violation.get_violation_type())) {
-    RTLOG.error(Loc::current(), "No violation type!");
-  }
-  return violation_func_map[violation.get_violation_type()](violation);
+std::vector<std::pair<int32_t, bool>> DRCEngine::expandTwoViaLayer(Violation& violation)
+{
+  std::vector<std::vector<ViaMaster>>& layer_via_master_list = RTDM.getDatabase().get_layer_via_master_list();
+
+  std::vector<std::pair<int32_t, bool>> layer_routing_list;
+  int32_t below_layer_idx = violation.get_violation_shape().get_layer_idx();
+  ViaMaster& via_master_1 = layer_via_master_list[below_layer_idx].front();
+  int32_t cut_layer_idx_1 = via_master_1.get_cut_layer_idx();
+  int32_t mid_layer_idx = via_master_1.get_above_enclosure().get_layer_idx();
+  ViaMaster& via_master_2 = layer_via_master_list[mid_layer_idx].front();
+  int32_t cut_layer_idx_2 = via_master_2.get_cut_layer_idx();
+  int32_t above_layer_idx = via_master_2.get_above_enclosure().get_layer_idx();
+  layer_routing_list.emplace_back(below_layer_idx, true);
+  layer_routing_list.emplace_back(cut_layer_idx_1, false);
+  layer_routing_list.emplace_back(mid_layer_idx, true);
+  layer_routing_list.emplace_back(cut_layer_idx_2, false);
+  layer_routing_list.emplace_back(above_layer_idx, true);
+  return layer_routing_list;
 }
 
 }  // namespace irt

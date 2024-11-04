@@ -474,7 +474,7 @@ void TrackAssigner::buildOrientNetMap(TAPanel& ta_panel)
     }
   }
   for (Violation& violation : ta_panel.get_violation_list()) {
-    updateViolationToGraph(ta_panel, ChangeType::kAdd, violation);
+    addViolationToGraph(ta_panel, violation);
   }
 }
 
@@ -912,17 +912,10 @@ double TrackAssigner::getEstimateViaCost(TAPanel& ta_panel, TANode* start_node, 
 
 void TrackAssigner::updateViolationList(TAPanel& ta_panel)
 {
-  std::vector<Violation> new_violation_list = getCostViolationList(ta_panel);
-
-  std::vector<Violation>& violation_list = ta_panel.get_violation_list();
-  // 原结果从graph删除
-  for (Violation& violation : violation_list) {
-    updateViolationToGraph(ta_panel, ChangeType::kDel, violation);
-  }
-  violation_list = new_violation_list;
+  ta_panel.set_violation_list(getCostViolationList(ta_panel));
   // 新结果添加到graph
-  for (Violation& violation : violation_list) {
-    updateViolationToGraph(ta_panel, ChangeType::kAdd, violation);
+  for (Violation& violation : ta_panel.get_violation_list()) {
+    addViolationToGraph(ta_panel, violation);
   }
 }
 
@@ -1130,19 +1123,15 @@ void TrackAssigner::updateNetResultToGraph(TAPanel& ta_panel, ChangeType change_
   }
 }
 
-void TrackAssigner::updateViolationToGraph(TAPanel& ta_panel, ChangeType change_type, Violation& violation)
+void TrackAssigner::addViolationToGraph(TAPanel& ta_panel, Violation& violation)
 {
   NetShape net_shape(-1, violation.get_violation_shape().getRealLayerRect(), violation.get_is_routing());
   if (!net_shape.get_is_routing() || (ta_panel.get_ta_panel_id().get_layer_idx() != net_shape.get_layer_idx())) {
     return;
   }
-  for (auto& [ta_node, orientation_set] : getNodeOrientationMap(ta_panel, net_shape, true)) {
+  for (auto& [ta_node, orientation_set] : getNodeOrientationMap(ta_panel, net_shape, false)) {
     for (Orientation orientation : orientation_set) {
-      if (change_type == ChangeType::kAdd) {
-        ta_node->get_orient_violation_number_map()[orientation]++;
-      } else if (change_type == ChangeType::kDel) {
-        ta_node->get_orient_violation_number_map()[orientation]--;
-      }
+      ta_node->get_orient_violation_number_map()[orientation]++;
     }
   }
 }
@@ -1177,13 +1166,13 @@ std::map<TANode*, std::set<Orientation>> TrackAssigner::getRoutingNodeOrientatio
   std::map<TANode*, std::set<Orientation>> node_orientation_map;
   // wire
   {
-    int32_t enlarged_size = 0;
+    int32_t enlarged_size = half_wire_width;
     if (need_enlarged) {
-      // 膨胀size为 min_spacing + half_wire_width
-      enlarged_size = min_spacing + half_wire_width;
-      // 贴合的也不算违例
-      enlarged_size -= 1;
+      // 膨胀size为 min_spacing
+      enlarged_size += min_spacing;
     }
+    // 贴合的也不算违例
+    enlarged_size -= 1;
     PlanarRect planar_enlarged_rect = RTUTIL.getEnlargedRect(net_shape.get_rect(), enlarged_size);
     for (auto& [grid_coord, orientation_set] : RTUTIL.getTrackGridOrientationMap(planar_enlarged_rect, ta_panel.get_panel_track_axis())) {
       TANode& node = ta_node_map[grid_coord.get_x()][grid_coord.get_y()];
