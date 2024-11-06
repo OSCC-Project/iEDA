@@ -6,6 +6,7 @@ add_library(solver_lg_method
 
 target_link_libraries(solver_lg_method 
     PRIVATE
+    usage
     ipl-module-logger
     ipl-bridge
     ipl-configurator

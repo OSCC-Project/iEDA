@@ -18,8 +18,8 @@
 #pragma once
 
 #include <map>
-#include <unordered_map>
 #include <stack>
+#include <unordered_map>
 
 #include "AbacusCluster.hh"
 #include "LGMethodInterface.hh"
@@ -70,7 +70,7 @@ class Abacus : public LGMethodInterface
 
   int32_t _row_height = -1;
   int32_t _site_width = -1;
-  
+
   std::stack<RollbackInfo> _rollback_stack;
 
   void pickAndSortMovableInstList(std::vector<ipl::LGInstance*>& movable_inst_list);
@@ -102,6 +102,8 @@ class Abacus : public LGMethodInterface
   std::string obtainUniqueClusterName(std::string origin_name);
 
   void debugIntervalRemainLength(std::string interval_name);
+
+  int get_best_cost_row(ipl::LGInstance* inst);
 };
 
 }  // namespace ieda_solver
