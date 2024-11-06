@@ -50,7 +50,9 @@ struct DelayRcEdge;
  *
  */
 struct DelayRcPoint {
-  const char* _node_name = nullptr;
+  DelayRcPoint() {}
+  DelayRcPoint(std::string node_name) : _node_name(node_name) {}
+  std::string _node_name;
   float _cap = 0.0;
   float _nload =
       0.0;  //!< The nload is sum of the node cap and downstream node cap.
@@ -77,12 +79,12 @@ struct DelayRcPoint {
 struct CoupledDelayRcPoint {
   CoupledDelayRcPoint(const std::string& aggressor_node,
                       const std::string& victim_node, double coupled_cap)
-      : _local_node(aggressor_node.c_str()),
-        _remote_node(victim_node.c_str()),
+      : _local_node(aggressor_node),
+        _remote_node(victim_node),
         _coupled_cap(coupled_cap) {}
 
-  const char* _local_node;
-  const char* _remote_node;
+  std::string _local_node;
+  std::string _remote_node;
   float _coupled_cap;
 };
 
@@ -106,14 +108,27 @@ struct DelayRcEdge {
  */
 struct DelayRcNetwork {
   DelayRcPoint* insert_node(const std::string& name, double cap) {
-    if (_str2nodes.find(name) != _str2nodes.end() &&
-        ista::IsDoubleEqual(_str2nodes[name]->_cap, cap)) {
+    auto it = _str2nodes.find(name);
+
+    if (it != _str2nodes.end()) {
+      if (ista::IsDoubleEqual(it->second->_cap, cap)) {
+        return it->second.get();
+      } else {
+        it->second->_node_name = name;
+        it->second->_cap = cap;
+        return it->second.get();
+      }
+    } else {
+      auto new_node = std::make_unique<DelayRcPoint>();
+      new_node->_node_name = name;
+      new_node->_cap = cap;
+      _str2nodes[name] = std::move(new_node);
+
+      for (const auto& node : _str2nodes) {
+        LOG_INFO << node.second->_node_name;
+      }
       return _str2nodes[name].get();
     }
-    auto& node = _str2nodes[name];
-    node->_node_name = name.c_str();
-    node->_cap = cap;
-    return node.get();
   }
 
   CoupledDelayRcPoint* insert_node(const std::string& local_node,
@@ -160,7 +175,7 @@ struct DelayRcNetwork {
   }
   DelayRcPoint* rc_node(const std::string& name) {
     for (const auto& node : _nodes) {
-      if (node && strcmp(node->_node_name, name.c_str()) == 0) {
+      if (node && strcmp(node->_node_name.c_str(), name.c_str()) == 0) {
         return node.get();
       }
     }

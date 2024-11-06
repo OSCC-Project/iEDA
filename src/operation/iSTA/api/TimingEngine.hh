@@ -96,6 +96,10 @@ class TimingEngine {
     _ista->readVerilogWithRustParser(verilog_file);
     return *this;
   }
+  TimingEngine &linkDesign(const char *top_cell_name) {
+    _ista->linkDesignWithRustParser(top_cell_name);
+    return *this;
+  }
   TimingEngine &readSdc(const char *sdc_file) {
     _ista->resetConstraint();
     _ista->readSdc(sdc_file);
@@ -331,12 +335,11 @@ class TimingEngine {
   std::vector<std::string> getLibertyCellInputpin(const char *cell_name);
   StaClock *getPropClock(const char *clock_pin_name);
   StaSeqPathData *getWorstSeqData(StaVertex *vertex, AnalysisMode mode,
-                                          TransType trans_type) {
+                                  TransType trans_type) {
     return _ista->getWorstSeqData(vertex, mode, trans_type);
   }
 
-  StaSeqPathData *getWorstSeqData(AnalysisMode mode,
-                                          TransType trans_type) {
+  StaSeqPathData *getWorstSeqData(AnalysisMode mode, TransType trans_type) {
     return _ista->getWorstSeqData(std::nullopt, mode, trans_type);
   }
 

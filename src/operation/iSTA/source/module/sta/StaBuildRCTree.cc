@@ -67,7 +67,7 @@ std::unique_ptr<RcNet> StaBuildRCTree::createRcNet(Net* net) {
  * @return std::unique_ptr<DelayRcNet>
  */
 std::unique_ptr<DelayRcNet> StaBuildRCTree::createDelayRcNet(Net* net) {
-  std::unique_ptr<DelayRcNet> delay_rc_net = std::make_unique<DelayRcNet>();
+  std::unique_ptr<DelayRcNet> delay_rc_net = std::make_unique<DelayRcNet>(net);
   return delay_rc_net;
 }
 
@@ -126,7 +126,7 @@ unsigned StaBuildRCTree::operator()(StaGraph* the_graph) {
   std::atomic<unsigned> max_node = 0;
   std::string net_name;
 
-#if 1
+#if 0
   {
     ThreadPool pool(getNumThreads());
     auto* spef_file = spef_parser.get_spef_file();
@@ -184,7 +184,7 @@ unsigned StaBuildRCTree::operator()(StaGraph* the_graph) {
       make_delay_rct(delay_rc_net, rust_spef_net);
       update_rc_tree_info(delay_rc_net);
       update_rc_timing(delay_rc_net);
-      rust_free_spef_net(spef_net);
+      rust_free_spef_net(rust_spef_net);
       // printYaml(spef_net);
 #else
       auto* rc_net = getSta()->getRcNet(design_net);

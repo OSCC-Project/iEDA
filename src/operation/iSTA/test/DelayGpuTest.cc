@@ -14,14 +14,16 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
+#include <cuda_runtime.h>
+
+#include "api/TimingEngine.hh"
 #include "delay-cuda/rc_tree.cuh"
 #include "gtest/gtest.h"
 #include "log/Log.hh"
-#include <cuda_runtime.h>
-
 using namespace istagpu;
+using namespace ista;
 using ieda::Log;
-
+using ieda::Stats;
 
 namespace {
 
@@ -34,15 +36,40 @@ class DelayGPUTest : public testing::Test {
   void TearDown() { Log::end(); }
 };
 
-TEST_F(DelayGPUTest, update_point_load) { 
-    DelayRcNet rc_net;
+TEST_F(DelayGPUTest, update_point_load) {
+  DelayRcNet rc_net;
 
-    // delay_update_point_load(&rc_net);
+  // delay_update_point_load(&rc_net);
 }
 
-TEST_F(DelayGPUTest, elmore_delay) {
-   test();
-}
+TEST_F(DelayGPUTest, elmore_delay) { test(); }
 
+TEST_F(DelayGPUTest, example1) {
+  Stats stats;
+
+  auto* timing_engine = TimingEngine::getOrCreateTimingEngine();
+  timing_engine->set_num_threads(48);
+  const char* design_work_space = "/home/longshuaiying/cuda_delay";
+  timing_engine->set_design_work_space(design_work_space);
+
+  std::vector<const char*> lib_files{
+      "/home/taosimin/nangate45/lib/NangateOpenCellLibrary_typical.lib"};
+  timing_engine->readLiberty(lib_files);
+
+  timing_engine->get_ista()->set_analysis_mode(ista::AnalysisMode::kMaxMin);
+  timing_engine->get_ista()->set_n_worst_path_per_clock(1);
+
+  timing_engine->get_ista()->set_top_module_name("top");
+
+  timing_engine->readDesign(
+      "/home/taosimin/nangate45/design/example/example1.v");
+  timing_engine->linkDesign("top");
+
+  timing_engine->readSdc(
+      "/home/taosimin/nangate45/design/example/example1.sdc");
+
+  timing_engine->readSpef(
+      "/home/taosimin/nangate45/design/example/example1.spef");
+}
 
 }  // namespace
