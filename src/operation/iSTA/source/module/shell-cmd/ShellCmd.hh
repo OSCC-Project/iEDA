@@ -198,4 +198,17 @@ class CmdVerilogToDef : public TclCmd {
   unsigned exec();
 };
 
+/**
+ * @brief dump graph data.
+ * 
+ */
+class CmdDumpGraphData : public TclCmd {
+ public:
+  explicit CmdDumpGraphData(const char* cmd_name);
+  ~CmdDumpGraphData() override = default;
+
+  unsigned check();
+  unsigned exec();
+};
+
 }  // namespace ista

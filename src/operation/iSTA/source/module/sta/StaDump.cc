@@ -207,14 +207,12 @@ unsigned StaDumpYaml::operator()(StaGraph* the_graph) {
   FOREACH_VERTEX(the_graph, the_vertex) { 
     the_vertex->exec(*this); 
     LOG_INFO_EVERY_N(10000) << "dump 10000 vertexes ...";
-    break;
   }
 
   StaArc* the_arc;
   FOREACH_ARC(the_graph, the_arc) { 
     the_arc->exec(*this);
     LOG_INFO_EVERY_N(10000) << "dump 10000 arcs ...";
-    break;
   }
 
   printText(_yaml_file_path.c_str());
