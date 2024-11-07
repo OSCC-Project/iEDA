@@ -56,6 +56,7 @@ PYBIND11_MODULE(ieda_py, m)
   register_report(m);
   register_feature(m);
   register_eval(m);
+  register_large_model(m);
 }
 
 }  // namespace python_interface

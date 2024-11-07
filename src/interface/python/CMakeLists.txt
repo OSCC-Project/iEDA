@@ -22,6 +22,7 @@ add_subdirectory(py_ito)
 add_subdirectory(py_report)
 add_subdirectory(py_feature)
 add_subdirectory(py_eval)
+add_subdirectory(py_lm)
 # ADD SOURCE FILES 
 #file(GLOB_RECURSE PYTHON_INTERFACE_SRC CONFIGURE_DEPENDS ./*.cpp ./*.cc)
 file(GLOB PYTHON_INTERFACE_SRC CONFIGURE_DEPENDS *.cpp .h)

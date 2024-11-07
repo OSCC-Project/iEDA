@@ -42,6 +42,7 @@
 #include "tcl_register_idb.h"
 #include "tcl_register_inst.h"
 #include "tcl_register_irt.h"
+#include "tcl_register_lm.h"
 #include "tcl_register_no.h"
 #include "tcl_register_pdn.h"
 #include "tcl_register_pl.h"
@@ -113,6 +114,8 @@ int registerCommands()
   registerCmdEval();
 
   registerCmdECO();
+
+  registerCmdLargeModel();
 
 #ifdef CONTEST
   registerCmdContest();
