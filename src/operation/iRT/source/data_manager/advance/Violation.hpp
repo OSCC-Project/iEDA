@@ -46,7 +46,7 @@ class Violation
   EXTLayerRect _violation_shape;
   bool _is_routing = true;
   std::set<int32_t> _violation_net_set;
-  int32_t _required_size;
+  int32_t _required_size = 0;
 };
 
 }  // namespace irt

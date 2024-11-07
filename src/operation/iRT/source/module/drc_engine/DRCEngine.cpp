@@ -51,9 +51,9 @@ void DRCEngine::destroyInst()
 
 std::vector<Violation> DRCEngine::getViolationList(DETask& de_task)
 {
-  // getViolationListByOther(de_task);
+  getViolationListByOther(de_task);
 
-  getViolationListBySelf(de_task);
+  // getViolationListBySelf(de_task);
   buildViolationList(de_task);
 
   return de_task.get_violation_list();
@@ -438,6 +438,9 @@ void DRCEngine::getViolationListByOther(DETask& de_task)
     }
   }
   de_task.set_violation_list(RTI.getViolationList(de_task.get_env_shape_list(), de_task.get_net_pin_shape_map(), net_result_map));
+  for (Violation& violation : de_task.get_violation_list()) {
+    violation.set_violation_type(ViolationType::kParallelRunLengthSpacing);
+  }
 }
 
 void DRCEngine::buildViolationList(DETask& de_task)
