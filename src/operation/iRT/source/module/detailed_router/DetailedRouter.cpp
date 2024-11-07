@@ -117,12 +117,12 @@ void DetailedRouter::iterativeDRModel(DRModel& dr_model)
    */
   std::vector<DRParameter> dr_parameter_list;
   // clang-format off
-  dr_parameter_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 6, 0, fixed_rect_unit, routed_rect_unit, violation_unit, true, 4);
-  dr_parameter_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 6, -2, fixed_rect_unit, routed_rect_unit, violation_unit, false, 4);
-  dr_parameter_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 6, -4, fixed_rect_unit, routed_rect_unit, violation_unit, false, 4);
-  dr_parameter_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 6, 0, fixed_rect_unit, routed_rect_unit, violation_unit, false, 4);
-  dr_parameter_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 6, -2, fixed_rect_unit, routed_rect_unit, violation_unit, false, 4);
-  dr_parameter_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 6, -4, fixed_rect_unit, routed_rect_unit, violation_unit, false, 4);
+  dr_parameter_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 6, 0, fixed_rect_unit, routed_rect_unit, violation_unit, true, 10);
+  dr_parameter_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 6, -2, fixed_rect_unit, routed_rect_unit, violation_unit, false, 10);
+  dr_parameter_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 6, -4, fixed_rect_unit, routed_rect_unit, violation_unit, false, 10);
+  dr_parameter_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 6, 0, fixed_rect_unit, routed_rect_unit, violation_unit, false, 10);
+  dr_parameter_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 6, -2, fixed_rect_unit, routed_rect_unit, violation_unit, false, 10);
+  dr_parameter_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 6, -4, fixed_rect_unit, routed_rect_unit, violation_unit, false, 10);
   // clang-format on
   for (size_t i = 0, iter = 1; i < dr_parameter_list.size(); i++, iter++) {
     Monitor iter_monitor;
@@ -133,6 +133,7 @@ void DetailedRouter::iterativeDRModel(DRModel& dr_model)
     buildBoxSchedule(dr_model);
     routeDRBoxMap(dr_model);
     uploadNetResult(dr_model);
+    uploadViolation(dr_model);
     updateSummary(dr_model);
     printSummary(dr_model);
     outputNetCSV(dr_model);
@@ -262,7 +263,6 @@ void DetailedRouter::routeDRBoxMap(DRModel& dr_model)
         // debugPlotDRBox(dr_box, -1, "before");
         routeDRBox(dr_box);
         // debugPlotDRBox(dr_box, -1, "after");
-        uploadViolation(dr_box);
       }
       freeDRBox(dr_box);
     }
@@ -1121,7 +1121,10 @@ double DetailedRouter::getEstimateViaCost(DRBox& dr_box, DRNode* start_node, DRN
 
 void DetailedRouter::updateViolationList(DRBox& dr_box)
 {
-  dr_box.set_violation_list(getCostViolationList(dr_box));
+  dr_box.get_violation_list().clear();
+  for (Violation new_violation : getCostViolationList(dr_box)) {
+    dr_box.get_violation_list().push_back(new_violation);
+  }
   // 新结果添加到graph
   for (Violation& violation : dr_box.get_violation_list()) {
     addViolationToGraph(dr_box, violation);
@@ -1209,13 +1212,6 @@ std::vector<DRTask*> DetailedRouter::getTaskScheduleByViolation(DRBox& dr_box)
     dr_task_list.push_back(dr_task);
   }
   return dr_task_list;
-}
-
-void DetailedRouter::uploadViolation(DRBox& dr_box)
-{
-  for (Violation& violation : dr_box.get_violation_list()) {
-    RTDM.updateViolationToGCellMap(ChangeType::kAdd, new Violation(violation));
-  }
 }
 
 void DetailedRouter::freeDRBox(DRBox& dr_box)
@@ -1334,6 +1330,84 @@ void DetailedRouter::uploadNetResult(DRModel& dr_model)
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
+void DetailedRouter::uploadViolation(DRModel& dr_model)
+{
+  Monitor monitor;
+  RTLOG.info(Loc::current(), "Starting...");
+
+  Die& die = RTDM.getDatabase().get_die();
+
+  for (Violation* violation : RTDM.getViolationSet(die)) {
+    RTDM.updateViolationToGCellMap(ChangeType::kDel, violation);
+  }
+  for (Violation violation : getCostViolationList(dr_model)) {
+    RTDM.updateViolationToGCellMap(ChangeType::kAdd, new Violation(violation));
+  }
+  RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
+}
+
+std::vector<Violation> DetailedRouter::getCostViolationList(DRModel& dr_model)
+{
+  Die& die = RTDM.getDatabase().get_die();
+
+  std::string top_name = RTUTIL.getString("dr_model");
+  PlanarRect check_region = die.get_real_rect();
+  std::vector<std::pair<EXTLayerRect*, bool>> env_shape_list;
+  std::map<int32_t, std::vector<std::pair<EXTLayerRect*, bool>>> net_pin_shape_map;
+  for (auto& [is_routing, layer_net_fixed_rect_map] : RTDM.getTypeLayerNetFixedRectMap(die)) {
+    for (auto& [layer_idx, net_fixed_rect_map] : layer_net_fixed_rect_map) {
+      for (auto& [net_idx, fixed_rect_set] : net_fixed_rect_map) {
+        if (net_idx == -1) {
+          for (auto& fixed_rect : fixed_rect_set) {
+            env_shape_list.emplace_back(fixed_rect, is_routing);
+          }
+        } else {
+          for (auto& fixed_rect : fixed_rect_set) {
+            net_pin_shape_map[net_idx].emplace_back(fixed_rect, is_routing);
+          }
+        }
+      }
+    }
+  }
+  std::map<int32_t, std::vector<Segment<LayerCoord>*>> net_result_map;
+  for (auto& [net_idx, segment_set] : RTDM.getNetAccessResultMap(die)) {
+    for (Segment<LayerCoord>* segment : segment_set) {
+      net_result_map[net_idx].push_back(segment);
+    }
+  }
+  for (auto& [net_idx, segment_set] : RTDM.getNetDetailedResultMap(die)) {
+    for (Segment<LayerCoord>* segment : segment_set) {
+      net_result_map[net_idx].push_back(segment);
+    }
+  }
+  std::map<int32_t, std::vector<EXTLayerRect*>> net_patch_map;
+  for (auto& [net_idx, patch_set] : RTDM.getNetAccessPatchMap(die)) {
+    for (EXTLayerRect* patch : patch_set) {
+      net_patch_map[net_idx].push_back(patch);
+    }
+  }
+  for (auto& [net_idx, patch_set] : RTDM.getNetDetailedPatchMap(die)) {
+    for (EXTLayerRect* patch : patch_set) {
+      net_patch_map[net_idx].push_back(patch);
+    }
+  }
+  std::set<int32_t> need_checked_net_set;
+  for (DRNet& dr_net : dr_model.get_dr_net_list()) {
+    need_checked_net_set.insert(dr_net.get_net_idx());
+  }
+
+  DETask de_task;
+  de_task.set_process_type_set({DEProcessType::kCost});
+  de_task.set_top_name(top_name);
+  de_task.set_check_region(check_region);
+  de_task.set_env_shape_list(env_shape_list);
+  de_task.set_net_pin_shape_map(net_pin_shape_map);
+  de_task.set_net_result_map(net_result_map);
+  de_task.set_net_patch_map(net_patch_map);
+  de_task.set_need_checked_net_set(need_checked_net_set);
+  return RTDE.getViolationList(de_task);
+}
+
 bool DetailedRouter::stopIteration(DRModel& dr_model)
 {
   if (getViolationNum() == 0) {
@@ -1420,11 +1494,104 @@ void DetailedRouter::updateNetResultToGraph(DRBox& dr_box, ChangeType change_typ
 
 void DetailedRouter::addViolationToGraph(DRBox& dr_box, Violation& violation)
 {
-  // 违例区域本身(不需要膨胀)被禁止布线
-  NetShape net_shape(-1, violation.get_violation_shape().getRealLayerRect(), violation.get_is_routing());
-  for (auto& [dr_node, orientation_set] : getNodeOrientationMap(dr_box, net_shape, false)) {
-    for (Orientation orientation : orientation_set) {
-      dr_node->get_orient_violation_number_map()[orientation]++;
+  std::map<int32_t, std::vector<int32_t>>& cut_to_adjacent_routing_map = RTDM.getDatabase().get_cut_to_adjacent_routing_map();
+
+  std::vector<LayerRect> searched_rect_list;
+  {
+    EXTLayerRect& violation_shape = violation.get_violation_shape();
+    PlanarRect enlarged_rect = RTUTIL.getEnlargedRect(violation_shape.get_real_rect(), RTDM.getOnlyPitch());
+    if (violation.get_is_routing()) {
+      searched_rect_list.emplace_back(enlarged_rect, violation_shape.get_layer_idx());
+    } else {
+      for (int32_t layer_idx : cut_to_adjacent_routing_map[violation_shape.get_layer_idx()]) {
+        searched_rect_list.emplace_back(enlarged_rect, layer_idx);
+      }
+    }
+  }
+  std::vector<Segment<LayerCoord>> overlap_segment_list;
+  for (auto& [net_idx, segment_list] : dr_box.get_net_detailed_result_map()) {
+    if (!RTUTIL.exist(violation.get_violation_net_set(), net_idx)) {
+      continue;
+    }
+    for (Segment<LayerCoord>& segment : segment_list) {
+      for (LayerRect& searched_rect : searched_rect_list) {
+        if (!RTUTIL.isOverlap(searched_rect, segment)) {
+          continue;
+        }
+        overlap_segment_list.push_back(segment);
+        break;
+      }
+    }
+  }
+  addViolationToGraph(dr_box, searched_rect_list, overlap_segment_list);
+}
+
+void DetailedRouter::addViolationToGraph(DRBox& dr_box, std::vector<LayerRect>& searched_rect_list,
+                                         std::vector<Segment<LayerCoord>>& overlap_segment_list)
+{
+  ScaleAxis& box_track_axis = dr_box.get_box_track_axis();
+  std::vector<GridMap<DRNode>>& layer_node_map = dr_box.get_layer_node_map();
+
+  for (Segment<LayerCoord>& overlap_segment : overlap_segment_list) {
+    LayerCoord& first_coord = overlap_segment.get_first();
+    LayerCoord& second_coord = overlap_segment.get_second();
+    if (first_coord == second_coord) {
+      continue;
+    }
+    PlanarRect real_rect = RTUTIL.getEnlargedRect(first_coord, second_coord, 0);
+    if (!RTUTIL.existTrackGrid(real_rect, box_track_axis)) {
+      continue;
+    }
+    PlanarRect grid_rect = RTUTIL.getTrackGrid(real_rect, box_track_axis);
+    std::map<int32_t, std::set<DRNode*>> distance_node_map;
+    {
+      int32_t first_layer_idx = first_coord.get_layer_idx();
+      int32_t second_layer_idx = second_coord.get_layer_idx();
+      RTUTIL.swapByASC(first_layer_idx, second_layer_idx);
+      for (int32_t layer_idx = first_layer_idx; layer_idx <= second_layer_idx; layer_idx++) {
+        for (int32_t x = grid_rect.get_ll_x(); x <= grid_rect.get_ur_x(); x++) {
+          for (int32_t y = grid_rect.get_ll_y(); y <= grid_rect.get_ur_y(); y++) {
+            DRNode* dr_node = &layer_node_map[layer_idx][x][y];
+            for (LayerRect& searched_rect : searched_rect_list) {
+              if (searched_rect.get_layer_idx() != dr_node->get_layer_idx()) {
+                continue;
+              }
+              int32_t distance = 0;
+              if (!RTUTIL.isInside(searched_rect.get_rect(), dr_node->get_planar_coord())) {
+                distance = RTUTIL.getManhattanDistance(searched_rect.getMidPoint(), dr_node->get_planar_coord());
+              }
+              distance_node_map[distance].insert(dr_node);
+            }
+          }
+        }
+      }
+    }
+    std::set<DRNode*> valid_node_set;
+    if (!distance_node_map[0].empty()) {
+      valid_node_set = distance_node_map[0];
+    } else {
+      for (auto& [distance, node_set] : distance_node_map) {
+        valid_node_set.insert(node_set.begin(), node_set.end());
+        if (valid_node_set.size() >= 2) {
+          break;
+        }
+      }
+    }
+    Orientation orientation = RTUTIL.getOrientation(first_coord, second_coord);
+    Orientation oppo_orientation = RTUTIL.getOppositeOrientation(orientation);
+    for (DRNode* valid_node : valid_node_set) {
+      if (LayerCoord(*valid_node) != first_coord) {
+        valid_node->get_orient_violation_number_map()[oppo_orientation]++;
+        if (RTUTIL.exist(valid_node->get_neighbor_node_map(), oppo_orientation)) {
+          valid_node->get_neighbor_node_map()[oppo_orientation]->get_orient_violation_number_map()[orientation]++;
+        }
+      }
+      if (LayerCoord(*valid_node) != second_coord) {
+        valid_node->get_orient_violation_number_map()[orientation]++;
+        if (RTUTIL.exist(valid_node->get_neighbor_node_map(), orientation)) {
+          valid_node->get_neighbor_node_map()[orientation]->get_orient_violation_number_map()[oppo_orientation]++;
+        }
+      }
     }
   }
 }

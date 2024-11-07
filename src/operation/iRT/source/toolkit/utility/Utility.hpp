@@ -702,8 +702,8 @@ class Utility
 
     if (first_y == second_y && first_layer_idx == second_layer_idx) {
       if (first_y >= rect_ll_y && first_y <= rect_ur_y && rect_layer_idx == first_layer_idx) {
-        int overlap_min_x = std::max(rect_ll_x, std::min(first_x, second_x));
-        int overlap_max_x = std::min(rect_ur_x, std::max(first_x, second_x));
+        int32_t overlap_min_x = std::max(rect_ll_x, std::min(first_x, second_x));
+        int32_t overlap_max_x = std::min(rect_ur_x, std::max(first_x, second_x));
 
         if (overlap_min_x <= overlap_max_x) {
           return Segment<LayerCoord>(LayerCoord(overlap_min_x, first_y, rect_layer_idx),
@@ -712,8 +712,8 @@ class Utility
       }
     } else if (first_x == second_x && first_layer_idx == second_layer_idx) {
       if (first_x >= rect_ll_x && first_x <= rect_ur_x && rect_layer_idx == first_layer_idx) {
-        int overlap_min_y = std::max(rect_ll_y, std::min(first_y, second_y));
-        int overlap_max_y = std::min(rect_ur_y, std::max(first_y, second_y));
+        int32_t overlap_min_y = std::max(rect_ll_y, std::min(first_y, second_y));
+        int32_t overlap_max_y = std::min(rect_ur_y, std::max(first_y, second_y));
 
         if (overlap_min_y <= overlap_max_y) {
           return Segment<LayerCoord>(LayerCoord(first_x, overlap_min_y, rect_layer_idx),
@@ -750,8 +750,8 @@ class Utility
 
     if (first_y == second_y && first_layer_idx == second_layer_idx) {
       if (first_y >= rect_ll_y && first_y <= rect_ur_y && rect_layer_idx == first_layer_idx) {
-        int overlap_min_x = std::max(rect_ll_x, std::min(first_x, second_x));
-        int overlap_max_x = std::min(rect_ur_x, std::max(first_x, second_x));
+        int32_t overlap_min_x = std::max(rect_ll_x, std::min(first_x, second_x));
+        int32_t overlap_max_x = std::min(rect_ur_x, std::max(first_x, second_x));
 
         if (overlap_min_x <= overlap_max_x) {
           return true;
@@ -759,8 +759,8 @@ class Utility
       }
     } else if (first_x == second_x && first_layer_idx == second_layer_idx) {
       if (first_x >= rect_ll_x && first_x <= rect_ur_x && rect_layer_idx == first_layer_idx) {
-        int overlap_min_y = std::max(rect_ll_y, std::min(first_y, second_y));
-        int overlap_max_y = std::min(rect_ur_y, std::max(first_y, second_y));
+        int32_t overlap_min_y = std::max(rect_ll_y, std::min(first_y, second_y));
+        int32_t overlap_max_y = std::min(rect_ur_y, std::max(first_y, second_y));
 
         if (overlap_min_y <= overlap_max_y) {
           return true;

@@ -18,9 +18,9 @@ iterativeDRModel:迭代DRModel
                 routeDRTask:给task布线,在此函数末尾,布线结果从graph中删除,再加入新的结果
             updateViolationList:首先得到Violation存到Box下面,然后Violation结果从graph中删除,再加入新的结果
             getTaskScheduleByViolation:通过Violation得到新的布线调度
-        uploadViolation:将violation加入gcell_map
         freeDRBox:析构
     uploadNetResult:将所有的box布线结果去环优化,然后删除所有GCellMap的结果再添加
+    uploadViolation:将整个版图结果进行检查并将violation加入gcell_map
 
 
 

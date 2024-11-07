@@ -105,10 +105,11 @@ class DetailedRouter
   double getEstimateViaCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
   void updateViolationList(DRBox& dr_box);
   std::vector<Violation> getCostViolationList(DRBox& dr_box);
-  void uploadViolation(DRBox& dr_box);
   void freeDRBox(DRBox& dr_box);
   int32_t getViolationNum();
   void uploadNetResult(DRModel& dr_model);
+  void uploadViolation(DRModel& dr_model);
+  std::vector<Violation> getCostViolationList(DRModel& dr_model);
   bool stopIteration(DRModel& dr_model);
 
 #if 1  // update env
@@ -118,6 +119,8 @@ class DetailedRouter
   void updateNetResultToGraph(DRBox& dr_box, ChangeType change_type, int32_t net_idx, Segment<LayerCoord>& segment);
   void updateNetResultToGraph(DRBox& dr_box, ChangeType change_type, int32_t net_idx, EXTLayerRect& patch);
   void addViolationToGraph(DRBox& dr_box, Violation& violation);
+  void addViolationToGraph(DRBox& dr_box, std::vector<LayerRect>& searched_rect_list,
+                           std::vector<Segment<LayerCoord>>& overlap_segment_list);
   std::map<DRNode*, std::set<Orientation>> getNodeOrientationMap(DRBox& dr_box, NetShape& net_shape, bool need_enlarged);
   std::map<DRNode*, std::set<Orientation>> getRoutingNodeOrientationMap(DRBox& dr_box, NetShape& net_shape, bool need_enlarged);
   std::map<DRNode*, std::set<Orientation>> getCutNodeOrientationMap(DRBox& dr_box, NetShape& net_shape, bool need_enlarged);
