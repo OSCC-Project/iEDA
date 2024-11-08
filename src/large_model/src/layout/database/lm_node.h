@@ -23,39 +23,33 @@
  * @description
  *
  */
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 #include <map>
 #include <string>
-
-#include "lm_layer.h"
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+#include <vector>
 
 namespace ilm {
 
-class LmLayout
+class LmNode
 {
  public:
-  LmLayout() {}
-  ~LmLayout() = default;
+  LmNode() = default;
+  ~LmNode() = default;
 
   // getter
-  LmPatchLayers& get_patch_layers(){return _patch_layers;}
-  std::map<std::string, int>& get_layer_id_map() { return _layer_id_map; }
-  std::map<std::string, int>& get_via_id_map() { return _via_id_map; }
+
   // setter
 
   // operator
-  int findLayerId(std::string name);
-  int findViaId(std::string name);
 
  private:
-  LmPatchLayers _patch_layers;
-
-  std::map<std::string, int> _layer_id_map;  /// string : layer name, int : layer id begin from 1st routing layer, for example, if M1 is 1st
-                                             /// routing layer, then M1 id=0, CUT1 id=1, M2 id=2 ...
-  std::map<std::string, int> _via_id_map;    /// string : via name, int : via index in this map
+  int _x;
+  int _y;
+  int _row_id;  // node order of layer rows
+  int _col_id;  // node order of layer cols
 };
 
 }  // namespace ilm

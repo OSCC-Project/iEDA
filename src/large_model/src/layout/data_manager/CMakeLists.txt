@@ -5,12 +5,14 @@ lm_layout_init.cpp
 
 target_link_libraries(ilm_layout_dm
     PUBLIC
-    ilm_layout_db
     idb
     idm
+    log
+    ilm_layout_db
 )
 
 target_include_directories(ilm_layout_dm
     PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
+set(CMAKE_BUILD_TYPE "debug")

@@ -17,7 +17,27 @@
 
 #include "large_model.h"
 
+#include "Log.hh"
+#include "idm.h"
+
 namespace ilm {
+LargeModel::LargeModel()
+{
+  initLog();
+}
+
+void LargeModel::initLog(std::string log_path)
+{
+  char config[] = "large model";
+  char* argv[] = {config};
+
+  if (log_path == "") {
+    log_path = dmInst->get_config().get_output_path() + "/log/";
+  }
+
+  ieda::Log::init(argv, log_path);
+}
+
 bool LargeModel::buildLayoutData(const std::string path)
 {
   return _data_manager.buildLayoutData(path);

@@ -24,13 +24,15 @@ namespace ilm {
 class LargeModel
 {
  public:
-  LargeModel() {}
+  LargeModel();
   ~LargeModel() = default;
 
   bool buildLayoutData(const std::string path);
 
  private:
   LmDataManager _data_manager;  /// top module data manager
+
+  void initLog(std::string log_path = "");
 };
 
 }  // namespace ilm

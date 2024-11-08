@@ -31,35 +31,67 @@
 #include <string>
 #include <vector>
 
-#include "lm_node.h"
+#include "lm_layer_grid.h"
+#include "lm_patch.h"
 
 namespace ilm {
 
-class LmPatch
+class LmPatchLayer
 {
  public:
-  LmPatch() = default;
-  ~LmPatch() = default;
+  LmPatchLayer() = default;
+  ~LmPatchLayer() = default;
 
   // getter
-  std::vector<std::vector<LmNode>>& get_node_matrix() { return _node_matrix; }
-  LmNode& get_node(int row_id, int col_id);
+  LmLayerGrid& get_grid() { return _grid; }
+  std::vector<std::vector<LmPatch>>& get_patch_matrix() { return _patch_matrix; }
+  LmPatch& get_patch(int row_id, int col_id);
 
   // setter
+  void set_layer_name(std::string name) { _layer_name = name; }
+  void set_layer_order(int order) { _layer_order = order; }
+  void set_llx(int value) { _llx = value; }
+  void set_lly(int value) { _lly = value; }
+  void set_urx(int value) { _urx = value; }
+  void set_ury(int value) { _ury = value; }
 
   // operator
 
  private:
+  std::string _layer_name;
+  int _layer_order;
   int _llx;
   int _lly;
   int _urx;
   int _ury;
-  int _row_id;        // patch order of layer rows
-  int _col_id;        // patch order of layer cols
-  int _node_row_num;  /// node number on rows
-  int _node_col_num;  /// node number on cols
+  int _row_num;  /// patch row number
+  int _row_space;
+  int _col_num;  /// patch col number
+  int _col_space;
+  LmLayerGrid _grid;
+  std::vector<std::vector<LmPatch>> _patch_matrix;
+};
 
-  std::vector<std::vector<LmNode>> _node_matrix;
+class LmPatchLayers
+{
+ public:
+  LmPatchLayers(){};
+  ~LmPatchLayers() = default;
+
+  // getter
+  std::map<int, LmPatchLayer>& get_patch_layer_map() { return _patch_layers; }
+  LmPatchLayer* findPatchLayer(int order);
+
+  // setter
+  void set_layer_order_top(int order) { _layer_order_top = order; }
+  void set_layer_order_bottom(int order) { _layer_order_bottom = order; }
+
+  // operator
+
+ private:
+  int _layer_order_top = -1;
+  int _layer_order_bottom = -1;
+  std::map<int, LmPatchLayer> _patch_layers;  /// int : layer order
 };
 
 }  // namespace ilm

@@ -30,4 +30,24 @@
 
 namespace ilm {
 
+int LmLayout::findLayerId(std::string name)
+{
+  auto it = _layer_id_map.find(name);
+  if (it != _layer_id_map.end()) {
+    return it->second;
+  }
+
+  return -1;
+}
+
+int LmLayout::findViaId(std::string name)
+{
+  auto it = _via_id_map.find(name);
+  if (it != _via_id_map.end()) {
+    return it->second;
+  }
+
+  return -1;
+}
+
 }  // namespace ilm

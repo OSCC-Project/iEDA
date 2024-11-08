@@ -8,6 +8,8 @@ large_model.cpp
 
 target_link_libraries(large_model
     PUBLIC
+    log
+    idm
     ilm_dm
 )
 

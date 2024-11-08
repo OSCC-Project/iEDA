@@ -24,6 +24,7 @@
 
 #include "Log.hh"
 
+#include <filesystem>
 #include <fstream>
 #include <functional>
 #include <iostream>
@@ -55,6 +56,8 @@ void SignalHandle(const char* data, int size)
  */
 void Log::init(char* argv[], std::string log_dir)
 {
+  std::filesystem::create_directories(log_dir.c_str());
+
   /*init google logging.*/
   google::InitGoogleLogging(argv[0]);
 

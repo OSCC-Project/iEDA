@@ -27,22 +27,19 @@ class LmLayoutInit
  public:
   LmLayoutInit(LmLayout* layout) : _layout(layout) {}
   ~LmLayoutInit() = default;
-  void initProcessNode();
-  void initDesign();
+  void init();
 
  private:
   LmLayout* _layout;
-  /// init process node
-  void initLayerIds();
-  void initViaIds();
-  void initCellMasters();
-
-  /// init design
   void initDie();
   void initCore();
+  void initViaIds();
+  void initCellMasters();
+  void initLayers();
   void initTracks();
   void initPDN();
   void initInstances();
+  void initIOPins();
   void initNets();
 };
 

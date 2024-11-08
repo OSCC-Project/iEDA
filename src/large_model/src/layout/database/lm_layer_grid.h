@@ -23,39 +23,47 @@
  * @description
  *
  */
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 #include <map>
 #include <string>
+#include <vector>
 
-#include "lm_layer.h"
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+#include "lm_node.h"
 
 namespace ilm {
 
-class LmLayout
+class LmLayerGrid
 {
  public:
-  LmLayout() {}
-  ~LmLayout() = default;
+  LmLayerGrid() = default;
+  ~LmLayerGrid() = default;
 
   // getter
-  LmPatchLayers& get_patch_layers(){return _patch_layers;}
-  std::map<std::string, int>& get_layer_id_map() { return _layer_id_map; }
-  std::map<std::string, int>& get_via_id_map() { return _via_id_map; }
+  std::vector<std::vector<LmNode>>& get_node_matrix() { return _node_matrix; }
+  LmNode& get_node(int row_id, int col_id);
+
   // setter
+  void set_layer_order(int order) { _layer_order = order; }
+  void set_llx(int value) { _llx = value; }
+  void set_lly(int value) { _lly = value; }
+  void set_urx(int value) { _urx = value; }
+  void set_ury(int value) { _ury = value; }
 
   // operator
-  int findLayerId(std::string name);
-  int findViaId(std::string name);
 
  private:
-  LmPatchLayers _patch_layers;
+  int _layer_order;
+  int _llx;
+  int _lly;
+  int _urx;
+  int _ury;
+  int _node_row_num;  /// node number on rows
+  int _node_col_num;  /// node number on cols
 
-  std::map<std::string, int> _layer_id_map;  /// string : layer name, int : layer id begin from 1st routing layer, for example, if M1 is 1st
-                                             /// routing layer, then M1 id=0, CUT1 id=1, M2 id=2 ...
-  std::map<std::string, int> _via_id_map;    /// string : via name, int : via index in this map
+  std::vector<std::vector<LmNode>> _node_matrix;
 };
 
 }  // namespace ilm

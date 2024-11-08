@@ -31,8 +31,7 @@ bool LmLayoutDataManager::buildLayoutData(const std::string path)
 void LmLayoutDataManager::init()
 {
   LmLayoutInit layout_init(&_layout);
-  layout_init.initProcessNode();
-  layout_init.initDesign();
+  layout_init.init();
 }
 
 void LmLayoutDataManager::buildPatchs()
