@@ -1378,7 +1378,7 @@ void RTInterface::updateTimingAndPower(std::vector<std::map<std::string, std::ve
     LayerCoord _coord;
     bool _is_real_pin = false;
     std::string _pin_name;
-    int32_t _fake_pin_id;
+    int32_t _fake_pin_id = -1;
   };
 #endif
 
