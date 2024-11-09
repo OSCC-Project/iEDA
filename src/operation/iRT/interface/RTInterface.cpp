@@ -446,8 +446,7 @@ void RTInterface::wrapLayerViaMasterList()
   layer_via_master_list.resize(idb_routing_layers.size());
 
   std::vector<idb::IdbVia*>& idb_via_list = idb_via_list_lib->get_via_list();
-  for (size_t i = 0; i < idb_via_list.size(); i++) {
-    idb::IdbVia* idb_via = idb_via_list[i];
+  for (idb::IdbVia* idb_via : idb_via_list) {
     if (idb_via == nullptr) {
       RTLOG.error(Loc::current(), "The via is empty!");
     }
@@ -504,6 +503,7 @@ void RTInterface::wrapObstacleList()
   {
     // instance
     for (idb::IdbInstance* instance : instance_list) {
+      // instance obs
       for (idb::IdbLayerShape* obs_box : instance->get_obs_box_list()) {
         if (obs_box->get_layer()->is_routing()) {
           total_routing_obstacle_num += obs_box->get_rect_list().size();
@@ -511,6 +511,7 @@ void RTInterface::wrapObstacleList()
           total_cut_obstacle_num += obs_box->get_rect_list().size();
         }
       }
+      // instance pin without net
       for (idb::IdbPin* idb_pin : instance->get_pin_list()->get_pin_list()) {
         if (idb_pin->get_net() != nullptr) {
           continue;
@@ -521,6 +522,10 @@ void RTInterface::wrapObstacleList()
           } else if (port_box->get_layer()->is_cut()) {
             total_cut_obstacle_num += port_box->get_rect_list().size();
           }
+        }
+        for (idb::IdbVia* idb_via : idb_pin->get_via_list()) {
+          total_routing_obstacle_num += 2;
+          total_cut_obstacle_num += idb_via->get_cut_layer_shape().get_rect_list().size();
         }
       }
     }
@@ -587,6 +592,34 @@ void RTInterface::wrapObstacleList()
             } else if (port_box->get_layer()->is_cut()) {
               cut_obstacle_list.push_back(std::move(obstacle));
             }
+          }
+        }
+        for (idb::IdbVia* idb_via : idb_pin->get_via_list()) {
+          {
+            idb::IdbLayerShape idb_shape_top = idb_via->get_top_layer_shape();
+            idb::IdbRect idb_box_top = idb_shape_top.get_bounding_box();
+            Obstacle obstacle;
+            obstacle.set_real_ll(idb_box_top.get_low_x(), idb_box_top.get_low_y());
+            obstacle.set_real_ur(idb_box_top.get_high_x(), idb_box_top.get_high_y());
+            obstacle.set_layer_idx(idb_shape_top.get_layer()->get_id());
+            routing_obstacle_list.push_back(std::move(obstacle));
+          }
+          {
+            idb::IdbLayerShape idb_shape_bottom = idb_via->get_bottom_layer_shape();
+            idb::IdbRect idb_box_bottom = idb_shape_bottom.get_bounding_box();
+            Obstacle obstacle;
+            obstacle.set_real_ll(idb_box_bottom.get_low_x(), idb_box_bottom.get_low_y());
+            obstacle.set_real_ur(idb_box_bottom.get_high_x(), idb_box_bottom.get_high_y());
+            obstacle.set_layer_idx(idb_shape_bottom.get_layer()->get_id());
+            routing_obstacle_list.push_back(std::move(obstacle));
+          }
+          idb::IdbLayerShape idb_shape_cut = idb_via->get_cut_layer_shape();
+          for (idb::IdbRect* idb_rect : idb_shape_cut.get_rect_list()) {
+            Obstacle obstacle;
+            obstacle.set_real_ll(idb_rect->get_low_x(), idb_rect->get_low_y());
+            obstacle.set_real_ur(idb_rect->get_high_x(), idb_rect->get_high_y());
+            obstacle.set_layer_idx(idb_shape_cut.get_layer()->get_id());
+            cut_obstacle_list.push_back(std::move(obstacle));
           }
         }
       }
@@ -702,8 +735,8 @@ bool RTInterface::isSkipping(idb::IdbNet* idb_net)
     }
     pin_num++;
   }
-  for (auto* io_pin : idb_net->get_io_pins()->get_pin_list()) {
-    if (io_pin->get_term()->get_port_number() <= 0) {
+  for (idb::IdbPin* idb_pin : idb_net->get_io_pins()->get_pin_list()) {
+    if (idb_pin->get_term()->get_port_number() <= 0) {
       continue;
     }
     pin_num++;
@@ -729,13 +762,13 @@ void RTInterface::wrapPinList(Net& net, idb::IdbNet* idb_net)
     wrapPinShapeList(pin, idb_pin);
     pin_list.push_back(std::move(pin));
   }
-  for (auto* io_pin : idb_net->get_io_pins()->get_pin_list()) {
-    if (io_pin->get_term()->get_port_number() <= 0) {
+  for (idb::IdbPin* idb_pin : idb_net->get_io_pins()->get_pin_list()) {
+    if (idb_pin->get_term()->get_port_number() <= 0) {
       continue;
     }
     Pin pin;
-    pin.set_pin_name(io_pin->get_pin_name());
-    wrapPinShapeList(pin, io_pin);
+    pin.set_pin_name(idb_pin->get_pin_name());
+    wrapPinShapeList(pin, idb_pin);
     pin_list.push_back(std::move(pin));
   }
 }
@@ -756,6 +789,34 @@ void RTInterface::wrapPinShapeList(Pin& pin, idb::IdbPin* idb_pin)
       } else if (layer_shape->get_layer()->is_cut()) {
         cut_shape_list.push_back(std::move(pin_shape));
       }
+    }
+  }
+  for (idb::IdbVia* idb_via : idb_pin->get_via_list()) {
+    {
+      idb::IdbLayerShape idb_shape_top = idb_via->get_top_layer_shape();
+      idb::IdbRect idb_box_top = idb_shape_top.get_bounding_box();
+      EXTLayerRect pin_shape;
+      pin_shape.set_real_ll(idb_box_top.get_low_x(), idb_box_top.get_low_y());
+      pin_shape.set_real_ur(idb_box_top.get_high_x(), idb_box_top.get_high_y());
+      pin_shape.set_layer_idx(idb_shape_top.get_layer()->get_id());
+      routing_shape_list.push_back(std::move(pin_shape));
+    }
+    {
+      idb::IdbLayerShape idb_shape_bottom = idb_via->get_bottom_layer_shape();
+      idb::IdbRect idb_box_bottom = idb_shape_bottom.get_bounding_box();
+      EXTLayerRect pin_shape;
+      pin_shape.set_real_ll(idb_box_bottom.get_low_x(), idb_box_bottom.get_low_y());
+      pin_shape.set_real_ur(idb_box_bottom.get_high_x(), idb_box_bottom.get_high_y());
+      pin_shape.set_layer_idx(idb_shape_bottom.get_layer()->get_id());
+      routing_shape_list.push_back(std::move(pin_shape));
+    }
+    idb::IdbLayerShape idb_shape_cut = idb_via->get_cut_layer_shape();
+    for (idb::IdbRect* idb_rect : idb_shape_cut.get_rect_list()) {
+      EXTLayerRect pin_shape;
+      pin_shape.set_real_ll(idb_rect->get_low_x(), idb_rect->get_low_y());
+      pin_shape.set_real_ur(idb_rect->get_high_x(), idb_rect->get_high_y());
+      pin_shape.set_layer_idx(idb_shape_cut.get_layer()->get_id());
+      cut_shape_list.push_back(std::move(pin_shape));
     }
   }
 }
