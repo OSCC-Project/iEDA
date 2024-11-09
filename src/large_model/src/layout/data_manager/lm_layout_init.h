@@ -17,6 +17,10 @@
 #pragma once
 #include <string>
 
+#include "IdbGeometry.h"
+#include "IdbLayerShape.h"
+#include "IdbTrackGrid.h"
+#include "lm_layer_grid.h"
 #include "lm_layout.h"
 #include "lm_patch.h"
 
@@ -36,7 +40,9 @@ class LmLayoutInit
   void initViaIds();
   void initCellMasters();
   void initLayers();
-  void initTracks();
+  void initTracks(std::string layername = "M2");
+  void initTrackGrid(idb::IdbTrackGrid* idb_track_grid, LmLayerGrid& lm_grid);
+  void buildPatchGrid();
   void initPDN();
   void initInstances();
   void initIOPins();

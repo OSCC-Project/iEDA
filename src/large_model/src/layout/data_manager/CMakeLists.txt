@@ -7,6 +7,7 @@ target_link_libraries(ilm_layout_dm
     PUBLIC
     idb
     idm
+    geometry_db
     log
     ilm_layout_db
 )

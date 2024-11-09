@@ -33,10 +33,93 @@ namespace ilm {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void LmLayerGrid::buildNodeMatrix()
+{
+  _info.node_x_start = _info.x_start % _info.x_step;
+  _info.node_y_start = _info.y_start % _info.y_step;
+
+  int row = 0;
+  for (int y = _info.node_y_start; y < _info.ury; y = y + _info.y_step, ++row) {
+    std::vector<LmNode> row_nodes;
+    int col = 0;
+    for (int x = _info.node_x_start; x < _info.urx; x = x + _info.x_step, ++col) {
+      LmNode lm_node;
+
+      lm_node.set_col_id(col);
+      lm_node.set_row_id(row);
+      lm_node.set_x(x);
+      lm_node.set_y(y);
+
+      row_nodes.push_back(lm_node);
+    }
+
+    _node_matrix.push_back(row_nodes);
+  }
+
+  _info.node_row_num = _node_matrix.size();
+  _info.node_col_num = _node_matrix[0].size();
+}
+
 LmNode& LmLayerGrid::get_node(int row_id, int col_id)
 {
   auto row_patchs = _node_matrix.at(row_id);
   return row_patchs.at(col_id);
+}
+
+LmNode& LmLayerGrid::findNode(int x, int y)
+{
+  auto [row_id, col_id] = findNodeID(x, y);
+
+  return get_node(row_id, col_id);
+}
+
+std::pair<int, int> LmLayerGrid::findNodeID(int x, int y)
+{
+  int row_id = findNodeID(y, true);
+  int col_id = findNodeID(x, false);
+
+  return std::make_pair(row_id, col_id);
+}
+
+int LmLayerGrid::findNodeID(int value, bool b_row_id)
+{
+  int node_id = -1;
+
+  auto node_start = b_row_id ? _info.node_y_start : _info.node_x_start;
+  auto step = b_row_id ? _info.y_step : _info.x_step;
+  auto node_num = b_row_id ? _info.node_row_num : _info.node_col_num;
+
+  if (value <= node_start) {
+    node_id = 0;
+  } else {
+    auto remain = (value - node_start) % step;
+    auto index = (value - node_start) / step;
+    node_id = remain > step / 2 ? index + 1 : index;
+
+    node_id = node_id >= node_num ? node_num - 1 : node_id;
+  }
+
+  return node_id;
+}
+
+std::pair<int, int> LmLayerGrid::getNodeIDRange(int coord1, int coord2, bool b_row_id)
+{
+  auto index_1 = findNodeID(coord1, b_row_id);
+  auto index_2 = findNodeID(coord2, b_row_id);
+
+  return std::make_pair(index_1, index_2);
+}
+
+std::tuple<int, int, int, int> LmLayerGrid::getNodeIdRange(int x1, int x2, int y1, int y2)
+{
+  /// row id
+  auto row_id_1 = findNodeID(y1, true);
+  auto row_id_2 = findNodeID(y2, true);
+  /// col id
+  auto col_id_1 = findNodeID(x1, false);
+  auto col_id_2 = findNodeID(x2, false);
+
+  return std::tuple<int, int, int, int>(row_id_1, row_id_2, col_id_1, col_id_2);
 }
 
 }  // namespace ilm

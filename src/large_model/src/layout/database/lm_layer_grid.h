@@ -35,33 +35,46 @@
 
 namespace ilm {
 
+struct LmLayerGridInfo
+{
+  int layer_order;
+  int llx;
+  int lly;
+  int urx;
+  int ury;
+  int x_start;
+  int node_x_start;
+  int x_step;
+  int y_start;
+  int node_y_start;
+  int y_step;
+  int node_row_num;  /// node number on rows
+  int node_col_num;  /// node number on cols
+};
+
 class LmLayerGrid
 {
  public:
-  LmLayerGrid() = default;
+  LmLayerGrid() {}
   ~LmLayerGrid() = default;
 
   // getter
+  LmLayerGridInfo& get_info() { return _info; }
   std::vector<std::vector<LmNode>>& get_node_matrix() { return _node_matrix; }
   LmNode& get_node(int row_id, int col_id);
+  LmNode& findNode(int x, int y);
+  std::pair<int, int> findNodeID(int x, int y);
+  int findNodeID(int value, bool b_row_id);
+  std::pair<int, int> getNodeIDRange(int coord1, int coord2, bool b_row_id);
+  std::tuple<int, int, int, int> getNodeIdRange(int x1, int x2, int y1, int y2);
 
   // setter
-  void set_layer_order(int order) { _layer_order = order; }
-  void set_llx(int value) { _llx = value; }
-  void set_lly(int value) { _lly = value; }
-  void set_urx(int value) { _urx = value; }
-  void set_ury(int value) { _ury = value; }
 
   // operator
+  void buildNodeMatrix();
 
  private:
-  int _layer_order;
-  int _llx;
-  int _lly;
-  int _urx;
-  int _ury;
-  int _node_row_num;  /// node number on rows
-  int _node_col_num;  /// node number on cols
+  LmLayerGridInfo _info;
 
   std::vector<std::vector<LmNode>> _node_matrix;
 };

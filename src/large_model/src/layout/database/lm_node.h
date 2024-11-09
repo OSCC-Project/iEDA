@@ -33,6 +33,17 @@
 
 namespace ilm {
 
+enum class LmNodeTYpe
+{
+  None,
+  lm_pdn,
+  lm_wire,
+  lm_via,
+  lm_pin,
+  lm_io,
+  lm_max
+};
+
 class LmNode
 {
  public:
@@ -42,6 +53,11 @@ class LmNode
   // getter
 
   // setter
+  void set_x(int x) { _x = x; }
+  void set_y(int y) { _y = y; }
+  void set_row_id(int row_id) { _row_id = row_id; }
+  void set_col_id(int col_id) { _col_id = col_id; }
+  void set_node_type(LmNodeTYpe node_type) { _node_type = node_type; }
 
   // operator
 
@@ -50,6 +66,7 @@ class LmNode
   int _y;
   int _row_id;  // node order of layer rows
   int _col_id;  // node order of layer cols
+  LmNodeTYpe _node_type = LmNodeTYpe::None;
 };
 
 }  // namespace ilm
