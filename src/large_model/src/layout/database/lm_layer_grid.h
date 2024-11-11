@@ -52,6 +52,14 @@ struct LmLayerGridInfo
   int node_col_num;  /// node number on cols
 };
 
+enum class SideType
+{
+  kNone,
+  kLower,
+  kHigher,
+  kMax
+};
+
 class LmLayerGrid
 {
  public:
@@ -64,7 +72,7 @@ class LmLayerGrid
   LmNode& get_node(int row_id, int col_id);
   LmNode& findNode(int x, int y);
   std::pair<int, int> findNodeID(int x, int y);
-  int findNodeID(int value, bool b_row_id);
+  int findNodeID(int value, bool b_row_id, SideType side_type = SideType::kNone);
   std::pair<int, int> getNodeIDRange(int coord1, int coord2, bool b_row_id);
   std::tuple<int, int, int, int> getNodeIdRange(int x1, int x2, int y1, int y2);
 

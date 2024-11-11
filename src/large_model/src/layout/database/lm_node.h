@@ -35,13 +35,45 @@ namespace ilm {
 
 enum class LmNodeTYpe
 {
-  None,
+  kNone,
   lm_pdn,
-  lm_wire,
-  lm_via,
+  lm_net,
   lm_pin,
   lm_io,
-  lm_max
+  lm_obs,
+  kMax
+};
+
+enum class LmNodeStatus
+{
+  kNone,
+  lm_connected,   /// connect points, including via, end point of wire, connected points pon pins
+  lm_connecting,  /// points between end points
+  lm_fix,         /// objects that no need to connect such as obs, pdn eg.
+  kMax
+};
+
+class LmNodeData
+{
+ public:
+  LmNodeData() = default;
+  ~LmNodeData() = default;
+
+  // getter
+  LmNodeTYpe get_type() { return _type; }
+  LmNodeStatus get_status() { return _status; }
+  void set_net_id(int32_t id){_net_id=0;} 
+
+  // setter
+  void set_type(LmNodeTYpe type) { _type = type; }
+  void set_status(LmNodeStatus status) { _status = status; }
+
+  // operator
+
+ private:
+  LmNodeTYpe _type = LmNodeTYpe::kNone;
+  LmNodeStatus _status = LmNodeStatus::kNone;
+  int32_t _net_id = -1;
 };
 
 class LmNode
@@ -51,13 +83,18 @@ class LmNode
   ~LmNode() = default;
 
   // getter
+  int get_x() { return _x; }
+  int get_y() { return _y; }
+  int get_row_id() { return _row_id; }
+  int get_col_id() { return _col_id; }
+
+  LmNodeData& get_node_data() { return _node_data; }
 
   // setter
   void set_x(int x) { _x = x; }
   void set_y(int y) { _y = y; }
   void set_row_id(int row_id) { _row_id = row_id; }
   void set_col_id(int col_id) { _col_id = col_id; }
-  void set_node_type(LmNodeTYpe node_type) { _node_type = node_type; }
 
   // operator
 
@@ -66,7 +103,7 @@ class LmNode
   int _y;
   int _row_id;  // node order of layer rows
   int _col_id;  // node order of layer cols
-  LmNodeTYpe _node_type = LmNodeTYpe::None;
+  LmNodeData _node_data;
 };
 
 }  // namespace ilm

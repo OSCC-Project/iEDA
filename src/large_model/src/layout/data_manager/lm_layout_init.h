@@ -19,7 +19,9 @@
 
 #include "IdbGeometry.h"
 #include "IdbLayerShape.h"
+#include "IdbPins.h"
 #include "IdbTrackGrid.h"
+#include "IdbVias.h"
 #include "lm_layer_grid.h"
 #include "lm_layout.h"
 #include "lm_patch.h"
@@ -35,10 +37,9 @@ class LmLayoutInit
 
  private:
   LmLayout* _layout;
-  void initDie();
-  void initCore();
+
   void initViaIds();
-  void initCellMasters();
+  void initDie();
   void initLayers();
   void initTracks(std::string layername = "M2");
   void initTrackGrid(idb::IdbTrackGrid* idb_track_grid, LmLayerGrid& lm_grid);
@@ -47,6 +48,10 @@ class LmLayoutInit
   void initInstances();
   void initIOPins();
   void initNets();
+
+  void transVia(idb::IdbVia* idb_via, int net_id, LmNodeTYpe type);
+  void transPin(idb::IdbPin* idb_pin, int net_id);
+  void transRect(int32_t ll_x, int32_t ll_y, int32_t ur_x, int32_t ur_y, std::string layer_name);
 };
 
 }  // namespace ilm

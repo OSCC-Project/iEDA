@@ -50,4 +50,24 @@ int LmLayout::findViaId(std::string name)
   return -1;
 }
 
+int LmLayout::findPdnId(std::string name)
+{
+  auto it = _pdn_id_map.find(name);
+  if (it != _pdn_id_map.end()) {
+    return it->second;
+  }
+
+  return -1;
+}
+
+int LmLayout::findNetId(std::string name)
+{
+  auto it = _net_id_map.find(name);
+  if (it != _net_id_map.end()) {
+    return it->second;
+  }
+
+  return -1;
+}
+
 }  // namespace ilm

@@ -81,7 +81,7 @@ std::pair<int, int> LmLayerGrid::findNodeID(int x, int y)
   return std::make_pair(row_id, col_id);
 }
 
-int LmLayerGrid::findNodeID(int value, bool b_row_id)
+int LmLayerGrid::findNodeID(int value, bool b_row_id, SideType side_type)
 {
   int node_id = -1;
 
@@ -94,7 +94,15 @@ int LmLayerGrid::findNodeID(int value, bool b_row_id)
   } else {
     auto remain = (value - node_start) % step;
     auto index = (value - node_start) / step;
-    node_id = remain > step / 2 ? index + 1 : index;
+
+    if (side_type == SideType::kLower) {
+      node_id = index + 1;
+    } else if (side_type == SideType::kHigher) {
+      node_id = index;
+    } else {
+      /// find nearest node
+      node_id = remain > step / 2 ? index + 1 : index;
+    }
 
     node_id = node_id >= node_num ? node_num - 1 : node_id;
   }
@@ -104,8 +112,8 @@ int LmLayerGrid::findNodeID(int value, bool b_row_id)
 
 std::pair<int, int> LmLayerGrid::getNodeIDRange(int coord1, int coord2, bool b_row_id)
 {
-  auto index_1 = findNodeID(coord1, b_row_id);
-  auto index_2 = findNodeID(coord2, b_row_id);
+  auto index_1 = findNodeID(coord1, b_row_id, SideType::kLower);
+  auto index_2 = findNodeID(coord2, b_row_id, SideType::kHigher);
 
   return std::make_pair(index_1, index_2);
 }
@@ -113,11 +121,11 @@ std::pair<int, int> LmLayerGrid::getNodeIDRange(int coord1, int coord2, bool b_r
 std::tuple<int, int, int, int> LmLayerGrid::getNodeIdRange(int x1, int x2, int y1, int y2)
 {
   /// row id
-  auto row_id_1 = findNodeID(y1, true);
-  auto row_id_2 = findNodeID(y2, true);
+  auto row_id_1 = findNodeID(y1, true, SideType::kLower);
+  auto row_id_2 = findNodeID(y2, true, SideType::kHigher);
   /// col id
-  auto col_id_1 = findNodeID(x1, false);
-  auto col_id_2 = findNodeID(x2, false);
+  auto col_id_1 = findNodeID(x1, false, SideType::kLower);
+  auto col_id_2 = findNodeID(x2, false, SideType::kHigher);
 
   return std::tuple<int, int, int, int>(row_id_1, row_id_2, col_id_1, col_id_2);
 }
