@@ -53,6 +53,18 @@ enum class LmNodeStatus
   kMax
 };
 
+enum class LmNodeDirection : uint8_t
+{
+  kNone = 0,
+  lm_left = 1,
+  lm_right = 2,
+  lm_up = 4,
+  lm_down = 8,
+  lm_top = 16,
+  lm_bottom = 32,
+  kMax
+};
+
 class LmNodeData
 {
  public:
@@ -62,18 +74,21 @@ class LmNodeData
   // getter
   LmNodeTYpe get_type() { return _type; }
   LmNodeStatus get_status() { return _status; }
-  void set_net_id(int32_t id){_net_id=0;} 
+  LmNodeDirection get_direction() { return _direction; }
 
   // setter
   void set_type(LmNodeTYpe type) { _type = type; }
   void set_status(LmNodeStatus status) { _status = status; }
+  void set_net_id(int32_t id) { _net_id = id; }
+  void set_direction(LmNodeDirection direction);
 
   // operator
 
  private:
+  int32_t _net_id = -1;
   LmNodeTYpe _type = LmNodeTYpe::kNone;
   LmNodeStatus _status = LmNodeStatus::kNone;
-  int32_t _net_id = -1;
+  LmNodeDirection _direction = LmNodeDirection::kNone;
 };
 
 class LmNode
@@ -89,6 +104,9 @@ class LmNode
   int get_col_id() { return _col_id; }
 
   LmNodeData& get_node_data() { return _node_data; }
+
+  bool isSteinerPoint();
+  bool isVia();
 
   // setter
   void set_x(int x) { _x = x; }

@@ -62,8 +62,7 @@ void LmLayerGrid::buildNodeMatrix()
 
 LmNode& LmLayerGrid::get_node(int row_id, int col_id)
 {
-  auto row_patchs = _node_matrix.at(row_id);
-  return row_patchs.at(col_id);
+  return _node_matrix[row_id][col_id];
 }
 
 LmNode& LmLayerGrid::findNode(int x, int y)

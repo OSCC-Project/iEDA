@@ -18,6 +18,7 @@
 #include <string>
 
 #include "lm_layout.h"
+#include "lm_net.h"
 #include "lm_patch.h"
 
 namespace ilm {
@@ -31,6 +32,8 @@ class LmLayoutDataManager
   LmLayout& get_layout() { return _layout; }
 
   bool buildLayoutData(const std::string path);
+
+  std::map<int, LmNet> buildNetWires();
 
  private:
   LmLayout _layout;

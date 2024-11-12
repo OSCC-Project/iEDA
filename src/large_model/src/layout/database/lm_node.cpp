@@ -33,5 +33,37 @@ namespace ilm {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void LmNodeData::set_direction(LmNodeDirection direction)
+{
+  _direction = LmNodeDirection((static_cast<uint8_t>(_direction)) ^ (static_cast<uint8_t>(direction)));
+}
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// if node has more than 3 direction in routing layer, this node is steiner point
+bool LmNode::isSteinerPoint()
+{
+  int direction_num = 0;
+
+  uint8_t direction = static_cast<uint8_t>(_node_data.get_direction());
+  direction_num = (direction & static_cast<uint8_t>(LmNodeDirection::lm_left)) > 0 ? direction_num + 1 : direction_num;
+  direction_num = (direction & static_cast<uint8_t>(LmNodeDirection::lm_right)) > 0 ? direction_num + 1 : direction_num;
+  direction_num = (direction & static_cast<uint8_t>(LmNodeDirection::lm_up)) > 0 ? direction_num + 1 : direction_num;
+  direction_num = (direction & static_cast<uint8_t>(LmNodeDirection::lm_down)) > 0 ? direction_num + 1 : direction_num;
+
+  return direction_num > 3 ? true : false;
+}
+
+/// if node has top or bottom direction, it is a via connected point
+bool LmNode::isVia()
+{
+  int direction_num = 0;
+
+  uint8_t direction = static_cast<uint8_t>(_node_data.get_direction());
+  direction_num = (direction & static_cast<uint8_t>(LmNodeDirection::lm_top)) > 0 ? direction_num + 1 : direction_num;
+  direction_num = (direction & static_cast<uint8_t>(LmNodeDirection::lm_bottom)) > 0 ? direction_num + 1 : direction_num;
+
+  return direction_num > 0 ? true : false;
+}
 
 }  // namespace ilm

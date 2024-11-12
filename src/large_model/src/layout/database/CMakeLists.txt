@@ -4,6 +4,7 @@ lm_layer.cpp
 lm_layer_grid.cpp
 lm_patch.cpp
 lm_node.cpp
+lm_net.cpp
 )
 
 target_include_directories(ilm_layout_db 

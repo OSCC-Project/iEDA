@@ -34,6 +34,23 @@ void LmLayoutDataManager::init()
   layout_init.init();
 }
 
+std::map<int, LmNet> LmLayoutDataManager::buildNetWires()
+{
+  std::map<int, LmNet> net_map;
+
+  auto& patch_layers = _layout.get_patch_layers();
+  for (auto [layer_id, patch_layer] : patch_layers.get_patch_layer_map()) {
+    auto& grid = patch_layer.get_grid();
+    auto& node_matrix = grid.get_node_matrix();
+
+    if (patch_layer.is_routing()) {
+    } else {
+    }
+  }
+
+  return net_map;
+}
+
 void LmLayoutDataManager::buildPatchs()
 {
 }

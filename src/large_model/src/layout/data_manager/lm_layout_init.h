@@ -38,6 +38,9 @@ class LmLayoutInit
  private:
   LmLayout* _layout;
 
+  void buildConnectedPoints();
+  void buildNetWires();
+
   void initViaIds();
   void initDie();
   void initLayers();
@@ -51,7 +54,7 @@ class LmLayoutInit
 
   void transVia(idb::IdbVia* idb_via, int net_id, LmNodeTYpe type);
   void transPin(idb::IdbPin* idb_pin, int net_id);
-  void transRect(int32_t ll_x, int32_t ll_y, int32_t ur_x, int32_t ur_y, std::string layer_name);
+  void transRect(int32_t ll_x, int32_t ll_y, int32_t ur_x, int32_t ur_y, std::string layer_name, int net_id);
 };
 
 }  // namespace ilm
