@@ -117,12 +117,36 @@ void DetailedRouter::iterativeDRModel(DRModel& dr_model)
    */
   std::vector<DRParameter> dr_parameter_list;
   // clang-format off
-  dr_parameter_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 6, 0, fixed_rect_unit, routed_rect_unit, violation_unit, true, 10);
-  dr_parameter_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 6, -2, fixed_rect_unit, routed_rect_unit, violation_unit, false, 10);
-  dr_parameter_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 6, -4, fixed_rect_unit, routed_rect_unit, violation_unit, false, 10);
-  dr_parameter_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 6, 0, fixed_rect_unit, routed_rect_unit, violation_unit, false, 10);
-  dr_parameter_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 6, -2, fixed_rect_unit, routed_rect_unit, violation_unit, false, 10);
-  dr_parameter_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 6, -4, fixed_rect_unit, routed_rect_unit, violation_unit, false, 10);
+  dr_parameter_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 3, 0, fixed_rect_unit, routed_rect_unit, violation_unit, true, 3);
+  dr_parameter_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 3, -1, fixed_rect_unit, routed_rect_unit, violation_unit, false, 3);
+  dr_parameter_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 3, -2, fixed_rect_unit, routed_rect_unit, violation_unit, false, 3);
+  dr_parameter_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 3, 0, fixed_rect_unit, routed_rect_unit, violation_unit, false, 3);
+  dr_parameter_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 3, -1, fixed_rect_unit, routed_rect_unit, violation_unit, false, 3);
+  dr_parameter_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 3, -2, fixed_rect_unit, routed_rect_unit, violation_unit, false, 3);
+  dr_parameter_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 3, 0, fixed_rect_unit, routed_rect_unit, violation_unit, false, 3);
+  dr_parameter_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 3, -1, fixed_rect_unit, routed_rect_unit, violation_unit, false, 3);
+  dr_parameter_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 3, -2, fixed_rect_unit, routed_rect_unit, violation_unit, false, 3);
+  dr_parameter_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 3, 0, fixed_rect_unit, routed_rect_unit, violation_unit, false, 3);
+  dr_parameter_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 3, -1, fixed_rect_unit, routed_rect_unit, violation_unit, false, 3);
+  dr_parameter_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 3, -2, fixed_rect_unit, routed_rect_unit, violation_unit, false, 3);
+  dr_parameter_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 3, 0, fixed_rect_unit, routed_rect_unit, violation_unit, false, 3);
+  dr_parameter_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 3, -1, fixed_rect_unit, routed_rect_unit, violation_unit, false, 3);
+  dr_parameter_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 3, -2, fixed_rect_unit, routed_rect_unit, violation_unit, false, 3);
+  dr_parameter_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 3, 0, fixed_rect_unit, routed_rect_unit, violation_unit, false, 3);
+  dr_parameter_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 3, -1, fixed_rect_unit, routed_rect_unit, violation_unit, false, 3);
+  dr_parameter_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 3, -2, fixed_rect_unit, routed_rect_unit, violation_unit, false, 3);
+  dr_parameter_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 3, 0, fixed_rect_unit, routed_rect_unit, violation_unit, false, 3);
+  dr_parameter_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 3, -1, fixed_rect_unit, routed_rect_unit, violation_unit, false, 3);
+  dr_parameter_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 3, -2, fixed_rect_unit, routed_rect_unit, violation_unit, false, 3);
+  dr_parameter_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 3, 0, fixed_rect_unit, routed_rect_unit, violation_unit, false, 3);
+  dr_parameter_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 3, -1, fixed_rect_unit, routed_rect_unit, violation_unit, false, 3);
+  dr_parameter_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 3, -2, fixed_rect_unit, routed_rect_unit, violation_unit, false, 3);
+  dr_parameter_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 3, 0, fixed_rect_unit, routed_rect_unit, violation_unit, false, 3);
+  dr_parameter_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 3, -1, fixed_rect_unit, routed_rect_unit, violation_unit, false, 3);
+  dr_parameter_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 3, -2, fixed_rect_unit, routed_rect_unit, violation_unit, false, 3);
+  dr_parameter_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 3, 0, fixed_rect_unit, routed_rect_unit, violation_unit, false, 3);
+  dr_parameter_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 3, -1, fixed_rect_unit, routed_rect_unit, violation_unit, false, 3);
+  dr_parameter_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 3, -2, fixed_rect_unit, routed_rect_unit, violation_unit, false, 3);
   // clang-format on
   for (size_t i = 0, iter = 1; i < dr_parameter_list.size(); i++, iter++) {
     Monitor iter_monitor;

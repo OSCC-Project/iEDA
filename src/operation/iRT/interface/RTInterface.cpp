@@ -96,6 +96,8 @@ void RTInterface::runEGR()
   Monitor monitor;
   RTLOG.info(Loc::current(), "Starting...");
 
+  RTGP.init();
+
   SupplyAnalyzer::initInst();
   RTSA.analyze();
   SupplyAnalyzer::destroyInst();
@@ -111,6 +113,9 @@ void RTInterface::runRT()
 {
   Monitor monitor;
   RTLOG.info(Loc::current(), "Starting...");
+
+  RTDE.init();
+  RTGP.init();
 
   PinAccessor::initInst();
   RTPA.access();

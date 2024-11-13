@@ -49,19 +49,101 @@ void DRCEngine::destroyInst()
 
 // function
 
+void DRCEngine::init()
+{
+  Monitor monitor;
+  RTLOG.info(Loc::current(), "Starting...");
+
+  buildIgnoreViolationSet();
+
+  RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
+}
+
 std::vector<Violation> DRCEngine::getViolationList(DETask& de_task)
 {
-  getViolationListByOther(de_task);
-
-  // getViolationListBySelf(de_task);
-  buildViolationList(de_task);
-
-  return de_task.get_violation_list();
+  return getViolationList(de_task, true);
 }
 
 // private
 
 DRCEngine* DRCEngine::_de_instance = nullptr;
+
+void DRCEngine::buildIgnoreViolationSet()
+{
+  Die& die = RTDM.getDatabase().get_die();
+  std::vector<Net>& net_list = RTDM.getDatabase().get_net_list();
+
+  std::string top_name = RTUTIL.getString("ignore_violation");
+  PlanarRect check_region = die.get_real_rect();
+  std::vector<std::pair<EXTLayerRect*, bool>> env_shape_list;
+  std::map<int32_t, std::vector<std::pair<EXTLayerRect*, bool>>> net_pin_shape_map;
+  for (auto& [is_routing, layer_net_fixed_rect_map] : RTDM.getTypeLayerNetFixedRectMap(die)) {
+    for (auto& [layer_idx, net_fixed_rect_map] : layer_net_fixed_rect_map) {
+      for (auto& [net_idx, fixed_rect_set] : net_fixed_rect_map) {
+        if (net_idx == -1) {
+          for (auto& fixed_rect : fixed_rect_set) {
+            env_shape_list.emplace_back(fixed_rect, is_routing);
+          }
+        } else {
+          for (auto& fixed_rect : fixed_rect_set) {
+            net_pin_shape_map[net_idx].emplace_back(fixed_rect, is_routing);
+          }
+        }
+      }
+    }
+  }
+  std::map<int32_t, std::vector<Segment<LayerCoord>*>> net_result_map;
+  for (auto& [net_idx, segment_set] : RTDM.getNetAccessResultMap(die)) {
+    for (Segment<LayerCoord>* segment : segment_set) {
+      net_result_map[net_idx].push_back(segment);
+    }
+  }
+  for (auto& [net_idx, segment_set] : RTDM.getNetDetailedResultMap(die)) {
+    for (Segment<LayerCoord>* segment : segment_set) {
+      net_result_map[net_idx].push_back(segment);
+    }
+  }
+  std::map<int32_t, std::vector<EXTLayerRect*>> net_patch_map;
+  for (auto& [net_idx, patch_set] : RTDM.getNetAccessPatchMap(die)) {
+    for (EXTLayerRect* patch : patch_set) {
+      net_patch_map[net_idx].push_back(patch);
+    }
+  }
+  for (auto& [net_idx, patch_set] : RTDM.getNetDetailedPatchMap(die)) {
+    for (EXTLayerRect* patch : patch_set) {
+      net_patch_map[net_idx].push_back(patch);
+    }
+  }
+  std::set<int32_t> need_checked_net_set;
+  for (Net& net : net_list) {
+    need_checked_net_set.insert(net.get_net_idx());
+  }
+
+  DETask de_task;
+  de_task.set_process_type_set({DEProcessType::kCost});
+  de_task.set_top_name(top_name);
+  de_task.set_check_region(check_region);
+  de_task.set_env_shape_list(env_shape_list);
+  de_task.set_net_pin_shape_map(net_pin_shape_map);
+  de_task.set_net_result_map(net_result_map);
+  de_task.set_net_patch_map(net_patch_map);
+  de_task.set_need_checked_net_set(need_checked_net_set);
+  for (Violation violation : getViolationList(de_task, false)) {
+    _ignore_violation_set.insert(violation);
+  }
+}
+
+std::vector<Violation> DRCEngine::getViolationList(DETask& de_task, bool need_build)
+{
+  // getViolationListByOther(de_task);
+
+  getViolationListBySelf(de_task);
+  filterViolationList(de_task);
+  if (need_build) {
+    buildViolationList(de_task);
+  }
+  return de_task.get_violation_list();
+}
 
 void DRCEngine::getViolationListBySelf(DETask& de_task)
 {
@@ -443,10 +525,8 @@ void DRCEngine::getViolationListByOther(DETask& de_task)
   }
 }
 
-void DRCEngine::buildViolationList(DETask& de_task)
+void DRCEngine::filterViolationList(DETask& de_task)
 {
-  ScaleAxis& gcell_axis = RTDM.getDatabase().get_gcell_axis();
-
   std::vector<Violation> new_violation_list;
   for (Violation& violation : de_task.get_violation_list()) {
     if (violation.get_violation_type() == ViolationType::kNone) {
@@ -478,6 +558,21 @@ void DRCEngine::buildViolationList(DETask& de_task)
       // net不是布线net的舍弃
       continue;
     }
+    if (RTUTIL.exist(_ignore_violation_set, violation)) {
+      // 自带的违例舍弃
+      continue;
+    }
+    new_violation_list.push_back(violation);
+  }
+  de_task.set_violation_list(new_violation_list);
+}
+
+void DRCEngine::buildViolationList(DETask& de_task)
+{
+  ScaleAxis& gcell_axis = RTDM.getDatabase().get_gcell_axis();
+
+  std::vector<Violation> new_violation_list;
+  for (Violation& violation : de_task.get_violation_list()) {
     for (Violation new_violation : expandViolation(violation)) {
       new_violation_list.push_back(new_violation);
     }
@@ -488,6 +583,8 @@ void DRCEngine::buildViolationList(DETask& de_task)
   }
   de_task.set_violation_list(new_violation_list);
 }
+
+#if 1  // aux
 
 DEProcessType DRCEngine::getDEProcessType(Violation& violation)
 {
@@ -590,9 +687,10 @@ void DRCEngine::buildByFunc(Violation& violation, const DEFuncType& de_func_type
       break;
     case ViolationType::kJogToJogSpacing:
       if (de_func_type == DEFuncType::kGetDEProcessType) {
-        de_process_type = DEProcessType::kSkip;
+        de_process_type = DEProcessType::kCost;
       } else if (de_func_type == DEFuncType::kExpandViolation) {
-        RTLOG.error(Loc::current(), "This is skipping!");
+        enlarged_rect = enlargeRect(violation);
+        layer_routing_list = keepLayer(violation);
       }
       break;
     case ViolationType::kMaxViaStack:
@@ -782,5 +880,7 @@ std::vector<std::pair<int32_t, bool>> DRCEngine::expandTwoViaLayer(Violation& vi
   layer_routing_list.emplace_back(above_layer_idx, true);
   return layer_routing_list;
 }
+
+#endif
 
 }  // namespace irt

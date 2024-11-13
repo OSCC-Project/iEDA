@@ -34,11 +34,13 @@ class DRCEngine
   static DRCEngine& getInst();
   static void destroyInst();
   // function
+  void init();
   std::vector<Violation> getViolationList(DETask& de_task);
 
  private:
   // self
   static DRCEngine* _de_instance;
+  std::set<Violation, CmpViolation> _ignore_violation_set;
 
   DRCEngine() = default;
   DRCEngine(const DRCEngine& other) = delete;
@@ -47,12 +49,17 @@ class DRCEngine
   DRCEngine& operator=(const DRCEngine& other) = delete;
   DRCEngine& operator=(DRCEngine&& other) = delete;
   // function
+  void buildIgnoreViolationSet();
+  std::vector<Violation> getViolationList(DETask& de_task, bool need_build);
   void getViolationListBySelf(DETask& de_task);
   void buildTask(DETask& de_task);
   void writeTask(DETask& de_task);
   void readTask(DETask& de_task);
   void getViolationListByOther(DETask& de_task);
+  void filterViolationList(DETask& de_task);
   void buildViolationList(DETask& de_task);
+
+#if 1  // aux
   DEProcessType getDEProcessType(Violation& violation);
   std::vector<Violation> expandViolation(Violation& violation);
   void buildByFunc(Violation& violation, const DEFuncType& de_func_type, DEProcessType& de_process_type,
@@ -62,6 +69,7 @@ class DRCEngine
   std::vector<std::pair<int32_t, bool>> keepLayer(Violation& violation);
   std::vector<std::pair<int32_t, bool>> expandOneViaLayer(Violation& violation);
   std::vector<std::pair<int32_t, bool>> expandTwoViaLayer(Violation& violation);
+#endif
 };
 
 }  // namespace irt
