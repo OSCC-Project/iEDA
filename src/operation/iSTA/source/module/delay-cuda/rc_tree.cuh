@@ -54,9 +54,9 @@ struct DelayRcPoint {
   DelayRcPoint(std::string node_name) : _node_name(node_name) {}
   std::string _node_name;
   float _cap = 0.0;
-  float _nload =
+  float _load =
       0.0;  //!< The nload is sum of the node cap and downstream node cap.
-  float _ndelay = 0.0;  //!< The ndelay is the time from root to this node.
+  float _delay = 0.0;   //!< The ndelay is the time from root to this node.
   float _ldelay = 0.0;  //!< The load is sum of the node cap*ndelay and
   //!< downstream node cap*ndelay.
   float _beta = 0.0;
@@ -123,10 +123,6 @@ struct DelayRcNetwork {
       new_node->_node_name = name;
       new_node->_cap = cap;
       _str2nodes[name] = std::move(new_node);
-
-      for (const auto& node : _str2nodes) {
-        LOG_INFO << node.second->_node_name;
-      }
       return _str2nodes[name].get();
     }
   }
@@ -249,7 +245,7 @@ class DelayRcNetCommonInfo {
  *
  */
 struct DelayRcNet {
-  DelayRcNet() {};
+  DelayRcNet(){};
   explicit DelayRcNet(Net* net) : _net(net) {}
   static void set_rc_net_common_info(
       std::unique_ptr<DelayRcNetCommonInfo>&& delay_rc_net_common_info) {
@@ -275,6 +271,7 @@ void delay_update_point_impulse(std::vector<std::vector<DelayRcPoint*>>);
 void update_rc_timing(DelayRcNet* rc_net);
 void make_delay_rct(DelayRcNet* delay_rc_net, RustSpefNet* rust_spef_net);
 void update_rc_tree_info(DelayRcNet* delay_rc_net);
+void print_graphviz(DelayRcNetwork* rc_network);
 
 #else
 float delay_update_point_load(DelayRcPoint* parent, DelayRcPoint* rc_point);

@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <fstream>
 #include <iostream>
 #include <queue>
 
@@ -313,8 +314,8 @@ void delay_free_gpu_memory(DelayRcNetwork* rc_network) {
   cudaFree(rc_network->_gpu_load_array);
   cudaFree(rc_network->_gpu_resistance_array);
   cudaFree(rc_network->_gpu_delay_array);
-  cudaFree(rc_network->_gpu_delay_array);
   cudaFree(rc_network->_gpu_ldelay_array);
+  cudaFree(rc_network->_gpu_beta_array);
   cudaFree(rc_network->_gpu_impulse_array);
   cudaFree(rc_network->_gpu_parent_pos_array);
   cudaFree(rc_network->_gpu_children_pos_array);
@@ -354,7 +355,7 @@ void delay_update_point_load(
 
   // set the node load.
   for (auto& node : rc_network->_nodes) {
-    node->_nload = rc_network->_load_array[node->_flatten_pos];
+    node->_load = rc_network->_load_array[node->_flatten_pos];
   }
 }
 
@@ -387,7 +388,7 @@ void delay_update_point_delay(
 
   // set the node load.
   for (auto& node : rc_network->_nodes) {
-    node->_ndelay = rc_network->_delay_array[node->_flatten_pos];
+    node->_delay = rc_network->_delay_array[node->_flatten_pos];
   }
 }
 
@@ -483,8 +484,8 @@ void update_rc_timing(DelayRcNet* rc_net) {
 
   //   // for debug
   //   // for (auto& node : rc_network._nodes) {
-  //   //   std::cout << "node: " << node->_cap << ", load: " << node->_nload
-  //   //             << ", delay: " << node->_ndelay << ",ldelay: " <<
+  //   //   std::cout << "node: " << node->_cap << ", load: " << node->_load
+  //   //             << ", delay: " << node->_delay << ",ldelay: " <<
   //   node->_ldelay
   //   //             << ", beta: " << node->_beta << ", impulse: " <<
   //   node->_impulse
@@ -582,6 +583,42 @@ void update_rc_tree_info(DelayRcNet* delay_rc_net) {
   }
 }
 
+void print_graphviz(DelayRcNetwork* rc_network) {
+  LOG_INFO << "dump graph dotviz start";
+
+  std::ofstream dot_file;
+  dot_file.open("./tree_gpu.dot", std::ios::app);
+
+  dot_file << "digraph tree" << rc_network->_root->_node_name << "{\n";
+
+  for (auto& edge : rc_network->_edges) {
+    // if (!edge.isInOrder()) {
+    //   continue;
+    // }
+    auto from_name = edge->_from->_node_name;
+    auto to_name = edge->_to->_node_name;
+
+    dot_file << Str::printf(
+        "p%p[label=\"%s load %f delay %f ldelay %f beta %f impulse %f\" ]\n",
+        edge->_from, from_name.c_str(), edge->_from->_load, edge->_from->_delay,
+        edge->_from->_ldelay, edge->_from->_beta, edge->_from->_impulse);
+
+    dot_file << Str::printf("p%p", edge->_from) << " -> "
+             << Str::printf("p%p", edge->_to)
+             << Str::printf("[label=\"res %f\" ]", edge->_resistance) << "\n";
+
+    dot_file << Str::printf(
+        "p%p[label=\"%s load %f delay %f ldelay %f beta %f impulse %f\" ]\n",
+        edge->_to, to_name.c_str(), edge->_to->_load, edge->_to->_delay,
+        edge->_to->_ldelay, edge->_to->_beta, edge->_to->_impulse);
+  }
+
+  dot_file << "}\n";
+
+  dot_file.close();
+
+  LOG_INFO << "dump graph dotviz end";
+}
 #else
 
 /**
@@ -591,19 +628,19 @@ void update_rc_tree_info(DelayRcNet* delay_rc_net) {
  */
 float delay_update_point_load(DelayRcPoint* parent, DelayRcPoint* rc_point) {
   if (rc_point->_is_update_load) {
-    return rc_point->_nload;
+    return rc_point->_load;
   }
 
-  rc_point->_nload += rc_point->_cap;
+  rc_point->_load += rc_point->_cap;
   for (auto& edge : rc_point->_fanout_edges) {
     if (edge->_to != parent) {
-      rc_point->_nload += delay_update_point_load(rc_point, edge->_to);
+      rc_point->_load += delay_update_point_load(rc_point, edge->_to);
     }
   }
 
   rc_point->_is_update_load = true;
 
-  return rc_point->_nload;
+  return rc_point->_load;
 }
 
 /**
@@ -631,8 +668,8 @@ void delay_update_point_delay(DelayRcPoint* parent, DelayRcPoint* rc_point) {
   rc_point->_is_update_delay = true;
   for (auto& edge : rc_point->_fanout_edges) {
     if (edge->_to != parent) {
-      edge->_to->_ndelay =
-          rc_point->_ndelay + edge->_resistance * edge->_to->_nload;
+      edge->_to->_delay =
+          rc_point->_delay + edge->_resistance * edge->_to->_load;
       delay_update_point_delay(rc_point, edge->_to);
     }
   }
@@ -708,8 +745,8 @@ int test() {
   delay_update_point_response(&rc_network, level_to_points);
 
   for (auto& node : rc_network._nodes) {
-    std::cout << "node: " << node->_cap << ", load: " << node->_nload
-              << ", delay: " << node->_ndelay << ",ldelay: " << node->_ldelay
+    std::cout << "node: " << node->_cap << ", load: " << node->_load
+              << ", delay: " << node->_delay << ",ldelay: " << node->_ldelay
               << ", beta: " << node->_beta << ", impulse: " << node->_impulse
               << std::endl;
   }
