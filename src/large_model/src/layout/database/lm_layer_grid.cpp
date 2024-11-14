@@ -17,7 +17,6 @@
 #pragma once
 /**
  * @project		large model
- * @file		patch.h
  * @date		06/11/2024
  * @version		0.1
  * @description
@@ -33,7 +32,7 @@ namespace ilm {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-void LmLayerGrid::buildNodeMatrix()
+std::pair<int, int> LmLayerGrid::buildNodeMatrix(int order)
 {
   _info.node_x_start = _info.x_start % _info.x_step;
   _info.node_y_start = _info.y_start % _info.y_step;
@@ -49,6 +48,7 @@ void LmLayerGrid::buildNodeMatrix()
       lm_node.set_row_id(row);
       lm_node.set_x(x);
       lm_node.set_y(y);
+      lm_node.set_layer_id(order);
 
       row_nodes.push_back(lm_node);
     }
@@ -58,11 +58,21 @@ void LmLayerGrid::buildNodeMatrix()
 
   _info.node_row_num = _node_matrix.size();
   _info.node_col_num = _node_matrix[0].size();
+
+  return std::make_pair(_info.node_row_num, _info.node_col_num);
 }
 
 LmNode& LmLayerGrid::get_node(int row_id, int col_id)
 {
   return _node_matrix[row_id][col_id];
+}
+
+std::pair<int, int> LmLayerGrid::get_node_coodinate(int row_id, int col_id)
+{
+  int x = _info.node_y_start + row_id * _info.y_step;
+  int y = _info.node_x_start + row_id * _info.x_step;
+
+  return std::make_pair(x, y);
 }
 
 LmNode& LmLayerGrid::findNode(int x, int y)
@@ -109,7 +119,7 @@ int LmLayerGrid::findNodeID(int value, bool b_row_id, SideType side_type)
   return node_id;
 }
 
-std::pair<int, int> LmLayerGrid::getNodeIDRange(int coord1, int coord2, bool b_row_id)
+std::pair<int, int> LmLayerGrid::get_node_id_range(int coord1, int coord2, bool b_row_id)
 {
   auto index_1 = findNodeID(coord1, b_row_id, SideType::kLower);
   auto index_2 = findNodeID(coord2, b_row_id, SideType::kHigher);
@@ -117,7 +127,7 @@ std::pair<int, int> LmLayerGrid::getNodeIDRange(int coord1, int coord2, bool b_r
   return std::make_pair(index_1, index_2);
 }
 
-std::tuple<int, int, int, int> LmLayerGrid::getNodeIdRange(int x1, int x2, int y1, int y2)
+std::tuple<int, int, int, int> LmLayerGrid::get_node_id_range(int x1, int x2, int y1, int y2)
 {
   /// row id
   auto row_id_1 = findNodeID(y1, true, SideType::kLower);

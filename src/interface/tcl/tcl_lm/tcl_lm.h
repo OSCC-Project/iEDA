@@ -50,4 +50,18 @@ class CmdLmLayoutPatchs : public TclCmd
   // private data
 };
 
+class CmdLmLayoutGraph : public TclCmd
+{
+ public:
+  explicit CmdLmLayoutGraph(const char* cmd_name);
+  ~CmdLmLayoutGraph() override = default;
+
+  unsigned check() override;
+  unsigned exec() override;
+
+ private:
+  // private function
+  // private data
+};
+
 }  // namespace tcl

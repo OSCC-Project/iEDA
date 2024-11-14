@@ -17,7 +17,6 @@
 #pragma once
 /**
  * @project		large model
- * @file		patch.h
  * @date		06/11/2024
  * @version		0.1
  * @description
@@ -33,22 +32,30 @@
 
 namespace ilm {
 
-enum class LmNodeTYpe
+enum class LmNodeTYpe : uint8_t
+{
+  kNone = 0,
+  lm_pdn = 1,
+  lm_net = 2,
+  lm_pin = 4,
+  lm_io = 8,
+  lm_obs = 16,
+  kMax
+};
+
+enum class LmNodeConnectType
 {
   kNone,
-  lm_pdn,
-  lm_net,
-  lm_pin,
-  lm_io,
-  lm_obs,
+  lm_wire,
+  lm_via,
   kMax
 };
 
 enum class LmNodeStatus
 {
   kNone,
-  lm_connected,   /// connect points, including via, end point of wire, connected points pon pins
-  lm_connecting,  /// points between end points
+  lm_connected,   /// connected points, including via, end point of wire, connected points on pins, use to describe wire end points pair
+  lm_connecting,  /// points that are not end point but as a connecting point in a wire
   lm_fix,         /// objects that no need to connect such as obs, pdn eg.
   kMax
 };
@@ -72,23 +79,36 @@ class LmNodeData
   ~LmNodeData() = default;
 
   // getter
+  int32_t get_net_id() { return _net_id; }
   LmNodeTYpe get_type() { return _type; }
+  LmNodeConnectType get_connect_type() { return _connect_type; }
   LmNodeStatus get_status() { return _status; }
   LmNodeDirection get_direction() { return _direction; }
+  bool is_direction(LmNodeDirection direction);
+
+  bool is_net() { return is_type(LmNodeTYpe::lm_net); }
+  bool is_pdn() { return is_type(LmNodeTYpe::lm_pdn); }
+  bool is_pin() { return is_type(LmNodeTYpe::lm_pin); }
+  bool is_io() { return is_type(LmNodeTYpe::lm_io); }
+  bool is_obs() { return is_type(LmNodeTYpe::lm_obs); }
 
   // setter
-  void set_type(LmNodeTYpe type) { _type = type; }
-  void set_status(LmNodeStatus status) { _status = status; }
   void set_net_id(int32_t id) { _net_id = id; }
+  void set_type(LmNodeTYpe type);
+  void set_connect_type(LmNodeConnectType type) { _connect_type = type; }
+  void set_status(LmNodeStatus status) { _status = status; }
   void set_direction(LmNodeDirection direction);
 
   // operator
 
  private:
   int32_t _net_id = -1;
-  LmNodeTYpe _type = LmNodeTYpe::kNone;
+  LmNodeTYpe _type = LmNodeTYpe::kNone;  /// multiple type in one node
+  LmNodeConnectType _connect_type = LmNodeConnectType::kNone;
   LmNodeStatus _status = LmNodeStatus::kNone;
-  LmNodeDirection _direction = LmNodeDirection::kNone;
+  LmNodeDirection _direction = LmNodeDirection::kNone;  /// multiple direction in one node
+
+  bool is_type(LmNodeTYpe type);
 };
 
 class LmNode
@@ -102,17 +122,21 @@ class LmNode
   int get_y() { return _y; }
   int get_row_id() { return _row_id; }
   int get_col_id() { return _col_id; }
+  int32_t get_layer_id() { return _layer_id; }
 
   LmNodeData& get_node_data() { return _node_data; }
 
-  bool isSteinerPoint();
-  bool isVia();
+  bool is_steiner_point();
+  bool is_corner();
+  bool is_via();
+  bool is_end_point();
 
   // setter
   void set_x(int x) { _x = x; }
   void set_y(int y) { _y = y; }
   void set_row_id(int row_id) { _row_id = row_id; }
   void set_col_id(int col_id) { _col_id = col_id; }
+  void set_layer_id(int32_t layer_id) { _layer_id = layer_id; }
 
   // operator
 
@@ -121,6 +145,7 @@ class LmNode
   int _y;
   int _row_id;  // node order of layer rows
   int _col_id;  // node order of layer cols
+  int32_t _layer_id = -1;
   LmNodeData _node_data;
 };
 

@@ -17,7 +17,6 @@
 #pragma once
 /**
  * @project		large model
- * @file		patch.h
  * @date		06/11/2024
  * @version		0.1
  * @description
@@ -50,6 +49,7 @@ class LmPatchLayer
   LmPatch& get_patch(int row_id, int col_id);
   std::map<int, LmNet> get_net_map() { return _net_map; }
   LmNet* get_net(int net_id);
+  int get_layer_order() { return _layer_order; }
 
   // setter
   void set_layer_name(std::string name) { _layer_name = name; }

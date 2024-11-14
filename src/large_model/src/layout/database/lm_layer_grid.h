@@ -17,7 +17,6 @@
 #pragma once
 /**
  * @project		large model
- * @file		patch.h
  * @date		06/11/2024
  * @version		0.1
  * @description
@@ -70,16 +69,23 @@ class LmLayerGrid
   LmLayerGridInfo& get_info() { return _info; }
   std::vector<std::vector<LmNode>>& get_node_matrix() { return _node_matrix; }
   LmNode& get_node(int row_id, int col_id);
-  LmNode& findNode(int x, int y);
-  std::pair<int, int> findNodeID(int x, int y);
-  int findNodeID(int value, bool b_row_id, SideType side_type = SideType::kNone);
-  std::pair<int, int> getNodeIDRange(int coord1, int coord2, bool b_row_id);
-  std::tuple<int, int, int, int> getNodeIdRange(int x1, int x2, int y1, int y2);
+
+  std::pair<int, int> get_node_id_range(int coord1, int coord2, bool b_row_id);
+  std::tuple<int, int, int, int> get_node_id_range(int x1, int x2, int y1, int y2);
+  std::pair<int, int> get_node_coodinate(int row_id, int col_id);
+  bool is_out_of_range(int row_id, int col_id)
+  {
+    return (row_id >= 0 && row_id <= _info.node_row_num) && (col_id >= 0 && col_id <= _info.node_col_num) ? false : true;
+  }
 
   // setter
 
   // operator
-  void buildNodeMatrix();
+  LmNode& findNode(int x, int y);
+  std::pair<int, int> findNodeID(int x, int y);
+  int findNodeID(int value, bool b_row_id, SideType side_type = SideType::kNone);
+
+  std::pair<int, int> buildNodeMatrix(int order);
 
  private:
   LmLayerGridInfo _info;

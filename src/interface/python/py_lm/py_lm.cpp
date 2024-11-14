@@ -26,4 +26,10 @@ bool layout_patchs(const std::string& path)
   return lm_api.buildLargeModelLayoutData(path);
 }
 
+bool layout_graph(const std::string& path)
+{
+  ilm::LargeModelApi lm_api;
+  return lm_api.buildLargeModelGraphData(path);
+}
+
 }  // namespace python_interface

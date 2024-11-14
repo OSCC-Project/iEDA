@@ -25,4 +25,10 @@ bool LmDataManager::buildLayoutData(const std::string path)
   return layout_dm.buildLayoutData(path);
 }
 
+bool LmDataManager::buildGraphData(const std::string path)
+{
+  LmLayoutDataManager layout_dm;
+  return layout_dm.buildGraphData(path);
+}
+
 }  // namespace ilm

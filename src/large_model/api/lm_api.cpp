@@ -30,4 +30,13 @@ bool LargeModelApi::buildLargeModelLayoutData(const std::string path)
   return true;
 }
 
+bool LargeModelApi::buildLargeModelGraphData(const std::string path)
+{
+  LargeModel large_model;
+
+  large_model.buildGraphData(path);
+
+  return true;
+}
+
 }  // namespace ilm

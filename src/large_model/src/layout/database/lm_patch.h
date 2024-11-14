@@ -17,7 +17,6 @@
 #pragma once
 /**
  * @project		large model
- * @file		patch.h
  * @date		06/11/2024
  * @version		0.1
  * @description

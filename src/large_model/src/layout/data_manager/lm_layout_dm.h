@@ -32,14 +32,27 @@ class LmLayoutDataManager
   LmLayout& get_layout() { return _layout; }
 
   bool buildLayoutData(const std::string path);
-
-  std::map<int, LmNet> buildNetWires();
+  bool buildGraphData(const std::string path);
 
  private:
   LmLayout _layout;
 
   void init();
   void buildPatchs();
+
+  std::map<int, LmNet> buildNetWires(bool b_graph);
+  int buildCutLayer(int layer_id, LmPatchLayer& patch_layer, std::map<int, LmNet>& net_map);
+  int buildRoutingLayer(int layer_id, LmPatchLayer& patch_layer, std::map<int, LmNet>& net_map);
+
+  void buildSteinerWire(LmPatchLayer& patch_layer, std::map<int, LmNet>& net_map, std::vector<std::vector<bool>>& visited_matrix);
+  void buildRegulerWire();
+
+  void add_net_wire(std::map<int, LmNet>& net_map, int net_id, LmNetWire wire);
+  int searchEndNode(LmNode& node_connected, LmLayerGrid& grid, std::map<int, LmNet>& net_map,
+                    std::vector<std::vector<bool>>& visited_matrix);
+  int search_node_in_direction(LmNode& node_connected, LmNodeDirection direction, LmLayerGrid& grid, std::map<int, LmNet>& net_map,
+                               std::vector<std::vector<bool>>& visited_matrix);
+  LmNode* travel_grid(LmNode* node_start, LmNodeDirection direction, LmLayerGrid& grid, std::vector<std::vector<bool>>& visited_matrix);
 };
 
 }  // namespace ilm

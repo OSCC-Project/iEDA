@@ -15,17 +15,21 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 #pragma once
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
+#include <string>
 
-#include "py_lm.h"
+#include "lm_net.h"
 
-namespace python_interface {
-namespace py = pybind11;
-void register_large_model(py::module& m)
+namespace ilm {
+
+class LmLayoutFileIO
 {
-  m.def("layout_patchs", layout_patchs, py::arg("path"));
-  m.def("layout_graph", layout_graph, py::arg("path"));
-}
+ public:
+  LmLayoutFileIO(){}
+  ~LmLayoutFileIO() = default;
 
-}  // namespace python_interface
+  bool saveJson(std::string path, std::map<int, LmNet>& net_map);
+
+ private:
+};
+
+}  // namespace ilm

@@ -17,7 +17,6 @@
 #pragma once
 /**
  * @project		large model
- * @file		patch.h
  * @date		06/11/2024
  * @version		0.1
  * @description
@@ -38,18 +37,26 @@ namespace ilm {
 class LmNetWire
 {
  public:
-  LmNetWire(LmNode* node1, LmNode* node2) { _node_pair = std::make_pair(node1, node2); };
+  LmNetWire(LmNode* node1 = nullptr, LmNode* node2 = nullptr) { _node_pair = std::make_pair(node1, node2); };
   ~LmNetWire() = default;
 
   // getter
   std::pair<LmNode*, LmNode*>& get_connected_nodes() { return _node_pair; }
+  std::vector<std::pair<LmNode*, LmNode*>>& get_paths() { return _paths; }
 
   // setter
+  void set_start(LmNode* node) { _node_pair.first = node; }
+  void set_end(LmNode* node) { _node_pair.second = node; }
+
+  void add_path(LmNode* node1, LmNode* node2) { _paths.push_back(std::make_pair(node1, node2)); }
+  void insert_paths(std::vector<std::pair<LmNode*, LmNode*>> paths) { _paths.insert(_paths.end(), paths.begin(), paths.end()); }
 
   // operator
 
  private:
   std::pair<LmNode*, LmNode*> _node_pair;
+
+  std::vector<std::pair<LmNode*, LmNode*>> _paths;
 };
 
 class LmNet
@@ -60,14 +67,13 @@ class LmNet
 
   // getter
   int get_net_id() { return _net_id; }
-  std::vector<LmNetWire> get_wires() { return _wires; }
+  std::vector<LmNetWire>& get_wires() { return _wires; }
 
   // setter
   void set_net_id(int net_id) { _net_id = net_id; }
 
   // operator
   void addWire(LmNetWire wire) { _wires.push_back(wire); }
-  void addWire(LmNode* node1, LmNode* node2) { _wires.push_back(LmNetWire(node1, node2)); }
 
  private:
   int _net_id = -1;

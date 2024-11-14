@@ -21,5 +21,6 @@
 namespace python_interface {
 
 bool layout_patchs(const std::string& path);
+bool layout_graph(const std::string& path);
 
 }  // namespace python_interface

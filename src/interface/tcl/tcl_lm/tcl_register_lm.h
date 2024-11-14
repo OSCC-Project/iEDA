@@ -34,6 +34,7 @@ namespace tcl {
 int registerCmdLargeModel()
 {
   registerTclCmd(CmdLmLayoutPatchs, "layout_patchs");
+  registerTclCmd(CmdLmLayoutGraph, "layout_graph");
 
   return EXIT_SUCCESS;
 }

@@ -27,6 +27,7 @@
 #include "Log.hh"
 #include "idm.h"
 #include "omp.h"
+#include "usage.hh"
 
 namespace ilm {
 
@@ -181,7 +182,9 @@ void LmLayoutInit::buildPatchGrid()
   auto& patch_layer_map = patch_layers.get_patch_layer_map();
   for (auto& [order, patch_layer] : patch_layer_map) {
     auto& grid = patch_layer.get_grid();
-    grid.buildNodeMatrix();
+    auto [node_row_num, node_col_num] = grid.buildNodeMatrix(order);
+
+    LOG_INFO << "LM layer order : " << order << ", row = " << node_row_num << ", col = " << node_col_num;
   }
 }
 
@@ -201,7 +204,7 @@ void LmLayoutInit::transVia(idb::IdbVia* idb_via, int net_id, LmNodeTYpe type)
 
   for (auto* cut_rect : cut_layer_shape.get_rect_list()) {
     auto [row_1, row_2, co_1, col_2]
-        = grid.getNodeIdRange(cut_rect->get_low_x(), cut_rect->get_high_x(), cut_rect->get_low_y(), cut_rect->get_high_y());
+        = grid.get_node_id_range(cut_rect->get_low_x(), cut_rect->get_high_x(), cut_rect->get_low_y(), cut_rect->get_high_y());
     for (int row = row_1; row <= row_2; ++row) {
       for (int col = co_1; col <= col_2; ++col) {
         /// set node data
@@ -209,6 +212,7 @@ void LmLayoutInit::transVia(idb::IdbVia* idb_via, int net_id, LmNodeTYpe type)
         node_data.set_type(type);
         node_data.set_status(LmNodeStatus::lm_connected);
         node_data.set_net_id(net_id);
+        node_data.set_connect_type(LmNodeConnectType::lm_via);
       }
     }
   }
@@ -282,13 +286,13 @@ void LmLayoutInit::initPDN()
             continue;
           }
           auto& grid = patch_layer->get_grid();
-          auto [row_1, row_2, co_1, col_2] = grid.getNodeIdRange(ll_x, ur_x, ll_y, ur_y);
+          auto [row_1, row_2, co_1, col_2] = grid.get_node_id_range(ll_x, ur_x, ll_y, ur_y);
           for (int row = row_1; row <= row_2; ++row) {
             for (int col = co_1; col <= col_2; ++col) {
               /// set node data
               auto& node_data = grid.get_node(row, col).get_node_data();
               node_data.set_type(LmNodeTYpe::lm_pdn);
-              node_data.set_status(LmNodeStatus::lm_connecting);
+              node_data.set_connect_type(LmNodeConnectType::lm_wire);
             }
           }
         }
@@ -318,7 +322,6 @@ void LmLayoutInit::initPDN()
 
   LOG_INFO << "LM memory usage " << stats.memoryDelta() << " MB";
   LOG_INFO << "LM elapsed time " << stats.elapsedRunTime() << " s";
-
   LOG_INFO << "LM init PDN end...";
 }
 
@@ -414,18 +417,20 @@ void LmLayoutInit::transPin(idb::IdbPin* idb_pin, int net_id)
         node_data.set_type(LmNodeTYpe::lm_pin);
         node_data.set_status(LmNodeStatus::lm_fix);
         node_data.set_net_id(net_id);
+        node_data.set_connect_type(LmNodeConnectType::lm_via);
       }
     } else {
       for (IdbRect* rect : layer_shape->get_rect_list()) {
         /// build grid
         auto [row_1, row_2, co_1, col_2]
-            = grid.getNodeIdRange(rect->get_low_x(), rect->get_high_x(), rect->get_low_y(), rect->get_high_y());
+            = grid.get_node_id_range(rect->get_low_x(), rect->get_high_x(), rect->get_low_y(), rect->get_high_y());
         for (int row = row_1; row <= row_2; ++row) {
           for (int col = co_1; col <= col_2; ++col) {
             auto& node_data = grid.get_node(row, col).get_node_data();
             node_data.set_type(LmNodeTYpe::lm_pin);
             node_data.set_status(LmNodeStatus::lm_fix);
             node_data.set_net_id(net_id);
+            node_data.set_connect_type(LmNodeConnectType::lm_wire);
           }
         }
       }
@@ -436,7 +441,7 @@ void LmLayoutInit::transPin(idb::IdbPin* idb_pin, int net_id)
   /// tbd
 }
 
-void LmLayoutInit::transRect(int32_t ll_x, int32_t ll_y, int32_t ur_x, int32_t ur_y, std::string layer_name, int net_id)
+void LmLayoutInit::transNetRect(int32_t ll_x, int32_t ll_y, int32_t ur_x, int32_t ur_y, std::string layer_name, int net_id)
 {
   auto& patch_layers = _layout->get_patch_layers();
 
@@ -447,7 +452,7 @@ void LmLayoutInit::transRect(int32_t ll_x, int32_t ll_y, int32_t ur_x, int32_t u
     return;
   }
   auto& grid = patch_layer->get_grid();
-  auto [row_1, row_2, col_1, col_2] = grid.getNodeIdRange(ll_x, ur_x, ll_y, ur_y);
+  auto [row_1, row_2, col_1, col_2] = grid.get_node_id_range(ll_x, ur_x, ll_y, ur_y);
   /// net wire must only occupy one grid size
   //   if (net_id >= 0 && row_1 != row_2 && col_1 != col_2) {
   //     LOG_WARNING << "Net width maybe is out of range : " << net_id;
@@ -460,7 +465,6 @@ void LmLayoutInit::transRect(int32_t ll_x, int32_t ll_y, int32_t ur_x, int32_t u
       auto& node_data = grid.get_node(row, col).get_node_data();
       node_data.set_type(LmNodeTYpe::lm_net);
       node_data.set_net_id(net_id);
-      node_data.set_status(LmNodeStatus::lm_connecting);
       if (b_horizontal) {
         if (col == col_1) {
           node_data.set_direction(LmNodeDirection::lm_right);
@@ -531,8 +535,8 @@ void LmLayoutInit::initNets()
           rect->moveByStep(coordinate->get_x(), coordinate->get_y());
 
           /// build grid
-          transRect(rect->get_low_x(), rect->get_low_y(), rect->get_high_x(), rect->get_high_y(), idb_segment->get_layer()->get_name(),
-                    net_id);
+          transNetRect(rect->get_low_x(), rect->get_low_y(), rect->get_high_x(), rect->get_high_y(), idb_segment->get_layer()->get_name(),
+                       net_id);
 
         } else {
           /// nothing to do
@@ -566,7 +570,7 @@ void LmLayoutInit::initNets()
           }
 
           /// build grid
-          transRect(ll_x, ll_y, ur_x, ur_y, routing_layer->get_name(), net_id);
+          transNetRect(ll_x, ll_y, ur_x, ur_y, routing_layer->get_name(), net_id);
         }
       }
     }
@@ -584,6 +588,28 @@ void LmLayoutInit::initNets()
 
 void LmLayoutInit::buildConnectedPoints()
 {
+  auto set_connected = [](LmNode& node) -> bool {
+    auto& node_data = node.get_node_data();
+    /// steiner point
+    if (node_data.is_net() && node.is_steiner_point()) {
+      node_data.set_status(LmNodeStatus::lm_connected);
+      return true;
+    }
+    /// pin connected to wire
+    if ((node_data.is_net() && node_data.is_pin()) || (node_data.is_net() && node_data.is_io())) {
+      node_data.set_status(LmNodeStatus::lm_connected);
+      return true;
+    }
+
+    /// set corner as connecting
+    if (node.is_corner()) {
+      node_data.set_status(LmNodeStatus::lm_connecting);
+      return true;
+    }
+
+    return false;
+  };
+
   ieda::Stats stats;
 
   LOG_INFO << "LM build connected points start...";
@@ -605,17 +631,19 @@ void LmLayoutInit::buildConnectedPoints()
 #pragma omp parallel for schedule(dynamic)
       for (int row = 0; row < grid.get_info().node_row_num; ++row) {
         for (int col = 0; col < grid.get_info().node_col_num; ++col) {
-          if (LmNodeTYpe::lm_net == node_matrix[row][col].get_node_data().get_type() && node_matrix[row][col].isSteinerPoint()) {
-            node_matrix[row][col].get_node_data().set_status(LmNodeStatus::lm_connected);
-
+          /// set steiner points as connected
+          if (true == set_connected(node_matrix[row][col])) {
             omp_set_lock(&lck);
             connected_num++;
             omp_unset_lock(&lck);
           }
         }
-
-        LOG_INFO << "Patch layer " << i << " Read rows : " << row << " / " << grid.get_info().node_row_num;
+        if (row % 1000 == 0) {
+          LOG_INFO << "Patch layer " << i << " Read rows : " << row << " / " << grid.get_info().node_row_num;
+        }
       }
+
+      LOG_INFO << "Patch layer " << i << " Read rows : " << grid.get_info().node_row_num << " / " << grid.get_info().node_row_num;
     } else {
       /// cut layer
       auto* patch_layer_bottom = patch_layers.findPatchLayer(i - 1);  /// bottom routing layer
@@ -631,8 +659,11 @@ void LmLayoutInit::buildConnectedPoints()
       for (int row = 0; row < grid.get_info().node_row_num; ++row) {
         for (int col = 0; col < grid.get_info().node_col_num; ++col) {
           if (LmNodeTYpe::lm_net == node_matrix[row][col].get_node_data().get_type()) {
+            node_matrix_bottom[row][col].get_node_data().set_type(LmNodeTYpe::lm_net);
             node_matrix_bottom[row][col].get_node_data().set_direction(LmNodeDirection::lm_up);
             node_matrix_bottom[row][col].get_node_data().set_status(LmNodeStatus::lm_connected);
+
+            node_matrix_top[row][col].get_node_data().set_type(LmNodeTYpe::lm_net);
             node_matrix_top[row][col].get_node_data().set_direction(LmNodeDirection::lm_down);
             node_matrix_top[row][col].get_node_data().set_status(LmNodeStatus::lm_connected);
 
@@ -641,9 +672,11 @@ void LmLayoutInit::buildConnectedPoints()
             omp_unset_lock(&lck);
           }
         }
-
-        LOG_INFO << "Patch layer " << i << " Read rows : " << row << " / " << grid.get_info().node_row_num;
+        if (row % 1000 == 0) {
+          LOG_INFO << "Patch layer " << i << " Read rows : " << row << " / " << grid.get_info().node_row_num;
+        }
       }
+      LOG_INFO << "Patch layer " << i << " Read rows : " << grid.get_info().node_row_num << " / " << grid.get_info().node_row_num;
     }
   }
 

@@ -43,4 +43,9 @@ bool LargeModel::buildLayoutData(const std::string path)
   return _data_manager.buildLayoutData(path);
 }
 
+bool LargeModel::buildGraphData(const std::string path)
+{
+  return _data_manager.buildGraphData(path);
+}
+
 }  // namespace ilm
