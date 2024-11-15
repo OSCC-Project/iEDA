@@ -33,6 +33,8 @@
 #include "line.h"
 #include "ruler.h"
 #include "shape.h"
+#include "lm_net.h"
+#include <map>
 
 class DbSetup;
 
@@ -63,6 +65,7 @@ class GuiGraphicsScene : public QGraphicsScene {
   void createDrc(std::map<std::string, std::vector<idrc::DrcViolation*>>& drc_db, int max_num = -1);
   void createClockTree(std::vector<iplf::CtsTreeNodeMap*>& node_list);
   void updateInstanceInFastMode(std::vector<iplf::FileInstance>& file_inst_list);
+  void createGraph(std::map<int, ilm::LmNet> net_map);
 
   void onDbChanged(DbSetup* db_setup);
   void fitView(qreal width, qreal height);

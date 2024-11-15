@@ -24,7 +24,7 @@ namespace ilm {
 class LmLayoutFileIO
 {
  public:
-  LmLayoutFileIO(){}
+  LmLayoutFileIO() {}
   ~LmLayoutFileIO() = default;
 
   bool saveJson(std::string path, std::map<int, LmNet>& net_map);

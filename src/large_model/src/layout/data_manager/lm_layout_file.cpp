@@ -23,6 +23,7 @@
 #include <iostream>
 
 #include "Log.hh"
+#include "idm.h"
 #include "json.hpp"
 #include "omp.h"
 #include "usage.hh"
@@ -44,22 +45,22 @@ bool LmLayoutFileIO::saveJson(std::string path, std::map<int, LmNet>& net_map)
   json_root["net_num"] = net_map.size();
   json json_nets = json::array();
 
-  // #pragma omp parallel for schedule(dynamic)
+  int total = 0;
+  //   #pragma omp parallel for schedule(dynamic)
   for (int i = 0; i < net_map.size(); ++i) {
     auto it = net_map.begin();
     std::advance(it, i);
 
-    auto& net_id = it->first;
-    auto& net = it->second;
-
     json json_net;
     {
-      json_net["id"] = net_id;
-      json_net["wire_num"] = net.get_wires().size();
+      json_net["id"] = it->first;
+      json_net["name"] = dmInst->get_idb_design()->get_net_list()->get_net_list()[it->first]->get_net_name();
+      json_net["wire_num"] = it->second.get_wires().size();
+      total += it->second.get_wires().size();
 
       json json_wires = json::array();
       {
-        for (auto& wire : net.get_wires()) {
+        for (auto& wire : it->second.get_wires()) {
           json json_wire = {};
           {
             /// wire
@@ -123,6 +124,7 @@ bool LmLayoutFileIO::saveJson(std::string path, std::map<int, LmNet>& net_map)
     }
   }
   LOG_INFO << "Save net : " << net_map.size() << " / " << net_map.size();
+  LOG_INFO << "wire size : " << total;
 
   json_root["nets"] = json_nets;
 

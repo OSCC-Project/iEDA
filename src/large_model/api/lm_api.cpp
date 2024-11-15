@@ -39,4 +39,10 @@ bool LargeModelApi::buildLargeModelGraphData(const std::string path)
   return true;
 }
 
+std::map<int, LmNet> LargeModelApi::getGraph(std::string path)
+{
+  LargeModel large_model;
+
+  return large_model.getGraph(path);
+}
 }  // namespace ilm

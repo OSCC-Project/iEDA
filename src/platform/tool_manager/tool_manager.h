@@ -31,6 +31,7 @@
 #include <string>
 #include <vector>
 
+#include "lm_net.h"
 
 namespace iplf {
 
@@ -65,6 +66,7 @@ class ToolManager
   void guiReadDb();
   void guiShowDrc(std::string detail_drc_path = "", int max_num = 100000);
   void guiShowClockTree();
+  void guiShowGraph(std::map<int, ilm::LmNet> graph);
 
   void guiCaptrueDesign(std::string path = "");
   /// Eval
@@ -96,7 +98,7 @@ class ToolManager
   bool RunTOBuffering(std::string config = "", std::string net_name = "");
 
   /// iCTS
-  bool autoRunCTS(std::string config = "", std::string work_dir="");
+  bool autoRunCTS(std::string config = "", std::string work_dir = "");
   bool reportCTS(std::string path = "");
   /// iRT
   bool autoRunRouter(std::string config_file_path = "");

@@ -69,6 +69,7 @@ enum class LmNodeDirection : uint8_t
   lm_down = 8,
   lm_top = 16,
   lm_bottom = 32,
+  lm_middle = 64,
   kMax
 };
 

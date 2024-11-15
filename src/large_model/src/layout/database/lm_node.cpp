@@ -66,7 +66,7 @@ bool LmNode::is_steiner_point()
   direction_num = (direction & static_cast<uint8_t>(LmNodeDirection::lm_up)) > 0 ? direction_num + 1 : direction_num;
   direction_num = (direction & static_cast<uint8_t>(LmNodeDirection::lm_down)) > 0 ? direction_num + 1 : direction_num;
 
-  return direction_num > 3 ? true : false;
+  return direction_num > 2 ? true : false;
 }
 /// @brief corner means has 2 and only 2 directions orthogonal
 /// @return

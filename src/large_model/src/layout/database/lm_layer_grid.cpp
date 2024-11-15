@@ -104,16 +104,15 @@ int LmLayerGrid::findNodeID(int value, bool b_row_id, SideType side_type)
     auto remain = (value - node_start) % step;
     auto index = (value - node_start) / step;
 
-    if (side_type == SideType::kLower) {
-      node_id = index + 1;
-    } else if (side_type == SideType::kHigher) {
-      node_id = index;
-    } else {
-      /// find nearest node
-      node_id = remain > step / 2 ? index + 1 : index;
-    }
+    // if (side_type == SideType::kHigher) {
+    //   node_id = remain == 0 ? index : index + 1;
+    // } else {
+    //   /// find nearest node
+    //   //   node_id = remain > step / 2 ? index + 1 : index;
+    //   node_id = index;
+    // }
 
-    node_id = node_id >= node_num ? node_num - 1 : node_id;
+    node_id = index >= node_num ? node_num - 1 : index;
   }
 
   return node_id;

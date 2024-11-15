@@ -5,6 +5,7 @@ add_library(ilm_api
 target_link_libraries(ilm_api
     PUBLIC
     large_model
+    ilm_layout_db
 )
 
 target_include_directories(ilm_api

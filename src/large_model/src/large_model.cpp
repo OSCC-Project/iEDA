@@ -48,4 +48,9 @@ bool LargeModel::buildGraphData(const std::string path)
   return _data_manager.buildGraphData(path);
 }
 
+std::map<int, LmNet> LargeModel::getGraph(std::string path)
+{
+  return _data_manager.getGraph(path);
+}
+
 }  // namespace ilm

@@ -220,8 +220,8 @@ void IdbSpeedUpSetup::createChip() {
       createCore();
       createIO();
       createRow();
-      createInstance();
-      createSpecialNet();
+      //   createInstance();
+      //   createSpecialNet();
       createNet();
       createTrackGrid();
       createBlockage();

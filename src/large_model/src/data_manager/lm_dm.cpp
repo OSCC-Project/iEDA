@@ -31,4 +31,10 @@ bool LmDataManager::buildGraphData(const std::string path)
   return layout_dm.buildGraphData(path);
 }
 
+std::map<int, LmNet> LmDataManager::getGraph(std::string path)
+{
+  LmLayoutDataManager layout_dm;
+  return layout_dm.getGraph(path);
+}
+
 }  // namespace ilm

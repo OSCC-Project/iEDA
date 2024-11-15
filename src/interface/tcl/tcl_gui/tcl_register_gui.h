@@ -42,6 +42,7 @@ int registerCmdGUI()
   registerTclCmd(CmdGuiShowDrc, "gui_show_drc");
   registerTclCmd(CmdGuiShowClockTree, "gui_show_cts");
   registerTclCmd(CmdGuiShowPlacement, "gui_show_pl");
+  registerTclCmd(CmdGuiShowGraph, "gui_show_graph");
 
   // web
   registerTclCmd(CmdCaptureDesign, "capture_design");

@@ -53,6 +53,7 @@ set(sources
     ${CMAKE_CURRENT_SOURCE_DIR}/src/guiDB/idbfastsetupclocktree.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/guiDB/idbfastsetupInstancedemo.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/guiDB/idbfastsetupCellMaster.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/guiDB/idbfastsetupgraph.cpp
 
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphicsitem/guiitem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/graphicsitem/guirect.cpp
@@ -192,6 +193,7 @@ target_link_libraries(iGUI
     tool_api_ipl
     idrc_pro_violation
     ieda_feature
+    ilm_layout_db
 )
 if(OpenMP_CXX_FOUND)
 target_link_libraries(iGUI 

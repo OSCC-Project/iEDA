@@ -47,9 +47,10 @@ class LmPatchLayer
   LmLayerGrid& get_grid() { return _grid; }
   std::vector<std::vector<LmPatch>>& get_patch_matrix() { return _patch_matrix; }
   LmPatch& get_patch(int row_id, int col_id);
-  std::map<int, LmNet> get_net_map() { return _net_map; }
+  std::map<int, LmNet>& get_net_map() { return _net_map; }
   LmNet* get_net(int net_id);
   int get_layer_order() { return _layer_order; }
+  bool is_horizontal() { return _b_horizontal; }
 
   // setter
   void set_layer_name(std::string name) { _layer_name = name; }
@@ -59,6 +60,7 @@ class LmPatchLayer
   void set_lly(int value) { _lly = value; }
   void set_urx(int value) { _urx = value; }
   void set_ury(int value) { _ury = value; }
+  void set_horizontal(bool b_horizontal) { _b_horizontal = b_horizontal; }
 
   // operator
   LmNet* getOrCreateNet(int net_id);
@@ -66,6 +68,7 @@ class LmPatchLayer
  private:
   std::string _layer_name;
   bool _b_routing;
+  bool _b_horizontal;
   int _layer_order;
   int _llx;
   int _lly;

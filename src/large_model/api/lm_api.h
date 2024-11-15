@@ -17,6 +17,8 @@
 #pragma once
 #include <string>
 
+#include "lm_net.h"
+
 namespace ilm {
 
 class LargeModelApi
@@ -27,6 +29,8 @@ class LargeModelApi
 
   bool buildLargeModelLayoutData(const std::string path);
   bool buildLargeModelGraphData(const std::string path);
+
+  std::map<int, LmNet> getGraph(std::string path = "");
 
  private:
 };

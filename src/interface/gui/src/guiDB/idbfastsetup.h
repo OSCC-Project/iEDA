@@ -45,6 +45,7 @@
 #include "guivia.h"
 #include "idrc_violation.h"
 #include "lef_service.h"
+#include "lm_net.h"
 #include "transform.h"
 
 using namespace idb;
@@ -75,6 +76,8 @@ class IdbSpeedUpSetup : public DbSetup {
 
   /// drc
   void showDrc(std::map<std::string, std::vector<idrc::DrcViolation*>>& drc_db, int max_num = -1);
+
+  void showGraph(std::map<int, ilm::LmNet> net_map);
 
   /// clock tree
   void showClockTree(std::vector<iplf::CtsTreeNodeMap*>& _node_list);
