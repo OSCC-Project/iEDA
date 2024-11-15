@@ -129,11 +129,25 @@ std::pair<int, int> LmLayerGrid::get_node_id_range(int coord1, int coord2, bool 
 std::tuple<int, int, int, int> LmLayerGrid::get_node_id_range(int x1, int x2, int y1, int y2)
 {
   /// row id
-  auto row_id_1 = findNodeID(y1, true, SideType::kLower);
-  auto row_id_2 = findNodeID(y2, true, SideType::kHigher);
+  int row_id_1;
+  int row_id_2;
+  if (std::abs(y2 - y1) <= _info.y_step) {
+    row_id_1 = findNodeID((y1 + y2) / 2, true, SideType::kLower);
+    row_id_2 = row_id_1;
+  } else {
+    row_id_1 = findNodeID(y1, true, SideType::kLower);
+    row_id_2 = findNodeID(y2, true, SideType::kHigher);
+  }
   /// col id
-  auto col_id_1 = findNodeID(x1, false, SideType::kLower);
-  auto col_id_2 = findNodeID(x2, false, SideType::kHigher);
+  int col_id_1;
+  int col_id_2;
+  if (std::abs(x2 - x1) <= _info.x_step) {
+    col_id_1 = findNodeID((x1 + x2) / 2, true, SideType::kLower);
+    col_id_2 = col_id_1;
+  } else {
+    col_id_1 = findNodeID(x1, false, SideType::kLower);
+    col_id_2 = findNodeID(x2, false, SideType::kHigher);
+  }
 
   return std::tuple<int, int, int, int>(row_id_1, row_id_2, col_id_1, col_id_2);
 }

@@ -575,19 +575,23 @@ void LmLayoutInit::initNets()
 
           auto* point_1 = idb_segment->get_point_start();
           auto* point_2 = idb_segment->get_point_second();
-          if (point_1->get_y() == point_2->get_y()) {
-            // horizontal
-            ll_x = std::min(point_1->get_x(), point_2->get_x());
-            ll_y = std::min(point_1->get_y(), point_2->get_y()) - routing_width / 2;
-            ur_x = std::max(point_1->get_x(), point_2->get_x());
-            ur_y = ll_y + routing_width;
-          } else if (point_1->get_x() == point_2->get_x()) {
-            // vertical
-            ll_x = std::min(point_1->get_x(), point_2->get_x()) - routing_width / 2;
-            ll_y = std::min(point_1->get_y(), point_2->get_y());
-            ur_x = ll_x + routing_width;
-            ur_y = std::max(point_1->get_y(), point_2->get_y());
-          }
+          //   if (point_1->get_y() == point_2->get_y()) {
+          //     // horizontal
+          //     ll_x = std::min(point_1->get_x(), point_2->get_x());
+          //     ll_y = std::min(point_1->get_y(), point_2->get_y()) - routing_width / 2;
+          //     ur_x = std::max(point_1->get_x(), point_2->get_x());
+          //     ur_y = ll_y + routing_width;
+          //   } else if (point_1->get_x() == point_2->get_x()) {
+          //     // vertical
+          //     ll_x = std::min(point_1->get_x(), point_2->get_x()) - routing_width / 2;
+          //     ll_y = std::min(point_1->get_y(), point_2->get_y());
+          //     ur_x = ll_x + routing_width;
+          //     ur_y = std::max(point_1->get_y(), point_2->get_y());
+          //   }
+          ll_x = std::min(point_1->get_x(), point_2->get_x());
+          ll_y = std::min(point_1->get_y(), point_2->get_y());
+          ur_x = std::max(point_1->get_x(), point_2->get_x());
+          ur_y = std::max(point_1->get_y(), point_2->get_y());
 
           /// build grid
           transNetRect(ll_x, ll_y, ur_x, ur_y, routing_layer->get_name(), net_id);
