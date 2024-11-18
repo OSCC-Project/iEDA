@@ -286,6 +286,7 @@ int LmLayoutDataManager::search_node_in_direction(LmNode& node_connected, LmNode
       /// go to corner direciton node
       auto orthogonal_direction = get_corner_orthogonal_direction(node_search, direction);
       if (orthogonal_direction == LmNodeDirection::kNone) {
+        wire.set_end(node_search);
         add_net_wire(net_map, node_start->get_node_data().get_net_id(), wire);
         break;
       }
@@ -341,12 +342,16 @@ LmNode* LmLayoutDataManager::travel_grid(LmNode* node_start, LmNodeDirection dir
 
   while (false == grid.is_out_of_range(row_travel, col_travel) && false == visited_matrix[row_travel][col_travel]) {
     auto* this_node = &node_matrix[row_travel][col_travel];
+    visited_matrix[row_travel][col_travel] = true;
 
     auto& travel_data = this_node->get_node_data();
     if (travel_data.get_status() == LmNodeStatus::lm_connecting || travel_data.get_status() == LmNodeStatus::lm_connected
         || travel_data.is_net() == false || travel_data.get_net_id() != node_data.get_net_id()) {
       /// find node need to be record
-      if (true == this_node->is_steiner_point() || true == this_node->is_corner()) {
+      //   if (true == this_node->is_steiner_point() || true == this_node->is_corner()) {
+      //     visited_matrix[row_travel][col_travel] = false;
+      //   }
+      if (travel_data.get_status() == LmNodeStatus::lm_connecting || travel_data.get_status() == LmNodeStatus::lm_connected) {
         visited_matrix[row_travel][col_travel] = false;
       }
       return node_connect;
@@ -354,11 +359,10 @@ LmNode* LmLayoutDataManager::travel_grid(LmNode* node_start, LmNodeDirection dir
 
     /// store this node as connect node
     node_connect = this_node;
-    /// travel
+
+    /// travel to next node
     row_travel += row_delta;
     col_travel += col_delta;
-
-    visited_matrix[row_travel][col_travel] = true;
   }
 
   return node_connect;

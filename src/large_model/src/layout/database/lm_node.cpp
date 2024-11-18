@@ -75,15 +75,15 @@ bool LmNode::is_corner()
   int direction_num = 0;
 
   uint8_t direction = static_cast<uint8_t>(_node_data.get_direction());
-  int left = direction & static_cast<uint8_t>(LmNodeDirection::lm_left) > 0 ? true : false;
-  int right = direction & static_cast<uint8_t>(LmNodeDirection::lm_right) > 0 ? true : false;
-  int up = direction & static_cast<uint8_t>(LmNodeDirection::lm_up) > 0 ? true : false;
-  int down = direction & static_cast<uint8_t>(LmNodeDirection::lm_down) > 0 ? true : false;
+  bool left = (direction & static_cast<uint8_t>(LmNodeDirection::lm_left)) > 0 ? true : false;
+  bool right = (direction & static_cast<uint8_t>(LmNodeDirection::lm_right)) > 0 ? true : false;
+  bool up = (direction & static_cast<uint8_t>(LmNodeDirection::lm_up)) > 0 ? true : false;
+  bool down = (direction & static_cast<uint8_t>(LmNodeDirection::lm_down)) > 0 ? true : false;
 
-  direction_num = left & up ? direction_num + 1 : direction_num;
-  direction_num = left & down ? direction_num + 1 : direction_num;
-  direction_num = right & up ? direction_num + 1 : direction_num;
-  direction_num = right & down ? direction_num + 1 : direction_num;
+  direction_num = left && up ? direction_num + 1 : direction_num;
+  direction_num = left && down ? direction_num + 1 : direction_num;
+  direction_num = right && up ? direction_num + 1 : direction_num;
+  direction_num = right && down ? direction_num + 1 : direction_num;
 
   return direction_num == 1 ? true : false;
 }

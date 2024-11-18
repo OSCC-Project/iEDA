@@ -75,7 +75,7 @@ class LmLayerGrid
   std::pair<int, int> get_node_coodinate(int row_id, int col_id);
   bool is_out_of_range(int row_id, int col_id)
   {
-    return (row_id >= 0 && row_id <= _info.node_row_num) && (col_id >= 0 && col_id <= _info.node_col_num) ? false : true;
+    return (row_id >= 0 && row_id < _info.node_row_num) && (col_id >= 0 && col_id < _info.node_col_num) ? false : true;
   }
 
   // setter
