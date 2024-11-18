@@ -113,7 +113,9 @@ class PinAccessor
   void uploadViolation(PABox& pa_box);
   void freePABox(PABox& pa_box);
   int32_t getViolationNum();
-  void updatePAModel(PAModel& pa_model);
+  void uploadAccessPoint(PAModel& pa_model);
+  void uploadViolation(PAModel& pa_model);
+  std::vector<Violation> getCostViolationList(PAModel& pa_model);
 
 #if 1  // update env
   void updateFixedRectToGraph(PABox& pa_box, ChangeType change_type, int32_t net_idx, EXTLayerRect* fixed_rect, bool is_routing);

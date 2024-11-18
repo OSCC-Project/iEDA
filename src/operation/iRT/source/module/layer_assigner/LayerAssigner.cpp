@@ -1069,27 +1069,23 @@ void LayerAssigner::printSummary(LAModel& la_model)
     }
     cut_via_num_map_table << fort::header << "Total" << total_via_num << RTUTIL.getPercentage(total_via_num, total_via_num) << fort::endr;
   }
-  fort::char_table timing_and_power_table;
+  fort::char_table timing_table;
+  fort::char_table power_table;
   if (enable_timing) {
-    timing_and_power_table << fort::header << "Clock"
-                           << "TNS"
-                           << "WNS"
-                           << "Freq(MHz)" << fort::endr;
+    timing_table << fort::header << "clock_name"
+                 << "tns"
+                 << "wns"
+                 << "freq" << fort::endr;
     for (auto& [clock_name, timing_map] : clock_timing) {
-      timing_and_power_table << clock_name << timing_map["TNS"] << timing_map["WNS"] << timing_map["Freq(MHz)"] << fort::endr;
+      timing_table << clock_name << timing_map["TNS"] << timing_map["WNS"] << timing_map["Freq(MHz)"] << fort::endr;
     }
+    power_table << fort::header << "power_type" << "power_value" << fort::endr;
     for (auto& [type, power] : power_map) {
-      timing_and_power_table << fort::header << "type" << type << fort::endr;
-      timing_and_power_table << fort::header << "power" << power << fort::endr;
+      power_table << type << power << fort::endr;
     }
   }
-  std::vector<fort::char_table> table_list;
-  table_list.push_back(routing_demand_map_table);
-  table_list.push_back(routing_overflow_map_table);
-  table_list.push_back(routing_wire_length_map_table);
-  table_list.push_back(cut_via_num_map_table);
-  table_list.push_back(timing_and_power_table);
-  RTUTIL.printTableList(table_list);
+  RTUTIL.printTableList({routing_demand_map_table, routing_overflow_map_table, routing_wire_length_map_table, cut_via_num_map_table});
+  RTUTIL.printTableList({timing_table, power_table});
 }
 
 void LayerAssigner::outputGuide(LAModel& la_model)

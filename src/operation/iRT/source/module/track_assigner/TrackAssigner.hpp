@@ -101,6 +101,8 @@ class TrackAssigner
   void uploadViolation(TAPanel& ta_panel);
   void freeTAPanel(TAPanel& ta_panel);
   int32_t getViolationNum();
+  void uploadViolation(TAModel& ta_model);
+  std::vector<Violation> getCostViolationList(TAModel& ta_model);
 
 #if 1  // update env
   void updateFixedRectToGraph(TAPanel& ta_panel, ChangeType change_type, int32_t net_idx, EXTLayerRect* fixed_rect, bool is_routing);

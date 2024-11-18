@@ -290,9 +290,7 @@ void SupplyAnalyzer::printSummary(SAModel& sa_model)
     }
     routing_supply_map_table << fort::header << "Total" << total_supply << RTUTIL.getPercentage(total_supply, total_supply) << fort::endr;
   }
-  std::vector<fort::char_table> table_list;
-  table_list.push_back(routing_supply_map_table);
-  RTUTIL.printTableList(table_list);
+  RTUTIL.printTableList({routing_supply_map_table});
 }
 
 void SupplyAnalyzer::outputPlanarSupplyCSV(SAModel& sa_model)

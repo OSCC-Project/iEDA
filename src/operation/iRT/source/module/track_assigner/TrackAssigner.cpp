@@ -62,6 +62,7 @@ void TrackAssigner::assign()
   initTAPanelMap(ta_model);
   buildPanelSchedule(ta_model);
   assignTAPanelMap(ta_model);
+  uploadViolation(ta_model);
   // debugPlotTAModel(ta_model, "after");
   updateSummary(ta_model);
   printSummary(ta_model);
@@ -231,8 +232,8 @@ void TrackAssigner::assignTAPanelMap(TAModel& ta_model)
         routeTAPanel(ta_panel);
         // debugPlotTAPanel(ta_panel, -1, "after");
         uploadNetResult(ta_panel);
-        uploadViolation(ta_panel);
       }
+      uploadViolation(ta_panel);
       freeTAPanel(ta_panel);
     }
     assigned_panel_num += ta_panel_id_list.size();
@@ -1075,6 +1076,84 @@ int32_t TrackAssigner::getViolationNum()
   return static_cast<int32_t>(RTDM.getViolationSet(die).size());
 }
 
+void TrackAssigner::uploadViolation(TAModel& ta_model)
+{
+  Monitor monitor;
+  RTLOG.info(Loc::current(), "Starting...");
+
+  Die& die = RTDM.getDatabase().get_die();
+
+  for (Violation* violation : RTDM.getViolationSet(die)) {
+    RTDM.updateViolationToGCellMap(ChangeType::kDel, violation);
+  }
+  for (Violation violation : getCostViolationList(ta_model)) {
+    RTDM.updateViolationToGCellMap(ChangeType::kAdd, new Violation(violation));
+  }
+  RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
+}
+
+std::vector<Violation> TrackAssigner::getCostViolationList(TAModel& ta_model)
+{
+  Die& die = RTDM.getDatabase().get_die();
+
+  std::string top_name = RTUTIL.getString("ta_model");
+  PlanarRect check_region = die.get_real_rect();
+  std::vector<std::pair<EXTLayerRect*, bool>> env_shape_list;
+  std::map<int32_t, std::vector<std::pair<EXTLayerRect*, bool>>> net_pin_shape_map;
+  for (auto& [is_routing, layer_net_fixed_rect_map] : RTDM.getTypeLayerNetFixedRectMap(die)) {
+    for (auto& [layer_idx, net_fixed_rect_map] : layer_net_fixed_rect_map) {
+      for (auto& [net_idx, fixed_rect_set] : net_fixed_rect_map) {
+        if (net_idx == -1) {
+          for (auto& fixed_rect : fixed_rect_set) {
+            env_shape_list.emplace_back(fixed_rect, is_routing);
+          }
+        } else {
+          for (auto& fixed_rect : fixed_rect_set) {
+            net_pin_shape_map[net_idx].emplace_back(fixed_rect, is_routing);
+          }
+        }
+      }
+    }
+  }
+  std::map<int32_t, std::vector<Segment<LayerCoord>*>> net_result_map;
+  for (auto& [net_idx, segment_set] : RTDM.getNetAccessResultMap(die)) {
+    for (Segment<LayerCoord>* segment : segment_set) {
+      net_result_map[net_idx].push_back(segment);
+    }
+  }
+  for (auto& [net_idx, segment_set] : RTDM.getNetDetailedResultMap(die)) {
+    for (Segment<LayerCoord>* segment : segment_set) {
+      net_result_map[net_idx].push_back(segment);
+    }
+  }
+  std::map<int32_t, std::vector<EXTLayerRect*>> net_patch_map;
+  for (auto& [net_idx, patch_set] : RTDM.getNetAccessPatchMap(die)) {
+    for (EXTLayerRect* patch : patch_set) {
+      net_patch_map[net_idx].push_back(patch);
+    }
+  }
+  for (auto& [net_idx, patch_set] : RTDM.getNetDetailedPatchMap(die)) {
+    for (EXTLayerRect* patch : patch_set) {
+      net_patch_map[net_idx].push_back(patch);
+    }
+  }
+  std::set<int32_t> need_checked_net_set;
+  for (TANet& ta_net : ta_model.get_ta_net_list()) {
+    need_checked_net_set.insert(ta_net.get_net_idx());
+  }
+
+  DETask de_task;
+  de_task.set_process_type_set({DEProcessType::kCost});
+  de_task.set_top_name(top_name);
+  de_task.set_check_region(check_region);
+  de_task.set_env_shape_list(env_shape_list);
+  de_task.set_net_pin_shape_map(net_pin_shape_map);
+  de_task.set_net_result_map(net_result_map);
+  de_task.set_net_patch_map(net_patch_map);
+  de_task.set_need_checked_net_set(need_checked_net_set);
+  return RTDE.getViolationList(de_task);
+}
+
 #if 1  // update env
 
 void TrackAssigner::updateFixedRectToGraph(TAPanel& ta_panel, ChangeType change_type, int32_t net_idx, EXTLayerRect* fixed_rect,
@@ -1381,10 +1460,7 @@ void TrackAssigner::printSummary(TAModel& ta_model)
     routing_violation_num_map_table << fort::header << "Total" << total_violation_num
                                     << RTUTIL.getPercentage(total_violation_num, total_violation_num) << fort::endr;
   }
-  std::vector<fort::char_table> table_list;
-  table_list.push_back(routing_wire_length_map_table);
-  table_list.push_back(routing_violation_num_map_table);
-  RTUTIL.printTableList(table_list);
+  RTUTIL.printTableList({routing_wire_length_map_table, routing_violation_num_map_table});
 }
 
 void TrackAssigner::outputNetCSV(TAModel& ta_model)

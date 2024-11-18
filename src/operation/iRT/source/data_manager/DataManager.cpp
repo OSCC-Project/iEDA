@@ -926,36 +926,7 @@ std::vector<ScaleGrid> DataManager::makeGCellGridList(Direction direction)
     }
   }
   gcell_scale_list.erase(std::unique(gcell_scale_list.begin(), gcell_scale_list.end()), gcell_scale_list.end());
-  return makeGCellGridList(gcell_scale_list);
-}
-
-std::vector<ScaleGrid> DataManager::makeGCellGridList(std::vector<int32_t>& gcell_scale_list)
-{
-  std::vector<ScaleGrid> gcell_grid_list;
-
-  for (size_t i = 1; i < gcell_scale_list.size(); i++) {
-    int32_t pre_scale = gcell_scale_list[i - 1];
-    int32_t curr_scale = gcell_scale_list[i];
-
-    ScaleGrid gcell_grid;
-    gcell_grid.set_start_line(pre_scale);
-    gcell_grid.set_step_length(curr_scale - pre_scale);
-    gcell_grid.set_step_num(1);
-    gcell_grid.set_end_line(curr_scale);
-    gcell_grid_list.push_back(gcell_grid);
-  }
-  // merge
-  RTUTIL.merge(gcell_grid_list, [](ScaleGrid& sentry, ScaleGrid& soldier) {
-    if (sentry.get_step_length() != soldier.get_step_length()) {
-      return false;
-    }
-    sentry.set_start_line(std::min(sentry.get_start_line(), soldier.get_start_line()));
-    sentry.set_step_num(sentry.get_step_num() + 1);
-    sentry.set_end_line(std::max(sentry.get_end_line(), soldier.get_end_line()));
-    return true;
-  });
-
-  return gcell_grid_list;
+  return RTUTIL.makeScaleGridList(gcell_scale_list);
 }
 
 void DataManager::checkGCellAxis()
