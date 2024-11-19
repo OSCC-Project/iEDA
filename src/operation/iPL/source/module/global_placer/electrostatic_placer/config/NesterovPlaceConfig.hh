@@ -48,6 +48,7 @@ class NesterovPlaceConfig
   float   get_init_wirelength_coef() const { return _init_wirelength_coef; }
   float   get_reference_hpwl() const { return _reference_hpwl; }
   float   get_min_wirelength_force_bar() const { return _min_wirelength_force_bar; }
+  bool    isAdaptiveBin() const { return _is_adaptive_bin; }
   float   get_target_density() const { return _target_density; }
   int32_t get_bin_cnt_x() const { return _bin_cnt_x; }
   int32_t get_bin_cnt_y() const { return _bin_cnt_y; }
@@ -71,6 +72,7 @@ class NesterovPlaceConfig
   void set_reference_hpwl(float hpwl) { _reference_hpwl = hpwl; }
   void set_min_wirelength_force_bar(float bar) { _min_wirelength_force_bar = bar; }
   void set_target_density(float target_density) { _target_density = target_density; }
+  void set_adaptive_bin(bool is_adaptive) { _is_adaptive_bin = is_adaptive; }
   void set_bin_cnt_x(float bin_cnt_x) { _bin_cnt_x = bin_cnt_x; }
   void set_bin_cnt_y(float bin_cnt_y) { _bin_cnt_y = bin_cnt_y; }
   void set_min_phi_coef(float min_phi_coef) { _min_phi_coef = min_phi_coef; }
@@ -97,6 +99,7 @@ class NesterovPlaceConfig
 
   // about density.
   float   _target_density;
+  bool _is_adaptive_bin;
   int32_t _bin_cnt_x;
   int32_t _bin_cnt_y;
 

@@ -58,6 +58,8 @@ CmdTOConfig::CmdTOConfig(const char* cmd_name) : TclCmd(cmd_name)
     _config_list.push_back(std::make_pair("-min_divide_fanoutt", ValueType::kInt));
     // optimize_endpoints_percent double
     _config_list.push_back(std::make_pair("-optimize_endpoints_percent", ValueType::kDouble));
+    // drv_optimize_iter_number int
+    _config_list.push_back(std::make_pair("-drv_optimize_iter_number", ValueType::kInt));
 
     TclUtil::addOption(this, _config_list);
 }

@@ -7,6 +7,8 @@ add_library(feature_builder
     feature_eval_congestion.cpp
     feature_eval_density.cpp
     feature_eval_timing.cc
+
+    feature_eval_union.cpp
 )
 
 target_include_directories(feature_builder 
@@ -30,4 +32,5 @@ target_link_libraries(feature_builder
         eval_density_api
         eval_wirelength_api
         eval_timing_api
+        eval_union_api
 )

@@ -53,201 +53,202 @@ void CongestionEval::destroyInst()
   }
 }
 
-string CongestionEval::evalHoriEGR(string rt_dir_path)
+string CongestionEval::evalHoriEGR(string stage, string rt_dir_path)
 {
-  return evalEGR(rt_dir_path, "horizontal", "egr_horizontal.csv");
+  return evalEGR(rt_dir_path, "horizontal", stage + "_egr_horizontal_overflow.csv");
 }
 
-string CongestionEval::evalVertiEGR(string rt_dir_path)
+string CongestionEval::evalVertiEGR(string stage, string rt_dir_path)
 {
-  return evalEGR(rt_dir_path, "vertical", "egr_vertical.csv");
+  return evalEGR(rt_dir_path, "vertical", stage + "_egr_vertical_overflow.csv");
 }
 
-string CongestionEval::evalUnionEGR(string rt_dir_path)
+string CongestionEval::evalUnionEGR(string stage, string rt_dir_path)
 {
-  return evalEGR(rt_dir_path, "union", "egr_union.csv");
+  return evalEGR(rt_dir_path, "union", stage + "_egr_union_overflow.csv");
 }
 
-string CongestionEval::evalHoriRUDY(CongestionNets nets, CongestionRegion region, int32_t grid_size)
+string CongestionEval::evalHoriRUDY(string stage, CongestionNets nets, CongestionRegion region, int32_t grid_size)
 {
-  return evalRUDY(nets, region, grid_size, "horizontal", "rudy_horizontal.csv");
+  return evalRUDY(nets, region, grid_size, "horizontal", stage + "_rudy_horizontal.csv");
 }
 
-string CongestionEval::evalVertiRUDY(CongestionNets nets, CongestionRegion region, int32_t grid_size)
+string CongestionEval::evalVertiRUDY(string stage, CongestionNets nets, CongestionRegion region, int32_t grid_size)
 {
-  return evalRUDY(nets, region, grid_size, "vertical", "rudy_vertical.csv");
+  return evalRUDY(nets, region, grid_size, "vertical", stage + "_rudy_vertical.csv");
 }
 
-string CongestionEval::evalUnionRUDY(CongestionNets nets, CongestionRegion region, int32_t grid_size)
+string CongestionEval::evalUnionRUDY(string stage, CongestionNets nets, CongestionRegion region, int32_t grid_size)
 {
-  return evalRUDY(nets, region, grid_size, "union", "rudy_union.csv");
+  return evalRUDY(nets, region, grid_size, "union", stage + "_rudy_union.csv");
 }
 
-string CongestionEval::evalHoriLUTRUDY(CongestionNets nets, CongestionRegion region, int32_t grid_size)
+string CongestionEval::evalHoriLUTRUDY(string stage, CongestionNets nets, CongestionRegion region, int32_t grid_size)
 {
-  return evalLUTRUDY(nets, region, grid_size, "horizontal", "lut_rudy_horizontal.csv");
+  return evalLUTRUDY(nets, region, grid_size, "horizontal", stage + "_lut_rudy_horizontal.csv");
 }
 
-string CongestionEval::evalVertiLUTRUDY(CongestionNets nets, CongestionRegion region, int32_t grid_size)
+string CongestionEval::evalVertiLUTRUDY(string stage, CongestionNets nets, CongestionRegion region, int32_t grid_size)
 {
-  return evalLUTRUDY(nets, region, grid_size, "vertical", "lut_rudy_vertical.csv");
+  return evalLUTRUDY(nets, region, grid_size, "vertical", stage + "_lut_rudy_vertical.csv");
 }
 
-string CongestionEval::evalUnionLUTRUDY(CongestionNets nets, CongestionRegion region, int32_t grid_size)
+string CongestionEval::evalUnionLUTRUDY(string stage, CongestionNets nets, CongestionRegion region, int32_t grid_size)
 {
-  return evalLUTRUDY(nets, region, grid_size, "union", "lut_rudy_union.csv");
+  return evalLUTRUDY(nets, region, grid_size, "union", stage + "_lut_rudy_union.csv");
 }
 
-int32_t CongestionEval::evalHoriTotalOverflow(string rt_dir_path)
+int32_t CongestionEval::evalHoriTotalOverflow(string stage, string rt_dir_path)
 {
-  return evalTotalOverflow(rt_dir_path, "horizontal");
+  return evalTotalOverflow(stage, rt_dir_path, "horizontal");
 }
 
-int32_t CongestionEval::evalVertiTotalOverflow(string rt_dir_path)
+int32_t CongestionEval::evalVertiTotalOverflow(string stage, string rt_dir_path)
 {
-  return evalTotalOverflow(rt_dir_path, "vertical");
+  return evalTotalOverflow(stage, rt_dir_path, "vertical");
 }
 
-int32_t CongestionEval::evalUnionTotalOverflow(string rt_dir_path)
+int32_t CongestionEval::evalUnionTotalOverflow(string stage, string rt_dir_path)
 {
-  return evalTotalOverflow(rt_dir_path, "union");
+  return evalTotalOverflow(stage, rt_dir_path, "union");
 }
 
-int32_t CongestionEval::evalHoriMaxOverflow(string rt_dir_path)
+int32_t CongestionEval::evalHoriMaxOverflow(string stage, string rt_dir_path)
 {
-  return evalMaxOverflow(rt_dir_path, "horizontal");
+  return evalMaxOverflow(stage, rt_dir_path, "horizontal");
 }
 
-int32_t CongestionEval::evalVertiMaxOverflow(string rt_dir_path)
+int32_t CongestionEval::evalVertiMaxOverflow(string stage, string rt_dir_path)
 {
-  return evalMaxOverflow(rt_dir_path, "vertical");
+  return evalMaxOverflow(stage, rt_dir_path, "vertical");
 }
 
-int32_t CongestionEval::evalUnionMaxOverflow(string rt_dir_path)
+int32_t CongestionEval::evalUnionMaxOverflow(string stage, string rt_dir_path)
 {
-  return evalMaxOverflow(rt_dir_path, "union");
+  return evalMaxOverflow(stage, rt_dir_path, "union");
 }
 
-float CongestionEval::evalHoriAvgOverflow(string rt_dir_path)
+float CongestionEval::evalHoriAvgOverflow(string stage, string rt_dir_path)
 {
-  return evalAvgOverflow(rt_dir_path, "horizontal");
+  return evalAvgOverflow(stage, rt_dir_path, "horizontal");
 }
 
-float CongestionEval::evalVertiAvgOverflow(string rt_dir_path)
+float CongestionEval::evalVertiAvgOverflow(string stage, string rt_dir_path)
 {
-  return evalAvgOverflow(rt_dir_path, "vertical");
+  return evalAvgOverflow(stage, rt_dir_path, "vertical");
 }
 
-float CongestionEval::evalUnionAvgOverflow(string rt_dir_path)
+float CongestionEval::evalUnionAvgOverflow(string stage, string rt_dir_path)
 {
-  return evalAvgOverflow(rt_dir_path, "union");
+  return evalAvgOverflow(stage, rt_dir_path, "union");
 }
 
-float CongestionEval::evalHoriMaxUtilization(string rudy_dir_path, bool use_lut)
+float CongestionEval::evalHoriMaxUtilization(string stage, string rudy_dir_path, bool use_lut)
 {
-  return evalMaxUtilization(rudy_dir_path, "horizontal", use_lut);
+  return evalMaxUtilization(stage, rudy_dir_path, "horizontal", use_lut);
 }
 
-float CongestionEval::evalVertiMaxUtilization(string rudy_dir_path, bool use_lut)
+float CongestionEval::evalVertiMaxUtilization(string stage, string rudy_dir_path, bool use_lut)
 {
-  return evalMaxUtilization(rudy_dir_path, "vertical", use_lut);
+  return evalMaxUtilization(stage, rudy_dir_path, "vertical", use_lut);
 }
 
-float CongestionEval::evalUnionMaxUtilization(string rudy_dir_path, bool use_lut)
+float CongestionEval::evalUnionMaxUtilization(string stage, string rudy_dir_path, bool use_lut)
 {
-  return evalMaxUtilization(rudy_dir_path, "union", use_lut);
+  return evalMaxUtilization(stage, rudy_dir_path, "union", use_lut);
 }
 
-float CongestionEval::evalHoriAvgUtilization(string rudy_dir_path, bool use_lut)
+float CongestionEval::evalHoriAvgUtilization(string stage, string rudy_dir_path, bool use_lut)
 {
-  return evalAvgUtilization(rudy_dir_path, "horizontal", use_lut);
+  return evalAvgUtilization(stage, rudy_dir_path, "horizontal", use_lut);
 }
 
-float CongestionEval::evalVertiAvgUtilization(string rudy_dir_path, bool use_lut)
+float CongestionEval::evalVertiAvgUtilization(string stage, string rudy_dir_path, bool use_lut)
 {
-  return evalAvgUtilization(rudy_dir_path, "vertical", use_lut);
+  return evalAvgUtilization(stage, rudy_dir_path, "vertical", use_lut);
 }
 
-float CongestionEval::evalUnionAvgUtilization(string rudy_dir_path, bool use_lut)
+float CongestionEval::evalUnionAvgUtilization(string stage, string rudy_dir_path, bool use_lut)
 {
-  return evalAvgUtilization(rudy_dir_path, "union", use_lut);
+  return evalAvgUtilization(stage, rudy_dir_path, "union", use_lut);
 }
 
 string CongestionEval::evalEGR(string rt_dir_path, string egr_type, string output_filename)
 {
   std::unordered_map<std::string, LayerDirection> layer_directions
-      = EVAL_INIT_EGR_INST->parseLayerDirection(rt_dir_path + "/initial_router/route.guide");
+      = EVAL_INIT_EGR_INST->parseLayerDirection(rt_dir_path + "/early_router/route.guide");
 
   // for (const auto& [layer, direction] : LayerDirections) {
   //   std::cout << "Layer: " << layer << ", Direction: " << (direction == LayerDirection::Horizontal ? "Horizontal" : "Vertical")
   //             << std::endl;
   // }
   std::vector<std::string> target_layers;
-  std::string dir_path = rt_dir_path + "/initial_router/";
+  std::string dir_path = rt_dir_path + "/early_router/";
+  std::filesystem::path parent_path = std::filesystem::path(rt_dir_path).parent_path();
+  std::filesystem::path out_file_path = parent_path / output_filename;
 
   if (egr_type == "horizontal" || egr_type == "vertical") {
     LayerDirection target_direction = (egr_type == "horizontal") ? LayerDirection::Horizontal : LayerDirection::Vertical;
-
     for (const auto& [layer, direction] : layer_directions) {
       if (direction == target_direction) {
         target_layers.push_back(layer);
       }
     }
-
-    std::vector<std::vector<double>> sum_matrix;
-    bool is_first_file = true;
-
-    for (const auto& entry : std::filesystem::directory_iterator(dir_path)) {
-      std::string filename = entry.path().filename().string();
-      if (filename.find("overflow_map_") != std::string::npos) {
-        for (const auto& layer : target_layers) {
-          if (filename.find(layer) != std::string::npos) {
-            std::ifstream file(entry.path());
-            std::string line;
-            size_t row = 0;
-            while (std::getline(file, line)) {
-              std::istringstream iss(line);
-              std::string value;
-              int col = 0;
-              while (std::getline(iss, value, ',')) {
-                double num_value = std::stod(value);
-                if (is_first_file) {
-                  if (row >= sum_matrix.size()) {
-                    sum_matrix.push_back(std::vector<double>());
-                  }
-                  sum_matrix[row].push_back(num_value);
-                } else {
-                  sum_matrix[row][col] += num_value;
-                }
-                col++;
-              }
-              row++;
-            }
-            is_first_file = false;
-            break;
-          }
-        }
-      }
-    }
-
-    std::ofstream out_file(dir_path + output_filename);
-    for (const auto& row : sum_matrix) {
-      for (size_t i = 0; i < row.size(); ++i) {
-        out_file << row[i];
-        if (i < row.size() - 1) {
-          out_file << ",";
-        }
-      }
-      out_file << "\n";
-    }
-    out_file.close();
-    return dir_path + output_filename;
   } else if (egr_type == "union") {
-    dir_path = rt_dir_path + "/topology_generator/";
-    return dir_path + "overflow_map_planar.csv";
+    for (const auto& [layer, direction] : layer_directions) {
+      target_layers.push_back(layer);
+    }
   }
 
-  return "";
+  std::vector<std::vector<double>> sum_matrix;
+  bool is_first_file = true;
+
+  for (const auto& entry : std::filesystem::directory_iterator(dir_path)) {
+    std::string filename = entry.path().filename().string();
+    if (filename.find("overflow_map_") != std::string::npos) {
+      for (const auto& layer : target_layers) {
+        if (filename.find(layer) != std::string::npos) {
+          std::ifstream file(entry.path());
+          std::string line;
+          size_t row = 0;
+          while (std::getline(file, line)) {
+            std::istringstream iss(line);
+            std::string value;
+            int col = 0;
+            while (std::getline(iss, value, ',')) {
+              double num_value = std::stod(value);
+              if (is_first_file) {
+                if (row >= sum_matrix.size()) {
+                  sum_matrix.push_back(std::vector<double>());
+                }
+                sum_matrix[row].push_back(num_value);
+              } else {
+                sum_matrix[row][col] += num_value;
+              }
+              col++;
+            }
+            row++;
+          }
+          is_first_file = false;
+          break;
+        }
+      }
+    }
+  }
+
+  std::ofstream out_file(out_file_path);
+  for (const auto& row : sum_matrix) {
+    for (size_t i = 0; i < row.size(); ++i) {
+      out_file << row[i];
+      if (i < row.size() - 1) {
+        out_file << ",";
+      }
+    }
+    out_file << "\n";
+  }
+  out_file.close();
+
+  return out_file_path.string();
 }
 
 string CongestionEval::evalRUDY(CongestionNets nets, CongestionRegion region, int32_t grid_size, string rudy_type, string output_filename)
@@ -370,13 +371,13 @@ string CongestionEval::evalLUTRUDY(CongestionNets nets, CongestionRegion region,
     int pin_num = net.pins.size();
     int aspect_ratio = 1;
     if (net_ux - net_lx >= net_uy - net_ly && net_uy - net_ly != 0) {
-      aspect_ratio = std::round((net_ux - net_lx) / (net_uy - net_ly));
+      aspect_ratio = std::round((net_ux - net_lx) / static_cast<double>(net_uy - net_ly));
     } else if (net_ux - net_lx < net_uy - net_ly && net_ux - net_lx != 0) {
-      aspect_ratio = std::round((net_uy - net_ly) / (net_ux - net_lx));
+      aspect_ratio = std::round((net_uy - net_ly) / static_cast<double>(net_ux - net_lx));
     }
-    float l_ness = 0.f;
+    double l_ness = 0.0;
     if (pin_num < 3) {
-      l_ness = 1.f;
+      l_ness = 1.0;
     } else if (pin_num <= 15) {
       std::vector<std::pair<int32_t, int32_t>> point_set;
       for (const auto& pin : net.pins) {
@@ -384,7 +385,7 @@ string CongestionEval::evalLUTRUDY(CongestionNets nets, CongestionRegion region,
       }
       l_ness = calculateLness(point_set, net_lx, net_ux, net_ly, net_uy);
     } else {
-      l_ness = 0.5f;
+      l_ness = 0.5;
     }
 
     double hor_lutrudy = 0.0;
@@ -451,18 +452,18 @@ string CongestionEval::evalLUTRUDY(CongestionNets nets, CongestionRegion region,
   return getAbsoluteFilePath(output_path);
 }
 
-float CongestionEval::calculateLness(std::vector<std::pair<int32_t, int32_t>> point_set, int32_t net_lx, int32_t net_ux, int32_t net_ly,
-                                     int32_t net_uy)
+double CongestionEval::calculateLness(std::vector<std::pair<int32_t, int32_t>> point_set, int32_t net_lx, int32_t net_ux, int32_t net_ly,
+                                      int32_t net_uy)
 {
-  int32_t bbox = (net_ux - net_lx) * (net_uy - net_ly);
+  int64_t bbox = static_cast<int64_t>(net_ux - net_lx) * static_cast<int64_t>(net_uy - net_ly);
   int32_t r1 = calcLowerLeftRP(point_set, net_lx, net_ly);
   int32_t r2 = calcLowerRightRP(point_set, net_ux, net_ly);
   int32_t r3 = calcUpperLeftRP(point_set, net_lx, net_uy);
   int32_t r4 = calcUpperRightRP(point_set, net_ux, net_uy);
   int32_t r = std::max({r1, r2, r3, r4});
-  float l_ness;
+  double l_ness;
   if (bbox != 0) {
-    l_ness = r / bbox;
+    l_ness = static_cast<double>(r) / static_cast<double>(bbox);
   } else {
     l_ness = 1.0;
   }
@@ -529,7 +530,7 @@ int32_t CongestionEval::calcUpperRightRP(std::vector<std::pair<int32_t, int32_t>
   return r;
 }
 
-double CongestionEval::getLUT(int32_t pin_num, int32_t aspect_ratio, float l_ness)
+double CongestionEval::getLUT(int32_t pin_num, int32_t aspect_ratio, double l_ness)
 {
   int ar_index;
   if (aspect_ratio == 1) {
@@ -557,22 +558,25 @@ double CongestionEval::getLUT(int32_t pin_num, int32_t aspect_ratio, float l_nes
   return WIRELENGTH_LUT[ar_index][pin_index][l_index];
 }
 
-int32_t CongestionEval::evalTotalOverflow(string rt_dir_path, string overflow_type)
+int32_t CongestionEval::evalTotalOverflow(string stage, string rt_dir_path, string overflow_type)
 {
   int32_t total_overflow = 0;
-  std::string file_path;
+  std::string file_name;
 
   if (overflow_type == "horizontal") {
-    file_path = rt_dir_path + "/initial_router/egr_horizontal.csv";
+    file_name = stage + "_egr_horizontal_overflow.csv";
   } else if (overflow_type == "vertical") {
-    file_path = rt_dir_path + "/initial_router/egr_vertical.csv";
+    file_name = stage + "_egr_vertical_overflow.csv";
   } else if (overflow_type == "union") {
-    file_path = rt_dir_path + "/topology_generator/overflow_map_planar.csv";
+    file_name = stage + "_egr_union_overflow.csv";
   } else {
     return -1;
   }
+  std::filesystem::path parent_path = std::filesystem::path(rt_dir_path).parent_path();
+  std::filesystem::path file_path = parent_path / file_name;
+  std::string file_path_str = file_path.string();
 
-  std::ifstream file(file_path);
+  std::ifstream file(file_path_str);
   if (!file.is_open()) {
     return -1;
   }
@@ -590,22 +594,25 @@ int32_t CongestionEval::evalTotalOverflow(string rt_dir_path, string overflow_ty
   return total_overflow;
 }
 
-int32_t CongestionEval::evalMaxOverflow(string rt_dir_path, string overflow_type)
+int32_t CongestionEval::evalMaxOverflow(string stage, string rt_dir_path, string overflow_type)
 {
   int32_t max_overflow = -1;
-  std::string file_path;
+  std::string file_name;
 
   if (overflow_type == "horizontal") {
-    file_path = rt_dir_path + "/initial_router/egr_horizontal.csv";
+    file_name = stage + "_egr_horizontal_overflow.csv";
   } else if (overflow_type == "vertical") {
-    file_path = rt_dir_path + "/initial_router/egr_vertical.csv";
+    file_name = stage + "_egr_vertical_overflow.csv";
   } else if (overflow_type == "union") {
-    file_path = rt_dir_path + "/topology_generator/overflow_map_planar.csv";
+    file_name = stage + "_egr_union_overflow.csv";
   } else {
     return -1;
   }
+  std::filesystem::path parent_path = std::filesystem::path(rt_dir_path).parent_path();
+  std::filesystem::path file_path = parent_path / file_name;
+  std::string file_path_str = file_path.string();
 
-  std::ifstream file(file_path);
+  std::ifstream file(file_path_str);
   if (!file.is_open()) {
     return -1;
   }
@@ -624,22 +631,25 @@ int32_t CongestionEval::evalMaxOverflow(string rt_dir_path, string overflow_type
   return max_overflow;
 }
 
-float CongestionEval::evalAvgOverflow(string rt_dir_path, string overflow_type)
+float CongestionEval::evalAvgOverflow(string stage, string rt_dir_path, string overflow_type)
 {
   float avg_overflow = 0.0f;
-  std::string file_path;
+  std::string file_name;
 
   if (overflow_type == "horizontal") {
-    file_path = rt_dir_path + "/initial_router/egr_horizontal.csv";
+    file_name = stage + "_egr_horizontal_overflow.csv";
   } else if (overflow_type == "vertical") {
-    file_path = rt_dir_path + "/initial_router/egr_vertical.csv";
+    file_name = stage + "_egr_vertical_overflow.csv";
   } else if (overflow_type == "union") {
-    file_path = rt_dir_path + "/topology_generator/overflow_map_planar.csv";
+    file_name = stage + "_egr_union_overflow.csv";
   } else {
     return -1;
   }
+  std::filesystem::path parent_path = std::filesystem::path(rt_dir_path).parent_path();
+  std::filesystem::path file_path = parent_path / file_name;
+  std::string file_path_str = file_path.string();
 
-  std::ifstream file(file_path);
+  std::ifstream file(file_path_str);
   if (!file.is_open()) {
     return -1;
   }
@@ -704,16 +714,16 @@ float CongestionEval::evalAvgOverflow(string rt_dir_path, string overflow_type)
   return avg_overflow;
 }
 
-float CongestionEval::evalMaxUtilization(string map_path, string utilization_type, bool use_lut)
+float CongestionEval::evalMaxUtilization(string stage, string map_path, string utilization_type, bool use_lut)
 {
   float max_util = -1.0;
   std::string file_path;
   std::string file_name;
 
   if (use_lut == true) {
-    file_name = "/lut_rudy_";
+    file_name = "/" + stage + "_lut_rudy_";
   } else {
-    file_name = "/rudy_";
+    file_name = "/" + stage + "_rudy_";
   }
 
   if (utilization_type == "horizontal") {
@@ -745,16 +755,16 @@ float CongestionEval::evalMaxUtilization(string map_path, string utilization_typ
   return max_util;
 }
 
-float CongestionEval::evalAvgUtilization(string rudy_dir_path, string utilization_type, bool use_lut)
+float CongestionEval::evalAvgUtilization(string stage, string rudy_dir_path, string utilization_type, bool use_lut)
 {
   float avg_util = 0.0f;
   std::string file_path;
   std::string file_name;
 
   if (use_lut == true) {
-    file_name = "/lut_rudy_";
+    file_name = "/" + stage + "_lut_rudy_";
   } else {
-    file_name = "/rudy_";
+    file_name = "/" + stage + "_rudy_";
   }
 
   if (utilization_type == "horizontal") {
@@ -890,14 +900,14 @@ void CongestionEval::evalNetInfo()
 
     int aspect_ratio = 1;
     if (net_ux - net_lx >= net_uy - net_ly && net_uy - net_ly != 0) {
-      aspect_ratio = std::round((net_ux - net_lx) / (net_uy - net_ly));
+      aspect_ratio = std::round((net_ux - net_lx) / static_cast<double>(net_uy - net_ly));
     } else if (net_ux - net_lx < net_uy - net_ly && net_ux - net_lx != 0) {
-      aspect_ratio = std::round((net_uy - net_ly) / (net_ux - net_lx));
+      aspect_ratio = std::round((net_uy - net_ly) / static_cast<double>(net_ux - net_lx));
     }
 
-    float l_ness = 0.f;
+    double l_ness = 0.0;
     if (pin_num < 3) {
-      l_ness = 1.f;
+      l_ness = 1.0;
     } else if (pin_num <= 15) {
       std::vector<std::pair<int32_t, int32_t>> point_set;
       for (const auto& pin : net.pins) {
@@ -905,12 +915,27 @@ void CongestionEval::evalNetInfo()
       }
       l_ness = calculateLness(point_set, net_lx, net_ux, net_ly, net_uy);
     } else {
-      l_ness = 0.5f;
+      l_ness = 0.5;
     }
+
+    int32_t bbox_width = net_ux - net_lx;
+    int32_t bbox_height = net_uy - net_ly;
+    int64_t bbox_area = static_cast<int64_t>(bbox_width) * static_cast<int64_t>(bbox_height);
+    int32_t bbox_lx = net_lx;
+    int32_t bbox_ly = net_ly;
+    int32_t bbox_ux = net_ux;
+    int32_t bbox_uy = net_uy;
 
     _name_pin_numer.emplace(net.name, pin_num);
     _name_aspect_ratio.emplace(net.name, aspect_ratio);
     _name_lness.emplace(net.name, l_ness);
+    _name_bbox_width.emplace(net.name, bbox_width);
+    _name_bbox_height.emplace(net.name, bbox_height);
+    _name_bbox_area.emplace(net.name, bbox_area);
+    _name_bbox_lx.emplace(net.name, bbox_lx);
+    _name_bbox_ly.emplace(net.name, bbox_ly);
+    _name_bbox_ux.emplace(net.name, bbox_ux);
+    _name_bbox_uy.emplace(net.name, bbox_uy);
   }
 }
 
@@ -932,13 +957,76 @@ int CongestionEval::findAspectRatio(std::string net_name)
   throw std::runtime_error("Aspect ratio not found for net: " + net_name);
 }
 
-float CongestionEval::findLness(std::string net_name)
+double CongestionEval::findLness(std::string net_name)
 {
   auto it = _name_lness.find(net_name);
   if (it != _name_lness.end()) {
     return it->second;
   }
   throw std::runtime_error("Lness not found for net: " + net_name);
+}
+
+int32_t CongestionEval::findBBoxWidth(std::string net_name)
+{
+  auto it = _name_bbox_width.find(net_name);
+  if (it != _name_bbox_width.end()) {
+    return it->second;
+  }
+  throw std::runtime_error("BBox width not found for net: " + net_name);
+}
+
+int32_t CongestionEval::findBBoxHeight(std::string net_name)
+{
+  auto it = _name_bbox_height.find(net_name);
+  if (it != _name_bbox_height.end()) {
+    return it->second;
+  }
+  throw std::runtime_error("BBox height not found for net: " + net_name);
+}
+
+int64_t CongestionEval::findBBoxArea(std::string net_name)
+{
+  auto it = _name_bbox_area.find(net_name);
+  if (it != _name_bbox_area.end()) {
+    return it->second;
+  }
+  throw std::runtime_error("BBox area not found for net: " + net_name);
+}
+
+int32_t CongestionEval::findBBoxLx(std::string net_name)
+{
+  auto it = _name_bbox_lx.find(net_name);
+  if (it != _name_bbox_lx.end()) {
+    return it->second;
+  }
+  throw std::runtime_error("BBox lx not found for net: " + net_name);
+}
+
+int32_t CongestionEval::findBBoxLy(std::string net_name)
+{
+  auto it = _name_bbox_ly.find(net_name);
+  if (it != _name_bbox_ly.end()) {
+    return it->second;
+  }
+  throw std::runtime_error("BBox ly not found for net: " + net_name);
+}
+
+int32_t CongestionEval::findBBoxUx(std::string net_name)
+{
+  auto it = _name_bbox_ux.find(net_name);
+  if (it != _name_bbox_ux.end()) {
+    return it->second;
+  }
+  throw std::runtime_error("BBox ux not found for net: " + net_name);
+}
+
+int32_t CongestionEval::findBBoxUy(std::string net_name)
+{
+  auto it = _name_bbox_uy.find(net_name);
+  if (it != _name_bbox_uy.end()) {
+    return it->second;
+  }
+  throw std::runtime_error("BBox uy not found for net: " + net_name);
 }
 
 std::string CongestionEval::getEGRDirPath()
@@ -949,6 +1037,11 @@ std::string CongestionEval::getEGRDirPath()
 std::string CongestionEval::getDefaultOutputDir()
 {
   return getDefaultOutputPath();
+}
+
+void CongestionEval::setEGRDirPath(std::string egr_dir_path)
+{
+  EVAL_INIT_EGR_INST->setEGRDirPath(egr_dir_path);
 }
 
 }  // namespace ieval

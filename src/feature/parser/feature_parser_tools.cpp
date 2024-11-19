@@ -62,41 +62,92 @@ json FeatureParser::buildSummaryRT()
   }
   json_rt["SA"] = json_sa;
 
-  /// IR
-  json json_ir;
-  json_ir["total_demand"] = rt_sum.ir_summary.total_demand;
-  for (auto demand : rt_sum.ir_summary.routing_demand_map) {
-    json_ir["routing_demand_map"][std::to_string(demand.first)] = demand.second;
+  // TG
+  json json_tg;
+  json_tg["total_demand"] = rt_sum.tg_summary.total_demand;
+  json_tg["total_overflow"] = rt_sum.tg_summary.total_overflow;
+  json_tg["total_wire_length"] = rt_sum.tg_summary.total_wire_length;
+
+  for (int i = 0; i < (int) rt_sum.tg_summary.clocks_timing.size(); i++) {
+    auto clock_timing = rt_sum.tg_summary.clocks_timing[i];
+    json_tg["clocks_timing"][i]["clock_name"] = clock_timing.clock_name;
+    json_tg["clocks_timing"][i]["setup_tns"] = clock_timing.setup_tns;
+    json_tg["clocks_timing"][i]["setup_wns"] = clock_timing.setup_wns;
+    json_tg["clocks_timing"][i]["suggest_freq"] = clock_timing.suggest_freq;
+  }
+  json_tg["static_power"] = rt_sum.tg_summary.power_info.static_power;
+  json_tg["dynamic_power"] = rt_sum.tg_summary.power_info.dynamic_power;
+  json_rt["TG"] = json_tg;
+
+  /// LA
+  json json_la;
+  json_la["total_demand"] = rt_sum.la_summary.total_demand;
+  for (auto demand : rt_sum.la_summary.routing_demand_map) {
+    json_la["routing_demand_map"][std::to_string(demand.first)] = demand.second;
   }
 
-  json_ir["total_overflow"] = rt_sum.ir_summary.total_overflow;
-  for (auto routing_overflow : rt_sum.ir_summary.routing_overflow_map) {
-    json_ir["routing_overflow_map"][std::to_string(routing_overflow.first)] = routing_overflow.second;
+  json_la["total_overflow"] = rt_sum.la_summary.total_overflow;
+  for (auto routing_overflow : rt_sum.la_summary.routing_overflow_map) {
+    json_la["routing_overflow_map"][std::to_string(routing_overflow.first)] = routing_overflow.second;
   }
 
-  json_ir["total_wire_length"] = rt_sum.ir_summary.total_wire_length;
-  for (auto routing_wire_length : rt_sum.ir_summary.routing_wire_length_map) {
-    json_ir["routing_wire_length_map"][std::to_string(routing_wire_length.first)] = routing_wire_length.second;
+  json_la["total_wire_length"] = rt_sum.la_summary.total_wire_length;
+  for (auto routing_wire_length : rt_sum.la_summary.routing_wire_length_map) {
+    json_la["routing_wire_length_map"][std::to_string(routing_wire_length.first)] = routing_wire_length.second;
   }
 
-  json_ir["total_via_num"] = rt_sum.ir_summary.total_via_num;
-  for (auto cut_via_num : rt_sum.ir_summary.cut_via_num_map) {
-    json_ir["cut_via_num_map"][std::to_string(cut_via_num.first)] = cut_via_num.second;
+  json_la["total_via_num"] = rt_sum.la_summary.total_via_num;
+  for (auto cut_via_num : rt_sum.la_summary.cut_via_num_map) {
+    json_la["cut_via_num_map"][std::to_string(cut_via_num.first)] = cut_via_num.second;
   }
 
-  for (int i = 0; i < (int) rt_sum.ir_summary.clocks_timing.size(); i++) {
-    auto clock_timing = rt_sum.ir_summary.clocks_timing[i];
-    json_ir["clocks_timing"][i]["clock_name"] = clock_timing.clock_name;
-    json_ir["clocks_timing"][i]["setup_tns"] = clock_timing.setup_tns;
-    json_ir["clocks_timing"][i]["setup_wns"] = clock_timing.setup_wns;
-    json_ir["clocks_timing"][i]["suggest_freq"] = clock_timing.suggest_freq;
+  for (int i = 0; i < (int) rt_sum.la_summary.clocks_timing.size(); i++) {
+    auto clock_timing = rt_sum.la_summary.clocks_timing[i];
+    json_la["clocks_timing"][i]["clock_name"] = clock_timing.clock_name;
+    json_la["clocks_timing"][i]["setup_tns"] = clock_timing.setup_tns;
+    json_la["clocks_timing"][i]["setup_wns"] = clock_timing.setup_wns;
+    json_la["clocks_timing"][i]["suggest_freq"] = clock_timing.suggest_freq;
   }
-  json_ir["static_power"] = rt_sum.ir_summary.power_info.static_power;
-  json_ir["dynamic_power"] = rt_sum.ir_summary.power_info.dynamic_power;
+  json_la["static_power"] = rt_sum.la_summary.power_info.static_power;
+  json_la["dynamic_power"] = rt_sum.la_summary.power_info.dynamic_power;
 
-  json_rt["IR"] = json_ir;
+  json_rt["LA"] = json_la;
 
-  // // GR
+  // ER
+  json json_er;
+  json_er["total_demand"] = rt_sum.la_summary.total_demand;
+  for (auto demand : rt_sum.la_summary.routing_demand_map) {
+    json_er["routing_demand_map"][std::to_string(demand.first)] = demand.second;
+  }
+
+  json_er["total_overflow"] = rt_sum.la_summary.total_overflow;
+  for (auto routing_overflow : rt_sum.la_summary.routing_overflow_map) {
+    json_er["routing_overflow_map"][std::to_string(routing_overflow.first)] = routing_overflow.second;
+  }
+
+  json_er["total_wire_length"] = rt_sum.la_summary.total_wire_length;
+  for (auto routing_wire_length : rt_sum.la_summary.routing_wire_length_map) {
+    json_er["routing_wire_length_map"][std::to_string(routing_wire_length.first)] = routing_wire_length.second;
+  }
+
+  json_er["total_via_num"] = rt_sum.la_summary.total_via_num;
+  for (auto cut_via_num : rt_sum.la_summary.cut_via_num_map) {
+    json_er["cut_via_num_map"][std::to_string(cut_via_num.first)] = cut_via_num.second;
+  }
+
+  for (int i = 0; i < (int) rt_sum.la_summary.clocks_timing.size(); i++) {
+    auto clock_timing = rt_sum.la_summary.clocks_timing[i];
+    json_er["clocks_timing"][i]["clock_name"] = clock_timing.clock_name;
+    json_er["clocks_timing"][i]["setup_tns"] = clock_timing.setup_tns;
+    json_er["clocks_timing"][i]["setup_wns"] = clock_timing.setup_wns;
+    json_er["clocks_timing"][i]["suggest_freq"] = clock_timing.suggest_freq;
+  }
+  json_er["static_power"] = rt_sum.la_summary.power_info.static_power;
+  json_er["dynamic_power"] = rt_sum.la_summary.power_info.dynamic_power;
+
+  json_rt["ER"] = json_er;
+
+  // GR
   json json_gr_list;
   for (auto [id, gr_sum] : rt_sum.iter_gr_summary_map) {
     json json_gr;
@@ -197,32 +248,32 @@ json FeatureParser::buildSummaryPL(std::string step)
 
   if (step == "place") {
     summary_pl["gplace"]["place_density"] = pl_summary.gplace.place_density;
-    summary_pl["gplace"]["pin_density"] = pl_summary.gplace.pin_density;
-    summary_pl["gplace"]["HPWL"] = pl_summary.gplace.HPWL;
-    summary_pl["gplace"]["STWL"] = pl_summary.gplace.STWL;
-    summary_pl["gplace"]["GRWL"] = pl_summary.gplace.GRWL;
+    // summary_pl["gplace"]["pin_density"] = pl_summary.gplace.pin_density;
+    // summary_pl["gplace"]["HPWL"] = pl_summary.gplace.HPWL;
+    // summary_pl["gplace"]["STWL"] = pl_summary.gplace.STWL;
+    // summary_pl["gplace"]["GRWL"] = pl_summary.gplace.GRWL;
 
-    summary_pl["gplace"]["egr_tof"] = pl_summary.gplace.egr_tof;
-    summary_pl["gplace"]["egr_mof"] = pl_summary.gplace.egr_mof;
-    summary_pl["gplace"]["egr_ace"] = pl_summary.gplace.egr_ace;
+    // summary_pl["gplace"]["egr_tof"] = pl_summary.gplace.egr_tof;
+    // summary_pl["gplace"]["egr_mof"] = pl_summary.gplace.egr_mof;
+    // summary_pl["gplace"]["egr_ace"] = pl_summary.gplace.egr_ace;
 
-    summary_pl["gplace"]["tns"] = pl_summary.gplace.tns;
-    summary_pl["gplace"]["wns"] = pl_summary.gplace.wns;
-    summary_pl["gplace"]["suggest_freq"] = pl_summary.gplace.suggest_freq;
+    // summary_pl["gplace"]["tns"] = pl_summary.gplace.tns;
+    // summary_pl["gplace"]["wns"] = pl_summary.gplace.wns;
+    // summary_pl["gplace"]["suggest_freq"] = pl_summary.gplace.suggest_freq;
 
     summary_pl["dplace"]["place_density"] = pl_summary.dplace.place_density;
-    summary_pl["dplace"]["pin_density"] = pl_summary.dplace.pin_density;
-    summary_pl["dplace"]["HPWL"] = pl_summary.dplace.HPWL;
-    summary_pl["dplace"]["STWL"] = pl_summary.dplace.STWL;
-    summary_pl["dplace"]["GRWL"] = pl_summary.dplace.GRWL;
+    // summary_pl["dplace"]["pin_density"] = pl_summary.dplace.pin_density;
+    // summary_pl["dplace"]["HPWL"] = pl_summary.dplace.HPWL;
+    // summary_pl["dplace"]["STWL"] = pl_summary.dplace.STWL;
+    // summary_pl["dplace"]["GRWL"] = pl_summary.dplace.GRWL;
 
-    summary_pl["dplace"]["egr_tof"] = pl_summary.dplace.egr_tof;
-    summary_pl["dplace"]["egr_mof"] = pl_summary.dplace.egr_mof;
-    summary_pl["dplace"]["egr_ace"] = pl_summary.dplace.egr_ace;
+    // summary_pl["dplace"]["egr_tof"] = pl_summary.dplace.egr_tof;
+    // summary_pl["dplace"]["egr_mof"] = pl_summary.dplace.egr_mof;
+    // summary_pl["dplace"]["egr_ace"] = pl_summary.dplace.egr_ace;
 
-    summary_pl["dplace"]["tns"] = pl_summary.dplace.tns;
-    summary_pl["dplace"]["wns"] = pl_summary.dplace.wns;
-    summary_pl["dplace"]["suggest_freq"] = pl_summary.dplace.suggest_freq;
+    // summary_pl["dplace"]["tns"] = pl_summary.dplace.tns;
+    // summary_pl["dplace"]["wns"] = pl_summary.dplace.wns;
+    // summary_pl["dplace"]["suggest_freq"] = pl_summary.dplace.suggest_freq;
 
     summary_pl["instance_cnt"] = pl_summary.instance_cnt;
     summary_pl["fix_inst_cnt"] = pl_summary.fix_inst_cnt;
@@ -237,18 +288,18 @@ json FeatureParser::buildSummaryPL(std::string step)
   // 3: Data parameters required for legalization.
   else if (step == "legalization") {
     summary_pl["legalization"]["place_density"] = pl_summary.lg_summary.pl_common_summary.place_density;
-    summary_pl["legalization"]["pin_density"] = pl_summary.lg_summary.pl_common_summary.pin_density;
-    summary_pl["legalization"]["HPWL"] = pl_summary.lg_summary.pl_common_summary.HPWL;
-    summary_pl["legalization"]["STWL"] = pl_summary.lg_summary.pl_common_summary.STWL;
-    summary_pl["legalization"]["GRWL"] = pl_summary.lg_summary.pl_common_summary.GRWL;
+    // summary_pl["legalization"]["pin_density"] = pl_summary.lg_summary.pl_common_summary.pin_density;
+    // summary_pl["legalization"]["HPWL"] = pl_summary.lg_summary.pl_common_summary.HPWL;
+    // summary_pl["legalization"]["STWL"] = pl_summary.lg_summary.pl_common_summary.STWL;
+    // summary_pl["legalization"]["GRWL"] = pl_summary.lg_summary.pl_common_summary.GRWL;
 
-    summary_pl["legalization"]["egr_tof"] = pl_summary.lg_summary.pl_common_summary.egr_tof;
-    summary_pl["legalization"]["egr_mof"] = pl_summary.lg_summary.pl_common_summary.egr_mof;
-    summary_pl["legalization"]["egr_ace"] = pl_summary.lg_summary.pl_common_summary.egr_ace;
+    // summary_pl["legalization"]["egr_tof"] = pl_summary.lg_summary.pl_common_summary.egr_tof;
+    // summary_pl["legalization"]["egr_mof"] = pl_summary.lg_summary.pl_common_summary.egr_mof;
+    // summary_pl["legalization"]["egr_ace"] = pl_summary.lg_summary.pl_common_summary.egr_ace;
 
-    summary_pl["legalization"]["tns"] = pl_summary.lg_summary.pl_common_summary.tns;
-    summary_pl["legalization"]["wns"] = pl_summary.lg_summary.pl_common_summary.wns;
-    summary_pl["legalization"]["suggest_freq"] = pl_summary.lg_summary.pl_common_summary.suggest_freq;
+    // summary_pl["legalization"]["tns"] = pl_summary.lg_summary.pl_common_summary.tns;
+    // summary_pl["legalization"]["wns"] = pl_summary.lg_summary.pl_common_summary.wns;
+    // summary_pl["legalization"]["suggest_freq"] = pl_summary.lg_summary.pl_common_summary.suggest_freq;
 
     summary_pl["legalization"]["total_movement"] = pl_summary.lg_summary.lg_total_movement;
     summary_pl["legalization"]["max_movement"] = pl_summary.lg_summary.lg_max_movement;

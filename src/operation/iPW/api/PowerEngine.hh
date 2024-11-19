@@ -48,8 +48,8 @@ struct ClusterConnection {
  *
  */
 struct MacroConnection {
-  std::string _src_macro_name;
-  std::string _dst_macro_name;
+  const char* _src_macro_name;
+  const char* _dst_macro_name;
   std::vector<unsigned> _stages_each_hop;
   unsigned _hop;
 };
@@ -79,6 +79,10 @@ class PowerEngine {
 
   // api for build only macro connection.
   std::vector<MacroConnection> buildMacroConnectionMap(unsigned max_hop);
+
+#ifdef USE_GPU
+  std::vector<MacroConnection> buildMacroConnectionMapWithGPU(unsigned max_hop);
+#endif
 
  private:
   PowerEngine();

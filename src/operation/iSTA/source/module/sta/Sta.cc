@@ -795,8 +795,12 @@ void Sta::linkDesignWithRustParser(const char *top_cell_name) {
       design_netlist.addInstance(std::move(inst));
     }
   }
-  rust_free_verilog_file(_rust_verilog_file_ptr);
+  rust_free_verilog_file(_rust_verilog_file_ptr);  
   LOG_INFO << "link design " << top_cell_name << " end";
+
+  LOG_INFO << "design " << top_cell_name << " inst num: " << design_netlist.getInstanceNum();
+  LOG_INFO << "design " << top_cell_name << " net num: " << design_netlist.getNetNum();
+  LOG_INFO << "design " << top_cell_name << " port num: " << design_netlist.getPortNum();
 }
 
 /**
@@ -2351,7 +2355,12 @@ unsigned Sta::updateClockTiming() {
       StaCombLoopCheck(),
       StaSlewPropagation(),
       StaDelayPropagation(),
-      StaClockPropagation(StaClockPropagation::PropType::kNormalClockProp)};
+      StaClockPropagation(StaClockPropagation::PropType::kNormalClockProp),
+      StaApplySdc(StaApplySdc::PropType::kApplySdcPostNormalClockProp),
+      StaClockPropagation(
+          StaClockPropagation::PropType::kUpdateGeneratedClockProp),
+      StaApplySdc(StaApplySdc::PropType::kApplySdcPostClockProp)
+      };
 
   for (auto &func : funcs) {
     the_graph.exec(func);

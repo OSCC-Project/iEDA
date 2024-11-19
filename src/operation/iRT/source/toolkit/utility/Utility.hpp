@@ -850,6 +850,21 @@ class Utility
     return rect;
   }
 
+  static bool hasShrinkedRect(PlanarRect rect, int32_t shrinked_size)
+  {
+    addOffset(rect.get_ll(), shrinked_size, shrinked_size);
+    minusOffset(rect.get_ur(), shrinked_size, shrinked_size);
+
+    return rect.get_ll_x() <= rect.get_ur_x() && rect.get_ll_y() <= rect.get_ur_y();
+  }
+
+  static PlanarRect getShrinkedRect(PlanarRect rect, int32_t shrinked_size)
+  {
+    addOffset(rect.get_ll(), shrinked_size, shrinked_size);
+    minusOffset(rect.get_ur(), shrinked_size, shrinked_size);
+    return rect;
+  }
+
 #endif
 
 #if 1  // 与多叉树有关的计算
@@ -1307,6 +1322,41 @@ class Utility
     std::sort(scale_line_list.begin(), scale_line_list.end());
     scale_line_list.erase(std::unique(scale_line_list.begin(), scale_line_list.end()), scale_line_list.end());
     return scale_line_list;
+  }
+
+  /**
+   * 反取begin_line和end_line之外的数据,比begin_line小的存pre_scale_list,比end_line大的存post_scale_set
+   */
+  static void getScaleList(int32_t begin_line, int32_t end_line, std::vector<ScaleGrid>& scale_grid_list,
+                           std::vector<int32_t>& pre_scale_list, std::vector<int32_t>& post_scale_set)
+  {
+    swapByASC(begin_line, end_line);
+
+    std::vector<int32_t> scale_line_list;
+    for (ScaleGrid& scale_grid : scale_grid_list) {
+      if (scale_grid.get_step_length() == 0) {
+        if (scale_grid.get_start_line() < begin_line) {
+          pre_scale_list.push_back(scale_grid.get_start_line());
+        }
+        if (end_line < scale_grid.get_start_line()) {
+          post_scale_set.push_back(scale_grid.get_start_line());
+        }
+      } else {
+        for (int32_t scale_line = scale_grid.get_start_line(); scale_line <= scale_grid.get_end_line();
+             scale_line += scale_grid.get_step_length()) {
+          if (scale_line < begin_line) {
+            pre_scale_list.push_back(scale_line);
+          }
+          if (end_line < scale_line) {
+            post_scale_set.push_back(scale_line);
+          }
+        }
+      }
+    }
+    std::sort(pre_scale_list.begin(), pre_scale_list.end());
+    pre_scale_list.erase(std::unique(pre_scale_list.begin(), pre_scale_list.end()), pre_scale_list.end());
+    std::sort(post_scale_set.begin(), post_scale_set.end());
+    post_scale_set.erase(std::unique(post_scale_set.begin(), post_scale_set.end()), post_scale_set.end());
   }
 
   static bool existTrackGrid(const PlanarCoord& real_coord, ScaleAxis& track_axis)
@@ -2433,28 +2483,28 @@ class Utility
 
 #if 1  // reduce
 
-  static std::vector<PlanarRect> getOpenReducedRectListByBoost(const std::vector<PlanarRect>& master_list, int32_t ll_x_add_offset,
-                                                               int32_t ll_y_add_offset, int32_t ur_x_minus_offset,
-                                                               int32_t ur_y_minus_offset)
+  static std::vector<PlanarRect> getOpenShrinkedRectListByBoost(const std::vector<PlanarRect>& master_list, int32_t ll_x_add_offset,
+                                                                int32_t ll_y_add_offset, int32_t ur_x_minus_offset,
+                                                                int32_t ur_y_minus_offset)
   {
-    return getReducedRectListByBoost(master_list, ll_x_add_offset, ll_y_add_offset, ur_x_minus_offset, ur_y_minus_offset, true);
+    return getShrinkedRectListByBoost(master_list, ll_x_add_offset, ll_y_add_offset, ur_x_minus_offset, ur_y_minus_offset, true);
   }
 
-  static std::vector<PlanarRect> getClosedReducedRectListByBoost(const std::vector<PlanarRect>& master_list, int32_t reduced_offset)
+  static std::vector<PlanarRect> getClosedShrinkedRectListByBoost(const std::vector<PlanarRect>& master_list, int32_t shrinked_offset)
   {
-    return getReducedRectListByBoost(master_list, reduced_offset, reduced_offset, reduced_offset, reduced_offset, false);
+    return getShrinkedRectListByBoost(master_list, shrinked_offset, shrinked_offset, shrinked_offset, shrinked_offset, false);
   }
 
-  static std::vector<PlanarRect> getClosedReducedRectListByBoost(const std::vector<PlanarRect>& master_list, int32_t ll_x_add_offset,
-                                                                 int32_t ll_y_add_offset, int32_t ur_x_minus_offset,
-                                                                 int32_t ur_y_minus_offset)
+  static std::vector<PlanarRect> getClosedShrinkedRectListByBoost(const std::vector<PlanarRect>& master_list, int32_t ll_x_add_offset,
+                                                                  int32_t ll_y_add_offset, int32_t ur_x_minus_offset,
+                                                                  int32_t ur_y_minus_offset)
   {
-    return getReducedRectListByBoost(master_list, ll_x_add_offset, ll_y_add_offset, ur_x_minus_offset, ur_y_minus_offset, false);
+    return getShrinkedRectListByBoost(master_list, ll_x_add_offset, ll_y_add_offset, ur_x_minus_offset, ur_y_minus_offset, false);
   }
 
-  static std::vector<PlanarRect> getReducedRectListByBoost(const std::vector<PlanarRect>& master_list, int32_t ll_x_add_offset,
-                                                           int32_t ll_y_add_offset, int32_t ur_x_minus_offset, int32_t ur_y_minus_offset,
-                                                           bool is_open)
+  static std::vector<PlanarRect> getShrinkedRectListByBoost(const std::vector<PlanarRect>& master_list, int32_t ll_x_add_offset,
+                                                            int32_t ll_y_add_offset, int32_t ur_x_minus_offset, int32_t ur_y_minus_offset,
+                                                            bool is_open)
   {
     std::vector<PlanarRect> result_list;
 
@@ -3166,7 +3216,7 @@ class Utility
 
     std::stringstream ss(a);
     std::string result_token;
-    while (getline(ss, result_token, tok)) {
+    while (std::getline(ss, result_token, tok)) {
       if (result_token == "") {
         continue;
       }

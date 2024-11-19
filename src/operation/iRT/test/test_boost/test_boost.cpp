@@ -544,28 +544,28 @@ class RTUtil
 
 #if 1  // reduce
 
-  static std::vector<PlanarRect> getOpenReducedRectListByBoost(const std::vector<PlanarRect>& master_list, int32_t ll_x_add_offset,
-                                                               int32_t ll_y_add_offset, int32_t ur_x_minus_offset,
-                                                               int32_t ur_y_minus_offset)
+  static std::vector<PlanarRect> getOpenShrinkedRectListByBoost(const std::vector<PlanarRect>& master_list, int32_t ll_x_add_offset,
+                                                                int32_t ll_y_add_offset, int32_t ur_x_minus_offset,
+                                                                int32_t ur_y_minus_offset)
   {
-    return getReducedRectListByBoost(master_list, ll_x_add_offset, ll_y_add_offset, ur_x_minus_offset, ur_y_minus_offset, true);
+    return getShrinkedRectListByBoost(master_list, ll_x_add_offset, ll_y_add_offset, ur_x_minus_offset, ur_y_minus_offset, true);
   }
 
-  static std::vector<PlanarRect> getClosedReducedRectListByBoost(const std::vector<PlanarRect>& master_list, int32_t reduced_offset)
+  static std::vector<PlanarRect> getClosedShrinkedRectListByBoost(const std::vector<PlanarRect>& master_list, int32_t shrinked_offset)
   {
-    return getReducedRectListByBoost(master_list, reduced_offset, reduced_offset, reduced_offset, reduced_offset, false);
+    return getShrinkedRectListByBoost(master_list, shrinked_offset, shrinked_offset, shrinked_offset, shrinked_offset, false);
   }
 
-  static std::vector<PlanarRect> getClosedReducedRectListByBoost(const std::vector<PlanarRect>& master_list, int32_t ll_x_add_offset,
-                                                                 int32_t ll_y_add_offset, int32_t ur_x_minus_offset,
-                                                                 int32_t ur_y_minus_offset)
+  static std::vector<PlanarRect> getClosedShrinkedRectListByBoost(const std::vector<PlanarRect>& master_list, int32_t ll_x_add_offset,
+                                                                  int32_t ll_y_add_offset, int32_t ur_x_minus_offset,
+                                                                  int32_t ur_y_minus_offset)
   {
-    return getReducedRectListByBoost(master_list, ll_x_add_offset, ll_y_add_offset, ur_x_minus_offset, ur_y_minus_offset, false);
+    return getShrinkedRectListByBoost(master_list, ll_x_add_offset, ll_y_add_offset, ur_x_minus_offset, ur_y_minus_offset, false);
   }
 
-  static std::vector<PlanarRect> getReducedRectListByBoost(const std::vector<PlanarRect>& master_list, int32_t ll_x_add_offset,
-                                                           int32_t ll_y_add_offset, int32_t ur_x_minus_offset, int32_t ur_y_minus_offset,
-                                                           bool is_open)
+  static std::vector<PlanarRect> getShrinkedRectListByBoost(const std::vector<PlanarRect>& master_list, int32_t ll_x_add_offset,
+                                                            int32_t ll_y_add_offset, int32_t ur_x_minus_offset, int32_t ur_y_minus_offset,
+                                                            bool is_open)
   {
     std::vector<PlanarRect> result_list;
 
@@ -818,15 +818,15 @@ int32_t main()
     // std::vector<PlanarRect> ClosedOverlapRectListByBoost = RTUTIL.getClosedOverlapRectListByBoost(master_list, rect_list);
     // RTUTIL.plotGDS("6ClosedOverlapRectListByBoost", ClosedOverlapRectListByBoost);
 
-    // std::vector<PlanarRect> master_OpenReducedRectListByBoost = RTUTIL.getOpenReducedRectListByBoost(master_list, 5, 5, 5, 5);
-    // RTUTIL.plotGDS("7master_OpenReducedRectListByBoost", master_OpenReducedRectListByBoost);
-    // std::vector<PlanarRect> master_ClosedReducedRectListByBoost = RTUTIL.getClosedReducedRectListByBoost(master_list, 5, 5, 5, 5);
-    // RTUTIL.plotGDS("8master_ClosedReducedRectListByBoost", master_ClosedReducedRectListByBoost);
+    // std::vector<PlanarRect> master_OpenShrinkedRectListByBoost = RTUTIL.getOpenShrinkedRectListByBoost(master_list, 5, 5, 5, 5);
+    // RTUTIL.plotGDS("7master_OpenShrinkedRectListByBoost", master_OpenShrinkedRectListByBoost);
+    // std::vector<PlanarRect> master_ClosedShrinkedRectListByBoost = RTUTIL.getClosedShrinkedRectListByBoost(master_list, 5, 5, 5, 5);
+    // RTUTIL.plotGDS("8master_ClosedShrinkedRectListByBoost", master_ClosedShrinkedRectListByBoost);
 
-    // std::vector<PlanarRect> rect_OpenReducedRectListByBoost = RTUTIL.getOpenReducedRectListByBoost(rect_list, 5, 5, 5, 5);
-    // RTUTIL.plotGDS("9rect_OpenReducedRectListByBoost", rect_OpenReducedRectListByBoost);
-    // std::vector<PlanarRect> rect_ClosedReducedRectListByBoost = RTUTIL.getClosedReducedRectListByBoost(rect_list, 5, 5, 5, 5);
-    // RTUTIL.plotGDS("91rect_ClosedReducedRectListByBoost", rect_ClosedReducedRectListByBoost);
+    // std::vector<PlanarRect> rect_OpenShrinkedRectListByBoost = RTUTIL.getOpenShrinkedRectListByBoost(rect_list, 5, 5, 5, 5);
+    // RTUTIL.plotGDS("9rect_OpenShrinkedRectListByBoost", rect_OpenShrinkedRectListByBoost);
+    // std::vector<PlanarRect> rect_ClosedShrinkedRectListByBoost = RTUTIL.getClosedShrinkedRectListByBoost(rect_list, 5, 5, 5, 5);
+    // RTUTIL.plotGDS("91rect_ClosedShrinkedRectListByBoost", rect_ClosedShrinkedRectListByBoost);
     int32_t a = 0;
   }
 

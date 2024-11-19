@@ -35,6 +35,9 @@ CmdDefToVerilog::CmdDefToVerilog(const char* cmd_name) : TclCmd(cmd_name) {
 
   auto* verilog_option = new TclStringOption("-verilog", 0, nullptr);
   addOption(verilog_option);
+
+  auto* add_space_for_escape_name_option = new TclSwitchOption("-addspace");
+  addOption(add_space_for_escape_name_option);
 }
 
 unsigned CmdDefToVerilog::check() { return 1; }
@@ -58,8 +61,15 @@ unsigned CmdDefToVerilog::exec() {
   TclOption* verilog_option = getOptionOrArg("-verilog");
   auto* verilog_file = verilog_option->getStringVal();
 
+  TclOption* add_space_for_escape_name_option = getOptionOrArg("-addspace");
+  bool is_add_space_for_escape_name = false;
+  if (add_space_for_escape_name_option->is_set_val()) {
+    is_add_space_for_escape_name = true;
+  }
+
   std::set<std::string> exclude_cell_names;
-  db_builder->saveVerilog(verilog_file, exclude_cell_names);
+  db_builder->saveVerilog(verilog_file, exclude_cell_names,
+                          is_add_space_for_escape_name);
 
   return 1;
 }

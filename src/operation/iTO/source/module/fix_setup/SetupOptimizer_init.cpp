@@ -60,7 +60,11 @@ void SetupOptimizer::initBufferCell()
   auto bufs = toConfig->get_setup_insert_buffers();
   for (auto buf : bufs) {
     auto buffer = timingEngine->get_sta_engine()->findLibertyCell(buf.c_str());
-    _available_lib_cell_sizes.emplace_back(buffer);
+    if (!buffer) {
+      LOG_INFO << "Buffer cell " << buf.c_str() << " not found" << endl;
+    } else {
+      _available_lib_cell_sizes.emplace_back(buffer);
+    }
   }
 }
 

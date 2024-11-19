@@ -179,7 +179,6 @@ IdbLefService* IdbBuilder::buildLef(vector<string>& files, bool b_techfile)
   return _lef_service;
 }
 
-
 IdbDefService* IdbBuilder::rustBuildVerilog(string file, std::string top_module_name)
 {
   if (_def_service != nullptr) {
@@ -198,7 +197,7 @@ IdbDefService* IdbBuilder::rustBuildVerilog(string file, std::string top_module_
   }
 
   std::shared_ptr<RustVerilogRead> rust_verilog_read = std::make_shared<RustVerilogRead>(_def_service);
-  if(top_module_name.empty()) 
+  if (top_module_name.empty())
     rust_verilog_read->createDbAutoTop(file);
   else
     rust_verilog_read->createDb(file.c_str(), top_module_name);
@@ -264,10 +263,10 @@ bool IdbBuilder::saveDef(string file, DefWriteType type)
   return def_write->writeDb(file.c_str());
 }
 
-void IdbBuilder::saveVerilog(std::string verilog_file_name, std::set<std::string>& exclude_cell_names)
+void IdbBuilder::saveVerilog(std::string verilog_file_name, std::set<std::string>& exclude_cell_names, bool is_add_space_for_escape_name)
 {
   IdbDesign* idb_design = _def_service->get_design();
-  VerilogWriter writer(verilog_file_name.c_str(), exclude_cell_names, *idb_design);
+  VerilogWriter writer(verilog_file_name.c_str(), exclude_cell_names, *idb_design, is_add_space_for_escape_name);
   writer.writeModule();
 }
 

@@ -22,12 +22,11 @@
  * @date 2023-03-03
  */
 
-#include "PwrBuildSeqGraph.hh"
-
 #include <condition_variable>
 #include <mutex>
 #include <ranges>
 
+#include "PwrBuildSeqGraph.hh"
 #include "ThreadPool/ThreadPool.h"
 #include "ops/dump/PwrDumpSeqGraph.hh"
 
@@ -49,11 +48,35 @@ unsigned PwrBuildSeqGraph::operator()(PwrVertex* the_vertex) {
   /*Lambda function to create seq graph arc.*/
   auto create_seq_arc = [this](auto* seq_vertex, auto* fanout_seq_vertex,
                                auto combine_depth) {
+    // macro connection need filter repeat arc.
+    static std::shared_mutex rw_mutex;
+    if (seq_vertex->isMacro() || fanout_seq_vertex->isMacro()) {
+      {
+        std::shared_lock<std::shared_mutex> lock(rw_mutex);
+        if (_macro_arcs.count(std::make_pair(seq_vertex, fanout_seq_vertex))) {
+          LOG_INFO_FIRST_N(10)
+              << "Repeat macro arc: " << seq_vertex->get_obj_name() << " -> "
+              << fanout_seq_vertex->get_obj_name();
+          return;
+        }
+      }
+
+      {
+        std::unique_lock<std::shared_mutex> lock(rw_mutex);
+        _macro_arcs.insert(std::make_pair(seq_vertex, fanout_seq_vertex));
+        LOG_INFO_EVERY_N(100000)
+            << "macro seq arc size: " << _macro_arcs.size();
+      }
+    }
+
     PwrSeqArc* seq_arc = new PwrSeqArc(seq_vertex, fanout_seq_vertex);
     seq_arc->set_combine_depth(combine_depth);
     seq_vertex->addSrcArc(seq_arc);
     fanout_seq_vertex->addSnkArc(seq_arc);
     _seq_graph.addPwrSeqArc(seq_arc);
+
+    LOG_INFO_IF_EVERY_N(_seq_graph.get_arcs().size() > 100000, 10000000)
+        << "build seq arc size: " << _seq_graph.get_arcs().size();
   };
 
   auto* the_sta_vertex = the_vertex->get_sta_vertex();
@@ -78,7 +101,8 @@ unsigned PwrBuildSeqGraph::operator()(PwrVertex* the_vertex) {
     if (seq_vertex) {
       the_vertex->addFanoutSeqVertex(seq_vertex, 0);  // end vertex is level 0.
     } else {
-      LOG_ERROR << seq_instance->get_name() << " is not seq vertex.";
+      LOG_ERROR << seq_instance->get_name()
+                << " is not seq vertex, may be no clock.";
     }
 
     the_vertex->set_is_seq_visited();
@@ -189,7 +213,7 @@ unsigned PwrBuildSeqGraph::buildSeqVertexes(PwrGraph* the_graph) {
     } else {
       seq_instance = (*data_in_pwr_vertexes.begin())->getOwnInstance();
     }
-     
+
     // New a seq vertex for this instance.
     PwrSeqVertex* seq_vertex = new PwrSeqVertex(
         std::move(data_in_pwr_vertexes), std::move(data_out_pwr_vertexes));

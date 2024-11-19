@@ -21,7 +21,7 @@ int main(int argc, char* argv[])
   // TestTotalWirelength();
   // TestNetWirelength();
   // TestPathWirelength();
-  // TestEgrWirelength("./rt_temp_directory/initial_router/route.guide");
+  // TestEgrWirelength("./rt_temp_directory/early_router/route.guide");
   if (argc > 1) {
     std::string workspace_path(argv[1]);
     std::cout << "workspace_path: " << workspace_path << std::endl;

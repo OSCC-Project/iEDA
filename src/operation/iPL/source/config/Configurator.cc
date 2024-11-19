@@ -68,6 +68,7 @@ void Config::initConfigByJson(nlohmann::json json)
   float min_wirelength_force_bar = getDataByJson(json, {"PL", "GP", "Wirelength", "min_wirelength_force_bar"});
 
   float target_density = getDataByJson(json, {"PL", "GP", "Density", "target_density"});
+  int32_t is_adaptive_bin = getDataByJson(json, {"PL", "GP", "Density", "is_adaptive_bin"});
   int32_t bin_cnt_x = getDataByJson(json, {"PL", "GP", "Density", "bin_cnt_x"});
   int32_t bin_cnt_y = getDataByJson(json, {"PL", "GP", "Density", "bin_cnt_y"});
 
@@ -148,6 +149,11 @@ void Config::initConfigByJson(nlohmann::json json)
   _nes_config.set_reference_hpwl(reference_hpwl);
   _nes_config.set_min_wirelength_force_bar(min_wirelength_force_bar);
   _nes_config.set_target_density(target_density);
+  if(is_adaptive_bin){
+    _nes_config.set_adaptive_bin(true);
+  }else{
+    _nes_config.set_adaptive_bin(false);
+  }
   _nes_config.set_bin_cnt_x(bin_cnt_x);
   _nes_config.set_bin_cnt_y(bin_cnt_y);
   _nes_config.set_max_iter(max_iter);

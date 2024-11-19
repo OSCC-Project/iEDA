@@ -49,49 +49,49 @@ void DensityEval::destroyInst()
   }
 }
 
-std::string DensityEval::evalMacroDensity(DensityCells cells, DensityRegion region, int32_t grid_size)
+std::string DensityEval::evalMacroDensity(DensityCells cells, DensityRegion region, int32_t grid_size, std::string stage)
 {
-  return evalDensity(cells, region, grid_size, "macro", "macro_density.csv");
+  return evalDensity(cells, region, grid_size, "macro", stage + "_macro_density.csv");
 }
 
-std::string DensityEval::evalStdCellDensity(DensityCells cells, DensityRegion region, int32_t grid_size)
+std::string DensityEval::evalStdCellDensity(DensityCells cells, DensityRegion region, int32_t grid_size, std::string stage)
 {
-  return evalDensity(cells, region, grid_size, "stdcell", "stdcell_density.csv");
+  return evalDensity(cells, region, grid_size, "stdcell", stage + "_stdcell_density.csv");
 }
 
-std::string DensityEval::evalAllCellDensity(DensityCells cells, DensityRegion region, int32_t grid_size)
+std::string DensityEval::evalAllCellDensity(DensityCells cells, DensityRegion region, int32_t grid_size, std::string stage)
 {
-  return evalDensity(cells, region, grid_size, "all", "allcell_density.csv");
+  return evalDensity(cells, region, grid_size, "all", stage + "_allcell_density.csv");
 }
 
-std::string DensityEval::evalMacroPinDensity(DensityPins pins, DensityRegion region, int32_t grid_size, bool neighbor)
+std::string DensityEval::evalMacroPinDensity(DensityPins pins, DensityRegion region, int32_t grid_size, std::string stage, bool neighbor)
 {
-  return evalPinDensity(pins, region, grid_size, neighbor, "macro", "macro_pin_density.csv");
+  return evalPinDensity(pins, region, grid_size, neighbor, "macro", stage + "_macro_pin_density.csv");
 }
 
-std::string DensityEval::evalStdCellPinDensity(DensityPins pins, DensityRegion region, int32_t grid_size, bool neighbor)
+std::string DensityEval::evalStdCellPinDensity(DensityPins pins, DensityRegion region, int32_t grid_size, std::string stage, bool neighbor)
 {
-  return evalPinDensity(pins, region, grid_size, neighbor, "stdcell", "stdcell_pin_density.csv");
+  return evalPinDensity(pins, region, grid_size, neighbor, "stdcell", stage + "_stdcell_pin_density.csv");
 }
 
-std::string DensityEval::evalAllCellPinDensity(DensityPins pins, DensityRegion region, int32_t grid_size, bool neighbor)
+std::string DensityEval::evalAllCellPinDensity(DensityPins pins, DensityRegion region, int32_t grid_size, std::string stage, bool neighbor)
 {
-  return evalPinDensity(pins, region, grid_size, neighbor, "all", "allcell_pin_density.csv");
+  return evalPinDensity(pins, region, grid_size, neighbor, "all", stage + "_allcell_pin_density.csv");
 }
 
-std::string DensityEval::evalLocalNetDensity(DensityNets nets, DensityRegion region, int32_t grid_size, bool neighbor)
+std::string DensityEval::evalLocalNetDensity(DensityNets nets, DensityRegion region, int32_t grid_size, std::string stage, bool neighbor)
 {
-  return evalNetDensity(nets, region, grid_size, neighbor, "local", "local_net_density.csv");
+  return evalNetDensity(nets, region, grid_size, neighbor, "local", stage + "_local_net_density.csv");
 }
 
-std::string DensityEval::evalGlobalNetDensity(DensityNets nets, DensityRegion region, int32_t grid_size, bool neighbor)
+std::string DensityEval::evalGlobalNetDensity(DensityNets nets, DensityRegion region, int32_t grid_size, std::string stage, bool neighbor)
 {
-  return evalNetDensity(nets, region, grid_size, neighbor, "global", "global_net_density.csv");
+  return evalNetDensity(nets, region, grid_size, neighbor, "global", stage + "_global_net_density.csv");
 }
 
-std::string DensityEval::evalAllNetDensity(DensityNets nets, DensityRegion region, int32_t grid_size, bool neighbor)
+std::string DensityEval::evalAllNetDensity(DensityNets nets, DensityRegion region, int32_t grid_size, std::string stage, bool neighbor)
 {
-  return evalNetDensity(nets, region, grid_size, neighbor, "all", "allnet_density.csv");
+  return evalNetDensity(nets, region, grid_size, neighbor, "all", stage + "_allnet_density.csv");
 }
 
 std::string DensityEval::evalHorizonMargin(DensityCells cells, DensityRegion die, DensityRegion core, int32_t grid_size)
