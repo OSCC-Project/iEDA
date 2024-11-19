@@ -795,8 +795,12 @@ void Sta::linkDesignWithRustParser(const char *top_cell_name) {
       design_netlist.addInstance(std::move(inst));
     }
   }
-  rust_free_verilog_file(_rust_verilog_file_ptr);
+  rust_free_verilog_file(_rust_verilog_file_ptr);  
   LOG_INFO << "link design " << top_cell_name << " end";
+
+  LOG_INFO << "design " << top_cell_name << " inst num: " << design_netlist.getInstanceNum();
+  LOG_INFO << "design " << top_cell_name << " net num: " << design_netlist.getNetNum();
+  LOG_INFO << "design " << top_cell_name << " port num: " << design_netlist.getPortNum();
 }
 
 /**
@@ -2642,7 +2646,19 @@ void Sta::dumpNetlistData() {
   LOG_INFO << "cell_types.txt written to "
            << std::string(design_work_space) + std::string("/cell_types.txt")
            << std::endl;
-  outputJson.close();
+  outputTxt.close();
+}
+
+/**
+ * @brief dump timing graph data.
+ * 
+ */
+void Sta::dumpGraphData(const char* graph_file) {
+  StaDumpYaml dump_data;
+  dump_data.set_yaml_file_path(graph_file);
+
+  auto& the_graph = get_graph();
+  the_graph.exec(dump_data);
 }
 
 /**

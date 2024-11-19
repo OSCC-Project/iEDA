@@ -54,6 +54,7 @@ class PlanarCoord;
 
 namespace ieda_feature {
 class RTSummary;
+class FeatureManager;
 }  // namespace ieda_feature
 
 #endif
@@ -69,6 +70,8 @@ class RTInterface
   static void destroyInst();
 
 #if 1  // 外部调用RT的API
+
+#if 1  // iRT
   void initRT(std::map<std::string, std::any> config_map);
   void runEGR();
   void runRT();
@@ -76,9 +79,11 @@ class RTInterface
   void clearDef();
 #endif
 
+#endif
+
 #if 1  // RT调用外部的API
 
-#if 1  // iDB
+#if 1  // TopData
 
 #if 1  // input
   void input(std::map<std::string, std::any>& config_map);
@@ -109,6 +114,7 @@ class RTInterface
   void outputTrackGrid();
   void outputGCellGrid();
   void outputNetList();
+  void outputSummary();
 #endif
 
 #if 1  // 获得IdbSegment
@@ -134,10 +140,6 @@ class RTInterface
   void updateTimingAndPower(std::vector<std::map<std::string, std::vector<LayerCoord>>>& real_pin_coord_map_list,
                             std::vector<std::vector<Segment<LayerCoord>>>& routing_segment_list_list,
                             std::map<std::string, std::map<std::string, double>>& clock_timing, std::map<std::string, double>& power);
-#endif
-
-#if 1  // ieda_feature
-  ieda_feature::RTSummary outputSummary();
 #endif
 
 #if 1  // flute

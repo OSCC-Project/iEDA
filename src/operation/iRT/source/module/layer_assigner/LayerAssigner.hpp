@@ -92,13 +92,13 @@ class LayerAssigner
 #if 1  // exhibit
   void updateSummary(LAModel& la_model);
   void printSummary(LAModel& la_model);
+  void outputGuide(LAModel& la_model);
   void outputDemandCSV(LAModel& la_model);
   void outputOverflowCSV(LAModel& la_model);
 #endif
 
 #if 1  // debug
   void debugCheckLAModel(LAModel& la_model);
-  void outputGuide(LAModel& la_model);
 #endif
 };
 

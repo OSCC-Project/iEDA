@@ -33,11 +33,13 @@ class ERModel
   std::vector<ERNet>& get_er_net_list() { return _er_net_list; }
   ERParameter& get_er_parameter() { return _er_parameter; }
   std::vector<ERNet*>& get_er_task_list() { return _er_task_list; }
+  GridMap<ERNode>& get_planar_node_map() { return _planar_node_map; }
   std::vector<GridMap<ERNode>>& get_layer_node_map() { return _layer_node_map; }
   // setter
   void set_er_net_list(const std::vector<ERNet>& er_net_list) { _er_net_list = er_net_list; }
   void set_er_parameter(const ERParameter& er_parameter) { _er_parameter = er_parameter; }
   void set_er_task_list(const std::vector<ERNet*>& er_task_list) { _er_task_list = er_task_list; }
+  void set_planar_node_map(const GridMap<ERNode>& planar_node_map) { _planar_node_map = planar_node_map; }
   void set_layer_node_map(const std::vector<GridMap<ERNode>>& layer_node_map) { _layer_node_map = layer_node_map; }
   // function
 #if 1  // astar
@@ -81,6 +83,7 @@ class ERModel
   std::vector<ERNet> _er_net_list;
   ERParameter _er_parameter;
   std::vector<ERNet*> _er_task_list;
+  GridMap<ERNode> _planar_node_map;
   std::vector<GridMap<ERNode>> _layer_node_map;
 #if 1  // astar
   // single topo

@@ -817,6 +817,8 @@ unsigned TimingIDBAdapter::convertDBToTimingNetlist(bool link_all_cell) {
       }
       auto& created_inst = design_netlist.addInstance(std::move(sta_inst));
       crossRef(&created_inst, db_inst);
+
+      LOG_INFO_EVERY_N(10000) << "build inst num: " << design_netlist.getInstanceNum();
     }
   };
 
@@ -857,8 +859,9 @@ unsigned TimingIDBAdapter::convertDBToTimingNetlist(bool link_all_cell) {
         std::string inst_name = std::regex_replace(raw_name, re, "");
 
         auto* sta_inst = design_netlist.findInstance(inst_name.c_str());
+        LOG_FATAL_IF(!sta_inst) << "Instance " << inst_name << " not found";
         auto inst_pin = sta_inst->getPin(cell_port_name.c_str());
-        LOG_FATAL_IF(!inst_pin);
+        LOG_FATAL_IF(!inst_pin) << "Instance " << inst_name << " Pin " << cell_port_name << " not found";
 
         if (sta_net) {
           sta_net->addPinPort(*inst_pin);
@@ -889,12 +892,18 @@ unsigned TimingIDBAdapter::convertDBToTimingNetlist(bool link_all_cell) {
           }
         }
       }
+
+      LOG_INFO_EVERY_N(10000) << "build net num: " << design_netlist.getNetNum();
     }
   };
 
   build_insts();
   build_ports();
   build_nets();
+
+  LOG_INFO << "build instance num: " << design_netlist.getInstanceNum();
+  LOG_INFO << "build port num: " << design_netlist.getPortNum();
+  LOG_INFO << "build net num: " << design_netlist.getNetNum();
 
   return 1;
 }

@@ -49,9 +49,9 @@ PlaceSummary FeatureBuilder::buildPLSummary(std::string step)
 
 RTSummary FeatureBuilder::buildRTSummary()
 {
-  RTSummary summary = RTI.outputSummary();
+  // RTSummary summary = RTI.getSummary();
 
-  return summary;
+  // return summary;
 }
 
 CTSSummary FeatureBuilder::buildCTSSummary()
@@ -71,7 +71,7 @@ NetOptSummary FeatureBuilder::buildNetOptSummary()
 TimingOptSummary FeatureBuilder::buildTimingOptSummary()
 {
   TimingOptSummary summary = ToApiInst.outputSummary();
-
+  
 
   return summary;
 }

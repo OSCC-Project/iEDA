@@ -78,6 +78,7 @@ class ToConfig {
   void set_max_allowed_buffering_fanout(int num) { _max_allowed_buffering_fanout = num; }
   void set_min_divide_fanout(int num) { _min_divide_fanout = num; }
   void set_optimize_endpoints_percent(float num) { _optimize_endpoints_percent = num; }
+  void set_drv_optimize_iter_number(int num) { _drv_optimize_iter_number = num; }
 
   void set_drv_buffer_prefix(const string& prefix) { _drv_buffer_prefix = prefix; }
   void set_drv_net_prefix(const string& prefix) { _drv_net_prefix = prefix; }
@@ -117,6 +118,7 @@ class ToConfig {
   int get_max_allowed_buffering_fanout() { return _max_allowed_buffering_fanout; }
   int get_min_divide_fanout() { return _min_divide_fanout; }
   float get_optimize_endpoints_percent() { return _optimize_endpoints_percent; }
+  int get_drv_optimize_iter_number() { return _drv_optimize_iter_number; }
 
   string get_drv_buffer_prefix() const { return _drv_buffer_prefix; }
   string get_drv_net_prefix() const { return _drv_net_prefix; }
@@ -162,6 +164,7 @@ class ToConfig {
   int _max_allowed_buffering_fanout = 20;
   int _min_divide_fanout = 8; // Nets with low fanout don't need to divide loads.
   float _optimize_endpoints_percent = 1.0; // Nets with low fanout don't need to divide loads.
+  int _drv_optimize_iter_number = 1.0; // max iter number for optimize DRV
 
   // output
   string _out_def_path;

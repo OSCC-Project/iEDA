@@ -108,10 +108,18 @@ TANet TrackAssigner::convertToTANet(Net& net)
 void TrackAssigner::setTAParameter(TAModel& ta_model)
 {
   int32_t cost_unit = RTDM.getOnlyPitch();
+  double prefer_wire_unit = 1;
+  double non_prefer_wire_unit = 2.5;
+  double via_unit = cost_unit;
+  double fixed_rect_unit = 4 * non_prefer_wire_unit * cost_unit;
+  double routed_rect_unit = 2 * via_unit;
+  double violation_unit = 4 * non_prefer_wire_unit * cost_unit;
   /**
    * prefer_wire_unit, fixed_rect_unit, routed_rect_unit, violation_unit, max_routed_times
    */
-  TAParameter ta_parameter(1, 8 * cost_unit, 2 * cost_unit, 4 * cost_unit, 4);
+  // clang-format off
+  TAParameter ta_parameter(prefer_wire_unit, fixed_rect_unit, routed_rect_unit, violation_unit, 10);
+  // clang-format on
   RTLOG.info(Loc::current(), "prefer_wire_unit: ", ta_parameter.get_prefer_wire_unit());
   RTLOG.info(Loc::current(), "fixed_rect_unit: ", ta_parameter.get_fixed_rect_unit());
   RTLOG.info(Loc::current(), "routed_rect_unit: ", ta_parameter.get_routed_rect_unit());
@@ -175,7 +183,7 @@ void TrackAssigner::buildPanelSchedule(TAModel& ta_model)
 {
   std::vector<std::vector<TAPanel>>& layer_panel_list = ta_model.get_layer_panel_list();
 
-  int32_t range = 2;
+  int32_t range = 3;
 
   std::vector<std::vector<TAPanelId>> ta_panel_id_list_list;
   for (int32_t layer_idx = 0; layer_idx < static_cast<int32_t>(layer_panel_list.size()); layer_idx++) {
@@ -466,7 +474,7 @@ void TrackAssigner::buildOrientNetMap(TAPanel& ta_panel)
     }
   }
   for (Violation& violation : ta_panel.get_violation_list()) {
-    updateViolationToGraph(ta_panel, ChangeType::kAdd, violation);
+    addViolationToGraph(ta_panel, violation);
   }
 }
 
@@ -622,7 +630,7 @@ void TrackAssigner::expandSearching(TAPanel& ta_panel)
     if (neighbor_node->isOpen() && know_cost < neighbor_node->get_known_cost()) {
       neighbor_node->set_known_cost(know_cost);
       neighbor_node->set_parent_node(path_head_node);
-      // 对优先队列中的值修改了，需要重新建堆
+      // 对优先队列中的值修改了,需要重新建堆
       std::make_heap(open_queue.begin(), open_queue.end(), CmpTANodeCost());
     } else if (neighbor_node->isNone()) {
       neighbor_node->set_known_cost(know_cost);
@@ -679,7 +687,7 @@ void TrackAssigner::resetStartAndEnd(TAPanel& ta_panel)
   TANode* path_head_node = ta_panel.get_path_head_node();
   int32_t end_node_list_idx = ta_panel.get_end_node_list_idx();
 
-  // 对于抵达的终点pin，只保留到达的node
+  // 对于抵达的终点pin,只保留到达的node
   end_node_list_list[end_node_list_idx].clear();
   end_node_list_list[end_node_list_idx].push_back(path_head_node);
 
@@ -695,7 +703,7 @@ void TrackAssigner::resetStartAndEnd(TAPanel& ta_panel)
     }
   }
   if (start_node_list_list.size() == 1) {
-    // 初始化时，要把start_node_list_list的pin只留一个ap点
+    // 初始化时,要把start_node_list_list的pin只留一个ap点
     // 后续只要将end_node_list_list的pin保留一个ap点
     start_node_list_list.front().clear();
     start_node_list_list.front().push_back(path_node);
@@ -904,17 +912,20 @@ double TrackAssigner::getEstimateViaCost(TAPanel& ta_panel, TANode* start_node, 
 
 void TrackAssigner::updateViolationList(TAPanel& ta_panel)
 {
-  std::vector<Violation> new_violation_list = getCostViolationList(ta_panel);
-
-  std::vector<Violation>& violation_list = ta_panel.get_violation_list();
-  // 原结果从graph删除
-  for (Violation& violation : violation_list) {
-    updateViolationToGraph(ta_panel, ChangeType::kDel, violation);
+  ta_panel.get_violation_list().clear();
+  for (Violation new_violation : getCostViolationList(ta_panel)) {
+    if (new_violation.get_is_routing() != true
+        || new_violation.get_violation_shape().get_layer_idx() != ta_panel.get_panel_rect().get_layer_idx()) {
+      continue;
+    }
+    if (!RTUTIL.isInside(ta_panel.get_panel_rect().get_real_rect(), new_violation.get_violation_shape().get_real_rect())) {
+      continue;
+    }
+    ta_panel.get_violation_list().push_back(new_violation);
   }
-  violation_list = new_violation_list;
   // 新结果添加到graph
-  for (Violation& violation : violation_list) {
-    updateViolationToGraph(ta_panel, ChangeType::kAdd, violation);
+  for (Violation& violation : ta_panel.get_violation_list()) {
+    addViolationToGraph(ta_panel, violation);
   }
 }
 
@@ -944,40 +955,59 @@ std::vector<Violation> TrackAssigner::getCostViolationList(TAPanel& ta_panel)
       break;
     }
   }
-  std::map<int32_t, std::vector<Segment<LayerCoord>*>> net_env_result_map;
+  std::map<int32_t, std::vector<Segment<LayerCoord>*>> net_result_map;
   for (auto& [net_idx, segment_set] : ta_panel.get_net_access_result_map()) {
     for (Segment<LayerCoord>* segment : segment_set) {
-      net_env_result_map[net_idx].push_back(segment);
+      int32_t first_layer_idx = segment->get_first().get_layer_idx();
+      int32_t second_layer_idx = segment->get_second().get_layer_idx();
+      RTUTIL.swapByASC(first_layer_idx, second_layer_idx);
+      if (ta_panel.get_panel_rect().get_layer_idx() < first_layer_idx || second_layer_idx < ta_panel.get_panel_rect().get_layer_idx()) {
+        continue;
+      }
+      net_result_map[net_idx].push_back(segment);
     }
   }
   for (auto& [net_idx, segment_set] : ta_panel.get_net_detailed_result_map()) {
     for (Segment<LayerCoord>* segment : segment_set) {
-      net_env_result_map[net_idx].push_back(segment);
+      int32_t first_layer_idx = segment->get_first().get_layer_idx();
+      int32_t second_layer_idx = segment->get_second().get_layer_idx();
+      RTUTIL.swapByASC(first_layer_idx, second_layer_idx);
+      if (ta_panel.get_panel_rect().get_layer_idx() < first_layer_idx || second_layer_idx < ta_panel.get_panel_rect().get_layer_idx()) {
+        continue;
+      }
+      net_result_map[net_idx].push_back(segment);
     }
   }
-  std::map<int32_t, std::vector<EXTLayerRect*>> net_env_patch_map;
-  for (auto& [net_idx, patch_set] : ta_panel.get_net_access_patch_map()) {
-    for (EXTLayerRect* patch : patch_set) {
-      net_env_patch_map[net_idx].push_back(patch);
-    }
-  }
-  std::map<int32_t, std::vector<Segment<LayerCoord>>> net_check_result_map;
   for (auto& [net_idx, task_result_map] : ta_panel.get_net_task_result_map()) {
     for (auto& [task_idx, segment_list] : task_result_map) {
       for (Segment<LayerCoord>& segment : segment_list) {
-        net_check_result_map[net_idx].emplace_back(segment);
+        net_result_map[net_idx].emplace_back(&segment);
       }
     }
   }
+  std::map<int32_t, std::vector<EXTLayerRect*>> net_patch_map;
+  for (auto& [net_idx, patch_set] : ta_panel.get_net_access_patch_map()) {
+    for (EXTLayerRect* patch : patch_set) {
+      if (patch->get_layer_idx() != ta_panel.get_panel_rect().get_layer_idx()) {
+        continue;
+      }
+      net_patch_map[net_idx].push_back(patch);
+    }
+  }
+  std::set<int32_t> need_checked_net_set;
+  for (TATask* ta_task : ta_panel.get_ta_task_list()) {
+    need_checked_net_set.insert(ta_task->get_net_idx());
+  }
+
   DETask de_task;
-  de_task.set_process_type_set({DEProcessType::kRoutingCost, DEProcessType::kCutCost});
+  de_task.set_process_type_set({DEProcessType::kCost});
   de_task.set_top_name(top_name);
   de_task.set_check_region(check_region);
   de_task.set_env_shape_list(env_shape_list);
   de_task.set_net_pin_shape_map(net_pin_shape_map);
-  de_task.set_net_env_result_map(net_env_result_map);
-  de_task.set_net_env_patch_map(net_env_patch_map);
-  de_task.set_net_check_result_map(net_check_result_map);
+  de_task.set_net_result_map(net_result_map);
+  de_task.set_net_patch_map(net_patch_map);
+  de_task.set_need_checked_net_set(need_checked_net_set);
   return RTDE.getViolationList(de_task);
 }
 
@@ -1054,7 +1084,7 @@ void TrackAssigner::updateFixedRectToGraph(TAPanel& ta_panel, ChangeType change_
   if (!net_shape.get_is_routing() || (ta_panel.get_ta_panel_id().get_layer_idx() != net_shape.get_layer_idx())) {
     return;
   }
-  for (auto& [ta_node, orientation_set] : getNodeOrientationMap(ta_panel, net_shape)) {
+  for (auto& [ta_node, orientation_set] : getNodeOrientationMap(ta_panel, net_shape, true)) {
     for (Orientation orientation : orientation_set) {
       if (change_type == ChangeType::kAdd) {
         ta_node->get_orient_fixed_rect_map()[orientation].insert(net_shape.get_net_idx());
@@ -1071,7 +1101,7 @@ void TrackAssigner::updateFixedRectToGraph(TAPanel& ta_panel, ChangeType change_
     if (!net_shape.get_is_routing() || (ta_panel.get_ta_panel_id().get_layer_idx() != net_shape.get_layer_idx())) {
       continue;
     }
-    for (auto& [ta_node, orientation_set] : getNodeOrientationMap(ta_panel, net_shape)) {
+    for (auto& [ta_node, orientation_set] : getNodeOrientationMap(ta_panel, net_shape, true)) {
       for (Orientation orientation : orientation_set) {
         if (change_type == ChangeType::kAdd) {
           ta_node->get_orient_fixed_rect_map()[orientation].insert(net_shape.get_net_idx());
@@ -1089,7 +1119,7 @@ void TrackAssigner::updateFixedRectToGraph(TAPanel& ta_panel, ChangeType change_
   if (!net_shape.get_is_routing() || (ta_panel.get_ta_panel_id().get_layer_idx() != net_shape.get_layer_idx())) {
     return;
   }
-  for (auto& [ta_node, orientation_set] : getNodeOrientationMap(ta_panel, net_shape)) {
+  for (auto& [ta_node, orientation_set] : getNodeOrientationMap(ta_panel, net_shape, true)) {
     for (Orientation orientation : orientation_set) {
       if (change_type == ChangeType::kAdd) {
         ta_node->get_orient_fixed_rect_map()[orientation].insert(net_shape.get_net_idx());
@@ -1106,7 +1136,7 @@ void TrackAssigner::updateNetResultToGraph(TAPanel& ta_panel, ChangeType change_
     if (!net_shape.get_is_routing() || (ta_panel.get_ta_panel_id().get_layer_idx() != net_shape.get_layer_idx())) {
       continue;
     }
-    for (auto& [ta_node, orientation_set] : getNodeOrientationMap(ta_panel, net_shape)) {
+    for (auto& [ta_node, orientation_set] : getNodeOrientationMap(ta_panel, net_shape, true)) {
       for (Orientation orientation : orientation_set) {
         if (change_type == ChangeType::kAdd) {
           ta_node->get_orient_routed_rect_map()[orientation].insert(net_shape.get_net_idx());
@@ -1118,35 +1148,121 @@ void TrackAssigner::updateNetResultToGraph(TAPanel& ta_panel, ChangeType change_
   }
 }
 
-void TrackAssigner::updateViolationToGraph(TAPanel& ta_panel, ChangeType change_type, Violation& violation)
+void TrackAssigner::addViolationToGraph(TAPanel& ta_panel, Violation& violation)
 {
   NetShape net_shape(-1, violation.get_violation_shape().getRealLayerRect(), violation.get_is_routing());
   if (!net_shape.get_is_routing() || (ta_panel.get_ta_panel_id().get_layer_idx() != net_shape.get_layer_idx())) {
     return;
   }
-  for (auto& [ta_node, orientation_set] : getNodeOrientationMap(ta_panel, net_shape)) {
-    for (Orientation orientation : orientation_set) {
-      if (change_type == ChangeType::kAdd) {
-        ta_node->get_orient_violation_number_map()[orientation]++;
-      } else if (change_type == ChangeType::kDel) {
-        ta_node->get_orient_violation_number_map()[orientation]--;
+
+  std::vector<LayerRect> searched_rect_list;
+  {
+    EXTLayerRect& violation_shape = violation.get_violation_shape();
+    PlanarRect enlarged_rect = RTUTIL.getEnlargedRect(violation_shape.get_real_rect(), RTDM.getOnlyPitch());
+    if (violation.get_is_routing()) {
+      searched_rect_list.emplace_back(enlarged_rect, violation_shape.get_layer_idx());
+    } else {
+      RTLOG.error(Loc::current(), "The type of net_shape is cut!");
+    }
+  }
+  std::vector<Segment<LayerCoord>> overlap_segment_list;
+  for (auto& [net_idx, task_result_map] : ta_panel.get_net_task_result_map()) {
+    for (auto& [task_idx, segment_list] : task_result_map) {
+      if (!RTUTIL.exist(violation.get_violation_net_set(), net_idx)) {
+        continue;
+      }
+      for (Segment<LayerCoord>& segment : segment_list) {
+        for (LayerRect& searched_rect : searched_rect_list) {
+          if (!RTUTIL.isOverlap(searched_rect, segment)) {
+            continue;
+          }
+          overlap_segment_list.push_back(segment);
+          break;
+        }
+      }
+    }
+  }
+  addViolationToGraph(ta_panel, searched_rect_list, overlap_segment_list);
+}
+
+void TrackAssigner::addViolationToGraph(TAPanel& ta_panel, std::vector<LayerRect>& searched_rect_list,
+                                        std::vector<Segment<LayerCoord>>& overlap_segment_list)
+{
+  ScaleAxis& panel_track_axis = ta_panel.get_panel_track_axis();
+  GridMap<TANode>& ta_node_map = ta_panel.get_ta_node_map();
+
+  for (Segment<LayerCoord>& overlap_segment : overlap_segment_list) {
+    LayerCoord& first_coord = overlap_segment.get_first();
+    LayerCoord& second_coord = overlap_segment.get_second();
+    if (first_coord == second_coord) {
+      continue;
+    }
+    PlanarRect real_rect = RTUTIL.getEnlargedRect(first_coord, second_coord, 0);
+    if (!RTUTIL.existTrackGrid(real_rect, panel_track_axis)) {
+      continue;
+    }
+    PlanarRect grid_rect = RTUTIL.getTrackGrid(real_rect, panel_track_axis);
+    std::map<int32_t, std::set<TANode*>> distance_node_map;
+    {
+      for (int32_t x = grid_rect.get_ll_x(); x <= grid_rect.get_ur_x(); x++) {
+        for (int32_t y = grid_rect.get_ll_y(); y <= grid_rect.get_ur_y(); y++) {
+          TANode* ta_node = &ta_node_map[x][y];
+          for (LayerRect& searched_rect : searched_rect_list) {
+            if (searched_rect.get_layer_idx() != ta_node->get_layer_idx()) {
+              continue;
+            }
+            int32_t distance = 0;
+            if (!RTUTIL.isInside(searched_rect.get_rect(), ta_node->get_planar_coord())) {
+              distance = RTUTIL.getManhattanDistance(searched_rect.getMidPoint(), ta_node->get_planar_coord());
+            }
+            distance_node_map[distance].insert(ta_node);
+          }
+        }
+      }
+    }
+    std::set<TANode*> valid_node_set;
+    if (!distance_node_map[0].empty()) {
+      valid_node_set = distance_node_map[0];
+    } else {
+      for (auto& [distance, node_set] : distance_node_map) {
+        valid_node_set.insert(node_set.begin(), node_set.end());
+        if (valid_node_set.size() >= 2) {
+          break;
+        }
+      }
+    }
+    Orientation orientation = RTUTIL.getOrientation(first_coord, second_coord);
+    Orientation oppo_orientation = RTUTIL.getOppositeOrientation(orientation);
+    for (TANode* valid_node : valid_node_set) {
+      if (LayerCoord(*valid_node) != first_coord) {
+        valid_node->get_orient_violation_number_map()[oppo_orientation]++;
+        if (RTUTIL.exist(valid_node->get_neighbor_node_map(), oppo_orientation)) {
+          valid_node->get_neighbor_node_map()[oppo_orientation]->get_orient_violation_number_map()[orientation]++;
+        }
+      }
+      if (LayerCoord(*valid_node) != second_coord) {
+        valid_node->get_orient_violation_number_map()[orientation]++;
+        if (RTUTIL.exist(valid_node->get_neighbor_node_map(), orientation)) {
+          valid_node->get_neighbor_node_map()[orientation]->get_orient_violation_number_map()[oppo_orientation]++;
+        }
       }
     }
   }
 }
 
-std::map<TANode*, std::set<Orientation>> TrackAssigner::getNodeOrientationMap(TAPanel& ta_panel, NetShape& net_shape)
+std::map<TANode*, std::set<Orientation>> TrackAssigner::getNodeOrientationMap(TAPanel& ta_panel, NetShape& net_shape, bool need_enlarged)
 {
   std::map<TANode*, std::set<Orientation>> node_orientation_map;
   if (net_shape.get_is_routing()) {
-    node_orientation_map = getRoutingNodeOrientationMap(ta_panel, net_shape);
+    node_orientation_map = getRoutingNodeOrientationMap(ta_panel, net_shape, need_enlarged);
   } else {
     RTLOG.error(Loc::current(), "The type of net_shape is cut!");
   }
   return node_orientation_map;
 }
 
-std::map<TANode*, std::set<Orientation>> TrackAssigner::getRoutingNodeOrientationMap(TAPanel& ta_panel, NetShape& net_shape)
+std::map<TANode*, std::set<Orientation>> TrackAssigner::getRoutingNodeOrientationMap(TAPanel& ta_panel, NetShape& net_shape,
+                                                                                     bool need_enlarged)
 {
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
   if (!net_shape.get_is_routing()) {
@@ -1164,8 +1280,11 @@ std::map<TANode*, std::set<Orientation>> TrackAssigner::getRoutingNodeOrientatio
   std::map<TANode*, std::set<Orientation>> node_orientation_map;
   // wire
   {
-    // 膨胀size为 min_spacing + half_wire_width
-    int32_t enlarged_size = min_spacing + half_wire_width;
+    int32_t enlarged_size = half_wire_width;
+    if (need_enlarged) {
+      // 膨胀size为 min_spacing
+      enlarged_size += min_spacing;
+    }
     // 贴合的也不算违例
     enlarged_size -= 1;
     PlanarRect planar_enlarged_rect = RTUTIL.getEnlargedRect(net_shape.get_rect(), enlarged_size);
@@ -1195,10 +1314,12 @@ void TrackAssigner::updateSummary(TAModel& ta_model)
   int32_t micron_dbu = RTDM.getDatabase().get_micron_dbu();
   Die& die = RTDM.getDatabase().get_die();
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
-  std::map<int32_t, double>& routing_wire_length_map = RTDM.getSummary().ta_summary.routing_wire_length_map;
-  double& total_wire_length = RTDM.getSummary().ta_summary.total_wire_length;
-  std::map<int32_t, int32_t>& routing_violation_num_map = RTDM.getSummary().ta_summary.routing_violation_num_map;
-  int32_t& total_violation_num = RTDM.getSummary().ta_summary.total_violation_num;
+  Summary& summary = RTDM.getDatabase().get_summary();
+
+  std::map<int32_t, double>& routing_wire_length_map = summary.ta_summary.routing_wire_length_map;
+  double& total_wire_length = summary.ta_summary.total_wire_length;
+  std::map<int32_t, int32_t>& routing_violation_num_map = summary.ta_summary.routing_violation_num_map;
+  int32_t& total_violation_num = summary.ta_summary.total_violation_num;
 
   for (RoutingLayer& routing_layer : routing_layer_list) {
     routing_wire_length_map[routing_layer.get_layer_idx()] = 0;
@@ -1227,10 +1348,12 @@ void TrackAssigner::updateSummary(TAModel& ta_model)
 void TrackAssigner::printSummary(TAModel& ta_model)
 {
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
-  std::map<int32_t, double>& routing_wire_length_map = RTDM.getSummary().ta_summary.routing_wire_length_map;
-  double& total_wire_length = RTDM.getSummary().ta_summary.total_wire_length;
-  std::map<int32_t, int32_t>& routing_violation_num_map = RTDM.getSummary().ta_summary.routing_violation_num_map;
-  int32_t& total_violation_num = RTDM.getSummary().ta_summary.total_violation_num;
+  Summary& summary = RTDM.getDatabase().get_summary();
+
+  std::map<int32_t, double>& routing_wire_length_map = summary.ta_summary.routing_wire_length_map;
+  double& total_wire_length = summary.ta_summary.total_wire_length;
+  std::map<int32_t, int32_t>& routing_violation_num_map = summary.ta_summary.routing_violation_num_map;
+  int32_t& total_violation_num = summary.ta_summary.total_violation_num;
 
   fort::char_table routing_wire_length_map_table;
   {
@@ -1511,8 +1634,8 @@ void TrackAssigner::debugPlotTAModel(TAModel& ta_model, std::string flag)
 
   // violation
   {
-    GPStruct violation_struct("violation");
     for (Violation* violation : RTDM.getViolationSet(die)) {
+      GPStruct violation_struct(RTUTIL.getString("violation_", GetViolationTypeName()(violation->get_violation_type())));
       EXTLayerRect& violation_shape = violation->get_violation_shape();
 
       GPBoundary gp_boundary;
@@ -1524,8 +1647,8 @@ void TrackAssigner::debugPlotTAModel(TAModel& ta_model, std::string flag)
         gp_boundary.set_layer_idx(RTGP.getGDSIdxByCut(violation_shape.get_layer_idx()));
       }
       violation_struct.push(gp_boundary);
+      gp_gds.addStruct(violation_struct);
     }
-    gp_gds.addStruct(violation_struct);
   }
 
   std::string gds_file_path = RTUTIL.getString(ta_temp_directory_path, flag, "_ta_model.gds");
@@ -2002,8 +2125,8 @@ void TrackAssigner::debugPlotTAPanel(TAPanel& ta_panel, int32_t curr_task_idx, s
 
   // violation
   {
-    GPStruct violation_struct("violation");
     for (Violation& violation : ta_panel.get_violation_list()) {
+      GPStruct violation_struct(RTUTIL.getString("violation_", GetViolationTypeName()(violation.get_violation_type())));
       EXTLayerRect& violation_shape = violation.get_violation_shape();
 
       GPBoundary gp_boundary;
@@ -2015,8 +2138,8 @@ void TrackAssigner::debugPlotTAPanel(TAPanel& ta_panel, int32_t curr_task_idx, s
         gp_boundary.set_layer_idx(RTGP.getGDSIdxByCut(violation_shape.get_layer_idx()));
       }
       violation_struct.push(gp_boundary);
+      gp_gds.addStruct(violation_struct);
     }
-    gp_gds.addStruct(violation_struct);
   }
 
   std::string gds_file_path = RTUTIL.getString(ta_temp_directory_path, flag, "_ta_panel_", ta_panel.get_ta_panel_id().get_layer_idx(), "_",

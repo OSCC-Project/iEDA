@@ -57,13 +57,12 @@ void SupplyAnalyzer::analyze()
   SAModel sa_model = initSAModel();
   buildSupplySchedule(sa_model);
   analyzeSupply(sa_model);
+  // debugPlotSAModel(sa_model);
   updateSummary(sa_model);
   printSummary(sa_model);
   outputPlanarSupplyCSV(sa_model);
   outputLayerSupplyCSV(sa_model);
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
-
-  // debugPlotSAModel(sa_model);
 }
 
 // private
@@ -250,8 +249,10 @@ void SupplyAnalyzer::updateSummary(SAModel& sa_model)
 {
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
   GridMap<GCell>& gcell_map = RTDM.getDatabase().get_gcell_map();
-  std::map<int32_t, int32_t>& routing_supply_map = RTDM.getSummary().sa_summary.routing_supply_map;
-  int32_t& total_supply = RTDM.getSummary().sa_summary.total_supply;
+  Summary& summary = RTDM.getDatabase().get_summary();
+
+  std::map<int32_t, int32_t>& routing_supply_map = summary.sa_summary.routing_supply_map;
+  int32_t& total_supply = summary.sa_summary.total_supply;
 
   for (RoutingLayer& routing_layer : routing_layer_list) {
     routing_supply_map[routing_layer.get_layer_idx()] = 0;
@@ -273,8 +274,10 @@ void SupplyAnalyzer::updateSummary(SAModel& sa_model)
 void SupplyAnalyzer::printSummary(SAModel& sa_model)
 {
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
-  std::map<int32_t, int32_t>& routing_supply_map = RTDM.getSummary().sa_summary.routing_supply_map;
-  int32_t& total_supply = RTDM.getSummary().sa_summary.total_supply;
+  Summary& summary = RTDM.getDatabase().get_summary();
+
+  std::map<int32_t, int32_t>& routing_supply_map = summary.sa_summary.routing_supply_map;
+  int32_t& total_supply = summary.sa_summary.total_supply;
 
   fort::char_table routing_supply_map_table;
   {

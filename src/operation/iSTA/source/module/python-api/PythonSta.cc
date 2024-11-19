@@ -43,6 +43,10 @@ PYBIND11_MODULE(ista_cpp, m) {
   m.def("display_timing_tns_map", display_timing_tns_map);
   m.def("display_slew_map", display_slew_map);
   m.def("get_used_libs", get_used_libs);
+  
+  m.def("build_timing_graph", build_timing_graph);
+  m.def("update_clock_timing", update_clock_timing);
+  m.def("dump_graph_data", dump_graph_data, ("graph_file"));
 }
 
 }  // namespace ista

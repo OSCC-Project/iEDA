@@ -5,7 +5,6 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
 set(CMAKE_CXX_STANDARD 20)
 
 set(SANITIZER OFF)
-
 if(SANITIZER)
     add_compile_options("-fsanitize=thread")
     link_libraries("-fsanitize=thread")
@@ -32,6 +31,12 @@ include_directories(${PROJECT_SOURCE_DIR}/src/operation/iPW/source/module)
 
 include_directories(${HOME_THIRDPARTY}/pybind11)
 
+
+if (USE_GPU)
+message("power use gpu mode.")
+add_subdirectory(source/gpu-kernel)
+endif()
+
 add_subdirectory(api)
 add_subdirectory(source/module/core)
 add_subdirectory(source/module/ops/annotate_toggle_sp)
@@ -45,6 +50,7 @@ add_subdirectory(source/module/ops/read_vcd)
 add_subdirectory(source/module/ops/plot_power)
 add_subdirectory(source/shell-cmd)
 add_subdirectory(source/python-api)
+
 add_subdirectory(test)
 
 add_executable(iPower main.cc)

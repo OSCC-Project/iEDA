@@ -20,7 +20,7 @@
 #include <string.h>
 // #include "/home/shuyuz/iEDA/src/platform/data_manager/idm.h"
 #include <fstream>
-#define sref_expension 1
+#define sref_expension 0
 namespace idb {
 
 JsonTextWriter::JsonTextWriter()
@@ -519,9 +519,10 @@ void JsonTextWriter::write_struct_element(JsonElemBase* e,int i,bool out) const
     case JsonElemType::kPath:
       write_path(dynamic_cast<JsonPath*>(e),i+1,out);
       break;
-    case JsonElemType::kSref:
-      write_sref(dynamic_cast<JsonSref*>(e),i+1,out);
-      break;
+    // block sref printing for json
+    // case JsonElemType::kSref:
+    //   write_sref(dynamic_cast<JsonSref*>(e),i+1,out);
+    //   break;
     case JsonElemType::kAref:
       write_aref(dynamic_cast<JsonAref*>(e),i+1,out);
       break;

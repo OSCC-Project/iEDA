@@ -50,14 +50,26 @@ class EarlyRouter
   ERModel initERModel();
   std::vector<ERNet> convertToERNetList(std::vector<Net>& net_list);
   ERNet convertToERNet(Net& net);
-  void initERTaskList(ERModel& er_model);
   void setERParameter(ERModel& er_model);
+  void generateAccessPoint(ERModel& er_model);
+  void initERTaskList(ERModel& er_model);
+  void buildPlanarNodeMap(ERModel& er_model);
+  void buildPlanarNodeNeighbor(ERModel& er_model);
+  void buildPlanarOrientSupply(ERModel& er_model);
+  void generateTopoTree(ERModel& er_model);
+  void routePlanarNet(ERModel& er_model, ERNet* er_net);
+  std::vector<Segment<PlanarCoord>> getPlanarTopoList(ERModel& er_model, ERNet* er_net);
+  std::vector<Segment<PlanarCoord>> getRoutingSegmentList(ERModel& er_model, Segment<PlanarCoord>& planar_topo);
+  std::vector<Segment<PlanarCoord>> getRoutingSegmentListByStraight(ERModel& er_model, Segment<PlanarCoord>& planar_topo);
+  std::vector<Segment<PlanarCoord>> getRoutingSegmentListByLPattern(ERModel& er_model, Segment<PlanarCoord>& planar_topo);
+  double getPlanarNodeCost(ERModel& er_model, std::vector<Segment<PlanarCoord>>& routing_segment_list);
+  MTree<LayerCoord> getPlanarCoordTree(ERNet* er_net, std::vector<Segment<PlanarCoord>>& planar_routing_segment_list);
+  void updatePlanarDemand(ERModel& er_model, MTree<LayerCoord>& coord_tree);
   void buildLayerNodeMap(ERModel& er_model);
-  void buildERNodeNeighbor(ERModel& er_model);
-  void buildOrientSupply(ERModel& er_model);
-  void buildTopoTree(ERModel& er_model);
-  void routeERModel(ERModel& er_model);
-  void routeERNet(ERModel& er_model, ERNet* er_net);
+  void buildLayerNodeNeighbor(ERModel& er_model);
+  void buildLayerOrientSupply(ERModel& er_model);
+  void generateGlobalTree(ERModel& er_model);
+  void routeLayerNet(ERModel& er_model, ERNet* er_net);
   void makeERTopoList(ERModel& er_model, ERNet* er_net, std::vector<ERTopo>& er_topo_list,
                       std::vector<Segment<LayerCoord>>& routing_segment_list);
   void routeERTopo(ERModel& er_model, ERTopo* er_topo);
@@ -85,20 +97,21 @@ class EarlyRouter
   double getEstimateCost(ERModel& er_model, ERNode* start_node, ERNode* end_node);
   double getEstimateWireCost(ERModel& er_model, ERNode* start_node, ERNode* end_node);
   double getEstimateViaCost(ERModel& er_model, ERNode* start_node, ERNode* end_node);
-  MTree<LayerCoord> getCoordTree(ERNet* er_net, std::vector<Segment<LayerCoord>>& routing_segment_list);
-  void updateDemand(ERModel& er_model, ERNet* er_net, MTree<LayerCoord>& coord_tree);
+  MTree<LayerCoord> getLayerCoordTree(ERNet* er_net, std::vector<Segment<LayerCoord>>& routing_segment_list);
+  void updateLayerDemand(ERModel& er_model, ERNet* er_net, MTree<LayerCoord>& coord_tree);
   void uploadNetResult(ERNet* er_net, MTree<LayerCoord>& coord_tree);
 
 #if 1  // exhibit
   void updateSummary(ERModel& er_model);
   void printSummary(ERModel& er_model);
+  void outputGuide(ERModel& er_model);
   void outputDemandCSV(ERModel& er_model);
   void outputOverflowCSV(ERModel& er_model);
 #endif
 
 #if 1  // debug
-  void debugCheckERModel(ERModel& er_model);
-  void outputGuide(ERModel& er_model);
+  void debugCheckPlanarNodeMap(ERModel& er_model);
+  void debugCheckLayerNodeMap(ERModel& er_model);
 #endif
 };
 

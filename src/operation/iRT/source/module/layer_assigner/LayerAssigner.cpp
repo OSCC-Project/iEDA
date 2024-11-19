@@ -109,10 +109,16 @@ LANet LayerAssigner::convertToLANet(Net& net)
 
 void LayerAssigner::setLAParameter(LAModel& la_model)
 {
+  int32_t topo_spilt_length = 10;
+  double congestion_unit = 2;
+  double prefer_wire_unit = 1;
+  double via_unit = 1;
   /**
    * topo_spilt_length, congestion_unit, prefer_wire_unit, via_unit
    */
-  LAParameter la_parameter(10, 2, 1, 1);
+  // clang-format off
+  LAParameter la_parameter(topo_spilt_length, congestion_unit, prefer_wire_unit, via_unit);
+  // clang-format on
   RTLOG.info(Loc::current(), "topo_spilt_length: ", la_parameter.get_topo_spilt_length());
   RTLOG.info(Loc::current(), "congestion_unit: ", la_parameter.get_congestion_unit());
   RTLOG.info(Loc::current(), "prefer_wire_unit: ", la_parameter.get_prefer_wire_unit());
@@ -288,7 +294,7 @@ void LayerAssigner::routeLAModel(LAModel& la_model)
 
 void LayerAssigner::routeLANet(LAModel& la_model, LANet* la_net)
 {
-  // 构建la_topo_list，并将通孔线段加入routing_segment_list
+  // 构建la_topo_list,并将通孔线段加入routing_segment_list
   std::vector<LATopo> la_topo_list;
   std::vector<Segment<LayerCoord>> routing_segment_list;
   makeLATopoList(la_model, la_net, la_topo_list, routing_segment_list);
@@ -318,12 +324,17 @@ void LayerAssigner::makeLATopoList(LAModel& la_model, LANet* la_net, std::vector
       la_topo.get_la_group_list().push_back(la_group);
     }
     la_topo_list.push_back(la_topo);
-    LayerCoord& only_coord = la_topo_list.front().get_la_group_list().front().get_coord_list().front();
-    for (LAGroup& la_group : la_topo.get_la_group_list()) {
-      for (LayerCoord& coord : la_group.get_coord_list()) {
-        if (only_coord != coord) {
-          RTLOG.error(Loc::current(), "The topo_tree should not be empty!");
+    {
+      std::set<PlanarCoord, CmpPlanarCoordByXASC> coord_set;
+      for (LATopo& la_topo : la_topo_list) {
+        for (LAGroup& la_group : la_topo.get_la_group_list()) {
+          for (LayerCoord& coord : la_group.get_coord_list()) {
+            coord_set.insert(coord);
+          }
         }
+      }
+      if (coord_set.size() > 1) {
+        RTLOG.error(Loc::current(), "The topo_tree should not be empty!");
       }
     }
   } else {
@@ -540,7 +551,7 @@ void LayerAssigner::expandSearching(LAModel& la_model)
     if (neighbor_node->isOpen() && know_cost < neighbor_node->get_known_cost()) {
       neighbor_node->set_known_cost(know_cost);
       neighbor_node->set_parent_node(path_head_node);
-      // 对优先队列中的值修改了，需要重新建堆
+      // 对优先队列中的值修改了,需要重新建堆
       std::make_heap(open_queue.begin(), open_queue.end(), CmpLANodeCost());
     } else if (neighbor_node->isNone()) {
       neighbor_node->set_known_cost(know_cost);
@@ -597,7 +608,7 @@ void LayerAssigner::resetStartAndEnd(LAModel& la_model)
   LANode* path_head_node = la_model.get_path_head_node();
   int32_t end_node_list_idx = la_model.get_end_node_list_idx();
 
-  // 对于抵达的终点pin，只保留到达的node
+  // 对于抵达的终点pin,只保留到达的node
   end_node_list_list[end_node_list_idx].clear();
   end_node_list_list[end_node_list_idx].push_back(path_head_node);
 
@@ -613,7 +624,7 @@ void LayerAssigner::resetStartAndEnd(LAModel& la_model)
     }
   }
   if (start_node_list_list.size() == 1) {
-    // 初始化时，要把start_node_list_list的pin只留一个ap点
+    // 初始化时,要把start_node_list_list的pin只留一个ap点
     // 后续只要将end_node_list_list的pin保留一个ap点
     start_node_list_list.front().clear();
     start_node_list_list.front().push_back(path_node);
@@ -889,17 +900,19 @@ void LayerAssigner::updateSummary(LAModel& la_model)
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
   std::vector<CutLayer>& cut_layer_list = RTDM.getDatabase().get_cut_layer_list();
   std::vector<std::vector<ViaMaster>>& layer_via_master_list = RTDM.getDatabase().get_layer_via_master_list();
+  Summary& summary = RTDM.getDatabase().get_summary();
   int32_t enable_timing = RTDM.getConfig().enable_timing;
-  std::map<int32_t, int32_t>& routing_demand_map = RTDM.getSummary().la_summary.routing_demand_map;
-  int32_t& total_demand = RTDM.getSummary().la_summary.total_demand;
-  std::map<int32_t, int32_t>& routing_overflow_map = RTDM.getSummary().la_summary.routing_overflow_map;
-  int32_t& total_overflow = RTDM.getSummary().la_summary.total_overflow;
-  std::map<int32_t, double>& routing_wire_length_map = RTDM.getSummary().la_summary.routing_wire_length_map;
-  double& total_wire_length = RTDM.getSummary().la_summary.total_wire_length;
-  std::map<int32_t, int32_t>& cut_via_num_map = RTDM.getSummary().la_summary.cut_via_num_map;
-  int32_t& total_via_num = RTDM.getSummary().la_summary.total_via_num;
-  std::map<std::string, std::map<std::string, double>>& clock_timing = RTDM.getSummary().la_summary.clock_timing;
-  std::map<std::string, double>& power_map = RTDM.getSummary().la_summary.power_map;
+
+  std::map<int32_t, int32_t>& routing_demand_map = summary.la_summary.routing_demand_map;
+  int32_t& total_demand = summary.la_summary.total_demand;
+  std::map<int32_t, int32_t>& routing_overflow_map = summary.la_summary.routing_overflow_map;
+  int32_t& total_overflow = summary.la_summary.total_overflow;
+  std::map<int32_t, double>& routing_wire_length_map = summary.la_summary.routing_wire_length_map;
+  double& total_wire_length = summary.la_summary.total_wire_length;
+  std::map<int32_t, int32_t>& cut_via_num_map = summary.la_summary.cut_via_num_map;
+  int32_t& total_via_num = summary.la_summary.total_via_num;
+  std::map<std::string, std::map<std::string, double>>& clock_timing = summary.la_summary.clock_timing;
+  std::map<std::string, double>& power_map = summary.la_summary.power_map;
 
   std::vector<GridMap<LANode>>& layer_node_map = la_model.get_layer_node_map();
   std::vector<LANet>& la_net_list = la_model.get_la_net_list();
@@ -995,17 +1008,19 @@ void LayerAssigner::printSummary(LAModel& la_model)
 {
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
   std::vector<CutLayer>& cut_layer_list = RTDM.getDatabase().get_cut_layer_list();
+  Summary& summary = RTDM.getDatabase().get_summary();
   int32_t enable_timing = RTDM.getConfig().enable_timing;
-  std::map<int32_t, int32_t>& routing_demand_map = RTDM.getSummary().la_summary.routing_demand_map;
-  int32_t& total_demand = RTDM.getSummary().la_summary.total_demand;
-  std::map<int32_t, int32_t>& routing_overflow_map = RTDM.getSummary().la_summary.routing_overflow_map;
-  int32_t& total_overflow = RTDM.getSummary().la_summary.total_overflow;
-  std::map<int32_t, double>& routing_wire_length_map = RTDM.getSummary().la_summary.routing_wire_length_map;
-  double& total_wire_length = RTDM.getSummary().la_summary.total_wire_length;
-  std::map<int32_t, int32_t>& cut_via_num_map = RTDM.getSummary().la_summary.cut_via_num_map;
-  int32_t& total_via_num = RTDM.getSummary().la_summary.total_via_num;
-  std::map<std::string, std::map<std::string, double>>& clock_timing = RTDM.getSummary().la_summary.clock_timing;
-  std::map<std::string, double>& power_map = RTDM.getSummary().la_summary.power_map;
+
+  std::map<int32_t, int32_t>& routing_demand_map = summary.la_summary.routing_demand_map;
+  int32_t& total_demand = summary.la_summary.total_demand;
+  std::map<int32_t, int32_t>& routing_overflow_map = summary.la_summary.routing_overflow_map;
+  int32_t& total_overflow = summary.la_summary.total_overflow;
+  std::map<int32_t, double>& routing_wire_length_map = summary.la_summary.routing_wire_length_map;
+  double& total_wire_length = summary.la_summary.total_wire_length;
+  std::map<int32_t, int32_t>& cut_via_num_map = summary.la_summary.cut_via_num_map;
+  int32_t& total_via_num = summary.la_summary.total_via_num;
+  std::map<std::string, std::map<std::string, double>>& clock_timing = summary.la_summary.clock_timing;
+  std::map<std::string, double>& power_map = summary.la_summary.power_map;
 
   fort::char_table routing_demand_map_table;
   {
