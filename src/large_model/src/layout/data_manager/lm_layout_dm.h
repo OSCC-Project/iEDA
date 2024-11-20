@@ -45,7 +45,6 @@ class LmLayoutDataManager
   int buildCutLayer(int layer_id, LmPatchLayer& patch_layer, std::map<int, LmNet>& net_map);
   int buildRoutingLayer(int layer_id, LmPatchLayer& patch_layer, std::map<int, LmNet>& net_map);
 
-  void buildSteinerWire(LmPatchLayer& patch_layer, std::map<int, LmNet>& net_map, std::vector<std::vector<bool>>& visited_matrix);
   void buildRegulerWire();
 
   void add_net_wire(std::map<int, LmNet>& net_map, int net_id, LmNetWire wire);

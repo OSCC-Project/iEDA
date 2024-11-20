@@ -49,6 +49,7 @@ enum class LmNodeConnectType : uint8_t
   lm_wire = 1,
   lm_delta = 2,
   lm_via = 4,
+  lm_enclosure = 8,
   kMax
 };
 
@@ -89,6 +90,7 @@ class LmNodeData
   bool is_wire() { return is_connect_type(LmNodeConnectType::lm_wire); }
   bool is_delta() { return is_connect_type(LmNodeConnectType::lm_delta); }
   bool is_via() { return is_connect_type(LmNodeConnectType::lm_via); }
+  bool is_enclosure() { return is_connect_type(LmNodeConnectType::lm_enclosure); }
   LmNodeStatus get_status() { return _status; }
   bool is_status(LmNodeStatus type);
   bool is_connected() { return is_status(LmNodeStatus::lm_connected); }
@@ -97,6 +99,7 @@ class LmNodeData
   bool is_fix() { return is_status(LmNodeStatus::lm_fix); }
   LmNodeDirection get_direction() { return _direction; }
   bool is_direction(LmNodeDirection direction);
+  bool is_direction_visited(LmNodeDirection direction);
 
   bool is_net() { return is_type(LmNodeTYpe::lm_net); }
   bool is_pdn() { return is_type(LmNodeTYpe::lm_pdn); }
@@ -110,6 +113,7 @@ class LmNodeData
   void set_connect_type(LmNodeConnectType type);
   void set_status(LmNodeStatus status);
   void set_direction(LmNodeDirection direction);
+  void set_direction_visited(LmNodeDirection direction);
 
   // operator
 
@@ -119,6 +123,7 @@ class LmNodeData
   LmNodeConnectType _connect_type = LmNodeConnectType::kNone;
   LmNodeStatus _status = LmNodeStatus::kNone;
   LmNodeDirection _direction = LmNodeDirection::kNone;  /// multiple direction in one node
+  LmNodeDirection _visited = LmNodeDirection::kNone;    /// a temp data, describe visited status while travel the grid
 
   bool is_type(LmNodeTYpe type);
 };

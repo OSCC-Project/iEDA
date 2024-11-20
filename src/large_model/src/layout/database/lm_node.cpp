@@ -34,7 +34,7 @@ namespace ilm {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void LmNodeData::set_type(LmNodeTYpe type)
 {
-  _type = LmNodeTYpe((static_cast<uint8_t>(_type)) ^ (static_cast<uint8_t>(type)));
+  _type = LmNodeTYpe((static_cast<uint8_t>(_type)) | (static_cast<uint8_t>(type)));
 }
 
 bool LmNodeData::is_type(LmNodeTYpe type)
@@ -49,7 +49,7 @@ bool LmNodeData::is_connect_type(LmNodeConnectType type)
 
 void LmNodeData::set_connect_type(LmNodeConnectType type)
 {
-  _connect_type = LmNodeConnectType((static_cast<uint8_t>(_connect_type)) ^ (static_cast<uint8_t>(type)));
+  _connect_type = LmNodeConnectType((static_cast<uint8_t>(_connect_type)) | (static_cast<uint8_t>(type)));
 }
 
 bool LmNodeData::is_status(LmNodeStatus type)
@@ -59,17 +59,26 @@ bool LmNodeData::is_status(LmNodeStatus type)
 
 void LmNodeData::set_status(LmNodeStatus type)
 {
-  _status = LmNodeStatus((static_cast<uint8_t>(_status)) ^ (static_cast<uint8_t>(type)));
+  _status = LmNodeStatus((static_cast<uint8_t>(_status)) | (static_cast<uint8_t>(type)));
 }
 
 void LmNodeData::set_direction(LmNodeDirection direction)
 {
-  _direction = LmNodeDirection((static_cast<uint8_t>(_direction)) ^ (static_cast<uint8_t>(direction)));
+  _direction = LmNodeDirection((static_cast<uint8_t>(_direction)) | (static_cast<uint8_t>(direction)));
+}
+
+void LmNodeData::set_direction_visited(LmNodeDirection direction)
+{
+  _visited = LmNodeDirection((static_cast<uint8_t>(_visited)) | (static_cast<uint8_t>(direction)));
 }
 
 bool LmNodeData::is_direction(LmNodeDirection direction)
 {
   return (static_cast<uint8_t>(_direction) & static_cast<uint8_t>(direction)) > 0 ? true : false;
+}
+bool LmNodeData::is_direction_visited(LmNodeDirection direction)
+{
+  return (static_cast<uint8_t>(_visited) & static_cast<uint8_t>(direction)) > 0 ? true : false;
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

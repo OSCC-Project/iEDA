@@ -113,11 +113,6 @@ std::map<int, LmNet> LmLayoutDataManager::buildNetWires(bool b_graph)
   return net_map;
 }
 
-void LmLayoutDataManager::buildSteinerWire(LmPatchLayer& patch_layer, std::map<int, LmNet>& net_map,
-                                           std::vector<std::vector<bool>>& visited_matrix)
-{
-}
-
 int LmLayoutDataManager::buildCutLayer(int layer_id, LmPatchLayer& patch_layer, std::map<int, LmNet>& net_map)
 {
   int wire_num = 0;
@@ -126,8 +121,6 @@ int LmLayoutDataManager::buildCutLayer(int layer_id, LmPatchLayer& patch_layer, 
 
   auto& grid = patch_layer.get_grid();
   auto& node_matrix = grid.get_node_matrix();
-
-  std::vector<std::vector<bool>> visited_matrix(grid.get_info().node_row_num, std::vector<bool>(grid.get_info().node_col_num, false));
 
   if (false == patch_layer.is_routing()) {
     /// via
@@ -142,14 +135,12 @@ int LmLayoutDataManager::buildCutLayer(int layer_id, LmPatchLayer& patch_layer, 
       for (int col = 0; col < grid.get_info().node_col_num; ++col) {
         auto& node_data = node_matrix[row][col].get_node_data();
         if (false == node_data.is_net()) {
-          visited_matrix[row][col] = true;
           continue;
         }
 
         int net_id = node_data.get_net_id();
         /// skip node if node is not net
         if (net_id < 0) {
-          visited_matrix[row][col] = true;
           continue;
         }
 
@@ -159,8 +150,6 @@ int LmLayoutDataManager::buildCutLayer(int layer_id, LmPatchLayer& patch_layer, 
         add_net_wire(net_map, net_id, wire);
         ++wire_num;
         omp_unset_lock(&lck);
-
-        visited_matrix[row][col] = true;
       }
       if (row % 1000 == 0) {
         LOG_INFO << "Patch layer " << layer_id << " Read rows : " << row << " / " << grid.get_info().node_row_num;
