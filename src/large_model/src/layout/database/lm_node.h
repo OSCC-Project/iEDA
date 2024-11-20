@@ -43,20 +43,22 @@ enum class LmNodeTYpe : uint8_t
   kMax
 };
 
-enum class LmNodeConnectType
+enum class LmNodeConnectType : uint8_t
 {
   kNone,
-  lm_wire,
-  lm_via,
+  lm_wire = 1,
+  lm_delta = 2,
+  lm_via = 4,
   kMax
 };
 
-enum class LmNodeStatus
+enum class LmNodeStatus : uint8_t
 {
   kNone,
-  lm_connected,   /// connected points, including via, end point of wire, connected points on pins, use to describe wire end points pair
-  lm_connecting,  /// points that are not end point but as a connecting point in a wire
-  lm_fix,         /// objects that no need to connect such as obs, pdn eg.
+  lm_connected = 1,   /// connected points, including via, end point of wire, connected points on pins, use to describe wire end points pair
+  lm_connecting = 2,  /// points that are not end point but as a connecting point in a wire
+  lm_end_point = 4,   /// end points for wire
+  lm_fix = 8,         /// objects that no need to connect such as obs, pdn eg.
   kMax
 };
 
@@ -83,7 +85,16 @@ class LmNodeData
   int32_t get_net_id() { return _net_id; }
   LmNodeTYpe get_type() { return _type; }
   LmNodeConnectType get_connect_type() { return _connect_type; }
+  bool is_connect_type(LmNodeConnectType type);
+  bool is_wire() { return is_connect_type(LmNodeConnectType::lm_wire); }
+  bool is_delta() { return is_connect_type(LmNodeConnectType::lm_delta); }
+  bool is_via() { return is_connect_type(LmNodeConnectType::lm_via); }
   LmNodeStatus get_status() { return _status; }
+  bool is_status(LmNodeStatus type);
+  bool is_connected() { return is_status(LmNodeStatus::lm_connected); }
+  bool is_connecting() { return is_status(LmNodeStatus::lm_connecting); }
+  bool is_end_point() { return is_status(LmNodeStatus::lm_end_point); }
+  bool is_fix() { return is_status(LmNodeStatus::lm_fix); }
   LmNodeDirection get_direction() { return _direction; }
   bool is_direction(LmNodeDirection direction);
 
@@ -96,8 +107,8 @@ class LmNodeData
   // setter
   void set_net_id(int32_t id) { _net_id = id; }
   void set_type(LmNodeTYpe type);
-  void set_connect_type(LmNodeConnectType type) { _connect_type = type; }
-  void set_status(LmNodeStatus status) { _status = status; }
+  void set_connect_type(LmNodeConnectType type);
+  void set_status(LmNodeStatus status);
   void set_direction(LmNodeDirection direction);
 
   // operator

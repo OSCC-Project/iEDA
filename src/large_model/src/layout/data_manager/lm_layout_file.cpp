@@ -47,14 +47,34 @@ bool LmLayoutFileIO::saveJson(std::string path, std::map<int, LmNet>& net_map)
 
   int total = 0;
   //   #pragma omp parallel for schedule(dynamic)
-  for (int i = 0; i < net_map.size(); ++i) {
+  for (int i = 0; i < (int) net_map.size(); ++i) {
     auto it = net_map.begin();
     std::advance(it, i);
+
+    auto* idb_net = dmInst->get_idb_design()->get_net_list()->get_net_list()[it->first];
 
     json json_net;
     {
       json_net["id"] = it->first;
-      json_net["name"] = dmInst->get_idb_design()->get_net_list()->get_net_list()[it->first]->get_net_name();
+      json_net["name"] = idb_net->get_net_name();
+
+      json json_pins = json::array();
+      int pin_num = 0;
+      if (idb_net->has_io_pins()) {
+        for (auto io_pin : idb_net->get_io_pins()->get_pin_list()) {
+          json_pins.push_back(io_pin->get_pin_name());
+          pin_num++;
+        }
+      }
+
+      for (auto inst_pin : idb_net->get_instance_pin_list()->get_pin_list()) {
+        json_pins.push_back(inst_pin->get_pin_name());
+        pin_num++;
+      }
+
+      json_net["pin_num"] = pin_num;
+      json_net["pins"] = json_pins;
+
       json_net["wire_num"] = it->second.get_wires().size();
       total += it->second.get_wires().size();
 

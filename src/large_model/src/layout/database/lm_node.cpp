@@ -42,6 +42,26 @@ bool LmNodeData::is_type(LmNodeTYpe type)
   return (static_cast<uint8_t>(_type) & static_cast<uint8_t>(type)) > 0 ? true : false;
 }
 
+bool LmNodeData::is_connect_type(LmNodeConnectType type)
+{
+  return (static_cast<uint8_t>(_connect_type) & static_cast<uint8_t>(type)) > 0 ? true : false;
+}
+
+void LmNodeData::set_connect_type(LmNodeConnectType type)
+{
+  _connect_type = LmNodeConnectType((static_cast<uint8_t>(_connect_type)) ^ (static_cast<uint8_t>(type)));
+}
+
+bool LmNodeData::is_status(LmNodeStatus type)
+{
+  return (static_cast<uint8_t>(_status) & static_cast<uint8_t>(type)) > 0 ? true : false;
+}
+
+void LmNodeData::set_status(LmNodeStatus type)
+{
+  _status = LmNodeStatus((static_cast<uint8_t>(_status)) ^ (static_cast<uint8_t>(type)));
+}
+
 void LmNodeData::set_direction(LmNodeDirection direction)
 {
   _direction = LmNodeDirection((static_cast<uint8_t>(_direction)) ^ (static_cast<uint8_t>(direction)));

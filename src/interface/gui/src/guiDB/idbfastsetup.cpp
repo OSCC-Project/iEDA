@@ -922,7 +922,16 @@ void IdbSpeedUpSetup::createNet() {
 
   // #pragma omp parallel for
 
+  int net_id = 0;
   for (IdbNet* net : net_list->get_net_list()) {
+    // if (net_id > 100) {
+    //   continue;
+    // }
+    // net_id++;
+    if (net->get_net_name() != "clk") {
+      continue;
+    }
+
     GuiSpeedupItemType gui_type = getNetGuiType(net);
 
     for (IdbRegularWire* wire : net->get_wire_list()->get_wire_list()) {

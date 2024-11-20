@@ -39,6 +39,8 @@ class LmLayoutInit
   LmLayout* _layout;
 
   void buildConnectedPoints();
+  int buildConnectedPointsRoutingLayer();
+  int buildConnectedPointsCutLayer();
   void buildNetWires();
 
   void initViaIds();
@@ -50,11 +52,14 @@ class LmLayoutInit
   void initPDN();
   void initInstances();
   void initIOPins();
-  void initNets();
+  void initNets(bool init_delta = false);
 
-  void transVia(idb::IdbVia* idb_via, int net_id, LmNodeTYpe type);
   void transPin(idb::IdbPin* idb_pin, int net_id);
-  void transNetRect(int32_t ll_x, int32_t ll_y, int32_t ur_x, int32_t ur_y, std::string layer_name, int net_id, bool b_delta = false);
+  void transVia(idb::IdbVia* idb_via, int net_id, LmNodeTYpe type);
+  void transEnclosure(int32_t ll_x, int32_t ll_y, int32_t ur_x, int32_t ur_y, std::string layer_name, int net_id);
+  void transNetRect(int32_t ll_x, int32_t ll_y, int32_t ur_x, int32_t ur_y, std::string layer_name, int net_id);
+  void transNetDelta(int32_t ll_x, int32_t ll_y, int32_t ur_x, int32_t ur_y, std::string layer_name, int net_id);
+  bool setConnectNode(LmNode& node);
 };
 
 }  // namespace ilm

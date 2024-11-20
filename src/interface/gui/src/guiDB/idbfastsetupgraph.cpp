@@ -46,6 +46,37 @@ void IdbSpeedUpSetup::showGraph(std::map<int, ilm::LmNet> net_map) {
           return;
         }
         item2->add_rect(rect2);
+
+        for (auto [path_node1, path_node2] : wire.get_paths()) {
+          std::string layer_path1 = "M" + std::to_string(path_node1->get_layer_id() / 2 + 1);
+          std::string layer_path2 = "M" + std::to_string(path_node2->get_layer_id() / 2 + 1);
+          if (layer_path1 != layer_path2) {
+            continue;
+          }
+
+          int llx = std::min(path_node1->get_x(), path_node2->get_x());
+          int lly = std::min(path_node1->get_y(), path_node2->get_y());
+          int urx = std::max(path_node1->get_x(), path_node2->get_x());
+          int ury = std::max(path_node1->get_y(), path_node2->get_y());
+
+          auto path_list = container->findDrcList(layer_path1);
+
+          /// horizontal
+          if (lly == ury) {
+            lly -= 30;
+            ury += 30;
+          } else {
+            llx -= 30;
+            urx += 30;
+          }
+          QRectF rect_path         = _transform.db_to_guidb_rect(llx, lly, urx, ury);
+          GuiSpeedupDrc* item_path = path_list->findItem(rect_path.center());
+          if (item_path == nullptr) {
+            return;
+          }
+
+          item_path->add_rect(rect_path);
+        }
       }
     }
   }

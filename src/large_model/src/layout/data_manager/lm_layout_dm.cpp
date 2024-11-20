@@ -199,7 +199,7 @@ int LmLayoutDataManager::buildRoutingLayer(int layer_id, LmPatchLayer& patch_lay
           continue;
         }
 
-        if (node_data.get_status() == LmNodeStatus::lm_connected) {
+        if (node_data.is_connected()) {
           omp_set_lock(&lck);
           wire_num += searchEndNode(node_matrix[row][col], grid, net_map, visited_matrix);
           omp_unset_lock(&lck);
@@ -272,13 +272,13 @@ int LmLayoutDataManager::search_node_in_direction(LmNode& node_connected, LmNode
   LmNetWire wire(node_start);
   auto* node_search = travel_grid(node_start, direction, grid, visited_matrix);
   while (node_search != nullptr) {
-    if (node_search->get_node_data().get_status() == LmNodeStatus::lm_connected) {
+    if (node_search->get_node_data().is_connected()) {
       wire.set_end(node_search);
       wire.add_path(node_start, node_search);
       add_net_wire(net_map, node_start->get_node_data().get_net_id(), wire);
       number++;
       break;
-    } else if (node_search->get_node_data().get_status() == LmNodeStatus::lm_connecting) {
+    } else if (node_search->get_node_data().is_connecting()) {
       /// connecting means corner node with only two direction in this routing layer
       wire.add_path(node_start, node_search);
       number++;
@@ -345,13 +345,13 @@ LmNode* LmLayoutDataManager::travel_grid(LmNode* node_start, LmNodeDirection dir
     visited_matrix[row_travel][col_travel] = true;
 
     auto& travel_data = this_node->get_node_data();
-    if (travel_data.get_status() == LmNodeStatus::lm_connecting || travel_data.get_status() == LmNodeStatus::lm_connected
-        || travel_data.is_net() == false || travel_data.get_net_id() != node_data.get_net_id()) {
+    if (travel_data.is_connecting() || travel_data.is_connected() || travel_data.is_net() == false
+        || travel_data.get_net_id() != node_data.get_net_id()) {
       /// find node need to be record
       //   if (true == this_node->is_steiner_point() || true == this_node->is_corner()) {
       //     visited_matrix[row_travel][col_travel] = false;
       //   }
-      if (travel_data.get_status() == LmNodeStatus::lm_connecting || travel_data.get_status() == LmNodeStatus::lm_connected) {
+      if (travel_data.is_connecting() || travel_data.is_connected()) {
         visited_matrix[row_travel][col_travel] = false;
       }
       return node_connect;
