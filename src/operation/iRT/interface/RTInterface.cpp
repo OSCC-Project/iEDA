@@ -495,7 +495,9 @@ void RTInterface::wrapObstacleList()
   std::vector<Obstacle>& routing_obstacle_list = RTDM.getDatabase().get_routing_obstacle_list();
   std::vector<Obstacle>& cut_obstacle_list = RTDM.getDatabase().get_cut_obstacle_list();
   std::vector<idb::IdbInstance*>& instance_list = dmInst->get_idb_def_service()->get_design()->get_instance_list()->get_instance_list();
-  idb::IdbSpecialNetList* idb_special_net_list = dmInst->get_idb_def_service()->get_design()->get_special_net_list();
+  std::vector<idb::IdbSpecialNet*>& idb_special_net_list
+      = dmInst->get_idb_def_service()->get_design()->get_special_net_list()->get_net_list();
+  std::vector<idb::IdbPin*>& idb_io_pin_list = dmInst->get_idb_def_service()->get_design()->get_io_pin_list()->get_pin_list();
 
   int32_t total_routing_obstacle_num = 0;
   int32_t total_cut_obstacle_num = 0;
@@ -523,7 +525,7 @@ void RTInterface::wrapObstacleList()
       }
     }
     // special net
-    for (idb::IdbSpecialNet* idb_net : idb_special_net_list->get_net_list()) {
+    for (idb::IdbSpecialNet* idb_net : idb_special_net_list) {
       for (idb::IdbSpecialWire* idb_wire : idb_net->get_wire_list()->get_wire_list()) {
         for (idb::IdbSpecialWireSegment* idb_segment : idb_wire->get_segment_list()) {
           if (idb_segment->is_via()) {
@@ -533,6 +535,19 @@ void RTInterface::wrapObstacleList()
           } else {
             total_routing_obstacle_num += 1;
           }
+        }
+      }
+    }
+    // io pin
+    for (idb::IdbPin* idb_io_pin : idb_io_pin_list) {
+      if (idb_io_pin->get_net() != nullptr) {
+        continue;
+      }
+      for (idb::IdbLayerShape* port_box : idb_io_pin->get_port_box_list()) {
+        if (port_box->get_layer()->is_routing()) {
+          total_routing_obstacle_num += port_box->get_rect_list().size();
+        } else if (port_box->get_layer()->is_cut()) {
+          total_cut_obstacle_num += port_box->get_rect_list().size();
         }
       }
     }
@@ -577,7 +592,7 @@ void RTInterface::wrapObstacleList()
       }
     }
     // special net
-    for (idb::IdbSpecialNet* idb_net : idb_special_net_list->get_net_list()) {
+    for (idb::IdbSpecialNet* idb_net : idb_special_net_list) {
       for (idb::IdbSpecialWire* idb_wire : idb_net->get_wire_list()->get_wire_list()) {
         for (idb::IdbSpecialWireSegment* idb_segment : idb_wire->get_segment_list()) {
           if (idb_segment->is_via()) {
@@ -607,6 +622,25 @@ void RTInterface::wrapObstacleList()
             obstacle.set_real_ur(idb_rect->get_high_x(), idb_rect->get_high_y());
             obstacle.set_layer_idx(idb_segment->get_layer()->get_id());
             routing_obstacle_list.push_back(std::move(obstacle));
+          }
+        }
+      }
+    }
+    // io pin
+    for (idb::IdbPin* idb_io_pin : idb_io_pin_list) {
+      if (idb_io_pin->get_net() != nullptr) {
+        continue;
+      }
+      for (idb::IdbLayerShape* port_box : idb_io_pin->get_port_box_list()) {
+        for (idb::IdbRect* rect : port_box->get_rect_list()) {
+          Obstacle obstacle;
+          obstacle.set_real_ll(rect->get_low_x(), rect->get_low_y());
+          obstacle.set_real_ur(rect->get_high_x(), rect->get_high_y());
+          obstacle.set_layer_idx(port_box->get_layer()->get_id());
+          if (port_box->get_layer()->is_routing()) {
+            routing_obstacle_list.push_back(std::move(obstacle));
+          } else if (port_box->get_layer()->is_cut()) {
+            cut_obstacle_list.push_back(std::move(obstacle));
           }
         }
       }
@@ -879,6 +913,9 @@ void RTInterface::outputNetList()
   idb::IdbNetList* idb_net_list = dmInst->get_idb_def_service()->get_design()->get_net_list();
   if (idb_net_list == nullptr) {
     RTLOG.error(Loc::current(), "The idb net list is empty!");
+  }
+  for (idb::IdbNet* idb_net : idb_net_list->get_net_list()) {
+    idb_net->clear_wire_list();
   }
   for (auto& [net_idx, idb_segment_list] : net_idb_segment_map) {
     std::string net_name = net_list[net_idx].get_net_name();

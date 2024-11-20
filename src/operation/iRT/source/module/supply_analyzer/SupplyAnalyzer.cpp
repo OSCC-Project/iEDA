@@ -57,13 +57,12 @@ void SupplyAnalyzer::analyze()
   SAModel sa_model = initSAModel();
   buildSupplySchedule(sa_model);
   analyzeSupply(sa_model);
+  // debugPlotSAModel(sa_model);
   updateSummary(sa_model);
   printSummary(sa_model);
   outputPlanarSupplyCSV(sa_model);
   outputLayerSupplyCSV(sa_model);
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
-
-  // debugPlotSAModel(sa_model);
 }
 
 // private

@@ -16,26 +16,38 @@
 // ***************************************************************************************
 #pragma once
 
-#include "Pin.hpp"
+#include "Logger.hpp"
 
 namespace irt {
 
-class PAPin : public Pin
+enum class DEFuncType
 {
- public:
-  PAPin() = default;
-  explicit PAPin(const Pin& pin) : Pin(pin) {}
-  ~PAPin() = default;
-  // getter
-  std::vector<AccessPoint>& get_access_point_list() { return _access_point_list; }
-  bool get_is_accessed() const { return _is_accessed; }
-  // setter
-  void set_access_point_list(const std::vector<AccessPoint>& access_point_list) { _access_point_list = access_point_list; }
-  void set_is_accessed(const bool is_accessed) { _is_accessed = is_accessed; }
-  // function
- private:
-  std::vector<AccessPoint> _access_point_list;
-  bool _is_accessed = false;
+  kNone,
+  kGetDEProcessType,
+  kExpandViolation
+};
+
+struct GetDEFuncTypeName
+{
+  std::string operator()(const DEFuncType& process_type) const
+  {
+    std::string process_type_name;
+    switch (process_type) {
+      case DEFuncType::kNone:
+        process_type_name = "none";
+        break;
+      case DEFuncType::kGetDEProcessType:
+        process_type_name = "get_de_process_type";
+        break;
+      case DEFuncType::kExpandViolation:
+        process_type_name = "expand_violation";
+        break;
+      default:
+        RTLOG.error(Loc::current(), "Unrecognized type!");
+        break;
+    }
+    return process_type_name;
+  }
 };
 
 }  // namespace irt

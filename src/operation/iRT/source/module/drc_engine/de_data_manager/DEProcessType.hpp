@@ -24,9 +24,8 @@ enum class DEProcessType
 {
   kNone,
   kSkip,
-  kRoutingCost,
-  kCutCost,
-  kRoutingPatch
+  kCost,
+  kPatch
 };
 
 struct GetDEProcessTypeName
@@ -41,14 +40,11 @@ struct GetDEProcessTypeName
       case DEProcessType::kSkip:
         process_type_name = "skip";
         break;
-      case DEProcessType::kRoutingCost:
-        process_type_name = "routing_cost";
+      case DEProcessType::kCost:
+        process_type_name = "cost";
         break;
-      case DEProcessType::kCutCost:
-        process_type_name = "cut_cost";
-        break;
-      case DEProcessType::kRoutingPatch:
-        process_type_name = "routing_patch";
+      case DEProcessType::kPatch:
+        process_type_name = "patch";
         break;
       default:
         RTLOG.error(Loc::current(), "Unrecognized type!");

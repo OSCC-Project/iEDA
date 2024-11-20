@@ -3,8 +3,8 @@ setTAParameter:设置ta_model的参数
 initTAPanelMap:构建TAPanel框架,里面主要数据为空
 buildPanelSchedule:构建时间表
 assignTAPanelMap:
-    buildFixedRect:将GCellmap中的fix_rect（与此Panel覆盖）以指针的方式拷贝到Panel内,不需要对GCellmap删除或添加
-    buildAccessResult:将GCellmap中的access_result（与此Panel覆盖）以指针的方式拷贝到Panel内,不需要对GCellmap删除或添加
+    buildFixedRect:将GCellmap中的fix_rect(与此Panel覆盖)以指针的方式拷贝到Panel内,不需要对GCellmap删除或添加
+    buildAccessResult:将GCellmap中的access_result(与此Panel覆盖)以指针的方式拷贝到Panel内,不需要对GCellmap删除或添加
     buildNetResult:将GCellMap中的net_result以实体的方式拷贝到Box的net_result_map
     buildViolation:将GCellMap中的violation以实体的方式拷贝到Box的violation_list,并在GCellMap中删除
     initTATaskList:构建task任务
