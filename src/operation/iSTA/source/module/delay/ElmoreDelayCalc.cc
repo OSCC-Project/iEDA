@@ -857,7 +857,6 @@ void RcNet::updateRcTiming(RustSpefNet* spef_net) {
     // }
   }
 
-  rust_free_spef_net(spef_net);
 }
 /**
  * @brief net load
