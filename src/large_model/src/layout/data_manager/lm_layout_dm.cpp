@@ -18,6 +18,7 @@
 #include "lm_layout_dm.h"
 
 #include "Log.hh"
+#include "lm_layout_check.hh"
 #include "lm_layout_file.h"
 #include "lm_layout_init.h"
 #include "omp.h"
@@ -38,11 +39,13 @@ bool LmLayoutDataManager::buildGraphData(const std::string path)
 
   auto net_map = buildNetWires(true);
   if (net_map.size() > 0) {
+    // connectiviy check
+    LmLayoutChecker checker;
+    LOG_ERROR_IF(!checker.checkLayout(net_map)) << "Graph is not connected";
     /// save to path
     LmLayoutFileIO file_io;
     return file_io.saveJson(path, net_map);
   }
-
   return false;
 }
 

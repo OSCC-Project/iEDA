@@ -1,7 +1,8 @@
 add_library(ilm_layout_dm
-lm_layout_dm.cpp
-lm_layout_init.cpp
-lm_layout_file.cpp
+    lm_layout_dm.cpp
+    lm_layout_init.cpp
+    lm_layout_file.cpp
+    lm_layout_check.cc
 )
 
 target_link_libraries(ilm_layout_dm
@@ -19,4 +20,7 @@ target_include_directories(ilm_layout_dm
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${HOME_UTILITY}/json
 )
+
+include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
+
 set(CMAKE_BUILD_TYPE "debug")
