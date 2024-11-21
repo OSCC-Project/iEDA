@@ -57,9 +57,13 @@ bool LmNodeData::is_status(LmNodeStatus type)
   return (static_cast<uint8_t>(_status) & static_cast<uint8_t>(type)) > 0 ? true : false;
 }
 
-void LmNodeData::set_status(LmNodeStatus type)
+void LmNodeData::set_status(LmNodeStatus type, bool b_cancel)
 {
-  _status = LmNodeStatus((static_cast<uint8_t>(_status)) | (static_cast<uint8_t>(type)));
+  if (b_cancel) {
+    _status = LmNodeStatus((static_cast<uint8_t>(_status)) ^ (static_cast<uint8_t>(type)));
+  } else {
+    _status = LmNodeStatus((static_cast<uint8_t>(_status)) | (static_cast<uint8_t>(type)));
+  }
 }
 
 void LmNodeData::set_direction(LmNodeDirection direction)
@@ -72,6 +76,14 @@ void LmNodeData::set_direction_visited(LmNodeDirection direction)
   _visited = LmNodeDirection((static_cast<uint8_t>(_visited)) | (static_cast<uint8_t>(direction)));
 }
 
+void LmNodeData::set_visited()
+{
+  set_direction_visited(LmNodeDirection::lm_left);
+  set_direction_visited(LmNodeDirection::lm_right);
+  set_direction_visited(LmNodeDirection::lm_up);
+  set_direction_visited(LmNodeDirection::lm_down);
+}
+
 bool LmNodeData::is_direction(LmNodeDirection direction)
 {
   return (static_cast<uint8_t>(_direction) & static_cast<uint8_t>(direction)) > 0 ? true : false;
@@ -79,6 +91,12 @@ bool LmNodeData::is_direction(LmNodeDirection direction)
 bool LmNodeData::is_direction_visited(LmNodeDirection direction)
 {
   return (static_cast<uint8_t>(_visited) & static_cast<uint8_t>(direction)) > 0 ? true : false;
+}
+
+bool LmNodeData::is_visited()
+{
+  return is_direction_visited(LmNodeDirection::lm_left) && is_direction_visited(LmNodeDirection::lm_right)
+         && is_direction_visited(LmNodeDirection::lm_up) && is_direction_visited(LmNodeDirection::lm_down);
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

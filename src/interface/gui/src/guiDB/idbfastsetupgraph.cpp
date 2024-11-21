@@ -30,7 +30,7 @@ void IdbSpeedUpSetup::showGraph(std::map<int, ilm::LmNet> net_map) {
         auto drc_list1     = container->findDrcList(layer1);
 
         QRectF rect1 =
-            _transform.db_to_guidb_rect(node1->get_x() - 50, node1->get_y() - 50, node1->get_x() + 50, node1->get_y() + 50);
+            _transform.db_to_guidb_rect(node1->get_x() - 20, node1->get_y() - 20, node1->get_x() + 20, node1->get_y() + 20);
         GuiSpeedupDrc* item1 = drc_list1->findItem(rect1.center());
         if (item1 == nullptr) {
           return;
@@ -39,8 +39,9 @@ void IdbSpeedUpSetup::showGraph(std::map<int, ilm::LmNet> net_map) {
 
         std::string layer2 = "M" + std::to_string(node2->get_layer_id() / 2 + 1);
         auto drc_list2     = container->findDrcList(layer2);
-        QRectF rect2 =
-            _transform.db_to_guidb_rect(node2->get_x() - 50, node2->get_y() - 50, node2->get_x() + 50, node2->get_y() + 50);
+        auto detal         = node2->get_node_data().is_connected() ? 20 : 10;
+        QRectF rect2 = _transform.db_to_guidb_rect(node2->get_x() - detal, node2->get_y() - detal, node2->get_x() + detal,
+                                                   node2->get_y() + detal);
         GuiSpeedupDrc* item2 = drc_list2->findItem(rect2.center());
         if (item2 == nullptr) {
           return;
@@ -63,11 +64,11 @@ void IdbSpeedUpSetup::showGraph(std::map<int, ilm::LmNet> net_map) {
 
           /// horizontal
           if (lly == ury) {
-            lly -= 30;
-            ury += 30;
+            lly -= 3;
+            ury += 3;
           } else {
-            llx -= 30;
-            urx += 30;
+            llx -= 3;
+            urx += 3;
           }
           QRectF rect_path         = _transform.db_to_guidb_rect(llx, lly, urx, ury);
           GuiSpeedupDrc* item_path = path_list->findItem(rect_path.center());

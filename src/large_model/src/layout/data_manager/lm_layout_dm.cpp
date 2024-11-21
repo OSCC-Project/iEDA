@@ -173,13 +173,11 @@ int LmLayoutDataManager::buildRoutingLayer(int layer_id, LmPatchLayer& patch_lay
   auto& grid = patch_layer.get_grid();
   auto& node_matrix = grid.get_node_matrix();
 
-  std::vector<std::vector<bool>> visited_matrix(grid.get_info().node_row_num, std::vector<bool>(grid.get_info().node_col_num, false));
-
   if (true == patch_layer.is_routing()) {
     for (int row = 0; row < grid.get_info().node_row_num; ++row) {
       for (int col = 0; col < grid.get_info().node_col_num; ++col) {
-        if (visited_matrix[row][col] == true) {
-          /// skip visited node
+        if (node_matrix[row][col].get_node_data().is_visited() || false == node_matrix[row][col].get_node_data().is_net()) {
+          /// skip node
           continue;
         }
 
@@ -187,17 +185,15 @@ int LmLayoutDataManager::buildRoutingLayer(int layer_id, LmPatchLayer& patch_lay
         int net_id = node_data.get_net_id();
         /// skip node if node is not net
         if (net_id < 0) {
-          visited_matrix[row][col] = true;
+          node_matrix[row][col].get_node_data().set_visited();
           continue;
         }
 
         if (node_data.is_connected()) {
           omp_set_lock(&lck);
-          wire_num += searchEndNode(node_matrix[row][col], grid, net_map, visited_matrix);
+          wire_num += searchEndNode(node_matrix[row][col], grid, net_map);
           omp_unset_lock(&lck);
         }
-
-        visited_matrix[row][col] = true;
       }
 
       if (row % 1000 == 0) {
@@ -211,85 +207,107 @@ int LmLayoutDataManager::buildRoutingLayer(int layer_id, LmPatchLayer& patch_lay
   return wire_num;
 }
 
-int LmLayoutDataManager::searchEndNode(LmNode& node_connected, LmLayerGrid& grid, std::map<int, LmNet>& net_map,
-                                       std::vector<std::vector<bool>>& visited_matrix)
+int LmLayoutDataManager::searchEndNode(LmNode& node_connected, LmLayerGrid& grid, std::map<int, LmNet>& net_map)
 {
   int number = 0;
 
   for (LmNodeDirection direction_enum :
        {LmNodeDirection::lm_left, LmNodeDirection::lm_right, LmNodeDirection::lm_down, LmNodeDirection::lm_up}) {
     if (node_connected.get_node_data().is_direction(direction_enum)) {
-      number += search_node_in_direction(node_connected, direction_enum, grid, net_map, visited_matrix);
+      number += search_node_in_direction(node_connected, direction_enum, grid, net_map);
     }
   }
 
   return number;
 }
 
-int LmLayoutDataManager::search_node_in_direction(LmNode& node_connected, LmNodeDirection direction, LmLayerGrid& grid,
-                                                  std::map<int, LmNet>& net_map, std::vector<std::vector<bool>>& visited_matrix)
+LmNodeDirection LmLayoutDataManager::get_corner_orthogonal_direction(LmNode* node, LmNodeDirection direction)
 {
-  auto get_corner_orthogonal_direction = [](LmNode* node, LmNodeDirection direction) -> LmNodeDirection {
-    if (false == node->is_corner()) {
-      return LmNodeDirection::kNone;
-    }
-
-    LmNodeData& node_data = node->get_node_data();
-    if (direction == LmNodeDirection::lm_left || direction == LmNodeDirection::lm_right) {
-      if (node_data.is_direction(LmNodeDirection::lm_down) || node_data.is_direction(LmNodeDirection::lm_middle)) {
-        return LmNodeDirection::lm_down;
-      }
-
-      if (node_data.is_direction(LmNodeDirection::lm_up) || node_data.is_direction(LmNodeDirection::lm_middle)) {
-        return LmNodeDirection::lm_up;
-      }
-    }
-
-    if (direction == LmNodeDirection::lm_down || direction == LmNodeDirection::lm_up) {
-      if (node_data.is_direction(LmNodeDirection::lm_left) || node_data.is_direction(LmNodeDirection::lm_middle)) {
-        return LmNodeDirection::lm_left;
-      }
-
-      if (node_data.is_direction(LmNodeDirection::lm_right) || node_data.is_direction(LmNodeDirection::lm_middle)) {
-        return LmNodeDirection::lm_right;
-      }
-    }
-
+  if (false == node->is_corner()) {
     return LmNodeDirection::kNone;
-  };
+  }
+
+  LmNodeData& node_data = node->get_node_data();
+  if (direction == LmNodeDirection::lm_left || direction == LmNodeDirection::lm_right) {
+    if (node_data.is_direction(LmNodeDirection::lm_down)) {
+      return LmNodeDirection::lm_down;
+    }
+
+    if (node_data.is_direction(LmNodeDirection::lm_up)) {
+      return LmNodeDirection::lm_up;
+    }
+  }
+
+  if (direction == LmNodeDirection::lm_down || direction == LmNodeDirection::lm_up) {
+    if (node_data.is_direction(LmNodeDirection::lm_left)) {
+      return LmNodeDirection::lm_left;
+    }
+
+    if (node_data.is_direction(LmNodeDirection::lm_right)) {
+      return LmNodeDirection::lm_right;
+    }
+  }
+
+  return LmNodeDirection::kNone;
+}
+
+LmNodeDirection LmLayoutDataManager::get_opposite_direction(LmNodeDirection direction)
+{
+  LmNodeDirection opposite_direction = LmNodeDirection::kNone;
+  switch (direction) {
+    case LmNodeDirection::lm_left:
+      opposite_direction = LmNodeDirection::lm_right;
+    case LmNodeDirection::lm_right:
+      opposite_direction = LmNodeDirection::lm_left;
+    case LmNodeDirection::lm_up:
+      opposite_direction = LmNodeDirection::lm_down;
+    case LmNodeDirection::lm_down:
+      opposite_direction = LmNodeDirection::lm_up;
+      break;
+
+    default:
+      break;
+  }
+
+  return opposite_direction;
+}
+
+int LmLayoutDataManager::search_node_in_direction(LmNode& node_connected, LmNodeDirection direction, LmLayerGrid& grid,
+                                                  std::map<int, LmNet>& net_map)
+{
+  if (node_connected.get_node_data().is_direction_visited(direction)) {
+    return 0;
+  }
 
   int number = 0;
 
+  LmNetWire wire;
+  wire.set_start(&node_connected);
+
   auto* node_start = &node_connected;
-  LmNetWire wire(node_start);
-  auto* node_search = travel_grid(node_start, direction, grid, visited_matrix);
-  while (node_search != nullptr) {
-    if (node_search->get_node_data().is_connected()) {
-      wire.set_end(node_search);
-      wire.add_path(node_start, node_search);
+  auto* node_end = travel_grid(node_start, direction, grid);
+  while (node_end != nullptr) {
+    if (node_end->get_node_data().is_connected()) {
+      wire.set_end(node_end);
+      wire.add_path(node_start, node_end);
       add_net_wire(net_map, node_start->get_node_data().get_net_id(), wire);
       number++;
       break;
-    } else if (node_search->get_node_data().is_connecting()) {
+    } else if (node_end->get_node_data().is_connecting()) {
       /// connecting means corner node with only two direction in this routing layer
-      wire.add_path(node_start, node_search);
+      wire.add_path(node_start, node_end);
       number++;
 
       /// go to corner direciton node
-      auto orthogonal_direction = get_corner_orthogonal_direction(node_search, direction);
-      if (orthogonal_direction == LmNodeDirection::kNone) {
-        wire.set_end(node_search);
-        add_net_wire(net_map, node_start->get_node_data().get_net_id(), wire);
-        break;
-      }
-      node_start = node_search;
+      auto orthogonal_direction = get_corner_orthogonal_direction(node_end, direction);
+      node_start = node_end;
 
       /// go to next node
-      node_search = travel_grid(node_start, orthogonal_direction, grid, visited_matrix);
+      node_end = travel_grid(node_start, orthogonal_direction, grid);
     } else {
       /// wire not connected ?
-      wire.set_end(node_search);
-      wire.add_path(node_start, node_search);
+      wire.set_end(node_end);
+      wire.add_path(node_start, node_end);
       add_net_wire(net_map, node_start->get_node_data().get_net_id(), wire);
       number++;
       break;
@@ -300,64 +318,70 @@ int LmLayoutDataManager::search_node_in_direction(LmNode& node_connected, LmNode
 }
 
 /// travel to next connecting or connected point
-LmNode* LmLayoutDataManager::travel_grid(LmNode* node_start, LmNodeDirection direction, LmLayerGrid& grid,
-                                         std::vector<std::vector<bool>>& visited_matrix)
+LmNode* LmLayoutDataManager::travel_grid(LmNode* node_start, LmNodeDirection direction, LmLayerGrid& grid)
 {
-  LmNode* node_connect = nullptr;
-  auto& node_matrix = grid.get_node_matrix();
+  /// set direction visited states
+  node_start->get_node_data().set_direction_visited(direction);
+
+  auto& node_data = node_start->get_node_data();
 
   int row_travel = node_start->get_row_id();
   int col_travel = node_start->get_col_id();
-  auto& node_data = node_start->get_node_data();
-
   int row_delta = 0;
   int col_delta = 0;
-  if (node_data.is_direction(direction) && direction == LmNodeDirection::lm_left) {
-    --col_travel;
-    col_delta = -1;
+  {
+    switch (direction) {
+      case LmNodeDirection::lm_left:
+        --col_travel;
+        col_delta = -1;
+        break;
+      case LmNodeDirection::lm_right:
+        ++col_travel;
+        col_delta = 1;
+        break;
+      case LmNodeDirection::lm_down:
+        --row_travel;
+        row_delta = -1;
+        break;
+      case LmNodeDirection::lm_up:
+        ++row_travel;
+        row_delta = 1;
+        break;
+
+      default:
+        break;
+    }
   }
 
-  if (node_data.is_direction(direction) && direction == LmNodeDirection::lm_right) {
-    ++col_travel;
-    col_delta = 1;
-  }
+  LmNode* node_end = nullptr;
+  auto& node_matrix = grid.get_node_matrix();
 
-  if (node_data.is_direction(direction) && direction == LmNodeDirection::lm_down) {
-    --row_travel;
-    row_delta = -1;
-  }
+  auto direction_opposite = get_opposite_direction(direction);
+  while (false == grid.is_out_of_range(row_travel, col_travel)
+         && false == node_matrix[row_travel][col_travel].get_node_data().is_direction_visited(direction_opposite)) {
+    auto& travel_data = node_matrix[row_travel][col_travel].get_node_data();
+    /// set visited
+    travel_data.set_direction_visited(direction_opposite);
+    if (travel_data.is_connecting() || travel_data.is_connected()) {
+      /// success
+      node_end = &node_matrix[row_travel][col_travel];
+      break;
+    }
 
-  if (node_data.is_direction(direction) && direction == LmNodeDirection::lm_up) {
-    ++row_travel;
-    row_delta = 1;
-  }
-
-  while (false == grid.is_out_of_range(row_travel, col_travel) && false == visited_matrix[row_travel][col_travel]) {
-    auto* this_node = &node_matrix[row_travel][col_travel];
-    visited_matrix[row_travel][col_travel] = true;
-
-    auto& travel_data = this_node->get_node_data();
-    if (travel_data.is_connecting() || travel_data.is_connected() || travel_data.is_net() == false
-        || travel_data.get_net_id() != node_data.get_net_id()) {
-      /// find node need to be record
-      //   if (true == this_node->is_steiner_point() || true == this_node->is_corner()) {
-      //     visited_matrix[row_travel][col_travel] = false;
-      //   }
-      if (travel_data.is_connecting() || travel_data.is_connected()) {
-        visited_matrix[row_travel][col_travel] = false;
-      }
-      return node_connect;
+    if (travel_data.is_net() == false || travel_data.get_net_id() != node_data.get_net_id()) {
+      /// stop and return some error and return last node end
+      break;
     }
 
     /// store this node as connect node
-    node_connect = this_node;
+    node_end = &node_matrix[row_travel][col_travel];
 
     /// travel to next node
     row_travel += row_delta;
     col_travel += col_delta;
   }
 
-  return node_connect;
+  return node_end;
 }
 
 void LmLayoutDataManager::buildPatchs()

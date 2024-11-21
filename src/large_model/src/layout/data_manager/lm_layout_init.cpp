@@ -42,11 +42,13 @@ void LmLayoutInit::init()
   initPDN();
   initNets();
   //   initInstances();
-  initIOPins();
+  //   initIOPins();
 
   buildConnectedPoints();
 
   initNets(true);
+
+  //   optConnectionsRoutingLayer();
 }
 
 void LmLayoutInit::initViaIds()
@@ -195,20 +197,6 @@ void LmLayoutInit::transVia(idb::IdbVia* idb_via, int net_id, LmNodeTYpe type)
 {
   auto& patch_layers = _layout->get_patch_layers();
 
-  /// botttom
-  auto enclosure_bottom = idb_via->get_bottom_layer_shape();
-  for (auto* rect : enclosure_bottom.get_rect_list()) {
-    transEnclosure(rect->get_low_x(), rect->get_low_y(), rect->get_high_x(), rect->get_high_y(), enclosure_bottom.get_layer()->get_name(),
-                   net_id);
-  }
-
-  /// top
-  auto enclosure_top = idb_via->get_top_layer_shape();
-  for (auto* rect : enclosure_top.get_rect_list()) {
-    transEnclosure(rect->get_low_x(), rect->get_low_y(), rect->get_high_x(), rect->get_high_y(), enclosure_top.get_layer()->get_name(),
-                   net_id);
-  }
-
   /// cut layer
   auto cut_layer_shape = idb_via->get_cut_layer_shape();
   auto order = _layout->findLayerId(cut_layer_shape.get_layer()->get_name());
@@ -225,6 +213,20 @@ void LmLayoutInit::transVia(idb::IdbVia* idb_via, int net_id, LmNodeTYpe type)
   node_data.set_status(LmNodeStatus::lm_connected);
   node_data.set_net_id(net_id);
   node_data.set_connect_type(LmNodeConnectType::lm_via);
+
+  /// botttom
+  auto enclosure_bottom = idb_via->get_bottom_layer_shape();
+  for (auto* rect : enclosure_bottom.get_rect_list()) {
+    transEnclosure(rect->get_low_x(), rect->get_low_y(), rect->get_high_x(), rect->get_high_y(), enclosure_bottom.get_layer()->get_name(),
+                   net_id, row, col);
+  }
+
+  /// top
+  auto enclosure_top = idb_via->get_top_layer_shape();
+  for (auto* rect : enclosure_top.get_rect_list()) {
+    transEnclosure(rect->get_low_x(), rect->get_low_y(), rect->get_high_x(), rect->get_high_y(), enclosure_top.get_layer()->get_name(),
+                   net_id, row, col);
+  }
 }
 
 void LmLayoutInit::initPDN()
@@ -250,10 +252,9 @@ void LmLayoutInit::initPDN()
   }
 
   int segment_num = 0;
-  int net_id = 0;
   for (auto* idb_net : idb_pdn->get_net_list()) {
     /// init pdn id map
-    pdn_id_map.insert(std::make_pair(idb_net->get_net_name(), net_id));
+    pdn_id_map.insert(std::make_pair(idb_net->get_net_name(), -1));
 
     auto* idb_wires = idb_net->get_wire_list();
     for (auto* idb_wire : idb_wires->get_wire_list()) {
@@ -308,7 +309,7 @@ void LmLayoutInit::initPDN()
 
         if (idb_segment->is_via()) {
           auto* idb_via = idb_segment->get_via();
-          transVia(idb_via, net_id, LmNodeTYpe::lm_pdn);
+          transVia(idb_via, -1, LmNodeTYpe::lm_pdn);
         }
 
         if (i % 1000 == 0) {
@@ -323,8 +324,6 @@ void LmLayoutInit::initPDN()
         }
       }
     }
-
-    net_id++;
   }
 
   omp_destroy_lock(&lck);
@@ -426,6 +425,9 @@ void LmLayoutInit::transPin(idb::IdbPin* idb_pin, int net_id)
         node_data.set_type(LmNodeTYpe::lm_pin);
         node_data.set_status(LmNodeStatus::lm_fix);
         node_data.set_net_id(net_id);
+        if (net_id > 0) {
+          node_data.set_type(LmNodeTYpe::lm_net);
+        }
         node_data.set_connect_type(LmNodeConnectType::lm_via);
       }
     } else {
@@ -439,6 +441,9 @@ void LmLayoutInit::transPin(idb::IdbPin* idb_pin, int net_id)
             node_data.set_type(LmNodeTYpe::lm_pin);
             node_data.set_status(LmNodeStatus::lm_fix);
             node_data.set_net_id(net_id);
+            if (net_id > 0) {
+              node_data.set_type(LmNodeTYpe::lm_net);
+            }
             node_data.set_connect_type(LmNodeConnectType::lm_wire);
           }
         }
@@ -475,10 +480,12 @@ void LmLayoutInit::transNetRect(int32_t ll_x, int32_t ll_y, int32_t ur_x, int32_
       if (b_horizontal) {
         if (col == col_1) {
           node_data.set_direction(LmNodeDirection::lm_right);
-          node_data.set_status(LmNodeStatus::lm_end_point);
+          bool b_cancel = node_data.is_enclosure() && node_data.is_wire() ? true : false;
+          node_data.set_status(LmNodeStatus::lm_end_point, b_cancel);
         } else if (col == col_2) {
           node_data.set_direction(LmNodeDirection::lm_left);
-          node_data.set_status(LmNodeStatus::lm_end_point);
+          bool b_cancel = node_data.is_enclosure() && node_data.is_wire() ? true : false;
+          node_data.set_status(LmNodeStatus::lm_end_point, b_cancel);
         } else {
           node_data.set_direction(LmNodeDirection::lm_left);
           node_data.set_direction(LmNodeDirection::lm_right);
@@ -486,10 +493,12 @@ void LmLayoutInit::transNetRect(int32_t ll_x, int32_t ll_y, int32_t ur_x, int32_
       } else {
         if (row == row_1) {
           node_data.set_direction(LmNodeDirection::lm_up);
-          node_data.set_status(LmNodeStatus::lm_end_point);
+          bool b_cancel = node_data.is_enclosure() && node_data.is_wire() ? true : false;
+          node_data.set_status(LmNodeStatus::lm_end_point, b_cancel);
         } else if (row == row_2) {
           node_data.set_direction(LmNodeDirection::lm_down);
-          node_data.set_status(LmNodeStatus::lm_end_point);
+          bool b_cancel = node_data.is_enclosure() && node_data.is_wire() ? true : false;
+          node_data.set_status(LmNodeStatus::lm_end_point, b_cancel);
         } else {
           node_data.set_direction(LmNodeDirection::lm_up);
           node_data.set_direction(LmNodeDirection::lm_down);
@@ -499,7 +508,8 @@ void LmLayoutInit::transNetRect(int32_t ll_x, int32_t ll_y, int32_t ur_x, int32_
   }
 }
 
-void LmLayoutInit::transEnclosure(int32_t ll_x, int32_t ll_y, int32_t ur_x, int32_t ur_y, std::string layer_name, int net_id)
+void LmLayoutInit::transEnclosure(int32_t ll_x, int32_t ll_y, int32_t ur_x, int32_t ur_y, std::string layer_name, int net_id, int via_row,
+                                  int via_col)
 {
   auto& patch_layers = _layout->get_patch_layers();
 
@@ -515,11 +525,11 @@ void LmLayoutInit::transEnclosure(int32_t ll_x, int32_t ll_y, int32_t ur_x, int3
 
   bool b_horizontal = (ur_x - ll_x) == (ur_y - ll_y) ? patch_layer->is_horizontal() : ((ur_x - ll_x) > (ur_y - ll_y) ? true : false);
   if (b_horizontal) {
-    row_1 = (row_1 + row_2) / 2;
-    row_2 = (row_1 + row_2) / 2;
+    row_1 = via_row;
+    row_2 = via_row;
   } else {
-    col_1 = (col_1 + col_2) / 2;
-    col_2 = (col_1 + col_2) / 2;
+    col_1 = via_col;
+    col_2 = via_col;
   }
 
   for (int row = row_1; row <= row_2; ++row) {
@@ -530,32 +540,61 @@ void LmLayoutInit::transEnclosure(int32_t ll_x, int32_t ll_y, int32_t ur_x, int3
       node_data.set_connect_type(LmNodeConnectType::lm_enclosure);
       node_data.set_net_id(net_id);
       if (b_horizontal) {
-        if (col == col_1 || col == col_2) {
-          if (col == col_1) {
-            node_data.set_direction(LmNodeDirection::lm_right);
-            node_data.set_status(LmNodeStatus::lm_end_point);
-          }
-          if (col == col_2) {
+        if (via_row == row) {
+          if (col == col_1 || col == col_2) {
+            if (col == col_1) {
+              bool b_cancel = node_data.is_wire() && node_data.is_enclosure() ? true : false;
+              node_data.set_status(LmNodeStatus::lm_end_point, b_cancel);
+              if (b_cancel) {
+                node_data.set_direction(LmNodeDirection::lm_left);
+                node_data.set_direction(LmNodeDirection::lm_right);
+              } else {
+                node_data.set_direction(LmNodeDirection::lm_right);
+              }
+            }
+            if (col == col_2) {
+              bool b_cancel = node_data.is_wire() && node_data.is_enclosure() ? true : false;
+              node_data.set_status(LmNodeStatus::lm_end_point, b_cancel);
+
+              if (b_cancel) {
+                node_data.set_direction(LmNodeDirection::lm_left);
+                node_data.set_direction(LmNodeDirection::lm_right);
+              } else {
+                node_data.set_direction(LmNodeDirection::lm_left);
+              }
+            }
+          } else {
             node_data.set_direction(LmNodeDirection::lm_left);
-            node_data.set_status(LmNodeStatus::lm_end_point);
+            node_data.set_direction(LmNodeDirection::lm_right);
           }
-        } else {
-          node_data.set_direction(LmNodeDirection::lm_left);
-          node_data.set_direction(LmNodeDirection::lm_right);
         }
       } else {
-        if (row == row_1 || row == row_2) {
-          if (row == row_1) {
+        if (via_col == col) {
+          if (row == row_1 || row == row_2) {
+            if (row == row_1) {
+              bool b_cancel = node_data.is_wire() && node_data.is_enclosure() ? true : false;
+              node_data.set_status(LmNodeStatus::lm_end_point, b_cancel);
+              if (b_cancel) {
+                node_data.set_direction(LmNodeDirection::lm_up);
+                node_data.set_direction(LmNodeDirection::lm_down);
+              } else {
+                node_data.set_direction(LmNodeDirection::lm_up);
+              }
+            }
+            if (row == row_2) {
+              bool b_cancel = node_data.is_wire() && node_data.is_enclosure() ? true : false;
+              node_data.set_status(LmNodeStatus::lm_end_point, b_cancel);
+              if (b_cancel) {
+                node_data.set_direction(LmNodeDirection::lm_up);
+                node_data.set_direction(LmNodeDirection::lm_down);
+              } else {
+                node_data.set_direction(LmNodeDirection::lm_down);
+              }
+            }
+          } else {
             node_data.set_direction(LmNodeDirection::lm_up);
-            node_data.set_status(LmNodeStatus::lm_end_point);
-          }
-          if (row == row_2) {
             node_data.set_direction(LmNodeDirection::lm_down);
-            node_data.set_status(LmNodeStatus::lm_end_point);
           }
-        } else {
-          node_data.set_direction(LmNodeDirection::lm_up);
-          node_data.set_direction(LmNodeDirection::lm_down);
         }
       }
     }
@@ -604,17 +643,14 @@ void LmLayoutInit::transNetDelta(int32_t ll_x, int32_t ll_y, int32_t ur_x, int32
   /// print
   /////////////////////////////////////////////////////////////////////////////
 
-  std::set<LmNode*> node_connectd;
+  std::set<LmNode*> node_connectds;
   std::set<LmNode*> node_endpoints;
-  std::set<LmNode*> node_wires;
   std::set<LmNode*> node_connecting;
 
-  /// draw line
+  /// find connecting node
   for (int row = row_1; row <= row_2; ++row) {
     for (int col = col_1; col <= col_2; ++col) {
       auto& node = grid.get_node(row, col);
-      auto node_row = node.get_row_id();
-      auto node_col = node.get_col_id();
       auto& node_data = node.get_node_data();
       node_data.set_type(LmNodeTYpe::lm_net);
       node_data.set_connect_type(LmNodeConnectType::lm_delta);
@@ -622,35 +658,124 @@ void LmLayoutInit::transNetDelta(int32_t ll_x, int32_t ll_y, int32_t ur_x, int32
       node_data.set_direction(LmNodeDirection::lm_middle);
 
       if (node_data.is_connected()) {
-        node_connectd.insert(&node);
+        node_connectds.insert(&node);
         node_connecting.insert(&node);
-        {
-          for (int row = row_1; row <= row_2; ++row) {
-            grid.get_node(row, node_col).get_node_data().set_direction(LmNodeDirection::lm_up);
-            grid.get_node(row, node_col).get_node_data().set_direction(LmNodeDirection::lm_down);
-          }
+      } else {
+        if (node_data.is_end_point()) {
+          node_endpoints.insert(&node);
+          node_connecting.insert(&node);
+        }
+      }
+    }
+  }
 
-          for (int col = col_1; col <= col_2; ++col) {
-            grid.get_node(node_row, col).get_node_data().set_direction(LmNodeDirection::lm_left);
-            grid.get_node(node_row, col).get_node_data().set_direction(LmNodeDirection::lm_right);
+  /// draw line
+  for (auto node_connectd : node_connectds) {
+    auto node_row = node_connectd->get_row_id();
+    auto node_col = node_connectd->get_col_id();
+    for (int row_travel = row_1; row_travel <= row_2; ++row_travel) {
+      grid.get_node(row_travel, node_col).get_node_data().set_direction(LmNodeDirection::lm_up);
+      grid.get_node(row_travel, node_col).get_node_data().set_direction(LmNodeDirection::lm_down);
+    }
+
+    for (int col_travel = col_1; col_travel <= col_2; ++col_travel) {
+      grid.get_node(node_row, col_travel).get_node_data().set_direction(LmNodeDirection::lm_left);
+      grid.get_node(node_row, col_travel).get_node_data().set_direction(LmNodeDirection::lm_right);
+    }
+  }
+
+  for (auto node_endpoint : node_endpoints) {
+    auto& node_data = node_endpoint->get_node_data();
+    /// skip if node is endpoint & connected point
+    if (node_data.is_connected()) {
+      continue;
+    }
+
+    auto node_row = node_endpoint->get_row_id();
+    auto node_col = node_endpoint->get_col_id();
+
+    if (node_data.is_direction(LmNodeDirection::lm_left) || node_data.is_direction(LmNodeDirection::lm_right)) {
+      for (auto node_connectd : node_connectds) {
+        auto connected_row = node_connectd->get_row_id();
+        auto connected_col = node_connectd->get_col_id();
+        /// connecting endpoint
+        auto col_start = node_col < connected_col ? node_col : connected_col;
+        auto col_end = node_col < connected_col ? connected_col : node_col;
+        for (int col = col_start; col <= col_end; ++col) {
+          auto& endpoint_data = grid.get_node(node_row, col).get_node_data();
+          if (col == col_start || col == col_end) {
+            if (col == col_start) {
+              endpoint_data.set_direction(LmNodeDirection::lm_right);
+            }
+            if (col == col_end) {
+              endpoint_data.set_direction(LmNodeDirection::lm_left);
+            }
+          } else {
+            endpoint_data.set_direction(LmNodeDirection::lm_left);
+            endpoint_data.set_direction(LmNodeDirection::lm_right);
+          }
+        }
+
+        /// connecting connected point
+        auto row_start = node_row < connected_row ? node_row : connected_row;
+        auto row_end = node_row < connected_row ? connected_row : node_row;
+
+        for (int row = row_start; row <= row_end; ++row) {
+          auto& endpoint_data = grid.get_node(row, connected_col).get_node_data();
+          if (row == row_start || row == row_end) {
+            if (row == row_start) {
+              endpoint_data.set_direction(LmNodeDirection::lm_up);
+            }
+            if (row == row_end) {
+              endpoint_data.set_direction(LmNodeDirection::lm_down);
+            }
+          } else {
+            endpoint_data.set_direction(LmNodeDirection::lm_up);
+            endpoint_data.set_direction(LmNodeDirection::lm_down);
           }
         }
       }
+    }
 
-      if (node_data.is_end_point()) {
-        node_endpoints.insert(&node);
-        node_connecting.insert(&node);
-        if (node_data.is_direction(LmNodeDirection::lm_left) || node_data.is_direction(LmNodeDirection::lm_right)) {
-          for (int col = col_1; col <= col_2; ++col) {
-            grid.get_node(node_row, col).get_node_data().set_direction(LmNodeDirection::lm_left);
-            grid.get_node(node_row, col).get_node_data().set_direction(LmNodeDirection::lm_right);
+    if (node_data.is_direction(LmNodeDirection::lm_up) || node_data.is_direction(LmNodeDirection::lm_down)) {
+      for (auto node_connectd : node_connectds) {
+        auto connected_row = node_connectd->get_row_id();
+        auto connected_col = node_connectd->get_col_id();
+
+        /// connecting endpoint
+        auto row_start = node_row < connected_row ? node_row : connected_row;
+        auto row_end = node_row < connected_row ? connected_row : node_row;
+
+        for (int row = row_start; row <= row_end; ++row) {
+          auto& endpoint_data = grid.get_node(row, node_col).get_node_data();
+          if (row == row_start || row == row_end) {
+            if (row == row_start) {
+              endpoint_data.set_direction(LmNodeDirection::lm_up);
+            }
+            if (row == row_end) {
+              endpoint_data.set_direction(LmNodeDirection::lm_down);
+            }
+          } else {
+            endpoint_data.set_direction(LmNodeDirection::lm_up);
+            endpoint_data.set_direction(LmNodeDirection::lm_down);
           }
         }
 
-        if (node_data.is_direction(LmNodeDirection::lm_up) || node_data.is_direction(LmNodeDirection::lm_down)) {
-          for (int row = row_1; row <= row_2; ++row) {
-            grid.get_node(row, node_col).get_node_data().set_direction(LmNodeDirection::lm_up);
-            grid.get_node(row, node_col).get_node_data().set_direction(LmNodeDirection::lm_down);
+        /// connecting connected point
+        auto col_start = node_col < connected_col ? node_col : connected_col;
+        auto col_end = node_col < connected_col ? connected_col : node_col;
+        for (int col = col_start; col <= col_end; ++col) {
+          auto& endpoint_data = grid.get_node(connected_row, col).get_node_data();
+          if (col == col_start || col == col_end) {
+            if (col == col_start) {
+              endpoint_data.set_direction(LmNodeDirection::lm_right);
+            }
+            if (col == col_end) {
+              endpoint_data.set_direction(LmNodeDirection::lm_left);
+            }
+          } else {
+            endpoint_data.set_direction(LmNodeDirection::lm_left);
+            endpoint_data.set_direction(LmNodeDirection::lm_right);
           }
         }
       }
@@ -885,6 +1010,9 @@ bool LmLayoutInit::setConnectNode(LmNode& node)
   /// steiner point
   if (node_data.is_net() && node.is_steiner_point()) {
     node_data.set_status(LmNodeStatus::lm_connected);
+    if (node_data.is_end_point()) {
+      node_data.set_status(LmNodeStatus::lm_end_point, true);
+    }
     return true;
   }
   /// pin connected to wire
@@ -902,6 +1030,9 @@ bool LmLayoutInit::setConnectNode(LmNode& node)
   /// set corner as connecting
   if (node.is_corner()) {
     node_data.set_status(LmNodeStatus::lm_connecting);
+    if (node_data.is_end_point()) {
+      node_data.set_status(LmNodeStatus::lm_end_point, true);
+    }
     return true;
   }
 
@@ -955,8 +1086,61 @@ int LmLayoutInit::buildConnectedPointsRoutingLayer()
   return connected_num;
 }
 
-void LmLayoutInit::buildNetWires()
+void LmLayoutInit::optConnectionsRoutingLayer()
 {
+  ieda::Stats stats;
+
+  LOG_INFO << "LM optimize connections for routing layer start...";
+
+  omp_lock_t lck;
+  omp_init_lock(&lck);
+
+  auto& patch_layers = _layout->get_patch_layers();
+  for (int i = patch_layers.get_layer_order_bottom(); i <= patch_layers.get_layer_order_top(); ++i) {
+    auto* patch_layer = patch_layers.findPatchLayer(i);
+    if (patch_layer == nullptr) {
+      LOG_ERROR << "Data error, layer not exits, id : " << i;
+      continue;
+    }
+    auto& grid = patch_layer->get_grid();
+    auto& node_matrix = grid.get_node_matrix();
+
+    if (patch_layer->is_routing()) {
+#pragma omp parallel for schedule(dynamic)
+      for (int row = 0; row < grid.get_info().node_row_num; ++row) {
+        std::set<LmNode*> connecting_nodes;
+        int net_id = -1;
+        for (int col = 0; col < grid.get_info().node_col_num; ++col) {
+          /// eliminate useless connectiong points
+          auto& node_data = node_matrix[row][col].get_node_data();
+          if (false == node_data.is_net()) {
+            continue;
+          }
+
+          /// skip node if node is not net
+          if (node_data.get_net_id() < 0) {
+            continue;
+          }
+
+          if (node_data.is_connected() || node_matrix[row][col].is_corner()) {
+            continue;
+          }
+
+          if (node_data.is_connecting()) {
+          }
+        }
+        if (row % 1000 == 0) {
+          LOG_INFO << "Patch layer " << i << " Read rows : " << row << " / " << grid.get_info().node_row_num;
+        }
+      }
+
+      LOG_INFO << "Patch layer " << i << " Read rows : " << grid.get_info().node_row_num << " / " << grid.get_info().node_row_num;
+    }
+  }
+
+  omp_destroy_lock(&lck);
+
+  LOG_INFO << "LM optimize connections for routing layer end...";
 }
 
 }  // namespace ilm

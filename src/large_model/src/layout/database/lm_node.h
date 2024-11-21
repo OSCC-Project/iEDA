@@ -100,6 +100,7 @@ class LmNodeData
   LmNodeDirection get_direction() { return _direction; }
   bool is_direction(LmNodeDirection direction);
   bool is_direction_visited(LmNodeDirection direction);
+  bool is_visited();
 
   bool is_net() { return is_type(LmNodeTYpe::lm_net); }
   bool is_pdn() { return is_type(LmNodeTYpe::lm_pdn); }
@@ -111,9 +112,10 @@ class LmNodeData
   void set_net_id(int32_t id) { _net_id = id; }
   void set_type(LmNodeTYpe type);
   void set_connect_type(LmNodeConnectType type);
-  void set_status(LmNodeStatus status);
+  void set_status(LmNodeStatus status, bool b_cancel = false);
   void set_direction(LmNodeDirection direction);
   void set_direction_visited(LmNodeDirection direction);
+  void set_visited();
 
   // operator
 

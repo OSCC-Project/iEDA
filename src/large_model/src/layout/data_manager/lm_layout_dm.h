@@ -48,11 +48,11 @@ class LmLayoutDataManager
   void buildRegulerWire();
 
   void add_net_wire(std::map<int, LmNet>& net_map, int net_id, LmNetWire wire);
-  int searchEndNode(LmNode& node_connected, LmLayerGrid& grid, std::map<int, LmNet>& net_map,
-                    std::vector<std::vector<bool>>& visited_matrix);
-  int search_node_in_direction(LmNode& node_connected, LmNodeDirection direction, LmLayerGrid& grid, std::map<int, LmNet>& net_map,
-                               std::vector<std::vector<bool>>& visited_matrix);
-  LmNode* travel_grid(LmNode* node_start, LmNodeDirection direction, LmLayerGrid& grid, std::vector<std::vector<bool>>& visited_matrix);
+  int searchEndNode(LmNode& node_connected, LmLayerGrid& grid, std::map<int, LmNet>& net_map);
+  int search_node_in_direction(LmNode& node_connected, LmNodeDirection direction, LmLayerGrid& grid, std::map<int, LmNet>& net_map);
+  LmNode* travel_grid(LmNode* node_start, LmNodeDirection direction, LmLayerGrid& grid);
+  LmNodeDirection get_corner_orthogonal_direction(LmNode* node, LmNodeDirection direction);
+  LmNodeDirection get_opposite_direction(LmNodeDirection direction);
 };
 
 }  // namespace ilm
