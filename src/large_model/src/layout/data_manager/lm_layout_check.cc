@@ -88,9 +88,7 @@ void GraphCheckerBase::writeToPy(LmNet& net, const std::string& path)
   file << "        yaxis_title='Y',\n";
   file << "        zaxis_title='Layer ID'\n";
   file << "    ),\n";
-  file << "    title='Net " << net.get_net_id() << "',\n";
-  file << "    width=800,\n";
-  file << "    height=600\n";
+  file << "    title='Net " << net.get_net_id() << "'\n";
   file << ")\n";
   file << "\n";
 
