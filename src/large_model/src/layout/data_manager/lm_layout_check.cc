@@ -52,30 +52,50 @@ void GraphCheckerBase::writeToDot(const Graph& graph, const std::string& path)
 
 void GraphCheckerBase::writeToPy(LmNet& net, const std::string& path)
 {
-  // write the wire line to py file, plot in 3D space (x, y, layer_id)
+  // Write the wire line to a Python file for plotting in 3D space (x, y, layer_id) using Plotly
   std::ofstream file(path);
-  file << "import matplotlib.pyplot as plt\n";
-  file << "from mpl_toolkits.mplot3d import Axes3D\n";
-  file << "import numpy as np\n";
-  file << "fig = plt.figure()\n";
-  file << "ax = fig.add_subplot(111, projection='3d')\n";
-  file << "ax.set_xlabel('X')\n";
-  file << "ax.set_ylabel('Y')\n";
-  file << "ax.set_zlabel('Layer ID')\n";
-  file << "ax.set_title('Net " << net.get_net_id() << "')\n";
+  file << "import plotly.graph_objects as go\n";
+  file << "\n";
+  file << "# Create a Plotly Figure\n";
+  file << "fig = go.Figure()\n";
+  file << "\n";
 
-  // use color which determined by end->get_layer_id()
+  // Add data for each wire and path
   auto& wires = net.get_wires();
   for (auto& wire : wires) {
     auto& paths = wire.get_paths();
     for (auto& path : paths) {
       auto* start = path.first;
       auto* end = path.second;
-      file << "ax.plot([" << start->get_x() << ", " << end->get_x() << "], [" << start->get_y() << ", " << end->get_y() << "], ["
-           << start->get_layer_id() << ", " << end->get_layer_id() << "], color='C" << end->get_layer_id() << "')\n";
+
+      // Add a trace for each path
+      file << "fig.add_trace(go.Scatter3d(\n";
+      file << "    x=[" << start->get_x() << ", " << end->get_x() << "],\n";
+      file << "    y=[" << start->get_y() << ", " << end->get_y() << "],\n";
+      file << "    z=[" << start->get_layer_id() << ", " << end->get_layer_id() << "],\n";
+      file << "    mode='lines',\n";
+      file << "    line=dict(color='rgb(" << (50 + end->get_layer_id() * 20) % 256 << "," << (100 + end->get_layer_id() * 30) % 256 << ","
+           << (150 + end->get_layer_id() * 40) % 256 << ")', width=4),\n";
+      file << "))\n";
     }
   }
-  file << "plt.show()\n";
+
+  // Set up the layout with axis labels and title
+  file << "\n";
+  file << "fig.update_layout(\n";
+  file << "    scene=dict(\n";
+  file << "        xaxis_title='X',\n";
+  file << "        yaxis_title='Y',\n";
+  file << "        zaxis_title='Layer ID'\n";
+  file << "    ),\n";
+  file << "    title='Net " << net.get_net_id() << "',\n";
+  file << "    width=800,\n";
+  file << "    height=600\n";
+  file << ")\n";
+  file << "\n";
+
+  // Show the plot
+  file << "fig.show()\n";
 }
 
 bool LmNetChecker::isLocalConnectivity(LmNet& net)
