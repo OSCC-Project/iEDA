@@ -74,14 +74,19 @@ pub trait VcdCounter {
             return false;
         }
 
+        let default_bit_value = VCDBit::BitZero;
+
         let pre_bit_value = match &pre_time_value.value {
             VCDValue::BitScalar(bit) => Ok(bit),
-            VCDValue::BitVector(vec) => {
-                if let Some(index) = bus_index {
-                    Ok(&vec[index as usize])
+            VCDValue::BitVector(bit_vec) => {
+                let index = bus_index.unwrap() as usize;
+                
+                let bit_value = if index < bit_vec.len() {
+                    &bit_vec[index as usize]
                 } else {
-                    Err("No bus index provided")
-                }
+                    &default_bit_value
+                };
+                Ok(bit_value)
             }
             _ => Err("Unmatched value"),
         }
@@ -89,12 +94,15 @@ pub trait VcdCounter {
 
         let cur_bit_value = match &cur_time_value.value {
             VCDValue::BitScalar(bit) => Ok(bit),
-            VCDValue::BitVector(vec) => {
-                if let Some(index) = bus_index {
-                    Ok(&vec[index as usize])
+            VCDValue::BitVector(bit_vec) => {
+                let index = bus_index.unwrap() as usize;
+                
+                let bit_value = if index < bit_vec.len() {
+                    &bit_vec[index as usize]
                 } else {
-                    Err("No bus index provided")
-                }
+                    &default_bit_value
+                };
+                Ok(bit_value)
             }
             _ => Err("Unmatched value"),
         }
@@ -328,6 +336,7 @@ impl<'a> VcdBusCounter<'a> {
         let signal_time_values = self.vcd_file.get_signal_values().get(signal_hash);
 
         let signal_name = self.signal.get_name().to_string();
+        // println!("signal name {}", signal_name);
 
         // count the toggle, if current signal value is rise transition or fall
         // transition, count add one.

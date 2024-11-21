@@ -45,10 +45,22 @@ impl VCDValue {
     }
 
     pub fn get_vector_bit(&self, index: usize) -> VCDBit {
+
         match self {
-            VCDValue::BitVector(vec) => vec[index],
+            VCDValue::BitVector(bit_vec) => {
+                let default_bit_value = VCDBit::BitZero;
+                let bit_value = if index < bit_vec.len() {
+                    bit_vec[index as usize]
+                } else {
+                    default_bit_value
+                };
+
+                bit_value
+            }
             _ => panic!("Not a BitVector"),
         }
+
+        
     }
 }
 
@@ -331,6 +343,10 @@ impl VCDFile {
 
     pub fn set_date(&mut self, date_text: String) {
         self.date = date_text;
+    }
+
+    pub fn set_version(&mut self, version_text: String) {
+        self.version = version_text;
     }
 
     pub fn set_time_unit(&mut self, time_unit: &str) {

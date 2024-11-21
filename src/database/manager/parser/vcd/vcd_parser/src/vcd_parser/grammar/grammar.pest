@@ -11,13 +11,16 @@ header_text = _{ (!"$" ~ ANY)+ }
 date_text =  { header_text }
 date      = _{ "$date" ~ date_text ~ "$end" }
 
+version_text = { header_text }
+version      = _{ "$version" ~ version_text ~ "$end" }
+
 timescale = _{ "$timescale" ~ scale_text ~ "$end" }
 
 comment_text =  { header_text }
 vcd_comment  = _{ "$comment" ~ comment_text ~ "$end" }
 
 header_section = _{
-    date ~ timescale ~ vcd_comment
+    date ~ version? ~ timescale ~ vcd_comment?
 }
 
 /* definition */
@@ -65,12 +68,12 @@ close_scope = { "$upscope" ~ "$end" }
 scope  = _{ open_scope ~ (scope | variable)+ ~ close_scope }
 scopes = _{ scope+ }
 
-variable_definition_section = _{ scopes ~ "$enddefinitions" ~ "$end" }
+variable_definition_section = _{ scopes ~ "$enddefinitions" ~ "$end" ~ vcd_comment?}
 
 /* change */
 scalar_num = { "0" | "1" | "x" | "X" | "z" | "Z" }
 
-bin_num_text =  { scalar_num+ }
+bin_num_text =  @{ scalar_num+ }
 bin_num      = _{ ("b" | "B") ~ bin_num_text }
 real_num     =  {
     ("r" | "R") ~ ("-")? ~ ASCII_DIGIT+ ~ (("e" | "E") ~ ("+" | "-")? ~ ASCII_DIGIT+)?
@@ -87,7 +90,7 @@ vector_value_change    = _{ bitvector_value_change | real_value_change }
 signal_value_change = _{ scalar_value_change | vector_value_change }
 
 value_change         = _{
-    simulation_time ~ simulation_keyword ~ (signal_value_change)* ~ "$end"
+    simulation_time? ~ simulation_keyword ~ (signal_value_change)* ~ "$end"
   | simulation_time ~ (signal_value_change)*
 }
 value_change_section = _{ value_change+ }

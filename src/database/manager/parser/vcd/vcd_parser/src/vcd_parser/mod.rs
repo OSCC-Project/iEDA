@@ -22,6 +22,12 @@ fn process_date(pair: Pair<Rule>, vcd_file_parser: &mut vcd_data::VCDFileParser)
     vcd_file.set_date(date_text);
 }
 
+fn process_version(pair: Pair<Rule>, vcd_file_parser: &mut vcd_data::VCDFileParser) {
+    let version_text = pair.as_str().parse::<String>().unwrap();
+    let vcd_file = vcd_file_parser.get_vcd_file();
+    vcd_file.set_date(version_text);
+}
+
 /// process scale number.
 fn process_scale_number(pair: Pair<Rule>, vcd_file_parser: &mut vcd_data::VCDFileParser) {
     let scale_number = pair.as_str().parse::<u32>().unwrap();
@@ -63,6 +69,8 @@ fn process_open_scope(pair: Pair<Rule>, vcd_file_parser: &mut vcd_data::VCDFileP
     let pair_module = inner_pairs.next_back().unwrap();
     let module_name = pair_module.as_str();
 
+    println!("scope module: {}", module_name);
+
     let new_scope: Rc<RefCell<vcd_data::VCDScope>> = Rc::new(RefCell::new(
         vcd_data::VCDScope::new(String::from(module_name)),
     ));
@@ -78,10 +86,12 @@ fn process_open_scope(pair: Pair<Rule>, vcd_file_parser: &mut vcd_data::VCDFileP
             .set_parent_scope(Rc::clone(&*parent_scope));
 
         parent_scope.borrow_mut().add_child_scope(new_scope);
+
         scope_stack.push_back(new_scope_copy);
     } else {
         vcd_file_parser.set_root_scope(new_scope);
     }
+    
 }
 
 /// process signal variable.
@@ -126,7 +136,10 @@ fn process_variable(pair: Pair<Rule>, vcd_file_parser: &mut vcd_data::VCDFilePar
 /// process close scope.
 fn process_close_scope(_pair: Pair<Rule>, vcd_file_parser: &mut vcd_data::VCDFileParser) {
     let scope_stack = vcd_file_parser.get_scope_stack();
-    scope_stack.pop_back();
+    if !scope_stack.is_empty() {
+        scope_stack.pop_back();
+    }
+    
 }
 
 /// process simulate time.
@@ -146,7 +159,7 @@ fn process_scalar_value_change(pair: Pair<Rule>, vcd_file_parser: &mut vcd_data:
         "1" => vcd_data::VCDBit::BitOne,
         "x" | "X" => vcd_data::VCDBit::BitX,
         "z" | "Z" => vcd_data::VCDBit::BitZ,
-        _ => panic!("unkown value"),
+        _ => panic!("unkown value {}", scalar_value_pair.as_str()),
     };
     let hash_pair = scalar_value_change_pairs.next_back().unwrap();
     let hash_str = String::from(hash_pair.as_str());
@@ -165,9 +178,16 @@ fn process_scalar_value_change(pair: Pair<Rule>, vcd_file_parser: &mut vcd_data:
 
 /// process vector value change.
 fn process_bitvector_value_change(pair: Pair<Rule>, vcd_file_parser: &mut vcd_data::VCDFileParser) {
+    let line_no = pair.line_col().0;
+    // let pair_clone = pair.clone();
+    // println!("Rule:    {:?}", pair_clone.as_rule());
+    // println!("Span:    {:?}", pair_clone.as_span());
+    // println!("Text:    {}", pair_clone.as_str());
+
     let mut bitvector_value_change_pairs = pair.into_inner().into_iter();
     let bitvector_value_pair = bitvector_value_change_pairs.next().unwrap();
     let bitvector_value_str = bitvector_value_pair.as_str();
+    // println!("bitvector_value_str {} len {}", bitvector_value_str,bitvector_value_str.len());
 
     let mut vcd_bit_vec: Vec<vcd_data::VCDBit> = Vec::with_capacity(bitvector_value_str.len());
     for bit in bitvector_value_str.chars() {
@@ -176,7 +196,7 @@ fn process_bitvector_value_change(pair: Pair<Rule>, vcd_file_parser: &mut vcd_da
             '1' => vcd_data::VCDBit::BitOne,
             'x' | 'X' => vcd_data::VCDBit::BitX,
             'z' | 'Z' => vcd_data::VCDBit::BitZ,
-            _ => panic!("unkown value"),
+            _ => panic!("unkown value {} in {}", bit, line_no),
         };
 
         vcd_bit_vec.push(bit_value);
@@ -221,14 +241,15 @@ fn process_real_value_change(pair: Pair<Rule>, vcd_file_parser: &mut vcd_data::V
 
 /// process vcd data.
 fn process_vcd(pair: Pair<Rule>, vcd_file_parser: &mut vcd_data::VCDFileParser) {
-    let pair_clone = pair.clone();
-    println!("Rule:    {:?}", pair_clone.as_rule());
-    println!("Span:    {:?}", pair_clone.as_span());
-    println!("Text:    {}", pair_clone.as_str());
+    // let pair_clone = pair.clone();
+    // println!("Rule:    {:?}", pair_clone.as_rule());
+    // println!("Span:    {:?}", pair_clone.as_span());
+    // println!("Text:    {}", pair_clone.as_str());
 
     for inner_pair in pair.into_inner() {
         match inner_pair.as_rule() {
             Rule::date_text => process_date(inner_pair, vcd_file_parser),
+            Rule::version_text => process_version(inner_pair, vcd_file_parser),
             Rule::scale_text => process_scale(inner_pair, vcd_file_parser),
             Rule::comment_text => process_comment(inner_pair, vcd_file_parser),
             Rule::open_scope => process_open_scope(inner_pair, vcd_file_parser),
