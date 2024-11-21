@@ -49,19 +49,103 @@ void DRCEngine::destroyInst()
 
 // function
 
+void DRCEngine::init()
+{
+  Monitor monitor;
+  RTLOG.info(Loc::current(), "Starting...");
+
+  buildIgnoreViolationSet();
+
+  RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
+}
+
 std::vector<Violation> DRCEngine::getViolationList(DETask& de_task)
 {
-  getViolationListByOther(de_task);
-
-  // getViolationListBySelf(de_task);
-  buildViolationList(de_task);
-
-  return de_task.get_violation_list();
+  return getViolationList(de_task, true);
 }
 
 // private
 
 DRCEngine* DRCEngine::_de_instance = nullptr;
+
+void DRCEngine::buildIgnoreViolationSet()
+{
+  Die& die = RTDM.getDatabase().get_die();
+  std::vector<Net>& net_list = RTDM.getDatabase().get_net_list();
+
+  std::string top_name = RTUTIL.getString("ignore_violation");
+  PlanarRect check_region = die.get_real_rect();
+  std::vector<std::pair<EXTLayerRect*, bool>> env_shape_list;
+  std::map<int32_t, std::vector<std::pair<EXTLayerRect*, bool>>> net_pin_shape_map;
+  for (auto& [is_routing, layer_net_fixed_rect_map] : RTDM.getTypeLayerNetFixedRectMap(die)) {
+    for (auto& [layer_idx, net_fixed_rect_map] : layer_net_fixed_rect_map) {
+      for (auto& [net_idx, fixed_rect_set] : net_fixed_rect_map) {
+        if (net_idx == -1) {
+          for (auto& fixed_rect : fixed_rect_set) {
+            env_shape_list.emplace_back(fixed_rect, is_routing);
+          }
+        } else {
+          for (auto& fixed_rect : fixed_rect_set) {
+            net_pin_shape_map[net_idx].emplace_back(fixed_rect, is_routing);
+          }
+        }
+      }
+    }
+  }
+  std::map<int32_t, std::vector<Segment<LayerCoord>*>> net_result_map;
+  for (auto& [net_idx, segment_set] : RTDM.getNetAccessResultMap(die)) {
+    for (Segment<LayerCoord>* segment : segment_set) {
+      net_result_map[net_idx].push_back(segment);
+    }
+  }
+  for (auto& [net_idx, segment_set] : RTDM.getNetDetailedResultMap(die)) {
+    for (Segment<LayerCoord>* segment : segment_set) {
+      net_result_map[net_idx].push_back(segment);
+    }
+  }
+  std::map<int32_t, std::vector<EXTLayerRect*>> net_patch_map;
+  for (auto& [net_idx, patch_set] : RTDM.getNetAccessPatchMap(die)) {
+    for (EXTLayerRect* patch : patch_set) {
+      net_patch_map[net_idx].push_back(patch);
+    }
+  }
+  for (auto& [net_idx, patch_set] : RTDM.getNetDetailedPatchMap(die)) {
+    for (EXTLayerRect* patch : patch_set) {
+      net_patch_map[net_idx].push_back(patch);
+    }
+  }
+  std::set<int32_t> need_checked_net_set;
+  for (Net& net : net_list) {
+    need_checked_net_set.insert(net.get_net_idx());
+  }
+
+  DETask de_task;
+  de_task.set_process_type_set({DEProcessType::kCost});
+  de_task.set_top_name(top_name);
+  de_task.set_check_region(check_region);
+  de_task.set_env_shape_list(env_shape_list);
+  de_task.set_net_pin_shape_map(net_pin_shape_map);
+  de_task.set_net_result_map(net_result_map);
+  de_task.set_net_patch_map(net_patch_map);
+  de_task.set_need_checked_net_set(need_checked_net_set);
+  for (Violation violation : getViolationList(de_task, false)) {
+    _ignore_violation_set.insert(violation);
+  }
+}
+
+std::vector<Violation> DRCEngine::getViolationList(DETask& de_task, bool post_process)
+{
+  getViolationListByInterface(de_task);
+
+  // getViolationListBySelf(de_task);
+  filterViolationList(de_task);
+  if (post_process) {
+    fixViolationNetSet(de_task);
+    explandViolationList(de_task);
+    buildViolationList(de_task);
+  }
+  return de_task.get_violation_list();
+}
 
 void DRCEngine::getViolationListBySelf(DETask& de_task)
 {
@@ -424,7 +508,7 @@ void DRCEngine::readTask(DETask& de_task)
   RTUTIL.removeDir(de_task.get_top_dir_path());
 }
 
-void DRCEngine::getViolationListByOther(DETask& de_task)
+void DRCEngine::getViolationListByInterface(DETask& de_task)
 {
   std::map<int32_t, std::vector<Segment<LayerCoord>>> net_result_map;
   for (auto& [net_idx, segment_list] : de_task.get_net_result_map()) {
@@ -443,10 +527,8 @@ void DRCEngine::getViolationListByOther(DETask& de_task)
   }
 }
 
-void DRCEngine::buildViolationList(DETask& de_task)
+void DRCEngine::filterViolationList(DETask& de_task)
 {
-  ScaleAxis& gcell_axis = RTDM.getDatabase().get_gcell_axis();
-
   std::vector<Violation> new_violation_list;
   for (Violation& violation : de_task.get_violation_list()) {
     if (violation.get_violation_type() == ViolationType::kNone) {
@@ -478,16 +560,76 @@ void DRCEngine::buildViolationList(DETask& de_task)
       // net不是布线net的舍弃
       continue;
     }
+    if (RTUTIL.exist(_ignore_violation_set, violation)) {
+      // 自带的违例舍弃
+      continue;
+    }
+    new_violation_list.push_back(violation);
+  }
+  de_task.set_violation_list(new_violation_list);
+}
+
+void DRCEngine::fixViolationNetSet(DETask& de_task)
+{
+  // {
+  //   for (Violation& violation : pa_box.get_violation_list()) {
+  //     std::map<int32_t, std::vector<int32_t>>& cut_to_adjacent_routing_map = RTDM.getDatabase().get_cut_to_adjacent_routing_map();
+
+  //     std::vector<LayerRect> searched_rect_list;
+  //     {
+  //       EXTLayerRect& violation_shape = violation.get_violation_shape();
+  //       PlanarRect enlarged_rect = RTUTIL.getEnlargedRect(violation_shape.get_real_rect(), RTDM.getOnlyPitch());
+  //       if (violation.get_is_routing()) {
+  //         searched_rect_list.emplace_back(enlarged_rect, violation_shape.get_layer_idx());
+  //       } else {
+  //         for (int32_t layer_idx : cut_to_adjacent_routing_map[violation_shape.get_layer_idx()]) {
+  //           searched_rect_list.emplace_back(enlarged_rect, layer_idx);
+  //         }
+  //       }
+  //     }
+  //     std::set<int32_t> violation_net_set;
+  //     for (auto& [net_idx, task_result_map] : pa_box.get_net_task_result_map()) {
+  //       for (auto& [task_idx, segment_list] : task_result_map) {
+  //         for (Segment<LayerCoord>& segment : segment_list) {
+  //           for (LayerRect& searched_rect : searched_rect_list) {
+  //             if (!RTUTIL.isOverlap(searched_rect, segment)) {
+  //               continue;
+  //             }
+  //             violation_net_set.insert(net_idx);
+  //             if (violation_net_set.size() >= 2) {
+  //               break;
+  //             }
+  //           }
+  //         }
+  //       }
+  //     }
+  //     violation.set_violation_net_set(violation_net_set);
+  //   }
+  // }
+}
+
+void DRCEngine::explandViolationList(DETask& de_task)
+{
+  std::vector<Violation> new_violation_list;
+  for (Violation& violation : de_task.get_violation_list()) {
     for (Violation new_violation : expandViolation(violation)) {
       new_violation_list.push_back(new_violation);
     }
   }
-  for (Violation& new_violation : new_violation_list) {
-    EXTLayerRect& violation_shape = new_violation.get_violation_shape();
-    violation_shape.set_grid_rect(RTUTIL.getClosedGCellGridRect(violation_shape.get_real_rect(), gcell_axis));
-  }
   de_task.set_violation_list(new_violation_list);
 }
+
+void DRCEngine::buildViolationList(DETask& de_task)
+{
+  ScaleAxis& gcell_axis = RTDM.getDatabase().get_gcell_axis();
+
+  for (Violation& violation : de_task.get_violation_list()) {
+    EXTLayerRect& violation_shape = violation.get_violation_shape();
+    violation_shape.set_grid_rect(RTUTIL.getClosedGCellGridRect(violation_shape.get_real_rect(), gcell_axis));
+  }
+}
+
+#if 1  // aux
 
 DEProcessType DRCEngine::getDEProcessType(Violation& violation)
 {
@@ -590,9 +732,10 @@ void DRCEngine::buildByFunc(Violation& violation, const DEFuncType& de_func_type
       break;
     case ViolationType::kJogToJogSpacing:
       if (de_func_type == DEFuncType::kGetDEProcessType) {
-        de_process_type = DEProcessType::kSkip;
+        de_process_type = DEProcessType::kCost;
       } else if (de_func_type == DEFuncType::kExpandViolation) {
-        RTLOG.error(Loc::current(), "This is skipping!");
+        enlarged_rect = enlargeRect(violation);
+        layer_routing_list = keepLayer(violation);
       }
       break;
     case ViolationType::kMaxViaStack:
@@ -714,32 +857,16 @@ PlanarRect DRCEngine::keepRect(Violation& violation)
 
 PlanarRect DRCEngine::enlargeRect(Violation& violation)
 {
-  PlanarRect enlarged_rect;
   PlanarRect& real_rect = violation.get_violation_shape().get_real_rect();
-  if (RTUTIL.exist(violation.get_violation_net_set(), -1)) {
-    int32_t enlarged_x_size = 0;
-    if (real_rect.getXSpan() < violation.get_required_size()) {
-      enlarged_x_size = violation.get_required_size() - real_rect.getXSpan();
-    }
-    int32_t enlarged_y_size = 0;
-    if (real_rect.getYSpan() < violation.get_required_size()) {
-      enlarged_y_size = violation.get_required_size() - real_rect.getYSpan();
-    }
-    enlarged_rect = RTUTIL.getEnlargedRect(real_rect, enlarged_x_size, enlarged_y_size, enlarged_x_size, enlarged_y_size);
-  } else {
-    int32_t enlarged_x_size = 0;
-    if (real_rect.getXSpan() < violation.get_required_size()) {
-      enlarged_x_size = violation.get_required_size() - real_rect.getXSpan();
-      enlarged_x_size /= 2;
-    }
-    int32_t enlarged_y_size = 0;
-    if (real_rect.getYSpan() < violation.get_required_size()) {
-      enlarged_y_size = violation.get_required_size() - real_rect.getYSpan();
-      enlarged_y_size /= 2;
-    }
-    enlarged_rect = RTUTIL.getEnlargedRect(real_rect, enlarged_x_size, enlarged_y_size, enlarged_x_size, enlarged_y_size);
+  int32_t enlarged_x_size = 0;
+  if (real_rect.getXSpan() < violation.get_required_size()) {
+    enlarged_x_size = violation.get_required_size() - real_rect.getXSpan();
   }
-  return enlarged_rect;
+  int32_t enlarged_y_size = 0;
+  if (real_rect.getYSpan() < violation.get_required_size()) {
+    enlarged_y_size = violation.get_required_size() - real_rect.getYSpan();
+  }
+  return RTUTIL.getEnlargedRect(real_rect, enlarged_x_size, enlarged_y_size, enlarged_x_size, enlarged_y_size);
 }
 
 std::vector<std::pair<int32_t, bool>> DRCEngine::keepLayer(Violation& violation)
@@ -782,5 +909,7 @@ std::vector<std::pair<int32_t, bool>> DRCEngine::expandTwoViaLayer(Violation& vi
   layer_routing_list.emplace_back(above_layer_idx, true);
   return layer_routing_list;
 }
+
+#endif
 
 }  // namespace irt

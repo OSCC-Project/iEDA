@@ -95,12 +95,14 @@ class TrackAssigner
   double getEstimateViaCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node);
   void updateViolationList(TAPanel& ta_panel);
   std::vector<Violation> getCostViolationList(TAPanel& ta_panel);
-  std::vector<TATask*> getTaskScheduleByViolation(TAPanel& ta_panel);
-  void routeTAPanelByOther(TAPanel& ta_panel);
+  void updateTaskSchedule(TAPanel& ta_panel, std::vector<TATask*>& routing_task_list);
+  void routeTAPanelByInterface(TAPanel& ta_panel);
   void uploadNetResult(TAPanel& ta_panel);
   void uploadViolation(TAPanel& ta_panel);
   void freeTAPanel(TAPanel& ta_panel);
   int32_t getViolationNum();
+  void uploadViolation(TAModel& ta_model);
+  std::vector<Violation> getCostViolationList(TAModel& ta_model);
 
 #if 1  // update env
   void updateFixedRectToGraph(TAPanel& ta_panel, ChangeType change_type, int32_t net_idx, EXTLayerRect* fixed_rect, bool is_routing);

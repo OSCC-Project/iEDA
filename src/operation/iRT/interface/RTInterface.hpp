@@ -95,8 +95,8 @@ class RTInterface
   void wrapRow();
   void wrapLayerList();
   void wrapTrackAxis(RoutingLayer& routing_layer, idb::IdbLayerRouting* idb_layer);
-  void wrapRoutingSpacingTable(RoutingLayer& routing_layer, idb::IdbLayerRouting* idb_layer);
-  void wrapCutSpacingTable(CutLayer& cut_layer, idb::IdbLayerCut* idb_layer);
+  void wrapRoutingDesignRule(RoutingLayer& routing_layer, idb::IdbLayerRouting* idb_layer);
+  void wrapCutDesignRule(CutLayer& cut_layer, idb::IdbLayerCut* idb_layer);
   void wrapLayerInfo();
   void wrapLayerViaMasterList();
   void wrapObstacleList();
