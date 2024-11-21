@@ -73,7 +73,6 @@ class DetailedRouter
   void buildOrientNetMap(DRBox& dr_box);
   void routeDRBox(DRBox& dr_box);
   std::vector<DRTask*> initTaskSchedule(DRBox& dr_box);
-  std::vector<DRTask*> getTaskScheduleByViolation(DRBox& dr_box);
   void routeDRTask(DRBox& dr_box, DRTask* dr_task);
   void initSingleTask(DRBox& dr_box, DRTask* dr_task);
   bool isConnectedAllEnd(DRBox& dr_box);
@@ -106,6 +105,7 @@ class DetailedRouter
   double getEstimateViaCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
   void updateViolationList(DRBox& dr_box);
   std::vector<Violation> getCostViolationList(DRBox& dr_box);
+  void updateTaskSchedule(DRBox& dr_box, std::vector<DRTask*>& routing_task_list);
   void uploadNetResult(DRBox& dr_box);
   void uploadViolation(DRBox& dr_box);
   void freeDRBox(DRBox& dr_box);

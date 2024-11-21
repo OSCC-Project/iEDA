@@ -133,13 +133,15 @@ void DRCEngine::buildIgnoreViolationSet()
   }
 }
 
-std::vector<Violation> DRCEngine::getViolationList(DETask& de_task, bool need_build)
+std::vector<Violation> DRCEngine::getViolationList(DETask& de_task, bool post_process)
 {
-  // getViolationListByOther(de_task);
+  getViolationListByInterface(de_task);
 
-  getViolationListBySelf(de_task);
+  // getViolationListBySelf(de_task);
   filterViolationList(de_task);
-  if (need_build) {
+  if (post_process) {
+    fixViolationNetSet(de_task);
+    explandViolationList(de_task);
     buildViolationList(de_task);
   }
   return de_task.get_violation_list();
@@ -506,7 +508,7 @@ void DRCEngine::readTask(DETask& de_task)
   RTUTIL.removeDir(de_task.get_top_dir_path());
 }
 
-void DRCEngine::getViolationListByOther(DETask& de_task)
+void DRCEngine::getViolationListByInterface(DETask& de_task)
 {
   std::map<int32_t, std::vector<Segment<LayerCoord>>> net_result_map;
   for (auto& [net_idx, segment_list] : de_task.get_net_result_map()) {
@@ -567,21 +569,64 @@ void DRCEngine::filterViolationList(DETask& de_task)
   de_task.set_violation_list(new_violation_list);
 }
 
-void DRCEngine::buildViolationList(DETask& de_task)
+void DRCEngine::fixViolationNetSet(DETask& de_task)
 {
-  ScaleAxis& gcell_axis = RTDM.getDatabase().get_gcell_axis();
+  // {
+  //   for (Violation& violation : pa_box.get_violation_list()) {
+  //     std::map<int32_t, std::vector<int32_t>>& cut_to_adjacent_routing_map = RTDM.getDatabase().get_cut_to_adjacent_routing_map();
 
+  //     std::vector<LayerRect> searched_rect_list;
+  //     {
+  //       EXTLayerRect& violation_shape = violation.get_violation_shape();
+  //       PlanarRect enlarged_rect = RTUTIL.getEnlargedRect(violation_shape.get_real_rect(), RTDM.getOnlyPitch());
+  //       if (violation.get_is_routing()) {
+  //         searched_rect_list.emplace_back(enlarged_rect, violation_shape.get_layer_idx());
+  //       } else {
+  //         for (int32_t layer_idx : cut_to_adjacent_routing_map[violation_shape.get_layer_idx()]) {
+  //           searched_rect_list.emplace_back(enlarged_rect, layer_idx);
+  //         }
+  //       }
+  //     }
+  //     std::set<int32_t> violation_net_set;
+  //     for (auto& [net_idx, task_result_map] : pa_box.get_net_task_result_map()) {
+  //       for (auto& [task_idx, segment_list] : task_result_map) {
+  //         for (Segment<LayerCoord>& segment : segment_list) {
+  //           for (LayerRect& searched_rect : searched_rect_list) {
+  //             if (!RTUTIL.isOverlap(searched_rect, segment)) {
+  //               continue;
+  //             }
+  //             violation_net_set.insert(net_idx);
+  //             if (violation_net_set.size() >= 2) {
+  //               break;
+  //             }
+  //           }
+  //         }
+  //       }
+  //     }
+  //     violation.set_violation_net_set(violation_net_set);
+  //   }
+  // }
+}
+
+void DRCEngine::explandViolationList(DETask& de_task)
+{
   std::vector<Violation> new_violation_list;
   for (Violation& violation : de_task.get_violation_list()) {
     for (Violation new_violation : expandViolation(violation)) {
       new_violation_list.push_back(new_violation);
     }
   }
-  for (Violation& new_violation : new_violation_list) {
-    EXTLayerRect& violation_shape = new_violation.get_violation_shape();
+  de_task.set_violation_list(new_violation_list);
+}
+
+void DRCEngine::buildViolationList(DETask& de_task)
+{
+  ScaleAxis& gcell_axis = RTDM.getDatabase().get_gcell_axis();
+
+  for (Violation& violation : de_task.get_violation_list()) {
+    EXTLayerRect& violation_shape = violation.get_violation_shape();
     violation_shape.set_grid_rect(RTUTIL.getClosedGCellGridRect(violation_shape.get_real_rect(), gcell_axis));
   }
-  de_task.set_violation_list(new_violation_list);
 }
 
 #if 1  // aux
@@ -812,32 +857,16 @@ PlanarRect DRCEngine::keepRect(Violation& violation)
 
 PlanarRect DRCEngine::enlargeRect(Violation& violation)
 {
-  PlanarRect enlarged_rect;
   PlanarRect& real_rect = violation.get_violation_shape().get_real_rect();
-  if (RTUTIL.exist(violation.get_violation_net_set(), -1)) {
-    int32_t enlarged_x_size = 0;
-    if (real_rect.getXSpan() < violation.get_required_size()) {
-      enlarged_x_size = violation.get_required_size() - real_rect.getXSpan();
-    }
-    int32_t enlarged_y_size = 0;
-    if (real_rect.getYSpan() < violation.get_required_size()) {
-      enlarged_y_size = violation.get_required_size() - real_rect.getYSpan();
-    }
-    enlarged_rect = RTUTIL.getEnlargedRect(real_rect, enlarged_x_size, enlarged_y_size, enlarged_x_size, enlarged_y_size);
-  } else {
-    int32_t enlarged_x_size = 0;
-    if (real_rect.getXSpan() < violation.get_required_size()) {
-      enlarged_x_size = violation.get_required_size() - real_rect.getXSpan();
-      enlarged_x_size /= 2;
-    }
-    int32_t enlarged_y_size = 0;
-    if (real_rect.getYSpan() < violation.get_required_size()) {
-      enlarged_y_size = violation.get_required_size() - real_rect.getYSpan();
-      enlarged_y_size /= 2;
-    }
-    enlarged_rect = RTUTIL.getEnlargedRect(real_rect, enlarged_x_size, enlarged_y_size, enlarged_x_size, enlarged_y_size);
+  int32_t enlarged_x_size = 0;
+  if (real_rect.getXSpan() < violation.get_required_size()) {
+    enlarged_x_size = violation.get_required_size() - real_rect.getXSpan();
   }
-  return enlarged_rect;
+  int32_t enlarged_y_size = 0;
+  if (real_rect.getYSpan() < violation.get_required_size()) {
+    enlarged_y_size = violation.get_required_size() - real_rect.getYSpan();
+  }
+  return RTUTIL.getEnlargedRect(real_rect, enlarged_x_size, enlarged_y_size, enlarged_x_size, enlarged_y_size);
 }
 
 std::vector<std::pair<int32_t, bool>> DRCEngine::keepLayer(Violation& violation)

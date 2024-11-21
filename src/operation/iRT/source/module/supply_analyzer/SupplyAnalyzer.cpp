@@ -233,7 +233,7 @@ bool SupplyAnalyzer::isAccess(LayerRect& wire, std::vector<PlanarRect>& obs_rect
   RoutingLayer& routing_layer = routing_layer_list[wire.get_layer_idx()];
 
   for (PlanarRect& obs_rect : obs_rect_list) {
-    int32_t enlarged_size = routing_layer.getMinSpacing(obs_rect);
+    int32_t enlarged_size = routing_layer.getPRLSpacing(obs_rect);
     PlanarRect enlarged_rect = RTUTIL.getEnlargedRect(obs_rect, enlarged_size);
     if (RTUTIL.isOpenOverlap(enlarged_rect, wire)) {
       // 阻塞

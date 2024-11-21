@@ -685,14 +685,14 @@ void DetailedRouter::buildOrientNetMap(DRBox& dr_box)
 
 void DetailedRouter::routeDRBox(DRBox& dr_box)
 {
-  std::vector<DRTask*> dr_task_list = initTaskSchedule(dr_box);
-  while (!dr_task_list.empty()) {
-    for (DRTask* dr_task : dr_task_list) {
-      routeDRTask(dr_box, dr_task);
-      dr_task->addRoutedTimes();
+  std::vector<DRTask*> routing_task_list = initTaskSchedule(dr_box);
+  while (!routing_task_list.empty()) {
+    for (DRTask* routing_task : routing_task_list) {
+      routeDRTask(dr_box, routing_task);
+      routing_task->addRoutedTimes();
     }
     updateViolationList(dr_box);
-    dr_task_list = getTaskScheduleByViolation(dr_box);
+    updateTaskSchedule(dr_box, routing_task_list);
   }
 }
 
@@ -700,15 +700,15 @@ std::vector<DRTask*> DetailedRouter::initTaskSchedule(DRBox& dr_box)
 {
   bool initial_rip_up = dr_box.get_dr_parameter()->get_initial_rip_up();
 
-  std::vector<DRTask*> dr_task_list;
+  std::vector<DRTask*> routing_task_list;
   if (initial_rip_up) {
     for (DRTask* dr_task : dr_box.get_dr_task_list()) {
-      dr_task_list.push_back(dr_task);
+      routing_task_list.push_back(dr_task);
     }
   } else {
-    dr_task_list = getTaskScheduleByViolation(dr_box);
+    updateTaskSchedule(dr_box, routing_task_list);
   }
-  return dr_task_list;
+  return routing_task_list;
 }
 
 void DetailedRouter::routeDRTask(DRBox& dr_box, DRTask* dr_task)
@@ -1287,27 +1287,36 @@ std::vector<Violation> DetailedRouter::getCostViolationList(DRBox& dr_box)
   return RTDE.getViolationList(de_task);
 }
 
-std::vector<DRTask*> DetailedRouter::getTaskScheduleByViolation(DRBox& dr_box)
+void DetailedRouter::updateTaskSchedule(DRBox& dr_box, std::vector<DRTask*>& routing_task_list)
 {
   int32_t max_routed_times = dr_box.get_dr_parameter()->get_max_routed_times();
 
-  std::set<int32_t> violation_net_set;
+  std::set<DRTask*> visited_routing_task_set;
+  std::vector<DRTask*> new_routing_task_list;
   for (Violation& violation : dr_box.get_violation_list()) {
-    for (int32_t violation_net : violation.get_violation_net_set()) {
-      violation_net_set.insert(violation_net);
+    for (DRTask* dr_task : dr_box.get_dr_task_list()) {
+      if (!RTUTIL.exist(violation.get_violation_net_set(), dr_task->get_net_idx())) {
+        continue;
+      }
+      if (dr_task->get_routed_times() < max_routed_times && !RTUTIL.exist(visited_routing_task_set, dr_task)) {
+        visited_routing_task_set.insert(dr_task);
+        new_routing_task_list.push_back(dr_task);
+      }
+      break;
     }
   }
-  std::vector<DRTask*> dr_task_list;
+  routing_task_list = new_routing_task_list;
+
+  std::vector<DRTask*> new_dr_task_list;
   for (DRTask* dr_task : dr_box.get_dr_task_list()) {
-    if (!RTUTIL.exist(violation_net_set, dr_task->get_net_idx())) {
-      continue;
+    if (!RTUTIL.exist(visited_routing_task_set, dr_task)) {
+      new_dr_task_list.push_back(dr_task);
     }
-    if (dr_task->get_routed_times() >= max_routed_times) {
-      continue;
-    }
-    dr_task_list.push_back(dr_task);
   }
-  return dr_task_list;
+  for (DRTask* routing_task : routing_task_list) {
+    new_dr_task_list.push_back(routing_task);
+  }
+  dr_box.set_dr_task_list(new_dr_task_list);
 }
 
 void DetailedRouter::uploadNetResult(DRBox& dr_box)
@@ -1707,7 +1716,18 @@ std::map<DRNode*, std::set<Orientation>> DetailedRouter::getRoutingNodeOrientati
   }
   int32_t layer_idx = net_shape.get_layer_idx();
   RoutingLayer& routing_layer = routing_layer_list[layer_idx];
-  int32_t min_spacing = routing_layer.getMinSpacing(net_shape.get_rect());
+  int32_t x_spacing = 0;
+  int32_t y_spacing = 0;
+  {
+    int32_t prl_spacing = routing_layer.getPRLSpacing(net_shape.get_rect());
+    if (routing_layer.isPreferH()) {
+      x_spacing = std::max(prl_spacing, routing_layer.get_eol_spacing());
+      y_spacing = std::max(prl_spacing, routing_layer.get_eol_within());
+    } else {
+      x_spacing = std::max(prl_spacing, routing_layer.get_eol_within());
+      y_spacing = std::max(prl_spacing, routing_layer.get_eol_spacing());
+    }
+  }
   int32_t half_wire_width = routing_layer.get_min_width() / 2;
   PlanarRect& enclosure = layer_enclosure_map[layer_idx];
   int32_t enclosure_half_x_span = enclosure.getXSpan() / 2;
@@ -1717,14 +1737,18 @@ std::map<DRNode*, std::set<Orientation>> DetailedRouter::getRoutingNodeOrientati
   std::map<DRNode*, std::set<Orientation>> node_orientation_map;
   // wire 与 net_shape
   {
-    int32_t enlarged_size = half_wire_width;
+    int32_t enlarged_x_size = half_wire_width;
+    int32_t enlarged_y_size = half_wire_width;
     if (need_enlarged) {
-      // 膨胀size为 min_spacing
-      enlarged_size += min_spacing;
+      // 膨胀size为 half_wire_width + spacing
+      enlarged_x_size += x_spacing;
+      enlarged_y_size += y_spacing;
     }
     // 贴合的也不算违例
-    enlarged_size -= 1;
-    PlanarRect planar_enlarged_rect = RTUTIL.getEnlargedRect(net_shape.get_rect(), enlarged_size);
+    enlarged_x_size -= 1;
+    enlarged_y_size -= 1;
+    PlanarRect planar_enlarged_rect
+        = RTUTIL.getEnlargedRect(net_shape.get_rect(), enlarged_x_size, enlarged_y_size, enlarged_x_size, enlarged_y_size);
     for (auto& [grid_coord, orientation_set] : RTUTIL.getTrackGridOrientationMap(planar_enlarged_rect, dr_box.get_box_track_axis())) {
       DRNode& node = dr_node_map[grid_coord.get_x()][grid_coord.get_y()];
       for (const Orientation& orientation : orientation_set) {
@@ -1744,9 +1768,9 @@ std::map<DRNode*, std::set<Orientation>> DetailedRouter::getRoutingNodeOrientati
     int32_t enlarged_x_size = enclosure_half_x_span;
     int32_t enlarged_y_size = enclosure_half_y_span;
     if (need_enlarged) {
-      // 膨胀size为 min_spacing + enclosure_half_span
-      enlarged_x_size += min_spacing;
-      enlarged_y_size += min_spacing;
+      // 膨胀size为 enclosure_half_span + spacing
+      enlarged_x_size += x_spacing;
+      enlarged_y_size += y_spacing;
     }
     // 贴合的也不算违例
     enlarged_x_size -= 1;
@@ -1791,7 +1815,7 @@ std::map<DRNode*, std::set<Orientation>> DetailedRouter::getCutNodeOrientationMa
   std::vector<GridMap<DRNode>>& layer_node_map = dr_box.get_layer_node_map();
   std::map<DRNode*, std::set<Orientation>> node_orientation_map;
 
-  int32_t cut_spacing = cut_layer_list[net_shape.get_layer_idx()].getMinSpacing();
+  int32_t cut_spacing = cut_layer_list[net_shape.get_layer_idx()].getCutSpacing();
   PlanarRect& cut_shape = layer_via_master_list[below_routing_layer_idx].front().get_cut_shape_list().front();
   int32_t cut_shape_half_x_span = cut_shape.getXSpan() / 2;
   int32_t cut_shape_half_y_span = cut_shape.getYSpan() / 2;
@@ -1799,7 +1823,7 @@ std::map<DRNode*, std::set<Orientation>> DetailedRouter::getCutNodeOrientationMa
   int32_t enlarged_x_size = cut_shape_half_x_span;
   int32_t enlarged_y_size = cut_shape_half_y_span;
   if (need_enlarged) {
-    // 膨胀size为 min_spacing + cut_shape_half_span
+    // 膨胀size为 cut_spacing + cut_shape_half_span
     enlarged_x_size += cut_spacing;
     enlarged_y_size += cut_spacing;
   }

@@ -677,10 +677,10 @@ void DataManager::makeLayerList()
     std::vector<int32_t> cut_spacing_list;
     for (RoutingLayer& routing_layer : routing_layer_list) {
       width_list.push_back(routing_layer.get_min_width());
-      routing_spacing_list.push_back(routing_layer.getMinSpacing(PlanarRect(0, 0, 0, 0)));
+      routing_spacing_list.push_back(routing_layer.getPRLSpacing(PlanarRect(0, 0, 0, 0)));
     }
     for (CutLayer& cut_layer : cut_layer_list) {
-      cut_spacing_list.push_back(cut_layer.getMinSpacing());
+      cut_spacing_list.push_back(cut_layer.getCutSpacing());
     }
     step_length = getFrequentNum(width_list) + std::min(getFrequentNum(routing_spacing_list), getFrequentNum(cut_spacing_list));
   }
@@ -724,7 +724,6 @@ void DataManager::checkLayerList()
   if (cut_layer_list.empty()) {
     RTLOG.error(Loc::current(), "The cut_layer_list is empty!");
   }
-
   for (RoutingLayer& routing_layer : routing_layer_list) {
     std::string& layer_name = routing_layer.get_layer_name();
     if (routing_layer.get_prefer_direction() == Direction::kNone) {
@@ -742,27 +741,33 @@ void DataManager::checkLayerList()
                     "' is wrong!");
       }
     }
-    SpacingTable& spacing_table = routing_layer.get_spacing_table();
-    if (spacing_table.get_width_list().empty()) {
+    SpacingTable& prl_spacing_table = routing_layer.get_prl_spacing_table();
+    if (prl_spacing_table.get_width_list().empty()) {
       RTLOG.error(Loc::current(), "The layer '", layer_name, "' spacing width list is empty!");
     }
-    for (int32_t width : spacing_table.get_width_list()) {
+    for (int32_t width : prl_spacing_table.get_width_list()) {
       if (width < 0) {
         RTLOG.error(Loc::current(), "The layer '", layer_name, "' width < 0!");
       }
     }
-    for (int32_t parallel_length : spacing_table.get_parallel_length_list()) {
+    for (int32_t parallel_length : prl_spacing_table.get_parallel_length_list()) {
       if (parallel_length < 0) {
         RTLOG.error(Loc::current(), "The layer '", layer_name, "' parallel_length < 0!");
       }
     }
-    GridMap<int32_t>& width_parallel_length_map = spacing_table.get_width_parallel_length_map();
+    GridMap<int32_t>& width_parallel_length_map = prl_spacing_table.get_width_parallel_length_map();
     for (int32_t width_idx = 0; width_idx < width_parallel_length_map.get_x_size(); width_idx++) {
       for (int32_t parallel_length_idx = 0; parallel_length_idx < width_parallel_length_map.get_y_size(); parallel_length_idx++) {
         if (width_parallel_length_map[width_idx][parallel_length_idx] < 0) {
           RTLOG.error(Loc::current(), "The layer '", layer_name, "' spacing < 0!");
         }
       }
+    }
+  }
+  for (CutLayer& cut_layer : cut_layer_list) {
+    std::string& layer_name = cut_layer.get_layer_name();
+    if (cut_layer.get_cut_spacing() < 0) {
+      RTLOG.error(Loc::current(), "The layer '", layer_name, "' spacing < 0!");
     }
   }
 }

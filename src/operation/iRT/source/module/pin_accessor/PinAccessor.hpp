@@ -108,7 +108,7 @@ class PinAccessor
   double getEstimateViaCost(PABox& pa_box, PANode* start_node, PANode* end_node);
   void updateViolationList(PABox& pa_box);
   std::vector<Violation> getCostViolationList(PABox& pa_box);
-  std::vector<PATask*> getTaskScheduleByViolation(PABox& pa_box);
+  void updateTaskSchedule(PABox& pa_box, std::vector<PATask*>& routing_task_list);
   void uploadAccessResult(PABox& pa_box);
   void uploadViolation(PABox& pa_box);
   void freePABox(PABox& pa_box);

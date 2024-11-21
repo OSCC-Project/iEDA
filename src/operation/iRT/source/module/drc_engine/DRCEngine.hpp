@@ -50,13 +50,15 @@ class DRCEngine
   DRCEngine& operator=(DRCEngine&& other) = delete;
   // function
   void buildIgnoreViolationSet();
-  std::vector<Violation> getViolationList(DETask& de_task, bool need_build);
+  std::vector<Violation> getViolationList(DETask& de_task, bool post_process);
   void getViolationListBySelf(DETask& de_task);
   void buildTask(DETask& de_task);
   void writeTask(DETask& de_task);
   void readTask(DETask& de_task);
-  void getViolationListByOther(DETask& de_task);
+  void getViolationListByInterface(DETask& de_task);
   void filterViolationList(DETask& de_task);
+  void fixViolationNetSet(DETask& de_task);
+  void explandViolationList(DETask& de_task);
   void buildViolationList(DETask& de_task);
 
 #if 1  // aux

@@ -486,20 +486,20 @@ void TrackAssigner::routeTAPanel(TAPanel& ta_panel)
   if (!enable_lsa) {
     routeTAPanelBySelf(ta_panel);
   } else {
-    routeTAPanelByOther(ta_panel);
+    routeTAPanelByInterface(ta_panel);
   }
 }
 
 void TrackAssigner::routeTAPanelBySelf(TAPanel& ta_panel)
 {
-  std::vector<TATask*> ta_task_list = initTaskSchedule(ta_panel);
-  while (!ta_task_list.empty()) {
-    for (TATask* ta_task : ta_task_list) {
-      routeTATask(ta_panel, ta_task);
-      ta_task->addRoutedTimes();
+  std::vector<TATask*> routing_task_list = initTaskSchedule(ta_panel);
+  while (!routing_task_list.empty()) {
+    for (TATask* routing_task : routing_task_list) {
+      routeTATask(ta_panel, routing_task);
+      routing_task->addRoutedTimes();
     }
     updateViolationList(ta_panel);
-    ta_task_list = getTaskScheduleByViolation(ta_panel);
+    updateTaskSchedule(ta_panel, routing_task_list);
   }
 }
 
@@ -1012,30 +1012,39 @@ std::vector<Violation> TrackAssigner::getCostViolationList(TAPanel& ta_panel)
   return RTDE.getViolationList(de_task);
 }
 
-std::vector<TATask*> TrackAssigner::getTaskScheduleByViolation(TAPanel& ta_panel)
+void TrackAssigner::updateTaskSchedule(TAPanel& ta_panel, std::vector<TATask*>& routing_task_list)
 {
   int32_t max_routed_times = ta_panel.get_ta_parameter()->get_max_routed_times();
 
-  std::set<int32_t> violation_net_set;
+  std::set<TATask*> visited_routing_task_set;
+  std::vector<TATask*> new_routing_task_list;
   for (Violation& violation : ta_panel.get_violation_list()) {
-    for (int32_t violation_net : violation.get_violation_net_set()) {
-      violation_net_set.insert(violation_net);
+    for (TATask* ta_task : ta_panel.get_ta_task_list()) {
+      if (!RTUTIL.exist(violation.get_violation_net_set(), ta_task->get_net_idx())) {
+        continue;
+      }
+      if (ta_task->get_routed_times() < max_routed_times && !RTUTIL.exist(visited_routing_task_set, ta_task)) {
+        visited_routing_task_set.insert(ta_task);
+        new_routing_task_list.push_back(ta_task);
+      }
+      break;
     }
   }
-  std::vector<TATask*> ta_task_list;
+  routing_task_list = new_routing_task_list;
+
+  std::vector<TATask*> new_ta_task_list;
   for (TATask* ta_task : ta_panel.get_ta_task_list()) {
-    if (!RTUTIL.exist(violation_net_set, ta_task->get_net_idx())) {
-      continue;
+    if (!RTUTIL.exist(visited_routing_task_set, ta_task)) {
+      new_ta_task_list.push_back(ta_task);
     }
-    if (ta_task->get_routed_times() >= max_routed_times) {
-      continue;
-    }
-    ta_task_list.push_back(ta_task);
   }
-  return ta_task_list;
+  for (TATask* routing_task : routing_task_list) {
+    new_ta_task_list.push_back(routing_task);
+  }
+  ta_panel.set_ta_task_list(new_ta_task_list);
 }
 
-void TrackAssigner::routeTAPanelByOther(TAPanel& ta_panel)
+void TrackAssigner::routeTAPanelByInterface(TAPanel& ta_panel)
 {
   RTI.routeTAPanel(ta_panel);
   updateViolationList(ta_panel);
@@ -1352,21 +1361,36 @@ std::map<TANode*, std::set<Orientation>> TrackAssigner::getRoutingNodeOrientatio
   }
   int32_t layer_idx = net_shape.get_layer_idx();
   RoutingLayer& routing_layer = routing_layer_list[layer_idx];
-  int32_t min_spacing = routing_layer.getMinSpacing(net_shape.get_rect());
+  int32_t x_spacing = 0;
+  int32_t y_spacing = 0;
+  {
+    int32_t prl_spacing = routing_layer.getPRLSpacing(net_shape.get_rect());
+    if (routing_layer.isPreferH()) {
+      x_spacing = std::max(prl_spacing, routing_layer.get_eol_spacing());
+      y_spacing = std::max(prl_spacing, routing_layer.get_eol_within());
+    } else {
+      x_spacing = std::max(prl_spacing, routing_layer.get_eol_within());
+      y_spacing = std::max(prl_spacing, routing_layer.get_eol_spacing());
+    }
+  }
   int32_t half_wire_width = routing_layer.get_min_width() / 2;
 
   GridMap<TANode>& ta_node_map = ta_panel.get_ta_node_map();
   std::map<TANode*, std::set<Orientation>> node_orientation_map;
-  // wire
+  // wire 与 net_shape
   {
-    int32_t enlarged_size = half_wire_width;
+    int32_t enlarged_x_size = half_wire_width;
+    int32_t enlarged_y_size = half_wire_width;
     if (need_enlarged) {
-      // 膨胀size为 min_spacing
-      enlarged_size += min_spacing;
+      // 膨胀size为 half_wire_width + spacing
+      enlarged_x_size += x_spacing;
+      enlarged_y_size += y_spacing;
     }
     // 贴合的也不算违例
-    enlarged_size -= 1;
-    PlanarRect planar_enlarged_rect = RTUTIL.getEnlargedRect(net_shape.get_rect(), enlarged_size);
+    enlarged_x_size -= 1;
+    enlarged_y_size -= 1;
+    PlanarRect planar_enlarged_rect
+        = RTUTIL.getEnlargedRect(net_shape.get_rect(), enlarged_x_size, enlarged_y_size, enlarged_x_size, enlarged_y_size);
     for (auto& [grid_coord, orientation_set] : RTUTIL.getTrackGridOrientationMap(planar_enlarged_rect, ta_panel.get_panel_track_axis())) {
       TANode& node = ta_node_map[grid_coord.get_x()][grid_coord.get_y()];
       for (const Orientation& orientation : orientation_set) {
