@@ -740,7 +740,7 @@ unsigned StaReportPathDump::operator()(StaSeqPathData* seq_path_data) {
 
   std::string now_time = Time::getNowWallTime();
   std::string tmp = Str::replace(now_time, ":", "_");
-  const char* text_file_name = Str::printf("path_%s.yml", tmp.c_str());
+  const char* text_file_name = Str::printf("path_%s.yaml", tmp.c_str());
 
   dump_yaml.printText(text_file_name);
 
@@ -791,7 +791,7 @@ unsigned StaReportPathYaml::operator()(StaSeqPathData* seq_path_data) {
   std::string now_time = Time::getNowWallTime();
   std::string tmp = Str::replace(now_time, ":", "_");
   const char* text_file_name = Str::printf(
-      "%s/path_delay_%s_%d.yml", path_dir.c_str(), tmp.c_str(), file_id++);
+      "%s/path_delay_%s_%d.yaml", path_dir.c_str(), tmp.c_str(), file_id++);
 
   dump_delay_yaml.printText(text_file_name);
 
