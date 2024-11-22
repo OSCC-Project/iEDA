@@ -172,7 +172,7 @@ unsigned StaBuildRCTree::operator()(StaGraph* the_graph) {
 
   // ProfilerStop();
 
-  printYamlText("spef.yaml");
+  // printYamlText("spef.yaml");
 
   LOG_INFO << "build rc tree end";
 
