@@ -170,9 +170,16 @@ bool LmLayoutChecker::checkLayout(std::map<int, LmNet> net_map)
 {
   // connectiviy check
   LmLayoutChecker checker;
+  int success_num = 0;
+  int total = 0;
   for (auto& [net_id, net] : net_map) {
-    checker.addNet(net);
+    if (checker.addNet(net)) {
+      success_num++;
+    }
+    total++;
   }
+
+  LOG_ERROR << "Net connected succuss ratio : " << success_num << " / " << total;
   return checker.isConnectivity();
 }
 bool LmLayoutChecker::addNet(LmNet& net)

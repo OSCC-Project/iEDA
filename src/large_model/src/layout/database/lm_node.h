@@ -45,7 +45,7 @@ enum class LmNodeTYpe : uint8_t
 
 enum class LmNodeConnectType : uint8_t
 {
-  kNone,
+  kNone = 0,
   lm_wire = 1,
   lm_delta = 2,
   lm_via = 4,
@@ -55,7 +55,7 @@ enum class LmNodeConnectType : uint8_t
 
 enum class LmNodeStatus : uint8_t
 {
-  kNone,
+  kNone = 0,
   lm_connected = 1,   /// connected points, including via, end point of wire, connected points on pins, use to describe wire end points pair
   lm_connecting = 2,  /// points that are not end point but as a connecting point in a wire
   lm_end_point = 4,   /// end points for wire

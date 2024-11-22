@@ -924,14 +924,9 @@ void IdbSpeedUpSetup::createNet() {
 
   int net_id = 0;
   for (IdbNet* net : net_list->get_net_list()) {
-    // if (net_id > 100) {
+    // if ("core/sbox_inst/n1554" == net->get_net_name()) {
     //   continue;
     // }
-    // net_id++;
-    if (net->get_net_name() != "clk") {
-      continue;
-    }
-
     GuiSpeedupItemType gui_type = getNetGuiType(net);
 
     for (IdbRegularWire* wire : net->get_wire_list()->get_wire_list()) {

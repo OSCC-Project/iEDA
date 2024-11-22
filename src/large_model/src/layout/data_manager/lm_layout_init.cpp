@@ -48,7 +48,9 @@ void LmLayoutInit::init()
 
   initNets(true);
 
-  //   optConnectionsRoutingLayer();
+  //   buildConnectedPoints();
+
+  optConnectionsRoutingLayer();
 }
 
 void LmLayoutInit::initViaIds()
@@ -465,6 +467,10 @@ void LmLayoutInit::transNetRect(int32_t ll_x, int32_t ll_y, int32_t ur_x, int32_
     LOG_WARNING << "Can not get layer order : " << layer_name;
     return;
   }
+  if (layer_name == "M5") {
+    int a = 0;
+    a += 1;
+  }
   auto& grid = patch_layer->get_grid();
   auto [row_1, row_2, col_1, col_2] = grid.get_node_id_range(ll_x, ur_x, ll_y, ur_y);
   /// net wire must only occupy one grid size
@@ -842,9 +848,10 @@ void LmLayoutInit::initNets(bool init_delta)
   // #pragma omp parallel for schedule(dynamic)
   for (int net_id = 0; net_id < (int) idb_nets->get_net_list().size(); ++net_id) {
     auto* idb_net = idb_nets->get_net_list()[net_id];
-    if (idb_net->get_net_name() != "clk") {
-      continue;
-    }
+    // if ("core/sbox_inst/n1554" == idb_net->get_net_name()) {
+    //   continue;
+    // }
+
     /// init pins
     /// instance pin
     if (false == init_delta) {
@@ -968,7 +975,7 @@ int LmLayoutInit::buildConnectedPointsCutLayer()
 
       auto& node_matrix_bottom = patch_layer_bottom->get_grid().get_node_matrix();
       auto& node_matrix_top = patch_layer_top->get_grid().get_node_matrix();
-      // #pragma omp parallel for schedule(dynamic)
+#pragma omp parallel for schedule(dynamic)
       for (int row = 0; row < grid.get_info().node_row_num; ++row) {
         for (int col = 0; col < grid.get_info().node_col_num; ++col) {
           if (node_matrix[row][col].get_node_data().is_net()) {
@@ -1033,8 +1040,12 @@ bool LmLayoutInit::setConnectNode(LmNode& node)
     if (node_data.is_end_point()) {
       node_data.set_status(LmNodeStatus::lm_end_point, true);
     }
+
     return true;
   }
+
+  //   node_data.set_status(LmNodeStatus::lm_connecting, true);
+  //   node_data.set_status(LmNodeStatus::lm_connected, true);
 
   return false;
 }
@@ -1106,27 +1117,43 @@ void LmLayoutInit::optConnectionsRoutingLayer()
     auto& node_matrix = grid.get_node_matrix();
 
     if (patch_layer->is_routing()) {
-#pragma omp parallel for schedule(dynamic)
-      for (int row = 0; row < grid.get_info().node_row_num; ++row) {
+      // #pragma omp parallel for schedule(dynamic)
+      for (int row = 1; row < grid.get_info().node_row_num - 1; ++row) {
         std::set<LmNode*> connecting_nodes;
-        int net_id = -1;
-        for (int col = 0; col < grid.get_info().node_col_num; ++col) {
+        for (int col = 1; col < grid.get_info().node_col_num - 1; ++col) {
           /// eliminate useless connectiong points
           auto& node_data = node_matrix[row][col].get_node_data();
-          if (false == node_data.is_net()) {
+          if (false == node_data.is_net() || false == node_data.is_connecting()) {
             continue;
           }
 
-          /// skip node if node is not net
-          if (node_data.get_net_id() < 0) {
-            continue;
+          /// eliminate connecting point
+          auto& left_node = node_matrix[row][col - 1];
+          auto& right_node = node_matrix[row][col + 1];
+          auto& down_node = node_matrix[row - 1][col];
+          auto& up_node = node_matrix[row + 1][col];
+
+          if (false == node_data.is_direction(LmNodeDirection::lm_left)
+              && node_data.get_net_id() == left_node.get_node_data().get_net_id()) {
+            // node_data.set_status(LmNodeStatus::lm_connecting, true);
+            node_data.set_direction(LmNodeDirection::lm_left);
           }
 
-          if (node_data.is_connected() || node_matrix[row][col].is_corner()) {
-            continue;
+          if (false == node_data.is_direction(LmNodeDirection::lm_right)
+              && node_data.get_net_id() == right_node.get_node_data().get_net_id()) {
+            // node_data.set_status(LmNodeStatus::lm_connecting, true);
+            node_data.set_direction(LmNodeDirection::lm_right);
           }
 
-          if (node_data.is_connecting()) {
+          if (false == node_data.is_direction(LmNodeDirection::lm_down)
+              && node_data.get_net_id() == down_node.get_node_data().get_net_id()) {
+            // node_data.set_status(LmNodeStatus::lm_connecting, true);
+            node_data.set_direction(LmNodeDirection::lm_down);
+          }
+
+          if (false == node_data.is_direction(LmNodeDirection::lm_up) && node_data.get_net_id() == up_node.get_node_data().get_net_id()) {
+            // node_data.set_status(LmNodeStatus::lm_connecting, true);
+            node_data.set_direction(LmNodeDirection::lm_up);
           }
         }
         if (row % 1000 == 0) {

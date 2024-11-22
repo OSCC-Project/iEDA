@@ -46,7 +46,7 @@ bool LmLayoutFileIO::saveJson(std::string path, std::map<int, LmNet>& net_map)
   json json_nets = json::array();
 
   int total = 0;
-  //   #pragma omp parallel for schedule(dynamic)
+#pragma omp parallel for schedule(dynamic)
   for (int i = 0; i < (int) net_map.size(); ++i) {
     auto it = net_map.begin();
     std::advance(it, i);

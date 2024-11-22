@@ -24,10 +24,18 @@ void IdbSpeedUpSetup::showGraph(std::map<int, ilm::LmNet> net_map) {
     auto container = _gui_design->get_drc_container("Metal Short");
     if (container != nullptr) {
       for (auto wire : net.get_wires()) {
-        auto [node1, node2] = wire.get_connected_nodes();
+        auto& [node1, node2] = wire.get_connected_nodes();
+        if (node1 == nullptr && node2 == nullptr) {
+          std::cout << "error node...." << std::endl;
+          continue;
+        }
 
         std::string layer1 = "M" + std::to_string(node1->get_layer_id() / 2 + 1);
         auto drc_list1     = container->findDrcList(layer1);
+        if (drc_list1 == nullptr) {
+          std::cout << "error drc_list1...." << layer1 << std::endl;
+          continue;
+        }
 
         QRectF rect1 =
             _transform.db_to_guidb_rect(node1->get_x() - 20, node1->get_y() - 20, node1->get_x() + 20, node1->get_y() + 20);
@@ -39,7 +47,12 @@ void IdbSpeedUpSetup::showGraph(std::map<int, ilm::LmNet> net_map) {
 
         std::string layer2 = "M" + std::to_string(node2->get_layer_id() / 2 + 1);
         auto drc_list2     = container->findDrcList(layer2);
-        auto detal         = node2->get_node_data().is_connected() ? 20 : 10;
+        if (drc_list2 == nullptr) {
+          std::cout << "error drc_list2...." << std::endl;
+          continue;
+        }
+
+        auto detal   = node2->get_node_data().is_connected() ? 20 : 10;
         QRectF rect2 = _transform.db_to_guidb_rect(node2->get_x() - detal, node2->get_y() - detal, node2->get_x() + detal,
                                                    node2->get_y() + detal);
         GuiSpeedupDrc* item2 = drc_list2->findItem(rect2.center());
@@ -48,7 +61,11 @@ void IdbSpeedUpSetup::showGraph(std::map<int, ilm::LmNet> net_map) {
         }
         item2->add_rect(rect2);
 
-        for (auto [path_node1, path_node2] : wire.get_paths()) {
+        for (auto& [path_node1, path_node2] : wire.get_paths()) {
+          if (path_node1 == nullptr && path_node2 == nullptr) {
+            std::cout << "error node...." << std::endl;
+            continue;
+          }
           std::string layer_path1 = "M" + std::to_string(path_node1->get_layer_id() / 2 + 1);
           std::string layer_path2 = "M" + std::to_string(path_node2->get_layer_id() / 2 + 1);
           if (layer_path1 != layer_path2) {
@@ -61,6 +78,10 @@ void IdbSpeedUpSetup::showGraph(std::map<int, ilm::LmNet> net_map) {
           int ury = std::max(path_node1->get_y(), path_node2->get_y());
 
           auto path_list = container->findDrcList(layer_path1);
+          if (path_list == nullptr) {
+            std::cout << "error path_list...." << std::endl;
+            continue;
+          }
 
           /// horizontal
           if (lly == ury) {
@@ -73,7 +94,8 @@ void IdbSpeedUpSetup::showGraph(std::map<int, ilm::LmNet> net_map) {
           QRectF rect_path         = _transform.db_to_guidb_rect(llx, lly, urx, ury);
           GuiSpeedupDrc* item_path = path_list->findItem(rect_path.center());
           if (item_path == nullptr) {
-            return;
+            std::cout << "error item_path...." << std::endl;
+            continue;
           }
 
           item_path->add_rect(rect_path);

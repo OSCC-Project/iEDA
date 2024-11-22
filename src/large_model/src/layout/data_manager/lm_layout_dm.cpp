@@ -71,6 +71,10 @@ void LmLayoutDataManager::init()
 
 void LmLayoutDataManager::add_net_wire(std::map<int, LmNet>& net_map, int net_id, LmNetWire wire)
 {
+  auto& [start, end] = wire.get_connected_nodes();
+  if (start == nullptr || end == nullptr) {
+    LOG_INFO << "wire error";
+  }
   auto it = net_map.find(net_id);
   if (it != net_map.end()) {
     it->second.addWire(wire);
@@ -223,9 +227,9 @@ int LmLayoutDataManager::searchEndNode(LmNode& node_connected, LmLayerGrid& grid
 
 LmNodeDirection LmLayoutDataManager::get_corner_orthogonal_direction(LmNode* node, LmNodeDirection direction)
 {
-  if (false == node->is_corner()) {
-    return LmNodeDirection::kNone;
-  }
+  //   if (false == node->is_corner()) {
+  //     return LmNodeDirection::kNone;
+  //   }
 
   LmNodeData& node_data = node->get_node_data();
   if (direction == LmNodeDirection::lm_left || direction == LmNodeDirection::lm_right) {
@@ -257,10 +261,13 @@ LmNodeDirection LmLayoutDataManager::get_opposite_direction(LmNodeDirection dire
   switch (direction) {
     case LmNodeDirection::lm_left:
       opposite_direction = LmNodeDirection::lm_right;
+      break;
     case LmNodeDirection::lm_right:
       opposite_direction = LmNodeDirection::lm_left;
+      break;
     case LmNodeDirection::lm_up:
       opposite_direction = LmNodeDirection::lm_down;
+      break;
     case LmNodeDirection::lm_down:
       opposite_direction = LmNodeDirection::lm_up;
       break;
@@ -300,7 +307,18 @@ int LmLayoutDataManager::search_node_in_direction(LmNode& node_connected, LmNode
 
       /// go to corner direciton node
       auto orthogonal_direction = get_corner_orthogonal_direction(node_end, direction);
+      if (orthogonal_direction == LmNodeDirection::kNone) {
+        // wire.set_end(node_end);
+        // wire.add_path(node_start, node_end);
+        // add_net_wire(net_map, node_start->get_node_data().get_net_id(), wire);
+        // number++;
+        LOG_INFO << "node_start [ " << node_start->get_row_id() << " , " << node_start->get_col_id() << " ]";
+        LOG_INFO << "node_end [ " << node_end->get_row_id() << " , " << node_end->get_col_id() << " ]";
+        break;
+      }
+
       node_start = node_end;
+      direction = orthogonal_direction;
 
       /// go to next node
       node_end = travel_grid(node_start, orthogonal_direction, grid);
