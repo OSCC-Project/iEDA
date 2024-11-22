@@ -738,9 +738,16 @@ unsigned StaReportPathDump::operator()(StaSeqPathData* seq_path_data) {
     path_stack.pop();
   }
 
+  std::string design_work_space =
+      dump_yaml.getSta()->get_design_work_space();
+  std::string path_dir = design_work_space + "/path";
+  std::filesystem::create_directories(path_dir);
+
+  static unsigned file_id = 1;
   std::string now_time = Time::getNowWallTime();
   std::string tmp = Str::replace(now_time, ":", "_");
-  const char* text_file_name = Str::printf("path_%s.yaml", tmp.c_str());
+  const char* text_file_name = Str::printf(
+      "%s/path_%s_%d.yaml", path_dir.c_str(), tmp.c_str(), file_id++);
 
   dump_yaml.printText(text_file_name);
 
