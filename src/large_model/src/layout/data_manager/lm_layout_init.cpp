@@ -39,7 +39,7 @@ void LmLayoutInit::init()
   initDie();
 
   initTracks();
-  initPDN();
+  //   initPDN();
   initNets();
   //   initInstances();
   //   initIOPins();
@@ -435,10 +435,13 @@ void LmLayoutInit::transPin(idb::IdbPin* idb_pin, int net_id)
     } else {
       for (IdbRect* rect : layer_shape->get_rect_list()) {
         /// build grid
-        auto [row_1, row_2, co_1, col_2]
+        bool b_horizontal = (rect->get_high_x() - rect->get_low_x()) == (rect->get_high_y() - rect->get_low_y())
+                                ? patch_layer->is_horizontal()
+                                : ((rect->get_high_x() - rect->get_low_x()) > (rect->get_high_y() - rect->get_low_y()) ? true : false);
+        auto [row_1, row_2, col_1, col_2]
             = grid.get_node_id_range(rect->get_low_x(), rect->get_high_x(), rect->get_low_y(), rect->get_high_y());
         for (int row = row_1; row <= row_2; ++row) {
-          for (int col = co_1; col <= col_2; ++col) {
+          for (int col = col_1; col <= col_2; ++col) {
             auto& node_data = grid.get_node(row, col).get_node_data();
             node_data.set_type(LmNodeTYpe::lm_pin);
             node_data.set_status(LmNodeStatus::lm_fix);
@@ -447,6 +450,25 @@ void LmLayoutInit::transPin(idb::IdbPin* idb_pin, int net_id)
               node_data.set_type(LmNodeTYpe::lm_net);
             }
             node_data.set_connect_type(LmNodeConnectType::lm_wire);
+            if (b_horizontal) {
+              if (col == col_1) {
+                node_data.set_direction(LmNodeDirection::lm_right);
+              } else if (col == col_2) {
+                node_data.set_direction(LmNodeDirection::lm_left);
+              } else {
+                node_data.set_direction(LmNodeDirection::lm_left);
+                node_data.set_direction(LmNodeDirection::lm_right);
+              }
+            } else {
+              if (row == row_1) {
+                node_data.set_direction(LmNodeDirection::lm_up);
+              } else if (row == row_2) {
+                node_data.set_direction(LmNodeDirection::lm_down);
+              } else {
+                node_data.set_direction(LmNodeDirection::lm_up);
+                node_data.set_direction(LmNodeDirection::lm_down);
+              }
+            }
           }
         }
       }
@@ -848,7 +870,7 @@ void LmLayoutInit::initNets(bool init_delta)
   // #pragma omp parallel for schedule(dynamic)
   for (int net_id = 0; net_id < (int) idb_nets->get_net_list().size(); ++net_id) {
     auto* idb_net = idb_nets->get_net_list()[net_id];
-    // if ("core/sbox_inst/n1554" == idb_net->get_net_name()) {
+    // if ("FE_OFN5655_n" != idb_net->get_net_name()) {
     //   continue;
     // }
 
