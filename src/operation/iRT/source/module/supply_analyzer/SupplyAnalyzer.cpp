@@ -171,6 +171,14 @@ void SupplyAnalyzer::analyzeSupply(SAModel& sa_model)
             }
           }
         }
+        for (auto& [net_idx, patch_set] : RTDM.getNetAccessPatchMap(search_rect)) {
+          for (EXTLayerRect* patch : patch_set) {
+              if (search_rect.get_layer_idx() != patch->get_layer_idx()) {
+                continue;
+              }
+              obs_rect_list.push_back(patch->get_real_rect());
+          }
+        }
       }
       for (LayerRect& wire : getCrossingWireList(search_rect)) {
         if (isAccess(wire, obs_rect_list)) {

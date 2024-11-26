@@ -114,8 +114,7 @@ class PinAccessor
   void freePABox(PABox& pa_box);
   int32_t getViolationNum();
   void uploadAccessPoint(PAModel& pa_model);
-  void uploadViolation(PAModel& pa_model);
-  std::vector<Violation> getCostViolationList(PAModel& pa_model);
+  void ignoreViolation(PAModel& pa_model);
 
 #if 1  // update env
   void updateFixedRectToGraph(PABox& pa_box, ChangeType change_type, int32_t net_idx, EXTLayerRect* fixed_rect, bool is_routing);
@@ -124,8 +123,7 @@ class PinAccessor
   void updateNetResultToGraph(PABox& pa_box, ChangeType change_type, int32_t net_idx, Segment<LayerCoord>& segment);
   void updateNetResultToGraph(PABox& pa_box, ChangeType change_type, int32_t net_idx, EXTLayerRect& patch);
   void addViolationToGraph(PABox& pa_box, Violation& violation);
-  void addViolationToGraph(PABox& pa_box, std::vector<LayerRect>& searched_rect_list,
-                           std::vector<Segment<LayerCoord>>& overlap_segment_list);
+  void addViolationToGraph(PABox& pa_box, LayerRect& searched_rect, std::vector<Segment<LayerCoord>>& overlap_segment_list);
   std::map<PANode*, std::set<Orientation>> getNodeOrientationMap(PABox& pa_box, NetShape& net_shape, bool need_enlarged);
   std::map<PANode*, std::set<Orientation>> getRoutingNodeOrientationMap(PABox& pa_box, NetShape& net_shape, bool need_enlarged);
   std::map<PANode*, std::set<Orientation>> getCutNodeOrientationMap(PABox& pa_box, NetShape& net_shape, bool need_enlarged);

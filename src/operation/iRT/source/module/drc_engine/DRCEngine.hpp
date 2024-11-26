@@ -35,6 +35,7 @@ class DRCEngine
   static void destroyInst();
   // function
   void init();
+  void updateIgnoreViolationSet();
   std::vector<Violation> getViolationList(DETask& de_task);
 
  private:
@@ -49,7 +50,6 @@ class DRCEngine
   DRCEngine& operator=(const DRCEngine& other) = delete;
   DRCEngine& operator=(DRCEngine&& other) = delete;
   // function
-  void buildIgnoreViolationSet();
   std::vector<Violation> getViolationList(DETask& de_task, bool post_process);
   void getViolationListBySelf(DETask& de_task);
   void buildTask(DETask& de_task);
@@ -66,11 +66,10 @@ class DRCEngine
   std::vector<Violation> expandViolation(Violation& violation);
   void buildByFunc(Violation& violation, const DEFuncType& de_func_type, DEProcessType& de_process_type,
                    std::vector<Violation>& expanded_violation_list);
-  PlanarRect keepRect(Violation& violation);
-  PlanarRect enlargeRect(Violation& violation);
-  std::vector<std::pair<int32_t, bool>> keepLayer(Violation& violation);
-  std::vector<std::pair<int32_t, bool>> expandOneViaLayer(Violation& violation);
-  std::vector<std::pair<int32_t, bool>> expandTwoViaLayer(Violation& violation);
+  PlanarRect enlargeRect(PlanarRect& real_rect, int32_t required_size);
+  std::vector<std::pair<int32_t, bool>> expandAdjacentOneLayer(Violation& violation);
+  std::vector<std::pair<int32_t, bool>> expandUpOneLayer(Violation& violation);
+  std::vector<std::pair<int32_t, bool>> expandUpTwoLayer(Violation& violation);
 #endif
 };
 
