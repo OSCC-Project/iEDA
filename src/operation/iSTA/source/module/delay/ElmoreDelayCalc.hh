@@ -85,7 +85,22 @@ class RctNode {
   friend class ArnoldiNet;
 
  public:
-  RctNode() = default;
+  RctNode()
+      : _is_update_load(0),
+        _is_update_delay(0),
+        _is_update_ldelay(0),
+        _is_update_delay_ecm(0),
+        _is_update_m2(0),
+        _is_update_mc(0),
+        _is_update_m2_c(0),
+        _is_update_mc_c(0),
+        _is_update_ceff(0),
+        _is_update_response(0),
+        _is_tranverse(0),
+        _is_visited(0),
+        _is_visited_ecm(0),
+        _is_root(0),
+        _reserved(0) {}
   explicit RctNode(std::string&&);
 
   virtual ~RctNode() = default;
@@ -192,6 +207,12 @@ class RctNode {
 
   LaplaceMoments* get_moments() { return &_moments; }
 
+  void set_flatten_pos(std::size_t flatten_pos) { _flatten_pos = flatten_pos; }
+  std::size_t get_flatten_pos() { return _flatten_pos; }
+
+  void set_parent(RctNode* parent) { _parent = parent; }
+  RctNode* get_parent() { return _parent; }
+
   auto& get_fanin() { return _fanin; }
   auto& get_fanout() { return _fanout; }
 
@@ -222,21 +243,22 @@ class RctNode {
   double _ceff = 0.0;
   double _delay_ecm = 0.0;
 
-  unsigned _is_update_load : 1 = 0;
-  unsigned _is_update_delay : 1 = 0;
-  unsigned _is_update_ldelay : 1 = 0;
-  unsigned _is_update_delay_ecm : 1 = 0;
-  unsigned _is_update_m2 : 1 = 0;
-  unsigned _is_update_mc : 1 = 0;
-  unsigned _is_update_m2_c : 1 = 0;
-  unsigned _is_update_mc_c : 1 = 0;
-  unsigned _is_update_ceff : 1 = 0;
-  unsigned _is_update_response : 1 = 0;
-  unsigned _is_tranverse : 1 = 0;
-  unsigned _is_visited : 1 = 0;
-  unsigned _is_visited_ecm : 1 = 0;
-  unsigned _is_root : 1 = 0;
-  unsigned _reserved : 18 = 0;
+  unsigned _is_update_load : 1;
+  // unsigned _is_update_load : 1 = 0;
+  unsigned _is_update_delay : 1;
+  unsigned _is_update_ldelay : 1;
+  unsigned _is_update_delay_ecm : 1;
+  unsigned _is_update_m2 : 1;
+  unsigned _is_update_mc : 1;
+  unsigned _is_update_m2_c : 1;
+  unsigned _is_update_mc_c : 1;
+  unsigned _is_update_ceff : 1;
+  unsigned _is_update_response : 1;
+  unsigned _is_tranverse : 1;
+  unsigned _is_visited : 1;
+  unsigned _is_visited_ecm : 1;
+  unsigned _is_root : 1;
+  unsigned _reserved : 18;
 
   std::map<ModeTransPair, double> _ures;
   std::map<ModeTransPair, double> _nload;
@@ -246,6 +268,8 @@ class RctNode {
   std::map<ModeTransPair, double> _ldelay;
   std::map<ModeTransPair, double> _impulse;
 
+  std::size_t _flatten_pos = 0;
+  RctNode* _parent = nullptr;
   std::list<RctEdge*> _fanin;
   std::list<RctEdge*> _fanout;
 
@@ -339,10 +363,10 @@ class RctEdge {
   RctNode& _from;
   RctNode& _to;
 
-  unsigned _is_break : 1 = 0;
-  unsigned _is_visited : 1 = 0;
-  unsigned _is_in_order : 1 = 0;
-  unsigned _reserved : 30 = 0;
+  unsigned _is_break : 1;
+  unsigned _is_visited : 1;
+  unsigned _is_in_order : 1;
+  unsigned _reserved : 30;
 
   double _res = 0.0;
 
@@ -457,6 +481,11 @@ class RcTree {
 
   void printGraphViz();
 
+  void levelizeRcTree(std::queue<RctNode*> bfs_queue);
+  void levelizeRcTree();
+  void applyDelayDataToArray();
+  void initGpuMemory();
+
  private:
   RctNode* _root{nullptr};
 
@@ -464,6 +493,20 @@ class RcTree {
   std::list<RctEdge> _edges;
 
   std::vector<CoupledRcNode> _coupled_nodes;
+  std::vector<std::vector<RctNode*>> _level_to_points;
+  std::vector<float> _cap_array;
+  std::vector<float> _load_array;
+  std::vector<float> _res_array;
+  std::vector<int> _parent_pos_array;
+  std::vector<int> _children_pos_array;
+
+  float* _gpu_cap_array = nullptr;
+  float* _gpu_load_array = nullptr;
+  float* _gpu_res_array = nullptr;
+  int* _gpu_parent_pos_array = nullptr;
+  int* _gpu_children_pos_array = nullptr;
+
+  void updateLoad();
 
   void initData();
   void initMoment();
