@@ -97,49 +97,57 @@ void GraphCheckerBase::writeToPy(LmNet& net, const std::string& path)
   file << "fig.show()\n";
 }
 
-void GraphCheckerBase::writeToPy(const Graph& graph, LmNet& net, const std::string& path)
+void GraphCheckerBase::writeToPy(const Graph& graph, LmNet& net, const std::string& path, const bool& mark_break)
 {
   // Write the wire line to a Python file for plotting in 3D space (x, y, layer_id) using Plotly
   std::ofstream file(path);
   file << "import plotly.graph_objects as go\n";
+  file << "import matplotlib.cm as cm\n";
   file << "\n";
   file << "# Create a Plotly Figure\n";
   file << "fig = go.Figure()\n";
   file << "\n";
 
-  // Add data for each wire and path
-  auto& wires = net.get_wires();
-  for (auto& wire : wires) {
-    auto& paths = wire.get_paths();
-    for (auto& path : paths) {
-      auto* start = path.first;
-      auto* end = path.second;
-
-      // Add a trace for each path
-      file << "fig.add_trace(go.Scatter3d(\n";
-      file << "    x=[" << start->get_x() << ", " << end->get_x() << "],\n";
-      file << "    y=[" << start->get_y() << ", " << end->get_y() << "],\n";
-      file << "    z=[" << start->get_layer_id() << ", " << end->get_layer_id() << "],\n";
-      file << "    mode='lines',\n";
-      file << "    line=dict(color='rgb(" << (50 + end->get_layer_id() * 20) % 256 << "," << (100 + end->get_layer_id() * 30) % 256 << ","
-           << (150 + end->get_layer_id() * 40) % 256 << ")', width=4),\n";
-      file << "))\n";
+  // for each component, plot the subgraph edges' label (x,y,layer_id), use the same color for the same component
+  std::vector<size_t> component(boost::num_vertices(graph));
+  size_t num_components = boost::connected_components(graph, &component[0]);
+  file << "colors = [f'rgb{cm.tab10(i)[:3]}' for i in range(" << num_components << ")]\n";
+  for (size_t i = 0; i < num_components; ++i) {
+    file << "# Component " << i << "\n";
+    // for each edge, plot the edge with the same color
+    size_t edge_idx = 0;
+    for (auto e : boost::make_iterator_range(boost::edges(graph))) {
+      auto u = boost::source(e, graph);
+      auto v = boost::target(e, graph);
+      if (component[u] == i && component[v] == i) {
+        file << "fig.add_trace(go.Scatter3d(\n";
+        file << "    x=[" << graph[u].x << ", " << graph[v].x << "],\n";
+        file << "    y=[" << graph[u].y << ", " << graph[v].y << "],\n";
+        file << "    z=[" << graph[u].layer_id << ", " << graph[v].layer_id << "],\n";
+        file << "    mode='lines',\n";
+        file << "    line=dict(color=colors[" << i << "], width=4),\n";
+        file << "    name='Component " << i << ", Edge " << edge_idx++ << "'\n";
+        file << "))\n";
+      }
     }
   }
+
   // plot the nodes which degree is 1, plot with 'x' marker
-  for (auto v : boost::make_iterator_range(boost::vertices(graph))) {
-    if (boost::degree(v, graph) == 1) {
-      file << "fig.add_trace(go.Scatter3d(\n";
-      file << "    x=[" << graph[v].x << "],\n";
-      file << "    y=[" << graph[v].y << "],\n";
-      file << "    z=[" << graph[v].layer_id << "],\n";
-      file << "    mode='markers',\n";
-      file << "    marker=dict(\n";
-      file << "        size=3,\n";
-      file << "        symbol='x',\n";
-      file << "        color='red'\n";
-      file << "    )\n";
-      file << "))\n";
+  if (mark_break) {
+    for (auto v : boost::make_iterator_range(boost::vertices(graph))) {
+      if (boost::degree(v, graph) == 1) {
+        file << "fig.add_trace(go.Scatter3d(\n";
+        file << "    x=[" << graph[v].x << "],\n";
+        file << "    y=[" << graph[v].y << "],\n";
+        file << "    z=[" << graph[v].layer_id << "],\n";
+        file << "    mode='markers',\n";
+        file << "    marker=dict(\n";
+        file << "        size=3,\n";
+        file << "        symbol='x',\n";
+        file << "        color='red'\n";
+        file << "    )\n";
+        file << "))\n";
+      }
     }
   }
 
