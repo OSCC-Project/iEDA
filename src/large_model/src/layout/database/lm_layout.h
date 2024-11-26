@@ -26,6 +26,7 @@
 #include <string>
 
 #include "lm_layer.h"
+#include "lm_net.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -45,6 +46,7 @@ class LmLayout
   std::map<std::string, int>& get_via_id_map() { return _via_id_map; }
   std::map<std::string, int>& get_pdn_id_map() { return _pdn_id_map; }
   std::map<std::string, int>& get_net_id_map() { return _net_id_map; }
+  std::map<int, LmNet>& get_graph() { return _net_map; }
   // setter
 
   // operator
@@ -61,6 +63,8 @@ class LmLayout
   std::map<std::string, int> _via_id_map;    /// string : via name, int : via index in this map
   std::map<std::string, int> _pdn_id_map;    /// string : pdn name, int : id in the map
   std::map<std::string, int> _net_id_map;    /// string : net name, int id in the map
+
+  std::map<int, LmNet> _net_map;
 };
 
 }  // namespace ilm

@@ -30,10 +30,10 @@ class LmLayoutDataManager
   ~LmLayoutDataManager() = default;
 
   LmLayout& get_layout() { return _layout; }
+  std::map<int, LmNet>& get_graph(std::string path = "") { return _layout.get_graph(); }
 
   bool buildLayoutData(const std::string path);
   bool buildGraphData(const std::string path);
-  std::map<int, LmNet> getGraph(std::string path);
 
  private:
   LmLayout _layout;
@@ -42,14 +42,12 @@ class LmLayoutDataManager
   void buildPatchs();
 
   std::map<int, LmNet> buildNetWires(bool b_graph);
-  int buildCutLayer(int layer_id, LmPatchLayer& patch_layer, std::map<int, LmNet>& net_map);
-  int buildRoutingLayer(int layer_id, LmPatchLayer& patch_layer, std::map<int, LmNet>& net_map);
+  int buildCutLayer(int layer_id, LmPatchLayer& patch_layer);
+  int buildRoutingLayer(int layer_id, LmPatchLayer& patch_layer);
 
-  void buildRegulerWire();
-
-  void add_net_wire(std::map<int, LmNet>& net_map, int net_id, LmNetWire wire);
-  int searchEndNode(LmNode& node_connected, LmLayerGrid& grid, std::map<int, LmNet>& net_map);
-  int search_node_in_direction(LmNode& node_connected, LmNodeDirection direction, LmLayerGrid& grid, std::map<int, LmNet>& net_map);
+  void add_net_wire(int net_id, LmNetWire wire);
+  int searchEndNode(LmNode& node_connected, LmLayerGrid& grid);
+  int search_node_in_direction(LmNode& node_connected, LmNodeDirection direction, LmLayerGrid& grid);
   LmNode* travel_grid(LmNode* node_start, LmNodeDirection direction, LmLayerGrid& grid);
   LmNodeDirection get_corner_orthogonal_direction(LmNode* node, LmNodeDirection direction);
   LmNodeDirection get_opposite_direction(LmNodeDirection direction);

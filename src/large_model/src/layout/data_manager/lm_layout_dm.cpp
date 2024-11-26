@@ -37,30 +37,16 @@ bool LmLayoutDataManager::buildGraphData(const std::string path)
 {
   init();
 
-  auto net_map = buildNetWires(true);
-  if (net_map.size() > 0) {
+  buildNetWires(true);
+  if (get_graph().size() > 0) {
     // connectiviy check
     LmLayoutChecker checker;
-    LOG_ERROR_IF(!checker.checkLayout(net_map)) << "Graph is not connected";
+    LOG_ERROR_IF(!checker.checkLayout(get_graph())) << "Graph is not connected";
     /// save to path
     LmLayoutFileIO file_io;
-    return file_io.saveJson(path, net_map);
+    return file_io.saveJson(path, get_graph());
   }
   return false;
-}
-
-std::map<int, LmNet> LmLayoutDataManager::getGraph(std::string path)
-{
-  init();
-
-  auto net_map = buildNetWires(true);
-  if (net_map.size() > 0) {
-    /// save to path
-    LmLayoutFileIO file_io;
-    file_io.saveJson(path, net_map);
-  }
-
-  return net_map;
 }
 
 void LmLayoutDataManager::init()
@@ -69,19 +55,20 @@ void LmLayoutDataManager::init()
   layout_init.init();
 }
 
-void LmLayoutDataManager::add_net_wire(std::map<int, LmNet>& net_map, int net_id, LmNetWire wire)
+void LmLayoutDataManager::add_net_wire(int net_id, LmNetWire wire)
 {
   auto& [start, end] = wire.get_connected_nodes();
   if (start == nullptr || end == nullptr) {
     LOG_INFO << "wire error";
   }
-  auto it = net_map.find(net_id);
-  if (it != net_map.end()) {
+
+  auto it = get_graph().find(net_id);
+  if (it != get_graph().end()) {
     it->second.addWire(wire);
   } else {
     LmNet lm_net(net_id);
     lm_net.addWire(wire);
-    auto result = net_map.insert(std::make_pair(net_id, lm_net));
+    auto result = get_graph().insert(std::make_pair(net_id, lm_net));
   }
 }
 
@@ -91,22 +78,20 @@ std::map<int, LmNet> LmLayoutDataManager::buildNetWires(bool b_graph)
 
   LOG_INFO << "LM build net wires start...";
 
-  std::map<int, LmNet> net_map;
-
   int wire_num = 0;
 
   auto& patch_layers = _layout.get_patch_layers();
   for (auto& [layer_id, patch_layer] : patch_layers.get_patch_layer_map()) {
     if (patch_layer.is_routing()) {
       /// metal
-      wire_num += buildRoutingLayer(layer_id, patch_layer, net_map);
+      wire_num += buildRoutingLayer(layer_id, patch_layer);
     } else {
       /// via
-      wire_num += buildCutLayer(layer_id, patch_layer, net_map);
+      wire_num += buildCutLayer(layer_id, patch_layer);
     }
   }
 
-  LOG_INFO << "Net number : " << net_map.size();
+  LOG_INFO << "Net number : " << get_graph().size();
   LOG_INFO << "Wire number : " << wire_num;
 
   LOG_INFO << "LM memory usage " << stats.memoryDelta() << " MB";
@@ -114,10 +99,10 @@ std::map<int, LmNet> LmLayoutDataManager::buildNetWires(bool b_graph)
 
   LOG_INFO << "LM build net wires end...";
 
-  return net_map;
+  return get_graph();
 }
 
-int LmLayoutDataManager::buildCutLayer(int layer_id, LmPatchLayer& patch_layer, std::map<int, LmNet>& net_map)
+int LmLayoutDataManager::buildCutLayer(int layer_id, LmPatchLayer& patch_layer)
 {
   int wire_num = 0;
   omp_lock_t lck;
@@ -151,7 +136,7 @@ int LmLayoutDataManager::buildCutLayer(int layer_id, LmPatchLayer& patch_layer, 
         omp_set_lock(&lck);
         LmNetWire wire(&node_matrix_bottom[row][col], &node_matrix_top[row][col]);
         wire.add_path(&node_matrix_bottom[row][col], &node_matrix_top[row][col]);
-        add_net_wire(net_map, net_id, wire);
+        add_net_wire(net_id, wire);
         ++wire_num;
         omp_unset_lock(&lck);
       }
@@ -168,7 +153,7 @@ int LmLayoutDataManager::buildCutLayer(int layer_id, LmPatchLayer& patch_layer, 
   return wire_num;
 }
 
-int LmLayoutDataManager::buildRoutingLayer(int layer_id, LmPatchLayer& patch_layer, std::map<int, LmNet>& net_map)
+int LmLayoutDataManager::buildRoutingLayer(int layer_id, LmPatchLayer& patch_layer)
 {
   int wire_num = 0;
   omp_lock_t lck;
@@ -195,7 +180,7 @@ int LmLayoutDataManager::buildRoutingLayer(int layer_id, LmPatchLayer& patch_lay
 
         if (node_data.is_connected()) {
           omp_set_lock(&lck);
-          wire_num += searchEndNode(node_matrix[row][col], grid, net_map);
+          wire_num += searchEndNode(node_matrix[row][col], grid);
           omp_unset_lock(&lck);
         }
       }
@@ -211,14 +196,14 @@ int LmLayoutDataManager::buildRoutingLayer(int layer_id, LmPatchLayer& patch_lay
   return wire_num;
 }
 
-int LmLayoutDataManager::searchEndNode(LmNode& node_connected, LmLayerGrid& grid, std::map<int, LmNet>& net_map)
+int LmLayoutDataManager::searchEndNode(LmNode& node_connected, LmLayerGrid& grid)
 {
   int number = 0;
 
   for (LmNodeDirection direction_enum :
        {LmNodeDirection::lm_left, LmNodeDirection::lm_right, LmNodeDirection::lm_down, LmNodeDirection::lm_up}) {
     if (node_connected.get_node_data().is_direction(direction_enum)) {
-      number += search_node_in_direction(node_connected, direction_enum, grid, net_map);
+      number += search_node_in_direction(node_connected, direction_enum, grid);
     }
   }
 
@@ -279,8 +264,7 @@ LmNodeDirection LmLayoutDataManager::get_opposite_direction(LmNodeDirection dire
   return opposite_direction;
 }
 
-int LmLayoutDataManager::search_node_in_direction(LmNode& node_connected, LmNodeDirection direction, LmLayerGrid& grid,
-                                                  std::map<int, LmNet>& net_map)
+int LmLayoutDataManager::search_node_in_direction(LmNode& node_connected, LmNodeDirection direction, LmLayerGrid& grid)
 {
   if (node_connected.get_node_data().is_direction_visited(direction)) {
     return 0;
@@ -297,7 +281,7 @@ int LmLayoutDataManager::search_node_in_direction(LmNode& node_connected, LmNode
     if (node_end->get_node_data().is_connected()) {
       wire.set_end(node_end);
       wire.add_path(node_start, node_end);
-      add_net_wire(net_map, node_start->get_node_data().get_net_id(), wire);
+      add_net_wire(node_start->get_node_data().get_net_id(), wire);
       number++;
       break;
     } else if (node_end->get_node_data().is_connecting()) {
@@ -310,7 +294,7 @@ int LmLayoutDataManager::search_node_in_direction(LmNode& node_connected, LmNode
       if (orthogonal_direction == LmNodeDirection::kNone) {
         // wire.set_end(node_end);
         // wire.add_path(node_start, node_end);
-        // add_net_wire(net_map, node_start->get_node_data().get_net_id(), wire);
+        // add_net_wire(node_start->get_node_data().get_net_id(), wire);
         // number++;
         LOG_INFO << "node_start [ " << node_start->get_row_id() << " , " << node_start->get_col_id() << " ]";
         LOG_INFO << "node_end [ " << node_end->get_row_id() << " , " << node_end->get_col_id() << " ]";
@@ -326,7 +310,7 @@ int LmLayoutDataManager::search_node_in_direction(LmNode& node_connected, LmNode
       /// wire not connected ?
       wire.set_end(node_end);
       wire.add_path(node_start, node_end);
-      add_net_wire(net_map, node_start->get_node_data().get_net_id(), wire);
+      add_net_wire(node_start->get_node_data().get_net_id(), wire);
       number++;
       break;
     }

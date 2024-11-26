@@ -30,9 +30,9 @@
 namespace ilm {
 struct GraphLabel
 {
-  std::string x;
-  std::string y;
-  std::string layer_id;
+  int x;
+  int y;
+  int32_t layer_id;
 };
 
 using Graph = boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS, GraphLabel>;
@@ -47,6 +47,7 @@ class GraphCheckerBase
   virtual bool isConnectivity(const Graph& graph);
   virtual void writeToDot(const Graph& graph, const std::string& path);
   virtual void writeToPy(LmNet& net, const std::string& path);
+  virtual void writeToPy(const Graph& graph, LmNet& net, const std::string& path);
 };
 
 class LmNetChecker : public GraphCheckerBase

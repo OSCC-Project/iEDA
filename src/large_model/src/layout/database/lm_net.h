@@ -68,16 +68,19 @@ class LmNet
   // getter
   int get_net_id() { return _net_id; }
   std::vector<LmNetWire>& get_wires() { return _wires; }
+  std::vector<int> get_pin_ids(){return _pin_ids;}
 
   // setter
   void set_net_id(int net_id) { _net_id = net_id; }
 
   // operator
   void addWire(LmNetWire wire) { _wires.push_back(wire); }
+  void addPinId(int id){_pin_ids.push_back(id);}
 
  private:
   int _net_id = -1;
   std::vector<LmNetWire> _wires;
+  std::vector<int> _pin_ids;
 };
 
 }  // namespace ilm

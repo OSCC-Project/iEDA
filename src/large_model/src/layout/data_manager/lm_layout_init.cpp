@@ -864,6 +864,16 @@ void LmLayoutInit::initNets(bool init_delta)
       /// init net id map
       auto* idb_net = idb_nets->get_net_list()[net_id];
       net_id_map.insert(std::make_pair(idb_net->get_net_name(), net_id));
+
+      int pin_id = 0;
+
+      for (auto* idb_inst_pin : idb_net->get_instance_pin_list()->get_pin_list()) {
+        transPin(idb_inst_pin, net_id);
+      }
+
+      for (auto* io_pin : idb_net->get_io_pins()->get_pin_list()) {
+        transPin(io_pin, net_id);
+      }
     }
   }
 

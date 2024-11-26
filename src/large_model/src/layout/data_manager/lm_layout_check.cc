@@ -46,7 +46,8 @@ void GraphCheckerBase::writeToDot(const Graph& graph, const std::string& path)
 {
   std::ofstream file(path);
   boost::write_graphviz(file, graph, [&](std::ostream& out, const Graph::vertex_descriptor& v) {
-    out << "[x=" << graph[v].x << ", y=" << graph[v].y << ", layer_id=" << graph[v].layer_id << "]";
+    out << "[x=" << std::to_string(graph[v].x) << ", y=" << std::to_string(graph[v].y) << ", layer_id=" << std::to_string(graph[v].layer_id)
+        << "]";
   });
 }
 
@@ -76,6 +77,68 @@ void GraphCheckerBase::writeToPy(LmNet& net, const std::string& path)
       file << "    mode='lines',\n";
       file << "    line=dict(color='rgb(" << (50 + end->get_layer_id() * 20) % 256 << "," << (100 + end->get_layer_id() * 30) % 256 << ","
            << (150 + end->get_layer_id() * 40) % 256 << ")', width=4),\n";
+      file << "))\n";
+    }
+  }
+
+  // Set up the layout with axis labels and title
+  file << "\n";
+  file << "fig.update_layout(\n";
+  file << "    scene=dict(\n";
+  file << "        xaxis_title='X',\n";
+  file << "        yaxis_title='Y',\n";
+  file << "        zaxis_title='Layer ID'\n";
+  file << "    ),\n";
+  file << "    title='Net " << net.get_net_id() << "'\n";
+  file << ")\n";
+  file << "\n";
+
+  // Show the plot
+  file << "fig.show()\n";
+}
+
+void GraphCheckerBase::writeToPy(const Graph& graph, LmNet& net, const std::string& path)
+{
+  // Write the wire line to a Python file for plotting in 3D space (x, y, layer_id) using Plotly
+  std::ofstream file(path);
+  file << "import plotly.graph_objects as go\n";
+  file << "\n";
+  file << "# Create a Plotly Figure\n";
+  file << "fig = go.Figure()\n";
+  file << "\n";
+
+  // Add data for each wire and path
+  auto& wires = net.get_wires();
+  for (auto& wire : wires) {
+    auto& paths = wire.get_paths();
+    for (auto& path : paths) {
+      auto* start = path.first;
+      auto* end = path.second;
+
+      // Add a trace for each path
+      file << "fig.add_trace(go.Scatter3d(\n";
+      file << "    x=[" << start->get_x() << ", " << end->get_x() << "],\n";
+      file << "    y=[" << start->get_y() << ", " << end->get_y() << "],\n";
+      file << "    z=[" << start->get_layer_id() << ", " << end->get_layer_id() << "],\n";
+      file << "    mode='lines',\n";
+      file << "    line=dict(color='rgb(" << (50 + end->get_layer_id() * 20) % 256 << "," << (100 + end->get_layer_id() * 30) % 256 << ","
+           << (150 + end->get_layer_id() * 40) % 256 << ")', width=4),\n";
+      file << "))\n";
+    }
+  }
+  // plot the nodes which degree is 1, plot with 'x' marker
+  for (auto v : boost::make_iterator_range(boost::vertices(graph))) {
+    if (boost::degree(v, graph) == 1) {
+      file << "fig.add_trace(go.Scatter3d(\n";
+      file << "    x=[" << graph[v].x << "],\n";
+      file << "    y=[" << graph[v].y << "],\n";
+      file << "    z=[" << graph[v].layer_id << "],\n";
+      file << "    mode='markers',\n";
+      file << "    marker=dict(\n";
+      file << "        size=3,\n";
+      file << "        symbol='x',\n";
+      file << "        color='red'\n";
+      file << "    )\n";
       file << "))\n";
     }
   }
@@ -171,14 +234,14 @@ Graph LmNetChecker::convertToGraph(LmNet& net)
     auto end_id = node_to_id[end_key];
 
     auto start_vertex = boost::vertex(start_id, graph);
-    graph[start_vertex].x = std::to_string(start->get_x());
-    graph[start_vertex].y = std::to_string(start->get_y());
-    graph[start_vertex].layer_id = std::to_string(start->get_layer_id());
+    graph[start_vertex].x = start->get_x();
+    graph[start_vertex].y = start->get_y();
+    graph[start_vertex].layer_id = start->get_layer_id();
 
     auto end_vertex = boost::vertex(end_id, graph);
-    graph[end_vertex].x = std::to_string(end->get_x());
-    graph[end_vertex].y = std::to_string(end->get_y());
-    graph[end_vertex].layer_id = std::to_string(end->get_layer_id());
+    graph[end_vertex].x = end->get_x();
+    graph[end_vertex].y = end->get_y();
+    graph[end_vertex].layer_id = end->get_layer_id();
 
     boost::add_edge(start_id, end_id, graph);
   }
@@ -211,7 +274,8 @@ bool LmLayoutChecker::addNet(LmNet& net)
     GraphCheckerBase::writeToDot(
         graph, "/data/project_share/benchmark/t28/baseline/result/feature/graph_debug/net_" + std::to_string(net.get_net_id()) + ".dot");
     GraphCheckerBase::writeToPy(
-        net, "/data/project_share/benchmark/t28/baseline/result/feature/graph_debug/net_" + std::to_string(net.get_net_id()) + ".py");
+        graph, net,
+        "/data/project_share/benchmark/t28/baseline/result/feature/graph_debug/net_" + std::to_string(net.get_net_id()) + ".py");
     return false;
   } else {
     LOG_INFO << "Net " << net.get_net_id() << " is locally connected.";
@@ -267,14 +331,14 @@ bool LmLayoutChecker::isConnectivity()
       auto end_id = _node_to_id[end_key];
 
       auto start_vertex = boost::vertex(start_id, _graph);
-      _graph[start_vertex].x = std::to_string(start->get_x());
-      _graph[start_vertex].y = std::to_string(start->get_y());
-      _graph[start_vertex].layer_id = std::to_string(start->get_layer_id());
+      _graph[start_vertex].x = start->get_x();
+      _graph[start_vertex].y = start->get_y();
+      _graph[start_vertex].layer_id = start->get_layer_id();
 
       auto end_vertex = boost::vertex(end_id, _graph);
-      _graph[end_vertex].x = std::to_string(end->get_x());
-      _graph[end_vertex].y = std::to_string(end->get_y());
-      _graph[end_vertex].layer_id = std::to_string(end->get_layer_id());
+      _graph[end_vertex].x = end->get_x();
+      _graph[end_vertex].y = end->get_y();
+      _graph[end_vertex].layer_id = end->get_layer_id();
 
       boost::add_edge(start_id, end_id, _graph);
     }
