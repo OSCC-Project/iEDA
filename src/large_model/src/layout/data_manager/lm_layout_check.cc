@@ -99,6 +99,44 @@ void GraphCheckerBase::writeToPy(LmNet& net, const std::string& path)
 
 void GraphCheckerBase::writeToPy(const Graph& graph, LmNet& net, const std::string& path, const bool& mark_break)
 {
+  // get all
+  auto& wires = net.get_wires();
+  // build a map for get wire by (x1,y1,layer_id1) and (x2,y2,layer_id2)
+  struct WireKey
+  {
+    int x1;
+    int y1;
+    int layer_id1;
+    int x2;
+    int y2;
+    int layer_id2;
+    bool operator==(const WireKey& other) const
+    {
+      return x1 == other.x1 && y1 == other.y1 && layer_id1 == other.layer_id1 && x2 == other.x2 && y2 == other.y2
+             && layer_id2 == other.layer_id2;
+    }
+  };
+  struct WireKeyHash
+  {
+    std::size_t operator()(const WireKey& key) const
+    {
+      return (std::hash<int>()(key.x1) ^ std::hash<int>()(key.y1) ^ std::hash<int>()(key.layer_id1) ^ std::hash<int>()(key.x2)
+              ^ std::hash<int>()(key.y2) ^ std::hash<int>()(key.layer_id2));
+    }
+  };
+  std::unordered_map<WireKey, LmNetWire, WireKeyHash> wire_map;
+  for (auto& wire : wires) {
+    auto& paths = wire.get_paths();
+    for (auto& path : paths) {
+      auto* start = path.first;
+      auto* end = path.second;
+      WireKey key = {start->get_x(), start->get_y(), start->get_layer_id(), end->get_x(), end->get_y(), end->get_layer_id()};
+      wire_map[key] = wire;
+      WireKey key_reverse = {end->get_x(), end->get_y(), end->get_layer_id(), start->get_x(), start->get_y(), start->get_layer_id()};
+      wire_map[key_reverse] = wire;
+    }
+  }
+
   // Write the wire line to a Python file for plotting in 3D space (x, y, layer_id) using Plotly
   std::ofstream file(path);
   file << "import plotly.graph_objects as go\n";
@@ -114,20 +152,35 @@ void GraphCheckerBase::writeToPy(const Graph& graph, LmNet& net, const std::stri
   file << "colors = [f'rgb{cm.tab10(i)[:3]}' for i in range(" << num_components << ")]\n";
   for (size_t i = 0; i < num_components; ++i) {
     file << "# Component " << i << "\n";
-    // for each edge, plot the edge with the same color
-    size_t edge_idx = 0;
+    // for each wire, plot the wire with the same color
+    size_t wire_idx = 0;
     for (auto e : boost::make_iterator_range(boost::edges(graph))) {
       auto u = boost::source(e, graph);
       auto v = boost::target(e, graph);
       if (component[u] == i && component[v] == i) {
-        file << "fig.add_trace(go.Scatter3d(\n";
-        file << "    x=[" << graph[u].x << ", " << graph[v].x << "],\n";
-        file << "    y=[" << graph[u].y << ", " << graph[v].y << "],\n";
-        file << "    z=[" << graph[u].layer_id << ", " << graph[v].layer_id << "],\n";
-        file << "    mode='lines',\n";
-        file << "    line=dict(color=colors[" << i << "], width=4),\n";
-        file << "    name='Component " << i << ", Edge " << edge_idx++ << "'\n";
-        file << "))\n";
+        // file << "fig.add_trace(go.Scatter3d(\n";
+        // file << "    x=[" << graph[u].x << ", " << graph[v].x << "],\n";
+        // file << "    y=[" << graph[u].y << ", " << graph[v].y << "],\n";
+        // file << "    z=[" << graph[u].layer_id << ", " << graph[v].layer_id << "],\n";
+        // file << "    mode='lines',\n";
+        // file << "    line=dict(color=colors[" << i << "], width=4),\n";
+        // file << "    name='Component " << i << ", Wire " << wire_idx++ << "'\n";
+        // file << "))\n";
+        auto wire = wire_map[{graph[u].x, graph[u].y, graph[u].layer_id, graph[v].x, graph[v].y, graph[v].layer_id}];
+        size_t path_idx = 0;
+        for (auto& path : wire.get_paths()) {
+          auto* start = path.first;
+          auto* end = path.second;
+          file << "fig.add_trace(go.Scatter3d(\n";
+          file << "    x=[" << start->get_x() << ", " << end->get_x() << "],\n";
+          file << "    y=[" << start->get_y() << ", " << end->get_y() << "],\n";
+          file << "    z=[" << start->get_layer_id() << ", " << end->get_layer_id() << "],\n";
+          file << "    mode='lines',\n";
+          file << "    line=dict(color=colors[" << i << "], width=4),\n";
+          file << "    name='Component " << i << ", Wire " << wire_idx << ", Path " << path_idx++ << "'\n";
+          file << "))\n";
+        }
+        wire_idx++;
       }
     }
   }
