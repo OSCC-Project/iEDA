@@ -102,6 +102,7 @@ class LmNodeData
   bool is_direction(LmNodeDirection direction);
   bool is_direction_visited(LmNodeDirection direction);
   bool is_visited();
+  void reset_direction();
 
   bool is_net() { return is_type(LmNodeTYpe::lm_net); }
   bool is_pdn() { return is_type(LmNodeTYpe::lm_pdn); }

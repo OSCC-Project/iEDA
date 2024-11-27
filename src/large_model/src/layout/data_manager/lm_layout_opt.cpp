@@ -42,19 +42,49 @@ void LmLayoutOptimize::wirePruning()
 
   auto& net_map = _layout->get_graph().get_net_map();
 
-  struct ClassfyMap
+  struct ClassifyMap
   {
-    int pin_num;
-    std::vector<std::vector<LmNetWire*>> wire_map;
+    std::set<int> pin_ids;
+    std::vector<LmNetWire*> wires;
   };
 
   for (auto& [net_id, net] : net_map) {
     auto& pin_ids = net.get_pin_ids();
+    auto& wires = net.get_wires();
+    if (wires.size() <= 0) {
+      continue;
+    }
 
-    std::vector<ClassfyMap> classify_map_list;
+    std::map<int, ClassifyMap> sub_graph;
 
-    for (auto& classify_map : classify_map_list) {
-      if (classify_map.pin_num == pin_ids.size()) {
+    int sub_graph_id = 0;
+    for (auto& wire : wires) {
+      auto& [node1, node2] = wire.get_connected_nodes();
+      for (auto& [id, classify_map] : sub_graph) {
+        for (auto& sub_graph_wire : classify_map.wires) {
+          auto& [sub_node1, sub_node2] = sub_graph_wire->get_connected_nodes();
+          if (node1 == sub_node1 || node1 == sub_node2 || node2 == sub_node1 || node2 == sub_node2) {
+            classify_map.wires.push_back(&wire);
+            if (node1->get_node_data().get_pin_id() != -1) {
+              classify_map.pin_ids.insert(node1->get_node_data().get_pin_id());
+            }
+
+            if (node2->get_node_data().get_pin_id() != -1) {
+              classify_map.pin_ids.insert(node2->get_node_data().get_pin_id());
+            }
+          } else {
+            ClassifyMap new_classify_map;
+            sub_graph.insert(std::make_pair(sub_graph_id++, new_classify_map));
+            new_classify_map.wires.push_back(&wire);
+            if (node1->get_node_data().get_pin_id() != -1) {
+              new_classify_map.pin_ids.insert(node1->get_node_data().get_pin_id());
+            }
+
+            if (node2->get_node_data().get_pin_id() != -1) {
+              new_classify_map.pin_ids.insert(node2->get_node_data().get_pin_id());
+            }
+          }
+        }
       }
     }
   }

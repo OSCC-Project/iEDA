@@ -24,20 +24,10 @@
 #include "IdbVias.h"
 #include "lm_layer_grid.h"
 #include "lm_layout.h"
-#include "lm_patch.h"
 #include "lm_node.h"
+#include "lm_patch.h"
 
 namespace ilm {
-
-struct NodeLink{
-    LmNode* node;
-    LmNode* node_left;
-    LmNode* node_right;
-    LmNode* node_up;
-    LmNode* node_down;
-    LmNode* node_top;
-    LmNode* node_bottom;
-};
 
 class LmLayoutOptimize
 {
