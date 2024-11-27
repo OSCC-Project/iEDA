@@ -59,7 +59,8 @@ class GraphCheckerBase
   virtual bool isConnectivity(const Graph& graph) const;
   virtual void writeToDot(const Graph& graph, const std::string& path) const;
   virtual void writeToPy(LmNet& net, const std::string& path) const;
-  virtual void writeToPy(const Graph& graph, LmNet& net, const std::string& path, const bool& mark_break = false) const;
+  virtual void writeToPy(const Graph& graph, LmNet& net, const std::string& path, const bool& mark_break = false,
+                         const bool& mark_pin_id = true) const;
 };
 
 class LmNetChecker : public GraphCheckerBase

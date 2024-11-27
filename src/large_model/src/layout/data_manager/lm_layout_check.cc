@@ -97,7 +97,8 @@ void GraphCheckerBase::writeToPy(LmNet& net, const std::string& path) const
   file << "fig.show()\n";
 }
 
-void GraphCheckerBase::writeToPy(const Graph& graph, LmNet& net, const std::string& path, const bool& mark_break) const
+void GraphCheckerBase::writeToPy(const Graph& graph, LmNet& net, const std::string& path, const bool& mark_break,
+                                 const bool& mark_pin_id) const
 {
   // get all
   auto& wires = net.get_wires();
@@ -203,6 +204,26 @@ void GraphCheckerBase::writeToPy(const Graph& graph, LmNet& net, const std::stri
         file << "        size=3,\n";
         file << "        symbol='x',\n";
         file << "        color='red'\n";
+        file << "    )\n";
+        file << "))\n";
+      }
+    }
+  }
+
+  // plot the nodes with pin_id, plot with text
+  if (mark_pin_id) {
+    for (auto v : boost::make_iterator_range(boost::vertices(graph))) {
+      if (graph[v].pin_id != -1) {
+        file << "fig.add_trace(go.Scatter3d(\n";
+        file << "    x=[" << graph[v].x << "],\n";
+        file << "    y=[" << graph[v].y << "],\n";
+        file << "    z=[" << graph[v].layer_id << "],\n";
+        file << "    mode='text',\n";
+        file << "    text=['" << graph[v].pin_id << "'],\n";
+        file << "    textposition='top center',\n";
+        file << "    textfont=dict(\n";
+        file << "        size=12,\n";
+        file << "        color='black'\n";
         file << "    )\n";
         file << "))\n";
       }
@@ -420,7 +441,8 @@ bool LmLayoutChecker::addNet(LmNet& net)
     //     ".dot");
     // GraphCheckerBase::writeToPy(
     //     graph, net,
-    //     "/data/project_share/benchmark/t28/baseline/result/feature/graph_debug_temp/net_" + std::to_string(net.get_net_id()) + "_pass.py");
+    //     "/data/project_share/benchmark/t28/baseline/result/feature/graph_debug_temp/net_" + std::to_string(net.get_net_id()) +
+    //     "_pass.py");
   }
   _nets.push_back(net);
   return true;
