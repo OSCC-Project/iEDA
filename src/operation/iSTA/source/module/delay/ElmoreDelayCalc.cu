@@ -58,6 +58,8 @@
 #include "ElmoreDelayCalc.hh"
 #include "log/Log.hh"
 
+#define CUDA_DELAY 1
+
 namespace ista {
 
 const int THREAD_PER_BLOCK_NUM = 64;
@@ -370,8 +372,6 @@ void RcTree::updateLDelay(RctNode* parent, RctNode* from) {
   }
 
   FOREACH_MODE_TRANS(mode, trans) {
-    std::cout << from->cap(mode, trans) << " "
-              << from->_ndelay[ModeTransPair(mode, trans)] << std::endl;
     from->_ldelay[ModeTransPair(mode, trans)] +=
         from->cap(mode, trans) * from->_ndelay[ModeTransPair(mode, trans)];
   }
@@ -399,12 +399,9 @@ void RcTree::updateResponse(RctNode* parent, RctNode* from) {
   }
 
   FOREACH_MODE_TRANS(mode, trans) {
-    std::cout << from->_beta[ModeTransPair(mode, trans)] << std::endl;
-    std::cout << from->_ndelay[ModeTransPair(mode, trans)] << std::endl;
     from->_impulse[ModeTransPair(mode, trans)] =
         2.0 * from->_beta[ModeTransPair(mode, trans)] -
         std::pow(from->_ndelay[ModeTransPair(mode, trans)], 2);
-    std::cout << from->_impulse[ModeTransPair(mode, trans)] << std::endl;
   }
 }
 
@@ -512,16 +509,19 @@ void RcTree::updateRcTiming() {
     return;
   }
 
+#if CUDA_DELAY
   initData();
   levelizeRcTree();
   applyDelayDataToArray();
   initGpuMemory();
   updateLoad();
-
+  freeGpuMemory();
+#else
   updateLoad(nullptr, _root);
   updateDelay(nullptr, _root);
   updateLDelay(nullptr, _root);
   updateResponse(nullptr, _root);
+#endif
 
   if (c_print_delay_yaml) {
     updateMC(nullptr, _root);
@@ -570,9 +570,10 @@ void RcTree::printGraphViz() {
   LOG_INFO << "dump graph dotviz start";
 
   std::ofstream dot_file;
-  dot_file.open("./tree__cap.dot", std::ios::app);  //, std::ios::app
+  dot_file.open("./tree_gpu.dot", std::ios::app);  //, std::ios::app(for test.)
 
-  dot_file << "digraph tree" << _root->get_name() << "{\n";
+  dot_file << "digraph tree" << _root->get_name()
+           << "{\n";  //_root->get_name()(for test.)
 
   for (auto& edge : _edges) {
     // if (!edge.isInOrder()) {
@@ -580,13 +581,15 @@ void RcTree::printGraphViz() {
     // }
     auto from_name = edge._from.get_name();
     auto to_name = edge._to.get_name();
-    ModeTransPair mode_trans = {AnalysisMode::kMax, TransType::kRise};
+    ModeTransPair mode_trans = {AnalysisMode::kMax,
+                                TransType::kRise};  //(for test.)
 
     dot_file << Str::printf(
         "p%p[label=\"%s load %f delay %f ldelay %f beta %f impulse %f\" ]\n",
-        &edge._from, from_name.c_str(), edge._from._load,
+        &edge._from, from_name.c_str(), edge._from._nload[mode_trans],
         edge._from._ndelay[mode_trans], edge._from._ldelay[mode_trans],
-        edge._from._beta[mode_trans], edge._from._impulse[mode_trans]);
+        edge._from._beta[mode_trans],
+        edge._from._impulse[mode_trans]);  //(for test.)
 
     dot_file << Str::printf("p%p", &edge._from) << " -> "
              << Str::printf("p%p", &edge._to)
@@ -594,9 +597,10 @@ void RcTree::printGraphViz() {
 
     dot_file << Str::printf(
         "p%p[label=\"%s load %f delay %f ldelay %f beta %f impulse %f\" ]\n",
-        &edge._to, to_name.c_str(), edge._to._load,
+        &edge._to, to_name.c_str(), edge._to._nload[mode_trans],
         edge._to._ndelay[mode_trans], edge._to._ldelay[mode_trans],
-        edge._to._beta[mode_trans], edge._to._impulse[mode_trans]);
+        edge._to._beta[mode_trans],
+        edge._to._impulse[mode_trans]);  //(for test.)
   }
 
   dot_file << "}\n";
@@ -642,12 +646,29 @@ void RcTree::levelizeRcTree() {
   levelizeRcTree(std::move(bfs_queue));
 }
 
+inline ModeTransIndex mapToModeTransIndex(AnalysisMode mode, TransType type) {
+  if (mode == AnalysisMode::kMax) {
+    if (type == TransType::kRise) {
+      return ModeTransIndex::kMaxRise;
+    } else if (type == TransType::kFall) {
+      return ModeTransIndex::kMaxFall;
+    }
+  } else if (mode == AnalysisMode::kMin) {
+    if (type == TransType::kRise) {
+      return ModeTransIndex::kMinRise;
+    } else if (type == TransType::kFall) {
+      return ModeTransIndex::kMinFall;
+    }
+  }
+  throw std::invalid_argument("Invalid AnalysisMode or TransType combination");
+}
+
 void RcTree::applyDelayDataToArray() {
   int node_num = numNodes();
   std::vector<float> cap_array;
-  std::vector<float> ncap_array(node_num * 9, 0);
+  std::vector<float> ncap_array;
   std::vector<float> load_array(node_num, 0);
-  std::vector<float> nload_array(node_num * 9, 0);
+  std::vector<float> nload_array(node_num * 4, 0);
   std::vector<int> parent_pos_array(node_num, 0);
   // children use start and end pair to mark position.
   std::vector<int> children_pos_array(node_num * 2, 0);
@@ -663,12 +684,17 @@ void RcTree::applyDelayDataToArray() {
   for (auto& points : _level_to_points) {
     for (auto* rc_node : points) {
       rc_node->set_flatten_pos(flatten_pos);
-      cap_array.emplace_back(rc_node->get_cap());
+      cap_array.emplace_back(rc_node->cap());
 
-      // FOREACH_MODE_TRANS(mode, trans) {
-      //   from->_nload[ModeTransPair(mode, trans)] +=
-      //       to._nload[ModeTransPair(mode, trans)];
-      // }
+      std::vector<float> one_node_ncap(4, 0);
+
+      FOREACH_MODE_TRANS(mode, trans) {
+        ModeTransIndex index = mapToModeTransIndex(mode, trans);
+        one_node_ncap[static_cast<int>(index)] = rc_node->cap(mode, trans);
+      }
+
+      ncap_array.insert(ncap_array.end(), one_node_ncap.begin(),
+                        one_node_ncap.end());
 
       if (rc_node->get_parent()) {
         auto found_edge = findEdge(*(rc_node->get_parent()), *rc_node);
@@ -690,10 +716,12 @@ void RcTree::applyDelayDataToArray() {
   }
 
   std::swap(_cap_array, cap_array);
+  std::swap(_ncap_array, ncap_array);
   std::swap(_res_array, res_array);
   std::swap(_parent_pos_array, parent_pos_array);
   std::swap(_children_pos_array, children_pos_array);
   std::swap(_load_array, load_array);
+  std::swap(_nload_array, nload_array);
   // std::swap(rc_network->_delay_array, delay_array);
   // std::swap(rc_network->_ldelay_array, ldelay_array);
   // std::swap(rc_network->_beta_array, beta_array);
@@ -704,14 +732,18 @@ void RcTree::initGpuMemory() {
   auto node_num = numNodes();
   // malloc gpu memory.
   cudaMalloc(&_gpu_cap_array, node_num * sizeof(float));
+  cudaMalloc(&_gpu_ncap_array, 4 * node_num * sizeof(float));
   cudaMalloc(&_gpu_res_array, node_num * sizeof(float));
   cudaMalloc(&_gpu_parent_pos_array, node_num * sizeof(int));
   // for rc point children, use start and end pair to record the children.
   cudaMalloc(&_gpu_children_pos_array, 2 * node_num * sizeof(int));
   cudaMalloc(&_gpu_load_array, node_num * sizeof(float));
+  cudaMalloc(&_gpu_nload_array, 4 * node_num * sizeof(float));
 
   // copy cpu data to gpu memory.
   cudaMemcpy(_gpu_cap_array, _cap_array.data(), node_num * sizeof(float),
+             cudaMemcpyHostToDevice);
+  cudaMemcpy(_gpu_ncap_array, _ncap_array.data(), 4 * node_num * sizeof(float),
              cudaMemcpyHostToDevice);
   cudaMemcpy(_gpu_res_array, _res_array.data(), node_num * sizeof(float),
              cudaMemcpyHostToDevice);
@@ -719,6 +751,16 @@ void RcTree::initGpuMemory() {
              node_num * sizeof(int), cudaMemcpyHostToDevice);
   cudaMemcpy(_gpu_children_pos_array, _children_pos_array.data(),
              2 * node_num * sizeof(int), cudaMemcpyHostToDevice);
+}
+
+void RcTree::freeGpuMemory() {
+  cudaFree(_gpu_cap_array);
+  cudaFree(_gpu_ncap_array);
+  cudaFree(_gpu_load_array);
+  cudaFree(_gpu_nload_array);
+  cudaFree(_gpu_res_array);
+  cudaFree(_gpu_parent_pos_array);
+  cudaFree(_gpu_children_pos_array);
 }
 
 /**
@@ -731,9 +773,10 @@ void RcTree::initGpuMemory() {
  * @param num_count
  * @return __global__
  */
-__global__ void update_load(float* cap_array, float* load_array,
-                            int* parent_pos_array, int start_pos,
-                            int num_count) {
+__global__ void kernelUpdateLoad(float* cap_array, float* ncap_array,
+                                 float* load_array, float* nload_array,
+                                 int* parent_pos_array, int start_pos,
+                                 int num_count) {
   int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
   if (tid < num_count) {
@@ -747,8 +790,23 @@ __global__ void update_load(float* cap_array, float* load_array,
     load_array[current_pos] += cap;
     // printf("current pos %d cap: %f \n", current_pos, cap);
 
+    // update the current pos nload and parent's nload.
+    nload_array[4 * current_pos + 0] += ncap_array[4 * current_pos + 0];
+    nload_array[4 * current_pos + 1] += ncap_array[4 * current_pos + 1];
+    nload_array[4 * current_pos + 2] += ncap_array[4 * current_pos + 2];
+    nload_array[4 * current_pos + 3] += ncap_array[4 * current_pos + 3];
+
     if (parent_pos != current_pos) {
       atomicAdd(&load_array[parent_pos], load_array[current_pos]);
+
+      atomicAdd(&nload_array[4 * parent_pos + 0],
+                nload_array[4 * current_pos + 0]);
+      atomicAdd(&nload_array[4 * parent_pos + 1],
+                nload_array[4 * current_pos + 1]);
+      atomicAdd(&nload_array[4 * parent_pos + 2],
+                nload_array[4 * current_pos + 2]);
+      atomicAdd(&nload_array[4 * parent_pos + 3],
+                nload_array[4 * current_pos + 3]);
     }
 
     printf("load array pos %d load: %f \n", parent_pos, load_array[parent_pos]);
@@ -759,7 +817,9 @@ void RcTree::updateLoad() {
   auto node_num = numNodes();
 
   float* cap_array = _gpu_cap_array;
+  float* ncap_array = _gpu_ncap_array;
   float* load_array = _gpu_load_array;
+  float* nload_array = _gpu_nload_array;
   int* parent_pos_array = _gpu_parent_pos_array;
 
   // update load of the rc node, sum the children cap.
@@ -770,8 +830,9 @@ void RcTree::updateLoad() {
     int start_pos = node_num - num_count;
     node_num -= num_count;
 
-    update_load<<<num_blocks, THREAD_PER_BLOCK_NUM>>>(
-        cap_array, load_array, parent_pos_array, start_pos, num_count);
+    kernelUpdateLoad<<<num_blocks, THREAD_PER_BLOCK_NUM>>>(
+        cap_array, ncap_array, load_array, nload_array, parent_pos_array,
+        start_pos, num_count);
 
     cudaDeviceSynchronize();
   }
@@ -780,10 +841,20 @@ void RcTree::updateLoad() {
 
   cudaMemcpy(_load_array.data(), load_array, node_num * sizeof(float),
              cudaMemcpyDeviceToHost);
+  cudaMemcpy(_nload_array.data(), nload_array, 4 * node_num * sizeof(float),
+             cudaMemcpyDeviceToHost);
 
   // set the node load.
   for (auto& [node_name, node] : _str2nodes) {
     node._load = _load_array[node._flatten_pos];
+    node._nload[ModeTransPair(AnalysisMode::kMax, TransType::kRise)] =
+        _nload_array[4 * node._flatten_pos + 0];
+    node._nload[ModeTransPair(AnalysisMode::kMax, TransType::kFall)] =
+        _nload_array[4 * node._flatten_pos + 1];
+    node._nload[ModeTransPair(AnalysisMode::kMin, TransType::kRise)] =
+        _nload_array[4 * node._flatten_pos + 2];
+    node._nload[ModeTransPair(AnalysisMode::kMin, TransType::kFall)] =
+        _nload_array[4 * node._flatten_pos + 3];
   }
 }
 
@@ -1065,9 +1136,10 @@ void RcNet::updateRcTreeInfo() {
  * steps: 1、construce rctree 2、determine the root of rctree 3.update timing
  */
 void RcNet::updateRcTiming(RustSpefNet* spef_net) {
-  if (name() == "u1z") {
-    LOG_INFO << "Debug";
-  }
+  //(for test.)
+  // if (name() == "u1z") {
+  //   LOG_INFO << "Debug";
+  // }
   makeRct(spef_net);
   updateRcTreeInfo();
 
@@ -1078,6 +1150,7 @@ void RcNet::updateRcTiming(RustSpefNet* spef_net) {
     auto& rct = std::get<RcTree>(_rct);
     rct.updateRcTiming();
 
+    // the previous is annotated.(for test.)
     if (name() == "in1" || name() == "r2q" || name() == "u1z" ||
         name() == "u2z" || name() == "out") {
       rct.printGraphViz();

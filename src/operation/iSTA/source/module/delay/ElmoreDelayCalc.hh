@@ -485,6 +485,7 @@ class RcTree {
   void levelizeRcTree();
   void applyDelayDataToArray();
   void initGpuMemory();
+  void freeGpuMemory();
 
  private:
   RctNode* _root{nullptr};
@@ -496,12 +497,16 @@ class RcTree {
   std::vector<std::vector<RctNode*>> _level_to_points;
   std::vector<float> _cap_array;
   std::vector<float> _load_array;
+  std::vector<float> _ncap_array;
+  std::vector<float> _nload_array;
   std::vector<float> _res_array;
   std::vector<int> _parent_pos_array;
   std::vector<int> _children_pos_array;
 
   float* _gpu_cap_array = nullptr;
+  float* _gpu_ncap_array = nullptr;
   float* _gpu_load_array = nullptr;
+  float* _gpu_nload_array = nullptr;
   float* _gpu_res_array = nullptr;
   int* _gpu_parent_pos_array = nullptr;
   int* _gpu_children_pos_array = nullptr;

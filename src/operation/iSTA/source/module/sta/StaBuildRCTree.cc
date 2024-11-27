@@ -34,7 +34,7 @@
 #include "log/Log.hh"
 #include "netlist/Netlist.hh"
 #include "spef/SpefParserRustC.hh"
-#define CUDA_DELAY 0
+#define NEW_CUDA_DELAY 0
 
 namespace ista {
 
@@ -91,7 +91,7 @@ unsigned StaBuildRCTree::operator()(StaGraph* the_graph) {
 
   spef_parser.expandName();
 
-#if CUDA_DELAY
+#if NEW_CUDA_DELAY
   auto delay_rc_net_common_info = std::make_unique<DelayRcNetCommonInfo>();
   delay_rc_net_common_info->set_spef_cap_unit(spef_parser.getSpefCapUnit());
   delay_rc_net_common_info->set_spef_resistance_unit(
@@ -111,7 +111,7 @@ unsigned StaBuildRCTree::operator()(StaGraph* the_graph) {
   Netlist* design_nl = the_graph->get_nl();
   Net* net;
   FOREACH_NET(design_nl, net) {
-#if CUDA_DELAY
+#if NEW_CUDA_DELAY
     auto delay_rc_net = createDelayRcNet(net);
     // DLOG_INFO << net->get_name() << "build rc tree";
     getSta()->addDelayRcNet(net, std::move(delay_rc_net));
@@ -178,18 +178,22 @@ unsigned StaBuildRCTree::operator()(StaGraph* the_graph) {
     std::string spef_name = rust_spef_net->_name;
     auto* design_net = design_nl->findNet(spef_name.c_str());
     if (design_net) {
-#if CUDA_DELAY
+#if NEW_CUDA_DELAY
       auto* delay_rc_net = getSta()->getDelayRcNet(design_net);
       // DLOG_INFO << "Update Rc tree timing " << spef_name;
       make_delay_rct(delay_rc_net, rust_spef_net);
       update_rc_tree_info(delay_rc_net);
       update_rc_timing(delay_rc_net);
+      // if (delay_rc_net->_net->getFullName() == "in1") {
+      //   print_graphviz(&delay_rc_net->_rc_network);
+      // }
       rust_free_spef_net(rust_spef_net);
       // printYaml(spef_net);
 #else
       auto* rc_net = getSta()->getRcNet(design_net);
       // DLOG_INFO << "Update Rc tree timing " << spef_name;
       rc_net->updateRcTiming(rust_spef_net);
+
       // printYaml(spef_net);
 #endif
     } else {

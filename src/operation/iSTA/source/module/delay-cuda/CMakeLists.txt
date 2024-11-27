@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.15.0)
 
 cmake_policy(SET CMP0104 NEW)
 set(CMAKE_CUDA_ARCHITECTURES native)
-
+# set(CMAKE_BUILD_TYPE "Debug")
 find_package(CUDAToolkit)
 
 set(CMAKE_CXX_STANDARD 17)
@@ -25,7 +25,7 @@ if(${CMAKE_BUILD_TYPE} STREQUAL "RELEASE")
     set(NVCC_FLAGS -O3)
     message(STATUS "${lib_name} compile cuda code in release mode")
 else()
-    set(NVCC_FLAGS -G)
+    set(NVCC_FLAGS -G -g)
     message(STATUS "${lib_name} compile cuda code in debug mode")
 endif()
 
