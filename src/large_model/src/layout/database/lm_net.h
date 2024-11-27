@@ -74,6 +74,7 @@ class LmNet
   void set_net_id(int net_id) { _net_id = net_id; }
 
   // operator
+  void setWires(std::vector<LmNetWire> wires){_wires = wires;}
   void addWire(LmNetWire wire) { _wires.push_back(wire); }
   void addPinId(int id) { _pin_ids.push_back(id); }
 

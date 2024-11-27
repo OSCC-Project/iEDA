@@ -51,8 +51,11 @@ void LmLayoutOptimize::wirePruning()
   for (auto& [net_id, net] : net_map) {
     auto& pin_ids = net.get_pin_ids();
 
-    ClassfyMap classify_map;
-    for (int i = 0; i < net.get_wires().size(); i++) {
+    std::vector<ClassfyMap> classify_map_list;
+
+    for (auto& classify_map : classify_map_list) {
+      if (classify_map.pin_num == pin_ids.size()) {
+      }
     }
   }
 

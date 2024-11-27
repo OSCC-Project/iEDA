@@ -213,6 +213,7 @@ void LmLayoutInit::transVia(idb::IdbVia* idb_via, int net_id, LmNodeTYpe type)
   auto& node_data = grid.get_node(row, col).get_node_data();
   node_data.set_type(type);
   node_data.set_status(LmNodeStatus::lm_connected);
+  set_node_id(grid.get_node(row, col));
   node_data.set_net_id(net_id);
   node_data.set_connect_type(LmNodeConnectType::lm_via);
 
@@ -1028,12 +1029,14 @@ int LmLayoutInit::buildConnectedPointsCutLayer()
             node_matrix_bottom[row][col].get_node_data().set_type(LmNodeTYpe::lm_net);
             node_matrix_bottom[row][col].get_node_data().set_direction(LmNodeDirection::lm_up);
             node_matrix_bottom[row][col].get_node_data().set_status(LmNodeStatus::lm_connected);
+            set_node_id(node_matrix_bottom[row][col]);
             node_matrix_bottom[row][col].get_node_data().set_connect_type(LmNodeConnectType::lm_via);
             node_matrix_bottom[row][col].get_node_data().set_net_id(node_matrix[row][col].get_node_data().get_net_id());
 
             node_matrix_top[row][col].get_node_data().set_type(LmNodeTYpe::lm_net);
             node_matrix_top[row][col].get_node_data().set_direction(LmNodeDirection::lm_down);
             node_matrix_top[row][col].get_node_data().set_status(LmNodeStatus::lm_connected);
+            set_node_id(node_matrix_top[row][col]);
             node_matrix_top[row][col].get_node_data().set_connect_type(LmNodeConnectType::lm_via);
             node_matrix_top[row][col].get_node_data().set_net_id(node_matrix[row][col].get_node_data().get_net_id());
 
@@ -1057,15 +1060,55 @@ int LmLayoutInit::buildConnectedPointsCutLayer()
   return connected_num;
 }
 
+bool LmLayoutInit::is_steiner_node(LmNode& node)
+{
+  auto& node_data = node.get_node_data();
+  if (node_data.is_net()) {
+    if (node.is_steiner_point()) {
+      return true;
+    } else {
+      if (node_data.is_io() || node_data.get_net_id() < 0) {
+        return false;
+      }
+
+      int neightbour_num = 0;
+      int row = node.get_row_id();
+      int col = node.get_col_id();
+
+      auto& patch_layers = _layout->get_patch_layers();
+      auto* patch_layer = patch_layers.findPatchLayer(node.get_layer_id());
+      if (patch_layer == nullptr) {
+        return false;
+      }
+
+      auto& grid = patch_layer->get_grid();
+      auto& node_matrix = grid.get_node_matrix();
+      if (0 < row && row < grid.get_info().node_row_num && 0 < col && col < grid.get_info().node_col_num) {
+        neightbour_num += (node_matrix[row][col - 1].get_node_data().get_net_id() == node_data.get_net_id() ? 1 : 0);
+        neightbour_num += (node_matrix[row][col + 1].get_node_data().get_net_id() == node_data.get_net_id() ? 1 : 0);
+        neightbour_num += (node_matrix[row - 1][col].get_node_data().get_net_id() == node_data.get_net_id() ? 1 : 0);
+        neightbour_num += (node_matrix[row + 1][col].get_node_data().get_net_id() == node_data.get_net_id() ? 1 : 0);
+        if (neightbour_num == 3) {
+          return true;
+        }
+      }
+    }
+  }
+
+  return false;
+}
+
 bool LmLayoutInit::setConnectNode(LmNode& node)
 {
   auto& node_data = node.get_node_data();
   /// steiner point
-  if (node_data.is_net() && node.is_steiner_point()) {
+  if (is_steiner_node(node)) {
     node_data.set_status(LmNodeStatus::lm_connected);
     if (node_data.is_end_point()) {
       node_data.set_status(LmNodeStatus::lm_end_point, true);
     }
+
+    set_node_id(node);
     return true;
   }
   /// pin connected to wire
@@ -1086,6 +1129,8 @@ bool LmLayoutInit::setConnectNode(LmNode& node)
     if (node_data.is_end_point()) {
       node_data.set_status(LmNodeStatus::lm_end_point, true);
     }
+
+    set_node_id(node);
 
     return true;
   }

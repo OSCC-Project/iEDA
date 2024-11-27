@@ -84,7 +84,7 @@ class LmNodeData
 
   // getter
   int32_t get_net_id() { return _net_id; }
-  int32_t get_pin_id() {return _pin_id;}
+  int32_t get_pin_id() { return _pin_id; }
   LmNodeTYpe get_type() { return _type; }
   LmNodeConnectType get_connect_type() { return _connect_type; }
   bool is_connect_type(LmNodeConnectType type);
@@ -140,6 +140,7 @@ class LmNode
   ~LmNode() = default;
 
   // getter
+  int64_t get_node_id() { return _node_id; }
   int get_x() { return _x; }
   int get_y() { return _y; }
   int get_row_id() { return _row_id; }
@@ -154,6 +155,7 @@ class LmNode
   bool is_end_point();
 
   // setter
+  void set_node_id(int64_t id) { _node_id = id; }
   void set_x(int x) { _x = x; }
   void set_y(int y) { _y = y; }
   void set_row_id(int row_id) { _row_id = row_id; }
@@ -163,6 +165,7 @@ class LmNode
   // operator
 
  private:
+  int64_t _node_id = -1;
   int _x;
   int _y;
   int _row_id;  // node order of layer rows

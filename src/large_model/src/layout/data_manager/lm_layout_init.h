@@ -37,6 +37,7 @@ class LmLayoutInit
 
  private:
   LmLayout* _layout;
+  int64_t _node_id = 0;
 
   void buildConnectedPoints();
   int buildConnectedPointsRoutingLayer();
@@ -60,6 +61,8 @@ class LmLayoutInit
   void transNetRect(int32_t ll_x, int32_t ll_y, int32_t ur_x, int32_t ur_y, std::string layer_name, int net_id);
   void transNetDelta(int32_t ll_x, int32_t ll_y, int32_t ur_x, int32_t ur_y, std::string layer_name, int net_id);
   bool setConnectNode(LmNode& node);
+  void set_node_id(LmNode& node) { node.set_node_id(_node_id++); }
+  bool is_steiner_node(LmNode& node);
 };
 
 }  // namespace ilm

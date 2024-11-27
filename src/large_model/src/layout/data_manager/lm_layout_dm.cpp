@@ -183,7 +183,7 @@ int LmLayoutDataManager::buildRoutingLayer(int layer_id, LmPatchLayer& patch_lay
           continue;
         }
 
-        if (node_data.is_connected()) {
+        if (node_matrix[row][col].get_node_id() != -1) {
           omp_set_lock(&lck);
           wire_num += searchEndNode(node_matrix[row][col], grid);
           omp_unset_lock(&lck);
@@ -283,34 +283,36 @@ int LmLayoutDataManager::search_node_in_direction(LmNode& node_connected, LmNode
   auto* node_start = &node_connected;
   auto* node_end = travel_grid(node_start, direction, grid);
   while (node_end != nullptr) {
-    if (node_end->get_node_data().is_connected()) {
-      wire.set_end(node_end);
-      wire.add_path(node_start, node_end);
-      add_net_wire(node_start->get_node_data().get_net_id(), wire);
-      number++;
-      break;
-    } else if (node_end->get_node_data().is_connecting()) {
-      /// connecting means corner node with only two direction in this routing layer
-      wire.add_path(node_start, node_end);
-      number++;
-
-      /// go to corner direciton node
-      auto orthogonal_direction = get_corner_orthogonal_direction(node_end, direction);
-      if (orthogonal_direction == LmNodeDirection::kNone) {
-        // wire.set_end(node_end);
-        // wire.add_path(node_start, node_end);
-        // add_net_wire(node_start->get_node_data().get_net_id(), wire);
-        // number++;
-        LOG_INFO << "node_start [ " << node_start->get_row_id() << " , " << node_start->get_col_id() << " ]";
-        LOG_INFO << "node_end [ " << node_end->get_row_id() << " , " << node_end->get_col_id() << " ]";
+    if (node_end->get_node_id() != -1) {
+      if (node_end->get_node_data().is_connected()) {
+        wire.set_end(node_end);
+        wire.add_path(node_start, node_end);
+        add_net_wire(node_start->get_node_data().get_net_id(), wire);
+        number++;
         break;
+      } else if (node_end->get_node_data().is_connecting()) {
+        /// connecting means corner node with only two direction in this routing layer
+        wire.add_path(node_start, node_end);
+        number++;
+
+        /// go to corner direciton node
+        auto orthogonal_direction = get_corner_orthogonal_direction(node_end, direction);
+        if (orthogonal_direction == LmNodeDirection::kNone) {
+          // wire.set_end(node_end);
+          // wire.add_path(node_start, node_end);
+          // add_net_wire(node_start->get_node_data().get_net_id(), wire);
+          // number++;
+          LOG_INFO << "node_start [ " << node_start->get_row_id() << " , " << node_start->get_col_id() << " ]";
+          LOG_INFO << "node_end [ " << node_end->get_row_id() << " , " << node_end->get_col_id() << " ]";
+          break;
+        }
+
+        node_start = node_end;
+        direction = orthogonal_direction;
+
+        /// go to next node
+        node_end = travel_grid(node_start, orthogonal_direction, grid);
       }
-
-      node_start = node_end;
-      direction = orthogonal_direction;
-
-      /// go to next node
-      node_end = travel_grid(node_start, orthogonal_direction, grid);
     } else {
       /// wire not connected ?
       wire.set_end(node_end);
@@ -369,7 +371,8 @@ LmNode* LmLayoutDataManager::travel_grid(LmNode* node_start, LmNodeDirection dir
     auto& travel_data = node_matrix[row_travel][col_travel].get_node_data();
     /// set visited
     travel_data.set_direction_visited(direction_opposite);
-    if (travel_data.is_connecting() || travel_data.is_connected()) {
+    // if (travel_data.is_connecting() || travel_data.is_connected()) {
+    if (node_matrix[row_travel][col_travel].get_node_id() != -1) {
       /// success
       node_end = &node_matrix[row_travel][col_travel];
       break;
