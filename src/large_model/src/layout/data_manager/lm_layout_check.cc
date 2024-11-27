@@ -233,7 +233,9 @@ bool LmNetChecker::isLocalConnectivity(LmNet& net)
   // 2. Convert the net to a graph
   auto graph = convertToGraph(net);
 
-  // 3. Check if the entire graph is connected
+  // 3. Check if there is a component containing all pins
+
+  // 4. Check if the entire graph is connected
   return GraphCheckerBase::isConnectivity(graph);
 }
 
@@ -303,6 +305,8 @@ Graph LmNetChecker::convertToGraph(LmNet& net)
     graph[end_vertex].x = end->get_x();
     graph[end_vertex].y = end->get_y();
     graph[end_vertex].layer_id = end->get_layer_id();
+    // auto end_data = end->get_node_data();
+    // auto pin_id = end_data.get_pin_id();
 
     boost::add_edge(start_id, end_id, graph);
   }
