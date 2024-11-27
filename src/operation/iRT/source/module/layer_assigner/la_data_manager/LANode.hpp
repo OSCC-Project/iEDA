@@ -25,7 +25,7 @@
 namespace irt {
 
 #if 1  // astar
-enum class IRNodeState
+enum class LANodeState
 {
   kNone = 0,
   kOpen = 1,
@@ -33,23 +33,23 @@ enum class IRNodeState
 };
 #endif
 
-class IRNode : public LayerCoord
+class LANode : public LayerCoord
 {
  public:
-  IRNode() = default;
-  ~IRNode() = default;
+  LANode() = default;
+  ~LANode() = default;
   // getter
-  std::map<Orientation, IRNode*>& get_neighbor_node_map() { return _neighbor_node_map; }
+  std::map<Orientation, LANode*>& get_neighbor_node_map() { return _neighbor_node_map; }
   std::map<Orientation, int32_t>& get_orient_supply_map() { return _orient_supply_map; }
   std::map<Orientation, int32_t>& get_orient_demand_map() { return _orient_demand_map; }
   // setter
-  void set_neighbor_node_map(const std::map<Orientation, IRNode*>& neighbor_node_map) { _neighbor_node_map = neighbor_node_map; }
+  void set_neighbor_node_map(const std::map<Orientation, LANode*>& neighbor_node_map) { _neighbor_node_map = neighbor_node_map; }
   void set_orient_supply_map(const std::map<Orientation, int32_t>& orient_supply_map) { _orient_supply_map = orient_supply_map; }
   void set_orient_demand_map(const std::map<Orientation, int32_t>& orient_demand_map) { _orient_demand_map = orient_demand_map; }
   // function
-  IRNode* getNeighborNode(Orientation orientation)
+  LANode* getNeighborNode(Orientation orientation)
   {
-    IRNode* neighbor_node = nullptr;
+    LANode* neighbor_node = nullptr;
     if (RTUTIL.exist(_neighbor_node_map, orientation)) {
       neighbor_node = _neighbor_node_map[orientation];
     }
@@ -93,38 +93,38 @@ class IRNode : public LayerCoord
   }
 #if 1  // astar
   // single path
-  IRNodeState& get_state() { return _state; }
-  IRNode* get_parent_node() const { return _parent_node; }
+  LANodeState& get_state() { return _state; }
+  LANode* get_parent_node() const { return _parent_node; }
   double get_known_cost() const { return _known_cost; }
   double get_estimated_cost() const { return _estimated_cost; }
-  void set_state(IRNodeState state) { _state = state; }
-  void set_parent_node(IRNode* parent_node) { _parent_node = parent_node; }
+  void set_state(LANodeState state) { _state = state; }
+  void set_parent_node(LANode* parent_node) { _parent_node = parent_node; }
   void set_known_cost(const double known_cost) { _known_cost = known_cost; }
   void set_estimated_cost(const double estimated_cost) { _estimated_cost = estimated_cost; }
   // function
-  bool isNone() { return _state == IRNodeState::kNone; }
-  bool isOpen() { return _state == IRNodeState::kOpen; }
-  bool isClose() { return _state == IRNodeState::kClose; }
+  bool isNone() { return _state == LANodeState::kNone; }
+  bool isOpen() { return _state == LANodeState::kOpen; }
+  bool isClose() { return _state == LANodeState::kClose; }
   double getTotalCost() { return (_known_cost + _estimated_cost); }
 #endif
 
  private:
-  std::map<Orientation, IRNode*> _neighbor_node_map;
+  std::map<Orientation, LANode*> _neighbor_node_map;
   std::map<Orientation, int32_t> _orient_supply_map;
   std::map<Orientation, int32_t> _orient_demand_map;
 #if 1  // astar
   // single path
-  IRNodeState _state = IRNodeState::kNone;
-  IRNode* _parent_node = nullptr;
+  LANodeState _state = LANodeState::kNone;
+  LANode* _parent_node = nullptr;
   double _known_cost = 0.0;  // include curr
   double _estimated_cost = 0.0;
 #endif
 };
 
 #if 1  // astar
-struct CmpIRNodeCost
+struct CmpLANodeCost
 {
-  bool operator()(IRNode* a, IRNode* b)
+  bool operator()(LANode* a, LANode* b)
   {
     if (RTUTIL.equalDoubleByError(a->getTotalCost(), b->getTotalCost(), RT_ERROR)) {
       if (RTUTIL.equalDoubleByError(a->get_estimated_cost(), b->get_estimated_cost(), RT_ERROR)) {

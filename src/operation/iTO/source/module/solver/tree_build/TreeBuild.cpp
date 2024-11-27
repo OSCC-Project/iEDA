@@ -99,6 +99,32 @@ bool TreeBuild::makeRoutingTree(ista::Net* net, RoutingType rout_type)
     }
   };
 
+  struct pair_hash {
+    std::size_t operator()(const std::pair<int, int>& pair) const
+    {
+      return std::hash<int>()(pair.first) ^ std::hash<int>()(pair.second);
+    }
+  };
+
+  auto findDuplicateCoordinates = [](const int* real_x, const int* real_y, int size) {
+    std::unordered_map<int, std::vector<int>> result_map;
+    std::unordered_map<std::pair<int, int>, int, pair_hash> coord_map;
+
+    for (int i = 0; i < size; ++i) {
+      std::pair<int, int> coord = {real_x[i], real_y[i]};
+      if (coord_map.find(coord) != coord_map.end()) {
+        if (result_map.find(coord_map[coord]) != result_map.end()) {
+          result_map[coord_map[coord]].push_back(i);
+        } else {
+          result_map[coord_map[coord]] = {i};
+        }
+      } else {
+        coord_map[coord] = static_cast<int>(i);
+      }
+    }
+    return result_map;
+  };
+
   getConnectedPins(net, _pins);
   int pin_num = _pins.size();
   if (pin_num < 2) {
@@ -116,6 +142,10 @@ bool TreeBuild::makeRoutingTree(ista::Net* net, RoutingType rout_type)
     x[i] = pin_loc.get_x();
     y[i] = pin_loc.get_y();
 
+    if (pin_loc.get_x() == -1 && pin_loc.get_y() == -1) {
+      return false;
+    }
+
     if (pin->isOutput()) {
       driver_id = i;
     }
@@ -123,6 +153,15 @@ bool TreeBuild::makeRoutingTree(ista::Net* net, RoutingType rout_type)
   std::swap(_pins[0], _pins[driver_id]);
   std::swap(x[0], x[driver_id]);
   std::swap(y[0], y[driver_id]);
+
+  // 对重合的节点坐标进行微调
+  auto check = findDuplicateCoordinates(x, y, pin_num);
+  for (auto c : check) {
+    for (int i = 0; i < c.second.size(); i++) {
+      x[c.second[i]] += (i+1);
+    }
+  }
+
   driver_id = 0;
   build(rout_type, x, y, pin_num, driver_id);
   return true;

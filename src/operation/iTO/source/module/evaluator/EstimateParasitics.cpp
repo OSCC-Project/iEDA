@@ -116,9 +116,7 @@ void EstimateParasitics::estimateNetParasitics(Net* net)
 void EstimateParasitics::estimateInvalidNetParasitics(Net* net, DesignObject* driver_pin_port)
 {
   if (_parasitics_invalid_nets.find(net) != _parasitics_invalid_nets.end() && net) {
-    if (timingEngine->get_sta_engine()->get_ista()->getRcNet(net)) {
-      timingEngine->get_sta_engine()->resetRcTree(net);
-    }
+
     excuteWireParasitic(net);
 
     _parasitics_invalid_nets.erase(net);
@@ -133,6 +131,10 @@ void EstimateParasitics::excuteWireParasitic(Net* curr_net)
     return;
   }
   // cout << tree;
+
+  if (timingEngine->get_sta_engine()->get_ista()->getRcNet(curr_net)) {
+    timingEngine->get_sta_engine()->resetRcTree(curr_net);
+  }
 
   vector<int> segment_idx;
   vector<int> length_wire;

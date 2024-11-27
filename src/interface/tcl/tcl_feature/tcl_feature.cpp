@@ -47,7 +47,7 @@ CmdFeatureSummary::CmdFeatureSummary(const char* cmd_name) : TclCmd(cmd_name)
 unsigned CmdFeatureSummary::check()
 {
   TclOption* path_option = getOptionOrArg(TCL_PATH);
-  TclOption* step_option = getOptionOrArg(TCL_STEP);
+  // TclOption* step_option = getOptionOrArg(TCL_STEP);
   LOG_FATAL_IF(!path_option);
   //   LOG_FATAL_IF(!step_option);
   return 1;
@@ -226,4 +226,50 @@ unsigned CmdFeatureRouteRead::exec()
 
   return 1;
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/**
+ * feature_cong_map -dir "/your/dir/path/"
+ */
+CmdFeatureCongMap::CmdFeatureCongMap(const char* cmd_name) : TclCmd(cmd_name)
+{
+  auto* dir_option = new TclStringOption(TCL_DIRECTORY, 1, nullptr);
+  auto* step_option = new TclStringOption(TCL_STEP, 1, nullptr);
+  addOption(dir_option);
+  addOption(step_option);
+}
+
+unsigned CmdFeatureCongMap::check()
+{
+  TclOption* dir_option = getOptionOrArg(TCL_DIRECTORY);
+  TclOption* step_option = getOptionOrArg(TCL_STEP);
+
+  LOG_FATAL_IF(!dir_option);
+  LOG_FATAL_IF(!step_option);
+
+  return 1;
+}
+
+unsigned CmdFeatureCongMap::exec()
+{
+  if (!check()) {
+    return 0;
+  }
+
+  TclOption* option = getOptionOrArg(TCL_DIRECTORY);
+  auto dir_path = option->getStringVal();
+
+  std::string stage = "";
+  TclOption* step_option = getOptionOrArg(TCL_STEP);
+  if (step_option->getStringVal() != nullptr) {
+    stage = step_option->getStringVal();
+  }
+
+  featureInst->save_cong_map(stage, dir_path);
+
+  return 1;
+}
+
 }  // namespace tcl

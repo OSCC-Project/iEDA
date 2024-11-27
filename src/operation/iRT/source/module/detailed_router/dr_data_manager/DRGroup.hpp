@@ -31,7 +31,7 @@ class DRGroup
   // setter
   void set_coord_list(const std::vector<LayerCoord>& coord_list) { _coord_list = coord_list; }
   // function
-  
+
  private:
   std::vector<LayerCoord> _coord_list;
 };

@@ -27,7 +27,6 @@
 #include "api/PowerEngine.hh"
 #include "api/TimingEngine.hh"
 #include "api/TimingIDBAdapter.hh"
-#include "feature_irt.h"
 #include "idm.h"
 #include "salt/base/flute.h"
 #include "salt/salt.h"
@@ -62,10 +61,6 @@ void InitSTA::destroyInst()
 
 void InitSTA::runSTA()
 {
-  if (_sta_init) {
-    return;
-  }
-  _sta_init = true;
   // auto routing_type_list = {"WLM", "HPWL", "FLUTE", "SALT", "EGR", "DR"}
   initStaEngine();
   auto routing_type_list = {"HPWL", "FLUTE", "SALT", "EGR", "DR"};
@@ -77,6 +72,136 @@ void InitSTA::runSTA()
     }
     updateResult(routing_type);
   });
+}
+
+void InitSTA::evalTiming(const std::string& routing_type, const bool& rt_done)
+{
+  initStaEngine();
+  if (routing_type == "EGR" || routing_type == "DR") {
+    if (!rt_done) {
+      callRT(routing_type);
+    }
+  } else {
+    buildRCTree(routing_type);
+  }
+
+  updateResult(routing_type);
+}
+
+void InitSTA::leaglization(const std::vector<std::shared_ptr<salt::Pin>>& pins)
+{
+  if (pins.empty()) {
+    return;
+  }
+
+  std::set<std::pair<double, double>> loc_set;
+  bool is_legal = true;
+  for (size_t i = 0; i < pins.size(); ++i) {
+    if (loc_set.contains(std::make_pair(pins[i]->loc.x, pins[i]->loc.y))) {
+      is_legal = false;
+      break;
+    }
+    loc_set.insert(std::make_pair(pins[i]->loc.x, pins[i]->loc.y));
+  }
+  if (is_legal) {
+    return;
+  }
+
+  // find all duplicated locations, and move them to a new location, objective: no duplicated locations and minimum total movement
+  // x: pin->loc.x
+  // y: pin->loc.y
+  // Step 1: Group pins by their (x, y) locations
+  std::map<std::pair<int, int>, std::vector<std::shared_ptr<salt::Pin>>> loc_map;
+  for (const auto& pin : pins) {
+    std::pair<int, int> coord = {pin->loc.x, pin->loc.y};
+    loc_map[coord].push_back(pin);
+  }
+
+  // Step 2: Initialize a set to keep track of occupied locations
+  std::unordered_set<long long> occupied;
+  // Helper lambda to encode (x, y) into a unique key
+  auto encode = [](int x, int y) -> long long {
+    // Assuming x and y are within reasonable bounds to prevent overflow
+    return static_cast<long long>(x) * 100000000 + y;
+  };
+
+  // Populate the occupied set with initial locations
+  for (const auto& [coord, pin_list] : loc_map) {
+    occupied.insert(encode(coord.first, coord.second));
+  }
+
+  // Step 3: Collect all pins that need to be moved
+  std::vector<std::shared_ptr<salt::Pin>> pins_to_move;
+  for (const auto& [coord, pin_list] : loc_map) {
+    if (pin_list.size() > 1) {
+      // Keep the first pin, move the rest
+      for (size_t i = 1; i < pin_list.size(); ++i) {
+        pins_to_move.push_back(pin_list[i]);
+      }
+    }
+  }
+
+  // Step 4: Define directions for BFS (8-connected grid)
+  const std::vector<std::pair<int, int>> directions = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}, {1, 1}, {1, -1}, {-1, 1}, {-1, -1}};
+
+  // Step 5: For each pin to move, find the nearest available location
+  for (const auto& pin : pins_to_move) {
+    int start_x = pin->loc.x;
+    int start_y = pin->loc.y;
+
+    // BFS initialization
+    std::queue<std::pair<int, int>> q;
+    std::unordered_set<long long> visited;
+    q.push({start_x, start_y});
+    visited.insert(encode(start_x, start_y));
+
+    bool found = false;
+    int new_x = start_x;
+    int new_y = start_y;
+
+    while (!q.empty() && !found) {
+      int current_level_size = q.size();
+      for (int i = 0; i < current_level_size; ++i) {
+        auto [x, y] = q.front();
+        q.pop();
+
+        // Explore all directions
+        for (const auto& [dx, dy] : directions) {
+          int nx = x + dx;
+          int ny = y + dy;
+          long long key = encode(nx, ny);
+
+          if (visited.find(key) == visited.end()) {
+            // Check if the location is free
+            if (occupied.find(key) == occupied.end()) {
+              // Found a free location
+              new_x = nx;
+              new_y = ny;
+              occupied.insert(key);
+              found = true;
+              break;
+            }
+            // Mark as visited and add to queue for further exploration
+            visited.insert(key);
+            q.push({nx, ny});
+          }
+        }
+        if (found)
+          break;
+      }
+    }
+
+    if (!found) {
+      // If no free location found in the immediate vicinity, expand the search
+      // This can be optimized or have a maximum search radius
+      // For simplicity, we'll assign a far away location
+      LOG_FATAL << "No free location found for pin x=" << start_x << ", y=" << start_y;
+    }
+
+    // Update the pin's location
+    pin->loc.x = new_x;
+    pin->loc.y = new_y;
+  }
 }
 
 void InitSTA::initStaEngine()
@@ -100,8 +225,8 @@ void InitSTA::callRT(const std::string& routing_type)
   auto* idb_layout = dmInst->get_idb_lef_service()->get_layout();
   auto routing_layers = idb_layout->get_layers()->get_routing_layers();
   auto logic_layer_name = routing_layers.size() >= 2 ? routing_layers[1]->get_name() : routing_layers[0]->get_name();
-  auto clock_layer_name = routing_layers.size() >= 3 ? routing_layers[routing_layers.size() - 3]->get_name() : logic_layer_name;
-  // Hard Code, consider the clock layer is the last 3rd layer
+  auto clock_layer_name = routing_layers.size() >= 4 ? routing_layers[routing_layers.size() - 4]->get_name() : logic_layer_name;
+  // Hard Code, consider the clock layer is the last 4rd layer
   const std::string temp_path = dmInst->get_config().get_output_path() + "/rt/rt_temp_directory";
   config_map.insert({"-temp_directory_path", temp_path});
   config_map.insert({"-bottom_routing_layer", logic_layer_name});
@@ -143,7 +268,7 @@ void InitSTA::buildRCTree(const std::string& routing_type)
   auto routing_layers = idb_layout->get_layers()->get_routing_layers();
   auto logic_layer = routing_layers.size() >= 2 ? 2 : 1;
   auto clock_layer
-      = routing_layers.size() >= 3 ? routing_layers.size() - 3 : logic_layer;  // Hard Code, consider the clock layer is the last 3rd layer
+      = routing_layers.size() >= 4 ? routing_layers.size() - 4 : logic_layer;  // Hard Code, consider the clock layer is the last 3rd layer
   auto calc_res = [&](const bool& is_clock, const double& wirelength) {
     if (!is_clock) {
       return idb_adapter->getResistance(logic_layer, wirelength, width);
@@ -166,13 +291,17 @@ void InitSTA::buildRCTree(const std::string& routing_type)
     // WLM
     if (routing_type == "WLM") {
       LOG_ERROR << "STA does not support WLM, TBD...";
+      auto loads = sta_net->getLoads();
+
+      if (loads.empty()) {
+        continue;
+      }
       auto* driver = sta_net->getDriver();
       auto front_node = STA_INST->makeOrFindRCTreeNode(driver);
 
       double res = 0;  // rc TBD
       double cap = 0;  // rc TBD
 
-      auto loads = sta_net->getLoads();
       for (auto load : loads) {
         auto back_node = STA_INST->makeOrFindRCTreeNode(load);
         STA_INST->makeResistor(sta_net, front_node, back_node, res);
@@ -182,11 +311,16 @@ void InitSTA::buildRCTree(const std::string& routing_type)
     }
 
     if (routing_type == "HPWL") {
+      auto loads = sta_net->getLoads();
+
+      if (loads.empty()) {
+        continue;
+      }
+
       auto* driver = sta_net->getDriver();
       auto driver_loc = idb_adapter->idbLocation(driver);
       auto front_node = STA_INST->makeOrFindRCTreeNode(driver);
 
-      auto loads = sta_net->getLoads();
       for (auto load : loads) {
         auto load_loc = idb_adapter->idbLocation(load);
         auto wirelength = calc_length(driver_loc->get_x(), driver_loc->get_y(), load_loc->get_x(), load_loc->get_y());
@@ -202,7 +336,9 @@ void InitSTA::buildRCTree(const std::string& routing_type)
     if (routing_type == "FLUTE" || routing_type == "SALT") {
       std::vector<ista::DesignObject*> pin_ports = {sta_net->getDriver()};
       std::ranges::copy(sta_net->getLoads(), std::back_inserter(pin_ports));
-
+      if (pin_ports.size() < 2) {
+        continue;
+      }
       // makr rc node
       auto make_rc_node = [&](const std::shared_ptr<salt::TreeNode>& salt_node) {
         if (salt_node->pin) {
@@ -222,6 +358,7 @@ void InitSTA::buildRCTree(const std::string& routing_type)
         auto pin = std::make_shared<salt::Pin>(idb_loc->get_x(), idb_loc->get_y(), i);
         salt_pins.push_back(pin);
       }
+      leaglization(salt_pins);
       salt::Net salt_net;
       salt_net.init(0, sta_net->get_name(), salt_pins);
 
@@ -560,6 +697,11 @@ void InitSTA::updateTiming(const std::vector<TimingNet*>& timing_net_list, const
 
   // STA_INST->incrUpdateTiming();
   STA_INST->updateTiming();
+}
+
+bool InitSTA::isClockNet(const std::string& net_name) const
+{
+  return STA_INST->isClockNet(net_name.c_str());
 }
 
 }  // namespace ieval

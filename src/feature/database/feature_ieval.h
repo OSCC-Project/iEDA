@@ -114,35 +114,28 @@ struct CongestionSummary
   UtilizationSummary rudy_utilization_summary;
   UtilizationSummary lutrudy_utilization_summary;
 };
-struct WlmTimingEvalSummary
+struct TimingEvalSummaryBase
 {
   std::vector<ClockTiming> clock_timings;
   PowerInfo power_info;
 };
-struct HpwlTimingEvalSummary
+struct WlmTimingEvalSummary : TimingEvalSummaryBase
 {
-  std::vector<ClockTiming> clock_timings;
-  PowerInfo power_info;
 };
-struct FluteTimingEvalSummary
+struct HpwlTimingEvalSummary : TimingEvalSummaryBase
 {
-  std::vector<ClockTiming> clock_timings;
-  PowerInfo power_info;
 };
-struct SaltTimingEvalSummary
+struct FluteTimingEvalSummary : TimingEvalSummaryBase
 {
-  std::vector<ClockTiming> clock_timings;
-  PowerInfo power_info;
 };
-struct EgrTimingEvalSummary
+struct SaltTimingEvalSummary : TimingEvalSummaryBase
 {
-  std::vector<ClockTiming> clock_timings;
-  PowerInfo power_info;
 };
-struct DrTimingEvalSummary
+struct EgrTimingEvalSummary : TimingEvalSummaryBase
 {
-  std::vector<ClockTiming> clock_timings;
-  PowerInfo power_info;
+};
+struct DrTimingEvalSummary : TimingEvalSummaryBase
+{
 };
 struct TimingEvalSummary
 {
@@ -152,6 +145,14 @@ struct TimingEvalSummary
   SaltTimingEvalSummary salt_timing_eval_summary;
   EgrTimingEvalSummary egr_timing_eval_summary;
   DrTimingEvalSummary dr_timing_eval_summary;
+};
+
+struct UnionEvalSummary
+{
+  TotalWLSummary total_wl_summary;
+  DensityMapSummary density_map_summary;
+  CongestionSummary congestion_summary;
+  TimingEvalSummary timing_eval_summary;
 };
 
 }  // namespace ieda_feature

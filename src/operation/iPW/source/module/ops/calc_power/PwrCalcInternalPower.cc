@@ -23,7 +23,6 @@
  */
 
 #include "PwrCalcInternalPower.hh"
-
 #include "PwrCalcSPData.hh"
 namespace ipower {
 using ieda::Stats;
@@ -94,8 +93,12 @@ double PwrCalcInternalPower::calcCombInputPinPower(Instance* inst,
     // rise power
     auto rise_slew = (*the_input_sta_vertex)
                          ->getSlewNs(AnalysisMode::kMax, TransType::kRise);
-    LOG_FATAL_IF(!rise_slew)
-        << (*the_input_sta_vertex)->getName() << " rise slew is not exist.";
+    if (!rise_slew) {
+      LOG_ERROR_IF(!rise_slew)
+          << (*the_input_sta_vertex)->getName() << " rise slew is not exist.";
+      continue;
+    }
+
     double rise_power =
         internal_power->gatePower(TransType::kRise, *rise_slew, std ::nullopt);
     double rise_power_mw = lib_cell->convertTablePowerToMw(rise_power);
@@ -197,7 +200,7 @@ double PwrCalcInternalPower::calcOutputPinPower(Instance* inst,
       auto input_slew_ns = sta_arc->get_src()->getSlewNs(
           AnalysisMode::kMax,
           sta_arc->isPositiveArc() ? trans_type : FLIP_TRANS(trans_type));
-      LOG_ERROR_IF(!input_slew_ns)
+      LOG_ERROR_IF_EVERY_N(!input_slew_ns, 10)
           << sta_arc->get_src()->getName() << " input slew is not exist.";
 
       double output_load_pf =
@@ -368,15 +371,24 @@ double PwrCalcInternalPower::calcSeqInputPinPower(Instance* inst,
 
   LibInternalPowerInfo* internal_power;
   FOREACH_INTERNAL_POWER(cell_port, internal_power) {
+    if ((*the_input_sta_vertex)->getSlewBucket().empty()) {
+      // no slew data not need to calc power.
+      continue;
+    }
     /*get internal power of this condition.*/
     // rise power
     auto rise_slew = (*the_input_sta_vertex)
                          ->getSlewNs(AnalysisMode::kMax, TransType::kRise);
-    LOG_FATAL_IF(!rise_slew)
+
+    double rise_power_mw = 0.0;
+    LOG_ERROR_IF(!rise_slew)
         << (*the_input_sta_vertex)->getName() << " rise slew is not exist.";
-    double rise_power =
-        internal_power->gatePower(TransType::kRise, *rise_slew, std ::nullopt);
-    double rise_power_mw = lib_cell->convertTablePowerToMw(rise_power);
+    if (rise_slew) {
+      double rise_power = internal_power->gatePower(TransType::kRise,
+                                                    *rise_slew, std ::nullopt);
+      rise_power_mw = lib_cell->convertTablePowerToMw(rise_power);
+    }
+
     // fall power
     auto fall_slew = (*the_input_sta_vertex)
                          ->getSlewNs(AnalysisMode::kMax, TransType::kFall);
@@ -562,8 +574,8 @@ unsigned PwrCalcInternalPower::operator()(PwrGraph* the_graph) {
 
     double nom_voltage = inst_cell->get_owner_lib()->get_nom_voltage();
     // add power analysis data.
-    auto internal_data =
-        std::make_unique<PwrInternalData>(design_inst, MW_TO_W(inst_internal_power));
+    auto internal_data = std::make_unique<PwrInternalData>(
+        design_inst, MW_TO_W(inst_internal_power));
     internal_data->set_nom_voltage(nom_voltage);
 
     addInternalPower(std::move(internal_data));

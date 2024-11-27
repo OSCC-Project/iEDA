@@ -470,9 +470,9 @@ unsigned Power::reportSummaryPower(const char* rpt_file_name,
   std::fprintf(f.get(), "Cell Leakage Power   ==    %.3e %s\n",
                summary_leakage_power, summary_leakage_power_percentage.c_str());
 
-  std::fprintf(f.get(), "Total Power   ==  %.3e\n", total_power);
+  std::fprintf(f.get(), "Total Power   ==  %.3e W\n", total_power);
 
-  LOG_INFO << "Total Power   ==  " << total_power << " mW";
+  LOG_INFO << "Total Power   ==  " << total_power << " W";
   return 1;
 };
 

@@ -23,7 +23,6 @@
 #include "Monitor.hpp"
 #include "NetShape.hpp"
 #include "SortStatus.hpp"
-#include "Summary.hpp"
 
 namespace irt {
 
@@ -43,16 +42,18 @@ class DataManager
   void updateFixedRectToGCellMap(ChangeType change_type, int32_t net_idx, EXTLayerRect* ext_layer_rect, bool is_routing);
   void updateAccessNetPointToGCellMap(ChangeType change_type, int32_t net_idx, AccessPoint* access_point);
   void updateNetAccessResultToGCellMap(ChangeType change_type, int32_t net_idx, Segment<LayerCoord>* segment);
+  void updateNetAccessPatchToGCellMap(ChangeType change_type, int32_t net_idx, EXTLayerRect* ext_layer_rect);
   void updateGlobalNetResultToGCellMap(ChangeType change_type, int32_t net_idx, Segment<LayerCoord>* segment);
-  void updateDetailedNetResultToGCellMap(ChangeType change_type, int32_t net_idx, Segment<LayerCoord>* segment);
-  void updateNetPatchToGCellMap(ChangeType change_type, int32_t net_idx, EXTLayerRect* ext_layer_rect);
+  void updateNetDetailedResultToGCellMap(ChangeType change_type, int32_t net_idx, Segment<LayerCoord>* segment);
+  void updateNetDetailedPatchToGCellMap(ChangeType change_type, int32_t net_idx, EXTLayerRect* ext_layer_rect);
   void updateViolationToGCellMap(ChangeType change_type, Violation* violation);
   std::map<bool, std::map<int32_t, std::map<int32_t, std::set<EXTLayerRect*>>>> getTypeLayerNetFixedRectMap(EXTPlanarRect& region);
   std::map<int32_t, std::set<AccessPoint*>> getNetAccessPointMap(EXTPlanarRect& region);
   std::map<int32_t, std::set<Segment<LayerCoord>*>> getNetAccessResultMap(EXTPlanarRect& region);
-  std::map<int32_t, std::set<Segment<LayerCoord>*>> getGlobalNetResultMap(EXTPlanarRect& region);
-  std::map<int32_t, std::set<Segment<LayerCoord>*>> getDetailedNetResultMap(EXTPlanarRect& region);
-  std::map<int32_t, std::set<EXTLayerRect*>> getNetPatchMap(EXTPlanarRect& region);
+  std::map<int32_t, std::set<EXTLayerRect*>> getNetAccessPatchMap(EXTPlanarRect& region);
+  std::map<int32_t, std::set<Segment<LayerCoord>*>> getNetGlobalResultMap(EXTPlanarRect& region);
+  std::map<int32_t, std::set<Segment<LayerCoord>*>> getNetDetailedResultMap(EXTPlanarRect& region);
+  std::map<int32_t, std::set<EXTLayerRect*>> getNetDetailedPatchMap(EXTPlanarRect& region);
   std::set<Violation*> getViolationSet(EXTPlanarRect& region);
 #endif
 
@@ -69,14 +70,12 @@ class DataManager
 
   Config& getConfig() { return _config; }
   Database& getDatabase() { return _database; }
-  Summary& getSummary() { return _summary; }
 
  private:
   static DataManager* _dm_instance;
-  // config & database & summary
+  // config & database
   Config _config;
   Database _database;
-  Summary _summary;
 
   DataManager() = default;
   DataManager(const DataManager& other) = delete;
@@ -114,9 +113,11 @@ class DataManager
   void transPinList(Net& net);
   void makePinList(Net& net);
   void checkPinList(Net& net);
-  void buildGCellMap();
-  int32_t getIntervalIdx(int32_t scale_start, int32_t scale_end, int32_t interval_start, int32_t interval_end, int32_t interval_length);
   void buildDetectionDistance();
+  void buildGCellMap();
+  void initGCellMap();
+  void updateGCellMap();
+  int32_t getBucketIdx(int32_t scale_start, int32_t scale_end, int32_t bucket_start, int32_t bucket_end, int32_t bucket_length);
   void printConfig();
   void printDatabase();
   void writePYScript();

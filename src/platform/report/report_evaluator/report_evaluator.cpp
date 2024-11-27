@@ -107,7 +107,8 @@ std::shared_ptr<ieda::ReportTable> ReportEvaluator::createWireLengthReport()
 std::shared_ptr<ieda::ReportTable> ReportEvaluator::createCongestionReport()
 {
   // evaluate Instance Density & Pin Density
-  ieval::DensityMapSummary density_map_summay = DENSITY_API_INST->densityMap();
+  std::string stage = "place";  // hard code , only for place stage
+  ieval::DensityMapSummary density_map_summay = DENSITY_API_INST->densityMap(stage);
 
   std::string pin_density_file_path = density_map_summay.pin_map_summary.allcell_pin_density;
   std::ifstream pin_density_file(pin_density_file_path);
@@ -183,8 +184,8 @@ std::shared_ptr<ieda::ReportTable> ReportEvaluator::createCongestionReport()
        << "Total Overflow"
        << "Maximal Overflow" << TABLE_ENDLINE;
 
-  CONGESTION_API_INST->egrMap();
-  ieval::OverflowSummary overflow_summary = CONGESTION_API_INST->egrOverflow();
+  CONGESTION_API_INST->egrMap("place");                                                 // hard code , only for place stage
+  ieval::OverflowSummary overflow_summary = CONGESTION_API_INST->egrOverflow("place");  // hard code , only for place stage
   *tbl << ieda::Str::printf("%.2f", overflow_summary.weighted_average_overflow_union)
        << ieda::Str::printf("%.2f", overflow_summary.total_overflow_union) << ieda::Str::printf("%.2f", overflow_summary.max_overflow_union)
        << TABLE_ENDLINE;

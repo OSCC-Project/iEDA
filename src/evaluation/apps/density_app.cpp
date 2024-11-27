@@ -25,6 +25,8 @@ int main()
 
 void TestDensityMap()
 {
+  std::string stage = "place";
+
   ieval::DensityAPI density_api;
 
   ieval::DensityRegion region;
@@ -78,17 +80,17 @@ void TestDensityMap()
   nets.push_back(net1);
   nets.push_back(net2);
 
-  ieval::CellMapSummary cell_map_summary = density_api.cellDensityMap(cells, region, grid_size);
+  ieval::CellMapSummary cell_map_summary = density_api.cellDensityMap(cells, region, grid_size, stage);
   std::cout << "Macro density: " << cell_map_summary.macro_density << std::endl;
   std::cout << "StdCell density: " << cell_map_summary.stdcell_density << std::endl;
   std::cout << "AllCell density: " << cell_map_summary.allcell_density << std::endl;
 
-  ieval::PinMapSummary pin_map_summary = density_api.pinDensityMap(pins, region, grid_size, neighbor);
+  ieval::PinMapSummary pin_map_summary = density_api.pinDensityMap(pins, region, grid_size, stage, neighbor);
   std::cout << "Macro pin density: " << pin_map_summary.macro_pin_density << std::endl;
   std::cout << "StdCell pin density: " << pin_map_summary.stdcell_pin_density << std::endl;
   std::cout << "AllCell pin density: " << pin_map_summary.allcell_pin_density << std::endl;
 
-  ieval::NetMapSummary net_map_summary = density_api.netDensityMap(nets, region, grid_size, neighbor);
+  ieval::NetMapSummary net_map_summary = density_api.netDensityMap(nets, region, grid_size, stage, neighbor);
   std::cout << "Local net density: " << net_map_summary.local_net_density << std::endl;
   std::cout << "Global net density: " << net_map_summary.global_net_density << std::endl;
   std::cout << "All net density: " << net_map_summary.allnet_density << std::endl;
@@ -98,9 +100,10 @@ void TestDensityMapFromIDB()
 {
   dmInst->init("/data/yhqiu/benchmark/AiEDA/application/benchmark/28nm/gcd/config/db_default_config_test.json");
   int32_t grid_size = 2000;
+  std::string stage = "place";
 
   ieval::DensityAPI density_api;
-  ieval::DensityMapSummary density_map_summary = density_api.densityMap(grid_size);
+  ieval::DensityMapSummary density_map_summary = density_api.densityMap(stage, grid_size);
 
   std::cout << "Macro density: " << density_map_summary.cell_map_summary.macro_density << std::endl;
   std::cout << "StdCell density: " << density_map_summary.cell_map_summary.stdcell_density << std::endl;
@@ -112,7 +115,7 @@ void TestDensityMapFromIDB()
   std::cout << "Global net density: " << density_map_summary.net_map_summary.global_net_density << std::endl;
   std::cout << "All net density: " << density_map_summary.net_map_summary.allnet_density << std::endl;
 
-  ieval::NetMapSummary net_map = density_api.netDensityMap(grid_size);
+  ieval::NetMapSummary net_map = density_api.netDensityMap(stage, grid_size);
   std::cout << "Local net density: " << net_map.local_net_density << std::endl;
   std::cout << "Global net density: " << net_map.global_net_density << std::endl;
   std::cout << "All net density: " << net_map.allnet_density << std::endl;

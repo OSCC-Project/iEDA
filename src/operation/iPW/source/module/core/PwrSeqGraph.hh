@@ -30,6 +30,7 @@
 #include <mutex>
 #include <ranges>
 #include <vector>
+#include <shared_mutex>
 
 #include "BTreeSet.hh"
 #include "PwrVertex.hh"
@@ -87,7 +88,7 @@ class PwrSeqVertex {
 
   using PwrSeqArcSet = std::set<PwrSeqArc*, PwrSeqArcComp>;
 
-  auto get_obj_name() const { return _obj_name; }
+  auto& get_obj_name() const { return _obj_name; }
 
   [[nodiscard]] unsigned isInputPort() const { return _is_input_port; }
   void set_is_input_port() { _is_input_port = 1; }
@@ -254,6 +255,8 @@ class PwrSeqGraph {
   void addPwrSeqArc(PwrSeqArc* arc);
   auto& get_arcs() { return _arcs; }
 
+  PwrSeqArc* findSeqArc(PwrSeqVertex* src_vertex, PwrSeqVertex* snk_vertex);
+
   void addInputPortVerex(PwrSeqVertex* vertex) {
     _input_port_vertexes.emplace_back(vertex);
   }
@@ -326,6 +329,7 @@ class PwrSeqGraph {
       _obj_to_vertex;  //!< The seq belong inst to graph vertex.
   std::map<PwrVertex*, PwrSeqVertex*>
       _port_to_vertex;  //!< The seq belong power port to graph vertex.
+
 };
 
 /**
@@ -354,7 +358,7 @@ class PwrSeqGraph {
  *
  */
 #define FOREACH_SEQ_ARC(graph, arc)                  \
-  if (auto& arcs = graph->get_arcs(); !arcs.empty()) \
+  if (auto& arcs = (graph)->get_arcs(); !arcs.empty()) \
     for (auto p = arcs.begin();                      \
          p != arcs.end() ? arc = p->get(), true : false; ++p)
 }  // namespace ipower

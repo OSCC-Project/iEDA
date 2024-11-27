@@ -14,6 +14,7 @@
             },
             "Density": {
                 "target_density": 0.8,
+                "is_adaptive_bin": 1,
                 "bin_cnt_x": 128,
                 "bin_cnt_y": 128
             },

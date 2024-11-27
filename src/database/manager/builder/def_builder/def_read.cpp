@@ -1266,8 +1266,8 @@ int32_t DefRead::parse_special_net(defiNet* def_net)
   }
 
   IdbDesign* design = _def_service->get_design();  // Def
-  IdbLayout* layout = _def_service->get_layout();  // Lef
-  IdbLayers* layer_list = layout->get_layers();
+  //IdbLayout* layout = _def_service->get_layout();  // Lef
+  //IdbLayers* layer_list = layout->get_layers();
   IdbPins* io_pin_list = design->get_io_pin_list();
   IdbInstanceList* instance_list = design->get_instance_list();
 
@@ -1439,7 +1439,7 @@ int32_t DefRead::parse_special_net_wire(defiNet* def_net, IdbSpecialWireList* wi
 
 int32_t DefRead::parse_special_net_rects(defiNet* def_net, IdbSpecialWireList* wire_list)
 {
-  IdbDesign* design = _def_service->get_design();  // Def
+  //IdbDesign* design = _def_service->get_design();  // Def
   IdbLayout* layout = _def_service->get_layout();  // Lef
   IdbLayers* layer_list = layout->get_layers();
 

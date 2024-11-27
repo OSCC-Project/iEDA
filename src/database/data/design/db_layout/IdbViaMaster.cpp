@@ -98,7 +98,7 @@ void IdbViaMasterRulePattern::parse_pattern_row_value(size_t row_index, string v
   }
 
   int col_index = 0;
-  int str_index = 0;
+  size_t str_index = 0;
   bool b_result = true;
   while (b_result && str_index < value.length()) {
     char char_value = value.at(str_index);
@@ -123,7 +123,7 @@ void IdbViaMasterRulePattern::parse_pattern_row_value(size_t row_index, string v
     }
   }
 
-  int a = 0;
+  //int a = 0;
 }
 
 bool IdbViaMasterRulePattern::save_pattern_value(char value, int row_index, int& col_index)

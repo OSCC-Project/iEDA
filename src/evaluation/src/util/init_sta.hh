@@ -24,12 +24,16 @@
 
 #pragma once
 #include <map>
+#include <memory>
 #include <string>
 #include <unordered_map>
 #include <vector>
 
 namespace ista {
 enum class AnalysisMode;
+}
+namespace salt {
+class Pin;
 }
 namespace ieval {
 
@@ -43,6 +47,7 @@ class InitSTA
   static InitSTA* getInst();
   static void destroyInst();
   void runSTA();
+  void evalTiming(const std::string& routing_type, const bool& rt_done = false);
 
   std::map<std::string, std::map<std::string, std::map<std::string, double>>> getTiming() const { return _timing; }
   std::map<std::string, std::map<std::string, double>> getPower() const { return _power; }
@@ -62,7 +67,10 @@ class InitSTA
   void updateTiming(const std::vector<TimingNet*>& timing_net_list, const std::vector<std::string>& name_list, const int& propagation_level,
                     int32_t dbu_unit);
 
+  bool isClockNet(const std::string& net_name) const;
+
  private:
+  void leaglization(const std::vector<std::shared_ptr<salt::Pin>>& pins);
   void initStaEngine();
   void callRT(const std::string& routing_type);
   void buildRCTree(const std::string& routing_type);
@@ -72,7 +80,6 @@ class InitSTA
 
   static InitSTA* _init_sta;
 
-  bool _sta_init = false;
   std::map<std::string, std::map<std::string, std::map<std::string, double>>> _timing;
   std::map<std::string, std::map<std::string, double>> _power;
   std::map<std::string, std::unordered_map<std::string, double>> _net_power;

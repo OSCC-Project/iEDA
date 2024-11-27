@@ -18,18 +18,18 @@
 
 namespace irt {
 
-class IRParameter
+class LAParameter
 {
  public:
-  IRParameter() = default;
-  IRParameter(int32_t topo_spilt_length, double congestion_unit, double prefer_wire_unit, double via_unit)
+  LAParameter() = default;
+  LAParameter(int32_t topo_spilt_length, double congestion_unit, double prefer_wire_unit, double via_unit)
   {
     _topo_spilt_length = 10;
     _congestion_unit = 2;
     _prefer_wire_unit = 1;
     _via_unit = 1;
   }
-  ~IRParameter() = default;
+  ~LAParameter() = default;
   // getter
   int32_t get_topo_spilt_length() const { return _topo_spilt_length; }
   double get_congestion_unit() const { return _congestion_unit; }
