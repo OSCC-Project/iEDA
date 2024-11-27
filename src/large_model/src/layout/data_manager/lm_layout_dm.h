@@ -30,7 +30,7 @@ class LmLayoutDataManager
   ~LmLayoutDataManager() = default;
 
   LmLayout& get_layout() { return _layout; }
-  std::map<int, LmNet>& get_graph(std::string path = "") { return _layout.get_graph(); }
+  std::map<int, LmNet>& get_graph(std::string path = "") { return _layout.get_graph().get_net_map(); }
 
   bool buildLayoutData(const std::string path);
   bool buildGraphData(const std::string path);

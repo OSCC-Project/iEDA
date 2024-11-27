@@ -21,6 +21,7 @@
 #include "lm_layout_check.hh"
 #include "lm_layout_file.h"
 #include "lm_layout_init.h"
+#include "lm_layout_opt.h"
 #include "omp.h"
 #include "usage.hh"
 
@@ -38,6 +39,10 @@ bool LmLayoutDataManager::buildGraphData(const std::string path)
   init();
 
   buildNetWires(true);
+  /// optimize wire
+  LmLayoutOptimize wire_opt(&_layout);
+  wire_opt.wirePruning();
+
   if (get_graph().size() > 0) {
     // connectiviy check
     LmLayoutChecker checker;

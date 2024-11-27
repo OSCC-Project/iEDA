@@ -28,38 +28,15 @@
 
 namespace ilm {
 
-class LmLayoutInit
+class LmLayoutOptimize
 {
  public:
-  LmLayoutInit(LmLayout* layout) : _layout(layout) {}
-  ~LmLayoutInit() = default;
-  void init();
+  LmLayoutOptimize(LmLayout* layout) : _layout(layout) {}
+  ~LmLayoutOptimize() = default;
+  void wirePruning();
 
  private:
   LmLayout* _layout;
-
-  void buildConnectedPoints();
-  int buildConnectedPointsRoutingLayer();
-  int buildConnectedPointsCutLayer();
-  void optConnectionsRoutingLayer();
-
-  void initViaIds();
-  void initDie();
-  void initLayers();
-  void initTracks(std::string layername = "M2");
-  void initTrackGrid(idb::IdbTrackGrid* idb_track_grid, LmLayerGrid& lm_grid);
-  void buildPatchGrid();
-  void initPDN();
-  void initInstances();
-  void initIOPins();
-  void initNets(bool init_delta = false);
-
-  void transPin(idb::IdbPin* idb_pin, int net_id, int pin_id = -1, bool b_io = false);
-  void transVia(idb::IdbVia* idb_via, int net_id, LmNodeTYpe type);
-  void transEnclosure(int32_t ll_x, int32_t ll_y, int32_t ur_x, int32_t ur_y, std::string layer_name, int net_id, int via_row, int via_col);
-  void transNetRect(int32_t ll_x, int32_t ll_y, int32_t ur_x, int32_t ur_y, std::string layer_name, int net_id);
-  void transNetDelta(int32_t ll_x, int32_t ll_y, int32_t ur_x, int32_t ur_y, std::string layer_name, int net_id);
-  bool setConnectNode(LmNode& node);
 };
 
 }  // namespace ilm

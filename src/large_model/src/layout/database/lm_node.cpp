@@ -60,11 +60,11 @@ bool LmNodeData::is_status(LmNodeStatus type)
 void LmNodeData::set_status(LmNodeStatus type, bool b_cancel)
 {
   if (b_cancel) {
-    _status = LmNodeStatus((static_cast<uint8_t>(_status)) ^ (static_cast<uint8_t>(type)));
+    _status = LmNodeStatus((static_cast<uint8_t>(_status)) & (~(static_cast<uint8_t>(type))));
   } else {
     _status = LmNodeStatus((static_cast<uint8_t>(_status)) | (static_cast<uint8_t>(type)));
-    if (LmNodeStatus::lm_connected == type && is_status(LmNodeStatus::lm_connecting)) {
-      _status = LmNodeStatus((static_cast<uint8_t>(_status)) ^ (static_cast<uint8_t>(LmNodeStatus::lm_connecting)));
+    if (is_status(LmNodeStatus::lm_connected) && is_status(LmNodeStatus::lm_connecting)) {
+      _status = LmNodeStatus((static_cast<uint8_t>(_status)) & (~(static_cast<uint8_t>(LmNodeStatus::lm_connecting))));
     }
   }
 }

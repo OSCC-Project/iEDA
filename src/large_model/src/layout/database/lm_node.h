@@ -84,6 +84,7 @@ class LmNodeData
 
   // getter
   int32_t get_net_id() { return _net_id; }
+  int32_t get_pin_id() {return _pin_id;}
   LmNodeTYpe get_type() { return _type; }
   LmNodeConnectType get_connect_type() { return _connect_type; }
   bool is_connect_type(LmNodeConnectType type);
@@ -110,6 +111,7 @@ class LmNodeData
 
   // setter
   void set_net_id(int32_t id) { _net_id = id; }
+  void set_pin_id(int32_t id) { _pin_id = id; }
   void set_type(LmNodeTYpe type);
   void set_connect_type(LmNodeConnectType type);
   void set_status(LmNodeStatus status, bool b_cancel = false);
@@ -121,6 +123,7 @@ class LmNodeData
 
  private:
   int32_t _net_id = -1;
+  int32_t _pin_id = -1;
   LmNodeTYpe _type = LmNodeTYpe::kNone;  /// multiple type in one node
   LmNodeConnectType _connect_type = LmNodeConnectType::kNone;
   LmNodeStatus _status = LmNodeStatus::kNone;

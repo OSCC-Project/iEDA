@@ -407,7 +407,7 @@ void LmLayoutInit::initIOPins()
   }
 }
 
-void LmLayoutInit::transPin(idb::IdbPin* idb_pin, int net_id)
+void LmLayoutInit::transPin(idb::IdbPin* idb_pin, int net_id, int pin_id, bool b_io)
 {
   auto& patch_layers = _layout->get_patch_layers();
   for (auto* layer_shape : idb_pin->get_port_box_list()) {
@@ -430,6 +430,10 @@ void LmLayoutInit::transPin(idb::IdbPin* idb_pin, int net_id)
         if (net_id > 0) {
           node_data.set_type(LmNodeTYpe::lm_net);
         }
+        if (b_io) {
+          node_data.set_type(LmNodeTYpe::lm_io);
+        }
+        node_data.set_pin_id(pin_id);
         node_data.set_connect_type(LmNodeConnectType::lm_via);
       }
     } else {
@@ -449,6 +453,10 @@ void LmLayoutInit::transPin(idb::IdbPin* idb_pin, int net_id)
             if (net_id > 0) {
               node_data.set_type(LmNodeTYpe::lm_net);
             }
+            if (b_io) {
+              node_data.set_type(LmNodeTYpe::lm_io);
+            }
+            node_data.set_pin_id(pin_id);
             node_data.set_connect_type(LmNodeConnectType::lm_wire);
             if (b_horizontal) {
               if (col == col_1) {
@@ -858,6 +866,7 @@ void LmLayoutInit::initNets(bool init_delta)
 
   auto* idb_design = dmInst->get_idb_design();
   auto* idb_nets = idb_design->get_net_list();
+  auto& graph = _layout->get_graph();
 
   if (false == init_delta) {
     for (int net_id = 0; net_id < (int) idb_nets->get_net_list().size(); ++net_id) {
@@ -865,15 +874,7 @@ void LmLayoutInit::initNets(bool init_delta)
       auto* idb_net = idb_nets->get_net_list()[net_id];
       net_id_map.insert(std::make_pair(idb_net->get_net_name(), net_id));
 
-      int pin_id = 0;
-
-      for (auto* idb_inst_pin : idb_net->get_instance_pin_list()->get_pin_list()) {
-        transPin(idb_inst_pin, net_id);
-      }
-
-      for (auto* io_pin : idb_net->get_io_pins()->get_pin_list()) {
-        transPin(io_pin, net_id);
-      }
+      graph.addNet(net_id);
     }
   }
 
@@ -886,13 +887,26 @@ void LmLayoutInit::initNets(bool init_delta)
 
     /// init pins
     /// instance pin
+    /// add pin id
+    auto* lm_net = graph.get_net(net_id);
+    int pin_id = 0;
     if (false == init_delta) {
       for (auto* idb_inst_pin : idb_net->get_instance_pin_list()->get_pin_list()) {
-        transPin(idb_inst_pin, net_id);
+        transPin(idb_inst_pin, net_id, pin_id);
+        if (lm_net != nullptr) {
+          lm_net->addPinId(pin_id);
+        }
+
+        pin_id++;
       }
 
       for (auto* io_pin : idb_net->get_io_pins()->get_pin_list()) {
-        transPin(io_pin, net_id);
+        transPin(io_pin, net_id, pin_id, true);
+
+        if (lm_net != nullptr) {
+          lm_net->addPinId(pin_id);
+        }
+        pin_id++;
       }
     }
 
@@ -1068,7 +1082,7 @@ bool LmLayoutInit::setConnectNode(LmNode& node)
 
   /// set corner as connecting
   if (node.is_corner()) {
-    node_data.set_status(LmNodeStatus::lm_connecting);
+    node_data.set_status(LmNodeStatus::lm_connected);
     if (node_data.is_end_point()) {
       node_data.set_status(LmNodeStatus::lm_end_point, true);
     }

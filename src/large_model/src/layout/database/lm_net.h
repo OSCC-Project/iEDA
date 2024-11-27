@@ -68,19 +68,39 @@ class LmNet
   // getter
   int get_net_id() { return _net_id; }
   std::vector<LmNetWire>& get_wires() { return _wires; }
-  std::vector<int> get_pin_ids(){return _pin_ids;}
+  std::vector<int>& get_pin_ids() { return _pin_ids; }
 
   // setter
   void set_net_id(int net_id) { _net_id = net_id; }
 
   // operator
   void addWire(LmNetWire wire) { _wires.push_back(wire); }
-  void addPinId(int id){_pin_ids.push_back(id);}
+  void addPinId(int id) { _pin_ids.push_back(id); }
 
  private:
   int _net_id = -1;
   std::vector<LmNetWire> _wires;
   std::vector<int> _pin_ids;
+};
+
+class LmGraph
+{
+ public:
+  LmGraph() {}
+  ~LmGraph() = default;
+
+  // getter
+  std::map<int, LmNet>& get_net_map() { return _net_map; }
+  LmNet* get_net(int net_id);
+
+  // setter
+  LmNet* addNet(int net_id);
+  void add_net_wire(int net_id, LmNetWire wire);
+
+  // operator
+
+ private:
+  std::map<int, LmNet> _net_map;
 };
 
 }  // namespace ilm

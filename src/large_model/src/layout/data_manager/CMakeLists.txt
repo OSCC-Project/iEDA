@@ -3,6 +3,7 @@ add_library(ilm_layout_dm
     lm_layout_init.cpp
     lm_layout_file.cpp
     lm_layout_check.cc
+    lm_layout_opt.cpp
 )
 
 target_link_libraries(ilm_layout_dm

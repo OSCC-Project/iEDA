@@ -46,7 +46,7 @@ class LmLayout
   std::map<std::string, int>& get_via_id_map() { return _via_id_map; }
   std::map<std::string, int>& get_pdn_id_map() { return _pdn_id_map; }
   std::map<std::string, int>& get_net_id_map() { return _net_id_map; }
-  std::map<int, LmNet>& get_graph() { return _net_map; }
+  LmGraph& get_graph() { return _graph; }
   // setter
 
   // operator
@@ -64,7 +64,7 @@ class LmLayout
   std::map<std::string, int> _pdn_id_map;    /// string : pdn name, int : id in the map
   std::map<std::string, int> _net_id_map;    /// string : net name, int id in the map
 
-  std::map<int, LmNet> _net_map;
+  LmGraph _graph;
 };
 
 }  // namespace ilm
