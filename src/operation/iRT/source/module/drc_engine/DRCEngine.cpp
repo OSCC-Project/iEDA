@@ -54,21 +54,12 @@ void DRCEngine::init()
   Monitor monitor;
   RTLOG.info(Loc::current(), "Starting...");
 
-  buildIgnoreViolationSet();
+  updateIgnoreViolationSet();
 
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
-std::vector<Violation> DRCEngine::getViolationList(DETask& de_task)
-{
-  return getViolationList(de_task, true);
-}
-
-// private
-
-DRCEngine* DRCEngine::_de_instance = nullptr;
-
-void DRCEngine::buildIgnoreViolationSet()
+void DRCEngine::updateIgnoreViolationSet()
 {
   Die& die = RTDM.getDatabase().get_die();
   std::vector<Net>& net_list = RTDM.getDatabase().get_net_list();
@@ -132,6 +123,15 @@ void DRCEngine::buildIgnoreViolationSet()
     _ignore_violation_set.insert(violation);
   }
 }
+
+std::vector<Violation> DRCEngine::getViolationList(DETask& de_task)
+{
+  return getViolationList(de_task, true);
+}
+
+// private
+
+DRCEngine* DRCEngine::_de_instance = nullptr;
 
 std::vector<Violation> DRCEngine::getViolationList(DETask& de_task, bool post_process)
 {
@@ -653,7 +653,7 @@ void DRCEngine::buildByFunc(Violation& violation, const DEFuncType& de_func_type
   if (de_func_type == DEFuncType::kNone) {
     RTLOG.error(Loc::current(), "The de_func_type is none!");
   }
-  PlanarRect enlarged_rect;
+  PlanarRect real_rect = violation.get_violation_shape().get_real_rect();
   std::vector<std::pair<int32_t, bool>> layer_routing_list;
   switch (violation.get_violation_type()) {
     case ViolationType::kAdjacentCutSpacing:
@@ -674,32 +674,32 @@ void DRCEngine::buildByFunc(Violation& violation, const DEFuncType& de_func_type
       if (de_func_type == DEFuncType::kGetDEProcessType) {
         de_process_type = DEProcessType::kCost;
       } else if (de_func_type == DEFuncType::kExpandViolation) {
-        enlarged_rect = enlargeRect(violation);
-        layer_routing_list = expandOneViaLayer(violation);
+        real_rect = enlargeRect(real_rect, violation.get_required_size());
+        layer_routing_list = expandUpOneLayer(violation);
       }
       break;
     case ViolationType::kCutShort:
       if (de_func_type == DEFuncType::kGetDEProcessType) {
         de_process_type = DEProcessType::kCost;
       } else if (de_func_type == DEFuncType::kExpandViolation) {
-        enlarged_rect = enlargeRect(violation);
-        layer_routing_list = expandOneViaLayer(violation);
+        real_rect = enlargeRect(real_rect, violation.get_required_size());
+        layer_routing_list = expandUpOneLayer(violation);
       }
       break;
     case ViolationType::kDifferentLayerCutSpacing:
       if (de_func_type == DEFuncType::kGetDEProcessType) {
         de_process_type = DEProcessType::kCost;
       } else if (de_func_type == DEFuncType::kExpandViolation) {
-        enlarged_rect = enlargeRect(violation);
-        layer_routing_list = expandTwoViaLayer(violation);
+        real_rect = enlargeRect(real_rect, violation.get_required_size());
+        layer_routing_list = expandUpTwoLayer(violation);
       }
       break;
     case ViolationType::kEndOfLineSpacing:
       if (de_func_type == DEFuncType::kGetDEProcessType) {
         de_process_type = DEProcessType::kCost;
       } else if (de_func_type == DEFuncType::kExpandViolation) {
-        enlarged_rect = enlargeRect(violation);
-        layer_routing_list = keepLayer(violation);
+        real_rect = enlargeRect(real_rect, violation.get_required_size());
+        layer_routing_list = expandAdjacentOneLayer(violation);
       }
       break;
     case ViolationType::kEnclosure:
@@ -734,39 +734,39 @@ void DRCEngine::buildByFunc(Violation& violation, const DEFuncType& de_func_type
       if (de_func_type == DEFuncType::kGetDEProcessType) {
         de_process_type = DEProcessType::kCost;
       } else if (de_func_type == DEFuncType::kExpandViolation) {
-        enlarged_rect = enlargeRect(violation);
-        layer_routing_list = keepLayer(violation);
+        real_rect = enlargeRect(real_rect, violation.get_required_size());
+        layer_routing_list = expandAdjacentOneLayer(violation);
       }
       break;
     case ViolationType::kMaxViaStack:
       if (de_func_type == DEFuncType::kGetDEProcessType) {
         de_process_type = DEProcessType::kCost;
       } else if (de_func_type == DEFuncType::kExpandViolation) {
-        enlarged_rect = keepRect(violation);
-        layer_routing_list = expandOneViaLayer(violation);
+        real_rect = enlargeRect(real_rect, 0);
+        layer_routing_list = expandUpOneLayer(violation);
       }
       break;
     case ViolationType::kMetalShort:
       if (de_func_type == DEFuncType::kGetDEProcessType) {
         de_process_type = DEProcessType::kCost;
       } else if (de_func_type == DEFuncType::kExpandViolation) {
-        enlarged_rect = enlargeRect(violation);
-        layer_routing_list = keepLayer(violation);
+        real_rect = enlargeRect(real_rect, violation.get_required_size());
+        layer_routing_list = expandAdjacentOneLayer(violation);
       }
       break;
     case ViolationType::kMinHole:
       if (de_func_type == DEFuncType::kGetDEProcessType) {
-        de_process_type = DEProcessType::kSkip;
+        de_process_type = DEProcessType::kCost;
       } else if (de_func_type == DEFuncType::kExpandViolation) {
-        RTLOG.error(Loc::current(), "This is skipping!");
+        real_rect = enlargeRect(real_rect, std::ceil(std::sqrt(violation.get_required_size())));
+        layer_routing_list = expandAdjacentOneLayer(violation);
       }
       break;
     case ViolationType::kMinimumArea:
       if (de_func_type == DEFuncType::kGetDEProcessType) {
-        de_process_type = DEProcessType::kPatch;
+        de_process_type = DEProcessType::kSkip;
       } else if (de_func_type == DEFuncType::kExpandViolation) {
-        enlarged_rect = keepRect(violation);
-        layer_routing_list = keepLayer(violation);
+        RTLOG.error(Loc::current(), "This is skipping!");
       }
       break;
     case ViolationType::kMinimumCut:
@@ -785,10 +785,9 @@ void DRCEngine::buildByFunc(Violation& violation, const DEFuncType& de_func_type
       break;
     case ViolationType::kMinStep:
       if (de_func_type == DEFuncType::kGetDEProcessType) {
-        de_process_type = DEProcessType::kPatch;
+        de_process_type = DEProcessType::kSkip;
       } else if (de_func_type == DEFuncType::kExpandViolation) {
-        enlarged_rect = keepRect(violation);
-        layer_routing_list = keepLayer(violation);
+        RTLOG.error(Loc::current(), "This is skipping!");
       }
       break;
     case ViolationType::kNonsufficientMetalOverlap:
@@ -800,9 +799,10 @@ void DRCEngine::buildByFunc(Violation& violation, const DEFuncType& de_func_type
       break;
     case ViolationType::kNotchSpacing:
       if (de_func_type == DEFuncType::kGetDEProcessType) {
-        de_process_type = DEProcessType::kSkip;
+        de_process_type = DEProcessType::kCost;
       } else if (de_func_type == DEFuncType::kExpandViolation) {
-        RTLOG.error(Loc::current(), "This is skipping!");
+        real_rect = enlargeRect(real_rect, violation.get_required_size());
+        layer_routing_list = expandAdjacentOneLayer(violation);
       }
       break;
     case ViolationType::kOffGridOrWrongWay:
@@ -823,16 +823,16 @@ void DRCEngine::buildByFunc(Violation& violation, const DEFuncType& de_func_type
       if (de_func_type == DEFuncType::kGetDEProcessType) {
         de_process_type = DEProcessType::kCost;
       } else if (de_func_type == DEFuncType::kExpandViolation) {
-        enlarged_rect = enlargeRect(violation);
-        layer_routing_list = keepLayer(violation);
+        real_rect = enlargeRect(real_rect, violation.get_required_size());
+        layer_routing_list = expandAdjacentOneLayer(violation);
       }
       break;
     case ViolationType::kSameLayerCutSpacing:
       if (de_func_type == DEFuncType::kGetDEProcessType) {
         de_process_type = DEProcessType::kCost;
       } else if (de_func_type == DEFuncType::kExpandViolation) {
-        enlarged_rect = enlargeRect(violation);
-        layer_routing_list = expandOneViaLayer(violation);
+        real_rect = enlargeRect(real_rect, violation.get_required_size());
+        layer_routing_list = expandUpOneLayer(violation);
       }
       break;
     default:
@@ -841,72 +841,71 @@ void DRCEngine::buildByFunc(Violation& violation, const DEFuncType& de_func_type
   }
   for (std::pair<int32_t, bool>& layer_routing : layer_routing_list) {
     Violation expanded_violation = violation;
-    expanded_violation.get_violation_shape().set_real_rect(enlarged_rect);
+    expanded_violation.get_violation_shape().set_real_rect(real_rect);
     expanded_violation.get_violation_shape().set_layer_idx(layer_routing.first);
     expanded_violation.set_is_routing(layer_routing.second);
     expanded_violation_list.push_back(expanded_violation);
   }
 }
 
-PlanarRect DRCEngine::keepRect(Violation& violation)
+PlanarRect DRCEngine::enlargeRect(PlanarRect& real_rect, int32_t required_size)
 {
-  PlanarRect enlarged_rect;
-  enlarged_rect = violation.get_violation_shape().get_real_rect();
-  return enlarged_rect;
-}
-
-PlanarRect DRCEngine::enlargeRect(Violation& violation)
-{
-  PlanarRect& real_rect = violation.get_violation_shape().get_real_rect();
   int32_t enlarged_x_size = 0;
-  if (real_rect.getXSpan() < violation.get_required_size()) {
-    enlarged_x_size = violation.get_required_size() - real_rect.getXSpan();
+  if (real_rect.getXSpan() < required_size) {
+    enlarged_x_size = required_size - real_rect.getXSpan();
   }
   int32_t enlarged_y_size = 0;
-  if (real_rect.getYSpan() < violation.get_required_size()) {
-    enlarged_y_size = violation.get_required_size() - real_rect.getYSpan();
+  if (real_rect.getYSpan() < required_size) {
+    enlarged_y_size = required_size - real_rect.getYSpan();
   }
   return RTUTIL.getEnlargedRect(real_rect, enlarged_x_size, enlarged_y_size, enlarged_x_size, enlarged_y_size);
 }
 
-std::vector<std::pair<int32_t, bool>> DRCEngine::keepLayer(Violation& violation)
+std::vector<std::pair<int32_t, bool>> DRCEngine::expandAdjacentOneLayer(Violation& violation)
 {
+  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
+
+  int32_t violation_layer_idx = violation.get_violation_shape().get_layer_idx();
+
   std::vector<std::pair<int32_t, bool>> layer_routing_list;
-  int32_t routing_layer_idx = violation.get_violation_shape().get_layer_idx();
-  layer_routing_list.emplace_back(routing_layer_idx, true);
+  layer_routing_list.emplace_back(violation_layer_idx, true);
+  if (0 < violation_layer_idx) {
+    layer_routing_list.emplace_back(violation_layer_idx - 1, true);
+  }
+  if (violation_layer_idx < (static_cast<int32_t>(routing_layer_list.size()) - 1)) {
+    layer_routing_list.emplace_back(violation_layer_idx + 1, true);
+  }
   return layer_routing_list;
 }
 
-std::vector<std::pair<int32_t, bool>> DRCEngine::expandOneViaLayer(Violation& violation)
+std::vector<std::pair<int32_t, bool>> DRCEngine::expandUpOneLayer(Violation& violation)
 {
-  std::vector<std::vector<ViaMaster>>& layer_via_master_list = RTDM.getDatabase().get_layer_via_master_list();
+  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
+
+  int32_t violation_layer_idx = violation.get_violation_shape().get_layer_idx();
 
   std::vector<std::pair<int32_t, bool>> layer_routing_list;
-  int32_t below_layer_idx = violation.get_violation_shape().get_layer_idx();
-  ViaMaster& via_master = layer_via_master_list[below_layer_idx].front();
-  layer_routing_list.emplace_back(via_master.get_below_enclosure().get_layer_idx(), true);
-  layer_routing_list.emplace_back(via_master.get_cut_layer_idx(), false);
-  layer_routing_list.emplace_back(via_master.get_above_enclosure().get_layer_idx(), true);
+  layer_routing_list.emplace_back(violation_layer_idx, true);
+  if (violation_layer_idx < (static_cast<int32_t>(routing_layer_list.size()) - 1)) {
+    layer_routing_list.emplace_back(violation_layer_idx + 1, true);
+  }
   return layer_routing_list;
 }
 
-std::vector<std::pair<int32_t, bool>> DRCEngine::expandTwoViaLayer(Violation& violation)
+std::vector<std::pair<int32_t, bool>> DRCEngine::expandUpTwoLayer(Violation& violation)
 {
-  std::vector<std::vector<ViaMaster>>& layer_via_master_list = RTDM.getDatabase().get_layer_via_master_list();
+  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
+
+  int32_t violation_layer_idx = violation.get_violation_shape().get_layer_idx();
 
   std::vector<std::pair<int32_t, bool>> layer_routing_list;
-  int32_t below_layer_idx = violation.get_violation_shape().get_layer_idx();
-  ViaMaster& via_master_1 = layer_via_master_list[below_layer_idx].front();
-  int32_t cut_layer_idx_1 = via_master_1.get_cut_layer_idx();
-  int32_t mid_layer_idx = via_master_1.get_above_enclosure().get_layer_idx();
-  ViaMaster& via_master_2 = layer_via_master_list[mid_layer_idx].front();
-  int32_t cut_layer_idx_2 = via_master_2.get_cut_layer_idx();
-  int32_t above_layer_idx = via_master_2.get_above_enclosure().get_layer_idx();
-  layer_routing_list.emplace_back(below_layer_idx, true);
-  layer_routing_list.emplace_back(cut_layer_idx_1, false);
-  layer_routing_list.emplace_back(mid_layer_idx, true);
-  layer_routing_list.emplace_back(cut_layer_idx_2, false);
-  layer_routing_list.emplace_back(above_layer_idx, true);
+  layer_routing_list.emplace_back(violation_layer_idx, true);
+  if (violation_layer_idx < (static_cast<int32_t>(routing_layer_list.size()) - 1)) {
+    layer_routing_list.emplace_back(violation_layer_idx + 1, true);
+  }
+  if (violation_layer_idx < (static_cast<int32_t>(routing_layer_list.size()) - 2)) {
+    layer_routing_list.emplace_back(violation_layer_idx + 2, true);
+  }
   return layer_routing_list;
 }
 

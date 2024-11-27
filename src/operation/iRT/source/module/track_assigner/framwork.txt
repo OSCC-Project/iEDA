@@ -20,7 +20,6 @@ assignTAPanelMap:
     uploadNetResult:将布线结果加入GCellMap
     uploadViolation:将violation加入GCellMap
     freeTAPanel:析构task_list和node_map
-uploadViolation:将整个版图结果进行检查并将violation加入GCellMap
 
 
 

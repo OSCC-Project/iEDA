@@ -139,6 +139,7 @@ void DetailedRouter::iterativeDRModel(DRModel& dr_model)
     routeDRBoxMap(dr_model);
     uploadNetResult(dr_model);
     uploadViolation(dr_model);
+    updateBestResult(dr_model);
     // debugPlotDRModel(dr_model, "after");
     updateSummary(dr_model);
     printSummary(dr_model);
@@ -150,6 +151,7 @@ void DetailedRouter::iterativeDRModel(DRModel& dr_model)
       break;
     }
   }
+  selectBestResult(dr_model);
 }
 
 void DetailedRouter::setDRParameter(DRModel& dr_model, int32_t iter, DRParameter& dr_parameter)
@@ -1507,6 +1509,40 @@ std::vector<Violation> DetailedRouter::getCostViolationList(DRModel& dr_model)
   return RTDE.getViolationList(de_task);
 }
 
+void DetailedRouter::updateBestResult(DRModel& dr_model)
+{
+  Monitor monitor;
+  RTLOG.info(Loc::current(), "Starting...");
+
+  Die& die = RTDM.getDatabase().get_die();
+
+  int32_t curr_violation_num = getViolationNum();
+  if (dr_model.get_best_violation_num() != -1 && dr_model.get_best_violation_num() < curr_violation_num) {
+    return;
+  }
+  std::map<int32_t, std::vector<Segment<LayerCoord>>>& best_net_detailed_result_map = dr_model.get_best_net_detailed_result_map();
+  std::map<int32_t, std::vector<EXTLayerRect>>& best_net_detailed_patch_map = dr_model.get_best_net_detailed_patch_map();
+
+  dr_model.set_best_violation_num(curr_violation_num);
+  best_net_detailed_result_map.clear();
+  best_net_detailed_patch_map.clear();
+
+  for (auto& [net_idx, segment_set] : RTDM.getNetDetailedResultMap(die)) {
+    best_net_detailed_result_map[net_idx].reserve(segment_set.size());
+    for (Segment<LayerCoord>* segment : segment_set) {
+      best_net_detailed_result_map[net_idx].push_back(*segment);
+    }
+  }
+  for (auto& [net_idx, patch_set] : RTDM.getNetDetailedPatchMap(die)) {
+    best_net_detailed_patch_map[net_idx].reserve(patch_set.size());
+    for (EXTLayerRect* patch : patch_set) {
+      best_net_detailed_patch_map[net_idx].push_back(*patch);
+    }
+  }
+
+  RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
+}
+
 bool DetailedRouter::stopIteration(DRModel& dr_model)
 {
   if (getViolationNum() == 0) {
@@ -1514,6 +1550,49 @@ bool DetailedRouter::stopIteration(DRModel& dr_model)
     return true;
   }
   return false;
+}
+
+void DetailedRouter::selectBestResult(DRModel& dr_model)
+{
+  Monitor monitor;
+  RTLOG.info(Loc::current(), "Starting...");
+
+  dr_model.set_iter(dr_model.get_iter() + 1);
+  uploadBestResult(dr_model);
+  uploadViolation(dr_model);
+  updateSummary(dr_model);
+  printSummary(dr_model);
+  outputNetCSV(dr_model);
+  outputViolationCSV(dr_model);
+
+  RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
+}
+
+void DetailedRouter::uploadBestResult(DRModel& dr_model)
+{
+  Die& die = RTDM.getDatabase().get_die();
+
+  for (auto& [net_idx, segment_set] : RTDM.getNetDetailedResultMap(die)) {
+    for (Segment<LayerCoord>* segment : segment_set) {
+      RTDM.updateNetDetailedResultToGCellMap(ChangeType::kDel, net_idx, segment);
+    }
+  }
+  for (auto& [net_idx, patch_set] : RTDM.getNetDetailedPatchMap(die)) {
+    for (EXTLayerRect* patch : patch_set) {
+      RTDM.updateNetAccessPatchToGCellMap(ChangeType::kDel, net_idx, patch);
+    }
+  }
+
+  for (auto& [net_idx, segment_list] : dr_model.get_best_net_detailed_result_map()) {
+    for (Segment<LayerCoord>& segment : segment_list) {
+      RTDM.updateNetDetailedResultToGCellMap(ChangeType::kAdd, net_idx, new Segment<LayerCoord>(segment));
+    }
+  }
+  for (auto& [net_idx, patch_list] : dr_model.get_best_net_detailed_patch_map()) {
+    for (EXTLayerRect& patch : patch_list) {
+      RTDM.updateNetAccessPatchToGCellMap(ChangeType::kAdd, net_idx, new EXTLayerRect(patch));
+    }
+  }
 }
 
 #if 1  // update env
@@ -1593,18 +1672,14 @@ void DetailedRouter::updateNetResultToGraph(DRBox& dr_box, ChangeType change_typ
 
 void DetailedRouter::addViolationToGraph(DRBox& dr_box, Violation& violation)
 {
-  std::map<int32_t, std::vector<int32_t>>& cut_to_adjacent_routing_map = RTDM.getDatabase().get_cut_to_adjacent_routing_map();
-
-  std::vector<LayerRect> searched_rect_list;
+  LayerRect searched_rect;
   {
     EXTLayerRect& violation_shape = violation.get_violation_shape();
-    PlanarRect enlarged_rect = RTUTIL.getEnlargedRect(violation_shape.get_real_rect(), RTDM.getOnlyPitch());
+    searched_rect.set_rect(RTUTIL.getEnlargedRect(violation_shape.get_real_rect(), RTDM.getOnlyPitch()));
     if (violation.get_is_routing()) {
-      searched_rect_list.emplace_back(enlarged_rect, violation_shape.get_layer_idx());
+      searched_rect.set_layer_idx(violation_shape.get_layer_idx());
     } else {
-      for (int32_t layer_idx : cut_to_adjacent_routing_map[violation_shape.get_layer_idx()]) {
-        searched_rect_list.emplace_back(enlarged_rect, layer_idx);
-      }
+      RTLOG.error(Loc::current(), "The violation layer is cut!");
     }
   }
   std::vector<Segment<LayerCoord>> overlap_segment_list;
@@ -1613,20 +1688,17 @@ void DetailedRouter::addViolationToGraph(DRBox& dr_box, Violation& violation)
       continue;
     }
     for (Segment<LayerCoord>& segment : segment_list) {
-      for (LayerRect& searched_rect : searched_rect_list) {
-        if (!RTUTIL.isOverlap(searched_rect, segment)) {
-          continue;
-        }
-        overlap_segment_list.push_back(segment);
-        break;
+      if (!RTUTIL.isOverlap(searched_rect, segment)) {
+        continue;
       }
+      overlap_segment_list.push_back(segment);
+      break;
     }
   }
-  addViolationToGraph(dr_box, searched_rect_list, overlap_segment_list);
+  addViolationToGraph(dr_box, searched_rect, overlap_segment_list);
 }
 
-void DetailedRouter::addViolationToGraph(DRBox& dr_box, std::vector<LayerRect>& searched_rect_list,
-                                         std::vector<Segment<LayerCoord>>& overlap_segment_list)
+void DetailedRouter::addViolationToGraph(DRBox& dr_box, LayerRect& searched_rect, std::vector<Segment<LayerCoord>>& overlap_segment_list)
 {
   ScaleAxis& box_track_axis = dr_box.get_box_track_axis();
   std::vector<GridMap<DRNode>>& layer_node_map = dr_box.get_layer_node_map();
@@ -1651,16 +1723,14 @@ void DetailedRouter::addViolationToGraph(DRBox& dr_box, std::vector<LayerRect>& 
         for (int32_t x = grid_rect.get_ll_x(); x <= grid_rect.get_ur_x(); x++) {
           for (int32_t y = grid_rect.get_ll_y(); y <= grid_rect.get_ur_y(); y++) {
             DRNode* dr_node = &layer_node_map[layer_idx][x][y];
-            for (LayerRect& searched_rect : searched_rect_list) {
-              if (searched_rect.get_layer_idx() != dr_node->get_layer_idx()) {
-                continue;
-              }
-              int32_t distance = 0;
-              if (!RTUTIL.isInside(searched_rect.get_rect(), dr_node->get_planar_coord())) {
-                distance = RTUTIL.getManhattanDistance(searched_rect.getMidPoint(), dr_node->get_planar_coord());
-              }
-              distance_node_map[distance].insert(dr_node);
+            if (searched_rect.get_layer_idx() != dr_node->get_layer_idx()) {
+              continue;
             }
+            int32_t distance = 0;
+            if (!RTUTIL.isInside(searched_rect.get_rect(), dr_node->get_planar_coord())) {
+              distance = RTUTIL.getManhattanDistance(searched_rect.getMidPoint(), dr_node->get_planar_coord());
+            }
+            distance_node_map[distance].insert(dr_node);
           }
         }
       }

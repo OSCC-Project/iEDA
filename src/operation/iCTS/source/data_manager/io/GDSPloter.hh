@@ -55,7 +55,8 @@ class GDSPloter
 
   static void insertPolygon(std::fstream& log_ofs, IdbRect& poly, const string& name = "polygon", int layer = 0, const int& type = 1);
 
-  static void insertWire(std::fstream& log_ofs, const Point& begin, const Point& end, const int& layer = 0, const int& width = 80);
+  static void insertWire(std::fstream& log_ofs, const Point& begin, const Point& end, const string& name = "WIRE", const int& layer = 0,
+                         const int& width = 80);
 
   static void head(std::fstream& log_ofs);
   static void tail(std::fstream& log_ofs);

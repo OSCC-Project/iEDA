@@ -46,12 +46,14 @@ void GDSPloter::plotDesign(const std::string& path)
   head(ofs);
 
   for (auto& clk_net : clk_nets) {
+    size_t wire_id = 0;
     auto net_name = clk_net->get_net_name();
 
     for (const auto& wire : clk_net->get_signal_wires()) {
+      auto wire_name = "WIRE_" + net_name + "_" + std::to_string(wire_id++);
       auto first = wire.get_first().point;
       auto second = wire.get_second().point;
-      insertWire(ofs, first, second, clk_net->get_driver_inst()->get_level());
+      insertWire(ofs, first, second, wire_name, clk_net->get_driver_inst()->get_level());
     }
   }
 
@@ -104,7 +106,14 @@ void GDSPloter::plotDesign(const std::string& path)
     }
   }
   refPolygon(ofs, "core");
-  refPolygon(ofs, "WIRE");
+  for (auto& clk_net : clk_nets) {
+    auto net_name = clk_net->get_net_name();
+
+    for (size_t i = 0; i < clk_net->get_signal_wires().size(); ++i) {
+      auto wire_name = "WIRE_" + net_name + "_" + std::to_string(i);
+      refPolygon(ofs, wire_name);
+    }
+  }
   strEnd(ofs);
 
   tail(ofs);
@@ -129,9 +138,11 @@ void GDSPloter::plotFlyLine(const std::string& path)
   head(ofs);
 
   for (auto& clk_net : clk_nets) {
-    auto driver = clk_net->get_driver_inst();
-    for (auto load : clk_net->get_load_insts()) {
-      insertWire(ofs, driver->get_location(), load->get_location(), driver->get_level());
+    auto* driver = clk_net->get_driver_inst();
+    size_t wire_id = 0;
+    for (auto* load : clk_net->get_load_insts()) {
+      auto wire_name = "WIRE_" + clk_net->get_net_name() + "_" + std::to_string(wire_id++);
+      insertWire(ofs, driver->get_location(), load->get_location(), wire_name, driver->get_level());
     }
   }
 
@@ -184,7 +195,13 @@ void GDSPloter::plotFlyLine(const std::string& path)
     }
   }
   refPolygon(ofs, "core");
-  refPolygon(ofs, "WIRE");
+
+  for (auto& clk_net : clk_nets) {
+    for (size_t i = 0; i < clk_net->get_load_insts().size(); ++i) {
+      auto wire_name = "WIRE_" + clk_net->get_net_name() + "_" + std::to_string(i);
+      refPolygon(ofs, wire_name);
+    }
+  }
   strEnd(ofs);
 
   tail(ofs);
@@ -392,10 +409,11 @@ void GDSPloter::insertInstance(std::fstream& log_ofs, CtsInstance* inst)
   insertPolygon(log_ofs, rect, name, layer);
 }
 
-void GDSPloter::insertWire(std::fstream& log_ofs, const Point& begin, const Point& end, const int& layer, const int& width)
+void GDSPloter::insertWire(std::fstream& log_ofs, const Point& begin, const Point& end, const string& name, const int& layer,
+                           const int& width)
 {
   log_ofs << "BGNSTR" << std::endl;
-  log_ofs << "STRNAME WIRE" << std::endl;
+  log_ofs << "STRNAME " << name << std::endl;
   log_ofs << "PATH" << std::endl;
   log_ofs << "LAYER " + std::to_string(layer) << std::endl;
   log_ofs << "DATATYPE 0" << std::endl;
