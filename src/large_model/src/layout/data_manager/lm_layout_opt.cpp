@@ -33,6 +33,7 @@ namespace ilm {
 
 void LmLayoutOptimize::wirePruning()
 {
+  return;
   ieda::Stats stats;
 
   LOG_INFO << "LM optimize connections for routing layer start...";
@@ -48,6 +49,8 @@ void LmLayoutOptimize::wirePruning()
     std::vector<LmNetWire*> wires;
   };
 
+  int connected_num = 0;
+
   for (auto& [net_id, net] : net_map) {
     auto& pin_ids = net.get_pin_ids();
     auto& wires = net.get_wires();
@@ -60,6 +63,7 @@ void LmLayoutOptimize::wirePruning()
     int sub_graph_id = 0;
     for (auto& wire : wires) {
       auto& [node1, node2] = wire.get_connected_nodes();
+      bool b_insert = false;
       for (auto& [id, classify_map] : sub_graph) {
         for (auto& sub_graph_wire : classify_map.wires) {
           auto& [sub_node1, sub_node2] = sub_graph_wire->get_connected_nodes();
@@ -67,27 +71,48 @@ void LmLayoutOptimize::wirePruning()
             classify_map.wires.push_back(&wire);
             if (node1->get_node_data().get_pin_id() != -1) {
               classify_map.pin_ids.insert(node1->get_node_data().get_pin_id());
+              b_insert = true;
             }
 
             if (node2->get_node_data().get_pin_id() != -1) {
               classify_map.pin_ids.insert(node2->get_node_data().get_pin_id());
-            }
-          } else {
-            ClassifyMap new_classify_map;
-            sub_graph.insert(std::make_pair(sub_graph_id++, new_classify_map));
-            new_classify_map.wires.push_back(&wire);
-            if (node1->get_node_data().get_pin_id() != -1) {
-              new_classify_map.pin_ids.insert(node1->get_node_data().get_pin_id());
-            }
-
-            if (node2->get_node_data().get_pin_id() != -1) {
-              new_classify_map.pin_ids.insert(node2->get_node_data().get_pin_id());
+              b_insert = true;
             }
           }
         }
       }
+
+      if (false == b_insert) {
+        ClassifyMap new_classify_map;
+
+        new_classify_map.wires.push_back(&wire);
+        if (node1->get_node_data().get_pin_id() != -1) {
+          new_classify_map.pin_ids.insert(node1->get_node_data().get_pin_id());
+        }
+
+        if (node2->get_node_data().get_pin_id() != -1) {
+          new_classify_map.pin_ids.insert(node2->get_node_data().get_pin_id());
+        }
+
+        sub_graph.insert(std::make_pair(sub_graph_id++, new_classify_map));
+      }
+    }
+
+    bool b_match = false;
+    for (auto& [id, classify_map] : sub_graph) {
+      if (classify_map.pin_ids.size() == pin_ids.size()) {
+        b_match = true;
+      }
+    }
+
+    if (b_match == false) {
+      LOG_INFO << "net disconnected" << net_id;
+    } else {
+      LOG_INFO << "net connected " << net_id;
     }
   }
+
+  LOG_INFO << "net connected ratio " << connected_num << " / " << net_map.size();
 
   omp_destroy_lock(&lck);
 

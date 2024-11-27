@@ -409,7 +409,7 @@ bool LmLayoutChecker::addNet(LmNet& net)
     //     ".dot");
     GraphCheckerBase::writeToPy(
         graph, net,
-        "/data/project_share/benchmark/t28/baseline/result/feature/graph_debug_temp/net_" + std::to_string(net.get_net_id()) + ".py");
+        "/data/project_share/benchmark/t28/baseline/result/feature/graph_debug/net_" + std::to_string(net.get_net_id()) + ".py");
     return false;
   } else {
     LOG_INFO << "Net " << net.get_net_id() << " is locally connected.";
@@ -420,7 +420,8 @@ bool LmLayoutChecker::addNet(LmNet& net)
     //     ".dot");
     // GraphCheckerBase::writeToPy(
     //     graph, net,
-    //     "/data/project_share/benchmark/t28/baseline/result/feature/graph_debug_temp/net_" + std::to_string(net.get_net_id()) + "_pass.py");
+    //     "/data/project_share/benchmark/t28/baseline/result/feature/graph_debug_temp/net_" + std::to_string(net.get_net_id()) +
+    //     "_pass.py");
   }
   _nets.push_back(net);
   return true;
