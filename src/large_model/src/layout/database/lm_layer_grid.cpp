@@ -134,67 +134,67 @@ std::tuple<int, int, int, int> LmLayerGrid::get_node_id_range(int x1, int x2, in
   int direction = (x2 - x1) == (y2 - y1) ? 0 : ((x2 - x1) > (y2 - y1) ? 1 : 2);
 
   /// row id
-  int row_id_1;
-  int row_id_2;
+  int row_id_1 = findNodeID(y1, true, SideType::kLower);
+  int row_id_2 = findNodeID(y2, true, SideType::kHigher);
   /// col id
-  int col_id_1;
-  int col_id_2;
+  int col_id_1 = findNodeID(x1, false, SideType::kLower);
+  int col_id_2 = findNodeID(x2, false, SideType::kHigher);
 
-  switch (direction) {
-    case 1:
-      /// 1 : horizotal
-      if (std::abs(y2 - y1) <= _info.y_step) {
-        row_id_1 = findNodeID((y1 + y2) / 2, true, SideType::kLower);
-        row_id_2 = row_id_1;
-      } else {
-        row_id_1 = findNodeID(y1, true, SideType::kLower);
-        row_id_2 = findNodeID(y2, true, SideType::kHigher);
-      }
-      if (std::abs(x2 - x1) < _info.x_step) {
-        col_id_1 = findNodeID((x1 + x2) / 2, true, SideType::kLower);
-        col_id_2 = col_id_1;
-      } else {
-        col_id_1 = findNodeID(x1, false, SideType::kLower);
-        col_id_2 = findNodeID(x2, false, SideType::kHigher);
-      }
+  //   switch (direction) {
+  //     case 1:
+  //       /// 1 : horizotal
+  //       if (std::abs(y2 - y1) <= _info.y_step) {
+  //         row_id_1 = findNodeID((y1 + y2) / 2, true, SideType::kLower);
+  //         row_id_2 = row_id_1;
+  //       } else {
+  //         row_id_1 = findNodeID(y1, true, SideType::kLower);
+  //         row_id_2 = findNodeID(y2, true, SideType::kHigher);
+  //       }
+  //       if (std::abs(x2 - x1) < _info.x_step) {
+  //         col_id_1 = findNodeID((x1 + x2) / 2, true, SideType::kLower);
+  //         col_id_2 = col_id_1;
+  //       } else {
+  //         col_id_1 = findNodeID(x1, false, SideType::kLower);
+  //         col_id_2 = findNodeID(x2, false, SideType::kHigher);
+  //       }
 
-      break;
-    case 2:
-      /// 2 : vertival
-      if (std::abs(y2 - y1) < _info.y_step) {
-        row_id_1 = findNodeID((y1 + y2) / 2, true, SideType::kLower);
-        row_id_2 = row_id_1;
-      } else {
-        row_id_1 = findNodeID(y1, true, SideType::kLower);
-        row_id_2 = findNodeID(y2, true, SideType::kHigher);
-      }
-      if (std::abs(x2 - x1) <= _info.x_step) {
-        col_id_1 = findNodeID((x1 + x2) / 2, true, SideType::kLower);
-        col_id_2 = col_id_1;
-      } else {
-        col_id_1 = findNodeID(x1, false, SideType::kLower);
-        col_id_2 = findNodeID(x2, false, SideType::kHigher);
-      }
+  //       break;
+  //     case 2:
+  //       /// 2 : vertival
+  //       if (std::abs(y2 - y1) < _info.y_step) {
+  //         row_id_1 = findNodeID((y1 + y2) / 2, true, SideType::kLower);
+  //         row_id_2 = row_id_1;
+  //       } else {
+  //         row_id_1 = findNodeID(y1, true, SideType::kLower);
+  //         row_id_2 = findNodeID(y2, true, SideType::kHigher);
+  //       }
+  //       if (std::abs(x2 - x1) <= _info.x_step) {
+  //         col_id_1 = findNodeID((x1 + x2) / 2, true, SideType::kLower);
+  //         col_id_2 = col_id_1;
+  //       } else {
+  //         col_id_1 = findNodeID(x1, false, SideType::kLower);
+  //         col_id_2 = findNodeID(x2, false, SideType::kHigher);
+  //       }
 
-      break;
-    default:
-      if (std::abs(y2 - y1) <= _info.y_step) {
-        row_id_1 = findNodeID((y1 + y2) / 2, true, SideType::kLower);
-        row_id_2 = row_id_1;
-      } else {
-        row_id_1 = findNodeID(y1, true, SideType::kLower);
-        row_id_2 = findNodeID(y2, true, SideType::kHigher);
-      }
-      if (std::abs(x2 - x1) <= _info.x_step) {
-        col_id_1 = findNodeID((x1 + x2) / 2, true, SideType::kLower);
-        col_id_2 = col_id_1;
-      } else {
-        col_id_1 = findNodeID(x1, false, SideType::kLower);
-        col_id_2 = findNodeID(x2, false, SideType::kHigher);
-      }
+  //       break;
+  //     default:
+  //       if (std::abs(y2 - y1) <= _info.y_step) {
+  //         row_id_1 = findNodeID((y1 + y2) / 2, true, SideType::kLower);
+  //         row_id_2 = row_id_1;
+  //       } else {
+  //         row_id_1 = findNodeID(y1, true, SideType::kLower);
+  //         row_id_2 = findNodeID(y2, true, SideType::kHigher);
+  //       }
+  //       if (std::abs(x2 - x1) <= _info.x_step) {
+  //         col_id_1 = findNodeID((x1 + x2) / 2, true, SideType::kLower);
+  //         col_id_2 = col_id_1;
+  //       } else {
+  //         col_id_1 = findNodeID(x1, false, SideType::kLower);
+  //         col_id_2 = findNodeID(x2, false, SideType::kHigher);
+  //       }
 
-      break;
-  }
+  //       break;
+  //   }
 
   return std::tuple<int, int, int, int>(row_id_1, row_id_2, col_id_1, col_id_2);
 }

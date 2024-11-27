@@ -434,17 +434,49 @@ void LmLayoutInit::transPin(idb::IdbPin* idb_pin, int net_id, int pin_id, bool b
         if (b_io) {
           node_data.set_type(LmNodeTYpe::lm_io);
         }
+        if (node_data.get_pin_id() > -1 && pin_id != node_data.get_pin_id()) {
+          int a = 0;
+          a += 1;
+          error_pin_num++;
+        }
         node_data.set_pin_id(pin_id);
         node_data.set_connect_type(LmNodeConnectType::lm_via);
       }
     } else {
+      if (net_id == 12264) {
+        int a = 0;
+        a += 1;
+      }
       for (IdbRect* rect : layer_shape->get_rect_list()) {
         /// build grid
         bool b_horizontal = (rect->get_high_x() - rect->get_low_x()) == (rect->get_high_y() - rect->get_low_y())
                                 ? patch_layer->is_horizontal()
                                 : ((rect->get_high_x() - rect->get_low_x()) > (rect->get_high_y() - rect->get_low_y()) ? true : false);
-        auto [row_1, row_2, col_1, col_2]
-            = grid.get_node_id_range(rect->get_low_x(), rect->get_high_x(), rect->get_low_y(), rect->get_high_y());
+
+        int llx;
+        int urx;
+        int lly;
+        int ury;
+        // if (b_io) {
+        // llx = rect->get_low_x();
+        // urx = rect->get_high_x();
+        // lly = rect->get_low_y();
+        // ury = rect->get_high_y();
+        // } else {
+        llx = b_horizontal ? rect->get_low_x() : rect->get_middle_point_x();
+        urx = b_horizontal ? rect->get_high_x() : rect->get_middle_point_x();
+        lly = b_horizontal ? rect->get_middle_point_y() : rect->get_low_y();
+        ury = b_horizontal ? rect->get_middle_point_y() : rect->get_high_y();
+        // }
+        // auto [row_1, row_2, col_1, col_2]
+        //     = grid.get_node_id_range(rect->get_low_x(), rect->get_high_x(), rect->get_low_y(), rect->get_high_y());
+        if ((urx - llx) == 100 || (ury - lly) == 100) {
+          int a = 0;
+          a += 1;
+        }
+        auto [row_1, row_2, col_1, col_2] = grid.get_node_id_range(llx, urx, lly, ury);
+        // int row_middle = (row_1 + row_2) / 2;
+        // int col_middle = (col_1 + col_2) / 2;
         for (int row = row_1; row <= row_2; ++row) {
           for (int col = col_1; col <= col_2; ++col) {
             auto& node_data = grid.get_node(row, col).get_node_data();
@@ -457,6 +489,11 @@ void LmLayoutInit::transPin(idb::IdbPin* idb_pin, int net_id, int pin_id, bool b
             if (b_io) {
               node_data.set_type(LmNodeTYpe::lm_io);
             }
+            if (node_data.get_pin_id() > -1 && pin_id != node_data.get_pin_id()) {
+              int a = 0;
+              a += 1;
+              error_pin_num++;
+            }
             node_data.set_pin_id(pin_id);
             node_data.set_connect_type(LmNodeConnectType::lm_wire);
             if (b_horizontal) {
@@ -468,6 +505,19 @@ void LmLayoutInit::transPin(idb::IdbPin* idb_pin, int net_id, int pin_id, bool b
                 node_data.set_direction(LmNodeDirection::lm_left);
                 node_data.set_direction(LmNodeDirection::lm_right);
               }
+
+              //   if (col == col_middle && (row_2 - row_1) > 1) {
+              //     if (row == row_1) {
+              //       node_data.set_direction(LmNodeDirection::lm_up);
+              //     } else if (row == row_2) {
+              //       node_data.set_direction(LmNodeDirection::lm_down);
+              //     } else {
+              //       node_data.set_direction(LmNodeDirection::lm_up);
+              //       node_data.set_direction(LmNodeDirection::lm_down);
+              //     }
+              //     node_data.set_status(LmNodeStatus::lm_connected);
+              //     set_node_id(grid.get_node(row, col));
+              //   }
             } else {
               if (row == row_1) {
                 node_data.set_direction(LmNodeDirection::lm_up);
@@ -477,6 +527,19 @@ void LmLayoutInit::transPin(idb::IdbPin* idb_pin, int net_id, int pin_id, bool b
                 node_data.set_direction(LmNodeDirection::lm_up);
                 node_data.set_direction(LmNodeDirection::lm_down);
               }
+
+              //   if (row == row_middle && (col_2 - col_1) > 1) {
+              //     if (col == col_1) {
+              //       node_data.set_direction(LmNodeDirection::lm_right);
+              //     } else if (col == col_2) {
+              //       node_data.set_direction(LmNodeDirection::lm_left);
+              //     } else {
+              //       node_data.set_direction(LmNodeDirection::lm_left);
+              //       node_data.set_direction(LmNodeDirection::lm_right);
+              //     }
+              //     node_data.set_status(LmNodeStatus::lm_connected);
+              //     set_node_id(grid.get_node(row, col));
+              //   }
             }
           }
         }
@@ -562,11 +625,21 @@ void LmLayoutInit::transEnclosure(int32_t ll_x, int32_t ll_y, int32_t ur_x, int3
 
   bool b_horizontal = (ur_x - ll_x) == (ur_y - ll_y) ? patch_layer->is_horizontal() : ((ur_x - ll_x) > (ur_y - ll_y) ? true : false);
   if (b_horizontal) {
-    row_1 = via_row;
-    row_2 = via_row;
+    if (order == 0 && (row_2 - row_1) > 1) {
+      int a = 0;
+      a += 1;
+    }
+
+    // row_1 = via_row;
+    // row_2 = via_row;
   } else {
-    col_1 = via_col;
-    col_2 = via_col;
+    if (order == 0 && (col_2 - col_1) > 1) {
+      int a = 0;
+      a += 1;
+    }
+
+    // col_1 = via_col;
+    // col_2 = via_col;
   }
 
   for (int row = row_1; row <= row_2; ++row) {
@@ -577,61 +650,86 @@ void LmLayoutInit::transEnclosure(int32_t ll_x, int32_t ll_y, int32_t ur_x, int3
       node_data.set_connect_type(LmNodeConnectType::lm_enclosure);
       node_data.set_net_id(net_id);
       if (b_horizontal) {
-        if (via_row == row) {
-          if (col == col_1 || col == col_2) {
-            if (col == col_1) {
-              bool b_cancel = node_data.is_wire() && node_data.is_enclosure() ? true : false;
-              node_data.set_status(LmNodeStatus::lm_end_point, b_cancel);
-              if (b_cancel) {
-                node_data.set_direction(LmNodeDirection::lm_left);
-                node_data.set_direction(LmNodeDirection::lm_right);
-              } else {
-                node_data.set_direction(LmNodeDirection::lm_right);
-              }
+        // if (via_row == row) {
+        if (col == col_1 || col == col_2) {
+          if (col == col_1) {
+            bool b_cancel = node_data.is_wire() && node_data.is_enclosure() ? true : false;
+            node_data.set_status(LmNodeStatus::lm_end_point, b_cancel);
+            if (b_cancel) {
+              node_data.set_direction(LmNodeDirection::lm_left);
+              node_data.set_direction(LmNodeDirection::lm_right);
+            } else {
+              node_data.set_direction(LmNodeDirection::lm_right);
             }
-            if (col == col_2) {
-              bool b_cancel = node_data.is_wire() && node_data.is_enclosure() ? true : false;
-              node_data.set_status(LmNodeStatus::lm_end_point, b_cancel);
-
-              if (b_cancel) {
-                node_data.set_direction(LmNodeDirection::lm_left);
-                node_data.set_direction(LmNodeDirection::lm_right);
-              } else {
-                node_data.set_direction(LmNodeDirection::lm_left);
-              }
-            }
-          } else {
-            node_data.set_direction(LmNodeDirection::lm_left);
-            node_data.set_direction(LmNodeDirection::lm_right);
           }
+          if (col == col_2) {
+            bool b_cancel = node_data.is_wire() && node_data.is_enclosure() ? true : false;
+            node_data.set_status(LmNodeStatus::lm_end_point, b_cancel);
+
+            if (b_cancel) {
+              node_data.set_direction(LmNodeDirection::lm_left);
+              node_data.set_direction(LmNodeDirection::lm_right);
+            } else {
+              node_data.set_direction(LmNodeDirection::lm_left);
+            }
+          }
+        } else {
+          node_data.set_direction(LmNodeDirection::lm_left);
+          node_data.set_direction(LmNodeDirection::lm_right);
         }
-      } else {
-        if (via_col == col) {
-          if (row == row_1 || row == row_2) {
-            if (row == row_1) {
-              bool b_cancel = node_data.is_wire() && node_data.is_enclosure() ? true : false;
-              node_data.set_status(LmNodeStatus::lm_end_point, b_cancel);
-              if (b_cancel) {
-                node_data.set_direction(LmNodeDirection::lm_up);
-                node_data.set_direction(LmNodeDirection::lm_down);
-              } else {
-                node_data.set_direction(LmNodeDirection::lm_up);
-              }
-            }
-            if (row == row_2) {
-              bool b_cancel = node_data.is_wire() && node_data.is_enclosure() ? true : false;
-              node_data.set_status(LmNodeStatus::lm_end_point, b_cancel);
-              if (b_cancel) {
-                node_data.set_direction(LmNodeDirection::lm_up);
-                node_data.set_direction(LmNodeDirection::lm_down);
-              } else {
-                node_data.set_direction(LmNodeDirection::lm_down);
-              }
-            }
+
+        if (col == via_col && (row_2 - row_1) > 1) {
+          if (row == row_1) {
+            node_data.set_direction(LmNodeDirection::lm_up);
+          } else if (row == row_2) {
+            node_data.set_direction(LmNodeDirection::lm_down);
           } else {
             node_data.set_direction(LmNodeDirection::lm_up);
             node_data.set_direction(LmNodeDirection::lm_down);
           }
+          node_data.set_status(LmNodeStatus::lm_connected);
+          set_node_id(grid.get_node(row, col));
+        }
+        // }
+      } else {
+        // if (via_col == col) {
+        if (row == row_1 || row == row_2) {
+          if (row == row_1) {
+            bool b_cancel = node_data.is_wire() && node_data.is_enclosure() ? true : false;
+            node_data.set_status(LmNodeStatus::lm_end_point, b_cancel);
+            if (b_cancel) {
+              node_data.set_direction(LmNodeDirection::lm_up);
+              node_data.set_direction(LmNodeDirection::lm_down);
+            } else {
+              node_data.set_direction(LmNodeDirection::lm_up);
+            }
+          }
+          if (row == row_2) {
+            bool b_cancel = node_data.is_wire() && node_data.is_enclosure() ? true : false;
+            node_data.set_status(LmNodeStatus::lm_end_point, b_cancel);
+            if (b_cancel) {
+              node_data.set_direction(LmNodeDirection::lm_up);
+              node_data.set_direction(LmNodeDirection::lm_down);
+            } else {
+              node_data.set_direction(LmNodeDirection::lm_down);
+            }
+          }
+        } else {
+          node_data.set_direction(LmNodeDirection::lm_up);
+          node_data.set_direction(LmNodeDirection::lm_down);
+        }
+        // }
+        if (row == via_row && (col_2 - col_1) > 1) {
+          if (col == col_1) {
+            node_data.set_direction(LmNodeDirection::lm_right);
+          } else if (col == col_2) {
+            node_data.set_direction(LmNodeDirection::lm_left);
+          } else {
+            node_data.set_direction(LmNodeDirection::lm_left);
+            node_data.set_direction(LmNodeDirection::lm_right);
+          }
+          node_data.set_status(LmNodeStatus::lm_connected);
+          set_node_id(grid.get_node(row, col));
         }
       }
     }
@@ -909,6 +1007,11 @@ void LmLayoutInit::initNets(bool init_delta)
         }
         pin_id++;
       }
+    }
+
+    if (net_id == 3 || net_id == 4) {
+      int a = 0;
+      a += 1;
     }
 
     /// init wires

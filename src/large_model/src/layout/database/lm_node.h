@@ -112,7 +112,7 @@ class LmNodeData
 
   // setter
   void set_net_id(int32_t id) { _net_id = id; }
-  void set_pin_id(int32_t id) { _pin_id = id; }
+  void set_pin_id(int32_t id);
   void set_type(LmNodeTYpe type);
   void set_connect_type(LmNodeConnectType type);
   void set_status(LmNodeStatus status, bool b_cancel = false);

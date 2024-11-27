@@ -67,6 +67,8 @@ void LmLayoutDataManager::add_net_wire(int net_id, LmNetWire wire)
     LOG_INFO << "wire error";
   }
 
+  auto& [node1, node2] = wire.get_connected_nodes();
+
   auto it = get_graph().find(net_id);
   if (it != get_graph().end()) {
     it->second.addWire(wire);
@@ -372,14 +374,15 @@ LmNode* LmLayoutDataManager::travel_grid(LmNode* node_start, LmNodeDirection dir
     /// set visited
     travel_data.set_direction_visited(direction_opposite);
     // if (travel_data.is_connecting() || travel_data.is_connected()) {
-    if (node_matrix[row_travel][col_travel].get_node_id() != -1) {
-      /// success
-      node_end = &node_matrix[row_travel][col_travel];
-      break;
-    }
 
     if (travel_data.is_net() == false || travel_data.get_net_id() != node_data.get_net_id()) {
       /// stop and return some error and return last node end
+      break;
+    }
+
+    if (node_matrix[row_travel][col_travel].get_node_id() != -1) {
+      /// success
+      node_end = &node_matrix[row_travel][col_travel];
       break;
     }
 

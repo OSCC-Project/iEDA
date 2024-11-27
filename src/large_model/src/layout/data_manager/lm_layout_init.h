@@ -38,6 +38,7 @@ class LmLayoutInit
  private:
   LmLayout* _layout;
   int64_t _node_id = 0;
+  int error_pin_num = 0;
 
   void buildConnectedPoints();
   int buildConnectedPointsRoutingLayer();

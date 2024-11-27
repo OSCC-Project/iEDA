@@ -33,7 +33,6 @@ namespace ilm {
 
 void LmLayoutOptimize::wirePruning()
 {
-  return;
   ieda::Stats stats;
 
   LOG_INFO << "LM optimize connections for routing layer start...";
@@ -60,55 +59,68 @@ void LmLayoutOptimize::wirePruning()
 
     std::map<int, ClassifyMap> sub_graph;
 
+    std::set<int> count_pins;
+
     int sub_graph_id = 0;
     for (auto& wire : wires) {
       auto& [node1, node2] = wire.get_connected_nodes();
-      bool b_insert = false;
-      for (auto& [id, classify_map] : sub_graph) {
-        for (auto& sub_graph_wire : classify_map.wires) {
-          auto& [sub_node1, sub_node2] = sub_graph_wire->get_connected_nodes();
-          if (node1 == sub_node1 || node1 == sub_node2 || node2 == sub_node1 || node2 == sub_node2) {
-            classify_map.wires.push_back(&wire);
-            if (node1->get_node_data().get_pin_id() != -1) {
-              classify_map.pin_ids.insert(node1->get_node_data().get_pin_id());
-              b_insert = true;
-            }
-
-            if (node2->get_node_data().get_pin_id() != -1) {
-              classify_map.pin_ids.insert(node2->get_node_data().get_pin_id());
-              b_insert = true;
-            }
-          }
-        }
+      if (node1->get_node_data().get_pin_id() != -1) {
+        count_pins.insert(node1->get_node_data().get_pin_id());
       }
-
-      if (false == b_insert) {
-        ClassifyMap new_classify_map;
-
-        new_classify_map.wires.push_back(&wire);
-        if (node1->get_node_data().get_pin_id() != -1) {
-          new_classify_map.pin_ids.insert(node1->get_node_data().get_pin_id());
-        }
-
-        if (node2->get_node_data().get_pin_id() != -1) {
-          new_classify_map.pin_ids.insert(node2->get_node_data().get_pin_id());
-        }
-
-        sub_graph.insert(std::make_pair(sub_graph_id++, new_classify_map));
+      if (node2->get_node_data().get_pin_id() != -1) {
+        count_pins.insert(node2->get_node_data().get_pin_id());
       }
+      //   bool b_insert = false;
+      //   for (auto& [id, classify_map] : sub_graph) {
+      //     for (auto& sub_graph_wire : classify_map.wires) {
+      //       auto& [sub_node1, sub_node2] = sub_graph_wire->get_connected_nodes();
+      //       if (node1 == sub_node1 || node1 == sub_node2 || node2 == sub_node1 || node2 == sub_node2) {
+      //         classify_map.wires.push_back(&wire);
+      //         if (node1->get_node_data().get_pin_id() != -1) {
+      //           classify_map.pin_ids.insert(node1->get_node_data().get_pin_id());
+      //           b_insert = true;
+      //         }
+
+      //         if (node2->get_node_data().get_pin_id() != -1) {
+      //           classify_map.pin_ids.insert(node2->get_node_data().get_pin_id());
+      //           b_insert = true;
+      //         }
+      //       }
+      //     }
+      //   }
+
+      //   if (false == b_insert) {
+      //     ClassifyMap new_classify_map;
+
+      //     new_classify_map.wires.push_back(&wire);
+      //     if (node1->get_node_data().get_pin_id() != -1) {
+      //       new_classify_map.pin_ids.insert(node1->get_node_data().get_pin_id());
+      //     }
+
+      //     if (node2->get_node_data().get_pin_id() != -1) {
+      //       new_classify_map.pin_ids.insert(node2->get_node_data().get_pin_id());
+      //     }
+
+      //     sub_graph.insert(std::make_pair(sub_graph_id++, new_classify_map));
+      //   }
     }
 
-    bool b_match = false;
-    for (auto& [id, classify_map] : sub_graph) {
-      if (classify_map.pin_ids.size() == pin_ids.size()) {
-        b_match = true;
-      }
-    }
+    bool b_match = pin_ids.size() == count_pins.size();
+    // for (auto& [id, classify_map] : sub_graph) {
+    //   if (classify_map.pin_ids.size() == pin_ids.size()) {
+    //     b_match = true;
+    //   }
+    // }
 
     if (b_match == false) {
+      for (auto pin_id : count_pins) {
+        LOG_INFO << "count_pin : " << pin_id;
+      }
+
       LOG_INFO << "net disconnected" << net_id;
     } else {
       LOG_INFO << "net connected " << net_id;
+      connected_num++;
     }
   }
 
