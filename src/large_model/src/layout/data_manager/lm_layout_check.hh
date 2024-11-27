@@ -33,10 +33,22 @@ struct GraphLabel
   int x;
   int y;
   int32_t layer_id;
+  int pin_id;
 };
 
 using Graph = boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS, GraphLabel>;
+using Vertex = Graph::vertex_descriptor;
+using Edge = Graph::edge_descriptor;
 
+struct EdgeHash
+{
+  size_t operator()(const Edge& e) const
+  {
+    size_t h1 = std::hash<size_t>()(e.m_source);
+    size_t h2 = std::hash<size_t>()(e.m_target);
+    return h1 ^ (h2 << 1);
+  }
+};
 class GraphCheckerBase
 {
  public:
@@ -44,10 +56,10 @@ class GraphCheckerBase
   ~GraphCheckerBase() = default;
 
  protected:
-  virtual bool isConnectivity(const Graph& graph);
-  virtual void writeToDot(const Graph& graph, const std::string& path);
-  virtual void writeToPy(LmNet& net, const std::string& path);
-  virtual void writeToPy(const Graph& graph, LmNet& net, const std::string& path, const bool& mark_break=false);
+  virtual bool isConnectivity(const Graph& graph) const;
+  virtual void writeToDot(const Graph& graph, const std::string& path) const;
+  virtual void writeToPy(LmNet& net, const std::string& path) const;
+  virtual void writeToPy(const Graph& graph, LmNet& net, const std::string& path, const bool& mark_break = false) const;
 };
 
 class LmNetChecker : public GraphCheckerBase
@@ -57,11 +69,11 @@ class LmNetChecker : public GraphCheckerBase
   ~LmNetChecker() = default;
 
   // check the connectivity of the net, wire, etc.
-  bool isLocalConnectivity(LmNet& net);
-  bool isLocalConnectivity(LmNetWire& wire);
+  bool isLocalConnectivity(LmNet& net) const;
+  bool isLocalConnectivity(LmNetWire& wire) const;
 
   // convert the net to graph
-  Graph convertToGraph(LmNet& net);
+  Graph convertToGraph(LmNet& net) const;
 
  private:
 };
