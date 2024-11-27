@@ -33,7 +33,7 @@
 #include "log/Log.hh"
 namespace ilm {
 
-bool GraphCheckerBase::isConnectivity(const Graph& graph)
+bool GraphCheckerBase::isConnectivity(const Graph& graph) const
 {
   std::vector<int> component(boost::num_vertices(graph));
   int num_components = boost::connected_components(graph, &component[0]);
@@ -42,16 +42,16 @@ bool GraphCheckerBase::isConnectivity(const Graph& graph)
   return (num_components == 1);
 }
 
-void GraphCheckerBase::writeToDot(const Graph& graph, const std::string& path)
+void GraphCheckerBase::writeToDot(const Graph& graph, const std::string& path) const
 {
   std::ofstream file(path);
   boost::write_graphviz(file, graph, [&](std::ostream& out, const Graph::vertex_descriptor& v) {
     out << "[x=" << std::to_string(graph[v].x) << ", y=" << std::to_string(graph[v].y) << ", layer_id=" << std::to_string(graph[v].layer_id)
-        << "]";
+        << ", pin_id=" << std::to_string(graph[v].pin_id) << "]";
   });
 }
 
-void GraphCheckerBase::writeToPy(LmNet& net, const std::string& path)
+void GraphCheckerBase::writeToPy(LmNet& net, const std::string& path) const
 {
   // Write the wire line to a Python file for plotting in 3D space (x, y, layer_id) using Plotly
   std::ofstream file(path);
@@ -97,7 +97,7 @@ void GraphCheckerBase::writeToPy(LmNet& net, const std::string& path)
   file << "fig.show()\n";
 }
 
-void GraphCheckerBase::writeToPy(const Graph& graph, LmNet& net, const std::string& path, const bool& mark_break)
+void GraphCheckerBase::writeToPy(const Graph& graph, LmNet& net, const std::string& path, const bool& mark_break) const
 {
   // get all
   auto& wires = net.get_wires();
@@ -107,21 +107,23 @@ void GraphCheckerBase::writeToPy(const Graph& graph, LmNet& net, const std::stri
     int x1;
     int y1;
     int layer_id1;
+    int pin_id1;
     int x2;
     int y2;
     int layer_id2;
+    int pin_id2;
     bool operator==(const WireKey& other) const
     {
-      return x1 == other.x1 && y1 == other.y1 && layer_id1 == other.layer_id1 && x2 == other.x2 && y2 == other.y2
-             && layer_id2 == other.layer_id2;
+      return x1 == other.x1 && y1 == other.y1 && layer_id1 == other.layer_id1 && pin_id1 == other.pin_id1 && x2 == other.x2
+             && y2 == other.y2 && layer_id2 == other.layer_id2 && pin_id2 == other.pin_id2;
     }
   };
   struct WireKeyHash
   {
     std::size_t operator()(const WireKey& key) const
     {
-      return (std::hash<int>()(key.x1) ^ std::hash<int>()(key.y1) ^ std::hash<int>()(key.layer_id1) ^ std::hash<int>()(key.x2)
-              ^ std::hash<int>()(key.y2) ^ std::hash<int>()(key.layer_id2));
+      return (std::hash<int>()(key.x1) ^ std::hash<int>()(key.y1) ^ std::hash<int>()(key.layer_id1) ^ std::hash<int>()(key.pin_id1)
+              ^ std::hash<int>()(key.x2) ^ std::hash<int>()(key.y2) ^ std::hash<int>()(key.layer_id2) ^ std::hash<int>()(key.pin_id2));
     }
   };
   std::unordered_map<WireKey, LmNetWire, WireKeyHash> wire_map;
@@ -130,9 +132,11 @@ void GraphCheckerBase::writeToPy(const Graph& graph, LmNet& net, const std::stri
     for (auto& path : paths) {
       auto* start = path.first;
       auto* end = path.second;
-      WireKey key = {start->get_x(), start->get_y(), start->get_layer_id(), end->get_x(), end->get_y(), end->get_layer_id()};
+      WireKey key = {start->get_x(), start->get_y(), start->get_layer_id(), start->get_node_data().get_pin_id(),
+                     end->get_x(),   end->get_y(),   end->get_layer_id(),   end->get_node_data().get_pin_id()};
       wire_map[key] = wire;
-      WireKey key_reverse = {end->get_x(), end->get_y(), end->get_layer_id(), start->get_x(), start->get_y(), start->get_layer_id()};
+      WireKey key_reverse = {end->get_x(),   end->get_y(),   end->get_layer_id(),   end->get_node_data().get_pin_id(),
+                             start->get_x(), start->get_y(), start->get_layer_id(), start->get_node_data().get_pin_id()};
       wire_map[key_reverse] = wire;
     }
   }
@@ -166,7 +170,8 @@ void GraphCheckerBase::writeToPy(const Graph& graph, LmNet& net, const std::stri
         // file << "    line=dict(color=colors[" << i << "], width=4),\n";
         // file << "    name='Component " << i << ", Wire " << wire_idx++ << "'\n";
         // file << "))\n";
-        auto wire = wire_map[{graph[u].x, graph[u].y, graph[u].layer_id, graph[v].x, graph[v].y, graph[v].layer_id}];
+        auto wire = wire_map[{graph[u].x, graph[u].y, graph[u].layer_id, graph[u].pin_id, graph[v].x, graph[v].y, graph[v].layer_id,
+                              graph[v].pin_id}];
         size_t path_idx = 0;
         for (auto& path : wire.get_paths()) {
           auto* start = path.first;
@@ -220,7 +225,7 @@ void GraphCheckerBase::writeToPy(const Graph& graph, LmNet& net, const std::stri
   file << "fig.show()\n";
 }
 
-bool LmNetChecker::isLocalConnectivity(LmNet& net)
+bool LmNetChecker::isLocalConnectivity(LmNet& net) const
 {
   auto& wires = net.get_wires();
   // 1. Check wire inner connectivity
@@ -233,13 +238,11 @@ bool LmNetChecker::isLocalConnectivity(LmNet& net)
   // 2. Convert the net to a graph
   auto graph = convertToGraph(net);
 
-  // 3. Check if there is a component containing all pins
-
-  // 4. Check if the entire graph is connected
+  // 3. Check if the entire graph is connected
   return GraphCheckerBase::isConnectivity(graph);
 }
 
-bool LmNetChecker::isLocalConnectivity(LmNetWire& wire)
+bool LmNetChecker::isLocalConnectivity(LmNetWire& wire) const
 {
   std::vector<std::pair<LmNode*, LmNode*>> paths = wire.get_paths();
   auto is_same_loc = [](LmNode* node1, LmNode* node2) { return node1->get_x() == node2->get_x() && node1->get_y() == node2->get_y(); };
@@ -256,8 +259,9 @@ bool LmNetChecker::isLocalConnectivity(LmNetWire& wire)
   }
   return true;
 }
-Graph LmNetChecker::convertToGraph(LmNet& net)
+Graph LmNetChecker::convertToGraph(LmNet& net) const
 {
+  // 1. Create a graph based on the net
   // Map to assign unique IDs to connection points
   std::unordered_map<std::tuple<int, int, int32_t>, size_t, boost::hash<std::tuple<int, int, int32_t>>> node_to_id;
   size_t next_id = 0;
@@ -283,6 +287,7 @@ Graph LmNetChecker::convertToGraph(LmNet& net)
 
   // Create a graph with the number of unique connection points as vertices
   Graph graph(next_id);
+  std::unordered_map<Edge, LmNetWire, EdgeHash> edge_to_wire;
 
   // Second pass: Add edges between connection points based on wires
   for (auto& wire : wires) {
@@ -300,33 +305,96 @@ Graph LmNetChecker::convertToGraph(LmNet& net)
     graph[start_vertex].x = start->get_x();
     graph[start_vertex].y = start->get_y();
     graph[start_vertex].layer_id = start->get_layer_id();
+    graph[start_vertex].pin_id = start->get_node_data().get_pin_id();
 
     auto end_vertex = boost::vertex(end_id, graph);
     graph[end_vertex].x = end->get_x();
     graph[end_vertex].y = end->get_y();
     graph[end_vertex].layer_id = end->get_layer_id();
-    // auto end_data = end->get_node_data();
-    // auto pin_id = end_data.get_pin_id();
+    graph[end_vertex].pin_id = end->get_node_data().get_pin_id();
 
-    boost::add_edge(start_id, end_id, graph);
+    auto [edge, inserted] = boost::add_edge(start_id, end_id, graph);
+
+    edge_to_wire[edge] = wire;
   }
+
+  // 2. Remove redundant components, if have one component contains all pins, remove all other components (and correspondingly wires)
+  // Get all pins
+  auto& pin_ids = net.get_pin_ids();
+  std::sort(pin_ids.begin(), pin_ids.end());
+
+  // Get all components
+  std::vector<int> component(boost::num_vertices(graph));
+  int num_components = boost::connected_components(graph, &component[0]);
+
+  // Try to find the component containing all pins
+  int desired_component = -1;
+  for (int component_id = 0; component_id < num_components; ++component_id) {
+    std::unordered_set<int> pins_in_component;
+    for (auto v : boost::make_iterator_range(boost::vertices(graph))) {
+      if (component[v] == component_id) {
+        auto pin_id = graph[v].pin_id;
+        if (pin_id != -1) {  // pin node
+          pins_in_component.insert(pin_id);
+        }
+      }
+    }
+    auto pins_in_component_vec = std::vector<int>(pins_in_component.begin(), pins_in_component.end());
+    std::sort(pins_in_component_vec.begin(), pins_in_component_vec.end());
+
+    if (pins_in_component_vec == pin_ids) {
+      desired_component = component_id;
+      break;
+    }
+  }
+  if (desired_component == -1) {
+    // Not fonud
+    return graph;
+  }
+
+  // Remove all other components
+  std::vector<Vertex> vertices_to_remove;
+  for (int component_id = 0; component_id < num_components; ++component_id) {
+    if (component_id != desired_component) {
+      for (auto v : boost::make_iterator_range(boost::vertices(graph))) {
+        if (component[v] == component_id) {
+          vertices_to_remove.push_back(v);
+        }
+      }
+    }
+  }
+
+  // Update the component's correspondingly wires
+  std::vector<LmNetWire> updated_wires;
+  for (auto e : boost::make_iterator_range(boost::edges(graph))) {
+    if (component[boost::source(e, graph)] == desired_component) {
+      auto wire = edge_to_wire[e];
+      updated_wires.push_back(wire);
+    }
+  }
+
+  std::sort(vertices_to_remove.begin(), vertices_to_remove.end(), [&](const Vertex a, const Vertex b) { return a > b; });
+  for (auto v : vertices_to_remove) {
+    boost::clear_vertex(v, graph);
+    boost::remove_vertex(v, graph);
+  }
+
+  wires = updated_wires;
   return graph;
 }
 bool LmLayoutChecker::checkLayout(std::map<int, LmNet> net_map)
 {
-  // connectiviy check
-  LmLayoutChecker checker;
   int success_num = 0;
   int total = 0;
   for (auto& [net_id, net] : net_map) {
-    if (checker.addNet(net)) {
+    if (addNet(net)) {
       success_num++;
     }
     total++;
   }
 
   LOG_ERROR << "Net connected succuss ratio : " << success_num << " / " << total;
-  return checker.isConnectivity();
+  return isConnectivity();
 }
 bool LmLayoutChecker::addNet(LmNet& net)
 {
@@ -336,19 +404,23 @@ bool LmLayoutChecker::addNet(LmNet& net)
     LOG_ERROR << "Net " << net.get_net_id() << " is not locally connected.";
     // debug
     auto graph = checker.convertToGraph(net);
-    GraphCheckerBase::writeToDot(
-        graph, "/data/project_share/benchmark/t28/baseline/result/feature/graph_debug/net_" + std::to_string(net.get_net_id()) + ".dot");
+    // GraphCheckerBase::writeToDot(
+    //     graph, "/data/project_share/benchmark/t28/baseline/result/feature/graph_debug_temp/net_" + std::to_string(net.get_net_id()) +
+    //     ".dot");
     GraphCheckerBase::writeToPy(
         graph, net,
-        "/data/project_share/benchmark/t28/baseline/result/feature/graph_debug/net_" + std::to_string(net.get_net_id()) + ".py");
+        "/data/project_share/benchmark/t28/baseline/result/feature/graph_debug_temp/net_" + std::to_string(net.get_net_id()) + ".py");
     return false;
   } else {
     LOG_INFO << "Net " << net.get_net_id() << " is locally connected.";
+    // debug
     // auto graph = checker.convertToGraph(net);
     // GraphCheckerBase::writeToDot(
-    //     graph, "/data/project_share/benchmark/t28/baseline/result/feature/graph_debug/net_" + std::to_string(net.get_net_id()) + ".dot");
+    //     graph, "/data/project_share/benchmark/t28/baseline/result/feature/graph_debug_temp/net_" + std::to_string(net.get_net_id()) +
+    //     ".dot");
     // GraphCheckerBase::writeToPy(
-    //     net, "/data/project_share/benchmark/t28/baseline/result/feature/graph_debug/net_" + std::to_string(net.get_net_id()) + ".py");
+    //     graph, net,
+    //     "/data/project_share/benchmark/t28/baseline/result/feature/graph_debug_temp/net_" + std::to_string(net.get_net_id()) + "_pass.py");
   }
   _nets.push_back(net);
   return true;
@@ -399,11 +471,13 @@ bool LmLayoutChecker::isConnectivity()
       _graph[start_vertex].x = start->get_x();
       _graph[start_vertex].y = start->get_y();
       _graph[start_vertex].layer_id = start->get_layer_id();
+      _graph[start_vertex].pin_id = start->get_node_data().get_pin_id();
 
       auto end_vertex = boost::vertex(end_id, _graph);
       _graph[end_vertex].x = end->get_x();
       _graph[end_vertex].y = end->get_y();
       _graph[end_vertex].layer_id = end->get_layer_id();
+      _graph[end_vertex].pin_id = end->get_node_data().get_pin_id();
 
       boost::add_edge(start_id, end_id, _graph);
     }
