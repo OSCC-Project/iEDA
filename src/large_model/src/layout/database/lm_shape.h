@@ -15,32 +15,40 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 #pragma once
-#include <string>
+/**
+ * @project		large model
+ * @date		06/11/2024
+ * @version		0.1
+ * @description
+ *
+ */
 
-#include "IdbGeometry.h"
-#include "IdbLayerShape.h"
-#include "IdbPins.h"
-#include "IdbTrackGrid.h"
-#include "IdbVias.h"
-#include "lm_layer_grid.h"
-#include "lm_layout.h"
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+#include <map>
+#include <string>
+#include <vector>
+
 #include "lm_node.h"
-#include "lm_patch.h"
 
 namespace ilm {
 
-class LmLayoutOptimize
+struct LmRect
 {
+  int row_start;
+  int row_end;
+  int col_start;
+  int col_end;
+};
+
+struct LmLayerShape
+{
+  int layer_id;
+  std::vector<LmRect> rect_list;
+
  public:
-  LmLayoutOptimize(LmLayout* layout) : _layout(layout) {}
-  ~LmLayoutOptimize() = default;
-  void wirePruning();
-  void checkPinConnection();
-
- private:
-  LmLayout* _layout;
-
-  void reconnectPin(LmNet& lm_net, int pin_id);
+  void addRect(LmRect rect) { rect_list.push_back(rect); }
 };
 
 }  // namespace ilm

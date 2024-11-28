@@ -46,11 +46,11 @@ void LmLayoutInit::init()
 
   buildConnectedPoints();
 
-  initNets(true);
+  //   initNets(true);
 
   //   buildConnectedPoints();
 
-  optConnectionsRoutingLayer();
+  //   optConnectionsRoutingLayer();
 }
 
 void LmLayoutInit::initViaIds()
@@ -408,8 +408,10 @@ void LmLayoutInit::initIOPins()
   }
 }
 
-void LmLayoutInit::transPin(idb::IdbPin* idb_pin, int net_id, int pin_id, bool b_io)
+LmPin LmLayoutInit::transPin(idb::IdbPin* idb_pin, int net_id, int pin_id, bool b_io)
 {
+  LmPin lm_pin(pin_id);
+
   auto& patch_layers = _layout->get_patch_layers();
   for (auto* layer_shape : idb_pin->get_port_box_list()) {
     auto order = _layout->findLayerId(layer_shape->get_layer()->get_name());
@@ -419,16 +421,22 @@ void LmLayoutInit::transPin(idb::IdbPin* idb_pin, int net_id, int pin_id, bool b
       continue;
     }
     auto& grid = patch_layer->get_grid();
+    LmLayerShape lm_shape;
+    lm_shape.layer_id = order;
     if (layer_shape->is_via()) {
       for (IdbRect* rect : layer_shape->get_rect_list()) {
         /// build grid
         auto& grid = patch_layer->get_grid();
         auto [row_id, col_id] = grid.findNodeID(rect->get_middle_point_x(), rect->get_middle_point_y());
+        /// add to lm pin
+        LmRect lm_rect(row_id, row_id, col_id, col_id);
+        lm_shape.addRect(lm_rect);
+
         auto& node_data = grid.get_node(row_id, col_id).get_node_data();
         node_data.set_type(LmNodeTYpe::lm_pin);
         node_data.set_status(LmNodeStatus::lm_fix);
         node_data.set_net_id(net_id);
-        if (net_id > 0) {
+        if (net_id > -1) {
           node_data.set_type(LmNodeTYpe::lm_net);
         }
         if (b_io) {
@@ -443,47 +451,28 @@ void LmLayoutInit::transPin(idb::IdbPin* idb_pin, int net_id, int pin_id, bool b
         node_data.set_connect_type(LmNodeConnectType::lm_via);
       }
     } else {
-      if (net_id == 12264) {
-        int a = 0;
-        a += 1;
-      }
       for (IdbRect* rect : layer_shape->get_rect_list()) {
         /// build grid
         bool b_horizontal = (rect->get_high_x() - rect->get_low_x()) == (rect->get_high_y() - rect->get_low_y())
                                 ? patch_layer->is_horizontal()
                                 : ((rect->get_high_x() - rect->get_low_x()) > (rect->get_high_y() - rect->get_low_y()) ? true : false);
 
-        int llx;
-        int urx;
-        int lly;
-        int ury;
-        // if (b_io) {
-        // llx = rect->get_low_x();
-        // urx = rect->get_high_x();
-        // lly = rect->get_low_y();
-        // ury = rect->get_high_y();
-        // } else {
-        llx = b_horizontal ? rect->get_low_x() : rect->get_middle_point_x();
-        urx = b_horizontal ? rect->get_high_x() : rect->get_middle_point_x();
-        lly = b_horizontal ? rect->get_middle_point_y() : rect->get_low_y();
-        ury = b_horizontal ? rect->get_middle_point_y() : rect->get_high_y();
-        // }
-        // auto [row_1, row_2, col_1, col_2]
-        //     = grid.get_node_id_range(rect->get_low_x(), rect->get_high_x(), rect->get_low_y(), rect->get_high_y());
-        if ((urx - llx) == 100 || (ury - lly) == 100) {
-          int a = 0;
-          a += 1;
-        }
+        int llx = rect->get_low_x();
+        int urx = rect->get_high_x();
+        int lly = rect->get_low_y();
+        int ury = rect->get_high_y();
+
         auto [row_1, row_2, col_1, col_2] = grid.get_node_id_range(llx, urx, lly, ury);
-        // int row_middle = (row_1 + row_2) / 2;
-        // int col_middle = (col_1 + col_2) / 2;
+        LmRect lm_rect(row_1, row_2, col_1, col_2);
+        lm_shape.addRect(lm_rect);
+
         for (int row = row_1; row <= row_2; ++row) {
           for (int col = col_1; col <= col_2; ++col) {
             auto& node_data = grid.get_node(row, col).get_node_data();
             node_data.set_type(LmNodeTYpe::lm_pin);
             node_data.set_status(LmNodeStatus::lm_fix);
             node_data.set_net_id(net_id);
-            if (net_id > 0) {
+            if (net_id > -1) {
               node_data.set_type(LmNodeTYpe::lm_net);
             }
             if (b_io) {
@@ -495,60 +484,65 @@ void LmLayoutInit::transPin(idb::IdbPin* idb_pin, int net_id, int pin_id, bool b
               error_pin_num++;
             }
             node_data.set_pin_id(pin_id);
-            node_data.set_connect_type(LmNodeConnectType::lm_wire);
+            // node_data.set_connect_type(LmNodeConnectType::lm_wire);
             if (b_horizontal) {
               if (col == col_1) {
                 node_data.set_direction(LmNodeDirection::lm_right);
+                if ((row_2 - row_1) > 0) {
+                  if (row == row_1) {
+                    node_data.set_direction(LmNodeDirection::lm_up);
+                    node_data.set_status(LmNodeStatus::lm_connected);
+                    set_node_id(grid.get_node(row, col));
+                  } else if (row == row_2) {
+                    node_data.set_direction(LmNodeDirection::lm_down);
+                    node_data.set_status(LmNodeStatus::lm_connected);
+                    set_node_id(grid.get_node(row, col));
+                  } else {
+                    node_data.set_direction(LmNodeDirection::lm_up);
+                    node_data.set_direction(LmNodeDirection::lm_down);
+                  }
+                }
               } else if (col == col_2) {
                 node_data.set_direction(LmNodeDirection::lm_left);
               } else {
                 node_data.set_direction(LmNodeDirection::lm_left);
                 node_data.set_direction(LmNodeDirection::lm_right);
               }
-
-              //   if (col == col_middle && (row_2 - row_1) > 1) {
-              //     if (row == row_1) {
-              //       node_data.set_direction(LmNodeDirection::lm_up);
-              //     } else if (row == row_2) {
-              //       node_data.set_direction(LmNodeDirection::lm_down);
-              //     } else {
-              //       node_data.set_direction(LmNodeDirection::lm_up);
-              //       node_data.set_direction(LmNodeDirection::lm_down);
-              //     }
-              //     node_data.set_status(LmNodeStatus::lm_connected);
-              //     set_node_id(grid.get_node(row, col));
-              //   }
             } else {
               if (row == row_1) {
                 node_data.set_direction(LmNodeDirection::lm_up);
+                if ((col_2 - col_1) > 0) {
+                  if (col == col_1) {
+                    node_data.set_direction(LmNodeDirection::lm_right);
+                    node_data.set_status(LmNodeStatus::lm_connected);
+                    set_node_id(grid.get_node(row, col));
+                  } else if (col == col_2) {
+                    node_data.set_direction(LmNodeDirection::lm_left);
+                    node_data.set_status(LmNodeStatus::lm_connected);
+                    set_node_id(grid.get_node(row, col));
+                  } else {
+                    node_data.set_direction(LmNodeDirection::lm_right);
+                    node_data.set_direction(LmNodeDirection::lm_left);
+                  }
+                }
               } else if (row == row_2) {
                 node_data.set_direction(LmNodeDirection::lm_down);
               } else {
                 node_data.set_direction(LmNodeDirection::lm_up);
                 node_data.set_direction(LmNodeDirection::lm_down);
               }
-
-              //   if (row == row_middle && (col_2 - col_1) > 1) {
-              //     if (col == col_1) {
-              //       node_data.set_direction(LmNodeDirection::lm_right);
-              //     } else if (col == col_2) {
-              //       node_data.set_direction(LmNodeDirection::lm_left);
-              //     } else {
-              //       node_data.set_direction(LmNodeDirection::lm_left);
-              //       node_data.set_direction(LmNodeDirection::lm_right);
-              //     }
-              //     node_data.set_status(LmNodeStatus::lm_connected);
-              //     set_node_id(grid.get_node(row, col));
-              //   }
             }
           }
         }
       }
     }
+
+    lm_pin.addShape(order, lm_shape);
   }
 
   /// init via in pins
   /// tbd
+  return lm_pin;
 }
 
 void LmLayoutInit::transNetRect(int32_t ll_x, int32_t ll_y, int32_t ur_x, int32_t ur_y, std::string layer_name, int net_id)
@@ -624,23 +618,6 @@ void LmLayoutInit::transEnclosure(int32_t ll_x, int32_t ll_y, int32_t ur_x, int3
   /// net wire must only occupy one grid size
 
   bool b_horizontal = (ur_x - ll_x) == (ur_y - ll_y) ? patch_layer->is_horizontal() : ((ur_x - ll_x) > (ur_y - ll_y) ? true : false);
-  if (b_horizontal) {
-    if (order == 0 && (row_2 - row_1) > 1) {
-      int a = 0;
-      a += 1;
-    }
-
-    // row_1 = via_row;
-    // row_2 = via_row;
-  } else {
-    if (order == 0 && (col_2 - col_1) > 1) {
-      int a = 0;
-      a += 1;
-    }
-
-    // col_1 = via_col;
-    // col_2 = via_col;
-  }
 
   for (int row = row_1; row <= row_2; ++row) {
     for (int col = col_1; col <= col_2; ++col) {
@@ -678,17 +655,21 @@ void LmLayoutInit::transEnclosure(int32_t ll_x, int32_t ll_y, int32_t ur_x, int3
           node_data.set_direction(LmNodeDirection::lm_right);
         }
 
-        if (col == via_col && (row_2 - row_1) > 1) {
+        if (col == via_col && (row_2 - row_1) > 0) {
           if (row == row_1) {
             node_data.set_direction(LmNodeDirection::lm_up);
+            node_data.set_status(LmNodeStatus::lm_connected);
+            set_node_id(grid.get_node(row, col));
           } else if (row == row_2) {
             node_data.set_direction(LmNodeDirection::lm_down);
+            node_data.set_status(LmNodeStatus::lm_connected);
+            set_node_id(grid.get_node(row, col));
           } else {
             node_data.set_direction(LmNodeDirection::lm_up);
             node_data.set_direction(LmNodeDirection::lm_down);
           }
-          node_data.set_status(LmNodeStatus::lm_connected);
-          set_node_id(grid.get_node(row, col));
+          //   node_data.set_status(LmNodeStatus::lm_connected);
+          //   set_node_id(grid.get_node(row, col));
         }
         // }
       } else {
@@ -719,17 +700,21 @@ void LmLayoutInit::transEnclosure(int32_t ll_x, int32_t ll_y, int32_t ur_x, int3
           node_data.set_direction(LmNodeDirection::lm_down);
         }
         // }
-        if (row == via_row && (col_2 - col_1) > 1) {
+        if (row == via_row && (col_2 - col_1) > 0) {
           if (col == col_1) {
             node_data.set_direction(LmNodeDirection::lm_right);
+            node_data.set_status(LmNodeStatus::lm_connected);
+            set_node_id(grid.get_node(row, col));
           } else if (col == col_2) {
             node_data.set_direction(LmNodeDirection::lm_left);
+            node_data.set_status(LmNodeStatus::lm_connected);
+            set_node_id(grid.get_node(row, col));
           } else {
             node_data.set_direction(LmNodeDirection::lm_left);
             node_data.set_direction(LmNodeDirection::lm_right);
           }
-          node_data.set_status(LmNodeStatus::lm_connected);
-          set_node_id(grid.get_node(row, col));
+          //   node_data.set_status(LmNodeStatus::lm_connected);
+          //   set_node_id(grid.get_node(row, col));
         }
       }
     }
@@ -792,7 +777,8 @@ void LmLayoutInit::transNetDelta(int32_t ll_x, int32_t ll_y, int32_t ur_x, int32
       node_data.set_net_id(net_id);
       node_data.set_direction(LmNodeDirection::lm_middle);
 
-      if (node_data.is_connected()) {
+      //   if (node_data.is_connected()) {
+      if (node.get_node_id() != -1) {
         node_connectds.insert(&node);
         node_connecting.insert(&node);
       } else {
@@ -822,7 +808,7 @@ void LmLayoutInit::transNetDelta(int32_t ll_x, int32_t ll_y, int32_t ur_x, int32
   for (auto node_endpoint : node_endpoints) {
     auto& node_data = node_endpoint->get_node_data();
     /// skip if node is endpoint & connected point
-    if (node_data.is_connected()) {
+    if (node_endpoint->get_node_id() != -1) {
       continue;
     }
 
@@ -921,7 +907,28 @@ void LmLayoutInit::transNetDelta(int32_t ll_x, int32_t ll_y, int32_t ur_x, int32
   for (int row = row_1; row <= row_2; ++row) {
     for (int col = col_1; col <= col_2; ++col) {
       auto& node = grid.get_node(row, col);
+      auto& node_data = node.get_node_data();
       if (true == setConnectNode(node)) {
+      }
+
+      if ((row == row_1 || col == col_1)) {
+        node_data.set_status(LmNodeStatus::lm_connected);
+        set_node_id(grid.get_node(row, col));
+      }
+
+      if ((row == row_2 || col == col_1)) {
+        node_data.set_status(LmNodeStatus::lm_connected);
+        set_node_id(grid.get_node(row, col));
+      }
+
+      if ((row == row_1 || col == col_2)) {
+        node_data.set_status(LmNodeStatus::lm_connected);
+        set_node_id(grid.get_node(row, col));
+      }
+
+      if ((row == row_2 || col == col_2)) {
+        node_data.set_status(LmNodeStatus::lm_connected);
+        set_node_id(grid.get_node(row, col));
       }
     }
   }
@@ -980,7 +987,7 @@ void LmLayoutInit::initNets(bool init_delta)
   // #pragma omp parallel for schedule(dynamic)
   for (int net_id = 0; net_id < (int) idb_nets->get_net_list().size(); ++net_id) {
     auto* idb_net = idb_nets->get_net_list()[net_id];
-    // if ("FE_OFN5655_n" != idb_net->get_net_name()) {
+    // if ("FE_OFN5472_FE_OFN426_n686" != idb_net->get_net_name()) {
     //   continue;
     // }
 
@@ -991,27 +998,24 @@ void LmLayoutInit::initNets(bool init_delta)
     int pin_id = 0;
     if (false == init_delta) {
       for (auto* idb_inst_pin : idb_net->get_instance_pin_list()->get_pin_list()) {
-        transPin(idb_inst_pin, net_id, pin_id);
+        auto lm_pin = transPin(idb_inst_pin, net_id, pin_id);
         if (lm_net != nullptr) {
           lm_net->addPinId(pin_id);
+          lm_net->addPin(lm_pin);
         }
 
         pin_id++;
       }
 
       for (auto* io_pin : idb_net->get_io_pins()->get_pin_list()) {
-        transPin(io_pin, net_id, pin_id, true);
+        auto lm_pin = transPin(io_pin, net_id, pin_id, true);
 
         if (lm_net != nullptr) {
           lm_net->addPinId(pin_id);
+          lm_net->addPin(lm_pin);
         }
         pin_id++;
       }
-    }
-
-    if (net_id == 3 || net_id == 4) {
-      int a = 0;
-      a += 1;
     }
 
     /// init wires
@@ -1186,7 +1190,7 @@ bool LmLayoutInit::is_steiner_node(LmNode& node)
 
       auto& grid = patch_layer->get_grid();
       auto& node_matrix = grid.get_node_matrix();
-      if (0 < row && row < grid.get_info().node_row_num && 0 < col && col < grid.get_info().node_col_num) {
+      if (0 < row && row < (grid.get_info().node_row_num - 1) && 0 < col && col < (grid.get_info().node_col_num - 1)) {
         neightbour_num += (node_matrix[row][col - 1].get_node_data().get_net_id() == node_data.get_net_id() ? 1 : 0);
         neightbour_num += (node_matrix[row][col + 1].get_node_data().get_net_id() == node_data.get_net_id() ? 1 : 0);
         neightbour_num += (node_matrix[row - 1][col].get_node_data().get_net_id() == node_data.get_net_id() ? 1 : 0);
@@ -1214,6 +1218,7 @@ bool LmLayoutInit::setConnectNode(LmNode& node)
     set_node_id(node);
     return true;
   }
+
   /// pin connected to wire
   /// tbd : node_data.is_net() && node_data.is_pin()
   //   if ((node_data.is_net() && node_data.is_pin())) {
@@ -1221,10 +1226,11 @@ bool LmLayoutInit::setConnectNode(LmNode& node)
   //     return true;
   //   }
   /// tbd
-  //   if ((node_data.is_net() && node_data.is_io())) {
-  //     node_data.set_status(LmNodeStatus::lm_connected);
-  //     return true;
-  //   }
+  if ((node_data.is_wire() && node_data.is_io())) {
+    node_data.set_status(LmNodeStatus::lm_connected);
+    set_node_id(node);
+    return true;
+  }
 
   /// set corner as connecting
   if (node.is_corner()) {

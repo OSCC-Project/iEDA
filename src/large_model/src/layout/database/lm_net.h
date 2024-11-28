@@ -31,6 +31,7 @@
 #include <vector>
 
 #include "lm_node.h"
+#include "lm_shape.h"
 
 namespace ilm {
 
@@ -59,6 +60,28 @@ class LmNetWire
   std::vector<std::pair<LmNode*, LmNode*>> _paths;
 };
 
+class LmPin
+{
+ public:
+  LmPin(int pin_id) { _pin_id = pin_id; };
+  ~LmPin() = default;
+
+  // getter
+  int get_pin_id() { return _pin_id; }
+  std::map<int, LmLayerShape>& get_shape_map() { return _shape_map; }
+  LmLayerShape* get_layer_shape(int layer_id);
+
+  // setter
+
+  // operator
+  void addShape(int layer, LmLayerShape shape) { _shape_map.insert(std::make_pair(layer, shape)); }
+
+ private:
+  int _pin_id = -1;
+
+  std::map<int, LmLayerShape> _shape_map;
+};
+
 class LmNet
 {
  public:
@@ -69,6 +92,8 @@ class LmNet
   int get_net_id() { return _net_id; }
   std::vector<LmNetWire>& get_wires() { return _wires; }
   std::vector<int>& get_pin_ids() { return _pin_ids; }
+  std::map<int, LmPin>& get_pin_map() { return _pin_map; }
+  LmPin* get_pin(int pin_id);
 
   // setter
   void set_net_id(int net_id) { _net_id = net_id; }
@@ -77,11 +102,13 @@ class LmNet
   void setWires(std::vector<LmNetWire> wires) { _wires = wires; }
   void addWire(LmNetWire wire);
   void addPinId(int id) { _pin_ids.push_back(id); }
+  void addPin(LmPin lm_pin) { _pin_map.insert(std::make_pair(lm_pin.get_pin_id(), lm_pin)); }
 
  private:
   int _net_id = -1;
   std::vector<LmNetWire> _wires;
   std::vector<int> _pin_ids;
+  std::map<int, LmPin> _pin_map;
 };
 
 class LmGraph

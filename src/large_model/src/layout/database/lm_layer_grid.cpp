@@ -196,7 +196,8 @@ std::tuple<int, int, int, int> LmLayerGrid::get_node_id_range(int x1, int x2, in
   //       break;
   //   }
 
-  return std::tuple<int, int, int, int>(row_id_1, row_id_2, col_id_1, col_id_2);
+  return std::tuple<int, int, int, int>(std::min(row_id_1, row_id_2), std::max(row_id_1, row_id_2), std::min(col_id_1, col_id_2),
+                                        std::max(col_id_1, col_id_2));
 }
 
 }  // namespace ilm

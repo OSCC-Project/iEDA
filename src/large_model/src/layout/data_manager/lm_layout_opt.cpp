@@ -60,15 +60,22 @@ void LmLayoutOptimize::wirePruning()
     std::map<int, ClassifyMap> sub_graph;
 
     std::set<int> count_pins;
+    bool b_io = false;
 
     int sub_graph_id = 0;
     for (auto& wire : wires) {
       auto& [node1, node2] = wire.get_connected_nodes();
       if (node1->get_node_data().get_pin_id() != -1) {
         count_pins.insert(node1->get_node_data().get_pin_id());
+        if (node1->get_node_data().is_io()) {
+          b_io = true;
+        }
       }
       if (node2->get_node_data().get_pin_id() != -1) {
         count_pins.insert(node2->get_node_data().get_pin_id());
+        if (node2->get_node_data().is_io()) {
+          b_io = true;
+        }
       }
       //   bool b_insert = false;
       //   for (auto& [id, classify_map] : sub_graph) {
@@ -117,6 +124,10 @@ void LmLayoutOptimize::wirePruning()
         LOG_INFO << "count_pin : " << pin_id;
       }
 
+      LOG_INFO << "net pin size : " << pin_ids.size();
+      if (b_io) {
+        LOG_INFO << "has io... ";
+      }
       LOG_INFO << "net disconnected" << net_id;
     } else {
       LOG_INFO << "net connected " << net_id;
@@ -129,6 +140,103 @@ void LmLayoutOptimize::wirePruning()
   omp_destroy_lock(&lck);
 
   LOG_INFO << "LM optimize connections for routing layer end...";
+}
+
+void LmLayoutOptimize::checkPinConnection()
+{
+  ieda::Stats stats;
+
+  LOG_INFO << "LM check pin connections for routing layer start...";
+
+  omp_lock_t lck;
+  omp_init_lock(&lck);
+
+  auto& net_map = _layout->get_graph().get_net_map();
+
+  int connected_num = 0;
+
+  for (auto& [net_id, net] : net_map) {
+    auto& pin_ids = net.get_pin_ids();
+    auto& wires = net.get_wires();
+    if (wires.size() <= 0) {
+      continue;
+    }
+
+    std::set<int> count_pins = std::set<int>(pin_ids.begin(), pin_ids.end());
+    bool b_io = false;
+
+    for (auto& wire : wires) {
+      auto& [node1, node2] = wire.get_connected_nodes();
+      if (node1->get_node_data().get_pin_id() != -1) {
+        count_pins.erase(node1->get_node_data().get_pin_id());
+        if (node1->get_node_data().is_io()) {
+          b_io = true;
+        }
+      }
+      if (node2->get_node_data().get_pin_id() != -1) {
+        count_pins.erase(node2->get_node_data().get_pin_id());
+        if (node2->get_node_data().is_io()) {
+          b_io = true;
+        }
+      }
+    }
+
+    if (count_pins.size() > 0) {
+      for (auto pin_id : count_pins) {
+        LOG_INFO << "disconnected pin : " << pin_id;
+        reconnectPin(net, pin_id);
+      }
+
+      if (b_io) {
+        LOG_INFO << "has io... ";
+      }
+      LOG_INFO << "net " << net_id << " reconnect : " << count_pins.size();
+    } else {
+      LOG_INFO << "net connected " << net_id;
+      connected_num++;
+    }
+  }
+
+  LOG_INFO << "net reconnect ratio " << connected_num << " / " << net_map.size();
+
+  omp_destroy_lock(&lck);
+
+  LOG_INFO << "LM check pin connections for routing layer end...";
+}
+
+void LmLayoutOptimize::reconnectPin(LmNet& lm_net, int pin_id)
+{
+  auto& patch_layers = _layout->get_patch_layers();
+
+  auto* lm_pin = lm_net.get_pin(pin_id);
+  if (lm_pin) {
+    auto& shape_map = lm_pin->get_shape_map();
+    for (auto& [layer_id, layer_shape] : shape_map) {
+      auto* patch_layer = patch_layers.findPatchLayer(layer_id);
+      if (nullptr == patch_layer) {
+        LOG_WARNING << "Can not get layer order : " << layer_id;
+        continue;
+      }
+      auto& grid = patch_layer->get_grid();
+      auto& node_matrix = grid.get_node_matrix();
+      for (auto& rect : layer_shape.rect_list) {
+        for (int row = rect.row_start; row <= rect.row_end; ++row) {
+          for (int col = rect.col_start; col <= rect.col_end; ++col) {
+            auto& node_data = node_matrix[row][col].get_node_data();
+            if (node_data.is_connected() || node_data.is_connecting()) {
+              int a = 0;
+              a += 1;
+            }
+
+            if (node_data.is_enclosure() || node_data.is_delta() || node_data.is_wire()) {
+              int a = 0;
+              a += 1;
+            }
+          }
+        }
+      }
+    }
+  }
 }
 
 }  // namespace ilm

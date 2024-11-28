@@ -5,6 +5,7 @@ add_library(ilm_layout_db
     lm_patch.cpp
     lm_node.cpp
     lm_net.cpp
+    lm_shape.cpp
 )
 
 target_link_libraries(ilm_layout_db

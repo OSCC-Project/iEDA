@@ -924,7 +924,7 @@ void IdbSpeedUpSetup::createNet() {
 
   int net_id = 0;
   for (IdbNet* net : net_list->get_net_list()) {
-    // if ("FE_OFN5655_n" != net->get_net_name()) {
+    // if ("FE_OFN5472_FE_OFN426_n686" != net->get_net_name()) {
     //   continue;
     // }
     GuiSpeedupItemType gui_type = getNetGuiType(net);
