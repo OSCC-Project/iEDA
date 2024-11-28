@@ -5,7 +5,10 @@ add_library(ilm_layout_dm
     lm_layout_check.cc
     lm_layout_opt.cpp
     lm_pattern_gen.cc
+    lm_pattern_op.cc
 )
+
+find_package(OpenCV REQUIRED)
 
 target_link_libraries(ilm_layout_dm
     PUBLIC
@@ -15,12 +18,14 @@ target_link_libraries(ilm_layout_dm
     log
     usage
     ilm_layout_db
+    ${OpenCV_LIBS}
 )
 
 target_include_directories(ilm_layout_dm
     PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${HOME_UTILITY}/json
+    ${OpenCV_INCLUDE_DIRS}
 )
 
 include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
