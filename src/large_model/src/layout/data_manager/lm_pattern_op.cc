@@ -47,17 +47,18 @@ Matrix LmPatternOperator::resize(const Matrix& matrix, const int& target_width, 
   // 1. Convert to cv::Mat
   cv::Mat mat;
   cv::eigen2cv(matrix, mat);
+  mat.convertTo(mat, CV_32F);
 
   // 2. Resize
   cv::Mat resized;
   cv::resize(mat, resized, cv::Size(target_width, target_height));
 
-  // 3. Convert back to Eigen::Matrix
+  // 3. Post-process, round all elements to 0 or 1
+  resized.forEach<float>([](float& val, const int* position) { val = val >= 0.5 ? 1.0 : 0.0; });
+
+  // 4. Convert back to Eigen::Matrix
   Matrix resized_matrix;
   cv::cv2eigen(resized, resized_matrix);
-
-  // 4. Post-process, round all elements to 0 or 1
-  resized_matrix = resized_matrix.array().round();
 
   return resized_matrix;
 }
@@ -73,7 +74,7 @@ double LmPatternOperator::similarity(const Matrix& matrix1, const Matrix& matrix
 
   // Calculate similarity
   auto diff = (left - right).array().abs();
-  auto similarity = 1 - diff.sum() / (left.rows() * left.cols());
+  auto similarity = 1.0 - diff.sum() / (left.rows() * left.cols());
 
   return similarity;
 }
@@ -89,14 +90,15 @@ void LmPatternOperator::dropHomogenousPatterns()
   }
 
   // drop homogenous patterns
+  std::vector<bool> to_remove(_patterns.size(), false);
   for (size_t i = 0; i < _patterns.size(); ++i) {
     for (size_t j = i + 1; j < _patterns.size(); ++j) {
       if (similarity_matrix[i][j] == 1.0) {
-        _patterns.erase(_patterns.begin() + j);
-        j--;
+        to_remove[j] = true;
       }
     }
   }
+  std::ranges::remove_if(_patterns, [&to_remove, i = 0](const auto& pattern) mutable { return to_remove[i++]; });
 }
 
 }  // namespace ilm
