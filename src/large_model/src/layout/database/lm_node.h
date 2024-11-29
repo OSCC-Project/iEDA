@@ -103,6 +103,7 @@ class LmNodeData
   bool is_direction_visited(LmNodeDirection direction);
   bool is_visited();
   void reset_direction();
+  void reset_visited();
 
   bool is_net() { return is_type(LmNodeTYpe::lm_net); }
   bool is_pdn() { return is_type(LmNodeTYpe::lm_pdn); }
@@ -140,6 +141,13 @@ class LmNode
   LmNode() = default;
   ~LmNode() = default;
 
+  LmNode* left = nullptr;
+  LmNode* right = nullptr;
+  LmNode* up = nullptr;
+  LmNode* down = nullptr;
+  LmNode* bottom = nullptr;
+  LmNode* top = nullptr;
+
   // getter
   int64_t get_node_id() { return _node_id; }
   int get_x() { return _x; }
@@ -147,6 +155,7 @@ class LmNode
   int get_row_id() { return _row_id; }
   int get_col_id() { return _col_id; }
   int32_t get_layer_id() { return _layer_id; }
+  int getconnected_num();
 
   LmNodeData& get_node_data() { return _node_data; }
 

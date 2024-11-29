@@ -110,6 +110,11 @@ void LmNodeData::reset_direction()
   _visited = LmNodeDirection::kNone;
 }
 
+void LmNodeData::reset_visited()
+{
+  _visited = LmNodeDirection::kNone;
+}
+
 void LmNodeData::set_pin_id(int32_t id)
 {
   if (_pin_id == -1) {
@@ -181,6 +186,19 @@ bool LmNode::is_via()
   direction_num = (direction & static_cast<uint8_t>(LmNodeDirection::lm_bottom)) > 0 ? direction_num + 1 : direction_num;
 
   return direction_num > 0 ? true : false;
+}
+
+int LmNode::getconnected_num()
+{
+  int layer_node_num = 0;
+  layer_node_num += (up != nullptr ? 1 : 0);
+  layer_node_num += (down != nullptr ? 1 : 0);
+  layer_node_num += (left != nullptr ? 1 : 0);
+  layer_node_num += (right != nullptr ? 1 : 0);
+  layer_node_num += (bottom != nullptr ? 1 : 0);
+  layer_node_num += (top != nullptr ? 1 : 0);
+
+  return layer_node_num;
 }
 
 }  // namespace ilm

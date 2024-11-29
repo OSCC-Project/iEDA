@@ -42,6 +42,7 @@ bool LmLayoutDataManager::buildGraphData(const std::string path)
   /// optimize wire
   LmLayoutOptimize wire_opt(&_layout);
   wire_opt.checkPinConnection();
+  wire_opt.wirePruning();
 
   if (get_graph().size() > 0) {
     // connectiviy check

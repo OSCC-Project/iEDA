@@ -101,6 +101,7 @@ class LmNet
   // operator
   void setWires(std::vector<LmNetWire> wires) { _wires = wires; }
   void addWire(LmNetWire wire);
+  void clearWire() { _wires.clear(); }
   void addPinId(int id) { _pin_ids.push_back(id); }
   void addPin(LmPin lm_pin) { _pin_map.insert(std::make_pair(lm_pin.get_pin_id(), lm_pin)); }
 

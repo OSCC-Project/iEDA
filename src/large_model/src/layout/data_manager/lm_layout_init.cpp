@@ -990,6 +990,9 @@ void LmLayoutInit::initNets(bool init_delta)
     // if ("FE_OFN5472_FE_OFN426_n686" != idb_net->get_net_name()) {
     //   continue;
     // }
+    if (net_id != 142) {
+      continue;
+    }
 
     /// init pins
     /// instance pin
