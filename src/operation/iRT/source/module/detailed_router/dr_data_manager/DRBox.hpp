@@ -49,6 +49,9 @@ class DRBox
   std::vector<Violation>& get_violation_list() { return _violation_list; }
   ScaleAxis& get_box_track_axis() { return _box_track_axis; }
   std::vector<GridMap<DRNode>>& get_layer_node_map() { return _layer_node_map; }
+  std::map<int32_t, std::vector<Segment<LayerCoord>>>& get_best_net_detailed_result_map() { return _best_net_detailed_result_map; }
+  std::map<int32_t, std::vector<EXTLayerRect>>& get_best_net_detailed_patch_map() { return _best_net_detailed_patch_map; }
+  std::vector<Violation>& get_best_violation_list() { return _best_violation_list; }
   // setter
   void set_box_rect(const EXTPlanarRect& box_rect) { _box_rect = box_rect; }
   void set_dr_box_id(const DRBoxId& dr_box_id) { _dr_box_id = dr_box_id; }
@@ -78,6 +81,15 @@ class DRBox
   void set_violation_list(const std::vector<Violation>& violation_list) { _violation_list = violation_list; }
   void set_box_track_axis(const ScaleAxis& box_track_axis) { _box_track_axis = box_track_axis; }
   void set_layer_node_map(const std::vector<GridMap<DRNode>>& layer_node_map) { _layer_node_map = layer_node_map; }
+  void set_best_net_detailed_result_map(const std::map<int32_t, std::vector<Segment<LayerCoord>>>& best_net_detailed_result_map)
+  {
+    _best_net_detailed_result_map = best_net_detailed_result_map;
+  }
+  void set_best_net_detailed_patch_map(const std::map<int32_t, std::vector<EXTLayerRect>>& best_net_detailed_patch_map)
+  {
+    _best_net_detailed_patch_map = best_net_detailed_patch_map;
+  }
+  void set_best_violation_list(const std::vector<Violation>& best_violation_list) { _best_violation_list = best_violation_list; }
   // function
 #if 1  // astar
   // single task
@@ -131,6 +143,9 @@ class DRBox
   std::vector<Violation> _violation_list;
   ScaleAxis _box_track_axis;
   std::vector<GridMap<DRNode>> _layer_node_map;
+  std::map<int32_t, std::vector<Segment<LayerCoord>>> _best_net_detailed_result_map;
+  std::map<int32_t, std::vector<EXTLayerRect>> _best_net_detailed_patch_map;
+  std::vector<Violation> _best_violation_list;
 #if 1  // astar
   // single task
   DRTask* _curr_dr_task = nullptr;

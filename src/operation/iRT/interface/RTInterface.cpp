@@ -183,26 +183,44 @@ void RTInterface::clearDef()
   // 删除net内所有的virtual
   for (idb::IdbNet* idb_net : idb_net_list->get_net_list()) {
     for (idb::IdbRegularWire* wire : idb_net->get_wire_list()->get_wire_list()) {
-      std::vector<idb::IdbRegularWireSegment*>& segment_list = wire->get_segment_list();
-      std::sort(segment_list.begin(), segment_list.end(), [](idb::IdbRegularWireSegment* a, idb::IdbRegularWireSegment* b) {
-        bool a_is_virtual = a->is_virtual(a->get_point_second());
-        bool b_is_virtual = b->is_virtual(b->get_point_second());
-        if (a_is_virtual == false && b_is_virtual == true) {
-          return true;
+      std::vector<idb::IdbRegularWireSegment*> del_segment_list;
+      for (idb::IdbRegularWireSegment* segment : wire->get_segment_list()) {
+        if (segment->is_virtual(segment->get_point_second())) {
+          del_segment_list.push_back(segment);
         }
-        return false;
-      });
+      }
+      for (idb::IdbRegularWireSegment* segment : del_segment_list) {
+        wire->delete_seg(segment);
+      }
     }
   }
   // 删除net内所有的virtual
   //////////////////////////////////////////
 
+  // //////////////////////////////////////////
+  // // 删除net内所有的wire
+  // for (idb::IdbNet* idb_net : idb_net_list->get_net_list()) {
+  //   idb_net->clear_wire_list();
+  // }
+  // // 删除net内所有的wire
+  // //////////////////////////////////////////
+
   //////////////////////////////////////////
-  // 删除net内所有的wire
+  // 删除net内所有的patch
   for (idb::IdbNet* idb_net : idb_net_list->get_net_list()) {
-    idb_net->clear_wire_list();
+    for (idb::IdbRegularWire* wire : idb_net->get_wire_list()->get_wire_list()) {
+      std::vector<idb::IdbRegularWireSegment*> del_segment_list;
+      for (idb::IdbRegularWireSegment* segment : wire->get_segment_list()) {
+        if (segment->is_rect()) {
+          del_segment_list.push_back(segment);
+        }
+      }
+      for (idb::IdbRegularWireSegment* segment : del_segment_list) {
+        wire->delete_seg(segment);
+      }
+    }
   }
-  // 删除net内所有的wire
+  // 删除net内所有的patch
   //////////////////////////////////////////
 
   //////////////////////////////////////////

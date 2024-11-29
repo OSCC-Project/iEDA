@@ -115,16 +115,16 @@ void DetailedRouter::iterativeDRModel(DRModel& dr_model)
    */
   std::vector<DRParameter> dr_parameter_list;
   // clang-format off
-  dr_parameter_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 5, 0, fixed_rect_unit, routed_rect_unit, violation_unit, true, 3);
-  dr_parameter_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 5, -1, fixed_rect_unit, routed_rect_unit, violation_unit, false, 3);
-  dr_parameter_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 5, -2, fixed_rect_unit, routed_rect_unit, violation_unit, false, 3);
-  dr_parameter_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 5, -3, fixed_rect_unit, routed_rect_unit, violation_unit, false, 3);
-  dr_parameter_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 5, -4, fixed_rect_unit, routed_rect_unit, violation_unit, false, 3);
-  dr_parameter_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 5, 0, fixed_rect_unit, routed_rect_unit, violation_unit, false, 3);
-  dr_parameter_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 5, -1, fixed_rect_unit, routed_rect_unit, violation_unit, false, 3);
-  dr_parameter_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 5, -2, fixed_rect_unit, routed_rect_unit, violation_unit, false, 3);
-  dr_parameter_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 5, -3, fixed_rect_unit, routed_rect_unit, violation_unit, false, 3);
-  dr_parameter_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 5, -4, fixed_rect_unit, routed_rect_unit, violation_unit, false, 3);
+  dr_parameter_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 5, 0, fixed_rect_unit, routed_rect_unit, violation_unit, true, 5);
+  dr_parameter_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 5, 1, fixed_rect_unit, routed_rect_unit, violation_unit, false, 5);
+  dr_parameter_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 5, 2, fixed_rect_unit, routed_rect_unit, violation_unit, false, 5);
+  dr_parameter_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 5, 3, fixed_rect_unit, routed_rect_unit, violation_unit, false, 5);
+  dr_parameter_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 5, 4, fixed_rect_unit, routed_rect_unit, violation_unit, false, 5);
+  dr_parameter_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 5, 0, fixed_rect_unit, routed_rect_unit, violation_unit, false, 5);
+  dr_parameter_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 5, 1, fixed_rect_unit, routed_rect_unit, violation_unit, false, 5);
+  dr_parameter_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 5, 2, fixed_rect_unit, routed_rect_unit, violation_unit, false, 5);
+  dr_parameter_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 5, 3, fixed_rect_unit, routed_rect_unit, violation_unit, false, 5);
+  dr_parameter_list.emplace_back(prefer_wire_unit, non_prefer_wire_unit, via_unit, 5, 4, fixed_rect_unit, routed_rect_unit, violation_unit, false, 5);
   // clang-format on
   for (size_t i = 0, iter = 1; i < dr_parameter_list.size(); i++, iter++) {
     Monitor iter_monitor;
@@ -349,8 +349,7 @@ void DetailedRouter::routeDRBoxMap(DRModel& dr_model)
         routeDRBox(dr_box);
         // debugPlotDRBox(dr_box, -1, "after");
       }
-      uploadNetResult(dr_box);
-      uploadViolation(dr_box);
+      selectBestResult(dr_box);
       freeDRBox(dr_box);
     }
     routed_box_num += dr_box_id_list.size();
@@ -694,6 +693,7 @@ void DetailedRouter::routeDRBox(DRBox& dr_box)
       routing_task->addRoutedTimes();
     }
     updateViolationList(dr_box);
+    updateBestResult(dr_box);
     updateTaskSchedule(dr_box, routing_task_list);
   }
 }
@@ -1289,6 +1289,23 @@ std::vector<Violation> DetailedRouter::getCostViolationList(DRBox& dr_box)
   return RTDE.getViolationList(de_task);
 }
 
+void DetailedRouter::updateBestResult(DRBox& dr_box)
+{
+  std::map<int32_t, std::vector<Segment<LayerCoord>>>& best_net_detailed_result_map = dr_box.get_best_net_detailed_result_map();
+  std::map<int32_t, std::vector<EXTLayerRect>>& best_net_detailed_patch_map = dr_box.get_best_net_detailed_patch_map();
+  std::vector<Violation>& best_violation_list = dr_box.get_best_violation_list();
+
+  int32_t curr_violation_num = static_cast<int32_t>(dr_box.get_violation_list().size());
+  if (!best_net_detailed_result_map.empty() || !best_net_detailed_patch_map.empty()) {
+    if (static_cast<int32_t>(best_violation_list.size()) < curr_violation_num) {
+      return;
+    }
+  }
+  best_net_detailed_result_map = dr_box.get_net_detailed_result_map();
+  best_net_detailed_patch_map = dr_box.get_net_detailed_patch_map();
+  best_violation_list = dr_box.get_violation_list();
+}
+
 void DetailedRouter::updateTaskSchedule(DRBox& dr_box, std::vector<DRTask*>& routing_task_list)
 {
   int32_t max_routed_times = dr_box.get_dr_parameter()->get_max_routed_times();
@@ -1321,23 +1338,25 @@ void DetailedRouter::updateTaskSchedule(DRBox& dr_box, std::vector<DRTask*>& rou
   dr_box.set_dr_task_list(new_dr_task_list);
 }
 
-void DetailedRouter::uploadNetResult(DRBox& dr_box)
+void DetailedRouter::selectBestResult(DRBox& dr_box)
 {
-  for (auto& [net_idx, segment_list] : dr_box.get_net_detailed_result_map()) {
+  updateBestResult(dr_box);
+  uploadBestResult(dr_box);
+}
+
+void DetailedRouter::uploadBestResult(DRBox& dr_box)
+{
+  for (auto& [net_idx, segment_list] : dr_box.get_best_net_detailed_result_map()) {
     for (Segment<LayerCoord>& segment : segment_list) {
       RTDM.updateNetDetailedResultToGCellMap(ChangeType::kAdd, net_idx, new Segment<LayerCoord>(segment));
     }
   }
-  for (auto& [net_idx, patch_list] : dr_box.get_net_detailed_patch_map()) {
+  for (auto& [net_idx, patch_list] : dr_box.get_best_net_detailed_patch_map()) {
     for (EXTLayerRect& patch : patch_list) {
       RTDM.updateNetDetailedPatchToGCellMap(ChangeType::kAdd, net_idx, new EXTLayerRect(patch));
     }
   }
-}
-
-void DetailedRouter::uploadViolation(DRBox& dr_box)
-{
-  for (Violation& violation : dr_box.get_violation_list()) {
+  for (Violation& violation : dr_box.get_best_violation_list()) {
     RTDM.updateViolationToGCellMap(ChangeType::kAdd, new Violation(violation));
   }
 }
@@ -1516,28 +1535,31 @@ void DetailedRouter::updateBestResult(DRModel& dr_model)
 
   Die& die = RTDM.getDatabase().get_die();
 
-  int32_t curr_violation_num = getViolationNum();
-  if (dr_model.get_best_violation_num() != -1 && dr_model.get_best_violation_num() < curr_violation_num) {
-    return;
-  }
   std::map<int32_t, std::vector<Segment<LayerCoord>>>& best_net_detailed_result_map = dr_model.get_best_net_detailed_result_map();
   std::map<int32_t, std::vector<EXTLayerRect>>& best_net_detailed_patch_map = dr_model.get_best_net_detailed_patch_map();
+  std::vector<Violation>& best_violation_list = dr_model.get_best_violation_list();
 
-  dr_model.set_best_violation_num(curr_violation_num);
+  int32_t curr_violation_num = getViolationNum();
+  if (!best_net_detailed_result_map.empty() || !best_net_detailed_patch_map.empty()) {
+    if (static_cast<int32_t>(best_violation_list.size()) < curr_violation_num) {
+      return;
+    }
+  }
   best_net_detailed_result_map.clear();
-  best_net_detailed_patch_map.clear();
-
   for (auto& [net_idx, segment_set] : RTDM.getNetDetailedResultMap(die)) {
-    best_net_detailed_result_map[net_idx].reserve(segment_set.size());
     for (Segment<LayerCoord>* segment : segment_set) {
       best_net_detailed_result_map[net_idx].push_back(*segment);
     }
   }
+  best_net_detailed_patch_map.clear();
   for (auto& [net_idx, patch_set] : RTDM.getNetDetailedPatchMap(die)) {
-    best_net_detailed_patch_map[net_idx].reserve(patch_set.size());
     for (EXTLayerRect* patch : patch_set) {
       best_net_detailed_patch_map[net_idx].push_back(*patch);
     }
+  }
+  best_violation_list.clear();
+  for (Violation* violation : RTDM.getViolationSet(die)) {
+    best_violation_list.push_back(*violation);
   }
 
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
@@ -1559,7 +1581,6 @@ void DetailedRouter::selectBestResult(DRModel& dr_model)
 
   dr_model.set_iter(dr_model.get_iter() + 1);
   uploadBestResult(dr_model);
-  uploadViolation(dr_model);
   updateSummary(dr_model);
   printSummary(dr_model);
   outputNetCSV(dr_model);
@@ -1582,6 +1603,9 @@ void DetailedRouter::uploadBestResult(DRModel& dr_model)
       RTDM.updateNetAccessPatchToGCellMap(ChangeType::kDel, net_idx, patch);
     }
   }
+  for (Violation* violation : RTDM.getViolationSet(die)) {
+    RTDM.updateViolationToGCellMap(ChangeType::kDel, violation);
+  }
 
   for (auto& [net_idx, segment_list] : dr_model.get_best_net_detailed_result_map()) {
     for (Segment<LayerCoord>& segment : segment_list) {
@@ -1592,6 +1616,9 @@ void DetailedRouter::uploadBestResult(DRModel& dr_model)
     for (EXTLayerRect& patch : patch_list) {
       RTDM.updateNetAccessPatchToGCellMap(ChangeType::kAdd, net_idx, new EXTLayerRect(patch));
     }
+  }
+  for (Violation violation : dr_model.get_best_violation_list()) {
+    RTDM.updateViolationToGCellMap(ChangeType::kAdd, new Violation(violation));
   }
 }
 
