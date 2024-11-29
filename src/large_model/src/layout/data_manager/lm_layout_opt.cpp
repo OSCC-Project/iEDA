@@ -142,7 +142,7 @@ void LmLayoutOptimize::wirePruning()
   uint64_t total = 0;
   uint64_t pruning_total = 0;
 
-  // #pragma omp parallel for schedule(dynamic)
+#pragma omp parallel for schedule(dynamic)
   for (int i = 0; i < net_map.size(); ++i) {
     //   for (auto& [net_id, net] : net_map) {
     auto it = net_map.begin();
@@ -171,7 +171,7 @@ void LmLayoutOptimize::wirePruning()
     }
 
     /// remove redundant node
-    remove_size = removeRedundancy(node_list);
+    remove_size = remove_size + removeRedundancy(node_list);
 
     /// rebuild wires
     rebuildGraph(node_list, net);
