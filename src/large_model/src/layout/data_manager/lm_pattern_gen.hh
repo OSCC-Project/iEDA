@@ -50,24 +50,27 @@ enum PatternDirection
   kRIGHT
 };
 
-class LmPatternGen
+class LmPatternGenerator
 {
  public:
-  LmPatternGen() = default;
-  ~LmPatternGen() = default;
+  LmPatternGenerator() = delete;
+  ~LmPatternGenerator() = default;
+
+  // Main function to initiate pattern generation
+  static std::vector<Matrix> generateAllPatterns(const int& w, const int& h);
 
  private:
+  // Reverse Operation
+  static Matrix reverse(const Matrix& matrix, const bool& horizontal, const bool& vertical);
+
   // Function to deep copy the grid and expand it in the specified direction
-  PatternState expandGrid(const PatternState& state, const PatternDirection& dir) const;
+  static PatternState expandGrid(const PatternState& state, const PatternDirection& dir);
 
-  // Recursive function to generate all paths
-  void generatePaths(const int& w, const int& h, const std::vector<PatternDirection>& directions, const PatternState& current,
-                     std::vector<Matrix>& results) const;
+  // Recursive function to generate all patterns
+  static void generatePatterns(const int& w, const int& h, const std::vector<PatternDirection>& directions, const PatternState& current,
+                               std::vector<Matrix>& results);
 
-  // Main function to initiate path generation
-  std::vector<Matrix> generateAllPaths(const int& w, const int& h) const;
-
-  // Drop duplicate paths
-  void dropDuplicatePaths(std::vector<Matrix>& results) const;
+  // Drop duplicate patterns
+  static void dropDuplicatePatterns(std::vector<Matrix>& results);
 };
 }  // namespace ilm

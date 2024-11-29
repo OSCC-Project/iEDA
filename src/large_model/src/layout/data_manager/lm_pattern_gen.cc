@@ -24,10 +24,53 @@
 
 #include "lm_pattern_gen.hh"
 
+#include <ranges>
 #include <unordered_set>
 
 namespace ilm {
-PatternState LmPatternGen::expandGrid(const PatternState& state, const PatternDirection& dir) const
+
+std::vector<Matrix> LmPatternGenerator::generateAllPatterns(const int& w, const int& h)
+{
+  std::vector<Matrix> results;
+
+  // Initialize the state with a 1x1 grid
+  PatternState initial;
+  initial.grid = Matrix::Zero(1, 1);
+  initial.grid(0, 0) = 1;
+  initial.current_row = 0;
+  initial.current_col = 0;
+  initial.max_width = 1;
+  initial.max_height = 1;
+
+  // Directions to start, just need to start from top-right, because of symmetry
+  std::vector<PatternDirection> top_right = {kTOP, kRIGHT};
+
+  // Start recursion
+  generatePatterns(w, h, top_right, initial, results);
+
+  // Reverse the patterns to get the other half
+  auto revesed_results = std::ranges::transform_view(results, [](const Matrix& matrix) { return reverse(matrix, true, false); });
+  std::ranges::copy(revesed_results, std::back_inserter(results));
+
+  // Drop duplicate patterns/matrices
+  dropDuplicatePatterns(results);
+
+  return results;
+}
+
+Matrix LmPatternGenerator::reverse(const Matrix& matrix, const bool& horizontal, const bool& vertical)
+{
+  auto reversed = matrix;
+  if (horizontal) {
+    reversed = reversed.rowwise().reverse();
+  }
+  if (vertical) {
+    reversed = reversed.colwise().reverse();
+  }
+  return reversed;
+}
+
+PatternState LmPatternGenerator::expandGrid(const PatternState& state, const PatternDirection& dir)
 {
   auto new_state = state;
 
@@ -80,8 +123,8 @@ PatternState LmPatternGen::expandGrid(const PatternState& state, const PatternDi
   return new_state;
 }
 
-void LmPatternGen::generatePaths(const int& w, const int& h, const std::vector<PatternDirection>& directions, const PatternState& current,
-                                 std::vector<Matrix>& results) const
+void LmPatternGenerator::generatePatterns(const int& w, const int& h, const std::vector<PatternDirection>& directions,
+                                          const PatternState& current, std::vector<Matrix>& results)
 {
   // Add the current grid to results, if it's not 1x1
   if (current.max_width > 1 || current.max_height > 1) {
@@ -96,7 +139,7 @@ void LmPatternGen::generatePaths(const int& w, const int& h, const std::vector<P
     if (new_state.max_width > w || new_state.max_height > h)
       continue;
 
-    // Find the new position to add the path
+    // Find the new position to add the pattern
     switch (dir) {
       case kTOP:
         if (new_state.grid(current.current_row - 1, current.current_col) == 0) {
@@ -125,70 +168,43 @@ void LmPatternGen::generatePaths(const int& w, const int& h, const std::vector<P
     }
 
     // Recursive call
-    generatePaths(w, h, directions, new_state, results);
+    generatePatterns(w, h, directions, new_state, results);
   }
 }
 
-std::vector<Matrix> LmPatternGen::generateAllPaths(const int& w, const int& h) const
-{
-  std::vector<Matrix> results;
-
-  // Initialize the state with a 1x1 grid
-  PatternState initial;
-  initial.grid = Matrix::Zero(1, 1);
-  initial.grid(0, 0) = 1;
-  initial.current_row = 0;
-  initial.current_col = 0;
-  initial.max_width = 1;
-  initial.max_height = 1;
-
-  // Directions to start (just need to start from top-left and top-right corners, because of symmetry)
-  std::vector<PatternDirection> left_top = {kLEFT, kTOP};
-  std::vector<PatternDirection> right_top = {kRIGHT, kTOP};
-
-  // Start recursion, only generate paths/matrices starting from the top-left and top-right corners
-  generatePaths(w, h, left_top, initial, results);
-  generatePaths(w, h, right_top, initial, results);
-
-  // Drop duplicate paths/matrices
-  dropDuplicatePaths(results);
-
-  return results;
-}
-
-void LmPatternGen::dropDuplicatePaths(std::vector<Matrix>& results) const
+void LmPatternGenerator::dropDuplicatePatterns(std::vector<Matrix>& results)
 {
   // Lambda function to convert a matrix to a string, split by ',' and ';'
   auto to_string = [](const Matrix& matrix) {
-    std::string path_str;
+    std::string pattern_str;
     for (int i = 0; i < matrix.rows(); ++i) {
       for (int j = 0; j < matrix.cols(); ++j) {
-        path_str += std::to_string(matrix(i, j));
+        pattern_str += std::to_string(matrix(i, j));
         if (j < matrix.cols() - 1) {
-          path_str += ",";
+          pattern_str += ",";
         }
       }
       if (i < matrix.rows() - 1) {
-        path_str += ";";
+        pattern_str += ";";
       }
     }
-    return path_str;
+    return pattern_str;
   };
 
-  // Use a set to store unique paths
+  // Use a set to store unique patterns
   std::unordered_set<std::string> unique_matrices;
   std::vector<size_t> to_remove;
 
   for (size_t i = 0; i < results.size(); ++i) {
-    auto path_str = to_string(results[i]);
-    if (unique_matrices.contains(path_str)) {
+    auto pattern_str = to_string(results[i]);
+    if (unique_matrices.contains(pattern_str)) {
       to_remove.push_back(i);
     } else {
-      unique_matrices.insert(path_str);
+      unique_matrices.insert(pattern_str);
     }
   }
 
-  // Remove duplicate paths
+  // Remove duplicate patterns
   for (size_t i = to_remove.size(); i > 0; --i) {
     results.erase(results.begin() + to_remove[i - 1]);
   }
