@@ -30,20 +30,24 @@ class CutLayer
   int32_t get_layer_idx() const { return _layer_idx; }
   int32_t get_layer_order() const { return _layer_order; }
   std::string& get_layer_name() { return _layer_name; }
-  int32_t get_cut_spacing() const { return _cut_spacing; }
+  int32_t get_prl_spacing() const { return _prl_spacing; }
+  int32_t get_x_spacing() const { return _x_spacing; }
+  int32_t get_y_spacing() const { return _y_spacing; }
   // setter
   void set_layer_idx(const int32_t layer_idx) { _layer_idx = layer_idx; }
   void set_layer_order(const int32_t layer_order) { _layer_order = layer_order; }
   void set_layer_name(const std::string& layer_name) { _layer_name = layer_name; }
-  void set_cut_spacing(const int32_t cut_spacing) { _cut_spacing = cut_spacing; }
+  void set_prl_spacing(const int32_t prl_spacing) { _prl_spacing = prl_spacing; }
+  void set_x_spacing(const int32_t x_spacing) { _x_spacing = x_spacing; }
+  void set_y_spacing(const int32_t y_spacing) { _y_spacing = y_spacing; }
   // function
-  int32_t getCutSpacing() { return _cut_spacing; }
-
  private:
   int32_t _layer_idx = -1;
   int32_t _layer_order = -1;
   std::string _layer_name;
-  int32_t _cut_spacing = -1;
+  int32_t _prl_spacing = -1;
+  int32_t _x_spacing = -1;
+  int32_t _y_spacing = -1;
 };
 
 }  // namespace irt

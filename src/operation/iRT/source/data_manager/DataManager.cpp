@@ -650,7 +650,6 @@ void DataManager::makeLayerList()
 {
   Die& die = _database.get_die();
   std::vector<RoutingLayer>& routing_layer_list = _database.get_routing_layer_list();
-  std::vector<CutLayer>& cut_layer_list = _database.get_cut_layer_list();
 
   auto getFrequentNum = [](const std::vector<int32_t>& num_list) {
     if (num_list.empty()) {
@@ -672,17 +671,11 @@ void DataManager::makeLayerList()
   };
   int32_t step_length;
   {
-    std::vector<int32_t> width_list;
-    std::vector<int32_t> routing_spacing_list;
-    std::vector<int32_t> cut_spacing_list;
+    std::vector<int32_t> pitch_list;
     for (RoutingLayer& routing_layer : routing_layer_list) {
-      width_list.push_back(routing_layer.get_min_width());
-      routing_spacing_list.push_back(routing_layer.getPRLSpacing(PlanarRect(0, 0, 0, 0)));
+      pitch_list.push_back(routing_layer.getPreferTrackGridList().front().get_step_length());
     }
-    for (CutLayer& cut_layer : cut_layer_list) {
-      cut_spacing_list.push_back(cut_layer.getCutSpacing());
-    }
-    step_length = getFrequentNum(width_list) + std::min(getFrequentNum(routing_spacing_list), getFrequentNum(cut_spacing_list));
+    step_length = getFrequentNum(pitch_list);
   }
   auto getScaleGrid = [](int32_t real_ll_scale, int32_t real_ur_scale, int32_t step_length) {
     int32_t start_line = real_ll_scale + step_length;
@@ -766,8 +759,14 @@ void DataManager::checkLayerList()
   }
   for (CutLayer& cut_layer : cut_layer_list) {
     std::string& layer_name = cut_layer.get_layer_name();
-    if (cut_layer.get_cut_spacing() < 0) {
-      RTLOG.error(Loc::current(), "The layer '", layer_name, "' spacing < 0!");
+    if (cut_layer.get_prl_spacing() < 0) {
+      RTLOG.error(Loc::current(), "The layer '", layer_name, "' prl_spacing < 0!");
+    }
+    if (cut_layer.get_x_spacing() < 0) {
+      RTLOG.error(Loc::current(), "The layer '", layer_name, "' x_spacing < 0!");
+    }
+    if (cut_layer.get_y_spacing() < 0) {
+      RTLOG.error(Loc::current(), "The layer '", layer_name, "' y_spacing < 0!");
     }
   }
 }

@@ -99,7 +99,6 @@ class DRBox
   std::vector<DRNode*>& get_path_node_list() { return _path_node_list; }
   std::vector<DRNode*>& get_single_task_visited_node_list() { return _single_task_visited_node_list; }
   std::vector<Segment<LayerCoord>>& get_routing_segment_list() { return _routing_segment_list; }
-  std::vector<EXTLayerRect>& get_routing_patch_list() { return _routing_patch_list; }
   void set_curr_dr_task(DRTask* curr_dr_task) { _curr_dr_task = curr_dr_task; }
   void set_start_node_list_list(const std::vector<std::vector<DRNode*>>& start_node_list_list)
   {
@@ -115,7 +114,6 @@ class DRBox
   {
     _routing_segment_list = routing_segment_list;
   }
-  void set_routing_patch_list(const std::vector<EXTLayerRect>& routing_patch_list) { _routing_patch_list = routing_patch_list; }
   // single path
   PriorityQueue<DRNode*, std::vector<DRNode*>, CmpDRNodeCost>& get_open_queue() { return _open_queue; }
   std::vector<DRNode*>& get_single_path_visited_node_list() { return _single_path_visited_node_list; }
@@ -154,7 +152,6 @@ class DRBox
   std::vector<DRNode*> _path_node_list;
   std::vector<DRNode*> _single_task_visited_node_list;
   std::vector<Segment<LayerCoord>> _routing_segment_list;
-  std::vector<EXTLayerRect> _routing_patch_list;
   // single path
   PriorityQueue<DRNode*, std::vector<DRNode*>, CmpDRNodeCost> _open_queue;
   std::vector<DRNode*> _single_path_visited_node_list;

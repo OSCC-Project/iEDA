@@ -71,6 +71,7 @@ class DetailedRouter
   void buildLayerNodeMap(DRBox& dr_box);
   void buildDRNodeNeighbor(DRBox& dr_box);
   void buildOrientNetMap(DRBox& dr_box);
+  void exemptPinShape(DRBox& dr_box);
   void routeDRBox(DRBox& dr_box);
   std::vector<DRTask*> initTaskSchedule(DRBox& dr_box);
   void routeDRTask(DRBox& dr_box, DRTask* dr_task);
@@ -87,11 +88,6 @@ class DetailedRouter
   void resetSinglePath(DRBox& dr_box);
   void updateTaskResult(DRBox& dr_box);
   std::vector<Segment<LayerCoord>> getRoutingSegmentList(DRBox& dr_box);
-  void patchSingleTask(DRBox& dr_box);
-  std::vector<LayerRect> getMinStepPatchList(DRBox& dr_box);
-  std::vector<Violation> getPatchViolationList(DRBox& dr_box);
-  void updateTaskPatch(DRBox& dr_box);
-  std::vector<EXTLayerRect> getRoutingPatchList(DRBox& dr_box);
   void resetSingleTask(DRBox& dr_box);
   void pushToOpenList(DRBox& dr_box, DRNode* curr_node);
   DRNode* popFromOpenList(DRBox& dr_box);

@@ -28,7 +28,7 @@ class DETask
   DETask() = default;
   ~DETask() = default;
   // getter
-  std::set<DEProcessType>& get_process_type_set() { return _process_type_set; }
+  DEProcessType& get_process_type() { return _process_type; }
   std::string& get_top_name() { return _top_name; }
   PlanarRect& get_check_region() { return _check_region; }
   std::vector<std::pair<EXTLayerRect*, bool>>& get_env_shape_list() { return _env_shape_list; }
@@ -44,7 +44,7 @@ class DETask
   std::string& get_violation_file_path() { return _violation_file_path; }
   std::vector<Violation>& get_violation_list() { return _violation_list; }
   // setter
-  void set_process_type_set(const std::set<DEProcessType>& process_type_set) { _process_type_set = process_type_set; }
+  void set_process_type(const DEProcessType& process_type) { _process_type = process_type; }
   void set_top_name(const std::string& top_name) { _top_name = top_name; }
   void set_check_region(const PlanarRect& check_region) { _check_region = check_region; }
   void set_env_shape_list(const std::vector<std::pair<EXTLayerRect*, bool>>& env_shape_list) { _env_shape_list = env_shape_list; }
@@ -64,7 +64,7 @@ class DETask
   void set_violation_list(const std::vector<Violation>& violation_list) { _violation_list = violation_list; }
   // function
  private:
-  std::set<DEProcessType> _process_type_set;
+  DEProcessType _process_type;
   std::string _top_name;
   PlanarRect _check_region;
   std::vector<std::pair<EXTLayerRect*, bool>> _env_shape_list;

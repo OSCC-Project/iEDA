@@ -64,6 +64,7 @@ class PinAccessor
   void uploadAccessPointList(PAModel& pa_model);
   void initPABoxMap(PAModel& pa_model);
   void buildBoxSchedule(PAModel& pa_model);
+  void exemptPinShape(PABox& pa_box);
   void routePABoxMap(PAModel& pa_model);
   void buildFixedRect(PABox& pa_box);
   void buildAccessResult(PABox& pa_box);
@@ -90,11 +91,6 @@ class PinAccessor
   void resetSinglePath(PABox& pa_box);
   void updateTaskResult(PABox& pa_box);
   std::vector<Segment<LayerCoord>> getRoutingSegmentList(PABox& pa_box);
-  void patchSingleTask(PABox& pa_box);
-  std::vector<LayerRect> getMinStepPatchList(PABox& pa_box);
-  std::vector<Violation> getPatchViolationList(PABox& pa_box);
-  void updateTaskPatch(PABox& pa_box);
-  std::vector<EXTLayerRect> getRoutingPatchList(PABox& pa_box);
   void resetSingleTask(PABox& pa_box);
   void pushToOpenList(PABox& pa_box, PANode* curr_node);
   PANode* popFromOpenList(PABox& pa_box);

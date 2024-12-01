@@ -23,7 +23,7 @@ namespace irt {
 enum class DEFuncType
 {
   kNone,
-  kGetDEProcessType,
+  kSkipViolation,
   kExpandViolation
 };
 
@@ -36,8 +36,8 @@ struct GetDEFuncTypeName
       case DEFuncType::kNone:
         process_type_name = "none";
         break;
-      case DEFuncType::kGetDEProcessType:
-        process_type_name = "get_de_process_type";
+      case DEFuncType::kSkipViolation:
+        process_type_name = "skip_violation";
         break;
       case DEFuncType::kExpandViolation:
         process_type_name = "expand_violation";
