@@ -108,10 +108,14 @@ TGNet TopologyGenerator::convertToTGNet(Net& net)
 
 void TopologyGenerator::setTGParameter(TGModel& tg_model)
 {
+  int32_t topo_spilt_length = 10;
+  double congestion_unit = 2;
   /**
    * topo_spilt_length, congestion_unit
    */
-  TGParameter tg_parameter(10, 2);
+  // clang-format off
+  TGParameter tg_parameter(topo_spilt_length, congestion_unit);
+  // clang-format on
   RTLOG.info(Loc::current(), "topo_spilt_length: ", tg_parameter.get_topo_spilt_length());
   RTLOG.info(Loc::current(), "congestion_unit: ", tg_parameter.get_congestion_unit());
   tg_model.set_tg_parameter(tg_parameter);
@@ -571,23 +575,23 @@ void TopologyGenerator::printSummary(TGModel& tg_model)
     summary_table << fort::header << "total_overflow" << total_overflow << fort::endr;
     summary_table << fort::header << "total_wire_length" << total_wire_length << fort::endr;
   }
-  fort::char_table timing_and_power_table;
+  fort::char_table timing_table;
+  fort::char_table power_table;
   if (enable_timing) {
-    timing_and_power_table << fort::header << "Clock"
-                           << "TNS"
-                           << "WNS"
-                           << "Freq(MHz)" << fort::endr;
+    timing_table << fort::header << "clock_name"
+                 << "tns"
+                 << "wns"
+                 << "freq" << fort::endr;
     for (auto& [clock_name, timing_map] : clock_timing) {
-      timing_and_power_table << clock_name << timing_map["TNS"] << timing_map["WNS"] << timing_map["Freq(MHz)"] << fort::endr;
+      timing_table << clock_name << timing_map["TNS"] << timing_map["WNS"] << timing_map["Freq(MHz)"] << fort::endr;
     }
+    power_table << fort::header << "power_type" << "power_value" << fort::endr;
     for (auto& [type, power] : power_map) {
-      timing_and_power_table << fort::header << type << power << fort::endr;
+      power_table << type << power << fort::endr;
     }
   }
-  std::vector<fort::char_table> table_list;
-  table_list.push_back(summary_table);
-  table_list.push_back(timing_and_power_table);
-  RTUTIL.printTableList(table_list);
+  RTUTIL.printTableList({summary_table});
+  RTUTIL.printTableList({timing_table, power_table});
 }
 
 void TopologyGenerator::outputGuide(TGModel& tg_model)

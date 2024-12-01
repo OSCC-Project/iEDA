@@ -130,6 +130,7 @@ unsigned StaBuildRCTree::operator()(StaGraph* the_graph) {
               auto* rc_net = getSta()->getRcNet(design_net);
               // DLOG_INFO << "Update Rc tree timing " << spef_name;
               rc_net->updateRcTiming(spef_net);
+              rust_free_spef_net(spef_net);
             } else {
               LOG_FATAL << "build rc tree not found design net "
                         << spef_net->_name;
@@ -156,7 +157,10 @@ unsigned StaBuildRCTree::operator()(StaGraph* the_graph) {
       auto* rc_net = getSta()->getRcNet(design_net);
       // DLOG_INFO << "Update Rc tree timing " << spef_name;
       rc_net->updateRcTiming(rust_spef_net);
-      // printYaml(spef_net);
+
+      // printYaml(*rust_spef_net);
+      rust_free_spef_net(rust_spef_net);
+      
     } else {
       LOG_FATAL << "build rc tree not found design net " << spef_name;
     }
@@ -168,7 +172,7 @@ unsigned StaBuildRCTree::operator()(StaGraph* the_graph) {
 
   // ProfilerStop();
 
-  // printYamlText("spef_1W.yaml");
+  // printYamlText("spef.yaml");
 
   LOG_INFO << "build rc tree end";
 

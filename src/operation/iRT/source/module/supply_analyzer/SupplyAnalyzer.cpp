@@ -57,13 +57,12 @@ void SupplyAnalyzer::analyze()
   SAModel sa_model = initSAModel();
   buildSupplySchedule(sa_model);
   analyzeSupply(sa_model);
+  // debugPlotSAModel(sa_model);
   updateSummary(sa_model);
   printSummary(sa_model);
   outputPlanarSupplyCSV(sa_model);
   outputLayerSupplyCSV(sa_model);
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
-
-  // debugPlotSAModel(sa_model);
 }
 
 // private
@@ -172,6 +171,14 @@ void SupplyAnalyzer::analyzeSupply(SAModel& sa_model)
             }
           }
         }
+        for (auto& [net_idx, patch_set] : RTDM.getNetAccessPatchMap(search_rect)) {
+          for (EXTLayerRect* patch : patch_set) {
+              if (search_rect.get_layer_idx() != patch->get_layer_idx()) {
+                continue;
+              }
+              obs_rect_list.push_back(patch->get_real_rect());
+          }
+        }
       }
       for (LayerRect& wire : getCrossingWireList(search_rect)) {
         if (isAccess(wire, obs_rect_list)) {
@@ -234,7 +241,7 @@ bool SupplyAnalyzer::isAccess(LayerRect& wire, std::vector<PlanarRect>& obs_rect
   RoutingLayer& routing_layer = routing_layer_list[wire.get_layer_idx()];
 
   for (PlanarRect& obs_rect : obs_rect_list) {
-    int32_t enlarged_size = routing_layer.getMinSpacing(obs_rect);
+    int32_t enlarged_size = routing_layer.getPRLSpacing(obs_rect);
     PlanarRect enlarged_rect = RTUTIL.getEnlargedRect(obs_rect, enlarged_size);
     if (RTUTIL.isOpenOverlap(enlarged_rect, wire)) {
       // 阻塞
@@ -291,9 +298,7 @@ void SupplyAnalyzer::printSummary(SAModel& sa_model)
     }
     routing_supply_map_table << fort::header << "Total" << total_supply << RTUTIL.getPercentage(total_supply, total_supply) << fort::endr;
   }
-  std::vector<fort::char_table> table_list;
-  table_list.push_back(routing_supply_map_table);
-  RTUTIL.printTableList(table_list);
+  RTUTIL.printTableList({routing_supply_map_table});
 }
 
 void SupplyAnalyzer::outputPlanarSupplyCSV(SAModel& sa_model)

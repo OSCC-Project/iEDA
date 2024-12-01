@@ -99,7 +99,6 @@ class DataManager
   void buildGCellAxis();
   void makeGCellAxis();
   std::vector<ScaleGrid> makeGCellGridList(Direction direction);
-  std::vector<ScaleGrid> makeGCellGridList(std::vector<int32_t>& gcell_scale_list);
   void checkGCellAxis();
   void buildDie();
   void makeDie();

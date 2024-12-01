@@ -602,11 +602,17 @@ icts::CtsCellLib* CTSAPI::getCellLib(const std::string& cell_master, const std::
       y_slew.emplace_back(slew_mid_value[i * cap_out.size() + j]);
     }
   }
-  LOG_FATAL_IF(x_slew_in.empty() || x_cap_out.empty() || y_delay.empty() || y_slew.empty())
-      << "No feasible work value, please check "
-         "the config parameter: \"max_buf_tran\", \"max_sink_tran\" and "
-         "\"max_cap\" with the liberty "
-      << cell_master;
+  if (x_slew_in.empty() || x_cap_out.empty() || y_delay.empty() || y_slew.empty()) {
+    LOG_WARNING << "No feasible work value, please check "
+                   "the config parameter: \"max_buf_tran\", \"max_sink_tran\" and "
+                   "\"max_cap\" with the liberty "
+                << cell_master;
+    // use all value
+    x_slew_in = slew_in;
+    x_cap_out = cap_out;
+    y_delay = delay_mid_value;
+    y_slew = slew_mid_value;
+  }
   std::vector<std::vector<double>> x_delay = {x_slew_in, x_cap_out};
   lib->set_delay_coef(_model_factory->cppLinearModel(x_delay, y_delay));
 

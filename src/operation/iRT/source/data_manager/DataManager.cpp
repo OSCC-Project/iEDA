@@ -103,7 +103,7 @@ void DataManager::updateFixedRectToGCellMap(ChangeType change_type, int32_t net_
     }
   }
   if (change_type == ChangeType::kDel) {
-    // 由于在database内的obstacle_list引用过来，所以不需要delete，也不能delete
+    // 由于在database内的obstacle_list引用过来,所以不需要delete,也不能delete
   }
 }
 
@@ -121,7 +121,7 @@ void DataManager::updateAccessNetPointToGCellMap(ChangeType change_type, int32_t
     }
   }
   if (change_type == ChangeType::kDel) {
-    // 由于在pin内的access_point_list引用过来，所以不需要delete，也不能delete
+    // 由于在pin内的access_point_list引用过来,所以不需要delete,也不能delete
   }
 }
 
@@ -677,10 +677,10 @@ void DataManager::makeLayerList()
     std::vector<int32_t> cut_spacing_list;
     for (RoutingLayer& routing_layer : routing_layer_list) {
       width_list.push_back(routing_layer.get_min_width());
-      routing_spacing_list.push_back(routing_layer.getMinSpacing(PlanarRect(0, 0, 0, 0)));
+      routing_spacing_list.push_back(routing_layer.getPRLSpacing(PlanarRect(0, 0, 0, 0)));
     }
     for (CutLayer& cut_layer : cut_layer_list) {
-      cut_spacing_list.push_back(cut_layer.getMinSpacing());
+      cut_spacing_list.push_back(cut_layer.getCutSpacing());
     }
     step_length = getFrequentNum(width_list) + std::min(getFrequentNum(routing_spacing_list), getFrequentNum(cut_spacing_list));
   }
@@ -724,7 +724,6 @@ void DataManager::checkLayerList()
   if (cut_layer_list.empty()) {
     RTLOG.error(Loc::current(), "The cut_layer_list is empty!");
   }
-
   for (RoutingLayer& routing_layer : routing_layer_list) {
     std::string& layer_name = routing_layer.get_layer_name();
     if (routing_layer.get_prefer_direction() == Direction::kNone) {
@@ -742,27 +741,33 @@ void DataManager::checkLayerList()
                     "' is wrong!");
       }
     }
-    SpacingTable& spacing_table = routing_layer.get_spacing_table();
-    if (spacing_table.get_width_list().empty()) {
+    SpacingTable& prl_spacing_table = routing_layer.get_prl_spacing_table();
+    if (prl_spacing_table.get_width_list().empty()) {
       RTLOG.error(Loc::current(), "The layer '", layer_name, "' spacing width list is empty!");
     }
-    for (int32_t width : spacing_table.get_width_list()) {
+    for (int32_t width : prl_spacing_table.get_width_list()) {
       if (width < 0) {
         RTLOG.error(Loc::current(), "The layer '", layer_name, "' width < 0!");
       }
     }
-    for (int32_t parallel_length : spacing_table.get_parallel_length_list()) {
+    for (int32_t parallel_length : prl_spacing_table.get_parallel_length_list()) {
       if (parallel_length < 0) {
         RTLOG.error(Loc::current(), "The layer '", layer_name, "' parallel_length < 0!");
       }
     }
-    GridMap<int32_t>& width_parallel_length_map = spacing_table.get_width_parallel_length_map();
+    GridMap<int32_t>& width_parallel_length_map = prl_spacing_table.get_width_parallel_length_map();
     for (int32_t width_idx = 0; width_idx < width_parallel_length_map.get_x_size(); width_idx++) {
       for (int32_t parallel_length_idx = 0; parallel_length_idx < width_parallel_length_map.get_y_size(); parallel_length_idx++) {
         if (width_parallel_length_map[width_idx][parallel_length_idx] < 0) {
           RTLOG.error(Loc::current(), "The layer '", layer_name, "' spacing < 0!");
         }
       }
+    }
+  }
+  for (CutLayer& cut_layer : cut_layer_list) {
+    std::string& layer_name = cut_layer.get_layer_name();
+    if (cut_layer.get_cut_spacing() < 0) {
+      RTLOG.error(Loc::current(), "The layer '", layer_name, "' spacing < 0!");
     }
   }
 }
@@ -903,7 +908,7 @@ std::vector<ScaleGrid> DataManager::makeGCellGridList(Direction direction)
   int32_t die_start_scale = (direction == Direction::kVertical ? die.get_real_ll_x() : die.get_real_ll_y());
   int32_t die_end_scale = (direction == Direction::kVertical ? die.get_real_ur_x() : die.get_real_ur_y());
   int32_t row_mid_scale = (direction == Direction::kVertical ? row.get_start_x() : row.get_start_y());
-  // 为了防止与track重合，减去一个recommended_pitch的一半
+  // 为了防止与track重合,减去一个recommended_pitch的一半
   row_mid_scale -= (getOnlyPitch() / 2);
   int32_t step_length = row.get_height();
 
@@ -926,36 +931,7 @@ std::vector<ScaleGrid> DataManager::makeGCellGridList(Direction direction)
     }
   }
   gcell_scale_list.erase(std::unique(gcell_scale_list.begin(), gcell_scale_list.end()), gcell_scale_list.end());
-  return makeGCellGridList(gcell_scale_list);
-}
-
-std::vector<ScaleGrid> DataManager::makeGCellGridList(std::vector<int32_t>& gcell_scale_list)
-{
-  std::vector<ScaleGrid> gcell_grid_list;
-
-  for (size_t i = 1; i < gcell_scale_list.size(); i++) {
-    int32_t pre_scale = gcell_scale_list[i - 1];
-    int32_t curr_scale = gcell_scale_list[i];
-
-    ScaleGrid gcell_grid;
-    gcell_grid.set_start_line(pre_scale);
-    gcell_grid.set_step_length(curr_scale - pre_scale);
-    gcell_grid.set_step_num(1);
-    gcell_grid.set_end_line(curr_scale);
-    gcell_grid_list.push_back(gcell_grid);
-  }
-  // merge
-  RTUTIL.merge(gcell_grid_list, [](ScaleGrid& sentry, ScaleGrid& soldier) {
-    if (sentry.get_step_length() != soldier.get_step_length()) {
-      return false;
-    }
-    sentry.set_start_line(std::min(sentry.get_start_line(), soldier.get_start_line()));
-    sentry.set_step_num(sentry.get_step_num() + 1);
-    sentry.set_end_line(std::max(sentry.get_end_line(), soldier.get_end_line()));
-    return true;
-  });
-
-  return gcell_grid_list;
+  return RTUTIL.makeScaleGridList(gcell_scale_list);
 }
 
 void DataManager::checkGCellAxis()
