@@ -244,7 +244,6 @@ class RctNode {
   double _delay_ecm = 0.0;
 
   unsigned _is_update_load : 1;
-  // unsigned _is_update_load : 1 = 0;
   unsigned _is_update_delay : 1;
   unsigned _is_update_ldelay : 1;
   unsigned _is_update_delay_ecm : 1;
@@ -481,12 +480,6 @@ class RcTree {
 
   void printGraphViz();
 
-  void levelizeRcTree(std::queue<RctNode*> bfs_queue);
-  void levelizeRcTree();
-  void applyDelayDataToArray();
-  void initGpuMemory();
-  void freeGpuMemory();
-
  private:
   RctNode* _root{nullptr};
 
@@ -495,23 +488,45 @@ class RcTree {
 
   std::vector<CoupledRcNode> _coupled_nodes;
   std::vector<std::vector<RctNode*>> _level_to_points;
-  std::vector<float> _cap_array;
-  std::vector<float> _load_array;
-  std::vector<float> _ncap_array;
-  std::vector<float> _nload_array;
-  std::vector<float> _res_array;
-  std::vector<int> _parent_pos_array;
-  std::vector<int> _children_pos_array;
 
-  float* _gpu_cap_array = nullptr;
-  float* _gpu_ncap_array = nullptr;
-  float* _gpu_load_array = nullptr;
-  float* _gpu_nload_array = nullptr;
-  float* _gpu_res_array = nullptr;
-  int* _gpu_parent_pos_array = nullptr;
-  int* _gpu_children_pos_array = nullptr;
+  std::vector<float> _cap_array;       // levelized cap for gpu speed up.
+  std::vector<float> _ncap_array;      // levelized ncap for gpu speed up.
+  std::vector<float> _res_array;       // levelized res for gpu speed up.
+  std::vector<int> _parent_pos_array;  // levelized parent pos for gpu speed up.
+  std::vector<int>
+      _children_pos_array;           // levelized children pos for gpu speed up.
+  std::vector<float> _load_array;    // levelized load for gpu speed up.
+  std::vector<float> _nload_array;   // levelized nload for gpu speed up.
+  std::vector<float> _delay_array;   // levelized delay for gpu speed up.
+  std::vector<float> _ndelay_array;  // levelized ndelay for gpu speed up.
+  std::vector<float> _ures_array;    // levelized ures for gpu speed up.
+  std::vector<float> _ldelay_array;  // levelized ldelay for gpu speed up.
+  std::vector<float> _beta_array;    // levelized beta for gpu speed up.
+  std::vector<float> _impulse_array;  // levelized impulse for gpu speed up.
 
+  float* _gpu_cap_array = nullptr;         // cap located on gpu.
+  float* _gpu_ncap_array = nullptr;        // ncap located on gpu.
+  float* _gpu_res_array = nullptr;         // res located on gpu.
+  int* _gpu_parent_pos_array = nullptr;    // parent pos located on gpu.
+  int* _gpu_children_pos_array = nullptr;  // children pos located on gpu.
+  float* _gpu_load_array = nullptr;        // load located on gpu.
+  float* _gpu_nload_array = nullptr;       // nload located on gpu.
+  float* _gpu_delay_array = nullptr;       // delay located on gpu.
+  float* _gpu_ndelay_array = nullptr;      // ndelay located on gpu.
+  float* _gpu_ures_array = nullptr;        // ures located on gpu.
+  float* _gpu_ldelay_array = nullptr;      // ldelay located on gpu.
+  float* _gpu_beta_array = nullptr;        // beta located on gpu.
+  float* _gpu_impulse_array = nullptr;     // impulse located on gpu.
+
+  void levelizeRcTree(std::queue<RctNode*> bfs_queue);
+  void levelizeRcTree();
+  void applyDelayDataToArray();
+  void initGpuMemory();
   void updateLoad();
+  void updateDelay();
+  void updateLDelay();
+  void updateResponse();
+  void freeGpuMemory();
 
   void initData();
   void initMoment();
