@@ -29,7 +29,7 @@ class WirelengthAPI
   NetWLSummary netWL(PointSet point_set);
   PathWLSummary pathWL(PointSet point_set, PointPair point_pair);
 
-  float totalEGRWL(std::string guide_path);
+  double totalEGRWL(std::string guide_path);
   float netEGRWL(std::string guide_path, std::string net_name);
   float pathEGRWL(std::string guide_path, std::string net_name, std::string load_name);
 
