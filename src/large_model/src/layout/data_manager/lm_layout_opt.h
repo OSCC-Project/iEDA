@@ -42,8 +42,8 @@ class LmLayoutOptimize
 
   void reconnectPin(LmNet& lm_net, int pin_id);
   std::vector<LmNode*> rebuildGridNode(LmNet& lm_net);
-  bool needPruning(LmNode* node);
-  int pruningNode(std::vector<LmNode*>& node_list);
+  bool needPruning(LmNode* node, bool has_via = false);
+  int pruningNode(std::vector<LmNode*>& node_list, bool has_via = false);
   int removeRedundancy(std::vector<LmNode*>& node_list);
   void rebuildGraph(std::vector<LmNode*>& node_list, LmNet& lm_net);
   int processRing(std::vector<LmNode*>& node_list);

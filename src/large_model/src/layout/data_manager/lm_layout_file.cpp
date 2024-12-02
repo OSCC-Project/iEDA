@@ -62,13 +62,19 @@ bool LmLayoutFileIO::saveJson(std::string path, std::map<int, LmNet>& net_map)
       int pin_num = 0;
       if (idb_net->has_io_pins()) {
         for (auto io_pin : idb_net->get_io_pins()->get_pin_list()) {
-          json_pins.push_back(io_pin->get_pin_name());
+          json json_pin;
+          json_pin["i"] = "";
+          json_pin["p"] = io_pin->get_pin_name();
+          json_pins.push_back(json_pin);
           pin_num++;
         }
       }
 
       for (auto inst_pin : idb_net->get_instance_pin_list()->get_pin_list()) {
-        json_pins.push_back(inst_pin->get_pin_name());
+        json json_pin;
+        json_pin["i"] = inst_pin->get_instance()->get_name();
+        json_pin["p"] = inst_pin->get_pin_name();
+        json_pins.push_back(json_pin);
         pin_num++;
       }
 

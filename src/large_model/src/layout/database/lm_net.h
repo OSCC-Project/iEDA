@@ -44,13 +44,13 @@ class LmNetWire
   // getter
   std::pair<LmNode*, LmNode*>& get_connected_nodes() { return _node_pair; }
   std::vector<std::pair<LmNode*, LmNode*>>& get_paths() { return _paths; }
+  bool has_via() { return _has_via; }
 
   // setter
   void set_start(LmNode* node) { _node_pair.first = node; }
   void set_end(LmNode* node) { _node_pair.second = node; }
 
-  void add_path(LmNode* node1, LmNode* node2) { _paths.push_back(std::make_pair(node1, node2)); }
-  void insert_paths(std::vector<std::pair<LmNode*, LmNode*>> paths) { _paths.insert(_paths.end(), paths.begin(), paths.end()); }
+  void add_path(LmNode* node1, LmNode* node2);
 
   // operator
 
@@ -58,6 +58,8 @@ class LmNetWire
   std::pair<LmNode*, LmNode*> _node_pair;
 
   std::vector<std::pair<LmNode*, LmNode*>> _paths;
+
+  bool _has_via = false;
 };
 
 class LmPin
@@ -94,12 +96,12 @@ class LmNet
   std::vector<int>& get_pin_ids() { return _pin_ids; }
   std::map<int, LmPin>& get_pin_map() { return _pin_map; }
   LmPin* get_pin(int pin_id);
+  bool has_via() { return _has_via; }
 
   // setter
   void set_net_id(int net_id) { _net_id = net_id; }
 
   // operator
-  void setWires(std::vector<LmNetWire> wires) { _wires = wires; }
   void addWire(LmNetWire wire);
   void clearWire() { _wires.clear(); }
   void addPinId(int id) { _pin_ids.push_back(id); }
@@ -110,6 +112,7 @@ class LmNet
   std::vector<LmNetWire> _wires;
   std::vector<int> _pin_ids;
   std::map<int, LmPin> _pin_map;
+  bool _has_via = false;
 };
 
 class LmGraph

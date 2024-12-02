@@ -31,6 +31,14 @@
 #include "Log.hh"
 
 namespace ilm {
+
+void LmNetWire::add_path(LmNode* node1, LmNode* node2)
+{
+  _paths.push_back(std::make_pair(node1, node2));
+  if (node1->get_node_data().is_via() || node2->get_node_data().is_via()) {
+    _has_via = true;
+  }
+}
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -57,6 +65,10 @@ void LmNet::addWire(LmNetWire wire)
     LOG_INFO << "pin error  : " << node1->get_node_data().get_pin_id() << " , " << node2->get_node_data().get_pin_id();
   }
   _wires.push_back(wire);
+
+  if (wire.has_via()) {
+    _has_via = true;
+  }
 }
 
 LmPin* LmNet::get_pin(int pin_id)

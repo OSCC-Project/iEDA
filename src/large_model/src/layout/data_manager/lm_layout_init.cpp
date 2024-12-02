@@ -484,7 +484,6 @@ LmPin LmLayoutInit::transPin(idb::IdbPin* idb_pin, int net_id, int pin_id, bool 
               error_pin_num++;
             }
             node_data.set_pin_id(pin_id);
-            // node_data.set_connect_type(LmNodeConnectType::lm_wire);
             if (b_horizontal) {
               if (col == col_1) {
                 node_data.set_direction(LmNodeDirection::lm_right);
@@ -990,9 +989,11 @@ void LmLayoutInit::initNets(bool init_delta)
     // if ("FE_OFN5472_FE_OFN426_n686" != idb_net->get_net_name()) {
     //   continue;
     // }
-    // if (net_id != 142) {
+    // if (net_id != 651) {
     //   continue;
     // }
+
+    // LOG_INFO << idb_net->get_net_name();
 
     /// init pins
     /// instance pin

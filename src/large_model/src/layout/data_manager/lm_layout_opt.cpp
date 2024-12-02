@@ -142,7 +142,7 @@ void LmLayoutOptimize::wirePruning()
   uint64_t total = 0;
   uint64_t pruning_total = 0;
 
-#pragma omp parallel for schedule(dynamic)
+  // #pragma omp parallel for schedule(dynamic)
   for (int i = 0; i < net_map.size(); ++i) {
     //   for (auto& [net_id, net] : net_map) {
     auto it = net_map.begin();
@@ -150,12 +150,16 @@ void LmLayoutOptimize::wirePruning()
     auto net_id = it->first;
     auto& net = it->second;
 
+    // if (net_id != 651) {
+    //   continue;
+    // }
+
     std::vector<LmNode*> node_list = rebuildGridNode(net);
 
     uint64_t net_pruning_num = 0;
 
     uint64_t pruning_num = 0;
-    while ((pruning_num = pruningNode(node_list)) > 0) {
+    while ((pruning_num = pruningNode(node_list, net.has_via())) > 0) {
       net_pruning_num += pruning_num;
     }
 
@@ -164,24 +168,31 @@ void LmLayoutOptimize::wirePruning()
 
     /// process ring
     while (processRing(node_list) > 0) {
+      while ((pruning_num = pruningNode(node_list, net.has_via())) > 0) {
+        net_pruning_num += pruning_num;
+      }
+
+      /// remove redundant node
+      removeRedundancy(node_list);
     }
 
-    while ((pruning_num = pruningNode(node_list)) > 0) {
+    while ((pruning_num = pruningNode(node_list, net.has_via())) > 0) {
       net_pruning_num += pruning_num;
     }
 
-    /// remove redundant node
-    remove_size = remove_size + removeRedundancy(node_list);
+    // /// remove redundant node
+    // remove_size = remove_size + removeRedundancy(node_list);
+    removeRedundancy(node_list);
 
     /// rebuild wires
     rebuildGraph(node_list, net);
 
     omp_set_lock(&lck);
-    pruning_total = pruning_total + net_pruning_num + remove_size;
+    pruning_total = pruning_total + net_pruning_num;
     total += node_list.size();
     omp_unset_lock(&lck);
 
-    LOG_INFO << "net " << net_id << " pruning " << node_list.size() << " -> " << net_pruning_num + remove_size;
+    LOG_INFO << "net " << net_id << " pruning " << node_list.size() << " -> " << net_pruning_num;
   }
 
   LOG_INFO << "net pruning ratio " << pruning_total << " / " << total;
@@ -191,7 +202,7 @@ void LmLayoutOptimize::wirePruning()
   LOG_INFO << "LM optimize connections for routing layer end...";
 }
 
-int LmLayoutOptimize::pruningNode(std::vector<LmNode*>& node_list)
+int LmLayoutOptimize::pruningNode(std::vector<LmNode*>& node_list, bool has_via)
 {
   std::sort(node_list.begin(), node_list.end(), [](LmNode* a, LmNode* b) { return a->getconnected_num() < b->getconnected_num(); });
 
@@ -199,7 +210,8 @@ int LmLayoutOptimize::pruningNode(std::vector<LmNode*>& node_list)
 
   for (int i = 0; i < (int) node_list.size(); ++i) {
     auto* node = node_list[i];
-    if (needPruning(node)) {
+
+    if (needPruning(node, has_via)) {
       redundant_list.insert(node);
 
       if (node->left != nullptr) {
@@ -232,6 +244,10 @@ int LmLayoutOptimize::pruningNode(std::vector<LmNode*>& node_list)
 int LmLayoutOptimize::processRing(std::vector<LmNode*>& node_list)
 {
   auto can_remove = [](LmNode* node) -> bool {
+    if (node == nullptr) {
+      return false;
+    }
+
     if (node->get_node_data().is_via()) {
       return false;
     }
@@ -246,20 +262,28 @@ int LmLayoutOptimize::processRing(std::vector<LmNode*>& node_list)
 
   auto has_ring = [&](LmNode* node) -> LmNode* {
     if (node->up != nullptr && node->up->right != nullptr && node->up->right->down != nullptr && node->up->right->down->left != nullptr) {
-      if (can_remove(node)) {
-        return node;
-      }
+      auto node_ll = node;
+      auto node_lu = node_ll->up;
+      auto node_ru = node_lu->right;
+      auto node_rl = node_ru->down;
 
-      if (can_remove(node->up)) {
-        return node->up;
-      }
+      if (node_ll->up == node_lu && node_ll == node_lu->down && node_lu->right == node_ru && node_lu == node_ru->left
+          && node_ru->down == node_rl && node_ru == node_rl->up && node_rl->left == node_ll && node_rl == node_ll->right) {
+        if (can_remove(node_ll)) {
+          return node_ll;
+        }
 
-      if (can_remove(node->up->right)) {
-        return node->up->right;
-      }
+        if (can_remove(node_lu)) {
+          return node_lu;
+        }
 
-      if (can_remove(node->up->right->down)) {
-        return node->up->right->down;
+        if (can_remove(node_ru)) {
+          return node_ru;
+        }
+
+        if (can_remove(node_rl)) {
+          return node_rl;
+        }
       }
     }
     return nullptr;
@@ -276,27 +300,35 @@ int LmLayoutOptimize::processRing(std::vector<LmNode*>& node_list)
 
       if (ring_node->left != nullptr) {
         ring_node->left->right = nullptr;
+        ring_node->left = nullptr;
+        continue;
       }
 
       if (ring_node->right != nullptr) {
         ring_node->right->left = nullptr;
+        ring_node->right = nullptr;
+        continue;
       }
 
       if (ring_node->up != nullptr) {
         ring_node->up->down = nullptr;
+        ring_node->up = nullptr;
+        continue;
       }
 
       if (ring_node->down != nullptr) {
         ring_node->down->up = nullptr;
+        ring_node->down = nullptr;
+        continue;
       }
     }
   }
 
-  node_list.erase(std::remove_if(node_list.begin(), node_list.end(),
-                                 [&redundant_list](LmNode* remove_node) {
-                                   return std::find(redundant_list.begin(), redundant_list.end(), remove_node) != redundant_list.end();
-                                 }),
-                  node_list.end());
+  // node_list.erase(std::remove_if(node_list.begin(), node_list.end(),
+  //                                [&redundant_list](LmNode* remove_node) {
+  //                                  return std::find(redundant_list.begin(), redundant_list.end(), remove_node) != redundant_list.end();
+  //                                }),
+  //                 node_list.end());
 
   return redundant_list.size();
 }
@@ -307,6 +339,26 @@ int LmLayoutOptimize::removeRedundancy(std::vector<LmNode*>& node_list)
     if (node->get_node_data().is_via()) {
       return false;
     }
+
+    // if (node->get_node_data().is_pin() && node->get_node_data().is_wire()) {
+    //   return false;
+    // }
+
+    // if (node->get_node_data().is_pin() && node->get_node_data().is_wire()) {
+    //   return false;
+    // }
+
+    // if (node->get_node_data().is_pin() && node->get_node_data().is_enclosure()) {
+    //   return false;
+    // }
+
+    // if (node->get_node_data().is_io() && node->get_node_data().is_wire()) {
+    //   return false;
+    // }
+
+    // if (node->get_node_data().is_io() && node->get_node_data().is_enclosure()) {
+    //   return false;
+    // }
 
     /// horizontal
     if (node->left != nullptr && node->right != nullptr && node->up == nullptr && node->down == nullptr) {
@@ -402,10 +454,29 @@ std::vector<LmNode*> LmLayoutOptimize::rebuildGridNode(LmNet& lm_net)
   return std::vector<LmNode*>(node_list.begin(), node_list.end());
 }
 
-bool LmLayoutOptimize::needPruning(LmNode* node)
+bool LmLayoutOptimize::needPruning(LmNode* node, bool has_via)
 {
   if (node->get_node_data().is_via()) {
     return false;
+  }
+
+  if (false == has_via) {
+    return false;
+    // if (node->get_node_data().is_pin() && node->get_node_data().is_wire()) {
+    //   return false;
+    // }
+
+    // if (node->get_node_data().is_pin() && node->get_node_data().is_enclosure()) {
+    //   return false;
+    // }
+
+    // if (node->get_node_data().is_io() && node->get_node_data().is_wire()) {
+    //   return false;
+    // }
+
+    // if (node->get_node_data().is_io() && node->get_node_data().is_enclosure()) {
+    //   return false;
+    // }
   }
 
   int layer_node_num = 0;
