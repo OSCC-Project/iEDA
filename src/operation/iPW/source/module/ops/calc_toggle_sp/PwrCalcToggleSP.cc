@@ -323,6 +323,11 @@ unsigned PwrCalcToggleSP::calcToggleSP(
     auto* output_pin = output_vertex->get_sta_vertex()->get_design_obj();
     auto* liberty_port =
         lib_cell->get_cell_port_or_port_bus(output_pin->get_name());
+    if (!liberty_port) { 
+      LOG_ERROR << "lib cell " << lib_cell->get_cell_name()
+                                << " has no port " << output_pin->get_name();
+    }
+    
     auto* port_func = liberty_port->get_func_expr();
 
     // FiXME, output pad not have function.
