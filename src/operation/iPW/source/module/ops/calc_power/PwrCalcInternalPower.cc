@@ -220,6 +220,11 @@ double PwrCalcInternalPower::calcOutputPinPower(Instance* inst,
 
     auto* power_arc_set =
         dynamic_cast<PwrInstArc*>(snk_arc)->get_power_arc_set();
+
+    if (!power_arc_set) {
+      continue;
+    }
+    
     LibPowerArc* power_arc;
     FOREACH_POWER_LIB_ARC(power_arc_set, power_arc) {
       auto [rise_power_mw, rise_input_slew_ns, rise_output_load] =
