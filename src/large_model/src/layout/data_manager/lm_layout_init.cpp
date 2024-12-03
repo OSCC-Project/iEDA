@@ -169,7 +169,13 @@ void LmLayoutInit::initTracks(std::string layername)
   auto& patch_layers = _layout->get_patch_layers();
   auto& patch_layer_map = patch_layers.get_patch_layer_map();
 
-  for (auto& [order, patch_layer] : patch_layer_map) {
+#pragma omp parallel for schedule(dynamic)
+  for (int i = 0; i < patch_layer_map.size(); ++i) {
+    //   for (auto& [order, patch_layer] : patch_layer_map) {
+    auto it = patch_layer_map.begin();
+    std::advance(it, i);
+    auto order = it->first;
+    auto& patch_layer = it->second;
     auto& grid = patch_layer.get_grid();
     initTrackGrid(idb_track_grid_prefer, grid);
     initTrackGrid(idb_track_grid_nonprefer, grid);
@@ -187,7 +193,14 @@ void LmLayoutInit::buildPatchGrid()
 {
   auto& patch_layers = _layout->get_patch_layers();
   auto& patch_layer_map = patch_layers.get_patch_layer_map();
-  for (auto& [order, patch_layer] : patch_layer_map) {
+#pragma omp parallel for schedule(dynamic)
+  for (int i = 0; i < patch_layer_map.size(); ++i) {
+    //   for (auto& [order, patch_layer] : patch_layer_map) {
+    auto it = patch_layer_map.begin();
+    std::advance(it, i);
+    auto order = it->first;
+    auto& patch_layer = it->second;
+
     auto& grid = patch_layer.get_grid();
     auto [node_row_num, node_col_num] = grid.buildNodeMatrix(order);
 
@@ -443,8 +456,6 @@ LmPin LmLayoutInit::transPin(idb::IdbPin* idb_pin, int net_id, int pin_id, bool 
           node_data.set_type(LmNodeTYpe::lm_io);
         }
         if (node_data.get_pin_id() > -1 && pin_id != node_data.get_pin_id()) {
-          int a = 0;
-          a += 1;
           error_pin_num++;
         }
         node_data.set_pin_id(pin_id);
@@ -479,8 +490,6 @@ LmPin LmLayoutInit::transPin(idb::IdbPin* idb_pin, int net_id, int pin_id, bool 
               node_data.set_type(LmNodeTYpe::lm_io);
             }
             if (node_data.get_pin_id() > -1 && pin_id != node_data.get_pin_id()) {
-              int a = 0;
-              a += 1;
               error_pin_num++;
             }
             node_data.set_pin_id(pin_id);
@@ -554,10 +563,7 @@ void LmLayoutInit::transNetRect(int32_t ll_x, int32_t ll_y, int32_t ur_x, int32_
     LOG_WARNING << "Can not get layer order : " << layer_name;
     return;
   }
-  if (layer_name == "M5") {
-    int a = 0;
-    a += 1;
-  }
+
   auto& grid = patch_layer->get_grid();
   auto [row_1, row_2, col_1, col_2] = grid.get_node_id_range(ll_x, ur_x, ll_y, ur_y);
   /// net wire must only occupy one grid size
@@ -983,7 +989,7 @@ void LmLayoutInit::initNets(bool init_delta)
     }
   }
 
-  // #pragma omp parallel for schedule(dynamic)
+#pragma omp parallel for schedule(dynamic)
   for (int net_id = 0; net_id < (int) idb_nets->get_net_list().size(); ++net_id) {
     auto* idb_net = idb_nets->get_net_list()[net_id];
     // if ("FE_OFN5472_FE_OFN426_n686" != idb_net->get_net_name()) {

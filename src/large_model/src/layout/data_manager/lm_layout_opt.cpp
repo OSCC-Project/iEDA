@@ -112,15 +112,6 @@ void LmLayoutOptimize::reconnectPin(LmNet& lm_net, int pin_id)
         for (int row = rect.row_start; row <= rect.row_end; ++row) {
           for (int col = rect.col_start; col <= rect.col_end; ++col) {
             auto& node_data = node_matrix[row][col].get_node_data();
-            if (node_data.is_connected() || node_data.is_connecting()) {
-              int a = 0;
-              a += 1;
-            }
-
-            if (node_data.is_enclosure() || node_data.is_delta() || node_data.is_wire()) {
-              int a = 0;
-              a += 1;
-            }
           }
         }
       }
@@ -142,7 +133,7 @@ void LmLayoutOptimize::wirePruning()
   uint64_t total = 0;
   uint64_t pruning_total = 0;
 
-  // #pragma omp parallel for schedule(dynamic)
+#pragma omp parallel for schedule(dynamic)
   for (int i = 0; i < net_map.size(); ++i) {
     //   for (auto& [net_id, net] : net_map) {
     auto it = net_map.begin();
@@ -407,10 +398,6 @@ std::vector<LmNode*> LmLayoutOptimize::rebuildGridNode(LmNet& lm_net)
   for (auto& wire : lm_net.get_wires()) {
     for (auto& [node1, node2] : wire.get_paths()) {
       if (node1->get_layer_id() == node2->get_layer_id()) {
-        if ((node1->get_col_id() == node2->get_col_id()) && node1->get_row_id() == node2->get_row_id()) {
-          int a = 0;
-          a += 1;
-        }
         /// same layer
         if (node1->get_row_id() == node2->get_row_id()) {
           if (node1->get_col_id() > node2->get_col_id()) {
@@ -487,6 +474,97 @@ bool LmLayoutOptimize::needPruning(LmNode* node, bool has_via)
   return layer_node_num < 2 ? true : false;
 }
 
+void LmLayoutOptimize::rebuildGraph(std::vector<LmNode*>& node_list, LmNet& lm_net)
+{
+  auto need_connected = [](LmNode* node) -> bool {
+    if (node->get_node_data().is_via()) {
+      return true;
+    }
+
+    // if (node->get_node_data().is_pin()) {
+    //   return true;
+    // }
+
+    int layer_node_num = 0;
+    for (auto* neighbout_node : {node->left, node->right, node->up, node->down}) {
+      layer_node_num += (neighbout_node != nullptr ? 1 : 0);
+    }
+
+    return layer_node_num > 2 || layer_node_num == 1 ? true : false;
+  };
+
+  auto build_wire = [&](LmNode* node1, LmNode* node2, LmNet& lm_net) -> bool {
+    if (node2->get_node_data().is_visited()) {
+      return false;
+    }
+
+    if (need_connected(node2)) {
+      LmNetWire wire(node1, node2);
+      wire.add_path(node1, node2);
+      lm_net.addWire(wire);
+      return true;
+    } else {
+      /// path
+      LmNetWire wire;
+      wire.set_start(node1);
+
+      auto start = node1;
+      auto end = node2;
+      while (false == end->get_node_data().is_visited() && false == need_connected(end)) {
+        /// if path, set visited
+        end->get_node_data().set_visited();
+        wire.add_path(start, end);
+
+        bool b_find = false;
+        /// find connecting point
+        for (auto* end_neighbor : {end->left, end->right, end->up, end->down, end->top, end->bottom}) {
+          if (end_neighbor != nullptr && end_neighbor != start) {
+            start = end;
+            end = end_neighbor;
+
+            b_find = true;
+            break;
+          }
+        }
+
+        /// end point
+        if (false == b_find) {
+          break;
+        }
+      }
+
+      wire.set_end(end);
+      wire.add_path(start, end);
+      lm_net.addWire(wire);
+      return true;
+    }
+
+    return false;
+  };
+
+  int origin_wire_size = lm_net.get_wires().size();
+  lm_net.clearWire();
+
+  for (auto* node : node_list) {
+    if (node->get_node_data().is_visited()) {
+      continue;
+    }
+
+    if (need_connected(node)) {
+      /// set visited
+      node->get_node_data().set_visited();
+
+      for (auto* neighbout_node : {node->bottom, node->top, node->left, node->right, node->up, node->down}) {
+        if (nullptr != neighbout_node && false == neighbout_node->get_node_data().is_visited()) {
+          build_wire(node, neighbout_node, lm_net);
+        }
+      }
+    }
+  }
+
+  LOG_INFO << "net " << lm_net.get_net_id() << " wire size " << origin_wire_size << " -> " << lm_net.get_wires().size();
+}
+
 // void LmLayoutOptimize::rebuildGraph(std::vector<LmNode*>& node_list, LmNet& lm_net)
 // {
 //   auto need_connected = [](LmNode* node) -> bool {
@@ -507,40 +585,10 @@ bool LmLayoutOptimize::needPruning(LmNode* node, bool has_via)
 //       return false;
 //     }
 
-//     if (need_connected(node2)) {
-//       LmNetWire wire(node1, node2);
-//       wire.add_path(node1, node2);
-//       lm_net.addWire(wire);
-//       return true;
-//     } else {
-//       /// path
-//       LmNetWire wire;
-//       wire.set_start(node1);
-
-//       auto start = node1;
-//       auto end = node2;
-//       //   while (false == end->get_node_data().is_visited() && false == need_connected(end)) {
-//       while (false == need_connected(end)) {
-//         /// if path, set visited
-//         end->get_node_data().set_visited();
-//         wire.add_path(start, end);
-
-//         for (auto* end_neighbor : {end->bottom, end->top, end->left, end->right, end->up, end->down}) {
-//           if (end_neighbor != nullptr && end_neighbor != start) {
-//             start = end;
-//             end = end_neighbor;
-//             break;
-//           }
-//         }
-//       }
-
-//       wire.set_end(end);
-//       wire.add_path(start, end);
-//       lm_net.addWire(wire);
-//       return true;
-//     }
-
-//     return false;
+//     LmNetWire wire(node1, node2);
+//     wire.add_path(node1, node2);
+//     lm_net.addWire(wire);
+//     return true;
 //   };
 
 //   int origin_wire_size = lm_net.get_wires().size();
@@ -551,67 +599,18 @@ bool LmLayoutOptimize::needPruning(LmNode* node, bool has_via)
 //       continue;
 //     }
 
-//     if (need_connected(node)) {
-//       for (auto* neighbout_node : {node->bottom, node->top, node->left, node->right, node->up, node->down}) {
-//         if (nullptr != neighbout_node && false == neighbout_node->get_node_data().is_visited()) {
-//           build_wire(node, neighbout_node, lm_net);
-//         }
+//     // if (need_connected(node)) {
+//     for (auto* neighbout_node : {node->bottom, node->top, node->left, node->right, node->up, node->down}) {
+//       if (nullptr != neighbout_node) {
+//         build_wire(node, neighbout_node, lm_net);
 //       }
-
-//       /// set visited
-//       node->get_node_data().set_visited();
 //     }
+
+//     /// set visited
+//     node->get_node_data().set_visited();
 //   }
 
 //   LOG_INFO << "net " << lm_net.get_net_id() << " wire size " << origin_wire_size << " -> " << lm_net.get_wires().size();
 // }
-
-void LmLayoutOptimize::rebuildGraph(std::vector<LmNode*>& node_list, LmNet& lm_net)
-{
-  auto need_connected = [](LmNode* node) -> bool {
-    if (node->get_node_data().is_via()) {
-      return true;
-    }
-
-    int layer_node_num = 0;
-    for (auto* neighbout_node : {node->left, node->right, node->up, node->down}) {
-      layer_node_num += (neighbout_node != nullptr ? 1 : 0);
-    }
-
-    return layer_node_num > 2 || layer_node_num == 1 ? true : false;
-  };
-
-  auto build_wire = [&](LmNode* node1, LmNode* node2, LmNet& lm_net) -> bool {
-    if (node2->get_node_data().is_visited()) {
-      return false;
-    }
-
-    LmNetWire wire(node1, node2);
-    wire.add_path(node1, node2);
-    lm_net.addWire(wire);
-    return true;
-  };
-
-  int origin_wire_size = lm_net.get_wires().size();
-  lm_net.clearWire();
-
-  for (auto* node : node_list) {
-    if (node->get_node_data().is_visited()) {
-      continue;
-    }
-
-    // if (need_connected(node)) {
-    for (auto* neighbout_node : {node->bottom, node->top, node->left, node->right, node->up, node->down}) {
-      if (nullptr != neighbout_node) {
-        build_wire(node, neighbout_node, lm_net);
-      }
-    }
-
-    /// set visited
-    node->get_node_data().set_visited();
-  }
-
-  LOG_INFO << "net " << lm_net.get_net_id() << " wire size " << origin_wire_size << " -> " << lm_net.get_wires().size();
-}
 
 }  // namespace ilm
