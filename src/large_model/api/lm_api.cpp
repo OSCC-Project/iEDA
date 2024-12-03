@@ -45,4 +45,13 @@ std::map<int, LmNet> LargeModelApi::getGraph(std::string path)
 
   return large_model.getGraph(path);
 }
+
+bool LargeModelApi::buildLargeModelFeature(const std::string path)
+{
+  //   LargeModel large_model;
+
+  //   large_model.buildLayoutData(path);
+
+  return true;
+}
 }  // namespace ilm

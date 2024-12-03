@@ -40,7 +40,6 @@ class LmLayoutOptimize
  private:
   LmLayout* _layout;
 
-  void reconnectPin(LmNet& lm_net, int pin_id);
   std::vector<LmNode*> rebuildGridNode(LmNet& lm_net);
   bool needPruning(LmNode* node, bool has_via = false);
   int pruningNode(std::vector<LmNode*>& node_list, bool has_via = false);

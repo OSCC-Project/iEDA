@@ -73,7 +73,6 @@ void LmLayoutOptimize::checkPinConnection()
     if (count_pins.size() > 0) {
       for (auto pin_id : count_pins) {
         LOG_INFO << "disconnected pin : " << pin_id;
-        reconnectPin(net, pin_id);
       }
 
       if (b_io) {
@@ -91,32 +90,6 @@ void LmLayoutOptimize::checkPinConnection()
   omp_destroy_lock(&lck);
 
   LOG_INFO << "LM check pin connections for routing layer end...";
-}
-
-void LmLayoutOptimize::reconnectPin(LmNet& lm_net, int pin_id)
-{
-  auto& patch_layers = _layout->get_patch_layers();
-
-  auto* lm_pin = lm_net.get_pin(pin_id);
-  if (lm_pin) {
-    auto& shape_map = lm_pin->get_shape_map();
-    for (auto& [layer_id, layer_shape] : shape_map) {
-      auto* patch_layer = patch_layers.findPatchLayer(layer_id);
-      if (nullptr == patch_layer) {
-        LOG_WARNING << "Can not get layer order : " << layer_id;
-        continue;
-      }
-      auto& grid = patch_layer->get_grid();
-      auto& node_matrix = grid.get_node_matrix();
-      for (auto& rect : layer_shape.rect_list) {
-        for (int row = rect.row_start; row <= rect.row_end; ++row) {
-          for (int col = rect.col_start; col <= rect.col_end; ++col) {
-            auto& node_data = node_matrix[row][col].get_node_data();
-          }
-        }
-      }
-    }
-  }
 }
 
 void LmLayoutOptimize::wirePruning()

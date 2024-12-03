@@ -421,10 +421,8 @@ void LmLayoutInit::initIOPins()
   }
 }
 
-LmPin LmLayoutInit::transPin(idb::IdbPin* idb_pin, int net_id, int pin_id, bool b_io)
+void LmLayoutInit::transPin(idb::IdbPin* idb_pin, int net_id, int pin_id, bool b_io)
 {
-  LmPin lm_pin(pin_id);
-
   auto& patch_layers = _layout->get_patch_layers();
   for (auto* layer_shape : idb_pin->get_port_box_list()) {
     auto order = _layout->findLayerId(layer_shape->get_layer()->get_name());
@@ -434,16 +432,12 @@ LmPin LmLayoutInit::transPin(idb::IdbPin* idb_pin, int net_id, int pin_id, bool 
       continue;
     }
     auto& grid = patch_layer->get_grid();
-    LmLayerShape lm_shape;
-    lm_shape.layer_id = order;
+
     if (layer_shape->is_via()) {
       for (IdbRect* rect : layer_shape->get_rect_list()) {
         /// build grid
         auto& grid = patch_layer->get_grid();
         auto [row_id, col_id] = grid.findNodeID(rect->get_middle_point_x(), rect->get_middle_point_y());
-        /// add to lm pin
-        LmRect lm_rect(row_id, row_id, col_id, col_id);
-        lm_shape.addRect(lm_rect);
 
         auto& node_data = grid.get_node(row_id, col_id).get_node_data();
         node_data.set_type(LmNodeTYpe::lm_pin);
@@ -474,8 +468,6 @@ LmPin LmLayoutInit::transPin(idb::IdbPin* idb_pin, int net_id, int pin_id, bool 
         int ury = rect->get_high_y();
 
         auto [row_1, row_2, col_1, col_2] = grid.get_node_id_range(llx, urx, lly, ury);
-        LmRect lm_rect(row_1, row_2, col_1, col_2);
-        lm_shape.addRect(lm_rect);
 
         for (int row = row_1; row <= row_2; ++row) {
           for (int col = col_1; col <= col_2; ++col) {
@@ -544,13 +536,10 @@ LmPin LmLayoutInit::transPin(idb::IdbPin* idb_pin, int net_id, int pin_id, bool 
         }
       }
     }
-
-    lm_pin.addShape(order, lm_shape);
   }
 
   /// init via in pins
   /// tbd
-  return lm_pin;
 }
 
 void LmLayoutInit::transNetRect(int32_t ll_x, int32_t ll_y, int32_t ur_x, int32_t ur_y, std::string layer_name, int net_id)
@@ -1008,21 +997,16 @@ void LmLayoutInit::initNets(bool init_delta)
     int pin_id = 0;
     if (false == init_delta) {
       for (auto* idb_inst_pin : idb_net->get_instance_pin_list()->get_pin_list()) {
-        auto lm_pin = transPin(idb_inst_pin, net_id, pin_id);
         if (lm_net != nullptr) {
           lm_net->addPinId(pin_id);
-          lm_net->addPin(lm_pin);
         }
 
         pin_id++;
       }
 
       for (auto* io_pin : idb_net->get_io_pins()->get_pin_list()) {
-        auto lm_pin = transPin(io_pin, net_id, pin_id, true);
-
         if (lm_net != nullptr) {
           lm_net->addPinId(pin_id);
-          lm_net->addPin(lm_pin);
         }
         pin_id++;
       }

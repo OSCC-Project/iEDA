@@ -56,7 +56,7 @@ class LmLayoutInit
   void initIOPins();
   void initNets(bool init_delta = false);
 
-  LmPin transPin(idb::IdbPin* idb_pin, int net_id, int pin_id = -1, bool b_io = false);
+  void transPin(idb::IdbPin* idb_pin, int net_id, int pin_id = -1, bool b_io = false);
   void transVia(idb::IdbVia* idb_via, int net_id, LmNodeTYpe type);
   void transEnclosure(int32_t ll_x, int32_t ll_y, int32_t ur_x, int32_t ur_y, std::string layer_name, int net_id, int via_row, int via_col);
   void transNetRect(int32_t ll_x, int32_t ll_y, int32_t ur_x, int32_t ur_y, std::string layer_name, int net_id);
