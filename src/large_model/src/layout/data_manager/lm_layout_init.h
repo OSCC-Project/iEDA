@@ -40,11 +40,6 @@ class LmLayoutInit
   int64_t _node_id = 0;
   int error_pin_num = 0;
 
-  void buildConnectedPoints();
-  int buildConnectedPointsRoutingLayer();
-  int buildConnectedPointsCutLayer();
-  void optConnectionsRoutingLayer();
-
   void initViaIds();
   void initDie();
   void initLayers();
@@ -54,16 +49,13 @@ class LmLayoutInit
   void initPDN();
   void initInstances();
   void initIOPins();
-  void initNets(bool init_delta = false);
+  void initNets();
 
   void transPin(idb::IdbPin* idb_pin, int net_id, int pin_id = -1, bool b_io = false);
   void transVia(idb::IdbVia* idb_via, int net_id, LmNodeTYpe type);
   void transEnclosure(int32_t ll_x, int32_t ll_y, int32_t ur_x, int32_t ur_y, std::string layer_name, int net_id, int via_row, int via_col);
   void transNetRect(int32_t ll_x, int32_t ll_y, int32_t ur_x, int32_t ur_y, std::string layer_name, int net_id);
   void transNetDelta(int32_t ll_x, int32_t ll_y, int32_t ur_x, int32_t ur_y, std::string layer_name, int net_id);
-  bool setConnectNode(LmNode& node);
-  void set_node_id(LmNode& node) { node.set_node_id(_node_id++); }
-  bool is_steiner_node(LmNode& node);
 };
 
 }  // namespace ilm

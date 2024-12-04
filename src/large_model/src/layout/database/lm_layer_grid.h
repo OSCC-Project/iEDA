@@ -67,8 +67,8 @@ class LmLayerGrid
 
   // getter
   LmLayerGridInfo& get_info() { return _info; }
-  std::vector<std::vector<LmNode>>& get_node_matrix() { return _node_matrix; }
-  LmNode& get_node(int row_id, int col_id);
+  std::vector<std::vector<LmNode*>>& get_node_matrix() { return _node_matrix; }
+  LmNode* get_node(int row_id, int col_id, bool b_create = false);
 
   std::pair<int, int> get_node_id_range(int coord1, int coord2, bool b_row_id);
   std::tuple<int, int, int, int> get_node_id_range(int x1, int x2, int y1, int y2);
@@ -81,16 +81,19 @@ class LmLayerGrid
   // setter
 
   // operator
-  LmNode& findNode(int x, int y);
+  LmNode* findNode(int x, int y);
   std::pair<int, int> findNodeID(int x, int y);
   int findNodeID(int value, bool b_row_id, SideType side_type = SideType::kNone);
 
   std::pair<int, int> buildNodeMatrix(int order);
 
+  int calculate_x(int col);
+  int calculate_y(int row);
+
  private:
   LmLayerGridInfo _info;
 
-  std::vector<std::vector<LmNode>> _node_matrix;
+  std::vector<std::vector<LmNode*>> _node_matrix;
 };
 
 }  // namespace ilm

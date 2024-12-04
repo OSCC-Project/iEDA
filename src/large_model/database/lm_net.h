@@ -43,7 +43,6 @@ class LmNetWire
   // getter
   std::pair<LmNode*, LmNode*>& get_connected_nodes() { return _node_pair; }
   std::vector<std::pair<LmNode*, LmNode*>>& get_paths() { return _paths; }
-  bool has_via() { return _has_via; }
 
   // setter
   void set_start(LmNode* node) { _node_pair.first = node; }
@@ -57,8 +56,6 @@ class LmNetWire
   std::pair<LmNode*, LmNode*> _node_pair;
 
   std::vector<std::pair<LmNode*, LmNode*>> _paths;
-
-  bool _has_via = false;
 };
 
 class LmNet
@@ -71,7 +68,6 @@ class LmNet
   int get_net_id() { return _net_id; }
   std::vector<LmNetWire>& get_wires() { return _wires; }
   std::vector<int>& get_pin_ids() { return _pin_ids; }
-  bool has_via() { return _has_via; }
 
   // setter
   void set_net_id(int net_id) { _net_id = net_id; }
@@ -85,7 +81,6 @@ class LmNet
   int _net_id = -1;
   std::vector<LmNetWire> _wires;
   std::vector<int> _pin_ids;
-  bool _has_via = false;
 };
 
 class LmGraph

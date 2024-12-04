@@ -37,24 +37,31 @@ std::pair<int, int> LmLayerGrid::buildNodeMatrix(int order)
   _info.node_x_start = _info.x_start % _info.x_step;
   _info.node_y_start = _info.y_start % _info.y_step;
 
-  int row = 0;
-  for (int y = _info.node_y_start; y < _info.ury; y = y + _info.y_step, ++row) {
-    std::vector<LmNode> row_nodes;
-    int col = 0;
-    for (int x = _info.node_x_start; x < _info.urx; x = x + _info.x_step, ++col) {
-      LmNode lm_node;
+  int row_num = (_info.ury - _info.node_y_start) / _info.y_step;
+  int col_num = (_info.urx - _info.node_x_start) / _info.x_step;
 
-      lm_node.set_col_id(col);
-      lm_node.set_row_id(row);
-      lm_node.set_x(x);
-      lm_node.set_y(y);
-      lm_node.set_layer_id(order);
+  _node_matrix = std::vector<std::vector<LmNode*>>(row_num, std::vector<LmNode*>(col_num, nullptr));
 
-      row_nodes.push_back(lm_node);
-    }
+  // #pragma omp parallel for schedule(dynamic)
+  //   for (int y = _info.node_y_start; y < _info.ury; y = y + _info.y_step) {
+  //     std::vector<LmNode> row_nodes;
+  //     int row = (y - _info.node_y_start) / _info.y_step;
+  //     auto& lm_node_row = _node_matrix[row];
+  //     int col = 0;
+  //     for (int x = _info.node_x_start; x < _info.urx; x = x + _info.x_step, ++col) {
+  //       LmNode& lm_node = lm_node_row[col];
 
-    _node_matrix.push_back(row_nodes);
-  }
+  //       lm_node.set_col_id(col);
+  //       lm_node.set_row_id(row);
+  //       lm_node.set_x(x);
+  //       lm_node.set_y(y);
+  //       lm_node.set_layer_id(order);
+
+  //       //   row_nodes.push_back(lm_node);
+  //     }
+
+  //     // _node_matrix.push_back(row_nodes);
+  //   }
 
   _info.node_row_num = _node_matrix.size();
   _info.node_col_num = _node_matrix[0].size();
@@ -62,8 +69,21 @@ std::pair<int, int> LmLayerGrid::buildNodeMatrix(int order)
   return std::make_pair(_info.node_row_num, _info.node_col_num);
 }
 
-LmNode& LmLayerGrid::get_node(int row_id, int col_id)
+int LmLayerGrid::calculate_x(int col)
 {
+  return _info.node_x_start + _info.x_step * col;
+}
+
+int LmLayerGrid::calculate_y(int row)
+{
+  return _info.node_y_start + _info.y_step * row;
+}
+
+LmNode* LmLayerGrid::get_node(int row_id, int col_id, bool b_create)
+{
+  if (_node_matrix[row_id][col_id] == nullptr && b_create) {
+    _node_matrix[row_id][col_id] = new LmNode();
+  }
   return _node_matrix[row_id][col_id];
 }
 
@@ -75,7 +95,7 @@ std::pair<int, int> LmLayerGrid::get_node_coodinate(int row_id, int col_id)
   return std::make_pair(x, y);
 }
 
-LmNode& LmLayerGrid::findNode(int x, int y)
+LmNode* LmLayerGrid::findNode(int x, int y)
 {
   auto [row_id, col_id] = findNodeID(x, y);
 

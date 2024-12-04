@@ -54,67 +54,6 @@ void LmNodeData::set_connect_type(LmNodeConnectType type)
   _connect_type = LmNodeConnectType((static_cast<uint8_t>(_connect_type)) | (static_cast<uint8_t>(type)));
 }
 
-bool LmNodeData::is_status(LmNodeStatus type)
-{
-  return (static_cast<uint8_t>(_status) & static_cast<uint8_t>(type)) > 0 ? true : false;
-}
-
-void LmNodeData::set_status(LmNodeStatus type, bool b_cancel)
-{
-  if (b_cancel) {
-    _status = LmNodeStatus((static_cast<uint8_t>(_status)) & (~(static_cast<uint8_t>(type))));
-  } else {
-    _status = LmNodeStatus((static_cast<uint8_t>(_status)) | (static_cast<uint8_t>(type)));
-    if (is_status(LmNodeStatus::lm_connected) && is_status(LmNodeStatus::lm_connecting)) {
-      _status = LmNodeStatus((static_cast<uint8_t>(_status)) & (~(static_cast<uint8_t>(LmNodeStatus::lm_connecting))));
-    }
-  }
-}
-
-void LmNodeData::set_direction(LmNodeDirection direction)
-{
-  _direction = LmNodeDirection((static_cast<uint8_t>(_direction)) | (static_cast<uint8_t>(direction)));
-}
-
-void LmNodeData::set_direction_visited(LmNodeDirection direction)
-{
-  _visited = LmNodeDirection((static_cast<uint8_t>(_visited)) | (static_cast<uint8_t>(direction)));
-}
-
-void LmNodeData::set_visited()
-{
-  set_direction_visited(LmNodeDirection::lm_left);
-  set_direction_visited(LmNodeDirection::lm_right);
-  set_direction_visited(LmNodeDirection::lm_up);
-  set_direction_visited(LmNodeDirection::lm_down);
-}
-
-bool LmNodeData::is_direction(LmNodeDirection direction)
-{
-  return (static_cast<uint8_t>(_direction) & static_cast<uint8_t>(direction)) > 0 ? true : false;
-}
-bool LmNodeData::is_direction_visited(LmNodeDirection direction)
-{
-  return (static_cast<uint8_t>(_visited) & static_cast<uint8_t>(direction)) > 0 ? true : false;
-}
-
-bool LmNodeData::is_visited()
-{
-  return is_direction_visited(LmNodeDirection::lm_left) && is_direction_visited(LmNodeDirection::lm_right)
-         && is_direction_visited(LmNodeDirection::lm_up) && is_direction_visited(LmNodeDirection::lm_down);
-}
-
-void LmNodeData::reset_direction()
-{
-  _direction = LmNodeDirection::kNone;
-  _visited = LmNodeDirection::kNone;
-}
-
-void LmNodeData::reset_visited()
-{
-  _visited = LmNodeDirection::kNone;
-}
-
 void LmNodeData::set_pin_id(int32_t id)
 {
   if (_pin_id == -1) {
@@ -129,76 +68,28 @@ void LmNodeData::set_pin_id(int32_t id)
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/// if node has more than 3 direction in routing layer, this node is steiner point
-
-bool LmNode::is_steiner_point()
+LmNodeData* LmNode::get_node_data(int net_id, bool b_create)
 {
-  int direction_num = 0;
+  //   if (net_id == -1 && _data_map.size() > 0) {
+  //     /// get first data
+  //     return &_data_map.begin()->second;
+  //   }
+  //   auto it = _data_map.find(net_id);
+  //   if (it != _data_map.end()) {
+  //     return &it->second;
+  //   } else {
+  //     if (b_create) {
+  //       LmNodeData data;
+  //       data.set_net_id(net_id);
+  //       addNodeData(data);
+  //     }
+  //   }
+  //   return &_data_map.find(net_id)->second;
+  if (_node_data == nullptr && b_create) {
+    _node_data = new LmNodeData();
+  }
 
-  uint8_t direction = static_cast<uint8_t>(_node_data.get_direction());
-  direction_num = (direction & static_cast<uint8_t>(LmNodeDirection::lm_left)) > 0 ? direction_num + 1 : direction_num;
-  direction_num = (direction & static_cast<uint8_t>(LmNodeDirection::lm_right)) > 0 ? direction_num + 1 : direction_num;
-  direction_num = (direction & static_cast<uint8_t>(LmNodeDirection::lm_up)) > 0 ? direction_num + 1 : direction_num;
-  direction_num = (direction & static_cast<uint8_t>(LmNodeDirection::lm_down)) > 0 ? direction_num + 1 : direction_num;
-
-  return direction_num > 2 ? true : false;
-}
-/// @brief corner means has 2 and only 2 directions orthogonal
-/// @return
-bool LmNode::is_corner()
-{
-  int direction_num = 0;
-
-  uint8_t direction = static_cast<uint8_t>(_node_data.get_direction());
-  bool left = (direction & static_cast<uint8_t>(LmNodeDirection::lm_left)) > 0 ? true : false;
-  bool right = (direction & static_cast<uint8_t>(LmNodeDirection::lm_right)) > 0 ? true : false;
-  bool up = (direction & static_cast<uint8_t>(LmNodeDirection::lm_up)) > 0 ? true : false;
-  bool down = (direction & static_cast<uint8_t>(LmNodeDirection::lm_down)) > 0 ? true : false;
-
-  direction_num = left && up ? direction_num + 1 : direction_num;
-  direction_num = left && down ? direction_num + 1 : direction_num;
-  direction_num = right && up ? direction_num + 1 : direction_num;
-  direction_num = right && down ? direction_num + 1 : direction_num;
-
-  return direction_num == 1 ? true : false;
-}
-
-bool LmNode::is_end_point()
-{
-  int direction_num = 0;
-
-  uint8_t direction = static_cast<uint8_t>(_node_data.get_direction());
-  direction_num = (direction & static_cast<uint8_t>(LmNodeDirection::lm_left)) > 0 ? direction_num + 1 : direction_num;
-  direction_num = (direction & static_cast<uint8_t>(LmNodeDirection::lm_right)) > 0 ? direction_num + 1 : direction_num;
-  direction_num = (direction & static_cast<uint8_t>(LmNodeDirection::lm_up)) > 0 ? direction_num + 1 : direction_num;
-  direction_num = (direction & static_cast<uint8_t>(LmNodeDirection::lm_down)) > 0 ? direction_num + 1 : direction_num;
-
-  return direction_num == 1 ? true : false;
-}
-
-/// if node has top or bottom direction, it is a via connected point
-bool LmNode::is_via()
-{
-  int direction_num = 0;
-
-  uint8_t direction = static_cast<uint8_t>(_node_data.get_direction());
-  direction_num = (direction & static_cast<uint8_t>(LmNodeDirection::lm_top)) > 0 ? direction_num + 1 : direction_num;
-  direction_num = (direction & static_cast<uint8_t>(LmNodeDirection::lm_bottom)) > 0 ? direction_num + 1 : direction_num;
-
-  return direction_num > 0 ? true : false;
-}
-
-int LmNode::getconnected_num()
-{
-  int layer_node_num = 0;
-  layer_node_num += (up != nullptr ? 1 : 0);
-  layer_node_num += (down != nullptr ? 1 : 0);
-  layer_node_num += (left != nullptr ? 1 : 0);
-  layer_node_num += (right != nullptr ? 1 : 0);
-  layer_node_num += (bottom != nullptr ? 1 : 0);
-  layer_node_num += (top != nullptr ? 1 : 0);
-
-  return layer_node_num;
+  return _node_data;
 }
 
 }  // namespace ilm

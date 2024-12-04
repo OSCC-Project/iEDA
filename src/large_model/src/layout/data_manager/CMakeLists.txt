@@ -1,7 +1,6 @@
 add_library(ilm_layout_dm
     lm_layout_dm.cpp
     lm_layout_init.cpp
-    lm_layout_opt.cpp
     lm_pattern_gen.cc
     lm_pattern_op.cc
 )

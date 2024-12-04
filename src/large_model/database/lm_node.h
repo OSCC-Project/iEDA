@@ -53,29 +53,6 @@ enum class LmNodeConnectType : uint8_t
   kMax
 };
 
-enum class LmNodeStatus : uint8_t
-{
-  kNone = 0,
-  lm_connected = 1,   /// connected points, including via, end point of wire, connected points on pins, use to describe wire end points pair
-  lm_connecting = 2,  /// points that are not end point but as a connecting point in a wire
-  lm_end_point = 4,   /// end points for wire
-  lm_fix = 8,         /// objects that no need to connect such as obs, pdn eg.
-  kMax
-};
-
-enum class LmNodeDirection : uint8_t
-{
-  kNone = 0,
-  lm_left = 1,
-  lm_right = 2,
-  lm_up = 4,
-  lm_down = 8,
-  lm_top = 16,
-  lm_bottom = 32,
-  lm_middle = 64,
-  kMax
-};
-
 class LmNodeData
 {
  public:
@@ -92,18 +69,6 @@ class LmNodeData
   bool is_delta() { return is_connect_type(LmNodeConnectType::lm_delta); }
   bool is_via() { return is_connect_type(LmNodeConnectType::lm_via); }
   bool is_enclosure() { return is_connect_type(LmNodeConnectType::lm_enclosure); }
-  LmNodeStatus get_status() { return _status; }
-  bool is_status(LmNodeStatus type);
-  bool is_connected() { return is_status(LmNodeStatus::lm_connected); }
-  bool is_connecting() { return is_status(LmNodeStatus::lm_connecting); }
-  bool is_end_point() { return is_status(LmNodeStatus::lm_end_point); }
-  bool is_fix() { return is_status(LmNodeStatus::lm_fix); }
-  LmNodeDirection get_direction() { return _direction; }
-  bool is_direction(LmNodeDirection direction);
-  bool is_direction_visited(LmNodeDirection direction);
-  bool is_visited();
-  void reset_direction();
-  void reset_visited();
 
   bool is_net() { return is_type(LmNodeTYpe::lm_net); }
   bool is_pdn() { return is_type(LmNodeTYpe::lm_pdn); }
@@ -116,21 +81,14 @@ class LmNodeData
   void set_pin_id(int32_t id);
   void set_type(LmNodeTYpe type);
   void set_connect_type(LmNodeConnectType type);
-  void set_status(LmNodeStatus status, bool b_cancel = false);
-  void set_direction(LmNodeDirection direction);
-  void set_direction_visited(LmNodeDirection direction);
-  void set_visited();
 
   // operator
 
  private:
   int32_t _net_id = -1;
-  int32_t _pin_id = -1;
+  int16_t _pin_id = -1;
   LmNodeTYpe _type = LmNodeTYpe::kNone;  /// multiple type in one node
   LmNodeConnectType _connect_type = LmNodeConnectType::kNone;
-  LmNodeStatus _status = LmNodeStatus::kNone;
-  LmNodeDirection _direction = LmNodeDirection::kNone;  /// multiple direction in one node
-  LmNodeDirection _visited = LmNodeDirection::kNone;    /// a temp data, describe visited status while travel the grid
 
   bool is_type(LmNodeTYpe type);
 };
@@ -141,31 +99,16 @@ class LmNode
   LmNode() = default;
   ~LmNode() = default;
 
-  LmNode* left = nullptr;
-  LmNode* right = nullptr;
-  LmNode* up = nullptr;
-  LmNode* down = nullptr;
-  LmNode* bottom = nullptr;
-  LmNode* top = nullptr;
-
   // getter
-  int64_t get_node_id() { return _node_id; }
   int get_x() { return _x; }
   int get_y() { return _y; }
   int get_row_id() { return _row_id; }
   int get_col_id() { return _col_id; }
   int32_t get_layer_id() { return _layer_id; }
-  int getconnected_num();
 
-  LmNodeData& get_node_data() { return _node_data; }
-
-  bool is_steiner_point();
-  bool is_corner();
-  bool is_via();
-  bool is_end_point();
+  LmNodeData* get_node_data(int net_id = -1, bool b_create = false);
 
   // setter
-  void set_node_id(int64_t id) { _node_id = id; }
   void set_x(int x) { _x = x; }
   void set_y(int y) { _y = y; }
   void set_row_id(int row_id) { _row_id = row_id; }
@@ -173,15 +116,16 @@ class LmNode
   void set_layer_id(int32_t layer_id) { _layer_id = layer_id; }
 
   // operator
+  //   void addNodeData(LmNodeData data) { _data_map.insert(std::make_pair(data.get_net_id(), data)); }
 
  private:
-  int64_t _node_id = -1;
-  int _x;
-  int _y;
-  int _row_id;  // node order of layer rows
-  int _col_id;  // node order of layer cols
-  int32_t _layer_id = -1;
-  LmNodeData _node_data;
+  int32_t _x;
+  int32_t _y;
+  int16_t _row_id;  // node order of layer rows
+  int16_t _col_id;  // node order of layer cols
+  int8_t _layer_id = -1;
+  LmNodeData* _node_data = nullptr;
+  //   std::map<int, LmNodeData> _data_map;
 };
 
 }  // namespace ilm

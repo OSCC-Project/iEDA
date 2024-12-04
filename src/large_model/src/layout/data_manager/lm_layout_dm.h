@@ -40,17 +40,6 @@ class LmLayoutDataManager
 
   void init();
   void buildPatchs();
-
-  std::map<int, LmNet> buildNetWires(bool b_graph);
-  int buildCutLayer(int layer_id, LmPatchLayer& patch_layer);
-  int buildRoutingLayer(int layer_id, LmPatchLayer& patch_layer);
-
-  void add_net_wire(int net_id, LmNetWire wire);
-  int searchEndNode(LmNode& node_connected, LmLayerGrid& grid);
-  int search_node_in_direction(LmNode& node_connected, LmNodeDirection direction, LmLayerGrid& grid);
-  LmNode* travel_grid(LmNode* node_start, LmNodeDirection direction, LmLayerGrid& grid);
-  LmNodeDirection get_corner_orthogonal_direction(LmNode* node, LmNodeDirection direction);
-  LmNodeDirection get_opposite_direction(LmNodeDirection direction);
 };
 
 }  // namespace ilm

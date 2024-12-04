@@ -133,11 +133,11 @@ void GraphCheckerBase::writeToPy(const Graph& graph, LmNet& net, const std::stri
     for (auto& path : paths) {
       auto* start = path.first;
       auto* end = path.second;
-      WireKey key = {start->get_x(), start->get_y(), start->get_layer_id(), start->get_node_data().get_pin_id(),
-                     end->get_x(),   end->get_y(),   end->get_layer_id(),   end->get_node_data().get_pin_id()};
+      WireKey key = {start->get_x(), start->get_y(), start->get_layer_id(), start->get_node_data()->get_pin_id(),
+                     end->get_x(),   end->get_y(),   end->get_layer_id(),   end->get_node_data()->get_pin_id()};
       wire_map[key] = wire;
-      WireKey key_reverse = {end->get_x(),   end->get_y(),   end->get_layer_id(),   end->get_node_data().get_pin_id(),
-                             start->get_x(), start->get_y(), start->get_layer_id(), start->get_node_data().get_pin_id()};
+      WireKey key_reverse = {end->get_x(),   end->get_y(),   end->get_layer_id(),   end->get_node_data()->get_pin_id(),
+                             start->get_x(), start->get_y(), start->get_layer_id(), start->get_node_data()->get_pin_id()};
       wire_map[key_reverse] = wire;
     }
   }
@@ -326,13 +326,13 @@ Graph LmNetChecker::convertToGraph(LmNet& net) const
     graph[start_vertex].x = start->get_x();
     graph[start_vertex].y = start->get_y();
     graph[start_vertex].layer_id = start->get_layer_id();
-    graph[start_vertex].pin_id = start->get_node_data().get_pin_id();
+    graph[start_vertex].pin_id = start->get_node_data()->get_pin_id();
 
     auto end_vertex = boost::vertex(end_id, graph);
     graph[end_vertex].x = end->get_x();
     graph[end_vertex].y = end->get_y();
     graph[end_vertex].layer_id = end->get_layer_id();
-    graph[end_vertex].pin_id = end->get_node_data().get_pin_id();
+    graph[end_vertex].pin_id = end->get_node_data()->get_pin_id();
 
     auto [edge, inserted] = boost::add_edge(start_id, end_id, graph);
 
@@ -491,13 +491,13 @@ bool LmLayoutChecker::isConnectivity()
       _graph[start_vertex].x = start->get_x();
       _graph[start_vertex].y = start->get_y();
       _graph[start_vertex].layer_id = start->get_layer_id();
-      _graph[start_vertex].pin_id = start->get_node_data().get_pin_id();
+      _graph[start_vertex].pin_id = start->get_node_data()->get_pin_id();
 
       auto end_vertex = boost::vertex(end_id, _graph);
       _graph[end_vertex].x = end->get_x();
       _graph[end_vertex].y = end->get_y();
       _graph[end_vertex].layer_id = end->get_layer_id();
-      _graph[end_vertex].pin_id = end->get_node_data().get_pin_id();
+      _graph[end_vertex].pin_id = end->get_node_data()->get_pin_id();
 
       boost::add_edge(start_id, end_id, _graph);
     }

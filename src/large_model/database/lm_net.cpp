@@ -35,9 +35,6 @@ namespace ilm {
 void LmNetWire::add_path(LmNode* node1, LmNode* node2)
 {
   _paths.push_back(std::make_pair(node1, node2));
-  if (node1->get_node_data().is_via() || node2->get_node_data().is_via()) {
-    _has_via = true;
-  }
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -45,32 +42,8 @@ void LmNetWire::add_path(LmNode* node1, LmNode* node2)
 void LmNet::addWire(LmNetWire wire)
 {
   auto& [node1, node2] = wire.get_connected_nodes();
-  bool find_1 = node1->get_node_data().get_pin_id() == -1 ? true : false;
-  bool find_2 = node2->get_node_data().get_pin_id() == -1 ? true : false;
-  for (auto pin_id : _pin_ids) {
-    if (node1->get_node_data().get_pin_id() == pin_id) {
-      find_1 = true;
-    }
-
-    if (node2->get_node_data().get_pin_id() == pin_id) {
-      find_2 = true;
-    }
-
-    if (find_1 && find_2) {
-      break;
-    }
-  }
-
-  if (!(find_1 && find_2)) {
-    LOG_INFO << "pin error  : " << node1->get_node_data().get_pin_id() << " , " << node2->get_node_data().get_pin_id();
-  }
   _wires.push_back(wire);
-
-  if (wire.has_via()) {
-    _has_via = true;
-  }
 }
-
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
