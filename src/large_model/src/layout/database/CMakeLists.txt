@@ -3,13 +3,12 @@ add_library(ilm_layout_db
     lm_layer.cpp
     lm_layer_grid.cpp
     lm_patch.cpp
-    lm_node.cpp
-    lm_net.cpp
 )
 
 target_link_libraries(ilm_layout_db
     PUBLIC
     log
+    ilm_db
 )
 
 target_include_directories(ilm_layout_db

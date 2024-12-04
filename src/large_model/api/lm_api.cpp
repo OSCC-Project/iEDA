@@ -46,11 +46,11 @@ std::map<int, LmNet> LargeModelApi::getGraph(std::string path)
   return large_model.getGraph(path);
 }
 
-bool LargeModelApi::buildLargeModelFeature(const std::string path)
+bool LargeModelApi::buildLargeModelFeature(const std::string dir)
 {
-  //   LargeModel large_model;
+  LargeModel large_model;
 
-  //   large_model.buildLayoutData(path);
+  large_model.buildFeature(dir);
 
   return true;
 }

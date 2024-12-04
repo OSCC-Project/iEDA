@@ -31,6 +31,7 @@ class LargeModel
   bool buildLayoutData(const std::string path);
   bool buildGraphData(const std::string path);
   std::map<int, LmNet> getGraph(std::string path);
+  void buildFeature(const std::string dir);
 
  private:
   LmDataManager _data_manager;  /// top module data manager

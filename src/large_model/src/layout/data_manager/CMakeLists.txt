@@ -17,6 +17,7 @@ target_link_libraries(ilm_layout_dm
     geometry_db
     log
     usage
+    ilm_db
     ilm_layout_db
     ${OpenCV_LIBS}
 )

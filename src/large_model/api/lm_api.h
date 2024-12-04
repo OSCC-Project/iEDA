@@ -29,7 +29,7 @@ class LargeModelApi
 
   bool buildLargeModelLayoutData(const std::string path);
   bool buildLargeModelGraphData(const std::string path);
-  bool buildLargeModelFeature(const std::string path);
+  bool buildLargeModelFeature(const std::string dir);
 
   std::map<int, LmNet> getGraph(std::string path = "");
 
