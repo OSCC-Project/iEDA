@@ -17,6 +17,10 @@
 
 #include "lm_dm.h"
 
+#include "Log.hh"
+#include "lm_graph_check.hh"
+#include "lm_file.h"
+
 namespace ilm {
 
 bool LmDataManager::buildLayoutData(const std::string path)
@@ -28,12 +32,28 @@ bool LmDataManager::buildLayoutData(const std::string path)
 bool LmDataManager::buildGraphData(const std::string path)
 {
   LmLayoutDataManager layout_dm;
-  return layout_dm.buildGraphData(path);
+  bool b_success = layout_dm.buildGraphData(path);
+
+  auto& graph = layout_dm.get_graph();
+
+  if (graph.size() > 0) {
+    // connectiviy check
+    LmLayoutChecker checker;
+    LOG_ERROR_IF(!checker.checkLayout(graph)) << "Graph is not connected";
+    /// save to path
+    LmLayoutFileIO file_io;
+    file_io.saveJson(path, graph);
+  }
+
+  //   LmGraphDataManager dm;
+  //   return dm.buildGraphData(path);
+
+  return b_success;
 }
 
 std::map<int, LmNet> LmDataManager::getGraph(std::string path)
 {
-  LmLayoutDataManager layout_dm;
+  LmGraphDataManager layout_dm;
   return layout_dm.get_graph(path);
 }
 

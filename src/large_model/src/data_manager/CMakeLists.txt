@@ -1,11 +1,13 @@
 add_library(ilm_dm
     lm_dm.cpp
+    lm_file.cpp
 )
 
 target_link_libraries(ilm_dm
     PUBLIC
     ilm_layout_dm
     ilm_layout_db
+    ilm_graph_dm
 )
 
 target_include_directories(ilm_dm

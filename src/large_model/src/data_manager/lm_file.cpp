@@ -15,7 +15,7 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 
-#include "lm_layout_file.h"
+#include "lm_file.h"
 
 #include <cstring>
 #include <fstream>

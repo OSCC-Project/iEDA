@@ -21,7 +21,7 @@
  * @date 2024-11-15
  * @brief Check layout data (connectivity of nets, wires, etc.), and provide interfaces for graph construction.
  */
-#include "lm_layout_check.hh"
+#include "lm_graph_check.hh"
 
 #include <boost/graph/connected_components.hpp>
 #include <boost/graph/graphviz.hpp>

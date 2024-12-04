@@ -17,6 +17,7 @@
 #pragma once
 #include <string>
 
+#include "lm_graph_dm.h"
 #include "lm_layout_dm.h"
 #include "lm_net.h"
 

@@ -14,51 +14,30 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
+#pragma once
+#include <string>
 
-#include "large_model.h"
-
-#include "Log.hh"
-#include "idm.h"
+#include "IdbGeometry.h"
+#include "IdbLayerShape.h"
+#include "IdbPins.h"
+#include "IdbTrackGrid.h"
+#include "IdbVias.h"
+#include "lm_layout.h"
+#include "lm_patch.h"
 
 namespace ilm {
-LargeModel::LargeModel()
+
+class LmGraphInit
 {
-  initLog();
-}
+ public:
+  LmGraphInit(LmLayout* layout) : _layout(layout) {}
+  ~LmGraphInit() = default;
+  void init();
 
-void LargeModel::initLog(std::string log_path)
-{
-  char config[] = "large model";
-  char* argv[] = {config};
-
-  if (log_path == "") {
-    log_path = dmInst->get_config().get_output_path() + "/log/";
-  }
-
-  ieda::Log::init(argv, log_path);
-}
-
-bool LargeModel::buildLayoutData(const std::string path)
-{
-  bool b_success = _data_manager.buildLayoutData(path);
-
-  return b_success;
-}
-
-bool LargeModel::buildGraphData(const std::string path)
-{
-  return _data_manager.buildGraphData(path);
-}
-
-std::map<int, LmNet> LargeModel::getGraph(std::string path)
-{
-  return _data_manager.getGraph(path);
-}
-
-void LargeModel::buildFeature(const std::string dir)
-{
-  /// build graph
-  buildGraphData(dir + "/layout_graph.json");
-}
+ private:
+  LmLayout* _layout;
+  int64_t _node_id = 0;
+  int error_pin_num = 0;
+};
 
 }  // namespace ilm

@@ -18,8 +18,7 @@
 #include "lm_layout_dm.h"
 
 #include "Log.hh"
-#include "lm_layout_check.hh"
-#include "lm_layout_file.h"
+#include "lm_graph_check.hh"
 #include "lm_layout_init.h"
 #include "lm_layout_opt.h"
 #include "omp.h"
@@ -43,16 +42,6 @@ bool LmLayoutDataManager::buildGraphData(const std::string path)
   LmLayoutOptimize wire_opt(&_layout);
   wire_opt.checkPinConnection();
   wire_opt.wirePruning();
-
-  if (get_graph().size() > 0) {
-    // connectiviy check
-    LmLayoutChecker checker;
-    LOG_ERROR_IF(!checker.checkLayout(get_graph())) << "Graph is not connected";
-    /// save to path
-    LmLayoutFileIO file_io;
-    return file_io.saveJson(path, get_graph());
-  }
-  return false;
 }
 
 void LmLayoutDataManager::init()
