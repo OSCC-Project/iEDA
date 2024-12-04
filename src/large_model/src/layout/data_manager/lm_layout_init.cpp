@@ -997,6 +997,7 @@ void LmLayoutInit::initNets(bool init_delta)
     int pin_id = 0;
     if (false == init_delta) {
       for (auto* idb_inst_pin : idb_net->get_instance_pin_list()->get_pin_list()) {
+        transPin(idb_inst_pin, net_id, pin_id);
         if (lm_net != nullptr) {
           lm_net->addPinId(pin_id);
         }
@@ -1005,6 +1006,7 @@ void LmLayoutInit::initNets(bool init_delta)
       }
 
       for (auto* io_pin : idb_net->get_io_pins()->get_pin_list()) {
+        transPin(io_pin, net_id, pin_id, true);
         if (lm_net != nullptr) {
           lm_net->addPinId(pin_id);
         }
