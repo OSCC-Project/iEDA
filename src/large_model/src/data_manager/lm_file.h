@@ -24,12 +24,17 @@ namespace ilm {
 class LmLayoutFileIO
 {
  public:
-  LmLayoutFileIO() {}
+  LmLayoutFileIO(std::string dir) { _dir = dir; }
   ~LmLayoutFileIO() = default;
 
-  bool saveJson(std::string path, std::map<int, LmNet>& net_map);
+  bool saveJson(std::map<int, LmNet>& net_map);
 
  private:
+  std::string _dir = "";
+
+  bool saveJsonNets(std::map<int, LmNet>& net_map);
+
+  void makeDir(std::string dir);
 };
 
 }  // namespace ilm

@@ -23,7 +23,7 @@
 #include "usage.hh"
 
 namespace ilm {
-bool LmLayoutDataManager::buildLayoutData(const std::string path)
+bool LmLayoutDataManager::buildLayoutData()
 {
   init();
   buildPatchs();
@@ -31,9 +31,11 @@ bool LmLayoutDataManager::buildLayoutData(const std::string path)
   return true;
 }
 
-bool LmLayoutDataManager::buildGraphData(const std::string path)
+bool LmLayoutDataManager::buildGraphData()
 {
   init();
+
+  return true;
 }
 
 void LmLayoutDataManager::init()

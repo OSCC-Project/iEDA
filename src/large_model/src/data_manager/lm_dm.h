@@ -30,7 +30,7 @@ class LmDataManager
   ~LmDataManager() = default;
 
   bool buildLayoutData(const std::string path);
-  bool buildGraphData(const std::string path);
+  bool buildGraphData(const std::string dir);
   std::map<int, LmNet> getGraph(std::string path);
 
  private:

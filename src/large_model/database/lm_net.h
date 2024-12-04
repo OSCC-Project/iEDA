@@ -34,15 +34,53 @@
 
 namespace ilm {
 
+struct LmNetWireFeature
+{
+  int wire_width = 0;
+  int wire_len = 0;
+  int drc_num = 0;
+  double R = 0.0;
+  double C = 0.0;
+  double power = 0.0;
+  double delay = 0.0;
+  double slew = 0.0;
+  double congestion = 0.0;
+};
+
+struct LmNetFeature
+{
+  int llx = 0;
+  int lly = 0;
+  int urx = 0;
+  int ury = 0;
+  int wire_len = 0;
+  int via_num = 0;
+  int drc_num = 0;
+  double R = 0.0;
+  double C = 0.0;
+  double power = 0.0;
+  double delay = 0.0;
+  double slew = 0.0;
+  int fanout = 0;
+};
+
+static int64_t wire_id_index = 0;
+
 class LmNetWire
 {
  public:
-  LmNetWire(LmNode* node1 = nullptr, LmNode* node2 = nullptr) { _node_pair = std::make_pair(node1, node2); };
+  LmNetWire(LmNode* node1 = nullptr, LmNode* node2 = nullptr)
+  {
+    _node_pair = std::make_pair(node1, node2);
+    _id = wire_id_index++;
+  };
   ~LmNetWire() = default;
 
   // getter
+  int64_t get_id() { return _id; }
   std::pair<LmNode*, LmNode*>& get_connected_nodes() { return _node_pair; }
   std::vector<std::pair<LmNode*, LmNode*>>& get_paths() { return _paths; }
+  LmNetWireFeature* get_feature(bool b_create = false);
 
   // setter
   void set_start(LmNode* node) { _node_pair.first = node; }
@@ -53,9 +91,12 @@ class LmNetWire
   // operator
 
  private:
+  int64_t _id = -1;
   std::pair<LmNode*, LmNode*> _node_pair;
 
   std::vector<std::pair<LmNode*, LmNode*>> _paths;
+
+  LmNetWireFeature* _feature = nullptr;
 };
 
 class LmNet
@@ -68,6 +109,7 @@ class LmNet
   int get_net_id() { return _net_id; }
   std::vector<LmNetWire>& get_wires() { return _wires; }
   std::vector<int>& get_pin_ids() { return _pin_ids; }
+  LmNetFeature* get_feature(bool b_create = false);
 
   // setter
   void set_net_id(int net_id) { _net_id = net_id; }
@@ -81,6 +123,7 @@ class LmNet
   int _net_id = -1;
   std::vector<LmNetWire> _wires;
   std::vector<int> _pin_ids;
+  LmNetFeature* _feature = nullptr;
 };
 
 class LmGraph

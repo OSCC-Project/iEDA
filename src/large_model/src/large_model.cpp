@@ -58,7 +58,7 @@ std::map<int, LmNet> LargeModel::getGraph(std::string path)
 void LargeModel::buildFeature(const std::string dir)
 {
   /// build graph
-  buildGraphData(dir + "/layout_graph.json");
+  buildGraphData(dir);
 }
 
 }  // namespace ilm
