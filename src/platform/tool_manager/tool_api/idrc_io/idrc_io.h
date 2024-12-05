@@ -26,7 +26,7 @@
 
 namespace iplf {
 
-#define drcInst (DrcIO::getInstance())
+#define drcInst DrcIO::getInstance()
 class DrcIO
 {
  public:

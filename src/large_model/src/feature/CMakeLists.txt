@@ -9,9 +9,11 @@ target_link_libraries(ilm_feature
     PUBLIC
     ilm_layout_db
     idm
+    idb
     log
     usage
     ilm_util
+    tool_api_idrc
 )
 
 target_include_directories(ilm_feature

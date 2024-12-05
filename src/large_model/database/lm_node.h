@@ -53,6 +53,11 @@ enum class LmNodeConnectType : uint8_t
   kMax
 };
 
+struct LmNodeFeature
+{
+  uint8_t drc_num = 0;
+};
+
 class LmNodeData
 {
  public:
@@ -64,12 +69,14 @@ class LmNodeData
   int32_t get_pin_id() { return _pin_id; }
   LmNodeTYpe get_type() { return _type; }
   LmNodeConnectType get_connect_type() { return _connect_type; }
+  LmNodeFeature& get_feature(){return _feature;}
   bool is_connect_type(LmNodeConnectType type);
   bool is_wire() { return is_connect_type(LmNodeConnectType::lm_wire); }
   bool is_delta() { return is_connect_type(LmNodeConnectType::lm_delta); }
   bool is_via() { return is_connect_type(LmNodeConnectType::lm_via); }
   bool is_enclosure() { return is_connect_type(LmNodeConnectType::lm_enclosure); }
 
+  bool is_type(LmNodeTYpe type);
   bool is_net() { return is_type(LmNodeTYpe::lm_net); }
   bool is_pdn() { return is_type(LmNodeTYpe::lm_pdn); }
   bool is_pin() { return is_type(LmNodeTYpe::lm_pin); }
@@ -88,9 +95,8 @@ class LmNodeData
   int32_t _net_id = -1;
   int16_t _pin_id = -1;
   LmNodeTYpe _type = LmNodeTYpe::kNone;  /// multiple type in one node
-  LmNodeConnectType _connect_type = LmNodeConnectType::kNone;
-
-  bool is_type(LmNodeTYpe type);
+  LmNodeConnectType _connect_type = LmNodeConnectType::kNone; 
+  LmNodeFeature _feature;
 };
 
 class LmNode

@@ -71,14 +71,19 @@ void LargeModel::buildFeature(const std::string dir)
   bool check_ok = _data_manager.checkData();
 
   /// build feature
-  generateFeature();
+  generateFeature(dir);
 
   /// save
   _data_manager.saveData(dir);
 }
 
-void LargeModel::generateFeature()
+void LargeModel::generateFeature(const std::string dir)
 {
+  LmFeature feature(&_data_manager.layout_dm.get_layout(), dir);
+
+  feature.buildFeatureDrc();
+  feature.buildFeatureTiming();
+  feature.buildFeatureStatis();
 }
 
 }  // namespace ilm

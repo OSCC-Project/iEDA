@@ -38,7 +38,7 @@ class LargeModel
 
   void initLog(std::string log_path = "");
 
-  void generateFeature();
+  void generateFeature(const std::string dir);
 };
 
 }  // namespace ilm

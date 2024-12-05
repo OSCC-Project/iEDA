@@ -27,15 +27,16 @@ namespace ilm {
 class LmFeature
 {
  public:
-  LmFeature(LmLayout* layout) { _layout = layout; }
+  LmFeature(LmLayout* layout, std::string dir) { _layout = layout; _dir= dir;}
   ~LmFeature() = default;
 
-  void buildFeatureDrc(std::string drc_path);
+  void buildFeatureDrc(std::string drc_path = "");
   void buildFeatureTiming();
   void buildFeatureStatis();
 
  private:
   LmLayout* _layout;
+  std::string _dir;
 };
 
 }  // namespace ilm

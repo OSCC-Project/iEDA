@@ -36,6 +36,9 @@ class LmFeatureDrc
  private:
   LmLayout* _layout;
   std::string _drc_path;
+
+  void markNodes();
+  void markNetsAndWires();
 };
 
 }  // namespace ilm

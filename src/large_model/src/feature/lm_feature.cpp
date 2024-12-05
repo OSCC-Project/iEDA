@@ -17,10 +17,21 @@
 
 #include "lm_feature.h"
 
+#include "Log.hh"
+#include "idm.h"
+
 namespace ilm {
 
 void LmFeature::buildFeatureDrc(std::string drc_path)
 {
+  if (drc_path == "") {
+    drc_path = _dir + "/" + dmInst->get_idb_design()->get_design_name() + "_route_baseline_drc.json";
+  }
+
+  LOG_INFO << "buildFeatureDrc : " << drc_path;
+
+  //   drc_path = "/data/project_share/dataset_baseline/aes/workspace/output/iEDA/feature/aes_route_baseline_drc.json";
+
   LmFeatureDrc feature_drc(_layout, drc_path);
 
   feature_drc.build();
@@ -33,7 +44,8 @@ void LmFeature::buildFeatureTiming()
   feature_timing.build();
 }
 
-void LmFeature::buildFeatureStatis(){
+void LmFeature::buildFeatureStatis()
+{
   LmFeatureStatis feature_statis(_layout);
 
   feature_statis.build();
