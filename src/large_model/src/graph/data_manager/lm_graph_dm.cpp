@@ -19,6 +19,7 @@
 
 #include "Log.hh"
 #include "lm_graph_check.hh"
+#include "lm_net_graph_gen.hh"
 #include "lm_graph_init.h"
 #include "omp.h"
 #include "usage.hh"
@@ -27,7 +28,8 @@ namespace ilm {
 
 bool LmGraphDataManager::buildGraphData(const std::string path)
 {
-  return false;
+  LmNetGraphGenerator gen;
+  auto wire_graphs = gen.buildGraphs();
 }
 
 }  // namespace ilm
