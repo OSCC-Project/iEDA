@@ -33,7 +33,6 @@ class LmLayoutDataManager
   std::map<int, LmNet>& get_graph() { return _layout.get_graph().get_net_map(); }
 
   bool buildLayoutData();
-  bool buildGraphData();
 
  private:
   LmLayout _layout;

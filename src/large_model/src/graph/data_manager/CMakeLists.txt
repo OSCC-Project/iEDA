@@ -1,6 +1,5 @@
 add_library(ilm_graph_dm
     lm_graph_dm.cpp
-    lm_graph_init.cpp
     lm_graph_check.cc
     lm_net_graph_gen.cc
 )
@@ -17,6 +16,7 @@ target_link_libraries(ilm_graph_dm
     ilm_db
     ilm_dm
     ilm_layout_db
+    ilm_util
 )
 
 target_include_directories(ilm_graph_dm

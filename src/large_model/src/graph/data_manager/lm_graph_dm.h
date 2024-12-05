@@ -26,16 +26,15 @@ namespace ilm {
 class LmGraphDataManager
 {
  public:
-  LmGraphDataManager() {}
+  LmGraphDataManager(LmLayout* layout) { _layout = layout; }
   ~LmGraphDataManager() = default;
 
-  LmLayout& get_layout() { return _layout; }
-  std::map<int, LmNet>& get_graph(std::string path = "") { return _layout.get_graph().get_net_map(); }
+  std::map<int, LmNet>& get_graph() { return _layout->get_graph().get_net_map(); }
 
-  bool buildGraphData(const std::string path);
+  bool buildGraphData();
 
  private:
-  LmLayout _layout;
+  LmLayout* _layout;
 };
 
 }  // namespace ilm

@@ -20,16 +20,24 @@
 #include "Log.hh"
 #include "lm_graph_check.hh"
 #include "lm_net_graph_gen.hh"
-#include "lm_graph_init.h"
 #include "omp.h"
 #include "usage.hh"
 
 namespace ilm {
 
-bool LmGraphDataManager::buildGraphData(const std::string path)
+bool LmGraphDataManager::buildGraphData()
 {
   LmNetGraphGenerator gen;
   auto wire_graphs = gen.buildGraphs();
+
+  auto& layout_graph = _layout->get_graph();
+  for (auto wire : wire_graphs) {
+    auto net_id = 0;
+    LmNetWire lm_wire;
+    layout_graph.add_net_wire(net_id, lm_wire);
+  }
+
+  return true;
 }
 
 }  // namespace ilm

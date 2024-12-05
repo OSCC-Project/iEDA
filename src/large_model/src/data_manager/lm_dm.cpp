@@ -23,17 +23,15 @@
 
 namespace ilm {
 
-bool LmDataManager::buildLayoutData(const std::string path)
+bool LmDataManager::buildLayoutData()
 {
   return layout_dm.buildLayoutData();
 }
 
-bool LmDataManager::buildGraphData(const std::string dir)
+bool LmDataManager::buildGraphData()
 {
-  bool b_success = layout_dm.buildGraphData();
-
-  //   LmGraphDataManager dm;
-  //   return dm.buildGraphData(path);
+  LmGraphDataManager graph_dm(&layout_dm.get_layout());
+  bool b_success = graph_dm.buildGraphData();
 
   return b_success;
 }

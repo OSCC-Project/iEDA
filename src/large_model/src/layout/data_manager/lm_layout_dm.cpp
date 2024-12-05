@@ -31,13 +31,6 @@ bool LmLayoutDataManager::buildLayoutData()
   return true;
 }
 
-bool LmLayoutDataManager::buildGraphData()
-{
-  init();
-
-  return true;
-}
-
 void LmLayoutDataManager::init()
 {
   LmLayoutInit layout_init(&_layout);

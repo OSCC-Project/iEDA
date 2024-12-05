@@ -27,13 +27,12 @@ class LmDataManager
 {
  public:
   LmLayoutDataManager layout_dm;
-  LmGraphDataManager graph_dm;
 
   LmDataManager() {}
   ~LmDataManager() = default;
 
-  bool buildLayoutData(const std::string path);
-  bool buildGraphData(const std::string dir);
+  bool buildLayoutData();
+  bool buildGraphData();
   std::map<int, LmNet> getGraph(std::string path);
 
   bool checkData();

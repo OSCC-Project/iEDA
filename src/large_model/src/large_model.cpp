@@ -41,14 +41,14 @@ void LargeModel::initLog(std::string log_path)
 
 bool LargeModel::buildLayoutData(const std::string path)
 {
-  bool b_success = _data_manager.buildLayoutData(path);
+  bool b_success = _data_manager.buildLayoutData();
 
   return b_success;
 }
 
 bool LargeModel::buildGraphData(const std::string path)
 {
-  bool b_success = _data_manager.buildGraphData(path);
+  bool b_success = _data_manager.buildGraphData();
 
   _data_manager.checkData();
 
@@ -64,8 +64,11 @@ std::map<int, LmNet> LargeModel::getGraph(std::string path)
 
 void LargeModel::buildFeature(const std::string dir)
 {
+  /// build layout data
+  _data_manager.buildLayoutData();
+
   /// build graph
-  _data_manager.buildGraphData(dir);
+  _data_manager.buildGraphData();
 
   /// check data
   bool check_ok = _data_manager.checkData();
