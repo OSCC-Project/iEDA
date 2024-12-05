@@ -72,7 +72,7 @@
 
 ---
 
-## **Papers and Presentations**
+## **Papers and Presentations**  [[See more](https://ieda.oscc.cc/en/research/achieves/papers.html)]
 - iRT: Net Resource Allocation: A Desirable Initial Routing Step, DAC, 2024
 - iCTS: Toward Controllable Hierarchical Clock Tree Synthesis with Skew-Latency-Load Tree, DAC, 2024
 - AiEDA: An Open-source AI-native EDA Library, ISEDA, 2024
@@ -83,11 +83,12 @@
 - iEDA: An Open-source Intelligent Physical Implementation Toolkit and Library, ISEDA, 2023. (BPA) \[[paper][iEDA-paper], [slides][iEDA-slides]\]
 
 
-# **iEDA User Guide**
+
+# **iEDA User Guide** 
 
 Before designing chip by iEDA，you need to obtain the execution binary of iEDA.
 
-If you need to modify iEDA through source code construction, please read in sequence.
+If you need to modify iEDA through source code construction, please read [iEDA user guide](https://ieda.oscc.cc/en/tools/ieda-platform/guide.html).
 
 You can also directly  use the latest release docker， then you can skip "1. Source code construction of iEDA".
 
