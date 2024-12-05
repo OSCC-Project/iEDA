@@ -25,25 +25,12 @@ namespace ilm {
 
 bool LmDataManager::buildLayoutData(const std::string path)
 {
-  LmLayoutDataManager layout_dm;
   return layout_dm.buildLayoutData();
 }
 
 bool LmDataManager::buildGraphData(const std::string dir)
 {
-  LmLayoutDataManager layout_dm;
   bool b_success = layout_dm.buildGraphData();
-
-  auto& graph = layout_dm.get_graph();
-
-  if (graph.size() > 0) {
-    // connectiviy check
-    LmLayoutChecker checker;
-    LOG_ERROR_IF(!checker.checkLayout(graph)) << "Graph is not connected";
-    /// save to path
-    LmLayoutFileIO file_io(dir);
-    file_io.saveJson(graph);
-  }
 
   //   LmGraphDataManager dm;
   //   return dm.buildGraphData(path);
@@ -51,10 +38,28 @@ bool LmDataManager::buildGraphData(const std::string dir)
   return b_success;
 }
 
+bool LmDataManager::checkData()
+{
+  auto& graph = layout_dm.get_graph();
+
+  if (graph.size() > 0) {
+    // connectiviy check
+    LmLayoutChecker checker;
+    return checker.checkLayout(graph);
+  }
+
+  return false;
+}
+
 std::map<int, LmNet> LmDataManager::getGraph(std::string path)
 {
-  LmGraphDataManager layout_dm;
-  return layout_dm.get_graph(path);
+  return layout_dm.get_graph();
+}
+
+void LmDataManager::saveData(const std::string dir)
+{
+  LmLayoutFileIO file_io(dir);
+  file_io.saveJson(layout_dm.get_graph());
 }
 
 }  // namespace ilm

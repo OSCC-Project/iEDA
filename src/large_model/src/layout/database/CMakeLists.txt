@@ -9,6 +9,7 @@ target_link_libraries(ilm_layout_db
     PUBLIC
     log
     ilm_db
+    ilm_util
 )
 
 target_include_directories(ilm_layout_db

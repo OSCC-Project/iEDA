@@ -16,6 +16,7 @@ target_link_libraries(ilm_layout_dm
     usage
     ilm_db
     ilm_layout_db
+    ilm_util
     ${OpenCV_LIBS}
 )
 

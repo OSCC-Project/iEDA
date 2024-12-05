@@ -26,6 +26,9 @@ namespace ilm {
 class LmDataManager
 {
  public:
+  LmLayoutDataManager layout_dm;
+  LmGraphDataManager graph_dm;
+
   LmDataManager() {}
   ~LmDataManager() = default;
 
@@ -33,7 +36,8 @@ class LmDataManager
   bool buildGraphData(const std::string dir);
   std::map<int, LmNet> getGraph(std::string path);
 
- private:
+  bool checkData();
+  void saveData(const std::string dir);
 };
 
 }  // namespace ilm

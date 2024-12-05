@@ -44,7 +44,7 @@ class LmLayoutInit
   void initDie();
   void initLayers();
   void initTracks(std::string layername = "M2");
-  void initTrackGrid(idb::IdbTrackGrid* idb_track_grid, LmLayerGrid& lm_grid);
+  void initTrackGrid(idb::IdbTrackGrid* idb_track_grid);
   void buildPatchGrid();
   void initPDN();
   void initInstances();

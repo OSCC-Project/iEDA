@@ -26,6 +26,7 @@
 #include "IdbSpecialWire.h"
 #include "Log.hh"
 #include "idm.h"
+#include "lm_grid_info.h"
 #include "omp.h"
 #include "usage.hh"
 
@@ -79,10 +80,10 @@ void LmLayoutInit::initDie()
     patch_layer.set_ury(idb_die->get_ury());
 
     auto& grid = patch_layer.get_grid();
-    grid.get_info().llx = idb_die->get_llx();
-    grid.get_info().lly = idb_die->get_lly();
-    grid.get_info().urx = idb_die->get_urx();
-    grid.get_info().ury = idb_die->get_ury();
+    gridInfoInst.llx = idb_die->get_llx();
+    gridInfoInst.lly = idb_die->get_lly();
+    gridInfoInst.urx = idb_die->get_urx();
+    gridInfoInst.ury = idb_die->get_ury();
   }
 }
 
@@ -113,7 +114,7 @@ void LmLayoutInit::initLayers()
       patch_layer.set_horizontal(idb_layer->is_routing());
 
       auto& grid = patch_layer.get_grid();
-      grid.get_info().layer_order = index;
+      grid.layer_order = index;
 
       patch_layer_map.insert(std::make_pair(index, patch_layer));
 
@@ -131,17 +132,17 @@ void LmLayoutInit::initLayers()
   LOG_INFO << "Layer number : " << index;
 }
 
-void LmLayoutInit::initTrackGrid(idb::IdbTrackGrid* idb_track_grid, LmLayerGrid& lm_grid)
+void LmLayoutInit::initTrackGrid(idb::IdbTrackGrid* idb_track_grid)
 {
   auto start = idb_track_grid->get_track()->get_start();
   auto pitch = idb_track_grid->get_track()->get_pitch();
 
   if (idb_track_grid->get_track()->is_track_vertical()) {
-    lm_grid.get_info().x_start = start;
-    lm_grid.get_info().x_step = pitch / 2;
+    gridInfoInst.x_start = start;
+    gridInfoInst.x_step = pitch / 2;
   } else {
-    lm_grid.get_info().y_start = start;
-    lm_grid.get_info().y_step = pitch / 2;
+    gridInfoInst.y_start = start;
+    gridInfoInst.y_step = pitch / 2;
   }
 }
 
@@ -161,17 +162,8 @@ void LmLayoutInit::initTracks(std::string layername)
   auto& patch_layers = _layout->get_patch_layers();
   auto& patch_layer_map = patch_layers.get_patch_layer_map();
 
-#pragma omp parallel for schedule(dynamic)
-  for (int i = 0; i < (int) patch_layer_map.size(); ++i) {
-    //   for (auto& [order, patch_layer] : patch_layer_map) {
-    auto it = patch_layer_map.begin();
-    std::advance(it, i);
-
-    auto& patch_layer = it->second;
-    auto& grid = patch_layer.get_grid();
-    initTrackGrid(idb_track_grid_prefer, grid);
-    initTrackGrid(idb_track_grid_nonprefer, grid);
-  }
+  initTrackGrid(idb_track_grid_prefer);
+  initTrackGrid(idb_track_grid_nonprefer);
 
   buildPatchGrid();
 
@@ -214,11 +206,11 @@ void LmLayoutInit::transVia(idb::IdbVia* idb_via, int net_id, LmNodeTYpe type)
   }
   auto& grid = patch_layer->get_grid();
   auto* via_coordinate = idb_via->get_coordinate();
-  auto [row, col] = grid.findNodeID(via_coordinate->get_x(), via_coordinate->get_y());
+  auto [row, col] = gridInfoInst.findNodeID(via_coordinate->get_x(), via_coordinate->get_y());
 
   auto* node = grid.get_node(row, col, true);
-  node->set_x(grid.calculate_x(col));
-  node->set_y(grid.calculate_y(row));
+  node->set_x(gridInfoInst.calculate_x(col));
+  node->set_y(gridInfoInst.calculate_y(row));
   node->set_col_id(col);
   node->set_row_id(row);
   node->set_layer_id(order);
@@ -310,14 +302,14 @@ void LmLayoutInit::initPDN()
             continue;
           }
           auto& grid = patch_layer->get_grid();
-          auto [row_1, row_2, co_1, col_2] = grid.get_node_id_range(ll_x, ur_x, ll_y, ur_y);
+          auto [row_1, row_2, co_1, col_2] = gridInfoInst.get_node_id_range(ll_x, ur_x, ll_y, ur_y);
           for (int row = row_1; row <= row_2; ++row) {
             for (int col = co_1; col <= col_2; ++col) {
               /// set node data
               auto* node = grid.get_node(row, col, true);
               LmNodeData* node_data = node->get_node_data(-1, true);
-              node->set_x(grid.calculate_x(col));
-              node->set_y(grid.calculate_y(row));
+              node->set_x(gridInfoInst.calculate_x(col));
+              node->set_y(gridInfoInst.calculate_y(row));
               node->set_col_id(col);
               node->set_row_id(row);
               node->set_layer_id(order);
@@ -441,10 +433,10 @@ void LmLayoutInit::transPin(idb::IdbPin* idb_pin, int net_id, int pin_id, bool b
       for (IdbRect* rect : layer_shape->get_rect_list()) {
         /// build grid
         auto& grid = patch_layer->get_grid();
-        auto [row_id, col_id] = grid.findNodeID(rect->get_middle_point_x(), rect->get_middle_point_y());
+        auto [row_id, col_id] = gridInfoInst.findNodeID(rect->get_middle_point_x(), rect->get_middle_point_y());
         auto* node = grid.get_node(row_id, col_id, true);
-        node->set_x(grid.calculate_x(col_id));
-        node->set_y(grid.calculate_y(row_id));
+        node->set_x(gridInfoInst.calculate_x(col_id));
+        node->set_y(gridInfoInst.calculate_y(row_id));
         node->set_col_id(col_id);
         node->set_row_id(row_id);
         node->set_layer_id(order);
@@ -472,13 +464,13 @@ void LmLayoutInit::transPin(idb::IdbPin* idb_pin, int net_id, int pin_id, bool b
         int lly = rect->get_low_y();
         int ury = rect->get_high_y();
 
-        auto [row_1, row_2, col_1, col_2] = grid.get_node_id_range(llx, urx, lly, ury);
+        auto [row_1, row_2, col_1, col_2] = gridInfoInst.get_node_id_range(llx, urx, lly, ury);
 
         for (int row = row_1; row <= row_2; ++row) {
           for (int col = col_1; col <= col_2; ++col) {
             auto* node = grid.get_node(row, col, true);
-            node->set_x(grid.calculate_x(col));
-            node->set_y(grid.calculate_y(row));
+            node->set_x(gridInfoInst.calculate_x(col));
+            node->set_y(gridInfoInst.calculate_y(row));
             node->set_col_id(col);
             node->set_row_id(row);
             node->set_layer_id(order);
@@ -518,14 +510,14 @@ void LmLayoutInit::transNetRect(int32_t ll_x, int32_t ll_y, int32_t ur_x, int32_
   }
 
   auto& grid = patch_layer->get_grid();
-  auto [row_1, row_2, col_1, col_2] = grid.get_node_id_range(ll_x, ur_x, ll_y, ur_y);
+  auto [row_1, row_2, col_1, col_2] = gridInfoInst.get_node_id_range(ll_x, ur_x, ll_y, ur_y);
   /// net wire must only occupy one grid size
   for (int row = row_1; row <= row_2; ++row) {
     for (int col = col_1; col <= col_2; ++col) {
       /// set node data
       auto* node = grid.get_node(row, col, true);
-      node->set_x(grid.calculate_x(col));
-      node->set_y(grid.calculate_y(row));
+      node->set_x(gridInfoInst.calculate_x(col));
+      node->set_y(gridInfoInst.calculate_y(row));
       node->set_col_id(col);
       node->set_row_id(row);
       node->set_layer_id(order);
@@ -549,13 +541,13 @@ void LmLayoutInit::transEnclosure(int32_t ll_x, int32_t ll_y, int32_t ur_x, int3
     return;
   }
   auto& grid = patch_layer->get_grid();
-  auto [row_1, row_2, col_1, col_2] = grid.get_node_id_range(ll_x, ur_x, ll_y, ur_y);
+  auto [row_1, row_2, col_1, col_2] = gridInfoInst.get_node_id_range(ll_x, ur_x, ll_y, ur_y);
 
   for (int row = row_1; row <= row_2; ++row) {
     for (int col = col_1; col <= col_2; ++col) {
       auto* node = grid.get_node(row, col, true);
-      node->set_x(grid.calculate_x(col));
-      node->set_y(grid.calculate_y(row));
+      node->set_x(gridInfoInst.calculate_x(col));
+      node->set_y(gridInfoInst.calculate_y(row));
       node->set_col_id(col);
       node->set_row_id(row);
       node->set_layer_id(order);
@@ -578,13 +570,13 @@ void LmLayoutInit::transNetDelta(int32_t ll_x, int32_t ll_y, int32_t ur_x, int32
     return;
   }
   auto& grid = patch_layer->get_grid();
-  auto [row_1, row_2, col_1, col_2] = grid.get_node_id_range(ll_x, ur_x, ll_y, ur_y);
+  auto [row_1, row_2, col_1, col_2] = gridInfoInst.get_node_id_range(ll_x, ur_x, ll_y, ur_y);
 
   for (int row = row_1; row <= row_2; ++row) {
     for (int col = col_1; col <= col_2; ++col) {
       auto* node = grid.get_node(row, col, true);
-      node->set_x(grid.calculate_x(col));
-      node->set_y(grid.calculate_y(row));
+      node->set_x(gridInfoInst.calculate_x(col));
+      node->set_y(gridInfoInst.calculate_y(row));
       node->set_col_id(col);
       node->set_row_id(row);
       node->set_layer_id(order);

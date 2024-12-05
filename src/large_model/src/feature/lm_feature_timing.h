@@ -17,28 +17,20 @@
 #pragma once
 #include <string>
 
-#include "lm_dm.h"
-#include "lm_net.h"
+#include "lm_layout.h"
 
 namespace ilm {
 
-class LargeModel
+class LmFeatureTiming
 {
  public:
-  LargeModel();
-  ~LargeModel() = default;
+  LmFeatureTiming(LmLayout* layout) { _layout = layout; }
+  ~LmFeatureTiming() = default;
 
-  bool buildLayoutData(const std::string path);
-  bool buildGraphData(const std::string path);
-  std::map<int, LmNet> getGraph(std::string path);
-  void buildFeature(const std::string dir);
+  void build();
 
  private:
-  LmDataManager _data_manager;  /// top module data manager
-
-  void initLog(std::string log_path = "");
-
-  void generateFeature();
+  LmLayout* _layout;
 };
 
 }  // namespace ilm

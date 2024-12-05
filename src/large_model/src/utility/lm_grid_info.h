@@ -30,12 +30,42 @@
 #include <string>
 #include <vector>
 
-#include "lm_node.h"
-
 namespace ilm {
 
-struct LmLayerGridInfo
+#define gridInfoInst LmGridInfo::getInst()
+
+class LmGridInfo
 {
+ public:
+  static LmGridInfo& getInst()
+  {
+    if (_info_inst == nullptr) {
+      _info_inst = new LmGridInfo();
+    }
+    return *_info_inst;
+  }
+
+  static void destroyInst();
+
+  // getter
+  std::pair<int, int> get_node_id_range(int coord1, int coord2, bool b_row_id);
+  std::tuple<int, int, int, int> get_node_id_range(int x1, int x2, int y1, int y2);
+  std::pair<int, int> get_node_coodinate(int row_id, int col_id);
+  bool is_out_of_range(int row_id, int col_id)
+  {
+    return (row_id >= 0 && row_id < node_row_num) && (col_id >= 0 && col_id < node_col_num) ? false : true;
+  }
+
+  // setter
+
+  // operator
+  std::pair<int, int> findNodeID(int x, int y);
+  int findNodeID(int value, bool b_row_id);
+
+  int calculate_x(int col);
+  int calculate_y(int row);
+
+ public:
   int layer_order;
   int llx;
   int lly;
@@ -49,38 +79,12 @@ struct LmLayerGridInfo
   int y_step;
   int node_row_num;  /// node number on rows
   int node_col_num;  /// node number on cols
-};
-
-enum class SideType
-{
-  kNone,
-  kLower,
-  kHigher,
-  kMax
-};
-
-class LmLayerGrid
-{
- public:
-  LmLayerGrid() {}
-  ~LmLayerGrid() = default;
-
-  // getter
-  std::vector<std::vector<LmNode*>>& get_node_matrix() { return _node_matrix; }
-  LmNode* get_node(int row_id, int col_id, bool b_create = false);
-
-  // setter
-
-  // operator
-  std::pair<int, int> buildNodeMatrix(int order);
-  LmNode* findNode(int x, int y);
-
-public:
-  int layer_order;
 
  private:
-  
-  std::vector<std::vector<LmNode*>> _node_matrix;
+  static LmGridInfo* _info_inst;
+
+  LmGridInfo() {}
+  ~LmGridInfo() = default;
 };
 
 }  // namespace ilm

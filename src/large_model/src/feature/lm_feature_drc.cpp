@@ -14,31 +14,24 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-#pragma once
-#include <string>
 
-#include "lm_dm.h"
-#include "lm_net.h"
+#include "lm_feature_drc.h"
+
+#include <cstring>
+#include <filesystem>
+#include <fstream>
+#include <iomanip>
+#include <iostream>
+
+#include "Log.hh"
+#include "idm.h"
+#include "omp.h"
+#include "usage.hh"
 
 namespace ilm {
 
-class LargeModel
+void LmFeatureDrc::build()
 {
- public:
-  LargeModel();
-  ~LargeModel() = default;
-
-  bool buildLayoutData(const std::string path);
-  bool buildGraphData(const std::string path);
-  std::map<int, LmNet> getGraph(std::string path);
-  void buildFeature(const std::string dir);
-
- private:
-  LmDataManager _data_manager;  /// top module data manager
-
-  void initLog(std::string log_path = "");
-
-  void generateFeature();
-};
+}
 
 }  // namespace ilm

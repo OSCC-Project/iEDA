@@ -19,6 +19,7 @@
 
 #include "Log.hh"
 #include "idm.h"
+#include "lm_feature.h"
 
 namespace ilm {
 LargeModel::LargeModel()
@@ -47,7 +48,13 @@ bool LargeModel::buildLayoutData(const std::string path)
 
 bool LargeModel::buildGraphData(const std::string path)
 {
-  return _data_manager.buildGraphData(path);
+  bool b_success = _data_manager.buildGraphData(path);
+
+  _data_manager.checkData();
+
+  _data_manager.saveData(path);
+
+  return b_success;
 }
 
 std::map<int, LmNet> LargeModel::getGraph(std::string path)
@@ -58,7 +65,20 @@ std::map<int, LmNet> LargeModel::getGraph(std::string path)
 void LargeModel::buildFeature(const std::string dir)
 {
   /// build graph
-  buildGraphData(dir);
+  _data_manager.buildGraphData(dir);
+
+  /// check data
+  bool check_ok = _data_manager.checkData();
+
+  /// build feature
+  generateFeature();
+
+  /// save
+  _data_manager.saveData(dir);
+}
+
+void LargeModel::generateFeature()
+{
 }
 
 }  // namespace ilm
