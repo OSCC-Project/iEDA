@@ -68,9 +68,6 @@ std::vector<WireGraph> LmNetGraphGenerator::buildGraphs() const
 TopoGraph LmNetGraphGenerator::buildTopoGraph(idb::IdbNet* idb_net) const
 {
   LOG_INFO << "Net name : " << idb_net->get_net_name();
-  if (idb_net->get_net_name() == "core/FE_OFN394_FE_DBTN0_core_encdec") {
-    LOG_WARNING << "core/FE_OFN394_FE_DBTN0_core_encdec";
-  }
 
   TopoGraph graph;
   // Build Instances' pins and IO pins
