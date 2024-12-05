@@ -1,0 +1,975 @@
+// ***************************************************************************************
+// Copyright (c) 2023-2025 Peng Cheng Laboratory
+// Copyright (c) 2023-2025 Institute of Computing Technology, Chinese Academy of Sciences
+// Copyright (c) 2023-2025 Beijing Institute of Open Source Chip
+//
+// iEDA is licensed under Mulan PSL v2.
+// You can use this software according to the terms and conditions of the Mulan PSL v2.
+// You may obtain a copy of Mulan PSL v2 at:
+// http://license.coscl.org.cn/MulanPSL2
+//
+// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
+// EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
+// MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+//
+// See the Mulan PSL v2 for more details.
+// ***************************************************************************************
+/**
+ * @file lm_net_graph_gen.cc
+ * @author Dawn Li (dawnli619215645@gmail.com)
+ * @version 1.0
+ * @date 2024-11-29
+ * @brief Construct graph from net data.
+ */
+
+#include "lm_net_graph_gen.hh"
+
+#include <algorithm>
+#include <boost/graph/connected_components.hpp>
+#include <boost/graph/dijkstra_shortest_paths.hpp>
+#include <boost/graph/kruskal_min_spanning_tree.hpp>
+#include <fstream>
+#include <functional>
+#include <tuple>
+
+#include "IdbPins.h"
+#include "idm.h"
+#include "log/Log.hh"
+namespace ilm {
+void LmNetGraphGenerator::initLayerMap()
+{
+  auto* idb_layout = dmInst->get_idb_layout();
+  auto* idb_layers = idb_layout->get_layers();
+  auto idb_layer_1st = dmInst->get_config().get_routing_layer_1st();
+  auto layers = idb_layers->get_layers();
+
+  // Define the range starting from the 'idb_layer_1st'
+  // and ending before the first non-routing, non-cut layer
+  auto layer_range = layers | std::views::drop_while([&](auto* layer) -> bool { return layer->get_name() != idb_layer_1st; })
+                     | std::views::take_while([&](auto* layer) -> bool { return layer->is_routing() || layer->is_cut(); });
+
+  int index = 0;
+  std::ranges::for_each(layer_range, [&](auto* layer) -> void { _layer_map[layer->get_name()] = index++; });
+
+  LOG_INFO << "Layer number : " << index;
+}
+std::vector<WireGraph> LmNetGraphGenerator::buildGraphs() const
+{
+  auto* idb_design = dmInst->get_idb_design();
+  auto* idb_nets = idb_design->get_net_list();
+  std::vector<WireGraph> graphs;
+  std::ranges::transform(idb_nets->get_net_list(), std::back_inserter(graphs), [&](auto* idb_net) -> WireGraph {
+    auto topo_graph = buildTopoGraph(idb_net);
+    auto wire_graph = buildWireGraph(topo_graph);
+    return wire_graph;
+  });
+  return graphs;
+}
+TopoGraph LmNetGraphGenerator::buildTopoGraph(idb::IdbNet* idb_net) const
+{
+  LOG_INFO << "Net name : " << idb_net->get_net_name();
+  if (idb_net->get_net_name() == "core/FE_OFN394_FE_DBTN0_core_encdec") {
+    LOG_WARNING << "core/FE_OFN394_FE_DBTN0_core_encdec";
+  }
+
+  TopoGraph graph;
+  // Build Instances' pins and IO pins
+  std::vector<idb::IdbPin*> pins;
+  std::ranges::copy(idb_net->get_instance_pin_list()->get_pin_list(), std::back_inserter(pins));
+  std::ranges::copy(idb_net->get_io_pins()->get_pin_list(), std::back_inserter(pins));
+  std::ranges::for_each(pins, [&](auto* idb_pin) -> void {
+    auto vertex = boost::add_vertex(graph);
+    auto* layout_pin = new LayoutPin();
+    graph[vertex].content = layout_pin;
+    for (auto* layer_shape : idb_pin->get_port_box_list()) {
+      auto layer_name = layer_shape->get_layer()->get_name();
+      auto layer_id = _layer_map.at(layer_name);
+      if (layer_shape->is_via()) {
+        std::ranges::for_each(layer_shape->get_rect_list(), [&](auto* rect) -> void { layout_pin->addViaCut(rect, layer_id); });
+      } else {
+        std::ranges::for_each(layer_shape->get_rect_list(), [&](auto* rect) -> void { layout_pin->addPinShape(rect, layer_id); });
+      }
+    }
+  });
+
+  // Build Wires
+  auto* idb_wires = idb_net->get_wire_list();
+  for (auto* idb_wire : idb_wires->get_wire_list()) {
+    for (auto* idb_segment : idb_wire->get_segment_list()) {
+      if (idb_segment->is_rect()) {
+        auto* coord_start = idb_segment->get_point_start();
+        auto* delta_rect = idb_segment->get_delta_rect();
+        auto* rect = new idb::IdbRect(delta_rect);
+        rect->moveByStep(coord_start->get_x(), coord_start->get_y());
+        auto layer_id = _layer_map.at(idb_segment->get_layer()->get_name());
+        auto* patch = new LayoutPatch(rect, layer_id);
+        delete rect;
+        auto vertex = boost::add_vertex(graph);
+        graph[vertex].content = patch;
+      }
+      if (idb_segment->is_via()) {
+        std::ranges::for_each(idb_segment->get_via_list(), [&](auto* idb_via) -> void {
+          auto* coord = idb_via->get_coordinate();
+          auto enclosure_bottom = idb_via->get_bottom_layer_shape();
+          auto enclosure_top = idb_via->get_top_layer_shape();
+          auto layer_shape = idb_via->get_cut_layer_shape();
+          auto layer_name = layer_shape.get_layer()->get_name();
+          auto cur_layer_id = _layer_map.at(layer_name);
+          std::vector<LayoutDefRect> bottom_shapes;
+          std::vector<LayoutDefRect> top_shapes;
+          auto* via = new LayoutVia(coord, enclosure_bottom.get_rect_list(), enclosure_top.get_rect_list(), cur_layer_id);
+          auto vertex = boost::add_vertex(graph);
+          graph[vertex].content = via;
+        });
+      }
+      if (idb_segment->is_wire()) {
+        auto* coord_start = idb_segment->get_point_start();
+        auto* coord_end = idb_segment->get_point_second();
+        auto layer_id = _layer_map.at(idb_segment->get_layer()->get_name());
+        auto* wire = new LayoutWire(coord_start, coord_end, layer_id);
+        auto vertex = boost::add_vertex(graph);
+        graph[vertex].content = wire;
+      }
+    }
+  }
+  buildConnections(graph);
+  checkConnectivity(graph);
+  return graph;
+}
+void LmNetGraphGenerator::buildConnections(TopoGraph& graph) const
+{
+  LayoutShapeManager shape_manager;
+
+  for (auto v : boost::make_iterator_range(boost::vertices(graph))) {
+    auto* content = graph[v].content;
+    if (content->is_patch) {
+      auto* patch = dynamic_cast<LayoutPatch*>(content);
+      shape_manager.addShape(patch->rect, v);
+    } else if (content->is_wire) {
+      auto* wire = dynamic_cast<LayoutWire*>(content);
+      shape_manager.addShape(LayoutDefRect(wire->start, wire->end), v);
+    } else if (content->is_via) {
+      auto* via = dynamic_cast<LayoutVia*>(content);
+      shape_manager.addShape(via->cut_path, v);
+      for (auto& bottom_shape : via->bottom_shapes) {
+        shape_manager.addShape(bottom_shape, v);
+      }
+      for (auto& top_shape : via->top_shapes) {
+        shape_manager.addShape(top_shape, v);
+      }
+    } else if (content->is_pin) {
+      auto* pin = dynamic_cast<LayoutPin*>(content);
+      for (auto& pin_shape : pin->pin_shapes) {
+        shape_manager.addShape(pin_shape, v);
+      }
+      for (auto& via_cut : pin->via_cuts) {
+        shape_manager.addShape(via_cut, v);
+      }
+    } else {
+      LOG_FATAL << "Unknown content type";
+    }
+  }
+
+  // Find intersections
+  auto connect = [&](const size_t& ref, const std::vector<size_t>& intersections) -> void {
+    LOG_FATAL_IF(intersections.empty()) << "No intersections found";
+    for (auto i : intersections) {
+      if (i != ref && !boost::edge(ref, i, graph).second) {
+        // except itself and no duplicate edge
+        boost::add_edge(ref, i, graph);
+      }
+    }
+  };
+
+  for (auto v : boost::make_iterator_range(boost::vertices(graph))) {
+    auto* content = graph[v].content;
+    if (content->is_patch) {
+      auto* patch = dynamic_cast<LayoutPatch*>(content);
+      // for patch, find the intersections of the rect
+      auto intersections = shape_manager.findIntersections(patch->rect);
+      connect(v, intersections);
+    } else if (content->is_wire) {
+      auto* wire = dynamic_cast<LayoutWire*>(content);
+      // for wire, find the intersections of the wire
+      auto intersections = shape_manager.findIntersections(wire->start, wire->end);
+      connect(v, intersections);
+    } else if (content->is_via) {
+      auto* via = dynamic_cast<LayoutVia*>(content);
+      // for via, find the intersections of the cut path, bottom shapes and top shapes
+      auto cut_intersections = shape_manager.findIntersections(via->cut_path);
+      connect(v, cut_intersections);
+      for (auto& bottom_shape : via->bottom_shapes) {
+        auto intersections = shape_manager.findIntersections(bottom_shape);
+        connect(v, intersections);
+      }
+      for (auto& top_shape : via->top_shapes) {
+        auto intersections = shape_manager.findIntersections(top_shape);
+        connect(v, intersections);
+      }
+    }
+    // skip pins because symmetry
+  }
+}
+bool LmNetGraphGenerator::checkConnectivity(const TopoGraph& graph) const
+{
+  std::vector<int> component(boost::num_vertices(graph));
+  auto num = boost::connected_components(graph, component.data());
+  if (num > 1) {
+    LOG_ERROR << "Topo Graph is not connected";
+    // toPy(graph, "/home/liweiguo/temp/file/temp_net.py");
+    return false;
+  }
+  // toPy(graph, "/home/liweiguo/temp/file/temp_net.py");
+  return true;
+}
+WireGraph LmNetGraphGenerator::buildWireGraph(const TopoGraph& graph) const
+{
+  WireGraph wire_graph;
+  WireGraphVertexMap point_to_vertex;
+  auto build_and_connect = [&](const LayoutDefPoint& start, const LayoutDefPoint& end) -> void {
+    if (!point_to_vertex.contains(start)) {
+      auto vertex = boost::add_vertex(wire_graph);
+      wire_graph[vertex].x = getX(start);
+      wire_graph[vertex].y = getY(start);
+      wire_graph[vertex].layer_id = getZ(start);
+      point_to_vertex[start] = vertex;
+    }
+    if (!point_to_vertex.contains(end)) {
+      auto vertex = boost::add_vertex(wire_graph);
+      wire_graph[vertex].x = getX(end);
+      wire_graph[vertex].y = getY(end);
+      wire_graph[vertex].layer_id = getZ(end);
+      point_to_vertex[end] = vertex;
+    }
+    // check edge exists
+    auto start_vertex = point_to_vertex[start];
+    auto end_vertex = point_to_vertex[end];
+    if (boost::edge(start_vertex, end_vertex, wire_graph).second) {
+      return;
+    }
+    auto [edge, inserted] = boost::add_edge(start_vertex, end_vertex, wire_graph);
+    if (inserted) {
+      wire_graph[edge].path.push_back({start, end});
+    }
+  };
+  // traversal all vertices
+  for (auto v : boost::make_iterator_range(boost::vertices(graph))) {
+    auto* content = graph[v].content;
+    if (content->is_patch) {
+      continue;
+    }
+    if (content->is_wire) {
+      auto* wire = dynamic_cast<LayoutWire*>(content);
+      build_and_connect(wire->start, wire->end);
+    } else if (content->is_via) {
+      auto* via = dynamic_cast<LayoutVia*>(content);
+      auto cut_path = via->cut_path;
+      build_and_connect(cut_path.first, cut_path.second);
+    } else if (content->is_pin) {
+      // only connect the pin's via cut
+      auto* pin = dynamic_cast<LayoutPin*>(content);
+      auto via_cuts = pin->via_cuts;
+      std::ranges::for_each(via_cuts, [&](const LayoutDefRect& via_cut) -> void {
+        auto center = getCenter(via_cut);
+        auto start = LayoutDefPoint(getX(center), getY(center), getZ(center) - 1);
+        auto end = LayoutDefPoint(getX(center), getY(center), getZ(center) + 1);
+        build_and_connect(start, end);
+      });
+    } else {
+      LOG_FATAL << "Unknown content type";
+    }
+  }
+  // post process
+  buildVirtualWire(graph, wire_graph, point_to_vertex);
+  reduceWireGraph(wire_graph);
+  checkConnectivity(wire_graph);
+  return wire_graph;
+}
+void LmNetGraphGenerator::buildVirtualWire(const TopoGraph& graph, WireGraph& wire_graph, WireGraphVertexMap& point_to_vertex) const
+{
+  // for each pin and patch in TopoGraph
+  std::vector<TopoGraphVertex> pins_to_process;
+  std::vector<TopoGraphVertex> patches_to_process;
+  for (auto v : boost::make_iterator_range(boost::vertices(graph))) {
+    auto* content = graph[v].content;
+    auto neighbors = boost::adjacent_vertices(v, graph);
+    size_t count = 0;
+    for (auto it = neighbors.first; it != neighbors.second; ++it) {
+      auto neighbor = *it;
+      if (graph[neighbor].content->is_wire || graph[neighbor].content->is_via) {
+        ++count;
+      }
+    }
+    if (content->is_pin) {
+      auto* pin = dynamic_cast<LayoutPin*>(content);
+      count += pin->via_cuts.size();
+      if (count > 1) {
+        pins_to_process.push_back(v);
+      }
+    }
+    if (content->is_patch && count > 1) {
+      patches_to_process.push_back(v);
+    }
+  }
+  if (pins_to_process.empty() && patches_to_process.empty()) {
+    return;
+  }
+  // if (!patches_to_process.empty()) {
+  //   LOG_WARNING << "Patch is not supported";
+  // }
+  // PIN PROCESS
+  std::ranges::for_each(pins_to_process, [&](TopoGraphVertex v) -> void {
+    auto* content = graph[v].content;
+    auto* pin = dynamic_cast<LayoutPin*>(content);
+    // only save the points in the shapes
+    auto is_in_shapes = [&](const LayoutDefPoint& point) -> bool {
+      for (auto shape : pin->pin_shapes) {
+        if (bg::intersects(shape, point)) {
+          return true;
+        }
+      }
+      return false;
+    };
+    // divide pin's shape by layer
+    std::unordered_map<int, std::vector<LayoutDefRect>> shapes_by_layer;
+    for (auto& pin_shape : pin->pin_shapes) {
+      shapes_by_layer[getLowZ(pin_shape)].push_back(pin_shape);
+    }
+    // divide via cuts, pin's via cuts and wire's end points by layer
+    std::unordered_map<int, std::vector<LayoutDefPoint>> connections_by_layer;
+    auto neighbors = boost::adjacent_vertices(v, graph);
+    for (auto it = neighbors.first; it != neighbors.second; ++it) {
+      auto neighbor = *it;
+      auto* neighbor_content = graph[neighbor].content;
+      if (neighbor_content->is_wire) {
+        auto* wire = dynamic_cast<LayoutWire*>(neighbor_content);
+        auto start = LayoutDefPoint(wire->start);
+        auto end = LayoutDefPoint(wire->end);
+        if (is_in_shapes(start)) {
+          connections_by_layer[getZ(start)].push_back(start);
+        }
+        if (is_in_shapes(end)) {
+          connections_by_layer[getZ(end)].push_back(end);
+        }
+      } else if (neighbor_content->is_via) {
+        auto* via = dynamic_cast<LayoutVia*>(neighbor_content);
+        auto cut_path = via->cut_path;
+        auto start = cut_path.first;
+        auto end = cut_path.second;
+        if (is_in_shapes(start)) {
+          connections_by_layer[getZ(start)].push_back(start);
+        }
+        if (is_in_shapes(end)) {
+          connections_by_layer[getZ(end)].push_back(end);
+        }
+      }
+    }
+    // pin's via cuts
+    for (auto& via_cut : pin->via_cuts) {
+      auto center = getCenter(via_cut);
+      auto start = LayoutDefPoint(getX(center), getY(center), getZ(center) - 1);
+      auto end = LayoutDefPoint(getX(center), getY(center), getZ(center) + 1);
+      connections_by_layer[getZ(center) - 1].push_back(start);
+      connections_by_layer[getZ(center) + 1].push_back(end);
+    }
+    // for each layer, generate connected points
+    auto drop_duplicate = [&](const std::vector<LayoutDefPoint>& points) -> std::vector<LayoutDefPoint> {
+      std::unordered_set<LayoutDefPoint, LayoutDefPointHash, LayoutDefPointEqual> point_set;
+      std::ranges::copy_if(points, std::inserter(point_set, point_set.end()),
+                           [&](const LayoutDefPoint& point) -> bool { return point_set.find(point) == point_set.end(); });
+      return std::vector<LayoutDefPoint>(point_set.begin(), point_set.end());
+    };
+    for (auto& [layer_id, shapes] : shapes_by_layer) {
+      auto& connections = connections_by_layer[layer_id];
+      connections = drop_duplicate(connections);
+      if (connections.size() < 2) {
+        continue;
+      }
+      auto paths = generateShortestPath(connections, shapes);
+      std::ranges::for_each(paths, [&](const std::vector<LayoutDefPoint>& path) -> void {
+        // add to wrie graph
+        auto start = path.front();
+        auto end = path.back();
+        std::vector<std::pair<LayoutDefPoint, LayoutDefPoint>> path_pairs;
+        for (size_t i = 0; i < path.size() - 1; ++i) {
+          path_pairs.push_back({path[i], path[i + 1]});
+        }
+        auto start_vertex = point_to_vertex[start];
+        auto end_vertex = point_to_vertex[end];
+        if (boost::edge(start_vertex, end_vertex, wire_graph).second) {
+          return;
+        }
+        auto [edge, inserted] = boost::add_edge(start_vertex, end_vertex, wire_graph);
+        if (inserted) {
+          wire_graph[edge].path = path_pairs;
+        }
+      });
+    }
+  });
+}
+void LmNetGraphGenerator::reduceWireGraph(WireGraph& graph) const
+{
+  // Step 1: Check for cycles in the graph
+  LOG_FATAL_IF(hasCycle(graph)) << "The Wire Graph has cycle";
+
+  size_t num_vertices = boost::num_vertices(graph);
+  std::vector<bool> visited(num_vertices, false);
+
+  auto is_reduce_vertex = [&](WireGraphVertex v) -> bool {
+    if (boost::degree(v, graph) != 2) {
+      return false;
+    }
+    auto neighbors = boost::adjacent_vertices(v, graph);
+    auto left = *neighbors.first;
+    auto right = *std::next(neighbors.first);
+    return graph[v].layer_id == graph[left].layer_id && graph[v].layer_id == graph[right].layer_id;
+  };
+
+  struct PathToReduce
+  {
+    std::vector<WireGraphVertex> vertices;
+    std::vector<WireGraphEdge> edges;
+  };
+
+  std::vector<PathToReduce> paths_to_reduce;
+
+  // Step 2: Start from an endpoint with degree 1 and collect a sub-path
+  WireGraphVertex start_vertex = 0;
+  for (size_t i = 0; i < num_vertices; ++i) {
+    if (boost::degree(i, graph) == 1) {
+      start_vertex = i;
+      break;
+    }
+  }
+  // Step 3: DFS from the start vertex
+  std::stack<WireGraphVertex> stack;
+  stack.push(start_vertex);
+  while (!stack.empty()) {
+    WireGraphVertex current = stack.top();
+    stack.pop();
+    visited[current] = true;
+
+    auto adj_vertices = boost::adjacent_vertices(current, graph);
+    for (auto it = adj_vertices.first; it != adj_vertices.second; ++it) {
+      WireGraphVertex v = *it;
+      if (!visited[v] && is_reduce_vertex(v)) {
+        PathToReduce path;
+        path.vertices.push_back(current);
+        path.vertices.push_back(v);
+        path.edges.push_back(boost::edge(current, v, graph).first);
+        while (is_reduce_vertex(v)) {
+          visited[v] = true;
+          auto neighbors = boost::adjacent_vertices(v, graph);
+          auto left = *neighbors.first;
+          auto right = *std::next(neighbors.first);
+          if (!visited[left]) {
+            path.vertices.push_back(left);
+            path.edges.push_back(boost::edge(v, left, graph).first);
+            v = left;
+          } else if (!visited[right]) {
+            path.vertices.push_back(right);
+            path.edges.push_back(boost::edge(v, right, graph).first);
+            v = right;
+          } else {
+            LOG_ERROR << "Cannot find a valid path to reduce";
+            break;
+          }
+        }
+        paths_to_reduce.push_back(path);
+        stack.push(v);
+      } else if (!visited[v]) {
+        stack.push(v);
+      }
+    }
+  }
+  // Step 4: Reduce the paths
+  for (const auto& path : paths_to_reduce) {
+    auto vertices = path.vertices;
+    if (vertices.size() < 3) {
+      continue;
+    }
+    auto start = vertices.front();
+    auto end = vertices.back();
+    // add edge between start and end
+    auto [edge, inserted] = boost::add_edge(start, end, graph);
+    if (inserted) {
+      graph[edge].path.clear();
+      for (auto e : path.edges) {
+        graph[edge].path.insert(graph[edge].path.end(), graph[e].path.begin(), graph[e].path.end());
+      }
+    }
+  }
+  std::vector<WireGraphVertex> vertices_to_remove;
+  std::ranges::for_each(paths_to_reduce, [&](const PathToReduce& path) -> void {
+    vertices_to_remove.insert(vertices_to_remove.end(), path.vertices.begin() + 1, path.vertices.end() - 1);
+  });
+  std::ranges::sort(vertices_to_remove, std::greater<>());
+  std::ranges::for_each(vertices_to_remove, [&](WireGraphVertex v) -> void {
+    boost::clear_vertex(v, graph);
+    boost::remove_vertex(v, graph);
+  });
+}
+
+// Helper function to check for cycles in the graph
+bool LmNetGraphGenerator::hasCycleUtil(const WireGraph& graph, WireGraphVertex v, std::vector<bool>& visited, WireGraphVertex parent) const
+{
+  visited[v] = true;
+
+  auto adj_vertices = boost::adjacent_vertices(v, graph);
+  for (auto it = adj_vertices.first; it != adj_vertices.second; ++it) {
+    WireGraphVertex adj_v = *it;
+    if (!visited[adj_v]) {
+      if (hasCycleUtil(graph, adj_v, visited, v))
+        return true;
+    } else if (adj_v != parent) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool LmNetGraphGenerator::hasCycle(const WireGraph& graph) const
+{
+  size_t num_vertices = boost::num_vertices(graph);
+  std::vector<bool> visited(num_vertices, false);
+
+  for (size_t i = 0; i < num_vertices; ++i) {
+    if (!visited[i]) {
+      if (hasCycleUtil(graph, i, visited, -1))
+        return true;
+    }
+  }
+  return false;
+}
+bool LmNetGraphGenerator::checkConnectivity(const WireGraph& graph) const
+{
+  std::vector<int> component(boost::num_vertices(graph));
+  auto num = boost::connected_components(graph, component.data());
+  if (num > 1) {
+    LOG_ERROR << "Wire Graph is not connected";
+    // toPy(graph, "/home/liweiguo/temp/file/temp_net.py");
+    return false;
+  }
+  // toPy(graph, "/home/liweiguo/temp/file/temp_net.py");
+  return true;
+}
+std::vector<std::vector<LayoutDefPoint>> LmNetGraphGenerator::generateShortestPath(const std::vector<LayoutDefPoint>& points,
+                                                                                   const std::vector<LayoutDefRect>& regions) const
+{
+  using PointSet = std::unordered_set<LayoutDefPoint, LayoutDefPointHash, LayoutDefPointEqual>;
+  PointSet path_point_set(points.begin(), points.end());
+
+  auto rtree = bgi::rtree<LayoutDefRect, bgi::quadratic<16>>();
+  std::ranges::for_each(regions, [&](const LayoutDefRect& rect) -> void { rtree.insert(rect); });
+
+  // 1. generate seg pivot between regions
+  std::ranges::for_each(regions, [&](const LayoutDefRect& rect) -> void {
+    std::vector<LayoutDefRect> intersections;
+    rtree.query(bgi::intersects(rect), std::back_inserter(intersections));
+    std::vector<LayoutDefSeg> segs;
+    std::ranges::for_each(intersections, [&](const LayoutDefRect& other) -> void {
+      if (boost::geometry::equals(rect, other)) {
+        return;
+      }
+      if (!bg::intersects(rect, other)) {
+        return;
+      }
+      LayoutDefSeg seg;
+      bg::intersection(rect, other, seg);
+      segs.push_back(seg);
+    });
+    std::ranges::for_each(segs, [&](const LayoutDefSeg& seg) -> void {
+      auto pivot = generateSegPivot(seg, rect);
+      path_point_set.insert(pivot);
+    });
+  });
+
+  // 2. generate crossroads points between points and regions
+  PointSet add_point_set;
+  std::ranges::for_each(points, [&](const LayoutDefPoint& point) -> void {
+    std::vector<LayoutDefRect> intersections;
+    rtree.query(bgi::intersects(point), std::back_inserter(intersections));
+    std::ranges::for_each(intersections, [&](const LayoutDefRect& rect) -> void {
+      auto crossroads = generateCrossroadsPoints(point, rect);
+      std::ranges::for_each(crossroads, [&](const LayoutDefPoint& crossroad) -> void { add_point_set.insert(crossroad); });
+    });
+  });
+  std::ranges::for_each(add_point_set, [&](const LayoutDefPoint& point) -> void {
+    std::vector<LayoutDefRect> intersections;
+    rtree.query(bgi::intersects(point), std::back_inserter(intersections));
+    std::ranges::for_each(intersections, [&](const LayoutDefRect& rect) -> void {
+      auto pivot = generatePointPivot(point, rect);
+      path_point_set.insert(pivot);
+    });
+  });
+
+  auto path_point_vec = std::vector<LayoutDefPoint>(path_point_set.begin(), path_point_set.end());
+  // 3. generate shortest path which connects all input {points}
+  auto paths = findByDijkstra(points, path_point_vec, regions);
+  return paths;
+}
+std::vector<std::vector<LayoutDefPoint>> LmNetGraphGenerator::findByDijkstra(const std::vector<LayoutDefPoint>& points,
+                                                                             const std::vector<LayoutDefPoint>& path_points,
+                                                                             const std::vector<LayoutDefRect>& regions) const
+{
+  // pre-process
+  using FlatPoint = bg::model::point<int, 2, bg::cs::cartesian>;
+  using FlatLine = bg::model::linestring<FlatPoint>;
+  using FlatPolygon = bg::model::polygon<FlatPoint>;
+  using FlatMultiPolygon = bg::model::multi_polygon<FlatPolygon>;
+  FlatMultiPolygon regions_polygon;
+
+  std::ranges::for_each(regions, [&](const LayoutDefRect& rect) -> void {
+    FlatPolygon polygon;
+    bg::append(polygon.outer(), FlatPoint(getLowX(rect), getLowY(rect)));
+    bg::append(polygon.outer(), FlatPoint(getHighX(rect), getLowY(rect)));
+    bg::append(polygon.outer(), FlatPoint(getHighX(rect), getHighY(rect)));
+    bg::append(polygon.outer(), FlatPoint(getLowX(rect), getHighY(rect)));
+    bg::correct(polygon);
+
+    std::vector<FlatPolygon> regions_polygon_list;
+    bg::union_(regions_polygon, polygon, regions_polygon_list);
+
+    regions_polygon.clear();
+    std::ranges::for_each(regions_polygon_list, [&](const FlatPolygon& poly) -> void { regions_polygon.push_back(poly); });
+  });
+
+  struct GridGraphVertexProperty
+  {
+    LayoutDefPoint point;
+  };
+  struct GridGraphEdgeProperty
+  {
+    int weight;
+  };
+  using GridGraph = boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS, GridGraphVertexProperty, GridGraphEdgeProperty>;
+  using GridGraphVertex = boost::graph_traits<GridGraph>::vertex_descriptor;
+  using GridVertexMap = std::unordered_map<LayoutDefPoint, GridGraphVertex, LayoutDefPointHash, LayoutDefPointEqual>;
+  GridGraph grid;
+  GridVertexMap point_to_vertex;
+  auto build_and_connect = [&](const LayoutDefPoint& start, const LayoutDefPoint& end) -> void {
+    if (!point_to_vertex.contains(start)) {
+      auto vertex = boost::add_vertex(grid);
+      grid[vertex].point = start;
+      point_to_vertex[start] = vertex;
+    }
+    if (!point_to_vertex.contains(end)) {
+      auto vertex = boost::add_vertex(grid);
+      grid[vertex].point = end;
+      point_to_vertex[end] = vertex;
+    }
+    // check edge exists
+    auto start_vertex = point_to_vertex[start];
+    auto end_vertex = point_to_vertex[end];
+    if (boost::edge(start_vertex, end_vertex, grid).second) {
+      return;
+    }
+    auto [edge, inserted] = boost::add_edge(start_vertex, end_vertex, grid);
+    if (inserted) {
+      grid[edge].weight = std::abs(getX(start) - getX(end)) + std::abs(getY(start) - getY(end));
+    }
+  };
+  // build edges between path_points in path_point_set (if e(p1, p2) is vertical or horizontal, and e(p1, p2) is in the regions)
+  for (size_t i = 0; i < path_points.size(); ++i) {
+    for (size_t j = i + 1; j < path_points.size(); ++j) {
+      auto p1 = path_points[i];
+      auto p2 = path_points[j];
+      if (getX(p1) == getX(p2) || getY(p1) == getY(p2)) {
+        FlatLine flat_line;
+        bg::append(flat_line, FlatPoint(getX(p1), getY(p1)));
+        bg::append(flat_line, FlatPoint(getX(p2), getY(p2)));
+        if (!bg::covered_by(flat_line, regions_polygon)) {
+          continue;
+        }
+        build_and_connect(p1, p2);
+      }
+    }
+  }
+  // 1. find shortest path between points, by Dijkstra (distance is edge weight)
+  auto weight_map = boost::get(&GridGraphEdgeProperty::weight, grid);
+  auto find_shortest_path = [&](const LayoutDefPoint& start, const LayoutDefPoint& end) -> std::vector<LayoutDefPoint> {
+    auto start_vertex = point_to_vertex[start];
+    auto end_vertex = point_to_vertex[end];
+    std::vector<GridGraphVertex> predecessors(boost::num_vertices(grid));
+    std::vector<int> distances(boost::num_vertices(grid));
+    boost::dijkstra_shortest_paths(grid, start_vertex,
+                                   boost::predecessor_map(predecessors.data()).distance_map(distances.data()).weight_map(weight_map));
+    std::vector<LayoutDefPoint> path;
+    for (auto v = end_vertex; v != start_vertex; v = predecessors[v]) {
+      path.push_back(grid[v].point);
+    }
+    path.push_back(start);
+    std::reverse(path.begin(), path.end());
+    return path;
+  };
+  auto calc_distance = [&](const std::vector<LayoutDefPoint>& path) -> int {
+    int distance = 0;
+    for (size_t i = 0; i < path.size() - 1; ++i) {
+      distance += std::abs(getX(path[i]) - getX(path[i + 1])) + std::abs(getY(path[i]) - getY(path[i + 1]));
+    }
+    return distance;
+  };
+  // 2. build points graph by shortest distance (for find the minimum spanning tree/path)
+  using PointGraph
+      = boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS, boost::no_property, boost::property<boost::edge_weight_t, int>>;
+  using PointGraphVertex = boost::graph_traits<PointGraph>::vertex_descriptor;
+  using PointGraphEdge = boost::graph_traits<PointGraph>::edge_descriptor;
+  PointGraph point_graph;
+  std::unordered_map<LayoutDefPoint, PointGraphVertex, LayoutDefPointHash, LayoutDefPointEqual> point_to_vertex_in_point_graph;
+  for (size_t i = 0; i < points.size(); ++i) {
+    for (size_t j = i + 1; j < points.size(); ++j) {
+      auto p1 = points[i];
+      auto p2 = points[j];
+      auto path = find_shortest_path(p1, p2);
+      auto distance = calc_distance(path);
+      auto [edge, inserted] = boost::add_edge(i, j, point_graph);
+      if (inserted) {
+        boost::put(boost::edge_weight, point_graph, edge, distance);
+      }
+    }
+  }
+  // 3. find the minimum spanning tree/path by Kruskal
+  std::vector<PointGraphEdge> spanning_tree;
+  boost::kruskal_minimum_spanning_tree(point_graph, std::back_inserter(spanning_tree));
+  // 4. check if the spanning tree is a path, and convert it to the path
+  std::vector<std::vector<LayoutDefPoint>> paths;
+  std::ranges::for_each(spanning_tree, [&](PointGraphEdge edge) -> void {
+    auto start = points[boost::source(edge, point_graph)];
+    auto end = points[boost::target(edge, point_graph)];
+    auto path = find_shortest_path(start, end);
+    paths.push_back(path);
+  });
+  return paths;
+}
+std::vector<LayoutDefPoint> LmNetGraphGenerator::generateCrossroadsPoints(const LayoutDefPoint& p, const LayoutDefRect& rect) const
+{
+  std::unordered_set<LayoutDefPoint, LayoutDefPointHash, LayoutDefPointEqual> points;
+  auto x = getX(p);
+  auto y = getY(p);
+  auto z = getZ(p);
+  auto low_x = getLowX(rect);
+  auto high_x = getHighX(rect);
+  auto low_y = getLowY(rect);
+  auto high_y = getHighY(rect);
+  points.insert(LayoutDefPoint(x, low_y, z));
+  points.insert(LayoutDefPoint(x, high_y, z));
+  points.insert(LayoutDefPoint(low_x, y, z));
+  points.insert(LayoutDefPoint(high_x, y, z));
+  return std::vector<LayoutDefPoint>(points.begin(), points.end());
+}
+LayoutDefPoint LmNetGraphGenerator::generatePointPivot(const LayoutDefPoint& p, const LayoutDefRect& rect) const
+{
+  auto x = getX(p);
+  auto y = getY(p);
+  auto z = getZ(p);
+  auto low_x = getLowX(rect);
+  auto high_x = getHighX(rect);
+  auto low_y = getLowY(rect);
+  auto high_y = getHighY(rect);
+  if (x == low_x || x == high_x) {
+    auto new_x = (low_x + high_x) / 2;
+    return LayoutDefPoint(new_x, y, z);
+  }
+  if (y == low_y || y == high_y) {
+    auto new_y = (low_y + high_y) / 2;
+    return LayoutDefPoint(x, new_y, z);
+  }
+  LOG_FATAL << "Invalid point pivot";
+  return LayoutDefPoint();
+}
+LayoutDefPoint LmNetGraphGenerator::generateSegPivot(const LayoutDefSeg& seg, const LayoutDefRect& rect) const
+{
+  LayoutDefPoint center = getCenter(seg);
+  return generatePointPivot(center, rect);
+}
+void LmNetGraphGenerator::toPy(const TopoGraph& graph, const std::string& path) const
+{
+  std::ofstream file(path);
+  file << "import plotly.graph_objects as go\n";
+  file << "import matplotlib.cm as cm\n";
+  file << "\n";
+  file << "# Create a Plotly Figure\n";
+  file << "fig = go.Figure()\n";
+  file << "\n";
+  size_t patch_count = 0;
+  size_t wire_count = 0;
+  size_t via_count = 0;
+  size_t pin_count = 0;
+  std::vector<int> component(boost::num_vertices(graph));
+  auto num_components = boost::connected_components(graph, component.data());
+  file << "colors = [f'rgb{cm.tab10(i)[:3]}' for i in range(" << num_components << ")]\n";
+  for (auto v : boost::make_iterator_range(boost::vertices(graph))) {
+    auto* content = graph[v].content;
+    if (content->is_patch) {
+      auto* patch = dynamic_cast<LayoutPatch*>(content);
+      // plot rect
+      file << "fig.add_trace(go.Scatter3d(\n";
+      file << "    x=[" << getLowX(patch->rect) << ", " << getHighX(patch->rect) << ", " << getHighX(patch->rect) << ", "
+           << getLowX(patch->rect) << ", " << getLowX(patch->rect) << "],\n";
+      file << "    y=[" << getLowY(patch->rect) << ", " << getLowY(patch->rect) << ", " << getHighY(patch->rect) << ", "
+           << getHighY(patch->rect) << ", " << getLowY(patch->rect) << "],\n";
+      file << "    z=[" << getLowZ(patch->rect) << ", " << getLowZ(patch->rect) << ", " << getLowZ(patch->rect) << ", "
+           << getLowZ(patch->rect) << ", " << getLowZ(patch->rect) << "],\n";
+      file << "    mode='lines',\n";
+      file << "    line=dict(color='rgb(0,128,0)', width=4),\n";
+      file << "    name='Patch " << patch_count++ << "'\n";
+      file << "))\n";
+    } else if (content->is_wire) {
+      auto* wire = dynamic_cast<LayoutWire*>(content);
+      // plot line
+      file << "fig.add_trace(go.Scatter3d(\n";
+      file << "    x=[" << getX(wire->start) << ", " << getX(wire->end) << "],\n";
+      file << "    y=[" << getY(wire->start) << ", " << getY(wire->end) << "],\n";
+      file << "    z=[" << getZ(wire->start) << ", " << getZ(wire->end) << "],\n";
+      file << "    mode='lines',\n";
+      file << "    line=dict(color=colors[" << component[v] << "], width=4),\n";
+      file << "    name='Wire " << wire_count++ << "'\n";
+      file << "))\n";
+    } else if (content->is_via) {
+      auto* via = dynamic_cast<LayoutVia*>(content);
+      size_t bottom_count = 0;
+      size_t top_count = 0;
+      // plot cut path
+      file << "fig.add_trace(go.Scatter3d(\n";
+      file << "    x=[" << getStartX(via->cut_path) << ", " << getEndX(via->cut_path) << "],\n";
+      file << "    y=[" << getStartY(via->cut_path) << ", " << getEndY(via->cut_path) << "],\n";
+      file << "    z=[" << getStartZ(via->cut_path) << ", " << getEndZ(via->cut_path) << "],\n";
+      file << "    mode='lines',\n";
+      file << "    line=dict(color=colors[" << component[v] << "], width=4),\n";
+      file << "    name='Via " << via_count << " Cut Path'\n";
+      file << "))\n";
+      for (auto& bottom_shape : via->bottom_shapes) {
+        // plot bottom shapes
+        file << "fig.add_trace(go.Scatter3d(\n";
+        file << "    x=[" << getLowX(bottom_shape) << ", " << getHighX(bottom_shape) << ", " << getHighX(bottom_shape) << ", "
+             << getLowX(bottom_shape) << ", " << getLowX(bottom_shape) << "],\n";
+        file << "    y=[" << getLowY(bottom_shape) << ", " << getLowY(bottom_shape) << ", " << getHighY(bottom_shape) << ", "
+             << getHighY(bottom_shape) << ", " << getLowY(bottom_shape) << "],\n";
+        file << "    z=[" << getLowZ(bottom_shape) << ", " << getLowZ(bottom_shape) << ", " << getLowZ(bottom_shape) << ", "
+             << getLowZ(bottom_shape) << ", " << getLowZ(bottom_shape) << "],\n";
+        file << "    mode='lines',\n";
+        file << "    line=dict(color='rgb(128,128,128)', width=4),\n";
+        file << "    name='Via " << via_count << " Bottom " << bottom_count++ << "'\n";
+        file << "))\n";
+      }
+      for (auto& top_shape : via->top_shapes) {
+        // plot top shapes
+        file << "fig.add_trace(go.Scatter3d(\n";
+        file << "    x=[" << getLowX(top_shape) << ", " << getHighX(top_shape) << ", " << getHighX(top_shape) << ", " << getLowX(top_shape)
+             << ", " << getLowX(top_shape) << "],\n";
+        file << "    y=[" << getLowY(top_shape) << ", " << getLowY(top_shape) << ", " << getHighY(top_shape) << ", " << getHighY(top_shape)
+             << ", " << getLowY(top_shape) << "],\n";
+        file << "    z=[" << getLowZ(top_shape) << ", " << getLowZ(top_shape) << ", " << getLowZ(top_shape) << ", " << getLowZ(top_shape)
+             << ", " << getLowZ(top_shape) << "],\n";
+        file << "    mode='lines',\n";
+        file << "    line=dict(color='rgb(128,128,128)', width=4),\n";
+        file << "    name='Via " << via_count << " Top " << top_count++ << "'\n";
+        file << "))\n";
+      }
+      via_count++;
+    } else if (content->is_pin) {
+      auto* pin = dynamic_cast<LayoutPin*>(content);
+      size_t via_pin_shape_count = 0;
+      size_t via_cut_count = 0;
+
+      for (auto& pin_shape : pin->pin_shapes) {
+        // plot pin shapes
+        file << "fig.add_trace(go.Scatter3d(\n";
+        file << "    x=[" << getLowX(pin_shape) << ", " << getHighX(pin_shape) << ", " << getHighX(pin_shape) << ", " << getLowX(pin_shape)
+             << ", " << getLowX(pin_shape) << "],\n";
+        file << "    y=[" << getLowY(pin_shape) << ", " << getLowY(pin_shape) << ", " << getHighY(pin_shape) << ", " << getHighY(pin_shape)
+             << ", " << getLowY(pin_shape) << "],\n";
+        file << "    z=[" << getLowZ(pin_shape) << ", " << getLowZ(pin_shape) << ", " << getLowZ(pin_shape) << ", " << getLowZ(pin_shape)
+             << ", " << getLowZ(pin_shape) << "],\n";
+        file << "    mode='lines',\n";
+        file << "    line=dict(color='rgb(255,255,0)', width=4),\n";
+        file << "    name='Pin " << pin_count << " Shape " << via_pin_shape_count++ << "'\n";
+        file << "))\n";
+      }
+
+      for (auto& via_cut : pin->via_cuts) {
+        auto center = getCenter(via_cut);
+        // plot line
+        file << "fig.add_trace(go.Scatter3d(\n";
+        file << "    x=[" << getX(center) << ", " << getX(center) << "],\n";
+        file << "    y=[" << getY(center) << ", " << getY(center) << "],\n";
+        file << "    z=[" << getLowZ(via_cut) << ", " << getHighZ(via_cut) << "],\n";
+        file << "    mode='lines',\n";
+        file << "    line=dict(color='rgb(255,255,0)', width=4),\n";
+        file << "    name='Pin " << pin_count << " Via Cut " << via_cut_count++ << "'\n";
+        file << "))\n";
+      }
+      pin_count++;
+    }
+  }
+  // Set up the layout with axis labels and title
+  file << "\n";
+  file << "fig.update_layout(\n";
+  file << "    scene=dict(\n";
+  file << "        xaxis_title='X',\n";
+  file << "        yaxis_title='Y',\n";
+  file << "        zaxis_title='Layer ID'\n";
+  file << "    ),\n";
+  file << "    title='Temp Net'\n";
+  file << ")\n";
+  file << "\n";
+
+  // Show the plot
+  file << "fig.show()\n";
+}
+void LmNetGraphGenerator::toPy(const WireGraph& graph, const std::string& path) const
+{
+  std::ofstream file(path);
+  file << "import plotly.graph_objects as go\n";
+  file << "import matplotlib.cm as cm\n";
+  file << "\n";
+  file << "# Create a Plotly Figure\n";
+  file << "fig = go.Figure()\n";
+  file << "\n";
+  std::vector<int> component(boost::num_vertices(graph));
+  auto num_components = boost::connected_components(graph, component.data());
+  file << "colors = [f'rgb{cm.tab10(i)[:3]}' for i in range(" << num_components << ")]\n";
+  size_t wire_idx = 0;
+  size_t via_idx = 0;
+  for (auto e : boost::make_iterator_range(boost::edges(graph))) {
+    auto u = boost::source(e, graph);
+    auto v = boost::target(e, graph);
+    size_t path_idx = 0;
+    // plot line
+    for (auto [start, end] : graph[e].path) {
+      file << "fig.add_trace(go.Scatter3d(\n";
+      file << "    x=[" << getX(start) << ", " << getX(end) << "],\n";
+      file << "    y=[" << getY(start) << ", " << getY(end) << "],\n";
+      file << "    z=[" << getZ(start) << ", " << getZ(end) << "],\n";
+      file << "    mode='lines',\n";
+      file << "    line=dict(color=colors[" << component[u] << "], width=4),\n";
+      if (graph[u].layer_id == graph[v].layer_id) {
+        file << "    name='Component " << component[u] << ", Wire " << wire_idx << ", Path " << path_idx++ << "'\n";
+      } else {
+        file << "    name='Component " << component[u] << ", Via " << via_idx << "'\n";
+      }
+      file << "))\n";
+    }
+    if (graph[u].layer_id == graph[v].layer_id) {
+      wire_idx++;
+    } else {
+      via_idx++;
+    }
+  }
+
+  // Set up the layout with axis labels and title
+  file << "\n";
+  file << "fig.update_layout(\n";
+  file << "    scene=dict(\n";
+  file << "        xaxis_title='X',\n";
+  file << "        yaxis_title='Y',\n";
+  file << "        zaxis_title='Layer ID'\n";
+  file << "    ),\n";
+  file << "    title='Temp Net'\n";
+  file << ")\n";
+  file << "\n";
+
+  // Show the plot
+  file << "fig.show()\n";
+}
+}  // namespace ilm

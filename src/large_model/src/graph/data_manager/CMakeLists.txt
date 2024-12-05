@@ -2,6 +2,7 @@ add_library(ilm_graph_dm
     lm_graph_dm.cpp
     lm_graph_init.cpp
     lm_graph_check.cc
+    lm_net_graph_gen.cc
 )
 
 find_package(OpenCV REQUIRED)
@@ -16,14 +17,12 @@ target_link_libraries(ilm_graph_dm
     ilm_db
     ilm_dm
     ilm_layout_db
-    ${OpenCV_LIBS}
 )
 
 target_include_directories(ilm_graph_dm
     PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${HOME_UTILITY}/json
-    ${OpenCV_INCLUDE_DIRS}
 )
 
 include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
