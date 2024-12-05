@@ -74,7 +74,7 @@ Open-source is not a goal but a way
 
 ---
 
-## **论文和报告**
+## **论文和报告**  [[查看更多](https://ieda.oscc.cc/en/research/achieves/papers.html)]
 - iRT: Net Resource Allocation: A Desirable Initial Routing Step, DAC, 2024
 - iCTS: Toward Controllable Hierarchical Clock Tree Synthesis with Skew-Latency-Load Tree, DAC, 2024
 - AiEDA: An Open-source AI-native EDA Library, ISEDA, 2024
@@ -90,7 +90,7 @@ Open-source is not a goal but a way
 
 使用 iEDA 进行芯片设计，需首先获得 iEDA 可执行文件。
 
-若您需要对 iEDA 进行修改，通过源码构建，请按照顺序阅读。
+若您需要对 iEDA 进行修改，通过源码构建，请按照顺序阅读，查看 [iEDA user guide](https://ieda.oscc.cc/en/tools/ieda-platform/guide.html).。
 
 您也可以直接使用最新的 [iEDA docker 镜像](https://hub.docker.com/r/iedaopensource/base)，即可跳过 "*1. 源码构建 iEDA*"。
 
