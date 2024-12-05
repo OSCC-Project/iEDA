@@ -30,7 +30,7 @@ void LmFeature::buildFeatureDrc(std::string drc_path)
 
   LOG_INFO << "buildFeatureDrc : " << drc_path;
 
-  //   drc_path = "/data/project_share/dataset_baseline/aes/workspace/output/iEDA/feature/aes_route_baseline_drc.json";
+  drc_path = "/data/project_share/dataset_baseline/aes/workspace/output/iEDA/feature/aes_route_baseline_drc.json";
 
   LmFeatureDrc feature_drc(_layout, drc_path);
 

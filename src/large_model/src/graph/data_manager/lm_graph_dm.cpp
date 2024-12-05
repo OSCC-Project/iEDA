@@ -19,6 +19,7 @@
 
 #include "Log.hh"
 #include "lm_graph_check.hh"
+#include "lm_grid_info.h"
 #include "lm_net_graph_gen.hh"
 #include "omp.h"
 #include "usage.hh"
@@ -27,15 +28,80 @@ namespace ilm {
 
 bool LmGraphDataManager::buildGraphData()
 {
+  auto get_nodes = [&](int x1, int y1, int layer1, int x2, int y2, int layer2, LmPatchLayers& patch_layers) -> std::pair<LmNode*, LmNode*> {
+    if (layer1 == layer2) {
+      auto& grid = patch_layers.findPatchLayer(layer1)->get_grid();
+
+      auto [row1, col1] = gridInfoInst.findNodeID(x1, y1);
+      auto* node1 = grid.get_node(row1, col1);
+
+      auto [row2, col2] = gridInfoInst.findNodeID(x2, y2);
+      auto* node2 = grid.get_node(row2, col2);
+
+      return std::make_pair(node1, node2);
+    } else {
+      auto& grid1 = patch_layers.findPatchLayer(layer1)->get_grid();
+      auto [row1, col1] = gridInfoInst.findNodeID(x1, y1);
+      auto* node1 = grid1.get_node(row1, col1);
+
+      auto& grid2 = patch_layers.findPatchLayer(layer2)->get_grid();
+      auto [row2, col2] = gridInfoInst.findNodeID(x2, y2);
+      auto* node2 = grid2.get_node(row2, col2);
+
+      if (node1 == nullptr || node1->get_node_data() == nullptr || node2 == nullptr || node2->get_node_data() == nullptr) {
+        LOG_ERROR << "error node....";
+      }
+
+      return std::make_pair(node1, node2);
+    }
+  };
+
   LmNetGraphGenerator gen;
   auto wire_graphs = gen.buildGraphs();
 
+  auto net_id = 0;
   auto& layout_graph = _layout->get_graph();
-  for (auto wire : wire_graphs) {
-    auto net_id = 0;
-    LmNetWire lm_wire;
-    layout_graph.add_net_wire(net_id, lm_wire);
-  }
+  auto& patch_layers = _layout->get_patch_layers();
+
+  std::ranges::for_each(wire_graphs, [&](auto& wire_graph) -> void {
+    auto* lm_net = layout_graph.get_net(net_id);
+
+    // travelsal the edge in wire_graph
+    for (auto edge : boost::make_iterator_range(boost::edges(wire_graph))) {
+      LmNetWire lm_wire;
+
+      auto source = boost::source(edge, wire_graph);
+      auto target = boost::target(edge, wire_graph);
+      /// add wire
+      auto source_label = wire_graph[source];
+      auto target_label = wire_graph[target];
+
+      auto [node1, node2] = get_nodes(source_label.x, source_label.y, source_label.layer_id, target_label.x, target_label.y,
+                                      target_label.layer_id, patch_layers);
+      lm_wire.set_start(node1);
+      lm_wire.set_end(node2);
+
+      /// add path
+      std::ranges::for_each(wire_graph[edge].path, [&](auto& point_pair) -> void {
+        auto start_point = point_pair.first;
+        auto end_point = point_pair.second;
+        auto [node1, node2] = get_nodes(bg::get<0>(start_point), bg::get<1>(start_point), bg::get<2>(start_point), bg::get<0>(end_point),
+                                        bg::get<1>(end_point), bg::get<2>(end_point), patch_layers);
+
+        lm_wire.add_path(node1, node2);
+      });
+
+      lm_net->addWire(lm_wire);
+    }
+
+    if (net_id % 1000 == 0) {
+      LOG_INFO << "Read nets : " << net_id << " / " << (int) wire_graphs.size();
+    }
+
+    net_id++;
+  });
+
+  LOG_INFO << "Read nets : " << net_id << " / " << (int) wire_graphs.size();
 
   return true;
 }
