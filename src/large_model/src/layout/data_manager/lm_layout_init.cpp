@@ -110,7 +110,11 @@ void LmLayoutInit::initLayers()
       patch_layer.set_layer_name(idb_layer->get_name());
       patch_layer.set_layer_order(index);
       patch_layer.set_as_routing(idb_layer->is_routing());
-      patch_layer.set_horizontal(idb_layer->is_routing());
+      if (idb_layer->is_routing()) {
+        auto* routing_layer = dynamic_cast<IdbLayerRouting*>(idb_layer);
+        patch_layer.set_horizontal(routing_layer->is_horizontal());
+        patch_layer.set_wire_width(routing_layer->get_width());
+      }
 
       auto& grid = patch_layer.get_grid();
       grid.layer_order = index;

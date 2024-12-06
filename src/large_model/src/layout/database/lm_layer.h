@@ -43,6 +43,7 @@ class LmPatchLayer
   ~LmPatchLayer() = default;
 
   // getter
+  int get_wire_width() { return _wire_width; }
   bool is_routing() { return _b_routing; }
   LmLayerGrid& get_grid() { return _grid; }
   std::vector<std::vector<LmPatch>>& get_patch_matrix() { return _patch_matrix; }
@@ -54,6 +55,7 @@ class LmPatchLayer
 
   // setter
   void set_layer_name(std::string name) { _layer_name = name; }
+  void set_wire_width(int wire_width) { _wire_width = wire_width; }
   void set_as_routing(bool b_routing) { _b_routing = b_routing; }
   void set_layer_order(int order) { _layer_order = order; }
   void set_llx(int value) { _llx = value; }
@@ -67,6 +69,7 @@ class LmPatchLayer
 
  private:
   std::string _layer_name;
+  int _wire_width = 0;
   bool _b_routing;
   bool _b_horizontal;
   int _layer_order;
@@ -86,7 +89,7 @@ class LmPatchLayer
 class LmPatchLayers
 {
  public:
-  LmPatchLayers(){};
+  LmPatchLayers() {};
   ~LmPatchLayers() = default;
 
   // getter

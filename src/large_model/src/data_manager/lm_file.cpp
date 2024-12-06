@@ -131,10 +131,28 @@ bool LmLayoutFileIO::saveJsonNets(std::map<int, LmNet>& net_map)
         for (auto& wire : lm_net.get_wires()) {
           json json_wire = {};
           {
-            /// wire
-            {
-              json_wire["id"] = wire.get_id();
+            json_wire["id"] = wire.get_id();
 
+            /// wire feature
+            {
+              json json_feature;
+              auto wire_feature = wire.get_feature();
+              if (wire_feature != nullptr) {
+                json_feature["wire_width"] = wire_feature->wire_width;
+                json_feature["wire_len"] = wire_feature->wire_len;
+                json_feature["drc_num"] = wire_feature->drc_num;
+                json_feature["R"] = wire_feature->R;
+                json_feature["C"] = wire_feature->C;
+                json_feature["power"] = wire_feature->power;
+                json_feature["delay"] = wire_feature->delay;
+                json_feature["slew"] = wire_feature->slew;
+                json_feature["congestion"] = wire_feature->congestion;
+              }
+              json_wire["feature"] = json_feature;
+            }
+
+            /// wire nodes
+            {
               auto& [node1, node2] = wire.get_connected_nodes();
 
               json json_node;
@@ -159,43 +177,24 @@ bool LmLayoutFileIO::saveJsonNets(std::map<int, LmNet>& net_map)
               json_wire["path_num"] = wire.get_paths().size();
 
               json json_paths = json::array();
-              if (wire.get_paths().size() > 1) {
-                for (auto& [node1, node2] : wire.get_paths()) {
-                  json json_node;
-                  json_node["x1"] = node1->get_x();
-                  json_node["y1"] = node1->get_y();
-                  json_node["r1"] = node1->get_row_id();    /// row
-                  json_node["c1"] = node1->get_col_id();    /// col
-                  json_node["l1"] = node1->get_layer_id();  /// layer order
+              for (auto& [node1, node2] : wire.get_paths()) {
+                json json_node;
+                json_node["x1"] = node1->get_x();
+                json_node["y1"] = node1->get_y();
+                json_node["r1"] = node1->get_row_id();    /// row
+                json_node["c1"] = node1->get_col_id();    /// col
+                json_node["l1"] = node1->get_layer_id();  /// layer order
 
-                  json_node["x2"] = node2->get_x();
-                  json_node["y2"] = node2->get_y();
-                  json_node["r2"] = node2->get_row_id();    /// row
-                  json_node["c2"] = node2->get_col_id();    /// col
-                  json_node["l2"] = node2->get_layer_id();  /// layer order
+                json_node["x2"] = node2->get_x();
+                json_node["y2"] = node2->get_y();
+                json_node["r2"] = node2->get_row_id();    /// row
+                json_node["c2"] = node2->get_col_id();    /// col
+                json_node["l2"] = node2->get_layer_id();  /// layer order
 
-                  json_paths.push_back(json_node);
-                }
+                json_paths.push_back(json_node);
               }
+
               json_wire["paths"] = json_paths;
-            }
-
-            /// wire feature
-            {
-              json json_feature;
-              auto wire_feature = wire.get_feature();
-              if (wire_feature != nullptr) {
-                json_feature["wire_width"] = wire_feature->wire_width;
-                json_feature["wire_len"] = wire_feature->wire_len;
-                json_feature["drc_num"] = wire_feature->drc_num;
-                json_feature["R"] = wire_feature->R;
-                json_feature["C"] = wire_feature->C;
-                json_feature["power"] = wire_feature->power;
-                json_feature["delay"] = wire_feature->delay;
-                json_feature["slew"] = wire_feature->slew;
-                json_feature["congestion"] = wire_feature->congestion;
-              }
-              json_wire["feature"] = json_feature;
             }
           }
 
@@ -212,6 +211,7 @@ bool LmLayoutFileIO::saveJsonNets(std::map<int, LmNet>& net_map)
     } else {
       file_stream << std::setw(0) << json_net;
     }
+    // file_stream << std::setw(4) << json_net;
     file_stream.close();
     omp_unset_lock(&lck);
 
