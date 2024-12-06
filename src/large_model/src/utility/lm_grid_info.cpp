@@ -37,12 +37,14 @@ LmGridInfo* LmGridInfo::_info_inst = nullptr;
 
 int LmGridInfo::calculate_x(int col)
 {
-  return node_x_start + x_step * col;
+  int x = node_x_start + col * x_step;
+  return x > urx ? urx : x;
 }
 
 int LmGridInfo::calculate_y(int row)
 {
-  return node_y_start + y_step * row;
+  int y = node_y_start + row * y_step;
+  return y > ury ? ury : y;
 }
 
 std::pair<int, int> LmGridInfo::get_node_coodinate(int row_id, int col_id)

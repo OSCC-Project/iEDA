@@ -121,10 +121,10 @@ bool LmGraphDataManager::buildGraphData()
       LOG_INFO << "Read nets : " << net_id << " / " << (int) wire_graphs.size();
     }
 
-    // if (pin_ids_wires.size() != lm_net->get_pin_ids().size()) {
-    //   LOG_ERROR << "error wire pin num, net : " << lm_net->get_pin_ids().size() << " wire: " << pin_ids_wires.size()
-    //             << " path: " << pin_ids_paths.size();
-    // }
+    if (pin_ids_wires.size() != lm_net->get_pin_ids().size()) {
+      LOG_WARNING << "Warning, pin size mismatch, net id : " << net_id << " net num : " << lm_net->get_pin_ids().size()
+                  << " wire num : " << pin_ids_wires.size() << " path num: " << pin_ids_paths.size();
+    }
 
     net_id++;
   });

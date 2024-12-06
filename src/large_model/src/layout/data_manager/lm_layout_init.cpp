@@ -208,8 +208,6 @@ void LmLayoutInit::transVia(idb::IdbVia* idb_via, int net_id, LmNodeTYpe type)
   auto [row, col] = gridInfoInst.findNodeID(via_coordinate->get_x(), via_coordinate->get_y());
 
   auto* node = grid.get_node(row, col, true);
-  node->set_x(gridInfoInst.calculate_x(col));
-  node->set_y(gridInfoInst.calculate_y(row));
   node->set_col_id(col);
   node->set_row_id(row);
   node->set_layer_id(order);
@@ -307,8 +305,6 @@ void LmLayoutInit::initPDN()
               /// set node data
               auto* node = grid.get_node(row, col, true);
               LmNodeData* node_data = node->get_node_data(-1, true);
-              node->set_x(gridInfoInst.calculate_x(col));
-              node->set_y(gridInfoInst.calculate_y(row));
               node->set_col_id(col);
               node->set_row_id(row);
               node->set_layer_id(order);
@@ -434,8 +430,6 @@ void LmLayoutInit::transPin(idb::IdbPin* idb_pin, int net_id, int pin_id, bool b
         auto& grid = patch_layer->get_grid();
         auto [row_id, col_id] = gridInfoInst.findNodeID(rect->get_middle_point_x(), rect->get_middle_point_y());
         auto* node = grid.get_node(row_id, col_id, true);
-        node->set_x(gridInfoInst.calculate_x(col_id));
-        node->set_y(gridInfoInst.calculate_y(row_id));
         node->set_col_id(col_id);
         node->set_row_id(row_id);
         node->set_layer_id(order);
@@ -468,8 +462,6 @@ void LmLayoutInit::transPin(idb::IdbPin* idb_pin, int net_id, int pin_id, bool b
         for (int row = row_1; row <= row_2; ++row) {
           for (int col = col_1; col <= col_2; ++col) {
             auto* node = grid.get_node(row, col, true);
-            node->set_x(gridInfoInst.calculate_x(col));
-            node->set_y(gridInfoInst.calculate_y(row));
             node->set_col_id(col);
             node->set_row_id(row);
             node->set_layer_id(order);
@@ -515,8 +507,6 @@ void LmLayoutInit::transNetRect(int32_t ll_x, int32_t ll_y, int32_t ur_x, int32_
     for (int col = col_1; col <= col_2; ++col) {
       /// set node data
       auto* node = grid.get_node(row, col, true);
-      node->set_x(gridInfoInst.calculate_x(col));
-      node->set_y(gridInfoInst.calculate_y(row));
       node->set_col_id(col);
       node->set_row_id(row);
       node->set_layer_id(order);
@@ -545,8 +535,6 @@ void LmLayoutInit::transEnclosure(int32_t ll_x, int32_t ll_y, int32_t ur_x, int3
   for (int row = row_1; row <= row_2; ++row) {
     for (int col = col_1; col <= col_2; ++col) {
       auto* node = grid.get_node(row, col, true);
-      node->set_x(gridInfoInst.calculate_x(col));
-      node->set_y(gridInfoInst.calculate_y(row));
       node->set_col_id(col);
       node->set_row_id(row);
       node->set_layer_id(order);
@@ -574,8 +562,6 @@ void LmLayoutInit::transNetDelta(int32_t ll_x, int32_t ll_y, int32_t ur_x, int32
   for (int row = row_1; row <= row_2; ++row) {
     for (int col = col_1; col <= col_2; ++col) {
       auto* node = grid.get_node(row, col, true);
-      node->set_x(gridInfoInst.calculate_x(col));
-      node->set_y(gridInfoInst.calculate_y(row));
       node->set_col_id(col);
       node->set_row_id(row);
       node->set_layer_id(order);

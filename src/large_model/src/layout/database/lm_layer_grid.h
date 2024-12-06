@@ -34,31 +34,6 @@
 
 namespace ilm {
 
-struct LmLayerGridInfo
-{
-  int layer_order;
-  int llx;
-  int lly;
-  int urx;
-  int ury;
-  int x_start;
-  int node_x_start;
-  int x_step;
-  int y_start;
-  int node_y_start;
-  int y_step;
-  int node_row_num;  /// node number on rows
-  int node_col_num;  /// node number on cols
-};
-
-enum class SideType
-{
-  kNone,
-  kLower,
-  kHigher,
-  kMax
-};
-
 class LmLayerGrid
 {
  public:
@@ -75,11 +50,10 @@ class LmLayerGrid
   std::pair<int, int> buildNodeMatrix(int order);
   LmNode* findNode(int x, int y);
 
-public:
+ public:
   int layer_order;
 
  private:
-  
   std::vector<std::vector<LmNode*>> _node_matrix;
 };
 

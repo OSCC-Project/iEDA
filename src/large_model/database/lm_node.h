@@ -69,7 +69,7 @@ class LmNodeData
   int32_t get_pin_id() { return _pin_id; }
   LmNodeTYpe get_type() { return _type; }
   LmNodeConnectType get_connect_type() { return _connect_type; }
-  LmNodeFeature& get_feature(){return _feature;}
+  LmNodeFeature& get_feature() { return _feature; }
   bool is_connect_type(LmNodeConnectType type);
   bool is_wire() { return is_connect_type(LmNodeConnectType::lm_wire); }
   bool is_delta() { return is_connect_type(LmNodeConnectType::lm_delta); }
@@ -95,7 +95,7 @@ class LmNodeData
   int32_t _net_id = -1;
   int16_t _pin_id = -1;
   LmNodeTYpe _type = LmNodeTYpe::kNone;  /// multiple type in one node
-  LmNodeConnectType _connect_type = LmNodeConnectType::kNone; 
+  LmNodeConnectType _connect_type = LmNodeConnectType::kNone;
   LmNodeFeature _feature;
 };
 
@@ -106,8 +106,8 @@ class LmNode
   ~LmNode() = default;
 
   // getter
-  int get_x() { return _x; }
-  int get_y() { return _y; }
+  int get_x();
+  int get_y();
   int get_row_id() { return _row_id; }
   int get_col_id() { return _col_id; }
   int32_t get_layer_id() { return _layer_id; }
@@ -115,20 +115,15 @@ class LmNode
   LmNodeData* get_node_data(int net_id = -1, bool b_create = false);
 
   // setter
-  void set_x(int x) { _x = x; }
-  void set_y(int y) { _y = y; }
   void set_row_id(int row_id) { _row_id = row_id; }
   void set_col_id(int col_id) { _col_id = col_id; }
   void set_layer_id(int32_t layer_id) { _layer_id = layer_id; }
 
   // operator
-  //   void addNodeData(LmNodeData data) { _data_map.insert(std::make_pair(data.get_net_id(), data)); }
 
  private:
-  int32_t _x;
-  int32_t _y;
-  int16_t _row_id;  // node order of layer rows
-  int16_t _col_id;  // node order of layer cols
+  int16_t _row_id = -1;  // node order of layer rows
+  int16_t _col_id = -1;  // node order of layer cols
   int8_t _layer_id = -1;
   LmNodeData* _node_data = nullptr;
   //   std::map<int, LmNodeData> _data_map;
