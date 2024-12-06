@@ -1809,51 +1809,75 @@ std::map<PANode*, std::set<Orientation>> PinAccessor::getCutNodeOrientationMap(P
   if (net_shape.get_is_routing()) {
     RTLOG.error(Loc::current(), "The type of net_shape is routing!");
   }
-  std::vector<int32_t> adjacent_routing_layer_idx_list = cut_to_adjacent_routing_map[net_shape.get_layer_idx()];
-  if (adjacent_routing_layer_idx_list.size() != 2) {
-    // 如果相邻层只有一个,将不会在那一层打via
-    return {};
-  }
-  int32_t below_routing_layer_idx = adjacent_routing_layer_idx_list.front();
-  int32_t above_routing_layer_idx = adjacent_routing_layer_idx_list.back();
-  RTUTIL.swapByASC(below_routing_layer_idx, above_routing_layer_idx);
   CutLayer& cut_layer = cut_layer_list[net_shape.get_layer_idx()];
-  // x_spacing y_spacing
-  std::vector<std::pair<int32_t, int32_t>> spacing_pair_list;
+  std::map<int32_t, std::vector<std::pair<int32_t, int32_t>>> cut_spacing_map;
   {
-    spacing_pair_list.emplace_back(cut_layer.get_x_spacing(), cut_layer.get_prl_spacing());
-    spacing_pair_list.emplace_back(cut_layer.get_prl_spacing(), cut_layer.get_y_spacing());
-  }
-  PlanarRect& cut_shape = layer_via_master_list[below_routing_layer_idx].front().get_cut_shape_list().front();
-  int32_t cut_shape_half_x_span = cut_shape.getXSpan() / 2;
-  int32_t cut_shape_half_y_span = cut_shape.getYSpan() / 2;
-
-  std::vector<GridMap<PANode>>& layer_node_map = pa_box.get_layer_node_map();
-  std::map<PANode*, std::set<Orientation>> node_orientation_map;
-  for (auto& [x_spacing, y_spacing] : spacing_pair_list) {
-    int32_t enlarged_x_size = cut_shape_half_x_span;
-    int32_t enlarged_y_size = cut_shape_half_y_span;
-    if (need_enlarged) {
-      // 膨胀size为 cut_shape_half_span + spacing
-      enlarged_x_size += x_spacing;
-      enlarged_y_size += y_spacing;
+    int32_t curr_cut_layer_idx = net_shape.get_layer_idx();
+    if (0 <= curr_cut_layer_idx && curr_cut_layer_idx < static_cast<int32_t>(cut_layer_list.size())) {
+      std::vector<int32_t> adjacent_routing_layer_idx_list = cut_to_adjacent_routing_map[curr_cut_layer_idx];
+      if (adjacent_routing_layer_idx_list.size() == 2) {
+        std::vector<std::pair<int32_t, int32_t>> spacing_pair_list;
+        spacing_pair_list.emplace_back(cut_layer.get_curr_x_spacing(), cut_layer.get_curr_prl_spacing());
+        spacing_pair_list.emplace_back(cut_layer.get_curr_prl_spacing(), cut_layer.get_curr_y_spacing());
+        cut_spacing_map[curr_cut_layer_idx] = spacing_pair_list;
+      }
     }
-    // 贴合的也不算违例
-    enlarged_x_size -= 1;
-    enlarged_y_size -= 1;
-    PlanarRect space_enlarged_rect
-        = RTUTIL.getEnlargedRect(net_shape.get_rect(), enlarged_x_size, enlarged_y_size, enlarged_x_size, enlarged_y_size);
-    for (auto& [grid_coord, orientation_set] : RTUTIL.getTrackGridOrientationMap(space_enlarged_rect, pa_box.get_box_track_axis())) {
-      if (!RTUTIL.exist(orientation_set, Orientation::kAbove) && !RTUTIL.exist(orientation_set, Orientation::kBelow)) {
-        continue;
+    int32_t below_cut_layer_idx = net_shape.get_layer_idx() - 1;
+    if (0 <= below_cut_layer_idx && below_cut_layer_idx < static_cast<int32_t>(cut_layer_list.size())) {
+      std::vector<int32_t> adjacent_routing_layer_idx_list = cut_to_adjacent_routing_map[below_cut_layer_idx];
+      if (adjacent_routing_layer_idx_list.size() == 2) {
+        std::vector<std::pair<int32_t, int32_t>> spacing_pair_list;
+        spacing_pair_list.emplace_back(cut_layer.get_below_x_spacing(), cut_layer.get_below_prl_spacing());
+        spacing_pair_list.emplace_back(cut_layer.get_below_prl_spacing(), cut_layer.get_below_y_spacing());
+        cut_spacing_map[below_cut_layer_idx] = spacing_pair_list;
       }
-      PANode& below_node = layer_node_map[below_routing_layer_idx][grid_coord.get_x()][grid_coord.get_y()];
-      if (RTUTIL.exist(below_node.get_neighbor_node_map(), Orientation::kAbove)) {
-        node_orientation_map[&below_node].insert(Orientation::kAbove);
+    }
+    int32_t above_cut_layer_idx = net_shape.get_layer_idx() + 1;
+    if (0 <= above_cut_layer_idx && above_cut_layer_idx < static_cast<int32_t>(cut_layer_list.size())) {
+      std::vector<int32_t> adjacent_routing_layer_idx_list = cut_to_adjacent_routing_map[above_cut_layer_idx];
+      if (adjacent_routing_layer_idx_list.size() == 2) {
+        std::vector<std::pair<int32_t, int32_t>> spacing_pair_list;
+        spacing_pair_list.emplace_back(cut_layer.get_above_x_spacing(), cut_layer.get_above_prl_spacing());
+        spacing_pair_list.emplace_back(cut_layer.get_above_prl_spacing(), cut_layer.get_above_y_spacing());
+        cut_spacing_map[above_cut_layer_idx] = spacing_pair_list;
       }
-      PANode& above_node = layer_node_map[above_routing_layer_idx][grid_coord.get_x()][grid_coord.get_y()];
-      if (RTUTIL.exist(above_node.get_neighbor_node_map(), Orientation::kBelow)) {
-        node_orientation_map[&above_node].insert(Orientation::kBelow);
+    }
+  }
+  std::map<PANode*, std::set<Orientation>> node_orientation_map;
+  for (auto& [cut_layer_idx, spacing_pair_list] : cut_spacing_map) {
+    std::vector<int32_t> adjacent_routing_layer_idx_list = cut_to_adjacent_routing_map[cut_layer_idx];
+    int32_t below_routing_layer_idx = adjacent_routing_layer_idx_list.front();
+    int32_t above_routing_layer_idx = adjacent_routing_layer_idx_list.back();
+    RTUTIL.swapByASC(below_routing_layer_idx, above_routing_layer_idx);
+    PlanarRect& cut_shape = layer_via_master_list[below_routing_layer_idx].front().get_cut_shape_list().front();
+    int32_t cut_shape_half_x_span = cut_shape.getXSpan() / 2;
+    int32_t cut_shape_half_y_span = cut_shape.getYSpan() / 2;
+    std::vector<GridMap<PANode>>& layer_node_map = pa_box.get_layer_node_map();
+    for (auto& [x_spacing, y_spacing] : spacing_pair_list) {
+      int32_t enlarged_x_size = cut_shape_half_x_span;
+      int32_t enlarged_y_size = cut_shape_half_y_span;
+      if (need_enlarged) {
+        // 膨胀size为 cut_shape_half_span + spacing
+        enlarged_x_size += x_spacing;
+        enlarged_y_size += y_spacing;
+      }
+      // 贴合的也不算违例
+      enlarged_x_size -= 1;
+      enlarged_y_size -= 1;
+      PlanarRect space_enlarged_rect
+          = RTUTIL.getEnlargedRect(net_shape.get_rect(), enlarged_x_size, enlarged_y_size, enlarged_x_size, enlarged_y_size);
+      for (auto& [grid_coord, orientation_set] : RTUTIL.getTrackGridOrientationMap(space_enlarged_rect, pa_box.get_box_track_axis())) {
+        if (!RTUTIL.exist(orientation_set, Orientation::kAbove) && !RTUTIL.exist(orientation_set, Orientation::kBelow)) {
+          continue;
+        }
+        PANode& below_node = layer_node_map[below_routing_layer_idx][grid_coord.get_x()][grid_coord.get_y()];
+        if (RTUTIL.exist(below_node.get_neighbor_node_map(), Orientation::kAbove)) {
+          node_orientation_map[&below_node].insert(Orientation::kAbove);
+        }
+        PANode& above_node = layer_node_map[above_routing_layer_idx][grid_coord.get_x()][grid_coord.get_y()];
+        if (RTUTIL.exist(above_node.get_neighbor_node_map(), Orientation::kBelow)) {
+          node_orientation_map[&above_node].insert(Orientation::kBelow);
+        }
       }
     }
   }

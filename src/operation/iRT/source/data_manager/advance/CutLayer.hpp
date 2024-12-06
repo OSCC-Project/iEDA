@@ -30,24 +30,45 @@ class CutLayer
   int32_t get_layer_idx() const { return _layer_idx; }
   int32_t get_layer_order() const { return _layer_order; }
   std::string& get_layer_name() { return _layer_name; }
-  int32_t get_prl_spacing() const { return _prl_spacing; }
-  int32_t get_x_spacing() const { return _x_spacing; }
-  int32_t get_y_spacing() const { return _y_spacing; }
+  int32_t get_curr_prl_spacing() const { return _curr_prl_spacing; }
+  int32_t get_curr_x_spacing() const { return _curr_x_spacing; }
+  int32_t get_curr_y_spacing() const { return _curr_y_spacing; }
+  int32_t get_above_prl_spacing() const { return _above_prl_spacing; }
+  int32_t get_above_x_spacing() const { return _above_x_spacing; }
+  int32_t get_above_y_spacing() const { return _above_y_spacing; }
+  int32_t get_below_prl_spacing() const { return _below_prl_spacing; }
+  int32_t get_below_x_spacing() const { return _below_x_spacing; }
+  int32_t get_below_y_spacing() const { return _below_y_spacing; }
   // setter
   void set_layer_idx(const int32_t layer_idx) { _layer_idx = layer_idx; }
   void set_layer_order(const int32_t layer_order) { _layer_order = layer_order; }
   void set_layer_name(const std::string& layer_name) { _layer_name = layer_name; }
-  void set_prl_spacing(const int32_t prl_spacing) { _prl_spacing = prl_spacing; }
-  void set_x_spacing(const int32_t x_spacing) { _x_spacing = x_spacing; }
-  void set_y_spacing(const int32_t y_spacing) { _y_spacing = y_spacing; }
+  void set_curr_prl_spacing(const int32_t curr_prl_spacing) { _curr_prl_spacing = curr_prl_spacing; }
+  void set_curr_x_spacing(const int32_t curr_x_spacing) { _curr_x_spacing = curr_x_spacing; }
+  void set_curr_y_spacing(const int32_t curr_y_spacing) { _curr_y_spacing = curr_y_spacing; }
+  void set_above_prl_spacing(const int32_t above_prl_spacing) { _above_prl_spacing = above_prl_spacing; }
+  void set_above_x_spacing(const int32_t above_x_spacing) { _above_x_spacing = above_x_spacing; }
+  void set_above_y_spacing(const int32_t above_y_spacing) { _above_y_spacing = above_y_spacing; }
+  void set_below_prl_spacing(const int32_t below_prl_spacing) { _below_prl_spacing = below_prl_spacing; }
+  void set_below_x_spacing(const int32_t below_x_spacing) { _below_x_spacing = below_x_spacing; }
+  void set_below_y_spacing(const int32_t below_y_spacing) { _below_y_spacing = below_y_spacing; }
   // function
  private:
   int32_t _layer_idx = -1;
   int32_t _layer_order = -1;
   std::string _layer_name;
-  int32_t _prl_spacing = -1;
-  int32_t _x_spacing = -1;
-  int32_t _y_spacing = -1;
+  // curr
+  int32_t _curr_prl_spacing = -1;
+  int32_t _curr_x_spacing = -1;
+  int32_t _curr_y_spacing = -1;
+  // above
+  int32_t _above_prl_spacing = -1;
+  int32_t _above_x_spacing = -1;
+  int32_t _above_y_spacing = -1;
+  // below
+  int32_t _below_prl_spacing = -1;
+  int32_t _below_x_spacing = -1;
+  int32_t _below_y_spacing = -1;
 };
 
 }  // namespace irt

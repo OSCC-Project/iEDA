@@ -90,6 +90,8 @@ class DataManager
   void buildLayerList();
   void transLayerList();
   void makeLayerList();
+  void makeRoutingLayerList();
+  void makeCutLayerList();
   void checkLayerList();
   void buildLayerInfo();
   void buildLayerViaMasterList();
