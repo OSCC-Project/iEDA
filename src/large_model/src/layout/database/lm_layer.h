@@ -43,6 +43,7 @@ class LmPatchLayer
   ~LmPatchLayer() = default;
 
   // getter
+  std::string& get_layer_name(){return _layer_name;}
   int get_wire_width() { return _wire_width; }
   bool is_routing() { return _b_routing; }
   LmLayerGrid& get_grid() { return _grid; }
