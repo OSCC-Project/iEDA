@@ -39,6 +39,7 @@ struct PatternState
   int current_col;
   int max_width;
   int max_height;
+  int val;
 };
 
 // Directions for expansion
@@ -60,8 +61,14 @@ class LmPatternGenerator
   static std::vector<Matrix> generateAllPatterns(const int& w, const int& h);
 
  private:
+  // Check Direction Feasibility
+  static bool isFeasible(const PatternState& state, const PatternDirection& dir);
+
   // Reverse Operation
   static Matrix reverse(const Matrix& matrix, const bool& horizontal, const bool& vertical);
+
+  // Rotate Operation
+  static Matrix rotate(const Matrix& matrix, const int& angle);
 
   // Function to deep copy the grid and expand it in the specified direction
   static PatternState expandGrid(const PatternState& state, const PatternDirection& dir);
