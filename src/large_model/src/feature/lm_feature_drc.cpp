@@ -141,6 +141,7 @@ void LmFeatureDrc::markNetsAndWires()
     }
   }
 
+  LOG_INFO << "Read nets : " << (int) net_map.size() << " / " << (int) net_map.size();
   LOG_INFO << "LM memory usage " << stats.memoryDelta() << " MB";
   LOG_INFO << "LM elapsed time " << stats.elapsedRunTime() << " s";
   LOG_INFO << "LM mark net & wire drc end...";

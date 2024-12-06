@@ -90,6 +90,7 @@ class LmLayoutChecker : public GraphCheckerBase
   bool addNet(LmNet& net);
   bool isConnectivity();
   Graph getGraph() { return _graph; }
+  void checkPinConnection(std::map<int, LmNet> net_map);
 
  private:
   size_t _node_id = 0;

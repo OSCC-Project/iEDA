@@ -38,6 +38,10 @@ bool LmGraphDataManager::buildGraphData()
       auto [row2, col2] = gridInfoInst.findNodeID(x2, y2);
       auto* node2 = grid.get_node(row2, col2);
 
+      if (node1 == nullptr || node1->get_node_data() == nullptr || node2 == nullptr || node2->get_node_data() == nullptr) {
+        LOG_ERROR << "error node....";
+      }
+
       return std::make_pair(node1, node2);
     } else {
       auto& grid1 = patch_layers.findPatchLayer(layer1)->get_grid();
@@ -65,21 +69,33 @@ bool LmGraphDataManager::buildGraphData()
 
   std::ranges::for_each(wire_graphs, [&](auto& wire_graph) -> void {
     auto* lm_net = layout_graph.get_net(net_id);
+    lm_net->clearWire();
+
+    std::set<int> pin_ids_wires;
+    std::set<int> pin_ids_paths;
 
     // travelsal the edge in wire_graph
     for (auto edge : boost::make_iterator_range(boost::edges(wire_graph))) {
       LmNetWire lm_wire;
-
-      auto source = boost::source(edge, wire_graph);
-      auto target = boost::target(edge, wire_graph);
       /// add wire
-      auto source_label = wire_graph[source];
-      auto target_label = wire_graph[target];
+      {
+        auto source = boost::source(edge, wire_graph);
+        auto target = boost::target(edge, wire_graph);
 
-      auto [node1, node2] = get_nodes(source_label.x, source_label.y, source_label.layer_id, target_label.x, target_label.y,
-                                      target_label.layer_id, patch_layers);
-      lm_wire.set_start(node1);
-      lm_wire.set_end(node2);
+        auto source_label = wire_graph[source];
+        auto target_label = wire_graph[target];
+
+        auto [node1, node2] = get_nodes(source_label.x, source_label.y, source_label.layer_id, target_label.x, target_label.y,
+                                        target_label.layer_id, patch_layers);
+        lm_wire.set_start(node1);
+        lm_wire.set_end(node2);
+        if (node1->get_node_data()->get_pin_id() != 0) {
+          pin_ids_wires.insert(node1->get_node_data()->get_pin_id());
+        }
+        if (node2->get_node_data()->get_pin_id() != 0) {
+          pin_ids_wires.insert(node2->get_node_data()->get_pin_id());
+        }
+      }
 
       /// add path
       std::ranges::for_each(wire_graph[edge].path, [&](auto& point_pair) -> void {
@@ -89,6 +105,13 @@ bool LmGraphDataManager::buildGraphData()
                                         bg::get<1>(end_point), bg::get<2>(end_point), patch_layers);
 
         lm_wire.add_path(node1, node2);
+
+        if (node1->get_node_data()->get_pin_id() != 0) {
+          pin_ids_paths.insert(node1->get_node_data()->get_pin_id());
+        }
+        if (node2->get_node_data()->get_pin_id() != 0) {
+          pin_ids_paths.insert(node2->get_node_data()->get_pin_id());
+        }
       });
 
       lm_net->addWire(lm_wire);
@@ -97,6 +120,11 @@ bool LmGraphDataManager::buildGraphData()
     if (net_id % 1000 == 0) {
       LOG_INFO << "Read nets : " << net_id << " / " << (int) wire_graphs.size();
     }
+
+    // if (pin_ids_wires.size() != lm_net->get_pin_ids().size()) {
+    //   LOG_ERROR << "error wire pin num, net : " << lm_net->get_pin_ids().size() << " wire: " << pin_ids_wires.size()
+    //             << " path: " << pin_ids_paths.size();
+    // }
 
     net_id++;
   });

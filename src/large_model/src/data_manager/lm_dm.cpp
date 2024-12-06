@@ -43,6 +43,7 @@ bool LmDataManager::checkData()
   if (graph.size() > 0) {
     // connectiviy check
     LmLayoutChecker checker;
+    checker.checkPinConnection(graph);
     return checker.checkLayout(graph);
   }
 

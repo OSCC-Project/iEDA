@@ -42,8 +42,8 @@ void LmLayoutInit::init()
   initTracks();
   //   initPDN();
   initNets();
-  initInstances();
-  initIOPins();
+  //   initInstances();
+  //   initIOPins();
 }
 
 void LmLayoutInit::initViaIds()
@@ -79,7 +79,6 @@ void LmLayoutInit::initDie()
     patch_layer.set_urx(idb_die->get_urx());
     patch_layer.set_ury(idb_die->get_ury());
 
-    auto& grid = patch_layer.get_grid();
     gridInfoInst.llx = idb_die->get_llx();
     gridInfoInst.lly = idb_die->get_lly();
     gridInfoInst.urx = idb_die->get_urx();

@@ -74,7 +74,15 @@ class LmNetWire
     _node_pair = std::make_pair(node1, node2);
     _id = wire_id_index++;
   };
-  ~LmNetWire() = default;
+  ~LmNetWire()
+  {
+    if (_feature != nullptr) {
+      delete _feature;
+      _feature = nullptr;
+    }
+
+    _paths.clear();
+  }
 
   // getter
   int64_t get_id() { return _id; }

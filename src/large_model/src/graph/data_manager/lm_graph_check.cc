@@ -31,6 +31,8 @@
 #include <vector>
 
 #include "log/Log.hh"
+#include "omp.h"
+#include "usage.hh"
 namespace ilm {
 
 bool GraphCheckerBase::isConnectivity(const Graph& graph) const
@@ -543,4 +545,70 @@ bool LmLayoutChecker::isConnectivity()
 
   return false;
 }
+
+void LmLayoutChecker::checkPinConnection(std::map<int, LmNet> net_map)
+{
+  ieda::Stats stats;
+
+  LOG_INFO << "LM check pin connections for routing layer start...";
+
+  omp_lock_t lck;
+  omp_init_lock(&lck);
+
+  int connected_num = 0;
+
+  //   for (auto& [net_id, net] : net_map) {
+  // #pragma omp parallel for schedule(dynamic)
+  for (int i = 0; i < (int) net_map.size(); ++i) {
+    auto it = net_map.begin();
+    std::advance(it, i);
+    auto& net_id = it->first;
+    auto& net = it->second;
+    auto& pin_ids = net.get_pin_ids();
+    auto& wires = net.get_wires();
+    if (wires.size() <= 0) {
+      continue;
+    }
+
+    std::set<int> count_pins = std::set<int>(pin_ids.begin(), pin_ids.end());
+    bool b_io = false;
+
+    for (auto& wire : wires) {
+      auto& [node1, node2] = wire.get_connected_nodes();
+      if (node1->get_node_data()->get_pin_id() != -1) {
+        count_pins.erase(node1->get_node_data()->get_pin_id());
+        if (node1->get_node_data()->is_io()) {
+          b_io = true;
+        }
+      }
+      if (node2->get_node_data()->get_pin_id() != -1) {
+        count_pins.erase(node2->get_node_data()->get_pin_id());
+        if (node2->get_node_data()->is_io()) {
+          b_io = true;
+        }
+      }
+    }
+
+    if (count_pins.size() > 0) {
+      for (auto pin_id : count_pins) {
+        LOG_INFO << "disconnected pin : " << pin_id;
+      }
+
+      if (b_io) {
+        LOG_INFO << "has io... ";
+      }
+      LOG_INFO << "net " << net_id << " reconnect : " << count_pins.size();
+    } else {
+      LOG_INFO << "net connected " << net_id;
+      connected_num++;
+    }
+  }
+
+  LOG_INFO << "net reconnect ratio " << connected_num << " / " << net_map.size();
+
+  omp_destroy_lock(&lck);
+
+  LOG_INFO << "LM check pin connections for routing layer end...";
+}
+
 }  // namespace ilm
