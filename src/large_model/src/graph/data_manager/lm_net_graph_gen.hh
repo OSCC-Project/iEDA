@@ -272,6 +272,7 @@ class LmNetGraphGenerator
   ~LmNetGraphGenerator() = default;
 
   void initLayerMap();
+  WireGraph buildGraph(idb::IdbNet* idb_net) const;
   std::vector<WireGraph> buildGraphs() const;
 
   // Topo Graph
@@ -294,6 +295,9 @@ class LmNetGraphGenerator
   LayoutDefPoint generatePointPivot(const LayoutDefPoint& p, const LayoutDefRect& rect) const;
   LayoutDefPoint generateSegPivot(const LayoutDefSeg& seg, const LayoutDefRect& rect) const;
 
+  // debug
+  void toPy(const TopoGraph& graph, const std::string& path) const;
+  void toPy(const WireGraph& graph, const std::string& path) const;
  private:
   int getX(const LayoutDefPoint& point) const { return bg::get<0>(point); }
   int getY(const LayoutDefPoint& point) const { return bg::get<1>(point); }
@@ -318,9 +322,6 @@ class LmNetGraphGenerator
   {
     return LayoutDefPoint((getLowX(rect) + getHighX(rect)) / 2, (getLowY(rect) + getHighY(rect)) / 2, (getLowZ(rect) + getHighZ(rect)) / 2);
   }
-  // debug
-  void toPy(const TopoGraph& graph, const std::string& path) const;
-  void toPy(const WireGraph& graph, const std::string& path) const;
 
   std::unordered_map<std::string, int> _layer_map;
 };

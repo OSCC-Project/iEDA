@@ -53,21 +53,24 @@ void LmNetGraphGenerator::initLayerMap()
 
   LOG_INFO << "Layer number : " << index;
 }
+WireGraph LmNetGraphGenerator::buildGraph(idb::IdbNet* idb_net) const
+{
+  auto topo_graph = buildTopoGraph(idb_net);
+  auto wire_graph = buildWireGraph(topo_graph);
+  return wire_graph;
+}
 std::vector<WireGraph> LmNetGraphGenerator::buildGraphs() const
 {
   auto* idb_design = dmInst->get_idb_design();
   auto* idb_nets = idb_design->get_net_list();
   std::vector<WireGraph> graphs;
-  std::ranges::transform(idb_nets->get_net_list(), std::back_inserter(graphs), [&](auto* idb_net) -> WireGraph {
-    auto topo_graph = buildTopoGraph(idb_net);
-    auto wire_graph = buildWireGraph(topo_graph);
-    return wire_graph;
-  });
+  std::ranges::transform(idb_nets->get_net_list(), std::back_inserter(graphs),
+                         [&](auto* idb_net) -> WireGraph { return buildGraph(idb_net); });
   return graphs;
 }
 TopoGraph LmNetGraphGenerator::buildTopoGraph(idb::IdbNet* idb_net) const
 {
-  LOG_INFO << "Net name : " << idb_net->get_net_name();
+  // LOG_INFO << "Net name : " << idb_net->get_net_name();
 
   TopoGraph graph;
   // Build Instances' pins and IO pins
@@ -425,7 +428,6 @@ void LmNetGraphGenerator::reduceWireGraph(WireGraph& graph) const
   struct PathToReduce
   {
     std::vector<WireGraphVertex> vertices;
-    std::vector<WireGraphEdge> edges;
   };
 
   std::vector<PathToReduce> paths_to_reduce;
@@ -453,7 +455,6 @@ void LmNetGraphGenerator::reduceWireGraph(WireGraph& graph) const
         PathToReduce path;
         path.vertices.push_back(current);
         path.vertices.push_back(v);
-        path.edges.push_back(boost::edge(current, v, graph).first);
         while (is_reduce_vertex(v)) {
           visited[v] = true;
           auto neighbors = boost::adjacent_vertices(v, graph);
@@ -461,11 +462,9 @@ void LmNetGraphGenerator::reduceWireGraph(WireGraph& graph) const
           auto right = *std::next(neighbors.first);
           if (!visited[left]) {
             path.vertices.push_back(left);
-            path.edges.push_back(boost::edge(v, left, graph).first);
             v = left;
           } else if (!visited[right]) {
             path.vertices.push_back(right);
-            path.edges.push_back(boost::edge(v, right, graph).first);
             v = right;
           } else {
             LOG_ERROR << "Cannot find a valid path to reduce";
@@ -490,9 +489,23 @@ void LmNetGraphGenerator::reduceWireGraph(WireGraph& graph) const
     // add edge between start and end
     auto [edge, inserted] = boost::add_edge(start, end, graph);
     if (inserted) {
-      graph[edge].path.clear();
-      for (auto e : path.edges) {
-        graph[edge].path.insert(graph[edge].path.end(), graph[e].path.begin(), graph[e].path.end());
+      auto& new_path = graph[edge].path;
+      new_path.clear();
+      for (size_t i = 0; i < vertices.size() - 1; ++i) {
+        auto cur = vertices[i];
+        auto next = vertices[i + 1];
+        auto cur_edge = boost::edge(cur, next, graph).first;
+        auto& path = graph[cur_edge].path;
+        auto cur_point = LayoutDefPoint(graph[cur].x, graph[cur].y, graph[cur].layer_id);
+        auto path_start_point = path.front().first;
+        if (bg::equals(cur_point, path_start_point)) {
+          new_path.insert(new_path.end(), path.begin(), path.end());
+        } else {
+          // swap for each pair
+          std::ranges::for_each(path, [&](const std::pair<LayoutDefPoint, LayoutDefPoint>& pair) -> void {
+            new_path.push_back({pair.second, pair.first});
+          });
+        }
       }
     }
   }
