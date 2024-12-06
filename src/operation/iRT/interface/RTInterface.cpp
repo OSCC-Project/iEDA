@@ -180,29 +180,47 @@ void RTInterface::clearDef()
   IdbNetList* idb_net_list = dmInst->get_idb_def_service()->get_design()->get_net_list();
 
   //////////////////////////////////////////
+  // 删除net内所有的wire
+  for (idb::IdbNet* idb_net : idb_net_list->get_net_list()) {
+    idb_net->clear_wire_list();
+  }
+  // 删除net内所有的wire
+  //////////////////////////////////////////
+
+  //////////////////////////////////////////
   // 删除net内所有的virtual
   for (idb::IdbNet* idb_net : idb_net_list->get_net_list()) {
     for (idb::IdbRegularWire* wire : idb_net->get_wire_list()->get_wire_list()) {
-      std::vector<idb::IdbRegularWireSegment*>& segment_list = wire->get_segment_list();
-      std::sort(segment_list.begin(), segment_list.end(), [](idb::IdbRegularWireSegment* a, idb::IdbRegularWireSegment* b) {
-        bool a_is_virtual = a->is_virtual(a->get_point_second());
-        bool b_is_virtual = b->is_virtual(b->get_point_second());
-        if (a_is_virtual == false && b_is_virtual == true) {
-          return true;
+      std::vector<idb::IdbRegularWireSegment*> del_segment_list;
+      for (idb::IdbRegularWireSegment* segment : wire->get_segment_list()) {
+        if (segment->is_virtual(segment->get_point_second())) {
+          del_segment_list.push_back(segment);
         }
-        return false;
-      });
+      }
+      for (idb::IdbRegularWireSegment* segment : del_segment_list) {
+        wire->delete_seg(segment);
+      }
     }
   }
   // 删除net内所有的virtual
   //////////////////////////////////////////
 
   //////////////////////////////////////////
-  // 删除net内所有的wire
+  // 删除net内所有的patch
   for (idb::IdbNet* idb_net : idb_net_list->get_net_list()) {
-    idb_net->clear_wire_list();
+    for (idb::IdbRegularWire* wire : idb_net->get_wire_list()->get_wire_list()) {
+      std::vector<idb::IdbRegularWireSegment*> del_segment_list;
+      for (idb::IdbRegularWireSegment* segment : wire->get_segment_list()) {
+        if (segment->is_rect()) {
+          del_segment_list.push_back(segment);
+        }
+      }
+      for (idb::IdbRegularWireSegment* segment : del_segment_list) {
+        wire->delete_seg(segment);
+      }
+    }
   }
-  // 删除net内所有的wire
+  // 删除net内所有的patch
   //////////////////////////////////////////
 
   //////////////////////////////////////////
@@ -236,7 +254,7 @@ void RTInterface::clearDef()
   std::vector<idb::IdbPin*> remove_pin_list;
   for (idb::IdbPin* io_pin : idb_pin_list->get_pin_list()) {
     if (io_pin->get_port_box_list().empty()) {
-      RTLOG.info(Loc::current(), io_pin->get_pin_name());
+      RTLOG.info(Loc::current(), "del io_pin: ", io_pin->get_pin_name());
       remove_pin_list.push_back(io_pin);
     }
   }
@@ -410,37 +428,94 @@ void RTInterface::wrapRoutingDesignRule(RoutingLayer& routing_layer, idb::IdbLay
   // eol
   {
     idb::IdbLayerRouting* idb_routing_layer = dynamic_cast<idb::IdbLayerRouting*>(idb_layer);
-    int32_t eol_spacing = 0;
-    int32_t eol_within = 0;
     if (!idb_routing_layer->get_lef58_spacing_eol_list().empty()) {
-      eol_spacing = idb_routing_layer->get_lef58_spacing_eol_list().front().get()->get_eol_space();
-      eol_within = idb_routing_layer->get_lef58_spacing_eol_list().front().get()->get_eol_within().value();
+      int32_t eol_spacing = idb_routing_layer->get_lef58_spacing_eol_list().front().get()->get_eol_space();
+      int32_t eol_within = idb_routing_layer->get_lef58_spacing_eol_list().front().get()->get_eol_within().value();
       for (std::shared_ptr<routinglayer::Lef58SpacingEol>& idb_rule_eol : idb_routing_layer->get_lef58_spacing_eol_list()) {
         if (idb_rule_eol.get()->get_eol_space() < eol_spacing) {
           eol_spacing = idb_rule_eol.get()->get_eol_space();
           eol_within = idb_rule_eol.get()->get_eol_within().value();
         }
       }
-    }
-    if (eol_spacing == 0 && eol_within == 0) {
+      routing_layer.set_eol_spacing(eol_spacing);
+      routing_layer.set_eol_within(eol_within);
+    } else {
       RTLOG.warn(Loc::current(), "The idb layer ", idb_layer->get_name(), " eol_spacing is empty!");
+      routing_layer.set_eol_spacing(0);
+      routing_layer.set_eol_within(0);
     }
-    routing_layer.set_eol_spacing(eol_spacing);
-    routing_layer.set_eol_within(eol_within);
   }
 }
 
 void RTInterface::wrapCutDesignRule(CutLayer& cut_layer, idb::IdbLayerCut* idb_layer)
 {
-  if (!idb_layer->get_spacings().empty()) {
-    cut_layer.set_cut_spacing(idb_layer->get_spacings().front()->get_spacing());
-  } else if (!idb_layer->get_lef58_spacing_table().empty()) {
-    idb::cutlayer::Lef58SpacingTable::CutSpacing cut_spacing
-        = idb_layer->get_lef58_spacing_table().front()->get_cutclass().get_cut_spacing(0, 0);
-    cut_layer.set_cut_spacing(std::max(cut_spacing.get_cut_spacing1().value(), cut_spacing.get_cut_spacing2().value()));
-  } else {
-    cut_layer.set_cut_spacing(0);
-    RTLOG.warn(Loc::current(), "The idb layer ", idb_layer->get_name(), " spacing table is empty!");
+  // curr layer
+  {
+    if (!idb_layer->get_spacings().empty()) {
+      cut_layer.set_curr_prl_spacing(0);
+      cut_layer.set_curr_x_spacing(idb_layer->get_spacings().front()->get_spacing());
+      cut_layer.set_curr_y_spacing(idb_layer->get_spacings().front()->get_spacing());
+    } else if (!idb_layer->get_lef58_spacing_table().empty()) {
+      idb::cutlayer::Lef58SpacingTable* spacing_table = nullptr;
+      for (std::shared_ptr<idb::cutlayer::Lef58SpacingTable>& spacing_table_ptr : idb_layer->get_lef58_spacing_table()) {
+        if (spacing_table_ptr.get()->get_second_layer().has_value()) {
+          continue;
+        }
+        spacing_table = spacing_table_ptr.get();
+      }
+      if (spacing_table != nullptr) {
+        idb::cutlayer::Lef58SpacingTable::CutSpacing cut_spacing = spacing_table->get_cutclass().get_cut_spacing(0, 0);
+
+        int32_t curr_prl_spacing = -1 * spacing_table->get_prl().value().get_prl();
+        int32_t curr_x_spacing = cut_spacing.get_cut_spacing1().value();
+        int32_t curr_y_spacing = cut_spacing.get_cut_spacing2().value();
+        cut_layer.set_curr_prl_spacing(curr_prl_spacing);
+        cut_layer.set_curr_x_spacing(curr_x_spacing);
+        cut_layer.set_curr_y_spacing(curr_y_spacing);
+      } else {
+        cut_layer.set_curr_prl_spacing(0);
+        cut_layer.set_curr_x_spacing(0);
+        cut_layer.set_curr_y_spacing(0);
+        RTLOG.warn(Loc::current(), "The idb layer ", idb_layer->get_name(), " curr layer spacing is empty!");
+      }
+    } else {
+      cut_layer.set_curr_prl_spacing(0);
+      cut_layer.set_curr_x_spacing(0);
+      cut_layer.set_curr_y_spacing(0);
+      RTLOG.warn(Loc::current(), "The idb layer ", idb_layer->get_name(), " curr layer spacing is empty!");
+    }
+  }
+  // below layer
+  {
+    if (!idb_layer->get_lef58_spacing_table().empty()) {
+      idb::cutlayer::Lef58SpacingTable* spacing_table = nullptr;
+      for (std::shared_ptr<idb::cutlayer::Lef58SpacingTable>& spacing_table_ptr : idb_layer->get_lef58_spacing_table()) {
+        if (!spacing_table_ptr.get()->get_second_layer().has_value()) {
+          continue;
+        }
+        spacing_table = spacing_table_ptr.get();
+      }
+      if (spacing_table != nullptr) {
+        idb::cutlayer::Lef58SpacingTable::CutSpacing cut_spacing = spacing_table->get_cutclass().get_cut_spacing(0, 0);
+
+        int32_t below_prl_spacing = -1 * spacing_table->get_prl().value().get_prl();
+        int32_t below_x_spacing = cut_spacing.get_cut_spacing1().value();
+        int32_t below_y_spacing = cut_spacing.get_cut_spacing2().value();
+        cut_layer.set_below_prl_spacing(below_prl_spacing);
+        cut_layer.set_below_x_spacing(below_x_spacing);
+        cut_layer.set_below_y_spacing(below_y_spacing);
+      } else {
+        cut_layer.set_below_prl_spacing(0);
+        cut_layer.set_below_x_spacing(0);
+        cut_layer.set_below_y_spacing(0);
+        RTLOG.warn(Loc::current(), "The idb layer ", idb_layer->get_name(), " below layer spacing is empty!");
+      }
+    } else {
+      cut_layer.set_below_prl_spacing(0);
+      cut_layer.set_below_x_spacing(0);
+      cut_layer.set_below_y_spacing(0);
+      RTLOG.warn(Loc::current(), "The idb layer ", idb_layer->get_name(), " below layer spacing is empty!");
+    }
   }
 }
 

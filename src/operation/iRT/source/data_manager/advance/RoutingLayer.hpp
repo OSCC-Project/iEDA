@@ -79,7 +79,9 @@ class RoutingLayer
   int32_t _min_area = 0;
   Direction _prefer_direction = Direction::kNone;
   ScaleAxis _track_axis;
+  // prl
   SpacingTable _prl_spacing_table;
+  // eol
   int32_t _eol_spacing = -1;
   int32_t _eol_within = -1;
 };

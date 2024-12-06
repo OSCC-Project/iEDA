@@ -226,6 +226,7 @@ void TrackAssigner::assignTAPanelMap(TAModel& ta_model)
         buildTANodeMap(ta_panel);
         buildTANodeNeighbor(ta_panel);
         buildOrientNetMap(ta_panel);
+        exemptPinShape(ta_panel);
         // debugCheckTAPanel(ta_panel);
         // debugPlotTAPanel(ta_panel, -1, "before");
         routeTAPanel(ta_panel);
@@ -502,6 +503,21 @@ void TrackAssigner::buildOrientNetMap(TAPanel& ta_panel)
   }
   for (Violation& violation : ta_panel.get_violation_list()) {
     addViolationToGraph(ta_panel, violation);
+  }
+}
+
+void TrackAssigner::exemptPinShape(TAPanel& ta_panel)
+{
+  GridMap<TANode>& ta_node_map = ta_panel.get_ta_node_map();
+  for (int32_t x = 0; x < ta_node_map.get_x_size(); x++) {
+    for (int32_t y = 0; y < ta_node_map.get_y_size(); y++) {
+      TANode& ta_node = ta_node_map[x][y];
+      for (auto& [orient, net_set] : ta_node.get_orient_fixed_rect_map()) {
+        if (RTUTIL.exist(net_set, -1) && net_set.size() >= 2) {
+          net_set.erase(-1);
+        }
+      }
+    }
   }
 }
 
@@ -1344,16 +1360,17 @@ std::map<TANode*, std::set<Orientation>> TrackAssigner::getRoutingNodeOrientatio
   }
   int32_t layer_idx = net_shape.get_layer_idx();
   RoutingLayer& routing_layer = routing_layer_list[layer_idx];
-  int32_t x_spacing = 0;
-  int32_t y_spacing = 0;
+  // x_spacing y_spacing
+  std::vector<std::pair<int32_t, int32_t>> spacing_pair_list;
   {
+    // prl
     int32_t prl_spacing = routing_layer.getPRLSpacing(net_shape.get_rect());
+    spacing_pair_list.emplace_back(prl_spacing, prl_spacing);
+    // eol
     if (routing_layer.isPreferH()) {
-      x_spacing = std::max(prl_spacing, routing_layer.get_eol_spacing());
-      y_spacing = std::max(prl_spacing, routing_layer.get_eol_within());
+      spacing_pair_list.emplace_back(routing_layer.get_eol_spacing(), routing_layer.get_eol_within());
     } else {
-      x_spacing = std::max(prl_spacing, routing_layer.get_eol_within());
-      y_spacing = std::max(prl_spacing, routing_layer.get_eol_spacing());
+      spacing_pair_list.emplace_back(routing_layer.get_eol_within(), routing_layer.get_eol_spacing());
     }
   }
   int32_t half_wire_width = routing_layer.get_min_width() / 2;
@@ -1361,7 +1378,7 @@ std::map<TANode*, std::set<Orientation>> TrackAssigner::getRoutingNodeOrientatio
   GridMap<TANode>& ta_node_map = ta_panel.get_ta_node_map();
   std::map<TANode*, std::set<Orientation>> node_orientation_map;
   // wire 与 net_shape
-  {
+  for (auto& [x_spacing, y_spacing] : spacing_pair_list) {
     int32_t enlarged_x_size = half_wire_width;
     int32_t enlarged_y_size = half_wire_width;
     if (need_enlarged) {

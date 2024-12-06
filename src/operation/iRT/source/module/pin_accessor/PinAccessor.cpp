@@ -303,24 +303,29 @@ std::vector<PlanarRect> PinAccessor::getPlanarLegalRectList(PAModel& pa_model, i
               continue;
             }
             for (EXTLayerRect* fixed_rect : fixed_rect_set) {
-              int32_t x_spacing = 0;
-              int32_t y_spacing = 0;
+              // x_spacing y_spacing
+              std::vector<std::pair<int32_t, int32_t>> spacing_pair_list;
               {
+                // prl
                 int32_t prl_spacing = routing_layer.getPRLSpacing(fixed_rect->get_real_rect());
-                if (routing_layer.isPreferH()) {
-                  x_spacing = std::max(prl_spacing, routing_layer.get_eol_spacing());
-                  y_spacing = std::max(prl_spacing, routing_layer.get_eol_within());
-                } else {
-                  x_spacing = std::max(prl_spacing, routing_layer.get_eol_within());
-                  y_spacing = std::max(prl_spacing, routing_layer.get_eol_spacing());
+                spacing_pair_list.emplace_back(prl_spacing, prl_spacing);
+                if (layer_idx != curr_layer_idx) {
+                  // eol
+                  if (routing_layer.isPreferH()) {
+                    spacing_pair_list.emplace_back(routing_layer.get_eol_spacing(), routing_layer.get_eol_within());
+                  } else {
+                    spacing_pair_list.emplace_back(routing_layer.get_eol_within(), routing_layer.get_eol_spacing());
+                  }
                 }
               }
-              int32_t enlarged_x_size = x_spacing + enclosure_half_x_span;
-              int32_t enlarged_y_size = y_spacing + enclosure_half_y_span;
-              PlanarRect enlarged_rect
-                  = RTUTIL.getEnlargedRect(fixed_rect->get_real_rect(), enlarged_x_size, enlarged_y_size, enlarged_x_size, enlarged_y_size);
-              if (RTUTIL.isOpenOverlap(shrinked_rect.get_real_rect(), enlarged_rect)) {
-                routing_obs_shape_list.push_back(enlarged_rect);
+              for (auto& [x_spacing, y_spacing] : spacing_pair_list) {
+                int32_t enlarged_x_size = x_spacing + enclosure_half_x_span;
+                int32_t enlarged_y_size = y_spacing + enclosure_half_y_span;
+                PlanarRect enlarged_rect = RTUTIL.getEnlargedRect(fixed_rect->get_real_rect(), enlarged_x_size, enlarged_y_size,
+                                                                  enlarged_x_size, enlarged_y_size);
+                if (RTUTIL.isOpenOverlap(shrinked_rect.get_real_rect(), enlarged_rect)) {
+                  routing_obs_shape_list.push_back(enlarged_rect);
+                }
               }
             }
           }
@@ -551,6 +556,7 @@ void PinAccessor::routePABoxMap(PAModel& pa_model)
         buildLayerNodeMap(pa_box);
         buildPANodeNeighbor(pa_box);
         buildOrientNetMap(pa_box);
+        exemptPinShape(pa_box);
         // debugCheckPABox(pa_box);
         // debugPlotPABox(pa_box, -1, "before");
         routePABox(pa_box);
@@ -830,6 +836,23 @@ void PinAccessor::buildOrientNetMap(PABox& pa_box)
   }
 }
 
+void PinAccessor::exemptPinShape(PABox& pa_box)
+{
+  std::vector<GridMap<PANode>>& layer_node_map = pa_box.get_layer_node_map();
+  for (GridMap<PANode>& pa_node_map : layer_node_map) {
+    for (int32_t x = 0; x < pa_node_map.get_x_size(); x++) {
+      for (int32_t y = 0; y < pa_node_map.get_y_size(); y++) {
+        PANode& pa_node = pa_node_map[x][y];
+        for (auto& [orient, net_set] : pa_node.get_orient_fixed_rect_map()) {
+          if (RTUTIL.exist(net_set, -1) && net_set.size() >= 2) {
+            net_set.erase(-1);
+          }
+        }
+      }
+    }
+  }
+}
+
 void PinAccessor::routePABox(PABox& pa_box)
 {
   std::vector<PATask*> routing_task_list = initTaskSchedule(pa_box);
@@ -862,8 +885,6 @@ void PinAccessor::routePATask(PABox& pa_box, PATask* pa_task)
     resetSinglePath(pa_box);
   }
   updateTaskResult(pa_box);
-  // patchSingleTask(pa_box);
-  updateTaskPatch(pa_box);
   resetSingleTask(pa_box);
 }
 
@@ -1111,100 +1132,6 @@ std::vector<Segment<LayerCoord>> PinAccessor::getRoutingSegmentList(PABox& pa_bo
   return routing_segment_list;
 }
 
-void PinAccessor::patchSingleTask(PABox& pa_box)
-{
-  ScaleAxis& gcell_axis = RTDM.getDatabase().get_gcell_axis();
-
-  for (auto getRealPatchList : {std::bind(&PinAccessor::getMinStepPatchList, this, std::placeholders::_1)}) {
-    for (LayerRect real_patch : getRealPatchList(pa_box)) {
-      EXTLayerRect routing_patch;
-      routing_patch.set_real_rect(real_patch);
-      routing_patch.set_layer_idx(real_patch.get_layer_idx());
-      routing_patch.set_grid_rect(RTUTIL.getClosedGCellGridRect(routing_patch.get_real_rect(), gcell_axis));
-      pa_box.get_routing_patch_list().push_back(routing_patch);
-    }
-  }
-}
-
-std::vector<LayerRect> PinAccessor::getMinStepPatchList(PABox& pa_box)
-{
-  std::vector<LayerRect> real_patch_list;
-  for (Violation patch_violation : getPatchViolationList(pa_box)) {
-    if (patch_violation.get_violation_type() != ViolationType::kMinStep) {
-      continue;
-    }
-    real_patch_list.push_back(patch_violation.get_violation_shape().getRealLayerRect());
-  }
-  return real_patch_list;
-}
-
-std::vector<Violation> PinAccessor::getPatchViolationList(PABox& pa_box)
-{
-  int32_t curr_net_idx = pa_box.get_curr_pa_task()->get_net_idx();
-  int32_t curr_task_idx = pa_box.get_curr_pa_task()->get_task_idx();
-
-  std::string top_name
-      = RTUTIL.getString("pa_box_", pa_box.get_pa_box_id().get_x(), "_", pa_box.get_pa_box_id().get_y(), "_", curr_task_idx);
-  PlanarRect check_region = pa_box.get_box_rect().get_real_rect();
-
-  std::map<int32_t, std::vector<std::pair<EXTLayerRect*, bool>>> net_pin_shape_map;
-  for (auto& [is_routing, layer_net_fixed_rect_map] : pa_box.get_type_layer_net_fixed_rect_map()) {
-    for (auto& [layer_idx, net_fixed_rect_map] : layer_net_fixed_rect_map) {
-      for (auto& [net_idx, fixed_rect_set] : net_fixed_rect_map) {
-        if (net_idx == curr_net_idx) {
-          for (auto& fixed_rect : fixed_rect_set) {
-            net_pin_shape_map[net_idx].emplace_back(fixed_rect, is_routing);
-          }
-        }
-      }
-    }
-  }
-  std::map<int32_t, std::vector<Segment<LayerCoord>*>> net_result_map;
-  for (Segment<LayerCoord>& segment : pa_box.get_net_task_result_map()[curr_net_idx][curr_task_idx]) {
-    net_result_map[curr_net_idx].emplace_back(&segment);
-  }
-  std::map<int32_t, std::vector<EXTLayerRect*>> net_patch_map;
-  for (EXTLayerRect& routing_patch : pa_box.get_routing_patch_list()) {
-    net_patch_map[curr_net_idx].emplace_back(&routing_patch);
-  }
-  std::set<int32_t> need_checked_net_set;
-  need_checked_net_set.insert(curr_net_idx);
-
-  DETask de_task;
-  de_task.set_process_type_set({DEProcessType::kPatch});
-  de_task.set_top_name(top_name);
-  de_task.set_check_region(check_region);
-  de_task.set_net_pin_shape_map(net_pin_shape_map);
-  de_task.set_net_result_map(net_result_map);
-  de_task.set_net_patch_map(net_patch_map);
-  de_task.set_need_checked_net_set(need_checked_net_set);
-  return RTDE.getViolationList(de_task);
-}
-
-void PinAccessor::updateTaskPatch(PABox& pa_box)
-{
-  std::vector<EXTLayerRect> new_routing_patch_list = getRoutingPatchList(pa_box);
-
-  int32_t curr_net_idx = pa_box.get_curr_pa_task()->get_net_idx();
-  int32_t curr_task_idx = pa_box.get_curr_pa_task()->get_task_idx();
-  std::vector<EXTLayerRect>& routing_patch_list = pa_box.get_net_task_patch_map()[curr_net_idx][curr_task_idx];
-
-  // 原结果从graph删除,由于task有对应net_idx,所以不需要在布线前进行删除也不会影响结果
-  for (EXTLayerRect& routing_patch : routing_patch_list) {
-    updateNetResultToGraph(pa_box, ChangeType::kDel, curr_net_idx, routing_patch);
-  }
-  routing_patch_list = new_routing_patch_list;
-  // 新结果添加到graph
-  for (EXTLayerRect& routing_patch : routing_patch_list) {
-    updateNetResultToGraph(pa_box, ChangeType::kAdd, curr_net_idx, routing_patch);
-  }
-}
-
-std::vector<EXTLayerRect> PinAccessor::getRoutingPatchList(PABox& pa_box)
-{
-  return pa_box.get_routing_patch_list();
-}
-
 void PinAccessor::resetSingleTask(PABox& pa_box)
 {
   pa_box.set_curr_pa_task(nullptr);
@@ -1213,7 +1140,6 @@ void PinAccessor::resetSingleTask(PABox& pa_box)
   pa_box.get_path_node_list().clear();
   pa_box.get_single_task_visited_node_list().clear();
   pa_box.get_routing_segment_list().clear();
-  pa_box.get_routing_patch_list().clear();
 }
 
 // manager open list
@@ -1418,7 +1344,7 @@ std::vector<Violation> PinAccessor::getCostViolationList(PABox& pa_box)
   }
 
   DETask de_task;
-  de_task.set_process_type_set({DEProcessType::kCost});
+  de_task.set_process_type(DEProcessType::kMultiNet);
   de_task.set_top_name(top_name);
   de_task.set_check_region(check_region);
   de_task.set_env_shape_list(env_shape_list);
@@ -1795,16 +1721,17 @@ std::map<PANode*, std::set<Orientation>> PinAccessor::getRoutingNodeOrientationM
   }
   int32_t layer_idx = net_shape.get_layer_idx();
   RoutingLayer& routing_layer = routing_layer_list[layer_idx];
-  int32_t x_spacing = 0;
-  int32_t y_spacing = 0;
+  // x_spacing y_spacing
+  std::vector<std::pair<int32_t, int32_t>> spacing_pair_list;
   {
+    // prl
     int32_t prl_spacing = routing_layer.getPRLSpacing(net_shape.get_rect());
+    spacing_pair_list.emplace_back(prl_spacing, prl_spacing);
+    // eol
     if (routing_layer.isPreferH()) {
-      x_spacing = std::max(prl_spacing, routing_layer.get_eol_spacing());
-      y_spacing = std::max(prl_spacing, routing_layer.get_eol_within());
+      spacing_pair_list.emplace_back(routing_layer.get_eol_spacing(), routing_layer.get_eol_within());
     } else {
-      x_spacing = std::max(prl_spacing, routing_layer.get_eol_within());
-      y_spacing = std::max(prl_spacing, routing_layer.get_eol_spacing());
+      spacing_pair_list.emplace_back(routing_layer.get_eol_within(), routing_layer.get_eol_spacing());
     }
   }
   int32_t half_wire_width = routing_layer.get_min_width() / 2;
@@ -1815,7 +1742,7 @@ std::map<PANode*, std::set<Orientation>> PinAccessor::getRoutingNodeOrientationM
   GridMap<PANode>& pa_node_map = pa_box.get_layer_node_map()[layer_idx];
   std::map<PANode*, std::set<Orientation>> node_orientation_map;
   // wire 与 net_shape
-  {
+  for (auto& [x_spacing, y_spacing] : spacing_pair_list) {
     int32_t enlarged_x_size = half_wire_width;
     int32_t enlarged_y_size = half_wire_width;
     if (need_enlarged) {
@@ -1843,7 +1770,7 @@ std::map<PANode*, std::set<Orientation>> PinAccessor::getRoutingNodeOrientationM
     }
   }
   // enclosure 与 net_shape
-  {
+  for (auto& [x_spacing, y_spacing] : spacing_pair_list) {
     int32_t enlarged_x_size = enclosure_half_x_span;
     int32_t enlarged_y_size = enclosure_half_y_span;
     if (need_enlarged) {
@@ -1882,46 +1809,76 @@ std::map<PANode*, std::set<Orientation>> PinAccessor::getCutNodeOrientationMap(P
   if (net_shape.get_is_routing()) {
     RTLOG.error(Loc::current(), "The type of net_shape is routing!");
   }
-  std::vector<int32_t> adjacent_routing_layer_idx_list = cut_to_adjacent_routing_map[net_shape.get_layer_idx()];
-  if (adjacent_routing_layer_idx_list.size() != 2) {
-    // 如果相邻层只有一个,将不会在那一层打via
-    return {};
+  CutLayer& cut_layer = cut_layer_list[net_shape.get_layer_idx()];
+  std::map<int32_t, std::vector<std::pair<int32_t, int32_t>>> cut_spacing_map;
+  {
+    int32_t curr_cut_layer_idx = net_shape.get_layer_idx();
+    if (0 <= curr_cut_layer_idx && curr_cut_layer_idx < static_cast<int32_t>(cut_layer_list.size())) {
+      std::vector<int32_t> adjacent_routing_layer_idx_list = cut_to_adjacent_routing_map[curr_cut_layer_idx];
+      if (adjacent_routing_layer_idx_list.size() == 2) {
+        std::vector<std::pair<int32_t, int32_t>> spacing_pair_list;
+        spacing_pair_list.emplace_back(cut_layer.get_curr_x_spacing(), cut_layer.get_curr_prl_spacing());
+        spacing_pair_list.emplace_back(cut_layer.get_curr_prl_spacing(), cut_layer.get_curr_y_spacing());
+        cut_spacing_map[curr_cut_layer_idx] = spacing_pair_list;
+      }
+    }
+    int32_t below_cut_layer_idx = net_shape.get_layer_idx() - 1;
+    if (0 <= below_cut_layer_idx && below_cut_layer_idx < static_cast<int32_t>(cut_layer_list.size())) {
+      std::vector<int32_t> adjacent_routing_layer_idx_list = cut_to_adjacent_routing_map[below_cut_layer_idx];
+      if (adjacent_routing_layer_idx_list.size() == 2) {
+        std::vector<std::pair<int32_t, int32_t>> spacing_pair_list;
+        spacing_pair_list.emplace_back(cut_layer.get_below_x_spacing(), cut_layer.get_below_prl_spacing());
+        spacing_pair_list.emplace_back(cut_layer.get_below_prl_spacing(), cut_layer.get_below_y_spacing());
+        cut_spacing_map[below_cut_layer_idx] = spacing_pair_list;
+      }
+    }
+    int32_t above_cut_layer_idx = net_shape.get_layer_idx() + 1;
+    if (0 <= above_cut_layer_idx && above_cut_layer_idx < static_cast<int32_t>(cut_layer_list.size())) {
+      std::vector<int32_t> adjacent_routing_layer_idx_list = cut_to_adjacent_routing_map[above_cut_layer_idx];
+      if (adjacent_routing_layer_idx_list.size() == 2) {
+        std::vector<std::pair<int32_t, int32_t>> spacing_pair_list;
+        spacing_pair_list.emplace_back(cut_layer.get_above_x_spacing(), cut_layer.get_above_prl_spacing());
+        spacing_pair_list.emplace_back(cut_layer.get_above_prl_spacing(), cut_layer.get_above_y_spacing());
+        cut_spacing_map[above_cut_layer_idx] = spacing_pair_list;
+      }
+    }
   }
-  int32_t below_routing_layer_idx = adjacent_routing_layer_idx_list.front();
-  int32_t above_routing_layer_idx = adjacent_routing_layer_idx_list.back();
-  RTUTIL.swapByASC(below_routing_layer_idx, above_routing_layer_idx);
-
-  std::vector<GridMap<PANode>>& layer_node_map = pa_box.get_layer_node_map();
   std::map<PANode*, std::set<Orientation>> node_orientation_map;
-
-  int32_t cut_spacing = cut_layer_list[net_shape.get_layer_idx()].getCutSpacing();
-  PlanarRect& cut_shape = layer_via_master_list[below_routing_layer_idx].front().get_cut_shape_list().front();
-  int32_t cut_shape_half_x_span = cut_shape.getXSpan() / 2;
-  int32_t cut_shape_half_y_span = cut_shape.getYSpan() / 2;
-
-  int32_t enlarged_x_size = cut_shape_half_x_span;
-  int32_t enlarged_y_size = cut_shape_half_y_span;
-  if (need_enlarged) {
-    // 膨胀size为 cut_spacing + cut_shape_half_span
-    enlarged_x_size += cut_spacing;
-    enlarged_y_size += cut_spacing;
-  }
-  // 贴合的也不算违例
-  enlarged_x_size -= 1;
-  enlarged_y_size -= 1;
-  PlanarRect space_enlarged_rect
-      = RTUTIL.getEnlargedRect(net_shape.get_rect(), enlarged_x_size, enlarged_y_size, enlarged_x_size, enlarged_y_size);
-  for (auto& [grid_coord, orientation_set] : RTUTIL.getTrackGridOrientationMap(space_enlarged_rect, pa_box.get_box_track_axis())) {
-    if (!RTUTIL.exist(orientation_set, Orientation::kAbove) && !RTUTIL.exist(orientation_set, Orientation::kBelow)) {
-      continue;
-    }
-    PANode& below_node = layer_node_map[below_routing_layer_idx][grid_coord.get_x()][grid_coord.get_y()];
-    if (RTUTIL.exist(below_node.get_neighbor_node_map(), Orientation::kAbove)) {
-      node_orientation_map[&below_node].insert(Orientation::kAbove);
-    }
-    PANode& above_node = layer_node_map[above_routing_layer_idx][grid_coord.get_x()][grid_coord.get_y()];
-    if (RTUTIL.exist(above_node.get_neighbor_node_map(), Orientation::kBelow)) {
-      node_orientation_map[&above_node].insert(Orientation::kBelow);
+  for (auto& [cut_layer_idx, spacing_pair_list] : cut_spacing_map) {
+    std::vector<int32_t> adjacent_routing_layer_idx_list = cut_to_adjacent_routing_map[cut_layer_idx];
+    int32_t below_routing_layer_idx = adjacent_routing_layer_idx_list.front();
+    int32_t above_routing_layer_idx = adjacent_routing_layer_idx_list.back();
+    RTUTIL.swapByASC(below_routing_layer_idx, above_routing_layer_idx);
+    PlanarRect& cut_shape = layer_via_master_list[below_routing_layer_idx].front().get_cut_shape_list().front();
+    int32_t cut_shape_half_x_span = cut_shape.getXSpan() / 2;
+    int32_t cut_shape_half_y_span = cut_shape.getYSpan() / 2;
+    std::vector<GridMap<PANode>>& layer_node_map = pa_box.get_layer_node_map();
+    for (auto& [x_spacing, y_spacing] : spacing_pair_list) {
+      int32_t enlarged_x_size = cut_shape_half_x_span;
+      int32_t enlarged_y_size = cut_shape_half_y_span;
+      if (need_enlarged) {
+        // 膨胀size为 cut_shape_half_span + spacing
+        enlarged_x_size += x_spacing;
+        enlarged_y_size += y_spacing;
+      }
+      // 贴合的也不算违例
+      enlarged_x_size -= 1;
+      enlarged_y_size -= 1;
+      PlanarRect space_enlarged_rect
+          = RTUTIL.getEnlargedRect(net_shape.get_rect(), enlarged_x_size, enlarged_y_size, enlarged_x_size, enlarged_y_size);
+      for (auto& [grid_coord, orientation_set] : RTUTIL.getTrackGridOrientationMap(space_enlarged_rect, pa_box.get_box_track_axis())) {
+        if (!RTUTIL.exist(orientation_set, Orientation::kAbove) && !RTUTIL.exist(orientation_set, Orientation::kBelow)) {
+          continue;
+        }
+        PANode& below_node = layer_node_map[below_routing_layer_idx][grid_coord.get_x()][grid_coord.get_y()];
+        if (RTUTIL.exist(below_node.get_neighbor_node_map(), Orientation::kAbove)) {
+          node_orientation_map[&below_node].insert(Orientation::kAbove);
+        }
+        PANode& above_node = layer_node_map[above_routing_layer_idx][grid_coord.get_x()][grid_coord.get_y()];
+        if (RTUTIL.exist(above_node.get_neighbor_node_map(), Orientation::kBelow)) {
+          node_orientation_map[&above_node].insert(Orientation::kBelow);
+        }
+      }
     }
   }
   return node_orientation_map;

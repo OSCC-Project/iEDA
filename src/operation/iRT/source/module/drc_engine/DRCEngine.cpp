@@ -111,7 +111,7 @@ void DRCEngine::updateIgnoreViolationSet()
   }
 
   DETask de_task;
-  de_task.set_process_type_set({DEProcessType::kCost});
+  de_task.set_process_type(DEProcessType::kMultiNet);
   de_task.set_top_name(top_name);
   de_task.set_check_region(check_region);
   de_task.set_env_shape_list(env_shape_list);
@@ -535,9 +535,8 @@ void DRCEngine::filterViolationList(DETask& de_task)
       // 未知规则舍弃
       continue;
     }
-    DEProcessType process_type = getDEProcessType(violation);
-    if (!RTUTIL.exist(de_task.get_process_type_set(), process_type)) {
-      // 非处理类型舍弃
+    if (skipViolation(violation)) {
+      // 跳过的类型舍弃
       continue;
     }
     PlanarRect& real_rect = violation.get_violation_shape().get_real_rect();
@@ -558,6 +557,12 @@ void DRCEngine::filterViolationList(DETask& de_task)
     }
     if (violation_net_set.empty() || (violation_net_set.size() == 1 && *violation_net_set.begin() == -1)) {
       // net不是布线net的舍弃
+      continue;
+    }
+    if (de_task.get_process_type() == DEProcessType::kSingleNet && violation_net_set.size() > 1) {
+      continue;
+    }
+    if (de_task.get_process_type() == DEProcessType::kMultiNet && violation_net_set.size() < 2) {
       continue;
     }
     if (RTUTIL.exist(_ignore_violation_set, violation)) {
@@ -631,23 +636,23 @@ void DRCEngine::buildViolationList(DETask& de_task)
 
 #if 1  // aux
 
-DEProcessType DRCEngine::getDEProcessType(Violation& violation)
+bool DRCEngine::skipViolation(Violation& violation)
 {
-  DEProcessType de_process_type;
+  std::string skip_violation;
   std::vector<Violation> expanded_violation_list;
-  buildByFunc(violation, DEFuncType::kGetDEProcessType, de_process_type, expanded_violation_list);
-  return de_process_type;
+  buildByFunc(violation, DEFuncType::kSkipViolation, skip_violation, expanded_violation_list);
+  return (skip_violation == "skip");
 }
 
 std::vector<Violation> DRCEngine::expandViolation(Violation& violation)
 {
-  DEProcessType de_process_type;
+  std::string skip_violation;
   std::vector<Violation> expanded_violation_list;
-  buildByFunc(violation, DEFuncType::kExpandViolation, de_process_type, expanded_violation_list);
+  buildByFunc(violation, DEFuncType::kExpandViolation, skip_violation, expanded_violation_list);
   return expanded_violation_list;
 }
 
-void DRCEngine::buildByFunc(Violation& violation, const DEFuncType& de_func_type, DEProcessType& de_process_type,
+void DRCEngine::buildByFunc(Violation& violation, const DEFuncType& de_func_type, std::string& need_skip,
                             std::vector<Violation>& expanded_violation_list)
 {
   if (de_func_type == DEFuncType::kNone) {
@@ -657,179 +662,179 @@ void DRCEngine::buildByFunc(Violation& violation, const DEFuncType& de_func_type
   std::vector<std::pair<int32_t, bool>> layer_routing_list;
   switch (violation.get_violation_type()) {
     case ViolationType::kAdjacentCutSpacing:
-      if (de_func_type == DEFuncType::kGetDEProcessType) {
-        de_process_type = DEProcessType::kSkip;
+      if (de_func_type == DEFuncType::kSkipViolation) {
+        need_skip = "skip";
       } else if (de_func_type == DEFuncType::kExpandViolation) {
         RTLOG.error(Loc::current(), "This is skipping!");
       }
       break;
     case ViolationType::kCornerFillSpacing:
-      if (de_func_type == DEFuncType::kGetDEProcessType) {
-        de_process_type = DEProcessType::kSkip;
+      if (de_func_type == DEFuncType::kSkipViolation) {
+        need_skip = "skip";
       } else if (de_func_type == DEFuncType::kExpandViolation) {
         RTLOG.error(Loc::current(), "This is skipping!");
       }
       break;
     case ViolationType::kCutEOLSpacing:
-      if (de_func_type == DEFuncType::kGetDEProcessType) {
-        de_process_type = DEProcessType::kCost;
+      if (de_func_type == DEFuncType::kSkipViolation) {
+        need_skip = "attend";
       } else if (de_func_type == DEFuncType::kExpandViolation) {
         real_rect = enlargeRect(real_rect, violation.get_required_size());
         layer_routing_list = expandUpOneLayer(violation);
       }
       break;
     case ViolationType::kCutShort:
-      if (de_func_type == DEFuncType::kGetDEProcessType) {
-        de_process_type = DEProcessType::kCost;
+      if (de_func_type == DEFuncType::kSkipViolation) {
+        need_skip = "attend";
       } else if (de_func_type == DEFuncType::kExpandViolation) {
         real_rect = enlargeRect(real_rect, violation.get_required_size());
         layer_routing_list = expandUpOneLayer(violation);
       }
       break;
     case ViolationType::kDifferentLayerCutSpacing:
-      if (de_func_type == DEFuncType::kGetDEProcessType) {
-        de_process_type = DEProcessType::kCost;
+      if (de_func_type == DEFuncType::kSkipViolation) {
+        need_skip = "attend";
       } else if (de_func_type == DEFuncType::kExpandViolation) {
         real_rect = enlargeRect(real_rect, violation.get_required_size());
         layer_routing_list = expandUpTwoLayer(violation);
       }
       break;
     case ViolationType::kEndOfLineSpacing:
-      if (de_func_type == DEFuncType::kGetDEProcessType) {
-        de_process_type = DEProcessType::kCost;
+      if (de_func_type == DEFuncType::kSkipViolation) {
+        need_skip = "attend";
       } else if (de_func_type == DEFuncType::kExpandViolation) {
         real_rect = enlargeRect(real_rect, violation.get_required_size());
         layer_routing_list = expandAdjacentOneLayer(violation);
       }
       break;
     case ViolationType::kEnclosure:
-      if (de_func_type == DEFuncType::kGetDEProcessType) {
-        de_process_type = DEProcessType::kSkip;
+      if (de_func_type == DEFuncType::kSkipViolation) {
+        need_skip = "skip";
       } else if (de_func_type == DEFuncType::kExpandViolation) {
         RTLOG.error(Loc::current(), "This is skipping!");
       }
       break;
     case ViolationType::kEnclosureEdge:
-      if (de_func_type == DEFuncType::kGetDEProcessType) {
-        de_process_type = DEProcessType::kSkip;
+      if (de_func_type == DEFuncType::kSkipViolation) {
+        need_skip = "skip";
       } else if (de_func_type == DEFuncType::kExpandViolation) {
         RTLOG.error(Loc::current(), "This is skipping!");
       }
       break;
     case ViolationType::kEnclosureParallel:
-      if (de_func_type == DEFuncType::kGetDEProcessType) {
-        de_process_type = DEProcessType::kSkip;
+      if (de_func_type == DEFuncType::kSkipViolation) {
+        need_skip = "skip";
       } else if (de_func_type == DEFuncType::kExpandViolation) {
         RTLOG.error(Loc::current(), "This is skipping!");
       }
       break;
     case ViolationType::kFloatingPatch:
-      if (de_func_type == DEFuncType::kGetDEProcessType) {
-        de_process_type = DEProcessType::kSkip;
+      if (de_func_type == DEFuncType::kSkipViolation) {
+        need_skip = "skip";
       } else if (de_func_type == DEFuncType::kExpandViolation) {
         RTLOG.error(Loc::current(), "This is skipping!");
       }
       break;
     case ViolationType::kJogToJogSpacing:
-      if (de_func_type == DEFuncType::kGetDEProcessType) {
-        de_process_type = DEProcessType::kCost;
+      if (de_func_type == DEFuncType::kSkipViolation) {
+        need_skip = "attend";
       } else if (de_func_type == DEFuncType::kExpandViolation) {
         real_rect = enlargeRect(real_rect, violation.get_required_size());
         layer_routing_list = expandAdjacentOneLayer(violation);
       }
       break;
     case ViolationType::kMaxViaStack:
-      if (de_func_type == DEFuncType::kGetDEProcessType) {
-        de_process_type = DEProcessType::kCost;
+      if (de_func_type == DEFuncType::kSkipViolation) {
+        need_skip = "attend";
       } else if (de_func_type == DEFuncType::kExpandViolation) {
         real_rect = enlargeRect(real_rect, 0);
         layer_routing_list = expandUpOneLayer(violation);
       }
       break;
     case ViolationType::kMetalShort:
-      if (de_func_type == DEFuncType::kGetDEProcessType) {
-        de_process_type = DEProcessType::kCost;
+      if (de_func_type == DEFuncType::kSkipViolation) {
+        need_skip = "attend";
       } else if (de_func_type == DEFuncType::kExpandViolation) {
         real_rect = enlargeRect(real_rect, violation.get_required_size());
         layer_routing_list = expandAdjacentOneLayer(violation);
       }
       break;
     case ViolationType::kMinHole:
-      if (de_func_type == DEFuncType::kGetDEProcessType) {
-        de_process_type = DEProcessType::kCost;
+      if (de_func_type == DEFuncType::kSkipViolation) {
+        need_skip = "attend";
       } else if (de_func_type == DEFuncType::kExpandViolation) {
         real_rect = enlargeRect(real_rect, std::ceil(std::sqrt(violation.get_required_size())));
         layer_routing_list = expandAdjacentOneLayer(violation);
       }
       break;
     case ViolationType::kMinimumArea:
-      if (de_func_type == DEFuncType::kGetDEProcessType) {
-        de_process_type = DEProcessType::kSkip;
+      if (de_func_type == DEFuncType::kSkipViolation) {
+        need_skip = "skip";
       } else if (de_func_type == DEFuncType::kExpandViolation) {
         RTLOG.error(Loc::current(), "This is skipping!");
       }
       break;
     case ViolationType::kMinimumCut:
-      if (de_func_type == DEFuncType::kGetDEProcessType) {
-        de_process_type = DEProcessType::kSkip;
+      if (de_func_type == DEFuncType::kSkipViolation) {
+        need_skip = "skip";
       } else if (de_func_type == DEFuncType::kExpandViolation) {
         RTLOG.error(Loc::current(), "This is skipping!");
       }
       break;
     case ViolationType::kMinimumWidth:
-      if (de_func_type == DEFuncType::kGetDEProcessType) {
-        de_process_type = DEProcessType::kSkip;
+      if (de_func_type == DEFuncType::kSkipViolation) {
+        need_skip = "skip";
       } else if (de_func_type == DEFuncType::kExpandViolation) {
         RTLOG.error(Loc::current(), "This is skipping!");
       }
       break;
     case ViolationType::kMinStep:
-      if (de_func_type == DEFuncType::kGetDEProcessType) {
-        de_process_type = DEProcessType::kSkip;
+      if (de_func_type == DEFuncType::kSkipViolation) {
+        need_skip = "skip";
       } else if (de_func_type == DEFuncType::kExpandViolation) {
         RTLOG.error(Loc::current(), "This is skipping!");
       }
       break;
     case ViolationType::kNonsufficientMetalOverlap:
-      if (de_func_type == DEFuncType::kGetDEProcessType) {
-        de_process_type = DEProcessType::kSkip;
+      if (de_func_type == DEFuncType::kSkipViolation) {
+        need_skip = "skip";
       } else if (de_func_type == DEFuncType::kExpandViolation) {
         RTLOG.error(Loc::current(), "This is skipping!");
       }
       break;
     case ViolationType::kNotchSpacing:
-      if (de_func_type == DEFuncType::kGetDEProcessType) {
-        de_process_type = DEProcessType::kCost;
+      if (de_func_type == DEFuncType::kSkipViolation) {
+        need_skip = "attend";
       } else if (de_func_type == DEFuncType::kExpandViolation) {
         real_rect = enlargeRect(real_rect, violation.get_required_size());
         layer_routing_list = expandAdjacentOneLayer(violation);
       }
       break;
     case ViolationType::kOffGridOrWrongWay:
-      if (de_func_type == DEFuncType::kGetDEProcessType) {
-        de_process_type = DEProcessType::kSkip;
+      if (de_func_type == DEFuncType::kSkipViolation) {
+        need_skip = "skip";
       } else if (de_func_type == DEFuncType::kExpandViolation) {
         RTLOG.error(Loc::current(), "This is skipping!");
       }
       break;
     case ViolationType::kOutOfDie:
-      if (de_func_type == DEFuncType::kGetDEProcessType) {
-        de_process_type = DEProcessType::kSkip;
+      if (de_func_type == DEFuncType::kSkipViolation) {
+        need_skip = "skip";
       } else if (de_func_type == DEFuncType::kExpandViolation) {
         RTLOG.error(Loc::current(), "This is skipping!");
       }
       break;
     case ViolationType::kParallelRunLengthSpacing:
-      if (de_func_type == DEFuncType::kGetDEProcessType) {
-        de_process_type = DEProcessType::kCost;
+      if (de_func_type == DEFuncType::kSkipViolation) {
+        need_skip = "attend";
       } else if (de_func_type == DEFuncType::kExpandViolation) {
         real_rect = enlargeRect(real_rect, violation.get_required_size());
         layer_routing_list = expandAdjacentOneLayer(violation);
       }
       break;
     case ViolationType::kSameLayerCutSpacing:
-      if (de_func_type == DEFuncType::kGetDEProcessType) {
-        de_process_type = DEProcessType::kCost;
+      if (de_func_type == DEFuncType::kSkipViolation) {
+        need_skip = "attend";
       } else if (de_func_type == DEFuncType::kExpandViolation) {
         real_rect = enlargeRect(real_rect, violation.get_required_size());
         layer_routing_list = expandUpOneLayer(violation);
