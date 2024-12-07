@@ -405,6 +405,14 @@ Graph LmNetChecker::convertToGraph(LmNet& net) const
   wires = updated_wires;
   return graph;
 }
+void LmNetChecker::writeToDot(const Graph& graph, const std::string& path) const
+{
+  GraphCheckerBase::writeToDot(graph, path);
+}
+void LmNetChecker::writeToPy(const Graph& graph, LmNet& net, const std::string& path, const bool& mark_break, const bool& mark_pin_id) const
+{
+  GraphCheckerBase::writeToPy(graph, net, path, mark_break, mark_pin_id);
+}
 bool LmLayoutChecker::checkLayout(std::map<int, LmNet> net_map)
 {
   int success_num = 0;

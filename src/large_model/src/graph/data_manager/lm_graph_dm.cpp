@@ -18,6 +18,7 @@
 #include "lm_graph_dm.h"
 
 #include "Log.hh"
+#include "idm.h"
 #include "lm_graph_check.hh"
 #include "lm_grid_info.h"
 #include "lm_net_graph_gen.hh"
@@ -59,15 +60,17 @@ bool LmGraphDataManager::buildGraphData()
       return std::make_pair(node1, node2);
     }
   };
-
+  auto* idb_design = dmInst->get_idb_design();
+  auto idb_nets = idb_design->get_net_list()->get_net_list();
   LmNetGraphGenerator gen;
-  auto wire_graphs = gen.buildGraphs();
 
   auto net_id = 0;
   auto& layout_graph = _layout->get_graph();
   auto& patch_layers = _layout->get_patch_layers();
 
-  std::ranges::for_each(wire_graphs, [&](auto& wire_graph) -> void {
+  for (size_t net_id = 0; net_id < idb_nets.size(); ++net_id) {
+    auto* idb_net = idb_nets[net_id];
+    auto wire_graph = gen.buildGraph(idb_net);
     auto* lm_net = layout_graph.get_net(net_id);
     lm_net->clearWire();
 
@@ -118,7 +121,7 @@ bool LmGraphDataManager::buildGraphData()
     }
 
     if (net_id % 1000 == 0) {
-      LOG_INFO << "Read nets : " << net_id << " / " << (int) wire_graphs.size();
+      LOG_INFO << "Read nets : " << net_id << " / " << (int) idb_nets.size();
     }
 
     if (pin_ids_wires.size() != lm_net->get_pin_ids().size()) {
@@ -127,9 +130,9 @@ bool LmGraphDataManager::buildGraphData()
     }
 
     net_id++;
-  });
+  }
 
-  LOG_INFO << "Read nets : " << net_id << " / " << (int) wire_graphs.size();
+  LOG_INFO << "Read nets : " << net_id << " / " << (int) idb_nets.size();
 
   return true;
 }
