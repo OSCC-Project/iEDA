@@ -36,6 +36,8 @@ class LmFeatureDrc
  private:
   LmLayout* _layout;
   std::string _drc_path;
+  int origin_drc_num = 0;
+  int mark_drc_num = 0;
 
   void markNodes();
   void markNetsAndWires();

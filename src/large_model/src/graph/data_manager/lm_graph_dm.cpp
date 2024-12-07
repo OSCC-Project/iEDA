@@ -98,6 +98,11 @@ bool LmGraphDataManager::buildGraphData()
       }
 
       /// add path
+#if debug
+      LmNode* bk_start = nullptr;
+      LmNode* bk_end = nullptr;
+      int i = 0;
+#endif
       std::ranges::for_each(wire_graph[edge].path, [&](auto& point_pair) -> void {
         auto start_point = point_pair.first;
         auto end_point = point_pair.second;
@@ -105,6 +110,22 @@ bool LmGraphDataManager::buildGraphData()
                                         bg::get<1>(end_point), bg::get<2>(end_point), patch_layers);
 
         lm_wire.add_path(node1, node2);
+#if debug
+        if (i == 0) {
+          bk_end = node2;
+        } else {
+          bk_start = node1;
+
+          if (bk_end != bk_start) {
+            std::ranges::for_each(wire_graph[edge].path, [&](auto& p) -> void {
+              LOG_INFO << "[" << bg::get<0>(p.first) << "," << bg::get<1>(p.first) << "," << bg::get<2>(p.first) << "] ["
+                       << bg::get<0>(p.second) << "," << bg::get<1>(p.second) << "," << bg::get<2>(p.second) << "]";
+            });
+          }
+
+          bk_end = node2;
+        }
+#endif
 
         if (node1->get_node_data()->get_pin_id() != 0) {
           pin_ids_paths.insert(node1->get_node_data()->get_pin_id());

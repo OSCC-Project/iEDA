@@ -50,32 +50,40 @@ void LmFeatureDrc::markNodes()
   auto& patch_layers = _layout->get_patch_layers();
 
   auto detail_drc_map = iplf::drcInst->getDetailCheckResult(_drc_path);
+  int drc_id = 0;
   for (auto& [rule, drc_spot_list] : detail_drc_map) {
     LOG_INFO << "LM mark nodes drc : " << rule << ", size :" << drc_spot_list.size();
+    origin_drc_num += drc_spot_list.size();
 #pragma omp parallel for schedule(dynamic)
-    for (auto drc_spot : drc_spot_list) {
-      /// get row & col
-      auto* spot_rect = static_cast<idrc::DrcViolationRect*>(drc_spot);
-      int middle_x = (spot_rect->get_llx() + spot_rect->get_urx()) / 2;
-      int middle_y = (spot_rect->get_lly() + spot_rect->get_ury()) / 2;
-
-      auto [row, col] = gridInfoInst.findNodeID(middle_x, middle_y);
-
+    for (int i = 0; i < (int) drc_spot_list.size(); ++i) {
+      // for (auto drc_spot : drc_spot_list) {
       /// set to node if node data exist
+      auto& drc_spot = drc_spot_list[i];
       auto order = _layout->findLayerId(drc_spot->get_layer()->get_name());
       if (order < 0) {
         continue;
       }
 
       auto& grid = patch_layers.findPatchLayer(order)->get_grid();
-      auto* node = grid.get_node(row, col);
-      if (node != nullptr && node->get_node_data() != nullptr) {
-        auto& node_feature = node->get_node_data()->get_feature();
-        omp_set_lock(&lck);
-        node_feature.drc_num += 1;
-        omp_unset_lock(&lck);
+
+      /// get row & col
+      auto* spot_rect = static_cast<idrc::DrcViolationRect*>(drc_spot);
+      auto [row_1, row_2, co_1, col_2]
+          = gridInfoInst.get_node_id_range(spot_rect->get_llx(), spot_rect->get_urx(), spot_rect->get_lly(), spot_rect->get_ury());
+      for (int row = row_1; row <= row_2; ++row) {
+        for (int col = co_1; col <= col_2; ++col) {
+          auto* node = grid.get_node(row, col);
+          if (node != nullptr && node->get_node_data() != nullptr) {
+            auto& node_feature = node->get_node_data()->get_feature();
+            omp_set_lock(&lck);
+            node_feature.drc_ids.push_back(drc_id + i);
+            omp_unset_lock(&lck);
+          }
+        }
       }
     }
+
+    drc_id += drc_spot_list.size();
   }
 
   omp_destroy_lock(&lck);
@@ -102,6 +110,8 @@ void LmFeatureDrc::markNetsAndWires()
 
     auto* net_feature = lm_net.get_feature(true);
     for (auto& wire : lm_net.get_wires()) {
+      std::set<int> drc_ids;
+
       auto* wire_feature = wire.get_feature(true);
 
       std::set<LmNode*> node_list;
@@ -122,16 +132,23 @@ void LmFeatureDrc::markNetsAndWires()
                 continue;
               }
 
-              wire_feature->drc_num += node->get_node_data()->get_feature().drc_num;
-              net_feature->drc_num += node->get_node_data()->get_feature().drc_num;
+              for (auto drc_id : node->get_node_data()->get_feature().drc_ids) {
+                drc_ids.insert(drc_id);
+              }
             }
           }
-        } else {
-          wire_feature->drc_num += node1->get_node_data()->get_feature().drc_num;
-          net_feature->drc_num += node1->get_node_data()->get_feature().drc_num;
 
-          wire_feature->drc_num += node2->get_node_data()->get_feature().drc_num;
-          net_feature->drc_num += node2->get_node_data()->get_feature().drc_num;
+          wire_feature->drc_num += drc_ids.size();
+          net_feature->drc_num += drc_ids.size();
+          mark_drc_num += drc_ids.size();
+        } else {
+          wire_feature->drc_num += node1->get_node_data()->get_feature().drc_ids.size();
+          net_feature->drc_num += node1->get_node_data()->get_feature().drc_ids.size();
+          mark_drc_num += node1->get_node_data()->get_feature().drc_ids.size();
+
+          wire_feature->drc_num += node2->get_node_data()->get_feature().drc_ids.size();
+          net_feature->drc_num += node2->get_node_data()->get_feature().drc_ids.size();
+          mark_drc_num += node2->get_node_data()->get_feature().drc_ids.size();
         }
       }
     }
@@ -139,6 +156,10 @@ void LmFeatureDrc::markNetsAndWires()
     if (i % 1000 == 0) {
       LOG_INFO << "Read nets : " << i << " / " << (int) net_map.size();
     }
+  }
+
+  if (mark_drc_num != origin_drc_num) {
+    LOG_WARNING << "[origin_drc_num] vs [mark_drc_num] : " << origin_drc_num << " vs " << mark_drc_num;
   }
 
   LOG_INFO << "Read nets : " << (int) net_map.size() << " / " << (int) net_map.size();
