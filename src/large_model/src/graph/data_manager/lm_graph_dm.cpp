@@ -64,7 +64,6 @@ bool LmGraphDataManager::buildGraphData()
   auto idb_nets = idb_design->get_net_list()->get_net_list();
   LmNetGraphGenerator gen;
 
-  auto net_id = 0;
   auto& layout_graph = _layout->get_graph();
   auto& patch_layers = _layout->get_patch_layers();
 
@@ -154,7 +153,7 @@ bool LmGraphDataManager::buildGraphData()
     net_id++;
   }
 
-  LOG_INFO << "Read nets : " << net_id << " / " << (int) idb_nets.size();
+  LOG_INFO << "Read nets : " << idb_nets.size() << " / " << (int) idb_nets.size();
 
   return true;
 }
