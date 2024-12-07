@@ -28,6 +28,7 @@
 #include "api/TimingEngine.hh"
 #include "api/TimingIDBAdapter.hh"
 #include "idm.h"
+#include "lm_api.h"
 #include "salt/base/flute.h"
 #include "salt/salt.h"
 #include "timing_db.hh"
@@ -244,7 +245,8 @@ void InitSTA::callRT(const std::string& routing_type)
 
 void InitSTA::buildRCTree(const std::string& routing_type)
 {
-  LOG_FATAL_IF(routing_type != "WLM" && routing_type != "HPWL" && routing_type != "FLUTE" && routing_type != "SALT")
+  LOG_FATAL_IF(routing_type != "WLM" && routing_type != "HPWL" && routing_type != "FLUTE" && routing_type != "SALT"
+               && routing_type != "WireGraph")
       << "The routing type: " << routing_type << " is not supported.";
 
   auto* idb_adapter = dynamic_cast<ista::TimingIDBAdapter*>(STA_INST->get_db_adapter());
@@ -283,10 +285,12 @@ void InitSTA::buildRCTree(const std::string& routing_type)
   };
 
   // main flow
-  auto* netlist = STA_INST->get_netlist();
+  auto idb_nets = idb_design->get_net_list()->get_net_list();
+  auto* sta_netlist = STA_INST->get_netlist();
   ista::Net* sta_net = nullptr;
-  FOREACH_NET(netlist, sta_net)
-  {
+  for (size_t net_id = 0; net_id < idb_nets.size(); ++net_id) {
+    auto* idb_net = idb_nets[net_id];
+    sta_net = sta_netlist->findNet(idb_net->get_net_name().c_str());
     STA_INST->resetRcTree(sta_net);
     // WLM
     if (routing_type == "WLM") {
@@ -389,6 +393,92 @@ void InitSTA::buildRCTree(const std::string& routing_type)
         STA_INST->incrCap(back_node, cap / 2, true);
       };
       salt::TreeNode::postOrder(source, build_rc_tree);
+    }
+
+    if (routing_type == "WireGraph") {
+      ilm::LargeModelApi lm_api;
+      auto lm_nets_map = lm_api.getGraph();
+      auto lm_net = lm_nets_map.at(net_id);
+      auto idb_inst_pins = idb_net->get_instance_pin_list()->get_pin_list();
+      auto io_pins = idb_net->get_io_pins()->get_pin_list();
+      auto& wires = lm_net.get_wires();
+
+      auto sta_pin_ports = sta_net->get_pin_ports();
+      std::unordered_map<std::string, ista::DesignObject*> sta_pin_port_map;
+      std::ranges::for_each(sta_pin_ports, [&](ista::DesignObject* pin_port) { sta_pin_port_map[pin_port->getFullName()] = pin_port; });
+      std::unordered_map<ilm::LmNode*, ista::RctNode*> lm_node_map;
+      auto make_or_find_rc_node = [&](ilm::LmNode* lm_node) {
+        if (lm_node_map.contains(lm_node)) {
+          return lm_node_map[lm_node];
+        }
+        size_t pin_id = lm_node->get_node_data()->get_pin_id();
+        ista::RctNode* rc_node = nullptr;
+        if (pin_id >= 0) {
+          bool is_io = pin_id >= idb_inst_pins.size();
+          auto* idb_pin = pin_id < idb_inst_pins.size() ? idb_inst_pins[pin_id] : io_pins[pin_id - idb_inst_pins.size()];
+          std::string pin_name = "";
+          if (is_io) {
+            pin_name = idb_pin->get_pin_name();
+          } else {
+            auto* idb_inst = idb_pin->get_instance();
+            pin_name = idb_inst ? idb_inst->get_name() + idb_pin->get_pin_name() : idb_pin->get_pin_name();
+          }
+          auto* sta_pin_port = sta_pin_port_map[pin_name];
+          rc_node = STA_INST->makeOrFindRCTreeNode(sta_pin_port);
+        } else {
+          // steiner node
+          rc_node = STA_INST->makeOrFindRCTreeNode(sta_net, lm_node_map.size());
+        }
+        lm_node_map[lm_node] = rc_node;
+        return rc_node;
+      };
+      auto calc_res_cap = [&](ilm::LmNetWire& wire) {
+        auto connected_nodes = wire.get_connected_nodes();
+        auto* source = connected_nodes.first;
+        auto* target = connected_nodes.second;
+        auto source_layer = source->get_layer_id();
+        auto target_layer = target->get_layer_id();
+        if (source_layer != target_layer) {
+          // is via
+          return std::make_pair(0.0, 0.0);
+        }
+        auto& paths = wire.get_paths();
+        int wirelength = 0;
+        std::ranges::for_each(paths, [&](auto& path) {
+          auto x1 = path.first->get_x();
+          auto y1 = path.first->get_y();
+          auto x2 = path.second->get_x();
+          auto y2 = path.second->get_y();
+          wirelength += std::abs(x1 - x2) + std::abs(y1 - y2);
+        });
+
+        // get unit r,c
+        auto* routing_layer = dynamic_cast<IdbLayerRouting*>(routing_layers[source_layer]);
+
+        auto segment_width = (double) routing_layer->get_width() / idb_layout->get_units()->get_micron_dbu();
+
+        auto lef_resistance = routing_layer->get_resistance();
+        auto lef_capacitance = routing_layer->get_capacitance();
+        auto lef_edge_capacitance = routing_layer->get_edge_capacitance();
+
+        auto res = lef_resistance * wirelength / segment_width;
+        auto cap = (lef_capacitance * wirelength * segment_width) + (lef_edge_capacitance * 2 * (wirelength + segment_width));
+
+        return std::make_pair(res, cap);
+      };
+      std::ranges::for_each(wires, [&](ilm::LmNetWire& wire) {
+        auto connected_nodes = wire.get_connected_nodes();
+        auto* source = connected_nodes.first;
+        auto* target = connected_nodes.second;
+
+        auto* front_node = make_or_find_rc_node(source);
+        auto* back_node = make_or_find_rc_node(target);
+
+        auto [res, cap] = calc_res_cap(wire);
+        STA_INST->makeResistor(sta_net, front_node, back_node, res);
+        STA_INST->incrCap(front_node, cap / 2, true);
+        STA_INST->incrCap(back_node, cap / 2, true);
+      });
     }
     // update rc tree
     STA_INST->updateRCTreeInfo(sta_net);
