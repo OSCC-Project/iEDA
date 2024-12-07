@@ -72,10 +72,10 @@ bool LmGraphDataManager::buildGraphData()
     auto wire_graph = gen.buildGraph(idb_net);
     auto* lm_net = layout_graph.get_net(net_id);
     lm_net->clearWire();
-
+#if 0
     std::set<int> pin_ids_wires;
     std::set<int> pin_ids_paths;
-
+#endif
     // travelsal the edge in wire_graph
     for (auto edge : boost::make_iterator_range(boost::edges(wire_graph))) {
       LmNetWire lm_wire;
@@ -91,12 +91,14 @@ bool LmGraphDataManager::buildGraphData()
                                         target_label.layer_id, patch_layers);
         lm_wire.set_start(node1);
         lm_wire.set_end(node2);
+#if 0
         if (node1->get_node_data()->get_pin_id() != 0) {
           pin_ids_wires.insert(node1->get_node_data()->get_pin_id());
         }
         if (node2->get_node_data()->get_pin_id() != 0) {
           pin_ids_wires.insert(node2->get_node_data()->get_pin_id());
         }
+#endif
       }
 
       /// add path
@@ -150,7 +152,6 @@ bool LmGraphDataManager::buildGraphData()
                   << " wire num : " << pin_ids_wires.size() << " path num: " << pin_ids_paths.size();
     }
 #endif
-    net_id++;
   }
 
   LOG_INFO << "Read nets : " << idb_nets.size() << " / " << (int) idb_nets.size();
