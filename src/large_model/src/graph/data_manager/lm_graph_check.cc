@@ -131,17 +131,15 @@ void GraphCheckerBase::writeToPy(const Graph& graph, LmNet& net, const std::stri
   };
   std::unordered_map<WireKey, LmNetWire, WireKeyHash> wire_map;
   for (auto& wire : wires) {
-    auto& paths = wire.get_paths();
-    for (auto& path : paths) {
-      auto* start = path.first;
-      auto* end = path.second;
-      WireKey key = {start->get_x(), start->get_y(), start->get_layer_id(), start->get_node_data()->get_pin_id(),
-                     end->get_x(),   end->get_y(),   end->get_layer_id(),   end->get_node_data()->get_pin_id()};
-      wire_map[key] = wire;
-      WireKey key_reverse = {end->get_x(),   end->get_y(),   end->get_layer_id(),   end->get_node_data()->get_pin_id(),
-                             start->get_x(), start->get_y(), start->get_layer_id(), start->get_node_data()->get_pin_id()};
-      wire_map[key_reverse] = wire;
-    }
+    auto connected_nodes = wire.get_connected_nodes();
+    auto* start = connected_nodes.first;
+    auto* end = connected_nodes.second;
+    WireKey key = {start->get_x(), start->get_y(), start->get_layer_id(), start->get_node_data()->get_pin_id(),
+                   end->get_x(),   end->get_y(),   end->get_layer_id(),   end->get_node_data()->get_pin_id()};
+    wire_map[key] = wire;
+    WireKey key_reverse = {end->get_x(),   end->get_y(),   end->get_layer_id(),   end->get_node_data()->get_pin_id(),
+                           start->get_x(), start->get_y(), start->get_layer_id(), start->get_node_data()->get_pin_id()};
+    wire_map[key_reverse] = wire;
   }
 
   // Write the wire line to a Python file for plotting in 3D space (x, y, layer_id) using Plotly
