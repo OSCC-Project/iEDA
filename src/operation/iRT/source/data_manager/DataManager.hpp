@@ -90,7 +90,6 @@ class DataManager
   void buildLayerList();
   void transLayerList();
   void makeLayerList();
-  void makeRoutingLayerList();
   void makeCutLayerList();
   void checkLayerList();
   void buildLayerInfo();
@@ -98,6 +97,7 @@ class DataManager
   void transLayerViaMasterList();
   void makeLayerViaMasterList();
   void buildLayerViaMasterInfo();
+  void buildTrackGrid();
   void buildGCellAxis();
   void makeGCellAxis();
   std::vector<ScaleGrid> makeGCellGridList(Direction direction);

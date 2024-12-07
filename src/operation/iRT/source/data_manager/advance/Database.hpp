@@ -54,6 +54,7 @@ class Database
   std::map<int32_t, std::vector<int32_t>>& get_cut_to_adjacent_routing_map() { return _cut_to_adjacent_routing_map; }
   std::vector<std::vector<ViaMaster>>& get_layer_via_master_list() { return _layer_via_master_list; }
   std::map<int32_t, PlanarRect>& get_layer_enclosure_map() { return _layer_enclosure_map; }
+  std::map<int32_t, PlanarRect>& get_layer_cut_shape_map() { return _layer_cut_shape_map; }
   std::vector<Obstacle>& get_routing_obstacle_list() { return _routing_obstacle_list; }
   std::vector<Obstacle>& get_cut_obstacle_list() { return _cut_obstacle_list; }
   std::vector<Net>& get_net_list() { return _net_list; }
@@ -86,6 +87,7 @@ class Database
   std::map<int32_t, std::vector<int32_t>> _cut_to_adjacent_routing_map;
   std::vector<std::vector<ViaMaster>> _layer_via_master_list;
   std::map<int32_t, PlanarRect> _layer_enclosure_map;
+  std::map<int32_t, PlanarRect> _layer_cut_shape_map;
   std::vector<Obstacle> _routing_obstacle_list;
   std::vector<Obstacle> _cut_obstacle_list;
   std::vector<Net> _net_list;

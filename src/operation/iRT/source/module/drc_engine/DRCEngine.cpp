@@ -135,9 +135,9 @@ DRCEngine* DRCEngine::_de_instance = nullptr;
 
 std::vector<Violation> DRCEngine::getViolationList(DETask& de_task, bool post_process)
 {
-  getViolationListByInterface(de_task);
+  // getViolationListByInterface(de_task);
 
-  // getViolationListBySelf(de_task);
+  getViolationListBySelf(de_task);
   filterViolationList(de_task);
   if (post_process) {
     fixViolationNetSet(de_task);
