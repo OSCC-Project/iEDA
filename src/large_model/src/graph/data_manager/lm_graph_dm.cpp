@@ -101,7 +101,8 @@ bool LmGraphDataManager::buildGraphData()
       }
 
       /// add path
-#if debug
+
+#if 0
       LmNode* bk_start = nullptr;
       LmNode* bk_end = nullptr;
       int i = 0;
@@ -113,7 +114,7 @@ bool LmGraphDataManager::buildGraphData()
                                         bg::get<1>(end_point), bg::get<2>(end_point), patch_layers);
 
         lm_wire.add_path(node1, node2);
-#if debug
+#if 0
         if (i == 0) {
           bk_end = node2;
         } else {
@@ -128,7 +129,6 @@ bool LmGraphDataManager::buildGraphData()
 
           bk_end = node2;
         }
-#endif
 
         if (node1->get_node_data()->get_pin_id() != 0) {
           pin_ids_paths.insert(node1->get_node_data()->get_pin_id());
@@ -136,6 +136,7 @@ bool LmGraphDataManager::buildGraphData()
         if (node2->get_node_data()->get_pin_id() != 0) {
           pin_ids_paths.insert(node2->get_node_data()->get_pin_id());
         }
+#endif
       });
 
       lm_net->addWire(lm_wire);
@@ -144,12 +145,12 @@ bool LmGraphDataManager::buildGraphData()
     if (net_id % 1000 == 0) {
       LOG_INFO << "Read nets : " << net_id << " / " << (int) idb_nets.size();
     }
-
+#if 0
     if (pin_ids_wires.size() != lm_net->get_pin_ids().size()) {
       LOG_WARNING << "Warning, pin size mismatch, net id : " << net_id << " net num : " << lm_net->get_pin_ids().size()
                   << " wire num : " << pin_ids_wires.size() << " path num: " << pin_ids_paths.size();
     }
-
+#endif
     net_id++;
   }
 
