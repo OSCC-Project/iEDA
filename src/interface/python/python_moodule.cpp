@@ -31,6 +31,7 @@
 #include "py_register_irt.h"
 #include "py_register_ista.h"
 #include "py_register_ito.h"
+#include "py_register_lm.h"
 #include "py_register_report.h"
 #include "python_module.h"
 
