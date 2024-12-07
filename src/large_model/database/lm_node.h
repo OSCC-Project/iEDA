@@ -56,7 +56,7 @@ enum class LmNodeConnectType : uint8_t
 
 struct LmNodeFeature
 {
-  std::vector<int> drc_ids;
+  std::set<int> drc_ids;
 };
 
 class LmNodeData

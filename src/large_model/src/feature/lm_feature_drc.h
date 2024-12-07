@@ -40,7 +40,8 @@ class LmFeatureDrc
   int mark_drc_num = 0;
 
   void markNodes();
-  void markNetsAndWires();
+  void markWires();
+  void markNets();
 };
 
 }  // namespace ilm
