@@ -76,6 +76,11 @@ class LmNetChecker : public GraphCheckerBase
   // convert the net to graph
   Graph convertToGraph(LmNet& net) const;
 
+  // write to py for debug
+  void writeToDot(const Graph& graph, const std::string& path) const;
+  void writeToPy(const Graph& graph, LmNet& net, const std::string& path, const bool& mark_break = false,
+                 const bool& mark_pin_id = true) const;
+
  private:
 };
 

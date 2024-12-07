@@ -502,7 +502,9 @@ void LmNetGraphGenerator::reduceWireGraph(WireGraph& graph) const
           new_path.insert(new_path.end(), path.begin(), path.end());
         } else {
           // swap for each pair
-          std::ranges::for_each(path, [&](const std::pair<LayoutDefPoint, LayoutDefPoint>& pair) -> void {
+          auto reverse_path = path;
+          std::ranges::reverse(reverse_path);
+          std::ranges::for_each(reverse_path, [&](const std::pair<LayoutDefPoint, LayoutDefPoint>& pair) -> void {
             new_path.push_back({pair.second, pair.first});
           });
         }
