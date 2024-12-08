@@ -616,13 +616,12 @@ void DataManager::buildDatabase()
 {
   buildLayerList();
   buildLayerInfo();
-  buildLayerViaMasterList();
-  buildLayerViaMasterInfo();
-  buildTrackGrid();
   buildGCellAxis();
   buildDie();
   buildObstacleList();
   buildNetList();
+  buildLayerViaMasterList();
+  buildLayerViaMasterInfo();
   buildDetectionDistance();
   buildGCellMap();
 }
@@ -649,7 +648,68 @@ void DataManager::transLayerList()
 
 void DataManager::makeLayerList()
 {
+  makeRoutingLayerList();
   makeCutLayerList();
+}
+
+void DataManager::makeRoutingLayerList()
+{
+  Die& die = _database.get_die();
+  std::vector<RoutingLayer>& routing_layer_list = _database.get_routing_layer_list();
+
+  auto getFrequentNum = [](const std::vector<int32_t>& num_list) {
+    if (num_list.empty()) {
+      RTLOG.error(Loc::current(), "The num_list is empty!");
+    }
+    std::map<int32_t, int32_t> num_count_map;
+    for (int32_t num : num_list) {
+      num_count_map[num]++;
+    }
+    std::map<int32_t, std::vector<int32_t>, std::greater<int32_t>> count_num_list_map;
+    for (auto& [num, count] : num_count_map) {
+      count_num_list_map[count].push_back(num);
+    }
+    int32_t frequent_num = INT32_MAX;
+    for (int32_t num : count_num_list_map.begin()->second) {
+      frequent_num = std::min(frequent_num, num);
+    }
+    return frequent_num;
+  };
+  int32_t step_length;
+  {
+    std::vector<int32_t> pitch_list;
+    for (RoutingLayer& routing_layer : routing_layer_list) {
+      pitch_list.push_back(routing_layer.getPreferTrackGridList().front().get_step_length());
+    }
+    step_length = getFrequentNum(pitch_list);
+  }
+  auto getScaleGrid = [](int32_t real_ll_scale, int32_t real_ur_scale, int32_t step_length) {
+    int32_t start_line = real_ll_scale + step_length;
+    int32_t step_num = (real_ur_scale - start_line) / step_length;
+    int32_t end_line = start_line + step_num * step_length;
+    if (end_line > real_ur_scale) {
+      step_num -= 1;
+      end_line = start_line + step_num * step_length;
+    }
+    if (std::abs(end_line - real_ur_scale) < step_length) {
+      step_num -= 1;
+      end_line = start_line + step_num * step_length;
+    }
+    ScaleGrid scale_grid;
+    scale_grid.set_start_line(start_line);
+    scale_grid.set_step_length(step_length);
+    scale_grid.set_step_num(step_num);
+    scale_grid.set_end_line(end_line);
+    return scale_grid;
+  };
+  ScaleAxis track_axis;
+  {
+    track_axis.get_x_grid_list().push_back(getScaleGrid(die.get_real_ll_x(), die.get_real_ur_x(), step_length));
+    track_axis.get_y_grid_list().push_back(getScaleGrid(die.get_real_ll_y(), die.get_real_ur_y(), step_length));
+  }
+  for (RoutingLayer& routing_layer : routing_layer_list) {
+    routing_layer.set_track_axis(track_axis);
+  }
 }
 
 void DataManager::makeCutLayerList()
@@ -772,198 +832,6 @@ void DataManager::buildLayerInfo()
         cut_to_adjacent_routing_map[std::get<2>(order_routing_layer_list[i])].push_back(std::get<2>(order_routing_layer_list[i + 1]));
       }
     }
-  }
-}
-
-void DataManager::buildLayerViaMasterList()
-{
-  transLayerViaMasterList();
-  makeLayerViaMasterList();
-}
-
-void DataManager::transLayerViaMasterList()
-{
-  std::map<int32_t, int32_t>& routing_idb_layer_id_to_idx_map = _database.get_routing_idb_layer_id_to_idx_map();
-  std::map<int32_t, int32_t>& cut_idb_layer_id_to_idx_map = _database.get_cut_idb_layer_id_to_idx_map();
-  std::vector<std::vector<ViaMaster>>& layer_via_master_list = _database.get_layer_via_master_list();
-
-  for (std::vector<ViaMaster>& via_master_list : layer_via_master_list) {
-    for (ViaMaster& via_master : via_master_list) {
-      // above
-      LayerRect& above_enclosure = via_master.get_above_enclosure();
-      above_enclosure.set_layer_idx(routing_idb_layer_id_to_idx_map[above_enclosure.get_layer_idx()]);
-      // below
-      LayerRect& below_enclosure = via_master.get_below_enclosure();
-      below_enclosure.set_layer_idx(routing_idb_layer_id_to_idx_map[below_enclosure.get_layer_idx()]);
-      // cut
-      via_master.set_cut_layer_idx(cut_idb_layer_id_to_idx_map[via_master.get_cut_layer_idx()]);
-    }
-  }
-}
-
-void DataManager::makeLayerViaMasterList()
-{
-  std::vector<std::vector<ViaMaster>>& layer_via_master_list = _database.get_layer_via_master_list();
-  std::vector<RoutingLayer>& routing_layer_list = _database.get_routing_layer_list();
-
-  std::vector<ViaMaster> first_via_master_list;
-  for (ViaMaster& via_master : layer_via_master_list.front()) {
-    int32_t below_layer_idx = via_master.get_below_enclosure().get_layer_idx();
-    if (below_layer_idx == 0) {
-      first_via_master_list.push_back(via_master);
-    } else {
-      layer_via_master_list[below_layer_idx].push_back(via_master);
-    }
-  }
-  layer_via_master_list[0] = first_via_master_list;
-
-  for (size_t layer_idx = 0; layer_idx < layer_via_master_list.size(); layer_idx++) {
-    std::vector<ViaMaster>& via_master_list = layer_via_master_list[layer_idx];
-    for (ViaMaster& via_master : via_master_list) {
-      // above
-      LayerRect& above_enclosure = via_master.get_above_enclosure();
-      Direction above_layer_direction = routing_layer_list[above_enclosure.get_layer_idx()].get_prefer_direction();
-      via_master.set_above_direction(above_enclosure.getRectDirection(above_layer_direction));
-      // below
-      LayerRect& below_enclosure = via_master.get_below_enclosure();
-      Direction below_layer_direction = routing_layer_list[below_enclosure.get_layer_idx()].get_prefer_direction();
-      via_master.set_below_direction(below_enclosure.getRectDirection(below_layer_direction));
-    }
-    std::sort(via_master_list.begin(), via_master_list.end(),
-              [&routing_layer_list](ViaMaster& a, ViaMaster& b) { return CmpViaMaster()(a, b, routing_layer_list); });
-    for (size_t i = 0; i < via_master_list.size(); i++) {
-      via_master_list[i].set_via_master_idx(layer_idx, i);
-    }
-  }
-}
-
-void DataManager::buildLayerViaMasterInfo()
-{
-  std::vector<RoutingLayer>& routing_layer_list = _database.get_routing_layer_list();
-  std::vector<std::vector<ViaMaster>>& layer_via_master_list = _database.get_layer_via_master_list();
-  std::map<int32_t, PlanarRect>& layer_enclosure_map = _database.get_layer_enclosure_map();
-  std::map<int32_t, PlanarRect>& layer_cut_shape_map = _database.get_layer_cut_shape_map();
-
-  int32_t start_layer_idx = 0;
-  int32_t end_layer_idx = static_cast<int32_t>(routing_layer_list.size()) - 1;
-
-  layer_enclosure_map[start_layer_idx] = layer_via_master_list[start_layer_idx].front().get_below_enclosure();
-  for (int32_t layer_idx = 1; layer_idx < end_layer_idx; layer_idx++) {
-    std::vector<PlanarRect> rect_list;
-    rect_list.push_back(layer_via_master_list[layer_idx - 1].front().get_above_enclosure());
-    rect_list.push_back(layer_via_master_list[layer_idx].front().get_below_enclosure());
-    layer_enclosure_map[layer_idx] = RTUTIL.getBoundingBox(rect_list);
-  }
-  layer_enclosure_map[end_layer_idx] = layer_via_master_list[end_layer_idx - 1].front().get_above_enclosure();
-
-  for (int32_t layer_idx = 0; layer_idx < end_layer_idx; layer_idx++) {
-    ViaMaster& via_master = layer_via_master_list[layer_idx].front();
-    layer_cut_shape_map[via_master.get_cut_layer_idx()] = via_master.get_cut_shape_list().front();
-  }
-}
-
-void DataManager::buildTrackGrid()
-{
-  Die& die = _database.get_die();
-  std::vector<RoutingLayer>& routing_layer_list = _database.get_routing_layer_list();
-  std::vector<CutLayer>& cut_layer_list = _database.get_cut_layer_list();
-  std::map<int32_t, PlanarRect>& layer_cut_shape_map = _database.get_layer_cut_shape_map();
-
-  std::vector<int32_t> routing_eol_pitch_list;
-  std::vector<int32_t> cut_eol_pitch_list;
-  std::vector<int32_t> cut_diff_layer_pitch_list;
-  {
-    for (RoutingLayer& routing_layer : routing_layer_list) {
-      // eol
-      routing_eol_pitch_list.emplace_back(std::max(routing_layer.get_eol_spacing(), routing_layer.get_eol_ete())
-                                          + routing_layer.get_min_width());
-    }
-    for (CutLayer& cut_layer : cut_layer_list) {
-      if (!RTUTIL.exist(layer_cut_shape_map, cut_layer.get_layer_idx())) {
-        continue;
-      }
-      PlanarRect& curr_cut_shape = layer_cut_shape_map[cut_layer.get_layer_idx()];
-      int32_t curr_half_x_span = curr_cut_shape.getXSpan() / 2;
-      int32_t curr_half_y_span = curr_cut_shape.getYSpan() / 2;
-      // eol
-      int32_t eol_spacing = std::min(cut_layer.get_curr_eol_x_spacing(), cut_layer.get_curr_eol_y_spacing());
-      cut_eol_pitch_list.emplace_back(curr_half_x_span + (eol_spacing / std::sqrt(2)) + curr_half_x_span);
-      cut_eol_pitch_list.emplace_back(curr_half_y_span + (eol_spacing / std::sqrt(2)) + curr_half_y_span);
-      // diff layer
-      int32_t below_cut_layer_idx = cut_layer.get_layer_idx() - 1;
-      if (RTUTIL.exist(layer_cut_shape_map, below_cut_layer_idx)) {
-        PlanarRect& below_cut_shape = layer_cut_shape_map[below_cut_layer_idx];
-        int32_t below_half_x_span = below_cut_shape.getXSpan() / 2;
-        int32_t below_half_y_span = below_cut_shape.getYSpan() / 2;
-        cut_diff_layer_pitch_list.emplace_back(std::max(below_half_x_span + cut_layer.get_below_x_spacing() + curr_half_x_span,
-                                                        below_half_y_span + cut_layer.get_below_y_spacing() + curr_half_y_span));
-      }
-      int32_t above_cut_layer_idx = cut_layer.get_layer_idx() + 1;
-      if (RTUTIL.exist(layer_cut_shape_map, above_cut_layer_idx)) {
-        PlanarRect& above_cut_shape = layer_cut_shape_map[above_cut_layer_idx];
-        int32_t above_half_x_span = above_cut_shape.getXSpan() / 2;
-        int32_t above_half_y_span = above_cut_shape.getYSpan() / 2;
-        cut_diff_layer_pitch_list.emplace_back(std::max(curr_half_x_span + cut_layer.get_above_x_spacing() + above_half_x_span,
-                                                        curr_half_y_span + cut_layer.get_above_y_spacing() + above_half_y_span));
-      }
-    }
-  }
-  std::vector<int32_t> origin_pitch_list;
-  for (RoutingLayer& routing_layer : routing_layer_list) {
-    origin_pitch_list.push_back(routing_layer.getPreferTrackGridList().front().get_step_length());
-  }
-  auto getFrequentNum = [](const std::vector<int32_t>& num_list) {
-    if (num_list.empty()) {
-      RTLOG.error(Loc::current(), "The num_list is empty!");
-    }
-    std::map<int32_t, int32_t> num_count_map;
-    for (int32_t num : num_list) {
-      num_count_map[num]++;
-    }
-    std::map<int32_t, std::vector<int32_t>, std::greater<int32_t>> count_num_list_map;
-    for (auto& [num, count] : num_count_map) {
-      count_num_list_map[count].push_back(num);
-    }
-    int32_t frequent_num = INT32_MAX;
-    for (int32_t num : count_num_list_map.begin()->second) {
-      frequent_num = std::min(frequent_num, num);
-    }
-    return frequent_num;
-  };
-  int32_t step_length;
-  {
-    step_length = getFrequentNum(origin_pitch_list);
-    for (int32_t pitch :
-         {getFrequentNum(routing_eol_pitch_list), getFrequentNum(cut_eol_pitch_list), getFrequentNum(cut_diff_layer_pitch_list)}) {
-      step_length = std::max(step_length, pitch);
-    }
-  }
-  auto getScaleGrid = [](int32_t real_ll_scale, int32_t real_ur_scale, int32_t step_length) {
-    int32_t start_line = real_ll_scale + step_length;
-    int32_t step_num = (real_ur_scale - start_line) / step_length;
-    int32_t end_line = start_line + step_num * step_length;
-    if (end_line > real_ur_scale) {
-      step_num -= 1;
-      end_line = start_line + step_num * step_length;
-    }
-    if (std::abs(end_line - real_ur_scale) < step_length) {
-      step_num -= 1;
-      end_line = start_line + step_num * step_length;
-    }
-    ScaleGrid scale_grid;
-    scale_grid.set_start_line(start_line);
-    scale_grid.set_step_length(step_length);
-    scale_grid.set_step_num(step_num);
-    scale_grid.set_end_line(end_line);
-    return scale_grid;
-  };
-  ScaleAxis track_axis;
-  {
-    track_axis.get_x_grid_list().push_back(getScaleGrid(die.get_real_ll_x(), die.get_real_ur_x(), step_length));
-    track_axis.get_y_grid_list().push_back(getScaleGrid(die.get_real_ll_y(), die.get_real_ur_y(), step_length));
-  }
-  for (RoutingLayer& routing_layer : routing_layer_list) {
-    routing_layer.set_track_axis(track_axis);
   }
 }
 
@@ -1243,6 +1111,124 @@ void DataManager::checkPinList(Net& net)
                     die.get_real_ll_y(), ") - (", die.get_real_ur_x(), " , ", die.get_real_ur_y(), ")'");
       }
     }
+  }
+}
+
+void DataManager::buildLayerViaMasterList()
+{
+  transLayerViaMasterList();
+  makeLayerViaMasterList();
+}
+
+void DataManager::transLayerViaMasterList()
+{
+  std::map<int32_t, int32_t>& routing_idb_layer_id_to_idx_map = _database.get_routing_idb_layer_id_to_idx_map();
+  std::map<int32_t, int32_t>& cut_idb_layer_id_to_idx_map = _database.get_cut_idb_layer_id_to_idx_map();
+  std::vector<std::vector<ViaMaster>>& layer_via_master_list = _database.get_layer_via_master_list();
+
+  for (std::vector<ViaMaster>& via_master_list : layer_via_master_list) {
+    for (ViaMaster& via_master : via_master_list) {
+      // above
+      LayerRect& above_enclosure = via_master.get_above_enclosure();
+      above_enclosure.set_layer_idx(routing_idb_layer_id_to_idx_map[above_enclosure.get_layer_idx()]);
+      // below
+      LayerRect& below_enclosure = via_master.get_below_enclosure();
+      below_enclosure.set_layer_idx(routing_idb_layer_id_to_idx_map[below_enclosure.get_layer_idx()]);
+      // cut
+      via_master.set_cut_layer_idx(cut_idb_layer_id_to_idx_map[via_master.get_cut_layer_idx()]);
+    }
+  }
+}
+
+void DataManager::makeLayerViaMasterList()
+{
+  std::vector<std::vector<ViaMaster>>& layer_via_master_list = _database.get_layer_via_master_list();
+  std::vector<RoutingLayer>& routing_layer_list = _database.get_routing_layer_list();
+  std::vector<Net>& net_list = _database.get_net_list();
+  {
+    std::vector<ViaMaster> first_via_master_list;
+    for (ViaMaster& via_master : layer_via_master_list.front()) {
+      int32_t below_layer_idx = via_master.get_below_enclosure().get_layer_idx();
+      if (below_layer_idx == 0) {
+        first_via_master_list.push_back(via_master);
+      } else {
+        layer_via_master_list[below_layer_idx].push_back(via_master);
+      }
+    }
+    layer_via_master_list[0] = first_via_master_list;
+  }
+  for (size_t layer_idx = 0; layer_idx < layer_via_master_list.size(); layer_idx++) {
+    std::vector<ViaMaster>& via_master_list = layer_via_master_list[layer_idx];
+    for (ViaMaster& via_master : via_master_list) {
+      // above
+      LayerRect& above_enclosure = via_master.get_above_enclosure();
+      Direction above_layer_direction = routing_layer_list[above_enclosure.get_layer_idx()].get_prefer_direction();
+      via_master.set_above_direction(above_enclosure.getRectDirection(above_layer_direction));
+      // below
+      LayerRect& below_enclosure = via_master.get_below_enclosure();
+      Direction below_layer_direction = routing_layer_list[below_enclosure.get_layer_idx()].get_prefer_direction();
+      via_master.set_below_direction(below_enclosure.getRectDirection(below_layer_direction));
+    }
+  }
+  std::vector<Direction> direction_list;
+  {
+    for (RoutingLayer& routing_layer : routing_layer_list) {
+      direction_list.push_back(routing_layer.get_prefer_direction());
+    }
+    // 只对第一层进行方向分析
+    std::map<Direction, int32_t> direction_num_map;
+    for (Net& net : net_list) {
+      for (Pin& pin : net.get_pin_list()) {
+        for (EXTLayerRect& routing_shape : pin.get_routing_shape_list()) {
+          if (routing_shape.get_layer_idx() != 0) {
+            continue;
+          }
+          direction_num_map[routing_shape.get_real_rect().getRectDirection()]++;
+        }
+      }
+    }
+    Direction first_direction = direction_list.front();
+    int32_t max_num = INT32_MIN;
+    for (auto& [direction, num] : direction_num_map) {
+      if (max_num < num) {
+        first_direction = direction;
+        max_num = num;
+      }
+    }
+    direction_list.front() = first_direction;
+  }
+  for (size_t layer_idx = 0; layer_idx < layer_via_master_list.size(); layer_idx++) {
+    std::vector<ViaMaster>& via_master_list = layer_via_master_list[layer_idx];
+    std::sort(via_master_list.begin(), via_master_list.end(),
+              [&direction_list](ViaMaster& a, ViaMaster& b) { return CmpViaMaster()(a, b, direction_list); });
+    for (size_t i = 0; i < via_master_list.size(); i++) {
+      via_master_list[i].set_via_master_idx(layer_idx, i);
+    }
+  }
+}
+
+void DataManager::buildLayerViaMasterInfo()
+{
+  std::vector<RoutingLayer>& routing_layer_list = _database.get_routing_layer_list();
+  std::vector<std::vector<ViaMaster>>& layer_via_master_list = _database.get_layer_via_master_list();
+  std::map<int32_t, PlanarRect>& layer_enclosure_map = _database.get_layer_enclosure_map();
+  std::map<int32_t, PlanarRect>& layer_cut_shape_map = _database.get_layer_cut_shape_map();
+
+  int32_t start_layer_idx = 0;
+  int32_t end_layer_idx = static_cast<int32_t>(routing_layer_list.size()) - 1;
+
+  layer_enclosure_map[start_layer_idx] = layer_via_master_list[start_layer_idx].front().get_below_enclosure();
+  for (int32_t layer_idx = 1; layer_idx < end_layer_idx; layer_idx++) {
+    std::vector<PlanarRect> rect_list;
+    rect_list.push_back(layer_via_master_list[layer_idx - 1].front().get_above_enclosure());
+    rect_list.push_back(layer_via_master_list[layer_idx].front().get_below_enclosure());
+    layer_enclosure_map[layer_idx] = RTUTIL.getBoundingBox(rect_list);
+  }
+  layer_enclosure_map[end_layer_idx] = layer_via_master_list[end_layer_idx - 1].front().get_above_enclosure();
+
+  for (int32_t layer_idx = 0; layer_idx < end_layer_idx; layer_idx++) {
+    ViaMaster& via_master = layer_via_master_list[layer_idx].front();
+    layer_cut_shape_map[via_master.get_cut_layer_idx()] = via_master.get_cut_shape_list().front();
   }
 }
 
