@@ -92,15 +92,8 @@ class LmLayoutChecker : public GraphCheckerBase
 
   bool checkLayout(std::map<int, LmNet> net_map);
 
-  bool addNet(LmNet& net);
-  bool isConnectivity();
-  Graph getGraph() { return _graph; }
   void checkPinConnection(std::map<int, LmNet> net_map);
 
  private:
-  size_t _node_id = 0;
-  std::unordered_map<std::tuple<int, int, int32_t>, size_t, boost::hash<std::tuple<int, int, int32_t>>> _node_to_id;
-  Graph _graph;
-  std::vector<LmNet> _nets;
 };
 }  // namespace ilm
