@@ -27,6 +27,8 @@ class LmFeatureTiming
   LmFeatureTiming(LmLayout* layout) { _layout = layout; }
   ~LmFeatureTiming() = default;
 
+  void buildWireTimingPowerFeature(LmNet* lm_net);
+  void buildNetTimingPowerFeature();
   void build();
 
  private:
