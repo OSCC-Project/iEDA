@@ -27,11 +27,47 @@
 #include "idm.h"
 #include "omp.h"
 #include "usage.hh"
+#include "init_sta.hh"
 
 namespace ilm {
 
+void LmFeatureTiming::buildWireTimingPowerFeature(LmNet* lm_net) {
+    auto* eval_tp = ieval::InitSTA::getInst();
+    
+    for (auto& wire : lm_net->get_wires()) {
+        auto* wire_feature = wire.get_feature(true);
+
+        wire_feature->slew = 0.0;  // TODO(to taosimin), get wire slew(driver) from eval.
+        wire_feature->delay = 0.0; // TODO(to taosimin), get wire delay from eval.
+        wire_feature->power = 0.0; // TODO(to taosimin), get wire power from eval.
+    }
+}
+
+void LmFeatureTiming::buildNetTimingPowerFeature() {
+    auto* eval_tp = ieval::InitSTA::getInst();
+
+    auto& lm_graph = _layout->get_graph();
+    auto& net_id_map = _layout->get_net_id_map();
+    for (auto [net_name, net_id] : net_id_map) {
+        LOG_INFO << "net name" << net_name;
+        auto* lm_net = lm_graph.get_net(net_id);
+        auto* net_feature = lm_net->get_feature(true);
+
+        net_feature->slew = 0.0; // TODO(to taosimin), get net slew(driver) from eval.
+        net_feature->delay = 0.0; // TODO(to taosimin), get net delay from eval.
+        net_feature->power = 0.0; // TODO(to taosimin), get net power from eval.
+
+        buildWireTimingPowerFeature(lm_net);
+    }
+}
+
 void LmFeatureTiming::build()
 {
+    auto* eval_tp = ieval::InitSTA::getInst(); // evaluate timing and power.
+    eval_tp->evalTiming("WireGraph", true);
+
+    buildNetTimingPowerFeature();
+
 }
 
 }  // namespace ilm

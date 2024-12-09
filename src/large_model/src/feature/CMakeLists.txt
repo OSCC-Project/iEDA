@@ -16,8 +16,11 @@ target_link_libraries(ilm_feature
     tool_api_idrc
 )
 
+set(EVALUTION_INCLUDE ${HOME_EVALUATION}/src/util)
+
 target_include_directories(ilm_feature
     PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
+    ${EVALUTION_INCLUDE}
 )
 set(CMAKE_BUILD_TYPE "debug")
