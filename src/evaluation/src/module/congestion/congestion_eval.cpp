@@ -1046,6 +1046,17 @@ void CongestionEval::setEGRDirPath(std::string egr_dir_path)
 
 std::map<std::string, std::vector<std::vector<int>>> CongestionEval::getEGRMap(std::string congestion_dir)
 {
+  // check if congestion_dir is empty
+  if (!std::filesystem::exists(congestion_dir)) {
+    std::filesystem::path dir_path(congestion_dir);
+    dir_path = dir_path.parent_path();
+    std::string new_congestion_dir = dir_path.string();
+
+    setEGRDirPath(new_congestion_dir);
+    initEGR();
+    destroyEGR();
+  }
+
   std::map<std::string, std::vector<std::vector<int>>> egr_map;
   std::filesystem::path dir_path(congestion_dir);
 
