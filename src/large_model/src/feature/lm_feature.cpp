@@ -52,7 +52,7 @@ void LmFeature::buildFeatureStatis(std::string congestion_dir)
 
   // tcl: get congestion map
   // feature_cong_map -step "route" -dir "/home/yhqiu/net_level_collect/benchmark/large_model_test"
-  congestion_dir = "/home/yhqiu/net_level_collect/benchmark/large_model_test/rt/rt_temp_directory/early_router";
+  //   congestion_dir = "/home/yhqiu/net_level_collect/benchmark/large_model_test/rt/rt_temp_directory/early_router";
   LOG_INFO << "buildFeatureCongestion : " << congestion_dir;
 
   LmFeatureStatis feature_statis(_layout, congestion_dir);

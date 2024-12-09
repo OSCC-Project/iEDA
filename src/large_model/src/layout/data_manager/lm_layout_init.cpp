@@ -617,11 +617,13 @@ void LmLayoutInit::initNets()
     auto* lm_net = graph.get_net(net_id);
 
     for (auto* idb_inst_pin : idb_net->get_instance_pin_list()->get_pin_list()) {
-      transPin(idb_inst_pin, net_id, _layout->findPinId(idb_inst_pin->get_instance()->get_name(), idb_inst_pin->get_pin_name()));
+      auto pin_id = _layout->findPinId(idb_inst_pin->get_instance()->get_name(), idb_inst_pin->get_pin_name());
+      transPin(idb_inst_pin, net_id, pin_id);
     }
 
     for (auto* io_pin : idb_net->get_io_pins()->get_pin_list()) {
-      transPin(io_pin, net_id, _layout->findPinId("", io_pin->get_pin_name()), true);
+      auto pin_id = _layout->findPinId("", io_pin->get_pin_name());
+      transPin(io_pin, net_id, pin_id, true);
     }
 
     /// init wires
