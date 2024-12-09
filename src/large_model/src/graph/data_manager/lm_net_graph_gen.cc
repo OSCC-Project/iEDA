@@ -520,6 +520,47 @@ void LmNetGraphGenerator::reduceWireGraph(WireGraph& graph) const
     boost::clear_vertex(v, graph);
     boost::remove_vertex(v, graph);
   });
+
+  // Step 5: Reduce the redundant path pairs (with the same direction)
+  auto calc_direction = [&](const LayoutDefPoint& start, const LayoutDefPoint& end) -> int {
+    if (getX(start) == getX(end)) {
+      return getY(start) < getY(end) ? 0 : 1;
+    } else {
+      return getX(start) < getX(end) ? 2 : 3;
+    }
+  };
+  auto remove_redundant_path = [&](std::vector<std::pair<LayoutDefPoint, LayoutDefPoint>>& path) -> void {
+    if (path.size() < 2) {
+      return;
+    }
+    std::vector<std::pair<LayoutDefPoint, LayoutDefPoint>> new_path;
+
+    auto it = path.begin();
+    while (it != path.end()) {
+      auto start = it->first;
+      auto end = it->second;
+      auto direction = calc_direction(start, end);
+
+      auto next = std::next(it);
+      while (next != path.end() && calc_direction(end, next->second) == direction) {
+        end = next->second;
+        ++next;
+      }
+
+      new_path.emplace_back(start, end);
+
+      it = next;
+    }
+
+    path = std::move(new_path);
+  };
+  for (auto e : boost::make_iterator_range(boost::edges(graph))) {
+    auto& path = graph[e].path;
+    if (path.size() < 2) {
+      continue;
+    }
+    remove_redundant_path(path);
+  }
 }
 
 // Helper function to check for cycles in the graph
