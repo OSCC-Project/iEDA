@@ -99,6 +99,7 @@ void LmFeatureStatis::build()
           int trans_min_col = static_cast<int>(min_node_x / col_factor);
           int trans_max_col = static_cast<int>(max_node_x / col_factor);
 
+          /// congestion
           int sum_congestion = 0;
           int trans_grid_count = 0;
 
@@ -110,7 +111,7 @@ void LmFeatureStatis::build()
           }
 
           if (trans_grid_count > 0) {
-            wire_feature->congestion += sum_congestion / trans_grid_count;
+            wire_feature->congestion += ((double) sum_congestion / trans_grid_count);
           } else {
             wire_feature->congestion = 0;
           }

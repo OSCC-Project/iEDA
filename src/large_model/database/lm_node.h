@@ -94,7 +94,7 @@ class LmNodeData
 
  private:
   int32_t _net_id = -1;
-  int16_t _pin_id = -1;
+  int32_t _pin_id = -1;
   LmNodeTYpe _type = LmNodeTYpe::kNone;  /// multiple type in one node
   LmNodeConnectType _connect_type = LmNodeConnectType::kNone;
   LmNodeFeature _feature;
@@ -107,6 +107,7 @@ class LmNode
   ~LmNode() = default;
 
   // getter
+  uint64_t get_node_id();
   int get_x();
   int get_y();
   int get_row_id() { return _row_id; }

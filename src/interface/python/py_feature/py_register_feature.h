@@ -35,6 +35,7 @@ void register_feature(py::module& m)
   m.def("feature_eval_union", feature_eval_union, py::arg("jsonl_path"), py::arg("csv_path"), py::arg("grid_size"));
   m.def("feature_pl_eval_union", feature_pl_eval_union, py::arg("jsonl_path"), py::arg("csv_path"), py::arg("grid_size"));
   m.def("feature_cts_eval_union", feature_cts_eval_union, py::arg("jsonl_path"), py::arg("csv_path"), py::arg("grid_size"));
+  m.def("feature_cong_map", feature_cong_map, py::arg("step"), py::arg("dir"));
 }
 
 }  // namespace python_interface

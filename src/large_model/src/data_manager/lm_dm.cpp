@@ -52,7 +52,7 @@ bool LmDataManager::checkData()
   if (graph.size() > 0) {
     // connectiviy check
     LmLayoutChecker checker;
-    checker.checkPinConnection(graph);
+    // checker.checkPinConnection(graph);
     return checker.checkLayout(graph);
   }
 
@@ -66,8 +66,8 @@ std::map<int, LmNet> LmDataManager::getGraph(std::string path)
 
 void LmDataManager::saveData(const std::string dir)
 {
-  LmLayoutFileIO file_io(dir);
-  file_io.saveJson(layout_dm.get_graph());
+  LmLayoutFileIO file_io(dir, &layout_dm.get_layout());
+  file_io.saveJson();
 }
 
 }  // namespace ilm

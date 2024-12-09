@@ -104,13 +104,13 @@ unsigned CmdLmLayoutGraph::exec()
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 CmdLmFeature::CmdLmFeature(const char* cmd_name) : TclCmd(cmd_name)
 {
-  auto* option = new TclStringOption(TCL_PATH, 1, nullptr);
+  auto* option = new TclStringOption(TCL_DIRECTORY, 1, nullptr);
   addOption(option);
 }
 
 unsigned CmdLmFeature::check()
 {
-  TclOption* option = getOptionOrArg(TCL_PATH);
+  TclOption* option = getOptionOrArg(TCL_DIRECTORY);
   LOG_FATAL_IF(!option);
 
   return 1;
@@ -122,7 +122,7 @@ unsigned CmdLmFeature::exec()
     return 0;
   }
 
-  TclOption* option = getOptionOrArg(TCL_PATH);
+  TclOption* option = getOptionOrArg(TCL_DIRECTORY);
   if (option != nullptr) {
     auto path_option = option->getStringVal();
     std::string path = path_option == nullptr ? "./large_model" : path_option;

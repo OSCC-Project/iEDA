@@ -26,6 +26,7 @@ void register_large_model(py::module& m)
 {
   m.def("layout_patchs", layout_patchs, py::arg("path"));
   m.def("layout_graph", layout_graph, py::arg("path"));
+  m.def("large_model_feature", large_model_feature, py::arg("dir"));
 }
 
 }  // namespace python_interface

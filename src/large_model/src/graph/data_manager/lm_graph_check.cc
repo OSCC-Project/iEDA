@@ -422,13 +422,12 @@ bool LmLayoutChecker::checkLayout(std::map<int, LmNet> net_map)
     } else {
       LOG_ERROR << "Net " << net.get_net_id() << " is not locally connected.";
       // debug
-      // auto graph = checker.convertToGraph(net);
-      // GraphCheckerBase::writeToDot(
-      //     graph, "/data/project_share/benchmark/t28/baseline/result/feature/graph_debug_temp/net_" + std::to_string(net.get_net_id()) +
-      //     ".dot");
-      // GraphCheckerBase::writeToPy(
-      //     graph, net,
-      //     "/data/project_share/benchmark/t28/baseline/result/feature/graph_debug/net_" + std::to_string(net.get_net_id()) + ".py");
+      auto graph = checker.convertToGraph(net);
+      //   GraphCheckerBase::writeToDot(graph, "/data/project_share/benchmark/t28/baseline/result/feature/graph_debug_temp/net_"
+      //                                           + std::to_string(net.get_net_id()) + ".dot");
+      GraphCheckerBase::writeToPy(
+          graph, net,
+          "/data/project_share/benchmark/t28/baseline/result/feature/graph_debug/net_" + std::to_string(net.get_net_id()) + ".py");
     }
     total++;
   }

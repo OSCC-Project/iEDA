@@ -42,27 +42,45 @@ class LmLayout
 
   // getter
   LmPatchLayers& get_patch_layers() { return _patch_layers; }
-  std::map<std::string, int>& get_layer_id_map() { return _layer_id_map; }
-  std::map<std::string, int>& get_via_id_map() { return _via_id_map; }
-  std::map<std::string, int>& get_pdn_id_map() { return _pdn_id_map; }
-  std::map<std::string, int>& get_net_id_map() { return _net_id_map; }
+  std::map<std::string, int>& get_net_name_map() { return _net_name_map; }
   LmGraph& get_graph() { return _graph; }
+
   // setter
+  void add_layer_map(int id, std::string name);
+  void add_via_map(int id, std::string name);
+  void add_pdn_map(int id, std::string name);
+  void add_net_map(int id, std::string name);
+  void add_pin_map(int id, std::string inst_name, std::string pin_name);
 
   // operator
   int findLayerId(std::string name);
+  std::string findLayerName(int id);
   int findViaId(std::string name);
+  std::string findViaName(int id);
   int findPdnId(std::string name);
+  std::string findPdnName(int id);
   int findNetId(std::string name);
+  std::string findNetName(int id);
+  int findPinId(std::string inst_name, std::string pin_name);
+  std::pair<std::string, std::string> findPinName(int id);
 
  private:
   LmPatchLayers _patch_layers;
 
-  std::map<std::string, int> _layer_id_map;  /// string : layer name, int : layer id begin from 1st routing layer, for example, if M1 is 1st
-                                             /// routing layer, then M1 id=0, CUT1 id=1, M2 id=2 ...
-  std::map<std::string, int> _via_id_map;    /// string : via name, int : via index in this map
-  std::map<std::string, int> _pdn_id_map;    /// string : pdn name, int : id in the map
-  std::map<std::string, int> _net_id_map;    /// string : net name, int id in the map
+  std::map<std::string, int> _layer_name_map;  /// string : layer name, int : layer id begin from 1st routing layer, for example, if M1 is
+                                               /// 1st routing layer, then M1 id=0, CUT1 id=1, M2 id=2 ...
+  std::map<int, std::string> _layer_id_map;    /// string : layer name, int : layer id begin from 1st routing layer, for example, if M1 is
+                                               /// 1st routing layer, then M1 id=0, CUT1 id=1, M2 id=2 ...
+  std::map<std::string, int> _via_name_map;    /// string : via name, int : via index in this map
+  std::map<int, std::string> _via_id_map;      /// string : via name, int : via index in this map
+  std::map<std::string, int> _pdn_name_map;    /// string : pdn name, int : id in the map
+  std::map<int, std::string> _pdn_id_map;      /// string : pdn name, int : id in the map
+  std::map<std::string, int> _net_name_map;    /// string : net name, int id in the map
+  std::map<int, std::string> _net_id_map;      /// string : net name, int id in the map
+  std::map<std::pair<std::string, std::string>, int>
+      _pin_name_map;  /// std::pair<std::string, std::string> : instance name & pin name, int id in the map
+  std::map<int, std::pair<std::string, std::string>>
+      _pin_id_map;  /// std::pair<std::string, std::string> : instance name & pin name, int id in the map
 
   LmGraph _graph;
 };
