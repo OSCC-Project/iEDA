@@ -71,7 +71,8 @@ void LmNodeData::set_pin_id(int32_t id)
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 uint64_t LmNode::get_node_id()
 {
-  return ((uint64_t) _row_id) * ((uint64_t) gridInfoInst.node_col_num) + ((uint64_t) _col_id);
+  return (_layer_id * gridInfoInst.node_col_num * gridInfoInst.node_row_num) + ((uint64_t) _row_id) * ((uint64_t) gridInfoInst.node_col_num)
+         + ((uint64_t) _col_id);
 }
 
 int LmNode::get_x()

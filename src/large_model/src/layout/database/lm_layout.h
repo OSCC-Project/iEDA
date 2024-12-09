@@ -42,8 +42,9 @@ class LmLayout
 
   // getter
   LmPatchLayers& get_patch_layers() { return _patch_layers; }
-
+  std::map<std::string, int>& get_net_name_map() { return _net_name_map; }
   LmGraph& get_graph() { return _graph; }
+
   // setter
   void add_layer_map(int id, std::string name);
   void add_via_map(int id, std::string name);
