@@ -44,9 +44,18 @@ void LmFeature::buildFeatureTiming()
   feature_timing.build();
 }
 
-void LmFeature::buildFeatureStatis()
+void LmFeature::buildFeatureStatis(std::string congestion_dir)
 {
-  LmFeatureStatis feature_statis(_layout);
+  if (congestion_dir == "") {
+    congestion_dir = dmInst->get_config().get_output_path() + "/rt/rt_temp_directory/early_router";
+  }
+
+  // tcl: get congestion map
+  // feature_cong_map -step "route" -dir "/home/yhqiu/net_level_collect/benchmark/large_model_test"
+  congestion_dir = "/home/yhqiu/net_level_collect/benchmark/large_model_test/rt/rt_temp_directory/early_router";
+  LOG_INFO << "buildFeatureCongestion : " << congestion_dir;
+
+  LmFeatureStatis feature_statis(_layout, congestion_dir);
 
   feature_statis.build();
 }

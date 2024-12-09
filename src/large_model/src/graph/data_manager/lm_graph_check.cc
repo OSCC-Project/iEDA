@@ -415,141 +415,26 @@ bool LmLayoutChecker::checkLayout(std::map<int, LmNet> net_map)
 {
   int success_num = 0;
   int total = 0;
+  auto checker = LmNetChecker();
   for (auto& [net_id, net] : net_map) {
-    if (addNet(net)) {
+    if (checker.isLocalConnectivity(net)) {
       success_num++;
+    } else {
+      LOG_ERROR << "Net " << net.get_net_id() << " is not locally connected.";
+      // debug
+      // auto graph = checker.convertToGraph(net);
+      // GraphCheckerBase::writeToDot(
+      //     graph, "/data/project_share/benchmark/t28/baseline/result/feature/graph_debug_temp/net_" + std::to_string(net.get_net_id()) +
+      //     ".dot");
+      // GraphCheckerBase::writeToPy(
+      //     graph, net,
+      //     "/data/project_share/benchmark/t28/baseline/result/feature/graph_debug/net_" + std::to_string(net.get_net_id()) + ".py");
     }
     total++;
   }
 
   LOG_ERROR << "Net connected succuss ratio : " << success_num << " / " << total;
-  return isConnectivity();
-}
-bool LmLayoutChecker::addNet(LmNet& net)
-{
-  // check local connectivity
-  auto checker = LmNetChecker();
-  if (!checker.isLocalConnectivity(net)) {
-    LOG_ERROR << "Net " << net.get_net_id() << " is not locally connected.";
-    // debug
-    auto graph = checker.convertToGraph(net);
-    // GraphCheckerBase::writeToDot(
-    //     graph, "/data/project_share/benchmark/t28/baseline/result/feature/graph_debug_temp/net_" + std::to_string(net.get_net_id()) +
-    //     ".dot");
-    GraphCheckerBase::writeToPy(
-        graph, net,
-        "/data/project_share/benchmark/t28/baseline/result/feature/graph_debug/net_" + std::to_string(net.get_net_id()) + ".py");
-    return false;
-  } else {
-    LOG_INFO << "Net " << net.get_net_id() << " is locally connected.";
-    // debug
-    auto graph = checker.convertToGraph(net);
-    // GraphCheckerBase::writeToDot(
-    //     graph, "/data/project_share/benchmark/t28/baseline/result/feature/graph_debug/net_" + std::to_string(net.get_net_id()) + ".dot");
-    GraphCheckerBase::writeToPy(
-        graph, net,
-        "/data/project_share/benchmark/t28/baseline/result/feature/graph_debug/net_" + std::to_string(net.get_net_id()) + "_pass.py");
-  }
-  _nets.push_back(net);
-  return true;
-}
-bool LmLayoutChecker::isConnectivity()
-{
-  _node_id = 0;
-  _node_to_id.clear();
-  _graph.clear();
-
-  // 1. convert all nets' nodes to id
-  for (auto& net : _nets) {
-    auto& wires = net.get_wires();
-    for (auto& wire : wires) {
-      auto& connected_nodes = wire.get_connected_nodes();
-      auto* start = connected_nodes.first;
-      auto* end = connected_nodes.second;
-
-      // Create keys based on (x, y, layer_id)
-      auto start_key = std::make_tuple(start->get_x(), start->get_y(), start->get_layer_id());
-      auto end_key = std::make_tuple(end->get_x(), end->get_y(), end->get_layer_id());
-
-      // Assign unique ID if not already assigned
-      if (!_node_to_id.contains(start_key)) {
-        _node_to_id[start_key] = _node_id++;
-      }
-      if (!_node_to_id.contains(end_key)) {
-        _node_to_id[end_key] = _node_id++;
-      }
-    }
-  }
-  // 2. convert all nets to graph
-  _graph = Graph(_node_id);
-  for (auto& net : _nets) {
-    auto& wires = net.get_wires();
-    for (auto& wire : wires) {
-      auto& connected_nodes = wire.get_connected_nodes();
-      auto* start = connected_nodes.first;
-      auto* end = connected_nodes.second;
-
-      auto start_key = std::make_tuple(start->get_x(), start->get_y(), start->get_layer_id());
-      auto end_key = std::make_tuple(end->get_x(), end->get_y(), end->get_layer_id());
-
-      auto start_id = _node_to_id[start_key];
-      auto end_id = _node_to_id[end_key];
-
-      auto start_vertex = boost::vertex(start_id, _graph);
-      _graph[start_vertex].x = start->get_x();
-      _graph[start_vertex].y = start->get_y();
-      _graph[start_vertex].layer_id = start->get_layer_id();
-      _graph[start_vertex].pin_id = start->get_node_data()->get_pin_id();
-
-      auto end_vertex = boost::vertex(end_id, _graph);
-      _graph[end_vertex].x = end->get_x();
-      _graph[end_vertex].y = end->get_y();
-      _graph[end_vertex].layer_id = end->get_layer_id();
-      _graph[end_vertex].pin_id = end->get_node_data()->get_pin_id();
-
-      boost::add_edge(start_id, end_id, _graph);
-    }
-  }
-  // 3. check the connectivity of the graph
-  if (GraphCheckerBase::isConnectivity(_graph)) {
-    LOG_INFO << "The layout is fully connected.";
-    return true;
-  }
-  LOG_ERROR << "The layout is not fully connected.";
-  // debug
-  return false;
-
-  // sort the components by number of nodes (ascending)
-  std::vector<size_t> component(boost::num_vertices(_graph));
-  size_t num_components = boost::connected_components(_graph, &component[0]);
-  std::unordered_map<int, int> component_size;
-  for (size_t i = 0; i < num_components; ++i) {
-    component_size[i] = 0;
-  }
-  for (size_t i = 0; i < component.size(); ++i) {
-    component_size[component[i]]++;
-  }
-  std::vector<std::pair<int, int>> sorted_component;
-  for (auto& [key, value] : component_size) {
-    sorted_component.push_back(std::make_pair(key, value));
-  }
-  std::sort(sorted_component.begin(), sorted_component.end(),
-            [](const std::pair<int, int>& a, const std::pair<int, int>& b) { return a.second < b.second; });
-  // print the components, save the result to graphviz (dot) file
-  std::ofstream ofs("layout.dot");
-  ofs << "graph G {\n";
-  for (size_t i = 0; i < num_components; ++i) {
-    ofs << "subgraph cluster_" << i << " {\n";
-    ofs << "label = \"Component " << i << " (" << component_size[i] << " nodes)\";\n";
-    for (size_t j = 0; j < component.size(); ++j) {
-      if (component[j] == i) {
-        ofs << j << ";\n";
-      }
-    }
-    ofs << "}\n";
-  }
-
-  return false;
+  return success_num == total;
 }
 
 void LmLayoutChecker::checkPinConnection(std::map<int, LmNet> net_map)

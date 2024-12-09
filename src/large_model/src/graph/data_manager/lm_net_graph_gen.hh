@@ -263,7 +263,6 @@ using WireGraph = boost::adjacency_list<boost::vecS, boost::vecS, boost::undirec
 using WireGraphVertex = boost::graph_traits<WireGraph>::vertex_descriptor;
 using WireGraphEdge = boost::graph_traits<WireGraph>::edge_descriptor;
 using WireGraphVertexMap = std::unordered_map<LayoutDefPoint, WireGraphVertex, LayoutDefPointHash, LayoutDefPointEqual>;
-using WirePath = std::vector<LayoutDefPoint>;
 
 class LmNetGraphGenerator
 {

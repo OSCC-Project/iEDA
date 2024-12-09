@@ -1,8 +1,8 @@
 add_library(ilm_feature
-lm_feature.cpp
-lm_feature_drc.cpp
-lm_feature_timing.cpp
-lm_feature_statis.cpp
+    lm_feature.cpp
+    lm_feature_drc.cpp
+    lm_feature_timing.cpp
+    lm_feature_statis.cpp
 )
 
 target_link_libraries(ilm_feature
@@ -14,6 +14,7 @@ target_link_libraries(ilm_feature
     usage
     ilm_util
     tool_api_idrc
+    eval_congestion_api
 )
 
 set(EVALUTION_INCLUDE ${HOME_EVALUATION}/src/util)
