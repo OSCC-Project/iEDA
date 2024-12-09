@@ -32,4 +32,13 @@ bool layout_graph(const std::string& path)
   return lm_api.buildLargeModelGraphData(path);
 }
 
+bool large_model_feature(const std::string& dir)
+{
+  if (dir == "") {
+    dir = "./large_model";
+  }
+  ilm::LargeModelApi lm_api;
+  return lm_api.buildLargeModelFeature(dir);
+}
+
 }  // namespace python_interface
