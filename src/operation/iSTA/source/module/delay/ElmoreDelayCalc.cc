@@ -944,12 +944,13 @@ double RcNet::getResistance(AnalysisMode mode, TransType trans_type,
  * @param delay_method
  * @return std::optional<double>
  */
-std::optional<double> RcNet::delay(DesignObject& to, DelayMethod delay_method) {
-  if (_rct.index() == 0) {
+std::optional<double> RcNet::delay(const char* node_name,
+                              DelayMethod delay_method) {
+   if (_rct.index() == 0) {
     return std::nullopt;
   }
 
-  auto node = std::get<RcTree>(_rct).node(to.getFullName());
+  auto node = std::get<RcTree>(_rct).node(node_name);
   std::optional<double> delay;
   if (delay_method == DelayMethod::kElmore) {
     delay = node->delay();
@@ -961,6 +962,18 @@ std::optional<double> RcNet::delay(DesignObject& to, DelayMethod delay_method) {
     delay = node->delayD2MM();
   }
   return delay;
+
+}
+
+/**
+ * @brief get delay of pin or port.
+ *
+ * @param to
+ * @param delay_method
+ * @return std::optional<double>
+ */
+std::optional<double> RcNet::delay(DesignObject& to, DelayMethod delay_method) {
+  return delay(to.getFullName().c_str());
 }
 
 std::optional<std::pair<double, Eigen::MatrixXd>> RcNet::delay(
@@ -974,6 +987,18 @@ std::optional<std::pair<double, Eigen::MatrixXd>> RcNet::delay(
   auto* node = std::get<RcTree>(_rct).node(to.getFullName());
   Eigen::MatrixXd waveform;
   return std::make_pair(node->delay(mode, trans_type), waveform);
+}
+
+std::optional<double> RcNet::slew(const char* node_name, double from_slew, AnalysisMode mode,
+    TransType trans_type) {
+  if (_rct.index() == 0) {
+    return std::nullopt;
+  }
+
+  auto* node = std::get<RcTree>(_rct).node(node_name);
+  double slew = node->slew(mode, trans_type, from_slew);
+
+  return slew;
 }
 
 std::optional<double> RcNet::slew(

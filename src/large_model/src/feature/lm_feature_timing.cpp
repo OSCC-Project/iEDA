@@ -31,15 +31,18 @@
 
 namespace ilm {
 
-void LmFeatureTiming::buildWireTimingPowerFeature(LmNet* lm_net)
+void LmFeatureTiming::buildWireTimingPowerFeature(LmNet* lm_net, const std::string& net_name)
 {
   auto* eval_tp = ieval::InitSTA::getInst();
 
   for (auto& wire : lm_net->get_wires()) {
     auto* wire_feature = wire.get_feature(true);
+    auto [src, snk] = wire.get_connected_nodes();
 
-    wire_feature->slew = 0.0;   // TODO(to taosimin), get wire slew(driver) from eval.
-    wire_feature->delay = 0.0;  // TODO(to taosimin), get wire delay from eval.
+    std::string node_name = net_name + ":" + std::to_string(snk->get_node_id());
+
+    wire_feature->slew = eval_tp->getWireSlew(net_name, node_name);
+    wire_feature->delay = eval_tp->getWireDelay(net_name, node_name);
     wire_feature->power = 0.0;  // TODO(to taosimin), get wire power from eval.
   }
 }
@@ -55,11 +58,11 @@ void LmFeatureTiming::buildNetTimingPowerFeature()
     auto* lm_net = lm_graph.get_net(net_id);
     auto* net_feature = lm_net->get_feature(true);
 
-    net_feature->slew = eval_tp->getNetSlew(net_name);    // TODO(to taosimin), get net slew(driver) from eval.
-    net_feature->delay = eval_tp->getNetDelay(net_name);  // TODO(to taosimin), get net delay from eval.
-    net_feature->power = eval_tp->getNetPower(net_name);  // TODO(to taosimin), get net power from eval.
+    net_feature->slew = eval_tp->getNetSlew(net_name);
+    net_feature->delay = eval_tp->getNetDelay(net_name);
+    net_feature->power = eval_tp->getNetPower(net_name);
 
-    buildWireTimingPowerFeature(lm_net);
+    buildWireTimingPowerFeature(lm_net, net_name);
   }
 }
 
