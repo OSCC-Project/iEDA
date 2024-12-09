@@ -18,37 +18,62 @@
  * @file lm_wire_pattern.hh
  * @author Dawn Li (dawnli619215645@gmail.com)
  * @version 1.0
- * @date 2024-11-25
- * @brief generate wire pattern for large model
+ * @date 2024-12-08
+ * @brief wire pattern for large model
  */
 
 #pragma once
 
-#include <Eigen/Dense>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
-namespace ilm {
-using Matrix = Eigen::Matrix<int, Eigen::Dynamic, Eigen::Dynamic>;
+#include "lm_net.h"
 
-class LmWirePattern
+namespace ilm {
+struct Point
+{
+  int x;
+  int y;
+  int z;
+};
+enum LmWirePatternDirection
+{
+  kTOP,
+  kBOTTOM,
+  kLEFT,
+  kRIGHT,
+  kVIA
+};
+
+struct LmWirePatternUnit
+{
+  LmWirePatternDirection direction;
+  int length;
+};
+
+struct LmWirePatternSequence
+{
+  std::string name;
+  std::vector<LmWirePatternUnit> units;
+};
+
+class LmWirePatternGenerator
 {
  public:
-  LmWirePattern() = default;
-  LmWirePattern(const std::string& name, const Matrix& matrix) : _pattern_name(name), _pattern_matrix(matrix) {}
-  ~LmWirePattern() = default;
+  LmWirePatternGenerator() = default;
+  ~LmWirePatternGenerator() = default;
 
-  // getter
-  std::string get_pattern_name() const { return _pattern_name; }
-  Matrix get_pattern_matrix() const { return _pattern_matrix; }
-
-  // setter
-  void set_pattern_name(const std::string& name) { _pattern_name = name; }
-  void set_pattern_matrix(const Matrix& matrix) { _pattern_matrix = matrix; }
+  void genPatterns();
+  void addPattern(LmNetWire& wire);
+  void patternSummary(const std::string& csv_path);
 
  private:
-  std::string _pattern_name = "";
+  std::vector<Point> getPointList(LmNetWire& wire);
+  LmWirePatternSequence calcPattern(const std::vector<Point>& points);
 
-  Matrix _pattern_matrix;
+  std::unordered_map<std::string, LmWirePatternSequence> _patterns;
+  std::unordered_map<std::string, int> _pattern_count;
 };
+
 }  // namespace ilm

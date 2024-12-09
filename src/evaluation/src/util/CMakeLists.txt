@@ -57,6 +57,7 @@ target_link_libraries(eval_util_init_ista
     PRIVATE
         ieda_feature
         idm
+        ilm_api
         irt_interface
         ista-engine
         power
