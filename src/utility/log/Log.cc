@@ -56,6 +56,9 @@ void SignalHandle(const char* data, int size)
  */
 void Log::init(char* argv[], std::string log_dir)
 {
+  if (b_init) {
+    end();
+  }
   std::filesystem::create_directories(log_dir.c_str());
 
   /*init google logging.*/
@@ -80,6 +83,8 @@ void Log::init(char* argv[], std::string log_dir)
 
   /*print core dump SIGSEGV signal*/
   google::InstallFailureWriter(&SignalHandle);
+
+  b_init = true;
 }
 
 /**
@@ -89,6 +94,7 @@ void Log::init(char* argv[], std::string log_dir)
 void Log::end()
 {
   google::ShutdownGoogleLogging();
+  b_init = false;
 }
 
 /**

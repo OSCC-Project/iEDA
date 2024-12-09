@@ -36,6 +36,9 @@ namespace ieda {
  * from glog.
  *
  */
+
+static bool b_init = false;
+
 class Log
 {
   enum class LogServerity : int

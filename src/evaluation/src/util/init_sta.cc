@@ -28,7 +28,7 @@
 #include "api/TimingEngine.hh"
 #include "api/TimingIDBAdapter.hh"
 #include "idm.h"
-#include "lm_api.h"
+#include "lm_layout.h"
 #include "salt/base/flute.h"
 #include "salt/salt.h"
 #include "timing_db.hh"
@@ -75,11 +75,11 @@ void InitSTA::runSTA()
   });
 }
 
-void InitSTA::runLmSTA()
+void InitSTA::runLmSTA(ilm::LmLayout* lm_layout)
 {
   initStaEngine();
 
-  buildLmRCTree();
+  buildLmRCTree(lm_layout);
 
   // updateResult(); TODO: update result for lm
 }
@@ -409,7 +409,7 @@ void InitSTA::buildRCTree(const std::string& routing_type)
   STA_INST->updateTiming();
 }
 
-void InitSTA::buildLmRCTree()
+void InitSTA::buildLmRCTree(ilm::LmLayout* lm_layout)
 {
   // init
   auto* idb = dmInst->get_idb_builder();
@@ -423,8 +423,7 @@ void InitSTA::buildLmRCTree()
   auto* sta_netlist = STA_INST->get_netlist();
   ista::Net* sta_net = nullptr;
   // TODO: fix the lm api
-  ilm::LargeModelApi lm_api;
-  auto wire_graph = lm_api.getGraph();
+  auto& wire_graph = lm_layout->get_graph().get_net_map();
   for (size_t net_id = 0; net_id < idb_nets.size(); ++net_id) {
     auto* idb_net = idb_nets[net_id];
     sta_net = sta_netlist->findNet(idb_net->get_net_name().c_str());
@@ -671,7 +670,8 @@ double InitSTA::reportTNS(const char* clock_name, ista::AnalysisMode mode)
   return STA_INST->getTNS(clock_name, mode);
 }
 
-double InitSTA::getNetSlew(const std::string& net_name) const {
+double InitSTA::getNetSlew(const std::string& net_name) const
+{
   auto netlist = STA_INST->get_netlist();
   ista::Net* ista_net = netlist->findNet(net_name.c_str());
   // get driver slew for net slew.
@@ -681,7 +681,8 @@ double InitSTA::getNetSlew(const std::string& net_name) const {
   return (rise_slew + fall_slew) / 2;
 }
 
-double InitSTA::getNetDelay(const std::string& net_name) const {
+double InitSTA::getNetDelay(const std::string& net_name) const
+{
   auto netlist = STA_INST->get_netlist();
   ista::Net* ista_net = netlist->findNet(net_name.c_str());
 
@@ -704,13 +705,13 @@ double InitSTA::getNetDelay(const std::string& net_name) const {
   return net_avg_delay;
 }
 
-double InitSTA::getNetPower(const std::string& net_name) const {
+double InitSTA::getNetPower(const std::string& net_name) const
+{
   // get net power from updated results.
   auto& nets_power = _net_power.begin()->second;
   double net_power = nets_power.at(net_name);
   return net_power;
 }
-
 
 void InitSTA::updateTiming(const std::vector<TimingNet*>& timing_net_list, int32_t dbu_unit)
 {

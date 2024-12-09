@@ -14,6 +14,11 @@
 namespace ista {
 enum class AnalysisMode;
 }
+
+namespace ilm {
+class LmLayout;
+}
+
 namespace ieval {
 class TimingAPI
 {
@@ -25,6 +30,7 @@ class TimingAPI
   static TimingAPI* getInst();
 
   void runSTA();
+  void runLmSTA(ilm::LmLayout* lm_layout);
   void evalTiming(const std::string& routing_type, const bool& rt_done = false);
 
   static void destroyInst();
