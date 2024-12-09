@@ -412,11 +412,9 @@ void InitSTA::buildRCTree(const std::string& routing_type)
 void InitSTA::buildLmRCTree()
 {
   // init
-  // 1. wirelength calculation
   auto* idb = dmInst->get_idb_builder();
   auto* idb_design = idb->get_def_service()->get_design();
 
-  // 2. cap and res calculation, if is clock net, return the last layer, otherwise return the first layer
   auto* idb_layout = dmInst->get_idb_lef_service()->get_layout();
   auto routing_layers = idb_layout->get_layers()->get_routing_layers();
 
@@ -486,9 +484,7 @@ void InitSTA::buildLmRCTree()
         wirelength += std::abs(x1 - x2) + std::abs(y1 - y2);
       });
 
-      // get unit r,c
       auto* routing_layer = dynamic_cast<IdbLayerRouting*>(routing_layers[source_layer]);
-
       auto segment_width = (double) routing_layer->get_width() / idb_layout->get_units()->get_micron_dbu();
 
       auto lef_resistance = routing_layer->get_resistance();
