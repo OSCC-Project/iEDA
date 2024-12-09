@@ -57,8 +57,8 @@ std::map<int, LmNet> LmDataManager::getGraph(std::string path)
 
 void LmDataManager::saveData(const std::string dir)
 {
-  LmLayoutFileIO file_io(dir);
-  file_io.saveJson(layout_dm.get_graph());
+  LmLayoutFileIO file_io(dir, &layout_dm.get_layout());
+  file_io.saveJson();
 }
 
 }  // namespace ilm

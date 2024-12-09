@@ -53,15 +53,13 @@ void LmLayoutInit::initViaIds()
   auto* idb_lef_vias = idb_layout->get_via_list();
   auto* idb_def_vias = idb_design->get_via_list();
 
-  auto& via_map = _layout->get_via_id_map();
-
   int index = 0;
   for (auto* via : idb_lef_vias->get_via_list()) {
-    via_map.insert(std::make_pair(via->get_name(), index++));
+    _layout->add_via_map(index++, via->get_name());
   }
 
   for (auto* via : idb_def_vias->get_via_list()) {
-    via_map.insert(std::make_pair(via->get_name(), index++));
+    _layout->add_via_map(index++, via->get_name());
   }
 
   LOG_INFO << "Via number : " << index;
@@ -92,7 +90,6 @@ void LmLayoutInit::initLayers()
   auto* idb_layers = idb_layout->get_layers();
   auto idb_layer_1st = dmInst->get_config().get_routing_layer_1st();
 
-  auto& layer_id_map = _layout->get_layer_id_map();
   auto& patch_layers = _layout->get_patch_layers();
   auto& patch_layer_map = patch_layers.get_patch_layer_map();
 
@@ -104,7 +101,7 @@ void LmLayoutInit::initLayers()
     }
 
     if (true == b_record) {
-      layer_id_map.insert(std::make_pair(idb_layer->get_name(), index));
+      _layout->add_layer_map(index, idb_layer->get_name());
 
       LmPatchLayer patch_layer;
       patch_layer.set_layer_name(idb_layer->get_name());
@@ -241,7 +238,6 @@ void LmLayoutInit::initPDN()
   ieda::Stats stats;
 
   LOG_INFO << "LM init PDN start...";
-  auto& pdn_id_map = _layout->get_pdn_id_map();
   auto& patch_layers = _layout->get_patch_layers();
 
   auto* idb_design = dmInst->get_idb_design();
@@ -259,9 +255,10 @@ void LmLayoutInit::initPDN()
   }
 
   int segment_num = 0;
-  for (auto* idb_net : idb_pdn->get_net_list()) {
+  for (int i = 0; i < idb_pdn->get_net_list().size(); ++i) {
+    auto* idb_net = idb_pdn->get_net_list()[i];
     /// init pdn id map
-    pdn_id_map.insert(std::make_pair(idb_net->get_net_name(), -1));
+    _layout->add_pdn_map(i, idb_net->get_net_name());
 
     auto* idb_wires = idb_net->get_wire_list();
     for (auto* idb_wire : idb_wires->get_wire_list()) {
@@ -582,39 +579,49 @@ void LmLayoutInit::initNets()
   ieda::Stats stats;
 
   LOG_INFO << "LM init nets start...";
-  auto& net_id_map = _layout->get_net_id_map();
 
   auto* idb_design = dmInst->get_idb_design();
   auto* idb_nets = idb_design->get_net_list();
   auto& graph = _layout->get_graph();
+  int pin_id = 0;
   for (int net_id = 0; net_id < (int) idb_nets->get_net_list().size(); ++net_id) {
     /// init net id map
     auto* idb_net = idb_nets->get_net_list()[net_id];
-    net_id_map.insert(std::make_pair(idb_net->get_net_name(), net_id));
+    _layout->add_net_map(net_id, idb_net->get_net_name());
 
-    graph.addNet(net_id);
+    auto* lm_net = graph.addNet(net_id);
+
+    for (auto* idb_inst_pin : idb_net->get_instance_pin_list()->get_pin_list()) {
+      if (lm_net != nullptr) {
+        lm_net->addPinId(pin_id);
+      }
+
+      _layout->add_pin_map(pin_id, idb_inst_pin->get_instance()->get_name(), idb_inst_pin->get_pin_name());
+
+      pin_id++;
+    }
+
+    for (auto* io_pin : idb_net->get_io_pins()->get_pin_list()) {
+      if (lm_net != nullptr) {
+        lm_net->addPinId(pin_id);
+      }
+
+      _layout->add_pin_map(pin_id, "", io_pin->get_pin_name());
+      pin_id++;
+    }
   }
 
 #pragma omp parallel for schedule(dynamic)
   for (int net_id = 0; net_id < (int) idb_nets->get_net_list().size(); ++net_id) {
     auto* idb_net = idb_nets->get_net_list()[net_id];
     auto* lm_net = graph.get_net(net_id);
-    int pin_id = 0;
-    for (auto* idb_inst_pin : idb_net->get_instance_pin_list()->get_pin_list()) {
-      transPin(idb_inst_pin, net_id, pin_id);
-      if (lm_net != nullptr) {
-        lm_net->addPinId(pin_id);
-      }
 
-      pin_id++;
+    for (auto* idb_inst_pin : idb_net->get_instance_pin_list()->get_pin_list()) {
+      transPin(idb_inst_pin, net_id, _layout->findPinId(idb_inst_pin->get_instance()->get_name(), idb_inst_pin->get_pin_name()));
     }
 
     for (auto* io_pin : idb_net->get_io_pins()->get_pin_list()) {
-      transPin(io_pin, net_id, pin_id, true);
-      if (lm_net != nullptr) {
-        lm_net->addPinId(pin_id);
-      }
-      pin_id++;
+      transPin(io_pin, net_id, _layout->findPinId("", io_pin->get_pin_name()), true);
     }
 
     /// init wires

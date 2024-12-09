@@ -107,6 +107,7 @@ class LmNode
   ~LmNode() = default;
 
   // getter
+  uint64_t get_node_id();
   int get_x();
   int get_y();
   int get_row_id() { return _row_id; }

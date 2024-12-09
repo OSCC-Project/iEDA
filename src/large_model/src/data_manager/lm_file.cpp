@@ -41,10 +41,11 @@ void LmLayoutFileIO::makeDir(std::string dir)
   }
 }
 
-bool LmLayoutFileIO::saveJson(std::map<int, LmNet>& net_map)
+bool LmLayoutFileIO::saveJson()
 {
   LOG_INFO << "LM save json start... dir = " << _dir;
 
+  std::map<int, LmNet>& net_map = _layout->get_graph().get_net_map();
   makeDir(_dir);
 
   saveJsonNets(net_map);
@@ -106,6 +107,7 @@ bool LmLayoutFileIO::saveJsonNets(std::map<int, LmNet>& net_map)
         if (idb_net->has_io_pins()) {
           for (auto io_pin : idb_net->get_io_pins()->get_pin_list()) {
             json json_pin;
+            json_pin["id"] = _layout->findPinId("", io_pin->get_pin_name());
             json_pin["i"] = "";
             json_pin["p"] = io_pin->get_pin_name();
             json_pins.push_back(json_pin);
@@ -114,6 +116,7 @@ bool LmLayoutFileIO::saveJsonNets(std::map<int, LmNet>& net_map)
         }
         for (auto inst_pin : idb_net->get_instance_pin_list()->get_pin_list()) {
           json json_pin;
+          json_pin["id"] = _layout->findPinId(inst_pin->get_instance()->get_name(), inst_pin->get_pin_name());
           json_pin["i"] = inst_pin->get_instance()->get_name();
           json_pin["p"] = inst_pin->get_pin_name();
           json_pins.push_back(json_pin);
@@ -156,13 +159,14 @@ bool LmLayoutFileIO::saveJsonNets(std::map<int, LmNet>& net_map)
               auto& [node1, node2] = wire.get_connected_nodes();
 
               json json_node;
-
+              json_node["id1"] = node1->get_node_id();
               json_node["x1"] = node1->get_x();
               json_node["y1"] = node1->get_y();
               json_node["r1"] = node1->get_row_id();    /// row
               json_node["c1"] = node1->get_col_id();    /// col
               json_node["l1"] = node1->get_layer_id();  /// layer order
 
+              json_node["id2"] = node2->get_node_id();
               json_node["x2"] = node2->get_x();
               json_node["y2"] = node2->get_y();
               json_node["r2"] = node2->get_row_id();    /// row
@@ -179,12 +183,14 @@ bool LmLayoutFileIO::saveJsonNets(std::map<int, LmNet>& net_map)
               json json_paths = json::array();
               for (auto& [node1, node2] : wire.get_paths()) {
                 json json_node;
+                json_node["id1"] = node1->get_node_id();
                 json_node["x1"] = node1->get_x();
                 json_node["y1"] = node1->get_y();
                 json_node["r1"] = node1->get_row_id();    /// row
                 json_node["c1"] = node1->get_col_id();    /// col
                 json_node["l1"] = node1->get_layer_id();  /// layer order
 
+                json_node["id2"] = node2->get_node_id();
                 json_node["x2"] = node2->get_x();
                 json_node["y2"] = node2->get_y();
                 json_node["r2"] = node2->get_row_id();    /// row

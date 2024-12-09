@@ -17,6 +17,7 @@
 #pragma once
 #include <string>
 
+#include "lm_layout.h"
 #include "lm_net.h"
 
 namespace ilm {
@@ -24,13 +25,18 @@ namespace ilm {
 class LmLayoutFileIO
 {
  public:
-  LmLayoutFileIO(std::string dir) { _dir = dir; }
+  LmLayoutFileIO(std::string dir, LmLayout* layout)
+  {
+    _dir = dir;
+    _layout = layout;
+  }
   ~LmLayoutFileIO() = default;
 
-  bool saveJson(std::map<int, LmNet>& net_map);
+  bool saveJson();
 
  private:
   std::string _dir = "";
+  LmLayout* _layout = nullptr;
 
   bool saveJsonNets(std::map<int, LmNet>& net_map);
 
