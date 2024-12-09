@@ -24,6 +24,7 @@
 #include <iostream>
 
 #include "Log.hh"
+#include "congestion_api.h"
 #include "idm.h"
 #include "lm_grid_info.h"
 #include "omp.h"
@@ -38,6 +39,18 @@ void LmFeatureStatis::build()
   LOG_INFO << "LM build statis feature start...";
 
   auto& patch_layers = _layout->get_patch_layers();
+
+  // get egr_layer_map, which is a map of layer name to a 2D vector of congestion value.
+  auto egr_layer_map = CONGESTION_API_INST->getEGRMap(_congestion_dir);
+
+  // get the number of egr_map's rows and cols.
+  const auto& first_layer = egr_layer_map.begin()->second;
+  size_t egr_rows = first_layer.size();
+  size_t egr_cols = (egr_rows > 0) ? first_layer[0].size() : 0;
+
+  // calculate the factor to convert egr_map's row and col to the layout's coordinate (x and y).
+  double row_factor = static_cast<double>(gridInfoInst.ury - gridInfoInst.lly) / egr_rows;
+  double col_factor = static_cast<double>(gridInfoInst.urx - gridInfoInst.llx) / egr_cols;
 
   auto& net_map = _layout->get_graph().get_net_map();
 #pragma omp parallel for schedule(dynamic)
@@ -60,6 +73,7 @@ void LmFeatureStatis::build()
           auto order = node1->get_layer_id();
           auto* patch_layer = patch_layers.findPatchLayer(order);
           auto& grid = patch_layer->get_grid();
+          auto layer_name = patch_layer->get_layer_name();
 
           /// set feature
           wire_feature->wire_width = patch_layer->get_wire_width();
@@ -73,6 +87,33 @@ void LmFeatureStatis::build()
           net_row_max = std::max(net_row_max, max_row);
           net_col_min = std::min(net_col_min, min_col);
           net_col_max = std::max(net_col_max, max_col);
+
+          // transform the row and col index of node to the row and col index of egr_layer_map
+          int min_node_x = std::min(node1->get_x(), node2->get_x());
+          int max_node_x = std::max(node1->get_x(), node2->get_x());
+          int min_node_y = std::min(node1->get_y(), node2->get_y());
+          int max_node_y = std::max(node1->get_y(), node2->get_y());
+
+          int trans_min_row = static_cast<int>(min_node_y / row_factor);
+          int trans_max_row = static_cast<int>(max_node_y / row_factor);
+          int trans_min_col = static_cast<int>(min_node_x / col_factor);
+          int trans_max_col = static_cast<int>(max_node_x / col_factor);
+
+          int sum_congestion = 0;
+          int trans_grid_count = 0;
+
+          for (int r = trans_min_row; r <= trans_max_row; ++r) {
+            for (int c = trans_min_col; c <= trans_max_col; ++c) {
+              sum_congestion += egr_layer_map[layer_name][egr_rows - r - 1][egr_cols - c - 1];
+              trans_grid_count++;
+            }
+          }
+
+          if (trans_grid_count > 0) {
+            wire_feature->congestion += sum_congestion / trans_grid_count;
+          } else {
+            wire_feature->congestion = 0;
+          }
 
           int horizontal_len = (max_col - min_col) * gridInfoInst.x_step;
           int vertical_len = (max_row - min_row) * gridInfoInst.y_step;

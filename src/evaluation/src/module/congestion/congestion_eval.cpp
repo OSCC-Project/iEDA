@@ -1044,4 +1044,38 @@ void CongestionEval::setEGRDirPath(std::string egr_dir_path)
   EVAL_INIT_EGR_INST->setEGRDirPath(egr_dir_path);
 }
 
+std::map<std::string, std::vector<std::vector<int>>> CongestionEval::getEGRMap(std::string congestion_dir)
+{
+  std::map<std::string, std::vector<std::vector<int>>> egr_map;
+  std::filesystem::path dir_path(congestion_dir);
+
+  // tranverse all files in the directory
+  for (const auto& entry : std::filesystem::directory_iterator(dir_path)) {
+    std::string filename = entry.path().filename().string();
+    if (filename.find("overflow_map_") == 0) {
+      // extract layer name
+      std::string layer_name = filename.substr(13, filename.length() - 17);
+
+      // read file content
+      std::ifstream file(entry.path());
+      std::string line;
+      std::vector<std::vector<int>> matrix;
+      while (std::getline(file, line)) {
+        std::vector<int> row;
+        std::istringstream iss(line);
+        std::string value;
+        while (std::getline(iss, value, ',')) {
+          row.push_back(std::stod(value));
+        }
+        matrix.push_back(row);
+      }
+
+      // save to egr_map
+      egr_map[layer_name] = matrix;
+    }
+  }
+
+  return egr_map;
+}
+
 }  // namespace ieval
