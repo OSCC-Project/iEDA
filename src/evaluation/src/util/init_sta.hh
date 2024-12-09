@@ -68,6 +68,12 @@ class InitSTA
   double getNetDelay(const std::string& net_name) const;
   double getNetPower(const std::string& net_name) const;
 
+  // for wire slew and delay.
+  double getWireSlew(const std::string& net_name, const std::string& wire_node_name) const;
+  double getWireDelay(const std::string& net_name, const std::string& wire_node_name) const;
+  // double getWirePower(const std::string& net_name) const;
+
+  void buildRCTree(const std::string& routing_type);
   void updateTiming(const std::vector<TimingNet*>& timing_net_list, int32_t dbu_unit);
   void updateTiming(const std::vector<TimingNet*>& timing_net_list, const std::vector<std::string>& name_list, const int& propagation_level,
                     int32_t dbu_unit);
@@ -78,7 +84,7 @@ class InitSTA
   void leaglization(const std::vector<std::shared_ptr<salt::Pin>>& pins);
   void initStaEngine();
   void callRT(const std::string& routing_type);
-  void buildRCTree(const std::string& routing_type);
+  
   void initPowerEngine();
 
   void updateResult(const std::string& routing_type);

@@ -568,6 +568,9 @@ class RcNet {
   double getResistance(AnalysisMode mode, TransType trans_type,
                        DesignObject* load_obj);
 
+  std::optional<double> delay(const char* node_name,
+                              DelayMethod delay_method = DelayMethod::kElmore);
+
   std::optional<double> delay(DesignObject& to,
                               DelayMethod delay_method = DelayMethod::kElmore);
   std::optional<double> delayNs(DesignObject& to, DelayMethod delay_method) {
@@ -582,6 +585,9 @@ class RcNet {
       DesignObject& to, double from_slew,
       std::optional<LibCurrentData*> output_current, AnalysisMode mode,
       TransType trans_type);
+
+  std::optional<double> slew(const char* node_name, double from_slew, AnalysisMode mode,
+    TransType trans_type);
 
   virtual std::optional<double> slew(
       Pin& to, double from_slew, std::optional<LibCurrentData*> output_current,

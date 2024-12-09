@@ -644,33 +644,34 @@ double InitSTA::reportTNS(const char* clock_name, ista::AnalysisMode mode)
 double InitSTA::getNetSlew(const std::string& net_name) const {
   auto netlist = STA_INST->get_netlist();
   ista::Net* ista_net = netlist->findNet(net_name.c_str());
+  auto* rc_net = STA_INST->get_ista()->getRcNet(ista_net);
   // get driver slew for net slew.
-  std::string driver_name = ista_net->getDriver()->getFullName();
-  double rise_slew = STA_INST->getSlew(driver_name.c_str(), ista::AnalysisMode::kMax, ista::TransType::kRise);
-  double fall_slew = STA_INST->getSlew(driver_name.c_str(), ista::AnalysisMode::kMax, ista::TransType::kFall);
-  return (rise_slew + fall_slew) / 2;
+  auto loads = ista_net->getLoads();
+
+  double sum_load_slew = 0.0;
+  for (auto* load : loads) {
+    std::string load_name = load->getFullName();
+    sum_load_slew += rc_net->slew(load_name.c_str(), 0.0, ista::AnalysisMode::kMax, ista::TransType::kRise).value_or(0.0);
+  }
+  double net_avg_slew = sum_load_slew / loads.size();
+  return net_avg_slew;
 }
 
 double InitSTA::getNetDelay(const std::string& net_name) const {
   auto netlist = STA_INST->get_netlist();
   ista::Net* ista_net = netlist->findNet(net_name.c_str());
+  auto* rc_net = STA_INST->get_ista()->getRcNet(ista_net);
 
   // get load average delay for net delay.
   auto loads = ista_net->getLoads();
 
-  double sum_load_rise_delay = 0.0;
-  double sum_load_fall_delay = 0.0;
+  double sum_load_delay = 0.0;
   for (auto* load : loads) {
     std::string load_name = load->getFullName();
-    sum_load_rise_delay += STA_INST->getNetDelay(net_name.c_str(), load_name.c_str(), ista::AnalysisMode::kMax, ista::TransType::kRise);
-    sum_load_fall_delay += STA_INST->getNetDelay(net_name.c_str(), load_name.c_str(), ista::AnalysisMode::kMax, ista::TransType::kRise);
+    sum_load_delay += rc_net->delay(load_name.c_str()).value_or(0.0);
   }
 
-  double net_rise_delay = sum_load_rise_delay / loads.size();
-  double net_fall_delay = sum_load_fall_delay / loads.size();
-
-  double net_avg_delay = (net_rise_delay + net_fall_delay) / 2.0;
-
+  double net_avg_delay = sum_load_delay / loads.size();
   return net_avg_delay;
 }
 
@@ -681,6 +682,25 @@ double InitSTA::getNetPower(const std::string& net_name) const {
   return net_power;
 }
 
+double InitSTA::getWireSlew(const std::string& net_name, const std::string& wire_node_name) const {
+  auto netlist = STA_INST->get_netlist();
+  ista::Net* ista_net = netlist->findNet(net_name.c_str());
+  auto* rc_net = STA_INST->get_ista()->getRcNet(ista_net);
+
+  auto slew = rc_net->slew(wire_node_name.c_str(), 0.0, ista::AnalysisMode::kMax, ista::TransType::kRise);
+
+  return slew.value_or(0.0);
+}
+
+double InitSTA::getWireDelay(const std::string& net_name, const std::string& wire_node_name) const {
+  auto netlist = STA_INST->get_netlist();
+  ista::Net* ista_net = netlist->findNet(net_name.c_str());
+  auto* rc_net = STA_INST->get_ista()->getRcNet(ista_net);
+
+  auto delay = rc_net->delay(wire_node_name.c_str());
+
+  return delay.value_or(0.0);
+}
 
 void InitSTA::updateTiming(const std::vector<TimingNet*>& timing_net_list, int32_t dbu_unit)
 {
