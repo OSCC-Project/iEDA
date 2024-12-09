@@ -47,6 +47,7 @@ class InitSTA
   static InitSTA* getInst();
   static void destroyInst();
   void runSTA();
+  void runLmSTA();
   void evalTiming(const std::string& routing_type, const bool& rt_done = false);
 
   std::map<std::string, std::map<std::string, std::map<std::string, double>>> getTiming() const { return _timing; }
@@ -79,6 +80,7 @@ class InitSTA
   void initStaEngine();
   void callRT(const std::string& routing_type);
   void buildRCTree(const std::string& routing_type);
+  void buildLmRCTree();
   void initPowerEngine();
 
   void updateResult(const std::string& routing_type);
