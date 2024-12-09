@@ -63,6 +63,11 @@ class InitSTA
   double reportWNS(const char* clock_name, ista::AnalysisMode mode);
   double reportTNS(const char* clock_name, ista::AnalysisMode mode);
 
+  // for net slew and delay
+  double getNetSlew(const std::string& net_name) const;
+  double getNetDelay(const std::string& net_name) const;
+  double getNetPower(const std::string& net_name) const;
+
   void updateTiming(const std::vector<TimingNet*>& timing_net_list, int32_t dbu_unit);
   void updateTiming(const std::vector<TimingNet*>& timing_net_list, const std::vector<std::string>& name_list, const int& propagation_level,
                     int32_t dbu_unit);
