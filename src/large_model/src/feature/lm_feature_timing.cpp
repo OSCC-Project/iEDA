@@ -55,9 +55,9 @@ void LmFeatureTiming::buildNetTimingPowerFeature()
     auto* lm_net = lm_graph.get_net(net_id);
     auto* net_feature = lm_net->get_feature(true);
 
-    net_feature->slew = 0.0;   // TODO(to taosimin), get net slew(driver) from eval.
-    net_feature->delay = 0.0;  // TODO(to taosimin), get net delay from eval.
-    net_feature->power = 0.0;  // TODO(to taosimin), get net power from eval.
+    net_feature->slew = eval_tp->getNetSlew(net_name);    // TODO(to taosimin), get net slew(driver) from eval.
+    net_feature->delay = eval_tp->getNetDelay(net_name);  // TODO(to taosimin), get net delay from eval.
+    net_feature->power = eval_tp->getNetPower(net_name);  // TODO(to taosimin), get net power from eval.
 
     buildWireTimingPowerFeature(lm_net);
   }
