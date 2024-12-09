@@ -28,9 +28,8 @@
 #include <iostream>
 #include <vector>
 
-#include "lm_wire_pattern.hh"
-
 namespace ilm {
+using Matrix = Eigen::Matrix<int, Eigen::Dynamic, Eigen::Dynamic>;
 // Structure to hold the current state
 struct PatternState
 {

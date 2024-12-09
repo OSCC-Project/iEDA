@@ -70,6 +70,9 @@ void LargeModel::buildFeature(const std::string dir)
   /// build graph
   _data_manager.buildGraphData();
 
+  // build pattern
+  // _data_manager.buildPatternData();
+
   /// check data
   bool check_ok = _data_manager.checkData();
 

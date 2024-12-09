@@ -16,6 +16,7 @@ void TestRudyUtilization();
 // void TestRudyMapFromIDB();
 void TestRudyMapFromIDB(const std::string& file_path);
 void TestEgrMapFromIDB();
+void TestEgrDataStructure();
 
 int main(int argc, char* argv[])
 {
@@ -24,14 +25,36 @@ int main(int argc, char* argv[])
   // TestEgrOverflow();
   // TestRudyUtilization();
 
-  if (argc > 1) {
-    std::string map_path(argv[1]);
-    std::cout << "map_path: " << map_path << std::endl;
-    TestRudyMapFromIDB(map_path);
-  }
+  // if (argc > 1) {
+  //   std::string map_path(argv[1]);
+  //   std::cout << "map_path: " << map_path << std::endl;
+  //   TestRudyMapFromIDB(map_path);
+  // }
 
   // TestEgrMapFromIDB();
+  TestEgrDataStructure();
   return 0;
+}
+
+void TestEgrDataStructure()
+{
+  std::string congestion_dir = "/home/yhqiu/net_level_collect/benchmark/large_model_test/rt/rt_temp_directory/early_router";
+
+  ieval::CongestionAPI api;
+  std::map<std::string, std::vector<std::vector<int>>> egr_map = api.getEGRMap(congestion_dir);
+
+  for (const auto& pair : egr_map) {
+    std::cout << "Layer: " << pair.first << std::endl;
+    const auto& matrix = pair.second;
+
+    for (size_t i = 0; i < matrix.size() && i < 3; ++i) {
+      for (const auto& value : matrix[i]) {
+        std::cout << value << " ";
+      }
+      std::cout << std::endl;
+    }
+    std::cout << std::endl;
+  }
 }
 
 void TestEgrMap()

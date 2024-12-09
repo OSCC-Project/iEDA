@@ -20,6 +20,7 @@
 #include "Log.hh"
 #include "lm_file.h"
 #include "lm_graph_check.hh"
+#include "lm_wire_pattern.hh"
 
 namespace ilm {
 
@@ -34,6 +35,14 @@ bool LmDataManager::buildGraphData()
   bool b_success = graph_dm.buildGraphData();
 
   return b_success;
+}
+
+bool LmDataManager::buildPatternData()
+{
+  LmWirePatternGenerator wire_pattern_gen;
+  wire_pattern_gen.genPatterns();
+  wire_pattern_gen.patternSummary("/home/liweiguo/temp/file/pattern_summary.csv");
+  return true;
 }
 
 bool LmDataManager::checkData()

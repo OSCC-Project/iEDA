@@ -33,6 +33,7 @@ class LmDataManager
 
   bool buildLayoutData();
   bool buildGraphData();
+  bool buildPatternData();
   std::map<int, LmNet> getGraph(std::string path);
 
   bool checkData();
