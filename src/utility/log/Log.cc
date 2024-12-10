@@ -32,6 +32,8 @@
 
 using std::string;
 
+static bool b_init = false;
+
 namespace ieda {
 
 /**

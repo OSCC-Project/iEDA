@@ -53,7 +53,6 @@ class InitSTA
   static InitSTA* getInst();
   static void destroyInst();
 
-  void initStaEngine();
   void runSTA();
   void runLmSTA(ilm::LmLayout* lm_layout);
   void evalTiming(const std::string& routing_type, const bool& rt_done = false);
