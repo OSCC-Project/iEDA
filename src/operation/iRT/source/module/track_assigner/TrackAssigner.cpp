@@ -1365,12 +1365,15 @@ std::map<TANode*, std::set<Orientation>> TrackAssigner::getRoutingNodeOrientatio
   {
     // prl
     int32_t prl_spacing = routing_layer.getPRLSpacing(net_shape.get_rect());
-    spacing_pair_list.emplace_back(prl_spacing, prl_spacing);
+    spacing_pair_list.emplace_back(0, prl_spacing);
+    spacing_pair_list.emplace_back(prl_spacing, 0);
+    spacing_pair_list.emplace_back(prl_spacing / RT_SQRT_2, prl_spacing / RT_SQRT_2);
     // eol
+    int32_t max_eol_spacing = std::max(routing_layer.get_eol_spacing(), routing_layer.get_eol_ete());
     if (routing_layer.isPreferH()) {
-      spacing_pair_list.emplace_back(routing_layer.get_eol_spacing(), routing_layer.get_eol_within());
+      spacing_pair_list.emplace_back(max_eol_spacing, routing_layer.get_eol_within());
     } else {
-      spacing_pair_list.emplace_back(routing_layer.get_eol_within(), routing_layer.get_eol_spacing());
+      spacing_pair_list.emplace_back(routing_layer.get_eol_within(), max_eol_spacing);
     }
   }
   int32_t half_wire_width = routing_layer.get_min_width() / 2;

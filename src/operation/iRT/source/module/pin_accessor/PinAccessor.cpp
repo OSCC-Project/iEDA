@@ -306,9 +306,12 @@ std::vector<PlanarRect> PinAccessor::getPlanarLegalRectList(PAModel& pa_model, i
               // x_spacing y_spacing
               std::vector<std::pair<int32_t, int32_t>> spacing_pair_list;
               {
+                // 剪裁pin_shape只会在routing层
                 // prl
                 int32_t prl_spacing = routing_layer.getPRLSpacing(fixed_rect->get_real_rect());
-                spacing_pair_list.emplace_back(prl_spacing, prl_spacing);
+                spacing_pair_list.emplace_back(0, prl_spacing);
+                spacing_pair_list.emplace_back(prl_spacing, 0);
+                spacing_pair_list.emplace_back(prl_spacing / RT_SQRT_2, prl_spacing / RT_SQRT_2);
                 if (layer_idx != curr_layer_idx) {
                   // eol
                   if (routing_layer.isPreferH()) {
@@ -1726,12 +1729,15 @@ std::map<PANode*, std::set<Orientation>> PinAccessor::getRoutingNodeOrientationM
   {
     // prl
     int32_t prl_spacing = routing_layer.getPRLSpacing(net_shape.get_rect());
-    spacing_pair_list.emplace_back(prl_spacing, prl_spacing);
+    spacing_pair_list.emplace_back(0, prl_spacing);
+    spacing_pair_list.emplace_back(prl_spacing, 0);
+    spacing_pair_list.emplace_back(prl_spacing / RT_SQRT_2, prl_spacing / RT_SQRT_2);
     // eol
+    int32_t max_eol_spacing = std::max(routing_layer.get_eol_spacing(), routing_layer.get_eol_ete());
     if (routing_layer.isPreferH()) {
-      spacing_pair_list.emplace_back(routing_layer.get_eol_spacing(), routing_layer.get_eol_within());
+      spacing_pair_list.emplace_back(max_eol_spacing, routing_layer.get_eol_within());
     } else {
-      spacing_pair_list.emplace_back(routing_layer.get_eol_within(), routing_layer.get_eol_spacing());
+      spacing_pair_list.emplace_back(routing_layer.get_eol_within(), max_eol_spacing);
     }
   }
   int32_t half_wire_width = routing_layer.get_min_width() / 2;
@@ -1817,8 +1823,16 @@ std::map<PANode*, std::set<Orientation>> PinAccessor::getCutNodeOrientationMap(P
       std::vector<int32_t> adjacent_routing_layer_idx_list = cut_to_adjacent_routing_map[curr_cut_layer_idx];
       if (adjacent_routing_layer_idx_list.size() == 2) {
         std::vector<std::pair<int32_t, int32_t>> spacing_pair_list;
-        spacing_pair_list.emplace_back(cut_layer.get_curr_x_spacing(), cut_layer.get_curr_prl_spacing());
-        spacing_pair_list.emplace_back(cut_layer.get_curr_prl_spacing(), cut_layer.get_curr_y_spacing());
+        // prl
+        spacing_pair_list.emplace_back(0, cut_layer.get_curr_spacing());
+        spacing_pair_list.emplace_back(cut_layer.get_curr_spacing(), 0);
+        spacing_pair_list.emplace_back(cut_layer.get_curr_spacing() / RT_SQRT_2, cut_layer.get_curr_spacing() / RT_SQRT_2);
+        spacing_pair_list.emplace_back(cut_layer.get_curr_prl(), cut_layer.get_curr_prl_spacing());
+        spacing_pair_list.emplace_back(cut_layer.get_curr_prl_spacing(), cut_layer.get_curr_prl());
+        // eol
+        spacing_pair_list.emplace_back(0, cut_layer.get_curr_eol_spacing());
+        spacing_pair_list.emplace_back(cut_layer.get_curr_eol_spacing(), 0);
+        spacing_pair_list.emplace_back(cut_layer.get_curr_eol_spacing() / RT_SQRT_2, cut_layer.get_curr_eol_spacing() / RT_SQRT_2);
         cut_spacing_map[curr_cut_layer_idx] = spacing_pair_list;
       }
     }
@@ -1827,8 +1841,12 @@ std::map<PANode*, std::set<Orientation>> PinAccessor::getCutNodeOrientationMap(P
       std::vector<int32_t> adjacent_routing_layer_idx_list = cut_to_adjacent_routing_map[below_cut_layer_idx];
       if (adjacent_routing_layer_idx_list.size() == 2) {
         std::vector<std::pair<int32_t, int32_t>> spacing_pair_list;
-        spacing_pair_list.emplace_back(cut_layer.get_below_x_spacing(), cut_layer.get_below_prl_spacing());
-        spacing_pair_list.emplace_back(cut_layer.get_below_prl_spacing(), cut_layer.get_below_y_spacing());
+        // prl
+        spacing_pair_list.emplace_back(0, cut_layer.get_below_spacing());
+        spacing_pair_list.emplace_back(cut_layer.get_below_spacing(), 0);
+        spacing_pair_list.emplace_back(cut_layer.get_below_spacing() / RT_SQRT_2, cut_layer.get_below_spacing() / RT_SQRT_2);
+        spacing_pair_list.emplace_back(cut_layer.get_below_prl(), cut_layer.get_below_prl_spacing());
+        spacing_pair_list.emplace_back(cut_layer.get_below_prl_spacing(), cut_layer.get_below_prl());
         cut_spacing_map[below_cut_layer_idx] = spacing_pair_list;
       }
     }
@@ -1837,8 +1855,12 @@ std::map<PANode*, std::set<Orientation>> PinAccessor::getCutNodeOrientationMap(P
       std::vector<int32_t> adjacent_routing_layer_idx_list = cut_to_adjacent_routing_map[above_cut_layer_idx];
       if (adjacent_routing_layer_idx_list.size() == 2) {
         std::vector<std::pair<int32_t, int32_t>> spacing_pair_list;
-        spacing_pair_list.emplace_back(cut_layer.get_above_x_spacing(), cut_layer.get_above_prl_spacing());
-        spacing_pair_list.emplace_back(cut_layer.get_above_prl_spacing(), cut_layer.get_above_y_spacing());
+        // prl
+        spacing_pair_list.emplace_back(0, cut_layer.get_above_spacing());
+        spacing_pair_list.emplace_back(cut_layer.get_above_spacing(), 0);
+        spacing_pair_list.emplace_back(cut_layer.get_above_spacing() / RT_SQRT_2, cut_layer.get_above_spacing() / RT_SQRT_2);
+        spacing_pair_list.emplace_back(cut_layer.get_above_prl(), cut_layer.get_above_prl_spacing());
+        spacing_pair_list.emplace_back(cut_layer.get_above_prl_spacing(), cut_layer.get_above_prl());
         cut_spacing_map[above_cut_layer_idx] = spacing_pair_list;
       }
     }

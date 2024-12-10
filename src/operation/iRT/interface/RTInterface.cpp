@@ -465,9 +465,9 @@ void RTInterface::wrapCutDesignRule(CutLayer& cut_layer, idb::IdbLayerCut* idb_l
   // curr layer
   {
     if (!idb_layer->get_spacings().empty()) {
-      cut_layer.set_curr_prl_spacing(0);
-      cut_layer.set_curr_x_spacing(idb_layer->get_spacings().front()->get_spacing());
-      cut_layer.set_curr_y_spacing(idb_layer->get_spacings().front()->get_spacing());
+      cut_layer.set_curr_spacing(idb_layer->get_spacings().front()->get_spacing());
+      cut_layer.set_curr_prl(0);
+      cut_layer.set_curr_prl_spacing(idb_layer->get_spacings().front()->get_spacing());
     } else if (!idb_layer->get_lef58_spacing_table().empty()) {
       idb::cutlayer::Lef58SpacingTable* spacing_table = nullptr;
       for (std::shared_ptr<idb::cutlayer::Lef58SpacingTable>& spacing_table_ptr : idb_layer->get_lef58_spacing_table()) {
@@ -479,31 +479,29 @@ void RTInterface::wrapCutDesignRule(CutLayer& cut_layer, idb::IdbLayerCut* idb_l
       if (spacing_table != nullptr) {
         idb::cutlayer::Lef58SpacingTable::CutSpacing cut_spacing = spacing_table->get_cutclass().get_cut_spacing(0, 0);
 
-        int32_t curr_prl_spacing = -1 * spacing_table->get_prl().value().get_prl();
-        int32_t curr_x_spacing = cut_spacing.get_cut_spacing1().value();
-        int32_t curr_y_spacing = cut_spacing.get_cut_spacing2().value();
+        int32_t curr_spacing = cut_spacing.get_cut_spacing1().value();
+        int32_t curr_prl = -1 * spacing_table->get_prl().value().get_prl();
+        int32_t curr_prl_spacing = cut_spacing.get_cut_spacing2().value();
+        cut_layer.set_curr_spacing(curr_spacing);
+        cut_layer.set_curr_prl(curr_prl);
         cut_layer.set_curr_prl_spacing(curr_prl_spacing);
-        cut_layer.set_curr_x_spacing(curr_x_spacing);
-        cut_layer.set_curr_y_spacing(curr_y_spacing);
       } else {
+        cut_layer.set_curr_spacing(0);
+        cut_layer.set_curr_prl(0);
         cut_layer.set_curr_prl_spacing(0);
-        cut_layer.set_curr_x_spacing(0);
-        cut_layer.set_curr_y_spacing(0);
         RTLOG.warn(Loc::current(), "The idb layer ", idb_layer->get_name(), " curr layer spacing is empty!");
       }
     } else {
+      cut_layer.set_curr_spacing(0);
+      cut_layer.set_curr_prl(0);
       cut_layer.set_curr_prl_spacing(0);
-      cut_layer.set_curr_x_spacing(0);
-      cut_layer.set_curr_y_spacing(0);
       RTLOG.warn(Loc::current(), "The idb layer ", idb_layer->get_name(), " curr layer spacing is empty!");
     }
     if (idb_layer->get_lef58_eol_spacing().get() != nullptr) {
-      cut_layer.set_curr_eol_x_spacing(idb_layer->get_lef58_eol_spacing().get()->get_cut_spacing1());
-      cut_layer.set_curr_eol_y_spacing(idb_layer->get_lef58_eol_spacing().get()->get_cut_spacing2());
+      cut_layer.set_curr_eol_spacing(idb_layer->get_lef58_eol_spacing().get()->get_cut_spacing1());
     } else {
       RTLOG.warn(Loc::current(), "The idb layer ", idb_layer->get_name(), " eol_spacing is empty!");
-      cut_layer.set_curr_eol_x_spacing(0);
-      cut_layer.set_curr_eol_y_spacing(0);
+      cut_layer.set_curr_eol_spacing(0);
     }
   }
   // below layer
@@ -519,22 +517,22 @@ void RTInterface::wrapCutDesignRule(CutLayer& cut_layer, idb::IdbLayerCut* idb_l
       if (spacing_table != nullptr) {
         idb::cutlayer::Lef58SpacingTable::CutSpacing cut_spacing = spacing_table->get_cutclass().get_cut_spacing(0, 0);
 
-        int32_t below_prl_spacing = -1 * spacing_table->get_prl().value().get_prl();
-        int32_t below_x_spacing = cut_spacing.get_cut_spacing1().value();
-        int32_t below_y_spacing = cut_spacing.get_cut_spacing2().value();
+        int32_t below_spacing = cut_spacing.get_cut_spacing1().value();
+        int32_t below_prl = -1 * spacing_table->get_prl().value().get_prl();
+        int32_t below_prl_spacing = cut_spacing.get_cut_spacing2().value();
+        cut_layer.set_below_spacing(below_spacing);
+        cut_layer.set_below_prl(below_prl);
         cut_layer.set_below_prl_spacing(below_prl_spacing);
-        cut_layer.set_below_x_spacing(below_x_spacing);
-        cut_layer.set_below_y_spacing(below_y_spacing);
       } else {
+        cut_layer.set_below_spacing(0);
+        cut_layer.set_below_prl(0);
         cut_layer.set_below_prl_spacing(0);
-        cut_layer.set_below_x_spacing(0);
-        cut_layer.set_below_y_spacing(0);
         RTLOG.warn(Loc::current(), "The idb layer ", idb_layer->get_name(), " below layer spacing is empty!");
       }
     } else {
+      cut_layer.set_below_spacing(0);
+      cut_layer.set_below_prl(0);
       cut_layer.set_below_prl_spacing(0);
-      cut_layer.set_below_x_spacing(0);
-      cut_layer.set_below_y_spacing(0);
       RTLOG.warn(Loc::current(), "The idb layer ", idb_layer->get_name(), " below layer spacing is empty!");
     }
   }
