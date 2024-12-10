@@ -79,7 +79,7 @@ void InitSTA::runLmSTA()
 {
   initStaEngine();
 
-  buildLmRCTree();
+  buildLmRCTree(nullptr);
 
   // updateResult(); TODO: update result for lm
 }
@@ -409,7 +409,7 @@ void InitSTA::buildRCTree(const std::string& routing_type)
   STA_INST->updateTiming();
 }
 
-void InitSTA::buildLmRCTree()
+void InitSTA::buildLmRCTree(void* the_wire_graph)
 {
   // init
   auto* idb = dmInst->get_idb_builder();
@@ -423,14 +423,18 @@ void InitSTA::buildLmRCTree()
   auto* sta_netlist = STA_INST->get_netlist();
   ista::Net* sta_net = nullptr;
   // TODO: fix the lm api
-  ilm::LargeModelApi lm_api;
-  auto wire_graph = lm_api.getGraph();
+  // ilm::LargeModelApi lm_api;
+  // auto wire_graph = lm_api.getGraph();
+
+  // use the passed wire graph.
+  auto* wire_graph = static_cast<std::map<int, ilm::LmNet>*>(the_wire_graph);
+
   for (size_t net_id = 0; net_id < idb_nets.size(); ++net_id) {
     auto* idb_net = idb_nets[net_id];
     sta_net = sta_netlist->findNet(idb_net->get_net_name().c_str());
     STA_INST->resetRcTree(sta_net);
 
-    auto lm_net = wire_graph.at(net_id);
+    auto lm_net = (*wire_graph).at(net_id);
     auto idb_inst_pins = idb_net->get_instance_pin_list()->get_pin_list();
     auto io_pins = idb_net->get_io_pins()->get_pin_list();
     auto& wires = lm_net.get_wires();
@@ -453,7 +457,7 @@ void InitSTA::buildLmRCTree()
           pin_name = idb_pin->get_pin_name();
         } else {
           auto* idb_inst = idb_pin->get_instance();
-          pin_name = idb_inst ? idb_inst->get_name() + idb_pin->get_pin_name() : idb_pin->get_pin_name();
+          pin_name = idb_inst ? idb_inst->get_name() + ":" + idb_pin->get_pin_name() : idb_pin->get_pin_name();
         }
         auto* sta_pin_port = sta_pin_port_map[pin_name];
         rc_node = STA_INST->makeOrFindRCTreeNode(sta_pin_port);
