@@ -443,9 +443,8 @@ void InitSTA::buildLmRCTree(ilm::LmLayout* lm_layout)
       }
       int pin_id = lm_node->get_node_data()->get_pin_id();
       auto pin_name_pair = lm_layout->findPinName(pin_id);
-      auto inst_name = pin_name_pair.first;
-      auto pin_type_name = pin_name_pair.second;
-      auto pin_name = !inst_name.empty() ? (inst_name + ":" + pin_type_name) : pin_type_name;
+      auto [inst_name, pin_type_name] = pin_name_pair;
+      auto pin_name = !inst_name.empty() ? (inst_name + "/" + pin_type_name) : pin_type_name;
       ista::RctNode* rc_node = nullptr;
       if (pin_id >= 0) {
         auto* sta_pin_port = sta_pin_port_map[pin_name];
@@ -476,8 +475,6 @@ void InitSTA::buildLmRCTree(ilm::LmLayout* lm_layout)
         auto y2 = path.second->get_y();
         wirelength += std::abs(x1 - x2) + std::abs(y1 - y2);
       });
-
-      source_layer = source_layer > routing_layers.size() ? 0 : source_layer;
 
       auto* routing_layer = dynamic_cast<IdbLayerRouting*>(routing_layers[source_layer]);
       auto segment_width = (double) routing_layer->get_width() / idb_layout->get_units()->get_micron_dbu();
