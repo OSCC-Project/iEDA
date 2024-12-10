@@ -422,7 +422,6 @@ void InitSTA::buildLmRCTree(ilm::LmLayout* lm_layout)
   auto idb_nets = idb_design->get_net_list()->get_net_list();
   auto* sta_netlist = STA_INST->get_netlist();
   ista::Net* sta_net = nullptr;
-  // TODO: fix the lm api
   auto& wire_graph = lm_layout->get_graph().get_net_map();
   for (size_t net_id = 0; net_id < idb_nets.size(); ++net_id) {
     auto* idb_net = idb_nets[net_id];
@@ -442,18 +441,13 @@ void InitSTA::buildLmRCTree(ilm::LmLayout* lm_layout)
       if (lm_node_map.contains(lm_node)) {
         return lm_node_map[lm_node];
       }
-      int pin_id = lm_node->get_node_data()->get_pin_id();
+      size_t pin_id = lm_node->get_node_data()->get_pin_id();
+      auto pin_name_pair = lm_layout->findPinName(pin_id);
+      auto inst_name = pin_name_pair.first;
+      auto pin_type_name = pin_name_pair.second;
+      auto pin_name = inst_name.empty() ? inst_name + "/" + pin_type_name : pin_type_name;
       ista::RctNode* rc_node = nullptr;
       if (pin_id >= 0) {
-        bool is_io = pin_id >= idb_inst_pins.size();
-        auto* idb_pin = pin_id < idb_inst_pins.size() ? idb_inst_pins[pin_id] : io_pins[pin_id - idb_inst_pins.size()];
-        std::string pin_name = "";
-        if (is_io) {
-          pin_name = idb_pin->get_pin_name();
-        } else {
-          auto* idb_inst = idb_pin->get_instance();
-          pin_name = idb_inst ? idb_inst->get_name() + ":" + idb_pin->get_pin_name() : idb_pin->get_pin_name();
-        }
         auto* sta_pin_port = sta_pin_port_map[pin_name];
         rc_node = STA_INST->makeOrFindRCTreeNode(sta_pin_port);
       } else {
