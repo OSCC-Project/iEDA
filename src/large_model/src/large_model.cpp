@@ -24,11 +24,7 @@
 namespace ilm {
 LargeModel::LargeModel()
 {
-  static bool is_init_log = false;
-  if (!is_init_log) {
-    is_init_log = true;
-    initLog();
-  }
+  initLog();
 }
 
 void LargeModel::initLog(std::string log_path)
