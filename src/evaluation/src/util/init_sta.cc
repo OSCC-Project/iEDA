@@ -442,7 +442,7 @@ void InitSTA::buildLmRCTree(ilm::LmLayout* lm_layout)
       if (lm_node_map.contains(lm_node)) {
         return lm_node_map[lm_node];
       }
-      size_t pin_id = lm_node->get_node_data()->get_pin_id();
+      int pin_id = lm_node->get_node_data()->get_pin_id();
       ista::RctNode* rc_node = nullptr;
       if (pin_id >= 0) {
         bool is_io = pin_id >= idb_inst_pins.size();
