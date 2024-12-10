@@ -32,7 +32,7 @@ bool layout_graph(const std::string& path)
   return lm_api.buildLargeModelGraphData(path);
 }
 
-bool large_model_feature(const std::string& dir)
+bool large_model_feature(std::string dir)
 {
   if (dir == "") {
     dir = "./large_model";

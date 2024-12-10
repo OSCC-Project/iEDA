@@ -68,10 +68,10 @@ void LmFeatureTiming::buildNetTimingPowerFeature()
 
 void LmFeatureTiming::build()
 {
-  auto wire_graph = _layout->get_graph().get_net_map();
-  auto* eval_tp = ieval::InitSTA::getInst(); // evaluate timing and power.
-  eval_tp->initStaEngine();
-  eval_tp->buildLmRCTree(&wire_graph);
+  auto* eval_tp = ieval::InitSTA::getInst();  // evaluate timing and power.
+
+  eval_tp->runLmSTA(_layout);
+  //   eval_tp->evalTiming("WireGraph", true);
 
   buildNetTimingPowerFeature();
 }

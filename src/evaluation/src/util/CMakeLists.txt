@@ -62,6 +62,7 @@ target_link_libraries(eval_util_init_ista
         ista-engine
         power
         salt
+        ilm_layout_db
 )
 
 target_include_directories(eval_util_init_ista

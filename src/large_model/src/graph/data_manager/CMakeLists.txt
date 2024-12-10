@@ -17,6 +17,7 @@ target_link_libraries(ilm_graph_dm
     ilm_dm
     ilm_layout_db
     ilm_util
+    eval_timing_api
 )
 
 target_include_directories(ilm_graph_dm

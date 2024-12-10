@@ -29,6 +29,11 @@ void TimingAPI::runSTA()
   EVAL_STA_INST->runSTA();
 }
 
+void TimingAPI::runLmSTA(ilm::LmLayout* lm_layout)
+{
+  EVAL_STA_INST->runLmSTA(lm_layout);
+}
+
 void TimingAPI::evalTiming(const std::string& routing_type, const bool& rt_done)
 {
   EVAL_STA_INST->evalTiming(routing_type, rt_done);
