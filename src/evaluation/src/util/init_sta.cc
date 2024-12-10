@@ -443,8 +443,7 @@ void InitSTA::buildLmRCTree(ilm::LmLayout* lm_layout)
       }
       size_t pin_id = lm_node->get_node_data()->get_pin_id();
       auto pin_name_pair = lm_layout->findPinName(pin_id);
-      auto inst_name = pin_name_pair.first;
-      auto pin_type_name = pin_name_pair.second;
+      auto [inst_name, pin_type_name] = pin_name_pair;
       auto pin_name = inst_name.empty() ? inst_name + "/" + pin_type_name : pin_type_name;
       ista::RctNode* rc_node = nullptr;
       if (pin_id >= 0) {
