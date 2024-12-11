@@ -103,7 +103,7 @@ void DataManager::updateFixedRectToGCellMap(ChangeType change_type, int32_t net_
     }
   }
   if (change_type == ChangeType::kDel) {
-    // 由于在database内的obstacle_list引用过来，所以不需要delete，也不能delete
+    // 由于在database内的obstacle_list引用过来,所以不需要delete,也不能delete
   }
 }
 
@@ -121,7 +121,7 @@ void DataManager::updateAccessNetPointToGCellMap(ChangeType change_type, int32_t
     }
   }
   if (change_type == ChangeType::kDel) {
-    // 由于在pin内的access_point_list引用过来，所以不需要delete，也不能delete
+    // 由于在pin内的access_point_list引用过来,所以不需要delete,也不能delete
   }
 }
 
@@ -573,14 +573,16 @@ void DataManager::buildConfig()
   _config.sa_temp_directory_path = _config.temp_directory_path + "supply_analyzer/";
   // ********   TopologyGenerator   ******** //
   _config.tg_temp_directory_path = _config.temp_directory_path + "topology_generator/";
-  // **********   InitialRouter    ********** //
-  _config.ir_temp_directory_path = _config.temp_directory_path + "initial_router/";
+  // **********   LayerAssigner    ********** //
+  _config.la_temp_directory_path = _config.temp_directory_path + "layer_assigner/";
   // **********   GlobalRouter    ********** //
   _config.gr_temp_directory_path = _config.temp_directory_path + "global_router/";
   // **********   TrackAssigner   ********** //
   _config.ta_temp_directory_path = _config.temp_directory_path + "track_assigner/";
   // **********  DetailedRouter   ********** //
   _config.dr_temp_directory_path = _config.temp_directory_path + "detailed_router/";
+  // **********   EarlyRouter    ********** //
+  _config.er_temp_directory_path = _config.temp_directory_path + "early_router/";
   /////////////////////////////////////////////
   // **********        RT         ********** //
   RTUTIL.removeDir(_config.temp_directory_path);
@@ -596,14 +598,16 @@ void DataManager::buildConfig()
   RTUTIL.createDir(_config.sa_temp_directory_path);
   // *********  TopologyGenerator  ********* //
   RTUTIL.createDir(_config.tg_temp_directory_path);
-  // **********   InitialRouter    ********** //
-  RTUTIL.createDir(_config.ir_temp_directory_path);
+  // **********   LayerAssigner    ********** //
+  RTUTIL.createDir(_config.la_temp_directory_path);
   // **********   GlobalRouter    ********** //
   RTUTIL.createDir(_config.gr_temp_directory_path);
   // **********   TrackAssigner   ********** //
   RTUTIL.createDir(_config.ta_temp_directory_path);
   // **********  DetailedRouter   ********** //
   RTUTIL.createDir(_config.dr_temp_directory_path);
+  // **********   EarlyRouter    ********** //
+  RTUTIL.createDir(_config.er_temp_directory_path);
   /////////////////////////////////////////////
   RTLOG.openLogFileStream(_config.log_file_path);
 }
@@ -644,9 +648,14 @@ void DataManager::transLayerList()
 
 void DataManager::makeLayerList()
 {
+  makeRoutingLayerList();
+  makeCutLayerList();
+}
+
+void DataManager::makeRoutingLayerList()
+{
   Die& die = _database.get_die();
   std::vector<RoutingLayer>& routing_layer_list = _database.get_routing_layer_list();
-  std::vector<CutLayer>& cut_layer_list = _database.get_cut_layer_list();
 
   auto getFrequentNum = [](const std::vector<int32_t>& num_list) {
     if (num_list.empty()) {
@@ -668,17 +677,11 @@ void DataManager::makeLayerList()
   };
   int32_t step_length;
   {
-    std::vector<int32_t> width_list;
-    std::vector<int32_t> routing_spacing_list;
-    std::vector<int32_t> cut_spacing_list;
+    std::vector<int32_t> pitch_list;
     for (RoutingLayer& routing_layer : routing_layer_list) {
-      width_list.push_back(routing_layer.get_min_width());
-      routing_spacing_list.push_back(routing_layer.getMinSpacing(PlanarRect(0, 0, 0, 0)));
+      pitch_list.push_back(routing_layer.getPreferTrackGridList().front().get_step_length());
     }
-    for (CutLayer& cut_layer : cut_layer_list) {
-      cut_spacing_list.push_back(cut_layer.getMinSpacing());
-    }
-    step_length = getFrequentNum(width_list) + std::min(getFrequentNum(routing_spacing_list), getFrequentNum(cut_spacing_list));
+    step_length = getFrequentNum(pitch_list);
   }
   auto getScaleGrid = [](int32_t real_ll_scale, int32_t real_ur_scale, int32_t step_length) {
     int32_t start_line = real_ll_scale + step_length;
@@ -709,6 +712,22 @@ void DataManager::makeLayerList()
   }
 }
 
+void DataManager::makeCutLayerList()
+{
+  std::vector<CutLayer>& cut_layer_list = _database.get_cut_layer_list();
+
+  for (size_t i = 1; i < cut_layer_list.size(); i++) {
+    CutLayer& pre_cut_layer = cut_layer_list[i - 1];
+    CutLayer& curr_cut_layer = cut_layer_list[i];
+    pre_cut_layer.set_above_prl_spacing(curr_cut_layer.get_below_prl_spacing());
+    pre_cut_layer.set_above_x_spacing(curr_cut_layer.get_below_x_spacing());
+    pre_cut_layer.set_above_y_spacing(curr_cut_layer.get_below_y_spacing());
+  }
+  cut_layer_list.back().set_above_prl_spacing(0);
+  cut_layer_list.back().set_above_x_spacing(0);
+  cut_layer_list.back().set_above_y_spacing(0);
+}
+
 void DataManager::checkLayerList()
 {
   std::vector<RoutingLayer>& routing_layer_list = _database.get_routing_layer_list();
@@ -720,7 +739,6 @@ void DataManager::checkLayerList()
   if (cut_layer_list.empty()) {
     RTLOG.error(Loc::current(), "The cut_layer_list is empty!");
   }
-
   for (RoutingLayer& routing_layer : routing_layer_list) {
     std::string& layer_name = routing_layer.get_layer_name();
     if (routing_layer.get_prefer_direction() == Direction::kNone) {
@@ -738,27 +756,48 @@ void DataManager::checkLayerList()
                     "' is wrong!");
       }
     }
-    SpacingTable& spacing_table = routing_layer.get_spacing_table();
-    if (spacing_table.get_width_list().empty()) {
-      RTLOG.error(Loc::current(), "The layer '", layer_name, "' spacing width list is empty!");
+    SpacingTable& prl_spacing_table = routing_layer.get_prl_spacing_table();
+    if (prl_spacing_table.get_width_list().empty()) {
+      RTLOG.error(Loc::current(), "The layer '", layer_name, "' spacing width_list is empty!");
     }
-    for (int32_t width : spacing_table.get_width_list()) {
-      if (width < 0) {
-        RTLOG.error(Loc::current(), "The layer '", layer_name, "' width < 0!");
-      }
+    if (prl_spacing_table.get_parallel_length_list().empty()) {
+      RTLOG.error(Loc::current(), "The layer '", layer_name, "' spacing parallel_length_list is empty!");
     }
-    for (int32_t parallel_length : spacing_table.get_parallel_length_list()) {
-      if (parallel_length < 0) {
-        RTLOG.error(Loc::current(), "The layer '", layer_name, "' parallel_length < 0!");
-      }
+    if (routing_layer.get_eol_spacing() == -1) {
+      RTLOG.error(Loc::current(), "The layer '", layer_name, "' eol_spacing == -1!");
     }
-    GridMap<int32_t>& width_parallel_length_map = spacing_table.get_width_parallel_length_map();
-    for (int32_t width_idx = 0; width_idx < width_parallel_length_map.get_x_size(); width_idx++) {
-      for (int32_t parallel_length_idx = 0; parallel_length_idx < width_parallel_length_map.get_y_size(); parallel_length_idx++) {
-        if (width_parallel_length_map[width_idx][parallel_length_idx] < 0) {
-          RTLOG.error(Loc::current(), "The layer '", layer_name, "' spacing < 0!");
-        }
-      }
+    if (routing_layer.get_eol_within() == -1) {
+      RTLOG.error(Loc::current(), "The layer '", layer_name, "' eol_within == -1!");
+    }
+  }
+  for (CutLayer& cut_layer : cut_layer_list) {
+    std::string& layer_name = cut_layer.get_layer_name();
+    if (cut_layer.get_curr_prl_spacing() == -1) {
+      RTLOG.error(Loc::current(), "The layer '", layer_name, "' curr_prl_spacing == -1!");
+    }
+    if (cut_layer.get_curr_x_spacing() == -1) {
+      RTLOG.error(Loc::current(), "The layer '", layer_name, "' curr_x_spacing == -1!");
+    }
+    if (cut_layer.get_curr_y_spacing() == -1) {
+      RTLOG.error(Loc::current(), "The layer '", layer_name, "' curr_y_spacing == -1!");
+    }
+    if (cut_layer.get_above_prl_spacing() == -1) {
+      RTLOG.error(Loc::current(), "The layer '", layer_name, "' above_prl_spacing == -1!");
+    }
+    if (cut_layer.get_above_x_spacing() == -1) {
+      RTLOG.error(Loc::current(), "The layer '", layer_name, "' above_x_spacing == -1!");
+    }
+    if (cut_layer.get_above_y_spacing() == -1) {
+      RTLOG.error(Loc::current(), "The layer '", layer_name, "' above_y_spacing == -1!");
+    }
+    if (cut_layer.get_below_prl_spacing() == -1) {
+      RTLOG.error(Loc::current(), "The layer '", layer_name, "' below_prl_spacing == -1!");
+    }
+    if (cut_layer.get_below_x_spacing() == -1) {
+      RTLOG.error(Loc::current(), "The layer '", layer_name, "' below_x_spacing == -1!");
+    }
+    if (cut_layer.get_below_y_spacing() == -1) {
+      RTLOG.error(Loc::current(), "The layer '", layer_name, "' below_y_spacing == -1!");
     }
   }
 }
@@ -899,7 +938,7 @@ std::vector<ScaleGrid> DataManager::makeGCellGridList(Direction direction)
   int32_t die_start_scale = (direction == Direction::kVertical ? die.get_real_ll_x() : die.get_real_ll_y());
   int32_t die_end_scale = (direction == Direction::kVertical ? die.get_real_ur_x() : die.get_real_ur_y());
   int32_t row_mid_scale = (direction == Direction::kVertical ? row.get_start_x() : row.get_start_y());
-  // 为了防止与track重合，减去一个recommended_pitch的一半
+  // 为了防止与track重合,减去一个recommended_pitch的一半
   row_mid_scale -= (getOnlyPitch() / 2);
   int32_t step_length = row.get_height();
 
@@ -922,36 +961,7 @@ std::vector<ScaleGrid> DataManager::makeGCellGridList(Direction direction)
     }
   }
   gcell_scale_list.erase(std::unique(gcell_scale_list.begin(), gcell_scale_list.end()), gcell_scale_list.end());
-  return makeGCellGridList(gcell_scale_list);
-}
-
-std::vector<ScaleGrid> DataManager::makeGCellGridList(std::vector<int32_t>& gcell_scale_list)
-{
-  std::vector<ScaleGrid> gcell_grid_list;
-
-  for (size_t i = 1; i < gcell_scale_list.size(); i++) {
-    int32_t pre_scale = gcell_scale_list[i - 1];
-    int32_t curr_scale = gcell_scale_list[i];
-
-    ScaleGrid gcell_grid;
-    gcell_grid.set_start_line(pre_scale);
-    gcell_grid.set_step_length(curr_scale - pre_scale);
-    gcell_grid.set_step_num(1);
-    gcell_grid.set_end_line(curr_scale);
-    gcell_grid_list.push_back(gcell_grid);
-  }
-  // merge
-  RTUTIL.merge(gcell_grid_list, [](ScaleGrid& sentry, ScaleGrid& soldier) {
-    if (sentry.get_step_length() != soldier.get_step_length()) {
-      return false;
-    }
-    sentry.set_start_line(std::min(sentry.get_start_line(), soldier.get_start_line()));
-    sentry.set_step_num(sentry.get_step_num() + 1);
-    sentry.set_end_line(std::max(sentry.get_end_line(), soldier.get_end_line()));
-    return true;
-  });
-
-  return gcell_grid_list;
+  return RTUTIL.makeScaleGridList(gcell_scale_list);
 }
 
 void DataManager::checkGCellAxis()
@@ -1376,10 +1386,10 @@ void DataManager::printConfig()
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "TopologyGenerator");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), "tg_temp_directory_path");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(3), _config.tg_temp_directory_path);
-  // **********   InitialRouter    ********** //
-  RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "InitialRouter");
-  RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), "ir_temp_directory_path");
-  RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(3), _config.ir_temp_directory_path);
+  // **********   LayerAssigner    ********** //
+  RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "LayerAssigner");
+  RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), "la_temp_directory_path");
+  RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(3), _config.la_temp_directory_path);
   // **********   GlobalRouter    ********** //
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "GlobalRouter");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), "gr_temp_directory_path");
@@ -1392,6 +1402,10 @@ void DataManager::printConfig()
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "DetailedRouter");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), "dr_temp_directory_path");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(3), _config.dr_temp_directory_path);
+  // **********   EarlyRouter    ********** //
+  RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "EarlyRouter");
+  RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), "er_temp_directory_path");
+  RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(3), _config.er_temp_directory_path);
   /////////////////////////////////////////////
 }
 

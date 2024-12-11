@@ -136,6 +136,7 @@ double ViolationOptimizer::calcLoadCap(ista::LibPort* driver_port, double slew)
   while (slew_diff < 0.0) {
     lower_cap = upper_cap;
     upper_cap *= 2.0;
+    slew_diff = calcSlew(driver_port, upper_cap) - slew;
   }
 
   // 二分法查找最佳电容值

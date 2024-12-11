@@ -649,7 +649,7 @@ void Sta::linkDesignWithRustParser(const char *top_cell_name) {
               net_name = rust_convert_verilog_id(net_id)->id;
             } else if (rust_is_bus_index_id(net_id)) {
               net_name = rust_convert_verilog_index_id(net_id)->id;
-            } else {
+            } else if (rust_is_bus_slice_id(net_id)) {
               net_name = rust_convert_verilog_slice_id(net_id)->id;
             }
             // fix net name contain backslash
@@ -797,6 +797,13 @@ void Sta::linkDesignWithRustParser(const char *top_cell_name) {
   }
   rust_free_verilog_file(_rust_verilog_file_ptr);
   LOG_INFO << "link design " << top_cell_name << " end";
+
+  LOG_INFO << "design " << top_cell_name
+           << " inst num: " << design_netlist.getInstanceNum();
+  LOG_INFO << "design " << top_cell_name
+           << " net num: " << design_netlist.getNetNum();
+  LOG_INFO << "design " << top_cell_name
+           << " port num: " << design_netlist.getPortNum();
 }
 
 /**
@@ -2355,8 +2362,7 @@ unsigned Sta::updateClockTiming() {
       StaApplySdc(StaApplySdc::PropType::kApplySdcPostNormalClockProp),
       StaClockPropagation(
           StaClockPropagation::PropType::kUpdateGeneratedClockProp),
-      StaApplySdc(StaApplySdc::PropType::kApplySdcPostClockProp)
-      };
+      StaApplySdc(StaApplySdc::PropType::kApplySdcPostClockProp)};
 
   for (auto &func : funcs) {
     the_graph.exec(func);
@@ -2642,7 +2648,19 @@ void Sta::dumpNetlistData() {
   LOG_INFO << "cell_types.txt written to "
            << std::string(design_work_space) + std::string("/cell_types.txt")
            << std::endl;
-  outputJson.close();
+  outputTxt.close();
+}
+
+/**
+ * @brief dump timing graph data.
+ *
+ */
+void Sta::dumpGraphData(const char *graph_file) {
+  StaDumpYaml dump_data;
+  dump_data.set_yaml_file_path(graph_file);
+
+  auto &the_graph = get_graph();
+  the_graph.exec(dump_data);
 }
 
 /**

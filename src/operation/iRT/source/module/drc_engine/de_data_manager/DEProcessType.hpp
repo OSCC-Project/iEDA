@@ -23,10 +23,8 @@ namespace irt {
 enum class DEProcessType
 {
   kNone,
-  kSkip,
-  kRoutingCost,
-  kCutCost,
-  kRoutingPatch
+  kSingleNet,
+  kMultiNet
 };
 
 struct GetDEProcessTypeName
@@ -38,17 +36,11 @@ struct GetDEProcessTypeName
       case DEProcessType::kNone:
         process_type_name = "none";
         break;
-      case DEProcessType::kSkip:
-        process_type_name = "skip";
+      case DEProcessType::kSingleNet:
+        process_type_name = "single_net";
         break;
-      case DEProcessType::kRoutingCost:
-        process_type_name = "routing_cost";
-        break;
-      case DEProcessType::kCutCost:
-        process_type_name = "cut_cost";
-        break;
-      case DEProcessType::kRoutingPatch:
-        process_type_name = "routing_patch";
+      case DEProcessType::kMultiNet:
+        process_type_name = "multi_net";
         break;
       default:
         RTLOG.error(Loc::current(), "Unrecognized type!");

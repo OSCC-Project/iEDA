@@ -29,8 +29,8 @@ void rust_free_spef_net_cap_res(void*);
 
 typedef struct RustSpefCoord
 {
-  double _x;
-  double _y;
+  double _x = 0.0;
+  double _y = 0.0;
 } RustSpefCoord;
 
 enum RustConnectionDirection

@@ -20,14 +20,15 @@ class DensityAPI
   static DensityAPI* getInst();
   static void destroyInst();
 
-  DensityMapSummary densityMap(int32_t grid_size = 1, bool neighbor = false);
-  CellMapSummary cellDensityMap(int32_t grid_size = 1);
-  PinMapSummary pinDensityMap(int32_t grid_size = 1, bool neighbor = false);
-  NetMapSummary netDensityMap(int32_t grid_size = 1, bool neighbor = false);
+  DensityMapSummary densityMap(std::string stage, int32_t grid_size = 1, bool neighbor = false);
+  DensityMapSummary densityMapPure(std::string stage, int32_t grid_size = 1, bool neighbor = false);
+  CellMapSummary cellDensityMap(std::string stage, int32_t grid_size = 1);
+  PinMapSummary pinDensityMap(std::string stage, int32_t grid_size = 1, bool neighbor = false);
+  NetMapSummary netDensityMap(std::string stage, int32_t grid_size = 1, bool neighbor = false);
 
-  CellMapSummary cellDensityMap(DensityCells cells, DensityRegion region, int32_t grid_size);
-  PinMapSummary pinDensityMap(DensityPins pins, DensityRegion region, int32_t grid_size, bool neighbor);
-  NetMapSummary netDensityMap(DensityNets nets, DensityRegion region, int32_t grid_size, bool neighbor);
+  CellMapSummary cellDensityMap(DensityCells cells, DensityRegion region, int32_t grid_size, std::string stage);
+  PinMapSummary pinDensityMap(DensityPins pins, DensityRegion region, int32_t grid_size, std::string stage, bool neighbor);
+  NetMapSummary netDensityMap(DensityNets nets, DensityRegion region, int32_t grid_size, std::string stage, bool neighbor);
 
   MacroMarginSummary macroMarginMap(int32_t grid_size = 1);
   MacroMarginSummary macroMarginMap(DensityCells cells, DensityRegion die, DensityRegion core, int32_t grid_size);

@@ -29,6 +29,7 @@
 
 namespace ipower {
 
+// static std::shared_mutex rw_mutex;  //! For synchronization read write seq data.
 /**
  * @brief add power vertex of the graph.
  *
@@ -48,7 +49,25 @@ void PwrSeqGraph::addPwrSeqVertex(PwrSeqVertex* vertex) {
 void PwrSeqGraph::addPwrSeqArc(PwrSeqArc* arc) {
   static std::mutex mt;
   std::lock_guard lk(mt);
+  // std::unique_lock<std::shared_mutex> lock(rw_mutex);
   _arcs.emplace_back(arc);
+}
+
+/**
+ * @brief find seq arc.
+ * 
+ * @param src_vertex 
+ * @param snk_vertex 
+ * @return PwrSeqArc* 
+ */
+PwrSeqArc* PwrSeqGraph::findSeqArc(PwrSeqVertex* src_vertex,
+                                   PwrSeqVertex* snk_vertex) {
+  // std::shared_lock<std::shared_mutex> lock(rw_mutex);
+  auto it = std::find_if(
+      _arcs.begin(), _arcs.end(), [src_vertex, snk_vertex](auto& arc) {
+        return arc->get_src() == src_vertex && arc->get_snk() == snk_vertex;
+      });
+  return it != _arcs.end() ? it->get() : nullptr;
 }
 
 /**

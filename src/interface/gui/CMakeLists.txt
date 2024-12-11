@@ -5,12 +5,10 @@
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_CXX_FLAGS "-Wno-error=deprecated-declarations -Wno-deprecated-declarations ")
 
-if(BUILD_PR_FLOW)
-    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${HOME_BUILD}/lib/iGUI)
-    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${HOME_BUILD}/lib/iGUI)
-    if(NOT DEFINED CMD_BUILD)
-    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${HOME_BUILD}/lib/iGUI)
-    endif()
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${HOME_BUILD}/lib/iGUI)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${HOME_BUILD}/lib/iGUI)
+if(NOT DEFINED CMD_BUILD)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${HOME_BUILD}/lib/iGUI)
 endif()
 
 
@@ -181,82 +179,41 @@ set(headers
 
 include(${HOME_CMAKE}/operation/idb.cmake)
 
-if(BUILD_PR_FLOW)
-    message("Build iGUI lib")
-
-    add_library(iGUI
-          ${headers}
-          ${sources}
-    )
-
-    target_link_libraries(iGUI Qt5${QT_VERSION_MAJOR}::Widgets Qt5${QT_VERSION_MAJOR}::Xml Qt5${QT_VERSION_MAJOR}::Core)
-    # target_link_libraries(iGUI idrc_api file_manager_cts file_manager_drc file_manager_placement tool_api_ipl OpenMP::OpenMP_CXX)
-    target_link_libraries(iGUI 
-        file_manager_cts 
-        file_manager_drc 
-        file_manager_placement
-        tool_api_ipl
-        idrc_pro_violation
-        ieda_feature
-    )
-
-    if(OpenMP_CXX_FOUND)
-    target_link_libraries(iGUI 
-        OpenMP::OpenMP_CXX
-    )
-        
-    endif()
-
-    target_include_directories(iGUI PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
-    target_include_directories(iGUI PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src/graphicsitem)
-    target_include_directories(iGUI PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src/guiaction)
-    target_include_directories(iGUI PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src/guicontroltree)
-    target_include_directories(iGUI PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src/guiDB)
-    target_include_directories(iGUI PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src/guiparser)
-    target_include_directories(iGUI PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src/designitem)
-    target_include_directories(iGUI PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src/utilityitem)
-    target_include_directories(iGUI PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src/utility)
-    target_include_directories(iGUI PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src/guispeedupitems)
-    target_include_directories(iGUI PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/interface)
-    target_include_directories(iGUI PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src/config)
-
-
-    target_include_directories(iGUI 
-        PUBLIC 
-            # ${HOME_PLATFORM}/
-            # ${HOME_PLATFORM}//tool_api
-            # ${HOME_PLATFORM}//tool_api/irt_io
-    )
-    
-else()
-    message("Build iGUI exe")
-
-    include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
-    include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/graphicsitem)
-    include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/guiaction)
-    include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/guicontroltree)
-    include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/guiDB)
-    include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/guiparser)
-    include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/designitem)
-    include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/utilityitem)
-    include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/utility)
-    include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/guispeedupitems)
-    include_directories(${CMAKE_CURRENT_SOURCE_DIR}/interface)
-
-    set(exe_sources
-            src/main.cpp
-            ${sources}
-    )
-    add_executable(iGUI
-         ${headers}
-         ${exe_sources}
-         ${samples}
-    )
-    
-    target_link_libraries(iGUI Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::Xml Qt${QT_VERSION_MAJOR}::Core)
-    target_link_libraries(iGUI idb IdbBuilder def_service lef_service )
+add_library(iGUI
+      ${headers}
+      ${sources}
+)
+target_link_libraries(iGUI Qt5${QT_VERSION_MAJOR}::Widgets Qt5${QT_VERSION_MAJOR}::Xml Qt5${QT_VERSION_MAJOR}::Core)
+# target_link_libraries(iGUI idrc_api file_manager_cts file_manager_drc file_manager_placement tool_api_ipl OpenMP::OpenMP_CXX)
+target_link_libraries(iGUI 
+    file_manager_cts 
+    file_manager_drc 
+    file_manager_placement
+    tool_api_ipl
+    idrc_pro_violation
+    ieda_feature
+)
+if(OpenMP_CXX_FOUND)
+target_link_libraries(iGUI 
+    OpenMP::OpenMP_CXX
+)  
 endif()
 
-
-#     add_subdirectory(${IDB_HOME} idb.out)
-SET(CMAKE_BUILD_TYPE "debug")
+target_include_directories(iGUI PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_include_directories(iGUI PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src/graphicsitem)
+target_include_directories(iGUI PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src/guiaction)
+target_include_directories(iGUI PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src/guicontroltree)
+target_include_directories(iGUI PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src/guiDB)
+target_include_directories(iGUI PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src/guiparser)
+target_include_directories(iGUI PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src/designitem)
+target_include_directories(iGUI PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src/utilityitem)
+target_include_directories(iGUI PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src/utility)
+target_include_directories(iGUI PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src/guispeedupitems)
+target_include_directories(iGUI PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/interface)
+target_include_directories(iGUI PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src/config)
+target_include_directories(iGUI 
+    PUBLIC 
+        # ${HOME_PLATFORM}/
+        # ${HOME_PLATFORM}//tool_api
+        # ${HOME_PLATFORM}//tool_api/irt_io
+)

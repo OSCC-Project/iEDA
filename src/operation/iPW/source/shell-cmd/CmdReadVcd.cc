@@ -42,7 +42,7 @@ CmdReadVcd::CmdReadVcd(const char* cmd_name) : TclCmd(cmd_name) {
 
 unsigned CmdReadVcd::check() {
   TclOption* file_name_option = getOptionOrArg("file_name");
-  TclOption* top_instance_name_option = getOptionOrArg("top_instance_name");
+  TclOption* top_instance_name_option = getOptionOrArg("-top_name");
   LOG_FATAL_IF(!file_name_option);
   LOG_FATAL_IF(!top_instance_name_option);
   return 1;
@@ -56,7 +56,7 @@ unsigned CmdReadVcd::exec() {
   TclOption* file_name_option = getOptionOrArg("file_name");
   auto vcd_file = file_name_option->getStringVal();
 
-  TclOption* top_instance_name_option = getOptionOrArg("top_instance_name");
+  TclOption* top_instance_name_option = getOptionOrArg("-top_name");
   auto top_instance_name = top_instance_name_option->getStringVal();
 
   Sta* ista = Sta::getOrCreateSta();

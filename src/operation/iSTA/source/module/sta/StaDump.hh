@@ -41,12 +41,18 @@ class StaDumpYaml : public StaFunc {
 
   void printText(const char* file_name);
 
+  void set_yaml_file_path(const char* yaml_file_path) {
+    _yaml_file_path = yaml_file_path;
+  }
+  auto& get_yaml_file_path() { return _yaml_file_path; }
+
  protected:
   YAML::Node _node;
+  std::string _yaml_file_path;
 };
 
 /**
- * @brief The class for dump delay data in yaml text file for traing data.
+ * @brief The class for dump delay data in yaml text file for training data.
  *
  */
 class StaDumpDelayYaml : public StaDumpYaml {

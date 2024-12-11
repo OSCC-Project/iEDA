@@ -325,6 +325,13 @@ fn process_first_port_connection_single_connect(
     }
 }
 
+fn extract_bitwidth_value(input: &str) -> Option<(u32, String)> {
+    // Split the input string by the character `'` and collect into a tuple(2'b00->(2,b'00))
+    input.split_once('\'').and_then(|(bw, val)| {
+        bw.parse::<u32>().ok().map(|bit_width| (bit_width, val.to_string()))
+    })
+}
+
 fn process_first_port_connection_multiple_connect(
     pair: Pair<Rule>,
 ) -> Result<Box<verilog_data::VerilogPortRefPortConnect>, pest::error::Error<Rule>> {
@@ -338,8 +345,13 @@ fn process_first_port_connection_multiple_connect(
             Rule::scalar_constant => {
                 let net_connect_line_no = inner_pair.line_col().0;
                 let net_connect = inner_pair.as_str();
-                let verilog_id = verilog_data::VerilogID::new(net_connect);
-                let verilog_virtual_base_id: Box<dyn verilog_data::VerilogVirtualBaseID> = Box::new(verilog_id);
+                let verilog_constant_id: verilog_data::VerilogConstantID;
+                if let Some((bit_width, value)) = extract_bitwidth_value(net_connect) {                    
+                    verilog_constant_id = verilog_data::VerilogConstantID::new(bit_width, &value);
+                } else {
+                    panic!("Error: invalid format");
+                }
+                let verilog_virtual_base_id: Box<dyn verilog_data::VerilogVirtualBaseID> = Box::new(verilog_constant_id);
                 let verilog_net_constant_expr =
                     verilog_data::VerilogConstantExpr::new(net_connect_line_no, verilog_virtual_base_id);
                 let verilog_virtual_base_net_expr: Box<dyn verilog_data::VerilogVirtualBaseNetExpr> =

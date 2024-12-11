@@ -22,6 +22,7 @@ class WirelengthAPI
   static void destroyInst();
 
   TotalWLSummary totalWL();
+  TotalWLSummary totalWLPure();
   NetWLSummary netWL(std::string net_name);
 
   TotalWLSummary totalWL(PointSets point_sets);
@@ -33,6 +34,7 @@ class WirelengthAPI
   float pathEGRWL(std::string guide_path, std::string net_name, std::string load_name);
 
   void evalNetInfo();
+  void evalNetInfoPure();
   int32_t findNetHPWL(std::string net_name);
   int32_t findNetFLUTE(std::string net_name);
   int32_t findNetGRWL(std::string net_name);

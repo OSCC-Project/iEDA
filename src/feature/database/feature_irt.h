@@ -39,7 +39,30 @@ struct SASummary
   int32_t total_supply = 0;
 };
 
-struct IRSummary
+struct TGSummary
+{
+  int32_t total_demand = 0;
+  int32_t total_overflow = 0;
+  double total_wire_length = 0;
+  std::vector<ClockTiming> clocks_timing;
+  PowerInfo power_info;
+};
+
+struct LASummary
+{
+  std::map<int32_t, int32_t> routing_demand_map;
+  int32_t total_demand = 0;
+  std::map<int32_t, int32_t> routing_overflow_map;
+  int32_t total_overflow = 0;
+  std::map<int32_t, double> routing_wire_length_map;
+  double total_wire_length = 0;
+  std::map<int32_t, int32_t> cut_via_num_map;
+  int32_t total_via_num = 0;
+  std::vector<ClockTiming> clocks_timing;
+  PowerInfo power_info;
+};
+
+struct ERSummary
 {
   std::map<int32_t, int32_t> routing_demand_map;
   int32_t total_demand = 0;
@@ -93,7 +116,9 @@ struct RTSummary
 {
   PASummary pa_summary;
   SASummary sa_summary;
-  IRSummary ir_summary;
+  TGSummary tg_summary;
+  LASummary la_summary;
+  ERSummary er_summary;
   std::map<int32_t, GRSummary> iter_gr_summary_map;
   TASummary ta_summary;
   std::map<int32_t, DRSummary> iter_dr_summary_map;

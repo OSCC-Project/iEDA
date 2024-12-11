@@ -77,7 +77,7 @@ class GCell : public PlanarRect
   // function
 
  private:
-  // obstacle & pin_shape 如果是routing则true，cut则false
+  // obstacle & pin_shape 如果是routing则true,cut则false
   std::map<bool, std::map<int32_t, std::map<int32_t, std::set<EXTLayerRect*>>>> _type_layer_net_fixed_rect_map;
   // access point 只有routing层有
   std::map<int32_t, std::set<AccessPoint*>> _net_access_point_map;

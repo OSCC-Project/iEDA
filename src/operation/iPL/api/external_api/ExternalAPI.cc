@@ -175,14 +175,14 @@ ieval::TotalWLSummary ExternalAPI::evalproIDBWL()
 
 ieval::OverflowSummary ExternalAPI::evalproCongestion()
 {
-  CONGESTION_API_INST->egrMap();
+  CONGESTION_API_INST->egrMap("place");
 
-  return CONGESTION_API_INST->egrOverflow();
+  return CONGESTION_API_INST->egrOverflow("place");
 }
 
 float ExternalAPI::obtainPeakAvgPinDens()
 {
-  ieval::PinMapSummary pin_map_summary = DENSITY_API_INST->pinDensityMap();
+  ieval::PinMapSummary pin_map_summary = DENSITY_API_INST->pinDensityMap("place");
 
   std::string file_path = pin_map_summary.allcell_pin_density;
   std::ifstream file(file_path);

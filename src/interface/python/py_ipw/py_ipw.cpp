@@ -52,7 +52,11 @@ build_connection_map(std::vector<std::set<std::string>> clusters, std::set<std::
 
 std::vector<ipower::MacroConnection> build_macro_connection_map(unsigned max_hop) {
   auto* power_engine = ipower::PowerEngine::getOrCreatePowerEngine();
+#ifdef USE_GPU
+  return power_engine->buildMacroConnectionMapWithGPU(max_hop);
+#else
   return power_engine->buildMacroConnectionMap(max_hop);
+#endif
 }
 
 }  // namespace python_interface

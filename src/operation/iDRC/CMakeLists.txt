@@ -8,16 +8,12 @@ add_subdirectory(api)
 add_subdirectory(source)
 # add_subdirectory(test)
 
-if(BUILD_PR_FLOW)
-  # ADD_EXECUTABLE(run_drc ${IDRC_TESTS}/run_drc.cpp)
-  # TARGET_LINK_LIBRARIES(run_drc DRC)
-else(BUILD_PR_FLOW)
-    ADD_EXECUTABLE(run_drc ${IDRC_TESTS}/run_drc.cpp)
-    TARGET_LINK_LIBRARIES(run_drc DRC)
-    
-    ADD_EXECUTABLE(conflict_graph ${IDRC_TESTS}/conflict_graph.cpp)
-    TARGET_LINK_LIBRARIES(conflict_graph DRC)
-    
-    add_executable(test_boost ${IDRC_TESTS}/test_boost.cpp)
-    target_link_libraries(test_boost DRC)
-endif(BUILD_PR_FLOW)
+
+# ADD_EXECUTABLE(run_drc ${IDRC_TESTS}/run_drc.cpp)
+# TARGET_LINK_LIBRARIES(run_drc DRC)
+
+# ADD_EXECUTABLE(conflict_graph ${IDRC_TESTS}/conflict_graph.cpp)
+# TARGET_LINK_LIBRARIES(conflict_graph DRC)
+
+# add_executable(test_boost ${IDRC_TESTS}/test_boost.cpp)
+# target_link_libraries(test_boost DRC)

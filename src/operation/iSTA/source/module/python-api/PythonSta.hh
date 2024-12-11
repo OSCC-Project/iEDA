@@ -224,4 +224,32 @@ std::vector<std::string> get_used_libs() {
   return ret;
 }
 
+/**
+ * @brief Only build timing graph.
+ * 
+ */
+void build_timing_graph() {
+  auto* ista = ista::Sta::getOrCreateSta();
+  ista->buildGraph();
+}
+
+/**
+ * @brief Only update clock timing.
+ * 
+ */
+void update_clock_timing() {
+  auto* ista = ista::Sta::getOrCreateSta();
+  ista->updateClockTiming(); 
+}
+
+/**
+ * @brief Print the graph in yaml format.
+ * 
+ * @param graph_file 
+ */
+void dump_graph_data(std::string graph_file) {
+  auto* ista = ista::Sta::getOrCreateSta();
+  ista->dumpGraphData(graph_file.c_str());
+}
+
 }  // namespace ista

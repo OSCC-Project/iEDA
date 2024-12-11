@@ -29,6 +29,11 @@ void TimingAPI::runSTA()
   EVAL_STA_INST->runSTA();
 }
 
+void TimingAPI::evalTiming(const std::string& routing_type, const bool& rt_done)
+{
+  EVAL_STA_INST->evalTiming(routing_type, rt_done);
+}
+
 void TimingAPI::destroyInst()
 {
   ieval::TimingEval::destroyInst();
@@ -92,6 +97,11 @@ void TimingAPI::updateTiming(const std::vector<TimingNet*>& timing_net_list, con
                              const int& propagation_level, int32_t dbu_unit)
 {
   EVAL_STA_INST->updateTiming(timing_net_list, name_list, propagation_level, dbu_unit);
+}
+
+bool TimingAPI::isClockNet(const std::string& net_name) const
+{
+  return EVAL_STA_INST->isClockNet(net_name);
 }
 
 }  // namespace ieval

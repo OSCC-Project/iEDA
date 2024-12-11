@@ -18,10 +18,11 @@
 
 #include "DRCEngine.hpp"
 #include "DetailedRouter.hpp"
+#include "EarlyRouter.hpp"
 #include "GDSPlotter.hpp"
 #include "GlobalRouter.hpp"
-#include "InitialRouter.hpp"
 #include "LSAssigner4iEDA/ls_assigner/LSAssigner.h"
+#include "LayerAssigner.hpp"
 #include "Monitor.hpp"
 #include "PinAccessor.hpp"
 #include "RTInterface.hpp"
@@ -32,6 +33,7 @@
 #include "api/TimingEngine.hh"
 #include "api/TimingIDBAdapter.hh"
 #include "feature_irt.h"
+#include "feature_manager.h"
 #include "flute3/flute.h"
 #include "idm.h"
 #include "idrc_api.h"
@@ -58,6 +60,8 @@ void RTInterface::destroyInst()
 }
 
 #if 1  // 外部调用RT的API
+
+#if 1  // iRT
 
 void RTInterface::initRT(std::map<std::string, std::any> config_map)
 {
@@ -92,25 +96,15 @@ void RTInterface::runEGR()
   Monitor monitor;
   RTLOG.info(Loc::current(), "Starting...");
 
-  PinAccessor::initInst();
-  RTPA.access();
-  PinAccessor::destroyInst();
+  RTGP.init();
 
   SupplyAnalyzer::initInst();
   RTSA.analyze();
   SupplyAnalyzer::destroyInst();
 
-  TopologyGenerator::initInst();
-  RTTG.generate();
-  TopologyGenerator::destroyInst();
-
-  InitialRouter::initInst();
-  RTIR.route();
-  InitialRouter::destroyInst();
-
-  GlobalRouter::initInst();
-  RTGR.route();
-  GlobalRouter::destroyInst();
+  EarlyRouter::initInst();
+  RTER.route();
+  EarlyRouter::destroyInst();
 
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
@@ -120,6 +114,9 @@ void RTInterface::runRT()
   Monitor monitor;
   RTLOG.info(Loc::current(), "Starting...");
 
+  RTDE.init();
+  RTGP.init();
+
   PinAccessor::initInst();
   RTPA.access();
   PinAccessor::destroyInst();
@@ -132,9 +129,9 @@ void RTInterface::runRT()
   RTTG.generate();
   TopologyGenerator::destroyInst();
 
-  InitialRouter::initInst();
-  RTIR.route();
-  InitialRouter::destroyInst();
+  LayerAssigner::initInst();
+  RTLA.route();
+  LayerAssigner::destroyInst();
 
   GlobalRouter::initInst();
   RTGR.route();
@@ -183,29 +180,47 @@ void RTInterface::clearDef()
   IdbNetList* idb_net_list = dmInst->get_idb_def_service()->get_design()->get_net_list();
 
   //////////////////////////////////////////
+  // 删除net内所有的wire
+  for (idb::IdbNet* idb_net : idb_net_list->get_net_list()) {
+    idb_net->clear_wire_list();
+  }
+  // 删除net内所有的wire
+  //////////////////////////////////////////
+
+  //////////////////////////////////////////
   // 删除net内所有的virtual
   for (idb::IdbNet* idb_net : idb_net_list->get_net_list()) {
     for (idb::IdbRegularWire* wire : idb_net->get_wire_list()->get_wire_list()) {
-      std::vector<idb::IdbRegularWireSegment*>& segment_list = wire->get_segment_list();
-      std::sort(segment_list.begin(), segment_list.end(), [](idb::IdbRegularWireSegment* a, idb::IdbRegularWireSegment* b) {
-        bool a_is_virtual = a->is_virtual(a->get_point_second());
-        bool b_is_virtual = b->is_virtual(b->get_point_second());
-        if (a_is_virtual == false && b_is_virtual == true) {
-          return true;
+      std::vector<idb::IdbRegularWireSegment*> del_segment_list;
+      for (idb::IdbRegularWireSegment* segment : wire->get_segment_list()) {
+        if (segment->is_virtual(segment->get_point_second())) {
+          del_segment_list.push_back(segment);
         }
-        return false;
-      });
+      }
+      for (idb::IdbRegularWireSegment* segment : del_segment_list) {
+        wire->delete_seg(segment);
+      }
     }
   }
   // 删除net内所有的virtual
   //////////////////////////////////////////
 
   //////////////////////////////////////////
-  // 删除net内所有的wire
+  // 删除net内所有的patch
   for (idb::IdbNet* idb_net : idb_net_list->get_net_list()) {
-    idb_net->clear_wire_list();
+    for (idb::IdbRegularWire* wire : idb_net->get_wire_list()->get_wire_list()) {
+      std::vector<idb::IdbRegularWireSegment*> del_segment_list;
+      for (idb::IdbRegularWireSegment* segment : wire->get_segment_list()) {
+        if (segment->is_rect()) {
+          del_segment_list.push_back(segment);
+        }
+      }
+      for (idb::IdbRegularWireSegment* segment : del_segment_list) {
+        wire->delete_seg(segment);
+      }
+    }
   }
-  // 删除net内所有的wire
+  // 删除net内所有的patch
   //////////////////////////////////////////
 
   //////////////////////////////////////////
@@ -239,7 +254,7 @@ void RTInterface::clearDef()
   std::vector<idb::IdbPin*> remove_pin_list;
   for (idb::IdbPin* io_pin : idb_pin_list->get_pin_list()) {
     if (io_pin->get_port_box_list().empty()) {
-      RTLOG.info(Loc::current(), io_pin->get_pin_name());
+      RTLOG.info(Loc::current(), "del io_pin: ", io_pin->get_pin_name());
       remove_pin_list.push_back(io_pin);
     }
   }
@@ -252,9 +267,11 @@ void RTInterface::clearDef()
 
 #endif
 
+#endif
+
 #if 1  // RT调用外部的API
 
-#if 1  // iDB
+#if 1  // TopData
 
 #if 1  // input
 
@@ -343,7 +360,7 @@ void RTInterface::wrapLayerList()
       routing_layer.set_min_area(idb_routing_layer->get_area());
       routing_layer.set_prefer_direction(getRTDirectionByDB(idb_routing_layer->get_direction()));
       wrapTrackAxis(routing_layer, idb_routing_layer);
-      wrapRoutingSpacingTable(routing_layer, idb_routing_layer);
+      wrapRoutingDesignRule(routing_layer, idb_routing_layer);
       routing_layer_list.push_back(std::move(routing_layer));
     } else if (idb_layer->is_cut()) {
       idb::IdbLayerCut* idb_cut_layer = dynamic_cast<idb::IdbLayerCut*>(idb_layer);
@@ -351,7 +368,7 @@ void RTInterface::wrapLayerList()
       cut_layer.set_layer_idx(idb_cut_layer->get_id());
       cut_layer.set_layer_order(idb_cut_layer->get_order());
       cut_layer.set_layer_name(idb_cut_layer->get_name());
-      wrapCutSpacingTable(cut_layer, idb_cut_layer);
+      wrapCutDesignRule(cut_layer, idb_cut_layer);
       cut_layer_list.push_back(std::move(cut_layer));
     }
   }
@@ -377,47 +394,128 @@ void RTInterface::wrapTrackAxis(RoutingLayer& routing_layer, idb::IdbLayerRoutin
   }
 }
 
-void RTInterface::wrapRoutingSpacingTable(RoutingLayer& routing_layer, idb::IdbLayerRouting* idb_layer)
+void RTInterface::wrapRoutingDesignRule(RoutingLayer& routing_layer, idb::IdbLayerRouting* idb_layer)
 {
-  std::shared_ptr<idb::IdbParallelSpacingTable> idb_spacing_table;
-  if (idb_layer->get_spacing_table().get()->get_parallel().get() != nullptr && idb_layer->get_spacing_table().get()->is_parallel()) {
-    idb_spacing_table = idb_layer->get_spacing_table()->get_parallel();
-  } else if (idb_layer->get_spacing_list() != nullptr && !idb_layer->get_spacing_table().get()->is_parallel()) {
-    idb_spacing_table = idb_layer->get_spacing_table_from_spacing_list()->get_parallel();
-  } else {
-    idb_spacing_table = std::make_shared<idb::IdbParallelSpacingTable>(1, 1);
-    idb_spacing_table.get()->set_parallel_length(0, 0);
-    idb_spacing_table.get()->set_width(0, 0);
-    idb_spacing_table.get()->set_spacing(0, 0, 0);
-    RTLOG.warn(Loc::current(), "The idb layer ", idb_layer->get_name(), " spacing table is empty!");
+  // prl
+  {
+    std::shared_ptr<idb::IdbParallelSpacingTable> idb_spacing_table;
+    if (idb_layer->get_spacing_table().get()->get_parallel().get() != nullptr && idb_layer->get_spacing_table().get()->is_parallel()) {
+      idb_spacing_table = idb_layer->get_spacing_table()->get_parallel();
+    } else if (idb_layer->get_spacing_list() != nullptr && !idb_layer->get_spacing_table().get()->is_parallel()) {
+      idb_spacing_table = idb_layer->get_spacing_table_from_spacing_list()->get_parallel();
+    } else {
+      idb_spacing_table = std::make_shared<idb::IdbParallelSpacingTable>(1, 1);
+      idb_spacing_table.get()->set_parallel_length(0, 0);
+      idb_spacing_table.get()->set_width(0, 0);
+      idb_spacing_table.get()->set_spacing(0, 0, 0);
+      RTLOG.warn(Loc::current(), "The idb layer ", idb_layer->get_name(), " spacing table is empty!");
+    }
+
+    SpacingTable& prl_spacing_table = routing_layer.get_prl_spacing_table();
+    std::vector<int32_t>& width_list = prl_spacing_table.get_width_list();
+    std::vector<int32_t>& parallel_length_list = prl_spacing_table.get_parallel_length_list();
+    GridMap<int32_t>& width_parallel_length_map = prl_spacing_table.get_width_parallel_length_map();
+
+    width_list = idb_spacing_table->get_width_list();
+    parallel_length_list = idb_spacing_table->get_parallel_length_list();
+    width_parallel_length_map.init(width_list.size(), parallel_length_list.size());
+    for (int32_t x = 0; x < width_parallel_length_map.get_x_size(); x++) {
+      for (int32_t y = 0; y < width_parallel_length_map.get_y_size(); y++) {
+        width_parallel_length_map[x][y] = idb_spacing_table->get_spacing_table()[x][y];
+      }
+    }
   }
-
-  SpacingTable& spacing_table = routing_layer.get_spacing_table();
-  std::vector<int32_t>& width_list = spacing_table.get_width_list();
-  std::vector<int32_t>& parallel_length_list = spacing_table.get_parallel_length_list();
-  GridMap<int32_t>& width_parallel_length_map = spacing_table.get_width_parallel_length_map();
-
-  width_list = idb_spacing_table->get_width_list();
-  parallel_length_list = idb_spacing_table->get_parallel_length_list();
-  width_parallel_length_map.init(width_list.size(), parallel_length_list.size());
-  for (int32_t x = 0; x < width_parallel_length_map.get_x_size(); x++) {
-    for (int32_t y = 0; y < width_parallel_length_map.get_y_size(); y++) {
-      width_parallel_length_map[x][y] = idb_spacing_table->get_spacing_table()[x][y];
+  // eol
+  {
+    idb::IdbLayerRouting* idb_routing_layer = dynamic_cast<idb::IdbLayerRouting*>(idb_layer);
+    if (!idb_routing_layer->get_lef58_spacing_eol_list().empty()) {
+      int32_t eol_spacing = idb_routing_layer->get_lef58_spacing_eol_list().front().get()->get_eol_space();
+      int32_t eol_within = idb_routing_layer->get_lef58_spacing_eol_list().front().get()->get_eol_within().value();
+      for (std::shared_ptr<routinglayer::Lef58SpacingEol>& idb_rule_eol : idb_routing_layer->get_lef58_spacing_eol_list()) {
+        if (idb_rule_eol.get()->get_eol_space() < eol_spacing) {
+          eol_spacing = idb_rule_eol.get()->get_eol_space();
+          eol_within = idb_rule_eol.get()->get_eol_within().value();
+        }
+      }
+      routing_layer.set_eol_spacing(eol_spacing);
+      routing_layer.set_eol_within(eol_within);
+    } else {
+      RTLOG.warn(Loc::current(), "The idb layer ", idb_layer->get_name(), " eol_spacing is empty!");
+      routing_layer.set_eol_spacing(0);
+      routing_layer.set_eol_within(0);
     }
   }
 }
 
-void RTInterface::wrapCutSpacingTable(CutLayer& cut_layer, idb::IdbLayerCut* idb_layer)
+void RTInterface::wrapCutDesignRule(CutLayer& cut_layer, idb::IdbLayerCut* idb_layer)
 {
-  if (!idb_layer->get_spacings().empty()) {
-    cut_layer.set_spacing(idb_layer->get_spacings().front()->get_spacing());
-  } else if (!idb_layer->get_lef58_spacing_table().empty()) {
-    idb::cutlayer::Lef58SpacingTable::CutSpacing cut_spacing
-        = idb_layer->get_lef58_spacing_table().front()->get_cutclass().get_cut_spacing(0, 0);
-    cut_layer.set_spacing(std::max(cut_spacing.get_cut_spacing1().value(), cut_spacing.get_cut_spacing2().value()));
-  } else {
-    cut_layer.set_spacing(0);
-    RTLOG.warn(Loc::current(), "The idb layer ", idb_layer->get_name(), " spacing table is empty!");
+  // curr layer
+  {
+    if (!idb_layer->get_spacings().empty()) {
+      cut_layer.set_curr_prl_spacing(0);
+      cut_layer.set_curr_x_spacing(idb_layer->get_spacings().front()->get_spacing());
+      cut_layer.set_curr_y_spacing(idb_layer->get_spacings().front()->get_spacing());
+    } else if (!idb_layer->get_lef58_spacing_table().empty()) {
+      idb::cutlayer::Lef58SpacingTable* spacing_table = nullptr;
+      for (std::shared_ptr<idb::cutlayer::Lef58SpacingTable>& spacing_table_ptr : idb_layer->get_lef58_spacing_table()) {
+        if (spacing_table_ptr.get()->get_second_layer().has_value()) {
+          continue;
+        }
+        spacing_table = spacing_table_ptr.get();
+      }
+      if (spacing_table != nullptr) {
+        idb::cutlayer::Lef58SpacingTable::CutSpacing cut_spacing = spacing_table->get_cutclass().get_cut_spacing(0, 0);
+
+        int32_t curr_prl_spacing = -1 * spacing_table->get_prl().value().get_prl();
+        int32_t curr_x_spacing = cut_spacing.get_cut_spacing1().value();
+        int32_t curr_y_spacing = cut_spacing.get_cut_spacing2().value();
+        cut_layer.set_curr_prl_spacing(curr_prl_spacing);
+        cut_layer.set_curr_x_spacing(curr_x_spacing);
+        cut_layer.set_curr_y_spacing(curr_y_spacing);
+      } else {
+        cut_layer.set_curr_prl_spacing(0);
+        cut_layer.set_curr_x_spacing(0);
+        cut_layer.set_curr_y_spacing(0);
+        RTLOG.warn(Loc::current(), "The idb layer ", idb_layer->get_name(), " curr layer spacing is empty!");
+      }
+    } else {
+      cut_layer.set_curr_prl_spacing(0);
+      cut_layer.set_curr_x_spacing(0);
+      cut_layer.set_curr_y_spacing(0);
+      RTLOG.warn(Loc::current(), "The idb layer ", idb_layer->get_name(), " curr layer spacing is empty!");
+    }
+  }
+  // below layer
+  {
+    if (!idb_layer->get_lef58_spacing_table().empty()) {
+      idb::cutlayer::Lef58SpacingTable* spacing_table = nullptr;
+      for (std::shared_ptr<idb::cutlayer::Lef58SpacingTable>& spacing_table_ptr : idb_layer->get_lef58_spacing_table()) {
+        if (!spacing_table_ptr.get()->get_second_layer().has_value()) {
+          continue;
+        }
+        spacing_table = spacing_table_ptr.get();
+      }
+      if (spacing_table != nullptr) {
+        idb::cutlayer::Lef58SpacingTable::CutSpacing cut_spacing = spacing_table->get_cutclass().get_cut_spacing(0, 0);
+
+        int32_t below_prl_spacing = -1 * spacing_table->get_prl().value().get_prl();
+        int32_t below_x_spacing = cut_spacing.get_cut_spacing1().value();
+        int32_t below_y_spacing = cut_spacing.get_cut_spacing2().value();
+        cut_layer.set_below_prl_spacing(below_prl_spacing);
+        cut_layer.set_below_x_spacing(below_x_spacing);
+        cut_layer.set_below_y_spacing(below_y_spacing);
+      } else {
+        cut_layer.set_below_prl_spacing(0);
+        cut_layer.set_below_x_spacing(0);
+        cut_layer.set_below_y_spacing(0);
+        RTLOG.warn(Loc::current(), "The idb layer ", idb_layer->get_name(), " below layer spacing is empty!");
+      }
+    } else {
+      cut_layer.set_below_prl_spacing(0);
+      cut_layer.set_below_x_spacing(0);
+      cut_layer.set_below_y_spacing(0);
+      RTLOG.warn(Loc::current(), "The idb layer ", idb_layer->get_name(), " below layer spacing is empty!");
+    }
   }
 }
 
@@ -452,8 +550,7 @@ void RTInterface::wrapLayerViaMasterList()
   layer_via_master_list.resize(idb_routing_layers.size());
 
   std::vector<idb::IdbVia*>& idb_via_list = idb_via_list_lib->get_via_list();
-  for (size_t i = 0; i < idb_via_list.size(); i++) {
-    idb::IdbVia* idb_via = idb_via_list[i];
+  for (idb::IdbVia* idb_via : idb_via_list) {
     if (idb_via == nullptr) {
       RTLOG.error(Loc::current(), "The via is empty!");
     }
@@ -501,13 +598,16 @@ void RTInterface::wrapObstacleList()
   std::vector<Obstacle>& routing_obstacle_list = RTDM.getDatabase().get_routing_obstacle_list();
   std::vector<Obstacle>& cut_obstacle_list = RTDM.getDatabase().get_cut_obstacle_list();
   std::vector<idb::IdbInstance*>& instance_list = dmInst->get_idb_def_service()->get_design()->get_instance_list()->get_instance_list();
-  idb::IdbSpecialNetList* idb_special_net_list = dmInst->get_idb_def_service()->get_design()->get_special_net_list();
+  std::vector<idb::IdbSpecialNet*>& idb_special_net_list
+      = dmInst->get_idb_def_service()->get_design()->get_special_net_list()->get_net_list();
+  std::vector<idb::IdbPin*>& idb_io_pin_list = dmInst->get_idb_def_service()->get_design()->get_io_pin_list()->get_pin_list();
 
   int32_t total_routing_obstacle_num = 0;
   int32_t total_cut_obstacle_num = 0;
   {
     // instance
     for (idb::IdbInstance* instance : instance_list) {
+      // instance obs
       for (idb::IdbLayerShape* obs_box : instance->get_obs_box_list()) {
         if (obs_box->get_layer()->is_routing()) {
           total_routing_obstacle_num += obs_box->get_rect_list().size();
@@ -515,6 +615,7 @@ void RTInterface::wrapObstacleList()
           total_cut_obstacle_num += obs_box->get_rect_list().size();
         }
       }
+      // instance pin without net
       for (idb::IdbPin* idb_pin : instance->get_pin_list()->get_pin_list()) {
         if (idb_pin->get_net() != nullptr) {
           continue;
@@ -526,10 +627,14 @@ void RTInterface::wrapObstacleList()
             total_cut_obstacle_num += port_box->get_rect_list().size();
           }
         }
+        for (idb::IdbVia* idb_via : idb_pin->get_via_list()) {
+          total_routing_obstacle_num += 2;
+          total_cut_obstacle_num += idb_via->get_cut_layer_shape().get_rect_list().size();
+        }
       }
     }
     // special net
-    for (idb::IdbSpecialNet* idb_net : idb_special_net_list->get_net_list()) {
+    for (idb::IdbSpecialNet* idb_net : idb_special_net_list) {
       for (idb::IdbSpecialWire* idb_wire : idb_net->get_wire_list()->get_wire_list()) {
         for (idb::IdbSpecialWireSegment* idb_segment : idb_wire->get_segment_list()) {
           if (idb_segment->is_via()) {
@@ -539,6 +644,19 @@ void RTInterface::wrapObstacleList()
           } else {
             total_routing_obstacle_num += 1;
           }
+        }
+      }
+    }
+    // io pin
+    for (idb::IdbPin* idb_io_pin : idb_io_pin_list) {
+      if (idb_io_pin->get_net() != nullptr) {
+        continue;
+      }
+      for (idb::IdbLayerShape* port_box : idb_io_pin->get_port_box_list()) {
+        if (port_box->get_layer()->is_routing()) {
+          total_routing_obstacle_num += port_box->get_rect_list().size();
+        } else if (port_box->get_layer()->is_cut()) {
+          total_cut_obstacle_num += port_box->get_rect_list().size();
         }
       }
     }
@@ -580,10 +698,38 @@ void RTInterface::wrapObstacleList()
             }
           }
         }
+        for (idb::IdbVia* idb_via : idb_pin->get_via_list()) {
+          {
+            idb::IdbLayerShape idb_shape_top = idb_via->get_top_layer_shape();
+            idb::IdbRect idb_box_top = idb_shape_top.get_bounding_box();
+            Obstacle obstacle;
+            obstacle.set_real_ll(idb_box_top.get_low_x(), idb_box_top.get_low_y());
+            obstacle.set_real_ur(idb_box_top.get_high_x(), idb_box_top.get_high_y());
+            obstacle.set_layer_idx(idb_shape_top.get_layer()->get_id());
+            routing_obstacle_list.push_back(std::move(obstacle));
+          }
+          {
+            idb::IdbLayerShape idb_shape_bottom = idb_via->get_bottom_layer_shape();
+            idb::IdbRect idb_box_bottom = idb_shape_bottom.get_bounding_box();
+            Obstacle obstacle;
+            obstacle.set_real_ll(idb_box_bottom.get_low_x(), idb_box_bottom.get_low_y());
+            obstacle.set_real_ur(idb_box_bottom.get_high_x(), idb_box_bottom.get_high_y());
+            obstacle.set_layer_idx(idb_shape_bottom.get_layer()->get_id());
+            routing_obstacle_list.push_back(std::move(obstacle));
+          }
+          idb::IdbLayerShape idb_shape_cut = idb_via->get_cut_layer_shape();
+          for (idb::IdbRect* idb_rect : idb_shape_cut.get_rect_list()) {
+            Obstacle obstacle;
+            obstacle.set_real_ll(idb_rect->get_low_x(), idb_rect->get_low_y());
+            obstacle.set_real_ur(idb_rect->get_high_x(), idb_rect->get_high_y());
+            obstacle.set_layer_idx(idb_shape_cut.get_layer()->get_id());
+            cut_obstacle_list.push_back(std::move(obstacle));
+          }
+        }
       }
     }
     // special net
-    for (idb::IdbSpecialNet* idb_net : idb_special_net_list->get_net_list()) {
+    for (idb::IdbSpecialNet* idb_net : idb_special_net_list) {
       for (idb::IdbSpecialWire* idb_wire : idb_net->get_wire_list()->get_wire_list()) {
         for (idb::IdbSpecialWireSegment* idb_segment : idb_wire->get_segment_list()) {
           if (idb_segment->is_via()) {
@@ -613,6 +759,25 @@ void RTInterface::wrapObstacleList()
             obstacle.set_real_ur(idb_rect->get_high_x(), idb_rect->get_high_y());
             obstacle.set_layer_idx(idb_segment->get_layer()->get_id());
             routing_obstacle_list.push_back(std::move(obstacle));
+          }
+        }
+      }
+    }
+    // io pin
+    for (idb::IdbPin* idb_io_pin : idb_io_pin_list) {
+      if (idb_io_pin->get_net() != nullptr) {
+        continue;
+      }
+      for (idb::IdbLayerShape* port_box : idb_io_pin->get_port_box_list()) {
+        for (idb::IdbRect* rect : port_box->get_rect_list()) {
+          Obstacle obstacle;
+          obstacle.set_real_ll(rect->get_low_x(), rect->get_low_y());
+          obstacle.set_real_ur(rect->get_high_x(), rect->get_high_y());
+          obstacle.set_layer_idx(port_box->get_layer()->get_id());
+          if (port_box->get_layer()->is_routing()) {
+            routing_obstacle_list.push_back(std::move(obstacle));
+          } else if (port_box->get_layer()->is_cut()) {
+            cut_obstacle_list.push_back(std::move(obstacle));
           }
         }
       }
@@ -674,8 +839,8 @@ bool RTInterface::isSkipping(idb::IdbNet* idb_net)
     }
     pin_num++;
   }
-  for (auto* io_pin : idb_net->get_io_pins()->get_pin_list()) {
-    if (io_pin->get_term()->get_port_number() <= 0) {
+  for (idb::IdbPin* idb_pin : idb_net->get_io_pins()->get_pin_list()) {
+    if (idb_pin->get_term()->get_port_number() <= 0) {
       continue;
     }
     pin_num++;
@@ -701,13 +866,13 @@ void RTInterface::wrapPinList(Net& net, idb::IdbNet* idb_net)
     wrapPinShapeList(pin, idb_pin);
     pin_list.push_back(std::move(pin));
   }
-  for (auto* io_pin : idb_net->get_io_pins()->get_pin_list()) {
-    if (io_pin->get_term()->get_port_number() <= 0) {
+  for (idb::IdbPin* idb_pin : idb_net->get_io_pins()->get_pin_list()) {
+    if (idb_pin->get_term()->get_port_number() <= 0) {
       continue;
     }
     Pin pin;
-    pin.set_pin_name(io_pin->get_pin_name());
-    wrapPinShapeList(pin, io_pin);
+    pin.set_pin_name(idb_pin->get_pin_name());
+    wrapPinShapeList(pin, idb_pin);
     pin_list.push_back(std::move(pin));
   }
 }
@@ -728,6 +893,34 @@ void RTInterface::wrapPinShapeList(Pin& pin, idb::IdbPin* idb_pin)
       } else if (layer_shape->get_layer()->is_cut()) {
         cut_shape_list.push_back(std::move(pin_shape));
       }
+    }
+  }
+  for (idb::IdbVia* idb_via : idb_pin->get_via_list()) {
+    {
+      idb::IdbLayerShape idb_shape_top = idb_via->get_top_layer_shape();
+      idb::IdbRect idb_box_top = idb_shape_top.get_bounding_box();
+      EXTLayerRect pin_shape;
+      pin_shape.set_real_ll(idb_box_top.get_low_x(), idb_box_top.get_low_y());
+      pin_shape.set_real_ur(idb_box_top.get_high_x(), idb_box_top.get_high_y());
+      pin_shape.set_layer_idx(idb_shape_top.get_layer()->get_id());
+      routing_shape_list.push_back(std::move(pin_shape));
+    }
+    {
+      idb::IdbLayerShape idb_shape_bottom = idb_via->get_bottom_layer_shape();
+      idb::IdbRect idb_box_bottom = idb_shape_bottom.get_bounding_box();
+      EXTLayerRect pin_shape;
+      pin_shape.set_real_ll(idb_box_bottom.get_low_x(), idb_box_bottom.get_low_y());
+      pin_shape.set_real_ur(idb_box_bottom.get_high_x(), idb_box_bottom.get_high_y());
+      pin_shape.set_layer_idx(idb_shape_bottom.get_layer()->get_id());
+      routing_shape_list.push_back(std::move(pin_shape));
+    }
+    idb::IdbLayerShape idb_shape_cut = idb_via->get_cut_layer_shape();
+    for (idb::IdbRect* idb_rect : idb_shape_cut.get_rect_list()) {
+      EXTLayerRect pin_shape;
+      pin_shape.set_real_ll(idb_rect->get_low_x(), idb_rect->get_low_y());
+      pin_shape.set_real_ur(idb_rect->get_high_x(), idb_rect->get_high_y());
+      pin_shape.set_layer_idx(idb_shape_cut.get_layer()->get_id());
+      cut_shape_list.push_back(std::move(pin_shape));
     }
   }
 }
@@ -783,6 +976,7 @@ void RTInterface::output()
   outputTrackGrid();
   outputGCellGrid();
   outputNetList();
+  outputSummary();
 }
 
 void RTInterface::outputTrackGrid()
@@ -885,6 +1079,9 @@ void RTInterface::outputNetList()
   if (idb_net_list == nullptr) {
     RTLOG.error(Loc::current(), "The idb net list is empty!");
   }
+  for (idb::IdbNet* idb_net : idb_net_list->get_net_list()) {
+    idb_net->clear_wire_list();
+  }
   for (auto& [net_idx, idb_segment_list] : net_idb_segment_map) {
     std::string net_name = net_list[net_idx].get_net_name();
     idb::IdbNet* idb_net = idb_net_list->find_net(net_name);
@@ -908,6 +1105,139 @@ void RTInterface::outputNetList()
         print_new = true;
       }
     }
+  }
+}
+
+void RTInterface::outputSummary()
+{
+  ieda_feature::RTSummary& top_rt_summary = featureInst->get_summary()->get_summary_irt();
+
+  Summary& rt_summary = RTDM.getDatabase().get_summary();
+
+  // pa_summary
+  {
+    top_rt_summary.pa_summary.routing_access_point_num_map = rt_summary.pa_summary.routing_access_point_num_map;
+    for (auto& [type, access_point_num] : rt_summary.pa_summary.type_access_point_num_map) {
+      top_rt_summary.pa_summary.type_access_point_num_map[GetAccessPointTypeName()(type)] = access_point_num;
+    }
+    top_rt_summary.pa_summary.total_access_point_num = rt_summary.pa_summary.total_access_point_num;
+  }
+  // sa_summary
+  {
+    top_rt_summary.sa_summary.routing_supply_map = rt_summary.sa_summary.routing_supply_map;
+    top_rt_summary.sa_summary.total_supply = rt_summary.sa_summary.total_supply;
+  }
+  // tg_summary
+  {
+    top_rt_summary.tg_summary.total_demand = rt_summary.tg_summary.total_demand;
+    top_rt_summary.tg_summary.total_overflow = rt_summary.tg_summary.total_overflow;
+    top_rt_summary.tg_summary.total_wire_length = rt_summary.tg_summary.total_wire_length;
+    for (auto& [clock_name, timing_map] : rt_summary.tg_summary.clock_timing) {
+      ieda_feature::ClockTiming clock_timing;
+      clock_timing.clock_name = clock_name;
+      clock_timing.setup_tns = timing_map["TNS"];
+      clock_timing.setup_wns = timing_map["WNS"];
+      clock_timing.suggest_freq = timing_map["Freq(MHz)"];
+      top_rt_summary.tg_summary.clocks_timing.push_back(clock_timing);
+    }
+    top_rt_summary.tg_summary.power_info
+        = {rt_summary.tg_summary.power_map["static_power"], rt_summary.tg_summary.power_map["dynamic_power"]};
+  }
+  // la_summary
+  {
+    top_rt_summary.la_summary.routing_demand_map = rt_summary.la_summary.routing_demand_map;
+    top_rt_summary.la_summary.total_demand = rt_summary.la_summary.total_demand;
+    top_rt_summary.la_summary.routing_overflow_map = rt_summary.la_summary.routing_overflow_map;
+    top_rt_summary.la_summary.total_overflow = rt_summary.la_summary.total_overflow;
+    top_rt_summary.la_summary.routing_wire_length_map = rt_summary.la_summary.routing_wire_length_map;
+    top_rt_summary.la_summary.total_wire_length = rt_summary.la_summary.total_wire_length;
+    top_rt_summary.la_summary.cut_via_num_map = rt_summary.la_summary.cut_via_num_map;
+    top_rt_summary.la_summary.total_via_num = rt_summary.la_summary.total_via_num;
+    for (auto& [clock_name, timing_map] : rt_summary.la_summary.clock_timing) {
+      ieda_feature::ClockTiming clock_timing;
+      clock_timing.clock_name = clock_name;
+      clock_timing.setup_tns = timing_map["TNS"];
+      clock_timing.setup_wns = timing_map["WNS"];
+      clock_timing.suggest_freq = timing_map["Freq(MHz)"];
+      top_rt_summary.la_summary.clocks_timing.push_back(clock_timing);
+    }
+    top_rt_summary.la_summary.power_info
+        = {rt_summary.la_summary.power_map["static_power"], rt_summary.la_summary.power_map["dynamic_power"]};
+  }
+  // gr_summary
+  {
+    for (auto& [iter, gr_summary] : rt_summary.iter_gr_summary_map) {
+      ieda_feature::GRSummary& top_gr_summary = top_rt_summary.iter_gr_summary_map[iter];
+      top_gr_summary.routing_demand_map = gr_summary.routing_demand_map;
+      top_gr_summary.total_demand = gr_summary.total_demand;
+      top_gr_summary.routing_overflow_map = gr_summary.routing_overflow_map;
+      top_gr_summary.total_overflow = gr_summary.total_overflow;
+      top_gr_summary.routing_wire_length_map = gr_summary.routing_wire_length_map;
+      top_gr_summary.total_wire_length = gr_summary.total_wire_length;
+      top_gr_summary.cut_via_num_map = gr_summary.cut_via_num_map;
+      top_gr_summary.total_via_num = gr_summary.total_via_num;
+      for (auto& [clock_name, timing_map] : gr_summary.clock_timing) {
+        ieda_feature::ClockTiming clock_timing;
+        clock_timing.clock_name = clock_name;
+        clock_timing.setup_tns = timing_map["TNS"];
+        clock_timing.setup_wns = timing_map["WNS"];
+        clock_timing.suggest_freq = timing_map["Freq(MHz)"];
+        top_gr_summary.clocks_timing.push_back(clock_timing);
+      }
+      top_gr_summary.power_info = {gr_summary.power_map["static_power"], gr_summary.power_map["dynamic_power"]};
+    }
+  }
+  // ta_summary
+  {
+    top_rt_summary.ta_summary.routing_wire_length_map = rt_summary.ta_summary.routing_wire_length_map;
+    top_rt_summary.ta_summary.total_wire_length = rt_summary.ta_summary.total_wire_length;
+    top_rt_summary.ta_summary.routing_violation_num_map = rt_summary.ta_summary.routing_violation_num_map;
+    top_rt_summary.ta_summary.total_violation_num = rt_summary.ta_summary.total_violation_num;
+  }
+  // dr_summary
+  {
+    for (auto& [iter, dr_summary] : rt_summary.iter_dr_summary_map) {
+      ieda_feature::DRSummary& top_dr_summary = top_rt_summary.iter_dr_summary_map[iter];
+      top_dr_summary.routing_wire_length_map = dr_summary.routing_wire_length_map;
+      top_dr_summary.total_wire_length = dr_summary.total_wire_length;
+      top_dr_summary.cut_via_num_map = dr_summary.cut_via_num_map;
+      top_dr_summary.total_via_num = dr_summary.total_via_num;
+      top_dr_summary.routing_patch_num_map = dr_summary.routing_patch_num_map;
+      top_dr_summary.total_patch_num = dr_summary.total_patch_num;
+      top_dr_summary.routing_violation_num_map = dr_summary.routing_violation_num_map;
+      top_dr_summary.total_violation_num = dr_summary.total_violation_num;
+
+      for (auto& [clock_name, timing_map] : dr_summary.clock_timing) {
+        ieda_feature::ClockTiming clock_timing;
+        clock_timing.clock_name = clock_name;
+        clock_timing.setup_tns = timing_map["TNS"];
+        clock_timing.setup_wns = timing_map["WNS"];
+        clock_timing.suggest_freq = timing_map["Freq(MHz)"];
+        top_dr_summary.clocks_timing.push_back(clock_timing);
+      }
+      top_dr_summary.power_info = {dr_summary.power_map["static_power"], dr_summary.power_map["dynamic_power"]};
+    }
+  }
+  // er_summary
+  {
+    top_rt_summary.er_summary.routing_demand_map = rt_summary.er_summary.routing_demand_map;
+    top_rt_summary.er_summary.total_demand = rt_summary.er_summary.total_demand;
+    top_rt_summary.er_summary.routing_overflow_map = rt_summary.er_summary.routing_overflow_map;
+    top_rt_summary.er_summary.total_overflow = rt_summary.er_summary.total_overflow;
+    top_rt_summary.er_summary.routing_wire_length_map = rt_summary.er_summary.routing_wire_length_map;
+    top_rt_summary.er_summary.total_wire_length = rt_summary.er_summary.total_wire_length;
+    top_rt_summary.er_summary.cut_via_num_map = rt_summary.er_summary.cut_via_num_map;
+    top_rt_summary.er_summary.total_via_num = rt_summary.er_summary.total_via_num;
+    for (auto& [clock_name, timing_map] : rt_summary.er_summary.clock_timing) {
+      ieda_feature::ClockTiming clock_timing;
+      clock_timing.clock_name = clock_name;
+      clock_timing.setup_tns = timing_map["TNS"];
+      clock_timing.setup_wns = timing_map["WNS"];
+      clock_timing.suggest_freq = timing_map["Freq(MHz)"];
+      top_rt_summary.er_summary.clocks_timing.push_back(clock_timing);
+    }
+    top_rt_summary.er_summary.power_info
+        = {rt_summary.er_summary.power_map["static_power"], rt_summary.er_summary.power_map["dynamic_power"]};
   }
 }
 
@@ -1152,7 +1482,7 @@ void RTInterface::updateTimingAndPower(std::vector<std::map<std::string, std::ve
     LayerCoord _coord;
     bool _is_real_pin = false;
     std::string _pin_name;
-    int32_t _fake_pin_id;
+    int32_t _fake_pin_id = -1;
   };
 #endif
 
@@ -1366,97 +1696,6 @@ void RTInterface::updateTimingAndPower(std::vector<std::map<std::string, std::ve
 
 #endif
 
-#if 1  // ieda_feature
-
-ieda_feature::RTSummary RTInterface::outputSummary()
-{
-  ieda_feature::RTSummary top_rt_summary;
-  Summary& rt_summary = RTDM.getSummary();
-
-  // pa_summary
-  top_rt_summary.pa_summary.routing_access_point_num_map = rt_summary.pa_summary.routing_access_point_num_map;
-  for (auto& [type, access_point_num] : rt_summary.pa_summary.type_access_point_num_map) {
-    top_rt_summary.pa_summary.type_access_point_num_map[GetAccessPointTypeName()(type)] = access_point_num;
-  }
-  top_rt_summary.pa_summary.total_access_point_num = rt_summary.pa_summary.total_access_point_num;
-  // sa_summary
-  top_rt_summary.sa_summary.routing_supply_map = rt_summary.sa_summary.routing_supply_map;
-  top_rt_summary.sa_summary.total_supply = rt_summary.sa_summary.total_supply;
-  // ir_summary
-  top_rt_summary.ir_summary.routing_demand_map = rt_summary.ir_summary.routing_demand_map;
-  top_rt_summary.ir_summary.total_demand = rt_summary.ir_summary.total_demand;
-  top_rt_summary.ir_summary.routing_overflow_map = rt_summary.ir_summary.routing_overflow_map;
-  top_rt_summary.ir_summary.total_overflow = rt_summary.ir_summary.total_overflow;
-  top_rt_summary.ir_summary.routing_wire_length_map = rt_summary.ir_summary.routing_wire_length_map;
-  top_rt_summary.ir_summary.total_wire_length = rt_summary.ir_summary.total_wire_length;
-  top_rt_summary.ir_summary.cut_via_num_map = rt_summary.ir_summary.cut_via_num_map;
-  top_rt_summary.ir_summary.total_via_num = rt_summary.ir_summary.total_via_num;
-
-  for (auto& [clock_name, timing_map] : rt_summary.ir_summary.clock_timing) {
-    ieda_feature::ClockTiming clock_timing;
-    clock_timing.clock_name = clock_name;
-    clock_timing.setup_tns = timing_map["TNS"];
-    clock_timing.setup_wns = timing_map["WNS"];
-    clock_timing.suggest_freq = timing_map["Freq(MHz)"];
-    top_rt_summary.ir_summary.clocks_timing.push_back(clock_timing);
-  }
-
-  top_rt_summary.ir_summary.power_info
-      = {rt_summary.ir_summary.power_map["static_power"], rt_summary.ir_summary.power_map["dynamic_power"]};
-  // gr_summary
-  for (auto& [iter, gr_summary] : rt_summary.iter_gr_summary_map) {
-    ieda_feature::GRSummary& top_gr_summary = top_rt_summary.iter_gr_summary_map[iter];
-    top_gr_summary.routing_demand_map = gr_summary.routing_demand_map;
-    top_gr_summary.total_demand = gr_summary.total_demand;
-    top_gr_summary.routing_overflow_map = gr_summary.routing_overflow_map;
-    top_gr_summary.total_overflow = gr_summary.total_overflow;
-    top_gr_summary.routing_wire_length_map = gr_summary.routing_wire_length_map;
-    top_gr_summary.total_wire_length = gr_summary.total_wire_length;
-    top_gr_summary.cut_via_num_map = gr_summary.cut_via_num_map;
-    top_gr_summary.total_via_num = gr_summary.total_via_num;
-
-    for (auto& [clock_name, timing_map] : gr_summary.clock_timing) {
-      ieda_feature::ClockTiming clock_timing;
-      clock_timing.clock_name = clock_name;
-      clock_timing.setup_tns = timing_map["TNS"];
-      clock_timing.setup_wns = timing_map["WNS"];
-      clock_timing.suggest_freq = timing_map["Freq(MHz)"];
-      top_gr_summary.clocks_timing.push_back(clock_timing);
-    }
-    top_gr_summary.power_info = {gr_summary.power_map["static_power"], gr_summary.power_map["dynamic_power"]};
-  }
-  // ta_summary
-  top_rt_summary.ta_summary.routing_wire_length_map = rt_summary.ta_summary.routing_wire_length_map;
-  top_rt_summary.ta_summary.total_wire_length = rt_summary.ta_summary.total_wire_length;
-  top_rt_summary.ta_summary.routing_violation_num_map = rt_summary.ta_summary.routing_violation_num_map;
-  top_rt_summary.ta_summary.total_violation_num = rt_summary.ta_summary.total_violation_num;
-  // dr_summary
-  for (auto& [iter, dr_summary] : rt_summary.iter_dr_summary_map) {
-    ieda_feature::DRSummary& top_dr_summary = top_rt_summary.iter_dr_summary_map[iter];
-    top_dr_summary.routing_wire_length_map = dr_summary.routing_wire_length_map;
-    top_dr_summary.total_wire_length = dr_summary.total_wire_length;
-    top_dr_summary.cut_via_num_map = dr_summary.cut_via_num_map;
-    top_dr_summary.total_via_num = dr_summary.total_via_num;
-    top_dr_summary.routing_patch_num_map = dr_summary.routing_patch_num_map;
-    top_dr_summary.total_patch_num = dr_summary.total_patch_num;
-    top_dr_summary.routing_violation_num_map = dr_summary.routing_violation_num_map;
-    top_dr_summary.total_violation_num = dr_summary.total_violation_num;
-
-    for (auto& [clock_name, timing_map] : dr_summary.clock_timing) {
-      ieda_feature::ClockTiming clock_timing;
-      clock_timing.clock_name = clock_name;
-      clock_timing.setup_tns = timing_map["TNS"];
-      clock_timing.setup_wns = timing_map["WNS"];
-      clock_timing.suggest_freq = timing_map["Freq(MHz)"];
-      top_dr_summary.clocks_timing.push_back(clock_timing);
-    }
-    top_dr_summary.power_info = {dr_summary.power_map["static_power"], dr_summary.power_map["dynamic_power"]};
-  }
-  return top_rt_summary;
-}
-
-#endif
-
 #if 1  // flute
 
 void RTInterface::initFlute()
@@ -1560,23 +1799,48 @@ void RTInterface::routeTAPanel(TAPanel& ta_panel)
       ls_panel.wire_list.push_back(ls_shape);
     }
     // hard_shape_list
-    for (auto& [is_routing, layer_net_fixed_rect_map] : ta_panel.get_type_layer_net_fixed_rect_map()) {
-      for (auto& [layer_idx, net_fixed_rect_map] : layer_net_fixed_rect_map) {
-        if (is_routing != true || layer_idx != ta_panel.get_panel_rect().get_layer_idx()) {
-          continue;
-        }
-        for (auto& [net_idx, fixed_rect_set] : net_fixed_rect_map) {
-          for (auto& fixed_rect : fixed_rect_set) {
-            lsa::LSShape ls_shape;
-            ls_shape.net_id = net_idx;
-            ls_shape.ll_x = fixed_rect->get_real_ll_x();
-            ls_shape.ll_y = fixed_rect->get_real_ll_y();
-            ls_shape.ur_x = fixed_rect->get_real_ur_x();
-            ls_shape.ur_y = fixed_rect->get_real_ur_y();
-            ls_panel.hard_shape_list.push_back(ls_shape);
-          }
-        }
-        break;
+    for (auto& [net_idx, fixed_rect_set] : ta_panel.get_net_fixed_rect_map()) {
+      for (auto& fixed_rect : fixed_rect_set) {
+        lsa::LSShape ls_shape;
+        ls_shape.net_id = net_idx;
+        ls_shape.ll_x = fixed_rect->get_real_ll_x();
+        ls_shape.ll_y = fixed_rect->get_real_ll_y();
+        ls_shape.ur_x = fixed_rect->get_real_ur_x();
+        ls_shape.ur_y = fixed_rect->get_real_ur_y();
+        ls_panel.hard_shape_list.push_back(ls_shape);
+      }
+    }
+    for (auto& [net_idx, rect_list] : ta_panel.get_net_access_result_map()) {
+      for (auto& rect : rect_list) {
+        lsa::LSShape ls_shape;
+        ls_shape.net_id = net_idx;
+        ls_shape.ll_x = rect.get_ll_x();
+        ls_shape.ll_y = rect.get_ll_y();
+        ls_shape.ur_x = rect.get_ur_x();
+        ls_shape.ur_y = rect.get_ur_y();
+        ls_panel.hard_shape_list.push_back(ls_shape);
+      }
+    }
+    for (auto& [net_idx, patch_set] : ta_panel.get_net_access_patch_map()) {
+      for (auto& patch : patch_set) {
+        lsa::LSShape ls_shape;
+        ls_shape.net_id = net_idx;
+        ls_shape.ll_x = patch->get_real_ll_x();
+        ls_shape.ll_y = patch->get_real_ll_y();
+        ls_shape.ur_x = patch->get_real_ur_x();
+        ls_shape.ur_y = patch->get_real_ur_y();
+        ls_panel.hard_shape_list.push_back(ls_shape);
+      }
+    }
+    for (auto& [net_idx, rect_list] : ta_panel.get_net_detailed_result_map()) {
+      for (auto& rect : rect_list) {
+        lsa::LSShape ls_shape;
+        ls_shape.net_id = net_idx;
+        ls_shape.ll_x = rect.get_ll_x();
+        ls_shape.ll_y = rect.get_ll_y();
+        ls_shape.ur_x = rect.get_ur_x();
+        ls_shape.ur_y = rect.get_ur_y();
+        ls_panel.hard_shape_list.push_back(ls_shape);
       }
     }
   }

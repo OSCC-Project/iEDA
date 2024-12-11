@@ -129,7 +129,11 @@ void HoldOptimizer::initBufferCell()
   auto bufs = toConfig->get_hold_insert_buffers();
   for (auto buf : bufs) {
     auto buffer = timingEngine->get_sta_engine()->findLibertyCell(buf.c_str());
-    _available_buffer_cells.emplace_back(buffer);
+    if (!buffer) {
+      LOG_INFO << "Buffer cell " << buf.c_str() << " not found" << endl;
+    } else {
+      _available_buffer_cells.emplace_back(buffer);
+    }
   }
 }
 
