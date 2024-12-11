@@ -401,13 +401,14 @@ void LmNetGraphGenerator::buildVirtualWire(const TopoGraph& graph, WireGraph& wi
         }
         auto [edge, inserted] = boost::add_edge(start_vertex, end_vertex, wire_graph);
         if (inserted) {
+          wire_graph[edge].is_virtual = true;
           wire_graph[edge].path = path_pairs;
         }
       });
     }
   });
 }
-void LmNetGraphGenerator::reduceWireGraph(WireGraph& graph) const
+void LmNetGraphGenerator::reduceWireGraph(WireGraph& graph, const bool& retain_pin) const
 {
   // Step 1: Check for cycles in the graph
   LOG_FATAL_IF(hasCycle(graph)) << "The Wire Graph has cycle";
@@ -425,14 +426,13 @@ void LmNetGraphGenerator::reduceWireGraph(WireGraph& graph) const
     return graph[v].layer_id == graph[left].layer_id && graph[v].layer_id == graph[right].layer_id;
   };
 
+  // Step 2: Start from an endpoint with degree 1 and collect a sub-path
   struct PathToReduce
   {
     std::vector<WireGraphVertex> vertices;
   };
 
   std::vector<PathToReduce> paths_to_reduce;
-
-  // Step 2: Start from an endpoint with degree 1 and collect a sub-path
   WireGraphVertex start_vertex = 0;
   for (size_t i = 0; i < num_vertices; ++i) {
     if (boost::degree(i, graph) == 1) {
@@ -440,6 +440,7 @@ void LmNetGraphGenerator::reduceWireGraph(WireGraph& graph) const
       break;
     }
   }
+
   // Step 3: DFS from the start vertex
   std::stack<WireGraphVertex> stack;
   stack.push(start_vertex);
@@ -478,7 +479,23 @@ void LmNetGraphGenerator::reduceWireGraph(WireGraph& graph) const
       }
     }
   }
-  // Step 4: Reduce the paths
+
+  // Step 4: Remove the paths which include virtual wires
+  if (retain_pin) {
+    std::erase_if(paths_to_reduce, [&](const PathToReduce& path) -> bool {
+      for (size_t i = 0; i < path.vertices.size() - 1; ++i) {
+        auto start = path.vertices[i];
+        auto end = path.vertices[i + 1];
+        auto edge = boost::edge(start, end, graph).first;
+        if (graph[edge].is_virtual) {
+          return true;
+        }
+      }
+      return false;
+    });
+  }
+
+  // Step 5: Reduce the paths
   for (const auto& path : paths_to_reduce) {
     auto vertices = path.vertices;
     if (vertices.size() < 3) {
@@ -521,7 +538,7 @@ void LmNetGraphGenerator::reduceWireGraph(WireGraph& graph) const
     boost::remove_vertex(v, graph);
   });
 
-  // Step 5: Reduce the redundant path pairs (with the same direction)
+  // Step 6: Reduce the redundant path pairs (with the same direction)
   auto calc_direction = [&](const LayoutDefPoint& start, const LayoutDefPoint& end) -> int {
     if (getX(start) == getX(end)) {
       return getY(start) < getY(end) ? 0 : 1;
