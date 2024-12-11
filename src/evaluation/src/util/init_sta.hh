@@ -29,6 +29,7 @@
 #include <unordered_map>
 #include <vector>
 
+
 namespace ista {
 enum class AnalysisMode;
 }
@@ -51,6 +52,7 @@ class InitSTA
   ~InitSTA();
   static InitSTA* getInst();
   static void destroyInst();
+
   void runSTA();
   void runLmSTA(ilm::LmLayout* lm_layout);
   void evalTiming(const std::string& routing_type, const bool& rt_done = false);
@@ -93,7 +95,6 @@ class InitSTA
   void callRT(const std::string& routing_type);
 
   void initPowerEngine();
-
   void updateResult(const std::string& routing_type);
 
   static InitSTA* _init_sta;

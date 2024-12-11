@@ -36,7 +36,7 @@ class CongestionAPI
   RUDYMapSummary rudyMap(std::string stage, CongestionNets congestion_nets, CongestionRegion region, int32_t grid_size);
   UtilizationSummary rudyUtilization(std::string stage, std::string rudy_dir_path, bool use_lut = false);
 
-  std::map<std::string, std::vector<std::vector<int>>> getEGRMap(std::string congestion_dir);
+  std::map<std::string, std::vector<std::vector<int>>> getEGRMap(std::string congestion_dir = "");
 
   void evalNetInfo();
   void evalNetInfoPure();

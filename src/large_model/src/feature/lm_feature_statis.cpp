@@ -41,7 +41,7 @@ void LmFeatureStatis::build()
   auto& patch_layers = _layout->get_patch_layers();
 
   // get egr_layer_map, which is a map of layer name to a 2D vector of congestion value.
-  auto egr_layer_map = CONGESTION_API_INST->getEGRMap(_congestion_dir);
+  auto egr_layer_map = CONGESTION_API_INST->getEGRMap();
 
   // get the number of egr_map's rows and cols.
   const auto& first_layer = egr_layer_map.begin()->second;

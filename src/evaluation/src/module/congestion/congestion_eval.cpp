@@ -17,6 +17,7 @@
 #include <stdexcept>
 
 #include "general_ops.h"
+#include "idm.h"
 #include "init_egr.h"
 #include "init_idb.h"
 #include "wirelength_lut.h"
@@ -1046,6 +1047,9 @@ void CongestionEval::setEGRDirPath(std::string egr_dir_path)
 
 std::map<std::string, std::vector<std::vector<int>>> CongestionEval::getEGRMap(std::string congestion_dir)
 {
+  if (congestion_dir == "") {
+    congestion_dir = dmInst->get_config().get_output_path() + "/rt/rt_temp_directory/early_router";
+  }
   // check if congestion_dir is empty
   if (!std::filesystem::exists(congestion_dir)) {
     std::filesystem::path dir_path(congestion_dir);
@@ -1060,6 +1064,7 @@ std::map<std::string, std::vector<std::vector<int>>> CongestionEval::getEGRMap(s
   std::map<std::string, std::vector<std::vector<int>>> egr_map;
   std::filesystem::path dir_path(congestion_dir);
 
+  std::cout << congestion_dir << std::endl;
   // tranverse all files in the directory
   for (const auto& entry : std::filesystem::directory_iterator(dir_path)) {
     std::string filename = entry.path().filename().string();

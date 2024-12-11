@@ -37,7 +37,7 @@ namespace ieda {
  *
  */
 
-static bool b_init = false;
+
 
 class Log
 {

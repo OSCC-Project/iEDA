@@ -24,18 +24,13 @@ namespace ilm {
 class LmFeatureStatis
 {
  public:
-  LmFeatureStatis(LmLayout* layout, std::string congestion_dir)
-  {
-    _layout = layout;
-    _congestion_dir = congestion_dir;
-  }
+  LmFeatureStatis(LmLayout* layout) { _layout = layout; }
   ~LmFeatureStatis() = default;
 
   void build();
 
  private:
   LmLayout* _layout;
-  std::string _congestion_dir;
 };
 
 }  // namespace ilm

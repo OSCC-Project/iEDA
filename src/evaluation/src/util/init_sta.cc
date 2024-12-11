@@ -32,6 +32,7 @@
 #include "salt/base/flute.h"
 #include "salt/salt.h"
 #include "timing_db.hh"
+#include <algorithm>
 
 namespace ieval {
 #define STA_INST (ista::TimingEngine::getOrCreateTimingEngine())
@@ -415,14 +416,17 @@ void InitSTA::buildLmRCTree(ilm::LmLayout* lm_layout)
   auto* idb = dmInst->get_idb_builder();
   auto* idb_design = idb->get_def_service()->get_design();
 
-  auto* idb_layout = dmInst->get_idb_lef_service()->get_layout();
-  auto routing_layers = idb_layout->get_layers()->get_routing_layers();
+  auto* idb_layout = dmInst->get_idb_layout();
+  auto idb_layers = idb_layout->get_layers();
+  auto layers = idb_layers->get_layers();
+  auto idb_layer_1st = dmInst->get_config().get_routing_layer_1st();
+  // find the first layer which get_name == "idb_layer_1st", erase the layers before it
+  auto lm_layers = layers | std::views::drop_while([&](auto layer) { return layer->get_name() != idb_layer_1st; });
 
   // main flow
   auto idb_nets = idb_design->get_net_list()->get_net_list();
   auto* sta_netlist = STA_INST->get_netlist();
   ista::Net* sta_net = nullptr;
-  // TODO: fix the lm api
   auto& wire_graph = lm_layout->get_graph().get_net_map();
   for (size_t net_id = 0; net_id < idb_nets.size(); ++net_id) {
     auto* idb_net = idb_nets[net_id];
@@ -442,18 +446,12 @@ void InitSTA::buildLmRCTree(ilm::LmLayout* lm_layout)
       if (lm_node_map.contains(lm_node)) {
         return lm_node_map[lm_node];
       }
-      size_t pin_id = lm_node->get_node_data()->get_pin_id();
+      int pin_id = lm_node->get_node_data()->get_pin_id();
       ista::RctNode* rc_node = nullptr;
       if (pin_id >= 0) {
-        bool is_io = pin_id >= idb_inst_pins.size();
-        auto* idb_pin = pin_id < idb_inst_pins.size() ? idb_inst_pins[pin_id] : io_pins[pin_id - idb_inst_pins.size()];
-        std::string pin_name = "";
-        if (is_io) {
-          pin_name = idb_pin->get_pin_name();
-        } else {
-          auto* idb_inst = idb_pin->get_instance();
-          pin_name = idb_inst ? idb_inst->get_name() + idb_pin->get_pin_name() : idb_pin->get_pin_name();
-        }
+        auto pin_name_pair = lm_layout->findPinName(pin_id);
+        auto [inst_name, pin_type_name] = pin_name_pair;
+        auto pin_name = !inst_name.empty() ? (inst_name + "/" + pin_type_name) : pin_type_name;
         auto* sta_pin_port = sta_pin_port_map[pin_name];
         rc_node = STA_INST->makeOrFindRCTreeNode(sta_pin_port);
       } else {
@@ -483,7 +481,7 @@ void InitSTA::buildLmRCTree(ilm::LmLayout* lm_layout)
         wirelength += std::abs(x1 - x2) + std::abs(y1 - y2);
       });
 
-      auto* routing_layer = dynamic_cast<IdbLayerRouting*>(routing_layers[source_layer]);
+      auto* routing_layer = dynamic_cast<IdbLayerRouting*>(lm_layers[source_layer]);
       auto segment_width = (double) routing_layer->get_width() / idb_layout->get_units()->get_micron_dbu();
 
       auto lef_resistance = routing_layer->get_resistance();

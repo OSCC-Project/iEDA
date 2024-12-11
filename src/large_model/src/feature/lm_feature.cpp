@@ -46,9 +46,7 @@ void LmFeature::buildFeatureTiming()
 
 void LmFeature::buildFeatureStatis()
 {
-  auto congestion_dir = _dir + "congestion/";
-
-  LmFeatureStatis feature_statis(_layout, congestion_dir);
+  LmFeatureStatis feature_statis(_layout);
 
   feature_statis.build();
 }
