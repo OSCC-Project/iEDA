@@ -36,7 +36,7 @@ class LmFeature
 
   void buildFeatureDrc(std::string drc_path = "");
   void buildFeatureTiming();
-  void buildFeatureStatis(std::string congestion_dir = "");
+  void buildFeatureStatis();
 
  private:
   LmLayout* _layout;
