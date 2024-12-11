@@ -309,9 +309,7 @@ std::vector<PlanarRect> PinAccessor::getPlanarLegalRectList(PAModel& pa_model, i
                 // 剪裁pin_shape只会在routing层
                 // prl
                 int32_t prl_spacing = routing_layer.getPRLSpacing(fixed_rect->get_real_rect());
-                spacing_pair_list.emplace_back(0, prl_spacing);
-                spacing_pair_list.emplace_back(prl_spacing, 0);
-                spacing_pair_list.emplace_back(prl_spacing / RT_SQRT_2, prl_spacing / RT_SQRT_2);
+                spacing_pair_list.emplace_back(prl_spacing, prl_spacing);
                 if (layer_idx != curr_layer_idx) {
                   // eol
                   if (routing_layer.isPreferH()) {
@@ -1729,9 +1727,7 @@ std::map<PANode*, std::set<Orientation>> PinAccessor::getRoutingNodeOrientationM
   {
     // prl
     int32_t prl_spacing = routing_layer.getPRLSpacing(net_shape.get_rect());
-    spacing_pair_list.emplace_back(0, prl_spacing);
-    spacing_pair_list.emplace_back(prl_spacing, 0);
-    spacing_pair_list.emplace_back(prl_spacing / RT_SQRT_2, prl_spacing / RT_SQRT_2);
+    spacing_pair_list.emplace_back(prl_spacing, prl_spacing);
     // eol
     int32_t max_eol_spacing = std::max(routing_layer.get_eol_spacing(), routing_layer.get_eol_ete());
     if (routing_layer.isPreferH()) {
