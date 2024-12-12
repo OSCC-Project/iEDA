@@ -1571,6 +1571,8 @@ class LibLibrary : public LibObject {
   }
   double get_slew_derate_from_library() { return _slew_derate_from_library; }
 
+ void printLibertyLibraryJson(const char* json_file_name);
+
  private:
   std::string _lib_name;
   std::vector<std::unique_ptr<LibCell>>
