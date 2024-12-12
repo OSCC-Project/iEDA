@@ -59,7 +59,7 @@ bool LmLayoutFileIO::saveJsonNets(std::map<int, LmNet>& net_map)
 
   LOG_INFO << "LM save json net start...";
 
-  makeDir(_dir + "/nets/");
+  makeDir(_dir + "/large_model/nets/");
 
   omp_lock_t lck;
   omp_init_lock(&lck);
