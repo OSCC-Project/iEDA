@@ -88,7 +88,7 @@ void LargeModel::generateFeature(const std::string dir)
   LmFeature feature(&_data_manager.layout_dm.get_layout(), dir);
 
   feature.buildFeatureDrc();
-  //   feature.buildFeatureTiming();
+  feature.buildFeatureTiming();
   feature.buildFeatureStatis();
 }
 

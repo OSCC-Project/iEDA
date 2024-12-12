@@ -39,11 +39,21 @@ void LmFeatureTiming::buildWireTimingPowerFeature(LmNet* lm_net, const std::stri
     auto* wire_feature = wire.get_feature(true);
     auto [src, snk] = wire.get_connected_nodes();
 
-    std::string node_name = net_name + ":" + std::to_string(snk->get_node_id());
+    std::string node_name;
+    int pin_id = snk->get_node_data()->get_pin_id();
+    if (pin_id != -1) {
+      auto [inst_name, pin_type_name] = _layout->findPinName(pin_id);
+      auto pin_name = !inst_name.empty() ? (inst_name + ":" + pin_type_name) : pin_type_name;
+      node_name = pin_name;
+    } else {
+       node_name = net_name + ":" + std::to_string(snk->get_node_id());
+    }
 
-    wire_feature->slew = eval_tp->getWireSlew(net_name, node_name);
-    wire_feature->delay = eval_tp->getWireDelay(net_name, node_name);
-    wire_feature->power = 0.0;  // TODO(to taosimin), get wire power from eval.
+    double slew = eval_tp->getWireSlew(net_name, node_name);
+    double delay = eval_tp->getWireDelay(net_name, node_name);
+    double power = 0.0;  // TODO(to taosimin), get wire power from eval.
+
+    LOG_INFO << "node " << node_name << " slew " << slew << " delay " << delay << " power " << power;
   }
 }
 
@@ -54,15 +64,17 @@ void LmFeatureTiming::buildNetTimingPowerFeature()
   auto& lm_graph = _layout->get_graph();
   auto& net_id_map = _layout->get_net_name_map();
   for (auto [net_name, net_id] : net_id_map) {
-    LOG_INFO << "net name" << net_name;
+    LOG_INFO << "build net " << net_name << " feature ";
     auto* lm_net = lm_graph.get_net(net_id);
     auto* net_feature = lm_net->get_feature(true);
 
-    net_feature->slew = eval_tp->getNetSlew(net_name);
-    net_feature->delay = eval_tp->getNetDelay(net_name);
-    net_feature->power = eval_tp->getNetPower(net_name);
+    double slew = eval_tp->getNetSlew(net_name);
+    double delay = eval_tp->getNetDelay(net_name);
+    double power = 0.0;  // TODO(to taosimin), get net power from eval.
 
     buildWireTimingPowerFeature(lm_net, net_name);
+
+    LOG_INFO << "net " << net_name << " slew " << slew << " delay " << delay << " power " << power;
   }
 }
 
