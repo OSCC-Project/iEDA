@@ -54,7 +54,7 @@ class LmPatternGenerator
 {
  public:
   LmPatternGenerator() = delete;
-  ~LmPatternGenerator() = default;
+  ~LmPatternGenerator() {}
 
   // Main function to initiate pattern generation
   static std::vector<Matrix> generateAllPatterns(const int& w, const int& h);

@@ -25,7 +25,7 @@ class LmFeatureStatis
 {
  public:
   LmFeatureStatis(LmLayout* layout) { _layout = layout; }
-  ~LmFeatureStatis() = default;
+  ~LmFeatureStatis() {}
 
   void build();
 

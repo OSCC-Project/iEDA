@@ -61,8 +61,8 @@ struct LmWirePatternSequence
 class LmWirePatternGenerator
 {
  public:
-  LmWirePatternGenerator() = default;
-  ~LmWirePatternGenerator() = default;
+  LmWirePatternGenerator() {}
+  ~LmWirePatternGenerator() {}
 
   void genPatterns();
   void addPattern(LmNetWire& wire);

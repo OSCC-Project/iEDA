@@ -111,7 +111,7 @@ struct LayoutBase
   LayoutBase(bool is_wire, bool is_via, bool is_patch, bool is_pin) : is_wire(is_wire), is_via(is_via), is_patch(is_patch), is_pin(is_pin)
   {
   }
-  virtual ~LayoutBase() = default;
+  virtual ~LayoutBase() {}
   bool is_wire;
   bool is_via;
   bool is_patch;
@@ -193,8 +193,8 @@ using RTreeVal = std::pair<LayoutDefRect, size_t>;
 class LayoutShapeManager
 {
  public:
-  LayoutShapeManager() = default;
-  ~LayoutShapeManager() = default;
+  LayoutShapeManager() {}
+  ~LayoutShapeManager() {}
 
   void addShape(const LayoutDefSeg& seg, const size_t& vertex_id)
   {
@@ -269,7 +269,7 @@ class LmNetGraphGenerator
 {
  public:
   LmNetGraphGenerator() { initLayerMap(); };
-  ~LmNetGraphGenerator() = default;
+  ~LmNetGraphGenerator() {}
 
   void initLayerMap();
   WireGraph buildGraph(idb::IdbNet* idb_net) const;

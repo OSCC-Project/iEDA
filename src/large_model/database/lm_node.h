@@ -62,8 +62,8 @@ struct LmNodeFeature
 class LmNodeData
 {
  public:
-  LmNodeData() = default;
-  ~LmNodeData() = default;
+  LmNodeData() {}
+  ~LmNodeData() {}
 
   // getter
   int32_t get_net_id() { return _net_id; }
@@ -103,8 +103,8 @@ class LmNodeData
 class LmNode
 {
  public:
-  LmNode() = default;
-  ~LmNode() = default;
+  LmNode() {}
+  ~LmNode() {}
 
   // getter
   uint64_t get_node_id();

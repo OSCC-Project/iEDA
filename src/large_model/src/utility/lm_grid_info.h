@@ -84,7 +84,7 @@ class LmGridInfo
   static LmGridInfo* _info_inst;
 
   LmGridInfo() {}
-  ~LmGridInfo() = default;
+  ~LmGridInfo() {}
 };
 
 }  // namespace ilm

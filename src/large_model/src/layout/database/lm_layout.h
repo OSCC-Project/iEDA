@@ -38,7 +38,7 @@ class LmLayout
 {
  public:
   LmLayout() {}
-  ~LmLayout() = default;
+  ~LmLayout() {}
 
   // getter
   LmPatchLayers& get_patch_layers() { return _patch_layers; }

@@ -30,7 +30,7 @@ class LmLayoutFileIO
     _dir = dir;
     _layout = layout;
   }
-  ~LmLayoutFileIO() = default;
+  ~LmLayoutFileIO() {}
 
   bool saveJson();
 

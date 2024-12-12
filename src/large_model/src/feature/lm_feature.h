@@ -32,7 +32,7 @@ class LmFeature
     _layout = layout;
     _dir = dir;  /// feature directory
   }
-  ~LmFeature() = default;
+  ~LmFeature() {}
 
   void buildFeatureDrc(std::string drc_path = "");
   void buildFeatureTiming();

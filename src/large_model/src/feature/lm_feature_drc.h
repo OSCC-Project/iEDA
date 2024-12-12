@@ -29,7 +29,7 @@ class LmFeatureDrc
     _layout = layout;
     _drc_path = drc_path;
   }
-  ~LmFeatureDrc() = default;
+  ~LmFeatureDrc() {}
 
   void build();
 

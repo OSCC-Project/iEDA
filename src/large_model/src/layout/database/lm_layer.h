@@ -39,11 +39,11 @@ namespace ilm {
 class LmPatchLayer
 {
  public:
-  LmPatchLayer() = default;
-  ~LmPatchLayer() = default;
+  LmPatchLayer() {}
+  ~LmPatchLayer() {}
 
   // getter
-  std::string& get_layer_name(){return _layer_name;}
+  std::string& get_layer_name() { return _layer_name; }
   int get_wire_width() { return _wire_width; }
   bool is_routing() { return _b_routing; }
   LmLayerGrid& get_grid() { return _grid; }
@@ -91,7 +91,7 @@ class LmPatchLayers
 {
  public:
   LmPatchLayers() {};
-  ~LmPatchLayers() = default;
+  ~LmPatchLayers() {}
 
   // getter
   int get_layer_order_top() { return _layer_order_top; }

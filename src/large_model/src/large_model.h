@@ -26,7 +26,7 @@ class LargeModel
 {
  public:
   LargeModel();
-  ~LargeModel() = default;
+  ~LargeModel() {}
 
   bool buildLayoutData(const std::string path);
   bool buildGraphData(const std::string path);

@@ -27,7 +27,7 @@ class LmLayoutDataManager
 {
  public:
   LmLayoutDataManager() {}
-  ~LmLayoutDataManager() = default;
+  ~LmLayoutDataManager() {}
 
   LmLayout& get_layout() { return _layout; }
   std::map<int, LmNet>& get_graph() { return _layout.get_graph().get_net_map(); }

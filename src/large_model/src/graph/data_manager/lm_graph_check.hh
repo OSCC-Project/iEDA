@@ -53,7 +53,7 @@ class GraphCheckerBase
 {
  public:
   GraphCheckerBase() {}
-  ~GraphCheckerBase() = default;
+  ~GraphCheckerBase() {}
 
  protected:
   virtual bool isConnectivity(const Graph& graph) const;
@@ -67,7 +67,7 @@ class LmNetChecker : public GraphCheckerBase
 {
  public:
   LmNetChecker() {}
-  ~LmNetChecker() = default;
+  ~LmNetChecker() {}
 
   // check the connectivity of the net, wire, etc.
   bool isLocalConnectivity(LmNet& net) const;
@@ -88,7 +88,7 @@ class LmLayoutChecker : public GraphCheckerBase
 {
  public:
   LmLayoutChecker() {}
-  ~LmLayoutChecker() = default;
+  ~LmLayoutChecker() {}
 
   bool checkLayout(std::map<int, LmNet> net_map);
 

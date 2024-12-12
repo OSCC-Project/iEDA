@@ -29,7 +29,7 @@ class LmDataManager
   LmLayoutDataManager layout_dm;
 
   LmDataManager() {}
-  ~LmDataManager() = default;
+  ~LmDataManager() {}
 
   bool buildLayoutData();
   bool buildGraphData();

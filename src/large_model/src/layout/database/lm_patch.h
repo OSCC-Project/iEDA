@@ -37,8 +37,8 @@ namespace ilm {
 class LmPatch
 {
  public:
-  LmPatch() = default;
-  ~LmPatch() = default;
+  LmPatch() {}
+  ~LmPatch() {}
 
   // getter
   std::vector<std::vector<LmNode>>& get_node_matrix() { return _node_matrix; }

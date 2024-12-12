@@ -32,7 +32,7 @@ class LmLayoutInit
 {
  public:
   LmLayoutInit(LmLayout* layout) : _layout(layout) {}
-  ~LmLayoutInit() = default;
+  ~LmLayoutInit() {}
   void init();
 
  private:

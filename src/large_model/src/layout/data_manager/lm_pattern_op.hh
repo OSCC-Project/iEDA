@@ -29,8 +29,8 @@ namespace ilm {
 class LmPatternOperator
 {
  public:
-  LmPatternOperator() = default;
-  ~LmPatternOperator() = default;
+  LmPatternOperator() {}
+  ~LmPatternOperator() {}
 
   void generatePatterns(const int& w, const int& h) { _patterns = LmPatternGenerator::generateAllPatterns(w, h); }
 

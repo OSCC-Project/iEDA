@@ -25,7 +25,7 @@ class LargeModelApi
 {
  public:
   LargeModelApi() {}
-  ~LargeModelApi() = default;
+  ~LargeModelApi()  {}
 
   bool buildLargeModelLayoutData(const std::string path);
   bool buildLargeModelGraphData(const std::string path);

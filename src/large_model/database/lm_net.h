@@ -74,21 +74,13 @@ class LmNetWire
     _node_pair = std::make_pair(node1, node2);
     _id = wire_id_index++;
   };
-  ~LmNetWire()
-  {
-    if (_feature != nullptr) {
-      delete _feature;
-      _feature = nullptr;
-    }
-
-    _paths.clear();
-  }
+  ~LmNetWire() { _paths.clear(); }
 
   // getter
   int64_t get_id() { return _id; }
   std::pair<LmNode*, LmNode*>& get_connected_nodes() { return _node_pair; }
   std::vector<std::pair<LmNode*, LmNode*>>& get_paths() { return _paths; }
-  LmNetWireFeature* get_feature(bool b_create = false);
+  LmNetWireFeature* get_feature(bool b_create = false) { return &_feature; }
 
   // setter
   void set_start(LmNode* node) { _node_pair.first = node; }
@@ -104,14 +96,14 @@ class LmNetWire
 
   std::vector<std::pair<LmNode*, LmNode*>> _paths;
 
-  LmNetWireFeature* _feature = nullptr;
+  LmNetWireFeature _feature;
 };
 
 class LmNet
 {
  public:
   LmNet(int net_id) : _net_id(net_id) {}
-  ~LmNet() = default;
+  ~LmNet() {}
 
   // getter
   int get_net_id() { return _net_id; }
@@ -138,7 +130,7 @@ class LmGraph
 {
  public:
   LmGraph() {}
-  ~LmGraph() = default;
+  ~LmGraph() {}
 
   // getter
   std::map<int, LmNet>& get_net_map() { return _net_map; }
