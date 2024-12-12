@@ -57,6 +57,7 @@ void TrackAssigner::assign()
   Monitor monitor;
   RTLOG.info(Loc::current(), "Starting...");
   TAModel ta_model = initTAModel();
+  ignorePreViolation(ta_model);
   // debugPlotTAModel(ta_model, "before");
   setTAParameter(ta_model);
   initTAPanelMap(ta_model);
@@ -103,6 +104,23 @@ TANet TrackAssigner::convertToTANet(Net& net)
     ta_net.get_ta_pin_list().push_back(TAPin(pin));
   }
   return ta_net;
+}
+
+void TrackAssigner::ignorePreViolation(TAModel& ta_model)
+{
+  Monitor monitor;
+  RTLOG.info(Loc::current(), "Starting...");
+
+  Die& die = RTDM.getDatabase().get_die();
+
+  for (Violation* violation : RTDM.getViolationSet(die)) {
+    RTDM.updateViolationToGCellMap(ChangeType::kDel, violation);
+  }
+  DETask de_task = RTDE.getFullDesignDETask(DEProcType::kIgnore, DENetType::kMultiNet);
+  std::vector<Violation> violation_list = RTDE.getViolationList(de_task);
+  RTDE.updateIgnoredViolationSet(ChangeType::kAdd, violation_list);
+
+  RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
 void TrackAssigner::setTAParameter(TAModel& ta_model)
@@ -1367,10 +1385,11 @@ std::map<TANode*, std::set<Orientation>> TrackAssigner::getRoutingNodeOrientatio
     int32_t prl_spacing = routing_layer.getPRLSpacing(net_shape.get_rect());
     spacing_pair_list.emplace_back(prl_spacing, prl_spacing);
     // eol
+    int32_t max_eol_spacing = std::max(routing_layer.get_eol_spacing(), routing_layer.get_eol_ete());
     if (routing_layer.isPreferH()) {
-      spacing_pair_list.emplace_back(routing_layer.get_eol_spacing(), routing_layer.get_eol_within());
+      spacing_pair_list.emplace_back(max_eol_spacing, routing_layer.get_eol_within());
     } else {
-      spacing_pair_list.emplace_back(routing_layer.get_eol_within(), routing_layer.get_eol_spacing());
+      spacing_pair_list.emplace_back(routing_layer.get_eol_within(), max_eol_spacing);
     }
   }
   int32_t half_wire_width = routing_layer.get_min_width() / 2;

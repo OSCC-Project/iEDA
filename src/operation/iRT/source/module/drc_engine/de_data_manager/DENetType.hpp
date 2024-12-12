@@ -20,33 +20,33 @@
 
 namespace irt {
 
-enum class DEFuncType
+enum class DENetType
 {
   kNone,
-  kSkipViolation,
-  kExpandViolation
+  kSingleNet,
+  kMultiNet
 };
 
-struct GetDEFuncTypeName
+struct GetDENetTypeName
 {
-  std::string operator()(const DEFuncType& func_type) const
+  std::string operator()(const DENetType& net_type) const
   {
-    std::string func_type_name;
-    switch (func_type) {
-      case DEFuncType::kNone:
-        func_type_name = "none";
+    std::string net_type_name;
+    switch (net_type) {
+      case DENetType::kNone:
+        net_type_name = "none";
         break;
-      case DEFuncType::kSkipViolation:
-        func_type_name = "skip_violation";
+      case DENetType::kSingleNet:
+        net_type_name = "single_net";
         break;
-      case DEFuncType::kExpandViolation:
-        func_type_name = "expand_violation";
+      case DENetType::kMultiNet:
+        net_type_name = "multi_net";
         break;
       default:
         RTLOG.error(Loc::current(), "Unrecognized type!");
         break;
     }
-    return func_type_name;
+    return net_type_name;
   }
 };
 

@@ -53,6 +53,7 @@ class PinAccessor
   PinAccessor& operator=(PinAccessor&& other) = delete;
   // function
   PAModel initPAModel();
+  void ignorePreViolation(PAModel& pa_model);
   void setPAParameter(PAModel& pa_model);
   void initAccessPointList(PAModel& pa_model);
   std::vector<PANet> convertToPANetList(std::vector<Net>& net_list);
@@ -110,7 +111,8 @@ class PinAccessor
   void freePABox(PABox& pa_box);
   int32_t getViolationNum();
   void uploadAccessPoint(PAModel& pa_model);
-  void ignoreViolation(PAModel& pa_model);
+  void uploadViolation(PAModel& pa_model);
+  std::vector<Violation> getCostViolationList(PAModel& pa_model);
 
 #if 1  // update env
   void updateFixedRectToGraph(PABox& pa_box, ChangeType change_type, int32_t net_idx, EXTLayerRect* fixed_rect, bool is_routing);

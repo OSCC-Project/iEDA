@@ -34,14 +34,14 @@ class DRCEngine
   static DRCEngine& getInst();
   static void destroyInst();
   // function
-  void init();
-  void updateIgnoreViolationSet();
+  DETask getFullDesignDETask(DEProcType de_proc_type, DENetType de_net_type);
   std::vector<Violation> getViolationList(DETask& de_task);
+  void updateIgnoredViolationSet(ChangeType change_type, std::vector<Violation>& violation_list);
 
  private:
   // self
   static DRCEngine* _de_instance;
-  std::set<Violation, CmpViolation> _ignore_violation_set;
+  std::set<Violation, CmpViolation> _ignored_violation_set;
 
   DRCEngine() = default;
   DRCEngine(const DRCEngine& other) = delete;
@@ -50,14 +50,12 @@ class DRCEngine
   DRCEngine& operator=(const DRCEngine& other) = delete;
   DRCEngine& operator=(DRCEngine&& other) = delete;
   // function
-  std::vector<Violation> getViolationList(DETask& de_task, bool post_process);
   void getViolationListBySelf(DETask& de_task);
   void buildTask(DETask& de_task);
   void writeTask(DETask& de_task);
   void readTask(DETask& de_task);
   void getViolationListByInterface(DETask& de_task);
   void filterViolationList(DETask& de_task);
-  void fixViolationNetSet(DETask& de_task);
   void explandViolationList(DETask& de_task);
   void buildViolationList(DETask& de_task);
 

@@ -20,33 +20,33 @@
 
 namespace irt {
 
-enum class DEProcessType
+enum class DEProcType
 {
   kNone,
-  kSingleNet,
-  kMultiNet
+  kIgnore,
+  kGet
 };
 
-struct GetDEProcessTypeName
+struct GetDEProcTypeName
 {
-  std::string operator()(const DEProcessType& process_type) const
+  std::string operator()(const DEProcType& proc_type) const
   {
-    std::string process_type_name;
-    switch (process_type) {
-      case DEProcessType::kNone:
-        process_type_name = "none";
+    std::string proc_type_name;
+    switch (proc_type) {
+      case DEProcType::kNone:
+        proc_type_name = "none";
         break;
-      case DEProcessType::kSingleNet:
-        process_type_name = "single_net";
+      case DEProcType::kIgnore:
+        proc_type_name = "ignore";
         break;
-      case DEProcessType::kMultiNet:
-        process_type_name = "multi_net";
+      case DEProcType::kGet:
+        proc_type_name = "get";
         break;
       default:
         RTLOG.error(Loc::current(), "Unrecognized type!");
         break;
     }
-    return process_type_name;
+    return proc_type_name;
   }
 };
 
