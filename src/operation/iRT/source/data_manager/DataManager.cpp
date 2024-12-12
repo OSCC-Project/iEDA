@@ -581,6 +581,8 @@ void DataManager::buildConfig()
   _config.ta_temp_directory_path = _config.temp_directory_path + "track_assigner/";
   // **********  DetailedRouter   ********** //
   _config.dr_temp_directory_path = _config.temp_directory_path + "detailed_router/";
+  // **********  ViolationRepairer  ********** //
+  _config.vr_temp_directory_path = _config.temp_directory_path + "violation_repairer/";
   // **********   EarlyRouter    ********** //
   _config.er_temp_directory_path = _config.temp_directory_path + "early_router/";
   /////////////////////////////////////////////
@@ -606,6 +608,8 @@ void DataManager::buildConfig()
   RTUTIL.createDir(_config.ta_temp_directory_path);
   // **********  DetailedRouter   ********** //
   RTUTIL.createDir(_config.dr_temp_directory_path);
+  // **********  ViolationRepairer  ********** //
+  RTUTIL.createDir(_config.vr_temp_directory_path);
   // **********   EarlyRouter    ********** //
   RTUTIL.createDir(_config.er_temp_directory_path);
   /////////////////////////////////////////////
@@ -1442,6 +1446,10 @@ void DataManager::printConfig()
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "DetailedRouter");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), "dr_temp_directory_path");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(3), _config.dr_temp_directory_path);
+  // **********  ViolationRepairer  ********** //
+  RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "ViolationRepairer");
+  RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), "vr_temp_directory_path");
+  RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(3), _config.vr_temp_directory_path);
   // **********   EarlyRouter    ********** //
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "EarlyRouter");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), "er_temp_directory_path");

@@ -29,6 +29,7 @@
 #include "SupplyAnalyzer.hpp"
 #include "TopologyGenerator.hpp"
 #include "TrackAssigner.hpp"
+#include "ViolationRepairer.hpp"
 #include "api/PowerEngine.hh"
 #include "api/TimingEngine.hh"
 #include "api/TimingIDBAdapter.hh"
@@ -143,6 +144,10 @@ void RTInterface::runRT()
   DetailedRouter::initInst();
   RTDR.route();
   DetailedRouter::destroyInst();
+
+  ViolationRepairer::initInst();
+  RTVR.repair();
+  ViolationRepairer::destroyInst();
 
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
