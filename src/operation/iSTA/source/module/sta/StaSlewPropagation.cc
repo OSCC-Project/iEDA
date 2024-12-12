@@ -61,14 +61,15 @@ unsigned StaSlewPropagation::operator()(StaArc* the_arc) {
       slew_data->set_bwd(src_slew_data);
       src_slew_data->add_fwd(slew_data);
 
+      slew_data->set_output_current_data(std::move(output_current_data));
       own_vertex->addData(slew_data);
     }
 
     if (isIncremental()) {
       slew_data->set_slew(slew);
+      slew_data->set_output_current_data(std::move(output_current_data));
     }
 
-    slew_data->set_output_current_data(std::move(output_current_data));
   };
 
   unsigned is_ok = 1;
