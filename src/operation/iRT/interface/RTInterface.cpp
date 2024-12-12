@@ -114,7 +114,6 @@ void RTInterface::runRT()
   Monitor monitor;
   RTLOG.info(Loc::current(), "Starting...");
 
-  RTDE.init();
   RTGP.init();
 
   PinAccessor::initInst();

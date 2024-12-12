@@ -1195,7 +1195,8 @@ std::vector<Violation> DetailedRouter::getCostViolationList(DRBox& dr_box)
   }
 
   DETask de_task;
-  de_task.set_process_type(DEProcessType::kMultiNet);
+  de_task.set_proc_type(DEProcType::kGet);
+  de_task.set_net_type(DENetType::kMultiNet);
   de_task.set_top_name(top_name);
   de_task.set_check_region(check_region);
   de_task.set_env_shape_list(env_shape_list);
@@ -1385,63 +1386,7 @@ void DetailedRouter::uploadViolation(DRModel& dr_model)
 
 std::vector<Violation> DetailedRouter::getCostViolationList(DRModel& dr_model)
 {
-  Die& die = RTDM.getDatabase().get_die();
-
-  std::string top_name = RTUTIL.getString("dr_model");
-  PlanarRect check_region = die.get_real_rect();
-  std::vector<std::pair<EXTLayerRect*, bool>> env_shape_list;
-  std::map<int32_t, std::vector<std::pair<EXTLayerRect*, bool>>> net_pin_shape_map;
-  for (auto& [is_routing, layer_net_fixed_rect_map] : RTDM.getTypeLayerNetFixedRectMap(die)) {
-    for (auto& [layer_idx, net_fixed_rect_map] : layer_net_fixed_rect_map) {
-      for (auto& [net_idx, fixed_rect_set] : net_fixed_rect_map) {
-        if (net_idx == -1) {
-          for (auto& fixed_rect : fixed_rect_set) {
-            env_shape_list.emplace_back(fixed_rect, is_routing);
-          }
-        } else {
-          for (auto& fixed_rect : fixed_rect_set) {
-            net_pin_shape_map[net_idx].emplace_back(fixed_rect, is_routing);
-          }
-        }
-      }
-    }
-  }
-  std::map<int32_t, std::vector<Segment<LayerCoord>*>> net_result_map;
-  for (auto& [net_idx, segment_set] : RTDM.getNetAccessResultMap(die)) {
-    for (Segment<LayerCoord>* segment : segment_set) {
-      net_result_map[net_idx].push_back(segment);
-    }
-  }
-  for (auto& [net_idx, segment_set] : RTDM.getNetDetailedResultMap(die)) {
-    for (Segment<LayerCoord>* segment : segment_set) {
-      net_result_map[net_idx].push_back(segment);
-    }
-  }
-  std::map<int32_t, std::vector<EXTLayerRect*>> net_patch_map;
-  for (auto& [net_idx, patch_set] : RTDM.getNetAccessPatchMap(die)) {
-    for (EXTLayerRect* patch : patch_set) {
-      net_patch_map[net_idx].push_back(patch);
-    }
-  }
-  for (auto& [net_idx, patch_set] : RTDM.getNetDetailedPatchMap(die)) {
-    for (EXTLayerRect* patch : patch_set) {
-      net_patch_map[net_idx].push_back(patch);
-    }
-  }
-  std::set<int32_t> need_checked_net_set;
-  for (DRNet& dr_net : dr_model.get_dr_net_list()) {
-    need_checked_net_set.insert(dr_net.get_net_idx());
-  }
-
-  DETask de_task;
-  de_task.set_process_type(DEProcessType::kMultiNet);
-  de_task.set_top_name(top_name);
-  de_task.set_check_region(check_region);
-  de_task.set_env_shape_list(env_shape_list);
-  de_task.set_net_pin_shape_map(net_pin_shape_map);
-  de_task.set_net_result_map(net_result_map);
-  de_task.set_net_patch_map(net_patch_map);
-  de_task.set_need_checked_net_set(need_checked_net_set);
+  DETask de_task = RTDE.getFullDesignDETask(DEProcType::kGet, DENetType::kMultiNet);
   return RTDE.getViolationList(de_task);
 }
 

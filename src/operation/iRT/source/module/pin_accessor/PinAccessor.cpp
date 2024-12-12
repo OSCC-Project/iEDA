@@ -61,6 +61,7 @@ void PinAccessor::access()
   Monitor monitor;
   RTLOG.info(Loc::current(), "Starting...");
   PAModel pa_model = initPAModel();
+  ignorePreViolation(pa_model);
   // debugPlotPAModel(pa_model, "before");
   setPAParameter(pa_model);
   initAccessPointList(pa_model);
@@ -70,7 +71,7 @@ void PinAccessor::access()
   buildBoxSchedule(pa_model);
   routePABoxMap(pa_model);
   uploadAccessPoint(pa_model);
-  ignoreViolation(pa_model);
+  uploadViolation(pa_model);
   // debugPlotPAModel(pa_model, "after");
   updateSummary(pa_model);
   printSummary(pa_model);
@@ -113,6 +114,23 @@ PANet PinAccessor::convertToPANet(Net& net)
   }
   pa_net.set_bounding_box(net.get_bounding_box());
   return pa_net;
+}
+
+void PinAccessor::ignorePreViolation(PAModel& pa_model)
+{
+  Monitor monitor;
+  RTLOG.info(Loc::current(), "Starting...");
+
+  Die& die = RTDM.getDatabase().get_die();
+
+  for (Violation* violation : RTDM.getViolationSet(die)) {
+    RTDM.updateViolationToGCellMap(ChangeType::kDel, violation);
+  }
+  DETask de_task = RTDE.getFullDesignDETask(DEProcType::kIgnore, DENetType::kMultiNet);
+  std::vector<Violation> violation_list = RTDE.getViolationList(de_task);
+  RTDE.updateIgnoredViolationSet(ChangeType::kAdd, violation_list);
+
+  RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
 void PinAccessor::setPAParameter(PAModel& pa_model)
@@ -1345,7 +1363,8 @@ std::vector<Violation> PinAccessor::getCostViolationList(PABox& pa_box)
   }
 
   DETask de_task;
-  de_task.set_process_type(DEProcessType::kMultiNet);
+  de_task.set_proc_type(DEProcType::kGet);
+  de_task.set_net_type(DENetType::kMultiNet);
   de_task.set_top_name(top_name);
   de_task.set_check_region(check_region);
   de_task.set_env_shape_list(env_shape_list);
@@ -1518,7 +1537,7 @@ void PinAccessor::uploadAccessPoint(PAModel& pa_model)
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
-void PinAccessor::ignoreViolation(PAModel& pa_model)
+void PinAccessor::uploadViolation(PAModel& pa_model)
 {
   Monitor monitor;
   RTLOG.info(Loc::current(), "Starting...");
@@ -1528,8 +1547,16 @@ void PinAccessor::ignoreViolation(PAModel& pa_model)
   for (Violation* violation : RTDM.getViolationSet(die)) {
     RTDM.updateViolationToGCellMap(ChangeType::kDel, violation);
   }
-  RTDE.updateIgnoreViolationSet();
+  for (Violation violation : getCostViolationList(pa_model)) {
+    RTDM.updateViolationToGCellMap(ChangeType::kAdd, new Violation(violation));
+  }
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
+}
+
+std::vector<Violation> PinAccessor::getCostViolationList(PAModel& pa_model)
+{
+  DETask de_task = RTDE.getFullDesignDETask(DEProcType::kGet, DENetType::kMultiNet);
+  return RTDE.getViolationList(de_task);
 }
 
 #if 1  // update env
