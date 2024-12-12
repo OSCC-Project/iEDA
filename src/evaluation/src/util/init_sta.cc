@@ -451,7 +451,7 @@ void InitSTA::buildLmRCTree(ilm::LmLayout* lm_layout)
       if (pin_id >= 0) {
         auto pin_name_pair = lm_layout->findPinName(pin_id);
         auto [inst_name, pin_type_name] = pin_name_pair;
-        auto pin_name = !inst_name.empty() ? (inst_name + "/" + pin_type_name) : pin_type_name;
+        auto pin_name = !inst_name.empty() ? (inst_name + ":" + pin_type_name) : pin_type_name;
         auto* sta_pin_port = sta_pin_port_map[pin_name];
         rc_node = STA_INST->makeOrFindRCTreeNode(sta_pin_port);
       } else {
@@ -482,14 +482,18 @@ void InitSTA::buildLmRCTree(ilm::LmLayout* lm_layout)
       });
 
       auto* routing_layer = dynamic_cast<IdbLayerRouting*>(lm_layers[source_layer]);
-      auto segment_width = (double) routing_layer->get_width() / idb_layout->get_units()->get_micron_dbu();
+
+      auto dbu = idb_layout->get_units()->get_micron_dbu();
+      auto segment_width = ((double) routing_layer->get_width()) / dbu;
+
+      double wirelength_um = ((double) wirelength) / dbu;
 
       auto lef_resistance = routing_layer->get_resistance();
       auto lef_capacitance = routing_layer->get_capacitance();
       auto lef_edge_capacitance = routing_layer->get_edge_capacitance();
 
-      auto res = lef_resistance * wirelength / segment_width;
-      auto cap = (lef_capacitance * wirelength * segment_width) + (lef_edge_capacitance * 2 * (wirelength + segment_width));
+      auto res = lef_resistance * wirelength_um / segment_width;
+      auto cap = (lef_capacitance * wirelength_um * segment_width) + (lef_edge_capacitance * 2 * (wirelength_um + segment_width));
 
       return std::make_pair(res, cap);
     };
@@ -506,6 +510,26 @@ void InitSTA::buildLmRCTree(ilm::LmLayout* lm_layout)
       STA_INST->incrCap(front_node, cap / 2, true);
       STA_INST->incrCap(back_node, cap / 2, true);
     });
+
+    std::vector<std::string> pin_names;
+    std::ranges::for_each(wires, [&pin_names, lm_layout](ilm::LmNetWire& wire) {
+      auto connected_nodes = wire.get_connected_nodes();
+      auto* source = connected_nodes.first;
+      auto* target = connected_nodes.second;
+
+      for (auto* connected_node : {source, target}) {
+        int pin_id = connected_node->get_node_data()->get_pin_id();
+
+        if (pin_id != -1) {
+          auto [inst_name, pin_type_name] = lm_layout->findPinName(pin_id);
+          auto pin_name = !inst_name.empty() ? (inst_name + ":" + pin_type_name) : pin_type_name;
+
+          pin_names.push_back(pin_name);
+        }
+      }
+    });
+
+    LOG_INFO << "Net " << idb_net->get_net_name() << " has " << pin_names.size() << " pins";
 
     // update rc tree
     STA_INST->updateRCTreeInfo(sta_net);
@@ -717,6 +741,8 @@ double InitSTA::getWireSlew(const std::string& net_name, const std::string& wire
   auto netlist = STA_INST->get_netlist();
   ista::Net* ista_net = netlist->findNet(net_name.c_str());
   auto* rc_net = STA_INST->get_ista()->getRcNet(ista_net);
+
+  LOG_FATAL_IF(!rc_net) << "net " << net_name << " not found rc net.";
 
   auto slew = rc_net->slew(wire_node_name.c_str(), 0.0, ista::AnalysisMode::kMax, ista::TransType::kRise);
 
