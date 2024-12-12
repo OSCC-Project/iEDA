@@ -52,7 +52,7 @@ void IdbSpeedUpSetup::showGraph(std::map<int, ilm::LmNet> net_map) {
           continue;
         }
 
-        auto detal   = node2->get_node_data().is_connected() ? 20 : 10;
+        int detal    = 20;
         QRectF rect2 = _transform.db_to_guidb_rect(node2->get_x() - detal, node2->get_y() - detal, node2->get_x() + detal,
                                                    node2->get_y() + detal);
         GuiSpeedupDrc* item2 = drc_list2->findItem(rect2.center());

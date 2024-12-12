@@ -38,7 +38,7 @@ class LmLayerGrid
 {
  public:
   LmLayerGrid() {}
-  ~LmLayerGrid() = default;
+  ~LmLayerGrid();
 
   // getter
   std::vector<std::vector<LmNode*>>& get_node_matrix() { return _node_matrix; }

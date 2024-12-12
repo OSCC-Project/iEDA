@@ -34,6 +34,18 @@ namespace ilm {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+LmLayerGrid::~LmLayerGrid()
+{
+  for (int row_id = 0; row_id < gridInfoInst.node_row_num; ++row_id) {
+    for (int col_id = 0; col_id < gridInfoInst.node_col_num; ++col_id) {
+      if (_node_matrix[row_id][col_id] != nullptr) {
+        delete _node_matrix[row_id][col_id];
+        _node_matrix[row_id][col_id] = nullptr;
+      }
+    }
+  }
+}
+
 std::pair<int, int> LmLayerGrid::buildNodeMatrix(int order)
 {
   gridInfoInst.node_x_start = gridInfoInst.x_start % gridInfoInst.x_step;
