@@ -136,7 +136,7 @@ TopoGraph LmNetGraphGenerator::buildTopoGraph(idb::IdbNet* idb_net) const
   checkConnectivity(graph);
   return graph;
 }
-void LmNetGraphGenerator::buildConnections(TopoGraph& graph) const
+LayoutShapeManager LmNetGraphGenerator::buildShapeManager(const TopoGraph& graph) const
 {
   LayoutShapeManager shape_manager;
 
@@ -169,6 +169,12 @@ void LmNetGraphGenerator::buildConnections(TopoGraph& graph) const
       LOG_FATAL << "Unknown content type";
     }
   }
+
+  return shape_manager;
+}
+void LmNetGraphGenerator::buildConnections(TopoGraph& graph) const
+{
+  auto shape_manager = buildShapeManager(graph);
 
   // Find intersections
   auto connect = [&](const size_t& ref, const std::vector<size_t>& intersections) -> void {
@@ -281,6 +287,7 @@ WireGraph LmNetGraphGenerator::buildWireGraph(const TopoGraph& graph) const
   }
   // post process
   buildVirtualWire(graph, wire_graph, point_to_vertex);
+  markPinVertex(graph, wire_graph, point_to_vertex);
   reduceWireGraph(wire_graph);
   checkConnectivity(wire_graph);
   return wire_graph;
@@ -407,7 +414,27 @@ void LmNetGraphGenerator::buildVirtualWire(const TopoGraph& graph, WireGraph& wi
     }
   });
 }
-void LmNetGraphGenerator::reduceWireGraph(WireGraph& graph) const
+void LmNetGraphGenerator::markPinVertex(const TopoGraph& graph, WireGraph& wire_graph, WireGraphVertexMap& point_to_vertex) const
+{
+  auto shape_manager = buildShapeManager(graph);
+  // for each node in wire graph, if it's located in the pin shape, mark it as pin
+  for (auto v : boost::make_iterator_range(boost::vertices(wire_graph))) {
+    auto x = wire_graph[v].x;
+    auto y = wire_graph[v].y;
+    auto layer_id = wire_graph[v].layer_id;
+    auto point = LayoutDefPoint(x, y, layer_id);
+    auto intersections = shape_manager.findIntersections(point);
+    if (intersections.empty()) {
+      continue;
+    }
+    auto is_pin = std::ranges::any_of(intersections, [&](size_t i) -> bool {
+      auto* content = graph[i].content;
+      return content->is_pin;
+    });
+    wire_graph[v].is_pin = is_pin;
+  }
+}
+void LmNetGraphGenerator::reduceWireGraph(WireGraph& graph, const bool& retain_pin) const
 {
   // Step 1: Check for cycles in the graph
   LOG_FATAL_IF(hasCycle(graph)) << "The Wire Graph has cycle";
@@ -425,14 +452,13 @@ void LmNetGraphGenerator::reduceWireGraph(WireGraph& graph) const
     return graph[v].layer_id == graph[left].layer_id && graph[v].layer_id == graph[right].layer_id;
   };
 
+  // Step 2: Start from an endpoint with degree 1 and collect a sub-path
   struct PathToReduce
   {
     std::vector<WireGraphVertex> vertices;
   };
 
   std::vector<PathToReduce> paths_to_reduce;
-
-  // Step 2: Start from an endpoint with degree 1 and collect a sub-path
   WireGraphVertex start_vertex = 0;
   for (size_t i = 0; i < num_vertices; ++i) {
     if (boost::degree(i, graph) == 1) {
@@ -440,6 +466,7 @@ void LmNetGraphGenerator::reduceWireGraph(WireGraph& graph) const
       break;
     }
   }
+
   // Step 3: DFS from the start vertex
   std::stack<WireGraphVertex> stack;
   stack.push(start_vertex);
@@ -478,7 +505,21 @@ void LmNetGraphGenerator::reduceWireGraph(WireGraph& graph) const
       }
     }
   }
-  // Step 4: Reduce the paths
+
+  // Step 4: Remove the paths which include virtual wires
+  if (retain_pin) {
+    std::erase_if(paths_to_reduce, [&](const PathToReduce& path) -> bool {
+      for (size_t i = 0; i < path.vertices.size(); ++i) {
+        auto v = path.vertices[i];
+        if (graph[v].is_pin) {
+          return true;
+        }
+      }
+      return false;
+    });
+  }
+
+  // Step 5: Reduce the paths
   for (const auto& path : paths_to_reduce) {
     auto vertices = path.vertices;
     if (vertices.size() < 3) {
@@ -521,7 +562,7 @@ void LmNetGraphGenerator::reduceWireGraph(WireGraph& graph) const
     boost::remove_vertex(v, graph);
   });
 
-  // Step 5: Reduce the redundant path pairs (with the same direction)
+  // Step 6: Reduce the redundant path pairs (with the same direction)
   auto calc_direction = [&](const LayoutDefPoint& start, const LayoutDefPoint& end) -> int {
     if (getX(start) == getX(end)) {
       return getY(start) < getY(end) ? 0 : 1;

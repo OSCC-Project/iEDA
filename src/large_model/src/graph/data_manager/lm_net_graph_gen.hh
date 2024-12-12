@@ -252,6 +252,7 @@ struct WireGraphVertexProperty
   int x;
   int y;
   int layer_id;
+  bool is_pin = false;
 };
 
 struct WireGraphEdgeProperty
@@ -276,20 +277,23 @@ class LmNetGraphGenerator
 
   // Topo Graph
   TopoGraph buildTopoGraph(idb::IdbNet* idb_net) const;
+  LayoutShapeManager buildShapeManager(const TopoGraph& graph) const;
   void buildConnections(TopoGraph& graph) const;
   bool checkConnectivity(const TopoGraph& graph) const;
 
   // Wire Graph
   WireGraph buildWireGraph(const TopoGraph& graph) const;
   void buildVirtualWire(const TopoGraph& graph, WireGraph& wire_graph, WireGraphVertexMap& point_to_vertex) const;
-  void reduceWireGraph(WireGraph& graph) const;
+  void markPinVertex(const TopoGraph& graph, WireGraph& wire_graph, WireGraphVertexMap& point_to_vertex) const;
+  void reduceWireGraph(WireGraph& graph, const bool& retain_pin = true) const;
   bool hasCycleUtil(const WireGraph& graph, WireGraphVertex v, std::vector<bool>& visited, WireGraphVertex parent) const;
   bool hasCycle(const WireGraph& graph) const;
   bool checkConnectivity(const WireGraph& graph) const;
   std::vector<std::vector<LayoutDefPoint>> generateShortestPath(const std::vector<LayoutDefPoint>& points,
                                                                 const std::vector<LayoutDefRect>& regions) const;
-  std::vector<std::vector<LayoutDefPoint>> findByDijkstra(const std::vector<LayoutDefPoint>& points, const std::vector<LayoutDefPoint>& path_points,
-                                             const std::vector<LayoutDefRect>& regions) const;
+  std::vector<std::vector<LayoutDefPoint>> findByDijkstra(const std::vector<LayoutDefPoint>& points,
+                                                          const std::vector<LayoutDefPoint>& path_points,
+                                                          const std::vector<LayoutDefRect>& regions) const;
   std::vector<LayoutDefPoint> generateCrossroadsPoints(const LayoutDefPoint& p, const LayoutDefRect& rect) const;
   LayoutDefPoint generatePointPivot(const LayoutDefPoint& p, const LayoutDefRect& rect) const;
   LayoutDefPoint generateSegPivot(const LayoutDefSeg& seg, const LayoutDefRect& rect) const;
@@ -297,6 +301,7 @@ class LmNetGraphGenerator
   // debug
   void toPy(const TopoGraph& graph, const std::string& path) const;
   void toPy(const WireGraph& graph, const std::string& path) const;
+
  private:
   int getX(const LayoutDefPoint& point) const { return bg::get<0>(point); }
   int getY(const LayoutDefPoint& point) const { return bg::get<1>(point); }
