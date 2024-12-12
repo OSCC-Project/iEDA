@@ -30,7 +30,7 @@ class LmFeature
   LmFeature(LmLayout* layout, std::string dir)
   {
     _layout = layout;
-    _dir = dir;
+    _dir = dir;  /// feature directory
   }
   ~LmFeature() = default;
 

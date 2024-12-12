@@ -59,7 +59,7 @@ bool LmLayoutFileIO::saveJsonNets(std::map<int, LmNet>& net_map)
 
   LOG_INFO << "LM save json net start...";
 
-  makeDir(_dir + "/nets/");
+  makeDir(_dir + "/large_model/nets/");
 
   omp_lock_t lck;
   omp_init_lock(&lck);
@@ -210,7 +210,7 @@ bool LmLayoutFileIO::saveJsonNets(std::map<int, LmNet>& net_map)
       json_net["wires"] = json_wires;
     }
     omp_set_lock(&lck);
-    auto file_name = _dir + "/nets/net_" + std::to_string(net_id) + ".json";
+    auto file_name = _dir + "/large_model/nets/net_" + std::to_string(net_id) + ".json";
     std::ofstream file_stream(file_name);
     if (net_id == 0) {
       file_stream << std::setw(4) << json_net;
