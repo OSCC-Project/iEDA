@@ -82,7 +82,7 @@ void InitSTA::runLmSTA(ilm::LmLayout* lm_layout)
 
   buildLmRCTree(lm_layout);
 
-  // updateResult(); TODO: update result for lm
+  updateResult("Large Model");
 }
 
 void InitSTA::evalTiming(const std::string& routing_type, const bool& rt_done)
@@ -692,6 +692,23 @@ double InitSTA::reportTNS(const char* clock_name, ista::AnalysisMode mode)
   return STA_INST->getTNS(clock_name, mode);
 }
 
+double InitSTA::getNetResistance(const std::string& net_name) const {
+  auto netlist = STA_INST->get_netlist();
+  ista::Net* ista_net = netlist->findNet(net_name.c_str());
+  auto* rc_net = STA_INST->get_ista()->getRcNet(ista_net);
+
+  double resistance = rc_net->getNetResistance();
+  return resistance;
+}
+double InitSTA::getNetCapacitance(const std::string& net_name) const {
+  auto netlist = STA_INST->get_netlist();
+  ista::Net* ista_net = netlist->findNet(net_name.c_str());
+  auto* rc_net = STA_INST->get_ista()->getRcNet(ista_net);
+
+  double load = rc_net->load();
+  return load;
+}
+
 double InitSTA::getNetSlew(const std::string& net_name) const
 {
   auto netlist = STA_INST->get_netlist();
@@ -728,12 +745,38 @@ double InitSTA::getNetDelay(const std::string& net_name) const
   return net_avg_delay;
 }
 
+std::pair<double, double> InitSTA::getNetToggleAndVoltage(const std::string& net_name) const {
+  return PW_INST->get_power()->getNetToggleAndVoltageData(net_name.c_str());
+}
+
 double InitSTA::getNetPower(const std::string& net_name) const
 {
   // get net power from updated results.
   auto& nets_power = _net_power.begin()->second;
   double net_power = nets_power.at(net_name);
   return net_power;
+}
+
+double InitSTA::getWireResistance(const std::string& net_name, const std::string& wire_node_name) const {
+  auto netlist = STA_INST->get_netlist();
+  ista::Net* ista_net = netlist->findNet(net_name.c_str());
+  auto* rc_net = STA_INST->get_ista()->getRcNet(ista_net);
+
+  LOG_FATAL_IF(!rc_net) << "net " << net_name << " not found rc net.";
+
+  double resistance = rc_net->getNodeResistance(wire_node_name.c_str());
+  return resistance;
+}
+
+double InitSTA::getWireCapacitance(const std::string& net_name, const std::string& wire_node_name) const {
+  auto netlist = STA_INST->get_netlist();
+  ista::Net* ista_net = netlist->findNet(net_name.c_str());
+  auto* rc_net = STA_INST->get_ista()->getRcNet(ista_net);
+
+  LOG_FATAL_IF(!rc_net) << "net " << net_name << " not found rc net.";
+
+  double load = rc_net->getNodeLoad(wire_node_name.c_str());
+  return load;
 }
 
 double InitSTA::getWireSlew(const std::string& net_name, const std::string& wire_node_name) const
@@ -758,6 +801,10 @@ double InitSTA::getWireDelay(const std::string& net_name, const std::string& wir
   auto delay = rc_net->delay(wire_node_name.c_str());
 
   return delay.value_or(0.0);
+}
+
+double InitSTA::getWirePower(const std::string& net_name, const std::string& wire_node_name) const {
+
 }
 
 void InitSTA::updateTiming(const std::vector<TimingNet*>& timing_net_list, int32_t dbu_unit)

@@ -71,15 +71,20 @@ class InitSTA
   double reportWNS(const char* clock_name, ista::AnalysisMode mode);
   double reportTNS(const char* clock_name, ista::AnalysisMode mode);
 
-  // for net slew and delay
+  // for net R、C、slew、delay power.
+  double getNetResistance(const std::string& net_name) const;
+  double getNetCapacitance(const std::string& net_name) const;
   double getNetSlew(const std::string& net_name) const;
   double getNetDelay(const std::string& net_name) const;
+  std::pair<double, double> getNetToggleAndVoltage(const std::string& net_name) const;
   double getNetPower(const std::string& net_name) const;
 
-  // for wire slew and delay.
+  // for wire R、C、slew、delay power.
+  double getWireResistance(const std::string& net_name, const std::string& wire_node_name) const;
+  double getWireCapacitance(const std::string& net_name, const std::string& wire_node_name) const;
   double getWireSlew(const std::string& net_name, const std::string& wire_node_name) const;
   double getWireDelay(const std::string& net_name, const std::string& wire_node_name) const;
-  // double getWirePower(const std::string& net_name) const;
+  double getWirePower(const std::string& net_name, const std::string& wire_node_name) const;  
 
   void buildRCTree(const std::string& routing_type);
   void buildLmRCTree(ilm::LmLayout* lm_layout);

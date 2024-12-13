@@ -231,6 +231,7 @@ void RcTree::initData() {
 
   for (auto& kvp : _str2nodes) {
     kvp.second._load = 0.0;
+    kvp.second._res = 0.0;
     kvp.second._delay = 0.0;
 
     kvp.second._is_update_load = 0;
@@ -307,8 +308,8 @@ void RcTree::updateDelay(RctNode* parent, RctNode* from) {
 
   for (auto* e : from->_fanout) {
     if (auto& to = e->_to; &to != parent) {
+      to._res = from->_res + e->_res;
       to._delay = from->_delay + e->_res * to._load;
-
       FOREACH_MODE_TRANS(mode, trans) {
         to._ndelay[ModeTransPair(mode, trans)] =
             from->_ndelay[ModeTransPair(mode, trans)] +
@@ -916,6 +917,23 @@ std::set<RctNode*> RcNet::getLoadNodes() {
 }
 
 /**
+ * @brief Get node load. 
+ * 
+ * @param node_name 
+ * @return double 
+ */
+double RcNet::getNodeLoad(const char* node_name) {
+  double load = 0.0;
+
+  if (auto* rc_tree = rct(); rc_tree) {
+    auto* node = rc_tree->node(node_name);
+    load = node->_load;
+  }
+
+  return load;
+}
+
+/**
  * @brief Get rc net resistance from driver pin to load pin.
  *
  * @param mode
@@ -932,6 +950,40 @@ double RcNet::getResistance(AnalysisMode mode, TransType trans_type,
     auto* node = rc_tree->node(node_name);
 
     res = node->get_ures(mode, trans_type);
+  }
+
+  return res;
+}
+
+/**
+ * @brief Get rc net resistance from driver pin to load pin.
+ * 
+ * @param node_name 
+ * @return double 
+ */
+double RcNet::getNodeResistance(const char* node_name) {
+  double res = 0.0;
+
+  if (auto* rc_tree = rct(); rc_tree) {
+    auto* node = rc_tree->node(node_name);
+    res = node->_res;
+  }
+
+  return res;
+}
+
+/**
+ * @brief Get rc net resistance.
+ * 
+ * @return double 
+ */
+double RcNet::getNetResistance() {
+  double res = 0.0;
+
+  if (auto* rc_tree = rct(); rc_tree) {
+    for (auto& edge : rc_tree->_edges) {
+      res += edge.get_res();
+    }
   }
 
   return res;

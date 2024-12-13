@@ -117,6 +117,8 @@ class Power {
     _obj_to_datas[group_data->get_obj()] = std::move(group_data);
   }
 
+  std::pair<double, double> getNetToggleAndVoltageData(const char* net_name);
+
  private:
   std::string _design_work_space; // The power report work space.
 

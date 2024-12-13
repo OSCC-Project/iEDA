@@ -213,6 +213,7 @@ class RctNode {
   std::string _name;
 
   double _cap = 0.0;
+  double _res = 0.0; //!< from driver to node resistance.
   double _load = 0.0;
   double _delay = 0.0;
   double _mc = 0.0;    //!< Elmore * cap
@@ -564,9 +565,12 @@ class RcNet {
   double load();
   double load(AnalysisMode mode, TransType trans_type);
   std::set<RctNode*> getLoadNodes();
+  double getNodeLoad(const char* node_name);
 
   double getResistance(AnalysisMode mode, TransType trans_type,
                        DesignObject* load_obj);
+  double getNodeResistance(const char* node_name);
+  double getNetResistance();
 
   std::optional<double> delay(const char* node_name,
                               DelayMethod delay_method = DelayMethod::kElmore);
