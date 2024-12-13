@@ -16,7 +16,7 @@
 // ***************************************************************************************
 /**
  * @file TimingEngine.cc
- * @author shy long (longshy@pcl.ac.cn)
+ * @author longshy (longshy@pcl.ac.cn)
  * @brief
  * @version 0.1
  * @date 2021-08-20

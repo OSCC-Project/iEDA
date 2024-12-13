@@ -16,7 +16,7 @@
 // ***************************************************************************************
 /**
  * @file TimingIDBAdapter.hh
- * @author shy long (longshy@pcl.ac.cn)
+ * @author longshy (longshy@pcl.ac.cn)
  * @brief idb and ista data adapter.
  * @version 0.1
  * @date 2021-10-11
@@ -724,7 +724,7 @@ unsigned TimingIDBAdapter::convertDBToTimingNetlist(bool link_all_cell) {
   if (!link_all_cell) {
     configStaLinkCells();
   }
-  
+
   _ista->linkLibertys();
 
   _ista->set_design_name(_idb_design->get_design_name().c_str());
@@ -818,7 +818,8 @@ unsigned TimingIDBAdapter::convertDBToTimingNetlist(bool link_all_cell) {
       auto& created_inst = design_netlist.addInstance(std::move(sta_inst));
       crossRef(&created_inst, db_inst);
 
-      LOG_INFO_EVERY_N(10000) << "build inst num: " << design_netlist.getInstanceNum();
+      LOG_INFO_EVERY_N(10000)
+          << "build inst num: " << design_netlist.getInstanceNum();
     }
   };
 
@@ -861,7 +862,8 @@ unsigned TimingIDBAdapter::convertDBToTimingNetlist(bool link_all_cell) {
         auto* sta_inst = design_netlist.findInstance(inst_name.c_str());
         LOG_FATAL_IF(!sta_inst) << "Instance " << inst_name << " not found";
         auto inst_pin = sta_inst->getPin(cell_port_name.c_str());
-        LOG_FATAL_IF(!inst_pin) << "Instance " << inst_name << " Pin " << cell_port_name << " not found";
+        LOG_FATAL_IF(!inst_pin) << "Instance " << inst_name << " Pin "
+                                << cell_port_name << " not found";
 
         if (sta_net) {
           sta_net->addPinPort(*inst_pin);
@@ -893,7 +895,8 @@ unsigned TimingIDBAdapter::convertDBToTimingNetlist(bool link_all_cell) {
         }
       }
 
-      LOG_INFO_EVERY_N(10000) << "build net num: " << design_netlist.getNetNum();
+      LOG_INFO_EVERY_N(10000)
+          << "build net num: " << design_netlist.getNetNum();
     }
   };
 
