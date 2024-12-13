@@ -17,6 +17,8 @@
 
 #include "lm_feature.h"
 
+#include <filesystem>
+
 #include "Log.hh"
 #include "idm.h"
 
@@ -28,9 +30,11 @@ void LmFeature::buildFeatureDrc(std::string drc_path)
     drc_path = _dir + "/" + dmInst->get_idb_design()->get_design_name() + "_route_baseline_drc.json";
   }
 
-  LOG_INFO << "buildFeatureDrc : " << drc_path;
-
-  drc_path = "/data/project_share/dataset_baseline/aes/workspace/output/iEDA/feature/aes_route_baseline_drc.json";
+  namespace fs = std::filesystem;
+  if (false == fs::exists(drc_path)) {
+    LOG_WARNING << "Drc file not exist, path : " << drc_path;
+    return;
+  }
 
   LmFeatureDrc feature_drc(_layout, drc_path);
 
