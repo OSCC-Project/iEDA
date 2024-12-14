@@ -17,7 +17,6 @@
 #pragma once
 
 #include "Config.hpp"
-#include "DEFuncType.hpp"
 #include "DETask.hpp"
 #include "DataManager.hpp"
 #include "Database.hpp"
@@ -60,11 +59,11 @@ class DRCEngine
   void buildViolationList(DETask& de_task);
 
 #if 1  // aux
-  bool skipViolation(Violation& violation);
-  std::vector<Violation> expandViolation(Violation& violation);
-  void buildByFunc(Violation& violation, const DEFuncType& de_func_type, std::string& need_skip,
-                   std::vector<Violation>& expanded_violation_list);
+  bool skipViolation(DETask& de_task, Violation& violation);
+  std::vector<Violation> getExpandedViolationList(DETask& de_task, Violation& violation);
+  PlanarRect keepRect(PlanarRect& real_rect);
   PlanarRect enlargeRect(PlanarRect& real_rect, int32_t required_size);
+  std::vector<std::pair<int32_t, bool>> keepLayer(Violation& violation);
   std::vector<std::pair<int32_t, bool>> expandAdjacentOneLayer(Violation& violation);
   std::vector<std::pair<int32_t, bool>> expandUpOneLayer(Violation& violation);
   std::vector<std::pair<int32_t, bool>> expandUpTwoLayer(Violation& violation);

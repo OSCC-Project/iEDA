@@ -408,11 +408,11 @@ void RTInterface::wrapRoutingDesignRule(RoutingLayer& routing_layer, idb::IdbLay
     } else if (idb_layer->get_spacing_list() != nullptr && !idb_layer->get_spacing_table().get()->is_parallel()) {
       idb_spacing_table = idb_layer->get_spacing_table_from_spacing_list()->get_parallel();
     } else {
+      RTLOG.warn(Loc::current(), "The idb layer ", idb_layer->get_name(), " spacing table is empty!");
       idb_spacing_table = std::make_shared<idb::IdbParallelSpacingTable>(1, 1);
       idb_spacing_table.get()->set_parallel_length(0, 0);
       idb_spacing_table.get()->set_width(0, 0);
       idb_spacing_table.get()->set_spacing(0, 0, 0);
-      RTLOG.warn(Loc::current(), "The idb layer ", idb_layer->get_name(), " spacing table is empty!");
     }
 
     SpacingTable& prl_spacing_table = routing_layer.get_prl_spacing_table();
@@ -432,26 +432,14 @@ void RTInterface::wrapRoutingDesignRule(RoutingLayer& routing_layer, idb::IdbLay
   // eol
   {
     if (!idb_layer->get_lef58_spacing_eol_list().empty()) {
-      int32_t eol_spacing = 0;
+      routinglayer::Lef58SpacingEol* idb_spacing_eol = idb_layer->get_lef58_spacing_eol_list().front().get();
+
+      int32_t eol_spacing = idb_spacing_eol->get_eol_space();
       int32_t eol_ete = 0;
-      int32_t eol_within = 0;
-      {
-        std::shared_ptr<routinglayer::Lef58SpacingEol>& first_idb_rule_eol = idb_layer->get_lef58_spacing_eol_list().front();
-        eol_spacing = first_idb_rule_eol.get()->get_eol_space();
-        if (first_idb_rule_eol.get()->get_end_to_end().has_value()) {
-          eol_ete = first_idb_rule_eol.get()->get_end_to_end().value().get_end_to_end_space();
-        }
-        eol_within = first_idb_rule_eol.get()->get_eol_within().value();
+      if (idb_spacing_eol->get_end_to_end().has_value()) {
+        eol_ete = idb_spacing_eol->get_end_to_end().value().get_end_to_end_space();
       }
-      for (std::shared_ptr<routinglayer::Lef58SpacingEol>& idb_rule_eol : idb_layer->get_lef58_spacing_eol_list()) {
-        if (idb_rule_eol.get()->get_eol_space() < eol_spacing) {
-          eol_spacing = idb_rule_eol.get()->get_eol_space();
-          if (idb_rule_eol.get()->get_end_to_end().has_value()) {
-            eol_ete = idb_rule_eol.get()->get_end_to_end().value().get_end_to_end_space();
-          }
-          eol_within = idb_rule_eol.get()->get_eol_within().value();
-        }
-      }
+      int32_t eol_within = idb_spacing_eol->get_eol_within().value();
       routing_layer.set_eol_spacing(eol_spacing);
       routing_layer.set_eol_ete(eol_ete);
       routing_layer.set_eol_within(eol_within);
@@ -468,6 +456,7 @@ void RTInterface::wrapCutDesignRule(CutLayer& cut_layer, idb::IdbLayerCut* idb_l
 {
   // curr layer
   {
+    // prl
     if (!idb_layer->get_spacings().empty()) {
       cut_layer.set_curr_spacing(idb_layer->get_spacings().front()->get_spacing());
       cut_layer.set_curr_prl(0);
@@ -490,26 +479,37 @@ void RTInterface::wrapCutDesignRule(CutLayer& cut_layer, idb::IdbLayerCut* idb_l
         cut_layer.set_curr_prl(curr_prl);
         cut_layer.set_curr_prl_spacing(curr_prl_spacing);
       } else {
+        RTLOG.warn(Loc::current(), "The idb layer ", idb_layer->get_name(), " curr layer spacing is empty!");
         cut_layer.set_curr_spacing(0);
         cut_layer.set_curr_prl(0);
         cut_layer.set_curr_prl_spacing(0);
-        RTLOG.warn(Loc::current(), "The idb layer ", idb_layer->get_name(), " curr layer spacing is empty!");
       }
     } else {
+      RTLOG.warn(Loc::current(), "The idb layer ", idb_layer->get_name(), " curr layer spacing is empty!");
       cut_layer.set_curr_spacing(0);
       cut_layer.set_curr_prl(0);
       cut_layer.set_curr_prl_spacing(0);
-      RTLOG.warn(Loc::current(), "The idb layer ", idb_layer->get_name(), " curr layer spacing is empty!");
     }
+    // eol
     if (idb_layer->get_lef58_eol_spacing().get() != nullptr) {
-      cut_layer.set_curr_eol_spacing(idb_layer->get_lef58_eol_spacing().get()->get_cut_spacing1());
+      idb::cutlayer::Lef58EolSpacing* idb_eol_spacing = idb_layer->get_lef58_eol_spacing().get();
+
+      int32_t curr_eol_spacing = idb_eol_spacing->get_cut_spacing1();
+      int32_t curr_eol_prl = -1 * idb_eol_spacing->get_prl();
+      int32_t curr_eol_prl_spacing = idb_eol_spacing->get_cut_spacing2();
+      cut_layer.set_curr_eol_spacing(curr_eol_spacing);
+      cut_layer.set_curr_eol_prl(curr_eol_prl);
+      cut_layer.set_curr_eol_prl_spacing(curr_eol_prl_spacing);
     } else {
       RTLOG.warn(Loc::current(), "The idb layer ", idb_layer->get_name(), " eol_spacing is empty!");
       cut_layer.set_curr_eol_spacing(0);
+      cut_layer.set_curr_eol_prl(0);
+      cut_layer.set_curr_eol_prl_spacing(0);
     }
   }
   // below layer
   {
+    // prl
     if (!idb_layer->get_lef58_spacing_table().empty()) {
       idb::cutlayer::Lef58SpacingTable* spacing_table = nullptr;
       for (std::shared_ptr<idb::cutlayer::Lef58SpacingTable>& spacing_table_ptr : idb_layer->get_lef58_spacing_table()) {
