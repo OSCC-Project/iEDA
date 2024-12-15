@@ -1083,19 +1083,9 @@ void RTInterface::outputNetList()
       net_idb_segment_map[net_idx].push_back(getIDBSegmentByNetResult(net_idx, *segment));
     }
   }
-  for (auto& [net_idx, patch_set] : RTDM.getNetAccessPatchMap(die)) {
-    for (EXTLayerRect* patch : patch_set) {
-      net_idb_segment_map[net_idx].push_back(getIDBSegmentByNetPatch(net_idx, *patch));
-    }
-  }
   for (auto& [net_idx, segment_set] : RTDM.getNetDetailedResultMap(die)) {
     for (Segment<LayerCoord>* segment : segment_set) {
       net_idb_segment_map[net_idx].push_back(getIDBSegmentByNetResult(net_idx, *segment));
-    }
-  }
-  for (auto& [net_idx, patch_set] : RTDM.getNetDetailedPatchMap(die)) {
-    for (EXTLayerRect* patch : patch_set) {
-      net_idb_segment_map[net_idx].push_back(getIDBSegmentByNetPatch(net_idx, *patch));
     }
   }
   idb::IdbNetList* idb_net_list = dmInst->get_idb_def_service()->get_design()->get_net_list();
@@ -1225,8 +1215,6 @@ void RTInterface::outputSummary()
       top_dr_summary.total_wire_length = dr_summary.total_wire_length;
       top_dr_summary.cut_via_num_map = dr_summary.cut_via_num_map;
       top_dr_summary.total_via_num = dr_summary.total_via_num;
-      top_dr_summary.routing_patch_num_map = dr_summary.routing_patch_num_map;
-      top_dr_summary.total_patch_num = dr_summary.total_patch_num;
       top_dr_summary.routing_violation_num_map = dr_summary.routing_violation_num_map;
       top_dr_summary.total_violation_num = dr_summary.total_violation_num;
 
@@ -1439,10 +1427,6 @@ std::vector<Violation> RTInterface::getViolationList(std::vector<idb::IdbLayerSh
   check_select.insert(idrc::ViolationEnumType::kPRLSpacing);
   check_select.insert(idrc::ViolationEnumType::kEOL);
 
-  /**
-   * env_shape_list 存储 obstacle obs pin_shape
-   * net_idb_segment_map 存储 wire via patch
-   */
   ScaleAxis& gcell_axis = RTDM.getDatabase().get_gcell_axis();
   std::map<std::string, int32_t>& routing_layer_name_to_idx_map = RTDM.getDatabase().get_routing_layer_name_to_idx_map();
   std::map<std::string, int32_t>& cut_layer_name_to_idx_map = RTDM.getDatabase().get_cut_layer_name_to_idx_map();
@@ -1841,17 +1825,6 @@ void RTInterface::routeTAPanel(TAPanel& ta_panel)
         ls_shape.ll_y = rect.get_ll_y();
         ls_shape.ur_x = rect.get_ur_x();
         ls_shape.ur_y = rect.get_ur_y();
-        ls_panel.hard_shape_list.push_back(ls_shape);
-      }
-    }
-    for (auto& [net_idx, patch_set] : ta_panel.get_net_access_patch_map()) {
-      for (auto& patch : patch_set) {
-        lsa::LSShape ls_shape;
-        ls_shape.net_id = net_idx;
-        ls_shape.ll_x = patch->get_real_ll_x();
-        ls_shape.ll_y = patch->get_real_ll_y();
-        ls_shape.ur_x = patch->get_real_ur_x();
-        ls_shape.ur_y = patch->get_real_ur_y();
         ls_panel.hard_shape_list.push_back(ls_shape);
       }
     }

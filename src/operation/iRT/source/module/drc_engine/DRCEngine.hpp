@@ -33,7 +33,6 @@ class DRCEngine
   static DRCEngine& getInst();
   static void destroyInst();
   // function
-  DETask getFullDesignDETask(DEProcType de_proc_type, DENetType de_net_type);
   std::vector<Violation> getViolationList(DETask& de_task);
   void updateIgnoredViolationSet(ChangeType change_type, std::vector<Violation>& violation_list);
 
