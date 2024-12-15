@@ -53,7 +53,7 @@ class PinAccessor
   PinAccessor& operator=(PinAccessor&& other) = delete;
   // function
   PAModel initPAModel();
-  void ignorePreViolation(PAModel& pa_model);
+  void ignoreViolation(PAModel& pa_model);
   void setPAParameter(PAModel& pa_model);
   void initAccessPointList(PAModel& pa_model);
   std::vector<PANet> convertToPANetList(std::vector<Net>& net_list);

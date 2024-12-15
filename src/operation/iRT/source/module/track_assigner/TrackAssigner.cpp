@@ -57,7 +57,7 @@ void TrackAssigner::assign()
   Monitor monitor;
   RTLOG.info(Loc::current(), "Starting...");
   TAModel ta_model = initTAModel();
-  ignorePreViolation(ta_model);
+  ignoreViolation(ta_model);
   // debugPlotTAModel(ta_model, "before");
   setTAParameter(ta_model);
   initTAPanelMap(ta_model);
@@ -106,7 +106,7 @@ TANet TrackAssigner::convertToTANet(Net& net)
   return ta_net;
 }
 
-void TrackAssigner::ignorePreViolation(TAModel& ta_model)
+void TrackAssigner::ignoreViolation(TAModel& ta_model)
 {
   Monitor monitor;
   RTLOG.info(Loc::current(), "Starting...");

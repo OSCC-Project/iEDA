@@ -61,7 +61,7 @@ void PinAccessor::access()
   Monitor monitor;
   RTLOG.info(Loc::current(), "Starting...");
   PAModel pa_model = initPAModel();
-  ignorePreViolation(pa_model);
+  ignoreViolation(pa_model);
   // debugPlotPAModel(pa_model, "before");
   setPAParameter(pa_model);
   initAccessPointList(pa_model);
@@ -116,7 +116,7 @@ PANet PinAccessor::convertToPANet(Net& net)
   return pa_net;
 }
 
-void PinAccessor::ignorePreViolation(PAModel& pa_model)
+void PinAccessor::ignoreViolation(PAModel& pa_model)
 {
   Monitor monitor;
   RTLOG.info(Loc::current(), "Starting...");

@@ -51,7 +51,7 @@ class TrackAssigner
   TAModel initTAModel();
   std::vector<TANet> convertToTANetList(std::vector<Net>& net_list);
   TANet convertToTANet(Net& net);
-  void ignorePreViolation(TAModel& ta_model);
+  void ignoreViolation(TAModel& ta_model);
   void setTAParameter(TAModel& ta_model);
   void initTAPanelMap(TAModel& ta_model);
   void buildPanelSchedule(TAModel& ta_model);
