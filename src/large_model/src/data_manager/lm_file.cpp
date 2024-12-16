@@ -162,16 +162,18 @@ bool LmLayoutFileIO::saveJsonNets(std::map<int, LmNet>& net_map)
               json_node["id1"] = node1->get_node_id();
               json_node["x1"] = node1->get_x();
               json_node["y1"] = node1->get_y();
-              json_node["r1"] = node1->get_row_id();    /// row
-              json_node["c1"] = node1->get_col_id();    /// col
-              json_node["l1"] = node1->get_layer_id();  /// layer order
+              json_node["r1"] = node1->get_row_id();                   /// row
+              json_node["c1"] = node1->get_col_id();                   /// col
+              json_node["l1"] = node1->get_layer_id();                 /// layer order
+              json_node["p1"] = node1->get_node_data()->get_pin_id();  /// pin id
 
               json_node["id2"] = node2->get_node_id();
               json_node["x2"] = node2->get_x();
               json_node["y2"] = node2->get_y();
-              json_node["r2"] = node2->get_row_id();    /// row
-              json_node["c2"] = node2->get_col_id();    /// col
-              json_node["l2"] = node2->get_layer_id();  /// layer order
+              json_node["r2"] = node2->get_row_id();                   /// row
+              json_node["c2"] = node2->get_col_id();                   /// col
+              json_node["l2"] = node2->get_layer_id();                 /// layer order
+              json_node["p2"] = node2->get_node_data()->get_pin_id();  /// pin id
 
               json_wire["wire"] = json_node;
             }
@@ -186,16 +188,18 @@ bool LmLayoutFileIO::saveJsonNets(std::map<int, LmNet>& net_map)
                 json_node["id1"] = node1->get_node_id();
                 json_node["x1"] = node1->get_x();
                 json_node["y1"] = node1->get_y();
-                json_node["r1"] = node1->get_row_id();    /// row
-                json_node["c1"] = node1->get_col_id();    /// col
-                json_node["l1"] = node1->get_layer_id();  /// layer order
+                json_node["r1"] = node1->get_row_id();                   /// row
+                json_node["c1"] = node1->get_col_id();                   /// col
+                json_node["l1"] = node1->get_layer_id();                 /// layer order
+                json_node["p1"] = node1->get_node_data()->get_pin_id();  /// pin id
 
                 json_node["id2"] = node2->get_node_id();
                 json_node["x2"] = node2->get_x();
                 json_node["y2"] = node2->get_y();
-                json_node["r2"] = node2->get_row_id();    /// row
-                json_node["c2"] = node2->get_col_id();    /// col
-                json_node["l2"] = node2->get_layer_id();  /// layer order
+                json_node["r2"] = node2->get_row_id();                   /// row
+                json_node["c2"] = node2->get_col_id();                   /// col
+                json_node["l2"] = node2->get_layer_id();                 /// layer order
+                json_node["p2"] = node2->get_node_data()->get_pin_id();  /// pin id
 
                 json_paths.push_back(json_node);
               }
