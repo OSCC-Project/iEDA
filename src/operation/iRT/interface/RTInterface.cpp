@@ -116,6 +116,7 @@ void RTInterface::runRT()
   RTLOG.info(Loc::current(), "Starting...");
 
   RTGP.init();
+  RTDE.init();
 
   PinAccessor::initInst();
   RTPA.access();
@@ -1078,14 +1079,14 @@ void RTInterface::outputNetList()
   std::vector<Net>& net_list = RTDM.getDatabase().get_net_list();
 
   std::map<int32_t, std::vector<idb::IdbRegularWireSegment*>> net_idb_segment_map;
-  for (auto& [net_idx, segment_set] : RTDM.getNetAccessResultMap(die)) {
+  for (auto& [net_idx, segment_set] : RTDM.getNetFinalResultMap(die)) {
     for (Segment<LayerCoord>* segment : segment_set) {
       net_idb_segment_map[net_idx].push_back(getIDBSegmentByNetResult(net_idx, *segment));
     }
   }
-  for (auto& [net_idx, segment_set] : RTDM.getNetDetailedResultMap(die)) {
-    for (Segment<LayerCoord>* segment : segment_set) {
-      net_idb_segment_map[net_idx].push_back(getIDBSegmentByNetResult(net_idx, *segment));
+  for (auto& [net_idx, patch_set] : RTDM.getNetFinalPatchMap(die)) {
+    for (EXTLayerRect* patch : patch_set) {
+      net_idb_segment_map[net_idx].push_back(getIDBSegmentByNetPatch(net_idx, *patch));
     }
   }
   idb::IdbNetList* idb_net_list = dmInst->get_idb_def_service()->get_design()->get_net_list();

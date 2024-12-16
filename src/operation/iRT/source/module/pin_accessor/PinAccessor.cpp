@@ -61,7 +61,6 @@ void PinAccessor::access()
   Monitor monitor;
   RTLOG.info(Loc::current(), "Starting...");
   PAModel pa_model = initPAModel();
-  ignoreViolation(pa_model);
   // debugPlotPAModel(pa_model, "before");
   setPAParameter(pa_model);
   initAccessPointList(pa_model);
@@ -114,55 +113,6 @@ PANet PinAccessor::convertToPANet(Net& net)
   }
   pa_net.set_bounding_box(net.get_bounding_box());
   return pa_net;
-}
-
-void PinAccessor::ignoreViolation(PAModel& pa_model)
-{
-  Monitor monitor;
-  RTLOG.info(Loc::current(), "Starting...");
-
-  Die& die = RTDM.getDatabase().get_die();
-
-  for (Violation* violation : RTDM.getViolationSet(die)) {
-    RTDM.updateViolationToGCellMap(ChangeType::kDel, violation);
-  }
-  DETask de_task;
-  {
-    std::string top_name = RTUTIL.getString("ignore_violation");
-    PlanarRect check_region = die.get_real_rect();
-    std::vector<std::pair<EXTLayerRect*, bool>> env_shape_list;
-    std::map<int32_t, std::vector<std::pair<EXTLayerRect*, bool>>> net_pin_shape_map;
-    for (auto& [is_routing, layer_net_fixed_rect_map] : RTDM.getTypeLayerNetFixedRectMap(die)) {
-      for (auto& [layer_idx, net_fixed_rect_map] : layer_net_fixed_rect_map) {
-        for (auto& [net_idx, fixed_rect_set] : net_fixed_rect_map) {
-          if (net_idx == -1) {
-            for (auto& fixed_rect : fixed_rect_set) {
-              env_shape_list.emplace_back(fixed_rect, is_routing);
-            }
-          } else {
-            for (auto& fixed_rect : fixed_rect_set) {
-              net_pin_shape_map[net_idx].emplace_back(fixed_rect, is_routing);
-            }
-          }
-        }
-      }
-    }
-    std::set<int32_t> need_checked_net_set;
-    for (PANet& pa_net : pa_model.get_pa_net_list()) {
-      need_checked_net_set.insert(pa_net.get_net_idx());
-    }
-    de_task.set_proc_type(DEProcType::kIgnore);
-    de_task.set_net_type(DENetType::kMultiNet);
-    de_task.set_top_name(top_name);
-    de_task.set_check_region(check_region);
-    de_task.set_env_shape_list(env_shape_list);
-    de_task.set_net_pin_shape_map(net_pin_shape_map);
-    de_task.set_need_checked_net_set(need_checked_net_set);
-  }
-  std::vector<Violation> violation_list = RTDE.getViolationList(de_task);
-  RTDE.updateIgnoredViolationSet(ChangeType::kAdd, violation_list);
-
-  RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
 void PinAccessor::setPAParameter(PAModel& pa_model)

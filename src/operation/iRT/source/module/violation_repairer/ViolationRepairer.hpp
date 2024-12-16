@@ -20,6 +20,7 @@
 #include "DataManager.hpp"
 #include "Database.hpp"
 #include "Monitor.hpp"
+#include "VRModel.hpp"
 
 namespace irt {
 
@@ -45,6 +46,22 @@ class ViolationRepairer
   ViolationRepairer& operator=(const ViolationRepairer& other) = delete;
   ViolationRepairer& operator=(ViolationRepairer&& other) = delete;
   // function
+  VRModel initVRModel();
+  std::vector<VRNet> convertToVRNetList(std::vector<Net>& net_list);
+  VRNet convertToVRNet(Net& net);
+  void initNetFinalResultMap(VRModel& vr_model);
+  void resetViolationSet(VRModel& vr_model);
+  std::vector<Violation> getMultiNetViolationList(VRModel& vr_model);
+  std::vector<Violation> getSingleNetViolationList(VRModel& vr_model);
+
+#if 1  // exhibit
+  void updateSummary(VRModel& vr_model);
+  void printSummary(VRModel& vr_model);
+#endif
+
+#if 1  // debug
+  void debugPlotVRModel(VRModel& vr_model, std::string flag);
+#endif
 };
 
 }  // namespace irt

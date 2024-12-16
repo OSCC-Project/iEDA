@@ -49,6 +49,57 @@ void DRCEngine::destroyInst()
 
 // function
 
+void DRCEngine::init()
+{
+  Monitor monitor;
+  RTLOG.info(Loc::current(), "Starting...");
+
+  Die& die = RTDM.getDatabase().get_die();
+  std::vector<Net>& net_list = RTDM.getDatabase().get_net_list();
+
+  for (Violation* violation : RTDM.getViolationSet(die)) {
+    RTDM.updateViolationToGCellMap(ChangeType::kDel, violation);
+  }
+  DETask de_task;
+  {
+    std::string top_name = RTUTIL.getString("ignore_violation");
+    PlanarRect check_region = die.get_real_rect();
+    std::vector<std::pair<EXTLayerRect*, bool>> env_shape_list;
+    std::map<int32_t, std::vector<std::pair<EXTLayerRect*, bool>>> net_pin_shape_map;
+    for (auto& [is_routing, layer_net_fixed_rect_map] : RTDM.getTypeLayerNetFixedRectMap(die)) {
+      for (auto& [layer_idx, net_fixed_rect_map] : layer_net_fixed_rect_map) {
+        for (auto& [net_idx, fixed_rect_set] : net_fixed_rect_map) {
+          if (net_idx == -1) {
+            for (auto& fixed_rect : fixed_rect_set) {
+              env_shape_list.emplace_back(fixed_rect, is_routing);
+            }
+          } else {
+            for (auto& fixed_rect : fixed_rect_set) {
+              net_pin_shape_map[net_idx].emplace_back(fixed_rect, is_routing);
+            }
+          }
+        }
+      }
+    }
+    std::set<int32_t> need_checked_net_set;
+    for (Net& net : net_list) {
+      need_checked_net_set.insert(net.get_net_idx());
+    }
+    de_task.set_proc_type(DEProcType::kIgnore);
+    de_task.set_net_type(DENetType::kMultiNet);
+    de_task.set_top_name(top_name);
+    de_task.set_check_region(check_region);
+    de_task.set_env_shape_list(env_shape_list);
+    de_task.set_net_pin_shape_map(net_pin_shape_map);
+    de_task.set_need_checked_net_set(need_checked_net_set);
+  }
+  for (Violation violation : getViolationList(de_task)) {
+    _ignored_violation_set.insert(violation);
+  }
+
+  RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
+}
+
 std::vector<Violation> DRCEngine::getViolationList(DETask& de_task)
 {
   // getViolationListByInterface(de_task);
@@ -61,16 +112,16 @@ std::vector<Violation> DRCEngine::getViolationList(DETask& de_task)
   return de_task.get_violation_list();
 }
 
-void DRCEngine::updateIgnoredViolationSet(ChangeType change_type, std::vector<Violation>& violation_list)
+void DRCEngine::addTempIgnoredViolation(std::vector<Violation>& violation_list)
 {
-  if (change_type == ChangeType::kAdd) {
-    for (Violation& violation : violation_list) {
-      _ignored_violation_set.insert(violation);
-    }
+  for (Violation& violation : violation_list) {
+    _temp_ignored_violation_set.insert(violation);
   }
-  if (change_type == ChangeType::kDel) {
-    // 忽略
-  }
+}
+
+void DRCEngine::clearTempIgnoredViolationSet()
+{
+  _temp_ignored_violation_set.clear();
 }
 
 // private
@@ -495,7 +546,7 @@ void DRCEngine::filterViolationList(DETask& de_task)
     if (de_task.get_net_type() == DENetType::kMultiNet && violation_net_set.size() < 2) {
       continue;
     }
-    if (RTUTIL.exist(_ignored_violation_set, violation)) {
+    if (RTUTIL.exist(_ignored_violation_set, violation) || RTUTIL.exist(_temp_ignored_violation_set, violation)) {
       // 自带的违例舍弃
       continue;
     }
