@@ -56,9 +56,6 @@ std::vector<Violation> DRCEngine::getViolationList(DETask& de_task)
 
   filterViolationList(de_task);
   if (de_task.get_proc_type() == DEProcType::kGet) {
-    if (de_task.get_net_type() == DENetType::kMultiNet) {
-      explandViolationList(de_task);
-    }
     buildViolationList(de_task);
   }
   return de_task.get_violation_list();
@@ -507,25 +504,19 @@ void DRCEngine::filterViolationList(DETask& de_task)
   de_task.set_violation_list(new_violation_list);
 }
 
-void DRCEngine::explandViolationList(DETask& de_task)
-{
-  std::vector<Violation> new_violation_list;
-  for (Violation& violation : de_task.get_violation_list()) {
-    for (Violation new_violation : getExpandedViolationList(de_task, violation)) {
-      new_violation_list.push_back(new_violation);
-    }
-  }
-  de_task.set_violation_list(new_violation_list);
-}
-
 void DRCEngine::buildViolationList(DETask& de_task)
 {
   ScaleAxis& gcell_axis = RTDM.getDatabase().get_gcell_axis();
 
+  std::vector<Violation> new_violation_list;
   for (Violation& violation : de_task.get_violation_list()) {
-    EXTLayerRect& violation_shape = violation.get_violation_shape();
-    violation_shape.set_grid_rect(RTUTIL.getClosedGCellGridRect(violation_shape.get_real_rect(), gcell_axis));
+    for (Violation new_violation : getExpandedViolationList(de_task, violation)) {
+      EXTLayerRect& violation_shape = new_violation.get_violation_shape();
+      violation_shape.set_grid_rect(RTUTIL.getClosedGCellGridRect(violation_shape.get_real_rect(), gcell_axis));
+      new_violation_list.push_back(new_violation);
+    }
   }
+  de_task.set_violation_list(new_violation_list);
 }
 
 #if 1  // aux

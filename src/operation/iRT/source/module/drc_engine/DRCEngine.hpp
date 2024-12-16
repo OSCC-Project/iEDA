@@ -54,7 +54,6 @@ class DRCEngine
   void readTask(DETask& de_task);
   void getViolationListByInterface(DETask& de_task);
   void filterViolationList(DETask& de_task);
-  void explandViolationList(DETask& de_task);
   void buildViolationList(DETask& de_task);
 
 #if 1  // aux
