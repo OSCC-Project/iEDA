@@ -89,6 +89,11 @@ bool LmGraphDataManager::buildGraphData()
 
         auto [node1, node2] = get_nodes(source_label.x, source_label.y, source_label.layer_id, target_label.x, target_label.y,
                                         target_label.layer_id, patch_layers);
+
+        /// ignore same node
+        if (node1 == node2) {
+          continue;
+        }
         lm_wire.set_start(node1);
         lm_wire.set_end(node2);
 #if 0
@@ -114,7 +119,10 @@ bool LmGraphDataManager::buildGraphData()
         auto [node1, node2] = get_nodes(bg::get<0>(start_point), bg::get<1>(start_point), bg::get<2>(start_point), bg::get<0>(end_point),
                                         bg::get<1>(end_point), bg::get<2>(end_point), patch_layers);
 
-        lm_wire.add_path(node1, node2);
+        /// ignore same node
+        if (node1 != node2) {
+          lm_wire.add_path(node1, node2);
+        }
 #if 0
         if (i == 0) {
           bk_end = node2;
