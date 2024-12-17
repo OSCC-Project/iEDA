@@ -278,7 +278,15 @@ bool LmNetChecker::isLocalConnectivity(LmNetWire& wire) const
       return false;
     }
   }
-  return true;
+  auto connect_nodes = wire.get_connected_nodes();
+  auto* front = connect_nodes.first;
+  auto* back = connect_nodes.second;
+  if (front->get_layer_id() != back->get_layer_id()) {
+    // check is via
+    return is_same_loc(front, back);
+  }
+  // check is wire (front's x,y != back's x,y)
+  return !is_same_loc(front, back);
 }
 Graph LmNetChecker::convertToGraph(LmNet& net) const
 {
@@ -432,7 +440,7 @@ bool LmLayoutChecker::checkLayout(std::map<int, LmNet> net_map)
     total++;
   }
 
-  LOG_ERROR << "Net connected succuss ratio : " << success_num << " / " << total;
+  LOG_INFO << "Net connected succuss ratio : " << success_num << " / " << total;
   return success_num == total;
 }
 
