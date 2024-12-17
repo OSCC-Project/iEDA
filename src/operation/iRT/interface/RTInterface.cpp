@@ -1131,9 +1131,6 @@ void RTInterface::outputSummary()
   // pa_summary
   {
     top_rt_summary.pa_summary.routing_access_point_num_map = rt_summary.pa_summary.routing_access_point_num_map;
-    for (auto& [type, access_point_num] : rt_summary.pa_summary.type_access_point_num_map) {
-      top_rt_summary.pa_summary.type_access_point_num_map[GetAccessPointTypeName()(type)] = access_point_num;
-    }
     top_rt_summary.pa_summary.total_access_point_num = rt_summary.pa_summary.total_access_point_num;
   }
   // sa_summary

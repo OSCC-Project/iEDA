@@ -55,7 +55,9 @@ void ViolationRepairer::repair()
   RTLOG.info(Loc::current(), "Starting...");
   VRModel vr_model = initVRModel();
   initNetFinalResultMap(vr_model);
+  buildNetFinalResultMap(vr_model);
   resetViolationSet(vr_model);
+  // debugPlotVRModel(vr_model, "after");
   updateSummary(vr_model);
   printSummary(vr_model);
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
@@ -108,13 +110,52 @@ void ViolationRepairer::initNetFinalResultMap(VRModel& vr_model)
           net_final_result_map[net_idx].insert(segment);
         }
       }
+      gcell_map[x][y].get_net_access_result_map().clear();
       for (auto& [net_idx, segment_set] : gcell_map[x][y].get_net_detailed_result_map()) {
         for (Segment<LayerCoord>* segment : segment_set) {
           net_final_result_map[net_idx].insert(segment);
         }
       }
+      gcell_map[x][y].get_net_detailed_result_map().clear();
     }
   }
+}
+
+void ViolationRepairer::buildNetFinalResultMap(VRModel& vr_model)
+{
+  Monitor monitor;
+  RTLOG.info(Loc::current(), "Starting...");
+
+  Die& die = RTDM.getDatabase().get_die();
+  std::vector<VRNet>& vr_net_list = vr_model.get_vr_net_list();
+
+  std::map<int32_t, std::set<Segment<LayerCoord>*>> net_final_result_map = RTDM.getNetFinalResultMap(die);
+  for (auto& [net_idx, segment_set] : net_final_result_map) {
+    std::vector<Segment<LayerCoord>> routing_segment_list;
+    for (Segment<LayerCoord>* segment : segment_set) {
+      routing_segment_list.emplace_back(segment->get_first(), segment->get_second());
+    }
+    std::vector<LayerCoord> candidate_root_coord_list;
+    std::map<LayerCoord, std::set<int32_t>, CmpLayerCoordByXASC> key_coord_pin_map;
+    std::vector<VRPin>& vr_pin_list = vr_net_list[net_idx].get_vr_pin_list();
+    for (size_t i = 0; i < vr_pin_list.size(); i++) {
+      LayerCoord coord = vr_pin_list[i].get_origin_access_point().getRealLayerCoord();
+      candidate_root_coord_list.push_back(coord);
+      key_coord_pin_map[coord].insert(static_cast<int32_t>(i));
+    }
+    MTree<LayerCoord> coord_tree = RTUTIL.getTreeByFullFlow(candidate_root_coord_list, routing_segment_list, key_coord_pin_map);
+    for (Segment<TNode<LayerCoord>*>& coord_segment : RTUTIL.getSegListByTree(coord_tree)) {
+      RTDM.updateNetFinalResultToGCellMap(
+          ChangeType::kAdd, net_idx, new Segment<LayerCoord>(coord_segment.get_first()->value(), coord_segment.get_second()->value()));
+    }
+  }
+  for (auto& [net_idx, segment_set] : net_final_result_map) {
+    for (Segment<LayerCoord>* segment : segment_set) {
+      RTDM.updateNetFinalResultToGCellMap(ChangeType::kDel, net_idx, segment);
+    }
+  }
+
+  RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
 void ViolationRepairer::resetViolationSet(VRModel& vr_model)

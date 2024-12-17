@@ -398,7 +398,7 @@ std::vector<AccessPoint> PinAccessor::getAccessPointList(PAModel& pa_model, int3
   uniformSampleCoordList(pa_model, layer_coord_list);
   std::vector<AccessPoint> access_point_list;
   for (LayerCoord& layer_coord : layer_coord_list) {
-    access_point_list.emplace_back(pin_idx, layer_coord, AccessPointType::kNoAccess);
+    access_point_list.emplace_back(pin_idx, layer_coord);
   }
   return access_point_list;
 }
@@ -1382,50 +1382,53 @@ void PinAccessor::uploadAccessResult(PABox& pa_box)
     }
     // access_point
     {
-      std::vector<LayerCoord> origin_coord_list;
+      std::vector<LayerCoord> pin_shape_coord_list;
       std::vector<LayerCoord> target_coord_list;
+      for (PAGroup& pa_group : pa_task->get_pa_group_list()) {
+        for (LayerCoord& coord : pa_group.get_coord_list()) {
+          if (!pa_group.get_is_target()) {
+            pin_shape_coord_list.push_back(coord);
+          } else {
+            target_coord_list.push_back(coord);
+          }
+        }
+      }
+      std::vector<LayerCoord> segment_coord_list;
+      for (Segment<LayerCoord>& segment : segment_list) {
+        segment_coord_list.push_back(segment.get_first());
+        segment_coord_list.push_back(segment.get_second());
+      }
+      auto getEqualCoord = [](std::vector<LayerCoord> a, std::vector<LayerCoord> b) {
+        std::sort(a.begin(), a.end(), CmpLayerCoordByXASC());
+        a.erase(std::unique(a.begin(), a.end()), a.end());
+        std::sort(b.begin(), b.end(), CmpLayerCoordByXASC());
+        b.erase(std::unique(b.begin(), b.end()), b.end());
+        for (size_t i = 0, j = 0; i < a.size() && j < b.size();) {
+          if (a[i] == b[j]) {
+            return a[i];
+            break;
+          } else if (CmpLayerCoordByXASC()(a[i], b[j])) {
+            i++;
+          } else {
+            j++;
+          }
+        }
+        return LayerCoord(-1, -1, -1);
+      };
       if (segment_list.empty()) {
-        for (PAGroup& pa_group : pa_task->get_pa_group_list()) {
-          for (LayerCoord& coord : pa_group.get_coord_list()) {
-            if (!pa_group.get_is_target()) {
-              origin_coord_list.push_back(coord);
-            } else {
-              target_coord_list.push_back(coord);
-            }
-          }
-        }
+        pa_pin->set_origin_access_point(AccessPoint(pa_pin->get_pin_idx(), getEqualCoord(pin_shape_coord_list, target_coord_list)));
+        pa_pin->set_extend_access_point(AccessPoint(pa_pin->get_pin_idx(), getEqualCoord(pin_shape_coord_list, target_coord_list)));
       } else {
-        for (Segment<LayerCoord>& segment : segment_list) {
-          origin_coord_list.push_back(segment.get_first());
-          origin_coord_list.push_back(segment.get_second());
-        }
-        for (PAGroup& pa_group : pa_task->get_pa_group_list()) {
-          if (pa_group.get_is_target()) {
-            for (LayerCoord& coord : pa_group.get_coord_list()) {
-              target_coord_list.push_back(coord);
-            }
-          }
-        }
+        pa_pin->set_origin_access_point(AccessPoint(pa_pin->get_pin_idx(), getEqualCoord(pin_shape_coord_list, segment_coord_list)));
+        pa_pin->set_extend_access_point(AccessPoint(pa_pin->get_pin_idx(), getEqualCoord(target_coord_list, segment_coord_list)));
       }
-      std::sort(origin_coord_list.begin(), origin_coord_list.end(), CmpLayerCoordByXASC());
-      origin_coord_list.erase(std::unique(origin_coord_list.begin(), origin_coord_list.end()), origin_coord_list.end());
-      std::sort(target_coord_list.begin(), target_coord_list.end(), CmpLayerCoordByXASC());
-      target_coord_list.erase(std::unique(target_coord_list.begin(), target_coord_list.end()), target_coord_list.end());
-
-      for (size_t i = 0, j = 0; i < origin_coord_list.size() && j < target_coord_list.size();) {
-        if (origin_coord_list[i] == target_coord_list[j]) {
-          AccessPoint access_point(pa_pin->get_pin_idx(), origin_coord_list[i], AccessPointType::kTrackGrid);
-          pa_pin->set_access_point(access_point);
-          break;
-        } else if (CmpLayerCoordByXASC()(origin_coord_list[i], target_coord_list[j])) {
-          i++;
-        } else {
-          j++;
-        }
+      if (pa_pin->get_origin_access_point().get_real_coord() == PlanarCoord(-1, -1)) {
+        RTLOG.error(Loc::current(), "The origin_access_point creation failed!");
       }
-      if (pa_pin->get_access_point().get_real_coord() == PlanarCoord(-1, -1)) {
-        RTLOG.error(Loc::current(), "The access_point creation failed!");
+      if (pa_pin->get_extend_access_point().get_real_coord() == PlanarCoord(-1, -1)) {
+        RTLOG.error(Loc::current(), "The extend_access_point creation failed!");
       }
+      pa_pin->set_access_point(pa_pin->get_extend_access_point());
     }
   }
 }
@@ -1485,9 +1488,18 @@ void PinAccessor::uploadAccessPoint(PAModel& pa_model)
       if (origin_pin.get_pin_idx() != pa_pin.get_pin_idx()) {
         RTLOG.error(Loc::current(), "The pin idx is not equal!");
       }
+      AccessPoint& origin_access_point = pa_pin.get_origin_access_point();
+      origin_access_point.set_grid_coord(RTUTIL.getGCellGridCoordByBBox(origin_access_point.get_real_coord(), gcell_axis, bounding_box));
+      origin_pin.set_origin_access_point(origin_access_point);
+
+      AccessPoint& extend_access_point = pa_pin.get_extend_access_point();
+      extend_access_point.set_grid_coord(RTUTIL.getGCellGridCoordByBBox(extend_access_point.get_real_coord(), gcell_axis, bounding_box));
+      origin_pin.set_extend_access_point(extend_access_point);
+
       AccessPoint& access_point = pa_pin.get_access_point();
       access_point.set_grid_coord(RTUTIL.getGCellGridCoordByBBox(access_point.get_real_coord(), gcell_axis, bounding_box));
       origin_pin.set_access_point(access_point);
+      
       RTDM.updateAccessNetPointToGCellMap(ChangeType::kAdd, pa_net.get_net_idx(), &origin_pin.get_access_point());
     }
   }
@@ -1913,7 +1925,6 @@ void PinAccessor::updateSummary(PAModel& pa_model)
   Summary& summary = RTDM.getDatabase().get_summary();
 
   std::map<int32_t, int32_t>& routing_access_point_num_map = summary.pa_summary.routing_access_point_num_map;
-  std::map<AccessPointType, int32_t>& type_access_point_num_map = summary.pa_summary.type_access_point_num_map;
   int32_t& total_access_point_num = summary.pa_summary.total_access_point_num;
   std::map<int32_t, int32_t>& routing_violation_num_map = summary.pa_summary.routing_violation_num_map;
   int32_t& total_violation_num = summary.pa_summary.total_violation_num;
@@ -1922,14 +1933,12 @@ void PinAccessor::updateSummary(PAModel& pa_model)
     routing_access_point_num_map[routing_layer.get_layer_idx()] = 0;
     routing_violation_num_map[routing_layer.get_layer_idx()] = 0;
   }
-  type_access_point_num_map = {{AccessPointType::kNone, 0}, {AccessPointType::kNoAccess, 0}, {AccessPointType::kTrackGrid, 0}};
   total_access_point_num = 0;
   total_violation_num = 0;
 
   for (auto& [net_idx, access_point_list] : RTDM.getNetAccessPointMap(die)) {
     for (AccessPoint* access_point : access_point_list) {
       routing_access_point_num_map[access_point->get_layer_idx()]++;
-      type_access_point_num_map[access_point->get_type()]++;
       total_access_point_num++;
     }
   }
@@ -1945,7 +1954,6 @@ void PinAccessor::printSummary(PAModel& pa_model)
   Summary& summary = RTDM.getDatabase().get_summary();
 
   std::map<int32_t, int32_t>& routing_access_point_num_map = summary.pa_summary.routing_access_point_num_map;
-  std::map<AccessPointType, int32_t>& type_access_point_num_map = summary.pa_summary.type_access_point_num_map;
   int32_t& total_access_point_num = summary.pa_summary.total_access_point_num;
   std::map<int32_t, int32_t>& routing_violation_num_map = summary.pa_summary.routing_violation_num_map;
   int32_t& total_violation_num = summary.pa_summary.total_violation_num;
@@ -1964,18 +1972,6 @@ void PinAccessor::printSummary(PAModel& pa_model)
     routing_access_point_num_map_table << fort::header << "Total" << total_access_point_num
                                        << RTUTIL.getPercentage(total_access_point_num, total_access_point_num) << fort::endr;
   }
-  fort::char_table type_access_point_num_map_table;
-  {
-    type_access_point_num_map_table << fort::header << "type"
-                                    << "access_point_num"
-                                    << "proportion" << fort::endr;
-    for (auto& [type, access_point_num] : type_access_point_num_map) {
-      type_access_point_num_map_table << GetAccessPointTypeName()(type) << access_point_num
-                                      << RTUTIL.getPercentage(access_point_num, total_access_point_num) << fort::endr;
-    }
-    type_access_point_num_map_table << fort::header << "Total" << total_access_point_num
-                                    << RTUTIL.getPercentage(total_access_point_num, total_access_point_num) << fort::endr;
-  }
   fort::char_table routing_violation_num_map_table;
   {
     routing_violation_num_map_table << fort::header << "routing_layer"
@@ -1989,7 +1985,7 @@ void PinAccessor::printSummary(PAModel& pa_model)
     routing_violation_num_map_table << fort::header << "Total" << total_violation_num
                                     << RTUTIL.getPercentage(total_violation_num, total_violation_num) << fort::endr;
   }
-  RTUTIL.printTableList({routing_access_point_num_map_table, type_access_point_num_map_table, routing_violation_num_map_table});
+  RTUTIL.printTableList({routing_access_point_num_map_table, routing_violation_num_map_table});
 }
 
 void PinAccessor::outputPlanarPinCSV(PAModel& pa_model)

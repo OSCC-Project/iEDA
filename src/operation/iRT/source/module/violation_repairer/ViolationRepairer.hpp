@@ -50,6 +50,7 @@ class ViolationRepairer
   std::vector<VRNet> convertToVRNetList(std::vector<Net>& net_list);
   VRNet convertToVRNet(Net& net);
   void initNetFinalResultMap(VRModel& vr_model);
+  void buildNetFinalResultMap(VRModel& vr_model);
   void resetViolationSet(VRModel& vr_model);
   std::vector<Violation> getMultiNetViolationList(VRModel& vr_model);
   std::vector<Violation> getSingleNetViolationList(VRModel& vr_model);
