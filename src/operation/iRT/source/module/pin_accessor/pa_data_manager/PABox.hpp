@@ -87,7 +87,6 @@ class PABox
   std::vector<PANode*>& get_path_node_list() { return _path_node_list; }
   std::vector<PANode*>& get_single_task_visited_node_list() { return _single_task_visited_node_list; }
   std::vector<Segment<LayerCoord>>& get_routing_segment_list() { return _routing_segment_list; }
-  std::vector<EXTLayerRect>& get_routing_patch_list() { return _routing_patch_list; }
   void set_curr_pa_task(PATask* curr_pa_task) { _curr_pa_task = curr_pa_task; }
   void set_start_node_list_list(const std::vector<std::vector<PANode*>>& start_node_list_list)
   {
@@ -103,7 +102,6 @@ class PABox
   {
     _routing_segment_list = routing_segment_list;
   }
-  void set_routing_patch_list(const std::vector<EXTLayerRect>& routing_patch_list) { _routing_patch_list = routing_patch_list; }
   // single path
   PriorityQueue<PANode*, std::vector<PANode*>, CmpPANodeCost>& get_open_queue() { return _open_queue; }
   std::vector<PANode*>& get_single_path_visited_node_list() { return _single_path_visited_node_list; }
@@ -139,7 +137,6 @@ class PABox
   std::vector<PANode*> _path_node_list;
   std::vector<PANode*> _single_task_visited_node_list;
   std::vector<Segment<LayerCoord>> _routing_segment_list;
-  std::vector<EXTLayerRect> _routing_patch_list;
   // single path
   PriorityQueue<PANode*, std::vector<PANode*>, CmpPANodeCost> _open_queue;
   std::vector<PANode*> _single_path_visited_node_list;

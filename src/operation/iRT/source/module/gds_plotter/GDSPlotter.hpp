@@ -37,6 +37,7 @@ class GDSPlotter
   static GDSPlotter& getInst();
   static void destroyInst();
   // function
+  void init();
   void plot(GPGDS& gp_gds, std::string gds_file_path);
   int32_t getGDSIdxByRouting(int32_t layer_idx);
   int32_t getGDSIdxByCut(int32_t below_layer_idx);
@@ -49,14 +50,13 @@ class GDSPlotter
   std::map<int32_t, int32_t> _gds_routing_layer_map;
   std::map<int32_t, int32_t> _gds_cut_layer_map;
 
-  GDSPlotter() { init(); }
+  GDSPlotter() = default;
   GDSPlotter(const GDSPlotter& other) = delete;
   GDSPlotter(GDSPlotter&& other) = delete;
   ~GDSPlotter() = default;
   GDSPlotter& operator=(const GDSPlotter& other) = delete;
   GDSPlotter& operator=(GDSPlotter&& other) = delete;
   // function
-  void init();
   void buildGDSLayerMap();
   void buildGraphLypFile();
   void writeLypFile(std::string lyp_file_path, std::vector<GPLYPLayer>& lyp_layer_list);

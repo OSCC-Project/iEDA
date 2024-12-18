@@ -17,6 +17,7 @@
 
 // #include <gperftools/heap-profiler.h>
 
+#include "api/TimingEngine.hh"
 #include "gtest/gtest.h"
 #include "liberty/Lib.hh"
 #include "log/Log.hh"
@@ -52,5 +53,17 @@ TEST_F(LibertyTest, rust_expr_builder) {
   LOG_FATAL_IF(!func_expr) << "func_expr is nullptr";
 }
 
-}  // namespace
+TEST_F(LibertyTest, print_liberty_library_json) {
+  const char* lib_path =
+      "/home/taosimin/nangate45/lib/NangateOpenCellLibrary_typical.lib";
+  Lib lib;
+  auto lib_rust_reader = lib.loadLibertyWithRustParser(lib_path);
+  lib_rust_reader.linkLib();
+  auto lib_library = lib_rust_reader.get_library_builder()->takeLib();
+  const char* json_file_names_n45 =
+      "/home/longshuaiying/lib_lef/"
+      "NangateOpenCellLibrary_typical.json";
+  lib_library->printLibertyLibraryJson(json_file_names_n45);
+}
 
+}  // namespace

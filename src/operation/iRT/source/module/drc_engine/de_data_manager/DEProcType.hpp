@@ -20,41 +20,33 @@
 
 namespace irt {
 
-enum class DEProcessType
+enum class DEProcType
 {
   kNone,
-  kSkip,
-  kRoutingCost,
-  kCutCost,
-  kRoutingPatch
+  kIgnore,
+  kGet
 };
 
-struct GetDEProcessTypeName
+struct GetDEProcTypeName
 {
-  std::string operator()(const DEProcessType& process_type) const
+  std::string operator()(const DEProcType& proc_type) const
   {
-    std::string process_type_name;
-    switch (process_type) {
-      case DEProcessType::kNone:
-        process_type_name = "none";
+    std::string proc_type_name;
+    switch (proc_type) {
+      case DEProcType::kNone:
+        proc_type_name = "none";
         break;
-      case DEProcessType::kSkip:
-        process_type_name = "skip";
+      case DEProcType::kIgnore:
+        proc_type_name = "ignore";
         break;
-      case DEProcessType::kRoutingCost:
-        process_type_name = "routing_cost";
-        break;
-      case DEProcessType::kCutCost:
-        process_type_name = "cut_cost";
-        break;
-      case DEProcessType::kRoutingPatch:
-        process_type_name = "routing_patch";
+      case DEProcType::kGet:
+        proc_type_name = "get";
         break;
       default:
         RTLOG.error(Loc::current(), "Unrecognized type!");
         break;
     }
-    return process_type_name;
+    return proc_type_name;
   }
 };
 

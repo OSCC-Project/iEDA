@@ -16,26 +16,38 @@
 // ***************************************************************************************
 #pragma once
 
-#include "Pin.hpp"
+#include "Logger.hpp"
 
 namespace irt {
 
-class PAPin : public Pin
+enum class DEFuncType
 {
- public:
-  PAPin() = default;
-  explicit PAPin(const Pin& pin) : Pin(pin) {}
-  ~PAPin() = default;
-  // getter
-  std::vector<AccessPoint>& get_access_point_list() { return _access_point_list; }
-  bool get_is_accessed() const { return _is_accessed; }
-  // setter
-  void set_access_point_list(const std::vector<AccessPoint>& access_point_list) { _access_point_list = access_point_list; }
-  void set_is_accessed(const bool is_accessed) { _is_accessed = is_accessed; }
-  // function
- private:
-  std::vector<AccessPoint> _access_point_list;
-  bool _is_accessed = false;
+  kNone,
+  kSkipViolation,
+  kExpandViolation
+};
+
+struct GetDEFuncTypeName
+{
+  std::string operator()(const DEFuncType& func_type) const
+  {
+    std::string func_type_name;
+    switch (func_type) {
+      case DEFuncType::kNone:
+        func_type_name = "none";
+        break;
+      case DEFuncType::kSkipViolation:
+        func_type_name = "skip_violation";
+        break;
+      case DEFuncType::kExpandViolation:
+        func_type_name = "expand_violation";
+        break;
+      default:
+        RTLOG.error(Loc::current(), "Unrecognized type!");
+        break;
+    }
+    return func_type_name;
+  }
 };
 
 }  // namespace irt

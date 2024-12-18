@@ -66,7 +66,7 @@ PwrToggleSPData PwrPropagateToggleSP::calcSeqDataOutToggleSP(
   LOG_INFO_IF(!launch_clock_domain)
       << "power vertex " << data_in_vertex->getName()
       << " not found launch clock domain.";
-  if (data_out_vertex->getName() == "bus/clint/_1098_:QN") {
+  if (data_out_vertex->getName() == "swerv_exu__30129_:QN") {
     LOG_INFO << "Debug";
   }
   auto capcure_clock_domain = data_out_vertex->getOwnFastestClockDomain();
@@ -223,7 +223,14 @@ unsigned PwrPropagateToggleSP::operator()(PwrGraph* the_graph) {
         auto& data_out_vertexes = seq_vertex->get_seq_out_vertexes();
         for (auto* data_out_vertex : data_out_vertexes) {
           auto* seq_data_out_net = data_out_vertex->getDesignObj()->get_net();
+          // If the net is not loaded, skip this data out vertex.
           if (seq_data_out_net && seq_data_out_net->getLoads().empty()) {
+            continue;
+          }
+          
+          // If the dataout vertex is not in data path, skip this data out.
+          auto capcure_clock_domain = data_out_vertex->getOwnFastestClockDomain();
+          if (!capcure_clock_domain) {
             continue;
           }
 

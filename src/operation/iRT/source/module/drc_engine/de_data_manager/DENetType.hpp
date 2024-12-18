@@ -16,26 +16,38 @@
 // ***************************************************************************************
 #pragma once
 
-#include "Pin.hpp"
+#include "Logger.hpp"
 
 namespace irt {
 
-class PAPin : public Pin
+enum class DENetType
 {
- public:
-  PAPin() = default;
-  explicit PAPin(const Pin& pin) : Pin(pin) {}
-  ~PAPin() = default;
-  // getter
-  std::vector<AccessPoint>& get_access_point_list() { return _access_point_list; }
-  bool get_is_accessed() const { return _is_accessed; }
-  // setter
-  void set_access_point_list(const std::vector<AccessPoint>& access_point_list) { _access_point_list = access_point_list; }
-  void set_is_accessed(const bool is_accessed) { _is_accessed = is_accessed; }
-  // function
- private:
-  std::vector<AccessPoint> _access_point_list;
-  bool _is_accessed = false;
+  kNone,
+  kSingleNet,
+  kMultiNet
+};
+
+struct GetDENetTypeName
+{
+  std::string operator()(const DENetType& net_type) const
+  {
+    std::string net_type_name;
+    switch (net_type) {
+      case DENetType::kNone:
+        net_type_name = "none";
+        break;
+      case DENetType::kSingleNet:
+        net_type_name = "single_net";
+        break;
+      case DENetType::kMultiNet:
+        net_type_name = "multi_net";
+        break;
+      default:
+        RTLOG.error(Loc::current(), "Unrecognized type!");
+        break;
+    }
+    return net_type_name;
+  }
 };
 
 }  // namespace irt

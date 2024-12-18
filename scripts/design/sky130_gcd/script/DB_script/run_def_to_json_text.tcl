@@ -29,7 +29,7 @@ def_init -path [expr {[info exists ::env(INPUT_DEF)]? $::env(INPUT_DEF) : $DEFAU
 ##   Full layer information instance:(-discard li/mcon/nwell/pwell/met/via)
 ##   use (-discard null) to choose all layer
 #===========================================================
-json_save -path $::env(GDS_JSON_FILE) -discard li
+json_save -path $::env(LAYOUT_JSON_FILE) -discard li
 
 #===========================================================
 ##   Exit 

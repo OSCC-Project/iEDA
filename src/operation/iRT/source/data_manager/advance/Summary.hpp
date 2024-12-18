@@ -28,6 +28,8 @@ class PASummary
   std::map<int32_t, int32_t> routing_access_point_num_map;
   std::map<AccessPointType, int32_t> type_access_point_num_map;
   int32_t total_access_point_num = 0;
+  std::map<int32_t, int32_t> routing_violation_num_map;
+  int32_t total_violation_num = 0;
 };
 
 class SASummary
