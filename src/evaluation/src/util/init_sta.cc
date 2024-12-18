@@ -692,7 +692,8 @@ double InitSTA::reportTNS(const char* clock_name, ista::AnalysisMode mode)
   return STA_INST->getTNS(clock_name, mode);
 }
 
-double InitSTA::getNetResistance(const std::string& net_name) const {
+double InitSTA::getNetResistance(const std::string& net_name) const
+{
   auto netlist = STA_INST->get_netlist();
   ista::Net* ista_net = netlist->findNet(net_name.c_str());
   auto* rc_net = STA_INST->get_ista()->getRcNet(ista_net);
@@ -700,7 +701,8 @@ double InitSTA::getNetResistance(const std::string& net_name) const {
   double resistance = rc_net->getNetResistance();
   return resistance;
 }
-double InitSTA::getNetCapacitance(const std::string& net_name) const {
+double InitSTA::getNetCapacitance(const std::string& net_name) const
+{
   auto netlist = STA_INST->get_netlist();
   ista::Net* ista_net = netlist->findNet(net_name.c_str());
   auto* rc_net = STA_INST->get_ista()->getRcNet(ista_net);
@@ -714,16 +716,39 @@ double InitSTA::getNetSlew(const std::string& net_name) const
   auto netlist = STA_INST->get_netlist();
   ista::Net* ista_net = netlist->findNet(net_name.c_str());
   auto* rc_net = STA_INST->get_ista()->getRcNet(ista_net);
+
+  double driver_slew = 0.0;
+  auto* driver = rc_net->get_net()->getDriver();
+  if (driver && driver->isPin()) {
+    driver_slew = STA_INST->getSlew(driver->getFullName().c_str(), ista::AnalysisMode::kMax, ista::TransType::kRise);
+  }
   // get driver slew for net slew.
   auto loads = ista_net->getLoads();
 
   double sum_load_slew = 0.0;
   for (auto* load : loads) {
     std::string load_name = load->getFullName();
-    sum_load_slew += rc_net->slew(load_name.c_str(), 0.0, ista::AnalysisMode::kMax, ista::TransType::kRise).value_or(0.0);
+    sum_load_slew += rc_net->slew(load_name.c_str(), driver_slew, ista::AnalysisMode::kMax, ista::TransType::kRise).value_or(0.0);
   }
-  double net_avg_slew = sum_load_slew / loads.size();
+  double net_avg_slew = (sum_load_slew / loads.size()) - driver_slew;
   return net_avg_slew;
+}
+
+std::map<std::string, double> InitSTA::getAllNodesSlew(const std::string& net_name) const
+{
+  auto netlist = STA_INST->get_netlist();
+  ista::Net* ista_net = netlist->findNet(net_name.c_str());
+  auto* rc_net = STA_INST->get_ista()->getRcNet(ista_net);
+
+  double driver_slew = 0.0;
+  auto* driver = rc_net->get_net()->getDriver();
+  if (driver && driver->isPin()) {
+    driver_slew = STA_INST->getSlew(driver->getFullName().c_str(), ista::AnalysisMode::kMax, ista::TransType::kRise);
+  }
+
+  auto all_node_slews = rc_net->getAllNodeSlew(driver_slew, ista::AnalysisMode::kMax, ista::TransType::kRise);
+
+  return all_node_slews;
 }
 
 double InitSTA::getNetDelay(const std::string& net_name) const
@@ -745,7 +770,8 @@ double InitSTA::getNetDelay(const std::string& net_name) const
   return net_avg_delay;
 }
 
-std::pair<double, double> InitSTA::getNetToggleAndVoltage(const std::string& net_name) const {
+std::pair<double, double> InitSTA::getNetToggleAndVoltage(const std::string& net_name) const
+{
   return PW_INST->get_power()->getNetToggleAndVoltageData(net_name.c_str());
 }
 
@@ -757,7 +783,8 @@ double InitSTA::getNetPower(const std::string& net_name) const
   return net_power;
 }
 
-double InitSTA::getWireResistance(const std::string& net_name, const std::string& wire_node_name) const {
+double InitSTA::getWireResistance(const std::string& net_name, const std::string& wire_node_name) const
+{
   auto netlist = STA_INST->get_netlist();
   ista::Net* ista_net = netlist->findNet(net_name.c_str());
   auto* rc_net = STA_INST->get_ista()->getRcNet(ista_net);
@@ -768,7 +795,8 @@ double InitSTA::getWireResistance(const std::string& net_name, const std::string
   return resistance;
 }
 
-double InitSTA::getWireCapacitance(const std::string& net_name, const std::string& wire_node_name) const {
+double InitSTA::getWireCapacitance(const std::string& net_name, const std::string& wire_node_name) const
+{
   auto netlist = STA_INST->get_netlist();
   ista::Net* ista_net = netlist->findNet(net_name.c_str());
   auto* rc_net = STA_INST->get_ista()->getRcNet(ista_net);
@@ -777,19 +805,6 @@ double InitSTA::getWireCapacitance(const std::string& net_name, const std::strin
 
   double load = rc_net->getNodeLoad(wire_node_name.c_str());
   return load;
-}
-
-double InitSTA::getWireSlew(const std::string& net_name, const std::string& wire_node_name) const
-{
-  auto netlist = STA_INST->get_netlist();
-  ista::Net* ista_net = netlist->findNet(net_name.c_str());
-  auto* rc_net = STA_INST->get_ista()->getRcNet(ista_net);
-
-  LOG_FATAL_IF(!rc_net) << "net " << net_name << " not found rc net.";
-
-  auto slew = rc_net->slew(wire_node_name.c_str(), 0.0, ista::AnalysisMode::kMax, ista::TransType::kRise);
-
-  return slew.value_or(0.0);
 }
 
 double InitSTA::getWireDelay(const std::string& net_name, const std::string& wire_node_name) const
@@ -801,10 +816,6 @@ double InitSTA::getWireDelay(const std::string& net_name, const std::string& wir
   auto delay = rc_net->delay(wire_node_name.c_str());
 
   return delay.value_or(0.0);
-}
-
-double InitSTA::getWirePower(const std::string& net_name, const std::string& wire_node_name) const {
-
 }
 
 void InitSTA::updateTiming(const std::vector<TimingNet*>& timing_net_list, int32_t dbu_unit)
@@ -855,7 +866,8 @@ void InitSTA::updateTiming(const std::vector<TimingNet*>& timing_net_list, int32
 
       int64_t wire_length = 0;
       wire_length = std::abs(first_pin->x - second_pin->x) + std::abs(first_pin->y - second_pin->y);
-      // wire_length = first_pin->get_coord().computeDist(second_pin->get_coord());
+      // wire_length =
+      // first_pin->get_coord().computeDist(second_pin->get_coord());
 
       std::optional<double> width = std::nullopt;
 
@@ -930,7 +942,8 @@ void InitSTA::updateTiming(const std::vector<TimingNet*>& timing_net_list, const
       }
 
       // int64_t wire_length = 0;
-      // wire_length = first_pin->get_coord().computeDist(second_pin->get_coord());
+      // wire_length =
+      // first_pin->get_coord().computeDist(second_pin->get_coord());
       int64_t wire_length = 0;
       wire_length = std::abs(first_pin->x - second_pin->x) + std::abs(first_pin->y - second_pin->y);
 

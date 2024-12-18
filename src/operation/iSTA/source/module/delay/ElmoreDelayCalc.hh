@@ -213,7 +213,7 @@ class RctNode {
   std::string _name;
 
   double _cap = 0.0;
-  double _res = 0.0; //!< from driver to node resistance.
+  double _res = 0.0;  //!< from driver to node resistance.
   double _load = 0.0;
   double _delay = 0.0;
   double _mc = 0.0;    //!< Elmore * cap
@@ -590,12 +590,16 @@ class RcNet {
       std::optional<LibCurrentData*> output_current, AnalysisMode mode,
       TransType trans_type);
 
-  std::optional<double> slew(const char* node_name, double from_slew, AnalysisMode mode,
-    TransType trans_type);
+  std::optional<double> slew(const char* node_name, double from_slew,
+                             AnalysisMode mode, TransType trans_type);
 
   virtual std::optional<double> slew(
       Pin& to, double from_slew, std::optional<LibCurrentData*> output_current,
       AnalysisMode mode, TransType trans_type);
+
+  std::map<std::string, double> getAllNodeSlew(double driver_slew,
+                                                  AnalysisMode mode,
+                                                  TransType trans_type);
 
   void printRctInfo();
 

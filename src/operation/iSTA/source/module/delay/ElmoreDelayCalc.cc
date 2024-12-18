@@ -49,12 +49,11 @@
  * @date 2021-01-27
  */
 
-#include "ElmoreDelayCalc.hh"
-
 #include <numeric>
 #include <queue>
 #include <utility>
 
+#include "ElmoreDelayCalc.hh"
 #include "log/Log.hh"
 
 namespace ista {
@@ -206,6 +205,10 @@ RctEdge* RcTree::insertEdge(RctNode* from_node, RctNode* to_node, double res,
                             bool in_order) {
   auto& edge = _edges.emplace_back(*from_node, *to_node, res);
   edge.set_is_in_order(in_order);
+  if (from_node == to_node) {
+    // self loop need break;
+    edge.set_is_break();
+  }
 
   from_node->_fanout.push_back(&edge);
   to_node->_fanin.push_back(&edge);
@@ -917,10 +920,10 @@ std::set<RctNode*> RcNet::getLoadNodes() {
 }
 
 /**
- * @brief Get node load. 
- * 
- * @param node_name 
- * @return double 
+ * @brief Get node load.
+ *
+ * @param node_name
+ * @return double
  */
 double RcNet::getNodeLoad(const char* node_name) {
   double load = 0.0;
@@ -957,9 +960,9 @@ double RcNet::getResistance(AnalysisMode mode, TransType trans_type,
 
 /**
  * @brief Get rc net resistance from driver pin to load pin.
- * 
- * @param node_name 
- * @return double 
+ *
+ * @param node_name
+ * @return double
  */
 double RcNet::getNodeResistance(const char* node_name) {
   double res = 0.0;
@@ -974,8 +977,8 @@ double RcNet::getNodeResistance(const char* node_name) {
 
 /**
  * @brief Get rc net resistance.
- * 
- * @return double 
+ *
+ * @return double
  */
 double RcNet::getNetResistance() {
   double res = 0.0;
@@ -997,8 +1000,8 @@ double RcNet::getNetResistance() {
  * @return std::optional<double>
  */
 std::optional<double> RcNet::delay(const char* node_name,
-                              DelayMethod delay_method) {
-   if (_rct.index() == 0) {
+                                   DelayMethod delay_method) {
+  if (_rct.index() == 0) {
     return std::nullopt;
   }
 
@@ -1041,8 +1044,8 @@ std::optional<std::pair<double, Eigen::MatrixXd>> RcNet::delay(
   return std::make_pair(node->delay(mode, trans_type), waveform);
 }
 
-std::optional<double> RcNet::slew(const char* node_name, double from_slew, AnalysisMode mode,
-    TransType trans_type) {
+std::optional<double> RcNet::slew(const char* node_name, double from_slew,
+                                  AnalysisMode mode, TransType trans_type) {
   if (_rct.index() == 0) {
     return std::nullopt;
   }
@@ -1068,6 +1071,48 @@ std::optional<double> RcNet::slew(
   }
 
   return node->slew(mode, trans_type, from_slew);
+}
+
+/**
+ * @brief Get all node slew based on the from driver slew.
+ *
+ * @param driver_slew
+ * @param mode
+ * @param trans_type
+ * @return std::map<std::string, double>
+ */
+std::map<std::string, double> RcNet::getAllNodeSlew(double driver_slew,
+                                                       AnalysisMode mode,
+                                                       TransType trans_type) {
+  std::map<std::string, double> all_node_slews;
+  if (_rct.index() == 0) {
+    return all_node_slews;
+  }
+
+  std::function<void(RctNode*, RctNode*, double)> get_snk_slew =
+      [&get_snk_slew, this, mode, trans_type, &all_node_slews](
+          RctNode* parent_node, RctNode* src_node, double from_slew) {
+        auto& fanout_edges = src_node->get_fanout();
+        for (auto* fanout_edge : fanout_edges) {
+          auto& snk_node = fanout_edge->_to;
+          if (fanout_edge->isBreak() || &snk_node == parent_node) {
+            continue;
+          }
+          
+          auto snk_slew = snk_node.slew(mode, trans_type, from_slew);
+          all_node_slews[snk_node.get_name()] = snk_slew;
+
+          get_snk_slew(src_node, &snk_node, snk_slew);
+        }
+      };
+
+  auto* rc_tree = rct();
+  auto* rc_root = rc_tree->_root;
+  all_node_slews[rc_root->get_name()] = driver_slew;
+
+  get_snk_slew(nullptr, rc_root, driver_slew);
+
+  return all_node_slews;
 }
 
 /**

@@ -432,10 +432,13 @@ void TimingEngine::makeResistor(Net* net, RctNode* from_node, RctNode* to_node,
  */
 void TimingEngine::updateRCTreeInfo(Net* net) {
   auto* rc_net = _timing_engine->get_ista()->getRcNet(net);
+  
   if (rc_net) {
     rc_net->updateRcTreeInfo();
     auto* rct = rc_net->rct();
     if (rct) {
+      // check and break loop.
+      rc_net->checkLoop();
       rct->updateRcTiming();
     }
   }

@@ -75,6 +75,7 @@ class InitSTA
   double getNetResistance(const std::string& net_name) const;
   double getNetCapacitance(const std::string& net_name) const;
   double getNetSlew(const std::string& net_name) const;
+  std::map<std::string, double> getAllNodesSlew(const std::string& net_name) const;
   double getNetDelay(const std::string& net_name) const;
   std::pair<double, double> getNetToggleAndVoltage(const std::string& net_name) const;
   double getNetPower(const std::string& net_name) const;
@@ -82,9 +83,8 @@ class InitSTA
   // for wire R、C、slew、delay power.
   double getWireResistance(const std::string& net_name, const std::string& wire_node_name) const;
   double getWireCapacitance(const std::string& net_name, const std::string& wire_node_name) const;
-  double getWireSlew(const std::string& net_name, const std::string& wire_node_name) const;
   double getWireDelay(const std::string& net_name, const std::string& wire_node_name) const;
-  double getWirePower(const std::string& net_name, const std::string& wire_node_name) const;  
+  // double getWirePower(const std::string& net_name, const std::string& wire_node_name) const;  
 
   void buildRCTree(const std::string& routing_type);
   void buildLmRCTree(ilm::LmLayout* lm_layout);
