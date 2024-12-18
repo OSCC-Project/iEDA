@@ -54,9 +54,12 @@ void ViolationRepairer::repair()
   Monitor monitor;
   RTLOG.info(Loc::current(), "Starting...");
   VRModel vr_model = initVRModel();
+  updateAccessPoint(vr_model);
   initNetFinalResultMap(vr_model);
   buildNetFinalResultMap(vr_model);
   resetViolationSet(vr_model);
+  // debugPlotVRModel(vr_model, "before");
+  fixViolation(vr_model);
   // debugPlotVRModel(vr_model, "after");
   updateSummary(vr_model);
   printSummary(vr_model);
@@ -96,6 +99,33 @@ VRNet ViolationRepairer::convertToVRNet(Net& net)
     vr_net.get_vr_pin_list().push_back(VRPin(pin));
   }
   return vr_net;
+}
+
+void ViolationRepairer::updateAccessPoint(VRModel& vr_model)
+{
+  Die& die = RTDM.getDatabase().get_die();
+
+  for (auto& [net_idx, access_point_set] : RTDM.getNetAccessPointMap(die)) {
+    for (AccessPoint* access_point : access_point_set) {
+      RTDM.updateAccessNetPointToGCellMap(ChangeType::kDel, net_idx, access_point);
+    }
+  }
+  for (VRNet& vr_net : vr_model.get_vr_net_list()) {
+    Net* origin_net = vr_net.get_origin_net();
+    if (origin_net->get_net_idx() != vr_net.get_net_idx()) {
+      RTLOG.error(Loc::current(), "The net idx is not equal!");
+    }
+    for (VRPin& vr_pin : vr_net.get_vr_pin_list()) {
+      Pin& origin_pin = origin_net->get_pin_list()[vr_pin.get_pin_idx()];
+      if (origin_pin.get_pin_idx() != vr_pin.get_pin_idx()) {
+        RTLOG.error(Loc::current(), "The pin idx is not equal!");
+      }
+      vr_pin.set_access_point(vr_pin.get_origin_access_point());
+      // 之后流程将暂时使用origin_access_point作为主要access point
+      origin_pin.set_access_point(origin_pin.get_origin_access_point());
+      RTDM.updateAccessNetPointToGCellMap(ChangeType::kAdd, vr_net.get_net_idx(), &origin_pin.get_access_point());
+    }
+  }
 }
 
 void ViolationRepairer::initNetFinalResultMap(VRModel& vr_model)
@@ -139,14 +169,14 @@ void ViolationRepairer::buildNetFinalResultMap(VRModel& vr_model)
     std::map<LayerCoord, std::set<int32_t>, CmpLayerCoordByXASC> key_coord_pin_map;
     std::vector<VRPin>& vr_pin_list = vr_net_list[net_idx].get_vr_pin_list();
     for (size_t i = 0; i < vr_pin_list.size(); i++) {
-      LayerCoord coord = vr_pin_list[i].get_origin_access_point().getRealLayerCoord();
+      LayerCoord coord = vr_pin_list[i].get_access_point().getRealLayerCoord();
       candidate_root_coord_list.push_back(coord);
       key_coord_pin_map[coord].insert(static_cast<int32_t>(i));
     }
     MTree<LayerCoord> coord_tree = RTUTIL.getTreeByFullFlow(candidate_root_coord_list, routing_segment_list, key_coord_pin_map);
     for (Segment<TNode<LayerCoord>*>& coord_segment : RTUTIL.getSegListByTree(coord_tree)) {
-      RTDM.updateNetFinalResultToGCellMap(
-          ChangeType::kAdd, net_idx, new Segment<LayerCoord>(coord_segment.get_first()->value(), coord_segment.get_second()->value()));
+      RTDM.updateNetFinalResultToGCellMap(ChangeType::kAdd, net_idx,
+                                          new Segment<LayerCoord>(coord_segment.get_first()->value(), coord_segment.get_second()->value()));
     }
   }
   for (auto& [net_idx, segment_set] : net_final_result_map) {
@@ -288,6 +318,10 @@ std::vector<Violation> ViolationRepairer::getSingleNetViolationList(VRModel& vr_
     de_task.set_need_checked_net_set(need_checked_net_set);
   }
   return RTDE.getViolationList(de_task);
+}
+
+void ViolationRepairer::fixViolation(VRModel& vr_model)
+{
 }
 
 #if 1  // exhibit

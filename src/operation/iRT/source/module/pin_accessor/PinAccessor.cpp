@@ -1428,7 +1428,6 @@ void PinAccessor::uploadAccessResult(PABox& pa_box)
       if (pa_pin->get_extend_access_point().get_real_coord() == PlanarCoord(-1, -1)) {
         RTLOG.error(Loc::current(), "The extend_access_point creation failed!");
       }
-      pa_pin->set_access_point(pa_pin->get_extend_access_point());
     }
   }
 }
@@ -1477,7 +1476,8 @@ void PinAccessor::uploadAccessPoint(PAModel& pa_model)
     }
     std::vector<PlanarCoord> coord_list;
     for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
-      coord_list.push_back(pa_pin.get_access_point().get_real_coord());
+      coord_list.push_back(pa_pin.get_origin_access_point().get_real_coord());
+      coord_list.push_back(pa_pin.get_extend_access_point().get_real_coord());
     }
     BoundingBox& bounding_box = pa_net.get_bounding_box();
     bounding_box.set_real_rect(RTUTIL.getBoundingBox(coord_list));
@@ -1496,10 +1496,9 @@ void PinAccessor::uploadAccessPoint(PAModel& pa_model)
       extend_access_point.set_grid_coord(RTUTIL.getGCellGridCoordByBBox(extend_access_point.get_real_coord(), gcell_axis, bounding_box));
       origin_pin.set_extend_access_point(extend_access_point);
 
-      AccessPoint& access_point = pa_pin.get_access_point();
-      access_point.set_grid_coord(RTUTIL.getGCellGridCoordByBBox(access_point.get_real_coord(), gcell_axis, bounding_box));
-      origin_pin.set_access_point(access_point);
-      
+      pa_pin.set_access_point(pa_pin.get_extend_access_point());
+      // 之后流程将暂时使用extend_access_point作为主要access point
+      origin_pin.set_access_point(origin_pin.get_extend_access_point());
       RTDM.updateAccessNetPointToGCellMap(ChangeType::kAdd, pa_net.get_net_idx(), &origin_pin.get_access_point());
     }
   }
