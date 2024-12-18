@@ -99,18 +99,6 @@ void DrcConditionManager::checkPolygons(std::string layer, DrcEngineLayout* layo
     rule_min_enclosed_area = 0;
   }
 
-  // area
-  int rule_min_area = DrcTechRuleInst->getMinArea(layer);
-  auto rule_lef58_area_list = DrcTechRuleInst->getLef58AreaList(layer);
-  int max_rule_lef58_area = 0;
-  for (auto& rule_lef58_area : rule_lef58_area_list) {
-    max_rule_lef58_area = std::max(max_rule_lef58_area, rule_lef58_area->get_min_area());
-  }
-  if (_check_select.find(ViolationEnumType::kArea) == _check_select.end()) {
-    rule_min_area = 0;
-    rule_lef58_area_list.clear();
-  }
-
   // methods
   auto get_edge_orientation = [](const ieda_solver::GeometryPoint& p1, const ieda_solver::GeometryPoint& p2) {
     return p1.x() == p2.x() ? ieda_solver::VERTICAL : ieda_solver::HORIZONTAL;
@@ -416,53 +404,6 @@ void DrcConditionManager::checkPolygons(std::string layer, DrcEngineLayout* layo
       }
 #endif
     }
-
-// area
-#ifndef DEBUGCLOSE_AREA
-    if (polygon_area < rule_min_area) {
-      ieda_solver::GeometryRect violation_rect;
-      ieda_solver::envelope(violation_rect, polygon);
-      addViolation(violation_rect, layer, ViolationEnumType::kArea);
-      ++area_count;
-    } else if (polygon_area < max_rule_lef58_area) {
-      std::vector<ieda_solver::GeometryRect> current_polygon_max_rects;
-      for (auto& rule_lef58_area : rule_lef58_area_list) {
-        if (polygon_area >= rule_lef58_area->get_min_area()) {
-          continue;
-        }
-        auto rule_min_edge_length = rule_lef58_area->get_except_edge_length()->get_min_edge_length();
-        auto rule_max_edge_length = rule_lef58_area->get_except_edge_length()->get_max_edge_length();
-        if (max_edge_length < rule_min_edge_length || max_edge_length >= rule_max_edge_length) {
-          continue;
-        }
-
-        auto rule_except_size_width = rule_lef58_area->get_except_min_size()[0].get_min_width();
-        auto rule_except_size_length = rule_lef58_area->get_except_min_size()[0].get_min_length();
-
-        if (current_polygon_max_rects.empty()) {
-          ieda_solver::getMaxRectangles(current_polygon_max_rects, polygon);
-        }
-
-        bool is_ignore = false;
-        for (auto& rect : current_polygon_max_rects) {
-          auto orientation = ieda_solver::getWireDirection(rect);
-          int rect_width = ieda_solver::getWireWidth(rect, orientation.get_perpendicular());
-          int rect_length = ieda_solver::getWireWidth(rect, orientation);
-          if (rect_width >= rule_except_size_width && rect_length >= rule_except_size_length) {
-            is_ignore = true;
-            break;
-          }
-        }
-
-        if (!is_ignore) {
-          ieda_solver::GeometryRect violation_rect;
-          ieda_solver::envelope(violation_rect, polygon);
-          addViolation(violation_rect, layer, ViolationEnumType::kArea);
-          ++area_count;
-        }
-      }
-    }
-#endif
   }
 
   DEBUGOUTPUT(DEBUGHIGHLIGHT("Polygon Filter:\t") << "-\ttime = " << states.elapsedRunTime() << "\tmemory = " << states.memoryDelta()

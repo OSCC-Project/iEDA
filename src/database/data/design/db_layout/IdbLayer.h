@@ -245,7 +245,7 @@ class IdbMinStep
     kSTEP,
   };
   IdbMinStep() = default;
-  explicit IdbMinStep(int32_t min_step) : _min_step_length(min_step){};
+  explicit IdbMinStep(int32_t min_step) : _min_step_length(min_step) {};
   [[nodiscard]] int32_t get_min_step_length() const { return _min_step_length; }
   [[nodiscard]] Type get_type() const { return _type; }
   [[nodiscard]] bool has_length_sum() const { return _has_length_sum; }
@@ -535,7 +535,7 @@ class IdbLayerCutSpacing
   class AdjacentCuts
   {
    public:
-    AdjacentCuts(int32_t adjacent_cuts, int32_t cut_within) : _adjacnet_cuts(adjacent_cuts), _cut_within(cut_within){};
+    AdjacentCuts(int32_t adjacent_cuts, int32_t cut_within) : _adjacnet_cuts(adjacent_cuts), _cut_within(cut_within) {};
 
     void set_adjacent_cuts(int32_t adjacent_cuts) { _adjacnet_cuts = adjacent_cuts; }
     void set_cut_within(int32_t cut_within) { _cut_within = cut_within; }
