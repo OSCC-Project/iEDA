@@ -88,7 +88,14 @@ void LmFeatureTiming::buildNetTimingPowerFeature()
 
   auto& lm_graph = _layout->get_graph();
   auto& net_id_map = _layout->get_net_name_map();
-  for (auto [net_name, net_id] : net_id_map) {
+
+  #pragma omp parallel for schedule(dynamic)
+  for (int i = 0; i < (int) net_id_map.size(); ++i) {
+    auto it = net_id_map.begin();
+    std::advance(it, i);
+    auto& net_name = it->first;
+    auto& net_id = it->second;
+
     LOG_INFO << "build net " << net_name << " feature ";
     auto* lm_net = lm_graph.get_net(net_id);
     auto* net_feature = lm_net->get_feature(true);
