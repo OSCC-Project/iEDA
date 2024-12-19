@@ -433,6 +433,10 @@ void InitSTA::buildLmRCTree(ilm::LmLayout* lm_layout)
     sta_net = sta_netlist->findNet(idb_net->get_net_name().c_str());
     STA_INST->resetRcTree(sta_net);
 
+    if (!wire_graph.contains(net_id)) {
+      continue;
+    }
+
     auto lm_net = wire_graph.at(net_id);
     auto idb_inst_pins = idb_net->get_instance_pin_list()->get_pin_list();
     auto io_pins = idb_net->get_io_pins()->get_pin_list();
