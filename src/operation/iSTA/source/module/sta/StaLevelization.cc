@@ -16,7 +16,7 @@
 // ***************************************************************************************
 /**
  * @file StaLevelization.cc
- * @author shy long (longshy@pcl.ac.cn)
+ * @author longshy (longshy@pcl.ac.cn)
  * @brief The levelization implemention from end vertex of the graph.
  * @version 0.1
  * @date 2021-09-16
@@ -61,7 +61,7 @@ unsigned StaLevelization::operator()(StaArc* the_arc) {
   if (the_arc->is_loop_disable()) {
     return 1;
   }
-  
+
   auto* src_vertex = the_arc->get_src();
   auto* snk_vertex = the_arc->get_snk();
   src_vertex->exec(*this);
