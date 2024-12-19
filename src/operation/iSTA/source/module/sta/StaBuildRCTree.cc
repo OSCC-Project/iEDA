@@ -130,6 +130,7 @@ unsigned StaBuildRCTree::operator()(StaGraph* the_graph) {
   {
     ThreadPool pool(getNumThreads());
     auto* spef_file = spef_parser.get_spef_file();
+    std::vector<RcNet*> all_nets;
     void* spef_net;
     FOREACH_VEC_ELEM(&(spef_file->_nets), void, spef_net) {
       auto* rust_spef_net =
@@ -149,10 +150,13 @@ unsigned StaBuildRCTree::operator()(StaGraph* the_graph) {
 
       // enqueue and store future
       pool.enqueue(
-          [design_nl, &spef_parser, this](const auto& spef_net) {
+          [design_nl, &spef_parser, &all_nets, this](const auto& spef_net) {
             auto* design_net = design_nl->findNet(spef_net->_name);
             if (design_net) {
               auto* rc_net = getSta()->getRcNet(design_net);
+              if (rc_net->rct()) {
+                all_nets.emplace_back(rc_net);
+              }
               // DLOG_INFO << "Update Rc tree timing " << spef_name;
               rc_net->updateRcTiming(spef_net);
             } else {
@@ -162,9 +166,11 @@ unsigned StaBuildRCTree::operator()(StaGraph* the_graph) {
           },
           rust_spef_net);
     }
+    calcRcTiming(all_nets);
   }
 #else
   auto* spef_file = spef_parser.get_spef_file();
+  std::vector<RcNet*> all_nets;
   void* spef_net;
   FOREACH_VEC_ELEM(&(spef_file->_nets), void, spef_net) {
     auto* rust_spef_net =
@@ -193,6 +199,9 @@ unsigned StaBuildRCTree::operator()(StaGraph* the_graph) {
       auto* rc_net = getSta()->getRcNet(design_net);
       // DLOG_INFO << "Update Rc tree timing " << spef_name;
       rc_net->updateRcTiming(rust_spef_net);
+      if (rc_net->rct()) {
+        all_nets.emplace_back(rc_net);
+      }
 
       // printYaml(spef_net);
 #endif
@@ -200,6 +209,17 @@ unsigned StaBuildRCTree::operator()(StaGraph* the_graph) {
       LOG_FATAL << "build rc tree not found design net " << spef_name;
     }
   }
+  calcRcTiming(all_nets);
+  // printGraphViz get result for debugging.
+  // for (const auto net : all_nets) {
+  //   if (net->rct()) {
+  //     if (net->name() == "in1" || net->name() == "r2q" ||
+  //         net->name() == "u1z" || net->name() == "u2z" ||
+  //         net->name() == "out") {
+  //       net->rct()->printGraphViz();
+  //     }
+  //   }
+  // }
 
 #endif
 

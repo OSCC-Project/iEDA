@@ -62,7 +62,7 @@
 
 namespace ista {
 
-const int THREAD_PER_BLOCK_NUM = 64;
+const int THREAD_PER_BLOCK_NUM = 512;
 
 std::unique_ptr<RCNetCommonInfo> RcNet::_rc_net_common_info;
 
@@ -513,13 +513,27 @@ void RcTree::updateRcTiming() {
 
 #if CUDA_DELAY
   levelizeRcTree();
+  // {
+  //   std::ofstream outFile("RCTree_level_size_1.txt", std::ios::app);
+  //   if (!outFile) {
+  //     std::cerr << "Error opening file: " << "RCTree_level_size" <<
+  //     std::endl; return;
+  //   }
+
+  //   for (size_t i = 0; i < _level_to_points.size(); ++i) {
+  //     outFile << _level_to_points[i].size() << " ";
+  //   }
+  //   outFile << std::endl;
+  //   outFile.close();
+  // }
+
   applyDelayDataToArray();
-  initGpuMemory();
-  updateLoad();
-  updateDelay();
-  updateLDelay();
-  updateResponse();
-  freeGpuMemory();
+  // initGpuMemory();
+  // updateLoad();
+  // updateDelay();
+  // updateLDelay();
+  // updateResponse();
+  // freeGpuMemory();
 #else
   updateLoad(nullptr, _root);
   updateDelay(nullptr, _root);
@@ -574,7 +588,7 @@ void RcTree::printGraphViz() {
   LOG_INFO << "dump graph dotviz start";
 
   std::ofstream dot_file;
-  dot_file.open("./tree_gpu.dot",
+  dot_file.open("./tree_gpu_gloabl.dot",
                 std::ios::app);  //, std::ios::app(for test.)
 
   //(for test.)
@@ -1557,10 +1571,10 @@ void RcNet::updateRcTiming(RustSpefNet* spef_net) {
 
     // the previous is annotated.(for test.)
     // nangate45:"FE_OFN0_text_out_80"
-    if (name() == "in1" || name() == "r2q" || name() == "u1z" ||
-        name() == "u2z" || name() == "out") {
-      rct.printGraphViz();
-    }
+    // if (name() == "in1" || name() == "r2q" || name() == "u1z" ||
+    //     name() == "u2z" || name() == "out") {
+    //   rct.printGraphViz();
+    // }
   }
 
   rust_free_spef_net(spef_net);

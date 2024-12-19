@@ -109,6 +109,7 @@ class RctNode {
   [[nodiscard]] unsigned isRoot() const { return _is_root; }
 
   [[nodiscard]] double nodeLoad() const { return _load; }
+  void set_load(double load) { _load = load; }
   double nodeLoad(AnalysisMode mode, TransType trans_type);
   [[nodiscard]] double cap() const { return _obj ? _obj->cap() + _cap : _cap; }
   [[nodiscard]] double get_cap() const { return _cap; }
@@ -118,6 +119,8 @@ class RctNode {
   }
   void setCap(double cap);
   void incrCap(double cap);
+
+  std::map<ModeTransPair, double>& get_nload() { return _nload; }
 
   double get_ures(AnalysisMode mode, TransType trans_type) {
     return _ures[ModeTransPair(mode, trans_type)];
@@ -415,6 +418,59 @@ class RcTree {
   auto get_node_num() { return _str2nodes.size(); }
   auto& get_edges() { return _edges; }
   auto& get_coupled_nodes() { return _coupled_nodes; }
+  const std::vector<float>& get_cap_array() const { return _cap_array; }
+  const std::vector<float>& get_ncap_array() const { return _ncap_array; }
+  const std::vector<float>& get_res_array() const { return _res_array; }
+  const std::vector<int>& get_parent_pos_array() const {
+    return _parent_pos_array;
+  }
+  void set_load_array(const std::vector<float>& load_array) {
+    _load_array = load_array;
+  }
+
+  void set_nload_array(const std::vector<float>& nload_array) {
+    _nload_array = nload_array;
+  }
+
+  void set_delay_array(const std::vector<float>& delay_array) {
+    _delay_array = delay_array;
+  }
+
+  void set_ndelay_array(const std::vector<float>& ndelay_array) {
+    _ndelay_array = ndelay_array;
+  }
+
+  void set_ures_array(const std::vector<float>& ures_array) {
+    _ures_array = ures_array;
+  }
+
+  void set_ldelay_array(const std::vector<float>& ldelay_array) {
+    _ldelay_array = ldelay_array;
+  }
+
+  void set_beta_array(const std::vector<float>& beta_array) {
+    _beta_array = beta_array;
+  }
+
+  void set_impulse_array(const std::vector<float>& impulse_array) {
+    _impulse_array = impulse_array;
+  }
+
+  std::vector<float>& get_load_array() { return _load_array; }
+
+  std::vector<float>& get_nload_array() { return _nload_array; }
+
+  std::vector<float>& get_delay_array() { return _delay_array; }
+
+  std::vector<float>& get_ndelay_array() { return _ndelay_array; }
+
+  std::vector<float>& get_ures_array() { return _ures_array; }
+
+  std::vector<float>& get_ldelay_array() { return _ldelay_array; }
+
+  std::vector<float>& get_beta_array() { return _beta_array; }
+
+  std::vector<float>& get_impulse_array() { return _impulse_array; }
 
   void removeEdge(RctEdge* the_edge) {
     auto it =
@@ -671,5 +727,7 @@ class RcNet {
  private:
   static std::unique_ptr<RCNetCommonInfo> _rc_net_common_info;
 };
+
+void calcRcTiming(std::vector<RcNet*> all_nets);
 
 }  // namespace ista
