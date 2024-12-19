@@ -102,8 +102,8 @@ void DRCEngine::init()
 
 std::vector<Violation> DRCEngine::getViolationList(DETask& de_task)
 {
-  // getViolationListByInterface(de_task);
-  getViolationListBySelf(de_task);
+  getViolationListByInterface(de_task);
+  // getViolationListBySelf(de_task);
 
   filterViolationList(de_task);
   if (de_task.get_proc_type() == DEProcType::kGet) {
