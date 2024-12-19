@@ -5,6 +5,7 @@ add_library(idrc_condition_manager
   condition_jog.cpp
   condition_polygon.cpp
   condition_paralle_length.cpp
+  condition_area.cpp
 )
 
 target_link_libraries(idrc_condition_manager
