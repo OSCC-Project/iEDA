@@ -587,6 +587,10 @@ void LmLayoutInit::initNets()
   for (int net_id = 0; net_id < (int) idb_nets->get_net_list().size(); ++net_id) {
     /// init net id map
     auto* idb_net = idb_nets->get_net_list()[net_id];
+    /// ignore net if pin number < 2
+    if (idb_net->get_pin_number() < 2) {
+      continue;
+    }
     _layout->add_net_map(net_id, idb_net->get_net_name());
 
     auto* lm_net = graph.addNet(net_id);
@@ -614,6 +618,11 @@ void LmLayoutInit::initNets()
 #pragma omp parallel for schedule(dynamic)
   for (int net_id = 0; net_id < (int) idb_nets->get_net_list().size(); ++net_id) {
     auto* idb_net = idb_nets->get_net_list()[net_id];
+    /// ignore net if pin number < 2
+    if (idb_net->get_pin_number() < 2) {
+      continue;
+    }
+
     auto* lm_net = graph.get_net(net_id);
 
     for (auto* idb_inst_pin : idb_net->get_instance_pin_list()->get_pin_list()) {
