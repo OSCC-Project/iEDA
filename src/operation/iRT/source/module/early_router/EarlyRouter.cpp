@@ -158,7 +158,7 @@ void EarlyRouter::generateAccessPoint(ERModel& er_model)
         layer_coord.set_coord(max_area_shape.getMidPoint());
         layer_coord.set_layer_idx(max_area_shape.get_layer_idx());
       }
-      er_pin.set_access_point(AccessPoint(er_pin.get_pin_idx(), layer_coord, AccessPointType::kNoAccess));
+      er_pin.set_access_point(AccessPoint(er_pin.get_pin_idx(), layer_coord));
     }
 
     std::vector<PlanarCoord> coord_list;

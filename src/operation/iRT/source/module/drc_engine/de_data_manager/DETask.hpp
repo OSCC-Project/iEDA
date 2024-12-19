@@ -67,8 +67,8 @@ class DETask
   void set_violation_list(const std::vector<Violation>& violation_list) { _violation_list = violation_list; }
   // function
  private:
-  DEProcType _proc_type;
-  DENetType _net_type;
+  DEProcType _proc_type = DEProcType::kNone;
+  DENetType _net_type = DENetType::kNone;
   std::string _top_name;
   PlanarRect _check_region;
   std::vector<std::pair<EXTLayerRect*, bool>> _env_shape_list;

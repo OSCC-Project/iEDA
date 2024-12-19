@@ -16,38 +16,28 @@
 // ***************************************************************************************
 #pragma once
 
-#include "Logger.hpp"
+#include <string>
+#include <vector>
+
+#include "EXTLayerRect.hpp"
+#include "LayerCoord.hpp"
+#include "Pin.hpp"
 
 namespace irt {
 
-enum class DEFuncType
+class VRPin : public Pin
 {
-  kNone,
-  kSkipViolation,
-  kExpandViolation
-};
+ public:
+  VRPin() = default;
+  explicit VRPin(const Pin& pin) : Pin(pin) {}
+  ~VRPin() = default;
+  // getter
 
-struct GetDEFuncTypeName
-{
-  std::string operator()(const DEFuncType& func_type) const
-  {
-    std::string func_type_name;
-    switch (func_type) {
-      case DEFuncType::kNone:
-        func_type_name = "none";
-        break;
-      case DEFuncType::kSkipViolation:
-        func_type_name = "skip_violation";
-        break;
-      case DEFuncType::kExpandViolation:
-        func_type_name = "expand_violation";
-        break;
-      default:
-        RTLOG.error(Loc::current(), "Unrecognized type!");
-        break;
-    }
-    return func_type_name;
-  }
+  // setter
+
+  // function
+
+ private:
 };
 
 }  // namespace irt

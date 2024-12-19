@@ -16,34 +16,25 @@
 // ***************************************************************************************
 #pragma once
 
-#include "EXTLayerCoord.hpp"
-#include "LayerCoord.hpp"
-#include "Orientation.hpp"
-#include "RTHeader.hpp"
+#include "VRNet.hpp"
 
 namespace irt {
 
-class AccessPoint : public EXTLayerCoord
+class VRModel
 {
  public:
-  AccessPoint() = default;
-  AccessPoint(int32_t pin_idx, const LayerCoord& coord)
-  {
-    _pin_idx = pin_idx;
-    set_real_coord(coord);
-    set_layer_idx(coord.get_layer_idx());
-  }
-  ~AccessPoint() = default;
+  VRModel() = default;
+  ~VRModel() = default;
   // getter
-  int32_t get_pin_idx() const { return _pin_idx; }
+  std::vector<VRNet>& get_vr_net_list() { return _vr_net_list; }
+  int32_t get_iter() const { return _iter; }
   // setter
-  void set_pin_idx(const int32_t pin_idx) { _pin_idx = pin_idx; }
-  // function
-  LayerCoord getGridLayerCoord() { return LayerCoord(get_grid_coord(), get_layer_idx()); }
-  LayerCoord getRealLayerCoord() { return LayerCoord(get_real_coord(), get_layer_idx()); }
+  void set_vr_net_list(const std::vector<VRNet>& vr_net_list) { _vr_net_list = vr_net_list; }
+  void set_iter(const int32_t iter) { _iter = iter; }
 
  private:
-  int32_t _pin_idx = -1;
+  std::vector<VRNet> _vr_net_list;
+  int32_t _iter = -1;
 };
 
 }  // namespace irt

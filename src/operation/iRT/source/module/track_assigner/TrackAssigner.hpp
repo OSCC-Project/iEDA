@@ -51,7 +51,7 @@ class TrackAssigner
   TAModel initTAModel();
   std::vector<TANet> convertToTANetList(std::vector<Net>& net_list);
   TANet convertToTANet(Net& net);
-  void ignorePreViolation(TAModel& ta_model);
+  void ignoreViolation(TAModel& ta_model);
   void setTAParameter(TAModel& ta_model);
   void initTAPanelMap(TAModel& ta_model);
   void buildPanelSchedule(TAModel& ta_model);
@@ -107,7 +107,6 @@ class TrackAssigner
 #if 1  // update env
   void updateFixedRectToGraph(TAPanel& ta_panel, ChangeType change_type, int32_t net_idx, EXTLayerRect* fixed_rect, bool is_routing);
   void updateFixedRectToGraph(TAPanel& ta_panel, ChangeType change_type, int32_t net_idx, LayerRect& rect, bool is_routing);
-  void updateFixedRectToGraph(TAPanel& ta_panel, ChangeType change_type, int32_t net_idx, EXTLayerRect& patch);
   void updateNetResultToGraph(TAPanel& ta_panel, ChangeType change_type, int32_t net_idx, Segment<LayerCoord>& segment);
   void addViolationToGraph(TAPanel& ta_panel, Violation& violation);
   void addViolationToGraph(TAPanel& ta_panel, LayerRect& searched_rect, std::vector<Segment<LayerCoord>>& overlap_segment_list);

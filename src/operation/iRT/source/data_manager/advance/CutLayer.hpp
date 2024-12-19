@@ -34,6 +34,8 @@ class CutLayer
   int32_t get_curr_prl() const { return _curr_prl; }
   int32_t get_curr_prl_spacing() const { return _curr_prl_spacing; }
   int32_t get_curr_eol_spacing() const { return _curr_eol_spacing; }
+  int32_t get_curr_eol_prl() const { return _curr_eol_prl; }
+  int32_t get_curr_eol_prl_spacing() const { return _curr_eol_prl_spacing; }
   int32_t get_above_spacing() const { return _above_spacing; }
   int32_t get_above_prl() const { return _above_prl; }
   int32_t get_above_prl_spacing() const { return _above_prl_spacing; }
@@ -48,6 +50,8 @@ class CutLayer
   void set_curr_prl(const int32_t curr_prl) { _curr_prl = curr_prl; }
   void set_curr_prl_spacing(const int32_t curr_prl_spacing) { _curr_prl_spacing = curr_prl_spacing; }
   void set_curr_eol_spacing(const int32_t curr_eol_spacing) { _curr_eol_spacing = curr_eol_spacing; }
+  void set_curr_eol_prl(const int32_t curr_eol_prl) { _curr_eol_prl = curr_eol_prl; }
+  void set_curr_eol_prl_spacing(const int32_t curr_eol_prl_spacing) { _curr_eol_prl_spacing = curr_eol_prl_spacing; }
   void set_above_spacing(const int32_t above_spacing) { _above_spacing = above_spacing; }
   void set_above_prl(const int32_t above_prl) { _above_prl = above_prl; }
   void set_above_prl_spacing(const int32_t above_prl_spacing) { _above_prl_spacing = above_prl_spacing; }
@@ -59,16 +63,19 @@ class CutLayer
   int32_t _layer_idx = -1;
   int32_t _layer_order = -1;
   std::string _layer_name;
-  // curr spacing
+  // curr prl 
   int32_t _curr_spacing = -1;
   int32_t _curr_prl = -1;
   int32_t _curr_prl_spacing = -1;
+  // curr eol 
   int32_t _curr_eol_spacing = -1;
-  // above spacing
+  int32_t _curr_eol_prl = -1;
+  int32_t _curr_eol_prl_spacing = -1;
+  // above prl
   int32_t _above_spacing = -1;
   int32_t _above_prl = -1;
   int32_t _above_prl_spacing = -1;
-  // below spacing
+  // below prl
   int32_t _below_spacing = -1;
   int32_t _below_prl = -1;
   int32_t _below_prl_spacing = -1;

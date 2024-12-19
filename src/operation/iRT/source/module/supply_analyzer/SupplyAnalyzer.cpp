@@ -171,14 +171,6 @@ void SupplyAnalyzer::analyzeSupply(SAModel& sa_model)
             }
           }
         }
-        for (auto& [net_idx, patch_set] : RTDM.getNetAccessPatchMap(search_rect)) {
-          for (EXTLayerRect* patch : patch_set) {
-            if (search_rect.get_layer_idx() != patch->get_layer_idx()) {
-              continue;
-            }
-            obs_rect_list.push_back(patch->get_real_rect());
-          }
-        }
       }
       for (LayerRect& wire : getCrossingWireList(search_rect)) {
         if (isAccess(wire, obs_rect_list)) {
@@ -450,19 +442,6 @@ void SupplyAnalyzer::debugPlotSAModel(SAModel& sa_model)
       }
     }
     gp_gds.addStruct(access_result_struct);
-  }
-
-  // net_access_patch
-  for (auto& [net_idx, patch_set] : RTDM.getNetAccessPatchMap(die)) {
-    GPStruct access_patch_struct(RTUTIL.getString("access_patch(net_", net_idx, ")"));
-    for (EXTLayerRect* patch : patch_set) {
-      GPBoundary gp_boundary;
-      gp_boundary.set_data_type(static_cast<int32_t>(GPDataType::kShape));
-      gp_boundary.set_rect(patch->get_real_rect());
-      gp_boundary.set_layer_idx(RTGP.getGDSIdxByRouting(patch->get_layer_idx()));
-      access_patch_struct.push(gp_boundary);
-    }
-    gp_gds.addStruct(access_patch_struct);
   }
 
   // supply_map
