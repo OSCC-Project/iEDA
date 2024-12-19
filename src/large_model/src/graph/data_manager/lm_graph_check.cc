@@ -248,6 +248,11 @@ void GraphCheckerBase::writeToPy(const Graph& graph, LmNet& net, const std::stri
 
 bool LmNetChecker::isLocalConnectivity(LmNet& net) const
 {
+  /// ignore net if pin number < 2
+  if (net.get_pin_ids().size() < 2) {
+    return true;
+  }
+
   auto& wires = net.get_wires();
   // 1. Check wire inner connectivity
   for (auto& wire : wires) {

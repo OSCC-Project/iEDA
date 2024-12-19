@@ -69,6 +69,11 @@ bool LmGraphDataManager::buildGraphData()
 
   for (size_t net_id = 0; net_id < idb_nets.size(); ++net_id) {
     auto* idb_net = idb_nets[net_id];
+    /// ignore net if pin number < 2
+    if (idb_net->get_pin_number() < 2) {
+      continue;
+    }
+
     auto wire_graph = gen.buildGraph(idb_net);
     auto* lm_net = layout_graph.get_net(net_id);
     lm_net->clearWire();
