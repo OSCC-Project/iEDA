@@ -57,12 +57,11 @@ void ViolationRepairer::repair()
   updateAccessPoint(vr_model);
   initNetFinalResultMap(vr_model);
   buildNetFinalResultMap(vr_model);
-  resetViolationSet(vr_model);
+  clearIgnoredViolation(vr_model);
+  uploadViolation(vr_model);
   // debugPlotVRModel(vr_model, "before");
-  fixViolation(vr_model);
+  repairViolation(vr_model);
   // debugPlotVRModel(vr_model, "after");
-  updateSummary(vr_model);
-  printSummary(vr_model);
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
@@ -188,7 +187,12 @@ void ViolationRepairer::buildNetFinalResultMap(VRModel& vr_model)
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
-void ViolationRepairer::resetViolationSet(VRModel& vr_model)
+void ViolationRepairer::clearIgnoredViolation(VRModel& vr_model)
+{
+  RTDE.clearTempIgnoredViolationSet();
+}
+
+void ViolationRepairer::uploadViolation(VRModel& vr_model)
 {
   Monitor monitor;
   RTLOG.info(Loc::current(), "Starting...");
@@ -198,8 +202,6 @@ void ViolationRepairer::resetViolationSet(VRModel& vr_model)
   for (Violation* violation : RTDM.getViolationSet(die)) {
     RTDM.updateViolationToGCellMap(ChangeType::kDel, violation);
   }
-  RTDE.clearTempIgnoredViolationSet();
-
   for (Violation violation : getMultiNetViolationList(vr_model)) {
     RTDM.updateViolationToGCellMap(ChangeType::kAdd, new Violation(violation));
   }
@@ -320,7 +322,27 @@ std::vector<Violation> ViolationRepairer::getSingleNetViolationList(VRModel& vr_
   return RTDE.getViolationList(de_task);
 }
 
-void ViolationRepairer::fixViolation(VRModel& vr_model)
+void ViolationRepairer::repairViolation(VRModel& vr_model)
+{
+  for (size_t i = 0; i < 10; i++) {
+    initVRBoxList(vr_model);
+    buildBoxSchedule(vr_model);
+    repairVRBoxList(vr_model);
+    uploadViolation(vr_model);
+    updateSummary(vr_model);
+    printSummary(vr_model);
+  }
+}
+
+void ViolationRepairer::initVRBoxList(VRModel& vr_model)
+{
+}
+
+void ViolationRepairer::buildBoxSchedule(VRModel& vr_model)
+{
+}
+
+void ViolationRepairer::repairVRBoxList(VRModel& vr_model)
 {
 }
 

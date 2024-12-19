@@ -52,10 +52,14 @@ class ViolationRepairer
   void updateAccessPoint(VRModel& vr_model);
   void initNetFinalResultMap(VRModel& vr_model);
   void buildNetFinalResultMap(VRModel& vr_model);
-  void resetViolationSet(VRModel& vr_model);
+  void clearIgnoredViolation(VRModel& vr_model);
+  void uploadViolation(VRModel& vr_model);
   std::vector<Violation> getMultiNetViolationList(VRModel& vr_model);
   std::vector<Violation> getSingleNetViolationList(VRModel& vr_model);
-  void fixViolation(VRModel& vr_model);
+  void repairViolation(VRModel& vr_model);
+  void initVRBoxList(VRModel& vr_model);
+  void buildBoxSchedule(VRModel& vr_model);
+  void repairVRBoxList(VRModel& vr_model);
 
 #if 1  // exhibit
   void updateSummary(VRModel& vr_model);
