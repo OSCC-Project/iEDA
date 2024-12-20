@@ -1060,10 +1060,9 @@ void RcTree::updateDelay() {
 /**
  * @brief gpu speed up update the ldelay of the rc node.
  *
- * @param cap_array
  * @param ncap_array
- * @param load_array
- * @param nload_array
+ * @param ndelay_array
+ * @param ldelay_array
  * @param parent_pos_array
  * @param start_pos
  * @param num_count
@@ -1151,7 +1150,7 @@ void RcTree::updateLDelay() {
 }
 
 /**
- * @brief gpu speed up update the delay of the rc node.
+ * @brief gpu speed up update the response of the rc node.
  *
  * @param res_array
  * @param ldelay_array

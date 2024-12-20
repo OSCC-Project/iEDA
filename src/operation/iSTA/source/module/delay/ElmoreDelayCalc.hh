@@ -121,6 +121,11 @@ class RctNode {
   void incrCap(double cap);
 
   std::map<ModeTransPair, double>& get_nload() { return _nload; }
+  std::map<ModeTransPair, double>& get_ndelay() { return _ndelay; }
+  std::map<ModeTransPair, double>& get_ures() { return _ures; }
+  std::map<ModeTransPair, double>& get_ldelay() { return _ldelay; }
+  std::map<ModeTransPair, double>& get_beta() { return _beta; }
+  std::map<ModeTransPair, double>& get_impulse() { return _impulse; }
 
   double get_ures(AnalysisMode mode, TransType trans_type) {
     return _ures[ModeTransPair(mode, trans_type)];
@@ -134,6 +139,7 @@ class RctNode {
   }
 
   [[nodiscard]] double delay() const { return _delay; }
+  void set_delay(double delay) { _delay = delay; }
   double delay(AnalysisMode mode, TransType trans_type);
   [[nodiscard]] double delayD2M() const {
     return _m2 == 0 ? 0 : _delay * _delay / sqrt(_m2) * log(2);
