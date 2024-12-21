@@ -898,7 +898,6 @@ void LayerAssigner::updateSummary(LAModel& la_model)
   Die& die = RTDM.getDatabase().get_die();
   GridMap<GCell>& gcell_map = RTDM.getDatabase().get_gcell_map();
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
-  std::vector<CutLayer>& cut_layer_list = RTDM.getDatabase().get_cut_layer_list();
   std::vector<std::vector<ViaMaster>>& layer_via_master_list = RTDM.getDatabase().get_layer_via_master_list();
   Summary& summary = RTDM.getDatabase().get_summary();
   int32_t enable_timing = RTDM.getConfig().enable_timing;
@@ -917,18 +916,16 @@ void LayerAssigner::updateSummary(LAModel& la_model)
   std::vector<GridMap<LANode>>& layer_node_map = la_model.get_layer_node_map();
   std::vector<LANet>& la_net_list = la_model.get_la_net_list();
 
-  for (RoutingLayer& routing_layer : routing_layer_list) {
-    routing_demand_map[routing_layer.get_layer_idx()] = 0;
-    routing_overflow_map[routing_layer.get_layer_idx()] = 0;
-    routing_wire_length_map[routing_layer.get_layer_idx()] = 0;
-  }
+  routing_demand_map.clear();
   total_demand = 0;
+  routing_overflow_map.clear();
   total_overflow = 0;
+  routing_wire_length_map.clear();
   total_wire_length = 0;
-  for (CutLayer& cut_layer : cut_layer_list) {
-    cut_via_num_map[cut_layer.get_layer_idx()] = 0;
-  }
+  cut_via_num_map.clear();
   total_via_num = 0;
+  clock_timing.clear();
+  power_map.clear();
 
   for (int32_t layer_idx = 0; layer_idx < static_cast<int32_t>(layer_node_map.size()); layer_idx++) {
     GridMap<LANode>& la_node_map = layer_node_map[layer_idx];

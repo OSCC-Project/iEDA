@@ -41,6 +41,7 @@ class Database
   std::vector<std::string>& get_lef_file_path_list() { return _lef_file_path_list; }
   std::string& get_def_file_path() { return _def_file_path; }
   int32_t get_micron_dbu() const { return _micron_dbu; }
+  int32_t get_manufacture_grid() const { return _manufacture_grid; }
   ScaleAxis& get_gcell_axis() { return _gcell_axis; }
   Die& get_die() { return _die; }
   Row& get_row() { return _row; }
@@ -66,6 +67,7 @@ class Database
   void set_lef_file_path_list(const std::vector<std::string>& lef_file_path_list) { _lef_file_path_list = lef_file_path_list; }
   void set_def_file_path(const std::string& def_file_path) { _def_file_path = def_file_path; }
   void set_micron_dbu(const int32_t micron_dbu) { _micron_dbu = micron_dbu; }
+  void set_manufacture_grid(const int32_t manufacture_grid) { _manufacture_grid = manufacture_grid; }
   void set_detection_distance(const int32_t detection_distance) { _detection_distance = detection_distance; }
   // function
 
@@ -74,6 +76,7 @@ class Database
   std::vector<std::string> _lef_file_path_list;
   std::string _def_file_path;
   int32_t _micron_dbu = -1;
+  int32_t _manufacture_grid = -1;
   ScaleAxis _gcell_axis;
   Die _die;
   Row _row;

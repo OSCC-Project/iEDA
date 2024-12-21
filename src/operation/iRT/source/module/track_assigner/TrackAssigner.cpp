@@ -1424,7 +1424,6 @@ void TrackAssigner::updateSummary(TAModel& ta_model)
 {
   int32_t micron_dbu = RTDM.getDatabase().get_micron_dbu();
   Die& die = RTDM.getDatabase().get_die();
-  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
   Summary& summary = RTDM.getDatabase().get_summary();
 
   std::map<int32_t, double>& routing_wire_length_map = summary.ta_summary.routing_wire_length_map;
@@ -1432,11 +1431,9 @@ void TrackAssigner::updateSummary(TAModel& ta_model)
   std::map<int32_t, int32_t>& routing_violation_num_map = summary.ta_summary.routing_violation_num_map;
   int32_t& total_violation_num = summary.ta_summary.total_violation_num;
 
-  for (RoutingLayer& routing_layer : routing_layer_list) {
-    routing_wire_length_map[routing_layer.get_layer_idx()] = 0;
-    routing_violation_num_map[routing_layer.get_layer_idx()] = 0;
-  }
+  routing_wire_length_map.clear();
   total_wire_length = 0;
+  routing_violation_num_map.clear();
   total_violation_num = 0;
 
   for (auto& [net_idx, segment_set] : RTDM.getNetDetailedResultMap(die)) {

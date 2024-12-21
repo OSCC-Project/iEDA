@@ -1797,8 +1797,6 @@ void DetailedRouter::updateSummary(DRModel& dr_model)
 {
   int32_t micron_dbu = RTDM.getDatabase().get_micron_dbu();
   Die& die = RTDM.getDatabase().get_die();
-  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
-  std::vector<CutLayer>& cut_layer_list = RTDM.getDatabase().get_cut_layer_list();
   std::vector<std::vector<ViaMaster>>& layer_via_master_list = RTDM.getDatabase().get_layer_via_master_list();
   Summary& summary = RTDM.getDatabase().get_summary();
   int32_t enable_timing = RTDM.getConfig().enable_timing;
@@ -1814,16 +1812,14 @@ void DetailedRouter::updateSummary(DRModel& dr_model)
 
   std::vector<DRNet>& dr_net_list = dr_model.get_dr_net_list();
 
-  for (RoutingLayer& routing_layer : routing_layer_list) {
-    routing_wire_length_map[routing_layer.get_layer_idx()] = 0;
-    routing_violation_num_map[routing_layer.get_layer_idx()] = 0;
-  }
+  routing_wire_length_map.clear();
   total_wire_length = 0;
-  total_violation_num = 0;
-  for (CutLayer& cut_layer : cut_layer_list) {
-    cut_via_num_map[cut_layer.get_layer_idx()] = 0;
-  }
+  cut_via_num_map.clear();
   total_via_num = 0;
+  routing_violation_num_map.clear();
+  total_violation_num = 0;
+  clock_timing.clear();
+  power_map.clear();
 
   for (auto& [net_idx, segment_set] : RTDM.getNetDetailedResultMap(die)) {
     for (Segment<LayerCoord>* segment : segment_set) {

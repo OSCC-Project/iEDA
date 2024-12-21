@@ -432,7 +432,6 @@ std::map<int32_t, std::set<EXTLayerRect*>> DataManager::getNetFinalPatchMap(EXTP
   return net_final_patch_map;
 }
 
-
 std::set<Violation*> DataManager::getViolationSet(EXTPlanarRect& region)
 {
   GridMap<GCell>& gcell_map = _database.get_gcell_map();
@@ -1476,6 +1475,9 @@ void DataManager::printDatabase()
   // ********** MicronDBU ********** //
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "micron_dbu");
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), _database.get_micron_dbu());
+  // ********** ManufactureGrid ********** //
+  RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "manufacture_grid");
+  RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(2), _database.get_manufacture_grid());
   // ********** GCellAxis ********** //
   ScaleAxis& gcell_axis = _database.get_gcell_axis();
   RTLOG.info(Loc::current(), RTUTIL.getSpaceByTabNum(1), "gcell_axis");

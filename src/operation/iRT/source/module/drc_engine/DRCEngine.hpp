@@ -35,7 +35,7 @@ class DRCEngine
   // function
   void init();
   std::vector<Violation> getViolationList(DETask& de_task);
-  void addTempIgnoredViolation( std::vector<Violation>& violation_list);
+  void addTempIgnoredViolation(std::vector<Violation>& violation_list);
   void clearTempIgnoredViolationSet();
 
  private:

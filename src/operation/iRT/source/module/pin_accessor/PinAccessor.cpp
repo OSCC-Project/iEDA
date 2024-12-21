@@ -152,11 +152,6 @@ void PinAccessor::initAccessPointList(PAModel& pa_model)
   ScaleAxis& gcell_axis = RTDM.getDatabase().get_gcell_axis();
   Die& die = RTDM.getDatabase().get_die();
 
-  PlanarRect die_valid_rect = die.get_real_rect();
-  int32_t shrinked_size = RTDM.getOnlyPitch();
-  if (RTUTIL.hasShrinkedRect(die_valid_rect, shrinked_size)) {
-    die_valid_rect = RTUTIL.getShrinkedRect(die_valid_rect, shrinked_size);
-  }
   std::vector<PANet>& pa_net_list = pa_model.get_pa_net_list();
   std::vector<std::pair<int32_t, PAPin*>> net_pin_pair_list;
   for (PANet& pa_net : pa_net_list) {
@@ -170,9 +165,6 @@ void PinAccessor::initAccessPointList(PAModel& pa_model)
     std::vector<AccessPoint>& access_point_list = net_pin_pair.second->get_access_point_list();
     std::vector<LayerRect> legal_shape_list = getLegalShapeList(pa_model, net_pin_pair.first, pin);
     for (AccessPoint& access_point : getAccessPointList(pa_model, pin->get_pin_idx(), legal_shape_list)) {
-      if (!RTUTIL.isInside(die_valid_rect, access_point.get_real_coord())) {
-        continue;
-      }
       access_point_list.push_back(access_point);
     }
     // 对于分散在多个gcell内的ap,取最多的留下
@@ -354,6 +346,8 @@ std::vector<PlanarRect> PinAccessor::getPlanarLegalRectList(PAModel& pa_model, i
 
 std::vector<AccessPoint> PinAccessor::getAccessPointList(PAModel& pa_model, int32_t pin_idx, std::vector<LayerRect>& legal_shape_list)
 {
+  Die& die = RTDM.getDatabase().get_die();
+  int32_t manufacture_grid = RTDM.getDatabase().get_manufacture_grid();
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
 
   std::vector<LayerCoord> layer_coord_list;
@@ -363,6 +357,19 @@ std::vector<AccessPoint> PinAccessor::getAccessPointList(PAModel& pa_model, int3
     int32_t ur_x = legal_shape.get_ur_x();
     int32_t ur_y = legal_shape.get_ur_y();
     int32_t curr_layer_idx = legal_shape.get_layer_idx();
+    // 避免 off_grid
+    while (ll_x % manufacture_grid != 0) {
+      ll_x++;
+    }
+    while (ll_y % manufacture_grid != 0) {
+      ll_y++;
+    }
+    while (ur_x % manufacture_grid != 0) {
+      ur_x--;
+    }
+    while (ur_y % manufacture_grid != 0) {
+      ur_y--;
+    }
     int32_t mid_x = (ll_x + ur_x) / 2;
     int32_t mid_y = (ll_y + ur_y) / 2;
     RoutingLayer curr_routing_layer = routing_layer_list[curr_layer_idx];
@@ -392,9 +399,22 @@ std::vector<AccessPoint> PinAccessor::getAccessPointList(PAModel& pa_model, int3
       }
     }
   }
+  {
+    PlanarRect die_valid_rect = die.get_real_rect();
+    int32_t shrinked_size = RTDM.getOnlyPitch();
+    if (RTUTIL.hasShrinkedRect(die_valid_rect, shrinked_size)) {
+      die_valid_rect = RTUTIL.getShrinkedRect(die_valid_rect, shrinked_size);
+    }
+    std::vector<LayerCoord> new_layer_coord_list;
+    for (LayerCoord& layer_coord : layer_coord_list) {
+      if (RTUTIL.isInside(die_valid_rect, layer_coord)) {
+        new_layer_coord_list.push_back(layer_coord);
+      }
+    }
+    layer_coord_list = new_layer_coord_list;
+  }
   std::sort(layer_coord_list.begin(), layer_coord_list.end(), CmpLayerCoordByXASC());
   layer_coord_list.erase(std::unique(layer_coord_list.begin(), layer_coord_list.end()), layer_coord_list.end());
-  // 均匀采样,删除一些靠的很近的点
   uniformSampleCoordList(pa_model, layer_coord_list);
   std::vector<AccessPoint> access_point_list;
   for (LayerCoord& layer_coord : layer_coord_list) {
@@ -1920,7 +1940,6 @@ std::map<PANode*, std::set<Orientation>> PinAccessor::getCutNodeOrientationMap(P
 void PinAccessor::updateSummary(PAModel& pa_model)
 {
   Die& die = RTDM.getDatabase().get_die();
-  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
   Summary& summary = RTDM.getDatabase().get_summary();
 
   std::map<int32_t, int32_t>& routing_access_point_num_map = summary.pa_summary.routing_access_point_num_map;
@@ -1928,11 +1947,9 @@ void PinAccessor::updateSummary(PAModel& pa_model)
   std::map<int32_t, int32_t>& routing_violation_num_map = summary.pa_summary.routing_violation_num_map;
   int32_t& total_violation_num = summary.pa_summary.total_violation_num;
 
-  for (RoutingLayer& routing_layer : routing_layer_list) {
-    routing_access_point_num_map[routing_layer.get_layer_idx()] = 0;
-    routing_violation_num_map[routing_layer.get_layer_idx()] = 0;
-  }
+  routing_access_point_num_map.clear();
   total_access_point_num = 0;
+  routing_violation_num_map.clear();
   total_violation_num = 0;
 
   for (auto& [net_idx, access_point_list] : RTDM.getNetAccessPointMap(die)) {

@@ -358,6 +358,11 @@ void ViolationRepairer::updateSummary(VRModel& vr_model)
   std::map<int32_t, int32_t>& routing_violation_num_map = summary.vr_summary.routing_violation_num_map;
   int32_t& total_violation_num = summary.vr_summary.total_violation_num;
 
+  routing_violation_type_num_map.clear();
+  violation_type_num_map.clear();
+  routing_violation_num_map.clear();
+  total_violation_num = 0;
+
   for (Violation* violation : RTDM.getViolationSet(die)) {
     routing_violation_type_num_map[violation->get_violation_shape().get_layer_idx()]
                                   [GetViolationTypeName()(violation->get_violation_type())]++;

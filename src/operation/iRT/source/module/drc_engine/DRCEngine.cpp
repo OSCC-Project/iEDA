@@ -102,8 +102,8 @@ void DRCEngine::init()
 
 std::vector<Violation> DRCEngine::getViolationList(DETask& de_task)
 {
-  getViolationListByInterface(de_task);
-  // getViolationListBySelf(de_task);
+  // getViolationListByInterface(de_task);
+  getViolationListBySelf(de_task);
 
   filterViolationList(de_task);
   if (de_task.get_proc_type() == DEProcType::kGet) {
@@ -491,21 +491,8 @@ void DRCEngine::readTask(DETask& de_task)
 
 void DRCEngine::getViolationListByInterface(DETask& de_task)
 {
-  std::map<int32_t, std::vector<Segment<LayerCoord>>> net_result_map;
-  for (auto& [net_idx, segment_list] : de_task.get_net_result_map()) {
-    for (Segment<LayerCoord>* segment : segment_list) {
-      net_result_map[net_idx].push_back(*segment);
-    }
-  }
-  for (auto& [net_idx, segment_list] : de_task.get_net_result_map()) {
-    for (Segment<LayerCoord>* segment : segment_list) {
-      net_result_map[net_idx].push_back(*segment);
-    }
-  }
-  de_task.set_violation_list(RTI.getViolationList(de_task.get_env_shape_list(), de_task.get_net_pin_shape_map(), net_result_map));
-  for (Violation& violation : de_task.get_violation_list()) {
-    violation.set_violation_type(ViolationType::kParallelRunLengthSpacing);
-  }
+  de_task.set_violation_list(RTI.getViolationList(de_task.get_env_shape_list(), de_task.get_net_pin_shape_map(),
+                                                  de_task.get_net_result_map(), de_task.get_net_patch_map()));
 }
 
 void DRCEngine::filterViolationList(DETask& de_task)
