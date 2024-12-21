@@ -100,8 +100,13 @@ void DrcConditionManager::checkMinSpacing(std::string layer, DrcEngineLayout* la
 
         /// save violation
         for (int i = 0; i < (int) results.size(); i++) {
-          addViolation(results[i], layer, ViolationEnumType::kDefaultSpacing);
-          violation_num++;
+          if (((ieda_solver::upRightX(results[i]) - ieda_solver::lowLeftX(results[i])) < min_spacing
+               && direction == ieda_solver::HORIZONTAL)
+              || ((ieda_solver::upRightY(results[i]) - ieda_solver::lowLeftY(results[i])) < min_spacing
+                  && direction == ieda_solver::VERTICAL)) {
+            addViolation(results[i], layer, ViolationEnumType::kDefaultSpacing);
+            violation_num++;
+          }
         }
       }
     }

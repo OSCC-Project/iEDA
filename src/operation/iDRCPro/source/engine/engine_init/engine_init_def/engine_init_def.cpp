@@ -72,9 +72,9 @@ void DrcEngineInitDef::initDataFromInstances()
     }
 
     /// obs
-    for (auto* idb_obs : idb_inst->get_obs_box_list()) {
-      initDataFromShape(idb_obs, NET_ID_OBS);
-    }
+    // for (auto* idb_obs : idb_inst->get_obs_box_list()) {
+    //   initDataFromShape(idb_obs, NET_ID_OBS);
+    // }
 
     number++;
   }
