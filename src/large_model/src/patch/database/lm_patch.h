@@ -30,6 +30,7 @@
 #include <string>
 #include <vector>
 
+#include "lm_net.h"
 #include "lm_node.h"
 
 namespace ilm {
@@ -41,24 +42,20 @@ class LmPatch
   ~LmPatch() {}
 
   // getter
-  std::vector<std::vector<LmNode>>& get_node_matrix() { return _node_matrix; }
-  LmNode& get_node(int row_id, int col_id);
 
   // setter
 
   // operator
 
- private:
-  int _llx;
-  int _lly;
-  int _urx;
-  int _ury;
-  int _row_id;        // patch order of layer rows
-  int _col_id;        // patch order of layer cols
-  int _node_row_num;  /// node number on rows
-  int _node_col_num;  /// node number on cols
+ public:
+  int layer_id = -1;
+  int rowIdMin = -1;
+  int rowIdMax = -1;
+  int colIdMin = -1;
+  int colIdMax = -1;
 
-  std::vector<std::vector<LmNode>> _node_matrix;
+ private:
+  std::map<int, LmNet*> _sub_nets;
 };
 
 }  // namespace ilm

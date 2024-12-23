@@ -101,18 +101,32 @@ class LmPatchInfo
 
   static void destroyInst();
 
-  // getter
-
   // setter
+  void set_patch_size(int row_size, int col_size)
+  {
+    patch_row_step = row_size;
+    patch_col_step = col_size;
+
+    set_patch_num();
+  }
 
   // operator
 
  public:
+  int patch_row_start = 0;       /// indicate core low left node id
+  int patch_row_step = 9;        /// default 9T
+  int patch_col_start = 0;       /// indicate core low left node id
+  int patch_col_step = 9;        /// default 9T
+  int patch_num_vertical = 0;    /// indicate how many patchs in vertical direciton
+  int patch_num_horizontal = 0;  /// indicate how many patchs in horizontal direciton
+
  private:
   static LmPatchInfo* _info_inst;
 
-  LmPatchInfo() {}
+  LmPatchInfo();
   ~LmPatchInfo() {}
+
+  void set_patch_num();
 };
 
 }  // namespace ilm

@@ -41,7 +41,7 @@ class LmLayout
   ~LmLayout() {}
 
   // getter
-  LmPatchLayers& get_patch_layers() { return _patch_layers; }
+  LmLayoutLayers& get_layout_layers() { return _layout_layers; }
   std::map<std::string, int>& get_net_name_map() { return _net_name_map; }
   LmGraph& get_graph() { return _graph; }
 
@@ -65,7 +65,7 @@ class LmLayout
   std::pair<std::string, std::string> findPinName(int id);
 
  private:
-  LmPatchLayers _patch_layers;
+  LmLayoutLayers _layout_layers;
 
   std::map<std::string, int> _layer_name_map;  /// string : layer name, int : layer id begin from 1st routing layer, for example, if M1 is
                                                /// 1st routing layer, then M1 id=0, CUT1 id=1, M2 id=2 ...

@@ -31,6 +31,7 @@
 namespace ilm {
 
 LmGridInfo* LmGridInfo::_info_inst = nullptr;
+LmPatchInfo* LmPatchInfo::_info_inst = nullptr;
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -109,9 +110,34 @@ std::tuple<int, int, int, int> LmGridInfo::get_node_id_range(int x1, int x2, int
                                         std::max(col_id_1, col_id_2));
 }
 
-LmPatchInfo* LmPatchInfo::_info_inst = nullptr;
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+LmPatchInfo::LmPatchInfo()
+{
+  patch_row_start = gridInfoInst.y_start / gridInfoInst.y_step;
+  patch_col_start = gridInfoInst.x_start / gridInfoInst.x_step;
+
+  set_patch_num();
+}
+
+void LmPatchInfo::set_patch_num()
+{
+  {
+    int bottom_num = patch_row_start % patch_row_step == 0 ? patch_row_start / patch_row_step : patch_row_start / patch_row_step + 1;
+    int top_num = (gridInfoInst.node_row_num - patch_row_start) % patch_row_step == 0
+                      ? (gridInfoInst.node_row_num - patch_row_start) / patch_row_step
+                      : (gridInfoInst.node_row_num - patch_row_start) / patch_row_step + 1;
+    patch_num_vertical = bottom_num + top_num;
+  }
+
+  {
+    int left_num = patch_col_start % patch_col_step == 0 ? patch_col_start / patch_col_step : patch_col_start / patch_col_step + 1;
+    int right_num = (gridInfoInst.node_col_num - patch_col_start) % patch_col_step == 0
+                        ? (gridInfoInst.node_col_num - patch_col_start) / patch_col_step
+                        : (gridInfoInst.node_col_num - patch_row_start) / patch_col_step + 1;
+    patch_num_horizontal = left_num + right_num;
+  }
+}
 
 }  // namespace ilm
