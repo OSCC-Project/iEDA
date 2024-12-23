@@ -34,7 +34,8 @@
 #include "log/Log.hh"
 #include "netlist/Netlist.hh"
 #include "spef/SpefParserRustC.hh"
-#define NEW_CUDA_DELAY 0
+
+#define CUDA_DELAY 0
 
 namespace ista {
 
@@ -90,19 +91,10 @@ unsigned StaBuildRCTree::operator()(StaGraph* the_graph) {
   LOG_INFO << "read spef " << _spef_file_name << " end";
 
   spef_parser.expandName();
-
-#if NEW_CUDA_DELAY
-  auto delay_rc_net_common_info = std::make_unique<DelayRcNetCommonInfo>();
-  delay_rc_net_common_info->set_spef_cap_unit(spef_parser.getSpefCapUnit());
-  delay_rc_net_common_info->set_spef_resistance_unit(
-      spef_parser.getSpefResUnit());
-  DelayRcNet::set_rc_net_common_info(std::move(delay_rc_net_common_info));
-#else
   auto rc_net_common_info = std::make_unique<RCNetCommonInfo>();
   rc_net_common_info->set_spef_cap_unit(spef_parser.getSpefCapUnit());
   rc_net_common_info->set_spef_resistance_unit(spef_parser.getSpefResUnit());
   RcNet::set_rc_net_common_info(std::move(rc_net_common_info));
-#endif
 
   // ProfilerStart("rc_tree.prof");
   unsigned is_ok = 1;
@@ -111,15 +103,9 @@ unsigned StaBuildRCTree::operator()(StaGraph* the_graph) {
   Netlist* design_nl = the_graph->get_nl();
   Net* net;
   FOREACH_NET(design_nl, net) {
-#if NEW_CUDA_DELAY
-    auto delay_rc_net = createDelayRcNet(net);
-    // DLOG_INFO << net->get_name() << "build rc tree";
-    getSta()->addDelayRcNet(net, std::move(delay_rc_net));
-#else
     auto rc_net = createRcNet(net);
     // DLOG_INFO << net->get_name() << "build rc tree";
     getSta()->addRcNet(net, std::move(rc_net));
-#endif
   }
 
   // rc net update timing information.
@@ -128,9 +114,12 @@ unsigned StaBuildRCTree::operator()(StaGraph* the_graph) {
 
 #if 0
   {
+    ieda::Stats stats;
     ThreadPool pool(getNumThreads());
     auto* spef_file = spef_parser.get_spef_file();
+#if CUDA_DELAY
     std::vector<RcNet*> all_nets;
+#endif
     void* spef_net;
     FOREACH_VEC_ELEM(&(spef_file->_nets), void, spef_net) {
       auto* rust_spef_net =
@@ -148,15 +137,34 @@ unsigned StaBuildRCTree::operator()(StaGraph* the_graph) {
             << " node num " << rust_spef_net->_caps.len;
       }
 
+#if CUDA_DELAY
+      std::mutex nets_mutex;
       // enqueue and store future
       pool.enqueue(
-          [design_nl, &spef_parser, &all_nets, this](const auto& spef_net) {
+          [design_nl, &spef_parser, &all_nets, &nets_mutex,
+           this](const auto& spef_net) {
             auto* design_net = design_nl->findNet(spef_net->_name);
             if (design_net) {
               auto* rc_net = getSta()->getRcNet(design_net);
+              rc_net->updateRcTiming(spef_net);
               if (rc_net->rct()) {
+                std::lock_guard<std::mutex> lock(nets_mutex);
                 all_nets.emplace_back(rc_net);
               }
+              // DLOG_INFO << "Update Rc tree timing " << spef_name;
+            } else {
+              LOG_FATAL << "build rc tree not found design net "
+                        << spef_net->_name;
+            }
+          },
+          rust_spef_net);
+#else
+      // enqueue and store future
+      pool.enqueue(
+          [design_nl, &spef_parser, this](const auto& spef_net) {
+            auto* design_net = design_nl->findNet(spef_net->_name);
+            if (design_net) {
+              auto* rc_net = getSta()->getRcNet(design_net);
               // DLOG_INFO << "Update Rc tree timing " << spef_name;
               rc_net->updateRcTiming(spef_net);
             } else {
@@ -165,12 +173,34 @@ unsigned StaBuildRCTree::operator()(StaGraph* the_graph) {
             }
           },
           rust_spef_net);
+#endif
     }
+#if CUDA_DELAY
     calcRcTiming(all_nets);
+// printGraphViz get result for debugging.
+// for (const auto net : all_nets) {
+//   if (net->rct()) {
+//     if (net->name() == "in1" || net->name() == "r2q" ||
+//         net->name() == "u1z" || net->name() == "u2z" ||
+//         net->name() == "out") {
+//       net->rct()->printGraphViz();
+//     }
+//   }
+// }
+#endif
+    LOG_INFO << "calculate rc timing end";
+    // LOG_INFO << "calculate rc timing net num: " << all_nets.size();
+    double memory_delta = stats.memoryDelta();
+    LOG_INFO << "calculate rc timing memory usage " << memory_delta << "MB";
+    double time_delta = stats.elapsedRunTime();
+    LOG_INFO << "calculate rc timing time elapsed " << time_delta << "s";
   }
 #else
+  ieda::Stats stats;
   auto* spef_file = spef_parser.get_spef_file();
+#if CUDA_DELAY
   std::vector<RcNet*> all_nets;
+#endif
   void* spef_net;
   FOREACH_VEC_ELEM(&(spef_file->_nets), void, spef_net) {
     auto* rust_spef_net =
@@ -184,31 +214,21 @@ unsigned StaBuildRCTree::operator()(StaGraph* the_graph) {
     std::string spef_name = rust_spef_net->_name;
     auto* design_net = design_nl->findNet(spef_name.c_str());
     if (design_net) {
-#if NEW_CUDA_DELAY
-      auto* delay_rc_net = getSta()->getDelayRcNet(design_net);
-      // DLOG_INFO << "Update Rc tree timing " << spef_name;
-      make_delay_rct(delay_rc_net, rust_spef_net);
-      update_rc_tree_info(delay_rc_net);
-      update_rc_timing(delay_rc_net);
-      // if (delay_rc_net->_net->getFullName() == "in1") {
-      //   print_graphviz(&delay_rc_net->_rc_network);
-      // }
-      rust_free_spef_net(rust_spef_net);
-      // printYaml(spef_net);
-#else
       auto* rc_net = getSta()->getRcNet(design_net);
       // DLOG_INFO << "Update Rc tree timing " << spef_name;
       rc_net->updateRcTiming(rust_spef_net);
+#if CUDA_DELAY
       if (rc_net->rct()) {
         all_nets.emplace_back(rc_net);
       }
-
-      // printYaml(spef_net);
 #endif
+      // printYaml(spef_net);
+
     } else {
       LOG_FATAL << "build rc tree not found design net " << spef_name;
     }
   }
+#if CUDA_DELAY
   calcRcTiming(all_nets);
   // printGraphViz get result for debugging.
   // for (const auto net : all_nets) {
@@ -220,6 +240,13 @@ unsigned StaBuildRCTree::operator()(StaGraph* the_graph) {
   //     }
   //   }
   // }
+#endif
+  LOG_INFO << "calculate rc timing end";
+  // LOG_INFO << "calculate rc timing net num: " << all_nets.size();
+  double memory_delta = stats.memoryDelta();
+  LOG_INFO << "calculate rc timing memory usage " << memory_delta << "MB";
+  double time_delta = stats.elapsedRunTime();
+  LOG_INFO << "calculate rc timing time elapsed " << time_delta << "s";
 
 #endif
 
@@ -274,10 +301,9 @@ void StaBuildRCTree::printYaml(RustSpefNet& spef_net) {
     one_node["direction"] =
         (rust_spef_conn->_conn_direction == RustConnectionDirection::kOUTPUT)
             ? "O"
-            : (rust_spef_conn->_conn_direction ==
-               RustConnectionDirection::kINPUT)
-                  ? "I"
-                  : "IO";
+        : (rust_spef_conn->_conn_direction == RustConnectionDirection::kINPUT)
+            ? "I"
+            : "IO";
     one_node["coordinate_x"] = rust_spef_conn->_coordinate._x;
     one_node["coordinate_y"] = rust_spef_conn->_coordinate._y;
     one_node["load"] = rust_spef_conn->_load;

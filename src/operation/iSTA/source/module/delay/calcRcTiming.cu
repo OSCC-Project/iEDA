@@ -56,7 +56,7 @@
 
 namespace ista {
 
-const int THREAD_PER_BLOCK_NUM = 512;
+const int THREAD_PER_BLOCK_NUM = 1024;
 
 /**
  * @brief gpu speed up update the load of the rc node.
@@ -74,10 +74,11 @@ __global__ void kernelUpdateLoad(int* start_array, float* cap_array,
                                  float* ncap_array, float* load_array,
                                  float* nload_array, int* parent_pos_array,
                                  int total_nets_num) {
-  int tid = blockIdx.x * blockDim.x + threadIdx.x;
+  int net_tid = blockIdx.x * blockDim.x + threadIdx.x;
+  int cond_tid = threadIdx.y;
 
-  if (tid < total_nets_num) {
-    int current_net = tid;
+  if (net_tid < total_nets_num && cond_tid < 4) {
+    int current_net = net_tid;
     int start_node = start_array[current_net];
     int end_node = start_array[current_net + 1];
 
@@ -86,28 +87,24 @@ __global__ void kernelUpdateLoad(int* start_array, float* cap_array,
       int parent_pos = parent_pos_array[current_pos];
       // printf("current pos %d current pos cap: %f\n", current_pos,
       //        cap_array[current_pos]);
-      float cap = cap_array[current_pos];
 
-      // update the current pos load and parent's load.
-      load_array[current_pos] += cap;
+      if (cond_tid == 0) {
+        float cap = cap_array[current_pos];
+        // update the current pos load and parent's load.
+        load_array[current_pos] += cap;
+      }
 
       // update the current pos nload and parent's nload.
-      nload_array[4 * current_pos + 0] += ncap_array[4 * current_pos + 0];
-      nload_array[4 * current_pos + 1] += ncap_array[4 * current_pos + 1];
-      nload_array[4 * current_pos + 2] += ncap_array[4 * current_pos + 2];
-      nload_array[4 * current_pos + 3] += ncap_array[4 * current_pos + 3];
+      nload_array[4 * current_pos + cond_tid] +=
+          ncap_array[4 * current_pos + cond_tid];
 
       if (parent_pos != current_pos) {
-        atomicAdd(&load_array[parent_pos], load_array[current_pos]);
+        if (cond_tid == 0) {
+          atomicAdd(&load_array[parent_pos], load_array[current_pos]);
+        }
 
-        atomicAdd(&nload_array[4 * parent_pos + 0],
-                  nload_array[4 * current_pos + 0]);
-        atomicAdd(&nload_array[4 * parent_pos + 1],
-                  nload_array[4 * current_pos + 1]);
-        atomicAdd(&nload_array[4 * parent_pos + 2],
-                  nload_array[4 * current_pos + 2]);
-        atomicAdd(&nload_array[4 * parent_pos + 3],
-                  nload_array[4 * current_pos + 3]);
+        atomicAdd(&nload_array[4 * parent_pos + cond_tid],
+                  nload_array[4 * current_pos + cond_tid]);
       }
     }
   }
@@ -131,10 +128,11 @@ __global__ void kernelUpdateDelay(int* start_array, float* res_array,
                                   float* delay_array, float* ndelay_array,
                                   float* ures_array, int* parent_pos_array,
                                   int total_nets_num) {
-  int tid = blockIdx.x * blockDim.x + threadIdx.x;
+  int net_tid = blockIdx.x * blockDim.x + threadIdx.x;
+  int cond_tid = threadIdx.y;
 
-  if (tid < total_nets_num) {
-    int current_net = tid;
+  if (net_tid < total_nets_num && cond_tid < 4) {
+    int current_net = net_tid;
     int start_node = start_array[current_net];
     int end_node = start_array[current_net + 1];
 
@@ -142,54 +140,28 @@ __global__ void kernelUpdateDelay(int* start_array, float* res_array,
     for (int i = start_node + 1; i < end_node; ++i) {
       int current_pos = i;
       int parent_pos = parent_pos_array[current_pos];
-      // printf("parent pos %d parent delay cap: %f\n", parent_pos,
-      //        delay_array[parent_pos]);
-      float parent_delay = delay_array[parent_pos];
-
       float res = res_array[current_pos];
 
-      // update delay_array
-      float load = load_array[current_pos];
-      float delay = parent_delay + res * load;
-      atomicAdd(&delay_array[current_pos], delay);
+      if (cond_tid == 0) {
+        // printf("parent pos %d parent delay cap: %f\n", parent_pos,
+        //        delay_array[parent_pos]);
+        float parent_delay = delay_array[parent_pos];
+        // update delay_array
+        float load = load_array[current_pos];
+        float delay = parent_delay + res * load;
+        atomicAdd(&delay_array[current_pos], delay);
+      }
 
       // update ndelay_array
-      float parent_ndelay_0 = ndelay_array[4 * parent_pos + 0];
-      float nload_0 = nload_array[4 * current_pos + 0];
-      float ndelay_0 = parent_ndelay_0 + res * nload_0;
-      atomicAdd(&ndelay_array[4 * current_pos + 0], ndelay_0);
-
-      float parent_ndelay_1 = ndelay_array[4 * parent_pos + 1];
-      float nload_1 = nload_array[4 * current_pos + 1];
-      float ndelay_1 = parent_ndelay_1 + res * nload_1;
-      atomicAdd(&ndelay_array[4 * current_pos + 1], ndelay_1);
-
-      float parent_ndelay_2 = ndelay_array[4 * parent_pos + 2];
-      float nload_2 = nload_array[4 * current_pos + 2];
-      float ndelay_2 = parent_ndelay_2 + res * nload_2;
-      atomicAdd(&ndelay_array[4 * current_pos + 2], ndelay_2);
-
-      float parent_ndelay_3 = ndelay_array[4 * parent_pos + 3];
-      float nload_3 = nload_array[4 * current_pos + 3];
-      float ndelay_3 = parent_ndelay_3 + res * nload_3;
-      atomicAdd(&ndelay_array[4 * current_pos + 3], ndelay_3);
+      float parent_ndelay = ndelay_array[4 * parent_pos + cond_tid];
+      float nload = nload_array[4 * current_pos + cond_tid];
+      float ndelay = parent_ndelay + res * nload;
+      atomicAdd(&ndelay_array[4 * current_pos + cond_tid], ndelay);
 
       // update ures_array
-      float parent_ures_0 = ures_array[4 * parent_pos + 0];
-      float ures_0 = parent_ures_0 + res;
-      atomicAdd(&ures_array[4 * current_pos + 0], ures_0);
-
-      float parent_ures_1 = ures_array[4 * parent_pos + 1];
-      float ures_1 = parent_ures_1 + res;
-      atomicAdd(&ures_array[4 * current_pos + 1], ures_1);
-
-      float parent_ures_2 = ures_array[4 * parent_pos + 2];
-      float ures_2 = parent_ures_2 + res;
-      atomicAdd(&ures_array[4 * current_pos + 2], ures_2);
-
-      float parent_ures_3 = ures_array[4 * parent_pos + 3];
-      float ures_3 = parent_ures_3 + res;
-      atomicAdd(&ures_array[4 * current_pos + 3], ures_3);
+      float parent_ures = ures_array[4 * parent_pos + cond_tid];
+      float ures = parent_ures + res;
+      atomicAdd(&ures_array[4 * current_pos + cond_tid], ures);
     }
   }
 }
@@ -208,10 +180,11 @@ __global__ void kernelUpdateDelay(int* start_array, float* res_array,
 __global__ void kernelUpdateLDelay(int* start_array, float* ncap_array,
                                    float* ndelay_array, float* ldelay_array,
                                    int* parent_pos_array, int total_nets_num) {
-  int tid = blockIdx.x * blockDim.x + threadIdx.x;
+  int net_tid = blockIdx.x * blockDim.x + threadIdx.x;
+  int cond_tid = threadIdx.y;
 
-  if (tid < total_nets_num) {
-    int current_net = tid;
+  if (net_tid < total_nets_num && cond_tid < 4) {
+    int current_net = net_tid;
     int start_node = start_array[current_net];
     int end_node = start_array[current_net + 1];
 
@@ -220,24 +193,13 @@ __global__ void kernelUpdateLDelay(int* start_array, float* ncap_array,
       int parent_pos = parent_pos_array[current_pos];
 
       // update the current pos nload and parent's nload.
-      ldelay_array[4 * current_pos + 0] +=
-          ncap_array[4 * current_pos + 0] * ndelay_array[4 * current_pos + 0];
-      ldelay_array[4 * current_pos + 1] +=
-          ncap_array[4 * current_pos + 1] * ndelay_array[4 * current_pos + 1];
-      ldelay_array[4 * current_pos + 2] +=
-          ncap_array[4 * current_pos + 2] * ndelay_array[4 * current_pos + 2];
-      ldelay_array[4 * current_pos + 3] +=
-          ncap_array[4 * current_pos + 3] * ndelay_array[4 * current_pos + 3];
+      ldelay_array[4 * current_pos + cond_tid] +=
+          ncap_array[4 * current_pos + cond_tid] *
+          ndelay_array[4 * current_pos + cond_tid];
 
       if (parent_pos != current_pos) {
-        atomicAdd(&ldelay_array[4 * parent_pos + 0],
-                  ldelay_array[4 * current_pos + 0]);
-        atomicAdd(&ldelay_array[4 * parent_pos + 1],
-                  ldelay_array[4 * current_pos + 1]);
-        atomicAdd(&ldelay_array[4 * parent_pos + 2],
-                  ldelay_array[4 * current_pos + 2]);
-        atomicAdd(&ldelay_array[4 * parent_pos + 3],
-                  ldelay_array[4 * current_pos + 3]);
+        atomicAdd(&ldelay_array[4 * parent_pos + cond_tid],
+                  ldelay_array[4 * current_pos + cond_tid]);
       }
     }
   }
@@ -260,10 +222,11 @@ __global__ void kernelUpdateResponse(int* start_array, float* res_array,
                                      float* beta_array, float* impulse_array,
                                      int* parent_pos_array,
                                      int total_nets_num) {
-  int tid = blockIdx.x * blockDim.x + threadIdx.x;
+  int net_tid = blockIdx.x * blockDim.x + threadIdx.x;
+  int cond_tid = threadIdx.y;
 
-  if (tid < total_nets_num) {
-    int current_net = tid;
+  if (net_tid < total_nets_num && cond_tid < 4) {
+    int current_net = net_tid;
     int start_node = start_array[current_net];
     int end_node = start_array[current_net + 1];
 
@@ -274,42 +237,15 @@ __global__ void kernelUpdateResponse(int* start_array, float* res_array,
       float res = res_array[current_pos];
 
       // update beta_array
-      float parent_beta_0 = beta_array[4 * parent_pos + 0];
-      float ldelay_0 = ldelay_array[4 * current_pos + 0];
-      float beta_0 = parent_beta_0 + res * ldelay_0;
-      atomicAdd(&beta_array[4 * current_pos + 0], beta_0);
-
-      float parent_beta_1 = beta_array[4 * parent_pos + 1];
-      float ldelay_1 = ldelay_array[4 * current_pos + 1];
-      float beta_1 = parent_beta_1 + res * ldelay_1;
-      atomicAdd(&beta_array[4 * current_pos + 1], beta_1);
-
-      float parent_beta_2 = beta_array[4 * parent_pos + 2];
-      float ldelay_2 = ldelay_array[4 * current_pos + 2];
-      float beta_2 = parent_beta_2 + res * ldelay_2;
-      atomicAdd(&beta_array[4 * current_pos + 2], beta_2);
-
-      float parent_beta_3 = beta_array[4 * parent_pos + 3];
-      float ldelay_3 = ldelay_array[4 * current_pos + 3];
-      float beta_3 = parent_beta_3 + res * ldelay_3;
-      atomicAdd(&beta_array[4 * current_pos + 3], beta_3);
+      float parent_beta = beta_array[4 * parent_pos + cond_tid];
+      float ldelay = ldelay_array[4 * current_pos + cond_tid];
+      float beta = parent_beta + res * ldelay;
+      atomicAdd(&beta_array[4 * current_pos + cond_tid], beta);
 
       // update impulse_array
-      float current_ndelay_0 = ndelay_array[4 * current_pos + 0];
-      float impulse_0 = 2 * beta_0 - std::pow(current_ndelay_0, 2);
-      atomicAdd(&impulse_array[4 * current_pos + 0], impulse_0);
-
-      float current_ndelay_1 = ndelay_array[4 * current_pos + 1];
-      float impulse_1 = 2 * beta_1 - std::pow(current_ndelay_1, 2);
-      atomicAdd(&impulse_array[4 * current_pos + 1], impulse_1);
-
-      float current_ndelay_2 = ndelay_array[4 * current_pos + 2];
-      float impulse_2 = 2 * beta_2 - std::pow(current_ndelay_2, 2);
-      atomicAdd(&impulse_array[4 * current_pos + 2], impulse_2);
-
-      float current_ndelay_3 = ndelay_array[4 * current_pos + 3];
-      float impulse_3 = 2 * beta_3 - std::pow(current_ndelay_3, 2);
-      atomicAdd(&impulse_array[4 * current_pos + 3], impulse_3);
+      float current_ndelay = ndelay_array[4 * current_pos + cond_tid];
+      float impulse = 2 * beta - std::pow(current_ndelay, 2);
+      atomicAdd(&impulse_array[4 * current_pos + cond_tid], impulse);
     }
   }
 }
@@ -322,7 +258,7 @@ __global__ void kernelUpdateResponse(int* start_array, float* res_array,
  */
 void calcRcTiming(std::vector<RcNet*> all_nets) {
   std::vector<int> start_array{0};
-  std::size_t total_nodes_num = 0;
+  unsigned long total_nodes_num = 0;
   // start_array: last element is the end position of the last tree.
   for (const auto& net : all_nets) {
     auto rct = net->rct();
@@ -406,78 +342,122 @@ void calcRcTiming(std::vector<RcNet*> all_nets) {
   float* gpu_beta_array = nullptr;
   float* gpu_impulse_array = nullptr;
 
+  cudaStream_t stream1 = nullptr;
+  cudaStreamCreate(&stream1);
   // malloc gpu memory
-  cudaMalloc(&gpu_start_array, (total_nodes_num + 1) * sizeof(int));
-  cudaMalloc(&gpu_cap_array, total_nodes_num * sizeof(float));
-  cudaMalloc(&gpu_ncap_array, 4 * total_nodes_num * sizeof(float));
-  cudaMalloc(&gpu_res_array, total_nodes_num * sizeof(float));
-  cudaMalloc(&gpu_parent_pos_array, total_nodes_num * sizeof(int));
+  cudaMallocAsync(&gpu_start_array, (total_nodes_num + 1) * sizeof(int),
+                  stream1);
+  cudaMallocAsync(&gpu_cap_array, total_nodes_num * sizeof(float), stream1);
+  cudaMallocAsync(&gpu_ncap_array, 4 * total_nodes_num * sizeof(float),
+                  stream1);
+  cudaMallocAsync(&gpu_res_array, total_nodes_num * sizeof(float), stream1);
+  cudaMallocAsync(&gpu_parent_pos_array, total_nodes_num * sizeof(int),
+                  stream1);
   // data to be calculated
-  cudaMalloc(&gpu_load_array, total_nodes_num * sizeof(float));
-  cudaMalloc(&gpu_nload_array, 4 * total_nodes_num * sizeof(float));
-  cudaMalloc(&gpu_delay_array, total_nodes_num * sizeof(float));
-  cudaMalloc(&gpu_ndelay_array, 4 * total_nodes_num * sizeof(float));
-  cudaMalloc(&gpu_ures_array, 4 * total_nodes_num * sizeof(float));
-  cudaMalloc(&gpu_ldelay_array, 4 * total_nodes_num * sizeof(float));
-  cudaMalloc(&gpu_beta_array, 4 * total_nodes_num * sizeof(float));
-  cudaMalloc(&gpu_impulse_array, 4 * total_nodes_num * sizeof(float));
+  cudaMallocAsync(&gpu_load_array, total_nodes_num * sizeof(float), stream1);
+  cudaMallocAsync(&gpu_nload_array, 4 * total_nodes_num * sizeof(float),
+                  stream1);
+  cudaMallocAsync(&gpu_delay_array, total_nodes_num * sizeof(float), stream1);
+  cudaMallocAsync(&gpu_ndelay_array, 4 * total_nodes_num * sizeof(float),
+                  stream1);
+  cudaMallocAsync(&gpu_ures_array, 4 * total_nodes_num * sizeof(float),
+                  stream1);
+  cudaMallocAsync(&gpu_ldelay_array, 4 * total_nodes_num * sizeof(float),
+                  stream1);
+  cudaMallocAsync(&gpu_beta_array, 4 * total_nodes_num * sizeof(float),
+                  stream1);
+  cudaMallocAsync(&gpu_impulse_array, 4 * total_nodes_num * sizeof(float),
+                  stream1);
+  // wait for all cudaMallocAsync to complete
+  cudaStreamSynchronize(stream1);
 
   // copy cpu data to gpu memory.
-  cudaMemcpy(gpu_start_array, start_array.data(),
-             (total_nodes_num + 1) * sizeof(int), cudaMemcpyHostToDevice);
-  cudaMemcpy(gpu_cap_array, cap_array.data(), total_nodes_num * sizeof(float),
-             cudaMemcpyHostToDevice);
-  cudaMemcpy(gpu_ncap_array, ncap_array.data(),
-             4 * total_nodes_num * sizeof(float), cudaMemcpyHostToDevice);
-  cudaMemcpy(gpu_res_array, res_array.data(), total_nodes_num * sizeof(float),
-             cudaMemcpyHostToDevice);
-  cudaMemcpy(gpu_parent_pos_array, parent_pos_array.data(),
-             total_nodes_num * sizeof(int), cudaMemcpyHostToDevice);
+  cudaMemcpyAsync(gpu_start_array, start_array.data(),
+                  (total_nodes_num + 1) * sizeof(int), cudaMemcpyHostToDevice,
+                  stream1);
+  cudaMemcpyAsync(gpu_cap_array, cap_array.data(),
+                  total_nodes_num * sizeof(float), cudaMemcpyHostToDevice,
+                  stream1);
+  cudaMemcpyAsync(gpu_ncap_array, ncap_array.data(),
+                  4 * total_nodes_num * sizeof(float), cudaMemcpyHostToDevice,
+                  stream1);
+  cudaMemcpyAsync(gpu_res_array, res_array.data(),
+                  total_nodes_num * sizeof(float), cudaMemcpyHostToDevice,
+                  stream1);
+  cudaMemcpyAsync(gpu_parent_pos_array, parent_pos_array.data(),
+                  total_nodes_num * sizeof(int), cudaMemcpyHostToDevice,
+                  stream1);
   // data to be calculated:should initialize to zero
-  cudaMemset(gpu_load_array, 0, total_nodes_num * sizeof(float));
-  cudaMemset(gpu_nload_array, 0, 4 * total_nodes_num * sizeof(float));
-  cudaMemset(gpu_delay_array, 0, total_nodes_num * sizeof(float));
-  cudaMemset(gpu_ndelay_array, 0, 4 * total_nodes_num * sizeof(float));
-  cudaMemset(gpu_ures_array, 0, 4 * total_nodes_num * sizeof(float));
-  cudaMemset(gpu_ldelay_array, 0, 4 * total_nodes_num * sizeof(float));
-  cudaMemset(gpu_beta_array, 0, 4 * total_nodes_num * sizeof(float));
-  cudaMemset(gpu_impulse_array, 0, 4 * total_nodes_num * sizeof(float));
+  cudaMemsetAsync(gpu_load_array, 0, total_nodes_num * sizeof(float), stream1);
+  cudaMemsetAsync(gpu_nload_array, 0, 4 * total_nodes_num * sizeof(float),
+                  stream1);
+  cudaMemsetAsync(gpu_delay_array, 0, total_nodes_num * sizeof(float), stream1);
+  cudaMemsetAsync(gpu_ndelay_array, 0, 4 * total_nodes_num * sizeof(float),
+                  stream1);
+  cudaMemsetAsync(gpu_ures_array, 0, 4 * total_nodes_num * sizeof(float),
+                  stream1);
+  cudaMemsetAsync(gpu_ldelay_array, 0, 4 * total_nodes_num * sizeof(float),
+                  stream1);
+  cudaMemsetAsync(gpu_beta_array, 0, 4 * total_nodes_num * sizeof(float),
+                  stream1);
+  cudaMemsetAsync(gpu_impulse_array, 0, 4 * total_nodes_num * sizeof(float),
+                  stream1);
+  cudaStreamSynchronize(stream1);
 
   // launch kernel：kernelUpdateLoad
   auto total_nets_num = all_nets.size();
-  int num_blocks =
-      (total_nets_num + THREAD_PER_BLOCK_NUM - 1) / THREAD_PER_BLOCK_NUM;
-  // int num_blocks = 2;
-  kernelUpdateLoad<<<num_blocks, THREAD_PER_BLOCK_NUM>>>(
+  // int num_blocks =
+  // (total_nets_num + THREAD_PER_BLOCK_NUM - 1) / THREAD_PER_BLOCK_NUM;
+  dim3 block_size(256, 4);
+  dim3 num_blocks((total_nets_num + block_size.x - 1) / block_size.x, 1);
+
+  printf(
+      "use grid dims (%d, %d) with block dims (%d, %d), total threads: %d, "
+      "start run gpu kernel.\n",
+      num_blocks.x, num_blocks.y, block_size.x, block_size.y,
+      num_blocks.x * num_blocks.y * block_size.x * block_size.y);
+  kernelUpdateLoad<<<num_blocks, block_size>>>(
       gpu_start_array, gpu_cap_array, gpu_ncap_array, gpu_load_array,
       gpu_nload_array, gpu_parent_pos_array, total_nets_num);
-  kernelUpdateDelay<<<num_blocks, THREAD_PER_BLOCK_NUM>>>(
+  kernelUpdateDelay<<<num_blocks, block_size>>>(
       gpu_start_array, gpu_res_array, gpu_load_array, gpu_nload_array,
       gpu_delay_array, gpu_ndelay_array, gpu_ures_array, gpu_parent_pos_array,
       total_nets_num);
-  kernelUpdateLDelay<<<num_blocks, THREAD_PER_BLOCK_NUM>>>(
+  kernelUpdateLDelay<<<num_blocks, block_size>>>(
       gpu_start_array, gpu_ncap_array, gpu_ndelay_array, gpu_ldelay_array,
       gpu_parent_pos_array, total_nets_num);
-  kernelUpdateResponse<<<num_blocks, THREAD_PER_BLOCK_NUM>>>(
+  kernelUpdateResponse<<<num_blocks, block_size>>>(
       gpu_start_array, gpu_res_array, gpu_ldelay_array, gpu_ndelay_array,
       gpu_beta_array, gpu_impulse_array, gpu_parent_pos_array, total_nets_num);
   cudaDeviceSynchronize();
-  cudaMemcpy(load_array.data(), gpu_load_array, total_nodes_num * sizeof(float),
-             cudaMemcpyDeviceToHost);
-  cudaMemcpy(nload_array.data(), gpu_nload_array,
-             4 * total_nodes_num * sizeof(float), cudaMemcpyDeviceToHost);
-  cudaMemcpy(delay_array.data(), gpu_delay_array,
-             total_nodes_num * sizeof(float), cudaMemcpyDeviceToHost);
-  cudaMemcpy(ndelay_array.data(), gpu_ndelay_array,
-             4 * total_nodes_num * sizeof(float), cudaMemcpyDeviceToHost);
-  cudaMemcpy(ures_array.data(), gpu_ures_array,
-             4 * total_nodes_num * sizeof(float), cudaMemcpyDeviceToHost);
-  cudaMemcpy(ldelay_array.data(), gpu_ldelay_array,
-             4 * total_nodes_num * sizeof(float), cudaMemcpyDeviceToHost);
-  cudaMemcpy(beta_array.data(), gpu_beta_array,
-             4 * total_nodes_num * sizeof(float), cudaMemcpyDeviceToHost);
-  cudaMemcpy(impulse_array.data(), gpu_impulse_array,
-             4 * total_nodes_num * sizeof(float), cudaMemcpyDeviceToHost);
+
+  // copy gpu data to cpu memory.
+  cudaMemcpyAsync(load_array.data(), gpu_load_array,
+                  total_nodes_num * sizeof(float), cudaMemcpyDeviceToHost,
+                  stream1);
+  cudaMemcpyAsync(nload_array.data(), gpu_nload_array,
+                  4 * total_nodes_num * sizeof(float), cudaMemcpyDeviceToHost,
+                  stream1);
+  cudaMemcpyAsync(delay_array.data(), gpu_delay_array,
+                  total_nodes_num * sizeof(float), cudaMemcpyDeviceToHost,
+                  stream1);
+  cudaMemcpyAsync(ndelay_array.data(), gpu_ndelay_array,
+                  4 * total_nodes_num * sizeof(float), cudaMemcpyDeviceToHost,
+                  stream1);
+  cudaMemcpyAsync(ures_array.data(), gpu_ures_array,
+                  4 * total_nodes_num * sizeof(float), cudaMemcpyDeviceToHost,
+                  stream1);
+  cudaMemcpyAsync(ldelay_array.data(), gpu_ldelay_array,
+                  4 * total_nodes_num * sizeof(float), cudaMemcpyDeviceToHost,
+                  stream1);
+  cudaMemcpyAsync(beta_array.data(), gpu_beta_array,
+                  4 * total_nodes_num * sizeof(float), cudaMemcpyDeviceToHost,
+                  stream1);
+  cudaMemcpyAsync(impulse_array.data(), gpu_impulse_array,
+                  4 * total_nodes_num * sizeof(float), cudaMemcpyDeviceToHost,
+                  stream1);
+  cudaStreamSynchronize(stream1);  // cudaDeviceSynchronize();
+  cudaStreamDestroy(stream1);
   // print_array("load array", load_array);
   // print_array("nload array", nload_array);
 

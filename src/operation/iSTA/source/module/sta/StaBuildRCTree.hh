@@ -28,10 +28,8 @@
 #include <string>
 
 #include "StaFunc.hh"
-#include "delay-cuda/rc_tree.cuh"
 
 class RustSpefNet;
-using namespace istagpu;
 
 namespace ista {
 
