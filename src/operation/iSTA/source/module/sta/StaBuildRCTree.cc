@@ -35,7 +35,7 @@
 #include "netlist/Netlist.hh"
 #include "spef/SpefParserRustC.hh"
 
-#define CUDA_DELAY 0
+#define CUDA_DELAY 1
 
 namespace ista {
 
@@ -112,7 +112,7 @@ unsigned StaBuildRCTree::operator()(StaGraph* the_graph) {
   std::atomic<unsigned> max_node = 0;
   std::string net_name;
 
-#if 0
+#if 1
   {
     ieda::Stats stats;
     ThreadPool pool(getNumThreads());
@@ -120,6 +120,7 @@ unsigned StaBuildRCTree::operator()(StaGraph* the_graph) {
 #if CUDA_DELAY
     std::vector<RcNet*> all_nets;
 #endif
+    std::mutex all_nets_mutex;
     void* spef_net;
     FOREACH_VEC_ELEM(&(spef_file->_nets), void, spef_net) {
       auto* rust_spef_net =
@@ -138,18 +139,19 @@ unsigned StaBuildRCTree::operator()(StaGraph* the_graph) {
       }
 
 #if CUDA_DELAY
-      std::mutex nets_mutex;
       // enqueue and store future
       pool.enqueue(
-          [design_nl, &spef_parser, &all_nets, &nets_mutex,
+          [design_nl, &spef_parser, &all_nets, &all_nets_mutex,
            this](const auto& spef_net) {
             auto* design_net = design_nl->findNet(spef_net->_name);
             if (design_net) {
               auto* rc_net = getSta()->getRcNet(design_net);
               rc_net->updateRcTiming(spef_net);
               if (rc_net->rct()) {
-                std::lock_guard<std::mutex> lock(nets_mutex);
-                all_nets.emplace_back(rc_net);
+                std::lock_guard<std::mutex> lock(all_nets_mutex);
+                if (rc_net) {
+                  all_nets.emplace_back(rc_net);
+                }
               }
               // DLOG_INFO << "Update Rc tree timing " << spef_name;
             } else {
@@ -233,9 +235,7 @@ unsigned StaBuildRCTree::operator()(StaGraph* the_graph) {
   // printGraphViz get result for debugging.
   // for (const auto net : all_nets) {
   //   if (net->rct()) {
-  //     if (net->name() == "in1" || net->name() == "r2q" ||
-  //         net->name() == "u1z" || net->name() == "u2z" ||
-  //         net->name() == "out") {
+  //     if (net->name() == "CTS_10") {
   //       net->rct()->printGraphViz();
   //     }
   //   }
@@ -301,9 +301,10 @@ void StaBuildRCTree::printYaml(RustSpefNet& spef_net) {
     one_node["direction"] =
         (rust_spef_conn->_conn_direction == RustConnectionDirection::kOUTPUT)
             ? "O"
-        : (rust_spef_conn->_conn_direction == RustConnectionDirection::kINPUT)
-            ? "I"
-            : "IO";
+            : (rust_spef_conn->_conn_direction ==
+               RustConnectionDirection::kINPUT)
+                  ? "I"
+                  : "IO";
     one_node["coordinate_x"] = rust_spef_conn->_coordinate._x;
     one_node["coordinate_y"] = rust_spef_conn->_coordinate._y;
     one_node["load"] = rust_spef_conn->_load;
