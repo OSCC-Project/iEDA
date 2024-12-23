@@ -113,13 +113,14 @@ unsigned StaBuildRCTree::operator()(StaGraph* the_graph) {
   std::string net_name;
 
 #if 1
+#if CUDA_DELAY
+    std::vector<RcNet*> all_nets;
+#endif
   {
     ieda::Stats stats;
     ThreadPool pool(getNumThreads());
     auto* spef_file = spef_parser.get_spef_file();
-#if CUDA_DELAY
-    std::vector<RcNet*> all_nets;
-#endif
+
     std::mutex all_nets_mutex;
     void* spef_net;
     FOREACH_VEC_ELEM(&(spef_file->_nets), void, spef_net) {
@@ -177,7 +178,16 @@ unsigned StaBuildRCTree::operator()(StaGraph* the_graph) {
           rust_spef_net);
 #endif
     }
-#if CUDA_DELAY
+
+    LOG_INFO << "calculate rc timing end";
+    // LOG_INFO << "calculate rc timing net num: " << all_nets.size();
+    double memory_delta = stats.memoryDelta();
+    LOG_INFO << "calculate rc timing memory usage " << memory_delta << "MB";
+    double time_delta = stats.elapsedRunTime();
+    LOG_INFO << "calculate rc timing time elapsed " << time_delta << "s";
+  }
+
+  #if CUDA_DELAY
     calcRcTiming(all_nets);
 // printGraphViz get result for debugging.
 // for (const auto net : all_nets) {
@@ -189,14 +199,7 @@ unsigned StaBuildRCTree::operator()(StaGraph* the_graph) {
 //     }
 //   }
 // }
-#endif
-    LOG_INFO << "calculate rc timing end";
-    // LOG_INFO << "calculate rc timing net num: " << all_nets.size();
-    double memory_delta = stats.memoryDelta();
-    LOG_INFO << "calculate rc timing memory usage " << memory_delta << "MB";
-    double time_delta = stats.elapsedRunTime();
-    LOG_INFO << "calculate rc timing time elapsed " << time_delta << "s";
-  }
+  #endif
 #else
   ieda::Stats stats;
   auto* spef_file = spef_parser.get_spef_file();
