@@ -76,11 +76,11 @@ void InitSTA::runSTA()
   });
 }
 
-void InitSTA::runLmSTA(ilm::LmLayout* lm_layout)
+void InitSTA::runLmSTA(ilm::LmLayout* lm_layout, std::string work_dir)
 {
   initStaEngine();
 
-  buildLmRCTree(lm_layout);
+  buildLmRCTree(lm_layout, work_dir);
 
   updateResult("Large Model");
 }
@@ -410,7 +410,7 @@ void InitSTA::buildRCTree(const std::string& routing_type)
   STA_INST->updateTiming();
 }
 
-void InitSTA::buildLmRCTree(ilm::LmLayout* lm_layout)
+void InitSTA::buildLmRCTree(ilm::LmLayout* lm_layout, std::string work_dir)
 {
   // init
   auto* idb = dmInst->get_idb_builder();
@@ -539,6 +539,9 @@ void InitSTA::buildLmRCTree(ilm::LmLayout* lm_layout)
     STA_INST->updateRCTreeInfo(sta_net);
   }
   STA_INST->updateTiming();
+  std::string path_dir = work_dir + "/large_model";
+  STA_INST->set_design_work_space(path_dir.c_str());
+  STA_INST->reportTiming();
 }
 
 void InitSTA::initPowerEngine()

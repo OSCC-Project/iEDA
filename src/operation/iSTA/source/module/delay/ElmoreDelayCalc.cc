@@ -1017,7 +1017,6 @@ std::optional<double> RcNet::delay(const char* node_name,
     delay = node->delayD2MM();
   }
   return delay;
-
 }
 
 /**
@@ -1082,8 +1081,8 @@ std::optional<double> RcNet::slew(
  * @return std::map<std::string, double>
  */
 std::map<std::string, double> RcNet::getAllNodeSlew(double driver_slew,
-                                                       AnalysisMode mode,
-                                                       TransType trans_type) {
+                                                    AnalysisMode mode,
+                                                    TransType trans_type) {
   std::map<std::string, double> all_node_slews;
   if (_rct.index() == 0) {
     return all_node_slews;
@@ -1098,7 +1097,7 @@ std::map<std::string, double> RcNet::getAllNodeSlew(double driver_slew,
           if (fanout_edge->isBreak() || &snk_node == parent_node) {
             continue;
           }
-          
+
           auto snk_slew = snk_node.slew(mode, trans_type, from_slew);
           all_node_slews[snk_node.get_name()] = snk_slew;
 
@@ -1113,6 +1112,52 @@ std::map<std::string, double> RcNet::getAllNodeSlew(double driver_slew,
   get_snk_slew(nullptr, rc_root, driver_slew);
 
   return all_node_slews;
+}
+
+/**
+ * @brief From the driver node, get the edges to the required node.
+ *
+ * @param to_node_name
+ * @return std::vector<RctEdge*>
+ */
+std::vector<RctEdge*> RcNet::getWireTopo(const char* to_node_name) {
+  std::vector<RctEdge*> wire_topo;
+  if (_rct.index() == 0) {
+    return wire_topo;
+  }
+
+  std::function<unsigned(RctNode*, RctNode*)> get_topo_edge =
+      [&get_topo_edge, this, &wire_topo, to_node_name](
+          RctNode* parent_node, RctNode* src_node) -> unsigned {
+    auto& fanout_edges = src_node->get_fanout();
+    for (auto* fanout_edge : fanout_edges) {
+      auto& snk_node = fanout_edge->_to;
+      if (fanout_edge->isBreak() || &snk_node == parent_node) {
+        continue;
+      }
+
+      if (snk_node.get_name() == to_node_name) {
+        wire_topo.push_back(fanout_edge);
+        return 1;
+      }
+
+      if (get_topo_edge(src_node, &snk_node)) {
+        wire_topo.push_back(fanout_edge);
+        return 1;
+      }
+    }
+
+    return 0;
+  };
+
+  auto* rc_tree = rct();
+  get_topo_edge(nullptr, rc_tree->_root);
+
+  LOG_FATAL_IF((wire_topo.empty() ||
+               (*wire_topo.begin())->_to.get_name() != to_node_name))
+      << "not found to node name " << to_node_name;
+
+  return wire_topo;
 }
 
 /**

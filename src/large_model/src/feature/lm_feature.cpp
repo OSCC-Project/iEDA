@@ -43,7 +43,7 @@ void LmFeature::buildFeatureDrc(std::string drc_path)
 
 void LmFeature::buildFeatureTiming()
 {
-  LmFeatureTiming feature_timing(_layout);
+  LmFeatureTiming feature_timing(_layout, _dir);
 
   feature_timing.build();
 }

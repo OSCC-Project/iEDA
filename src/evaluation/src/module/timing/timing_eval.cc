@@ -28,7 +28,7 @@ void TimingEval::runSTA()
 
 void TimingEval::runLmSTA(ilm::LmLayout* lm_layout)
 {
-  EVAL_INIT_STA_INST->runLmSTA(lm_layout);
+  EVAL_INIT_STA_INST->runLmSTA(lm_layout, "./");
 }
 
 void TimingEval::evalTiming(const std::string& routing_type, const bool& rt_done)
