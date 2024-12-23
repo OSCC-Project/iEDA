@@ -1,6 +1,7 @@
 add_subdirectory(data_manager)
 add_subdirectory(graph)
 add_subdirectory(layout)
+add_subdirectory(patch)
 add_subdirectory(feature)
 add_subdirectory(utility)
 

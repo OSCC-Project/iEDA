@@ -33,6 +33,7 @@
 namespace ilm {
 
 #define gridInfoInst LmGridInfo::getInst()
+#define patchInfoInst LmPatchInfo::getInst()
 
 class LmGridInfo
 {
@@ -85,6 +86,33 @@ class LmGridInfo
 
   LmGridInfo() {}
   ~LmGridInfo() {}
+};
+
+class LmPatchInfo
+{
+ public:
+  static LmPatchInfo& getInst()
+  {
+    if (_info_inst == nullptr) {
+      _info_inst = new LmPatchInfo();
+    }
+    return *_info_inst;
+  }
+
+  static void destroyInst();
+
+  // getter
+
+  // setter
+
+  // operator
+
+ public:
+ private:
+  static LmPatchInfo* _info_inst;
+
+  LmPatchInfo() {}
+  ~LmPatchInfo() {}
 };
 
 }  // namespace ilm

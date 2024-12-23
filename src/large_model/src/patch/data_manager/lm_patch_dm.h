@@ -14,26 +14,22 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
+#pragma once
+#include <string>
 
-#include "lm_layout_dm.h"
-
-#include "Log.hh"
-#include "lm_layout_init.h"
-#include "omp.h"
-#include "usage.hh"
+#include "lm_layout.h"
+#include "lm_net.h"
+#include "lm_patch.h"
 
 namespace ilm {
-bool LmLayoutDataManager::buildLayoutData()
-{
-  init();
 
-  return true;
-}
-
-void LmLayoutDataManager::init()
+class LmPatchDataManager
 {
-  LmLayoutInit layout_init(&_layout);
-  layout_init.init();
-}
+ public:
+  LmPatchDataManager() {}
+  ~LmPatchDataManager() {}
+
+ private:
+};
 
 }  // namespace ilm

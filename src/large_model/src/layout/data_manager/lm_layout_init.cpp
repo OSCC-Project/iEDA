@@ -165,7 +165,7 @@ void LmLayoutInit::initTracks(std::string layername)
   initTrackGrid(idb_track_grid_prefer);
   initTrackGrid(idb_track_grid_nonprefer);
 
-  buildPatchGrid();
+  buildLayoutGrid();
 
   LOG_INFO << "LM memory usage " << stats.memoryDelta() << " MB";
   LOG_INFO << "LM elapsed time " << stats.elapsedRunTime() << " s";
@@ -173,7 +173,7 @@ void LmLayoutInit::initTracks(std::string layername)
   LOG_INFO << "LM init tracks end...";
 }
 
-void LmLayoutInit::buildPatchGrid()
+void LmLayoutInit::buildLayoutGrid()
 {
   auto& patch_layers = _layout->get_patch_layers();
   auto& patch_layer_map = patch_layers.get_patch_layer_map();

@@ -32,7 +32,7 @@
 
 #include "lm_layer_grid.h"
 #include "lm_net.h"
-#include "lm_patch.h"
+// #include "lm_patch.h"
 
 namespace ilm {
 
@@ -47,8 +47,8 @@ class LmPatchLayer
   int get_wire_width() { return _wire_width; }
   bool is_routing() { return _b_routing; }
   LmLayerGrid& get_grid() { return _grid; }
-  std::vector<std::vector<LmPatch>>& get_patch_matrix() { return _patch_matrix; }
-  LmPatch& get_patch(int row_id, int col_id);
+  //   std::vector<std::vector<LmPatch*>>& get_patch_matrix() { return _patch_matrix; }
+  //   LmPatch* get_patch(int row_id, int col_id);
   std::map<int, LmNet>& get_net_map() { return _net_map; }
   LmNet* get_net(int net_id);
   int get_layer_order() { return _layer_order; }
@@ -83,7 +83,7 @@ class LmPatchLayer
   int _col_num;  /// patch col number
   int _col_space;
   LmLayerGrid _grid;
-  std::vector<std::vector<LmPatch>> _patch_matrix;
+  //   std::vector<std::vector<LmPatch*>> _patch_matrix;
   std::map<int, LmNet> _net_map;
 };
 

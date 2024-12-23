@@ -19,7 +19,6 @@
 
 #include "lm_layout.h"
 #include "lm_net.h"
-#include "lm_patch.h"
 
 namespace ilm {
 
