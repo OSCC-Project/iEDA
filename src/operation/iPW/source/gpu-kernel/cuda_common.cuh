@@ -14,9 +14,9 @@
 #include "kernel_common.h"
 
 
-inline void cudaCheck(cudaError_t error, const char *file, int line) {
+inline void cuda_check(cudaError_t error, const char *file, int line) {
   if (error != cudaSuccess) {
     printf("CUDA error at file %s:%d:\n%s\n", file, line, cudaGetErrorString(error));
   }
 };
-#define cudaWithCheck(err) (cudaCheck(err, __FILE__, __LINE__))
+#define CUDA_CHECK(err) (cuda_check(err, __FILE__, __LINE__))

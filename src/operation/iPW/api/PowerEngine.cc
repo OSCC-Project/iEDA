@@ -326,7 +326,7 @@ std::vector<MacroConnection> PowerEngine::buildMacroConnectionMapWithGPU(
   auto& seq_graph = _ipower->get_power_seq_graph();
   int num_macro = seq_graph.getMacroSeqVertexNum();
   // The first connection point is the src macro vertex.
-  std::vector<GPUConnectionPoint> connection_points(num_macro);
+  std::vector<GPU_Connection_Point> connection_points(num_macro);
 
   std::map<PwrSeqVertex*, unsigned> vertex_to_id;
   int num_seq_vertexes = seq_graph.get_vertexes().size();
@@ -379,7 +379,7 @@ std::vector<MacroConnection> PowerEngine::buildMacroConnectionMapWithGPU(
       << " is not equal to seq graph arc num " << seq_graph.getSeqArcNum();
 
   std::size_t output_connection_size = seq_arcs.size();
-  std::vector<GPUConnectionPoint> out_connection_points(output_connection_size);
+  std::vector<GPU_Connection_Point> out_connection_points(output_connection_size);
   int connection_point_num = connection_points.size();
 
   auto& seq_vertexes = seq_graph.get_vertexes();
