@@ -90,7 +90,12 @@ std::shared_ptr<idb::IdbLayerSpacingTable> TechRules::getSpacingTable(std::strin
   if (!idb_routing_layer)
     return nullptr;
 
-  return idb_routing_layer->get_spacing_table();
+  auto spacin_table = idb_routing_layer->get_spacing_table();
+  if (spacin_table == nullptr || false == spacin_table->is_parallel()) {
+    spacin_table = idb_routing_layer->get_spacing_table_from_spacing_list();
+  }
+
+  return spacin_table;
 }
 
 std::vector<std::shared_ptr<idb::routinglayer::Lef58SpacingEol>> TechRules::getSpacingEolList(std::string layer_name)

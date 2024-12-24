@@ -16,38 +16,28 @@
 // ***************************************************************************************
 #pragma once
 
-#include "Logger.hpp"
+#include <string>
+#include <vector>
+
+#include "EXTLayerRect.hpp"
+#include "LayerCoord.hpp"
+#include "Pin.hpp"
 
 namespace irt {
 
-enum class DEProcessType
+class VRPin : public Pin
 {
-  kNone,
-  kSingleNet,
-  kMultiNet
-};
+ public:
+  VRPin() = default;
+  explicit VRPin(const Pin& pin) : Pin(pin) {}
+  ~VRPin() = default;
+  // getter
 
-struct GetDEProcessTypeName
-{
-  std::string operator()(const DEProcessType& process_type) const
-  {
-    std::string process_type_name;
-    switch (process_type) {
-      case DEProcessType::kNone:
-        process_type_name = "none";
-        break;
-      case DEProcessType::kSingleNet:
-        process_type_name = "single_net";
-        break;
-      case DEProcessType::kMultiNet:
-        process_type_name = "multi_net";
-        break;
-      default:
-        RTLOG.error(Loc::current(), "Unrecognized type!");
-        break;
-    }
-    return process_type_name;
-  }
+  // setter
+
+  // function
+
+ private:
 };
 
 }  // namespace irt

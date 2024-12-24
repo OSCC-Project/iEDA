@@ -40,6 +40,7 @@ class RoutingLayer
   ScaleAxis& get_track_axis() { return _track_axis; }
   SpacingTable& get_prl_spacing_table() { return _prl_spacing_table; }
   int32_t get_eol_spacing() const { return _eol_spacing; }
+  int32_t get_eol_ete() const { return _eol_ete; }
   int32_t get_eol_within() const { return _eol_within; }
   // setter
   void set_layer_idx(const int32_t layer_idx) { _layer_idx = layer_idx; }
@@ -51,6 +52,7 @@ class RoutingLayer
   void set_track_axis(const ScaleAxis& track_axis) { _track_axis = track_axis; }
   void set_prl_spacing_table(const SpacingTable& prl_spacing_table) { _prl_spacing_table = prl_spacing_table; }
   void set_eol_spacing(const int32_t eol_spacing) { _eol_spacing = eol_spacing; }
+  void set_eol_ete(const int32_t eol_ete) { _eol_ete = eol_ete; }
   void set_eol_within(const int32_t eol_within) { _eol_within = eol_within; }
   // function
   bool isPreferH() const { return _prefer_direction == Direction::kHorizontal; }
@@ -83,6 +85,7 @@ class RoutingLayer
   SpacingTable _prl_spacing_table;
   // eol
   int32_t _eol_spacing = -1;
+  int32_t _eol_ete = -1;
   int32_t _eol_within = -1;
 };
 

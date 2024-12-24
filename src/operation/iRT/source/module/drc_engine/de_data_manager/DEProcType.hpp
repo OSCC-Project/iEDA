@@ -20,33 +20,33 @@
 
 namespace irt {
 
-enum class DEFuncType
+enum class DEProcType
 {
   kNone,
-  kSkipViolation,
-  kExpandViolation
+  kIgnore,
+  kGet
 };
 
-struct GetDEFuncTypeName
+struct GetDEProcTypeName
 {
-  std::string operator()(const DEFuncType& process_type) const
+  std::string operator()(const DEProcType& proc_type) const
   {
-    std::string process_type_name;
-    switch (process_type) {
-      case DEFuncType::kNone:
-        process_type_name = "none";
+    std::string proc_type_name;
+    switch (proc_type) {
+      case DEProcType::kNone:
+        proc_type_name = "none";
         break;
-      case DEFuncType::kSkipViolation:
-        process_type_name = "skip_violation";
+      case DEProcType::kIgnore:
+        proc_type_name = "ignore";
         break;
-      case DEFuncType::kExpandViolation:
-        process_type_name = "expand_violation";
+      case DEProcType::kGet:
+        proc_type_name = "get";
         break;
       default:
         RTLOG.error(Loc::current(), "Unrecognized type!");
         break;
     }
-    return process_type_name;
+    return proc_type_name;
   }
 };
 

@@ -22,4 +22,4 @@ routePABoxMap:
     uploadViolation:将violation加入GCellMap
     freePABox:析构task_list和node_map
 uploadAccessPoint:将access数据更新到顶层GCellMap
-ignoreViolation:将整个版图结果进行检查并将violation加入ignore
+uploadViolation:将整个版图结果进行检查并将violation加入GCellMap

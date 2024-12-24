@@ -1,4 +1,5 @@
 initTAModel:初始化ta_net
+ignoreViolation:将整个版图结果进行检查并将violation加入ignore
 setTAParameter:设置ta_model的参数
 initTAPanelMap:构建TAPanel框架,里面主要数据为空
 buildPanelSchedule:构建时间表

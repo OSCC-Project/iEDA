@@ -16,7 +16,8 @@
 // ***************************************************************************************
 #pragma once
 
-#include "DEProcessType.hpp"
+#include "DENetType.hpp"
+#include "DEProcType.hpp"
 #include "RTHeader.hpp"
 #include "Violation.hpp"
 
@@ -28,9 +29,9 @@ class DETask
   DETask() = default;
   ~DETask() = default;
   // getter
-  DEProcessType& get_process_type() { return _process_type; }
+  DEProcType& get_proc_type() { return _proc_type; }
+  DENetType& get_net_type() { return _net_type; }
   std::string& get_top_name() { return _top_name; }
-  PlanarRect& get_check_region() { return _check_region; }
   std::vector<std::pair<EXTLayerRect*, bool>>& get_env_shape_list() { return _env_shape_list; }
   std::map<int32_t, std::vector<std::pair<EXTLayerRect*, bool>>>& get_net_pin_shape_map() { return _net_pin_shape_map; }
   std::map<int32_t, std::vector<Segment<LayerCoord>*>>& get_net_result_map() { return _net_result_map; }
@@ -44,9 +45,9 @@ class DETask
   std::string& get_violation_file_path() { return _violation_file_path; }
   std::vector<Violation>& get_violation_list() { return _violation_list; }
   // setter
-  void set_process_type(const DEProcessType& process_type) { _process_type = process_type; }
+  void set_proc_type(const DEProcType& proc_type) { _proc_type = proc_type; }
+  void set_net_type(const DENetType& net_type) { _net_type = net_type; }
   void set_top_name(const std::string& top_name) { _top_name = top_name; }
-  void set_check_region(const PlanarRect& check_region) { _check_region = check_region; }
   void set_env_shape_list(const std::vector<std::pair<EXTLayerRect*, bool>>& env_shape_list) { _env_shape_list = env_shape_list; }
   void set_net_pin_shape_map(const std::map<int32_t, std::vector<std::pair<EXTLayerRect*, bool>>>& net_pin_shape_map)
   {
@@ -64,9 +65,9 @@ class DETask
   void set_violation_list(const std::vector<Violation>& violation_list) { _violation_list = violation_list; }
   // function
  private:
-  DEProcessType _process_type;
+  DEProcType _proc_type = DEProcType::kNone;
+  DENetType _net_type = DENetType::kNone;
   std::string _top_name;
-  PlanarRect _check_region;
   std::vector<std::pair<EXTLayerRect*, bool>> _env_shape_list;
   std::map<int32_t, std::vector<std::pair<EXTLayerRect*, bool>>> _net_pin_shape_map;
   std::map<int32_t, std::vector<Segment<LayerCoord>*>> _net_result_map;

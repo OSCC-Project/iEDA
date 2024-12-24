@@ -55,36 +55,79 @@ void DrcConditionManager::checkMinSpacing(std::string layer, DrcEngineLayout* la
     }
   };
 
+  auto get_violation_rects = [&](std::vector<ieda_solver::GeometryRect>& results) -> std::vector<bool> {
+    std::vector<bool> mark_save(results.size(), true);  /// mark violation need to be saved
+
+    for (int i = 0; i < (int) results.size(); i++) {
+      auto state_h = get_new_interval(ieda_solver::HORIZONTAL, results[i]);
+      auto state_v = get_new_interval(ieda_solver::VERTICAL, results[i]);
+      /// if state_h and state_v are all bloat, result is a diagnal rect,
+      /// if rect is a diagnal rect, check diagnal spacing >= min spacing is ok
+      if (state_h && state_v) {
+        if (ptEuclideanDistance(lowLeftX(results[i]), lowLeftY(results[i]), upRightX(results[i]), upRightY(results[i])) >= min_spacing) {
+          mark_save[i] = false;  /// mark as don't save
+        }
+      }
+    }
+
+    return mark_save;
+  };
+
   ieda::Stats states;
   int violation_num = 0;
 
-  auto violation_position_set = layout->get_layout_engine()->copyPolyset();  /// copy polyset
-  violation_position_set.clean();                                            /// eliminate overlaps
+  /// check polygon self
+  {
+    auto& origin_polygons = layout->get_layout_engine()->getLayoutPolygons();  /// copy polyset
+    for (auto& origin_polygon : origin_polygons) {
+      ieda_solver::GeometryPolygonSet origin_polyset;
+      origin_polyset += origin_polygon;
+      origin_polyset.clean();  /// eliminate overlaps
 
-  /// get min spacing for horizontal and vertical spacing < min spacing
-  std::vector<ieda_solver::GeometryRect> results;
-  ieda_solver::growAnd(violation_position_set, half_min_spacing);
-  violation_position_set.get(results);
+      for (auto direction : {ieda_solver::HORIZONTAL, ieda_solver::VERTICAL}) {
+        auto polyset_copy = origin_polyset;
+        std::vector<ieda_solver::GeometryRect> results;
 
-  std::vector<bool> mark_save(results.size(), true);  /// mark violation need to be saved
+        // ieda_solver::growAnd(polyset, half_min_spacing);
 
-  for (int i = 0; i < (int) results.size(); i++) {
-    auto state_h = get_new_interval(ieda_solver::HORIZONTAL, results[i]);
-    auto state_v = get_new_interval(ieda_solver::VERTICAL, results[i]);
-    /// if state_h and state_v are all bloat, result is a diagnal rect,
-    /// if rect is a diagnal rect, check diagnal spacing >= min spacing is ok
-    if (state_h && state_v) {
-      if (ptEuclideanDistance(lowLeftX(results[i]), lowLeftY(results[i]), upRightX(results[i]), upRightY(results[i])) >= min_spacing) {
-        mark_save[i] = false;  /// mark as don't save
+        ieda_solver::bloat(polyset_copy, direction, half_min_spacing);
+        polyset_copy.clean();
+        ieda_solver::shrink(polyset_copy, direction, half_min_spacing);
+        polyset_copy.clean();
+        polyset_copy -= origin_polyset;
+        polyset_copy.clean();
+        polyset_copy.get(results);
+
+        /// save violation
+        for (int i = 0; i < (int) results.size(); i++) {
+          if (((ieda_solver::upRightX(results[i]) - ieda_solver::lowLeftX(results[i])) < min_spacing
+               && direction == ieda_solver::HORIZONTAL)
+              || ((ieda_solver::upRightY(results[i]) - ieda_solver::lowLeftY(results[i])) < min_spacing
+                  && direction == ieda_solver::VERTICAL)) {
+            addViolation(results[i], layer, ViolationEnumType::kDefaultSpacing);
+            violation_num++;
+          }
+        }
       }
     }
   }
 
-  /// save violation
-  for (int i = 0; i < (int) results.size(); i++) {
-    if (true == mark_save[i]) {
-      addViolation(results[i], layer, ViolationEnumType::kDefaultSpacing);
-      violation_num++;
+  /// check different poly
+  {
+    auto violation_position_set = layout->get_layout_engine()->copyPolyset();  /// copy polyset
+    violation_position_set.clean();                                            /// eliminate overlaps
+    /// get min spacing for horizontal and vertical spacing < min spacing
+    std::vector<ieda_solver::GeometryRect> results;
+    ieda_solver::growAnd(violation_position_set, half_min_spacing);
+    violation_position_set.get(results);
+
+    std::vector<bool> mark_save = get_violation_rects(results);
+    /// save violation
+    for (int i = 0; i < (int) results.size(); i++) {
+      if (true == mark_save[i]) {
+        addViolation(results[i], layer, ViolationEnumType::kDefaultSpacing);
+        violation_num++;
+      }
     }
   }
 

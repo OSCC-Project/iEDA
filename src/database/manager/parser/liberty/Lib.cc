@@ -29,6 +29,7 @@
 #include <set>
 #include <utility>
 
+#include "json/json.hpp"
 #include "solver/Interpolation.hh"
 #include "string/StrMap.hh"
 
@@ -1539,6 +1540,184 @@ const std::map<std::string_view, LibLutTableTemplate::Variable> LibLutTableTempl
 
 LibCurrentTemplate::LibCurrentTemplate(const char* template_name) : LibLutTableTemplate(template_name)
 {
+}
+
+/**
+ * @brief print the LibertyLibrary in json format.
+ *
+ */
+void LibLibrary::printLibertyLibraryJson(const char* json_file_name)
+{
+  auto create_timing_arc = [](LibArc* lib_arc) {
+    nlohmann::json timing_arc = nlohmann::json::object();
+    timing_arc["source_sink"] = {lib_arc->get_src_port(), lib_arc->get_snk_port()};
+    LibTableModel* table_model = lib_arc->get_table_model();
+    LibDelayTableModel* delay_model = dynamic_cast<LibDelayTableModel*>(table_model);
+
+    // cell_rise table
+    LibTable* cell_rise_table = dynamic_cast<LibDelayTableModel*>(table_model)->getTable(int(LibTable::TableType::kCellRise));
+    if (cell_rise_table) {
+      auto& axes = cell_rise_table->get_axes();
+      int rows = axes[0].get()->get_axis_values().size();
+      int columns = axes[1].get()->get_axis_values().size();
+      nlohmann::json cell_rise_data;
+      for (int i = 0; i < axes.size(); i++) {
+        auto& axis_values = axes[i].get()->get_axis_values();
+        nlohmann::json index = nlohmann::json::array();
+        for (int j = 0; j < axis_values.size(); ++j) {
+          auto axis_float_value = dynamic_cast<LibFloatValue*>(axis_values[j].get())->getFloatValue();
+          index.push_back(axis_float_value);
+        }
+        // index_1 ("0.00117378,0.00472397,0.0171859,0.0409838,0.0780596,0.130081,0.198535");
+        cell_rise_data["index_" + std::to_string(i + 1)] = index;
+      }
+      auto& lib_table_values = cell_rise_table->get_table_values();
+      nlohmann::json values_array = nlohmann::json::array();
+      for (size_t i = 0; i < lib_table_values.size(); i += columns) {
+        nlohmann::json row = nlohmann::json::array();
+        for (size_t j = 0; j < columns && (i + j) < lib_table_values.size(); ++j) {
+          auto lib_table_float_value = dynamic_cast<LibFloatValue*>(lib_table_values[i + j].get())->getFloatValue();
+          row.push_back(lib_table_float_value);
+        }
+        values_array.push_back(row);
+      }
+      cell_rise_data["values"] = values_array;
+      timing_arc["cell_rise"] = cell_rise_data;
+    }
+
+    // rise_transition table
+    LibTable* rise_transition_table = dynamic_cast<LibDelayTableModel*>(table_model)->getTable(int(LibTable::TableType::kRiseTransition));
+    if (rise_transition_table) {
+      auto& rise_trans_axes = rise_transition_table->get_axes();
+      int rise_trans_rows = rise_trans_axes[0].get()->get_axis_values().size();
+      int rise_trans_columns = rise_trans_axes[1].get()->get_axis_values().size();
+      nlohmann::json rise_transition_data;
+      for (int i = 0; i < rise_trans_axes.size(); i++) {
+        auto& axis_values = rise_trans_axes[i].get()->get_axis_values();
+        nlohmann::json index = nlohmann::json::array();
+        for (int j = 0; j < axis_values.size(); ++j) {
+          auto axis_float_value = dynamic_cast<LibFloatValue*>(axis_values[j].get())->getFloatValue();
+          index.push_back(axis_float_value);
+        }
+        rise_transition_data["index_" + std::to_string(i + 1)] = index;
+      }
+      auto& rise_trans_lib_table_values = rise_transition_table->get_table_values();
+      nlohmann::json rise_trans_values_array = nlohmann::json::array();
+      for (size_t i = 0; i < rise_trans_lib_table_values.size(); i += rise_trans_columns) {
+        nlohmann::json row = nlohmann::json::array();
+        for (size_t j = 0; j < rise_trans_columns && (i + j) < rise_trans_lib_table_values.size(); ++j) {
+          auto lib_table_float_value = dynamic_cast<LibFloatValue*>(rise_trans_lib_table_values[i + j].get())->getFloatValue();
+          row.push_back(lib_table_float_value);
+        }
+        rise_trans_values_array.push_back(row);
+      }
+      rise_transition_data["values"] = rise_trans_values_array;
+      timing_arc["rise_transition"] = rise_transition_data;
+    }
+
+    // cell_fall table
+    LibTable* cell_fall_table = dynamic_cast<LibDelayTableModel*>(table_model)->getTable(int(LibTable::TableType::kCellFall));
+    if (cell_fall_table) {
+      auto& cell_fall_axes = cell_fall_table->get_axes();
+      int cell_fall_rows = cell_fall_axes[0].get()->get_axis_values().size();
+      int cell_fall_columns = cell_fall_axes[1].get()->get_axis_values().size();
+      nlohmann::json cell_fall_data;
+      for (int i = 0; i < cell_fall_axes.size(); i++) {
+        auto& axis_values = cell_fall_axes[i].get()->get_axis_values();
+        nlohmann::json index = nlohmann::json::array();
+        for (int j = 0; j < axis_values.size(); ++j) {
+          auto axis_float_value = dynamic_cast<LibFloatValue*>(axis_values[j].get())->getFloatValue();
+          index.push_back(axis_float_value);
+        }
+        cell_fall_data["index_" + std::to_string(i + 1)] = index;
+      }
+      auto& cell_fall_lib_table_values = cell_fall_table->get_table_values();
+      nlohmann::json cell_fall_values_array = nlohmann::json::array();
+      for (size_t i = 0; i < cell_fall_lib_table_values.size(); i += cell_fall_columns) {
+        nlohmann::json row = nlohmann::json::array();
+        for (size_t j = 0; j < cell_fall_columns && (i + j) < cell_fall_lib_table_values.size(); ++j) {
+          auto lib_table_float_value = dynamic_cast<LibFloatValue*>(cell_fall_lib_table_values[i + j].get())->getFloatValue();
+          row.push_back(lib_table_float_value);
+        }
+        cell_fall_values_array.push_back(row);
+      }
+      cell_fall_data["values"] = cell_fall_values_array;
+      timing_arc["cell_fall"] = cell_fall_data;
+    }
+
+    // fall_transition table
+    LibTable* fall_transition_table = dynamic_cast<LibDelayTableModel*>(table_model)->getTable(int(LibTable::TableType::kFallTransition));
+    if (fall_transition_table) {
+      auto& fall_transition_axes = fall_transition_table->get_axes();
+      int fall_transition_rows = fall_transition_axes[0].get()->get_axis_values().size();
+      int fall_transition_columns = fall_transition_axes[1].get()->get_axis_values().size();
+      nlohmann::json fall_transition_data;
+      for (int i = 0; i < fall_transition_axes.size(); i++) {
+        auto& axis_values = fall_transition_axes[i].get()->get_axis_values();
+        nlohmann::json index = nlohmann::json::array();
+        for (int j = 0; j < axis_values.size(); ++j) {
+          auto axis_float_value = dynamic_cast<LibFloatValue*>(axis_values[j].get())->getFloatValue();
+          index.push_back(axis_float_value);
+        }
+        fall_transition_data["index_" + std::to_string(i + 1)] = index;
+      }
+      auto& fall_transition_lib_table_values = fall_transition_table->get_table_values();
+      nlohmann::json fall_transition_values_array = nlohmann::json::array();
+      for (size_t i = 0; i < fall_transition_lib_table_values.size(); i += fall_transition_columns) {
+        nlohmann::json row = nlohmann::json::array();
+        for (size_t j = 0; j < fall_transition_columns && (i + j) < fall_transition_lib_table_values.size(); ++j) {
+          auto lib_table_float_value = dynamic_cast<LibFloatValue*>(fall_transition_lib_table_values[i + j].get())->getFloatValue();
+          row.push_back(lib_table_float_value);
+        }
+        fall_transition_values_array.push_back(row);
+      }
+      fall_transition_data["values"] = fall_transition_values_array;
+      timing_arc["fall_transition"] = fall_transition_data;
+    }
+
+    return timing_arc;
+  };
+
+  auto classify_cell_arc_by_snk_port = [](LibCell* lib_cell) -> std::map<std::string, std::vector<LibArc*>> {
+    std::map<std::string, std::vector<LibArc*>> snkport2arcset;
+    for (auto& cell_arc_set : lib_cell->get_cell_arcs()) {
+      auto* cell_arc = cell_arc_set->front();
+      const char* src_port_name = cell_arc->get_src_port();
+      const char* snk_port_name = cell_arc->get_snk_port();
+      snkport2arcset[snk_port_name].push_back(cell_arc);
+    }
+
+    return snkport2arcset;
+  };
+
+  nlohmann::json json_data;
+  json_data["lib_name"] = get_lib_name();
+  for (const auto& cell : get_cells()) {
+    nlohmann::json cell_info;
+    cell_info["cell_name"] = cell->get_cell_name();
+    cell_info["timing_arcs"] = nlohmann::json::array();
+
+    auto snkport2arcset = classify_cell_arc_by_snk_port(cell.get());
+    for (const auto& pair : snkport2arcset) {
+      for (const auto& arc : pair.second) {
+        if (arc->isDelayArc()) {
+          // wirte json
+          cell_info["timing_arcs"].push_back(create_timing_arc(arc));
+        }
+      }
+    }
+    json_data["cells_lib_info"].push_back(cell_info);
+  }
+
+  std::ofstream json_file(json_file_name);
+  if (json_file.is_open()) {
+    LOG_INFO << "start write liberty into json file: " << json_file_name;
+    json_file << json_data.dump(1);
+    json_file.close();
+    LOG_INFO << "success write liberty into json file: " << json_file_name;
+  } else {
+    LOG_INFO << "fail write liberty into json file: " << json_file_name;
+  }
 }
 
 /**

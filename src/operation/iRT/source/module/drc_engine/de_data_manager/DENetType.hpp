@@ -16,34 +16,38 @@
 // ***************************************************************************************
 #pragma once
 
-#include "EXTLayerCoord.hpp"
-#include "LayerCoord.hpp"
-#include "Orientation.hpp"
-#include "RTHeader.hpp"
+#include "Logger.hpp"
 
 namespace irt {
 
-class AccessPoint : public EXTLayerCoord
+enum class DENetType
 {
- public:
-  AccessPoint() = default;
-  AccessPoint(int32_t pin_idx, const LayerCoord& coord)
-  {
-    _pin_idx = pin_idx;
-    set_real_coord(coord);
-    set_layer_idx(coord.get_layer_idx());
-  }
-  ~AccessPoint() = default;
-  // getter
-  int32_t get_pin_idx() const { return _pin_idx; }
-  // setter
-  void set_pin_idx(const int32_t pin_idx) { _pin_idx = pin_idx; }
-  // function
-  LayerCoord getGridLayerCoord() { return LayerCoord(get_grid_coord(), get_layer_idx()); }
-  LayerCoord getRealLayerCoord() { return LayerCoord(get_real_coord(), get_layer_idx()); }
+  kNone,
+  kSingleNet,
+  kMultiNet
+};
 
- private:
-  int32_t _pin_idx = -1;
+struct GetDENetTypeName
+{
+  std::string operator()(const DENetType& net_type) const
+  {
+    std::string net_type_name;
+    switch (net_type) {
+      case DENetType::kNone:
+        net_type_name = "none";
+        break;
+      case DENetType::kSingleNet:
+        net_type_name = "single_net";
+        break;
+      case DENetType::kMultiNet:
+        net_type_name = "multi_net";
+        break;
+      default:
+        RTLOG.error(Loc::current(), "Unrecognized type!");
+        break;
+    }
+    return net_type_name;
+  }
 };
 
 }  // namespace irt

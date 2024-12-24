@@ -496,6 +496,8 @@ void TopologyGenerator::updateSummary(TGModel& tg_model)
   total_demand = 0;
   total_overflow = 0;
   total_wire_length = 0;
+  clock_timing.clear();
+  power_map.clear();
 
   for (int32_t x = 0; x < tg_node_map.get_x_size(); x++) {
     for (int32_t y = 0; y < tg_node_map.get_y_size(); y++) {

@@ -33,7 +33,7 @@ namespace ipower {
  * @brief for gpu kernel function used to store connection point.
  * 
  */
-struct GPUConnectionPoint {
+struct GPU_Connection_Point {
     int _src_id = -1;
     int _snk_id = -1;
     unsigned _last_depth; // The last hop combine depth.
@@ -53,11 +53,11 @@ struct GPUConnectionPoint {
  * @param num_seq_arcs 
  * @param out_connection_points 
  */
-void build_macro_connection_map(GPUConnectionPoint* connection_points,
+void build_macro_connection_map(GPU_Connection_Point* connection_points,
                                 unsigned* is_macros, unsigned* seq_arcs,
                                 unsigned* snk_depths, unsigned* snk_arcs,
                                 int connection_point_num, int num_seq_vertexes,
                                 int num_seq_arcs,
-                                GPUConnectionPoint* out_connection_points, bool is_free_memory);
+                                GPU_Connection_Point* out_connection_points, bool is_free_memory);
 
 }
