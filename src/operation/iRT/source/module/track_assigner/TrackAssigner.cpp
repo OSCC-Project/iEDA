@@ -119,7 +119,6 @@ void TrackAssigner::ignoreViolation(TAModel& ta_model)
   DETask de_task;
   {
     std::string top_name = RTUTIL.getString("ignore_violation");
-    PlanarRect check_region = die.get_real_rect();
     std::vector<std::pair<EXTLayerRect*, bool>> env_shape_list;
     std::map<int32_t, std::vector<std::pair<EXTLayerRect*, bool>>> net_pin_shape_map;
     for (auto& [is_routing, layer_net_fixed_rect_map] : RTDM.getTypeLayerNetFixedRectMap(die)) {
@@ -151,7 +150,6 @@ void TrackAssigner::ignoreViolation(TAModel& ta_model)
     de_task.set_proc_type(DEProcType::kIgnore);
     de_task.set_net_type(DENetType::kMultiNet);
     de_task.set_top_name(top_name);
-    de_task.set_check_region(check_region);
     de_task.set_env_shape_list(env_shape_list);
     de_task.set_net_pin_shape_map(net_pin_shape_map);
     de_task.set_net_result_map(net_result_map);
@@ -277,8 +275,8 @@ void TrackAssigner::assignTAPanelMap(TAModel& ta_model)
       buildFixedRect(ta_panel);
       buildAccessResult(ta_panel);
       buildNetResult(ta_panel);
-      buildViolation(ta_panel);
       initTATaskList(ta_model, ta_panel);
+      buildViolation(ta_panel);
       if (needRouting(ta_panel)) {
         buildPanelTrackAxis(ta_panel);
         buildTANodeMap(ta_panel);
@@ -342,21 +340,6 @@ void TrackAssigner::buildNetResult(TAPanel& ta_panel)
         ta_panel.get_net_detailed_result_map()[net_idx].push_back(net_shape);
       }
     }
-  }
-}
-
-void TrackAssigner::buildViolation(TAPanel& ta_panel)
-{
-  for (Violation* violation : RTDM.getViolationSet(ta_panel.get_panel_rect())) {
-    if (violation->get_is_routing() != true
-        || violation->get_violation_shape().get_layer_idx() != ta_panel.get_panel_rect().get_layer_idx()) {
-      continue;
-    }
-    if (!RTUTIL.isInside(ta_panel.get_panel_rect().get_real_rect(), violation->get_violation_shape().get_real_rect())) {
-      continue;
-    }
-    ta_panel.get_violation_list().push_back(*violation);
-    RTDM.updateViolationToGCellMap(ChangeType::kDel, violation);
   }
 }
 
@@ -448,6 +431,31 @@ void TrackAssigner::initTATaskList(TAModel& ta_model, TAPanel& ta_panel)
     }
   }
   std::sort(ta_task_list.begin(), ta_task_list.end(), CmpTATask());
+}
+
+void TrackAssigner::buildViolation(TAPanel& ta_panel)
+{
+  std::set<int32_t> need_checked_net_set;
+  for (TATask* ta_task : ta_panel.get_ta_task_list()) {
+    need_checked_net_set.insert(ta_task->get_net_idx());
+  }
+  for (Violation* violation : RTDM.getViolationSet(ta_panel.get_panel_rect())) {
+    if (violation->get_is_routing() != true
+        || violation->get_violation_shape().get_layer_idx() != ta_panel.get_panel_rect().get_layer_idx()) {
+      continue;
+    }
+    bool exist_checked_net = false;
+    for (int32_t violation_net_idx : violation->get_violation_net_set()) {
+      if (RTUTIL.exist(need_checked_net_set, violation_net_idx)) {
+        exist_checked_net = true;
+        break;
+      }
+    }
+    if (exist_checked_net) {
+      ta_panel.get_violation_list().push_back(*violation);
+      RTDM.updateViolationToGCellMap(ChangeType::kDel, violation);
+    }
+  }
 }
 
 bool TrackAssigner::needRouting(TAPanel& ta_panel)

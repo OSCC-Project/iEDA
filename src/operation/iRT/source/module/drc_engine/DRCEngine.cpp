@@ -63,7 +63,6 @@ void DRCEngine::init()
   DETask de_task;
   {
     std::string top_name = RTUTIL.getString("ignore_violation");
-    PlanarRect check_region = die.get_real_rect();
     std::vector<std::pair<EXTLayerRect*, bool>> env_shape_list;
     std::map<int32_t, std::vector<std::pair<EXTLayerRect*, bool>>> net_pin_shape_map;
     for (auto& [is_routing, layer_net_fixed_rect_map] : RTDM.getTypeLayerNetFixedRectMap(die)) {
@@ -88,7 +87,6 @@ void DRCEngine::init()
     de_task.set_proc_type(DEProcType::kIgnore);
     de_task.set_net_type(DENetType::kMultiNet);
     de_task.set_top_name(top_name);
-    de_task.set_check_region(check_region);
     de_task.set_env_shape_list(env_shape_list);
     de_task.set_net_pin_shape_map(net_pin_shape_map);
     de_task.set_need_checked_net_set(need_checked_net_set);
@@ -102,8 +100,8 @@ void DRCEngine::init()
 
 std::vector<Violation> DRCEngine::getViolationList(DETask& de_task)
 {
-  // getViolationListByInterface(de_task);
-  getViolationListBySelf(de_task);
+  getViolationListByInterface(de_task);
+  // getViolationListBySelf(de_task);
 
   filterViolationList(de_task);
   if (de_task.get_proc_type() == DEProcType::kGet) {
@@ -507,30 +505,23 @@ void DRCEngine::filterViolationList(DETask& de_task)
       // 跳过的类型舍弃
       continue;
     }
-    PlanarRect& real_rect = violation.get_violation_shape().get_real_rect();
-    if (!RTUTIL.isOverlap(de_task.get_check_region(), real_rect)) {
-      // 不在检查区域内的舍弃
-      continue;
-    }
-    std::set<int32_t>& violation_net_set = violation.get_violation_net_set();
+    bool exist_checked_net = false;
     {
-      // 构建违例net
-      std::set<int32_t> new_violation_net_set;
-      for (int32_t violation_net_idx : violation_net_set) {
-        if (violation_net_idx == -1 || RTUTIL.exist(de_task.get_need_checked_net_set(), violation_net_idx)) {
-          new_violation_net_set.insert(violation_net_idx);
+      for (int32_t violation_net_idx : violation.get_violation_net_set()) {
+        if (RTUTIL.exist(de_task.get_need_checked_net_set(), violation_net_idx)) {
+          exist_checked_net = true;
+          break;
         }
       }
-      violation_net_set = new_violation_net_set;
     }
-    if (violation_net_set.empty() || (violation_net_set.size() == 1 && *violation_net_set.begin() == -1)) {
-      // net不是布线net的舍弃
+    if (!exist_checked_net) {
+      // net不包含布线net的舍弃
       continue;
     }
-    if (de_task.get_net_type() == DENetType::kSingleNet && violation_net_set.size() > 1) {
+    if (de_task.get_net_type() == DENetType::kSingleNet && violation.get_violation_net_set().size() > 1) {
       continue;
     }
-    if (de_task.get_net_type() == DENetType::kMultiNet && violation_net_set.size() < 2) {
+    if (de_task.get_net_type() == DENetType::kMultiNet && violation.get_violation_net_set().size() < 2) {
       continue;
     }
     if (RTUTIL.exist(_ignored_violation_set, violation) || RTUTIL.exist(_temp_ignored_violation_set, violation)) {

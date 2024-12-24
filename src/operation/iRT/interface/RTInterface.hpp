@@ -102,7 +102,7 @@ class RTInterface
   void wrapLayerViaMasterList();
   void wrapObstacleList();
   void wrapNetList();
-  bool isSkipping(idb::IdbNet* idb_net);
+  bool isSkipping(idb::IdbNet* idb_net, bool with_log);
   void wrapPinList(Net& net, idb::IdbNet* idb_net);
   void wrapPinShapeList(Pin& pin, idb::IdbPin* idb_pin);
   void wrapDrivenPin(Net& net, idb::IdbNet* idb_net);

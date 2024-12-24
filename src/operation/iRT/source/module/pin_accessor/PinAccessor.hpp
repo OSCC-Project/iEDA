@@ -68,8 +68,8 @@ class PinAccessor
   void routePABoxMap(PAModel& pa_model);
   void buildFixedRect(PABox& pa_box);
   void buildAccessResult(PABox& pa_box);
-  void buildViolation(PABox& pa_box);
   void initPATaskList(PAModel& pa_model, PABox& pa_box);
+  void buildViolation(PABox& pa_box);
   bool needRouting(PABox& pa_box);
   void buildBoxTrackAxis(PABox& pa_box);
   void buildLayerNodeMap(PABox& pa_box);

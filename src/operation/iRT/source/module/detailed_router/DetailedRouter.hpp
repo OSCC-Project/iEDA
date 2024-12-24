@@ -64,8 +64,8 @@ class DetailedRouter
   void buildFixedRect(DRBox& dr_box);
   void buildAccessResult(DRBox& dr_box);
   void buildNetResult(DRBox& dr_box);
-  void buildViolation(DRBox& dr_box);
   void initDRTaskList(DRModel& dr_model, DRBox& dr_box);
+  void buildViolation(DRBox& dr_box);
   bool needRouting(DRBox& dr_box);
   void buildBoxTrackAxis(DRBox& dr_box);
   void buildLayerNodeMap(DRBox& dr_box);

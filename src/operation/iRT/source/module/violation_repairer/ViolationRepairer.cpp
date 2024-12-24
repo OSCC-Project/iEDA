@@ -219,7 +219,6 @@ std::vector<Violation> ViolationRepairer::getMultiNetViolationList(VRModel& vr_m
   DETask de_task;
   {
     std::string top_name = RTUTIL.getString("vr_model");
-    PlanarRect check_region = die.get_real_rect();
     std::vector<std::pair<EXTLayerRect*, bool>> env_shape_list;
     std::map<int32_t, std::vector<std::pair<EXTLayerRect*, bool>>> net_pin_shape_map;
     for (auto& [is_routing, layer_net_fixed_rect_map] : RTDM.getTypeLayerNetFixedRectMap(die)) {
@@ -257,7 +256,6 @@ std::vector<Violation> ViolationRepairer::getMultiNetViolationList(VRModel& vr_m
     de_task.set_proc_type(DEProcType::kGet);
     de_task.set_net_type(DENetType::kMultiNet);
     de_task.set_top_name(top_name);
-    de_task.set_check_region(check_region);
     de_task.set_env_shape_list(env_shape_list);
     de_task.set_net_pin_shape_map(net_pin_shape_map);
     de_task.set_net_result_map(net_result_map);
@@ -274,7 +272,6 @@ std::vector<Violation> ViolationRepairer::getSingleNetViolationList(VRModel& vr_
   DETask de_task;
   {
     std::string top_name = RTUTIL.getString("vr_model");
-    PlanarRect check_region = die.get_real_rect();
     std::vector<std::pair<EXTLayerRect*, bool>> env_shape_list;
     std::map<int32_t, std::vector<std::pair<EXTLayerRect*, bool>>> net_pin_shape_map;
     for (auto& [is_routing, layer_net_fixed_rect_map] : RTDM.getTypeLayerNetFixedRectMap(die)) {
@@ -312,7 +309,6 @@ std::vector<Violation> ViolationRepairer::getSingleNetViolationList(VRModel& vr_
     de_task.set_proc_type(DEProcType::kGet);
     de_task.set_net_type(DENetType::kSingleNet);
     de_task.set_top_name(top_name);
-    de_task.set_check_region(check_region);
     de_task.set_env_shape_list(env_shape_list);
     de_task.set_net_pin_shape_map(net_pin_shape_map);
     de_task.set_net_result_map(net_result_map);
@@ -324,7 +320,7 @@ std::vector<Violation> ViolationRepairer::getSingleNetViolationList(VRModel& vr_
 
 void ViolationRepairer::repairViolation(VRModel& vr_model)
 {
-  for (size_t i = 0; i < 10; i++) {
+  for (size_t i = 0; i < 1; i++) {
     initVRBoxList(vr_model);
     buildBoxSchedule(vr_model);
     repairVRBoxList(vr_model);

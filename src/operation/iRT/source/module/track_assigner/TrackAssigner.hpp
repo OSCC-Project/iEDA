@@ -58,8 +58,8 @@ class TrackAssigner
   void assignTAPanelMap(TAModel& ta_model);
   void buildAccessResult(TAPanel& ta_panel);
   void buildNetResult(TAPanel& ta_panel);
-  void buildViolation(TAPanel& ta_panel);
   void initTATaskList(TAModel& ta_model, TAPanel& ta_panel);
+  void buildViolation(TAPanel& ta_panel);
   bool needRouting(TAPanel& ta_panel);
   void buildFixedRect(TAPanel& ta_panel);
   void buildPanelTrackAxis(TAPanel& ta_panel);

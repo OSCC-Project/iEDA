@@ -337,8 +337,8 @@ void DetailedRouter::routeDRBoxMap(DRModel& dr_model)
       buildFixedRect(dr_box);
       buildAccessResult(dr_box);
       buildNetResult(dr_box);
-      buildViolation(dr_box);
       initDRTaskList(dr_model, dr_box);
+      buildViolation(dr_box);
       if (needRouting(dr_box)) {
         buildBoxTrackAxis(dr_box);
         buildLayerNodeMap(dr_box);
@@ -377,25 +377,21 @@ void DetailedRouter::buildNetResult(DRBox& dr_box)
 
   for (auto& [net_idx, segment_set] : RTDM.getNetDetailedResultMap(dr_box.get_box_rect())) {
     for (Segment<LayerCoord>* segment : segment_set) {
-      dr_box.get_net_detailed_result_map()[net_idx].push_back(*segment);
+      dr_box.get_net_task_detailed_result_map()[net_idx].push_back(*segment);
+
+      bool least_one_coord_in_box = false;
       if (RTUTIL.isInside(box_region, segment->get_first()) && RTUTIL.isInside(box_region, segment->get_second())) {
         if (RTUTIL.isInside(box_region, segment->get_first(), false) || RTUTIL.isInside(box_region, segment->get_second(), false)) {
-          // 线段在box_region内,但不能贴边
-          RTDM.updateNetDetailedResultToGCellMap(ChangeType::kDel, net_idx, segment);
+          // 线段在box_region内,但不贴边的
+          least_one_coord_in_box = true;
         }
       }
+      if (least_one_coord_in_box) {
+        RTDM.updateNetDetailedResultToGCellMap(ChangeType::kDel, net_idx, segment);
+      } else {
+        dr_box.get_net_detailed_result_map()[net_idx].insert(segment);
+      }
     }
-  }
-}
-
-void DetailedRouter::buildViolation(DRBox& dr_box)
-{
-  for (Violation* violation : RTDM.getViolationSet(dr_box.get_box_rect())) {
-    if (!RTUTIL.isInside(dr_box.get_box_rect().get_real_rect(), violation->get_violation_shape().get_real_rect())) {
-      continue;
-    }
-    dr_box.get_violation_list().push_back(*violation);
-    RTDM.updateViolationToGCellMap(ChangeType::kDel, violation);
   }
 }
 
@@ -407,7 +403,7 @@ void DetailedRouter::initDRTaskList(DRModel& dr_model, DRBox& dr_box)
   EXTPlanarRect& box_rect = dr_box.get_box_rect();
   PlanarRect& box_real_rect = box_rect.get_real_rect();
   std::map<int32_t, std::set<AccessPoint*>> net_access_point_map = RTDM.getNetAccessPointMap(box_rect);
-  std::map<int32_t, std::vector<Segment<LayerCoord>>>& net_detailed_result_map = dr_box.get_net_detailed_result_map();
+  std::map<int32_t, std::vector<Segment<LayerCoord>>>& net_task_detailed_result_map = dr_box.get_net_task_detailed_result_map();
 
   std::map<int32_t, std::vector<DRGroup>> net_group_list_map;
   {
@@ -420,7 +416,7 @@ void DetailedRouter::initDRTaskList(DRModel& dr_model, DRBox& dr_box)
         net_group_list_map[net_idx].push_back(group);
       }
     }
-    for (auto& [net_idx, segment_list] : net_detailed_result_map) {
+    for (auto& [net_idx, segment_list] : net_task_detailed_result_map) {
       std::vector<LayerCoord> coord_list;
       for (const Segment<LayerCoord>& segment : segment_list) {
         const LayerCoord& first = segment.get_first();
@@ -486,6 +482,27 @@ void DetailedRouter::initDRTaskList(DRModel& dr_model, DRBox& dr_box)
     dr_task_list.push_back(dr_task);
   }
   std::sort(dr_task_list.begin(), dr_task_list.end(), CmpDRTask());
+}
+
+void DetailedRouter::buildViolation(DRBox& dr_box)
+{
+  std::set<int32_t> need_checked_net_set;
+  for (DRTask* dr_task : dr_box.get_dr_task_list()) {
+    need_checked_net_set.insert(dr_task->get_net_idx());
+  }
+  for (Violation* violation : RTDM.getViolationSet(dr_box.get_box_rect())) {
+    bool exist_checked_net = false;
+    for (int32_t violation_net_idx : violation->get_violation_net_set()) {
+      if (RTUTIL.exist(need_checked_net_set, violation_net_idx)) {
+        exist_checked_net = true;
+        break;
+      }
+    }
+    if (exist_checked_net) {
+      dr_box.get_violation_list().push_back(*violation);
+      RTDM.updateViolationToGCellMap(ChangeType::kDel, violation);
+    }
+  }
 }
 
 bool DetailedRouter::needRouting(DRBox& dr_box)
@@ -656,7 +673,12 @@ void DetailedRouter::buildOrientNetMap(DRBox& dr_box)
       updateFixedRectToGraph(dr_box, ChangeType::kAdd, net_idx, *segment);
     }
   }
-  for (auto& [net_idx, segment_list] : dr_box.get_net_detailed_result_map()) {
+  for (auto& [net_idx, segment_set] : dr_box.get_net_detailed_result_map()) {
+    for (Segment<LayerCoord>* segment : segment_set) {
+      updateFixedRectToGraph(dr_box, ChangeType::kAdd, net_idx, *segment);
+    }
+  }
+  for (auto& [net_idx, segment_list] : dr_box.get_net_task_detailed_result_map()) {
     for (Segment<LayerCoord>& segment : segment_list) {
       updateNetResultToGraph(dr_box, ChangeType::kAdd, net_idx, segment);
     }
@@ -933,7 +955,7 @@ void DetailedRouter::updateTaskResult(DRBox& dr_box)
   std::vector<Segment<LayerCoord>> new_routing_segment_list = getRoutingSegmentList(dr_box);
 
   int32_t curr_net_idx = dr_box.get_curr_dr_task()->get_net_idx();
-  std::vector<Segment<LayerCoord>>& routing_segment_list = dr_box.get_net_detailed_result_map()[curr_net_idx];
+  std::vector<Segment<LayerCoord>>& routing_segment_list = dr_box.get_net_task_detailed_result_map()[curr_net_idx];
 
   // 原结果从graph删除,由于task有对应net_idx,所以不需要在布线前进行删除也不会影响结果
   for (Segment<LayerCoord>& routing_segment : routing_segment_list) {
@@ -1130,7 +1152,6 @@ void DetailedRouter::updateViolationList(DRBox& dr_box)
 std::vector<Violation> DetailedRouter::getCostViolationList(DRBox& dr_box)
 {
   std::string top_name = RTUTIL.getString("dr_box_", dr_box.get_dr_box_id().get_x(), "_", dr_box.get_dr_box_id().get_y());
-  PlanarRect check_region = dr_box.get_box_rect().get_real_rect();
   std::vector<std::pair<EXTLayerRect*, bool>> env_shape_list;
   std::map<int32_t, std::vector<std::pair<EXTLayerRect*, bool>>> net_pin_shape_map;
   for (auto& [is_routing, layer_net_fixed_rect_map] : dr_box.get_type_layer_net_fixed_rect_map()) {
@@ -1154,7 +1175,12 @@ std::vector<Violation> DetailedRouter::getCostViolationList(DRBox& dr_box)
       net_result_map[net_idx].push_back(segment);
     }
   }
-  for (auto& [net_idx, segment_list] : dr_box.get_net_detailed_result_map()) {
+  for (auto& [net_idx, segment_set] : dr_box.get_net_detailed_result_map()) {
+    for (Segment<LayerCoord>* segment : segment_set) {
+      net_result_map[net_idx].push_back(segment);
+    }
+  }
+  for (auto& [net_idx, segment_list] : dr_box.get_net_task_detailed_result_map()) {
     for (Segment<LayerCoord>& segment : segment_list) {
       net_result_map[net_idx].emplace_back(&segment);
     }
@@ -1168,7 +1194,6 @@ std::vector<Violation> DetailedRouter::getCostViolationList(DRBox& dr_box)
   de_task.set_proc_type(DEProcType::kGet);
   de_task.set_net_type(DENetType::kMultiNet);
   de_task.set_top_name(top_name);
-  de_task.set_check_region(check_region);
   de_task.set_env_shape_list(env_shape_list);
   de_task.set_net_pin_shape_map(net_pin_shape_map);
   de_task.set_net_result_map(net_result_map);
@@ -1178,16 +1203,16 @@ std::vector<Violation> DetailedRouter::getCostViolationList(DRBox& dr_box)
 
 void DetailedRouter::updateBestResult(DRBox& dr_box)
 {
-  std::map<int32_t, std::vector<Segment<LayerCoord>>>& best_net_detailed_result_map = dr_box.get_best_net_detailed_result_map();
+  std::map<int32_t, std::vector<Segment<LayerCoord>>>& best_net_task_detailed_result_map = dr_box.get_best_net_task_detailed_result_map();
   std::vector<Violation>& best_violation_list = dr_box.get_best_violation_list();
 
   int32_t curr_violation_num = static_cast<int32_t>(dr_box.get_violation_list().size());
-  if (!best_net_detailed_result_map.empty()) {
+  if (!best_net_task_detailed_result_map.empty()) {
     if (static_cast<int32_t>(best_violation_list.size()) < curr_violation_num) {
       return;
     }
   }
-  best_net_detailed_result_map = dr_box.get_net_detailed_result_map();
+  best_net_task_detailed_result_map = dr_box.get_net_task_detailed_result_map();
   best_violation_list = dr_box.get_violation_list();
 }
 
@@ -1231,7 +1256,7 @@ void DetailedRouter::selectBestResult(DRBox& dr_box)
 
 void DetailedRouter::uploadBestResult(DRBox& dr_box)
 {
-  for (auto& [net_idx, segment_list] : dr_box.get_best_net_detailed_result_map()) {
+  for (auto& [net_idx, segment_list] : dr_box.get_best_net_task_detailed_result_map()) {
     for (Segment<LayerCoord>& segment : segment_list) {
       RTDM.updateNetDetailedResultToGCellMap(ChangeType::kAdd, net_idx, new Segment<LayerCoord>(segment));
     }
@@ -1321,7 +1346,6 @@ std::vector<Violation> DetailedRouter::getCostViolationList(DRModel& dr_model)
   DETask de_task;
   {
     std::string top_name = RTUTIL.getString("dr_model");
-    PlanarRect check_region = die.get_real_rect();
     std::vector<std::pair<EXTLayerRect*, bool>> env_shape_list;
     std::map<int32_t, std::vector<std::pair<EXTLayerRect*, bool>>> net_pin_shape_map;
     for (auto& [is_routing, layer_net_fixed_rect_map] : RTDM.getTypeLayerNetFixedRectMap(die)) {
@@ -1358,7 +1382,6 @@ std::vector<Violation> DetailedRouter::getCostViolationList(DRModel& dr_model)
     de_task.set_proc_type(DEProcType::kGet);
     de_task.set_net_type(DENetType::kMultiNet);
     de_task.set_top_name(top_name);
-    de_task.set_check_region(check_region);
     de_task.set_env_shape_list(env_shape_list);
     de_task.set_net_pin_shape_map(net_pin_shape_map);
     de_task.set_net_result_map(net_result_map);
@@ -1504,7 +1527,7 @@ void DetailedRouter::addViolationToGraph(DRBox& dr_box, Violation& violation)
     }
   }
   std::vector<Segment<LayerCoord>> overlap_segment_list;
-  for (auto& [net_idx, segment_list] : dr_box.get_net_detailed_result_map()) {
+  for (auto& [net_idx, segment_list] : dr_box.get_net_task_detailed_result_map()) {
     if (!RTUTIL.exist(violation.get_violation_net_set(), net_idx)) {
       continue;
     }
@@ -2543,6 +2566,25 @@ void DetailedRouter::debugPlotDRBox(DRBox& dr_box, int32_t curr_task_idx, std::s
     gp_gds.addStruct(access_result_struct);
   }
 
+  // net_detailed_result
+  for (auto& [net_idx, segment_set] : dr_box.get_net_detailed_result_map()) {
+    GPStruct detailed_result_struct(RTUTIL.getString("detailed_result(net_", net_idx, ")"));
+    for (Segment<LayerCoord>* segment : segment_set) {
+      for (NetShape& net_shape : RTDM.getNetShapeList(net_idx, *segment)) {
+        GPBoundary gp_boundary;
+        gp_boundary.set_data_type(static_cast<int32_t>(GPDataType::kShape));
+        gp_boundary.set_rect(net_shape.get_rect());
+        if (net_shape.get_is_routing()) {
+          gp_boundary.set_layer_idx(RTGP.getGDSIdxByRouting(net_shape.get_layer_idx()));
+        } else {
+          gp_boundary.set_layer_idx(RTGP.getGDSIdxByCut(net_shape.get_layer_idx()));
+        }
+        detailed_result_struct.push(gp_boundary);
+      }
+    }
+    gp_gds.addStruct(detailed_result_struct);
+  }
+
   // task
   for (DRTask* dr_task : dr_box.get_dr_task_list()) {
     GPStruct task_struct(RTUTIL.getString("task(net_", dr_task->get_net_idx(), ")"));
@@ -2566,7 +2608,7 @@ void DetailedRouter::debugPlotDRBox(DRBox& dr_box, int32_t curr_task_idx, std::s
       gp_boundary.set_rect(dr_task->get_bounding_box());
       task_struct.push(gp_boundary);
     }
-    for (Segment<LayerCoord>& segment : dr_box.get_net_detailed_result_map()[dr_task->get_net_idx()]) {
+    for (Segment<LayerCoord>& segment : dr_box.get_net_task_detailed_result_map()[dr_task->get_net_idx()]) {
       LayerCoord first_coord = segment.get_first();
       LayerCoord second_coord = segment.get_second();
       int32_t first_layer_idx = first_coord.get_layer_idx();

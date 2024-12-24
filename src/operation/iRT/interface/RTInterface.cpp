@@ -647,7 +647,7 @@ void RTInterface::wrapObstacleList()
       }
       // instance pin without net
       for (idb::IdbPin* idb_pin : instance->get_pin_list()->get_pin_list()) {
-        if (!isSkipping(idb_pin->get_net())) {
+        if (!isSkipping(idb_pin->get_net(), false)) {
           continue;
         }
         for (idb::IdbLayerShape* port_box : idb_pin->get_port_box_list()) {
@@ -679,7 +679,7 @@ void RTInterface::wrapObstacleList()
     }
     // io pin
     for (idb::IdbPin* idb_io_pin : idb_io_pin_list) {
-      if (!isSkipping(idb_io_pin->get_net())) {
+      if (!isSkipping(idb_io_pin->get_net(), false)) {
         continue;
       }
       for (idb::IdbLayerShape* port_box : idb_io_pin->get_port_box_list()) {
@@ -712,7 +712,7 @@ void RTInterface::wrapObstacleList()
       }
       // instance pin without net
       for (idb::IdbPin* idb_pin : instance->get_pin_list()->get_pin_list()) {
-        if (!isSkipping(idb_pin->get_net())) {
+        if (!isSkipping(idb_pin->get_net(), false)) {
           continue;
         }
         for (idb::IdbLayerShape* port_box : idb_pin->get_port_box_list()) {
@@ -795,7 +795,7 @@ void RTInterface::wrapObstacleList()
     }
     // io pin
     for (idb::IdbPin* idb_io_pin : idb_io_pin_list) {
-      if (!isSkipping(idb_io_pin->get_net())) {
+      if (!isSkipping(idb_io_pin->get_net(), false)) {
         continue;
       }
       for (idb::IdbLayerShape* port_box : idb_io_pin->get_port_box_list()) {
@@ -828,7 +828,7 @@ void RTInterface::wrapNetList()
   {
     valid_idb_net_list.reserve(idb_net_list.size());
     for (idb::IdbNet* idb_net : idb_net_list) {
-      if (isSkipping(idb_net)) {
+      if (isSkipping(idb_net, true)) {
         continue;
       }
       valid_idb_net_list.push_back(idb_net);
@@ -847,7 +847,7 @@ void RTInterface::wrapNetList()
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
-bool RTInterface::isSkipping(idb::IdbNet* idb_net)
+bool RTInterface::isSkipping(idb::IdbNet* idb_net, bool with_log)
 {
   if (idb_net == nullptr) {
     return true;
@@ -881,7 +881,9 @@ bool RTInterface::isSkipping(idb::IdbNet* idb_net)
   if (pin_num <= 1) {
     return true;
   } else if (pin_num >= 500) {
-    RTLOG.warn(Loc::current(), "The ultra large net: ", idb_net->get_net_name(), " has ", pin_num, " pins!");
+    if (with_log) {
+      RTLOG.warn(Loc::current(), "The ultra large net: ", idb_net->get_net_name(), " has ", pin_num, " pins!");
+    }
   }
   return false;
 }
