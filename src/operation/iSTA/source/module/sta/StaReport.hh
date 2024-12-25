@@ -156,6 +156,19 @@ class StaReportPathYaml : public StaReportPathDump {
 };
 
 /**
+ * @brief The report wire path in yaml format.
+ * 
+ */
+class StaReportWirePathYaml : public StaReportPathDump {
+ public:
+  StaReportWirePathYaml(const char* rpt_file_name, AnalysisMode analysis_mode,
+                        unsigned n_worst);
+  ~StaReportWirePathYaml() override = default;
+
+  unsigned operator()(StaSeqPathData* seq_path_data) override;
+};
+
+/**
  * @brief The DRV trans report.
  *
  */

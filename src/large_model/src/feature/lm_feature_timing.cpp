@@ -123,7 +123,7 @@ void LmFeatureTiming::build()
 {
   auto* eval_tp = ieval::InitSTA::getInst();  // evaluate timing and power.
 
-  eval_tp->runLmSTA(_layout);
+  eval_tp->runLmSTA(_layout, _dir);
   //   eval_tp->evalTiming("WireGraph", true);
 
   buildNetTimingPowerFeature();

@@ -22,14 +22,14 @@
  * @date 2021-04-22
  */
 
-#include "StaDump.hh"
-
 #include <yaml-cpp/yaml.h>
 
 #include <fstream>
+#include <ranges>
 #include <regex>
 #include <string>
 
+#include "StaDump.hh"
 #include "ThreadPool/ThreadPool.h"
 
 namespace ista {
@@ -119,7 +119,7 @@ unsigned StaDumpYaml::operator()(StaVertex* the_vertex) {
         src_clock_data ? src_clock_data : 0,
         clock_data->get_prop_clock()->get_clock_name());
 
-    node5.push_back(data_str); 
+    node5.push_back(data_str);
   }
 
   YAML::Node node6;
@@ -165,10 +165,11 @@ unsigned StaDumpYaml::operator()(StaArc* the_arc) {
 
   arc_node["src"] = arc->get_src()->getName();
   arc_node["snk"] = arc->get_snk()->getName();
-  arc_node["arc_type"] =
-      arc->isDelayArc()
-          ? (arc->isInstArc() ? "cell Delay" : "net Delay")
-          : arc->isSetupArc() ? "Setup" : arc->isHoldArc() ? "Hold" : "Other";
+  arc_node["arc_type"] = arc->isDelayArc()
+                             ? (arc->isInstArc() ? "cell Delay" : "net Delay")
+                         : arc->isSetupArc() ? "Setup"
+                         : arc->isHoldArc()  ? "Hold"
+                                             : "Other";
 
   YAML::Node delay_node;
   arc_node["arc_delay_data"] = delay_node;
@@ -204,14 +205,14 @@ unsigned StaDumpYaml::operator()(StaGraph* the_graph) {
   LOG_INFO << "dump graph arc total arc " << the_graph->numArc();
 
   StaVertex* the_vertex;
-  FOREACH_VERTEX(the_graph, the_vertex) { 
-    the_vertex->exec(*this); 
+  FOREACH_VERTEX(the_graph, the_vertex) {
+    the_vertex->exec(*this);
     LOG_INFO_EVERY_N(10000) << "dump 10000 vertexes ...";
     break;
   }
 
   StaArc* the_arc;
-  FOREACH_ARC(the_graph, the_arc) { 
+  FOREACH_ARC(the_graph, the_arc) {
     the_arc->exec(*this);
     LOG_INFO_EVERY_N(10000) << "dump 10000 arcs ...";
     break;
@@ -300,6 +301,62 @@ unsigned StaDumpDelayYaml::operator()(StaArc* the_arc) {
         rc_net->delayNs(*snk_obj, RcNet::DelayMethod::kECM).value_or(0.0);
     arc_node["D2MC"] =
         rc_net->delayNs(*snk_obj, RcNet::DelayMethod::kD2MC).value_or(0.0);
+  }
+
+  return 1;
+}
+
+/**
+ * @brief dump timing arc data, for net arc, we need extract the wire topo, from
+ * driver pin to load pin.
+ * @param the_arc
+ * @return unsigned
+ */
+unsigned StaDumpWireYaml::operator()(StaArc* the_arc) {
+  YAML::Node& node = _node;
+  AnalysisMode analysis_mode = _analysis_mode;
+  TransType trans_type = _trans_type;
+
+  auto vertex_slew = the_arc->get_src()->getSlewNs(analysis_mode, trans_type);
+
+  unsigned& arc_id = _arc_id;
+  const char* arc_type_str = the_arc->isNetArc() ? "net" : "inst";
+  std::string node_name = Str::printf("%s_arc_%d", arc_type_str, arc_id++);
+  YAML::Node arc_node;
+  node[node_name] = arc_node;
+
+  arc_node["Incr"] =
+      FS_TO_NS(the_arc->get_arc_delay(analysis_mode, trans_type));
+
+  if (the_arc->isNetArc()) {
+    // for net arc, we need extract the wire topo.
+    auto* the_net_arc = dynamic_cast<StaNetArc*>(the_arc);
+    auto* the_net = the_net_arc->get_net();
+
+    auto* rc_net = getSta()->getRcNet(the_net);
+
+    auto* snk_node = the_arc->get_snk();
+    auto snk_node_name = snk_node->get_design_obj()->getFullName();
+
+    auto wire_topo = rc_net->getWireTopo(snk_node_name.c_str());
+    auto all_nodes_slew =
+        rc_net->getAllNodeSlew(*vertex_slew, analysis_mode, trans_type);
+    for (int edge_index = 0;
+         auto* wire_edge : wire_topo | std::ranges::views::reverse) {
+      std::string edge_index_name = Str::printf("edge_%d", edge_index++);
+      YAML::Node edge_node;
+      arc_node[edge_index_name] = edge_node;
+
+      auto& from_node = wire_edge->get_from();
+      auto& to_node = wire_edge->get_to();
+      edge_node["wire_from_node"] = from_node.get_name();
+      edge_node["wire_to_node"] = to_node.get_name();
+      edge_node["wire_R"] = wire_edge->get_res();
+      edge_node["wire_C"] = from_node.nodeLoad() - to_node.nodeLoad();
+      edge_node["from_slew"] = all_nodes_slew[from_node.get_name()];
+      edge_node["to_slew"] = all_nodes_slew[to_node.get_name()];
+      edge_node["wire_delay"] = to_node.delay() - from_node.delay();
+    }
   }
 
   return 1;

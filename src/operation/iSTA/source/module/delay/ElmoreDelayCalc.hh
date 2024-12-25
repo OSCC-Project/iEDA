@@ -600,6 +600,7 @@ class RcNet {
   std::map<std::string, double> getAllNodeSlew(double driver_slew,
                                                   AnalysisMode mode,
                                                   TransType trans_type);
+  std::vector<RctEdge*> getWireTopo(const char* to_node_name);
 
   void printRctInfo();
 

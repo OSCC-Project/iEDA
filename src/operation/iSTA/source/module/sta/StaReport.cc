@@ -798,6 +798,58 @@ unsigned StaReportPathYaml::operator()(StaSeqPathData* seq_path_data) {
   return 1;
 }
 
+
+StaReportWirePathYaml::StaReportWirePathYaml(const char* rpt_file_name,
+                                     AnalysisMode analysis_mode,
+                                     unsigned n_worst)
+    : StaReportPathDump(rpt_file_name, analysis_mode, n_worst) {}
+
+/**
+ * @brief print timing path in yaml in wire level.
+ * 
+ * @param seq_path_data 
+ * @return unsigned 
+ */
+unsigned StaReportWirePathYaml::operator()(StaSeqPathData* seq_path_data) {
+  StaDumpWireYaml dump_wire_yaml;
+  std::stack<StaPathDelayData*> path_stack = seq_path_data->getPathDelayData();
+
+  StaVertex* last_vertex = nullptr;
+  while (!path_stack.empty()) {
+    auto* path_delay_data = path_stack.top();
+    auto* own_vertex = path_delay_data->get_own_vertex();
+    dump_wire_yaml.set_analysis_mode(path_delay_data->get_delay_type());
+    dump_wire_yaml.set_trans_type(path_delay_data->get_trans_type());
+
+    if (last_vertex) {
+      auto snk_arcs = last_vertex->getSnkArc(own_vertex);
+      auto* snk_arc = snk_arcs.empty() ? nullptr : snk_arcs.front();
+      snk_arc->exec(dump_wire_yaml);
+    }
+
+    own_vertex->exec(dump_wire_yaml);
+
+    last_vertex = own_vertex;
+
+    path_stack.pop();
+  }
+
+  std::string design_work_space =
+      dump_wire_yaml.getSta()->get_design_work_space();
+  std::string path_dir = design_work_space + "/wire_paths";
+  std::filesystem::create_directories(path_dir);
+
+  static unsigned file_id = 1;
+  std::string now_time = Time::getNowWallTime();
+  std::string tmp = Str::replace(now_time, ":", "_");
+  const char* text_file_name = Str::printf(
+      "%s/wire_path_%s_%d.yml", path_dir.c_str(), tmp.c_str(), file_id++);
+
+  dump_wire_yaml.printText(text_file_name);
+
+  return 1;
+}
+
 StaReportTrans::StaReportTrans(const char* rpt_file_name,
                                AnalysisMode analysis_mode, unsigned n_worst)
     : _rpt_file_name(Str::copy(rpt_file_name)),

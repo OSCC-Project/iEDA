@@ -1388,6 +1388,11 @@ unsigned Sta::reportPath(const char *rpt_file_name, bool is_derate /*=true*/) {
         report_funcs.emplace_back(&report_path_dump);
       }
 
+      StaReportWirePathYaml report_wire_dump(rpt_file_name, mode, n_worst);
+      if (c_print_wire_yaml) {        
+        report_funcs.emplace_back(&report_wire_dump);
+      }
+
       for (auto *report_fun : report_funcs) {
         is_ok = report_path(*report_fun);
       }
