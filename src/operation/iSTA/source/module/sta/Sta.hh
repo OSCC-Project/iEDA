@@ -259,6 +259,14 @@ class Sta {
     return _net_to_rc_net.contains(the_net) ? _net_to_rc_net[the_net].get()
                                             : nullptr;
   }
+  std::vector<RcNet*> getAllRcNet() {
+    std::vector<RcNet*> rc_nets;
+    for (auto& [net, rc_net] : _net_to_rc_net) {
+      rc_nets.push_back(rc_net.get());
+    }
+    return rc_nets;
+  }
+  
   void resetAllRcNet() { _net_to_rc_net.clear(); }
   LibCell* findLibertyCell(const char* cell_name);
   std::optional<AocvObjectSpecSet*> findDataAocvObjectSpecSet(

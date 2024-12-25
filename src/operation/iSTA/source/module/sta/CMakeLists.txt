@@ -6,6 +6,7 @@ set (CMAKE_CXX_STANDARD 20)
 aux_source_directory(./ SRC)
 add_library(sta ${SRC})
 
+if (USE_GPU)
 target_link_libraries(sta 
     liberty 
     delay 
@@ -23,4 +24,21 @@ target_link_libraries(sta
     stdc++fs 
     log 
     yaml-cpp)
-
+else ()
+target_link_libraries(sta 
+    liberty 
+    delay 
+    spef 
+    sdc 
+    sdc-cmd 
+    verilog 
+    aocv-parser 
+    graph sdc 
+    absl::btree 
+    tcl 
+    time 
+    report_table 
+    stdc++fs 
+    log 
+    yaml-cpp)
+endif()

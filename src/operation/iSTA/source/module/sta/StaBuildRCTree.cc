@@ -35,7 +35,7 @@
 #include "netlist/Netlist.hh"
 #include "spef/SpefParserRustC.hh"
 
-#define CUDA_DELAY 1
+// #define CUDA_DELAY 1
 
 namespace ista {
 

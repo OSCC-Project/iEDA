@@ -412,7 +412,7 @@ void calc_rc_timing(std::vector<RcNet*> all_nets) {
 
   printf(
       "use grid dims (%d, %d) with block dims (%d, %d), total threads: %d, "
-      "start run gpu kernel.\n",
+      "start run gpu kernel to speedup elmore delay.\n",
       num_blocks.x, num_blocks.y, block_size.x, block_size.y,
       num_blocks.x * num_blocks.y * block_size.x * block_size.y);
   // ieda::Stats stats;

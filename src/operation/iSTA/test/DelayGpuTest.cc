@@ -14,7 +14,6 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-#include <cuda_runtime.h>
 
 #include "api/TimingEngine.hh"
 #include "gtest/gtest.h"

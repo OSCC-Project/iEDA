@@ -56,8 +56,6 @@
 
 #include "log/Log.hh"
 
-#define CUDA_DELAY 1
-
 namespace ista {
 
 const int THREAD_PER_BLOCK_NUM = 512;

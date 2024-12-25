@@ -728,6 +728,8 @@ class RcNet {
   static std::unique_ptr<RCNetCommonInfo> _rc_net_common_info;
 };
 
+#if CUDA_DELAY
 void calc_rc_timing(std::vector<RcNet*> all_nets);
+#endif
 
 }  // namespace ista
