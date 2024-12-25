@@ -101,7 +101,7 @@ unsigned StaBuildRCTree::operator()(StaGraph* the_graph) {
   std::atomic<unsigned> max_node = 0;
   std::string net_name;
 
-#if 0
+#if 1
 #if CUDA_DELAY
   std::vector<RcNet*> all_nets;
 #endif
@@ -143,6 +143,7 @@ unsigned StaBuildRCTree::operator()(StaGraph* the_graph) {
                 }
               }
               // DLOG_INFO << "Update Rc tree timing " << spef_name;
+              rust_free_spef_net(spef_net);
             } else {
               LOG_FATAL << "build rc tree not found design net "
                         << spef_net->_name;
