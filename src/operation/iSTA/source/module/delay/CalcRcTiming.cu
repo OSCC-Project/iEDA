@@ -406,8 +406,6 @@ void calcRcTiming(std::vector<RcNet*> all_nets) {
 
   // launch kernel：kernelUpdateLoad
   auto total_nets_num = all_nets.size();
-  // int num_blocks =
-  // (total_nets_num + THREAD_PER_BLOCK_NUM - 1) / THREAD_PER_BLOCK_NUM;
   dim3 block_size(256, 4);
   dim3 num_blocks((total_nets_num + block_size.x - 1) / block_size.x, 1);
 
@@ -416,6 +414,7 @@ void calcRcTiming(std::vector<RcNet*> all_nets) {
       "start run gpu kernel.\n",
       num_blocks.x, num_blocks.y, block_size.x, block_size.y,
       num_blocks.x * num_blocks.y * block_size.x * block_size.y);
+  // ieda::Stats stats;
   kernelUpdateLoad<<<num_blocks, block_size>>>(
       gpu_start_array, gpu_cap_array, gpu_ncap_array, gpu_load_array,
       gpu_nload_array, gpu_parent_pos_array, total_nets_num);
@@ -430,7 +429,12 @@ void calcRcTiming(std::vector<RcNet*> all_nets) {
       gpu_start_array, gpu_res_array, gpu_ldelay_array, gpu_ndelay_array,
       gpu_beta_array, gpu_impulse_array, gpu_parent_pos_array, total_nets_num);
   cudaDeviceSynchronize();
-
+  // LOG_INFO << "calculate rc timing end";
+  // // LOG_INFO << "calculate rc timing net num: " << all_nets.size();
+  // double memory_delta = stats.memoryDelta();
+  // LOG_INFO << "calculate rc timing memory usage " << memory_delta << "MB";
+  // double time_delta = stats.elapsedRunTime();
+  // LOG_INFO << "calculate rc timing time elapsed " << time_delta << "s";
   // copy gpu data to cpu memory.
   cudaMemcpyAsync(load_array.data(), gpu_load_array,
                   total_nodes_num * sizeof(float), cudaMemcpyDeviceToHost,
@@ -456,7 +460,7 @@ void calcRcTiming(std::vector<RcNet*> all_nets) {
   cudaMemcpyAsync(impulse_array.data(), gpu_impulse_array,
                   4 * total_nodes_num * sizeof(float), cudaMemcpyDeviceToHost,
                   stream1);
-  cudaStreamSynchronize(stream1);  // cudaDeviceSynchronize();
+  cudaStreamSynchronize(stream1);
   cudaStreamDestroy(stream1);
   // print_array("load array", load_array);
   // print_array("nload array", nload_array);

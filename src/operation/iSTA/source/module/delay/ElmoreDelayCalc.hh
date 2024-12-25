@@ -583,12 +583,6 @@ class RcTree {
   void levelizeRcTree(std::queue<RctNode*> bfs_queue);
   void levelizeRcTree();
   void applyDelayDataToArray();
-  void initGpuMemory();
-  void updateLoad();
-  void updateDelay();
-  void updateLDelay();
-  void updateResponse();
-  void freeGpuMemory();
 
   void initData();
   void initMoment();
