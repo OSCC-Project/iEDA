@@ -19,13 +19,16 @@ cmake_minimum_required(VERSION 3.11)
 project(iEDA)
 
 option(BUILD_STATIC_LIB "If ON, build static lib." ON)
+if (BUILD_STATIC_LIB)
+    set(BUILD_SHARED_LIBS OFF)
+endif()
 
 # option(BUILD_PYTHON "If ON, build python lib." ON)
 if(BUILD_PYTHON)
     set(BUILD_STATIC_LIB OFF)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
 endif()
-option(BUILD_GUI "If ON, build GUI." ON)
+option(BUILD_GUI "If ON, build GUI." OFF)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_VERBOSE_MAKEFILE OFF)
