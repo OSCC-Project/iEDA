@@ -50,8 +50,8 @@ int LmGridInfo::calculate_y(int row)
 
 std::pair<int, int> LmGridInfo::get_node_coodinate(int row_id, int col_id)
 {
-  int x = node_y_start + row_id * y_step;
-  int y = node_x_start + row_id * x_step;
+  int x = node_x_start + col_id * x_step;
+  int y = node_y_start + row_id * y_step;
 
   return std::make_pair(x, y);
 }
