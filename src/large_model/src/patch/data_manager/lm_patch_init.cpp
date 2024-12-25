@@ -92,6 +92,10 @@ void LmPatchInit::init_patch_grid()
     for (int col = 0; col < patchInfoInst.patch_num_horizontal; ++col) {
       auto im_patch = init_patch(row, col);
       auto patch_id = patchInfoInst.patch_num_horizontal * row + col;
+
+      im_patch.patch_id = patch_id;
+      im_patch.patch_id_row = row;
+      im_patch.patch_id_col = col;
       patchs.insert(std::make_pair(patch_id, im_patch));
 
       if (patch_id % 1000 == 0) {

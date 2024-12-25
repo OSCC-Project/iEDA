@@ -76,6 +76,10 @@ class LmPatch
   LmPatchLayer* findLayer(int layer_id);
 
  public:
+  int patch_id = -1;
+  int patch_id_row = -1;
+  int patch_id_col = -1;
+
   int rowIdMin = -1;
   int rowIdMax = -1;
   int colIdMin = -1;

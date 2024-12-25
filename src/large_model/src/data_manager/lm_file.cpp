@@ -25,6 +25,7 @@
 
 #include "Log.hh"
 #include "idm.h"
+#include "lm_grid_info.h"
 #include "omp.h"
 #include "usage.hh"
 
@@ -246,7 +247,21 @@ bool LmLayoutFileIO::saveJsonPatchs()
 
     json json_patch;
     {
-      json_patch["id"] = patch_id;
+      auto [llx, lly] = gridInfoInst.get_node_coodinate(patch.rowIdMin, patch.colIdMin);
+      auto [urx, ury] = gridInfoInst.get_node_coodinate(patch.rowIdMax, patch.colIdMax);
+
+      json_patch["id"] = patch.patch_id;
+      json_patch["patch_id_row"] = patch.patch_id_row;
+      json_patch["patch_id_col"] = patch.patch_id_col;
+      json_patch["llx"] = llx;
+      json_patch["lly"] = lly;
+      json_patch["urx"] = urx;
+      json_patch["ury"] = ury;
+      json_patch["row_min"] = patch.rowIdMin;
+      json_patch["row_max"] = patch.rowIdMax;
+      json_patch["col_min"] = patch.colIdMin;
+      json_patch["col_max"] = patch.colIdMax;
+
       json json_layers = json::array();
 
       for (auto& [layer_id, patch_layer] : patch.get_layer_map()) {
