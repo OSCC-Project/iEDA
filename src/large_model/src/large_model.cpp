@@ -80,7 +80,7 @@ void LargeModel::buildFeature(const std::string dir)
   bool check_ok = _data_manager.checkData();
 
   /// build feature
-  //   generateFeature(dir);
+  generateFeature(dir);
 
   /// save
   _data_manager.saveData(dir);
