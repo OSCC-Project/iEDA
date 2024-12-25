@@ -441,16 +441,18 @@ void TimingEngine::updateRCTreeInfo(Net* net) {
   }
 }
 
-#if CUDA_DELAY
+
 /**
  * @brief update all rc tree elmore delay use gpu speedup.
  * 
  */
-void TimingEngine::updateAllRCTreeWithGPU() {
+void TimingEngine::updateAllRCTree() {
+#if CUDA_DELAY
   auto all_rc_nets = _timing_engine->get_ista()->getAllRcNet();
   calc_rc_timing(all_rc_nets);
-}
 #endif
+}
+
 
 /**
  * @brief build balanced rc tree of the net and update rc tree info.
