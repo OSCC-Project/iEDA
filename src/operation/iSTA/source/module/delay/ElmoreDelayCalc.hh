@@ -728,6 +728,6 @@ class RcNet {
   static std::unique_ptr<RCNetCommonInfo> _rc_net_common_info;
 };
 
-void calcRcTiming(std::vector<RcNet*> all_nets);
+void calc_rc_timing(std::vector<RcNet*> all_nets);
 
 }  // namespace ista

@@ -40,7 +40,6 @@
 #include "StaReport.hh"
 #include "Type.hh"
 #include "aocv/AocvParser.hh"
-#include "delay-cuda/rc_tree.cuh"
 #include "delay/ElmoreDelayCalc.hh"
 #include "liberty/Lib.hh"
 #include "liberty/LibClassifyCell.hh"
@@ -49,7 +48,6 @@
 #include "verilog/VerilogParserRustC.hh"
 
 namespace ista {
-using istagpu::DelayRcNet;
 
 class SdcConstrain;
 
@@ -262,15 +260,6 @@ class Sta {
                                             : nullptr;
   }
   void resetAllRcNet() { _net_to_rc_net.clear(); }
-  void addDelayRcNet(Net* the_net, std::unique_ptr<DelayRcNet> delay_rc_net) {
-    _net_to_delay_rc_net[the_net] = std::move(delay_rc_net);
-  }
-  DelayRcNet* getDelayRcNet(Net* the_net) {
-    return _net_to_delay_rc_net.contains(the_net)
-               ? _net_to_delay_rc_net[the_net].get()
-               : nullptr;
-  }
-
   LibCell* findLibertyCell(const char* cell_name);
   std::optional<AocvObjectSpecSet*> findDataAocvObjectSpecSet(
       const char* object_name);
@@ -566,9 +555,7 @@ class Sta {
 
   StaGraph _graph;  //!< The graph mapped to netlist.
   std::map<Net*, std::unique_ptr<RcNet>>
-      _net_to_rc_net;  //!< The net to rc net.
-  std::map<Net*, std::unique_ptr<istagpu::DelayRcNet>>
-      _net_to_delay_rc_net;                   //!< The net to delay rc net.
+      _net_to_rc_net;                         //!< The net to rc net.
   Vector<std::unique_ptr<StaClock>> _clocks;  //!< The clock domain.
   Multimap<StaVertex*, SdcSetIODelay*>
       _io_delays;  //!< The port vertex io delay constrain.

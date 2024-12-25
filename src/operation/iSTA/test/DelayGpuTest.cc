@@ -17,10 +17,8 @@
 #include <cuda_runtime.h>
 
 #include "api/TimingEngine.hh"
-#include "delay-cuda/rc_tree.cuh"
 #include "gtest/gtest.h"
 #include "log/Log.hh"
-using namespace istagpu;
 using namespace ista;
 using ieda::Log;
 using ieda::Stats;
@@ -35,14 +33,6 @@ class DelayGPUTest : public testing::Test {
   }
   void TearDown() { Log::end(); }
 };
-
-TEST_F(DelayGPUTest, update_point_load) {
-  DelayRcNet rc_net;
-
-  // delay_update_point_load(&rc_net);
-}
-
-TEST_F(DelayGPUTest, elmore_delay) { test(); }
 
 TEST_F(DelayGPUTest, example1) {
   Stats stats;

@@ -51,7 +51,7 @@
 
 #include <cuda_runtime.h>
 
-#include "ElmoreDelayCalc.hh"
+#include "delay/ElmoreDelayCalc.hh"
 #include "log/Log.hh"
 
 namespace ista {
@@ -70,7 +70,7 @@ const int THREAD_PER_BLOCK_NUM = 1024;
  * @param total_nets_num
  * @return __global__
  */
-__global__ void kernelUpdateLoad(int* start_array, float* cap_array,
+__global__ void kernel_update_load(int* start_array, float* cap_array,
                                  float* ncap_array, float* load_array,
                                  float* nload_array, int* parent_pos_array,
                                  int total_nets_num) {
@@ -123,7 +123,7 @@ __global__ void kernelUpdateLoad(int* start_array, float* cap_array,
  * @param total_nets_num
  * @return __global__
  */
-__global__ void kernelUpdateDelay(int* start_array, float* res_array,
+__global__ void kernel_update_delay(int* start_array, float* res_array,
                                   float* load_array, float* nload_array,
                                   float* delay_array, float* ndelay_array,
                                   float* ures_array, int* parent_pos_array,
@@ -177,7 +177,7 @@ __global__ void kernelUpdateDelay(int* start_array, float* res_array,
  * @param total_nets_num
  * @return __global__
  */
-__global__ void kernelUpdateLDelay(int* start_array, float* ncap_array,
+__global__ void kernel_update_ldelay(int* start_array, float* ncap_array,
                                    float* ndelay_array, float* ldelay_array,
                                    int* parent_pos_array, int total_nets_num) {
   int net_tid = blockIdx.x * blockDim.x + threadIdx.x;
@@ -217,7 +217,7 @@ __global__ void kernelUpdateLDelay(int* start_array, float* ncap_array,
  * @param total_nets_num
  * @return __global__
  */
-__global__ void kernelUpdateResponse(int* start_array, float* res_array,
+__global__ void kernel_update_response(int* start_array, float* res_array,
                                      float* ldelay_array, float* ndelay_array,
                                      float* beta_array, float* impulse_array,
                                      int* parent_pos_array,
@@ -256,7 +256,7 @@ __global__ void kernelUpdateResponse(int* start_array, float* res_array,
  * @param  std::vector<RcNet*> all_nets
  * @return void
  */
-void calcRcTiming(std::vector<RcNet*> all_nets) {
+void calc_rc_timing(std::vector<RcNet*> all_nets) {
   std::vector<int> start_array{0};
   unsigned long total_nodes_num = 0;
   // start_array: last element is the end position of the last tree.
@@ -290,6 +290,7 @@ void calcRcTiming(std::vector<RcNet*> all_nets) {
   //     std::cout << std::endl;
   //   };
 
+  // for debugging(print_array("parent_pos_array", parent_pos_array);)
   //   auto print_int_array = [](const std::string& array_name,
   //                             const std::vector<int>& array) {
   //     std::cout << array_name << " contents: ";
@@ -415,17 +416,17 @@ void calcRcTiming(std::vector<RcNet*> all_nets) {
       num_blocks.x, num_blocks.y, block_size.x, block_size.y,
       num_blocks.x * num_blocks.y * block_size.x * block_size.y);
   // ieda::Stats stats;
-  kernelUpdateLoad<<<num_blocks, block_size>>>(
+  kernel_update_load<<<num_blocks, block_size>>>(
       gpu_start_array, gpu_cap_array, gpu_ncap_array, gpu_load_array,
       gpu_nload_array, gpu_parent_pos_array, total_nets_num);
-  kernelUpdateDelay<<<num_blocks, block_size>>>(
+  kernel_update_delay<<<num_blocks, block_size>>>(
       gpu_start_array, gpu_res_array, gpu_load_array, gpu_nload_array,
       gpu_delay_array, gpu_ndelay_array, gpu_ures_array, gpu_parent_pos_array,
       total_nets_num);
-  kernelUpdateLDelay<<<num_blocks, block_size>>>(
+  kernel_update_ldelay<<<num_blocks, block_size>>>(
       gpu_start_array, gpu_ncap_array, gpu_ndelay_array, gpu_ldelay_array,
       gpu_parent_pos_array, total_nets_num);
-  kernelUpdateResponse<<<num_blocks, block_size>>>(
+  kernel_update_response<<<num_blocks, block_size>>>(
       gpu_start_array, gpu_res_array, gpu_ldelay_array, gpu_ndelay_array,
       gpu_beta_array, gpu_impulse_array, gpu_parent_pos_array, total_nets_num);
   cudaDeviceSynchronize();

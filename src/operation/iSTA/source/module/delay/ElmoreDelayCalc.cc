@@ -48,14 +48,12 @@
  * @version 0.1
  * @date 2021-01-27
  */
-
-#include <cuda_runtime.h>
+#include "ElmoreDelayCalc.hh"
 
 #include <numeric>
 #include <queue>
 #include <utility>
 
-#include "ElmoreDelayCalc.hh"
 #include "log/Log.hh"
 
 #define CUDA_DELAY 1

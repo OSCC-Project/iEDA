@@ -20,6 +20,6 @@
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
 
-  testing::GTEST_FLAG(filter) = "DelayGPUTest.elmore_delay*";
+  testing::GTEST_FLAG(filter) = "DelayGPUTest.skywater130*";
   return RUN_ALL_TESTS();
 }

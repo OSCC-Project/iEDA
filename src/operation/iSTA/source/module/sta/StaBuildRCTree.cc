@@ -62,17 +62,6 @@ std::unique_ptr<RcNet> StaBuildRCTree::createRcNet(Net* net) {
 }
 
 /**
- * @brief Create the delay rc net for delay calculation.
- *
- * @param net
- * @return std::unique_ptr<DelayRcNet>
- */
-std::unique_ptr<DelayRcNet> StaBuildRCTree::createDelayRcNet(Net* net) {
-  std::unique_ptr<DelayRcNet> delay_rc_net = std::make_unique<DelayRcNet>(net);
-  return delay_rc_net;
-}
-
-/**
  * @brief Build the net rc tree connected to the vertex.
  *
  * @param the_vertex
@@ -180,7 +169,7 @@ unsigned StaBuildRCTree::operator()(StaGraph* the_graph) {
   }
 
 #if CUDA_DELAY
-  calcRcTiming(all_nets);
+  calc_rc_timing(all_nets);
   // printGraphViz get result for debugging.
   // for (const auto net : all_nets) {
   //   if (net->rct()) {
