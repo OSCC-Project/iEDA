@@ -70,6 +70,9 @@ void LargeModel::buildFeature(const std::string dir)
   /// build graph
   _data_manager.buildGraphData();
 
+  /// build patch data
+  buildPatchData(dir);
+
   // build pattern
   // _data_manager.buildPatternData();
 
@@ -77,7 +80,7 @@ void LargeModel::buildFeature(const std::string dir)
   bool check_ok = _data_manager.checkData();
 
   /// build feature
-  generateFeature(dir);
+  //   generateFeature(dir);
 
   /// save
   _data_manager.saveData(dir);
@@ -90,6 +93,11 @@ void LargeModel::generateFeature(const std::string dir)
   feature.buildFeatureDrc();
   feature.buildFeatureStatis();
   feature.buildFeatureTiming();
+}
+
+bool LargeModel::buildPatchData(const std::string dir)
+{
+  return _data_manager.buildPatchData(dir);
 }
 
 }  // namespace ilm

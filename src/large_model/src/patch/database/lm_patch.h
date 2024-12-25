@@ -35,17 +35,20 @@
 
 namespace ilm {
 
-class LmPatch
+class LmPatchLayer
 {
  public:
-  LmPatch() {}
-  ~LmPatch() {}
+  LmPatchLayer() {}
+  ~LmPatchLayer() {}
 
   // getter
+  std::map<int, LmNet>& get_sub_nets() { return _sub_nets; }
 
   // setter
 
   // operator
+  void addSubnet(int net_id, int64_t wire_id, LmNode* node1, LmNode* node2);
+  LmNet* findNet(int net_id);
 
  public:
   int layer_id = -1;
@@ -55,7 +58,31 @@ class LmPatch
   int colIdMax = -1;
 
  private:
-  std::map<int, LmNet*> _sub_nets;
+  std::map<int, LmNet> _sub_nets;  /// int : net id
+};
+
+class LmPatch
+{
+ public:
+  LmPatch() {}
+  ~LmPatch() {}
+
+  // getter
+  std::map<int, LmPatchLayer>& get_layer_map() { return _layer_map; }
+
+  // setter
+
+  // operator
+  LmPatchLayer* findLayer(int layer_id);
+
+ public:
+  int rowIdMin = -1;
+  int rowIdMax = -1;
+  int colIdMin = -1;
+  int colIdMax = -1;
+
+ private:
+  std::map<int, LmPatchLayer> _layer_map;  /// int : layer id
 };
 
 }  // namespace ilm

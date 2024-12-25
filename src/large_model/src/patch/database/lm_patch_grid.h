@@ -34,27 +34,26 @@
 
 namespace ilm {
 
-class LmPatchLayer
+class LmPatchGrid
 {
  public:
-  LmPatchLayer() {}
-  ~LmPatchLayer() {}
+  LmPatchGrid() {}
+  ~LmPatchGrid() {}
 
   // getter
+  std::map<int, LmPatch>& get_patchs() { return _patchs; }
 
   // setter
 
   // operator
+  LmPatch* findPatch(int node_row, int node_col);
+  LmPatch* findPatch(int patch_id);
+
+  LmPatchLayer* findPatchLayer(int patch_id, int layer_id);
 
  public:
-  int layer_id = -1;
-  int rowIdMin = -1;
-  int rowIdMax = -1;
-  int colIdMin = -1;
-  int colIdMax = -1;
-
  private:
-  std::vector<LmPatch*> _patchs;
+  std::map<int, LmPatch> _patchs;  /// int : patch id
 };
 
 }  // namespace ilm

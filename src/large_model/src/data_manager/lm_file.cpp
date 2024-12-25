@@ -25,13 +25,10 @@
 
 #include "Log.hh"
 #include "idm.h"
-#include "json.hpp"
 #include "omp.h"
 #include "usage.hh"
 
 namespace ilm {
-
-using json = nlohmann::ordered_json;
 
 void LmLayoutFileIO::makeDir(std::string dir)
 {
@@ -45,21 +42,26 @@ bool LmLayoutFileIO::saveJson()
 {
   LOG_INFO << "LM save json start... dir = " << _dir;
 
-  std::map<int, LmNet>& net_map = _layout->get_graph().get_net_map();
   makeDir(_dir);
 
-  saveJsonNets(net_map);
+  /// save graph
+  saveJsonNets();
+
+  /// save patch
+  saveJsonPatchs();
 
   LOG_INFO << "LM save json end... dir = " << _dir;
 }
 
-bool LmLayoutFileIO::saveJsonNets(std::map<int, LmNet>& net_map)
+bool LmLayoutFileIO::saveJsonNets()
 {
   ieda::Stats stats;
 
   LOG_INFO << "LM save json net start...";
 
   makeDir(_dir + "/large_model/nets/");
+
+  auto& net_map = _layout->get_graph().get_net_map();
 
   omp_lock_t lck;
   omp_init_lock(&lck);
@@ -158,22 +160,7 @@ bool LmLayoutFileIO::saveJsonNets(std::map<int, LmNet>& net_map)
             {
               auto& [node1, node2] = wire.get_connected_nodes();
 
-              json json_node;
-              json_node["id1"] = node1->get_node_id();
-              json_node["x1"] = node1->get_x();
-              json_node["y1"] = node1->get_y();
-              json_node["r1"] = node1->get_row_id();                   /// row
-              json_node["c1"] = node1->get_col_id();                   /// col
-              json_node["l1"] = node1->get_layer_id();                 /// layer order
-              json_node["p1"] = node1->get_node_data()->get_pin_id();  /// pin id
-
-              json_node["id2"] = node2->get_node_id();
-              json_node["x2"] = node2->get_x();
-              json_node["y2"] = node2->get_y();
-              json_node["r2"] = node2->get_row_id();                   /// row
-              json_node["c2"] = node2->get_col_id();                   /// col
-              json_node["l2"] = node2->get_layer_id();                 /// layer order
-              json_node["p2"] = node2->get_node_data()->get_pin_id();  /// pin id
+              auto json_node = makeNodePair(node1, node2);
 
               json_wire["wire"] = json_node;
             }
@@ -184,27 +171,23 @@ bool LmLayoutFileIO::saveJsonNets(std::map<int, LmNet>& net_map)
 
               json json_paths = json::array();
               for (auto& [node1, node2] : wire.get_paths()) {
-                json json_node;
-                json_node["id1"] = node1->get_node_id();
-                json_node["x1"] = node1->get_x();
-                json_node["y1"] = node1->get_y();
-                json_node["r1"] = node1->get_row_id();                   /// row
-                json_node["c1"] = node1->get_col_id();                   /// col
-                json_node["l1"] = node1->get_layer_id();                 /// layer order
-                json_node["p1"] = node1->get_node_data()->get_pin_id();  /// pin id
-
-                json_node["id2"] = node2->get_node_id();
-                json_node["x2"] = node2->get_x();
-                json_node["y2"] = node2->get_y();
-                json_node["r2"] = node2->get_row_id();                   /// row
-                json_node["c2"] = node2->get_col_id();                   /// col
-                json_node["l2"] = node2->get_layer_id();                 /// layer order
-                json_node["p2"] = node2->get_node_data()->get_pin_id();  /// pin id
+                json json_node = makeNodePair(node1, node2);
 
                 json_paths.push_back(json_node);
               }
 
               json_wire["paths"] = json_paths;
+            }
+
+            /// patch id
+            {
+              json_wire["patch_num"] = wire.get_patchs().size();
+              json json_patchs = json::array();
+              for (auto& [patch_id, layer_ids] : wire.get_patchs()) {
+                json_patchs.push_back(patch_id);
+              }
+
+              json_wire["patchs"] = json_patchs;
             }
           }
 
@@ -239,6 +222,120 @@ bool LmLayoutFileIO::saveJsonNets(std::map<int, LmNet>& net_map)
   LOG_INFO << "LM save json net end...";
 
   return true;
+}
+
+bool LmLayoutFileIO::saveJsonPatchs()
+{
+  ieda::Stats stats;
+
+  LOG_INFO << "LM save json patchs start...";
+
+  makeDir(_dir + "/large_model/patchs/");
+
+  auto& patchs = _patch_grid->get_patchs();
+
+  omp_lock_t lck;
+  omp_init_lock(&lck);
+
+  // #pragma omp parallel for schedule(dynamic)
+  for (int i = 0; i < (int) patchs.size(); ++i) {
+    auto it = patchs.begin();
+    std::advance(it, i);
+    auto& patch_id = it->first;
+    auto& patch = it->second;
+
+    json json_patch;
+    {
+      json_patch["id"] = patch_id;
+      json json_layers = json::array();
+
+      for (auto& [layer_id, patch_layer] : patch.get_layer_map()) {
+        json json_layer = {};
+        json_layer["id"] = layer_id;
+
+        /// sub net in patch for each layer
+        json_layer["net_num"] = patch_layer.get_sub_nets().size();
+        for (auto& [net_id, lm_net] : patch_layer.get_sub_nets()) {
+          json json_net = {};
+          json_net["id"] = net_id;
+
+          /// wires
+          json_net["wire_num"] = lm_net.get_wires().size();
+          json json_wires = json::array();
+          {
+            for (auto& wire : lm_net.get_wires()) {
+              json json_wire = {};
+              {
+                json_wire["id"] = wire.get_id();
+
+                /// paths
+                {
+                  json_wire["path_num"] = wire.get_paths().size();
+                  json json_paths = json::array();
+                  for (auto& [node1, node2] : wire.get_paths()) {
+                    json json_node = makeNodePair(node1, node2);
+                    json_paths.push_back(json_node);
+                  }
+
+                  json_wire["paths"] = json_paths;
+                }
+              }
+
+              json_wires.push_back(json_wire);
+            }
+          }
+          json_net["wires"] = json_wires;
+
+          json_layer["net"] = json_net;
+        }
+        json_layers.push_back(json_layer);
+      }
+
+      json_patch["patch_layer"] = json_layers;
+    }
+
+    omp_set_lock(&lck);
+    auto file_name = _dir + "/large_model/patchs/patch_" + std::to_string(patch_id) + ".json";
+    std::ofstream file_stream(file_name);
+    // file_stream << std::setw(0) << json_patch;
+    file_stream << std::setw(4) << json_patch;
+    file_stream.close();
+    omp_unset_lock(&lck);
+
+    if (i % 1000 == 0) {
+      LOG_INFO << "Save patch : " << i << " / " << patchs.size();
+    }
+  }
+
+  omp_destroy_lock(&lck);
+
+  LOG_INFO << "LM memory usage " << stats.memoryDelta() << " MB";
+  LOG_INFO << "LM elapsed time " << stats.elapsedRunTime() << " s";
+  LOG_INFO << "LM save json patchs end...";
+
+  return true;
+}
+
+json LmLayoutFileIO::makeNodePair(LmNode* node1, LmNode* node2)
+{
+  json json_node;
+
+  json_node["id1"] = node1->get_node_id();
+  json_node["x1"] = node1->get_x();
+  json_node["y1"] = node1->get_y();
+  json_node["r1"] = node1->get_row_id();                   /// row
+  json_node["c1"] = node1->get_col_id();                   /// col
+  json_node["l1"] = node1->get_layer_id();                 /// layer order
+  json_node["p1"] = node1->get_node_data()->get_pin_id();  /// pin
+
+  json_node["id2"] = node2->get_node_id();
+  json_node["x2"] = node2->get_x();
+  json_node["y2"] = node2->get_y();
+  json_node["r2"] = node2->get_row_id();                   /// row
+  json_node["c2"] = node2->get_col_id();                   /// col
+  json_node["l2"] = node2->get_layer_id();                 /// layer order
+  json_node["p2"] = node2->get_node_data()->get_pin_id();  /// pin
+  return json_node;
 }
 
 }  // namespace ilm

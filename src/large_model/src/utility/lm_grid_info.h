@@ -101,6 +101,12 @@ class LmPatchInfo
 
   static void destroyInst();
 
+  /// getter
+  int get_patch_id(int node_row, int node_col);
+  int get_patch_row_id(int node_row);
+  int get_patch_col_id(int node_col);
+  std::pair<int, int> get_node_range(int index, bool b_horizontal);
+
   // setter
   void set_patch_size(int row_size, int col_size)
   {
@@ -113,9 +119,9 @@ class LmPatchInfo
   // operator
 
  public:
-  int patch_row_start = 0;       /// indicate core low left node id
-  int patch_row_step = 9;        /// default 9T
-  int patch_col_start = 0;       /// indicate core low left node id
+  int patch_row_start = 0;
+  int patch_row_step = 9;  /// default 9T
+  int patch_col_start = 0;
   int patch_col_step = 9;        /// default 9T
   int patch_num_vertical = 0;    /// indicate how many patchs in vertical direciton
   int patch_num_horizontal = 0;  /// indicate how many patchs in horizontal direciton

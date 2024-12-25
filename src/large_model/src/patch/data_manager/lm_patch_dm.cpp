@@ -24,4 +24,17 @@
 
 namespace ilm {
 
+bool LmPatchDataManager::buildPatchData()
+{
+  init();
+
+  return true;
+}
+
+void LmPatchDataManager::init()
+{
+  LmPatchInit patch_init(_layout, &_patch_grid);
+  patch_init.init();
+}
+
 }  // namespace ilm

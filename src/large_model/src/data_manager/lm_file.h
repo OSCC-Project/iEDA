@@ -19,16 +19,22 @@
 
 #include "lm_layout.h"
 #include "lm_net.h"
+#include "lm_node.h"
+#include "lm_patch.h"
+#include "lm_patch_grid.h"
+#include "json.hpp"
 
 namespace ilm {
+using json = nlohmann::ordered_json;
 
 class LmLayoutFileIO
 {
  public:
-  LmLayoutFileIO(std::string dir, LmLayout* layout)
+  LmLayoutFileIO(std::string dir, LmLayout* layout, LmPatchGrid* patch_grid = nullptr)
   {
     _dir = dir;
     _layout = layout;
+    _patch_grid = patch_grid;
   }
   ~LmLayoutFileIO() {}
 
@@ -37,10 +43,13 @@ class LmLayoutFileIO
  private:
   std::string _dir = "";
   LmLayout* _layout = nullptr;
+  LmPatchGrid* _patch_grid = nullptr;
 
-  bool saveJsonNets(std::map<int, LmNet>& net_map);
+  bool saveJsonNets();
+  bool saveJsonPatchs();
 
   void makeDir(std::string dir);
+  json makeNodePair(LmNode* node1, LmNode* node2);
 };
 
 }  // namespace ilm

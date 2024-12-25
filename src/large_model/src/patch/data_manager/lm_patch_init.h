@@ -17,26 +17,29 @@
 #pragma once
 #include <string>
 
-#include "IdbGeometry.h"
-#include "IdbLayerShape.h"
-#include "IdbPins.h"
-#include "IdbTrackGrid.h"
-#include "IdbVias.h"
-#include "lm_layer_grid.h"
 #include "lm_layout.h"
+#include "lm_node.h"
 #include "lm_patch.h"
+#include "lm_patch_grid.h"
 
 namespace ilm {
 
 class LmPatchInit
 {
  public:
-  LmPatchInit(LmLayout* layout) : _layout(layout) {}
+  LmPatchInit(LmLayout* layout, LmPatchGrid* patch_grid) : _layout(layout), _patch_grid(patch_grid) {}
   ~LmPatchInit() {}
   void init();
 
  private:
   LmLayout* _layout;
+  LmPatchGrid* _patch_grid;
+
+  void init_patch_grid();
+
+  void initSubNet();
+
+  std::map<int, std::pair<LmNode*, LmNode*>> splitWirePath(LmNode* node1, LmNode* node2);
 };
 
 }  // namespace ilm

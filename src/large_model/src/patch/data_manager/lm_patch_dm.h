@@ -19,17 +19,25 @@
 
 #include "lm_layout.h"
 #include "lm_net.h"
-#include "lm_patch.h"
+#include "lm_patch_grid.h"
 
 namespace ilm {
 
 class LmPatchDataManager
 {
  public:
-  LmPatchDataManager() {}
+  LmPatchDataManager(LmLayout* layout) { _layout = layout; }
   ~LmPatchDataManager() {}
 
+  LmPatchGrid& get_patch_grid() { return _patch_grid; }
+
+  bool buildPatchData();
+
  private:
+  LmLayout* _layout = nullptr;
+  LmPatchGrid _patch_grid;
+
+  void init();
 };
 
 }  // namespace ilm

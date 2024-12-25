@@ -1,6 +1,6 @@
 add_library(ilm_patch_db
     lm_patch.cpp
-    lm_patch_layer.cpp
+    lm_patch_grid.cpp
 )
 
 target_link_libraries(ilm_patch_db
