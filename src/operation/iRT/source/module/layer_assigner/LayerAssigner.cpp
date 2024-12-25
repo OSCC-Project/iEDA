@@ -109,10 +109,16 @@ LANet LayerAssigner::convertToLANet(Net& net)
 
 void LayerAssigner::setLAParameter(LAModel& la_model)
 {
+  int32_t topo_spilt_length = 10;
+  double congestion_unit = 2;
+  double prefer_wire_unit = 1;
+  double via_unit = 1;
   /**
    * topo_spilt_length, congestion_unit, prefer_wire_unit, via_unit
    */
-  LAParameter la_parameter(10, 2, 1, 1);
+  // clang-format off
+  LAParameter la_parameter(topo_spilt_length, congestion_unit, prefer_wire_unit, via_unit);
+  // clang-format on
   RTLOG.info(Loc::current(), "topo_spilt_length: ", la_parameter.get_topo_spilt_length());
   RTLOG.info(Loc::current(), "congestion_unit: ", la_parameter.get_congestion_unit());
   RTLOG.info(Loc::current(), "prefer_wire_unit: ", la_parameter.get_prefer_wire_unit());
@@ -288,7 +294,7 @@ void LayerAssigner::routeLAModel(LAModel& la_model)
 
 void LayerAssigner::routeLANet(LAModel& la_model, LANet* la_net)
 {
-  // 构建la_topo_list，并将通孔线段加入routing_segment_list
+  // 构建la_topo_list,并将通孔线段加入routing_segment_list
   std::vector<LATopo> la_topo_list;
   std::vector<Segment<LayerCoord>> routing_segment_list;
   makeLATopoList(la_model, la_net, la_topo_list, routing_segment_list);
@@ -545,7 +551,7 @@ void LayerAssigner::expandSearching(LAModel& la_model)
     if (neighbor_node->isOpen() && know_cost < neighbor_node->get_known_cost()) {
       neighbor_node->set_known_cost(know_cost);
       neighbor_node->set_parent_node(path_head_node);
-      // 对优先队列中的值修改了，需要重新建堆
+      // 对优先队列中的值修改了,需要重新建堆
       std::make_heap(open_queue.begin(), open_queue.end(), CmpLANodeCost());
     } else if (neighbor_node->isNone()) {
       neighbor_node->set_known_cost(know_cost);
@@ -602,7 +608,7 @@ void LayerAssigner::resetStartAndEnd(LAModel& la_model)
   LANode* path_head_node = la_model.get_path_head_node();
   int32_t end_node_list_idx = la_model.get_end_node_list_idx();
 
-  // 对于抵达的终点pin，只保留到达的node
+  // 对于抵达的终点pin,只保留到达的node
   end_node_list_list[end_node_list_idx].clear();
   end_node_list_list[end_node_list_idx].push_back(path_head_node);
 
@@ -618,7 +624,7 @@ void LayerAssigner::resetStartAndEnd(LAModel& la_model)
     }
   }
   if (start_node_list_list.size() == 1) {
-    // 初始化时，要把start_node_list_list的pin只留一个ap点
+    // 初始化时,要把start_node_list_list的pin只留一个ap点
     // 后续只要将end_node_list_list的pin保留一个ap点
     start_node_list_list.front().clear();
     start_node_list_list.front().push_back(path_node);
@@ -892,7 +898,6 @@ void LayerAssigner::updateSummary(LAModel& la_model)
   Die& die = RTDM.getDatabase().get_die();
   GridMap<GCell>& gcell_map = RTDM.getDatabase().get_gcell_map();
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
-  std::vector<CutLayer>& cut_layer_list = RTDM.getDatabase().get_cut_layer_list();
   std::vector<std::vector<ViaMaster>>& layer_via_master_list = RTDM.getDatabase().get_layer_via_master_list();
   Summary& summary = RTDM.getDatabase().get_summary();
   int32_t enable_timing = RTDM.getConfig().enable_timing;
@@ -911,18 +916,16 @@ void LayerAssigner::updateSummary(LAModel& la_model)
   std::vector<GridMap<LANode>>& layer_node_map = la_model.get_layer_node_map();
   std::vector<LANet>& la_net_list = la_model.get_la_net_list();
 
-  for (RoutingLayer& routing_layer : routing_layer_list) {
-    routing_demand_map[routing_layer.get_layer_idx()] = 0;
-    routing_overflow_map[routing_layer.get_layer_idx()] = 0;
-    routing_wire_length_map[routing_layer.get_layer_idx()] = 0;
-  }
+  routing_demand_map.clear();
   total_demand = 0;
+  routing_overflow_map.clear();
   total_overflow = 0;
+  routing_wire_length_map.clear();
   total_wire_length = 0;
-  for (CutLayer& cut_layer : cut_layer_list) {
-    cut_via_num_map[cut_layer.get_layer_idx()] = 0;
-  }
+  cut_via_num_map.clear();
   total_via_num = 0;
+  clock_timing.clear();
+  power_map.clear();
 
   for (int32_t layer_idx = 0; layer_idx < static_cast<int32_t>(layer_node_map.size()); layer_idx++) {
     GridMap<LANode>& la_node_map = layer_node_map[layer_idx];
@@ -1063,27 +1066,23 @@ void LayerAssigner::printSummary(LAModel& la_model)
     }
     cut_via_num_map_table << fort::header << "Total" << total_via_num << RTUTIL.getPercentage(total_via_num, total_via_num) << fort::endr;
   }
-  fort::char_table timing_and_power_table;
+  fort::char_table timing_table;
+  fort::char_table power_table;
   if (enable_timing) {
-    timing_and_power_table << fort::header << "Clock"
-                           << "TNS"
-                           << "WNS"
-                           << "Freq(MHz)" << fort::endr;
+    timing_table << fort::header << "clock_name"
+                 << "tns"
+                 << "wns"
+                 << "freq" << fort::endr;
     for (auto& [clock_name, timing_map] : clock_timing) {
-      timing_and_power_table << clock_name << timing_map["TNS"] << timing_map["WNS"] << timing_map["Freq(MHz)"] << fort::endr;
+      timing_table << clock_name << timing_map["TNS"] << timing_map["WNS"] << timing_map["Freq(MHz)"] << fort::endr;
     }
+    power_table << fort::header << "power_type" << "power_value" << fort::endr;
     for (auto& [type, power] : power_map) {
-      timing_and_power_table << fort::header << "type" << type << fort::endr;
-      timing_and_power_table << fort::header << "power" << power << fort::endr;
+      power_table << type << power << fort::endr;
     }
   }
-  std::vector<fort::char_table> table_list;
-  table_list.push_back(routing_demand_map_table);
-  table_list.push_back(routing_overflow_map_table);
-  table_list.push_back(routing_wire_length_map_table);
-  table_list.push_back(cut_via_num_map_table);
-  table_list.push_back(timing_and_power_table);
-  RTUTIL.printTableList(table_list);
+  RTUTIL.printTableList({routing_demand_map_table, routing_overflow_map_table, routing_wire_length_map_table, cut_via_num_map_table});
+  RTUTIL.printTableList({timing_table, power_table});
 }
 
 void LayerAssigner::outputGuide(LAModel& la_model)

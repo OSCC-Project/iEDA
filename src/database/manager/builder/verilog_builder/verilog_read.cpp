@@ -733,8 +733,11 @@ int32_t RustVerilogRead::build_components()
                 net_name = rust_convert_verilog_id(net_id)->id;
               } else if (rust_is_bus_index_id(net_id)) {
                 net_name = rust_convert_verilog_index_id(net_id)->id;
-              } else {
+              } else if (rust_is_bus_slice_id(net_id)) {
                 net_name = rust_convert_verilog_slice_id(net_id)->id;
+              } else {
+                static int index = 0;
+                net_name = ieda::Str::printf("IEDA_CONST_%d", index++);
               }
               add_pin(net_name, idb_pin);
             }

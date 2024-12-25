@@ -776,7 +776,9 @@ unsigned TimingIDBAdapter::convertDBToTimingNetlist(bool link_all_cell) {
             inst_cell->get_cell_port_or_port_bus(port_base_name.c_str());
 
         LOG_INFO_IF(!library_port_or_port_bus)
-            << cell_port_name << " port is not found.";
+            << cell_port_name << " port is not found in lib cell "
+            << inst_cell->get_cell_name() << " of "
+            << inst_cell->get_owner_lib()->get_file_name();
 
         std::unique_ptr<PinBus> pin_bus;
         PinBus* found_pin_bus = nullptr;
@@ -862,8 +864,10 @@ unsigned TimingIDBAdapter::convertDBToTimingNetlist(bool link_all_cell) {
         auto* sta_inst = design_netlist.findInstance(inst_name.c_str());
         LOG_FATAL_IF(!sta_inst) << "Instance " << inst_name << " not found";
         auto inst_pin = sta_inst->getPin(cell_port_name.c_str());
-        LOG_FATAL_IF(!inst_pin) << "Instance " << inst_name << " Pin "
-                                << cell_port_name << " not found";
+        LOG_FATAL_IF(!inst_pin)
+            << "Instance " << sta_inst->getFullName() << " cell Pin "
+            << cell_port_name << " not found for cell "
+            << sta_inst->get_inst_cell()->get_cell_name();
 
         if (sta_net) {
           sta_net->addPinPort(*inst_pin);

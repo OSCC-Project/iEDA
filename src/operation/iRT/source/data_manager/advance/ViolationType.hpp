@@ -23,6 +23,7 @@ namespace irt {
 enum class ViolationType
 {
   kNone,
+  kAdjacentCutSpacing,
   kCornerFillSpacing,
   kCutEOLSpacing,
   kCutShort,
@@ -32,6 +33,7 @@ enum class ViolationType
   kEnclosureEdge,
   kEnclosureParallel,
   kFloatingPatch,
+  kJogToJogSpacing,
   kMaxViaStack,
   kMetalShort,
   kMinHole,
@@ -55,6 +57,9 @@ struct GetViolationTypeName
     switch (violation_rule) {
       case ViolationType::kNone:
         violation_rule_name = "none";
+        break;
+      case ViolationType::kAdjacentCutSpacing:
+        violation_rule_name = "adjacent_cut_spacing";
         break;
       case ViolationType::kCornerFillSpacing:
         violation_rule_name = "corner_fill_spacing";
@@ -82,6 +87,9 @@ struct GetViolationTypeName
         break;
       case ViolationType::kFloatingPatch:
         violation_rule_name = "floating_patch";
+        break;
+      case ViolationType::kJogToJogSpacing:
+        violation_rule_name = "jog_to_jog_spacing";
         break;
       case ViolationType::kMaxViaStack:
         violation_rule_name = "max_via_stack";
@@ -135,7 +143,11 @@ struct GetViolationTypeByName
   ViolationType operator()(const std::string& violation_rule_name) const
   {
     ViolationType violation_rule;
-    if (violation_rule_name == "corner_fill_spacing") {
+    if (violation_rule_name == "adjacent_cut_spacing") {
+      violation_rule = ViolationType::kAdjacentCutSpacing;
+    } else if (violation_rule_name == "corner_fill_spacing") {
+      violation_rule = ViolationType::kCornerFillSpacing;
+    } else if (violation_rule_name == "corner_fill_spacing") {
       violation_rule = ViolationType::kCornerFillSpacing;
     } else if (violation_rule_name == "cut_eol_spacing") {
       violation_rule = ViolationType::kCutEOLSpacing;
@@ -153,6 +165,8 @@ struct GetViolationTypeByName
       violation_rule = ViolationType::kEnclosureParallel;
     } else if (violation_rule_name == "floating_patch") {
       violation_rule = ViolationType::kFloatingPatch;
+    } else if (violation_rule_name == "jog_to_jog_spacing") {
+      violation_rule = ViolationType::kJogToJogSpacing;
     } else if (violation_rule_name == "max_via_stack") {
       violation_rule = ViolationType::kMaxViaStack;
     } else if (violation_rule_name == "metal_short") {

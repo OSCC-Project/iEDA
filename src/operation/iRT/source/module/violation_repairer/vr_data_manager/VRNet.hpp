@@ -16,38 +16,34 @@
 // ***************************************************************************************
 #pragma once
 
-#include "Logger.hpp"
+#include "ConnectType.hpp"
+#include "Net.hpp"
+#include "Pin.hpp"
+#include "VRPin.hpp"
 
 namespace irt {
 
-enum class AccessPointType
+class VRNet
 {
-  kNone,
-  kTrackGrid,
-  kNoAccess
-};
+ public:
+  VRNet() = default;
+  ~VRNet() = default;
+  // getter
+  Net* get_origin_net() { return _origin_net; }
+  int32_t get_net_idx() const { return _net_idx; }
+  ConnectType get_connect_type() const { return _connect_type; }
+  std::vector<VRPin>& get_vr_pin_list() { return _vr_pin_list; }
+  // setter
+  void set_origin_net(Net* origin_net) { _origin_net = origin_net; }
+  void set_net_idx(const int32_t net_idx) { _net_idx = net_idx; }
+  void set_connect_type(const ConnectType& connect_type) { _connect_type = connect_type; }
+  void set_vr_pin_list(const std::vector<VRPin>& vr_pin_list) { _vr_pin_list = vr_pin_list; }
 
-struct GetAccessPointTypeName
-{
-  std::string operator()(const AccessPointType& access_point_type) const
-  {
-    std::string access_point_name;
-    switch (access_point_type) {
-      case AccessPointType::kNone:
-        access_point_name = "none";
-        break;
-      case AccessPointType::kNoAccess:
-        access_point_name = "no_access";
-        break;
-      case AccessPointType::kTrackGrid:
-        access_point_name = "track_grid";
-        break;
-      default:
-        RTLOG.error(Loc::current(), "Unrecognized type!");
-        break;
-    }
-    return access_point_name;
-  }
+ private:
+  Net* _origin_net = nullptr;
+  int32_t _net_idx = -1;
+  ConnectType _connect_type = ConnectType::kNone;
+  std::vector<VRPin> _vr_pin_list;
 };
 
 }  // namespace irt

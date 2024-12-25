@@ -101,7 +101,7 @@ unsigned StaBuildRCTree::operator()(StaGraph* the_graph) {
   std::atomic<unsigned> max_node = 0;
   std::string net_name;
 
-#if 1
+#if 0
 #if CUDA_DELAY
   std::vector<RcNet*> all_nets;
 #endif
@@ -158,6 +158,7 @@ unsigned StaBuildRCTree::operator()(StaGraph* the_graph) {
               auto* rc_net = getSta()->getRcNet(design_net);
               // DLOG_INFO << "Update Rc tree timing " << spef_name;
               rc_net->updateRcTiming(spef_net);
+              rust_free_spef_net(spef_net);
             } else {
               LOG_FATAL << "build rc tree not found design net "
                         << spef_net->_name;
@@ -205,14 +206,15 @@ unsigned StaBuildRCTree::operator()(StaGraph* the_graph) {
         all_nets.emplace_back(rc_net);
       }
 #endif
-      // printYaml(spef_net);
-
+      // printYaml(*rust_spef_net);
+      rust_free_spef_net(rust_spef_net);
+      
     } else {
       LOG_FATAL << "build rc tree not found design net " << spef_name;
     }
   }
 #if CUDA_DELAY
-  calcRcTiming(all_nets);
+  calc_rc_timing(all_nets);
   // printGraphViz get result for debugging.
   // for (const auto net : all_nets) {
   //   if (net->rct()) {
@@ -229,7 +231,7 @@ unsigned StaBuildRCTree::operator()(StaGraph* the_graph) {
 
   // ProfilerStop();
 
-  // printYamlText("spef_1W.yaml");
+  // printYamlText("spef.yaml");
 
   LOG_INFO << "build rc tree end";
 

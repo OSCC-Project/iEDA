@@ -33,11 +33,16 @@ class DRCEngine
   static DRCEngine& getInst();
   static void destroyInst();
   // function
+  void init();
   std::vector<Violation> getViolationList(DETask& de_task);
+  void addTempIgnoredViolation(std::vector<Violation>& violation_list);
+  void clearTempIgnoredViolationSet();
 
  private:
   // self
   static DRCEngine* _de_instance;
+  std::set<Violation, CmpViolation> _ignored_violation_set;
+  std::set<Violation, CmpViolation> _temp_ignored_violation_set;
 
   DRCEngine() = default;
   DRCEngine(const DRCEngine& other) = delete;
@@ -46,12 +51,24 @@ class DRCEngine
   DRCEngine& operator=(const DRCEngine& other) = delete;
   DRCEngine& operator=(DRCEngine&& other) = delete;
   // function
-  std::vector<Violation> getViolationListBySelf(DETask& de_task);
+  void getViolationListBySelf(DETask& de_task);
   void buildTask(DETask& de_task);
   void writeTask(DETask& de_task);
   void readTask(DETask& de_task);
-  std::map<ViolationType, DEProcessType>& getViolationProcessMap();
-  std::vector<Violation> getViolationListByOther(DETask& de_task);
+  void getViolationListByInterface(DETask& de_task);
+  void filterViolationList(DETask& de_task);
+  void buildViolationList(DETask& de_task);
+
+#if 1  // aux
+  bool skipViolation(DETask& de_task, Violation& violation);
+  std::vector<Violation> getExpandedViolationList(DETask& de_task, Violation& violation);
+  PlanarRect keepRect(PlanarRect& real_rect);
+  PlanarRect enlargeRect(PlanarRect& real_rect, int32_t required_size);
+  std::vector<std::pair<int32_t, bool>> keepLayer(Violation& violation);
+  std::vector<std::pair<int32_t, bool>> expandAdjacentOneLayer(Violation& violation);
+  std::vector<std::pair<int32_t, bool>> expandUpOneLayer(Violation& violation);
+  std::vector<std::pair<int32_t, bool>> expandUpTwoLayer(Violation& violation);
+#endif
 };
 
 }  // namespace irt

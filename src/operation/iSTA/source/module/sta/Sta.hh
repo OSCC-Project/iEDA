@@ -487,6 +487,8 @@ class Sta {
   void dumpVertexData(std::vector<std::string> vertex_names);
   void dumpNetlistData();
 
+  void dumpGraphData(const char* graph_file);
+
   void buildClockTrees();
 
   // const char* getUnit(const char* unit_name);

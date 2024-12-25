@@ -69,13 +69,13 @@ class ViaMaster
 
 struct CmpViaMaster
 {
-  bool operator()(const ViaMaster& a, const ViaMaster& b, std::vector<RoutingLayer>& routing_layer_list) const
+  bool operator()(const ViaMaster& a, const ViaMaster& b, std::vector<Direction>& direction_list) const
   {
     SortStatus sort_status = SortStatus::kEqual;
     // 层方向优先
     if (sort_status == SortStatus::kEqual) {
-      Direction above_layer_direction = routing_layer_list[a.get_above_enclosure().get_layer_idx()].get_prefer_direction();
-      Direction below_layer_direction = routing_layer_list[a.get_below_enclosure().get_layer_idx()].get_prefer_direction();
+      Direction above_layer_direction = direction_list[a.get_above_enclosure().get_layer_idx()];
+      Direction below_layer_direction = direction_list[a.get_below_enclosure().get_layer_idx()];
       Direction a_above_direction = a.get_above_direction();
       Direction a_below_direction = a.get_below_direction();
       Direction b_above_direction = b.get_above_direction();
@@ -136,7 +136,7 @@ struct CmpViaMaster
     }
     // 对称升序(对称值越小越对称)
     if (sort_status == SortStatus::kEqual) {
-      // via_master的ll为负数，ur为正数
+      // via_master的ll为负数,ur为正数
       int32_t a_above_enclosure_symmetry = std::abs(a.get_above_enclosure().get_ll_x() + a.get_above_enclosure().get_ur_x());
       int32_t b_above_enclosure_symmetry = std::abs(b.get_above_enclosure().get_ll_x() + b.get_above_enclosure().get_ur_x());
       int32_t a_below_enclosure_symmetry = std::abs(a.get_below_enclosure().get_ll_x() + a.get_below_enclosure().get_ur_x());
