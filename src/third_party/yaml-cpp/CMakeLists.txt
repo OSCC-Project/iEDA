@@ -14,11 +14,12 @@ option(YAML_CPP_BUILD_TOOLS "Enable parse tools" ON)
 option(YAML_BUILD_SHARED_LIBS "Build yaml-cpp shared library" ${BUILD_SHARED_LIBS})
 
 
-set(yaml-cpp-type SHARED)
-set(yaml-cpp-label-postfix "static")
 if (YAML_BUILD_SHARED_LIBS)
   set(yaml-cpp-type SHARED)
   set(yaml-cpp-label-postfix "shared")
+else()
+  set(yaml-cpp-type STATIC)
+  set(yaml-cpp-label-postfix "static")
 endif()
 
 set(contrib-pattern "src/contrib/*.cpp")
