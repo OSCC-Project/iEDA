@@ -6,7 +6,7 @@ set (CMAKE_CXX_STANDARD 20)
 aux_source_directory(./ SRC)
 add_library(sta ${SRC})
 
-if (USE_GPU)
+if (USE_CUDA_DELAY)
 target_link_libraries(sta 
     liberty 
     delay 
