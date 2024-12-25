@@ -52,11 +52,8 @@
 #include <cuda_runtime.h>
 
 #include "delay/ElmoreDelayCalc.hh"
-#include "log/Log.hh"
 
 namespace ista {
-
-const int THREAD_PER_BLOCK_NUM = 1024;
 
 /**
  * @brief gpu speed up update the load of the rc node.

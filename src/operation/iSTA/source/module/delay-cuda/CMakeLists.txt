@@ -2,11 +2,13 @@ cmake_minimum_required(VERSION 3.15.0)
 
 cmake_policy(SET CMP0104 NEW)
 set(CMAKE_CUDA_ARCHITECTURES native)
+# set(CMAKE_CUDA_ARCHITECTURES "80") # set architecture according your platform
+
 # set(CMAKE_BUILD_TYPE "Debug")
 find_package(CUDAToolkit)
 
-set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CUDA_STANDARD 17)
+add_compile_options(-std=c++17)
 
 enable_language(CUDA)
 
@@ -19,8 +21,6 @@ endif()
 
 set(lib_name "delay-gpu")
 
-add_compile_options("-fopenmp" "-fPIC")
-
 if(${CMAKE_BUILD_TYPE} STREQUAL "RELEASE")
     set(NVCC_FLAGS -O3)
     message(STATUS "${lib_name} compile cuda code in release mode")
@@ -31,11 +31,7 @@ endif()
 
 file(GLOB_RECURSE source_file LIST_DIRECTORIES false *.cpp *.c *.cuh *.h *.cu)
 
-add_library(${lib_name}  STATIC ${source_file})
-
-target_include_directories(${lib_name} PUBLIC ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
-
-message(${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
+add_library(${lib_name} STATIC ${source_file})
 
 set_property(TARGET ${lib_name} PROPERTY LANGUAGES CXX CUDA)
 set_target_properties(${lib_name} 
