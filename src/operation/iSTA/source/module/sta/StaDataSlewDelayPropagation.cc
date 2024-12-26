@@ -15,14 +15,13 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 /**
- * @file StaClockSlewDelayPropagation.cc
+ * @file StaDataSlewDelayPropagation.hh
  * @author simin tao (taosm@pcl.ac.cn)
- * @brief The clock slew and propagation together using BFS method.
+ * @brief The Data slew delay propagation using BFS method.
  * @version 0.1
  * @date 2024-12-26
  */
-
-#include "StaClockSlewDelayPropagation.hh"
+#include "StaDataSlewDelayPropagation.hh"
 #include "StaDelayPropagation.hh"
 #include "StaSlewPropagation.hh"
 #include "ThreadPool/ThreadPool.h"
@@ -35,7 +34,7 @@ namespace ista {
  * @param the_arc
  * @return unsigned
  */
-unsigned StaClockSlewDelayPropagation::operator()(StaArc* the_arc) {
+unsigned StaDataSlewDelayPropagation::operator()(StaArc* the_arc) {
   StaSlewPropagation slew_propagation;
   StaDelayPropagation delay_propagation;
 
@@ -50,19 +49,24 @@ unsigned StaClockSlewDelayPropagation::operator()(StaArc* the_arc) {
  * @param the_vertex
  * @return unsigned
  */
-unsigned StaClockSlewDelayPropagation::operator()(StaVertex* the_vertex) {
+unsigned StaDataSlewDelayPropagation::operator()(StaVertex* the_vertex) {
   if (the_vertex->is_const()) {
     return 1;
   }
 
-  // clock propagation end at the clock vertex.
-  if (the_vertex->is_clock()) {
+  // data propagation end at the clock vertex.
+  if (the_vertex->is_end()) {
     return 1;
   }
 
   unsigned is_ok = 1;
   FOREACH_SRC_ARC(the_vertex, src_arc) {
     if (!src_arc->isDelayArc()) {
+      // calculate the check arc constrain value.
+      if (src_arc->isCheckArc()) {
+        StaDelayPropagation delay_propagation;
+        src_arc->exec(delay_propagation);
+      }
       continue;
     }
 
@@ -76,9 +80,11 @@ unsigned StaClockSlewDelayPropagation::operator()(StaVertex* the_vertex) {
       break;
     }
 
-    // get the next bfs vertex and add it to the queue.
+    // get the next level bfs vertex and add it to the queue.
     auto* snk_vertex = src_arc->get_snk();
-    _next_bfs_queue.push_back(snk_vertex);
+    if (snk_vertex->get_level() == the_vertex->get_level() + 1) {
+      _next_bfs_queue.push_back(snk_vertex);
+    }
   }
 
   the_vertex->set_is_slew_prop();
@@ -92,23 +98,14 @@ unsigned StaClockSlewDelayPropagation::operator()(StaVertex* the_vertex) {
  *
  * @return unsigned
  */
-unsigned StaClockSlewDelayPropagation::operator()(StaGraph*) {
+unsigned StaDataSlewDelayPropagation::operator()(StaGraph* the_graph) {
   unsigned is_ok = 1;
 
-  Sta* ista = getSta();
-  auto& clocks = ista->get_clocks();
-
-  for (auto& clock : clocks) {
-    // skip the ideal clock network.
-    if (clock->isIdealClockNetwork()) {
-      continue;
-    }
-
-    auto& vertexes = clock->get_clock_vertexes();
-
-    for (auto* vertex : vertexes) {
-      vertex->initSlewData();
-      _bfs_queue.emplace_back(vertex);
+  StaVertex* start_vertex;
+  FOREACH_START_VERTEX(the_graph, start_vertex) {
+    // start from the vertex which is level one.
+    if (start_vertex->get_level() == 1) {
+      _bfs_queue.emplace_back(start_vertex);
     }
   }
 
@@ -116,8 +113,9 @@ unsigned StaClockSlewDelayPropagation::operator()(StaGraph*) {
   auto propagate_current_queue = [this](auto& current_queue) {
     LOG_INFO << "Propagating current queue vertexes number is "
              << current_queue.size();
+
 #if 0
-    // create thread pool
+// create thread pool
     unsigned num_threads = getNumThreads();
     ThreadPool pool(num_threads);
 
@@ -135,6 +133,7 @@ unsigned StaClockSlewDelayPropagation::operator()(StaGraph*) {
     for (auto* the_vertex : current_queue) {
       the_vertex->exec(*this);
     }
+
 #endif
   };
 
