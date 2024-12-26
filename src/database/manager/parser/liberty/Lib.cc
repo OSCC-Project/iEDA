@@ -1208,7 +1208,8 @@ LibPowerArcSet& LibPowerArcSet::operator=(LibPowerArcSet&& rhs) noexcept
   return *this;
 }
 
-LibCell::LibCell(const char* cell_name, LibLibrary* owner_lib) : _cell_name(cell_name), _owner_lib(owner_lib), _is_dont_use(0)
+LibCell::LibCell(const char* cell_name, LibLibrary* owner_lib)
+    : _cell_name(cell_name), _owner_lib(owner_lib), _is_dont_use(0), _is_macro_cell(0)
 {
 }
 

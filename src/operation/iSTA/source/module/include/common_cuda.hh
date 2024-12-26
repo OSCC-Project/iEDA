@@ -14,28 +14,27 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-/**
- * @file StaLevelization.hh
- * @author longshy (longshy@pcl.ac.cn)
- * @brief The levelization from end vertex of the graph.
- * @version 0.1
- * @date 2021-09-16
- */
 #pragma once
 
-#include "StaFunc.hh"
+#include <stdlib.h>
+#include <stdio.h>
+#include <math.h>
+#include <string>
+#include <type_traits>      // std::bool_constant
+#include <cuda_runtime.h>
+#include <stdarg.h>
 
-namespace ista {
+#include <cuda_profiler_api.h>
+#include <cuda_bf16.h>
+#include <cuda_fp16.h>
 
-class StaLevelization : public StaFunc {
- public:
-  StaLevelization() = default;
-  ~StaLevelization() override = default;
-
-  unsigned operator()(StaVertex* the_vertex) override;
-  unsigned operator()(StaArc* the_arc) override;
-
-  unsigned operator()(StaGraph* the_graph) override;
+inline void print_with_newline(const char *format, ...) { \
+  va_list args; \
+  va_start(args, format); \
+  vfprintf(stderr, format, args); \
+  va_end(args); \
+  fprintf(stderr, " (file:%s, line:%d)\n", __FILE__, __LINE__); \
 };
 
-}  // namespace ista
+
+#define PRINTLN print_with_newline

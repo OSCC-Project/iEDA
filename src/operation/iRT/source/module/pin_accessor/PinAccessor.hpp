@@ -53,7 +53,6 @@ class PinAccessor
   PinAccessor& operator=(PinAccessor&& other) = delete;
   // function
   PAModel initPAModel();
-  void ignorePreViolation(PAModel& pa_model);
   void setPAParameter(PAModel& pa_model);
   void initAccessPointList(PAModel& pa_model);
   std::vector<PANet> convertToPANetList(std::vector<Net>& net_list);
@@ -69,8 +68,8 @@ class PinAccessor
   void routePABoxMap(PAModel& pa_model);
   void buildFixedRect(PABox& pa_box);
   void buildAccessResult(PABox& pa_box);
-  void buildViolation(PABox& pa_box);
   void initPATaskList(PAModel& pa_model, PABox& pa_box);
+  void buildViolation(PABox& pa_box);
   bool needRouting(PABox& pa_box);
   void buildBoxTrackAxis(PABox& pa_box);
   void buildLayerNodeMap(PABox& pa_box);
@@ -117,9 +116,7 @@ class PinAccessor
 #if 1  // update env
   void updateFixedRectToGraph(PABox& pa_box, ChangeType change_type, int32_t net_idx, EXTLayerRect* fixed_rect, bool is_routing);
   void updateFixedRectToGraph(PABox& pa_box, ChangeType change_type, int32_t net_idx, Segment<LayerCoord>& segment);
-  void updateFixedRectToGraph(PABox& pa_box, ChangeType change_type, int32_t net_idx, EXTLayerRect& patch);
   void updateNetResultToGraph(PABox& pa_box, ChangeType change_type, int32_t net_idx, Segment<LayerCoord>& segment);
-  void updateNetResultToGraph(PABox& pa_box, ChangeType change_type, int32_t net_idx, EXTLayerRect& patch);
   void addViolationToGraph(PABox& pa_box, Violation& violation);
   void addViolationToGraph(PABox& pa_box, LayerRect& searched_rect, std::vector<Segment<LayerCoord>>& overlap_segment_list);
   std::map<PANode*, std::set<Orientation>> getNodeOrientationMap(PABox& pa_box, NetShape& net_shape, bool need_enlarged);

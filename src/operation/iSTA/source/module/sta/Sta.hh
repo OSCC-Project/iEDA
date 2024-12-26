@@ -253,13 +253,21 @@ class Sta {
   void addRcNet(Net* the_net, std::unique_ptr<RcNet> rc_net) {
     _net_to_rc_net[the_net] = std::move(rc_net);
   }
+
   void removeRcNet(Net* the_net) { _net_to_rc_net.erase(the_net); }
   RcNet* getRcNet(Net* the_net) {
     return _net_to_rc_net.contains(the_net) ? _net_to_rc_net[the_net].get()
                                             : nullptr;
   }
+  std::vector<RcNet*> getAllRcNet() {
+    std::vector<RcNet*> rc_nets;
+    for (auto& [net, rc_net] : _net_to_rc_net) {
+      rc_nets.push_back(rc_net.get());
+    }
+    return rc_nets;
+  }
+  
   void resetAllRcNet() { _net_to_rc_net.clear(); }
-
   LibCell* findLibertyCell(const char* cell_name);
   std::optional<AocvObjectSpecSet*> findDataAocvObjectSpecSet(
       const char* object_name);
