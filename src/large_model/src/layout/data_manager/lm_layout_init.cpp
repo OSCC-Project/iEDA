@@ -38,12 +38,11 @@ void LmLayoutInit::init()
 
   initLayers();
   initDie();
-
   initTracks();
-  //   initPDN();
+  initPDN();
   initNets();
-  //   initInstances();
-  //   initIOPins();
+  initInstances();
+  initIOPins();
 }
 
 void LmLayoutInit::initViaIds()
@@ -215,21 +214,26 @@ void LmLayoutInit::transVia(idb::IdbVia* idb_via, int net_id, LmNodeTYpe type)
 
   LmNodeData* node_data = node->get_node_data(net_id, true);
   node_data->set_type(type);
-  node_data->set_net_id(net_id);
+  if (type == LmNodeTYpe::lm_net) {
+    node_data->set_net_id(net_id);
+  }
+  if (type == LmNodeTYpe::lm_pdn) {
+    node_data->set_pdn_id(net_id);
+  }
   node_data->set_connect_type(LmNodeConnectType::lm_via);
 
   /// botttom
   auto enclosure_bottom = idb_via->get_bottom_layer_shape();
   for (auto* rect : enclosure_bottom.get_rect_list()) {
     transEnclosure(rect->get_low_x(), rect->get_low_y(), rect->get_high_x(), rect->get_high_y(), enclosure_bottom.get_layer()->get_name(),
-                   net_id, row, col);
+                   net_id, row, col, type);
   }
 
   /// top
   auto enclosure_top = idb_via->get_top_layer_shape();
   for (auto* rect : enclosure_top.get_rect_list()) {
     transEnclosure(rect->get_low_x(), rect->get_low_y(), rect->get_high_x(), rect->get_high_y(), enclosure_top.get_layer()->get_name(),
-                   net_id, row, col);
+                   net_id, row, col, type);
   }
 }
 
@@ -311,13 +315,14 @@ void LmLayoutInit::initPDN()
               node->set_layer_id(order);
               node_data->set_type(LmNodeTYpe::lm_pdn);
               node_data->set_connect_type(LmNodeConnectType::lm_wire);
+              node_data->set_pdn_id(i);
             }
           }
         }
 
         if (idb_segment->is_via()) {
           auto* idb_via = idb_segment->get_via();
-          transVia(idb_via, -1, LmNodeTYpe::lm_pdn);
+          transVia(idb_via, i, LmNodeTYpe::lm_pdn);
         }
 
         if (i % 1000 == 0) {
@@ -364,7 +369,8 @@ void LmLayoutInit::initInstances()
     auto* idb_inst_pins = idb_inst->get_pin_list();
     for (auto* idb_pin : idb_inst_pins->get_pin_list()) {
       if (false == idb_pin->is_net_pin()) {
-        transPin(idb_pin, -1);
+        auto type = idb_pin->is_special_net_pin() ? LmNodeTYpe::lm_pdn : LmNodeTYpe::kNone;
+        transPin(idb_pin, -1, type);
       }
     }
 
@@ -402,18 +408,18 @@ void LmLayoutInit::initIOPins()
   auto* idb_design = dmInst->get_idb_design();
   auto* idb_iopins = idb_design->get_io_pin_list();
 
-  auto& layout_layers = _layout->get_layout_layers();
-
   for (auto* io_pin : idb_iopins->get_pin_list()) {
     /// net io pin has been built in init net flow
     if (false == io_pin->is_net_pin()) {
       auto net_id = _layout->findPdnId(io_pin->get_net_name());
-      transPin(io_pin, net_id);
+      /// net has been connected
+      auto type = io_pin->is_special_net_pin() ? LmNodeTYpe::lm_pdn : LmNodeTYpe::kNone;
+      transPin(io_pin, net_id, type);
     }
   }
 }
 
-void LmLayoutInit::transPin(idb::IdbPin* idb_pin, int net_id, int pin_id, bool b_io)
+void LmLayoutInit::transPin(idb::IdbPin* idb_pin, int net_id, LmNodeTYpe type, int pin_id, bool b_io)
 {
   auto& layout_layers = _layout->get_layout_layers();
   for (auto* layer_shape : idb_pin->get_port_box_list()) {
@@ -437,10 +443,15 @@ void LmLayoutInit::transPin(idb::IdbPin* idb_pin, int net_id, int pin_id, bool b
 
         LmNodeData* node_data = node->get_node_data(net_id, true);
         node_data->set_type(LmNodeTYpe::lm_pin);
-        node_data->set_net_id(net_id);
-        if (net_id > -1) {
-          node_data->set_type(LmNodeTYpe::lm_net);
+        node_data->set_type(type);
+        if (type == LmNodeTYpe::lm_net) {
+          node_data->set_net_id(net_id);
         }
+
+        if (type == LmNodeTYpe::lm_pdn) {
+          node_data->set_pdn_id(net_id);
+        }
+
         if (b_io) {
           node_data->set_type(LmNodeTYpe::lm_io);
         }
@@ -469,10 +480,15 @@ void LmLayoutInit::transPin(idb::IdbPin* idb_pin, int net_id, int pin_id, bool b
 
             LmNodeData* node_data = node->get_node_data(net_id, true);
             node_data->set_type(LmNodeTYpe::lm_pin);
-            node_data->set_net_id(net_id);
-            if (net_id > -1) {
-              node_data->set_type(LmNodeTYpe::lm_net);
+            node_data->set_type(type);
+            if (type == LmNodeTYpe::lm_net) {
+              node_data->set_net_id(net_id);
             }
+
+            if (type == LmNodeTYpe::lm_pdn) {
+              node_data->set_pdn_id(net_id);
+            }
+
             if (b_io) {
               node_data->set_type(LmNodeTYpe::lm_io);
             }
@@ -490,7 +506,7 @@ void LmLayoutInit::transPin(idb::IdbPin* idb_pin, int net_id, int pin_id, bool b
   /// tbd
 }
 
-void LmLayoutInit::transNetRect(int32_t ll_x, int32_t ll_y, int32_t ur_x, int32_t ur_y, std::string layer_name, int net_id)
+void LmLayoutInit::transNetRect(int32_t ll_x, int32_t ll_y, int32_t ur_x, int32_t ur_y, std::string layer_name, int net_id, LmNodeTYpe type)
 {
   auto& layout_layers = _layout->get_layout_layers();
 
@@ -514,13 +530,19 @@ void LmLayoutInit::transNetRect(int32_t ll_x, int32_t ll_y, int32_t ur_x, int32_
       LmNodeData* node_data = node->get_node_data(net_id, true);
       node_data->set_type(LmNodeTYpe::lm_net);
       node_data->set_connect_type(LmNodeConnectType::lm_wire);
-      node_data->set_net_id(net_id);
+      if (type == LmNodeTYpe::lm_net) {
+        node_data->set_net_id(net_id);
+      }
+
+      if (type == LmNodeTYpe::lm_pdn) {
+        node_data->set_pdn_id(net_id);
+      }
     }
   }
 }
 
 void LmLayoutInit::transEnclosure(int32_t ll_x, int32_t ll_y, int32_t ur_x, int32_t ur_y, std::string layer_name, int net_id, int via_row,
-                                  int via_col)
+                                  int via_col, LmNodeTYpe type)
 {
   auto& layout_layers = _layout->get_layout_layers();
 
@@ -540,14 +562,21 @@ void LmLayoutInit::transEnclosure(int32_t ll_x, int32_t ll_y, int32_t ur_x, int3
       node->set_row_id(row);
       node->set_layer_id(order);
       LmNodeData* node_data = node->get_node_data(net_id, true);
-      node_data->set_type(LmNodeTYpe::lm_net);
+      node_data->set_type(type);
       node_data->set_connect_type(LmNodeConnectType::lm_enclosure);
-      node_data->set_net_id(net_id);
+      if (type == LmNodeTYpe::lm_net) {
+        node_data->set_net_id(net_id);
+      }
+
+      if (type == LmNodeTYpe::lm_pdn) {
+        node_data->set_pdn_id(net_id);
+      }
     }
   }
 }
 
-void LmLayoutInit::transNetDelta(int32_t ll_x, int32_t ll_y, int32_t ur_x, int32_t ur_y, std::string layer_name, int net_id)
+void LmLayoutInit::transNetDelta(int32_t ll_x, int32_t ll_y, int32_t ur_x, int32_t ur_y, std::string layer_name, int net_id,
+                                 LmNodeTYpe type)
 {
   auto& layout_layers = _layout->get_layout_layers();
 
@@ -569,7 +598,13 @@ void LmLayoutInit::transNetDelta(int32_t ll_x, int32_t ll_y, int32_t ur_x, int32
       LmNodeData* node_data = node->get_node_data(net_id, true);
       node_data->set_type(LmNodeTYpe::lm_net);
       node_data->set_connect_type(LmNodeConnectType::lm_delta);
-      node_data->set_net_id(net_id);
+      if (type == LmNodeTYpe::lm_net) {
+        node_data->set_net_id(net_id);
+      }
+
+      if (type == LmNodeTYpe::lm_pdn) {
+        node_data->set_pdn_id(net_id);
+      }
     }
   }
 }
@@ -627,12 +662,12 @@ void LmLayoutInit::initNets()
 
     for (auto* idb_inst_pin : idb_net->get_instance_pin_list()->get_pin_list()) {
       auto pin_id = _layout->findPinId(idb_inst_pin->get_instance()->get_name(), idb_inst_pin->get_pin_name());
-      transPin(idb_inst_pin, net_id, pin_id);
+      transPin(idb_inst_pin, net_id, LmNodeTYpe::lm_net, pin_id);
     }
 
     for (auto* io_pin : idb_net->get_io_pins()->get_pin_list()) {
       auto pin_id = _layout->findPinId("", io_pin->get_pin_name());
-      transPin(io_pin, net_id, pin_id, true);
+      transPin(io_pin, net_id, LmNodeTYpe::lm_net, pin_id, true);
     }
 
     /// init wires
@@ -653,7 +688,7 @@ void LmLayoutInit::initNets()
 
           /// build grid
           transNetDelta(rect->get_low_x(), rect->get_low_y(), rect->get_high_x(), rect->get_high_y(), idb_segment->get_layer()->get_name(),
-                        net_id);
+                        net_id, LmNodeTYpe::lm_net);
 
           delete rect;
         } else {
@@ -674,7 +709,7 @@ void LmLayoutInit::initNets()
           int32_t ur_y = std::max(point_1->get_y(), point_2->get_y());
 
           /// build grid
-          transNetRect(ll_x, ll_y, ur_x, ur_y, routing_layer->get_name(), net_id);
+          transNetRect(ll_x, ll_y, ur_x, ur_y, routing_layer->get_name(), net_id, LmNodeTYpe::lm_net);
         }
       }
       if (net_id % 1000 == 0) {
