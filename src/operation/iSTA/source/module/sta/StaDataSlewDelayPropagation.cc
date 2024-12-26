@@ -101,11 +101,13 @@ unsigned StaDataSlewDelayPropagation::operator()(StaVertex* the_vertex) {
 unsigned StaDataSlewDelayPropagation::operator()(StaGraph* the_graph) {
   unsigned is_ok = 1;
 
-  StaVertex* start_vertex;
-  FOREACH_START_VERTEX(the_graph, start_vertex) {
-    // start from the vertex which is level one.
-    if (start_vertex->get_level() == 1) {
-      _bfs_queue.emplace_back(start_vertex);
+  StaVertex* the_vertex;
+  FOREACH_VERTEX(the_graph, the_vertex) {
+    // start from the vertex which is level one and has slew prop.
+    if (the_vertex->get_level() == 1 && the_vertex->is_slew_prop()) {
+      LOG_FATAL_IF(!the_vertex->is_delay_prop())
+          << "the vertex should be delay propagated.";
+      _bfs_queue.emplace_back(the_vertex);
     }
   }
 
