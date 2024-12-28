@@ -37,12 +37,16 @@ class DRBox
   EXTPlanarRect& get_box_rect() { return _box_rect; }
   DRBoxId& get_dr_box_id() { return _dr_box_id; }
   DRParameter* get_dr_parameter() { return _dr_parameter; }
+  bool get_initial_routing() const { return _initial_routing; }
   std::vector<DRTask*>& get_dr_task_list() { return _dr_task_list; }
   std::map<bool, std::map<int32_t, std::map<int32_t, std::set<EXTLayerRect*>>>>& get_type_layer_net_fixed_rect_map()
   {
     return _type_layer_net_fixed_rect_map;
   }
-  std::map<int32_t, std::set<Segment<LayerCoord>*>>& get_net_access_result_map() { return _net_access_result_map; }
+  std::map<int32_t, std::map<int32_t, std::set<Segment<LayerCoord>*>>>& get_net_pin_access_result_map()
+  {
+    return _net_pin_access_result_map;
+  }
   std::map<int32_t, std::set<Segment<LayerCoord>*>>& get_net_detailed_result_map() { return _net_detailed_result_map; }
   std::map<int32_t, std::vector<Segment<LayerCoord>>>& get_net_task_detailed_result_map() { return _net_task_detailed_result_map; }
   std::vector<Violation>& get_violation_list() { return _violation_list; }
@@ -57,15 +61,16 @@ class DRBox
   void set_box_rect(const EXTPlanarRect& box_rect) { _box_rect = box_rect; }
   void set_dr_box_id(const DRBoxId& dr_box_id) { _dr_box_id = dr_box_id; }
   void set_dr_parameter(DRParameter* dr_parameter) { _dr_parameter = dr_parameter; }
+  void set_initial_routing(const bool initial_routing) { _initial_routing = initial_routing; }
   void set_dr_task_list(const std::vector<DRTask*>& dr_task_list) { _dr_task_list = dr_task_list; }
   void set_type_layer_net_fixed_rect_map(
       const std::map<bool, std::map<int32_t, std::map<int32_t, std::set<EXTLayerRect*>>>>& type_layer_net_fixed_rect_map)
   {
     _type_layer_net_fixed_rect_map = type_layer_net_fixed_rect_map;
   }
-  void set_net_access_result_map(const std::map<int32_t, std::set<Segment<LayerCoord>*>>& net_access_result_map)
+  void set_net_pin_access_result_map(const std::map<int32_t, std::map<int32_t, std::set<Segment<LayerCoord>*>>>& net_pin_access_result_map)
   {
-    _net_access_result_map = net_access_result_map;
+    _net_pin_access_result_map = net_pin_access_result_map;
   }
   void set_net_detailed_result_map(const std::map<int32_t, std::set<Segment<LayerCoord>*>>& net_detailed_result_map)
   {
@@ -125,9 +130,10 @@ class DRBox
   EXTPlanarRect _box_rect;
   DRBoxId _dr_box_id;
   DRParameter* _dr_parameter = nullptr;
+  bool _initial_routing = true;
   std::vector<DRTask*> _dr_task_list;
   std::map<bool, std::map<int32_t, std::map<int32_t, std::set<EXTLayerRect*>>>> _type_layer_net_fixed_rect_map;
-  std::map<int32_t, std::set<Segment<LayerCoord>*>> _net_access_result_map;
+  std::map<int32_t, std::map<int32_t, std::set<Segment<LayerCoord>*>>> _net_pin_access_result_map;
   std::map<int32_t, std::set<Segment<LayerCoord>*>> _net_detailed_result_map;
   std::map<int32_t, std::vector<Segment<LayerCoord>>> _net_task_detailed_result_map;
   std::vector<Violation> _violation_list;

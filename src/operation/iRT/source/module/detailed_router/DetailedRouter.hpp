@@ -56,7 +56,9 @@ class DetailedRouter
   std::vector<DRNet> convertToDRNetList(std::vector<Net>& net_list);
   DRNet convertToDRNet(Net& net);
   void iterativeDRModel(DRModel& dr_model);
+  void initRoutingState(DRModel& dr_model);
   void setDRParameter(DRModel& dr_model, int32_t iter, DRParameter& dr_parameter);
+  void resetRoutingState(DRModel& dr_model);
   void initDRBoxMap(DRModel& dr_model);
   void buildBoxSchedule(DRModel& dr_model);
   void splitNetResult(DRModel& dr_model);

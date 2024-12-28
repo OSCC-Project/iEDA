@@ -57,12 +57,13 @@ class PinAccessor
   void initAccessPointList(PAModel& pa_model);
   std::vector<PANet> convertToPANetList(std::vector<Net>& net_list);
   PANet convertToPANet(Net& net);
-  std::vector<LayerRect> getLegalShapeList(PAModel& pa_model, int32_t net_idx, Pin* pin);
+  std::vector<LayerRect> getLegalShapeList(PAModel& pa_model, int32_t net_idx, PAPin* pa_pin);
   std::vector<PlanarRect> getPlanarLegalRectList(PAModel& pa_model, int32_t curr_net_idx, std::vector<EXTLayerRect>& pin_shape_list);
   std::vector<AccessPoint> getAccessPointList(PAModel& pa_model, int32_t pin_idx, std::vector<LayerRect>& legal_shape_list);
   void uniformSampleCoordList(PAModel& pa_model, std::vector<LayerCoord>& layer_coord_list);
   void uploadAccessPointList(PAModel& pa_model);
   void initPABoxMap(PAModel& pa_model);
+  void initRoutingState(PABox& pa_box);
   void buildBoxSchedule(PAModel& pa_model);
   void exemptPinShape(PABox& pa_box);
   void routePABoxMap(PAModel& pa_model);
@@ -106,6 +107,7 @@ class PinAccessor
   std::vector<Violation> getCostViolationList(PABox& pa_box);
   void updateTaskSchedule(PABox& pa_box, std::vector<PATask*>& routing_task_list);
   void uploadAccessResult(PABox& pa_box);
+  void resetRoutingState(PABox& pa_box);
   void uploadViolation(PABox& pa_box);
   void freePABox(PABox& pa_box);
   int32_t getViolationNum();

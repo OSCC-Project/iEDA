@@ -22,9 +22,10 @@ class PAParameter
 {
  public:
   PAParameter() = default;
-  PAParameter(double prefer_wire_unit, double non_prefer_wire_unit, double via_unit, int32_t size, int32_t offset, double fixed_rect_unit,
-              double routed_rect_unit, double violation_unit, int32_t max_routed_times, int32_t max_candidate_point_num)
+  PAParameter(int32_t max_candidate_point_num, double prefer_wire_unit, double non_prefer_wire_unit, double via_unit, int32_t size,
+              int32_t offset, double fixed_rect_unit, double routed_rect_unit, double violation_unit, int32_t max_routed_times)
   {
+    _max_candidate_point_num = max_candidate_point_num;
     _prefer_wire_unit = prefer_wire_unit;
     _non_prefer_wire_unit = non_prefer_wire_unit;
     _via_unit = via_unit;
@@ -34,10 +35,10 @@ class PAParameter
     _routed_rect_unit = routed_rect_unit;
     _violation_unit = violation_unit;
     _max_routed_times = max_routed_times;
-    _max_candidate_point_num = max_candidate_point_num;
   }
   ~PAParameter() = default;
   // getter
+  int32_t get_max_candidate_point_num() const { return _max_candidate_point_num; }
   double get_prefer_wire_unit() const { return _prefer_wire_unit; }
   double get_non_prefer_wire_unit() const { return _non_prefer_wire_unit; }
   double get_via_unit() const { return _via_unit; }
@@ -47,8 +48,8 @@ class PAParameter
   double get_routed_rect_unit() const { return _routed_rect_unit; }
   double get_violation_unit() const { return _violation_unit; }
   int32_t get_max_routed_times() const { return _max_routed_times; }
-  int32_t get_max_candidate_point_num() const { return _max_candidate_point_num; }
   // setter
+  void set_max_candidate_point_num(const int32_t max_candidate_point_num) { _max_candidate_point_num = max_candidate_point_num; }
   void set_prefer_wire_unit(const double prefer_wire_unit) { _prefer_wire_unit = prefer_wire_unit; }
   void set_non_prefer_wire_unit(const double non_prefer_wire_unit) { _non_prefer_wire_unit = non_prefer_wire_unit; }
   void set_via_unit(const double via_unit) { _via_unit = via_unit; }
@@ -58,9 +59,9 @@ class PAParameter
   void set_routed_rect_unit(const double routed_rect_unit) { _routed_rect_unit = routed_rect_unit; }
   void set_violation_unit(const double violation_unit) { _violation_unit = violation_unit; }
   void set_max_routed_times(const int32_t max_routed_times) { _max_routed_times = max_routed_times; }
-  void set_max_candidate_point_num(const int32_t max_candidate_point_num) { _max_candidate_point_num = max_candidate_point_num; }
 
  private:
+  int32_t _max_candidate_point_num = 0;
   double _prefer_wire_unit = 0;
   double _non_prefer_wire_unit = 0;
   double _via_unit = 0;
@@ -70,7 +71,6 @@ class PAParameter
   double _routed_rect_unit = 0;
   double _violation_unit = 0;
   int32_t _max_routed_times = 0;
-  int32_t _max_candidate_point_num = 0;
 };
 
 }  // namespace irt

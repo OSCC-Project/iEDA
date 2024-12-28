@@ -12,7 +12,7 @@ assignTAPanelMap:
     buildPanelTrackAxis:构建Panel内的track_axis
     buildTANodeMap:构建Panel的Graph,只有节点,其他信息后续构建
     buildTANodeNeighbor:将所有节点连接
-    buildOrientNetMap:构建Graph的cost,fix_rect从Panel中得到,在ta阶段net_access_result为fix结果
+    buildOrientNetMap:构建Graph的cost,fix_rect从Panel中得到,在ta阶段net_pin_access_result为fix结果
     routeTAPanel:
         initTaskSchedule:初始化task布线调度表
             routeTATask:给task布线,在此函数末尾,布线结果从graph中删除,再加入新的结果
