@@ -18,7 +18,7 @@
 
 #include "DRBoxId.hpp"
 #include "DRNode.hpp"
-#include "DRParameter.hpp"
+#include "DRIterParam.hpp"
 #include "DRTask.hpp"
 #include "LayerCoord.hpp"
 #include "LayerRect.hpp"
@@ -36,7 +36,7 @@ class DRBox
   // getter
   EXTPlanarRect& get_box_rect() { return _box_rect; }
   DRBoxId& get_dr_box_id() { return _dr_box_id; }
-  DRParameter* get_dr_parameter() { return _dr_parameter; }
+  DRIterParam* get_dr_iter_param() { return _dr_iter_param; }
   bool get_initial_routing() const { return _initial_routing; }
   std::vector<DRTask*>& get_dr_task_list() { return _dr_task_list; }
   std::map<bool, std::map<int32_t, std::map<int32_t, std::set<EXTLayerRect*>>>>& get_type_layer_net_fixed_rect_map()
@@ -60,7 +60,7 @@ class DRBox
   // setter
   void set_box_rect(const EXTPlanarRect& box_rect) { _box_rect = box_rect; }
   void set_dr_box_id(const DRBoxId& dr_box_id) { _dr_box_id = dr_box_id; }
-  void set_dr_parameter(DRParameter* dr_parameter) { _dr_parameter = dr_parameter; }
+  void set_dr_iter_param(DRIterParam* dr_iter_param) { _dr_iter_param = dr_iter_param; }
   void set_initial_routing(const bool initial_routing) { _initial_routing = initial_routing; }
   void set_dr_task_list(const std::vector<DRTask*>& dr_task_list) { _dr_task_list = dr_task_list; }
   void set_type_layer_net_fixed_rect_map(
@@ -129,7 +129,7 @@ class DRBox
  private:
   EXTPlanarRect _box_rect;
   DRBoxId _dr_box_id;
-  DRParameter* _dr_parameter = nullptr;
+  DRIterParam* _dr_iter_param = nullptr;
   bool _initial_routing = true;
   std::vector<DRTask*> _dr_task_list;
   std::map<bool, std::map<int32_t, std::map<int32_t, std::set<EXTLayerRect*>>>> _type_layer_net_fixed_rect_map;

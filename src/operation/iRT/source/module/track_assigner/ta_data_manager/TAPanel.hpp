@@ -22,7 +22,7 @@
 #include "ScaleAxis.hpp"
 #include "TANode.hpp"
 #include "TAPanelId.hpp"
-#include "TAParameter.hpp"
+#include "TAComParam.hpp"
 #include "TATask.hpp"
 
 namespace irt {
@@ -35,7 +35,7 @@ class TAPanel
   // getter
   EXTLayerRect& get_panel_rect() { return _panel_rect; }
   TAPanelId& get_ta_panel_id() { return _ta_panel_id; }
-  TAParameter* get_ta_parameter() { return _ta_parameter; }
+  TAComParam* get_ta_com_param() { return _ta_com_param; }
   std::vector<TATask*>& get_ta_task_list() { return _ta_task_list; }
   std::map<int32_t, std::set<EXTLayerRect*>>& get_net_fixed_rect_map() { return _net_fixed_rect_map; }
   std::map<int32_t, std::map<int32_t, std::vector<LayerRect>>>& get_net_pin_access_result_map() { return _net_pin_access_result_map; }
@@ -47,7 +47,7 @@ class TAPanel
   // setter
   void set_panel_rect(const EXTLayerRect& panel_rect) { _panel_rect = panel_rect; }
   void set_ta_panel_id(const TAPanelId& ta_panel_id) { _ta_panel_id = ta_panel_id; }
-  void set_ta_parameter(TAParameter* ta_parameter) { _ta_parameter = ta_parameter; }
+  void set_ta_com_param(TAComParam* ta_com_param) { _ta_com_param = ta_com_param; }
   void set_ta_task_list(const std::vector<TATask*>& ta_task_list) { _ta_task_list = ta_task_list; }
   void set_net_fixed_rect_map(const std::map<int32_t, std::set<EXTLayerRect*>>& net_fixed_rect_map)
   {
@@ -105,7 +105,7 @@ class TAPanel
  private:
   EXTLayerRect _panel_rect;
   TAPanelId _ta_panel_id;
-  TAParameter* _ta_parameter = nullptr;
+  TAComParam* _ta_com_param = nullptr;
   std::vector<TATask*> _ta_task_list;
   std::map<int32_t, std::set<EXTLayerRect*>> _net_fixed_rect_map;
   std::map<int32_t, std::map<int32_t, std::vector<LayerRect>>> _net_pin_access_result_map;

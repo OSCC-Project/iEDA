@@ -16,28 +16,23 @@
 // ***************************************************************************************
 #pragma once
 
+#include "RTHeader.hpp"
+
 namespace irt {
 
-class TGParameter
+class PAComParam
 {
  public:
-  TGParameter() = default;
-  TGParameter(int32_t topo_spilt_length, double congestion_unit)
-  {
-    _topo_spilt_length = topo_spilt_length;
-    _congestion_unit = congestion_unit;
-  }
-  ~TGParameter() = default;
+  PAComParam() = default;
+  PAComParam(int32_t max_candidate_point_num) { _max_candidate_point_num = max_candidate_point_num; }
+  ~PAComParam() = default;
   // getter
-  int32_t get_topo_spilt_length() const { return _topo_spilt_length; }
-  double get_congestion_unit() const { return _congestion_unit; }
+  int32_t get_max_candidate_point_num() const { return _max_candidate_point_num; }
   // setter
-  void set_topo_spilt_length(const int32_t topo_spilt_length) { _topo_spilt_length = topo_spilt_length; }
-  void set_congestion_unit(const double congestion_unit) { _congestion_unit = congestion_unit; }
+  void set_max_candidate_point_num(const int32_t max_candidate_point_num) { _max_candidate_point_num = max_candidate_point_num; }
 
  private:
-  int32_t _topo_spilt_length = 0;
-  double _congestion_unit = 0;
+  int32_t _max_candidate_point_num = 0;
 };
 
 }  // namespace irt

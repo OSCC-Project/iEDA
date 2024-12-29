@@ -1,6 +1,6 @@
 initDRModel:初始化dr_net
 iterativeDRModel:迭代DRModel
-    setDRParameter:设置参数
+    setDRIterParam:设置参数
     initDRBoxMap:构建DRBox框架,里面主要数据为空
     buildBoxSchedule:构建Box布线的调度表
     splitNetResult:以Box边界分割线网结果

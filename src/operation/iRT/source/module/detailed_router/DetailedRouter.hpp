@@ -22,7 +22,7 @@
 #include "DRModel.hpp"
 #include "DRNet.hpp"
 #include "DRNode.hpp"
-#include "DRParameter.hpp"
+#include "DRIterParam.hpp"
 #include "DataManager.hpp"
 #include "Database.hpp"
 #include "Net.hpp"
@@ -57,7 +57,7 @@ class DetailedRouter
   DRNet convertToDRNet(Net& net);
   void iterativeDRModel(DRModel& dr_model);
   void initRoutingState(DRModel& dr_model);
-  void setDRParameter(DRModel& dr_model, int32_t iter, DRParameter& dr_parameter);
+  void setDRIterParam(DRModel& dr_model, int32_t iter, DRIterParam& dr_iter_param);
   void resetRoutingState(DRModel& dr_model);
   void initDRBoxMap(DRModel& dr_model);
   void buildBoxSchedule(DRModel& dr_model);

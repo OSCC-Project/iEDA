@@ -146,7 +146,7 @@ class Summary
  public:
   Summary() = default;
   ~Summary() = default;
-  PASummary pa_summary;
+  std::map<int32_t, PASummary> iter_pa_summary_map;
   SASummary sa_summary;
   TGSummary tg_summary;
   LASummary la_summary;

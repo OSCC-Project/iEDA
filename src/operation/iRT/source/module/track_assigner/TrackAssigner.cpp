@@ -59,7 +59,7 @@ void TrackAssigner::assign()
   TAModel ta_model = initTAModel();
   ignoreViolation(ta_model);
   // debugPlotTAModel(ta_model, "before");
-  setTAParameter(ta_model);
+  setTAComParam(ta_model);
   initTAPanelMap(ta_model);
   buildPanelSchedule(ta_model);
   assignTAPanelMap(ta_model);
@@ -163,7 +163,7 @@ void TrackAssigner::ignoreViolation(TAModel& ta_model)
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
-void TrackAssigner::setTAParameter(TAModel& ta_model)
+void TrackAssigner::setTAComParam(TAModel& ta_model)
 {
   int32_t cost_unit = RTDM.getOnlyPitch();
   double prefer_wire_unit = 1;
@@ -173,17 +173,18 @@ void TrackAssigner::setTAParameter(TAModel& ta_model)
   double routed_rect_unit = 2 * via_unit;
   double violation_unit = 4 * non_prefer_wire_unit * cost_unit;
   /**
-   * prefer_wire_unit, fixed_rect_unit, routed_rect_unit, violation_unit, max_routed_times
+   * prefer_wire_unit, schedule_interval, fixed_rect_unit, routed_rect_unit, violation_unit, max_routed_times
    */
   // clang-format off
-  TAParameter ta_parameter(prefer_wire_unit, fixed_rect_unit, routed_rect_unit, violation_unit, 10);
+  TAComParam ta_com_param(prefer_wire_unit, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 10);
   // clang-format on
-  RTLOG.info(Loc::current(), "prefer_wire_unit: ", ta_parameter.get_prefer_wire_unit());
-  RTLOG.info(Loc::current(), "fixed_rect_unit: ", ta_parameter.get_fixed_rect_unit());
-  RTLOG.info(Loc::current(), "routed_rect_unit: ", ta_parameter.get_routed_rect_unit());
-  RTLOG.info(Loc::current(), "violation_unit: ", ta_parameter.get_violation_unit());
-  RTLOG.info(Loc::current(), "max_routed_times: ", ta_parameter.get_max_routed_times());
-  ta_model.set_ta_parameter(ta_parameter);
+  RTLOG.info(Loc::current(), "prefer_wire_unit: ", ta_com_param.get_prefer_wire_unit());
+  RTLOG.info(Loc::current(), "schedule_interval: ", ta_com_param.get_schedule_interval());
+  RTLOG.info(Loc::current(), "fixed_rect_unit: ", ta_com_param.get_fixed_rect_unit());
+  RTLOG.info(Loc::current(), "routed_rect_unit: ", ta_com_param.get_routed_rect_unit());
+  RTLOG.info(Loc::current(), "violation_unit: ", ta_com_param.get_violation_unit());
+  RTLOG.info(Loc::current(), "max_routed_times: ", ta_com_param.get_max_routed_times());
+  ta_model.set_ta_com_param(ta_com_param);
 }
 
 void TrackAssigner::initTAPanelMap(TAModel& ta_model)
@@ -192,7 +193,7 @@ void TrackAssigner::initTAPanelMap(TAModel& ta_model)
   Die& die = RTDM.getDatabase().get_die();
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
 
-  TAParameter& ta_parameter = ta_model.get_ta_parameter();
+  TAComParam& ta_com_param = ta_model.get_ta_com_param();
   std::vector<std::vector<TAPanel>>& layer_panel_list = ta_model.get_layer_panel_list();
   for (RoutingLayer& routing_layer : routing_layer_list) {
     std::vector<TAPanel> ta_panel_list;
@@ -210,7 +211,7 @@ void TrackAssigner::initTAPanelMap(TAModel& ta_model)
           ta_panel_id.set_layer_idx(routing_layer.get_layer_idx());
           ta_panel_id.set_panel_idx(static_cast<int32_t>(ta_panel_list.size()));
           ta_panel.set_ta_panel_id(ta_panel_id);
-          ta_panel.set_ta_parameter(&ta_parameter);
+          ta_panel.set_ta_com_param(&ta_com_param);
           ta_panel_list.push_back(ta_panel);
         }
       }
@@ -228,7 +229,7 @@ void TrackAssigner::initTAPanelMap(TAModel& ta_model)
           ta_panel_id.set_layer_idx(routing_layer.get_layer_idx());
           ta_panel_id.set_panel_idx(static_cast<int32_t>(ta_panel_list.size()));
           ta_panel.set_ta_panel_id(ta_panel_id);
-          ta_panel.set_ta_parameter(&ta_parameter);
+          ta_panel.set_ta_com_param(&ta_com_param);
           ta_panel_list.push_back(ta_panel);
         }
       }
@@ -240,14 +241,13 @@ void TrackAssigner::initTAPanelMap(TAModel& ta_model)
 void TrackAssigner::buildPanelSchedule(TAModel& ta_model)
 {
   std::vector<std::vector<TAPanel>>& layer_panel_list = ta_model.get_layer_panel_list();
-
-  int32_t range = 3;
+  int32_t schedule_interval = ta_model.get_ta_com_param().get_schedule_interval();
 
   std::vector<std::vector<TAPanelId>> ta_panel_id_list_list;
   for (int32_t layer_idx = 0; layer_idx < static_cast<int32_t>(layer_panel_list.size()); layer_idx++) {
-    for (int32_t start_i = 0; start_i < range; start_i++) {
+    for (int32_t start_i = 0; start_i < schedule_interval; start_i++) {
       std::vector<TAPanelId> ta_panel_id_list;
-      for (int32_t i = start_i; i < static_cast<int32_t>(layer_panel_list[layer_idx].size()); i += range) {
+      for (int32_t i = start_i; i < static_cast<int32_t>(layer_panel_list[layer_idx].size()); i += schedule_interval) {
         ta_panel_id_list.emplace_back(layer_idx, i);
       }
       ta_panel_id_list_list.push_back(ta_panel_id_list);
@@ -935,9 +935,9 @@ double TrackAssigner::getKnowCost(TAPanel& ta_panel, TANode* start_node, TANode*
 
 double TrackAssigner::getNodeCost(TAPanel& ta_panel, TANode* curr_node, Orientation orientation)
 {
-  double fixed_rect_unit = ta_panel.get_ta_parameter()->get_fixed_rect_unit();
-  double routed_rect_unit = ta_panel.get_ta_parameter()->get_routed_rect_unit();
-  double violation_unit = ta_panel.get_ta_parameter()->get_violation_unit();
+  double fixed_rect_unit = ta_panel.get_ta_com_param()->get_fixed_rect_unit();
+  double routed_rect_unit = ta_panel.get_ta_com_param()->get_routed_rect_unit();
+  double violation_unit = ta_panel.get_ta_com_param()->get_violation_unit();
 
   int32_t net_idx = ta_panel.get_curr_ta_task()->get_net_idx();
 
@@ -951,7 +951,7 @@ double TrackAssigner::getNodeCost(TAPanel& ta_panel, TANode* curr_node, Orientat
 double TrackAssigner::getKnowWireCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node)
 {
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
-  double prefer_wire_unit = ta_panel.get_ta_parameter()->get_prefer_wire_unit();
+  double prefer_wire_unit = ta_panel.get_ta_com_param()->get_prefer_wire_unit();
 
   double wire_cost = 0;
   if (start_node->get_layer_idx() == end_node->get_layer_idx()) {
@@ -998,7 +998,7 @@ double TrackAssigner::getEstimateCost(TAPanel& ta_panel, TANode* start_node, TAN
 
 double TrackAssigner::getEstimateWireCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node)
 {
-  double prefer_wire_unit = ta_panel.get_ta_parameter()->get_prefer_wire_unit();
+  double prefer_wire_unit = ta_panel.get_ta_com_param()->get_prefer_wire_unit();
 
   double wire_cost = 0;
   wire_cost += RTUTIL.getManhattanDistance(start_node->get_planar_coord(), end_node->get_planar_coord());
@@ -1138,7 +1138,7 @@ std::vector<Violation> TrackAssigner::getCostViolationList(TAPanel& ta_panel)
 
 void TrackAssigner::updateTaskSchedule(TAPanel& ta_panel, std::vector<TATask*>& routing_task_list)
 {
-  int32_t max_routed_times = ta_panel.get_ta_parameter()->get_max_routed_times();
+  int32_t max_routed_times = ta_panel.get_ta_com_param()->get_max_routed_times();
 
   std::set<TATask*> visited_routing_task_set;
   std::vector<TATask*> new_routing_task_list;
@@ -1819,7 +1819,7 @@ void TrackAssigner::debugPlotTAPanel(TAPanel& ta_panel, int32_t curr_task_idx, s
   std::vector<std::vector<ViaMaster>>& layer_via_master_list = RTDM.getDatabase().get_layer_via_master_list();
   std::string& ta_temp_directory_path = RTDM.getConfig().ta_temp_directory_path;
 
-  PlanarRect panel_rect = ta_panel.get_panel_rect().get_real_rect();
+  PlanarRect panel_real_rect = ta_panel.get_panel_rect().get_real_rect();
 
   int32_t point_size = 5;
 
@@ -1831,7 +1831,7 @@ void TrackAssigner::debugPlotTAPanel(TAPanel& ta_panel, int32_t curr_task_idx, s
     GPBoundary gp_boundary;
     gp_boundary.set_layer_idx(0);
     gp_boundary.set_data_type(0);
-    gp_boundary.set_rect(panel_rect);
+    gp_boundary.set_rect(panel_real_rect);
     base_region_struct.push(gp_boundary);
     gp_gds.addStruct(base_region_struct);
   }
@@ -1839,20 +1839,22 @@ void TrackAssigner::debugPlotTAPanel(TAPanel& ta_panel, int32_t curr_task_idx, s
   // gcell_axis
   {
     GPStruct gcell_axis_struct("gcell_axis");
-    std::vector<int32_t> gcell_x_list = RTUTIL.getScaleList(panel_rect.get_ll_x(), panel_rect.get_ur_x(), gcell_axis.get_x_grid_list());
-    std::vector<int32_t> gcell_y_list = RTUTIL.getScaleList(panel_rect.get_ll_y(), panel_rect.get_ur_y(), gcell_axis.get_y_grid_list());
+    std::vector<int32_t> gcell_x_list
+        = RTUTIL.getScaleList(panel_real_rect.get_ll_x(), panel_real_rect.get_ur_x(), gcell_axis.get_x_grid_list());
+    std::vector<int32_t> gcell_y_list
+        = RTUTIL.getScaleList(panel_real_rect.get_ll_y(), panel_real_rect.get_ur_y(), gcell_axis.get_y_grid_list());
     for (int32_t x : gcell_x_list) {
       GPPath gp_path;
       gp_path.set_layer_idx(0);
       gp_path.set_data_type(1);
-      gp_path.set_segment(x, panel_rect.get_ll_y(), x, panel_rect.get_ur_y());
+      gp_path.set_segment(x, panel_real_rect.get_ll_y(), x, panel_real_rect.get_ur_y());
       gcell_axis_struct.push(gp_path);
     }
     for (int32_t y : gcell_y_list) {
       GPPath gp_path;
       gp_path.set_layer_idx(0);
       gp_path.set_data_type(1);
-      gp_path.set_segment(panel_rect.get_ll_x(), y, panel_rect.get_ur_x(), y);
+      gp_path.set_segment(panel_real_rect.get_ll_x(), y, panel_real_rect.get_ur_x(), y);
       gcell_axis_struct.push(gp_path);
     }
     gp_gds.addStruct(gcell_axis_struct);
@@ -2047,8 +2049,8 @@ void TrackAssigner::debugPlotTAPanel(TAPanel& ta_panel, int32_t curr_task_idx, s
   // panel_track_axis
   {
     GPStruct panel_track_axis_struct("panel_track_axis");
-    PlanarCoord& real_ll = panel_rect.get_ll();
-    PlanarCoord& real_ur = panel_rect.get_ur();
+    PlanarCoord& real_ll = panel_real_rect.get_ll();
+    PlanarCoord& real_ur = panel_real_rect.get_ur();
     ScaleAxis& panel_track_axis = ta_panel.get_panel_track_axis();
     std::vector<int32_t> x_list = RTUTIL.getScaleList(real_ll.get_x(), real_ur.get_x(), panel_track_axis.get_x_grid_list());
     std::vector<int32_t> y_list = RTUTIL.getScaleList(real_ll.get_y(), real_ur.get_y(), panel_track_axis.get_y_grid_list());

@@ -16,57 +16,59 @@
 // ***************************************************************************************
 #pragma once
 
+#include "RTHeader.hpp"
+
 namespace irt {
 
-class PAParameter
+class PAIterParam
 {
  public:
-  PAParameter() = default;
-  PAParameter(int32_t max_candidate_point_num, double prefer_wire_unit, double non_prefer_wire_unit, double via_unit, int32_t size,
-              int32_t offset, double fixed_rect_unit, double routed_rect_unit, double violation_unit, int32_t max_routed_times)
+  PAIterParam() = default;
+  PAIterParam(double prefer_wire_unit, double non_prefer_wire_unit, double via_unit, int32_t size, int32_t offset,
+              int32_t schedule_interval, double fixed_rect_unit, double routed_rect_unit, double violation_unit, int32_t max_routed_times)
   {
-    _max_candidate_point_num = max_candidate_point_num;
     _prefer_wire_unit = prefer_wire_unit;
     _non_prefer_wire_unit = non_prefer_wire_unit;
     _via_unit = via_unit;
     _size = size;
     _offset = offset;
+    _schedule_interval = schedule_interval;
     _fixed_rect_unit = fixed_rect_unit;
     _routed_rect_unit = routed_rect_unit;
     _violation_unit = violation_unit;
     _max_routed_times = max_routed_times;
   }
-  ~PAParameter() = default;
+  ~PAIterParam() = default;
   // getter
-  int32_t get_max_candidate_point_num() const { return _max_candidate_point_num; }
   double get_prefer_wire_unit() const { return _prefer_wire_unit; }
   double get_non_prefer_wire_unit() const { return _non_prefer_wire_unit; }
   double get_via_unit() const { return _via_unit; }
   int32_t get_size() const { return _size; }
   int32_t get_offset() const { return _offset; }
+  int32_t get_schedule_interval() const { return _schedule_interval; }
   double get_fixed_rect_unit() const { return _fixed_rect_unit; }
   double get_routed_rect_unit() const { return _routed_rect_unit; }
   double get_violation_unit() const { return _violation_unit; }
   int32_t get_max_routed_times() const { return _max_routed_times; }
   // setter
-  void set_max_candidate_point_num(const int32_t max_candidate_point_num) { _max_candidate_point_num = max_candidate_point_num; }
   void set_prefer_wire_unit(const double prefer_wire_unit) { _prefer_wire_unit = prefer_wire_unit; }
   void set_non_prefer_wire_unit(const double non_prefer_wire_unit) { _non_prefer_wire_unit = non_prefer_wire_unit; }
   void set_via_unit(const double via_unit) { _via_unit = via_unit; }
   void set_size(const int32_t size) { _size = size; }
   void set_offset(const int32_t offset) { _offset = offset; }
+  void set_schedule_interval(const int32_t schedule_interval) { _schedule_interval = schedule_interval; }
   void set_fixed_rect_unit(const double fixed_rect_unit) { _fixed_rect_unit = fixed_rect_unit; }
   void set_routed_rect_unit(const double routed_rect_unit) { _routed_rect_unit = routed_rect_unit; }
   void set_violation_unit(const double violation_unit) { _violation_unit = violation_unit; }
   void set_max_routed_times(const int32_t max_routed_times) { _max_routed_times = max_routed_times; }
 
  private:
-  int32_t _max_candidate_point_num = 0;
   double _prefer_wire_unit = 0;
   double _non_prefer_wire_unit = 0;
   double _via_unit = 0;
   int32_t _size = -1;
   int32_t _offset = -1;
+  int32_t _schedule_interval = -1;
   double _fixed_rect_unit = 0;
   double _routed_rect_unit = 0;
   double _violation_unit = 0;

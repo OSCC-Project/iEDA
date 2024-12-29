@@ -1,5 +1,5 @@
 initLAModel:初始化la_net_list
-setLAParameter:设置布线参数
+setLAComParam:设置布线参数
 initLATaskList：构建task,有序
 buildLayerNodeMap:初始化graph
 buildLANodeNeighbor:构建graph的邻居

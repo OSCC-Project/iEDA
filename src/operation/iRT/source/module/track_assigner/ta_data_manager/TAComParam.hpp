@@ -18,27 +18,31 @@
 
 namespace irt {
 
-class TAParameter
+class TAComParam
 {
  public:
-  TAParameter() = default;
-  TAParameter(double prefer_wire_unit, double fixed_rect_unit, double routed_rect_unit, double violation_unit, int32_t max_routed_times)
+  TAComParam() = default;
+  TAComParam(double prefer_wire_unit, int32_t schedule_interval, double fixed_rect_unit, double routed_rect_unit, double violation_unit,
+             int32_t max_routed_times)
   {
     _prefer_wire_unit = prefer_wire_unit;
+    _schedule_interval = schedule_interval;
     _fixed_rect_unit = fixed_rect_unit;
     _routed_rect_unit = routed_rect_unit;
     _violation_unit = violation_unit;
     _max_routed_times = max_routed_times;
   }
-  ~TAParameter() = default;
+  ~TAComParam() = default;
   // getter
   double get_prefer_wire_unit() const { return _prefer_wire_unit; }
+  int32_t get_schedule_interval() const { return _schedule_interval; }
   double get_fixed_rect_unit() const { return _fixed_rect_unit; }
   double get_routed_rect_unit() const { return _routed_rect_unit; }
   double get_violation_unit() const { return _violation_unit; }
   int32_t get_max_routed_times() const { return _max_routed_times; }
   // setter
   void set_prefer_wire_unit(const double prefer_wire_unit) { _prefer_wire_unit = prefer_wire_unit; }
+  void set_schedule_interval(const int32_t schedule_interval) { _schedule_interval = schedule_interval; }
   void set_fixed_rect_unit(const double fixed_rect_unit) { _fixed_rect_unit = fixed_rect_unit; }
   void set_routed_rect_unit(const double routed_rect_unit) { _routed_rect_unit = routed_rect_unit; }
   void set_violation_unit(const double violation_unit) { _violation_unit = violation_unit; }
@@ -46,6 +50,7 @@ class TAParameter
 
  private:
   double _prefer_wire_unit = 0;
+  int32_t _schedule_interval = -1;
   double _fixed_rect_unit = 0;
   double _routed_rect_unit = 0;
   double _violation_unit = 0;

@@ -19,8 +19,8 @@
 #include "LayerCoord.hpp"
 #include "LayerRect.hpp"
 #include "PABoxId.hpp"
+#include "PAIterParam.hpp"
 #include "PANode.hpp"
-#include "PAParameter.hpp"
 #include "PATask.hpp"
 #include "PriorityQueue.hpp"
 #include "ScaleAxis.hpp"
@@ -36,7 +36,7 @@ class PABox
   // getter
   EXTPlanarRect& get_box_rect() { return _box_rect; }
   PABoxId& get_pa_box_id() { return _pa_box_id; }
-  PAParameter* get_pa_parameter() { return _pa_parameter; }
+  PAIterParam* get_pa_iter_param() { return _pa_iter_param; }
   bool get_initial_routing() const { return _initial_routing; }
   std::vector<PATask*>& get_pa_task_list() { return _pa_task_list; }
   std::map<bool, std::map<int32_t, std::map<int32_t, std::set<EXTLayerRect*>>>>& get_type_layer_net_fixed_rect_map()
@@ -54,7 +54,7 @@ class PABox
   // setter
   void set_box_rect(const EXTPlanarRect& box_rect) { _box_rect = box_rect; }
   void set_pa_box_id(const PABoxId& pa_box_id) { _pa_box_id = pa_box_id; }
-  void set_pa_parameter(PAParameter* pa_parameter) { _pa_parameter = pa_parameter; }
+  void set_pa_iter_param(PAIterParam* pa_iter_param) { _pa_iter_param = pa_iter_param; }
   void set_initial_routing(const bool initial_routing) { _initial_routing = initial_routing; }
   void set_pa_task_list(const std::vector<PATask*>& pa_task_list) { _pa_task_list = pa_task_list; }
   void set_type_layer_net_fixed_rect_map(
@@ -114,7 +114,7 @@ class PABox
  private:
   EXTPlanarRect _box_rect;
   PABoxId _pa_box_id;
-  PAParameter* _pa_parameter = nullptr;
+  PAIterParam* _pa_iter_param = nullptr;
   bool _initial_routing = true;
   std::vector<PATask*> _pa_task_list;
   std::map<bool, std::map<int32_t, std::map<int32_t, std::set<EXTLayerRect*>>>> _type_layer_net_fixed_rect_map;
