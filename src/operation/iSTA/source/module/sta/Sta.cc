@@ -22,8 +22,6 @@
  * @date 2020-11-27
  */
 
-#include "Sta.hh"
-
 #include <algorithm>
 #include <filesystem>
 #include <map>
@@ -33,6 +31,7 @@
 #include <tuple>
 #include <utility>
 
+#include "Sta.hh"
 #include "StaAnalyze.hh"
 #include "StaApplySdc.hh"
 #include "StaBuildClockTree.hh"
@@ -41,9 +40,11 @@
 #include "StaBuildRCTree.hh"
 #include "StaCheck.hh"
 #include "StaClockPropagation.hh"
+#include "StaClockSlewDelayPropagation.hh"
 #include "StaConstPropagation.hh"
 #include "StaCrossTalkPropagation.hh"
 #include "StaDataPropagation.hh"
+#include "StaDataSlewDelayPropagation.hh"
 #include "StaDelayPropagation.hh"
 #include "StaDump.hh"
 #include "StaFindStartOrEnd.hh"
@@ -64,11 +65,6 @@
 #include "tcl/ScriptEngine.hh"
 #include "time/Time.hh"
 #include "usage/usage.hh"
-
-// // Swig uses C linkage for init functions.
-// extern "C" {
-// extern int Ista_Init(Tcl_Interp *interp);
-// }
 
 namespace ista {
 
@@ -2310,26 +2306,51 @@ unsigned Sta::updateTiming() {
   resetPathData();
 
   StaGraph &the_graph = get_graph();
+  if (_propagation_method == PropagationMethod::kDFS) {
+    // DFS flow
+    Vector<std::function<unsigned(StaGraph *)>> funcs = {
+        StaApplySdc(StaApplySdc::PropType::kApplySdcPreProp),
+        StaConstPropagation(),
+        StaClockPropagation(StaClockPropagation::PropType::kIdealClockProp),
+        StaCombLoopCheck(), StaSlewPropagation(), StaDelayPropagation(),
+        StaClockPropagation(StaClockPropagation::PropType::kNormalClockProp),
+        StaApplySdc(StaApplySdc::PropType::kApplySdcPostNormalClockProp),
+        StaClockPropagation(
+            StaClockPropagation::PropType::kUpdateGeneratedClockProp),
+        StaApplySdc(StaApplySdc::PropType::kApplySdcPostClockProp),
+        StaLevelization(), StaBuildPropTag(StaPropagationTag::TagType::kProp),
+        StaDataPropagation(StaDataPropagation::PropType::kFwdProp),
+        // StaCrossTalkPropagation(),
+        StaDataPropagation(StaDataPropagation::PropType::kIncrFwdProp),
+        StaAnalyze(), StaApplySdc(StaApplySdc::PropType::kApplySdcPostProp),
+        StaDataPropagation(StaDataPropagation::PropType::kBwdProp)};
 
-  Vector<std::function<unsigned(StaGraph *)>> funcs = {
-      StaApplySdc(StaApplySdc::PropType::kApplySdcPreProp),
-      StaConstPropagation(),
-      StaClockPropagation(StaClockPropagation::PropType::kIdealClockProp),
-      StaCombLoopCheck(), StaSlewPropagation(), StaDelayPropagation(),
-      StaClockPropagation(StaClockPropagation::PropType::kNormalClockProp),
-      StaApplySdc(StaApplySdc::PropType::kApplySdcPostNormalClockProp),
-      StaClockPropagation(
-          StaClockPropagation::PropType::kUpdateGeneratedClockProp),
-      StaApplySdc(StaApplySdc::PropType::kApplySdcPostClockProp),
-      StaLevelization(), StaBuildPropTag(StaPropagationTag::TagType::kProp),
-      StaDataPropagation(StaDataPropagation::PropType::kFwdProp),
-      // StaCrossTalkPropagation(),
-      StaDataPropagation(StaDataPropagation::PropType::kIncrFwdProp),
-      StaAnalyze(), StaApplySdc(StaApplySdc::PropType::kApplySdcPostProp),
-      StaDataPropagation(StaDataPropagation::PropType::kBwdProp)};
+    for (auto &func : funcs) {
+      the_graph.exec(func);
+    }
+  } else {
+    // BFS flow
+    Vector<std::function<unsigned(StaGraph *)>> funcs = {
+        StaApplySdc(StaApplySdc::PropType::kApplySdcPreProp),
+        StaConstPropagation(),
+        StaClockPropagation(StaClockPropagation::PropType::kIdealClockProp),
+        StaCombLoopCheck(), StaClockSlewDelayPropagation(), StaLevelization(), 
+        StaDataSlewDelayPropagation(),
+        StaClockPropagation(StaClockPropagation::PropType::kNormalClockProp),
+        StaApplySdc(StaApplySdc::PropType::kApplySdcPostNormalClockProp),
+        StaClockPropagation(
+            StaClockPropagation::PropType::kUpdateGeneratedClockProp),
+        StaApplySdc(StaApplySdc::PropType::kApplySdcPostClockProp),
+        StaBuildPropTag(StaPropagationTag::TagType::kProp),
+        StaDataPropagation(StaDataPropagation::PropType::kFwdProp),
+        // StaCrossTalkPropagation(),
+        StaDataPropagation(StaDataPropagation::PropType::kIncrFwdProp),
+        StaAnalyze(), StaApplySdc(StaApplySdc::PropType::kApplySdcPostProp),
+        StaDataPropagation(StaDataPropagation::PropType::kBwdProp)};
 
-  for (auto &func : funcs) {
-    the_graph.exec(func);
+    for (auto &func : funcs) {
+      the_graph.exec(func);
+    }
   }
 
   LOG_INFO << "update timing end";

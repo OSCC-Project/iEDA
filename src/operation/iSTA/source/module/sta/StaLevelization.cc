@@ -33,7 +33,8 @@ namespace ista {
  * @return unsigned  1 if success, 0 else fail.
  */
 unsigned StaLevelization::operator()(StaVertex* the_vertex) {
-  if (the_vertex->is_start()) {
+  // only levelization data path.
+  if (the_vertex->is_start() || the_vertex->is_clock()) {
     the_vertex->set_level(1);
     return 1;
   }
