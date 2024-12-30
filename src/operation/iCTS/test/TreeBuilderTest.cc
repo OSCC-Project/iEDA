@@ -129,8 +129,7 @@ TEST_F(TreeBuilderTest, CriticalWireLenTest)
   auto libs = CTSAPIInst.getAllBufferLibs();
   auto* model_factory = new icts::ModelFactory();
   auto slew_in = 0.025;
-  auto cap_load = TimingPropagator::getMaxCap() * 0.5;
-  size_t fanout = 4;
+  auto cap_load = 0.02;
   auto r = TimingPropagator::getUnitRes();
   auto c = TimingPropagator::getUnitCap();
   for (auto lib : libs) {
@@ -139,7 +138,7 @@ TEST_F(TreeBuilderTest, CriticalWireLenTest)
     auto cap_pin = lib->get_init_cap();
     auto crit_buf_wl = model_factory->criticalBufWireLen(coeffs[2], coeffs[1], coeffs[0], r, c, cap_pin);
     auto crit_est_wl = model_factory->criticalBufWireLen(coeffs[2], coeffs[1], coeffs[0], r, c, cap_load);
-    auto crit_pair = model_factory->criticalSteinerWireLen(coeffs[2], coeffs[1], coeffs[0], r, c, cap_pin, slew_in, fanout);
+    auto crit_pair = model_factory->criticalSteinerWireLen(coeffs[2], coeffs[1], coeffs[0], r, c, cap_pin, slew_in, cap_load);
     LOG_INFO << "Critical Buffer Wirelength: " << crit_buf_wl;
     LOG_INFO << "Critical EstSteiner Wirelength: " << crit_est_wl;
     if (crit_pair.first.second > 0) {
@@ -152,6 +151,29 @@ TEST_F(TreeBuilderTest, CriticalWireLenTest)
     }
     LOG_INFO << "--------------------------------";
   }
+  std::string output_csv = "./error.csv";
+  std::ofstream ofs(output_csv);
+  ofs << "x,i,k,j,size_i,size_k,size_j,error\n";
+  for (double x = 0.1; x < 1.0; x += 0.1) {
+    for (size_t j = 0; j < libs.size(); ++j) {
+      for (size_t k = j; k < libs.size(); ++k) {
+        for (size_t i = k; i < libs.size(); ++i) {
+          auto lib_i = libs[i];
+          auto lib_k = libs[k];
+          auto lib_j = libs[j];
+          auto coeffs_i = lib_i->get_delay_coef();
+          auto coeffs_k = lib_k->get_delay_coef();
+          auto cap_pin_j = lib_j->get_init_cap();
+          auto cap_pin_k = lib_k->get_init_cap();
+          auto error
+              = model_factory->criticalError(r, c, x, cap_load, cap_pin_j, cap_pin_k, slew_in, coeffs_k[0], coeffs_i[1], coeffs_k[1]);
+          ofs << x << "," << i << "," << k << "," << j << "," << lib_i->get_cell_master() << "," << lib_k->get_cell_master() << ","
+              << lib_j->get_cell_master() << "," << error << "\n";
+        }
+      }
+    }
+  }
+  ofs.close();
 }
 
 TEST_F(TreeBuilderTest, CellLinearDelayModelTest)
