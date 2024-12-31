@@ -20,6 +20,8 @@
 #include "Log.hh"
 #include "lm_file.h"
 #include "lm_graph_check.hh"
+#include "lm_graph_dm.h"
+#include "lm_patch_dm.h"
 #include "lm_wire_pattern.hh"
 
 namespace ilm {
@@ -45,6 +47,12 @@ bool LmDataManager::buildPatternData()
   return true;
 }
 
+bool LmDataManager::buildPatchData(const std::string dir)
+{
+  patch_dm = new LmPatchDataManager(&layout_dm.get_layout());
+  return patch_dm->buildPatchData();
+}
+
 bool LmDataManager::checkData()
 {
   auto& graph = layout_dm.get_graph();
@@ -66,7 +74,7 @@ std::map<int, LmNet> LmDataManager::getGraph(std::string path)
 
 void LmDataManager::saveData(const std::string dir)
 {
-  LmLayoutFileIO file_io(dir, &layout_dm.get_layout());
+  LmLayoutFileIO file_io(dir, &layout_dm.get_layout(), &patch_dm->get_patch_grid());
   file_io.saveJson();
 }
 

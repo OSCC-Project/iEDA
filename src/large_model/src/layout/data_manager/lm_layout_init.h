@@ -24,7 +24,6 @@
 #include "IdbVias.h"
 #include "lm_layer_grid.h"
 #include "lm_layout.h"
-#include "lm_patch.h"
 
 namespace ilm {
 
@@ -45,7 +44,7 @@ class LmLayoutInit
   void initLayers();
   void initTracks(std::string layername = "M2");
   void initTrackGrid(idb::IdbTrackGrid* idb_track_grid);
-  void buildPatchGrid();
+  void buildLayoutGrid();
   void initPDN();
   void initInstances();
   void initIOPins();

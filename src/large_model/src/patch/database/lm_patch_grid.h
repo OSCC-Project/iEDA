@@ -15,25 +15,45 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 #pragma once
-#include <string>
+/**
+ * @project		large model
+ * @date		06/11/2024
+ * @version		0.1
+ * @description
+ *
+ */
 
-#include "lm_layout.h"
-#include "lm_net.h"
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+#include <map>
+#include <string>
+#include <vector>
+
+#include "lm_patch.h"
 
 namespace ilm {
 
-class LmGraphDataManager
+class LmPatchGrid
 {
  public:
-  LmGraphDataManager(LmLayout* layout) { _layout = layout; }
-  ~LmGraphDataManager() {}
+  LmPatchGrid() {}
+  ~LmPatchGrid() {}
 
-  std::map<int, LmNet>& get_graph() { return _layout->get_graph().get_net_map(); }
+  // getter
+  std::map<int, LmPatch>& get_patchs() { return _patchs; }
 
-  bool buildGraphData();
+  // setter
 
+  // operator
+  LmPatch* findPatch(int node_row, int node_col);
+  LmPatch* findPatch(int patch_id);
+
+  LmPatchLayer* findPatchLayer(int patch_id, int layer_id);
+
+ public:
  private:
-  LmLayout* _layout;
+  std::map<int, LmPatch> _patchs;  /// int : patch id
 };
 
 }  // namespace ilm

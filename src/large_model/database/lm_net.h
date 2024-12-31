@@ -69,10 +69,10 @@ static int64_t wire_id_index = 0;
 class LmNetWire
 {
  public:
-  LmNetWire(LmNode* node1 = nullptr, LmNode* node2 = nullptr)
+  LmNetWire(LmNode* node1 = nullptr, LmNode* node2 = nullptr, int id = -1)
   {
     _node_pair = std::make_pair(node1, node2);
-    _id = wire_id_index++;
+    _id = id == -1 ? wire_id_index++ : id;
   };
   ~LmNetWire() { _paths.clear(); }
 
@@ -81,6 +81,7 @@ class LmNetWire
   std::pair<LmNode*, LmNode*>& get_connected_nodes() { return _node_pair; }
   std::vector<std::pair<LmNode*, LmNode*>>& get_paths() { return _paths; }
   LmNetWireFeature* get_feature(bool b_create = false) { return &_feature; }
+  std::map<int, std::set<int>>& get_patchs() { return _patchs; }
 
   // setter
   void set_start(LmNode* node) { _node_pair.first = node; }
@@ -89,14 +90,16 @@ class LmNetWire
   void add_path(LmNode* node1, LmNode* node2);
 
   // operator
+  void addPatch(int patch_id, int layer_id);
 
  private:
   int64_t _id = -1;
   std::pair<LmNode*, LmNode*> _node_pair;
-
   std::vector<std::pair<LmNode*, LmNode*>> _paths;
 
   LmNetWireFeature _feature;
+
+  std::map<int, std::set<int>> _patchs;
 };
 
 class LmNet
@@ -118,6 +121,7 @@ class LmNet
   void addWire(LmNetWire wire);
   void clearWire() { _wires.clear(); }
   void addPinId(int id) { _pin_ids.push_back(id); }
+  LmNetWire* findWire(int64_t wire_id);
 
  private:
   int _net_id = -1;

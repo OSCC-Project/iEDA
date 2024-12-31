@@ -32,23 +32,21 @@
 
 #include "lm_layer_grid.h"
 #include "lm_net.h"
-#include "lm_patch.h"
 
 namespace ilm {
 
-class LmPatchLayer
+class LmLayoutLayer
 {
  public:
-  LmPatchLayer() {}
-  ~LmPatchLayer() {}
+  LmLayoutLayer() {}
+  ~LmLayoutLayer() {}
 
   // getter
   std::string& get_layer_name() { return _layer_name; }
   int get_wire_width() { return _wire_width; }
   bool is_routing() { return _b_routing; }
   LmLayerGrid& get_grid() { return _grid; }
-  std::vector<std::vector<LmPatch>>& get_patch_matrix() { return _patch_matrix; }
-  LmPatch& get_patch(int row_id, int col_id);
+
   std::map<int, LmNet>& get_net_map() { return _net_map; }
   LmNet* get_net(int net_id);
   int get_layer_order() { return _layer_order; }
@@ -78,26 +76,25 @@ class LmPatchLayer
   int _lly;
   int _urx;
   int _ury;
-  int _row_num;  /// patch row number
+  int _row_num;  /// row number
   int _row_space;
-  int _col_num;  /// patch col number
+  int _col_num;  /// col number
   int _col_space;
   LmLayerGrid _grid;
-  std::vector<std::vector<LmPatch>> _patch_matrix;
   std::map<int, LmNet> _net_map;
 };
 
-class LmPatchLayers
+class LmLayoutLayers
 {
  public:
-  LmPatchLayers() {};
-  ~LmPatchLayers() {}
+  LmLayoutLayers() {};
+  ~LmLayoutLayers() {}
 
   // getter
   int get_layer_order_top() { return _layer_order_top; }
   int get_layer_order_bottom() { return _layer_order_bottom; }
-  std::map<int, LmPatchLayer>& get_patch_layer_map() { return _patch_layers; }
-  LmPatchLayer* findPatchLayer(int order);
+  std::map<int, LmLayoutLayer>& get_layout_layer_map() { return _layout_layers; }
+  LmLayoutLayer* findLayoutLayer(int order);
 
   // setter
   void set_layer_order_top(int order) { _layer_order_top = order; }
@@ -108,7 +105,7 @@ class LmPatchLayers
  private:
   int _layer_order_top = -1;
   int _layer_order_bottom = -1;
-  std::map<int, LmPatchLayer> _patch_layers;  /// int : layer order
+  std::map<int, LmLayoutLayer> _layout_layers;  /// int : layer order
 };
 
 }  // namespace ilm

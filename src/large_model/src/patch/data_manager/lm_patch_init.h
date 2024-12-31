@@ -14,26 +14,32 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
+#pragma once
+#include <string>
 
-#include "lm_layout_dm.h"
-
-#include "Log.hh"
-#include "lm_layout_init.h"
-#include "omp.h"
-#include "usage.hh"
+#include "lm_layout.h"
+#include "lm_node.h"
+#include "lm_patch.h"
+#include "lm_patch_grid.h"
 
 namespace ilm {
-bool LmLayoutDataManager::buildLayoutData()
-{
-  init();
 
-  return true;
-}
-
-void LmLayoutDataManager::init()
+class LmPatchInit
 {
-  LmLayoutInit layout_init(&_layout);
-  layout_init.init();
-}
+ public:
+  LmPatchInit(LmLayout* layout, LmPatchGrid* patch_grid) : _layout(layout), _patch_grid(patch_grid) {}
+  ~LmPatchInit() {}
+  void init();
+
+ private:
+  LmLayout* _layout;
+  LmPatchGrid* _patch_grid;
+
+  void init_patch_grid();
+
+  void initSubNet();
+
+  std::map<int, std::pair<LmNode*, LmNode*>> splitWirePath(LmNode* node1, LmNode* node2);
+};
 
 }  // namespace ilm

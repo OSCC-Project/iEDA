@@ -2,7 +2,6 @@ add_library(ilm_layout_db
     lm_layout.cpp
     lm_layer.cpp
     lm_layer_grid.cpp
-    lm_patch.cpp
 )
 
 target_link_libraries(ilm_layout_db

@@ -32,13 +32,7 @@ namespace ilm {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-LmPatch& LmPatchLayer::get_patch(int row_id, int col_id)
-{
-  auto row_patchs = _patch_matrix.at(row_id);
-  return row_patchs.at(col_id);
-}
-
-LmNet* LmPatchLayer::get_net(int net_id)
+LmNet* LmLayoutLayer::get_net(int net_id)
 {
   auto it = _net_map.find(net_id);
   if (it != _net_map.end()) {
@@ -48,7 +42,7 @@ LmNet* LmPatchLayer::get_net(int net_id)
   return nullptr;
 }
 
-LmNet* LmPatchLayer::getOrCreateNet(int net_id)
+LmNet* LmLayoutLayer::getOrCreateNet(int net_id)
 {
   auto* net = get_net(net_id);
   if (net == nullptr) {
@@ -66,11 +60,11 @@ LmNet* LmPatchLayer::getOrCreateNet(int net_id)
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-LmPatchLayer* LmPatchLayers::findPatchLayer(int order)
+LmLayoutLayer* LmLayoutLayers::findLayoutLayer(int order)
 {
-  auto patch_layer = _patch_layers.find(order);
-  if (patch_layer != _patch_layers.end()) {
-    return &patch_layer->second;
+  auto layout_layer = _layout_layers.find(order);
+  if (layout_layer != _layout_layers.end()) {
+    return &layout_layer->second;
   }
 
   return nullptr;

@@ -48,7 +48,7 @@ void LmFeatureDrc::markNodes()
   omp_lock_t lck;
   omp_init_lock(&lck);
 
-  auto& patch_layers = _layout->get_patch_layers();
+  auto& layout_layers = _layout->get_layout_layers();
 
   auto detail_drc_map = iplf::drcInst->getDetailCheckResult(_drc_path);
   int drc_id = 0;
@@ -66,7 +66,7 @@ void LmFeatureDrc::markNodes()
         continue;
       }
 
-      auto& grid = patch_layers.findPatchLayer(order)->get_grid();
+      auto& grid = layout_layers.findLayoutLayer(order)->get_grid();
 
       /// get row & col
       auto* spot_rect = static_cast<idrc::DrcViolationRect*>(drc_spot);
@@ -117,7 +117,7 @@ void LmFeatureDrc::markWires()
 
   LOG_INFO << "LM mark wire drc start...";
 
-  auto& patch_layers = _layout->get_patch_layers();
+  auto& layout_layers = _layout->get_layout_layers();
 
   auto& net_map = _layout->get_graph().get_net_map();
 #pragma omp parallel for schedule(dynamic)
@@ -136,7 +136,7 @@ void LmFeatureDrc::markWires()
       for (auto& [node1, node2] : wire.get_paths()) {
         if (node1->get_layer_id() == node2->get_layer_id()) {
           auto order = node1->get_layer_id();
-          auto& grid = patch_layers.findPatchLayer(order)->get_grid();
+          auto& grid = layout_layers.findLayoutLayer(order)->get_grid();
 
           int min_row = std::min(node1->get_row_id(), node2->get_row_id());
           int max_row = std::max(node1->get_row_id(), node2->get_row_id());
@@ -205,10 +205,10 @@ void LmFeatureDrc::markNets()
 
   std::map<int, std::set<int>> net_drc_map;
 
-  auto& patch_layers = _layout->get_patch_layers();
-  auto& layer_map = patch_layers.get_patch_layer_map();
+  auto& layout_layers = _layout->get_layout_layers();
+  auto& layer_map = layout_layers.get_layout_layer_map();
   for (int layer_id = 0; layer_id < (int) layer_map.size(); ++layer_id) {
-    auto& grid = patch_layers.findPatchLayer(layer_id)->get_grid();
+    auto& grid = layout_layers.findLayoutLayer(layer_id)->get_grid();
     auto& node_matrix = grid.get_node_matrix();
 #pragma omp parallel for schedule(dynamic)
     for (int row = 0; row < gridInfoInst.node_row_num; ++row) {

@@ -31,6 +31,7 @@
 namespace ilm {
 
 LmGridInfo* LmGridInfo::_info_inst = nullptr;
+LmPatchInfo* LmPatchInfo::_info_inst = nullptr;
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -49,8 +50,8 @@ int LmGridInfo::calculate_y(int row)
 
 std::pair<int, int> LmGridInfo::get_node_coodinate(int row_id, int col_id)
 {
-  int x = node_y_start + row_id * y_step;
-  int y = node_x_start + row_id * x_step;
+  int x = node_x_start + col_id * x_step;
+  int y = node_y_start + row_id * y_step;
 
   return std::make_pair(x, y);
 }
@@ -107,6 +108,117 @@ std::tuple<int, int, int, int> LmGridInfo::get_node_id_range(int x1, int x2, int
 
   return std::tuple<int, int, int, int>(std::min(row_id_1, row_id_2), std::max(row_id_1, row_id_2), std::min(col_id_1, col_id_2),
                                         std::max(col_id_1, col_id_2));
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+LmPatchInfo::LmPatchInfo()
+{
+  int core_row_start = gridInfoInst.y_start / gridInfoInst.y_step;
+  int core_col_start = gridInfoInst.x_start / gridInfoInst.x_step;
+
+  patch_row_start = core_row_start % patch_row_step;
+  patch_col_start = core_col_start % patch_col_step;
+
+  set_patch_num();
+}
+
+void LmPatchInfo::set_patch_num()
+{
+  {
+    patch_num_vertical = patch_row_start == 0 ? 0 : 1;
+
+    int row_num = (gridInfoInst.node_row_num - patch_row_start) % patch_row_step == 0
+                      ? (gridInfoInst.node_row_num - patch_row_start) / patch_row_step
+                      : (gridInfoInst.node_row_num - patch_row_start) / patch_row_step + 1;
+
+    patch_num_vertical += row_num;
+  }
+
+  {
+    patch_num_horizontal = patch_col_start == 0 ? 0 : 1;
+
+    int right_num = (gridInfoInst.node_col_num - patch_col_start) % patch_col_step == 0
+                        ? (gridInfoInst.node_col_num - patch_col_start) / patch_col_step
+                        : (gridInfoInst.node_col_num - patch_col_start) / patch_col_step + 1;
+    patch_num_horizontal += right_num;
+  }
+}
+
+int LmPatchInfo::get_patch_id(int node_row, int node_col)
+{
+  return patch_num_horizontal * get_patch_row_id(node_row) + get_patch_col_id(node_col);
+}
+
+int LmPatchInfo::get_patch_row_id(int node_row)
+{
+  int patch_row_id = 0;
+  if (node_row < patch_row_start) {
+    patch_row_id = 0;
+  } else {
+    patch_row_id = patch_row_start == 0 ? 0 : 1;
+    patch_row_id += ((node_row - patch_row_start) / patch_row_step);
+  }
+
+  return patch_row_id;
+}
+
+int LmPatchInfo::get_patch_col_id(int node_col)
+{
+  int patch_col_id = 0;
+  {
+    if (node_col < patch_col_start) {
+      patch_col_id = 0;
+    } else {
+      patch_col_id = patch_col_start == 0 ? 0 : 1;
+      patch_col_id += ((node_col - patch_col_start) / patch_col_step);
+    }
+  }
+
+  return patch_col_id;
+}
+
+std::pair<int, int> LmPatchInfo::get_node_range(int index, bool b_horizontal)
+{
+  int min_id, max_id;
+  if (b_horizontal) {
+    if (patch_col_start == 0) {
+      min_id = index * patch_col_step;
+      max_id = (index + 1) * patch_col_step;
+      max_id = max_id > gridInfoInst.node_col_num ? gridInfoInst.node_col_num : max_id;
+    } else {
+      if (index == 0) {
+        min_id = 0;
+        max_id = patch_col_start;
+      } else if (index == patch_num_horizontal - 1) {
+        min_id = patch_col_start + (index - 1) * patch_col_step;
+        max_id = gridInfoInst.node_col_num;
+      } else {
+        min_id = patch_col_start + (index - 1) * patch_col_step;
+        max_id = patch_col_start + index * patch_col_step;
+      }
+    }
+  } else {
+    if (patch_row_start == 0) {
+      min_id = index * patch_row_step;
+      max_id = (index + 1) * patch_row_step;
+      max_id = max_id > gridInfoInst.node_row_num ? gridInfoInst.node_row_num : max_id;
+    } else {
+      if (index == 0) {
+        min_id = 0;
+        max_id = patch_row_start;
+      } else if (index == patch_num_vertical - 1) {
+        min_id = patch_row_start + (index - 1) * patch_row_step;
+        max_id = gridInfoInst.node_row_num;
+      } else {
+        min_id = patch_row_start + (index - 1) * patch_row_step;
+        max_id = patch_row_start + index * patch_row_step;
+      }
+    }
+  }
+
+  return std::make_pair(min_id, max_id);
 }
 
 }  // namespace ilm

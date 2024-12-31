@@ -29,9 +29,10 @@ namespace ilm {
 
 bool LmGraphDataManager::buildGraphData()
 {
-  auto get_nodes = [&](int x1, int y1, int layer1, int x2, int y2, int layer2, LmPatchLayers& patch_layers) -> std::pair<LmNode*, LmNode*> {
+  auto get_nodes
+      = [&](int x1, int y1, int layer1, int x2, int y2, int layer2, LmLayoutLayers& layout_layers) -> std::pair<LmNode*, LmNode*> {
     if (layer1 == layer2) {
-      auto& grid = patch_layers.findPatchLayer(layer1)->get_grid();
+      auto& grid = layout_layers.findLayoutLayer(layer1)->get_grid();
 
       auto [row1, col1] = gridInfoInst.findNodeID(x1, y1);
       auto* node1 = grid.get_node(row1, col1);
@@ -45,11 +46,11 @@ bool LmGraphDataManager::buildGraphData()
 
       return std::make_pair(node1, node2);
     } else {
-      auto& grid1 = patch_layers.findPatchLayer(layer1)->get_grid();
+      auto& grid1 = layout_layers.findLayoutLayer(layer1)->get_grid();
       auto [row1, col1] = gridInfoInst.findNodeID(x1, y1);
       auto* node1 = grid1.get_node(row1, col1);
 
-      auto& grid2 = patch_layers.findPatchLayer(layer2)->get_grid();
+      auto& grid2 = layout_layers.findLayoutLayer(layer2)->get_grid();
       auto [row2, col2] = gridInfoInst.findNodeID(x2, y2);
       auto* node2 = grid2.get_node(row2, col2);
 
@@ -65,7 +66,7 @@ bool LmGraphDataManager::buildGraphData()
   LmNetGraphGenerator gen;
 
   auto& layout_graph = _layout->get_graph();
-  auto& patch_layers = _layout->get_patch_layers();
+  auto& layout_layers = _layout->get_layout_layers();
 
   for (size_t net_id = 0; net_id < idb_nets.size(); ++net_id) {
     auto* idb_net = idb_nets[net_id];
@@ -93,7 +94,7 @@ bool LmGraphDataManager::buildGraphData()
         auto target_label = wire_graph[target];
 
         auto [node1, node2] = get_nodes(source_label.x, source_label.y, source_label.layer_id, target_label.x, target_label.y,
-                                        target_label.layer_id, patch_layers);
+                                        target_label.layer_id, layout_layers);
 
         /// ignore same node
         if (node1 == node2) {
@@ -122,7 +123,7 @@ bool LmGraphDataManager::buildGraphData()
         auto start_point = point_pair.first;
         auto end_point = point_pair.second;
         auto [node1, node2] = get_nodes(bg::get<0>(start_point), bg::get<1>(start_point), bg::get<2>(start_point), bg::get<0>(end_point),
-                                        bg::get<1>(end_point), bg::get<2>(end_point), patch_layers);
+                                        bg::get<1>(end_point), bg::get<2>(end_point), layout_layers);
 
         /// ignore same node
         if (node1 != node2) {

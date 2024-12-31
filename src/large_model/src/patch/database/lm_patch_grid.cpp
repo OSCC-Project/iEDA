@@ -26,39 +26,43 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-#include <map>
-#include <string>
-#include <vector>
+#include "lm_patch_grid.h"
 
-#include "lm_node.h"
+#include "lm_grid_info.h"
 
 namespace ilm {
-
-class LmPatch
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+LmPatch* LmPatchGrid::findPatch(int node_row, int node_col)
 {
- public:
-  LmPatch() {}
-  ~LmPatch() {}
+  int patch_id = patchInfoInst.get_patch_id(node_row, node_col);
+  auto it = _patchs.find(patch_id);
+  if (it != _patchs.end()) {
+    return &it->second;
+  }
 
-  // getter
-  std::vector<std::vector<LmNode>>& get_node_matrix() { return _node_matrix; }
-  LmNode& get_node(int row_id, int col_id);
+  return nullptr;
+}
 
-  // setter
+LmPatch* LmPatchGrid::findPatch(int patch_id)
+{
+  auto it = _patchs.find(patch_id);
+  if (it != _patchs.end()) {
+    return &it->second;
+  }
 
-  // operator
+  return nullptr;
+}
 
- private:
-  int _llx;
-  int _lly;
-  int _urx;
-  int _ury;
-  int _row_id;        // patch order of layer rows
-  int _col_id;        // patch order of layer cols
-  int _node_row_num;  /// node number on rows
-  int _node_col_num;  /// node number on cols
+LmPatchLayer* LmPatchGrid::findPatchLayer(int patch_id, int layer_id)
+{
+  auto* patch = findPatch(patch_id);
+  if (patch != nullptr) {
+    return patch->findLayer(layer_id);
+  }
 
-  std::vector<std::vector<LmNode>> _node_matrix;
-};
+  return nullptr;
+}
 
 }  // namespace ilm

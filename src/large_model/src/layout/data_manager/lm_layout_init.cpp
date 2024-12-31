@@ -70,12 +70,12 @@ void LmLayoutInit::initDie()
   auto* idb_layout = dmInst->get_idb_layout();
   auto* idb_die = idb_layout->get_die();
 
-  auto& patch_layers = _layout->get_patch_layers();
-  for (auto& [order, patch_layer] : patch_layers.get_patch_layer_map()) {
-    patch_layer.set_llx(idb_die->get_llx());
-    patch_layer.set_lly(idb_die->get_lly());
-    patch_layer.set_urx(idb_die->get_urx());
-    patch_layer.set_ury(idb_die->get_ury());
+  auto& layout_layers = _layout->get_layout_layers();
+  for (auto& [order, layout_layer] : layout_layers.get_layout_layer_map()) {
+    layout_layer.set_llx(idb_die->get_llx());
+    layout_layer.set_lly(idb_die->get_lly());
+    layout_layer.set_urx(idb_die->get_urx());
+    layout_layer.set_ury(idb_die->get_ury());
 
     gridInfoInst.llx = idb_die->get_llx();
     gridInfoInst.lly = idb_die->get_lly();
@@ -90,8 +90,8 @@ void LmLayoutInit::initLayers()
   auto* idb_layers = idb_layout->get_layers();
   auto idb_layer_1st = dmInst->get_config().get_routing_layer_1st();
 
-  auto& patch_layers = _layout->get_patch_layers();
-  auto& patch_layer_map = patch_layers.get_patch_layer_map();
+  auto& layout_layers = _layout->get_layout_layers();
+  auto& layout_layer_map = layout_layers.get_layout_layer_map();
 
   bool b_record = false;
   int index = 0;
@@ -103,20 +103,20 @@ void LmLayoutInit::initLayers()
     if (true == b_record) {
       _layout->add_layer_map(index, idb_layer->get_name());
 
-      LmPatchLayer patch_layer;
-      patch_layer.set_layer_name(idb_layer->get_name());
-      patch_layer.set_layer_order(index);
-      patch_layer.set_as_routing(idb_layer->is_routing());
+      LmLayoutLayer layout_layer;
+      layout_layer.set_layer_name(idb_layer->get_name());
+      layout_layer.set_layer_order(index);
+      layout_layer.set_as_routing(idb_layer->is_routing());
       if (idb_layer->is_routing()) {
         auto* routing_layer = dynamic_cast<IdbLayerRouting*>(idb_layer);
-        patch_layer.set_horizontal(routing_layer->is_horizontal());
-        patch_layer.set_wire_width(routing_layer->get_width());
+        layout_layer.set_horizontal(routing_layer->is_horizontal());
+        layout_layer.set_wire_width(routing_layer->get_width());
       }
 
-      auto& grid = patch_layer.get_grid();
+      auto& grid = layout_layer.get_grid();
       grid.layer_order = index;
 
-      patch_layer_map.insert(std::make_pair(index, patch_layer));
+      layout_layer_map.insert(std::make_pair(index, layout_layer));
 
       index++;
 
@@ -126,8 +126,8 @@ void LmLayoutInit::initLayers()
     }
   }
 
-  patch_layers.set_layer_order_bottom(0);
-  patch_layers.set_layer_order_top(index - 1);
+  layout_layers.set_layer_order_bottom(0);
+  layout_layers.set_layer_order_top(index - 1);
 
   LOG_INFO << "Layer number : " << index;
 }
@@ -159,13 +159,13 @@ void LmLayoutInit::initTracks(std::string layername)
   auto* idb_track_grid_prefer = (dynamic_cast<idb::IdbLayerRouting*>(idb_layer))->get_prefer_track_grid();
   auto* idb_track_grid_nonprefer = (dynamic_cast<idb::IdbLayerRouting*>(idb_layer))->get_nonprefer_track_grid();
 
-  auto& patch_layers = _layout->get_patch_layers();
-  auto& patch_layer_map = patch_layers.get_patch_layer_map();
+  auto& layout_layers = _layout->get_layout_layers();
+  auto& layout_layer_map = layout_layers.get_layout_layer_map();
 
   initTrackGrid(idb_track_grid_prefer);
   initTrackGrid(idb_track_grid_nonprefer);
 
-  buildPatchGrid();
+  buildLayoutGrid();
 
   LOG_INFO << "LM memory usage " << stats.memoryDelta() << " MB";
   LOG_INFO << "LM elapsed time " << stats.elapsedRunTime() << " s";
@@ -173,19 +173,19 @@ void LmLayoutInit::initTracks(std::string layername)
   LOG_INFO << "LM init tracks end...";
 }
 
-void LmLayoutInit::buildPatchGrid()
+void LmLayoutInit::buildLayoutGrid()
 {
-  auto& patch_layers = _layout->get_patch_layers();
-  auto& patch_layer_map = patch_layers.get_patch_layer_map();
+  auto& layout_layers = _layout->get_layout_layers();
+  auto& layout_layer_map = layout_layers.get_layout_layer_map();
   // #pragma omp parallel for schedule(dynamic)
-  for (int i = 0; i < (int) patch_layer_map.size(); ++i) {
-    //   for (auto& [order, patch_layer] : patch_layer_map) {
-    auto it = patch_layer_map.begin();
+  for (int i = 0; i < (int) layout_layer_map.size(); ++i) {
+    //   for (auto& [order, layout_layer] : layout_layer_map) {
+    auto it = layout_layer_map.begin();
     std::advance(it, i);
     auto order = it->first;
-    auto& patch_layer = it->second;
+    auto& layout_layer = it->second;
 
-    auto& grid = patch_layer.get_grid();
+    auto& grid = layout_layer.get_grid();
     auto [node_row_num, node_col_num] = grid.buildNodeMatrix(order);
 
     LOG_INFO << "LM layer order : " << order << ", row = " << node_row_num << ", col = " << node_col_num;
@@ -194,17 +194,17 @@ void LmLayoutInit::buildPatchGrid()
 
 void LmLayoutInit::transVia(idb::IdbVia* idb_via, int net_id, LmNodeTYpe type)
 {
-  auto& patch_layers = _layout->get_patch_layers();
+  auto& layout_layers = _layout->get_layout_layers();
 
   /// cut layer
   auto cut_layer_shape = idb_via->get_cut_layer_shape();
   auto order = _layout->findLayerId(cut_layer_shape.get_layer()->get_name());
-  auto* patch_layer = patch_layers.findPatchLayer(order);
-  if (nullptr == patch_layer) {
+  auto* layout_layer = layout_layers.findLayoutLayer(order);
+  if (nullptr == layout_layer) {
     LOG_WARNING << "Can not get layer order : " << cut_layer_shape.get_layer()->get_name();
     return;
   }
-  auto& grid = patch_layer->get_grid();
+  auto& grid = layout_layer->get_grid();
   auto* via_coordinate = idb_via->get_coordinate();
   auto [row, col] = gridInfoInst.findNodeID(via_coordinate->get_x(), via_coordinate->get_y());
 
@@ -238,7 +238,7 @@ void LmLayoutInit::initPDN()
   ieda::Stats stats;
 
   LOG_INFO << "LM init PDN start...";
-  auto& patch_layers = _layout->get_patch_layers();
+  auto& layout_layers = _layout->get_layout_layers();
 
   auto* idb_design = dmInst->get_idb_design();
   auto* idb_pdn = idb_design->get_special_net_list();
@@ -294,12 +294,12 @@ void LmLayoutInit::initPDN()
 
           /// build grid
           auto order = _layout->findLayerId(routing_layer->get_name());
-          auto* patch_layer = patch_layers.findPatchLayer(order);
-          if (nullptr == patch_layer) {
+          auto* layout_layer = layout_layers.findLayoutLayer(order);
+          if (nullptr == layout_layer) {
             LOG_WARNING << "Can not get layer order : " << routing_layer->get_name();
             continue;
           }
-          auto& grid = patch_layer->get_grid();
+          auto& grid = layout_layer->get_grid();
           auto [row_1, row_2, co_1, col_2] = gridInfoInst.get_node_id_range(ll_x, ur_x, ll_y, ur_y);
           for (int row = row_1; row <= row_2; ++row) {
             for (int col = co_1; col <= col_2; ++col) {
@@ -347,7 +347,7 @@ void LmLayoutInit::initInstances()
 
   LOG_INFO << "LM init instances start...";
 
-  auto& patch_layers = _layout->get_patch_layers();
+  auto& layout_layers = _layout->get_layout_layers();
 
   auto* idb_design = dmInst->get_idb_design();
   auto* idb_insts = idb_design->get_instance_list();
@@ -371,8 +371,8 @@ void LmLayoutInit::initInstances()
     for (auto* layer_shape : idb_inst->get_obs_box_list()) {
       auto* layer = layer_shape->get_layer();
       auto order = _layout->findLayerId(layer->get_name());
-      auto* patch_layer = patch_layers.findPatchLayer(order);
-      if (nullptr == patch_layer) {
+      auto* layout_layer = layout_layers.findLayoutLayer(order);
+      if (nullptr == layout_layer) {
         LOG_WARNING << "Can not get layer order : " << layer->get_name();
         continue;
       }
@@ -402,7 +402,7 @@ void LmLayoutInit::initIOPins()
   auto* idb_design = dmInst->get_idb_design();
   auto* idb_iopins = idb_design->get_io_pin_list();
 
-  auto& patch_layers = _layout->get_patch_layers();
+  auto& layout_layers = _layout->get_layout_layers();
 
   for (auto* io_pin : idb_iopins->get_pin_list()) {
     /// net io pin has been built in init net flow
@@ -415,20 +415,20 @@ void LmLayoutInit::initIOPins()
 
 void LmLayoutInit::transPin(idb::IdbPin* idb_pin, int net_id, int pin_id, bool b_io)
 {
-  auto& patch_layers = _layout->get_patch_layers();
+  auto& layout_layers = _layout->get_layout_layers();
   for (auto* layer_shape : idb_pin->get_port_box_list()) {
     auto order = _layout->findLayerId(layer_shape->get_layer()->get_name());
-    auto* patch_layer = patch_layers.findPatchLayer(order);
-    if (nullptr == patch_layer) {
+    auto* layout_layer = layout_layers.findLayoutLayer(order);
+    if (nullptr == layout_layer) {
       LOG_WARNING << "Can not get layer order : " << layer_shape->get_layer()->get_name();
       continue;
     }
-    auto& grid = patch_layer->get_grid();
+    auto& grid = layout_layer->get_grid();
 
     if (layer_shape->is_via()) {
       for (IdbRect* rect : layer_shape->get_rect_list()) {
         /// build grid
-        auto& grid = patch_layer->get_grid();
+        auto& grid = layout_layer->get_grid();
         auto [row_id, col_id] = gridInfoInst.findNodeID(rect->get_middle_point_x(), rect->get_middle_point_y());
         auto* node = grid.get_node(row_id, col_id, true);
         node->set_col_id(col_id);
@@ -492,16 +492,16 @@ void LmLayoutInit::transPin(idb::IdbPin* idb_pin, int net_id, int pin_id, bool b
 
 void LmLayoutInit::transNetRect(int32_t ll_x, int32_t ll_y, int32_t ur_x, int32_t ur_y, std::string layer_name, int net_id)
 {
-  auto& patch_layers = _layout->get_patch_layers();
+  auto& layout_layers = _layout->get_layout_layers();
 
   auto order = _layout->findLayerId(layer_name);
-  auto* patch_layer = patch_layers.findPatchLayer(order);
-  if (nullptr == patch_layer) {
+  auto* layout_layer = layout_layers.findLayoutLayer(order);
+  if (nullptr == layout_layer) {
     LOG_WARNING << "Can not get layer order : " << layer_name;
     return;
   }
 
-  auto& grid = patch_layer->get_grid();
+  auto& grid = layout_layer->get_grid();
   auto [row_1, row_2, col_1, col_2] = gridInfoInst.get_node_id_range(ll_x, ur_x, ll_y, ur_y);
   /// net wire must only occupy one grid size
   for (int row = row_1; row <= row_2; ++row) {
@@ -522,15 +522,15 @@ void LmLayoutInit::transNetRect(int32_t ll_x, int32_t ll_y, int32_t ur_x, int32_
 void LmLayoutInit::transEnclosure(int32_t ll_x, int32_t ll_y, int32_t ur_x, int32_t ur_y, std::string layer_name, int net_id, int via_row,
                                   int via_col)
 {
-  auto& patch_layers = _layout->get_patch_layers();
+  auto& layout_layers = _layout->get_layout_layers();
 
   auto order = _layout->findLayerId(layer_name);
-  auto* patch_layer = patch_layers.findPatchLayer(order);
-  if (nullptr == patch_layer) {
+  auto* layout_layer = layout_layers.findLayoutLayer(order);
+  if (nullptr == layout_layer) {
     LOG_WARNING << "Can not get layer order : " << layer_name;
     return;
   }
-  auto& grid = patch_layer->get_grid();
+  auto& grid = layout_layer->get_grid();
   auto [row_1, row_2, col_1, col_2] = gridInfoInst.get_node_id_range(ll_x, ur_x, ll_y, ur_y);
 
   for (int row = row_1; row <= row_2; ++row) {
@@ -549,15 +549,15 @@ void LmLayoutInit::transEnclosure(int32_t ll_x, int32_t ll_y, int32_t ur_x, int3
 
 void LmLayoutInit::transNetDelta(int32_t ll_x, int32_t ll_y, int32_t ur_x, int32_t ur_y, std::string layer_name, int net_id)
 {
-  auto& patch_layers = _layout->get_patch_layers();
+  auto& layout_layers = _layout->get_layout_layers();
 
   auto order = _layout->findLayerId(layer_name);
-  auto* patch_layer = patch_layers.findPatchLayer(order);
-  if (nullptr == patch_layer) {
+  auto* layout_layer = layout_layers.findLayoutLayer(order);
+  if (nullptr == layout_layer) {
     LOG_WARNING << "Can not get layer order : " << layer_name;
     return;
   }
-  auto& grid = patch_layer->get_grid();
+  auto& grid = layout_layer->get_grid();
   auto [row_1, row_2, col_1, col_2] = gridInfoInst.get_node_id_range(ll_x, ur_x, ll_y, ur_y);
 
   for (int row = row_1; row <= row_2; ++row) {

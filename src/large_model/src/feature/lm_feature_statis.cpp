@@ -38,7 +38,7 @@ void LmFeatureStatis::build()
 
   LOG_INFO << "LM build statis feature start...";
 
-  auto& patch_layers = _layout->get_patch_layers();
+  auto& layout_layers = _layout->get_layout_layers();
 
   // get egr_layer_map, which is a map of layer name to a 2D vector of congestion value.
   auto egr_layer_map = CONGESTION_API_INST->getEGRMap();
@@ -71,12 +71,12 @@ void LmFeatureStatis::build()
       for (auto& [node1, node2] : wire.get_paths()) {
         if (node1->get_layer_id() == node2->get_layer_id()) {
           auto order = node1->get_layer_id();
-          auto* patch_layer = patch_layers.findPatchLayer(order);
-          auto& grid = patch_layer->get_grid();
-          auto layer_name = patch_layer->get_layer_name();
+          auto* layout_layer = layout_layers.findLayoutLayer(order);
+          auto& grid = layout_layer->get_grid();
+          auto layer_name = layout_layer->get_layer_name();
 
           /// set feature
-          wire_feature->wire_width = patch_layer->get_wire_width();
+          wire_feature->wire_width = layout_layer->get_wire_width();
 
           int min_row = std::min(node1->get_row_id(), node2->get_row_id());
           int max_row = std::max(node1->get_row_id(), node2->get_row_id());
