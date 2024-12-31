@@ -33,7 +33,7 @@ include_directories(${HOME_THIRDPARTY}/pybind11)
 
 
 if (USE_GPU)
-message("power use gpu mode.")
+message("STATUS power use gpu mode.")
 add_subdirectory(source/gpu-kernel)
 endif()
 
