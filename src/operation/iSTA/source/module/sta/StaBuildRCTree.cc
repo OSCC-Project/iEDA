@@ -68,6 +68,7 @@ std::unique_ptr<RcNet> StaBuildRCTree::createRcNet(Net* net) {
  * @return unsigned
  */
 unsigned StaBuildRCTree::operator()(StaGraph* the_graph) {
+  ieda::Stats stats;
   LOG_INFO << "build rc tree start";
 
   LOG_INFO << "read spef " << _spef_file_name << " start";
@@ -235,6 +236,11 @@ unsigned StaBuildRCTree::operator()(StaGraph* the_graph) {
   // printYamlText("spef.yaml");
 
   LOG_INFO << "build rc tree end";
+
+  double memory_delta = stats.memoryDelta();
+  LOG_INFO << "build rc tree " << memory_delta << "MB";
+  double time_delta = stats.elapsedRunTime();
+  LOG_INFO << "build rc tree " << time_delta << "s";
 
   return is_ok;
 }

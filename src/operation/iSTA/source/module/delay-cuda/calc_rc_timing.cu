@@ -52,6 +52,7 @@
 #include <cuda_runtime.h>
 
 #include "delay/ElmoreDelayCalc.hh"
+#include "usage/usage.hh"
 
 namespace ista {
 
@@ -254,6 +255,9 @@ __global__ void kernel_update_response(int* start_array, float* res_array,
  * @return void
  */
 void calc_rc_timing(std::vector<RcNet*> all_nets) {
+  ieda::Stats stats;
+  LOG_INFO << "calc rc timing start";
+
   std::vector<int> start_array{0};
   unsigned long total_nodes_num = 0;
   // start_array: last element is the end position of the last tree.
@@ -434,6 +438,13 @@ void calc_rc_timing(std::vector<RcNet*> all_nets) {
   kernel_update_response<<<num_blocks, block_size>>>(
       gpu_start_array, gpu_res_array, gpu_ldelay_array, gpu_ndelay_array,
       gpu_beta_array, gpu_impulse_array, gpu_parent_pos_array, total_nets_num);
+  
+  // get launch kernel error status
+  auto err = cudaGetLastError();
+  if (err!= cudaSuccess) {
+      LOG_ERROR << "Kernel launch failed: " << cudaGetErrorString(err);
+  }
+
   cudaDeviceSynchronize();
 
   LOG_INFO << "finish gpu kernel to calc elmore delay threads num " << num_gpu_threads;
@@ -632,6 +643,13 @@ void calc_rc_timing(std::vector<RcNet*> all_nets) {
   cudaFree(gpu_impulse_array);
 
   LOG_INFO << "finish copy gpu data to cpu memory and free gpu memory";
+
+  LOG_INFO << "calc rc timing end";
+
+  double memory_delta = stats.memoryDelta();
+  LOG_INFO << "build rc tree " << memory_delta << "MB";
+  double time_delta = stats.elapsedRunTime();
+  LOG_INFO << "build rc tree " << time_delta << "s";
 }
 
 }  // namespace ista

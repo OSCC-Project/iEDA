@@ -1,5 +1,5 @@
 initTGModel:初始化model
-setTGParameter:设置tg_model的参数
+setTGComParam:设置tg_model的参数
 initTGTaskList:构建TGTask,数据结构是TGNet
 buildTGNodeMap:构建Graph,只有节点,其他信息后续构建
 buildTGNodeNeighbor:将所有节点连接

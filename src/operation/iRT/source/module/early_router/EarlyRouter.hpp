@@ -50,7 +50,7 @@ class EarlyRouter
   ERModel initERModel();
   std::vector<ERNet> convertToERNetList(std::vector<Net>& net_list);
   ERNet convertToERNet(Net& net);
-  void setERParameter(ERModel& er_model);
+  void setERComParam(ERModel& er_model);
   void generateAccessPoint(ERModel& er_model);
   void initERTaskList(ERModel& er_model);
   void buildPlanarNodeMap(ERModel& er_model);

@@ -11,14 +11,6 @@ find_package(GTest REQUIRED)
 aux_source_directory(. SourceFiles)
 add_executable(iSTATest ${SourceFiles})
 
-if(${CMAKE_BUILD_TYPE} STREQUAL "RELEASE")
-    set(NVCC_FLAGS -O3)
-    message(STATUS "${lib_name} compile cuda code in release mode")
-else()
-    set(NVCC_FLAGS -G -g)
-    message(STATUS "${lib_name} compile cuda code in debug mode")
-endif()
-
 target_link_libraries(iSTATest ista-engine inference
 sdc-cmd shell-cmd sta log str time netlist liberty
 delay delay-gpu ista_utility sta-solver verilog graph idb
