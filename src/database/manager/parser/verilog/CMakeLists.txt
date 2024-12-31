@@ -23,7 +23,7 @@ else()
 endif()
 
 
-message("verilog parser rust lib path ${RUST_LIB_PATH}")
+message(STATUS "verilog parser rust lib path ${RUST_LIB_PATH}")
 
 ADD_EXTERNAL_PROJ(verilog)
 
