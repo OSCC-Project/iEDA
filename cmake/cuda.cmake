@@ -23,7 +23,7 @@ endif()
 
 set(lib_name ${proj_name})
 
-if(${CMAKE_BUILD_TYPE} STREQUAL "RELEASE")
+if(${CMAKE_BUILD_TYPE} STREQUAL "Release")
     set(NVCC_FLAGS -O3)
     message(STATUS "${lib_name} compile cuda code in release mode")
 else()
