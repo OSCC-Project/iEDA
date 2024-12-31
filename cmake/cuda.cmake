@@ -2,15 +2,18 @@ macro(ADD_CUDA_PROJ proj_name)
 
 cmake_minimum_required(VERSION 3.15.0)
 
-cmake_policy(SET CMP0104 NEW)
-set(CMAKE_CUDA_ARCHITECTURES native)
-# set(CMAKE_CUDA_ARCHITECTURES "80") # set architecture according your platform
+cmake_policy(SET CMP0128 NEW)
+
+# set(CMAKE_CUDA_ARCHITECTURES native)
+set(CMAKE_CUDA_ARCHITECTURES "80") # set architecture according your platform
 
 # set(CMAKE_BUILD_TYPE "Debug")
 find_package(CUDAToolkit)
 
 set(CMAKE_CUDA_STANDARD 17)
 add_compile_options(-std=c++17)
+
+set(CMAKE_CUDA_FLAGS_INIT "-std=c++17")
 
 enable_language(CUDA)
 

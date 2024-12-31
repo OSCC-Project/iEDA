@@ -49,7 +49,7 @@ class TopologyGenerator
   TGModel initTGModel();
   std::vector<TGNet> convertToTGNetList(std::vector<Net>& net_list);
   TGNet convertToTGNet(Net& net);
-  void setTGParameter(TGModel& tg_model);
+  void setTGComParam(TGModel& tg_model);
   void initTGTaskList(TGModel& tg_model);
   void buildTGNodeMap(TGModel& tg_model);
   void buildTGNodeNeighbor(TGModel& tg_model);

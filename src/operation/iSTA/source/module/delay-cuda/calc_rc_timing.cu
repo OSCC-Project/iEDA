@@ -52,6 +52,7 @@
 #include <cuda_runtime.h>
 
 #include "delay/ElmoreDelayCalc.hh"
+#include "usage/usage.hh"
 
 namespace ista {
 
@@ -254,6 +255,9 @@ __global__ void kernel_update_response(int* start_array, float* res_array,
  * @return void
  */
 void calc_rc_timing(std::vector<RcNet*> all_nets) {
+  ieda::Stats stats;
+  LOG_INFO << "calc rc timing start";
+
   std::vector<int> start_array{0};
   unsigned long total_nodes_num = 0;
   // start_array: last element is the end position of the last tree.
@@ -322,6 +326,8 @@ void calc_rc_timing(std::vector<RcNet*> all_nets) {
     res_array.insert(res_array.end(), rct->get_res_array().begin(),
                      rct->get_res_array().end());
   }
+
+  LOG_INFO << "start alloc gpu memory and copy cpu data to gpu memory";
 
   // initGpuMemory
   int* gpu_start_array =
@@ -402,16 +408,22 @@ void calc_rc_timing(std::vector<RcNet*> all_nets) {
                   stream1);
   cudaStreamSynchronize(stream1);
 
+  LOG_INFO << "finish alloc gpu memory and copy cpu data to gpu memory";
+
   // launch kernel：kernelUpdateLoad
   auto total_nets_num = all_nets.size();
   dim3 block_size(256, 4);
   dim3 num_blocks((total_nets_num + block_size.x - 1) / block_size.x, 1);
 
+  unsigned num_gpu_threads = num_blocks.x * num_blocks.y * block_size.x * block_size.y;
+
+  LOG_INFO << "start gpu kernel to calc elmore delay threads num " << num_gpu_threads;
+
   printf(
       "use grid dims (%d, %d) with block dims (%d, %d), total threads: %d, "
       "start run gpu kernel to speedup elmore delay.\n",
       num_blocks.x, num_blocks.y, block_size.x, block_size.y,
-      num_blocks.x * num_blocks.y * block_size.x * block_size.y);
+      num_gpu_threads);
   // ieda::Stats stats;
   kernel_update_load<<<num_blocks, block_size>>>(
       gpu_start_array, gpu_cap_array, gpu_ncap_array, gpu_load_array,
@@ -426,7 +438,18 @@ void calc_rc_timing(std::vector<RcNet*> all_nets) {
   kernel_update_response<<<num_blocks, block_size>>>(
       gpu_start_array, gpu_res_array, gpu_ldelay_array, gpu_ndelay_array,
       gpu_beta_array, gpu_impulse_array, gpu_parent_pos_array, total_nets_num);
+  
+  // get launch kernel error status
+  auto err = cudaGetLastError();
+  if (err!= cudaSuccess) {
+      LOG_ERROR << "Kernel launch failed: " << cudaGetErrorString(err);
+  }
+
   cudaDeviceSynchronize();
+
+  LOG_INFO << "finish gpu kernel to calc elmore delay threads num " << num_gpu_threads;
+
+  LOG_INFO << "start copy gpu data to cpu memory";
   // LOG_INFO << "calculate rc timing end";
   // // LOG_INFO << "calculate rc timing net num: " << all_nets.size();
   // double memory_delta = stats.memoryDelta();
@@ -618,6 +641,15 @@ void calc_rc_timing(std::vector<RcNet*> all_nets) {
   cudaFree(gpu_ldelay_array);
   cudaFree(gpu_beta_array);
   cudaFree(gpu_impulse_array);
+
+  LOG_INFO << "finish copy gpu data to cpu memory and free gpu memory";
+
+  LOG_INFO << "calc rc timing end";
+
+  double memory_delta = stats.memoryDelta();
+  LOG_INFO << "build rc tree " << memory_delta << "MB";
+  double time_delta = stats.elapsedRunTime();
+  LOG_INFO << "build rc tree " << time_delta << "s";
 }
 
 }  // namespace ista
