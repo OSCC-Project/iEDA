@@ -20,7 +20,7 @@ else()
     set(RUST_BUILD_CMD_OPTION "--release")
 endif()
 
-message("spef parser rust lib path ${RUST_LIB_PATH}")
+message(STATUS "spef parser rust lib path ${RUST_LIB_PATH}")
 
 ADD_EXTERNAL_PROJ(spef)
 

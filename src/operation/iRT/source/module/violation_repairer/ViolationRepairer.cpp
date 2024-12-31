@@ -134,12 +134,14 @@ void ViolationRepairer::initNetFinalResultMap(VRModel& vr_model)
   for (int32_t x = 0; x < gcell_map.get_x_size(); x++) {
     for (int32_t y = 0; y < gcell_map.get_y_size(); y++) {
       std::map<int32_t, std::set<Segment<LayerCoord>*>>& net_final_result_map = gcell_map[x][y].get_net_final_result_map();
-      for (auto& [net_idx, segment_set] : gcell_map[x][y].get_net_access_result_map()) {
-        for (Segment<LayerCoord>* segment : segment_set) {
-          net_final_result_map[net_idx].insert(segment);
+      for (auto& [net_idx, pin_access_result_map] : gcell_map[x][y].get_net_pin_access_result_map()) {
+        for (auto& [pin_idx, segment_set] : pin_access_result_map) {
+          for (Segment<LayerCoord>* segment : segment_set) {
+            net_final_result_map[net_idx].insert(segment);
+          }
         }
       }
-      gcell_map[x][y].get_net_access_result_map().clear();
+      gcell_map[x][y].get_net_pin_access_result_map().clear();
       for (auto& [net_idx, segment_set] : gcell_map[x][y].get_net_detailed_result_map()) {
         for (Segment<LayerCoord>* segment : segment_set) {
           net_final_result_map[net_idx].insert(segment);

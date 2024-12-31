@@ -374,12 +374,12 @@ class RctEdge {
   RctNode& _from;
   RctNode& _to;
 
+  double _res = 0.0;
+
   unsigned _is_break : 1;
   unsigned _is_visited : 1;
   unsigned _is_in_order : 1;
-  unsigned _reserved : 30;
-
-  double _res = 0.0;
+  unsigned _reserved : 29;
 
   FORBIDDEN_COPY(RctEdge);
 };
