@@ -19,10 +19,10 @@
 #include "ChangeType.hpp"
 #include "Config.hpp"
 #include "DRBoxId.hpp"
+#include "DRIterParam.hpp"
 #include "DRModel.hpp"
 #include "DRNet.hpp"
 #include "DRNode.hpp"
-#include "DRParameter.hpp"
 #include "DataManager.hpp"
 #include "Database.hpp"
 #include "Net.hpp"
@@ -56,7 +56,9 @@ class DetailedRouter
   std::vector<DRNet> convertToDRNetList(std::vector<Net>& net_list);
   DRNet convertToDRNet(Net& net);
   void iterativeDRModel(DRModel& dr_model);
-  void setDRParameter(DRModel& dr_model, int32_t iter, DRParameter& dr_parameter);
+  void initRoutingState(DRModel& dr_model);
+  void setDRIterParam(DRModel& dr_model, int32_t iter, DRIterParam& dr_iter_param);
+  void resetRoutingState(DRModel& dr_model);
   void initDRBoxMap(DRModel& dr_model);
   void buildBoxSchedule(DRModel& dr_model);
   void splitNetResult(DRModel& dr_model);
