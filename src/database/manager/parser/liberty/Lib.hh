@@ -146,8 +146,15 @@ class LibTable : public LibObject {
     kFallCurrent = 7,
     // power
     kRisePower = 8,
-    kFallPower = 9
+    kFallPower = 9,
+    // sigma
+    kCellRiseSigma = 10,
+    kCellFallSigma = 12,
+    kRiseTransitionSigma = 14,
+    kFallTransitionSigma = 16
   };
+
+  enum class CornerType : int { kDefault = 0, kEarly = 1, kLate = 2 };
 
   static const std::map<std::string, TableType> _str2TableType;
   static const unsigned _time_index = 2;
@@ -173,6 +180,9 @@ class LibTable : public LibObject {
   }
   auto& get_table_values() { return _table_values; }
 
+  void set_corner_type(CornerType corner_type) { _corner_type = corner_type; }
+  CornerType get_corner_type() { return _corner_type; }
+
   TableType get_table_type() { return _table_type; }
 
   void set_table_template(LibLutTableTemplate* table_template) {
@@ -191,6 +201,7 @@ class LibTable : public LibObject {
       _table_values;      //!< The axis values.
   TableType _table_type;  //!< The table type.
 
+  CornerType _corner_type = CornerType::kDefault;
   LibLutTableTemplate* _table_template;  //!< The lut template.
 
   FORBIDDEN_COPY(LibTable);
@@ -320,9 +331,19 @@ class LibTableModel : public LibObject {
     LOG_FATAL << "not support";
     return 0.0;
   }
+  virtual std::optional<double> gateDelaySigma(AnalysisMode mode,
+                                               TransType trans_type,
+                                               double slew, double load) {
+    return 0.0;
+  }
   virtual std::optional<double> gateSlew(TransType trans_type, double slew,
                                          double load) {
     LOG_FATAL << "not support";
+    return 0.0;
+  }
+  virtual std::optional<double> gateSlewSigma(AnalysisMode mode,
+                                              TransType trans_type, double slew,
+                                              double load) {
     return 0.0;
   }
   virtual std::optional<double> gateCheckConstrain(TransType trans_type,
@@ -362,7 +383,8 @@ class LibTableModel : public LibObject {
 class LibDelayTableModel final : public LibTableModel {
  public:
   static constexpr size_t kTableNum =
-      4;  //!< The model contain delay/slew, rise/fall four table.
+      12;  //!< The model contain delay/slew, rise/fall four table, eight sigma
+           //!< table(rise/fall, early/late, delay/slew ).
   static constexpr size_t kCurrentTableNum = 2;  //!< Current rise/fall table.
 
   unsigned isDelayModel() override { return 1; }
@@ -373,9 +395,21 @@ class LibDelayTableModel final : public LibTableModel {
   LibDelayTableModel(LibDelayTableModel&& other) noexcept;
   LibDelayTableModel& operator=(LibDelayTableModel&& rhs) noexcept;
 
+  int calcShiftIndex(LibTable::CornerType corner_type) {
+    int shift = 0;
+    if (corner_type != LibTable::CornerType::kDefault) {
+      shift = -2 + (static_cast<int>(corner_type) - 1);
+    }
+    return shift;
+  }
+
   unsigned addTable(std::unique_ptr<LibTable>&& table) {
     auto table_type = table->get_table_type();
-    _tables[CAST_TYPE_TO_INDEX(table_type)] = std::move(table);
+    int index = CAST_TYPE_TO_INDEX(table_type);
+    int shift_index = calcShiftIndex(table->get_corner_type());
+    index += shift_index;
+
+    _tables.at(index) = std::move(table);
     return 1;
   }
 
@@ -389,8 +423,12 @@ class LibDelayTableModel final : public LibTableModel {
 
   std::optional<double> gateDelay(TransType trans_type, double slew,
                                   double load) override;
+  std::optional<double> gateDelaySigma(AnalysisMode mode, TransType trans_type,
+                                       double slew, double load) override;
   std::optional<double> gateSlew(TransType trans_type, double slew,
                                  double load) override;
+  std::optional<double> gateSlewSigma(AnalysisMode mode, TransType trans_type,
+                                      double slew, double load) override;
   std::unique_ptr<LibCurrentData> gateOutputCurrent(TransType trans_type,
                                                     double slew,
                                                     double load) override;
@@ -904,7 +942,11 @@ class LibArc : public LibObject {
 
   double getDelayOrConstrainCheckNs(TransType trans_type, double slew,
                                     double load_or_constrain_slew);
+  double getDelaySigma(AnalysisMode mode, TransType trans_type, double slew,
+                       double load_or_constrain_slew);
   double getSlewNs(TransType trans_type, double slew, double load);
+  double getSlewSigma(AnalysisMode mode, TransType trans_type, double slew,
+                      double load);
 
   std::unique_ptr<LibCurrentData> getOutputCurrent(TransType trans_type,
                                                    double slew, double load);
@@ -1571,7 +1613,7 @@ class LibLibrary : public LibObject {
   }
   double get_slew_derate_from_library() { return _slew_derate_from_library; }
 
- void printLibertyLibraryJson(const char* json_file_name);
+  void printLibertyLibraryJson(const char* json_file_name);
 
  private:
   std::string _lib_name;
