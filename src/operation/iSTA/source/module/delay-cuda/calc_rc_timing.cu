@@ -52,11 +52,8 @@
 #include <cuda_runtime.h>
 
 #include "delay/ElmoreDelayCalc.hh"
-#include "log/Log.hh"
 
 namespace ista {
-
-const int THREAD_PER_BLOCK_NUM = 1024;
 
 /**
  * @brief gpu speed up update the load of the rc node.
@@ -326,6 +323,8 @@ void calc_rc_timing(std::vector<RcNet*> all_nets) {
                      rct->get_res_array().end());
   }
 
+  LOG_INFO << "start alloc gpu memory and copy cpu data to gpu memory";
+
   // initGpuMemory
   int* gpu_start_array =
       nullptr;  // the offsets of each net in arrays of nodes on gpu.
@@ -405,16 +404,22 @@ void calc_rc_timing(std::vector<RcNet*> all_nets) {
                   stream1);
   cudaStreamSynchronize(stream1);
 
+  LOG_INFO << "finish alloc gpu memory and copy cpu data to gpu memory";
+
   // launch kernel：kernelUpdateLoad
   auto total_nets_num = all_nets.size();
   dim3 block_size(256, 4);
   dim3 num_blocks((total_nets_num + block_size.x - 1) / block_size.x, 1);
 
+  unsigned num_gpu_threads = num_blocks.x * num_blocks.y * block_size.x * block_size.y;
+
+  LOG_INFO << "start gpu kernel to calc elmore delay threads num " << num_gpu_threads;
+
   printf(
       "use grid dims (%d, %d) with block dims (%d, %d), total threads: %d, "
       "start run gpu kernel to speedup elmore delay.\n",
       num_blocks.x, num_blocks.y, block_size.x, block_size.y,
-      num_blocks.x * num_blocks.y * block_size.x * block_size.y);
+      num_gpu_threads);
   // ieda::Stats stats;
   kernel_update_load<<<num_blocks, block_size>>>(
       gpu_start_array, gpu_cap_array, gpu_ncap_array, gpu_load_array,
@@ -430,6 +435,10 @@ void calc_rc_timing(std::vector<RcNet*> all_nets) {
       gpu_start_array, gpu_res_array, gpu_ldelay_array, gpu_ndelay_array,
       gpu_beta_array, gpu_impulse_array, gpu_parent_pos_array, total_nets_num);
   cudaDeviceSynchronize();
+
+  LOG_INFO << "finish gpu kernel to calc elmore delay threads num " << num_gpu_threads;
+
+  LOG_INFO << "start copy gpu data to cpu memory";
   // LOG_INFO << "calculate rc timing end";
   // // LOG_INFO << "calculate rc timing net num: " << all_nets.size();
   // double memory_delta = stats.memoryDelta();
@@ -621,6 +630,8 @@ void calc_rc_timing(std::vector<RcNet*> all_nets) {
   cudaFree(gpu_ldelay_array);
   cudaFree(gpu_beta_array);
   cudaFree(gpu_impulse_array);
+
+  LOG_INFO << "finish copy gpu data to cpu memory and free gpu memory";
 }
 
 }  // namespace ista

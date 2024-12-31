@@ -61,19 +61,22 @@
 #include <set>
 #include <string>
 #include <variant>
+#include <memory>
 
-#include "WaveformApproximation.hh"
-#include "liberty/Lib.hh"
-#include "netlist/Net.hh"
-#include "netlist/Pin.hh"
-#include "netlist/Port.hh"
+#include "Type.hh"
 #include "spef/SpefParserRustC.hh"
+#include "WaveformApproximation.hh"
+#include "log/Log.hh"
 
 namespace ista {
 class RctEdge;
 class RctNode;
 class RcTree;
 class LibCurrentData;
+class Net;
+class Pin;
+class Port;
+class DesignObject;
 
 /**
  * @brief The RC tree node, that has ground capacitance.
@@ -111,7 +114,7 @@ class RctNode {
   [[nodiscard]] double nodeLoad() const { return _load; }
   void set_load(double load) { _load = load; }
   double nodeLoad(AnalysisMode mode, TransType trans_type);
-  [[nodiscard]] double cap() const { return _obj ? _obj->cap() + _cap : _cap; }
+  [[nodiscard]] double cap() const;
   [[nodiscard]] double get_cap() const { return _cap; }
   double cap(AnalysisMode mode, TransType trans_type);
   double get_cap(AnalysisMode mode, TransType trans_type) {
@@ -626,24 +629,8 @@ class RcTree {
  */
 class RCNetCommonInfo {
  public:
-  void set_spef_cap_unit(const std::string& spef_cap_unit) {
-    // The unit is 1.0 FF, fix me
-    if (Str::contain(spef_cap_unit.c_str(), "1 FF") ||
-        Str::contain(spef_cap_unit.c_str(), "1.0 FF")) {
-      _spef_cap_unit = CapacitiveUnit::kFF;
-    } else {
-      _spef_cap_unit = CapacitiveUnit::kPF;
-    }
-  }
-  void set_spef_resistance_unit(const std::string& spef_resistance_unit) {
-    // The unit is 1.0 OHM, fix me
-    if (Str::contain(spef_resistance_unit.c_str(), "1 OHM") ||
-        Str::contain(spef_resistance_unit.c_str(), "1.0 OHM")) {
-      _spef_resistance_unit = ResistanceUnit::kOHM;
-    } else {
-      _spef_resistance_unit = ResistanceUnit::kOHM;
-    }
-  }
+  void set_spef_cap_unit(const std::string& spef_cap_unit);
+  void set_spef_resistance_unit(const std::string& spef_resistance_unit);
   CapacitiveUnit get_spef_cap_unit() { return _spef_cap_unit; }
   ResistanceUnit get_spef_resistance_unit() { return _spef_resistance_unit; }
 

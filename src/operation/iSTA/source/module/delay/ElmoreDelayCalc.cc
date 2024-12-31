@@ -55,6 +55,11 @@
 #include <utility>
 
 #include "log/Log.hh"
+#include "liberty/Lib.hh"
+#include "netlist/Net.hh"
+#include "netlist/Pin.hh"
+#include "netlist/Port.hh"
+
 
 namespace ista {
 
@@ -100,6 +105,8 @@ void RctNode::calNodePIModel() {
 double RctNode::nodeLoad(AnalysisMode mode, TransType trans_type) {
   return _nload[ModeTransPair(mode, trans_type)];
 }
+
+double RctNode::cap() const { return _obj ? _obj->cap() + _cap : _cap; }
 
 double RctNode::cap(AnalysisMode mode, TransType trans_type) {
   return _obj ? _obj->cap(mode, trans_type) +
@@ -734,6 +741,26 @@ void RcTree::applyDelayDataToArray() {
   std::swap(_beta_array, beta_array);
   std::swap(_impulse_array, impulse_array);
 }
+
+void RCNetCommonInfo::set_spef_cap_unit(const std::string& spef_cap_unit) {
+      // The unit is 1.0 FF, fix me
+    if (Str::contain(spef_cap_unit.c_str(), "1 FF") ||
+        Str::contain(spef_cap_unit.c_str(), "1.0 FF")) {
+      _spef_cap_unit = CapacitiveUnit::kFF;
+    } else {
+      _spef_cap_unit = CapacitiveUnit::kPF;
+    }
+}
+
+void RCNetCommonInfo::set_spef_resistance_unit(const std::string& spef_resistance_unit) {
+    // The unit is 1.0 OHM, fix me
+    if (Str::contain(spef_resistance_unit.c_str(), "1 OHM") ||
+        Str::contain(spef_resistance_unit.c_str(), "1.0 OHM")) {
+      _spef_resistance_unit = ResistanceUnit::kOHM;
+    } else {
+      _spef_resistance_unit = ResistanceUnit::kOHM;
+    }
+  }
 
 std::string RcNet::name() const { return _net->get_name(); }
 size_t RcNet::numPins() const { return _net->get_pin_ports().size() - 1; }

@@ -22,6 +22,7 @@
  * @date 2022-09-16
  */
 #include "CrossTalkDelayCalc.hh"
+#include "netlist/Net.hh"
 
 #include "Reduce.hh"
 
