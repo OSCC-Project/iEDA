@@ -146,12 +146,12 @@ class LibTable : public LibObject {
     kFallCurrent = 7,
     // power
     kRisePower = 8,
-    kFallPower = 9
+    kFallPower = 9,
     // sigma
     kCellRiseSigma = 10,
     kCellFallSigma = 12,
     kRiseTransitionSigma = 14,
-    kFallTransitionSigma = 16,
+    kFallTransitionSigma = 16
   };
 
   enum class CornerType : int { kDefault = 0, kEarly = 1, kLate = 2 };
@@ -942,7 +942,11 @@ class LibArc : public LibObject {
 
   double getDelayOrConstrainCheckNs(TransType trans_type, double slew,
                                     double load_or_constrain_slew);
+  double getDelaySigma(AnalysisMode mode, TransType trans_type, double slew,
+                       double load_or_constrain_slew);
   double getSlewNs(TransType trans_type, double slew, double load);
+  double getSlewSigma(AnalysisMode mode, TransType trans_type, double slew,
+                      double load);
 
   std::unique_ptr<LibCurrentData> getOutputCurrent(TransType trans_type,
                                                    double slew, double load);
