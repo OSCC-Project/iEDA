@@ -16,7 +16,7 @@
 // ***************************************************************************************
 /**
  * @file TimingEngine.cc
- * @author shy long (longshy@pcl.ac.cn)
+ * @author longshy (longshy@pcl.ac.cn)
  * @brief
  * @version 0.1
  * @date 2021-08-20
@@ -440,6 +440,19 @@ void TimingEngine::updateRCTreeInfo(Net* net) {
     }
   }
 }
+
+
+/**
+ * @brief update all rc tree elmore delay use gpu speedup.
+ * 
+ */
+void TimingEngine::updateAllRCTree() {
+#if CUDA_DELAY
+  auto all_rc_nets = _timing_engine->get_ista()->getAllRcNet();
+  calc_rc_timing(all_rc_nets);
+#endif
+}
+
 
 /**
  * @brief build balanced rc tree of the net and update rc tree info.

@@ -562,7 +562,7 @@ std::pair<std::vector<Inst*>, std::vector<Inst*>> BalanceClustering::divideBy(co
   std::vector<Inst*> sorted_insts = insts;
   std::ranges::sort(sorted_insts, cmp);
   size_t num = sorted_insts.size();
-  size_t split_id = num * ratio;
+  size_t split_id = num * (1 - ratio);
   std::vector<Inst*> left(sorted_insts.begin(), sorted_insts.begin() + split_id);
   std::vector<Inst*> right(sorted_insts.begin() + split_id, sorted_insts.end());
   return {left, right};

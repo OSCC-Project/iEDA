@@ -16,7 +16,7 @@
 // ***************************************************************************************
 /**
  * @file StaClockTree.hh
- * @author shy long (longshy@pcl.ac.cn)
+ * @author longshy (longshy@pcl.ac.cn)
  * @brief The clock tree representing the delay between the clock source and the
  * end sink.
  * @version 0.1
