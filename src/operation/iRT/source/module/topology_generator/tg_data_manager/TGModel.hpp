@@ -18,9 +18,9 @@
 #pragma once
 
 #include "RTHeader.hpp"
+#include "TGComParam.hpp"
 #include "TGNet.hpp"
 #include "TGNode.hpp"
-#include "TGComParam.hpp"
 
 namespace irt {
 

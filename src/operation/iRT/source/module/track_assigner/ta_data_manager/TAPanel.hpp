@@ -20,9 +20,9 @@
 #include "PriorityQueue.hpp"
 #include "RTHeader.hpp"
 #include "ScaleAxis.hpp"
+#include "TAComParam.hpp"
 #include "TANode.hpp"
 #include "TAPanelId.hpp"
-#include "TAComParam.hpp"
 #include "TATask.hpp"
 
 namespace irt {

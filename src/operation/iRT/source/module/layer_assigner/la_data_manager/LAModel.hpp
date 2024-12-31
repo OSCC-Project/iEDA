@@ -16,9 +16,9 @@
 // ***************************************************************************************
 #pragma once
 
+#include "LAComParam.hpp"
 #include "LANet.hpp"
 #include "LANode.hpp"
-#include "LAComParam.hpp"
 #include "LATopo.hpp"
 #include "PriorityQueue.hpp"
 

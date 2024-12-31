@@ -18,9 +18,9 @@
 #pragma once
 
 #include "PABox.hpp"
-#include "PANet.hpp"
 #include "PAComParam.hpp"
 #include "PAIterParam.hpp"
+#include "PANet.hpp"
 #include "RTHeader.hpp"
 
 namespace irt {

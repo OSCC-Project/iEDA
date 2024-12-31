@@ -16,9 +16,9 @@
 // ***************************************************************************************
 #pragma once
 
+#include "ERComParam.hpp"
 #include "ERNet.hpp"
 #include "ERNode.hpp"
-#include "ERComParam.hpp"
 #include "ERTopo.hpp"
 #include "PriorityQueue.hpp"
 

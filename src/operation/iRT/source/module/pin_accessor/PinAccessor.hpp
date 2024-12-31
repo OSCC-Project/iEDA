@@ -135,6 +135,8 @@ class PinAccessor
   void printSummary(PAModel& pa_model);
   void outputPlanarPinCSV(PAModel& pa_model);
   void outputLayerPinCSV(PAModel& pa_model);
+  void outputNetCSV(PAModel& pa_model);
+  void outputViolationCSV(PAModel& pa_model);
 #endif
 
 #if 1  // debug
