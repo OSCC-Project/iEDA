@@ -45,6 +45,49 @@ namespace ieval {
 
 struct TimingNet;
 
+/// @brief The timing wire graph for weiguo used.
+struct TimingWireNode {
+  std::string _name; //!< for pin/port name or node id.
+  bool _is_pin = false;
+  bool _is_port = false;
+};
+
+struct TimingWireEdge {
+  double _feature_R;
+  double _feature_C;
+  double _feature_from_slew;
+  double _feature_to_slew;
+  double _feature_wire_delay;
+
+  bool _is_net_edge = true; //!< is net edge or instance edge.
+
+  unsigned _from_node;
+  unsigned _to_node;
+};
+
+struct TimingWireGraph {
+  std::vector<TimingWireNode> _nodes; //!< each one is a graph node
+  std::vector<TimingWireEdge> _edges;
+  std::vector<std::vector<unsigned>> _adjacency_list; //!< adjacency list for node fanout edges.
+  
+  std::optional<unsigned> findNode(std::string& node_name) {
+    for (unsigned index = 0 ; auto& node : _nodes) {
+      if (node._name == node_name) {
+        return index;
+      }
+      ++index;
+    }
+    return std::nullopt;
+  }
+
+  unsigned addNode(const TimingWireNode& node) { 
+    _nodes.push_back(node);
+    return _nodes.size() - 1;
+  }
+};
+
+
+
 class InitSTA
 {
  public:
@@ -84,15 +127,17 @@ class InitSTA
   double getWireResistance(const std::string& net_name, const std::string& wire_node_name) const;
   double getWireCapacitance(const std::string& net_name, const std::string& wire_node_name) const;
   double getWireDelay(const std::string& net_name, const std::string& wire_node_name) const;
-  // double getWirePower(const std::string& net_name, const std::string& wire_node_name) const;  
+  // double getWirePower(const std::string& net_name, const std::string& wire_node_name) const;
+  TimingWireGraph getTimingWireGraph(); 
 
   void buildRCTree(const std::string& routing_type);
   void buildLmRCTree(ilm::LmLayout* lm_layout, std::string work_dir);
   void updateTiming(const std::vector<TimingNet*>& timing_net_list, int32_t dbu_unit);
   void updateTiming(const std::vector<TimingNet*>& timing_net_list, const std::vector<std::string>& name_list, const int& propagation_level,
-                    int32_t dbu_unit);
+                    int32_t dbu_unit);  
 
   bool isClockNet(const std::string& net_name) const;
+
 
  private:
   void leaglization(const std::vector<std::shared_ptr<salt::Pin>>& pins);

@@ -901,6 +901,92 @@ void InitSTA::updateTiming(const std::vector<TimingNet*>& timing_net_list, int32
   STA_INST->reportTiming();
 }
 
+TimingWireGraph InitSTA::getTimingWireGraph() 
+{
+  TimingWireGraph timing_wire_graph;
+  auto create_node =
+      [&timing_wire_graph](std::string edge_node_name) -> unsigned {
+    auto index = timing_wire_graph.findNode(edge_node_name);
+    if (!index) {
+      TimingWireNode edge_from_node;
+      edge_from_node._name = edge_node_name;
+      index = timing_wire_graph.addNode(edge_from_node);
+    }
+
+    return index.value();
+  };
+
+  auto* ista = STA_INST->get_ista();
+  auto* the_timing_graph = &(ista->get_graph());
+  ista::StaArc* the_arc;
+  FOREACH_ARC(the_timing_graph, the_arc) {
+    if (the_arc->isNetArc()) {
+      // for net arc, we need extract the wire topo.
+      auto* the_net_arc = dynamic_cast<StaNetArc*>(the_arc);
+      auto* the_net = the_net_arc->get_net();
+
+      auto* rc_net = ista->getRcNet(the_net);
+
+      auto* snk_node = the_arc->get_snk();
+      auto snk_node_name = snk_node->get_design_obj()->getFullName();
+
+      auto vertex_slew = the_arc->get_src()->getSlewNs(ista::AnalysisMode::kMax,
+                                                       TransType::kRise);
+
+      auto wire_topo = rc_net->getWireTopo(snk_node_name.c_str());
+      auto all_nodes_slew = rc_net->getAllNodeSlew(
+          *vertex_slew, ista::AnalysisMode::kMax, TransType::kRise);
+      for (auto* wire_edge : wire_topo | std::ranges::views::reverse) {
+        auto& from_node = wire_edge->get_from();
+        auto& to_node = wire_edge->get_to();
+
+        auto wire_from_node_index = create_node(from_node.get_name());
+        auto wire_to_node_index = create_node(to_node.get_name());
+
+        TimingWireEdge wire_graph_edge;
+        wire_graph_edge._feature_R = wire_edge->get_res();
+        wire_graph_edge._feature_C = from_node.nodeLoad() - to_node.nodeLoad();
+        wire_graph_edge._feature_from_slew =
+            all_nodes_slew[from_node.get_name()];
+        wire_graph_edge._feature_to_slew = all_nodes_slew[to_node.get_name()];
+        wire_graph_edge._feature_wire_delay =
+            to_node.delay() - from_node.delay();
+
+        wire_graph_edge._is_net_edge = true;
+
+        wire_graph_edge._from_node = wire_from_node_index;
+        wire_graph_edge._to_node = wire_to_node_index;
+
+        timing_wire_graph._edges.emplace_back(std::move(wire_graph_edge));
+
+        if (timing_wire_graph._adjacency_list.size() <= wire_from_node_index) {
+          timing_wire_graph._adjacency_list.resize(wire_from_node_index + 1);
+        }
+
+        timing_wire_graph._adjacency_list[wire_from_node_index].emplace_back(wire_to_node_index);
+      }
+    } else {
+      TimingWireEdge wire_graph_edge;
+      auto wire_from_node_index = create_node(the_arc->get_src()->getName());
+      auto wire_to_node_index = create_node(the_arc->get_snk()->getName());
+
+      wire_graph_edge._feature_wire_delay = FS_TO_NS(the_arc->get_arc_delay(ista::AnalysisMode::kMax,
+                                                       TransType::kRise));
+      wire_graph_edge._is_net_edge = false;
+
+      wire_graph_edge._from_node = wire_from_node_index;
+      wire_graph_edge._to_node = wire_to_node_index;
+
+      timing_wire_graph._edges.emplace_back(std::move(wire_graph_edge));
+      if (timing_wire_graph._adjacency_list.size() <= wire_from_node_index) {
+        timing_wire_graph._adjacency_list.resize(wire_from_node_index + 1);
+      }
+      timing_wire_graph._adjacency_list[wire_from_node_index].emplace_back(wire_to_node_index);
+    }
+  }
+  return timing_wire_graph;
+}
+
 void InitSTA::updateTiming(const std::vector<TimingNet*>& timing_net_list, const std::vector<std::string>& name_list,
                            const int& propagation_level, int32_t dbu_unit)
 {
