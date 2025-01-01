@@ -425,8 +425,8 @@ void calc_rc_timing(std::vector<RcNet*> all_nets) {
 
   LOG_INFO << "finish alloc gpu memory and copy cpu data to gpu memory";
 
-  // unsigned max_net_per_epoch = 10240;
-  unsigned max_net_per_epoch = 2560;
+  unsigned max_net_per_epoch = 5120;
+  // unsigned max_net_per_epoch = 2560;
   cudaMemcpyToSymbol(c_max_net_per_epoch, &max_net_per_epoch, sizeof(unsigned), 0,
                      cudaMemcpyHostToDevice);  // Copy to constant memory
 
