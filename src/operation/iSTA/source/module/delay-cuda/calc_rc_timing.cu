@@ -53,6 +53,7 @@
 
 #include "delay/ElmoreDelayCalc.hh"
 #include "usage/usage.hh"
+#include "gpu/cuda_common.cuh"
 
 namespace ista {
 
@@ -349,48 +350,48 @@ void calc_rc_timing(std::vector<RcNet*> all_nets) {
   cudaStream_t stream1 = nullptr;
   cudaStreamCreate(&stream1);
   // malloc gpu memory
-  cudaMallocAsync(&gpu_start_array, (total_nodes_num + 1) * sizeof(int),
-                  stream1);
-  cudaMallocAsync(&gpu_cap_array, total_nodes_num * sizeof(float), stream1);
-  cudaMallocAsync(&gpu_ncap_array, 4 * total_nodes_num * sizeof(float),
-                  stream1);
-  cudaMallocAsync(&gpu_res_array, total_nodes_num * sizeof(float), stream1);
-  cudaMallocAsync(&gpu_parent_pos_array, total_nodes_num * sizeof(int),
-                  stream1);
+  CUDA_CHECK(cudaMallocAsync(&gpu_start_array, (total_nodes_num + 1) * sizeof(int),
+                  stream1));
+  CUDA_CHECK(cudaMallocAsync(&gpu_cap_array, total_nodes_num * sizeof(float), stream1));
+  CUDA_CHECK(cudaMallocAsync(&gpu_ncap_array, 4 * total_nodes_num * sizeof(float),
+                  stream1));
+  CUDA_CHECK(cudaMallocAsync(&gpu_res_array, total_nodes_num * sizeof(float), stream1));
+  CUDA_CHECK(cudaMallocAsync(&gpu_parent_pos_array, total_nodes_num * sizeof(int),
+                  stream1));
   // data to be calculated
-  cudaMallocAsync(&gpu_load_array, total_nodes_num * sizeof(float), stream1);
-  cudaMallocAsync(&gpu_nload_array, 4 * total_nodes_num * sizeof(float),
-                  stream1);
-  cudaMallocAsync(&gpu_delay_array, total_nodes_num * sizeof(float), stream1);
-  cudaMallocAsync(&gpu_ndelay_array, 4 * total_nodes_num * sizeof(float),
-                  stream1);
-  cudaMallocAsync(&gpu_ures_array, 4 * total_nodes_num * sizeof(float),
-                  stream1);
-  cudaMallocAsync(&gpu_ldelay_array, 4 * total_nodes_num * sizeof(float),
-                  stream1);
-  cudaMallocAsync(&gpu_beta_array, 4 * total_nodes_num * sizeof(float),
-                  stream1);
-  cudaMallocAsync(&gpu_impulse_array, 4 * total_nodes_num * sizeof(float),
-                  stream1);
+  CUDA_CHECK(cudaMallocAsync(&gpu_load_array, total_nodes_num * sizeof(float), stream1));
+  CUDA_CHECK(cudaMallocAsync(&gpu_nload_array, 4 * total_nodes_num * sizeof(float),
+                  stream1));
+  CUDA_CHECK(cudaMallocAsync(&gpu_delay_array, total_nodes_num * sizeof(float), stream1));
+  CUDA_CHECK(cudaMallocAsync(&gpu_ndelay_array, 4 * total_nodes_num * sizeof(float),
+                  stream1));
+  CUDA_CHECK(cudaMallocAsync(&gpu_ures_array, 4 * total_nodes_num * sizeof(float),
+                  stream1));
+  CUDA_CHECK(cudaMallocAsync(&gpu_ldelay_array, 4 * total_nodes_num * sizeof(float),
+                  stream1));
+  CUDA_CHECK(cudaMallocAsync(&gpu_beta_array, 4 * total_nodes_num * sizeof(float),
+                  stream1));
+  CUDA_CHECK(cudaMallocAsync(&gpu_impulse_array, 4 * total_nodes_num * sizeof(float),
+                  stream1));
   // wait for all cudaMallocAsync to complete
-  cudaStreamSynchronize(stream1);
+  CUDA_CHECK(cudaStreamSynchronize(stream1));
 
   // copy cpu data to gpu memory.
-  cudaMemcpyAsync(gpu_start_array, start_array.data(),
+  CUDA_CHECK(cudaMemcpyAsync(gpu_start_array, start_array.data(),
                   (total_nodes_num + 1) * sizeof(int), cudaMemcpyHostToDevice,
-                  stream1);
-  cudaMemcpyAsync(gpu_cap_array, cap_array.data(),
+                  stream1));
+  CUDA_CHECK(cudaMemcpyAsync(gpu_cap_array, cap_array.data(),
                   total_nodes_num * sizeof(float), cudaMemcpyHostToDevice,
-                  stream1);
-  cudaMemcpyAsync(gpu_ncap_array, ncap_array.data(),
+                  stream1));
+  CUDA_CHECK(cudaMemcpyAsync(gpu_ncap_array, ncap_array.data(),
                   4 * total_nodes_num * sizeof(float), cudaMemcpyHostToDevice,
-                  stream1);
-  cudaMemcpyAsync(gpu_res_array, res_array.data(),
+                  stream1));
+  CUDA_CHECK(cudaMemcpyAsync(gpu_res_array, res_array.data(),
                   total_nodes_num * sizeof(float), cudaMemcpyHostToDevice,
-                  stream1);
-  cudaMemcpyAsync(gpu_parent_pos_array, parent_pos_array.data(),
+                  stream1));
+  CUDA_CHECK(cudaMemcpyAsync(gpu_parent_pos_array, parent_pos_array.data(),
                   total_nodes_num * sizeof(int), cudaMemcpyHostToDevice,
-                  stream1);
+                  stream1));
   // data to be calculated:should initialize to zero
   cudaMemsetAsync(gpu_load_array, 0, total_nodes_num * sizeof(float), stream1);
   cudaMemsetAsync(gpu_nload_array, 0, 4 * total_nodes_num * sizeof(float),
@@ -406,7 +407,7 @@ void calc_rc_timing(std::vector<RcNet*> all_nets) {
                   stream1);
   cudaMemsetAsync(gpu_impulse_array, 0, 4 * total_nodes_num * sizeof(float),
                   stream1);
-  cudaStreamSynchronize(stream1);
+  CUDA_CHECK(cudaStreamSynchronize(stream1));
 
   LOG_INFO << "finish alloc gpu memory and copy cpu data to gpu memory";
 
@@ -440,10 +441,7 @@ void calc_rc_timing(std::vector<RcNet*> all_nets) {
       gpu_beta_array, gpu_impulse_array, gpu_parent_pos_array, total_nets_num);
   
   // get launch kernel error status
-  auto err = cudaGetLastError();
-  if (err!= cudaSuccess) {
-      LOG_ERROR << "Kernel launch failed: " << cudaGetErrorString(err);
-  }
+  CUDA_CHECK_ERROR();
 
   cudaDeviceSynchronize();
 
@@ -457,34 +455,36 @@ void calc_rc_timing(std::vector<RcNet*> all_nets) {
   // double time_delta = stats.elapsedRunTime();
   // LOG_INFO << "calculate rc timing time elapsed " << time_delta << "s";
   // copy gpu data to cpu memory.
-  cudaMemcpyAsync(load_array.data(), gpu_load_array,
+  CUDA_CHECK(cudaMemcpyAsync(load_array.data(), gpu_load_array,
                   total_nodes_num * sizeof(float), cudaMemcpyDeviceToHost,
-                  stream1);
-  cudaMemcpyAsync(nload_array.data(), gpu_nload_array,
+                  stream1));
+  CUDA_CHECK(cudaMemcpyAsync(nload_array.data(), gpu_nload_array,
                   4 * total_nodes_num * sizeof(float), cudaMemcpyDeviceToHost,
-                  stream1);
-  cudaMemcpyAsync(delay_array.data(), gpu_delay_array,
+                  stream1));
+  CUDA_CHECK(cudaMemcpyAsync(delay_array.data(), gpu_delay_array,
                   total_nodes_num * sizeof(float), cudaMemcpyDeviceToHost,
-                  stream1);
-  cudaMemcpyAsync(ndelay_array.data(), gpu_ndelay_array,
+                  stream1));
+  CUDA_CHECK(cudaMemcpyAsync(ndelay_array.data(), gpu_ndelay_array,
                   4 * total_nodes_num * sizeof(float), cudaMemcpyDeviceToHost,
-                  stream1);
-  cudaMemcpyAsync(ures_array.data(), gpu_ures_array,
+                  stream1));
+  CUDA_CHECK(cudaMemcpyAsync(ures_array.data(), gpu_ures_array,
                   4 * total_nodes_num * sizeof(float), cudaMemcpyDeviceToHost,
-                  stream1);
-  cudaMemcpyAsync(ldelay_array.data(), gpu_ldelay_array,
+                  stream1));
+  CUDA_CHECK(cudaMemcpyAsync(ldelay_array.data(), gpu_ldelay_array,
                   4 * total_nodes_num * sizeof(float), cudaMemcpyDeviceToHost,
-                  stream1);
-  cudaMemcpyAsync(beta_array.data(), gpu_beta_array,
+                  stream1));
+  CUDA_CHECK(cudaMemcpyAsync(beta_array.data(), gpu_beta_array,
                   4 * total_nodes_num * sizeof(float), cudaMemcpyDeviceToHost,
-                  stream1);
-  cudaMemcpyAsync(impulse_array.data(), gpu_impulse_array,
+                  stream1));
+  CUDA_CHECK(cudaMemcpyAsync(impulse_array.data(), gpu_impulse_array,
                   4 * total_nodes_num * sizeof(float), cudaMemcpyDeviceToHost,
-                  stream1);
+                  stream1));
   cudaStreamSynchronize(stream1);
   cudaStreamDestroy(stream1);
   // print_array("load array", load_array);
   // print_array("nload array", nload_array);
+
+  CUDA_CHECK_ERROR();
 
   std::size_t offset = 0;
   for (const auto& net : all_nets) {

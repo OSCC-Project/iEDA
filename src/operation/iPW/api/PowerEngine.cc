@@ -27,7 +27,6 @@
 
 #include "PowerEngine.hh"
 #include "ThreadPool/ThreadPool.h"
-#include "gpu-kernel/kernel_common.h"
 #ifdef USE_GPU
 #include "gpu-kernel/power_kernel.cuh"
 #endif
