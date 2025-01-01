@@ -6,7 +6,7 @@
  * @date 2024-10-09
  *
  */
-#include "cuda_common.cuh"
+#include "gpu/cuda_common.cuh"
 #include "power_kernel.cuh"
 
 namespace ipower {
