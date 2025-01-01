@@ -20,3 +20,10 @@ inline void cuda_check(cudaError_t error, const char *file, int line) {
   }
 };
 #define CUDA_CHECK(err) (cuda_check(err, __FILE__, __LINE__))
+
+#define CUDA_CHECK_ERROR() do { \
+  cudaError_t error = cudaGetLastError(); \
+  if (error != cudaSuccess) { \
+    printf("CUDA error at %s:%d:\n%s\n", __FILE__, __LINE__, cudaGetErrorString(error)); \
+  } \
+} while(0)
