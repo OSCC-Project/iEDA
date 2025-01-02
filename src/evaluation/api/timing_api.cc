@@ -39,6 +39,10 @@ void TimingAPI::evalTiming(const std::string& routing_type, const bool& rt_done)
   EVAL_STA_INST->evalTiming(routing_type, rt_done);
 }
 
+TimingWireGraph* TimingAPI::getTimingWireGraph() {
+  return EVAL_STA_INST->getTimingWireGraph();
+}
+
 void TimingAPI::destroyInst()
 {
   ieval::TimingEval::destroyInst();

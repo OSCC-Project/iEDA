@@ -36,6 +36,13 @@ void TimingEval::evalTiming(const std::string& routing_type, const bool& rt_done
   EVAL_INIT_STA_INST->evalTiming(routing_type, rt_done);
 }
 
+// for large model(to weiguo)
+TimingWireGraph* TimingEval::getTimingWireGraph() {
+  auto timing_wire_graph = EVAL_INIT_STA_INST->getTimingWireGraph();
+  auto timing_wire_graph_ptr = new TimingWireGraph(std::move(timing_wire_graph));
+  return timing_wire_graph_ptr;
+}
+
 void TimingEval::destroyInst()
 {
   delete _timing_eval;
