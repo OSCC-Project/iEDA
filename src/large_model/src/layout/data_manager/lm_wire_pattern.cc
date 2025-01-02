@@ -154,7 +154,7 @@ LmWirePatternSequence LmWirePatternGenerator::calcPattern(const std::vector<Poin
         pattern_name += "V";
         break;
     }
-    pattern_name += std::to_string(unit.length);
+    pattern_name += std::to_string(unit.length / 100 + 1);
   });
   pattern.name = pattern_name;
   return pattern;
