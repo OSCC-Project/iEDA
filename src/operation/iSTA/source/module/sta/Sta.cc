@@ -445,8 +445,7 @@ void Sta::linkDesignWithRustParser(const char *top_cell_name) {
              return &ret_val;
            }},
           {DclType::KWire,
-           [&design_netlist](DclType dcl_type, const char *dcl_name) {
-             dcl_name = Str::trimmed(dcl_name);
+           [&design_netlist](DclType dcl_type, const char *dcl_name) {             
              Net net(dcl_name);
              auto &ret_val = design_netlist.addNet(std::move(net));
              return &ret_val;
@@ -461,6 +460,8 @@ void Sta::linkDesignWithRustParser(const char *top_cell_name) {
 
     if (!dcl_range.has_value) {
       if (dcl_process.contains(dcl_type)) {
+        // for ports and wire trimmed.
+        dcl_name = Str::trimmed(dcl_name);
         dcl_process[dcl_type](dcl_type, dcl_name);
       } else {
         LOG_INFO << "not support the declaration " << dcl_name;

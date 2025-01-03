@@ -327,9 +327,7 @@ fn process_first_port_connection_single_connect(
 
 fn extract_bitwidth_value(input: &str) -> Option<(u32, String)> {
     // Split the input string by the character `'` and collect into a tuple(2'b00->(2,b'00))
-    input.split_once('\'').and_then(|(bw, val)| {
-        bw.parse::<u32>().ok().map(|bit_width| (bit_width, val.to_string()))
-    })
+    input.split_once('\'').and_then(|(bw, val)| bw.parse::<u32>().ok().map(|bit_width| (bit_width, val.to_string())))
 }
 
 fn process_first_port_connection_multiple_connect(
@@ -346,12 +344,13 @@ fn process_first_port_connection_multiple_connect(
                 let net_connect_line_no = inner_pair.line_col().0;
                 let net_connect = inner_pair.as_str();
                 let verilog_constant_id: verilog_data::VerilogConstantID;
-                if let Some((bit_width, value)) = extract_bitwidth_value(net_connect) {                    
+                if let Some((bit_width, value)) = extract_bitwidth_value(net_connect) {
                     verilog_constant_id = verilog_data::VerilogConstantID::new(bit_width, &value);
                 } else {
                     panic!("Error: invalid format");
                 }
-                let verilog_virtual_base_id: Box<dyn verilog_data::VerilogVirtualBaseID> = Box::new(verilog_constant_id);
+                let verilog_virtual_base_id: Box<dyn verilog_data::VerilogVirtualBaseID> =
+                    Box::new(verilog_constant_id);
                 let verilog_net_constant_expr =
                     verilog_data::VerilogConstantExpr::new(net_connect_line_no, verilog_virtual_base_id);
                 let verilog_virtual_base_net_expr: Box<dyn verilog_data::VerilogVirtualBaseNetExpr> =
@@ -468,17 +467,20 @@ fn find_dcl_stmt_range(
     net_base_name: &str,
 ) -> Option<(i32, i32)> {
     let borrowed_module = cur_module.borrow();
-    let dcls_stmt = borrowed_module.find_dcls_stmt(net_base_name).unwrap();
     let mut range: Option<(i32, i32)> = None;
-
-    if dcls_stmt.is_verilog_dcls_stmt() {
-        let verilog_dcls_stmt = dcls_stmt.as_any().downcast_ref::<verilog_data::VerilogDcls>().unwrap();
-        for verilog_dcl in verilog_dcls_stmt.get_verilog_dcls() {
-            if verilog_dcl.get_dcl_name().eq(net_base_name) {
-                range = *verilog_dcl.get_range();
-                break;
+    let dcls_stmt_opt = borrowed_module.find_dcls_stmt(net_base_name);
+    if dcls_stmt_opt.is_some() {
+        let dcls_stmt = dcls_stmt_opt.unwrap();
+        if dcls_stmt.is_verilog_dcls_stmt() {
+            let verilog_dcls_stmt = dcls_stmt.as_any().downcast_ref::<verilog_data::VerilogDcls>().unwrap();
+            for verilog_dcl in verilog_dcls_stmt.get_verilog_dcls() {
+                if verilog_dcl.get_dcl_name().eq(net_base_name) {
+                    range = *verilog_dcl.get_range();
+                    break;
+                }
             }
         }
+
     }
 
     range
@@ -495,7 +497,10 @@ fn process_port_connect(
     let net_base_name = net_expr_id.get_base_name();
     let mut range: Option<(i32, i32)> = None;
 
-    if !verilog_data::VerilogModule::is_port(&cur_module.borrow(), net_base_name) {
+    // for may be port_name is split, we need judge port base name and full name
+    if !verilog_data::VerilogModule::is_port(&cur_module.borrow(), net_base_name)
+        && !verilog_data::VerilogModule::is_port(&cur_module.borrow(), net_expr_id.get_name())
+    {
         // for common name, should check whether bus, get range first.
         if !net_base_name.contains("/") && !net_expr_id.is_bus_index_id() && !net_expr_id.is_bus_slice_id() {
             range = find_dcl_stmt_range(cur_module, net_base_name);
@@ -535,7 +540,14 @@ fn process_port_connect(
     } else {
         // is port, check the port whether port or port bus, then get
         // the port or port bus connect parent net.
+        let port_name = net_expr_id.get_name();
+        // println!("port name {}", port_name);
         range = find_dcl_stmt_range(cur_module, net_base_name);
+        if range.is_none() {
+            // for may be port_name is split.
+            range = find_dcl_stmt_range(cur_module, port_name);
+        } 
+
         // get port connected parent module net.***************
         let port_connect_net = verilog_data::VerilogInst::get_port_connect_net(
             inst_stmt,
@@ -544,6 +556,7 @@ fn process_port_connect(
             net_expr_id_clone,
             range,
         );
+        // println!("port connect net {}", port_connect_net.clone().unwrap().get_verilog_id().get_name());
         return port_connect_net;
     }
 }
