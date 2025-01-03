@@ -25,7 +25,7 @@
 #pragma once
 
 #include <cuda_runtime.h>
-#include "kernel_common.h"
+#include "gpu/kernel_common.h"
 
 namespace ipower {
 

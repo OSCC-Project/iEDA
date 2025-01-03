@@ -53,7 +53,7 @@ unsigned CmdGetLibs::exec() {
   if (used_option->is_set_val()) {
     auto used_libs = ista->getUsedLibs();
     for (auto* used_lib : used_libs) {
-      std::string lib_name = used_lib->get_lib_name();
+      std::string lib_name = used_lib->get_file_name();
 
       for (auto& pattern : lib_patterns) {
         // match lib name all str.
