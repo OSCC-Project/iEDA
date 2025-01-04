@@ -295,11 +295,11 @@ void VerilogWriter::writeAssign()
   for (const auto& net : net_list) {
     std::string net_name = net->get_net_name();
     for (const auto& io_pin : net->get_io_pins()->get_pin_list()) {
-      // assign net=input_port;
+      // assign net = input_port;
       if (io_pin->get_term()->get_direction() == IdbConnectDirection::kInput && io_pin->get_pin_name() != net_name) {
         fprintf(_stream, "assign %s = %s ;\n", net_name.c_str(), io_pin->get_pin_name().c_str());
       }
-      // assign net=input_port;
+      // assign output_port = net;
       // assign output_port = input_port;
       if (io_pin->get_term()->get_direction() == IdbConnectDirection::kOutput && io_pin->get_pin_name() != net_name) {
         fprintf(_stream, "assign %s = %s ;\n", io_pin->get_pin_name().c_str(), net_name.c_str());

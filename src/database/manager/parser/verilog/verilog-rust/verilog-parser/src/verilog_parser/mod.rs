@@ -4,6 +4,7 @@ pub mod verilog_data;
 use pest::iterators::Pair;
 use pest::Parser;
 use pest_derive::Parser;
+use verilog_data::VerilogVirtualBaseStmt;
 
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -480,7 +481,6 @@ fn find_dcl_stmt_range(
                 }
             }
         }
-
     }
 
     range
@@ -546,7 +546,7 @@ fn process_port_connect(
         if range.is_none() {
             // for may be port_name is split.
             range = find_dcl_stmt_range(cur_module, port_name);
-        } 
+        }
 
         // get port connected parent module net.***************
         let port_connect_net = verilog_data::VerilogInst::get_port_connect_net(
@@ -729,6 +729,66 @@ fn flatten_the_module(
             let new_dyn_module_inst_stmt: Box<dyn verilog_data::VerilogVirtualBaseStmt> =
                 Box::new(new_module_inst_stmt);
             verilog_data::VerilogModule::add_stmt(&mut parent_module.borrow_mut(), new_dyn_module_inst_stmt);
+        } else if stmt.is_module_assign_stmt() {
+            // for assign stmt, we need change the assignment both side net expr to net name / parent net,
+            // or the port to connected net name / parent net.
+            let module_assign_stmt = (*stmt).as_any().downcast_ref::<verilog_data::VerilogAssign>().unwrap();
+            let left_net_expr = module_assign_stmt.get_left_net_expr();
+            let right_net_expr = module_assign_stmt.get_right_net_expr();
+
+            let left_net_expr_id = left_net_expr.get_verilog_id();
+            let left_port_name = left_net_expr_id.get_name();
+            let left_net_base_name = left_net_expr_id.get_base_name();
+
+            let right_net_expr_id = right_net_expr.get_verilog_id();
+            let right_port_name = right_net_expr_id.get_name();
+            let right_net_base_name = right_net_expr_id.get_base_name();
+
+            let get_connect_net = |cur_module, parent_module, net_expr_id_clone, net_base_name, port_name| {
+                // println!("port name {}", port_name);
+                let mut range = None;
+                range = find_dcl_stmt_range(cur_module, net_base_name);
+                if range.is_none() {
+                    // for may be port_name is split.
+                    range = find_dcl_stmt_range(cur_module, port_name);
+                }
+
+                // get port connected parent module net.***************
+                let port_connect_net = verilog_data::VerilogInst::get_port_connect_net(
+                    inst_stmt,
+                    cur_module,
+                    parent_module,
+                    net_expr_id_clone,
+                    range,
+                );
+
+                port_connect_net
+            };
+
+            let left_port_connect_net = get_connect_net(
+                cur_module,
+                parent_module,
+                left_net_expr_id.clone(),
+                left_net_base_name,
+                left_port_name,
+            );
+            let right_port_connect_net = get_connect_net(
+                cur_module,
+                parent_module,
+                right_net_expr_id.clone(),
+                right_net_base_name,
+                right_port_name,
+            );
+
+            let new_assignment_stmt: verilog_data::VerilogAssign = verilog_data::VerilogAssign::new(
+                module_assign_stmt.get_line_no(),
+                left_port_connect_net.unwrap(),
+                right_port_connect_net.unwrap(),
+            );
+
+            let new_dyn_assign_stmt: Box<dyn verilog_data::VerilogVirtualBaseStmt> = Box::new(new_assignment_stmt);
+
+            verilog_data::VerilogModule::add_stmt(&mut parent_module.borrow_mut(), new_dyn_assign_stmt);
         }
     }
 }
