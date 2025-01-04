@@ -4,7 +4,9 @@ pub mod verilog_data;
 use pest::iterators::Pair;
 use pest::Parser;
 use pest_derive::Parser;
-use verilog_data::VerilogVirtualBaseStmt;
+use verilog_data::{
+    VerilogID, VerilogNetIDExpr, VerilogVirtualBaseID, VerilogVirtualBaseNetExpr, VerilogVirtualBaseStmt,
+};
 
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -764,15 +766,22 @@ fn flatten_the_module(
 
                 port_connect_net
             };
+            
+            // for debug
+            // println!("curr module {}", cur_module.clone().borrow().get_module_name());
+            // println!("left base name {} port name {}", left_net_base_name, left_port_name);
+            // println!("right base name {} port name {}", right_net_base_name, right_port_name);
+            // println!("assign {} = {}", left_port_name, right_port_name);
 
-            let left_port_connect_net = get_connect_net(
+            let left_port_connect_net_opt = get_connect_net(
                 cur_module,
                 parent_module,
                 left_net_expr_id.clone(),
                 left_net_base_name,
                 left_port_name,
             );
-            let right_port_connect_net = get_connect_net(
+
+            let right_port_connect_net_opt = get_connect_net(
                 cur_module,
                 parent_module,
                 right_net_expr_id.clone(),
@@ -780,10 +789,40 @@ fn flatten_the_module(
                 right_port_name,
             );
 
+            let get_or_create_port_connect_net =
+                |port_connect_net_opt: Option<Box<dyn VerilogVirtualBaseNetExpr>>,
+                 net_expr: &Box<dyn VerilogVirtualBaseNetExpr>| {
+                    if port_connect_net_opt.is_none() {
+                        // modify net name to inst name/net name
+                        let port_connect_net = net_expr.clone();
+
+                        let port_name = port_connect_net.get_verilog_id().get_name();
+                        let new_port_name = format!("{}/{}", inst_stmt.get_inst_name(), port_name);
+
+                        let new_port_connect_port_id = VerilogID::new(&new_port_name);
+                        let dyn_new_port_connect_port_id: Box<dyn VerilogVirtualBaseID> =
+                            Box::new(new_port_connect_port_id);
+
+                        let new_left_port_connect_net =
+                            VerilogNetIDExpr::new(port_connect_net.get_line_no(), dyn_new_port_connect_port_id);
+                        Box::new(new_left_port_connect_net)
+                    } else {
+                        port_connect_net_opt.unwrap()
+                    }
+                };
+
+            let left_port_connect_net = get_or_create_port_connect_net(left_port_connect_net_opt, left_net_expr);
+            let right_port_connect_net = get_or_create_port_connect_net(right_port_connect_net_opt, right_net_expr);
+             
+            // for debug
+            // let new_left_port_name = left_port_connect_net.get_verilog_id().get_name();
+            // let new_right_port_name = right_port_connect_net.get_verilog_id().get_name();
+            // println!("new assign {} = {}", new_left_port_name, new_right_port_name);
+
             let new_assignment_stmt: verilog_data::VerilogAssign = verilog_data::VerilogAssign::new(
                 module_assign_stmt.get_line_no(),
-                left_port_connect_net.unwrap(),
-                right_port_connect_net.unwrap(),
+                left_port_connect_net,
+                right_port_connect_net,
             );
 
             let new_dyn_assign_stmt: Box<dyn verilog_data::VerilogVirtualBaseStmt> = Box::new(new_assignment_stmt);
