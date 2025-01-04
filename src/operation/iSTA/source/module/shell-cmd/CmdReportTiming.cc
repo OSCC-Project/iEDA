@@ -71,12 +71,16 @@ unsigned CmdReportTiming::printHelp() {
   Options:
     [-delay-type <string>]        : Specify the type of path to report. 
                                     Legal Values: max, min, max_min, default: max_min
+
     [-digits <int>]               : The significant digits the report show.
                                     default: 3
+
     [-max_path <int>]             : The max timing path per clock.
                                     default: 3
+
     [-nworst <int>]               : The max timing path per endpoint.
                                     default: 1
+
     [-from <string list>]         : Specify the timing path start points name.
                                     example: report_timing -from {dpath/b_reg/_55_:CK}
 
@@ -84,7 +88,7 @@ unsigned CmdReportTiming::printHelp() {
                                     example: report_timing -from {dpath/a_reg/_55_:D}
 
     [-through <string list list>] : Specify the timing path through points.
-                                    example: report_timing -through {dpath/a_reg/_55_:Q } -through { dpath/a_reg/_39_:B }
+                                    example: report_timing -through {dpath/a_reg/_55_:Q dpath/a_reg/_39_:A} -through {dpath/a_reg/_39_:B}
 
   
   )";
