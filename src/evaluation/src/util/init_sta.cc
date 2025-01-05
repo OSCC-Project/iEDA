@@ -903,6 +903,7 @@ void InitSTA::updateTiming(const std::vector<TimingNet*>& timing_net_list, int32
 
 TimingWireGraph InitSTA::getTimingWireGraph() 
 {
+  LOG_INFO << "get wire timing graph start";
   TimingWireGraph timing_wire_graph;
   auto create_node =
       [&timing_wire_graph](std::string edge_node_name) -> unsigned {
@@ -917,6 +918,8 @@ TimingWireGraph InitSTA::getTimingWireGraph()
   };
 
   auto* ista = STA_INST->get_ista();
+  LOG_ERROR_IF(!ista->isBuildGraph()) << "timing graph is not build";
+
   auto* the_timing_graph = &(ista->get_graph());
   ista::StaArc* the_arc;
   FOREACH_ARC(the_timing_graph, the_arc) {
@@ -959,10 +962,10 @@ TimingWireGraph InitSTA::getTimingWireGraph()
 
         timing_wire_graph._edges.emplace_back(std::move(wire_graph_edge));
 
-        if (timing_wire_graph._adjacency_list.size() <= wire_from_node_index) {
-          timing_wire_graph._adjacency_list.resize(wire_from_node_index + 1);
+        // reserve memory
+        while (timing_wire_graph._adjacency_list.size() <= wire_from_node_index) {
+          timing_wire_graph._adjacency_list.emplace_back();
         }
-
         timing_wire_graph._adjacency_list[wire_from_node_index].emplace_back(wire_to_node_index);
       }
     } else {
@@ -978,12 +981,18 @@ TimingWireGraph InitSTA::getTimingWireGraph()
       wire_graph_edge._to_node = wire_to_node_index;
 
       timing_wire_graph._edges.emplace_back(std::move(wire_graph_edge));
-      if (timing_wire_graph._adjacency_list.size() <= wire_from_node_index) {
-        timing_wire_graph._adjacency_list.resize(wire_from_node_index + 1);
+
+       // reserve memory
+      while (timing_wire_graph._adjacency_list.size() <= wire_from_node_index) {
+        timing_wire_graph._adjacency_list.emplace_back();
       }
       timing_wire_graph._adjacency_list[wire_from_node_index].emplace_back(wire_to_node_index);
     }
   }
+
+  LOG_INFO << "wire timing graph nodes " << timing_wire_graph._nodes.size();
+  LOG_INFO << "wire timing graph edges " << timing_wire_graph._edges.size();
+  LOG_INFO << "get wire timing graph end";
   return timing_wire_graph;
 }
 

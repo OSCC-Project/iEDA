@@ -52,6 +52,8 @@ bool LmLayoutFileIO::saveJson()
   saveJsonPatchs();
 
   LOG_INFO << "LM save json end... dir = " << _dir;
+
+  return true;
 }
 
 bool LmLayoutFileIO::saveJsonNets()
@@ -203,7 +205,7 @@ bool LmLayoutFileIO::saveJsonNets()
     if (net_id == 0) {
       file_stream << std::setw(4) << json_net;
     } else {
-      file_stream << std::setw(0) << json_net;
+      file_stream << std::setw(4) << json_net;
     }
     // file_stream << std::setw(4) << json_net;
     file_stream.close();
@@ -232,6 +234,10 @@ bool LmLayoutFileIO::saveJsonPatchs()
   LOG_INFO << "LM save json patchs start...";
 
   makeDir(_dir + "/large_model/patchs/");
+
+  if (!_patch_grid) {
+    return false;
+  }
 
   auto& patchs = _patch_grid->get_patchs();
 
