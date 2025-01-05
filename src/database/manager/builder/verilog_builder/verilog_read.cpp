@@ -484,9 +484,9 @@ int32_t RustVerilogRead::build_assign()
       } else if (the_left_idb_net && the_right_idb_net 
                   && the_left_io_pin && the_right_io_pin) {
         // assign output_port = output_port
-          the_right_idb_net->add_io_pin(the_left_io_pin);
-          the_left_io_pin->set_net(the_right_idb_net);
-          the_left_io_pin->set_net_name(the_right_idb_net->get_net_name());
+          the_left_idb_net->add_io_pin(the_right_io_pin);
+          the_right_io_pin->set_net(the_left_idb_net);
+          the_right_io_pin->set_net_name(the_left_idb_net->get_net_name());
 
       }
     }
