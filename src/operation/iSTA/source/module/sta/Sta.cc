@@ -538,6 +538,10 @@ void Sta::linkDesignWithRustParser(const char *top_cell_name) {
         LOG_INFO
             << "assign declaration's lhs/rhs is not VerilogNetIDExpr class.";
       }
+
+      left_net_name = Str::trimmed(left_net_name.c_str());
+      right_net_name = Str::trimmed(right_net_name.c_str());
+
       Net *the_left_net = design_netlist.findNet(left_net_name.c_str());
       Net *the_right_net = design_netlist.findNet(right_net_name.c_str());
       auto *the_left_port = design_netlist.findPort(left_net_name.c_str());
