@@ -51,6 +51,7 @@ class LmLayout
   void add_pdn_map(int id, std::string name);
   void add_net_map(int id, std::string name);
   void add_pin_map(int id, std::string inst_name, std::string pin_name);
+  void add_instance_map(int id, std::string name);
 
   // operator
   int findLayerId(std::string name);
@@ -63,6 +64,8 @@ class LmLayout
   std::string findNetName(int id);
   int findPinId(std::string inst_name, std::string pin_name);
   std::pair<std::string, std::string> findPinName(int id);
+  int findInstId(std::string name);
+  std::string findInstName(int id);
 
  private:
   LmLayoutLayers _layout_layers;
@@ -80,7 +83,9 @@ class LmLayout
   std::map<std::pair<std::string, std::string>, int>
       _pin_name_map;  /// std::pair<std::string, std::string> : instance name & pin name, int id in the map
   std::map<int, std::pair<std::string, std::string>>
-      _pin_id_map;  /// std::pair<std::string, std::string> : instance name & pin name, int id in the map
+      _pin_id_map;                            /// std::pair<std::string, std::string> : instance name & pin name, int id in the map
+  std::map<std::string, int> _inst_name_map;  /// string : instance name, int id in the map
+  std::map<int, std::string> _inst_id_map;    /// string : instance name, int id in the map
 
   LmGraph _graph;
 };

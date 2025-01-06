@@ -40,9 +40,10 @@ void LmLayoutInit::init()
   initDie();
   initTracks();
   initPDN();
-  initNets();
   initInstances();
   initIOPins();
+
+  initNets();
 }
 
 void LmLayoutInit::initViaIds()
@@ -366,23 +367,25 @@ void LmLayoutInit::initInstances()
 #pragma omp parallel for schedule(dynamic)
   for (int i = 0; i < inst_total; ++i) {
     auto* idb_inst = idb_insts->get_instance_list()[i];
+    _layout->add_net_map(i, idb_inst->get_name());
+
     auto* idb_inst_pins = idb_inst->get_pin_list();
     for (auto* idb_pin : idb_inst_pins->get_pin_list()) {
       if (false == idb_pin->is_net_pin()) {
         auto type = idb_pin->is_special_net_pin() ? LmNodeTYpe::lm_pdn : LmNodeTYpe::kNone;
-        transPin(idb_pin, -1, type);
+        transPin(idb_pin, -1, type, i);
       }
     }
 
-    for (auto* layer_shape : idb_inst->get_obs_box_list()) {
-      auto* layer = layer_shape->get_layer();
-      auto order = _layout->findLayerId(layer->get_name());
-      auto* layout_layer = layout_layers.findLayoutLayer(order);
-      if (nullptr == layout_layer) {
-        LOG_WARNING << "Can not get layer order : " << layer->get_name();
-        continue;
-      }
-    }
+    // for (auto* layer_shape : idb_inst->get_obs_box_list()) {
+    //   auto* layer = layer_shape->get_layer();
+    //   auto order = _layout->findLayerId(layer->get_name());
+    //   auto* layout_layer = layout_layers.findLayoutLayer(order);
+    //   if (nullptr == layout_layer) {
+    //     // LOG_WARNING << "Can not get layer order : " << layer->get_name();
+    //     continue;
+    //   }
+    // }
 
     if (i % 1000 == 0) {
       omp_set_lock(&lck);
@@ -419,7 +422,7 @@ void LmLayoutInit::initIOPins()
   }
 }
 
-void LmLayoutInit::transPin(idb::IdbPin* idb_pin, int net_id, LmNodeTYpe type, int pin_id, bool b_io)
+void LmLayoutInit::transPin(idb::IdbPin* idb_pin, int net_id, LmNodeTYpe type, int instance_id, int pin_id, bool b_io)
 {
   auto& layout_layers = _layout->get_layout_layers();
   for (auto* layer_shape : idb_pin->get_port_box_list()) {
@@ -450,6 +453,10 @@ void LmLayoutInit::transPin(idb::IdbPin* idb_pin, int net_id, LmNodeTYpe type, i
 
         if (type == LmNodeTYpe::lm_pdn) {
           node_data->set_pdn_id(net_id);
+        }
+
+        if (instance_id != -1) {
+          node_data->set_instance_id(instance_id);
         }
 
         if (b_io) {
@@ -487,6 +494,10 @@ void LmLayoutInit::transPin(idb::IdbPin* idb_pin, int net_id, LmNodeTYpe type, i
 
             if (type == LmNodeTYpe::lm_pdn) {
               node_data->set_pdn_id(net_id);
+            }
+
+            if (instance_id != -1) {
+              node_data->set_instance_id(instance_id);
             }
 
             if (b_io) {
@@ -549,7 +560,7 @@ void LmLayoutInit::transEnclosure(int32_t ll_x, int32_t ll_y, int32_t ur_x, int3
   auto order = _layout->findLayerId(layer_name);
   auto* layout_layer = layout_layers.findLayoutLayer(order);
   if (nullptr == layout_layer) {
-    LOG_WARNING << "Can not get layer order : " << layer_name;
+    LOG_WARNING << "Can not get layer : " << layer_name;
     return;
   }
   auto& grid = layout_layer->get_grid();

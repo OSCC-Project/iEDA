@@ -144,10 +144,17 @@ void LmPatchInit::initSubNet()
           }
         } else {
           /// via ??? no need to store in patch???
+          int patch_id = patchInfoInst.get_patch_id(node1->get_row_id(), node1->get_col_id());
+          auto* patch = _patch_grid->findPatch(patch_id);
 
-          //   auto* patch = _patch_grid->findPatch(node1->get_row_id(), node1->get_col_id());
-          //   auto* patch_layer1 = patch->findLayer(node1->get_layer_id());
-          //   auto* patch_layer2 = patch->findLayer(node2->get_layer_id());
+          for (auto node_pair : {std::make_pair(node1, node1), std::make_pair(node1, node2), std::make_pair(node2, node2)}) {
+            int layer_id = (node_pair.first->get_layer_id() + node_pair.second->get_layer_id()) / 2;
+            auto* patch_layer = patch->findLayer(layer_id);
+            patch_layer->addSubnet(net_id, wire.get_id(), node_pair.first, node_pair.second);
+
+            /// label at wire
+            wire.addPatch(patch_id, layer_id);
+          }
         }
       }
     }
@@ -172,70 +179,103 @@ void LmPatchInit::initSubNet()
 std::map<int, std::pair<LmNode*, LmNode*>> LmPatchInit::splitWirePath(LmNode* node1, LmNode* node2)
 {
   std::map<int, std::pair<LmNode*, LmNode*>> node_map;
-  if (node1->get_layer_id() != node2->get_layer_id()) {
-    return node_map;
-  }
+  if (node1->get_layer_id() == node2->get_layer_id()) {
+    auto& node_grid = _layout->get_layout_layers().findLayoutLayer(node1->get_layer_id())->get_grid();
 
-  auto& node_grid = _layout->get_layout_layers().findLayoutLayer(node1->get_layer_id())->get_grid();
+    int row_min = std::min(node1->get_row_id(), node2->get_row_id());
+    int row_max = std::max(node1->get_row_id(), node2->get_row_id());
+    int col_min = std::min(node1->get_col_id(), node2->get_col_id());
+    int col_max = std::max(node1->get_col_id(), node2->get_col_id());
 
-  int row_min = std::min(node1->get_row_id(), node2->get_row_id());
-  int row_max = std::max(node1->get_row_id(), node2->get_row_id());
-  int col_min = std::min(node1->get_col_id(), node2->get_col_id());
-  int col_max = std::max(node1->get_col_id(), node2->get_col_id());
+    if (row_min == row_max) {
+      /// horizontal
+      int patch_row_id = patchInfoInst.get_patch_row_id(row_min);
+      int patch_id_min = patchInfoInst.get_patch_col_id(col_min);
+      int patch_id_max = patchInfoInst.get_patch_col_id(col_max);
+      for (int patch_col_id = patch_id_min; patch_col_id <= patch_id_max; ++patch_col_id) {
+        auto [split_node_id_min, split_node_id_max] = patchInfoInst.get_node_range(patch_col_id, true);
 
-  if (row_min == row_max) {
-    /// horizontal
-    int patch_row_id = patchInfoInst.get_patch_row_id(row_min);
-    int patch_id_min = patchInfoInst.get_patch_col_id(col_min);
-    int patch_id_max = patchInfoInst.get_patch_col_id(col_max);
-    for (int patch_col_id = patch_id_min; patch_col_id <= patch_id_max; ++patch_col_id) {
-      auto [split_node_id_min, split_node_id_max] = patchInfoInst.get_node_range(patch_col_id, true);
+        if (patch_col_id == patch_id_min) {
+          split_node_id_min = col_min;
+        }
 
-      if (patch_col_id == patch_id_min) {
-        split_node_id_min = col_min;
+        if (patch_col_id == patch_id_max) {
+          split_node_id_max = col_max;
+        }
+
+        int patch_id = patchInfoInst.patch_num_horizontal * patch_row_id + patch_col_id;
+
+        auto* split_node_1 = node_grid.get_node(row_min, split_node_id_min);
+        auto* split_node_2 = node_grid.get_node(row_min, split_node_id_max);
+        if (split_node_1 == nullptr || split_node_2 == nullptr) {
+          LOG_ERROR << "Node error after split wire";
+        }
+        node_map.emplace(patch_id, std::make_pair(split_node_1, split_node_2));
       }
+    } else {
+      /// vertical
+      int patch_id_min = patchInfoInst.get_patch_row_id(row_min);
+      int patch_id_max = patchInfoInst.get_patch_row_id(row_max);
+      int patch_col_id = patchInfoInst.get_patch_col_id(col_min);
+      for (int patch_row_id = patch_id_min; patch_row_id <= patch_id_max; ++patch_row_id) {
+        auto [split_node_id_min, split_node_id_max] = patchInfoInst.get_node_range(patch_row_id, false);
 
-      if (patch_col_id == patch_id_max) {
-        split_node_id_max = col_max;
+        if (patch_row_id == patch_id_min) {
+          split_node_id_min = row_min;
+        }
+
+        if (patch_row_id == patch_id_max) {
+          split_node_id_max = row_max;
+        }
+
+        int patch_id = patchInfoInst.patch_num_horizontal * patch_row_id + patch_col_id;
+
+        auto* split_node_1 = node_grid.get_node(split_node_id_min, col_min);
+        auto* split_node_2 = node_grid.get_node(split_node_id_max, col_min);
+        if (split_node_1 == nullptr || split_node_2 == nullptr) {
+          LOG_ERROR << "Node error after split wire";
+        }
+        node_map.emplace(patch_id, std::make_pair(split_node_1, split_node_2));
       }
-
-      int patch_id = patchInfoInst.patch_num_horizontal * patch_row_id + patch_col_id;
-
-      auto* split_node_1 = node_grid.get_node(row_min, split_node_id_min);
-      auto* split_node_2 = node_grid.get_node(row_min, split_node_id_max);
-      if (split_node_1 == nullptr || split_node_2 == nullptr) {
-        LOG_ERROR << "Node error after split wire";
-      }
-      node_map.emplace(patch_id, std::make_pair(split_node_1, split_node_2));
     }
   } else {
-    /// vertical
-    int patch_id_min = patchInfoInst.get_patch_row_id(row_min);
-    int patch_id_max = patchInfoInst.get_patch_row_id(row_max);
-    int patch_col_id = patchInfoInst.get_patch_col_id(col_min);
-    for (int patch_row_id = patch_id_min; patch_row_id <= patch_id_max; ++patch_row_id) {
-      auto [split_node_id_min, split_node_id_max] = patchInfoInst.get_node_range(patch_row_id, false);
-
-      if (patch_row_id == patch_id_min) {
-        split_node_id_min = row_min;
-      }
-
-      if (patch_row_id == patch_id_max) {
-        split_node_id_max = row_max;
-      }
-
-      int patch_id = patchInfoInst.patch_num_horizontal * patch_row_id + patch_col_id;
-
-      auto* split_node_1 = node_grid.get_node(split_node_id_min, col_min);
-      auto* split_node_2 = node_grid.get_node(split_node_id_max, col_min);
-      if (split_node_1 == nullptr || split_node_2 == nullptr) {
-        LOG_ERROR << "Node error after split wire";
-      }
-      node_map.emplace(patch_id, std::make_pair(split_node_1, split_node_2));
-    }
+    /// via
   }
 
   return node_map;
+}
+
+void LmPatchInit::initLayoutPDN()
+{
+  auto& layout_layers = _layout->get_layout_layers();
+
+  for (auto& [patch_id, patch] : _patch_grid->get_patchs()) {
+    for (auto& [layer_id, patch_layer] : patch.get_layer_map()) {
+      auto* layout_layer = layout_layers.findLayoutLayer(layer_id);
+      if (nullptr == layout_layer) {
+        LOG_WARNING << "Can not get layer order : " << layer_id;
+        return;
+      }
+      auto& grid = layout_layer->get_grid();
+
+      for (int row = patch_layer.rowIdMin; row <= patch_layer.rowIdMax; ++row) {
+        for (int col = patch_layer.colIdMin; col <= patch_layer.colIdMax; ++col) {
+        }
+      }
+    }
+  }
+}
+
+void LmPatchInit::initLayoutInstance()
+{
+}
+
+void LmPatchInit::initLayoutIO()
+{
+}
+
+void LmPatchInit::initLayoutNets()
+{
 }
 
 }  // namespace ilm
