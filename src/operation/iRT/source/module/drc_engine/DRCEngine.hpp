@@ -35,6 +35,18 @@ class DRCEngine
   // function
   void init();
   std::vector<Violation> getViolationList(DETask& de_task);
+
+  std::vector<Violation> getViolationListByTemp(DETask& de_task)
+  {
+    getViolationListBySelf(de_task);
+
+    filterViolationList(de_task);
+    if (de_task.get_proc_type() == DEProcType::kGet) {
+      buildViolationList(de_task);
+    }
+    return de_task.get_violation_list();
+  }
+
   void addTempIgnoredViolation(std::vector<Violation>& violation_list);
   void clearTempIgnoredViolationSet();
 
