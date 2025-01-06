@@ -396,6 +396,10 @@ int32_t RustVerilogRead::build_nets()
  */
 int32_t RustVerilogRead::build_assign()
 {
+  IdbDesign* idb_design = _def_service->get_design();
+  IdbPins* idb_io_pin_list = idb_design->get_io_pin_list();
+  IdbNetList* idb_net_list = idb_design->get_net_list();
+
   auto& top_module_stmts = _rust_top_module->module_stmts;
   void* stmt;
   FOREACH_VEC_ELEM(&top_module_stmts, void, stmt)
@@ -433,15 +437,35 @@ int32_t RustVerilogRead::build_assign()
       right_net_name = ieda::Str::replace(right_net_name, R"(\\)", "");
 
       // according to assign's lhs/rhs to connect port to net.
-      IdbDesign* idb_design = _def_service->get_design();
-      IdbPins* idb_io_pin_list = idb_design->get_io_pin_list();
-      IdbNetList* idb_net_list = idb_design->get_net_list();
+
       auto* the_left_idb_net = idb_net_list->find_net(left_net_name);
       auto* the_right_idb_net = idb_net_list->find_net(right_net_name);
       auto* the_left_io_pin = idb_io_pin_list->find_pin(left_net_name.c_str());
       auto* the_right_io_pin = idb_io_pin_list->find_pin(right_net_name.c_str());
 
-      if (the_left_idb_net && !the_left_io_pin) {
+      if (the_left_idb_net && the_right_idb_net && !the_left_io_pin && !the_right_io_pin) {
+        // assign net = net, need merge two net to one net.
+        auto right_instance_pin_list = the_right_idb_net->get_instance_pin_list()->get_pin_list();
+        auto right_io_pin_list = the_right_idb_net->get_io_pins()->get_pin_list();
+
+        // merge right to left net.
+        for (auto* right_instance_pin : right_instance_pin_list) {
+          the_left_idb_net->add_instance_pin(right_instance_pin);
+          the_right_idb_net->remove_pin(right_instance_pin);
+          right_instance_pin->set_net(the_left_idb_net);
+          right_instance_pin->set_net_name(left_net_name);
+        }
+
+        for (auto* right_io_pin : right_io_pin_list) {
+          the_left_idb_net->add_io_pin(right_io_pin);
+          the_right_idb_net->remove_pin(right_io_pin);
+          right_io_pin->set_net(the_left_idb_net);
+          right_io_pin->set_net_name(left_net_name);
+        }
+
+        idb_net_list->remove_net(right_net_name);
+
+      } else if (the_left_idb_net && !the_left_io_pin) {
         // assign net = input_port;
         if (the_right_io_pin && the_right_io_pin->is_io_pin()) {
           the_left_idb_net->add_io_pin(the_right_io_pin);
@@ -488,6 +512,8 @@ int32_t RustVerilogRead::build_assign()
           the_right_io_pin->set_net(the_left_idb_net);
           the_right_io_pin->set_net_name(the_left_idb_net->get_net_name());
 
+      } else {
+        std::cout << "assign " << left_net_name << " = " << right_net_name << " is not processed.";
       }
     }
   }
