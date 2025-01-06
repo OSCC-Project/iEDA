@@ -264,6 +264,9 @@ CmdSaveNetlist::CmdSaveNetlist(const char* cmd_name) : TclCmd(cmd_name)
 
   auto* exclude_cell_names = new TclStringListOption(EXCLUDE_CELL_NAMES, 1, {});
   addOption(exclude_cell_names);
+
+  auto* is_add_space = new TclSwitchOption(TCL_ADD_SPACE);
+  addOption(is_add_space);
 }
 
 unsigned CmdSaveNetlist::check()
@@ -276,6 +279,9 @@ unsigned CmdSaveNetlist::check()
 
   TclOption* exclude_cell_names = getOptionOrArg(EXCLUDE_CELL_NAMES);
   LOG_FATAL_IF(!exclude_cell_names);
+
+  TclOption* is_add_space = getOptionOrArg(TCL_ADD_SPACE);
+  LOG_FATAL_IF(!is_add_space);
 
   return 1;
 }
@@ -306,8 +312,14 @@ unsigned CmdSaveNetlist::exec()
     new_exclude_cell_names.insert(exclude_cell_name);
   }
 
+  TclOption* is_add_space_option = getOptionOrArg(TCL_ADD_SPACE);
+  bool is_add_space = false;
+  if (is_add_space_option->is_set_val()) {
+    is_add_space = true;
+  }
+
   if (str_path != nullptr) {
-    dmInst->saveVerilog(str_path, std::move(new_exclude_cell_names));
+    dmInst->saveVerilog(str_path, std::move(new_exclude_cell_names), is_add_space);
     return 1;
   }
 

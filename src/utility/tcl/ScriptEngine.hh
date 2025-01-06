@@ -467,6 +467,11 @@ class TclCmd
 
   void resetOptionArgValue();
 
+  virtual unsigned printHelp() {
+    LOG_FATAL << "This cmd has not define print help body.";
+    return 0;
+  }
+
   virtual unsigned check()
   {
     LOG_FATAL << "This cmd has not define check body.";

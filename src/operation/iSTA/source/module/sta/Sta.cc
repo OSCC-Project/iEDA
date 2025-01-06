@@ -445,8 +445,7 @@ void Sta::linkDesignWithRustParser(const char *top_cell_name) {
              return &ret_val;
            }},
           {DclType::KWire,
-           [&design_netlist](DclType dcl_type, const char *dcl_name) {
-             dcl_name = Str::trimmed(dcl_name);
+           [&design_netlist](DclType dcl_type, const char *dcl_name) {             
              Net net(dcl_name);
              auto &ret_val = design_netlist.addNet(std::move(net));
              return &ret_val;
@@ -456,12 +455,15 @@ void Sta::linkDesignWithRustParser(const char *top_cell_name) {
   auto process_dcl_stmt = [&dcl_process,
                            &design_netlist](auto *rust_verilog_dcl) {
     auto dcl_type = rust_verilog_dcl->dcl_type;
-    const auto *dcl_name = rust_verilog_dcl->dcl_name;
+    const auto * raw_dcl_name = rust_verilog_dcl->dcl_name;
     auto dcl_range = rust_verilog_dcl->range;
+
+    // for dcl ports and wire trimmed \ in name.
+    std::string dcl_name = Str::trimmed(raw_dcl_name);
 
     if (!dcl_range.has_value) {
       if (dcl_process.contains(dcl_type)) {
-        dcl_process[dcl_type](dcl_type, dcl_name);
+        dcl_process[dcl_type](dcl_type, dcl_name.c_str());
       } else {
         LOG_INFO << "not support the declaration " << dcl_name;
       }
@@ -469,7 +471,7 @@ void Sta::linkDesignWithRustParser(const char *top_cell_name) {
       auto bus_range = std::make_pair(dcl_range.start, dcl_range.end);
       for (int index = bus_range.second; index <= bus_range.first; index++) {
         // for port or wire bus, we split to one bye one port.
-        const char *one_name = Str::printf("%s[%d]", dcl_name, index);
+        const char *one_name = Str::printf("%s[%d]", dcl_name.c_str(), index);
 
         if (dcl_process.contains(dcl_type)) {
           auto *design_obj = dcl_process[dcl_type](dcl_type, one_name);
@@ -477,13 +479,13 @@ void Sta::linkDesignWithRustParser(const char *top_cell_name) {
             auto *port = dynamic_cast<Port *>(design_obj);
             if (index == bus_range.second) {
               unsigned bus_size = bus_range.first + 1;
-              PortBus port_bus(dcl_name, bus_range.first, bus_range.second,
+              PortBus port_bus(dcl_name.c_str(), bus_range.first, bus_range.second,
                                bus_size, port->get_port_dir());
               port_bus.addPort(index, port);
               auto &ret_val = design_netlist.addPortBus(std::move(port_bus));
               port->set_port_bus(&ret_val);
             } else {
-              auto *found_port_bus = design_netlist.findPortBus(dcl_name);
+              auto *found_port_bus = design_netlist.findPortBus(dcl_name.c_str());
               found_port_bus->addPort(index, port);
               port->set_port_bus(found_port_bus);
             }
@@ -536,6 +538,10 @@ void Sta::linkDesignWithRustParser(const char *top_cell_name) {
         LOG_INFO
             << "assign declaration's lhs/rhs is not VerilogNetIDExpr class.";
       }
+
+      left_net_name = Str::trimmed(left_net_name.c_str());
+      right_net_name = Str::trimmed(right_net_name.c_str());
+
       Net *the_left_net = design_netlist.findNet(left_net_name.c_str());
       Net *the_right_net = design_netlist.findNet(right_net_name.c_str());
       auto *the_left_port = design_netlist.findPort(left_net_name.c_str());
