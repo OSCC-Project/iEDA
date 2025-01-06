@@ -264,7 +264,7 @@ std::vector<Violation> ViolationRepairer::getMultiNetViolationList(VRModel& vr_m
     de_task.set_net_patch_map(net_patch_map);
     de_task.set_need_checked_net_set(need_checked_net_set);
   }
-  return RTDE.getViolationList(de_task);
+  return RTDE.getViolationListByTemp(de_task);
 }
 
 std::vector<Violation> ViolationRepairer::getSingleNetViolationList(VRModel& vr_model)
@@ -317,7 +317,7 @@ std::vector<Violation> ViolationRepairer::getSingleNetViolationList(VRModel& vr_
     de_task.set_net_patch_map(net_patch_map);
     de_task.set_need_checked_net_set(need_checked_net_set);
   }
-  return RTDE.getViolationList(de_task);
+  return RTDE.getViolationListByTemp(de_task);
 }
 
 void ViolationRepairer::repairViolation(VRModel& vr_model)
