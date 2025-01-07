@@ -436,8 +436,11 @@ int32_t RustVerilogRead::build_assign()
         std::cout << "assign declaration's lhs/rhs is not VerilogNetIDExpr class." << std::endl;
       }
 
-      left_net_name = ieda::Str::trimmed(left_net_name.c_str());
-      right_net_name = ieda::Str::trimmed(right_net_name.c_str());
+      std::string tmp = ieda::Str::trimmed(left_net_name.c_str());
+      std::string tmp1 = ieda::Str::trimmed(right_net_name.c_str());
+
+      left_net_name = ieda::Str::replace(left_net_name, R"(\\)", "");
+      right_net_name = ieda::Str::replace(right_net_name, R"(\\)", "");
 
       // according to assign's lhs/rhs to connect port to net.
 
@@ -457,7 +460,7 @@ int32_t RustVerilogRead::build_assign()
       if (the_left_idb_net && the_right_idb_net && !the_left_io_pin && !the_right_io_pin) {
         // assign net = net, need merge two net to one net.
 
-        std::cout << "merge " << left_net_name << " = " << right_net_name << "\n";
+        // std::cout << "merge " << left_net_name << " = " << right_net_name << "\n";
 
         auto left_instance_pin_list = the_left_idb_net->get_instance_pin_list()->get_pin_list();
         auto left_io_pin_list = the_left_idb_net->get_io_pins()->get_pin_list();
