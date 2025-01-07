@@ -364,10 +364,10 @@ void LmLayoutInit::initInstances()
   int inst_total = (int) idb_insts->get_instance_list().size();
   int number = 0;
 
-#pragma omp parallel for schedule(dynamic)
+  // #pragma omp parallel for schedule(dynamic)
   for (int i = 0; i < inst_total; ++i) {
     auto* idb_inst = idb_insts->get_instance_list()[i];
-    _layout->add_net_map(i, idb_inst->get_name());
+    _layout->add_instance_map(i, idb_inst->get_name());
 
     auto* idb_inst_pins = idb_inst->get_pin_list();
     for (auto* idb_pin : idb_inst_pins->get_pin_list()) {
