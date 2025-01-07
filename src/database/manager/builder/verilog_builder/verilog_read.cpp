@@ -436,12 +436,8 @@ int32_t RustVerilogRead::build_assign()
         std::cout << "assign declaration's lhs/rhs is not VerilogNetIDExpr class." << std::endl;
       }
 
-      left_net_name = ieda::Str::replace(left_net_name, R"(\\)", "");
-      right_net_name = ieda::Str::replace(right_net_name, R"(\\)", "");
-
-      if (ieda::Str::contain(left_net_name.c_str(), "_exu_io_out_bits_rd")) {
-        int a = 0;
-      }
+      left_net_name = ieda::Str::trimmed(left_net_name.c_str());
+      right_net_name = ieda::Str::trimmed(right_net_name.c_str());
 
       // according to assign's lhs/rhs to connect port to net.
 
