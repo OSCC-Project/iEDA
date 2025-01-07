@@ -17,6 +17,7 @@
 #include "py_lm.h"
 
 #include "lm_api.h"
+#include "timing_api.hh"
 
 namespace python_interface {
 
@@ -39,6 +40,19 @@ bool large_model_feature(std::string dir)
   }
   ilm::LargeModelApi lm_api;
   return lm_api.buildLargeModelFeature(dir);
+}
+
+ieval::TimingWireGraph get_timing_wire_graph() {
+
+  ilm::LargeModelApi lm_api;
+  lm_api.runLmSTA();
+  
+
+  auto* timing_wire_graph_ptr = ieval::TimingAPI::getInst()->getTimingWireGraph();
+  auto timing_wire_graph = std::move(*timing_wire_graph_ptr);
+  delete timing_wire_graph_ptr;
+
+  return timing_wire_graph;
 }
 
 }  // namespace python_interface

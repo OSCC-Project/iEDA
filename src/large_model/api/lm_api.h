@@ -31,6 +31,9 @@ class LargeModelApi
   bool buildLargeModelGraphData(const std::string path);
   bool buildLargeModelFeature(const std::string dir);
 
+  // run the large model sta for get timing data.
+  bool runLmSTA(const std::string dir = "LM_STA");
+
   std::map<int, LmNet> getGraph(std::string path = "");
 
  private:

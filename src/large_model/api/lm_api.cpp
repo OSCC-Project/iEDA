@@ -19,6 +19,8 @@
 
 #include "large_model.h"
 
+#include "init_sta.hh"
+
 namespace ilm {
 
 bool LargeModelApi::buildLargeModelLayoutData(const std::string path)
@@ -51,6 +53,17 @@ bool LargeModelApi::buildLargeModelFeature(const std::string dir)
   LargeModel large_model;
 
   large_model.buildFeature(dir);
+
+  return true;
+}
+
+bool LargeModelApi::runLmSTA(const std::string dir) {
+  LargeModel large_model;
+
+  large_model.buildLayoutData(dir);
+  large_model.buildGraphDataWithoutSave(dir);
+
+  large_model.runLmSTA(dir);
 
   return true;
 }

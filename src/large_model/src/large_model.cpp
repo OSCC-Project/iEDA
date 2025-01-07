@@ -20,6 +20,7 @@
 #include "Log.hh"
 #include "idm.h"
 #include "lm_feature.h"
+#include "init_sta.hh"
 
 namespace ilm {
 LargeModel::LargeModel()
@@ -54,6 +55,11 @@ bool LargeModel::buildGraphData(const std::string path)
 
   _data_manager.saveData(path);
 
+  return b_success;
+}
+
+bool LargeModel::buildGraphDataWithoutSave(const std::string path) {
+  bool b_success = _data_manager.buildGraphData();
   return b_success;
 }
 
@@ -93,6 +99,16 @@ void LargeModel::generateFeature(const std::string dir)
   feature.buildFeatureDrc();
   feature.buildFeatureStatis();
   feature.buildFeatureTiming();
+}
+
+/// for run large model sta api.
+bool LargeModel::runLmSTA(const std::string dir) {
+
+  auto* eval_tp = ieval::InitSTA::getInst();  // evaluate timing and power.
+
+  eval_tp->runLmSTA(&_data_manager.layout_dm.get_layout(), dir);
+
+  return true;  
 }
 
 bool LargeModel::buildPatchData(const std::string dir)

@@ -45,6 +45,76 @@ namespace ieval {
 
 struct TimingNet;
 
+/// @brief The timing wire graph for weiguo used.
+struct TimingWireNode {
+  std::string _name; //!< for pin/port name or node id.
+  bool _is_pin = false;
+  bool _is_port = false;
+};
+
+struct TimingWireEdge {
+  double _feature_R = 0.0;
+  double _feature_C = 0.0;
+  double _feature_from_slew = 0.0;
+  double _feature_to_slew = 0.0;
+  double _feature_wire_delay = 0.0;
+
+  bool _is_net_edge = true; //!< is net edge or instance edge.
+
+  unsigned _from_node = 0;
+  unsigned _to_node = 0;
+};
+
+struct TimingWireGraph {
+  std::vector<TimingWireNode> _nodes; //!< each one is a graph node
+  std::vector<TimingWireEdge> _edges;
+  std::vector<std::vector<unsigned>> _adjacency_list; //!< adjacency list for node fanout edges.
+  
+  std::optional<unsigned> findNode(std::string& node_name) {
+    for (unsigned index = 0 ; auto& node : _nodes) {
+      if (node._name == node_name) {
+        return index;
+      }
+      ++index;
+    }
+    return std::nullopt;
+  }
+
+  unsigned addNode(const TimingWireNode& node) { 
+    _nodes.push_back(node);
+    return _nodes.size() - 1;
+  }
+
+  TimingWireEdge& addEdge(unsigned wire_from_node_index, unsigned wire_to_node_index) {
+    TimingWireEdge wire_graph_edge;
+
+    wire_graph_edge._from_node = wire_from_node_index;
+    wire_graph_edge._to_node = wire_to_node_index;
+
+    addAdjacencyListNode(wire_from_node_index,
+                                               wire_to_node_index);
+
+    return _edges.emplace_back(std::move(wire_graph_edge));
+  }
+
+  void addAdjacencyListNode(unsigned wire_from_node_index,
+                            unsigned wire_to_node_index) {
+    // reserve memory
+    while (_adjacency_list.size() <= wire_from_node_index) {
+      _adjacency_list.emplace_back();
+    }
+    auto& adjacency_list = _adjacency_list[wire_from_node_index];
+
+    if (adjacency_list.end() == std::find(adjacency_list.begin(),
+                                          adjacency_list.end(),
+                                          wire_to_node_index)) {
+      adjacency_list.emplace_back(wire_to_node_index);
+    }
+  }
+};
+
+
+
 class InitSTA
 {
  public:
@@ -84,15 +154,17 @@ class InitSTA
   double getWireResistance(const std::string& net_name, const std::string& wire_node_name) const;
   double getWireCapacitance(const std::string& net_name, const std::string& wire_node_name) const;
   double getWireDelay(const std::string& net_name, const std::string& wire_node_name) const;
-  // double getWirePower(const std::string& net_name, const std::string& wire_node_name) const;  
+  // double getWirePower(const std::string& net_name, const std::string& wire_node_name) const;
+  TimingWireGraph getTimingWireGraph(); 
 
   void buildRCTree(const std::string& routing_type);
   void buildLmRCTree(ilm::LmLayout* lm_layout, std::string work_dir);
   void updateTiming(const std::vector<TimingNet*>& timing_net_list, int32_t dbu_unit);
   void updateTiming(const std::vector<TimingNet*>& timing_net_list, const std::vector<std::string>& name_list, const int& propagation_level,
-                    int32_t dbu_unit);
+                    int32_t dbu_unit);  
 
   bool isClockNet(const std::string& net_name) const;
+
 
  private:
   void leaglization(const std::vector<std::shared_ptr<salt::Pin>>& pins);

@@ -89,8 +89,8 @@ void LmFeatureTiming::buildNetTimingPowerFeature()
   auto& lm_graph = _layout->get_graph();
   auto& net_id_map = _layout->get_net_name_map();
 
-#pragma omp parallel for schedule(dynamic)
-  for (int i = 0; i < (int) net_id_map.size(); ++i) {
+// #pragma omp parallel for schedule(dynamic)
+  for (int i = 0; i < (int)net_id_map.size(); ++i) {
     auto it = net_id_map.begin();
     std::advance(it, i);
     auto& net_name = it->first;
@@ -124,9 +124,10 @@ void LmFeatureTiming::build()
   auto* eval_tp = ieval::InitSTA::getInst();  // evaluate timing and power.
 
   eval_tp->runLmSTA(_layout, _dir);
-  //   eval_tp->evalTiming("WireGraph", true);
-
+ 
   buildNetTimingPowerFeature();
+
+  // auto timing_wire_graph = eval_tp->getTimingWireGraph();
 }
 
 }  // namespace ilm

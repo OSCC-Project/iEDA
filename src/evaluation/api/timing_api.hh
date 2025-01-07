@@ -20,6 +20,9 @@ class LmLayout;
 }
 
 namespace ieval {
+
+class TimingWireGraph;
+
 class TimingAPI
 {
  public:
@@ -32,6 +35,7 @@ class TimingAPI
   void runSTA();
   void runLmSTA(ilm::LmLayout* lm_layout);
   void evalTiming(const std::string& routing_type, const bool& rt_done = false);
+  TimingWireGraph* getTimingWireGraph();
 
   static void destroyInst();
 
