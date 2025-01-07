@@ -24,6 +24,7 @@
 #include "init_sta.hh"
 
 #include <algorithm>
+#include <yaml-cpp/yaml.h>
 
 #include "RTInterface.hpp"
 #include "api/PowerEngine.hh"
@@ -1051,7 +1052,56 @@ TimingWireGraph InitSTA::getTimingWireGraph() {
   LOG_INFO << "wire timing graph nodes " << timing_wire_graph._nodes.size();
   LOG_INFO << "wire timing graph edges " << timing_wire_graph._edges.size();
   LOG_INFO << "get wire timing graph end";
+
+  // for debug
+  // saveTimingGraph(timing_wire_graph, "./timing_wire_graph.yaml");
+
   return timing_wire_graph;
+}
+
+void saveTimingGraph(const TimingWireGraph& timing_wire_graph, const std::string& yaml_file_name) {
+  LOG_INFO << "save wire timing graph start.";
+  YAML::Node yaml_graph_node;
+
+  for (unsigned node_id = 0; auto& node : timing_wire_graph._nodes) {
+    std::string node_name = Str::printf("node_%d", node_id++);
+    YAML::Node the_node;
+    yaml_graph_node[node_name] = the_node;
+    the_node["name"] = node._name;
+    the_node["is_pin"] = node._is_pin;
+    the_node["is_port"] = node._is_port;
+
+    YAML::Node adjaceny_node;
+    the_node["adjaceny_node"] = adjaceny_node;
+
+    if (node_id <= timing_wire_graph._adjacency_list.size()) {
+      for (unsigned adjacency_node :
+           timing_wire_graph._adjacency_list[node_id - 1]) {
+        adjaceny_node.push_back(adjacency_node);
+      }
+    }
+  }
+
+  for (unsigned edge_id = 0; auto& edge : timing_wire_graph._edges) {
+    std::string edge_name = Str::printf("edge_%d", edge_id++);
+    YAML::Node the_edge;
+    yaml_graph_node[edge_name] = the_edge;
+    the_edge["from_node"] = edge._from_node;
+    the_edge["to_node"] = edge._to_node;
+    the_edge["feature_R"] = edge._feature_R;
+    the_edge["feature_C"] = edge._feature_C;
+    the_edge["feature_from_slew"] = edge._feature_from_slew;
+    the_edge["feature_to_slew"] = edge._feature_to_slew;
+    the_edge["feature_wire_delay"] = edge._feature_wire_delay;
+    the_edge["is_net_edge"] = edge._is_net_edge;
+  }
+
+  std::ofstream file(yaml_file_name, std::ios::trunc);
+  file << yaml_graph_node << std::endl;
+  file.close();
+  
+  LOG_INFO << "save wire timing graph end.";
+  LOG_INFO << "output wire graph yaml file path: " << yaml_file_name;
 }
 
 void InitSTA::updateTiming(const std::vector<TimingNet*>& timing_net_list,

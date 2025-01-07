@@ -42,13 +42,14 @@ bool large_model_feature(std::string dir)
   return lm_api.buildLargeModelFeature(dir);
 }
 
-ieval::TimingWireGraph get_timing_wire_graph() {
+ieval::TimingWireGraph get_timing_wire_graph(std::string wire_graph_yaml_path) {
 
   ilm::LargeModelApi lm_api;
-  lm_api.runLmSTA();
-  
+  lm_api.runLmSTA(); 
 
   auto* timing_wire_graph_ptr = ieval::TimingAPI::getInst()->getTimingWireGraph();
+  saveTimingGraph(*timing_wire_graph_ptr, wire_graph_yaml_path);
+
   auto timing_wire_graph = std::move(*timing_wire_graph_ptr);
   delete timing_wire_graph_ptr;
 
