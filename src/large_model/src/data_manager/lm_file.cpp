@@ -276,6 +276,7 @@ bool LmLayoutFileIO::saveJsonPatchs()
 
         /// sub net in patch for each layer
         json_layer["net_num"] = patch_layer.get_sub_nets().size();
+        json json_nets = json::array();
         for (auto& [net_id, lm_net] : patch_layer.get_sub_nets()) {
           json json_net = {};
           json_net["id"] = net_id;
@@ -306,9 +307,10 @@ bool LmLayoutFileIO::saveJsonPatchs()
             }
           }
           json_net["wires"] = json_wires;
-
-          json_layer["net"] = json_net;
+          json_nets.push_back(json_net);
         }
+        json_layer["nets"] = json_nets;
+
         json_layers.push_back(json_layer);
       }
 
