@@ -60,6 +60,12 @@ void LmLayout::add_pin_map(int id, std::string inst_name, std::string pin_name)
   _pin_id_map.insert(std::make_pair(id, name_pair));
 }
 
+void LmLayout::add_instance_map(int id, std::string name)
+{
+  _inst_name_map.insert(std::make_pair(name, id));
+  _inst_id_map.insert(std::make_pair(id, name));
+}
+
 int LmLayout::findLayerId(std::string name)
 {
   auto it = _layer_name_map.find(name);
@@ -161,6 +167,26 @@ std::pair<std::string, std::string> LmLayout::findPinName(int id)
   }
 
   return std::make_pair("", "");
+}
+
+int LmLayout::findInstId(std::string name)
+{
+  auto it = _inst_name_map.find(name);
+  if (it != _inst_name_map.end()) {
+    return it->second;
+  }
+
+  return -1;
+}
+
+std::string LmLayout::findInstName(int id)
+{
+  auto it = _inst_id_map.find(id);
+  if (it != _inst_id_map.end()) {
+    return it->second;
+  }
+
+  return "";
 }
 
 }  // namespace ilm

@@ -39,6 +39,11 @@ class LmPatchInit
 
   void initSubNet();
 
+  void initLayoutPDN();
+  void initLayoutInstance();
+  void initLayoutIO();
+  void initLayoutNets();
+
   std::map<int, std::pair<LmNode*, LmNode*>> splitWirePath(LmNode* node1, LmNode* node2);
 };
 
