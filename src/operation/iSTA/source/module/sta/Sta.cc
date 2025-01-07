@@ -460,6 +460,7 @@ void Sta::linkDesignWithRustParser(const char *top_cell_name) {
 
     // for dcl ports and wire trimmed \ in name.
     std::string dcl_name = Str::trimmed(raw_dcl_name);
+    dcl_name = Str::replace(dcl_name, R"(\\)", "");
 
     if (!dcl_range.has_value) {
       if (dcl_process.contains(dcl_type)) {
@@ -512,6 +513,7 @@ void Sta::linkDesignWithRustParser(const char *top_cell_name) {
       std::string inst_name = verilog_inst->inst_name;
       inst_name = Str::trimmed(inst_name.c_str());
       inst_name = Str::replace(inst_name, " ", "");
+      inst_name = Str::replace(inst_name, R"(\\)", "");
 
       const char *liberty_cell_name = verilog_inst->cell_name;
       auto port_connections = verilog_inst->port_connections;
@@ -744,7 +746,8 @@ void Sta::linkDesignWithRustParser(const char *top_cell_name) {
       design_netlist.addInstance(std::move(inst));
     }
   }
-
+   
+  // build assign stmt
   //record the merge nets.
   std::map<std::string, Net*> remove_to_merge_nets;
   FOREACH_VEC_ELEM(&top_module_stmts, void, stmt) {
@@ -779,9 +782,19 @@ void Sta::linkDesignWithRustParser(const char *top_cell_name) {
         LOG_INFO
             << "assign declaration's lhs/rhs is not VerilogNetIDExpr class.";
       }
+      
+      LOG_INFO << "assign " << left_net_name << " = " << right_net_name << "\n";
 
       left_net_name = Str::trimmed(left_net_name.c_str());
       right_net_name = Str::trimmed(right_net_name.c_str());
+
+      left_net_name = Str::replace(left_net_name, R"(\\)", "");
+      right_net_name = Str::replace(right_net_name, R"(\\)", "");
+
+      // for debug
+      // if (Str::contain(left_net_name.c_str(), "io_master_araddr[0]")) {
+      //   LOG_INFO << "debug";
+      // }
 
       Net *the_left_net = design_netlist.findNet(left_net_name.c_str());
       if (!the_left_net && remove_to_merge_nets.contains(left_net_name)) {
@@ -803,11 +816,10 @@ void Sta::linkDesignWithRustParser(const char *top_cell_name) {
 
         // merge left to right net.
         for (auto* left_pin_port : left_pin_ports) {
-          the_right_net->addPinPort(left_pin_port);
           the_left_net->removePinPort(left_pin_port);
+          the_right_net->addPinPort(left_pin_port);          
         }
-        
-        design_netlist.removeNet(the_left_net);
+
         remove_to_merge_nets[left_net_name] = the_right_net; 
 
       } else if (the_left_net && !the_left_port) {
@@ -835,14 +847,25 @@ void Sta::linkDesignWithRustParser(const char *top_cell_name) {
         // assign output_port = 1'b0(1'b1);
 
         auto &created_net = design_netlist.addNet(Net(left_net_name.c_str()));
+        LOG_FATAL_IF(!the_left_port) << "the left port is not exist.";
         created_net.addPinPort(the_left_port);
 
       } else if (the_left_net && the_right_net && the_left_port && the_right_port) {
 
         // assign output_port = output_port
-        the_left_net->addPinPort(the_right_port);        
+        LOG_FATAL_IF(!the_right_port) << "the right port is not exist.";
+        the_left_net->addPinPort(the_right_port);
       } else {
         LOG_FATAL << "assign " << left_net_name << " = " << right_net_name << " is not processed.";
+      }
+
+      // remove ununsed nets.
+      if (the_left_net->get_pin_ports().size() == 0) {
+        design_netlist.removeNet(the_left_net);
+      }
+
+      if (the_right_net->get_pin_ports().size() == 0) {
+        design_netlist.removeNet(the_right_net);
       }
 
     } 
