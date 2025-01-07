@@ -106,14 +106,14 @@ bool FeatureManager::save_pl_eval_union(std::string jsonl_path, std::string csv_
   _summary->set_density_eval(union_db.density_map_summary);
   _summary->set_congestion_eval(union_db.congestion_summary);
 
-  builder.evalTiming("EGR", true);
+  // builder.evalTiming("EGR", true);
 
-  builder.evalTiming("HPWL");
-  builder.evalTiming("FLUTE");
-  builder.evalTiming("SALT");
+  // builder.evalTiming("HPWL");
+  // builder.evalTiming("FLUTE");
+  // builder.evalTiming("SALT");
 
-  auto union_timing_db = builder.buildTimingUnionEvalSummary();
-  _summary->set_timing_eval(union_timing_db);
+  // auto union_timing_db = builder.buildTimingUnionEvalSummary();
+  // _summary->set_timing_eval(union_timing_db);
 
   FeatureParser feature_parser(_summary);
   bool jsonl_success = feature_parser.buildSummaryEvalJsonl(jsonl_path);
