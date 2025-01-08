@@ -262,6 +262,9 @@ class Sta {
   std::vector<RcNet*> getAllRcNet() {
     std::vector<RcNet*> rc_nets;
     for (auto& [net, rc_net] : _net_to_rc_net) {
+      if (!rc_net->rct()) {
+        continue;
+      }
       rc_nets.push_back(rc_net.get());
     }
     return rc_nets;

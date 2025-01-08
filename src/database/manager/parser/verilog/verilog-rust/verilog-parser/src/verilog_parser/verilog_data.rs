@@ -227,8 +227,8 @@ pub struct VerilogConstantID {
 impl VerilogConstantID {
     pub fn new(bit_width: u32, value: &str) -> VerilogConstantID {
         let formatted_constant_id = format!("{}'{}", bit_width, value);
-        VerilogConstantID { 
-            bit_width: bit_width, 
+        VerilogConstantID {
+            bit_width: bit_width,
             value: VerilogID::new(value),
             formatted_constant_id: formatted_constant_id,
         }
@@ -256,10 +256,9 @@ impl VerilogVirtualBaseID for VerilogConstantID {
         &self.value.get_base_name()
     }
 
-
     fn set_base_name(&mut self, id: &str) {
         self.value.set_base_name(id);
-        self.formatted_constant_id = format!("{}'{}", self.bit_width,self.value.get_base_name());
+        self.formatted_constant_id = format!("{}'{}", self.bit_width, self.value.get_base_name());
     }
 
     fn as_any(&self) -> &dyn std::any::Any {
@@ -596,11 +595,12 @@ impl VerilogInst {
             if expr_net.get_verilog_id().is_bus_index_id() {
                 bus_range_max -= 1;
             } else if expr_net.get_verilog_id().is_constant_id() {
-                let mut bit_width = expr_net.get_verilog_id().as_any().downcast_ref::<VerilogConstantID>().unwrap().get_bit_width();
+                let mut bit_width =
+                    expr_net.get_verilog_id().as_any().downcast_ref::<VerilogConstantID>().unwrap().get_bit_width();
                 while bit_width > 0 {
                     bus_range_max -= 1;
                     if bus_range_max == port_index {
-                        const_net_bit_index = Some(bit_width-1);
+                        const_net_bit_index = Some(bit_width - 1);
                         break;
                     }
                     bit_width -= 1;
@@ -687,7 +687,7 @@ impl VerilogInst {
             let net_value = connect_net_id.get_base_name();
             let new_net_value = &net_value[1..];
             let bit_value = new_net_value.chars().nth(const_net_bit_index as usize).unwrap();
-            let value= format!("{}{}", 'b', bit_value);
+            let value = format!("{}{}", 'b', bit_value);
             let const_verilog_id = VerilogConstantID::new(1, &value);
             let dyn_const_verilog_id: Box<dyn VerilogVirtualBaseID> = Box::new(const_verilog_id);
             let net_id_expr = VerilogConstantExpr::new(0, dyn_const_verilog_id);
@@ -724,12 +724,17 @@ impl VerilogInst {
         // process the inst connection below.
         let mut port_connect_net_option: Option<Box<dyn VerilogVirtualBaseNetExpr>> = None;
         for port_connection in &self.port_connections {
-            if port_connection.get_port_id().get_name() == port_id.get_base_name() {
+            // for port may be splited, we need judge port full name and port base name. 
+            if (port_connection.get_port_id().get_name() == port_id.get_base_name())
+                || (port_connection.get_port_id().get_name() == port_id.get_name())
+            {
                 if let Some(net_expr) = port_connection.get_net_expr().clone() {
                     let mut port_connect_net: Box<dyn VerilogVirtualBaseNetExpr> = net_expr;
                     if port_connect_net.is_id_expr() {
-                        // is not concat expr.
-                        if port_id.is_bus_index_id() || port_id.is_bus_slice_id() {
+                        // is not concat expr.Only port base name match need consider bus index and slice.
+                        if (port_connection.get_port_id().get_name() == port_id.get_base_name())
+                            && (port_id.is_bus_index_id() || port_id.is_bus_slice_id())
+                        {
                             // find port range first
                             let borrowed_cur_module = cur_module.borrow();
                             let port_dcls_stmt = borrowed_cur_module.find_dcls_stmt(port_id.get_base_name()).unwrap();

@@ -64,13 +64,23 @@ void FixFanout::fixFanout() {
 }
 
 void FixFanout::fixFanout(IdbNet *net) {
-  // return;
   int fanout = net->get_load_pins().size();
   while (fanout > _max_fanout) {
     auto load_pins = net->get_load_pins();
+    bool connect_to_port = false;  // if net connect to a port need rename for the net
+    for (auto pin : load_pins) {
+      if (pin->is_io_pin()) {
+        connect_to_port = true;
+        break;
+      }
+    }
     /* code */
     IdbNet *in_net, *out_net;
     in_net = net;
+    if (connect_to_port) {
+      string re_name = net->get_net_name() + "_renamed";
+      net->set_net_name(re_name);
+    }
     string net_name = ("fanout_net_" + std::to_string(_make_net_index));
     _make_net_index++;
     out_net = makeNet(net_name.c_str());
