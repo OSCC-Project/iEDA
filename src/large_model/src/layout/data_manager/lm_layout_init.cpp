@@ -465,7 +465,9 @@ void LmLayoutInit::transPin(idb::IdbPin* idb_pin, int net_id, LmNodeTYpe type, i
         if (node_data->get_pin_id() > -1 && pin_id != node_data->get_pin_id()) {
           error_pin_num++;
         }
-        node_data->set_pin_id(pin_id);
+        if (pin_id > -1) {
+          node_data->set_pin_id(pin_id);
+        }
         node_data->set_connect_type(LmNodeConnectType::lm_via);
       }
     } else {
@@ -506,7 +508,10 @@ void LmLayoutInit::transPin(idb::IdbPin* idb_pin, int net_id, LmNodeTYpe type, i
             if (node_data->get_pin_id() > -1 && pin_id != node_data->get_pin_id()) {
               error_pin_num++;
             }
-            node_data->set_pin_id(pin_id);
+
+            if (pin_id > -1) {
+              node_data->set_pin_id(pin_id);
+            }
           }
         }
       }
@@ -642,20 +647,20 @@ void LmLayoutInit::initNets()
     auto* lm_net = graph.addNet(net_id);
 
     for (auto* idb_inst_pin : idb_net->get_instance_pin_list()->get_pin_list()) {
-      if (lm_net != nullptr) {
-        lm_net->addPinId(pin_id);
+      if (lm_net == nullptr) {
+        continue;
       }
-
+      lm_net->addPinId(pin_id);
       _layout->add_pin_map(pin_id, idb_inst_pin->get_instance()->get_name(), idb_inst_pin->get_pin_name());
 
       pin_id++;
     }
 
     for (auto* io_pin : idb_net->get_io_pins()->get_pin_list()) {
-      if (lm_net != nullptr) {
-        lm_net->addPinId(pin_id);
+      if (lm_net == nullptr) {
+        continue;
       }
-
+      lm_net->addPinId(pin_id);
       _layout->add_pin_map(pin_id, "", io_pin->get_pin_name());
       pin_id++;
     }
@@ -673,12 +678,13 @@ void LmLayoutInit::initNets()
 
     for (auto* idb_inst_pin : idb_net->get_instance_pin_list()->get_pin_list()) {
       auto pin_id = _layout->findPinId(idb_inst_pin->get_instance()->get_name(), idb_inst_pin->get_pin_name());
-      transPin(idb_inst_pin, net_id, LmNodeTYpe::lm_net, pin_id);
+      auto instance_id = _layout->findInstId(idb_inst_pin->get_instance()->get_name());
+      transPin(idb_inst_pin, net_id, LmNodeTYpe::lm_net, instance_id, pin_id, false);
     }
 
     for (auto* io_pin : idb_net->get_io_pins()->get_pin_list()) {
       auto pin_id = _layout->findPinId("", io_pin->get_pin_name());
-      transPin(io_pin, net_id, LmNodeTYpe::lm_net, pin_id, true);
+      transPin(io_pin, net_id, LmNodeTYpe::lm_net, -1, pin_id, true);
     }
 
     /// init wires
