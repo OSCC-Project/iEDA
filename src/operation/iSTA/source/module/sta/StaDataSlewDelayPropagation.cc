@@ -56,17 +56,16 @@ unsigned StaDataSlewDelayPropagation::operator()(StaVertex* the_vertex) {
 
   // data propagation end at the clock vertex.
   if (the_vertex->is_end()) {
+    // calc check arc
+    FOREACH_SNK_ARC(the_vertex, snk_arc) {
+      snk_arc->exec(*this);
+    }
     return 1;
   }
 
   unsigned is_ok = 1;
   FOREACH_SRC_ARC(the_vertex, src_arc) {
     if (!src_arc->isDelayArc()) {
-      // calculate the check arc constrain value.
-      if (src_arc->isCheckArc()) {
-        StaDelayPropagation delay_propagation;
-        src_arc->exec(delay_propagation);
-      }
       continue;
     }
 
