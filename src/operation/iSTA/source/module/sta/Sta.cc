@@ -2376,6 +2376,8 @@ unsigned Sta::resetPathData() {
  * @return unsigned
  */
 unsigned Sta::updateTiming() {
+  ieda::Stats stats;
+
   LOG_INFO << "update timing start";
 
   resetSdcConstrain();
@@ -2431,6 +2433,11 @@ unsigned Sta::updateTiming() {
   }
 
   LOG_INFO << "update timing end";
+  
+  double memory_delta = stats.memoryDelta();
+  LOG_INFO << "update timing memory usage " << memory_delta << "MB";
+  double time_delta = stats.elapsedRunTime();
+  LOG_INFO << "update timing time elapsed " << time_delta << "s";
   return 1;
 }
 

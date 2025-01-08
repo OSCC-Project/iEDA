@@ -99,21 +99,29 @@ unsigned StaDataSlewDelayPropagation::operator()(StaVertex* the_vertex) {
  * @return unsigned
  */
 unsigned StaDataSlewDelayPropagation::operator()(StaGraph* the_graph) {
+  ieda::Stats stats;
+  LOG_INFO << "data slew delay propagation start";
   unsigned is_ok = 1;
 
   StaVertex* the_vertex;
   FOREACH_VERTEX(the_graph, the_vertex) {
+    if (the_vertex->getName() == "result_reg_reg_118_:CP") {
+      LOG_INFO << "Debug";
+    }
     // start from the vertex which is level one and has slew prop.
-    if (the_vertex->get_level() == 1 && the_vertex->is_slew_prop()) {
-      LOG_FATAL_IF(!the_vertex->is_delay_prop())
-          << "the vertex should be delay propagated.";
-      _bfs_queue.emplace_back(the_vertex);
+    if (the_vertex->get_level() == 1) {
+      // only propagate the vertex has slew.
+      if (the_vertex->is_slew_prop()) {
+        LOG_FATAL_IF(!the_vertex->is_delay_prop())
+            << "the vertex should be delay propagated.";
+        _bfs_queue.emplace_back(the_vertex);
+      }
     }
   }
 
   // lambda for propagate the current queue.
   auto propagate_current_queue = [this](auto& current_queue) {
-    LOG_INFO << "Propagating current queue vertexes number is "
+    LOG_INFO << "propagating current data queue vertexes number is "
              << current_queue.size();
 
 #if 0
@@ -148,6 +156,14 @@ unsigned StaDataSlewDelayPropagation::operator()(StaGraph* the_graph) {
     std::swap(_bfs_queue, _next_bfs_queue);
 
   } while (!_bfs_queue.empty());
+
+  LOG_INFO << "data slew delay propagation end";
+
+  double memory_delta = stats.memoryDelta();
+  LOG_INFO << "data slew delay propagation memory usage " << memory_delta
+           << "MB";
+  double time_delta = stats.elapsedRunTime();
+  LOG_INFO << "data slew delay propagation time elapsed " << time_delta << "s";
 
   return is_ok;
 }

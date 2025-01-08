@@ -57,6 +57,8 @@ unsigned StaClockSlewDelayPropagation::operator()(StaVertex* the_vertex) {
 
   // clock propagation end at the clock vertex.
   if (the_vertex->is_clock()) {
+    the_vertex->set_is_slew_prop();
+    the_vertex->set_is_delay_prop();
     return 1;
   }
 
@@ -69,15 +71,19 @@ unsigned StaClockSlewDelayPropagation::operator()(StaVertex* the_vertex) {
     if (src_arc->is_loop_disable()) {
       continue;
     }
-
-    is_ok = src_arc->exec(*this);
-    if (!is_ok) {
-      LOG_FATAL << "slew propgation error";
-      break;
-    }
-
+    
     // get the next bfs vertex and add it to the queue.
     auto* snk_vertex = src_arc->get_snk();
+    if (!isIdealClock()) {
+      is_ok = src_arc->exec(*this);
+      if (!is_ok) {
+        LOG_FATAL << "slew propgation error";
+        break;
+      }
+    } else {
+      snk_vertex->initSlewData();
+    }
+
     _next_bfs_queue.push_back(snk_vertex);
   }
 
@@ -93,19 +99,17 @@ unsigned StaClockSlewDelayPropagation::operator()(StaVertex* the_vertex) {
  * @return unsigned
  */
 unsigned StaClockSlewDelayPropagation::operator()(StaGraph*) {
+  ieda::Stats stats;
+  LOG_INFO << "clock slew delay propagation start";
   unsigned is_ok = 1;
 
   Sta* ista = getSta();
   auto& clocks = ista->get_clocks();
 
   for (auto& clock : clocks) {
-    // skip the ideal clock network.
-    if (clock->isIdealClockNetwork()) {
-      continue;
-    }
+    _propagate_clock = clock.get();
 
     auto& vertexes = clock->get_clock_vertexes();
-
     for (auto* vertex : vertexes) {
       vertex->initSlewData();
       _bfs_queue.emplace_back(vertex);
@@ -114,7 +118,7 @@ unsigned StaClockSlewDelayPropagation::operator()(StaGraph*) {
 
   // lambda for propagate the current queue.
   auto propagate_current_queue = [this](auto& current_queue) {
-    LOG_INFO << "Propagating current queue vertexes number is "
+    LOG_INFO << "propagating current clock queue vertexes number is "
              << current_queue.size();
 #if 0
     // create thread pool
@@ -147,6 +151,13 @@ unsigned StaClockSlewDelayPropagation::operator()(StaGraph*) {
     std::swap(_bfs_queue, _next_bfs_queue);
 
   } while (!_bfs_queue.empty());
+
+  LOG_INFO << "clock slew delay propagation end";
+  
+  double memory_delta = stats.memoryDelta();
+  LOG_INFO << "clock slew delay propagation memory usage " << memory_delta << "MB";
+  double time_delta = stats.elapsedRunTime();
+  LOG_INFO << "clock slew delay propagation time elapsed " << time_delta << "s";
 
   return is_ok;
 }

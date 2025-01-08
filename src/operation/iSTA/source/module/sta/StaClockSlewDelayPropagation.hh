@@ -39,10 +39,15 @@ class StaClockSlewDelayPropagation : public StaFunc {
   unsigned operator()(StaGraph* the_graph) override;
 
   AnalysisMode get_analysis_mode() override { return AnalysisMode::kMaxMin; }
+  [[nodiscard]] bool isIdealClock() const {
+    return _propagate_clock->isIdealClockNetwork();
+  }
 
   private:
   std::vector<StaVertex*> _bfs_queue; //!< The current bfs queue
   std::vector<StaVertex*> _next_bfs_queue; //!< For next bfs use.
+
+  StaClock* _propagate_clock; //!< The current propagate clock.
 };
 
 
