@@ -26,6 +26,7 @@
 #include "StaDump.hh"
 #include "StaFunc.hh"
 #include "StaVertex.hh"
+#include "propagation-cuda/LibArc.cuh"
 
 namespace ista {
 
@@ -101,5 +102,78 @@ StaNetArc::StaNetArc(StaVertex* driver, StaVertex* load, Net* net)
 StaInstArc::StaInstArc(StaVertex* src, StaVertex* snk, LibArc* lib_arc,
                        Instance* inst)
     : StaArc(src, snk), _lib_arc(lib_arc), _inst(inst) {}
+
+/**
+ * @brief build gpu lib arc(axes and values) according to the lib arc.
+ */
+void StaInstArc::buildLibArcGPU() {
+  auto* table_model = _lib_arc->get_table_model();
+  if (isDelayArc()) {
+    auto* delay_table_model = dynamic_cast<LibDelayTableModel*>(table_model);
+    _lib_gpu_arc->_num_table = delay_table_model->kTableNum;
+    _lib_gpu_arc->_table = new LibTableGPU[_lib_gpu_arc->_num_table];
+    for (size_t index = 0; index < delay_table_model->kTableNum; index++) {
+      auto* table = delay_table_model->getTable(index);
+
+      LibTableGPU gpu_table;
+      // set the x axis.
+      auto& x_axis = table->getAxis(0);
+      std::string x_axis_name = x_axis.get_axis_name();
+      auto& x_axis_values = x_axis.get_axis_values();
+      gpu_table._num_x = static_cast<unsigned>(x_axis_values.size());
+      gpu_table._x = new double[gpu_table._num_x];
+      for (unsigned i = 0; i < x_axis_values.size(); ++i) {
+        gpu_table._x[i] = x_axis_values[i]->getFloatValue();
+      }
+
+      auto axes_size = table->get_axes().size();
+      LOG_FATAL_IF(axes_size > 2);
+
+      // set the y axis.
+      std::string y_axis_name;
+      if (axes_size > 1) {
+        auto& y_axis = table->getAxis(1);
+        y_axis_name = y_axis.get_axis_name();
+        auto& y_axis_values = y_axis.get_axis_values();
+        gpu_table._num_y = static_cast<unsigned>(y_axis_values.size());
+        gpu_table._y = new double[gpu_table._num_y];
+        for (unsigned i = 0; i < y_axis_values.size(); ++i) {
+          gpu_table._y[i] = y_axis_values[i]->getFloatValue();
+        }
+      }
+
+      if (axes_size == 1) {
+        if (x_axis_name == "input_net_transition" ||
+            x_axis_name == "related_pin_transition" ||
+            x_axis_name == "input_transition_time") {
+          gpu_table._type = 0;  //(x axis denotes slew.)
+        } else {
+          gpu_table._type = 1;  //(x axis denotes constrain_slew_or_load.)
+        }
+      } else {
+        if (x_axis_name == "input_net_transition" ||
+            x_axis_name == "related_pin_transition" ||
+            x_axis_name == "input_transition_time") {
+          gpu_table._type = 2;  // (x axis denotes slew, y axis denotes
+                                // constrain_slew_or_load.)
+        } else {
+          gpu_table._type = 3;  //(x axis denotes constrain_slew_or_load, y axis
+                                // denotes slew.)
+        }
+      }
+
+      // set the values.
+      auto& table_values = table->get_table_values();
+      gpu_table._num_values = static_cast<unsigned>(table_values.size());
+      gpu_table._values = new double[gpu_table._num_values];
+      for (unsigned i = 0; i < table_values.size(); ++i) {
+        gpu_table._values[i] = table_values[i]->getFloatValue();
+      }
+
+      // set the gpu table to the arc.(cpu index is the same as gpu index)
+      _lib_gpu_arc->_table[index] = gpu_table;
+    }
+  }
+}
 
 }  // namespace ista

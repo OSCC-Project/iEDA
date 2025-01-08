@@ -266,7 +266,7 @@ class Sta {
     }
     return rc_nets;
   }
-  
+
   void resetAllRcNet() { _net_to_rc_net.clear(); }
   LibCell* findLibertyCell(const char* cell_name);
   std::optional<AocvObjectSpecSet*> findDataAocvObjectSpecSet(
@@ -366,6 +366,7 @@ class Sta {
   void resetGraph() { _graph.reset(); }
   StaGraph& get_graph() { return _graph; }
   bool isBuildGraph() { return !_graph.get_vertexes().empty(); }
+  unsigned buildLibArcGPU();
 
   StaVertex* findVertex(const char* pin_name);
   StaVertex* findVertex(DesignObject* obj) {
@@ -552,7 +553,8 @@ class Sta {
       _classified_cells;  //!< The function equivalently liberty cell.
 
   AnalysisMode _analysis_mode;  //!< The analysis max/min mode.
-  PropagationMethod _propagation_method = PropagationMethod::kDFS; //!< The propagation method used by DFS or BFS.
+  PropagationMethod _propagation_method =
+      PropagationMethod::kDFS;  //!< The propagation method used by DFS or BFS.
 
   StaDreateTable _derate_table;  //!< The derate table for ocv.
   Vector<std::unique_ptr<AocvLibrary>>

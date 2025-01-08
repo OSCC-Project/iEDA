@@ -31,6 +31,7 @@
 namespace ista {
 class StaVertex;
 class StaFunc;
+class LibArcGPU;
 
 /**
  * @brief The static timing analysis DAG edge.
@@ -231,9 +232,19 @@ class StaInstArc : public StaArc {
 
   auto* get_inst() { return _inst; }
 
+  LibArcGPU* get_lib_gpu_arc() const { return _lib_gpu_arc; }
+  void set_lib_gpu_arc(LibArcGPU* lib_gpu_arc) { _lib_gpu_arc = lib_gpu_arc; }
+  void buildLibArcGPU();
+
+  unsigned get_arc_id() const { return _arc_id; }
+  void set_arc_id(unsigned arc_id) { _arc_id = arc_id; }
+
  private:
   LibArc* _lib_arc;  //!< The mapped to lib arc.
   Instance* _inst;   //!< The owned inst.
+
+  LibArcGPU* _lib_gpu_arc;  //!< The gpu lib arc.
+  unsigned _arc_id;
 
   FORBIDDEN_COPY(StaInstArc);
 };

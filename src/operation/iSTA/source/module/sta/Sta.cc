@@ -22,6 +22,8 @@
  * @date 2020-11-27
  */
 
+#include "Sta.hh"
+
 #include <algorithm>
 #include <filesystem>
 #include <map>
@@ -31,7 +33,6 @@
 #include <tuple>
 #include <utility>
 
-#include "Sta.hh"
 #include "StaAnalyze.hh"
 #include "StaApplySdc.hh"
 #include "StaBuildClockTree.hh"
@@ -1274,6 +1275,27 @@ unsigned Sta::buildGraph() {
 }
 
 /**
+ * @brief build the gpu liberty arc.
+ *
+ * @return unsigned
+ */
+unsigned Sta::buildLibArcGPU() {
+  StaGraph *the_graph = &get_graph();
+  StaArc *the_arc;
+  unsigned arc_id = 0;
+  FOREACH_ARC(the_graph, the_arc) {
+    if (the_arc->isInstArc()) {
+      if (the_arc->isDelayArc()) {
+        dynamic_cast<StaInstArc *>(the_arc)->buildLibArcGPU();
+        dynamic_cast<StaInstArc *>(the_arc)->set_arc_id(arc_id);
+        ++arc_id;
+      }
+    }
+  }
+  return 1;
+}
+
+/**
  * @brief Insert the seq path data.
  *
  */
@@ -2334,7 +2356,7 @@ unsigned Sta::updateTiming() {
         StaApplySdc(StaApplySdc::PropType::kApplySdcPreProp),
         StaConstPropagation(),
         StaClockPropagation(StaClockPropagation::PropType::kIdealClockProp),
-        StaCombLoopCheck(), StaClockSlewDelayPropagation(), StaLevelization(), 
+        StaCombLoopCheck(), StaClockSlewDelayPropagation(), StaLevelization(),
         StaDataSlewDelayPropagation(),
         StaClockPropagation(StaClockPropagation::PropType::kNormalClockProp),
         StaApplySdc(StaApplySdc::PropType::kApplySdcPostNormalClockProp),
