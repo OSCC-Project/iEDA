@@ -27,7 +27,7 @@ bool large_model_feature(std::string dir);
 
 
 // for large model wire timing graph.
-ieval::TimingWireGraph get_timing_wire_graph();
+ieval::TimingWireGraph get_timing_wire_graph(std::string wire_graph_yaml_path);
 
 
 }  // namespace python_interface

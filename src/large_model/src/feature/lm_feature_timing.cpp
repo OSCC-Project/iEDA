@@ -127,7 +127,10 @@ void LmFeatureTiming::build()
  
   buildNetTimingPowerFeature();
 
-  // auto timing_wire_graph = eval_tp->getTimingWireGraph();
+  auto timing_wire_graph = eval_tp->getTimingWireGraph();
+
+  std::string yaml_graph_file = _dir + "../timing_wire_graph.yaml";
+  saveTimingGraph(timing_wire_graph, yaml_graph_file);
 }
 
 }  // namespace ilm

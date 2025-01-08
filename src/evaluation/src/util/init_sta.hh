@@ -113,7 +113,10 @@ struct TimingWireGraph {
   }
 };
 
-
+/// @brief  save timing graph to yaml file.
+/// @param timing_wire_graph
+/// @param yaml_file_name  
+void saveTimingGraph(const TimingWireGraph& timing_wire_graph, const std::string& yaml_file_name);
 
 class InitSTA
 {
