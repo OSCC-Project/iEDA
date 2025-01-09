@@ -22,8 +22,6 @@
  * @date 2020-11-27
  */
 
-#include "Sta.hh"
-
 #include <algorithm>
 #include <filesystem>
 #include <map>
@@ -33,6 +31,7 @@
 #include <tuple>
 #include <utility>
 
+#include "Sta.hh"
 #include "StaAnalyze.hh"
 #include "StaApplySdc.hh"
 #include "StaBuildClockTree.hh"
@@ -795,12 +794,15 @@ void Sta::linkDesignWithRustParser(const char *top_cell_name) {
       design_netlist.addInstance(std::move(inst));
     }
   }
-  rust_free_verilog_file(_rust_verilog_file_ptr);  
+  rust_free_verilog_file(_rust_verilog_file_ptr);
   LOG_INFO << "link design " << top_cell_name << " end";
 
-  LOG_INFO << "design " << top_cell_name << " inst num: " << design_netlist.getInstanceNum();
-  LOG_INFO << "design " << top_cell_name << " net num: " << design_netlist.getNetNum();
-  LOG_INFO << "design " << top_cell_name << " port num: " << design_netlist.getPortNum();
+  LOG_INFO << "design " << top_cell_name
+           << " inst num: " << design_netlist.getInstanceNum();
+  LOG_INFO << "design " << top_cell_name
+           << " net num: " << design_netlist.getNetNum();
+  LOG_INFO << "design " << top_cell_name
+           << " port num: " << design_netlist.getPortNum();
 }
 
 /**
@@ -1337,7 +1339,8 @@ void Sta::setReportSpec(std::vector<std::string> &&prop_froms,
  * @param rpt_file_name The report text file name.
  * @return unsigned 1 if success, 0 else fail.
  */
-unsigned Sta::reportPath(const char *rpt_file_name, bool is_derate /*=true*/) {
+unsigned Sta::reportPath(const char *rpt_file_name, bool is_derate,
+                         bool only_wire_path) {
   auto report_path =
       [this](StaReportPathSummary &report_path_func) -> unsigned {
     unsigned is_ok = 1;
@@ -1361,7 +1364,7 @@ unsigned Sta::reportPath(const char *rpt_file_name, bool is_derate /*=true*/) {
     return is_ok;
   };
 
-  auto report_path_of_mode = [&report_path, this, rpt_file_name,
+  auto report_path_of_mode = [&report_path, this, rpt_file_name, only_wire_path,
                               is_derate](AnalysisMode mode) -> unsigned {
     unsigned is_ok = 1;
     if ((get_analysis_mode() == mode) ||
@@ -1389,12 +1392,19 @@ unsigned Sta::reportPath(const char *rpt_file_name, bool is_derate /*=true*/) {
       }
 
       StaReportWirePathYaml report_wire_dump(rpt_file_name, mode, n_worst);
-      if (c_print_wire_yaml) {        
+      if (c_print_wire_yaml) {
         report_funcs.emplace_back(&report_wire_dump);
       }
 
       for (auto *report_fun : report_funcs) {
-        is_ok = report_path(*report_fun);
+        if (only_wire_path) {
+          if (dynamic_cast<StaReportWirePathYaml *>(report_fun)) {
+            is_ok = report_path(*report_fun);
+          }
+
+        } else {
+          is_ok = report_path(*report_fun);
+        }
       }
     }
 
@@ -1408,22 +1418,24 @@ unsigned Sta::reportPath(const char *rpt_file_name, bool is_derate /*=true*/) {
     return is_ok;
   }
 
-  LOG_INFO << "\n" << _report_tbl_summary->c_str();
-  LOG_INFO << "\n" << _report_tbl_TNS->c_str();
+  if (!only_wire_path) {
+    LOG_INFO << "\n" << _report_tbl_summary->c_str();
+    LOG_INFO << "\n" << _report_tbl_TNS->c_str();
 
-  auto close_file = [](std::FILE *fp) { std::fclose(fp); };
+    auto close_file = [](std::FILE *fp) { std::fclose(fp); };
 
-  std::unique_ptr<std::FILE, decltype(close_file)> f(
-      std::fopen(rpt_file_name, "w"), close_file);
+    std::unique_ptr<std::FILE, decltype(close_file)> f(
+        std::fopen(rpt_file_name, "w"), close_file);
 
-  std::fprintf(f.get(), "Generate the report at %s, GitVersion: %s.\n",
-               Time::getNowWallTime(), GIT_VERSION);
-  std::fprintf(f.get(), "%s", _report_tbl_summary->c_str());  // WNS
-  // report_TNS;
-  std::fprintf(f.get(), "%s", _report_tbl_TNS->c_str());
+    std::fprintf(f.get(), "Generate the report at %s, GitVersion: %s.\n",
+                 Time::getNowWallTime(), GIT_VERSION);
+    std::fprintf(f.get(), "%s", _report_tbl_summary->c_str());  // WNS
+    // report_TNS;
+    std::fprintf(f.get(), "%s", _report_tbl_TNS->c_str());
 
-  for (auto &report_tbl_detail : _report_tbl_details) {
-    std::fprintf(f.get(), "%s", report_tbl_detail->c_str());
+    for (auto &report_tbl_detail : _report_tbl_details) {
+      std::fprintf(f.get(), "%s", report_tbl_detail->c_str());
+    }
   }
 
   return 1;
@@ -2529,6 +2541,34 @@ unsigned Sta::reportTiming(std::set<std::string> &&exclude_cell_names /*= {}*/,
 }
 
 /**
+ * @brief report wire paths.
+ *
+ * @return unsigned
+ */
+unsigned Sta::reportWirePaths() {
+  LOG_INFO << "report wire paths start";
+  const char *design_work_space = get_design_work_space();
+
+  std::string path_dir = std::string(design_work_space) + "/wire_paths";
+
+  if (std::filesystem::exists(path_dir)) {
+    for (const auto& entry : std::filesystem::directory_iterator(path_dir)) {
+      if (entry.is_regular_file()) {
+        std::filesystem::remove(entry.path());
+      }
+    }
+  }
+
+  std::string rpt_file_name =
+      Str::printf("%s/%s.rpt", design_work_space, get_design_name().c_str());
+  reportPath(rpt_file_name.c_str(), false, true);
+
+  LOG_INFO << "report wire paths end";
+
+  return 1;
+}
+
+/**
  * @brief dump vertex data in yaml format.
  *
  * @param vertex_names
@@ -2656,7 +2696,7 @@ void Sta::dumpNetlistData() {
 
 /**
  * @brief dump timing graph data.
- * 
+ *
  */
 void Sta::dumpGraphData(const char* graph_file) {
   StaDumpYaml dump_data;

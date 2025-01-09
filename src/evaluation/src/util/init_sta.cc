@@ -569,7 +569,7 @@ void InitSTA::buildLmRCTree(ilm::LmLayout* lm_layout, std::string work_dir) {
   STA_INST->updateTiming();
   std::string path_dir = work_dir + "/large_model";
   STA_INST->set_design_work_space(path_dir.c_str());
-  STA_INST->reportTiming();
+  STA_INST->reportWirePaths(5000);
 }
 
 void InitSTA::initPowerEngine() {
@@ -1060,7 +1060,7 @@ TimingWireGraph InitSTA::getTimingWireGraph() {
 }
 
 void saveTimingGraph(const TimingWireGraph& timing_wire_graph, const std::string& yaml_file_name) {
-  LOG_INFO << "save wire timing graph start.";
+  LOG_INFO << "save wire timing graph start";
   YAML::Node yaml_graph_node;
 
   for (unsigned node_id = 0; auto& node : timing_wire_graph._nodes) {
@@ -1100,7 +1100,7 @@ void saveTimingGraph(const TimingWireGraph& timing_wire_graph, const std::string
   file << yaml_graph_node << std::endl;
   file.close();
   
-  LOG_INFO << "save wire timing graph end.";
+  LOG_INFO << "save wire timing graph end";
   LOG_INFO << "output wire graph yaml file path: " << yaml_file_name;
 }
 

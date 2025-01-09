@@ -129,7 +129,13 @@ void LmFeatureTiming::build()
 
   auto timing_wire_graph = eval_tp->getTimingWireGraph();
 
-  std::string yaml_graph_file = _dir + "../timing_wire_graph.yaml";
+  std::string yaml_graph_path = _dir + "/large_model/wire_graph";
+
+  if (!std::filesystem::exists(yaml_graph_path)) {
+    std::filesystem::create_directories(yaml_graph_path);
+  }
+
+  std::string yaml_graph_file = yaml_graph_path + "/timing_wire_graph.yaml";
   saveTimingGraph(timing_wire_graph, yaml_graph_file);
 }
 

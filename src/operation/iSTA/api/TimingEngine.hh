@@ -246,6 +246,11 @@ class TimingEngine {
     return *this;
   }
 
+  unsigned reportWirePaths(unsigned n_worst_path_per_clock) {
+    _ista->set_n_worst_path_per_clock(n_worst_path_per_clock);
+    return  _ista->reportWirePaths();
+  }
+
   std::vector<StaClock *> getClockList();
   void setPropagatedClock(const char *clock_name);
   bool isPropagatedClock(const char *clock_name);

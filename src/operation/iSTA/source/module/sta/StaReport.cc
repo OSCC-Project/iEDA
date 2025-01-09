@@ -21,8 +21,6 @@
  * @version 0.1
  * @date 2021-04-23
  */
-#include "StaReport.hh"
-
 #include <algorithm>
 #include <filesystem>
 #include <optional>
@@ -34,6 +32,7 @@
 #include "Sta.hh"
 #include "StaDump.hh"
 #include "StaFunc.hh"
+#include "StaReport.hh"
 #include "StaVertex.hh"
 #include "include/Version.hh"
 #include "sta/StaPathData.hh"
@@ -798,17 +797,16 @@ unsigned StaReportPathYaml::operator()(StaSeqPathData* seq_path_data) {
   return 1;
 }
 
-
 StaReportWirePathYaml::StaReportWirePathYaml(const char* rpt_file_name,
-                                     AnalysisMode analysis_mode,
-                                     unsigned n_worst)
+                                             AnalysisMode analysis_mode,
+                                             unsigned n_worst)
     : StaReportPathDump(rpt_file_name, analysis_mode, n_worst) {}
 
 /**
  * @brief print timing path in yaml in wire level.
- * 
- * @param seq_path_data 
- * @return unsigned 
+ *
+ * @param seq_path_data
+ * @return unsigned
  */
 unsigned StaReportWirePathYaml::operator()(StaSeqPathData* seq_path_data) {
   StaDumpWireYaml dump_wire_yaml;
@@ -837,7 +835,9 @@ unsigned StaReportWirePathYaml::operator()(StaSeqPathData* seq_path_data) {
   std::string design_work_space =
       dump_wire_yaml.getSta()->get_design_work_space();
   std::string path_dir = design_work_space + "/wire_paths";
+
   std::filesystem::create_directories(path_dir);
+  
 
   static unsigned file_id = 1;
   std::string now_time = Time::getNowWallTime();
