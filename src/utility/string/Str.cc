@@ -660,7 +660,7 @@ std::pair<std::string, std::optional<std::pair<int, int>>> Str::matchBusSliceNam
 }
 
 /**
- * @brief trim \[\] to []
+ * @brief trim \[\] to [], and \\ to nothing
  *
  * @param origin_str
  * @return std::string
@@ -675,9 +675,7 @@ std::string Str::trimBackslash(std::string origin_str)
     replace_str = new_value_2;
   }
 
-  if (ieda::Str::contain(replace_str.c_str(), R"(\/)")) {
-    replace_str = replace(replace_str, R"(\\/)", R"(/)");
-  }
+  replace_str = replace(replace_str, R"(\\)", "");
 
   return replace_str;
 }

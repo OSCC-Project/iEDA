@@ -34,6 +34,7 @@ namespace tcl {
 #define TCL_MAX_NUM "-max_num"
 #define TCL_WORK_DIR "-work_dir"
 #define TCL_STEP "-step"
+#define TCL_ADD_SPACE "-add_space"
 
 const char* const EMPTY_STR = "";
 

@@ -262,6 +262,9 @@ class Sta {
   std::vector<RcNet*> getAllRcNet() {
     std::vector<RcNet*> rc_nets;
     for (auto& [net, rc_net] : _net_to_rc_net) {
+      if (!rc_net->rct()) {
+        continue;
+      }
       rc_nets.push_back(rc_net.get());
     }
     return rc_nets;
@@ -555,7 +558,7 @@ class Sta {
 
   AnalysisMode _analysis_mode;  //!< The analysis max/min mode.
   PropagationMethod _propagation_method =
-      PropagationMethod::kDFS;  //!< The propagation method used by DFS or BFS.
+      PropagationMethod::kBFS;  //!< The propagation method used by DFS or BFS.
 
   StaDreateTable _derate_table;  //!< The derate table for ocv.
   Vector<std::unique_ptr<AocvLibrary>>

@@ -35,6 +35,7 @@ namespace ista {
  * @return unsigned
  */
 unsigned StaDataSlewDelayPropagation::operator()(StaArc* the_arc) {
+  std::lock_guard<std::mutex> lk(the_arc->get_snk()->get_fwd_mutex());
   StaSlewPropagation slew_propagation;
   StaDelayPropagation delay_propagation;
 
@@ -49,24 +50,23 @@ unsigned StaDataSlewDelayPropagation::operator()(StaArc* the_arc) {
  * @param the_vertex
  * @return unsigned
  */
-unsigned StaDataSlewDelayPropagation::operator()(StaVertex* the_vertex) {
+unsigned StaDataSlewDelayPropagation::operator()(StaVertex* the_vertex) {  
   if (the_vertex->is_const()) {
     return 1;
   }
 
   // data propagation end at the clock vertex.
   if (the_vertex->is_end()) {
+    // calc check arc
+    FOREACH_SNK_ARC(the_vertex, snk_arc) {
+      snk_arc->exec(*this);
+    }
     return 1;
   }
 
   unsigned is_ok = 1;
   FOREACH_SRC_ARC(the_vertex, src_arc) {
     if (!src_arc->isDelayArc()) {
-      // calculate the check arc constrain value.
-      if (src_arc->isCheckArc()) {
-        StaDelayPropagation delay_propagation;
-        src_arc->exec(delay_propagation);
-      }
       continue;
     }
 
@@ -82,8 +82,8 @@ unsigned StaDataSlewDelayPropagation::operator()(StaVertex* the_vertex) {
 
     // get the next level bfs vertex and add it to the queue.
     auto* snk_vertex = src_arc->get_snk();
-    if (snk_vertex->get_level() == the_vertex->get_level() + 1) {
-      _next_bfs_queue.push_back(snk_vertex);
+    if (snk_vertex->get_level() == (the_vertex->get_level() + 1)) {
+      addNextBFSQueue(snk_vertex);
     }
   }
 
@@ -99,38 +99,44 @@ unsigned StaDataSlewDelayPropagation::operator()(StaVertex* the_vertex) {
  * @return unsigned
  */
 unsigned StaDataSlewDelayPropagation::operator()(StaGraph* the_graph) {
+  ieda::Stats stats;
+  LOG_INFO << "data slew delay propagation start";
   unsigned is_ok = 1;
 
   StaVertex* the_vertex;
   FOREACH_VERTEX(the_graph, the_vertex) {
     // start from the vertex which is level one and has slew prop.
-    if (the_vertex->get_level() == 1 && the_vertex->is_slew_prop()) {
-      LOG_FATAL_IF(!the_vertex->is_delay_prop())
-          << "the vertex should be delay propagated.";
-      _bfs_queue.emplace_back(the_vertex);
+    if (the_vertex->get_level() == 1) {
+      // only propagate the vertex has slew.
+      if (the_vertex->is_slew_prop()) {
+        LOG_FATAL_IF(!the_vertex->is_delay_prop())
+            << "the vertex should be delay propagated.";
+        _bfs_queue.emplace_back(the_vertex);
+      }
     }
   }
 
   // lambda for propagate the current queue.
   auto propagate_current_queue = [this](auto& current_queue) {
-    LOG_INFO << "Propagating current queue vertexes number is "
+    LOG_INFO << "propagating current data queue vertexes number is "
              << current_queue.size();
 
-#if 0
-// create thread pool
-    unsigned num_threads = getNumThreads();
-    ThreadPool pool(num_threads);
+#if 1
+    {
+      // create thread pool
+      unsigned num_threads = getNumThreads();
+      // unsigned num_threads = 1;
+      ThreadPool pool(num_threads);
 
-    for (auto* the_vertex : current_queue) {
-      // bfs start from the root vertex, traverse to the clock pin vertex.
-      if (the_vertex->get_src_arcs().empty()) {
-        continue;
+      for (auto* the_vertex : current_queue) {
+        pool.enqueue(
+            [this](StaVertex* the_vertex) {
+              return the_vertex->exec(*this);
+            },
+            the_vertex);
       }
-
-      pool.enqueue([](StaFunc& func,
-                      StaVertex* the_vertex) { return the_vertex->exec(func); },
-                   *this, the_vertex);
     }
+
 #else
     for (auto* the_vertex : current_queue) {
       the_vertex->exec(*this);
@@ -148,6 +154,14 @@ unsigned StaDataSlewDelayPropagation::operator()(StaGraph* the_graph) {
     std::swap(_bfs_queue, _next_bfs_queue);
 
   } while (!_bfs_queue.empty());
+
+  LOG_INFO << "data slew delay propagation end";
+
+  double memory_delta = stats.memoryDelta();
+  LOG_INFO << "data slew delay propagation memory usage " << memory_delta
+           << "MB";
+  double time_delta = stats.elapsedRunTime();
+  LOG_INFO << "data slew delay propagation time elapsed " << time_delta << "s";
 
   return is_ok;
 }
