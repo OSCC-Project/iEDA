@@ -95,7 +95,8 @@ void LargeModel::buildFeature(const std::string dir)
 
 void LargeModel::generateFeature(const std::string dir)
 {
-  LmFeature feature(&_data_manager.layout_dm.get_layout(), dir);
+  auto* patch_grid = _data_manager.patch_dm == nullptr ? nullptr : &_data_manager.patch_dm->get_patch_grid();
+  LmFeature feature(&_data_manager.layout_dm.get_layout(), patch_grid, dir);
 
   feature.buildFeatureDrc();
   feature.buildFeatureStatis();

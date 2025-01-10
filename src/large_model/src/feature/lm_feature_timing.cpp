@@ -31,6 +31,26 @@
 
 namespace ilm {
 
+void LmFeatureTiming::build()
+{
+  auto* eval_tp = ieval::InitSTA::getInst();  // evaluate timing and power.
+
+  eval_tp->runLmSTA(_layout, _dir);
+ 
+  buildNetTimingPowerFeature();
+
+  auto timing_wire_graph = eval_tp->getTimingWireGraph();
+
+  std::string yaml_graph_path = _dir + "/large_model/wire_graph";
+
+  if (!std::filesystem::exists(yaml_graph_path)) {
+    std::filesystem::create_directories(yaml_graph_path);
+  }
+
+  std::string yaml_graph_file = yaml_graph_path + "/timing_wire_graph.yaml";
+  saveTimingGraph(timing_wire_graph, yaml_graph_file);
+}
+
 void LmFeatureTiming::buildWireTimingPowerFeature(LmNet* lm_net, const std::string& net_name)
 {
   auto* eval_tp = ieval::InitSTA::getInst();
@@ -117,26 +137,6 @@ void LmFeatureTiming::buildNetTimingPowerFeature()
     net_feature->delay = delay;
     net_feature->power = power;
   }
-}
-
-void LmFeatureTiming::build()
-{
-  auto* eval_tp = ieval::InitSTA::getInst();  // evaluate timing and power.
-
-  eval_tp->runLmSTA(_layout, _dir);
- 
-  buildNetTimingPowerFeature();
-
-  auto timing_wire_graph = eval_tp->getTimingWireGraph();
-
-  std::string yaml_graph_path = _dir + "/large_model/wire_graph";
-
-  if (!std::filesystem::exists(yaml_graph_path)) {
-    std::filesystem::create_directories(yaml_graph_path);
-  }
-
-  std::string yaml_graph_file = yaml_graph_path + "/timing_wire_graph.yaml";
-  saveTimingGraph(timing_wire_graph, yaml_graph_file);
 }
 
 }  // namespace ilm

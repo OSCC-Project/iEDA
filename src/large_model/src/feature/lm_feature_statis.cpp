@@ -31,8 +31,13 @@
 #include "usage.hh"
 
 namespace ilm {
-
 void LmFeatureStatis::build()
+{
+  feature_graph();
+  feature_patch();
+}
+
+void LmFeatureStatis::feature_graph()
 {
   ieda::Stats stats;
 
@@ -153,6 +158,60 @@ void LmFeatureStatis::build()
   LOG_INFO << "LM memory usage " << stats.memoryDelta() << " MB";
   LOG_INFO << "LM elapsed time " << stats.elapsedRunTime() << " s";
   LOG_INFO << "LM build statis feature end...";
+}
+
+void LmFeatureStatis::feature_patch()
+{
+  ieda::Stats stats;
+
+  LOG_INFO << "LM feature patch start...";
+
+  if (_patch_grid == nullptr) {
+    LOG_WARNING << "LM feature patch not exist.";
+  }
+
+  auto& patchs = _patch_grid->get_patchs();
+  auto& layout_layers = _layout->get_layout_layers();
+
+  omp_lock_t lck;
+  omp_init_lock(&lck);
+
+  // #pragma omp parallel for schedule(dynamic)
+  for (int i = 0; i < (int) patchs.size(); ++i) {
+    auto it = patchs.begin();
+    std::advance(it, i);
+    auto& patch_id = it->first;
+    auto& patch = it->second;
+
+    for (auto& [layer_id, patch_layer] : patch.get_layer_map()) {
+      for (auto& [net_id, lm_net] : patch_layer.get_sub_nets()) {
+        for (auto& wire : lm_net.get_wires()) {
+          auto* wire_feature = wire.get_feature(true);
+
+          for (auto& [node1, node2] : wire.get_paths()) {
+            if (node1->get_layer_id() == node2->get_layer_id()) {
+              auto order = node1->get_layer_id();
+              auto* layout_layer = layout_layers.findLayoutLayer(order);
+              auto layer_name = layout_layer->get_layer_name();
+
+              /// set feature
+              wire_feature->wire_width = layout_layer->get_wire_width();
+            }
+          }
+        }
+      }
+    }
+
+    if (i % 1000 == 0) {
+      LOG_INFO << "Feature patch : " << i << " / " << patchs.size();
+    }
+  }
+
+  omp_destroy_lock(&lck);
+
+  LOG_INFO << "LM memory usage " << stats.memoryDelta() << " MB";
+  LOG_INFO << "LM elapsed time " << stats.elapsedRunTime() << " s";
+  LOG_INFO << "LM feature patch end...";
 }
 
 }  // namespace ilm

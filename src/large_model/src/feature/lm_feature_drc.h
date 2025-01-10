@@ -39,6 +39,9 @@ class LmFeatureDrc
   int origin_drc_num = 0;
   int mark_drc_num = 0;
 
+  void feature_graph();
+  void feature_patch();
+
   void markNodes();
   void markWires();
   void markNets();

@@ -21,3 +21,4 @@ target_include_directories(large_model
     PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
+set(CMAKE_BUILD_TYPE "debug")
