@@ -1279,20 +1279,41 @@ unsigned Sta::buildGraph() {
  *
  * @return unsigned
  */
-unsigned Sta::buildLibArcGPU() {
+unsigned Sta::buildLibArcsGPU() {
   StaGraph *the_graph = &get_graph();
   StaArc *the_arc;
   unsigned arc_id = 0;
   FOREACH_ARC(the_graph, the_arc) {
     if (the_arc->isInstArc()) {
       if (the_arc->isDelayArc()) {
-        dynamic_cast<StaInstArc *>(the_arc)->buildLibArcGPU();
+        dynamic_cast<StaInstArc *>(the_arc)->buildLibArcsGPU();
         dynamic_cast<StaInstArc *>(the_arc)->set_arc_id(arc_id);
         ++arc_id;
       }
     }
   }
   return 1;
+}
+
+/**
+ * @brief get the all lib gpu arcs.
+ */
+std::vector<LibArcGPU *> Sta::getLibArcsGPU() {
+  std::vector<LibArcGPU *> lib_gpu_arcs;
+
+  StaGraph *the_graph = &get_graph();
+  StaArc *the_arc;
+  FOREACH_ARC(the_graph, the_arc) {
+    if (the_arc->isInstArc()) {
+      if (the_arc->isDelayArc()) {
+        auto *lib_arc_gpu =
+            dynamic_cast<StaInstArc *>(the_arc)->get_lib_gpu_arc();
+        lib_gpu_arcs.emplace_back(lib_arc_gpu);
+      }
+    }
+  }
+
+  return lib_gpu_arcs;
 }
 
 /**
@@ -2918,4 +2939,5 @@ double Sta::convertCapUnit(const double src_value) {
   }
   return -1;
 }
+
 }  // namespace ista

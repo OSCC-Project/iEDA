@@ -57,14 +57,17 @@ struct LibArcGPU {
 };
 
 /**
- * @brief The struct of LibData.
+ * @brief The struct of LibDataGPU.
  *
  */
-struct LibData {
+struct LibDataGPU {
   LibArcGPU* _arcs_gpu;  //!< points to GPU arc datas.
-  unsigned _num_arc;     //!< GPU arc datas.
+  unsigned _num_arcs;    //!< GPU arc datas.
 
   std::vector<LibArcGPU> _arcs;  //!< CPU arc datas.
 };
+
+void build_lib_data_gpu(LibDataGPU& lib_data_gpu,
+                        std::vector<LibArcGPU*> lib_arcs_cpu);
 
 }  // namespace ista

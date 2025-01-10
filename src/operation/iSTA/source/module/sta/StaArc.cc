@@ -106,7 +106,7 @@ StaInstArc::StaInstArc(StaVertex* src, StaVertex* snk, LibArc* lib_arc,
 /**
  * @brief build gpu lib arc(axes and values) according to the lib arc.
  */
-void StaInstArc::buildLibArcGPU() {
+void StaInstArc::buildLibArcsGPU() {
   auto* table_model = _lib_arc->get_table_model();
   if (isDelayArc()) {
     auto* delay_table_model = dynamic_cast<LibDelayTableModel*>(table_model);
