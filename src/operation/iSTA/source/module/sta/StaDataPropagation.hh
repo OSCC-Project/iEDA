@@ -36,8 +36,9 @@ class StaFwdPropagation : public StaFunc {
  public:
   unsigned operator()(StaVertex* the_vertex) override;
   unsigned operator()(StaArc* the_arc) override;
+  unsigned operator()(StaGraph* the_graph) override;
 
- private:
+ protected:
   unsigned createClockVertexStartData(StaVertex* the_vertex);
   unsigned createPortVertexStartData(StaVertex* the_vertex);
   unsigned createStartData(StaVertex* the_vertex);
@@ -51,6 +52,7 @@ class StaBwdPropagation : public StaFunc {
  public:
   unsigned operator()(StaVertex* the_vertex) override;
   unsigned operator()(StaArc* the_arc) override;
+  unsigned operator()(StaGraph* the_graph) override;
 
  private:
   unsigned createEndData(StaVertex* the_vertex);
