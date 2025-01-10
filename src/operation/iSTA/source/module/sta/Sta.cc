@@ -22,6 +22,8 @@
  * @date 2020-11-27
  */
 
+#include "Sta.hh"
+
 #include <algorithm>
 #include <filesystem>
 #include <map>
@@ -31,7 +33,6 @@
 #include <tuple>
 #include <utility>
 
-#include "Sta.hh"
 #include "StaAnalyze.hh"
 #include "StaApplySdc.hh"
 #include "StaBuildClockTree.hh"
@@ -1351,6 +1352,48 @@ unsigned Sta::buildGraph() {
 }
 
 /**
+ * @brief build the gpu liberty arc.
+ *
+ * @return unsigned
+ */
+unsigned Sta::buildLibArcsGPU() {
+  StaGraph *the_graph = &get_graph();
+  StaArc *the_arc;
+  unsigned arc_id = 0;
+  FOREACH_ARC(the_graph, the_arc) {
+    if (the_arc->isInstArc()) {
+      if (the_arc->isDelayArc()) {
+        dynamic_cast<StaInstArc *>(the_arc)->buildLibArcsGPU();
+        dynamic_cast<StaInstArc *>(the_arc)->set_arc_id(arc_id);
+        ++arc_id;
+      }
+    }
+  }
+  return 1;
+}
+
+/**
+ * @brief get the all lib gpu arcs.
+ */
+std::vector<LibArcGPU *> Sta::getLibArcsGPU() {
+  std::vector<LibArcGPU *> lib_gpu_arcs;
+
+  StaGraph *the_graph = &get_graph();
+  StaArc *the_arc;
+  FOREACH_ARC(the_graph, the_arc) {
+    if (the_arc->isInstArc()) {
+      if (the_arc->isDelayArc()) {
+        auto *lib_arc_gpu =
+            dynamic_cast<StaInstArc *>(the_arc)->get_lib_gpu_arc();
+        lib_gpu_arcs.emplace_back(lib_arc_gpu);
+      }
+    }
+  }
+
+  return lib_gpu_arcs;
+}
+
+/**
  * @brief Insert the seq path data.
  *
  */
@@ -2413,7 +2456,7 @@ unsigned Sta::updateTiming() {
         StaApplySdc(StaApplySdc::PropType::kApplySdcPreProp),
         StaConstPropagation(),
         StaClockPropagation(StaClockPropagation::PropType::kIdealClockProp),
-        StaCombLoopCheck(), StaClockSlewDelayPropagation(), StaLevelization(), 
+        StaCombLoopCheck(), StaClockSlewDelayPropagation(), StaLevelization(),
         StaDataSlewDelayPropagation(),
         StaClockPropagation(StaClockPropagation::PropType::kNormalClockProp),
         StaApplySdc(StaApplySdc::PropType::kApplySdcPostNormalClockProp),
@@ -2980,4 +3023,5 @@ double Sta::convertCapUnit(const double src_value) {
   }
   return -1;
 }
+
 }  // namespace ista
