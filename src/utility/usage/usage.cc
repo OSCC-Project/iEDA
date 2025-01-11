@@ -129,4 +129,13 @@ double Stats::elapsedRunTime() const
   return time.tv_sec - _elapsed_begin_time.tv_sec + (time.tv_usec - _elapsed_begin_time.tv_usec) * 1e-6;
 }
 
+/**
+ * @brief restart the run time and memory statistics.
+ * 
+ */
+void Stats::restartStats() {
+  _memory_begin = memoryUsage();
+  getTimeOfDay(&_elapsed_begin_time);
+}
+
 }  // namespace ieda
