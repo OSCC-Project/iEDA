@@ -50,7 +50,7 @@ void LmFeature::buildFeatureTiming()
 
 void LmFeature::buildFeatureStatis()
 {
-  LmFeatureStatis feature_statis(_layout);
+  LmFeatureStatis feature_statis(_layout, _patch_grid);
 
   feature_statis.build();
 }

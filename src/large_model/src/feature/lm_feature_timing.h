@@ -27,13 +27,14 @@ class LmFeatureTiming {
       : _layout(layout), _dir(dir) {}
   ~LmFeatureTiming() {}
 
-  void buildWireTimingPowerFeature(LmNet* lm_net, const std::string& net_name);
-  void buildNetTimingPowerFeature();
   void build();
 
  private:
   LmLayout* _layout;
   std::string _dir;  //!< The directory for the path.
+
+  void buildWireTimingPowerFeature(LmNet* lm_net, const std::string& net_name);
+  void buildNetTimingPowerFeature();
 };
 
 }  // namespace ilm

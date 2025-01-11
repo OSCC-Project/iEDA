@@ -27,9 +27,10 @@ namespace ilm {
 class LmFeature
 {
  public:
-  LmFeature(LmLayout* layout, std::string dir)
+  LmFeature(LmLayout* layout, LmPatchGrid* patch_grid, std::string dir)
   {
     _layout = layout;
+    _patch_grid = patch_grid;
     _dir = dir;  /// feature directory
   }
   ~LmFeature() {}
@@ -40,6 +41,7 @@ class LmFeature
 
  private:
   LmLayout* _layout;
+  LmPatchGrid* _patch_grid;
   std::string _dir;
 };
 

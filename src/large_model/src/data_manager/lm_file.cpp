@@ -290,6 +290,16 @@ bool LmLayoutFileIO::saveJsonPatchs()
               {
                 json_wire["id"] = wire.get_id();
 
+                /// wire feature
+                {
+                  json json_feature;
+                  auto wire_feature = wire.get_feature();
+                  if (wire_feature != nullptr) {
+                    json_feature["wire_width"] = wire_feature->wire_width;
+                  }
+                  json_wire["feature"] = json_feature;
+                }
+
                 /// paths
                 {
                   json_wire["path_num"] = wire.get_paths().size();

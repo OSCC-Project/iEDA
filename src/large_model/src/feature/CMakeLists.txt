@@ -8,6 +8,8 @@ add_library(ilm_feature
 target_link_libraries(ilm_feature
     PUBLIC
     ilm_layout_db
+    ilm_patch_db
+    ilm_patch_dm
     idm
     idb
     log

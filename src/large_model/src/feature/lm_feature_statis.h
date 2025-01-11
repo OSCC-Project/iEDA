@@ -18,19 +18,29 @@
 #include <string>
 
 #include "lm_layout.h"
+#include "lm_patch.h"
+#include "lm_patch_grid.h"
 
 namespace ilm {
 
 class LmFeatureStatis
 {
  public:
-  LmFeatureStatis(LmLayout* layout) { _layout = layout; }
+  LmFeatureStatis(LmLayout* layout, LmPatchGrid* patch_grid)
+  {
+    _layout = layout;
+    _patch_grid = patch_grid;
+  }
   ~LmFeatureStatis() {}
 
   void build();
 
  private:
   LmLayout* _layout;
+  LmPatchGrid* _patch_grid;
+
+  void feature_graph();
+  void feature_patch();
 };
 
 }  // namespace ilm

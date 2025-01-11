@@ -35,8 +35,19 @@ namespace ilm {
 void LmFeatureDrc::build()
 {
   markNodes();
+
+  feature_graph();
+  feature_patch();
+}
+
+void LmFeatureDrc::feature_graph()
+{
   markWires();
   markNets();
+}
+
+void LmFeatureDrc::feature_patch()
+{
 }
 
 void LmFeatureDrc::markNodes()
