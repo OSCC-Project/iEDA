@@ -2612,7 +2612,7 @@ unsigned Sta::reportTiming(std::set<std::string> &&exclude_cell_names /*= {}*/,
 unsigned Sta::reportUsedLibs() {
   auto used_libs = getUsedLibs();
   for (auto *used_lib : used_libs) {
-    std::string lib_name = used_lib->get_lib_name();
+    std::string lib_name = used_lib->get_file_name();
     LOG_INFO << "used lib: " << lib_name;
   }
 }
