@@ -597,7 +597,7 @@ class RcNet {
       Pin& to, double from_slew, std::optional<LibCurrentData*> output_current,
       AnalysisMode mode, TransType trans_type);
 
-  std::map<std::string, double> getAllNodeSlew(double driver_slew,
+  std::map<std::string, double>& getAllNodeSlew(double driver_slew,
                                                   AnalysisMode mode,
                                                   TransType trans_type);
   std::vector<RctEdge*> getWireTopo(const char* to_node_name);
@@ -622,6 +622,8 @@ class RcNet {
 
  private:
   static std::unique_ptr<RCNetCommonInfo> _rc_net_common_info;
+
+  std::optional<std::map<std::string, double>> _all_node_slews;
 };
 
 }  // namespace ista

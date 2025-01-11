@@ -48,7 +48,7 @@ ieval::TimingWireGraph get_timing_wire_graph(std::string wire_graph_yaml_path) {
   lm_api.runLmSTA(); 
 
   auto* timing_wire_graph_ptr = ieval::TimingAPI::getInst()->getTimingWireGraph();
-  saveTimingGraph(*timing_wire_graph_ptr, wire_graph_yaml_path);
+  SaveTimingGraph(*timing_wire_graph_ptr, wire_graph_yaml_path);
 
   auto timing_wire_graph = std::move(*timing_wire_graph_ptr);
   delete timing_wire_graph_ptr;

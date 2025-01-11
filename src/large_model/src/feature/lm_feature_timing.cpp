@@ -136,7 +136,7 @@ void LmFeatureTiming::build()
   }
 
   std::string yaml_graph_file = yaml_graph_path + "/timing_wire_graph.yaml";
-  saveTimingGraph(timing_wire_graph, yaml_graph_file);
+  SaveTimingGraph(timing_wire_graph, yaml_graph_file);
 }
 
 }  // namespace ilm

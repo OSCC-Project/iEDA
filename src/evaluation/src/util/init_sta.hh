@@ -69,20 +69,26 @@ struct TimingWireGraph {
   std::vector<TimingWireNode> _nodes; //!< each one is a graph node
   std::vector<TimingWireEdge> _edges;
   std::vector<std::vector<unsigned>> _adjacency_list; //!< adjacency list for node fanout edges.
+
+  private:
+  std::map<std::string, unsigned> _node2index_map; //!< node name to node index map.
   
+  public:
   std::optional<unsigned> findNode(std::string& node_name) {
-    for (unsigned index = 0 ; auto& node : _nodes) {
-      if (node._name == node_name) {
-        return index;
-      }
-      ++index;
+
+    if (_node2index_map.find(node_name) == _node2index_map.end()) {
+      return std::nullopt;
     }
-    return std::nullopt;
+
+    return _node2index_map[node_name];
   }
 
   unsigned addNode(const TimingWireNode& node) { 
     _nodes.push_back(node);
-    return _nodes.size() - 1;
+    unsigned index = _nodes.size() - 1;
+    _node2index_map[node._name] = index;
+
+    return index;
   }
 
   TimingWireEdge& addEdge(unsigned wire_from_node_index, unsigned wire_to_node_index) {
@@ -116,7 +122,7 @@ struct TimingWireGraph {
 /// @brief  save timing graph to yaml file.
 /// @param timing_wire_graph
 /// @param yaml_file_name  
-void saveTimingGraph(const TimingWireGraph& timing_wire_graph, const std::string& yaml_file_name);
+void SaveTimingGraph(const TimingWireGraph& timing_wire_graph, const std::string& yaml_file_name);
 
 class InitSTA
 {

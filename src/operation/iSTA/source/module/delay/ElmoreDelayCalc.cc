@@ -1080,9 +1080,13 @@ std::optional<double> RcNet::slew(
  * @param trans_type
  * @return std::map<std::string, double>
  */
-std::map<std::string, double> RcNet::getAllNodeSlew(double driver_slew,
+std::map<std::string, double>& RcNet::getAllNodeSlew(double driver_slew,
                                                     AnalysisMode mode,
                                                     TransType trans_type) {
+  if (_all_node_slews) {
+    return *_all_node_slews;
+  }
+
   std::map<std::string, double> all_node_slews;
   if (_rct.index() == 0) {
     return all_node_slews;
@@ -1111,7 +1115,9 @@ std::map<std::string, double> RcNet::getAllNodeSlew(double driver_slew,
 
   get_snk_slew(nullptr, rc_root, driver_slew);
 
-  return all_node_slews;
+  _all_node_slews = std::move(all_node_slews);
+
+  return *_all_node_slews;
 }
 
 /**
