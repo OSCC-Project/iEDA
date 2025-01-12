@@ -1123,21 +1123,20 @@ TimingWireGraph InitSTA::getTimingWireGraph() {
 
 void SaveTimingGraph(const TimingWireGraph& timing_wire_graph,
                      const std::string& yaml_file_name) {
-  LOG_INFO << "save wire timing graph start";
-  LOG_INFO << "output wire graph yaml file path: " << yaml_file_name;
+  LOG_INFO << "save wire timing graph start";  
 
   std::ofstream file(yaml_file_name, std::ios::trunc);
 
-  YAML::Node yaml_graph_node;
-  YAML::Emitter out(file); 
-  out << YAML::BeginMap; // Start the YAML map 
+  // YAML::Node yaml_graph_node;
+  // YAML::Emitter out(file); 
+  // out << YAML::BeginMap; // Start the YAML map 
   for (unsigned node_id = 0; auto& node : timing_wire_graph._nodes) {
-    std::string node_name = Str::printf("node_%d", node_id++);
-    YAML::Node the_node;
-    yaml_graph_node[std::move(node_name)] = the_node;
-    the_node["name"] = node._name;
-    the_node["is_pin"] = node._is_pin;
-    the_node["is_port"] = node._is_port;    
+    const char* node_name = Str::printf("node_%d", node_id++);
+    // YAML::Node the_node;
+    // yaml_graph_node[std::move(node_name)] = the_node;
+    // the_node["name"] = node._name;
+    // the_node["is_pin"] = node._is_pin;
+    // the_node["is_port"] = node._is_port;    
 
     // YAML::Node adjaceny_node;
     // the_node["adjaceny_node"] = adjaceny_node;
@@ -1153,17 +1152,20 @@ void SaveTimingGraph(const TimingWireGraph& timing_wire_graph,
                            << timing_wire_graph._nodes.size();
 
     // Add key-value pairs incrementally  
-    out << YAML::Key << node_name << YAML::Value << the_node;
+    // out << YAML::Key << node_name << YAML::Value << the_node;
 
-    
+    file << node_name << ":" << "\n";
+    file << "  name: " << node._name << "\n";
+    file << "  is_pin: " << node._is_pin << "\n";
+    file << "  is_port: " << node._is_port << "\n";    
   }
 
   for (unsigned edge_id = 0; auto& edge : timing_wire_graph._edges) {
     std::string edge_name = Str::printf("edge_%d", edge_id++);
-    YAML::Node the_edge; 
-    yaml_graph_node[std::move(edge_name)] = the_edge;
-    the_edge["from_node"] = edge._from_node;
-    the_edge["to_node"] = edge._to_node;
+    // YAML::Node the_edge; 
+    // yaml_graph_node[std::move(edge_name)] = the_edge;
+    // the_edge["from_node"] = edge._from_node;
+    // the_edge["to_node"] = edge._to_node;
     // the_edge["feature_R"] = edge._feature_R;
     // the_edge["feature_C"] = edge._feature_C;
     // the_edge["feature_from_slew"] = edge._feature_from_slew;
@@ -1175,13 +1177,17 @@ void SaveTimingGraph(const TimingWireGraph& timing_wire_graph,
                            << timing_wire_graph._edges.size();
 
     // Add key-value pairs incrementally  
-    out << YAML::Key << edge_name << YAML::Value << the_edge;   
+    // out << YAML::Key << edge_name << YAML::Value << the_edge;
 
+    file << edge_name << ":" << "\n";
+    file << "  from_node: " << edge._from_node << "\n";
+    file << "  to_node: " << edge._to_node << "\n";
   } 
 
-  out << YAML::EndMap; // Close the YAML map  
+  // out << YAML::EndMap; // Close the YAML map  
   file.close();
 
+  LOG_INFO << "output wire graph yaml file path: " << yaml_file_name;
   LOG_INFO << "save wire timing graph end";
 }
 
