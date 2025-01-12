@@ -33,16 +33,13 @@ namespace ista {
  * @brief The forward propagation using BFS method.
  *
  */
-class StaFwdPropagationBFS : public StaFwdPropagation {
+class StaFwdPropagationBFS : public StaBFSFunc, public StaFwdPropagation {
  public:
   unsigned operator()(StaVertex* the_vertex) override;
   unsigned operator()(StaArc* the_arc) override;
 
   unsigned operator()(StaGraph* the_graph) override;
 
- private:
-  std::vector<StaVertex*> _bfs_queue;       //!< The current bfs queue
-  std::vector<StaVertex*> _next_bfs_queue;  //!< For next bfs use.
 };
 
 }  // namespace ista

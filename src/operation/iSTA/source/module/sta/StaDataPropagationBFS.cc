@@ -57,13 +57,7 @@ unsigned StaFwdPropagationBFS::operator()(StaVertex* the_vertex) {
                           << " date fwd propagate found start vertex."
                           << the_vertex->getName();
 
-    the_vertex->set_is_fwd();
-
-    if (isTracePath()) {
-      addTracePathVertex(the_vertex);
-    }
-
-    return createStartData(the_vertex);
+    createStartData(the_vertex);
   }
 
   if (isTracePath()) {
@@ -88,6 +82,11 @@ unsigned StaFwdPropagationBFS::operator()(StaVertex* the_vertex) {
       LOG_FATAL << "data propagation error";
       break;
     }
+
+    // get the next level bfs vertex and add it to the queue.
+    if (snk_vertex->get_level() == (the_vertex->get_level() + 1)) {
+      addNextBFSQueue(snk_vertex);
+    }
   }
 
   the_vertex->set_is_fwd();
@@ -109,7 +108,7 @@ unsigned StaFwdPropagationBFS::operator()(StaGraph* the_graph) {
   StaVertex* the_vertex;
   FOREACH_VERTEX(the_graph, the_vertex) {
     // start from the vertex which is level one and has slew prop.
-    if (the_vertex->get_level() == 1) {
+    if ((the_vertex->get_level() == 1) && !the_vertex->is_fwd()) {
       // only propagate the vertex has slew.
       if (the_vertex->is_delay_prop()) {
         LOG_FATAL_IF(!the_vertex->is_delay_prop())
@@ -124,7 +123,7 @@ unsigned StaFwdPropagationBFS::operator()(StaGraph* the_graph) {
     LOG_INFO << "propagating current data queue vertexes number is "
              << current_queue.size();
 
-#if 1
+#if 0
     {
       // create thread pool
       unsigned num_threads = getNumThreads();
@@ -158,13 +157,13 @@ unsigned StaFwdPropagationBFS::operator()(StaGraph* the_graph) {
 
   } while (!_bfs_queue.empty());
 
-  LOG_INFO << "data fwd propagation end";
+  LOG_INFO << "data fwd propagation bfs end";
 
   double memory_delta = stats.memoryDelta();
-  LOG_INFO << "data slew delay propagation memory usage " << memory_delta
+  LOG_INFO << "data fwd propagation bfs memory usage " << memory_delta
            << "MB";
   double time_delta = stats.elapsedRunTime();
-  LOG_INFO << "data slew delay propagation time elapsed " << time_delta << "s";
+  LOG_INFO << "data fwd propagation bfs time elapsed " << time_delta << "s";
 
   return is_ok;
 }

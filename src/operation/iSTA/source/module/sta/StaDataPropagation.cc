@@ -24,6 +24,7 @@
 // #include <gperftools/profiler.h>
 
 #include "StaDataPropagation.hh"
+#include "StaDataPropagationBFS.hh"
 
 #include "StaData.hh"
 #include "StaVertex.hh"
@@ -216,9 +217,9 @@ unsigned StaBwdPropagation::operator()(StaVertex* the_vertex) {
 
 /**
  * @brief bwd propagation for the graph.
- * 
- * @param the_graph 
- * @return unsigned 
+ *
+ * @param the_graph
+ * @return unsigned
  */
 unsigned StaBwdPropagation::operator()(StaGraph* the_graph) {
   unsigned num_threads = getNumThreads();
@@ -635,12 +636,10 @@ unsigned StaFwdPropagation::operator()(StaGraph* the_graph) {
       continue;
     }
 #if 1
-        // enqueue and store future
-        pool.enqueue(
-            [this](StaVertex* end_vertex) {
-              return end_vertex->exec(*this);
-            },
-           end_vertex);
+    // enqueue and store future
+    pool.enqueue(
+        [this](StaVertex* end_vertex) { return end_vertex->exec(*this); },
+        end_vertex);
 #else
 
     VLOG_EVERY_N(1, 200) << "propagate end vertex " << end_vertex->getName();
@@ -668,18 +667,28 @@ unsigned StaFwdPropagation::operator()(StaGraph* the_graph) {
  * @return unsigned return 1 if success, else return 0.
  */
 unsigned StaDataPropagation::operator()(StaGraph* the_graph) {
-  unsigned is_ok = 1;  
+  unsigned is_ok = 1;
+  auto* ista = getSta();
+  auto prop_mode = ista->get_propagation_method();
 
   if ((_prop_type == PropType::kFwdProp) ||
       (_prop_type == PropType::kIncrFwdProp)) {
     LOG_INFO << "data fwd propagation start";
     // ProfilerStart("fwd_prop.prof");
     {
-      StaFwdPropagation fwd_propagation;
-      if (_prop_type == PropType::kIncrFwdProp) {
-        fwd_propagation.set_is_incremental();
+      if (prop_mode == PropagationMethod::kDFS) {
+        StaFwdPropagation fwd_propagation;
+        if (_prop_type == PropType::kIncrFwdProp) {
+          fwd_propagation.set_is_incremental();
+        }
+        fwd_propagation(the_graph);
+      } else {
+        StaFwdPropagationBFS fwd_propagation_bfs;
+        if (_prop_type == PropType::kIncrFwdProp) {
+          fwd_propagation_bfs.set_is_incremental();
+        }
+        fwd_propagation_bfs(the_graph);
       }
-      fwd_propagation(the_graph);
     }
 
     // ProfilerStop();

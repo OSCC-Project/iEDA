@@ -33,28 +33,14 @@ namespace ista {
  * @brief The data slew and delay propagation with bfs.
  *
  */
-class StaDataSlewDelayPropagation : public StaFunc {
+class StaDataSlewDelayPropagation : public StaBFSFunc, public StaFunc {
  public:
   unsigned operator()(StaArc* the_arc) override;
   unsigned operator()(StaVertex* the_vertex) override;
   unsigned operator()(StaGraph* the_graph) override;
 
   AnalysisMode get_analysis_mode() override { return AnalysisMode::kMaxMin; }
-
-  private:
-
-  void addNextBFSQueue(StaVertex* the_vertex) {
-      static std::mutex g_mutex;
-
-      if (std::find(_next_bfs_queue.begin(), _next_bfs_queue.end(),
-                    the_vertex) == _next_bfs_queue.end()) {
-        std::lock_guard<std::mutex> lk(g_mutex);
-        _next_bfs_queue.push_back(the_vertex);
-      }
-  }
-
-  std::vector<StaVertex*> _bfs_queue; //!< The current bfs queue
-  std::vector<StaVertex*> _next_bfs_queue; //!< For next bfs use.
+ 
 };
 
 }
