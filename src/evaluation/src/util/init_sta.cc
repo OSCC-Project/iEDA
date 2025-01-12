@@ -572,7 +572,7 @@ void InitSTA::buildLmRCTree(ilm::LmLayout* lm_layout, std::string work_dir) {
 
   std::string path_dir = work_dir + "/large_model";
   STA_INST->set_design_work_space(path_dir.c_str());
-  STA_INST->reportWirePaths(5000);
+  STA_INST->reportWirePaths(1000);
 }
 
 void InitSTA::initPowerEngine() {
@@ -1134,44 +1134,48 @@ void SaveTimingGraph(const TimingWireGraph& timing_wire_graph,
   for (unsigned node_id = 0; auto& node : timing_wire_graph._nodes) {
     std::string node_name = Str::printf("node_%d", node_id++);
     YAML::Node the_node;
-    yaml_graph_node[node_name] = the_node;
+    yaml_graph_node[std::move(node_name)] = the_node;
     the_node["name"] = node._name;
     the_node["is_pin"] = node._is_pin;
-    the_node["is_port"] = node._is_port;
+    the_node["is_port"] = node._is_port;    
 
-    YAML::Node adjaceny_node;
-    the_node["adjaceny_node"] = adjaceny_node;
+    // YAML::Node adjaceny_node;
+    // the_node["adjaceny_node"] = adjaceny_node;
 
-    if (node_id <= timing_wire_graph._adjacency_list.size()) {
-      for (unsigned adjacency_node :
-           timing_wire_graph._adjacency_list[node_id - 1]) {
-        adjaceny_node.push_back(adjacency_node);
-      }
-    }
-    
-    LOG_INFO_EVERY_N(1000) << "write " << node_id << " total " << timing_wire_graph._nodes.size();
+    // if (node_id <= timing_wire_graph._adjacency_list.size()) {
+    //   for (unsigned adjacency_node :
+    //        timing_wire_graph._adjacency_list[node_id - 1]) {
+    //     adjaceny_node.push_back(adjacency_node);
+    //   }
+    // }
+
+    LOG_INFO_EVERY_N(1000) << "write node " << node_id << " total "
+                           << timing_wire_graph._nodes.size();
 
     // Add key-value pairs incrementally  
     out << YAML::Key << node_name << YAML::Value << the_node;
+
+    
   }
 
   for (unsigned edge_id = 0; auto& edge : timing_wire_graph._edges) {
     std::string edge_name = Str::printf("edge_%d", edge_id++);
-    YAML::Node the_edge;
-    yaml_graph_node[edge_name] = the_edge;
+    YAML::Node the_edge; 
+    yaml_graph_node[std::move(edge_name)] = the_edge;
     the_edge["from_node"] = edge._from_node;
     the_edge["to_node"] = edge._to_node;
-    the_edge["feature_R"] = edge._feature_R;
-    the_edge["feature_C"] = edge._feature_C;
-    the_edge["feature_from_slew"] = edge._feature_from_slew;
-    the_edge["feature_to_slew"] = edge._feature_to_slew;
-    the_edge["feature_wire_delay"] = edge._feature_wire_delay;
-    the_edge["is_net_edge"] = edge._is_net_edge;
+    // the_edge["feature_R"] = edge._feature_R;
+    // the_edge["feature_C"] = edge._feature_C;
+    // the_edge["feature_from_slew"] = edge._feature_from_slew;
+    // the_edge["feature_to_slew"] = edge._feature_to_slew;
+    // the_edge["feature_wire_delay"] = edge._feature_wire_delay;
+    // the_edge["is_net_edge"] = edge._is_net_edge;
 
-    LOG_INFO_EVERY_N(1000) << "write " << edge_name << " total " << timing_wire_graph._edges.size();
+    LOG_INFO_EVERY_N(1000) << "write edge " << edge_id << " total "
+                           << timing_wire_graph._edges.size();
 
     // Add key-value pairs incrementally  
-    out << YAML::Key << edge_name << YAML::Value << the_edge;
+    out << YAML::Key << edge_name << YAML::Value << the_edge;   
 
   } 
 
