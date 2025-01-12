@@ -61,7 +61,6 @@ unsigned StaDataSlewDelayPropagation::operator()(StaVertex* the_vertex) {
     FOREACH_SNK_ARC(the_vertex, snk_arc) {
       snk_arc->exec(*this);
     }
-    return 1;
   }
 
   unsigned is_ok = 1;

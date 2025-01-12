@@ -24,8 +24,8 @@
  */
 #pragma once
 
-#include "StaFunc.hh"
 #include "StaDataPropagation.hh"
+#include "StaFunc.hh"
 
 namespace ista {
 
@@ -39,7 +39,8 @@ class StaFwdPropagationBFS : public StaBFSFunc, public StaFwdPropagation {
   unsigned operator()(StaArc* the_arc) override;
 
   unsigned operator()(StaGraph* the_graph) override;
-
 };
+
+
 
 }  // namespace ista

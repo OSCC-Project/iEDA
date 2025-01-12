@@ -25,6 +25,9 @@
 
 #include "StaDataPropagationBFS.hh"
 #include "ThreadPool/ThreadPool.h"
+#include "StaDelayPropagation.hh"
+#include "StaSlewPropagation.hh"
+#include "Config.hh"
 
 namespace ista {
 
@@ -36,8 +39,21 @@ namespace ista {
  */
 unsigned StaFwdPropagationBFS::operator()(StaArc* the_arc) {
   std::lock_guard<std::mutex> lk(the_arc->get_snk()->get_fwd_mutex());
-  // call parent operator.
-  StaFwdPropagation::operator()(the_arc);
+
+#if INTEGRATION_FWD
+  StaSlewPropagation slew_propagation;
+  StaDelayPropagation delay_propagation;
+
+  slew_propagation(the_arc);
+  delay_propagation(the_arc);
+#endif
+
+  if (!the_arc->isCheckArc()) {
+    // call parent operator.
+    StaFwdPropagation::operator()(the_arc);
+    
+  }
+
   return 1;
 }
 
@@ -59,6 +75,16 @@ unsigned StaFwdPropagationBFS::operator()(StaVertex* the_vertex) {
 
     createStartData(the_vertex);
   }
+
+#if INTEGRATION_FWD
+    // data propagation end at the clock vertex.
+  if (the_vertex->is_end()) {
+    // calc check arc
+    FOREACH_SNK_ARC(the_vertex, snk_arc) {
+      snk_arc->exec(*this);
+    }
+  }
+#endif
 
   if (isTracePath()) {
     addTracePathVertex(the_vertex);
@@ -88,6 +114,11 @@ unsigned StaFwdPropagationBFS::operator()(StaVertex* the_vertex) {
       addNextBFSQueue(snk_vertex);
     }
   }
+
+#if INTEGRATION_FWD
+  the_vertex->set_is_slew_prop();
+  the_vertex->set_is_delay_prop();
+#endif
 
   the_vertex->set_is_fwd();
 
@@ -123,7 +154,7 @@ unsigned StaFwdPropagationBFS::operator()(StaGraph* the_graph) {
     LOG_INFO << "propagating current data queue vertexes number is "
              << current_queue.size();
 
-#if 0
+#if 1
     {
       // create thread pool
       unsigned num_threads = getNumThreads();
@@ -167,5 +198,7 @@ unsigned StaFwdPropagationBFS::operator()(StaGraph* the_graph) {
 
   return is_ok;
 }
+
+
 
 }  // namespace ista
