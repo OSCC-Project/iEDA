@@ -389,8 +389,6 @@ void DetailedRouter::buildNetResult(DRBox& dr_box)
 
   for (auto& [net_idx, segment_set] : RTDM.getNetDetailedResultMap(dr_box.get_box_rect())) {
     for (Segment<LayerCoord>* segment : segment_set) {
-      dr_box.get_net_task_detailed_result_map()[net_idx].push_back(*segment);
-
       bool least_one_coord_in_box = false;
       if (RTUTIL.isInside(box_real_rect, segment->get_first()) && RTUTIL.isInside(box_real_rect, segment->get_second())) {
         if (RTUTIL.isInside(box_real_rect, segment->get_first(), false) || RTUTIL.isInside(box_real_rect, segment->get_second(), false)) {
@@ -399,6 +397,7 @@ void DetailedRouter::buildNetResult(DRBox& dr_box)
         }
       }
       if (least_one_coord_in_box) {
+        dr_box.get_net_task_detailed_result_map()[net_idx].push_back(*segment);
         RTDM.updateNetDetailedResultToGCellMap(ChangeType::kDel, net_idx, segment);
       } else {
         dr_box.get_net_detailed_result_map()[net_idx].insert(segment);
