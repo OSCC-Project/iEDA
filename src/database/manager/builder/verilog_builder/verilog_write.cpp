@@ -58,7 +58,7 @@ void VerilogWriter::writeModule()
   }
   LOG_INFO << "start write verilog file " << _file_name;
 
-  fprintf(_stream, "//Generate the verilog at %s\n", ieda::Time::getNowWallTime());
+  fprintf(_stream, "//Generate the verilog at %s by iSTA.\n", ieda::Time::getNowWallTime());
 
   fprintf(_stream, "module %s (", _idb_design.get_design_name().c_str());
   fprintf(_stream, "\n");

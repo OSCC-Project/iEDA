@@ -40,6 +40,8 @@ class Stats {
   int getTimeOfDay(struct timeval *tv) const;
   [[nodiscard]] double elapsedRunTime() const;
 
+  void restartStats();
+
  private:
   std::size_t _memory_begin;
   struct timeval _elapsed_begin_time;
