@@ -480,6 +480,7 @@ void InitSTA::buildLmRCTree(ilm::LmLayout* lm_layout, std::string work_dir) {
         auto [inst_name, pin_type_name] = pin_name_pair;
         auto pin_name = !inst_name.empty() ? (inst_name + ":" + pin_type_name)
                                            : pin_type_name;
+        pin_name.erase(std::remove(pin_name.begin(), pin_name.end(), '\\'), pin_name.end());
         auto* sta_pin_port = sta_pin_port_map[pin_name];
         rc_node = STA_INST->makeOrFindRCTreeNode(sta_pin_port);
       } else {
