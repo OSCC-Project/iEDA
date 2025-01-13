@@ -1177,7 +1177,7 @@ std::optional<std::pair<double, Eigen::MatrixXd>> RcNet::delay(
 }
 
 std::optional<double> RcNet::slew(
-    Pin& to, double from_slew,
+    DesignObject& to, double from_slew,
     std::optional<LibCurrentData*> /* output_current */, AnalysisMode mode,
     TransType trans_type) {
   if (_rct.index() == 0) {

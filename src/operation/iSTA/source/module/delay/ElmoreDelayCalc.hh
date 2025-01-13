@@ -690,7 +690,7 @@ class RcNet {
       TransType trans_type);
 
   virtual std::optional<double> slew(
-      Pin& to, double from_slew, std::optional<LibCurrentData*> output_current,
+      DesignObject& to, double from_slew, std::optional<LibCurrentData*> output_current,
       AnalysisMode mode, TransType trans_type);
 
   void printRctInfo();

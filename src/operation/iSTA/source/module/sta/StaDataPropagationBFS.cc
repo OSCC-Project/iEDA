@@ -25,6 +25,7 @@
 
 #include "StaDataPropagationBFS.hh"
 #include "ThreadPool/ThreadPool.h"
+#include "StaDataSlewDelayPropagation.hh"
 #include "StaDelayPropagation.hh"
 #include "StaSlewPropagation.hh"
 #include "Config.hh"
@@ -41,11 +42,17 @@ unsigned StaFwdPropagationBFS::operator()(StaArc* the_arc) {
   std::lock_guard<std::mutex> lk(the_arc->get_snk()->get_fwd_mutex());
 
 #if INTEGRATION_FWD
+#if 0
   StaSlewPropagation slew_propagation;
   StaDelayPropagation delay_propagation;
 
   slew_propagation(the_arc);
   delay_propagation(the_arc);
+#else 
+  StaDataSlewDelayPropagation slew_delay_propagation;
+  slew_delay_propagation(the_arc);
+
+#endif
 #endif
 
   if (!the_arc->isCheckArc()) {
@@ -154,7 +161,7 @@ unsigned StaFwdPropagationBFS::operator()(StaGraph* the_graph) {
     LOG_INFO << "propagating current data queue vertexes number is "
              << current_queue.size();
 
-#if 1
+#if 0
     {
       // create thread pool
       unsigned num_threads = getNumThreads();
