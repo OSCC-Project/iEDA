@@ -195,6 +195,8 @@ class Sta {
   }
   auto& get_link_cells() { return _link_cells; }
 
+  auto get_propagation_method() { return _propagation_method; }
+
   SdcConstrain* getConstrain();
 
   unsigned readDesignWithRustParser(const char* verilog_file);

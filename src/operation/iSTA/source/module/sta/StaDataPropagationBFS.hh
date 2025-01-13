@@ -15,32 +15,32 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 /**
- * @file StaDataSlewDelayPropagation.hh
+ * @file StaDataPropagationBFS.hh
  * @author simin tao (taosm@pcl.ac.cn)
- * @brief The Data slew delay propagation using BFS method.
+ * @brief The class of data propagation use the BFS method.
  * @version 0.1
- * @date 2024-12-26
+ * @date 2025-01-10
+ *
  */
 #pragma once
 
+#include "StaDataPropagation.hh"
 #include "StaFunc.hh"
-#include <queue>
-#include <mutex>
 
 namespace ista {
 
 /**
- * @brief The data slew and delay propagation with bfs.
+ * @brief The forward propagation using BFS method.
  *
  */
-class StaDataSlewDelayPropagation : public StaBFSFunc, public StaFunc {
+class StaFwdPropagationBFS : public StaBFSFunc, public StaFwdPropagation {
  public:
-  unsigned operator()(StaArc* the_arc) override;
   unsigned operator()(StaVertex* the_vertex) override;
-  unsigned operator()(StaGraph* the_graph) override;
+  unsigned operator()(StaArc* the_arc) override;
 
-  AnalysisMode get_analysis_mode() override { return AnalysisMode::kMaxMin; }
- 
+  unsigned operator()(StaGraph* the_graph) override;
 };
 
-}
+
+
+}  // namespace ista

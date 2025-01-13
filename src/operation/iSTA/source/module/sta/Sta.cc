@@ -66,6 +66,7 @@
 #include "tcl/ScriptEngine.hh"
 #include "time/Time.hh"
 #include "usage/usage.hh"
+#include "Config.hh"
 
 namespace ista {
 
@@ -2456,16 +2457,19 @@ unsigned Sta::updateTiming() {
         StaApplySdc(StaApplySdc::PropType::kApplySdcPreProp),
         StaConstPropagation(),
         StaClockPropagation(StaClockPropagation::PropType::kIdealClockProp),
-        StaCombLoopCheck(), StaClockSlewDelayPropagation(), StaLevelization(),
-        StaDataSlewDelayPropagation(),
+        StaCombLoopCheck(), StaClockSlewDelayPropagation(), StaLevelization(),        
         StaClockPropagation(StaClockPropagation::PropType::kNormalClockProp),
         StaApplySdc(StaApplySdc::PropType::kApplySdcPostNormalClockProp),
         StaClockPropagation(
             StaClockPropagation::PropType::kUpdateGeneratedClockProp),
         StaApplySdc(StaApplySdc::PropType::kApplySdcPostClockProp),
         StaBuildPropTag(StaPropagationTag::TagType::kProp),
+        #if !INTEGRATION_FWD
+        StaDataSlewDelayPropagation(),
+        #endif
         StaDataPropagation(StaDataPropagation::PropType::kFwdProp),
         // StaCrossTalkPropagation(),
+
         StaDataPropagation(StaDataPropagation::PropType::kIncrFwdProp),
         StaAnalyze(), StaApplySdc(StaApplySdc::PropType::kApplySdcPostProp),
         StaDataPropagation(StaDataPropagation::PropType::kBwdProp)};

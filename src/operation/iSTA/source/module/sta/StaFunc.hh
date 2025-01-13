@@ -78,4 +78,25 @@ class StaFunc {
   std::stack<StaVertex*> _trace_path_record;
 };
 
+/**
+ * @brief The func for BFS processing.
+ * 
+ */
+class StaBFSFunc {
+  protected:
+
+  void addNextBFSQueue(StaVertex* the_vertex) {
+      static std::mutex g_mutex;
+
+      if (std::find(_next_bfs_queue.begin(), _next_bfs_queue.end(),
+                    the_vertex) == _next_bfs_queue.end()) {
+        std::lock_guard<std::mutex> lk(g_mutex);
+        _next_bfs_queue.push_back(the_vertex);
+      }
+  }
+
+  std::vector<StaVertex*> _bfs_queue; //!< The current bfs queue
+  std::vector<StaVertex*> _next_bfs_queue; //!< For next bfs use.
+};
+
 }  // namespace ista
