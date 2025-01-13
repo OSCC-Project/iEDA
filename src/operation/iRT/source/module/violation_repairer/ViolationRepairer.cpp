@@ -823,12 +823,12 @@ void ViolationRepairer::buildOrientNetMap(VRBox& vr_box)
   }
   for (auto& [net_idx, segment_list] : vr_box.get_net_task_final_result_map()) {
     for (Segment<LayerCoord>& segment : segment_list) {
-      updateNetResultToGraph(vr_box, ChangeType::kAdd, net_idx, segment);
+      updateRoutedRectToGraph(vr_box, ChangeType::kAdd, net_idx, segment);
     }
   }
   for (auto& [net_idx, patch_list] : vr_box.get_net_task_final_patch_map()) {
     for (EXTLayerRect& patch : patch_list) {
-      updateNetPatchToGraph(vr_box, ChangeType::kAdd, net_idx, patch);
+      updateRoutedRectToGraph(vr_box, ChangeType::kAdd, net_idx, patch);
     }
   }
   for (Violation& violation : vr_box.get_violation_list()) {
@@ -1194,7 +1194,7 @@ void ViolationRepairer::updateFixedRectToGraph(VRBox& vr_box, ChangeType change_
   }
 }
 
-void ViolationRepairer::updateNetResultToGraph(VRBox& vr_box, ChangeType change_type, int32_t net_idx, Segment<LayerCoord>& segment)
+void ViolationRepairer::updateRoutedRectToGraph(VRBox& vr_box, ChangeType change_type, int32_t net_idx, Segment<LayerCoord>& segment)
 {
   for (NetShape& net_shape : RTDM.getNetShapeList(net_idx, segment)) {
     for (auto& [vr_node, obs_type_set] : getNodeObsTypeMap(vr_box, net_shape, true)) {
@@ -1209,7 +1209,7 @@ void ViolationRepairer::updateNetResultToGraph(VRBox& vr_box, ChangeType change_
   }
 }
 
-void ViolationRepairer::updateNetPatchToGraph(VRBox& vr_box, ChangeType change_type, int32_t net_idx, EXTLayerRect& patch)
+void ViolationRepairer::updateRoutedRectToGraph(VRBox& vr_box, ChangeType change_type, int32_t net_idx, EXTLayerRect& patch)
 {
   NetShape net_shape(net_idx, patch.getRealLayerRect(), true);
   for (auto& [vr_node, obs_type_set] : getNodeObsTypeMap(vr_box, net_shape, true)) {

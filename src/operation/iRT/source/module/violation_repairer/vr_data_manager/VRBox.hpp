@@ -49,10 +49,7 @@ class VRBox
   std::vector<Violation>& get_violation_list() { return _violation_list; }
   ScaleAxis& get_box_track_axis() { return _box_track_axis; }
   std::vector<GridMap<VRNode>>& get_layer_node_map() { return _layer_node_map; }
-  std::map<int32_t, std::vector<Segment<LayerCoord>>>& get_best_net_task_final_result_map()
-  {
-    return _best_net_task_final_result_map;
-  }
+  std::map<int32_t, std::vector<Segment<LayerCoord>>>& get_best_net_task_final_result_map() { return _best_net_task_final_result_map; }
   std::map<int32_t, std::vector<EXTLayerRect>>& get_best_net_task_final_patch_map() { return _best_net_task_final_patch_map; }
   std::vector<Violation>& get_best_violation_list() { return _best_violation_list; }
   // setter

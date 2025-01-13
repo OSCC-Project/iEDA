@@ -17,10 +17,10 @@
 #pragma once
 
 #include "ConnectType.hpp"
-#include "VRGroup.hpp"
 #include "LayerCoord.hpp"
 #include "LayerRect.hpp"
 #include "SortStatus.hpp"
+#include "VRGroup.hpp"
 
 namespace irt {
 

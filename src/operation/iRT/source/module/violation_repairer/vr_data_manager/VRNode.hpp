@@ -18,10 +18,9 @@
 
 #include "Direction.hpp"
 #include "LayerCoord.hpp"
-#include "VRObsType.hpp"
-#include "VRObsType.hpp"
 #include "RTHeader.hpp"
 #include "Utility.hpp"
+#include "VRObsType.hpp"
 
 namespace irt {
 

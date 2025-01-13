@@ -977,7 +977,7 @@ void PinAccessor::buildOrientNetMap(PABox& pa_box)
   for (auto& [net_idx, task_result_map] : pa_box.get_net_task_result_map()) {
     for (auto& [task_idx, segment_list] : task_result_map) {
       for (Segment<LayerCoord>& segment : segment_list) {
-        updateNetResultToGraph(pa_box, ChangeType::kAdd, net_idx, segment);
+        updateRoutedRectToGraph(pa_box, ChangeType::kAdd, net_idx, segment);
       }
     }
   }
@@ -1257,12 +1257,12 @@ void PinAccessor::updateTaskResult(PABox& pa_box)
 
   // 原结果从graph删除,由于task有对应net_idx,所以不需要在布线前进行删除也不会影响结果
   for (Segment<LayerCoord>& routing_segment : routing_segment_list) {
-    updateNetResultToGraph(pa_box, ChangeType::kDel, curr_net_idx, routing_segment);
+    updateRoutedRectToGraph(pa_box, ChangeType::kDel, curr_net_idx, routing_segment);
   }
   routing_segment_list = new_routing_segment_list;
   // 新结果添加到graph
   for (Segment<LayerCoord>& routing_segment : routing_segment_list) {
-    updateNetResultToGraph(pa_box, ChangeType::kAdd, curr_net_idx, routing_segment);
+    updateRoutedRectToGraph(pa_box, ChangeType::kAdd, curr_net_idx, routing_segment);
   }
 }
 
@@ -1778,7 +1778,7 @@ void PinAccessor::updateFixedRectToGraph(PABox& pa_box, ChangeType change_type, 
   }
 }
 
-void PinAccessor::updateNetResultToGraph(PABox& pa_box, ChangeType change_type, int32_t net_idx, Segment<LayerCoord>& segment)
+void PinAccessor::updateRoutedRectToGraph(PABox& pa_box, ChangeType change_type, int32_t net_idx, Segment<LayerCoord>& segment)
 {
   for (NetShape& net_shape : RTDM.getNetShapeList(net_idx, segment)) {
     for (auto& [pa_node, orientation_set] : getNodeOrientationMap(pa_box, net_shape, true)) {
