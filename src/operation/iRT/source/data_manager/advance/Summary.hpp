@@ -121,11 +121,18 @@ class VRSummary
  public:
   VRSummary() = default;
   ~VRSummary() = default;
-
+  std::map<int32_t, double> routing_wire_length_map;
+  double total_wire_length = 0;
+  std::map<int32_t, int32_t> cut_via_num_map;
+  int32_t total_via_num = 0;
+  std::map<int32_t, int32_t> routing_patch_num_map;
+  int32_t total_patch_num = 0;
   std::map<int32_t, std::map<std::string, int32_t>> routing_violation_type_num_map;
   std::map<std::string, int32_t> violation_type_num_map;
   std::map<int32_t, int32_t> routing_violation_num_map;
   int32_t total_violation_num = 0;
+  std::map<std::string, std::map<std::string, double>> clock_timing;
+  std::map<std::string, double> power_map;
 };
 
 class ERSummary
@@ -157,7 +164,7 @@ class Summary
   std::map<int32_t, GRSummary> iter_gr_summary_map;
   TASummary ta_summary;
   std::map<int32_t, DRSummary> iter_dr_summary_map;
-  VRSummary vr_summary;
+  std::map<int32_t, VRSummary> iter_vr_summary_map;
   ERSummary er_summary;
 };
 

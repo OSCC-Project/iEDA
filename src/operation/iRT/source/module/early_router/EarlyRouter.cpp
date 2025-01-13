@@ -1373,9 +1373,9 @@ void EarlyRouter::printSummary(ERModel& er_model)
 
   fort::char_table routing_demand_map_table;
   {
-    routing_demand_map_table << fort::header << "routing_layer"
+    routing_demand_map_table << fort::header << "routing"
                              << "demand"
-                             << "proportion" << fort::endr;
+                             << "prop" << fort::endr;
     for (RoutingLayer& routing_layer : routing_layer_list) {
       routing_demand_map_table << routing_layer.get_layer_name() << routing_demand_map[routing_layer.get_layer_idx()]
                                << RTUTIL.getPercentage(routing_demand_map[routing_layer.get_layer_idx()], total_demand) << fort::endr;
@@ -1384,9 +1384,9 @@ void EarlyRouter::printSummary(ERModel& er_model)
   }
   fort::char_table routing_overflow_map_table;
   {
-    routing_overflow_map_table << fort::header << "routing_layer"
+    routing_overflow_map_table << fort::header << "routing"
                                << "overflow"
-                               << "proportion" << fort::endr;
+                               << "prop" << fort::endr;
     for (RoutingLayer& routing_layer : routing_layer_list) {
       routing_overflow_map_table << routing_layer.get_layer_name() << routing_overflow_map[routing_layer.get_layer_idx()]
                                  << RTUTIL.getPercentage(routing_overflow_map[routing_layer.get_layer_idx()], total_overflow) << fort::endr;
@@ -1396,9 +1396,9 @@ void EarlyRouter::printSummary(ERModel& er_model)
   }
   fort::char_table routing_wire_length_map_table;
   {
-    routing_wire_length_map_table << fort::header << "routing_layer"
+    routing_wire_length_map_table << fort::header << "routing"
                                   << "wire_length"
-                                  << "proportion" << fort::endr;
+                                  << "prop" << fort::endr;
     for (RoutingLayer& routing_layer : routing_layer_list) {
       routing_wire_length_map_table << routing_layer.get_layer_name() << routing_wire_length_map[routing_layer.get_layer_idx()]
                                     << RTUTIL.getPercentage(routing_wire_length_map[routing_layer.get_layer_idx()], total_wire_length)
@@ -1409,9 +1409,9 @@ void EarlyRouter::printSummary(ERModel& er_model)
   }
   fort::char_table cut_via_num_map_table;
   {
-    cut_via_num_map_table << fort::header << "cut_layer"
-                          << "via_num"
-                          << "proportion" << fort::endr;
+    cut_via_num_map_table << fort::header << "cut"
+                          << "#via"
+                          << "prop" << fort::endr;
     for (CutLayer& cut_layer : cut_layer_list) {
       cut_via_num_map_table << cut_layer.get_layer_name() << cut_via_num_map[cut_layer.get_layer_idx()]
                             << RTUTIL.getPercentage(cut_via_num_map[cut_layer.get_layer_idx()], total_via_num) << fort::endr;
