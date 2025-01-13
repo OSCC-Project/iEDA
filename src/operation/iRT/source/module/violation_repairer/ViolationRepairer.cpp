@@ -60,7 +60,7 @@ void ViolationRepairer::repair()
   buildNetFinalResultMap(vr_model);
   clearIgnoredViolation(vr_model);
   uploadViolation(vr_model);
-  // iterativeVRModel(vr_model);
+  iterativeVRModel(vr_model);
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
@@ -333,8 +333,9 @@ void ViolationRepairer::iterativeVRModel(VRModel& vr_model)
    */
   std::vector<VRIterParam> vr_iter_param_list;
   // clang-format off
-  vr_iter_param_list.emplace_back(2, 0, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 3);
-  vr_iter_param_list.emplace_back(2, 1, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 3);
+  vr_iter_param_list.emplace_back(3, 0, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 3);
+  vr_iter_param_list.emplace_back(3, 1, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 3);
+  vr_iter_param_list.emplace_back(3, 2, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 3);
   // clang-format on
   for (size_t i = 0, iter = 1; i < vr_iter_param_list.size(); i++, iter++) {
     Monitor iter_monitor;
@@ -537,7 +538,7 @@ void ViolationRepairer::routeVRBoxMap(VRModel& vr_model)
   size_t routed_box_num = 0;
   for (std::vector<VRBoxId>& vr_box_id_list : vr_model.get_vr_box_id_list_list()) {
     Monitor stage_monitor;
-#pragma omp parallel for
+    // #pragma omp parallel for
     for (VRBoxId& vr_box_id : vr_box_id_list) {
       VRBox& vr_box = vr_box_map[vr_box_id.get_x()][vr_box_id.get_y()];
       buildFixedRect(vr_box);
@@ -737,36 +738,40 @@ bool ViolationRepairer::needRouting(VRBox& vr_box)
 
 void ViolationRepairer::buildBoxTrackAxis(VRBox& vr_box)
 {
-  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
-
-  std::vector<int32_t> x_scale_list;
-  std::vector<int32_t> y_scale_list;
+  int32_t manufacture_grid = RTDM.getDatabase().get_manufacture_grid();
 
   PlanarRect& box_real_rect = vr_box.get_box_rect().get_real_rect();
-  for (RoutingLayer& routing_layer : routing_layer_list) {
-    for (int32_t x_scale : RTUTIL.getScaleList(box_real_rect.get_ll_x(), box_real_rect.get_ur_x(), routing_layer.getXTrackGridList())) {
-      x_scale_list.push_back(x_scale);
-    }
-    for (int32_t y_scale : RTUTIL.getScaleList(box_real_rect.get_ll_y(), box_real_rect.get_ur_y(), routing_layer.getYTrackGridList())) {
-      y_scale_list.push_back(y_scale);
-    }
-  }
-  for (VRTask* vr_task : vr_box.get_vr_task_list()) {
-    for (VRGroup& vr_group : vr_task->get_vr_group_list()) {
-      for (LayerCoord& coord : vr_group.get_coord_list()) {
-        x_scale_list.push_back(coord.get_x());
-        y_scale_list.push_back(coord.get_y());
-      }
-    }
-  }
-
   ScaleAxis& box_track_axis = vr_box.get_box_track_axis();
-  std::sort(x_scale_list.begin(), x_scale_list.end());
-  x_scale_list.erase(std::unique(x_scale_list.begin(), x_scale_list.end()), x_scale_list.end());
-  box_track_axis.set_x_grid_list(RTUTIL.makeScaleGridList(x_scale_list));
-  std::sort(y_scale_list.begin(), y_scale_list.end());
-  y_scale_list.erase(std::unique(y_scale_list.begin(), y_scale_list.end()), y_scale_list.end());
-  box_track_axis.set_y_grid_list(RTUTIL.makeScaleGridList(y_scale_list));
+
+  int32_t ll_x = box_real_rect.get_ll_x();
+  int32_t ll_y = box_real_rect.get_ll_y();
+  int32_t ur_x = box_real_rect.get_ur_x();
+  int32_t ur_y = box_real_rect.get_ur_y();
+  // 对齐manufacture_grid
+  while (ll_x % manufacture_grid != 0) {
+    ll_x++;
+  }
+  while (ll_y % manufacture_grid != 0) {
+    ll_y++;
+  }
+  while (ur_x % manufacture_grid != 0) {
+    ur_x--;
+  }
+  while (ur_y % manufacture_grid != 0) {
+    ur_y--;
+  }
+  ScaleGrid x_grid;
+  x_grid.set_start_line(ll_x);
+  x_grid.set_step_length(manufacture_grid);
+  x_grid.set_step_num((ur_x - ll_x) / manufacture_grid);
+  x_grid.set_end_line(ur_x);
+  box_track_axis.get_x_grid_list().emplace_back(x_grid);
+  ScaleGrid y_grid;
+  y_grid.set_start_line(ll_y);
+  y_grid.set_step_length(manufacture_grid);
+  y_grid.set_step_num((ur_y - ll_y) / manufacture_grid);
+  y_grid.set_end_line(ur_y);
+  box_track_axis.get_y_grid_list().emplace_back(y_grid);
 }
 
 void ViolationRepairer::buildLayerNodeMap(VRBox& vr_box)
@@ -797,38 +802,38 @@ void ViolationRepairer::buildLayerNodeMap(VRBox& vr_box)
 
 void ViolationRepairer::buildOrientNetMap(VRBox& vr_box)
 {
-  // for (auto& [is_routing, layer_net_fixed_rect_map] : vr_box.get_type_layer_net_fixed_rect_map()) {
-  //   for (auto& [layer_idx, net_fixed_rect_map] : layer_net_fixed_rect_map) {
-  //     for (auto& [net_idx, fixed_rect_set] : net_fixed_rect_map) {
-  //       for (auto& fixed_rect : fixed_rect_set) {
-  //         updateFixedRectToGraph(vr_box, ChangeType::kAdd, net_idx, fixed_rect, is_routing);
-  //       }
-  //     }
-  //   }
-  // }
-  // for (auto& [net_idx, segment_set] : vr_box.get_net_final_result_map()) {
-  //   for (Segment<LayerCoord>* segment : segment_set) {
-  //     updateFixedRectToGraph(vr_box, ChangeType::kAdd, net_idx, *segment);
-  //   }
-  // }
-  // for (auto& [net_idx, patch_set] : vr_box.get_net_final_patch_map()) {
-  //   for (EXTLayerRect* patch : patch_set) {
-  //     updateFixedRectToGraph(vr_box, ChangeType::kAdd, net_idx, *patch);
-  //   }
-  // }
-  // for (auto& [net_idx, segment_list] : vr_box.get_net_task_final_result_map()) {
-  //   for (Segment<LayerCoord>& segment : segment_list) {
-  //     updateNetResultToGraph(vr_box, ChangeType::kAdd, net_idx, segment);
-  //   }
-  // }
-  // for (auto& [net_idx, patch_list] : vr_box.get_net_task_final_patch_map()) {
-  //   for (EXTLayerRect& patch : patch_list) {
-  //     updateNetResultToGraph(vr_box, ChangeType::kAdd, net_idx, patch);
-  //   }
-  // }
-  // for (Violation& violation : vr_box.get_violation_list()) {
-  //   addViolationToGraph(vr_box, violation);
-  // }
+  for (auto& [is_routing, layer_net_fixed_rect_map] : vr_box.get_type_layer_net_fixed_rect_map()) {
+    for (auto& [layer_idx, net_fixed_rect_map] : layer_net_fixed_rect_map) {
+      for (auto& [net_idx, fixed_rect_set] : net_fixed_rect_map) {
+        for (auto& fixed_rect : fixed_rect_set) {
+          updateFixedRectToGraph(vr_box, ChangeType::kAdd, net_idx, fixed_rect, is_routing);
+        }
+      }
+    }
+  }
+  for (auto& [net_idx, segment_set] : vr_box.get_net_final_result_map()) {
+    for (Segment<LayerCoord>* segment : segment_set) {
+      updateFixedRectToGraph(vr_box, ChangeType::kAdd, net_idx, *segment);
+    }
+  }
+  for (auto& [net_idx, patch_set] : vr_box.get_net_final_patch_map()) {
+    for (EXTLayerRect* patch : patch_set) {
+      updateFixedRectToGraph(vr_box, ChangeType::kAdd, net_idx, patch, true);
+    }
+  }
+  for (auto& [net_idx, segment_list] : vr_box.get_net_task_final_result_map()) {
+    for (Segment<LayerCoord>& segment : segment_list) {
+      updateNetResultToGraph(vr_box, ChangeType::kAdd, net_idx, segment);
+    }
+  }
+  for (auto& [net_idx, patch_list] : vr_box.get_net_task_final_patch_map()) {
+    for (EXTLayerRect& patch : patch_list) {
+      updateNetPatchToGraph(vr_box, ChangeType::kAdd, net_idx, patch);
+    }
+  }
+  for (Violation& violation : vr_box.get_violation_list()) {
+    addViolationToGraph(vr_box, violation);
+  }
 }
 
 void ViolationRepairer::exemptPinShape(VRBox& vr_box)
@@ -838,7 +843,7 @@ void ViolationRepairer::exemptPinShape(VRBox& vr_box)
     for (int32_t x = 0; x < vr_node_map.get_x_size(); x++) {
       for (int32_t y = 0; y < vr_node_map.get_y_size(); y++) {
         VRNode& vr_node = vr_node_map[x][y];
-        for (auto& [orient, net_set] : vr_node.get_orient_fixed_rect_map()) {
+        for (auto& [obs_type, net_set] : vr_node.get_obs_type_fixed_rect_map()) {
           if (RTUTIL.exist(net_set, -1) && net_set.size() >= 2) {
             net_set.erase(-1);
           }
@@ -1163,12 +1168,12 @@ void ViolationRepairer::updateFixedRectToGraph(VRBox& vr_box, ChangeType change_
                                                bool is_routing)
 {
   NetShape net_shape(net_idx, fixed_rect->getRealLayerRect(), is_routing);
-  for (auto& [vr_node, orientation_set] : getNodeOrientationMap(vr_box, net_shape, true)) {
-    for (Orientation orientation : orientation_set) {
+  for (auto& [vr_node, obs_type_set] : getNodeObsTypeMap(vr_box, net_shape, true)) {
+    for (VRObsType obs_type : obs_type_set) {
       if (change_type == ChangeType::kAdd) {
-        vr_node->get_orient_fixed_rect_map()[orientation].insert(net_shape.get_net_idx());
+        vr_node->get_obs_type_fixed_rect_map()[obs_type].insert(net_shape.get_net_idx());
       } else if (change_type == ChangeType::kDel) {
-        vr_node->get_orient_fixed_rect_map()[orientation].erase(net_shape.get_net_idx());
+        vr_node->get_obs_type_fixed_rect_map()[obs_type].erase(net_shape.get_net_idx());
       }
     }
   }
@@ -1177,12 +1182,12 @@ void ViolationRepairer::updateFixedRectToGraph(VRBox& vr_box, ChangeType change_
 void ViolationRepairer::updateFixedRectToGraph(VRBox& vr_box, ChangeType change_type, int32_t net_idx, Segment<LayerCoord>& segment)
 {
   for (NetShape& net_shape : RTDM.getNetShapeList(net_idx, segment)) {
-    for (auto& [vr_node, orientation_set] : getNodeOrientationMap(vr_box, net_shape, true)) {
-      for (Orientation orientation : orientation_set) {
+    for (auto& [vr_node, obs_type_set] : getNodeObsTypeMap(vr_box, net_shape, true)) {
+      for (VRObsType obs_type : obs_type_set) {
         if (change_type == ChangeType::kAdd) {
-          vr_node->get_orient_fixed_rect_map()[orientation].insert(net_shape.get_net_idx());
+          vr_node->get_obs_type_fixed_rect_map()[obs_type].insert(net_shape.get_net_idx());
         } else if (change_type == ChangeType::kDel) {
-          vr_node->get_orient_fixed_rect_map()[orientation].erase(net_shape.get_net_idx());
+          vr_node->get_obs_type_fixed_rect_map()[obs_type].erase(net_shape.get_net_idx());
         }
       }
     }
@@ -1192,13 +1197,27 @@ void ViolationRepairer::updateFixedRectToGraph(VRBox& vr_box, ChangeType change_
 void ViolationRepairer::updateNetResultToGraph(VRBox& vr_box, ChangeType change_type, int32_t net_idx, Segment<LayerCoord>& segment)
 {
   for (NetShape& net_shape : RTDM.getNetShapeList(net_idx, segment)) {
-    for (auto& [vr_node, orientation_set] : getNodeOrientationMap(vr_box, net_shape, true)) {
-      for (Orientation orientation : orientation_set) {
+    for (auto& [vr_node, obs_type_set] : getNodeObsTypeMap(vr_box, net_shape, true)) {
+      for (VRObsType obs_type : obs_type_set) {
         if (change_type == ChangeType::kAdd) {
-          vr_node->get_orient_routed_rect_map()[orientation].insert(net_shape.get_net_idx());
+          vr_node->get_obs_type_routed_rect_map()[obs_type].insert(net_shape.get_net_idx());
         } else if (change_type == ChangeType::kDel) {
-          vr_node->get_orient_routed_rect_map()[orientation].erase(net_shape.get_net_idx());
+          vr_node->get_obs_type_routed_rect_map()[obs_type].erase(net_shape.get_net_idx());
         }
+      }
+    }
+  }
+}
+
+void ViolationRepairer::updateNetPatchToGraph(VRBox& vr_box, ChangeType change_type, int32_t net_idx, EXTLayerRect& patch)
+{
+  NetShape net_shape(net_idx, patch.getRealLayerRect(), true);
+  for (auto& [vr_node, obs_type_set] : getNodeObsTypeMap(vr_box, net_shape, true)) {
+    for (VRObsType obs_type : obs_type_set) {
+      if (change_type == ChangeType::kAdd) {
+        vr_node->get_obs_type_routed_rect_map()[obs_type].insert(net_shape.get_net_idx());
+      } else if (change_type == ChangeType::kDel) {
+        vr_node->get_obs_type_routed_rect_map()[obs_type].erase(net_shape.get_net_idx());
       }
     }
   }
@@ -1206,112 +1225,26 @@ void ViolationRepairer::updateNetResultToGraph(VRBox& vr_box, ChangeType change_
 
 void ViolationRepairer::addViolationToGraph(VRBox& vr_box, Violation& violation)
 {
-  // LayerRect searched_rect;
-  // {
-  //   EXTLayerRect& violation_shape = violation.get_violation_shape();
-  //   searched_rect.set_rect(RTUTIL.getEnlargedRect(violation_shape.get_real_rect(), RTDM.getOnlyPitch()));
-  //   if (violation.get_is_routing()) {
-  //     searched_rect.set_layer_idx(violation_shape.get_layer_idx());
-  //   } else {
-  //     RTLOG.error(Loc::current(), "The violation layer is cut!");
-  //   }
-  // }
-  // std::vector<Segment<LayerCoord>> overlap_segment_list;
-  // for (auto& [net_idx, segment_list] : vr_box.get_net_task_detailed_result_map()) {
-  //   if (!RTUTIL.exist(violation.get_violation_net_set(), net_idx)) {
-  //     continue;
-  //   }
-  //   for (Segment<LayerCoord>& segment : segment_list) {
-  //     if (!RTUTIL.isOverlap(searched_rect, segment)) {
-  //       continue;
-  //     }
-  //     overlap_segment_list.push_back(segment);
-  //     break;
-  //   }
-  // }
-  // addViolationToGraph(vr_box, searched_rect, overlap_segment_list);
-}
-
-void ViolationRepairer::addViolationToGraph(VRBox& vr_box, LayerRect& searched_rect, std::vector<Segment<LayerCoord>>& overlap_segment_list)
-{
-  ScaleAxis& box_track_axis = vr_box.get_box_track_axis();
-  std::vector<GridMap<VRNode>>& layer_node_map = vr_box.get_layer_node_map();
-
-  for (Segment<LayerCoord>& overlap_segment : overlap_segment_list) {
-    LayerCoord& first_coord = overlap_segment.get_first();
-    LayerCoord& second_coord = overlap_segment.get_second();
-    if (first_coord == second_coord) {
-      continue;
-    }
-    PlanarRect real_rect = RTUTIL.getEnlargedRect(first_coord, second_coord, 0);
-    if (!RTUTIL.existTrackGrid(real_rect, box_track_axis)) {
-      continue;
-    }
-    PlanarRect grid_rect = RTUTIL.getTrackGrid(real_rect, box_track_axis);
-    std::map<int32_t, std::set<VRNode*>> distance_node_map;
-    {
-      int32_t first_layer_idx = first_coord.get_layer_idx();
-      int32_t second_layer_idx = second_coord.get_layer_idx();
-      RTUTIL.swapByASC(first_layer_idx, second_layer_idx);
-      for (int32_t layer_idx = first_layer_idx; layer_idx <= second_layer_idx; layer_idx++) {
-        for (int32_t x = grid_rect.get_ll_x(); x <= grid_rect.get_ur_x(); x++) {
-          for (int32_t y = grid_rect.get_ll_y(); y <= grid_rect.get_ur_y(); y++) {
-            VRNode* vr_node = &layer_node_map[layer_idx][x][y];
-            if (searched_rect.get_layer_idx() != vr_node->get_layer_idx()) {
-              continue;
-            }
-            int32_t distance = 0;
-            if (!RTUTIL.isInside(searched_rect.get_rect(), vr_node->get_planar_coord())) {
-              distance = RTUTIL.getManhattanDistance(searched_rect.getMidPoint(), vr_node->get_planar_coord());
-            }
-            distance_node_map[distance].insert(vr_node);
-          }
-        }
-      }
-    }
-    std::set<VRNode*> valid_node_set;
-    if (!distance_node_map[0].empty()) {
-      valid_node_set = distance_node_map[0];
-    } else {
-      for (auto& [distance, node_set] : distance_node_map) {
-        valid_node_set.insert(node_set.begin(), node_set.end());
-        if (valid_node_set.size() >= 2) {
-          break;
-        }
-      }
-    }
-    Orientation orientation = RTUTIL.getOrientation(first_coord, second_coord);
-    Orientation oppo_orientation = RTUTIL.getOppositeOrientation(orientation);
-    for (VRNode* valid_node : valid_node_set) {
-      if (LayerCoord(*valid_node) != first_coord) {
-        valid_node->get_orient_violation_number_map()[oppo_orientation]++;
-        if (RTUTIL.exist(valid_node->get_neighbor_node_map(), oppo_orientation)) {
-          valid_node->get_neighbor_node_map()[oppo_orientation]->get_orient_violation_number_map()[orientation]++;
-        }
-      }
-      if (LayerCoord(*valid_node) != second_coord) {
-        valid_node->get_orient_violation_number_map()[orientation]++;
-        if (RTUTIL.exist(valid_node->get_neighbor_node_map(), orientation)) {
-          valid_node->get_neighbor_node_map()[orientation]->get_orient_violation_number_map()[oppo_orientation]++;
-        }
-      }
+  NetShape net_shape(-1, violation.get_violation_shape().getRealLayerRect(), violation.get_is_routing());
+  for (auto& [vr_node, obs_type_set] : getNodeObsTypeMap(vr_box, net_shape, true)) {
+    for (VRObsType obs_type : obs_type_set) {
+      vr_node->get_obs_type_violation_number_map()[obs_type]++;
     }
   }
 }
 
-std::map<VRNode*, std::set<Orientation>> ViolationRepairer::getNodeOrientationMap(VRBox& vr_box, NetShape& net_shape, bool need_enlarged)
+std::map<VRNode*, std::set<VRObsType>> ViolationRepairer::getNodeObsTypeMap(VRBox& vr_box, NetShape& net_shape, bool need_enlarged)
 {
-  std::map<VRNode*, std::set<Orientation>> node_orientation_map;
+  std::map<VRNode*, std::set<VRObsType>> node_obs_type_map;
   if (net_shape.get_is_routing()) {
-    node_orientation_map = getRoutingNodeOrientationMap(vr_box, net_shape, need_enlarged);
+    node_obs_type_map = getRoutingNodeObsTypeMap(vr_box, net_shape, need_enlarged);
   } else {
-    node_orientation_map = getCutNodeOrientationMap(vr_box, net_shape, need_enlarged);
+    node_obs_type_map = getCutNodeObsTypeMap(vr_box, net_shape, need_enlarged);
   }
-  return node_orientation_map;
+  return node_obs_type_map;
 }
 
-std::map<VRNode*, std::set<Orientation>> ViolationRepairer::getRoutingNodeOrientationMap(VRBox& vr_box, NetShape& net_shape,
-                                                                                         bool need_enlarged)
+std::map<VRNode*, std::set<VRObsType>> ViolationRepairer::getRoutingNodeObsTypeMap(VRBox& vr_box, NetShape& net_shape, bool need_enlarged)
 {
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
   std::map<int32_t, PlanarRect>& layer_enclosure_map = RTDM.getDatabase().get_layer_enclosure_map();
@@ -1340,7 +1273,7 @@ std::map<VRNode*, std::set<Orientation>> ViolationRepairer::getRoutingNodeOrient
   int32_t enclosure_half_y_span = enclosure.getYSpan() / 2;
 
   GridMap<VRNode>& vr_node_map = vr_box.get_layer_node_map()[layer_idx];
-  std::map<VRNode*, std::set<Orientation>> node_orientation_map;
+  std::map<VRNode*, std::set<VRObsType>> node_obs_type_map;
   // wire 与 net_shape
   for (auto& [x_spacing, y_spacing] : spacing_pair_list) {
     int32_t enlarged_x_size = half_wire_width;
@@ -1355,17 +1288,14 @@ std::map<VRNode*, std::set<Orientation>> ViolationRepairer::getRoutingNodeOrient
     enlarged_y_size -= 1;
     PlanarRect planar_enlarged_rect
         = RTUTIL.getEnlargedRect(net_shape.get_rect(), enlarged_x_size, enlarged_y_size, enlarged_x_size, enlarged_y_size);
-    for (auto& [grid_coord, orientation_set] : RTUTIL.getTrackGridOrientationMap(planar_enlarged_rect, vr_box.get_box_track_axis())) {
-      VRNode& node = vr_node_map[grid_coord.get_x()][grid_coord.get_y()];
-      for (const Orientation& orientation : orientation_set) {
-        if (orientation == Orientation::kAbove || orientation == Orientation::kBelow) {
-          continue;
-        }
-        if (!RTUTIL.exist(node.get_neighbor_node_map(), orientation)) {
-          continue;
-        }
-        node_orientation_map[&node].insert(orientation);
-        node_orientation_map[node.get_neighbor_node_map()[orientation]].insert(RTUTIL.getOppositeOrientation(orientation));
+    if (!RTUTIL.existTrackGrid(planar_enlarged_rect, vr_box.get_box_track_axis())) {
+      continue;
+    }
+    PlanarRect grid_rect = RTUTIL.getTrackGrid(planar_enlarged_rect, vr_box.get_box_track_axis());
+    for (int32_t x = grid_rect.get_ll_x(); x <= grid_rect.get_ur_x(); x++) {
+      for (int32_t y = grid_rect.get_ll_y(); y <= grid_rect.get_ur_y(); y++) {
+        VRNode& node = vr_node_map[x][y];
+        node_obs_type_map[&node].insert(VRObsType::kPlanar);
       }
     }
   }
@@ -1383,25 +1313,21 @@ std::map<VRNode*, std::set<Orientation>> ViolationRepairer::getRoutingNodeOrient
     enlarged_y_size -= 1;
     PlanarRect space_enlarged_rect
         = RTUTIL.getEnlargedRect(net_shape.get_rect(), enlarged_x_size, enlarged_y_size, enlarged_x_size, enlarged_y_size);
-    for (auto& [grid_coord, orientation_set] : RTUTIL.getTrackGridOrientationMap(space_enlarged_rect, vr_box.get_box_track_axis())) {
-      VRNode& node = vr_node_map[grid_coord.get_x()][grid_coord.get_y()];
-      for (const Orientation& orientation : orientation_set) {
-        if (orientation == Orientation::kEast || orientation == Orientation::kWest || orientation == Orientation::kSouth
-            || orientation == Orientation::kNorth) {
-          continue;
-        }
-        if (!RTUTIL.exist(node.get_neighbor_node_map(), orientation)) {
-          continue;
-        }
-        node_orientation_map[&node].insert(orientation);
-        node_orientation_map[node.get_neighbor_node_map()[orientation]].insert(RTUTIL.getOppositeOrientation(orientation));
+    if (!RTUTIL.existTrackGrid(space_enlarged_rect, vr_box.get_box_track_axis())) {
+      continue;
+    }
+    PlanarRect grid_rect = RTUTIL.getTrackGrid(space_enlarged_rect, vr_box.get_box_track_axis());
+    for (int32_t x = grid_rect.get_ll_x(); x <= grid_rect.get_ur_x(); x++) {
+      for (int32_t y = grid_rect.get_ll_y(); y <= grid_rect.get_ur_y(); y++) {
+        VRNode& node = vr_node_map[x][y];
+        node_obs_type_map[&node].insert(VRObsType::kSpace);
       }
     }
   }
-  return node_orientation_map;
+  return node_obs_type_map;
 }
 
-std::map<VRNode*, std::set<Orientation>> ViolationRepairer::getCutNodeOrientationMap(VRBox& vr_box, NetShape& net_shape, bool need_enlarged)
+std::map<VRNode*, std::set<VRObsType>> ViolationRepairer::getCutNodeObsTypeMap(VRBox& vr_box, NetShape& net_shape, bool need_enlarged)
 {
   std::vector<CutLayer>& cut_layer_list = RTDM.getDatabase().get_cut_layer_list();
   std::map<int32_t, std::vector<int32_t>>& cut_to_adjacent_routing_map = RTDM.getDatabase().get_cut_to_adjacent_routing_map();
@@ -1461,7 +1387,7 @@ std::map<VRNode*, std::set<Orientation>> ViolationRepairer::getCutNodeOrientatio
       }
     }
   }
-  std::map<VRNode*, std::set<Orientation>> node_orientation_map;
+  std::map<VRNode*, std::set<VRObsType>> node_obs_type_map;
   for (auto& [cut_layer_idx, spacing_pair_list] : cut_spacing_map) {
     std::vector<int32_t> adjacent_routing_layer_idx_list = cut_to_adjacent_routing_map[cut_layer_idx];
     int32_t below_routing_layer_idx = adjacent_routing_layer_idx_list.front();
@@ -1484,22 +1410,21 @@ std::map<VRNode*, std::set<Orientation>> ViolationRepairer::getCutNodeOrientatio
       enlarged_y_size -= 1;
       PlanarRect space_enlarged_rect
           = RTUTIL.getEnlargedRect(net_shape.get_rect(), enlarged_x_size, enlarged_y_size, enlarged_x_size, enlarged_y_size);
-      for (auto& [grid_coord, orientation_set] : RTUTIL.getTrackGridOrientationMap(space_enlarged_rect, vr_box.get_box_track_axis())) {
-        if (!RTUTIL.exist(orientation_set, Orientation::kAbove) && !RTUTIL.exist(orientation_set, Orientation::kBelow)) {
-          continue;
-        }
-        VRNode& below_node = layer_node_map[below_routing_layer_idx][grid_coord.get_x()][grid_coord.get_y()];
-        if (RTUTIL.exist(below_node.get_neighbor_node_map(), Orientation::kAbove)) {
-          node_orientation_map[&below_node].insert(Orientation::kAbove);
-        }
-        VRNode& above_node = layer_node_map[above_routing_layer_idx][grid_coord.get_x()][grid_coord.get_y()];
-        if (RTUTIL.exist(above_node.get_neighbor_node_map(), Orientation::kBelow)) {
-          node_orientation_map[&above_node].insert(Orientation::kBelow);
+      if (!RTUTIL.existTrackGrid(space_enlarged_rect, vr_box.get_box_track_axis())) {
+        continue;
+      }
+      PlanarRect grid_rect = RTUTIL.getTrackGrid(space_enlarged_rect, vr_box.get_box_track_axis());
+      for (int32_t x = grid_rect.get_ll_x(); x <= grid_rect.get_ur_x(); x++) {
+        for (int32_t y = grid_rect.get_ll_y(); y <= grid_rect.get_ur_y(); y++) {
+          VRNode& below_node = layer_node_map[below_routing_layer_idx][x][y];
+          VRNode& above_node = layer_node_map[above_routing_layer_idx][x][y];
+          node_obs_type_map[&below_node].insert(VRObsType::kSpace);
+          node_obs_type_map[&above_node].insert(VRObsType::kSpace);
         }
       }
     }
   }
-  return node_orientation_map;
+  return node_obs_type_map;
 }
 
 #endif

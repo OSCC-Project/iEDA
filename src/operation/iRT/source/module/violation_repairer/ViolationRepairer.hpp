@@ -93,11 +93,12 @@ class ViolationRepairer
   void updateFixedRectToGraph(VRBox& vr_box, ChangeType change_type, int32_t net_idx, EXTLayerRect* fixed_rect, bool is_routing);
   void updateFixedRectToGraph(VRBox& vr_box, ChangeType change_type, int32_t net_idx, Segment<LayerCoord>& segment);
   void updateNetResultToGraph(VRBox& vr_box, ChangeType change_type, int32_t net_idx, Segment<LayerCoord>& segment);
+  void updateNetPatchToGraph(VRBox& vr_box, ChangeType change_type, int32_t net_idx, EXTLayerRect& patch);
   void addViolationToGraph(VRBox& vr_box, Violation& violation);
   void addViolationToGraph(VRBox& vr_box, LayerRect& searched_rect, std::vector<Segment<LayerCoord>>& overlap_segment_list);
-  std::map<VRNode*, std::set<Orientation>> getNodeOrientationMap(VRBox& vr_box, NetShape& net_shape, bool need_enlarged);
-  std::map<VRNode*, std::set<Orientation>> getRoutingNodeOrientationMap(VRBox& vr_box, NetShape& net_shape, bool need_enlarged);
-  std::map<VRNode*, std::set<Orientation>> getCutNodeOrientationMap(VRBox& vr_box, NetShape& net_shape, bool need_enlarged);
+  std::map<VRNode*, std::set<VRObsType>> getNodeObsTypeMap(VRBox& vr_box, NetShape& net_shape, bool need_enlarged);
+  std::map<VRNode*, std::set<VRObsType>> getRoutingNodeObsTypeMap(VRBox& vr_box, NetShape& net_shape, bool need_enlarged);
+  std::map<VRNode*, std::set<VRObsType>> getCutNodeObsTypeMap(VRBox& vr_box, NetShape& net_shape, bool need_enlarged);
 #endif
 
 #if 1  // exhibit
