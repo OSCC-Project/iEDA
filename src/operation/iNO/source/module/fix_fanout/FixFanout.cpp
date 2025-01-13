@@ -78,7 +78,7 @@ void FixFanout::fixFanout(IdbNet *net) {
     IdbNet *in_net, *out_net;
     in_net = net;
     if (connect_to_port) {
-      string re_name = net->get_net_name() + "_renamed";
+      string re_name = "renamed_" + net->get_net_name();
       net->set_net_name(re_name);
     }
     string net_name = ("fanout_net_" + std::to_string(_make_net_index));
