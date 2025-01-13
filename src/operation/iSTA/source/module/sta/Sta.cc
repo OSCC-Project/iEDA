@@ -333,6 +333,7 @@ unsigned Sta::linkLibertys() {
   }
 
   auto link_lib = [this](auto &lib_rust_reader) {
+    // lib_rust_reader.set_build_cells(get_link_cells());
     lib_rust_reader.linkLib();
     auto lib = lib_rust_reader.get_library_builder()->takeLib();
 
@@ -2672,9 +2673,24 @@ unsigned Sta::reportTiming(std::set<std::string> &&exclude_cell_names /*= {}*/,
 
   writeVerilog(verilog_file_name.c_str(), exclude_cell_names);
 
+  reportUsedLibs();
+
   LOG_INFO << "The timing engine run success.";
 
   return 1;
+}
+
+/**
+ * @brief report used libs.
+ *
+ * @return unsigned
+ */
+unsigned Sta::reportUsedLibs() {
+  auto used_libs = getUsedLibs();
+  for (auto *used_lib : used_libs) {
+    std::string lib_name = used_lib->get_file_name();
+    LOG_INFO << "used lib: " << lib_name;
+  }
 }
 
 /**

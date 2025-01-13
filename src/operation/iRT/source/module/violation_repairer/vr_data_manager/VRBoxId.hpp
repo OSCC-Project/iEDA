@@ -16,35 +16,45 @@
 // ***************************************************************************************
 #pragma once
 
-#include <sys/time.h>
-#include <time.h>
+#include "RTHeader.hpp"
 
-#include <cstddef>  // size_t
-#include <string>
+namespace irt {
 
-namespace ieda {
-
-/**
- * @brief Show run time and memory statistics if the "stats" debug flag is on.
- *
- */
-class Stats {
+class VRBoxId
+{
  public:
-  Stats();
-  ~Stats() = default;
-  [[nodiscard]] std::size_t memoryUsage() const;
-  [[nodiscard]] double memoryDelta() const;
-
-  std::string getCurrentWallTime() const;
-
-  int getTimeOfDay(struct timeval *tv) const;
-  [[nodiscard]] double elapsedRunTime() const;
-
-  void restartStats();
+  VRBoxId() = default;
+  VRBoxId(const int32_t x, const int32_t y)
+  {
+    _x = x;
+    _y = y;
+  }
+  ~VRBoxId() = default;
+  bool operator==(const VRBoxId& other) { return this->_x == other._x && this->_y == other._y; }
+  bool operator!=(const VRBoxId& other) { return !((*this) == other); }
+  // getter
+  int32_t get_x() const { return _x; }
+  int32_t get_y() const { return _y; }
+  // setter
+  void set_x(const int32_t x) { _x = x; }
+  void set_y(const int32_t y) { _y = y; }
+  // function
 
  private:
-  std::size_t _memory_begin;
-  struct timeval _elapsed_begin_time;
+  int32_t _x = -1;
+  int32_t _y = -1;
 };
 
-}  // namespace ieda
+struct CmpVRBoxId
+{
+  bool operator()(const VRBoxId& a, const VRBoxId& b) const
+  {
+    if (a.get_x() != b.get_x()) {
+      return a.get_x() < b.get_x();
+    } else {
+      return a.get_y() < b.get_y();
+    }
+  }
+};
+
+}  // namespace irt

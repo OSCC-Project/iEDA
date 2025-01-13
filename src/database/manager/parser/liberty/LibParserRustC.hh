@@ -357,7 +357,9 @@ class RustLibertyReader
   RustLibertyReader(RustLibertyReader&& other) noexcept = default;
   RustLibertyReader& operator=(RustLibertyReader&& rhs) noexcept = default;
 
-  void set_build_cells(std::set<std::string> build_cells) { _build_cells = build_cells; }
+  void set_build_cells(std::set<std::string>& build_cells) {
+    _build_cells = build_cells;
+  }
   auto& get_build_cells() { return _build_cells; }
   bool isNeedBuild(std::string cell_name)
   {
