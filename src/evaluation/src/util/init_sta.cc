@@ -825,8 +825,13 @@ std::pair<double, double> InitSTA::getNetToggleAndVoltage(
 double InitSTA::getNetPower(const std::string& net_name) const {
   // get net power from updated results.
   auto& nets_power = _net_power.begin()->second;
-  double net_power = nets_power.at(net_name);
-  return net_power;
+  if (nets_power.contains(net_name)) {
+    double net_power = nets_power.at(net_name);
+    return net_power;
+  } else {
+    return 0.0;
+  }
+
 }
 
 double InitSTA::getWireResistance(const std::string& net_name,

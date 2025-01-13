@@ -69,6 +69,8 @@ void LmFeatureTiming::buildWireTimingPowerFeature(LmNet* lm_net, const std::stri
       node_name = net_name + ":" + std::to_string(lm_node->get_node_id());
     }
 
+    node_name = ieda::Str::replace(node_name, R"(\\)", "");
+
     double resistance = eval_tp->getWireResistance(net_name, node_name);
     double capacitance = eval_tp->getWireCapacitance(net_name, node_name);
     double slew = all_node_slews.at(node_name);
