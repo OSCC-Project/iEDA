@@ -30,6 +30,8 @@
 #include <climits>
 #include <vector>
 
+#include "log/Log.hh"
+
 namespace ista {
 
 __device__ double linear_interpolate(double x1, double x2, double y1, double y2,
@@ -64,9 +66,20 @@ struct LibTableGPU {
   unsigned _type =
       UINT_MAX;  //!< normal(slew->cap),invert(cap->slew),slew,cap,and so on.
 
-  __device__ double find_value(double slew, double constrain_slew_or_load);
+  __device__ double get_x_axis_size() { return _num_x; }
+  __device__ double get_x_axis_val(unsigned index) { return _x[index]; }
+  __device__ double get_y_axis_size() { return _num_y; }
+  __device__ double get_y_axis_val(unsigned index) { return _y[index]; }
+  __device__ double get_table_value(unsigned index) {
+    if (index >= _num_values) {
+      printf("Error: index %u beyond table value size %u\n", index,
+             _num_values);
+      return -1.0;
+    }
+    return _values[index];
+  }
 
-  __device__ unsigned check_value(int axis_index, double val) {
+  __device__ unsigned check_val(int axis_index, double val) {
     unsigned num_val = 0;
     double min_val = 0;
     double max_val = 0;
@@ -81,9 +94,10 @@ struct LibTableGPU {
     }
 
     if ((val < min_val) || (val > max_val)) {
-      LOG_ERROR_FIRST_N(10) << "Warning: val outside table ranges:  "
-                            << "val = " << val << "; min_val = " << min_val
-                            << "; max_val = " << max_val << std::endl;
+      printf(
+          "Warning: val outside table ranges: val = %f; min_val = %f; max_val "
+          "= %f\n",
+          val, min_val, max_val);
     }
     return num_val;
   }
@@ -129,16 +143,7 @@ struct LibTableGPU {
 
     return AxisRegion{x1, x2, val_index};
   }
-
-  __device__ double get_x_axis_size() { return _num_x; }
-  __device__ double get_x_axis_val(unsigned index) { return _x[index]; }
-  __device__ double get_y_axis_size() { return _num_y; }
-  __device__ double get_y_axis_val(unsigned index) { return _y[index]; }
-  __device__ double get_table_value(unsigned index) {
-    LOG_FATAL_IF(index >= _num_values)
-        << "index " << index << " beyond table value size " << _num_values;
-    return _values[index];
-  }
+  __device__ double find_value(double slew, double constrain_slew_or_load);
 };
 
 /**

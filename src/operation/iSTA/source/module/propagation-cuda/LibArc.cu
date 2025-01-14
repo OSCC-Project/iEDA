@@ -8,9 +8,18 @@
 #include <cassert>
 
 #include "LibArc.cuh"
-#include "Type.hh"
-#include "log/Log.hh"
+
 namespace ista {
+
+__device__ constexpr double double_precision = 1e-15;
+
+__device__ bool is_double_equal(double data1, double data2,
+                                double epsilon = double_precision) {
+  return fabs(data1 - data2) < epsilon;
+}
+
+__device__ constexpr double DOUBLE_MAX = 1.7976931348623157e+308;
+__device__ constexpr double DOUBLE_MIN = -1.7976931348623157e+308;
 
 /**
  * @brief The one dimension interpolation.
@@ -24,10 +33,9 @@ namespace ista {
  */
 __device__ double linear_interpolate(double x1, double x2, double y1, double y2,
                                      double x) {
-  assert(!IsDoubleEqual(x1, x2));
+  assert(!is_double_equal(x1, x2));
 
-  if (x >= std::numeric_limits<double>::max() ||
-      x <= std::numeric_limits<double>::lowest()) {
+  if (x >= DOUBLE_MAX || x <= DOUBLE_MIN) {
     return x;
   }
 
@@ -38,9 +46,9 @@ __device__ double linear_interpolate(double x1, double x2, double y1, double y2,
     ret_val = y1 - (x1 - x) * slope;  // Extrapolation.
   } else if (x > x2) {
     ret_val = y2 + (x - x2) * slope;  // Extrapolation.
-  } else if (IsDoubleEqual(x, x1)) {
+  } else if (is_double_equal(x, x1)) {
     ret_val = y1;  // Boundary case.
-  } else if (IsDoubleEqual(x, x2)) {
+  } else if (is_double_equal(x, x2)) {
     ret_val = y2;  // Boundary case.
   } else {
     ret_val = y1 + (x - x1) * slope;  // Interpolation.
@@ -103,7 +111,8 @@ __device__ double LibTableGPU::find_value(double slew,
     val2 = slew;
   } else {
     // ??? not sure (_type == UINT_MAX) can work as (!table_template)
-    LOG_FATAL << "lut table: invalid delay lut template variable";
+    printf("Error: lut table: invalid delay lut template variable\n");
+    return -1.0;
   }
 
   if (_num_y == 0) {
