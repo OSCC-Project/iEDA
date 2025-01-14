@@ -218,6 +218,10 @@ double PwrCalcInternalPower::calcOutputPinPower(Instance* inst,
               output_load};
     };
 
+    if (snk_arc->isNetArc()) {
+      continue;
+    }
+
     auto* power_arc_set =
         dynamic_cast<PwrInstArc*>(snk_arc)->get_power_arc_set();
 
