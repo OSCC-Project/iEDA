@@ -1,1 +1,1 @@
-ADD_CUDA_PROJ(ssta-gpu)
+ADD_CUDA_PROJ(propagation-gpu)

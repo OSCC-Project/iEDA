@@ -25,14 +25,13 @@
 
 #pragma once
 
-#include <cuda_runtime.h>
-
 #include <climits>
-#include <vector>
 
+#include "propagation.cuh"
 #include "log/Log.hh"
 
 namespace ista {
+#if 0
 
 __device__ double linear_interpolate(double x1, double x2, double y1, double y2,
                                      double x);
@@ -51,7 +50,6 @@ struct AxisRegion {
   double x2;
   unsigned val_index;
 };
-
 /**
  * @brief The struct of LibTableGPU.
  *
@@ -143,27 +141,11 @@ struct LibTableGPU {
 
     return AxisRegion{x1, x2, val_index};
   }
-  __device__ double find_value(double slew, double constrain_slew_or_load);
-};
 
-/**
- * @brief The struct of LibArcGPU.
- *
- */
-struct LibArcGPU {
-  LibTableGPU* _table;
-  unsigned _num_table;  //!< number of tables.(SSTA:12 tables.)
-};
 
-/**
- * @brief The struct of LibDataGPU.
- *
- */
-struct LibDataGPU {
-  LibArcGPU* _arcs_gpu;  //!< points to GPU arc datas.
-  unsigned _num_arcs;    //!< GPU arc datas.
+__device__ double find_value(double slew, double constrain_slew_or_load);
 
-  std::vector<LibArcGPU> _arcs;  //!< CPU arc datas.
+
 };
 
 /**
@@ -174,5 +156,7 @@ struct LibDataGPU {
  */
 void build_lib_data_gpu(LibDataGPU& lib_data_gpu,
                         std::vector<LibArcGPU*> lib_arcs_cpu);
+
+#endif
 
 }  // namespace ista

@@ -6,12 +6,12 @@ set(CMAKE_BUILD_TYPE "Debug")
 aux_source_directory(./ SRC)
 add_library(sta ${SRC})
 
-if (USE_CUDA_DELAY)
+if (USE_CUDA_MODE)
 target_link_libraries(sta 
     liberty 
     delay 
     delay-gpu 
-    ssta-gpu
+    propagation-gpu
     spef 
     sdc 
     sdc-cmd 

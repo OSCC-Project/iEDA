@@ -26,7 +26,7 @@
 #include "StaDump.hh"
 #include "StaFunc.hh"
 #include "StaVertex.hh"
-#include "propagation-cuda/LibArc.cuh"
+#include "propagation-cuda/propagation.cuh"
 
 namespace ista {
 

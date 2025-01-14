@@ -6,10 +6,12 @@
  * @date 2025-01-09
  */
 #include <cassert>
-
+#include <cuda_runtime.h>
 #include "LibArc.cuh"
 
 namespace ista {
+
+#if 0
 
 __device__ constexpr double double_precision = 1e-15;
 
@@ -218,5 +220,6 @@ void build_lib_data_gpu(LibDataGPU& lib_data_gpu,
     }
   }
 }
+#endif
 
 }  // namespace ista
