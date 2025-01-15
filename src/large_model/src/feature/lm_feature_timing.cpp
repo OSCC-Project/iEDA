@@ -118,6 +118,10 @@ void LmFeatureTiming::buildNetTimingPowerFeature()
     auto& net_name = it->first;
     auto& net_id = it->second;
 
+    if (!eval_tp->getRcNet(net_name)) {
+      continue;
+    }
+
     LOG_INFO << "build net " << net_name << " feature ";
     auto* lm_net = lm_graph.get_net(net_id);
     auto* net_feature = lm_net->get_feature(true);
