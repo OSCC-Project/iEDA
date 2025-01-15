@@ -10,10 +10,8 @@ set(CMAKE_CUDA_ARCHITECTURES native)
 # set(CMAKE_BUILD_TYPE "Debug")
 find_package(CUDAToolkit)
 
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CUDA_STANDARD 20)
-# add_compile_options(-std=c++20)
-
-set(CMAKE_CUDA_FLAGS_INIT "-std=c++17")
 
 enable_language(CUDA)
 
