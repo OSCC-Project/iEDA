@@ -49,6 +49,9 @@
 #include "netlist/Instance.hh"
 #include "solver/Interpolation.hh"
 #include "utility/EigenMatrixUtility.hh"
+#include "netlist/Net.hh"
+#include "netlist/Pin.hh"
+#include "netlist/Port.hh"
 
 using namespace Eigen;
 

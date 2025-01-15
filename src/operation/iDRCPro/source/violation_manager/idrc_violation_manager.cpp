@@ -70,6 +70,11 @@ void DrcViolationManager::set_net_ids(DrcEngineManager* engine_manager)
             ury += 2;
           }
           auto net_ids = layout->querySubLayoutNetId(llx, lly, urx, ury);
+          while (net_ids.size() > 2) {
+            auto it = net_ids.end();
+            --it;
+            net_ids.erase(it);
+          }
           violation_rect->set_net_ids(net_ids);
 
           DEBUGOUTPUT(DEBUGHIGHLIGHT("net_ids:\t") << net_ids.size());

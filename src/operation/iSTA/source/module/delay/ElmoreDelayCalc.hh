@@ -61,19 +61,22 @@
 #include <set>
 #include <string>
 #include <variant>
+#include <memory>
 
-#include "WaveformApproximation.hh"
-#include "liberty/Lib.hh"
-#include "netlist/Net.hh"
-#include "netlist/Pin.hh"
-#include "netlist/Port.hh"
+#include "Type.hh"
 #include "spef/SpefParserRustC.hh"
+#include "WaveformApproximation.hh"
+#include "log/Log.hh"
 
 namespace ista {
 class RctEdge;
 class RctNode;
 class RcTree;
 class LibCurrentData;
+class Net;
+class Pin;
+class Port;
+class DesignObject;
 
 /**
  * @brief The RC tree node, that has ground capacitance.
@@ -85,7 +88,22 @@ class RctNode {
   friend class ArnoldiNet;
 
  public:
-  RctNode() = default;
+  RctNode()
+      : _is_update_load(0),
+        _is_update_delay(0),
+        _is_update_ldelay(0),
+        _is_update_delay_ecm(0),
+        _is_update_m2(0),
+        _is_update_mc(0),
+        _is_update_m2_c(0),
+        _is_update_mc_c(0),
+        _is_update_ceff(0),
+        _is_update_response(0),
+        _is_tranverse(0),
+        _is_visited(0),
+        _is_visited_ecm(0),
+        _is_root(0),
+        _reserved(0) {}
   explicit RctNode(std::string&&);
 
   virtual ~RctNode() = default;
@@ -94,8 +112,9 @@ class RctNode {
   [[nodiscard]] unsigned isRoot() const { return _is_root; }
 
   [[nodiscard]] double nodeLoad() const { return _load; }
+  void set_load(double load) { _load = load; }
   double nodeLoad(AnalysisMode mode, TransType trans_type);
-  [[nodiscard]] double cap() const { return _obj ? _obj->cap() + _cap : _cap; }
+  [[nodiscard]] double cap() const;
   [[nodiscard]] double get_cap() const { return _cap; }
   double cap(AnalysisMode mode, TransType trans_type);
   double get_cap(AnalysisMode mode, TransType trans_type) {
@@ -103,6 +122,13 @@ class RctNode {
   }
   void setCap(double cap);
   void incrCap(double cap);
+
+  std::map<ModeTransPair, double>& get_nload() { return _nload; }
+  std::map<ModeTransPair, double>& get_ndelay() { return _ndelay; }
+  std::map<ModeTransPair, double>& get_ures() { return _ures; }
+  std::map<ModeTransPair, double>& get_ldelay() { return _ldelay; }
+  std::map<ModeTransPair, double>& get_beta() { return _beta; }
+  std::map<ModeTransPair, double>& get_impulse() { return _impulse; }
 
   double get_ures(AnalysisMode mode, TransType trans_type) {
     return _ures[ModeTransPair(mode, trans_type)];
@@ -116,6 +142,7 @@ class RctNode {
   }
 
   [[nodiscard]] double delay() const { return _delay; }
+  void set_delay(double delay) { _delay = delay; }
   double delay(AnalysisMode mode, TransType trans_type);
   [[nodiscard]] double delayD2M() const {
     return _m2 == 0 ? 0 : _delay * _delay / sqrt(_m2) * log(2);
@@ -192,6 +219,12 @@ class RctNode {
 
   LaplaceMoments* get_moments() { return &_moments; }
 
+  void set_flatten_pos(std::size_t flatten_pos) { _flatten_pos = flatten_pos; }
+  std::size_t get_flatten_pos() { return _flatten_pos; }
+
+  void set_parent(RctNode* parent) { _parent = parent; }
+  RctNode* get_parent() { return _parent; }
+
   auto& get_fanin() { return _fanin; }
   auto& get_fanout() { return _fanout; }
 
@@ -222,21 +255,21 @@ class RctNode {
   double _ceff = 0.0;
   double _delay_ecm = 0.0;
 
-  unsigned _is_update_load : 1 = 0;
-  unsigned _is_update_delay : 1 = 0;
-  unsigned _is_update_ldelay : 1 = 0;
-  unsigned _is_update_delay_ecm : 1 = 0;
-  unsigned _is_update_m2 : 1 = 0;
-  unsigned _is_update_mc : 1 = 0;
-  unsigned _is_update_m2_c : 1 = 0;
-  unsigned _is_update_mc_c : 1 = 0;
-  unsigned _is_update_ceff : 1 = 0;
-  unsigned _is_update_response : 1 = 0;
-  unsigned _is_tranverse : 1 = 0;
-  unsigned _is_visited : 1 = 0;
-  unsigned _is_visited_ecm : 1 = 0;
-  unsigned _is_root : 1 = 0;
-  unsigned _reserved : 18 = 0;
+  unsigned _is_update_load : 1;
+  unsigned _is_update_delay : 1;
+  unsigned _is_update_ldelay : 1;
+  unsigned _is_update_delay_ecm : 1;
+  unsigned _is_update_m2 : 1;
+  unsigned _is_update_mc : 1;
+  unsigned _is_update_m2_c : 1;
+  unsigned _is_update_mc_c : 1;
+  unsigned _is_update_ceff : 1;
+  unsigned _is_update_response : 1;
+  unsigned _is_tranverse : 1;
+  unsigned _is_visited : 1;
+  unsigned _is_visited_ecm : 1;
+  unsigned _is_root : 1;
+  unsigned _reserved : 18;
 
   std::map<ModeTransPair, double> _ures;
   std::map<ModeTransPair, double> _nload;
@@ -246,6 +279,8 @@ class RctNode {
   std::map<ModeTransPair, double> _ldelay;
   std::map<ModeTransPair, double> _impulse;
 
+  std::size_t _flatten_pos = 0;
+  RctNode* _parent = nullptr;
   std::list<RctEdge*> _fanin;
   std::list<RctEdge*> _fanout;
 
@@ -339,12 +374,12 @@ class RctEdge {
   RctNode& _from;
   RctNode& _to;
 
-  unsigned _is_break : 1 = 0;
-  unsigned _is_visited : 1 = 0;
-  unsigned _is_in_order : 1 = 0;
-  unsigned _reserved : 30 = 0;
-
   double _res = 0.0;
+
+  unsigned _is_break : 1;
+  unsigned _is_visited : 1;
+  unsigned _is_in_order : 1;
+  unsigned _reserved : 29;
 
   FORBIDDEN_COPY(RctEdge);
 };
@@ -392,6 +427,59 @@ class RcTree {
   auto get_node_num() { return _str2nodes.size(); }
   auto& get_edges() { return _edges; }
   auto& get_coupled_nodes() { return _coupled_nodes; }
+  const std::vector<float>& get_cap_array() const { return _cap_array; }
+  const std::vector<float>& get_ncap_array() const { return _ncap_array; }
+  const std::vector<float>& get_res_array() const { return _res_array; }
+  const std::vector<int>& get_parent_pos_array() const {
+    return _parent_pos_array;
+  }
+  void set_load_array(const std::vector<float>& load_array) {
+    _load_array = load_array;
+  }
+
+  void set_nload_array(const std::vector<float>& nload_array) {
+    _nload_array = nload_array;
+  }
+
+  void set_delay_array(const std::vector<float>& delay_array) {
+    _delay_array = delay_array;
+  }
+
+  void set_ndelay_array(const std::vector<float>& ndelay_array) {
+    _ndelay_array = ndelay_array;
+  }
+
+  void set_ures_array(const std::vector<float>& ures_array) {
+    _ures_array = ures_array;
+  }
+
+  void set_ldelay_array(const std::vector<float>& ldelay_array) {
+    _ldelay_array = ldelay_array;
+  }
+
+  void set_beta_array(const std::vector<float>& beta_array) {
+    _beta_array = beta_array;
+  }
+
+  void set_impulse_array(const std::vector<float>& impulse_array) {
+    _impulse_array = impulse_array;
+  }
+
+  std::vector<float>& get_load_array() { return _load_array; }
+
+  std::vector<float>& get_nload_array() { return _nload_array; }
+
+  std::vector<float>& get_delay_array() { return _delay_array; }
+
+  std::vector<float>& get_ndelay_array() { return _ndelay_array; }
+
+  std::vector<float>& get_ures_array() { return _ures_array; }
+
+  std::vector<float>& get_ldelay_array() { return _ldelay_array; }
+
+  std::vector<float>& get_beta_array() { return _beta_array; }
+
+  std::vector<float>& get_impulse_array() { return _impulse_array; }
 
   void removeEdge(RctEdge* the_edge) {
     auto it =
@@ -464,6 +552,40 @@ class RcTree {
   std::list<RctEdge> _edges;
 
   std::vector<CoupledRcNode> _coupled_nodes;
+  std::vector<std::vector<RctNode*>> _level_to_points;
+
+  std::vector<float> _cap_array;       // levelized cap for gpu speed up.
+  std::vector<float> _ncap_array;      // levelized ncap for gpu speed up.
+  std::vector<float> _res_array;       // levelized res for gpu speed up.
+  std::vector<int> _parent_pos_array;  // levelized parent pos for gpu speed up.
+  std::vector<int>
+      _children_pos_array;           // levelized children pos for gpu speed up.
+  std::vector<float> _load_array;    // levelized load for gpu speed up.
+  std::vector<float> _nload_array;   // levelized nload for gpu speed up.
+  std::vector<float> _delay_array;   // levelized delay for gpu speed up.
+  std::vector<float> _ndelay_array;  // levelized ndelay for gpu speed up.
+  std::vector<float> _ures_array;    // levelized ures for gpu speed up.
+  std::vector<float> _ldelay_array;  // levelized ldelay for gpu speed up.
+  std::vector<float> _beta_array;    // levelized beta for gpu speed up.
+  std::vector<float> _impulse_array;  // levelized impulse for gpu speed up.
+
+  float* _gpu_cap_array = nullptr;         // cap located on gpu.
+  float* _gpu_ncap_array = nullptr;        // ncap located on gpu.
+  float* _gpu_res_array = nullptr;         // res located on gpu.
+  int* _gpu_parent_pos_array = nullptr;    // parent pos located on gpu.
+  int* _gpu_children_pos_array = nullptr;  // children pos located on gpu.
+  float* _gpu_load_array = nullptr;        // load located on gpu.
+  float* _gpu_nload_array = nullptr;       // nload located on gpu.
+  float* _gpu_delay_array = nullptr;       // delay located on gpu.
+  float* _gpu_ndelay_array = nullptr;      // ndelay located on gpu.
+  float* _gpu_ures_array = nullptr;        // ures located on gpu.
+  float* _gpu_ldelay_array = nullptr;      // ldelay located on gpu.
+  float* _gpu_beta_array = nullptr;        // beta located on gpu.
+  float* _gpu_impulse_array = nullptr;     // impulse located on gpu.
+
+  void levelizeRcTree(std::queue<RctNode*> bfs_queue);
+  void levelizeRcTree();
+  void applyDelayDataToArray();
 
   void initData();
   void initMoment();
@@ -507,24 +629,8 @@ class RcTree {
  */
 class RCNetCommonInfo {
  public:
-  void set_spef_cap_unit(const std::string& spef_cap_unit) {
-    // The unit is 1.0 FF, fix me
-    if (Str::contain(spef_cap_unit.c_str(), "1 FF") ||
-        Str::contain(spef_cap_unit.c_str(), "1.0 FF")) {
-      _spef_cap_unit = CapacitiveUnit::kFF;
-    } else {
-      _spef_cap_unit = CapacitiveUnit::kPF;
-    }
-  }
-  void set_spef_resistance_unit(const std::string& spef_resistance_unit) {
-    // The unit is 1.0 OHM, fix me
-    if (Str::contain(spef_resistance_unit.c_str(), "1 OHM") ||
-        Str::contain(spef_resistance_unit.c_str(), "1.0 OHM")) {
-      _spef_resistance_unit = ResistanceUnit::kOHM;
-    } else {
-      _spef_resistance_unit = ResistanceUnit::kOHM;
-    }
-  }
+  void set_spef_cap_unit(const std::string& spef_cap_unit);
+  void set_spef_resistance_unit(const std::string& spef_resistance_unit);
   CapacitiveUnit get_spef_cap_unit() { return _spef_cap_unit; }
   ResistanceUnit get_spef_resistance_unit() { return _spef_resistance_unit; }
 
@@ -608,5 +714,9 @@ class RcNet {
  private:
   static std::unique_ptr<RCNetCommonInfo> _rc_net_common_info;
 };
+
+#if CUDA_DELAY
+void calc_rc_timing(std::vector<RcNet*> all_nets);
+#endif
 
 }  // namespace ista

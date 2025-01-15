@@ -593,6 +593,8 @@ std::vector<Violation> DRCEngine::getExpandedViolationList(DETask& de_task, Viol
       case ViolationType::kMetalShort:
         break;
       case ViolationType::kMinHole:
+        new_real_rect = keepRect(new_real_rect);
+        layer_routing_list = keepLayer(violation);
         break;
       case ViolationType::kMinimumArea:
         new_real_rect = keepRect(new_real_rect);
@@ -601,6 +603,8 @@ std::vector<Violation> DRCEngine::getExpandedViolationList(DETask& de_task, Viol
       case ViolationType::kMinimumCut:
         break;
       case ViolationType::kMinimumWidth:
+        new_real_rect = keepRect(new_real_rect);
+        layer_routing_list = keepLayer(violation);
         break;
       case ViolationType::kMinStep:
         break;

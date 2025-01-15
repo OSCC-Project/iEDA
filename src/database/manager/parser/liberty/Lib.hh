@@ -1165,8 +1165,8 @@ class LibCell : public LibObject {
 
   LibLibrary* _owner_lib;  //!< The owner lib.
 
-  unsigned _is_dont_use : 1 = 0;
-  unsigned _is_macro_cell : 1 = 0;
+  unsigned _is_dont_use : 1;
+  unsigned _is_macro_cell : 1;
   unsigned _reserved : 30;
 
   FORBIDDEN_COPY(LibCell);
@@ -1320,7 +1320,7 @@ class LibLutTableTemplate : public LibObject {
   const char* get_template_name() { return _template_name.c_str(); }
 
   void set_template_variable1(const char* template_variable1) override {
-    DLOG_FATAL_IF(!_str2var.contains(template_variable1))
+    DLOG_FATAL_IF(_str2var.find(template_variable1) == _str2var.end())
         << "not contain the template variable " << template_variable1;
     _template_variable1 = _str2var.at(template_variable1);
   }

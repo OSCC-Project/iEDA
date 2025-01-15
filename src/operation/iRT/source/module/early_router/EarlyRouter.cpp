@@ -55,7 +55,7 @@ void EarlyRouter::route()
   Monitor monitor;
   RTLOG.info(Loc::current(), "Starting...");
   ERModel er_model = initERModel();
-  setERParameter(er_model);
+  setERComParam(er_model);
   generateAccessPoint(er_model);
   initERTaskList(er_model);
   buildPlanarNodeMap(er_model);
@@ -112,7 +112,7 @@ ERNet EarlyRouter::convertToERNet(Net& net)
   return er_net;
 }
 
-void EarlyRouter::setERParameter(ERModel& er_model)
+void EarlyRouter::setERComParam(ERModel& er_model)
 {
   int32_t topo_spilt_length = 10;
   double congestion_unit = 2;
@@ -122,13 +122,13 @@ void EarlyRouter::setERParameter(ERModel& er_model)
    * topo_spilt_length, congestion_unit, prefer_wire_unit, via_unit
    */
   // clang-format off
-  ERParameter er_parameter(topo_spilt_length, congestion_unit, prefer_wire_unit, via_unit);
+  ERComParam er_com_param(topo_spilt_length, congestion_unit, prefer_wire_unit, via_unit);
   // clang-format on
-  RTLOG.info(Loc::current(), "topo_spilt_length: ", er_parameter.get_topo_spilt_length());
-  RTLOG.info(Loc::current(), "congestion_unit: ", er_parameter.get_congestion_unit());
-  RTLOG.info(Loc::current(), "prefer_wire_unit: ", er_parameter.get_prefer_wire_unit());
-  RTLOG.info(Loc::current(), "via_unit: ", er_parameter.get_via_unit());
-  er_model.set_er_parameter(er_parameter);
+  RTLOG.info(Loc::current(), "topo_spilt_length: ", er_com_param.get_topo_spilt_length());
+  RTLOG.info(Loc::current(), "congestion_unit: ", er_com_param.get_congestion_unit());
+  RTLOG.info(Loc::current(), "prefer_wire_unit: ", er_com_param.get_prefer_wire_unit());
+  RTLOG.info(Loc::current(), "via_unit: ", er_com_param.get_via_unit());
+  er_model.set_er_com_param(er_com_param);
 }
 
 void EarlyRouter::generateAccessPoint(ERModel& er_model)
@@ -297,7 +297,7 @@ void EarlyRouter::routePlanarNet(ERModel& er_model, ERNet* er_net)
 
 std::vector<Segment<PlanarCoord>> EarlyRouter::getPlanarTopoList(ERModel& er_model, ERNet* er_net)
 {
-  int32_t topo_spilt_length = er_model.get_er_parameter().get_topo_spilt_length();
+  int32_t topo_spilt_length = er_model.get_er_com_param().get_topo_spilt_length();
 
   std::vector<PlanarCoord> planar_coord_list;
   {
@@ -416,7 +416,7 @@ std::vector<Segment<PlanarCoord>> EarlyRouter::getRoutingSegmentListByLPattern(E
 
 double EarlyRouter::getPlanarNodeCost(ERModel& er_model, std::vector<Segment<PlanarCoord>>& routing_segment_list)
 {
-  double congestion_unit = er_model.get_er_parameter().get_congestion_unit();
+  double congestion_unit = er_model.get_er_com_param().get_congestion_unit();
   GridMap<ERNode>& planar_node_map = er_model.get_planar_node_map();
 
   double node_cost = 0;
@@ -666,7 +666,7 @@ void EarlyRouter::makeERTopoList(ERModel& er_model, ERNet* er_net, std::vector<E
 {
   int32_t bottom_routing_layer_idx = RTDM.getConfig().bottom_routing_layer_idx;
   int32_t top_routing_layer_idx = RTDM.getConfig().top_routing_layer_idx;
-  int32_t topo_spilt_length = er_model.get_er_parameter().get_topo_spilt_length();
+  int32_t topo_spilt_length = er_model.get_er_com_param().get_topo_spilt_length();
 
   if (er_net->get_topo_tree().get_root() == nullptr) {
     ERTopo er_topo;
@@ -1094,7 +1094,7 @@ double EarlyRouter::getKnowCost(ERModel& er_model, ERNode* start_node, ERNode* e
 
 double EarlyRouter::getNodeCost(ERModel& er_model, ERNode* curr_node, Orientation orientation)
 {
-  double congestion_unit = er_model.get_er_parameter().get_congestion_unit();
+  double congestion_unit = er_model.get_er_com_param().get_congestion_unit();
 
   double node_cost = 0;
   node_cost += curr_node->getCongestionCost(orientation) * congestion_unit;
@@ -1104,7 +1104,7 @@ double EarlyRouter::getNodeCost(ERModel& er_model, ERNode* curr_node, Orientatio
 double EarlyRouter::getKnowWireCost(ERModel& er_model, ERNode* start_node, ERNode* end_node)
 {
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
-  double prefer_wire_unit = er_model.get_er_parameter().get_prefer_wire_unit();
+  double prefer_wire_unit = er_model.get_er_com_param().get_prefer_wire_unit();
 
   double wire_cost = 0;
   if (start_node->get_layer_idx() == end_node->get_layer_idx()) {
@@ -1120,7 +1120,7 @@ double EarlyRouter::getKnowWireCost(ERModel& er_model, ERNode* start_node, ERNod
 
 double EarlyRouter::getKnowViaCost(ERModel& er_model, ERNode* start_node, ERNode* end_node)
 {
-  double via_unit = er_model.get_er_parameter().get_via_unit();
+  double via_unit = er_model.get_er_com_param().get_via_unit();
   double via_cost = (via_unit * std::abs(start_node->get_layer_idx() - end_node->get_layer_idx()));
   return via_cost;
 }
@@ -1153,7 +1153,7 @@ double EarlyRouter::getEstimateCost(ERModel& er_model, ERNode* start_node, ERNod
 
 double EarlyRouter::getEstimateWireCost(ERModel& er_model, ERNode* start_node, ERNode* end_node)
 {
-  double prefer_wire_unit = er_model.get_er_parameter().get_prefer_wire_unit();
+  double prefer_wire_unit = er_model.get_er_com_param().get_prefer_wire_unit();
 
   double wire_cost = 0;
   wire_cost += RTUTIL.getManhattanDistance(start_node->get_planar_coord(), end_node->get_planar_coord());
@@ -1163,7 +1163,7 @@ double EarlyRouter::getEstimateWireCost(ERModel& er_model, ERNode* start_node, E
 
 double EarlyRouter::getEstimateViaCost(ERModel& er_model, ERNode* start_node, ERNode* end_node)
 {
-  double via_unit = er_model.get_er_parameter().get_via_unit();
+  double via_unit = er_model.get_er_com_param().get_via_unit();
   double via_cost = (via_unit * std::abs(start_node->get_layer_idx() - end_node->get_layer_idx()));
   return via_cost;
 }
@@ -1373,9 +1373,9 @@ void EarlyRouter::printSummary(ERModel& er_model)
 
   fort::char_table routing_demand_map_table;
   {
-    routing_demand_map_table << fort::header << "routing_layer"
+    routing_demand_map_table << fort::header << "routing"
                              << "demand"
-                             << "proportion" << fort::endr;
+                             << "prop" << fort::endr;
     for (RoutingLayer& routing_layer : routing_layer_list) {
       routing_demand_map_table << routing_layer.get_layer_name() << routing_demand_map[routing_layer.get_layer_idx()]
                                << RTUTIL.getPercentage(routing_demand_map[routing_layer.get_layer_idx()], total_demand) << fort::endr;
@@ -1384,9 +1384,9 @@ void EarlyRouter::printSummary(ERModel& er_model)
   }
   fort::char_table routing_overflow_map_table;
   {
-    routing_overflow_map_table << fort::header << "routing_layer"
+    routing_overflow_map_table << fort::header << "routing"
                                << "overflow"
-                               << "proportion" << fort::endr;
+                               << "prop" << fort::endr;
     for (RoutingLayer& routing_layer : routing_layer_list) {
       routing_overflow_map_table << routing_layer.get_layer_name() << routing_overflow_map[routing_layer.get_layer_idx()]
                                  << RTUTIL.getPercentage(routing_overflow_map[routing_layer.get_layer_idx()], total_overflow) << fort::endr;
@@ -1396,9 +1396,9 @@ void EarlyRouter::printSummary(ERModel& er_model)
   }
   fort::char_table routing_wire_length_map_table;
   {
-    routing_wire_length_map_table << fort::header << "routing_layer"
+    routing_wire_length_map_table << fort::header << "routing"
                                   << "wire_length"
-                                  << "proportion" << fort::endr;
+                                  << "prop" << fort::endr;
     for (RoutingLayer& routing_layer : routing_layer_list) {
       routing_wire_length_map_table << routing_layer.get_layer_name() << routing_wire_length_map[routing_layer.get_layer_idx()]
                                     << RTUTIL.getPercentage(routing_wire_length_map[routing_layer.get_layer_idx()], total_wire_length)
@@ -1409,9 +1409,9 @@ void EarlyRouter::printSummary(ERModel& er_model)
   }
   fort::char_table cut_via_num_map_table;
   {
-    cut_via_num_map_table << fort::header << "cut_layer"
-                          << "via_num"
-                          << "proportion" << fort::endr;
+    cut_via_num_map_table << fort::header << "cut"
+                          << "#via"
+                          << "prop" << fort::endr;
     for (CutLayer& cut_layer : cut_layer_list) {
       cut_via_num_map_table << cut_layer.get_layer_name() << cut_via_num_map[cut_layer.get_layer_idx()]
                             << RTUTIL.getPercentage(cut_via_num_map[cut_layer.get_layer_idx()], total_via_num) << fort::endr;

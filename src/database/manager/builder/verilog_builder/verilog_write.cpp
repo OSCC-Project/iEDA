@@ -16,7 +16,7 @@
 // ***************************************************************************************
 /**
  * @file verilog_writer.cpp
- * @author shy long (longshy@pcl.ac.cn)
+ * @author longshy (longshy@pcl.ac.cn)
  * @brief
  * @version 0.1
  * @date 2021-12-03
@@ -58,7 +58,7 @@ void VerilogWriter::writeModule()
   }
   LOG_INFO << "start write verilog file " << _file_name;
 
-  fprintf(_stream, "//Generate the verilog at %s\n", ieda::Time::getNowWallTime());
+  fprintf(_stream, "//Generate the verilog at %s by iSTA.\n", ieda::Time::getNowWallTime());
 
   fprintf(_stream, "module %s (", _idb_design.get_design_name().c_str());
   fprintf(_stream, "\n");
@@ -295,14 +295,21 @@ void VerilogWriter::writeAssign()
   for (const auto& net : net_list) {
     std::string net_name = net->get_net_name();
     for (const auto& io_pin : net->get_io_pins()->get_pin_list()) {
-      // assign net=input_port;
+      // assign net = input_port;
+
+      std::string new_net_name = ieda::Str::replace(net_name, R"(\\)", "");
+      std::string escape_net_name = escapeName(new_net_name);
+
+      std::string new_io_pin_name = ieda::Str::replace(io_pin->get_pin_name(), R"(\\)", "");
+      std::string escape_io_pin_name = escapeName(new_io_pin_name);
+
       if (io_pin->get_term()->get_direction() == IdbConnectDirection::kInput && io_pin->get_pin_name() != net_name) {
-        fprintf(_stream, "assign %s = %s ;\n", net_name.c_str(), io_pin->get_pin_name().c_str());
+        fprintf(_stream, "assign %s = %s ;\n", escape_net_name.c_str(), escape_io_pin_name.c_str());
       }
-      // assign net=input_port;
+      // assign output_port = net;
       // assign output_port = input_port;
       if (io_pin->get_term()->get_direction() == IdbConnectDirection::kOutput && io_pin->get_pin_name() != net_name) {
-        fprintf(_stream, "assign %s = %s ;\n", io_pin->get_pin_name().c_str(), net_name.c_str());
+        fprintf(_stream, "assign %s = %s ;\n", escape_net_name.c_str(), escape_io_pin_name.c_str());
       }
     }
   }

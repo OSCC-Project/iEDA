@@ -16,7 +16,7 @@
 // ***************************************************************************************
 /**
  * @file StaLevelization.hh
- * @author shy long (longshy@pcl.ac.cn)
+ * @author longshy (longshy@pcl.ac.cn)
  * @brief The levelization from end vertex of the graph.
  * @version 0.1
  * @date 2021-09-16
