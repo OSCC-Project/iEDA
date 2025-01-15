@@ -49,9 +49,6 @@ class VRBox
   std::vector<Violation>& get_violation_list() { return _violation_list; }
   ScaleAxis& get_box_track_axis() { return _box_track_axis; }
   std::vector<GridMap<VRNode>>& get_layer_node_map() { return _layer_node_map; }
-  std::map<int32_t, std::vector<Segment<LayerCoord>>>& get_best_net_task_final_result_map() { return _best_net_task_final_result_map; }
-  std::map<int32_t, std::vector<EXTLayerRect>>& get_best_net_task_final_patch_map() { return _best_net_task_final_patch_map; }
-  std::vector<Violation>& get_best_violation_list() { return _best_violation_list; }
   // setter
   void set_box_rect(const EXTPlanarRect& box_rect) { _box_rect = box_rect; }
   void set_vr_box_id(const VRBoxId& vr_box_id) { _vr_box_id = vr_box_id; }
@@ -81,32 +78,38 @@ class VRBox
   void set_violation_list(const std::vector<Violation>& violation_list) { _violation_list = violation_list; }
   void set_box_track_axis(const ScaleAxis& box_track_axis) { _box_track_axis = box_track_axis; }
   void set_layer_node_map(const std::vector<GridMap<VRNode>>& layer_node_map) { _layer_node_map = layer_node_map; }
-  void set_best_net_task_final_result_map(const std::map<int32_t, std::vector<Segment<LayerCoord>>>& best_net_task_final_result_map)
+// function
+#if 1
+  // single task
+  VRTask* get_curr_vr_task() { return _curr_vr_task; }
+  std::vector<Segment<LayerCoord>>& get_routing_segment_list() { return _routing_segment_list; }
+  std::vector<EXTLayerRect>& get_routing_patch_list() { return _routing_patch_list; }
+  void set_curr_vr_task(VRTask* curr_vr_task) { _curr_vr_task = curr_vr_task; }
+  void set_routing_segment_list(const std::vector<Segment<LayerCoord>>& routing_segment_list)
   {
-    _best_net_task_final_result_map = best_net_task_final_result_map;
+    _routing_segment_list = routing_segment_list;
   }
-  void set_best_net_task_final_patch_map(const std::map<int32_t, std::vector<EXTLayerRect>>& best_net_task_final_patch_map)
-  {
-    _best_net_task_final_patch_map = best_net_task_final_patch_map;
-  }
-  void set_best_violation_list(const std::vector<Violation>& best_violation_list) { _best_violation_list = best_violation_list; }
-  // function
+  void set_routing_patch_list(const std::vector<EXTLayerRect>& routing_patch_list) { _routing_patch_list = routing_patch_list; }
+#endif
  private:
   EXTPlanarRect _box_rect;
   VRBoxId _vr_box_id;
   VRIterParam* _vr_iter_param = nullptr;
-  std::vector<VRTask*> _vr_task_list;
   std::map<bool, std::map<int32_t, std::map<int32_t, std::set<EXTLayerRect*>>>> _type_layer_net_fixed_rect_map;
+  std::vector<Violation> _violation_list;
+  std::vector<VRTask*> _vr_task_list;
   std::map<int32_t, std::set<Segment<LayerCoord>*>> _net_final_result_map;
   std::map<int32_t, std::set<EXTLayerRect*>> _net_final_patch_map;
   std::map<int32_t, std::vector<Segment<LayerCoord>>> _net_task_final_result_map;
   std::map<int32_t, std::vector<EXTLayerRect>> _net_task_final_patch_map;
-  std::vector<Violation> _violation_list;
   ScaleAxis _box_track_axis;
   std::vector<GridMap<VRNode>> _layer_node_map;
-  std::map<int32_t, std::vector<Segment<LayerCoord>>> _best_net_task_final_result_map;
-  std::map<int32_t, std::vector<EXTLayerRect>> _best_net_task_final_patch_map;
-  std::vector<Violation> _best_violation_list;
+#if 1
+  // single task
+  VRTask* _curr_vr_task = nullptr;
+  std::vector<Segment<LayerCoord>> _routing_segment_list;
+  std::vector<EXTLayerRect> _routing_patch_list;
+#endif
 };
 
 }  // namespace irt
