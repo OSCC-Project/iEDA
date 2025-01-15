@@ -166,6 +166,8 @@ class InitSTA
   // double getWirePower(const std::string& net_name, const std::string& wire_node_name) const;
   TimingWireGraph getTimingWireGraph(); 
 
+  bool getRcNet(const std::string& net_name);
+
   void buildRCTree(const std::string& routing_type);
   void buildLmRCTree(ilm::LmLayout* lm_layout, std::string work_dir);
   void updateTiming(const std::vector<TimingNet*>& timing_net_list, int32_t dbu_unit);

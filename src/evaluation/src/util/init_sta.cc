@@ -741,22 +741,35 @@ double InitSTA::getNetResistance(const std::string& net_name) const {
   ista::Net* ista_net = netlist->findNet(net_name.c_str());
   auto* rc_net = STA_INST->get_ista()->getRcNet(ista_net);
 
-  double resistance = rc_net->getNetResistance();
-  return resistance;
+  if (rc_net) {
+    double resistance = rc_net->getNetResistance();
+    return resistance;
+  }
+
+  return 0.0;
+
 }
 double InitSTA::getNetCapacitance(const std::string& net_name) const {
   auto netlist = STA_INST->get_netlist();
   ista::Net* ista_net = netlist->findNet(net_name.c_str());
   auto* rc_net = STA_INST->get_ista()->getRcNet(ista_net);
 
-  double load = rc_net->load();
-  return load;
+  if (rc_net) {
+      double load = rc_net->load();
+      return load;
+  }
+
+  return 0.0;
 }
 
 double InitSTA::getNetSlew(const std::string& net_name) const {
   auto netlist = STA_INST->get_netlist();
   ista::Net* ista_net = netlist->findNet(net_name.c_str());
   auto* rc_net = STA_INST->get_ista()->getRcNet(ista_net);
+
+  if (!rc_net) {
+    return 0.0;
+  }
 
   double driver_slew = 0.0;
   auto* driver = rc_net->get_net()->getDriver();
@@ -1127,6 +1140,15 @@ TimingWireGraph InitSTA::getTimingWireGraph() {
   // SaveTimingGraph(timing_wire_graph, "./timing_wire_graph.yaml");
 
   return timing_wire_graph;
+}
+
+bool InitSTA::getRcNet(const std::string& net_name)
+{
+  auto netlist = STA_INST->get_netlist();
+  ista::Net* ista_net = netlist->findNet(net_name.c_str());
+  auto* rc_net = STA_INST->get_ista()->getRcNet(ista_net);
+
+  return rc_net ? true : false;
 }
 
 void SaveTimingGraph(const TimingWireGraph& timing_wire_graph,
