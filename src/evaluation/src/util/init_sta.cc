@@ -451,7 +451,9 @@ void InitSTA::buildLmRCTree(ilm::LmLayout* lm_layout, std::string work_dir) {
   auto& wire_graph = lm_layout->get_graph().get_net_map();
   for (size_t net_id = 0; net_id < idb_nets.size(); ++net_id) {
     auto* idb_net = idb_nets[net_id];
-    sta_net = sta_netlist->findNet(idb_net->get_net_name().c_str());
+    std::string the_idb_net_name = idb_net->get_net_name();
+    the_idb_net_name = ieda::Str::replace(the_idb_net_name, R"(\\)", "");
+    sta_net = sta_netlist->findNet(the_idb_net_name.c_str());
     STA_INST->resetRcTree(sta_net);
 
     if (!wire_graph.contains(net_id)) {
