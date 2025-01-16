@@ -17,7 +17,7 @@
 /**
  * @file fwd_propagation.cuh
  * @author simin tao (taosm@pcl.ac.cn)
- * @brief The fwd propagation using GPU. 
+ * @brief The fwd propagation using GPU.
  * @version 0.1
  * @date 2025-01-15
  *
@@ -44,7 +44,7 @@ enum GPU_Analysis_Mode { kMax = 0, kMin = 0 };
  * @brief The arc type.
  *
  */
-enum GPU_Arc_Type { kInst = 0, kNet = 1 };
+enum GPU_Arc_Type { kInstDelayArc = 0, kInstCheckArc = 0, kNet = 1 };
 
 /**
  * @brief The fwd data common type.
@@ -66,6 +66,21 @@ struct GPU_Vertex_Data {
 };
 
 /**
+ * @brief The macro of foreach gpu vertex, usage:
+ * GPU_Vertex_Data* the_datas;
+ * GPU_Fwd_Data one_data;
+ * FOREACH_GPU_FWD_DATA(the_datas, one_data)
+ * {
+ *    do_something_for_data();
+ * }
+ */
+#define FOREACH_GPU_FWD_DATA(the_datas, one_data)                             \
+  for (unsigned i = 0;                                                        \
+       (i < the_datas._num_fwd_data) ? one_data = the_datas._fwd_data[i], \
+                true                 : false;                                 \
+       ++i)
+
+/**
  * @brief The vertex in GPU mapping with StaVertex.
  *
  */
@@ -78,27 +93,37 @@ struct GPU_Vertex {
                                        //!< calculate impulse data.
 };
 
+constexpr unsigned num_arc_delay = 4;
+
 /**
  * @brief The arc in GPU mapping with the StaArc.
  *
  */
-struct GPU_Arc {
-  GPU_Arc_Type _arc_type;  //!< The arc type inst or net arc.
-  unsigned _arc_id;  //!< inst arc id or net arc id mapping the host StaArc.
+struct GPU_Arc {  
+  GPU_Arc_Type _arc_type;   //!< The arc type inst or net arc.
   unsigned _src_vertex_id;  //!< The src vertex id mapping the host StaVertex.
   unsigned _snk_vertex_id;  //!< The snk vertex id mapping the host StaVertex.
+  GPU_Fwd_Data _delay_values[num_arc_delay];
+};
+
+/**
+ * @brief The bfs propagated arcs.
+ *
+ */
+struct GPU_BFS_Propagated_Arc {
+  unsigned* _arc_start_addr;  //!< The arc start address.
+  unsigned _num_arcs;
 };
 
 /**
  * @brief The gpu graph mapping wht the StaGraph.
- * 
+ *
  */
 struct GPU_Graph {
-    GPU_Vertex* _vertices;  //!< The vertex data on GPU.
-    GPU_Arc* _arcs;        //!< The arc data on GPU.
-    unsigned _num_vertices;  //!< The number of vertices.
-    unsigned _num_arcs;    //!< The number of arcs.
+  GPU_Vertex* _vertices;   //!< The vertex data on GPU.
+  GPU_Arc* _arcs;          //!< The arc data on GPU.
+  unsigned _num_vertices;  //!< The number of vertices.
+  unsigned _num_arcs;      //!< The number of arcs.
 };
-
 
 }  // namespace ista
