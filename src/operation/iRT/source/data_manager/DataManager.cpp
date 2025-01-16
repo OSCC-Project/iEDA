@@ -1637,6 +1637,16 @@ void DataManager::destroyGCellMap()
       RTDM.updateNetDetailedResultToGCellMap(ChangeType::kDel, net_idx, segment);
     }
   }
+  for (auto& [net_idx, segment_set] : getNetFinalResultMap(die)) {
+    for (Segment<LayerCoord>* segment : segment_set) {
+      RTDM.updateNetFinalResultToGCellMap(ChangeType::kDel, net_idx, segment);
+    }
+  }
+  for (auto& [net_idx, patch_set] : getNetFinalPatchMap(die)) {
+    for (EXTLayerRect* patch : patch_set) {
+      RTDM.updateNetFinalPatchToGCellMap(ChangeType::kDel, net_idx, patch);
+    }
+  }
   for (Violation* violation : getViolationSet(die)) {
     RTDM.updateViolationToGCellMap(ChangeType::kDel, violation);
   }

@@ -40,6 +40,7 @@ class VRModel
   void set_vr_iter_param(const VRIterParam& vr_iter_param) { _vr_iter_param = vr_iter_param; }
   void set_vr_box_map(const GridMap<VRBox>& vr_box_map) { _vr_box_map = vr_box_map; }
   void set_vr_box_id_list_list(const std::vector<std::vector<VRBoxId>>& vr_box_id_list_list) { _vr_box_id_list_list = vr_box_id_list_list; }
+
  private:
   std::vector<VRNet> _vr_net_list;
   int32_t _iter = -1;

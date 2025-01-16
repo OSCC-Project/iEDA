@@ -334,8 +334,8 @@ void ViolationRepairer::iterativeVRModel(VRModel& vr_model)
   std::vector<VRIterParam> vr_iter_param_list;
   // clang-format off
   vr_iter_param_list.emplace_back(3, 0, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 10);
-  // vr_iter_param_list.emplace_back(1, 0, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 3);
-  // vr_iter_param_list.emplace_back(1, 0, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 3);
+  vr_iter_param_list.emplace_back(3, 1, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 10);
+  vr_iter_param_list.emplace_back(3, 2, 3, fixed_rect_unit, routed_rect_unit, violation_unit, 10);
   // clang-format on
   for (size_t i = 0, iter = 1; i < vr_iter_param_list.size(); i++, iter++) {
     Monitor iter_monitor;
