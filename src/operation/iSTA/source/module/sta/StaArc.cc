@@ -101,7 +101,10 @@ StaNetArc::StaNetArc(StaVertex* driver, StaVertex* load, Net* net)
 
 StaInstArc::StaInstArc(StaVertex* src, StaVertex* snk, LibArc* lib_arc,
                        Instance* inst)
-    : StaArc(src, snk), _lib_arc(lib_arc), _inst(inst) {}
+    : StaArc(src, snk),
+      _lib_arc(lib_arc),
+      _inst(inst),
+      _lib_gpu_arc(new LibArcGPU()) {}
 
 /**
  * @brief build gpu lib arc(axes and values) according to the lib arc.
@@ -111,6 +114,7 @@ void StaInstArc::buildLibArcsGPU() {
   if (isDelayArc()) {
     auto* delay_table_model = dynamic_cast<LibDelayTableModel*>(table_model);
     _lib_gpu_arc->_num_table = delay_table_model->kTableNum;
+    int num_table = delay_table_model->kTableNum;
     _lib_gpu_arc->_table = new LibTableGPU[_lib_gpu_arc->_num_table];
     for (size_t index = 0; index < delay_table_model->kTableNum; index++) {
       auto* table = delay_table_model->getTable(index);

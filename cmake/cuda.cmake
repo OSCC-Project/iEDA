@@ -3,11 +3,11 @@ macro(ADD_CUDA_PROJ proj_name)
 cmake_minimum_required(VERSION 3.24.0)
 
 cmake_policy(SET CMP0128 NEW)
-
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_CUDA_ARCHITECTURES native)
 # set(CMAKE_CUDA_ARCHITECTURES "70") # set architecture according your platform
 
-# set(CMAKE_BUILD_TYPE "Debug")
+set(CMAKE_BUILD_TYPE "Debug")
 find_package(CUDAToolkit)
 
 set(CMAKE_CXX_STANDARD 20)

@@ -33,6 +33,7 @@
 #include <tuple>
 #include <utility>
 
+#include "Config.hh"
 #include "StaAnalyze.hh"
 #include "StaApplySdc.hh"
 #include "StaBuildClockTree.hh"
@@ -66,7 +67,6 @@
 #include "tcl/ScriptEngine.hh"
 #include "time/Time.hh"
 #include "usage/usage.hh"
-#include "Config.hh"
 
 namespace ista {
 
@@ -444,7 +444,7 @@ void Sta::linkDesignWithRustParser(const char *top_cell_name) {
              return &ret_val;
            }},
           {DclType::KWire,
-           [&design_netlist](DclType dcl_type, const char *dcl_name) {             
+           [&design_netlist](DclType dcl_type, const char *dcl_name) {
              Net net(dcl_name);
              auto &ret_val = design_netlist.addNet(std::move(net));
              return &ret_val;
@@ -454,7 +454,7 @@ void Sta::linkDesignWithRustParser(const char *top_cell_name) {
   auto process_dcl_stmt = [&dcl_process,
                            &design_netlist](auto *rust_verilog_dcl) {
     auto dcl_type = rust_verilog_dcl->dcl_type;
-    const auto * raw_dcl_name = rust_verilog_dcl->dcl_name;
+    const auto *raw_dcl_name = rust_verilog_dcl->dcl_name;
     auto dcl_range = rust_verilog_dcl->range;
 
     // for dcl ports and wire trimmed \ in name.
@@ -479,13 +479,15 @@ void Sta::linkDesignWithRustParser(const char *top_cell_name) {
             auto *port = dynamic_cast<Port *>(design_obj);
             if (index == bus_range.second) {
               unsigned bus_size = bus_range.first + 1;
-              PortBus port_bus(dcl_name.c_str(), bus_range.first, bus_range.second,
-                               bus_size, port->get_port_dir());
+              PortBus port_bus(dcl_name.c_str(), bus_range.first,
+                               bus_range.second, bus_size,
+                               port->get_port_dir());
               port_bus.addPort(index, port);
               auto &ret_val = design_netlist.addPortBus(std::move(port_bus));
               port->set_port_bus(&ret_val);
             } else {
-              auto *found_port_bus = design_netlist.findPortBus(dcl_name.c_str());
+              auto *found_port_bus =
+                  design_netlist.findPortBus(dcl_name.c_str());
               found_port_bus->addPort(index, port);
               port->set_port_bus(found_port_bus);
             }
@@ -745,12 +747,12 @@ void Sta::linkDesignWithRustParser(const char *top_cell_name) {
       design_netlist.addInstance(std::move(inst));
     }
   }
-   
+
   // build assign stmt
-  //record the merge nets.
-  std::map<std::string, Net*> remove_to_merge_nets;
+  // record the merge nets.
+  std::map<std::string, Net *> remove_to_merge_nets;
   FOREACH_VEC_ELEM(&top_module_stmts, void, stmt) {
-     if (rust_is_module_assign_stmt(stmt)) {
+    if (rust_is_module_assign_stmt(stmt)) {
       RustVerilogAssign *verilog_assign = rust_convert_verilog_assign(stmt);
       auto *left_net_expr = const_cast<void *>(verilog_assign->left_net_expr);
       auto *right_net_expr = const_cast<void *>(verilog_assign->right_net_expr);
@@ -781,7 +783,7 @@ void Sta::linkDesignWithRustParser(const char *top_cell_name) {
         LOG_INFO
             << "assign declaration's lhs/rhs is not VerilogNetIDExpr class.";
       }
-      
+
       LOG_INFO << "assign " << left_net_name << " = " << right_net_name << "\n";
 
       left_net_name = Str::trimmed(left_net_name.c_str());
@@ -797,29 +799,30 @@ void Sta::linkDesignWithRustParser(const char *top_cell_name) {
 
       Net *the_left_net = design_netlist.findNet(left_net_name.c_str());
       if (!the_left_net && remove_to_merge_nets.contains(left_net_name)) {
-        the_left_net = remove_to_merge_nets[left_net_name];        
+        the_left_net = remove_to_merge_nets[left_net_name];
       }
 
       Net *the_right_net = design_netlist.findNet(right_net_name.c_str());
       if (!the_right_net && remove_to_merge_nets.contains(right_net_name)) {
-        the_right_net = remove_to_merge_nets[right_net_name];        
+        the_right_net = remove_to_merge_nets[right_net_name];
       }
 
       auto *the_left_port = design_netlist.findPort(left_net_name.c_str());
       auto *the_right_port = design_netlist.findPort(right_net_name.c_str());
 
       if (the_left_net && the_right_net && !the_left_port && !the_right_port) {
-        LOG_INFO << "merge " << left_net_name << " = " << right_net_name << "\n";
+        LOG_INFO << "merge " << left_net_name << " = " << right_net_name
+                 << "\n";
 
         auto left_pin_ports = the_left_net->get_pin_ports();
 
         // merge left to right net.
-        for (auto* left_pin_port : left_pin_ports) {
+        for (auto *left_pin_port : left_pin_ports) {
           the_left_net->removePinPort(left_pin_port);
-          the_right_net->addPinPort(left_pin_port);          
+          the_right_net->addPinPort(left_pin_port);
         }
 
-        remove_to_merge_nets[left_net_name] = the_right_net; 
+        remove_to_merge_nets[left_net_name] = the_right_net;
 
       } else if (the_left_net && !the_left_port) {
         // assign net = input_port;
@@ -849,13 +852,14 @@ void Sta::linkDesignWithRustParser(const char *top_cell_name) {
         LOG_FATAL_IF(!the_left_port) << "the left port is not exist.";
         created_net.addPinPort(the_left_port);
 
-      } else if (the_left_net && the_right_net && the_left_port && the_right_port) {
-
+      } else if (the_left_net && the_right_net && the_left_port &&
+                 the_right_port) {
         // assign output_port = output_port
         LOG_FATAL_IF(!the_right_port) << "the right port is not exist.";
         the_left_net->addPinPort(the_right_port);
       } else {
-        LOG_FATAL << "assign " << left_net_name << " = " << right_net_name << " is not processed.";
+        LOG_FATAL << "assign " << left_net_name << " = " << right_net_name
+                  << " is not processed.";
       }
 
       // remove ununsed nets.
@@ -866,9 +870,7 @@ void Sta::linkDesignWithRustParser(const char *top_cell_name) {
       if (the_right_net->get_pin_ports().size() == 0) {
         design_netlist.removeNet(the_right_net);
       }
-
-    } 
-
+    }
   }
 
   rust_free_verilog_file(_rust_verilog_file_ptr);
@@ -1365,7 +1367,11 @@ unsigned Sta::buildLibArcsGPU() {
   FOREACH_ARC(the_graph, the_arc) {
     if (the_arc->isInstArc()) {
       if (the_arc->isDelayArc()) {
+        auto *the_cell =
+            dynamic_cast<StaInstArc *>(the_arc)->get_inst()->get_inst_cell();
+        auto the_cell_name = the_cell->get_cell_name();
         dynamic_cast<StaInstArc *>(the_arc)->buildLibArcsGPU();
+
         dynamic_cast<StaInstArc *>(the_arc)->set_arc_id(arc_id);
         ++arc_id;
       }
@@ -2455,25 +2461,29 @@ unsigned Sta::updateTiming() {
   } else {
     // BFS flow
     Vector<std::function<unsigned(StaGraph *)>> funcs = {
-        StaApplySdc(StaApplySdc::PropType::kApplySdcPreProp),
-        StaConstPropagation(),
-        StaClockPropagation(StaClockPropagation::PropType::kIdealClockProp),
-        StaCombLoopCheck(), StaClockSlewDelayPropagation(), StaLevelization(),        
-        StaClockPropagation(StaClockPropagation::PropType::kNormalClockProp),
-        StaApplySdc(StaApplySdc::PropType::kApplySdcPostNormalClockProp),
-        StaClockPropagation(
-            StaClockPropagation::PropType::kUpdateGeneratedClockProp),
-        StaApplySdc(StaApplySdc::PropType::kApplySdcPostClockProp),
-        StaBuildPropTag(StaPropagationTag::TagType::kProp),
-        #if !INTEGRATION_FWD
-        StaDataSlewDelayPropagation(),
-        #endif
-        StaDataPropagation(StaDataPropagation::PropType::kFwdProp),
-        // StaCrossTalkPropagation(),
+      StaApplySdc(StaApplySdc::PropType::kApplySdcPreProp),
+      StaConstPropagation(),
+      StaClockPropagation(StaClockPropagation::PropType::kIdealClockProp),
+      StaCombLoopCheck(),
+      StaClockSlewDelayPropagation(),
+      StaLevelization(),
+      StaClockPropagation(StaClockPropagation::PropType::kNormalClockProp),
+      StaApplySdc(StaApplySdc::PropType::kApplySdcPostNormalClockProp),
+      StaClockPropagation(
+          StaClockPropagation::PropType::kUpdateGeneratedClockProp),
+      StaApplySdc(StaApplySdc::PropType::kApplySdcPostClockProp),
+      StaBuildPropTag(StaPropagationTag::TagType::kProp),
+#if !INTEGRATION_FWD
+      StaDataSlewDelayPropagation(),
+#endif
+      StaDataPropagation(StaDataPropagation::PropType::kFwdProp),
+      // StaCrossTalkPropagation(),
 
-        StaDataPropagation(StaDataPropagation::PropType::kIncrFwdProp),
-        StaAnalyze(), StaApplySdc(StaApplySdc::PropType::kApplySdcPostProp),
-        StaDataPropagation(StaDataPropagation::PropType::kBwdProp)};
+      StaDataPropagation(StaDataPropagation::PropType::kIncrFwdProp),
+      StaAnalyze(),
+      StaApplySdc(StaApplySdc::PropType::kApplySdcPostProp),
+      StaDataPropagation(StaDataPropagation::PropType::kBwdProp)
+    };
 
     for (auto &func : funcs) {
       the_graph.exec(func);
@@ -2481,7 +2491,7 @@ unsigned Sta::updateTiming() {
   }
 
   LOG_INFO << "update timing end";
-  
+
   double memory_delta = stats.memoryDelta();
   LOG_INFO << "update timing memory usage " << memory_delta << "MB";
   double time_delta = stats.elapsedRunTime();

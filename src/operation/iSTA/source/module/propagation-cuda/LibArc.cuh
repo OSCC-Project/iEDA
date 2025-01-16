@@ -25,20 +25,89 @@
 
 #pragma once
 
+#include <cuda_runtime.h>
+
 #include <climits>
 
 #include "propagation.cuh"
-#include "log/Log.hh"
 
 namespace ista {
-#if 0
 
+/**
+ * @brief The one dimension interpolation.
+ *
+ * @param x1
+ * @param x2
+ * @param y1
+ * @param y2
+ * @param x
+ * @return double
+ */
 __device__ double linear_interpolate(double x1, double x2, double y1, double y2,
                                      double x);
+
+/**
+ * @brief The two dimension interpolation.
+ * // From
+ * https://helloacm.com/cc-function-to-compute-the-bilinear-interpolation/
+ * @param q11 x1, y1 value
+ * @param q12 x1, y2 value
+ * @param q21 x2, y1 value
+ * @param q22 x2, y2 value
+ * @param x1
+ * @param x2
+ * @param y1
+ * @param y2
+ * @param x
+ * @param y
+ * @return double
+ */
 __device__ double bilinear_interpolation(double q11, double q12, double q21,
                                          double q22, double x1, double x2,
                                          double y1, double y2, double x,
                                          double y);
+
+/**
+ * @brief get x axis size of LibTableGPU.
+ * @param lib_table_gpu
+ */
+__device__ double get_x_axis_size(LibTableGPU& lib_table_gpu);
+
+/**
+ * @brief get x val size of LibTableGPU.
+ * @param lib_table_gpu
+ * @param index
+ */
+__device__ double get_x_axis_val(LibTableGPU& lib_table_gpu, unsigned index);
+
+/**
+ * @brief get y axis size of LibTableGPU.
+ * @param lib_table_gpu
+ */
+__device__ double get_y_axis_size(LibTableGPU& lib_table_gpu);
+
+/**
+ * @brief get y val size of LibTableGPU.
+ * @param lib_table_gpu
+ * @param index
+ */
+__device__ double get_y_axis_val(LibTableGPU& lib_table_gpu, unsigned index);
+
+/**
+ * @brief get table value of LibTableGPU.
+ * @param lib_table_gpu
+ * @param index
+ */
+__device__ double get_table_value(LibTableGPU& lib_table_gpu, unsigned index);
+
+/**
+ * @brief check val of LibTableGPU.
+ * @param lib_table_gpu
+ * @param axis_index
+ * @param val
+ */
+__device__ unsigned check_val(LibTableGPU& lib_table_gpu, int axis_index,
+                              double val);
 
 /**
  * @brief The struct of AxisRegion, used to store the return value of
@@ -50,103 +119,27 @@ struct AxisRegion {
   double x2;
   unsigned val_index;
 };
+
 /**
- * @brief The struct of LibTableGPU.
- *
+ * @brief get val's axis region of LibTableGPU.
+ * @param lib_table_gpu
+ * @param axis_index
+ * @param num_val
+ * @param val
  */
-struct LibTableGPU {
-  double* _x;
-  double* _y;
-  unsigned _num_x = 0;
-  unsigned _num_y = 0;
-  double* _values;
-  unsigned _num_values = 0;
-  unsigned _type =
-      UINT_MAX;  //!< normal(slew->cap),invert(cap->slew),slew,cap,and so on.
+__device__ AxisRegion get_axis_region(LibTableGPU& lib_table_gpu,
+                                      int axis_index, unsigned int num_val,
+                                      double val);
 
-  __device__ double get_x_axis_size() { return _num_x; }
-  __device__ double get_x_axis_val(unsigned index) { return _x[index]; }
-  __device__ double get_y_axis_size() { return _num_y; }
-  __device__ double get_y_axis_val(unsigned index) { return _y[index]; }
-  __device__ double get_table_value(unsigned index) {
-    if (index >= _num_values) {
-      printf("Error: index %u beyond table value size %u\n", index,
-             _num_values);
-      return -1.0;
-    }
-    return _values[index];
-  }
-
-  __device__ unsigned check_val(int axis_index, double val) {
-    unsigned num_val = 0;
-    double min_val = 0;
-    double max_val = 0;
-    if (axis_index == 0) {
-      num_val = get_x_axis_size();
-      min_val = get_x_axis_val(0);
-      max_val = get_x_axis_val(num_val - 1);
-    } else if (axis_index == 1) {
-      num_val = get_y_axis_size();
-      min_val = get_y_axis_val(0);
-      max_val = get_y_axis_val(num_val - 1);
-    }
-
-    if ((val < min_val) || (val > max_val)) {
-      printf(
-          "Warning: val outside table ranges: val = %f; min_val = %f; max_val "
-          "= %f\n",
-          val, min_val, max_val);
-    }
-    return num_val;
-  }
-
-  __device__ AxisRegion get_axis_region(int axis_index, unsigned int num_val,
-                                        double val) {
-    double x2 = 0.0;
-    unsigned int val_index = 0;
-    double x1;
-    if (axis_index == 0) {
-      for (; val_index < num_val; val_index++) {
-        x2 = get_x_axis_val(val_index);
-        if (x2 > val) {
-          break;
-        }
-      }
-
-      if (val_index == num_val) {
-        val_index = num_val - 2;
-      } else if (val_index) {
-        --val_index;
-      } else {
-        x2 = get_x_axis_val(1);
-      }
-      x1 = get_x_axis_val(val_index);
-    } else if (axis_index == 1) {
-      for (; val_index < num_val; val_index++) {
-        x2 = get_y_axis_val(val_index);
-        if (x2 > val) {
-          break;
-        }
-      }
-
-      if (val_index == num_val) {
-        val_index = num_val - 2;
-      } else if (val_index) {
-        --val_index;
-      } else {
-        x2 = get_y_axis_val(1);
-      }
-      x1 = get_y_axis_val(val_index);
-    }
-
-    return AxisRegion{x1, x2, val_index};
-  }
-
-
-__device__ double find_value(double slew, double constrain_slew_or_load);
-
-
-};
+/**
+ * @brief find value of LibTableGPU according to slew and
+ * constrain_slew_or_load.
+ * @param lib_table_gpu
+ * @param slew
+ * @param constrain_slew_or_load
+ */
+__device__ double find_value(LibTableGPU& lib_table_gpu, double slew,
+                             double constrain_slew_or_load);
 
 /**
  * @brief build gpu LibArcGPU(lib_data_gpu._arcs_gpu) according to cpu
@@ -157,6 +150,11 @@ __device__ double find_value(double slew, double constrain_slew_or_load);
 void build_lib_data_gpu(LibDataGPU& lib_data_gpu,
                         std::vector<LibArcGPU*> lib_arcs_cpu);
 
-#endif
+__global__ void kernel_find_value(LibDataGPU& lib_data_gpu, double slew,
+                                  double constrain_slew_or_load,
+                                  double* d_value);
+
+double find_value(LibDataGPU& lib_data_gpu, double slew,
+                  double constrain_slew_or_load);
 
 }  // namespace ista

@@ -190,7 +190,8 @@ class StaNetArc : public StaArc {
 class StaInstArc : public StaArc {
  public:
   StaInstArc(StaVertex* src, StaVertex* snk, LibArc* lib_arc, Instance* inst);
-  ~StaInstArc() override = default;
+  ~StaInstArc() override { delete _lib_gpu_arc; }
+  // ~StaInstArc() override = default;
 
   unsigned isInstArc() const override { return 1; }
 
@@ -243,7 +244,7 @@ class StaInstArc : public StaArc {
   LibArc* _lib_arc;  //!< The mapped to lib arc.
   Instance* _inst;   //!< The owned inst.
 
-  LibArcGPU* _lib_gpu_arc;  //!< The gpu lib arc.
+  LibArcGPU* _lib_gpu_arc;  //!< The gpu lib arc. (attention delete)
   unsigned _arc_id;
 
   FORBIDDEN_COPY(StaInstArc);

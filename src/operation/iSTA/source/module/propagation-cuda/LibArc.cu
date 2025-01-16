@@ -5,13 +5,14 @@
  * @version 0.1
  * @date 2025-01-09
  */
+
+#include <stdio.h>
+
 #include <cassert>
-#include <cuda_runtime.h>
+
 #include "LibArc.cuh"
 
 namespace ista {
-
-#if 0
 
 __device__ constexpr double double_precision = 1e-15;
 
@@ -91,24 +92,152 @@ __device__ double bilinear_interpolation(double q11, double q12, double q21,
 }
 
 /**
+ * @brief get x axis size of LibTableGPU.
+ * @param lib_table_gpu
+ */
+__device__ double get_x_axis_size(LibTableGPU& lib_table_gpu) {
+  return lib_table_gpu._num_x;
+}
+
+/**
+ * @brief get x val size of LibTableGPU.
+ * @param lib_table_gpu
+ * @param index
+ */
+__device__ double get_x_axis_val(LibTableGPU& lib_table_gpu, unsigned index) {
+  return lib_table_gpu._x[index];
+}
+
+/**
+ * @brief get y axis size of LibTableGPU.
+ * @param lib_table_gpu
+ */
+__device__ double get_y_axis_size(LibTableGPU& lib_table_gpu) {
+  return lib_table_gpu._num_y;
+}
+
+/**
+ * @brief get y val size of LibTableGPU.
+ * @param lib_table_gpu
+ * @param index
+ */
+__device__ double get_y_axis_val(LibTableGPU& lib_table_gpu, unsigned index) {
+  return lib_table_gpu._y[index];
+}
+
+/**
+ * @brief get table value of LibTableGPU.
+ * @param lib_table_gpu
+ * @param index
+ */
+__device__ double get_table_value(LibTableGPU& lib_table_gpu, unsigned index) {
+  if (index >= lib_table_gpu._num_values) {
+    printf("Error: index %u beyond table value size %u\n", index,
+           lib_table_gpu._num_values);
+    return -1.0;
+  }
+  return lib_table_gpu._values[index];
+}
+
+/**
+ * @brief check val of LibTableGPU.
+ * @param lib_table_gpu
+ * @param axis_index
+ * @param val
+ */
+__device__ unsigned check_val(LibTableGPU& lib_table_gpu, int axis_index,
+                              double val) {
+  unsigned num_val = 0;
+  double min_val = 0;
+  double max_val = 0;
+  if (axis_index == 0) {
+    num_val = get_x_axis_size(lib_table_gpu);
+    min_val = get_x_axis_val(lib_table_gpu, 0);
+    max_val = get_x_axis_val(lib_table_gpu, num_val - 1);
+  } else if (axis_index == 1) {
+    num_val = get_y_axis_size(lib_table_gpu);
+    min_val = get_y_axis_val(lib_table_gpu, 0);
+    max_val = get_y_axis_val(lib_table_gpu, num_val - 1);
+  }
+
+  if ((val < min_val) || (val > max_val)) {
+    printf(
+        "Warning: val outside table ranges: val = %f; min_val = %f; max_val "
+        "= %f\n",
+        val, min_val, max_val);
+  }
+  return num_val;
+}
+
+/**
+ * @brief get val's axis region of LibTableGPU.
+ * @param lib_table_gpu
+ * @param axis_index
+ * @param num_val
+ * @param val
+ */
+__device__ AxisRegion get_axis_region(LibTableGPU& lib_table_gpu,
+                                      int axis_index, unsigned int num_val,
+                                      double val) {
+  double x2 = 0.0;
+  unsigned int val_index = 0;
+  double x1;
+  if (axis_index == 0) {
+    for (; val_index < num_val; val_index++) {
+      x2 = get_x_axis_val(lib_table_gpu, val_index);
+      if (x2 > val) {
+        break;
+      }
+    }
+
+    if (val_index == num_val) {
+      val_index = num_val - 2;
+    } else if (val_index) {
+      --val_index;
+    } else {
+      x2 = get_x_axis_val(lib_table_gpu, 1);
+    }
+    x1 = get_x_axis_val(lib_table_gpu, val_index);
+  } else if (axis_index == 1) {
+    for (; val_index < num_val; val_index++) {
+      x2 = get_y_axis_val(lib_table_gpu, val_index);
+      if (x2 > val) {
+        break;
+      }
+    }
+
+    if (val_index == num_val) {
+      val_index = num_val - 2;
+    } else if (val_index) {
+      --val_index;
+    } else {
+      x2 = get_y_axis_val(lib_table_gpu, 1);
+    }
+    x1 = get_y_axis_val(lib_table_gpu, val_index);
+  }
+
+  return AxisRegion{x1, x2, val_index};
+}
+
+/**
  * @brief find value according to slew and constrain_slew_or_load.
  * @param slew The slew value.
  * @param constrain_slew_or_load The constrain_slew_or_load value.
  * @return The value.
  */
-__device__ double LibTableGPU::find_value(double slew,
-                                          double constrain_slew_or_load) {
+__device__ double find_value(LibTableGPU& lib_table_gpu, double slew,
+                             double constrain_slew_or_load) {
   // ??? not sure (_type == UINT_MAX) can work as (!table_template)
-  if (_type == UINT_MAX) {
-    return _values[0];
+  if (lib_table_gpu._type == UINT_MAX) {
+    return lib_table_gpu._values[0];
   }
 
   double val1;
   double val2;
-  if (_type == 0 || _type == 2) {
+  if (lib_table_gpu._type == 0 || lib_table_gpu._type == 2) {
     val1 = slew;
     val2 = constrain_slew_or_load;
-  } else if (_type == 1 || _type == 3) {
+  } else if (lib_table_gpu._type == 1 || lib_table_gpu._type == 3) {
     val1 = constrain_slew_or_load;
     val2 = slew;
   } else {
@@ -117,35 +246,38 @@ __device__ double LibTableGPU::find_value(double slew,
     return -1.0;
   }
 
-  if (_num_y == 0) {
+  if (lib_table_gpu._num_y == 0) {
     // only one axis(x axis.)
-    auto num_val1 = check_val(0, val1);
-    auto [x1, x2, val1_index] = get_axis_region(0, num_val1, val1);
-    unsigned int x1_table_val = get_table_value(val1_index);
-    unsigned int x2_table_val = get_table_value(val1_index + 1);
+    auto num_val1 = check_val(lib_table_gpu, 0, val1);
+    auto [x1, x2, val1_index] =
+        get_axis_region(lib_table_gpu, 0, num_val1, val1);
+    unsigned int x1_table_val = get_table_value(lib_table_gpu, val1_index);
+    unsigned int x2_table_val = get_table_value(lib_table_gpu, val1_index + 1);
 
     auto result = linear_interpolate(x1, x2, x1_table_val, x2_table_val, val1);
     return result;
   } else {
     // two axis(x and y axis.)
-    auto num_val1 = check_val(0, val1);
-    auto num_val2 = check_val(1, val2);
+    auto num_val1 = check_val(lib_table_gpu, 0, val1);
+    auto num_val2 = check_val(lib_table_gpu, 1, val2);
 
-    auto [x1, x2, val1_index] = get_axis_region(0, num_val1, val1);
-    auto [y1, y2, val2_index] = get_axis_region(1, num_val2, val2);
+    auto [x1, x2, val1_index] =
+        get_axis_region(lib_table_gpu, 0, num_val1, val1);
+    auto [y1, y2, val2_index] =
+        get_axis_region(lib_table_gpu, 1, num_val2, val2);
 
     // now do the table lookup
     unsigned int index = num_val2 * val1_index + val2_index;
-    const auto q11 = get_table_value(index);
+    const auto q11 = get_table_value(lib_table_gpu, index);
 
     index = num_val2 * (val1_index + 1) + val2_index;
-    const auto q21 = get_table_value(index);
+    const auto q21 = get_table_value(lib_table_gpu, index);
 
     index = num_val2 * val1_index + (val2_index + 1);
-    const auto q12 = get_table_value(index);
+    const auto q12 = get_table_value(lib_table_gpu, index);
 
     index = num_val2 * (val1_index + 1) + (val2_index + 1);
-    const auto q22 = get_table_value(index);
+    const auto q22 = get_table_value(lib_table_gpu, index);
 
     auto result =
         bilinear_interpolation(q11, q12, q21, q22, x1, x2, y1, y2, val1, val2);
@@ -220,6 +352,27 @@ void build_lib_data_gpu(LibDataGPU& lib_data_gpu,
     }
   }
 }
-#endif
+
+__global__ void kernel_find_value(LibDataGPU& lib_data_gpu, double slew,
+                                  double constrain_slew_or_load,
+                                  double* d_value) {
+  *d_value = find_value(lib_data_gpu._arcs_gpu[0]._table[0], slew,
+                        constrain_slew_or_load);
+}
+
+double find_value(LibDataGPU& lib_data_gpu, double slew,
+                  double constrain_slew_or_load) {
+  double value;
+
+  double* d_value;
+  cudaMalloc((void**)&d_value, sizeof(double));
+  kernel_find_value<<<1, 1>>>(lib_data_gpu, slew, constrain_slew_or_load,
+                              d_value);
+  cudaMemcpy(&value, d_value, sizeof(double), cudaMemcpyDeviceToHost);
+
+  cudaFree(d_value);
+
+  return value;
+}
 
 }  // namespace ista
