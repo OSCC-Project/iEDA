@@ -1122,7 +1122,7 @@ int Abacus::get_best_cost_row(ipl::LGInstance* inst)
   }
 
   std::vector<std::pair<int, int>> row_costs(_database->get_lg_layout()->get_row_num());
-#pragma omp parallel for
+// #pragma omp parallel for
   for (int32_t row_idx = 0; row_idx < _database->get_lg_layout()->get_row_num(); row_idx++) {
     int32_t cost = placeRow(inst, row_idx, true, false);
     row_costs[row_idx] = std::make_pair(row_idx, cost);
