@@ -1019,12 +1019,6 @@ TimingWireGraph InitSTA::getTimingWireGraph() {
   auto* the_timing_graph = &(ista->get_graph());
   ista::StaArc* the_arc;
 
-  double sum_wire_topo_time = 0.0;
-  double sum_create_wire_edge = 0.0;
-  double sum_find_feature = 0.0;
-  double sum_create_node = 0.0;
-  double sum_create_edge = 0.0;
-
   timing_wire_graph._edges.reserve(the_timing_graph->get_arcs().size() * 100);
   timing_wire_graph._nodes.reserve(the_timing_graph->get_vertexes().size() * 10);
   FOREACH_ARC(the_timing_graph, the_arc) {
@@ -1045,21 +1039,7 @@ TimingWireGraph InitSTA::getTimingWireGraph() {
                                                     TransType::kFall);
       }
 
-      ieda::Stats stats1;
-
       auto wire_topo = rc_net->getWireTopo(snk_node_name.c_str());
-
-      double wire_topo_time = stats1.elapsedRunTime();
-      sum_wire_topo_time += wire_topo_time;
-      stats1.restartStats();
-
-      auto all_nodes_slew = rc_net->getAllNodeSlew(
-          *vertex_slew, ista::AnalysisMode::kMax, TransType::kRise);
-
-      double node_slew_time = stats1.elapsedRunTime();
-      sum_find_feature += node_slew_time;
-      stats1.restartStats();
-
       for (auto* wire_edge : wire_topo | std::ranges::views::reverse) {
         ieda::Stats stats2;
         auto& from_node = wire_edge->get_from();
@@ -1067,21 +1047,9 @@ TimingWireGraph InitSTA::getTimingWireGraph() {
 
         auto wire_from_node_index = create_net_node(from_node);
         auto wire_to_node_index = create_net_node(to_node);
-
-        double node_create_time = stats2.elapsedRunTime();
-        sum_create_node += node_create_time;
-        stats2.restartStats();
-
-        auto& wire_graph_edge =
-            timing_wire_graph.addEdge(wire_from_node_index, wire_to_node_index);
-
-        double edge_create_time = stats2.elapsedRunTime();
-        sum_create_edge += edge_create_time;
+        
+        timing_wire_graph.addEdge(wire_from_node_index, wire_to_node_index);
       }
-
-      double build_wire_edge_time = stats1.elapsedRunTime();
-      sum_create_wire_edge += build_wire_edge_time;
-
     } else {
       auto wire_from_node_index = create_inst_node(the_arc->get_src());
       auto wire_to_node_index = create_inst_node(the_arc->get_snk());
@@ -1103,21 +1071,6 @@ TimingWireGraph InitSTA::getTimingWireGraph() {
            << " MB";           
   double total_time = stats.elapsedRunTime();
   LOG_INFO << "get wire timing graph elapsed time " << total_time << " s";
-
-  LOG_INFO << "get wire topo total " << sum_wire_topo_time
-           << " occpy total: " << sum_wire_topo_time * 100 / total_time << "%";
-
-  LOG_INFO << "create wire edges total " << sum_create_wire_edge
-           << " occpy total: " << sum_create_wire_edge * 100 / total_time << "%";
-
-  LOG_INFO << "find all nodes slew total " << sum_find_feature
-           << " occpy total: " << sum_find_feature * 100 / total_time << "%";
-
-  LOG_INFO << "create nodes total " << sum_create_node
-           << " occpy total: " << sum_create_node * 100 / total_time << "%";
-
-  LOG_INFO << "create edges total " << sum_create_edge
-           << " occpy total: " << sum_create_edge * 100 / total_time << "%";
 
   // for debug
   // SaveTimingGraph(timing_wire_graph, "./timing_wire_graph.yaml");
