@@ -1050,21 +1050,20 @@ std::map<std::string, std::vector<std::vector<int>>> CongestionEval::getEGRMap(s
   if (congestion_dir == "") {
     congestion_dir = dmInst->get_config().get_output_path() + "/rt/rt_temp_directory/early_router";
   }
+  printf("congestion_dir: %s\n", congestion_dir.c_str());
   // check if congestion_dir is empty
-  if (!std::filesystem::exists(congestion_dir)) {
-    std::filesystem::path dir_path(congestion_dir);
-    dir_path = dir_path.parent_path();
-    std::string new_congestion_dir = dir_path.string();
+  // if (std::filesystem::is_empty(congestion_dir)) {
+  std::filesystem::path cong_dir_path(congestion_dir);
+  std::filesystem::path parent_dir_path = cong_dir_path.parent_path();
 
-    setEGRDirPath(new_congestion_dir);
-    initEGR();
-    destroyEGR();
-  }
+  setEGRDirPath(parent_dir_path.string());
+  initEGR();
+  destroyEGR();
+  // }
 
   std::map<std::string, std::vector<std::vector<int>>> egr_map;
   std::filesystem::path dir_path(congestion_dir);
 
-  std::cout << congestion_dir << std::endl;
   // tranverse all files in the directory
   for (const auto& entry : std::filesystem::directory_iterator(dir_path)) {
     std::string filename = entry.path().filename().string();

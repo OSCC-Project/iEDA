@@ -70,7 +70,7 @@ bool LmLayoutFileIO::saveJsonNets()
   omp_init_lock(&lck);
 
   int total = 0;
-  // #pragma omp parallel for schedule(dynamic)
+#pragma omp parallel for schedule(dynamic)
   for (int i = 0; i < (int) net_map.size(); ++i) {
     auto it = net_map.begin();
     std::advance(it, i);
