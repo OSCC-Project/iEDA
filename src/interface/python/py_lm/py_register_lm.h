@@ -34,19 +34,12 @@ void register_large_model(py::module& m)
     .def_readwrite("is_port", &ieval::TimingWireNode::_is_port);
 
   py::class_<ieval::TimingWireEdge>(m, "TimingWireEdge")
-    .def_readwrite("feature_R", &ieval::TimingWireEdge::_feature_R)
-    .def_readwrite("feature_C", &ieval::TimingWireEdge::_feature_C)
-    .def_readwrite("feature_from_slew", &ieval::TimingWireEdge::_feature_from_slew)
-    .def_readwrite("feature_to_slew", &ieval::TimingWireEdge::_feature_to_slew)
-    .def_readwrite("feature_wire_delay", &ieval::TimingWireEdge::_feature_wire_delay)
-    .def_readwrite("is_net_edge", &ieval::TimingWireEdge::_is_net_edge)
     .def_readwrite("from_node", &ieval::TimingWireEdge::_from_node)
     .def_readwrite("to_node", &ieval::TimingWireEdge::_to_node);
 
   py::class_<ieval::TimingWireGraph>(m, "TimingWireGraph")
     .def_readwrite("nodes", &ieval::TimingWireGraph::_nodes)
-    .def_readwrite("edges", &ieval::TimingWireGraph::_edges)
-    .def_readwrite("adjacency_list", &ieval::TimingWireGraph::_adjacency_list);
+    .def_readwrite("edges", &ieval::TimingWireGraph::_edges);
 
   m.def("get_timing_wire_graph", &get_timing_wire_graph);
 }

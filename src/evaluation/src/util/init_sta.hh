@@ -53,14 +53,6 @@ struct TimingWireNode {
 };
 
 struct TimingWireEdge {
-  double _feature_R = 0.0;
-  double _feature_C = 0.0;
-  double _feature_from_slew = 0.0;
-  double _feature_to_slew = 0.0;
-  double _feature_wire_delay = 0.0;
-
-  bool _is_net_edge = true; //!< is net edge or instance edge.
-
   unsigned _from_node = 0;
   unsigned _to_node = 0;
 };
@@ -68,7 +60,6 @@ struct TimingWireEdge {
 struct TimingWireGraph {
   std::vector<TimingWireNode> _nodes; //!< each one is a graph node
   std::vector<TimingWireEdge> _edges;
-  std::vector<std::vector<unsigned>> _adjacency_list; //!< adjacency list for node fanout edges.
 
   private:
   std::map<std::string, unsigned> _node2index_map; //!< node name to node index map.
@@ -97,26 +88,9 @@ struct TimingWireGraph {
     wire_graph_edge._from_node = wire_from_node_index;
     wire_graph_edge._to_node = wire_to_node_index;
 
-    addAdjacencyListNode(wire_from_node_index,
-                                               wire_to_node_index);
-
     return _edges.emplace_back(std::move(wire_graph_edge));
   }
 
-  void addAdjacencyListNode(unsigned wire_from_node_index,
-                            unsigned wire_to_node_index) {
-    // reserve memory
-    while (_adjacency_list.size() <= wire_from_node_index) {
-      _adjacency_list.emplace_back();
-    }
-    auto& adjacency_list = _adjacency_list[wire_from_node_index];
-
-    if (adjacency_list.end() == std::find(adjacency_list.begin(),
-                                          adjacency_list.end(),
-                                          wire_to_node_index)) {
-      adjacency_list.emplace_back(wire_to_node_index);
-    }
-  }
 };
 
 /// @brief  save timing graph to yaml file.

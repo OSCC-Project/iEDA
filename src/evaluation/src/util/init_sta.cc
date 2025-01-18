@@ -1075,17 +1075,6 @@ TimingWireGraph InitSTA::getTimingWireGraph() {
         auto& wire_graph_edge =
             timing_wire_graph.addEdge(wire_from_node_index, wire_to_node_index);
 
-        // build feature
-        wire_graph_edge._feature_R = wire_edge->get_res();
-        wire_graph_edge._feature_C = from_node.nodeLoad() - to_node.nodeLoad();
-        wire_graph_edge._feature_from_slew =
-            all_nodes_slew[from_node.get_name()];
-        wire_graph_edge._feature_to_slew = all_nodes_slew[to_node.get_name()];
-        wire_graph_edge._feature_wire_delay =
-            to_node.delay() - from_node.delay();
-
-        wire_graph_edge._is_net_edge = true;
-
         double edge_create_time = stats2.elapsedRunTime();
         sum_create_edge += edge_create_time;
       }
@@ -1097,14 +1086,8 @@ TimingWireGraph InitSTA::getTimingWireGraph() {
       auto wire_from_node_index = create_inst_node(the_arc->get_src());
       auto wire_to_node_index = create_inst_node(the_arc->get_snk());
 
-      auto& wire_graph_edge =
-          timing_wire_graph.addEdge(wire_from_node_index, wire_to_node_index);
+      timing_wire_graph.addEdge(wire_from_node_index, wire_to_node_index);
 
-      // build feature
-      wire_graph_edge._feature_wire_delay = FS_TO_NS(
-          the_arc->get_arc_delay(ista::AnalysisMode::kMax, TransType::kRise));
-
-      wire_graph_edge._is_net_edge = false;
     }
   }
 
@@ -1157,32 +1140,10 @@ void SaveTimingGraph(const TimingWireGraph& timing_wire_graph,
 
   std::ofstream file(yaml_file_name, std::ios::trunc);
 
-  // YAML::Node yaml_graph_node;
-  // YAML::Emitter out(file); 
-  // out << YAML::BeginMap; // Start the YAML map 
   for (unsigned node_id = 0; auto& node : timing_wire_graph._nodes) {
     const char* node_name = Str::printf("node_%d", node_id++);
-    // YAML::Node the_node;
-    // yaml_graph_node[std::move(node_name)] = the_node;
-    // the_node["name"] = node._name;
-    // the_node["is_pin"] = node._is_pin;
-    // the_node["is_port"] = node._is_port;    
-
-    // YAML::Node adjaceny_node;
-    // the_node["adjaceny_node"] = adjaceny_node;
-
-    // if (node_id <= timing_wire_graph._adjacency_list.size()) {
-    //   for (unsigned adjacency_node :
-    //        timing_wire_graph._adjacency_list[node_id - 1]) {
-    //     adjaceny_node.push_back(adjacency_node);
-    //   }
-    // }
-
     LOG_INFO_EVERY_N(1000) << "write node " << node_id << " total "
                            << timing_wire_graph._nodes.size();
-
-    // Add key-value pairs incrementally  
-    // out << YAML::Key << node_name << YAML::Value << the_node;
 
     file << node_name << ":" << "\n";
     file << "  name: " << node._name << "\n";
@@ -1192,22 +1153,9 @@ void SaveTimingGraph(const TimingWireGraph& timing_wire_graph,
 
   for (unsigned edge_id = 0; auto& edge : timing_wire_graph._edges) {
     std::string edge_name = Str::printf("edge_%d", edge_id++);
-    // YAML::Node the_edge; 
-    // yaml_graph_node[std::move(edge_name)] = the_edge;
-    // the_edge["from_node"] = edge._from_node;
-    // the_edge["to_node"] = edge._to_node;
-    // the_edge["feature_R"] = edge._feature_R;
-    // the_edge["feature_C"] = edge._feature_C;
-    // the_edge["feature_from_slew"] = edge._feature_from_slew;
-    // the_edge["feature_to_slew"] = edge._feature_to_slew;
-    // the_edge["feature_wire_delay"] = edge._feature_wire_delay;
-    // the_edge["is_net_edge"] = edge._is_net_edge;
 
     LOG_INFO_EVERY_N(1000) << "write edge " << edge_id << " total "
                            << timing_wire_graph._edges.size();
-
-    // Add key-value pairs incrementally  
-    // out << YAML::Key << edge_name << YAML::Value << the_edge;
 
     file << edge_name << ":" << "\n";
     file << "  from_node: " << edge._from_node << "\n";
