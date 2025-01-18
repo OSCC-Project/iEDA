@@ -98,6 +98,9 @@ struct TimingWireGraph {
 /// @param yaml_file_name  
 void SaveTimingGraph(const TimingWireGraph& timing_wire_graph, const std::string& yaml_file_name);
 
+/// @brief restore timing graph from yaml file.
+TimingWireGraph RestoreTimingGraph(const std::string& yaml_file_name);
+
 class InitSTA
 {
  public:

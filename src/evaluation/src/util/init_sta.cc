@@ -1121,6 +1121,59 @@ void SaveTimingGraph(const TimingWireGraph& timing_wire_graph,
   LOG_INFO << "output wire graph yaml file path: " << yaml_file_name;
   LOG_INFO << "save wire timing graph end";
 }
+/// @brief Restore wire timing graph from yaml file.
+/// @param yaml_file_name 
+/// @return 
+TimingWireGraph RestoreTimingGraph(const std::string& yaml_file_name) {
+  LOG_INFO << "restore wire timing graph start";
+  TimingWireGraph timing_wire_graph;
+
+  std::ifstream file(yaml_file_name);
+  string line;
+  
+  bool is_node = true;
+  TimingWireNode wire_node;
+  TimingWireEdge wire_edge;
+
+  while (getline(file, line)) {
+    if (is_node && (line.rfind("edge_", 0) == 0)) {
+      is_node = false;
+    }
+
+    if (is_node) {
+      if (line.find("name:") != string::npos) {
+        size_t pos = line.find(": ");
+        wire_node._name = line.substr(pos + 2);
+      } else if (line.find("is_pin:") != string::npos) {
+        size_t pos = line.find(": ");
+        wire_node._is_pin = stoi(line.substr(pos + 2));
+      } else if (line.find("is_port:") != string::npos) {
+        size_t pos = line.find(": ");
+        wire_node._is_port = stoi(line.substr(pos + 2));
+        timing_wire_graph._nodes.emplace_back(std::move(wire_node));
+      }
+
+    } else {
+
+      if (line.find("from_node:") != string::npos) {
+        size_t pos = line.find(": ");
+        wire_edge._from_node = stoll(line.substr(pos + 2));
+      } else if (line.find("to_node:") != string::npos) {
+        size_t pos = line.find(": ");
+        wire_edge._to_node = stoll(line.substr(pos + 2));
+        timing_wire_graph._edges.emplace_back(std::move(wire_edge));
+      }
+    }
+  }
+  file.close();
+
+  LOG_INFO << "restore wire timing graph end";
+
+  LOG_INFO << "wire timing graph nodes " << timing_wire_graph._nodes.size();
+  LOG_INFO << "wire timing graph edges " << timing_wire_graph._edges.size();
+
+  return timing_wire_graph;
+}
 
 void InitSTA::updateTiming(const std::vector<TimingNet*>& timing_net_list,
                            const std::vector<std::string>& name_list,
