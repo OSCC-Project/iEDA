@@ -114,7 +114,7 @@ struct GPU_Arc {
  *
  */
 struct GPU_BFS_Propagated_Arc {
-  unsigned* _arc_start_addr;  //!< The arc start address, each one is arc id.
+  unsigned* _arc_start_addr = nullptr;  //!< The arc start address, each one is arc id.
   unsigned _num_arcs;
 };
 
@@ -123,10 +123,10 @@ struct GPU_BFS_Propagated_Arc {
  *
  */
 struct GPU_Graph {
-  GPU_Vertex* _vertices;   //!< The vertex data on GPU.
-  GPU_Arc* _arcs;          //!< The arc data on GPU.
-  unsigned _num_vertices;  //!< The number of vertices.
-  unsigned _num_arcs;      //!< The number of arcs.
+  GPU_Vertex* _vertices = nullptr;   //!< The vertex data on GPU.
+  GPU_Arc* _arcs = nullptr;          //!< The arc data on GPU.
+  unsigned _num_vertices = 0;  //!< The number of vertices.
+  unsigned _num_arcs = 0;      //!< The number of arcs.
 
   // flatten data for copy data from cpu to gpu faster.
   GPU_Fwd_Data* _flatten_slew_data; //!< The all slew data of the vertex.

@@ -23,9 +23,9 @@
  *
  */
 #include <cuda_runtime.h>
+#include <map>
 
 #include "fwd_propagation.cuh"
-// #include "sta/StaGraph.hh"
 
 namespace ista {
 
@@ -115,12 +115,12 @@ __global__ void propagate_fwd(GPU_Graph the_graph,
     }
   }
 }
-#if 0
+
 /**
  * @brief copy sta graph to gpu sta graph.
  *
  */
-GPU_Graph build_gpu_sta_graph(StaGraph* the_cpu_graph) {
+GPU_Graph build_gpu_sta_graph(GPU_Graph* the_cpu_graph) {
   GPU_Graph the_gpu_graph;
   return the_gpu_graph;
 }
@@ -131,7 +131,7 @@ GPU_Graph build_gpu_sta_graph(StaGraph* the_cpu_graph) {
  * @param the_cpu_graph
  * @param the_gpu_graph
  */
-void update_sta_graph(StaGraph* the_cpu_graph, GPU_Graph the_gpu_graph) {}
+void update_sta_graph(GPU_Graph* the_cpu_graph, GPU_Graph the_gpu_graph) {}
 
 /**
  * @brief The interface function for the fwd function.
@@ -141,17 +141,15 @@ void update_sta_graph(StaGraph* the_cpu_graph, GPU_Graph the_gpu_graph) {}
  * then, propagate level by level.
  */
 void gpu_propagate_fwd(
-    StaGraph* the_cpu_graph,
-    std::map<unsigned, std::vector<StaArc*>>& level_to_arcs) {
+    GPU_Graph* the_cpu_graph,
+    std::map<unsigned, GPU_BFS_Propagated_Arc>& level_to_arcs) {
   auto the_gpu_graph = build_gpu_sta_graph(the_cpu_graph);
-  GPU_BFS_Propagated_Arc propagate_arcs;
   //TODO(to taosimin), copy arc id to gpu bfs propagated arc.
   for (auto& [level, the_arcs] : level_to_arcs) {
-    propagate_fwd<<<1, 1000>>>(the_gpu_graph, propagate_arcs);
+    propagate_fwd<<<1, 1000>>>(the_gpu_graph, the_arcs);
   }
 
   update_sta_graph(the_cpu_graph, the_gpu_graph);
 }
-#endif
 
 }  // namespace ista
