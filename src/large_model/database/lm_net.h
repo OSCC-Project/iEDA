@@ -62,6 +62,11 @@ struct LmNetFeature
   double delay = 0.0;
   double slew = 0.0;
   int fanout = 0;
+  int aspect_ratio = 0;
+  int64_t width = 0;
+  int64_t height = 0;
+  int64_t area = 0;
+  float l_ness = 0.0;
 };
 
 static int64_t wire_id_index = 0;
