@@ -66,6 +66,7 @@ using ieda::Time;
 using ieda::Vector;
 
 #define INTEGRATION_FWD 1
+#define CUDA_PROPAGATION 1
 
 // slew and path delay bucket config.
 constexpr unsigned c_vertex_slew_data_bucket_size = 1;

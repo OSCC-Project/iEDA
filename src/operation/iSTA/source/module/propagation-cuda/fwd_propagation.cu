@@ -28,6 +28,13 @@
 
 namespace ista {
 
+/**
+ * @brief propagate the bfs arcs in cuda kernal.
+ * 
+ * @param the_graph 
+ * @param propagated_arcs 
+ * @return __global__ 
+ */
 __global__ void propagate_fwd(GPU_Graph the_graph,
                               GPU_BFS_Propagated_Arc propagated_arcs) {
   // current thread id
@@ -58,5 +65,7 @@ __global__ void propagate_fwd(GPU_Graph the_graph,
     }
   }
 }
+
+
 
 }  // namespace ista
