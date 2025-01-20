@@ -225,12 +225,17 @@ unsigned StaFwdPropagationBFS::operator()(StaGraph* the_graph) {
  *
  */
 void StaFwdPropagationBFS::dispatchArcTask() {
+  if (_level_to_arcs.empty()) {
+    return;
+  }
+  
   ieda::Stats stats;
   LOG_INFO << "dispatch arc task start";
   for (auto& [level, the_arcs] : _level_to_arcs) {
     std::for_each(std::execution::par, the_arcs.begin(), the_arcs.end(),
                   [this](auto* the_arc) { the_arc->exec(*this); });
   }
+  _level_to_arcs.clear();
 
   LOG_INFO << "dispatch arc task end";
 
