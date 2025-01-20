@@ -52,7 +52,8 @@ enum GPU_Arc_Type { kInstDelayArc = 0, kInstCheckArc = 0, kNet = 1 };
  */
 struct GPU_Fwd_Data {
   double _data_value;
-  GPU_Trans_Type _trans_type;
+  GPU_Trans_Type _trans_type;  //!< for purposes of more gpu fwd data, so we
+                               //!< record trans_type and analysis mode.
   GPU_Analysis_Mode _analysis_mode;
 };
 
@@ -74,12 +75,14 @@ struct GPU_Vertex_Data {
  *    do_something_for_data();
  * }
  */
-#define FOREACH_GPU_FWD_DATA(the_datas, one_data)                             \
-  for (unsigned i = 0;                                                        \
+#define FOREACH_GPU_FWD_DATA(the_datas, one_data)                         \
+  for (unsigned i = 0;                                                    \
        (i < the_datas._num_fwd_data) ? one_data = the_datas._fwd_data[i], \
-                true                 : false;                                 \
+                true                 : false;                             \
        ++i)
 
+constexpr unsigned num_vertex_data = 4;
+constexpr unsigned num_node_data = 4;
 /**
  * @brief The vertex in GPU mapping with StaVertex.
  *
@@ -87,10 +90,10 @@ struct GPU_Vertex_Data {
 struct GPU_Vertex {
   GPU_Vertex_Data _slew_data;          //!< The slew data of the vertex.
   GPU_Vertex_Data _at_data;            //!< The arrive data of the vertex.
-  GPU_Vertex_Data _load_cap_data;      //!< The driver load cap.
+  GPU_Vertex_Data _node_cap_data;      //!< The driver load cap.
   GPU_Vertex_Data _node_delay_data;    //!< The load pin node delay data.
-  GPU_Vertex_Data _node_impulse_data;  //!< The load pin node impulse data for
-                                       //!< calculate impulse data.
+  GPU_Vertex_Data _node_impulse_data;  //!< The load pin node impulse data
+                                       //!< for calculate impulse data.
 };
 
 constexpr unsigned num_arc_delay = 4;
@@ -99,11 +102,11 @@ constexpr unsigned num_arc_delay = 4;
  * @brief The arc in GPU mapping with the StaArc.
  *
  */
-struct GPU_Arc {  
+struct GPU_Arc {
   GPU_Arc_Type _arc_type;   //!< The arc type inst or net arc.
   unsigned _src_vertex_id;  //!< The src vertex id mapping the host StaVertex.
   unsigned _snk_vertex_id;  //!< The snk vertex id mapping the host StaVertex.
-  GPU_Fwd_Data _delay_values[num_arc_delay];
+  GPU_Vertex_Data _delay_values;
 };
 
 /**
@@ -111,7 +114,7 @@ struct GPU_Arc {
  *
  */
 struct GPU_BFS_Propagated_Arc {
-  unsigned* _arc_start_addr;  //!< The arc start address.
+  unsigned* _arc_start_addr;  //!< The arc start address, each one is arc id.
   unsigned _num_arcs;
 };
 
@@ -124,6 +127,13 @@ struct GPU_Graph {
   GPU_Arc* _arcs;          //!< The arc data on GPU.
   unsigned _num_vertices;  //!< The number of vertices.
   unsigned _num_arcs;      //!< The number of arcs.
+
+  // flatten data for copy data from cpu to gpu faster.
+  GPU_Fwd_Data* _flatten_slew_data; //!< The all slew data of the vertex.
+  GPU_Fwd_Data* _flatten_at_data;   //!< The all arrive data of the vertex.
+  GPU_Fwd_Data* _flatten_node_cap_data; //!< The all node cap data of the vertex.
+  GPU_Fwd_Data* _flatten_node_delay_data;  //!< The all node delay data of the vertex.
+  GPU_Fwd_Data* _flatten_node_impulse_data;  //!< The all node impulse data of the vertex.
 };
 
 }  // namespace ista
