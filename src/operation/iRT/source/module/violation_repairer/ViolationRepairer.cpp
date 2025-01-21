@@ -829,8 +829,12 @@ void ViolationRepairer::routeVRTask(VRBox& vr_box, VRTask* vr_task)
 {
   initSingleTask(vr_box, vr_task);
   {
-    // todo
-    // 更新vr_box.get_routing_segment_list()和vr_box.get_routing_patch_list()
+    std::vector<Segment<LayerCoord>>& routing_segment_list = vr_box.get_routing_segment_list();
+    std::vector<EXTLayerRect>& routing_patch_list = vr_box.get_routing_patch_list();
+
+    routing_segment_list = vr_box.get_net_task_final_result_map()[vr_task->get_net_idx()];
+    routing_patch_list = vr_box.get_net_task_final_patch_map()[vr_task->get_net_idx()];
+
     std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
     int32_t manufacture_grid = RTDM.getDatabase().get_manufacture_grid();
     ScaleAxis& gcell_axis = RTDM.getDatabase().get_gcell_axis();
@@ -1014,10 +1018,10 @@ void ViolationRepairer::routeVRTask(VRBox& vr_box, VRTask* vr_task)
           }
           // 打上最优patch
           if (left_south_cadidate_patch_list[best_i].getRealArea() > 0) {
-            vr_box.get_routing_patch_list().push_back(left_south_cadidate_patch_list[best_i]);
+            routing_patch_list.push_back(left_south_cadidate_patch_list[best_i]);
           }
           if (right_north_cadidate_patch_list[best_i].getRealArea() > 0) {
-            vr_box.get_routing_patch_list().push_back(right_north_cadidate_patch_list[best_i]);
+            routing_patch_list.push_back(right_north_cadidate_patch_list[best_i]);
           }
         } else {  // 处理多矩形的情况,先简单的处理为上面这种情况
           std::vector<EXTLayerRect> patch_for_extend_rect_shape;
@@ -1033,7 +1037,7 @@ void ViolationRepairer::routeVRTask(VRBox& vr_box, VRTask* vr_task)
             }
           }
           for (auto& patch : patch_for_extend_rect_shape) {
-            vr_box.get_routing_patch_list().push_back(patch);
+            routing_patch_list.push_back(patch);
           }
           if (gtl::area(extend_rect_shape) < min_area) {
             int32_t need_area = min_area - gtl::area(extend_rect_shape);
@@ -1123,10 +1127,10 @@ void ViolationRepairer::routeVRTask(VRBox& vr_box, VRTask* vr_task)
             }
             // 打上最优patch
             if (left_south_cadidate_patch_list[best_i].getRealArea() > 0) {
-              vr_box.get_routing_patch_list().push_back(left_south_cadidate_patch_list[best_i]);
+              routing_patch_list.push_back(left_south_cadidate_patch_list[best_i]);
             }
             if (right_north_cadidate_patch_list[best_i].getRealArea() > 0) {
-              vr_box.get_routing_patch_list().push_back(right_north_cadidate_patch_list[best_i]);
+              routing_patch_list.push_back(right_north_cadidate_patch_list[best_i]);
             }
           }
         }
