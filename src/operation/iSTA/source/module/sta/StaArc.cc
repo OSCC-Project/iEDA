@@ -155,7 +155,7 @@ void StaInstArc::buildLibArcsGPU() {
   if (isDelayArc()) {
     auto* delay_table_model = dynamic_cast<LibDelayTableModel*>(table_model);
     _lib_gpu_arc->_num_table = delay_table_model->kTableNum;
-    int num_table = delay_table_model->kTableNum;
+    // int num_table = delay_table_model->kTableNum;
     _lib_gpu_arc->_table = new LibTableGPU[_lib_gpu_arc->_num_table];
 
     for (size_t index = 0; index < delay_table_model->kTableNum; index++) {

@@ -12,8 +12,8 @@
 #include <iomanip>
 #include <iostream>
 
-#include "LibArc.cuh"
 #include "gpu/cuda_common.cuh"
+#include "lib_arc.cuh"
 
 namespace ista {
 
@@ -179,9 +179,9 @@ __device__ unsigned check_val(LibTableGPU& lib_table_gpu, int axis_index,
  * @param num_val
  * @param val
  */
-__device__ AxisRegion get_axis_region(LibTableGPU& lib_table_gpu,
-                                      int axis_index, unsigned int num_val,
-                                      double val) {
+__device__ Axis_Region get_axis_region(LibTableGPU& lib_table_gpu,
+                                       int axis_index, unsigned int num_val,
+                                       double val) {
   double x2 = 0.0;
   unsigned int val_index = 0;
   double x1;
@@ -219,7 +219,7 @@ __device__ AxisRegion get_axis_region(LibTableGPU& lib_table_gpu,
     x1 = get_y_axis_val(lib_table_gpu, val_index);
   }
 
-  return AxisRegion{x1, x2, val_index};
+  return Axis_Region{x1, x2, val_index};
 }
 
 /**
