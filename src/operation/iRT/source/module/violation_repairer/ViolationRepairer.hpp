@@ -73,6 +73,16 @@ class ViolationRepairer
   void buildObsTypeNetMap(VRBox& vr_box);
   void exemptPinShape(VRBox& vr_box);
   void routeVRBox(VRBox& vr_box);
+  std::vector<VRTask*> initTaskSchedule(VRBox& vr_box);
+  void routeVRTask(VRBox& vr_box, VRTask* vr_task);
+  void initSingleTask(VRBox& vr_box, VRTask* vr_task);
+  void updateTaskResult(VRBox& vr_box);
+  void updateTaskPatch(VRBox& vr_box);
+  void resetSingleTask(VRBox& vr_box);
+  void updateViolationList(VRBox& vr_box);
+  std::vector<Violation> getMultiNetViolationList(VRBox& vr_box);
+  std::vector<Violation> getSingleNetViolationList(VRBox& vr_box);
+  void updateTaskSchedule(VRBox& vr_box, std::vector<VRTask*>& routing_task_list);
   void uploadNetResult(VRBox& vr_box);
   void uploadNetPatch(VRBox& vr_box);
   void uploadViolation(VRBox& vr_box);
