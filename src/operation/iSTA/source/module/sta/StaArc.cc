@@ -106,6 +106,47 @@ StaInstArc::StaInstArc(StaVertex* src, StaVertex* snk, LibArc* lib_arc,
       _inst(inst),
       _lib_gpu_arc(new LibArcGPU()) {}
 
+// for debug by printLIBTableGPU.
+void printLibTableGPU(const LibTableGPU& gpu_table) {
+  // 打印 x 轴
+  std::cout << "index_1(";
+  for (unsigned i = 0; i < gpu_table._num_x; ++i) {
+    std::cout << std::fixed << std::setprecision(8) << gpu_table._x[i];
+    if (i < gpu_table._num_x - 1) {
+      std::cout << ",";
+    }
+  }
+  std::cout << ");" << std::endl;
+
+  // 打印 y 轴
+  std::cout << "index_2(";
+  for (unsigned i = 0; i < gpu_table._num_y; ++i) {
+    std::cout << std::fixed << std::setprecision(8) << gpu_table._y[i];
+    if (i < gpu_table._num_y - 1) {
+      std::cout << ",";
+    }
+  }
+  std::cout << ");" << std::endl;
+
+  // 打印 values
+  std::cout << "values (";
+  for (unsigned i = 0; i < gpu_table._num_values / gpu_table._num_y; ++i) {
+    std::cout << "\"";
+    for (unsigned j = 0; j < gpu_table._num_y; ++j) {
+      std::cout << std::fixed << std::setprecision(8)
+                << gpu_table._values[i * gpu_table._num_y + j];
+      if (j < gpu_table._num_y - 1) {
+        std::cout << ",";
+      }
+    }
+    std::cout << "\"";
+    if (i < gpu_table._num_values - 1) {
+      std::cout << ",";
+    }
+  }
+  std::cout << ");" << std::endl;
+}
+
 /**
  * @brief build gpu lib arc(axes and values) according to the lib arc.
  */
@@ -116,13 +157,13 @@ void StaInstArc::buildLibArcsGPU() {
     _lib_gpu_arc->_num_table = delay_table_model->kTableNum;
     int num_table = delay_table_model->kTableNum;
     _lib_gpu_arc->_table = new LibTableGPU[_lib_gpu_arc->_num_table];
+
     for (size_t index = 0; index < delay_table_model->kTableNum; index++) {
       auto* table = delay_table_model->getTable(index);
 
       LibTableGPU gpu_table;
       // set the x axis.
       auto& x_axis = table->getAxis(0);
-      std::string x_axis_name = x_axis.get_axis_name();
       auto& x_axis_values = x_axis.get_axis_values();
       gpu_table._num_x = static_cast<unsigned>(x_axis_values.size());
       gpu_table._x = new double[gpu_table._num_x];
@@ -134,10 +175,8 @@ void StaInstArc::buildLibArcsGPU() {
       LOG_FATAL_IF(axes_size > 2);
 
       // set the y axis.
-      std::string y_axis_name;
       if (axes_size > 1) {
         auto& y_axis = table->getAxis(1);
-        y_axis_name = y_axis.get_axis_name();
         auto& y_axis_values = y_axis.get_axis_values();
         gpu_table._num_y = static_cast<unsigned>(y_axis_values.size());
         gpu_table._y = new double[gpu_table._num_y];
@@ -146,18 +185,25 @@ void StaInstArc::buildLibArcsGPU() {
         }
       }
 
+      auto* table_template = table->get_table_template();
       if (axes_size == 1) {
-        if (x_axis_name == "input_net_transition" ||
-            x_axis_name == "related_pin_transition" ||
-            x_axis_name == "input_transition_time") {
+        if (*(table_template->get_template_variable1()) ==
+                LibLutTableTemplate::Variable::INPUT_NET_TRANSITION ||
+            *(table_template->get_template_variable1()) ==
+                LibLutTableTemplate::Variable::RELATED_PIN_TRANSITION ||
+            *(table_template->get_template_variable1()) ==
+                LibLutTableTemplate::Variable::INPUT_TRANSITION_TIME) {
           gpu_table._type = 0;  //(x axis denotes slew.)
         } else {
           gpu_table._type = 1;  //(x axis denotes constrain_slew_or_load.)
         }
       } else {
-        if (x_axis_name == "input_net_transition" ||
-            x_axis_name == "related_pin_transition" ||
-            x_axis_name == "input_transition_time") {
+        if (*(table_template->get_template_variable1()) ==
+                LibLutTableTemplate::Variable::INPUT_NET_TRANSITION ||
+            *(table_template->get_template_variable1()) ==
+                LibLutTableTemplate::Variable::RELATED_PIN_TRANSITION ||
+            *(table_template->get_template_variable1()) ==
+                LibLutTableTemplate::Variable::INPUT_TRANSITION_TIME) {
           gpu_table._type = 2;  // (x axis denotes slew, y axis denotes
                                 // constrain_slew_or_load.)
         } else {
@@ -174,6 +220,7 @@ void StaInstArc::buildLibArcsGPU() {
         gpu_table._values[i] = table_values[i]->getFloatValue();
       }
 
+      // printLibTableGPU(gpu_table);
       // set the gpu table to the arc.(cpu index is the same as gpu index)
       _lib_gpu_arc->_table[index] = gpu_table;
     }

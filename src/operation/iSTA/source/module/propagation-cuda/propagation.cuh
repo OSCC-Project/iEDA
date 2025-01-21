@@ -1,12 +1,12 @@
 /**
  * @file Propagation.cuh
  * @author simin tao (taosm@pcl.ac.cn)
- * @brief 
+ * @brief
  * @version 0.1
  * @date 2025-01-14
- * 
+ *
  * @copyright Copyright (c) 2025
- * 
+ *
  */
 #pragma once
 
@@ -49,5 +49,4 @@ struct LibDataGPU {
   std::vector<LibArcGPU> _arcs;  //!< CPU arc datas.
 };
 
-}
-
+}  // namespace ista
