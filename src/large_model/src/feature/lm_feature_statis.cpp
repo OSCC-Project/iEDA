@@ -196,6 +196,9 @@ void LmFeatureStatis::feature_patch()
 
               /// set feature
               wire_feature->wire_width = layout_layer->get_wire_width();
+
+              /// set width only once
+              break;
             }
           }
         }
