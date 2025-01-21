@@ -32,6 +32,7 @@
 #include "StaDelayPropagation.hh"
 #include "StaSlewPropagation.hh"
 #include "ThreadPool/ThreadPool.h"
+#include "propagation-cuda/fwd_propagation.cuh"
 
 namespace ista {
 
@@ -221,6 +222,71 @@ unsigned StaFwdPropagationBFS::operator()(StaGraph* the_graph) {
 }
 
 /**
+ * @brief build gpu vertex slew data.
+ * 
+ * @param the_vertex 
+ * @param gpu_vertex 
+ * @param flatten_slew_data 
+ */
+void build_gpu_vertex_slew_data(StaVertex* the_vertex, GPU_Vertex& gpu_vertex,
+                                std::vector<GPU_Fwd_Data>& flatten_slew_data) {
+  // build slew data.
+  the_vertex->initSlewData();
+  gpu_vertex._slew_data._start_pos = flatten_slew_data.size();
+  StaData* slew_data;
+  FOREACH_SLEW_DATA(the_vertex, slew_data) {
+    GPU_Fwd_Data gpu_slew_data;
+    auto* the_slew_data = dynamic_cast<StaSlewData*>(slew_data);
+    double slew_value = FS_TO_NS(the_slew_data->get_slew());
+
+    gpu_slew_data._data_value = slew_value;
+    gpu_slew_data._trans_type =
+        the_slew_data->get_trans_type() == TransType::kRise
+            ? GPU_Trans_Type::kRise
+            : GPU_Trans_Type::kFall;
+    gpu_slew_data._analysis_mode =
+        the_slew_data->get_delay_type() == AnalysisMode::kMax
+            ? GPU_Analysis_Mode::kMax
+            : GPU_Analysis_Mode::kMin;
+    flatten_slew_data.emplace_back(gpu_slew_data);
+  }
+  gpu_vertex._slew_data._num_fwd_data =
+      flatten_slew_data.size() - gpu_vertex._slew_data._start_pos;
+}
+
+/**
+ * @brief build gpu graph for gpu speed computation.
+ *
+ * @param the_sta_graph
+ * @return GPU_Graph
+ */
+GPU_Graph build_gpu_graph(StaGraph* the_sta_graph) {
+  GPU_Graph gpu_graph;
+  unsigned num_vertex = the_sta_graph->numVertex();
+  unsigned num_arc = the_sta_graph->numArc();
+
+  std::vector<GPU_Vertex> gpu_vertices;
+  gpu_vertices.reserve(num_vertex);
+  std::vector<GPU_Arc> gpu_arcs;
+  gpu_arcs.reserve(num_arc);
+
+  std::vector<GPU_Fwd_Data> flatten_slew_data;
+  flatten_slew_data.reserve(c_gpu_num_vertex_data * num_vertex);
+  std::vector<GPU_Fwd_Data> flatten_at_data;
+  flatten_at_data.reserve(c_gpu_num_vertex_data * num_vertex);
+
+  // build gpu vertex
+  StaVertex* the_vertex;
+  FOREACH_VERTEX(the_sta_graph, the_vertex) { 
+    GPU_Vertex gpu_vertex;
+    build_gpu_vertex_slew_data(the_vertex, gpu_vertex, flatten_slew_data);
+    gpu_vertices.emplace_back(std::move(gpu_vertex));
+  }
+
+  return gpu_graph;
+}
+
+/**
  * @brief dispatch arc propagation task on CPU or GPU.
  *
  */
@@ -228,7 +294,7 @@ void StaFwdPropagationBFS::dispatchArcTask() {
   if (_level_to_arcs.empty()) {
     return;
   }
-  
+
   ieda::Stats stats;
   LOG_INFO << "dispatch arc task start";
   for (auto& [level, the_arcs] : _level_to_arcs) {

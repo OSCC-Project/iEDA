@@ -23,6 +23,7 @@
  *
  */
 #include <cuda_runtime.h>
+
 #include <map>
 
 #include "fwd_propagation.cuh"
@@ -55,13 +56,15 @@ __device__ void lut_inst_slew_delay(GPU_Vertex_Data* in_slew,
  * @param arc_delay
  * @return __device__
  */
-__device__ void lut_constraint_delay(GPU_Vertex_Data* in_slew,
+__device__ void lut_constraint_delay(GPU_Graph* the_graph,
+                                     GPU_Vertex_Data* in_slew,
                                      GPU_Vertex_Data* snk_slew,
                                      GPU_Vertex_Data* arc_delay) {
   // TODO(to taosimin), call gpu lut table.
   // store the lut value
   GPU_Fwd_Data one_src_slew_data;
-  FOREACH_GPU_FWD_DATA((*in_slew), one_src_slew_data) {}
+  FOREACH_GPU_FWD_DATA(the_graph->_flatten_slew_data, (*in_slew),
+                       one_src_slew_data) {}
 }
 
 /**
@@ -104,8 +107,8 @@ __global__ void propagate_fwd(GPU_Graph the_graph,
                           &snk_vertex._slew_data, &current_arc._delay_values);
     } else if (current_arc_type == kInstCheckArc) {
       // lut table for get constrain value for check arc.
-      lut_constraint_delay(&src_vertex._slew_data, &snk_vertex._slew_data,
-                           &current_arc._delay_values);
+      lut_constraint_delay(&the_graph, &src_vertex._slew_data,
+                           &snk_vertex._slew_data, &current_arc._delay_values);
     } else {
       // for net arc
       // lut net output slew and delay.
@@ -120,7 +123,7 @@ __global__ void propagate_fwd(GPU_Graph the_graph,
  * @brief copy sta graph to gpu sta graph.
  *
  */
-GPU_Graph build_gpu_sta_graph(GPU_Graph* the_cpu_graph) {
+GPU_Graph copy_from_sta_graph(GPU_Graph* the_cpu_graph) {
   GPU_Graph the_gpu_graph;
   return the_gpu_graph;
 }
@@ -131,7 +134,7 @@ GPU_Graph build_gpu_sta_graph(GPU_Graph* the_cpu_graph) {
  * @param the_cpu_graph
  * @param the_gpu_graph
  */
-void update_sta_graph(GPU_Graph* the_cpu_graph, GPU_Graph the_gpu_graph) {}
+void copy_to_sta_graph(GPU_Graph* the_cpu_graph, GPU_Graph the_gpu_graph) {}
 
 /**
  * @brief The interface function for the fwd function.
@@ -143,13 +146,13 @@ void update_sta_graph(GPU_Graph* the_cpu_graph, GPU_Graph the_gpu_graph) {}
 void gpu_propagate_fwd(
     GPU_Graph* the_cpu_graph,
     std::map<unsigned, GPU_BFS_Propagated_Arc>& level_to_arcs) {
-  auto the_gpu_graph = build_gpu_sta_graph(the_cpu_graph);
-  //TODO(to taosimin), copy arc id to gpu bfs propagated arc.
+  auto the_gpu_graph = copy_from_sta_graph(the_cpu_graph);
+  // TODO(to taosimin), copy arc id to gpu bfs propagated arc.
   for (auto& [level, the_arcs] : level_to_arcs) {
     propagate_fwd<<<1, 1000>>>(the_gpu_graph, the_arcs);
   }
 
-  update_sta_graph(the_cpu_graph, the_gpu_graph);
+  copy_to_sta_graph(the_cpu_graph, the_gpu_graph);
 }
 
 }  // namespace ista
