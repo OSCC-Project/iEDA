@@ -318,55 +318,58 @@ void build_lib_data_gpu(LibDataGPU& lib_data_gpu,
     LibArcGPU* cpu_arc = lib_arcs_cpu_ptr[i];
 
     LibTableGPU* d_tables;
-    cudaMalloc(&(d_tables), cpu_arc->_num_table * sizeof(LibTableGPU));
-    cudaMemcpy(d_tables, cpu_arc->_table,
-               cpu_arc->_num_table * sizeof(LibTableGPU),
-               cudaMemcpyHostToDevice);
+    CUDA_CHECK(
+        cudaMalloc(&(d_tables), cpu_arc->_num_table * sizeof(LibTableGPU)));
+    CUDA_CHECK(cudaMemcpy(d_tables, cpu_arc->_table,
+                          cpu_arc->_num_table * sizeof(LibTableGPU),
+                          cudaMemcpyHostToDevice));
 
     for (unsigned j = 0; j < cpu_arc->_num_table; ++j) {
       LibTableGPU& cpu_table = cpu_arc->_table[j];
 
       double *d_x, *d_y, *d_values;
-      cudaMalloc(&d_x, cpu_table._num_x * sizeof(double));
-      cudaMalloc(&d_y, cpu_table._num_y * sizeof(double));
-      cudaMalloc(&d_values, cpu_table._num_values * sizeof(double));
+      CUDA_CHECK(cudaMalloc(&d_x, cpu_table._num_x * sizeof(double)));
+      CUDA_CHECK(cudaMalloc(&d_y, cpu_table._num_y * sizeof(double)));
+      CUDA_CHECK(cudaMalloc(&d_values, cpu_table._num_values * sizeof(double)));
 
-      cudaMemcpy(d_x, cpu_table._x, cpu_table._num_x * sizeof(double),
-                 cudaMemcpyHostToDevice);
-      cudaMemcpy(d_y, cpu_table._y, cpu_table._num_y * sizeof(double),
-                 cudaMemcpyHostToDevice);
-      cudaMemcpy(d_values, cpu_table._values,
-                 cpu_table._num_values * sizeof(double),
-                 cudaMemcpyHostToDevice);
+      CUDA_CHECK(cudaMemcpy(d_x, cpu_table._x,
+                            cpu_table._num_x * sizeof(double),
+                            cudaMemcpyHostToDevice));
+      CUDA_CHECK(cudaMemcpy(d_y, cpu_table._y,
+                            cpu_table._num_y * sizeof(double),
+                            cudaMemcpyHostToDevice));
+      CUDA_CHECK(cudaMemcpy(d_values, cpu_table._values,
+                            cpu_table._num_values * sizeof(double),
+                            cudaMemcpyHostToDevice));
 
       LibTableGPU* gpu_table = &d_tables[j];
 
-      cudaMemcpy(&(gpu_table->_x), &d_x, sizeof(double*),
-                 cudaMemcpyHostToDevice);
-      cudaMemcpy(&(gpu_table->_y), &d_y, sizeof(double*),
-                 cudaMemcpyHostToDevice);
-      cudaMemcpy(&(gpu_table->_values), &d_values, sizeof(double*),
-                 cudaMemcpyHostToDevice);
+      CUDA_CHECK(cudaMemcpy(&(gpu_table->_x), &d_x, sizeof(double*),
+                            cudaMemcpyHostToDevice));
+      CUDA_CHECK(cudaMemcpy(&(gpu_table->_y), &d_y, sizeof(double*),
+                            cudaMemcpyHostToDevice));
+      CUDA_CHECK(cudaMemcpy(&(gpu_table->_values), &d_values, sizeof(double*),
+                            cudaMemcpyHostToDevice));
 
       unsigned num_x = cpu_table._num_x;
       unsigned num_y = cpu_table._num_y;
       unsigned num_values = cpu_table._num_values;
 
-      cudaMemcpy(&(gpu_table->_num_x), &num_x, sizeof(unsigned),
-                 cudaMemcpyHostToDevice);
-      cudaMemcpy(&(gpu_table->_num_y), &num_y, sizeof(unsigned),
-                 cudaMemcpyHostToDevice);
-      cudaMemcpy(&(gpu_table->_num_values), &num_values, sizeof(unsigned),
-                 cudaMemcpyHostToDevice);
+      CUDA_CHECK(cudaMemcpy(&(gpu_table->_num_x), &num_x, sizeof(unsigned),
+                            cudaMemcpyHostToDevice));
+      CUDA_CHECK(cudaMemcpy(&(gpu_table->_num_y), &num_y, sizeof(unsigned),
+                            cudaMemcpyHostToDevice));
+      CUDA_CHECK(cudaMemcpy(&(gpu_table->_num_values), &num_values,
+                            sizeof(unsigned), cudaMemcpyHostToDevice));
     }
 
     LibArcGPU* gpu_arc = &lib_data_gpu._arcs_gpu[i];
 
     unsigned num_table = cpu_arc->_num_table;
-    cudaMemcpy(&(gpu_arc->_table), &d_tables, sizeof(LibTableGPU*),
-               cudaMemcpyHostToDevice);
-    cudaMemcpy(&(gpu_arc->_num_table), &num_table, sizeof(unsigned),
-               cudaMemcpyHostToDevice);
+    CUDA_CHECK(cudaMemcpy(&(gpu_arc->_table), &d_tables, sizeof(LibTableGPU*),
+                          cudaMemcpyHostToDevice));
+    CUDA_CHECK(cudaMemcpy(&(gpu_arc->_num_table), &num_table, sizeof(unsigned),
+                          cudaMemcpyHostToDevice));
   }
 }
 
@@ -515,11 +518,10 @@ double find_value(LibDataGPU& lib_data_gpu, double slew,
   cudaMalloc((void**)&d_value, sizeof(double));
   kernel_find_value<<<1, 1>>>(&lib_data_gpu, slew, constrain_slew_or_load,
                               d_value);
-  cudaError_t err = cudaGetLastError();
-  if (err != cudaSuccess) {
-    printf("Kernel launch failed: %s\n", cudaGetErrorString(err));
-  }
+
+  CUDA_CHECK_ERROR();
   cudaDeviceSynchronize();
+
   cudaMemcpy(&value, d_value, sizeof(double), cudaMemcpyDeviceToHost);
 
   cudaFree(d_value);
