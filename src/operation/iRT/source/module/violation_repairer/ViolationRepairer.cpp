@@ -263,6 +263,7 @@ std::vector<Violation> ViolationRepairer::getMultiNetViolationList(VRModel& vr_m
     de_task.set_net_patch_map(net_patch_map);
     de_task.set_need_checked_net_set(need_checked_net_set);
   }
+  // return RTDE.getViolationListByTemp(de_task);
   return RTDE.getViolationList(de_task);
 }
 
@@ -316,6 +317,7 @@ std::vector<Violation> ViolationRepairer::getSingleNetViolationList(VRModel& vr_
     de_task.set_net_patch_map(net_patch_map);
     de_task.set_need_checked_net_set(need_checked_net_set);
   }
+  // RTDE.getViolationListByTemp(de_task);
   return RTDE.getViolationList(de_task);
 }
 
@@ -341,17 +343,17 @@ void ViolationRepairer::iterativeVRModel(VRModel& vr_model)
     Monitor iter_monitor;
     RTLOG.info(Loc::current(), "***** Begin iteration ", iter, "/", vr_iter_param_list.size(), "(",
                RTUTIL.getPercentage(iter, vr_iter_param_list.size()), ") *****");
-    // debugPlotVRModel(vr_model, "before");
+    debugPlotVRModel(vr_model, "before");
     setVRIterParam(vr_model, iter, vr_iter_param_list[i]);
     initVRBoxMap(vr_model);
     buildBoxSchedule(vr_model);
     splitNetResult(vr_model);
-    // debugPlotVRModel(vr_model, "middle");
+    debugPlotVRModel(vr_model, "middle");
     routeVRBoxMap(vr_model);
     uploadNetResult(vr_model);
     uploadNetPatch(vr_model);
     uploadViolation(vr_model);
-    // debugPlotVRModel(vr_model, "after");
+    debugPlotVRModel(vr_model, "after");
     updateSummary(vr_model);
     printSummary(vr_model);
     outputNetCSV(vr_model);
@@ -805,6 +807,346 @@ void ViolationRepairer::exemptPinShape(VRBox& vr_box)
 
 void ViolationRepairer::routeVRBox(VRBox& vr_box)
 {
+  std::vector<VRTask*> routing_task_list;
+  // update task,暂时还没用到
+  int32_t max_routed_times = vr_box.get_vr_iter_param()->get_max_routed_times();
+
+  std::set<VRTask*> visited_routing_task_set;
+  std::vector<VRTask*> new_routing_task_list;
+  for (Violation& violation : vr_box.get_violation_list()) {
+    for (VRTask* vr_task : vr_box.get_vr_task_list()) {
+      if (!RTUTIL.exist(violation.get_violation_net_set(), vr_task->get_net_idx())) {
+        continue;
+      }
+      if (vr_task->get_routed_times() < max_routed_times && !RTUTIL.exist(visited_routing_task_set, vr_task)) {
+        visited_routing_task_set.insert(vr_task);
+        new_routing_task_list.push_back(vr_task);
+      }
+      break;
+    }
+  }
+  routing_task_list = new_routing_task_list;
+
+  std::vector<VRTask*> new_vr_task_list;
+  for (VRTask* vr_task : vr_box.get_vr_task_list()) {
+    if (!RTUTIL.exist(visited_routing_task_set, vr_task)) {
+      new_vr_task_list.push_back(vr_task);
+    }
+  }
+  for (VRTask* routing_task : routing_task_list) {
+    new_vr_task_list.push_back(routing_task);
+  }
+  vr_box.set_vr_task_list(new_vr_task_list);
+
+  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
+  int32_t manufacture_grid = RTDM.getDatabase().get_manufacture_grid();
+  ScaleAxis& gcell_axis = RTDM.getDatabase().get_gcell_axis();
+  // 得到所有矩形，检查最小面积违例
+  std::map<int32_t, std::map<int32_t, std::vector<PlanarRect>>> net_layer_rect_map;  // 所有形状
+  for (auto& [is_routing, layer_net_fixed_rect_map] : vr_box.get_type_layer_net_fixed_rect_map()) {
+    for (auto& [layer_idx, net_fixed_rect_map] : layer_net_fixed_rect_map) {
+      for (auto& [net_idx, fixed_rect_set] : net_fixed_rect_map) {
+        for (auto& fixed_rect : fixed_rect_set) {
+          net_layer_rect_map[net_idx][layer_idx].push_back(fixed_rect->get_real_rect());
+        }
+      }
+    }
+  }
+
+  for (auto& [net_idx, segment_set] : vr_box.get_net_final_result_map()) {
+    for (Segment<LayerCoord>* segment : segment_set) {
+      for (NetShape& net_shape : RTDM.getNetShapeList(net_idx, *segment)) {
+        if (!net_shape.get_is_routing()) {
+          continue;
+        }
+        net_layer_rect_map[net_idx][net_shape.get_layer_idx()].push_back(net_shape.get_rect());
+      }
+    }
+  }
+  for (auto& [net_idx, segment_list] : vr_box.get_net_task_final_result_map()) {
+    for (Segment<LayerCoord>& segment : segment_list) {
+      for (NetShape& net_shape : RTDM.getNetShapeList(net_idx, segment)) {
+        if (!net_shape.get_is_routing()) {
+          continue;
+        }
+        net_layer_rect_map[net_idx][net_shape.get_layer_idx()].push_back(net_shape.get_rect());
+      }
+    }
+  }
+
+  for (auto& [net_idx, patch_set] : vr_box.get_net_final_patch_map()) {
+    for (EXTLayerRect* patch : patch_set) {
+      net_layer_rect_map[net_idx][patch->get_layer_idx()].push_back(patch->get_real_rect());
+    }
+  }
+  for (auto& [net_idx, patch_list] : vr_box.get_net_task_final_patch_map()) {
+    for (EXTLayerRect& patch : patch_list) {
+      net_layer_rect_map[net_idx][patch.get_layer_idx()].push_back(patch.get_real_rect());
+    }
+  }
+
+  std::map<int32_t, std::map<int32_t, std::vector<GTLPolyInt>>> net_layer_bshape_map;    // 所有形状的boost shape
+  std::map<int32_t, std::map<int32_t, std::vector<GTLPolyInt>>> net_layer_min_poly_map;  // 所有的poly minarea shape
+  int32_t min_area_num = 0;
+  int32_t ref_min_area_num = 0;
+  for (auto [net_idx, layer_rect_map] : net_layer_rect_map) {
+    for (auto [layer_idx, rect_map] : layer_rect_map) {
+      GTLPolySetInt poly_set;
+      for (PlanarRect rect : rect_map) {
+        poly_set += (RTUTIL.convertToGTLRectInt(rect));
+      }
+      poly_set.get(net_layer_bshape_map[net_idx][layer_idx]);
+      for (auto& poly : net_layer_bshape_map[net_idx][layer_idx]) {
+        if (gtl::area(poly) < routing_layer_list[layer_idx].get_min_area()) {
+          // 得到在box内部的poly
+          std::vector<GTLRectInt> poly_rectangle;
+          gtl::get_rectangles(poly_rectangle, poly, gtl::orientation_2d_enum::VERTICAL);  // 竖直切割
+          bool inside_box = true;
+          for (auto rect : poly_rectangle) {
+            if (!(RTUTIL.isInside(vr_box.get_box_rect().get_real_rect(), RTUTIL.convertToPlanarRect(rect)))) {
+              inside_box = false;
+              break;
+            }
+          }
+          if (inside_box) {
+            net_layer_min_poly_map[net_idx][layer_idx].push_back(poly);
+            min_area_num++;
+          }
+        }
+      }
+    }
+  }
+  for (auto violation : vr_box.get_violation_list()) {
+    if (violation.get_violation_type() == ViolationType::kMinimumArea) {
+      ref_min_area_num++;
+    }
+  }
+  if (min_area_num != ref_min_area_num) {
+    RTLOG.info(Loc::current(), "min_area num in self:", min_area_num, " ref:", ref_min_area_num);
+  }
+  // 开始修复，现在有所有rect的map的话会比较好修复
+  // 线宽为: routing_layer_list[first_layer_idx].get_min_width()
+  for (auto [net_idx, layer_min_poly_map] : net_layer_min_poly_map) {
+    for (auto [layer_idx, min_poly_map] : layer_min_poly_map) {
+      
+      int32_t min_width = routing_layer_list[layer_idx].get_min_width();
+      int32_t min_area = routing_layer_list[layer_idx].get_min_area();
+      GridMap<VRNode>& vr_node_map = vr_box.get_layer_node_map()[layer_idx];
+
+      for (auto min_poly : min_poly_map) {
+        GTLRectInt extend_rect_shape;  // 得到外接矩形
+        gtl::extents(extend_rect_shape, min_poly);
+
+        GTLPolySetInt diff_poly_set;
+        diff_poly_set = extend_rect_shape - min_poly;
+        std::vector<GTLPolyInt> diff_poly_list;
+        diff_poly_set.get(diff_poly_list);  // 得到min area 与 外接矩形相差的部分
+
+        // 看下最小面积与外接矩形是否有差距
+        if (diff_poly_list.empty()) {  // 单个矩形的违例，往prefer方向patch
+          int32_t need_area = min_area - gtl::area(min_poly);
+          int32_t patch_length = (need_area + min_width - 1) / min_width;
+          int32_t patch_grid_length = (patch_length + manufacture_grid - 1) / manufacture_grid;  // 根据这个长度生成候选patch
+          std::vector<EXTLayerRect> left_south_cadidate_patch_list;
+          std::vector<EXTLayerRect> right_north_cadidate_patch_list;
+          // 总共生成11个，每一边的占比从0%到100%递增，然后选择cost最小的
+          for (size_t i = 0; i < 11; i++) {
+            int32_t llx, lly, urx, ury;
+            llx = gtl::xl(extend_rect_shape);
+            lly = gtl::yl(extend_rect_shape);
+            urx = gtl::xh(extend_rect_shape);
+            ury = gtl::yh(extend_rect_shape);
+            // 生成左边patach length,右边的用总的减去左边的
+            int32_t left_length = static_cast<int>(static_cast<double>(patch_grid_length) * i / 10);
+            int32_t right_length = patch_grid_length - left_length;
+            EXTLayerRect left_patch, right_patch;
+
+            if (routing_layer_list[layer_idx].isPreferH()) {
+              PlanarRect left_planar(llx - left_length * manufacture_grid, lly, llx, lly + min_width);
+              PlanarRect right_planar(urx, lly, urx + right_length * manufacture_grid, lly + min_width);
+              if (!RTUTIL.isInside(vr_box.get_box_rect().get_real_rect(), left_planar)
+                  || !RTUTIL.isInside(vr_box.get_box_rect().get_real_rect(), right_planar)) {
+                continue;  // patch不要超出box
+              }
+
+              left_patch.set_layer_idx(layer_idx);
+              left_patch.set_real_rect(PlanarRect(left_planar));
+              left_patch.set_grid_rect(RTUTIL.getOpenGCellGridRect(left_patch.get_real_rect(), gcell_axis));
+              left_south_cadidate_patch_list.push_back(left_patch);
+
+              right_patch.set_layer_idx(layer_idx);
+              right_patch.set_real_rect(PlanarRect(right_planar));
+              right_patch.set_grid_rect(RTUTIL.getOpenGCellGridRect(right_patch.get_real_rect(), gcell_axis));
+              right_north_cadidate_patch_list.push_back(right_patch);
+            } else {  // 竖直方向
+              PlanarRect south_planar(llx, lly - left_length * manufacture_grid, llx+min_width, lly);
+              PlanarRect north_planar(llx, ury, llx+min_width, ury + right_length * manufacture_grid);
+              if (!RTUTIL.isInside(vr_box.get_box_rect().get_real_rect(), south_planar)
+                  || !RTUTIL.isInside(vr_box.get_box_rect().get_real_rect(), north_planar)) {
+                continue;  // patch不要超出box
+              }
+
+              left_patch.set_layer_idx(layer_idx);
+              left_patch.set_real_rect(PlanarRect(south_planar));
+              left_patch.set_grid_rect(RTUTIL.getOpenGCellGridRect(left_patch.get_real_rect(), gcell_axis));
+              left_south_cadidate_patch_list.push_back(left_patch);
+
+              right_patch.set_layer_idx(layer_idx);
+              right_patch.set_real_rect(PlanarRect(north_planar));
+              right_patch.set_grid_rect(RTUTIL.getOpenGCellGridRect(right_patch.get_real_rect(), gcell_axis));
+              right_north_cadidate_patch_list.push_back(right_patch);
+            }
+          }
+          // 选取代价最小的patch
+          double min_cost = INT32_MAX;
+          int32_t best_i = 0;
+          for (size_t i = 0; i < left_south_cadidate_patch_list.size(); i++) {
+            double now_cost = 0;
+            auto left_patch = left_south_cadidate_patch_list[i];
+            auto right_patch = right_north_cadidate_patch_list[i];
+            if (left_patch.get_real_rect().getArea() > 0) {
+              NetShape net_shape(net_idx, left_patch.getRealLayerRect(), true);
+              for (auto& [vr_node, obs_type_set] : getNodeObsTypeMap(vr_box, net_shape, true)) {
+                for (VRObsType obs_type : obs_type_set) {
+                  now_cost += vr_node->getFixedRectCost(net_idx, obs_type, vr_box.get_vr_iter_param()->get_fixed_rect_unit());
+                  now_cost += vr_node->getRoutedRectCost(net_idx, obs_type, vr_box.get_vr_iter_param()->get_routed_rect_unit());
+                  now_cost += vr_node->getViolationCost(obs_type, vr_box.get_vr_iter_param()->get_violation_unit());
+                }
+              }
+            }
+            if (right_patch.get_real_rect().getArea() > 0) {
+              NetShape net_shape(net_idx, right_patch.getRealLayerRect(), true);
+              for (auto& [vr_node, obs_type_set] : getNodeObsTypeMap(vr_box, net_shape, true)) {
+                for (VRObsType obs_type : obs_type_set) {
+                  now_cost += vr_node->getFixedRectCost(net_idx, obs_type, vr_box.get_vr_iter_param()->get_fixed_rect_unit());
+                  now_cost += vr_node->getRoutedRectCost(net_idx, obs_type, vr_box.get_vr_iter_param()->get_routed_rect_unit());
+                  now_cost += vr_node->getViolationCost(obs_type, vr_box.get_vr_iter_param()->get_violation_unit());
+                }
+              }
+            }
+            if (now_cost < min_cost) {
+              min_cost = now_cost;
+              best_i = i;
+            }
+          }
+          // 打上最优patch
+          vr_box.get_net_task_final_patch_map()[net_idx].push_back(left_south_cadidate_patch_list[best_i]);
+          vr_box.get_net_task_final_patch_map()[net_idx].push_back(right_north_cadidate_patch_list[best_i]);
+          updateRoutedRectToGraph(vr_box, ChangeType::kAdd, net_idx, left_south_cadidate_patch_list[best_i]);
+          updateRoutedRectToGraph(vr_box, ChangeType::kAdd, net_idx, right_north_cadidate_patch_list[best_i]);
+        } else {  // 处理多矩形的情况,先简单的处理为上面这种情况
+          std::vector<EXTLayerRect> patch_for_extend_rect_shape;
+          for (auto poly : diff_poly_list) {
+            std::vector<GTLRectInt> poly_rectangle;
+            gtl::get_rectangles(poly_rectangle, poly, gtl::orientation_2d_enum::VERTICAL);
+            for (auto rect : poly_rectangle) {
+              EXTLayerRect temp_patch;
+              temp_patch.set_layer_idx(layer_idx);
+              temp_patch.set_real_rect(RTUTIL.convertToPlanarRect(rect));
+              temp_patch.set_grid_rect(RTUTIL.getOpenGCellGridRect(temp_patch.get_real_rect(), gcell_axis));
+              patch_for_extend_rect_shape.push_back(temp_patch);
+            }
+          }
+          for (auto& patch : patch_for_extend_rect_shape) {
+            vr_box.get_net_task_final_patch_map()[net_idx].push_back(patch);
+            updateRoutedRectToGraph(vr_box, ChangeType::kAdd, net_idx, patch);
+          }
+          if (gtl::area(extend_rect_shape) < min_area) {
+            int32_t need_area = min_area - gtl::area(extend_rect_shape);
+            int32_t patch_length = (need_area + min_width - 1) / min_width;
+            int32_t patch_grid_length = (patch_length + manufacture_grid - 1) / manufacture_grid;  // 根据这个长度生成候选patch
+            std::vector<EXTLayerRect> left_south_cadidate_patch_list;
+            std::vector<EXTLayerRect> right_north_cadidate_patch_list;
+            // 总共生成11个，每一边的占比从0%到100%递增，然后选择cost最小的
+            for (size_t i = 0; i < 11; i++) {
+              int32_t llx, lly, urx, ury;
+              llx = gtl::xl(extend_rect_shape);
+              lly = gtl::yl(extend_rect_shape);
+              urx = gtl::xh(extend_rect_shape);
+              ury = gtl::yh(extend_rect_shape);
+              // 生成左边patach length,右边的用总的减去左边的
+              int32_t left_length = static_cast<int>(static_cast<double>(patch_grid_length) * i / 10);
+              int32_t right_length = patch_grid_length - left_length;
+              EXTLayerRect left_patch, right_patch;
+
+              if (routing_layer_list[layer_idx].isPreferH()) {
+                PlanarRect left_planar(llx - left_length * manufacture_grid, lly, llx, lly + min_width);
+                PlanarRect right_planar(urx, lly, urx + right_length * manufacture_grid, lly + min_width);
+                if (!RTUTIL.isInside(vr_box.get_box_rect().get_real_rect(), left_planar)
+                    || !RTUTIL.isInside(vr_box.get_box_rect().get_real_rect(), right_planar)) {
+                  continue;  // patch不要超出box
+                }
+
+                left_patch.set_layer_idx(layer_idx);
+                left_patch.set_real_rect(PlanarRect(left_planar));
+                left_patch.set_grid_rect(RTUTIL.getOpenGCellGridRect(left_patch.get_real_rect(), gcell_axis));
+                left_south_cadidate_patch_list.push_back(left_patch);
+
+                right_patch.set_layer_idx(layer_idx);
+                right_patch.set_real_rect(PlanarRect(right_planar));
+                right_patch.set_grid_rect(RTUTIL.getOpenGCellGridRect(right_patch.get_real_rect(), gcell_axis));
+                right_north_cadidate_patch_list.push_back(right_patch);
+              } else {  // 竖直方向
+                PlanarRect south_planar(llx, lly - left_length * manufacture_grid, urx, lly);
+                PlanarRect north_planar(llx, ury, urx, ury + right_length * manufacture_grid);
+                if (!RTUTIL.isInside(vr_box.get_box_rect().get_real_rect(), south_planar)
+                    || !RTUTIL.isInside(vr_box.get_box_rect().get_real_rect(), north_planar)) {
+                  continue;  // patch不要超出box
+                }
+
+                left_patch.set_layer_idx(layer_idx);
+                left_patch.set_real_rect(PlanarRect(south_planar));
+                left_patch.set_grid_rect(RTUTIL.getOpenGCellGridRect(left_patch.get_real_rect(), gcell_axis));
+                left_south_cadidate_patch_list.push_back(left_patch);
+
+                right_patch.set_layer_idx(layer_idx);
+                right_patch.set_real_rect(PlanarRect(north_planar));
+                right_patch.set_grid_rect(RTUTIL.getOpenGCellGridRect(right_patch.get_real_rect(), gcell_axis));
+                right_north_cadidate_patch_list.push_back(right_patch);
+              }
+            }
+            // 选取代价最小的patch
+            double min_cost = INT32_MAX;
+            int32_t best_i = 0;
+            for (size_t i = 0; i < left_south_cadidate_patch_list.size(); i++) {
+              double now_cost = 0;
+              auto left_patch = left_south_cadidate_patch_list[i];
+              auto right_patch = right_north_cadidate_patch_list[i];
+              if (left_patch.get_real_rect().getArea() > 0) {
+                NetShape net_shape(net_idx, left_patch.getRealLayerRect(), true);
+                for (auto& [vr_node, obs_type_set] : getNodeObsTypeMap(vr_box, net_shape, true)) {
+                  for (VRObsType obs_type : obs_type_set) {
+                    now_cost += vr_node->getFixedRectCost(net_idx, obs_type, vr_box.get_vr_iter_param()->get_fixed_rect_unit());
+                    now_cost += vr_node->getRoutedRectCost(net_idx, obs_type, vr_box.get_vr_iter_param()->get_routed_rect_unit());
+                    now_cost += vr_node->getViolationCost(obs_type, vr_box.get_vr_iter_param()->get_violation_unit());
+                  }
+                }
+              }
+              if (right_patch.get_real_rect().getArea() > 0) {
+                NetShape net_shape(net_idx, right_patch.getRealLayerRect(), true);
+                for (auto& [vr_node, obs_type_set] : getNodeObsTypeMap(vr_box, net_shape, true)) {
+                  for (VRObsType obs_type : obs_type_set) {
+                    now_cost += vr_node->getFixedRectCost(net_idx, obs_type, vr_box.get_vr_iter_param()->get_fixed_rect_unit());
+                    now_cost += vr_node->getRoutedRectCost(net_idx, obs_type, vr_box.get_vr_iter_param()->get_routed_rect_unit());
+                    now_cost += vr_node->getViolationCost(obs_type, vr_box.get_vr_iter_param()->get_violation_unit());
+                  }
+                }
+              }
+              if (now_cost < min_cost) {
+                min_cost = now_cost;
+                best_i = i;
+              }
+            }
+            // 打上最优patch
+            vr_box.get_net_task_final_patch_map()[net_idx].push_back(left_south_cadidate_patch_list[best_i]);
+            vr_box.get_net_task_final_patch_map()[net_idx].push_back(right_north_cadidate_patch_list[best_i]);
+            updateRoutedRectToGraph(vr_box, ChangeType::kAdd, net_idx, left_south_cadidate_patch_list[best_i]);
+            updateRoutedRectToGraph(vr_box, ChangeType::kAdd, net_idx, right_north_cadidate_patch_list[best_i]);
+          }
+        }
+      }
+    }
+  }
 }
 
 void ViolationRepairer::uploadNetResult(VRBox& vr_box)
@@ -1614,6 +1956,8 @@ void ViolationRepairer::debugPlotVRModel(VRModel& vr_model, std::string flag)
   // violation
   {
     for (Violation* violation : RTDM.getViolationSet(die)) {
+      // if (violation->get_violation_type() != ViolationType::kMinimumArea)
+      //   continue;
       GPStruct violation_struct(RTUTIL.getString("violation_", GetViolationTypeName()(violation->get_violation_type())));
       EXTLayerRect& violation_shape = violation->get_violation_shape();
 
