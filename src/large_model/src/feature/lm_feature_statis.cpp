@@ -57,6 +57,8 @@ void LmFeatureStatis::feature_graph()
   double row_factor = static_cast<double>(gridInfoInst.ury - gridInfoInst.lly) / egr_rows;
   double col_factor = static_cast<double>(gridInfoInst.urx - gridInfoInst.llx) / egr_cols;
 
+  CONGESTION_API_INST->evalNetInfo();
+
   auto& net_map = _layout->get_graph().get_net_map();
 #pragma omp parallel for schedule(dynamic)
   for (int i = 0; i < (int) net_map.size(); ++i) {
@@ -70,6 +72,14 @@ void LmFeatureStatis::feature_graph()
     int net_col_max = INT32_MIN;
 
     auto* net_feature = lm_net.get_feature(true);
+
+    std::string net_name = _layout->findNetName(it->first);
+    net_feature->aspect_ratio = CONGESTION_API_INST->findAspectRatio(net_name);
+    net_feature->width = CONGESTION_API_INST->findBBoxWidth(net_name);
+    net_feature->height = CONGESTION_API_INST->findBBoxHeight(net_name);
+    net_feature->area = CONGESTION_API_INST->findBBoxArea(net_name);
+    net_feature->l_ness = CONGESTION_API_INST->findLness(net_name);
+
     for (auto& wire : lm_net.get_wires()) {
       auto* wire_feature = wire.get_feature(true);
 

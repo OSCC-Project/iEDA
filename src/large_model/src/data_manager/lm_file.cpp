@@ -70,7 +70,7 @@ bool LmLayoutFileIO::saveJsonNets()
   omp_init_lock(&lck);
 
   int total = 0;
-  // #pragma omp parallel for schedule(dynamic)
+#pragma omp parallel for schedule(dynamic)
   for (int i = 0; i < (int) net_map.size(); ++i) {
     auto it = net_map.begin();
     std::advance(it, i);
@@ -101,6 +101,11 @@ bool LmLayoutFileIO::saveJsonNets()
           json_feature["delay"] = net_feature->delay;
           json_feature["slew"] = net_feature->slew;
           json_feature["fanout"] = net_feature->fanout;
+          json_feature["aspect_ratio"] = net_feature->aspect_ratio;
+          json_feature["width"] = net_feature->width;
+          json_feature["height"] = net_feature->height;
+          json_feature["area"] = net_feature->area;
+          json_feature["l_ness"] = net_feature->l_ness;
         }
         json_net["feature"] = json_feature;
       }
