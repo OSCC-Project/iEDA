@@ -24,19 +24,22 @@
  */
 
 #include "StaDataPropagationBFS.hh"
-#include "ThreadPool/ThreadPool.h"
+
+#include <execution>
+
+#include "Config.hh"
 #include "StaDataSlewDelayPropagation.hh"
 #include "StaDelayPropagation.hh"
 #include "StaSlewPropagation.hh"
-#include "Config.hh"
+#include "ThreadPool/ThreadPool.h"
 
 namespace ista {
 
 /**
  * @brief propagate the arc to accumulated the path delay.
- * 
- * @param the_arc 
- * @return unsigned 
+ *
+ * @param the_arc
+ * @return unsigned
  */
 unsigned StaFwdPropagationBFS::operator()(StaArc* the_arc) {
   std::lock_guard<std::mutex> lk(the_arc->get_snk()->get_fwd_mutex());
@@ -48,7 +51,7 @@ unsigned StaFwdPropagationBFS::operator()(StaArc* the_arc) {
 
   slew_propagation(the_arc);
   delay_propagation(the_arc);
-#else 
+#else
   StaDataSlewDelayPropagation slew_delay_propagation;
   slew_delay_propagation(the_arc);
 
@@ -58,7 +61,6 @@ unsigned StaFwdPropagationBFS::operator()(StaArc* the_arc) {
   if (!the_arc->isCheckArc()) {
     // call parent operator.
     StaFwdPropagation::operator()(the_arc);
-    
   }
 
   return 1;
@@ -66,16 +68,16 @@ unsigned StaFwdPropagationBFS::operator()(StaArc* the_arc) {
 
 /**
  * @brief The vertex propagate the vertex, and get the next bfs vertexes.
- * 
- * @param the_vertex 
- * @return unsigned 
+ *
+ * @param the_vertex
+ * @return unsigned
  */
 unsigned StaFwdPropagationBFS::operator()(StaVertex* the_vertex) {
   if (the_vertex->is_const()) {
     return 1;
   }
 
- if (the_vertex->is_start() && !isIncremental()) {
+  if (the_vertex->is_start() && !isIncremental()) {
     DLOG_INFO_FIRST_N(10) << "Thread " << std::this_thread::get_id()
                           << " date fwd propagate found start vertex."
                           << the_vertex->getName();
@@ -84,11 +86,16 @@ unsigned StaFwdPropagationBFS::operator()(StaVertex* the_vertex) {
   }
 
 #if INTEGRATION_FWD
-    // data propagation end at the clock vertex.
+  // data propagation end at the clock vertex.
   if (the_vertex->is_end()) {
-    // calc check arc
+    // calc check arc at the end vertex.
     FOREACH_SNK_ARC(the_vertex, snk_arc) {
+#if CUDA_PROPAGATION
+      // collect different level arcs.
+      addLevelArcs(the_vertex->get_level(), snk_arc);
+#else
       snk_arc->exec(*this);
+#endif
     }
   }
 #endif
@@ -111,10 +118,16 @@ unsigned StaFwdPropagationBFS::operator()(StaVertex* the_vertex) {
       continue;
     }
 
+#if CUDA_PROPAGATION
+    // collect different level arcs.
+    addLevelArcs(the_vertex->get_level(), src_arc);
+#else
     if (!src_arc->exec(*this)) {
       LOG_FATAL << "data propagation error";
       break;
     }
+
+#endif
 
     // get the next level bfs vertex and add it to the queue.
     if (snk_vertex->get_level() == (the_vertex->get_level() + 1)) {
@@ -134,9 +147,9 @@ unsigned StaFwdPropagationBFS::operator()(StaVertex* the_vertex) {
 
 /**
  * @brief The data propagation using BFS.
- * 
- * @param the_graph 
- * @return unsigned 
+ *
+ * @param the_graph
+ * @return unsigned
  */
 unsigned StaFwdPropagationBFS::operator()(StaGraph* the_graph) {
   ieda::Stats stats;
@@ -161,7 +174,7 @@ unsigned StaFwdPropagationBFS::operator()(StaGraph* the_graph) {
     LOG_INFO << "propagating current data queue vertexes number is "
              << current_queue.size();
 
-#if 0
+#if 1
     {
       // create thread pool
       unsigned num_threads = getNumThreads();
@@ -170,9 +183,7 @@ unsigned StaFwdPropagationBFS::operator()(StaGraph* the_graph) {
 
       for (auto* the_vertex : current_queue) {
         pool.enqueue(
-            [this](StaVertex* the_vertex) {
-              return the_vertex->exec(*this);
-            },
+            [this](StaVertex* the_vertex) { return the_vertex->exec(*this); },
             the_vertex);
       }
     }
@@ -195,17 +206,43 @@ unsigned StaFwdPropagationBFS::operator()(StaGraph* the_graph) {
 
   } while (!_bfs_queue.empty());
 
+#if CUDA_PROPAGATION
+  dispatchArcTask();
+#endif
+
   LOG_INFO << "data fwd propagation bfs end";
 
   double memory_delta = stats.memoryDelta();
-  LOG_INFO << "data fwd propagation bfs memory usage " << memory_delta
-           << "MB";
+  LOG_INFO << "data fwd propagation bfs memory usage " << memory_delta << "MB";
   double time_delta = stats.elapsedRunTime();
   LOG_INFO << "data fwd propagation bfs time elapsed " << time_delta << "s";
 
   return is_ok;
 }
 
+/**
+ * @brief dispatch arc propagation task on CPU or GPU.
+ *
+ */
+void StaFwdPropagationBFS::dispatchArcTask() {
+  if (_level_to_arcs.empty()) {
+    return;
+  }
+  
+  ieda::Stats stats;
+  LOG_INFO << "dispatch arc task start";
+  for (auto& [level, the_arcs] : _level_to_arcs) {
+    std::for_each(std::execution::par, the_arcs.begin(), the_arcs.end(),
+                  [this](auto* the_arc) { the_arc->exec(*this); });
+  }
+  _level_to_arcs.clear();
 
+  LOG_INFO << "dispatch arc task end";
+
+  double memory_delta = stats.memoryDelta();
+  LOG_INFO << "dispatch arc task memory usage " << memory_delta << "MB";
+  double time_delta = stats.elapsedRunTime();
+  LOG_INFO << "dispatch arc task time elapsed " << time_delta << "s";
+}
 
 }  // namespace ista

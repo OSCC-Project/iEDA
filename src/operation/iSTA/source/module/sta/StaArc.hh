@@ -27,6 +27,7 @@
 #include "liberty/Lib.hh"
 #include "netlist/Instance.hh"
 #include "netlist/Net.hh"
+#include "propagation-cuda/propagation.cuh"
 
 namespace ista {
 class StaVertex;

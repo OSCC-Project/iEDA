@@ -7,11 +7,13 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_CUDA_ARCHITECTURES native)
 # set(CMAKE_CUDA_ARCHITECTURES "70") # set architecture according your platform
 
-set(CMAKE_BUILD_TYPE "Debug")
+# set(CMAKE_BUILD_TYPE "Debug")
 find_package(CUDAToolkit)
 
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CUDA_STANDARD 20)
+set(CMAKE_CXX_STANDARD 20)  
+set(CMAKE_CXX_STANDARD_REQUIRED ON)  
+set(CMAKE_CUDA_STANDARD 17)  
+set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 
 enable_language(CUDA)
 
@@ -21,6 +23,8 @@ check_language(CUDA)
 if(NOT CUDAToolkit_FOUND)
     include(FindCUDAToolkit)
 endif()
+
+set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --expt-relaxed-constexpr --expt-extended-lambda")
 
 set(lib_name ${proj_name})
 
