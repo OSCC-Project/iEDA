@@ -342,9 +342,9 @@ void build_gpu_vertex_node_impulse_data(
 
 /**
  * @brief build gpu arc delay data.
- * 
- * @param gpu_arc 
- * @param flatten_arc_delay_data 
+ *
+ * @param gpu_arc
+ * @param flatten_arc_delay_data
  */
 void build_gpu_arc_delay_data(
     GPU_Arc& gpu_arc, std::vector<GPU_Fwd_Data>& flatten_arc_delay_data) {
@@ -379,20 +379,24 @@ GPU_Graph build_gpu_graph(StaGraph* the_sta_graph) {
   std::vector<GPU_Arc> gpu_arcs;
   gpu_arcs.reserve(num_arc);
 
+  // init cpu memory.
+  unsigned vertex_data_size = c_gpu_num_vertex_data * num_vertex;
   std::vector<GPU_Fwd_Data> flatten_slew_data;
-  flatten_slew_data.reserve(c_gpu_num_vertex_data * num_vertex);
+  flatten_slew_data.reserve(vertex_data_size);
   std::vector<GPU_Fwd_Data> flatten_at_data;
-  flatten_at_data.reserve(c_gpu_num_vertex_data * num_vertex);
+  flatten_at_data.reserve(vertex_data_size);
   std::vector<GPU_Fwd_Data> flatten_node_cap_data;
-  flatten_node_cap_data.reserve(c_gpu_num_vertex_data * num_vertex);
+  flatten_node_cap_data.reserve(vertex_data_size);
   std::vector<GPU_Fwd_Data> flatten_node_impulse_data;
-  flatten_node_impulse_data.reserve(c_gpu_num_vertex_data * num_vertex);
+  flatten_node_impulse_data.reserve(vertex_data_size);
 
+  unsigned arc_data_size = c_gpu_num_arc_delay * num_arc;
   std::vector<GPU_Fwd_Data> flatten_arc_delay_data;
-  flatten_arc_delay_data.reserve(c_gpu_num_arc_delay * num_arc);
+  flatten_arc_delay_data.reserve(arc_data_size);
 
   // build gpu vertex
   StaVertex* the_vertex;
+  std::map<StaVertex*, unsigned> vertex_to_id;
   FOREACH_VERTEX(the_sta_graph, the_vertex) {
     GPU_Vertex gpu_vertex;
 
@@ -402,19 +406,40 @@ GPU_Graph build_gpu_graph(StaGraph* the_sta_graph) {
                                    flatten_node_cap_data);
     build_gpu_vertex_node_impulse_data(the_vertex, gpu_vertex,
                                        flatten_node_impulse_data);
-
+    vertex_to_id[the_vertex] = gpu_vertices.size();
     gpu_vertices.emplace_back(std::move(gpu_vertex));
   }
 
   // build gpu arc
-  StaArc* the_arc [[maybe_unused]];
+  StaArc* the_arc;
   FOREACH_ARC(the_sta_graph, the_arc) {
     GPU_Arc gpu_arc;
+
+    gpu_arc._arc_type = the_arc->isDelayArc()
+                            ? GPU_Arc_Type::kInstDelayArc
+                            : the_arc->isCheckArc()
+                                  ? GPU_Arc_Type::kInstCheckArc
+                                  : GPU_Arc_Type::kNet;
+
+    gpu_arc._src_vertex_id = vertex_to_id[the_arc->get_src()];
+    gpu_arc._snk_vertex_id = vertex_to_id[the_arc->get_snk()];
 
     build_gpu_arc_delay_data(gpu_arc, flatten_arc_delay_data);
 
     gpu_arcs.emplace_back(std::move(gpu_arc));
   }
+
+  // copy cpu data to gpu memory.
+  gpu_graph._vertices = gpu_vertices.data();
+  gpu_graph._arcs = gpu_arcs.data();
+
+  gpu_graph._num_vertices = num_vertex;
+  gpu_graph._num_arcs = num_arc;
+  gpu_graph._flatten_slew_data = flatten_slew_data.data();
+  gpu_graph._flatten_at_data = flatten_at_data.data();
+  gpu_graph._flatten_node_cap_data = flatten_node_cap_data.data();
+  gpu_graph._flatten_node_impulse_data = flatten_node_impulse_data.data();
+  gpu_graph._flatten_arc_delay_data = flatten_arc_delay_data.data();
 
   return gpu_graph;
 }

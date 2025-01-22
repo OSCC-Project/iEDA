@@ -114,7 +114,7 @@ struct GPU_Arc {
  *
  */
 struct GPU_BFS_Propagated_Arc {
-  unsigned* _arc_start_addr =
+  unsigned* _arc_index =
       nullptr;  //!< The arc start address, each one is arc id.
   unsigned _num_arcs;
 };
