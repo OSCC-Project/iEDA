@@ -157,6 +157,7 @@ class StaVertex {
   void resetVertexArcData();
 
   void initSlewData();
+  void initPathDelayData();
 
   StaDataBucket& getSlewBucket() { return _slew_bucket; }
   StaDataBucket& getClockBucket() { return _clock_bucket; }

@@ -341,6 +341,31 @@ void StaVertex::initSlewData() {
 }
 
 /**
+ * @brief Init at data, if not create zero at default.
+ * 
+ */
+void StaVertex::initPathDelayData() {
+  auto& data_bucket = getDataBucket();
+  if (!data_bucket.empty()) {
+    return;
+  }
+
+  auto construct_path_delay_data = [](AnalysisMode delay_type, TransType trans_type,
+                                StaVertex* own_vertex, int at) {
+    auto* path_delay_data =
+        new StaPathDelayData(delay_type, trans_type, at, nullptr, own_vertex);
+    own_vertex->addData(path_delay_data);
+  };
+
+  /*if not, create default zero path delay.*/
+  construct_path_delay_data(AnalysisMode::kMax, TransType::kRise, this, 0);
+  construct_path_delay_data(AnalysisMode::kMax, TransType::kFall, this, 0);
+  construct_path_delay_data(AnalysisMode::kMin, TransType::kRise, this, 0);
+  construct_path_delay_data(AnalysisMode::kMin, TransType::kFall, this, 0);
+
+}
+
+/**
  * @brief reset vertex data and arc data for increment analysis.
  *
  */

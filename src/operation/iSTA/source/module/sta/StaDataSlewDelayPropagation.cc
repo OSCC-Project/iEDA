@@ -95,7 +95,11 @@ unsigned StaDataSlewDelayPropagation::operator()(StaArc* the_arc) {
   auto* obj = snk_vertex->get_design_obj();
 
   auto* the_net = obj->get_net();
-  LOG_FATAL_IF(!the_net);
+  if (!the_net) {
+    LOG_ERROR << "Not connect net in the design object: " << obj->get_name();
+    the_arc->set_is_disable_arc(true);
+    return is_ok;
+  }
 
   StaData* slew_data;
   FOREACH_SLEW_DATA(src_vertex, slew_data) {
