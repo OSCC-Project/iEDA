@@ -435,41 +435,31 @@ void build_lib_data_gpu(LibDataGPU& lib_data_gpu,
 //   }
 // }
 
-__global__ void kernel_find_value(LibDataGPU* lib_data_gpu, double slew,
-                                  double constrain_slew_or_load,
-                                  double* d_value) {
-  *d_value = find_value(lib_data_gpu->_arcs_gpu[0]._table[0], slew,
-                        constrain_slew_or_load);
-}
-
-double find_value(LibDataGPU& lib_data_gpu, double slew,
-                  double constrain_slew_or_load) {
-  // gpu->cpu,for print lib_data_gpu for debug.
-  LibArcGPU* h_arcs;  // 主机端指针
+/**
+ * @brief print first arc's first table of lib_data_gpu for debug.
+ */
+void print_lib_data_gpu_first_arc_first_table(LibDataGPU& lib_data_gpu) {
+  // gpu->cpu transfer
+  LibArcGPU* h_arcs;
   cudaMallocHost(&h_arcs, sizeof(LibArcGPU) * lib_data_gpu._num_arcs);
 
-  // 从 GPU 拷贝到主机
   cudaMemcpy(h_arcs, lib_data_gpu._arcs_gpu,
              sizeof(LibArcGPU) * lib_data_gpu._num_arcs,
              cudaMemcpyDeviceToHost);
 
-  // 访问第一个表
   LibTableGPU* h_table;
   cudaMallocHost(&h_table, sizeof(LibTableGPU) * h_arcs[0]._num_table);
   cudaMemcpy(h_table, h_arcs[0]._table,
              sizeof(LibTableGPU) * h_arcs[0]._num_table,
              cudaMemcpyDeviceToHost);
 
-  // 现在可以访问 h_table[0] 的内容
   LibTableGPU first_table = h_table[0];
 
-  // 打印内容
   std::cout << "First table values:" << std::endl;
   std::cout << "Num X: " << first_table._num_x << std::endl;
   std::cout << "Num Y: " << first_table._num_y << std::endl;
   std::cout << "Num Values: " << first_table._num_values << std::endl;
 
-  // 拷贝 _x, _y, _values 数组到主机
   double* h_x;
   double* h_y;
   double* h_values;
@@ -485,45 +475,64 @@ double find_value(LibDataGPU& lib_data_gpu, double slew,
   cudaMemcpy(h_values, first_table._values,
              sizeof(double) * first_table._num_values, cudaMemcpyDeviceToHost);
 
-  // 打印 _x, _y, _values 数组的内容
-  std::cout << "_x values: ";
+  std::cout << "X: ";
   for (unsigned i = 0; i < first_table._num_x; ++i) {
     std::cout << h_x[i] << " ";
   }
   std::cout << std::endl;
 
-  std::cout << "_y values: ";
+  std::cout << "Y: ";
   for (unsigned i = 0; i < first_table._num_y; ++i) {
     std::cout << h_y[i] << " ";
   }
   std::cout << std::endl;
 
-  std::cout << "_values: ";
+  std::cout << "Values: ";
   for (unsigned i = 0; i < first_table._num_values; ++i) {
     std::cout << h_values[i] << " ";
   }
   std::cout << std::endl;
 
-  // 释放主机内存
   cudaFreeHost(h_arcs);
   cudaFreeHost(h_table);
   cudaFreeHost(h_x);
   cudaFreeHost(h_y);
   cudaFreeHost(h_values);
+}
+
+__global__ void kernel_find_value(LibDataGPU* lib_data_gpu, double slew,
+                                  double constrain_slew_or_load,
+                                  double* d_value) {
+  *d_value = find_value(lib_data_gpu->_arcs_gpu[0]._table[0], slew,
+                        constrain_slew_or_load);
+}
+
+double find_value(LibDataGPU& lib_data_gpu, double slew,
+                  double constrain_slew_or_load) {
+  // print first arc's first table of lib_data_gpu for debug.
+  print_lib_data_gpu_first_arc_first_table(lib_data_gpu);
+
+  // transfer lib_data_gpu_host(host pointer) to lib_data_gpu_device(device
+  // pointer) for launching kernel.
+  LibDataGPU* lib_data_gpu_host = &lib_data_gpu;
+
+  LibDataGPU* lib_data_gpu_device;
+  cudaMalloc((void**)&lib_data_gpu_device, sizeof(LibDataGPU));
+  cudaMemcpy(lib_data_gpu_device, lib_data_gpu_host, sizeof(LibDataGPU),
+             cudaMemcpyHostToDevice);
 
   // launch kernel
-  double value;
-
   double* d_value;
   cudaMalloc((void**)&d_value, sizeof(double));
-  kernel_find_value<<<1, 1>>>(&lib_data_gpu, slew, constrain_slew_or_load,
+  kernel_find_value<<<1, 1>>>(lib_data_gpu_device, slew, constrain_slew_or_load,
                               d_value);
-
   CUDA_CHECK_ERROR();
   cudaDeviceSynchronize();
 
+  double value;
   cudaMemcpy(&value, d_value, sizeof(double), cudaMemcpyDeviceToHost);
 
+  cudaFree(lib_data_gpu_device);
   cudaFree(d_value);
 
   return value;

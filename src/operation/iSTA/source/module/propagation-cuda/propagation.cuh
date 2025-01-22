@@ -36,9 +36,9 @@ struct LibTableGPU {
 struct LibArcGPU {
   LibTableGPU* _table;
   unsigned _num_table;  //!< number of tables.(first case:SSTA:12 tables;second
-                        //!< case:4 tables; third case(check arc):2 tables.
-                        //!< ps:the table's index order is the same as the
-                        //!< LibTable::TableType(124 Line in Lib.cc ).)
+                        //!< case(delay arc):4 tables; third case(check arc):2
+                        //!< tables. ps:the table's index order is the same as
+                        //!< the LibTable::TableType(124 Line in Lib.cc ).)
 };
 
 /**
