@@ -26,7 +26,10 @@ struct LibTableGPU {
   double* _values;
   unsigned _num_values = 0;
   unsigned _type =
-      UINT_MAX;  //!< normal(slew->cap),invert(cap->slew),slew,cap,and so on.
+      UINT_MAX;  //!< 0(x axis denotes slew), 1(x axis denotes
+                 //!< constrain_slew_or_load), , 2(x axis denotes slew, y axis
+                 //!< denotes constrain_slew_or_load), 3(x axis denotes
+                 //!< constrain_slew_or_load, y axis denotes slew.)
 };
 
 /**
