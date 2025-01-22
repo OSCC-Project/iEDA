@@ -97,7 +97,7 @@ struct GPU_Vertex {
 };
 
 constexpr unsigned c_gpu_num_arc_delay = 4;
-
+using GPU_ARC_DATA = GPU_Vertex_Data;
 /**
  * @brief The arc in GPU mapping with the StaArc.
  *
@@ -106,7 +106,7 @@ struct GPU_Arc {
   GPU_Arc_Type _arc_type;   //!< The arc type inst or net arc.
   unsigned _src_vertex_id;  //!< The src vertex id mapping the host StaVertex.
   unsigned _snk_vertex_id;  //!< The snk vertex id mapping the host StaVertex.
-  GPU_Vertex_Data _delay_values;
+  GPU_ARC_DATA _delay_values;
 };
 
 /**
@@ -135,9 +135,10 @@ struct GPU_Graph {
   GPU_Fwd_Data*
       _flatten_node_cap_data;  //!< The all node cap data of the vertex.
   GPU_Fwd_Data*
-      _flatten_node_delay_data;  //!< The all node delay data of the vertex.
-  GPU_Fwd_Data*
       _flatten_node_impulse_data;  //!< The all node impulse data of the vertex.
+
+  GPU_Fwd_Data*
+      _flatten_arc_delay_data;  //!< The all arc delay data.
 };
 
 }  // namespace ista

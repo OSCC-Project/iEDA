@@ -669,6 +669,7 @@ class RcNet {
 
   double load();
   double load(AnalysisMode mode, TransType trans_type);
+  double slewImpulse(DesignObject& to, AnalysisMode mode, TransType trans_type);
   std::set<RctNode*> getLoadNodes();
 
   double getResistance(AnalysisMode mode, TransType trans_type,
