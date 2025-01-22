@@ -106,9 +106,9 @@ StaInstArc::StaInstArc(StaVertex* src, StaVertex* snk, LibArc* lib_arc,
       _inst(inst),
       _lib_gpu_arc(new LibArcGPU()) {}
 
-// for debug by printLIBTableGPU.
+// for debug by printLIBTableGPU.(to be deleted)
 void printLibTableGPU(const LibTableGPU& gpu_table) {
-  // 打印 x 轴
+  // print x axis
   std::cout << "index_1(";
   for (unsigned i = 0; i < gpu_table._num_x; ++i) {
     std::cout << std::fixed << std::setprecision(8) << gpu_table._x[i];
@@ -118,7 +118,7 @@ void printLibTableGPU(const LibTableGPU& gpu_table) {
   }
   std::cout << ");" << std::endl;
 
-  // 打印 y 轴
+  // print y axis
   std::cout << "index_2(";
   for (unsigned i = 0; i < gpu_table._num_y; ++i) {
     std::cout << std::fixed << std::setprecision(8) << gpu_table._y[i];
@@ -128,7 +128,7 @@ void printLibTableGPU(const LibTableGPU& gpu_table) {
   }
   std::cout << ");" << std::endl;
 
-  // 打印 values
+  // print values
   std::cout << "values (";
   for (unsigned i = 0; i < gpu_table._num_values / gpu_table._num_y; ++i) {
     std::cout << "\"";
