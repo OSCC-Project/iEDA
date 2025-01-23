@@ -152,14 +152,25 @@ void printLibTableGPU(const LibTableGPU& gpu_table) {
  */
 void StaInstArc::buildLibArcsGPU() {
   auto* table_model = _lib_arc->get_table_model();
-  if (isDelayArc()) {
-    auto* delay_table_model = dynamic_cast<LibDelayTableModel*>(table_model);
-    _lib_gpu_arc->_num_table = delay_table_model->kTableNum;
-    // int num_table = delay_table_model->kTableNum;
+  LibTableModel* delay_or_check_table_model;
+  unsigned num_table;
+  if (isDelayArc() || isCheckArc()) {
+    if (isDelayArc()) {
+      delay_or_check_table_model =
+          dynamic_cast<LibDelayTableModel*>(table_model);
+      num_table = dynamic_cast<LibDelayTableModel*>(table_model)->kTableNum;
+    }
+    if (isCheckArc()) {
+      delay_or_check_table_model =
+          dynamic_cast<LibCheckTableModel*>(table_model);
+      num_table = dynamic_cast<LibCheckTableModel*>(table_model)->kTableNum;
+    }
+
+    _lib_gpu_arc->_num_table = num_table;
     _lib_gpu_arc->_table = new LibTableGPU[_lib_gpu_arc->_num_table];
 
-    for (size_t index = 0; index < delay_table_model->kTableNum; index++) {
-      auto* table = delay_table_model->getTable(index);
+    for (size_t index = 0; index < num_table; index++) {
+      auto* table = delay_or_check_table_model->getTable(index);
 
       LibTableGPU gpu_table;
       // set the x axis.
