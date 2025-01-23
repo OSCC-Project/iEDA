@@ -246,7 +246,7 @@ class StaInstArc : public StaArc {
   Instance* _inst;   //!< The owned inst.
 
   Lib_Arc_GPU* _lib_gpu_arc;  //!< The gpu lib arc. (attention delete)
-  unsigned _arc_id;
+  unsigned _arc_id; //!< The arc id for gpu lib data.
 
   FORBIDDEN_COPY(StaInstArc);
 };

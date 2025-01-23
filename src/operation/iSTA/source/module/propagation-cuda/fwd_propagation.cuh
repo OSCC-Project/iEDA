@@ -107,6 +107,8 @@ struct GPU_Arc {
   unsigned _src_vertex_id;  //!< The src vertex id mapping the host StaVertex.
   unsigned _snk_vertex_id;  //!< The snk vertex id mapping the host StaVertex.
   GPU_ARC_DATA _delay_values;
+
+  int _lib_data_arc_id; //!< The lib data arc id.
 };
 
 /**

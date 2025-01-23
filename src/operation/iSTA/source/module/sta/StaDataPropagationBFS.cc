@@ -423,6 +423,11 @@ GPU_Graph build_gpu_graph(StaGraph* the_sta_graph) {
 
     gpu_arc._src_vertex_id = vertex_to_id[the_arc->get_src()];
     gpu_arc._snk_vertex_id = vertex_to_id[the_arc->get_snk()];
+    if (the_arc->isInstArc()) {
+      gpu_arc._lib_data_arc_id = dynamic_cast<StaInstArc*>(the_arc)->get_arc_id();
+    } else {
+      gpu_arc._lib_data_arc_id = -1;
+    }
 
     build_gpu_arc_delay_data(gpu_arc, flatten_arc_delay_data);
 

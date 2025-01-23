@@ -28,6 +28,7 @@
 
 #include "fwd_propagation.cuh"
 #include "gpu/cuda_common.cuh"
+#include "lib_arc.cuh"
 #include "propagation.cuh"
 
 namespace ista {
@@ -42,12 +43,24 @@ namespace ista {
  * @param arc_delay the arc delay for store value
  * @return __device__
  */
-__device__ void lut_inst_slew_delay(GPU_Vertex_Data* in_slew,
+__device__ void lut_inst_slew_delay(GPU_Graph* the_graph,
+                                    Lib_Data_GPU& the_lib_data,
+                                    GPU_Vertex_Data* in_slew,
                                     GPU_Vertex_Data* out_load,
                                     GPU_Vertex_Data* snk_slew,
                                     GPU_Vertex_Data* arc_delay) {
   // TODO(to taosimin), call gpu lut table.
   // store the lut value
+  GPU_Fwd_Data one_src_slew_data;
+  GPU_Fwd_Data one_snk_cap_data;
+  FOREACH_GPU_FWD_DATA(the_graph->_flatten_slew_data, (*in_slew),
+                       one_src_slew_data) {
+    FOREACH_GPU_FWD_DATA(the_graph->_flatten_node_cap_data, (*out_load),
+                         one_snk_cap_data) {
+      find_value(the_lib_data._arcs_gpu[0]._table[0],
+                 one_src_slew_data._data_value, one_snk_cap_data._data_value);
+    }
+  }
 }
 
 /**
@@ -59,14 +72,22 @@ __device__ void lut_inst_slew_delay(GPU_Vertex_Data* in_slew,
  * @return __device__
  */
 __device__ void lut_constraint_delay(GPU_Graph* the_graph,
+                                     Lib_Data_GPU& the_lib_data,
                                      GPU_Vertex_Data* in_slew,
                                      GPU_Vertex_Data* snk_slew,
                                      GPU_Vertex_Data* arc_delay) {
   // TODO(to taosimin), call gpu lut table.
   // store the lut value
   GPU_Fwd_Data one_src_slew_data;
+  GPU_Fwd_Data one_snk_slew_data;
   FOREACH_GPU_FWD_DATA(the_graph->_flatten_slew_data, (*in_slew),
-                       one_src_slew_data) {}
+                       one_src_slew_data) {
+    FOREACH_GPU_FWD_DATA(the_graph->_flatten_slew_data, (*snk_slew),
+                         one_snk_slew_data) {
+      find_value(the_lib_data._arcs_gpu[0]._table[0],
+                 one_src_slew_data._data_value, one_snk_slew_data._data_value);
+    }
+  }
 }
 
 /**
@@ -90,7 +111,7 @@ __device__ void lut_net_slew_delay(GPU_Vertex_Data* in_slew,
  * @param propagated_arcs
  * @return __global__
  */
-__global__ void propagate_fwd(GPU_Graph the_graph,
+__global__ void propagate_fwd(GPU_Graph the_graph, Lib_Data_GPU the_lib_data,
                               GPU_BFS_Propagated_Arc propagated_arcs) {
   // current thread id
   int i = blockIdx.x * blockDim.x + threadIdx.x;
@@ -105,11 +126,12 @@ __global__ void propagate_fwd(GPU_Graph the_graph,
 
     if (current_arc_type == kInstDelayArc) {
       // lut table for snk arc slew and arc delay use src slew and out cap.
-      lut_inst_slew_delay(&src_vertex._slew_data, &snk_vertex._node_cap_data,
-                          &snk_vertex._slew_data, &current_arc._delay_values);
+      lut_inst_slew_delay(&the_graph, the_lib_data, &src_vertex._slew_data,
+                          &snk_vertex._node_cap_data, &snk_vertex._slew_data,
+                          &current_arc._delay_values);
     } else if (current_arc_type == kInstCheckArc) {
       // lut table for get constrain value for check arc.
-      lut_constraint_delay(&the_graph, &src_vertex._slew_data,
+      lut_constraint_delay(&the_graph, the_lib_data, &src_vertex._slew_data,
                            &snk_vertex._slew_data, &current_arc._delay_values);
     } else {
       // for net arc
@@ -266,17 +288,19 @@ void copy_to_sta_graph(GPU_Graph& the_cpu_graph, GPU_Graph& the_gpu_graph,
  * then, propagate level by level.
  */
 void gpu_propagate_fwd(
-    GPU_Graph& the_cpu_graph, unsigned vertex_data_size, unsigned arc_data_size, 
-    std::map<unsigned, GPU_BFS_Propagated_Arc>& level_to_arcs, Lib_Data_GPU& lib_data) {
+    GPU_Graph& the_cpu_graph, unsigned vertex_data_size, unsigned arc_data_size,
+    std::map<unsigned, GPU_BFS_Propagated_Arc>& level_to_arcs,
+    Lib_Data_GPU& lib_data) {
   auto the_gpu_graph =
       copy_from_sta_graph(the_cpu_graph, vertex_data_size, arc_data_size);
 
   // TODO(to taosimin), copy arc id to gpu bfs propagated arc.
   for (auto& [level, the_arcs] : level_to_arcs) {
-    propagate_fwd<<<1, 1000>>>(the_gpu_graph, the_arcs);
+    propagate_fwd<<<1, 1000>>>(the_gpu_graph, lib_data, the_arcs);
   }
 
-  copy_to_sta_graph(the_cpu_graph, the_gpu_graph, vertex_data_size, arc_data_size);
+  copy_to_sta_graph(the_cpu_graph, the_gpu_graph, vertex_data_size,
+                    arc_data_size);
 }
 
 }  // namespace ista
