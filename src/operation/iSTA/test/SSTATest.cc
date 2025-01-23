@@ -61,9 +61,9 @@ TEST_F(SSTATest, test) {
 
   timing_engine->buildGraph();
   timing_engine->get_ista()->buildLibArcsGPU();
-  std::vector<ista::LibArcGPU*> lib_arcs_gpu =
+  std::vector<ista::Lib_Arc_GPU*> lib_arcs_gpu =
       timing_engine->get_ista()->getLibArcsGPU();
-  LibDataGPU lib_data_gpu;
+  Lib_Data_GPU lib_data_gpu;
   build_lib_data_gpu(lib_data_gpu, lib_arcs_gpu);
   double ret_val = find_value(lib_data_gpu, 0.00472397, 1.897810);
 

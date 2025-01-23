@@ -1382,8 +1382,8 @@ unsigned Sta::buildLibArcsGPU() {
 /**
  * @brief get the all lib gpu arcs.
  */
-std::vector<LibArcGPU *> Sta::getLibArcsGPU() {
-  std::vector<LibArcGPU *> lib_gpu_arcs;
+std::vector<Lib_Arc_GPU *> Sta::getLibArcsGPU() {
+  std::vector<Lib_Arc_GPU *> lib_gpu_arcs;
 
   StaGraph *the_graph = &get_graph();
   StaArc *the_arc;

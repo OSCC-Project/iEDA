@@ -104,10 +104,10 @@ StaInstArc::StaInstArc(StaVertex* src, StaVertex* snk, LibArc* lib_arc,
     : StaArc(src, snk),
       _lib_arc(lib_arc),
       _inst(inst),
-      _lib_gpu_arc(new LibArcGPU()) {}
+      _lib_gpu_arc(new Lib_Arc_GPU()) {}
 
 // for debug by printLIBTableGPU.(to be deleted)
-void printLibTableGPU(const LibTableGPU& gpu_table) {
+void printLibTableGPU(const Lib_Table_GPU& gpu_table) {
   // print x axis
   std::cout << "index_1(";
   for (unsigned i = 0; i < gpu_table._num_x; ++i) {
@@ -167,12 +167,12 @@ void StaInstArc::buildLibArcsGPU() {
     }
 
     _lib_gpu_arc->_num_table = num_table;
-    _lib_gpu_arc->_table = new LibTableGPU[_lib_gpu_arc->_num_table];
+    _lib_gpu_arc->_table = new Lib_Table_GPU[_lib_gpu_arc->_num_table];
 
     for (size_t index = 0; index < num_table; index++) {
       auto* table = delay_or_check_table_model->getTable(index);
 
-      LibTableGPU gpu_table;
+      Lib_Table_GPU gpu_table;
       // set the x axis.
       auto& x_axis = table->getAxis(0);
       auto& x_axis_values = x_axis.get_axis_values();

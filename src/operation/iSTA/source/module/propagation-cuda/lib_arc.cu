@@ -95,45 +95,45 @@ __device__ double bilinear_interpolation(double q11, double q12, double q21,
 }
 
 /**
- * @brief get x axis size of LibTableGPU.
+ * @brief get x axis size of Lib_Table_GPU.
  * @param lib_table_gpu
  */
-__device__ double get_x_axis_size(LibTableGPU& lib_table_gpu) {
+__device__ double get_x_axis_size(Lib_Table_GPU& lib_table_gpu) {
   return lib_table_gpu._num_x;
 }
 
 /**
- * @brief get x val size of LibTableGPU.
+ * @brief get x val size of Lib_Table_GPU.
  * @param lib_table_gpu
  * @param index
  */
-__device__ double get_x_axis_val(LibTableGPU& lib_table_gpu, unsigned index) {
+__device__ double get_x_axis_val(Lib_Table_GPU& lib_table_gpu, unsigned index) {
   return lib_table_gpu._x[index];
 }
 
 /**
- * @brief get y axis size of LibTableGPU.
+ * @brief get y axis size of Lib_Table_GPU.
  * @param lib_table_gpu
  */
-__device__ double get_y_axis_size(LibTableGPU& lib_table_gpu) {
+__device__ double get_y_axis_size(Lib_Table_GPU& lib_table_gpu) {
   return lib_table_gpu._num_y;
 }
 
 /**
- * @brief get y val size of LibTableGPU.
+ * @brief get y val size of Lib_Table_GPU.
  * @param lib_table_gpu
  * @param index
  */
-__device__ double get_y_axis_val(LibTableGPU& lib_table_gpu, unsigned index) {
+__device__ double get_y_axis_val(Lib_Table_GPU& lib_table_gpu, unsigned index) {
   return lib_table_gpu._y[index];
 }
 
 /**
- * @brief get table value of LibTableGPU.
+ * @brief get table value of Lib_Table_GPU.
  * @param lib_table_gpu
  * @param index
  */
-__device__ double get_table_value(LibTableGPU& lib_table_gpu, unsigned index) {
+__device__ double get_table_value(Lib_Table_GPU& lib_table_gpu, unsigned index) {
   if (index >= lib_table_gpu._num_values) {
     printf("Error: index %u beyond table value size %u\n", index,
            lib_table_gpu._num_values);
@@ -143,12 +143,12 @@ __device__ double get_table_value(LibTableGPU& lib_table_gpu, unsigned index) {
 }
 
 /**
- * @brief check val of LibTableGPU.
+ * @brief check val of Lib_Table_GPU.
  * @param lib_table_gpu
  * @param axis_index
  * @param val
  */
-__device__ unsigned check_val(LibTableGPU& lib_table_gpu, int axis_index,
+__device__ unsigned check_val(Lib_Table_GPU& lib_table_gpu, int axis_index,
                               double val) {
   unsigned num_val = 0;
   double min_val = 0;
@@ -173,13 +173,13 @@ __device__ unsigned check_val(LibTableGPU& lib_table_gpu, int axis_index,
 }
 
 /**
- * @brief get val's axis region of LibTableGPU.
+ * @brief get val's axis region of Lib_Table_GPU.
  * @param lib_table_gpu
  * @param axis_index
  * @param num_val
  * @param val
  */
-__device__ Axis_Region get_axis_region(LibTableGPU& lib_table_gpu,
+__device__ Axis_Region get_axis_region(Lib_Table_GPU& lib_table_gpu,
                                        int axis_index, unsigned int num_val,
                                        double val) {
   double x2 = 0.0;
@@ -228,7 +228,7 @@ __device__ Axis_Region get_axis_region(LibTableGPU& lib_table_gpu,
  * @param constrain_slew_or_load The constrain_slew_or_load value.
  * @return The value.
  */
-__device__ double find_value(LibTableGPU& lib_table_gpu, double slew,
+__device__ double find_value(Lib_Table_GPU& lib_table_gpu, double slew,
                              double constrain_slew_or_load) {
   // ??? not sure (_type == UINT_MAX) can work as (!table_template)
   if (lib_table_gpu._type == UINT_MAX) {
@@ -292,14 +292,14 @@ __device__ double find_value(LibTableGPU& lib_table_gpu, double slew,
 }
 
 /**
- * @brief build gpu LibArcGPU(lib_data_gpu._arcs_gpu) according to cpu
- * LibArcGPU(lib_arcs_cpu).
- * @param lib_data_gpu The struct of LibDataGPU.
- * @param lib_arcs_cpu The vector of LibArcGPU.
+ * @brief build gpu Lib_Arc_GPU(lib_data_gpu._arcs_gpu) according to cpu
+ * Lib_Arc_GPU(lib_arcs_cpu).
+ * @param lib_data_gpu The struct of Lib_Data_GPU.
+ * @param lib_arcs_cpu The vector of Lib_Arc_GPU.
  */
-void build_lib_data_gpu(LibDataGPU& lib_data_gpu,
-                        std::vector<LibArcGPU*> lib_arcs_cpu_ptr) {
-  std::vector<ista::LibArcGPU> lib_arcs_cpu;
+void build_lib_data_gpu(Lib_Data_GPU& lib_data_gpu,
+                        std::vector<Lib_Arc_GPU*> lib_arcs_cpu_ptr) {
+  std::vector<ista::Lib_Arc_GPU> lib_arcs_cpu;
   lib_arcs_cpu.reserve(lib_arcs_cpu_ptr.size());
   for (const auto& arc_ptr : lib_arcs_cpu_ptr) {
     if (arc_ptr != nullptr) {
@@ -310,23 +310,23 @@ void build_lib_data_gpu(LibDataGPU& lib_data_gpu,
   lib_data_gpu._num_arcs = lib_arcs_cpu_ptr.size();
 
   cudaMalloc(&(lib_data_gpu._arcs_gpu),
-             lib_data_gpu._num_arcs * sizeof(LibArcGPU));
+             lib_data_gpu._num_arcs * sizeof(Lib_Arc_GPU));
 
   cudaStream_t stream1 = nullptr;
   cudaStreamCreate(&stream1);
 
   for (unsigned i = 0; i < lib_data_gpu._num_arcs; ++i) {
-    LibArcGPU* cpu_arc = lib_arcs_cpu_ptr[i];
+    Lib_Arc_GPU* cpu_arc = lib_arcs_cpu_ptr[i];
 
-    LibTableGPU* d_tables;
+    Lib_Table_GPU* d_tables;
     CUDA_CHECK(
-        cudaMalloc(&(d_tables), cpu_arc->_num_table * sizeof(LibTableGPU)));
+        cudaMalloc(&(d_tables), cpu_arc->_num_table * sizeof(Lib_Table_GPU)));
     CUDA_CHECK(cudaMemcpy(d_tables, cpu_arc->_table,
-                          cpu_arc->_num_table * sizeof(LibTableGPU),
+                          cpu_arc->_num_table * sizeof(Lib_Table_GPU),
                           cudaMemcpyHostToDevice));
 
     for (unsigned j = 0; j < cpu_arc->_num_table; ++j) {
-      LibTableGPU& cpu_table = cpu_arc->_table[j];
+      Lib_Table_GPU& cpu_table = cpu_arc->_table[j];
 
       double *d_x, *d_y, *d_values;
       CUDA_CHECK(
@@ -348,7 +348,7 @@ void build_lib_data_gpu(LibDataGPU& lib_data_gpu,
                                  cudaMemcpyHostToDevice, stream1));
       CUDA_CHECK(cudaStreamSynchronize(stream1));
 
-      LibTableGPU* gpu_table = &d_tables[j];
+      Lib_Table_GPU* gpu_table = &d_tables[j];
 
       CUDA_CHECK(cudaMemcpyAsync(&(gpu_table->_x), &d_x, sizeof(double*),
                                  cudaMemcpyHostToDevice, stream1));
@@ -373,11 +373,11 @@ void build_lib_data_gpu(LibDataGPU& lib_data_gpu,
       CUDA_CHECK(cudaStreamSynchronize(stream1));
     }
 
-    LibArcGPU* gpu_arc = &lib_data_gpu._arcs_gpu[i];
+    Lib_Arc_GPU* gpu_arc = &lib_data_gpu._arcs_gpu[i];
 
     unsigned num_table = cpu_arc->_num_table;
     CUDA_CHECK(cudaMemcpyAsync(&(gpu_arc->_table), &d_tables,
-                               sizeof(LibTableGPU*), cudaMemcpyHostToDevice,
+                               sizeof(Lib_Table_GPU*), cudaMemcpyHostToDevice,
                                stream1));
     CUDA_CHECK(cudaMemcpyAsync(&(gpu_arc->_num_table), &num_table,
                                sizeof(unsigned), cudaMemcpyHostToDevice,
@@ -390,22 +390,22 @@ void build_lib_data_gpu(LibDataGPU& lib_data_gpu,
 /**
  * @brief print first arc's first table of lib_data_gpu for debug.
  */
-void print_lib_data_gpu_first_arc_first_table(LibDataGPU& lib_data_gpu) {
+void print_lib_data_gpu_first_arc_first_table(Lib_Data_GPU& lib_data_gpu) {
   // gpu->cpu transfer
-  LibArcGPU* h_arcs;
-  cudaMallocHost(&h_arcs, sizeof(LibArcGPU) * lib_data_gpu._num_arcs);
+  Lib_Arc_GPU* h_arcs;
+  cudaMallocHost(&h_arcs, sizeof(Lib_Arc_GPU) * lib_data_gpu._num_arcs);
 
   cudaMemcpy(h_arcs, lib_data_gpu._arcs_gpu,
-             sizeof(LibArcGPU) * lib_data_gpu._num_arcs,
+             sizeof(Lib_Arc_GPU) * lib_data_gpu._num_arcs,
              cudaMemcpyDeviceToHost);
 
-  LibTableGPU* h_table;
-  cudaMallocHost(&h_table, sizeof(LibTableGPU) * h_arcs[0]._num_table);
+  Lib_Table_GPU* h_table;
+  cudaMallocHost(&h_table, sizeof(Lib_Table_GPU) * h_arcs[0]._num_table);
   cudaMemcpy(h_table, h_arcs[0]._table,
-             sizeof(LibTableGPU) * h_arcs[0]._num_table,
+             sizeof(Lib_Table_GPU) * h_arcs[0]._num_table,
              cudaMemcpyDeviceToHost);
 
-  LibTableGPU first_table = h_table[0];
+  Lib_Table_GPU first_table = h_table[0];
 
   std::cout << "First table values:" << std::endl;
   std::cout << "Num X: " << first_table._num_x << std::endl;
@@ -452,31 +452,27 @@ void print_lib_data_gpu_first_arc_first_table(LibDataGPU& lib_data_gpu) {
   cudaFreeHost(h_values);
 }
 
-__global__ void kernel_find_value(LibDataGPU* lib_data_gpu, double slew,
+__global__ void kernel_find_value(Lib_Data_GPU lib_data_gpu, double slew,
                                   double constrain_slew_or_load,
                                   double* d_value) {
-  *d_value = find_value(lib_data_gpu->_arcs_gpu[0]._table[0], slew,
+  *d_value = find_value(lib_data_gpu._arcs_gpu[0]._table[0], slew,
                         constrain_slew_or_load);
 }
 
-double find_value(LibDataGPU& lib_data_gpu, double slew,
+double find_value(Lib_Data_GPU& lib_data_gpu, double slew,
                   double constrain_slew_or_load) {
   // print first arc's first table of lib_data_gpu for debug.
   print_lib_data_gpu_first_arc_first_table(lib_data_gpu);
 
   // transfer lib_data_gpu_host(host pointer) to lib_data_gpu_device(device
   // pointer) for launching kernel.
-  LibDataGPU* lib_data_gpu_host = &lib_data_gpu;
+  Lib_Data_GPU lib_data_gpu_host = lib_data_gpu;
 
-  LibDataGPU* lib_data_gpu_device;
-  cudaMalloc((void**)&lib_data_gpu_device, sizeof(LibDataGPU));
-  cudaMemcpy(lib_data_gpu_device, lib_data_gpu_host, sizeof(LibDataGPU),
-             cudaMemcpyHostToDevice);
 
   // launch kernel
   double* d_value;
   cudaMalloc((void**)&d_value, sizeof(double));
-  kernel_find_value<<<1, 1>>>(lib_data_gpu_device, slew, constrain_slew_or_load,
+  kernel_find_value<<<1, 1>>>(lib_data_gpu_host, slew, constrain_slew_or_load,
                               d_value);
   CUDA_CHECK_ERROR();
   cudaDeviceSynchronize();
@@ -484,7 +480,6 @@ double find_value(LibDataGPU& lib_data_gpu, double slew,
   double value;
   cudaMemcpy(&value, d_value, sizeof(double), cudaMemcpyDeviceToHost);
 
-  cudaFree(lib_data_gpu_device);
   cudaFree(d_value);
 
   return value;

@@ -44,35 +44,29 @@ struct Axis_Region {
 };
 
 /**
- * @brief find value of LibTableGPU according to slew and
+ * @brief find value of Lib_Table_GPU according to slew and
  * constrain_slew_or_load.
  * @param lib_table_gpu
  * @param slew
  * @param constrain_slew_or_load
  */
-__device__ double find_value(LibTableGPU& lib_table_gpu, double slew,
+__device__ double find_value(Lib_Table_GPU& lib_table_gpu, double slew,
                              double constrain_slew_or_load);
 
 /**
- * @brief build gpu LibArcGPU(lib_data_gpu._arcs_gpu) according to cpu
- * LibArcGPU(lib_arcs_cpu).
- * @param lib_data_gpu The struct of LibDataGPU.
- * @param lib_arcs_cpu The vector of LibArcGPU.
+ * @brief build gpu Lib_Arc_GPU(lib_data_gpu._arcs_gpu) according to cpu
+ * Lib_Arc_GPU(lib_arcs_cpu).
+ * @param lib_data_gpu The struct of Lib_Data_GPU.
+ * @param lib_arcs_cpu The vector of Lib_Arc_GPU.
  */
-void build_lib_data_gpu(LibDataGPU& lib_data_gpu,
-                        std::vector<LibArcGPU*> lib_arcs_cpu);
+void build_lib_data_gpu(Lib_Data_GPU& lib_data_gpu,
+                        std::vector<Lib_Arc_GPU*> lib_arcs_cpu);
+
 
 /**
  * @brief for test.
  */
-__global__ void kernel_find_value(LibDataGPU& lib_data_gpu, double slew,
-                                  double constrain_slew_or_load,
-                                  double* d_value);
-
-/**
- * @brief for test.
- */
-double find_value(LibDataGPU& lib_data_gpu, double slew,
+double find_value(Lib_Data_GPU& lib_data_gpu, double slew,
                   double constrain_slew_or_load);
 
 }  // namespace ista

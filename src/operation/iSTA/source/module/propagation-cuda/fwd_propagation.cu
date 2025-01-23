@@ -28,6 +28,7 @@
 
 #include "fwd_propagation.cuh"
 #include "gpu/cuda_common.cuh"
+#include "propagation.cuh"
 
 namespace ista {
 
@@ -265,10 +266,11 @@ void copy_to_sta_graph(GPU_Graph& the_cpu_graph, GPU_Graph& the_gpu_graph,
  * then, propagate level by level.
  */
 void gpu_propagate_fwd(
-    GPU_Graph& the_cpu_graph, unsigned vertex_data_size, unsigned arc_data_size,
-    std::map<unsigned, GPU_BFS_Propagated_Arc>& level_to_arcs) {
+    GPU_Graph& the_cpu_graph, unsigned vertex_data_size, unsigned arc_data_size, 
+    std::map<unsigned, GPU_BFS_Propagated_Arc>& level_to_arcs, Lib_Data_GPU& lib_data) {
   auto the_gpu_graph =
       copy_from_sta_graph(the_cpu_graph, vertex_data_size, arc_data_size);
+
   // TODO(to taosimin), copy arc id to gpu bfs propagated arc.
   for (auto& [level, the_arcs] : level_to_arcs) {
     propagate_fwd<<<1, 1000>>>(the_gpu_graph, the_arcs);

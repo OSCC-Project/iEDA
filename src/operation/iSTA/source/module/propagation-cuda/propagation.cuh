@@ -15,10 +15,10 @@
 namespace ista {
 
 /**
- * @brief The struct of LibTableGPU.
+ * @brief The struct of Lib_Table_GPU.
  *
  */
-struct LibTableGPU {
+struct Lib_Table_GPU {
   double* _x;
   double* _y;
   unsigned _num_x = 0;
@@ -33,11 +33,11 @@ struct LibTableGPU {
 };
 
 /**
- * @brief The struct of LibArcGPU.
+ * @brief The struct of Lib_Arc_GPU.
  *
  */
-struct LibArcGPU {
-  LibTableGPU* _table;
+struct Lib_Arc_GPU {
+  Lib_Table_GPU* _table;
   unsigned _num_table;  //!< number of tables.(first case:SSTA:12 tables;second
                         //!< case(delay arc):4 tables; third case(check arc):2
                         //!< tables. ps:the table's index order is the same as
@@ -45,11 +45,11 @@ struct LibArcGPU {
 };
 
 /**
- * @brief The struct of LibDataGPU.
+ * @brief The struct of Lib_Data_GPU.
  *
  */
-struct LibDataGPU {
-  LibArcGPU* _arcs_gpu;  //!< points to GPU arc datas.
+struct Lib_Data_GPU {
+  Lib_Arc_GPU* _arcs_gpu;  //!< points to GPU arc datas.
   unsigned _num_arcs;    //!< GPU arc datas.
 };
 

@@ -372,7 +372,7 @@ class Sta {
   StaGraph& get_graph() { return _graph; }
   bool isBuildGraph() { return !_graph.get_vertexes().empty(); }
   unsigned buildLibArcsGPU();
-  std::vector<LibArcGPU*> getLibArcsGPU();
+  std::vector<Lib_Arc_GPU*> getLibArcsGPU();
 
   StaVertex* findVertex(const char* pin_name);
   StaVertex* findVertex(DesignObject* obj) {
