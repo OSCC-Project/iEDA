@@ -401,6 +401,7 @@ class StaVertex {
   }
 
   double getLoad(AnalysisMode analysis_mode, TransType trans_type);
+  double getNetSlewImpulse(AnalysisMode analysis_mode, TransType trans_type);
   double getNetLoad();
   double getResistance(AnalysisMode analysis_mode, TransType trans_type);
   int getNetworkLatency(AnalysisMode analysis_mode, TransType trans_type);
