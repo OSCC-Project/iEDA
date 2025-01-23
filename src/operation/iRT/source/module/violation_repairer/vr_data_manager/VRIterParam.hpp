@@ -61,5 +61,4 @@ class VRIterParam
   int32_t _max_routed_times = 0;
 };
 
-
 }  // namespace irt

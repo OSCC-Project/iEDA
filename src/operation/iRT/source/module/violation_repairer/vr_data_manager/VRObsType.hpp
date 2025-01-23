@@ -14,49 +14,42 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
-#include "engine_sublayout.h"
+#pragma once
 
-#include "engine_geometry_creator.h"
+#include <string>
 
-namespace idrc {
+#include "Logger.hpp"
 
-DrcEngineSubLayout::DrcEngineSubLayout(int id)
+namespace irt {
+
+enum class VRObsType
 {
-  _id = id;
+  kNone = 0,
+  kPlanar = 1,
+  kSpace = 2
+};
 
-  ieda_solver::EngineGeometryCreator geo_creator;
-  _engine = geo_creator.create();
-}
-
-DrcEngineSubLayout::~DrcEngineSubLayout()
+struct GetVRObsTypeName
 {
-  if (_engine != nullptr) {
-    delete _engine;
-    _engine = nullptr;
+  std::string operator()(const VRObsType& vr_obs_type) const
+  {
+    std::string vr_obs_type_name;
+    switch (vr_obs_type) {
+      case VRObsType::kNone:
+        vr_obs_type_name = "none";
+        break;
+      case VRObsType::kPlanar:
+        vr_obs_type_name = "planar";
+        break;
+      case VRObsType::kSpace:
+        vr_obs_type_name = "space";
+        break;
+      default:
+        RTLOG.error(Loc::current(), "Unrecognized type!");
+        break;
+    }
+    return vr_obs_type_name;
   }
+};
 
-  _check_nets.clear();
-}
-
-bool DrcEngineSubLayout::isIntersect(int llx, int lly, int urx, int ury)
-{
-  return _engine->isIntersect(llx, lly, urx, ury);
-}
-
-void DrcEngineSubLayout::markChecked(int net_id)
-{
-  _check_nets.insert(net_id);
-}
-
-bool DrcEngineSubLayout::hasChecked(int net_id)
-{
-  return _check_nets.find(net_id) != _check_nets.end() ? true : false;
-}
-
-bool DrcEngineSubLayout::clearChecked()
-{
-  _check_nets.clear();
-  return true;
-}
-
-}  // namespace idrc
+}  // namespace irt

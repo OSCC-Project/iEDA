@@ -63,41 +63,33 @@ class ViolationRepairer
   void splitNetResult(VRModel& vr_model);
   void routeVRBoxMap(VRModel& vr_model);
   void buildFixedRect(VRBox& vr_box);
+  void buildViolation(VRBox& vr_box);
+  void initVRTaskList(VRModel& vr_model, VRBox& vr_box);
   void buildNetResult(VRBox& vr_box);
   void buildNetPatch(VRBox& vr_box);
-  void initVRTaskList(VRModel& vr_model, VRBox& vr_box);
-  void buildViolation(VRBox& vr_box);
   bool needRouting(VRBox& vr_box);
   void buildBoxTrackAxis(VRBox& vr_box);
   void buildLayerNodeMap(VRBox& vr_box);
-  void buildOrientNetMap(VRBox& vr_box);
+  void buildObsTypeNetMap(VRBox& vr_box);
   void exemptPinShape(VRBox& vr_box);
   void routeVRBox(VRBox& vr_box);
-  std::vector<VRTask*> initTaskSchedule(VRBox& vr_box);
-  void routeVRTask(VRBox& vr_box, VRTask* vr_task);
-  void updateViolationList(VRBox& vr_box);
-  std::vector<Violation> getCostViolationList(VRBox& vr_box);
-  void updateBestResult(VRBox& vr_box);
-  void updateTaskSchedule(VRBox& vr_box, std::vector<VRTask*>& routing_task_list);
-  void selectBestResult(VRBox& vr_box);
-  void uploadBestResult(VRBox& vr_box);
+  void uploadNetResult(VRBox& vr_box);
+  void uploadNetPatch(VRBox& vr_box);
+  void uploadViolation(VRBox& vr_box);
   void freeVRBox(VRBox& vr_box);
   int32_t getViolationNum();
   void uploadNetResult(VRModel& vr_model);
-  void updateBestResult(VRModel& vr_model);
+  void uploadNetPatch(VRModel& vr_model);
   bool stopIteration(VRModel& vr_model);
-  void selectBestResult(VRModel& vr_model);
-  void uploadBestResult(VRModel& vr_model);
-
 #if 1  // update env
   void updateFixedRectToGraph(VRBox& vr_box, ChangeType change_type, int32_t net_idx, EXTLayerRect* fixed_rect, bool is_routing);
   void updateFixedRectToGraph(VRBox& vr_box, ChangeType change_type, int32_t net_idx, Segment<LayerCoord>& segment);
-  void updateNetResultToGraph(VRBox& vr_box, ChangeType change_type, int32_t net_idx, Segment<LayerCoord>& segment);
+  void updateRoutedRectToGraph(VRBox& vr_box, ChangeType change_type, int32_t net_idx, Segment<LayerCoord>& segment);
+  void updateRoutedRectToGraph(VRBox& vr_box, ChangeType change_type, int32_t net_idx, EXTLayerRect& patch);
   void addViolationToGraph(VRBox& vr_box, Violation& violation);
-  void addViolationToGraph(VRBox& vr_box, LayerRect& searched_rect, std::vector<Segment<LayerCoord>>& overlap_segment_list);
-  std::map<VRNode*, std::set<Orientation>> getNodeOrientationMap(VRBox& vr_box, NetShape& net_shape, bool need_enlarged);
-  std::map<VRNode*, std::set<Orientation>> getRoutingNodeOrientationMap(VRBox& vr_box, NetShape& net_shape, bool need_enlarged);
-  std::map<VRNode*, std::set<Orientation>> getCutNodeOrientationMap(VRBox& vr_box, NetShape& net_shape, bool need_enlarged);
+  std::map<VRNode*, std::set<VRObsType>> getNodeObsTypeMap(VRBox& vr_box, NetShape& net_shape, bool need_enlarged);
+  std::map<VRNode*, std::set<VRObsType>> getRoutingNodeObsTypeMap(VRBox& vr_box, NetShape& net_shape, bool need_enlarged);
+  std::map<VRNode*, std::set<VRObsType>> getCutNodeObsTypeMap(VRBox& vr_box, NetShape& net_shape, bool need_enlarged);
 #endif
 
 #if 1  // exhibit
