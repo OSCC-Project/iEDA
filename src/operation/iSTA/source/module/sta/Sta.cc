@@ -2598,7 +2598,7 @@ unsigned Sta::reportTiming(std::set<std::string> &&exclude_cell_names /*= {}*/,
 
   writeVerilog(verilog_file_name.c_str(), exclude_cell_names);
 
-  // reportUsedLibs();
+  reportUsedLibs();
 
   LOG_INFO << "The timing engine run success.";
 
@@ -2618,6 +2618,7 @@ unsigned Sta::reportUsedLibs() {
       LOG_INFO << "used lib: " << lib_name;
     }
   }
+  return 1;
 }
 
 /**
