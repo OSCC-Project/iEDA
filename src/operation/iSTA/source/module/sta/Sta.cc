@@ -1366,12 +1366,11 @@ unsigned Sta::buildLibArcsGPU() {
   unsigned arc_id = 0;
   FOREACH_ARC(the_graph, the_arc) {
     if (the_arc->isInstArc()) {
-      if (the_arc->isDelayArc()) {
-        auto *the_cell =
-            dynamic_cast<StaInstArc *>(the_arc)->get_inst()->get_inst_cell();
-        auto the_cell_name = the_cell->get_cell_name();
+      if (the_arc->isDelayArc() || the_arc->isCheckArc()) {
+        // auto *the_cell =
+        //     dynamic_cast<StaInstArc *>(the_arc)->get_inst()->get_inst_cell();
+        // auto the_cell_name = the_cell->get_cell_name();
         dynamic_cast<StaInstArc *>(the_arc)->buildLibArcsGPU();
-
         dynamic_cast<StaInstArc *>(the_arc)->set_arc_id(arc_id);
         ++arc_id;
       }
@@ -1390,7 +1389,7 @@ std::vector<LibArcGPU *> Sta::getLibArcsGPU() {
   StaArc *the_arc;
   FOREACH_ARC(the_graph, the_arc) {
     if (the_arc->isInstArc()) {
-      if (the_arc->isDelayArc()) {
+      if (the_arc->isDelayArc() || the_arc->isCheckArc()) {
         auto *lib_arc_gpu =
             dynamic_cast<StaInstArc *>(the_arc)->get_lib_gpu_arc();
         lib_gpu_arcs.emplace_back(lib_arc_gpu);
