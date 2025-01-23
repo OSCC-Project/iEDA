@@ -306,8 +306,6 @@ void build_lib_data_gpu(LibDataGPU& lib_data_gpu,
       lib_arcs_cpu.push_back(*arc_ptr);
     }
   }
-  // ???  not sure need _arcs as member of LibDataGPU
-  lib_data_gpu._arcs = lib_arcs_cpu;
 
   lib_data_gpu._num_arcs = lib_arcs_cpu_ptr.size();
 
