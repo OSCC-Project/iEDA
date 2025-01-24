@@ -47,6 +47,7 @@ class VerilogWriter
   bool isNeedEscape(const std::string& name);
   std::string escapeName(const std::string& name);
   std::string addSpaceForEscapeName(const std::string& name);
+  bool isMiddleSquareBracket(const std::string& str);
 
  protected:
   void writePorts();
