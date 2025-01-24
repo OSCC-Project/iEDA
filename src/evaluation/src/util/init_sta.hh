@@ -55,6 +55,7 @@ struct TimingWireNode {
 struct TimingWireEdge {
   unsigned _from_node = 0;
   unsigned _to_node = 0;
+  bool _is_net_edge = true;
 };
 
 struct TimingWireGraph {
