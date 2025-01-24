@@ -46,6 +46,33 @@ enum GPU_Analysis_Mode { kMax = 0, kMin = 0 };
  */
 enum GPU_Arc_Type { kInstDelayArc = 0, kInstCheckArc = 0, kNet = 1 };
 
+enum GPU_Arc_Trans_Type { kPositive = 0, kNegative = 0, kNonUnate = 1 };
+
+enum GPU_TABLE_TYPE {
+  kCellRise = 0,
+  kCellFall = 1,
+  kRiseTransition = 2,
+  kFallTransition = 3,
+  kRiseConstrain = 4,
+  kFallConstrain = 5,
+  kRiseCurrent = 6,
+  kFallCurrent = 7,
+  // power
+  kRisePower = 8,
+  kFallPower = 9,
+  // sigma
+  kCellRiseSigma = 10,
+  kCellFallSigma = 12,
+  kRiseTransitionSigma = 14,
+  kFallTransitionSigma = 16
+};
+
+enum GPU_TABLE_BASE_INDEX {
+  kDelayBase = GPU_TABLE_TYPE::kCellRise,
+  kTransitionBase = GPU_TABLE_TYPE::kRiseTransition,
+  kCheckBase = GPU_TABLE_TYPE::kRiseConstrain
+};
+
 /**
  * @brief The fwd data common type.
  *
@@ -104,6 +131,7 @@ using GPU_ARC_DATA = GPU_Vertex_Data;
  */
 struct GPU_Arc {
   GPU_Arc_Type _arc_type;   //!< The arc type inst or net arc.
+  GPU_Arc_Trans_Type _arc_trans_type; //!< The arc trans type.
   unsigned _src_vertex_id;  //!< The src vertex id mapping the host StaVertex.
   unsigned _snk_vertex_id;  //!< The snk vertex id mapping the host StaVertex.
   GPU_ARC_DATA _delay_values;

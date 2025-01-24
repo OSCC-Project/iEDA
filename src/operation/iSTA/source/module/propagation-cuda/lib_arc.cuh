@@ -66,7 +66,7 @@ void build_lib_data_gpu(Lib_Data_GPU& lib_data_gpu,
 /**
  * @brief for test.
  */
-double find_value(Lib_Data_GPU& lib_data_gpu, double slew,
+double find_value_test(Lib_Data_GPU& lib_data_gpu, double slew,
                   double constrain_slew_or_load);
 
 }  // namespace ista

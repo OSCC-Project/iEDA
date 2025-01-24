@@ -44,7 +44,7 @@ namespace ista {
  * @return __device__
  */
 __device__ void lut_inst_slew_delay(GPU_Graph* the_graph,
-                                    Lib_Data_GPU& the_lib_data,
+                                    Lib_Arc_GPU& the_lib_arc,
                                     GPU_Vertex_Data* in_slew,
                                     GPU_Vertex_Data* out_load,
                                     GPU_Vertex_Data* snk_slew,
@@ -57,7 +57,8 @@ __device__ void lut_inst_slew_delay(GPU_Graph* the_graph,
                        one_src_slew_data) {
     FOREACH_GPU_FWD_DATA(the_graph->_flatten_node_cap_data, (*out_load),
                          one_snk_cap_data) {
-      find_value(the_lib_data._arcs_gpu[0]._table[0],
+      auto& the_lib_table = the_lib_arc._table[0];
+      find_value(the_lib_table,
                  one_src_slew_data._data_value, one_snk_cap_data._data_value);
     }
   }
@@ -72,7 +73,7 @@ __device__ void lut_inst_slew_delay(GPU_Graph* the_graph,
  * @return __device__
  */
 __device__ void lut_constraint_delay(GPU_Graph* the_graph,
-                                     Lib_Data_GPU& the_lib_data,
+                                     Lib_Arc_GPU& the_lib_arc,
                                      GPU_Vertex_Data* in_slew,
                                      GPU_Vertex_Data* snk_slew,
                                      GPU_Vertex_Data* arc_delay) {
@@ -84,7 +85,8 @@ __device__ void lut_constraint_delay(GPU_Graph* the_graph,
                        one_src_slew_data) {
     FOREACH_GPU_FWD_DATA(the_graph->_flatten_slew_data, (*snk_slew),
                          one_snk_slew_data) {
-      find_value(the_lib_data._arcs_gpu[0]._table[0],
+      auto& the_lib_table = the_lib_arc._table[0];
+      find_value(the_lib_table,
                  one_src_slew_data._data_value, one_snk_slew_data._data_value);
     }
   }
@@ -119,19 +121,28 @@ __global__ void propagate_fwd(GPU_Graph the_graph, Lib_Data_GPU the_lib_data,
     unsigned current_arc_id = propagated_arcs._arc_index[i];
     GPU_Arc current_arc = the_graph._arcs[current_arc_id];
     GPU_Arc_Type current_arc_type = current_arc._arc_type;
+    GPU_Arc_Trans_Type current_arc_trans_type = current_arc._arc_trans_type;
     unsigned src_vertex_id = current_arc._src_vertex_id;
     unsigned snk_vertex_id = current_arc._snk_vertex_id;
     auto src_vertex = the_graph._vertices[src_vertex_id];
     auto snk_vertex = the_graph._vertices[snk_vertex_id];
 
+    unsigned lib_arc_id = current_arc._lib_data_arc_id;
+    auto lib_arc = the_lib_data._arcs_gpu[lib_arc_id];
+
     if (current_arc_type == kInstDelayArc) {
-      // lut table for snk arc slew and arc delay use src slew and out cap.
-      lut_inst_slew_delay(&the_graph, the_lib_data, &src_vertex._slew_data,
-                          &snk_vertex._node_cap_data, &snk_vertex._slew_data,
-                          &current_arc._delay_values);
+      for (auto trans_type : {GPU_Trans_Type::kRise, GPU_Trans_Type::kFall}) {
+        
+        // lut table for snk arc slew and arc delay use src slew and out cap.
+        lut_inst_slew_delay(&the_graph, lib_arc, &src_vertex._slew_data,
+                            &snk_vertex._node_cap_data, &snk_vertex._slew_data,
+                            &current_arc._delay_values);
+        
+      }
+
     } else if (current_arc_type == kInstCheckArc) {
       // lut table for get constrain value for check arc.
-      lut_constraint_delay(&the_graph, the_lib_data, &src_vertex._slew_data,
+      lut_constraint_delay(&the_graph, lib_arc, &src_vertex._slew_data,
                            &snk_vertex._slew_data, &current_arc._delay_values);
     } else {
       // for net arc

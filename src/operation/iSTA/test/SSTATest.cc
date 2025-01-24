@@ -65,7 +65,7 @@ TEST_F(SSTATest, test) {
       timing_engine->get_ista()->getLibArcsGPU();
   Lib_Data_GPU lib_data_gpu;
   build_lib_data_gpu(lib_data_gpu, lib_arcs_gpu);
-  double ret_val = find_value(lib_data_gpu, 0.00472397, 1.897810);
+  double ret_val = find_value_test(lib_data_gpu, 0.00472397, 1.897810);
 
   double memory_delta = stats.memoryDelta();
   LOG_INFO << "memory usage " << memory_delta << "MB";

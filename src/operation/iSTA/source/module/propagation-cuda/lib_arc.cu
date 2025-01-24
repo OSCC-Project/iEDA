@@ -459,7 +459,7 @@ __global__ void kernel_find_value(Lib_Data_GPU lib_data_gpu, double slew,
                         constrain_slew_or_load);
 }
 
-double find_value(Lib_Data_GPU& lib_data_gpu, double slew,
+double find_value_test(Lib_Data_GPU& lib_data_gpu, double slew,
                   double constrain_slew_or_load) {
   // print first arc's first table of lib_data_gpu for debug.
   print_lib_data_gpu_first_arc_first_table(lib_data_gpu);
