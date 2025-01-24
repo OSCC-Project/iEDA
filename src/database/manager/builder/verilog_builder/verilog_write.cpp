@@ -481,7 +481,7 @@ std::string VerilogWriter::escapeName(const std::string& name)
   std::string trim_name = ieda::Str::trimBackslash(name);
 
   std::string add_back_slash_name;
-  if (isMiddleBracket(trim_name)) {
+  if (isMiddleSquareBracket(trim_name)) {
     add_back_slash_name = ieda::Str::addDoubleBackslash(trim_name);
   } else {
     add_back_slash_name = trim_name;
