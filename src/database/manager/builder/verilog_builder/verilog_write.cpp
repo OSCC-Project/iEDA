@@ -480,18 +480,11 @@ std::string VerilogWriter::escapeName(const std::string& name)
 {
   std::string trim_name = ieda::Str::trimBackslash(name);
 
-  std::string add_back_slash_name;
-  if (isMiddleSquareBracket(trim_name)) {
-    add_back_slash_name = ieda::Str::addDoubleBackslash(trim_name);
-  } else {
-    add_back_slash_name = trim_name;
-  }
-
   std::string escape_name;
   if (_is_add_space_for_escape_name) {
-    escape_name = isNeedEscape(add_back_slash_name) ? "\\" + addSpaceForEscapeName(add_back_slash_name) : add_back_slash_name;
+    escape_name = isNeedEscape(trim_name) ? "\\" + addSpaceForEscapeName(trim_name) : trim_name;
   } else {
-    escape_name = isNeedEscape(add_back_slash_name) ? "\\" + add_back_slash_name : add_back_slash_name;
+    escape_name = isNeedEscape(trim_name) ? "\\" + trim_name : trim_name;
   }
 
   return escape_name;
