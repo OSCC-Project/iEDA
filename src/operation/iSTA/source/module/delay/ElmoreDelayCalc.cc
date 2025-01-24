@@ -1086,15 +1086,16 @@ std::map<std::string, double>& RcNet::getAllNodeSlew(double driver_slew,
   if (_all_node_slews) {
     return *_all_node_slews;
   }
-
-  std::map<std::string, double> all_node_slews;
+  
   if (_rct.index() == 0) {
-    return all_node_slews;
+    return *_all_node_slews;
   }
 
-  std::function<void(RctNode*, RctNode*, double)> get_snk_slew =
-      [&get_snk_slew, this, mode, trans_type, &all_node_slews](
-          RctNode* parent_node, RctNode* src_node, double from_slew) {
+  std::map<std::string, double> all_node_slews;
+
+  std::function<void(RctNode*, RctNode*)> get_snk_slew =
+      [&get_snk_slew, this, mode, trans_type, driver_slew, &all_node_slews](
+          RctNode* parent_node, RctNode* src_node) {
         auto& fanout_edges = src_node->get_fanout();
         for (auto* fanout_edge : fanout_edges) {
           auto& snk_node = fanout_edge->_to;
@@ -1102,10 +1103,10 @@ std::map<std::string, double>& RcNet::getAllNodeSlew(double driver_slew,
             continue;
           }
 
-          auto snk_slew = snk_node.slew(mode, trans_type, from_slew);
-          all_node_slews[snk_node.get_name()] = snk_slew;
+          auto snk_slew = snk_node.slew(mode, trans_type, NS_TO_PS(driver_slew));
+          all_node_slews[snk_node.get_name()] = PS_TO_NS(snk_slew);
 
-          get_snk_slew(src_node, &snk_node, snk_slew);
+          get_snk_slew(src_node, &snk_node);
         }
       };
 
@@ -1113,7 +1114,7 @@ std::map<std::string, double>& RcNet::getAllNodeSlew(double driver_slew,
   auto* rc_root = rc_tree->_root;
   all_node_slews[rc_root->get_name()] = driver_slew;
 
-  get_snk_slew(nullptr, rc_root, driver_slew);
+  get_snk_slew(nullptr, rc_root);
 
   _all_node_slews = std::move(all_node_slews);
 
