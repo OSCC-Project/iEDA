@@ -34,6 +34,31 @@
 namespace ista {
 
 /**
+ * @brief Get the one fwd data object accroding the analysis mode and trans type.
+ * 
+ * @param flatten_all_datas 
+ * @param the_vertex_data 
+ * @param analysis_mode 
+ * @param trans_type 
+ * @return GPU_Fwd_Data 
+ */
+__device__ GPU_Fwd_Data get_one_fwd_data(GPU_Fwd_Data* flatten_all_datas,
+                              GPU_Vertex_Data* the_vertex_data,
+                              GPU_Analysis_Mode analysis_mode,
+                              GPU_Trans_Type trans_type) {
+    for (unsigned i = 0; i < the_vertex_data->_num_fwd_data; ++i) {
+      auto fwd_data = flatten_all_datas[the_vertex_data->_start_pos + i];
+      if (fwd_data._analysis_mode == analysis_mode && fwd_data._trans_type == trans_type) {
+        return fwd_data;
+      }
+    }
+
+    GPU_Fwd_Data error_fwd_data;
+    return error_fwd_data;
+
+}
+
+/**
  * @brief device function for lut delay arc, using slew and load
  *
  * @param trans_type
@@ -45,21 +70,54 @@ namespace ista {
  */
 __device__ void lut_inst_slew_delay(GPU_Graph* the_graph,
                                     Lib_Arc_GPU& the_lib_arc,
+                                    GPU_Arc_Trans_Type the_arc_trans_type,
                                     GPU_Vertex_Data* in_slew,
                                     GPU_Vertex_Data* out_load,
                                     GPU_Vertex_Data* snk_slew,
                                     GPU_Vertex_Data* arc_delay) {
   // TODO(to taosimin), call gpu lut table.
   // store the lut value
+
+  auto find_slew_delay = [the_lib_arc](auto in_trans_type,
+                                       auto& one_src_slew_data,
+                                       auto& one_snk_cap_data) {
+    auto& the_slew_lib_table =
+        the_lib_arc
+            ._table[GPU_Table_Base_Index::kTransitionBase + in_trans_type];
+    double slew_value = find_value(the_slew_lib_table, one_src_slew_data._data_value,
+                                   one_snk_cap_data._data_value);
+    auto& the_delay_lib_table =
+        the_lib_arc._table[GPU_Table_Base_Index::kDelayBase + in_trans_type];
+    double delay_value =
+        find_value(the_delay_lib_table, one_src_slew_data._data_value,
+                   one_snk_cap_data._data_value);
+
+    return std::pair(slew_value, delay_value);
+  };
+
   GPU_Fwd_Data one_src_slew_data;
   GPU_Fwd_Data one_snk_cap_data;
   FOREACH_GPU_FWD_DATA(the_graph->_flatten_slew_data, (*in_slew),
                        one_src_slew_data) {
-    FOREACH_GPU_FWD_DATA(the_graph->_flatten_node_cap_data, (*out_load),
-                         one_snk_cap_data) {
-      auto& the_lib_table = the_lib_arc._table[0];
-      find_value(the_lib_table,
-                 one_src_slew_data._data_value, one_snk_cap_data._data_value);
+    GPU_Trans_Type in_trans_type = one_src_slew_data._trans_type;
+    GPU_Analysis_Mode analysis_mode = one_src_slew_data._analysis_mode;
+    auto out_trans_type = in_trans_type;
+    if (the_arc_trans_type == GPU_Arc_Trans_Type::kNegative) {
+      out_trans_type = FLIP_TRANS(in_trans_type);
+    }
+    auto one_snk_cap_data =
+        get_one_fwd_data(the_graph->_flatten_node_cap_data, out_load,
+                         analysis_mode, out_trans_type);
+    auto [slew, delay] =
+        find_slew_delay(out_trans_type, one_src_slew_data, one_snk_cap_data);
+    if (the_arc_trans_type == GPU_Arc_Trans_Type::kNonUnate) {
+      // non unate split the trans type into two type.
+      out_trans_type = FLIP_TRANS(in_trans_type);
+      auto one_snk_cap_data =
+          get_one_fwd_data(the_graph->_flatten_node_cap_data, out_load,
+                           analysis_mode, out_trans_type);
+      auto [slew1, delay1] =
+          find_slew_delay(out_trans_type, one_src_slew_data, one_snk_cap_data);
     }
   }
 }
@@ -85,9 +143,12 @@ __device__ void lut_constraint_delay(GPU_Graph* the_graph,
                        one_src_slew_data) {
     FOREACH_GPU_FWD_DATA(the_graph->_flatten_slew_data, (*snk_slew),
                          one_snk_slew_data) {
-      auto& the_lib_table = the_lib_arc._table[0];
-      find_value(the_lib_table,
-                 one_src_slew_data._data_value, one_snk_slew_data._data_value);
+      auto snk_trans = one_snk_slew_data._trans_type;
+      auto& the_lib_table = the_lib_arc._table[GPU_Table_Base_Index::kCheckBase + snk_trans];
+
+      double delay_value =
+        find_value(the_lib_table, one_src_slew_data._data_value,
+                   one_snk_slew_data._data_value);
     }
   }
 }
@@ -131,14 +192,9 @@ __global__ void propagate_fwd(GPU_Graph the_graph, Lib_Data_GPU the_lib_data,
     auto lib_arc = the_lib_data._arcs_gpu[lib_arc_id];
 
     if (current_arc_type == kInstDelayArc) {
-      for (auto trans_type : {GPU_Trans_Type::kRise, GPU_Trans_Type::kFall}) {
-        
-        // lut table for snk arc slew and arc delay use src slew and out cap.
-        lut_inst_slew_delay(&the_graph, lib_arc, &src_vertex._slew_data,
-                            &snk_vertex._node_cap_data, &snk_vertex._slew_data,
-                            &current_arc._delay_values);
-        
-      }
+      lut_inst_slew_delay(&the_graph, lib_arc, current_arc_trans_type,
+                          &src_vertex._slew_data, &snk_vertex._node_cap_data,
+                          &snk_vertex._slew_data, &current_arc._delay_values);
 
     } else if (current_arc_type == kInstCheckArc) {
       // lut table for get constrain value for check arc.

@@ -34,6 +34,10 @@ namespace ista {
  */
 enum GPU_Trans_Type { kRise = 0, kFall = 1 };
 
+#define FLIP_TRANS(trans)                                  \
+  (trans == GPU_Trans_Type::kRise) ? GPU_Trans_Type::kFall \
+                                   : GPU_Trans_Type::kRise
+
 /**
  * @brief The analysis mode.
  *
@@ -48,7 +52,7 @@ enum GPU_Arc_Type { kInstDelayArc = 0, kInstCheckArc = 0, kNet = 1 };
 
 enum GPU_Arc_Trans_Type { kPositive = 0, kNegative = 0, kNonUnate = 1 };
 
-enum GPU_TABLE_TYPE {
+enum GPU_Table_Type {
   kCellRise = 0,
   kCellFall = 1,
   kRiseTransition = 2,
@@ -67,10 +71,10 @@ enum GPU_TABLE_TYPE {
   kFallTransitionSigma = 16
 };
 
-enum GPU_TABLE_BASE_INDEX {
-  kDelayBase = GPU_TABLE_TYPE::kCellRise,
-  kTransitionBase = GPU_TABLE_TYPE::kRiseTransition,
-  kCheckBase = GPU_TABLE_TYPE::kRiseConstrain
+enum GPU_Table_Base_Index {
+  kDelayBase = GPU_Table_Type::kCellRise,
+  kTransitionBase = GPU_Table_Type::kRiseTransition,
+  kCheckBase = GPU_Table_Type::kRiseConstrain
 };
 
 /**
@@ -108,6 +112,8 @@ struct GPU_Vertex_Data {
                 true : false;                                            \
        ++i)
 
+
+
 constexpr unsigned c_gpu_num_vertex_data = 4;
 constexpr unsigned c_gpu_num_node_data = 4;
 /**
@@ -130,13 +136,13 @@ using GPU_ARC_DATA = GPU_Vertex_Data;
  *
  */
 struct GPU_Arc {
-  GPU_Arc_Type _arc_type;   //!< The arc type inst or net arc.
-  GPU_Arc_Trans_Type _arc_trans_type; //!< The arc trans type.
+  GPU_Arc_Type _arc_type;              //!< The arc type inst or net arc.
+  GPU_Arc_Trans_Type _arc_trans_type;  //!< The arc trans type.
   unsigned _src_vertex_id;  //!< The src vertex id mapping the host StaVertex.
   unsigned _snk_vertex_id;  //!< The snk vertex id mapping the host StaVertex.
   GPU_ARC_DATA _delay_values;
 
-  int _lib_data_arc_id; //!< The lib data arc id.
+  int _lib_data_arc_id;  //!< The lib data arc id.
 };
 
 /**
@@ -167,8 +173,7 @@ struct GPU_Graph {
   GPU_Fwd_Data*
       _flatten_node_impulse_data;  //!< The all node impulse data of the vertex.
 
-  GPU_Fwd_Data*
-      _flatten_arc_delay_data;  //!< The all arc delay data.
+  GPU_Fwd_Data* _flatten_arc_delay_data;  //!< The all arc delay data.
 };
 
 }  // namespace ista

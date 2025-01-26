@@ -421,10 +421,19 @@ GPU_Graph build_gpu_graph(StaGraph* the_sta_graph) {
                                   ? GPU_Arc_Type::kInstCheckArc
                                   : GPU_Arc_Type::kNet;
 
+    gpu_arc._arc_trans_type = the_arc->isInstArc()
+                                  ? the_arc->isPositiveArc()
+                                        ? GPU_Arc_Trans_Type::kPositive
+                                        : the_arc->isNegativeArc()
+                                              ? GPU_Arc_Trans_Type::kNegative
+                                              : GPU_Arc_Trans_Type::kNonUnate
+                                  : GPU_Arc_Trans_Type::kPositive;
+
     gpu_arc._src_vertex_id = vertex_to_id[the_arc->get_src()];
     gpu_arc._snk_vertex_id = vertex_to_id[the_arc->get_snk()];
     if (the_arc->isInstArc()) {
-      gpu_arc._lib_data_arc_id = dynamic_cast<StaInstArc*>(the_arc)->get_arc_id();
+      gpu_arc._lib_data_arc_id =
+          dynamic_cast<StaInstArc*>(the_arc)->get_arc_id();
     } else {
       gpu_arc._lib_data_arc_id = -1;
     }
