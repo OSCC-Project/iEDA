@@ -865,12 +865,39 @@ double StaVertex::getNetSlewImpulse(AnalysisMode analysis_mode, TransType trans_
 
   if (the_net->getDriver() != obj) {
     auto* rc_net = Sta::getOrCreateSta()->getRcNet(the_net);
-    load_impulse = rc_net ? rc_net->slewImpulse(*obj, analysis_mode, trans_type)
+    load_impulse = rc_net ? PS_TO_NS(rc_net->slewImpulse(*obj, analysis_mode, trans_type))
                          : 0.0;
   } 
 
   return load_impulse;
 
+}
+/**
+ * @brief Get the slew delay for the net load node.
+ * 
+ * @param analysis_mode 
+ * @param trans_type 
+ * @return double 
+ */
+double StaVertex::getNetLoadDelay(AnalysisMode analysis_mode, TransType trans_type) {
+  double load_delay = 0.0;
+
+  auto* obj = get_design_obj();
+  auto* the_net = obj->get_net();
+  if (!the_net) {
+    return 0.0;
+  }
+
+  if (the_net->getDriver() != obj) {
+    auto* rc_net = Sta::getOrCreateSta()->getRcNet(the_net);
+    
+    if (rc_net) {
+      auto* node = rc_net->rct()->node(obj->getFullName());
+      load_delay = PS_TO_NS(node->delay(analysis_mode, trans_type));
+    }
+  } 
+
+  return load_delay;
 }
 
 /**

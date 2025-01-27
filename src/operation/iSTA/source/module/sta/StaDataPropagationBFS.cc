@@ -314,16 +314,42 @@ void build_gpu_vertex_node_cap_data(
 }
 
 /**
+ * @brief build gpu node delay data.
+ * 
+ * @param the_vertex 
+ * @param gpu_vertex 
+ * @param flatten_node_delay_data 
+ */
+void build_gpu_vertex_node_delay_data(StaVertex* the_vertex, GPU_Vertex& gpu_vertex,
+    std::vector<GPU_Fwd_Data>& flatten_node_delay_data) {
+  gpu_vertex._node_cap_data._start_pos = flatten_node_delay_data.size();
+  FOREACH_MODE_TRANS(mode, trans) {
+    GPU_Fwd_Data gpu_node_delay_data;
+    gpu_node_delay_data._data_value = the_vertex->getNetLoadDelay(mode, trans);
+    gpu_node_delay_data._trans_type = trans == TransType::kRise
+                                        ? GPU_Trans_Type::kRise
+                                        : GPU_Trans_Type::kFall;
+    gpu_node_delay_data._analysis_mode = mode == AnalysisMode::kMax
+                                           ? GPU_Analysis_Mode::kMax
+                                           : GPU_Analysis_Mode::kMin;
+    flatten_node_delay_data.emplace_back(gpu_node_delay_data);
+  }
+  gpu_vertex._node_cap_data._num_fwd_data =
+      flatten_node_delay_data.size() - gpu_vertex._node_cap_data._start_pos;
+
+}
+
+/**
  * @brief build gpu vertex node impulse data for calc net load slew.
  *
  * @param the_vertex
  * @param gpu_vertex
- * @param flatten_node_cap_data
+ * @param flatten_node_impulse_data
  */
 void build_gpu_vertex_node_impulse_data(
     StaVertex* the_vertex, GPU_Vertex& gpu_vertex,
     std::vector<GPU_Fwd_Data>& flatten_node_impulse_data) {
-  gpu_vertex._node_cap_data._start_pos = flatten_node_impulse_data.size();
+  gpu_vertex._node_impulse_data._start_pos = flatten_node_impulse_data.size();
   FOREACH_MODE_TRANS(mode, trans) {
     GPU_Fwd_Data gpu_node_impulse_data;
     gpu_node_impulse_data._data_value =
@@ -336,7 +362,7 @@ void build_gpu_vertex_node_impulse_data(
                                                : GPU_Analysis_Mode::kMin;
     flatten_node_impulse_data.emplace_back(gpu_node_impulse_data);
   }
-  gpu_vertex._node_cap_data._num_fwd_data =
+  gpu_vertex._node_impulse_data._num_fwd_data =
       flatten_node_impulse_data.size() - gpu_vertex._node_cap_data._start_pos;
 }
 
@@ -387,6 +413,8 @@ GPU_Graph build_gpu_graph(StaGraph* the_sta_graph) {
   flatten_at_data.reserve(vertex_data_size);
   std::vector<GPU_Fwd_Data> flatten_node_cap_data;
   flatten_node_cap_data.reserve(vertex_data_size);
+  std::vector<GPU_Fwd_Data> flatten_node_delay_data;
+  flatten_node_delay_data.reserve(vertex_data_size);
   std::vector<GPU_Fwd_Data> flatten_node_impulse_data;
   flatten_node_impulse_data.reserve(vertex_data_size);
 
@@ -404,6 +432,8 @@ GPU_Graph build_gpu_graph(StaGraph* the_sta_graph) {
     build_gpu_vertex_at_data(the_vertex, gpu_vertex, flatten_at_data);
     build_gpu_vertex_node_cap_data(the_vertex, gpu_vertex,
                                    flatten_node_cap_data);
+    build_gpu_vertex_node_delay_data(the_vertex, gpu_vertex,
+                                   flatten_node_delay_data);
     build_gpu_vertex_node_impulse_data(the_vertex, gpu_vertex,
                                        flatten_node_impulse_data);
     vertex_to_id[the_vertex] = gpu_vertices.size();
@@ -452,6 +482,7 @@ GPU_Graph build_gpu_graph(StaGraph* the_sta_graph) {
   gpu_graph._flatten_slew_data = flatten_slew_data.data();
   gpu_graph._flatten_at_data = flatten_at_data.data();
   gpu_graph._flatten_node_cap_data = flatten_node_cap_data.data();
+  gpu_graph._flatten_node_delay_data = flatten_node_delay_data.data();
   gpu_graph._flatten_node_impulse_data = flatten_node_impulse_data.data();
   gpu_graph._flatten_arc_delay_data = flatten_arc_delay_data.data();
 

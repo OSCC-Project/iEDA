@@ -171,6 +171,8 @@ struct GPU_Graph {
   GPU_Fwd_Data*
       _flatten_node_cap_data;  //!< The all node cap data of the vertex.
   GPU_Fwd_Data*
+      _flatten_node_delay_data;  //!< The all node cap data of the vertex.
+  GPU_Fwd_Data*
       _flatten_node_impulse_data;  //!< The all node impulse data of the vertex.
 
   GPU_Fwd_Data* _flatten_arc_delay_data;  //!< The all arc delay data.
