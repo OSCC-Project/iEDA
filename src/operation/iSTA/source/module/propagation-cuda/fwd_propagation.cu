@@ -56,7 +56,40 @@ __device__ GPU_Fwd_Data get_one_fwd_data(GPU_Fwd_Data* flatten_all_datas,
   }
 
   GPU_Fwd_Data error_fwd_data;
+  error_fwd_data._data_value = -1.0;
   return error_fwd_data;
+}
+
+/**
+ * @brief Set the one fwd data object
+ *
+ * @param flatten_all_datas
+ * @param the_vertex_data
+ * @param analysis_mode
+ * @param trans_type
+ * @param data_value
+ * @return __device__
+ */
+__device__ void set_one_fwd_data(GPU_Fwd_Data* flatten_all_datas,
+                                 GPU_Vertex_Data* the_vertex_data,
+                                 GPU_Analysis_Mode analysis_mode,
+                                 GPU_Trans_Type trans_type, float data_value) {
+  for (unsigned i = 0; i < the_vertex_data->_num_fwd_data; ++i) {
+    auto fwd_data = flatten_all_datas[the_vertex_data->_start_pos + i];
+    if (fwd_data._analysis_mode == analysis_mode &&
+        fwd_data._trans_type == trans_type) {
+      if (GPU_Analysis_Mode::kMax == analysis_mode) {
+        if (fwd_data._data_value < data_value) {
+          // atomicMax(&(fwd_data._data_value), data_value);
+        }
+      } else {
+          // atomicMin(&(fwd_data._data_value), data_value);
+      }
+
+      return;
+    }
+  }
+  printf("error not found fwd data.");
 }
 
 /**
@@ -85,12 +118,12 @@ __device__ void lut_inst_slew_delay(GPU_Graph* the_graph,
     auto& the_slew_lib_table =
         the_lib_arc
             ._table[GPU_Table_Base_Index::kTransitionBase + in_trans_type];
-    double slew_value =
+    float slew_value =
         find_value(the_slew_lib_table, one_src_slew_data._data_value,
                    one_snk_cap_data._data_value);
     auto& the_delay_lib_table =
         the_lib_arc._table[GPU_Table_Base_Index::kDelayBase + in_trans_type];
-    double delay_value =
+    float delay_value =
         find_value(the_delay_lib_table, one_src_slew_data._data_value,
                    one_snk_cap_data._data_value);
 
@@ -149,7 +182,7 @@ __device__ void lut_constraint_delay(GPU_Graph* the_graph,
       auto& the_lib_table =
           the_lib_arc._table[GPU_Table_Base_Index::kCheckBase + snk_trans];
 
-      double delay_value =
+      float delay_value =
           find_value(the_lib_table, one_src_slew_data._data_value,
                      one_snk_slew_data._data_value);
     }
@@ -173,20 +206,20 @@ __device__ void lut_net_slew_delay(GPU_Graph* the_graph,
   GPU_Fwd_Data one_snk_delay_data;
   FOREACH_GPU_FWD_DATA(the_graph->_flatten_node_delay_data, (*delay_data),
                        one_snk_delay_data) {
-    double delay_value = one_snk_delay_data._data_value;
+    float delay_value = one_snk_delay_data._data_value;
   }
 
   GPU_Fwd_Data one_src_slew_data;
   FOREACH_GPU_FWD_DATA(the_graph->_flatten_slew_data, (*in_slew),
                        one_src_slew_data) {
-    double in_slew_value = one_src_slew_data._data_value;
+    float in_slew_value = one_src_slew_data._data_value;
     GPU_Trans_Type in_trans_type = one_src_slew_data._trans_type;
     GPU_Analysis_Mode analysis_mode = one_src_slew_data._analysis_mode;
     auto one_snk_impulse_data =
         get_one_fwd_data(the_graph->_flatten_node_impulse_data, impulse_data,
                          analysis_mode, in_trans_type);
 
-    double out_slew = in_slew_value < 0.0
+    float out_slew = in_slew_value < 0.0
                           ? -std::sqrt(in_slew_value * in_slew_value +
                                        one_snk_impulse_data._data_value)
                           : std::sqrt(in_slew_value * in_slew_value +

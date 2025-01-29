@@ -82,7 +82,7 @@ enum GPU_Table_Base_Index {
  *
  */
 struct GPU_Fwd_Data {
-  double _data_value = 0.0;
+  float _data_value = 0.0;
   GPU_Trans_Type _trans_type;  //!< for purposes of more gpu fwd data, so we
                                //!< record trans_type and analysis mode.
   GPU_Analysis_Mode _analysis_mode;

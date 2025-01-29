@@ -19,11 +19,11 @@ namespace ista {
  *
  */
 struct Lib_Table_GPU {
-  double* _x;
-  double* _y;
+  float* _x;
+  float* _y;
   unsigned _num_x = 0;
   unsigned _num_y = 0;
-  double* _values;
+  float* _values;
   unsigned _num_values = 0;
   unsigned _type =
       UINT_MAX;  //!< 0(x axis denotes slew), 1(x axis denotes

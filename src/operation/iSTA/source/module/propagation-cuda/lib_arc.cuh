@@ -38,8 +38,8 @@ namespace ista {
  *
  */
 struct Axis_Region {
-  double x1;
-  double x2;
+  float x1;
+  float x2;
   unsigned val_index;
 };
 
@@ -50,8 +50,8 @@ struct Axis_Region {
  * @param slew
  * @param constrain_slew_or_load
  */
-__device__ double find_value(Lib_Table_GPU& lib_table_gpu, double slew,
-                             double constrain_slew_or_load);
+__device__ float find_value(Lib_Table_GPU& lib_table_gpu, float slew,
+                             float constrain_slew_or_load);
 
 /**
  * @brief build gpu Lib_Arc_GPU(lib_data_gpu._arcs_gpu) according to cpu
@@ -66,7 +66,7 @@ void build_lib_data_gpu(Lib_Data_GPU& lib_data_gpu,
 /**
  * @brief for test.
  */
-double find_value_test(Lib_Data_GPU& lib_data_gpu, double slew,
-                  double constrain_slew_or_load);
+float find_value_test(Lib_Data_GPU& lib_data_gpu, float slew,
+                  float constrain_slew_or_load);
 
 }  // namespace ista

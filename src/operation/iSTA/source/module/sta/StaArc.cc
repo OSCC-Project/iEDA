@@ -177,7 +177,7 @@ void StaInstArc::buildLibArcsGPU() {
       auto& x_axis = table->getAxis(0);
       auto& x_axis_values = x_axis.get_axis_values();
       gpu_table._num_x = static_cast<unsigned>(x_axis_values.size());
-      gpu_table._x = new double[gpu_table._num_x];
+      gpu_table._x = new float[gpu_table._num_x];
       for (unsigned i = 0; i < x_axis_values.size(); ++i) {
         gpu_table._x[i] = x_axis_values[i]->getFloatValue();
       }
@@ -190,7 +190,7 @@ void StaInstArc::buildLibArcsGPU() {
         auto& y_axis = table->getAxis(1);
         auto& y_axis_values = y_axis.get_axis_values();
         gpu_table._num_y = static_cast<unsigned>(y_axis_values.size());
-        gpu_table._y = new double[gpu_table._num_y];
+        gpu_table._y = new float[gpu_table._num_y];
         for (unsigned i = 0; i < y_axis_values.size(); ++i) {
           gpu_table._y[i] = y_axis_values[i]->getFloatValue();
         }
@@ -226,7 +226,7 @@ void StaInstArc::buildLibArcsGPU() {
       // set the values.
       auto& table_values = table->get_table_values();
       gpu_table._num_values = static_cast<unsigned>(table_values.size());
-      gpu_table._values = new double[gpu_table._num_values];
+      gpu_table._values = new float[gpu_table._num_values];
       for (unsigned i = 0; i < table_values.size(); ++i) {
         gpu_table._values[i] = table_values[i]->getFloatValue();
       }
