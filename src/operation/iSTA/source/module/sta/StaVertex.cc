@@ -865,7 +865,7 @@ double StaVertex::getNetSlewImpulse(AnalysisMode analysis_mode, TransType trans_
 
   if (the_net->getDriver() != obj) {
     auto* rc_net = Sta::getOrCreateSta()->getRcNet(the_net);
-    load_impulse = rc_net ? PS_TO_NS(rc_net->slewImpulse(*obj, analysis_mode, trans_type))
+    load_impulse = rc_net ? rc_net->slewImpulse(*obj, analysis_mode, trans_type)
                          : 0.0;
   } 
 

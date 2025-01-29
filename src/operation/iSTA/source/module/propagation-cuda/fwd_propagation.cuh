@@ -34,7 +34,7 @@ namespace ista {
  */
 enum GPU_Trans_Type { kRise = 0, kFall = 1 };
 
-#define FLIP_TRANS(trans)                                  \
+#define GPU_FLIP_TRANS(trans)                                  \
   (trans == GPU_Trans_Type::kRise) ? GPU_Trans_Type::kFall \
                                    : GPU_Trans_Type::kRise
 
@@ -81,8 +81,9 @@ enum GPU_Table_Base_Index {
  * @brief The fwd data common type.
  *
  */
+template<typename T>
 struct GPU_Fwd_Data {
-  float _data_value = 0.0;
+  T _data_value = 0.0;
   GPU_Trans_Type _trans_type;  //!< for purposes of more gpu fwd data, so we
                                //!< record trans_type and analysis mode.
   GPU_Analysis_Mode _analysis_mode;
@@ -166,16 +167,16 @@ struct GPU_Graph {
   unsigned _num_arcs = 0;           //!< The number of arcs.
 
   // flatten data for copy data from cpu to gpu faster.
-  GPU_Fwd_Data* _flatten_slew_data;  //!< The all slew data of the vertex.
-  GPU_Fwd_Data* _flatten_at_data;    //!< The all arrive data of the vertex.
-  GPU_Fwd_Data*
+  GPU_Fwd_Data<int64_t>* _flatten_slew_data;  //!< The all slew data of the vertex.
+  GPU_Fwd_Data<int64_t>* _flatten_at_data;    //!< The all arrive data of the vertex.
+  GPU_Fwd_Data<double>*
       _flatten_node_cap_data;  //!< The all node cap data of the vertex.
-  GPU_Fwd_Data*
-      _flatten_node_delay_data;  //!< The all node cap data of the vertex.
-  GPU_Fwd_Data*
+  GPU_Fwd_Data<double>*
+      _flatten_node_delay_data;  //!< The all node delay data of the vertex.
+  GPU_Fwd_Data<double>*
       _flatten_node_impulse_data;  //!< The all node impulse data of the vertex.
 
-  GPU_Fwd_Data* _flatten_arc_delay_data;  //!< The all arc delay data.
+  GPU_Fwd_Data<int64_t>* _flatten_arc_delay_data;  //!< The all arc delay data.
 };
 
 }  // namespace ista
