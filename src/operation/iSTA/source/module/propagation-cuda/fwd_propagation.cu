@@ -72,7 +72,7 @@ __device__ GPU_Fwd_Data<T> get_one_fwd_data(GPU_Fwd_Data<T>* flatten_all_datas,
  * @param data_value
  * @return __device__
  */
-template <typename T>
+template <typename T, GPU_OP_TYPE op>
 __device__ void set_one_fwd_data(GPU_Fwd_Data<T>* flatten_all_datas,
                                  GPU_Vertex_Data* the_vertex_data,
                                  GPU_Analysis_Mode analysis_mode,
@@ -82,17 +82,26 @@ __device__ void set_one_fwd_data(GPU_Fwd_Data<T>* flatten_all_datas,
     auto fwd_data = flatten_all_datas[the_vertex_data->_start_pos + i];
     if (fwd_data._analysis_mode == analysis_mode &&
         fwd_data._trans_type == trans_type) {
-      long long* the_data_address = (long long*)&(fwd_data._data_value);
-      long long the_data_value = (long long)data_value;
+      unsigned long long* the_data_address =
+          (unsigned long long*)&(fwd_data._data_value);
+      unsigned long long the_data_value = (unsigned long long)data_value;
       if (is_force) {
         fwd_data._data_value = data_value;
       } else {
         if (GPU_Analysis_Mode::kMax == analysis_mode) {
           if (fwd_data._data_value < data_value) {
-            atomicMax(the_data_address, the_data_value);
+            if (op == GPU_OP_TYPE::kMaxMin) {
+              atomicMax(the_data_address, the_data_value);
+            } else {
+              atomicAdd(the_data_address, the_data_value);
+            }
           }
         } else {
-          atomicMin(the_data_address, the_data_value);
+          if (op == GPU_OP_TYPE::kMaxMin) {
+            atomicMin(the_data_address, the_data_value);
+          } else {
+            atomicAdd(the_data_address, the_data_value);
+          }
         }
       }
 
@@ -112,13 +121,11 @@ __device__ void set_one_fwd_data(GPU_Fwd_Data<T>* flatten_all_datas,
  * @param arc_delay the arc delay for store value
  * @return __device__
  */
-__device__ void lut_inst_slew_delay(GPU_Graph* the_graph,
-                                    Lib_Arc_GPU& the_lib_arc,
-                                    GPU_Arc_Trans_Type the_arc_trans_type,
-                                    GPU_Vertex_Data* in_slew,
-                                    GPU_Vertex_Data* out_load,
-                                    GPU_Vertex_Data* snk_slew,
-                                    GPU_Vertex_Data* arc_delay) {
+__device__ void lut_inst_slew_delay(
+    GPU_Graph* the_graph, Lib_Arc_GPU& the_lib_arc,
+    GPU_Arc_Trans_Type the_arc_trans_type, GPU_Vertex_Data* in_slew,
+    GPU_Vertex_Data* out_load, GPU_Vertex_Data* snk_slew,
+    GPU_Vertex_Data* arc_delay, GPU_Vertex_Data* at_data) {
   auto find_slew_delay = [the_lib_arc](auto in_trans_type,
                                        auto& one_src_slew_data,
                                        auto& one_snk_cap_data) {
@@ -154,10 +161,12 @@ __device__ void lut_inst_slew_delay(GPU_Graph* the_graph,
     auto [slew, delay] =
         find_slew_delay(out_trans_type, one_src_slew_data, one_snk_cap_data);
 
-    set_one_fwd_data(the_graph->_flatten_slew_data, snk_slew, analysis_mode,
-                     out_trans_type, slew);
-    set_one_fwd_data(the_graph->_flatten_arc_delay_data, arc_delay,
-                     analysis_mode, out_trans_type, delay);
+    set_one_fwd_data<int64_t, GPU_OP_TYPE::kMaxMin>(
+        the_graph->_flatten_slew_data, snk_slew, analysis_mode, out_trans_type,
+        slew);
+    set_one_fwd_data<int64_t, GPU_OP_TYPE::kMaxMin>(
+        the_graph->_flatten_arc_delay_data, arc_delay, analysis_mode,
+        out_trans_type, delay);
     if (the_arc_trans_type == GPU_Arc_Trans_Type::kNonUnate) {
       // non unate split the trans type into two type.
       out_trans_type = GPU_FLIP_TRANS(in_trans_type);
@@ -167,10 +176,12 @@ __device__ void lut_inst_slew_delay(GPU_Graph* the_graph,
       auto [slew1, delay1] =
           find_slew_delay(out_trans_type, one_src_slew_data, one_snk_cap_data);
 
-      set_one_fwd_data(the_graph->_flatten_slew_data, snk_slew, analysis_mode,
-                       out_trans_type, slew1);
-      set_one_fwd_data(the_graph->_flatten_arc_delay_data, arc_delay,
-                       analysis_mode, out_trans_type, delay1);
+      set_one_fwd_data<int64_t, GPU_OP_TYPE::kMaxMin>(
+          the_graph->_flatten_slew_data, snk_slew, analysis_mode,
+          out_trans_type, slew1);
+      set_one_fwd_data<int64_t, GPU_OP_TYPE::kMaxMin>(
+          the_graph->_flatten_arc_delay_data, arc_delay, analysis_mode,
+          out_trans_type, delay1);
     }
   }
 }
@@ -209,8 +220,9 @@ __device__ void lut_constraint_delay(GPU_Graph* the_graph,
 
       auto analysis_mode = one_snk_slew_data._analysis_mode;
 
-      set_one_fwd_data(the_graph->_flatten_arc_delay_data, arc_delay,
-                       analysis_mode, snk_trans, delay_value, true);
+      set_one_fwd_data<int64_t, GPU_OP_TYPE::kMaxMin>(
+          the_graph->_flatten_arc_delay_data, arc_delay, analysis_mode,
+          snk_trans, delay_value, true);
     }
   }
 }
@@ -223,12 +235,10 @@ __device__ void lut_constraint_delay(GPU_Graph* the_graph,
  * @param impulse_data
  * @return __device__
  */
-__device__ void lut_net_slew_delay(GPU_Graph* the_graph,
-                                   GPU_Vertex_Data* in_slew,
-                                   GPU_Vertex_Data* delay_data,
-                                   GPU_Vertex_Data* impulse_data,
-                                   GPU_Vertex_Data* arc_delay,
-                                   GPU_Vertex_Data* snk_slew) {
+__device__ void lut_net_slew_delay(
+    GPU_Graph* the_graph, GPU_Vertex_Data* in_slew, GPU_Vertex_Data* delay_data,
+    GPU_Vertex_Data* impulse_data, GPU_Vertex_Data* arc_delay,
+    GPU_Vertex_Data* snk_slew, GPU_Vertex_Data* at_data) {
   GPU_Fwd_Data<double> one_snk_delay_data;
   FOREACH_GPU_FWD_DATA(the_graph->_flatten_node_delay_data, (*delay_data),
                        one_snk_delay_data) {
@@ -236,8 +246,9 @@ __device__ void lut_net_slew_delay(GPU_Graph* the_graph,
     auto analysis_mode = one_snk_delay_data._analysis_mode;
     auto in_trans_type = one_snk_delay_data._trans_type;
     // net out trans type is the same with the in trans type.
-    set_one_fwd_data(the_graph->_flatten_arc_delay_data, arc_delay,
-                     analysis_mode, in_trans_type, delay_value);
+    set_one_fwd_data<int64_t, GPU_OP_TYPE::kMaxMin>(
+        the_graph->_flatten_arc_delay_data, arc_delay, analysis_mode,
+        in_trans_type, delay_value);
   }
 
   GPU_Fwd_Data<int64_t> one_src_slew_data;
@@ -256,8 +267,9 @@ __device__ void lut_net_slew_delay(GPU_Graph* the_graph,
                          : std::sqrt(in_slew_value * in_slew_value +
                                      one_snk_impulse_data._data_value);
 
-    set_one_fwd_data(the_graph->_flatten_slew_data, snk_slew, analysis_mode,
-                     in_trans_type, out_slew);
+    set_one_fwd_data<int64_t, GPU_OP_TYPE::kMaxMin>(
+        the_graph->_flatten_slew_data, snk_slew, analysis_mode, in_trans_type,
+        out_slew);
   }
 }
 
@@ -288,7 +300,8 @@ __global__ void propagate_fwd(GPU_Graph the_graph, Lib_Data_GPU the_lib_data,
     if (current_arc_type == kInstDelayArc) {
       lut_inst_slew_delay(&the_graph, lib_arc, current_arc_trans_type,
                           &src_vertex._slew_data, &snk_vertex._node_cap_data,
-                          &snk_vertex._slew_data, &current_arc._delay_values);
+                          &snk_vertex._slew_data, &current_arc._delay_values,
+                          &snk_vertex._at_data);
 
     } else if (current_arc_type == kInstCheckArc) {
       // lut table for get constrain value for check arc.
@@ -297,10 +310,10 @@ __global__ void propagate_fwd(GPU_Graph the_graph, Lib_Data_GPU the_lib_data,
     } else {
       // for net arc
       // lut net output slew and delay.
-      lut_net_slew_delay(&the_graph, &src_vertex._slew_data,
-                         &snk_vertex._node_delay_data,
-                         &snk_vertex._node_impulse_data,
-                         &current_arc._delay_values, &snk_vertex._slew_data);
+      lut_net_slew_delay(
+          &the_graph, &src_vertex._slew_data, &snk_vertex._node_delay_data,
+          &snk_vertex._node_impulse_data, &current_arc._delay_values,
+          &snk_vertex._slew_data, &snk_vertex._at_data);
     }
   }
 }

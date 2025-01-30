@@ -78,6 +78,15 @@ enum GPU_Table_Base_Index {
 };
 
 /**
+ * @brief The operator for gpu data update.
+ * 
+ */
+enum GPU_OP_TYPE {
+  kMaxMin = 0,
+  kSum = 1
+};
+
+/**
  * @brief The fwd data common type.
  *
  */
