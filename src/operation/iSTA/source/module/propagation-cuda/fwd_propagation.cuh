@@ -82,8 +82,9 @@ enum GPU_Table_Base_Index {
  * 
  */
 enum GPU_OP_TYPE {
-  kMaxMin = 0,
-  kSum = 1
+  kSlew = 0,
+  kDelay = 1,
+  kAT = 2
 };
 
 /**
@@ -97,6 +98,8 @@ struct GPU_Fwd_Data {
                                //!< record trans_type and analysis mode.
   GPU_Analysis_Mode _analysis_mode;
   unsigned _src_vertex_id = 0; //!< The src vertex id for backtrace analysis.
+
+  int _is_lock = 0; //!< 0 is not lock.
 };
 
 /**
