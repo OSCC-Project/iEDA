@@ -59,6 +59,7 @@ __device__ GPU_Fwd_Data<T> get_one_fwd_data(GPU_Fwd_Data<T>* flatten_all_datas,
 
   GPU_Fwd_Data<T> error_fwd_data;
   error_fwd_data._data_value = -1.0;
+  printf("not found the fwd data.");
   return error_fwd_data;
 }
 
@@ -92,56 +93,63 @@ __device__ void set_one_fwd_data(GPU_Graph* the_graph, GPU_Arc& the_arc,
   auto src_vertex = the_graph->_vertices[src_vertex_id];
   auto snk_vertex = the_graph->_vertices[snk_vertex_id];
 
-  GPU_Vertex_Data* the_vertex_data;
+  GPU_Vertex_Data* src_vertex_data;
+  GPU_Vertex_Data* snk_vertex_data;
   if (op == GPU_OP_TYPE::kSlew) {
-    the_vertex_data = &snk_vertex._slew_data;
+    src_vertex_data = &src_vertex._slew_data;
+    snk_vertex_data = &snk_vertex._slew_data;
   } else if (op == GPU_OP_TYPE::kDelay) {
-    the_vertex_data = &the_arc._delay_values;
+    src_vertex_data = &the_arc._delay_values;
+    snk_vertex_data = &the_arc._delay_values;
   } else {
-    the_vertex_data = &snk_vertex._at_data;
+    src_vertex_data = &src_vertex._at_data;
+    snk_vertex_data = &snk_vertex._at_data;
   }
 
-  for (unsigned i = 0; i < the_vertex_data->_num_fwd_data; ++i) {
-    auto fwd_data = flatten_all_datas[the_vertex_data->_start_pos + i];
-    if (fwd_data._analysis_mode == analysis_mode &&
-        fwd_data._trans_type == trans_type) {
-      int expected = 0;
-      while (atomicCAS(&fwd_data._is_lock, expected, 1) != expected) {
-        expected = 0;
+  auto src_fwd_data = get_one_fwd_data(flatten_all_datas, src_vertex_data,
+                                       analysis_mode, trans_type);
+
+  auto snk_fwd_data = get_one_fwd_data(flatten_all_datas, snk_vertex_data,
+                                       analysis_mode, trans_type);
+
+  if (is_force) {
+    snk_fwd_data._data_value = data_value;
+  }
+
+  // lock the data.
+  int expected = 0;
+  while (atomicCAS(&snk_fwd_data._is_lock, expected, 1) != expected) {
+    expected = 0;
+  }
+
+  if (GPU_Analysis_Mode::kMax == analysis_mode) {
+    if (op != GPU_OP_TYPE::kAT) {
+      if (snk_fwd_data._data_value < data_value) {
+        snk_fwd_data._src_vertex_id = src_vertex_id;
+        snk_fwd_data._data_value = data_value;
       }
-
-      if (is_force) {
-        fwd_data._data_value = data_value;
-      } else {
-        if (GPU_Analysis_Mode::kMax == analysis_mode) {
-          if (op != GPU_OP_TYPE::kAT) {
-            if (fwd_data._data_value < data_value) {
-              fwd_data._src_vertex_id = src_vertex_id;
-              fwd_data._data_value = data_value;
-            }
-          } else {
-            if (fwd_data._data_value) {
-            }
-          }
-        } else {
-          if (op != GPU_OP_TYPE::kAT) {
-            if (fwd_data._data_value > data_value) {
-              fwd_data._src_vertex_id = src_vertex_id;
-              fwd_data._data_value = data_value;
-            }
-          } else {
-            
-          }
-        }
-
-        // release the lock.
-        atomicExch(&fwd_data._is_lock, 0);
-
-        return;
+    } else {
+      if (snk_fwd_data._data_value < (src_fwd_data._data_value + data_value)) {
+        snk_fwd_data._src_vertex_id = src_vertex_id;
+        snk_fwd_data._data_value = src_fwd_data._data_value + data_value;
       }
     }
-    printf("error not found fwd data.");
+  } else {
+    if (op != GPU_OP_TYPE::kAT) {
+      if (snk_fwd_data._data_value > data_value) {
+        snk_fwd_data._src_vertex_id = src_vertex_id;
+        snk_fwd_data._data_value = data_value;
+      }
+    } else {
+      if (snk_fwd_data._data_value > (src_fwd_data._data_value + data_value)) {
+        snk_fwd_data._src_vertex_id = src_vertex_id;
+        snk_fwd_data._data_value = src_fwd_data._data_value + data_value;
+      }
+    }
   }
+
+  // release the lock.
+  atomicExch(&snk_fwd_data._is_lock, 0);
 }
 /**
  * @brief device function for lut delay arc, using slew and load
