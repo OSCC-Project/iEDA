@@ -26,6 +26,7 @@
 
 #include <variant>
 #include "propagation-cuda/lib_arc.cuh"
+#include <map>
 
 namespace ista {
 
