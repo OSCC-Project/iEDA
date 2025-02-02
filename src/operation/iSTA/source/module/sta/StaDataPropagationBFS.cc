@@ -235,7 +235,7 @@ void StaFwdPropagationBFS::dispatchArcTask(StaGraph* the_graph) {
   ieda::Stats stats;
   
 
-#if 1
+#if 0
   LOG_INFO << "dispatch arc task to cpu start";
   for (auto& [level, the_arcs] : _level_to_arcs) {
     LOG_INFO << "propagate level " << level;

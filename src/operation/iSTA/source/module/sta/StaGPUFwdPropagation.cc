@@ -318,15 +318,15 @@ auto convert_trans_type(GPU_Trans_Type gpu_trans_type) {
  * @brief update sta slew data.
  *
  * @param the_sta_graph
- * @param the_cpu_graph
+ * @param the_host_graph
  */
-void update_sta_slew_data(StaGraph* the_sta_graph, GPU_Graph& the_cpu_graph) {
+void update_sta_slew_data(StaGraph* the_sta_graph, GPU_Graph& the_host_graph) {
   auto& the_sta_vertexes = the_sta_graph->get_vertexes();
-  auto* the_cpu_graph_vertexes = the_cpu_graph._vertices;
+  auto* the_host_graph_vertexes = the_host_graph._vertices;
   // iterate each vertex in gpu graph.
-  for (unsigned vertex_index = 0; vertex_index < the_cpu_graph._num_vertices;
+  for (unsigned vertex_index = 0; vertex_index < the_host_graph._num_vertices;
        ++vertex_index) {
-    auto& current_vertex = the_cpu_graph_vertexes[vertex_index];
+    auto& current_vertex = the_host_graph_vertexes[vertex_index];
     auto& current_sta_vertex = the_sta_vertexes[vertex_index];
 
     // update vertex slew
@@ -334,11 +334,11 @@ void update_sta_slew_data(StaGraph* the_sta_graph, GPU_Graph& the_cpu_graph) {
          slew_index < current_vertex._slew_data._num_fwd_data; ++slew_index) {
       unsigned vertex_slew_pos =
           current_vertex._slew_data._start_pos + slew_index;
-      auto slew_fwd_data = the_cpu_graph._flatten_slew_data[vertex_slew_pos];
+      auto slew_fwd_data = the_host_graph._flatten_slew_data[vertex_slew_pos];
       unsigned src_vertex_id = slew_fwd_data._src_vertex_id;
       auto& src_sta_vertex = the_sta_vertexes[src_vertex_id];
       unsigned src_data_index = slew_fwd_data._src_data_index;
-      auto src_slew_fwd_data = the_cpu_graph._flatten_slew_data[src_data_index];
+      auto src_slew_fwd_data = the_host_graph._flatten_slew_data[src_data_index];
 
       // get src and current slew data.
       auto src_sta_slew_data = src_sta_vertex->getSlewData(
@@ -359,26 +359,26 @@ void update_sta_slew_data(StaGraph* the_sta_graph, GPU_Graph& the_cpu_graph) {
  * @brief update path delay data.
  *
  * @param the_sta_graph
- * @param the_cpu_graph
+ * @param the_host_graph
  */
-void update_sta_at_data(StaGraph* the_sta_graph, GPU_Graph& the_cpu_graph) {
+void update_sta_at_data(StaGraph* the_sta_graph, GPU_Graph& the_host_graph) {
   auto& the_sta_vertexes = the_sta_graph->get_vertexes();
-  auto* the_cpu_graph_vertexes = the_cpu_graph._vertices;
+  auto* the_host_graph_vertexes = the_host_graph._vertices;
   // iterate each vertex in gpu graph.
-  for (unsigned vertex_index = 0; vertex_index < the_cpu_graph._num_vertices;
+  for (unsigned vertex_index = 0; vertex_index < the_host_graph._num_vertices;
        ++vertex_index) {
-    auto& current_vertex = the_cpu_graph_vertexes[vertex_index];
+    auto& current_vertex = the_host_graph_vertexes[vertex_index];
     auto& current_sta_vertex = the_sta_vertexes[vertex_index];
 
     // update vertex at
     for (unsigned at_index = 0;
          at_index < current_vertex._at_data._num_fwd_data; ++at_index) {
       unsigned vertex_slew_pos = current_vertex._at_data._start_pos + at_index;
-      auto at_fwd_data = the_cpu_graph._flatten_at_data[vertex_slew_pos];
+      auto at_fwd_data = the_host_graph._flatten_at_data[vertex_slew_pos];
       unsigned src_vertex_id = at_fwd_data._src_vertex_id;
       auto& src_sta_vertex = the_sta_vertexes[src_vertex_id];
       unsigned src_data_index = at_fwd_data._src_data_index;
-      auto src_at_fwd_data = the_cpu_graph._flatten_at_data[src_data_index];
+      auto src_at_fwd_data = the_host_graph._flatten_at_data[src_data_index];
 
       // get src and current slew data.
       auto* src_sta_at_data = src_sta_vertex->getSlewData(
@@ -399,17 +399,17 @@ void update_sta_at_data(StaGraph* the_sta_graph, GPU_Graph& the_cpu_graph) {
  * @brief update sta arc delay data.
  *
  * @param the_sta_graph
- * @param the_cpu_graph
+ * @param the_host_graph
  */
 void update_sta_arc_delay_data(StaGraph* the_sta_graph,
-                               GPU_Graph& the_cpu_graph) {
+                               GPU_Graph& the_host_graph) {
   auto& the_sta_arcs = the_sta_graph->get_arcs();
-  auto* the_cpu_graph_arcs = the_cpu_graph._arcs;
+  auto* the_host_graph_arcs = the_host_graph._arcs;
 
   // iterate each arc in gpu graph.
-  for (unsigned arc_index = 0; arc_index < the_cpu_graph._num_arcs;
+  for (unsigned arc_index = 0; arc_index < the_host_graph._num_arcs;
        ++arc_index) {
-    auto& current_arc = the_cpu_graph_arcs[arc_index];
+    auto& current_arc = the_host_graph_arcs[arc_index];
     auto& current_sta_arc = the_sta_arcs[arc_index];
 
     // update arc delay.
@@ -417,7 +417,7 @@ void update_sta_arc_delay_data(StaGraph* the_sta_graph,
          arc_index < current_arc._delay_values._num_fwd_data; ++arc_index) {
       unsigned arc_delay_pos = current_arc._delay_values._start_pos + arc_index;
       auto arc_delay_fwd_data =
-          the_cpu_graph._flatten_arc_delay_data[arc_delay_pos];
+          the_host_graph._flatten_arc_delay_data[arc_delay_pos];
 
       auto* arc_delay_data = current_sta_arc->getArcDelayData(
           convert_analysis_mode(arc_delay_fwd_data._analysis_mode),
@@ -430,13 +430,13 @@ void update_sta_arc_delay_data(StaGraph* the_sta_graph,
 /**
  * @brief from the gpu graph data to update the sta graph.
  *
- * @param the_cpu_graph
+ * @param the_host_graph
  * @param the_sta_graph
  */
-void update_sta_graph(GPU_Graph& the_cpu_graph, StaGraph* the_sta_graph) {
-  update_sta_slew_data(the_sta_graph, the_cpu_graph);
-  update_sta_at_data(the_sta_graph, the_cpu_graph);
-  update_sta_arc_delay_data(the_sta_graph, the_cpu_graph);
+void update_sta_graph(GPU_Graph& the_host_graph, StaGraph* the_sta_graph) {
+  update_sta_slew_data(the_sta_graph, the_host_graph);
+  update_sta_at_data(the_sta_graph, the_host_graph);
+  update_sta_arc_delay_data(the_sta_graph, the_host_graph);
 }
     
 
@@ -451,7 +451,7 @@ unsigned StaGPUFwdPropagation::operator()(StaGraph* the_graph) {
   unsigned vertex_data_size;
   unsigned arc_data_size;
   std::map<StaArc*, unsigned> arc_to_index;
-  auto host_graph =
+  auto the_host_graph =
       build_gpu_graph(the_graph, vertex_data_size, arc_data_size, arc_to_index);
 
   // prepare the lib data.
@@ -470,11 +470,11 @@ unsigned StaGPUFwdPropagation::operator()(StaGraph* the_graph) {
   }
 
   // cpu the cuda gpu program.
-  gpu_propagate_fwd(host_graph, vertex_data_size, arc_data_size, level_to_arcs,
+  gpu_propagate_fwd(the_host_graph, vertex_data_size, arc_data_size, level_to_arcs,
                     lib_data_gpu);
 
   // update the sta graph.
-  update_sta_graph(host_graph, the_graph);
+  update_sta_graph(the_host_graph, the_graph);
   return 1;
 }
 
