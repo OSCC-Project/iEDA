@@ -669,7 +669,7 @@ void StaFwdPropagationBFS::dispatchArcTask(StaGraph* the_graph) {
   unsigned vertex_data_size;
   unsigned arc_data_size;
   std::map<StaArc*, unsigned> arc_to_index;
-  auto cpu_graph =
+  auto host_graph =
       build_gpu_graph(the_graph, vertex_data_size, arc_data_size, arc_to_index);
 
   // prepare the lib data.
@@ -688,11 +688,11 @@ void StaFwdPropagationBFS::dispatchArcTask(StaGraph* the_graph) {
   }
 
   // cpu the cuda gpu program.
-  gpu_propagate_fwd(cpu_graph, vertex_data_size, arc_data_size, level_to_arcs,
+  gpu_propagate_fwd(host_graph, vertex_data_size, arc_data_size, level_to_arcs,
                     lib_data_gpu);
 
   // update the sta graph.
-  update_sta_graph(cpu_graph, the_graph);
+  update_sta_graph(host_graph, the_graph);
 
 #endif
   _level_to_arcs.clear();
