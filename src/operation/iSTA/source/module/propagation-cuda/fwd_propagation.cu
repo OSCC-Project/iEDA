@@ -42,25 +42,26 @@ namespace ista {
  * @param the_vertex_data
  * @param analysis_mode
  * @param trans_type
- * @return GPU_Fwd_Data
+ * @return GPU_Fwd_Data and index
  */
 template <typename T>
-__device__ GPU_Fwd_Data<T> get_one_fwd_data(GPU_Fwd_Data<T>* flatten_all_datas,
+__device__ std::pair<GPU_Fwd_Data<T>, int> get_one_fwd_data(GPU_Fwd_Data<T>* flatten_all_datas,
                                             GPU_Vertex_Data* the_vertex_data,
                                             GPU_Analysis_Mode analysis_mode,
                                             GPU_Trans_Type trans_type) {
   for (unsigned i = 0; i < the_vertex_data->_num_fwd_data; ++i) {
-    auto fwd_data = flatten_all_datas[the_vertex_data->_start_pos + i];
+    int data_index = the_vertex_data->_start_pos + i;
+    auto fwd_data = flatten_all_datas[data_index];
     if (fwd_data._analysis_mode == analysis_mode &&
         fwd_data._trans_type == trans_type) {
-      return fwd_data;
+      return std::make_pair(fwd_data, data_index);
     }
   }
 
   GPU_Fwd_Data<T> error_fwd_data;
   error_fwd_data._data_value = -1.0;
   printf("not found the fwd data.");
-  return error_fwd_data;
+  return std::make_pair(error_fwd_data, -1);
 }
 
 /**
@@ -75,8 +76,8 @@ __device__ GPU_Fwd_Data<T> get_one_fwd_data(GPU_Fwd_Data<T>* flatten_all_datas,
  */
 template <GPU_OP_TYPE op>
 __device__ void set_one_fwd_data(GPU_Graph* the_graph, GPU_Arc& the_arc,
-                                 GPU_Analysis_Mode analysis_mode,
-                                 GPU_Trans_Type trans_type, int64_t data_value,
+                                 GPU_Analysis_Mode analysis_mode, GPU_Trans_Type in_trans_type,
+                                 GPU_Trans_Type out_trans_type, int64_t data_value,
                                  bool is_force = false) {
   GPU_Fwd_Data<int64_t>* flatten_all_datas;
   if (op == GPU_OP_TYPE::kSlew) {
@@ -106,11 +107,11 @@ __device__ void set_one_fwd_data(GPU_Graph* the_graph, GPU_Arc& the_arc,
     snk_vertex_data = &snk_vertex._at_data;
   }
 
-  auto src_fwd_data = get_one_fwd_data(flatten_all_datas, src_vertex_data,
-                                       analysis_mode, trans_type);
+  auto [src_fwd_data, src_data_index] = get_one_fwd_data(flatten_all_datas, src_vertex_data,
+                                       analysis_mode, in_trans_type);
 
-  auto snk_fwd_data = get_one_fwd_data(flatten_all_datas, snk_vertex_data,
-                                       analysis_mode, trans_type);
+  auto [snk_fwd_data, snk_data_index] = get_one_fwd_data(flatten_all_datas, snk_vertex_data,
+                                       analysis_mode, out_trans_type);
 
   if (is_force) {
     snk_fwd_data._data_value = data_value;
@@ -125,24 +126,24 @@ __device__ void set_one_fwd_data(GPU_Graph* the_graph, GPU_Arc& the_arc,
   if (GPU_Analysis_Mode::kMax == analysis_mode) {
     if (op != GPU_OP_TYPE::kAT) {
       if (snk_fwd_data._data_value < data_value) {
-        snk_fwd_data._src_vertex_id = src_vertex_id;
+        snk_fwd_data._src_data_index = src_data_index;
         snk_fwd_data._data_value = data_value;
       }
     } else {
       if (snk_fwd_data._data_value < (src_fwd_data._data_value + data_value)) {
-        snk_fwd_data._src_vertex_id = src_vertex_id;
+        snk_fwd_data._src_data_index = src_data_index;
         snk_fwd_data._data_value = src_fwd_data._data_value + data_value;
       }
     }
   } else {
     if (op != GPU_OP_TYPE::kAT) {
       if (snk_fwd_data._data_value > data_value) {
-        snk_fwd_data._src_vertex_id = src_vertex_id;
+        snk_fwd_data._src_data_index = src_data_index;
         snk_fwd_data._data_value = data_value;
       }
     } else {
       if (snk_fwd_data._data_value > (src_fwd_data._data_value + data_value)) {
-        snk_fwd_data._src_vertex_id = src_vertex_id;
+        snk_fwd_data._src_data_index = src_data_index;
         snk_fwd_data._data_value = src_fwd_data._data_value + data_value;
       }
     }
@@ -202,33 +203,33 @@ __device__ void propagate_inst_slew_delay(GPU_Graph* the_graph,
     if (the_arc_trans_type == GPU_Arc_Trans_Type::kNegative) {
       out_trans_type = GPU_FLIP_TRANS(in_trans_type);
     }
-    auto one_snk_cap_data =
+    auto [one_snk_cap_data, snk_cap_index] =
         get_one_fwd_data(the_graph->_flatten_node_cap_data, out_load,
                          analysis_mode, out_trans_type);
     auto [slew, delay] =
         find_slew_delay(out_trans_type, one_src_slew_data, one_snk_cap_data);
 
-    set_one_fwd_data<GPU_OP_TYPE::kSlew>(the_graph, the_arc, analysis_mode,
+    set_one_fwd_data<GPU_OP_TYPE::kSlew>(the_graph, the_arc, analysis_mode, in_trans_type,
                                          out_trans_type, slew);
-    set_one_fwd_data<GPU_OP_TYPE::kDelay>(the_graph, the_arc, analysis_mode,
+    set_one_fwd_data<GPU_OP_TYPE::kDelay>(the_graph, the_arc, analysis_mode, in_trans_type,
                                           out_trans_type, delay);
     // update at data.
-    set_one_fwd_data<GPU_OP_TYPE::kAT>(the_graph, the_arc, analysis_mode,
+    set_one_fwd_data<GPU_OP_TYPE::kAT>(the_graph, the_arc, analysis_mode, in_trans_type,
                                        out_trans_type, delay);
     if (the_arc_trans_type == GPU_Arc_Trans_Type::kNonUnate) {
       // non unate split the trans type into two type.
       out_trans_type = GPU_FLIP_TRANS(in_trans_type);
-      auto one_snk_cap_data =
+      auto [one_snk_cap_data1, snk_cap_index1] =
           get_one_fwd_data(the_graph->_flatten_node_cap_data, out_load,
                            analysis_mode, out_trans_type);
       auto [slew1, delay1] =
-          find_slew_delay(out_trans_type, one_src_slew_data, one_snk_cap_data);
+          find_slew_delay(out_trans_type, one_src_slew_data, one_snk_cap_data1);
 
-      set_one_fwd_data<GPU_OP_TYPE::kSlew>(the_graph, the_arc, analysis_mode,
+      set_one_fwd_data<GPU_OP_TYPE::kSlew>(the_graph, the_arc, analysis_mode, in_trans_type,
                                            out_trans_type, slew1);
-      set_one_fwd_data<GPU_OP_TYPE::kDelay>(the_graph, the_arc, analysis_mode,
+      set_one_fwd_data<GPU_OP_TYPE::kDelay>(the_graph, the_arc, analysis_mode, in_trans_type,
                                             out_trans_type, delay1);
-      set_one_fwd_data<GPU_OP_TYPE::kAT>(the_graph, the_arc, analysis_mode,
+      set_one_fwd_data<GPU_OP_TYPE::kAT>(the_graph, the_arc, analysis_mode, in_trans_type,
                                          out_trans_type, delay1);
     }
   }
@@ -271,7 +272,7 @@ __device__ void lut_constraint_delay(GPU_Graph* the_graph, GPU_Arc& the_arc,
 
       auto analysis_mode = one_snk_slew_data._analysis_mode;
 
-      set_one_fwd_data<GPU_OP_TYPE::kDelay>(the_graph, the_arc, analysis_mode,
+      set_one_fwd_data<GPU_OP_TYPE::kDelay>(the_graph, the_arc, analysis_mode, snk_trans,
                                             snk_trans, delay_value, true);
     }
   }
@@ -304,7 +305,7 @@ __device__ void propagate_net_slew_delay(GPU_Graph* the_graph,
       auto in_slew_value = FS_TO_PS(one_src_slew_data._data_value);
       GPU_Trans_Type in_trans_type = one_src_slew_data._trans_type;
       GPU_Analysis_Mode analysis_mode = one_src_slew_data._analysis_mode;
-      auto one_snk_impulse_data =
+      auto [one_snk_impulse_data, impulse_data_index]=
           get_one_fwd_data(the_graph->_flatten_node_impulse_data, impulse_data,
                            analysis_mode, in_trans_type);
 
@@ -314,7 +315,7 @@ __device__ void propagate_net_slew_delay(GPU_Graph* the_graph,
                            : std::sqrt(in_slew_value * in_slew_value +
                                        one_snk_impulse_data._data_value);
 
-      set_one_fwd_data<GPU_OP_TYPE::kSlew>(the_graph, the_arc, analysis_mode,
+      set_one_fwd_data<GPU_OP_TYPE::kSlew>(the_graph, the_arc, analysis_mode, in_trans_type,
                                            in_trans_type, out_slew);
     }
 
@@ -327,9 +328,9 @@ __device__ void propagate_net_slew_delay(GPU_Graph* the_graph,
         auto analysis_mode = one_snk_delay_data._analysis_mode;
         auto in_trans_type = one_snk_delay_data._trans_type;
         // net out trans type is the same with the in trans type.
-        set_one_fwd_data<GPU_OP_TYPE::kDelay>(the_graph, the_arc, analysis_mode,
+        set_one_fwd_data<GPU_OP_TYPE::kDelay>(the_graph, the_arc, analysis_mode, in_trans_type,
                                               in_trans_type, delay_value);
-        set_one_fwd_data<GPU_OP_TYPE::kAT>(the_graph, the_arc, analysis_mode,
+        set_one_fwd_data<GPU_OP_TYPE::kAT>(the_graph, the_arc, analysis_mode, in_trans_type,
                                            in_trans_type, delay_value);
       }
     }

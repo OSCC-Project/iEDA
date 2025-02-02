@@ -97,7 +97,7 @@ struct GPU_Fwd_Data {
   GPU_Trans_Type _trans_type;  //!< for purposes of more gpu fwd data, so we
                                //!< record trans_type and analysis mode.
   GPU_Analysis_Mode _analysis_mode;
-  unsigned _src_vertex_id = 0; //!< The src vertex id for backtrace analysis.
+  int _src_data_index = -1; //!< The src vertex id for backtrace analysis.
 
   int _is_lock = 0; //!< 0 is not lock.
 };
