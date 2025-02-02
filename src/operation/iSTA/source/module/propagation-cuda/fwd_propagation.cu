@@ -486,27 +486,27 @@ void copy_to_host_graph(GPU_Graph& the_host_graph, GPU_Graph& the_device_graph,
   CUDA_CHECK(cudaMemcpyAsync(the_host_graph._flatten_slew_data,
                              the_device_graph._flatten_slew_data,
                              vertex_data_size * sizeof(GPU_Fwd_Data<int64_t>),
-                             cudaMemcpyHostToDevice, stream[0]));
+                             cudaMemcpyDeviceToHost, stream[0]));
 
   CUDA_CHECK(cudaMemcpyAsync(the_host_graph._flatten_at_data,
                              the_device_graph._flatten_at_data,
                              vertex_data_size * sizeof(GPU_Fwd_Data<int64_t>),
-                             cudaMemcpyHostToDevice, stream[1]));
+                             cudaMemcpyDeviceToHost, stream[1]));
 
   CUDA_CHECK(cudaMemcpyAsync(the_host_graph._flatten_node_cap_data,
                              the_device_graph._flatten_node_cap_data,
                              vertex_data_size * sizeof(GPU_Fwd_Data<double>),
-                             cudaMemcpyHostToDevice, stream[2]));
+                             cudaMemcpyDeviceToHost, stream[2]));
 
   CUDA_CHECK(cudaMemcpyAsync(the_host_graph._flatten_node_impulse_data,
                              the_device_graph._flatten_node_impulse_data,
                              vertex_data_size * sizeof(GPU_Fwd_Data<double>),
-                             cudaMemcpyHostToDevice, stream[3]));
+                             cudaMemcpyDeviceToHost, stream[3]));
 
   CUDA_CHECK(cudaMemcpyAsync(the_host_graph._flatten_arc_delay_data,
                              the_device_graph._flatten_arc_delay_data,
                              arc_data_size * sizeof(GPU_Fwd_Data<int64_t>),
-                             cudaMemcpyHostToDevice, stream[4]));
+                             cudaMemcpyDeviceToHost, stream[4]));
 
   for (unsigned index = 0; index < num_stream; ++index) {
     cudaStreamSynchronize(stream[index]);
@@ -548,6 +548,7 @@ void gpu_propagate_fwd(GPU_Graph& the_host_graph, unsigned vertex_data_size,
 
   copy_to_host_graph(the_host_graph, the_device_graph, vertex_data_size,
                     arc_data_size);
+  CUDA_CHECK_ERROR();
 }
 
 }  // namespace ista
