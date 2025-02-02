@@ -479,6 +479,7 @@ unsigned StaGPUFwdPropagation::operator()(StaGraph* the_graph) {
     for (auto* the_arc : the_arcs) {
       arc_indexes.emplace_back(arc_to_index[the_arc]);
     }
+    level_to_arcs[level] = std::move(arc_indexes);
   }
 
   // cpu the cuda gpu program.

@@ -34,6 +34,144 @@
 namespace ista {
 
 /**
+ * @brief copy sta graph to gpu sta graph.
+ *
+ */
+GPU_Graph copy_from_host_graph(GPU_Graph& the_host_graph,
+                              unsigned vertex_data_size,
+                              unsigned arc_data_size) {
+  const unsigned num_stream = 7;
+  cudaStream_t stream[num_stream];
+  for (unsigned index = 0; index < num_stream; ++index) {
+    cudaStreamCreate(&stream[index]);
+  }
+
+  GPU_Graph the_device_graph;
+
+  CUDA_CHECK(cudaMallocAsync((void**)&the_device_graph._vertices,
+                             the_device_graph._num_vertices * sizeof(GPU_Vertex),
+                             stream[0]));
+
+  CUDA_CHECK(cudaMallocAsync((void**)&the_device_graph._arcs,
+                             the_device_graph._num_arcs * sizeof(GPU_Arc),
+                             stream[1]));
+
+  CUDA_CHECK(cudaMallocAsync((void**)&the_device_graph._flatten_slew_data,
+                             vertex_data_size * sizeof(GPU_Fwd_Data<int64_t>),
+                             stream[2]));
+
+  CUDA_CHECK(cudaMallocAsync((void**)&the_device_graph._flatten_at_data,
+                             vertex_data_size * sizeof(GPU_Fwd_Data<int64_t>),
+                             stream[3]));
+
+  CUDA_CHECK(cudaMallocAsync((void**)&the_device_graph._flatten_node_cap_data,
+                             vertex_data_size * sizeof(GPU_Fwd_Data<double>),
+                             stream[4]));
+
+  CUDA_CHECK(cudaMallocAsync((void**)&the_device_graph._flatten_node_impulse_data,
+                             vertex_data_size * sizeof(GPU_Fwd_Data<double>),
+                             stream[5]));
+
+  CUDA_CHECK(cudaMallocAsync((void**)&the_device_graph._flatten_arc_delay_data,
+                             arc_data_size * sizeof(GPU_Fwd_Data<int64_t>),
+                             stream[6]));
+
+  for (unsigned index = 0; index < num_stream; ++index) {
+    cudaStreamSynchronize(stream[index]);
+  }
+
+  CUDA_CHECK(cudaMemcpyAsync(the_device_graph._vertices, the_host_graph._vertices,
+                             the_device_graph._num_vertices * sizeof(GPU_Vertex),
+                             cudaMemcpyHostToDevice, stream[0]));
+
+  CUDA_CHECK(cudaMemcpyAsync(the_device_graph._arcs, the_host_graph._arcs,
+                             the_device_graph._num_arcs * sizeof(GPU_Arc),
+                             cudaMemcpyHostToDevice, stream[1]));
+
+  CUDA_CHECK(cudaMemcpyAsync(the_device_graph._flatten_slew_data,
+                             the_host_graph._flatten_slew_data,
+                             vertex_data_size * sizeof(GPU_Fwd_Data<int64_t>),
+                             cudaMemcpyHostToDevice, stream[2]));
+
+  CUDA_CHECK(cudaMemcpyAsync(the_device_graph._flatten_at_data,
+                             the_host_graph._flatten_at_data,
+                             vertex_data_size * sizeof(GPU_Fwd_Data<int64_t>),
+                             cudaMemcpyHostToDevice, stream[3]));
+
+  CUDA_CHECK(cudaMemcpyAsync(the_device_graph._flatten_node_cap_data,
+                             the_host_graph._flatten_node_cap_data,
+                             vertex_data_size * sizeof(GPU_Fwd_Data<double>),
+                             cudaMemcpyHostToDevice, stream[4]));
+
+  CUDA_CHECK(cudaMemcpyAsync(the_device_graph._flatten_node_impulse_data,
+                             the_host_graph._flatten_node_impulse_data,
+                             vertex_data_size * sizeof(GPU_Fwd_Data<double>),
+                             cudaMemcpyHostToDevice, stream[5]));
+
+  CUDA_CHECK(cudaMemcpyAsync(the_device_graph._flatten_arc_delay_data,
+                             the_host_graph._flatten_arc_delay_data,
+                             arc_data_size * sizeof(GPU_Fwd_Data<int64_t>),
+                             cudaMemcpyHostToDevice, stream[6]));
+
+  for (unsigned index = 0; index < num_stream; ++index) {
+    cudaStreamSynchronize(stream[index]);
+  }
+
+  for (unsigned index = 0; index < num_stream; ++index) {
+    cudaStreamDestroy(stream[index]);
+  }
+  return the_device_graph;
+}
+
+/**
+ * @brief copyback gpu data to cpu sta graph.
+ *
+ * @param the_host_graph
+ * @param the_device_graph
+ */
+void copy_to_host_graph(GPU_Graph& the_host_graph, GPU_Graph& the_device_graph,
+                       unsigned vertex_data_size, unsigned arc_data_size) {
+  const unsigned num_stream = 5;
+  cudaStream_t stream[num_stream];
+  for (unsigned index = 0; index < num_stream; ++index) {
+    cudaStreamCreate(&stream[index]);
+  }
+
+  CUDA_CHECK(cudaMemcpyAsync(the_host_graph._flatten_slew_data,
+                             the_device_graph._flatten_slew_data,
+                             vertex_data_size * sizeof(GPU_Fwd_Data<int64_t>),
+                             cudaMemcpyDeviceToHost, stream[0]));
+
+  CUDA_CHECK(cudaMemcpyAsync(the_host_graph._flatten_at_data,
+                             the_device_graph._flatten_at_data,
+                             vertex_data_size * sizeof(GPU_Fwd_Data<int64_t>),
+                             cudaMemcpyDeviceToHost, stream[1]));
+
+  CUDA_CHECK(cudaMemcpyAsync(the_host_graph._flatten_node_cap_data,
+                             the_device_graph._flatten_node_cap_data,
+                             vertex_data_size * sizeof(GPU_Fwd_Data<double>),
+                             cudaMemcpyDeviceToHost, stream[2]));
+
+  CUDA_CHECK(cudaMemcpyAsync(the_host_graph._flatten_node_impulse_data,
+                             the_device_graph._flatten_node_impulse_data,
+                             vertex_data_size * sizeof(GPU_Fwd_Data<double>),
+                             cudaMemcpyDeviceToHost, stream[3]));
+
+  CUDA_CHECK(cudaMemcpyAsync(the_host_graph._flatten_arc_delay_data,
+                             the_device_graph._flatten_arc_delay_data,
+                             arc_data_size * sizeof(GPU_Fwd_Data<int64_t>),
+                             cudaMemcpyDeviceToHost, stream[4]));
+
+  for (unsigned index = 0; index < num_stream; ++index) {
+    cudaStreamSynchronize(stream[index]);
+  }
+
+  for (unsigned index = 0; index < num_stream; ++index) {
+    cudaStreamDestroy(stream[index]);
+  }
+}
+
+/**
  * @brief Get the one fwd data object accroding the analysis mode and trans
  * type.
  *
@@ -358,6 +496,7 @@ __global__ void propagate_fwd(GPU_Graph the_graph, Lib_Data_GPU the_lib_data,
   // current thread id
   int i = blockIdx.x * blockDim.x + threadIdx.x;
   if (i < propagated_arcs._num_arcs) {
+    printf("GPU thread %d propagate fwd in gpu kernel\n", i);
     unsigned current_arc_id = propagated_arcs._arc_index[i];
     GPU_Arc current_arc = the_graph._arcs[current_arc_id];
     GPU_Arc_Type current_arc_type = current_arc._arc_type;
@@ -376,144 +515,6 @@ __global__ void propagate_fwd(GPU_Graph the_graph, Lib_Data_GPU the_lib_data,
       // lut net output slew and delay.
       propagate_net_slew_delay(&the_graph, current_arc);
     }
-  }
-}
-
-/**
- * @brief copy sta graph to gpu sta graph.
- *
- */
-GPU_Graph copy_from_host_graph(GPU_Graph& the_host_graph,
-                              unsigned vertex_data_size,
-                              unsigned arc_data_size) {
-  const unsigned num_stream = 7;
-  cudaStream_t stream[num_stream];
-  for (unsigned index = 0; index < num_stream; ++index) {
-    cudaStreamCreate(&stream[index]);
-  }
-
-  GPU_Graph the_device_graph;
-
-  CUDA_CHECK(cudaMallocAsync((void**)&the_device_graph._vertices,
-                             the_device_graph._num_vertices * sizeof(GPU_Vertex),
-                             stream[0]));
-
-  CUDA_CHECK(cudaMallocAsync((void**)&the_device_graph._arcs,
-                             the_device_graph._num_arcs * sizeof(GPU_Arc),
-                             stream[1]));
-
-  CUDA_CHECK(cudaMallocAsync((void**)&the_device_graph._flatten_slew_data,
-                             vertex_data_size * sizeof(GPU_Fwd_Data<int64_t>),
-                             stream[2]));
-
-  CUDA_CHECK(cudaMallocAsync((void**)&the_device_graph._flatten_at_data,
-                             vertex_data_size * sizeof(GPU_Fwd_Data<int64_t>),
-                             stream[3]));
-
-  CUDA_CHECK(cudaMallocAsync((void**)&the_device_graph._flatten_node_cap_data,
-                             vertex_data_size * sizeof(GPU_Fwd_Data<double>),
-                             stream[4]));
-
-  CUDA_CHECK(cudaMallocAsync((void**)&the_device_graph._flatten_node_impulse_data,
-                             vertex_data_size * sizeof(GPU_Fwd_Data<double>),
-                             stream[5]));
-
-  CUDA_CHECK(cudaMallocAsync((void**)&the_device_graph._flatten_arc_delay_data,
-                             arc_data_size * sizeof(GPU_Fwd_Data<int64_t>),
-                             stream[6]));
-
-  for (unsigned index = 0; index < num_stream; ++index) {
-    cudaStreamSynchronize(stream[index]);
-  }
-
-  CUDA_CHECK(cudaMemcpyAsync(the_device_graph._vertices, the_host_graph._vertices,
-                             the_device_graph._num_vertices * sizeof(GPU_Vertex),
-                             cudaMemcpyHostToDevice, stream[0]));
-
-  CUDA_CHECK(cudaMemcpyAsync(the_device_graph._arcs, the_host_graph._arcs,
-                             the_device_graph._num_arcs * sizeof(GPU_Arc),
-                             cudaMemcpyHostToDevice, stream[1]));
-
-  CUDA_CHECK(cudaMemcpyAsync(the_device_graph._flatten_slew_data,
-                             the_host_graph._flatten_slew_data,
-                             vertex_data_size * sizeof(GPU_Fwd_Data<int64_t>),
-                             cudaMemcpyHostToDevice, stream[2]));
-
-  CUDA_CHECK(cudaMemcpyAsync(the_device_graph._flatten_at_data,
-                             the_host_graph._flatten_at_data,
-                             vertex_data_size * sizeof(GPU_Fwd_Data<int64_t>),
-                             cudaMemcpyHostToDevice, stream[3]));
-
-  CUDA_CHECK(cudaMemcpyAsync(the_device_graph._flatten_node_cap_data,
-                             the_host_graph._flatten_node_cap_data,
-                             vertex_data_size * sizeof(GPU_Fwd_Data<double>),
-                             cudaMemcpyHostToDevice, stream[4]));
-
-  CUDA_CHECK(cudaMemcpyAsync(the_device_graph._flatten_node_impulse_data,
-                             the_host_graph._flatten_node_impulse_data,
-                             vertex_data_size * sizeof(GPU_Fwd_Data<double>),
-                             cudaMemcpyHostToDevice, stream[5]));
-
-  CUDA_CHECK(cudaMemcpyAsync(the_device_graph._flatten_arc_delay_data,
-                             the_host_graph._flatten_arc_delay_data,
-                             arc_data_size * sizeof(GPU_Fwd_Data<int64_t>),
-                             cudaMemcpyHostToDevice, stream[6]));
-
-  for (unsigned index = 0; index < num_stream; ++index) {
-    cudaStreamSynchronize(stream[index]);
-  }
-
-  for (unsigned index = 0; index < num_stream; ++index) {
-    cudaStreamDestroy(stream[index]);
-  }
-  return the_device_graph;
-}
-
-/**
- * @brief copyback gpu data to cpu sta graph.
- *
- * @param the_host_graph
- * @param the_device_graph
- */
-void copy_to_host_graph(GPU_Graph& the_host_graph, GPU_Graph& the_device_graph,
-                       unsigned vertex_data_size, unsigned arc_data_size) {
-  const unsigned num_stream = 5;
-  cudaStream_t stream[num_stream];
-  for (unsigned index = 0; index < num_stream; ++index) {
-    cudaStreamCreate(&stream[index]);
-  }
-
-  CUDA_CHECK(cudaMemcpyAsync(the_host_graph._flatten_slew_data,
-                             the_device_graph._flatten_slew_data,
-                             vertex_data_size * sizeof(GPU_Fwd_Data<int64_t>),
-                             cudaMemcpyDeviceToHost, stream[0]));
-
-  CUDA_CHECK(cudaMemcpyAsync(the_host_graph._flatten_at_data,
-                             the_device_graph._flatten_at_data,
-                             vertex_data_size * sizeof(GPU_Fwd_Data<int64_t>),
-                             cudaMemcpyDeviceToHost, stream[1]));
-
-  CUDA_CHECK(cudaMemcpyAsync(the_host_graph._flatten_node_cap_data,
-                             the_device_graph._flatten_node_cap_data,
-                             vertex_data_size * sizeof(GPU_Fwd_Data<double>),
-                             cudaMemcpyDeviceToHost, stream[2]));
-
-  CUDA_CHECK(cudaMemcpyAsync(the_host_graph._flatten_node_impulse_data,
-                             the_device_graph._flatten_node_impulse_data,
-                             vertex_data_size * sizeof(GPU_Fwd_Data<double>),
-                             cudaMemcpyDeviceToHost, stream[3]));
-
-  CUDA_CHECK(cudaMemcpyAsync(the_host_graph._flatten_arc_delay_data,
-                             the_device_graph._flatten_arc_delay_data,
-                             arc_data_size * sizeof(GPU_Fwd_Data<int64_t>),
-                             cudaMemcpyDeviceToHost, stream[4]));
-
-  for (unsigned index = 0; index < num_stream; ++index) {
-    cudaStreamSynchronize(stream[index]);
-  }
-
-  for (unsigned index = 0; index < num_stream; ++index) {
-    cudaStreamDestroy(stream[index]);
   }
 }
 
@@ -540,9 +541,10 @@ void gpu_propagate_fwd(GPU_Graph& the_host_graph, unsigned vertex_data_size,
                           bfs_arcs._num_arcs * sizeof(unsigned),
                           cudaMemcpyHostToDevice));
 
-    propagate_fwd<<<1, 1>>>(the_device_graph, lib_data, bfs_arcs);
+    propagate_fwd<<<2, 256>>>(the_device_graph, lib_data, bfs_arcs);    
     // wait to finish.
     cudaDeviceSynchronize();
+    CUDA_CHECK_ERROR();
     CUDA_CHECK(cudaFree(bfs_arcs._arc_index));
   }
 
