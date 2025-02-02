@@ -60,7 +60,7 @@ unsigned StaFwdPropagationBFS::operator()(StaArc* the_arc) {
 #endif
 
   if (!the_arc->isCheckArc()) {
-    // call parent operator.
+    // call parent operator to arrive time propagation.
     StaFwdPropagation::operator()(the_arc);
   }
 
@@ -235,11 +235,11 @@ void StaFwdPropagationBFS::dispatchArcTask(StaGraph* the_graph) {
   ieda::Stats stats;
   
 
-#if 0
+#if 1
   LOG_INFO << "dispatch arc task to cpu start";
   for (auto& [level, the_arcs] : _level_to_arcs) {
-
-    std::for_each(std::execution::par, the_arcs.begin(), the_arcs.end(),
+    LOG_INFO << "propagate level " << level;
+    std::for_each(std::execution::seq, the_arcs.begin(), the_arcs.end(),
                   [this](auto* the_arc) { the_arc->exec(*this); });
   }
   _level_to_arcs.clear();

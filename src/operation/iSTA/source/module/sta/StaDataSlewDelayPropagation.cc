@@ -148,11 +148,11 @@ unsigned StaDataSlewDelayPropagation::operator()(StaArc* the_arc) {
 
             StaArcDelayData* arc_delay = nullptr;
             if (isIncremental()) {
-              arc_delay = the_arc->getArcDelayData(analysis_mode, trans_type);
+              arc_delay = the_arc->getArcDelayData(analysis_mode, snk_trans_type);
             }
 
             if (!arc_delay) {
-              arc_delay = new StaArcDelayData(analysis_mode, trans_type,
+              arc_delay = new StaArcDelayData(analysis_mode, snk_trans_type,
                                               the_arc, delay);
             }
             the_arc->addData(arc_delay);
