@@ -788,7 +788,7 @@ StaSlewData* StaVertex::getSlewData(AnalysisMode analysis_mode,
   FOREACH_SLEW_DATA(this, data) {
     if ((data->get_delay_type() == analysis_mode) &&
         (data->get_trans_type() == trans_type) &&
-        (src_slew_data == data->get_bwd())) {
+        (!src_slew_data || (src_slew_data == data->get_bwd()))) {
       auto* slew_data = dynamic_cast<StaSlewData*>(data);
       return slew_data;
     }
@@ -812,7 +812,7 @@ StaPathDelayData* StaVertex::getPathDelayData(AnalysisMode analysis_mode,
   FOREACH_DELAY_DATA(this, data) {
     if ((data->get_delay_type() == analysis_mode) &&
         (data->get_trans_type() == trans_type) &&
-        (src_delay_data == data->get_bwd())) {
+        (!src_delay_data || (src_delay_data == data->get_bwd()))) {
       auto* delay_data = dynamic_cast<StaPathDelayData*>(data);
       return delay_data;
     }

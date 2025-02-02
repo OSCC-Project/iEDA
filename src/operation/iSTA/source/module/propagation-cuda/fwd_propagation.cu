@@ -126,11 +126,13 @@ __device__ void set_one_fwd_data(GPU_Graph* the_graph, GPU_Arc& the_arc,
   if (GPU_Analysis_Mode::kMax == analysis_mode) {
     if (op != GPU_OP_TYPE::kAT) {
       if (snk_fwd_data._data_value < data_value) {
+        snk_fwd_data._src_vertex_id = src_vertex_id;
         snk_fwd_data._src_data_index = src_data_index;
         snk_fwd_data._data_value = data_value;
       }
     } else {
       if (snk_fwd_data._data_value < (src_fwd_data._data_value + data_value)) {
+        snk_fwd_data._src_vertex_id = src_vertex_id;
         snk_fwd_data._src_data_index = src_data_index;
         snk_fwd_data._data_value = src_fwd_data._data_value + data_value;
       }
@@ -138,11 +140,13 @@ __device__ void set_one_fwd_data(GPU_Graph* the_graph, GPU_Arc& the_arc,
   } else {
     if (op != GPU_OP_TYPE::kAT) {
       if (snk_fwd_data._data_value > data_value) {
+        snk_fwd_data._src_vertex_id = src_vertex_id;
         snk_fwd_data._src_data_index = src_data_index;
         snk_fwd_data._data_value = data_value;
       }
     } else {
       if (snk_fwd_data._data_value > (src_fwd_data._data_value + data_value)) {
+        snk_fwd_data._src_vertex_id = src_vertex_id;
         snk_fwd_data._src_data_index = src_data_index;
         snk_fwd_data._data_value = src_fwd_data._data_value + data_value;
       }
@@ -189,8 +193,8 @@ __device__ void propagate_inst_slew_delay(GPU_Graph* the_graph,
         find_value(the_delay_lib_table, one_src_slew_data._data_value,
                    one_snk_cap_data._data_value);
 
-    return std::pair(int64_t(NS_TO_PS(slew_value)),
-                     int64_t(NS_TO_PS(delay_value)));
+    return std::pair(int64_t(NS_TO_FS(slew_value)),
+                     int64_t(NS_TO_FS(delay_value)));
   };
 
   GPU_Fwd_Data<int64_t> one_src_slew_data;
@@ -268,7 +272,7 @@ __device__ void lut_constraint_delay(GPU_Graph* the_graph, GPU_Arc& the_arc,
       float delay_value_ns =
           find_value(the_lib_table, one_src_slew_data._data_value,
                      one_snk_slew_data._data_value);
-      int64_t delay_value = NS_TO_PS(delay_value_ns);
+      int64_t delay_value = NS_TO_FS(delay_value_ns);
 
       auto analysis_mode = one_snk_slew_data._analysis_mode;
 
@@ -316,7 +320,7 @@ __device__ void propagate_net_slew_delay(GPU_Graph* the_graph,
                                        one_snk_impulse_data._data_value);
 
       set_one_fwd_data<GPU_OP_TYPE::kSlew>(the_graph, the_arc, analysis_mode, in_trans_type,
-                                           in_trans_type, out_slew);
+                                           in_trans_type, PS_TO_FS(out_slew));
     }
 
     // delay
@@ -331,7 +335,7 @@ __device__ void propagate_net_slew_delay(GPU_Graph* the_graph,
         set_one_fwd_data<GPU_OP_TYPE::kDelay>(the_graph, the_arc, analysis_mode, in_trans_type,
                                               in_trans_type, delay_value);
         set_one_fwd_data<GPU_OP_TYPE::kAT>(the_graph, the_arc, analysis_mode, in_trans_type,
-                                           in_trans_type, delay_value);
+                                           in_trans_type, PS_TO_FS(delay_value));
       }
     }
   }

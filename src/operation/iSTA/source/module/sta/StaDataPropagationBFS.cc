@@ -450,19 +450,16 @@ GPU_Graph build_gpu_graph(StaGraph* the_sta_graph) {
   FOREACH_ARC(the_sta_graph, the_arc) {
     GPU_Arc gpu_arc;
 
-    gpu_arc._arc_type = the_arc->isDelayArc()
-                            ? GPU_Arc_Type::kInstDelayArc
-                            : the_arc->isCheckArc()
-                                  ? GPU_Arc_Type::kInstCheckArc
-                                  : GPU_Arc_Type::kNet;
+    gpu_arc._arc_type = the_arc->isDelayArc()   ? GPU_Arc_Type::kInstDelayArc
+                        : the_arc->isCheckArc() ? GPU_Arc_Type::kInstCheckArc
+                                                : GPU_Arc_Type::kNet;
 
-    gpu_arc._arc_trans_type = the_arc->isInstArc()
-                                  ? the_arc->isPositiveArc()
-                                        ? GPU_Arc_Trans_Type::kPositive
-                                        : the_arc->isNegativeArc()
-                                              ? GPU_Arc_Trans_Type::kNegative
-                                              : GPU_Arc_Trans_Type::kNonUnate
-                                  : GPU_Arc_Trans_Type::kPositive;
+    gpu_arc._arc_trans_type =
+        the_arc->isInstArc()
+            ? the_arc->isPositiveArc()   ? GPU_Arc_Trans_Type::kPositive
+              : the_arc->isNegativeArc() ? GPU_Arc_Trans_Type::kNegative
+                                         : GPU_Arc_Trans_Type::kNonUnate
+            : GPU_Arc_Trans_Type::kPositive;
 
     gpu_arc._src_vertex_id = vertex_to_id[the_arc->get_src()];
     gpu_arc._snk_vertex_id = vertex_to_id[the_arc->get_snk()];
@@ -494,24 +491,150 @@ GPU_Graph build_gpu_graph(StaGraph* the_sta_graph) {
   return gpu_graph;
 }
 
-void update_sta_graph(GPU_Graph& the_cpu_graph, StaGraph* the_sta_graph) {
-  auto* the_gpu_graph_vertexes = the_cpu_graph._vertices;
+/**
+ * @brief convert gpu analysis mode for cpu.
+ *
+ * @param gpu_analysis_mode
+ * @return auto
+ */
+auto convert_analysis_mode(GPU_Analysis_Mode gpu_analysis_mode) {
+  return gpu_analysis_mode == GPU_Analysis_Mode::kMax ? AnalysisMode::kMax
+                                                      : AnalysisMode::kMin;
+};
+
+/**
+ * @brief convert gpu trans type for cpu.
+ *
+ * @param gpu_trans_type
+ * @return auto
+ */
+auto convert_trans_type(GPU_Trans_Type gpu_trans_type) {
+  return gpu_trans_type == GPU_Trans_Type::kRise ? TransType::kRise
+                                                 : TransType::kFall;
+};
+
+/**
+ * @brief update sta slew data.
+ *
+ * @param the_sta_graph
+ * @param the_cpu_graph
+ */
+void update_sta_slew_data(StaGraph* the_sta_graph, GPU_Graph& the_cpu_graph) {
   auto& the_sta_vertexes = the_sta_graph->get_vertexes();
+  auto* the_cpu_graph_vertexes = the_cpu_graph._vertices;
+  // iterate each vertex in gpu graph.
   for (unsigned vertex_index = 0; vertex_index < the_cpu_graph._num_vertices;
        ++vertex_index) {
-    auto& current_vertex = the_gpu_graph_vertexes[vertex_index];
+    auto& current_vertex = the_cpu_graph_vertexes[vertex_index];
     auto& current_sta_vertex = the_sta_vertexes[vertex_index];
 
     // update vertex slew
     for (unsigned slew_index = 0;
          slew_index < current_vertex._slew_data._num_fwd_data; ++slew_index) {
-      unsigned vertex_slew_pos = current_vertex._slew_data._start_pos + slew_index;
-      auto slew_value_ps = the_cpu_graph._flatten_slew_data[vertex_slew_pos];
+      unsigned vertex_slew_pos =
+          current_vertex._slew_data._start_pos + slew_index;
+      auto slew_fwd_data = the_cpu_graph._flatten_slew_data[vertex_slew_pos];
+      unsigned src_vertex_id = slew_fwd_data._src_vertex_id;
+      auto& src_sta_vertex = the_sta_vertexes[src_vertex_id];
+      unsigned src_data_index = slew_fwd_data._src_data_index;
+      auto src_slew_fwd_data = the_cpu_graph._flatten_slew_data[src_data_index];
 
-      // current_sta_vertex->getSlewData();
+      // get src and current slew data.
+      auto src_sta_slew_data = src_sta_vertex->getSlewData(
+          convert_analysis_mode(src_slew_fwd_data._analysis_mode),
+          convert_trans_type(src_slew_fwd_data._trans_type), nullptr);
 
+      auto current_sta_slew_data = current_sta_vertex->getSlewData(
+          convert_analysis_mode(slew_fwd_data._analysis_mode),
+          convert_trans_type(slew_fwd_data._trans_type), nullptr);
+
+      current_sta_slew_data->set_slew(slew_fwd_data._data_value);
+      current_sta_slew_data->set_bwd(src_sta_slew_data);
     }
   }
+}
+
+/**
+ * @brief update path delay data.
+ *
+ * @param the_sta_graph
+ * @param the_cpu_graph
+ */
+void update_sta_at_data(StaGraph* the_sta_graph, GPU_Graph& the_cpu_graph) {
+  auto& the_sta_vertexes = the_sta_graph->get_vertexes();
+  auto* the_cpu_graph_vertexes = the_cpu_graph._vertices;
+  // iterate each vertex in gpu graph.
+  for (unsigned vertex_index = 0; vertex_index < the_cpu_graph._num_vertices;
+       ++vertex_index) {
+    auto& current_vertex = the_cpu_graph_vertexes[vertex_index];
+    auto& current_sta_vertex = the_sta_vertexes[vertex_index];
+
+    // update vertex at
+    for (unsigned at_index = 0;
+         at_index < current_vertex._at_data._num_fwd_data; ++at_index) {
+      unsigned vertex_slew_pos = current_vertex._at_data._start_pos + at_index;
+      auto at_fwd_data = the_cpu_graph._flatten_at_data[vertex_slew_pos];
+      unsigned src_vertex_id = at_fwd_data._src_vertex_id;
+      auto& src_sta_vertex = the_sta_vertexes[src_vertex_id];
+      unsigned src_data_index = at_fwd_data._src_data_index;
+      auto src_at_fwd_data = the_cpu_graph._flatten_at_data[src_data_index];
+
+      // get src and current slew data.
+      auto* src_sta_at_data = src_sta_vertex->getSlewData(
+          convert_analysis_mode(src_at_fwd_data._analysis_mode),
+          convert_trans_type(src_at_fwd_data._trans_type), nullptr);
+
+      auto* current_sta_at_data = current_sta_vertex->getSlewData(
+          convert_analysis_mode(src_at_fwd_data._analysis_mode),
+          convert_trans_type(src_at_fwd_data._trans_type), nullptr);
+
+      current_sta_at_data->set_slew(at_fwd_data._data_value);
+      current_sta_at_data->set_bwd(src_sta_at_data);
+    }
+  }
+}
+
+/**
+ * @brief update sta arc delay data.
+ *
+ * @param the_sta_graph
+ * @param the_cpu_graph
+ */
+void update_sta_arc_delay_data(StaGraph* the_sta_graph,
+                               GPU_Graph& the_cpu_graph) {
+  auto& the_sta_arcs = the_sta_graph->get_arcs();
+  auto* the_cpu_graph_arcs = the_cpu_graph._arcs;
+
+  // iterate each arc in gpu graph.
+  for (unsigned arc_index = 0; arc_index < the_cpu_graph._num_arcs;
+       ++arc_index) {
+    auto& current_arc = the_cpu_graph_arcs[arc_index];
+    auto& current_sta_arc = the_sta_arcs[arc_index];
+
+    // update arc delay.
+    for (unsigned arc_index = 0;
+         arc_index < current_arc._delay_values._num_fwd_data; ++arc_index) {
+      unsigned arc_delay_pos = current_arc._delay_values._start_pos + arc_index;
+      auto arc_delay_fwd_data =
+          the_cpu_graph._flatten_arc_delay_data[arc_delay_pos];
+
+      auto* arc_delay_data = current_sta_arc->getArcDelayData(convert_analysis_mode(arc_delay_fwd_data._analysis_mode),
+          convert_trans_type(arc_delay_fwd_data._trans_type));
+      arc_delay_data->set_arc_delay(arc_delay_fwd_data._data_value);
+    }
+  }
+}
+
+/**
+ * @brief from the gpu graph data to update the sta graph.
+ *
+ * @param the_cpu_graph
+ * @param the_sta_graph
+ */
+void update_sta_graph(GPU_Graph& the_cpu_graph, StaGraph* the_sta_graph) {
+  update_sta_slew_data(the_sta_graph, the_cpu_graph);
+  update_sta_at_data(the_sta_graph, the_cpu_graph);
+  update_sta_arc_delay_data(the_sta_graph, the_cpu_graph);
 }
 
 /**

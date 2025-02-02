@@ -93,11 +93,12 @@ enum GPU_OP_TYPE {
  */
 template<typename T>
 struct GPU_Fwd_Data {
-  T _data_value = 0.0;
+  T _data_value = 0.0; //!< unit is FS.
   GPU_Trans_Type _trans_type;  //!< for purposes of more gpu fwd data, so we
                                //!< record trans_type and analysis mode.
   GPU_Analysis_Mode _analysis_mode;
-  int _src_data_index = -1; //!< The src vertex id for backtrace analysis.
+  int _src_vertex_id = -1; //! The src vertex id for backtrace analysis.
+  int _src_data_index = -1; //!< The src data index in flatten datas.
 
   int _is_lock = 0; //!< 0 is not lock.
 };
