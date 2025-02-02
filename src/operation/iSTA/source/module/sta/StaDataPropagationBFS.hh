@@ -48,7 +48,7 @@ class StaFwdPropagationBFS : public StaBFSFunc, public StaFwdPropagation {
   }
   auto& get_level_to_arcs() { return _level_to_arcs; }
 
-  void dispatchArcTask();
+  void dispatchArcTask(StaGraph* the_graph);
 
 #if CUDA_PROPAGATION
   std::map<unsigned, std::vector<StaArc*>> _level_to_arcs;

@@ -25,6 +25,7 @@
 #pragma once
 
 #include <variant>
+#include "propagation-cuda/lib_arc.cuh"
 
 namespace ista {
 
@@ -192,5 +193,19 @@ struct GPU_Graph {
 
   GPU_Fwd_Data<int64_t>* _flatten_arc_delay_data;  //!< The all arc delay data.
 };
+
+/**
+ * @brief The gpu fwd propagation top api.
+ * 
+ * @param the_cpu_graph  The gpu graph in cpu.
+ * @param vertex_data_size The flatten vertex data size.
+ * @param arc_data_size The flatten arc data size.
+ * @param level_to_arcs The BFS propagation arcs for each level.
+ * @param lib_data The lut lib data.
+ */
+void gpu_propagate_fwd(
+    GPU_Graph& the_cpu_graph, unsigned vertex_data_size, unsigned arc_data_size,
+    std::map<unsigned, std::vector<unsigned>>& level_to_arcs,
+    Lib_Data_GPU& lib_data);
 
 }  // namespace ista

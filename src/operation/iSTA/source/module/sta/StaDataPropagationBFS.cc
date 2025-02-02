@@ -33,6 +33,7 @@
 #include "StaSlewPropagation.hh"
 #include "ThreadPool/ThreadPool.h"
 #include "propagation-cuda/fwd_propagation.cuh"
+#include "propagation-cuda/lib_arc.cuh"
 
 namespace ista {
 
@@ -208,7 +209,7 @@ unsigned StaFwdPropagationBFS::operator()(StaGraph* the_graph) {
   } while (!_bfs_queue.empty());
 
 #if CUDA_PROPAGATION
-  dispatchArcTask();
+  dispatchArcTask(the_graph);
 #endif
 
   LOG_INFO << "data fwd propagation bfs end";
@@ -398,9 +399,14 @@ void build_gpu_arc_delay_data(
  * @brief build gpu graph for gpu speed computation.
  *
  * @param the_sta_graph
+ * @param vertex_data_size the flatten vertex data size
+ * @param arc_data_size the flatten arc data size
+ * @param arc_to_index sta arc to gpu index.
  * @return GPU_Graph
  */
-GPU_Graph build_gpu_graph(StaGraph* the_sta_graph) {
+GPU_Graph build_gpu_graph(StaGraph* the_sta_graph, unsigned& vertex_data_size,
+                          unsigned& arc_data_size,
+                          std::map<StaArc*, unsigned>& arc_to_index) {
   GPU_Graph gpu_graph;
   unsigned num_vertex = the_sta_graph->numVertex();
   unsigned num_arc = the_sta_graph->numArc();
@@ -411,7 +417,7 @@ GPU_Graph build_gpu_graph(StaGraph* the_sta_graph) {
   gpu_arcs.reserve(num_arc);
 
   // init cpu memory.
-  unsigned vertex_data_size = c_gpu_num_vertex_data * num_vertex;
+  vertex_data_size = c_gpu_num_vertex_data * num_vertex;
   std::vector<GPU_Fwd_Data<int64_t>> flatten_slew_data;
   flatten_slew_data.reserve(vertex_data_size);
   std::vector<GPU_Fwd_Data<int64_t>> flatten_at_data;
@@ -423,7 +429,7 @@ GPU_Graph build_gpu_graph(StaGraph* the_sta_graph) {
   std::vector<GPU_Fwd_Data<double>> flatten_node_impulse_data;
   flatten_node_impulse_data.reserve(vertex_data_size);
 
-  unsigned arc_data_size = c_gpu_num_arc_delay * num_arc;
+  arc_data_size = c_gpu_num_arc_delay * num_arc;
   std::vector<GPU_Fwd_Data<int64_t>> flatten_arc_delay_data;
   flatten_arc_delay_data.reserve(arc_data_size);
 
@@ -473,6 +479,8 @@ GPU_Graph build_gpu_graph(StaGraph* the_sta_graph) {
     build_gpu_arc_delay_data(gpu_arc, flatten_arc_delay_data);
 
     gpu_arcs.emplace_back(std::move(gpu_arc));
+
+    arc_to_index[the_arc] = gpu_arcs.size() - 1;
   }
 
   // copy cpu data to gpu memory.
@@ -618,7 +626,8 @@ void update_sta_arc_delay_data(StaGraph* the_sta_graph,
       auto arc_delay_fwd_data =
           the_cpu_graph._flatten_arc_delay_data[arc_delay_pos];
 
-      auto* arc_delay_data = current_sta_arc->getArcDelayData(convert_analysis_mode(arc_delay_fwd_data._analysis_mode),
+      auto* arc_delay_data = current_sta_arc->getArcDelayData(
+          convert_analysis_mode(arc_delay_fwd_data._analysis_mode),
           convert_trans_type(arc_delay_fwd_data._trans_type));
       arc_delay_data->set_arc_delay(arc_delay_fwd_data._data_value);
     }
@@ -641,17 +650,51 @@ void update_sta_graph(GPU_Graph& the_cpu_graph, StaGraph* the_sta_graph) {
  * @brief dispatch arc propagation task on CPU or GPU.
  *
  */
-void StaFwdPropagationBFS::dispatchArcTask() {
+void StaFwdPropagationBFS::dispatchArcTask(StaGraph* the_graph) {
   if (_level_to_arcs.empty()) {
     return;
   }
 
   ieda::Stats stats;
   LOG_INFO << "dispatch arc task start";
+
+#if 0
   for (auto& [level, the_arcs] : _level_to_arcs) {
+
     std::for_each(std::execution::par, the_arcs.begin(), the_arcs.end(),
                   [this](auto* the_arc) { the_arc->exec(*this); });
   }
+#else
+  // prepare the gpu graph data in cpu.
+  unsigned vertex_data_size;
+  unsigned arc_data_size;
+  std::map<StaArc*, unsigned> arc_to_index;
+  auto cpu_graph =
+      build_gpu_graph(the_graph, vertex_data_size, arc_data_size, arc_to_index);
+
+  // prepare the lib data.
+  auto* ista = getSta();
+  ista->buildLibArcsGPU();
+  std::vector<ista::Lib_Arc_GPU*> lib_arcs_gpu = ista->getLibArcsGPU();
+  Lib_Data_GPU lib_data_gpu;
+  build_lib_data_gpu(lib_data_gpu, lib_arcs_gpu);
+
+  std::map<unsigned, std::vector<unsigned>> level_to_arcs;
+  for (auto& [level, the_arcs] : _level_to_arcs) {
+    std::vector<unsigned> arc_indexes;
+    for (auto* the_arc : the_arcs) {
+      arc_indexes.emplace_back(arc_to_index[the_arc]);
+    }
+  }
+
+  // cpu the cuda gpu program.
+  gpu_propagate_fwd(cpu_graph, vertex_data_size, arc_data_size, level_to_arcs,
+                    lib_data_gpu);
+
+  // update the sta graph.
+  update_sta_graph(cpu_graph, the_graph);
+
+#endif
   _level_to_arcs.clear();
 
   LOG_INFO << "dispatch arc task end";
