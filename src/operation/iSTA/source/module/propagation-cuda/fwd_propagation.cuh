@@ -111,7 +111,7 @@ struct GPU_Fwd_Data {
  */
 struct GPU_Vertex_Data {
   unsigned _start_pos = 0;
-  unsigned _num_fwd_data;
+  unsigned _num_fwd_data = 0;
 };
 
 /**
