@@ -30,9 +30,9 @@
 #include "Config.hh"
 #include "StaDataSlewDelayPropagation.hh"
 #include "StaDelayPropagation.hh"
+#include "StaGPUFwdPropagation.hh"
 #include "StaSlewPropagation.hh"
 #include "ThreadPool/ThreadPool.h"
-#include "StaGPUFwdPropagation.hh"
 
 namespace ista {
 
@@ -45,6 +45,7 @@ namespace ista {
 unsigned StaFwdPropagationBFS::operator()(StaArc* the_arc) {
   std::lock_guard<std::mutex> lk(the_arc->get_snk()->get_fwd_mutex());
 
+#if !CUDA_PROPAGATION
 #if INTEGRATION_FWD
 #if 0
   StaSlewPropagation slew_propagation;
@@ -56,6 +57,7 @@ unsigned StaFwdPropagationBFS::operator()(StaArc* the_arc) {
   StaDataSlewDelayPropagation slew_delay_propagation;
   slew_delay_propagation(the_arc);
 
+#endif
 #endif
 #endif
 
@@ -94,6 +96,7 @@ unsigned StaFwdPropagationBFS::operator()(StaVertex* the_vertex) {
 #if CUDA_PROPAGATION
       // collect different level arcs.
       addLevelArcs(the_vertex->get_level(), snk_arc);
+      snk_arc->exec(*this);
 #else
       snk_arc->exec(*this);
 #endif
@@ -122,13 +125,12 @@ unsigned StaFwdPropagationBFS::operator()(StaVertex* the_vertex) {
 #if CUDA_PROPAGATION
     // collect different level arcs.
     addLevelArcs(the_vertex->get_level(), src_arc);
-#else
+#endif
+
     if (!src_arc->exec(*this)) {
       LOG_FATAL << "data propagation error";
       break;
     }
-
-#endif
 
     // get the next level bfs vertex and add it to the queue.
     if (snk_vertex->get_level() == (the_vertex->get_level() + 1)) {
@@ -156,6 +158,12 @@ unsigned StaFwdPropagationBFS::operator()(StaGraph* the_graph) {
   ieda::Stats stats;
   LOG_INFO << "data fwd propagation bfs start";
   unsigned is_ok = 1;
+
+#if CUDA_PROPAGATION
+#if !CPU_SIM
+  initFwdData(the_graph);
+#endif
+#endif
 
   StaVertex* the_vertex;
   FOREACH_VERTEX(the_graph, the_vertex) {
@@ -221,7 +229,17 @@ unsigned StaFwdPropagationBFS::operator()(StaGraph* the_graph) {
   return is_ok;
 }
 
-
+/**
+ * @brief For use gpu propagation, we first init the sta fwd data.
+ *
+ * @param the_graph
+ */
+void StaFwdPropagationBFS::initFwdData(StaGraph* the_graph) {
+  StaArc* the_arc;
+  FOREACH_ARC(the_graph, the_arc) {
+    the_arc->initArcDelayData();
+  }
+}
 
 /**
  * @brief dispatch arc propagation task on CPU or GPU.
@@ -233,9 +251,9 @@ void StaFwdPropagationBFS::dispatchArcTask(StaGraph* the_graph) {
   }
 
   ieda::Stats stats;
-  
 
-#if 0
+#if CPU_SIM
+  // use cpu simulation the gpu fwd propagation.
   LOG_INFO << "dispatch arc task to cpu start";
   for (auto& [level, the_arcs] : _level_to_arcs) {
     LOG_INFO << "propagate level " << level;

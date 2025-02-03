@@ -47,7 +47,8 @@ class StaFwdPropagationBFS : public StaBFSFunc, public StaFwdPropagation {
     _level_to_arcs[level].emplace_back(the_arc);
   }
   auto& get_level_to_arcs() { return _level_to_arcs; }
-
+  
+  void initFwdData(StaGraph* the_graph);
   void dispatchArcTask(StaGraph* the_graph);
 
 #if CUDA_PROPAGATION

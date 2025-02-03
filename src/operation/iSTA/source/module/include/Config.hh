@@ -65,8 +65,12 @@ using ieda::StrMap;
 using ieda::Time;
 using ieda::Vector;
 
+// slew, delay, arrive time together.
 #define INTEGRATION_FWD 1
+// use CUDA GPU Speed.
 #define CUDA_PROPAGATION 1
+// use cpu to simulate the gpu fwd.
+#define CPU_SIM 0
 
 // slew and path delay bucket config.
 constexpr unsigned c_vertex_slew_data_bucket_size = 1;
