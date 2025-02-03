@@ -73,7 +73,7 @@ void build_gpu_vertex_at_data(
     StaVertex* the_vertex, GPU_Vertex& gpu_vertex,
     std::vector<GPU_Fwd_Data<int64_t>>& flatten_at_data) {
   // build slew data.
-  the_vertex->initPathDelayData();
+  // the_vertex->initPathDelayData();
   gpu_vertex._at_data._start_pos = flatten_at_data.size();
   StaData* at_data;
   FOREACH_DELAY_DATA(the_vertex, at_data) {
@@ -133,7 +133,7 @@ void build_gpu_vertex_node_cap_data(
 void build_gpu_vertex_node_delay_data(
     StaVertex* the_vertex, GPU_Vertex& gpu_vertex,
     std::vector<GPU_Fwd_Data<double>>& flatten_node_delay_data) {
-  gpu_vertex._node_cap_data._start_pos = flatten_node_delay_data.size();
+  gpu_vertex._node_delay_data._start_pos = flatten_node_delay_data.size();
   FOREACH_MODE_TRANS(mode, trans) {
     GPU_Fwd_Data<double> gpu_node_delay_data;
     gpu_node_delay_data._data_value =
@@ -146,7 +146,7 @@ void build_gpu_vertex_node_delay_data(
                                              : GPU_Analysis_Mode::kMin;
     flatten_node_delay_data.emplace_back(gpu_node_delay_data);
   }
-  gpu_vertex._node_cap_data._num_fwd_data =
+  gpu_vertex._node_delay_data._num_fwd_data =
       flatten_node_delay_data.size() - gpu_vertex._node_cap_data._start_pos;
 }
 
@@ -385,8 +385,8 @@ void update_sta_at_data(StaGraph* the_sta_graph, GPU_Graph& the_host_graph) {
     // update vertex at
     for (unsigned at_index = 0;
          at_index < current_vertex._at_data._num_fwd_data; ++at_index) {
-      unsigned vertex_slew_pos = current_vertex._at_data._start_pos + at_index;
-      auto at_fwd_data = the_host_graph._flatten_at_data[vertex_slew_pos];
+      unsigned vertex_at_pos = current_vertex._at_data._start_pos + at_index;
+      auto at_fwd_data = the_host_graph._flatten_at_data[vertex_at_pos];
 
       auto* current_sta_at_data = current_sta_vertex->getPathDelayData(
           convert_analysis_mode(at_fwd_data._analysis_mode),

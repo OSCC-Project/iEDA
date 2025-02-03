@@ -170,7 +170,6 @@ void copy_to_host_graph(GPU_Graph& the_host_graph, GPU_Graph& the_device_graph,
                              vertex_data_size * sizeof(GPU_Fwd_Data<int64_t>),
                              cudaMemcpyDeviceToHost, stream[1]));
 
-
   CUDA_CHECK(cudaMemcpyAsync(the_host_graph._flatten_arc_delay_data,
                              the_device_graph._flatten_arc_delay_data,
                              arc_data_size * sizeof(GPU_Fwd_Data<int64_t>),
@@ -261,6 +260,14 @@ __device__ void set_one_fwd_data(GPU_Graph* the_graph, GPU_Arc& the_arc,
   auto [snk_fwd_data_ptr, snk_data_index] = get_one_fwd_data(
       flatten_all_datas, snk_vertex_data, analysis_mode, out_trans_type);
 
+  if (!src_fwd_data_ptr) {
+    CUDA_LOG_FATAL("src fwd data should not be null.");
+  }
+
+  if (!snk_fwd_data_ptr) {
+    CUDA_LOG_FATAL("snk fwd data should not be null.");
+  }
+
   auto& src_fwd_data = *src_fwd_data_ptr;
   auto& snk_fwd_data = *snk_fwd_data_ptr;
 
@@ -282,10 +289,15 @@ __device__ void set_one_fwd_data(GPU_Graph* the_graph, GPU_Arc& the_arc,
         snk_fwd_data._data_value = data_value;
       }
     } else {
+      CUDA_LOG_INFO("update src vertex %d -> snk vertex %d at %lld",
+                    src_vertex_id, snk_vertex_id, snk_fwd_data._data_value);
       if (snk_fwd_data._data_value < (src_fwd_data._data_value + data_value)) {
         snk_fwd_data._src_vertex_id = src_vertex_id;
         snk_fwd_data._src_data_index = src_data_index;
         snk_fwd_data._data_value = src_fwd_data._data_value + data_value;
+
+        CUDA_LOG_INFO("update src vertex %d -> snk vertex %d at %lld",
+                      src_vertex_id, snk_vertex_id, snk_fwd_data._data_value);
       }
     }
   } else {
@@ -300,6 +312,9 @@ __device__ void set_one_fwd_data(GPU_Graph* the_graph, GPU_Arc& the_arc,
         snk_fwd_data._src_vertex_id = src_vertex_id;
         snk_fwd_data._src_data_index = src_data_index;
         snk_fwd_data._data_value = src_fwd_data._data_value + data_value;
+
+        CUDA_LOG_INFO("update src vertex %d -> snk vertex %d at %lld",
+                      src_vertex_id, snk_vertex_id, snk_fwd_data._data_value);
       }
     }
   }
@@ -341,9 +356,16 @@ __device__ void propagate_inst_slew_delay(GPU_Graph* the_graph,
           the_arc._lib_data_arc_id);
     }
     auto& the_slew_lib_table = the_lib_arc._table[table_index];
-    float slew_value =
-        find_value(the_slew_lib_table, one_src_slew_data._data_value,
-                   one_snk_cap_data._data_value);
+
+    auto src_slew_ns = FS_TO_NS(one_src_slew_data._data_value);
+    auto snk_cap_ff = PF_TO_FF(one_snk_cap_data._data_value);
+    float slew_value_ns =
+        find_value(the_slew_lib_table, src_slew_ns, (float)snk_cap_ff);
+    CUDA_LOG_INFO(
+        "find slew value %f src slew %f snk cap %d table line no %d "
+        "lib arc id %d",
+        slew_value_ns, src_slew_ns, snk_cap_ff, the_lib_arc._line_no,
+        the_arc._lib_data_arc_id);
 
     table_index = GPU_Table_Base_Index::kDelayBase + in_trans_type;
     if (table_index >= the_lib_arc._num_table) {
@@ -353,12 +375,17 @@ __device__ void propagate_inst_slew_delay(GPU_Graph* the_graph,
           the_arc._lib_data_arc_id);
     }
     auto& the_delay_lib_table = the_lib_arc._table[table_index];
-    float delay_value =
-        find_value(the_delay_lib_table, one_src_slew_data._data_value,
-                   one_snk_cap_data._data_value);
+    float delay_value_ns =
+        find_value(the_delay_lib_table, src_slew_ns, (float)snk_cap_ff);
 
-    return std::pair(int64_t(NS_TO_FS(slew_value)),
-                     int64_t(NS_TO_FS(delay_value)));
+    CUDA_LOG_INFO(
+        "find delay value %f src slew %f snk cap %d table line no %d "
+        "lib arc id %d",
+        delay_value_ns, src_slew_ns, snk_cap_ff, the_lib_arc._line_no,
+        the_arc._lib_data_arc_id);
+
+    return std::pair(int64_t(NS_TO_FS(slew_value_ns)),
+                     int64_t(NS_TO_FS(delay_value_ns)));
   };
 
   GPU_Fwd_Data<int64_t> one_src_slew_data;
@@ -435,8 +462,7 @@ __device__ void lut_constraint_delay(GPU_Graph* the_graph, GPU_Arc& the_arc,
       auto snk_trans = one_snk_slew_data._trans_type;
 
       unsigned table_index = snk_trans;
-      auto& the_lib_table =
-          the_lib_arc._table[snk_trans];
+      auto& the_lib_table = the_lib_arc._table[snk_trans];
 
       if (table_index >= the_lib_arc._num_table) {
         CUDA_LOG_FATAL(
@@ -445,11 +471,18 @@ __device__ void lut_constraint_delay(GPU_Graph* the_graph, GPU_Arc& the_arc,
             the_arc._lib_data_arc_id);
       }
 
-      float delay_value_ns =
-          find_value(the_lib_table, one_src_slew_data._data_value,
-                     one_snk_slew_data._data_value);
-      int64_t delay_value = NS_TO_FS(delay_value_ns);
+      float src_slew_ns = FS_TO_NS(one_src_slew_data._data_value);
+      float snk_slew_ns = FS_TO_NS(one_snk_slew_data._data_value);
 
+      float delay_value_ns =
+          find_value(the_lib_table, src_slew_ns, snk_slew_ns);
+      // CUDA_LOG_INFO(
+      //     "find check value %f src slew %f snk slew %f table line no %d "
+      //     "lib arc id %d",
+      //     delay_value_ns, src_slew_ns, snk_slew_ns, the_lib_arc._line_no,
+      //     the_arc._lib_data_arc_id);
+
+      int64_t delay_value = NS_TO_FS(delay_value_ns);
       auto analysis_mode = one_snk_slew_data._analysis_mode;
 
       set_one_fwd_data<GPU_OP_TYPE::kDelay>(the_graph, the_arc, analysis_mode,
@@ -556,7 +589,7 @@ __global__ void propagate_fwd(GPU_Graph the_graph, Lib_Data_GPU the_lib_data,
       // for inst check arc, lut table for get constrain value.
       lut_constraint_delay(&the_graph, current_arc, lib_arc);
     } else {
-      CUDA_LOG_INFO("process net arc");
+      // CUDA_LOG_INFO("process net arc");
       // for net arc, lut net output slew and delay.
       propagate_net_slew_delay(&the_graph, current_arc);
     }
