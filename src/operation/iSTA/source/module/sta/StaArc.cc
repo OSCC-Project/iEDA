@@ -64,6 +64,34 @@ int StaArc::get_arc_delay(AnalysisMode analysis_mode, TransType trans_type) {
 }
 
 /**
+ * @brief init arc delay data.
+ * 
+ */
+void StaArc::initArcDelayData() {
+  auto& delay_bucket = getDataBucket();
+  if (!delay_bucket.empty()) {
+    return;
+  }
+
+  auto construct_delay_data = [this](AnalysisMode delay_type,
+                                     TransType trans_type, StaArc* own_arc,
+                                     int delay) {
+    StaArcDelayData* arc_delay =
+        new StaArcDelayData(delay_type, trans_type, own_arc, delay);
+    ;
+    own_arc->addData(arc_delay);
+
+    arc_delay->set_arc_delay(delay);
+  };
+
+  /*if not, create default zero slew.*/
+  construct_delay_data(AnalysisMode::kMax, TransType::kRise, this, 0);
+  construct_delay_data(AnalysisMode::kMax, TransType::kFall, this, 0);
+  construct_delay_data(AnalysisMode::kMin, TransType::kRise, this, 0);
+  construct_delay_data(AnalysisMode::kMin, TransType::kFall, this, 0);
+}
+
+/**
  * @brief Get arc delay data.
  *
  * @param analysis_mode

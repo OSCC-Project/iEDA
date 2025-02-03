@@ -72,6 +72,7 @@ class StaArc {
   void resetArcDelayBucket() { _arc_delay_bucket.freeData(); }
   unsigned isResetArcDelayBucket() { return (_arc_delay_bucket.isFreeData()); }
   int get_arc_delay(AnalysisMode analysis_mode, TransType trans_type);
+  void initArcDelayData();
   StaArcDelayData* getArcDelayData(AnalysisMode analysis_mode,
                                    TransType trans_type);
   StaDataBucket& getDataBucket() { return _arc_delay_bucket; }
