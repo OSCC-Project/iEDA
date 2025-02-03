@@ -17,7 +17,7 @@ namespace ista {
 
 /**
  * @brief struct for collect all data.
- * 
+ *
  */
 struct GPU_Flatten_Data {
   std::vector<GPU_Fwd_Data<int64_t>> _flatten_slew_data;
@@ -217,15 +217,16 @@ GPU_Graph build_gpu_graph(StaGraph* the_sta_graph,
                           std::map<StaArc*, unsigned>& arc_to_index) {
   GPU_Graph gpu_graph;
 
-
   // build gpu vertex
   StaVertex* the_vertex;
   std::map<StaVertex*, unsigned> vertex_to_id;
   FOREACH_VERTEX(the_sta_graph, the_vertex) {
     GPU_Vertex gpu_vertex;
 
-    build_gpu_vertex_slew_data(the_vertex, gpu_vertex, flatten_data._flatten_slew_data);
-    build_gpu_vertex_at_data(the_vertex, gpu_vertex, flatten_data._flatten_at_data);
+    build_gpu_vertex_slew_data(the_vertex, gpu_vertex,
+                               flatten_data._flatten_slew_data);
+    build_gpu_vertex_at_data(the_vertex, gpu_vertex,
+                             flatten_data._flatten_at_data);
     build_gpu_vertex_node_cap_data(the_vertex, gpu_vertex,
                                    flatten_data._flatten_node_cap_data);
     build_gpu_vertex_node_delay_data(the_vertex, gpu_vertex,
@@ -239,6 +240,12 @@ GPU_Graph build_gpu_graph(StaGraph* the_sta_graph,
   // build gpu arc
   StaArc* the_arc;
   FOREACH_ARC(the_sta_graph, the_arc) {
+    // skip not used arc.
+    if (!the_arc->isDelayArc() && !the_arc->isCheckArc() &&
+        !the_arc->isNetArc()) {
+      continue;
+    }
+
     GPU_Arc gpu_arc;
 
     gpu_arc._arc_type = the_arc->isDelayArc()   ? GPU_Arc_Type::kInstDelayArc
@@ -277,9 +284,12 @@ GPU_Graph build_gpu_graph(StaGraph* the_sta_graph,
   gpu_graph._flatten_slew_data = flatten_data._flatten_slew_data.data();
   gpu_graph._flatten_at_data = flatten_data._flatten_at_data.data();
   gpu_graph._flatten_node_cap_data = flatten_data._flatten_node_cap_data.data();
-  gpu_graph._flatten_node_delay_data = flatten_data._flatten_node_delay_data.data();
-  gpu_graph._flatten_node_impulse_data = flatten_data._flatten_node_impulse_data.data();
-  gpu_graph._flatten_arc_delay_data = flatten_data._flatten_arc_delay_data.data();
+  gpu_graph._flatten_node_delay_data =
+      flatten_data._flatten_node_delay_data.data();
+  gpu_graph._flatten_node_impulse_data =
+      flatten_data._flatten_node_impulse_data.data();
+  gpu_graph._flatten_arc_delay_data =
+      flatten_data._flatten_arc_delay_data.data();
 
   return gpu_graph;
 }
@@ -439,20 +449,19 @@ void update_sta_graph(GPU_Graph& the_host_graph, StaGraph* the_sta_graph) {
  * @return unsigned
  */
 unsigned StaGPUFwdPropagation::operator()(StaGraph* the_graph) {
-
   unsigned num_vertex = the_graph->numVertex();
   unsigned num_arc = the_graph->numArc();
   // prepare the gpu graph data in cpu.
-  unsigned vertex_data_size = c_gpu_num_vertex_data * num_vertex;;
-  unsigned arc_data_size = c_gpu_num_arc_delay * num_arc;;
+  unsigned vertex_data_size = c_gpu_num_vertex_data * num_vertex;
+  unsigned arc_data_size = c_gpu_num_arc_delay * num_arc;
   std::map<StaArc*, unsigned> arc_to_index;
-  
+
   // gpu graph vertex and arc data.
   std::vector<GPU_Vertex> gpu_vertices;
   gpu_vertices.reserve(num_vertex);
   std::vector<GPU_Arc> gpu_arcs;
   gpu_arcs.reserve(num_arc);
-  
+
   // flatten data
   GPU_Flatten_Data flatten_data;
 

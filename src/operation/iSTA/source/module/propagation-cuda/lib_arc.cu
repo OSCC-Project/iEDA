@@ -135,7 +135,7 @@ __device__ float get_y_axis_val(Lib_Table_GPU& lib_table_gpu, unsigned index) {
  */
 __device__ float get_table_value(Lib_Table_GPU& lib_table_gpu, unsigned index) {
   if (index >= lib_table_gpu._num_values) {
-    printf("Error: index %u beyond table value size %u\n", index,
+    CUDA_LOG_ERROR("index %u beyond table value size %u", index,
            lib_table_gpu._num_values);
     return -1.0;
   }
@@ -164,9 +164,9 @@ __device__ unsigned check_val(Lib_Table_GPU& lib_table_gpu, int axis_index,
   }
 
   if ((val < min_val) || (val > max_val)) {
-    printf(
-        "Warning: val outside table ranges: val = %f; min_val = %f; max_val "
-        "= %f\n",
+    CUDA_LOG_WARNING(
+        "val outside table ranges: val = %f; min_val = %f; max_val "
+        "= %f",
         val, min_val, max_val);
   }
   return num_val;
@@ -245,7 +245,7 @@ __device__ float find_value(Lib_Table_GPU& lib_table_gpu, float slew,
     val2 = slew;
   } else {
     // ??? not sure (_type == UINT_MAX) can work as (!table_template)
-    printf("Error: lut table: invalid delay lut template variable\n");
+    CUDA_LOG_ERROR("lut table: invalid delay lut template variable");
     return -1.0;
   }
 

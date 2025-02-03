@@ -159,7 +159,7 @@ struct GPU_Arc {
   unsigned _snk_vertex_id;  //!< The snk vertex id mapping the host StaVertex.
   GPU_ARC_DATA _delay_values;
 
-  int _lib_data_arc_id;  //!< The lib data arc id.
+  int _lib_data_arc_id = -1;  //!< The lib data arc id.
 };
 
 /**
@@ -183,16 +183,16 @@ struct GPU_Graph {
   unsigned _num_arcs = 0;           //!< The number of arcs.
 
   // flatten data for copy data from cpu to gpu faster.
-  GPU_Fwd_Data<int64_t>* _flatten_slew_data;  //!< The all slew data of the vertex.
-  GPU_Fwd_Data<int64_t>* _flatten_at_data;    //!< The all arrive data of the vertex.
+  GPU_Fwd_Data<int64_t>* _flatten_slew_data = nullptr;  //!< The all slew data of the vertex.
+  GPU_Fwd_Data<int64_t>* _flatten_at_data = nullptr;    //!< The all arrive data of the vertex.
   GPU_Fwd_Data<double>*
-      _flatten_node_cap_data;  //!< The all node cap data of the vertex.
+      _flatten_node_cap_data = nullptr;  //!< The all node cap data of the vertex.
   GPU_Fwd_Data<double>*
-      _flatten_node_delay_data;  //!< The all node delay data of the vertex.
+      _flatten_node_delay_data = nullptr;  //!< The all node delay data of the vertex.
   GPU_Fwd_Data<double>*
-      _flatten_node_impulse_data;  //!< The all node impulse data of the vertex.
+      _flatten_node_impulse_data = nullptr;  //!< The all node impulse data of the vertex.
 
-  GPU_Fwd_Data<int64_t>* _flatten_arc_delay_data;  //!< The all arc delay data.
+  GPU_Fwd_Data<int64_t>* _flatten_arc_delay_data = nullptr;  //!< The all arc delay data.
 };
 
 /**
