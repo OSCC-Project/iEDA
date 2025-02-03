@@ -515,26 +515,26 @@ __global__ void propagate_fwd(GPU_Graph the_graph, Lib_Data_GPU the_lib_data,
   // current thread id
   int i = blockIdx.x * blockDim.x + threadIdx.x;
   if (i < propagated_arcs._num_arcs) {
-    CUDA_LOG_INFO("GPU thread %d propagate fwd in gpu kernel\n", i);
+    CUDA_LOG_INFO("GPU thread %d propagate fwd in gpu kernel", i);
     unsigned current_arc_id = propagated_arcs._arc_index[i];
     GPU_Arc current_arc = the_graph._arcs[current_arc_id];
     GPU_Arc_Type current_arc_type = current_arc._arc_type;
 
     int lib_arc_id = current_arc._lib_data_arc_id;
-    CUDA_LOG_INFO("lib arc id %d\n", lib_arc_id);
+    CUDA_LOG_INFO("lib arc id %d", lib_arc_id);
 
     if (current_arc_type == kInstDelayArc) {
-      CUDA_LOG_INFO("process inst delay arc\n");
+      CUDA_LOG_INFO("process inst delay arc");
       auto lib_arc = the_lib_data._arcs_gpu[lib_arc_id];
       // for inst delay arc.
       propagate_inst_slew_delay(&the_graph, current_arc, lib_arc);
     } else if (current_arc_type == kInstCheckArc) {
-      CUDA_LOG_INFO("process inst check arc\n");
+      CUDA_LOG_INFO("process inst check arc");
       auto lib_arc = the_lib_data._arcs_gpu[lib_arc_id];
       // for inst check arc, lut table for get constrain value.
       lut_constraint_delay(&the_graph, current_arc, lib_arc);
     } else {
-      CUDA_LOG_INFO("process net arc\n");
+      CUDA_LOG_INFO("process net arc");
       // for net arc, lut net output slew and delay.
       propagate_net_slew_delay(&the_graph, current_arc);
     }
@@ -573,7 +573,7 @@ void gpu_propagate_fwd(GPU_Graph& the_host_graph, unsigned vertex_data_size,
     // CUDA_CHECK(cudaMemcpy(bfs_arcs._arc_index, the_arcs.data(),
     //                       bfs_arcs._num_arcs * sizeof(unsigned),
     //                       cudaMemcpyHostToDevice));
-    CUDA_LOG_INFO("propagate arc size %d\n", the_arcs.size());
+    CUDA_LOG_INFO("propagate arc size %d", the_arcs.size());
     propagate_fwd<<<1, 1>>>(the_device_graph, lib_data, bfs_arcs);
     // wait to finish.
     cudaDeviceSynchronize();
