@@ -263,7 +263,7 @@ GPU_Graph build_gpu_graph(StaGraph* the_sta_graph,
     gpu_arc._snk_vertex_id = vertex_to_id[the_arc->get_snk()];
     if (the_arc->isInstArc()) {
       gpu_arc._lib_data_arc_id =
-          dynamic_cast<StaInstArc*>(the_arc)->get_arc_id();
+          dynamic_cast<StaInstArc*>(the_arc)->get_lib_arc_id();
     } else {
       gpu_arc._lib_data_arc_id = -1;
     }
@@ -449,9 +449,16 @@ void update_sta_graph(GPU_Graph& the_host_graph, StaGraph* the_sta_graph) {
  * @return unsigned
  */
 unsigned StaGPUFwdPropagation::operator()(StaGraph* the_graph) {
+  // prepare the lib data.
+  auto* ista = getSta();
+  ista->buildLibArcsGPU();
+  std::vector<ista::Lib_Arc_GPU*> lib_arcs_gpu = ista->getLibArcsGPU();
+  Lib_Data_GPU lib_data_gpu;
+  build_lib_data_gpu(lib_data_gpu, lib_arcs_gpu);
+
+  // prepare the gpu graph data in cpu.
   unsigned num_vertex = the_graph->numVertex();
   unsigned num_arc = the_graph->numArc();
-  // prepare the gpu graph data in cpu.
   unsigned vertex_data_size = c_gpu_num_vertex_data * num_vertex;
   unsigned arc_data_size = c_gpu_num_arc_delay * num_arc;
   std::map<StaArc*, unsigned> arc_to_index;
@@ -474,14 +481,8 @@ unsigned StaGPUFwdPropagation::operator()(StaGraph* the_graph) {
 
   auto the_host_graph = build_gpu_graph(the_graph, flatten_data, gpu_vertices,
                                         gpu_arcs, arc_to_index);
-
-  // prepare the lib data.
-  auto* ista = getSta();
-  ista->buildLibArcsGPU();
-  std::vector<ista::Lib_Arc_GPU*> lib_arcs_gpu = ista->getLibArcsGPU();
-  Lib_Data_GPU lib_data_gpu;
-  build_lib_data_gpu(lib_data_gpu, lib_arcs_gpu);
-
+  
+  // prepare level arcs data.
   std::map<unsigned, std::vector<unsigned>> level_to_arcs;
   for (auto& [level, the_arcs] : _level_to_arcs) {
     std::vector<unsigned> arc_indexes;
@@ -491,11 +492,11 @@ unsigned StaGPUFwdPropagation::operator()(StaGraph* the_graph) {
     level_to_arcs[level] = std::move(arc_indexes);
   }
 
-  // cpu the cuda gpu program.
+  // call the cuda gpu program.
   gpu_propagate_fwd(the_host_graph, vertex_data_size, arc_data_size,
                     level_to_arcs, lib_data_gpu);
 
-  // update the sta graph.
+  // update result to the sta graph.
   update_sta_graph(the_host_graph, the_graph);
   return 1;
 }

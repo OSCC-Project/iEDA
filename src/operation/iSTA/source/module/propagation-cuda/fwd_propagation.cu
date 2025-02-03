@@ -23,6 +23,7 @@
  *
  */
 #include <cuda_runtime.h>
+#include <thrust/device_vector.h>
 
 #include <map>
 
@@ -30,17 +31,19 @@
 #include "gpu/cuda_common.cuh"
 #include "include/Type.hh"
 #include "propagation.cuh"
-#include <thrust/device_vector.h>
 
 namespace ista {
+
+/// each block thread num.
+static const int THREAD_PER_BLOCK_NUM = 64;
 
 /**
  * @brief copy host graph to gpu device graph.
  *
  */
 GPU_Graph copy_from_host_graph(GPU_Graph& the_host_graph,
-                              unsigned vertex_data_size,
-                              unsigned arc_data_size) {
+                               unsigned vertex_data_size,
+                               unsigned arc_data_size) {
   const unsigned num_stream = 8;
   cudaStream_t stream[num_stream];
   for (unsigned index = 0; index < num_stream; ++index) {
@@ -77,9 +80,9 @@ GPU_Graph copy_from_host_graph(GPU_Graph& the_host_graph,
                              vertex_data_size * sizeof(GPU_Fwd_Data<double>),
                              stream[stream_index++]));
 
-  CUDA_CHECK(cudaMallocAsync((void**)&the_device_graph._flatten_node_impulse_data,
-                             vertex_data_size * sizeof(GPU_Fwd_Data<double>),
-                             stream[stream_index++]));
+  CUDA_CHECK(cudaMallocAsync(
+      (void**)&the_device_graph._flatten_node_impulse_data,
+      vertex_data_size * sizeof(GPU_Fwd_Data<double>), stream[stream_index++]));
 
   CUDA_CHECK(cudaMallocAsync((void**)&the_device_graph._flatten_arc_delay_data,
                              arc_data_size * sizeof(GPU_Fwd_Data<int64_t>),
@@ -92,7 +95,8 @@ GPU_Graph copy_from_host_graph(GPU_Graph& the_host_graph,
   }
 
   stream_index = 0;
-  CUDA_CHECK(cudaMemcpyAsync(the_device_graph._vertices, the_host_graph._vertices,
+  CUDA_CHECK(cudaMemcpyAsync(the_device_graph._vertices,
+                             the_host_graph._vertices,
                              the_host_graph._num_vertices * sizeof(GPU_Vertex),
                              cudaMemcpyHostToDevice, stream[stream_index++]));
 
@@ -129,7 +133,7 @@ GPU_Graph copy_from_host_graph(GPU_Graph& the_host_graph,
                              the_host_graph._flatten_arc_delay_data,
                              arc_data_size * sizeof(GPU_Fwd_Data<int64_t>),
                              cudaMemcpyHostToDevice, stream[stream_index++]));
-  
+
   assert(stream_index == num_stream);
 
   for (unsigned index = 0; index < num_stream; ++index) {
@@ -149,7 +153,7 @@ GPU_Graph copy_from_host_graph(GPU_Graph& the_host_graph,
  * @param the_device_graph
  */
 void copy_to_host_graph(GPU_Graph& the_host_graph, GPU_Graph& the_device_graph,
-                       unsigned vertex_data_size, unsigned arc_data_size) {
+                        unsigned vertex_data_size, unsigned arc_data_size) {
   const unsigned num_stream = 5;
   cudaStream_t stream[num_stream];
   for (unsigned index = 0; index < num_stream; ++index) {
@@ -517,6 +521,8 @@ __global__ void propagate_fwd(GPU_Graph the_graph, Lib_Data_GPU the_lib_data,
   if (i < propagated_arcs._num_arcs) {
     CUDA_LOG_INFO("GPU thread %d propagate fwd in gpu kernel", i);
     unsigned current_arc_id = propagated_arcs._arc_index[i];
+    CUDA_LOG_INFO("current arc id %d", current_arc_id);
+
     GPU_Arc current_arc = the_graph._arcs[current_arc_id];
     GPU_Arc_Type current_arc_type = current_arc._arc_type;
 
@@ -541,8 +547,6 @@ __global__ void propagate_fwd(GPU_Graph the_graph, Lib_Data_GPU the_lib_data,
   }
 }
 
-
-
 /**
  * @brief The interface function for the fwd function.
  * first, build gpu graph
@@ -558,23 +562,35 @@ void gpu_propagate_fwd(GPU_Graph& the_host_graph, unsigned vertex_data_size,
       copy_from_host_graph(the_host_graph, vertex_data_size, arc_data_size);
 
   for (auto& [level, the_arcs] : level_to_arcs) {
-
     thrust::device_vector<unsigned> bfs_arc_vec(the_arcs.size());
     unsigned i = 0;
-    std::for_each(the_arcs.begin(), the_arcs.end(), [&bfs_arc_vec, &i](auto arc_index){
-      bfs_arc_vec[i++] = arc_index;
-    });
+    std::for_each(
+        the_arcs.begin(), the_arcs.end(),
+        [&bfs_arc_vec, &i](auto arc_index) { bfs_arc_vec[i++] = arc_index; });
 
     GPU_BFS_Propagated_Arc bfs_arcs;
-    bfs_arcs._num_arcs = 1;
+    bfs_arcs._num_arcs = 2;
     bfs_arcs._arc_index = thrust::raw_pointer_cast(bfs_arc_vec.data());
     // CUDA_CHECK(cudaMalloc((void**)&bfs_arcs._arc_index,
     //                       bfs_arcs._num_arcs * sizeof(unsigned)));
     // CUDA_CHECK(cudaMemcpy(bfs_arcs._arc_index, the_arcs.data(),
     //                       bfs_arcs._num_arcs * sizeof(unsigned),
     //                       cudaMemcpyHostToDevice));
-    CUDA_LOG_INFO("propagate arc size %d", the_arcs.size());
-    propagate_fwd<<<1, 1>>>(the_device_graph, lib_data, bfs_arcs);
+    CUDA_LOG_INFO("propagate arc size %d", bfs_arcs._num_arcs);
+
+    int num_blocks =
+        (bfs_arcs._num_arcs + THREAD_PER_BLOCK_NUM - 1) / THREAD_PER_BLOCK_NUM;
+
+    CUDA_LOG_INFO(
+        "propagate fwd kernal num blocks %d per each block %d threads start",
+        num_blocks, THREAD_PER_BLOCK_NUM);
+
+    propagate_fwd<<<num_blocks, THREAD_PER_BLOCK_NUM>>>(the_device_graph,
+                                                        lib_data, bfs_arcs);
+    CUDA_LOG_INFO(
+        "propagate fwd kernal num blocks %d per each block %d threads finish",
+        num_blocks, THREAD_PER_BLOCK_NUM);
+
     // wait to finish.
     cudaDeviceSynchronize();
     CUDA_CHECK_ERROR();
@@ -583,7 +599,7 @@ void gpu_propagate_fwd(GPU_Graph& the_host_graph, unsigned vertex_data_size,
   }
 
   copy_to_host_graph(the_host_graph, the_device_graph, vertex_data_size,
-                    arc_data_size);
+                     arc_data_size);
   CUDA_CHECK_ERROR();
 
   exit(1);

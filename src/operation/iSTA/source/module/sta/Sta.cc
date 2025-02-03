@@ -1363,7 +1363,7 @@ unsigned Sta::buildGraph() {
 unsigned Sta::buildLibArcsGPU() {
   StaGraph *the_graph = &get_graph();
   StaArc *the_arc;
-  unsigned arc_id = 0;
+  int arc_id = 0;
   FOREACH_ARC(the_graph, the_arc) {
     if (the_arc->isInstArc()) {
       if (the_arc->isDelayArc() || the_arc->isCheckArc()) {
@@ -1371,7 +1371,7 @@ unsigned Sta::buildLibArcsGPU() {
         //     dynamic_cast<StaInstArc *>(the_arc)->get_inst()->get_inst_cell();
         // auto the_cell_name = the_cell->get_cell_name();
         dynamic_cast<StaInstArc *>(the_arc)->buildLibArcsGPU();
-        dynamic_cast<StaInstArc *>(the_arc)->set_arc_id(arc_id);
+        dynamic_cast<StaInstArc *>(the_arc)->set_lib_arc_id(arc_id);
         ++arc_id;
       }
     }
