@@ -164,10 +164,10 @@ __device__ unsigned check_val(Lib_Table_GPU& lib_table_gpu, int axis_index,
   }
 
   if ((val < min_val) || (val > max_val)) {
-    CUDA_LOG_WARNING(
-        "val outside table ranges: val = %f; min_val = %f; max_val "
-        "= %f",
-        val, min_val, max_val);
+    // CUDA_LOG_WARNING(
+    //     "val outside table ranges: val = %f; min_val = %f; max_val "
+    //     "= %f",
+    //     val, min_val, max_val);
   }
   return num_val;
 }
