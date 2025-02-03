@@ -441,8 +441,16 @@ __device__ void lut_constraint_delay(GPU_Graph* the_graph, GPU_Arc& the_arc,
                          one_snk_slew_data) {
       auto snk_trans = one_snk_slew_data._trans_type;
 
+      unsigned table_index = snk_trans;
       auto& the_lib_table =
-          the_lib_arc._table[GPU_Table_Base_Index::kCheckBase + snk_trans];
+          the_lib_arc._table[snk_trans];
+
+      if (table_index >= the_lib_arc._num_table) {
+        CUDA_LOG_FATAL(
+            "table index %d beyond num table %d table line no %d lib arc id %d",
+            table_index, the_lib_arc._num_table, the_lib_arc._line_no,
+            the_arc._lib_data_arc_id);
+      }
 
       float delay_value_ns =
           find_value(the_lib_table, one_src_slew_data._data_value,
