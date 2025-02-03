@@ -338,14 +338,16 @@ __device__ void propagate_inst_slew_delay(GPU_Graph* the_graph,
   GPU_Vertex_Data* in_slew = &src_vertex._slew_data;
   GPU_Vertex_Data* out_load = &snk_vertex._node_cap_data;
 
-  auto find_slew_delay = [the_lib_arc](auto in_trans_type,
-                                       auto& one_src_slew_data,
-                                       auto& one_snk_cap_data) {
+  auto find_slew_delay = [the_lib_arc, the_arc](auto in_trans_type,
+                                                auto& one_src_slew_data,
+                                                auto& one_snk_cap_data) {
     unsigned table_index =
         GPU_Table_Base_Index::kTransitionBase + in_trans_type;
     if (table_index >= the_lib_arc._num_table) {
-      CUDA_LOG_FATAL("table index %d beyond num table %d table line no %d",
-                     table_index, the_lib_arc._num_table, the_lib_arc._line_no);
+      CUDA_LOG_FATAL(
+          "table index %d beyond num table %d table line no %d lib arc id %d",
+          table_index, the_lib_arc._num_table, the_lib_arc._line_no,
+          the_arc._lib_data_arc_id);
     }
     auto& the_slew_lib_table = the_lib_arc._table[table_index];
     float slew_value =
@@ -354,8 +356,10 @@ __device__ void propagate_inst_slew_delay(GPU_Graph* the_graph,
 
     table_index = GPU_Table_Base_Index::kDelayBase + in_trans_type;
     if (table_index >= the_lib_arc._num_table) {
-      CUDA_LOG_FATAL("table index %d beyond num table %d table line no %d",
-                     table_index, the_lib_arc._num_table, the_lib_arc._line_no);
+      CUDA_LOG_FATAL(
+          "table index %d beyond num table %d table line no %d lib arc id %d",
+          table_index, the_lib_arc._num_table, the_lib_arc._line_no,
+          the_arc._lib_data_arc_id);
     }
     auto& the_delay_lib_table = the_lib_arc._table[table_index];
     float delay_value =

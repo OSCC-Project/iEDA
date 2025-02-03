@@ -44,15 +44,15 @@ enum GPU_Trans_Type { kRise = 0, kFall = 1 };
  * @brief The analysis mode.
  *
  */
-enum GPU_Analysis_Mode { kMax = 0, kMin = 0 };
+enum GPU_Analysis_Mode { kMax = 0, kMin };
 
 /**
  * @brief The arc type.
  *
  */
-enum GPU_Arc_Type { kInstDelayArc = 0, kInstCheckArc = 0, kNet = 1 };
+enum GPU_Arc_Type { kInstDelayArc = 0, kInstCheckArc, kNet };
 
-enum GPU_Arc_Trans_Type { kPositive = 0, kNegative = 0, kNonUnate = 1 };
+enum GPU_Arc_Trans_Type { kPositive = 0, kNegative, kNonUnate };
 
 enum GPU_Table_Type {
   kCellRise = 0,
@@ -85,8 +85,8 @@ enum GPU_Table_Base_Index {
  */
 enum GPU_OP_TYPE {
   kSlew = 0,
-  kDelay = 1,
-  kAT = 2
+  kDelay,
+  kAT
 };
 
 /**
