@@ -252,9 +252,9 @@ GPU_Graph build_gpu_graph(StaGraph* the_sta_graph,
     the_arc->initArcDelayData();
 
     GPU_Arc gpu_arc;
-    gpu_arc._arc_type = the_arc->isDelayArc()   ? GPU_Arc_Type::kInstDelayArc
+    gpu_arc._arc_type = the_arc->isNetArc()   ? GPU_Arc_Type::kNet
                         : the_arc->isCheckArc() ? GPU_Arc_Type::kInstCheckArc
-                                                : GPU_Arc_Type::kNet;
+                                                : GPU_Arc_Type::kInstDelayArc;
     gpu_arc._arc_trans_type =
         the_arc->isInstArc()
             ? the_arc->isPositiveArc()   ? GPU_Arc_Trans_Type::kPositive

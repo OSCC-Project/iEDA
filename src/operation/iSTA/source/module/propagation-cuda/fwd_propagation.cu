@@ -519,23 +519,25 @@ __global__ void propagate_fwd(GPU_Graph the_graph, Lib_Data_GPU the_lib_data,
   // current thread id
   int i = blockIdx.x * blockDim.x + threadIdx.x;
   if (i < propagated_arcs._num_arcs) {
-    CUDA_LOG_INFO("GPU thread %d propagate fwd in gpu kernel", i);
+    // CUDA_LOG_INFO("GPU thread %d propagate fwd in gpu kernel", i);
     unsigned current_arc_id = propagated_arcs._arc_index[i];
-    CUDA_LOG_INFO("current arc id %d", current_arc_id);
+    // CUDA_LOG_INFO("current arc id %d", current_arc_id);
 
     GPU_Arc current_arc = the_graph._arcs[current_arc_id];
     GPU_Arc_Type current_arc_type = current_arc._arc_type;
 
     int lib_arc_id = current_arc._lib_data_arc_id;
-    CUDA_LOG_INFO("current lib arc id %d", lib_arc_id);
+    // CUDA_LOG_INFO("current lib arc id %d", lib_arc_id);
 
     if (current_arc_type == kInstDelayArc) {
-      CUDA_LOG_INFO("process inst delay arc id %d", current_arc_id);
+      CUDA_LOG_INFO("process inst delay arc id %d lib arc id %d",
+                    current_arc_id, lib_arc_id);
       auto lib_arc = the_lib_data._arcs_gpu[lib_arc_id];
       // for inst delay arc.
       propagate_inst_slew_delay(&the_graph, current_arc, lib_arc);
     } else if (current_arc_type == kInstCheckArc) {
-      CUDA_LOG_INFO("process inst check arc id %d", current_arc_id);
+      CUDA_LOG_INFO("process inst check arc id %d lib arc id %d",
+                    current_arc_id, lib_arc_id);
       auto lib_arc = the_lib_data._arcs_gpu[lib_arc_id];
       // for inst check arc, lut table for get constrain value.
       lut_constraint_delay(&the_graph, current_arc, lib_arc);
@@ -562,7 +564,6 @@ void gpu_propagate_fwd(GPU_Graph& the_host_graph, unsigned vertex_data_size,
       copy_from_host_graph(the_host_graph, vertex_data_size, arc_data_size);
 
   for (auto& [level, the_arcs] : level_to_arcs) {
-
     unsigned the_level_arc_size = the_arcs.size();
     thrust::device_vector<unsigned> bfs_arc_vec(the_level_arc_size);
     unsigned i = 0;
@@ -598,7 +599,7 @@ void gpu_propagate_fwd(GPU_Graph& the_host_graph, unsigned vertex_data_size,
 
     CUDA_CHECK_ERROR();
     // CUDA_CHECK(cudaFree(bfs_arcs._arc_index));
-    break;
+    // break;
   }
 
   copy_to_host_graph(the_host_graph, the_device_graph, vertex_data_size,
