@@ -194,6 +194,7 @@ void StaInstArc::buildLibArcsGPU() {
       num_table = dynamic_cast<LibCheckTableModel*>(table_model)->kTableNum;
     }
 
+    _lib_gpu_arc->_line_no = delay_or_check_table_model->get_line_no();
     _lib_gpu_arc->_num_table = num_table;
     _lib_gpu_arc->_table = new Lib_Table_GPU[_lib_gpu_arc->_num_table];
 

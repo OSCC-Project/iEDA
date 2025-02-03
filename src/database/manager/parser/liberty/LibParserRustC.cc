@@ -1139,6 +1139,9 @@ unsigned RustLibertyReader::visitTable(RustLibertyGroupStmt* group) {
       table_model = std::make_unique<LibDelayTableModel>();
     }
 
+    table_model->set_file_name(group->file_name);
+    table_model->set_line_no(group->line_no);
+
     lib_builder->set_table_model(table_model.get());
     lib_model = lib_builder->get_table_model();
     lib_arc->set_table_model(std::move(table_model));

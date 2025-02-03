@@ -341,14 +341,23 @@ __device__ void propagate_inst_slew_delay(GPU_Graph* the_graph,
   auto find_slew_delay = [the_lib_arc](auto in_trans_type,
                                        auto& one_src_slew_data,
                                        auto& one_snk_cap_data) {
-    auto& the_slew_lib_table =
-        the_lib_arc
-            ._table[GPU_Table_Base_Index::kTransitionBase + in_trans_type];
+    unsigned table_index =
+        GPU_Table_Base_Index::kTransitionBase + in_trans_type;
+    if (table_index >= the_lib_arc._num_table) {
+      CUDA_LOG_FATAL("table index %d beyond num table %d table line no %d",
+                     table_index, the_lib_arc._num_table, the_lib_arc._line_no);
+    }
+    auto& the_slew_lib_table = the_lib_arc._table[table_index];
     float slew_value =
         find_value(the_slew_lib_table, one_src_slew_data._data_value,
                    one_snk_cap_data._data_value);
-    auto& the_delay_lib_table =
-        the_lib_arc._table[GPU_Table_Base_Index::kDelayBase + in_trans_type];
+
+    table_index = GPU_Table_Base_Index::kDelayBase + in_trans_type;
+    if (table_index >= the_lib_arc._num_table) {
+      CUDA_LOG_FATAL("table index %d beyond num table %d table line no %d",
+                     table_index, the_lib_arc._num_table, the_lib_arc._line_no);
+    }
+    auto& the_delay_lib_table = the_lib_arc._table[table_index];
     float delay_value =
         find_value(the_delay_lib_table, one_src_slew_data._data_value,
                    one_snk_cap_data._data_value);

@@ -375,11 +375,13 @@ void build_lib_data_gpu(Lib_Data_GPU& lib_data_gpu,
 
     Lib_Arc_GPU* gpu_arc = &lib_data_gpu._arcs_gpu[i];
 
-    unsigned num_table = cpu_arc->_num_table;
     CUDA_CHECK(cudaMemcpyAsync(&(gpu_arc->_table), &d_tables,
                                sizeof(Lib_Table_GPU*), cudaMemcpyHostToDevice,
                                stream1));
-    CUDA_CHECK(cudaMemcpyAsync(&(gpu_arc->_num_table), &num_table,
+    CUDA_CHECK(cudaMemcpyAsync(&(gpu_arc->_num_table), &cpu_arc->_num_table,
+                               sizeof(unsigned), cudaMemcpyHostToDevice,
+                               stream1));
+    CUDA_CHECK(cudaMemcpyAsync(&(gpu_arc->_line_no), &cpu_arc->_line_no,
                                sizeof(unsigned), cudaMemcpyHostToDevice,
                                stream1));
     CUDA_CHECK(cudaStreamSynchronize(stream1));

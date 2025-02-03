@@ -30,6 +30,11 @@
     printf("CUDA ERROR %s:%d] " msg "\n", __func__, __LINE__, ##__VA_ARGS__);\
 } while (0)
 
+#define CUDA_LOG_FATAL(msg, ...) do { \
+    printf("CUDA ERROR %s:%d] " msg "\n", __func__, __LINE__, ##__VA_ARGS__);\
+    assert(0);\
+} while (0)
+
 #else
 
 #define CUDA_LOG_INFO(msg, ...)

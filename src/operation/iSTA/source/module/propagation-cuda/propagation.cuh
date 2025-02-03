@@ -37,6 +37,8 @@ struct Lib_Table_GPU {
  *
  */
 struct Lib_Arc_GPU {
+  int _file_id = 0; //!< for debug file info.
+  int _line_no = 0; //!< for debug arc info.
   Lib_Table_GPU* _table;
   unsigned _num_table;  //!< number of tables.(first case:SSTA:12 tables;second
                         //!< case(delay arc):4 tables; third case(check arc):2
