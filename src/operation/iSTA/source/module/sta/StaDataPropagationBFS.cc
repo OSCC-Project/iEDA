@@ -45,7 +45,7 @@ namespace ista {
 unsigned StaFwdPropagationBFS::operator()(StaArc* the_arc) {
   std::lock_guard<std::mutex> lk(the_arc->get_snk()->get_fwd_mutex());
 
-#if !CUDA_PROPAGATION
+#if CPU_SIM
 #if INTEGRATION_FWD
 #if 0
   StaSlewPropagation slew_propagation;
