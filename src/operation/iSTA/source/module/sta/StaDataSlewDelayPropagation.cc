@@ -92,10 +92,6 @@ unsigned StaDataSlewDelayPropagation::operator()(StaArc* the_arc) {
   auto* src_vertex = the_arc->get_src();
   auto* snk_vertex = the_arc->get_snk();
 
-  if (src_vertex->getName() == "dpath/a_reg/_63_:CK" && snk_vertex->getName() == "dpath/a_reg/_63_:D") {
-    LOG_INFO << "Debug";
-  }
-
   auto* obj = snk_vertex->get_design_obj();
 
   auto* the_net = obj->get_net();
