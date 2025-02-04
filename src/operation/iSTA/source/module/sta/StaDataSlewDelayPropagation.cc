@@ -158,8 +158,6 @@ unsigned StaDataSlewDelayPropagation::operator()(StaArc* the_arc) {
             the_arc->addData(arc_delay);
           }
 
-          return 1;
-
         } else if (the_arc->isDelayArc()) {
           auto out_trans_type = lib_arc->isNegativeArc()
                                     ? flip_trans_type(trans_type)
