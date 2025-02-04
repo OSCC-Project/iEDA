@@ -198,7 +198,8 @@ void build_gpu_arc_delay_data(
                                             : GPU_Analysis_Mode::kMin;
     flatten_arc_delay_data.emplace_back(gpu_arc_delay_data);
   }
-  gpu_arc._delay_values._num_fwd_data = flatten_arc_delay_data.size();
+  gpu_arc._delay_values._num_fwd_data =
+      flatten_arc_delay_data.size() - gpu_arc._delay_values._start_pos;
 }
 
 /**
@@ -369,7 +370,7 @@ void update_sta_slew_data(StaGraph* the_sta_graph, GPU_Graph& the_host_graph) {
     }
   }
 
-   LOG_INFO << "update to sta slew end.";
+  LOG_INFO << "update to sta slew end.";
 }
 
 /**
@@ -384,9 +385,11 @@ void update_sta_at_data(StaGraph* the_sta_graph, GPU_Graph& the_host_graph) {
 
   auto& the_sta_vertexes = the_sta_graph->get_vertexes();
   auto* the_host_graph_vertexes = the_host_graph._vertices;
+
   // iterate each vertex in gpu graph.
   for (unsigned vertex_index = 0; vertex_index < the_host_graph._num_vertices;
        ++vertex_index) {
+
     auto& current_vertex = the_host_graph_vertexes[vertex_index];
     auto& current_sta_vertex = the_sta_vertexes[vertex_index];
 
@@ -429,7 +432,7 @@ void update_sta_at_data(StaGraph* the_sta_graph, GPU_Graph& the_host_graph) {
  * @param the_sta_graph
  * @param the_host_graph
  */
-void update_sta_arc_delay_data(StaGraph* the_sta_graph,
+void update_sta_arc_delay_data(StaGraph* /*the_sta_graph*/,
                                GPU_Graph& the_host_graph,
                                std::map<unsigned, StaArc*>& index_to_arc) {
   LOG_INFO << "update to arc delay start.";
@@ -440,23 +443,25 @@ void update_sta_arc_delay_data(StaGraph* the_sta_graph,
   // iterate each arc in gpu graph.
   for (unsigned arc_index = 0; arc_index < the_host_graph._num_arcs;
        ++arc_index) {
-    LOG_INFO_EVERY_N(1000) << "update the arc num " << arc_index + 1;
 
     auto& current_arc = the_host_graph_arcs[arc_index];
     auto& current_sta_arc = index_to_arc[arc_index];
-
     // update arc delay.
-    for (unsigned arc_index = 0;
-         arc_index < current_arc._delay_values._num_fwd_data; ++arc_index) {
-      unsigned arc_delay_pos = current_arc._delay_values._start_pos + arc_index;
+    for (unsigned arc_data_index = 0;
+         arc_data_index < current_arc._delay_values._num_fwd_data;
+         ++arc_data_index) {
+      unsigned arc_delay_pos =
+          current_arc._delay_values._start_pos + arc_data_index;
       auto arc_delay_fwd_data =
           the_host_graph._flatten_arc_delay_data[arc_delay_pos];
 
       auto* arc_delay_data = current_sta_arc->getArcDelayData(
           convert_analysis_mode(arc_delay_fwd_data._analysis_mode),
           convert_trans_type(arc_delay_fwd_data._trans_type));
+
       arc_delay_data->set_arc_delay(arc_delay_fwd_data._data_value);
     }
+
   }
 
   LOG_INFO << "update to arc delay end.";

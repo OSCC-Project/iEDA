@@ -275,7 +275,9 @@ __device__ void set_one_fwd_data(GPU_Graph* the_graph, GPU_Arc& the_arc,
   auto& snk_fwd_data = *snk_fwd_data_ptr;
 
   if (is_force) {
+    // update check value should be direct.
     snk_fwd_data._data_value = data_value;
+    return;
   }
 
   // lock the data.
