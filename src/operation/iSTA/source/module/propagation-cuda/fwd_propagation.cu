@@ -289,18 +289,17 @@ __device__ void set_one_fwd_data(GPU_Graph* the_graph, GPU_Arc& the_arc,
         snk_fwd_data._data_value = data_value;
       }
     } else {
-      CUDA_LOG_INFO("update src vertex %d -> snk vertex %d at %lld",
-                    src_vertex_id, snk_vertex_id, snk_fwd_data._data_value);
       if (snk_fwd_data._data_value < (src_fwd_data._data_value + data_value)) {
         snk_fwd_data._src_vertex_id = src_vertex_id;
         snk_fwd_data._src_data_index = src_data_index;
         snk_fwd_data._data_value = src_fwd_data._data_value + data_value;
 
-        CUDA_LOG_INFO("update src vertex %d -> snk vertex %d at %lld",
+        CUDA_LOG_INFO("update max src vertex %d -> snk vertex %d at %lld",
                       src_vertex_id, snk_vertex_id, snk_fwd_data._data_value);
       }
     }
   } else {
+
     if (op != GPU_OP_TYPE::kAT) {
       if (snk_fwd_data._data_value > data_value) {
         snk_fwd_data._src_vertex_id = src_vertex_id;
@@ -308,12 +307,12 @@ __device__ void set_one_fwd_data(GPU_Graph* the_graph, GPU_Arc& the_arc,
         snk_fwd_data._data_value = data_value;
       }
     } else {
-      if (snk_fwd_data._data_value > (src_fwd_data._data_value + data_value)) {
+      if ((snk_fwd_data._data_value == 0.0) || snk_fwd_data._data_value > (src_fwd_data._data_value + data_value)) {
         snk_fwd_data._src_vertex_id = src_vertex_id;
         snk_fwd_data._src_data_index = src_data_index;
         snk_fwd_data._data_value = src_fwd_data._data_value + data_value;
 
-        CUDA_LOG_INFO("update src vertex %d -> snk vertex %d at %lld",
+        CUDA_LOG_INFO("update min src vertex %d -> snk vertex %d at %lld",
                       src_vertex_id, snk_vertex_id, snk_fwd_data._data_value);
       }
     }
