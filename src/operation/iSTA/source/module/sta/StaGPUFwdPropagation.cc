@@ -515,6 +515,9 @@ unsigned StaGPUFwdPropagation::operator()(StaGraph* the_graph) {
 
   // update result to the sta graph.
   update_sta_graph(the_host_graph, the_graph, index_to_arc);
+
+  // save the graph.
+  ista->set_gpu_graph(std::move(the_host_graph));
   return 1;
 }
 

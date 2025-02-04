@@ -25,8 +25,8 @@
 #pragma once
 
 #include <variant>
-#include "propagation-cuda/lib_arc.cuh"
 #include <map>
+#include "propagation-cuda/propagation.cuh"
 
 namespace ista {
 

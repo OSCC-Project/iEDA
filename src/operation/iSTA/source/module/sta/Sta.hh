@@ -47,6 +47,10 @@
 #include "sdc/SdcSetIODelay.hh"
 #include "verilog/VerilogParserRustC.hh"
 
+#if CUDA_PROPAGATION
+#include "propagation-cuda/fwd_propagation.cuh"
+#endif
+
 namespace ista {
 
 class SdcConstrain;
@@ -371,8 +375,12 @@ class Sta {
   void resetGraph() { _graph.reset(); }
   StaGraph& get_graph() { return _graph; }
   bool isBuildGraph() { return !_graph.get_vertexes().empty(); }
+
   unsigned buildLibArcsGPU();
   std::vector<Lib_Arc_GPU*> getLibArcsGPU();
+
+  void set_gpu_graph(GPU_Graph&& the_gpu_graph) { _gpu_graph = std::move(the_gpu_graph); }
+  auto& get_gpu_graph() { return _gpu_graph; }
 
   StaVertex* findVertex(const char* pin_name);
   StaVertex* findVertex(DesignObject* obj) {
@@ -574,6 +582,9 @@ class Sta {
   std::optional<double> _max_fanout;
 
   StaGraph _graph;  //!< The graph mapped to netlist.
+#if CUDA_PROPAGATION
+  GPU_Graph _gpu_graph; //!< The gpu graph mapped to sta graph.
+#endif
   std::map<Net*, std::unique_ptr<RcNet>>
       _net_to_rc_net;                         //!< The net to rc net.
   Vector<std::unique_ptr<StaClock>> _clocks;  //!< The clock domain.

@@ -24,6 +24,7 @@
  */
 #include <cuda_runtime.h>
 #include <thrust/device_vector.h>
+#include "propagation-cuda/lib_arc.cuh"
 
 #include <map>
 
@@ -299,15 +300,17 @@ __device__ void set_one_fwd_data(GPU_Graph* the_graph, GPU_Arc& the_arc,
       }
     }
   } else {
-
     if (op != GPU_OP_TYPE::kAT) {
-      if (snk_fwd_data._data_value > data_value) {
+      if ((snk_fwd_data._data_value == 0.0) ||
+          (snk_fwd_data._data_value > data_value)) {
         snk_fwd_data._src_vertex_id = src_vertex_id;
         snk_fwd_data._src_data_index = src_data_index;
         snk_fwd_data._data_value = data_value;
       }
     } else {
-      if ((snk_fwd_data._data_value == 0.0) || snk_fwd_data._data_value > (src_fwd_data._data_value + data_value)) {
+      if ((snk_fwd_data._data_value == 0.0) ||
+          (snk_fwd_data._data_value >
+           (src_fwd_data._data_value + data_value))) {
         snk_fwd_data._src_vertex_id = src_vertex_id;
         snk_fwd_data._src_data_index = src_data_index;
         snk_fwd_data._data_value = src_fwd_data._data_value + data_value;
