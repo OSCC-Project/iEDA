@@ -202,6 +202,12 @@ void StaInstArc::buildLibArcsGPU() {
       auto* table = delay_or_check_table_model->getTable(index);
 
       Lib_Table_GPU gpu_table;
+
+      if (!table) {
+        _lib_gpu_arc->_table[index] = gpu_table;
+        continue;
+      }
+      
       // set the x axis.
       auto& x_axis = table->getAxis(0);
       auto& x_axis_values = x_axis.get_axis_values();

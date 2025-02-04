@@ -183,6 +183,8 @@ void copy_to_host_graph(GPU_Graph& the_host_graph, GPU_Graph& the_device_graph,
   for (unsigned index = 0; index < num_stream; ++index) {
     cudaStreamDestroy(stream[index]);
   }
+
+  //TODO(to taosimin) free the gpu memory.
 }
 
 /**
@@ -478,11 +480,11 @@ __device__ void lut_constraint_delay(GPU_Graph* the_graph, GPU_Arc& the_arc,
 
       float delay_value_ns =
           find_value(the_lib_table, src_slew_ns, snk_slew_ns);
-      // CUDA_LOG_INFO(
-      //     "find check value %f src slew %f snk slew %f table line no %d "
-      //     "lib arc id %d",
-      //     delay_value_ns, src_slew_ns, snk_slew_ns, the_lib_arc._line_no,
-      //     the_arc._lib_data_arc_id);
+      CUDA_LOG_INFO(
+          "find check value %f src slew %f snk slew %f table line no %d "
+          "lib arc id %d",
+          delay_value_ns, src_slew_ns, snk_slew_ns, the_lib_arc._line_no,
+          the_arc._lib_data_arc_id);
 
       int64_t delay_value = NS_TO_FS(delay_value_ns);
       auto analysis_mode = one_snk_slew_data._analysis_mode;
@@ -623,11 +625,7 @@ void gpu_propagate_fwd(GPU_Graph& the_host_graph, unsigned vertex_data_size,
     GPU_BFS_Propagated_Arc bfs_arcs;
     bfs_arcs._num_arcs = the_level_arc_size;
     bfs_arcs._arc_index = thrust::raw_pointer_cast(bfs_arc_vec.data());
-    // CUDA_CHECK(cudaMalloc((void**)&bfs_arcs._arc_index,
-    //                       bfs_arcs._num_arcs * sizeof(unsigned)));
-    // CUDA_CHECK(cudaMemcpy(bfs_arcs._arc_index, the_arcs.data(),
-    //                       bfs_arcs._num_arcs * sizeof(unsigned),
-    //                       cudaMemcpyHostToDevice));
+
     CUDA_LOG_INFO("propagate arc size %d", bfs_arcs._num_arcs);
 
     int num_blocks =
@@ -647,15 +645,15 @@ void gpu_propagate_fwd(GPU_Graph& the_host_graph, unsigned vertex_data_size,
         num_blocks, THREAD_PER_BLOCK_NUM);
 
     CUDA_CHECK_ERROR();
-    // CUDA_CHECK(cudaFree(bfs_arcs._arc_index));
-    // break;
-  }
 
+  }
+  CUDA_LOG_INFO("copy to host graph start.");
   copy_to_host_graph(the_host_graph, the_device_graph, vertex_data_size,
                      arc_data_size);
   CUDA_CHECK_ERROR();
 
-  // exit(1);
+  CUDA_LOG_INFO("copy to host graph end.");
+
 }
 
 }  // namespace ista

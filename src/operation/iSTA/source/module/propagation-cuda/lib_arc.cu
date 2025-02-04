@@ -232,7 +232,7 @@ __device__ float find_value(Lib_Table_GPU& lib_table_gpu, float slew,
                              float constrain_slew_or_load) {
   // ??? not sure (_type == UINT_MAX) can work as (!table_template)
   if (lib_table_gpu._type == UINT_MAX) {
-    return lib_table_gpu._values[0];
+    return 0.0;
   }
 
   float val1;

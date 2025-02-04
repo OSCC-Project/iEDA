@@ -390,7 +390,6 @@ class LibDelayTableModel final : public LibTableModel
     return 1;
   }
 
-  // int getTableNum() { return kTableNum; }
   LibTable* getTable(int index) override { return _tables[index].get(); }
 
   unsigned addCurrentTable(std::unique_ptr<LibCCSTable>&& table)
