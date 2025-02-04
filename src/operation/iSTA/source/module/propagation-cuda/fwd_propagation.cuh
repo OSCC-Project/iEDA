@@ -163,6 +163,19 @@ struct GPU_Arc {
 };
 
 /**
+ * @brief struct for collect all data.
+ *
+ */
+struct GPU_Flatten_Data {
+  std::vector<GPU_Fwd_Data<int64_t>> _flatten_slew_data;
+  std::vector<GPU_Fwd_Data<int64_t>> _flatten_at_data;
+  std::vector<GPU_Fwd_Data<double>> _flatten_node_cap_data;
+  std::vector<GPU_Fwd_Data<double>> _flatten_node_delay_data;
+  std::vector<GPU_Fwd_Data<double>> _flatten_node_impulse_data;
+  std::vector<GPU_Fwd_Data<int64_t>> _flatten_arc_delay_data;
+};
+
+/**
  * @brief The bfs propagated arcs.
  *
  */

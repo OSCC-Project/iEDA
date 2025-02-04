@@ -23,8 +23,12 @@ class StaGPUFwdPropagation : public StaFunc {
 
   unsigned operator()(StaGraph* the_graph) override;
 
+  unsigned prepareGPUData(StaGraph* the_graph);
+
  private:
   std::map<unsigned, std::vector<StaArc*>> _level_to_arcs;
+  std::map<unsigned, std::vector<unsigned>> _level_to_arc_index;
+  std::map<unsigned, StaArc*> _index_to_arc; //!< gpu index to sta arc.
 };
 
 }  // namespace ista

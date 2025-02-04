@@ -250,26 +250,11 @@ void StaFwdPropagationBFS::dispatchArcTask(StaGraph* the_graph) {
     return;
   }
 
-  ieda::Stats stats;
-
-#if CPU_SIM
-  // use cpu simulation the gpu fwd propagation.
-  LOG_INFO << "dispatch arc task to cpu start";
-  for (auto& [level, the_arcs] : _level_to_arcs) {
-    LOG_INFO << "propagate level " << level;
-    std::for_each(std::execution::par, the_arcs.begin(), the_arcs.end(),
-                  [this](auto* the_arc) { the_arc->exec(*this); });
-  }
-  _level_to_arcs.clear();
-  LOG_INFO << "dispatch arc task to cpu end";
-#else
-  LOG_INFO << "dispatch arc task to gpu start";
-
   StaGPUFwdPropagation gpu_fwd_propagation(std::move(_level_to_arcs));
-  gpu_fwd_propagation(the_graph);
+  gpu_fwd_propagation.prepareGPUData(the_graph);
 
-  LOG_INFO << "dispatch arc task to gpu end";
-#endif
+  ieda::Stats stats;    
+  gpu_fwd_propagation(the_graph);
 
   double memory_delta = stats.memoryDelta();
   LOG_INFO << "dispatch arc task memory usage " << memory_delta << "MB";

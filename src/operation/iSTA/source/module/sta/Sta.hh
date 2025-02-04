@@ -49,6 +49,7 @@
 
 #if CUDA_PROPAGATION
 #include "propagation-cuda/fwd_propagation.cuh"
+#include "propagation-cuda/propagation.cuh"
 #endif
 
 namespace ista {
@@ -379,8 +380,27 @@ class Sta {
   unsigned buildLibArcsGPU();
   std::vector<Lib_Arc_GPU*> getLibArcsGPU();
 
+#if CUDA_PROPAGATION
+
+  void set_gpu_lib_data(Lib_Data_GPU&& lib_data_gpu) { _gpu_lib_data = std::move(lib_data_gpu); }
+  auto& get_gpu_lib_data() { return _gpu_lib_data; }
+
   void set_gpu_graph(GPU_Graph&& the_gpu_graph) { _gpu_graph = std::move(the_gpu_graph); }
   auto& get_gpu_graph() { return _gpu_graph; }
+
+  void set_arc_to_index(std::map<StaArc*, unsigned>&& arc_to_index) { _arc_to_index = std::move(arc_to_index); }
+  auto& get_arc_to_index() { return _arc_to_index; }
+
+  void set_gpu_vertices(std::vector<GPU_Vertex>&& gpu_vertices) { _gpu_vertices = std::move(gpu_vertices); }
+  auto& get_gpu_vertices() { return _gpu_vertices; }
+
+  void set_gpu_arcs(std::vector<GPU_Arc>&& gpu_arcs) { _gpu_arcs = std::move(gpu_arcs); }
+  auto& get_gpu_arcs() { return _gpu_arcs; }
+
+  void set_flatten_data(GPU_Flatten_Data&& flatten_data) { _flatten_data = std::move(flatten_data); }
+  auto& get_flatten_data() { return _flatten_data; }
+
+#endif
 
   StaVertex* findVertex(const char* pin_name);
   StaVertex* findVertex(DesignObject* obj) {
@@ -583,7 +603,12 @@ class Sta {
 
   StaGraph _graph;  //!< The graph mapped to netlist.
 #if CUDA_PROPAGATION
+  std::vector<GPU_Vertex> _gpu_vertices; //!< gpu flatten vertex, arc data.
+  std::vector<GPU_Arc> _gpu_arcs;
+  GPU_Flatten_Data _flatten_data;
   GPU_Graph _gpu_graph; //!< The gpu graph mapped to sta graph.
+  Lib_Data_GPU _gpu_lib_data; //!< The gpu lib arc data.
+  std::map<StaArc*, unsigned> _arc_to_index; //!< The arc map to gpu index.
 #endif
   std::map<Net*, std::unique_ptr<RcNet>>
       _net_to_rc_net;                         //!< The net to rc net.
