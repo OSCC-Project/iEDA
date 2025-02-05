@@ -232,6 +232,7 @@ __device__ float find_value(Lib_Table_GPU& lib_table_gpu, float slew,
                              float constrain_slew_or_load) {
   // ??? not sure (_type == UINT_MAX) can work as (!table_template)
   if (lib_table_gpu._type == UINT_MAX) {
+    CUDA_LOG_ERROR("the table type is not set");
     return 0.0;
   }
 
@@ -285,9 +286,8 @@ __device__ float find_value(Lib_Table_GPU& lib_table_gpu, float slew,
     auto result =
         bilinear_interpolation(q11, q12, q21, q22, x1, x2, y1, y2, val1, val2);
 
-    // LOG_ERROR_IF_EVERY_N(result < 0.0, 100) << "table " << get_file_name() <<
-    // " " << get_line_no() << " "
-    //                                         << "delay value less zero.";
+    // CUDA_LOG_INFO("x1 %f x2 %f y1 %f y2 %f val1 %f val2 %f result %f", x1, x2, y1, y2, val1, val2, result);
+    return result;
   }
 }
 
@@ -327,48 +327,36 @@ void build_lib_data_gpu(Lib_Data_GPU& lib_data_gpu,
 
     for (unsigned j = 0; j < cpu_arc->_num_table; ++j) {
       Lib_Table_GPU& cpu_table = cpu_arc->_table[j];
+      Lib_Table_GPU* gpu_table = &d_tables[j];
 
-      float *d_x, *d_y, *d_values;
+      Lib_Table_GPU one_table;
+
       CUDA_CHECK(
-          cudaMallocAsync(&d_x, cpu_table._num_x * sizeof(float), stream1));
+          cudaMallocAsync(&(one_table._x), cpu_table._num_x * sizeof(float), stream1));
       CUDA_CHECK(
-          cudaMallocAsync(&d_y, cpu_table._num_y * sizeof(float), stream1));
+          cudaMallocAsync(&(one_table._y), cpu_table._num_y * sizeof(float), stream1));
       CUDA_CHECK(cudaMallocAsync(
-          &d_values, cpu_table._num_values * sizeof(float), stream1));
+          &(one_table._values), cpu_table._num_values * sizeof(float), stream1));
       CUDA_CHECK(cudaStreamSynchronize(stream1));
 
-      CUDA_CHECK(cudaMemcpyAsync(d_x, cpu_table._x,
+      CUDA_CHECK(cudaMemcpyAsync(one_table._x, cpu_table._x,
                                  cpu_table._num_x * sizeof(float),
                                  cudaMemcpyHostToDevice, stream1));
-      CUDA_CHECK(cudaMemcpyAsync(d_y, cpu_table._y,
+      CUDA_CHECK(cudaMemcpyAsync(one_table._y, cpu_table._y,
                                  cpu_table._num_y * sizeof(float),
                                  cudaMemcpyHostToDevice, stream1));
-      CUDA_CHECK(cudaMemcpyAsync(d_values, cpu_table._values,
+      CUDA_CHECK(cudaMemcpyAsync(one_table._values, cpu_table._values,
                                  cpu_table._num_values * sizeof(float),
                                  cudaMemcpyHostToDevice, stream1));
       CUDA_CHECK(cudaStreamSynchronize(stream1));
 
-      Lib_Table_GPU* gpu_table = &d_tables[j];
+      one_table._num_x = cpu_table._num_x;
+      one_table._num_y = cpu_table._num_y;
+      one_table._type = cpu_table._type;
+      one_table._num_values = cpu_table._num_values;
 
-      CUDA_CHECK(cudaMemcpyAsync(&(gpu_table->_x), &d_x, sizeof(float*),
-                                 cudaMemcpyHostToDevice, stream1));
-      CUDA_CHECK(cudaMemcpyAsync(&(gpu_table->_y), &d_y, sizeof(float*),
-                                 cudaMemcpyHostToDevice, stream1));
-      CUDA_CHECK(cudaMemcpyAsync(&(gpu_table->_values), &d_values,
-                                 sizeof(float*), cudaMemcpyHostToDevice,
-                                 stream1));
-      CUDA_CHECK(cudaStreamSynchronize(stream1));
-
-      unsigned num_x = cpu_table._num_x;
-      unsigned num_y = cpu_table._num_y;
-      unsigned num_values = cpu_table._num_values;
-
-      CUDA_CHECK(cudaMemcpyAsync(&(gpu_table->_num_x), &num_x, sizeof(unsigned),
-                                 cudaMemcpyHostToDevice, stream1));
-      CUDA_CHECK(cudaMemcpyAsync(&(gpu_table->_num_y), &num_y, sizeof(unsigned),
-                                 cudaMemcpyHostToDevice, stream1));
-      CUDA_CHECK(cudaMemcpyAsync(&(gpu_table->_num_values), &num_values,
-                                 sizeof(unsigned), cudaMemcpyHostToDevice,
+      CUDA_CHECK(cudaMemcpyAsync(gpu_table, &one_table,
+                                 sizeof(Lib_Table_GPU), cudaMemcpyHostToDevice,
                                  stream1));
       CUDA_CHECK(cudaStreamSynchronize(stream1));
     }

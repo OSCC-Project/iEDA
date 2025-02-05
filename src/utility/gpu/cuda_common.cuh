@@ -50,12 +50,11 @@
  * @param file 
  * @param line 
  */
-inline void cuda_check(cudaError_t error) {
-  if (error != cudaSuccess) {
-    CUDA_LOG_ERROR("%s", cudaGetErrorString(error));
-  }
-};
-#define CUDA_CHECK(err) cuda_check(err)
+#define CUDA_CHECK(error) do { \
+  if (error != cudaSuccess) { \
+    CUDA_LOG_ERROR("%s", cudaGetErrorString(error)); \
+  } \
+} while(0)
 
 #define CUDA_CHECK_ERROR() do { \
   cudaError_t error = cudaGetLastError(); \
