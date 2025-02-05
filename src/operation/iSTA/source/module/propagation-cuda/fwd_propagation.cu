@@ -207,7 +207,7 @@ void copy_to_host_graph(GPU_Graph& the_host_graph, GPU_Graph& the_device_graph,
  * @return GPU_Fwd_Data and index
  */
 template <typename T>
-__device__ std::pair<GPU_Fwd_Data<T>*, int> get_one_fwd_data(
+__device__ inline std::pair<GPU_Fwd_Data<T>*, int> get_one_fwd_data(
     GPU_Fwd_Data<T>* flatten_all_datas, GPU_Vertex_Data* the_vertex_data,
     GPU_Analysis_Mode analysis_mode, GPU_Trans_Type trans_type) {
   for (unsigned i = 0; i < the_vertex_data->_num_fwd_data; ++i) {

@@ -19,7 +19,7 @@ namespace ista {
 
 __device__ constexpr float float_precision = 1e-15;
 
-__device__ bool is_float_equal(float data1, float data2,
+__device__ inline bool is_float_equal(float data1, float data2,
                                 float epsilon = float_precision) {
   return fabs(data1 - data2) < epsilon;
 }
@@ -37,7 +37,7 @@ __device__ constexpr float DOUBLE_MIN = -1.7976931348623157e+308;
  * @param x
  * @return float
  */
-__device__ float linear_interpolate(float x1, float x2, float y1, float y2,
+__device__ inline float linear_interpolate(float x1, float x2, float y1, float y2,
                                      float x) {
   assert(!is_float_equal(x1, x2));
 
@@ -79,7 +79,7 @@ __device__ float linear_interpolate(float x1, float x2, float y1, float y2,
  * @param y
  * @return float
  */
-__device__ float bilinear_interpolation(float q11, float q12, float q21,
+__device__ inline float bilinear_interpolation(float q11, float q12, float q21,
                                          float q22, float x1, float x2,
                                          float y1, float y2, float x,
                                          float y) {
@@ -98,7 +98,7 @@ __device__ float bilinear_interpolation(float q11, float q12, float q21,
  * @brief get x axis size of Lib_Table_GPU.
  * @param lib_table_gpu
  */
-__device__ float get_x_axis_size(Lib_Table_GPU& lib_table_gpu) {
+__device__ inline float get_x_axis_size(Lib_Table_GPU& lib_table_gpu) {
   return lib_table_gpu._num_x;
 }
 
@@ -107,7 +107,7 @@ __device__ float get_x_axis_size(Lib_Table_GPU& lib_table_gpu) {
  * @param lib_table_gpu
  * @param index
  */
-__device__ float get_x_axis_val(Lib_Table_GPU& lib_table_gpu, unsigned index) {
+__device__ inline float get_x_axis_val(Lib_Table_GPU& lib_table_gpu, unsigned index) {
   return lib_table_gpu._x[index];
 }
 
@@ -115,7 +115,7 @@ __device__ float get_x_axis_val(Lib_Table_GPU& lib_table_gpu, unsigned index) {
  * @brief get y axis size of Lib_Table_GPU.
  * @param lib_table_gpu
  */
-__device__ float get_y_axis_size(Lib_Table_GPU& lib_table_gpu) {
+__device__ inline float get_y_axis_size(Lib_Table_GPU& lib_table_gpu) {
   return lib_table_gpu._num_y;
 }
 
@@ -124,7 +124,7 @@ __device__ float get_y_axis_size(Lib_Table_GPU& lib_table_gpu) {
  * @param lib_table_gpu
  * @param index
  */
-__device__ float get_y_axis_val(Lib_Table_GPU& lib_table_gpu, unsigned index) {
+__device__ inline float get_y_axis_val(Lib_Table_GPU& lib_table_gpu, unsigned index) {
   return lib_table_gpu._y[index];
 }
 
@@ -133,7 +133,7 @@ __device__ float get_y_axis_val(Lib_Table_GPU& lib_table_gpu, unsigned index) {
  * @param lib_table_gpu
  * @param index
  */
-__device__ float get_table_value(Lib_Table_GPU& lib_table_gpu, unsigned index) {
+__device__ inline float get_table_value(Lib_Table_GPU& lib_table_gpu, unsigned index) {
   if (index >= lib_table_gpu._num_values) {
     CUDA_LOG_ERROR("index %u beyond table value size %u", index,
            lib_table_gpu._num_values);
@@ -148,7 +148,7 @@ __device__ float get_table_value(Lib_Table_GPU& lib_table_gpu, unsigned index) {
  * @param axis_index
  * @param val
  */
-__device__ unsigned check_val(Lib_Table_GPU& lib_table_gpu, int axis_index,
+__device__ inline unsigned check_val(Lib_Table_GPU& lib_table_gpu, int axis_index,
                               float val) {
   unsigned num_val = 0;
   float min_val = 0;
