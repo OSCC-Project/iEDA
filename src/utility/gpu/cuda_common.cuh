@@ -13,7 +13,7 @@
 #include <cuda_runtime.h>
 #include "kernel_common.h"
 
-#if 1
+#if 0
 /**
  * @brief for log print.
  * 
@@ -40,6 +40,7 @@
 #define CUDA_LOG_INFO(msg, ...)
 #define CUDA_LOG_WARNING(msg, ...)
 #define CUDA_LOG_ERROR(msg, ...)
+#define CUDA_LOG_FATAL(msg, ...)
 
 #endif
 
@@ -63,8 +64,20 @@
   } \
 } while(0)
 
+/**
+ * @brief prof the cuda execute time, start and end should the same pos.
+ * 
+ */
+#define CUDA_PROF_START(pos) \
+    cudaEvent_t start##pos, stop##pos; \
+    float milliseconds##pos = 0; \
+    cudaEventCreate(&start##pos); \
+    cudaEventCreate(&stop##pos); \
+    cudaEventRecord(start##pos, 0)
 
-
-
-
+#define CUDA_PROF_END(pos, msg) \
+    cudaEventRecord(stop##pos, 0); \
+    cudaEventSynchronize(stop##pos); \
+    cudaEventElapsedTime(&milliseconds##pos, start##pos, stop##pos); \
+    printf("CUDA PROF %s:%d] %s %f s\n", __func__, __LINE__, msg, milliseconds##pos / 1000.0);
 

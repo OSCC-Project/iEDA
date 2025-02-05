@@ -36,7 +36,7 @@
 namespace ista {
 
 /// each block thread num.
-static const int THREAD_PER_BLOCK_NUM = 64;
+static const int THREAD_PER_BLOCK_NUM = 256;
 
 /**
  * @brief copy host graph to gpu device graph.
@@ -45,6 +45,8 @@ static const int THREAD_PER_BLOCK_NUM = 64;
 GPU_Graph copy_from_host_graph(GPU_Graph& the_host_graph,
                                unsigned vertex_data_size,
                                unsigned arc_data_size) {
+  CUDA_PROF_START(0);
+
   const unsigned num_stream = 8;
   cudaStream_t stream[num_stream];
   for (unsigned index = 0; index < num_stream; ++index) {
@@ -144,6 +146,9 @@ GPU_Graph copy_from_host_graph(GPU_Graph& the_host_graph,
   for (unsigned index = 0; index < num_stream; ++index) {
     cudaStreamDestroy(stream[index]);
   }
+
+  CUDA_PROF_END(0, "host data copy to gpu");
+
   return the_device_graph;
 }
 
@@ -155,6 +160,8 @@ GPU_Graph copy_from_host_graph(GPU_Graph& the_host_graph,
  */
 void copy_to_host_graph(GPU_Graph& the_host_graph, GPU_Graph& the_device_graph,
                         unsigned vertex_data_size, unsigned arc_data_size) {
+  CUDA_PROF_START(0);
+
   const unsigned num_stream = 3;
   cudaStream_t stream[num_stream];
   for (unsigned index = 0; index < num_stream; ++index) {
@@ -185,6 +192,8 @@ void copy_to_host_graph(GPU_Graph& the_host_graph, GPU_Graph& the_device_graph,
   }
 
   //TODO(to taosimin) free the gpu memory.
+
+  CUDA_PROF_END(0, "gpu data copy to host");
 }
 
 /**
@@ -618,7 +627,8 @@ void gpu_propagate_fwd(GPU_Graph& the_host_graph, unsigned vertex_data_size,
                        Lib_Data_GPU& lib_data) {
   auto the_device_graph =
       copy_from_host_graph(the_host_graph, vertex_data_size, arc_data_size);
-
+  
+  CUDA_PROF_START(0);
   for (auto& [level, the_arcs] : level_to_arcs) {
     unsigned the_level_arc_size = the_arcs.size();
     thrust::device_vector<unsigned> bfs_arc_vec(the_level_arc_size);
@@ -652,6 +662,9 @@ void gpu_propagate_fwd(GPU_Graph& the_host_graph, unsigned vertex_data_size,
     CUDA_CHECK_ERROR();
 
   }
+
+  CUDA_PROF_END(0, "propagate fwd kernel");
+
   CUDA_LOG_INFO("copy to host graph start.");
   copy_to_host_graph(the_host_graph, the_device_graph, vertex_data_size,
                      arc_data_size);

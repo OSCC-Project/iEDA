@@ -7,7 +7,7 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_CUDA_ARCHITECTURES native)
 # set(CMAKE_CUDA_ARCHITECTURES "70") # set architecture according your platform
 
-# set(CMAKE_BUILD_TYPE "Debug")
+set(CMAKE_BUILD_TYPE "Release")
 find_package(CUDAToolkit)
 
 set(CMAKE_CXX_STANDARD 20)  
