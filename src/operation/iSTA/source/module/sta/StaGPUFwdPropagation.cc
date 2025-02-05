@@ -95,10 +95,10 @@ void build_gpu_vertex_at_data(
  */
 void build_gpu_vertex_node_cap_data(
     StaVertex* the_vertex, GPU_Vertex& gpu_vertex,
-    std::vector<GPU_Fwd_Data<double>>& flatten_node_cap_data) {
+    std::vector<GPU_Fwd_Data<float>>& flatten_node_cap_data) {
   gpu_vertex._node_cap_data._start_pos = flatten_node_cap_data.size();
   FOREACH_MODE_TRANS(mode, trans) {
-    GPU_Fwd_Data<double> gpu_node_cap_data;
+    GPU_Fwd_Data<float> gpu_node_cap_data;
     auto the_vertex_load = the_vertex->getLoad(mode, trans);
     gpu_node_cap_data._data_value = the_vertex_load;
     gpu_node_cap_data._trans_type = trans == TransType::kRise
@@ -122,10 +122,10 @@ void build_gpu_vertex_node_cap_data(
  */
 void build_gpu_vertex_node_delay_data(
     StaVertex* the_vertex, GPU_Vertex& gpu_vertex,
-    std::vector<GPU_Fwd_Data<double>>& flatten_node_delay_data) {
+    std::vector<GPU_Fwd_Data<float>>& flatten_node_delay_data) {
   gpu_vertex._node_delay_data._start_pos = flatten_node_delay_data.size();
   FOREACH_MODE_TRANS(mode, trans) {
-    GPU_Fwd_Data<double> gpu_node_delay_data;
+    GPU_Fwd_Data<float> gpu_node_delay_data;
     gpu_node_delay_data._data_value =
         NS_TO_PS(the_vertex->getNetLoadDelay(mode, trans));
     gpu_node_delay_data._trans_type = trans == TransType::kRise
@@ -149,10 +149,10 @@ void build_gpu_vertex_node_delay_data(
  */
 void build_gpu_vertex_node_impulse_data(
     StaVertex* the_vertex, GPU_Vertex& gpu_vertex,
-    std::vector<GPU_Fwd_Data<double>>& flatten_node_impulse_data) {
+    std::vector<GPU_Fwd_Data<float>>& flatten_node_impulse_data) {
   gpu_vertex._node_impulse_data._start_pos = flatten_node_impulse_data.size();
   FOREACH_MODE_TRANS(mode, trans) {
-    GPU_Fwd_Data<double> gpu_node_impulse_data;
+    GPU_Fwd_Data<float> gpu_node_impulse_data;
     gpu_node_impulse_data._data_value =
         the_vertex->getNetSlewImpulse(mode, trans);
     gpu_node_impulse_data._trans_type = trans == TransType::kRise

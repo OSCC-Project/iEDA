@@ -384,6 +384,9 @@ void build_lib_data_gpu(Lib_Data_GPU& lib_data_gpu,
     CUDA_CHECK(cudaMemcpyAsync(&(gpu_arc->_line_no), &cpu_arc->_line_no,
                                sizeof(unsigned), cudaMemcpyHostToDevice,
                                stream1));
+    CUDA_CHECK(cudaMemcpyAsync(&(gpu_arc->_cap_unit), &cpu_arc->_cap_unit,
+                               sizeof(Lib_Cap_unit), cudaMemcpyHostToDevice,
+                               stream1));
     CUDA_CHECK(cudaStreamSynchronize(stream1));
   }
   cudaStreamDestroy(stream1);

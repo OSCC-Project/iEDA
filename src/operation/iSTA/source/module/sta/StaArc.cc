@@ -196,6 +196,8 @@ void StaInstArc::buildLibArcsGPU() {
 
     _lib_gpu_arc->_line_no = delay_or_check_table_model->get_line_no();
     _lib_gpu_arc->_num_table = num_table;
+    auto lib_cap_unit = _lib_arc->get_owner_cell()->get_owner_lib()->get_cap_unit();
+    _lib_gpu_arc->_cap_unit = ((lib_cap_unit == CapacitiveUnit::kFF) ? Lib_Cap_unit::kFF : Lib_Cap_unit::kPF);
     _lib_gpu_arc->_table = new Lib_Table_GPU[_lib_gpu_arc->_num_table];
 
     for (size_t index = 0; index < num_table; index++) {

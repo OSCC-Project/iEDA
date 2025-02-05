@@ -169,9 +169,9 @@ struct GPU_Arc {
 struct GPU_Flatten_Data {
   std::vector<GPU_Fwd_Data<int64_t>> _flatten_slew_data;
   std::vector<GPU_Fwd_Data<int64_t>> _flatten_at_data;
-  std::vector<GPU_Fwd_Data<double>> _flatten_node_cap_data;
-  std::vector<GPU_Fwd_Data<double>> _flatten_node_delay_data;
-  std::vector<GPU_Fwd_Data<double>> _flatten_node_impulse_data;
+  std::vector<GPU_Fwd_Data<float>> _flatten_node_cap_data;
+  std::vector<GPU_Fwd_Data<float>> _flatten_node_delay_data;
+  std::vector<GPU_Fwd_Data<float>> _flatten_node_impulse_data;
   std::vector<GPU_Fwd_Data<int64_t>> _flatten_arc_delay_data;
 };
 
@@ -198,11 +198,11 @@ struct GPU_Graph {
   // flatten data for copy data from cpu to gpu faster.
   GPU_Fwd_Data<int64_t>* _flatten_slew_data = nullptr;  //!< The all slew data of the vertex.
   GPU_Fwd_Data<int64_t>* _flatten_at_data = nullptr;    //!< The all arrive data of the vertex.
-  GPU_Fwd_Data<double>*
+  GPU_Fwd_Data<float>*
       _flatten_node_cap_data = nullptr;  //!< The all node cap data of the vertex.
-  GPU_Fwd_Data<double>*
+  GPU_Fwd_Data<float>*
       _flatten_node_delay_data = nullptr;  //!< The all node delay data of the vertex.
-  GPU_Fwd_Data<double>*
+  GPU_Fwd_Data<float>*
       _flatten_node_impulse_data = nullptr;  //!< The all node impulse data of the vertex.
 
   GPU_Fwd_Data<int64_t>* _flatten_arc_delay_data = nullptr;  //!< The all arc delay data.
