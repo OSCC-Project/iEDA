@@ -3,8 +3,8 @@ cmake_minimum_required(VERSION 3.0)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_VERBOSE_MAKEFILE ON)
 
-set(CMAKE_BUILD_TYPE "Debug") 
-MESSAGE(STATUS "iSTA Test")
+set(CMAKE_BUILD_TYPE "Debug")
+message(STATUS "iSTA Test")
 
 find_package(GTest REQUIRED)
 
@@ -24,8 +24,6 @@ target_link_libraries(
   netlist
   liberty
   delay
-  delay-gpu
-  propagation-gpu
   ista_utility
   sta-solver
   verilog
@@ -39,6 +37,10 @@ target_link_libraries(
   def_service
   lef_service
   gtest)
+
+if(USE_CUDA_MODE)
+  target_link_libraries(iSTATest delay-gpu propagation-gpu)
+endif()
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
   target_compile_options(iSTATest
