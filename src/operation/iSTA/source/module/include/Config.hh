@@ -68,7 +68,7 @@ using ieda::Vector;
 // slew, delay, arrive time together.
 #define INTEGRATION_FWD 1
 // use CUDA GPU Speed.
-#define CUDA_PROPAGATION 1
+// #define CUDA_PROPAGATION 1
 // use cpu to simulate the gpu fwd.
 #define CPU_SIM 0
 

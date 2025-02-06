@@ -41,12 +41,15 @@ class StaFwdPropagationBFS : public StaBFSFunc, public StaFwdPropagation {
   unsigned operator()(StaGraph* the_graph) override;
 
   private:
+
+#if CUDA_PROPAGATION
   void addLevelArcs(unsigned level, StaArc* the_arc) {
     static std::mutex the_mutex;
     std::lock_guard<std::mutex> lk(the_mutex);
     _level_to_arcs[level].emplace_back(the_arc);
   }
   auto& get_level_to_arcs() { return _level_to_arcs; }
+#endif
   
   void initFwdData(StaGraph* the_graph);
   void dispatchArcTask(StaGraph* the_graph);

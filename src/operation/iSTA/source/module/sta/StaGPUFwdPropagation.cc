@@ -7,6 +7,8 @@
  *
  */
 
+#if CUDA_PROPAGATION
+
 #include "StaGPUFwdPropagation.hh"
 
 #include <execution>
@@ -16,7 +18,8 @@
 #include "propagation-cuda/fwd_propagation.cuh"
 #include "propagation-cuda/lib_arc.cuh"
 
-namespace ista {
+
+namespace ista { 
 
 /**
  * @brief build gpu vertex slew data.
@@ -617,3 +620,5 @@ unsigned StaGPUFwdPropagation::operator()(StaGraph* the_graph) {
 }
 
 }  // namespace ista
+
+#endif

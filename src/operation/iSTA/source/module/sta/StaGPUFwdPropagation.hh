@@ -9,6 +9,7 @@
 #pragma once
 #include "StaFunc.hh"
 
+#if CUDA_PROPAGATION
 namespace ista {
 
 /**
@@ -32,3 +33,5 @@ class StaGPUFwdPropagation : public StaFunc {
 };
 
 }  // namespace ista
+
+#endif

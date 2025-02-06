@@ -45,7 +45,7 @@ namespace ista {
 unsigned StaFwdPropagationBFS::operator()(StaArc* the_arc) {
   std::lock_guard<std::mutex> lk(the_arc->get_snk()->get_fwd_mutex());
 
-#if CPU_SIM
+#if !CUDA_PROPAGATION || CPU_SIM
 #if INTEGRATION_FWD
 #if 0
   StaSlewPropagation slew_propagation;
@@ -246,6 +246,8 @@ void StaFwdPropagationBFS::initFwdData(StaGraph* the_graph) {
  *
  */
 void StaFwdPropagationBFS::dispatchArcTask(StaGraph* the_graph) {
+#if CUDA_PROPAGATION
+
   if (_level_to_arcs.empty()) {
     return;
   }
@@ -253,13 +255,15 @@ void StaFwdPropagationBFS::dispatchArcTask(StaGraph* the_graph) {
   StaGPUFwdPropagation gpu_fwd_propagation(std::move(_level_to_arcs));
   gpu_fwd_propagation.prepareGPUData(the_graph);
 
-  ieda::Stats stats;    
+  ieda::Stats stats;
   gpu_fwd_propagation(the_graph);
 
   double memory_delta = stats.memoryDelta();
   LOG_INFO << "dispatch arc task memory usage " << memory_delta << "MB";
   double time_delta = stats.elapsedRunTime();
   LOG_INFO << "dispatch arc task time elapsed " << time_delta << "s";
+
+#endif
 }
 
 }  // namespace ista

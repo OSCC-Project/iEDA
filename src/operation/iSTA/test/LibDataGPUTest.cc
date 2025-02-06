@@ -15,6 +15,8 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 
+#if CUDA_PROPAGATION
+
 #include "api/TimingEngine.hh"
 #include "gtest/gtest.h"
 #include "log/Log.hh"
@@ -75,3 +77,5 @@ TEST_F(LibDataGPUTest, test) {
 }
 
 }  // namespace
+
+#endif

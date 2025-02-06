@@ -1354,6 +1354,7 @@ unsigned Sta::buildGraph() {
   return 1;
 }
 
+#if CUDA_PROPAGATION
 /**
  * @brief build the gpu liberty arc.
  *
@@ -1496,7 +1497,7 @@ unsigned Sta::buildLibArcsGPU() {
 
   return 1;
 }
-
+#endif
 /**
  * @brief Insert the seq path data.
  *

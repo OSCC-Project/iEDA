@@ -377,10 +377,8 @@ class Sta {
   StaGraph& get_graph() { return _graph; }
   bool isBuildGraph() { return !_graph.get_vertexes().empty(); }
 
-  unsigned buildLibArcsGPU();
-
 #if CUDA_PROPAGATION
-
+  unsigned buildLibArcsGPU();
   void set_gpu_lib_data(Lib_Data_GPU&& lib_data_gpu) { _gpu_lib_data = std::move(lib_data_gpu); }
   auto& get_gpu_lib_data() { return _gpu_lib_data; }
 
