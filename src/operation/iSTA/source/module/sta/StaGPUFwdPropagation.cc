@@ -10,7 +10,7 @@
 #if CUDA_PROPAGATION
 
 #include "StaGPUFwdPropagation.hh"
-
+#include "ThreadPool/ThreadPool.h"
 #include "Sta.hh"
 #include "StaDataPropagationBFS.hh"
 #include "propagation-cuda/fwd_propagation.cuh"
@@ -578,12 +578,22 @@ unsigned StaGPUFwdPropagation::operator()(StaGraph* the_graph) {
 #if CPU_SIM
   // use cpu simulation the gpu fwd propagation.
   LOG_INFO << "dispatch arc task to cpu start";
+  unsigned num_threads = getNumThreads();
+  // create thread pool
+  
   StaFwdPropagationBFS fwd_prop_bfs;
   for (auto& [level, the_arcs] : _level_to_arcs) {
     LOG_INFO << "propagate level " << level;
-    std::for_each(
-        std::execution::par, the_arcs.begin(), the_arcs.end(),
-        [&fwd_prop_bfs](auto* the_arc) { the_arc->exec(fwd_prop_bfs); });
+    {
+      ThreadPool pool(num_threads);
+      for (auto* the_arc : the_arcs) {
+        pool.enqueue(
+            [&fwd_prop_bfs](StaArc* the_arc) {
+              return the_arc->exec(fwd_prop_bfs);
+            },
+            the_arc);
+      }
+    }
   }
   _level_to_arcs.clear();
   LOG_INFO << "dispatch arc task to cpu end";
