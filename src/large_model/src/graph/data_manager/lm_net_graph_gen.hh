@@ -274,6 +274,9 @@ class LmNetGraphGenerator
   void initLayerMap();
   WireGraph buildGraph(idb::IdbNet* idb_net) const;
   std::vector<WireGraph> buildGraphs() const;
+  
+  bool isCornerCase(idb::IdbNet* idb_net) const;
+  WireGraph buildCornerCaseGraph(idb::IdbNet* idb_net) const;
 
   // Topo Graph
   TopoGraph buildTopoGraph(idb::IdbNet* idb_net) const;
