@@ -231,7 +231,7 @@ GPU_Graph build_gpu_graph(StaGraph* the_sta_graph,
     vertex_to_id[the_vertex] = gpu_vertices.size();
     gpu_vertices.emplace_back(std::move(gpu_vertex));
 
-    LOG_INFO_EVERY_N(1000) << "build gpu vertex data " << gpu_vertices.size();
+    LOG_INFO_EVERY_N(10000) << "build gpu vertex data " << gpu_vertices.size();
   }
 
   // build gpu arc
@@ -274,7 +274,7 @@ GPU_Graph build_gpu_graph(StaGraph* the_sta_graph,
     arc_to_index[the_arc] = gpu_arc_index;
     index_to_arc[gpu_arc_index] = the_arc;
 
-    LOG_INFO_EVERY_N(1000) << "build gpu arc data " << gpu_arcs.size();
+    LOG_INFO_EVERY_N(10000) << "build gpu arc data " << gpu_arcs.size();
   }
 
   // copy cpu data to gpu memory.
