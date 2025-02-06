@@ -45,7 +45,11 @@ static const int THREAD_PER_BLOCK_NUM = 256;
 GPU_Graph copy_from_host_graph(GPU_Graph& the_host_graph,
                                unsigned vertex_data_size,
                                unsigned arc_data_size) {
+  CUDA_LOG_INFO("copy from host graph start");
   CUDA_PROF_START(0);
+
+  CUDA_LOG_INFO("malloc device graph start");
+  CUDA_CHECK_MEMORY(0, "before copy host graph to device graph");
 
   const unsigned num_stream = 8;
   cudaStream_t stream[num_stream];
@@ -96,6 +100,9 @@ GPU_Graph copy_from_host_graph(GPU_Graph& the_host_graph,
   for (unsigned index = 0; index < num_stream; ++index) {
     cudaStreamSynchronize(stream[index]);
   }
+  
+  CUDA_LOG_INFO("malloc device graph end");
+  CUDA_CHECK_MEMORY(1, "after copy host graph to device graph");
 
   stream_index = 0;
   CUDA_CHECK(cudaMemcpyAsync(the_device_graph._vertices,
@@ -147,6 +154,9 @@ GPU_Graph copy_from_host_graph(GPU_Graph& the_host_graph,
     cudaStreamDestroy(stream[index]);
   }
 
+  CUDA_CHECK_ERROR();
+  
+  CUDA_LOG_INFO("copy from host graph end");
   CUDA_PROF_END(0, "host data copy to gpu");
 
   return the_device_graph;
@@ -160,6 +170,7 @@ GPU_Graph copy_from_host_graph(GPU_Graph& the_host_graph,
  */
 void copy_to_host_graph(GPU_Graph& the_host_graph, GPU_Graph& the_device_graph,
                         unsigned vertex_data_size, unsigned arc_data_size) {
+  CUDA_LOG_INFO("copy to host graph start");
   CUDA_PROF_START(0);
 
   const unsigned num_stream = 3;
@@ -192,7 +203,7 @@ void copy_to_host_graph(GPU_Graph& the_host_graph, GPU_Graph& the_device_graph,
   }
 
   //TODO(to taosimin) free the gpu memory.
-
+  CUDA_LOG_INFO("copy to host graph end");
   CUDA_PROF_END(0, "gpu data copy to host");
 }
 
@@ -308,7 +319,7 @@ __device__ void set_one_fwd_data(GPU_Graph* the_graph, GPU_Arc& the_arc,
         snk_fwd_data._src_data_index = src_data_index;
         snk_fwd_data._data_value = src_fwd_data._data_value + data_value;
 
-        CUDA_LOG_INFO("update max src vertex %d -> snk vertex %d at %lld",
+        CUDA_LOG_DEBUG("update max src vertex %d -> snk vertex %d at %lld",
                       src_vertex_id, snk_vertex_id, snk_fwd_data._data_value);
       }
     }
@@ -328,7 +339,7 @@ __device__ void set_one_fwd_data(GPU_Graph* the_graph, GPU_Arc& the_arc,
         snk_fwd_data._src_data_index = src_data_index;
         snk_fwd_data._data_value = src_fwd_data._data_value + data_value;
 
-        CUDA_LOG_INFO("update min src vertex %d -> snk vertex %d at %lld",
+        CUDA_LOG_DEBUG("update min src vertex %d -> snk vertex %d at %lld",
                       src_vertex_id, snk_vertex_id, snk_fwd_data._data_value);
       }
     }
@@ -379,7 +390,7 @@ __device__ void propagate_inst_slew_delay(GPU_Graph* the_graph,
     }
     float slew_value_ns =
         find_value(the_slew_lib_table, src_slew_ns, snk_cap_load);
-    CUDA_LOG_INFO(
+    CUDA_LOG_DEBUG(
         "find slew value %f src slew %f snk cap %f table line no %d "
         "lib arc id %d",
         slew_value_ns, src_slew_ns, snk_cap_load, the_lib_arc._line_no,
@@ -396,7 +407,7 @@ __device__ void propagate_inst_slew_delay(GPU_Graph* the_graph,
     float delay_value_ns =
         find_value(the_delay_lib_table, src_slew_ns, snk_cap_load);
 
-    CUDA_LOG_INFO(
+    CUDA_LOG_DEBUG(
         "find delay value %f src slew %f snk cap %f table line no %d "
         "lib arc id %d",
         delay_value_ns, src_slew_ns, snk_cap_load, the_lib_arc._line_no,
@@ -494,7 +505,7 @@ __device__ void lut_constraint_delay(GPU_Graph* the_graph, GPU_Arc& the_arc,
 
       float delay_value_ns =
           find_value(the_lib_table, src_slew_ns, snk_slew_ns);
-      CUDA_LOG_INFO(
+      CUDA_LOG_DEBUG(
           "find check value %f src slew %f snk slew %f table line no %d "
           "lib arc id %d",
           delay_value_ns, src_slew_ns, snk_slew_ns, the_lib_arc._line_no,
@@ -584,30 +595,30 @@ __global__ void propagate_fwd(GPU_Graph the_graph, Lib_Data_GPU the_lib_data,
   // current thread id
   int i = blockIdx.x * blockDim.x + threadIdx.x;
   if (i < propagated_arcs._num_arcs) {
-    // CUDA_LOG_INFO("GPU thread %d propagate fwd in gpu kernel", i);
+    // CUDA_LOG_DEBUG("GPU thread %d propagate fwd in gpu kernel", i);
     unsigned current_arc_id = propagated_arcs._arc_index[i];
-    // CUDA_LOG_INFO("current arc id %d", current_arc_id);
+    // CUDA_LOG_DEBUG("current arc id %d", current_arc_id);
 
     GPU_Arc current_arc = the_graph._arcs[current_arc_id];
     GPU_Arc_Type current_arc_type = current_arc._arc_type;
 
     int lib_arc_id = current_arc._lib_data_arc_id;
-    // CUDA_LOG_INFO("current lib arc id %d", lib_arc_id);
+    // CUDA_LOG_DEBUG("current lib arc id %d", lib_arc_id);
 
     if (current_arc_type == kInstDelayArc) {
-      CUDA_LOG_INFO("process inst delay arc id %d lib arc id %d",
+      CUDA_LOG_DEBUG("process inst delay arc id %d lib arc id %d",
                     current_arc_id, lib_arc_id);
       auto lib_arc = the_lib_data._arcs_gpu[lib_arc_id];
       // for inst delay arc.
       propagate_inst_slew_delay(&the_graph, current_arc, lib_arc);
     } else if (current_arc_type == kInstCheckArc) {
-      CUDA_LOG_INFO("process inst check arc id %d lib arc id %d",
+      CUDA_LOG_DEBUG("process inst check arc id %d lib arc id %d",
                     current_arc_id, lib_arc_id);
       auto lib_arc = the_lib_data._arcs_gpu[lib_arc_id];
       // for inst check arc, lut table for get constrain value.
       lut_constraint_delay(&the_graph, current_arc, lib_arc);
     } else {
-      // CUDA_LOG_INFO("process net arc");
+      CUDA_LOG_DEBUG("process net arc");
       // for net arc, lut net output slew and delay.
       propagate_net_slew_delay(&the_graph, current_arc);
     }
@@ -641,7 +652,7 @@ void gpu_propagate_fwd(GPU_Graph& the_host_graph, unsigned vertex_data_size,
     bfs_arcs._num_arcs = the_level_arc_size;
     bfs_arcs._arc_index = thrust::raw_pointer_cast(bfs_arc_vec.data());
 
-    CUDA_LOG_INFO("propagate arc size %d", bfs_arcs._num_arcs);
+    CUDA_LOG_DEBUG("propagate arc size %d", bfs_arcs._num_arcs);
     unsigned max_arc_per_epoch = 5120;
 
     int num_epoch = (the_level_arc_size + max_arc_per_epoch - 1) / max_arc_per_epoch;
@@ -679,13 +690,12 @@ void gpu_propagate_fwd(GPU_Graph& the_host_graph, unsigned vertex_data_size,
   }
 
   CUDA_PROF_END(0, "propagate fwd kernel");
-
-  CUDA_LOG_INFO("copy to host graph start.");
+  
   copy_to_host_graph(the_host_graph, the_device_graph, vertex_data_size,
                      arc_data_size);
   CUDA_CHECK_ERROR();
 
-  CUDA_LOG_INFO("copy to host graph end.");
+  
 
 }
 
