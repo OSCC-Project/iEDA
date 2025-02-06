@@ -642,25 +642,40 @@ void gpu_propagate_fwd(GPU_Graph& the_host_graph, unsigned vertex_data_size,
     bfs_arcs._arc_index = thrust::raw_pointer_cast(bfs_arc_vec.data());
 
     CUDA_LOG_INFO("propagate arc size %d", bfs_arcs._num_arcs);
+    unsigned max_arc_per_epoch = 5120;
 
-    int num_blocks =
-        (bfs_arcs._num_arcs + THREAD_PER_BLOCK_NUM - 1) / THREAD_PER_BLOCK_NUM;
+    int num_epoch = (the_level_arc_size + max_arc_per_epoch - 1) / max_arc_per_epoch;
 
-    CUDA_LOG_INFO(
-        "propagate fwd kernal num blocks %d per each block %d threads start",
-        num_blocks, THREAD_PER_BLOCK_NUM);
+    // split to epoch for large arc size.
+    for (int i = 0; i < num_epoch; ++i) {
+      GPU_BFS_Propagated_Arc bfs_arcs_epoch;
+      if (num_epoch == 1) {
+        bfs_arcs_epoch._num_arcs = the_level_arc_size;
+        bfs_arcs_epoch._arc_index = bfs_arcs._arc_index;
+      } else {
+        bfs_arcs_epoch._num_arcs =
+            std::min(max_arc_per_epoch, the_level_arc_size - i * max_arc_per_epoch);
+        bfs_arcs_epoch._arc_index = bfs_arcs._arc_index + i * max_arc_per_epoch;
+      }
 
-    propagate_fwd<<<num_blocks, THREAD_PER_BLOCK_NUM>>>(the_device_graph,
-                                                        lib_data, bfs_arcs);
-    // wait to finish.
-    cudaDeviceSynchronize();
+      int num_blocks = (bfs_arcs_epoch._num_arcs + THREAD_PER_BLOCK_NUM - 1) /
+                       THREAD_PER_BLOCK_NUM;
 
-    CUDA_LOG_INFO(
-        "propagate fwd kernal num blocks %d per each block %d threads finish",
-        num_blocks, THREAD_PER_BLOCK_NUM);
+      CUDA_LOG_INFO(
+          "propagate fwd kernal num blocks %d per each block %d threads start",
+          num_blocks, THREAD_PER_BLOCK_NUM);
 
-    CUDA_CHECK_ERROR();
+      propagate_fwd<<<num_blocks, THREAD_PER_BLOCK_NUM>>>(the_device_graph,
+                                                          lib_data, bfs_arcs_epoch);
+      // wait to finish.
+      cudaDeviceSynchronize();
 
+      CUDA_LOG_INFO(
+          "propagate fwd kernal num blocks %d per each block %d threads finish",
+          num_blocks, THREAD_PER_BLOCK_NUM);
+
+      CUDA_CHECK_ERROR();
+    }
   }
 
   CUDA_PROF_END(0, "propagate fwd kernel");

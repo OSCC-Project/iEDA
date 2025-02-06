@@ -209,7 +209,9 @@ GPU_Graph build_gpu_graph(StaGraph* the_sta_graph,
                           std::map<StaArc*, unsigned>& arc_to_index,
                           std::map<unsigned, StaArc*>& index_to_arc) {
   GPU_Graph gpu_graph;
-
+  
+  // sort by level to improve data locality.
+  the_sta_graph->sortVertexByLevel();
   // build gpu vertex
   StaVertex* the_vertex;
   std::map<StaVertex*, unsigned> vertex_to_id;
@@ -228,6 +230,8 @@ GPU_Graph build_gpu_graph(StaGraph* the_sta_graph,
                                        flatten_data._flatten_node_impulse_data);
     vertex_to_id[the_vertex] = gpu_vertices.size();
     gpu_vertices.emplace_back(std::move(gpu_vertex));
+
+    LOG_INFO_EVERY_N(1000) << "build gpu vertex data " << gpu_vertices.size();
   }
 
   // build gpu arc
@@ -269,6 +273,8 @@ GPU_Graph build_gpu_graph(StaGraph* the_sta_graph,
     unsigned gpu_arc_index = gpu_arcs.size() - 1;
     arc_to_index[the_arc] = gpu_arc_index;
     index_to_arc[gpu_arc_index] = the_arc;
+
+    LOG_INFO_EVERY_N(1000) << "build gpu arc data " << gpu_arcs.size();
   }
 
   // copy cpu data to gpu memory.
@@ -479,6 +485,9 @@ unsigned StaGPUFwdPropagation::prepareGPUData(StaGraph* the_graph) {
   LOG_INFO << "prepare gpu data start";
 #if !CPU_SIM
   // prepare the lib data.
+  LOG_INFO << "prepare lib data start";
+  CPU_PROF_START(0);
+
   auto* ista = getSta();
   ista->buildLibArcsGPU();
   std::vector<ista::Lib_Arc_GPU*> lib_arcs_gpu = ista->getLibArcsGPU();
@@ -488,7 +497,12 @@ unsigned StaGPUFwdPropagation::prepareGPUData(StaGraph* the_graph) {
   // save lib data
   ista->set_gpu_lib_data(std::move(lib_data_gpu));
 
+  LOG_INFO << "prepare lib data end";
+  CPU_PROF_END(0, "prepare lib data");
+
   // prepare the gpu graph data in cpu.
+  LOG_INFO << "prepare gpu graph data start";
+  CPU_PROF_START(1);
   unsigned num_vertex = the_graph->numVertex();
   unsigned num_arc = the_graph->numArc();
 
@@ -522,7 +536,13 @@ unsigned StaGPUFwdPropagation::prepareGPUData(StaGraph* the_graph) {
   ista->set_gpu_arcs(std::move(gpu_arcs));
   ista->set_flatten_data(std::move(flatten_data));
 
+  LOG_INFO << "prepare gpu graph data end";
+  CPU_PROF_END(1, "prepare gpu graph data");
+
   // prepare level arcs data.
+  LOG_INFO << "prepare level arcs data start";
+  CPU_PROF_START(2);
+
   std::map<unsigned, std::vector<unsigned>> level_to_arc_index;
   for (auto& [level, the_arcs] : _level_to_arcs) {
     std::vector<unsigned> arc_indexes;
@@ -534,6 +554,9 @@ unsigned StaGPUFwdPropagation::prepareGPUData(StaGraph* the_graph) {
 
   _level_to_arc_index = std::move(level_to_arc_index);
   _index_to_arc = std::move(index_to_arc);
+
+  LOG_INFO << "prepare level arcs data end";
+  CPU_PROF_END(2, "prepare level arcs data");
 
   // save for debug.
   ista->set_arc_to_index(std::move(arc_to_index));
