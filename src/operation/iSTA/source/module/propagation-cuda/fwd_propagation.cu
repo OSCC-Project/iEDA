@@ -36,7 +36,8 @@
 namespace ista {
 
 /// each block thread num.
-static const int THREAD_PER_BLOCK_NUM = 256;
+static const int THREAD_PER_BLOCK_NUM = 64;
+static const unsigned max_arc_per_epoch = 640;
 
 /**
  * @brief copy host graph to gpu device graph.
@@ -596,6 +597,7 @@ __global__ void propagate_fwd(GPU_Graph the_graph, Lib_Data_GPU the_lib_data,
   int i = blockIdx.x * blockDim.x + threadIdx.x;
   if (i < propagated_arcs._num_arcs) {
     // CUDA_LOG_DEBUG("GPU thread %d propagate fwd in gpu kernel", i);
+
     unsigned current_arc_id = propagated_arcs._arc_index[i];
     // CUDA_LOG_DEBUG("current arc id %d", current_arc_id);
 
@@ -642,32 +644,29 @@ void gpu_propagate_fwd(GPU_Graph& the_host_graph, unsigned vertex_data_size,
   CUDA_PROF_START(0);
   for (auto& [level, the_arcs] : level_to_arcs) {
     unsigned the_level_arc_size = the_arcs.size();
-    thrust::device_vector<unsigned> bfs_arc_vec(the_level_arc_size);
-    unsigned i = 0;
-    std::for_each(
-        the_arcs.begin(), the_arcs.end(),
-        [&bfs_arc_vec, &i](auto arc_index) { bfs_arc_vec[i++] = arc_index; });
-
-    GPU_BFS_Propagated_Arc bfs_arcs;
-    bfs_arcs._num_arcs = the_level_arc_size;
-    bfs_arcs._arc_index = thrust::raw_pointer_cast(bfs_arc_vec.data());
-
-    CUDA_LOG_DEBUG("propagate arc size %d", bfs_arcs._num_arcs);
-    unsigned max_arc_per_epoch = 5120;
-
+    CUDA_LOG_INFO("propagate fwd level %d level size %d", level, the_level_arc_size);
+    
     int num_epoch = (the_level_arc_size + max_arc_per_epoch - 1) / max_arc_per_epoch;
-
     // split to epoch for large arc size.
-    for (int i = 0; i < num_epoch; ++i) {
+    for (int epoch_index = 0; epoch_index < num_epoch; ++epoch_index) {
+      CUDA_LOG_INFO("propagate fwd epoch %d total epoch %d", epoch_index, num_epoch);
+
       GPU_BFS_Propagated_Arc bfs_arcs_epoch;
       if (num_epoch == 1) {
         bfs_arcs_epoch._num_arcs = the_level_arc_size;
-        bfs_arcs_epoch._arc_index = bfs_arcs._arc_index;
       } else {
         bfs_arcs_epoch._num_arcs =
-            std::min(max_arc_per_epoch, the_level_arc_size - i * max_arc_per_epoch);
-        bfs_arcs_epoch._arc_index = bfs_arcs._arc_index + i * max_arc_per_epoch;
+            std::min(max_arc_per_epoch, the_level_arc_size - epoch_index * max_arc_per_epoch);
       }
+
+      thrust::device_vector<unsigned> bfs_arc_vec(bfs_arcs_epoch._num_arcs);
+      unsigned i = 0;
+      std::for_each_n(
+          the_arcs.begin() + epoch_index * max_arc_per_epoch, bfs_arcs_epoch._num_arcs,
+          [&bfs_arc_vec, &i](auto arc_index) { bfs_arc_vec[i++] = arc_index; });
+
+
+      bfs_arcs_epoch._arc_index = thrust::raw_pointer_cast(bfs_arc_vec.data());
 
       int num_blocks = (bfs_arcs_epoch._num_arcs + THREAD_PER_BLOCK_NUM - 1) /
                        THREAD_PER_BLOCK_NUM;
@@ -682,7 +681,7 @@ void gpu_propagate_fwd(GPU_Graph& the_host_graph, unsigned vertex_data_size,
       cudaDeviceSynchronize();
 
       CUDA_LOG_INFO(
-          "propagate fwd kernal num blocks %d per each block %d threads finish",
+          "propagate fwd kernal num blocks %d per each block %d threads end",
           num_blocks, THREAD_PER_BLOCK_NUM);
 
       CUDA_CHECK_ERROR();
@@ -694,8 +693,6 @@ void gpu_propagate_fwd(GPU_Graph& the_host_graph, unsigned vertex_data_size,
   copy_to_host_graph(the_host_graph, the_device_graph, vertex_data_size,
                      arc_data_size);
   CUDA_CHECK_ERROR();
-
-  
 
 }
 
