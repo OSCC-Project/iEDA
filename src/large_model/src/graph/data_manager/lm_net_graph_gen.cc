@@ -212,8 +212,20 @@ void LmNetGraphGenerator::buildConnections(TopoGraph& graph) const
         auto intersections = shape_manager.findIntersections(top_shape);
         connect(v, intersections);
       }
+    } else if (content->is_pin) {
+      auto* pin = dynamic_cast<LayoutPin*>(content);
+      // for pin, find the intersections of the pin shapes and via cuts
+      for (auto& pin_shape : pin->pin_shapes) {
+        auto intersections = shape_manager.findIntersections(pin_shape);
+        connect(v, intersections);
+      }
+      for (auto& via_cut : pin->via_cuts) {
+        auto intersections = shape_manager.findIntersections(via_cut);
+        connect(v, intersections);
+      }
+    } else {
+      LOG_FATAL << "Unknown content type";
     }
-    // skip pins because symmetry
   }
 }
 bool LmNetGraphGenerator::checkConnectivity(const TopoGraph& graph) const
