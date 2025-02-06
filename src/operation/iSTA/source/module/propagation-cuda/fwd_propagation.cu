@@ -182,17 +182,17 @@ void copy_to_host_graph(GPU_Graph& the_host_graph, GPU_Graph& the_device_graph,
 
   CUDA_CHECK(cudaMemcpyAsync(the_host_graph._flatten_slew_data,
                              the_device_graph._flatten_slew_data,
-                             vertex_data_size * sizeof(GPU_Fwd_Data<int64_t>),
+                             the_host_graph._num_slew_data * sizeof(GPU_Fwd_Data<int64_t>),
                              cudaMemcpyDeviceToHost, stream[0]));
 
   CUDA_CHECK(cudaMemcpyAsync(the_host_graph._flatten_at_data,
                              the_device_graph._flatten_at_data,
-                             vertex_data_size * sizeof(GPU_Fwd_Data<int64_t>),
+                             the_host_graph._num_at_data * sizeof(GPU_Fwd_Data<int64_t>),
                              cudaMemcpyDeviceToHost, stream[1]));
 
   CUDA_CHECK(cudaMemcpyAsync(the_host_graph._flatten_arc_delay_data,
                              the_device_graph._flatten_arc_delay_data,
-                             arc_data_size * sizeof(GPU_Fwd_Data<int64_t>),
+                             the_host_graph._num_arc_delay_data * sizeof(GPU_Fwd_Data<int64_t>),
                              cudaMemcpyDeviceToHost, stream[2]));
 
   for (unsigned index = 0; index < num_stream; ++index) {

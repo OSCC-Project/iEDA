@@ -85,9 +85,7 @@ unsigned StaClockSlewDelayPropagation::operator()(StaVertex* the_vertex) {
       snk_vertex->initSlewData();
     }
 
-    if (snk_vertex->get_level() == (the_vertex->get_level() + 1)) {
-      addNextBFSQueue(snk_vertex);
-    }
+    addNextBFSQueue(snk_vertex);
   }
 
   the_vertex->set_is_slew_prop();
