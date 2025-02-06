@@ -490,7 +490,7 @@ unsigned StaGPUFwdPropagation::prepareGPUData(StaGraph* the_graph) {
 
   auto* ista = getSta();
   ista->buildLibArcsGPU();
-  std::vector<ista::Lib_Arc_GPU*> lib_arcs_gpu = ista->getLibArcsGPU();
+  auto& lib_arcs_gpu = ista->get_lib_gpu_arcs();
   Lib_Data_GPU lib_data_gpu;
   build_lib_data_gpu(lib_data_gpu, lib_arcs_gpu);
 

@@ -131,8 +131,7 @@ StaInstArc::StaInstArc(StaVertex* src, StaVertex* snk, LibArc* lib_arc,
                        Instance* inst)
     : StaArc(src, snk),
       _lib_arc(lib_arc),
-      _inst(inst),
-      _lib_gpu_arc(new Lib_Arc_GPU()) {}
+      _inst(inst){}
 
 // for debug by printLIBTableGPU.(to be deleted)
 void printLibTableGPU(const Lib_Table_GPU& gpu_table) {
@@ -179,100 +178,7 @@ void printLibTableGPU(const Lib_Table_GPU& gpu_table) {
  * @brief build gpu lib arc(axes and values) according to the lib arc.
  */
 void StaInstArc::buildLibArcsGPU() {
-  auto* table_model = _lib_arc->get_table_model();
-  LibTableModel* delay_or_check_table_model;
-  unsigned num_table;
-  if (isDelayArc() || isCheckArc()) {
-    if (isDelayArc()) {
-      delay_or_check_table_model =
-          dynamic_cast<LibDelayTableModel*>(table_model);
-      num_table = dynamic_cast<LibDelayTableModel*>(table_model)->kTableNum;
-    }
-    if (isCheckArc()) {
-      delay_or_check_table_model =
-          dynamic_cast<LibCheckTableModel*>(table_model);
-      num_table = dynamic_cast<LibCheckTableModel*>(table_model)->kTableNum;
-    }
 
-    _lib_gpu_arc->_line_no = delay_or_check_table_model->get_line_no();
-    _lib_gpu_arc->_num_table = num_table;
-    auto lib_cap_unit = _lib_arc->get_owner_cell()->get_owner_lib()->get_cap_unit();
-    _lib_gpu_arc->_cap_unit = ((lib_cap_unit == CapacitiveUnit::kFF) ? Lib_Cap_unit::kFF : Lib_Cap_unit::kPF);
-    _lib_gpu_arc->_table = new Lib_Table_GPU[_lib_gpu_arc->_num_table];
-
-    for (size_t index = 0; index < num_table; index++) {
-      auto* table = delay_or_check_table_model->getTable(index);
-
-      Lib_Table_GPU gpu_table;
-
-      if (!table) {
-        _lib_gpu_arc->_table[index] = gpu_table;
-        continue;
-      }
-      
-      // set the x axis.
-      auto& x_axis = table->getAxis(0);
-      auto& x_axis_values = x_axis.get_axis_values();
-      gpu_table._num_x = static_cast<unsigned>(x_axis_values.size());
-      gpu_table._x = new float[gpu_table._num_x];
-      for (unsigned i = 0; i < x_axis_values.size(); ++i) {
-        gpu_table._x[i] = x_axis_values[i]->getFloatValue();
-      }
-
-      auto axes_size = table->get_axes().size();
-      LOG_FATAL_IF(axes_size > 2);
-
-      // set the y axis.
-      if (axes_size > 1) {
-        auto& y_axis = table->getAxis(1);
-        auto& y_axis_values = y_axis.get_axis_values();
-        gpu_table._num_y = static_cast<unsigned>(y_axis_values.size());
-        gpu_table._y = new float[gpu_table._num_y];
-        for (unsigned i = 0; i < y_axis_values.size(); ++i) {
-          gpu_table._y[i] = y_axis_values[i]->getFloatValue();
-        }
-      }
-
-      auto* table_template = table->get_table_template();
-      if (axes_size == 1) {
-        if (*(table_template->get_template_variable1()) ==
-                LibLutTableTemplate::Variable::INPUT_NET_TRANSITION ||
-            *(table_template->get_template_variable1()) ==
-                LibLutTableTemplate::Variable::RELATED_PIN_TRANSITION ||
-            *(table_template->get_template_variable1()) ==
-                LibLutTableTemplate::Variable::INPUT_TRANSITION_TIME) {
-          gpu_table._type = 0;  //(x axis denotes slew.)
-        } else {
-          gpu_table._type = 1;  //(x axis denotes constrain_slew_or_load.)
-        }
-      } else {
-        if (*(table_template->get_template_variable1()) ==
-                LibLutTableTemplate::Variable::INPUT_NET_TRANSITION ||
-            *(table_template->get_template_variable1()) ==
-                LibLutTableTemplate::Variable::RELATED_PIN_TRANSITION ||
-            *(table_template->get_template_variable1()) ==
-                LibLutTableTemplate::Variable::INPUT_TRANSITION_TIME) {
-          gpu_table._type = 2;  // (x axis denotes slew, y axis denotes
-                                // constrain_slew_or_load.)
-        } else {
-          gpu_table._type = 3;  //(x axis denotes constrain_slew_or_load, y axis
-                                // denotes slew.)
-        }
-      }
-
-      // set the values.
-      auto& table_values = table->get_table_values();
-      gpu_table._num_values = static_cast<unsigned>(table_values.size());
-      gpu_table._values = new float[gpu_table._num_values];
-      for (unsigned i = 0; i < table_values.size(); ++i) {
-        gpu_table._values[i] = table_values[i]->getFloatValue();
-      }
-
-      // printLibTableGPU(gpu_table);
-      // set the gpu table to the arc.(cpu index is the same as gpu index)
-      _lib_gpu_arc->_table[index] = gpu_table;
-    }
-  }
 }
 
 }  // namespace ista

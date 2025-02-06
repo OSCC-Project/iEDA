@@ -298,16 +298,9 @@ __device__ float find_value(Lib_Table_GPU& lib_table_gpu, float slew,
  * @param lib_arcs_cpu The vector of Lib_Arc_GPU.
  */
 void build_lib_data_gpu(Lib_Data_GPU& lib_data_gpu,
-                        std::vector<Lib_Arc_GPU*> lib_arcs_cpu_ptr) {
-  std::vector<ista::Lib_Arc_GPU> lib_arcs_cpu;
-  lib_arcs_cpu.reserve(lib_arcs_cpu_ptr.size());
-  for (const auto& arc_ptr : lib_arcs_cpu_ptr) {
-    if (arc_ptr != nullptr) {
-      lib_arcs_cpu.push_back(*arc_ptr);
-    }
-  }
+                        std::vector<Lib_Arc_GPU>& lib_arcs_cpu) {
 
-  lib_data_gpu._num_arcs = lib_arcs_cpu_ptr.size();
+  lib_data_gpu._num_arcs = lib_arcs_cpu.size();
 
   cudaMalloc(&(lib_data_gpu._arcs_gpu),
              lib_data_gpu._num_arcs * sizeof(Lib_Arc_GPU));
@@ -316,17 +309,17 @@ void build_lib_data_gpu(Lib_Data_GPU& lib_data_gpu,
   cudaStreamCreate(&stream1);
 
   for (unsigned i = 0; i < lib_data_gpu._num_arcs; ++i) {
-    Lib_Arc_GPU* cpu_arc = lib_arcs_cpu_ptr[i];
+    Lib_Arc_GPU& cpu_arc = lib_arcs_cpu[i];
 
     Lib_Table_GPU* d_tables;
     CUDA_CHECK(
-        cudaMalloc(&(d_tables), cpu_arc->_num_table * sizeof(Lib_Table_GPU)));
-    CUDA_CHECK(cudaMemcpy(d_tables, cpu_arc->_table,
-                          cpu_arc->_num_table * sizeof(Lib_Table_GPU),
+        cudaMalloc(&(d_tables), cpu_arc._num_table * sizeof(Lib_Table_GPU)));
+    CUDA_CHECK(cudaMemcpy(d_tables, cpu_arc._table,
+                          cpu_arc._num_table * sizeof(Lib_Table_GPU),
                           cudaMemcpyHostToDevice));
 
-    for (unsigned j = 0; j < cpu_arc->_num_table; ++j) {
-      Lib_Table_GPU& cpu_table = cpu_arc->_table[j];
+    for (unsigned j = 0; j < cpu_arc._num_table; ++j) {
+      Lib_Table_GPU& cpu_table = cpu_arc._table[j];
       Lib_Table_GPU* gpu_table = &d_tables[j];
 
       Lib_Table_GPU one_table;
@@ -366,13 +359,13 @@ void build_lib_data_gpu(Lib_Data_GPU& lib_data_gpu,
     CUDA_CHECK(cudaMemcpyAsync(&(gpu_arc->_table), &d_tables,
                                sizeof(Lib_Table_GPU*), cudaMemcpyHostToDevice,
                                stream1));
-    CUDA_CHECK(cudaMemcpyAsync(&(gpu_arc->_num_table), &cpu_arc->_num_table,
+    CUDA_CHECK(cudaMemcpyAsync(&(gpu_arc->_num_table), &cpu_arc._num_table,
                                sizeof(unsigned), cudaMemcpyHostToDevice,
                                stream1));
-    CUDA_CHECK(cudaMemcpyAsync(&(gpu_arc->_line_no), &cpu_arc->_line_no,
+    CUDA_CHECK(cudaMemcpyAsync(&(gpu_arc->_line_no), &cpu_arc._line_no,
                                sizeof(unsigned), cudaMemcpyHostToDevice,
                                stream1));
-    CUDA_CHECK(cudaMemcpyAsync(&(gpu_arc->_cap_unit), &cpu_arc->_cap_unit,
+    CUDA_CHECK(cudaMemcpyAsync(&(gpu_arc->_cap_unit), &cpu_arc._cap_unit,
                                sizeof(Lib_Cap_unit), cudaMemcpyHostToDevice,
                                stream1));
     CUDA_CHECK(cudaStreamSynchronize(stream1));

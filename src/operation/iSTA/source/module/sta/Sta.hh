@@ -378,12 +378,16 @@ class Sta {
   bool isBuildGraph() { return !_graph.get_vertexes().empty(); }
 
   unsigned buildLibArcsGPU();
-  std::vector<Lib_Arc_GPU*> getLibArcsGPU();
 
 #if CUDA_PROPAGATION
 
   void set_gpu_lib_data(Lib_Data_GPU&& lib_data_gpu) { _gpu_lib_data = std::move(lib_data_gpu); }
   auto& get_gpu_lib_data() { return _gpu_lib_data; }
+
+  void set_lib_gpu_arcs(std::vector<Lib_Arc_GPU>&& lib_gpu_arcs) {
+    _lib_gpu_arcs = std::move(lib_gpu_arcs);
+  }
+  auto& get_lib_gpu_arcs() { return _lib_gpu_arcs; }
 
   void set_gpu_graph(GPU_Graph&& the_gpu_graph) { _gpu_graph = std::move(the_gpu_graph); }
   auto& get_gpu_graph() { return _gpu_graph; }
@@ -608,6 +612,7 @@ class Sta {
   GPU_Flatten_Data _flatten_data;
   GPU_Graph _gpu_graph; //!< The gpu graph mapped to sta graph.
   Lib_Data_GPU _gpu_lib_data; //!< The gpu lib arc data.
+  std::vector<ista::Lib_Arc_GPU> _lib_gpu_arcs; //!< The gpu lib arc data.
   std::map<StaArc*, unsigned> _arc_to_index; //!< The arc map to gpu index.
 #endif
   std::map<Net*, std::unique_ptr<RcNet>>
