@@ -11,8 +11,6 @@
 
 #include "StaGPUFwdPropagation.hh"
 
-#include <execution>
-
 #include "Sta.hh"
 #include "StaDataPropagationBFS.hh"
 #include "propagation-cuda/fwd_propagation.cuh"

@@ -25,8 +25,6 @@
 
 #include "StaDataPropagationBFS.hh"
 
-#include <execution>
-
 #include "Config.hh"
 #include "StaDataSlewDelayPropagation.hh"
 #include "StaDelayPropagation.hh"
