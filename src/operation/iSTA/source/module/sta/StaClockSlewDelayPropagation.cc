@@ -36,6 +36,7 @@ namespace ista {
  * @return unsigned
  */
 unsigned StaClockSlewDelayPropagation::operator()(StaArc* the_arc) {
+  std::lock_guard<std::mutex> lk(the_arc->get_snk()->get_fwd_mutex());
   StaSlewPropagation slew_propagation;
   StaDelayPropagation delay_propagation;
 
@@ -84,7 +85,9 @@ unsigned StaClockSlewDelayPropagation::operator()(StaVertex* the_vertex) {
       snk_vertex->initSlewData();
     }
 
-    _next_bfs_queue.push_back(snk_vertex);
+    if (snk_vertex->get_level() == (the_vertex->get_level() + 1)) {
+      addNextBFSQueue(snk_vertex);
+    }
   }
 
   the_vertex->set_is_slew_prop();
@@ -131,9 +134,8 @@ unsigned StaClockSlewDelayPropagation::operator()(StaGraph*) {
         continue;
       }
 
-      pool.enqueue([](StaFunc& func,
-                      StaVertex* the_vertex) { return the_vertex->exec(func); },
-                   *this, the_vertex);
+      pool.enqueue([this](StaVertex* the_vertex) { return the_vertex->exec(*this); },
+                   the_vertex);
     }
 #else
     for (auto* the_vertex : current_queue) {

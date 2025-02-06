@@ -32,7 +32,7 @@ namespace ista {
  * @brief The clock slew and delay propagation with bfs.
  *
  */
-class StaClockSlewDelayPropagation : public StaFunc {
+class StaClockSlewDelayPropagation : public StaBFSFunc, public StaFunc {
  public:
   unsigned operator()(StaArc* the_arc) override;
   unsigned operator()(StaVertex* the_vertex) override;
@@ -44,9 +44,6 @@ class StaClockSlewDelayPropagation : public StaFunc {
   }
 
   private:
-  std::vector<StaVertex*> _bfs_queue; //!< The current bfs queue
-  std::vector<StaVertex*> _next_bfs_queue; //!< For next bfs use.
-
   StaClock* _propagate_clock; //!< The current propagate clock.
 };
 

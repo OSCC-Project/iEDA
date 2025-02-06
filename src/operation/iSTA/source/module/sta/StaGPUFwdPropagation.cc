@@ -530,6 +530,13 @@ unsigned StaGPUFwdPropagation::prepareGPUData(StaGraph* the_graph) {
 
   auto the_host_graph = build_gpu_graph(the_graph, flatten_data, gpu_vertices,
                                         gpu_arcs, arc_to_index, index_to_arc);
+  // set data size.
+  the_host_graph._num_slew_data = flatten_data._flatten_slew_data.size();
+  the_host_graph._num_at_data = flatten_data._flatten_at_data.size();
+  the_host_graph._num_node_cap_data = flatten_data._flatten_node_cap_data.size();
+  the_host_graph._num_node_delay_data = flatten_data._flatten_node_delay_data.size();
+  the_host_graph._num_node_impulse_data = flatten_data._flatten_node_impulse_data.size();
+  the_host_graph._num_arc_delay_data = flatten_data._flatten_arc_delay_data.size();
 
   // save the graph and data.
   ista->set_gpu_graph(std::move(the_host_graph));
