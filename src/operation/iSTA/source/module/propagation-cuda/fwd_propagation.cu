@@ -288,11 +288,13 @@ __device__ void set_one_fwd_data(GPU_Graph* the_graph, GPU_Arc& the_arc,
       flatten_all_datas, snk_vertex_data, analysis_mode, out_trans_type);
 
   if (!src_fwd_data_ptr) {
-    CUDA_LOG_FATAL("src fwd data should not be null.");
+    CUDA_LOG_ERROR("the arc %d -> %d, src fwd data is null.", src_vertex_id, snk_vertex_id);
+    return;
   }
 
   if (!snk_fwd_data_ptr) {
-    CUDA_LOG_FATAL("snk fwd data should not be null.");
+    CUDA_LOG_ERROR("the arc %d -> %d, snk fwd data is null.", src_vertex_id, snk_vertex_id);
+    return;
   }
 
   auto& src_fwd_data = *src_fwd_data_ptr;

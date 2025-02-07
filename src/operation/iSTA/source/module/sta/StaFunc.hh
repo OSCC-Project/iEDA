@@ -87,10 +87,10 @@ class StaBFSFunc {
 
   void addNextBFSQueue(StaVertex* the_vertex) {
       static std::mutex g_mutex;
+      std::lock_guard<std::mutex> lk(g_mutex);
 
       if (std::find(_next_bfs_queue.begin(), _next_bfs_queue.end(),
-                    the_vertex) == _next_bfs_queue.end()) {
-        std::lock_guard<std::mutex> lk(g_mutex);
+                    the_vertex) == _next_bfs_queue.end()) {        
         _next_bfs_queue.push_back(the_vertex);
       }
   }

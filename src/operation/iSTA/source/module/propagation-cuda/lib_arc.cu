@@ -263,7 +263,7 @@ __device__ float find_value(Lib_Table_GPU& lib_table_gpu, float slew,
   } else {
     // ??? not sure (_type == UINT_MAX) can work as (!table_template)
     CUDA_LOG_ERROR("lut table: invalid delay lut template variable");
-    return -1.0;
+    return 0.0;
   }
 
   if (lib_table_gpu._num_y == 0) {
