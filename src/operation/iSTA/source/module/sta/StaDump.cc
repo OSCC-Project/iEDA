@@ -355,7 +355,7 @@ unsigned StaDumpWireYaml::operator()(StaArc* the_arc) {
       edge_node["wire_C"] = from_node.nodeLoad() - to_node.nodeLoad();
       edge_node["from_slew"] = all_nodes_slew[from_node.get_name()];
       edge_node["to_slew"] = all_nodes_slew[to_node.get_name()];
-      edge_node["wire_delay"] = to_node.delay() - from_node.delay();
+      edge_node["wire_delay"] = PS_TO_NS(to_node.delay() - from_node.delay());
     }
   }
 

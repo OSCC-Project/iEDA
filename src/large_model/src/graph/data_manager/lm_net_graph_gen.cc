@@ -55,6 +55,9 @@ void LmNetGraphGenerator::initLayerMap()
 }
 WireGraph LmNetGraphGenerator::buildGraph(idb::IdbNet* idb_net) const
 {
+  if (isCornerCase(idb_net)) {
+    return buildCornerCaseGraph(idb_net);
+  }
   auto topo_graph = buildTopoGraph(idb_net);
   auto wire_graph = buildWireGraph(topo_graph);
   return wire_graph;
@@ -67,6 +70,52 @@ std::vector<WireGraph> LmNetGraphGenerator::buildGraphs() const
   std::ranges::transform(idb_nets->get_net_list(), std::back_inserter(graphs),
                          [&](auto* idb_net) -> WireGraph { return buildGraph(idb_net); });
   return graphs;
+}
+bool LmNetGraphGenerator::isCornerCase(idb::IdbNet* idb_net) const
+{
+  auto io_pins = idb_net->get_io_pins()->get_pin_list();
+  if (io_pins.size() != 1) {
+    return false;
+  }
+
+  auto else_pins = idb_net->get_instance_pin_list()->get_pin_list();
+  if (else_pins.size() != 1) {
+    return false;
+  }
+
+  return true;
+}
+WireGraph LmNetGraphGenerator::buildCornerCaseGraph(idb::IdbNet* idb_net) const
+{
+  // corner case: only one IO pin and one PAD
+  WireGraph wire_graph;
+  auto* pad = idb_net->get_instance_pin_list()->get_pin_list().front();
+
+  auto* pin_shape = pad->get_port_box_list().front();
+  auto rect = pin_shape->get_rect_list().front();
+  auto low_x = rect->get_low_x();
+  auto low_y = rect->get_low_y();
+  auto high_x = rect->get_high_x();
+  auto high_y = rect->get_high_y();
+  auto layer_id = _layer_map.at(pin_shape->get_layer()->get_name());
+  auto io_location = LayoutDefPoint(low_x, low_y, layer_id);
+
+  auto pad_vertex = boost::add_vertex(wire_graph);
+  wire_graph[pad_vertex].x = (low_x + high_x) / 2;
+  wire_graph[pad_vertex].y = (low_y + high_y) / 2;
+  wire_graph[pad_vertex].layer_id = layer_id;
+  wire_graph[pad_vertex].is_pin = true;
+
+  auto io_vertex = boost::add_vertex(wire_graph);
+  wire_graph[io_vertex].x = (low_x + high_x) / 2;
+  wire_graph[io_vertex].y = (low_y + high_y) / 2;
+  wire_graph[io_vertex].layer_id = layer_id;
+  wire_graph[io_vertex].is_pin = true;
+
+  auto edge = boost::add_edge(pad_vertex, io_vertex, wire_graph).first;
+  wire_graph[edge].path.push_back(std::make_pair(io_location, io_location));
+
+  return wire_graph;
 }
 TopoGraph LmNetGraphGenerator::buildTopoGraph(idb::IdbNet* idb_net) const
 {
@@ -212,8 +261,20 @@ void LmNetGraphGenerator::buildConnections(TopoGraph& graph) const
         auto intersections = shape_manager.findIntersections(top_shape);
         connect(v, intersections);
       }
+    } else if (content->is_pin) {
+      auto* pin = dynamic_cast<LayoutPin*>(content);
+      // for pin, find the intersections of the pin shapes and via cuts
+      for (auto& pin_shape : pin->pin_shapes) {
+        auto intersections = shape_manager.findIntersections(pin_shape);
+        connect(v, intersections);
+      }
+      for (auto& via_cut : pin->via_cuts) {
+        auto intersections = shape_manager.findIntersections(via_cut);
+        connect(v, intersections);
+      }
+    } else {
+      LOG_FATAL << "Unknown content type";
     }
-    // skip pins because symmetry
   }
 }
 bool LmNetGraphGenerator::checkConnectivity(const TopoGraph& graph) const
