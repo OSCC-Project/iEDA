@@ -232,7 +232,8 @@ std::string CongestionAPI::egrUnionMap(std::string stage, std::string rt_dir_pat
 
 std::map<std::string, std::vector<std::vector<int>>> CongestionAPI::getEGRMap(std::string congestion_dir)
 {
-  return EVAL_CONGESTION_INST->getEGRMap(congestion_dir);
+  // return EVAL_CONGESTION_INST->getEGRMap(congestion_dir);
+  return EVAL_CONGESTION_INST->getDemandSupplyDiffMap(congestion_dir);
 }
 
 }  // namespace ieval

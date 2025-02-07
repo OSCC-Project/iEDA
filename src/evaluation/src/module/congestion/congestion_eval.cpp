@@ -1093,4 +1093,106 @@ std::map<std::string, std::vector<std::vector<int>>> CongestionEval::getEGRMap(s
   return egr_map;
 }
 
+std::map<std::string, std::vector<std::vector<int>>> CongestionEval::getDemandSupplyDiffMap(std::string congestion_dir)
+{
+    // 如果未指定目录，使用默认路径
+    if (congestion_dir == "") {
+        congestion_dir = dmInst->get_config().get_output_path() + "/rt/rt_temp_directory";
+    }
+
+    setEGRDirPath(congestion_dir);
+    initEGR();
+    destroyEGR();
+    
+    // 构造early_router和supply_analyzer的完整路径
+    std::string demand_dir = congestion_dir + "/early_router";
+    std::string supply_dir = congestion_dir + "/supply_analyzer";
+    
+    printf("demand_dir: %s\nsupply_dir: %s\n", demand_dir.c_str(), supply_dir.c_str());
+
+    // 用于存储最终的差值矩阵
+    std::map<std::string, std::vector<std::vector<int>>> diff_map;
+    // 临时存储demand和supply矩阵
+    std::map<std::string, std::vector<std::vector<int>>> demand_matrices;
+    std::map<std::string, std::vector<std::vector<int>>> supply_matrices;
+
+    // 读取demand矩阵
+    std::filesystem::path demand_path(demand_dir);
+    for (const auto& entry : std::filesystem::directory_iterator(demand_path)) {
+        std::string filename = entry.path().filename().string();
+        if (filename.find("demand_map_") == 0) {
+            // 提取层名 (AP, M1, M2等)
+            std::string layer_name = filename.substr(11, filename.length() - 15);
+
+            // 读取文件内容
+            std::ifstream file(entry.path());
+            std::string line;
+            std::vector<std::vector<int>> matrix;
+            while (std::getline(file, line)) {
+                std::vector<int> row;
+                std::istringstream iss(line);
+                std::string value;
+                while (std::getline(iss, value, ',')) {
+                    row.push_back(std::stod(value));
+                }
+                matrix.push_back(row);
+            }
+            demand_matrices[layer_name] = matrix;
+        }
+    }
+
+    // 读取supply矩阵
+    std::filesystem::path supply_path(supply_dir);
+    for (const auto& entry : std::filesystem::directory_iterator(supply_path)) {
+        std::string filename = entry.path().filename().string();
+        if (filename.find("supply_map_") == 0) {
+            // 提取层名 (AP, M1, M2等)
+            std::string layer_name = filename.substr(11, filename.length() - 15);
+
+            // 读取文件内容
+            std::ifstream file(entry.path());
+            std::string line;
+            std::vector<std::vector<int>> matrix;
+            while (std::getline(file, line)) {
+                std::vector<int> row;
+                std::istringstream iss(line);
+                std::string value;
+                while (std::getline(iss, value, ',')) {
+                    row.push_back(std::stod(value));
+                }
+                matrix.push_back(row);
+            }
+            supply_matrices[layer_name] = matrix;
+        }
+    }
+
+    // 计算差值矩阵
+    for (const auto& [layer_name, demand_matrix] : demand_matrices) {
+        // 检查该层是否同时存在supply数据
+        if (supply_matrices.find(layer_name) != supply_matrices.end()) {
+            const auto& supply_matrix = supply_matrices[layer_name];
+            
+            // 确保矩阵尺寸相同
+            if (demand_matrix.size() == supply_matrix.size() && 
+                demand_matrix[0].size() == supply_matrix[0].size()) {
+                
+                std::vector<std::vector<int>> diff_matrix;
+                for (size_t i = 0; i < demand_matrix.size(); ++i) {
+                    std::vector<int> diff_row;
+                    for (size_t j = 0; j < demand_matrix[i].size(); ++j) {
+                        // 计算差值
+                        diff_row.push_back(demand_matrix[i][j] - supply_matrix[i][j]);
+                    }
+                    diff_matrix.push_back(diff_row);
+                }
+                diff_map[layer_name] = diff_matrix;
+            } else {
+                printf("Warning: Matrix size mismatch for layer %s\n", layer_name.c_str());
+            }
+        }
+    }
+
+    return diff_map;
+}
+
 }  // namespace ieval
