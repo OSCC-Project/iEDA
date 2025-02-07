@@ -1054,8 +1054,8 @@ TimingWireGraph InitSTA::getTimingWireGraph() {
       auto wire_from_node_index = create_inst_node(the_arc->get_src());
       auto wire_to_node_index = create_inst_node(the_arc->get_snk());
 
-      timing_wire_graph.addEdge(wire_from_node_index, wire_to_node_index);
-
+      auto& inst_wire_edge = timing_wire_graph.addEdge(wire_from_node_index, wire_to_node_index);
+      inst_wire_edge._is_net_edge = false;
     }
   }
 
@@ -1113,6 +1113,7 @@ void SaveTimingGraph(const TimingWireGraph& timing_wire_graph,
     file << edge_name << ":" << "\n";
     file << "  from_node: " << edge._from_node << "\n";
     file << "  to_node: " << edge._to_node << "\n";
+    file << "  is_net_edge: " << edge._is_net_edge << "\n";
   } 
 
   // out << YAML::EndMap; // Close the YAML map  
@@ -1161,6 +1162,9 @@ TimingWireGraph RestoreTimingGraph(const std::string& yaml_file_name) {
       } else if (line.find("to_node:") != string::npos) {
         size_t pos = line.find(": ");
         wire_edge._to_node = stoll(line.substr(pos + 2));
+      } else if (line.find("is_net_edge:") != string::npos) {
+        size_t pos = line.find(": ");
+        wire_edge._is_net_edge = stoi(line.substr(pos + 2));
         timing_wire_graph._edges.emplace_back(std::move(wire_edge));
       }
     }

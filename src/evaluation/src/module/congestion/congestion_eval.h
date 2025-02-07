@@ -80,6 +80,7 @@ class CongestionEval
   void setEGRDirPath(std::string egr_dir_path);
 
   std::map<std::string, std::vector<std::vector<int>>> getEGRMap(std::string congestion_dir);
+  std::map<std::string, std::vector<std::vector<int>>> getDemandSupplyDiffMap(std::string congestion_dir);
 
  private:
   static CongestionEval* _congestion_eval;
