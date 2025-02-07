@@ -49,9 +49,9 @@ PlaceSummary FeatureBuilder::buildPLSummary(std::string step)
 
 RTSummary FeatureBuilder::buildRTSummary()
 {
-  // RTSummary summary = RTI.getSummary();
+  RTSummary summary;
 
-  // return summary;
+  return summary;
 }
 
 CTSSummary FeatureBuilder::buildCTSSummary()

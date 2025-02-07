@@ -14,12 +14,33 @@
 //
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
+/**
+ * @file StaDataSlewDelayPropagation.hh
+ * @author simin tao (taosm@pcl.ac.cn)
+ * @brief The Data slew delay propagation using BFS method.
+ * @version 0.1
+ * @date 2024-12-26
+ */
+#pragma once
 
-#include "gtest/gtest.h"
+#include "StaFunc.hh"
+#include <queue>
+#include <mutex>
 
-int main(int argc, char** argv) {
-  ::testing::InitGoogleTest(&argc, argv);
+namespace ista {
 
-  testing::GTEST_FLAG(filter) = "LibDataGPUTest.test*";
-  return RUN_ALL_TESTS();
+/**
+ * @brief The data slew and delay propagation with bfs.
+ *
+ */
+class StaDataSlewDelayPropagation : public StaBFSFunc, public StaFunc {
+ public:
+  unsigned operator()(StaArc* the_arc) override;
+  unsigned operator()(StaVertex* the_vertex) override;
+  unsigned operator()(StaGraph* the_graph) override;
+
+  AnalysisMode get_analysis_mode() override { return AnalysisMode::kMaxMin; }
+ 
+};
+
 }

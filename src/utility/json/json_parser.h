@@ -123,6 +123,9 @@ static std::istringstream& getGzFileStream(std::string file_path)
     auto content = get_gz_string(file_path);
     std::istringstream* dataStream = new std::istringstream(content);
     return *dataStream;
+  } else {
+    std::istringstream* dataStream = new std::istringstream("");
+    return *dataStream;
   }
 }
 

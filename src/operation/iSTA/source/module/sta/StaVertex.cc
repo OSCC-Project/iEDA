@@ -341,6 +341,31 @@ void StaVertex::initSlewData() {
 }
 
 /**
+ * @brief Init at data, if not create zero at default.
+ * 
+ */
+void StaVertex::initPathDelayData() {
+  auto& data_bucket = getDataBucket();
+  if (!data_bucket.empty()) {
+    return;
+  }
+
+  auto construct_path_delay_data = [](AnalysisMode delay_type, TransType trans_type,
+                                StaVertex* own_vertex, int at) {
+    auto* path_delay_data =
+        new StaPathDelayData(delay_type, trans_type, at, nullptr, own_vertex);
+    own_vertex->addData(path_delay_data);
+  };
+
+  /*if not, create default zero path delay.*/
+  construct_path_delay_data(AnalysisMode::kMax, TransType::kRise, this, 0);
+  construct_path_delay_data(AnalysisMode::kMax, TransType::kFall, this, 0);
+  construct_path_delay_data(AnalysisMode::kMin, TransType::kRise, this, 0);
+  construct_path_delay_data(AnalysisMode::kMin, TransType::kFall, this, 0);
+
+}
+
+/**
  * @brief reset vertex data and arc data for increment analysis.
  *
  */
@@ -763,7 +788,7 @@ StaSlewData* StaVertex::getSlewData(AnalysisMode analysis_mode,
   FOREACH_SLEW_DATA(this, data) {
     if ((data->get_delay_type() == analysis_mode) &&
         (data->get_trans_type() == trans_type) &&
-        (src_slew_data == data->get_bwd())) {
+        (!src_slew_data || (src_slew_data == data->get_bwd()))) {
       auto* slew_data = dynamic_cast<StaSlewData*>(data);
       return slew_data;
     }
@@ -787,7 +812,7 @@ StaPathDelayData* StaVertex::getPathDelayData(AnalysisMode analysis_mode,
   FOREACH_DELAY_DATA(this, data) {
     if ((data->get_delay_type() == analysis_mode) &&
         (data->get_trans_type() == trans_type) &&
-        (src_delay_data == data->get_bwd())) {
+        (!src_delay_data || (src_delay_data == data->get_bwd()))) {
       auto* delay_data = dynamic_cast<StaPathDelayData*>(data);
       return delay_data;
     }
@@ -820,6 +845,59 @@ double StaVertex::getLoad(AnalysisMode analysis_mode, TransType trans_type) {
     load_or_cap = obj->cap();
   }
   return load_or_cap;
+}
+
+/**
+ * @brief Get the slew impulse for the net load node.
+ * 
+ * @param analysis_mode 
+ * @param trans_type 
+ * @return double 
+ */
+double StaVertex::getNetSlewImpulse(AnalysisMode analysis_mode, TransType trans_type) {
+  double load_impulse = 0.0;
+
+  auto* obj = get_design_obj();
+  auto* the_net = obj->get_net();
+  if (!the_net) {
+    return 0.0;
+  }
+
+  if (the_net->getDriver() != obj) {
+    auto* rc_net = Sta::getOrCreateSta()->getRcNet(the_net);
+    load_impulse = rc_net ? rc_net->slewImpulse(*obj, analysis_mode, trans_type)
+                         : 0.0;
+  } 
+
+  return load_impulse;
+
+}
+/**
+ * @brief Get the slew delay for the net load node.
+ * 
+ * @param analysis_mode 
+ * @param trans_type 
+ * @return double 
+ */
+double StaVertex::getNetLoadDelay(AnalysisMode analysis_mode, TransType trans_type) {
+  double load_delay = 0.0;
+
+  auto* obj = get_design_obj();
+  auto* the_net = obj->get_net();
+  if (!the_net) {
+    return 0.0;
+  }
+
+  if (the_net->getDriver() != obj) {
+    auto* rc_net = Sta::getOrCreateSta()->getRcNet(the_net);
+    
+    if (rc_net) {
+      auto* node = rc_net->rct()->node(obj->getFullName());
+      load_delay = PS_TO_NS(node->delay(analysis_mode, trans_type));
+    }
+  } 
+
+  return load_delay;
 }
 
 /**

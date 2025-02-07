@@ -61,16 +61,22 @@ double LibAxis::operator[](std::size_t index)
   return _axis_values[index]->getFloatValue();
 }
 
-const std::map<std::string, LibTable::TableType> LibTable::_str2TableType = {{"cell_rise", TableType::kCellRise},
-                                                                             {"cell_fall", TableType::kCellFall},
-                                                                             {"rise_transition", TableType::kRiseTransition},
-                                                                             {"fall_transition", TableType::kFallTransition},
-                                                                             {"rise_constraint", TableType::kRiseConstrain},
-                                                                             {"fall_constraint", TableType::kFallConstrain},
-                                                                             {"output_current_rise", TableType::kRiseCurrent},
-                                                                             {"output_current_fall", TableType::kFallCurrent},
-                                                                             {"rise_power", TableType::kRisePower},
-                                                                             {"fall_power", TableType::kFallPower}};
+const std::map<std::string, LibTable::TableType> LibTable::_str2TableType = {
+    {"cell_rise", TableType::kCellRise},
+    {"cell_fall", TableType::kCellFall},
+    {"rise_transition", TableType::kRiseTransition},
+    {"fall_transition", TableType::kFallTransition},
+    {"rise_constraint", TableType::kRiseConstrain},
+    {"fall_constraint", TableType::kFallConstrain},
+    {"output_current_rise", TableType::kRiseCurrent},
+    {"output_current_fall", TableType::kFallCurrent},
+    {"rise_power", TableType::kRisePower},
+    {"fall_power", TableType::kFallPower},
+    {"ocv_sigma_cell_rise", TableType::kCellRiseSigma},
+    {"ocv_sigma_cell_fall", TableType::kCellFallSigma},
+    {"ocv_sigma_rise_transition", TableType::kRiseTransitionSigma},
+    {"ocv_sigma_fall_transition", TableType::kFallTransitionSigma},
+};
 
 LibTable::LibTable(TableType table_type, LibLutTableTemplate* table_template) : _table_type(table_type), _table_template(table_template)
 {
@@ -165,7 +171,7 @@ double LibTable::findValue(double slew, double constrain_slew_or_load)
   }
 
   // first check that slew and constrain_slew_or_load are within the table
-  // ranges
+  // ranges (检查值是否在表格范围内)
   auto check_val = [this](auto axis_index, auto val) {
     auto num_val = getAxis(axis_index).get_axis_size();
     auto min_val = getAxis(axis_index)[0];
@@ -178,6 +184,7 @@ double LibTable::findValue(double slew, double constrain_slew_or_load)
     return num_val;
   };
 
+  //在轴上找到插值区间, 返回插值所需的两个端点值和左边的索引值
   auto get_axis_region = [this](auto axis_index, auto num_val, auto val) {
     auto x2 = 0.0;
     unsigned int val_index = 0;
@@ -200,6 +207,7 @@ double LibTable::findValue(double slew, double constrain_slew_or_load)
     return std::make_tuple(x1, x2, val_index);
   };
 
+  // 获取表格中的值
   auto get_table_value = [this](auto index) {
     auto& table_values = get_table_values();
     LOG_FATAL_IF(index >= table_values.size()) << "index " << index << " beyond table value size " << table_values.size();
@@ -207,6 +215,7 @@ double LibTable::findValue(double slew, double constrain_slew_or_load)
   };
 
   if (1 == get_axes().size()) {
+    //在单一变量的情况下使用线性插值（LinearInterpolate）
     auto num_val1 = check_val(0, val1);
     auto [x1, x2, val1_index] = get_axis_region(0, num_val1, val1);
     unsigned int x1_table_val = get_table_value(val1_index);
@@ -216,6 +225,7 @@ double LibTable::findValue(double slew, double constrain_slew_or_load)
     return result;
 
   } else {
+    //在有两个变量的情况下使用双线性插值（BilinearInterpolation）
     auto num_val1 = check_val(0, val1);
     auto num_val2 = check_val(1, val2);
 
@@ -471,6 +481,31 @@ std::optional<double> LibDelayTableModel::gateDelay(TransType trans_type, double
 }
 
 /**
+ * @brief Get the gate delay sigma of the cell arc.
+ *
+ * @param mode The early or late.
+ * @param trans_type Rise/Fall.
+ * @param slew The slew.
+ * @param load The constrain_slew_or_load.
+ * @return double The delay.
+ */
+std::optional<double> LibDelayTableModel::gateDelaySigma(AnalysisMode mode, TransType trans_type, double slew, double load)
+{
+  int index = CAST_TYPE_TO_INDEX(trans_type);
+  int shift_index = calcShiftIndex(LibTable::CornerType::kEarly);
+  if (mode == AnalysisMode::kMax) {
+    shift_index = calcShiftIndex(LibTable::CornerType::kLate);
+  }
+  LibTable* table = getTable(index + shift_index);
+
+  if (nullptr == table) {
+    return std::nullopt;
+  }
+
+  return table->findValue(slew, load);
+}
+
+/**
  * @brief Get the gate slew of the cell arc.
  *
  * @param trans_type Rise/Fall.
@@ -488,6 +523,31 @@ std::optional<double> LibDelayTableModel::gateSlew(TransType trans_type, double 
   }
 
   if (!table) {
+    return std::nullopt;
+  }
+
+  return table->findValue(slew, load);
+}
+
+/**
+ * @brief Get the gate slew sigma of the cell arc.
+ *
+ * @param mode The early or late.
+ * @param trans_type Rise/Fall.
+ * @param slew The slew.
+ * @param load The constrain_slew_or_load.
+ * @return std::optional<double> The slew.
+ */
+std::optional<double> LibDelayTableModel::gateSlewSigma(AnalysisMode mode, TransType trans_type, double slew, double load)
+{
+  int index = CAST_TYPE_TO_INDEX(trans_type);
+  int shift_index = calcShiftIndex(LibTable::CornerType::kEarly);
+  if (mode == AnalysisMode::kMax) {
+    shift_index = calcShiftIndex(LibTable::CornerType::kLate);
+  }
+  LibTable* table = getTable(index + shift_index);
+
+  if (nullptr == table) {
     return std::nullopt;
   }
 
@@ -1100,6 +1160,52 @@ double LibArc::getDelayOrConstrainCheckNs(TransType trans_type, double slew, dou
 }
 
 /**
+ * @brief Get the arc delay sigma or constrain value.
+ *
+ * @param mode The late or early.
+ * @param trans_type The transtion type, rise/fall.
+ * @param slew The first axis value.
+ * @param index2 The second axis value.
+ * @return double The delay or constrain value in ns.
+ */
+double LibArc::getDelaySigma(AnalysisMode mode, TransType trans_type, double slew, double load_or_constrain_slew)
+{
+  // get/set time unit of liberty and derate
+  TimeUnit input_time_unit = TimeUnit::kNS;
+  TimeUnit liberty_time_unit = get_owner_cell()->get_owner_lib()->get_time_unit();
+  double input_to_liberty_convert = 1.0;
+  double liberty_to_output_convert = 1.0;
+
+  // set convert derate of units
+  if (TimeUnit::kPS == liberty_time_unit) {
+    input_to_liberty_convert = 1e3;
+    liberty_to_output_convert = 1e-3;
+  } else if (TimeUnit::kFS == liberty_time_unit) {
+    input_to_liberty_convert = 1e6;
+    liberty_to_output_convert = 1e-6;
+  }
+
+  // pass converted slew into `gateDelay()` and return conveted Delay
+  /*
+  std::optional<double> found_delay;
+  if (isDelayArc()) {
+    found_delay = _table_model->gateDelay(trans_type, slew *
+  input_to_liberty_convert, load_or_constrain_slew); } else { found_delay =
+  _table_model->gateCheckConstrain(trans_type, slew * input_to_liberty_convert,
+  load_or_constrain_slew);
+  }
+  */
+  auto found_delay = _table_model->gateDelaySigma(mode, trans_type, slew * input_to_liberty_convert, load_or_constrain_slew);
+
+  if (found_delay) {
+    double ret_value = (*found_delay) * liberty_to_output_convert;
+    return ret_value;
+  }
+
+  return 0.0;
+}
+
+/**
  *
  * @param trans_type The transtion type, rise/fall.
  * @param slew The first axis value.
@@ -1131,6 +1237,47 @@ double LibArc::getSlewNs(TransType trans_type, double slew, double load)
 
   // pass converted slew into `gateSlew()` and return in ns
   auto found_slew = _table_model->gateSlew(trans_type, slew * input_to_liberty_convert, load);
+
+  if (found_slew) {
+    double ret_value = (*found_slew) * liberty_to_output_convert * slew_derate_from_library;
+    return ret_value;
+  }
+
+  return 0.0;
+}
+/**
+ *
+ * @param mode The early or late.
+ * @param trans_type The transtion type, rise/fall.
+ * @param slew The first axis value.
+ * @param load The second axis value.
+ * @return double The slew value in ns.
+ */
+double LibArc::getSlewSigma(AnalysisMode mode, TransType trans_type, double slew, double load)
+{
+  if (!isDelayArc()) {
+    LOG_FATAL << "check arc has not output slew.";
+  }
+
+  // set/get time units in liberty
+  TimeUnit input_time_unit = TimeUnit::kNS;
+  TimeUnit liberty_time_unit = get_owner_cell()->get_owner_lib()->get_time_unit();
+  double input_to_liberty_convert = 1.0;
+  double liberty_to_output_convert = 1.0;
+
+  double slew_derate_from_library = get_owner_cell()->get_owner_lib()->get_slew_derate_from_library();
+
+  // set convert derate
+  if (TimeUnit::kPS == liberty_time_unit) {
+    input_to_liberty_convert = 1e3;
+    liberty_to_output_convert = 1e-3;
+  } else if (TimeUnit::kFS == liberty_time_unit) {
+    input_to_liberty_convert = 1e6;
+    liberty_to_output_convert = 1e-6;
+  }
+
+  // pass converted slew into `gateSlew()` and return in ns
+  auto found_slew = _table_model->gateSlewSigma(mode, trans_type, slew * input_to_liberty_convert, load);
 
   if (found_slew) {
     double ret_value = (*found_slew) * liberty_to_output_convert * slew_derate_from_library;
@@ -1569,7 +1716,8 @@ void LibLibrary::printLibertyLibraryJson(const char* json_file_name)
           auto axis_float_value = dynamic_cast<LibFloatValue*>(axis_values[j].get())->getFloatValue();
           index.push_back(axis_float_value);
         }
-        // index_1 ("0.00117378,0.00472397,0.0171859,0.0409838,0.0780596,0.130081,0.198535");
+        // index_1
+        // ("0.00117378,0.00472397,0.0171859,0.0409838,0.0780596,0.130081,0.198535");
         cell_rise_data["index_" + std::to_string(i + 1)] = index;
       }
       auto& lib_table_values = cell_rise_table->get_table_values();

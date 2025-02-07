@@ -22,8 +22,6 @@
  * @date 2020-11-27
  */
 
-#include "Sta.hh"
-
 #include <algorithm>
 #include <filesystem>
 #include <map>
@@ -33,6 +31,8 @@
 #include <tuple>
 #include <utility>
 
+#include "Config.hh"
+#include "Sta.hh"
 #include "StaAnalyze.hh"
 #include "StaApplySdc.hh"
 #include "StaBuildClockTree.hh"
@@ -41,9 +41,11 @@
 #include "StaBuildRCTree.hh"
 #include "StaCheck.hh"
 #include "StaClockPropagation.hh"
+#include "StaClockSlewDelayPropagation.hh"
 #include "StaConstPropagation.hh"
 #include "StaCrossTalkPropagation.hh"
 #include "StaDataPropagation.hh"
+#include "StaDataSlewDelayPropagation.hh"
 #include "StaDelayPropagation.hh"
 #include "StaDump.hh"
 #include "StaFindStartOrEnd.hh"
@@ -64,11 +66,6 @@
 #include "tcl/ScriptEngine.hh"
 #include "time/Time.hh"
 #include "usage/usage.hh"
-
-// // Swig uses C linkage for init functions.
-// extern "C" {
-// extern int Ista_Init(Tcl_Interp *interp);
-// }
 
 namespace ista {
 
@@ -446,7 +443,7 @@ void Sta::linkDesignWithRustParser(const char *top_cell_name) {
              return &ret_val;
            }},
           {DclType::KWire,
-           [&design_netlist](DclType dcl_type, const char *dcl_name) {             
+           [&design_netlist](DclType dcl_type, const char *dcl_name) {
              Net net(dcl_name);
              auto &ret_val = design_netlist.addNet(std::move(net));
              return &ret_val;
@@ -456,7 +453,7 @@ void Sta::linkDesignWithRustParser(const char *top_cell_name) {
   auto process_dcl_stmt = [&dcl_process,
                            &design_netlist](auto *rust_verilog_dcl) {
     auto dcl_type = rust_verilog_dcl->dcl_type;
-    const auto * raw_dcl_name = rust_verilog_dcl->dcl_name;
+    const auto *raw_dcl_name = rust_verilog_dcl->dcl_name;
     auto dcl_range = rust_verilog_dcl->range;
 
     // for dcl ports and wire trimmed \ in name.
@@ -481,13 +478,15 @@ void Sta::linkDesignWithRustParser(const char *top_cell_name) {
             auto *port = dynamic_cast<Port *>(design_obj);
             if (index == bus_range.second) {
               unsigned bus_size = bus_range.first + 1;
-              PortBus port_bus(dcl_name.c_str(), bus_range.first, bus_range.second,
-                               bus_size, port->get_port_dir());
+              PortBus port_bus(dcl_name.c_str(), bus_range.first,
+                               bus_range.second, bus_size,
+                               port->get_port_dir());
               port_bus.addPort(index, port);
               auto &ret_val = design_netlist.addPortBus(std::move(port_bus));
               port->set_port_bus(&ret_val);
             } else {
-              auto *found_port_bus = design_netlist.findPortBus(dcl_name.c_str());
+              auto *found_port_bus =
+                  design_netlist.findPortBus(dcl_name.c_str());
               found_port_bus->addPort(index, port);
               port->set_port_bus(found_port_bus);
             }
@@ -747,12 +746,12 @@ void Sta::linkDesignWithRustParser(const char *top_cell_name) {
       design_netlist.addInstance(std::move(inst));
     }
   }
-   
+
   // build assign stmt
-  //record the merge nets.
-  std::map<std::string, Net*> remove_to_merge_nets;
+  // record the merge nets.
+  std::map<std::string, Net *> remove_to_merge_nets;
   FOREACH_VEC_ELEM(&top_module_stmts, void, stmt) {
-     if (rust_is_module_assign_stmt(stmt)) {
+    if (rust_is_module_assign_stmt(stmt)) {
       RustVerilogAssign *verilog_assign = rust_convert_verilog_assign(stmt);
       auto *left_net_expr = const_cast<void *>(verilog_assign->left_net_expr);
       auto *right_net_expr = const_cast<void *>(verilog_assign->right_net_expr);
@@ -783,7 +782,7 @@ void Sta::linkDesignWithRustParser(const char *top_cell_name) {
         LOG_INFO
             << "assign declaration's lhs/rhs is not VerilogNetIDExpr class.";
       }
-      
+
       LOG_INFO << "assign " << left_net_name << " = " << right_net_name << "\n";
 
       left_net_name = Str::trimmed(left_net_name.c_str());
@@ -799,29 +798,30 @@ void Sta::linkDesignWithRustParser(const char *top_cell_name) {
 
       Net *the_left_net = design_netlist.findNet(left_net_name.c_str());
       if (!the_left_net && remove_to_merge_nets.contains(left_net_name)) {
-        the_left_net = remove_to_merge_nets[left_net_name];        
+        the_left_net = remove_to_merge_nets[left_net_name];
       }
 
       Net *the_right_net = design_netlist.findNet(right_net_name.c_str());
       if (!the_right_net && remove_to_merge_nets.contains(right_net_name)) {
-        the_right_net = remove_to_merge_nets[right_net_name];        
+        the_right_net = remove_to_merge_nets[right_net_name];
       }
 
       auto *the_left_port = design_netlist.findPort(left_net_name.c_str());
       auto *the_right_port = design_netlist.findPort(right_net_name.c_str());
 
       if (the_left_net && the_right_net && !the_left_port && !the_right_port) {
-        LOG_INFO << "merge " << left_net_name << " = " << right_net_name << "\n";
+        LOG_INFO << "merge " << left_net_name << " = " << right_net_name
+                 << "\n";
 
         auto left_pin_ports = the_left_net->get_pin_ports();
 
         // merge left to right net.
-        for (auto* left_pin_port : left_pin_ports) {
+        for (auto *left_pin_port : left_pin_ports) {
           the_left_net->removePinPort(left_pin_port);
-          the_right_net->addPinPort(left_pin_port);          
+          the_right_net->addPinPort(left_pin_port);
         }
 
-        remove_to_merge_nets[left_net_name] = the_right_net; 
+        remove_to_merge_nets[left_net_name] = the_right_net;
 
       } else if (the_left_net && !the_left_port) {
         // assign net = input_port;
@@ -851,13 +851,14 @@ void Sta::linkDesignWithRustParser(const char *top_cell_name) {
         LOG_FATAL_IF(!the_left_port) << "the left port is not exist.";
         created_net.addPinPort(the_left_port);
 
-      } else if (the_left_net && the_right_net && the_left_port && the_right_port) {
-
+      } else if (the_left_net && the_right_net && the_left_port &&
+                 the_right_port) {
         // assign output_port = output_port
         LOG_FATAL_IF(!the_right_port) << "the right port is not exist.";
         the_left_net->addPinPort(the_right_port);
       } else {
-        LOG_FATAL << "assign " << left_net_name << " = " << right_net_name << " is not processed.";
+        LOG_FATAL << "assign " << left_net_name << " = " << right_net_name
+                  << " is not processed.";
       }
 
       // remove ununsed nets.
@@ -868,9 +869,7 @@ void Sta::linkDesignWithRustParser(const char *top_cell_name) {
       if (the_right_net->get_pin_ports().size() == 0) {
         design_netlist.removeNet(the_right_net);
       }
-
-    } 
-
+    }
   }
 
   rust_free_verilog_file(_rust_verilog_file_ptr);
@@ -1355,6 +1354,150 @@ unsigned Sta::buildGraph() {
   return 1;
 }
 
+#if CUDA_PROPAGATION
+/**
+ * @brief build the gpu liberty arc.
+ *
+ * @return unsigned
+ */
+unsigned Sta::buildLibArcsGPU() {
+  StaGraph *the_graph = &get_graph();
+
+  // collect all used libs.
+  auto collect_lib_arc = [the_graph](auto &lib_arc_to_sta_arc) {
+    std::set<LibArc *> all_used_lib_arcs;
+
+    StaArc *the_arc;
+    FOREACH_ARC(the_graph, the_arc) {
+      if (the_arc->isInstArc()) {
+        if (the_arc->isDelayArc() || the_arc->isCheckArc()) {
+          auto *the_inst_arc = dynamic_cast<StaInstArc *>(the_arc);
+          auto *the_lib_arc = the_inst_arc->get_lib_arc();
+          all_used_lib_arcs.insert(the_lib_arc);
+
+          lib_arc_to_sta_arc[the_lib_arc].emplace_back(the_inst_arc);
+        }
+      }
+    }
+
+    return all_used_lib_arcs;
+  };
+
+  std::map<LibArc *, std::vector<StaInstArc *>> lib_arc_to_sta_arc;
+  auto all_used_lib_arcs = collect_lib_arc(lib_arc_to_sta_arc);
+
+  std::vector<ista::Lib_Arc_GPU> lib_arcs_gpu;
+  for (auto *the_lib_arc : all_used_lib_arcs) {
+    auto *table_model = the_lib_arc->get_table_model();
+    LibTableModel *delay_or_check_table_model;
+    unsigned num_table;
+
+    if (table_model->isDelayModel()) {
+      delay_or_check_table_model =
+          dynamic_cast<LibDelayTableModel *>(table_model);
+      num_table = dynamic_cast<LibDelayTableModel *>(table_model)->kTableNum;
+    } else {
+      delay_or_check_table_model =
+          dynamic_cast<LibCheckTableModel *>(table_model);
+      num_table = dynamic_cast<LibCheckTableModel *>(table_model)->kTableNum;
+    }
+
+    Lib_Arc_GPU lib_gpu_arc;
+
+    lib_gpu_arc._line_no = delay_or_check_table_model->get_line_no();
+    lib_gpu_arc._num_table = num_table;
+    auto lib_cap_unit =
+        the_lib_arc->get_owner_cell()->get_owner_lib()->get_cap_unit();
+    lib_gpu_arc._cap_unit =
+        ((lib_cap_unit == CapacitiveUnit::kFF) ? Lib_Cap_unit::kFF
+                                               : Lib_Cap_unit::kPF);
+    lib_gpu_arc._table = new Lib_Table_GPU[lib_gpu_arc._num_table];
+
+    for (size_t index = 0; index < num_table; index++) {
+      auto *table = delay_or_check_table_model->getTable(index);
+
+      Lib_Table_GPU gpu_table;
+
+      if (!table) {
+        lib_gpu_arc._table[index] = gpu_table;
+        continue;
+      }
+
+      // set the x axis.
+      auto &x_axis = table->getAxis(0);
+      auto &x_axis_values = x_axis.get_axis_values();
+      gpu_table._num_x = static_cast<unsigned>(x_axis_values.size());
+      gpu_table._x = new float[gpu_table._num_x];
+      for (unsigned i = 0; i < x_axis_values.size(); ++i) {
+        gpu_table._x[i] = x_axis_values[i]->getFloatValue();
+      }
+
+      auto axes_size = table->get_axes().size();
+      LOG_FATAL_IF(axes_size > 2);
+
+      // set the y axis.
+      if (axes_size > 1) {
+        auto &y_axis = table->getAxis(1);
+        auto &y_axis_values = y_axis.get_axis_values();
+        gpu_table._num_y = static_cast<unsigned>(y_axis_values.size());
+        gpu_table._y = new float[gpu_table._num_y];
+        for (unsigned i = 0; i < y_axis_values.size(); ++i) {
+          gpu_table._y[i] = y_axis_values[i]->getFloatValue();
+        }
+      }
+
+      auto *table_template = table->get_table_template();
+      if (axes_size == 1) {
+        if (*(table_template->get_template_variable1()) ==
+                LibLutTableTemplate::Variable::INPUT_NET_TRANSITION ||
+            *(table_template->get_template_variable1()) ==
+                LibLutTableTemplate::Variable::RELATED_PIN_TRANSITION ||
+            *(table_template->get_template_variable1()) ==
+                LibLutTableTemplate::Variable::INPUT_TRANSITION_TIME) {
+          gpu_table._type = 0;  //(x axis denotes slew.)
+        } else {
+          gpu_table._type = 1;  //(x axis denotes constrain_slew_or_load.)
+        }
+      } else {
+        if (*(table_template->get_template_variable1()) ==
+                LibLutTableTemplate::Variable::INPUT_NET_TRANSITION ||
+            *(table_template->get_template_variable1()) ==
+                LibLutTableTemplate::Variable::RELATED_PIN_TRANSITION ||
+            *(table_template->get_template_variable1()) ==
+                LibLutTableTemplate::Variable::INPUT_TRANSITION_TIME) {
+          gpu_table._type = 2;  // (x axis denotes slew, y axis denotes
+                                // constrain_slew_or_load.)
+        } else {
+          gpu_table._type = 3;  //(x axis denotes constrain_slew_or_load, y axis
+                                // denotes slew.)
+        }
+      }
+
+      // set the values.
+      auto &table_values = table->get_table_values();
+      gpu_table._num_values = static_cast<unsigned>(table_values.size());
+      gpu_table._values = new float[gpu_table._num_values];
+      for (unsigned i = 0; i < table_values.size(); ++i) {
+        gpu_table._values[i] = table_values[i]->getFloatValue();
+      }
+
+      // printLibTableGPU(gpu_table);
+      // set the gpu table to the arc.(cpu index is the same as gpu index)
+      lib_gpu_arc._table[index] = gpu_table;
+    }
+
+    auto &lib_gpu_arc_data = lib_arcs_gpu.emplace_back(std::move(lib_gpu_arc));
+    for (auto *the_inst_arc : lib_arc_to_sta_arc[the_lib_arc]) {
+      the_inst_arc->set_lib_gpu_arc(&lib_gpu_arc_data);
+      the_inst_arc->set_lib_arc_id(lib_arcs_gpu.size() - 1);
+    }
+  }
+
+  set_lib_gpu_arcs(std::move(lib_arcs_gpu));
+
+  return 1;
+}
+#endif
 /**
  * @brief Insert the seq path data.
  *
@@ -2381,6 +2524,8 @@ unsigned Sta::resetPathData() {
  * @return unsigned
  */
 unsigned Sta::updateTiming() {
+  ieda::Stats stats;
+
   LOG_INFO << "update timing start";
 
   resetSdcConstrain();
@@ -2388,29 +2533,66 @@ unsigned Sta::updateTiming() {
   resetPathData();
 
   StaGraph &the_graph = get_graph();
+  if (_propagation_method == PropagationMethod::kDFS) {
+    // DFS flow
+    Vector<std::function<unsigned(StaGraph *)>> funcs = {
+        StaApplySdc(StaApplySdc::PropType::kApplySdcPreProp),
+        StaConstPropagation(),
+        StaClockPropagation(StaClockPropagation::PropType::kIdealClockProp),
+        StaCombLoopCheck(), StaSlewPropagation(), StaDelayPropagation(),
+        StaClockPropagation(StaClockPropagation::PropType::kNormalClockProp),
+        StaApplySdc(StaApplySdc::PropType::kApplySdcPostNormalClockProp),
+        StaClockPropagation(
+            StaClockPropagation::PropType::kUpdateGeneratedClockProp),
+        StaApplySdc(StaApplySdc::PropType::kApplySdcPostClockProp),
+        StaLevelization(), StaBuildPropTag(StaPropagationTag::TagType::kProp),
+        StaDataPropagation(StaDataPropagation::PropType::kFwdProp),
+        // StaCrossTalkPropagation(),
+        StaDataPropagation(StaDataPropagation::PropType::kIncrFwdProp),
+        StaAnalyze(), StaApplySdc(StaApplySdc::PropType::kApplySdcPostProp),
+        StaDataPropagation(StaDataPropagation::PropType::kBwdProp)};
 
-  Vector<std::function<unsigned(StaGraph *)>> funcs = {
+    for (auto &func : funcs) {
+      the_graph.exec(func);
+    }
+  } else {
+    // BFS flow
+    Vector<std::function<unsigned(StaGraph *)>> funcs = {
       StaApplySdc(StaApplySdc::PropType::kApplySdcPreProp),
       StaConstPropagation(),
       StaClockPropagation(StaClockPropagation::PropType::kIdealClockProp),
-      StaCombLoopCheck(), StaSlewPropagation(), StaDelayPropagation(),
+      StaCombLoopCheck(),
+      StaClockSlewDelayPropagation(),
+      StaLevelization(),
       StaClockPropagation(StaClockPropagation::PropType::kNormalClockProp),
       StaApplySdc(StaApplySdc::PropType::kApplySdcPostNormalClockProp),
       StaClockPropagation(
           StaClockPropagation::PropType::kUpdateGeneratedClockProp),
       StaApplySdc(StaApplySdc::PropType::kApplySdcPostClockProp),
-      StaLevelization(), StaBuildPropTag(StaPropagationTag::TagType::kProp),
+      StaBuildPropTag(StaPropagationTag::TagType::kProp),
+#if !INTEGRATION_FWD
+      StaDataSlewDelayPropagation(),
+#endif
       StaDataPropagation(StaDataPropagation::PropType::kFwdProp),
       // StaCrossTalkPropagation(),
-      StaDataPropagation(StaDataPropagation::PropType::kIncrFwdProp),
-      StaAnalyze(), StaApplySdc(StaApplySdc::PropType::kApplySdcPostProp),
-      StaDataPropagation(StaDataPropagation::PropType::kBwdProp)};
 
-  for (auto &func : funcs) {
-    the_graph.exec(func);
+      StaDataPropagation(StaDataPropagation::PropType::kIncrFwdProp),
+      StaAnalyze(),
+      StaApplySdc(StaApplySdc::PropType::kApplySdcPostProp),
+      StaDataPropagation(StaDataPropagation::PropType::kBwdProp)
+    };
+
+    for (auto &func : funcs) {
+      the_graph.exec(func);
+    }
   }
 
   LOG_INFO << "update timing end";
+
+  double memory_delta = stats.memoryDelta();
+  LOG_INFO << "update timing memory usage " << memory_delta << "MB";
+  double time_delta = stats.elapsedRunTime();
+  LOG_INFO << "update timing time elapsed " << time_delta << "s";
   return 1;
 }
 
@@ -2613,9 +2795,12 @@ unsigned Sta::reportTiming(std::set<std::string> &&exclude_cell_names /*= {}*/,
 unsigned Sta::reportUsedLibs() {
   auto used_libs = getUsedLibs();
   for (auto *used_lib : used_libs) {
-    std::string lib_name = used_lib->get_file_name();
-    LOG_INFO << "used lib: " << lib_name;
+    const char *lib_name = used_lib->get_file_name();
+    if (lib_name) {
+      LOG_INFO << "used lib: " << lib_name;
+    }
   }
+  return 1;
 }
 
 /**
@@ -2968,4 +3153,5 @@ double Sta::convertCapUnit(const double src_value) {
   }
   return -1;
 }
+
 }  // namespace ista

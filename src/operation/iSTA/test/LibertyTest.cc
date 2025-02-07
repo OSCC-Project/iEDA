@@ -60,10 +60,11 @@ TEST_F(LibertyTest, print_liberty_library_json) {
   auto lib_rust_reader = lib.loadLibertyWithRustParser(lib_path);
   lib_rust_reader.linkLib();
   auto lib_library = lib_rust_reader.get_library_builder()->takeLib();
-  const char* json_file_names_n45 =
-      "/home/longshuaiying/lib_lef/"
-      "NangateOpenCellLibrary_typical.json";
-  lib_library->printLibertyLibraryJson(json_file_names_n45);
+  // lib_library->findCell()->get_cell_arcs();
+  // const char* json_file_names_n45 =
+  //     "/home/longshuaiying/lib_lef/"
+  //     "NangateOpenCellLibrary_typical.json";
+  // lib_library->printLibertyLibraryJson(json_file_names_n45);
 }
 
 }  // namespace

@@ -1098,6 +1098,26 @@ double RcNet::load(AnalysisMode mode, TransType trans_type) {
 }
 
 /**
+ * @brief get slew impulse for gpu speedup data.
+ * 
+ * @param mode 
+ * @param trans_type 
+ * @return double 
+ */
+double RcNet::slewImpulse(DesignObject& to, AnalysisMode mode, TransType trans_type) {
+  auto* node = std::get<RcTree>(_rct).node(to.getFullName());
+  if (_rct.index() == 0) {
+    return 0.0;
+  } else {
+    if (node) {
+      return node->_impulse[ModeTransPair{mode, trans_type}]; 
+    } else {
+      return 0.0;
+    }
+  }
+}
+
+/**
  * @brief Get the net load nodes.
  *
  * @return std::vector<RctNode*>
@@ -1177,7 +1197,7 @@ std::optional<std::pair<double, Eigen::MatrixXd>> RcNet::delay(
 }
 
 std::optional<double> RcNet::slew(
-    Pin& to, double from_slew,
+    DesignObject& to, double from_slew,
     std::optional<LibCurrentData*> /* output_current */, AnalysisMode mode,
     TransType trans_type) {
   if (_rct.index() == 0) {

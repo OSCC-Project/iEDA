@@ -126,6 +126,11 @@ class StaGraph {
   BTreeSet<StaVertex*>& get_port_vertexes() { return _port_vertexes; }
 
   std::vector<std::unique_ptr<StaVertex>>& get_vertexes() { return _vertexes; }
+  void sortVertexByLevel() {
+    std::stable_sort(_vertexes.begin(), _vertexes.end(),
+              [](auto& lhs, auto& rhs) { return lhs->get_level() < rhs->get_level(); });
+
+  }
   std::vector<std::unique_ptr<StaArc>>& get_arcs() { return _arcs; }
 
   std::size_t numVertex() const { return _vertexes.size(); }
