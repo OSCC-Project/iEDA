@@ -62,8 +62,10 @@ void build_gpu_vertex_slew_data(
  */
 void build_gpu_vertex_at_data(
     StaVertex* the_vertex, GPU_Vertex& gpu_vertex,
-    std::vector<GPU_Fwd_Data<int64_t>>& flatten_at_data) {
-  // build slew data.
+    std::vector<GPU_Fwd_Data<int64_t>>& flatten_at_data,
+    std::map<StaPathDelayData*, unsigned>& at_to_index,
+    std::map<unsigned, StaPathDelayData*>& index_to_at) {
+  // build at data.
   // the_vertex->initPathDelayData();
   gpu_vertex._at_data._start_pos = flatten_at_data.size();
   StaData* at_data;
@@ -82,6 +84,17 @@ void build_gpu_vertex_at_data(
             ? GPU_Analysis_Mode::kMax
             : GPU_Analysis_Mode::kMin;
     flatten_at_data.emplace_back(gpu_at_data);
+
+    at_to_index[path_delay_data] = flatten_at_data.size() - 1;
+    index_to_at[flatten_at_data.size() - 1] = path_delay_data;
+
+    auto* bwd_data = dynamic_cast<StaPathDelayData*>(path_delay_data->get_bwd());
+
+    if (bwd_data) {
+      if (at_to_index.contains(bwd_data)) {
+        gpu_at_data._snk_data_index = at_to_index[bwd_data];
+      }
+    }
   }
   gpu_vertex._at_data._num_fwd_data =
       flatten_at_data.size() - gpu_vertex._at_data._start_pos;
@@ -208,7 +221,9 @@ GPU_Graph build_gpu_graph(StaGraph* the_sta_graph,
                           std::vector<GPU_Vertex>& gpu_vertices,
                           std::vector<GPU_Arc>& gpu_arcs,
                           std::map<StaArc*, unsigned>& arc_to_index,
-                          std::map<unsigned, StaArc*>& index_to_arc) {
+                          std::map<unsigned, StaArc*>& index_to_arc, 
+                          std::map<StaPathDelayData*, unsigned>& at_to_index,
+                          std::map<unsigned, StaPathDelayData*>& index_to_at) {
   GPU_Graph gpu_graph;
   
   // sort by level to improve data locality.
@@ -222,7 +237,7 @@ GPU_Graph build_gpu_graph(StaGraph* the_sta_graph,
     build_gpu_vertex_slew_data(the_vertex, gpu_vertex,
                                flatten_data._flatten_slew_data);
     build_gpu_vertex_at_data(the_vertex, gpu_vertex,
-                             flatten_data._flatten_at_data);
+                             flatten_data._flatten_at_data, at_to_index, index_to_at);
     build_gpu_vertex_node_cap_data(the_vertex, gpu_vertex,
                                    flatten_data._flatten_node_cap_data);
     build_gpu_vertex_node_delay_data(the_vertex, gpu_vertex,
@@ -376,47 +391,15 @@ void update_sta_slew_data(StaGraph* the_sta_graph, GPU_Graph& the_host_graph) {
  * @param the_sta_graph
  * @param the_host_graph
  */
-void update_sta_at_data(StaGraph* the_sta_graph, GPU_Graph& the_host_graph) {
+void update_sta_at_data(StaGraph* /*the_sta_graph*/, GPU_Graph& the_host_graph,
+                        std::map<unsigned, StaPathDelayData*>& index_to_at) {
   LOG_INFO << "update to sta at start.";
   LOG_INFO << "update num vertexes " << the_host_graph._num_vertices;
 
-  auto& the_sta_vertexes = the_sta_graph->get_vertexes();
-  auto* the_host_graph_vertexes = the_host_graph._vertices;
-
-  // iterate each vertex in gpu graph.
-  for (unsigned vertex_index = 0; vertex_index < the_host_graph._num_vertices;
-       ++vertex_index) {
-    auto& current_vertex = the_host_graph_vertexes[vertex_index];
-    auto& current_sta_vertex = the_sta_vertexes[vertex_index];
-
-    // update vertex at
-    for (unsigned at_index = 0;
-         at_index < current_vertex._at_data._num_fwd_data; ++at_index) {
-      unsigned vertex_at_pos = current_vertex._at_data._start_pos + at_index;
-      auto at_fwd_data = the_host_graph._flatten_at_data[vertex_at_pos];
-
-      auto* current_sta_at_data = current_sta_vertex->getPathDelayData(
-          convert_analysis_mode(at_fwd_data._analysis_mode),
-          convert_trans_type(at_fwd_data._trans_type), nullptr);
-
-      current_sta_at_data->set_arrive_time(at_fwd_data._data_value);
-
-      int src_vertex_id = at_fwd_data._src_vertex_id;
-      if (src_vertex_id == -1) {
-        // have no source.
-        continue;
-      }
-
-      auto& src_sta_vertex = the_sta_vertexes[src_vertex_id];
-      int src_data_index = at_fwd_data._src_data_index;
-      auto src_at_fwd_data = the_host_graph._flatten_at_data[src_data_index];
-
-      // get src and current slew data.
-      auto* src_sta_at_data = src_sta_vertex->getPathDelayData(
-          convert_analysis_mode(src_at_fwd_data._analysis_mode),
-          convert_trans_type(src_at_fwd_data._trans_type), nullptr);
-      current_sta_at_data->set_bwd(src_sta_at_data);
-    }
+  for (unsigned at_index = 0; at_index < the_host_graph._num_at_data; ++at_index) {
+    auto& current_at_data = the_host_graph._flatten_at_data[at_index];
+    auto* path_delay_data = index_to_at[at_index];
+    path_delay_data->set_arrive_time(current_at_data._data_value);
   }
 
   LOG_INFO << "update to sta at end.";
@@ -468,10 +451,11 @@ void update_sta_arc_delay_data(StaGraph* /*the_sta_graph*/,
  * @param the_sta_graph
  */
 void update_sta_graph(GPU_Graph& the_host_graph, StaGraph* the_sta_graph,
-                      std::map<unsigned, StaArc*>& index_to_arc) {
+                      std::map<unsigned, StaArc*>& index_to_arc,
+                      std::map<unsigned, StaPathDelayData*>& index_to_at) {
   LOG_INFO << "update to sta graph start.";
   update_sta_slew_data(the_sta_graph, the_host_graph);
-  update_sta_at_data(the_sta_graph, the_host_graph);
+  update_sta_at_data(the_sta_graph, the_host_graph, index_to_at);
   update_sta_arc_delay_data(the_sta_graph, the_host_graph, index_to_arc);
   LOG_INFO << "update to sta graph end.";
 }
@@ -513,6 +497,9 @@ unsigned StaGPUFwdPropagation::prepareGPUData(StaGraph* the_graph) {
   std::map<StaArc*, unsigned> arc_to_index;
   std::map<unsigned, StaArc*> index_to_arc;
 
+  std::map<StaPathDelayData*, unsigned> at_to_index;
+  std::map<unsigned, StaPathDelayData*> index_to_at;
+
   // gpu graph vertex and arc data.
   std::vector<GPU_Vertex> gpu_vertices;
   gpu_vertices.reserve(num_vertex);
@@ -528,8 +515,9 @@ unsigned StaGPUFwdPropagation::prepareGPUData(StaGraph* the_graph) {
   flatten_data._flatten_node_impulse_data.reserve(vertex_data_size);
   flatten_data._flatten_arc_delay_data.reserve(arc_data_size);
 
-  auto the_host_graph = build_gpu_graph(the_graph, flatten_data, gpu_vertices,
-                                        gpu_arcs, arc_to_index, index_to_arc);
+  auto the_host_graph =
+      build_gpu_graph(the_graph, flatten_data, gpu_vertices, gpu_arcs,
+                      arc_to_index, index_to_arc, at_to_index, index_to_at);
   // set data size.
   the_host_graph._num_slew_data = flatten_data._flatten_slew_data.size();
   the_host_graph._num_at_data = flatten_data._flatten_at_data.size();
@@ -566,8 +554,9 @@ unsigned StaGPUFwdPropagation::prepareGPUData(StaGraph* the_graph) {
   LOG_INFO << "prepare level arcs data end";
   CPU_PROF_END(2, "prepare level arcs data");
 
-  // save for debug.
   ista->set_arc_to_index(std::move(arc_to_index));
+  ista->set_at_to_index(std::move(at_to_index));
+  ista->set_index_to_at(std::move(index_to_at));
 #endif
 
   LOG_INFO << "prepare gpu data end";
@@ -620,12 +609,14 @@ unsigned StaGPUFwdPropagation::operator()(StaGraph* the_graph) {
 
     auto& lib_data_gpu = ista->get_gpu_lib_data();
 
+    auto& index_to_at = ista->get_index_to_at();
+
     // call the cuda gpu program.
     gpu_propagate_fwd(the_host_graph, vertex_data_size, arc_data_size,
                       _level_to_arc_index, lib_data_gpu);
 
     // update result to the sta graph.
-    update_sta_graph(the_host_graph, the_graph, _index_to_arc);
+    update_sta_graph(the_host_graph, the_graph, _index_to_arc, index_to_at);
   }
 
   LOG_INFO << "dispatch arc task to gpu end";

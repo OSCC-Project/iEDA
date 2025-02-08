@@ -36,8 +36,8 @@
 namespace ista {
 
 /// each block thread num.
-static const int THREAD_PER_BLOCK_NUM = 64;
-static const unsigned max_arc_per_epoch = 640;
+static const int THREAD_PER_BLOCK_NUM = 512;
+static const unsigned max_arc_per_epoch = 25600;
 
 /**
  * @brief copy host graph to gpu device graph.
@@ -72,29 +72,35 @@ GPU_Graph copy_from_host_graph(GPU_Graph& the_host_graph,
                              the_host_graph._num_arcs * sizeof(GPU_Arc),
                              stream[stream_index++]));
 
-  CUDA_CHECK(cudaMallocAsync((void**)&the_device_graph._flatten_slew_data,
-                             the_host_graph._num_slew_data * sizeof(GPU_Fwd_Data<int64_t>),
-                             stream[stream_index++]));
+  CUDA_CHECK(cudaMallocAsync(
+      (void**)&the_device_graph._flatten_slew_data,
+      the_host_graph._num_slew_data * sizeof(GPU_Fwd_Data<int64_t>),
+      stream[stream_index++]));
 
-  CUDA_CHECK(cudaMallocAsync((void**)&the_device_graph._flatten_at_data,
-                             the_host_graph._num_at_data * sizeof(GPU_Fwd_Data<int64_t>),
-                             stream[stream_index++]));
+  CUDA_CHECK(cudaMallocAsync(
+      (void**)&the_device_graph._flatten_at_data,
+      the_host_graph._num_at_data * sizeof(GPU_Fwd_Data<int64_t>),
+      stream[stream_index++]));
 
-  CUDA_CHECK(cudaMallocAsync((void**)&the_device_graph._flatten_node_cap_data,
-                             the_host_graph._num_node_cap_data * sizeof(GPU_Fwd_Data<float>),
-                             stream[stream_index++]));
+  CUDA_CHECK(cudaMallocAsync(
+      (void**)&the_device_graph._flatten_node_cap_data,
+      the_host_graph._num_node_cap_data * sizeof(GPU_Fwd_Data<float>),
+      stream[stream_index++]));
 
-  CUDA_CHECK(cudaMallocAsync((void**)&the_device_graph._flatten_node_delay_data,
-                             the_host_graph._num_node_delay_data * sizeof(GPU_Fwd_Data<float>),
-                             stream[stream_index++]));
+  CUDA_CHECK(cudaMallocAsync(
+      (void**)&the_device_graph._flatten_node_delay_data,
+      the_host_graph._num_node_delay_data * sizeof(GPU_Fwd_Data<float>),
+      stream[stream_index++]));
 
   CUDA_CHECK(cudaMallocAsync(
       (void**)&the_device_graph._flatten_node_impulse_data,
-      the_host_graph._num_node_impulse_data * sizeof(GPU_Fwd_Data<float>), stream[stream_index++]));
+      the_host_graph._num_node_impulse_data * sizeof(GPU_Fwd_Data<float>),
+      stream[stream_index++]));
 
-  CUDA_CHECK(cudaMallocAsync((void**)&the_device_graph._flatten_arc_delay_data,
-                             the_host_graph._num_arc_delay_data * sizeof(GPU_Fwd_Data<int64_t>),
-                             stream[stream_index++]));
+  CUDA_CHECK(cudaMallocAsync(
+      (void**)&the_device_graph._flatten_arc_delay_data,
+      the_host_graph._num_arc_delay_data * sizeof(GPU_Fwd_Data<int64_t>),
+      stream[stream_index++]));
 
   assert(stream_index == num_stream);
 
@@ -115,35 +121,39 @@ GPU_Graph copy_from_host_graph(GPU_Graph& the_host_graph,
                              the_host_graph._num_arcs * sizeof(GPU_Arc),
                              cudaMemcpyHostToDevice, stream[stream_index++]));
 
-  CUDA_CHECK(cudaMemcpyAsync(the_device_graph._flatten_slew_data,
-                             the_host_graph._flatten_slew_data,
-                             the_host_graph._num_slew_data * sizeof(GPU_Fwd_Data<int64_t>),
-                             cudaMemcpyHostToDevice, stream[stream_index++]));
+  CUDA_CHECK(cudaMemcpyAsync(
+      the_device_graph._flatten_slew_data, the_host_graph._flatten_slew_data,
+      the_host_graph._num_slew_data * sizeof(GPU_Fwd_Data<int64_t>),
+      cudaMemcpyHostToDevice, stream[stream_index++]));
 
-  CUDA_CHECK(cudaMemcpyAsync(the_device_graph._flatten_at_data,
-                             the_host_graph._flatten_at_data,
-                             the_host_graph._num_at_data * sizeof(GPU_Fwd_Data<int64_t>),
-                             cudaMemcpyHostToDevice, stream[stream_index++]));
+  CUDA_CHECK(cudaMemcpyAsync(
+      the_device_graph._flatten_at_data, the_host_graph._flatten_at_data,
+      the_host_graph._num_at_data * sizeof(GPU_Fwd_Data<int64_t>),
+      cudaMemcpyHostToDevice, stream[stream_index++]));
 
-  CUDA_CHECK(cudaMemcpyAsync(the_device_graph._flatten_node_cap_data,
-                             the_host_graph._flatten_node_cap_data,
-                             the_host_graph._num_node_cap_data * sizeof(GPU_Fwd_Data<float>),
-                             cudaMemcpyHostToDevice, stream[stream_index++]));
+  CUDA_CHECK(cudaMemcpyAsync(
+      the_device_graph._flatten_node_cap_data,
+      the_host_graph._flatten_node_cap_data,
+      the_host_graph._num_node_cap_data * sizeof(GPU_Fwd_Data<float>),
+      cudaMemcpyHostToDevice, stream[stream_index++]));
 
-  CUDA_CHECK(cudaMemcpyAsync(the_device_graph._flatten_node_delay_data,
-                             the_host_graph._flatten_node_delay_data,
-                             the_host_graph._num_node_delay_data * sizeof(GPU_Fwd_Data<float>),
-                             cudaMemcpyHostToDevice, stream[stream_index++]));
+  CUDA_CHECK(cudaMemcpyAsync(
+      the_device_graph._flatten_node_delay_data,
+      the_host_graph._flatten_node_delay_data,
+      the_host_graph._num_node_delay_data * sizeof(GPU_Fwd_Data<float>),
+      cudaMemcpyHostToDevice, stream[stream_index++]));
 
-  CUDA_CHECK(cudaMemcpyAsync(the_device_graph._flatten_node_impulse_data,
-                             the_host_graph._flatten_node_impulse_data,
-                             the_host_graph._num_node_impulse_data * sizeof(GPU_Fwd_Data<float>),
-                             cudaMemcpyHostToDevice, stream[stream_index++]));
+  CUDA_CHECK(cudaMemcpyAsync(
+      the_device_graph._flatten_node_impulse_data,
+      the_host_graph._flatten_node_impulse_data,
+      the_host_graph._num_node_impulse_data * sizeof(GPU_Fwd_Data<float>),
+      cudaMemcpyHostToDevice, stream[stream_index++]));
 
-  CUDA_CHECK(cudaMemcpyAsync(the_device_graph._flatten_arc_delay_data,
-                             the_host_graph._flatten_arc_delay_data,
-                             the_host_graph._num_arc_delay_data * sizeof(GPU_Fwd_Data<int64_t>),
-                             cudaMemcpyHostToDevice, stream[stream_index++]));
+  CUDA_CHECK(cudaMemcpyAsync(
+      the_device_graph._flatten_arc_delay_data,
+      the_host_graph._flatten_arc_delay_data,
+      the_host_graph._num_arc_delay_data * sizeof(GPU_Fwd_Data<int64_t>),
+      cudaMemcpyHostToDevice, stream[stream_index++]));
 
   assert(stream_index == num_stream);
 
@@ -180,20 +190,21 @@ void copy_to_host_graph(GPU_Graph& the_host_graph, GPU_Graph& the_device_graph,
     cudaStreamCreate(&stream[index]);
   }
 
-  CUDA_CHECK(cudaMemcpyAsync(the_host_graph._flatten_slew_data,
-                             the_device_graph._flatten_slew_data,
-                             the_host_graph._num_slew_data * sizeof(GPU_Fwd_Data<int64_t>),
-                             cudaMemcpyDeviceToHost, stream[0]));
+  CUDA_CHECK(cudaMemcpyAsync(
+      the_host_graph._flatten_slew_data, the_device_graph._flatten_slew_data,
+      the_host_graph._num_slew_data * sizeof(GPU_Fwd_Data<int64_t>),
+      cudaMemcpyDeviceToHost, stream[0]));
 
-  CUDA_CHECK(cudaMemcpyAsync(the_host_graph._flatten_at_data,
-                             the_device_graph._flatten_at_data,
-                             the_host_graph._num_at_data * sizeof(GPU_Fwd_Data<int64_t>),
-                             cudaMemcpyDeviceToHost, stream[1]));
+  CUDA_CHECK(cudaMemcpyAsync(
+      the_host_graph._flatten_at_data, the_device_graph._flatten_at_data,
+      the_host_graph._num_at_data * sizeof(GPU_Fwd_Data<int64_t>),
+      cudaMemcpyDeviceToHost, stream[1]));
 
-  CUDA_CHECK(cudaMemcpyAsync(the_host_graph._flatten_arc_delay_data,
-                             the_device_graph._flatten_arc_delay_data,
-                             the_host_graph._num_arc_delay_data * sizeof(GPU_Fwd_Data<int64_t>),
-                             cudaMemcpyDeviceToHost, stream[2]));
+  CUDA_CHECK(cudaMemcpyAsync(
+      the_host_graph._flatten_arc_delay_data,
+      the_device_graph._flatten_arc_delay_data,
+      the_host_graph._num_arc_delay_data * sizeof(GPU_Fwd_Data<int64_t>),
+      cudaMemcpyDeviceToHost, stream[2]));
 
   for (unsigned index = 0; index < num_stream; ++index) {
     cudaStreamSynchronize(stream[index]);
@@ -238,74 +249,23 @@ __device__ inline std::pair<GPU_Fwd_Data<T>*, int> get_one_fwd_data(
 }
 
 /**
- * @brief Set the one fwd data object
- *
- * @param flatten_all_datas
- * @param the_vertex_data
- * @param analysis_mode
- * @param trans_type
- * @param data_value
- * @return __device__
+ * @brief update the snk fwd data.
+ * 
+ * @tparam op 
+ * @param src_fwd_data 
+ * @param snk_fwd_data 
+ * @param src_vertex_id 
+ * @param src_data_index 
+ * @param analysis_mode 
+ * @param data_value 
+ * @return __device__ 
  */
 template <GPU_OP_TYPE op>
-__device__ void set_one_fwd_data(GPU_Graph* the_graph, GPU_Arc& the_arc,
-                                 GPU_Analysis_Mode analysis_mode,
-                                 GPU_Trans_Type in_trans_type,
-                                 GPU_Trans_Type out_trans_type,
-                                 int64_t data_value, bool is_force = false) {
-  GPU_Fwd_Data<int64_t>* flatten_all_datas;
-  if (op == GPU_OP_TYPE::kSlew) {
-    flatten_all_datas = the_graph->_flatten_slew_data;
-  } else if (op == GPU_OP_TYPE::kDelay) {
-    flatten_all_datas = the_graph->_flatten_arc_delay_data;
-  } else {
-    flatten_all_datas = the_graph->_flatten_at_data;
-  }
-
-  unsigned src_vertex_id = the_arc._src_vertex_id;
-  unsigned snk_vertex_id = the_arc._snk_vertex_id;
-
-  auto src_vertex = the_graph->_vertices[src_vertex_id];
-  auto snk_vertex = the_graph->_vertices[snk_vertex_id];
-
-  GPU_Vertex_Data* src_vertex_data;
-  GPU_Vertex_Data* snk_vertex_data;
-  if (op == GPU_OP_TYPE::kSlew) {
-    src_vertex_data = &src_vertex._slew_data;
-    snk_vertex_data = &snk_vertex._slew_data;
-  } else if (op == GPU_OP_TYPE::kDelay) {
-    src_vertex_data = &the_arc._delay_values;
-    snk_vertex_data = &the_arc._delay_values;
-  } else {
-    src_vertex_data = &src_vertex._at_data;
-    snk_vertex_data = &snk_vertex._at_data;
-  }
-
-  auto [src_fwd_data_ptr, src_data_index] = get_one_fwd_data(
-      flatten_all_datas, src_vertex_data, analysis_mode, in_trans_type);
-
-  auto [snk_fwd_data_ptr, snk_data_index] = get_one_fwd_data(
-      flatten_all_datas, snk_vertex_data, analysis_mode, out_trans_type);
-
-  if (!src_fwd_data_ptr) {
-    CUDA_LOG_ERROR("the arc %d -> %d, src fwd data is null.", src_vertex_id, snk_vertex_id);
-    return;
-  }
-
-  if (!snk_fwd_data_ptr) {
-    CUDA_LOG_ERROR("the arc %d -> %d, snk fwd data is null.", src_vertex_id, snk_vertex_id);
-    return;
-  }
-
-  auto& src_fwd_data = *src_fwd_data_ptr;
-  auto& snk_fwd_data = *snk_fwd_data_ptr;
-
-  if (is_force) {
-    // update check value should be direct.
-    snk_fwd_data._data_value = data_value;
-    return;
-  }
-
+__device__ void update_fwd_data(GPU_Fwd_Data<int64_t>& src_fwd_data,
+                                GPU_Fwd_Data<int64_t>& snk_fwd_data,
+                                unsigned src_vertex_id, int src_data_index,
+                                GPU_Analysis_Mode analysis_mode,
+                                int64_t data_value) {
   // lock the data.
   int expected = 0;
   while (atomicCAS(&snk_fwd_data._is_lock, expected, 1) != expected) {
@@ -353,6 +313,92 @@ __device__ void set_one_fwd_data(GPU_Graph* the_graph, GPU_Arc& the_arc,
 
   // release the lock.
   atomicExch(&snk_fwd_data._is_lock, 0);
+}
+
+/**
+ * @brief Set the one fwd data object
+ *
+ * @param flatten_all_datas
+ * @param the_vertex_data
+ * @param analysis_mode
+ * @param trans_type
+ * @param data_value
+ * @return __device__
+ */
+template <GPU_OP_TYPE op>
+__device__ void set_one_fwd_data(GPU_Graph* the_graph, GPU_Arc& the_arc,
+                                 GPU_Analysis_Mode analysis_mode,
+                                 GPU_Trans_Type in_trans_type,
+                                 GPU_Trans_Type out_trans_type,
+                                 int64_t data_value, bool is_force = false) {
+  GPU_Fwd_Data<int64_t>* flatten_all_datas;
+  if (op == GPU_OP_TYPE::kSlew) {
+    flatten_all_datas = the_graph->_flatten_slew_data;
+  } else if (op == GPU_OP_TYPE::kDelay) {
+    flatten_all_datas = the_graph->_flatten_arc_delay_data;
+  } else {
+    flatten_all_datas = the_graph->_flatten_at_data;
+  }
+
+  unsigned src_vertex_id = the_arc._src_vertex_id;
+  unsigned snk_vertex_id = the_arc._snk_vertex_id;
+
+  auto src_vertex = the_graph->_vertices[src_vertex_id];
+  auto snk_vertex = the_graph->_vertices[snk_vertex_id];
+
+  GPU_Vertex_Data* src_vertex_data;
+  GPU_Vertex_Data* snk_vertex_data;
+  if (op == GPU_OP_TYPE::kSlew) {
+    src_vertex_data = &src_vertex._slew_data;
+    snk_vertex_data = &snk_vertex._slew_data;
+  } else if (op == GPU_OP_TYPE::kDelay) {
+    src_vertex_data = &the_arc._delay_values;
+    snk_vertex_data = &the_arc._delay_values;
+  } else {
+    src_vertex_data = &src_vertex._at_data;
+    snk_vertex_data = &snk_vertex._at_data;
+  }
+
+  if (is_force) {
+    // update check value should be direct.
+    auto [snk_fwd_data_ptr, snk_data_index] = get_one_fwd_data(
+        flatten_all_datas, snk_vertex_data, analysis_mode, out_trans_type);
+    if (!snk_fwd_data_ptr) {
+      CUDA_LOG_ERROR("the arc %d -> %d, snk fwd data is null.", src_vertex_id,
+                     snk_vertex_id);
+    } else {
+      snk_fwd_data_ptr->_data_value = data_value;
+    }
+
+    return;
+  }
+
+  for (unsigned i = 0; i < src_vertex_data->_num_fwd_data; ++i) {
+    int src_data_index = src_vertex_data->_start_pos + i;
+    auto& src_fwd_data = flatten_all_datas[src_data_index];
+    if (src_fwd_data._analysis_mode == analysis_mode &&
+        src_fwd_data._trans_type == in_trans_type) {
+
+      if (src_fwd_data._snk_data_index != -1) {
+        // direct get the snk data from the snk data index, it should at data.
+        auto& snk_fwd_data = flatten_all_datas[src_fwd_data._snk_data_index];
+
+        update_fwd_data<op>(src_fwd_data, snk_fwd_data, src_vertex_id,
+                        src_data_index, analysis_mode, data_value);
+      } else {
+        auto [snk_fwd_data_ptr, snk_data_index] = get_one_fwd_data(
+            flatten_all_datas, snk_vertex_data, analysis_mode, out_trans_type);
+        if (!snk_fwd_data_ptr) {
+          CUDA_LOG_ERROR("the arc %d -> %d, snk fwd data is null.",
+                         src_vertex_id, snk_vertex_id);
+          continue;
+        }
+
+        update_fwd_data<op>(src_fwd_data, *snk_fwd_data_ptr, src_vertex_id,
+                        src_data_index, analysis_mode, data_value);
+      }
+    }
+  }
 }
 /**
  * @brief device function for lut delay arc, using slew and load
