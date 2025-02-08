@@ -78,6 +78,7 @@ bool LmGraphDataManager::buildGraphData()
     }
 
     auto wire_graph = gen.buildGraph(idb_net);
+    auto is_corner_case = gen.isCornerCase(idb_net);
     auto* lm_net = layout_graph.get_net(net_id);
     lm_net->clearWire();
 #if debug_error
@@ -99,7 +100,7 @@ bool LmGraphDataManager::buildGraphData()
                                         target_label.layer_id, layout_layers);
 
         /// ignore same node
-        if (node1 == node2) {
+        if (node1 == node2 && !is_corner_case) {
           continue;
         }
         lm_wire.set_start(node1);
@@ -138,7 +139,7 @@ bool LmGraphDataManager::buildGraphData()
                                         bg::get<1>(end_point), bg::get<2>(end_point), layout_layers);
 
         /// ignore same node
-        if (node1 != node2) {
+        if (node1 != node2 || is_corner_case) {
           lm_wire.add_path(node1, node2);
         }
 #if debug_error
