@@ -78,12 +78,13 @@ bool LmNetGraphGenerator::isCornerCase(idb::IdbNet* idb_net) const
     return false;
   }
 
-  auto else_pins = idb_net->get_instance_pin_list()->get_pin_list();
-  if (else_pins.size() != 1) {
-    return false;
+  auto* io_pin = io_pins.front();
+  auto io_shapes = io_pin->get_port_box_list();
+  if (io_shapes.empty()) {
+    return true;
   }
 
-  return true;
+  return false;
 }
 WireGraph LmNetGraphGenerator::buildCornerCaseGraph(idb::IdbNet* idb_net) const
 {
@@ -347,11 +348,145 @@ WireGraph LmNetGraphGenerator::buildWireGraph(const TopoGraph& graph) const
     }
   }
   // post process
+  innerConnectivityCompletion(graph, wire_graph, point_to_vertex);
   buildVirtualWire(graph, wire_graph, point_to_vertex);
-  markPinVertex(graph, wire_graph, point_to_vertex);
+  markPinVertex(graph, wire_graph);
   reduceWireGraph(wire_graph);
   checkConnectivity(wire_graph);
   return wire_graph;
+}
+void LmNetGraphGenerator::innerConnectivityCompletion(const TopoGraph& graph, WireGraph& wire_graph,
+                                                      WireGraphVertexMap& point_to_vertex) const
+{
+  // Temporary structure to group the vertices by flatten shape
+  struct FlattenShape
+  {
+    int low_x;
+    int low_y;
+    int high_x;
+    int high_y;
+
+    bool operator==(const FlattenShape& other) const
+    {
+      return low_x == other.low_x && low_y == other.low_y && high_x == other.high_x && high_y == other.high_y;
+    }
+  };
+
+  struct FlattenShapeHash
+  {
+    size_t operator()(const FlattenShape& shape) const
+    {
+      return std::hash<int>()(shape.low_x) ^ std::hash<int>()(shape.low_y) ^ std::hash<int>()(shape.high_x)
+             ^ std::hash<int>()(shape.high_y);
+    }
+  };
+
+  auto build_and_connect = [&](const LayoutDefPoint& start, const LayoutDefPoint& end) -> void {
+    if (!point_to_vertex.contains(start)) {
+      auto vertex = boost::add_vertex(wire_graph);
+      wire_graph[vertex].x = getX(start);
+      wire_graph[vertex].y = getY(start);
+      wire_graph[vertex].layer_id = getZ(start);
+      point_to_vertex[start] = vertex;
+    }
+    if (!point_to_vertex.contains(end)) {
+      auto vertex = boost::add_vertex(wire_graph);
+      wire_graph[vertex].x = getX(end);
+      wire_graph[vertex].y = getY(end);
+      wire_graph[vertex].layer_id = getZ(end);
+      point_to_vertex[end] = vertex;
+    }
+    // check edge exists
+    auto start_vertex = point_to_vertex[start];
+    auto end_vertex = point_to_vertex[end];
+    if (boost::edge(start_vertex, end_vertex, wire_graph).second) {
+      return;
+    }
+    auto [edge, inserted] = boost::add_edge(start_vertex, end_vertex, wire_graph);
+    if (inserted) {
+      wire_graph[edge].path.push_back({start, end});
+    }
+  };
+  // Build an R-tree to locate points within a shape
+  LayoutShapeManager shape_manager;
+  std::vector<LayoutDefPoint> points;
+  for (auto& [point, vertex] : point_to_vertex) {
+    points.push_back(point);
+  }
+  for (size_t i = 0; i < points.size(); ++i) {
+    shape_manager.addShape(points[i], i);
+  }
+
+  auto connectivity_complete = [&](const TopoGraphVertex& v) -> void {
+    auto* content = graph[v].content;
+    if (!content->is_pin) {
+      return;
+    }
+    auto* pin = dynamic_cast<LayoutPin*>(content);
+    auto pin_shapes = pin->pin_shapes;
+    auto via_cuts = pin->via_cuts;
+    auto via_cuts_set = std::unordered_set<LayoutDefRect, LayoutDefRectHash, LayoutDefRectEqual>(via_cuts.begin(), via_cuts.end());
+    // Group pin shapes by (low_x, low_y, high_x, high_y), if the group has more than one shape, connect them
+    std::unordered_map<FlattenShape, std::vector<size_t>, FlattenShapeHash> shape_map;
+    for (size_t i = 0; i < pin_shapes.size(); ++i) {
+      auto& shape = pin_shapes[i];
+      auto low_x = getLowX(shape);
+      auto low_y = getLowY(shape);
+      auto high_x = getHighX(shape);
+      auto high_y = getHighY(shape);
+      shape_map[{low_x, low_y, high_x, high_y}].push_back(i);
+    }
+    // Check if the group has more than one shape, if so, further check the connectivity between the neighboring shapes
+    for (auto& [shape, indices] : shape_map) {
+      if (indices.size() < 2) {
+        continue;
+      }
+      std::vector<LayoutDefRect> flatten_shapes;
+      std::ranges::transform(indices, std::back_inserter(flatten_shapes), [&](size_t i) -> LayoutDefRect { return pin_shapes[i]; });
+      // sort the shapes by layer, ascending
+      std::ranges::sort(flatten_shapes,
+                        [&](const LayoutDefRect& lhs, const LayoutDefRect& rhs) -> bool { return getLowZ(lhs) < getLowZ(rhs); });
+      // connect the neighboring shapes
+      for (size_t i = 0; i < flatten_shapes.size() - 1; ++i) {
+        auto low_shape = flatten_shapes[i];
+        auto high_shape = flatten_shapes[i + 1];
+
+        auto low_point_ids = shape_manager.findIntersections(low_shape);
+
+        if (!low_point_ids.empty()) {
+          std::ranges::for_each(low_point_ids, [&](size_t low_id) -> void {
+            auto low_point = points[low_id];
+            auto high_point = LayoutDefPoint(getX(low_point), getY(low_point), getHighZ(high_shape));
+            auto via_cut = LayoutDefRect(low_point, high_point);
+            if (via_cuts_set.find(via_cut) != via_cuts_set.end()) {
+              return;
+            }
+            via_cuts_set.insert(via_cut);
+            build_and_connect(low_point, high_point);
+          });
+          continue;
+        }
+
+        auto high_points = shape_manager.findIntersections(high_shape);
+        std::ranges::for_each(high_points, [&](size_t high_id) -> void {
+          auto high_point = points[high_id];
+          auto low_point = LayoutDefPoint(getX(high_point), getY(high_point), getLowZ(low_shape));
+          auto via_cut = LayoutDefRect(low_point, high_point);
+          if (via_cuts_set.find(via_cut) != via_cuts_set.end()) {
+            return;
+          }
+          via_cuts_set.insert(via_cut);
+          build_and_connect(low_point, high_point);
+        });
+      }
+    }
+    // Update the pin's via cuts
+    pin->via_cuts = std::vector<LayoutDefRect>(via_cuts_set.begin(), via_cuts_set.end());
+  };
+  // Traverse all vertices
+  for (auto v : boost::make_iterator_range(boost::vertices(graph))) {
+    connectivity_complete(v);
+  }
 }
 void LmNetGraphGenerator::buildVirtualWire(const TopoGraph& graph, WireGraph& wire_graph, WireGraphVertexMap& point_to_vertex) const
 {
@@ -475,7 +610,7 @@ void LmNetGraphGenerator::buildVirtualWire(const TopoGraph& graph, WireGraph& wi
     }
   });
 }
-void LmNetGraphGenerator::markPinVertex(const TopoGraph& graph, WireGraph& wire_graph, WireGraphVertexMap& point_to_vertex) const
+void LmNetGraphGenerator::markPinVertex(const TopoGraph& graph, WireGraph& wire_graph) const
 {
   auto shape_manager = buildShapeManager(graph);
   // for each node in wire graph, if it's located in the pin shape, mark it as pin
@@ -867,10 +1002,8 @@ std::vector<std::vector<LayoutDefPoint>> LmNetGraphGenerator::findByDijkstra(con
   // 2. build points graph by shortest distance (for find the minimum spanning tree/path)
   using PointGraph
       = boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS, boost::no_property, boost::property<boost::edge_weight_t, int>>;
-  using PointGraphVertex = boost::graph_traits<PointGraph>::vertex_descriptor;
   using PointGraphEdge = boost::graph_traits<PointGraph>::edge_descriptor;
   PointGraph point_graph;
-  std::unordered_map<LayoutDefPoint, PointGraphVertex, LayoutDefPointHash, LayoutDefPointEqual> point_to_vertex_in_point_graph;
   for (size_t i = 0; i < points.size(); ++i) {
     for (size_t j = i + 1; j < points.size(); ++j) {
       auto p1 = points[i];

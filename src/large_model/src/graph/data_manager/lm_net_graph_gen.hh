@@ -196,11 +196,8 @@ class LayoutShapeManager
   LayoutShapeManager() {}
   ~LayoutShapeManager() {}
 
-  void addShape(const LayoutDefSeg& seg, const size_t& vertex_id)
-  {
-    LayoutDefRect box(seg.first, seg.second);
-    addShape(box, vertex_id);
-  }
+  void addShape(const LayoutDefPoint& point, const size_t& vertex_id) { addShape(LayoutDefRect(point, point), vertex_id); }
+  void addShape(const LayoutDefSeg& seg, const size_t& vertex_id) { addShape(LayoutDefRect(seg.first, seg.second), vertex_id); }
   void addShape(const LayoutDefRect& box, const size_t& vertex_id) { _rtree.insert(std::make_pair(box, vertex_id)); }
 
   std::vector<size_t> findIntersections(const LayoutDefRect& box) const
@@ -274,7 +271,6 @@ class LmNetGraphGenerator
   void initLayerMap();
   WireGraph buildGraph(idb::IdbNet* idb_net) const;
   std::vector<WireGraph> buildGraphs() const;
-  
   bool isCornerCase(idb::IdbNet* idb_net) const;
   WireGraph buildCornerCaseGraph(idb::IdbNet* idb_net) const;
 
@@ -286,8 +282,9 @@ class LmNetGraphGenerator
 
   // Wire Graph
   WireGraph buildWireGraph(const TopoGraph& graph) const;
+  void innerConnectivityCompletion(const TopoGraph& graph, WireGraph& wire_graph, WireGraphVertexMap& point_to_vertex) const;
   void buildVirtualWire(const TopoGraph& graph, WireGraph& wire_graph, WireGraphVertexMap& point_to_vertex) const;
-  void markPinVertex(const TopoGraph& graph, WireGraph& wire_graph, WireGraphVertexMap& point_to_vertex) const;
+  void markPinVertex(const TopoGraph& graph, WireGraph& wire_graph) const;
   void reduceWireGraph(WireGraph& graph, const bool& retain_pin = true) const;
   bool hasCycleUtil(const WireGraph& graph, WireGraphVertex v, std::vector<bool>& visited, WireGraphVertex parent) const;
   bool hasCycle(const WireGraph& graph) const;

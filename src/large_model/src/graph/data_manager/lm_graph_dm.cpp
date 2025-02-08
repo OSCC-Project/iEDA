@@ -145,9 +145,10 @@ bool LmGraphDataManager::buildGraphData()
                                         bg::get<1>(end_point), bg::get<2>(end_point), layout_layers);
 
         /// ignore same node
-        if (node1 != node2) {
-          lm_wire.add_path(node1, node2);
-        }
+        // if (node1 != node2) {
+        //   lm_wire.add_path(node1, node2);
+        // }
+        lm_wire.add_path(node1, node2);
 #if debug_error
         if (i == 0) {
           bk_end = node2;
