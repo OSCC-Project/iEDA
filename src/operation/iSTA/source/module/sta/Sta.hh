@@ -393,6 +393,12 @@ class Sta {
   void set_arc_to_index(std::map<StaArc*, unsigned>&& arc_to_index) { _arc_to_index = std::move(arc_to_index); }
   auto& get_arc_to_index() { return _arc_to_index; }
 
+  void set_index_to_at(std::map<unsigned, StaPathDelayData*>&& index_to_at) { _index_to_at = std::move(index_to_at);}
+  auto& get_index_to_at() { return _index_to_at; }
+
+  void set_at_to_index(std::map<StaPathDelayData*, unsigned>&& at_to_index) { _at_to_index = std::move(at_to_index); }
+  auto& get_at_to_index() { return _at_to_index; }
+
   void set_gpu_vertices(std::vector<GPU_Vertex>&& gpu_vertices) { _gpu_vertices = std::move(gpu_vertices); }
   auto& get_gpu_vertices() { return _gpu_vertices; }
 
@@ -612,6 +618,8 @@ class Sta {
   Lib_Data_GPU _gpu_lib_data; //!< The gpu lib arc data.
   std::vector<ista::Lib_Arc_GPU> _lib_gpu_arcs; //!< The gpu lib arc data.
   std::map<StaArc*, unsigned> _arc_to_index; //!< The arc map to gpu index.
+  std::map<StaPathDelayData*, unsigned> _at_to_index; //!< The at map to gpu index.
+  std::map<unsigned, StaPathDelayData*> _index_to_at; //!< The gpu index to at map.
 #endif
   std::map<Net*, std::unique_ptr<RcNet>>
       _net_to_rc_net;                         //!< The net to rc net.

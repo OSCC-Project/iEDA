@@ -248,7 +248,7 @@ __device__ float find_value(Lib_Table_GPU& lib_table_gpu, float slew,
                              float constrain_slew_or_load) {
   // ??? not sure (_type == UINT_MAX) can work as (!table_template)
   if (lib_table_gpu._type == UINT_MAX) {
-    CUDA_LOG_ERROR("the table type is not set");
+    CUDA_LOG_DEBUG("the table type is not set");
     return 0.0;
   }
 

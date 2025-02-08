@@ -892,8 +892,11 @@ double StaVertex::getNetLoadDelay(AnalysisMode analysis_mode, TransType trans_ty
     auto* rc_net = Sta::getOrCreateSta()->getRcNet(the_net);
     
     if (rc_net) {
-      auto* node = rc_net->rct()->node(obj->getFullName());
-      load_delay = PS_TO_NS(node->delay(analysis_mode, trans_type));
+      auto* rc_tree = rc_net->rct();
+      if (rc_tree) {
+        auto* node = rc_tree->node(obj->getFullName());
+        load_delay = PS_TO_NS(node->delay(analysis_mode, trans_type));
+      }
     }
   } 
 
