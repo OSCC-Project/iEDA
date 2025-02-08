@@ -102,6 +102,7 @@ struct GPU_Fwd_Data {
   int _src_vertex_id = -1; //! The src vertex id for backtrace analysis.
   int _src_data_index = -1; //!< The src data index in flatten datas.
   int _snk_data_index = -1; //!< The snk data index in flatten datas.
+  int _own_clock_index = -1; //!< The launch clock index of path data.
 
   int _is_lock = 0; //!< 0 is not lock.
 };

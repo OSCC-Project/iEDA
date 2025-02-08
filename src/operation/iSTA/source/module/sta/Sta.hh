@@ -301,6 +301,14 @@ class Sta {
     return clocks;
   }
 
+  std::map<StaClock*, unsigned> getClockToIndex() {
+    std::map<StaClock*, unsigned> clock_to_index;
+    for (size_t i = 0; i < _clocks.size(); ++i) {
+      clock_to_index[_clocks[i].get()] = i;
+    }
+    return clock_to_index;
+  }
+
   void clearClocks() { _clocks.clear(); }
 
   StaClock* findClock(const char* clock_name);
@@ -408,12 +416,17 @@ class Sta {
   void set_flatten_data(GPU_Flatten_Data&& flatten_data) { _flatten_data = std::move(flatten_data); }
   auto& get_flatten_data() { return _flatten_data; }
 
+  void printFlattenData();
+
 #endif
 
   StaVertex* findVertex(const char* pin_name);
   StaVertex* findVertex(DesignObject* obj) {
     auto the_vertex = _graph.findVertex(obj);
     return the_vertex ? *the_vertex : nullptr;
+  }
+  StaVertex* getVertex(unsigned index) {
+    return _graph.get_vertexes()[index].get();
   }
 
   bool isMaxAnalysis() {

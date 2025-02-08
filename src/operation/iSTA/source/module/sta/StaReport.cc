@@ -295,12 +295,21 @@ unsigned StaReportPathDetail::operator()(StaSeqPathData* seq_path_data) {
     return Str::printf(fix_str.c_str(), data);
   };
 
-  auto print_path_data = [&report_tbl, &fix_point_str, &is_derate](
+  auto* ista = Sta::getOrCreateSta();
+  auto& at_to_index = ista->get_at_to_index();
+
+  auto print_path_data = [&report_tbl, &fix_point_str, &is_derate, &at_to_index](
                              auto& path_stack, auto clock_path_arrive_time) {
     double last_arrive_time = 0;
     StaVertex* last_vertex = nullptr;
     while (!path_stack.empty()) {
       auto* path_delay_data = path_stack.top();
+      std::string path_delay_index_str;
+#if CUDA_PROPAGATION
+      unsigned gpu_at_index = at_to_index[dynamic_cast<StaPathDelayData*>(path_delay_data)];
+      path_delay_index_str = Str::printf("(GPU AT %d)", gpu_at_index);
+#endif
+  
       auto* own_vertex = path_delay_data->get_own_vertex();
       auto trans_type = path_delay_data->get_trans_type();
       auto delay_type = path_delay_data->get_delay_type();
@@ -370,7 +379,7 @@ unsigned StaReportPathDetail::operator()(StaSeqPathData* seq_path_data) {
                       << fix_point_str(incr_time)
                       << std::string(fix_point_str(arrive_time +
                                                    clock_path_arrive_time)) +
-                             trans_type_str
+                             trans_type_str + path_delay_index_str
 
                       << TABLE_ENDLINE;
       } else {
@@ -381,7 +390,7 @@ unsigned StaReportPathDetail::operator()(StaSeqPathData* seq_path_data) {
                       << TABLE_SKIP << fix_point_str(incr_time)
                       << std::string(fix_point_str(arrive_time +
                                                    clock_path_arrive_time)) +
-                             trans_type_str
+                             trans_type_str + path_delay_index_str
 
                       << TABLE_ENDLINE;
       }
@@ -699,7 +708,6 @@ unsigned StaReportPathDetail::operator()(StaSeqPathData* seq_path_data) {
 
   // LOG_INFO << "\n" << report_tbl->c_str();
 
-  Sta* ista = Sta::getOrCreateSta();
   auto& report_tbl_details = ista->get_report_tbl_details();
   report_tbl_details.emplace_back(std::move(report_tbl));
 

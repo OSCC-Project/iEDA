@@ -40,6 +40,10 @@
     printf("CUDA ERROR %s:%d] " msg "\n", __func__, __LINE__, ##__VA_ARGS__);\
 } while (0)
 
+#define CUDA_LOG_CRITICAL(msg, ...) do { \
+    printf("CUDA CRITICAL %s:%d] " msg "\n", __func__, __LINE__, ##__VA_ARGS__);\
+} while (0)
+
 #define CUDA_LOG_FATAL(msg, ...) do { \
     printf("CUDA FATAL %s:%d] " msg "\n", __func__, __LINE__, ##__VA_ARGS__);\
     assert(0);\
@@ -50,6 +54,7 @@
 #define CUDA_LOG_INFO(msg, ...)
 #define CUDA_LOG_WARNING(msg, ...)
 #define CUDA_LOG_ERROR(msg, ...)
+#define CUDA_LOG_CRITICAL(msg, ...)
 #define CUDA_LOG_FATAL(msg, ...)
 
 #endif
