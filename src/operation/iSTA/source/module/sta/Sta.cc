@@ -332,7 +332,7 @@ unsigned Sta::linkLibertys() {
   }
 
   auto link_lib = [this](auto &lib_rust_reader) {
-    // lib_rust_reader.set_build_cells(get_link_cells());
+    lib_rust_reader.set_build_cells(get_link_cells());
     lib_rust_reader.linkLib();
     auto lib = lib_rust_reader.get_library_builder()->takeLib();
 
@@ -2782,6 +2782,10 @@ unsigned Sta::reportTiming(std::set<std::string> &&exclude_cell_names /*= {}*/,
 
   reportUsedLibs();
 
+#if CUDA_PROPAGATION
+  printFlattenData();
+#endif
+
   LOG_INFO << "The timing engine run success.";
 
   return 1;
@@ -3153,5 +3157,53 @@ double Sta::convertCapUnit(const double src_value) {
   }
   return -1;
 }
+
+#if CUDA_PROPAGATION
+/**
+ * @brief print flatten data for debug gpu data.
+ * 
+ */
+void Sta::printFlattenData() {
+  std::string design_work_space = get_design_work_space();
+
+  auto& flatten_data = get_flatten_data();
+  auto& index_to_at = get_index_to_at();
+
+  auto& flatten_at_data = flatten_data._flatten_at_data;
+  
+  std::string flatten_at_data_path = design_work_space + "/flatten_at_data.yaml";
+  std::ofstream output_file(flatten_at_data_path);  
+  unsigned at_data_index = 0;
+  for(auto& at_data : flatten_at_data) {
+    auto* path_delay_data = index_to_at[at_data_index];
+    auto* own_vertex = path_delay_data->get_own_vertex();
+    const char *launch_clock_name = path_delay_data->get_launch_clock_data()
+                                        ->get_prop_clock()
+                                        ->get_clock_name();
+
+    output_file << "GPU_AT_DATA_" << at_data_index++ << ": " << std::endl;
+    output_file << "  own_vertex: " << own_vertex->getName() << std::endl;
+    output_file << "  launch_clock_name: " << launch_clock_name << std::endl;
+    output_file << "  launch_clock_index: " << at_data._own_clock_index << std::endl;
+    output_file << "  mode: " << (at_data._analysis_mode == GPU_Analysis_Mode::kMax ? "max" : "min") << std::endl;
+    output_file << "  trans_type: " << (at_data._trans_type == GPU_Trans_Type::kRise ? "r" : "f") << std::endl;
+    output_file << "  data_value: " << FS_TO_NS(at_data._data_value) << std::endl;
+    output_file << "  src_vertex_id: " << at_data._src_vertex_id << std::endl;
+    if (at_data._src_vertex_id != -1) {
+      auto* src_vertex = getVertex(at_data._src_vertex_id);
+      output_file << "  src_vertex: " << src_vertex->getName() << std::endl;
+    } else {
+      output_file << "  src_vertex: " << "NA" << std::endl;
+    }
+
+    output_file << "  src_data_index: " << at_data._src_data_index << std::endl;
+    output_file << "  snk_data_index: " << at_data._snk_data_index << std::endl;
+  }
+
+  output_file.close();
+  LOG_INFO << "print flatten data path: " << flatten_at_data_path;
+}
+
+#endif
 
 }  // namespace ista
