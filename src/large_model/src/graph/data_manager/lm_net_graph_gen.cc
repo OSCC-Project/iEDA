@@ -78,12 +78,13 @@ bool LmNetGraphGenerator::isCornerCase(idb::IdbNet* idb_net) const
     return false;
   }
 
-  auto else_pins = idb_net->get_instance_pin_list()->get_pin_list();
-  if (else_pins.size() != 1) {
-    return false;
+  auto* io_pin = io_pins.front();
+  auto io_shapes = io_pin->get_port_box_list();
+  if (io_shapes.empty()) {
+    return true;
   }
 
-  return true;
+  return false;
 }
 WireGraph LmNetGraphGenerator::buildCornerCaseGraph(idb::IdbNet* idb_net) const
 {
