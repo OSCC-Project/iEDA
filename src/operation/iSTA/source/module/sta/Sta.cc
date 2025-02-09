@@ -3164,6 +3164,7 @@ double Sta::convertCapUnit(const double src_value) {
  * 
  */
 void Sta::printFlattenData() {
+  LOG_INFO << "print flatten data path start";
   std::string design_work_space = get_design_work_space();
 
   auto& flatten_data = get_flatten_data();
@@ -3183,6 +3184,7 @@ void Sta::printFlattenData() {
 
     output_file << "GPU_AT_DATA_" << at_data_index++ << ": " << std::endl;
     output_file << "  own_vertex: " << own_vertex->getName() << std::endl;
+    output_file << "  vertex level" << own_vertex->get_level()<< std::endl;
     output_file << "  launch_clock_name: " << launch_clock_name << std::endl;
     output_file << "  launch_clock_index: " << at_data._own_clock_index << std::endl;
     output_file << "  mode: " << (at_data._analysis_mode == GPU_Analysis_Mode::kMax ? "max" : "min") << std::endl;
@@ -3201,6 +3203,8 @@ void Sta::printFlattenData() {
   }
 
   output_file.close();
+
+  LOG_INFO << "print flatten data path end";
   LOG_INFO << "print flatten data path: " << flatten_at_data_path;
 }
 

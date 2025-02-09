@@ -232,7 +232,10 @@ GPU_Graph build_gpu_graph(StaGraph* the_sta_graph,
   // build gpu vertex
   StaVertex* the_vertex;
   std::map<StaVertex*, unsigned> vertex_to_id;
-  FOREACH_VERTEX(the_sta_graph, the_vertex) {
+
+  auto build_vertex_data = [&flatten_data, &vertex_to_id, &gpu_vertices,
+                            &at_to_index, &index_to_at,
+                            &clock_to_index](auto* the_vertex) {
     GPU_Vertex gpu_vertex;
 
     build_gpu_vertex_slew_data(the_vertex, gpu_vertex,
@@ -248,9 +251,19 @@ GPU_Graph build_gpu_graph(StaGraph* the_sta_graph,
                                        flatten_data._flatten_node_impulse_data);
     vertex_to_id[the_vertex] = gpu_vertices.size();
     gpu_vertices.emplace_back(std::move(gpu_vertex));
+  };
 
-    LOG_INFO_EVERY_N(10000) << "build gpu vertex data " << gpu_vertices.size();
+  FOREACH_VERTEX(the_sta_graph, the_vertex) {
+    build_vertex_data(the_vertex);
+    LOG_INFO_EVERY_N(10000) << "build gpu vertexes: " << gpu_vertices.size();
   }
+
+  auto& main_to_assistant = the_sta_graph->get_main2assistant();
+  for (auto& [main, assistant] : main_to_assistant) {
+    build_vertex_data(assistant.get());
+  }
+
+  LOG_INFO << "build gpu vertexes num: " << gpu_vertices.size();
 
   // build gpu arc
   StaArc* the_arc;
@@ -265,8 +278,8 @@ GPU_Graph build_gpu_graph(StaGraph* the_sta_graph,
     the_arc->initArcDelayData();
 
     GPU_Arc gpu_arc;
-    gpu_arc._src_vertex_id = vertex_to_id[the_arc->get_src()];
-    gpu_arc._snk_vertex_id = vertex_to_id[the_arc->get_snk()];
+    gpu_arc._src_vertex_id = vertex_to_id.at(the_arc->get_src());
+    gpu_arc._snk_vertex_id = vertex_to_id.at(the_arc->get_snk());
     if (the_arc->isInstArc()) {
       gpu_arc._lib_data_arc_id =
           dynamic_cast<StaInstArc*>(the_arc)->get_lib_arc_id();
@@ -292,8 +305,10 @@ GPU_Graph build_gpu_graph(StaGraph* the_sta_graph,
     arc_to_index[the_arc] = gpu_arc_index;
     index_to_arc[gpu_arc_index] = the_arc;
 
-    LOG_INFO_EVERY_N(10000) << "build gpu arc data " << gpu_arcs.size();
+    LOG_INFO_EVERY_N(10000) << "build gpu arc: " << gpu_arcs.size();
   }
+
+  LOG_INFO << "build gpu arcs num: " << gpu_arcs.size();
 
   // copy cpu data to gpu memory.
   gpu_graph._vertices = gpu_vertices.data();
@@ -347,12 +362,20 @@ void update_sta_slew_data(StaGraph* the_sta_graph, GPU_Graph& the_host_graph) {
   LOG_INFO << "update num vertexes " << the_host_graph._num_vertices;
 
   auto& the_sta_vertexes = the_sta_graph->get_vertexes();
+  auto the_sta_assistants = the_sta_graph->getAssistants();
   auto* the_host_graph_vertexes = the_host_graph._vertices;
+
   // iterate each vertex in gpu graph.
   for (unsigned vertex_index = 0; vertex_index < the_host_graph._num_vertices;
        ++vertex_index) {
     auto& current_vertex = the_host_graph_vertexes[vertex_index];
-    auto& current_sta_vertex = the_sta_vertexes[vertex_index];
+    StaVertex* current_sta_vertex = nullptr;
+    if (vertex_index < the_sta_vertexes.size()) {
+      current_sta_vertex = the_sta_vertexes[vertex_index].get();
+    } else {
+      current_sta_vertex = the_sta_assistants[vertex_index -
+                                              the_sta_vertexes.size()];
+    }
 
     // update vertex slew
     for (unsigned slew_index = 0;
@@ -365,22 +388,7 @@ void update_sta_slew_data(StaGraph* the_sta_graph, GPU_Graph& the_host_graph) {
           convert_analysis_mode(slew_fwd_data._analysis_mode),
           convert_trans_type(slew_fwd_data._trans_type), nullptr);
       current_sta_slew_data->set_slew(slew_fwd_data._data_value);
-
-      int src_vertex_id = slew_fwd_data._src_vertex_id;
-      if (src_vertex_id == -1) {
-        // have no source vertex
-        continue;
-      }
-      auto& src_sta_vertex = the_sta_vertexes[src_vertex_id];
-      int src_data_index = slew_fwd_data._src_data_index;
-      auto src_slew_fwd_data =
-          the_host_graph._flatten_slew_data[src_data_index];
-
-      // get src slew data.
-      auto src_sta_slew_data = src_sta_vertex->getSlewData(
-          convert_analysis_mode(src_slew_fwd_data._analysis_mode),
-          convert_trans_type(src_slew_fwd_data._trans_type), nullptr);
-      current_sta_slew_data->set_bwd(src_sta_slew_data);
+ 
     }
   }
 
