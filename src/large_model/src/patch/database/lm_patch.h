@@ -48,6 +48,7 @@ class LmPatchLayer
 
   // operator
   void addSubnet(int net_id, int64_t wire_id, LmNode* node1, LmNode* node2);
+  void addSubnet(LmNet* sub_net, int64_t wire_id, LmNode* node1, LmNode* node2);
   LmNet* findNet(int net_id);
 
  public:

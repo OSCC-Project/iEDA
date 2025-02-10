@@ -56,6 +56,20 @@ void LmPatchLayer::addSubnet(int net_id, int64_t wire_id, LmNode* node1, LmNode*
   }
 }
 
+void LmPatchLayer::addSubnet(LmNet* sub_net, int64_t wire_id, LmNode* node1, LmNode* node2)
+{
+  if (sub_net != nullptr) {
+    auto* wire = sub_net->findWire(wire_id);
+    if (wire == nullptr) {
+      LmNetWire wire(nullptr, nullptr, wire_id);
+      wire.add_path(node1, node2);
+      sub_net->addWire(wire);
+    } else {
+      wire->add_path(node1, node2);
+    }
+  }
+}
+
 LmNet* LmPatchLayer::findNet(int net_id)
 {
   auto it = _sub_nets.find(net_id);

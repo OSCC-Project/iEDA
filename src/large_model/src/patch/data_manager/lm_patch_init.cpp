@@ -158,14 +158,15 @@ void LmPatchInit::initSubNet()
           for (auto node_pair : {std::make_pair(node1, node1), std::make_pair(node1, node2), std::make_pair(node2, node2)}) {
             int layer_id = (node_pair.first->get_layer_id() + node_pair.second->get_layer_id()) / 2;
             auto* patch_layer = patch->findLayer(layer_id);
-            if (patch_layer->findNet(net_id) == nullptr) {
+            auto sub_net = patch_layer->findNet(net_id);
+            if (sub_net == nullptr) {
               omp_set_lock(&lck);
 
               patch_layer->addSubnet(net_id, wire.get_id(), node_pair.first, node_pair.second);
 
               omp_unset_lock(&lck);
             } else {
-              patch_layer->addSubnet(net_id, wire.get_id(), node_pair.first, node_pair.second);
+              patch_layer->addSubnet(sub_net, wire.get_id(), node_pair.first, node_pair.second);
             }
 
             /// label at wire
