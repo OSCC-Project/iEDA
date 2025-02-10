@@ -20,10 +20,14 @@
 
 namespace python_interface {
 
-bool drcAutoRun(const std::string& config)
+bool run_drc(const std::string& config, const std::string& report)
 {
-  bool run_ok = iplf::tmInst->autoRunDRC(config);
-  return run_ok;
+  return iplf::tmInst->autoRunDRC(config, report);
+}
+
+bool save_drc(const std::string& path)
+{
+  return iplf::tmInst->saveDrcDetailToFile(path);
 }
 
 }  // namespace python_interface

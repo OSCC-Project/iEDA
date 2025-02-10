@@ -45,6 +45,9 @@ CmdCreateClock::CmdCreateClock(const char* cmd_name) : TclCmd(cmd_name) {
 
   auto* pin_port_arg = new TclStringListOption("source_objects", 1, {});
   addOption(pin_port_arg);
+
+  auto* add_option = new TclSwitchOption("-add");
+  addOption(add_option);
 }
 
 /**
@@ -124,6 +127,12 @@ unsigned CmdCreateClock::exec() {
   }
 
   the_clock->set_objs(std::move(pins));
+
+  TclOption* add_option = getOptionOrArg("-add");
+  if (!add_option->is_set_val()) {
+    // TODO(to taosimin), need check the objs whethter already have clocks, if
+    // not -add option, need override the already created clock.
+  }
 
   the_constrain->addClock(the_clock);
   return 1;

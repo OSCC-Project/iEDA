@@ -117,9 +117,6 @@ class TANode : public LayerCoord
     return cost;
   }
 #if 1  // astar
-  // single task
-  std::set<Direction>& get_direction_set() { return _direction_set; }
-  void set_direction_set(std::set<Direction>& direction_set) { _direction_set = direction_set; }
   // single path
   TANodeState& get_state() { return _state; }
   TANode* get_parent_node() const { return _parent_node; }
@@ -140,13 +137,11 @@ class TANode : public LayerCoord
   std::map<Orientation, TANode*> _neighbor_node_map;
   // obstacle & pin_shape
   std::map<Orientation, std::set<int32_t>> _orient_fixed_rect_map;
-  // net_result & patch
+  // net_result
   std::map<Orientation, std::set<int32_t>> _orient_routed_rect_map;
   // violation
   std::map<Orientation, int32_t> _orient_violation_number_map;
 #if 1  // astar
-  // single task
-  std::set<Direction> _direction_set;
   // single path
   TANodeState _state = TANodeState::kNone;
   TANode* _parent_node = nullptr;

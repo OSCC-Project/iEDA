@@ -21,7 +21,6 @@
 #include "Database.hpp"
 #include "Monitor.hpp"
 #include "TGModel.hpp"
-#include "flute3/flute.h"
 
 namespace irt {
 
@@ -40,24 +39,24 @@ class TopologyGenerator
   // self
   static TopologyGenerator* _tg_instance;
 
-  TopologyGenerator() { Flute::readLUT(); }
+  TopologyGenerator() = default;
   TopologyGenerator(const TopologyGenerator& other) = delete;
   TopologyGenerator(TopologyGenerator&& other) = delete;
-  ~TopologyGenerator() { Flute::deleteLUT(); }
+  ~TopologyGenerator() = default;
   TopologyGenerator& operator=(const TopologyGenerator& other) = delete;
   TopologyGenerator& operator=(TopologyGenerator&& other) = delete;
   // function
   TGModel initTGModel();
   std::vector<TGNet> convertToTGNetList(std::vector<Net>& net_list);
   TGNet convertToTGNet(Net& net);
-  void setTGParameter(TGModel& tg_model);
+  void setTGComParam(TGModel& tg_model);
   void initTGTaskList(TGModel& tg_model);
   void buildTGNodeMap(TGModel& tg_model);
   void buildTGNodeNeighbor(TGModel& tg_model);
   void buildOrientSupply(TGModel& tg_model);
   void generateTGModel(TGModel& tg_model);
   void routeTGNet(TGModel& tg_model, TGNet* tg_net);
-  std::vector<Segment<PlanarCoord>> getPlanarTopoListByFlute(TGModel& tg_model, TGNet* tg_net);
+  std::vector<Segment<PlanarCoord>> getPlanarTopoList(TGModel& tg_model, TGNet* tg_net);
   std::vector<Segment<PlanarCoord>> getRoutingSegmentList(TGModel& tg_model, Segment<PlanarCoord>& planar_topo);
   std::vector<Segment<PlanarCoord>> getRoutingSegmentListByStraight(TGModel& tg_model, Segment<PlanarCoord>& planar_topo);
   std::vector<Segment<PlanarCoord>> getRoutingSegmentListByLPattern(TGModel& tg_model, Segment<PlanarCoord>& planar_topo);
@@ -69,9 +68,14 @@ class TopologyGenerator
 #if 1  // exhibit
   void updateSummary(TGModel& tg_model);
   void printSummary(TGModel& tg_model);
-  void writePlanarSupplyCSV(TGModel& tg_model);
-  void writePlanarDemandCSV(TGModel& tg_model);
-  void writePlanarOverflowCSV(TGModel& tg_model);
+  void outputGuide(TGModel& tg_model);
+  void outputPlanarSupplyCSV(TGModel& tg_model);
+  void outputPlanarDemandCSV(TGModel& tg_model);
+  void outputPlanarOverflowCSV(TGModel& tg_model);
+#endif
+
+#if 1  // debug
+  void debugCheckTGModel(TGModel& tg_model);
 #endif
 };
 

@@ -46,7 +46,7 @@ unsigned RustVcdParserWrapper::buildAnnotateDB(const char* top_instance_name) {
   } else {
     found_scope = traverse_scope(root_scope);
   }
-  LOG_FATAL_IF(!found_scope) << "not found the scope" << top_instance_name;
+  LOG_FATAL_IF(!found_scope) << "not found the scope " << top_instance_name;
 
   _top_instance_scope = found_scope;
 

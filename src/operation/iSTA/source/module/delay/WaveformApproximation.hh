@@ -18,14 +18,13 @@
 #include <vector>
 
 #include "Type.hh"
-#include "liberty/Lib.hh"
 
 namespace ista {
 
 class RctNode;
 class RctEdge;
 class RcTree;
-
+class LibArc;
 /**
  * @brief Class for pi model.
  *

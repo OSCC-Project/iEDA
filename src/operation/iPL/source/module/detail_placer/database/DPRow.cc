@@ -154,7 +154,7 @@ bool DPRow::insertNode(DPNode* inst)
 	int64_t pos_ux = inst->getPositionX() + inst->getWidth();
 	// Initialize the minimum distance to a very large value.
 	double min_dist = std::numeric_limits<double>::max();
-	std::size_t segment_index = -1;
+	int segment_index = -1;
 	// Iterate over all segments to find the nearest one.
 	for (std::size_t i = 0; i < _segment_list.size(); i++) {
 		DPSegment & dp_segment = _segment_list[i];

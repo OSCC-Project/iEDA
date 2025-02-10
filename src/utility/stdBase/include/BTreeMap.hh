@@ -26,9 +26,14 @@
 
 #include <functional>
 #include <list>
+#include <set>
 #include <utility>
 
 #include "absl/container/btree_map.h"
+
+#ifdef USE_CPP_STD
+#include <map>
+#endif
 
 namespace ieda {
 
@@ -51,10 +56,19 @@ namespace ieda {
  * @tparam CMP
  */
 template <class KEY, class VALUE, class CMP = std::less<KEY>>
+#ifndef USE_CPP_STD
 class BTreeMap : public absl::btree_map<KEY, VALUE, CMP>
+#else
+class BTreeMap : public std::map<KEY, VALUE, CMP>
+#endif
 {
  public:
+#ifndef USE_CPP_STD
   using Base = typename BTreeMap::btree_map;
+#else
+  using Base = typename BTreeMap::map;
+#endif
+
   using iterator = typename Base::iterator;
   using const_iterator = typename Base::const_iterator;
   using reverse_iterator = typename Base::reverse_iterator;
@@ -119,10 +133,18 @@ class BTreeMap : public absl::btree_map<KEY, VALUE, CMP>
  * The btree map implemented using B-trees is more efficent than binary tree.
  */
 template <typename KEY, typename VALUE, typename CMP = std::less<KEY>>
+#ifndef USE_CPP_STD
 class Multimap : public absl::btree_multimap<KEY, VALUE, CMP>
+#else
+class Multimap : public std::multimap<KEY, VALUE, CMP>
+#endif
 {
  public:
+#ifndef USE_CPP_STD
   using Base = typename Multimap::btree_multimap;
+#else
+  using Base = typename Multimap::multimap;
+#endif
   using iterator = typename Base::iterator;
   using const_iterator = typename Base::const_iterator;
   using reverse_iterator = typename Base::reverse_iterator;
@@ -197,6 +219,20 @@ class Multimap : public absl::btree_multimap<KEY, VALUE, CMP>
     }
 
     return ret_list;
+  }
+
+  /**
+   * @brief Get all the mapped values in the map container.
+   *
+   * @return std::set<VALUE>
+   */
+  std::set<VALUE> values()
+  {
+    std::set<VALUE> ret_set;
+    for (auto& kv : *this) {
+      ret_set.insert(kv.second);
+    }
+    return ret_set;
   }
 };
 

@@ -37,7 +37,7 @@ target_link_libraries(tool_manager
         ipl-api
 )
 
-target_link_libraries(tool_manager PUBLIC idm eval_source)
+target_link_libraries(tool_manager PUBLIC idm)
 
 target_link_libraries(tool_manager PUBLIC ito_source)
 

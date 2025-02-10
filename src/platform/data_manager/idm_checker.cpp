@@ -186,6 +186,8 @@ bool DataManager::isNetConnected(IdbNet* net)
 
 std::tuple<bool, std::vector<std::string>, std::vector<std::string>, int> DataManager::isAllNetConnected()
 {
+  std::cout << "[CheckNet Info] Begin check connected ..." << std::endl;
+
   std::vector<std::string> disconnected_net_list;
   std::vector<std::string> one_pin_net_list;
 
@@ -220,22 +222,24 @@ std::tuple<bool, std::vector<std::string>, std::vector<std::string>, int> DataMa
   omp_destroy_lock(&lck);
 
   for (auto disconnected_net : disconnected_net_list) {
-    std::cout << "[Error] Disconneted net [pin number >= 2] : " << disconnected_net << std::endl;
+    std::cout << "[CheckNet Summary] Disconneted net [pin number >= 2] : " << disconnected_net << std::endl;
   }
 
   if (one_pin_net_list.size() > 0) {
-    std::cout << "[Error] Disconneted nets [pin number < 2] : " << one_pin_net_list.size() << " / "
+    std::cout << "[CheckNet Summary] Disconneted nets [pin number < 2] : " << one_pin_net_list.size() << " / "
               << _design->get_net_list()->get_net_list().size() << std::endl;
   }
 
   if (disconnected_net_list.size() > 0) {
-    std::cout << "[Error] Disconneted nets [pin number >= 2] : " << disconnected_net_list.size() << " / "
+    std::cout << "[CheckNet Summary] Disconneted nets [pin number >= 2] : " << disconnected_net_list.size() << " / "
               << _design->get_net_list()->get_net_list().size() << std::endl;
   }
 
   bool b_result = disconnected_net_list.size() > 0 ? false : true;
 
   int num_net = _design->get_net_list()->get_net_list().size();
+
+  std::cout << "[CheckNet Info] End check connected" << std::endl;
 
   return std::make_tuple(b_result, disconnected_net_list, one_pin_net_list, num_net);
 }

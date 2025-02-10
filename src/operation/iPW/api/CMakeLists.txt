@@ -9,4 +9,14 @@ aux_source_directory(./ SRC)
 
 add_library(power ${SRC})
 
+if (USE_GPU)
+target_link_libraries(power power-gpu core vcd_wrapper build_graph propagate_toggle_sp levelize dump calc_power plot_power)
+else ()
 target_link_libraries(power core vcd_wrapper build_graph propagate_toggle_sp levelize dump calc_power plot_power)
+endif()
+
+target_include_directories(power 
+    PUBLIC 
+        ${PROJECT_SOURCE_DIR}/src/operation/iPW/source/module
+        ${HOME_OPERATION}/iSTA
+)

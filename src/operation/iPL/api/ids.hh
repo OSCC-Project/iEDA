@@ -55,14 +55,13 @@ class TopologyManager;
 
 }  // namespace ipl
 
-namespace eval {
-class EvalAPI;
-class TimingPin;
-class CongGrid;
-class CongInst;
-class TimingNet;
 
-}  // namespace eval
+namespace ieval {
+
+struct TimingNet;
+struct TimingPin;
+
+}  // namespace ieval
 
 namespace ista {
 

@@ -92,7 +92,14 @@ void DrcEngineInit::initDataFromPoints(idb::IdbCoordinate<int>* point_1, idb::Id
  */
 void DrcEngineInit::initDataFromPin(idb::IdbPin* idb_pin, int default_id)
 {
-  int net_id = idb_pin->get_net() == nullptr ? default_id : idb_pin->get_net()->get_id();
+  int net_id = default_id;
+  if (idb_pin->get_net() != nullptr) {
+    net_id = idb_pin->get_net()->get_id();
+  } else {
+    auto idb_term = idb_pin->get_term();
+    net_id = idb_term->is_power() ? NET_ID_VDD : (idb_term->is_ground() ? NET_ID_VSS : default_id);
+  }
+
   for (IdbLayerShape* layer_shape : idb_pin->get_port_box_list()) {
     initDataFromShape(layer_shape, net_id);
   }
@@ -132,24 +139,23 @@ void DrcEngineInit::initDataFromNet(idb::IdbNet* idb_net)
         auto* point_2 = idb_segment->get_point_second();
 
         initDataFromPoints(point_1, point_2, routing_width, idb_segment->get_layer(), idb_net->get_id());
-      } else {
-        /// via
-        if (idb_segment->is_via()) {
-          for (auto* idb_via : idb_segment->get_via_list()) {
-            initDataFromVia(idb_via, idb_net->get_id());
-          }
+      }
+      /// via
+      if (idb_segment->is_via()) {
+        for (auto* idb_via : idb_segment->get_via_list()) {
+          initDataFromVia(idb_via, idb_net->get_id());
         }
-        /// patch
-        if (idb_segment->is_rect()) {
-          IdbCoordinate<int32_t>* coordinate = idb_segment->get_point_start();
-          IdbRect* rect_delta = idb_segment->get_delta_rect();
-          IdbRect* rect = new IdbRect(rect_delta);
-          rect->moveByStep(coordinate->get_x(), coordinate->get_y());
+      }
+      /// patch
+      if (idb_segment->is_rect()) {
+        IdbCoordinate<int32_t>* coordinate = idb_segment->get_point_start();
+        IdbRect* rect_delta = idb_segment->get_delta_rect();
+        IdbRect* rect = new IdbRect(rect_delta);
+        rect->moveByStep(coordinate->get_x(), coordinate->get_y());
 
-          initDataFromRect(rect, LayoutType::kRouting, idb_segment->get_layer(), idb_net->get_id());
+        initDataFromRect(rect, LayoutType::kRouting, idb_segment->get_layer(), idb_net->get_id());
 
-          delete rect;
-        }
+        delete rect;
       }
     }
   }

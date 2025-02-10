@@ -1,7 +1,7 @@
-setTGParameter:设置tg_model的参数
+initTGModel:初始化model
+setTGComParam:设置tg_model的参数
 initTGTaskList:构建TGTask,数据结构是TGNet
-buildTGNodeMap:构建Graph，只有节点，其他信息后续构建
+buildTGNodeMap:构建Graph,只有节点,其他信息后续构建
 buildTGNodeNeighbor:将所有节点连接
 buildOrientSupply:构建Graph的supply
 generateTGModel:生成线网的拓扑
-uploadNetResult:将布线结果加入gcell_map

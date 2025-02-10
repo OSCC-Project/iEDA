@@ -10,7 +10,6 @@ target_link_libraries(irt_toolkit
         irt_monitor
         irt_utility
         irt_interface
-        irt_source_external_libs
 )
 
 target_include_directories(irt_toolkit 

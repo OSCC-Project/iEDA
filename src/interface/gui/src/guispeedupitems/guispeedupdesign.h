@@ -108,7 +108,7 @@ class GuiSpeedupDesign {
       return _cut_enclosure_container;
     }
 
-    if (drc_rule == "Metal EOL Spacing") {
+    if (drc_rule == "EndOfLine Spacing") {
       return _eol_container;
     }
 
@@ -116,11 +116,11 @@ class GuiSpeedupDesign {
       return _metal_short_container;
     }
 
-    if (drc_rule == "Metal Parallel Run Length Spacing") {
+    if (drc_rule == "ParallelRunLength Spacing") {
       return _prl_container;
     }
 
-    if (drc_rule == "Metal Notch Spacing") {
+    if (drc_rule == "Notch Spacing") {
       return _notch_container;
     }
 
@@ -128,7 +128,7 @@ class GuiSpeedupDesign {
       return _min_step_container;
     }
 
-    if (drc_rule == "Minimal Area") {
+    if (drc_rule == "Minimum Area") {
       return _min_area_container;
     }
 

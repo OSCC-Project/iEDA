@@ -16,7 +16,7 @@
 // ***************************************************************************************
 /**
  * @file TimingEngine.hh
- * @author shy long (longshy@pcl.ac.cn)
+ * @author longshy (longshy@pcl.ac.cn)
  * @brief
  * @version 0.1
  * @date 2021-08-20
@@ -94,6 +94,10 @@ class TimingEngine {
 
   TimingEngine &readDesign(const char *verilog_file) {
     _ista->readVerilogWithRustParser(verilog_file);
+    return *this;
+  }
+  TimingEngine &linkDesign(const char *top_cell_name) {
+    _ista->linkDesignWithRustParser(top_cell_name);
     return *this;
   }
   TimingEngine &readSdc(const char *sdc_file) {
@@ -219,12 +223,14 @@ class TimingEngine {
   void incrCap(RctNode *node, double cap, bool is_incremental = false);
   void makeResistor(Net *net, RctNode *from_node, RctNode *to_node, double res);
   void updateRCTreeInfo(Net *net);
+  void updateAllRCTree();
   void buildRcTreeAndUpdateRcTreeInfo(
       const char *net_name, std::map<std::string, double> &loadname2wl);
 
   TimingEngine &incrUpdateTiming();
 
   TimingEngine &updateTiming() {
+    updateAllRCTree();
     _ista->updateTiming();
     return *this;
   }
@@ -331,14 +337,21 @@ class TimingEngine {
   std::vector<std::string> getLibertyCellInputpin(const char *cell_name);
   StaClock *getPropClock(const char *clock_pin_name);
   StaSeqPathData *getWorstSeqData(StaVertex *vertex, AnalysisMode mode,
-                                          TransType trans_type) {
+                                  TransType trans_type) {
     return _ista->getWorstSeqData(vertex, mode, trans_type);
   }
 
-  StaSeqPathData *getWorstSeqData(AnalysisMode mode,
-                                          TransType trans_type) {
+  StaSeqPathData *getWorstSeqData(AnalysisMode mode, TransType trans_type) {
     return _ista->getWorstSeqData(std::nullopt, mode, trans_type);
   }
+
+  double getWorstArriveTime(AnalysisMode mode = AnalysisMode::kMax) {
+    double rise_AT = getWorstSeqData(mode, TransType::kRise)->getArriveTimeNs();
+    double fall_AT = getWorstSeqData(mode, TransType::kFall)->getArriveTimeNs();
+    double worst_AT = (rise_AT >= fall_AT ? rise_AT : fall_AT);
+    return worst_AT;
+  }
+
   std::priority_queue<StaSeqPathData *, std::vector<StaSeqPathData *>,
                       decltype(seq_data_cmp)>
   getViolatedSeqPathsBetweenTwoSinks(const char *pin1_name,

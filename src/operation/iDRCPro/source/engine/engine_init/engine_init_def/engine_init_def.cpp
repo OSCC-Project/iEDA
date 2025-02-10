@@ -25,6 +25,7 @@
 #include "IdbSpecialNet.h"
 #include "IdbSpecialWire.h"
 #include "idm.h"
+#include "idrc_data.h"
 #include "idrc_engine_manager.h"
 
 namespace idrc {
@@ -71,9 +72,9 @@ void DrcEngineInitDef::initDataFromInstances()
     }
 
     /// obs
-    for (auto* idb_obs : idb_inst->get_obs_box_list()) {
-      initDataFromShape(idb_obs, NET_ID_OBS);
-    }
+    // for (auto* idb_obs : idb_inst->get_obs_box_list()) {
+    //   initDataFromShape(idb_obs, NET_ID_OBS);
+    // }
 
     number++;
   }
@@ -95,6 +96,7 @@ void DrcEngineInitDef::initDataFromPDN()
 
   uint64_t number = 0;
   for (auto* idb_special_net : idb_design->get_special_net_list()->get_net_list()) {
+    int net_id = idb_special_net->is_vdd() ? NET_ID_VDD : NET_ID_VSS;
     for (auto* idb_special_wire : idb_special_net->get_wire_list()->get_wire_list()) {
       for (auto* idb_segment : idb_special_wire->get_segment_list()) {
         /// add wire
@@ -107,13 +109,13 @@ void DrcEngineInitDef::initDataFromPDN()
           auto* point_1 = idb_segment->get_point_start();
           auto* point_2 = idb_segment->get_point_second();
 
-          initDataFromPoints(point_1, point_2, routing_width, idb_segment->get_layer(), NET_ID_ENVIRONMENT, true);
+          initDataFromPoints(point_1, point_2, routing_width, idb_segment->get_layer(), net_id, true);
         }
 
         /// vias
         if (idb_segment->is_via()) {
           /// add via
-          initDataFromVia(idb_segment->get_via(), NET_ID_ENVIRONMENT);
+          initDataFromVia(idb_segment->get_via(), net_id);
         }
 
         number++;

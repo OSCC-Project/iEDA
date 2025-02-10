@@ -26,14 +26,16 @@ CmdTOConfig::CmdTOConfig(const char* cmd_name) : TclCmd(cmd_name)
 {
     // config_json_path string      required
     _config_list.push_back(std::make_pair("-config_json_path", ValueType::kString));
-    // setup_slack_margin double
-    _config_list.push_back(std::make_pair("-setup_slack_margin", ValueType::kDouble));
-    // hold_slack_margin double
-    _config_list.push_back(std::make_pair("-hold_slack_margin", ValueType::kDouble));
-    // max_buffer_percent double
-    _config_list.push_back(std::make_pair("-max_buffer_percent", ValueType::kDouble));
-    // max_utilization double
-    _config_list.push_back(std::make_pair("-max_utilization", ValueType::kDouble));
+    // setup_target_slack double
+    _config_list.push_back(std::make_pair("-setup_target_slack", ValueType::kDouble));
+    // hold_target_slack double
+    _config_list.push_back(std::make_pair("-hold_target_slack", ValueType::kDouble));
+    // max_insert_instance_percent double
+    _config_list.push_back(std::make_pair("-max_insert_instance_percent", ValueType::kDouble));
+    // max_core_utilization double
+    _config_list.push_back(std::make_pair("-max_core_utilization", ValueType::kDouble));
+    // routing_tree string
+    _config_list.push_back(std::make_pair("-routing_tree", ValueType::kString));
     // fix_fanout bool
 
     //optimize_drv bool
@@ -48,12 +50,16 @@ CmdTOConfig::CmdTOConfig(const char* cmd_name) : TclCmd(cmd_name)
     _config_list.push_back(std::make_pair("-hold_insert_buffers", ValueType::kStringList));
     // setup_insert_buffers stringlist
     _config_list.push_back(std::make_pair("-setup_insert_buffers", ValueType::kStringList));
-    // number_passes_allowed_decreasing_slack int
-    _config_list.push_back(std::make_pair("-number_passes_allowed_decreasing_slack", ValueType::kInt));
-    // rebuffer_max_fanout int
-    _config_list.push_back(std::make_pair("-rebuffer_max_fanout", ValueType::kInt));
-    // split_load_min_fanout int
-    _config_list.push_back(std::make_pair("-split_load_min_fanout", ValueType::kInt));
+    // number_of_decreasing_slack_iter int
+    _config_list.push_back(std::make_pair("-number_of_decreasing_slack_iter", ValueType::kInt));
+    // max_allowed_buffering_fanout int
+    _config_list.push_back(std::make_pair("-max_allowed_buffering_fanout", ValueType::kInt));
+    // min_divide_fanout int
+    _config_list.push_back(std::make_pair("-min_divide_fanoutt", ValueType::kInt));
+    // optimize_endpoints_percent double
+    _config_list.push_back(std::make_pair("-optimize_endpoints_percent", ValueType::kDouble));
+    // drv_optimize_iter_number int
+    _config_list.push_back(std::make_pair("-drv_optimize_iter_number", ValueType::kInt));
 
     TclUtil::addOption(this, _config_list);
 }

@@ -136,7 +136,19 @@ class LibTable : public LibObject
     kFallCurrent = 7,
     // power
     kRisePower = 8,
-    kFallPower = 9
+    kFallPower = 9,
+    // sigma
+    kCellRiseSigma = 10,
+    kCellFallSigma = 12,
+    kRiseTransitionSigma = 14,
+    kFallTransitionSigma = 16
+  };
+
+  enum class CornerType : int
+  {
+    kDefault = 0,
+    kEarly = 1,
+    kLate = 2
   };
 
   static const std::map<std::string, TableType> _str2TableType;
@@ -158,6 +170,9 @@ class LibTable : public LibObject
   void set_table_values(std::vector<std::unique_ptr<LibAttrValue>>&& table_values) { _table_values = std::move(table_values); }
   auto& get_table_values() { return _table_values; }
 
+  void set_corner_type(CornerType corner_type) { _corner_type = corner_type; }
+  CornerType get_corner_type() { return _corner_type; }
+
   TableType get_table_type() { return _table_type; }
 
   void set_table_template(LibLutTableTemplate* table_template) { _table_template = table_template; }
@@ -172,6 +187,7 @@ class LibTable : public LibObject
   std::vector<std::unique_ptr<LibAttrValue>> _table_values;  //!< The axis values.
   TableType _table_type;                                     //!< The table type.
 
+  CornerType _corner_type = CornerType::kDefault;
   LibLutTableTemplate* _table_template;  //!< The lut template.
 
   FORBIDDEN_COPY(LibTable);
@@ -300,11 +316,13 @@ class LibTableModel : public LibObject
     LOG_FATAL << "not support";
     return 0.0;
   }
+  virtual std::optional<double> gateDelaySigma(AnalysisMode mode, TransType trans_type, double slew, double load) { return 0.0; }
   virtual std::optional<double> gateSlew(TransType trans_type, double slew, double load)
   {
     LOG_FATAL << "not support";
     return 0.0;
   }
+  virtual std::optional<double> gateSlewSigma(AnalysisMode mode, TransType trans_type, double slew, double load) { return 0.0; }
   virtual std::optional<double> gateCheckConstrain(TransType trans_type, double slew, double load)
   {
     LOG_FATAL << "not support";
@@ -340,7 +358,8 @@ class LibTableModel : public LibObject
 class LibDelayTableModel final : public LibTableModel
 {
  public:
-  static constexpr size_t kTableNum = 4;         //!< The model contain delay/slew, rise/fall four table.
+  static constexpr size_t kTableNum = 4;         //!< The model contain delay/slew, rise/fall four table, eight sigma
+                                                 //!< table(rise/fall, early/late, delay/slew ).
   static constexpr size_t kCurrentTableNum = 2;  //!< Current rise/fall table.
 
   unsigned isDelayModel() override { return 1; }
@@ -351,10 +370,23 @@ class LibDelayTableModel final : public LibTableModel
   LibDelayTableModel(LibDelayTableModel&& other) noexcept;
   LibDelayTableModel& operator=(LibDelayTableModel&& rhs) noexcept;
 
+  int calcShiftIndex(LibTable::CornerType corner_type)
+  {
+    int shift = 0;
+    if (corner_type != LibTable::CornerType::kDefault) {
+      shift = -2 + (static_cast<int>(corner_type) - 1);
+    }
+    return shift;
+  }
+
   unsigned addTable(std::unique_ptr<LibTable>&& table)
   {
     auto table_type = table->get_table_type();
-    _tables[CAST_TYPE_TO_INDEX(table_type)] = std::move(table);
+    int index = CAST_TYPE_TO_INDEX(table_type);
+    int shift_index = calcShiftIndex(table->get_corner_type());
+    index += shift_index;
+
+    _tables.at(index) = std::move(table);
     return 1;
   }
 
@@ -368,14 +400,16 @@ class LibDelayTableModel final : public LibTableModel
   }
 
   std::optional<double> gateDelay(TransType trans_type, double slew, double load) override;
+  std::optional<double> gateDelaySigma(AnalysisMode mode, TransType trans_type, double slew, double load) override;
   std::optional<double> gateSlew(TransType trans_type, double slew, double load) override;
+  std::optional<double> gateSlewSigma(AnalysisMode mode, TransType trans_type, double slew, double load) override;
   std::unique_ptr<LibCurrentData> gateOutputCurrent(TransType trans_type, double slew, double load) override;
 
   double driveResistance() override;
 
  private:
-  std::array<std::unique_ptr<LibTable>, kTableNum> _tables;  // NLDM table,include cell rise/cell fall/rise transition/fall
-                                                             // transition.
+  std::array<std::unique_ptr<LibTable>, kTableNum> _tables;  // NLDM table,include cell rise/cell fall/rise transition/fall transition,
+                                                             // and  eight sigma table(rise/fall, early/late, delay/slew ).
   std::array<std::unique_ptr<LibCCSTable>,
              kCurrentTableNum>  // Output current rise/fall.
       _current_tables;
@@ -829,7 +863,9 @@ class LibArc : public LibObject
   LibTableModel* get_table_model() { return _table_model.get(); }
 
   double getDelayOrConstrainCheckNs(TransType trans_type, double slew, double load_or_constrain_slew);
+  double getDelaySigma(AnalysisMode mode, TransType trans_type, double slew, double load_or_constrain_slew);
   double getSlewNs(TransType trans_type, double slew, double load);
+  double getSlewSigma(AnalysisMode mode, TransType trans_type, double slew, double load);
 
   std::unique_ptr<LibCurrentData> getOutputCurrent(TransType trans_type, double slew, double load);
 
@@ -1067,8 +1103,8 @@ class LibCell : public LibObject
 
   LibLibrary* _owner_lib;  //!< The owner lib.
 
-  unsigned _is_dont_use : 1 = 0;
-  unsigned _is_macro_cell : 1 = 0;
+  unsigned _is_dont_use : 1;
+  unsigned _is_macro_cell : 1;
   unsigned _reserved : 30;
 
   FORBIDDEN_COPY(LibCell);
@@ -1206,7 +1242,7 @@ class LibLutTableTemplate : public LibObject
 
   void set_template_variable1(const char* template_variable1) override
   {
-    DLOG_FATAL_IF(!_str2var.contains(template_variable1)) << "not contain the template variable " << template_variable1;
+    DLOG_FATAL_IF(_str2var.find(template_variable1) == _str2var.end()) << "not contain the template variable " << template_variable1;
     _template_variable1 = _str2var.at(template_variable1);
   }
 
@@ -1440,6 +1476,8 @@ class LibLibrary : public LibObject
   void set_slew_derate_from_library(double slew_derate_from_library) { _slew_derate_from_library = slew_derate_from_library; }
   double get_slew_derate_from_library() { return _slew_derate_from_library; }
 
+  void printLibertyLibraryJson(const char* json_file_name);
+
  private:
   std::string _lib_name;
   std::vector<std::unique_ptr<LibCell>> _cells;  //!< The liberty cell, perserve the cell read order.
@@ -1657,7 +1695,7 @@ class Lib
   Lib() = default;
   ~Lib() = default;
 
-  std::unique_ptr<LibLibrary> loadLibertyWithRustParser(const char* file_name);
+  RustLibertyReader loadLibertyWithRustParser(const char* file_name);
 
  private:
   FORBIDDEN_COPY(Lib);

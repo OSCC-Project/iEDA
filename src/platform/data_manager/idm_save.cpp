@@ -65,12 +65,13 @@ bool DataManager::saveDef(string def_path)
   return _idb_builder->saveDef(def_path);
 }
 
-void DataManager::saveVerilog(string verilog_path, std::set<std::string>&& exclude_cell_names /*={}*/)
+void DataManager::saveVerilog(string verilog_path, std::set<std::string>&& exclude_cell_names /*={}*/,
+                              bool is_add_space_for_escape_name /*=false*/)
 {
   if (_idb_builder == nullptr || _idb_lef_service == nullptr || _layout == nullptr) {
     std::cout << "idb_builder error.\n";
   }
-  return _idb_builder->saveVerilog(verilog_path, exclude_cell_names);
+  return _idb_builder->saveVerilog(verilog_path, exclude_cell_names, is_add_space_for_escape_name);
 }
 
 bool DataManager::saveGDSII(string path)
@@ -80,12 +81,12 @@ bool DataManager::saveGDSII(string path)
   }
   return _idb_builder->saveGDSII(path);
 }
-bool DataManager::saveJSON(string path,string options)
+bool DataManager::saveJSON(string path, string options)
 {
   if (_idb_builder == nullptr || _idb_lef_service == nullptr || _layout == nullptr) {
     return false;
   }
-  return _idb_builder->saveJSON(path,options);
+  return _idb_builder->saveJSON(path, options);
 }
 
 }  // namespace idm

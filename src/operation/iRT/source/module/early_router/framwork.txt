@@ -1,0 +1,12 @@
+initERModel:初始化ERModel
+setERComParam:设置布线参数
+generateAccessPoint:简单生成ap点,以shape的中心为主要点
+initERTaskList:构建task,有序
+buildPlanarNodeMap：初始化平面graph
+buildPlanarNodeNeighbor：构建graph的邻居
+buildPlanarOrientSupply：从supply_analyzer获取supply的access
+generateTopoTree：对每个net生成topo树
+buildLayerNodeMap：初始化层graph
+buildLayerNodeNeighbor：构建graph的邻居
+buildLayerOrientSupply：从supply_analyzer获取supply的access
+generateGlobalTree:生成全局布线结果

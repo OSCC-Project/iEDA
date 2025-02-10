@@ -17,6 +17,7 @@
 
 // #include <gperftools/heap-profiler.h>
 
+#include "api/TimingEngine.hh"
 #include "gtest/gtest.h"
 #include "liberty/Lib.hh"
 #include "log/Log.hh"
@@ -40,10 +41,9 @@ class LibertyTest : public testing::Test {
 
 TEST_F(LibertyTest, rust_reader) {
   const char* lib_path =
-      "/home/taosimin/iEDA/src/database/manager/parser/liberty/lib-rust/"
-      "liberty-parser/example/example1_slow.lib";
+      "/home/ieda/ssta-data/lib/lib/tcbn28hpcplusbwp30p140ulvtssg0p81v125c.lib";
   Lib lib;
-  auto library = lib.loadLibertyWithRustParser(lib_path);
+  lib.loadLibertyWithRustParser(lib_path);
 }
 
 TEST_F(LibertyTest, rust_expr_builder) {
@@ -53,12 +53,18 @@ TEST_F(LibertyTest, rust_expr_builder) {
   LOG_FATAL_IF(!func_expr) << "func_expr is nullptr";
 }
 
-}  // namespace
-
-int main(int argc, char** argv) {
-  ::testing::InitGoogleTest(&argc, argv);
-
-  testing::GTEST_FLAG(filter) = "LibertyTest.rust_expr_builder*";
-  testing::GTEST_FLAG(filter) = "StaTest.read_error_file*";
-  return RUN_ALL_TESTS();
+TEST_F(LibertyTest, print_liberty_library_json) {
+  const char* lib_path =
+      "/home/taosimin/nangate45/lib/NangateOpenCellLibrary_typical.lib";
+  Lib lib;
+  auto lib_rust_reader = lib.loadLibertyWithRustParser(lib_path);
+  lib_rust_reader.linkLib();
+  auto lib_library = lib_rust_reader.get_library_builder()->takeLib();
+  // lib_library->findCell()->get_cell_arcs();
+  // const char* json_file_names_n45 =
+  //     "/home/longshuaiying/lib_lef/"
+  //     "NangateOpenCellLibrary_typical.json";
+  // lib_library->printLibertyLibraryJson(json_file_names_n45);
 }
+
+}  // namespace

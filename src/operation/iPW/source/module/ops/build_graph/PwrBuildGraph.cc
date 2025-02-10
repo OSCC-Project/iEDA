@@ -107,6 +107,10 @@ unsigned PwrBuildGraph::operator()(StaGraph* sta_graph) {
     auto* pwr_src_vertex = _power_graph.staToPwrVertex(sta_src_vertex);
     auto* pwr_snk_vertex = _power_graph.staToPwrVertex(sta_snk_vertex);
 
+    if (sta_arc->is_loop_disable()) {
+      continue;
+    }
+
     std::unique_ptr<PwrArc> power_arc;
     // power arc only exist for delay arc.
     if (sta_arc->isInstArc()) {

@@ -16,7 +16,7 @@
 // ***************************************************************************************
 /**
  * @file TimingIDBAdapter.hh
- * @author shy long (longshy@pcl.ac.cn)
+ * @author longshy (longshy@pcl.ac.cn)
  * @brief
  * @version 0.1
  * @date 2021-10-11
@@ -186,7 +186,9 @@ class TimingIDBAdapter : public TimingDBAdapter {
     _sta2dbPin.erase(sta_pin);
     _db2staPin.erase(db_pin);
   }
-  unsigned convertDBToTimingNetlist() override;
+
+  void configStaLinkCells();
+  unsigned convertDBToTimingNetlist(bool link_all_cell = false) override;
 
  private:
   unsigned makeTopCell();  // to do

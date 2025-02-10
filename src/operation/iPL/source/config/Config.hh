@@ -73,7 +73,6 @@ class Config
   int32_t get_ignore_net_degree() const { return _ignore_net_degree; }
   bool isTimingEffort() const { return _is_timing_effort; }
   bool isCongestionEffort() const { return _is_congestion_effort; }
-  std::string get_pl_dir() const { return _pl_dir; }
 
  private:
   // NesterovPlace config.
@@ -92,7 +91,6 @@ class Config
   int32_t _ignore_net_degree;
   bool _is_timing_effort;
   bool _is_congestion_effort;
-  std::string _pl_dir;
 
   void setConfigFromJson(const std::string& json_file);
   void initConfig(const std::string& json_file);

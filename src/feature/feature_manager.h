@@ -56,9 +56,17 @@ class FeatureManager
   bool save_summary(std::string path);
   bool save_tools(std::string path, std::string step);
   bool save_eval_map(std::string path, int bin_cnt_x, int bin_cnt_y);
-  /// route data
+  bool save_cong_map(std::string stage, std::string csv_dir);
+  bool save_net_eval(std::string path);
+  // route data
   bool save_route_data(std::string path);
   bool read_route_data(std::string path);
+  // evaluation
+  bool save_eval_summary(std::string path, int32_t grid_size);
+  bool save_timing_eval_summary(std::string path);
+  bool save_eval_union(std::string jsonl_path, std::string csv_path, int32_t grid_size);
+  bool save_pl_eval_union(std::string jsonl_path, std::string csv_path, int32_t grid_size);
+  bool save_cts_eval_union(std::string jsonl_path, std::string csv_path, int32_t grid_size);
 
  private:
   static FeatureManager* _instance;

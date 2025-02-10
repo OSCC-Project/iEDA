@@ -28,11 +28,14 @@ class PAPin : public Pin
   ~PAPin() = default;
   // getter
   std::vector<AccessPoint>& get_access_point_list() { return _access_point_list; }
+  PlanarCoord& get_key_grid_coord() { return _key_grid_coord; }
   // setter
   void set_access_point_list(const std::vector<AccessPoint>& access_point_list) { _access_point_list = access_point_list; }
+  void set_key_grid_coord(const PlanarCoord& key_grid_coord) { _key_grid_coord = key_grid_coord; }
   // function
  private:
   std::vector<AccessPoint> _access_point_list;
+  PlanarCoord _key_grid_coord;
 };
 
 }  // namespace irt

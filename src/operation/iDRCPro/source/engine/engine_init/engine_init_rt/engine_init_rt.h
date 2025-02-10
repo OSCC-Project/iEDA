@@ -19,6 +19,7 @@
 #include <stdint.h>
 
 #include "engine_init.h"
+#include "DRCViolationType.h"
 
 /**
  * check geometry overlap method

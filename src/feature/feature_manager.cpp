@@ -45,6 +45,132 @@ bool FeatureManager::save_summary(std::string path)
   return feature_parser.buildSummary(path);
 }
 
+bool FeatureManager::save_eval_summary(std::string path, int32_t grid_size)
+{
+  FeatureBuilder builder;
+
+  auto wirelength_db = builder.buildWirelengthEvalSummary();
+  auto density_db = builder.buildDensityEvalSummary(grid_size);
+  auto congestion_db = builder.buildCongestionEvalSummary(grid_size);
+  auto timing_db = builder.buildTimingEvalSummary();
+
+  _summary->set_wirelength_eval(wirelength_db);
+  _summary->set_density_eval(density_db);
+  _summary->set_congestion_eval(congestion_db);
+  _summary->set_timing_eval(timing_db);
+
+  FeatureParser feature_parser(_summary);
+  return feature_parser.buildSummaryEvalJsonl(path);
+}
+
+bool FeatureManager::save_eval_union(std::string jsonl_path, std::string csv_path, int32_t grid_size)
+{
+  FeatureBuilder builder;
+
+  bool is_init_eval_tool = builder.initEvalTool();
+  if (!is_init_eval_tool) {
+    return false;
+  }
+
+  // auto union_db = builder.buildUnionEvalSummary(grid_size);
+  // _summary->set_wirelength_eval(union_db.total_wl_summary);
+  // _summary->set_density_eval(union_db.density_map_summary);
+  // _summary->set_congestion_eval(union_db.congestion_summary);
+
+  bool csv_success = builder.buildNetEval(csv_path);
+  // bool csv_success = true;
+
+  // FeatureParser feature_parser(_summary);
+  // bool jsonl_success = feature_parser.buildSummaryEvalJsonl(jsonl_path);
+  bool jsonl_success = true;
+
+  builder.destroyEvalTool();
+
+  return jsonl_success && csv_success;
+}
+
+bool FeatureManager::save_pl_eval_union(std::string jsonl_path, std::string csv_path, int32_t grid_size)
+{
+  // EGR
+  FeatureBuilder builder;
+
+  bool is_init_eval_tool = builder.initEvalTool();
+  if (!is_init_eval_tool) {
+    return false;
+  }
+
+  std::string stage = "place";
+
+  auto union_db = builder.buildUnionEvalSummary(grid_size, stage);
+  _summary->set_wirelength_eval(union_db.total_wl_summary);
+  _summary->set_density_eval(union_db.density_map_summary);
+  _summary->set_congestion_eval(union_db.congestion_summary);
+
+  builder.evalTiming("EGR", true);
+
+  builder.evalTiming("HPWL");
+  builder.evalTiming("FLUTE");
+  builder.evalTiming("SALT");
+
+  auto union_timing_db = builder.buildTimingUnionEvalSummary();
+  _summary->set_timing_eval(union_timing_db);
+
+  FeatureParser feature_parser(_summary);
+  bool jsonl_success = feature_parser.buildSummaryEvalJsonl(jsonl_path);
+  bool csv_success = builder.buildNetEval(csv_path);
+
+  builder.destroyEvalTool();
+
+  return jsonl_success && csv_success;
+}
+
+bool FeatureManager::save_cts_eval_union(std::string jsonl_path, std::string csv_path, int32_t grid_size)
+{
+  // EGR
+  FeatureBuilder builder;
+
+  bool is_init_eval_tool = builder.initEvalTool();
+  if (!is_init_eval_tool) {
+    return false;
+  }
+
+  std::string stage = "cts";
+
+  auto union_db = builder.buildUnionEvalSummary(grid_size, stage);
+  _summary->set_wirelength_eval(union_db.total_wl_summary);
+  _summary->set_density_eval(union_db.density_map_summary);
+  _summary->set_congestion_eval(union_db.congestion_summary);
+
+  builder.evalTiming("EGR", true);
+
+  builder.evalTiming("HPWL");
+  builder.evalTiming("FLUTE");
+  builder.evalTiming("SALT");
+
+  auto union_timing_db = builder.buildTimingUnionEvalSummary();
+  _summary->set_timing_eval(union_timing_db);
+
+  FeatureParser feature_parser(_summary);
+  bool jsonl_success = feature_parser.buildSummaryEvalJsonl(jsonl_path);
+
+  bool csv_success = builder.buildNetEval(csv_path);
+
+  builder.destroyEvalTool();
+
+  return jsonl_success && csv_success;
+}
+
+bool FeatureManager::save_timing_eval_summary(std::string path)
+{
+  FeatureBuilder builder;
+  auto eval_db = builder.buildTimingEvalSummary();
+
+  _summary->set_timing_eval(eval_db);
+
+  FeatureParser feature_parser(_summary);
+  return feature_parser.buildSummaryTimingEval(path);
+}
+
 bool FeatureManager::save_tools(std::string path, std::string step)
 {
   FeatureBuilder builder;
@@ -73,9 +199,7 @@ bool FeatureManager::save_tools(std::string path, std::string step)
 
     _summary->set_ito_optsetup(db);
   } else if (step == "route") {
-    auto db = builder.buildRTSummary();
-
-    _summary->set_irt(db);
+    // skip
   } else {
   }
 
@@ -87,6 +211,12 @@ bool FeatureManager::save_eval_map(std::string path, int bin_cnt_x, int bin_cnt_
 {
   FeatureParser feature_parser(_summary);
   return feature_parser.buildSummaryMap(path, bin_cnt_x, bin_cnt_y);
+}
+
+bool FeatureManager::save_net_eval(std::string path)
+{
+  FeatureParser feature_parser;
+  return feature_parser.buildNetEval(path);
 }
 
 bool FeatureManager::save_route_data(std::string path)
@@ -104,4 +234,9 @@ bool FeatureManager::read_route_data(std::string path)
   return feature_parser.readRouteData(path, &_route_data);
 }
 
+bool FeatureManager::save_cong_map(std::string stage, std::string csv_dir)
+{
+  FeatureParser feature_parser;
+  return feature_parser.buildCongMap(stage, csv_dir);
+}
 }  // namespace ieda_feature

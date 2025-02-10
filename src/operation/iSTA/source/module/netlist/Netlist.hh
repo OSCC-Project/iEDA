@@ -175,8 +175,11 @@ class Netlist : public DesignObject {
     return nullptr;
   }
 
+  auto& get_instances() { return _instances; }
+
   std::size_t getInstanceNum() { return _instances.size(); }
   std::size_t getNetNum() { return _nets.size(); }
+  std::size_t getPortNum() { return _ports.size(); }
 
   void reset();
 

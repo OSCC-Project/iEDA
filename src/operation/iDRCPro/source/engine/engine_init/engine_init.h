@@ -17,6 +17,7 @@
 #pragma once
 
 #include <stdint.h>
+#include "DRCViolationType.h"
 
 /**
  * check geometry overlap method

@@ -58,8 +58,7 @@ static constexpr std::initializer_list<std::pair<AnalysisMode, TransType>>
                      {AnalysisMode::kMin, TransType::kFall}};
 
 static constexpr std::initializer_list<AnalysisMode> g_split_mode = {
-  AnalysisMode::kMax, AnalysisMode::kMin
-};
+    AnalysisMode::kMax, AnalysisMode::kMin};
 
 enum class ModeTransIndex : int {
   kMaxRise = 0,
@@ -67,6 +66,8 @@ enum class ModeTransIndex : int {
   kMinRise = 2,
   kMinFall = 3
 };
+
+ModeTransIndex mapToModeTransIndex(AnalysisMode mode, TransType type);
 
 using ModeTransPair = std::pair<AnalysisMode, TransType>;
 
@@ -80,13 +81,14 @@ using ModeTransPair = std::pair<AnalysisMode, TransType>;
 #define PS_TO_FS(delay) ((delay) * static_cast<int64_t>(g_ps2fs))
 #define FS_TO_PS(delay) ((delay) / static_cast<double>(g_ps2fs))
 
-#define PF_TO_FF(cap) (static_cast<int>(std::ceil((cap) * g_pf2ff)))
+#define PF_TO_FF(cap) (static_cast<int>(std::ceil((cap)*g_pf2ff)))
 #define FF_TO_PF(cap) ((cap) / static_cast<double>(g_pf2ff))
 
-#define PF_TO_F(cap) ((cap) * g_pf2f)
+#define PF_TO_F(cap) ((cap)*g_pf2f)
 #define F_TO_PF(cap) ((cap) / g_pf2f)
 
 enum class DelayCalcMethod : int { kElmore = 0, kArnoldi = 1 };
+enum class PropagationMethod : int { kDFS = 0, kBFS = 1 };
 
 enum class CapacitiveUnit { kPF = 0, kFF = 1, kF = 2 };
 enum class ResistanceUnit { kOHM = 0, kkOHM = 1 };

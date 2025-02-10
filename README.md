@@ -2,10 +2,12 @@
 
 <!-- <img src="docs/resources/iEDA-logo-new.png" width="15%" height="15%" alt="iEDA-logo" /> -->
 
+<!-- <img src="docs/resources/ieda_logo_b_2.png" width="15%" height="15%" alt="iEDA-logo" /> -->
+
 <img src="docs/resources/iEDA.png" width="15%" height="15%" alt="iEDA-logo" />
  <h1>iEDA</h1>
 
-<h3> An open-source  EDA infracstrucutre and tools from netlist to GDS for ASIC design.</h3>
+<h3> An open-source  EDA infracstructure and tools from Netlist to GDS for ASIC design.</h3>
 
 <p align="center">
     <a title="Project Version">
@@ -31,68 +33,55 @@
 
 [Chinese][README-CN-path] | **English**
 
+<h2> Open-source is not a goal but a way <h2>
 </div>
 
-iEDA Homepage：[ieda.oscc.cc][iEDA-OSCC-url]
 
-## **About iEDA**
 
-- **About “i”in iEDA**
-  - Meaning 1: Infrastructure
-  - Meaning 2: Intelligent
-- **The goal of the iEDA project**
-  - EDA Infrastructure
-  - High quality and performance EDA tool
-- **Open-source is not a goal but a way**
+### **iEDA Homepage：[ieda.oscc.cc/en/](https://ieda.oscc.cc/en/)**
 
-## **Main Contents and Plans**
+## **iEDA Overview**
+- **1 EDA Infrastructure、11 EDA Tools、4 times tape-out design by iEDA**
+  - Level 1: Open-source EDA, RTL, PDK, supporting chip design；
+  - Level 2:  Open-source Infrastructure supports EDA development and research
 
-- Enhance the **infrastructure** to support more design requirement
-- Complete the EDA tool chain from **RTL-GDS II**
-- Improve the **quality and performance** of all EDA tool operations
-- Construct **AI for EDA** platform and introduce trained **AI model** to the EDA platform
-- Build **data system** with enough chip design and labeling process data
-- Achieve the adaptability of the EDA platform for **cloud-native**
 
 <div align="center">
- <img src="docs/resources/iEDA_framework_new.png" width="550" height="50%" alt="iEDA_framework" />
+ <img src="docs/resources/iEDA-ov.png" width="70%" height="70%" alt="iEDA_tapeout" />
 </div>
 
-## **iEDA Structure**
+## **iEDA Infrastructure and tool**
+- To fast develop high-quality EDA tool, we need a Software Development Kit (SDK)  
+- iEDA can be used to support developing EDA tool or algorithm
+- Infrastructure: Database, Manager, Operator, Interface 
 
 <div align="center">
- <img src="docs/resources/iEDA-structure.png" width="650" height="65%"  alt="iEDA_structure" />
-</div>
-
-## **iEDA Infrastructure**
-
-<div align="center">
- <img src="docs/resources/iEDA-infrastructure.png" width="650" height="60%" alt="iEDA_infrastructure" />
-</div>
-
-## **iEDA Operations (Tools)**
-
-<div align="center">
- <img src="docs/resources/iEDA-operation.png" width="650" height="60%"  alt="iEDA_operation" />
+ <img src="docs/resources/iEDA-if.png" width="70%" height="70%"  alt="iEDA_tapeout" />
 </div>
 
 ## **iEDA Tapeout**
 
 <div align="center">
- <img src="docs/resources/iEDA-tapeout.png" width="550" height="55%"  alt="iEDA_tapeout" />
+ <img src="docs/resources/iEDA-tapeout.png" width="60%" height="60%"  alt="iEDA_tapeout" />
 </div>
 
----
 
 🎉 **News:**
 
-Presentation in ISEDA-2023, May-09 2023, Nanjing, China, Session 2: [iEDA: An Open-Source Intelligent Physical lmplementation Toolkit and Library][ISEDA-2023-iEDA-url] \[[paper][iEDA-paper], [slides][iEDA-slides]\]，and Panel 4 [Is ML a real cure for modern design automation?][ISEDA-2023-panel4-url], and Panel 6 [Open-source EDA and Standards][ISEDA-2023-panel6-url]
+**https://ieda.oscc.cc/en/publicity/news/**
 
 ---
 
 ## **Papers and Presentations**
+- iRT: Net Resource Allocation: A Desirable Initial Routing Step, DAC, 2024
+- iCTS: Toward Controllable Hierarchical Clock Tree Synthesis with Skew-Latency-Load Tree, DAC, 2024
+- AiEDA: An Open-source AI-native EDA Library, ISEDA, 2024
+- iEDA: An Open-source infrastructure of EDA (invited), ASPDAC, 2024.
+- iPD: An Open-source intelligent Physical Design Tool Chain (invited), ASPDAC, 2024.
+- AiMap: Learning to Improve Technology Mapping for ASICs via Delay Prediction, ICCD, 2023
+- iPL-3D: A Novel Bilevel Programming Model for Die-to-Die Placement, ICCAD, 2023.
+- iEDA: An Open-source Intelligent Physical Implementation Toolkit and Library, ISEDA, 2023. (BPA) \[[paper][iEDA-paper], [slides][iEDA-slides]\]
 
-- ISEDA 2023: iEDA：An Open-Source Intelligent Physical Implementation Toolkit and Library \[[paper][iEDA-paper], [slides][iEDA-slides]\]
 
 # **iEDA User Guide**
 
@@ -131,7 +120,7 @@ installing command on Ubuntu 20.04:
 
 ```bash
 # download iEDA repo
-git clone https://gitee.com/oscc-project/iEDA.git iEDA && cd iEDA
+git clone --recursive https://gitee.com/oscc-project/iEDA.git iEDA && cd iEDA
 # compile dependencies with an apt installation requires root permission
 sudo bash build.sh -i apt
 # comple iEDA
@@ -215,7 +204,6 @@ In the development of iEDA, some sub-modules from the open-source community are 
 | lemon          | [lemon](https://lemon.cs.elte.hu/trac/lemon)                                                             | Efficient modeling and optimization in graphs and networks.                                                   |
 | SALT           | [SALT]([SALT](https://github.com/chengengjie/salt))                                                      | Generating VLSI routing topology, It trades off between path length (shallowness) and wirelength (lightness). |
 | scipoptsuite   | [SCIP](https://scipopt.org/index.php#welcome)                                                            | It is used to quickly solve mixed integer programming (MIP) and mixed integer nonlinear programming (MINLP).  |
-| parser/verilog | [OpenROAD/OpenSTA/verilog](https://github.com/The-OpenROAD-Project/OpenSTA/tree/master/verilog)          | parse netlist file .                                                                                          |
 | mt-kahypar | [mt-kahypar]([mt-kahypar]https://github.com/kahypar/mt-kahypar.git)          | Multi-Threaded Karlsruhe Hypergraph Partitioner .                                                                                          |
 
 We are grateful for the support of the open-source community and encourage other open-source projects to reuse our code within the scope of the [MulanPSL-2.0](LICENSE).
@@ -228,7 +216,6 @@ We are grateful for the support of the open-source community and encourage other
 
 [License-url]: LICENSE
 [README-CN-path]: README-CN.md
-[README-EN-path]: README.md
 [Code-conduct-md]: docs/tbd/CodeConduct.md
 [Tcl-menu-xls]: docs/tbd/TclMenu.xls
 [iEDA-OSCC-url]: https://ieda.oscc.cc/

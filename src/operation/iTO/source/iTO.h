@@ -19,43 +19,32 @@
 #include <iostream>
 #include <string>
 
+#include "define.h"
 #include "ids.hpp"
 
 namespace ito {
 
-class DbInterface;
-class ToConfig;
 class Tree;
 
-class iTO {
+class iTO
+{
  public:
-  iTO() = delete;
-  iTO(const std::string &config_file);
-  ~iTO();
-  iTO(const iTO &other) = delete;
-  iTO(iTO &&other) = delete;
-
-  DbInterface *get_db_interface() {
-    // initialization();
-    return _db_interface;
-  }
-
-  ToConfig *get_config() { return _to_config; }
-
-  /// operator
-  void initialization(idb::IdbBuilder *idb_build, ista::TimingEngine *timing);
-  void resetInitialization(idb::IdbBuilder    *idb_build,
-                           ista::TimingEngine *timing_engine = nullptr);
+  iTO(const std::string& config_file);
+  ~iTO() = default;
 
   void runTO();
-  void optimizeDesignViolation();
+  // opt DRV functions
+  void optimizeDrv();
+  void optimizeDrvSpecialNet(const char* net_name);
+
+  // opt setup functions
   void optimizeSetup();
+  void performBuffering(const char* net_name);
+
+  // opt hold functions
   void optimizeHold();
 
-
  private:
-  DbInterface *_db_interface = nullptr;
-  ToConfig    *_to_config = nullptr;
 };
 
-} // namespace ito
+}  // namespace ito

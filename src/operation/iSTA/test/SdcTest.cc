@@ -34,17 +34,14 @@ class SdcTest : public testing::Test {
     Log::init(argv);
 
     Sta* ista = Sta::getOrCreateSta();
-    Lib lib;
 
-    auto load_lib = lib.loadLibertyWithRustParser(
-        "/home/taosimin/iEDA/src/iSTA/examples/example1_fast.lib");
-    LOG_INFO << "build lib test";
-    EXPECT_TRUE(load_lib);
-    ista->addLib(std::move(load_lib));
+    ista->readLiberty("/home/taosimin/nangate45/lib/example1_fast.lib");
 
     ista->readVerilogWithRustParser(
-        "/home/taosimin/iEDA/src/iSTA/examples/example1.v");
+        "/home/taosimin/nangate45/design/example/example1.v");
     ista->linkDesignWithRustParser("top");
+
+    ista->getConstrain();
   }
   void TearDown() {
     Sta::destroySta();
@@ -214,6 +211,24 @@ TEST_F(SdcTest, set_load) {
 
   result &= ScriptEngine::getOrCreateInstance()->evalString(
       R"(set_load 8.0 [get_ports clk1])");
+}
+
+TEST_F(SdcTest, zx_test) {
+  Sta* ista = Sta::getOrCreateSta();
+  ista->initSdcCmd();
+
+  int result = 1;
+  result = ScriptEngine::getOrCreateInstance()->evalString(
+      R"(create_clock -name clk -period 2.2 -add [get_ports clk1])");
+
+  result &= ScriptEngine::getOrCreateInstance()->evalString(
+      R"(set_false_path -to [get_ports clk1])");
+
+  result &= ScriptEngine::getOrCreateInstance()->evalString(
+      R"(set_max_delay 1.0 -from [get_ports clk1] -to [get_ports out])");
+
+  result &= ScriptEngine::getOrCreateInstance()->evalString(
+      R"(set_min_delay 1.0 -from [get_ports clk1] -to [get_ports out])");
 }
 
 }  // namespace

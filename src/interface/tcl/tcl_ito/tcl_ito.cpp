@@ -83,6 +83,42 @@ unsigned CmdTORunDrv::exec()
   return 1;
 }
 
+CmdTORunDrvSpecialNet::CmdTORunDrvSpecialNet(const char* cmd_name) : TclCmd(cmd_name)
+{
+  auto* file_name_option = new TclStringOption(TCL_CONFIG, 1, nullptr);
+  auto* net_name_option = new TclStringOption(TCL_NAME, 1, nullptr);
+  addOption(file_name_option);
+  addOption(net_name_option);
+}
+
+unsigned CmdTORunDrvSpecialNet::check()
+{
+  TclOption* file_name_option = getOptionOrArg(TCL_CONFIG);
+  TclOption* net_name_option = getOptionOrArg(TCL_NAME);
+  LOG_FATAL_IF(!file_name_option);
+  LOG_FATAL_IF(!net_name_option);
+  return 1;
+}
+
+unsigned CmdTORunDrvSpecialNet::exec()
+{
+  if (!check()) {
+    return 0;
+  }
+
+  TclOption* option = getOptionOrArg(TCL_CONFIG);
+  auto data_config = option->getStringVal();
+
+  TclOption* name_option = getOptionOrArg(TCL_NAME);
+  auto net_name = name_option->getStringVal();
+
+  if (iplf::tmInst->RunTODrvSpecialNet(data_config, net_name)) {
+    std::cout << "iTO optimize '" << net_name << "' Drv run successfully." << std::endl;
+  }
+
+  return 1;
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -149,6 +185,42 @@ unsigned CmdTORunSetup::exec()
   return 1;
 }
 
+CmdTOBuffering::CmdTOBuffering(const char* cmd_name) : TclCmd(cmd_name)
+{
+  auto* file_name_option = new TclStringOption(TCL_CONFIG, 1, nullptr);
+  auto* net_name_option = new TclStringOption(TCL_NAME, 1, nullptr);
+  addOption(file_name_option);
+  addOption(net_name_option);
+}
+
+unsigned CmdTOBuffering::check()
+{
+  TclOption* file_name_option = getOptionOrArg(TCL_CONFIG);
+  TclOption* net_name_option = getOptionOrArg(TCL_NAME);
+  LOG_FATAL_IF(!file_name_option);
+  LOG_FATAL_IF(!net_name_option);
+  return 1;
+}
+
+unsigned CmdTOBuffering::exec()
+{
+  if (!check()) {
+    return 0;
+  }
+
+  TclOption* option = getOptionOrArg(TCL_CONFIG);
+  auto data_config = option->getStringVal();
+
+  TclOption* name_option = getOptionOrArg(TCL_NAME);
+  auto net_name = name_option->getStringVal();
+
+  if (iplf::tmInst->RunTOBuffering(data_config, net_name)) {
+    std::cout << "iTO '" << net_name << "' buffering run successfully." << std::endl;
+  }
+
+  return 1;
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -166,16 +238,13 @@ unsigned CmdTOApiInitConfig::check()
   }
   return 1;
 }
-CMD_CLASS_DEFAULT_EXEC(CmdTOApiInitConfig, 
-ToApiInst.initTO(getOptionOrArg(TCL_CONFIG)->getStringVal());
-ToApiInst.iTODataInit();
-)
+CMD_CLASS_DEFAULT_EXEC(CmdTOApiInitConfig, ToApiInst.init(getOptionOrArg(TCL_CONFIG)->getStringVal());)
 
 CMD_CLASS_DEFAULT_DEFINITION(CmdTOApiRunFlow)
 CMD_CLASS_DEFAULT_EXEC(CmdTOApiRunFlow, ToApiInst.runTO())
 
 CMD_CLASS_DEFAULT_DEFINITION(CmdTOApiOptDRV);
-CMD_CLASS_DEFAULT_EXEC(CmdTOApiOptDRV, ToApiInst.optimizeDesignViolation());
+CMD_CLASS_DEFAULT_EXEC(CmdTOApiOptDRV, ToApiInst.optimizeDrv());
 
 CMD_CLASS_DEFAULT_DEFINITION(CmdTOApiOptHold);
 CMD_CLASS_DEFAULT_EXEC(CmdTOApiOptHold, ToApiInst.optimizeHold());
@@ -197,7 +266,6 @@ unsigned CmdTOApiSaveDef::check()
   return 1;
 }
 CMD_CLASS_DEFAULT_EXEC(CmdTOApiSaveDef, ToApiInst.saveDef(getOptionOrArg(TCL_PATH)->getStringVal()));
-
 
 CMD_CLASS_DEFAULT_DEFINITION(CmdTOApiReportTiming);
 CMD_CLASS_DEFAULT_EXEC(CmdTOApiReportTiming, ToApiInst.reportTiming())

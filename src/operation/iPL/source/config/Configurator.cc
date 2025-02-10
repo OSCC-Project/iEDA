@@ -61,7 +61,6 @@ void Config::initConfigByJson(nlohmann::json json)
   int32_t is_congestion_effort = getDataByJson(json, {"PL", "is_congestion_effort"});
   int32_t ignore_net_degree = getDataByJson(json, {"PL", "ignore_net_degree"});
   int32_t num_threads = getDataByJson(json, {"PL", "num_threads"});
-  std::string pl_dir = getDataByJson(json, {"PL", "pl_dir"});
 
   // Global Placer
   float init_wirelength_coef = getDataByJson(json, {"PL", "GP", "Wirelength", "init_wirelength_coef"});
@@ -69,6 +68,7 @@ void Config::initConfigByJson(nlohmann::json json)
   float min_wirelength_force_bar = getDataByJson(json, {"PL", "GP", "Wirelength", "min_wirelength_force_bar"});
 
   float target_density = getDataByJson(json, {"PL", "GP", "Density", "target_density"});
+  int32_t is_adaptive_bin = getDataByJson(json, {"PL", "GP", "Density", "is_adaptive_bin"});
   int32_t bin_cnt_x = getDataByJson(json, {"PL", "GP", "Density", "bin_cnt_x"});
   int32_t bin_cnt_y = getDataByJson(json, {"PL", "GP", "Density", "bin_cnt_y"});
 
@@ -149,6 +149,11 @@ void Config::initConfigByJson(nlohmann::json json)
   _nes_config.set_reference_hpwl(reference_hpwl);
   _nes_config.set_min_wirelength_force_bar(min_wirelength_force_bar);
   _nes_config.set_target_density(target_density);
+  if(is_adaptive_bin){
+    _nes_config.set_adaptive_bin(true);
+  }else{
+    _nes_config.set_adaptive_bin(false);
+  }
   _nes_config.set_bin_cnt_x(bin_cnt_x);
   _nes_config.set_bin_cnt_y(bin_cnt_y);
   _nes_config.set_max_iter(max_iter);
@@ -166,14 +171,14 @@ void Config::initConfigByJson(nlohmann::json json)
     _nes_config.set_is_opt_max_wirelength(false);
     _nes_config.set_max_net_wirelength(-1);
   }
-  if(is_timing_effort){
+  if (is_timing_effort) {
     _nes_config.set_is_opt_timing(true);
-  }else{
+  } else {
     _nes_config.set_is_opt_timing(false);
   }
-  if(is_congestion_effort){
+  if (is_congestion_effort) {
     _nes_config.set_is_opt_congestion(true);
-  }else{
+  } else {
     _nes_config.set_is_opt_congestion(false);
   }
 
@@ -220,7 +225,6 @@ void Config::initConfigByJson(nlohmann::json json)
   _ignore_net_degree = ignore_net_degree;
   _is_timing_effort = (is_timing_effort == 1);
   _is_congestion_effort = (is_congestion_effort == 1);
-  _pl_dir = pl_dir;
 }
 
 nlohmann::json Config::getDataByJson(nlohmann::json value, std::vector<std::string> flag_list)

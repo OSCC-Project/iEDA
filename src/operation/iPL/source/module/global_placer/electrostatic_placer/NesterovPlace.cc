@@ -33,11 +33,11 @@
 #include <cmath>
 #include <random>
 
-#include "EvalAPI.hpp"
 #include "ipl_io.h"
 #include "omp.h"
 #include "tool_manager.h"
 #include "usage/usage.hh"
+#include "PLAPI.hh"
 
 #ifdef BUILD_QT
 #include "utility/Image.hh"
@@ -75,6 +75,11 @@ namespace ipl {
     wrapNesPinList();
     completeConnection();
 
+    if (_nes_config.isAdaptiveBin()){
+      this->calculateAdaptiveBinCnt();
+      LOG_INFO << "Change to Adaptive Bin: (" << _nes_config.get_bin_cnt_x() << "," << _nes_config.get_bin_cnt_y() << ")" << std::endl;
+    }
+
     initGridManager();
     initTopologyManager();
     notifyPLBinSize();
@@ -83,6 +88,31 @@ namespace ipl {
     if (_nes_config.isOptTiming()) {
       initTimingAnnotation();
     }
+  }
+
+  void NesterovPlace::calculateAdaptiveBinCnt()
+  {
+      int32_t inst_cnt = _nes_database->_nInstances_range;
+      int32_t side_cnt = 2;
+      while(side_cnt*side_cnt < inst_cnt){
+        side_cnt *= 2;
+      }
+
+      int32_t bin_cnt_x = side_cnt;
+      int32_t bin_cnt_y = side_cnt;
+
+      const Layout* layout = _nes_database->_placer_db->get_layout();
+      int32_t core_width = layout->get_core_shape().get_width();
+      int32_t core_height = layout->get_core_shape().get_height();
+
+      if(core_width > core_height){
+        bin_cnt_x *= std::pow(2, static_cast<int32_t>(round(static_cast<float>(core_width)/core_height))-1);
+      }else{
+        bin_cnt_y *= std::pow(2, static_cast<int32_t>(round(static_cast<float>(core_height)/core_width))-1);
+      }
+
+      _nes_config.set_bin_cnt_x(bin_cnt_x);
+      _nes_config.set_bin_cnt_y(bin_cnt_y);
   }
 
   void NesterovPlace::notifyPLBinSize() {
@@ -1268,7 +1298,7 @@ namespace ipl {
       float layout_ratio = 0.5;
       long_width = core_shape.get_width() * layout_ratio;
       long_height = core_shape.get_height() * layout_ratio;
-      long_net_stream.open(_nes_database->_placer_db->get_placer_config()->get_pl_dir() + "/pl/AcrossLongNet_process.txt");
+      long_net_stream.open(iPLAPIInst.obtainTargetDir() + "/pl/AcrossLongNet_process.txt");
       if (!long_net_stream.good()) {
         LOG_WARNING << "Cannot open file for recording across long net !";
       }
@@ -1277,7 +1307,7 @@ namespace ipl {
     // prepare for iter info record
     std::ofstream info_stream;
     if (RECORD_ITER_INFO) {
-      info_stream.open(_nes_database->_placer_db->get_placer_config()->get_pl_dir() + "/pl/plIterInfo.csv");
+      info_stream.open(iPLAPIInst.obtainTargetDir() + "/pl/plIterInfo.csv");
       if (!info_stream.good()) {
         LOG_WARNING << "Cannot open file for iter info record !";
       }
@@ -1603,7 +1633,7 @@ namespace ipl {
       }
     }
 
-    image_ploter.save(_nes_database->_placer_db.get_placer_config()->get_pl_dir() + "/pl/plot/" + file_name + ".jpg");
+    image_ploter.save(iPLAPIInst.obtainTargetDir() + "/pl/plot/" + file_name + ".jpg");
 #endif
   }
 
@@ -1663,7 +1693,7 @@ namespace ipl {
         image_ploter.drawArc(cx, cy, cx + dx, cy + dy);
       }
     }
-    image_ploter.save(_nes_database->_placer_db.get_placer_config()->get_pl_dir() + "/pl/plot/" + file_name + ".jpg");
+    image_ploter.save(iPLAPIInst.obtainTargetDir() + "/pl/plot/" + file_name + ".jpg");
 #endif
   }
 
@@ -1677,7 +1707,7 @@ namespace ipl {
   void NesterovPlace::printDensityMapToCsv(std::string file_name)
   {
     std::ofstream file_stream;
-    file_stream.open(_nes_database->_placer_db->get_placer_config()->get_pl_dir() + "/pl/" + file_name + ".csv");
+    file_stream.open(iPLAPIInst.obtainTargetDir() + "/pl/" + file_name + ".csv");
     if (!file_stream.good()) {
       LOG_WARNING << "Cannot open file for density map calculation!";
     }
@@ -1908,7 +1938,7 @@ namespace ipl {
       iplf::plInst->addFileInstance(nes_inst->get_name(), coordi_x, coordi_y, (int8_t)inst->get_orient());
     }
 
-    iplf::plInst->saveInstanceDataToDirectory(_nes_database->_placer_db->get_placer_config()->get_pl_dir() + "/pl/gui/");
+    iplf::plInst->saveInstanceDataToDirectory(iPLAPIInst.obtainTargetDir() + "/pl/gui/");
   }
 
   void NesterovPlace::printIterationCoordi(std::ofstream& long_net_stream, int32_t cur_iter)

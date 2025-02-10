@@ -6,7 +6,7 @@ flow_init -config $::env(CONFIG_DIR)/flow_config.json
 #===========================================================
 ##   read db config
 #===========================================================
-db_init -config $::env(CONFIG_DIR)/db_default_config.json
+db_init -config $::env(CONFIG_DIR)/db_default_config.json -output_dir_path $::env(RESULT_DIR)
 
 #===========================================================
 ##   reset data path
@@ -27,7 +27,7 @@ def_init -path $::env(RESULT_DIR)/iRT_result.def
 ##   run DRC
 #===========================================================
 run_drc -config $::env(CONFIG_DIR)/drc_default_config.json -path $::env(RESULT_DIR)/report/drc.rpt
-save_drc -path $::env(RESULT_DIR)/drc/detail.drc
+save_drc -path $::env(RESULT_DIR)/drc/detail.json
 
 #read_drc -path $::env(RESULT_DIR)/drc/detail.drc
 

@@ -28,10 +28,13 @@ using std::string;
 using std::vector;
 
 namespace ito {
+
+enum class RoutingType : int { kHVTree = 0, kSteiner = 1, kShallowLight = 2 };
+
+#define toConfig ToConfig::getInstance()
 class ToConfig {
  public:
-  ToConfig() = default;
-  ~ToConfig() = default;
+  static ToConfig *getInstance();
 
   // setter
   void set_lef_files(const vector<string> lefs) { _lef_files_path = lefs; }
@@ -42,11 +45,21 @@ class ToConfig {
   void set_output_def_file(const string out) { _out_def_path = out; }
   void set_report_file(const string report) { _report_path = report; }
   void set_gds_file(const string gds) { _gds_path = gds; }
+  void set_routing_tree(const string tree)
+  {
+    if (tree == "flute") {
+      _routing_tree = RoutingType::kSteiner;
+    } else if (tree == "hvtree") {
+      _routing_tree = RoutingType::kHVTree;
+    } else if (tree == "shallow-light") {
+      _routing_tree = RoutingType::kShallowLight;
+    }
+  }
 
   void set_setup_target_slack(float slack_m) { this->_setup_target_slack = slack_m; }
   void set_hold_target_slack(float slack_m) { this->_hold_target_slack = slack_m; }
-  void set_max_buffer_percent(float percent) { _max_buffer_percent = percent; }
-  void set_max_utilization(float util) { _max_utilization = util; }
+  void set_max_insert_instance_percent(float percent) { _max_insert_instance_percent = percent; }
+  void set_max_core_utilization(float util) { _max_core_utilization = util; }
 
   void set_fix_fanout(bool bo) { _fix_fanout = bo; }
   void set_optimize_drv(bool bo) { _opti_drv = bo; }
@@ -59,11 +72,20 @@ class ToConfig {
   }
   void set_hold_insert_buffers(const vector<string> bufs) { _hold_insert_buffers = bufs; }
 
-  void set_number_passes_allowed_decreasing_slack(int num) {
+  void set_number_of_decreasing_slack_iter(int num) {
     _number_iter_allowed_decreasing_slack = num;
   }
-  void set_rebuffer_max_fanout(int num) { _rebuffer_max_fanout = num; }
-  void set_split_load_min_fanout(int num) { _split_load_min_fanout = num; }
+  void set_max_allowed_buffering_fanout(int num) { _max_allowed_buffering_fanout = num; }
+  void set_min_divide_fanout(int num) { _min_divide_fanout = num; }
+  void set_optimize_endpoints_percent(float num) { _optimize_endpoints_percent = num; }
+  void set_drv_optimize_iter_number(int num) { _drv_optimize_iter_number = num; }
+
+  void set_drv_buffer_prefix(const string& prefix) { _drv_buffer_prefix = prefix; }
+  void set_drv_net_prefix(const string& prefix) { _drv_net_prefix = prefix; }
+  void set_hold_buffer_prefix(const string& prefix) { _hold_buffer_prefix = prefix; }
+  void set_hold_net_prefix(const string& prefix) { _hold_net_prefix = prefix;}
+  void set_setup_buffer_prefix(const string& prefix) { _setup_buffer_prefix = prefix;}
+  void set_setup_net_prefix(const string& prefix) { _setup_net_prefix = prefix;}
 
   // getter
   const vector<string> &get_lef_files() const { return _lef_files_path; }
@@ -74,11 +96,12 @@ class ToConfig {
   const string         &get_output_def_file() const { return _out_def_path; }
   const string         &get_report_file() const { return _report_path; }
   const string         &get_gds_file() const { return _gds_path; }
+  const RoutingType    &get_routing_tree() const { return _routing_tree; }
 
   float get_setup_target_slack() const { return _setup_target_slack; }
   float get_hold_target_slack() const { return _hold_target_slack; }
-  float get_max_buffer_percent() const { return _max_buffer_percent; }
-  float get_max_utilization() const { return _max_utilization; }
+  float get_max_insert_instance_percent() const { return _max_insert_instance_percent; }
+  float get_max_core_utilization() const { return _max_core_utilization; }
 
   bool get_fix_fanout() const { return _fix_fanout; }
   bool get_optimize_drv() const { return _opti_drv; }
@@ -89,13 +112,24 @@ class ToConfig {
   const vector<string> &get_setup_insert_buffers() const { return _setup_insert_buffers; }
   const vector<string> &get_hold_insert_buffers() const { return _hold_insert_buffers; }
 
-  int get_number_passes_allowed_decreasing_slack() {
+  int get_number_of_decreasing_slack_iter() {
     return _number_iter_allowed_decreasing_slack;
   }
-  int get_rebuffer_max_fanout() { return _rebuffer_max_fanout; }
-  int get_split_load_min_fanout() { return _split_load_min_fanout; }
+  int get_max_allowed_buffering_fanout() { return _max_allowed_buffering_fanout; }
+  int get_min_divide_fanout() { return _min_divide_fanout; }
+  float get_optimize_endpoints_percent() { return _optimize_endpoints_percent; }
+  int get_drv_optimize_iter_number() { return _drv_optimize_iter_number; }
+
+  string get_drv_buffer_prefix() const { return _drv_buffer_prefix; }
+  string get_drv_net_prefix() const { return _drv_net_prefix; }
+  string get_hold_buffer_prefix() const { return _hold_buffer_prefix; }
+  string get_hold_net_prefix() const { return _hold_net_prefix;}
+  string get_setup_buffer_prefix() const { return _setup_buffer_prefix;}
+  string get_setup_net_prefix() const { return _setup_net_prefix;}
 
  private:
+  static ToConfig *_instance;
+
   // input
   vector<string> _lef_files_path;
   string         _def_file_path;
@@ -104,27 +138,41 @@ class ToConfig {
   vector<string> _lib_files_path;
   float          _setup_target_slack = 0.0;
   float          _hold_target_slack = 0.0;
-  float          _max_buffer_percent = 0.2;
-  float          _max_utilization = 0.8;
+  float          _max_insert_instance_percent = 0.2;
+  float          _max_core_utilization = 0.8;
 
   bool _fix_fanout;
   bool _opti_drv;
   bool _opti_hold;
   bool _opti_setup;
 
+  RoutingType _routing_tree = RoutingType::kSteiner;
   vector<string> _drv_insert_buffers;   // buffer for optimize Design Rule Violation
   vector<string> _setup_insert_buffers; // buffer for optimize Setup Violation
   vector<string> _hold_insert_buffers;  // buffer for optimize Hold Violation
 
+  // specific names prefixes
+  string _drv_buffer_prefix = "DRV_buffer_";
+  string _drv_net_prefix = "DRV_net_";
+  string _hold_buffer_prefix  = "hold_buffer_";
+  string _hold_net_prefix = "hold_net_";
+  string _setup_buffer_prefix = "setup_buffer_";
+  string _setup_net_prefix = "setup_net_";
+
   // the maximum number of times slack is allowed to get worse when fix setup
   int _number_iter_allowed_decreasing_slack = 50;
-  int _rebuffer_max_fanout = 20;
-  int _split_load_min_fanout = 8; // Nets with low fanout don't need to split loads.
+  int _max_allowed_buffering_fanout = 20;
+  int _min_divide_fanout = 8; // Nets with low fanout don't need to divide loads.
+  float _optimize_endpoints_percent = 1.0; // Nets with low fanout don't need to divide loads.
+  int _drv_optimize_iter_number = 1.0; // max iter number for optimize DRV
 
   // output
   string _out_def_path;
   string _report_path;
   string _gds_path;
+
+  ToConfig() = default;
+  ~ToConfig() = default;
 };
 
 } // namespace ito

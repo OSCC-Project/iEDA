@@ -54,17 +54,19 @@ void TopologyGenerator::generate()
   Monitor monitor;
   RTLOG.info(Loc::current(), "Starting...");
   TGModel tg_model = initTGModel();
-  setTGParameter(tg_model);
+  setTGComParam(tg_model);
   initTGTaskList(tg_model);
   buildTGNodeMap(tg_model);
   buildTGNodeNeighbor(tg_model);
   buildOrientSupply(tg_model);
+  // debugCheckTGModel(tg_model);
   generateTGModel(tg_model);
   updateSummary(tg_model);
   printSummary(tg_model);
-  writePlanarSupplyCSV(tg_model);
-  writePlanarDemandCSV(tg_model);
-  writePlanarOverflowCSV(tg_model);
+  outputGuide(tg_model);
+  outputPlanarSupplyCSV(tg_model);
+  outputPlanarDemandCSV(tg_model);
+  outputPlanarOverflowCSV(tg_model);
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
@@ -104,12 +106,19 @@ TGNet TopologyGenerator::convertToTGNet(Net& net)
   return tg_net;
 }
 
-void TopologyGenerator::setTGParameter(TGModel& tg_model)
+void TopologyGenerator::setTGComParam(TGModel& tg_model)
 {
-  TGParameter tg_parameter;
-  RTLOG.info(Loc::current(), "topo_spilt_length: ", tg_parameter.get_topo_spilt_length());
-  RTLOG.info(Loc::current(), "congestion_unit: ", tg_parameter.get_congestion_unit());
-  tg_model.set_tg_parameter(tg_parameter);
+  int32_t topo_spilt_length = 10;
+  double congestion_unit = 2;
+  /**
+   * topo_spilt_length, congestion_unit
+   */
+  // clang-format off
+  TGComParam tg_com_param(topo_spilt_length, congestion_unit);
+  // clang-format on
+  RTLOG.info(Loc::current(), "topo_spilt_length: ", tg_com_param.get_topo_spilt_length());
+  RTLOG.info(Loc::current(), "congestion_unit: ", tg_com_param.get_congestion_unit());
+  tg_model.set_tg_com_param(tg_com_param);
 }
 
 void TopologyGenerator::initTGTaskList(TGModel& tg_model)
@@ -218,7 +227,7 @@ void TopologyGenerator::generateTGModel(TGModel& tg_model)
 void TopologyGenerator::routeTGNet(TGModel& tg_model, TGNet* tg_net)
 {
   std::vector<Segment<PlanarCoord>> routing_segment_list;
-  for (Segment<PlanarCoord>& planar_topo : getPlanarTopoListByFlute(tg_model, tg_net)) {
+  for (Segment<PlanarCoord>& planar_topo : getPlanarTopoList(tg_model, tg_net)) {
     for (Segment<PlanarCoord>& routing_segment : getRoutingSegmentList(tg_model, planar_topo)) {
       routing_segment_list.push_back(routing_segment);
     }
@@ -228,45 +237,22 @@ void TopologyGenerator::routeTGNet(TGModel& tg_model, TGNet* tg_net)
   uploadNetResult(tg_net, coord_tree);
 }
 
-std::vector<Segment<PlanarCoord>> TopologyGenerator::getPlanarTopoListByFlute(TGModel& tg_model, TGNet* tg_net)
+std::vector<Segment<PlanarCoord>> TopologyGenerator::getPlanarTopoList(TGModel& tg_model, TGNet* tg_net)
 {
-  int32_t topo_spilt_length = tg_model.get_tg_parameter().get_topo_spilt_length();
+  int32_t topo_spilt_length = tg_model.get_tg_com_param().get_topo_spilt_length();
 
   std::vector<PlanarCoord> planar_coord_list;
   {
     for (TGPin& tg_pin : tg_net->get_tg_pin_list()) {
-      planar_coord_list.push_back(tg_pin.get_key_access_point().get_grid_coord());
+      planar_coord_list.push_back(tg_pin.get_access_point().get_grid_coord());
     }
     std::sort(planar_coord_list.begin(), planar_coord_list.end(), CmpPlanarCoordByXASC());
     planar_coord_list.erase(std::unique(planar_coord_list.begin(), planar_coord_list.end()), planar_coord_list.end());
   }
-  std::vector<Segment<PlanarCoord>> flute_planar_topo_list;
-  if (planar_coord_list.size() > 1) {
-    size_t point_num = planar_coord_list.size();
-    Flute::DTYPE* x_list = (Flute::DTYPE*) malloc(sizeof(Flute::DTYPE) * (point_num));
-    Flute::DTYPE* y_list = (Flute::DTYPE*) malloc(sizeof(Flute::DTYPE) * (point_num));
-    for (size_t i = 0; i < point_num; i++) {
-      x_list[i] = planar_coord_list[i].get_x();
-      y_list[i] = planar_coord_list[i].get_y();
-    }
-    Flute::Tree flute_tree = Flute::flute(point_num, x_list, y_list, FLUTE_ACCURACY);
-    free(x_list);
-    free(y_list);
-
-    for (int32_t i = 0; i < 2 * flute_tree.deg - 2; i++) {
-      int32_t n_id = flute_tree.branch[i].n;
-      PlanarCoord first_coord(flute_tree.branch[i].x, flute_tree.branch[i].y);
-      PlanarCoord second_coord(flute_tree.branch[n_id].x, flute_tree.branch[n_id].y);
-      if (first_coord != second_coord) {
-        flute_planar_topo_list.emplace_back(first_coord, second_coord);
-      }
-    }
-    Flute::free_tree(flute_tree);
-  }
   std::vector<Segment<PlanarCoord>> planar_topo_list;
-  for (Segment<PlanarCoord>& flute_planar_topo : flute_planar_topo_list) {
-    PlanarCoord& first_coord = flute_planar_topo.get_first();
-    PlanarCoord& second_coord = flute_planar_topo.get_second();
+  for (Segment<PlanarCoord>& planar_topo : RTI.getPlanarTopoList(planar_coord_list)) {
+    PlanarCoord& first_coord = planar_topo.get_first();
+    PlanarCoord& second_coord = planar_topo.get_second();
     int32_t span_x = std::abs(first_coord.get_x() - second_coord.get_x());
     int32_t span_y = std::abs(first_coord.get_y() - second_coord.get_y());
     if (span_x > 1 && span_y > 1 && (span_x > topo_spilt_length || span_y > topo_spilt_length)) {
@@ -372,7 +358,7 @@ std::vector<Segment<PlanarCoord>> TopologyGenerator::getRoutingSegmentListByLPat
 
 double TopologyGenerator::getNodeCost(TGModel& tg_model, std::vector<Segment<PlanarCoord>>& routing_segment_list)
 {
-  double congestion_unit = tg_model.get_tg_parameter().get_congestion_unit();
+  double congestion_unit = tg_model.get_tg_com_param().get_congestion_unit();
   GridMap<TGNode>& tg_node_map = tg_model.get_tg_node_map();
 
   double node_cost = 0;
@@ -424,7 +410,7 @@ MTree<LayerCoord> TopologyGenerator::getCoordTree(TGNet* tg_net, std::vector<Seg
   std::map<LayerCoord, std::set<int32_t>, CmpLayerCoordByXASC> key_coord_pin_map;
   std::vector<TGPin>& tg_pin_list = tg_net->get_tg_pin_list();
   for (size_t i = 0; i < tg_pin_list.size(); i++) {
-    LayerCoord coord(tg_pin_list[i].get_key_access_point().get_grid_coord(), 0);
+    LayerCoord coord(tg_pin_list[i].get_access_point().get_grid_coord(), 0);
     candidate_root_coord_list.push_back(coord);
     key_coord_pin_map[coord].insert(static_cast<int32_t>(i));
   }
@@ -495,11 +481,14 @@ void TopologyGenerator::updateSummary(TGModel& tg_model)
   ScaleAxis& gcell_axis = RTDM.getDatabase().get_gcell_axis();
   Die& die = RTDM.getDatabase().get_die();
   GridMap<GCell>& gcell_map = RTDM.getDatabase().get_gcell_map();
+  Summary& summary = RTDM.getDatabase().get_summary();
   int32_t enable_timing = RTDM.getConfig().enable_timing;
-  int32_t& total_demand = RTDM.getSummary().tg_summary.total_demand;
-  int32_t& total_overflow = RTDM.getSummary().tg_summary.total_overflow;
-  double& total_wire_length = RTDM.getSummary().tg_summary.total_wire_length;
-  std::map<std::string, std::vector<double>>& timing = RTDM.getSummary().tg_summary.timing;
+
+  int32_t& total_demand = summary.tg_summary.total_demand;
+  int32_t& total_overflow = summary.tg_summary.total_overflow;
+  double& total_wire_length = summary.tg_summary.total_wire_length;
+  std::map<std::string, std::map<std::string, double>>& clock_timing = summary.tg_summary.clock_timing;
+  std::map<std::string, double>& power_map = summary.tg_summary.power_map;
 
   std::vector<TGNet>& tg_net_list = tg_model.get_tg_net_list();
   GridMap<TGNode>& tg_node_map = tg_model.get_tg_node_map();
@@ -507,6 +496,8 @@ void TopologyGenerator::updateSummary(TGModel& tg_model)
   total_demand = 0;
   total_overflow = 0;
   total_wire_length = 0;
+  clock_timing.clear();
+  power_map.clear();
 
   for (int32_t x = 0; x < tg_node_map.get_x_size(); x++) {
     for (int32_t y = 0; y < tg_node_map.get_y_size(); y++) {
@@ -524,7 +515,7 @@ void TopologyGenerator::updateSummary(TGModel& tg_model)
       total_overflow += node_overflow;
     }
   }
-  for (auto& [net_idx, segment_set] : RTDM.getGlobalNetResultMap(die)) {
+  for (auto& [net_idx, segment_set] : RTDM.getNetGlobalResultMap(die)) {
     for (Segment<LayerCoord>* segment : segment_set) {
       LayerCoord& first_coord = segment->get_first();
       int32_t first_layer_idx = first_coord.get_layer_idx();
@@ -548,12 +539,12 @@ void TopologyGenerator::updateSummary(TGModel& tg_model)
     routing_segment_list_list.resize(tg_net_list.size());
     for (TGNet& tg_net : tg_net_list) {
       for (TGPin& tg_pin : tg_net.get_tg_pin_list()) {
-        LayerCoord layer_coord = tg_pin.get_key_access_point().getGridLayerCoord();
+        LayerCoord layer_coord = tg_pin.get_access_point().getGridLayerCoord();
         real_pin_coord_map_list[tg_net.get_net_idx()][tg_pin.get_pin_name()].emplace_back(
             RTUTIL.getRealRectByGCell(layer_coord, gcell_axis).getMidPoint(), 0);
       }
     }
-    for (auto& [net_idx, segment_set] : RTDM.getGlobalNetResultMap(die)) {
+    for (auto& [net_idx, segment_set] : RTDM.getNetGlobalResultMap(die)) {
       for (Segment<LayerCoord>* segment : segment_set) {
         LayerCoord first_layer_coord = segment->get_first();
         LayerCoord first_real_coord(RTUTIL.getRealRectByGCell(first_layer_coord, gcell_axis).getMidPoint(),
@@ -565,17 +556,20 @@ void TopologyGenerator::updateSummary(TGModel& tg_model)
         routing_segment_list_list[net_idx].emplace_back(first_real_coord, second_real_coord);
       }
     }
-    timing = RTI.getTiming(real_pin_coord_map_list, routing_segment_list_list);
+    RTI.updateTimingAndPower(real_pin_coord_map_list, routing_segment_list_list, clock_timing, power_map);
   }
 }
 
 void TopologyGenerator::printSummary(TGModel& tg_model)
 {
+  Summary& summary = RTDM.getDatabase().get_summary();
   int32_t enable_timing = RTDM.getConfig().enable_timing;
-  int32_t& total_demand = RTDM.getSummary().tg_summary.total_demand;
-  int32_t& total_overflow = RTDM.getSummary().tg_summary.total_overflow;
-  double& total_wire_length = RTDM.getSummary().tg_summary.total_wire_length;
-  std::map<std::string, std::vector<double>>& timing = RTDM.getSummary().tg_summary.timing;
+
+  int32_t& total_demand = summary.tg_summary.total_demand;
+  int32_t& total_overflow = summary.tg_summary.total_overflow;
+  double& total_wire_length = summary.tg_summary.total_wire_length;
+  std::map<std::string, std::map<std::string, double>>& clock_timing = summary.tg_summary.clock_timing;
+  std::map<std::string, double>& power_map = summary.tg_summary.power_map;
 
   fort::char_table summary_table;
   {
@@ -584,23 +578,105 @@ void TopologyGenerator::printSummary(TGModel& tg_model)
     summary_table << fort::header << "total_wire_length" << total_wire_length << fort::endr;
   }
   fort::char_table timing_table;
+  fort::char_table power_table;
   if (enable_timing) {
-    timing_table << fort::header << "Clock" << "TNS" << "WNS" << "Freq(MHz)" << fort::endr;
-    for (auto& [clock_name, timing_list] : timing) {
-      timing_table << clock_name << timing_list[0] << timing_list[1] << timing_list[2] << fort::endr;
+    timing_table << fort::header << "clock_name"
+                 << "tns"
+                 << "wns"
+                 << "freq" << fort::endr;
+    for (auto& [clock_name, timing_map] : clock_timing) {
+      timing_table << clock_name << timing_map["TNS"] << timing_map["WNS"] << timing_map["Freq(MHz)"] << fort::endr;
+    }
+    power_table << fort::header << "power_type" << "power_value" << fort::endr;
+    for (auto& [type, power] : power_map) {
+      power_table << type << power << fort::endr;
     }
   }
-  std::vector<fort::char_table> table_list;
-  table_list.push_back(summary_table);
-  table_list.push_back(timing_table);
-  RTUTIL.printTableList(table_list);
+  RTUTIL.printTableList({summary_table});
+  RTUTIL.printTableList({timing_table, power_table});
 }
 
-void TopologyGenerator::writePlanarSupplyCSV(TGModel& tg_model)
+void TopologyGenerator::outputGuide(TGModel& tg_model)
+{
+  int32_t micron_dbu = RTDM.getDatabase().get_micron_dbu();
+  ScaleAxis& gcell_axis = RTDM.getDatabase().get_gcell_axis();
+  Die& die = RTDM.getDatabase().get_die();
+  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
+  std::string& tg_temp_directory_path = RTDM.getConfig().tg_temp_directory_path;
+  int32_t output_inter_result = RTDM.getConfig().output_inter_result;
+  if (!output_inter_result) {
+    return;
+  }
+  std::vector<TGNet>& tg_net_list = tg_model.get_tg_net_list();
+
+  std::ofstream* guide_file_stream = RTUTIL.getOutputFileStream(tg_temp_directory_path + "route.guide");
+  if (guide_file_stream == nullptr) {
+    return;
+  }
+  RTUTIL.pushStream(guide_file_stream, "guide net_name\n");
+  RTUTIL.pushStream(guide_file_stream, "pin grid_x grid_y real_x real_y layer energy name\n");
+  RTUTIL.pushStream(guide_file_stream, "wire grid1_x grid1_y grid2_x grid2_y real1_x real1_y real2_x real2_y layer\n");
+  RTUTIL.pushStream(guide_file_stream, "via grid_x grid_y real_x real_y layer1 layer2\n");
+
+  for (auto& [net_idx, segment_set] : RTDM.getNetGlobalResultMap(die)) {
+    TGNet& tg_net = tg_net_list[net_idx];
+    RTUTIL.pushStream(guide_file_stream, "guide ", tg_net.get_origin_net()->get_net_name(), "\n");
+
+    for (TGPin& tg_pin : tg_net.get_tg_pin_list()) {
+      AccessPoint& access_point = tg_pin.get_access_point();
+      double grid_x = access_point.get_grid_x();
+      double grid_y = access_point.get_grid_y();
+      double real_x = access_point.get_real_x() / 1.0 / micron_dbu;
+      double real_y = access_point.get_real_y() / 1.0 / micron_dbu;
+      std::string layer = routing_layer_list[access_point.get_layer_idx()].get_layer_name();
+      std::string connnect;
+      if (tg_pin.get_is_driven()) {
+        connnect = "driven";
+      } else {
+        connnect = "load";
+      }
+      RTUTIL.pushStream(guide_file_stream, "pin ", grid_x, " ", grid_y, " ", real_x, " ", real_y, " ", layer, " ", connnect, " ",
+                        tg_pin.get_pin_name(), "\n");
+    }
+    for (Segment<LayerCoord>* segment : segment_set) {
+      LayerCoord first_layer_coord = segment->get_first();
+      double grid1_x = first_layer_coord.get_x();
+      double grid1_y = first_layer_coord.get_y();
+      int32_t first_layer_idx = first_layer_coord.get_layer_idx();
+
+      PlanarCoord first_mid_coord = RTUTIL.getRealRectByGCell(first_layer_coord, gcell_axis).getMidPoint();
+      double real1_x = first_mid_coord.get_x() / 1.0 / micron_dbu;
+      double real1_y = first_mid_coord.get_y() / 1.0 / micron_dbu;
+
+      LayerCoord second_layer_coord = segment->get_second();
+      double grid2_x = second_layer_coord.get_x();
+      double grid2_y = second_layer_coord.get_y();
+      int32_t second_layer_idx = second_layer_coord.get_layer_idx();
+
+      PlanarCoord second_mid_coord = RTUTIL.getRealRectByGCell(second_layer_coord, gcell_axis).getMidPoint();
+      double real2_x = second_mid_coord.get_x() / 1.0 / micron_dbu;
+      double real2_y = second_mid_coord.get_y() / 1.0 / micron_dbu;
+
+      if (first_layer_idx != second_layer_idx) {
+        RTUTIL.swapByASC(first_layer_idx, second_layer_idx);
+        std::string layer1 = routing_layer_list[first_layer_idx].get_layer_name();
+        std::string layer2 = routing_layer_list[second_layer_idx].get_layer_name();
+        RTUTIL.pushStream(guide_file_stream, "via ", grid1_x, " ", grid1_y, " ", real1_x, " ", real1_y, " ", layer1, " ", layer2, "\n");
+      } else {
+        std::string layer = routing_layer_list[first_layer_idx].get_layer_name();
+        RTUTIL.pushStream(guide_file_stream, "wire ", grid1_x, " ", grid1_y, " ", grid2_x, " ", grid2_y, " ", real1_x, " ", real1_y, " ",
+                          real2_x, " ", real2_y, " ", layer, "\n");
+      }
+    }
+  }
+  RTUTIL.closeFileStream(guide_file_stream);
+}
+
+void TopologyGenerator::outputPlanarSupplyCSV(TGModel& tg_model)
 {
   std::string& tg_temp_directory_path = RTDM.getConfig().tg_temp_directory_path;
-  int32_t output_csv = RTDM.getConfig().output_csv;
-  if (!output_csv) {
+  int32_t output_inter_result = RTDM.getConfig().output_inter_result;
+  if (!output_inter_result) {
     return;
   }
   std::ofstream* supply_csv_file = RTUTIL.getOutputFileStream(RTUTIL.getString(tg_temp_directory_path, "supply_map_planar.csv"));
@@ -618,11 +694,11 @@ void TopologyGenerator::writePlanarSupplyCSV(TGModel& tg_model)
   RTUTIL.closeFileStream(supply_csv_file);
 }
 
-void TopologyGenerator::writePlanarDemandCSV(TGModel& tg_model)
+void TopologyGenerator::outputPlanarDemandCSV(TGModel& tg_model)
 {
   std::string& tg_temp_directory_path = RTDM.getConfig().tg_temp_directory_path;
-  int32_t output_csv = RTDM.getConfig().output_csv;
-  if (!output_csv) {
+  int32_t output_inter_result = RTDM.getConfig().output_inter_result;
+  if (!output_inter_result) {
     return;
   }
   std::ofstream* demand_csv_file = RTUTIL.getOutputFileStream(RTUTIL.getString(tg_temp_directory_path, "demand_map_planar.csv"));
@@ -640,11 +716,11 @@ void TopologyGenerator::writePlanarDemandCSV(TGModel& tg_model)
   RTUTIL.closeFileStream(demand_csv_file);
 }
 
-void TopologyGenerator::writePlanarOverflowCSV(TGModel& tg_model)
+void TopologyGenerator::outputPlanarOverflowCSV(TGModel& tg_model)
 {
   std::string& tg_temp_directory_path = RTDM.getConfig().tg_temp_directory_path;
-  int32_t output_csv = RTDM.getConfig().output_csv;
-  if (!output_csv) {
+  int32_t output_inter_result = RTDM.getConfig().output_inter_result;
+  if (!output_inter_result) {
     return;
   }
   std::ofstream* overflow_csv_file = RTUTIL.getOutputFileStream(RTUTIL.getString(tg_temp_directory_path, "overflow_map_planar.csv"));
@@ -663,6 +739,33 @@ void TopologyGenerator::writePlanarOverflowCSV(TGModel& tg_model)
     RTUTIL.pushStream(overflow_csv_file, "\n");
   }
   RTUTIL.closeFileStream(overflow_csv_file);
+}
+
+#endif
+
+#if 1  // debug
+
+void TopologyGenerator::debugCheckTGModel(TGModel& tg_model)
+{
+  GridMap<TGNode>& tg_node_map = tg_model.get_tg_node_map();
+  for (int32_t x = 0; x < tg_node_map.get_x_size(); x++) {
+    for (int32_t y = 0; y < tg_node_map.get_y_size(); y++) {
+      TGNode& tg_node = tg_node_map[x][y];
+      for (auto& [orient, neighbor] : tg_node.get_neighbor_node_map()) {
+        Orientation opposite_orient = RTUTIL.getOppositeOrientation(orient);
+        if (!RTUTIL.exist(neighbor->get_neighbor_node_map(), opposite_orient)) {
+          RTLOG.error(Loc::current(), "The tg_node neighbor is not bidirectional!");
+        }
+        if (neighbor->get_neighbor_node_map()[opposite_orient] != &tg_node) {
+          RTLOG.error(Loc::current(), "The tg_node neighbor is not bidirectional!");
+        }
+        if (RTUTIL.getOrientation(PlanarCoord(tg_node), PlanarCoord(*neighbor)) == orient) {
+          continue;
+        }
+        RTLOG.error(Loc::current(), "The neighbor orient is different with real region!");
+      }
+    }
+  }
 }
 
 #endif

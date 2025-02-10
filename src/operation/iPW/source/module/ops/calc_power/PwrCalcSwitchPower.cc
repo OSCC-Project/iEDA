@@ -23,7 +23,6 @@
  */
 
 #include "PwrCalcSwitchPower.hh"
-
 #include "core/PwrSeqGraph.hh"
 
 namespace ipower {
@@ -96,7 +95,23 @@ unsigned PwrCalcSwitchPower::operator()(PwrGraph* the_graph) {
   Net* net;
   /*Calc switch power for power net arc.*/
   FOREACH_NET(nl, net) {
+    if (net->getLoads().empty()) {
+      LOG_INFO << "net " << net->get_name()
+               << " has no load, skip switch power calculation.";
+      continue;
+    }
+
     auto* driver_obj = net->getDriver();
+    if (!driver_obj) {
+      LOG_INFO << "net " << net->get_name()
+               << " has no driver, skip switch power calculation.";
+      continue;
+    }
+
+    if (driver_obj->isPort() &&
+        ((net->getLoads().size() == 1) && net->getLoads().front()->isPort())) {
+      continue;
+    }
 
     auto* the_sta_graph = the_graph->get_sta_graph();
     auto driver_sta_vertex = the_sta_graph->findVertex(driver_obj);
@@ -105,7 +120,9 @@ unsigned PwrCalcSwitchPower::operator()(PwrGraph* the_graph) {
     if (driver_sta_vertex) {
       driver_pwr_vertex = the_graph->staToPwrVertex(*driver_sta_vertex);
     } else {
-      LOG_FATAL << "not found driver sta vertex.";
+      // LOG_FATAL << "not found driver sta vertex.";
+      LOG_ERROR << "not found driver sta vertex.";
+      continue;
     }
 
     // get VDD
@@ -124,7 +141,8 @@ unsigned PwrCalcSwitchPower::operator()(PwrGraph* the_graph) {
     // calc swich power of the arc.
     // swich_power = k*toggle*Cap*(VDD^2)
     double arc_swich_power = c_switch_power_K * toggle * cap * vdd * vdd;
-    auto switch_data = std::make_unique<PwrSwitchData>(net, arc_swich_power);
+    auto switch_data =
+        std::make_unique<PwrSwitchData>(net, MW_TO_W(arc_swich_power));
     switch_data->set_nom_voltage(vdd);
     // add power analysis data.
     addSwitchPower(std::move(switch_data));

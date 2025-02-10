@@ -26,6 +26,8 @@
 
 #include <glog/logging.h>
 
+#include <string>
+
 namespace ieda {
 
 /**
@@ -45,7 +47,7 @@ class Log
   };
 
  public:
-  static void init(char* argv[]);
+  static void init(char* argv[], std::string log_dir = "/var/tmp/");
   static void end();
   static void setVerboseLogLevel(const char* module_name, int level);
 };

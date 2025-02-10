@@ -36,8 +36,8 @@
 namespace ipl {
 #define TOPO_SMALL_GAP 10
 #define TOPO_LARGE_GAP 1000
-#define TOPO_MIN_INDEX -10000000000
-#define TOPO_MAX_INDEX 10000000000
+#define TOPO_MIN_INDEX -1000000
+#define TOPO_MAX_INDEX 1000000
 
 std::vector<Node*> NetWork::get_node_list() const
 {

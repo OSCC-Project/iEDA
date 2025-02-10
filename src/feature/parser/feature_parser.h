@@ -62,11 +62,17 @@ class FeatureParser
 
   // report
   bool buildSummary(std::string json_path);
-  bool buildSummaryMap(std::string csv_path, int bin_cnt_x, int bin_cnt_y) { return true; }
+  bool buildSummaryMap(std::string csv_path, int bin_cnt_x, int bin_cnt_y);
   bool buildTools(std::string json_path, std::string step);
 
   bool buildRouteData(std::string json_path, RouteAnalyseData* data);
   bool readRouteData(std::string json_path, RouteAnalyseData* data);
+
+  bool buildSummaryEval(std::string json_path);
+  bool buildSummaryEvalJsonl(std::string jsonl_path);
+  bool buildSummaryTimingEval(std::string json_path);
+  bool buildNetEval(std::string csv_path);
+  bool buildCongMap(std::string stage, std::string csv_dir);
 
  private:
   IdbLayout* _layout = nullptr;
@@ -91,5 +97,11 @@ class FeatureParser
   json buildSummaryRT();
   json buildSummarySTA();
   json buildSummaryDRC();
+
+  json buildSummaryWirelength();
+  json buildSummaryDensity();
+  json buildSummaryCongestion();
+  json buildSummaryTiming();
+  json buildSummaryPower();
 };
 }  // namespace ieda_feature

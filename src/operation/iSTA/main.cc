@@ -68,6 +68,7 @@ int registerCommands() {
   registerTclCmd(CmdReportConstraint, "report_constraint");
   registerTclCmd(CmdDefToVerilog, "def_to_verilog");
   registerTclCmd(CmdVerilogToDef, "verilog_to_def");
+  registerTclCmd(CmdDumpGraphData, "dump_graph_data");
 
   return EXIT_SUCCESS;
 }

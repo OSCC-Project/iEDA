@@ -6,7 +6,7 @@ flow_init -config $::env(CONFIG_DIR)/flow_config.json
 #===========================================================
 ##   read db config
 #===========================================================
-db_init -config $::env(CONFIG_DIR)/db_default_config.json
+db_init -config $::env(CONFIG_DIR)/db_default_config.json -output_dir_path $::env(RESULT_DIR)
 
 #===========================================================
 ##   reset data path
@@ -86,7 +86,8 @@ source $::env(TCL_SCRIPT_DIR)/iFP_script/module/set_clocknet.tcl
 #===========================================================
 ##   save def 
 #===========================================================
-def_save -path $::env(RESULT_DIR)/iFP_result.def
+set DEFAULT_OUTPUT_DEF "$::env(RESULT_DIR)/iFP_result.def"
+def_save -path [expr {[info exists ::env(OUTPUT_DEF)] ? $::env(OUTPUT_DEF) : $DEFAULT_OUTPUT_DEF}]
 
 #===========================================================
 ##   report db summary

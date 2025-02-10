@@ -30,6 +30,37 @@ inline void hash_combine(std::size_t& seed, T const& v)
 
 namespace idrc {
 
+#define DEBUGCONDITION 0
+
+#if DEBUGCONDITION
+#define DEBUGPRINT 1
+#define DEBUGCLOSE 0
+#else
+#define DEBUGPRINT 0
+#define DEBUGCLOSE 0
+#endif
+
+#if DEBUGPRINT
+#define DEBUGOUTPUT(x) (std::cout << "idrc : " << x << std::endl)
+#define DEBUGHIGHLIGHT(x) "\033[0;36m" << x << "\033[0m"
+#else
+#define DEBUGOUTPUT(x)
+#define DEBUGHIGHLIGHT(x)
+#endif
+
+#if DEBUGCLOSE
+#if 1
+#define DEBUGCLOSE_OVERLAP
+// #define DEBUGCLOSE_JOG
+#define DEBUGCLOSE_STEP
+#define DEBUGCLOSE_HOLE
+#define DEBUGCLOSE_AREA
+// #define DEBUGCLOSE_EOL
+// #define DEBUGCLOSE_CORNER_FILL
+#define DEBUGCLOSE_NOTCH
+#endif
+#endif
+
 class DrcUtil
 {
  public:

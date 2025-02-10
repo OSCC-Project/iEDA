@@ -108,6 +108,9 @@ void CTSAPI::writeGDS()
 
 void CTSAPI::report(const std::string& save_dir)
 {
+  if (!std::filesystem::exists(save_dir)) {
+    std::filesystem::create_directories(save_dir);
+  }
   bool b_read_data = false;
   if (_timing_engine == nullptr) {
     startDbSta();
@@ -197,10 +200,10 @@ void CTSAPI::init(const std::string& config_file, const std::string& work_dir)
     _config->set_gds_file(gds_file_path.string());
     _config->set_output_def_path(def_path.string());
     if (!std::filesystem::exists(work_dir)) {
-      std::filesystem::create_directory(work_dir);
+      std::filesystem::create_directories(work_dir);
     }
     if (!std::filesystem::exists(def_path)) {
-      std::filesystem::create_directory(def_path);
+      std::filesystem::create_directories(def_path);
     }
   }
   _design = new CtsDesign();
@@ -599,11 +602,17 @@ icts::CtsCellLib* CTSAPI::getCellLib(const std::string& cell_master, const std::
       y_slew.emplace_back(slew_mid_value[i * cap_out.size() + j]);
     }
   }
-  LOG_FATAL_IF(x_slew_in.empty() || x_cap_out.empty() || y_delay.empty() || y_slew.empty())
-      << "No feasible work value, please check "
-         "the config parameter: \"max_buf_tran\", \"max_sink_tran\" and "
-         "\"max_cap\" with the liberty "
-      << cell_master;
+  if (x_slew_in.empty() || x_cap_out.empty() || y_delay.empty() || y_slew.empty()) {
+    LOG_WARNING << "No feasible work value, please check "
+                   "the config parameter: \"max_buf_tran\", \"max_sink_tran\" and "
+                   "\"max_cap\" with the liberty "
+                << cell_master;
+    // use all value
+    x_slew_in = slew_in;
+    x_cap_out = cap_out;
+    y_delay = delay_mid_value;
+    y_slew = slew_mid_value;
+  }
   std::vector<std::vector<double>> x_delay = {x_slew_in, x_cap_out};
   lib->set_delay_coef(_model_factory->cppLinearModel(x_delay, y_delay));
 
@@ -624,10 +633,10 @@ std::vector<icts::CtsCellLib*> CTSAPI::getAllBufferLibs()
 {
   auto buffer_types = _config->get_buffer_types();
   std::vector<icts::CtsCellLib*> all_buf_libs;
-  for (auto buf_cell : buffer_types) {
+  std::ranges::for_each(buffer_types, [&](const std::string& buf_cell) {
     auto* buf_lib = getCellLib(buf_cell);
     all_buf_libs.emplace_back(buf_lib);
-  }
+  });
   auto cmp = [](CtsCellLib* lib_1, CtsCellLib* lib_2) { return lib_1->getDelayIntercept() < lib_1->getDelayIntercept(); };
   std::ranges::sort(all_buf_libs, cmp);
   return all_buf_libs;
@@ -921,7 +930,10 @@ void CTSAPI::latencySkewLog() const
       ista::StaPathEnd* path_end;
       ista::StaPathData* path_data;
       FOREACH_PATH_GROUP_END(seq_path_group.get(), path_end)
-      FOREACH_PATH_END_DATA(path_end, mode, path_data) { seq_data_queue.push(path_data); }
+      FOREACH_PATH_END_DATA(path_end, mode, path_data)
+      {
+        seq_data_queue.push(path_data);
+      }
       auto* worst_seq_data = seq_data_queue.top();
       auto* launch_clock_data = worst_seq_data->get_launch_clock_data();
       auto* capture_clock_data = worst_seq_data->get_capture_clock_data();
@@ -1075,11 +1087,12 @@ void CTSAPI::readSTAFile()
     std::filesystem::create_directories(sta_work_dir);
   }
   std::vector<const char*> lib_paths;
-  for (auto& lib_path : DBCONFIG.get_lib_paths()) {
-    lib_paths.push_back(lib_path.c_str());
-  }
+  std::ranges::for_each(DBCONFIG.get_lib_paths(), [&](const std::string& lib_path) { lib_paths.push_back(lib_path.c_str()); });
   _timing_engine->set_num_threads(80);
   _timing_engine->set_design_work_space(sta_work_dir.c_str());
+  std::set<std::string> cell_set;
+  std::ranges::for_each(_config->get_buffer_types(), [&](const std::string& buf_cell) { cell_set.insert(buf_cell); });
+  _timing_engine->get_ista()->addLinkCells(cell_set);
   _timing_engine->readLiberty(lib_paths);
   convertDBToTimingEngine();
 
@@ -1186,18 +1199,18 @@ ieda_feature::CTSSummary CTSAPI::outputSummary()
   // 可能有多个clk_name，每一个时钟都需要报告tns、wns、freq
   auto clk_list = _timing_engine->getClockList();
   for (auto* clk : clk_list) {
-    ieda_feature::NetTiming net_timing;
+    ieda_feature::ClockTiming clock_timing;
 
     auto clk_name = clk->get_clock_name();
 
-    net_timing.net_name = clk_name;
-    net_timing.setup_tns = _timing_engine->getTNS(clk_name, AnalysisMode::kMax);
-    net_timing.setup_wns = _timing_engine->getWNS(clk_name, AnalysisMode::kMax);
-    net_timing.hold_tns = _timing_engine->getTNS(clk_name, AnalysisMode::kMin);
-    net_timing.hold_wns = _timing_engine->getWNS(clk_name, AnalysisMode::kMin);
-    net_timing.suggest_freq = 1000.0 / (clk->getPeriodNs() - net_timing.setup_wns);
+    clock_timing.clock_name = clk_name;
+    clock_timing.setup_tns = _timing_engine->getTNS(clk_name, AnalysisMode::kMax);
+    clock_timing.setup_wns = _timing_engine->getWNS(clk_name, AnalysisMode::kMax);
+    clock_timing.hold_tns = _timing_engine->getTNS(clk_name, AnalysisMode::kMin);
+    clock_timing.hold_wns = _timing_engine->getWNS(clk_name, AnalysisMode::kMin);
+    clock_timing.suggest_freq = 1000.0 / (clk->getPeriodNs() - clock_timing.setup_wns);
 
-    summary.nets_timing.push_back(net_timing);
+    summary.clocks_timing.push_back(clock_timing);
   }
 
   if (b_read_data) {

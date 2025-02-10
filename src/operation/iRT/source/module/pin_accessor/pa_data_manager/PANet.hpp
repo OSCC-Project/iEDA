@@ -44,7 +44,6 @@ class PANet
   Net* _origin_net = nullptr;
   int32_t _net_idx = -1;
   ConnectType _connect_type = ConnectType::kNone;
-  // PinAccessor
   std::vector<PAPin> _pa_pin_list;
   BoundingBox _bounding_box;
 };

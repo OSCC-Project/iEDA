@@ -20,11 +20,33 @@ namespace idb {
 
 void IdbBuilder::buildNet()
 {
+  auto sort_net_points = [](IdbNet* net) {
+    for (auto* wire : net->get_wire_list()->get_wire_list()) {
+      for (auto* segment : wire->get_segment_list()) {
+        if (segment->get_point_number() < 2) {
+          continue;
+        }
+
+        auto& points = segment->get_point_list();
+        std::sort(points.begin(), points.end(), [](IdbCoordinate<int>* a, IdbCoordinate<int>* b) {
+          if (a->get_x() == b->get_x()) {
+            return a->get_y() < b->get_y();
+          } else if (a->get_y() == b->get_y()) {
+            return a->get_x() < b->get_x();
+          } else {
+            return false;
+          }
+        });
+      }
+    }
+  };
+
   checkNetPins();
 
   for (IdbNet* net : _def_service->get_design()->get_net_list()->get_net_list()) {
     buildNetFeatureCoord(net);
     buildPinFeatureCoord(net);
+    sort_net_points(net);
   }
 }
 

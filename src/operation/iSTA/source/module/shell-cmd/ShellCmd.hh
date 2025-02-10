@@ -153,6 +153,7 @@ class CmdReportTiming : public TclCmd {
   explicit CmdReportTiming(const char* cmd_name);
   ~CmdReportTiming() override = default;
 
+  unsigned printHelp();
   unsigned check();
   unsigned exec();
 };
@@ -193,6 +194,19 @@ class CmdVerilogToDef : public TclCmd {
  public:
   explicit CmdVerilogToDef(const char* cmd_name);
   ~CmdVerilogToDef() override = default;
+
+  unsigned check();
+  unsigned exec();
+};
+
+/**
+ * @brief dump graph data.
+ * 
+ */
+class CmdDumpGraphData : public TclCmd {
+ public:
+  explicit CmdDumpGraphData(const char* cmd_name);
+  ~CmdDumpGraphData() override = default;
 
   unsigned check();
   unsigned exec();

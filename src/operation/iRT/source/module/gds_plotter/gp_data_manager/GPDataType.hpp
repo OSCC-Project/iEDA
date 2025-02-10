@@ -31,6 +31,7 @@ enum class GPDataType
   kPath,
   kShape,
   kAccessPoint,
+  kBestCoord,
   kAxis,
   kViolation
 };
@@ -67,6 +68,9 @@ struct GetGPDataTypeName
         break;
       case GPDataType::kAccessPoint:
         data_type_name = "access_point";
+        break;
+      case GPDataType::kBestCoord:
+        data_type_name = "best_coord";
         break;
       case GPDataType::kAxis:
         data_type_name = "axis";

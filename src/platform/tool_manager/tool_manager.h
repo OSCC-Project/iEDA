@@ -31,9 +31,6 @@
 #include <string>
 #include <vector>
 
-#include "TimingNet.hpp"
-#include "WLNet.hpp"
-#include "wirelength/WLFactory.hpp"
 
 namespace iplf {
 
@@ -71,9 +68,9 @@ class ToolManager
 
   void guiCaptrueDesign(std::string path = "");
   /// Eval
-  int64_t evalTotalWL(const std::vector<eval::WLNet*>& net_list, const std::string& wl_type);
-  void estimateDelay(std::vector<eval::TimingNet*> timing_net_list, const char* sta_workspace_path, const char* sdc_file_path,
-                     std::vector<const char*> lib_file_path_list);
+  // int64_t evalTotalWL(const std::vector<eval::WLNet*>& net_list, const std::string& wl_type);
+  // void estimateDelay(std::vector<eval::TimingNet*> timing_net_list, const char* sta_workspace_path, const char* sdc_file_path,
+  //                    std::vector<const char*> lib_file_path_list);
 
   /// iFP
   //   bool autoRunFloorplan(std::string config = "");
@@ -93,8 +90,10 @@ class ToolManager
   /// iTO
   bool autoRunTO(std::string config = "");
   bool RunTODrv(std::string config = "");
+  bool RunTODrvSpecialNet(std::string config = "", std::string net_name = "");
   bool RunTOHold(std::string config = "");
   bool RunTOSetup(std::string config = "");
+  bool RunTOBuffering(std::string config = "", std::string net_name = "");
 
   /// iCTS
   bool autoRunCTS(std::string config = "", std::string work_dir="");

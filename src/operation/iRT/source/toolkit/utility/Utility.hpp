@@ -392,8 +392,8 @@ class Utility
 
   /**
    *  ！在检测DRC中
-   *  如果a与b中有膨胀矩形，那么则用isOpenOverlap
-   *  如果a与b中都是真实矩形，那么用isClosedOverlap
+   *  如果a与b中有膨胀矩形,那么则用isOpenOverlap
+   *  如果a与b中都是真实矩形,那么用isClosedOverlap
    *
    *  isOpenOverlap:不考虑边的overlap
    */
@@ -401,8 +401,8 @@ class Utility
 
   /**
    *  ！在检测DRC中
-   *  如果a与b中有膨胀矩形，那么则用isOpenOverlap
-   *  如果a与b中都是真实矩形，那么用isClosedOverlap
+   *  如果a与b中有膨胀矩形,那么则用isOpenOverlap
+   *  如果a与b中都是真实矩形,那么用isClosedOverlap
    *
    *  isClosedOverlap:考虑边的overlap
    */
@@ -462,7 +462,7 @@ class Utility
             && first_layer_idx <= coord.get_layer_idx() && coord.get_layer_idx() <= second_layer_idx);
   }
 
-  // 判断coord是否在rect内，可以选择是否包含边界
+  // 判断coord是否在rect内,可以选择是否包含边界
   static bool isInside(const PlanarRect& rect, const PlanarCoord& coord, bool boundary = true)
   {
     int32_t coord_x = coord.get_x(), coord_y = coord.get_y();
@@ -682,8 +682,102 @@ class Utility
     return ratio;
   }
 
+  static Segment<LayerCoord> getOverlap(const LayerRect& rect, const Segment<LayerCoord>& segment)
+  {
+    int32_t rect_ll_x = rect.get_ll_x();
+    int32_t rect_ll_y = rect.get_ll_y();
+    int32_t rect_ur_x = rect.get_ur_x();
+    int32_t rect_ur_y = rect.get_ur_y();
+    int32_t rect_layer_idx = rect.get_layer_idx();
+
+    int32_t first_x = segment.get_first().get_x();
+    int32_t first_y = segment.get_first().get_y();
+    int32_t first_layer_idx = segment.get_first().get_layer_idx();
+    int32_t second_x = segment.get_second().get_x();
+    int32_t second_y = segment.get_second().get_y();
+    int32_t second_layer_idx = segment.get_second().get_layer_idx();
+    swapByASC(first_x, second_x);
+    swapByASC(first_y, second_y);
+    swapByASC(first_layer_idx, second_layer_idx);
+
+    if (first_y == second_y && first_layer_idx == second_layer_idx) {
+      if (first_y >= rect_ll_y && first_y <= rect_ur_y && rect_layer_idx == first_layer_idx) {
+        int32_t overlap_min_x = std::max(rect_ll_x, std::min(first_x, second_x));
+        int32_t overlap_max_x = std::min(rect_ur_x, std::max(first_x, second_x));
+
+        if (overlap_min_x <= overlap_max_x) {
+          return Segment<LayerCoord>(LayerCoord(overlap_min_x, first_y, rect_layer_idx),
+                                     LayerCoord(overlap_max_x, first_y, rect_layer_idx));
+        }
+      }
+    } else if (first_x == second_x && first_layer_idx == second_layer_idx) {
+      if (first_x >= rect_ll_x && first_x <= rect_ur_x && rect_layer_idx == first_layer_idx) {
+        int32_t overlap_min_y = std::max(rect_ll_y, std::min(first_y, second_y));
+        int32_t overlap_max_y = std::min(rect_ur_y, std::max(first_y, second_y));
+
+        if (overlap_min_y <= overlap_max_y) {
+          return Segment<LayerCoord>(LayerCoord(first_x, overlap_min_y, rect_layer_idx),
+                                     LayerCoord(first_x, overlap_max_y, rect_layer_idx));
+        }
+      }
+    } else if (first_x == second_x && first_y == second_y) {
+      if (first_x >= rect_ll_x && first_x <= rect_ur_x && first_y >= rect_ll_y && first_y <= rect_ur_y
+          && rect_layer_idx >= std::min(first_layer_idx, second_layer_idx)
+          && rect_layer_idx <= std::max(first_layer_idx, second_layer_idx)) {
+        return Segment<LayerCoord>(LayerCoord(first_x, first_y, rect_layer_idx), LayerCoord(first_x, first_y, rect_layer_idx));
+      }
+    }
+    return Segment<LayerCoord>(LayerCoord(-1, -1, -1), LayerCoord(-1, -1, -1));
+  }
+
+  static bool isOverlap(const LayerRect& rect, const Segment<LayerCoord>& segment)
+  {
+    int32_t rect_ll_x = rect.get_ll_x();
+    int32_t rect_ll_y = rect.get_ll_y();
+    int32_t rect_ur_x = rect.get_ur_x();
+    int32_t rect_ur_y = rect.get_ur_y();
+    int32_t rect_layer_idx = rect.get_layer_idx();
+
+    int32_t first_x = segment.get_first().get_x();
+    int32_t first_y = segment.get_first().get_y();
+    int32_t first_layer_idx = segment.get_first().get_layer_idx();
+    int32_t second_x = segment.get_second().get_x();
+    int32_t second_y = segment.get_second().get_y();
+    int32_t second_layer_idx = segment.get_second().get_layer_idx();
+    swapByASC(first_x, second_x);
+    swapByASC(first_y, second_y);
+    swapByASC(first_layer_idx, second_layer_idx);
+
+    if (first_y == second_y && first_layer_idx == second_layer_idx) {
+      if (first_y >= rect_ll_y && first_y <= rect_ur_y && rect_layer_idx == first_layer_idx) {
+        int32_t overlap_min_x = std::max(rect_ll_x, std::min(first_x, second_x));
+        int32_t overlap_max_x = std::min(rect_ur_x, std::max(first_x, second_x));
+
+        if (overlap_min_x <= overlap_max_x) {
+          return true;
+        }
+      }
+    } else if (first_x == second_x && first_layer_idx == second_layer_idx) {
+      if (first_x >= rect_ll_x && first_x <= rect_ur_x && rect_layer_idx == first_layer_idx) {
+        int32_t overlap_min_y = std::max(rect_ll_y, std::min(first_y, second_y));
+        int32_t overlap_max_y = std::min(rect_ur_y, std::max(first_y, second_y));
+
+        if (overlap_min_y <= overlap_max_y) {
+          return true;
+        }
+      }
+    } else if (first_x == second_x && first_y == second_y) {
+      if (first_x >= rect_ll_x && first_x <= rect_ur_x && first_y >= rect_ll_y && first_y <= rect_ur_y
+          && rect_layer_idx >= std::min(first_layer_idx, second_layer_idx)
+          && rect_layer_idx <= std::max(first_layer_idx, second_layer_idx)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   /**
-   *  分开矩形，将master矩形用rect进行分开，并不是求差集
+   *  分开矩形,将master矩形用rect进行分开,并不是求差集
    *       ┌────────────────────────────────────┐  split  ┌────────────────────────────────────┐
    *       │ master                             │ ──────> │ c                                  │
    *       │           ┌─────────────────┐      │         └────────────────────────────────────┘
@@ -695,9 +789,9 @@ class Utility
    *       │           │                 │      │
    *       │     a     │                 │  b   │
    *       └───────────┘                 └──────┘
-   *  如上图所示，输入master和rect
-   *  若split方向为horizontal，将得到a和b，可以理解为在横向上分开
-   *  若split方向为vertical，将得到c
+   *  如上图所示,输入master和rect
+   *  若split方向为horizontal,将得到a和b,可以理解为在横向上分开
+   *  若split方向为vertical,将得到c
    */
   static std::vector<PlanarRect> getSplitRectList(const PlanarRect& master, const PlanarRect& rect, Direction split_direction)
   {
@@ -773,24 +867,18 @@ class Utility
     return getEnlargedRect(segment.get_first(), segment.get_second(), enlarge_size);
   }
 
-  // 在有最大外边界约束下扩大矩形
-  static PlanarRect getEnlargedRect(PlanarRect rect, int32_t enlarge_size, PlanarRect border)
+  static bool hasRegularRect(const PlanarRect& rect, const PlanarRect& border)
   {
-    PlanarRect enlarged_rect = getEnlargedRect(rect, enlarge_size);
+    // 计算新的左下角坐标
+    int32_t new_ll_x = std::max(rect.get_ll_x(), border.get_ll_x());
+    int32_t new_ll_y = std::max(rect.get_ll_y(), border.get_ll_y());
 
-    enlarged_rect.set_ll(std::max(enlarged_rect.get_ll_x(), border.get_ll_x()), std::max(enlarged_rect.get_ll_y(), border.get_ll_y()));
-    enlarged_rect.set_ur(std::min(enlarged_rect.get_ur_x(), border.get_ur_x()), std::min(enlarged_rect.get_ur_y(), border.get_ur_y()));
+    // 计算新的右上角坐标
+    int32_t new_ur_x = std::min(rect.get_ur_x(), border.get_ur_x());
+    int32_t new_ur_y = std::min(rect.get_ur_y(), border.get_ur_y());
 
-    return enlarged_rect;
-  }
-
-  // 在有最大外边界约束下扩大矩形
-  static PlanarRect getEnlargedRect(PlanarRect rect, int32_t ll_x_minus_offset, int32_t ll_y_minus_offset, int32_t ur_x_add_offset,
-                                    int32_t ur_y_add_offset, PlanarRect border)
-  {
-    PlanarRect enlarged_rect = getEnlargedRect(rect, ll_x_minus_offset, ll_y_minus_offset, ur_x_add_offset, ur_y_add_offset);
-    enlarged_rect = getRegularRect(enlarged_rect, border);
-    return enlarged_rect;
+    // 检查新的坐标是否有效
+    return new_ll_x <= new_ur_x && new_ll_y <= new_ur_y;
   }
 
   static PlanarRect getRegularRect(PlanarRect rect, PlanarRect border)
@@ -856,6 +944,21 @@ class Utility
     return rect;
   }
 
+  static bool hasShrinkedRect(PlanarRect rect, int32_t shrinked_size)
+  {
+    addOffset(rect.get_ll(), shrinked_size, shrinked_size);
+    minusOffset(rect.get_ur(), shrinked_size, shrinked_size);
+
+    return rect.get_ll_x() <= rect.get_ur_x() && rect.get_ll_y() <= rect.get_ur_y();
+  }
+
+  static PlanarRect getShrinkedRect(PlanarRect rect, int32_t shrinked_size)
+  {
+    addOffset(rect.get_ll(), shrinked_size, shrinked_size);
+    minusOffset(rect.get_ur(), shrinked_size, shrinked_size);
+    return rect;
+  }
+
 #endif
 
 #if 1  // 与多叉树有关的计算
@@ -881,14 +984,14 @@ class Utility
     return node_list;
   }
 
-  // 以层序遍历获取树的所有结点，可以控制遍历最大深度
+  // 以层序遍历获取树的所有结点,可以控制遍历最大深度
   template <typename T>
   static std::vector<std::vector<TNode<T>*>> getLevelOrder(MTree<T>& tree, int32_t max_level = -1)
   {
     return getLevelOrder(tree.get_root(), max_level);
   }
 
-  // 以层序遍历获取树的所有结点，可以控制遍历最大深度
+  // 以层序遍历获取树的所有结点,可以控制遍历最大深度
   template <typename T>
   static std::vector<std::vector<TNode<T>*>> getLevelOrder(TNode<T>* root, int32_t max_level = -1)
   {
@@ -950,14 +1053,14 @@ class Utility
     return false;
   }
 
-  // 对树结点内的值进行转换，需要自定义转换函数
+  // 对树结点内的值进行转换,需要自定义转换函数
   template <typename T, typename U, typename... Args>
   static MTree<U> convertTree(MTree<T>& old_tree, const std::function<U(T&, Args&...)>& convert, Args&... args)
   {
     return MTree<U>(convertTree(old_tree.get_root(), convert, args...));
   }
 
-  // 对树结点内的值进行转换，需要自定义转换函数
+  // 对树结点内的值进行转换,需要自定义转换函数
   template <typename T, typename U, typename... Args>
   static TNode<U>* convertTree(TNode<T>* old_root, const std::function<U(T&, Args&...)>& convert, Args&... args)
   {
@@ -1013,7 +1116,7 @@ class Utility
     return segment_list;
   }
 
-  // 通过树根节点和边集构建一棵树，也会消除多个连通分量
+  // 通过树根节点和边集构建一棵树,也会消除多个连通分量
   template <typename T>
   static MTree<T> getTreeBySegList(const T& root_value, const std::vector<Segment<T>>& segment_list)
   {
@@ -1074,7 +1177,7 @@ class Utility
 
 #if 1  // 与GCell有关的计算
 
-  // 如果与边缘相交，则取内的，不取边缘上
+  // 如果与边缘相交,则取内的,不取边缘上
   static PlanarRect getOpenGCellGridRect(const PlanarRect& real_rect, ScaleAxis& gcell_axis)
   {
     int32_t real_ll_x = real_rect.get_ll_x();
@@ -1104,11 +1207,19 @@ class Utility
   // 能取到边缘上
   static PlanarRect getClosedGCellGridRect(const PlanarRect& real_rect, ScaleAxis& gcell_axis)
   {
+    PlanarRect border;
     int32_t min_x = gcell_axis.get_x_grid_list().front().get_start_line();
     int32_t max_x = gcell_axis.get_x_grid_list().back().get_end_line();
     int32_t min_y = gcell_axis.get_y_grid_list().front().get_start_line();
     int32_t max_y = gcell_axis.get_y_grid_list().back().get_end_line();
-    PlanarRect new_rect = getEnlargedRect(real_rect, 1, PlanarRect(min_x, min_y, max_x, max_y));
+    border.set_ll(min_x, min_y);
+    border.set_ur(max_x, max_y);
+
+    PlanarRect new_rect = getEnlargedRect(real_rect, 1);
+    if (!RTUTIL.hasRegularRect(new_rect, border)) {
+      RTLOG.error(Loc::current(), "This shape is outside the border!");
+    }
+    new_rect = getRegularRect(new_rect, border);
     return getOpenGCellGridRect(new_rect, gcell_axis);
   }
 
@@ -1281,7 +1392,7 @@ class Utility
 #if 1  // 与Track有关的计算
 
   /**
-   * 计算边界包含的刻度列表，如果边界与刻度重合，那么也会包含在内
+   * 计算边界包含的刻度列表,如果边界与刻度重合,那么也会包含在内
    */
   static std::vector<int32_t> getScaleList(int32_t begin_line, int32_t end_line, std::vector<ScaleGrid>& scale_grid_list)
   {
@@ -1305,6 +1416,41 @@ class Utility
     std::sort(scale_line_list.begin(), scale_line_list.end());
     scale_line_list.erase(std::unique(scale_line_list.begin(), scale_line_list.end()), scale_line_list.end());
     return scale_line_list;
+  }
+
+  /**
+   * 反取begin_line和end_line之外的数据,比begin_line小的存pre_scale_list,比end_line大的存post_scale_set
+   */
+  static void getScaleList(int32_t begin_line, int32_t end_line, std::vector<ScaleGrid>& scale_grid_list,
+                           std::vector<int32_t>& pre_scale_list, std::vector<int32_t>& post_scale_set)
+  {
+    swapByASC(begin_line, end_line);
+
+    std::vector<int32_t> scale_line_list;
+    for (ScaleGrid& scale_grid : scale_grid_list) {
+      if (scale_grid.get_step_length() == 0) {
+        if (scale_grid.get_start_line() < begin_line) {
+          pre_scale_list.push_back(scale_grid.get_start_line());
+        }
+        if (end_line < scale_grid.get_start_line()) {
+          post_scale_set.push_back(scale_grid.get_start_line());
+        }
+      } else {
+        for (int32_t scale_line = scale_grid.get_start_line(); scale_line <= scale_grid.get_end_line();
+             scale_line += scale_grid.get_step_length()) {
+          if (scale_line < begin_line) {
+            pre_scale_list.push_back(scale_line);
+          }
+          if (end_line < scale_line) {
+            post_scale_set.push_back(scale_line);
+          }
+        }
+      }
+    }
+    std::sort(pre_scale_list.begin(), pre_scale_list.end());
+    pre_scale_list.erase(std::unique(pre_scale_list.begin(), pre_scale_list.end()), pre_scale_list.end());
+    std::sort(post_scale_set.begin(), post_scale_set.end());
+    post_scale_set.erase(std::unique(post_scale_set.begin(), post_scale_set.end()), post_scale_set.end());
   }
 
   static bool existTrackGrid(const PlanarCoord& real_coord, ScaleAxis& track_axis)
@@ -1390,8 +1536,8 @@ class Utility
     return grid_orientation_map;
   }
 
-  static void getTrackIndexSet(std::vector<ScaleGrid>& scale_grid_list, int32_t ll_scale, int32_t ur_scale, std::set<int32_t>& pre_index_set,
-                              std::set<int32_t>& mid_index_set, std::set<int32_t>& post_index_set)
+  static void getTrackIndexSet(std::vector<ScaleGrid>& scale_grid_list, int32_t ll_scale, int32_t ur_scale,
+                               std::set<int32_t>& pre_index_set, std::set<int32_t>& mid_index_set, std::set<int32_t>& post_index_set)
   {
     int32_t pre_index = -1;
     int32_t post_index = -1;
@@ -1434,8 +1580,8 @@ class Utility
     }
   }
 
-  static void getTrackScaleSet(std::vector<ScaleGrid>& scale_grid_list, int32_t ll_scale, int32_t ur_scale, std::set<int32_t>& pre_scale_set,
-                              std::set<int32_t>& mid_scale_set, std::set<int32_t>& post_scale_set)
+  static void getTrackScaleSet(std::vector<ScaleGrid>& scale_grid_list, int32_t ll_scale, int32_t ur_scale,
+                               std::set<int32_t>& pre_scale_set, std::set<int32_t>& mid_scale_set, std::set<int32_t>& post_scale_set)
   {
     int32_t pre_scale = INT32_MIN;
     int32_t post_scale = INT32_MAX;
@@ -1506,15 +1652,6 @@ class Utility
       bounding_box.set_ll(ll_x, ll_y);
       bounding_box.set_ur(ur_x, ur_y);
     }
-    return bounding_box;
-  }
-
-  // 获得多个矩形的外接矩形
-  static PlanarRect getBoundingBox(const std::vector<PlanarRect>& rect_list, PlanarRect border)
-  {
-    PlanarRect bounding_box = getBoundingBox(rect_list);
-    bounding_box.set_ll(std::max(bounding_box.get_ll_x(), border.get_ll_x()), std::max(bounding_box.get_ll_y(), border.get_ll_y()));
-    bounding_box.set_ur(std::min(bounding_box.get_ur_x(), border.get_ur_x()), std::min(bounding_box.get_ur_y(), border.get_ur_y()));
     return bounding_box;
   }
 
@@ -1972,7 +2109,7 @@ class Utility
       }
     }
     bool is_connectivity = true;
-    for (auto [pin_idx, is_visited] : visited_map) {
+    for (auto& [pin_idx, is_visited] : visited_map) {
       if (is_visited == false) {
         RTLOG.warn(Loc::current(), "The pin idx ", pin_idx, " unreachable!");
         is_connectivity = false;
@@ -1983,8 +2120,8 @@ class Utility
 
   /**
    * curr_layer_idx在可布线层内
-   *    如果不是最高可布线层，向上打孔
-   *    是最高可布线层，向下打孔
+   *    如果不是最高可布线层,向上打孔
+   *    是最高可布线层,向下打孔
    *
    * curr_layer_idx在可布线层外
    *    打孔到最近的可布线层
@@ -2255,7 +2392,7 @@ class Utility
      * 下面每个字母表示一个独立的直角多边形
      * 求解(A ∪ B) - (D ∪ E ∪ F)
      * 转((A - D) ∩ (A - E) ∩ (A - F)) ∪ ((B - D) ∩ (B - E) ∩ (B - F))
-     * 其中利用(A - D)、(A - E)等式中结果不可能出现线，实现boost结果传递
+     * 其中利用(A - D)、(A - E)等式中结果不可能出现线,实现boost结果传递
      */
     // 将输入解析
     // 其中master_poly_list为(A ∪ B)
@@ -2281,7 +2418,7 @@ class Utility
             BGMultiPolyDBL diff_multi_poly;
             bg::difference(master_poly, rect_poly, diff_multi_poly);
             if (diff_multi_poly.empty()) {
-              // 当(A - D)为空，后续(A - D) ∩ (A - E) ∩ (A - F)结果为空，直接跳过
+              // 当(A - D)为空,后续(A - D) ∩ (A - E) ∩ (A - F)结果为空,直接跳过
               diff_multi_poly_list.clear();
               break;
             } else {
@@ -2364,13 +2501,13 @@ class Utility
     for (const PlanarRect& special_rect : special_rect_list) {
       if (special_rect.get_ll() == special_rect.get_ur()) {
         /**
-         * 对于点矩形, 在其中一个rect内(包含边界)则被删除
+         * 对于点矩形, 在其中一个rect内(不包含边界)则被删除
          */
         PlanarCoord point = special_rect.get_ll();
         bool exist_inside = false;
         for (const PlanarRect& rect : rect_list) {
-          if (rect.get_ll_x() <= point.get_x() && point.get_x() <= rect.get_ur_x() && rect.get_ll_y() <= point.get_y()
-              && point.get_y() <= rect.get_ur_y()) {
+          if (rect.get_ll_x() < point.get_x() && point.get_x() < rect.get_ur_x() && rect.get_ll_y() < point.get_y()
+              && point.get_y() < rect.get_ur_y()) {
             exist_inside = true;
             break;
           }
@@ -2397,12 +2534,12 @@ class Utility
               int32_t seg_second_x = segment.get_second().get_x();
               int32_t seg_y = segment.get_first().get_y();
               if (rect_ll_y <= seg_y && seg_y <= rect_ur_y && seg_first_x < rect_ur_x && rect_ll_x < seg_second_x) {
-                if (seg_first_x < rect_ll_x) {
+                if (seg_first_x <= rect_ll_x) {
                   // 提出左突出
                   segment_list_temp.emplace_back(segment.get_first(), PlanarCoord(rect_ll_x, seg_y));
                 }
-                if (rect_ur_x < seg_second_x) {
-                  // 提出右突出的
+                if (rect_ur_x <= seg_second_x) {
+                  // 提出右突出
                   segment_list_temp.emplace_back(PlanarCoord(rect_ur_x, seg_y), segment.get_second());
                 }
               } else {
@@ -2413,12 +2550,12 @@ class Utility
               int32_t seg_second_y = segment.get_second().get_y();
               int32_t seg_x = segment.get_first().get_x();
               if (rect_ll_x <= seg_x && seg_x <= rect_ur_x && seg_first_y < rect_ur_y && rect_ll_y < seg_second_y) {
-                if (seg_first_y < rect_ll_y) {
+                if (seg_first_y <= rect_ll_y) {
                   // 提出下突出
                   segment_list_temp.emplace_back(segment.get_first(), PlanarCoord(seg_x, rect_ll_y));
                 }
-                if (rect_ur_y < seg_second_y) {
-                  // 提出上突出的
+                if (rect_ur_y <= seg_second_y) {
+                  // 提出上突出
                   segment_list_temp.emplace_back(PlanarCoord(seg_x, rect_ur_y), segment.get_second());
                 }
               } else {
@@ -2440,28 +2577,28 @@ class Utility
 
 #if 1  // reduce
 
-  static std::vector<PlanarRect> getOpenReducedRectListByBoost(const std::vector<PlanarRect>& master_list, int32_t ll_x_add_offset,
-                                                               int32_t ll_y_add_offset, int32_t ur_x_minus_offset,
-                                                               int32_t ur_y_minus_offset)
+  static std::vector<PlanarRect> getOpenShrinkedRectListByBoost(const std::vector<PlanarRect>& master_list, int32_t ll_x_add_offset,
+                                                                int32_t ll_y_add_offset, int32_t ur_x_minus_offset,
+                                                                int32_t ur_y_minus_offset)
   {
-    return getReducedRectListByBoost(master_list, ll_x_add_offset, ll_y_add_offset, ur_x_minus_offset, ur_y_minus_offset, true);
+    return getShrinkedRectListByBoost(master_list, ll_x_add_offset, ll_y_add_offset, ur_x_minus_offset, ur_y_minus_offset, true);
   }
 
-  static std::vector<PlanarRect> getClosedReducedRectListByBoost(const std::vector<PlanarRect>& master_list, int32_t reduced_offset)
+  static std::vector<PlanarRect> getClosedShrinkedRectListByBoost(const std::vector<PlanarRect>& master_list, int32_t shrinked_offset)
   {
-    return getReducedRectListByBoost(master_list, reduced_offset, reduced_offset, reduced_offset, reduced_offset, false);
+    return getShrinkedRectListByBoost(master_list, shrinked_offset, shrinked_offset, shrinked_offset, shrinked_offset, false);
   }
 
-  static std::vector<PlanarRect> getClosedReducedRectListByBoost(const std::vector<PlanarRect>& master_list, int32_t ll_x_add_offset,
-                                                                 int32_t ll_y_add_offset, int32_t ur_x_minus_offset,
-                                                                 int32_t ur_y_minus_offset)
+  static std::vector<PlanarRect> getClosedShrinkedRectListByBoost(const std::vector<PlanarRect>& master_list, int32_t ll_x_add_offset,
+                                                                  int32_t ll_y_add_offset, int32_t ur_x_minus_offset,
+                                                                  int32_t ur_y_minus_offset)
   {
-    return getReducedRectListByBoost(master_list, ll_x_add_offset, ll_y_add_offset, ur_x_minus_offset, ur_y_minus_offset, false);
+    return getShrinkedRectListByBoost(master_list, ll_x_add_offset, ll_y_add_offset, ur_x_minus_offset, ur_y_minus_offset, false);
   }
 
-  static std::vector<PlanarRect> getReducedRectListByBoost(const std::vector<PlanarRect>& master_list, int32_t ll_x_add_offset,
-                                                           int32_t ll_y_add_offset, int32_t ur_x_minus_offset, int32_t ur_y_minus_offset,
-                                                           bool is_open)
+  static std::vector<PlanarRect> getShrinkedRectListByBoost(const std::vector<PlanarRect>& master_list, int32_t ll_x_add_offset,
+                                                            int32_t ll_y_add_offset, int32_t ur_x_minus_offset, int32_t ur_y_minus_offset,
+                                                            bool is_open)
   {
     std::vector<PlanarRect> result_list;
 
@@ -2470,7 +2607,7 @@ class Utility
       master_poly += convertToGTLRectInt(master);
     }
     if (!is_open) {
-      // 提取点矩形，线段矩形
+      // 提取点矩形,线段矩形
       std::vector<GTLRectInt> gtl_rect_list;
       gtl::get_rectangles(gtl_rect_list, master_poly, gtl::HORIZONTAL);
       gtl::get_rectangles(gtl_rect_list, master_poly, gtl::VERTICAL);
@@ -2601,7 +2738,7 @@ class Utility
 
   static int32_t getIntScale(double double_scale)
   {
-    int32_t integer_scale = std::round(double_scale);
+    int32_t integer_scale = static_cast<int32_t>(std::round(double_scale));
     if (std::abs(double_scale - integer_scale) > RT_ERROR) {
       RTLOG.error(Loc::current(), "Exceeding the error range of a double!");
     }
@@ -3098,7 +3235,7 @@ class Utility
 
   static void checkFile(std::string file_path)
   {
-    if (0 != access(file_path.c_str(), F_OK)) {
+    if (!std::filesystem::exists(file_path)) {
       RTLOG.error(Loc::current(), "The file ", file_path, " does not exist!");
     }
   }
@@ -3107,13 +3244,34 @@ class Utility
 
   static void createDir(std::string dir_path)
   {
-    if (0 != access(dir_path.c_str(), F_OK)) {
-      RTLOG.info(Loc::current(), "Create directory ", dir_path);
+    if (!std::filesystem::exists(dir_path)) {
       std::error_code system_error;
       if (!std::filesystem::create_directories(dir_path, system_error)) {
-        if (!std::filesystem::exists(dir_path)) {
-          RTLOG.error(Loc::current(), "Failed to create directory '", dir_path, "', system_error:", system_error.message());
-        }
+        RTLOG.error(Loc::current(), "Failed to create directory '", dir_path, "', system_error:", system_error.message());
+      }
+    }
+  }
+
+  static bool existFile(const std::string& file_path) { return std::filesystem::exists(file_path); }
+
+  static void changePermissions(const std::string& dir_path, std::filesystem::perms permissions)
+  {
+    std::error_code system_error;
+    std::filesystem::permissions(dir_path, permissions);
+    if (system_error) {
+      RTLOG.error(Loc::current(), "Failed to change permissions for '", dir_path, "', system_error: ", system_error.message());
+    }
+  }
+
+  static void removeDir(const std::string& dir_path)
+  {
+    std::error_code system_error;
+
+    // 检查文件夹是否存在
+    if (std::filesystem::exists(dir_path, system_error)) {
+      // 尝试删除文件夹
+      if (!std::filesystem::remove_all(dir_path, system_error)) {
+        RTLOG.error(Loc::current(), "Failed to remove directory '", dir_path, "'. Error: ", system_error.message());
       }
     }
   }
@@ -3152,7 +3310,7 @@ class Utility
 
     std::stringstream ss(a);
     std::string result_token;
-    while (getline(ss, result_token, tok)) {
+    while (std::getline(ss, result_token, tok)) {
       if (result_token == "") {
         continue;
       }
@@ -3227,7 +3385,7 @@ class Utility
   {
     std::string sec_string;
 
-    int32_t integer_sec = std::round(sec);
+    int32_t integer_sec = static_cast<int32_t>(std::round(sec));
     int32_t h = integer_sec / 3600;
     int32_t m = (integer_sec % 3600) / 60;
     int32_t s = (integer_sec % 3600) % 60;

@@ -16,7 +16,7 @@
 // ***************************************************************************************
 /**
  * @file verilog_writer.cpp
- * @author shy long (longshy@pcl.ac.cn)
+ * @author longshy (longshy@pcl.ac.cn)
  * @brief
  * @version 0.1
  * @date 2021-12-03
@@ -32,8 +32,12 @@
 #include "time/Time.hh"
 
 namespace idb {
-VerilogWriter::VerilogWriter(const char* file_name, std::set<std::string>& exclude_cell_names, IdbDesign& idb_design)
-    : _file_name(file_name), _exclude_cell_names(exclude_cell_names), _idb_design(idb_design)
+VerilogWriter::VerilogWriter(const char* file_name, std::set<std::string>& exclude_cell_names, IdbDesign& idb_design,
+                             bool is_add_space_for_escape_name)
+    : _file_name(file_name),
+      _exclude_cell_names(exclude_cell_names),
+      _idb_design(idb_design),
+      _is_add_space_for_escape_name(is_add_space_for_escape_name)
 {
   _stream = std::fopen(file_name, "w");
 }
@@ -54,7 +58,7 @@ void VerilogWriter::writeModule()
   }
   LOG_INFO << "start write verilog file " << _file_name;
 
-  fprintf(_stream, "//Generate the verilog at %s\n", ieda::Time::getNowWallTime());
+  fprintf(_stream, "//Generate the verilog at %s by iSTA.\n", ieda::Time::getNowWallTime());
 
   fprintf(_stream, "module %s (", _idb_design.get_design_name().c_str());
   fprintf(_stream, "\n");
@@ -63,6 +67,8 @@ void VerilogWriter::writeModule()
   writePortDcls();
   fprintf(_stream, "\n");
   writeWire();
+  fprintf(_stream, "\n");
+  writeAssign();
   fprintf(_stream, "\n");
   writeInstances();
   fprintf(_stream, "\n");
@@ -280,6 +286,36 @@ void VerilogWriter::writeWire()
 }
 
 /**
+ * @brief write assign declarations(assign net=port(such as assign g6265 = 983 ;))
+ *
+ */
+void VerilogWriter::writeAssign()
+{
+  vector<IdbNet*> net_list = _idb_design.get_net_list()->get_net_list();
+  for (const auto& net : net_list) {
+    std::string net_name = net->get_net_name();
+    for (const auto& io_pin : net->get_io_pins()->get_pin_list()) {
+      // assign net = input_port;
+
+      std::string new_net_name = ieda::Str::replace(net_name, R"(\\)", "");
+      std::string escape_net_name = escapeName(new_net_name);
+
+      std::string new_io_pin_name = ieda::Str::replace(io_pin->get_pin_name(), R"(\\)", "");
+      std::string escape_io_pin_name = escapeName(new_io_pin_name);
+
+      if (io_pin->get_term()->get_direction() == IdbConnectDirection::kInput && io_pin->get_pin_name() != net_name) {
+        fprintf(_stream, "assign %s = %s ;\n", escape_net_name.c_str(), escape_io_pin_name.c_str());
+      }
+      // assign output_port = net;
+      // assign output_port = input_port;
+      if (io_pin->get_term()->get_direction() == IdbConnectDirection::kOutput && io_pin->get_pin_name() != net_name) {
+        fprintf(_stream, "assign %s = %s ;\n", escape_net_name.c_str(), escape_io_pin_name.c_str());
+      }
+    }
+  }
+}
+
+/**
  * @brief write the instances of the verilog design.
  *
  */
@@ -443,13 +479,21 @@ bool VerilogWriter::isNeedEscape(const std::string& name)
 std::string VerilogWriter::escapeName(const std::string& name)
 {
   std::string trim_name = ieda::Str::trimBackslash(name);
-  std::string escape_name = isNeedEscape(trim_name) ? "\\" + addSpaceForEscapeName(trim_name) : trim_name;
+
+  std::string escape_name;
+  if (_is_add_space_for_escape_name) {
+    escape_name = isNeedEscape(trim_name) ? "\\" + addSpaceForEscapeName(trim_name) : trim_name;
+  } else {
+    escape_name = isNeedEscape(trim_name) ? "\\" + trim_name : trim_name;
+  }
+
   return escape_name;
 }
 
 /**
  * @brief add space for escape name between id and bracket
- * such as \waddrReg_r[2] should be changed to \waddrReg_r [2], which is required by verilator.
+ * such as \waddrReg_r[2] should be changed to \waddrReg_r [2], which is required by verilator. And such as \waddrReg_r[2]wa should not be
+ * changed.
  * @param name
  * @return std::string
  */
@@ -459,14 +503,39 @@ std::string VerilogWriter::addSpaceForEscapeName(const std::string& name)
     return name;
   }
 
-  size_t pos = name.find("[");
-  if (pos != string::npos) {
+  size_t start_pos = name.find("[");
+  size_t end_pos = name.find("]");
+  if (start_pos != string::npos && end_pos == name.size() - 1) {
     std::string replace_str = name;
-    replace_str.replace(pos, 1, " [");
+    replace_str.replace(start_pos, 1, " [");
     return replace_str;
   }
 
   return name;
+}
+
+/**
+ * @brief judge whether a string have "[0]" object in middle.
+ *
+ * @param str
+ * @return true
+ * @return false
+ */
+bool VerilogWriter::isMiddleSquareBracket(const std::string& str)
+{
+  size_t start_pos = str.find('[');
+  size_t end_pos = str.find(']', start_pos);
+
+  if (start_pos != std::string::npos && end_pos != std::string::npos && start_pos > 0 && end_pos < str.size() - 1) {
+    for (size_t i = start_pos + 1; i < end_pos; ++i) {
+      if (!std::isdigit(str[i])) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  return false;
 }
 
 }  // namespace idb

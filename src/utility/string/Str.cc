@@ -429,7 +429,14 @@ std::pair<std::string, std::string> Str::splitTwoPart(const char* orig, const ch
  */
 std::vector<std::string> Str::split(const char* orig, const char* delimiter)
 {
-  char* copy_str = Str::copy(orig);
+  auto copy_string = [](const char* src) {
+    size_t len = strlen(src);
+    char* dest = (char*) std::malloc((len + 1) * sizeof(char));
+    std::strcpy(dest, src);
+    return dest;
+  };
+
+  char* copy_str = copy_string(orig);
   std::vector<std::string> results;
 
   char* token = strtok(copy_str, delimiter);
@@ -438,7 +445,7 @@ std::vector<std::string> Str::split(const char* orig, const char* delimiter)
     token = strtok(nullptr, delimiter);
   }
 
-  Str::free(copy_str);
+  std::free(copy_str);
 
   return results;
 }
@@ -631,7 +638,7 @@ std::pair<std::string, std::optional<std::pair<int, int>>> Str::matchBusSliceNam
   if (!Str::endWith(str, "]")) {
     return {str, std::nullopt};
   }
-  
+
   char* copy_str = Str::copy(str);
 
   char* token = strtok(copy_str, "[");
@@ -653,7 +660,7 @@ std::pair<std::string, std::optional<std::pair<int, int>>> Str::matchBusSliceNam
 }
 
 /**
- * @brief trim \[\] to []
+ * @brief trim \[\] to [], and \\ to nothing
  *
  * @param origin_str
  * @return std::string
@@ -668,9 +675,7 @@ std::string Str::trimBackslash(std::string origin_str)
     replace_str = new_value_2;
   }
 
-  if (ieda::Str::contain(replace_str.c_str(), R"(\/)")) {
-    replace_str = replace(replace_str, R"(\\/)", R"(/)");
-  }
+  replace_str = replace(replace_str, R"(\\)", "");
 
   return replace_str;
 }
@@ -688,6 +693,31 @@ std::string Str::addBackslash(std::string origin_str)
     std::string new_value_2 = replace(new_value_1, R"(\])", R"(\])");
 
     return new_value_2;
+  }
+
+  return origin_str;
+}
+
+/**
+ * @brief change [] to \\[\\]
+ *
+ * @param origin_str
+ * @return std::string
+ */
+std::string Str::addDoubleBackslash(std::string origin_str)
+{
+  std::string new_value_2;
+
+  if (ieda::Str::contain(origin_str.c_str(), "[") && ieda::Str::contain(origin_str.c_str(), "]")) {
+    std::string new_value_1 = replace(origin_str, R"(\[)", R"(\[)");
+    new_value_2 = replace(new_value_1, R"(\])", R"(\])");
+  }
+
+  if (ieda::Str::contain(new_value_2.c_str(), "[") && ieda::Str::contain(new_value_2.c_str(), "]")) {
+    std::string new_value_3 = replace(new_value_2, R"(\[)", R"(\[)");
+    std::string new_value_4 = replace(new_value_3, R"(\])", R"(\])");
+
+    return new_value_4;
   }
 
   return origin_str;

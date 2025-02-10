@@ -23,7 +23,6 @@
 #include "idm.h"
 #include "idrc_engine_manager.h"
 #include "idrc_violation_manager.h"
-#include "omp.h"
 #include "rule_condition_width.h"
 #include "tech_rules.h"
 
@@ -32,15 +31,29 @@ namespace idrc {
 DrcEngineManager::DrcEngineManager(DrcDataManager* data_manager, DrcConditionManager* condition_manager)
     : _data_manager(data_manager), _condition_manager(condition_manager)
 {
-  _layouts
-      = {{LayoutType::kRouting, std::map<std::string, DrcEngineLayout*>{}}, {LayoutType::kCut, std::map<std::string, DrcEngineLayout*>{}}};
-  _scanline_matrix = {{LayoutType::kRouting, std::map<std::string, DrcEngineScanline*>{}},
-                      {LayoutType::kCut, std::map<std::string, DrcEngineScanline*>{}}};
-  // _engine_check = new DrcEngineCheck();
+  std::set<std::string> routing_layers;
+  std::set<std::string> cut_layers;
+  _layers.insert(std::make_pair(LayoutType::kRouting, routing_layers));
+  _layers.insert(std::make_pair(LayoutType::kCut, cut_layers));
+
+  std::map<std::string, DrcEngineLayout*> routing_map;
+  std::map<std::string, DrcEngineLayout*> cut_map;
+  _layouts.insert(std::make_pair(LayoutType::kRouting, routing_map));
+  _layouts.insert(std::make_pair(LayoutType::kCut, cut_map));
+
+  std::map<std::string, DrcEngineScanline*> routing_matrix_map;
+  std::map<std::string, DrcEngineScanline*> cut_matrix_map;
+  _scanline_matrix.insert(std::make_pair(LayoutType::kRouting, routing_matrix_map));
+  _scanline_matrix.insert(std::make_pair(LayoutType::kCut, cut_matrix_map));
 }
 
 DrcEngineManager::~DrcEngineManager()
 {
+  for (auto& [type, layers] : _layers) {
+    layers.clear();
+  }
+  _layers.clear();
+
   for (auto& [type, layout_arrays] : _layouts) {
     for (auto& [layer, layout] : layout_arrays) {
       if (layout != nullptr) {
@@ -65,19 +78,61 @@ DrcEngineManager::~DrcEngineManager()
   _scanline_matrix.clear();
 }
 
+std::map<std::string, DrcEngineLayout*>& DrcEngineManager::get_engine_layouts(LayoutType type)
+{
+  auto it = _layouts.find(type);
+  if (it != _layouts.end()) {
+    return it->second;
+  } else {
+    auto layout = std::make_pair(type, std::map<std::string, DrcEngineLayout*>{});
+    _layouts.insert(layout);
+
+    return layout.second;
+  }
+}
+
 // get or create layout engine for each layer
 DrcEngineLayout* DrcEngineManager::get_layout(std::string layer, LayoutType type)
 {
   auto& layouts = get_engine_layouts(type);
 
-  auto* engine_layout = layouts[layer];
-  if (engine_layout == nullptr) {
-    engine_layout = new DrcEngineLayout(layer);
-    layouts[layer] = engine_layout;
-  }
+  auto it = layouts.find(layer);
+  if (it != layouts.end()) {
+    return it->second;
+  } else {
+    DrcEngineLayout* engine_layout = new DrcEngineLayout(layer);
+    layouts.insert(std::make_pair(layer, engine_layout));
 
-  return engine_layout;
+    return engine_layout;
+  }
 }
+
+std::set<std::string>& DrcEngineManager::get_layers(LayoutType type)
+{
+  auto it = _layers.find(type);
+  if (it != _layers.end()) {
+    return it->second;
+  } else {
+    auto layers = std::make_pair(type, std::set<std::string>{});
+    _layers.insert(layers);
+
+    return _layers.find(type)->second;
+  }
+}
+
+bool DrcEngineManager::needChecking(std::string layer, LayoutType type)
+{
+  auto& layers = get_layers(type);
+
+  return layers.find(layer) != layers.end() ? true : false;
+}
+
+void DrcEngineManager::addLayer(std::string layer, LayoutType type)
+{
+  auto& layers = get_layers(type);
+  layers.insert(layer);
+}
+
 // add rect to engine
 bool DrcEngineManager::addRect(int llx, int lly, int urx, int ury, std::string layer, int net_id, LayoutType type)
 {
@@ -85,6 +140,9 @@ bool DrcEngineManager::addRect(int llx, int lly, int urx, int ury, std::string l
   auto engine_layout = get_layout(layer, type);
   if (engine_layout == nullptr) {
     return false;
+  }
+  if (net_id >= 0 || net_id == NET_ID_VDD || net_id == NET_ID_VSS) {
+    addLayer(layer, type);
   }
 
   return engine_layout->addRect(llx, lly, urx, ury, net_id);
@@ -100,11 +158,14 @@ void DrcEngineManager::dataPreprocess()
 void DrcEngineManager::filterData()
 {
   for (auto& [layer, layout] : get_engine_layouts(LayoutType::kRouting)) {
-    // std::cout << "\nidrc : layer " << layer << std::endl;
-    // only for routing layers
-    // if (!DrcTechRuleInst->isLayerRouting(layer)) {
-    //   continue;
-    // }
+    if (false == needChecking(layer, LayoutType::kRouting)) {
+      continue;
+    }
+
+    DEBUGOUTPUT("Need to check layer:\t" << layer);
+
+    /// area
+    _condition_manager->checkArea(layer, layout);
 
     // overlap
     _condition_manager->checkOverlap(layer, layout);
@@ -113,7 +174,8 @@ void DrcEngineManager::filterData()
     _condition_manager->checkMinSpacing(layer, layout);
 
     // jog and prl
-    _condition_manager->checkWires(layer, layout);
+    _condition_manager->checkParallelLengthSpacing(layer, layout);
+    _condition_manager->checkJogToJogSpacing(layer, layout);
 
     // edge
     _condition_manager->checkPolygons(layer, layout);
@@ -122,6 +184,8 @@ void DrcEngineManager::filterData()
   for (auto& [layer, layout] : get_engine_layouts(LayoutType::kCut)) {
     // TODO: cut rule
   }
+
+  DEBUGOUTPUT("Finish drc checking:\t");
 }
 
 // void DrcEngineManager::dataPreprocess()

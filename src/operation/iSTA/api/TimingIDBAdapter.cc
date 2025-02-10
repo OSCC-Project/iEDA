@@ -16,7 +16,7 @@
 // ***************************************************************************************
 /**
  * @file TimingIDBAdapter.hh
- * @author shy long (longshy@pcl.ac.cn)
+ * @author longshy (longshy@pcl.ac.cn)
  * @brief idb and ista data adapter.
  * @version 0.1
  * @date 2021-10-11
@@ -689,11 +689,26 @@ void TimingIDBAdapter::deleteNet(Net* sta_net) {
 }
 
 /**
+ * @brief config sta the need link cell to speed up load liberty.
+ *
+ */
+void TimingIDBAdapter::configStaLinkCells() {
+  std::set<std::string> link_cells;
+  auto db_inst_list = _idb_design->get_instance_list()->get_instance_list();
+  for (auto* db_inst : db_inst_list) {
+    std::string liberty_cell_name = db_inst->get_cell_master()->get_name();
+    link_cells.insert(std::move(liberty_cell_name));
+  }
+
+  _ista->addLinkCells(std::move(link_cells));
+}
+
+/**
  * @brief convert the idb to timing netlist.
  *
  * @return unsigned
  */
-unsigned TimingIDBAdapter::convertDBToTimingNetlist() {
+unsigned TimingIDBAdapter::convertDBToTimingNetlist(bool link_all_cell) {
   // reset all net to rc net
   _ista->resetAllRcNet();
 
@@ -704,6 +719,13 @@ unsigned TimingIDBAdapter::convertDBToTimingNetlist() {
   if (!def_service) {
     return 0;
   }
+
+  // link liberty lazy to build netlist.
+  if (!link_all_cell) {
+    configStaLinkCells();
+  }
+
+  _ista->linkLibertys();
 
   _ista->set_design_name(_idb_design->get_design_name().c_str());
   int dbu = _idb_design->get_units()->get_micron_dbu();
@@ -754,7 +776,9 @@ unsigned TimingIDBAdapter::convertDBToTimingNetlist() {
             inst_cell->get_cell_port_or_port_bus(port_base_name.c_str());
 
         LOG_INFO_IF(!library_port_or_port_bus)
-            << cell_port_name << " port is not found.";
+            << cell_port_name << " port is not found in lib cell "
+            << inst_cell->get_cell_name() << " of "
+            << inst_cell->get_owner_lib()->get_file_name();
 
         std::unique_ptr<PinBus> pin_bus;
         PinBus* found_pin_bus = nullptr;
@@ -795,6 +819,9 @@ unsigned TimingIDBAdapter::convertDBToTimingNetlist() {
       }
       auto& created_inst = design_netlist.addInstance(std::move(sta_inst));
       crossRef(&created_inst, db_inst);
+
+      LOG_INFO_EVERY_N(10000)
+          << "build inst num: " << design_netlist.getInstanceNum();
     }
   };
 
@@ -835,8 +862,12 @@ unsigned TimingIDBAdapter::convertDBToTimingNetlist() {
         std::string inst_name = std::regex_replace(raw_name, re, "");
 
         auto* sta_inst = design_netlist.findInstance(inst_name.c_str());
+        LOG_FATAL_IF(!sta_inst) << "Instance " << inst_name << " not found";
         auto inst_pin = sta_inst->getPin(cell_port_name.c_str());
-        LOG_FATAL_IF(!inst_pin);
+        LOG_FATAL_IF(!inst_pin)
+            << "Instance " << sta_inst->getFullName() << " cell Pin "
+            << cell_port_name << " not found for cell "
+            << sta_inst->get_inst_cell()->get_cell_name();
 
         if (sta_net) {
           sta_net->addPinPort(*inst_pin);
@@ -867,12 +898,19 @@ unsigned TimingIDBAdapter::convertDBToTimingNetlist() {
           }
         }
       }
+
+      LOG_INFO_EVERY_N(10000)
+          << "build net num: " << design_netlist.getNetNum();
     }
   };
 
   build_insts();
   build_ports();
   build_nets();
+
+  LOG_INFO << "build instance num: " << design_netlist.getInstanceNum();
+  LOG_INFO << "build port num: " << design_netlist.getPortNum();
+  LOG_INFO << "build net num: " << design_netlist.getNetNum();
 
   return 1;
 }

@@ -19,10 +19,10 @@
 #include "ChangeType.hpp"
 #include "Config.hpp"
 #include "DRBoxId.hpp"
+#include "DRIterParam.hpp"
 #include "DRModel.hpp"
 #include "DRNet.hpp"
 #include "DRNode.hpp"
-#include "DRParameter.hpp"
 #include "DataManager.hpp"
 #include "Database.hpp"
 #include "Net.hpp"
@@ -56,23 +56,26 @@ class DetailedRouter
   std::vector<DRNet> convertToDRNetList(std::vector<Net>& net_list);
   DRNet convertToDRNet(Net& net);
   void iterativeDRModel(DRModel& dr_model);
-  void setDRParameter(DRModel& dr_model, int32_t iter, DRParameter& dr_parameter);
+  void initRoutingState(DRModel& dr_model);
+  void setDRIterParam(DRModel& dr_model, int32_t iter, DRIterParam& dr_iter_param);
+  void resetRoutingState(DRModel& dr_model);
   void initDRBoxMap(DRModel& dr_model);
   void buildBoxSchedule(DRModel& dr_model);
+  void splitNetResult(DRModel& dr_model);
   void routeDRBoxMap(DRModel& dr_model);
-  void buildFixedRectList(DRBox& dr_box);
-  void buildNetResultMap(DRBox& dr_box);
-  void buildViolationList(DRBox& dr_box);
+  void buildFixedRect(DRBox& dr_box);
+  void buildAccessResult(DRBox& dr_box);
+  void buildNetResult(DRBox& dr_box);
   void initDRTaskList(DRModel& dr_model, DRBox& dr_box);
+  void buildViolation(DRBox& dr_box);
   bool needRouting(DRBox& dr_box);
   void buildBoxTrackAxis(DRBox& dr_box);
   void buildLayerNodeMap(DRBox& dr_box);
-  void buildDRNodeValid(DRBox& dr_box);
   void buildDRNodeNeighbor(DRBox& dr_box);
   void buildOrientNetMap(DRBox& dr_box);
+  void exemptPinShape(DRBox& dr_box);
   void routeDRBox(DRBox& dr_box);
   std::vector<DRTask*> initTaskSchedule(DRBox& dr_box);
-  std::vector<DRTask*> getTaskScheduleByViolation(DRBox& dr_box);
   void routeDRTask(DRBox& dr_box, DRTask* dr_task);
   void initSingleTask(DRBox& dr_box, DRTask* dr_task);
   bool isConnectedAllEnd(DRBox& dr_box);
@@ -81,12 +84,10 @@ class DetailedRouter
   bool searchEnded(DRBox& dr_box);
   void expandSearching(DRBox& dr_box);
   void resetPathHead(DRBox& dr_box);
-  bool isRoutingFailed(DRBox& dr_box);
-  void resetSinglePath(DRBox& dr_box);
   void updatePathResult(DRBox& dr_box);
   std::vector<Segment<LayerCoord>> getRoutingSegmentListByNode(DRNode* node);
-  void updateDirectionSet(DRBox& dr_box);
   void resetStartAndEnd(DRBox& dr_box);
+  void resetSinglePath(DRBox& dr_box);
   void updateTaskResult(DRBox& dr_box);
   std::vector<Segment<LayerCoord>> getRoutingSegmentList(DRBox& dr_box);
   void resetSingleTask(DRBox& dr_box);
@@ -95,38 +96,47 @@ class DetailedRouter
   double getKnowCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
   double getNodeCost(DRBox& dr_box, DRNode* curr_node, Orientation orientation);
   double getKnowWireCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
-  double getKnowCornerCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
   double getKnowViaCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
   double getEstimateCostToEnd(DRBox& dr_box, DRNode* curr_node);
   double getEstimateCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
   double getEstimateWireCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
-  double getEstimateCornerCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
   double getEstimateViaCost(DRBox& dr_box, DRNode* start_node, DRNode* end_node);
   void updateViolationList(DRBox& dr_box);
-  std::vector<Violation> getViolationList(DRBox& dr_box);
-  void uploadViolation(DRBox& dr_box);
+  std::vector<Violation> getCostViolationList(DRBox& dr_box);
+  void updateBestResult(DRBox& dr_box);
+  void updateTaskSchedule(DRBox& dr_box, std::vector<DRTask*>& routing_task_list);
+  void selectBestResult(DRBox& dr_box);
+  void uploadBestResult(DRBox& dr_box);
   void freeDRBox(DRBox& dr_box);
   int32_t getViolationNum();
   void uploadNetResult(DRModel& dr_model);
+  void uploadViolation(DRModel& dr_model);
+  std::vector<Violation> getCostViolationList(DRModel& dr_model);
+  void updateBestResult(DRModel& dr_model);
   bool stopIteration(DRModel& dr_model);
+  void selectBestResult(DRModel& dr_model);
+  void uploadBestResult(DRModel& dr_model);
 
 #if 1  // update env
   void updateFixedRectToGraph(DRBox& dr_box, ChangeType change_type, int32_t net_idx, EXTLayerRect* fixed_rect, bool is_routing);
-  void updateNetResultToGraph(DRBox& dr_box, ChangeType change_type, int32_t net_idx, Segment<LayerCoord>& segment);
-  std::map<DRNode*, std::set<Orientation>> getNodeOrientationMap(DRBox& dr_box, NetShape& net_shape);
-  std::map<DRNode*, std::set<Orientation>> getRoutingNodeOrientationMap(DRBox& dr_box, NetShape& net_shape);
-  std::map<DRNode*, std::set<Orientation>> getCutNodeOrientationMap(DRBox& dr_box, NetShape& net_shape);
-  void updateViolationToGraph(DRBox& dr_box, ChangeType change_type, Violation& violation);
+  void updateFixedRectToGraph(DRBox& dr_box, ChangeType change_type, int32_t net_idx, Segment<LayerCoord>& segment);
+  void updateRoutedRectToGraph(DRBox& dr_box, ChangeType change_type, int32_t net_idx, Segment<LayerCoord>& segment);
+  void addViolationToGraph(DRBox& dr_box, Violation& violation);
+  void addViolationToGraph(DRBox& dr_box, LayerRect& searched_rect, std::vector<Segment<LayerCoord>>& overlap_segment_list);
+  std::map<DRNode*, std::set<Orientation>> getNodeOrientationMap(DRBox& dr_box, NetShape& net_shape, bool need_enlarged);
+  std::map<DRNode*, std::set<Orientation>> getRoutingNodeOrientationMap(DRBox& dr_box, NetShape& net_shape, bool need_enlarged);
+  std::map<DRNode*, std::set<Orientation>> getCutNodeOrientationMap(DRBox& dr_box, NetShape& net_shape, bool need_enlarged);
 #endif
 
 #if 1  // exhibit
   void updateSummary(DRModel& dr_model);
   void printSummary(DRModel& dr_model);
-  void writeNetCSV(DRModel& dr_model);
-  void writeViolationCSV(DRModel& dr_model);
+  void outputNetCSV(DRModel& dr_model);
+  void outputViolationCSV(DRModel& dr_model);
 #endif
 
 #if 1  // debug
+  void debugPlotDRModel(DRModel& dr_model, std::string flag);
   void debugCheckDRBox(DRBox& dr_box);
   void debugPlotDRBox(DRBox& dr_box, int32_t curr_task_idx, std::string flag);
 #endif

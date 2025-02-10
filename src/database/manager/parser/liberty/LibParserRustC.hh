@@ -25,6 +25,7 @@
 #pragma once
 
 #include <iostream>
+#include <set>
 #include <string>
 #include <type_traits>
 
@@ -356,6 +357,18 @@ class RustLibertyReader
   RustLibertyReader(RustLibertyReader&& other) noexcept = default;
   RustLibertyReader& operator=(RustLibertyReader&& rhs) noexcept = default;
 
+  void set_build_cells(std::set<std::string>& build_cells) {
+    _build_cells = build_cells;
+  }
+  auto& get_build_cells() { return _build_cells; }
+  bool isNeedBuild(std::string cell_name)
+  {
+    if (_build_cells.empty()) {
+      return true;
+    }
+    return _build_cells.find(cell_name) != _build_cells.end();
+  }
+
   unsigned visitSimpleAttri(RustLibertySimpleAttrStmt* attri);
 
   unsigned visitAxisOrValues(RustLibertyComplexAttrStmt* attri);
@@ -378,7 +391,9 @@ class RustLibertyReader
   unsigned visitPowerTable(RustLibertyGroupStmt* group);
 
   unsigned visitGroup(RustLibertyGroupStmt* group);
+
   unsigned readLib();
+  unsigned linkLib();
 
   void set_library_builder(LibBuilder* library_builder) { _library_builder = library_builder; }
   auto* get_library_builder() { return _library_builder; }
@@ -386,6 +401,9 @@ class RustLibertyReader
  private:
   const char* getGroupAttriName(RustLibertyGroupStmt* group);
   unsigned visitStmtInGroup(RustLibertyGroupStmt* group);
+
+  void* _lib_file = nullptr;           //!< The parsered lib file.
+  std::set<std::string> _build_cells;  //!< The needed cells.
 
   std::string _file_name;        //!< The liberty file name.
   LibBuilder* _library_builder;  //!< The liberty library builder.

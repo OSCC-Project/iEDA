@@ -17,7 +17,9 @@
 
 #pragma once
 
-#include "ConflictGroup.hpp"
+#include "PABox.hpp"
+#include "PAComParam.hpp"
+#include "PAIterParam.hpp"
 #include "PANet.hpp"
 #include "RTHeader.hpp"
 
@@ -29,15 +31,30 @@ class PAModel
   PAModel() = default;
   ~PAModel() = default;
   // getter
+  PAComParam& get_pa_com_param() { return _pa_com_param; }
   std::vector<PANet>& get_pa_net_list() { return _pa_net_list; }
-  std::vector<ConflictGroup>& get_conflict_group_list() { return _conflict_group_list; }
+  bool get_initial_routing() const { return _initial_routing; }
+  int32_t get_iter() const { return _iter; }
+  PAIterParam& get_pa_iter_param() { return _pa_iter_param; }
+  GridMap<PABox>& get_pa_box_map() { return _pa_box_map; }
+  std::vector<std::vector<PABoxId>>& get_pa_box_id_list_list() { return _pa_box_id_list_list; }
   // setter
+  void set_pa_com_param(const PAComParam& pa_com_param) { _pa_com_param = pa_com_param; }
   void set_pa_net_list(const std::vector<PANet>& pa_net_list) { _pa_net_list = pa_net_list; }
-  void set_conflict_group_list(const std::vector<ConflictGroup>& conflict_group_list) { _conflict_group_list = conflict_group_list; }
+  void set_initial_routing(const bool initial_routing) { _initial_routing = initial_routing; }
+  void set_iter(const int32_t iter) { _iter = iter; }
+  void set_pa_iter_param(const PAIterParam& pa_iter_param) { _pa_iter_param = pa_iter_param; }
+  void set_pa_box_map(const GridMap<PABox>& pa_box_map) { _pa_box_map = pa_box_map; }
+  void set_pa_box_id_list_list(const std::vector<std::vector<PABoxId>>& pa_box_id_list_list) { _pa_box_id_list_list = pa_box_id_list_list; }
 
  private:
+  PAComParam _pa_com_param;
   std::vector<PANet> _pa_net_list;
-  std::vector<ConflictGroup> _conflict_group_list;
+  bool _initial_routing = true;
+  int32_t _iter = -1;
+  PAIterParam _pa_iter_param;
+  GridMap<PABox> _pa_box_map;
+  std::vector<std::vector<PABoxId>> _pa_box_id_list_list;
 };
 
 }  // namespace irt

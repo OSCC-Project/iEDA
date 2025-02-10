@@ -423,11 +423,21 @@ void IdbPin::set_port_vias()
   for_each(_via_list.begin(), _via_list.end(), [](IdbVia*& via) { delete via; });
   _via_list.clear();
 
-  auto cloneVia = [](IdbVia* via, int32_t x_off = 0, int32_t y_off = 0) {
+  auto cloneVia = [&](IdbVia* via, int32_t x_off = 0, int32_t y_off = 0) {
     auto* pin_via = via->clone();
     auto* coord = pin_via->get_coordinate();
     coord->get_x() += x_off;
     coord->get_y() += y_off;
+
+    if (!is_io_pin()) {
+      IdbOrientTransform db_transform(_instance->get_orient(), _instance->get_coordinate(), _instance->get_cell_master()->get_width(),
+                                      _instance->get_cell_master()->get_height());
+      db_transform.transformCoordinate(coord);
+    } else {
+      IdbOrientTransform db_transform(this->get_orient(), this->get_location(), 0, 0);
+      db_transform.transformCoordinate(coord);
+    }
+
     return pin_via;
   };
   if (is_io_pin()) {
@@ -679,7 +689,7 @@ void IdbPins::checkPins()
 {
   std::set<std::string> pin_name_set;
   for (auto it = _pin_list.begin(); it != _pin_list.end();) {
-    int pin_num = pin_name_set.size();
+    size_t pin_num = pin_name_set.size();
     auto pin = *it;
     std::string name = pin->get_pin_name();
     if (pin->get_instance() != nullptr) {

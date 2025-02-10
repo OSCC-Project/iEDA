@@ -15,42 +15,6 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 
-/////////////////////////////////////////////////////////////////////////////
-//
-// Copyright (c) 2019, The Regents of the University of California
-// All rights reserved.
-//
-// BSD 3-Clause License
-//
-// Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions are met:
-//
-// * Redistributions of source code must retain the above copyright notice, this
-//   list of conditions and the following disclaimer.
-//
-// * Redistributions in binary form must reproduce the above copyright notice,
-//   this list of conditions and the following disclaimer in the documentation
-//   and/or other materials provided with the distribution.
-//
-// * Neither the name of the copyright holder nor the names of its
-//   contributors may be used to endorse or promote products derived from
-//   this software without specific prior written permission.
-//
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
-// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-// POSSIBILITY OF SUCH DAMAGE.
-//
-///////////////////////////////////////////////////////////////////////////////
-
-
 #pragma once
 
 #include <set>
@@ -58,101 +22,76 @@
 #include <vector>
 
 #include "BufferedOption.h"
-#include "ViolationOptimizer.h"
-
-#include "ids.hpp"
+#include "define.h"
+#include "tree_build/TreeBuild.h"
 
 namespace ito {
 using ito::approximatelyLess;
 using ito::approximatelyLessEqual;
 using ito::BufferedOptionSeq;
-class SetupOptimizer {
- public:
-  SetupOptimizer(DbInterface *dbinterface);
 
-  ~SetupOptimizer() {
-    delete _parasitics_estimator;
-    delete _violation_fixer;
+#define toOptSetup SetupOptimizer::getInstance()
+
+class SetupOptimizer
+{
+ public:
+  static SetupOptimizer* getInstance()
+  {
+    if (nullptr == _instance) {
+      _instance = new SetupOptimizer();
+    }
+    return _instance;
   }
-  SetupOptimizer(const SetupOptimizer &other) = delete;
-  SetupOptimizer(SetupOptimizer &&other) = delete;
 
   // open functions
   void optimizeSetup();
 
+  void performBuffering(const char* net_name);
+
  private:
+  static SetupOptimizer* _instance;
+  TOLibertyCellSeq _available_lib_cell_sizes;
+
+  bool _has_estimate_all_net = false;
+
+  /// init
+  void init();
+  void checkAndFindVioaltion(TOVertexSeq& end_pts_setup_violation);
+  StaSeqPathData* worstRequiredPath();
   void initBufferCell();
-
-  void optimizeSetup(StaSeqPathData *worst_path, TOSlack path_slack,
-                     bool only_gs = false);
-  void optimizeSetup(StaVertex *vertex, TOSlack path_slack, bool only_gs = false);
-
-  void performBuffering(Pin *pin);
-
-  void insertBufferSeparateLoads(StaVertex *drvr_vertex, TOSlack drvr_slack);
-
-  LibCell *repowerCell(LibPort *in_port, LibPort *drvr_port, float load_cap,
-                       float prev_drive);
-
-  BufferedOptionSeq bottomUpBuffering(RoutingTree *tree, int curr_id, int prev_id,
-                                      int level);
-
-  BufferedOptionSeq mergeBranch(BufferedOptionSeq buf_opt_left,
-                                BufferedOptionSeq buf_opt_right, Point curr_loc);
-
-  BufferedOptionSeq addWireAndBuffer(BufferedOptionSeq buf_opt_seq, Point curr_loc,
-                                     Point prev_loc, int level);
-
-  BufferedOptionSeq addBuffer(BufferedOptionSeq buf_opt_seq, Point prev_loc);
-
-  void topDownImplementBuffering(BufferedOption *buf_opt, Net *net, int level);
-
-  float calcDelayOfBuffer(LibCell *buffer_cell, float load_cap);
-  float calcDelayOfBuffer(LibCell *buffer_cell, float load_cap, TransType rf);
-
-  float calcDelayOfGate(LibPort *drvr_port, float load_cap, TransType rf);
-
-  float calcDelayOfGate(LibPort *drvr_port, float load_cap);
-
-  int getFanoutNumber(Pin *pin);
-
-  bool netConnectToOutputPort(Net *net);
-
-  void setLocation(Instance *inst, int x, int y);
-
-  StaSeqPathData *worstRequiredPath();
-
-  bool netConnectToPort(Net *net);
-
-  TOSlack     getWorstSlack(StaVertex *vertex, AnalysisMode mode);
   TOVertexSet getEndPoints();
-  void findEndpointsWithSetupViolation(TOVertexSet end_points, TOSlack slack_margin,
-                                       TOVertexSeq &setup_violations);
+  void findEndpointsWithSetupViolation(TOVertexSet end_points, TOVertexSeq &setup_violations);
 
-  // data
-  DbInterface *    _db_interface;
-  TimingEngine *   _timing_engine;
-  TimingDBAdapter *_db_adapter;
+  /// process
+  void optimizeViolationProcess(TOVertexSeq& end_pts_setup_violation);
+  void optimizeSetupViolation(StaVertex *vertex, bool perform_gs, bool perform_buf); // main optimzation function
+  int getFanoutNumber(Pin* pin);
+  bool netConnectToOutputPort(Net* net);
+  bool netConnectToPort(Net* net);
+  void incrUpdateRCAndTiming();
+  bool checkSlackDecrease(TOSlack& current_slack, TOSlack& last_slack, int& number_of_decreasing_slack_iter);
 
-  EstimateParasitics *_parasitics_estimator;
-  ViolationOptimizer *_violation_fixer;
+  // gate sizing function
+  bool performGateSizing(float cap_load, float driver_res, Pin *in_pin, Pin *driver_pin);
+  bool heuristicGateSizing(float cap_load, float driver_res, Pin *in_pin, Pin *out_pin);
 
-  int _number_resized_instance;
-  int _number_insert_buffer;
+  // heuristic buffer insertion function
+  bool performSplitBufferingIfNecessary(StaVertex *driver_vertex, int fanout);
+  void insertBufferDivideFanout(StaVertex *driver_vertex);
 
-  // to name the instance
-  int _insert_instance_index;
-  // to name the net
-  int _make_net_index;
+  // buffer insertion function
+  bool performBufferingIfNecessary(Pin* driver_pin, int fanout);
+  // for VG style buffer insertion
+  void performVGBuffering(Pin* pin, int& num_insert_buf);
+  void implementVGSolution(BufferedOption* buf_opt, Net* net);
 
-  int _dbu;
+  /// report
+  void report(int begin_buffer_num, int begin_resize_num);
+  void reportWNSAndTNS();
 
-  static int _rise;
-  static int _fall;
-
-  TOLibertyCellSeq _available_buffer_cells;
-
-  friend class HoldOptimizer;
+  /// constuctor
+  SetupOptimizer() {}
+  ~SetupOptimizer() {}
 };
 
-} // namespace ito
+}  // namespace ito

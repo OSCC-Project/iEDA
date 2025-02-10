@@ -159,9 +159,9 @@ class GridManager
   Rectangle<int32_t> _shape;
   int32_t _grid_cnt_x = -1;
   int32_t _grid_cnt_y = -1;
-  float _available_ratio;
   int32_t _grid_size_x = -1;
   int32_t _grid_size_y = -1;
+  float _available_ratio = 0.f;
   float _h_util_max = 0.f;
   float _v_util_max = 0.f;
   float _h_util_sum = 0.f;
@@ -191,9 +191,9 @@ inline GridManager::GridManager(Rectangle<int32_t> region, int32_t grid_cnt_x, i
       _shape(std::move(region)),
       _grid_cnt_x(grid_cnt_x),
       _grid_cnt_y(grid_cnt_y),
+      _available_ratio(available_ratio),
       _grid_size_x(grid_size_x),
-      _grid_size_y(grid_size_y),
-      _available_ratio(available_ratio)
+      _grid_size_y(grid_size_y)
 {
   init();
 }

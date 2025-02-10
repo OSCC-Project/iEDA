@@ -20,6 +20,7 @@
 #include "NoConfig.h"
 #include "Reporter.h"
 #include "ids.hpp"
+#include "api/TimingEngine.hh"
 
 namespace ino {
 using idb::IdbBuilder;

@@ -16,7 +16,7 @@
 // ***************************************************************************************
 /**
  * @file NetlistWriter.hh
- * @author shy long (longshy@pcl.ac.cn)
+ * @author longshy (longshy@pcl.ac.cn)
  * @brief
  * @version 0.1
  * @date 2021-10-25
@@ -53,6 +53,7 @@ class NetlistWriter {
   void writePorts();
   void writePortDcls();
   void writeWire();
+  void writeAssign();
   void writeInstances();
   void writeInstance(Instance *inst);
   // void writeInstPin(Instance *inst, Port *port, bool &first_port);

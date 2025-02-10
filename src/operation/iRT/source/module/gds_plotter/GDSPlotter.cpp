@@ -51,6 +51,12 @@ void GDSPlotter::destroyInst()
 
 // function
 
+void GDSPlotter::init()
+{
+  buildGDSLayerMap();
+  buildGraphLypFile();
+}
+
 void GDSPlotter::plot(GPGDS& gp_gds, std::string gds_file_path)
 {
   buildTopStruct(gp_gds);
@@ -83,12 +89,6 @@ int32_t GDSPlotter::getGDSIdxByCut(int32_t cut_layer_idx)
 // private
 
 GDSPlotter* GDSPlotter::_gp_instance = nullptr;
-
-void GDSPlotter::init()
-{
-  buildGDSLayerMap();
-  buildGraphLypFile();
-}
 
 void GDSPlotter::buildGDSLayerMap()
 {
@@ -123,7 +123,7 @@ void GDSPlotter::buildGraphLypFile()
 {
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
   std::vector<CutLayer>& cut_layer_list = RTDM.getDatabase().get_cut_layer_list();
-  std::string& temp_directory_path = RTDM.getConfig().temp_directory_path;
+  std::string& gp_temp_directory_path = RTDM.getConfig().gp_temp_directory_path;
 
   std::vector<std::string> color_list = {"#ff9d9d", "#ff80a8", "#c080ff", "#9580ff", "#8086ff", "#80a8ff", "#ff0000", "#ff0080", "#ff00ff",
                                          "#8000ff", "#0000ff", "#0080ff", "#800000", "#800057", "#800080", "#500080", "#000080", "#004080",
@@ -132,9 +132,9 @@ void GDSPlotter::buildGraphLypFile()
   std::vector<std::string> pattern_list = {"I5", "I9"};
 
   std::map<GPDataType, bool> routing_data_type_visible_map
-      = {{GPDataType::kNone, false},        {GPDataType::kOpen, false}, {GPDataType::kClose, false},    {GPDataType::kInfo, false},
-         {GPDataType::kNeighbor, false},    {GPDataType::kKey, false},  {GPDataType::kPath, false},     {GPDataType::kShape, true},
-         {GPDataType::kAccessPoint, false}, {GPDataType::kAxis, false}, {GPDataType::kViolation, false}};
+      = {{GPDataType::kNone, false},        {GPDataType::kOpen, false},      {GPDataType::kClose, false}, {GPDataType::kInfo, false},
+         {GPDataType::kNeighbor, false},    {GPDataType::kKey, false},       {GPDataType::kPath, false},  {GPDataType::kShape, true},
+         {GPDataType::kAccessPoint, false}, {GPDataType::kBestCoord, false}, {GPDataType::kAxis, false},  {GPDataType::kViolation, false}};
   std::map<GPDataType, bool> cut_data_type_visible_map = {{GPDataType::kPath, false}, {GPDataType::kShape, false}};
 
   // 0为base_region 最后一个为GCell 中间为cut+routing
@@ -166,7 +166,7 @@ void GDSPlotter::buildGraphLypFile()
       }
     }
   }
-  writeLypFile(temp_directory_path + "rt.lyp", lyp_layer_list);
+  writeLypFile(gp_temp_directory_path + "rt.lyp", lyp_layer_list);
 }
 
 void GDSPlotter::writeLypFile(std::string lyp_file_path, std::vector<GPLYPLayer>& lyp_layer_list)

@@ -2,19 +2,20 @@ use log;
 use spef_parser::spef_parser;
 use sprs::TriMat;
 use sprs::TriMatI;
+use std::cell::RefCell;
 use std::collections::HashMap;
 
 /// RC node of the spef network.
 pub struct RCNode {
     name: String,
-    /// whether power bump.
-    is_bump: bool,
-    is_inst_pin: bool,
+    cap: f64,          // The node capacitance
+    is_bump: bool,     // Whether power bump.
+    is_inst_pin: bool, // Whether instance pin.
 }
 
 impl RCNode {
     pub fn new(name: String) -> RCNode {
-        RCNode { name, is_bump: false, is_inst_pin: false }
+        RCNode { name, cap: 0.0, is_bump: false, is_inst_pin: false }
     }
 
     pub fn get_name(&self) -> &str {
@@ -23,6 +24,13 @@ impl RCNode {
 
     pub fn get_node_name(&self) -> &String {
         &self.name
+    }
+    #[allow(dead_code)]
+    pub fn get_cap(&self) -> f64 {
+        self.cap
+    }
+    pub fn set_cap(&mut self, cap: f64) {
+        self.cap = cap;
     }
 
     pub fn set_is_bump(&mut self) {
@@ -53,29 +61,40 @@ pub struct RCResistance {
 pub struct RCOneNetData {
     name: String,
     node_name_to_node_id: HashMap<String, usize>,
-    nodes: Vec<RCNode>,
+    nodes: RefCell<Vec<RCNode>>,
     resistances: Vec<RCResistance>,
 }
 
 impl RCOneNetData {
     pub fn new(name: String) -> RCOneNetData {
-        RCOneNetData { name, node_name_to_node_id: HashMap::new(), nodes: Vec::new(), resistances: Vec::new() }
+        RCOneNetData {
+            name,
+            node_name_to_node_id: HashMap::new(),
+            nodes: RefCell::new(Vec::new()),
+            resistances: Vec::new(),
+        }
     }
     pub fn get_name(&self) -> &str {
         &self.name
     }
     pub fn add_node(&mut self, one_node: RCNode) -> usize {
-        let node_id = self.nodes.len();
+        let node_id = self.nodes.borrow().len();
         self.node_name_to_node_id.insert(String::from(one_node.get_name()), node_id);
-        self.nodes.push(one_node);
+        self.nodes.borrow_mut().push(one_node);
         node_id
     }
 
-    pub fn get_nodes(&self) -> &Vec<RCNode> {
+    pub fn get_nodes(&self) -> &RefCell<Vec<RCNode>> {
         &self.nodes
     }
     pub fn get_node_id(&self, node_name: &String) -> Option<usize> {
         self.node_name_to_node_id.get(node_name).cloned()
+    }
+
+    pub fn set_node_cap(&self, node_id: usize, cap_value: f64) {
+        if let Some(node) = self.nodes.borrow_mut().get_mut(node_id) {
+            node.set_cap(cap_value);
+        }
     }
 
     pub fn add_resistance(&mut self, one_resistance: RCResistance) {
@@ -90,19 +109,19 @@ impl RCOneNetData {
 /// All power net rc data.
 #[derive(Default)]
 pub struct RCData {
-    power_nets_data: HashMap<String, RCOneNetData>,
+    rc_nets_data: HashMap<String, RCOneNetData>,
 }
 
 impl RCData {
     pub fn add_one_net_data(&mut self, one_net_data: RCOneNetData) {
-        self.power_nets_data.insert(String::from(one_net_data.get_name()), one_net_data);
+        self.rc_nets_data.insert(String::from(one_net_data.get_name()), one_net_data);
     }
-    pub fn get_power_nets_data(&self) -> &HashMap<String, RCOneNetData> {
-        &self.power_nets_data
+    pub fn get_nets_data(&self) -> &HashMap<String, RCOneNetData> {
+        &self.rc_nets_data
     }
 
     pub fn get_one_net_data(&self, name: &str) -> &RCOneNetData {
-        self.power_nets_data.get(name).unwrap()
+        self.rc_nets_data.get(name).unwrap()
     }
 }
 
@@ -137,7 +156,7 @@ pub fn read_rc_data_from_spef(spef_file_path: &str) -> RCData {
         log::info!("build net {} rc data", net_name_str);
         let mut one_net_data = RCOneNetData::new(net_name_str);
 
-        // build the power bump and inst pin node.
+        // build the bump and inst pin node.
         for conn_entry in spef_net.get_conns() {
             let conn_type = conn_entry.get_conn_type();
             let pin_port_name_index = conn_entry.get_pin_port_name();
@@ -161,7 +180,27 @@ pub fn read_rc_data_from_spef(spef_file_path: &str) -> RCData {
             }
         }
 
-        // build the internal PDN node.
+        // build the cap node.
+        for cap_entry in spef_net.get_caps() {
+            if !cap_entry.node2.is_empty() {
+                continue;
+            }
+            let name_index = &cap_entry.node1;
+            let node_name = spef_index_to_string(name_index);
+            let cap_value = cap_entry.res_or_cap;
+
+            let node_id = one_net_data.get_node_id(&node_name);
+
+            if node_id.is_none() {
+                let mut rc_node = RCNode::new(node_name);
+                rc_node.set_cap(cap_value);
+                one_net_data.add_node(rc_node);
+            } else {
+                one_net_data.set_node_cap(node_id.unwrap(), cap_value);
+            }
+        }
+
+        // build the internal node.
         for one_resistance in spef_net.get_ress() {
             let node1_name_index: &str = &one_resistance.node1;
             let node1_name = spef_index_to_string(node1_name_index);
@@ -207,12 +246,12 @@ pub fn build_conductance_matrix(rc_one_net_data: &RCOneNetData) -> TriMatI<f64, 
     let nodes = rc_one_net_data.get_nodes();
     let resistances = rc_one_net_data.get_resistances();
 
-    let matrix_size = nodes.len();
+    let matrix_size = nodes.borrow().len();
     log::info!("matrix size {}", matrix_size);
 
     let mut g_matrix = TriMat::new((matrix_size, matrix_size));
 
-    for node in nodes {
+    for node in nodes.borrow().iter() {
         if node.get_is_bump() {
             let node_name = node.get_node_name();
             let node_id = rc_one_net_data.get_node_id(node_name).unwrap();

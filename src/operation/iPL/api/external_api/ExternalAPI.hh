@@ -34,11 +34,12 @@ class ExternalAPI
   ExternalAPI& operator=(const ExternalAPI&) = delete;
   ExternalAPI& operator=(ExternalAPI&&) = delete;
 
+  std::string obtainTargetDir();
+
   /*****************************Timing Interface: START*****************************/
   bool isSTAStarted();
   void modifySTAOutputDir(std::string path);
   void initSTA(std::string path, bool init_log);
-  void initEval();
   void updateSTATiming();
   std::vector<std::string> obtainClockNameList();
   bool isClockNet(std::string net_name);
@@ -48,7 +49,6 @@ class ExternalAPI
   bool insertSignalBuffer(std::pair<std::string, std::string> source_sink_net, std::vector<std::string> sink_pin_list,
                           std::pair<std::string, std::string> master_inst_buffer, std::pair<int, int> buffer_center_loc);
 
-  void initTimingEval(int32_t unit);
   double obtainPinEarlySlack(std::string pin_name);
   double obtainPinLateSlack(std::string pin_name);
   double obtainPinEarlyArrivalTime(std::string pin_name);
@@ -58,8 +58,9 @@ class ExternalAPI
   double obtainWNS(const char* clock_name, ista::AnalysisMode mode);
   double obtainTNS(const char* clock_name, ista::AnalysisMode mode);
   double obtainTargetClockPeriodNS(std::string clock_name);
-  void updateEvalTiming(const std::vector<eval::TimingNet*>& timing_net_list);
-  void updateEvalTiming(const std::vector<eval::TimingNet*>& timing_net_list, const std::vector<std::string>& name_list, const int& propagation_level);
+  void updateEvalTiming(const std::vector<ieval::TimingNet*>& timing_net_list, int32_t dbu_unit);
+  void updateEvalTiming(const std::vector<ieval::TimingNet*>& timing_net_list, const std::vector<std::string>& name_list,
+                        const int& propagation_level, int32_t dbu_unit);
   float obtainPinCap(std::string inst_pin_name);
   float obtainAvgWireResUnitLengthUm();
   float obtainAvgWireCapUnitLengthUm();
@@ -67,16 +68,12 @@ class ExternalAPI
   void destroyTimingEval();
   /*****************************Timing Interface: END*******************************/
 
-  /*****************************Routing Interface: START*****************************/
-  std::vector<float> obtainPinDens(int32_t grid_cnt_x, int32_t grid_cnt_y);
-  std::vector<float> obtainNetCong(std::string rudy_type);
-  std::vector<float> evalGRCong();
-  int64_t evalEGRWL();
-
-  std::vector<float> getUseCapRatioList();
-  void plotCongMap(const std::string& plot_path, const std::string& output_file_name);
+  /*****************************Congestion Interface: START*****************************/
+  ieval::TotalWLSummary evalproIDBWL();
+  ieval::OverflowSummary evalproCongestion();
+  float obtainPeakAvgPinDens();  // return max/average
   void destroyCongEval();
-  /*****************************Routing Interface: END*******************************/
+  /*****************************Congestion Interface: END*******************************/
 
   /*****************************Report Interface: START*****************************/
   std::unique_ptr<ieda::ReportTable> generateTable(const std::string& name);

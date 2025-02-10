@@ -1,16 +1,14 @@
 cmake_minimum_required(VERSION 3.0)
 
-set (CMAKE_CXX_STANDARD 20)
-# set(CMAKE_BUILD_TYPE "Debug")
-#include(cmake/conanbuildinfo.cmake)
-#conan_basic_setup()
+set(CMAKE_CXX_STANDARD 20)
+# set(CMAKE_BUILD_TYPE "Debug") include(cmake/conanbuildinfo.cmake)
+# conan_basic_setup()
 
 if(TEST_SHELL)
-    add_definitions(-DTEST_SHELL)
+  add_definitions(-DTEST_SHELL)
 endif(TEST_SHELL)
 
-# ADD_COMPILE_OPTIONS("-fsanitize=address")
-# LINK_LIBRARIES("-fsanitize=address")
+# ADD_COMPILE_OPTIONS("-fsanitize=address") LINK_LIBRARIES("-fsanitize=address")
 
 include_directories(${HOME_UTILITY}/stdBase)
 include_directories(${HOME_UTILITY}/stdBase/include)
@@ -21,6 +19,7 @@ include_directories(${HOME_OPERATION}/iSTA)
 include_directories(${HOME_OPERATION}/iSTA/source/module)
 include_directories(${HOME_OPERATION}/iSTA/source/module/include)
 include_directories(${HOME_THIRDPARTY}/onnxruntime/include)
+include_directories(${HOME_THIRDPARTY}/yaml-cpp/include)
 
 include(${HOME_CMAKE}/operation/idb.cmake)
 
@@ -35,20 +34,33 @@ link_directories(${EIGEN3_LIBRARY})
 
 option(UPDATE_RELEASE_VERSION "update git version for release" OFF)
 
-if (UPDATE_RELEASE_VERSION)
-    find_package(Git QUIET)
-    if(GIT_FOUND)
-        execute_process(COMMAND ${GIT_EXECUTABLE} describe --abbrev=40 --always OUTPUT_VARIABLE GIT_VERSION)
-        string(STRIP "${GIT_VERSION}" GIT_VERSION)
-        message(STATUS "Git version: " ${GIT_VERSION})
-    endif()
+if(UPDATE_RELEASE_VERSION)
+  find_package(Git QUIET)
+  if(GIT_FOUND)
+    execute_process(COMMAND ${GIT_EXECUTABLE} describe --abbrev=40 --always
+                    OUTPUT_VARIABLE GIT_VERSION)
+    string(STRIP "${GIT_VERSION}" GIT_VERSION)
+    message(STATUS "Git version: " ${GIT_VERSION})
+  endif()
 
-    configure_file(
-        "${HOME_OPERATION}/iSTA/source/module/include/Version.hh.in"
-        "${HOME_OPERATION}/iSTA/source/module/include/Version.hh"
-    )
+  configure_file("${HOME_OPERATION}/iSTA/source/module/include/Version.hh.in"
+                 "${HOME_OPERATION}/iSTA/source/module/include/Version.hh")
 endif()
 
+find_package(CUDAToolkit)
+
+if(CUDAToolkit_FOUND)
+    set(USE_CUDA_MODE ON)
+    if (USE_CUDA_MODE)
+        message(STATUS "CUDAToolkit is available, use cuda delay")
+        add_definitions(-DCUDA_DELAY=1)
+        add_definitions(-DCUDA_PROPAGATION=1)
+        add_subdirectory(source/module/delay-cuda)
+        add_subdirectory(source/module/propagation-cuda)
+    endif()
+else()
+    message("CUDAToolkit is not available.")
+endif()
 
 add_subdirectory(api)
 add_subdirectory(source/module/netlist)
@@ -66,7 +78,29 @@ add_subdirectory(test)
 
 add_executable(iSTA main.cc)
 
-target_link_libraries(iSTA sdc ista-engine inference
-sdc-cmd shell-cmd sta log str time netlist liberty
-delay utility sta-solver verilog graph idb
-tcl usage pthread stdc++fs IdbBuilder def_service lef_service)
+target_link_libraries(
+  iSTA
+  sdc
+  ista-engine
+  inference
+  sdc-cmd
+  shell-cmd
+  sta
+  log
+  str
+  time
+  netlist
+  liberty
+  delay
+  ista_utility
+  sta-solver
+  verilog
+  graph
+  idb
+  tcl
+  usage
+  pthread
+  stdc++fs
+  IdbBuilder
+  def_service
+  lef_service)

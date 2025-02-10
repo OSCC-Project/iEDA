@@ -24,10 +24,11 @@ iTO提供了4个Tcl命令：
 
 部分Config说明
 ```
-"setup_slack_margin": 0.0, // setup slack小于该值时认为违例，也是slack优化的目标
-"hold_slack_margin": 0.4,  // hold slack小于该值时认为违例，也是slack优化的目标
-"max_buffer_percent": 0.2,  // 缓冲器插入的面积占芯片面积的最大比例
-"max_utilization": 0.8,  // 缓冲器插入后的面积+其他单元的面积，占芯片面积的最大比例
+"routing_tree": "flute",  // 连接线网所有引脚的topology，主要用于RC树构建，DRV优化，以及Setup优化。可选flute：flute构建的rsmt、hvtree：HV tree、shallow-light：通过SALT构建的shallow-light tree
+"setup_target_slack": 0.0, // setup slack小于该值时认为违例，也是slack优化的目标
+"hold_target_slack": 0.4,  // hold slack小于该值时认为违例，也是slack优化的目标
+"max_insert_instance_percent": 0.2,  // 缓冲器插入的面积占芯片面积的最大比例
+"max_core_utilization": 0.8,  // 缓冲器插入后的面积+其他单元的面积，占芯片面积的最大比例
 
 "DRV_insert_buffers": [
     ""  // 优化DRV使用的缓冲器
@@ -38,9 +39,11 @@ iTO提供了4个Tcl命令：
 "hold_insert_buffers": [
     ""  // 优化hold使用的缓冲器
 ],
-"number_passes_allowed_decreasing_slack": 5,  // 迭代优化setup时，允许WNS不断变差的最大连续迭代次数
-"rebuffer_max_fanout": 20,  // 针对setup，线网的fanout超过该值时不会对其进行缓冲器插入优化
-"split_load_min_fanout": 8  // 针对setup，线网的fanout大于该值时通过插入缓冲器把fanout降低
+"number_of_decreasing_slack_iter": 5,  // 迭代优化setup时，允许WNS不断变差的最大连续迭代次数
+"max_allowed_buffering_fanout": 20,  // 针对setup，线网的fanout超过该值时不会对其进行缓冲器插入优化
+"min_divide_fanout": 8  // 针对setup，线网的fanout大于该值时通过插入缓冲器把fanout降低
+"optimize_endpoints_percent": 1.0 //针对setup，需要优化的违例端点占全部违例端点的比例 
+"drv_optimize_iter_number": 5  // 针对drv，drv优化的执行次数
 
 ```
 

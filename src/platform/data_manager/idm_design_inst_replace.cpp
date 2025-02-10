@@ -70,6 +70,7 @@ bool DataManager::place_macro_loc_rand(std::string tcl_path)
   auto compareByArea
       = [](const Macro& macro1, const Macro& macro2) { return (macro1.width * macro1.height) > (macro2.width * macro2.height); };
 
+
   auto isOverlap = [](const Macro& macro1, const Macro& macro2) {
     // 判断两个矩形是否重叠
     double left1 = macro1.center_x - macro1.width / 2;
@@ -94,7 +95,7 @@ bool DataManager::place_macro_loc_rand(std::string tcl_path)
   int lly = _layout->get_die()->get_bounding_box()->get_low_y();
   int urx = _layout->get_die()->get_bounding_box()->get_high_x();
   int ury = _layout->get_die()->get_bounding_box()->get_high_y();
-  double Avaliable_area = (double) (urx - llx) * (double) (ury - lly);
+  //double Avaliable_area = (double) (urx - llx) * (double) (ury - lly);
   // std::cout << " grid_width = " << grid_width << " grid_height = " << grid_height << std::endl;
   // std::cout << " llx = " << llx << " lly = " << lly << " urx = " << urx << " ury = " << ury << std::endl;
 
@@ -122,7 +123,7 @@ bool DataManager::place_macro_loc_rand(std::string tcl_path)
   //           << " Avaliable_area = " << Avaliable_area << std::endl;
 
   string orientations[] = {"R0", "MX", "R180", "MY"};
-  for (int i = 0; i < Avaliable_macro.size(); i++) {
+  for (size_t i = 0; i < Avaliable_macro.size(); i++) {
     // 随机一个角度，如果是90或270，交换宽高
     if (orientations[int(std::rand() % 4)] == "R0")
       Avaliable_macro[i].orient = IdbOrient::kN_R0;
@@ -163,7 +164,7 @@ bool DataManager::place_macro_loc_rand(std::string tcl_path)
     }
 
     // 跟已有单元计算重叠
-    for (int j = 0; j < i; j++) {
+    for (size_t j = 0; j < i; j++) {
       int left_bound = static_cast<int>(std::ceil(
           ((Avaliable_macro[j].center_x - Avaliable_macro[j].width / 2 - Avaliable_macro[i].width / 2) - grid_width / 2) / grid_width));
       int right_bound = static_cast<int>(std::floor(
@@ -181,8 +182,8 @@ bool DataManager::place_macro_loc_rand(std::string tcl_path)
       }
     }
     std::vector<std::pair<int, int>> falseGridPoints;  // 存储为false的格点坐标
-    for (int ii = 0; ii < mask_map.size(); ii++) {
-      for (int jj = 0; jj < mask_map[ii].size(); jj++) {
+    for (size_t ii = 0; ii < mask_map.size(); ii++) {
+      for (size_t jj = 0; jj < mask_map[ii].size(); jj++) {
         if (!mask_map[ii][jj]) {
           falseGridPoints.push_back(std::make_pair(ii, jj));
         }
@@ -201,19 +202,19 @@ bool DataManager::place_macro_loc_rand(std::string tcl_path)
     }
   }
 
-  for (int i = 0; i < Avaliable_macro.size(); i++) {
+  for (size_t i = 0; i < Avaliable_macro.size(); i++) {
     Avaliable_macro[i].center_x += llx;
     Avaliable_macro[i].center_y += lly;
   }
 
-  for (int i = 0; i < Avaliable_macro.size(); i++) {
+  for (size_t i = 0; i < Avaliable_macro.size(); i++) {
     if (Avaliable_macro[i].center_x < 0.1 || Avaliable_macro[i].center_y < 0.1) {
       std::cout << " error: exist unplaced macro" << std::endl;
       return false;
     }
   }
 
-  for (int i = 0; i < Avaliable_macro.size(); i++) {
+  for (size_t i = 0; i < Avaliable_macro.size(); i++) {
     if (Avaliable_macro[i].center_x - Avaliable_macro[i].width / 2 < llx
         || Avaliable_macro[i].center_y - Avaliable_macro[i].height / 2 < lly
         || Avaliable_macro[i].center_x + Avaliable_macro[i].width / 2 > urx
