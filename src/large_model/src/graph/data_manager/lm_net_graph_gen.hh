@@ -105,23 +105,31 @@ struct LayoutDefRectEqual
   bool operator()(const LayoutDefRect& lhs, const LayoutDefRect& rhs) const { return boost::geometry::equals(lhs, rhs); }
 };
 
+enum LayoutPropertyType
+{
+  kNone,
+  kWire,
+  kVia,
+  kPatch,
+  kPin
+};
+
 struct LayoutBase
 {
  public:
-  LayoutBase(bool is_wire, bool is_via, bool is_patch, bool is_pin) : is_wire(is_wire), is_via(is_via), is_patch(is_patch), is_pin(is_pin)
-  {
-  }
+  LayoutBase(const LayoutPropertyType& t) : type(t) {}
   virtual ~LayoutBase() {}
-  bool is_wire;
-  bool is_via;
-  bool is_patch;
-  bool is_pin;
+  bool is_wire() const { return type == kWire; }
+  bool is_via() const { return type == kVia; }
+  bool is_patch() const { return type == kPatch; }
+  bool is_pin() const { return type == kPin; }
+  LayoutPropertyType type = kNone;
 };
 
 struct LayoutWire : public LayoutBase
 {
  public:
-  LayoutWire(idb::IdbCoordinate<int32_t>* s, idb::IdbCoordinate<int32_t>* e, int layer_id) : LayoutBase{true, false, false, false}
+  LayoutWire(idb::IdbCoordinate<int32_t>* s, idb::IdbCoordinate<int32_t>* e, int layer_id) : LayoutBase{LayoutPropertyType::kWire}
   {
     start = LayoutDefPoint(s->get_x(), s->get_y(), layer_id);
     end = LayoutDefPoint(e->get_x(), e->get_y(), layer_id);
@@ -134,7 +142,7 @@ struct LayoutVia : public LayoutBase
 {
  public:
   LayoutVia(idb::IdbCoordinate<int32_t>* coord, std::vector<idb::IdbRect*> b_shapes, std::vector<idb::IdbRect*> t_shapes, int layer_id)
-      : LayoutBase{false, true, false, false}
+      : LayoutBase{LayoutPropertyType::kVia}
   {
     LayoutDefPoint cut_start(coord->get_x(), coord->get_y(), layer_id - 1);
     LayoutDefPoint cut_end(coord->get_x(), coord->get_y(), layer_id + 1);
@@ -158,7 +166,7 @@ struct LayoutVia : public LayoutBase
 struct LayoutPatch : public LayoutBase
 {
  public:
-  LayoutPatch(idb::IdbRect* r, int layer_id) : LayoutBase{false, false, true, false}
+  LayoutPatch(idb::IdbRect* r, int layer_id) : LayoutBase{LayoutPropertyType::kPatch}
   {
     LayoutDefPoint low(r->get_low_x(), r->get_low_y(), layer_id);
     LayoutDefPoint high(r->get_high_x(), r->get_high_y(), layer_id);
@@ -170,7 +178,7 @@ struct LayoutPatch : public LayoutBase
 struct LayoutPin : public LayoutBase
 {
  public:
-  LayoutPin() : LayoutBase{false, false, false, true} {}
+  LayoutPin() : LayoutBase{LayoutPropertyType::kPin} {}
   void addPinShape(idb::IdbRect* r, int layer_id)
   {
     LayoutDefPoint low(r->get_low_x(), r->get_low_y(), layer_id);
