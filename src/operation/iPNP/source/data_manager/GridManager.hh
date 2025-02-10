@@ -135,10 +135,10 @@ class PDNRectanGridRegion : public PDNGridRegion
     return right_top_coordinate;
   }
 
-  double set_x_left_bottom(double x) { _x_left_bottom = x; }
-  double set_y_left_bottom(double y) { _y_left_bottom = y; }
-  double set_x_right_top(double x) { _x_right_top = x; }
-  double set_y_right_top(double y) { _y_right_top = y; }
+  void set_x_left_bottom(double x) { _x_left_bottom = x; }
+  void set_y_left_bottom(double y) { _y_left_bottom = y; }
+  void set_x_right_top(double x) { _x_right_top = x; }
+  void set_y_right_top(double y) { _y_right_top = y; }
 
  private:
   double _x_left_bottom;

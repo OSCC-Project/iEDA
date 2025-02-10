@@ -27,14 +27,14 @@
 namespace ipnp {
 void CongestionEval::rudy_routing()
 {
-  auto& eval_api = eval::EvalAPI::initInst();
+  // auto& eval_api = eval::EvalAPI::initInst();
 
   int32_t bin_cnt_x = 512;  // Grid size
   int32_t bin_cnt_y = 512;
-  eval_api.initCongDataFromIDB(bin_cnt_x, bin_cnt_y);
+  // eval_api.initCongDataFromIDB(bin_cnt_x, bin_cnt_y);
 
   string eval_method = "RUDY";
-  _net_cong_rudy = eval_api.evalNetCong(eval_method);  // using RUDY
+  // _net_cong_rudy = eval_api.evalNetCong(eval_method);  // using RUDY
 }
 
 void CongestionEval::global_routing()
