@@ -426,7 +426,14 @@ class Sta {
     return the_vertex ? *the_vertex : nullptr;
   }
   StaVertex* getVertex(unsigned index) {
-    return _graph.get_vertexes()[index].get();
+    auto& the_vertexes = _graph.get_vertexes();
+    auto vertex_size = the_vertexes.size();
+    if (index < vertex_size) {
+      return the_vertexes[index].get();
+    } else {
+      auto assistants = _graph.getAssistants();
+      return assistants[index - vertex_size];
+    }
   }
 
   bool isMaxAnalysis() {

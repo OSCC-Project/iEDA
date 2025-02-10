@@ -22,6 +22,8 @@
  * @date 2020-11-27
  */
 
+#include "Sta.hh"
+
 #include <algorithm>
 #include <filesystem>
 #include <map>
@@ -32,7 +34,6 @@
 #include <utility>
 
 #include "Config.hh"
-#include "Sta.hh"
 #include "StaAnalyze.hh"
 #include "StaApplySdc.hh"
 #include "StaBuildClockTree.hh"
@@ -2558,29 +2559,25 @@ unsigned Sta::updateTiming() {
   } else {
     // BFS flow
     Vector<std::function<unsigned(StaGraph *)>> funcs = {
-      StaApplySdc(StaApplySdc::PropType::kApplySdcPreProp),
-      StaConstPropagation(),
-      StaClockPropagation(StaClockPropagation::PropType::kIdealClockProp),
-      StaCombLoopCheck(),
-      StaClockSlewDelayPropagation(),
-      StaLevelization(),
-      StaClockPropagation(StaClockPropagation::PropType::kNormalClockProp),
-      StaApplySdc(StaApplySdc::PropType::kApplySdcPostNormalClockProp),
-      StaClockPropagation(
-          StaClockPropagation::PropType::kUpdateGeneratedClockProp),
-      StaApplySdc(StaApplySdc::PropType::kApplySdcPostClockProp),
-      StaBuildPropTag(StaPropagationTag::TagType::kProp),
+        StaApplySdc(StaApplySdc::PropType::kApplySdcPreProp),
+        StaConstPropagation(),
+        StaClockPropagation(StaClockPropagation::PropType::kIdealClockProp),
+        StaCombLoopCheck(), StaClockSlewDelayPropagation(), StaLevelization(),
+        StaClockPropagation(StaClockPropagation::PropType::kNormalClockProp),
+        StaApplySdc(StaApplySdc::PropType::kApplySdcPostNormalClockProp),
+        StaClockPropagation(
+            StaClockPropagation::PropType::kUpdateGeneratedClockProp),
+        StaApplySdc(StaApplySdc::PropType::kApplySdcPostClockProp),
+        StaBuildPropTag(StaPropagationTag::TagType::kProp),
 #if !INTEGRATION_FWD
-      StaDataSlewDelayPropagation(),
+        StaDataSlewDelayPropagation(),
 #endif
-      StaDataPropagation(StaDataPropagation::PropType::kFwdProp),
-      // StaCrossTalkPropagation(),
+        StaDataPropagation(StaDataPropagation::PropType::kFwdProp),
+        // StaCrossTalkPropagation(),
 
-      StaDataPropagation(StaDataPropagation::PropType::kIncrFwdProp),
-      StaAnalyze(),
-      StaApplySdc(StaApplySdc::PropType::kApplySdcPostProp),
-      StaDataPropagation(StaDataPropagation::PropType::kBwdProp)
-    };
+        StaDataPropagation(StaDataPropagation::PropType::kIncrFwdProp),
+        StaAnalyze(), StaApplySdc(StaApplySdc::PropType::kApplySdcPostProp),
+        StaDataPropagation(StaDataPropagation::PropType::kBwdProp)};
 
     for (auto &func : funcs) {
       the_graph.exec(func);
@@ -3161,38 +3158,49 @@ double Sta::convertCapUnit(const double src_value) {
 #if CUDA_PROPAGATION
 /**
  * @brief print flatten data for debug gpu data.
- * 
+ *
  */
 void Sta::printFlattenData() {
   LOG_INFO << "print flatten data path start";
   std::string design_work_space = get_design_work_space();
 
-  auto& flatten_data = get_flatten_data();
-  auto& index_to_at = get_index_to_at();
+  auto &flatten_data = get_flatten_data();
+  auto &index_to_at = get_index_to_at();
 
-  auto& flatten_at_data = flatten_data._flatten_at_data;
-  
-  std::string flatten_at_data_path = design_work_space + "/flatten_at_data.yaml";
-  std::ofstream output_file(flatten_at_data_path);  
+  auto &flatten_at_data = flatten_data._flatten_at_data;
+  unsigned flatten_at_size = flatten_at_data.size();
+
+  std::string flatten_at_data_path =
+      design_work_space + "/flatten_at_data.yaml";
+  std::ofstream output_file(flatten_at_data_path);
   unsigned at_data_index = 0;
-  for(auto& at_data : flatten_at_data) {
-    auto* path_delay_data = index_to_at[at_data_index];
-    auto* own_vertex = path_delay_data->get_own_vertex();
+  for (auto &at_data : flatten_at_data) {
+    LOG_INFO_EVERY_N(100000) << "print flatten data path " << at_data_index
+                             << " total " << flatten_at_size;
+    auto *path_delay_data = index_to_at[at_data_index];
+    auto *own_vertex = path_delay_data->get_own_vertex();
     const char *launch_clock_name = path_delay_data->get_launch_clock_data()
                                         ->get_prop_clock()
                                         ->get_clock_name();
 
     output_file << "GPU_AT_DATA_" << at_data_index++ << ": " << std::endl;
     output_file << "  own_vertex: " << own_vertex->getName() << std::endl;
-    output_file << "  vertex level" << own_vertex->get_level()<< std::endl;
+    output_file << "  vertex level" << own_vertex->get_level() << std::endl;
     output_file << "  launch_clock_name: " << launch_clock_name << std::endl;
-    output_file << "  launch_clock_index: " << at_data._own_clock_index << std::endl;
-    output_file << "  mode: " << (at_data._analysis_mode == GPU_Analysis_Mode::kMax ? "max" : "min") << std::endl;
-    output_file << "  trans_type: " << (at_data._trans_type == GPU_Trans_Type::kRise ? "r" : "f") << std::endl;
-    output_file << "  data_value: " << FS_TO_NS(at_data._data_value) << std::endl;
+    output_file << "  launch_clock_index: " << at_data._own_clock_index
+                << std::endl;
+    output_file << "  mode: "
+                << (at_data._analysis_mode == GPU_Analysis_Mode::kMax ? "max"
+                                                                      : "min")
+                << std::endl;
+    output_file << "  trans_type: "
+                << (at_data._trans_type == GPU_Trans_Type::kRise ? "r" : "f")
+                << std::endl;
+    output_file << "  data_value: " << FS_TO_NS(at_data._data_value)
+                << std::endl;
     output_file << "  src_vertex_id: " << at_data._src_vertex_id << std::endl;
     if (at_data._src_vertex_id != -1) {
-      auto* src_vertex = getVertex(at_data._src_vertex_id);
+      auto *src_vertex = getVertex(at_data._src_vertex_id);
       output_file << "  src_vertex: " << src_vertex->getName() << std::endl;
     } else {
       output_file << "  src_vertex: " << "NA" << std::endl;
