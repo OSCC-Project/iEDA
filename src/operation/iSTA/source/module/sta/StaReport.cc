@@ -296,7 +296,12 @@ unsigned StaReportPathDetail::operator()(StaSeqPathData* seq_path_data) {
   };
 
   auto* ista = Sta::getOrCreateSta();
+
+#if CUDA_PROPAGATION
   auto& at_to_index = ista->get_at_to_index();
+#else 
+  std::map<ista::StaPathDelayData *, unsigned int> at_to_index;
+#endif
 
   auto print_path_data = [&report_tbl, &fix_point_str, &is_derate, &at_to_index](
                              auto& path_stack, auto clock_path_arrive_time) {
