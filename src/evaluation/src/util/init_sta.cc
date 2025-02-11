@@ -464,7 +464,16 @@ void InitSTA::buildLmRCTree(ilm::LmLayout* lm_layout, std::string work_dir) {
     auto idb_inst_pins = idb_net->get_instance_pin_list()->get_pin_list();
     auto io_pins = idb_net->get_io_pins()->get_pin_list();
     auto& wires = lm_net.get_wires();
-
+  // Check corner case
+    if (wires.size() == 1){
+      auto& wire = wires[0];
+      auto connected_nodes = wire.get_connected_nodes();
+      auto* source = connected_nodes.first;
+      auto* target = connected_nodes.second;
+      if (source == target) {
+        continue;
+      }
+    }
     auto sta_pin_ports = sta_net->get_pin_ports();
     std::unordered_map<std::string, ista::DesignObject*> sta_pin_port_map;
     std::ranges::for_each(sta_pin_ports, [&](ista::DesignObject* pin_port) {
