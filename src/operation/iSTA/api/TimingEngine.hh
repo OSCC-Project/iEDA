@@ -214,7 +214,7 @@ class TimingEngine {
   void initRcTree(Net *net);
   void initRcTree();
   void resetRcTree(Net *net);
-  RctNode *makeOrFindRCTreeNode(Net *net, int id);
+  RctNode *makeOrFindRCTreeNode(Net *net, int64_t id);
   RctNode *makeOrFindRCTreeNode(DesignObject *pin_or_port);
   void incrCap(RctNode *node, double cap, bool is_incremental = false);
   void makeResistor(Net *net, RctNode *from_node, RctNode *to_node, double res);

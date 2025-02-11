@@ -347,7 +347,7 @@ void TimingEngine::resetRcTree(Net* net) {
  * @param id
  * @return RctNode*
  */
-RctNode* TimingEngine::makeOrFindRCTreeNode(Net* net, int id) {
+RctNode* TimingEngine::makeOrFindRCTreeNode(Net* net, int64_t id) {
   StaBuildRCTree build_rc_tree;
   auto* rc_net = _timing_engine->get_ista()->getRcNet(net);
   if (!rc_net) {
@@ -362,7 +362,7 @@ RctNode* TimingEngine::makeOrFindRCTreeNode(Net* net, int id) {
   }
 
   auto* rc_tree = rc_net->rct();
-  std::string node_name = Str::printf("%s:%d", net->get_name(), id);
+  std::string node_name = Str::printf("%s:%lld", net->get_name(), id);
 
   auto* node = rc_tree->node(node_name);
   if (!node) {
