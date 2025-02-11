@@ -53,8 +53,8 @@ struct TimingWireNode {
 };
 
 struct TimingWireEdge {
-  unsigned _from_node = 0;
-  unsigned _to_node = 0;
+  int64_t _from_node = -1;
+  int64_t _to_node = -1;
   bool _is_net_edge = true;
 };
 

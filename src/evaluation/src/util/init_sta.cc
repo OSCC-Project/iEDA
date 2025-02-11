@@ -1039,6 +1039,8 @@ TimingWireGraph InitSTA::getTimingWireGraph() {
                                                     TransType::kFall);
       }
 
+      LOG_FATAL_IF(!rc_net) << the_net->get_name() << " rc net is null.";
+
       auto wire_topo = rc_net->getWireTopo(snk_node_name.c_str());
       for (auto* wire_edge : wire_topo | std::ranges::views::reverse) {
         ieda::Stats stats2;
