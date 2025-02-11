@@ -46,7 +46,7 @@ class TGNode : public PlanarCoord
     }
     return neighbor_node;
   }
-  double getCongestionCost(Orientation orientation)
+  double getOverflowCost(Orientation orientation)
   {
     double cost = 0;
     int32_t node_demand = 0;

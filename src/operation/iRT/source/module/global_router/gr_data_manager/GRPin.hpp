@@ -16,28 +16,28 @@
 // ***************************************************************************************
 #pragma once
 
+#include <string>
+#include <vector>
+
+#include "EXTLayerRect.hpp"
+#include "LayerCoord.hpp"
+#include "Pin.hpp"
+
 namespace irt {
 
-class TGComParam
+class GRPin : public Pin
 {
  public:
-  TGComParam() = default;
-  TGComParam(int32_t topo_spilt_length, double overflow_unit)
-  {
-    _topo_spilt_length = topo_spilt_length;
-    _overflow_unit = overflow_unit;
-  }
-  ~TGComParam() = default;
+  GRPin() = default;
+  explicit GRPin(const Pin& pin) : Pin(pin) {}
+  ~GRPin() = default;
   // getter
-  int32_t get_topo_spilt_length() const { return _topo_spilt_length; }
-  double get_overflow_unit() const { return _overflow_unit; }
+
   // setter
-  void set_topo_spilt_length(const int32_t topo_spilt_length) { _topo_spilt_length = topo_spilt_length; }
-  void set_overflow_unit(const double overflow_unit) { _overflow_unit = overflow_unit; }
+
+  // function
 
  private:
-  int32_t _topo_spilt_length = 0;
-  double _overflow_unit = 0;
 };
 
 }  // namespace irt

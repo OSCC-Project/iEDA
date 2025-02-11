@@ -16,28 +16,45 @@
 // ***************************************************************************************
 #pragma once
 
+#include "RTHeader.hpp"
+
 namespace irt {
 
-class TGComParam
+class GRBoxId
 {
  public:
-  TGComParam() = default;
-  TGComParam(int32_t topo_spilt_length, double overflow_unit)
+  GRBoxId() = default;
+  GRBoxId(const int32_t x, const int32_t y)
   {
-    _topo_spilt_length = topo_spilt_length;
-    _overflow_unit = overflow_unit;
+    _x = x;
+    _y = y;
   }
-  ~TGComParam() = default;
+  ~GRBoxId() = default;
+  bool operator==(const GRBoxId& other) { return this->_x == other._x && this->_y == other._y; }
+  bool operator!=(const GRBoxId& other) { return !((*this) == other); }
   // getter
-  int32_t get_topo_spilt_length() const { return _topo_spilt_length; }
-  double get_overflow_unit() const { return _overflow_unit; }
+  int32_t get_x() const { return _x; }
+  int32_t get_y() const { return _y; }
   // setter
-  void set_topo_spilt_length(const int32_t topo_spilt_length) { _topo_spilt_length = topo_spilt_length; }
-  void set_overflow_unit(const double overflow_unit) { _overflow_unit = overflow_unit; }
+  void set_x(const int32_t x) { _x = x; }
+  void set_y(const int32_t y) { _y = y; }
+  // function
 
  private:
-  int32_t _topo_spilt_length = 0;
-  double _overflow_unit = 0;
+  int32_t _x = -1;
+  int32_t _y = -1;
+};
+
+struct CmpGRBoxId
+{
+  bool operator()(const GRBoxId& a, const GRBoxId& b) const
+  {
+    if (a.get_x() != b.get_x()) {
+      return a.get_x() < b.get_x();
+    } else {
+      return a.get_y() < b.get_y();
+    }
+  }
 };
 
 }  // namespace irt

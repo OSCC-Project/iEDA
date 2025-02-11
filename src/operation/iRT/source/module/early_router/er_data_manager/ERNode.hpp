@@ -55,7 +55,7 @@ class ERNode : public LayerCoord
     }
     return neighbor_node;
   }
-  double getCongestionCost(Orientation orientation)
+  double getOverflowCost(Orientation orientation)
   {
     double cost = 0;
     if (orientation != Orientation::kAbove && orientation != Orientation::kBelow) {

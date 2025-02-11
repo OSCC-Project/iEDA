@@ -674,7 +674,7 @@ void PinAccessor::routePABoxMap(PAModel& pa_model)
     }
     routed_box_num += pa_box_id_list.size();
     RTLOG.info(Loc::current(), "Routed ", routed_box_num, "/", total_box_num, "(", RTUTIL.getPercentage(routed_box_num, total_box_num),
-               ") boxes with ", getViolationNum(), " violations", stage_monitor.getStatsInfo());
+               ") boxes with ", getViolationNum(pa_model), " violations", stage_monitor.getStatsInfo());
   }
 
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
@@ -1613,7 +1613,7 @@ void PinAccessor::freePABox(PABox& pa_box)
   pa_box.get_layer_node_map().clear();
 }
 
-int32_t PinAccessor::getViolationNum()
+int32_t PinAccessor::getViolationNum(PAModel& pa_model)
 {
   Die& die = RTDM.getDatabase().get_die();
 
@@ -1691,7 +1691,7 @@ std::vector<Violation> PinAccessor::getCostViolationList(PAModel& pa_model)
 
 bool PinAccessor::stopIteration(PAModel& pa_model)
 {
-  if (getViolationNum() == 0) {
+  if (getViolationNum(pa_model) == 0) {
     RTLOG.info(Loc::current(), "***** Iteration stopped early *****");
     return true;
   }

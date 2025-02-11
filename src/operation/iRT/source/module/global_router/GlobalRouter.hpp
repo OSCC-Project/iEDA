@@ -19,6 +19,7 @@
 #include "Config.hpp"
 #include "DataManager.hpp"
 #include "Database.hpp"
+#include "GRModel.hpp"
 #include "Monitor.hpp"
 
 namespace irt {
@@ -45,6 +46,79 @@ class GlobalRouter
   GlobalRouter& operator=(const GlobalRouter& other) = delete;
   GlobalRouter& operator=(GlobalRouter&& other) = delete;
   // function
+  GRModel initGRModel();
+  std::vector<GRNet> convertToGRNetList(std::vector<Net>& net_list);
+  GRNet convertToGRNet(Net& net);
+  void buildLayerNodeMap(GRModel& gr_model);
+  void buildOrientSupply(GRModel& gr_model);
+  void resetOrientDemand(GRModel& gr_model);
+  void iterativeGRModel(GRModel& gr_model);
+  void setGRIterParam(GRModel& gr_model, int32_t iter, GRIterParam& gr_iter_param);
+  void initGRBoxMap(GRModel& gr_model);
+  void buildBoxSchedule(GRModel& gr_model);
+  void splitNetResult(GRModel& gr_model);
+  void routeGRBoxMap(GRModel& gr_model);
+  void buildNetResult(GRBox& gr_box);
+  void initGRTaskList(GRModel& gr_model, GRBox& gr_box);
+  bool needRouting(GRModel& gr_model, GRBox& gr_box);
+  void buildBoxTrackAxis(GRBox& gr_box);
+  void buildLayerNodeMap(GRBox& gr_box);
+  void buildGRNodeNeighbor(GRBox& gr_box);
+  void buildOrientSupply(GRModel& gr_model, GRBox& gr_box);
+  void buildOrientDemand(GRModel& gr_model, GRBox& gr_box);
+  void routeGRBox(GRBox& gr_box);
+  std::vector<GRTask*> initTaskSchedule(GRBox& gr_box);
+  void routeGRTask(GRBox& gr_box, GRTask* gr_task);
+  void initSingleTask(GRBox& gr_box, GRTask* gr_task);
+  bool isConnectedAllEnd(GRBox& gr_box);
+  void routeSinglePath(GRBox& gr_box);
+  void initPathHead(GRBox& gr_box);
+  bool searchEnded(GRBox& gr_box);
+  void expandSearching(GRBox& gr_box);
+  void resetPathHead(GRBox& gr_box);
+  void updatePathResult(GRBox& gr_box);
+  std::vector<Segment<LayerCoord>> getRoutingSegmentListByNode(GRNode* node);
+  void resetStartAndEnd(GRBox& gr_box);
+  void resetSinglePath(GRBox& gr_box);
+  void updateTaskResult(GRBox& gr_box);
+  std::vector<Segment<LayerCoord>> getRoutingSegmentList(GRBox& gr_box);
+  void resetSingleTask(GRBox& gr_box);
+  void pushToOpenList(GRBox& gr_box, GRNode* curr_node);
+  GRNode* popFromOpenList(GRBox& gr_box);
+  double getKnowCost(GRBox& gr_box, GRNode* start_node, GRNode* end_node);
+  double getNodeCost(GRBox& gr_box, GRNode* curr_node, Orientation orientation);
+  double getKnowWireCost(GRBox& gr_box, GRNode* start_node, GRNode* end_node);
+  double getKnowViaCost(GRBox& gr_box, GRNode* start_node, GRNode* end_node);
+  double getEstimateCostToEnd(GRBox& gr_box, GRNode* curr_node);
+  double getEstimateCost(GRBox& gr_box, GRNode* start_node, GRNode* end_node);
+  double getEstimateWireCost(GRBox& gr_box, GRNode* start_node, GRNode* end_node);
+  double getEstimateViaCost(GRBox& gr_box, GRNode* start_node, GRNode* end_node);
+  void updateTaskSchedule(GRBox& gr_box, std::vector<GRTask*>& routing_task_list);
+  void uploadNetResult(GRBox& gr_box);
+  void freeGRBox(GRBox& gr_box);
+  int32_t getOverflow(GRModel& gr_model);
+  void uploadNetResult(GRModel& gr_model);
+  bool stopIteration(GRModel& gr_model);
+
+#if 1  // update env
+  void updateDemandToGraph(GRModel& gr_model, ChangeType change_type, int32_t net_idx, std::set<Segment<LayerCoord>*>& segment_set);
+  void updateDemandToGraph(GRBox& gr_box, ChangeType change_type, int32_t net_idx, std::vector<Segment<LayerCoord>>& segment_list);
+  int32_t getOverflow(GRModel& gr_model, EXTPlanarRect& region);
+#endif
+
+#if 1  // exhibit
+  void updateSummary(GRModel& gr_model);
+  void printSummary(GRModel& gr_model);
+  void outputGuide(GRModel& gr_model);
+  void outputDemandCSV(GRModel& gr_model);
+  void outputOverflowCSV(GRModel& gr_model);
+#endif
+
+#if 1  // debug
+  void debugPlotGRModel(GRModel& gr_model, std::string flag);
+  void debugCheckGRBox(GRBox& gr_box);
+  void debugPlotGRBox(GRBox& gr_box, int32_t curr_task_idx, std::string flag);
+#endif
 };
 
 }  // namespace irt

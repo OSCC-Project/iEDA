@@ -110,19 +110,19 @@ LANet LayerAssigner::convertToLANet(Net& net)
 void LayerAssigner::setLAComParam(LAModel& la_model)
 {
   int32_t topo_spilt_length = 10;
-  double congestion_unit = 2;
   double prefer_wire_unit = 1;
   double via_unit = 1;
+  double overflow_unit = 2;
   /**
-   * topo_spilt_length, congestion_unit, prefer_wire_unit, via_unit
+   * topo_spilt_length, prefer_wire_unit, via_unit, overflow_unit
    */
   // clang-format off
-  LAComParam la_com_param(topo_spilt_length, congestion_unit, prefer_wire_unit, via_unit);
+  LAComParam la_com_param(topo_spilt_length, prefer_wire_unit, via_unit, overflow_unit);
   // clang-format on
   RTLOG.info(Loc::current(), "topo_spilt_length: ", la_com_param.get_topo_spilt_length());
-  RTLOG.info(Loc::current(), "congestion_unit: ", la_com_param.get_congestion_unit());
   RTLOG.info(Loc::current(), "prefer_wire_unit: ", la_com_param.get_prefer_wire_unit());
   RTLOG.info(Loc::current(), "via_unit: ", la_com_param.get_via_unit());
+  RTLOG.info(Loc::current(), "overflow_unit: ", la_com_param.get_overflow_unit());
   la_model.set_la_com_param(la_com_param);
 }
 
@@ -265,7 +265,7 @@ void LayerAssigner::buildTopoTree(LAModel& la_model)
   }
   for (auto& [net_idx, segment_set] : RTDM.getNetGlobalResultMap(die)) {
     for (Segment<LayerCoord>* segment : segment_set) {
-      RTDM.updateGlobalNetResultToGCellMap(ChangeType::kDel, net_idx, segment);
+      RTDM.updateNetGlobalResultToGCellMap(ChangeType::kDel, net_idx, segment);
     }
   }
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
@@ -305,7 +305,7 @@ void LayerAssigner::routeLANet(LAModel& la_model, LANet* la_net)
     }
   }
   MTree<LayerCoord> coord_tree = getCoordTree(la_net, routing_segment_list);
-  updateDemand(la_model, la_net, coord_tree);
+  updateDemandToGraph(la_model, ChangeType::kAdd, coord_tree);
   uploadNetResult(la_net, coord_tree);
 }
 
@@ -742,10 +742,10 @@ double LayerAssigner::getKnowCost(LAModel& la_model, LANode* start_node, LANode*
 
 double LayerAssigner::getNodeCost(LAModel& la_model, LANode* curr_node, Orientation orientation)
 {
-  double congestion_unit = la_model.get_la_com_param().get_congestion_unit();
+  double overflow_unit = la_model.get_la_com_param().get_overflow_unit();
 
   double node_cost = 0;
-  node_cost += curr_node->getCongestionCost(orientation) * congestion_unit;
+  node_cost += curr_node->getOverflowCost(orientation) * overflow_unit;
   return node_cost;
 }
 
@@ -829,12 +829,18 @@ MTree<LayerCoord> LayerAssigner::getCoordTree(LANet* la_net, std::vector<Segment
   return RTUTIL.getTreeByFullFlow(candidate_root_coord_list, routing_segment_list, key_coord_pin_map);
 }
 
-void LayerAssigner::updateDemand(LAModel& la_model, LANet* la_net, MTree<LayerCoord>& coord_tree)
+void LayerAssigner::uploadNetResult(LANet* la_net, MTree<LayerCoord>& coord_tree)
 {
-  std::set<LayerCoord, CmpLayerCoordByXASC> key_coord_set;
-  for (LAPin& la_pin : la_net->get_la_pin_list()) {
-    key_coord_set.insert(la_pin.get_access_point().getGridLayerCoord());
+  for (Segment<TNode<LayerCoord>*>& coord_segment : RTUTIL.getSegListByTree(coord_tree)) {
+    Segment<LayerCoord>* segment = new Segment<LayerCoord>(coord_segment.get_first()->value(), coord_segment.get_second()->value());
+    RTDM.updateNetGlobalResultToGCellMap(ChangeType::kAdd, la_net->get_net_idx(), segment);
   }
+}
+
+#if 1  // update env
+
+void LayerAssigner::updateDemandToGraph(LAModel& la_model, ChangeType change_type, MTree<LayerCoord>& coord_tree)
+{
   std::vector<Segment<LayerCoord>> routing_segment_list;
   for (Segment<TNode<LayerCoord>*>& coord_segment : RTUTIL.getSegListByTree(coord_tree)) {
     routing_segment_list.emplace_back(coord_segment.get_first()->value(), coord_segment.get_second()->value());
@@ -877,17 +883,11 @@ void LayerAssigner::updateDemand(LAModel& la_model, LANet* la_net, MTree<LayerCo
   std::vector<GridMap<LANode>>& layer_node_map = la_model.get_layer_node_map();
   for (auto& [usage_coord, orientation_list] : usage_map) {
     LANode& la_node = layer_node_map[usage_coord.get_layer_idx()][usage_coord.get_x()][usage_coord.get_y()];
-    la_node.updateDemand(orientation_list, ChangeType::kAdd);
+    la_node.updateDemand(orientation_list, change_type);
   }
 }
 
-void LayerAssigner::uploadNetResult(LANet* la_net, MTree<LayerCoord>& coord_tree)
-{
-  for (Segment<TNode<LayerCoord>*>& coord_segment : RTUTIL.getSegListByTree(coord_tree)) {
-    Segment<LayerCoord>* segment = new Segment<LayerCoord>(coord_segment.get_first()->value(), coord_segment.get_second()->value());
-    RTDM.updateGlobalNetResultToGCellMap(ChangeType::kAdd, la_net->get_net_idx(), segment);
-  }
-}
+#endif
 
 #if 1  // exhibit
 
@@ -1098,7 +1098,7 @@ void LayerAssigner::outputGuide(LAModel& la_model)
   }
   std::vector<LANet>& la_net_list = la_model.get_la_net_list();
 
-  std::ofstream* guide_file_stream = RTUTIL.getOutputFileStream(la_temp_directory_path + "route.guide");
+  std::ofstream* guide_file_stream = RTUTIL.getOutputFileStream(RTUTIL.getString(la_temp_directory_path, "route.guide"));
   if (guide_file_stream == nullptr) {
     return;
   }

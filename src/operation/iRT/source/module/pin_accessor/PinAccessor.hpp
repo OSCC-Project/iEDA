@@ -113,7 +113,7 @@ class PinAccessor
   void uploadAccessResult(PABox& pa_box);
   void uploadViolation(PABox& pa_box);
   void freePABox(PABox& pa_box);
-  int32_t getViolationNum();
+  int32_t getViolationNum(PAModel& pa_model);
   void uploadViolation(PAModel& pa_model);
   std::vector<Violation> getCostViolationList(PAModel& pa_model);
   bool stopIteration(PAModel& pa_model);

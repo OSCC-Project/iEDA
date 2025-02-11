@@ -16,28 +16,39 @@
 // ***************************************************************************************
 #pragma once
 
+#include "ConnectType.hpp"
+#include "GRBox.hpp"
+#include "GRPin.hpp"
+#include "GridMap.hpp"
+#include "Guide.hpp"
+#include "MTree.hpp"
+#include "Net.hpp"
+#include "Pin.hpp"
+#include "TNode.hpp"
+
 namespace irt {
 
-class TGComParam
+class GRNet
 {
  public:
-  TGComParam() = default;
-  TGComParam(int32_t topo_spilt_length, double overflow_unit)
-  {
-    _topo_spilt_length = topo_spilt_length;
-    _overflow_unit = overflow_unit;
-  }
-  ~TGComParam() = default;
+  GRNet() = default;
+  ~GRNet() = default;
   // getter
-  int32_t get_topo_spilt_length() const { return _topo_spilt_length; }
-  double get_overflow_unit() const { return _overflow_unit; }
+  Net* get_origin_net() { return _origin_net; }
+  int32_t get_net_idx() const { return _net_idx; }
+  ConnectType get_connect_type() const { return _connect_type; }
+  std::vector<GRPin>& get_gr_pin_list() { return _gr_pin_list; }
   // setter
-  void set_topo_spilt_length(const int32_t topo_spilt_length) { _topo_spilt_length = topo_spilt_length; }
-  void set_overflow_unit(const double overflow_unit) { _overflow_unit = overflow_unit; }
+  void set_origin_net(Net* origin_net) { _origin_net = origin_net; }
+  void set_net_idx(const int32_t net_idx) { _net_idx = net_idx; }
+  void set_connect_type(const ConnectType& connect_type) { _connect_type = connect_type; }
+  void set_gr_pin_list(const std::vector<GRPin>& gr_pin_list) { _gr_pin_list = gr_pin_list; }
 
  private:
-  int32_t _topo_spilt_length = 0;
-  double _overflow_unit = 0;
+  Net* _origin_net = nullptr;
+  int32_t _net_idx = -1;
+  ConnectType _connect_type = ConnectType::kNone;
+  std::vector<GRPin> _gr_pin_list;
 };
 
 }  // namespace irt

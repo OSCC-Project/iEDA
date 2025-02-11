@@ -164,7 +164,7 @@ void DataManager::updateNetPinAccessResultToGCellMap(ChangeType change_type, int
   }
 }
 
-void DataManager::updateGlobalNetResultToGCellMap(ChangeType change_type, int32_t net_idx, Segment<LayerCoord>* segment)
+void DataManager::updateNetGlobalResultToGCellMap(ChangeType change_type, int32_t net_idx, Segment<LayerCoord>* segment)
 {
   GridMap<GCell>& gcell_map = _database.get_gcell_map();
 
@@ -1625,7 +1625,7 @@ void DataManager::destroyGCellMap()
   }
   for (auto& [net_idx, segment_set] : getNetGlobalResultMap(die)) {
     for (Segment<LayerCoord>* segment : segment_set) {
-      RTDM.updateGlobalNetResultToGCellMap(ChangeType::kDel, net_idx, segment);
+      RTDM.updateNetGlobalResultToGCellMap(ChangeType::kDel, net_idx, segment);
     }
   }
   for (auto& [net_idx, segment_set] : getNetDetailedResultMap(die)) {

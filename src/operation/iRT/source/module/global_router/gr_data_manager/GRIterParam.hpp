@@ -16,36 +16,51 @@
 // ***************************************************************************************
 #pragma once
 
+#include "RTHeader.hpp"
+
 namespace irt {
 
-class ERComParam
+class GRIterParam
 {
  public:
-  ERComParam() = default;
-  ERComParam(int32_t topo_spilt_length, double prefer_wire_unit, double via_unit, double overflow_unit)
+  GRIterParam() = default;
+  GRIterParam(double prefer_wire_unit, double via_unit, int32_t size, int32_t offset, int32_t schedule_interval, double overflow_unit,
+              int32_t max_routed_times)
   {
-    _topo_spilt_length = topo_spilt_length;
     _prefer_wire_unit = prefer_wire_unit;
     _via_unit = via_unit;
+    _size = size;
+    _offset = offset;
+    _schedule_interval = schedule_interval;
     _overflow_unit = overflow_unit;
+    _max_routed_times = max_routed_times;
   }
-  ~ERComParam() = default;
+  ~GRIterParam() = default;
   // getter
-  int32_t get_topo_spilt_length() const { return _topo_spilt_length; }
   double get_prefer_wire_unit() const { return _prefer_wire_unit; }
   double get_via_unit() const { return _via_unit; }
+  int32_t get_size() const { return _size; }
+  int32_t get_offset() const { return _offset; }
+  int32_t get_schedule_interval() const { return _schedule_interval; }
   double get_overflow_unit() const { return _overflow_unit; }
+  int32_t get_max_routed_times() const { return _max_routed_times; }
   // setter
-  void set_topo_spilt_length(const int32_t topo_spilt_length) { _topo_spilt_length = topo_spilt_length; }
   void set_prefer_wire_unit(const double prefer_wire_unit) { _prefer_wire_unit = prefer_wire_unit; }
   void set_via_unit(const double via_unit) { _via_unit = via_unit; }
+  void set_size(const int32_t size) { _size = size; }
+  void set_offset(const int32_t offset) { _offset = offset; }
+  void set_schedule_interval(const int32_t schedule_interval) { _schedule_interval = schedule_interval; }
   void set_overflow_unit(const double overflow_unit) { _overflow_unit = overflow_unit; }
+  void set_max_routed_times(const int32_t max_routed_times) { _max_routed_times = max_routed_times; }
 
  private:
-  int32_t _topo_spilt_length = 0;
   double _prefer_wire_unit = 0;
   double _via_unit = 0;
+  int32_t _size = -1;
+  int32_t _offset = -1;
+  int32_t _schedule_interval = -1;
   double _overflow_unit = 0;
+  int32_t _max_routed_times = 0;
 };
 
 }  // namespace irt

@@ -16,28 +16,24 @@
 // ***************************************************************************************
 #pragma once
 
+#include "Direction.hpp"
+#include "LayerCoord.hpp"
+
 namespace irt {
 
-class TGComParam
+class GRGroup
 {
  public:
-  TGComParam() = default;
-  TGComParam(int32_t topo_spilt_length, double overflow_unit)
-  {
-    _topo_spilt_length = topo_spilt_length;
-    _overflow_unit = overflow_unit;
-  }
-  ~TGComParam() = default;
+  GRGroup() = default;
+  ~GRGroup() = default;
   // getter
-  int32_t get_topo_spilt_length() const { return _topo_spilt_length; }
-  double get_overflow_unit() const { return _overflow_unit; }
+  std::vector<LayerCoord>& get_coord_list() { return _coord_list; }
   // setter
-  void set_topo_spilt_length(const int32_t topo_spilt_length) { _topo_spilt_length = topo_spilt_length; }
-  void set_overflow_unit(const double overflow_unit) { _overflow_unit = overflow_unit; }
+  void set_coord_list(const std::vector<LayerCoord>& coord_list) { _coord_list = coord_list; }
+  // function
 
  private:
-  int32_t _topo_spilt_length = 0;
-  double _overflow_unit = 0;
+  std::vector<LayerCoord> _coord_list;
 };
 
 }  // namespace irt
