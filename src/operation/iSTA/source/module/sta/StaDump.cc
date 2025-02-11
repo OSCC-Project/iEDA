@@ -334,7 +334,9 @@ unsigned StaDumpWireYaml::operator()(StaArc* the_arc) {
     auto* the_net = the_net_arc->get_net();
 
     auto* rc_net = getSta()->getRcNet(the_net);
-
+    if (rc_net == nullptr) {
+      return 0;
+    }
     auto* snk_node = the_arc->get_snk();
     auto snk_node_name = snk_node->get_design_obj()->getFullName();
 
