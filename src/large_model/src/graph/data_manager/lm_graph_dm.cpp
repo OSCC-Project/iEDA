@@ -76,7 +76,9 @@ bool LmGraphDataManager::buildGraphData()
     if (idb_net->get_pin_number() < 2) {
       continue;
     }
-
+    if (gen.isCornerCase(idb_net)) {
+      continue;
+    }
     auto wire_graph = gen.buildGraph(idb_net);
     auto* lm_net = layout_graph.get_net(net_id);
     lm_net->clearWire();
