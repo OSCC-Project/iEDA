@@ -1029,29 +1029,37 @@ TimingWireGraph InitSTA::getTimingWireGraph() {
 
       auto* rc_net = ista->getRcNet(the_net);
 
-      auto* snk_node = the_arc->get_snk();
-      auto snk_node_name = snk_node->get_design_obj()->getFullName();
+      if (rc_net) {
+        auto* snk_node = the_arc->get_snk();
+        auto snk_node_name = snk_node->get_design_obj()->getFullName();
 
-      auto vertex_slew = the_arc->get_src()->getSlewNs(ista::AnalysisMode::kMax,
-                                                       TransType::kRise);
-      if (!vertex_slew) {
-        vertex_slew = the_arc->get_src()->getSlewNs(ista::AnalysisMode::kMax,
-                                                    TransType::kFall);
+        auto vertex_slew = the_arc->get_src()->getSlewNs(
+            ista::AnalysisMode::kMax, TransType::kRise);
+        if (!vertex_slew) {
+          vertex_slew = the_arc->get_src()->getSlewNs(ista::AnalysisMode::kMax,
+                                                      TransType::kFall);
+        }
+
+        auto wire_topo = rc_net->getWireTopo(snk_node_name.c_str());
+        for (auto* wire_edge : wire_topo | std::ranges::views::reverse) {
+          ieda::Stats stats2;
+          auto& from_node = wire_edge->get_from();
+          auto& to_node = wire_edge->get_to();
+
+          auto wire_from_node_index = create_net_node(from_node);
+          auto wire_to_node_index = create_net_node(to_node);
+
+          timing_wire_graph.addEdge(wire_from_node_index, wire_to_node_index);
+        }
+      } else {
+        auto wire_from_node_index = create_inst_node(the_arc->get_src());
+        auto wire_to_node_index = create_inst_node(the_arc->get_snk());
+
+        auto& inst_wire_edge =
+            timing_wire_graph.addEdge(wire_from_node_index, wire_to_node_index);
+        inst_wire_edge._is_net_edge = true;
       }
 
-      LOG_FATAL_IF(!rc_net) << the_net->get_name() << " rc net is null.";
-
-      auto wire_topo = rc_net->getWireTopo(snk_node_name.c_str());
-      for (auto* wire_edge : wire_topo | std::ranges::views::reverse) {
-        ieda::Stats stats2;
-        auto& from_node = wire_edge->get_from();
-        auto& to_node = wire_edge->get_to();
-
-        auto wire_from_node_index = create_net_node(from_node);
-        auto wire_to_node_index = create_net_node(to_node);
-        
-        timing_wire_graph.addEdge(wire_from_node_index, wire_to_node_index);
-      }
     } else {
       auto wire_from_node_index = create_inst_node(the_arc->get_src());
       auto wire_to_node_index = create_inst_node(the_arc->get_snk());
