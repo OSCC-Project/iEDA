@@ -39,9 +39,9 @@ void LmLayoutInit::init()
   initLayers();
   initDie();
   initTracks();
-  initPDN();
-  initInstances();
-  initIOPins();
+  //   initPDN();
+  //   initInstances();
+  //   initIOPins();
 
   initNets();
 }
