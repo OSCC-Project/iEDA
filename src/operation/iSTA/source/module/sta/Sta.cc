@@ -2813,6 +2813,7 @@ unsigned Sta::reportUsedLibs() {
     std::string lib_name = used_lib->get_file_name();
     LOG_INFO << "used lib: " << lib_name;
   }
+  return 1;
 }
 
 /**
