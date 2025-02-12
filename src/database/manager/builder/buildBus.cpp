@@ -24,6 +24,10 @@ void IdbBuilder::buildBus()
   IdbNetList* net_list_ptr = design->get_net_list();
   IdbBusBitChars* bus_bit_chars = design->get_bus_bit_chars();
 
+  if (bus_bit_chars == nullptr) {
+    return;
+  }
+
   // busNet busInstancePin busIo
   for (auto* net : net_list_ptr->get_net_list()) {
     // parse bus net

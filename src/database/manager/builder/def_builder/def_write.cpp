@@ -43,7 +43,7 @@ namespace idb {
 
 /**
  * @brief Constructor for DefWrite class.
- * 
+ *
  * @param def_service Pointer to IdbDefService object.
  * @param type Type of DefWrite.
  */
@@ -60,7 +60,7 @@ DefWrite::~DefWrite()
 
 /**
  * @brief Initialize the output file.
- * 
+ *
  * @param file Path to the file.
  * @return true if initialization succeeds, false otherwise.
  */
@@ -89,7 +89,7 @@ bool DefWrite::initFile(const char* file)
 
 /**
  * @brief Close the output file.
- * 
+ *
  * @return true if file closure succeeds, false otherwise.
  */
 bool DefWrite::closeFile()
@@ -112,7 +112,7 @@ bool DefWrite::closeFile()
 
 /**
  * @brief Write formatted string data to the output file.
- * 
+ *
  * @param strdata Formatted string data.
  */
 void DefWrite::writestr(const char* strdata, ...)
@@ -132,7 +132,7 @@ void DefWrite::writestr(const char* strdata, ...)
 
 /**
  * @brief Write the design to the output file.
- * 
+ *
  * @param file Path to the file.
  * @return true if writing succeeds, false otherwise.
  */
@@ -171,13 +171,15 @@ bool DefWrite::writeDb(const char* file)
 
 /**
  * @brief Write the design to the output file.
- * 
+ *
  * @param file Path to the file.
  * @return true if writing succeeds, false otherwise.
  */
 bool DefWrite::writeChip()
 {
   write_version();
+  write_divider_char();
+  write_busbit_char();
   write_design();
   write_units();
   write_die();
@@ -218,7 +220,6 @@ bool DefWrite::writeDbSynthesis()
   return true;
 }
 
-
 /**
  * @brief Writes END DESIGN marker to the DEF file.
  * @return Status code indicating success or failure.
@@ -228,7 +229,6 @@ int32_t DefWrite::write_end()
   writestr("END DESIGN\n");
   return kDbSuccess;
 }
-
 
 /**
  * @brief Writes the VERSION information to the DEF file.
@@ -245,6 +245,26 @@ int32_t DefWrite::write_version()
   return kDbSuccess;
 }
 
+int32_t DefWrite::write_divider_char()
+{
+  return kDbSuccess;
+}
+
+int32_t DefWrite::write_busbit_char()
+{
+  IdbDesign* design = this->get_service()->get_design();
+  IdbBusBitChars* bus_bit_chars = design->get_bus_bit_chars();
+
+  if (bus_bit_chars == nullptr) {
+    return kDbFail;
+  }
+
+  writestr("BUSBITCHARS \"%s %s\";\n", bus_bit_chars->getLeftDelimiter(), bus_bit_chars->getRightDelimiter());
+
+  std::cout << "Write BUSBITCHARS success..." << std::endl;
+
+  return kDbSuccess;
+}
 
 /**
  * @brief Writes the DESIGN name to the DEF file.
@@ -259,8 +279,6 @@ int32_t DefWrite::write_design()
   std::cout << "Write DESIGN name success..." << std::endl;
   return kDbSuccess;
 }
-
-
 
 int32_t DefWrite::write_units()
 {

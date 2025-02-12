@@ -1266,8 +1266,8 @@ int32_t DefRead::parse_special_net(defiNet* def_net)
   }
 
   IdbDesign* design = _def_service->get_design();  // Def
-  //IdbLayout* layout = _def_service->get_layout();  // Lef
-  //IdbLayers* layer_list = layout->get_layers();
+  // IdbLayout* layout = _def_service->get_layout();  // Lef
+  // IdbLayers* layer_list = layout->get_layers();
   IdbPins* io_pin_list = design->get_io_pin_list();
   IdbInstanceList* instance_list = design->get_instance_list();
 
@@ -1439,7 +1439,7 @@ int32_t DefRead::parse_special_net_wire(defiNet* def_net, IdbSpecialWireList* wi
 
 int32_t DefRead::parse_special_net_rects(defiNet* def_net, IdbSpecialWireList* wire_list)
 {
-  //IdbDesign* design = _def_service->get_design();  // Def
+  // IdbDesign* design = _def_service->get_design();  // Def
   IdbLayout* layout = _def_service->get_layout();  // Lef
   IdbLayers* layer_list = layout->get_layers();
 
@@ -2259,9 +2259,11 @@ int32_t DefRead::busBitCharsCallBack(defrCallbackType_e c, const char* bus_bit_c
 int32_t DefRead::parse_bus_bit_chars(const char* bus_bit_chars_str)
 {
   IdbDesign* design = this->get_service()->get_design();
-  IdbBusBitChars* bus_bit_chars = design->get_bus_bit_chars();
+  IdbBusBitChars* bus_bit_chars = new IdbBusBitChars();
   bus_bit_chars->setLeftDelimiter(bus_bit_chars_str[0]);
   bus_bit_chars->setRightDelimter(bus_bit_chars_str[1]);
+
+  design->set_bus_bit_chars(bus_bit_chars);
   return kDbSuccess;
 }
 
