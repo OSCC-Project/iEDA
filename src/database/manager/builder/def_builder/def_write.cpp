@@ -259,7 +259,7 @@ int32_t DefWrite::write_busbit_char()
     return kDbFail;
   }
 
-  writestr("BUSBITCHARS \"%s %s\";\n", bus_bit_chars->getLeftDelimiter(), bus_bit_chars->getRightDelimiter());
+  writestr("BUSBITCHARS \"%c%c\";\n", bus_bit_chars->getLeftDelimiter(), bus_bit_chars->getRightDelimiter());
 
   std::cout << "Write BUSBITCHARS success..." << std::endl;
 
