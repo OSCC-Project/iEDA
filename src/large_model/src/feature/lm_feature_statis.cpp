@@ -186,7 +186,7 @@ void LmFeatureStatis::feature_patch()
   omp_lock_t lck;
   omp_init_lock(&lck);
 
-  // #pragma omp parallel for schedule(dynamic)
+#pragma omp parallel for schedule(dynamic)
   for (int i = 0; i < (int) patchs.size(); ++i) {
     auto it = patchs.begin();
     std::advance(it, i);
