@@ -458,25 +458,15 @@ void LmNetGraphGenerator::innerConnectivityCompletion(const TopoGraph& graph, Wi
         auto high_shape = flatten_shapes[i + 1];
 
         auto low_point_ids = shape_manager.findIntersections(low_shape);
+        auto high_points = shape_manager.findIntersections(high_shape);
 
-        if (!low_point_ids.empty()) {
-          std::ranges::for_each(low_point_ids, [&](size_t low_id) -> void {
-            auto low_point = points[low_id];
-            auto high_point = LayoutDefPoint(getX(low_point), getY(low_point), getHighZ(high_shape));
-            auto via_cut = LayoutDefRect(low_point, high_point);
-            if (via_cuts_set.find(via_cut) != via_cuts_set.end()) {
-              return;
-            }
-            via_cuts_set.insert(via_cut);
-            build_and_connect(low_point, high_point);
-          });
+        if (low_point_ids.empty() || high_points.empty()) {
           continue;
         }
 
-        auto high_points = shape_manager.findIntersections(high_shape);
-        std::ranges::for_each(high_points, [&](size_t high_id) -> void {
-          auto high_point = points[high_id];
-          auto low_point = LayoutDefPoint(getX(high_point), getY(high_point), getLowZ(low_shape));
+        std::ranges::for_each(low_point_ids, [&](size_t low_id) -> void {
+          auto low_point = points[low_id];
+          auto high_point = LayoutDefPoint(getX(low_point), getY(low_point), getHighZ(high_shape));
           auto via_cut = LayoutDefRect(low_point, high_point);
           if (via_cuts_set.find(via_cut) != via_cuts_set.end()) {
             return;
@@ -484,6 +474,7 @@ void LmNetGraphGenerator::innerConnectivityCompletion(const TopoGraph& graph, Wi
           via_cuts_set.insert(via_cut);
           build_and_connect(low_point, high_point);
         });
+        continue;
       }
     }
     // Update the pin's via cuts
