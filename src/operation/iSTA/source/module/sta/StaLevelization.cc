@@ -16,7 +16,7 @@
 // ***************************************************************************************
 /**
  * @file StaLevelization.cc
- * @author shy long (longshy@pcl.ac.cn)
+ * @author longshy (longshy@pcl.ac.cn)
  * @brief The levelization implemention from end vertex of the graph.
  * @version 0.1
  * @date 2021-09-16
@@ -32,10 +32,17 @@ namespace ista {
  * @param the_vertex
  * @return unsigned  1 if success, 0 else fail.
  */
-unsigned StaLevelization::operator()(StaVertex* the_vertex) {
+unsigned StaLevelization::operator()(StaVertex* the_vertex) {  
   if (the_vertex->is_start()) {
+    VLOG(1) << "set start vertex " << the_vertex->getName() << " level 1";
     the_vertex->set_level(1);
     return 1;
+  }
+
+  // only levelization data path.
+  if (the_vertex->is_clock()) {
+    VLOG(1) << "set clock vertex " << the_vertex->getName() << " level 1";
+    the_vertex->set_level(1);
   }
 
   if (the_vertex->isSetLevel()) {
@@ -61,7 +68,7 @@ unsigned StaLevelization::operator()(StaArc* the_arc) {
   if (the_arc->is_loop_disable()) {
     return 1;
   }
-  
+
   auto* src_vertex = the_arc->get_src();
   auto* snk_vertex = the_arc->get_snk();
   src_vertex->exec(*this);

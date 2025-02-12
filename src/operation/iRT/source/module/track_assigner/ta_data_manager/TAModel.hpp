@@ -29,12 +29,12 @@ class TAModel
   ~TAModel() = default;
   // getter
   std::vector<TANet>& get_ta_net_list() { return _ta_net_list; }
-  TAParameter& get_ta_parameter() { return _ta_parameter; }
+  TAComParam& get_ta_com_param() { return _ta_com_param; }
   std::vector<std::vector<TAPanel>>& get_layer_panel_list() { return _layer_panel_list; }
   std::vector<std::vector<TAPanelId>>& get_ta_panel_id_list_list() { return _ta_panel_id_list_list; }
   // setter
   void set_ta_net_list(const std::vector<TANet>& ta_net_list) { _ta_net_list = ta_net_list; }
-  void set_ta_parameter(const TAParameter& ta_parameter) { _ta_parameter = ta_parameter; }
+  void set_ta_com_param(const TAComParam& ta_com_param) { _ta_com_param = ta_com_param; }
   void set_layer_panel_list(const std::vector<std::vector<TAPanel>>& layer_panel_list) { _layer_panel_list = layer_panel_list; }
   void set_ta_panel_id_list_list(const std::vector<std::vector<TAPanelId>>& ta_panel_id_list_list)
   {
@@ -43,7 +43,7 @@ class TAModel
 
  private:
   std::vector<TANet> _ta_net_list;
-  TAParameter _ta_parameter;
+  TAComParam _ta_com_param;
   std::vector<std::vector<TAPanel>> _layer_panel_list;
   std::vector<std::vector<TAPanelId>> _ta_panel_id_list_list;
 };

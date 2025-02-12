@@ -74,6 +74,7 @@ class Str
 
   static std::string trimBackslash(std::string origin_str);
   static std::string addBackslash(std::string origin_str);
+  static std::string addDoubleBackslash(std::string origin_str);
 };
 
 }  // namespace ieda

@@ -16,28 +16,34 @@
 // ***************************************************************************************
 #pragma once
 
+#include "ConnectType.hpp"
+#include "Net.hpp"
+#include "Pin.hpp"
+#include "VRPin.hpp"
+
 namespace irt {
 
-class TGParameter
+class VRNet
 {
  public:
-  TGParameter() = default;
-  TGParameter(int32_t topo_spilt_length, double congestion_unit)
-  {
-    _topo_spilt_length = topo_spilt_length;
-    _congestion_unit = congestion_unit;
-  }
-  ~TGParameter() = default;
+  VRNet() = default;
+  ~VRNet() = default;
   // getter
-  int32_t get_topo_spilt_length() const { return _topo_spilt_length; }
-  double get_congestion_unit() const { return _congestion_unit; }
+  Net* get_origin_net() { return _origin_net; }
+  int32_t get_net_idx() const { return _net_idx; }
+  ConnectType get_connect_type() const { return _connect_type; }
+  std::vector<VRPin>& get_vr_pin_list() { return _vr_pin_list; }
   // setter
-  void set_topo_spilt_length(const int32_t topo_spilt_length) { _topo_spilt_length = topo_spilt_length; }
-  void set_congestion_unit(const double congestion_unit) { _congestion_unit = congestion_unit; }
+  void set_origin_net(Net* origin_net) { _origin_net = origin_net; }
+  void set_net_idx(const int32_t net_idx) { _net_idx = net_idx; }
+  void set_connect_type(const ConnectType& connect_type) { _connect_type = connect_type; }
+  void set_vr_pin_list(const std::vector<VRPin>& vr_pin_list) { _vr_pin_list = vr_pin_list; }
 
  private:
-  int32_t _topo_spilt_length = 0;
-  double _congestion_unit = 0;
+  Net* _origin_net = nullptr;
+  int32_t _net_idx = -1;
+  ConnectType _connect_type = ConnectType::kNone;
+  std::vector<VRPin> _vr_pin_list;
 };
 
 }  // namespace irt

@@ -31,6 +31,7 @@
 #include <stack>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 #include "ElmoreDelayCalc.hh"
@@ -124,13 +125,13 @@ class ArnoldiNet : public RcNet {
   std::optional<double> getSlew(
       std::function<std::vector<double>(double, double, int)>&& get_current,
       double start_time, double end_time, int num_sim_point,
-      AnalysisMode analysis_mode, TransType trans_type, Pin* pin);
+      AnalysisMode analysis_mode, TransType trans_type, DesignObject* pin);
 
   std::optional<std::pair<double, MatrixXd>> delay(
       DesignObject& to, double from_slew,
       std::optional<LibCurrentData*> output_current, AnalysisMode mode,
       TransType trans_type) override;
-  std::optional<double> slew(Pin& to, double from_slew,
+  std::optional<double> slew(DesignObject& to, double from_slew,
                              std::optional<LibCurrentData*> output_current,
                              AnalysisMode mode, TransType trans_type) override;
 

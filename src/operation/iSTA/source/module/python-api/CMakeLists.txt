@@ -1,6 +1,6 @@
 if(NOT BUILD_STATIC_LIB)
 
-set(CMAKE_BUILD_TYPE "Debug")
+# set(CMAKE_BUILD_TYPE "Debug")
 
 aux_source_directory(./ SRC)
 

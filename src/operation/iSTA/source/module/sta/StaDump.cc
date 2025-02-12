@@ -208,14 +208,12 @@ unsigned StaDumpYaml::operator()(StaGraph* the_graph) {
   FOREACH_VERTEX(the_graph, the_vertex) {
     the_vertex->exec(*this);
     LOG_INFO_EVERY_N(10000) << "dump 10000 vertexes ...";
-    break;
   }
 
   StaArc* the_arc;
   FOREACH_ARC(the_graph, the_arc) {
     the_arc->exec(*this);
     LOG_INFO_EVERY_N(10000) << "dump 10000 arcs ...";
-    break;
   }
 
   printText(_yaml_file_path.c_str());
@@ -293,14 +291,16 @@ unsigned StaDumpDelayYaml::operator()(StaArc* the_arc) {
     auto* snk_obj = snk_node->get_design_obj();
     arc_node["net_name"] = the_net->get_name();
     arc_node["fanout"] = the_net->getLoads().size();
-    arc_node["Elmore"] =
-        rc_net->delayNs(*snk_obj, RcNet::DelayMethod::kElmore).value_or(0.0);
-    arc_node["D2M"] =
-        rc_net->delayNs(*snk_obj, RcNet::DelayMethod::kD2M).value_or(0.0);
-    arc_node["ECM"] =
-        rc_net->delayNs(*snk_obj, RcNet::DelayMethod::kECM).value_or(0.0);
-    arc_node["D2MC"] =
-        rc_net->delayNs(*snk_obj, RcNet::DelayMethod::kD2MC).value_or(0.0);
+    if (rc_net) {
+      arc_node["Elmore"] =
+          rc_net->delayNs(*snk_obj, RcNet::DelayMethod::kElmore).value_or(0.0);
+      arc_node["D2M"] =
+          rc_net->delayNs(*snk_obj, RcNet::DelayMethod::kD2M).value_or(0.0);
+      arc_node["ECM"] =
+          rc_net->delayNs(*snk_obj, RcNet::DelayMethod::kECM).value_or(0.0);
+      arc_node["D2MC"] =
+          rc_net->delayNs(*snk_obj, RcNet::DelayMethod::kD2MC).value_or(0.0);
+    }
   }
 
   return 1;

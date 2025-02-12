@@ -20,7 +20,7 @@ project(iEDA)
 
 option(BUILD_STATIC_LIB "If ON, build static lib." ON)
 
-# option(BUILD_PYTHON "If ON, build python lib." ON)
+option(BUILD_PYTHON "If ON, build python lib." ON)
 if(BUILD_PYTHON)
     set(BUILD_STATIC_LIB OFF)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
@@ -34,9 +34,11 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(FORT_ENABLE_TESTING OFF CACHE INTERNAL "") # Disable building tests and examples in libfort project
 
-set(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -Wall")
-set(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -O0 -Wall -g2 -ggdb")
-set(CMAKE_BUILD_TYPE "Release")
+# set(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -Wall -Wextra -Werror=return-type")
+# set(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -O0 -Wall -g2 -ggdb -Wextra -Werror=return-type")
+set(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -Wall -Werror=return-type")
+set(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -O0 -Wall -g2 -ggdb -Werror=return-type")
+# set(CMAKE_BUILD_TYPE "Release")
 
 if(NOT DEFINED CMD_BUILD)
     set(SANITIZER OFF)
@@ -61,6 +63,7 @@ include(cmake/third_party.cmake)
 include(cmake/operation/ista.cmake)
 include(cmake/operation/ipw.cmake)
 include(cmake/rust.cmake)
+include(cmake/cuda.cmake)
 
 if(BUILD_GUI)
     add_definitions(-DBUILD_GUI)

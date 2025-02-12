@@ -164,6 +164,9 @@ void DrcEngineManager::filterData()
 
     DEBUGOUTPUT("Need to check layer:\t" << layer);
 
+    /// area
+    _condition_manager->checkArea(layer, layout);
+
     // overlap
     _condition_manager->checkOverlap(layer, layout);
 

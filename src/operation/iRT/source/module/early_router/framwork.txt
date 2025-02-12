@@ -1,5 +1,5 @@
 initERModel:初始化ERModel
-setERParameter:设置布线参数
+setERComParam:设置布线参数
 generateAccessPoint:简单生成ap点,以shape的中心为主要点
 initERTaskList:构建task,有序
 buildPlanarNodeMap：初始化平面graph

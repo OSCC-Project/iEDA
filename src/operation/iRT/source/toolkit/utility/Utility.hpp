@@ -682,6 +682,100 @@ class Utility
     return ratio;
   }
 
+  static Segment<LayerCoord> getOverlap(const LayerRect& rect, const Segment<LayerCoord>& segment)
+  {
+    int32_t rect_ll_x = rect.get_ll_x();
+    int32_t rect_ll_y = rect.get_ll_y();
+    int32_t rect_ur_x = rect.get_ur_x();
+    int32_t rect_ur_y = rect.get_ur_y();
+    int32_t rect_layer_idx = rect.get_layer_idx();
+
+    int32_t first_x = segment.get_first().get_x();
+    int32_t first_y = segment.get_first().get_y();
+    int32_t first_layer_idx = segment.get_first().get_layer_idx();
+    int32_t second_x = segment.get_second().get_x();
+    int32_t second_y = segment.get_second().get_y();
+    int32_t second_layer_idx = segment.get_second().get_layer_idx();
+    swapByASC(first_x, second_x);
+    swapByASC(first_y, second_y);
+    swapByASC(first_layer_idx, second_layer_idx);
+
+    if (first_y == second_y && first_layer_idx == second_layer_idx) {
+      if (first_y >= rect_ll_y && first_y <= rect_ur_y && rect_layer_idx == first_layer_idx) {
+        int32_t overlap_min_x = std::max(rect_ll_x, std::min(first_x, second_x));
+        int32_t overlap_max_x = std::min(rect_ur_x, std::max(first_x, second_x));
+
+        if (overlap_min_x <= overlap_max_x) {
+          return Segment<LayerCoord>(LayerCoord(overlap_min_x, first_y, rect_layer_idx),
+                                     LayerCoord(overlap_max_x, first_y, rect_layer_idx));
+        }
+      }
+    } else if (first_x == second_x && first_layer_idx == second_layer_idx) {
+      if (first_x >= rect_ll_x && first_x <= rect_ur_x && rect_layer_idx == first_layer_idx) {
+        int32_t overlap_min_y = std::max(rect_ll_y, std::min(first_y, second_y));
+        int32_t overlap_max_y = std::min(rect_ur_y, std::max(first_y, second_y));
+
+        if (overlap_min_y <= overlap_max_y) {
+          return Segment<LayerCoord>(LayerCoord(first_x, overlap_min_y, rect_layer_idx),
+                                     LayerCoord(first_x, overlap_max_y, rect_layer_idx));
+        }
+      }
+    } else if (first_x == second_x && first_y == second_y) {
+      if (first_x >= rect_ll_x && first_x <= rect_ur_x && first_y >= rect_ll_y && first_y <= rect_ur_y
+          && rect_layer_idx >= std::min(first_layer_idx, second_layer_idx)
+          && rect_layer_idx <= std::max(first_layer_idx, second_layer_idx)) {
+        return Segment<LayerCoord>(LayerCoord(first_x, first_y, rect_layer_idx), LayerCoord(first_x, first_y, rect_layer_idx));
+      }
+    }
+    return Segment<LayerCoord>(LayerCoord(-1, -1, -1), LayerCoord(-1, -1, -1));
+  }
+
+  static bool isOverlap(const LayerRect& rect, const Segment<LayerCoord>& segment)
+  {
+    int32_t rect_ll_x = rect.get_ll_x();
+    int32_t rect_ll_y = rect.get_ll_y();
+    int32_t rect_ur_x = rect.get_ur_x();
+    int32_t rect_ur_y = rect.get_ur_y();
+    int32_t rect_layer_idx = rect.get_layer_idx();
+
+    int32_t first_x = segment.get_first().get_x();
+    int32_t first_y = segment.get_first().get_y();
+    int32_t first_layer_idx = segment.get_first().get_layer_idx();
+    int32_t second_x = segment.get_second().get_x();
+    int32_t second_y = segment.get_second().get_y();
+    int32_t second_layer_idx = segment.get_second().get_layer_idx();
+    swapByASC(first_x, second_x);
+    swapByASC(first_y, second_y);
+    swapByASC(first_layer_idx, second_layer_idx);
+
+    if (first_y == second_y && first_layer_idx == second_layer_idx) {
+      if (first_y >= rect_ll_y && first_y <= rect_ur_y && rect_layer_idx == first_layer_idx) {
+        int32_t overlap_min_x = std::max(rect_ll_x, std::min(first_x, second_x));
+        int32_t overlap_max_x = std::min(rect_ur_x, std::max(first_x, second_x));
+
+        if (overlap_min_x <= overlap_max_x) {
+          return true;
+        }
+      }
+    } else if (first_x == second_x && first_layer_idx == second_layer_idx) {
+      if (first_x >= rect_ll_x && first_x <= rect_ur_x && rect_layer_idx == first_layer_idx) {
+        int32_t overlap_min_y = std::max(rect_ll_y, std::min(first_y, second_y));
+        int32_t overlap_max_y = std::min(rect_ur_y, std::max(first_y, second_y));
+
+        if (overlap_min_y <= overlap_max_y) {
+          return true;
+        }
+      }
+    } else if (first_x == second_x && first_y == second_y) {
+      if (first_x >= rect_ll_x && first_x <= rect_ur_x && first_y >= rect_ll_y && first_y <= rect_ur_y
+          && rect_layer_idx >= std::min(first_layer_idx, second_layer_idx)
+          && rect_layer_idx <= std::max(first_layer_idx, second_layer_idx)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   /**
    *  分开矩形,将master矩形用rect进行分开,并不是求差集
    *       ┌────────────────────────────────────┐  split  ┌────────────────────────────────────┐
@@ -2407,13 +2501,13 @@ class Utility
     for (const PlanarRect& special_rect : special_rect_list) {
       if (special_rect.get_ll() == special_rect.get_ur()) {
         /**
-         * 对于点矩形, 在其中一个rect内(包含边界)则被删除
+         * 对于点矩形, 在其中一个rect内(不包含边界)则被删除
          */
         PlanarCoord point = special_rect.get_ll();
         bool exist_inside = false;
         for (const PlanarRect& rect : rect_list) {
-          if (rect.get_ll_x() <= point.get_x() && point.get_x() <= rect.get_ur_x() && rect.get_ll_y() <= point.get_y()
-              && point.get_y() <= rect.get_ur_y()) {
+          if (rect.get_ll_x() < point.get_x() && point.get_x() < rect.get_ur_x() && rect.get_ll_y() < point.get_y()
+              && point.get_y() < rect.get_ur_y()) {
             exist_inside = true;
             break;
           }
@@ -2440,12 +2534,12 @@ class Utility
               int32_t seg_second_x = segment.get_second().get_x();
               int32_t seg_y = segment.get_first().get_y();
               if (rect_ll_y <= seg_y && seg_y <= rect_ur_y && seg_first_x < rect_ur_x && rect_ll_x < seg_second_x) {
-                if (seg_first_x < rect_ll_x) {
+                if (seg_first_x <= rect_ll_x) {
                   // 提出左突出
                   segment_list_temp.emplace_back(segment.get_first(), PlanarCoord(rect_ll_x, seg_y));
                 }
-                if (rect_ur_x < seg_second_x) {
-                  // 提出右突出的
+                if (rect_ur_x <= seg_second_x) {
+                  // 提出右突出
                   segment_list_temp.emplace_back(PlanarCoord(rect_ur_x, seg_y), segment.get_second());
                 }
               } else {
@@ -2456,12 +2550,12 @@ class Utility
               int32_t seg_second_y = segment.get_second().get_y();
               int32_t seg_x = segment.get_first().get_x();
               if (rect_ll_x <= seg_x && seg_x <= rect_ur_x && seg_first_y < rect_ur_y && rect_ll_y < seg_second_y) {
-                if (seg_first_y < rect_ll_y) {
+                if (seg_first_y <= rect_ll_y) {
                   // 提出下突出
                   segment_list_temp.emplace_back(segment.get_first(), PlanarCoord(seg_x, rect_ll_y));
                 }
-                if (rect_ur_y < seg_second_y) {
-                  // 提出上突出的
+                if (rect_ur_y <= seg_second_y) {
+                  // 提出上突出
                   segment_list_temp.emplace_back(PlanarCoord(seg_x, rect_ur_y), segment.get_second());
                 }
               } else {

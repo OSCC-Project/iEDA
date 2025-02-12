@@ -16,6 +16,10 @@ pub trait VerilogVirtualBaseID: Debug + VerilogVirtualBaseIDClone {
         false
     }
 
+    fn is_constant_id(&self) -> bool {
+        false
+    }
+
     fn get_name(&self) -> &str {
         panic!("This is unknown value.");
     }
@@ -206,6 +210,55 @@ impl VerilogVirtualBaseID for VerilogSliceID {
     fn set_base_name(&mut self, id: &str) {
         self.id.set_base_name(id);
         self.formatted_slice_id = format!("{}[{}:{}]", self.id.get_base_name(), self.range_from, self.range_to);
+    }
+
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct VerilogConstantID {
+    bit_width: u32,
+    value: VerilogID,
+    formatted_constant_id: String,
+}
+
+impl VerilogConstantID {
+    pub fn new(bit_width: u32, value: &str) -> VerilogConstantID {
+        let formatted_constant_id = format!("{}'{}", bit_width, value);
+        VerilogConstantID {
+            bit_width: bit_width,
+            value: VerilogID::new(value),
+            formatted_constant_id: formatted_constant_id,
+        }
+    }
+
+    pub fn get_bit_width(&self) -> u32 {
+        self.bit_width
+    }
+
+    pub fn get_value(&self) -> &VerilogID {
+        &self.value
+    }
+}
+
+impl VerilogVirtualBaseID for VerilogConstantID {
+    fn is_constant_id(&self) -> bool {
+        true
+    }
+
+    fn get_name(&self) -> &str {
+        &self.formatted_constant_id
+    }
+
+    fn get_base_name(&self) -> &str {
+        &self.value.get_base_name()
+    }
+
+    fn set_base_name(&mut self, id: &str) {
+        self.value.set_base_name(id);
+        self.formatted_constant_id = format!("{}'{}", self.bit_width, self.value.get_base_name());
     }
 
     fn as_any(&self) -> &dyn std::any::Any {
@@ -534,12 +587,24 @@ impl VerilogInst {
         // bus_range_max is the bus max beyond range.
         let mut bus_range_max = std::cmp::max(port_bus_wide_range.unwrap().0, port_bus_wide_range.unwrap().1) + 1;
 
+        let mut const_net_bit_index: Option<u32> = None;
         let mut net_index: Option<i32> = None;
         let mut connect_net_expr: Option<Box<dyn VerilogVirtualBaseNetExpr>> = None;
 
         for expr_net in concat_expr_nets {
             if expr_net.get_verilog_id().is_bus_index_id() {
                 bus_range_max -= 1;
+            } else if expr_net.get_verilog_id().is_constant_id() {
+                let mut bit_width =
+                    expr_net.get_verilog_id().as_any().downcast_ref::<VerilogConstantID>().unwrap().get_bit_width();
+                while bit_width > 0 {
+                    bus_range_max -= 1;
+                    if bus_range_max == port_index {
+                        const_net_bit_index = Some(bit_width - 1);
+                        break;
+                    }
+                    bit_width -= 1;
+                }
             } else if expr_net.get_verilog_id().is_bus_slice_id() {
                 let slice_id = expr_net.get_verilog_id().as_any().downcast_ref::<VerilogSliceID>().unwrap();
                 let from = slice_id.get_range_from();
@@ -617,6 +682,17 @@ impl VerilogInst {
             let net_id_expr = VerilogNetIDExpr::new(0, dyn_index_verilog_id);
             let dyn_net_id_expr: Box<dyn VerilogVirtualBaseNetExpr> = Box::new(net_id_expr);
             dyn_net_id_expr
+        } else if let Some(const_net_bit_index) = const_net_bit_index {
+            let connect_net_id = connect_net_expr.as_ref().unwrap().get_verilog_id();
+            let net_value = connect_net_id.get_base_name();
+            let new_net_value = &net_value[1..];
+            let bit_value = new_net_value.chars().nth(const_net_bit_index as usize).unwrap();
+            let value = format!("{}{}", 'b', bit_value);
+            let const_verilog_id = VerilogConstantID::new(1, &value);
+            let dyn_const_verilog_id: Box<dyn VerilogVirtualBaseID> = Box::new(const_verilog_id);
+            let net_id_expr = VerilogConstantExpr::new(0, dyn_const_verilog_id);
+            let dyn_net_id_expr: Box<dyn VerilogVirtualBaseNetExpr> = Box::new(net_id_expr);
+            dyn_net_id_expr
         } else {
             connect_net_expr.as_ref().unwrap().clone()
         }
@@ -648,12 +724,17 @@ impl VerilogInst {
         // process the inst connection below.
         let mut port_connect_net_option: Option<Box<dyn VerilogVirtualBaseNetExpr>> = None;
         for port_connection in &self.port_connections {
-            if port_connection.get_port_id().get_name() == port_id.get_base_name() {
+            // for port may be splited, we need judge port full name and port base name. 
+            if (port_connection.get_port_id().get_name() == port_id.get_base_name())
+                || (port_connection.get_port_id().get_name() == port_id.get_name())
+            {
                 if let Some(net_expr) = port_connection.get_net_expr().clone() {
                     let mut port_connect_net: Box<dyn VerilogVirtualBaseNetExpr> = net_expr;
                     if port_connect_net.is_id_expr() {
-                        // is not concat expr.
-                        if port_id.is_bus_index_id() || port_id.is_bus_slice_id() {
+                        // is not concat expr.Only port base name match need consider bus index and slice.
+                        if (port_connection.get_port_id().get_name() == port_id.get_base_name())
+                            && (port_id.is_bus_index_id() || port_id.is_bus_slice_id())
+                        {
                             // find port range first
                             let borrowed_cur_module = cur_module.borrow();
                             let port_dcls_stmt = borrowed_cur_module.find_dcls_stmt(port_id.get_base_name()).unwrap();

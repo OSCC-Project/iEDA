@@ -51,6 +51,12 @@ void GDSPlotter::destroyInst()
 
 // function
 
+void GDSPlotter::init()
+{
+  buildGDSLayerMap();
+  buildGraphLypFile();
+}
+
 void GDSPlotter::plot(GPGDS& gp_gds, std::string gds_file_path)
 {
   buildTopStruct(gp_gds);
@@ -83,12 +89,6 @@ int32_t GDSPlotter::getGDSIdxByCut(int32_t cut_layer_idx)
 // private
 
 GDSPlotter* GDSPlotter::_gp_instance = nullptr;
-
-void GDSPlotter::init()
-{
-  buildGDSLayerMap();
-  buildGraphLypFile();
-}
 
 void GDSPlotter::buildGDSLayerMap()
 {

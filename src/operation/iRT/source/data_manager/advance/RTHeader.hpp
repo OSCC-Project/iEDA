@@ -64,3 +64,4 @@
 #include "libfort/fort.hpp"
 
 #define RT_ERROR 1E-5
+#define RT_SQRT_2 1.41421356

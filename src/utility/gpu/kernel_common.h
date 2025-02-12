@@ -22,4 +22,4 @@ inline void *malloc_check(size_t size, const char *file, int line) {
     return ptr;
 }
 
-#define mallocWithCheck(size) malloc_check(size, __FILE__, __LINE__)
+#define MALLOC_Check(size) malloc_check(size, __FILE__, __LINE__)
