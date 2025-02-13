@@ -232,13 +232,17 @@ void copy_to_host_graph(GPU_Graph& the_host_graph, GPU_Graph& the_device_graph,
 template <typename T>
 __device__ inline std::pair<GPU_Fwd_Data<T>*, int> get_one_fwd_data(
     GPU_Fwd_Data<T>* flatten_all_datas, GPU_Vertex_Data* the_vertex_data,
-    GPU_Analysis_Mode analysis_mode, GPU_Trans_Type trans_type) {
+    GPU_Analysis_Mode analysis_mode, GPU_Trans_Type trans_type,
+    int own_clock_index) {
   for (unsigned i = 0; i < the_vertex_data->_num_fwd_data; ++i) {
     int data_index = the_vertex_data->_start_pos + i;
     auto& fwd_data = flatten_all_datas[data_index];
     if (fwd_data._analysis_mode == analysis_mode &&
         fwd_data._trans_type == trans_type) {
-      return std::make_pair(&fwd_data, data_index);
+      if (own_clock_index == -1 ||
+          fwd_data._own_clock_index == own_clock_index) {
+        return std::make_pair(&fwd_data, data_index);
+      }
     }
   }
 
@@ -264,6 +268,7 @@ template <GPU_OP_TYPE op>
 __device__ void update_fwd_data(GPU_Fwd_Data<int64_t>& src_fwd_data,
                                 GPU_Fwd_Data<int64_t>& snk_fwd_data,
                                 unsigned src_vertex_id, int src_data_index,
+                                int snk_data_index,
                                 GPU_Analysis_Mode analysis_mode,
                                 int64_t data_value) {
   // lock the data.
@@ -277,12 +282,14 @@ __device__ void update_fwd_data(GPU_Fwd_Data<int64_t>& src_fwd_data,
       if (snk_fwd_data._data_value < data_value) {
         snk_fwd_data._src_vertex_id = src_vertex_id;
         snk_fwd_data._src_data_index = src_data_index;
+        src_fwd_data._snk_data_index = snk_data_index;
         snk_fwd_data._data_value = data_value;
       }
     } else {
       if (snk_fwd_data._data_value < (src_fwd_data._data_value + data_value)) {
         snk_fwd_data._src_vertex_id = src_vertex_id;
         snk_fwd_data._src_data_index = src_data_index;
+        src_fwd_data._snk_data_index = snk_data_index;
         snk_fwd_data._data_value = src_fwd_data._data_value + data_value;
 
         CUDA_LOG_DEBUG("update max src vertex %d -> snk vertex %d at %lld",
@@ -295,6 +302,7 @@ __device__ void update_fwd_data(GPU_Fwd_Data<int64_t>& src_fwd_data,
           (snk_fwd_data._data_value > data_value)) {
         snk_fwd_data._src_vertex_id = src_vertex_id;
         snk_fwd_data._src_data_index = src_data_index;
+        src_fwd_data._snk_data_index = snk_data_index;
         snk_fwd_data._data_value = data_value;
       }
     } else {
@@ -303,6 +311,7 @@ __device__ void update_fwd_data(GPU_Fwd_Data<int64_t>& src_fwd_data,
            (src_fwd_data._data_value + data_value))) {
         snk_fwd_data._src_vertex_id = src_vertex_id;
         snk_fwd_data._src_data_index = src_data_index;
+        src_fwd_data._snk_data_index = snk_data_index;
         snk_fwd_data._data_value = src_fwd_data._data_value + data_value;
 
         CUDA_LOG_DEBUG("update min src vertex %d -> snk vertex %d at %lld",
@@ -362,7 +371,7 @@ __device__ void set_one_fwd_data(GPU_Graph* the_graph, GPU_Arc& the_arc,
   if (is_force) {
     // update check value should be direct.
     auto [snk_fwd_data_ptr, snk_data_index] = get_one_fwd_data(
-        flatten_all_datas, snk_vertex_data, analysis_mode, out_trans_type);
+        flatten_all_datas, snk_vertex_data, analysis_mode, out_trans_type, -1);
     if (!snk_fwd_data_ptr) {
       CUDA_LOG_ERROR("the arc %d -> %d, snk fwd data is null.", src_vertex_id,
                      snk_vertex_id);
@@ -378,25 +387,18 @@ __device__ void set_one_fwd_data(GPU_Graph* the_graph, GPU_Arc& the_arc,
     auto& src_fwd_data = flatten_all_datas[src_data_index];
     if (src_fwd_data._analysis_mode == analysis_mode &&
         src_fwd_data._trans_type == in_trans_type) {
+      int own_clock_index = src_fwd_data._own_clock_index;
 
-      if (src_fwd_data._snk_data_index != -1) {
-        // direct get the snk data from the snk data index, it should at data.
-        auto& snk_fwd_data = flatten_all_datas[src_fwd_data._snk_data_index];
-
-        update_fwd_data<op>(src_fwd_data, snk_fwd_data, src_vertex_id,
-                        src_data_index, analysis_mode, data_value);
-      } else {
-        auto [snk_fwd_data_ptr, snk_data_index] = get_one_fwd_data(
-            flatten_all_datas, snk_vertex_data, analysis_mode, out_trans_type);
-        if (!snk_fwd_data_ptr) {
-          CUDA_LOG_ERROR("the arc %d -> %d, snk fwd data is null.",
-                         src_vertex_id, snk_vertex_id);
-          continue;
-        }
-
-        update_fwd_data<op>(src_fwd_data, *snk_fwd_data_ptr, src_vertex_id,
-                        src_data_index, analysis_mode, data_value);
+      auto [snk_fwd_data_ptr, snk_data_index] = get_one_fwd_data(
+          flatten_all_datas, snk_vertex_data, analysis_mode, out_trans_type, own_clock_index);
+      if (!snk_fwd_data_ptr) {
+        CUDA_LOG_ERROR("the arc %d -> %d, snk fwd data is null.", src_vertex_id,
+                       snk_vertex_id);
+        continue;
       }
+
+      update_fwd_data<op>(src_fwd_data, *snk_fwd_data_ptr, src_vertex_id,
+                          src_data_index, snk_data_index, analysis_mode, data_value);
     }
   }
 }
@@ -481,7 +483,7 @@ __device__ void propagate_inst_slew_delay(GPU_Graph* the_graph,
     }
     auto [one_snk_cap_data_ptr, snk_cap_index] =
         get_one_fwd_data(the_graph->_flatten_node_cap_data, out_load,
-                         analysis_mode, out_trans_type);
+                         analysis_mode, out_trans_type, -1);
     auto& one_snk_cap_data = *one_snk_cap_data_ptr;
     auto [slew, delay] =
         find_slew_delay(out_trans_type, one_src_slew_data, one_snk_cap_data);
@@ -498,7 +500,7 @@ __device__ void propagate_inst_slew_delay(GPU_Graph* the_graph,
       out_trans_type = GPU_FLIP_TRANS(in_trans_type);
       auto [one_snk_cap_data1_ptr, snk_cap_index1] =
           get_one_fwd_data(the_graph->_flatten_node_cap_data, out_load,
-                           analysis_mode, out_trans_type);
+                           analysis_mode, out_trans_type, -1);
       auto& one_snk_cap_data1 = *one_snk_cap_data1_ptr;
       auto [slew1, delay1] =
           find_slew_delay(out_trans_type, one_src_slew_data, one_snk_cap_data1);
@@ -602,7 +604,7 @@ __device__ void propagate_net_slew_delay(GPU_Graph* the_graph,
       GPU_Analysis_Mode analysis_mode = one_src_slew_data._analysis_mode;
       auto [one_snk_impulse_data_ptr, impulse_data_index] =
           get_one_fwd_data(the_graph->_flatten_node_impulse_data, impulse_data,
-                           analysis_mode, in_trans_type);
+                           analysis_mode, in_trans_type, -1);
       auto& one_snk_impulse_data = *one_snk_impulse_data_ptr;
       float out_slew = in_slew_value < 0.0
                            ? -std::sqrt(in_slew_value * in_slew_value +

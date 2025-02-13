@@ -104,6 +104,14 @@ class StaGraph {
     return _main2assistant[main_vertex].get();
   }
 
+  std::vector<StaVertex*> getAssistants() {
+    std::vector<StaVertex*> assistants;
+    for (auto& [main_vertex, assistant_vertex] : _main2assistant) {
+      assistants.push_back(assistant_vertex.get());
+    }
+    return assistants;
+  }
+
   auto& get_main2assistant() { return _main2assistant; }
 
   StaVertex* getMain(StaVertex* assistant_vertex) {
