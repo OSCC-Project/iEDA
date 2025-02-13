@@ -367,7 +367,7 @@ void DetailedRouter::routeDRBoxMap(DRModel& dr_model)
     }
     routed_box_num += dr_box_id_list.size();
     RTLOG.info(Loc::current(), "Routed ", routed_box_num, "/", total_box_num, "(", RTUTIL.getPercentage(routed_box_num, total_box_num),
-               ") boxes with ", getViolationNum(), " violations", stage_monitor.getStatsInfo());
+               ") boxes with ", getViolationNum(dr_model), " violations", stage_monitor.getStatsInfo());
   }
 
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
@@ -1291,7 +1291,7 @@ void DetailedRouter::freeDRBox(DRBox& dr_box)
   dr_box.get_layer_node_map().clear();
 }
 
-int32_t DetailedRouter::getViolationNum()
+int32_t DetailedRouter::getViolationNum(DRModel& dr_model)
 {
   Die& die = RTDM.getDatabase().get_die();
 
@@ -1417,7 +1417,7 @@ void DetailedRouter::updateBestResult(DRModel& dr_model)
   std::map<int32_t, std::vector<Segment<LayerCoord>>>& best_net_detailed_result_map = dr_model.get_best_net_detailed_result_map();
   std::vector<Violation>& best_violation_list = dr_model.get_best_violation_list();
 
-  int32_t curr_violation_num = getViolationNum();
+  int32_t curr_violation_num = getViolationNum(dr_model);
   if (!best_net_detailed_result_map.empty()) {
     if (static_cast<int32_t>(best_violation_list.size()) < curr_violation_num) {
       return;
@@ -1439,7 +1439,7 @@ void DetailedRouter::updateBestResult(DRModel& dr_model)
 
 bool DetailedRouter::stopIteration(DRModel& dr_model)
 {
-  if (getViolationNum() == 0) {
+  if (getViolationNum(dr_model) == 0) {
     RTLOG.info(Loc::current(), "***** Iteration stopped early *****");
     return true;
   }

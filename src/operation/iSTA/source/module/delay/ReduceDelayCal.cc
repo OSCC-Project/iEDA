@@ -790,7 +790,7 @@ std::optional<double> ArnoldiNet::slew(Waveform& node_waveform,
 std::optional<double> ArnoldiNet::getSlew(
     std::function<std::vector<double>(double, double, int)>&& get_current,
     double start_time, double end_time, int num_sim_point,
-    AnalysisMode analysis_mode, TransType trans_type, Pin* pin) {
+    AnalysisMode analysis_mode, TransType trans_type, DesignObject* pin) {
   std::optional<double> slew;
 
   {
@@ -861,7 +861,7 @@ std::optional<std::pair<double, MatrixXd>> ArnoldiNet::delay(
  * @return std::optional<double>
  */
 std::optional<double> ArnoldiNet::slew(
-    Pin& to, double from_slew, std::optional<LibCurrentData*> output_current,
+    DesignObject& to, double from_slew, std::optional<LibCurrentData*> output_current,
     AnalysisMode mode, TransType trans_type) {
   // static int prof_count = 0;
   // if (prof_count == 0) {

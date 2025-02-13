@@ -108,7 +108,7 @@ class DetailedRouter
   void selectBestResult(DRBox& dr_box);
   void uploadBestResult(DRBox& dr_box);
   void freeDRBox(DRBox& dr_box);
-  int32_t getViolationNum();
+  int32_t getViolationNum(DRModel& dr_model);
   void uploadNetResult(DRModel& dr_model);
   void uploadViolation(DRModel& dr_model);
   std::vector<Violation> getCostViolationList(DRModel& dr_model);

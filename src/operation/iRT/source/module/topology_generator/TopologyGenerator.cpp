@@ -109,15 +109,15 @@ TGNet TopologyGenerator::convertToTGNet(Net& net)
 void TopologyGenerator::setTGComParam(TGModel& tg_model)
 {
   int32_t topo_spilt_length = 10;
-  double congestion_unit = 2;
+  double overflow_unit = 2;
   /**
-   * topo_spilt_length, congestion_unit
+   * topo_spilt_length, overflow_unit
    */
   // clang-format off
-  TGComParam tg_com_param(topo_spilt_length, congestion_unit);
+  TGComParam tg_com_param(topo_spilt_length, overflow_unit);
   // clang-format on
   RTLOG.info(Loc::current(), "topo_spilt_length: ", tg_com_param.get_topo_spilt_length());
-  RTLOG.info(Loc::current(), "congestion_unit: ", tg_com_param.get_congestion_unit());
+  RTLOG.info(Loc::current(), "overflow_unit: ", tg_com_param.get_overflow_unit());
   tg_model.set_tg_com_param(tg_com_param);
 }
 
@@ -233,7 +233,7 @@ void TopologyGenerator::routeTGNet(TGModel& tg_model, TGNet* tg_net)
     }
   }
   MTree<LayerCoord> coord_tree = getCoordTree(tg_net, routing_segment_list);
-  updateDemand(tg_model, coord_tree);
+  updateDemandToGraph(tg_model, ChangeType::kAdd, coord_tree);
   uploadNetResult(tg_net, coord_tree);
 }
 
@@ -358,7 +358,7 @@ std::vector<Segment<PlanarCoord>> TopologyGenerator::getRoutingSegmentListByLPat
 
 double TopologyGenerator::getNodeCost(TGModel& tg_model, std::vector<Segment<PlanarCoord>>& routing_segment_list)
 {
-  double congestion_unit = tg_model.get_tg_com_param().get_congestion_unit();
+  double overflow_unit = tg_model.get_tg_com_param().get_overflow_unit();
   GridMap<TGNode>& tg_node_map = tg_model.get_tg_node_map();
 
   double node_cost = 0;
@@ -372,8 +372,8 @@ double TopologyGenerator::getNodeCost(TGModel& tg_model, std::vector<Segment<Pla
     }
     Orientation opposite_orientation = RTUTIL.getOppositeOrientation(orientation);
 
-    node_cost += tg_node_map[first_coord.get_x()][first_coord.get_y()].getCongestionCost(orientation);
-    node_cost += tg_node_map[second_coord.get_x()][second_coord.get_y()].getCongestionCost(opposite_orientation);
+    node_cost += tg_node_map[first_coord.get_x()][first_coord.get_y()].getOverflowCost(orientation, overflow_unit);
+    node_cost += tg_node_map[second_coord.get_x()][second_coord.get_y()].getOverflowCost(opposite_orientation, overflow_unit);
 
     if (RTUTIL.isHorizontal(first_coord, second_coord)) {
       int32_t first_x = first_coord.get_x();
@@ -381,8 +381,8 @@ double TopologyGenerator::getNodeCost(TGModel& tg_model, std::vector<Segment<Pla
       int32_t y = first_coord.get_y();
       RTUTIL.swapByASC(first_x, second_x);
       for (int32_t x = (first_x + 1); x <= (second_x - 1); x++) {
-        node_cost += tg_node_map[x][y].getCongestionCost(orientation);
-        node_cost += tg_node_map[x][y].getCongestionCost(opposite_orientation);
+        node_cost += tg_node_map[x][y].getOverflowCost(orientation, overflow_unit);
+        node_cost += tg_node_map[x][y].getOverflowCost(opposite_orientation, overflow_unit);
       }
     } else if (RTUTIL.isVertical(first_coord, second_coord)) {
       int32_t x = first_coord.get_x();
@@ -390,12 +390,11 @@ double TopologyGenerator::getNodeCost(TGModel& tg_model, std::vector<Segment<Pla
       int32_t second_y = second_coord.get_y();
       RTUTIL.swapByASC(first_y, second_y);
       for (int32_t y = (first_y + 1); y <= (second_y - 1); y++) {
-        node_cost += tg_node_map[x][y].getCongestionCost(orientation);
-        node_cost += tg_node_map[x][y].getCongestionCost(opposite_orientation);
+        node_cost += tg_node_map[x][y].getOverflowCost(orientation, overflow_unit);
+        node_cost += tg_node_map[x][y].getOverflowCost(opposite_orientation, overflow_unit);
       }
     }
   }
-  node_cost *= congestion_unit;
   return node_cost;
 }
 
@@ -417,7 +416,17 @@ MTree<LayerCoord> TopologyGenerator::getCoordTree(TGNet* tg_net, std::vector<Seg
   return RTUTIL.getTreeByFullFlow(candidate_root_coord_list, routing_segment_list, key_coord_pin_map);
 }
 
-void TopologyGenerator::updateDemand(TGModel& tg_model, MTree<LayerCoord>& coord_tree)
+void TopologyGenerator::uploadNetResult(TGNet* tg_net, MTree<LayerCoord>& coord_tree)
+{
+  for (Segment<TNode<LayerCoord>*>& coord_segment : RTUTIL.getSegListByTree(coord_tree)) {
+    Segment<LayerCoord>* segment = new Segment<LayerCoord>(coord_segment.get_first()->value(), coord_segment.get_second()->value());
+    RTDM.updateNetGlobalResultToGCellMap(ChangeType::kAdd, tg_net->get_net_idx(), segment);
+  }
+}
+
+#if 1  // update env
+
+void TopologyGenerator::updateDemandToGraph(TGModel& tg_model, ChangeType change_type, MTree<LayerCoord>& coord_tree)
 {
   std::vector<Segment<LayerCoord>> routing_segment_list;
   for (Segment<TNode<LayerCoord>*>& coord_segment : RTUTIL.getSegListByTree(coord_tree)) {
@@ -461,17 +470,11 @@ void TopologyGenerator::updateDemand(TGModel& tg_model, MTree<LayerCoord>& coord
   GridMap<TGNode>& tg_node_map = tg_model.get_tg_node_map();
   for (auto& [usage_coord, orientation_list] : usage_map) {
     TGNode& tg_node = tg_node_map[usage_coord.get_x()][usage_coord.get_y()];
-    tg_node.updateDemand(orientation_list, ChangeType::kAdd);
+    tg_node.updateDemand(orientation_list, change_type);
   }
 }
 
-void TopologyGenerator::uploadNetResult(TGNet* tg_net, MTree<LayerCoord>& coord_tree)
-{
-  for (Segment<TNode<LayerCoord>*>& coord_segment : RTUTIL.getSegListByTree(coord_tree)) {
-    Segment<LayerCoord>* segment = new Segment<LayerCoord>(coord_segment.get_first()->value(), coord_segment.get_second()->value());
-    RTDM.updateGlobalNetResultToGCellMap(ChangeType::kAdd, tg_net->get_net_idx(), segment);
-  }
-}
+#endif
 
 #if 1  // exhibit
 
@@ -609,7 +612,7 @@ void TopologyGenerator::outputGuide(TGModel& tg_model)
   }
   std::vector<TGNet>& tg_net_list = tg_model.get_tg_net_list();
 
-  std::ofstream* guide_file_stream = RTUTIL.getOutputFileStream(tg_temp_directory_path + "route.guide");
+  std::ofstream* guide_file_stream = RTUTIL.getOutputFileStream(RTUTIL.getString(tg_temp_directory_path, "route.guide"));
   if (guide_file_stream == nullptr) {
     return;
   }

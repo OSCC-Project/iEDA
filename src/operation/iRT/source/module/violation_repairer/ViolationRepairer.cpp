@@ -862,7 +862,7 @@ void ViolationRepairer::routeVRBoxMap(VRModel& vr_model)
     }
     routed_box_num += vr_box_id_list.size();
     RTLOG.info(Loc::current(), "Routed ", routed_box_num, "/", total_box_num, "(", RTUTIL.getPercentage(routed_box_num, total_box_num),
-               ") boxes with ", getViolationNum(), " violations", stage_monitor.getStatsInfo());
+               ") boxes with ", getViolationNum(vr_model), " violations", stage_monitor.getStatsInfo());
   }
 
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
@@ -1218,7 +1218,7 @@ void ViolationRepairer::routeVRTask(VRBox& vr_box, VRTask* vr_task)
     for (auto& [layer_idx, min_poly_map] : layer_min_poly_map) {
       int32_t min_width = routing_layer_list[layer_idx].get_min_width();
       int32_t min_area = routing_layer_list[layer_idx].get_min_area();
-      GridMap<VRNode>& vr_node_map = vr_box.get_layer_node_map()[layer_idx];
+      // GridMap<VRNode>& vr_node_map = vr_box.get_layer_node_map()[layer_idx];
 
       for (auto min_poly : min_poly_map) {
         {
@@ -1706,7 +1706,7 @@ void ViolationRepairer::freeVRBox(VRBox& vr_box)
   vr_box.get_layer_node_map().clear();
 }
 
-int32_t ViolationRepairer::getViolationNum()
+int32_t ViolationRepairer::getViolationNum(VRModel& vr_model)
 {
   Die& die = RTDM.getDatabase().get_die();
 
@@ -1792,7 +1792,7 @@ void ViolationRepairer::uploadNetPatch(VRModel& vr_model)
 
 bool ViolationRepairer::stopIteration(VRModel& vr_model)
 {
-  if (getViolationNum() == 0) {
+  if (getViolationNum(vr_model) == 0) {
     RTLOG.info(Loc::current(), "***** Iteration stopped early *****");
     return true;
   }

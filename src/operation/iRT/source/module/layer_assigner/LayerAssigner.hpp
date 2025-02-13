@@ -86,8 +86,11 @@ class LayerAssigner
   double getEstimateWireCost(LAModel& la_model, LANode* start_node, LANode* end_node);
   double getEstimateViaCost(LAModel& la_model, LANode* start_node, LANode* end_node);
   MTree<LayerCoord> getCoordTree(LANet* la_net, std::vector<Segment<LayerCoord>>& routing_segment_list);
-  void updateDemand(LAModel& la_model, LANet* la_net, MTree<LayerCoord>& coord_tree);
   void uploadNetResult(LANet* la_net, MTree<LayerCoord>& coord_tree);
+
+#if 1  // update env
+  void updateDemandToGraph(LAModel& la_model, ChangeType change_type, MTree<LayerCoord>& coord_tree);
+#endif
 
 #if 1  // exhibit
   void updateSummary(LAModel& la_model);

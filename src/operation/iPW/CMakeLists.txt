@@ -6,15 +6,15 @@ set(CMAKE_CXX_STANDARD 20)
 
 set(SANITIZER OFF)
 if(SANITIZER)
-    add_compile_options("-fsanitize=thread")
-    link_libraries("-fsanitize=thread")
+  add_compile_options("-fsanitize=thread")
+  link_libraries("-fsanitize=thread")
 endif()
 
-SET(CMAKE_BUILD_TYPE "Release")
+set(CMAKE_BUILD_TYPE "Release")
 # set(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -Wall")
 
-#for sanitize
-#SET(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -O0 -g -ggdb -fsanitize=thread -std=c++20")
+# for sanitize SET(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -O0 -g -ggdb
+# -fsanitize=thread -std=c++20")
 
 add_compile_options("-march=native")
 
@@ -31,10 +31,9 @@ include_directories(${PROJECT_SOURCE_DIR}/src/operation/iPW/source/module)
 
 include_directories(${HOME_THIRDPARTY}/pybind11)
 
-
-if (USE_GPU)
-message("STATUS power use gpu mode.")
-add_subdirectory(source/gpu-kernel)
+if(USE_GPU)
+  message(STATUS "power use gpu mode.")
+  add_subdirectory(source/gpu-kernel)
 endif()
 
 add_subdirectory(api)
@@ -54,4 +53,15 @@ add_subdirectory(source/python-api)
 add_subdirectory(test)
 
 add_executable(iPower main.cc)
-target_link_libraries(iPower vcd_wrapper log power usage ista-engine core calc_power plot_power shell-cmd pwr-cmd)
+target_link_libraries(
+  iPower
+  vcd_wrapper
+  log
+  power
+  usage
+  ista-engine
+  core
+  calc_power
+  plot_power
+  shell-cmd
+  pwr-cmd)

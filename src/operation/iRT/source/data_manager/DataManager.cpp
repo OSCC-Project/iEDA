@@ -164,7 +164,7 @@ void DataManager::updateNetPinAccessResultToGCellMap(ChangeType change_type, int
   }
 }
 
-void DataManager::updateGlobalNetResultToGCellMap(ChangeType change_type, int32_t net_idx, Segment<LayerCoord>* segment)
+void DataManager::updateNetGlobalResultToGCellMap(ChangeType change_type, int32_t net_idx, Segment<LayerCoord>* segment)
 {
   GridMap<GCell>& gcell_map = _database.get_gcell_map();
 
@@ -867,20 +867,16 @@ std::vector<ScaleGrid> DataManager::makeGCellGridList(Direction direction)
 {
   Die& die = _database.get_die();
   Row& row = _database.get_row();
+  int32_t row_height = row.get_height();
+  int32_t only_pitch = getOnlyPitch();
 
   int32_t die_start_scale = (direction == Direction::kVertical ? die.get_real_ll_x() : die.get_real_ll_y());
   int32_t die_end_scale = (direction == Direction::kVertical ? die.get_real_ur_x() : die.get_real_ur_y());
-  int32_t row_mid_scale = (direction == Direction::kVertical ? row.get_start_x() : row.get_start_y());
-  // 为了防止与track重合,减去一个recommended_pitch的一半
-  row_mid_scale -= (getOnlyPitch() / 2);
-  int32_t step_length = row.get_height();
+  int32_t step_length = (row_height / only_pitch) * only_pitch + ((row_height % only_pitch) >= (only_pitch / 2) ? only_pitch : 0);
 
   std::vector<int32_t> gcell_scale_list;
   gcell_scale_list.push_back(die_start_scale);
-  for (int32_t gcell_scale = row_mid_scale; gcell_scale >= die_start_scale; gcell_scale -= step_length) {
-    gcell_scale_list.push_back(gcell_scale);
-  }
-  for (int32_t gcell_scale = row_mid_scale; gcell_scale <= die_end_scale; gcell_scale += step_length) {
+  for (int32_t gcell_scale = die_start_scale + (only_pitch / 2); gcell_scale <= die_end_scale; gcell_scale += step_length) {
     gcell_scale_list.push_back(gcell_scale);
   }
   gcell_scale_list.push_back(die_end_scale);
@@ -1629,7 +1625,7 @@ void DataManager::destroyGCellMap()
   }
   for (auto& [net_idx, segment_set] : getNetGlobalResultMap(die)) {
     for (Segment<LayerCoord>* segment : segment_set) {
-      RTDM.updateGlobalNetResultToGCellMap(ChangeType::kDel, net_idx, segment);
+      RTDM.updateNetGlobalResultToGCellMap(ChangeType::kDel, net_idx, segment);
     }
   }
   for (auto& [net_idx, segment_set] : getNetDetailedResultMap(die)) {

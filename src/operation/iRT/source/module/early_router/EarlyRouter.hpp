@@ -64,7 +64,6 @@ class EarlyRouter
   std::vector<Segment<PlanarCoord>> getRoutingSegmentListByLPattern(ERModel& er_model, Segment<PlanarCoord>& planar_topo);
   double getPlanarNodeCost(ERModel& er_model, std::vector<Segment<PlanarCoord>>& routing_segment_list);
   MTree<LayerCoord> getPlanarCoordTree(ERNet* er_net, std::vector<Segment<PlanarCoord>>& planar_routing_segment_list);
-  void updatePlanarDemand(ERModel& er_model, MTree<LayerCoord>& coord_tree);
   void buildLayerNodeMap(ERModel& er_model);
   void buildLayerNodeNeighbor(ERModel& er_model);
   void buildLayerOrientSupply(ERModel& er_model);
@@ -98,8 +97,12 @@ class EarlyRouter
   double getEstimateWireCost(ERModel& er_model, ERNode* start_node, ERNode* end_node);
   double getEstimateViaCost(ERModel& er_model, ERNode* start_node, ERNode* end_node);
   MTree<LayerCoord> getLayerCoordTree(ERNet* er_net, std::vector<Segment<LayerCoord>>& routing_segment_list);
-  void updateLayerDemand(ERModel& er_model, ERNet* er_net, MTree<LayerCoord>& coord_tree);
   void uploadNetResult(ERNet* er_net, MTree<LayerCoord>& coord_tree);
+
+#if 1  // update env
+  void updatePlanarDemandToGraph(ERModel& er_model, ChangeType change_type, MTree<LayerCoord>& coord_tree);
+  void updateLayerDemandToGraph(ERModel& er_model, ChangeType change_type, MTree<LayerCoord>& coord_tree);
+#endif
 
 #if 1  // exhibit
   void updateSummary(ERModel& er_model);

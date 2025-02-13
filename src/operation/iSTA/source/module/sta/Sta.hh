@@ -47,6 +47,11 @@
 #include "sdc/SdcSetIODelay.hh"
 #include "verilog/VerilogParserRustC.hh"
 
+#if CUDA_PROPAGATION
+#include "propagation-cuda/fwd_propagation.cuh"
+#include "propagation-cuda/propagation.cuh"
+#endif
+
 namespace ista {
 
 class SdcConstrain;
@@ -195,6 +200,8 @@ class Sta {
   }
   auto& get_link_cells() { return _link_cells; }
 
+  auto get_propagation_method() { return _propagation_method; }
+
   SdcConstrain* getConstrain();
 
   unsigned readDesignWithRustParser(const char* verilog_file);
@@ -269,7 +276,7 @@ class Sta {
     }
     return rc_nets;
   }
-  
+
   void resetAllRcNet() { _net_to_rc_net.clear(); }
   LibCell* findLibertyCell(const char* cell_name);
   std::optional<AocvObjectSpecSet*> findDataAocvObjectSpecSet(
@@ -292,6 +299,14 @@ class Sta {
       clocks.emplace_back(clock.get());
     }
     return clocks;
+  }
+
+  std::map<StaClock*, unsigned> getClockToIndex() {
+    std::map<StaClock*, unsigned> clock_to_index;
+    for (size_t i = 0; i < _clocks.size(); ++i) {
+      clock_to_index[_clocks[i].get()] = i;
+    }
+    return clock_to_index;
   }
 
   void clearClocks() { _clocks.clear(); }
@@ -370,10 +385,55 @@ class Sta {
   StaGraph& get_graph() { return _graph; }
   bool isBuildGraph() { return !_graph.get_vertexes().empty(); }
 
+#if CUDA_PROPAGATION
+  unsigned buildLibArcsGPU();
+  void set_gpu_lib_data(Lib_Data_GPU&& lib_data_gpu) { _gpu_lib_data = std::move(lib_data_gpu); }
+  auto& get_gpu_lib_data() { return _gpu_lib_data; }
+
+  void set_lib_gpu_arcs(std::vector<Lib_Arc_GPU>&& lib_gpu_arcs) {
+    _lib_gpu_arcs = std::move(lib_gpu_arcs);
+  }
+  auto& get_lib_gpu_arcs() { return _lib_gpu_arcs; }
+
+  void set_gpu_graph(GPU_Graph&& the_gpu_graph) { _gpu_graph = std::move(the_gpu_graph); }
+  auto& get_gpu_graph() { return _gpu_graph; }
+
+  void set_arc_to_index(std::map<StaArc*, unsigned>&& arc_to_index) { _arc_to_index = std::move(arc_to_index); }
+  auto& get_arc_to_index() { return _arc_to_index; }
+
+  void set_index_to_at(std::map<unsigned, StaPathDelayData*>&& index_to_at) { _index_to_at = std::move(index_to_at);}
+  auto& get_index_to_at() { return _index_to_at; }
+
+  void set_at_to_index(std::map<StaPathDelayData*, unsigned>&& at_to_index) { _at_to_index = std::move(at_to_index); }
+  auto& get_at_to_index() { return _at_to_index; }
+
+  void set_gpu_vertices(std::vector<GPU_Vertex>&& gpu_vertices) { _gpu_vertices = std::move(gpu_vertices); }
+  auto& get_gpu_vertices() { return _gpu_vertices; }
+
+  void set_gpu_arcs(std::vector<GPU_Arc>&& gpu_arcs) { _gpu_arcs = std::move(gpu_arcs); }
+  auto& get_gpu_arcs() { return _gpu_arcs; }
+
+  void set_flatten_data(GPU_Flatten_Data&& flatten_data) { _flatten_data = std::move(flatten_data); }
+  auto& get_flatten_data() { return _flatten_data; }
+
+  void printFlattenData();
+
+#endif
+
   StaVertex* findVertex(const char* pin_name);
   StaVertex* findVertex(DesignObject* obj) {
     auto the_vertex = _graph.findVertex(obj);
     return the_vertex ? *the_vertex : nullptr;
+  }
+  StaVertex* getVertex(unsigned index) {
+    auto& the_vertexes = _graph.get_vertexes();
+    auto vertex_size = the_vertexes.size();
+    if (index < vertex_size) {
+      return the_vertexes[index].get();
+    } else {
+      auto assistants = _graph.getAssistants();
+      return assistants[index - vertex_size];
+    }
   }
 
   bool isMaxAnalysis() {
@@ -556,6 +616,8 @@ class Sta {
       _classified_cells;  //!< The function equivalently liberty cell.
 
   AnalysisMode _analysis_mode;  //!< The analysis max/min mode.
+  PropagationMethod _propagation_method =
+      PropagationMethod::kBFS;  //!< The propagation method used by DFS or BFS.
 
   StaDreateTable _derate_table;  //!< The derate table for ocv.
   Vector<std::unique_ptr<AocvLibrary>>
@@ -568,6 +630,17 @@ class Sta {
   std::optional<double> _max_fanout;
 
   StaGraph _graph;  //!< The graph mapped to netlist.
+#if CUDA_PROPAGATION
+  std::vector<GPU_Vertex> _gpu_vertices; //!< gpu flatten vertex, arc data.
+  std::vector<GPU_Arc> _gpu_arcs;
+  GPU_Flatten_Data _flatten_data;
+  GPU_Graph _gpu_graph; //!< The gpu graph mapped to sta graph.
+  Lib_Data_GPU _gpu_lib_data; //!< The gpu lib arc data.
+  std::vector<ista::Lib_Arc_GPU> _lib_gpu_arcs; //!< The gpu lib arc data.
+  std::map<StaArc*, unsigned> _arc_to_index; //!< The arc map to gpu index.
+  std::map<StaPathDelayData*, unsigned> _at_to_index; //!< The at map to gpu index.
+  std::map<unsigned, StaPathDelayData*> _index_to_at; //!< The gpu index to at map.
+#endif
   std::map<Net*, std::unique_ptr<RcNet>>
       _net_to_rc_net;                         //!< The net to rc net.
   Vector<std::unique_ptr<StaClock>> _clocks;  //!< The clock domain.

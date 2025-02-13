@@ -88,7 +88,7 @@ class ViolationRepairer
   void uploadNetPatch(VRBox& vr_box);
   void uploadViolation(VRBox& vr_box);
   void freeVRBox(VRBox& vr_box);
-  int32_t getViolationNum();
+  int32_t getViolationNum(VRModel& vr_model);
   void uploadNetResult(VRModel& vr_model);
   void uploadNetPatch(VRModel& vr_model);
   bool stopIteration(VRModel& vr_model);
