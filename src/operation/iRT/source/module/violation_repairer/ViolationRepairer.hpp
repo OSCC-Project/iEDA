@@ -46,6 +46,7 @@ class ViolationRepairer
   ViolationRepairer& operator=(const ViolationRepairer& other) = delete;
   ViolationRepairer& operator=(ViolationRepairer&& other) = delete;
   // function
+  void self_check_violation(VRBox& vr_box);
   VRModel initVRModel();
   std::vector<VRNet> convertToVRNetList(std::vector<Net>& net_list);
   VRNet convertToVRNet(Net& net);
