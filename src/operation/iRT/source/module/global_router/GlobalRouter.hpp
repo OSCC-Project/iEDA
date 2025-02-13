@@ -51,7 +51,7 @@ class GlobalRouter
   GRNet convertToGRNet(Net& net);
   void buildLayerNodeMap(GRModel& gr_model);
   void buildOrientSupply(GRModel& gr_model);
-  void resetOrientDemand(GRModel& gr_model);
+  void resetDemand(GRModel& gr_model);
   void iterativeGRModel(GRModel& gr_model);
   void setGRIterParam(GRModel& gr_model, int32_t iter, GRIterParam& gr_iter_param);
   void initGRBoxMap(GRModel& gr_model);
@@ -60,6 +60,7 @@ class GlobalRouter
   void routeGRBoxMap(GRModel& gr_model);
   void buildNetResult(GRBox& gr_box);
   void initGRTaskList(GRModel& gr_model, GRBox& gr_box);
+  void buildOverflow(GRModel& gr_model, GRBox& gr_box);
   bool needRouting(GRModel& gr_model, GRBox& gr_box);
   void buildBoxTrackAxis(GRBox& gr_box);
   void buildLayerNodeMap(GRBox& gr_box);
@@ -93,17 +94,22 @@ class GlobalRouter
   double getEstimateCost(GRBox& gr_box, GRNode* start_node, GRNode* end_node);
   double getEstimateWireCost(GRBox& gr_box, GRNode* start_node, GRNode* end_node);
   double getEstimateViaCost(GRBox& gr_box, GRNode* start_node, GRNode* end_node);
+  void updateOverflow(GRBox& gr_box);
+  void updateBestResult(GRBox& gr_box);
   void updateTaskSchedule(GRBox& gr_box, std::vector<GRTask*>& routing_task_list);
-  void uploadNetResult(GRBox& gr_box);
+  void selectBestResult(GRBox& gr_box);
+  void uploadBestResult(GRBox& gr_box);
   void freeGRBox(GRBox& gr_box);
   int32_t getOverflow(GRModel& gr_model);
   void uploadNetResult(GRModel& gr_model);
+  void updateBestResult(GRModel& gr_model);
   bool stopIteration(GRModel& gr_model);
+  void selectBestResult(GRModel& gr_model);
+  void uploadBestResult(GRModel& gr_model);
 
 #if 1  // update env
   void updateDemandToGraph(GRModel& gr_model, ChangeType change_type, int32_t net_idx, std::set<Segment<LayerCoord>*>& segment_set);
   void updateDemandToGraph(GRBox& gr_box, ChangeType change_type, int32_t net_idx, std::vector<Segment<LayerCoord>>& segment_list);
-  int32_t getOverflow(GRModel& gr_model, EXTPlanarRect& region);
 #endif
 
 #if 1  // exhibit
@@ -115,9 +121,7 @@ class GlobalRouter
 #endif
 
 #if 1  // debug
-  void debugPlotGRModel(GRModel& gr_model, std::string flag);
   void debugCheckGRBox(GRBox& gr_box);
-  void debugPlotGRBox(GRBox& gr_box, int32_t curr_task_idx, std::string flag);
 #endif
 };
 

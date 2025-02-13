@@ -55,7 +55,7 @@ class GRNode : public LayerCoord
     }
     return neighbor_node;
   }
-  double getOverflowCost(int32_t net_idx, Orientation orientation)
+  double getOverflowCost(int32_t net_idx, Orientation orientation, double overflow_cost)
   {
     double cost = 0;
     if (orientation != Orientation::kAbove && orientation != Orientation::kBelow) {
@@ -71,19 +71,7 @@ class GRNode : public LayerCoord
       if (RTUTIL.exist(_orient_supply_map, orientation)) {
         node_supply = _orient_supply_map[orientation];
       }
-      cost += calcCost(node_demand + 1, node_supply);
-    }
-    return cost;
-  }
-  double calcCost(double demand, double supply)
-  {
-    double cost = 0;
-    if (demand == supply) {
-      cost = 1;
-    } else if (demand > supply) {
-      cost = std::pow(demand - supply + 1, 2);
-    } else if (demand < supply) {
-      cost = std::pow(demand / supply, 2);
+      cost += (std::max(0, node_demand + 1 - node_supply) * overflow_cost);
     }
     return cost;
   }
@@ -93,7 +81,7 @@ class GRNode : public LayerCoord
       if (orient == Orientation::kEast || orient == Orientation::kWest || orient == Orientation::kSouth || orient == Orientation::kNorth) {
         if (change_type == ChangeType::kAdd) {
           _orient_demand_map[orient].insert(net_idx);
-        }else{
+        } else {
           _orient_demand_map[orient].erase(net_idx);
         }
       }

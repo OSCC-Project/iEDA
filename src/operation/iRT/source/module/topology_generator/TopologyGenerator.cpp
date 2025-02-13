@@ -372,8 +372,8 @@ double TopologyGenerator::getNodeCost(TGModel& tg_model, std::vector<Segment<Pla
     }
     Orientation opposite_orientation = RTUTIL.getOppositeOrientation(orientation);
 
-    node_cost += tg_node_map[first_coord.get_x()][first_coord.get_y()].getOverflowCost(orientation);
-    node_cost += tg_node_map[second_coord.get_x()][second_coord.get_y()].getOverflowCost(opposite_orientation);
+    node_cost += tg_node_map[first_coord.get_x()][first_coord.get_y()].getOverflowCost(orientation, overflow_unit);
+    node_cost += tg_node_map[second_coord.get_x()][second_coord.get_y()].getOverflowCost(opposite_orientation, overflow_unit);
 
     if (RTUTIL.isHorizontal(first_coord, second_coord)) {
       int32_t first_x = first_coord.get_x();
@@ -381,8 +381,8 @@ double TopologyGenerator::getNodeCost(TGModel& tg_model, std::vector<Segment<Pla
       int32_t y = first_coord.get_y();
       RTUTIL.swapByASC(first_x, second_x);
       for (int32_t x = (first_x + 1); x <= (second_x - 1); x++) {
-        node_cost += tg_node_map[x][y].getOverflowCost(orientation);
-        node_cost += tg_node_map[x][y].getOverflowCost(opposite_orientation);
+        node_cost += tg_node_map[x][y].getOverflowCost(orientation, overflow_unit);
+        node_cost += tg_node_map[x][y].getOverflowCost(opposite_orientation, overflow_unit);
       }
     } else if (RTUTIL.isVertical(first_coord, second_coord)) {
       int32_t x = first_coord.get_x();
@@ -390,12 +390,11 @@ double TopologyGenerator::getNodeCost(TGModel& tg_model, std::vector<Segment<Pla
       int32_t second_y = second_coord.get_y();
       RTUTIL.swapByASC(first_y, second_y);
       for (int32_t y = (first_y + 1); y <= (second_y - 1); y++) {
-        node_cost += tg_node_map[x][y].getOverflowCost(orientation);
-        node_cost += tg_node_map[x][y].getOverflowCost(opposite_orientation);
+        node_cost += tg_node_map[x][y].getOverflowCost(orientation, overflow_unit);
+        node_cost += tg_node_map[x][y].getOverflowCost(opposite_orientation, overflow_unit);
       }
     }
   }
-  node_cost *= overflow_unit;
   return node_cost;
 }
 

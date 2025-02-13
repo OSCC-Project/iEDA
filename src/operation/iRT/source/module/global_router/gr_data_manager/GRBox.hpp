@@ -39,8 +39,12 @@ class GRBox
   GRIterParam* get_gr_iter_param() { return _gr_iter_param; }
   std::vector<GRTask*>& get_gr_task_list() { return _gr_task_list; }
   std::map<int32_t, std::vector<Segment<LayerCoord>>>& get_net_task_global_result_map() { return _net_task_global_result_map; }
+  int32_t get_total_overflow() const { return _total_overflow; }
+  std::vector<std::set<int32_t>>& get_overflow_net_set_list() { return _overflow_net_set_list; }
   ScaleAxis& get_box_track_axis() { return _box_track_axis; }
   std::vector<GridMap<GRNode>>& get_layer_node_map() { return _layer_node_map; }
+  std::map<int32_t, std::vector<Segment<LayerCoord>>>& get_best_net_task_global_result_map() { return _best_net_task_global_result_map; }
+  int32_t get_best_total_overflow() const { return _best_total_overflow; }
   // setter
   void set_box_rect(const EXTPlanarRect& box_rect) { _box_rect = box_rect; }
   void set_gr_box_id(const GRBoxId& gr_box_id) { _gr_box_id = gr_box_id; }
@@ -50,8 +54,18 @@ class GRBox
   {
     _net_task_global_result_map = net_task_global_result_map;
   }
+  void set_total_overflow(const int32_t total_overflow) { _total_overflow = total_overflow; }
+  void set_overflow_net_set_list(const std::vector<std::set<int32_t>>& overflow_net_set_list)
+  {
+    _overflow_net_set_list = overflow_net_set_list;
+  }
   void set_box_track_axis(const ScaleAxis& box_track_axis) { _box_track_axis = box_track_axis; }
   void set_layer_node_map(const std::vector<GridMap<GRNode>>& layer_node_map) { _layer_node_map = layer_node_map; }
+  void set_best_net_task_global_result_map(const std::map<int32_t, std::vector<Segment<LayerCoord>>>& best_net_task_global_result_map)
+  {
+    _best_net_task_global_result_map = best_net_task_global_result_map;
+  }
+  void set_best_total_overflow(const int32_t best_total_overflow) { _best_total_overflow = best_total_overflow; }
   // function
 #if 1  // astar
   // single task
@@ -96,8 +110,12 @@ class GRBox
   GRIterParam* _gr_iter_param = nullptr;
   std::vector<GRTask*> _gr_task_list;
   std::map<int32_t, std::vector<Segment<LayerCoord>>> _net_task_global_result_map;
+  int32_t _total_overflow = 0;
+  std::vector<std::set<int32_t>> _overflow_net_set_list;
   ScaleAxis _box_track_axis;
   std::vector<GridMap<GRNode>> _layer_node_map;
+  std::map<int32_t, std::vector<Segment<LayerCoord>>> _best_net_task_global_result_map;
+  int32_t _best_total_overflow = 0;
 #if 1  // astar
   // single task
   GRTask* _curr_gr_task = nullptr;

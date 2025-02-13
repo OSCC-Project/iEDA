@@ -56,7 +56,7 @@ void GlobalRouter::route()
   GRModel gr_model = initGRModel();
   buildLayerNodeMap(gr_model);
   buildOrientSupply(gr_model);
-  resetOrientDemand(gr_model);
+  resetDemand(gr_model);
   iterativeGRModel(gr_model);
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
@@ -142,7 +142,7 @@ void GlobalRouter::buildOrientSupply(GRModel& gr_model)
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
-void GlobalRouter::resetOrientDemand(GRModel& gr_model)
+void GlobalRouter::resetDemand(GRModel& gr_model)
 {
   Die& die = RTDM.getDatabase().get_die();
   GridMap<GCell>& gcell_map = RTDM.getDatabase().get_gcell_map();
@@ -165,8 +165,9 @@ void GlobalRouter::resetOrientDemand(GRModel& gr_model)
 void GlobalRouter::iterativeGRModel(GRModel& gr_model)
 {
   double prefer_wire_unit = 1;
+  double non_prefer_wire_unit = 2.5 * prefer_wire_unit;
   double via_unit = 1;
-  double overflow_unit = 2;
+  double overflow_unit = 4 * non_prefer_wire_unit;
   /**
    * prefer_wire_unit, via_unit, size, offset, schedule_interval, overflow_unit, max_routed_times
    */
@@ -187,16 +188,14 @@ void GlobalRouter::iterativeGRModel(GRModel& gr_model)
     Monitor iter_monitor;
     RTLOG.info(Loc::current(), "***** Begin iteration ", iter, "/", gr_iter_param_list.size(), "(",
                RTUTIL.getPercentage(iter, gr_iter_param_list.size()), ") *****");
-    // debugPlotGRModel(gr_model, "before");
     setGRIterParam(gr_model, iter, gr_iter_param_list[i]);
     initGRBoxMap(gr_model);
     buildBoxSchedule(gr_model);
     splitNetResult(gr_model);
-    // debugPlotGRModel(gr_model, "middle");
     routeGRBoxMap(gr_model);
     uploadNetResult(gr_model);
-    resetOrientDemand(gr_model);
-    // debugPlotGRModel(gr_model, "after");
+    resetDemand(gr_model);
+    updateBestResult(gr_model);
     updateSummary(gr_model);
     printSummary(gr_model);
     outputGuide(gr_model);
@@ -208,6 +207,7 @@ void GlobalRouter::iterativeGRModel(GRModel& gr_model)
       break;
     }
   }
+  selectBestResult(gr_model);
 }
 
 void GlobalRouter::setGRIterParam(GRModel& gr_model, int32_t iter, GRIterParam& gr_iter_param)
@@ -410,6 +410,7 @@ void GlobalRouter::routeGRBoxMap(GRModel& gr_model)
       GRBox& gr_box = gr_box_map[gr_box_id.get_x()][gr_box_id.get_y()];
       buildNetResult(gr_box);
       initGRTaskList(gr_model, gr_box);
+      buildOverflow(gr_model, gr_box);
       if (needRouting(gr_model, gr_box)) {
         buildBoxTrackAxis(gr_box);
         buildLayerNodeMap(gr_box);
@@ -417,11 +418,9 @@ void GlobalRouter::routeGRBoxMap(GRModel& gr_model)
         buildOrientSupply(gr_model, gr_box);
         buildOrientDemand(gr_model, gr_box);
         // debugCheckGRBox(gr_box);
-        // debugPlotGRBox(gr_box, -1, "before");
         routeGRBox(gr_box);
-        // debugPlotGRBox(gr_box, -1, "after");
       }
-      uploadNetResult(gr_box);
+      selectBestResult(gr_box);
       freeGRBox(gr_box);
     }
     routed_box_num += gr_box_id_list.size();
@@ -542,12 +541,50 @@ void GlobalRouter::initGRTaskList(GRModel& gr_model, GRBox& gr_box)
   std::sort(gr_task_list.begin(), gr_task_list.end(), CmpGRTask());
 }
 
+void GlobalRouter::buildOverflow(GRModel& gr_model, GRBox& gr_box)
+{
+  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
+  std::vector<GridMap<GRNode>>& layer_node_map = gr_model.get_layer_node_map();
+
+  EXTPlanarRect& box_rect = gr_box.get_box_rect();
+
+  int32_t total_overflow = 0;
+  std::vector<std::set<int32_t>> overflow_net_set_list;
+  for (int32_t layer_idx = 0; layer_idx < static_cast<int32_t>(layer_node_map.size()); layer_idx++) {
+    GridMap<GRNode>& gr_node_map = layer_node_map[layer_idx];
+    for (int32_t x = box_rect.get_grid_ll_x(); x <= box_rect.get_grid_ur_x(); x++) {
+      for (int32_t y = box_rect.get_grid_ll_y(); y <= box_rect.get_grid_ur_y(); y++) {
+        std::map<Orientation, int32_t>& orient_supply_map = gr_node_map[x][y].get_orient_supply_map();
+        std::map<Orientation, std::set<int32_t>>& orient_demand_map = gr_node_map[x][y].get_orient_demand_map();
+        int32_t node_overflow = 0;
+        if (routing_layer_list[layer_idx].isPreferH()) {
+          node_overflow
+              = std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kEast].size()) - orient_supply_map[Orientation::kEast])
+                + std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kWest].size()) - orient_supply_map[Orientation::kWest]);
+        } else {
+          node_overflow
+              = std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kSouth].size()) - orient_supply_map[Orientation::kSouth])
+                + std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kNorth].size()) - orient_supply_map[Orientation::kNorth]);
+        }
+        total_overflow += node_overflow;
+        if (node_overflow > 0) {
+          for (auto& [orient, net_set] : orient_demand_map) {
+            overflow_net_set_list.push_back(net_set);
+          }
+        }
+      }
+    }
+  }
+  gr_box.set_total_overflow(total_overflow);
+  gr_box.set_overflow_net_set_list(overflow_net_set_list);
+}
+
 bool GlobalRouter::needRouting(GRModel& gr_model, GRBox& gr_box)
 {
   if (gr_box.get_gr_task_list().empty()) {
     return false;
   }
-  if (getOverflow(gr_model, gr_box.get_box_rect()) <= 0) {
+  if (gr_box.get_total_overflow() <= 0) {
     return false;
   }
   return true;
@@ -697,6 +734,8 @@ void GlobalRouter::routeGRBox(GRBox& gr_box)
       routeGRTask(gr_box, routing_task);
       routing_task->addRoutedTimes();
     }
+    updateOverflow(gr_box);
+    updateBestResult(gr_box);
     updateTaskSchedule(gr_box, routing_task_list);
   }
 }
@@ -1026,7 +1065,7 @@ double GlobalRouter::getNodeCost(GRBox& gr_box, GRNode* curr_node, Orientation o
   double overflow_unit = gr_box.get_gr_iter_param()->get_overflow_unit();
 
   double node_cost = 0;
-  node_cost += curr_node->getOverflowCost(gr_box.get_curr_gr_task()->get_net_idx(), orientation) * overflow_unit;
+  node_cost += curr_node->getOverflowCost(gr_box.get_curr_gr_task()->get_net_idx(), orientation, overflow_unit);
   return node_cost;
 }
 
@@ -1097,52 +1136,75 @@ double GlobalRouter::getEstimateViaCost(GRBox& gr_box, GRNode* start_node, GRNod
   return via_cost;
 }
 
-void GlobalRouter::updateTaskSchedule(GRBox& gr_box, std::vector<GRTask*>& routing_task_list)
+void GlobalRouter::updateOverflow(GRBox& gr_box)
 {
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
-  int32_t max_routed_times = gr_box.get_gr_iter_param()->get_max_routed_times();
 
-  std::set<int32_t> overflow_net_set;
-  {
-    std::vector<GridMap<GRNode>>& layer_node_map = gr_box.get_layer_node_map();
-    for (int32_t layer_idx = 0; layer_idx < static_cast<int32_t>(layer_node_map.size()); layer_idx++) {
-      GridMap<GRNode>& gr_node_map = layer_node_map[layer_idx];
-      for (int32_t x = 0; x < gr_node_map.get_x_size(); x++) {
-        for (int32_t y = 0; y < gr_node_map.get_y_size(); y++) {
-          std::map<Orientation, int32_t>& orient_supply_map = gr_node_map[x][y].get_orient_supply_map();
-          std::map<Orientation, std::set<int32_t>>& orient_demand_map = gr_node_map[x][y].get_orient_demand_map();
-          int32_t node_overflow = 0;
-          if (routing_layer_list[layer_idx].isPreferH()) {
-            node_overflow
-                = std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kEast].size()) - orient_supply_map[Orientation::kEast])
-                  + std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kWest].size()) - orient_supply_map[Orientation::kWest]);
-          } else {
-            node_overflow
-                = std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kSouth].size()) - orient_supply_map[Orientation::kSouth])
-                  + std::max(0,
-                             static_cast<int32_t>(orient_demand_map[Orientation::kNorth].size()) - orient_supply_map[Orientation::kNorth]);
-          }
-          if (node_overflow <= 0) {
-            continue;
-          }
+  std::vector<GridMap<GRNode>>& layer_node_map = gr_box.get_layer_node_map();
+
+  int32_t total_overflow = 0;
+  std::vector<std::set<int32_t>> overflow_net_set_list;
+  for (int32_t layer_idx = 0; layer_idx < static_cast<int32_t>(layer_node_map.size()); layer_idx++) {
+    GridMap<GRNode>& gr_node_map = layer_node_map[layer_idx];
+    for (int32_t x = 0; x < gr_node_map.get_x_size(); x++) {
+      for (int32_t y = 0; y < gr_node_map.get_y_size(); y++) {
+        std::map<Orientation, int32_t>& orient_supply_map = gr_node_map[x][y].get_orient_supply_map();
+        std::map<Orientation, std::set<int32_t>>& orient_demand_map = gr_node_map[x][y].get_orient_demand_map();
+        int32_t node_overflow = 0;
+        if (routing_layer_list[layer_idx].isPreferH()) {
+          node_overflow
+              = std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kEast].size()) - orient_supply_map[Orientation::kEast])
+                + std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kWest].size()) - orient_supply_map[Orientation::kWest]);
+        } else {
+          node_overflow
+              = std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kSouth].size()) - orient_supply_map[Orientation::kSouth])
+                + std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kNorth].size()) - orient_supply_map[Orientation::kNorth]);
+        }
+        total_overflow += node_overflow;
+        if (node_overflow > 0) {
           for (auto& [orient, net_set] : orient_demand_map) {
-            overflow_net_set.insert(net_set.begin(), net_set.end());
+            overflow_net_set_list.push_back(net_set);
           }
         }
       }
     }
   }
+  gr_box.set_total_overflow(total_overflow);
+  gr_box.set_overflow_net_set_list(overflow_net_set_list);
+}
+
+void GlobalRouter::updateBestResult(GRBox& gr_box)
+{
+  std::map<int32_t, std::vector<Segment<LayerCoord>>>& best_net_task_global_result_map = gr_box.get_best_net_task_global_result_map();
+  int32_t best_total_overflow = gr_box.get_best_total_overflow();
+
+  int32_t curr_total_overflow = gr_box.get_total_overflow();
+  if (!best_net_task_global_result_map.empty()) {
+    if (best_total_overflow < curr_total_overflow) {
+      return;
+    }
+  }
+  best_net_task_global_result_map = gr_box.get_net_task_global_result_map();
+  gr_box.set_best_total_overflow(curr_total_overflow);
+}
+
+void GlobalRouter::updateTaskSchedule(GRBox& gr_box, std::vector<GRTask*>& routing_task_list)
+{
+  int32_t max_routed_times = gr_box.get_gr_iter_param()->get_max_routed_times();
+
   std::set<GRTask*> visited_routing_task_set;
   std::vector<GRTask*> new_routing_task_list;
-  for (GRTask* gr_task : gr_box.get_gr_task_list()) {
-    if (!RTUTIL.exist(overflow_net_set, gr_task->get_net_idx())) {
-      continue;
+  for (std::set<int32_t>& overflow_net_set : gr_box.get_overflow_net_set_list()) {
+    for (GRTask* gr_task : gr_box.get_gr_task_list()) {
+      if (!RTUTIL.exist(overflow_net_set, gr_task->get_net_idx())) {
+        continue;
+      }
+      if (gr_task->get_routed_times() < max_routed_times && !RTUTIL.exist(visited_routing_task_set, gr_task)) {
+        visited_routing_task_set.insert(gr_task);
+        new_routing_task_list.push_back(gr_task);
+      }
+      break;
     }
-    if (gr_task->get_routed_times() < max_routed_times && !RTUTIL.exist(visited_routing_task_set, gr_task)) {
-      visited_routing_task_set.insert(gr_task);
-      new_routing_task_list.push_back(gr_task);
-    }
-    break;
   }
   routing_task_list = new_routing_task_list;
 
@@ -1158,9 +1220,15 @@ void GlobalRouter::updateTaskSchedule(GRBox& gr_box, std::vector<GRTask*>& routi
   gr_box.set_gr_task_list(new_gr_task_list);
 }
 
-void GlobalRouter::uploadNetResult(GRBox& gr_box)
+void GlobalRouter::selectBestResult(GRBox& gr_box)
 {
-  for (auto& [net_idx, segment_list] : gr_box.get_net_task_global_result_map()) {
+  updateBestResult(gr_box);
+  uploadBestResult(gr_box);
+}
+
+void GlobalRouter::uploadBestResult(GRBox& gr_box)
+{
+  for (auto& [net_idx, segment_list] : gr_box.get_best_net_task_global_result_map()) {
     for (Segment<LayerCoord>& segment : segment_list) {
       RTDM.updateNetGlobalResultToGCellMap(ChangeType::kAdd, net_idx, new Segment<LayerCoord>(segment));
     }
@@ -1179,9 +1247,32 @@ void GlobalRouter::freeGRBox(GRBox& gr_box)
 
 int32_t GlobalRouter::getOverflow(GRModel& gr_model)
 {
-  Die& die = RTDM.getDatabase().get_die();
+  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
 
-  return getOverflow(gr_model, die);
+  std::vector<GridMap<GRNode>>& layer_node_map = gr_model.get_layer_node_map();
+
+  int32_t total_overflow = 0;
+  for (int32_t layer_idx = 0; layer_idx < static_cast<int32_t>(layer_node_map.size()); layer_idx++) {
+    GridMap<GRNode>& gr_node_map = layer_node_map[layer_idx];
+    for (int32_t x = 0; x < gr_node_map.get_x_size(); x++) {
+      for (int32_t y = 0; y < gr_node_map.get_y_size(); y++) {
+        std::map<Orientation, int32_t>& orient_supply_map = gr_node_map[x][y].get_orient_supply_map();
+        std::map<Orientation, std::set<int32_t>>& orient_demand_map = gr_node_map[x][y].get_orient_demand_map();
+        int32_t node_overflow = 0;
+        if (routing_layer_list[layer_idx].isPreferH()) {
+          node_overflow
+              = std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kEast].size()) - orient_supply_map[Orientation::kEast])
+                + std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kWest].size()) - orient_supply_map[Orientation::kWest]);
+        } else {
+          node_overflow
+              = std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kSouth].size()) - orient_supply_map[Orientation::kSouth])
+                + std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kNorth].size()) - orient_supply_map[Orientation::kNorth]);
+        }
+        total_overflow += node_overflow;
+      }
+    }
+  }
+  return total_overflow;
 }
 
 void GlobalRouter::uploadNetResult(GRModel& gr_model)
@@ -1224,6 +1315,33 @@ void GlobalRouter::uploadNetResult(GRModel& gr_model)
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
+void GlobalRouter::updateBestResult(GRModel& gr_model)
+{
+  Monitor monitor;
+  RTLOG.info(Loc::current(), "Starting...");
+
+  Die& die = RTDM.getDatabase().get_die();
+
+  std::map<int32_t, std::vector<Segment<LayerCoord>>>& best_net_task_global_result_map = gr_model.get_best_net_task_global_result_map();
+  int32_t best_overflow = gr_model.get_best_overflow();
+
+  int32_t curr_overflow = getOverflow(gr_model);
+  if (!best_net_task_global_result_map.empty()) {
+    if (best_overflow < curr_overflow) {
+      return;
+    }
+  }
+  best_net_task_global_result_map.clear();
+  for (auto& [net_idx, segment_set] : RTDM.getNetGlobalResultMap(die)) {
+    for (Segment<LayerCoord>* segment : segment_set) {
+      best_net_task_global_result_map[net_idx].push_back(*segment);
+    }
+  }
+  gr_model.set_best_overflow(curr_overflow);
+
+  RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
+}
+
 bool GlobalRouter::stopIteration(GRModel& gr_model)
 {
   if (getOverflow(gr_model) == 0) {
@@ -1231,6 +1349,39 @@ bool GlobalRouter::stopIteration(GRModel& gr_model)
     return true;
   }
   return false;
+}
+
+void GlobalRouter::selectBestResult(GRModel& gr_model)
+{
+  Monitor monitor;
+  RTLOG.info(Loc::current(), "Starting...");
+
+  gr_model.set_iter(gr_model.get_iter() + 1);
+  uploadBestResult(gr_model);
+  resetDemand(gr_model);
+  updateSummary(gr_model);
+  printSummary(gr_model);
+  outputGuide(gr_model);
+  outputDemandCSV(gr_model);
+  outputOverflowCSV(gr_model);
+
+  RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
+}
+
+void GlobalRouter::uploadBestResult(GRModel& gr_model)
+{
+  Die& die = RTDM.getDatabase().get_die();
+
+  for (auto& [net_idx, segment_set] : RTDM.getNetGlobalResultMap(die)) {
+    for (Segment<LayerCoord>* segment : segment_set) {
+      RTDM.updateNetGlobalResultToGCellMap(ChangeType::kDel, net_idx, segment);
+    }
+  }
+  for (auto& [net_idx, segment_list] : gr_model.get_best_net_task_global_result_map()) {
+    for (Segment<LayerCoord>& segment : segment_list) {
+      RTDM.updateNetGlobalResultToGCellMap(ChangeType::kAdd, net_idx, new Segment<LayerCoord>(segment));
+    }
+  }
 }
 
 #if 1  // update env
@@ -1326,36 +1477,6 @@ void GlobalRouter::updateDemandToGraph(GRBox& gr_box, ChangeType change_type, in
     GRNode& gr_node = layer_node_map[usage_coord.get_layer_idx()][usage_coord.get_x() - grid_ll_x][usage_coord.get_y() - grid_ll_y];
     gr_node.updateDemand(net_idx, orientation_list, change_type);
   }
-}
-
-int32_t GlobalRouter::getOverflow(GRModel& gr_model, EXTPlanarRect& region)
-{
-  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
-
-  std::vector<GridMap<GRNode>>& layer_node_map = gr_model.get_layer_node_map();
-
-  int32_t total_overflow = 0;
-  for (int32_t layer_idx = 0; layer_idx < static_cast<int32_t>(layer_node_map.size()); layer_idx++) {
-    GridMap<GRNode>& gr_node_map = layer_node_map[layer_idx];
-    for (int32_t x = region.get_grid_ll_x(); x <= region.get_grid_ur_x(); x++) {
-      for (int32_t y = region.get_grid_ll_y(); y <= region.get_grid_ur_y(); y++) {
-        std::map<Orientation, int32_t>& orient_supply_map = gr_node_map[x][y].get_orient_supply_map();
-        std::map<Orientation, std::set<int32_t>>& orient_demand_map = gr_node_map[x][y].get_orient_demand_map();
-        int32_t node_overflow = 0;
-        if (routing_layer_list[layer_idx].isPreferH()) {
-          node_overflow
-              = std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kEast].size()) - orient_supply_map[Orientation::kEast])
-                + std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kWest].size()) - orient_supply_map[Orientation::kWest]);
-        } else {
-          node_overflow
-              = std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kSouth].size()) - orient_supply_map[Orientation::kSouth])
-                + std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kNorth].size()) - orient_supply_map[Orientation::kNorth]);
-        }
-        total_overflow += node_overflow;
-      }
-    }
-  }
-  return total_overflow;
 }
 
 #endif

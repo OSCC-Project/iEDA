@@ -745,7 +745,7 @@ double LayerAssigner::getNodeCost(LAModel& la_model, LANode* curr_node, Orientat
   double overflow_unit = la_model.get_la_com_param().get_overflow_unit();
 
   double node_cost = 0;
-  node_cost += curr_node->getOverflowCost(orientation) * overflow_unit;
+  node_cost += curr_node->getOverflowCost(orientation, overflow_unit);
   return node_cost;
 }
 
