@@ -290,6 +290,12 @@ class LmNetGraphGenerator
 
   // Wire Graph
   WireGraph buildWireGraph(const TopoGraph& graph) const;
+  std::vector<WireGraphVertex> canonicalizeCycle(const std::vector<WireGraphVertex>& cycle) const;
+  void dfsFindCycles(const WireGraph& graph, WireGraphVertex start, WireGraphVertex current, std::vector<bool>& visited,
+                     std::vector<WireGraphVertex>& path, std::vector<std::vector<WireGraphVertex>>& cycles) const;
+
+  std::vector<std::vector<WireGraphVertex>> findAllCycles(const WireGraph& graph) const;
+  void breakCycle(WireGraph& graph) const;
   void innerConnectivityCompletion(const TopoGraph& graph, WireGraph& wire_graph, WireGraphVertexMap& point_to_vertex) const;
   void buildVirtualWire(const TopoGraph& graph, WireGraph& wire_graph, WireGraphVertexMap& point_to_vertex) const;
   void markPinVertex(const TopoGraph& graph, WireGraph& wire_graph) const;
