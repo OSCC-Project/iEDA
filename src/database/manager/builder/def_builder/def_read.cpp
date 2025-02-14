@@ -902,7 +902,10 @@ int32_t DefRead::parse_component(defiComponent* def_component)
     return kDbFail;
   }
 
-  IdbInstance* instance = instance_list->add_instance(def_component->id());
+  std::string inst_name = def_component->id();
+  std::string new_inst_name = ieda::Str::trimBackslash(inst_name);
+
+  IdbInstance* instance = instance_list->add_instance(new_inst_name);
   if (instance == nullptr) {
     std::cout << "Create Instance Error..." << std::endl;
     return kDbFail;
@@ -1033,11 +1036,11 @@ int32_t DefRead::parse_net(defiNet* def_net)
 
   IdbNetList* net_list = design->get_net_list();
 
-  IdbNet* net = net_list->add_net(def_net->name());
+  //   IdbNet* net = net_list->add_net(def_net->name());
 
-  //   std::string net_name = def_net->name();
-  //   std::string new_net_name = ieda::Str::trimBackslash(net_name);
-  //   IdbNet* net = net_list->add_net(new_net_name);
+  std::string net_name = def_net->name();
+  std::string new_net_name = ieda::Str::trimBackslash(net_name);
+  IdbNet* net = net_list->add_net(new_net_name);
 
   if (net == nullptr) {
     std::cout << "Create Net Error..." << std::endl;
@@ -1069,7 +1072,9 @@ int32_t DefRead::parse_net(defiNet* def_net)
   }
 
   for (int i = 0; i < def_net->numConnections(); i++) {
-    string io_name = def_net->instance(i);
+    std::string io_name = def_net->instance(i);
+    io_name = ieda::Str::trimBackslash(io_name);
+
     IdbPin* pin = nullptr;
     if (io_name.compare("PIN") == 0) {
       pin = io_pin_list->find_pin(def_net->pin(i));

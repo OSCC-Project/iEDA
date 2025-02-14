@@ -439,6 +439,9 @@ int32_t DefWrite::write_component()
   writestr("COMPONENTS %d ;\n", instance_list->get_num());
 
   for (IdbInstance* instance : instance_list->get_instance_list()) {
+    std::string inst_name = instance->get_name();
+    std::string new_inst_name = ieda::Str::addBackslash(inst_name);
+
     string type = instance->get_type() != IdbInstanceType::kNone
                       ? "+ SOURCE " + IdbEnum::GetInstance()->get_instance_property()->get_type_str(instance->get_type())
                       : "";
@@ -446,10 +449,10 @@ int32_t DefWrite::write_component()
     string orient = IdbEnum::GetInstance()->get_site_property()->get_orient_name(instance->get_orient());
 
     if (instance->has_placed()) {
-      writestr("    - %s %s %s + %s ( %d %d ) %s \n", instance->get_name().c_str(), instance->get_cell_master()->get_name().c_str(),
-               type.c_str(), status.c_str(), instance->get_coordinate()->get_x(), instance->get_coordinate()->get_y(), orient.c_str());
+      writestr("    - %s %s %s + %s ( %d %d ) %s \n", new_inst_name.c_str(), instance->get_cell_master()->get_name().c_str(), type.c_str(),
+               status.c_str(), instance->get_coordinate()->get_x(), instance->get_coordinate()->get_y(), orient.c_str());
     } else {
-      writestr("    - %s %s %s \n", instance->get_name().c_str(), instance->get_cell_master()->get_name().c_str(), type.c_str());
+      writestr("    - %s %s %s \n", new_inst_name.c_str(), instance->get_cell_master()->get_name().c_str(), type.c_str());
     }
 
     /// halo
@@ -790,9 +793,9 @@ int32_t DefWrite::write_net()
   writestr("NETS %ld ;\n", net_list->get_num());
 
   for (IdbNet* net : net_list->get_net_list()) {
-    // std::string net_name = net->get_net_name();
-    // std::string net_name_new = ieda::Str::addBackslash(net_name);
-    writestr("- %s", net->get_net_name().c_str());
+    std::string net_name = net->get_net_name();
+    std::string net_name_new = ieda::Str::addBackslash(net_name);
+    writestr("- %s", net_name_new.c_str());
 
     auto* io_pins = net->get_io_pins();
     for (auto* io_pin : io_pins->get_pin_list()) {
