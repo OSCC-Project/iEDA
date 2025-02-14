@@ -462,7 +462,7 @@ bool VerilogWriter::isNeedEscape(const std::string& name)
 {
   bool is_need_escape = false;
   for (const auto& ch : name) {
-    if (ch == '/' || ch == '[' || ch == ']') {
+    if (ch == '/' || ch == '[' || ch == ']' || ch == '.') {
       is_need_escape = true;
       break;
     }
