@@ -630,17 +630,7 @@ class Sta {
   std::optional<double> _max_fanout;
 
   StaGraph _graph;  //!< The graph mapped to netlist.
-#if CUDA_PROPAGATION
-  std::vector<GPU_Vertex> _gpu_vertices; //!< gpu flatten vertex, arc data.
-  std::vector<GPU_Arc> _gpu_arcs;
-  GPU_Flatten_Data _flatten_data;
-  GPU_Graph _gpu_graph; //!< The gpu graph mapped to sta graph.
-  Lib_Data_GPU _gpu_lib_data; //!< The gpu lib arc data.
-  std::vector<ista::Lib_Arc_GPU> _lib_gpu_arcs; //!< The gpu lib arc data.
-  std::map<StaArc*, unsigned> _arc_to_index; //!< The arc map to gpu index.
-  std::map<StaPathDelayData*, unsigned> _at_to_index; //!< The at map to gpu index.
-  std::map<unsigned, StaPathDelayData*> _index_to_at; //!< The gpu index to at map.
-#endif
+
   std::map<Net*, std::unique_ptr<RcNet>>
       _net_to_rc_net;                         //!< The net to rc net.
   Vector<std::unique_ptr<StaClock>> _clocks;  //!< The clock domain.
@@ -671,6 +661,18 @@ class Sta {
   CapacitiveUnit _cap_unit = CapacitiveUnit::kPF;
   // Singleton sta.
   static Sta* _sta;
+
+ #if CUDA_PROPAGATION
+  std::vector<GPU_Vertex> _gpu_vertices; //!< gpu flatten vertex, arc data.
+  std::vector<GPU_Arc> _gpu_arcs;
+  GPU_Flatten_Data _flatten_data;
+  GPU_Graph _gpu_graph; //!< The gpu graph mapped to sta graph.
+  Lib_Data_GPU _gpu_lib_data; //!< The gpu lib arc data.
+  std::vector<ista::Lib_Arc_GPU> _lib_gpu_arcs; //!< The gpu lib arc data.
+  std::map<StaArc*, unsigned> _arc_to_index; //!< The arc map to gpu index.
+  std::map<StaPathDelayData*, unsigned> _at_to_index; //!< The at map to gpu index.
+  std::map<unsigned, StaPathDelayData*> _index_to_at; //!< The gpu index to at map.
+#endif
 
   FORBIDDEN_COPY(Sta);
 };
