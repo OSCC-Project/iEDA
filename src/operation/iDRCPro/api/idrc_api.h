@@ -47,7 +47,6 @@ class DrcApi
                                                                 std::set<ViolationEnumType> check_select = {});
 
   std::map<ViolationEnumType, std::vector<DrcViolation*>> checkDef();
-  void diagnosis(std::string third_json_file, std::string idrc_json_file, std::string output_dir);
 
  private:
 };
