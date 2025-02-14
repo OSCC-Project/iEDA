@@ -47,8 +47,8 @@ class IdbBusBitChars
   void setRightDelimter(char right_delimiter) { _right_delimiter = right_delimiter; }
 
  private:
-  char _left_delimiter;
-  char _right_delimiter;
+  char _left_delimiter = '[';
+  char _right_delimiter = ']';
 };
 
 }  // namespace idb
