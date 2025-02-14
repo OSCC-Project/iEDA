@@ -31,6 +31,7 @@
 #include <set>
 #include <string>
 #include <utility>
+#include <shared_mutex>
 
 #include "FlatMap.hh"
 #include "StaClock.hh"
@@ -252,19 +253,25 @@ class Sta {
 
   unsigned linkLibertys();
   void resetRcNet(Net* the_net) {
+    std::unique_lock<std::shared_mutex> lock(_rw_mutex);
     if (_net_to_rc_net.contains(the_net)) {
       _net_to_rc_net.erase(the_net);
     }
   }
 
-  void addRcNet(Net* the_net, std::unique_ptr<RcNet> rc_net) {
+  void addRcNet(Net* the_net, std::unique_ptr<RcNet>&& rc_net) {
+    std::unique_lock<std::shared_mutex> lock(_rw_mutex);
     _net_to_rc_net[the_net] = std::move(rc_net);
   }
 
   void removeRcNet(Net* the_net) { _net_to_rc_net.erase(the_net); }
   RcNet* getRcNet(Net* the_net) {
-    return _net_to_rc_net.contains(the_net) ? _net_to_rc_net[the_net].get()
-                                            : nullptr;
+    std::shared_lock<std::shared_mutex> lock(_rw_mutex);;
+    RcNet* rc_net = _net_to_rc_net.contains(the_net)
+                        ? _net_to_rc_net[the_net].get()
+                        : nullptr;
+
+    return rc_net;
   }
   std::vector<RcNet*> getAllRcNet() {
     std::vector<RcNet*> rc_nets;
@@ -631,17 +638,13 @@ class Sta {
   std::optional<double> _max_fanout;
 
   StaGraph _graph;  //!< The graph mapped to netlist.
-#if CUDA_PROPAGATION
-  std::vector<GPU_Vertex> _gpu_vertices; //!< gpu flatten vertex, arc data.
-  std::vector<GPU_Arc> _gpu_arcs;
-  GPU_Flatten_Data _flatten_data;
-  GPU_Graph _gpu_graph; //!< The gpu graph mapped to sta graph.
-  Lib_Data_GPU _gpu_lib_data; //!< The gpu lib arc data.
-  std::vector<ista::Lib_Arc_GPU> _lib_gpu_arcs; //!< The gpu lib arc data.
-  std::map<StaArc*, unsigned> _arc_to_index; //!< The arc map to gpu index.
-  std::map<StaPathDelayData*, unsigned> _at_to_index; //!< The at map to gpu index.
-  std::map<unsigned, StaPathDelayData*> _index_to_at; //!< The gpu index to at map.
-#endif
+
+  unsigned _significant_digits =
+      3;  //!< The significant digits for report, default is 3.
+  
+  TimeUnit _time_unit = TimeUnit::kNS;
+  CapacitiveUnit _cap_unit = CapacitiveUnit::kPF;
+
   std::map<Net*, std::unique_ptr<RcNet>>
       _net_to_rc_net;                         //!< The net to rc net.
   Vector<std::unique_ptr<StaClock>> _clocks;  //!< The clock domain.
@@ -652,9 +655,6 @@ class Sta {
 
   std::unique_ptr<StaClockGatePathGroup>
       _clock_gate_group;  //!< The clock gate path groups.
-
-  unsigned _significant_digits =
-      3;  //!< The significant digits for report, default is 3.
 
   std::unique_ptr<StaReportTable>
       _report_tbl_summary;  //!< The sta report table.
@@ -667,11 +667,21 @@ class Sta {
       _clock_trees;  //!< The sta clock tree for GUI.
 
   std::mutex _mt;
-
-  TimeUnit _time_unit = TimeUnit::kNS;
-  CapacitiveUnit _cap_unit = CapacitiveUnit::kPF;
+  std::shared_mutex _rw_mutex; //!< For rc net.
   // Singleton sta.
   static Sta* _sta;
+
+#if CUDA_PROPAGATION
+  std::vector<GPU_Vertex> _gpu_vertices; //!< gpu flatten vertex, arc data.
+  std::vector<GPU_Arc> _gpu_arcs;
+  GPU_Flatten_Data _flatten_data;
+  GPU_Graph _gpu_graph; //!< The gpu graph mapped to sta graph.
+  Lib_Data_GPU _gpu_lib_data; //!< The gpu lib arc data.
+  std::vector<ista::Lib_Arc_GPU> _lib_gpu_arcs; //!< The gpu lib arc data.
+  std::map<StaArc*, unsigned> _arc_to_index; //!< The arc map to gpu index.
+  std::map<StaPathDelayData*, unsigned> _at_to_index; //!< The at map to gpu index.
+  std::map<unsigned, StaPathDelayData*> _index_to_at; //!< The gpu index to at map.
+#endif
 
   FORBIDDEN_COPY(Sta);
 };
