@@ -419,6 +419,9 @@ void TimingEngine::incrCap(RctNode* node, double cap, bool is_incremental) {
 void TimingEngine::makeResistor(Net* net, RctNode* from_node, RctNode* to_node,
                                 double res) {
   auto* rc_net = _timing_engine->get_ista()->getRcNet(net);
+  if (!rc_net) {
+    return;
+  }
   auto* rc_tree = rc_net->rct();
 
   rc_tree->insertEdge(from_node, to_node, res, true);
