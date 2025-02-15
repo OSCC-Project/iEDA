@@ -25,6 +25,7 @@
 
 #include "Log.hh"
 #include "congestion_api.h"
+#include "density_api.h"
 #include "idm.h"
 #include "lm_grid_info.h"
 #include "omp.h"
@@ -47,12 +48,12 @@ void LmFeatureStatis::feature_graph()
 
   // get egr_layer_map, which is a map of layer name to a 2D vector of congestion value.
   auto egr_layer_map = CONGESTION_API_INST->getEGRMap();
-
+  
   // get the number of egr_map's rows and cols.
   const auto& first_layer = egr_layer_map.begin()->second;
   size_t egr_rows = first_layer.size();
   size_t egr_cols = (egr_rows > 0) ? first_layer[0].size() : 0;
-
+  
   // calculate the factor to convert egr_map's row and col to the layout's coordinate (x and y).
   double row_factor = static_cast<double>(gridInfoInst.ury - gridInfoInst.lly) / egr_rows;
   double col_factor = static_cast<double>(gridInfoInst.urx - gridInfoInst.llx) / egr_cols;
@@ -80,6 +81,14 @@ void LmFeatureStatis::feature_graph()
     net_feature->area = CONGESTION_API_INST->findBBoxArea(net_name);
     net_feature->l_ness = CONGESTION_API_INST->findLness(net_name);
 
+    /// 初始化 layer_ratio
+    int min_order = INT32_MAX; // 记录最小层
+    int max_order = INT32_MIN; // 记录最大层
+    int layer_order_top = layout_layers.get_layer_order_top();
+    int layer_order_bottom = layout_layers.get_layer_order_bottom();
+    int num_layers = layer_order_top - layer_order_bottom + 1; // 总布线层数
+    net_feature->layer_ratio = std::vector<int>(num_layers, 0);
+
     for (auto& wire : lm_net.get_wires()) {
       auto* wire_feature = wire.get_feature(true);
 
@@ -89,6 +98,15 @@ void LmFeatureStatis::feature_graph()
           auto* layout_layer = layout_layers.findLayoutLayer(order);
           auto& grid = layout_layer->get_grid();
           auto layer_name = layout_layer->get_layer_name();
+
+          /// 更新最小层和最大层
+          min_order = std::min(min_order, order);
+          max_order = std::max(max_order, order);
+          /// 更新 layer_ratio
+          if (order >= layer_order_bottom && order <= layer_order_top) {
+            int layer_index = order - layer_order_bottom; // 计算层的索引
+            net_feature->layer_ratio[layer_index] = 1; // 设置为 1，表示该层有线经过
+          }
 
           /// set feature
           wire_feature->wire_width = layout_layer->get_wire_width();
@@ -120,7 +138,7 @@ void LmFeatureStatis::feature_graph()
 
           for (int r = trans_min_row; r <= trans_max_row; ++r) {
             for (int c = trans_min_col; c <= trans_max_col; ++c) {
-              sum_congestion += egr_layer_map[layer_name][egr_rows - r - 1][egr_cols - c - 1];
+              sum_congestion += egr_layer_map[layer_name][r][c];
               trans_grid_count++;
             }
           }
@@ -135,6 +153,7 @@ void LmFeatureStatis::feature_graph()
           int vertical_len = (max_row - min_row) * gridInfoInst.y_step;
 
           wire_feature->wire_len += (horizontal_len + vertical_len);
+          wire_feature->wire_density = wire_feature->wire_len * wire_feature->wire_width / static_cast<double>(net_feature->area);
 
           /// some feature label on node
           for (int row = min_row; row <= max_row; ++row) {
@@ -159,6 +178,18 @@ void LmFeatureStatis::feature_graph()
       net_feature->fanout = lm_net.get_pin_ids().size() - 1;
     }
 
+    /// 计算 BBox体积
+    if (min_order != INT32_MAX && max_order != INT32_MIN) {
+        int total_height = (max_order - min_order);
+        if (total_height == 0) {
+            total_height = 1; // 如果只在一层，层高为单层高度
+        }
+        net_feature->volume = net_feature->area * total_height; 
+    } else {
+        net_feature->volume = 0; // 如果没有有效的层，体积为 0
+    }
+
+
     if (i % 1000 == 0) {
       LOG_INFO << "Read nets : " << i << " / " << (int) net_map.size();
     }
@@ -181,19 +212,38 @@ void LmFeatureStatis::feature_patch()
   }
 
   auto& patchs = _patch_grid->get_patchs();
+  auto& patch_xy_map = _patch_grid->get_patch_xy_map();
   auto& layout_layers = _layout->get_layout_layers();
 
   omp_lock_t lck;
   omp_init_lock(&lck);
 
-  // #pragma omp parallel for schedule(dynamic)
+  // 评估器特征计算，返回的是 patch_id 和 value 的 map
+  std::map<int, int> pin_density_map = DENSITY_API_INST->patchPinDensity(patch_xy_map);
+  std::map<int, double> cell_density_map = DENSITY_API_INST->patchCellDensity(patch_xy_map);
+  std::map<int, double> net_density_map = DENSITY_API_INST->patchNetDensity(patch_xy_map);
+  std::map<int, int> macro_margin_map = DENSITY_API_INST->patchMacroMargin(patch_xy_map);
+  std::map<int, double> rudy_congestion_map = CONGESTION_API_INST->patchRUDYCongestion(patch_xy_map);
+  std::map<int, double> egr_congestion_map = CONGESTION_API_INST->patchEGRCongestion(patch_xy_map);
+
+  #pragma omp parallel for schedule(dynamic)
   for (int i = 0; i < (int) patchs.size(); ++i) {
     auto it = patchs.begin();
     std::advance(it, i);
     auto& patch_id = it->first;
     auto& patch = it->second;
 
+    // 根据 patch_id 获取 patch feature
+    patch.cell_density = cell_density_map[patch_id];
+    patch.pin_density = pin_density_map[patch_id];
+    patch.net_density = net_density_map[patch_id];
+    patch.macro_margin = macro_margin_map[patch_id];
+    patch.RUDY_congestion = rudy_congestion_map[patch_id];
+    patch.EGR_congestion = egr_congestion_map[patch_id]; 
+
     for (auto& [layer_id, patch_layer] : patch.get_layer_map()) {
+      patch_layer.wire_width = layout_layers.findLayoutLayer(layer_id)->get_wire_width();
+
       for (auto& [net_id, lm_net] : patch_layer.get_sub_nets()) {
         for (auto& wire : lm_net.get_wires()) {
           auto* wire_feature = wire.get_feature(true);
@@ -204,8 +254,14 @@ void LmFeatureStatis::feature_patch()
               auto* layout_layer = layout_layers.findLayoutLayer(order);
               auto layer_name = layout_layer->get_layer_name();
 
-              /// set feature
-              wire_feature->wire_width = layout_layer->get_wire_width();
+              int min_row = std::min(node1->get_row_id(), node2->get_row_id());
+              int max_row = std::max(node1->get_row_id(), node2->get_row_id());
+              int min_col = std::min(node1->get_col_id(), node2->get_col_id());
+              int max_col = std::max(node1->get_col_id(), node2->get_col_id());
+              int horizontal_len = (max_col - min_col) * gridInfoInst.x_step;
+              int vertical_len = (max_row - min_row) * gridInfoInst.y_step;
+              wire_feature->wire_len += (horizontal_len + vertical_len);
+              patch_layer.wire_len += wire_feature->wire_len;
             }
           }
         }

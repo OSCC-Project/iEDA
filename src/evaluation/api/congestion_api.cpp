@@ -236,4 +236,30 @@ std::map<std::string, std::vector<std::vector<int>>> CongestionAPI::getEGRMap(st
   return EVAL_CONGESTION_INST->getDemandSupplyDiffMap(congestion_dir);
 }
 
+
+std::map<int, double> CongestionAPI::patchRUDYCongestion(std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>> patch_coords)
+{
+  std::map<int, double> patch_rudy_congestion;
+
+  EVAL_CONGESTION_INST->initIDB();
+
+  CongestionEval congestion_eval;
+  patch_rudy_congestion = congestion_eval.patchRUDYCongestion(EVAL_CONGESTION_INST->getCongestionNets(), 
+                                                             patch_coords);
+  EVAL_CONGESTION_INST->destroyIDB();
+
+  return patch_rudy_congestion;
+}
+
+std::map<int, double> CongestionAPI::patchEGRCongestion(std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>> patch_coords)
+{
+  std::map<int, double> patch_egr_congestion;
+
+  CongestionEval congestion_eval;
+  patch_egr_congestion = congestion_eval.patchEGRCongestion(patch_coords);
+
+  return patch_egr_congestion;
+}
+
+
 }  // namespace ieval

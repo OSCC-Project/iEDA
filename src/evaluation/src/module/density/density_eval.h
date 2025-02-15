@@ -8,6 +8,7 @@
 #pragma once
 
 #include "density_db.h"
+#include <map>
 namespace ieval {
 
 struct MarginGrid
@@ -56,6 +57,11 @@ class DensityEval
   DensityRegion getDensityRegionCore();
 
   int32_t getRowHeight();
+
+  std::map<int, int> patchPinDensity(DensityPins pins, std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>> patch_coords);
+  std::map<int, double> patchCellDensity(DensityCells cells, std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>> patch_coords);
+  std::map<int, double> patchNetDensity(DensityNets nets, std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>> patch_coords);
+  std::map<int, int> patchMacroMargin(DensityCells cells, DensityRegion core, std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>> patch_coords);
 
  private:
   static DensityEval* _density_eval;

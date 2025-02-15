@@ -1137,6 +1137,8 @@ std::map<std::string, std::vector<std::vector<int>>> CongestionEval::getDemandSu
                 }
                 matrix.push_back(row);
             }
+            // 反转行顺序（转换为左下角原点）
+            std::reverse(matrix.begin(), matrix.end());
             demand_matrices[layer_name] = matrix;
         }
     }
@@ -1162,6 +1164,8 @@ std::map<std::string, std::vector<std::vector<int>>> CongestionEval::getDemandSu
                 }
                 matrix.push_back(row);
             }
+            // 反转行顺序（转换为左下角原点）
+            std::reverse(matrix.begin(), matrix.end());
             supply_matrices[layer_name] = matrix;
         }
     }
@@ -1194,5 +1198,132 @@ std::map<std::string, std::vector<std::vector<int>>> CongestionEval::getDemandSu
 
     return diff_map;
 }
+
+std::map<int, double> CongestionEval::patchRUDYCongestion(CongestionNets nets, std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>> patch_coords)
+{
+  std::map<int, double> patch_rudy_map;
+
+  // 遍历所有 patch
+  for (const auto& [patch_id, coord] : patch_coords) {
+      double rudy = 0.0;
+      auto [l_range, u_range] = coord;
+      
+      // 提取当前 patch 的物理边界
+      const int patch_lx = l_range.first;
+      const int patch_ly = l_range.second;
+      const int patch_ux = u_range.first;
+      const int patch_uy = u_range.second;
+
+      // 计算 patch 面积（保持左闭右开区间）
+      const int patch_width = patch_ux - patch_lx;
+      const int patch_height = patch_uy - patch_ly;
+      const int patch_area = patch_width * patch_height;
+
+      // 遍历所有线网
+      for (const auto& net : nets) {
+          // 计算线网边界框
+          int32_t net_lx = INT32_MAX;
+          int32_t net_ly = INT32_MAX;
+          int32_t net_ux = INT32_MIN;
+          int32_t net_uy = INT32_MIN;
+          
+          for (const auto& pin : net.pins) {
+              net_lx = std::min(net_lx, pin.lx);
+              net_ly = std::min(net_ly, pin.ly);
+              net_ux = std::max(net_ux, pin.lx);
+              net_uy = std::max(net_uy, pin.ly);
+          }
+
+          // 计算重叠区域
+          const int overlap_lx = std::max(net_lx, patch_lx);
+          const int overlap_ly = std::max(net_ly, patch_ly);
+          const int overlap_ux = std::min(net_ux, patch_ux);
+          const int overlap_uy = std::min(net_uy, patch_uy);
+
+          // 有效重叠面积计算
+          const int overlap_width = std::max(0, overlap_ux - overlap_lx);
+          const int overlap_height = std::max(0, overlap_uy - overlap_ly);
+          const int overlap_area = overlap_width * overlap_height;
+
+          if (overlap_area > 0) {
+              // 计算 RUDY 因子
+              double hor_rudy = (net_uy == net_ly) ? 1.0 : 1.0 / (net_uy - net_ly);
+              double ver_rudy = (net_ux == net_lx) ? 1.0 : 1.0 / (net_ux - net_lx);
+              
+              // 累加 RUDY 贡献
+              rudy += static_cast<double>(overlap_area) * (hor_rudy + ver_rudy) / patch_area;
+          }
+      }
+
+      patch_rudy_map[patch_id] = rudy;
+  }
+
+  return patch_rudy_map;
+}
+
+std::map<int, double> CongestionEval::patchEGRCongestion(std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>> patch_coords)
+{
+  std::map<int, double> patch_egr_congestion;
+  
+  // 获取各层拥塞数据
+  auto congestion_layer_map = getDemandSupplyDiffMap();
+  if (congestion_layer_map.empty()) {
+    return patch_egr_congestion;
+  }
+  
+  // 动态获取矩阵尺寸（取第一个有效层的尺寸）
+  const auto& first_matrix = congestion_layer_map.begin()->second;
+  const size_t matrix_rows = first_matrix.size();
+  const size_t matrix_cols = matrix_rows > 0 ? first_matrix[0].size() : 0;
+
+  if (matrix_rows == 0 || matrix_cols == 0) {
+      std::cerr << "Error: Empty congestion matrix" << std::endl;
+      return patch_egr_congestion;
+  }
+
+  // 步骤1：创建累加矩阵
+  std::vector<std::vector<int>> total_congestion(matrix_rows, std::vector<int>(matrix_cols, 0));
+  for (const auto& [layer, matrix] : congestion_layer_map) {
+      for (size_t row = 0; row < matrix_rows; ++row) {
+          for (size_t col = 0; col < matrix_cols; ++col) {
+              total_congestion[row][col] += matrix[row][col];
+          }
+      }
+  }
+
+  // 步骤2：获取物理坐标范围
+  int max_phy_x = 0, max_phy_y = 0;
+  for (const auto& [id, coords] : patch_coords) {
+      max_phy_x = std::max(max_phy_x, coords.second.first);  // 物理坐标最大值X
+      max_phy_y = std::max(max_phy_y, coords.second.second); // 物理坐标最大值Y
+  }
+
+  // 步骤3：建立映射关系
+  for (const auto& [patch_id, coords] : patch_coords) {
+      const auto& [left_bottom, right_top] = coords;
+      const auto& [phy_x1, phy_y1] = left_bottom;
+      const auto& [phy_x2, phy_y2] = right_top;
+
+      // 计算中心点坐标（物理坐标）
+      const double center_phy_x = (phy_x1 + phy_x2) / 2.0;
+      const double center_phy_y = (phy_y1 + phy_y2) / 2.0;
+
+      // 映射到矩阵行列索引
+      const int matrix_row = std::clamp(
+          static_cast<int>((center_phy_y / max_phy_y) * (matrix_rows - 1)),
+          0, static_cast<int>(matrix_rows - 1));
+          
+      const int matrix_col = std::clamp(
+          static_cast<int>((center_phy_x / max_phy_x) * (matrix_cols - 1)),
+          0, static_cast<int>(matrix_cols - 1));
+
+      // 存储结果
+      patch_egr_congestion[patch_id] = total_congestion[matrix_row][matrix_col];
+  }
+
+  return patch_egr_congestion;
+}
+
+
 
 }  // namespace ieval
