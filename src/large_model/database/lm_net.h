@@ -46,6 +46,7 @@ struct LmNetWireFeature
   double slew = 0.0;
   double congestion = 0.0;
   double wire_density = 0.0;
+  std::vector<std::string> drc_type = {};
 };
 
 struct LmNetFeature

@@ -164,6 +164,7 @@ bool LmLayoutFileIO::saveJsonNets()
                 json_feature["delay"] = wire_feature->delay;
                 json_feature["slew"] = wire_feature->slew;
                 json_feature["congestion"] = wire_feature->congestion;
+                json_feature["drc_type"] = wire_feature->drc_type;
               }
               json_wire["feature"] = json_feature;
             }
