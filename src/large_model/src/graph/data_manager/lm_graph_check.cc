@@ -249,7 +249,7 @@ void GraphCheckerBase::writeToPy(const Graph& graph, LmNet& net, const std::stri
 bool LmNetChecker::isLocalConnectivity(LmNet& net) const
 {
   /// ignore net if pin number < 2
-  if (net.get_pin_ids().size() < 2) {
+  if (net.get_pin_ids().size() < 2 || net.get_wires().empty()) {
     return true;
   }
 
@@ -451,11 +451,7 @@ bool LmLayoutChecker::checkLayout(std::map<int, LmNet> net_map)
       LOG_ERROR << "Net " << net.get_net_id() << " is not locally connected.";
       // debug
       // auto graph = checker.convertToGraph(net);
-      //   GraphCheckerBase::writeToDot(graph, "/data/project_share/benchmark/t28/baseline/result/feature/graph_debug_temp/net_"
-      //                                           + std::to_string(net.get_net_id()) + ".dot");
-      //   GraphCheckerBase::writeToPy(
-      //       graph, net,
-      //       "/data/project_share/benchmark/t28/baseline/result/feature/graph_debug/net_" + std::to_string(net.get_net_id()) + ".py");
+      // GraphCheckerBase::writeToPy(graph, net, "/home/liweiguo/temp/file/net_" + std::to_string(net.get_net_id()) + ".py");
     }
     total++;
   }
