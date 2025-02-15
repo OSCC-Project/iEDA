@@ -199,9 +199,9 @@ LayoutShapeManager LmNetGraphGenerator::buildShapeManager(const TopoGraph& graph
       shape_manager.addShape(patch->rect, v);
     } else if (content->is_wire()) {
       auto* wire = static_cast<LayoutWire*>(content);
-      const auto z = getZ(wire->start);
-      const auto [x1, x2] = std::minmax(getX(wire->start), getX(wire->end));
-      const auto [y1, y2] = std::minmax(getY(wire->start), getY(wire->end));
+      auto z = getZ(wire->start);
+      auto [x1, x2] = std::ranges::minmax({getX(wire->start), getX(wire->end)});
+      auto [y1, y2] = std::ranges::minmax({getY(wire->start), getY(wire->end)});
       shape_manager.addShape(LayoutDefRect({x1, y1, z}, {x2, y2, z}), v);
     } else if (content->is_via()) {
       auto* via = static_cast<LayoutVia*>(content);
