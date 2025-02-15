@@ -47,4 +47,15 @@ class Stats {
   struct timeval _elapsed_begin_time;
 };
 
+/**
+ * @brief macro for profiling, start and end pos should be the same.
+ * 
+ */
+#define CPU_PROF_START(pos) \
+  ieda::Stats stats##pos
+
+#define CPU_PROF_END(pos, msg) \
+  LOG_INFO << msg << " memory usage: " << stats##pos.memoryDelta() << "MB" << std::endl; \
+  LOG_INFO << msg << " time elapsed: " << stats##pos.elapsedRunTime() << "s" << std::endl
+
 }  // namespace ieda

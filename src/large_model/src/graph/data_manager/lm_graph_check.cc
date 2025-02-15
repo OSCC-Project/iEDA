@@ -271,7 +271,22 @@ bool LmNetChecker::isLocalConnectivity(LmNet& net) const
 bool LmNetChecker::isLocalConnectivity(LmNetWire& wire) const
 {
   std::vector<std::pair<LmNode*, LmNode*>> paths = wire.get_paths();
-  auto is_same_loc = [](LmNode* node1, LmNode* node2) { return node1->get_x() == node2->get_x() && node1->get_y() == node2->get_y(); };
+  auto is_same_xy = [](LmNode* node1, LmNode* node2) { return node1->get_x() == node2->get_x() && node1->get_y() == node2->get_y(); };
+  if (paths.empty()) {
+    return false;
+  }
+  if (paths.size() == 1) {
+    auto* front = paths[0].first;
+    auto* back = paths[0].second;
+    // avoid empty pointer
+    if (!front || !back) {
+      return false;
+    }
+    if (front->get_layer_id() == back->get_layer_id()) {
+      return front->get_x() == back->get_x() || front->get_y() == back->get_y();
+    }
+    return is_same_xy(front, back);
+  }
   for (size_t i = 0; i < paths.size() - 1; ++i) {
     auto* front = paths[i].second;
     auto* back = paths[i + 1].first;
@@ -279,7 +294,7 @@ bool LmNetChecker::isLocalConnectivity(LmNetWire& wire) const
     if (!front || !back) {
       return false;
     }
-    if (!is_same_loc(front, back)) {
+    if (!is_same_xy(front, back)) {
       return false;
     }
   }
@@ -288,10 +303,10 @@ bool LmNetChecker::isLocalConnectivity(LmNetWire& wire) const
   auto* back = connect_nodes.second;
   if (front->get_layer_id() != back->get_layer_id()) {
     // check is via
-    return is_same_loc(front, back);
+    return is_same_xy(front, back);
   }
   // check is wire (front's x,y != back's x,y)
-  return !is_same_loc(front, back);
+  return !is_same_xy(front, back);
 }
 Graph LmNetChecker::convertToGraph(LmNet& net) const
 {
@@ -435,7 +450,7 @@ bool LmLayoutChecker::checkLayout(std::map<int, LmNet> net_map)
     } else {
       LOG_ERROR << "Net " << net.get_net_id() << " is not locally connected.";
       // debug
-      auto graph = checker.convertToGraph(net);
+      // auto graph = checker.convertToGraph(net);
       //   GraphCheckerBase::writeToDot(graph, "/data/project_share/benchmark/t28/baseline/result/feature/graph_debug_temp/net_"
       //                                           + std::to_string(net.get_net_id()) + ".dot");
       //   GraphCheckerBase::writeToPy(

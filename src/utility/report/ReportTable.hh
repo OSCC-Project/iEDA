@@ -43,7 +43,7 @@ class ReportTable : public fort::char_table
   ~ReportTable() override = default;
 
   const char* get_tbl_name() { return _tbl_name.c_str(); }
-  const int get_type() { return _type; }
+  int get_type() { return _type; }
 
   using Base = fort::char_table;
 

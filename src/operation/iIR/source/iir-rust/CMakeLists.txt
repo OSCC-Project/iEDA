@@ -20,7 +20,7 @@ else()
     set(RUST_BUILD_CMD_OPTION "--release")
 endif()
 
-message("iIR rust lib path ${RUST_LIB_PATH}")
+message(STATUS "iIR rust lib path ${RUST_LIB_PATH}")
 
 ADD_EXTERNAL_PROJ(iir)
 

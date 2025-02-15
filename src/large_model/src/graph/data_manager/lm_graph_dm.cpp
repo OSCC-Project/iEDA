@@ -63,6 +63,9 @@ bool LmGraphDataManager::buildGraphData()
       return std::make_pair(node1, node2);
     }
   };
+
+  ieda::Stats stats;
+
   auto* idb_design = dmInst->get_idb_design();
   auto idb_nets = idb_design->get_net_list()->get_net_list();
   LmNetGraphGenerator gen;
@@ -70,13 +73,19 @@ bool LmGraphDataManager::buildGraphData()
   auto& layout_graph = _layout->get_graph();
   auto& layout_layers = _layout->get_layout_layers();
 
+  omp_lock_t lck;
+  omp_init_lock(&lck);
+
+#pragma omp parallel for schedule(dynamic)
   for (size_t net_id = 0; net_id < idb_nets.size(); ++net_id) {
     auto* idb_net = idb_nets[net_id];
     /// ignore net if pin number < 2
     if (idb_net->get_pin_number() < 2) {
       continue;
     }
-
+    if (gen.isCornerCase(idb_net)) {
+      continue;
+    }
     auto wire_graph = gen.buildGraph(idb_net);
     auto* lm_net = layout_graph.get_net(net_id);
     lm_net->clearWire();
@@ -102,6 +111,7 @@ bool LmGraphDataManager::buildGraphData()
         if (node1 == node2) {
           continue;
         }
+
         lm_wire.set_start(node1);
         lm_wire.set_end(node2);
 #if debug_error
@@ -182,6 +192,11 @@ bool LmGraphDataManager::buildGraphData()
   }
 
   LOG_INFO << "Read nets : " << idb_nets.size() << " / " << (int) idb_nets.size();
+
+  omp_destroy_lock(&lck);
+  LOG_INFO << "LM memory usage " << stats.memoryDelta() << " MB";
+  LOG_INFO << "LM elapsed time " << stats.elapsedRunTime() << " s";
+  LOG_INFO << "LM save json net end...";
 
   return true;
 }

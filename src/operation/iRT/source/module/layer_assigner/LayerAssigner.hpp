@@ -51,7 +51,7 @@ class LayerAssigner
   std::vector<LANet> convertToLANetList(std::vector<Net>& net_list);
   LANet convertToLANet(Net& net);
   void initLATaskList(LAModel& la_model);
-  void setLAParameter(LAModel& la_model);
+  void setLAComParam(LAModel& la_model);
   void buildLayerNodeMap(LAModel& la_model);
   void buildLANodeNeighbor(LAModel& la_model);
   void buildOrientSupply(LAModel& la_model);

@@ -157,6 +157,7 @@ class StaVertex {
   void resetVertexArcData();
 
   void initSlewData();
+  void initPathDelayData();
 
   StaDataBucket& getSlewBucket() { return _slew_bucket; }
   StaDataBucket& getClockBucket() { return _clock_bucket; }
@@ -400,6 +401,8 @@ class StaVertex {
   }
 
   double getLoad(AnalysisMode analysis_mode, TransType trans_type);
+  double getNetSlewImpulse(AnalysisMode analysis_mode, TransType trans_type);
+  double getNetLoadDelay(AnalysisMode analysis_mode, TransType trans_type);
   double getNetLoad();
   double getResistance(AnalysisMode analysis_mode, TransType trans_type);
   int getNetworkLatency(AnalysisMode analysis_mode, TransType trans_type);

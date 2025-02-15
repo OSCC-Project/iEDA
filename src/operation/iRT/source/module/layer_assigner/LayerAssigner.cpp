@@ -55,7 +55,7 @@ void LayerAssigner::route()
   Monitor monitor;
   RTLOG.info(Loc::current(), "Starting...");
   LAModel la_model = initLAModel();
-  setLAParameter(la_model);
+  setLAComParam(la_model);
   initLATaskList(la_model);
   buildLayerNodeMap(la_model);
   buildLANodeNeighbor(la_model);
@@ -107,7 +107,7 @@ LANet LayerAssigner::convertToLANet(Net& net)
   return la_net;
 }
 
-void LayerAssigner::setLAParameter(LAModel& la_model)
+void LayerAssigner::setLAComParam(LAModel& la_model)
 {
   int32_t topo_spilt_length = 10;
   double congestion_unit = 2;
@@ -117,13 +117,13 @@ void LayerAssigner::setLAParameter(LAModel& la_model)
    * topo_spilt_length, congestion_unit, prefer_wire_unit, via_unit
    */
   // clang-format off
-  LAParameter la_parameter(topo_spilt_length, congestion_unit, prefer_wire_unit, via_unit);
+  LAComParam la_com_param(topo_spilt_length, congestion_unit, prefer_wire_unit, via_unit);
   // clang-format on
-  RTLOG.info(Loc::current(), "topo_spilt_length: ", la_parameter.get_topo_spilt_length());
-  RTLOG.info(Loc::current(), "congestion_unit: ", la_parameter.get_congestion_unit());
-  RTLOG.info(Loc::current(), "prefer_wire_unit: ", la_parameter.get_prefer_wire_unit());
-  RTLOG.info(Loc::current(), "via_unit: ", la_parameter.get_via_unit());
-  la_model.set_la_parameter(la_parameter);
+  RTLOG.info(Loc::current(), "topo_spilt_length: ", la_com_param.get_topo_spilt_length());
+  RTLOG.info(Loc::current(), "congestion_unit: ", la_com_param.get_congestion_unit());
+  RTLOG.info(Loc::current(), "prefer_wire_unit: ", la_com_param.get_prefer_wire_unit());
+  RTLOG.info(Loc::current(), "via_unit: ", la_com_param.get_via_unit());
+  la_model.set_la_com_param(la_com_param);
 }
 
 void LayerAssigner::initLATaskList(LAModel& la_model)
@@ -314,7 +314,7 @@ void LayerAssigner::makeLATopoList(LAModel& la_model, LANet* la_net, std::vector
 {
   int32_t bottom_routing_layer_idx = RTDM.getConfig().bottom_routing_layer_idx;
   int32_t top_routing_layer_idx = RTDM.getConfig().top_routing_layer_idx;
-  int32_t topo_spilt_length = la_model.get_la_parameter().get_topo_spilt_length();
+  int32_t topo_spilt_length = la_model.get_la_com_param().get_topo_spilt_length();
 
   if (la_net->get_topo_tree().get_root() == nullptr) {
     LATopo la_topo;
@@ -742,7 +742,7 @@ double LayerAssigner::getKnowCost(LAModel& la_model, LANode* start_node, LANode*
 
 double LayerAssigner::getNodeCost(LAModel& la_model, LANode* curr_node, Orientation orientation)
 {
-  double congestion_unit = la_model.get_la_parameter().get_congestion_unit();
+  double congestion_unit = la_model.get_la_com_param().get_congestion_unit();
 
   double node_cost = 0;
   node_cost += curr_node->getCongestionCost(orientation) * congestion_unit;
@@ -752,7 +752,7 @@ double LayerAssigner::getNodeCost(LAModel& la_model, LANode* curr_node, Orientat
 double LayerAssigner::getKnowWireCost(LAModel& la_model, LANode* start_node, LANode* end_node)
 {
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
-  double prefer_wire_unit = la_model.get_la_parameter().get_prefer_wire_unit();
+  double prefer_wire_unit = la_model.get_la_com_param().get_prefer_wire_unit();
 
   double wire_cost = 0;
   if (start_node->get_layer_idx() == end_node->get_layer_idx()) {
@@ -768,7 +768,7 @@ double LayerAssigner::getKnowWireCost(LAModel& la_model, LANode* start_node, LAN
 
 double LayerAssigner::getKnowViaCost(LAModel& la_model, LANode* start_node, LANode* end_node)
 {
-  double via_unit = la_model.get_la_parameter().get_via_unit();
+  double via_unit = la_model.get_la_com_param().get_via_unit();
   double via_cost = (via_unit * std::abs(start_node->get_layer_idx() - end_node->get_layer_idx()));
   return via_cost;
 }
@@ -801,7 +801,7 @@ double LayerAssigner::getEstimateCost(LAModel& la_model, LANode* start_node, LAN
 
 double LayerAssigner::getEstimateWireCost(LAModel& la_model, LANode* start_node, LANode* end_node)
 {
-  double prefer_wire_unit = la_model.get_la_parameter().get_prefer_wire_unit();
+  double prefer_wire_unit = la_model.get_la_com_param().get_prefer_wire_unit();
 
   double wire_cost = 0;
   wire_cost += RTUTIL.getManhattanDistance(start_node->get_planar_coord(), end_node->get_planar_coord());
@@ -811,7 +811,7 @@ double LayerAssigner::getEstimateWireCost(LAModel& la_model, LANode* start_node,
 
 double LayerAssigner::getEstimateViaCost(LAModel& la_model, LANode* start_node, LANode* end_node)
 {
-  double via_unit = la_model.get_la_parameter().get_via_unit();
+  double via_unit = la_model.get_la_com_param().get_via_unit();
   double via_cost = (via_unit * std::abs(start_node->get_layer_idx() - end_node->get_layer_idx()));
   return via_cost;
 }
@@ -898,7 +898,6 @@ void LayerAssigner::updateSummary(LAModel& la_model)
   Die& die = RTDM.getDatabase().get_die();
   GridMap<GCell>& gcell_map = RTDM.getDatabase().get_gcell_map();
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
-  std::vector<CutLayer>& cut_layer_list = RTDM.getDatabase().get_cut_layer_list();
   std::vector<std::vector<ViaMaster>>& layer_via_master_list = RTDM.getDatabase().get_layer_via_master_list();
   Summary& summary = RTDM.getDatabase().get_summary();
   int32_t enable_timing = RTDM.getConfig().enable_timing;
@@ -917,18 +916,16 @@ void LayerAssigner::updateSummary(LAModel& la_model)
   std::vector<GridMap<LANode>>& layer_node_map = la_model.get_layer_node_map();
   std::vector<LANet>& la_net_list = la_model.get_la_net_list();
 
-  for (RoutingLayer& routing_layer : routing_layer_list) {
-    routing_demand_map[routing_layer.get_layer_idx()] = 0;
-    routing_overflow_map[routing_layer.get_layer_idx()] = 0;
-    routing_wire_length_map[routing_layer.get_layer_idx()] = 0;
-  }
+  routing_demand_map.clear();
   total_demand = 0;
+  routing_overflow_map.clear();
   total_overflow = 0;
+  routing_wire_length_map.clear();
   total_wire_length = 0;
-  for (CutLayer& cut_layer : cut_layer_list) {
-    cut_via_num_map[cut_layer.get_layer_idx()] = 0;
-  }
+  cut_via_num_map.clear();
   total_via_num = 0;
+  clock_timing.clear();
+  power_map.clear();
 
   for (int32_t layer_idx = 0; layer_idx < static_cast<int32_t>(layer_node_map.size()); layer_idx++) {
     GridMap<LANode>& la_node_map = layer_node_map[layer_idx];
@@ -1024,9 +1021,9 @@ void LayerAssigner::printSummary(LAModel& la_model)
 
   fort::char_table routing_demand_map_table;
   {
-    routing_demand_map_table << fort::header << "routing_layer"
+    routing_demand_map_table << fort::header << "routing"
                              << "demand"
-                             << "proportion" << fort::endr;
+                             << "prop" << fort::endr;
     for (RoutingLayer& routing_layer : routing_layer_list) {
       routing_demand_map_table << routing_layer.get_layer_name() << routing_demand_map[routing_layer.get_layer_idx()]
                                << RTUTIL.getPercentage(routing_demand_map[routing_layer.get_layer_idx()], total_demand) << fort::endr;
@@ -1035,9 +1032,9 @@ void LayerAssigner::printSummary(LAModel& la_model)
   }
   fort::char_table routing_overflow_map_table;
   {
-    routing_overflow_map_table << fort::header << "routing_layer"
+    routing_overflow_map_table << fort::header << "routing"
                                << "overflow"
-                               << "proportion" << fort::endr;
+                               << "prop" << fort::endr;
     for (RoutingLayer& routing_layer : routing_layer_list) {
       routing_overflow_map_table << routing_layer.get_layer_name() << routing_overflow_map[routing_layer.get_layer_idx()]
                                  << RTUTIL.getPercentage(routing_overflow_map[routing_layer.get_layer_idx()], total_overflow) << fort::endr;
@@ -1047,9 +1044,9 @@ void LayerAssigner::printSummary(LAModel& la_model)
   }
   fort::char_table routing_wire_length_map_table;
   {
-    routing_wire_length_map_table << fort::header << "routing_layer"
+    routing_wire_length_map_table << fort::header << "routing"
                                   << "wire_length"
-                                  << "proportion" << fort::endr;
+                                  << "prop" << fort::endr;
     for (RoutingLayer& routing_layer : routing_layer_list) {
       routing_wire_length_map_table << routing_layer.get_layer_name() << routing_wire_length_map[routing_layer.get_layer_idx()]
                                     << RTUTIL.getPercentage(routing_wire_length_map[routing_layer.get_layer_idx()], total_wire_length)
@@ -1060,36 +1057,32 @@ void LayerAssigner::printSummary(LAModel& la_model)
   }
   fort::char_table cut_via_num_map_table;
   {
-    cut_via_num_map_table << fort::header << "cut_layer"
-                          << "via_num"
-                          << "proportion" << fort::endr;
+    cut_via_num_map_table << fort::header << "cut"
+                          << "#via"
+                          << "prop" << fort::endr;
     for (CutLayer& cut_layer : cut_layer_list) {
       cut_via_num_map_table << cut_layer.get_layer_name() << cut_via_num_map[cut_layer.get_layer_idx()]
                             << RTUTIL.getPercentage(cut_via_num_map[cut_layer.get_layer_idx()], total_via_num) << fort::endr;
     }
     cut_via_num_map_table << fort::header << "Total" << total_via_num << RTUTIL.getPercentage(total_via_num, total_via_num) << fort::endr;
   }
-  fort::char_table timing_and_power_table;
+  fort::char_table timing_table;
+  fort::char_table power_table;
   if (enable_timing) {
-    timing_and_power_table << fort::header << "Clock"
-                           << "TNS"
-                           << "WNS"
-                           << "Freq(MHz)" << fort::endr;
+    timing_table << fort::header << "clock_name"
+                 << "tns"
+                 << "wns"
+                 << "freq" << fort::endr;
     for (auto& [clock_name, timing_map] : clock_timing) {
-      timing_and_power_table << clock_name << timing_map["TNS"] << timing_map["WNS"] << timing_map["Freq(MHz)"] << fort::endr;
+      timing_table << clock_name << timing_map["TNS"] << timing_map["WNS"] << timing_map["Freq(MHz)"] << fort::endr;
     }
+    power_table << fort::header << "power_type" << "power_value" << fort::endr;
     for (auto& [type, power] : power_map) {
-      timing_and_power_table << fort::header << "type" << type << fort::endr;
-      timing_and_power_table << fort::header << "power" << power << fort::endr;
+      power_table << type << power << fort::endr;
     }
   }
-  std::vector<fort::char_table> table_list;
-  table_list.push_back(routing_demand_map_table);
-  table_list.push_back(routing_overflow_map_table);
-  table_list.push_back(routing_wire_length_map_table);
-  table_list.push_back(cut_via_num_map_table);
-  table_list.push_back(timing_and_power_table);
-  RTUTIL.printTableList(table_list);
+  RTUTIL.printTableList({routing_demand_map_table, routing_overflow_map_table, routing_wire_length_map_table, cut_via_num_map_table});
+  RTUTIL.printTableList({timing_table, power_table});
 }
 
 void LayerAssigner::outputGuide(LAModel& la_model)

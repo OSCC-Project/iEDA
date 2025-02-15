@@ -24,6 +24,7 @@
 // #include <gperftools/profiler.h>
 
 #include "StaDataPropagation.hh"
+#include "StaDataPropagationBFS.hh"
 
 #include "StaData.hh"
 #include "StaVertex.hh"
@@ -212,6 +213,51 @@ unsigned StaBwdPropagation::operator()(StaVertex* the_vertex) {
   the_vertex->set_is_bwd();
 
   return is_ok;
+}
+
+/**
+ * @brief bwd propagation for the graph.
+ *
+ * @param the_graph
+ * @return unsigned
+ */
+unsigned StaBwdPropagation::operator()(StaGraph* the_graph) {
+  unsigned num_threads = getNumThreads();
+  unsigned is_ok = 1;
+  auto* ista = getSta();
+
+  ThreadPool pool(num_threads);
+  StaBwdPropagation bwd_propagation;
+  StaVertex* start_vertex;
+
+  FOREACH_START_VERTEX(the_graph, start_vertex) {
+    // not constrained port not propagation.
+    if (start_vertex->is_port() &&
+        ista->getIODelayConstrain(start_vertex).empty()) {
+      continue;
+    }
+
+#if 0
+    // enqueue and store future
+    pool.enqueue(
+        [](StaFunc& func, StaVertex* start_vertex) {
+          return start_vertex->exec(func);
+        },
+        bwd_propagation, start_vertex);
+#else
+
+    LOG_INFO_EVERY_N(200) << "propagate start vertex "
+                          << start_vertex->getName();
+
+    is_ok = start_vertex->exec(bwd_propagation);
+    if (!is_ok) {
+      break;
+    }
+
+#endif
+  }
+
+  return 1;
 }
 
 /**
@@ -574,6 +620,47 @@ unsigned StaFwdPropagation::operator()(StaVertex* the_vertex) {
 }
 
 /**
+ * @brief fwd propagation of the graph.
+ *
+ * @param the_graph
+ * @return unsigned
+ */
+unsigned StaFwdPropagation::operator()(StaGraph* the_graph) {
+  unsigned is_ok = 1;
+  unsigned num_threads = getNumThreads();
+  // create thread pool
+  ThreadPool pool(num_threads);
+  StaVertex* end_vertex;
+  FOREACH_END_VERTEX(the_graph, end_vertex) {
+    if (!end_vertex->get_prop_tag().is_prop()) {
+      continue;
+    }
+#if 1
+    // enqueue and store future
+    pool.enqueue(
+        [this](StaVertex* end_vertex) { return end_vertex->exec(*this); },
+        end_vertex);
+#else
+
+    VLOG_EVERY_N(1, 200) << "propagate end vertex " << end_vertex->getName();
+
+    is_ok = end_vertex->exec(*this);
+    if (!is_ok) {
+      break;
+    }
+
+    if (isTracePath()) {
+      PrintTraceRecord();
+      reset_is_trace_path();
+    }
+
+#endif
+  }
+
+  return is_ok;
+}
+
+/**
  * @brief The arrive time and require time data propagation.
  *
  * @param the_graph
@@ -582,90 +669,36 @@ unsigned StaFwdPropagation::operator()(StaVertex* the_vertex) {
 unsigned StaDataPropagation::operator()(StaGraph* the_graph) {
   unsigned is_ok = 1;
   auto* ista = getSta();
+  auto prop_mode = ista->get_propagation_method();
 
-  unsigned num_threads = getNumThreads();
   if ((_prop_type == PropType::kFwdProp) ||
       (_prop_type == PropType::kIncrFwdProp)) {
     LOG_INFO << "data fwd propagation start";
     // ProfilerStart("fwd_prop.prof");
     {
-      // create thread pool
-      ThreadPool pool(num_threads);
-      StaFwdPropagation fwd_propagation;
-      if (_prop_type == PropType::kIncrFwdProp) {
-        fwd_propagation.set_is_incremental();
-      }
-      StaVertex* end_vertex;
-
-      FOREACH_END_VERTEX(the_graph, end_vertex) {
-        if (!end_vertex->get_prop_tag().is_prop()) {
-          continue;
+      if (prop_mode == PropagationMethod::kDFS) {
+        StaFwdPropagation fwd_propagation;
+        if (_prop_type == PropType::kIncrFwdProp) {
+          fwd_propagation.set_is_incremental();
         }
-#if 1
-        // enqueue and store future
-        pool.enqueue(
-            [](StaFunc& func, StaVertex* end_vertex) {
-              return end_vertex->exec(func);
-            },
-            fwd_propagation, end_vertex);
-#else
-
-        VLOG_EVERY_N(1, 200)
-            << "propagate end vertex " << end_vertex->getName();
-
-        is_ok = end_vertex->exec(fwd_propagation);
-        if (!is_ok) {
-          break;
+        fwd_propagation(the_graph);
+      } else {
+        StaFwdPropagationBFS fwd_propagation_bfs;
+        if (_prop_type == PropType::kIncrFwdProp) {
+          fwd_propagation_bfs.set_is_incremental();
         }
-
-        if (fwd_propagation.isTracePath()) {
-          fwd_propagation.PrintTraceRecord();
-          fwd_propagation.reset_is_trace_path();
-        }
-
-#endif
+        fwd_propagation_bfs(the_graph);
       }
     }
 
     // ProfilerStop();
-
     LOG_INFO << "data fwd propagation end";
 
   } else {
     LOG_INFO << "data bwd propagation start";
     // ProfilerStart("bwd_prop.prof");
-    {
-      ThreadPool pool(num_threads);
-      StaBwdPropagation bwd_propagation;
-      StaVertex* start_vertex;
-
-      FOREACH_START_VERTEX(the_graph, start_vertex) {
-        // not constrained port not propagation.
-        if (start_vertex->is_port() &&
-            ista->getIODelayConstrain(start_vertex).empty()) {
-          continue;
-        }
-
-#if 1
-        // enqueue and store future
-        pool.enqueue(
-            [](StaFunc& func, StaVertex* start_vertex) {
-              return start_vertex->exec(func);
-            },
-            bwd_propagation, start_vertex);
-#else
-
-        LOG_INFO_EVERY_N(200)
-            << "propagate start vertex " << start_vertex->getName();
-
-        is_ok = start_vertex->exec(bwd_propagation);
-        if (!is_ok) {
-          break;
-        }
-
-#endif
-      }
-    }
+    StaBwdPropagation bwd_propagation;
+    bwd_propagation(the_graph);
     // ProfilerStop();
     LOG_INFO << "data bwd propagation end";
   }

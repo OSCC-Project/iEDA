@@ -16,7 +16,7 @@
 // ***************************************************************************************
 /**
  * @file verilog_writer.h
- * @author shy long (longshy@pcl.ac.cn)
+ * @author longshy (longshy@pcl.ac.cn)
  * @brief
  * @version 0.1
  * @date 2021-12-03
@@ -47,6 +47,7 @@ class VerilogWriter
   bool isNeedEscape(const std::string& name);
   std::string escapeName(const std::string& name);
   std::string addSpaceForEscapeName(const std::string& name);
+  bool isMiddleSquareBracket(const std::string& str);
 
  protected:
   void writePorts();

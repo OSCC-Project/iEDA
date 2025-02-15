@@ -16,38 +16,23 @@
 // ***************************************************************************************
 #pragma once
 
-#include "Logger.hpp"
+#include "RTHeader.hpp"
 
 namespace irt {
 
-enum class AccessPointType
+class PAComParam
 {
-  kNone,
-  kTrackGrid,
-  kNoAccess
-};
+ public:
+  PAComParam() = default;
+  PAComParam(int32_t max_candidate_point_num) { _max_candidate_point_num = max_candidate_point_num; }
+  ~PAComParam() = default;
+  // getter
+  int32_t get_max_candidate_point_num() const { return _max_candidate_point_num; }
+  // setter
+  void set_max_candidate_point_num(const int32_t max_candidate_point_num) { _max_candidate_point_num = max_candidate_point_num; }
 
-struct GetAccessPointTypeName
-{
-  std::string operator()(const AccessPointType& access_point_type) const
-  {
-    std::string access_point_name;
-    switch (access_point_type) {
-      case AccessPointType::kNone:
-        access_point_name = "none";
-        break;
-      case AccessPointType::kNoAccess:
-        access_point_name = "no_access";
-        break;
-      case AccessPointType::kTrackGrid:
-        access_point_name = "track_grid";
-        break;
-      default:
-        RTLOG.error(Loc::current(), "Unrecognized type!");
-        break;
-    }
-    return access_point_name;
-  }
+ private:
+  int32_t _max_candidate_point_num = 0;
 };
 
 }  // namespace irt

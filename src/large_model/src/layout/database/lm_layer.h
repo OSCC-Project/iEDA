@@ -26,8 +26,8 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-#include <map>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "lm_layer_grid.h"
@@ -93,7 +93,7 @@ class LmLayoutLayers
   // getter
   int get_layer_order_top() { return _layer_order_top; }
   int get_layer_order_bottom() { return _layer_order_bottom; }
-  std::map<int, LmLayoutLayer>& get_layout_layer_map() { return _layout_layers; }
+  std::unordered_map<int, LmLayoutLayer>& get_layout_layer_map() { return _layout_layers; }
   LmLayoutLayer* findLayoutLayer(int order);
 
   // setter
@@ -105,7 +105,7 @@ class LmLayoutLayers
  private:
   int _layer_order_top = -1;
   int _layer_order_bottom = -1;
-  std::map<int, LmLayoutLayer> _layout_layers;  /// int : layer order
+  std::unordered_map<int, LmLayoutLayer> _layout_layers;  /// int : layer order
 };
 
 }  // namespace ilm

@@ -454,7 +454,6 @@ void InitSTA::buildLmRCTree(ilm::LmLayout* lm_layout, std::string work_dir) {
     std::string the_idb_net_name = idb_net->get_net_name();
     the_idb_net_name = ieda::Str::replace(the_idb_net_name, R"(\\)", "");
     sta_net = sta_netlist->findNet(the_idb_net_name.c_str());
-    STA_INST->resetRcTree(sta_net);
 
     if (!wire_graph.contains(net_id)) {
       continue;
@@ -464,7 +463,16 @@ void InitSTA::buildLmRCTree(ilm::LmLayout* lm_layout, std::string work_dir) {
     auto idb_inst_pins = idb_net->get_instance_pin_list()->get_pin_list();
     auto io_pins = idb_net->get_io_pins()->get_pin_list();
     auto& wires = lm_net.get_wires();
-
+  // Check corner case
+    if (wires.size() == 1){
+      auto& wire = wires[0];
+      auto connected_nodes = wire.get_connected_nodes();
+      auto* source = connected_nodes.first;
+      auto* target = connected_nodes.second;
+      if (source == target) {
+        continue;
+      }
+    }
     auto sta_pin_ports = sta_net->get_pin_ports();
     std::unordered_map<std::string, ista::DesignObject*> sta_pin_port_map;
     std::ranges::for_each(sta_pin_ports, [&](ista::DesignObject* pin_port) {
@@ -1029,27 +1037,37 @@ TimingWireGraph InitSTA::getTimingWireGraph() {
 
       auto* rc_net = ista->getRcNet(the_net);
 
-      auto* snk_node = the_arc->get_snk();
-      auto snk_node_name = snk_node->get_design_obj()->getFullName();
+      if (rc_net) {
+        auto* snk_node = the_arc->get_snk();
+        auto snk_node_name = snk_node->get_design_obj()->getFullName();
 
-      auto vertex_slew = the_arc->get_src()->getSlewNs(ista::AnalysisMode::kMax,
-                                                       TransType::kRise);
-      if (!vertex_slew) {
-        vertex_slew = the_arc->get_src()->getSlewNs(ista::AnalysisMode::kMax,
-                                                    TransType::kFall);
+        auto vertex_slew = the_arc->get_src()->getSlewNs(
+            ista::AnalysisMode::kMax, TransType::kRise);
+        if (!vertex_slew) {
+          vertex_slew = the_arc->get_src()->getSlewNs(ista::AnalysisMode::kMax,
+                                                      TransType::kFall);
+        }
+
+        auto wire_topo = rc_net->getWireTopo(snk_node_name.c_str());
+        for (auto* wire_edge : wire_topo | std::ranges::views::reverse) {
+          ieda::Stats stats2;
+          auto& from_node = wire_edge->get_from();
+          auto& to_node = wire_edge->get_to();
+
+          auto wire_from_node_index = create_net_node(from_node);
+          auto wire_to_node_index = create_net_node(to_node);
+
+          timing_wire_graph.addEdge(wire_from_node_index, wire_to_node_index);
+        }
+      } else {
+        auto wire_from_node_index = create_inst_node(the_arc->get_src());
+        auto wire_to_node_index = create_inst_node(the_arc->get_snk());
+
+        auto& inst_wire_edge =
+            timing_wire_graph.addEdge(wire_from_node_index, wire_to_node_index);
+        inst_wire_edge._is_net_edge = true;
       }
 
-      auto wire_topo = rc_net->getWireTopo(snk_node_name.c_str());
-      for (auto* wire_edge : wire_topo | std::ranges::views::reverse) {
-        ieda::Stats stats2;
-        auto& from_node = wire_edge->get_from();
-        auto& to_node = wire_edge->get_to();
-
-        auto wire_from_node_index = create_net_node(from_node);
-        auto wire_to_node_index = create_net_node(to_node);
-        
-        timing_wire_graph.addEdge(wire_from_node_index, wire_to_node_index);
-      }
     } else {
       auto wire_from_node_index = create_inst_node(the_arc->get_src());
       auto wire_to_node_index = create_inst_node(the_arc->get_snk());

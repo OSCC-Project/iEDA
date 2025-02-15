@@ -27,16 +27,16 @@ void TestTiming()
   // iPLAPIInst.initAPI("/data/project_share/dataset_baseline/gcd/workspace/config/iEDA_config/pl_default_config.json",
   //                    dmInst->get_idb_builder());
   // iPLAPIInst.runFlow();
-  // /data/project_share/dataset_baseline/apb4_clint/workspace/output/iEDA/result/apb4_clint_place.def.gz
-  dmInst->init("/data/project_share/dataset_baseline/apb4_clint/workspace/config/iEDA_config/db_default_config.json");
+  dmInst->init("/data/project_share/dataset_baseline/s15850/workspace/config/iEDA_config/db_default_config.json");
   auto config = dmInst->get_config();
   config.set_output_path("/home/liweiguo/project/iEDA/scripts/design/eval/result");
   dmInst->readLef(std::vector<std::string>{config.get_tech_lef_path()}, true);
   dmInst->readLef(config.get_lef_paths());
-  dmInst->readDef("/data/project_share/dataset_baseline/apb4_clint/workspace/output/iEDA/result/apb4_clint_place.def.gz");
+  dmInst->readDef("/data/project_share/dataset_baseline/s15850/workspace/output/iEDA/result/s15850_place.def.gz");
 
   auto* timing_api = ieval::TimingAPI::getInst();
-  timing_api->runSTA();
+  // timing_api->runSTA();
+  timing_api->evalTiming("FLUTE");
   auto summary = timing_api->evalDesign();
   LOG_INFO << ">> Design Timing Evaluation: ";
   for (auto routing_type : {"HPWL", "FLUTE", "SALT", "EGR", "DR"}) {

@@ -44,6 +44,7 @@ class DrcConditionManager
 
   void checkOverlap(std::string layer, DrcEngineLayout* layout);
   void checkMinSpacing(std::string layer, DrcEngineLayout* layout);
+  void checkArea(std::string layer, DrcEngineLayout* layout);
 
   void checkPolygons(std::string layer, DrcEngineLayout* layout);
   void checkParallelLengthSpacing(std::string layer, DrcEngineLayout* layout);

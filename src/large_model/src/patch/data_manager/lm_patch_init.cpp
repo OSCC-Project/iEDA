@@ -126,7 +126,7 @@ void LmPatchInit::initSubNet()
   omp_init_lock(&lck);
 
   auto& net_map = _layout->get_graph().get_net_map();
-  // #pragma omp parallel for schedule(dynamic)
+#pragma omp parallel for schedule(dynamic)
   for (int i = 0; i < (int) net_map.size(); ++i) {
     auto it = net_map.begin();
     std::advance(it, i);
@@ -142,7 +142,15 @@ void LmPatchInit::initSubNet()
           for (auto& [patch_id, split_nodes] : node_map) {
             auto* patch = _patch_grid->findPatch(patch_id);
             auto* patch_layer = patch->findLayer(node1->get_layer_id());
-            patch_layer->addSubnet(net_id, wire.get_id(), split_nodes.first, split_nodes.second);
+            if (patch_layer->findNet(net_id) == nullptr) {
+              omp_set_lock(&lck);
+
+              patch_layer->addSubnet(net_id, wire.get_id(), split_nodes.first, split_nodes.second);
+
+              omp_unset_lock(&lck);
+            } else {
+              patch_layer->addSubnet(net_id, wire.get_id(), split_nodes.first, split_nodes.second);
+            }
 
             /// label at wire
             wire.addPatch(patch_id, node1->get_layer_id());
@@ -155,7 +163,16 @@ void LmPatchInit::initSubNet()
           for (auto node_pair : {std::make_pair(node1, node1), std::make_pair(node1, node2), std::make_pair(node2, node2)}) {
             int layer_id = (node_pair.first->get_layer_id() + node_pair.second->get_layer_id()) / 2;
             auto* patch_layer = patch->findLayer(layer_id);
-            patch_layer->addSubnet(net_id, wire.get_id(), node_pair.first, node_pair.second);
+            auto sub_net = patch_layer->findNet(net_id);
+            if (sub_net == nullptr) {
+              omp_set_lock(&lck);
+
+              patch_layer->addSubnet(net_id, wire.get_id(), node_pair.first, node_pair.second);
+
+              omp_unset_lock(&lck);
+            } else {
+              patch_layer->addSubnet(sub_net, wire.get_id(), node_pair.first, node_pair.second);
+            }
 
             /// label at wire
             wire.addPatch(patch_id, layer_id);

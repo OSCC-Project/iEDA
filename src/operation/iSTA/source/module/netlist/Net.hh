@@ -57,8 +57,8 @@ class Net : public DesignObject {
     _pin_ports.push_back(pin);
     pin->set_net(this);
 
-    std::ranges::for_each(_net_loads,
-                          [](auto &net_load) { net_load = std::nullopt; });
+    std::for_each(_net_loads.begin(), _net_loads.end(),
+                  [](auto &net_load) { net_load = std::nullopt; });
   }
 
   void removePinPort(DesignObject *pin) {
@@ -68,8 +68,8 @@ class Net : public DesignObject {
       pin->set_net(nullptr);
     }
 
-    std::ranges::for_each(_net_loads,
-                          [](auto &net_load) { net_load = std::nullopt; });
+    std::for_each(_net_loads.begin(), _net_loads.end(),
+                  [](auto &net_load) { net_load = std::nullopt; });
   }
 
   bool isNetPinPort(DesignObject *pin) {

@@ -29,6 +29,7 @@
 #include <set>
 #include <utility>
 
+#include "json/json.hpp"
 #include "solver/Interpolation.hh"
 #include "string/StrMap.hh"
 
@@ -60,16 +61,22 @@ double LibAxis::operator[](std::size_t index)
   return _axis_values[index]->getFloatValue();
 }
 
-const std::map<std::string, LibTable::TableType> LibTable::_str2TableType = {{"cell_rise", TableType::kCellRise},
-                                                                             {"cell_fall", TableType::kCellFall},
-                                                                             {"rise_transition", TableType::kRiseTransition},
-                                                                             {"fall_transition", TableType::kFallTransition},
-                                                                             {"rise_constraint", TableType::kRiseConstrain},
-                                                                             {"fall_constraint", TableType::kFallConstrain},
-                                                                             {"output_current_rise", TableType::kRiseCurrent},
-                                                                             {"output_current_fall", TableType::kFallCurrent},
-                                                                             {"rise_power", TableType::kRisePower},
-                                                                             {"fall_power", TableType::kFallPower}};
+const std::map<std::string, LibTable::TableType> LibTable::_str2TableType = {
+    {"cell_rise", TableType::kCellRise},
+    {"cell_fall", TableType::kCellFall},
+    {"rise_transition", TableType::kRiseTransition},
+    {"fall_transition", TableType::kFallTransition},
+    {"rise_constraint", TableType::kRiseConstrain},
+    {"fall_constraint", TableType::kFallConstrain},
+    {"output_current_rise", TableType::kRiseCurrent},
+    {"output_current_fall", TableType::kFallCurrent},
+    {"rise_power", TableType::kRisePower},
+    {"fall_power", TableType::kFallPower},
+    {"ocv_sigma_cell_rise", TableType::kCellRiseSigma},
+    {"ocv_sigma_cell_fall", TableType::kCellFallSigma},
+    {"ocv_sigma_rise_transition", TableType::kRiseTransitionSigma},
+    {"ocv_sigma_fall_transition", TableType::kFallTransitionSigma},
+};
 
 LibTable::LibTable(TableType table_type, LibLutTableTemplate* table_template) : _table_type(table_type), _table_template(table_template)
 {
@@ -164,7 +171,7 @@ double LibTable::findValue(double slew, double constrain_slew_or_load)
   }
 
   // first check that slew and constrain_slew_or_load are within the table
-  // ranges
+  // ranges (检查值是否在表格范围内)
   auto check_val = [this](auto axis_index, auto val) {
     auto num_val = getAxis(axis_index).get_axis_size();
     auto min_val = getAxis(axis_index)[0];
@@ -177,6 +184,7 @@ double LibTable::findValue(double slew, double constrain_slew_or_load)
     return num_val;
   };
 
+  //在轴上找到插值区间, 返回插值所需的两个端点值和左边的索引值
   auto get_axis_region = [this](auto axis_index, auto num_val, auto val) {
     auto x2 = 0.0;
     unsigned int val_index = 0;
@@ -199,6 +207,7 @@ double LibTable::findValue(double slew, double constrain_slew_or_load)
     return std::make_tuple(x1, x2, val_index);
   };
 
+  // 获取表格中的值
   auto get_table_value = [this](auto index) {
     auto& table_values = get_table_values();
     LOG_FATAL_IF(index >= table_values.size()) << "index " << index << " beyond table value size " << table_values.size();
@@ -206,6 +215,7 @@ double LibTable::findValue(double slew, double constrain_slew_or_load)
   };
 
   if (1 == get_axes().size()) {
+    //在单一变量的情况下使用线性插值（LinearInterpolate）
     auto num_val1 = check_val(0, val1);
     auto [x1, x2, val1_index] = get_axis_region(0, num_val1, val1);
     unsigned int x1_table_val = get_table_value(val1_index);
@@ -215,6 +225,7 @@ double LibTable::findValue(double slew, double constrain_slew_or_load)
     return result;
 
   } else {
+    //在有两个变量的情况下使用双线性插值（BilinearInterpolation）
     auto num_val1 = check_val(0, val1);
     auto num_val2 = check_val(1, val2);
 
@@ -470,6 +481,31 @@ std::optional<double> LibDelayTableModel::gateDelay(TransType trans_type, double
 }
 
 /**
+ * @brief Get the gate delay sigma of the cell arc.
+ *
+ * @param mode The early or late.
+ * @param trans_type Rise/Fall.
+ * @param slew The slew.
+ * @param load The constrain_slew_or_load.
+ * @return double The delay.
+ */
+std::optional<double> LibDelayTableModel::gateDelaySigma(AnalysisMode mode, TransType trans_type, double slew, double load)
+{
+  int index = CAST_TYPE_TO_INDEX(trans_type);
+  int shift_index = calcShiftIndex(LibTable::CornerType::kEarly);
+  if (mode == AnalysisMode::kMax) {
+    shift_index = calcShiftIndex(LibTable::CornerType::kLate);
+  }
+  LibTable* table = getTable(index + shift_index);
+
+  if (nullptr == table) {
+    return std::nullopt;
+  }
+
+  return table->findValue(slew, load);
+}
+
+/**
  * @brief Get the gate slew of the cell arc.
  *
  * @param trans_type Rise/Fall.
@@ -487,6 +523,31 @@ std::optional<double> LibDelayTableModel::gateSlew(TransType trans_type, double 
   }
 
   if (!table) {
+    return std::nullopt;
+  }
+
+  return table->findValue(slew, load);
+}
+
+/**
+ * @brief Get the gate slew sigma of the cell arc.
+ *
+ * @param mode The early or late.
+ * @param trans_type Rise/Fall.
+ * @param slew The slew.
+ * @param load The constrain_slew_or_load.
+ * @return std::optional<double> The slew.
+ */
+std::optional<double> LibDelayTableModel::gateSlewSigma(AnalysisMode mode, TransType trans_type, double slew, double load)
+{
+  int index = CAST_TYPE_TO_INDEX(trans_type);
+  int shift_index = calcShiftIndex(LibTable::CornerType::kEarly);
+  if (mode == AnalysisMode::kMax) {
+    shift_index = calcShiftIndex(LibTable::CornerType::kLate);
+  }
+  LibTable* table = getTable(index + shift_index);
+
+  if (nullptr == table) {
     return std::nullopt;
   }
 
@@ -1099,6 +1160,52 @@ double LibArc::getDelayOrConstrainCheckNs(TransType trans_type, double slew, dou
 }
 
 /**
+ * @brief Get the arc delay sigma or constrain value.
+ *
+ * @param mode The late or early.
+ * @param trans_type The transtion type, rise/fall.
+ * @param slew The first axis value.
+ * @param index2 The second axis value.
+ * @return double The delay or constrain value in ns.
+ */
+double LibArc::getDelaySigma(AnalysisMode mode, TransType trans_type, double slew, double load_or_constrain_slew)
+{
+  // get/set time unit of liberty and derate
+  TimeUnit input_time_unit = TimeUnit::kNS;
+  TimeUnit liberty_time_unit = get_owner_cell()->get_owner_lib()->get_time_unit();
+  double input_to_liberty_convert = 1.0;
+  double liberty_to_output_convert = 1.0;
+
+  // set convert derate of units
+  if (TimeUnit::kPS == liberty_time_unit) {
+    input_to_liberty_convert = 1e3;
+    liberty_to_output_convert = 1e-3;
+  } else if (TimeUnit::kFS == liberty_time_unit) {
+    input_to_liberty_convert = 1e6;
+    liberty_to_output_convert = 1e-6;
+  }
+
+  // pass converted slew into `gateDelay()` and return conveted Delay
+  /*
+  std::optional<double> found_delay;
+  if (isDelayArc()) {
+    found_delay = _table_model->gateDelay(trans_type, slew *
+  input_to_liberty_convert, load_or_constrain_slew); } else { found_delay =
+  _table_model->gateCheckConstrain(trans_type, slew * input_to_liberty_convert,
+  load_or_constrain_slew);
+  }
+  */
+  auto found_delay = _table_model->gateDelaySigma(mode, trans_type, slew * input_to_liberty_convert, load_or_constrain_slew);
+
+  if (found_delay) {
+    double ret_value = (*found_delay) * liberty_to_output_convert;
+    return ret_value;
+  }
+
+  return 0.0;
+}
+
+/**
  *
  * @param trans_type The transtion type, rise/fall.
  * @param slew The first axis value.
@@ -1130,6 +1237,47 @@ double LibArc::getSlewNs(TransType trans_type, double slew, double load)
 
   // pass converted slew into `gateSlew()` and return in ns
   auto found_slew = _table_model->gateSlew(trans_type, slew * input_to_liberty_convert, load);
+
+  if (found_slew) {
+    double ret_value = (*found_slew) * liberty_to_output_convert * slew_derate_from_library;
+    return ret_value;
+  }
+
+  return 0.0;
+}
+/**
+ *
+ * @param mode The early or late.
+ * @param trans_type The transtion type, rise/fall.
+ * @param slew The first axis value.
+ * @param load The second axis value.
+ * @return double The slew value in ns.
+ */
+double LibArc::getSlewSigma(AnalysisMode mode, TransType trans_type, double slew, double load)
+{
+  if (!isDelayArc()) {
+    LOG_FATAL << "check arc has not output slew.";
+  }
+
+  // set/get time units in liberty
+  TimeUnit input_time_unit = TimeUnit::kNS;
+  TimeUnit liberty_time_unit = get_owner_cell()->get_owner_lib()->get_time_unit();
+  double input_to_liberty_convert = 1.0;
+  double liberty_to_output_convert = 1.0;
+
+  double slew_derate_from_library = get_owner_cell()->get_owner_lib()->get_slew_derate_from_library();
+
+  // set convert derate
+  if (TimeUnit::kPS == liberty_time_unit) {
+    input_to_liberty_convert = 1e3;
+    liberty_to_output_convert = 1e-3;
+  } else if (TimeUnit::kFS == liberty_time_unit) {
+    input_to_liberty_convert = 1e6;
+    liberty_to_output_convert = 1e-6;
+  }
+
+  // pass converted slew into `gateSlew()` and return in ns
+  auto found_slew = _table_model->gateSlewSigma(mode, trans_type, slew * input_to_liberty_convert, load);
 
   if (found_slew) {
     double ret_value = (*found_slew) * liberty_to_output_convert * slew_derate_from_library;
@@ -1207,7 +1355,8 @@ LibPowerArcSet& LibPowerArcSet::operator=(LibPowerArcSet&& rhs) noexcept
   return *this;
 }
 
-LibCell::LibCell(const char* cell_name, LibLibrary* owner_lib) : _cell_name(cell_name), _owner_lib(owner_lib), _is_dont_use(0)
+LibCell::LibCell(const char* cell_name, LibLibrary* owner_lib)
+    : _cell_name(cell_name), _owner_lib(owner_lib), _is_dont_use(0), _is_macro_cell(0)
 {
 }
 
@@ -1539,6 +1688,185 @@ const std::map<std::string_view, LibLutTableTemplate::Variable> LibLutTableTempl
 
 LibCurrentTemplate::LibCurrentTemplate(const char* template_name) : LibLutTableTemplate(template_name)
 {
+}
+
+/**
+ * @brief print the LibertyLibrary in json format.
+ *
+ */
+void LibLibrary::printLibertyLibraryJson(const char* json_file_name)
+{
+  auto create_timing_arc = [](LibArc* lib_arc) {
+    nlohmann::json timing_arc = nlohmann::json::object();
+    timing_arc["source_sink"] = {lib_arc->get_src_port(), lib_arc->get_snk_port()};
+    LibTableModel* table_model = lib_arc->get_table_model();
+    LibDelayTableModel* delay_model = dynamic_cast<LibDelayTableModel*>(table_model);
+
+    // cell_rise table
+    LibTable* cell_rise_table = dynamic_cast<LibDelayTableModel*>(table_model)->getTable(int(LibTable::TableType::kCellRise));
+    if (cell_rise_table) {
+      auto& axes = cell_rise_table->get_axes();
+      int rows = axes[0].get()->get_axis_values().size();
+      int columns = axes[1].get()->get_axis_values().size();
+      nlohmann::json cell_rise_data;
+      for (int i = 0; i < axes.size(); i++) {
+        auto& axis_values = axes[i].get()->get_axis_values();
+        nlohmann::json index = nlohmann::json::array();
+        for (int j = 0; j < axis_values.size(); ++j) {
+          auto axis_float_value = dynamic_cast<LibFloatValue*>(axis_values[j].get())->getFloatValue();
+          index.push_back(axis_float_value);
+        }
+        // index_1
+        // ("0.00117378,0.00472397,0.0171859,0.0409838,0.0780596,0.130081,0.198535");
+        cell_rise_data["index_" + std::to_string(i + 1)] = index;
+      }
+      auto& lib_table_values = cell_rise_table->get_table_values();
+      nlohmann::json values_array = nlohmann::json::array();
+      for (size_t i = 0; i < lib_table_values.size(); i += columns) {
+        nlohmann::json row = nlohmann::json::array();
+        for (size_t j = 0; j < columns && (i + j) < lib_table_values.size(); ++j) {
+          auto lib_table_float_value = dynamic_cast<LibFloatValue*>(lib_table_values[i + j].get())->getFloatValue();
+          row.push_back(lib_table_float_value);
+        }
+        values_array.push_back(row);
+      }
+      cell_rise_data["values"] = values_array;
+      timing_arc["cell_rise"] = cell_rise_data;
+    }
+
+    // rise_transition table
+    LibTable* rise_transition_table = dynamic_cast<LibDelayTableModel*>(table_model)->getTable(int(LibTable::TableType::kRiseTransition));
+    if (rise_transition_table) {
+      auto& rise_trans_axes = rise_transition_table->get_axes();
+      int rise_trans_rows = rise_trans_axes[0].get()->get_axis_values().size();
+      int rise_trans_columns = rise_trans_axes[1].get()->get_axis_values().size();
+      nlohmann::json rise_transition_data;
+      for (int i = 0; i < rise_trans_axes.size(); i++) {
+        auto& axis_values = rise_trans_axes[i].get()->get_axis_values();
+        nlohmann::json index = nlohmann::json::array();
+        for (int j = 0; j < axis_values.size(); ++j) {
+          auto axis_float_value = dynamic_cast<LibFloatValue*>(axis_values[j].get())->getFloatValue();
+          index.push_back(axis_float_value);
+        }
+        rise_transition_data["index_" + std::to_string(i + 1)] = index;
+      }
+      auto& rise_trans_lib_table_values = rise_transition_table->get_table_values();
+      nlohmann::json rise_trans_values_array = nlohmann::json::array();
+      for (size_t i = 0; i < rise_trans_lib_table_values.size(); i += rise_trans_columns) {
+        nlohmann::json row = nlohmann::json::array();
+        for (size_t j = 0; j < rise_trans_columns && (i + j) < rise_trans_lib_table_values.size(); ++j) {
+          auto lib_table_float_value = dynamic_cast<LibFloatValue*>(rise_trans_lib_table_values[i + j].get())->getFloatValue();
+          row.push_back(lib_table_float_value);
+        }
+        rise_trans_values_array.push_back(row);
+      }
+      rise_transition_data["values"] = rise_trans_values_array;
+      timing_arc["rise_transition"] = rise_transition_data;
+    }
+
+    // cell_fall table
+    LibTable* cell_fall_table = dynamic_cast<LibDelayTableModel*>(table_model)->getTable(int(LibTable::TableType::kCellFall));
+    if (cell_fall_table) {
+      auto& cell_fall_axes = cell_fall_table->get_axes();
+      int cell_fall_rows = cell_fall_axes[0].get()->get_axis_values().size();
+      int cell_fall_columns = cell_fall_axes[1].get()->get_axis_values().size();
+      nlohmann::json cell_fall_data;
+      for (int i = 0; i < cell_fall_axes.size(); i++) {
+        auto& axis_values = cell_fall_axes[i].get()->get_axis_values();
+        nlohmann::json index = nlohmann::json::array();
+        for (int j = 0; j < axis_values.size(); ++j) {
+          auto axis_float_value = dynamic_cast<LibFloatValue*>(axis_values[j].get())->getFloatValue();
+          index.push_back(axis_float_value);
+        }
+        cell_fall_data["index_" + std::to_string(i + 1)] = index;
+      }
+      auto& cell_fall_lib_table_values = cell_fall_table->get_table_values();
+      nlohmann::json cell_fall_values_array = nlohmann::json::array();
+      for (size_t i = 0; i < cell_fall_lib_table_values.size(); i += cell_fall_columns) {
+        nlohmann::json row = nlohmann::json::array();
+        for (size_t j = 0; j < cell_fall_columns && (i + j) < cell_fall_lib_table_values.size(); ++j) {
+          auto lib_table_float_value = dynamic_cast<LibFloatValue*>(cell_fall_lib_table_values[i + j].get())->getFloatValue();
+          row.push_back(lib_table_float_value);
+        }
+        cell_fall_values_array.push_back(row);
+      }
+      cell_fall_data["values"] = cell_fall_values_array;
+      timing_arc["cell_fall"] = cell_fall_data;
+    }
+
+    // fall_transition table
+    LibTable* fall_transition_table = dynamic_cast<LibDelayTableModel*>(table_model)->getTable(int(LibTable::TableType::kFallTransition));
+    if (fall_transition_table) {
+      auto& fall_transition_axes = fall_transition_table->get_axes();
+      int fall_transition_rows = fall_transition_axes[0].get()->get_axis_values().size();
+      int fall_transition_columns = fall_transition_axes[1].get()->get_axis_values().size();
+      nlohmann::json fall_transition_data;
+      for (int i = 0; i < fall_transition_axes.size(); i++) {
+        auto& axis_values = fall_transition_axes[i].get()->get_axis_values();
+        nlohmann::json index = nlohmann::json::array();
+        for (int j = 0; j < axis_values.size(); ++j) {
+          auto axis_float_value = dynamic_cast<LibFloatValue*>(axis_values[j].get())->getFloatValue();
+          index.push_back(axis_float_value);
+        }
+        fall_transition_data["index_" + std::to_string(i + 1)] = index;
+      }
+      auto& fall_transition_lib_table_values = fall_transition_table->get_table_values();
+      nlohmann::json fall_transition_values_array = nlohmann::json::array();
+      for (size_t i = 0; i < fall_transition_lib_table_values.size(); i += fall_transition_columns) {
+        nlohmann::json row = nlohmann::json::array();
+        for (size_t j = 0; j < fall_transition_columns && (i + j) < fall_transition_lib_table_values.size(); ++j) {
+          auto lib_table_float_value = dynamic_cast<LibFloatValue*>(fall_transition_lib_table_values[i + j].get())->getFloatValue();
+          row.push_back(lib_table_float_value);
+        }
+        fall_transition_values_array.push_back(row);
+      }
+      fall_transition_data["values"] = fall_transition_values_array;
+      timing_arc["fall_transition"] = fall_transition_data;
+    }
+
+    return timing_arc;
+  };
+
+  auto classify_cell_arc_by_snk_port = [](LibCell* lib_cell) -> std::map<std::string, std::vector<LibArc*>> {
+    std::map<std::string, std::vector<LibArc*>> snkport2arcset;
+    for (auto& cell_arc_set : lib_cell->get_cell_arcs()) {
+      auto* cell_arc = cell_arc_set->front();
+      const char* src_port_name = cell_arc->get_src_port();
+      const char* snk_port_name = cell_arc->get_snk_port();
+      snkport2arcset[snk_port_name].push_back(cell_arc);
+    }
+
+    return snkport2arcset;
+  };
+
+  nlohmann::json json_data;
+  json_data["lib_name"] = get_lib_name();
+  for (const auto& cell : get_cells()) {
+    nlohmann::json cell_info;
+    cell_info["cell_name"] = cell->get_cell_name();
+    cell_info["timing_arcs"] = nlohmann::json::array();
+
+    auto snkport2arcset = classify_cell_arc_by_snk_port(cell.get());
+    for (const auto& pair : snkport2arcset) {
+      for (const auto& arc : pair.second) {
+        if (arc->isDelayArc()) {
+          // wirte json
+          cell_info["timing_arcs"].push_back(create_timing_arc(arc));
+        }
+      }
+    }
+    json_data["cells_lib_info"].push_back(cell_info);
+  }
+
+  std::ofstream json_file(json_file_name);
+  if (json_file.is_open()) {
+    LOG_INFO << "start write liberty into json file: " << json_file_name;
+    json_file << json_data.dump(1);
+    json_file.close();
+    LOG_INFO << "success write liberty into json file: " << json_file_name;
+  } else {
+    LOG_INFO << "fail write liberty into json file: " << json_file_name;
+  }
 }
 
 /**

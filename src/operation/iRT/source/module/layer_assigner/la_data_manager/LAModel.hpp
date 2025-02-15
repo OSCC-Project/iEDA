@@ -16,9 +16,9 @@
 // ***************************************************************************************
 #pragma once
 
+#include "LAComParam.hpp"
 #include "LANet.hpp"
 #include "LANode.hpp"
-#include "LAParameter.hpp"
 #include "LATopo.hpp"
 #include "PriorityQueue.hpp"
 
@@ -31,12 +31,12 @@ class LAModel
   ~LAModel() = default;
   // getter
   std::vector<LANet>& get_la_net_list() { return _la_net_list; }
-  LAParameter& get_la_parameter() { return _la_parameter; }
+  LAComParam& get_la_com_param() { return _la_com_param; }
   std::vector<LANet*>& get_la_task_list() { return _la_task_list; }
   std::vector<GridMap<LANode>>& get_layer_node_map() { return _layer_node_map; }
   // setter
   void set_la_net_list(const std::vector<LANet>& la_net_list) { _la_net_list = la_net_list; }
-  void set_la_parameter(const LAParameter& la_parameter) { _la_parameter = la_parameter; }
+  void set_la_com_param(const LAComParam& la_com_param) { _la_com_param = la_com_param; }
   void set_la_task_list(const std::vector<LANet*>& la_task_list) { _la_task_list = la_task_list; }
   void set_layer_node_map(const std::vector<GridMap<LANode>>& layer_node_map) { _layer_node_map = layer_node_map; }
   // function
@@ -79,7 +79,7 @@ class LAModel
 
  private:
   std::vector<LANet> _la_net_list;
-  LAParameter _la_parameter;
+  LAComParam _la_com_param;
   std::vector<LANet*> _la_task_list;
   std::vector<GridMap<LANode>> _layer_node_map;
 #if 1  // astar

@@ -32,6 +32,8 @@ typedef GtlPolygon90Set GeometryPolygonSet;
 #define envelope(rect, polygon_set) gtl::extents(rect, polygon_set)
 
 #define growAnd(polygon_set, value) gtl::grow_and(polygon_set, value)
+#define growAndHorizontal(polygon_set, value) gtl::grow_and(polygon_set, gtl::orientation_2d(HORIZONTAL), value)
+#define growAndVertical(polygon_set, value) gtl::grow_and(polygon_set, gtl::orientation_2d(VERTICAL), value)
 
 #define getArea(polygon_set) gtl::area(polygon_set)
 

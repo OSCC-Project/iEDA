@@ -55,12 +55,35 @@
 
 #include "ElmoreDelayCalc.hh"
 #include "log/Log.hh"
+#include "liberty/Lib.hh"
+#include "netlist/Net.hh"
+#include "netlist/Pin.hh"
+#include "netlist/Port.hh"
+
 
 namespace ista {
 
+const int THREAD_PER_BLOCK_NUM = 512;
+
 std::unique_ptr<RCNetCommonInfo> RcNet::_rc_net_common_info;
 
-RctNode::RctNode(std::string&& name) : _name{std::move(name)} {}
+RctNode::RctNode(std::string&& name)
+    : _name{std::move(name)},
+      _is_update_load(0),
+      _is_update_delay(0),
+      _is_update_ldelay(0),
+      _is_update_delay_ecm(0),
+      _is_update_m2(0),
+      _is_update_mc(0),
+      _is_update_m2_c(0),
+      _is_update_mc_c(0),
+      _is_update_ceff(0),
+      _is_update_response(0),
+      _is_tranverse(0),
+      _is_visited(0),
+      _is_visited_ecm(0),
+      _is_root(0),
+      _reserved(0) {}
 
 void RctNode::calNodePIModel() {
   if (IsDoubleEqual(_moments.y2, 0.0) || IsDoubleEqual(_moments.y3, 0.0)) {
@@ -82,6 +105,8 @@ void RctNode::calNodePIModel() {
 double RctNode::nodeLoad(AnalysisMode mode, TransType trans_type) {
   return _nload[ModeTransPair(mode, trans_type)];
 }
+
+double RctNode::cap() const { return _obj ? _obj->cap() + _cap : _cap; }
 
 double RctNode::cap(AnalysisMode mode, TransType trans_type) {
   return _obj ? _obj->cap(mode, trans_type) +
@@ -112,7 +137,13 @@ double RctNode::slew(AnalysisMode mode, TransType trans_type,
 }
 
 RctEdge::RctEdge(RctNode& from, RctNode& to, double res)
-    : _from{from}, _to{to}, _res{res} {
+    : _from{from},
+      _to{to},
+      _res{res},
+      _is_break(0),
+      _is_visited(0),
+      _is_in_order(0),
+      _reserved(0) {
   LOG_FATAL_IF(to.get_name().empty());
 }
 
@@ -140,7 +171,8 @@ RctNode* RcTree::node(const std::string& name) {
  * @return RctNode*
  */
 RctNode* RcTree::insertNode(const std::string& name, double cap) {
-  if (_str2nodes.contains(name) && IsDoubleEqual(_str2nodes[name]._cap, cap)) {
+  if (_str2nodes.find(name) != _str2nodes.end() &&
+      IsDoubleEqual(_str2nodes[name]._cap, cap)) {
     return &_str2nodes[name];
   }
 
@@ -297,7 +329,7 @@ void RcTree::updateLoad(RctNode* parent, RctNode* from) {
 }
 
 /**
- * @brief upadate the delay from net root to each node
+ * @brief upadate the delay from net root to each node.
  *
  * @param parent
  * @param from
@@ -487,10 +519,15 @@ void RcTree::updateRcTiming() {
 
   initData();
 
+#if CUDA_DELAY
+  levelizeRcTree();
+  applyDelayDataToArray();
+#else
   updateLoad(nullptr, _root);
   updateDelay(nullptr, _root);
   updateLDelay(nullptr, _root);
   updateResponse(nullptr, _root);
+#endif
 
   if (c_print_delay_yaml) {
     updateMC(nullptr, _root);
@@ -539,9 +576,16 @@ void RcTree::printGraphViz() {
   LOG_INFO << "dump graph dotviz start";
 
   std::ofstream dot_file;
-  dot_file.open("./tree.dot");
+  dot_file.open("./tree_gpu_gloabl.dot", std::ios::app);
 
-  dot_file << "digraph tree {\n";
+  auto replace_colon = [](const std::string& s) {
+    std::string modified = s;
+    std::replace(modified.begin(), modified.end(), ':', '_');
+    return modified;
+  };
+
+  dot_file << "digraph tree" << replace_colon(_root->get_name()).c_str()
+           << "{\n";
 
   for (auto& edge : _edges) {
     // if (!edge.isInOrder()) {
@@ -549,16 +593,29 @@ void RcTree::printGraphViz() {
     // }
     auto from_name = edge._from.get_name();
     auto to_name = edge._to.get_name();
+    ModeTransPair mode_trans = {AnalysisMode::kMax, TransType::kRise};
 
-    dot_file << Str::printf("p%p[label=\"%s cap %f\" ]\n", &edge._from,
-                            from_name.c_str(), edge._from.cap());
+    dot_file << Str::printf(
+        "p%p[label=\"%s load %f nload %f delay %f  ndelay %f  ures %f ldelay "
+        "%f beta %f impulse %f\" ]\n",
+        &edge._from, replace_colon(from_name).c_str(), edge._from._load,
+        edge._from._nload[mode_trans], edge._from._delay,
+        edge._from._ndelay[mode_trans], edge._from._ures[mode_trans],
+        edge._from._ldelay[mode_trans], edge._from._beta[mode_trans],
+        edge._from._impulse[mode_trans]);
 
     dot_file << Str::printf("p%p", &edge._from) << " -> "
              << Str::printf("p%p", &edge._to)
              << Str::printf("[label=\"res %f\" ]", edge.get_res()) << "\n";
 
-    dot_file << Str::printf("p%p[label=\"%s cap %f\" ]\n", &edge._to,
-                            to_name.c_str(), edge._to.cap());
+    dot_file << Str::printf(
+        "p%p[label=\"%s load %f nload %f delay %f  ndelay %f  ures %f ldelay "
+        "%f beta %f impulse %f\" ]\n",
+        &edge._to, replace_colon(to_name).c_str(), edge._to._load,
+        edge._to._nload[mode_trans], edge._to._delay,
+        edge._to._ndelay[mode_trans], edge._to._ures[mode_trans],
+        edge._to._ldelay[mode_trans], edge._to._beta[mode_trans],
+        edge._to._impulse[mode_trans]);
   }
 
   dot_file << "}\n";
@@ -567,6 +624,148 @@ void RcTree::printGraphViz() {
 
   LOG_INFO << "dump graph dotviz end";
 }
+
+void RcTree::levelizeRcTree(std::queue<RctNode*> bfs_queue) {
+  std::queue<RctNode*> next_bfs_queue;
+  std::vector<RctNode*> points;
+
+  while (!bfs_queue.empty()) {
+    auto* rc_node = bfs_queue.front();
+    bfs_queue.pop();
+
+    for (auto* fanout_edge : rc_node->get_fanout()) {
+      if ((&fanout_edge->get_to()) != rc_node->get_parent()) {
+        fanout_edge->get_to().set_parent(rc_node);
+        next_bfs_queue.push(&(fanout_edge->get_to()));
+        points.emplace_back(&(fanout_edge->get_to()));
+      }
+    }
+  }
+
+  if (!points.empty()) {
+    _level_to_points.emplace_back(std::move(points));
+  }
+
+  if (!next_bfs_queue.empty()) {
+    levelizeRcTree(next_bfs_queue);
+  }
+}
+
+void RcTree::levelizeRcTree() {
+  std::vector<RctNode*> points{_root};
+  _level_to_points.emplace_back(points);
+
+  std::queue<RctNode*> bfs_queue;
+  bfs_queue.push(_root);
+
+  levelizeRcTree(std::move(bfs_queue));
+}
+
+inline ModeTransIndex mapToModeTransIndex(AnalysisMode mode, TransType type) {
+  if (mode == AnalysisMode::kMax) {
+    if (type == TransType::kRise) {
+      return ModeTransIndex::kMaxRise;
+    } else if (type == TransType::kFall) {
+      return ModeTransIndex::kMaxFall;
+    }
+  } else if (mode == AnalysisMode::kMin) {
+    if (type == TransType::kRise) {
+      return ModeTransIndex::kMinRise;
+    } else if (type == TransType::kFall) {
+      return ModeTransIndex::kMinFall;
+    }
+  }
+  throw std::invalid_argument("Invalid AnalysisMode or TransType combination");
+}
+
+void RcTree::applyDelayDataToArray() {
+  int node_num = numNodes();
+  std::vector<float> cap_array;
+  std::vector<float> ncap_array;
+  std::vector<float> load_array(node_num, 0);
+  std::vector<float> nload_array(node_num * 4, 0);
+  std::vector<int> parent_pos_array(node_num, 0);
+  // children use start and end pair to mark position.
+  std::vector<int> children_pos_array(node_num * 2, 0);
+  // resistance record the parent resistance with the children.The first one is
+  // root, resistance is 0.
+  std::vector<float> res_array{0.0};
+  std::vector<float> delay_array(node_num, 0);
+  std::vector<float> ndelay_array(node_num * 4, 0);
+  std::vector<float> ures_array(node_num * 4, 0);
+  std::vector<float> ldelay_array(node_num * 4, 0);
+  std::vector<float> beta_array(node_num * 4, 0);
+  std::vector<float> impulse_array(node_num * 4, 0);
+
+  int flatten_pos = 0;
+  for (auto& points : _level_to_points) {
+    for (auto* rc_node : points) {
+      rc_node->set_flatten_pos(flatten_pos);
+      cap_array.emplace_back(rc_node->cap());
+
+      std::vector<float> one_node_ncap(4, 0);
+
+      FOREACH_MODE_TRANS(mode, trans) {
+        ModeTransIndex index = mapToModeTransIndex(mode, trans);
+        one_node_ncap[static_cast<int>(index)] = rc_node->cap(mode, trans);
+      }
+
+      ncap_array.insert(ncap_array.end(), one_node_ncap.begin(),
+                        one_node_ncap.end());
+
+      if (rc_node->get_parent()) {
+        auto found_edge = findEdge(*(rc_node->get_parent()), *rc_node);
+        assert(found_edge.has_value());
+        res_array.emplace_back((*found_edge)->get_res());
+
+        int parent_pos = rc_node->get_parent()->get_flatten_pos();
+        parent_pos_array[flatten_pos] = parent_pos;
+
+        if (children_pos_array[parent_pos * 2] == 0) {
+          children_pos_array[parent_pos * 2] = flatten_pos;
+        } else {
+          children_pos_array[parent_pos * 2 + 1] = flatten_pos;
+        }
+      }
+
+      ++flatten_pos;
+    }
+  }
+
+  std::swap(_cap_array, cap_array);
+  std::swap(_ncap_array, ncap_array);
+  std::swap(_res_array, res_array);
+  std::swap(_parent_pos_array, parent_pos_array);
+  std::swap(_children_pos_array, children_pos_array);
+  std::swap(_load_array, load_array);
+  std::swap(_nload_array, nload_array);
+  std::swap(_delay_array, delay_array);
+  std::swap(_ndelay_array, ndelay_array);
+  std::swap(_ures_array, ures_array);
+  std::swap(_ldelay_array, ldelay_array);
+  std::swap(_beta_array, beta_array);
+  std::swap(_impulse_array, impulse_array);
+}
+
+void RCNetCommonInfo::set_spef_cap_unit(const std::string& spef_cap_unit) {
+      // The unit is 1.0 FF, fix me
+    if (Str::contain(spef_cap_unit.c_str(), "1 FF") ||
+        Str::contain(spef_cap_unit.c_str(), "1.0 FF")) {
+      _spef_cap_unit = CapacitiveUnit::kFF;
+    } else {
+      _spef_cap_unit = CapacitiveUnit::kPF;
+    }
+}
+
+void RCNetCommonInfo::set_spef_resistance_unit(const std::string& spef_resistance_unit) {
+    // The unit is 1.0 OHM, fix me
+    if (Str::contain(spef_resistance_unit.c_str(), "1 OHM") ||
+        Str::contain(spef_resistance_unit.c_str(), "1.0 OHM")) {
+      _spef_resistance_unit = ResistanceUnit::kOHM;
+    } else {
+      _spef_resistance_unit = ResistanceUnit::kOHM;
+    }
+  }
 
 std::string RcNet::name() const { return _net->get_name(); }
 size_t RcNet::numPins() const { return _net->get_pin_ports().size() - 1; }
@@ -856,12 +1055,14 @@ void RcNet::updateRcTiming(RustSpefNet* spef_net) {
     auto& rct = std::get<RcTree>(_rct);
     rct.updateRcTiming();
 
-    // if (name() == "fanout_buf_215") {
+    // the previous is annotated.(for test.)
+    // nangate45:"FE_OFN0_text_out_80"
+    // if (name() == "in1" || name() == "r2q" || name() == "u1z" ||
+    //     name() == "u2z" || name() == "out") {
     //   rct.printGraphViz();
     // }
   }
 
-  rust_free_spef_net(spef_net);
 }
 /**
  * @brief net load
@@ -895,6 +1096,26 @@ double RcNet::load(AnalysisMode mode, TransType trans_type) {
     if (std::get<RcTree>(_rct)._root) {
       return std::get<RcTree>(_rct)
           ._root->_nload[ModeTransPair(mode, trans_type)];
+    } else {
+      return 0.0;
+    }
+  }
+}
+
+/**
+ * @brief get slew impulse for gpu speedup data.
+ * 
+ * @param mode 
+ * @param trans_type 
+ * @return double 
+ */
+double RcNet::slewImpulse(DesignObject& to, AnalysisMode mode, TransType trans_type) {
+  auto* node = std::get<RcTree>(_rct).node(to.getFullName());
+  if (_rct.index() == 0) {
+    return 0.0;
+  } else {
+    if (node) {
+      return node->_impulse[ModeTransPair{mode, trans_type}]; 
     } else {
       return 0.0;
     }
@@ -1056,7 +1277,7 @@ std::optional<double> RcNet::slew(const char* node_name, double from_slew,
 }
 
 std::optional<double> RcNet::slew(
-    Pin& to, double from_slew,
+    DesignObject& to, double from_slew,
     std::optional<LibCurrentData*> /* output_current */, AnalysisMode mode,
     TransType trans_type) {
   if (_rct.index() == 0) {

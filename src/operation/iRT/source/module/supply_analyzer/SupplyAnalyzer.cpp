@@ -57,13 +57,12 @@ void SupplyAnalyzer::analyze()
   SAModel sa_model = initSAModel();
   buildSupplySchedule(sa_model);
   analyzeSupply(sa_model);
+  // debugPlotSAModel(sa_model);
   updateSummary(sa_model);
   printSummary(sa_model);
   outputPlanarSupplyCSV(sa_model);
   outputLayerSupplyCSV(sa_model);
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
-
-  // debugPlotSAModel(sa_model);
 }
 
 // private
@@ -159,16 +158,18 @@ void SupplyAnalyzer::analyzeSupply(SAModel& sa_model)
             }
           }
         }
-        for (auto& [net_idx, segment_set] : RTDM.getNetAccessResultMap(search_rect)) {
-          for (Segment<LayerCoord>* segment : segment_set) {
-            for (NetShape& net_shape : RTDM.getNetShapeList(net_idx, *segment)) {
-              if (!net_shape.get_is_routing()) {
-                continue;
+        for (auto& [net_idx, pin_access_result_map] : RTDM.getNetPinAccessResultMap(search_rect)) {
+          for (auto& [pin_idx, segment_set] : pin_access_result_map) {
+            for (Segment<LayerCoord>* segment : segment_set) {
+              for (NetShape& net_shape : RTDM.getNetShapeList(net_idx, *segment)) {
+                if (!net_shape.get_is_routing()) {
+                  continue;
+                }
+                if (search_rect.get_layer_idx() != net_shape.get_layer_idx()) {
+                  continue;
+                }
+                obs_rect_list.push_back(net_shape);
               }
-              if (search_rect.get_layer_idx() != net_shape.get_layer_idx()) {
-                continue;
-              }
-              obs_rect_list.push_back(net_shape);
             }
           }
         }
@@ -234,7 +235,7 @@ bool SupplyAnalyzer::isAccess(LayerRect& wire, std::vector<PlanarRect>& obs_rect
   RoutingLayer& routing_layer = routing_layer_list[wire.get_layer_idx()];
 
   for (PlanarRect& obs_rect : obs_rect_list) {
-    int32_t enlarged_size = routing_layer.getMinSpacing(obs_rect);
+    int32_t enlarged_size = routing_layer.getPRLSpacing(obs_rect);
     PlanarRect enlarged_rect = RTUTIL.getEnlargedRect(obs_rect, enlarged_size);
     if (RTUTIL.isOpenOverlap(enlarged_rect, wire)) {
       // 阻塞
@@ -248,16 +249,13 @@ bool SupplyAnalyzer::isAccess(LayerRect& wire, std::vector<PlanarRect>& obs_rect
 
 void SupplyAnalyzer::updateSummary(SAModel& sa_model)
 {
-  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
   GridMap<GCell>& gcell_map = RTDM.getDatabase().get_gcell_map();
   Summary& summary = RTDM.getDatabase().get_summary();
 
   std::map<int32_t, int32_t>& routing_supply_map = summary.sa_summary.routing_supply_map;
   int32_t& total_supply = summary.sa_summary.total_supply;
 
-  for (RoutingLayer& routing_layer : routing_layer_list) {
-    routing_supply_map[routing_layer.get_layer_idx()] = 0;
-  }
+  routing_supply_map.clear();
   total_supply = 0;
 
   for (int32_t x = 0; x < gcell_map.get_x_size(); x++) {
@@ -282,18 +280,16 @@ void SupplyAnalyzer::printSummary(SAModel& sa_model)
 
   fort::char_table routing_supply_map_table;
   {
-    routing_supply_map_table << fort::header << "routing_layer"
+    routing_supply_map_table << fort::header << "routing"
                              << "supply"
-                             << "proportion" << fort::endr;
+                             << "prop" << fort::endr;
     for (RoutingLayer& routing_layer : routing_layer_list) {
       routing_supply_map_table << routing_layer.get_layer_name() << routing_supply_map[routing_layer.get_layer_idx()]
                                << RTUTIL.getPercentage(routing_supply_map[routing_layer.get_layer_idx()], total_supply) << fort::endr;
     }
     routing_supply_map_table << fort::header << "Total" << total_supply << RTUTIL.getPercentage(total_supply, total_supply) << fort::endr;
   }
-  std::vector<fort::char_table> table_list;
-  table_list.push_back(routing_supply_map_table);
-  RTUTIL.printTableList(table_list);
+  RTUTIL.printTableList({routing_supply_map_table});
 }
 
 void SupplyAnalyzer::outputPlanarSupplyCSV(SAModel& sa_model)
@@ -428,36 +424,25 @@ void SupplyAnalyzer::debugPlotSAModel(SAModel& sa_model)
     }
   }
 
-  // net_access_result
-  for (auto& [net_idx, segment_set] : RTDM.getNetAccessResultMap(die)) {
+  // net_pin_access_result
+  for (auto& [net_idx, pin_access_result_map] : RTDM.getNetPinAccessResultMap(die)) {
     GPStruct access_result_struct(RTUTIL.getString("access_result(net_", net_idx, ")"));
-    for (Segment<LayerCoord>* segment : segment_set) {
-      for (NetShape& net_shape : RTDM.getNetShapeList(net_idx, *segment)) {
-        GPBoundary gp_boundary;
-        gp_boundary.set_data_type(static_cast<int32_t>(GPDataType::kShape));
-        gp_boundary.set_rect(net_shape.get_rect());
-        if (net_shape.get_is_routing()) {
-          gp_boundary.set_layer_idx(RTGP.getGDSIdxByRouting(net_shape.get_layer_idx()));
-        } else {
-          gp_boundary.set_layer_idx(RTGP.getGDSIdxByCut(net_shape.get_layer_idx()));
+    for (auto& [pin_idx, segment_set] : pin_access_result_map) {
+      for (Segment<LayerCoord>* segment : segment_set) {
+        for (NetShape& net_shape : RTDM.getNetShapeList(net_idx, *segment)) {
+          GPBoundary gp_boundary;
+          gp_boundary.set_data_type(static_cast<int32_t>(GPDataType::kShape));
+          gp_boundary.set_rect(net_shape.get_rect());
+          if (net_shape.get_is_routing()) {
+            gp_boundary.set_layer_idx(RTGP.getGDSIdxByRouting(net_shape.get_layer_idx()));
+          } else {
+            gp_boundary.set_layer_idx(RTGP.getGDSIdxByCut(net_shape.get_layer_idx()));
+          }
+          access_result_struct.push(gp_boundary);
         }
-        access_result_struct.push(gp_boundary);
       }
     }
     gp_gds.addStruct(access_result_struct);
-  }
-
-  // net_access_patch
-  for (auto& [net_idx, patch_set] : RTDM.getNetAccessPatchMap(die)) {
-    GPStruct access_patch_struct(RTUTIL.getString("access_patch(net_", net_idx, ")"));
-    for (EXTLayerRect* patch : patch_set) {
-      GPBoundary gp_boundary;
-      gp_boundary.set_data_type(static_cast<int32_t>(GPDataType::kShape));
-      gp_boundary.set_rect(patch->get_real_rect());
-      gp_boundary.set_layer_idx(RTGP.getGDSIdxByRouting(patch->get_layer_idx()));
-      access_patch_struct.push(gp_boundary);
-    }
-    gp_gds.addStruct(access_patch_struct);
   }
 
   // supply_map
