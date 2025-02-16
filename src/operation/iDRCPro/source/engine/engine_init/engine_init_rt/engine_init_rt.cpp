@@ -61,8 +61,14 @@ void DrcEngineInitRT::init()
       /// rects
       if (idb_segment->is_rect()) {
         // add rect
+        IdbCoordinate<int32_t>* coordinate = idb_segment->get_point_start();
+
         auto type = idb_segment->get_layer()->is_routing() ? LayoutType::kRouting : LayoutType::kCut;
-        initDataFromRect(idb_segment->get_delta_rect(), type, idb_segment->get_layer(), net_id);
+        IdbRect* rect_delta = idb_segment->get_delta_rect();
+        IdbRect* rect = new IdbRect(rect_delta);
+        rect->moveByStep(coordinate->get_x(), coordinate->get_y());
+        initDataFromRect(rect, type, idb_segment->get_layer(), net_id);
+        delete rect;
       }
     }
   }

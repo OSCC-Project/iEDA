@@ -27,26 +27,31 @@ namespace ito {
 bool ViolationOptimizer::isNeedRepair(ista::Net* net, double& cap_load_allowed_max)
 {
   auto driver = net->getDriver();
+  if (driver == nullptr) {
+    return false;
+  }
+
   // check if exit cap violation
   bool is_cap_vio = checkCapacitanceViolation(cap_load_allowed_max, driver);
 
   // check if exit slew violation
   bool is_slew_vio = checkSlewViolation(cap_load_allowed_max, driver);
   if (is_slew_vio) {
-    cap_load_allowed_max *= _slew_2_cap_factor; //0.05;
+    cap_load_allowed_max *= _slew_2_cap_factor;  // 0.05;
   }
 
   return (is_cap_vio || is_slew_vio);
 }
 
-bool ViolationOptimizer::checkCapacitanceViolation(double& max_driver_load_cap, DesignObject *driver_pin)
+bool ViolationOptimizer::checkCapacitanceViolation(double& max_driver_load_cap, DesignObject* driver_pin)
 {
   double cap_load;
   std::optional<double> exit_cap_restraint_max;
   double cap_slack;
 
   TransType rf = TransType::kRise;
-  timingEngine->get_sta_engine()->validateCapacitance(driver_pin->getFullName().c_str(), AnalysisMode::kMax, rf, cap_load, exit_cap_restraint_max, cap_slack);
+  timingEngine->get_sta_engine()->validateCapacitance(driver_pin->getFullName().c_str(), AnalysisMode::kMax, rf, cap_load,
+                                                      exit_cap_restraint_max, cap_slack);
   if (exit_cap_restraint_max) {
     max_driver_load_cap = *exit_cap_restraint_max;
     if (cap_slack < 0) {
@@ -81,7 +86,7 @@ void ViolationOptimizer::checkViolations()
 #endif
 }
 
-bool ViolationOptimizer::checkSlewViolation(double& max_driver_load_cap, DesignObject *driver_pin)
+bool ViolationOptimizer::checkSlewViolation(double& max_driver_load_cap, DesignObject* driver_pin)
 {
   float slew_margin = kInf;
   float slew_constraint_max = kInf;
@@ -95,7 +100,7 @@ bool ViolationOptimizer::checkSlewViolation(double& max_driver_load_cap, DesignO
     double slack_tmp;
 
     timingEngine->get_sta_engine()->validateSlew(pin->getFullName().c_str(), AnalysisMode::kMax, TransType::kRise, slew_tmp,
-                                              exit_slew_max_restraint, slack_tmp);
+                                                 exit_slew_max_restraint, slack_tmp);
     if (exit_slew_max_restraint && slack_tmp < slew_margin) {
       slew_margin = slack_tmp;
       slew_constraint_max = *exit_slew_max_restraint;
@@ -155,8 +160,9 @@ double ViolationOptimizer::calcLoadCap(ista::LibPort* driver_port, double slew)
   return (lower_cap + upper_cap) / 2.0;
 }
 
-double ViolationOptimizer::calcSlew(LibPort *driver_port, double cap_load) {
-  TOSlew  rise_fall_slew[2];
+double ViolationOptimizer::calcSlew(LibPort* driver_port, double cap_load)
+{
+  TOSlew rise_fall_slew[2];
   timingEngine->calcGateRiseFallSlews(rise_fall_slew, cap_load, driver_port);
   TOSlew gate_slew = max(rise_fall_slew[TYPE_RISE], rise_fall_slew[TYPE_FALL]);
   return gate_slew;

@@ -19,10 +19,10 @@
 #include "ChangeType.hpp"
 #include "Config.hpp"
 #include "DRBoxId.hpp"
+#include "DRIterParam.hpp"
 #include "DRModel.hpp"
 #include "DRNet.hpp"
 #include "DRNode.hpp"
-#include "DRParameter.hpp"
 #include "DataManager.hpp"
 #include "Database.hpp"
 #include "Net.hpp"
@@ -56,7 +56,9 @@ class DetailedRouter
   std::vector<DRNet> convertToDRNetList(std::vector<Net>& net_list);
   DRNet convertToDRNet(Net& net);
   void iterativeDRModel(DRModel& dr_model);
-  void setDRParameter(DRModel& dr_model, int32_t iter, DRParameter& dr_parameter);
+  void initRoutingState(DRModel& dr_model);
+  void setDRIterParam(DRModel& dr_model, int32_t iter, DRIterParam& dr_iter_param);
+  void resetRoutingState(DRModel& dr_model);
   void initDRBoxMap(DRModel& dr_model);
   void buildBoxSchedule(DRModel& dr_model);
   void splitNetResult(DRModel& dr_model);
@@ -64,8 +66,8 @@ class DetailedRouter
   void buildFixedRect(DRBox& dr_box);
   void buildAccessResult(DRBox& dr_box);
   void buildNetResult(DRBox& dr_box);
-  void buildViolation(DRBox& dr_box);
   void initDRTaskList(DRModel& dr_model, DRBox& dr_box);
+  void buildViolation(DRBox& dr_box);
   bool needRouting(DRBox& dr_box);
   void buildBoxTrackAxis(DRBox& dr_box);
   void buildLayerNodeMap(DRBox& dr_box);
@@ -118,9 +120,7 @@ class DetailedRouter
 #if 1  // update env
   void updateFixedRectToGraph(DRBox& dr_box, ChangeType change_type, int32_t net_idx, EXTLayerRect* fixed_rect, bool is_routing);
   void updateFixedRectToGraph(DRBox& dr_box, ChangeType change_type, int32_t net_idx, Segment<LayerCoord>& segment);
-  void updateFixedRectToGraph(DRBox& dr_box, ChangeType change_type, int32_t net_idx, EXTLayerRect& patch);
-  void updateNetResultToGraph(DRBox& dr_box, ChangeType change_type, int32_t net_idx, Segment<LayerCoord>& segment);
-  void updateNetResultToGraph(DRBox& dr_box, ChangeType change_type, int32_t net_idx, EXTLayerRect& patch);
+  void updateRoutedRectToGraph(DRBox& dr_box, ChangeType change_type, int32_t net_idx, Segment<LayerCoord>& segment);
   void addViolationToGraph(DRBox& dr_box, Violation& violation);
   void addViolationToGraph(DRBox& dr_box, LayerRect& searched_rect, std::vector<Segment<LayerCoord>>& overlap_segment_list);
   std::map<DRNode*, std::set<Orientation>> getNodeOrientationMap(DRBox& dr_box, NetShape& net_shape, bool need_enlarged);

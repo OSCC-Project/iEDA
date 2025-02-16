@@ -42,7 +42,7 @@ class IdbBus
     kBusIo
   };
   IdbBus() = default;
-  IdbBus(std::string name, unsigned left, unsigned right) : _bus_name(std::move(name)), _left(left), _right(right){};
+  IdbBus(std::string name, unsigned left, unsigned right) : _bus_name(std::move(name)), _left(left), _right(right) {};
   ~IdbBus() = default;
   IdbBus(IdbBus&& other) = default;
   IdbBus& operator=(IdbBus&& other) = default;
@@ -69,7 +69,7 @@ class IdbBus
    * @param bus_bit_chars
    * @return std::optional<std::pair<std::string, unsigned>>
    */
-  static std::optional<std::pair<std::string, unsigned>> parseBusName(const std::string& name_str, const IdbBusBitChars& bus_bit_chars);
+  static std::optional<std::pair<std::string, unsigned>> parseBusName(std::string name_str, const IdbBusBitChars& bus_bit_chars);
   void set_type(kBusType type) { _bus_type = type; }
   [[nodiscard]] kBusType get_type() const { return _bus_type; }
 

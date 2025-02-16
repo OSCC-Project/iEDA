@@ -16,28 +16,40 @@
 // ***************************************************************************************
 #pragma once
 
+#include <string>
+
+#include "Logger.hpp"
+
 namespace irt {
 
-class TGParameter
+enum class VRObsType
 {
- public:
-  TGParameter() = default;
-  TGParameter(int32_t topo_spilt_length, double congestion_unit)
-  {
-    _topo_spilt_length = topo_spilt_length;
-    _congestion_unit = congestion_unit;
-  }
-  ~TGParameter() = default;
-  // getter
-  int32_t get_topo_spilt_length() const { return _topo_spilt_length; }
-  double get_congestion_unit() const { return _congestion_unit; }
-  // setter
-  void set_topo_spilt_length(const int32_t topo_spilt_length) { _topo_spilt_length = topo_spilt_length; }
-  void set_congestion_unit(const double congestion_unit) { _congestion_unit = congestion_unit; }
+  kNone = 0,
+  kPlanar = 1,
+  kSpace = 2
+};
 
- private:
-  int32_t _topo_spilt_length = 0;
-  double _congestion_unit = 0;
+struct GetVRObsTypeName
+{
+  std::string operator()(const VRObsType& vr_obs_type) const
+  {
+    std::string vr_obs_type_name;
+    switch (vr_obs_type) {
+      case VRObsType::kNone:
+        vr_obs_type_name = "none";
+        break;
+      case VRObsType::kPlanar:
+        vr_obs_type_name = "planar";
+        break;
+      case VRObsType::kSpace:
+        vr_obs_type_name = "space";
+        break;
+      default:
+        RTLOG.error(Loc::current(), "Unrecognized type!");
+        break;
+    }
+    return vr_obs_type_name;
+  }
 };
 
 }  // namespace irt

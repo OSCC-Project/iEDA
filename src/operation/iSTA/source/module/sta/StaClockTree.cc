@@ -16,7 +16,7 @@
 // ***************************************************************************************
 /**
  * @file staClockTree.cc
- * @author shy long (longshy@pcl.ac.cn)
+ * @author longshy (longshy@pcl.ac.cn)
  * @brief The implemention of clock tree for GUI show.
  * @version 0.1
  * @date 2023-03-27

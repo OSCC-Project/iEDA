@@ -20,9 +20,9 @@
 #include "PriorityQueue.hpp"
 #include "RTHeader.hpp"
 #include "ScaleAxis.hpp"
+#include "TAComParam.hpp"
 #include "TANode.hpp"
 #include "TAPanelId.hpp"
-#include "TAParameter.hpp"
 #include "TATask.hpp"
 
 namespace irt {
@@ -35,11 +35,10 @@ class TAPanel
   // getter
   EXTLayerRect& get_panel_rect() { return _panel_rect; }
   TAPanelId& get_ta_panel_id() { return _ta_panel_id; }
-  TAParameter* get_ta_parameter() { return _ta_parameter; }
+  TAComParam* get_ta_com_param() { return _ta_com_param; }
   std::vector<TATask*>& get_ta_task_list() { return _ta_task_list; }
   std::map<int32_t, std::set<EXTLayerRect*>>& get_net_fixed_rect_map() { return _net_fixed_rect_map; }
-  std::map<int32_t, std::vector<LayerRect>>& get_net_access_result_map() { return _net_access_result_map; }
-  std::map<int32_t, std::set<EXTLayerRect*>>& get_net_access_patch_map() { return _net_access_patch_map; }
+  std::map<int32_t, std::map<int32_t, std::vector<LayerRect>>>& get_net_pin_access_result_map() { return _net_pin_access_result_map; }
   std::map<int32_t, std::vector<LayerRect>>& get_net_detailed_result_map() { return _net_detailed_result_map; }
   std::map<int32_t, std::map<int32_t, std::vector<Segment<LayerCoord>>>>& get_net_task_result_map() { return _net_task_result_map; }
   std::vector<Violation>& get_violation_list() { return _violation_list; }
@@ -48,19 +47,15 @@ class TAPanel
   // setter
   void set_panel_rect(const EXTLayerRect& panel_rect) { _panel_rect = panel_rect; }
   void set_ta_panel_id(const TAPanelId& ta_panel_id) { _ta_panel_id = ta_panel_id; }
-  void set_ta_parameter(TAParameter* ta_parameter) { _ta_parameter = ta_parameter; }
+  void set_ta_com_param(TAComParam* ta_com_param) { _ta_com_param = ta_com_param; }
   void set_ta_task_list(const std::vector<TATask*>& ta_task_list) { _ta_task_list = ta_task_list; }
   void set_net_fixed_rect_map(const std::map<int32_t, std::set<EXTLayerRect*>>& net_fixed_rect_map)
   {
     _net_fixed_rect_map = net_fixed_rect_map;
   }
-  void set_net_access_result_map(const std::map<int32_t, std::vector<LayerRect>>& net_access_result_map)
+  void set_net_pin_access_result_map(const std::map<int32_t, std::map<int32_t, std::vector<LayerRect>>>& net_pin_access_result_map)
   {
-    _net_access_result_map = net_access_result_map;
-  }
-  void set_net_access_patch_map(const std::map<int32_t, std::set<EXTLayerRect*>>& net_access_patch_map)
-  {
-    _net_access_patch_map = net_access_patch_map;
+    _net_pin_access_result_map = net_pin_access_result_map;
   }
   void set_net_detailed_result_map(const std::map<int32_t, std::vector<LayerRect>>& net_detailed_result_map)
   {
@@ -110,11 +105,10 @@ class TAPanel
  private:
   EXTLayerRect _panel_rect;
   TAPanelId _ta_panel_id;
-  TAParameter* _ta_parameter = nullptr;
+  TAComParam* _ta_com_param = nullptr;
   std::vector<TATask*> _ta_task_list;
   std::map<int32_t, std::set<EXTLayerRect*>> _net_fixed_rect_map;
-  std::map<int32_t, std::vector<LayerRect>> _net_access_result_map;
-  std::map<int32_t, std::set<EXTLayerRect*>> _net_access_patch_map;
+  std::map<int32_t, std::map<int32_t, std::vector<LayerRect>>> _net_pin_access_result_map;
   std::map<int32_t, std::vector<LayerRect>> _net_detailed_result_map;
   std::map<int32_t, std::map<int32_t, std::vector<Segment<LayerCoord>>>> _net_task_result_map;
   std::vector<Violation> _violation_list;

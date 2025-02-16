@@ -75,7 +75,10 @@ class ModelFactory : public PyToolBase
   std::pair<std::pair<double, double>, std::pair<double, double>> criticalSteinerWireLen(const double& alpha, const double& beta,
                                                                                          const double& gamma, const double& r,
                                                                                          const double& c, const double& cap_pin,
-                                                                                         const double& input_slew, const size_t& fanout);
+                                                                                         const double& input_slew, const double& cap_load);
+  double criticalError(const double& r, const double& c, const double& x, const double& cap_load, const double& cap_pin_low,
+                       const double& cap_pin_high, const double& input_slew, const double& gamma, const double& beta_i,
+                       const double& beta_k);
 #ifdef PY_MODEL
   /**
    * @brief Python interface for timing model

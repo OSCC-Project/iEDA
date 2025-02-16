@@ -91,6 +91,7 @@ class RTInterface
   void wrapDatabase();
   void wrapDBInfo();
   void wrapMicronDBU();
+  void wrapManufactureGrid();
   void wrapDie();
   void wrapRow();
   void wrapLayerList();
@@ -101,7 +102,7 @@ class RTInterface
   void wrapLayerViaMasterList();
   void wrapObstacleList();
   void wrapNetList();
-  bool isSkipping(idb::IdbNet* idb_net);
+  bool isSkipping(idb::IdbNet* idb_net, bool with_log);
   void wrapPinList(Net& net, idb::IdbNet* idb_net);
   void wrapPinShapeList(Pin& pin, idb::IdbPin* idb_pin);
   void wrapDrivenPin(Net& net, idb::IdbNet* idb_net);
@@ -130,7 +131,8 @@ class RTInterface
 #if 1  // iDRC
   std::vector<Violation> getViolationList(std::vector<std::pair<EXTLayerRect*, bool>>& env_shape_list,
                                           std::map<int32_t, std::vector<std::pair<EXTLayerRect*, bool>>>& net_pin_shape_map,
-                                          std::map<int32_t, std::vector<Segment<LayerCoord>>>& net_result_map);
+                                          std::map<int32_t, std::vector<Segment<LayerCoord>*>>& net_result_map,
+                                          std::map<int32_t, std::vector<EXTLayerRect*>>& net_patch_map);
   std::vector<Violation> getViolationList(std::vector<idb::IdbLayerShape*>& env_shape_list,
                                           std::map<int32_t, std::vector<idb::IdbLayerShape*>>& net_pin_shape_map,
                                           std::map<int32_t, std::vector<idb::IdbRegularWireSegment*>>& net_result_map);

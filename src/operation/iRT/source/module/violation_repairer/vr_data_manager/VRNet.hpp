@@ -16,38 +16,34 @@
 // ***************************************************************************************
 #pragma once
 
-#include "Logger.hpp"
+#include "ConnectType.hpp"
+#include "Net.hpp"
+#include "Pin.hpp"
+#include "VRPin.hpp"
 
 namespace irt {
 
-enum class DEProcessType
+class VRNet
 {
-  kNone,
-  kSingleNet,
-  kMultiNet
-};
+ public:
+  VRNet() = default;
+  ~VRNet() = default;
+  // getter
+  Net* get_origin_net() { return _origin_net; }
+  int32_t get_net_idx() const { return _net_idx; }
+  ConnectType get_connect_type() const { return _connect_type; }
+  std::vector<VRPin>& get_vr_pin_list() { return _vr_pin_list; }
+  // setter
+  void set_origin_net(Net* origin_net) { _origin_net = origin_net; }
+  void set_net_idx(const int32_t net_idx) { _net_idx = net_idx; }
+  void set_connect_type(const ConnectType& connect_type) { _connect_type = connect_type; }
+  void set_vr_pin_list(const std::vector<VRPin>& vr_pin_list) { _vr_pin_list = vr_pin_list; }
 
-struct GetDEProcessTypeName
-{
-  std::string operator()(const DEProcessType& process_type) const
-  {
-    std::string process_type_name;
-    switch (process_type) {
-      case DEProcessType::kNone:
-        process_type_name = "none";
-        break;
-      case DEProcessType::kSingleNet:
-        process_type_name = "single_net";
-        break;
-      case DEProcessType::kMultiNet:
-        process_type_name = "multi_net";
-        break;
-      default:
-        RTLOG.error(Loc::current(), "Unrecognized type!");
-        break;
-    }
-    return process_type_name;
-  }
+ private:
+  Net* _origin_net = nullptr;
+  int32_t _net_idx = -1;
+  ConnectType _connect_type = ConnectType::kNone;
+  std::vector<VRPin> _vr_pin_list;
 };
 
 }  // namespace irt

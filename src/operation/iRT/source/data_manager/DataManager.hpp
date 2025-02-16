@@ -41,19 +41,19 @@ class DataManager
 #if 1  // 更新GCellMap
   void updateFixedRectToGCellMap(ChangeType change_type, int32_t net_idx, EXTLayerRect* ext_layer_rect, bool is_routing);
   void updateAccessNetPointToGCellMap(ChangeType change_type, int32_t net_idx, AccessPoint* access_point);
-  void updateNetAccessResultToGCellMap(ChangeType change_type, int32_t net_idx, Segment<LayerCoord>* segment);
-  void updateNetAccessPatchToGCellMap(ChangeType change_type, int32_t net_idx, EXTLayerRect* ext_layer_rect);
+  void updateNetPinAccessResultToGCellMap(ChangeType change_type, int32_t net_idx, int32_t pin_idx, Segment<LayerCoord>* segment);
   void updateGlobalNetResultToGCellMap(ChangeType change_type, int32_t net_idx, Segment<LayerCoord>* segment);
   void updateNetDetailedResultToGCellMap(ChangeType change_type, int32_t net_idx, Segment<LayerCoord>* segment);
-  void updateNetDetailedPatchToGCellMap(ChangeType change_type, int32_t net_idx, EXTLayerRect* ext_layer_rect);
+  void updateNetFinalResultToGCellMap(ChangeType change_type, int32_t net_idx, Segment<LayerCoord>* segment);
+  void updateNetFinalPatchToGCellMap(ChangeType change_type, int32_t net_idx, EXTLayerRect* ext_layer_rect);
   void updateViolationToGCellMap(ChangeType change_type, Violation* violation);
   std::map<bool, std::map<int32_t, std::map<int32_t, std::set<EXTLayerRect*>>>> getTypeLayerNetFixedRectMap(EXTPlanarRect& region);
   std::map<int32_t, std::set<AccessPoint*>> getNetAccessPointMap(EXTPlanarRect& region);
-  std::map<int32_t, std::set<Segment<LayerCoord>*>> getNetAccessResultMap(EXTPlanarRect& region);
-  std::map<int32_t, std::set<EXTLayerRect*>> getNetAccessPatchMap(EXTPlanarRect& region);
+  std::map<int32_t, std::map<int32_t, std::set<Segment<LayerCoord>*>>> getNetPinAccessResultMap(EXTPlanarRect& region);
   std::map<int32_t, std::set<Segment<LayerCoord>*>> getNetGlobalResultMap(EXTPlanarRect& region);
   std::map<int32_t, std::set<Segment<LayerCoord>*>> getNetDetailedResultMap(EXTPlanarRect& region);
-  std::map<int32_t, std::set<EXTLayerRect*>> getNetDetailedPatchMap(EXTPlanarRect& region);
+  std::map<int32_t, std::set<Segment<LayerCoord>*>> getNetFinalResultMap(EXTPlanarRect& region);
+  std::map<int32_t, std::set<EXTLayerRect*>> getNetFinalPatchMap(EXTPlanarRect& region);
   std::set<Violation*> getViolationSet(EXTPlanarRect& region);
 #endif
 
@@ -94,10 +94,6 @@ class DataManager
   void makeCutLayerList();
   void checkLayerList();
   void buildLayerInfo();
-  void buildLayerViaMasterList();
-  void transLayerViaMasterList();
-  void makeLayerViaMasterList();
-  void buildLayerViaMasterInfo();
   void buildGCellAxis();
   void makeGCellAxis();
   std::vector<ScaleGrid> makeGCellGridList(Direction direction);
@@ -114,6 +110,10 @@ class DataManager
   void transPinList(Net& net);
   void makePinList(Net& net);
   void checkPinList(Net& net);
+  void buildLayerViaMasterList();
+  void transLayerViaMasterList();
+  void makeLayerViaMasterList();
+  void buildLayerViaMasterInfo();
   void buildDetectionDistance();
   void buildGCellMap();
   void initGCellMap();

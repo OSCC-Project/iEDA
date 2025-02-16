@@ -1,5 +1,6 @@
 initTAModel:初始化ta_net
-setTAParameter:设置ta_model的参数
+ignoreViolation:将整个版图结果进行检查并将violation加入ignore
+setTAComParam:设置ta_model的参数
 initTAPanelMap:构建TAPanel框架,里面主要数据为空
 buildPanelSchedule:构建时间表
 assignTAPanelMap:
@@ -11,7 +12,7 @@ assignTAPanelMap:
     buildPanelTrackAxis:构建Panel内的track_axis
     buildTANodeMap:构建Panel的Graph,只有节点,其他信息后续构建
     buildTANodeNeighbor:将所有节点连接
-    buildOrientNetMap:构建Graph的cost,fix_rect从Panel中得到,在ta阶段net_access_result为fix结果
+    buildOrientNetMap:构建Graph的cost,fix_rect从Panel中得到,在ta阶段net_pin_access_result为fix结果
     routeTAPanel:
         initTaskSchedule:初始化task布线调度表
             routeTATask:给task布线,在此函数末尾,布线结果从graph中删除,再加入新的结果

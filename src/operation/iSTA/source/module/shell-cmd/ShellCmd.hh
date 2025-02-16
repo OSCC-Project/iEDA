@@ -153,6 +153,7 @@ class CmdReportTiming : public TclCmd {
   explicit CmdReportTiming(const char* cmd_name);
   ~CmdReportTiming() override = default;
 
+  unsigned printHelp();
   unsigned check();
   unsigned exec();
 };

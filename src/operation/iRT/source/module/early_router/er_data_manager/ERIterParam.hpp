@@ -16,38 +16,17 @@
 // ***************************************************************************************
 #pragma once
 
-#include "Logger.hpp"
-
 namespace irt {
 
-enum class DEFuncType
+class ERIterParam
 {
-  kNone,
-  kSkipViolation,
-  kExpandViolation
-};
+ public:
+  ERIterParam() = default;
+  ~ERIterParam() = default;
+  // getter
+  // setter
 
-struct GetDEFuncTypeName
-{
-  std::string operator()(const DEFuncType& process_type) const
-  {
-    std::string process_type_name;
-    switch (process_type) {
-      case DEFuncType::kNone:
-        process_type_name = "none";
-        break;
-      case DEFuncType::kSkipViolation:
-        process_type_name = "skip_violation";
-        break;
-      case DEFuncType::kExpandViolation:
-        process_type_name = "expand_violation";
-        break;
-      default:
-        RTLOG.error(Loc::current(), "Unrecognized type!");
-        break;
-    }
-    return process_type_name;
-  }
+ private:
 };
 
 }  // namespace irt
