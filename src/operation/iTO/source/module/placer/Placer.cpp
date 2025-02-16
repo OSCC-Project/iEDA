@@ -100,7 +100,7 @@ std::pair<int, int> Placer::findNearestSpace(unsigned int master_width, int loc_
       if (opt_up.first && opt_up.second < best_dist) {
         best_opt = opt_up.first;
         best_dist = opt_up.second;
-       update_loc_y = (sum_up * _row_height) + y_min;
+        update_loc_y = (sum_up * _row_height) + toDmInst->get_core().get_y_min();
       }
     }
   
@@ -112,7 +112,7 @@ std::pair<int, int> Placer::findNearestSpace(unsigned int master_width, int loc_
         if (opt_down.first && opt_down.second < best_dist) {
           best_opt = opt_down.first;
           best_dist = opt_down.second;
-          update_loc_y = (sum_down * _row_height) + y_min;
+          update_loc_y = (sum_down * _row_height) + toDmInst->get_core().get_y_min();
         }
       }
     }
