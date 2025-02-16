@@ -59,6 +59,8 @@ struct RustNetConductanceData build_one_net_conductance_matrix_data(const void *
  */
 void *read_inst_pwr_csv(const char *file_path);
 
+void *set_instance_power_data(struct RustVec c_instance_power_data);
+
 /**
  * Build one net instance current vector.
  */
