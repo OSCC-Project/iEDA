@@ -21,6 +21,8 @@
 #include "data_manager.h"
 #include "idm.h"
 
+#include <algorithm>
+
 using namespace std;
 
 namespace ito {
@@ -74,6 +76,7 @@ std::pair<int, int> Placer::findNearestSpace(unsigned int master_width, int loc_
 {
   // Which "rows" to search for
   int row_idx = (loc_y - toDmInst->get_core().get_y_min()) / _row_height;
+  row_idx = std::max(0, row_idx);
 
   UsedSpace* best_opt = nullptr;
   int best_dist = INT_MAX;
@@ -81,25 +84,39 @@ std::pair<int, int> Placer::findNearestSpace(unsigned int master_width, int loc_
   int update_loc_y = loc_y;
 
   int find_row = 0;
-  while ((find_row * _row_height) < best_dist && find_row < 40) {
-    if (row_idx + find_row < (int) _row_space.size() - 1) {
-      auto opt_up = findNearestRowLegalSpace(row_idx + find_row, master_width, loc_x, loc_y);
+  while (find_row < 40) {
+    if (find_row > 0 && (find_row > INT_MAX / _row_height)) {
+      break;
+    }
+    int current_height = find_row * _row_height;
+    if (current_height >= best_dist) {
+      break;
+    }
+  
+    // 向上查找 (row_idx + find_row)
+    int sum_up = row_idx + find_row;
+    if (sum_up >= 0 && static_cast<size_t>(sum_up) < _row_space.size()) {  // 严格索引检查
+      auto opt_up = findNearestRowLegalSpace(sum_up, master_width, loc_x, loc_y);
       if (opt_up.first && opt_up.second < best_dist) {
         best_opt = opt_up.first;
         best_dist = opt_up.second;
-        update_loc_y = ((row_idx + find_row) * _row_height) + toDmInst->get_core().get_y_min();
+       update_loc_y = (sum_up * _row_height) + y_min;
       }
     }
-
-    if (row_idx - find_row > 0 && find_row != 0) {
-      auto opt_down = findNearestRowLegalSpace(row_idx - find_row, master_width, loc_x, loc_y);
-      // Choose the option that moves the least distance
-      if (opt_down.first && opt_down.second < best_dist) {
-        best_opt = opt_down.first;
-        best_dist = opt_down.second;
-        update_loc_y = ((row_idx - find_row) * _row_height) + toDmInst->get_core().get_y_min();
+  
+    // 向下查找 (row_idx - find_row)
+    if (find_row != 0) {
+      int sum_down = row_idx - find_row;
+      if (sum_down >= 0 && static_cast<size_t>(sum_down) < _row_space.size()) {  // 严格索引检查
+        auto opt_down = findNearestRowLegalSpace(sum_down, master_width, loc_x, loc_y);
+        if (opt_down.first && opt_down.second < best_dist) {
+          best_opt = opt_down.first;
+          best_dist = opt_down.second;
+          update_loc_y = (sum_down * _row_height) + y_min;
+        }
       }
     }
+  
     find_row++;
   }
 
