@@ -73,6 +73,7 @@ class LmPatch
 
   // getter
   std::map<int, LmPatchLayer>& get_layer_map() { return _layer_map; }
+  std::map<int, LmNet>& get_subnet_map() { return _subnet_map; }
 
   // setter
 
@@ -99,6 +100,7 @@ class LmPatch
 
  private:
   std::map<int, LmPatchLayer> _layer_map;  /// int : layer id
+  std::map<int, LmNet> _subnet_map;       /// int : net id
 };
 
 }  // namespace ilm

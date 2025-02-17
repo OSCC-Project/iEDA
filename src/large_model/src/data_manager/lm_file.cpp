@@ -108,7 +108,7 @@ bool LmLayoutFileIO::saveJsonNets()
           json_feature["area"] = net_feature->area;
           json_feature["volume"] = net_feature->volume;
           json_feature["l_ness"] = net_feature->l_ness;
-          json_feature["layer_raito"]  = net_feature->layer_ratio;
+          json_feature["layer_ratio"]  = net_feature->layer_ratio;
         }
         json_net["feature"] = json_feature;
       }
@@ -285,9 +285,39 @@ bool LmLayoutFileIO::saveJsonPatchs()
       json_patch["macro_margin"] = patch.macro_margin;
       json_patch["RUDY_congestion"] = patch.RUDY_congestion;
       json_patch["EGR_congestion"] = patch.EGR_congestion;
-      
-      json json_layers = json::array();
 
+      json json_sub_nets = json::array();
+      for (auto& [net_id, lm_net] : patch.get_subnet_map()) {
+          json json_sub_net;
+          json_sub_net["id"] = net_id;
+          auto* idb_net = dmInst->get_idb_design()->get_net_list()->get_net_list()[net_id];
+          int min_lx = INT32_MAX;
+          int min_ly = INT32_MAX;
+          int max_ux = INT32_MIN;
+          int max_uy = INT32_MIN;
+          auto* idb_driving_pin = idb_net->get_driving_pin();
+          if (idb_driving_pin != nullptr) {
+            min_lx = idb_driving_pin->get_average_coordinate()->get_x();
+            min_ly = idb_driving_pin->get_average_coordinate()->get_y();
+            max_ux = idb_driving_pin->get_average_coordinate()->get_x();  
+            max_uy = idb_driving_pin->get_average_coordinate()->get_y();
+          }
+          for (auto* idb_load_pin : idb_net->get_load_pins()) {
+            min_lx = std::min(min_lx, idb_load_pin->get_average_coordinate()->get_x());
+            min_ly = std::min(min_ly, idb_load_pin->get_average_coordinate()->get_y());
+            max_ux = std::max(max_ux, idb_load_pin->get_average_coordinate()->get_x());
+            max_uy = std::max(max_uy, idb_load_pin->get_average_coordinate()->get_y());
+          }
+          // 返回 net 与 patch 的 overlap coordinate
+          json_sub_net["llx"] = std::max(min_lx, llx);
+          json_sub_net["lly"] = std::max(min_ly, lly);
+          json_sub_net["urx"] = std::min(max_ux, urx);
+          json_sub_net["ury"] = std::min(max_uy, ury);
+          json_sub_nets.push_back(json_sub_net);
+      }
+      json_patch["sub_nets"] = json_sub_nets;
+
+      json json_layers = json::array();
       for (auto& [layer_id, patch_layer] : patch.get_layer_map()) {
         json json_layer = {};
         json_layer["id"] = layer_id;

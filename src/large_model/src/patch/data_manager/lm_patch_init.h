@@ -38,6 +38,7 @@ class LmPatchInit
   void init_patch_grid();
 
   void initSubNet();
+  void initSubNetFeature();
 
   void initLayoutPDN();
   void initLayoutInstance();
