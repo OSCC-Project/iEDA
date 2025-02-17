@@ -1,5 +1,5 @@
 use log;
-use spef_parser::spef_parser;
+use spef::spef_parser;
 use sprs::TriMat;
 use sprs::TriMatI;
 use std::cell::RefCell;
@@ -125,6 +125,17 @@ impl RCData {
     }
 }
 
+pub fn split_spef_index_str(index_name: &str) -> (&str, &str) {
+    let v: Vec<&str> = index_name.split(':').collect();
+    let index_str = v.first().unwrap();
+    let node_str = v.last().unwrap();
+    if v.len() == 2 {
+        (&index_str[1..], *node_str)
+    } else {
+        (&index_str[1..], "")
+    }
+}
+
 /// Read rc data from spef file.
 pub fn read_rc_data_from_spef(spef_file_path: &str) -> RCData {
     log::info!("read spef file {} start", spef_file_path);
@@ -136,7 +147,7 @@ pub fn read_rc_data_from_spef(spef_file_path: &str) -> RCData {
     let mut rc_data = RCData::default();
 
     let spef_index_to_string = |index_str: &str| {
-        let split_names = spef_parser::spef_c_api::split_spef_index_str(&index_str);
+        let split_names = split_spef_index_str(&index_str);
         let index = split_names.0.parse::<usize>().unwrap();
         let node_name = node_name_map.get(&index);
         if !split_names.1.is_empty() {

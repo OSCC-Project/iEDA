@@ -40,6 +40,14 @@ const void *read_spef(const char *c_power_net_spef);
  */
 const void *read_inst_pwr_csv(const char *file_path);
 
+/**
+ * @brief Set the instance power data, not used the csv file.
+ * 
+ * @param c_instance_power_data 
+ * @return void* 
+ */
+void *set_instance_power_data(struct RustVec c_instance_power_data);
+
 struct RustNetConductanceData build_one_net_conductance_matrix_data(
     const void *c_rc_data, const char *c_net_name);
 

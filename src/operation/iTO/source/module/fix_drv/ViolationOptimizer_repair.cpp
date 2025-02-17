@@ -151,8 +151,9 @@ void ViolationOptimizer::repairViolationNetByDP(TreeBuild* tree, int curr_pt, in
         // The constructed tree structure may have the case that the children
         // of a pin are also a pin. This results in pin_cap >= cap_load_allowed_max, which
         // should be separated.
-        if (pin_cap >= cap_load_allowed_max) {
-          int left_branch = tree->left(curr_pt);
+        int left_branch = tree->left(curr_pt);
+        // FIXME: The pin may not have left branch
+        if (pin_cap >= cap_load_allowed_max && left_branch != TreeBuild::_null_pt) {
           Point left_loc = tree->get_location(left_branch);
 
           auto buf_loc = (curr_pt_loc + left_loc) / 2;
