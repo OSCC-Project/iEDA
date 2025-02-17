@@ -16,7 +16,7 @@
 // ***************************************************************************************
 /**
  * @file StaFindStartOrEnd.cc
- * @author shy long (longshy@pcl.ac.cn)
+ * @author longshy (longshy@pcl.ac.cn)
  * @brief The implemention of the class for finding start or end points of the
  * timing path.
  * @version 0.1

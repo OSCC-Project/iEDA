@@ -16,46 +16,17 @@
 // ***************************************************************************************
 #pragma once
 
-#include "Logger.hpp"
-
 namespace irt {
 
-enum class DEProcessType
+class ERIterParam
 {
-  kNone,
-  kSkip,
-  kRoutingCost,
-  kCutCost,
-  kRoutingPatch
-};
+ public:
+  ERIterParam() = default;
+  ~ERIterParam() = default;
+  // getter
+  // setter
 
-struct GetDEProcessTypeName
-{
-  std::string operator()(const DEProcessType& process_type) const
-  {
-    std::string process_type_name;
-    switch (process_type) {
-      case DEProcessType::kNone:
-        process_type_name = "none";
-        break;
-      case DEProcessType::kSkip:
-        process_type_name = "skip";
-        break;
-      case DEProcessType::kRoutingCost:
-        process_type_name = "routing_cost";
-        break;
-      case DEProcessType::kCutCost:
-        process_type_name = "cut_cost";
-        break;
-      case DEProcessType::kRoutingPatch:
-        process_type_name = "routing_patch";
-        break;
-      default:
-        RTLOG.error(Loc::current(), "Unrecognized type!");
-        break;
-    }
-    return process_type_name;
-  }
+ private:
 };
 
 }  // namespace irt

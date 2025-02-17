@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.0)
 
 set (CMAKE_CXX_STANDARD 20)
 
-SET(CMAKE_BUILD_TYPE "Debug")
+# SET(CMAKE_BUILD_TYPE "Debug")
 aux_source_directory(./ SRC)
 add_library(sdc-cmd ${SRC})
 

@@ -16,7 +16,7 @@
 // ***************************************************************************************
 /**
  * @file NetlistWriter.cc
- * @author shy long (longshy@pcl.ac.cn)
+ * @author longshy (longshy@pcl.ac.cn)
  * @brief
  * @version 0.1
  * @date 2021-10-26
@@ -51,7 +51,7 @@ void NetlistWriter::writeModule() {
 
   LOG_INFO << "start write verilog file " << _file_name;
 
-  std::fprintf(_stream, "//Generate the verilog at %s\n",
+  std::fprintf(_stream, "//Generate the verilog at %s by iSTA.\n",
                Time::getNowWallTime());
 
   fprintf(_stream, "module %s (", _netlist.get_name());

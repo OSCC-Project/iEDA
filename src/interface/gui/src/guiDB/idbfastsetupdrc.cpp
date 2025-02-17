@@ -19,31 +19,38 @@
 #include "omp.h"
 
 void IdbSpeedUpSetup::showDrc(std::map<std::string, std::vector<idrc::DrcViolation*>>& drc_db, int max_num) {
-  for (auto drc : drc_db) {
-    std::cout << "drc rule=" << drc.first << " number=" << drc.second.size() << std::endl;
-    auto container = _gui_design->get_drc_container(drc.first);
-    if (container != nullptr) {
-      auto drc_spot_list = drc.second;
-      if (max_num > 0) {
-        int size = max_num > drc_spot_list.size() ? drc_spot_list.size() : max_num;
-        // #pragma omp parallel for
-        for (int i = 0; i < size; i++) {
-          /// create drc view
-          std::string layer = drc_spot_list[i]->get_layer()->get_name();
-          auto drc_list     = container->findDrcList(layer);
-          createDrc(drc_list, drc_spot_list[i]);
+  for (auto [rule_type, drc_spot_list] : drc_db) {
+    std::cout << "drc rule=" << rule_type << " number=" << drc_spot_list.size() << std::endl;
+
+    for (auto [rule_type, drc_spot_list] : drc_db) {
+      std::string rule = rule_type;
+      if (rule == "Default Spacing") {
+        rule = "ParallelRunLength Spacing";
+      }
+
+      auto container = _gui_design->get_drc_container(rule);
+      if (container != nullptr) {
+        if (max_num > 0) {
+          int size = max_num > drc_spot_list.size() ? drc_spot_list.size() : max_num;
+          // #pragma omp parallel for
+          for (int i = 0; i < size; i++) {
+            /// create drc view
+            std::string layer = drc_spot_list[i]->get_layer()->get_name();
+            auto drc_list     = container->findDrcList(layer);
+            createDrc(drc_list, drc_spot_list[i]);
+          }
+        } else {
+          // #pragma omp parallel for
+          for (auto drc_spot : drc_spot_list) {
+            /// create drc view
+            std::string layer = drc_spot->get_layer()->get_name();
+            auto drc_list     = container->findDrcList(layer);
+            createDrc(drc_list, drc_spot);
+          }
         }
       } else {
-        // #pragma omp parallel for
-        for (auto drc_spot : drc_spot_list) {
-          /// create drc view
-          std::string layer = drc_spot->get_layer()->get_name();
-          auto drc_list     = container->findDrcList(layer);
-          createDrc(drc_list, drc_spot);
-        }
+        std::cout << "find no drc container view : " << rule << std::endl;
       }
-    } else {
-      std::cout << "find no drc container view : " << drc.first << std::endl;
     }
   }
 }

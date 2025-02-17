@@ -16,7 +16,7 @@
 // ***************************************************************************************
 /**
  * @file VerilogParserRustC.hh
- * @author shy long (longshy@pcl.ac.cn)
+ * @author longshy (longshy@pcl.ac.cn)
  * @brief The VerilogParser Rust C API.
  * @version 0.1
  * @date 2023-10-30

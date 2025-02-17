@@ -69,13 +69,13 @@ class ViaMaster
 
 struct CmpViaMaster
 {
-  bool operator()(const ViaMaster& a, const ViaMaster& b, std::vector<RoutingLayer>& routing_layer_list) const
+  bool operator()(const ViaMaster& a, const ViaMaster& b, std::vector<Direction>& direction_list) const
   {
     SortStatus sort_status = SortStatus::kEqual;
     // 层方向优先
     if (sort_status == SortStatus::kEqual) {
-      Direction above_layer_direction = routing_layer_list[a.get_above_enclosure().get_layer_idx()].get_prefer_direction();
-      Direction below_layer_direction = routing_layer_list[a.get_below_enclosure().get_layer_idx()].get_prefer_direction();
+      Direction above_layer_direction = direction_list[a.get_above_enclosure().get_layer_idx()];
+      Direction below_layer_direction = direction_list[a.get_below_enclosure().get_layer_idx()];
       Direction a_above_direction = a.get_above_direction();
       Direction a_below_direction = a.get_below_direction();
       Direction b_above_direction = b.get_above_direction();

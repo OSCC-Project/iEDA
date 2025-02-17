@@ -121,21 +121,35 @@ double ModelFactory::criticalBufWireLen(const double& alpha, const double& beta,
 
 std::pair<std::pair<double, double>, std::pair<double, double>> ModelFactory::criticalSteinerWireLen(
     const double& alpha, const double& beta, const double& gamma, const double& r, const double& c, const double& cap_pin,
-    const double& input_slew, const size_t& fanout)
+    const double& input_slew, const double& cap_load)
 {
   if (alpha <= 0 || beta <= 0 || gamma <= 0 || r <= 0 || c <= 0 || input_slew <= 0) {
     assert(false);
     return {{0, 0}, {0, 0}};
   }
-  auto m = cap_pin * (fanout - 1) / (2 * c);
-  auto n = (gamma - 0.414 * alpha * input_slew) / (r * c);
+  auto m = (cap_load - cap_pin) / (2 * c);
+  auto n = (-gamma - 0.414 * alpha * input_slew) / (r * c);
 
-  double x1 = (-n + m * std::sqrt(n)) / (2 * (m * m - n));
-  double x2 = (-n - m * std::sqrt(n)) / (2 * (m * m - n));
-  double cwe_1 = (m + std::sqrt(m * m - n + n / x1)) / (1 - x1);
-  double cwe_2 = (m + std::sqrt(m * m - n + n / x2)) / (1 - x2);
+  double x1 = (n - m * std::sqrt(-n)) / (2 * (m * m + n));
+  double x2 = (n + m * std::sqrt(-n)) / (2 * (m * m + n));
+  double cwe_1 = (std::sqrt(m * m + n - n / x1) - m) / (1 - x1);
+  double cwe_2 = (std::sqrt(m * m + n - n / x2) - m) / (1 - x2);
 
   return {{cwe_1, x1}, {cwe_2, x2}};
+}
+double ModelFactory::criticalError(const double& r, const double& c, const double& x, const double& cap_load, const double& cap_pin_low,
+                                   const double& cap_pin_high, const double& input_slew, const double& gamma, const double& beta_i,
+                                   const double& beta_k)
+{
+  double delta_slew = -0.414 * beta_k * input_slew;
+  double numerator = (cap_load - cap_pin_high) * r * x
+                     - std::sqrt(r * x * (4 * c * (delta_slew - gamma) * (x - 1) + std::pow((cap_load - cap_pin_high), 2) * r * x));
+
+  double denominator = c * (beta_i - beta_k) - c * (beta_i - beta_k) * x + (cap_load - cap_pin_high) * r * x
+                       - std::sqrt(4 * c * (cap_pin_low * (beta_i - beta_k) + delta_slew - gamma) * r * (x - 1) * x
+                                   + std::pow((cap_load - cap_pin_high) * r * x + c * (beta_i - beta_k) * (1 - x), 2));
+
+  return numerator / denominator;
 }
 #ifdef PY_MODEL
 /**

@@ -27,10 +27,12 @@
 #include "liberty/Lib.hh"
 #include "netlist/Instance.hh"
 #include "netlist/Net.hh"
+#include "propagation-cuda/propagation.cuh"
 
 namespace ista {
 class StaVertex;
 class StaFunc;
+class Lib_Arc_GPU;
 
 /**
  * @brief The static timing analysis DAG edge.
@@ -70,6 +72,7 @@ class StaArc {
   void resetArcDelayBucket() { _arc_delay_bucket.freeData(); }
   unsigned isResetArcDelayBucket() { return (_arc_delay_bucket.isFreeData()); }
   int get_arc_delay(AnalysisMode analysis_mode, TransType trans_type);
+  void initArcDelayData();
   StaArcDelayData* getArcDelayData(AnalysisMode analysis_mode,
                                    TransType trans_type);
   StaDataBucket& getDataBucket() { return _arc_delay_bucket; }
@@ -190,6 +193,7 @@ class StaInstArc : public StaArc {
  public:
   StaInstArc(StaVertex* src, StaVertex* snk, LibArc* lib_arc, Instance* inst);
   ~StaInstArc() override = default;
+  // ~StaInstArc() override = default;
 
   unsigned isInstArc() const override { return 1; }
 
@@ -231,9 +235,19 @@ class StaInstArc : public StaArc {
 
   auto* get_inst() { return _inst; }
 
+  Lib_Arc_GPU* get_lib_gpu_arc() const { return _lib_gpu_arc; }
+  void set_lib_gpu_arc(Lib_Arc_GPU* lib_gpu_arc) { _lib_gpu_arc = lib_gpu_arc; }
+  void buildLibArcsGPU();
+
+  int get_lib_arc_id() const { return _lib_arc_id; }
+  void set_lib_arc_id(int arc_id) { _lib_arc_id = arc_id; }
+
  private:
   LibArc* _lib_arc;  //!< The mapped to lib arc.
   Instance* _inst;   //!< The owned inst.
+
+  Lib_Arc_GPU* _lib_gpu_arc = nullptr;  //!< The gpu lib arc.
+  int _lib_arc_id = -1; //!< The arc id for gpu lib data.
 
   FORBIDDEN_COPY(StaInstArc);
 };

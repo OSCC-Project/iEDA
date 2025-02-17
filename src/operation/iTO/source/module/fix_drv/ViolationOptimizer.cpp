@@ -25,6 +25,8 @@
 #include "api/TimingIDBAdapter.hh"
 #include "timing_engine.h"
 
+#include <algorithm>
+
 namespace ito {
 
 ViolationOptimizer* ViolationOptimizer::_instance = nullptr;
@@ -131,7 +133,7 @@ void ViolationOptimizer::iterCheckAndRepair()
     // If there are still a violation nets, the secondary fix is performed.
     int which_id = 1;
     for (auto [net, cap_load_allowed_max] : _violation_nets_map) {
-      int batch_size = prev_violation_num / 100;
+      int batch_size = std::max(prev_violation_num / 100, 10);
       if (which_id % batch_size == 0 || which_id == prev_violation_num) {
         LOG_INFO << "The " << iter + 1 << "-th Check and repair: " << which_id << "/" << prev_violation_num << "("
                  << (double(which_id) / prev_violation_num) * 100 << "%) nets\n";
