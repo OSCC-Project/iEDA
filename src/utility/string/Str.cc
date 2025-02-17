@@ -681,6 +681,19 @@ std::string Str::trimBackslash(std::string origin_str)
 }
 
 /**
+ * @brief trim \
+ *
+ * @param origin_str
+ * @return std::string
+ */
+std::string Str::trimEscape(std::string origin_str)
+{
+  std::string str = origin_str;
+  str.erase(std::remove(str.begin(), str.end(), '\\'), str.end());
+  return str;
+}
+
+/**
  * @brief change [] to \[\]
  *
  * @param origin_str
