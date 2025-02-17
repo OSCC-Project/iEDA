@@ -48,6 +48,12 @@ unsigned iIR::readInstancePowerDB(std::string_view instance_power_file_path) {
 }
 
 unsigned iIR::setInstancePowerData(std::vector<IRInstancePower> instance_power_data) {
+  RustVec c_instance_power_data;
+  c_instance_power_data.data = instance_power_data.data();
+  c_instance_power_data.len = instance_power_data.size();
+  c_instance_power_data.type_size = sizeof(IRInstancePower);
+  c_instance_power_data.cap = instance_power_data.capacity();
+  _power_data = set_instance_power_data(c_instance_power_data);
   return 1;
 }
 
