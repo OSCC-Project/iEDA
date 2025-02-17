@@ -903,7 +903,7 @@ int32_t DefRead::parse_component(defiComponent* def_component)
   }
 
   std::string inst_name = def_component->id();
-  std::string new_inst_name = ieda::Str::trimBackslash(inst_name);
+  std::string new_inst_name = ieda::Str::trimEscape(inst_name);
 
   IdbInstance* instance = instance_list->add_instance(new_inst_name);
   if (instance == nullptr) {
@@ -1039,7 +1039,7 @@ int32_t DefRead::parse_net(defiNet* def_net)
   //   IdbNet* net = net_list->add_net(def_net->name());
 
   std::string net_name = def_net->name();
-  std::string new_net_name = ieda::Str::trimBackslash(net_name);
+  std::string new_net_name = ieda::Str::trimEscape(net_name);
   IdbNet* net = net_list->add_net(new_net_name);
 
   if (net == nullptr) {
@@ -1073,7 +1073,7 @@ int32_t DefRead::parse_net(defiNet* def_net)
 
   for (int i = 0; i < def_net->numConnections(); i++) {
     std::string io_name = def_net->instance(i);
-    io_name = ieda::Str::trimBackslash(io_name);
+    io_name = ieda::Str::trimEscape(io_name);
 
     IdbPin* pin = nullptr;
     if (io_name.compare("PIN") == 0) {
@@ -1547,12 +1547,19 @@ int32_t DefRead::parse_pin(defiPin* def_pin)
   IdbLayers* layer_list = layout->get_layers();
   // IdbNetList* net_list = design->get_net_list();
   IdbPins* pin_list = design->get_io_pin_list();
-  IdbPin* pin = pin_list->add_pin_list(def_pin->pinName());
+
+  std::string pin_name = def_pin->pinName();
+  std::string new_pin_name = ieda::Str::trimEscape(pin_name);
+
+  IdbPin* pin = pin_list->add_pin_list(new_pin_name);
   if (pin == nullptr) {
     std::cout << "Create Pin Error..." << std::endl;
     return kDbFail;
   }
-  pin->set_net_name(def_pin->netName());
+
+  std::string net_name = def_pin->netName();
+  std::string new_net_name = ieda::Str::trimEscape(net_name);
+  pin->set_net_name(new_net_name);
   // pin->set_net(net_list->find_net(pin->get_net_name()));
   pin->set_orient_by_enum(def_pin->orient());
   pin->set_as_io();
