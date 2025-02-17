@@ -14,17 +14,17 @@ use crate::matrix::ir_rc::RCOneNetData;
 #[derive(Deserialize)]
 pub struct InstancePowerRecord {
     #[serde(rename = "Instance Name")]
-    instance_name: String,
+    pub instance_name: String,
     #[serde(rename = "Nominal Voltage")]
-    nominal_voltage: f64,
+    pub nominal_voltage: f64,
     #[serde(rename = "Internal Power")]
-    internal_power: f64,
+    pub internal_power: f64,
     #[serde(rename = "Switch Power")]
-    switch_power: f64,
+    pub switch_power: f64,
     #[serde(rename = "Leakage Power")]
-    leakage_power: f64,
+    pub leakage_power: f64,
     #[serde(rename = "Total Power")]
-    total_power: f64,
+    pub total_power: f64,
 }
 
 /// Read instance power csv file.
