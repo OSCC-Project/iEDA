@@ -59,7 +59,7 @@ class CmdDRCAutoRun : public TclCmd
 class TclInitDrcAPI : public TclCmd
 {
  public:
-  explicit TclInitDrcAPI(const char* cmd_name) : TclCmd(cmd_name){};
+  explicit TclInitDrcAPI(const char* cmd_name) : TclCmd(cmd_name) {};
   ~TclInitDrcAPI() override = default;
 
   unsigned check() { return 1; };
@@ -100,7 +100,7 @@ class TclDrcCheckDef : public TclCmd
 class TclDestroyDrcAPI : public TclCmd
 {
  public:
-  explicit TclDestroyDrcAPI(const char* cmd_name) : TclCmd(cmd_name){};
+  explicit TclDestroyDrcAPI(const char* cmd_name) : TclCmd(cmd_name) {};
   ~TclDestroyDrcAPI() override = default;
 
   unsigned check() { return 1; };
@@ -158,18 +158,6 @@ class CmdDRCSaveDetailFile : public TclCmd
  private:
   // private function
   // private data
-};
-
-class CmdDRCDiagnosis : public TclCmd
-{
- public:
-  explicit CmdDRCDiagnosis(const char* cmd_name);
-  ~CmdDRCDiagnosis() override = default;
-
-  unsigned check() override;
-  unsigned exec() override;
-
- private:
 };
 
 class CmdDRCReadDetailFile : public TclCmd

@@ -41,6 +41,17 @@ pub struct RustVec {
     type_size: usize,
 }
 
+/// IR instance power data for interaction with ipower.
+#[repr(C)]
+pub struct IRInstancePower {
+    instance_name: *const c_char,
+    nominal_voltage: f64,
+    internal_power: f64,
+    switch_power: f64,
+    leakage_power: f64,
+    total_power: f64,
+}
+
 /// One Net conductance matrix data.
 #[allow(dead_code)]
 struct IRNetConductanceData {
@@ -181,6 +192,29 @@ pub extern "C" fn read_inst_pwr_csv(file_path: *const c_char) -> *mut c_void {
     let inst_power_path = inst_power_path_cstr.to_str().unwrap();
 
     let records = read_instance_pwr_csv(inst_power_path).expect("error reading instance power csv file");
+    Box::into_raw(Box::new(records)) as *mut c_void
+}
+
+#[no_mangle]
+pub extern "C" fn set_instance_power_data(c_instance_power_data: RustVec) -> *mut c_void {
+    let mut records = Vec::new();
+    for i in 0..c_instance_power_data.len {
+        let instance_power_data_ptr = c_instance_power_data.data as *const IRInstancePower;
+        let instance_power_data = unsafe { &*instance_power_data_ptr.offset(i as isize) };
+        let instance_name = unsafe {c_str_to_r_str(instance_power_data.instance_name)};
+    
+        let instance_power_record = InstancePowerRecord {
+            instance_name: instance_name,
+            nominal_voltage:instance_power_data.nominal_voltage,
+            internal_power:instance_power_data.internal_power,
+            switch_power:instance_power_data.switch_power,
+            leakage_power:instance_power_data.leakage_power,
+            total_power:instance_power_data.total_power,
+        };
+
+        records.push(instance_power_record);
+    }
+
     Box::into_raw(Box::new(records)) as *mut c_void
 }
 

@@ -23,8 +23,12 @@
  */
 #include "IdbBus.h"
 
+#include <cctype>
+#include <iostream>
 #include <optional>
 #include <sstream>
+#include <stdexcept>
+#include <string>
 
 #include "IdbNet.h"
 
@@ -88,7 +92,60 @@ void IdbBusList::addBusObject(IdbBus&& idb_bus_object)
   }
 }
 
-std::optional<std::pair<std::string, unsigned>> IdbBus::parseBusName(const std::string& name_str, const IdbBusBitChars& bus_bit_chars)
+// std::optional<std::pair<std::string, unsigned>> IdbBus::parseBusName(const std::string& name_str, const IdbBusBitChars& bus_bit_chars)
+// {
+//   /**
+//    * @brief
+//    * FSM to parse bus name.
+//    * parse state:
+//    *  read [bus_index], skip escaped busbitchars \[\]
+//    */
+//   if (!name_str.empty() && name_str.back() != bus_bit_chars.getRightDelimiter()) {
+//     return std::nullopt;
+//   }
+
+//   enum ParseState
+//   {
+//     ordinary,
+//     escape,
+//     busBitChar
+//   };
+//   std::stringstream ss;
+//   ParseState state = ordinary;
+//   bool is_bus = false;
+//   unsigned index = 0;
+//   for (auto c : name_str) {
+//     switch (state) {
+//       case ordinary:
+//         if (c == '\\') {
+//           state = escape;
+//         } else if (c == bus_bit_chars.getLeftDelimiter()) {
+//           state = busBitChar;
+//         } else {
+//           ss << c;
+//         }
+//         break;
+//       case escape:
+//         state = ordinary;
+//         ss << c;
+//         break;
+//       case busBitChar:
+//         if (c == bus_bit_chars.getRightDelimiter()) {
+//           state = ordinary;
+//           is_bus = true;
+//         } else {
+//           index = index * 10 + (c - '0');
+//         }
+//         break;
+//     }
+//   }
+//   if (state != ordinary || !is_bus) {
+//     return std::nullopt;
+//   }
+//   return std::pair<std::string, unsigned>{ss.str(), index};
+// }
+
+std::optional<std::pair<std::string, unsigned>> IdbBus::parseBusName(std::string name_str, const IdbBusBitChars& bus_bit_chars)
 {
   /**
    * @brief
@@ -96,45 +153,30 @@ std::optional<std::pair<std::string, unsigned>> IdbBus::parseBusName(const std::
    * parse state:
    *  read [bus_index], skip escaped busbitchars \[\]
    */
-  enum ParseState
-  {
-    ordinary,
-    escape,
-    busBitChar
-  };
-  std::stringstream ss;
-  ParseState state = ordinary;
-  bool is_bus = false;
-  unsigned index = 0;
-  for (auto c : name_str) {
-    switch (state) {
-      case ordinary:
-        if (c == '\\') {
-          state = escape;
-        } else if (c == bus_bit_chars.getLeftDelimiter()) {
-          state = busBitChar;
-        } else {
-          ss << c;
-        }
-        break;
-      case escape:
-        state = ordinary;
-        ss << c;
-        break;
-      case busBitChar:
-        if (c == bus_bit_chars.getRightDelimiter()) {
-          state = ordinary;
-          is_bus = true;
-        } else {
-          index = index * 10 + (c - '0');
-        }
-        break;
-    }
-  }
-  if (state != ordinary || !is_bus) {
+  if (!name_str.empty() && name_str.back() != bus_bit_chars.getRightDelimiter()) {
     return std::nullopt;
   }
-  return std::pair<std::string, unsigned>{ss.str(), index};
+  int index = 0;
+
+  size_t start_pos = name_str.find_last_of(bus_bit_chars.getLeftDelimiter());
+  if (start_pos != std::string::npos) {
+    size_t end_pos = name_str.find_last_of(bus_bit_chars.getRightDelimiter());
+    if (end_pos != std::string::npos && end_pos > start_pos) {
+      std::string extracted_str = name_str.substr(start_pos + 1, end_pos - start_pos - 1);
+
+      try {
+        index = std::stoi(extracted_str);
+      } catch (const std::invalid_argument& e) {
+        std::cerr << "Error: Invalid number format." << std::endl;
+      } catch (const std::out_of_range& e) {
+        std::cerr << "Error: Number out of range." << std::endl;
+      }
+
+      name_str.erase(start_pos, end_pos - start_pos + 1);
+    }
+  }
+
+  return std::pair<std::string, unsigned>{name_str, index};
 }
 void IdbBusList::addOrUpdate(const std::pair<std::string, unsigned>& info, const std::function<void(IdbBus&)>& setter)
 {

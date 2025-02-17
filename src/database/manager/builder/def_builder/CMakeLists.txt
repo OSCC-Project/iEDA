@@ -22,3 +22,4 @@ target_include_directories(def_builder
 )
 
 target_link_libraries(def_builder PRIVATE  def defzlib str)
+set(CMAKE_BUILD_TYPE "debug")

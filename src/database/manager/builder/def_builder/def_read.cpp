@@ -902,7 +902,14 @@ int32_t DefRead::parse_component(defiComponent* def_component)
     return kDbFail;
   }
 
-  IdbInstance* instance = instance_list->add_instance(def_component->id());
+  std::string inst_name = def_component->id();
+  std::string new_inst_name = ieda::Str::trimEscape(inst_name);
+  if ("u_NV_NVDLA_cbuf/u_cbuf_ram_bank6_ram0/rmod/u_mema" == new_inst_name) {
+    int a = 0;
+    a += 1;
+  }
+
+  IdbInstance* instance = instance_list->add_instance(new_inst_name);
   if (instance == nullptr) {
     std::cout << "Create Instance Error..." << std::endl;
     return kDbFail;
@@ -1033,11 +1040,11 @@ int32_t DefRead::parse_net(defiNet* def_net)
 
   IdbNetList* net_list = design->get_net_list();
 
-  IdbNet* net = net_list->add_net(def_net->name());
+  //   IdbNet* net = net_list->add_net(def_net->name());
 
-  //   std::string net_name = def_net->name();
-  //   std::string new_net_name = ieda::Str::trimBackslash(net_name);
-  //   IdbNet* net = net_list->add_net(new_net_name);
+  std::string net_name = def_net->name();
+  std::string new_net_name = ieda::Str::trimEscape(net_name);
+  IdbNet* net = net_list->add_net(new_net_name);
 
   if (net == nullptr) {
     std::cout << "Create Net Error..." << std::endl;
@@ -1069,7 +1076,9 @@ int32_t DefRead::parse_net(defiNet* def_net)
   }
 
   for (int i = 0; i < def_net->numConnections(); i++) {
-    string io_name = def_net->instance(i);
+    std::string io_name = def_net->instance(i);
+    io_name = ieda::Str::trimEscape(io_name);
+
     IdbPin* pin = nullptr;
     if (io_name.compare("PIN") == 0) {
       pin = io_pin_list->find_pin(def_net->pin(i));
@@ -1266,8 +1275,8 @@ int32_t DefRead::parse_special_net(defiNet* def_net)
   }
 
   IdbDesign* design = _def_service->get_design();  // Def
-  //IdbLayout* layout = _def_service->get_layout();  // Lef
-  //IdbLayers* layer_list = layout->get_layers();
+  // IdbLayout* layout = _def_service->get_layout();  // Lef
+  // IdbLayers* layer_list = layout->get_layers();
   IdbPins* io_pin_list = design->get_io_pin_list();
   IdbInstanceList* instance_list = design->get_instance_list();
 
@@ -1439,7 +1448,7 @@ int32_t DefRead::parse_special_net_wire(defiNet* def_net, IdbSpecialWireList* wi
 
 int32_t DefRead::parse_special_net_rects(defiNet* def_net, IdbSpecialWireList* wire_list)
 {
-  //IdbDesign* design = _def_service->get_design();  // Def
+  // IdbDesign* design = _def_service->get_design();  // Def
   IdbLayout* layout = _def_service->get_layout();  // Lef
   IdbLayers* layer_list = layout->get_layers();
 
@@ -1542,12 +1551,19 @@ int32_t DefRead::parse_pin(defiPin* def_pin)
   IdbLayers* layer_list = layout->get_layers();
   // IdbNetList* net_list = design->get_net_list();
   IdbPins* pin_list = design->get_io_pin_list();
-  IdbPin* pin = pin_list->add_pin_list(def_pin->pinName());
+
+  std::string pin_name = def_pin->pinName();
+  std::string new_pin_name = ieda::Str::trimEscape(pin_name);
+
+  IdbPin* pin = pin_list->add_pin_list(new_pin_name);
   if (pin == nullptr) {
     std::cout << "Create Pin Error..." << std::endl;
     return kDbFail;
   }
-  pin->set_net_name(def_pin->netName());
+
+  std::string net_name = def_pin->netName();
+  std::string new_net_name = ieda::Str::trimEscape(net_name);
+  pin->set_net_name(new_net_name);
   // pin->set_net(net_list->find_net(pin->get_net_name()));
   pin->set_orient_by_enum(def_pin->orient());
   pin->set_as_io();
@@ -2259,9 +2275,11 @@ int32_t DefRead::busBitCharsCallBack(defrCallbackType_e c, const char* bus_bit_c
 int32_t DefRead::parse_bus_bit_chars(const char* bus_bit_chars_str)
 {
   IdbDesign* design = this->get_service()->get_design();
-  IdbBusBitChars* bus_bit_chars = design->get_bus_bit_chars();
+  IdbBusBitChars* bus_bit_chars = new IdbBusBitChars();
   bus_bit_chars->setLeftDelimiter(bus_bit_chars_str[0]);
   bus_bit_chars->setRightDelimter(bus_bit_chars_str[1]);
+
+  design->set_bus_bit_chars(bus_bit_chars);
   return kDbSuccess;
 }
 

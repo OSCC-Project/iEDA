@@ -16,3 +16,4 @@ target_include_directories(idb
 )
 
 target_link_libraries(idb PRIVATE str geometry_db)
+set(CMAKE_BUILD_TYPE "debug")
