@@ -29,6 +29,7 @@ void LmPatchInit::init()
 {
   init_patch_grid();
   initSubNet();
+  initSubNetFeature();
 }
 
 void LmPatchInit::init_patch_grid()
@@ -299,5 +300,35 @@ void LmPatchInit::initLayoutIO()
 void LmPatchInit::initLayoutNets()
 {
 }
+
+void LmPatchInit::initSubNetFeature()
+{
+  ieda::Stats stats;
+
+  LOG_INFO << "LM patch init subnet feature start...";
+
+  auto& patchs = _patch_grid->get_patchs();
+
+  // #pragma omp parallel for schedule(dynamic)
+  for (int i = 0; i < (int) patchs.size(); ++i) {
+    auto it = patchs.begin();
+    std::advance(it, i);
+    auto& patch_id = it->first;
+    auto& patch = it->second;
+
+    auto& subnet_map = patch.get_subnet_map();
+    for (auto& [layer_id, patch_layer] : patch.get_layer_map()) {
+      auto& sub_nets = patch_layer.get_sub_nets();
+      for (auto&  [net_id, lm_net] : sub_nets){
+        subnet_map.insert(std::make_pair(net_id, lm_net));
+      }
+    }
+  }
+
+  LOG_INFO << "LM memory usage " << stats.memoryDelta() << " MB";
+  LOG_INFO << "LM elapsed time " << stats.elapsedRunTime() << " s";
+  LOG_INFO << "LM patch init subnet feature end...";
+}
+
 
 }  // namespace ilm
