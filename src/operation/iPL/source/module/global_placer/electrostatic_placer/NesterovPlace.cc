@@ -38,10 +38,15 @@
 #include "tool_manager.h"
 #include "usage/usage.hh"
 #include "PLAPI.hh"
+#include <boost/polygon/polygon.hpp>
+#include <boost/geometry.hpp>
 
 #ifdef BUILD_QT
 #include "utility/Image.hh"
 #endif
+namespace gtl = boost::polygon;
+using namespace gtl::operators;
+typedef gtl::polygon_90_set_data<int> PolygonSet;
 
 namespace ipl {
 
@@ -544,6 +549,8 @@ namespace ipl {
     int64_t nonplace_area = 0;
     int64_t occupied_area = 0;
 
+    Rectangle<int32_t> core_rect = _nes_database->_placer_db->get_layout()->get_core_shape();
+    PolygonSet ps;
     for (auto* n_inst : _nes_database->_nInstance_list) {
       Rectangle<int32_t> n_inst_shape = n_inst->get_origin_shape();
       int64_t shape_area_x = static_cast<int64_t>(n_inst_shape.get_width());
@@ -551,10 +558,9 @@ namespace ipl {
 
       // skip fixed nInsts.
       if (n_inst->isFixed()) {
-        nonplace_area += shape_area_x * shape_area_y;
+        ps.insert(gtl::rectangle_data<int>(n_inst_shape.get_ll_x(), n_inst_shape.get_ll_y(), n_inst_shape.get_ur_x(), n_inst_shape.get_ur_y()));
         continue;
       }
-
       if (n_inst->isMacro()) {
         occupied_area += shape_area_x * shape_area_y * _nes_config.get_target_density();
       }
@@ -565,13 +571,21 @@ namespace ipl {
       edge_x_assemble.push_back(shape_area_x);
       edge_y_assemble.push_back(shape_area_y);
     }
-
     for (auto* blockage : _nes_database->_placer_db->get_design()->get_region_list()) {
       for (auto boundary : blockage->get_boundaries()) {
-        int64_t boundary_width = static_cast<int64_t>(boundary.get_width());
-        int64_t boundary_height = static_cast<int64_t>(boundary.get_height());
-        nonplace_area += boundary_width * boundary_height;
+        // non_place_instance_area += boundary_width * boundary_height;
+        auto rect = gtl::rectangle_data<int>(boundary.get_ll_x(), boundary.get_ll_y(), boundary.get_ur_x(), boundary.get_ur_y());
+        ps.insert(rect) ;
+        
       }
+    }
+    ps &= gtl::rectangle_data<int>(core_rect.get_ll_x(), core_rect.get_ll_y(), core_rect.get_ur_x(), core_rect.get_ur_y());
+
+    std::vector<gtl::rectangle_data<int>> rects;
+    ps.get_rectangles(rects);
+    
+    for (const auto &rect : rects) {
+      nonplace_area += 1LL* boost::polygon::area(rect);
     }
 
     // sort
