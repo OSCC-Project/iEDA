@@ -92,4 +92,115 @@ TEST_F(PowerTest, example1) {
   ipower.reportInstancePowerCSV("report_instance.csv");
 }
 
+TEST_F(PowerTest, runIR) {
+  Log::setVerboseLogLevel("Pwr*", 1);
+
+  auto* timing_engine = TimingEngine::getOrCreateTimingEngine();
+  timing_engine->set_num_threads(48);
+  const char* design_work_space = "/home/taosimin/ir_example/aes";
+  timing_engine->set_design_work_space(design_work_space);
+
+  std::vector<const char*> lib_files {
+      "/home/taosimin/T28/lib/tcbn28hpcplusbwp40p140ssg0p81v125c.lib",
+      "/home/taosimin/T28/lib/tcbn28hpcplusbwp40p140hvtssg0p81v125c.lib",
+      "/home/taosimin/T28/lib/tcbn28hpcplusbwp35p140ssg0p81v125c.lib",
+      "/home/taosimin/T28/lib/tcbn28hpcplusbwp35p140lvtssg0p81v125c.lib",
+      "/home/taosimin/T28/lib/tcbn28hpcplusbwp40p140lvtssg0p81v125c.lib",
+      "/home/taosimin/T28/lib/tcbn28hpcplusbwp30p140lvtssg0p81v125c.lib",
+      "/home/taosimin/T28/lib/tcbn28hpcplusbwp30p140ssg0p81v125c.lib"
+  };
+  timing_engine->readLiberty(lib_files);
+
+  timing_engine->get_ista()->set_analysis_mode(ista::AnalysisMode::kMaxMin);
+  timing_engine->get_ista()->set_n_worst_path_per_clock(1);
+
+  std::vector<std::string> lef_files {
+    "/home/taosimin/T28/tlef/tsmcn28_9lm6X2ZUTRDL.tlef",
+            "/home/taosimin/T28/lef/PLLTS28HPMLAINT.lef",
+            "/home/taosimin/T28/lef/tcbn28hpcplusbwp30p140opplvt.lef",
+            "/home/taosimin/T28/lef/tcbn28hpcplusbwp35p140lvt.lef",
+            "/home/taosimin/T28/lef/tcbn28hpcplusbwp35p140uhvt.lef",
+            "/home/taosimin/T28/lef/tcbn28hpcplusbwp40p140hvt.lef",
+            "/home/taosimin/T28/lef/tcbn28hpcplusbwp40p140oppuhvt.lef",
+            "/home/taosimin/T28/lef/ts5n28hpcplvta256x32m4fw_130a.lef",
+            "/home/taosimin/T28/lef/tcbn28hpcplusbwp30p140cg.lef",
+            "/home/taosimin/T28/lef/tcbn28hpcplusbwp30p140oppuhvt.lef",
+            "/home/taosimin/T28/lef/tcbn28hpcplusbwp35p140mbhvt.lef",
+            "/home/taosimin/T28/lef/tcbn28hpcplusbwp35p140ulvt.lef",
+            "/home/taosimin/T28/lef/tcbn28hpcplusbwp40p140.lef",
+            "/home/taosimin/T28/lef/tcbn28hpcplusbwp40p140uhvt.lef",
+            "/home/taosimin/T28/lef/ts5n28hpcplvta64x100m2fw_130a.lef",
+            "/home/taosimin/T28/lef/tcbn28hpcplusbwp30p140hvt.lef",
+            "/home/taosimin/T28/lef/tcbn28hpcplusbwp30p140oppulvt.lef",
+            "/home/taosimin/T28/lef/tcbn28hpcplusbwp35p140mb.lef",
+            "/home/taosimin/T28/lef/tcbn28hpcplusbwp40p140cgcwhvt.lef",
+            "/home/taosimin/T28/lef/tcbn28hpcplusbwp40p140lvt.lef",
+            "/home/taosimin/T28/lef/tpbn28v_9lm.lef",
+            "/home/taosimin/T28/lef/ts5n28hpcplvta64x128m2f_130a.lef",
+            "/home/taosimin/T28/lef/tcbn28hpcplusbwp30p140.lef",
+            "/home/taosimin/T28/lef/tcbn28hpcplusbwp30p140uhvt.lef",
+            "/home/taosimin/T28/lef/tcbn28hpcplusbwp35p140mblvt.lef",
+            "/home/taosimin/T28/lef/tcbn28hpcplusbwp40p140cgcw.lef",
+            "/home/taosimin/T28/lef/tcbn28hpcplusbwp40p140mbhvt.lef",
+            "/home/taosimin/T28/lef/tpbn28v.lef",
+            "/home/taosimin/T28/lef/ts5n28hpcplvta64x128m2fw_130a.lef",
+            "/home/taosimin/T28/lef/tcbn28hpcplusbwp30p140lvt.lef",
+            "/home/taosimin/T28/lef/tcbn28hpcplusbwp30p140ulvt.lef",
+            "/home/taosimin/T28/lef/tcbn28hpcplusbwp35p140opphvt.lef",
+            "/home/taosimin/T28/lef/tcbn28hpcplusbwp40p140cgehvt.lef",
+            "/home/taosimin/T28/lef/tcbn28hpcplusbwp40p140mb.lef",
+            "/home/taosimin/T28/lef/tphn28hpcpgv18_9lm.lef",
+            "/home/taosimin/T28/lef/ts5n28hpcplvta64x88m2fw_130a.lef",
+            "/home/taosimin/T28/lef/tcbn28hpcplusbwp30p140mb.lef",
+            "/home/taosimin/T28/lef/tcbn28hpcplusbwp35p140cghvt.lef",
+            "/home/taosimin/T28/lef/tcbn28hpcplusbwp35p140opp.lef",
+            "/home/taosimin/T28/lef/tcbn28hpcplusbwp40p140cghvt.lef",
+            "/home/taosimin/T28/lef/tcbn28hpcplusbwp40p140oppehvt.lef",
+            "/home/taosimin/T28/lef/ts1n28hpcplvtb2048x48m8sw_180a.lef",
+            "/home/taosimin/T28/lef/ts5n28hpcplvta64x92m2fw_130a.lef",
+            "/home/taosimin/T28/lef/tcbn28hpcplusbwp30p140mblvt.lef",
+            "/home/taosimin/T28/lef/tcbn28hpcplusbwp35p140cg.lef",
+            "/home/taosimin/T28/lef/tcbn28hpcplusbwp35p140opplvt.lef",
+            "/home/taosimin/T28/lef/tcbn28hpcplusbwp40p140cg.lef",
+            "/home/taosimin/T28/lef/tcbn28hpcplusbwp40p140opphvt.lef",
+            "/home/taosimin/T28/lef/ts1n28hpcplvtb512x128m4sw_180a.lef",
+            "/home/taosimin/T28/lef/ts5n28hpcplvta64x96m2fw_130a.lef",
+            "/home/taosimin/T28/lef/tcbn28hpcplusbwp30p140opphvt.lef",
+            "/home/taosimin/T28/lef/tcbn28hpcplusbwp35p140hvt.lef",
+            "/home/taosimin/T28/lef/tcbn28hpcplusbwp35p140oppuhvt.lef",
+            "/home/taosimin/T28/lef/tcbn28hpcplusbwp40p140cguhvt.lef",
+            "/home/taosimin/T28/lef/tcbn28hpcplusbwp40p140opp.lef",
+            "/home/taosimin/T28/lef/ts1n28hpcplvtb512x64m4sw_180a.lef",
+            "/home/taosimin/T28/lef/ts6n28hpcplvta2048x32m8sw_130a.lef",
+            "/home/taosimin/T28/lef/tcbn28hpcplusbwp30p140opp.lef",
+            "/home/taosimin/T28/lef/tcbn28hpcplusbwp35p140.lef",
+            "/home/taosimin/T28/lef/tcbn28hpcplusbwp35p140oppulvt.lef",
+            "/home/taosimin/T28/lef/tcbn28hpcplusbwp40p140ehvt.lef",
+            "/home/taosimin/T28/lef/tcbn28hpcplusbwp40p140opplvt.lef",
+            "/home/taosimin/T28/lef/ts1n28hpcplvtb8192x64m8sw_180a.lef"
+  };
+
+  std::string def_file = "/home/taosimin/ir_example/aes/aes.def";
+  timing_engine->readDefDesign(def_file, lef_files);
+
+  timing_engine->readSdc(
+      "/home/taosimin/ir_example/aes/aes.sdc");
+
+  timing_engine->readSpef(
+      "/home/taosimin/ir_example/aes/aes.spef");
+
+  timing_engine->buildGraph();
+
+  timing_engine->updateTiming();
+  timing_engine->reportTiming();
+
+  Sta* ista = Sta::getOrCreateSta();
+  Power* ipower = Power::getOrCreatePower(&(ista->get_graph()));
+
+  ipower->runCompleteFlow();
+
+  ipower->runIRAnalysis();
+
+}
+
 }  // namespace
