@@ -228,46 +228,46 @@ void RTInterface::clearDef()
   // 删除net内所有的patch
   //////////////////////////////////////////
 
-  // //////////////////////////////////////////
-  // // 删除net: 虚拟的io_pin与io_cell连接的PAD
-  // std::vector<std::string> remove_net_list;
-  // for (idb::IdbNet* idb_net : idb_net_list->get_net_list()) {
-  //   bool has_io_pin = false;
-  //   if (idb_net->get_io_pins() != nullptr) {
-  //     has_io_pin = true;
-  //   }
-  //   bool has_io_cell = false;
-  //   for (idb::IdbInstance* instance : idb_net->get_instance_list()->get_instance_list()) {
-  //     if (instance->get_cell_master()->is_pad()) {
-  //       has_io_cell = true;
-  //       break;
-  //     }
-  //   }
-  //   if (has_io_pin && has_io_cell) {
-  //     RTLOG.info(Loc::current(), "The net '", idb_net->get_net_name(), "' connects PAD and io_pin! removing...");
-  //     remove_net_list.push_back(idb_net->get_net_name());
-  //   }
-  // }
-  // for (std::string remove_net : remove_net_list) {
-  //   idb_net_list->remove_net(remove_net);
-  // }
-  // // 删除net: 虚拟的io_pin与io_cell连接的PAD
-  // //////////////////////////////////////////
+  //////////////////////////////////////////
+  // 删除net: 虚拟的io_pin与io_cell连接的PAD
+  std::vector<std::string> remove_net_list;
+  for (idb::IdbNet* idb_net : idb_net_list->get_net_list()) {
+    bool has_io_pin = false;
+    if (idb_net->get_io_pins() != nullptr) {
+      has_io_pin = true;
+    }
+    bool has_io_cell = false;
+    for (idb::IdbInstance* instance : idb_net->get_instance_list()->get_instance_list()) {
+      if (instance->get_cell_master()->is_pad()) {
+        has_io_cell = true;
+        break;
+      }
+    }
+    if (has_io_pin && has_io_cell) {
+      RTLOG.info(Loc::current(), "The net '", idb_net->get_net_name(), "' connects PAD and io_pin! removing...");
+      remove_net_list.push_back(idb_net->get_net_name());
+    }
+  }
+  for (std::string remove_net : remove_net_list) {
+    idb_net_list->remove_net(remove_net);
+  }
+  // 删除net: 虚拟的io_pin与io_cell连接的PAD
+  //////////////////////////////////////////
 
-  // //////////////////////////////////////////
-  // // 删除虚空的io_pin
-  // std::vector<idb::IdbPin*> remove_pin_list;
-  // for (idb::IdbPin* io_pin : idb_pin_list->get_pin_list()) {
-  //   if (io_pin->get_port_box_list().empty()) {
-  //     RTLOG.info(Loc::current(), "del io_pin: ", io_pin->get_pin_name());
-  //     remove_pin_list.push_back(io_pin);
-  //   }
-  // }
-  // for (idb::IdbPin* io_pin : remove_pin_list) {
-  //   idb_pin_list->remove_pin(io_pin);
-  // }
-  // // 删除虚空的io_pin
-  // //////////////////////////////////////////
+  //////////////////////////////////////////
+  // 删除虚空的io_pin
+  std::vector<idb::IdbPin*> remove_pin_list;
+  for (idb::IdbPin* io_pin : idb_pin_list->get_pin_list()) {
+    if (io_pin->get_port_box_list().empty()) {
+      RTLOG.info(Loc::current(), "del io_pin: ", io_pin->get_pin_name());
+      remove_pin_list.push_back(io_pin);
+    }
+  }
+  for (idb::IdbPin* io_pin : remove_pin_list) {
+    idb_pin_list->remove_pin(io_pin);
+  }
+  // 删除虚空的io_pin
+  //////////////////////////////////////////
 }
 
 #endif

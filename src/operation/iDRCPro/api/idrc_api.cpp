@@ -67,8 +67,8 @@ std::map<ViolationEnumType, std::vector<DrcViolation*>> DrcApi::check(std::vecto
   for (auto& [net_idx, routing_segment_list] : routing_data) {
     shape_num += routing_segment_list.size();
   }
-  if (shape_num > 50000) {
-    int32_t box_size = 50000;
+  if (shape_num > 20000) {
+    int32_t box_size = 10000;
     int32_t expand_size = 500;
 
     // 初始化 设计边界 grid个数 box列表
@@ -300,6 +300,19 @@ std::map<ViolationEnumType, std::vector<DrcViolation*>> DrcApi::checkByBox(
     std::vector<idb::IdbLayerShape*>& env_shape_list, std::map<int, std::vector<idb::IdbLayerShape*>>& pin_data,
     std::map<int, std::vector<idb::IdbRegularWireSegment*>>& routing_data, std::set<ViolationEnumType> check_select)
 {
+  // 有bug,对于没有任何形状传入时,需要耗费大量时间
+  int32_t shape_num = 0;
+  shape_num += env_shape_list.size();
+  for (auto& [net_idx, pin_shape_list] : pin_data) {
+    shape_num += pin_shape_list.size();
+  }
+  for (auto& [net_idx, routing_segment_list] : routing_data) {
+    shape_num += routing_segment_list.size();
+  }
+  if (shape_num == 0) {
+    return {};
+  }
+
   DrcManager drc_manager;
 
   auto* data_manager = drc_manager.get_data_manager();
