@@ -47,6 +47,10 @@ unsigned iIR::readInstancePowerDB(std::string_view instance_power_file_path) {
   return 1;
 }
 
+unsigned iIR::setInstancePowerData(std::vector<IRInstancePower> instance_power_data) {
+  return 1;
+}
+
 /**
  * @brief solve the power net IR drop.
  *
