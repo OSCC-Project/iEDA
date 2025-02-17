@@ -45,6 +45,8 @@ struct LmNetWireFeature
   double delay = 0.0;
   double slew = 0.0;
   double congestion = 0.0;
+  double wire_density = 0.0;
+  std::vector<std::string> drc_type = {};
 };
 
 struct LmNetFeature
@@ -67,6 +69,9 @@ struct LmNetFeature
   int64_t height = 0;
   int64_t area = 0;
   float l_ness = 0.0;
+  std::vector<std::string> drc_type = {};
+  int64_t volume = 0;
+  std::vector<int> layer_ratio = {};
 };
 
 static int64_t wire_id_index = 0;

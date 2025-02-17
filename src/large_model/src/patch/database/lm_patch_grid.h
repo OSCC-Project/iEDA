@@ -42,6 +42,7 @@ class LmPatchGrid
 
   // getter
   std::map<int, LmPatch>& get_patchs() { return _patchs; }
+  std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>>& get_patch_xy_map() { return _patch_xy_map; }
 
   // setter
 
@@ -54,6 +55,8 @@ class LmPatchGrid
  public:
  private:
   std::map<int, LmPatch> _patchs;  /// int : patch id
+  std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>> _patch_xy_map;
+
 };
 
 }  // namespace ilm

@@ -87,6 +87,7 @@ void LmPatchInit::init_patch_grid()
   LOG_INFO << "LM patch grid init start...";
 
   auto& patchs = _patch_grid->get_patchs();
+  auto& patch_xy_map = _patch_grid->get_patch_xy_map();
 
   for (int row = 0; row < patchInfoInst.patch_num_vertical; ++row) {
     for (int col = 0; col < patchInfoInst.patch_num_horizontal; ++col) {
@@ -97,6 +98,10 @@ void LmPatchInit::init_patch_grid()
       im_patch.patch_id_row = row;
       im_patch.patch_id_col = col;
       patchs.insert(std::make_pair(patch_id, im_patch));
+
+      std::pair<int, int> lx_ly = gridInfoInst.get_node_coodinate(im_patch.rowIdMin, im_patch.colIdMin);
+      std::pair<int, int> ux_uy = gridInfoInst.get_node_coodinate(im_patch.rowIdMax, im_patch.colIdMax);
+      patch_xy_map[patch_id] = std::make_pair(lx_ly, ux_uy);
 
       if (patch_id % 1000 == 0) {
         LOG_INFO << "Init patch : " << patch_id;

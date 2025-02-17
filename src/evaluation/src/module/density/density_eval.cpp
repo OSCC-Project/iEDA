@@ -516,4 +516,206 @@ std::vector<MarginGrid> DensityEval::initMarginGrid(DensityRegion die, int32_t g
   return margin_grids;
 }
 
+std::map<int, double> DensityEval::patchCellDensity(DensityCells cells, std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>> patch_coords)
+{
+  std::map<int, double> patch_cell_density;
+
+  for (const auto& [patch_id, coord] : patch_coords) {
+      double density = 0.0;
+      auto [l_range, u_range] = coord;
+      
+      // 提取当前 patch 的物理边界
+      const int patch_lx = l_range.first;
+      const int patch_ly = l_range.second;
+      const int patch_ux = u_range.first;
+      const int patch_uy = u_range.second;
+
+      // 计算 patch 面积（保持与 pin 密度相同的左闭右开区间）
+      const int patch_width = patch_ux - patch_lx;
+      const int patch_height = patch_uy - patch_ly;
+      const int patch_area = patch_width * patch_height;
+
+      for (const auto& cell : cells) {
+          // 计算重叠区域
+          const int overlap_lx = std::max(cell.lx, patch_lx);
+          const int overlap_ly = std::max(cell.ly, patch_ly);
+          const int overlap_ux = std::min(cell.lx + cell.width, patch_ux);
+          const int overlap_uy = std::min(cell.ly + cell.height, patch_uy);
+
+          // 有效重叠面积计算
+          const int overlap_width = std::max(0, overlap_ux - overlap_lx);
+          const int overlap_height = std::max(0, overlap_uy - overlap_ly);
+          const int overlap_area = overlap_width * overlap_height;
+
+          // 累加密度贡献（当且仅当有重叠时）
+          if (overlap_area > 0) {
+              density += static_cast<double>(overlap_area) / patch_area;
+          }
+      }
+
+      patch_cell_density[patch_id] = density;
+  }
+
+  return patch_cell_density;
+}
+
+
+std::map<int, int> DensityEval::patchPinDensity(DensityPins pins, std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>> patch_coords)
+{
+    std::map<int, int> patch_pin_density;
+
+    for (const auto& [patch_id, coord] : patch_coords) {
+        int pin_count = 0;
+        auto [l_range, u_range] = coord;
+        
+        // 获取当前patch的物理边界
+        const int patch_lx = l_range.first;
+        const int patch_ly = l_range.second;
+        const int patch_ux = u_range.first;
+        const int patch_uy = u_range.second;
+
+        for (const auto& pin : pins) {
+            bool in_x = (pin.lx >= patch_lx) && (pin.lx < patch_ux);
+            bool in_y = (pin.ly >= patch_ly) && (pin.ly < patch_uy);
+            
+            // 使用与节点网格相同的左闭右开区间判断
+            if (in_x && in_y) {
+                pin_count++;
+            }
+        }
+        
+        patch_pin_density[patch_id] = pin_count;
+    }
+
+    return patch_pin_density;
+}
+
+std::map<int, double> DensityEval::patchNetDensity(DensityNets nets, std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>> patch_coords)
+{
+  std::map<int, double> patch_net_density;
+
+  for (const auto& [patch_id, coord] : patch_coords) {
+      double density = 0.0;
+      auto [l_range, u_range] = coord;
+      
+      // 提取当前 patch 的物理边界
+      const int patch_lx = l_range.first;
+      const int patch_ly = l_range.second;
+      const int patch_ux = u_range.first;
+      const int patch_uy = u_range.second;
+
+      // 计算 patch 面积（保持与 pin 密度相同的左闭右开区间）
+      const int patch_width = patch_ux - patch_lx;
+      const int patch_height = patch_uy - patch_ly;
+      const int patch_area = patch_width * patch_height;
+
+      for (const auto& net : nets) {
+          // 计算重叠区域
+          const int overlap_lx = std::max(net.lx, patch_lx);
+          const int overlap_ly = std::max(net.ly, patch_ly);
+          const int overlap_ux = std::min(net.ux, patch_ux);
+          const int overlap_uy = std::min(net.uy, patch_uy);
+
+          // 有效重叠面积计算
+          const int overlap_width = std::max(0, overlap_ux - overlap_lx);
+          const int overlap_height = std::max(0, overlap_uy - overlap_ly);
+          const int overlap_area = overlap_width * overlap_height;
+
+          // 累加密度贡献（当且仅当有重叠时）
+          if (overlap_area > 0) {
+              density += static_cast<double>(overlap_area) / patch_area;
+          }
+      }
+
+      patch_net_density[patch_id] = density;
+  }
+
+  return patch_net_density;
+}
+
+std::map<int, int> DensityEval::patchMacroMargin(DensityCells cells, DensityRegion core, std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>> patch_coords)
+{
+    std::map<int, int> patch_macro_margin;
+
+    std::vector<DensityCell> macros;
+    for (const auto& cell : cells) {
+      if (cell.type == "macro") {
+        macros.push_back(cell);
+      }
+    }
+
+    printf("core: %d %d %d %d\n", core.lx, core.ly, core.ux, core.uy);
+
+    for (const auto& [patch_id, coord] : patch_coords) {
+      auto [l_range, u_range] = coord;
+      
+      // 提取当前 patch 的物理边界
+      const int patch_lx = l_range.first;
+      const int patch_ly = l_range.second;
+      const int patch_ux = u_range.first;
+      const int patch_uy = u_range.second;
+      // 计算核心区域的边界
+      int32_t h_right = core.ux;
+      int32_t h_left = core.lx;
+      int32_t v_up = core.uy;
+      int32_t v_down = core.ly;
+
+      if (patch_ux <= h_left || patch_lx >= h_right || patch_uy <= v_down || patch_ly >= v_up) {
+        patch_macro_margin[patch_id] = 0; // 确保所有情况都有赋值
+        continue;
+      }
+
+      const int patch_width = patch_ux - patch_lx;
+      const int patch_height = patch_uy - patch_ly;
+      const int patch_area = patch_width * patch_height;
+
+      bool overlap = false;
+      int overlap_area = 0;
+      int margin = 0;
+
+      for (size_t j = 0; j < macros.size(); ++j) {
+        int32_t rect_lx = std::max(patch_lx, macros[j].lx);
+        int32_t rect_ly = std::max(patch_ly, macros[j].ly);
+        int32_t rect_ux = std::min(patch_ux, macros[j].lx + macros[j].width);
+        int32_t rect_uy = std::min(patch_uy, macros[j].ly + macros[j].height);
+        if (rect_lx < rect_ux && rect_ly < rect_uy) {
+          overlap_area += (std::min(patch_ux, macros[j].lx + macros[j].width) - std::max(patch_lx, macros[j].lx))
+                          * (std::min(patch_uy, macros[j].ly + macros[j].height) - std::max(patch_ly, macros[j].ly));
+        }
+        if (overlap_area > 0.5 * patch_area) {
+          overlap = true;
+          break;
+        }
+      }
+      
+      if (!overlap) {
+        for (size_t j = 0; j < macros.size(); ++j) {
+          int32_t macro_middle_x = macros[j].lx + macros[j].width * 0.5;
+          int32_t macro_middle_y = macros[j].ly + macros[j].height * 0.5;
+          int32_t grid_middle_x = (patch_lx + patch_ux) * 0.5;
+          int32_t grid_middle_y = (patch_ly + patch_uy) * 0.5;
+          if (grid_middle_y >= macros[j].ly && grid_middle_y <= macros[j].ly + macros[j].height) {
+            if (macro_middle_x > grid_middle_x) {
+              h_right = std::min(h_right, macros[j].lx);
+            } else {
+              h_left = std::max(h_left, macros[j].lx + macros[j].width);
+            }
+          }
+          if (grid_middle_x >= macros[j].lx && grid_middle_x <= macros[j].lx + macros[j].width) {
+            if (macro_middle_y > grid_middle_y) {
+              v_up = std::min(v_up, macros[j].ly);
+            } else {
+              v_down = std::max(v_down, macros[j].ly + macros[j].height);
+            }
+          }
+        }
+        margin = h_right - h_left + v_up - v_down;
+      }
+
+      patch_macro_margin[patch_id] = margin;
+    }
+    return patch_macro_margin;
+}
+
+
 }  // namespace ieval

@@ -87,7 +87,7 @@ unsigned StaFwdPropagationBFS::operator()(StaVertex* the_vertex) {
   }
 
 #if INTEGRATION_FWD
-  // data propagation end at the clock vertex.
+  // data propagation end at the end vertex.
   if (the_vertex->is_end()) {
     // calc check arc at the end vertex.
     FOREACH_SNK_ARC(the_vertex, snk_arc) {
@@ -163,14 +163,14 @@ unsigned StaFwdPropagationBFS::operator()(StaGraph* the_graph) {
 #endif
 #endif
 
+  the_graph->sortVertexByLevel();
+
   StaVertex* the_vertex;
   FOREACH_VERTEX(the_graph, the_vertex) {
     // start from the vertex which is level one and has slew prop.
     if ((the_vertex->get_level() == 1) && !the_vertex->is_fwd()) {
-      // only propagate the vertex has slew.
-      if (the_vertex->is_delay_prop()) {
-        LOG_FATAL_IF(!the_vertex->is_delay_prop())
-            << "the vertex should be delay propagated.";
+      // only propagate the vertex has clock slew or is input port.
+      if (the_vertex->is_slew_prop() || the_vertex->is_port()) {
         _bfs_queue.emplace_back(the_vertex);
       }
     }

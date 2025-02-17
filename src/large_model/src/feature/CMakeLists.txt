@@ -17,6 +17,7 @@ target_link_libraries(ilm_feature
     ilm_util
     tool_api_idrc
     eval_congestion_api
+    eval_density_api
 )
 
 set(EVALUTION_INCLUDE ${HOME_EVALUATION}/src/util)

@@ -64,6 +64,10 @@ void LmFeatureDrc::markNodes()
   auto detail_drc_map = iplf::drcInst->getDetailCheckResult(_drc_path);
   int drc_id = 0;
   int drc_without_net = 0;
+
+  // 新增：用于记录 drc_id 和 drc_type（rule）的映射
+  std::map<int, std::string> drc_id_to_type;
+
   for (auto& [rule, drc_spot_list] : detail_drc_map) {
     LOG_INFO << "LM mark nodes drc : " << rule << ", size :" << drc_spot_list.size();
     origin_drc_num += drc_spot_list.size();
@@ -91,6 +95,7 @@ void LmFeatureDrc::markNodes()
             auto& node_feature = node->get_node_data()->get_feature();
             omp_set_lock(&lck);
             node_feature.drc_ids.insert(drc_id + i);
+            drc_id_to_type[drc_id + i] = rule; // 将 drc_id 和 rule 关联
             omp_unset_lock(&lck);
 
             if (node->get_node_data()->get_net_id() >= 0) {
@@ -117,6 +122,9 @@ void LmFeatureDrc::markNodes()
   LOG_INFO << "LM memory usage " << stats.memoryDelta() << " MB";
   LOG_INFO << "LM elapsed time " << stats.elapsedRunTime() << " s";
   LOG_INFO << "LM mark nodes drc end...";
+
+  _drc_id_to_type = std::move(drc_id_to_type);
+
 }
 
 void LmFeatureDrc::markWires()
@@ -172,6 +180,10 @@ void LmFeatureDrc::markWires()
           mark_drc_num += drc_ids.size();
           omp_unset_lock(&lck);
         } else {
+          // 如果路径跨层，分别处理 node1 和 node2 的 drc_ids
+          drc_ids.insert(node1->get_node_data()->get_feature().drc_ids.begin(), node1->get_node_data()->get_feature().drc_ids.end());
+          drc_ids.insert(node2->get_node_data()->get_feature().drc_ids.begin(), node2->get_node_data()->get_feature().drc_ids.end());
+
           wire_feature->drc_num += node1->get_node_data()->get_feature().drc_ids.size();
           //   net_feature->drc_num += node1->get_node_data()->get_feature().drc_ids.size();
 
@@ -183,6 +195,10 @@ void LmFeatureDrc::markWires()
           mark_drc_num += node2->get_node_data()->get_feature().drc_ids.size();
           omp_unset_lock(&lck);
         }
+      }
+      // 填充 wire_feature->drc_type
+      for (auto drc_id : drc_ids) {
+        wire_feature->drc_type.push_back(_drc_id_to_type[drc_id]); // 根据 drc_id 获取对应的 drc_type
       }
     }
 
@@ -251,6 +267,13 @@ void LmFeatureDrc::markNets()
 
     auto* net_feature = lm_net.get_feature(true);
     net_feature->drc_num += net_drc_map[i].size();
+
+    // 填充 drc_type
+    for (auto drc_id : net_drc_map[i]) {
+      omp_set_lock(&lck);
+      net_feature->drc_type.push_back(_drc_id_to_type[drc_id]); // 根据 drc_id 获取对应的 drc_type
+      omp_unset_lock(&lck);
+    }
 
     omp_set_lock(&lck);
     mark_drc_num += net_drc_map[i].size();

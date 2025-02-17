@@ -95,6 +95,7 @@ bool LmLayoutFileIO::saveJsonNets()
           json_feature["wire_len"] = net_feature->wire_len;
           json_feature["via_num"] = net_feature->via_num;
           json_feature["drc_num"] = net_feature->drc_num;
+          json_feature["drc_type"] = net_feature->drc_type;
           json_feature["R"] = net_feature->R;
           json_feature["C"] = net_feature->C;
           json_feature["power"] = net_feature->power;
@@ -105,7 +106,9 @@ bool LmLayoutFileIO::saveJsonNets()
           json_feature["width"] = net_feature->width;
           json_feature["height"] = net_feature->height;
           json_feature["area"] = net_feature->area;
+          json_feature["volume"] = net_feature->volume;
           json_feature["l_ness"] = net_feature->l_ness;
+          json_feature["layer_raito"]  = net_feature->layer_ratio;
         }
         json_net["feature"] = json_feature;
       }
@@ -153,6 +156,7 @@ bool LmLayoutFileIO::saveJsonNets()
               if (wire_feature != nullptr) {
                 json_feature["wire_width"] = wire_feature->wire_width;
                 json_feature["wire_len"] = wire_feature->wire_len;
+                json_feature["wire_density"] = wire_feature->wire_density;
                 json_feature["drc_num"] = wire_feature->drc_num;
                 json_feature["R"] = wire_feature->R;
                 json_feature["C"] = wire_feature->C;
@@ -160,6 +164,7 @@ bool LmLayoutFileIO::saveJsonNets()
                 json_feature["delay"] = wire_feature->delay;
                 json_feature["slew"] = wire_feature->slew;
                 json_feature["congestion"] = wire_feature->congestion;
+                json_feature["drc_type"] = wire_feature->drc_type;
               }
               json_wire["feature"] = json_feature;
             }
@@ -260,6 +265,7 @@ bool LmLayoutFileIO::saveJsonPatchs()
     {
       auto [llx, lly] = gridInfoInst.get_node_coodinate(patch.rowIdMin, patch.colIdMin);
       auto [urx, ury] = gridInfoInst.get_node_coodinate(patch.rowIdMax, patch.colIdMax);
+      int area = (urx - llx) * (ury - lly);
 
       json_patch["id"] = patch.patch_id;
       json_patch["patch_id_row"] = patch.patch_id_row;
@@ -272,13 +278,29 @@ bool LmLayoutFileIO::saveJsonPatchs()
       json_patch["row_max"] = patch.rowIdMax;
       json_patch["col_min"] = patch.colIdMin;
       json_patch["col_max"] = patch.colIdMax;
-
+      json_patch["area"] = area;
+      json_patch["cell_density"] = patch.cell_density;
+      json_patch["pin_density"] = patch.pin_density;
+      json_patch["net_density"] = patch.net_density;
+      json_patch["macro_margin"] = patch.macro_margin;
+      json_patch["RUDY_congestion"] = patch.RUDY_congestion;
+      json_patch["EGR_congestion"] = patch.EGR_congestion;
+      
       json json_layers = json::array();
 
       for (auto& [layer_id, patch_layer] : patch.get_layer_map()) {
         json json_layer = {};
         json_layer["id"] = layer_id;
+        // layer feature
+        {
+        json json_layer_feature;
 
+        json_layer_feature["wire_width"] = patch_layer.wire_width;
+        json_layer_feature["wire_len"] = patch_layer.wire_len;
+        json_layer_feature["wire_density"] = (patch_layer.wire_width * patch_layer.wire_len) / static_cast<double>(area);
+
+        json_layer["feature"] = json_layer_feature;
+        }
         /// sub net in patch for each layer
         json_layer["net_num"] = patch_layer.get_sub_nets().size();
         json json_nets = json::array();
@@ -300,7 +322,7 @@ bool LmLayoutFileIO::saveJsonPatchs()
                   json json_feature;
                   auto wire_feature = wire.get_feature();
                   if (wire_feature != nullptr) {
-                    json_feature["wire_width"] = wire_feature->wire_width;
+                    json_feature["wire_len"] = wire_feature->wire_len;
                   }
                   json_wire["feature"] = json_feature;
                 }

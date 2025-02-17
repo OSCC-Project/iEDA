@@ -45,6 +45,8 @@ class LmFeatureDrc
   void markNodes();
   void markWires();
   void markNets();
+
+  std::map<int, std::string> _drc_id_to_type;
 };
 
 }  // namespace ilm

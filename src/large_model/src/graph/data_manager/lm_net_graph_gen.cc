@@ -199,7 +199,10 @@ LayoutShapeManager LmNetGraphGenerator::buildShapeManager(const TopoGraph& graph
       shape_manager.addShape(patch->rect, v);
     } else if (content->is_wire()) {
       auto* wire = static_cast<LayoutWire*>(content);
-      shape_manager.addShape(LayoutDefRect(wire->start, wire->end), v);
+      auto z = getZ(wire->start);
+      auto [x1, x2] = std::ranges::minmax({getX(wire->start), getX(wire->end)});
+      auto [y1, y2] = std::ranges::minmax({getY(wire->start), getY(wire->end)});
+      shape_manager.addShape(LayoutDefRect({x1, y1, z}, {x2, y2, z}), v);
     } else if (content->is_via()) {
       auto* via = static_cast<LayoutVia*>(content);
       shape_manager.addShape(via->cut_path, v);
@@ -354,12 +357,73 @@ WireGraph LmNetGraphGenerator::buildWireGraph(const TopoGraph& graph) const
     }
   }
   // post process
+  breakCycle(wire_graph);
   innerConnectivityCompletion(graph, wire_graph, point_to_vertex);
   buildVirtualWire(graph, wire_graph, point_to_vertex);
   markPinVertex(graph, wire_graph);
   reduceWireGraph(wire_graph);
   checkConnectivity(wire_graph);
   return wire_graph;
+}
+std::vector<WireGraphVertex> LmNetGraphGenerator::canonicalizeCycle(const std::vector<WireGraphVertex>& cycle) const
+{
+  auto forward = cycle;
+  auto backward = cycle;
+  std::reverse(backward.begin() + 1, backward.end());
+
+  return (forward < backward) ? forward : backward;
+}
+void LmNetGraphGenerator::dfsFindCycles(const WireGraph& graph, WireGraphVertex start, WireGraphVertex current, std::vector<bool>& visited,
+                                        std::vector<WireGraphVertex>& path, std::vector<std::vector<WireGraphVertex>>& cycles) const
+{
+  for (auto neighbor : boost::make_iterator_range(adjacent_vertices(current, graph))) {
+    if (neighbor == start && path.size() >= 3) {
+      cycles.push_back(path);
+    } else if (!visited[neighbor] && neighbor > start) {
+      visited[neighbor] = true;
+      path.push_back(neighbor);
+      dfsFindCycles(graph, start, neighbor, visited, path, cycles);
+      path.pop_back();
+      visited[neighbor] = false;
+    }
+  }
+}
+std::vector<std::vector<WireGraphVertex>> LmNetGraphGenerator::findAllCycles(const WireGraph& graph) const
+{
+  std::vector<std::vector<WireGraphVertex>> cycles;
+  const auto n = boost::num_vertices(graph);
+  std::vector<bool> visited(n, false);
+
+  for (WireGraphVertex start = 0; start < n; ++start) {
+    visited[start] = true;
+    std::vector<WireGraphVertex> path;
+    path.push_back(start);
+    dfsFindCycles(graph, start, start, visited, path, cycles);
+    visited[start] = false;
+  }
+  std::ranges::for_each(cycles, [&](std::vector<WireGraphVertex>& cycle) -> void { cycle = canonicalizeCycle(cycle); });
+  std::sort(cycles.begin(), cycles.end());
+  cycles.erase(std::unique(cycles.begin(), cycles.end()), cycles.end());
+  return cycles;
+}
+void LmNetGraphGenerator::breakCycle(WireGraph& graph) const
+{
+  if (!hasCycle(graph)) {
+    return;
+  }
+  // find all cycles, check cycle length whether is 4, and find the node which degree is 2, then remove one of nodes.
+  auto cycles = findAllCycles(graph);
+  std::ranges::for_each(cycles, [&](const std::vector<WireGraphVertex>& cycle) -> void {
+    LOG_FATAL_IF(cycle.size() != 4) << "Cycle length is " << cycle.size() << ", not 4";
+
+    auto degree_2_node
+        = std::find_if(cycle.begin(), cycle.end(), [&](const WireGraphVertex& v) -> bool { return boost::degree(v, graph) == 2; });
+    LOG_FATAL_IF(degree_2_node == cycle.end()) << "No degree 2 node found";
+
+    auto v = *degree_2_node;
+    boost::clear_vertex(v, graph);
+    boost::remove_vertex(v, graph);
+  });
 }
 void LmNetGraphGenerator::innerConnectivityCompletion(const TopoGraph& graph, WireGraph& wire_graph,
                                                       WireGraphVertexMap& point_to_vertex) const
@@ -635,8 +699,7 @@ void LmNetGraphGenerator::markPinVertex(const TopoGraph& graph, WireGraph& wire_
 }
 void LmNetGraphGenerator::reduceWireGraph(WireGraph& graph, const bool& retain_pin) const
 {
-  // Step 1: Check for cycles in the graph
-  LOG_FATAL_IF(hasCycle(graph)) << "The Wire Graph has cycle";
+  // Step 1: Prepare
 
   size_t num_vertices = boost::num_vertices(graph);
   std::vector<bool> visited(num_vertices, false);
