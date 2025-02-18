@@ -45,5 +45,7 @@ class iIR {
  private:
   const void* _rc_data = nullptr;
   const void* _power_data = nullptr;
+
+  std::map<std::string, double> _instance_to_ir_drop;
 };
 }  // namespace iir
