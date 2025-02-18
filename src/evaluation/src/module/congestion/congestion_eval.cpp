@@ -1201,64 +1201,64 @@ std::map<std::string, std::vector<std::vector<int>>> CongestionEval::getDemandSu
 
 std::map<int, double> CongestionEval::patchRUDYCongestion(CongestionNets nets, std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>> patch_coords)
 {
-  std::map<int, double> patch_rudy_map;
+    // 预计算
+    auto net_metadata = precomputeNetData(nets);
+    CongestionGridIndex index;
+    index.build(net_metadata); // 构建空间索引
 
-  // 遍历所有 patch
-  for (const auto& [patch_id, coord] : patch_coords) {
-      double rudy = 0.0;
-      auto [l_range, u_range] = coord;
-      
-      // 提取当前 patch 的物理边界
-      const int patch_lx = l_range.first;
-      const int patch_ly = l_range.second;
-      const int patch_ux = u_range.first;
-      const int patch_uy = u_range.second;
+    std::map<int, double> patch_rudy_map;
+    
+    // 处理每个patch
+    for (const auto& [patch_id, coord] : patch_coords) {
+        const auto& [l_range, u_range] = coord;
+        const int patch_lx = l_range.first, patch_ly = l_range.second;
+        const int patch_ux = u_range.first, patch_uy = u_range.second;
+        const int patch_area = (patch_ux - patch_lx) * (patch_uy - patch_ly);
+        
+        // 获取覆盖的网格范围
+        int min_gx = patch_lx / index.grid_size;
+        int max_gx = patch_ux / index.grid_size;
+        int min_gy = patch_ly / index.grid_size;
+        int max_gy = patch_uy / index.grid_size;
+        
+        std::unordered_set<int> processed_nets; // 去重
+        double rudy = 0.0;
 
-      // 计算 patch 面积（保持左闭右开区间）
-      const int patch_width = patch_ux - patch_lx;
-      const int patch_height = patch_uy - patch_ly;
-      const int patch_area = patch_width * patch_height;
-
-      // 遍历所有线网
-      for (const auto& net : nets) {
-          // 计算线网边界框
-          int32_t net_lx = INT32_MAX;
-          int32_t net_ly = INT32_MAX;
-          int32_t net_ux = INT32_MIN;
-          int32_t net_uy = INT32_MIN;
-          
-          for (const auto& pin : net.pins) {
-              net_lx = std::min(net_lx, pin.lx);
-              net_ly = std::min(net_ly, pin.ly);
-              net_ux = std::max(net_ux, pin.lx);
-              net_uy = std::max(net_uy, pin.ly);
-          }
-
-          // 计算重叠区域
-          const int overlap_lx = std::max(net_lx, patch_lx);
-          const int overlap_ly = std::max(net_ly, patch_ly);
-          const int overlap_ux = std::min(net_ux, patch_ux);
-          const int overlap_uy = std::min(net_uy, patch_uy);
-
-          // 有效重叠面积计算
-          const int overlap_width = std::max(0, overlap_ux - overlap_lx);
-          const int overlap_height = std::max(0, overlap_uy - overlap_ly);
-          const int overlap_area = overlap_width * overlap_height;
-
-          if (overlap_area > 0) {
-              // 计算 RUDY 因子
-              double hor_rudy = (net_uy == net_ly) ? 1.0 : 1.0 / (net_uy - net_ly);
-              double ver_rudy = (net_ux == net_lx) ? 1.0 : 1.0 / (net_ux - net_lx);
-              
-              // 累加 RUDY 贡献
-              rudy += static_cast<double>(overlap_area) * (hor_rudy + ver_rudy) / patch_area;
-          }
-      }
-
-      patch_rudy_map[patch_id] = rudy;
-  }
-
-  return patch_rudy_map;
+        // 遍历覆盖的网格
+        for (int gx = min_gx; gx <= max_gx; ++gx) {
+            for (int gy = min_gy; gy <= max_gy; ++gy) {
+                auto it = index.grid_map.find({gx, gy});
+                if (it == index.grid_map.end()) continue;
+                
+                // 处理该网格内的候选net
+                for (int net_id : it->second) {
+                    if (processed_nets.count(net_id)) continue;
+                    processed_nets.insert(net_id);
+                    
+                    const auto& net = net_metadata[net_id];
+                    // 快速边界检查
+                    if (net.ux <= patch_lx || net.lx >= patch_ux || 
+                        net.uy <= patch_ly || net.ly >= patch_uy) continue;
+                        
+                    // 计算重叠区域
+                    const int overlap_lx = std::max(net.lx, patch_lx);
+                    const int overlap_ly = std::max(net.ly, patch_ly);
+                    const int overlap_ux = std::min(net.ux, patch_ux);
+                    const int overlap_uy = std::min(net.uy, patch_uy);
+                    
+                    const int overlap_width = overlap_ux - overlap_lx;
+                    const int overlap_height = overlap_uy - overlap_ly;
+                    if (overlap_width <= 0 || overlap_height <= 0) continue;
+                    
+                    // 累加RUDY值（使用预计算结果）
+                    rudy += (overlap_width * overlap_height) * 
+                           (net.hor_rudy + net.ver_rudy) / patch_area;
+                }
+            }
+        }
+        patch_rudy_map[patch_id] = rudy;
+    }
+    return patch_rudy_map;
 }
 
 std::map<int, double> CongestionEval::patchEGRCongestion(std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>> patch_coords)
@@ -1323,6 +1323,34 @@ std::map<int, double> CongestionEval::patchEGRCongestion(std::map<int, std::pair
 
   return patch_egr_congestion;
 }
+
+std::vector<NetMetadata> CongestionEval::precomputeNetData(const CongestionNets& nets)
+{
+    std::vector<NetMetadata> metadata;
+    metadata.reserve(nets.size());
+    
+    for (const auto& net : nets) {
+        NetMetadata md;
+        // 计算边界框
+        md.lx = INT32_MAX; 
+        md.ly = INT32_MAX;
+        md.ux = INT32_MIN; 
+        md.uy = INT32_MIN;
+        for (const auto& pin : net.pins) {
+            md.lx = std::min(md.lx, pin.lx);
+            md.ly = std::min(md.ly, pin.ly);
+            md.ux = std::max(md.ux, pin.lx);
+            md.uy = std::max(md.uy, pin.ly);
+        }
+        // 预计算RUDY因子
+        md.hor_rudy = (md.uy == md.ly) ? 1.0 : 1.0 / (md.uy - md.ly);
+        md.ver_rudy = (md.ux == md.lx) ? 1.0 : 1.0 / (md.ux - md.lx);
+        
+        metadata.push_back(md);
+    }
+    return metadata;  
+}
+
 
 
 

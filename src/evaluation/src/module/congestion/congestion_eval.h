@@ -8,11 +8,51 @@
 #pragma once
 
 #include "congestion_db.h"
-#include "map"
+
+#include <map>
+#include <unordered_map>
 
 namespace ieval {
 
 using namespace ::std;
+
+struct NetMetadata {
+    int32_t lx, ly, ux, uy;  // 预计算的net边界框
+    double hor_rudy, ver_rudy; // 预计算的RUDY因子
+};
+
+// 辅助哈希函数
+struct CongestionPairHash {
+    template <typename T1, typename T2>
+    size_t operator()(const std::pair<T1, T2>& p) const {
+        auto hash1 = std::hash<T1>{}(p.first);
+        auto hash2 = std::hash<T2>{}(p.second);
+        return hash1 ^ (hash2 << 1);
+    }
+};
+
+struct CongestionGridIndex {
+    int grid_size = 5000; // 可调节
+    std::unordered_map<std::pair<int, int>, std::vector<int>, CongestionPairHash> grid_map;
+    
+    void build(const std::vector<NetMetadata>& nets) {
+        for (int i = 0; i < nets.size(); ++i) {
+            const auto& net = nets[i];
+            // 计算net覆盖的网格范围
+            int min_x = net.lx / grid_size;
+            int max_x = net.ux / grid_size;
+            int min_y = net.ly / grid_size;
+            int max_y = net.uy / grid_size;
+            // 注册到所有覆盖的网格
+            for (int x = min_x; x <= max_x; ++x) {
+                for (int y = min_y; y <= max_y; ++y) {
+                    grid_map[{x, y}].push_back(i);
+                }
+            }
+        }
+    }
+};
+
 
 class CongestionEval
 {
@@ -112,5 +152,7 @@ class CongestionEval
   float evalAvgOverflow(string stage, string rt_dir_path, string overflow_type);
   float evalMaxUtilization(string stage, string rudy_dir_path, string utilization_type, bool use_lut = false);
   float evalAvgUtilization(string stage, string rudy_dir_path, string utilization_type, bool use_lut = false);
+  std::vector<NetMetadata> precomputeNetData(const CongestionNets& nets);
+
 };
 }  // namespace ieval

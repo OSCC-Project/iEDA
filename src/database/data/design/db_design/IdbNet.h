@@ -150,6 +150,7 @@ class IdbNet : public IdbObject
 
   IdbPin* get_driving_pin();
 
+  IdbRect* get_bounding_box();
   // setter
   void set_net_name(string name)
   {

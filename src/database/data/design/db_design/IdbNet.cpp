@@ -154,6 +154,29 @@ vector<IdbPin*> IdbNet::get_load_pins()
   return pin_list;
 }
 
+IdbRect* IdbNet::get_bounding_box()
+{
+  int32_t min_lx = INT32_MAX;
+  int32_t min_ly = INT32_MAX;
+  int32_t max_ux = INT32_MIN;
+  int32_t max_uy = INT32_MIN;
+  auto* idb_driving_pin = get_driving_pin();
+  if (idb_driving_pin != nullptr) {
+    min_lx = idb_driving_pin->get_average_coordinate()->get_x();
+    min_ly = idb_driving_pin->get_average_coordinate()->get_y();
+    max_ux = idb_driving_pin->get_average_coordinate()->get_x();
+    max_uy = idb_driving_pin->get_average_coordinate()->get_y();
+  }
+  for (auto* idb_load_pin : get_load_pins()) {
+    min_lx = std::min(min_lx, idb_load_pin->get_average_coordinate()->get_x());
+    min_ly = std::min(min_ly, idb_load_pin->get_average_coordinate()->get_y());
+    max_ux = std::max(max_ux, idb_load_pin->get_average_coordinate()->get_x());
+    max_uy = std::max(max_uy, idb_load_pin->get_average_coordinate()->get_y());
+  }
+  return new IdbRect(min_lx, min_ly, max_ux, max_uy);
+}
+
+
 bool IdbNet::set_bounding_box()
 {
   // IdbRect* rect = get_bounding_box();

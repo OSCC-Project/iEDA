@@ -147,6 +147,7 @@ void InitIDB::initDensityDBCells()
   auto* idb_builder = dmInst->get_idb_builder();
   idb::IdbDesign* idb_design = idb_builder->get_def_service()->get_design();
   idb::IdbLayout* idb_layout = idb_builder->get_def_service()->get_layout();
+  int id = 0;
 
   idb::IdbRect* core_bbox = idb_layout->get_core()->get_bounding_box();
   int32_t core_lx = core_bbox->get_low_x();
@@ -160,6 +161,7 @@ void InitIDB::initDensityDBCells()
     auto cell_bbox = idb_inst->get_bounding_box();
 
     DensityCell cell;
+    cell.id = id++;
     cell.lx = cell_bbox->get_low_x();
     cell.ly = cell_bbox->get_low_y();
     cell.width = cell_bbox->get_width();
@@ -195,6 +197,7 @@ void InitIDB::initDensityDBNets()
   }
   auto* idb_builder = dmInst->get_idb_builder();
   idb::IdbDesign* idb_design = idb_builder->get_def_service()->get_design();
+  int id = 0;
 
   for (size_t i = 0; i < idb_design->get_net_list()->get_net_list().size(); i++) {
     auto* idb_net = idb_design->get_net_list()->get_net_list()[i];
@@ -221,6 +224,7 @@ void InitIDB::initDensityDBNets()
     net.ly = min_ly;
     net.ux = max_ux;
     net.uy = max_uy;
+    net.id = id++;
     _density_nets.emplace_back(net);
   }
 }
