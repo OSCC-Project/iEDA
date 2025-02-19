@@ -389,7 +389,75 @@ std::map<ViolationEnumType, std::vector<DrcViolation*>> DrcApi::checkDef()
   std::vector<idb::IdbLayerShape*> env_shape_list;
   std::map<int, std::vector<idb::IdbLayerShape*>> pin_data;
   std::map<int, std::vector<idb::IdbRegularWireSegment*>> routing_data;
-  return check(env_shape_list, pin_data, routing_data);
+  std::set<ViolationEnumType> check_select;
+
+  DrcManager drc_manager;
+
+  auto* data_manager = drc_manager.get_data_manager();
+  // auto* rule_manager = drc_manager.get_rule_manager();
+  auto* condition_manager = drc_manager.get_condition_manager();
+  auto* violation_manager = drc_manager.get_violation_manager();
+  if (data_manager == nullptr /*|| rule_manager == nullptr */ || condition_manager == nullptr || violation_manager == nullptr) {
+    return {};
+  }
+
+  condition_manager->set_check_select(check_select);
+
+  /// set drc rule stratagy by rt paramter
+  /// tbd
+  // rule_manager->get_stratagy()->set_stratagy_type(DrcStratagyType::kCheckFast);
+
+  data_manager->set_env_shapes(&env_shape_list);
+  data_manager->set_pin_data(&pin_data);
+  data_manager->set_routing_data(&routing_data);
+
+  // auto check_type = (env_shape_list.size() + pin_data.size() + routing_data.size()) > 0 ? DrcCheckerType::kRT : DrcCheckerType::kDef;
+  auto check_type = DrcCheckerType::kDef;
+
+  condition_manager->set_check_type(check_type);
+
+#ifdef DEBUG_IDRC_API
+  if (DrcCheckerType::kDef == check_type) {
+    std::cout << "idrc : check def" << std::endl;
+  }
+#endif
+
+#ifdef DEBUG_IDRC_API
+  ieda::Stats stats_engine;
+#endif
+  drc_manager.dataInit(check_type);
+#ifdef DEBUG_IDRC_API
+  if (DrcCheckerType::kDef == check_type) {
+    std::cout << "idrc : engine start"
+              << " runtime = " << stats_engine.elapsedRunTime() << " memory = " << stats_engine.memoryDelta() << std::endl;
+  }
+#endif
+
+#ifdef DEBUG_IDRC_API
+  ieda::Stats stats_build_condition;
+#endif
+  drc_manager.dataOperate();
+#ifdef DEBUG_IDRC_API
+  if (DrcCheckerType::kDef == check_type) {
+    std::cout << "idrc : build condition"
+              << " runtime = " << stats_build_condition.elapsedRunTime() << " memory = " << stats_build_condition.memoryDelta()
+              << std::endl;
+  }
+#endif
+
+#ifdef DEBUG_IDRC_API
+  ieda::Stats stats_check;
+#endif
+  drc_manager.dataCheck();
+
+#ifdef DEBUG_IDRC_API
+  if (DrcCheckerType::kDef == check_type) {
+    std::cout << "idrc : check"
+              << " runtime = " << stats_check.elapsedRunTime() << " memory = " << stats_check.memoryDelta() << std::endl;
+  }
+#endif
+
+  return violation_manager->get_violation_map(drc_manager.get_engine()->get_engine_manager());
 }
 
 }  // namespace idrc
