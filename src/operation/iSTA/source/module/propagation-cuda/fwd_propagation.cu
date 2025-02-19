@@ -691,6 +691,9 @@ void gpu_propagate_fwd(GPU_Graph& the_host_graph, unsigned vertex_data_size,
                        unsigned arc_data_size,
                        std::map<unsigned, std::vector<unsigned>>& level_to_arcs,
                        Lib_Data_GPU& lib_data) {
+
+  int device_id = 0;
+  CUDA_CHECK(cudaSetDevice(device_id));
   auto the_device_graph =
       copy_from_host_graph(the_host_graph, vertex_data_size, arc_data_size);
 

@@ -454,10 +454,6 @@ namespace ipl {
 
     for (auto* inst : design->get_instance_list()) {
       // Ignore the insts outside the core.
-      if (inst->isOutsideInstance() && inst->isFixed()) {
-        continue;
-      }
-
       // if (inst->get_cell_master() && inst->get_cell_master()->isIOCell()) {
       //   continue;
       // }
@@ -487,17 +483,15 @@ namespace ipl {
       }
     }
     ps &= gtl::rectangle_data<int>(core_rect.get_ll_x(), core_rect.get_ll_y(), core_rect.get_ur_x(), core_rect.get_ur_y());
-    // 使用 get_rectangles 分解出不重叠的矩形集合
+
     std::vector<gtl::rectangle_data<int>> rects;
     ps.get_rectangles(rects);
     
-    // 计算多边形的总覆盖面积
     int64_t total_blockage_area = 0;
     for (const auto &rect : rects) {
       total_blockage_area += 1LL* boost::polygon::area(rect);
     }
-    // 此时 total_blockage_area 就是 blockage 区域的并集面积
-    LOG_INFO << "Total blockage area : " << total_blockage_area;
+    // LOG_INFO << "Total blockage area : " << total_blockage_area;
     non_place_instance_area = total_blockage_area;
     LOG_INFO << "Core area : " << core_area;
     LOG_INFO << "Non place instance area : " << non_place_instance_area;
@@ -516,30 +510,48 @@ namespace ipl {
     int64_t core_area = static_cast<int64_t>(core_rect.get_width()) * static_cast<int64_t>(core_rect.get_height());
     int64_t place_instance_area = 0;
     int64_t non_place_instance_area = 0;
-
+    PolygonSet ps;
     for (auto* inst : design->get_instance_list()) {
       // Ignore the insts outside the core.
-      if (inst->isOutsideInstance() && inst->isFixed()) {
-        continue;
-      }
+      // if (inst->get_cell_master() && inst->get_cell_master()->isIOCell()) {
+      //   continue;
+      // }
+      // for ispd's benchmark
+      // if (inst->isOutsideInstance()) {
+      //   continue;
+      // }
+
       int64_t inst_width = static_cast<int64_t>(inst->get_shape().get_width());
       int64_t inst_height = static_cast<int64_t>(inst->get_shape().get_height());
       if (inst->isFixed()) {
-        non_place_instance_area += inst_width * inst_height;
+        ps.insert(gtl::rectangle_data<int>(inst->get_coordi().get_x(), inst->get_coordi().get_y(),
+          inst->get_coordi().get_x() + inst_width, inst->get_coordi().get_y() + inst_height));
       }
       else {
         place_instance_area += inst_width * inst_height;
       }
     }
-
-    // TODO : exclude the overlap region.
+    // PolygonSet ps; // Commented out as it is not used
+    
     for (auto* blockage : design->get_region_list()) {
       for (auto boundary : blockage->get_boundaries()) {
-        int64_t boundary_width = static_cast<int64_t>(boundary.get_width());
-        int64_t boundary_height = static_cast<int64_t>(boundary.get_height());
-        non_place_instance_area += boundary_width * boundary_height;
+        // non_place_instance_area += boundary_width * boundary_height;
+        auto rect = gtl::rectangle_data<int>(boundary.get_ll_x(), boundary.get_ll_y(), boundary.get_ur_x(), boundary.get_ur_y());
+        ps.insert(rect) ;
+        
       }
     }
+    ps &= gtl::rectangle_data<int>(core_rect.get_ll_x(), core_rect.get_ll_y(), core_rect.get_ur_x(), core_rect.get_ur_y());
+
+    std::vector<gtl::rectangle_data<int>> rects;
+    ps.get_rectangles(rects);
+    
+    int64_t total_blockage_area = 0;
+    for (const auto &rect : rects) {
+      total_blockage_area += 1LL* boost::polygon::area(rect);
+    }
+    // LOG_INFO << "Total blockage area : " << total_blockage_area;
+    non_place_instance_area = total_blockage_area;
 
     float util = static_cast<float>(place_instance_area) / (core_area - non_place_instance_area);
     return util;

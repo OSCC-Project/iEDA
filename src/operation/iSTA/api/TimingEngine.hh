@@ -100,6 +100,9 @@ class TimingEngine {
     _ista->linkDesignWithRustParser(top_cell_name);
     return *this;
   }
+
+  TimingEngine &readDefDesign(std::string def_file, std::vector<std::string>& lef_files);
+
   TimingEngine &readSdc(const char *sdc_file) {
     _ista->resetConstraint();
     _ista->readSdc(sdc_file);
