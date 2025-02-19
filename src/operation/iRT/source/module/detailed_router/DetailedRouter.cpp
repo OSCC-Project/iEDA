@@ -129,8 +129,8 @@ void DetailedRouter::iterativeDRModel(DRModel& dr_model)
   initRoutingState(dr_model);
   for (size_t i = 0, iter = 1; i < dr_iter_param_list.size(); i++, iter++) {
     Monitor iter_monitor;
-    RTLOG.info(Loc::current(), "***** Begin iteration ", iter, "/", dr_iter_param_list.size(), "(",
-               RTUTIL.getPercentage(iter, dr_iter_param_list.size()), ") *****");
+    RTLOG.info(Loc::current(), "***** Begin iteration ", iter, "/", dr_iter_param_list.size(), "(", RTUTIL.getPercentage(iter, dr_iter_param_list.size()),
+               ") *****");
     // debugPlotDRModel(dr_model, "before");
     setDRIterParam(dr_model, iter, dr_iter_param_list[i]);
     initDRBoxMap(dr_model);
@@ -147,8 +147,8 @@ void DetailedRouter::iterativeDRModel(DRModel& dr_model)
     printSummary(dr_model);
     outputNetCSV(dr_model);
     outputViolationCSV(dr_model);
-    RTLOG.info(Loc::current(), "***** End Iteration ", iter, "/", dr_iter_param_list.size(), "(",
-               RTUTIL.getPercentage(iter, dr_iter_param_list.size()), ")", iter_monitor.getStatsInfo(), "*****");
+    RTLOG.info(Loc::current(), "***** End Iteration ", iter, "/", dr_iter_param_list.size(), "(", RTUTIL.getPercentage(iter, dr_iter_param_list.size()), ")",
+               iter_monitor.getStatsInfo(), "*****");
     if (stopIteration(dr_model)) {
       break;
     }
@@ -366,8 +366,8 @@ void DetailedRouter::routeDRBoxMap(DRModel& dr_model)
       freeDRBox(dr_box);
     }
     routed_box_num += dr_box_id_list.size();
-    RTLOG.info(Loc::current(), "Routed ", routed_box_num, "/", total_box_num, "(", RTUTIL.getPercentage(routed_box_num, total_box_num),
-               ") boxes with ", getViolationNum(dr_model), " violations", stage_monitor.getStatsInfo());
+    RTLOG.info(Loc::current(), "Routed ", routed_box_num, "/", total_box_num, "(", RTUTIL.getPercentage(routed_box_num, total_box_num), ") boxes with ",
+               getViolationNum(dr_model), " violations", stage_monitor.getStatsInfo());
   }
 
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
@@ -1362,8 +1362,8 @@ void DetailedRouter::uploadNetResult(DRModel& dr_model)
       }
       MTree<LayerCoord> coord_tree = RTUTIL.getTreeByFullFlow(candidate_root_coord_list, routing_segment_list, key_coord_pin_map);
       for (Segment<TNode<LayerCoord>*>& coord_segment : RTUTIL.getSegListByTree(coord_tree)) {
-        RTDM.updateNetDetailedResultToGCellMap(
-            ChangeType::kAdd, net_idx, new Segment<LayerCoord>(coord_segment.get_first()->value(), coord_segment.get_second()->value()));
+        RTDM.updateNetDetailedResultToGCellMap(ChangeType::kAdd, net_idx,
+                                               new Segment<LayerCoord>(coord_segment.get_first()->value(), coord_segment.get_second()->value()));
       }
     }
     for (auto& [net_idx, segment_set] : net_detailed_result_map) {
@@ -1524,8 +1524,7 @@ void DetailedRouter::uploadBestResult(DRModel& dr_model)
 
 #if 1  // update env
 
-void DetailedRouter::updateFixedRectToGraph(DRBox& dr_box, ChangeType change_type, int32_t net_idx, EXTLayerRect* fixed_rect,
-                                            bool is_routing)
+void DetailedRouter::updateFixedRectToGraph(DRBox& dr_box, ChangeType change_type, int32_t net_idx, EXTLayerRect* fixed_rect, bool is_routing)
 {
   NetShape net_shape(net_idx, fixed_rect->getRealLayerRect(), is_routing);
   for (auto& [dr_node, orientation_set] : getNodeOrientationMap(dr_box, net_shape, true)) {
@@ -1675,8 +1674,7 @@ std::map<DRNode*, std::set<Orientation>> DetailedRouter::getNodeOrientationMap(D
   return node_orientation_map;
 }
 
-std::map<DRNode*, std::set<Orientation>> DetailedRouter::getRoutingNodeOrientationMap(DRBox& dr_box, NetShape& net_shape,
-                                                                                      bool need_enlarged)
+std::map<DRNode*, std::set<Orientation>> DetailedRouter::getRoutingNodeOrientationMap(DRBox& dr_box, NetShape& net_shape, bool need_enlarged)
 {
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
   std::map<int32_t, PlanarRect>& layer_enclosure_map = RTDM.getDatabase().get_layer_enclosure_map();
@@ -1718,8 +1716,7 @@ std::map<DRNode*, std::set<Orientation>> DetailedRouter::getRoutingNodeOrientati
     // 贴合的也不算违例
     enlarged_x_size -= 1;
     enlarged_y_size -= 1;
-    PlanarRect planar_enlarged_rect
-        = RTUTIL.getEnlargedRect(net_shape.get_rect(), enlarged_x_size, enlarged_y_size, enlarged_x_size, enlarged_y_size);
+    PlanarRect planar_enlarged_rect = RTUTIL.getEnlargedRect(net_shape.get_rect(), enlarged_x_size, enlarged_y_size, enlarged_x_size, enlarged_y_size);
     for (auto& [grid_coord, orientation_set] : RTUTIL.getTrackGridOrientationMap(planar_enlarged_rect, dr_box.get_box_track_axis())) {
       DRNode& node = dr_node_map[grid_coord.get_x()][grid_coord.get_y()];
       for (const Orientation& orientation : orientation_set) {
@@ -1746,8 +1743,7 @@ std::map<DRNode*, std::set<Orientation>> DetailedRouter::getRoutingNodeOrientati
     // 贴合的也不算违例
     enlarged_x_size -= 1;
     enlarged_y_size -= 1;
-    PlanarRect space_enlarged_rect
-        = RTUTIL.getEnlargedRect(net_shape.get_rect(), enlarged_x_size, enlarged_y_size, enlarged_x_size, enlarged_y_size);
+    PlanarRect space_enlarged_rect = RTUTIL.getEnlargedRect(net_shape.get_rect(), enlarged_x_size, enlarged_y_size, enlarged_x_size, enlarged_y_size);
     for (auto& [grid_coord, orientation_set] : RTUTIL.getTrackGridOrientationMap(space_enlarged_rect, dr_box.get_box_track_axis())) {
       DRNode& node = dr_node_map[grid_coord.get_x()][grid_coord.get_y()];
       for (const Orientation& orientation : orientation_set) {
@@ -1847,8 +1843,7 @@ std::map<DRNode*, std::set<Orientation>> DetailedRouter::getCutNodeOrientationMa
       // 贴合的也不算违例
       enlarged_x_size -= 1;
       enlarged_y_size -= 1;
-      PlanarRect space_enlarged_rect
-          = RTUTIL.getEnlargedRect(net_shape.get_rect(), enlarged_x_size, enlarged_y_size, enlarged_x_size, enlarged_y_size);
+      PlanarRect space_enlarged_rect = RTUTIL.getEnlargedRect(net_shape.get_rect(), enlarged_x_size, enlarged_y_size, enlarged_x_size, enlarged_y_size);
       for (auto& [grid_coord, orientation_set] : RTUTIL.getTrackGridOrientationMap(space_enlarged_rect, dr_box.get_box_track_axis())) {
         if (!RTUTIL.exist(orientation_set, Orientation::kAbove) && !RTUTIL.exist(orientation_set, Orientation::kBelow)) {
           continue;
@@ -1965,11 +1960,9 @@ void DetailedRouter::printSummary(DRModel& dr_model)
                                   << "prop" << fort::endr;
     for (RoutingLayer& routing_layer : routing_layer_list) {
       routing_wire_length_map_table << routing_layer.get_layer_name() << routing_wire_length_map[routing_layer.get_layer_idx()]
-                                    << RTUTIL.getPercentage(routing_wire_length_map[routing_layer.get_layer_idx()], total_wire_length)
-                                    << fort::endr;
+                                    << RTUTIL.getPercentage(routing_wire_length_map[routing_layer.get_layer_idx()], total_wire_length) << fort::endr;
     }
-    routing_wire_length_map_table << fort::header << "Total" << total_wire_length
-                                  << RTUTIL.getPercentage(total_wire_length, total_wire_length) << fort::endr;
+    routing_wire_length_map_table << fort::header << "Total" << total_wire_length << RTUTIL.getPercentage(total_wire_length, total_wire_length) << fort::endr;
   }
   fort::char_table cut_via_num_map_table;
   {
@@ -1989,11 +1982,10 @@ void DetailedRouter::printSummary(DRModel& dr_model)
                                     << "prop" << fort::endr;
     for (RoutingLayer& routing_layer : routing_layer_list) {
       routing_violation_num_map_table << routing_layer.get_layer_name() << routing_violation_num_map[routing_layer.get_layer_idx()]
-                                      << RTUTIL.getPercentage(routing_violation_num_map[routing_layer.get_layer_idx()], total_violation_num)
-                                      << fort::endr;
+                                      << RTUTIL.getPercentage(routing_violation_num_map[routing_layer.get_layer_idx()], total_violation_num) << fort::endr;
     }
-    routing_violation_num_map_table << fort::header << "Total" << total_violation_num
-                                    << RTUTIL.getPercentage(total_violation_num, total_violation_num) << fort::endr;
+    routing_violation_num_map_table << fort::header << "Total" << total_violation_num << RTUTIL.getPercentage(total_violation_num, total_violation_num)
+                                    << fort::endr;
   }
   fort::char_table timing_table;
   fort::char_table power_table;
@@ -2049,8 +2041,8 @@ void DetailedRouter::outputNetCSV(DRModel& dr_model)
     }
   }
   for (RoutingLayer& routing_layer : routing_layer_list) {
-    std::ofstream* net_csv_file = RTUTIL.getOutputFileStream(
-        RTUTIL.getString(dr_temp_directory_path, "net_map_", routing_layer.get_layer_name(), "_", dr_model.get_iter(), ".csv"));
+    std::ofstream* net_csv_file
+        = RTUTIL.getOutputFileStream(RTUTIL.getString(dr_temp_directory_path, "net_map_", routing_layer.get_layer_name(), "_", dr_model.get_iter(), ".csv"));
     GridMap<int32_t>& net_map = layer_net_map[routing_layer.get_layer_idx()];
     for (int32_t y = net_map.get_y_size() - 1; y >= 0; y--) {
       for (int32_t x = 0; x < net_map.get_x_size(); x++) {
@@ -2311,8 +2303,8 @@ void DetailedRouter::debugCheckDRBox(DRBox& dr_box)
         PlanarCoord grid_coord = RTUTIL.getTrackGrid(coord, dr_box.get_box_track_axis());
         DRNode& dr_node = layer_node_map[layer_idx][grid_coord.get_x()][grid_coord.get_y()];
         if (dr_node.get_neighbor_node_map().empty()) {
-          RTLOG.error(Loc::current(), "The neighbor of group coord (", coord.get_x(), ",", coord.get_y(), ",", layer_idx,
-                      ") is empty in box(", dr_box_id.get_x(), ",", dr_box_id.get_y(), ")");
+          RTLOG.error(Loc::current(), "The neighbor of group coord (", coord.get_x(), ",", coord.get_y(), ",", layer_idx, ") is empty in box(",
+                      dr_box_id.get_x(), ",", dr_box_id.get_y(), ")");
         }
         if (RTUTIL.isInside(dr_box.get_box_rect().get_real_rect(), coord)) {
           continue;
@@ -2400,8 +2392,7 @@ void DetailedRouter::debugPlotDRBox(DRBox& dr_box, int32_t curr_task_idx, std::s
           GPText gp_text_node_real_coord;
           gp_text_node_real_coord.set_coord(real_rect.get_ll_x(), y);
           gp_text_node_real_coord.set_text_type(static_cast<int32_t>(GPDataType::kInfo));
-          gp_text_node_real_coord.set_message(
-              RTUTIL.getString("(", dr_node.get_x(), " , ", dr_node.get_y(), " , ", dr_node.get_layer_idx(), ")"));
+          gp_text_node_real_coord.set_message(RTUTIL.getString("(", dr_node.get_x(), " , ", dr_node.get_y(), " , ", dr_node.get_layer_idx(), ")"));
           gp_text_node_real_coord.set_layer_idx(RTGP.getGDSIdxByRouting(dr_node.get_layer_idx()));
           gp_text_node_real_coord.set_presentation(GPTextPresentation::kLeftMiddle);
           dr_node_map_struct.push(gp_text_node_real_coord);
@@ -2487,8 +2478,7 @@ void DetailedRouter::debugPlotDRBox(DRBox& dr_box, int32_t curr_task_idx, std::s
             gp_text_orient_violation_number_map_info.set_text_type(static_cast<int32_t>(GPDataType::kInfo));
             std::string orient_violation_number_map_info_message = "--";
             for (auto& [orient, violation_number] : dr_node.get_orient_violation_number_map()) {
-              orient_violation_number_map_info_message
-                  += RTUTIL.getString("(", GetOrientationName()(orient), ",", violation_number != 0, ")");
+              orient_violation_number_map_info_message += RTUTIL.getString("(", GetOrientationName()(orient), ",", violation_number != 0, ")");
             }
             gp_text_orient_violation_number_map_info.set_message(orient_violation_number_map_info_message);
             gp_text_orient_violation_number_map_info.set_layer_idx(RTGP.getGDSIdxByRouting(dr_node.get_layer_idx()));
@@ -2700,8 +2690,8 @@ void DetailedRouter::debugPlotDRBox(DRBox& dr_box, int32_t curr_task_idx, std::s
     }
   }
 
-  std::string gds_file_path = RTUTIL.getString(dr_temp_directory_path, flag, "_dr_box_", dr_box.get_dr_box_id().get_x(), "_",
-                                               dr_box.get_dr_box_id().get_y(), ".gds");
+  std::string gds_file_path
+      = RTUTIL.getString(dr_temp_directory_path, flag, "_dr_box_", dr_box.get_dr_box_id().get_x(), "_", dr_box.get_dr_box_id().get_y(), ".gds");
   RTGP.plot(gp_gds, gds_file_path);
 }
 

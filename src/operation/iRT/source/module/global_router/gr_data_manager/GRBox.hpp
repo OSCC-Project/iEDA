@@ -55,10 +55,7 @@ class GRBox
     _net_task_global_result_map = net_task_global_result_map;
   }
   void set_total_overflow(const int32_t total_overflow) { _total_overflow = total_overflow; }
-  void set_overflow_net_set_list(const std::vector<std::set<int32_t>>& overflow_net_set_list)
-  {
-    _overflow_net_set_list = overflow_net_set_list;
-  }
+  void set_overflow_net_set_list(const std::vector<std::set<int32_t>>& overflow_net_set_list) { _overflow_net_set_list = overflow_net_set_list; }
   void set_box_track_axis(const ScaleAxis& box_track_axis) { _box_track_axis = box_track_axis; }
   void set_layer_node_map(const std::vector<GridMap<GRNode>>& layer_node_map) { _layer_node_map = layer_node_map; }
   void set_best_net_task_global_result_map(const std::map<int32_t, std::vector<Segment<LayerCoord>>>& best_net_task_global_result_map)
@@ -76,20 +73,14 @@ class GRBox
   std::vector<GRNode*>& get_single_task_visited_node_list() { return _single_task_visited_node_list; }
   std::vector<Segment<LayerCoord>>& get_routing_segment_list() { return _routing_segment_list; }
   void set_curr_gr_task(GRTask* curr_gr_task) { _curr_gr_task = curr_gr_task; }
-  void set_start_node_list_list(const std::vector<std::vector<GRNode*>>& start_node_list_list)
-  {
-    _start_node_list_list = start_node_list_list;
-  }
+  void set_start_node_list_list(const std::vector<std::vector<GRNode*>>& start_node_list_list) { _start_node_list_list = start_node_list_list; }
   void set_end_node_list_list(const std::vector<std::vector<GRNode*>>& end_node_list_list) { _end_node_list_list = end_node_list_list; }
   void set_path_node_list(const std::vector<GRNode*>& path_node_list) { _path_node_list = path_node_list; }
   void set_single_task_visited_node_list(const std::vector<GRNode*>& single_task_visited_node_list)
   {
     _single_task_visited_node_list = single_task_visited_node_list;
   }
-  void set_routing_segment_list(const std::vector<Segment<LayerCoord>>& routing_segment_list)
-  {
-    _routing_segment_list = routing_segment_list;
-  }
+  void set_routing_segment_list(const std::vector<Segment<LayerCoord>>& routing_segment_list) { _routing_segment_list = routing_segment_list; }
   // single path
   PriorityQueue<GRNode*, std::vector<GRNode*>, CmpGRNodeCost>& get_open_queue() { return _open_queue; }
   std::vector<GRNode*>& get_single_path_visited_node_list() { return _single_path_visited_node_list; }

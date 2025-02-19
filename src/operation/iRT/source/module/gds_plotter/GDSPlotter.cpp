@@ -125,10 +125,10 @@ void GDSPlotter::buildGraphLypFile()
   std::vector<CutLayer>& cut_layer_list = RTDM.getDatabase().get_cut_layer_list();
   std::string& gp_temp_directory_path = RTDM.getConfig().gp_temp_directory_path;
 
-  std::vector<std::string> color_list = {"#ff9d9d", "#ff80a8", "#c080ff", "#9580ff", "#8086ff", "#80a8ff", "#ff0000", "#ff0080", "#ff00ff",
-                                         "#8000ff", "#0000ff", "#0080ff", "#800000", "#800057", "#800080", "#500080", "#000080", "#004080",
-                                         "#80fffb", "#80ff8d", "#afff80", "#f3ff80", "#ffc280", "#ffa080", "#00ffff", "#01ff6b", "#91ff00",
-                                         "#ddff00", "#ffae00", "#ff8000", "#008080", "#008050", "#008000", "#508000", "#808000", "#805000"};
+  std::vector<std::string> color_list
+      = {"#ff9d9d", "#ff80a8", "#c080ff", "#9580ff", "#8086ff", "#80a8ff", "#ff0000", "#ff0080", "#ff00ff", "#8000ff", "#0000ff", "#0080ff",
+         "#800000", "#800057", "#800080", "#500080", "#000080", "#004080", "#80fffb", "#80ff8d", "#afff80", "#f3ff80", "#ffc280", "#ffa080",
+         "#00ffff", "#01ff6b", "#91ff00", "#ddff00", "#ffae00", "#ff8000", "#008080", "#008050", "#008000", "#508000", "#808000", "#805000"};
   std::vector<std::string> pattern_list = {"I5", "I9"};
 
   std::map<GPDataType, bool> routing_data_type_visible_map
@@ -153,16 +153,15 @@ void GDSPlotter::buildGraphLypFile()
       // routing
       std::string routing_layer_name = routing_layer_list[_gds_routing_layer_map[gds_layer_idx]].get_layer_name();
       for (auto& [routing_data_type, visible] : routing_data_type_visible_map) {
-        lyp_layer_list.emplace_back(color, pattern, visible,
-                                    RTUTIL.getString(routing_layer_name, "_", GetGPDataTypeName()(routing_data_type)), gds_layer_idx,
+        lyp_layer_list.emplace_back(color, pattern, visible, RTUTIL.getString(routing_layer_name, "_", GetGPDataTypeName()(routing_data_type)), gds_layer_idx,
                                     static_cast<int32_t>(routing_data_type));
       }
     } else if (RTUTIL.exist(_gds_cut_layer_map, gds_layer_idx)) {
       // cut
       std::string cut_layer_name = cut_layer_list[_gds_cut_layer_map[gds_layer_idx]].get_layer_name();
       for (auto& [cut_data_type, visible] : cut_data_type_visible_map) {
-        lyp_layer_list.emplace_back(color, pattern, visible, RTUTIL.getString(cut_layer_name, "_", GetGPDataTypeName()(cut_data_type)),
-                                    gds_layer_idx, static_cast<int32_t>(cut_data_type));
+        lyp_layer_list.emplace_back(color, pattern, visible, RTUTIL.getString(cut_layer_name, "_", GetGPDataTypeName()(cut_data_type)), gds_layer_idx,
+                                    static_cast<int32_t>(cut_data_type));
       }
     }
   }
@@ -195,8 +194,7 @@ void GDSPlotter::writeLypFile(std::string lyp_file_path, std::vector<GPLYPLayer>
     RTUTIL.pushStream(lyp_file, "<marked>false</marked>", "\n");
     RTUTIL.pushStream(lyp_file, "<xfill>false</xfill>", "\n");
     RTUTIL.pushStream(lyp_file, "<animation>0</animation>", "\n");
-    RTUTIL.pushStream(lyp_file, "<name>", lyp_layer.get_layer_name(), " ", lyp_layer.get_layer_idx(), "/", lyp_layer.get_data_type(),
-                      "</name>", "\n");
+    RTUTIL.pushStream(lyp_file, "<name>", lyp_layer.get_layer_name(), " ", lyp_layer.get_layer_idx(), "/", lyp_layer.get_data_type(), "</name>", "\n");
     RTUTIL.pushStream(lyp_file, "<source>", lyp_layer.get_layer_idx(), "/", lyp_layer.get_data_type(), "@1</source>", "\n");
     RTUTIL.pushStream(lyp_file, "</properties>", "\n");
   }

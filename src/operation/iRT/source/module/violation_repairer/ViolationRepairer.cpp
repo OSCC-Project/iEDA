@@ -343,8 +343,8 @@ void ViolationRepairer::iterativeVRModel(VRModel& vr_model)
   // clang-format on
   for (size_t i = 0, iter = 1; i < vr_iter_param_list.size(); i++, iter++) {
     Monitor iter_monitor;
-    RTLOG.info(Loc::current(), "***** Begin iteration ", iter, "/", vr_iter_param_list.size(), "(",
-               RTUTIL.getPercentage(iter, vr_iter_param_list.size()), ") *****");
+    RTLOG.info(Loc::current(), "***** Begin iteration ", iter, "/", vr_iter_param_list.size(), "(", RTUTIL.getPercentage(iter, vr_iter_param_list.size()),
+               ") *****");
     // debugPlotVRModel(vr_model, "before");
     setVRIterParam(vr_model, iter, vr_iter_param_list[i]);
     initVRBoxMap(vr_model);
@@ -360,8 +360,8 @@ void ViolationRepairer::iterativeVRModel(VRModel& vr_model)
     printSummary(vr_model);
     outputNetCSV(vr_model);
     outputViolationCSV(vr_model);
-    RTLOG.info(Loc::current(), "***** End Iteration ", iter, "/", vr_iter_param_list.size(), "(",
-               RTUTIL.getPercentage(iter, vr_iter_param_list.size()), ")", iter_monitor.getStatsInfo(), "*****");
+    RTLOG.info(Loc::current(), "***** End Iteration ", iter, "/", vr_iter_param_list.size(), "(", RTUTIL.getPercentage(iter, vr_iter_param_list.size()), ")",
+               iter_monitor.getStatsInfo(), "*****");
     if (stopIteration(vr_model)) {
       break;
     }
@@ -568,9 +568,8 @@ void ViolationRepairer::self_check_violation(VRBox& vr_box)
               }
               if ((gtl::yh(rect) - gtl::yl(rect)) < min_width && gtl::area(rect & layer_bshape_fixed_map[layer_idx]) == 0) {
                 // 检测到高度不满足
-                RTLOG.info(Loc::current(), "get min width:", min_width, " width:", gtl::xh(rect) - gtl::xl(rect),
-                           " height:", gtl::yh(rect) - gtl::yl(rect), " llx:", gtl::xl(rect), " lly:", gtl::yl(rect),
-                           " urx:", gtl::xh(rect), " ury:", gtl::yh(rect), " layer_idx:", layer_idx);
+                RTLOG.info(Loc::current(), "get min width:", min_width, " width:", gtl::xh(rect) - gtl::xl(rect), " height:", gtl::yh(rect) - gtl::yl(rect),
+                           " llx:", gtl::xl(rect), " lly:", gtl::yl(rect), " urx:", gtl::xh(rect), " ury:", gtl::yh(rect), " layer_idx:", layer_idx);
               }
             }
           }
@@ -589,9 +588,8 @@ void ViolationRepairer::self_check_violation(VRBox& vr_box)
             for (auto rect : poly_rectangle) {
               if ((gtl::xh(rect) - gtl::xl(rect)) < min_width && gtl::area(rect & layer_bshape_fixed_map[layer_idx]) == 0) {
                 // 检测到宽度不满足
-                RTLOG.info(Loc::current(), "get min width:", min_width, " width:", gtl::xh(rect) - gtl::xl(rect),
-                           " height:", gtl::yh(rect) - gtl::yl(rect), " llx:", gtl::xl(rect), " lly:", gtl::yl(rect),
-                           " urx:", gtl::xh(rect), " ury:", gtl::yh(rect), " layer_idx:", layer_idx);
+                RTLOG.info(Loc::current(), "get min width:", min_width, " width:", gtl::xh(rect) - gtl::xl(rect), " height:", gtl::yh(rect) - gtl::yl(rect),
+                           " llx:", gtl::xl(rect), " lly:", gtl::yl(rect), " urx:", gtl::xh(rect), " ury:", gtl::yh(rect), " layer_idx:", layer_idx);
               }
             }
           }
@@ -863,8 +861,8 @@ void ViolationRepairer::routeVRBoxMap(VRModel& vr_model)
       freeVRBox(vr_box);
     }
     routed_box_num += vr_box_id_list.size();
-    RTLOG.info(Loc::current(), "Routed ", routed_box_num, "/", total_box_num, "(", RTUTIL.getPercentage(routed_box_num, total_box_num),
-               ") boxes with ", getViolationNum(vr_model), " violations", stage_monitor.getStatsInfo());
+    RTLOG.info(Loc::current(), "Routed ", routed_box_num, "/", total_box_num, "(", RTUTIL.getPercentage(routed_box_num, total_box_num), ") boxes with ",
+               getViolationNum(vr_model), " violations", stage_monitor.getStatsInfo());
   }
 
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
@@ -1218,8 +1216,8 @@ void ViolationRepairer::routeVRTask(VRBox& vr_box, VRTask* vr_task)
     // 多net之间只能move，单net以patch为主，一些极端情况也只能move
     {
       for (auto violation : vr_box.get_violation_list()) {
-        if (violation.get_violation_type() == ViolationType::kParallelRunLengthSpacing
-            && RTUTIL.exist(violation.get_violation_net_set(), net_idx) && violation.get_violation_net_set().size() == 1) {
+        if (violation.get_violation_type() == ViolationType::kParallelRunLengthSpacing && RTUTIL.exist(violation.get_violation_net_set(), net_idx)
+            && violation.get_violation_net_set().size() == 1) {
           EXTLayerRect violation_shape = violation.get_violation_shape();
           int32_t layer_idx = violation_shape.get_layer_idx();
           int32_t min_width = routing_layer_list[layer_idx].get_min_width();
@@ -1237,8 +1235,7 @@ void ViolationRepairer::routeVRTask(VRBox& vr_box, VRTask* vr_task)
           std::vector<GTLRectInt> connect_shape;
           gtl::bloat(boost_violation_shape, gtl::HORIZONTAL, 1);
           gtl::bloat(boost_violation_shape_copy, gtl::VERTICAL, 1);
-          GTLPolySetInt bloat_shape
-              = boost_violation_shape + boost_violation_shape_copy - RTUTIL.convertToGTLRectInt(violation_shape.get_real_rect());
+          GTLPolySetInt bloat_shape = boost_violation_shape + boost_violation_shape_copy - RTUTIL.convertToGTLRectInt(violation_shape.get_real_rect());
           bloat_shape.get(connect_shape);
           if (connect_shape.size() != 4) {
             RTLOG.info(Loc::current(), "meet a exception prl");
@@ -1371,8 +1368,8 @@ void ViolationRepairer::routeVRTask(VRBox& vr_box, VRTask* vr_task)
               layer_set_map[layer_idx] += RTUTIL.convertToGTLRectInt(violation_shape.get_real_rect());
               break;
             default:
-              RTLOG.info(Loc::current(), violation_shape.get_real_ll_x(), " ", violation_shape.get_real_ll_y(), " ",
-                         violation_shape.get_real_ur_x(), " ", violation_shape.get_real_ur_y(), " ", violation_shape.get_layer_idx());
+              RTLOG.info(Loc::current(), violation_shape.get_real_ll_x(), " ", violation_shape.get_real_ll_y(), " ", violation_shape.get_real_ur_x(), " ",
+                         violation_shape.get_real_ur_y(), " ", violation_shape.get_layer_idx());
               RTLOG.info(Loc::current(), "meet prl violation unconcerned!");
               break;
           }
@@ -1489,13 +1486,11 @@ void ViolationRepairer::routeVRTask(VRBox& vr_box, VRTask* vr_task)
             Segment<LayerCoord> right_edge = cadidate_edges[1];
             assert(left_edge.get_first().get_y() <= left_edge.get_second().get_y());
             assert(right_edge.get_first().get_y() <= right_edge.get_second().get_y());
-            PlanarRect left_planar(left_edge.get_first().get_x() - left_length * manufacture_grid, left_edge.get_first().get_y(),
-                                   left_edge.get_first().get_x(), left_edge.get_first().get_y() + min_width);
+            PlanarRect left_planar(left_edge.get_first().get_x() - left_length * manufacture_grid, left_edge.get_first().get_y(), left_edge.get_first().get_x(),
+                                   left_edge.get_first().get_y() + min_width);
             PlanarRect right_planar(right_edge.get_first().get_x(), right_edge.get_first().get_y(),
-                                    right_edge.get_first().get_x() + right_length * manufacture_grid,
-                                    right_edge.get_first().get_y() + min_width);
-            if (!RTUTIL.isInside(vr_box.get_box_rect().get_real_rect(), left_planar)
-                || !RTUTIL.isInside(vr_box.get_box_rect().get_real_rect(), right_planar)) {
+                                    right_edge.get_first().get_x() + right_length * manufacture_grid, right_edge.get_first().get_y() + min_width);
+            if (!RTUTIL.isInside(vr_box.get_box_rect().get_real_rect(), left_planar) || !RTUTIL.isInside(vr_box.get_box_rect().get_real_rect(), right_planar)) {
               continue;  // patch不要超出box
             }
 
@@ -1515,8 +1510,7 @@ void ViolationRepairer::routeVRTask(VRBox& vr_box, VRTask* vr_task)
             assert(north_edge.get_first().get_x() <= north_edge.get_second().get_x());
             PlanarRect south_planar(south_edge.get_first().get_x(), south_edge.get_first().get_y() - left_length * manufacture_grid,
                                     south_edge.get_first().get_x() + min_width, south_edge.get_first().get_y());
-            PlanarRect north_planar(north_edge.get_first().get_x(), north_edge.get_first().get_y(),
-                                    north_edge.get_first().get_x() + min_width,
+            PlanarRect north_planar(north_edge.get_first().get_x(), north_edge.get_first().get_y(), north_edge.get_first().get_x() + min_width,
                                     north_edge.get_first().get_y() + right_length * manufacture_grid);
             if (!RTUTIL.isInside(vr_box.get_box_rect().get_real_rect(), south_planar)
                 || !RTUTIL.isInside(vr_box.get_box_rect().get_real_rect(), north_planar)) {
@@ -1537,9 +1531,8 @@ void ViolationRepairer::routeVRTask(VRBox& vr_box, VRTask* vr_task)
         // 选取代价最小的patch
 
         std::vector<GTLRectInt> min_poly_rect;
-        gtl::get_rectangles(
-            min_poly_rect, min_poly,
-            routing_layer_list[layer_idx].isPreferH() ? gtl::orientation_2d_enum::HORIZONTAL : gtl::orientation_2d_enum::VERTICAL);
+        gtl::get_rectangles(min_poly_rect, min_poly,
+                            routing_layer_list[layer_idx].isPreferH() ? gtl::orientation_2d_enum::HORIZONTAL : gtl::orientation_2d_enum::VERTICAL);
         // for (auto rect : min_poly_rect) {
         //   EXTLayerRect temp_del_rect;
         //   temp_del_rect.set_layer_idx(layer_idx);
@@ -1583,8 +1576,8 @@ void ViolationRepairer::routeVRTask(VRBox& vr_box, VRTask* vr_task)
           if (now_cost <= min_cost) {
             // 选择靠近中间的，这样打出来更均衡
             if (now_cost == min_cost) {
-              if (std::abs(left_south_cadidate_patch_list[i].getRealArea() - right_north_cadidate_patch_list[i].getRealArea()) < std::abs(
-                      left_south_cadidate_patch_list[best_i].getRealArea() - right_north_cadidate_patch_list[best_i].getRealArea())) {
+              if (std::abs(left_south_cadidate_patch_list[i].getRealArea() - right_north_cadidate_patch_list[i].getRealArea())
+                  < std::abs(left_south_cadidate_patch_list[best_i].getRealArea() - right_north_cadidate_patch_list[best_i].getRealArea())) {
                 min_cost = now_cost;
                 best_i = i;
               }
@@ -1974,8 +1967,7 @@ bool ViolationRepairer::stopIteration(VRModel& vr_model)
 
 #if 1  // update env
 
-void ViolationRepairer::updateFixedRectToGraph(VRBox& vr_box, ChangeType change_type, int32_t net_idx, EXTLayerRect* fixed_rect,
-                                               bool is_routing)
+void ViolationRepairer::updateFixedRectToGraph(VRBox& vr_box, ChangeType change_type, int32_t net_idx, EXTLayerRect* fixed_rect, bool is_routing)
 {
   NetShape net_shape(net_idx, fixed_rect->getRealLayerRect(), is_routing);
   for (auto& [vr_node, obs_type_set] : getNodeObsTypeMap(vr_box, net_shape, true)) {
@@ -2096,8 +2088,7 @@ std::map<VRNode*, std::set<VRObsType>> ViolationRepairer::getRoutingNodeObsTypeM
     // 贴合的也不算违例
     enlarged_x_size -= 1;
     enlarged_y_size -= 1;
-    PlanarRect planar_enlarged_rect
-        = RTUTIL.getEnlargedRect(net_shape.get_rect(), enlarged_x_size, enlarged_y_size, enlarged_x_size, enlarged_y_size);
+    PlanarRect planar_enlarged_rect = RTUTIL.getEnlargedRect(net_shape.get_rect(), enlarged_x_size, enlarged_y_size, enlarged_x_size, enlarged_y_size);
     if (!RTUTIL.existTrackGrid(planar_enlarged_rect, vr_box.get_box_track_axis())) {
       continue;
     }
@@ -2121,8 +2112,7 @@ std::map<VRNode*, std::set<VRObsType>> ViolationRepairer::getRoutingNodeObsTypeM
     // 贴合的也不算违例
     enlarged_x_size -= 1;
     enlarged_y_size -= 1;
-    PlanarRect space_enlarged_rect
-        = RTUTIL.getEnlargedRect(net_shape.get_rect(), enlarged_x_size, enlarged_y_size, enlarged_x_size, enlarged_y_size);
+    PlanarRect space_enlarged_rect = RTUTIL.getEnlargedRect(net_shape.get_rect(), enlarged_x_size, enlarged_y_size, enlarged_x_size, enlarged_y_size);
     if (!RTUTIL.existTrackGrid(space_enlarged_rect, vr_box.get_box_track_axis())) {
       continue;
     }
@@ -2218,8 +2208,7 @@ std::map<VRNode*, std::set<VRObsType>> ViolationRepairer::getCutNodeObsTypeMap(V
       // 贴合的也不算违例
       enlarged_x_size -= 1;
       enlarged_y_size -= 1;
-      PlanarRect space_enlarged_rect
-          = RTUTIL.getEnlargedRect(net_shape.get_rect(), enlarged_x_size, enlarged_y_size, enlarged_x_size, enlarged_y_size);
+      PlanarRect space_enlarged_rect = RTUTIL.getEnlargedRect(net_shape.get_rect(), enlarged_x_size, enlarged_y_size, enlarged_x_size, enlarged_y_size);
       if (!RTUTIL.existTrackGrid(space_enlarged_rect, vr_box.get_box_track_axis())) {
         continue;
       }
@@ -2305,8 +2294,7 @@ void ViolationRepairer::updateSummary(VRModel& vr_model)
     }
   }
   for (Violation* violation : RTDM.getViolationSet(die)) {
-    routing_violation_type_num_map[violation->get_violation_shape().get_layer_idx()]
-                                  [GetViolationTypeName()(violation->get_violation_type())]++;
+    routing_violation_type_num_map[violation->get_violation_shape().get_layer_idx()][GetViolationTypeName()(violation->get_violation_type())]++;
     violation_type_num_map[GetViolationTypeName()(violation->get_violation_type())]++;
     routing_violation_num_map[violation->get_violation_shape().get_layer_idx()]++;
     total_violation_num++;
@@ -2358,11 +2346,9 @@ void ViolationRepairer::printSummary(VRModel& vr_model)
                                   << "prop" << fort::endr;
     for (RoutingLayer& routing_layer : routing_layer_list) {
       routing_wire_length_map_table << routing_layer.get_layer_name() << routing_wire_length_map[routing_layer.get_layer_idx()]
-                                    << RTUTIL.getPercentage(routing_wire_length_map[routing_layer.get_layer_idx()], total_wire_length)
-                                    << fort::endr;
+                                    << RTUTIL.getPercentage(routing_wire_length_map[routing_layer.get_layer_idx()], total_wire_length) << fort::endr;
     }
-    routing_wire_length_map_table << fort::header << "Total" << total_wire_length
-                                  << RTUTIL.getPercentage(total_wire_length, total_wire_length) << fort::endr;
+    routing_wire_length_map_table << fort::header << "Total" << total_wire_length << RTUTIL.getPercentage(total_wire_length, total_wire_length) << fort::endr;
   }
   fort::char_table cut_via_num_map_table;
   {
@@ -2382,11 +2368,9 @@ void ViolationRepairer::printSummary(VRModel& vr_model)
                                 << "prop" << fort::endr;
     for (RoutingLayer& routing_layer : routing_layer_list) {
       routing_patch_num_map_table << routing_layer.get_layer_name() << routing_patch_num_map[routing_layer.get_layer_idx()]
-                                  << RTUTIL.getPercentage(routing_patch_num_map[routing_layer.get_layer_idx()], total_patch_num)
-                                  << fort::endr;
+                                  << RTUTIL.getPercentage(routing_patch_num_map[routing_layer.get_layer_idx()], total_patch_num) << fort::endr;
     }
-    routing_patch_num_map_table << fort::header << "Total" << total_patch_num << RTUTIL.getPercentage(total_patch_num, total_patch_num)
-                                << fort::endr;
+    routing_patch_num_map_table << fort::header << "Total" << total_patch_num << RTUTIL.getPercentage(total_patch_num, total_patch_num) << fort::endr;
   }
   fort::char_table routing_violation_map_table;
   {
@@ -2470,8 +2454,8 @@ void ViolationRepairer::outputNetCSV(VRModel& vr_model)
     }
   }
   for (RoutingLayer& routing_layer : routing_layer_list) {
-    std::ofstream* net_csv_file = RTUTIL.getOutputFileStream(
-        RTUTIL.getString(vr_temp_directory_path, "net_map_", routing_layer.get_layer_name(), "_", vr_model.get_iter(), ".csv"));
+    std::ofstream* net_csv_file
+        = RTUTIL.getOutputFileStream(RTUTIL.getString(vr_temp_directory_path, "net_map_", routing_layer.get_layer_name(), "_", vr_model.get_iter(), ".csv"));
     GridMap<int32_t>& net_map = layer_net_map[routing_layer.get_layer_idx()];
     for (int32_t y = net_map.get_y_size() - 1; y >= 0; y--) {
       for (int32_t x = 0; x < net_map.get_x_size(); x++) {
@@ -2762,8 +2746,7 @@ void ViolationRepairer::debugPlotVRBox(VRBox& vr_box, int32_t curr_task_idx, std
           GPText gp_text_node_real_coord;
           gp_text_node_real_coord.set_coord(real_rect.get_ll_x(), y);
           gp_text_node_real_coord.set_text_type(static_cast<int32_t>(GPDataType::kInfo));
-          gp_text_node_real_coord.set_message(
-              RTUTIL.getString("(", vr_node.get_x(), " , ", vr_node.get_y(), " , ", vr_node.get_layer_idx(), ")"));
+          gp_text_node_real_coord.set_message(RTUTIL.getString("(", vr_node.get_x(), " , ", vr_node.get_y(), " , ", vr_node.get_layer_idx(), ")"));
           gp_text_node_real_coord.set_layer_idx(RTGP.getGDSIdxByRouting(vr_node.get_layer_idx()));
           gp_text_node_real_coord.set_presentation(GPTextPresentation::kLeftMiddle);
           vr_node_map_struct.push(gp_text_node_real_coord);
@@ -2849,8 +2832,7 @@ void ViolationRepairer::debugPlotVRBox(VRBox& vr_box, int32_t curr_task_idx, std
             gp_text_obs_type_violation_number_map_info.set_text_type(static_cast<int32_t>(GPDataType::kInfo));
             std::string obs_type_violation_number_map_info_message = "--";
             for (auto& [obs_type, violation_number] : vr_node.get_obs_type_violation_number_map()) {
-              obs_type_violation_number_map_info_message
-                  += RTUTIL.getString("(", GetVRObsTypeName()(obs_type), ",", violation_number != 0, ")");
+              obs_type_violation_number_map_info_message += RTUTIL.getString("(", GetVRObsTypeName()(obs_type), ",", violation_number != 0, ")");
             }
             gp_text_obs_type_violation_number_map_info.set_message(obs_type_violation_number_map_info_message);
             gp_text_obs_type_violation_number_map_info.set_layer_idx(RTGP.getGDSIdxByRouting(vr_node.get_layer_idx()));
@@ -2989,8 +2971,8 @@ void ViolationRepairer::debugPlotVRBox(VRBox& vr_box, int32_t curr_task_idx, std
     }
   }
 
-  std::string gds_file_path = RTUTIL.getString(vr_temp_directory_path, flag, "_vr_box_", vr_box.get_vr_box_id().get_x(), "_",
-                                               vr_box.get_vr_box_id().get_y(), ".gds");
+  std::string gds_file_path
+      = RTUTIL.getString(vr_temp_directory_path, flag, "_vr_box_", vr_box.get_vr_box_id().get_x(), "_", vr_box.get_vr_box_id().get_y(), ".gds");
   RTGP.plot(gp_gds, gds_file_path);
 }
 

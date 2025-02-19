@@ -38,10 +38,7 @@ class VRBox
   VRBoxId& get_vr_box_id() { return _vr_box_id; }
   VRIterParam* get_vr_iter_param() { return _vr_iter_param; }
   std::vector<VRTask*>& get_vr_task_list() { return _vr_task_list; }
-  std::map<bool, std::map<int32_t, std::map<int32_t, std::set<EXTLayerRect*>>>>& get_type_layer_net_fixed_rect_map()
-  {
-    return _type_layer_net_fixed_rect_map;
-  }
+  std::map<bool, std::map<int32_t, std::map<int32_t, std::set<EXTLayerRect*>>>>& get_type_layer_net_fixed_rect_map() { return _type_layer_net_fixed_rect_map; }
   std::map<int32_t, std::set<Segment<LayerCoord>*>>& get_net_final_result_map() { return _net_final_result_map; }
   std::map<int32_t, std::set<EXTLayerRect*>>& get_net_final_patch_map() { return _net_final_patch_map; }
   std::map<int32_t, std::vector<Segment<LayerCoord>>>& get_net_task_final_result_map() { return _net_task_final_result_map; }
@@ -54,19 +51,12 @@ class VRBox
   void set_vr_box_id(const VRBoxId& vr_box_id) { _vr_box_id = vr_box_id; }
   void set_vr_iter_param(VRIterParam* vr_iter_param) { _vr_iter_param = vr_iter_param; }
   void set_vr_task_list(const std::vector<VRTask*>& vr_task_list) { _vr_task_list = vr_task_list; }
-  void set_type_layer_net_fixed_rect_map(
-      const std::map<bool, std::map<int32_t, std::map<int32_t, std::set<EXTLayerRect*>>>>& type_layer_net_fixed_rect_map)
+  void set_type_layer_net_fixed_rect_map(const std::map<bool, std::map<int32_t, std::map<int32_t, std::set<EXTLayerRect*>>>>& type_layer_net_fixed_rect_map)
   {
     _type_layer_net_fixed_rect_map = type_layer_net_fixed_rect_map;
   }
-  void set_net_final_result_map(const std::map<int32_t, std::set<Segment<LayerCoord>*>>& net_final_result_map)
-  {
-    _net_final_result_map = net_final_result_map;
-  }
-  void set_net_final_patch_map(const std::map<int32_t, std::set<EXTLayerRect*>>& net_final_patch_map)
-  {
-    _net_final_patch_map = net_final_patch_map;
-  }
+  void set_net_final_result_map(const std::map<int32_t, std::set<Segment<LayerCoord>*>>& net_final_result_map) { _net_final_result_map = net_final_result_map; }
+  void set_net_final_patch_map(const std::map<int32_t, std::set<EXTLayerRect*>>& net_final_patch_map) { _net_final_patch_map = net_final_patch_map; }
   void set_net_task_final_result_map(const std::map<int32_t, std::vector<Segment<LayerCoord>>>& net_task_final_result_map)
   {
     _net_task_final_result_map = net_task_final_result_map;
@@ -85,10 +75,7 @@ class VRBox
   std::vector<Segment<LayerCoord>>& get_routing_segment_list() { return _routing_segment_list; }
   std::vector<EXTLayerRect>& get_routing_patch_list() { return _routing_patch_list; }
   void set_curr_vr_task(VRTask* curr_vr_task) { _curr_vr_task = curr_vr_task; }
-  void set_routing_segment_list(const std::vector<Segment<LayerCoord>>& routing_segment_list)
-  {
-    _routing_segment_list = routing_segment_list;
-  }
+  void set_routing_segment_list(const std::vector<Segment<LayerCoord>>& routing_segment_list) { _routing_segment_list = routing_segment_list; }
   void set_routing_patch_list(const std::vector<EXTLayerRect>& routing_patch_list) { _routing_patch_list = routing_patch_list; }
 #endif
  private:

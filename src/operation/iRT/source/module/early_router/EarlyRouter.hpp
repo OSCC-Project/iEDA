@@ -69,8 +69,7 @@ class EarlyRouter
   void buildLayerOrientSupply(ERModel& er_model);
   void generateGlobalTree(ERModel& er_model);
   void routeLayerNet(ERModel& er_model, ERNet* er_net);
-  void makeERTopoList(ERModel& er_model, ERNet* er_net, std::vector<ERTopo>& er_topo_list,
-                      std::vector<Segment<LayerCoord>>& routing_segment_list);
+  void makeERTopoList(ERModel& er_model, ERNet* er_net, std::vector<ERTopo>& er_topo_list, std::vector<Segment<LayerCoord>>& routing_segment_list);
   void routeERTopo(ERModel& er_model, ERTopo* er_topo);
   void initSingleTask(ERModel& er_model, ERTopo* er_topo);
   bool isConnectedAllEnd(ERModel& er_model);
