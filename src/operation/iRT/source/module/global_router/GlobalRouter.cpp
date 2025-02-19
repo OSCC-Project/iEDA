@@ -186,8 +186,8 @@ void GlobalRouter::iterativeGRModel(GRModel& gr_model)
   // clang-format on
   for (size_t i = 0, iter = 1; i < gr_iter_param_list.size(); i++, iter++) {
     Monitor iter_monitor;
-    RTLOG.info(Loc::current(), "***** Begin iteration ", iter, "/", gr_iter_param_list.size(), "(",
-               RTUTIL.getPercentage(iter, gr_iter_param_list.size()), ") *****");
+    RTLOG.info(Loc::current(), "***** Begin iteration ", iter, "/", gr_iter_param_list.size(), "(", RTUTIL.getPercentage(iter, gr_iter_param_list.size()),
+               ") *****");
     setGRIterParam(gr_model, iter, gr_iter_param_list[i]);
     initGRBoxMap(gr_model);
     buildBoxSchedule(gr_model);
@@ -201,8 +201,8 @@ void GlobalRouter::iterativeGRModel(GRModel& gr_model)
     outputGuide(gr_model);
     outputDemandCSV(gr_model);
     outputOverflowCSV(gr_model);
-    RTLOG.info(Loc::current(), "***** End Iteration ", iter, "/", gr_iter_param_list.size(), "(",
-               RTUTIL.getPercentage(iter, gr_iter_param_list.size()), ")", iter_monitor.getStatsInfo(), "*****");
+    RTLOG.info(Loc::current(), "***** End Iteration ", iter, "/", gr_iter_param_list.size(), "(", RTUTIL.getPercentage(iter, gr_iter_param_list.size()), ")",
+               iter_monitor.getStatsInfo(), "*****");
     if (stopIteration(gr_model)) {
       break;
     }
@@ -424,8 +424,8 @@ void GlobalRouter::routeGRBoxMap(GRModel& gr_model)
       freeGRBox(gr_box);
     }
     routed_box_num += gr_box_id_list.size();
-    RTLOG.info(Loc::current(), "Routed ", routed_box_num, "/", total_box_num, "(", RTUTIL.getPercentage(routed_box_num, total_box_num),
-               ") boxes", stage_monitor.getStatsInfo());
+    RTLOG.info(Loc::current(), "Routed ", routed_box_num, "/", total_box_num, "(", RTUTIL.getPercentage(routed_box_num, total_box_num), ") boxes",
+               stage_monitor.getStatsInfo());
   }
 
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
@@ -558,13 +558,11 @@ void GlobalRouter::buildOverflow(GRModel& gr_model, GRBox& gr_box)
         std::map<Orientation, std::set<int32_t>>& orient_demand_map = gr_node_map[x][y].get_orient_demand_map();
         int32_t node_overflow = 0;
         if (routing_layer_list[layer_idx].isPreferH()) {
-          node_overflow
-              = std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kEast].size()) - orient_supply_map[Orientation::kEast])
-                + std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kWest].size()) - orient_supply_map[Orientation::kWest]);
+          node_overflow = std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kEast].size()) - orient_supply_map[Orientation::kEast])
+                          + std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kWest].size()) - orient_supply_map[Orientation::kWest]);
         } else {
-          node_overflow
-              = std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kSouth].size()) - orient_supply_map[Orientation::kSouth])
-                + std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kNorth].size()) - orient_supply_map[Orientation::kNorth]);
+          node_overflow = std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kSouth].size()) - orient_supply_map[Orientation::kSouth])
+                          + std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kNorth].size()) - orient_supply_map[Orientation::kNorth]);
         }
         total_overflow += node_overflow;
         if (node_overflow > 0) {
@@ -1152,13 +1150,11 @@ void GlobalRouter::updateOverflow(GRBox& gr_box)
         std::map<Orientation, std::set<int32_t>>& orient_demand_map = gr_node_map[x][y].get_orient_demand_map();
         int32_t node_overflow = 0;
         if (routing_layer_list[layer_idx].isPreferH()) {
-          node_overflow
-              = std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kEast].size()) - orient_supply_map[Orientation::kEast])
-                + std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kWest].size()) - orient_supply_map[Orientation::kWest]);
+          node_overflow = std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kEast].size()) - orient_supply_map[Orientation::kEast])
+                          + std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kWest].size()) - orient_supply_map[Orientation::kWest]);
         } else {
-          node_overflow
-              = std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kSouth].size()) - orient_supply_map[Orientation::kSouth])
-                + std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kNorth].size()) - orient_supply_map[Orientation::kNorth]);
+          node_overflow = std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kSouth].size()) - orient_supply_map[Orientation::kSouth])
+                          + std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kNorth].size()) - orient_supply_map[Orientation::kNorth]);
         }
         total_overflow += node_overflow;
         if (node_overflow > 0) {
@@ -1260,13 +1256,11 @@ int32_t GlobalRouter::getOverflow(GRModel& gr_model)
         std::map<Orientation, std::set<int32_t>>& orient_demand_map = gr_node_map[x][y].get_orient_demand_map();
         int32_t node_overflow = 0;
         if (routing_layer_list[layer_idx].isPreferH()) {
-          node_overflow
-              = std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kEast].size()) - orient_supply_map[Orientation::kEast])
-                + std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kWest].size()) - orient_supply_map[Orientation::kWest]);
+          node_overflow = std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kEast].size()) - orient_supply_map[Orientation::kEast])
+                          + std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kWest].size()) - orient_supply_map[Orientation::kWest]);
         } else {
-          node_overflow
-              = std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kSouth].size()) - orient_supply_map[Orientation::kSouth])
-                + std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kNorth].size()) - orient_supply_map[Orientation::kNorth]);
+          node_overflow = std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kSouth].size()) - orient_supply_map[Orientation::kSouth])
+                          + std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kNorth].size()) - orient_supply_map[Orientation::kNorth]);
         }
         total_overflow += node_overflow;
       }
@@ -1301,8 +1295,8 @@ void GlobalRouter::uploadNetResult(GRModel& gr_model)
       }
       MTree<LayerCoord> coord_tree = RTUTIL.getTreeByFullFlow(candidate_root_coord_list, routing_segment_list, key_coord_pin_map);
       for (Segment<TNode<LayerCoord>*>& coord_segment : RTUTIL.getSegListByTree(coord_tree)) {
-        RTDM.updateNetGlobalResultToGCellMap(
-            ChangeType::kAdd, net_idx, new Segment<LayerCoord>(coord_segment.get_first()->value(), coord_segment.get_second()->value()));
+        RTDM.updateNetGlobalResultToGCellMap(ChangeType::kAdd, net_idx,
+                                             new Segment<LayerCoord>(coord_segment.get_first()->value(), coord_segment.get_second()->value()));
       }
     }
     for (auto& [net_idx, segment_set] : net_global_result_map) {
@@ -1386,8 +1380,7 @@ void GlobalRouter::uploadBestResult(GRModel& gr_model)
 
 #if 1  // update env
 
-void GlobalRouter::updateDemandToGraph(GRModel& gr_model, ChangeType change_type, int32_t net_idx,
-                                       std::set<Segment<LayerCoord>*>& segment_set)
+void GlobalRouter::updateDemandToGraph(GRModel& gr_model, ChangeType change_type, int32_t net_idx, std::set<Segment<LayerCoord>*>& segment_set)
 {
   std::map<LayerCoord, std::set<Orientation>, CmpLayerCoordByXASC> usage_map;
   for (Segment<LayerCoord>* segment : segment_set) {
@@ -1431,8 +1424,7 @@ void GlobalRouter::updateDemandToGraph(GRModel& gr_model, ChangeType change_type
   }
 }
 
-void GlobalRouter::updateDemandToGraph(GRBox& gr_box, ChangeType change_type, int32_t net_idx,
-                                       std::vector<Segment<LayerCoord>>& segment_list)
+void GlobalRouter::updateDemandToGraph(GRBox& gr_box, ChangeType change_type, int32_t net_idx, std::vector<Segment<LayerCoord>>& segment_list)
 {
   int32_t grid_ll_x = gr_box.get_box_rect().get_grid_ll_x();
   int32_t grid_ll_y = gr_box.get_box_rect().get_grid_ll_y();
@@ -1529,14 +1521,12 @@ void GlobalRouter::updateSummary(GRModel& gr_model)
         int32_t node_overflow = 0;
         if (routing_layer_list[layer_idx].isPreferH()) {
           node_demand = static_cast<int32_t>(orient_demand_map[Orientation::kEast].size() + orient_demand_map[Orientation::kWest].size());
-          node_overflow
-              = std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kEast].size()) - orient_supply_map[Orientation::kEast])
-                + std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kWest].size()) - orient_supply_map[Orientation::kWest]);
+          node_overflow = std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kEast].size()) - orient_supply_map[Orientation::kEast])
+                          + std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kWest].size()) - orient_supply_map[Orientation::kWest]);
         } else {
           node_demand = static_cast<int32_t>(orient_demand_map[Orientation::kSouth].size() + orient_demand_map[Orientation::kNorth].size());
-          node_overflow
-              = std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kSouth].size()) - orient_supply_map[Orientation::kSouth])
-                + std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kNorth].size()) - orient_supply_map[Orientation::kNorth]);
+          node_overflow = std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kSouth].size()) - orient_supply_map[Orientation::kSouth])
+                          + std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kNorth].size()) - orient_supply_map[Orientation::kNorth]);
         }
         routing_demand_map[layer_idx] += node_demand;
         total_demand += node_demand;
@@ -1575,18 +1565,16 @@ void GlobalRouter::updateSummary(GRModel& gr_model)
     for (GRNet& gr_net : gr_net_list) {
       for (GRPin& gr_pin : gr_net.get_gr_pin_list()) {
         LayerCoord layer_coord = gr_pin.get_access_point().getGridLayerCoord();
-        real_pin_coord_map_list[gr_net.get_net_idx()][gr_pin.get_pin_name()].emplace_back(
-            RTUTIL.getRealRectByGCell(layer_coord, gcell_axis).getMidPoint(), layer_coord.get_layer_idx());
+        real_pin_coord_map_list[gr_net.get_net_idx()][gr_pin.get_pin_name()].emplace_back(RTUTIL.getRealRectByGCell(layer_coord, gcell_axis).getMidPoint(),
+                                                                                          layer_coord.get_layer_idx());
       }
     }
     for (auto& [net_idx, segment_set] : RTDM.getNetGlobalResultMap(die)) {
       for (Segment<LayerCoord>* segment : segment_set) {
         LayerCoord first_layer_coord = segment->get_first();
-        LayerCoord first_real_coord(RTUTIL.getRealRectByGCell(first_layer_coord, gcell_axis).getMidPoint(),
-                                    first_layer_coord.get_layer_idx());
+        LayerCoord first_real_coord(RTUTIL.getRealRectByGCell(first_layer_coord, gcell_axis).getMidPoint(), first_layer_coord.get_layer_idx());
         LayerCoord second_layer_coord = segment->get_second();
-        LayerCoord second_real_coord(RTUTIL.getRealRectByGCell(second_layer_coord, gcell_axis).getMidPoint(),
-                                     second_layer_coord.get_layer_idx());
+        LayerCoord second_real_coord(RTUTIL.getRealRectByGCell(second_layer_coord, gcell_axis).getMidPoint(), second_layer_coord.get_layer_idx());
 
         routing_segment_list_list[net_idx].emplace_back(first_real_coord, second_real_coord);
       }
@@ -1633,8 +1621,7 @@ void GlobalRouter::printSummary(GRModel& gr_model)
       routing_overflow_map_table << routing_layer.get_layer_name() << routing_overflow_map[routing_layer.get_layer_idx()]
                                  << RTUTIL.getPercentage(routing_overflow_map[routing_layer.get_layer_idx()], total_overflow) << fort::endr;
     }
-    routing_overflow_map_table << fort::header << "Total" << total_overflow << RTUTIL.getPercentage(total_overflow, total_overflow)
-                               << fort::endr;
+    routing_overflow_map_table << fort::header << "Total" << total_overflow << RTUTIL.getPercentage(total_overflow, total_overflow) << fort::endr;
   }
   fort::char_table routing_wire_length_map_table;
   {
@@ -1643,11 +1630,9 @@ void GlobalRouter::printSummary(GRModel& gr_model)
                                   << "prop" << fort::endr;
     for (RoutingLayer& routing_layer : routing_layer_list) {
       routing_wire_length_map_table << routing_layer.get_layer_name() << routing_wire_length_map[routing_layer.get_layer_idx()]
-                                    << RTUTIL.getPercentage(routing_wire_length_map[routing_layer.get_layer_idx()], total_wire_length)
-                                    << fort::endr;
+                                    << RTUTIL.getPercentage(routing_wire_length_map[routing_layer.get_layer_idx()], total_wire_length) << fort::endr;
     }
-    routing_wire_length_map_table << fort::header << "Total" << total_wire_length
-                                  << RTUTIL.getPercentage(total_wire_length, total_wire_length) << fort::endr;
+    routing_wire_length_map_table << fort::header << "Total" << total_wire_length << RTUTIL.getPercentage(total_wire_length, total_wire_length) << fort::endr;
   }
   fort::char_table cut_via_num_map_table;
   {
@@ -1692,8 +1677,7 @@ void GlobalRouter::outputGuide(GRModel& gr_model)
   }
   std::vector<GRNet>& gr_net_list = gr_model.get_gr_net_list();
 
-  std::ofstream* guide_file_stream
-      = RTUTIL.getOutputFileStream(RTUTIL.getString(gr_temp_directory_path, "route_", gr_model.get_iter(), ".guide"));
+  std::ofstream* guide_file_stream = RTUTIL.getOutputFileStream(RTUTIL.getString(gr_temp_directory_path, "route_", gr_model.get_iter(), ".guide"));
   if (guide_file_stream == nullptr) {
     return;
   }
@@ -1719,8 +1703,7 @@ void GlobalRouter::outputGuide(GRModel& gr_model)
       } else {
         connnect = "load";
       }
-      RTUTIL.pushStream(guide_file_stream, "pin ", grid_x, " ", grid_y, " ", real_x, " ", real_y, " ", layer, " ", connnect, " ",
-                        gr_pin.get_pin_name(), "\n");
+      RTUTIL.pushStream(guide_file_stream, "pin ", grid_x, " ", grid_y, " ", real_x, " ", real_y, " ", layer, " ", connnect, " ", gr_pin.get_pin_name(), "\n");
     }
     for (Segment<LayerCoord>* segment : segment_set) {
       LayerCoord first_layer_coord = segment->get_first();
@@ -1748,8 +1731,8 @@ void GlobalRouter::outputGuide(GRModel& gr_model)
         RTUTIL.pushStream(guide_file_stream, "via ", grid1_x, " ", grid1_y, " ", real1_x, " ", real1_y, " ", layer1, " ", layer2, "\n");
       } else {
         std::string layer = routing_layer_list[first_layer_idx].get_layer_name();
-        RTUTIL.pushStream(guide_file_stream, "wire ", grid1_x, " ", grid1_y, " ", grid2_x, " ", grid2_y, " ", real1_x, " ", real1_y, " ",
-                          real2_x, " ", real2_y, " ", layer, "\n");
+        RTUTIL.pushStream(guide_file_stream, "wire ", grid1_x, " ", grid1_y, " ", grid2_x, " ", grid2_y, " ", real1_x, " ", real1_y, " ", real2_x, " ", real2_y,
+                          " ", layer, "\n");
       }
     }
   }
@@ -1766,8 +1749,8 @@ void GlobalRouter::outputDemandCSV(GRModel& gr_model)
   }
   std::vector<GridMap<GRNode>>& layer_node_map = gr_model.get_layer_node_map();
   for (RoutingLayer& routing_layer : routing_layer_list) {
-    std::ofstream* demand_csv_file = RTUTIL.getOutputFileStream(
-        RTUTIL.getString(gr_temp_directory_path, "demand_map_", routing_layer.get_layer_name(), "_", gr_model.get_iter(), ".csv"));
+    std::ofstream* demand_csv_file
+        = RTUTIL.getOutputFileStream(RTUTIL.getString(gr_temp_directory_path, "demand_map_", routing_layer.get_layer_name(), "_", gr_model.get_iter(), ".csv"));
 
     GridMap<GRNode>& gr_node_map = layer_node_map[routing_layer.get_layer_idx()];
     for (int32_t y = gr_node_map.get_y_size() - 1; y >= 0; y--) {
@@ -1777,8 +1760,7 @@ void GlobalRouter::outputDemandCSV(GRModel& gr_model)
         if (routing_layer.isPreferH()) {
           total_demand = static_cast<int32_t>(orient_demand_map[Orientation::kEast].size() + orient_demand_map[Orientation::kWest].size());
         } else {
-          total_demand
-              = static_cast<int32_t>(orient_demand_map[Orientation::kSouth].size() + orient_demand_map[Orientation::kNorth].size());
+          total_demand = static_cast<int32_t>(orient_demand_map[Orientation::kSouth].size() + orient_demand_map[Orientation::kNorth].size());
         }
         RTUTIL.pushStream(demand_csv_file, total_demand, ",");
       }
@@ -1808,13 +1790,11 @@ void GlobalRouter::outputOverflowCSV(GRModel& gr_model)
         std::map<Orientation, std::set<int32_t>>& orient_demand_map = gr_node_map[x][y].get_orient_demand_map();
         int32_t total_overflow = 0;
         if (routing_layer.isPreferH()) {
-          total_overflow
-              = std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kEast].size()) - orient_supply_map[Orientation::kEast])
-                + std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kWest].size()) - orient_supply_map[Orientation::kWest]);
+          total_overflow = std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kEast].size()) - orient_supply_map[Orientation::kEast])
+                           + std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kWest].size()) - orient_supply_map[Orientation::kWest]);
         } else {
-          total_overflow
-              = std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kSouth].size()) - orient_supply_map[Orientation::kSouth])
-                + std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kNorth].size()) - orient_supply_map[Orientation::kNorth]);
+          total_overflow = std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kSouth].size()) - orient_supply_map[Orientation::kSouth])
+                           + std::max(0, static_cast<int32_t>(orient_demand_map[Orientation::kNorth].size()) - orient_supply_map[Orientation::kNorth]);
         }
         RTUTIL.pushStream(overflow_csv_file, total_overflow, ",");
       }

@@ -49,10 +49,7 @@ class TAPanel
   void set_ta_panel_id(const TAPanelId& ta_panel_id) { _ta_panel_id = ta_panel_id; }
   void set_ta_com_param(TAComParam* ta_com_param) { _ta_com_param = ta_com_param; }
   void set_ta_task_list(const std::vector<TATask*>& ta_task_list) { _ta_task_list = ta_task_list; }
-  void set_net_fixed_rect_map(const std::map<int32_t, std::set<EXTLayerRect*>>& net_fixed_rect_map)
-  {
-    _net_fixed_rect_map = net_fixed_rect_map;
-  }
+  void set_net_fixed_rect_map(const std::map<int32_t, std::set<EXTLayerRect*>>& net_fixed_rect_map) { _net_fixed_rect_map = net_fixed_rect_map; }
   void set_net_pin_access_result_map(const std::map<int32_t, std::map<int32_t, std::vector<LayerRect>>>& net_pin_access_result_map)
   {
     _net_pin_access_result_map = net_pin_access_result_map;
@@ -74,20 +71,14 @@ class TAPanel
   std::vector<TANode*>& get_single_task_visited_node_list() { return _single_task_visited_node_list; }
   std::vector<Segment<LayerCoord>>& get_routing_segment_list() { return _routing_segment_list; }
   void set_curr_ta_task(TATask* curr_ta_task) { _curr_ta_task = curr_ta_task; }
-  void set_start_node_list_list(const std::vector<std::vector<TANode*>>& start_node_list_list)
-  {
-    _start_node_list_list = start_node_list_list;
-  }
+  void set_start_node_list_list(const std::vector<std::vector<TANode*>>& start_node_list_list) { _start_node_list_list = start_node_list_list; }
   void set_end_node_list_list(const std::vector<std::vector<TANode*>>& end_node_list_list) { _end_node_list_list = end_node_list_list; }
   void set_path_node_list(const std::vector<TANode*>& path_node_list) { _path_node_list = path_node_list; }
   void set_single_task_visited_node_list(const std::vector<TANode*>& single_task_visited_node_list)
   {
     _single_task_visited_node_list = single_task_visited_node_list;
   }
-  void set_routing_segment_list(const std::vector<Segment<LayerCoord>>& routing_segment_list)
-  {
-    _routing_segment_list = routing_segment_list;
-  }
+  void set_routing_segment_list(const std::vector<Segment<LayerCoord>>& routing_segment_list) { _routing_segment_list = routing_segment_list; }
   // single path
   PriorityQueue<TANode*, std::vector<TANode*>, CmpTANodeCost>& get_open_queue() { return _open_queue; }
   std::vector<TANode*>& get_single_path_visited_node_list() { return _single_path_visited_node_list; }

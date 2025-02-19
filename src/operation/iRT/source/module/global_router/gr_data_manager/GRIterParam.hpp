@@ -24,8 +24,7 @@ class GRIterParam
 {
  public:
   GRIterParam() = default;
-  GRIterParam(double prefer_wire_unit, double via_unit, int32_t size, int32_t offset, int32_t schedule_interval, double overflow_unit,
-              int32_t max_routed_times)
+  GRIterParam(double prefer_wire_unit, double via_unit, int32_t size, int32_t offset, int32_t schedule_interval, double overflow_unit, int32_t max_routed_times)
   {
     _prefer_wire_unit = prefer_wire_unit;
     _via_unit = via_unit;

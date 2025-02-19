@@ -284,8 +284,8 @@ void LayerAssigner::routeLAModel(LAModel& la_model)
   for (size_t i = 0; i < la_task_list.size(); i++) {
     routeLANet(la_model, la_task_list[i]);
     if ((i + 1) % batch_size == 0 || (i + 1) == la_task_list.size()) {
-      RTLOG.info(Loc::current(), "Routed ", (i + 1), "/", la_task_list.size(), "(", RTUTIL.getPercentage(i + 1, la_task_list.size()),
-                 ") nets", stage_monitor.getStatsInfo());
+      RTLOG.info(Loc::current(), "Routed ", (i + 1), "/", la_task_list.size(), "(", RTUTIL.getPercentage(i + 1, la_task_list.size()), ") nets",
+                 stage_monitor.getStatsInfo());
     }
   }
 
@@ -309,8 +309,7 @@ void LayerAssigner::routeLANet(LAModel& la_model, LANet* la_net)
   uploadNetResult(la_net, coord_tree);
 }
 
-void LayerAssigner::makeLATopoList(LAModel& la_model, LANet* la_net, std::vector<LATopo>& la_topo_list,
-                                   std::vector<Segment<LayerCoord>>& routing_segment_list)
+void LayerAssigner::makeLATopoList(LAModel& la_model, LANet* la_net, std::vector<LATopo>& la_topo_list, std::vector<Segment<LayerCoord>>& routing_segment_list)
 {
   int32_t bottom_routing_layer_idx = RTDM.getConfig().bottom_routing_layer_idx;
   int32_t top_routing_layer_idx = RTDM.getConfig().top_routing_layer_idx;
@@ -669,8 +668,7 @@ std::vector<Segment<LayerCoord>> LayerAssigner::getRoutingSegmentList(LAModel& l
       key_coord_pin_map[coord].insert(static_cast<int32_t>(i));
     }
   }
-  MTree<LayerCoord> coord_tree
-      = RTUTIL.getTreeByFullFlow(candidate_root_coord_list, la_model.get_routing_segment_list(), key_coord_pin_map);
+  MTree<LayerCoord> coord_tree = RTUTIL.getTreeByFullFlow(candidate_root_coord_list, la_model.get_routing_segment_list(), key_coord_pin_map);
 
   std::vector<Segment<LayerCoord>> routing_segment_list;
   for (Segment<TNode<LayerCoord>*>& coord_segment : RTUTIL.getSegListByTree(coord_tree)) {
@@ -981,18 +979,16 @@ void LayerAssigner::updateSummary(LAModel& la_model)
     for (LANet& la_net : la_net_list) {
       for (LAPin& la_pin : la_net.get_la_pin_list()) {
         LayerCoord layer_coord = la_pin.get_access_point().getGridLayerCoord();
-        real_pin_coord_map_list[la_net.get_net_idx()][la_pin.get_pin_name()].emplace_back(
-            RTUTIL.getRealRectByGCell(layer_coord, gcell_axis).getMidPoint(), layer_coord.get_layer_idx());
+        real_pin_coord_map_list[la_net.get_net_idx()][la_pin.get_pin_name()].emplace_back(RTUTIL.getRealRectByGCell(layer_coord, gcell_axis).getMidPoint(),
+                                                                                          layer_coord.get_layer_idx());
       }
     }
     for (auto& [net_idx, segment_set] : RTDM.getNetGlobalResultMap(die)) {
       for (Segment<LayerCoord>* segment : segment_set) {
         LayerCoord first_layer_coord = segment->get_first();
-        LayerCoord first_real_coord(RTUTIL.getRealRectByGCell(first_layer_coord, gcell_axis).getMidPoint(),
-                                    first_layer_coord.get_layer_idx());
+        LayerCoord first_real_coord(RTUTIL.getRealRectByGCell(first_layer_coord, gcell_axis).getMidPoint(), first_layer_coord.get_layer_idx());
         LayerCoord second_layer_coord = segment->get_second();
-        LayerCoord second_real_coord(RTUTIL.getRealRectByGCell(second_layer_coord, gcell_axis).getMidPoint(),
-                                     second_layer_coord.get_layer_idx());
+        LayerCoord second_real_coord(RTUTIL.getRealRectByGCell(second_layer_coord, gcell_axis).getMidPoint(), second_layer_coord.get_layer_idx());
 
         routing_segment_list_list[net_idx].emplace_back(first_real_coord, second_real_coord);
       }
@@ -1039,8 +1035,7 @@ void LayerAssigner::printSummary(LAModel& la_model)
       routing_overflow_map_table << routing_layer.get_layer_name() << routing_overflow_map[routing_layer.get_layer_idx()]
                                  << RTUTIL.getPercentage(routing_overflow_map[routing_layer.get_layer_idx()], total_overflow) << fort::endr;
     }
-    routing_overflow_map_table << fort::header << "Total" << total_overflow << RTUTIL.getPercentage(total_overflow, total_overflow)
-                               << fort::endr;
+    routing_overflow_map_table << fort::header << "Total" << total_overflow << RTUTIL.getPercentage(total_overflow, total_overflow) << fort::endr;
   }
   fort::char_table routing_wire_length_map_table;
   {
@@ -1049,11 +1044,9 @@ void LayerAssigner::printSummary(LAModel& la_model)
                                   << "prop" << fort::endr;
     for (RoutingLayer& routing_layer : routing_layer_list) {
       routing_wire_length_map_table << routing_layer.get_layer_name() << routing_wire_length_map[routing_layer.get_layer_idx()]
-                                    << RTUTIL.getPercentage(routing_wire_length_map[routing_layer.get_layer_idx()], total_wire_length)
-                                    << fort::endr;
+                                    << RTUTIL.getPercentage(routing_wire_length_map[routing_layer.get_layer_idx()], total_wire_length) << fort::endr;
     }
-    routing_wire_length_map_table << fort::header << "Total" << total_wire_length
-                                  << RTUTIL.getPercentage(total_wire_length, total_wire_length) << fort::endr;
+    routing_wire_length_map_table << fort::header << "Total" << total_wire_length << RTUTIL.getPercentage(total_wire_length, total_wire_length) << fort::endr;
   }
   fort::char_table cut_via_num_map_table;
   {
@@ -1124,8 +1117,7 @@ void LayerAssigner::outputGuide(LAModel& la_model)
       } else {
         connnect = "load";
       }
-      RTUTIL.pushStream(guide_file_stream, "pin ", grid_x, " ", grid_y, " ", real_x, " ", real_y, " ", layer, " ", connnect, " ",
-                        la_pin.get_pin_name(), "\n");
+      RTUTIL.pushStream(guide_file_stream, "pin ", grid_x, " ", grid_y, " ", real_x, " ", real_y, " ", layer, " ", connnect, " ", la_pin.get_pin_name(), "\n");
     }
     for (Segment<LayerCoord>* segment : segment_set) {
       LayerCoord first_layer_coord = segment->get_first();
@@ -1153,8 +1145,8 @@ void LayerAssigner::outputGuide(LAModel& la_model)
         RTUTIL.pushStream(guide_file_stream, "via ", grid1_x, " ", grid1_y, " ", real1_x, " ", real1_y, " ", layer1, " ", layer2, "\n");
       } else {
         std::string layer = routing_layer_list[first_layer_idx].get_layer_name();
-        RTUTIL.pushStream(guide_file_stream, "wire ", grid1_x, " ", grid1_y, " ", grid2_x, " ", grid2_y, " ", real1_x, " ", real1_y, " ",
-                          real2_x, " ", real2_y, " ", layer, "\n");
+        RTUTIL.pushStream(guide_file_stream, "wire ", grid1_x, " ", grid1_y, " ", grid2_x, " ", grid2_y, " ", real1_x, " ", real1_y, " ", real2_x, " ", real2_y,
+                          " ", layer, "\n");
       }
     }
   }
