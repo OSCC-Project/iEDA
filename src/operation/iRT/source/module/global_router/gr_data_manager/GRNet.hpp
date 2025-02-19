@@ -16,30 +16,39 @@
 // ***************************************************************************************
 #pragma once
 
+#include "ConnectType.hpp"
+#include "GRBox.hpp"
+#include "GRPin.hpp"
 #include "GridMap.hpp"
-#include "RTHeader.hpp"
+#include "Guide.hpp"
+#include "MTree.hpp"
+#include "Net.hpp"
+#include "Pin.hpp"
+#include "TNode.hpp"
 
 namespace irt {
 
-class SpacingTable
+class GRNet
 {
  public:
-  SpacingTable() = default;
-  ~SpacingTable() = default;
+  GRNet() = default;
+  ~GRNet() = default;
   // getter
-  std::vector<int32_t>& get_width_list() { return _width_list; }
-  std::vector<int32_t>& get_parallel_length_list() { return _parallel_length_list; }
-  GridMap<int32_t>& get_width_parallel_length_map() { return _width_parallel_length_map; }
+  Net* get_origin_net() { return _origin_net; }
+  int32_t get_net_idx() const { return _net_idx; }
+  ConnectType get_connect_type() const { return _connect_type; }
+  std::vector<GRPin>& get_gr_pin_list() { return _gr_pin_list; }
   // setter
-  void set_width_list(const std::vector<int32_t>& width_list) { _width_list = width_list; }
-  void set_parallel_length_list(const std::vector<int32_t>& parallel_length_list) { _parallel_length_list = parallel_length_list; }
-  void set_width_parallel_length_map(const GridMap<int32_t>& width_parallel_length_map) { _width_parallel_length_map = width_parallel_length_map; }
-  // function
+  void set_origin_net(Net* origin_net) { _origin_net = origin_net; }
+  void set_net_idx(const int32_t net_idx) { _net_idx = net_idx; }
+  void set_connect_type(const ConnectType& connect_type) { _connect_type = connect_type; }
+  void set_gr_pin_list(const std::vector<GRPin>& gr_pin_list) { _gr_pin_list = gr_pin_list; }
 
  private:
-  std::vector<int32_t> _width_list;
-  std::vector<int32_t> _parallel_length_list;
-  GridMap<int32_t> _width_parallel_length_map;
+  Net* _origin_net = nullptr;
+  int32_t _net_idx = -1;
+  ConnectType _connect_type = ConnectType::kNone;
+  std::vector<GRPin> _gr_pin_list;
 };
 
 }  // namespace irt

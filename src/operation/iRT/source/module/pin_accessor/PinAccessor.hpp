@@ -109,14 +109,18 @@ class PinAccessor
   double getEstimateViaCost(PABox& pa_box, PANode* start_node, PANode* end_node);
   void updateViolationList(PABox& pa_box);
   std::vector<Violation> getCostViolationList(PABox& pa_box);
+  void updateBestResult(PABox& pa_box);
   void updateTaskSchedule(PABox& pa_box, std::vector<PATask*>& routing_task_list);
-  void uploadAccessResult(PABox& pa_box);
-  void uploadViolation(PABox& pa_box);
+  void selectBestResult(PABox& pa_box);
+  void uploadBestResult(PABox& pa_box);
   void freePABox(PABox& pa_box);
-  int32_t getViolationNum();
+  int32_t getViolationNum(PAModel& pa_model);
   void uploadViolation(PAModel& pa_model);
   std::vector<Violation> getCostViolationList(PAModel& pa_model);
+  void updateBestResult(PAModel& pa_model);
   bool stopIteration(PAModel& pa_model);
+  void selectBestResult(PAModel& pa_model);
+  void uploadBestResult(PAModel& pa_model);
   void uploadAccessPoint(PAModel& pa_model);
 
 #if 1  // update env
