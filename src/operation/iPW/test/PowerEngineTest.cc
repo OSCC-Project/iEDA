@@ -81,9 +81,3 @@ TEST_F(PowerEngineTest, example1) {
 
 }  // namespace
 
-int main(int argc, char** argv) {
-  ::testing::InitGoogleTest(&argc, argv);
-
-  testing::GTEST_FLAG(filter) = "PowerEngineTest.*";
-  return RUN_ALL_TESTS();
-}

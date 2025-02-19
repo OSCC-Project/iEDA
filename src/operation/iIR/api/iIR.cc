@@ -79,8 +79,12 @@ unsigned iIR::solveIRDrop(const char* net_name) {
   auto instance_node_ids = get_instance_node_ids(_rc_data, net_name);
   uintptr_t* instance_id;
   FOREACH_VEC_ELEM(&instance_node_ids, uintptr_t, instance_id) {
-    LOG_INFO << "instance id " << *instance_id << " ir drop "
-             << grid_voltages[*instance_id];
+    double ir_drop = grid_voltages[*instance_id];
+    std::string instance_name = get_instance_name(_rc_data, net_name, *instance_id);
+
+    LOG_INFO << "instance name " << instance_name << " ir drop "
+             << ir_drop;
+    _instance_to_ir_drop[instance_name] = ir_drop;
   }
 
   return 1;
