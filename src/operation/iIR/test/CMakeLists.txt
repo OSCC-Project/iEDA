@@ -10,4 +10,4 @@ find_package(GTest REQUIRED)
 aux_source_directory(. SourceFiles)
 add_executable(iIRTest ${SourceFiles})
 
-target_link_libraries(iIRTest api iIR-Rust gtest log)
+target_link_libraries(iIRTest iir-api iIR-Rust gtest log)

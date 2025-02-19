@@ -30,6 +30,9 @@
 #include "core/PwrSeqGraph.hh"
 #include "include/PwrConfig.hh"
 #include "ops/read_vcd/RustVCDParserWrapper.hh"
+#include "iIR/api/iIR.hh"
+
+using namespace iir;
 
 namespace ipower {
 
@@ -96,7 +99,10 @@ class Power {
 
   unsigned reportPower(bool is_copy = true);
 
+  std::vector<IRInstancePower> getInstancePowerData();
+
   unsigned runCompleteFlow();
+  unsigned runIRAnalysis();
 
   auto& get_leakage_powers() { return _leakage_powers; }
   auto& get_internal_powers() { return _internal_powers; }

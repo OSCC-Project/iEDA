@@ -59,6 +59,8 @@ struct RustNetConductanceData build_one_net_conductance_matrix_data(const void *
  */
 void *read_inst_pwr_csv(const char *file_path);
 
+void *set_instance_power_data(struct RustVec c_instance_power_data);
+
 /**
  * Build one net instance current vector.
  */
@@ -72,6 +74,8 @@ void *build_one_net_instance_current_vector(const void *c_instance_power_data,
 struct RustVec get_bump_node_ids(const void *c_rc_data, const char *c_net_name);
 
 struct RustVec get_instance_node_ids(const void *c_rc_data, const char *c_net_name);
+
+const char *get_instance_name(const void *c_rc_data, const char *c_net_name, uintptr_t node_id);
 
 /**
  * Build RC matrix and current vector data.

@@ -76,7 +76,7 @@ class IdbDesign
   IdbGroupList* get_group_list() { return _group_list; }
   IdbSpecialNetList* get_special_net_list() { return _special_net_list; }
   IdbFillList* get_fill_list() { return _fill_list; }
-  IdbBusBitChars* get_bus_bit_chars() { return &_bus_bit_chars; }
+  IdbBusBitChars* get_bus_bit_chars() { return _bus_bit_chars; }
   IdbBusList* get_bus_list() { return _bus_list; }
 
   // setter
@@ -93,6 +93,7 @@ class IdbDesign
   void set_group_list(IdbGroupList* group_list) { _group_list = group_list; }
   void set_special_net_list(IdbSpecialNetList* net_list) { _special_net_list = net_list; }
   void set_fill_list(IdbFillList* fill_list) { _fill_list = fill_list; }
+  void set_bus_bit_chars(IdbBusBitChars* busbit_chars) { _bus_bit_chars = busbit_chars; }
 
   // operator
   int32_t transUnitDB(double value) { return std::round(_units->get_micron_dbu() * value); }
@@ -117,7 +118,7 @@ class IdbDesign
   IdbFillList* _fill_list;
 
   IdbLayout* _layout;
-  IdbBusBitChars _bus_bit_chars;
+  IdbBusBitChars* _bus_bit_chars = nullptr;
   IdbBusList* _bus_list;
 };
 

@@ -9,6 +9,6 @@ find_package(Eigen3 REQUIRED)
 include_directories(${EIGEN3_INCLUDE_DIRS})
 
 aux_source_directory(./ SRC)
-add_library(api ${SRC} )
+add_library(iir-api ${SRC} )
 
-target_link_libraries(api ir_solver ir-matrix Eigen3::Eigen)
+target_link_libraries(iir-api ir_solver ir-matrix Eigen3::Eigen)

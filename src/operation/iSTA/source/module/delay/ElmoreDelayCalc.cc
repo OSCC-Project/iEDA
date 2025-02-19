@@ -1110,6 +1110,10 @@ double RcNet::load(AnalysisMode mode, TransType trans_type) {
  * @return double 
  */
 double RcNet::slewImpulse(DesignObject& to, AnalysisMode mode, TransType trans_type) {
+  if (!rct()) {
+    return 0.0;
+  }
+  
   auto* node = std::get<RcTree>(_rct).node(to.getFullName());
   if (_rct.index() == 0) {
     return 0.0;
