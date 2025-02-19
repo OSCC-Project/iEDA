@@ -34,7 +34,7 @@ class ViolationRepairer
   static void destroyInst();
   // function
   void repair();
- int  use_innovus = 0;
+ int  use_innovus = 0; 
  private:
   // self
   static ViolationRepairer* _vr_instance;
