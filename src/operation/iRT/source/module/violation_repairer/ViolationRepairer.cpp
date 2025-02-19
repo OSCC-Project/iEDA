@@ -265,7 +265,7 @@ std::vector<Violation> ViolationRepairer::getMultiNetViolationList(VRModel& vr_m
     de_task.set_net_patch_map(net_patch_map);
     de_task.set_need_checked_net_set(need_checked_net_set);
   }
-    // return RTDE.getViolationListByTemp(de_task);
+  // return RTDE.getViolationListByTemp(de_task);
   return RTDE.getViolationList(de_task);
 }
 
@@ -319,7 +319,7 @@ std::vector<Violation> ViolationRepairer::getSingleNetViolationList(VRModel& vr_
     de_task.set_net_patch_map(net_patch_map);
     de_task.set_need_checked_net_set(need_checked_net_set);
   }
-    // return RTDE.getViolationListByTemp(de_task);
+  // return RTDE.getViolationListByTemp(de_task);
   return RTDE.getViolationList(de_task);
 }
 
@@ -1090,14 +1090,45 @@ void ViolationRepairer::buildObsTypeNetMap(VRBox& vr_box)
 
 void ViolationRepairer::exemptPinShape(VRBox& vr_box)
 {
+  std::map<int32_t, std::vector<int32_t>>& cut_to_adjacent_routing_map = RTDM.getDatabase().get_cut_to_adjacent_routing_map();
+
+  std::map<int32_t, std::map<EXTLayerRect*, std::set<VRObsType>>> routing_layer_pin_shape_obs_type_map;
+  for (auto& [is_routing, layer_net_fixed_rect_map] : vr_box.get_type_layer_net_fixed_rect_map()) {
+    for (auto& [layer_idx, net_fixed_rect_map] : layer_net_fixed_rect_map) {
+      std::map<int32_t, std::set<VRObsType>> routing_layer_obs_type_map;
+      if (is_routing) {
+        routing_layer_obs_type_map[layer_idx].insert(VRObsType::kPlanar);
+      } else {
+        if (cut_to_adjacent_routing_map[layer_idx].size() < 2) {
+          continue;
+        }
+        routing_layer_obs_type_map[layer_idx].insert(VRObsType::kSpace);
+      }
+      for (auto& [net_idx, fixed_rect_set] : net_fixed_rect_map) {
+        if (net_idx == -1) {
+          continue;
+        }
+        for (auto& fixed_rect : fixed_rect_set) {
+          for (auto& [routing_layer_idx, obs_type_set] : routing_layer_obs_type_map) {
+            routing_layer_pin_shape_obs_type_map[routing_layer_idx][fixed_rect] = obs_type_set;
+          }
+        }
+      }
+    }
+  }
   std::vector<GridMap<VRNode>>& layer_node_map = vr_box.get_layer_node_map();
   for (GridMap<VRNode>& vr_node_map : layer_node_map) {
     for (int32_t x = 0; x < vr_node_map.get_x_size(); x++) {
       for (int32_t y = 0; y < vr_node_map.get_y_size(); y++) {
         VRNode& vr_node = vr_node_map[x][y];
-        for (auto& [obs_type, net_set] : vr_node.get_obs_type_fixed_rect_map()) {
-          if (RTUTIL.exist(net_set, -1) && net_set.size() >= 2) {
-            net_set.erase(-1);
+        for (auto& [pin_shape, obs_type_set] : routing_layer_pin_shape_obs_type_map[vr_node.get_layer_idx()]) {
+          if (!RTUTIL.isInside(pin_shape->get_real_rect(), vr_node.get_planar_coord())) {
+            continue;
+          }
+          for (auto& [obs_type, net_set] : vr_node.get_obs_type_fixed_rect_map()) {
+            if (RTUTIL.exist(obs_type_set, obs_type)) {
+              net_set.erase(-1);
+            }
           }
         }
       }

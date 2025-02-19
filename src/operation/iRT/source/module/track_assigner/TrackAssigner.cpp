@@ -145,8 +145,8 @@ void TrackAssigner::ignoreViolation(TAModel& ta_model)
       }
     }
     std::set<int32_t> need_checked_net_set;
-    for (TANet& pa_net : ta_model.get_ta_net_list()) {
-      need_checked_net_set.insert(pa_net.get_net_idx());
+    for (TANet& ta_net : ta_model.get_ta_net_list()) {
+      need_checked_net_set.insert(ta_net.get_net_idx());
     }
 
     de_task.set_proc_type(DEProcType::kIgnore);
@@ -566,13 +566,27 @@ void TrackAssigner::buildOrientNetMap(TAPanel& ta_panel)
 
 void TrackAssigner::exemptPinShape(TAPanel& ta_panel)
 {
+  std::map<EXTLayerRect*, std::set<Orientation>> pin_shape_orient_map;
+  for (auto& [net_idx, fixed_rect_set] : ta_panel.get_net_fixed_rect_map()) {
+    if (net_idx == -1) {
+      continue;
+    }
+    for (auto& fixed_rect : fixed_rect_set) {
+      pin_shape_orient_map[fixed_rect] = {Orientation::kEast, Orientation::kWest, Orientation::kSouth, Orientation::kNorth};
+    }
+  }
   GridMap<TANode>& ta_node_map = ta_panel.get_ta_node_map();
   for (int32_t x = 0; x < ta_node_map.get_x_size(); x++) {
     for (int32_t y = 0; y < ta_node_map.get_y_size(); y++) {
       TANode& ta_node = ta_node_map[x][y];
-      for (auto& [orient, net_set] : ta_node.get_orient_fixed_rect_map()) {
-        if (RTUTIL.exist(net_set, -1) && net_set.size() >= 2) {
-          net_set.erase(-1);
+      for (auto& [pin_shape, orient_set] : pin_shape_orient_map) {
+        if (!RTUTIL.isInside(pin_shape->get_real_rect(), ta_node.get_planar_coord())) {
+          continue;
+        }
+        for (auto& [orient, net_set] : ta_node.get_orient_fixed_rect_map()) {
+          if (RTUTIL.exist(orient_set, orient)) {
+            net_set.erase(-1);
+          }
         }
       }
     }

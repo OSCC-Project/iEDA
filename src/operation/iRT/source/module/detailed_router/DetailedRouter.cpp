@@ -703,14 +703,52 @@ void DetailedRouter::buildOrientNetMap(DRBox& dr_box)
 
 void DetailedRouter::exemptPinShape(DRBox& dr_box)
 {
+  std::map<int32_t, std::vector<int32_t>>& cut_to_adjacent_routing_map = RTDM.getDatabase().get_cut_to_adjacent_routing_map();
+
+  std::map<int32_t, std::map<EXTLayerRect*, std::set<Orientation>>> routing_layer_pin_shape_orient_map;
+  for (auto& [is_routing, layer_net_fixed_rect_map] : dr_box.get_type_layer_net_fixed_rect_map()) {
+    for (auto& [layer_idx, net_fixed_rect_map] : layer_net_fixed_rect_map) {
+      std::map<int32_t, std::set<Orientation>> routing_layer_orient_map;
+      if (is_routing) {
+        routing_layer_orient_map[layer_idx].insert(Orientation::kEast);
+        routing_layer_orient_map[layer_idx].insert(Orientation::kWest);
+        routing_layer_orient_map[layer_idx].insert(Orientation::kSouth);
+        routing_layer_orient_map[layer_idx].insert(Orientation::kNorth);
+      } else {
+        if (cut_to_adjacent_routing_map[layer_idx].size() < 2) {
+          continue;
+        }
+        int32_t below_routing_layer_idx = cut_to_adjacent_routing_map[layer_idx].front();
+        int32_t above_routing_layer_idx = cut_to_adjacent_routing_map[layer_idx].back();
+        RTUTIL.swapByASC(below_routing_layer_idx, above_routing_layer_idx);
+        routing_layer_orient_map[below_routing_layer_idx].insert(Orientation::kAbove);
+        routing_layer_orient_map[above_routing_layer_idx].insert(Orientation::kBelow);
+      }
+      for (auto& [net_idx, fixed_rect_set] : net_fixed_rect_map) {
+        if (net_idx == -1) {
+          continue;
+        }
+        for (auto& fixed_rect : fixed_rect_set) {
+          for (auto& [routing_layer_idx, orient_set] : routing_layer_orient_map) {
+            routing_layer_pin_shape_orient_map[routing_layer_idx][fixed_rect] = orient_set;
+          }
+        }
+      }
+    }
+  }
   std::vector<GridMap<DRNode>>& layer_node_map = dr_box.get_layer_node_map();
   for (GridMap<DRNode>& dr_node_map : layer_node_map) {
     for (int32_t x = 0; x < dr_node_map.get_x_size(); x++) {
       for (int32_t y = 0; y < dr_node_map.get_y_size(); y++) {
         DRNode& dr_node = dr_node_map[x][y];
-        for (auto& [orient, net_set] : dr_node.get_orient_fixed_rect_map()) {
-          if (RTUTIL.exist(net_set, -1) && net_set.size() >= 2) {
-            net_set.erase(-1);
+        for (auto& [pin_shape, orient_set] : routing_layer_pin_shape_orient_map[dr_node.get_layer_idx()]) {
+          if (!RTUTIL.isInside(pin_shape->get_real_rect(), dr_node.get_planar_coord())) {
+            continue;
+          }
+          for (auto& [orient, net_set] : dr_node.get_orient_fixed_rect_map()) {
+            if (RTUTIL.exist(orient_set, orient)) {
+              net_set.erase(-1);
+            }
           }
         }
       }

@@ -47,10 +47,18 @@ class PABox
   {
     return _net_pin_access_result_map;
   }
-  std::map<int32_t, std::map<int32_t, std::vector<Segment<LayerCoord>>>>& get_net_task_result_map() { return _net_task_result_map; }
+  std::map<int32_t, std::map<int32_t, std::vector<Segment<LayerCoord>>>>& get_net_task_access_result_map()
+  {
+    return _net_task_access_result_map;
+  }
   std::vector<Violation>& get_violation_list() { return _violation_list; }
   ScaleAxis& get_box_track_axis() { return _box_track_axis; }
   std::vector<GridMap<PANode>>& get_layer_node_map() { return _layer_node_map; }
+  std::map<int32_t, std::map<int32_t, std::vector<Segment<LayerCoord>>>>& get_best_net_task_access_result_map()
+  {
+    return _best_net_task_access_result_map;
+  }
+  std::vector<Violation>& get_best_violation_list() { return _best_violation_list; }
   // setter
   void set_box_rect(const EXTPlanarRect& box_rect) { _box_rect = box_rect; }
   void set_pa_box_id(const PABoxId& pa_box_id) { _pa_box_id = pa_box_id; }
@@ -66,13 +74,20 @@ class PABox
   {
     _net_pin_access_result_map = net_pin_access_result_map;
   }
-  void set_net_task_result_map(const std::map<int32_t, std::map<int32_t, std::vector<Segment<LayerCoord>>>>& net_task_result_map)
+  void set_net_task_access_result_map(
+      const std::map<int32_t, std::map<int32_t, std::vector<Segment<LayerCoord>>>>& net_task_access_result_map)
   {
-    _net_task_result_map = net_task_result_map;
+    _net_task_access_result_map = net_task_access_result_map;
   }
   void set_violation_list(const std::vector<Violation>& violation_list) { _violation_list = violation_list; }
   void set_box_track_axis(const ScaleAxis& box_track_axis) { _box_track_axis = box_track_axis; }
   void set_layer_node_map(const std::vector<GridMap<PANode>>& layer_node_map) { _layer_node_map = layer_node_map; }
+  void set_best_net_task_access_result_map(
+      const std::map<int32_t, std::map<int32_t, std::vector<Segment<LayerCoord>>>>& best_net_task_access_result_map)
+  {
+    _best_net_task_access_result_map = best_net_task_access_result_map;
+  }
+  void set_best_violation_list(const std::vector<Violation>& best_violation_list) { _best_violation_list = best_violation_list; }
   // function
 #if 1  // astar
   // single task
@@ -119,10 +134,12 @@ class PABox
   std::vector<PATask*> _pa_task_list;
   std::map<bool, std::map<int32_t, std::map<int32_t, std::set<EXTLayerRect*>>>> _type_layer_net_fixed_rect_map;
   std::map<int32_t, std::map<int32_t, std::set<Segment<LayerCoord>*>>> _net_pin_access_result_map;
-  std::map<int32_t, std::map<int32_t, std::vector<Segment<LayerCoord>>>> _net_task_result_map;
+  std::map<int32_t, std::map<int32_t, std::vector<Segment<LayerCoord>>>> _net_task_access_result_map;
   std::vector<Violation> _violation_list;
   ScaleAxis _box_track_axis;
   std::vector<GridMap<PANode>> _layer_node_map;
+  std::map<int32_t, std::map<int32_t, std::vector<Segment<LayerCoord>>>> _best_net_task_access_result_map;
+  std::vector<Violation> _best_violation_list;
 #if 1  // astar
   // single task
   PATask* _curr_pa_task = nullptr;
