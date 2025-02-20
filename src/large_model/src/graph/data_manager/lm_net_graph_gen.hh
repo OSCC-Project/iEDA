@@ -284,6 +284,7 @@ class LmNetGraphGenerator
 
   // Topo Graph
   TopoGraph buildTopoGraph(idb::IdbNet* idb_net) const;
+  TopoGraph buildTopoGraph(idb::IdbSpecialNet* idb_net) const;
   LayoutShapeManager buildShapeManager(const TopoGraph& graph) const;
   void buildConnections(TopoGraph& graph) const;
   bool checkConnectivity(const TopoGraph& graph) const;
