@@ -75,6 +75,9 @@ class ViolationRepairer
   std::vector<VRTask*> initTaskSchedule(VRBox& vr_box);
   void routeVRTask(VRBox& vr_box, VRTask* vr_task);
   void initSingleTask(VRBox& vr_box, VRTask* vr_task);
+  void routeSingleTask(VRBox& vr_box);
+  void routeByParallelRunLengthSpacing(VRBox& vr_box);
+  void routeByMinimumArea(VRBox& vr_box);
   void updateTaskResult(VRBox& vr_box);
   void updateTaskPatch(VRBox& vr_box);
   void resetSingleTask(VRBox& vr_box);

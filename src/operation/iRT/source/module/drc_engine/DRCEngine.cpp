@@ -606,6 +606,8 @@ std::vector<Violation> DRCEngine::getExpandedViolationList(DETask& de_task, Viol
       case ViolationType::kMinStep:
         break;
       case ViolationType::kNonsufficientMetalOverlap:
+        new_real_rect = keepRect(new_real_rect);
+        layer_routing_list = keepLayer(violation);
         break;
       case ViolationType::kNotchSpacing:
         break;

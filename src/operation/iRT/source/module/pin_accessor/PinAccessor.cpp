@@ -502,8 +502,7 @@ void PinAccessor::iterativePAModel(PAModel& pa_model)
   double routed_rect_unit = 2 * via_unit;
   double violation_unit = 4 * non_prefer_wire_unit * cost_unit;
   /**
-   * prefer_wire_unit, non_prefer_wire_unit, via_unit, size, offset, schedule_interval, fixed_rect_unit, routed_rect_unit, violation_unit,
-   * max_routed_times
+   * prefer_wire_unit, non_prefer_wire_unit, via_unit, size, offset, schedule_interval, fixed_rect_unit, routed_rect_unit, violation_unit, max_routed_times
    */
   std::vector<PAIterParam> pa_iter_param_list;
   // clang-format off
@@ -2301,6 +2300,7 @@ void PinAccessor::printSummary(PAModel& pa_model)
 
   fort::char_table routing_access_point_num_map_table;
   {
+    routing_access_point_num_map_table.set_cell_text_align(fort::text_align::right);
     routing_access_point_num_map_table << fort::header << "routing"
                                        << "#access_point"
                                        << "prop" << fort::endr;
@@ -2314,6 +2314,7 @@ void PinAccessor::printSummary(PAModel& pa_model)
   }
   fort::char_table routing_wire_length_map_table;
   {
+    routing_wire_length_map_table.set_cell_text_align(fort::text_align::right);
     routing_wire_length_map_table << fort::header << "routing"
                                   << "wire_length"
                                   << "prop" << fort::endr;
@@ -2325,6 +2326,7 @@ void PinAccessor::printSummary(PAModel& pa_model)
   }
   fort::char_table cut_via_num_map_table;
   {
+    cut_via_num_map_table.set_cell_text_align(fort::text_align::right);
     cut_via_num_map_table << fort::header << "cut"
                           << "#via"
                           << "prop" << fort::endr;
@@ -2336,6 +2338,7 @@ void PinAccessor::printSummary(PAModel& pa_model)
   }
   fort::char_table routing_violation_num_map_table;
   {
+    routing_violation_num_map_table.set_cell_text_align(fort::text_align::right);
     routing_violation_num_map_table << fort::header << "routing"
                                     << "#violation"
                                     << "prop" << fort::endr;
