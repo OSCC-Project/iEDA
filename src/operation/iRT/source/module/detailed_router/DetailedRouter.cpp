@@ -110,8 +110,7 @@ void DetailedRouter::iterativeDRModel(DRModel& dr_model)
   double routed_rect_unit = 2 * via_unit;
   double violation_unit = 4 * non_prefer_wire_unit * cost_unit;
   /**
-   * prefer_wire_unit, non_prefer_wire_unit, via_unit, size, offset, schedule_interval, fixed_rect_unit, routed_rect_unit, violation_unit,
-   * max_routed_times
+   * prefer_wire_unit, non_prefer_wire_unit, via_unit, size, offset, schedule_interval, fixed_rect_unit, routed_rect_unit, violation_unit, max_routed_times
    */
   std::vector<DRIterParam> dr_iter_param_list;
   // clang-format off
