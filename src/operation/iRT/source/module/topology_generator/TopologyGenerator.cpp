@@ -571,12 +571,15 @@ void TopologyGenerator::printSummary(TGModel& tg_model)
 
   fort::char_table summary_table;
   {
+    summary_table.set_cell_text_align(fort::text_align::right);
     summary_table << fort::header << "total_demand" << total_demand << fort::endr;
     summary_table << fort::header << "total_overflow" << total_overflow << fort::endr;
     summary_table << fort::header << "total_wire_length" << total_wire_length << fort::endr;
   }
   fort::char_table timing_table;
+  timing_table.set_cell_text_align(fort::text_align::right);
   fort::char_table power_table;
+  power_table.set_cell_text_align(fort::text_align::right);
   if (enable_timing) {
     timing_table << fort::header << "clock_name"
                  << "tns"
@@ -585,10 +588,16 @@ void TopologyGenerator::printSummary(TGModel& tg_model)
     for (auto& [clock_name, timing_map] : clock_timing) {
       timing_table << clock_name << timing_map["TNS"] << timing_map["WNS"] << timing_map["Freq(MHz)"] << fort::endr;
     }
-    power_table << fort::header << "power_type" << "power_value" << fort::endr;
+    power_table << fort::header << "power_type";
     for (auto& [type, power] : power_map) {
-      power_table << type << power << fort::endr;
+      power_table << fort::header << type;
     }
+    power_table << fort::endr;
+    power_table << "power_value";
+    for (auto& [type, power] : power_map) {
+      power_table << power;
+    }
+    power_table << fort::endr;
   }
   RTUTIL.printTableList({summary_table});
   RTUTIL.printTableList({timing_table, power_table});

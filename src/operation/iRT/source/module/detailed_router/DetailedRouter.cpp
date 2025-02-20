@@ -1954,6 +1954,7 @@ void DetailedRouter::printSummary(DRModel& dr_model)
 
   fort::char_table routing_wire_length_map_table;
   {
+    routing_wire_length_map_table.set_cell_text_align(fort::text_align::right);
     routing_wire_length_map_table << fort::header << "routing"
                                   << "wire_length"
                                   << "prop" << fort::endr;
@@ -1965,6 +1966,7 @@ void DetailedRouter::printSummary(DRModel& dr_model)
   }
   fort::char_table cut_via_num_map_table;
   {
+    cut_via_num_map_table.set_cell_text_align(fort::text_align::right);
     cut_via_num_map_table << fort::header << "cut"
                           << "#via"
                           << "prop" << fort::endr;
@@ -1976,6 +1978,7 @@ void DetailedRouter::printSummary(DRModel& dr_model)
   }
   fort::char_table routing_violation_num_map_table;
   {
+    routing_violation_num_map_table.set_cell_text_align(fort::text_align::right);
     routing_violation_num_map_table << fort::header << "routing"
                                     << "#violation"
                                     << "prop" << fort::endr;
@@ -1987,7 +1990,9 @@ void DetailedRouter::printSummary(DRModel& dr_model)
                                     << fort::endr;
   }
   fort::char_table timing_table;
+  timing_table.set_cell_text_align(fort::text_align::right);
   fort::char_table power_table;
+  power_table.set_cell_text_align(fort::text_align::right);
   if (enable_timing) {
     timing_table << fort::header << "clock_name"
                  << "tns"
@@ -1996,10 +2001,16 @@ void DetailedRouter::printSummary(DRModel& dr_model)
     for (auto& [clock_name, timing_map] : clock_timing) {
       timing_table << clock_name << timing_map["TNS"] << timing_map["WNS"] << timing_map["Freq(MHz)"] << fort::endr;
     }
-    power_table << fort::header << "power_type" << "power_value" << fort::endr;
+    power_table << fort::header << "power_type";
     for (auto& [type, power] : power_map) {
-      power_table << type << power << fort::endr;
+      power_table << fort::header << type;
     }
+    power_table << fort::endr;
+    power_table << "power_value";
+    for (auto& [type, power] : power_map) {
+      power_table << power;
+    }
+    power_table << fort::endr;
   }
   RTUTIL.printTableList({routing_wire_length_map_table, cut_via_num_map_table, routing_violation_num_map_table});
   RTUTIL.printTableList({timing_table, power_table});

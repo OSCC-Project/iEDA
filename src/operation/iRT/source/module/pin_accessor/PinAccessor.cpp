@@ -2300,6 +2300,7 @@ void PinAccessor::printSummary(PAModel& pa_model)
 
   fort::char_table routing_access_point_num_map_table;
   {
+    routing_access_point_num_map_table.set_cell_text_align(fort::text_align::right);
     routing_access_point_num_map_table << fort::header << "routing"
                                        << "#access_point"
                                        << "prop" << fort::endr;
@@ -2313,6 +2314,7 @@ void PinAccessor::printSummary(PAModel& pa_model)
   }
   fort::char_table routing_wire_length_map_table;
   {
+    routing_wire_length_map_table.set_cell_text_align(fort::text_align::right);
     routing_wire_length_map_table << fort::header << "routing"
                                   << "wire_length"
                                   << "prop" << fort::endr;
@@ -2324,6 +2326,7 @@ void PinAccessor::printSummary(PAModel& pa_model)
   }
   fort::char_table cut_via_num_map_table;
   {
+    cut_via_num_map_table.set_cell_text_align(fort::text_align::right);
     cut_via_num_map_table << fort::header << "cut"
                           << "#via"
                           << "prop" << fort::endr;
@@ -2335,6 +2338,7 @@ void PinAccessor::printSummary(PAModel& pa_model)
   }
   fort::char_table routing_violation_num_map_table;
   {
+    routing_violation_num_map_table.set_cell_text_align(fort::text_align::right);
     routing_violation_num_map_table << fort::header << "routing"
                                     << "#violation"
                                     << "prop" << fort::endr;
