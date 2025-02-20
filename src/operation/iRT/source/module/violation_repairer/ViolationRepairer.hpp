@@ -34,7 +34,6 @@ class ViolationRepairer
   static void destroyInst();
   // function
   void repair();
- int  use_innovus = 0; 
  private:
   // self
   static ViolationRepairer* _vr_instance;
@@ -46,7 +45,6 @@ class ViolationRepairer
   ViolationRepairer& operator=(const ViolationRepairer& other) = delete;
   ViolationRepairer& operator=(ViolationRepairer&& other) = delete;
   // function
-  void self_check_violation(VRBox& vr_box);
   VRModel initVRModel();
   std::vector<VRNet> convertToVRNetList(std::vector<Net>& net_list);
   VRNet convertToVRNet(Net& net);
