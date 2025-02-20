@@ -350,7 +350,7 @@ void ViolationRepairer::iterativeVRModel(VRModel& vr_model)
     initVRBoxMap(vr_model);
     buildBoxSchedule(vr_model);
     splitNetResult(vr_model);
-    // debugPlotVRModel(vr_model, "middle" + std::to_string(i));
+    // debugPlotVRModel(vr_model, "middle");
     routeVRBoxMap(vr_model);
     uploadNetResult(vr_model);
     uploadNetPatch(vr_model);
@@ -917,7 +917,7 @@ void ViolationRepairer::routeVRTask(VRBox& vr_box, VRTask* vr_task)
     //   layer_rect_map[patch.get_layer_idx()].push_back(patch.get_real_rect());
     // }自己需要重新打patch，所以不用上一轮自己的patch
 
-    std::map<int32_t, GTLPolySetInt> layer_bshape_all_net_map;                           // box内的所有net的形状
+    std::map<int32_t, GTLPolySetInt> layer_bshape_all_net_map;  // box内的所有net的形状
     for (auto& [is_routing, layer_net_fixed_rect_map] : vr_box.get_type_layer_net_fixed_rect_map()) {
       if (is_routing) {
         for (auto& [layer_idx, net_fixed_rect_map] : layer_net_fixed_rect_map) {
@@ -1074,7 +1074,7 @@ void ViolationRepairer::routeVRTask(VRBox& vr_box, VRTask* vr_task)
             if (best_patch_i >= 0) {
               std::vector<GTLRectInt> temp_rect_list;
               gtl::get_rectangles(temp_rect_list, patch_bshape_rect[best_patch_i]);
-              assert(temp_rect_list.size() == 2);//确保segment patch的正确性
+              assert(temp_rect_list.size() == 2);  // 确保segment patch的正确性
               cadidate_segment_patch_list.push_back(planar_to_patch_func(RTUTIL.convertToPlanarRect(temp_rect_list[0]), layer_idx));
               cadidate_segment_patch_list.push_back(planar_to_patch_func(RTUTIL.convertToPlanarRect(temp_rect_list[1]), layer_idx));
             }
@@ -1095,13 +1095,19 @@ void ViolationRepairer::routeVRTask(VRBox& vr_box, VRTask* vr_task)
               break;
             case 2:  // 双边形PRL
             {
+              // if (violation_shape.getRealArea() > (180 * 180)) {  // 目前相当于手工设计特征，没想好怎么做
+              //   break;
+              // }
               if (isCauseMinwidth == false) {
                 routing_patch_list.push_back(EXTLayerRect(violation_shape));
                 layer_set_map[layer_idx] += RTUTIL.convertToGTLRectInt(violation_shape.get_real_rect());
                 layer_bshape_all_net_map[layer_idx] += RTUTIL.convertToGTLRectInt(violation_shape.get_real_rect());
               }
             } break;
-            case 3:  // 凹陷性PRL
+            case 3:                                               // 凹陷性PRL
+              // if (violation_shape.getRealArea() > (160 * 160)) {  // 目前相当于手工设计特征，没想好怎么做
+              //   break;
+              // }
               if (isCauseMoreWidth == false) {
                 routing_patch_list.push_back(EXTLayerRect(violation_shape));
                 layer_set_map[layer_idx] += RTUTIL.convertToGTLRectInt(violation_shape.get_real_rect());
