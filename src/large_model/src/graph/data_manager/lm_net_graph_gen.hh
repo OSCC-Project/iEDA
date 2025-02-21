@@ -317,31 +317,33 @@ class LmNetGraphGenerator
   void toPy(const TopoGraph& graph, const std::string& path) const;
   void toPy(const WireGraph& graph, const std::string& path) const;
 
- private:
-  int getX(const LayoutDefPoint& point) const { return bg::get<0>(point); }
-  int getY(const LayoutDefPoint& point) const { return bg::get<1>(point); }
-  int getZ(const LayoutDefPoint& point) const { return bg::get<2>(point); }
-  int getStartX(const LayoutDefSeg& seg) const { return bg::get<0, 0>(seg); }
-  int getStartY(const LayoutDefSeg& seg) const { return bg::get<0, 1>(seg); }
-  int getStartZ(const LayoutDefSeg& seg) const { return bg::get<0, 2>(seg); }
-  int getEndX(const LayoutDefSeg& seg) const { return bg::get<1, 0>(seg); }
-  int getEndY(const LayoutDefSeg& seg) const { return bg::get<1, 1>(seg); }
-  int getEndZ(const LayoutDefSeg& seg) const { return bg::get<1, 2>(seg); }
-  int getLowX(const LayoutDefRect& rect) const { return bg::get<bg::min_corner, 0>(rect); }
-  int getLowY(const LayoutDefRect& rect) const { return bg::get<bg::min_corner, 1>(rect); }
-  int getLowZ(const LayoutDefRect& rect) const { return bg::get<bg::min_corner, 2>(rect); }
-  int getHighX(const LayoutDefRect& rect) const { return bg::get<bg::max_corner, 0>(rect); }
-  int getHighY(const LayoutDefRect& rect) const { return bg::get<bg::max_corner, 1>(rect); }
-  int getHighZ(const LayoutDefRect& rect) const { return bg::get<bg::max_corner, 2>(rect); }
-  LayoutDefPoint getCenter(const LayoutDefSeg& seg) const
+  static int getX(const LayoutDefPoint& point) { return bg::get<0>(point); }
+  static int getY(const LayoutDefPoint& point) { return bg::get<1>(point); }
+  static int getZ(const LayoutDefPoint& point) { return bg::get<2>(point); }
+  static int getStartX(const LayoutDefSeg& seg) { return bg::get<0, 0>(seg); }
+  static int getStartY(const LayoutDefSeg& seg) { return bg::get<0, 1>(seg); }
+  static int getStartZ(const LayoutDefSeg& seg) { return bg::get<0, 2>(seg); }
+  static int getEndX(const LayoutDefSeg& seg) { return bg::get<1, 0>(seg); }
+  static int getEndY(const LayoutDefSeg& seg) { return bg::get<1, 1>(seg); }
+  static int getEndZ(const LayoutDefSeg& seg) { return bg::get<1, 2>(seg); }
+  static int getLowX(const LayoutDefRect& rect) { return bg::get<bg::min_corner, 0>(rect); }
+  static int getLowY(const LayoutDefRect& rect) { return bg::get<bg::min_corner, 1>(rect); }
+  static int getLowZ(const LayoutDefRect& rect) { return bg::get<bg::min_corner, 2>(rect); }
+  static int getHighX(const LayoutDefRect& rect) { return bg::get<bg::max_corner, 0>(rect); }
+  static int getHighY(const LayoutDefRect& rect) { return bg::get<bg::max_corner, 1>(rect); }
+  static int getHighZ(const LayoutDefRect& rect) { return bg::get<bg::max_corner, 2>(rect); }
+  static int getWidth(const LayoutDefRect& rect) { return getHighX(rect) - getLowX(rect); }
+  static int getHeight(const LayoutDefRect& rect) { return getHighY(rect) - getLowY(rect); }
+  static LayoutDefPoint getCenter(const LayoutDefSeg& seg)
   {
     return LayoutDefPoint((getStartX(seg) + getEndX(seg)) / 2, (getStartY(seg) + getEndY(seg)) / 2, (getStartZ(seg) + getEndZ(seg)) / 2);
   }
-  LayoutDefPoint getCenter(const LayoutDefRect& rect) const
+  static LayoutDefPoint getCenter(const LayoutDefRect& rect)
   {
     return LayoutDefPoint((getLowX(rect) + getHighX(rect)) / 2, (getLowY(rect) + getHighY(rect)) / 2, (getLowZ(rect) + getHighZ(rect)) / 2);
   }
 
+ private:
   std::unordered_map<std::string, int> _layer_map;
 };
 
