@@ -1881,7 +1881,7 @@ void PinAccessor::uploadAccessPoint(PAModel& pa_model)
 void PinAccessor::updateFixedRectToGraph(PABox& pa_box, ChangeType change_type, int32_t net_idx, EXTLayerRect* fixed_rect, bool is_routing)
 {
   NetShape net_shape(net_idx, fixed_rect->getRealLayerRect(), is_routing);
-  for (auto& [pa_node, orientation_set] : getNodeOrientationMap(pa_box, net_shape, true)) {
+  for (auto& [pa_node, orientation_set] : getNodeOrientationMap(pa_box, net_shape)) {
     for (Orientation orientation : orientation_set) {
       if (change_type == ChangeType::kAdd) {
         pa_node->get_orient_fixed_rect_map()[orientation].insert(net_shape.get_net_idx());
@@ -1895,7 +1895,7 @@ void PinAccessor::updateFixedRectToGraph(PABox& pa_box, ChangeType change_type, 
 void PinAccessor::updateFixedRectToGraph(PABox& pa_box, ChangeType change_type, int32_t net_idx, Segment<LayerCoord>& segment)
 {
   for (NetShape& net_shape : RTDM.getNetShapeList(net_idx, segment)) {
-    for (auto& [pa_node, orientation_set] : getNodeOrientationMap(pa_box, net_shape, true)) {
+    for (auto& [pa_node, orientation_set] : getNodeOrientationMap(pa_box, net_shape)) {
       for (Orientation orientation : orientation_set) {
         if (change_type == ChangeType::kAdd) {
           pa_node->get_orient_fixed_rect_map()[orientation].insert(net_shape.get_net_idx());
@@ -1910,7 +1910,7 @@ void PinAccessor::updateFixedRectToGraph(PABox& pa_box, ChangeType change_type, 
 void PinAccessor::updateRoutedRectToGraph(PABox& pa_box, ChangeType change_type, int32_t net_idx, Segment<LayerCoord>& segment)
 {
   for (NetShape& net_shape : RTDM.getNetShapeList(net_idx, segment)) {
-    for (auto& [pa_node, orientation_set] : getNodeOrientationMap(pa_box, net_shape, true)) {
+    for (auto& [pa_node, orientation_set] : getNodeOrientationMap(pa_box, net_shape)) {
       for (Orientation orientation : orientation_set) {
         if (change_type == ChangeType::kAdd) {
           pa_node->get_orient_routed_rect_map()[orientation].insert(net_shape.get_net_idx());
@@ -2018,18 +2018,18 @@ void PinAccessor::addViolationToGraph(PABox& pa_box, LayerRect& searched_rect, s
   }
 }
 
-std::map<PANode*, std::set<Orientation>> PinAccessor::getNodeOrientationMap(PABox& pa_box, NetShape& net_shape, bool need_enlarged)
+std::map<PANode*, std::set<Orientation>> PinAccessor::getNodeOrientationMap(PABox& pa_box, NetShape& net_shape)
 {
   std::map<PANode*, std::set<Orientation>> node_orientation_map;
   if (net_shape.get_is_routing()) {
-    node_orientation_map = getRoutingNodeOrientationMap(pa_box, net_shape, need_enlarged);
+    node_orientation_map = getRoutingNodeOrientationMap(pa_box, net_shape);
   } else {
-    node_orientation_map = getCutNodeOrientationMap(pa_box, net_shape, need_enlarged);
+    node_orientation_map = getCutNodeOrientationMap(pa_box, net_shape);
   }
   return node_orientation_map;
 }
 
-std::map<PANode*, std::set<Orientation>> PinAccessor::getRoutingNodeOrientationMap(PABox& pa_box, NetShape& net_shape, bool need_enlarged)
+std::map<PANode*, std::set<Orientation>> PinAccessor::getRoutingNodeOrientationMap(PABox& pa_box, NetShape& net_shape)
 {
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
   std::map<int32_t, PlanarRect>& layer_enclosure_map = RTDM.getDatabase().get_layer_enclosure_map();
@@ -2061,13 +2061,9 @@ std::map<PANode*, std::set<Orientation>> PinAccessor::getRoutingNodeOrientationM
   std::map<PANode*, std::set<Orientation>> node_orientation_map;
   // wire 与 net_shape
   for (auto& [x_spacing, y_spacing] : spacing_pair_list) {
-    int32_t enlarged_x_size = half_wire_width;
-    int32_t enlarged_y_size = half_wire_width;
-    if (need_enlarged) {
-      // 膨胀size为 half_wire_width + spacing
-      enlarged_x_size += x_spacing;
-      enlarged_y_size += y_spacing;
-    }
+    // 膨胀size为 half_wire_width + spacing
+    int32_t enlarged_x_size = half_wire_width + x_spacing;
+    int32_t enlarged_y_size = half_wire_width + y_spacing;
     // 贴合的也不算违例
     enlarged_x_size -= 1;
     enlarged_y_size -= 1;
@@ -2088,13 +2084,9 @@ std::map<PANode*, std::set<Orientation>> PinAccessor::getRoutingNodeOrientationM
   }
   // enclosure 与 net_shape
   for (auto& [x_spacing, y_spacing] : spacing_pair_list) {
-    int32_t enlarged_x_size = enclosure_half_x_span;
-    int32_t enlarged_y_size = enclosure_half_y_span;
-    if (need_enlarged) {
-      // 膨胀size为 enclosure_half_span + spacing
-      enlarged_x_size += x_spacing;
-      enlarged_y_size += y_spacing;
-    }
+    // 膨胀size为 enclosure_half_span + spacing
+    int32_t enlarged_x_size = enclosure_half_x_span + x_spacing;
+    int32_t enlarged_y_size = enclosure_half_y_span + y_spacing;
     // 贴合的也不算违例
     enlarged_x_size -= 1;
     enlarged_y_size -= 1;
@@ -2117,7 +2109,7 @@ std::map<PANode*, std::set<Orientation>> PinAccessor::getRoutingNodeOrientationM
   return node_orientation_map;
 }
 
-std::map<PANode*, std::set<Orientation>> PinAccessor::getCutNodeOrientationMap(PABox& pa_box, NetShape& net_shape, bool need_enlarged)
+std::map<PANode*, std::set<Orientation>> PinAccessor::getCutNodeOrientationMap(PABox& pa_box, NetShape& net_shape)
 {
   std::vector<CutLayer>& cut_layer_list = RTDM.getDatabase().get_cut_layer_list();
   std::map<int32_t, std::vector<int32_t>>& cut_to_adjacent_routing_map = RTDM.getDatabase().get_cut_to_adjacent_routing_map();
@@ -2188,13 +2180,9 @@ std::map<PANode*, std::set<Orientation>> PinAccessor::getCutNodeOrientationMap(P
     int32_t cut_shape_half_y_span = cut_shape.getYSpan() / 2;
     std::vector<GridMap<PANode>>& layer_node_map = pa_box.get_layer_node_map();
     for (auto& [x_spacing, y_spacing] : spacing_pair_list) {
-      int32_t enlarged_x_size = cut_shape_half_x_span;
-      int32_t enlarged_y_size = cut_shape_half_y_span;
-      if (need_enlarged) {
-        // 膨胀size为 cut_shape_half_span + spacing
-        enlarged_x_size += x_spacing;
-        enlarged_y_size += y_spacing;
-      }
+      // 膨胀size为 cut_shape_half_span + spacing
+      int32_t enlarged_x_size = cut_shape_half_x_span + x_spacing;
+      int32_t enlarged_y_size = cut_shape_half_y_span + y_spacing;
       // 贴合的也不算违例
       enlarged_x_size -= 1;
       enlarged_y_size -= 1;
