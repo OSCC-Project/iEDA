@@ -884,7 +884,8 @@ void ViolationRepairer::routeSingleTask(VRBox& vr_box)
   // for (EXTLayerRect& routing_patch : task_patch_list) {
   //   updateRoutedRectToGraph(vr_box, ChangeType::kDel, vr_box.get_curr_vr_task()->get_net_idx(), routing_patch);
   // }
-  // task_patch_list.clear();
+  // task_patch_list.clear();//这里的clear有问题,prl patch无法收敛
+  // auto test_patch = vr_box.get_net_task_final_patch_map()[vr_box.get_curr_vr_task()->get_net_idx()];
   // vr_box.get_net_task_final_patch_map()[vr_box.get_curr_vr_task()->get_net_idx()].clear();
   routeByParallelRunLengthSpacing(vr_box);
   routeByMinimumArea(vr_box);
@@ -1137,7 +1138,6 @@ void ViolationRepairer::routeByMinimumArea(VRBox& vr_box)
   VRTask* curr_vr_task = vr_box.get_curr_vr_task();
   // std::vector<Segment<LayerCoord>>& routing_segment_list = vr_box.get_routing_segment_list();
   std::vector<EXTLayerRect>& routing_patch_list = vr_box.get_routing_patch_list();
-  ;
 
   int32_t net_idx = curr_vr_task->get_net_idx();
   std::map<int32_t, GTLPolySetInt> layer_single_net_map;      // 所有形状的boost shape set,单net
@@ -1195,15 +1195,10 @@ void ViolationRepairer::routeByMinimumArea(VRBox& vr_box)
   for (auto& [net_idx, patch_list] : vr_box.get_net_task_final_patch_map()) {
     for (EXTLayerRect& patch : patch_list) {
       if (net_idx == vr_task->get_net_idx()) {
-        continue;
+        layer_single_net_map[patch.get_layer_idx()] += RTUTIL.convertToGTLRectInt(patch.get_real_rect());
       }
       layer_bshape_all_net_map[patch.get_layer_idx()] += RTUTIL.convertToGTLRectInt(patch.get_real_rect());
     }
-  }
-
-  for (EXTLayerRect& patch : routing_patch_list) {
-    layer_single_net_map[patch.get_layer_idx()] += RTUTIL.convertToGTLRectInt(patch.get_real_rect());
-    layer_bshape_all_net_map[patch.get_layer_idx()] += RTUTIL.convertToGTLRectInt(patch.get_real_rect());
   }
 
   // min area检测&修复
@@ -1447,7 +1442,7 @@ void ViolationRepairer::routeByMinimumArea(VRBox& vr_box)
         // RTLOG.error(Loc::current(), "get two size patch: ", best_i);
       }
       if (left_south_cadidate_patch_list.size() == 0 || right_north_cadidate_patch_list.size() == 0) {
-        RTLOG.info(Loc::current(), "meet a exception min area can not patch");
+        RTLOG.info(Loc::current(), "WARNING:meet a exception min area can not patch!");
         continue;
       }
       // 打上最优patch
