@@ -34,6 +34,7 @@ class ViolationRepairer
   static void destroyInst();
   // function
   void repair();
+
  private:
   // self
   static ViolationRepairer* _vr_instance;
@@ -68,9 +69,7 @@ class ViolationRepairer
   void buildNetPatch(VRBox& vr_box);
   bool needRouting(VRBox& vr_box);
   void buildBoxTrackAxis(VRBox& vr_box);
-  void buildLayerNodeMap(VRBox& vr_box);
-  void buildObsTypeNetMap(VRBox& vr_box);
-  void exemptPinShape(VRBox& vr_box);
+  void buildGraphShapeMap(VRBox& vr_box);
   void routeVRBox(VRBox& vr_box);
   std::vector<VRTask*> initTaskSchedule(VRBox& vr_box);
   void routeVRTask(VRBox& vr_box, VRTask* vr_task);
@@ -99,9 +98,9 @@ class ViolationRepairer
   void updateRoutedRectToGraph(VRBox& vr_box, ChangeType change_type, int32_t net_idx, Segment<LayerCoord>& segment);
   void updateRoutedRectToGraph(VRBox& vr_box, ChangeType change_type, int32_t net_idx, EXTLayerRect& patch);
   void addViolationToGraph(VRBox& vr_box, Violation& violation);
-  std::map<VRNode*, std::set<VRObsType>> getNodeObsTypeMap(VRBox& vr_box, NetShape& net_shape, bool need_enlarged);
-  std::map<VRNode*, std::set<VRObsType>> getRoutingNodeObsTypeMap(VRBox& vr_box, NetShape& net_shape, bool need_enlarged);
-  std::map<VRNode*, std::set<VRObsType>> getCutNodeObsTypeMap(VRBox& vr_box, NetShape& net_shape, bool need_enlarged);
+  std::vector<PlanarRect> getGraphShape(VRBox& vr_box, NetShape& net_shape);
+  std::vector<PlanarRect> getRoutingGraphShapeList(VRBox& vr_box, NetShape& net_shape);
+  std::vector<PlanarRect> getCutGraphShapeList(VRBox& vr_box, NetShape& net_shape);
 #endif
 
 #if 1  // exhibit
