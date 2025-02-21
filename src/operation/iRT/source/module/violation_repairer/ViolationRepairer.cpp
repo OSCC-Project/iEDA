@@ -60,8 +60,6 @@ void ViolationRepairer::repair()
   buildNetFinalResultMap(vr_model);
   clearIgnoredViolation(vr_model);
   uploadViolation(vr_model);
-  updateSummary(vr_model);
-  printSummary(vr_model);
   iterativeVRModel(vr_model);
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }

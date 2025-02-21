@@ -158,6 +158,7 @@ void TrackAssigner::ignoreViolation(TAModel& ta_model)
     de_task.set_need_checked_net_set(need_checked_net_set);
   }
   std::vector<Violation> violation_list = RTDE.getViolationList(de_task);
+  RTDE.clearTempIgnoredViolationSet();
   RTDE.addTempIgnoredViolation(violation_list);
 
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
