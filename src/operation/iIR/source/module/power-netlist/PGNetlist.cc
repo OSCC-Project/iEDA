@@ -15,29 +15,20 @@
 // See the Mulan PSL v2 for more details.
 // ***************************************************************************************
 /**
- * @file IRSolver.hh
- * @author shaozheqing (707005020@qq.com)
- * @brief
+ * @file PGNetlist.cc
+ * @author simin tao (taosm@pcl.ac.cn)
+ * @brief The pg netlist for wire topo analysis, and esitmate the wire R.
  * @version 0.1
- * @date 2023-08-18
- *
- * @copyright Copyright (c) 2023
- *
+ * @date 2025-02-22
  */
-
-#pragma once
-#include <Eigen/Dense>
-#include <Eigen/Sparse>
-#include <Eigen/SparseLU>
-#include <map>
+#include "PGNetlist.hh"
 
 namespace iir {
 
-void PrintMatrix(Eigen::Map<Eigen::SparseMatrix<double>>& G_matrix, Eigen::Index base_index); 
-class IRSolver {
- public:
-  std::vector<double> operator()(
-      Eigen::Map<Eigen::SparseMatrix<double>>& G_matrix,
-      Eigen::VectorXd& J_vector);
-};
-}  // namespace iir
+IRPGNetlist IRPGNetlistBuilder::build(idb::IdbSpecialNet* special_net) {
+    IRPGNetlist pg_netlist;
+
+    return pg_netlist;
+}
+
+}
