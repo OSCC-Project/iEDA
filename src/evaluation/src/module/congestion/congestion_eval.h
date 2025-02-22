@@ -31,28 +31,6 @@ struct CongestionPairHash {
     }
 };
 
-struct CongestionGridIndex {
-    int grid_size = 5000; // 可调节
-    std::unordered_map<std::pair<int, int>, std::vector<int>, CongestionPairHash> grid_map;
-    
-    void build(const std::vector<NetMetadata>& nets) {
-        for (int i = 0; i < nets.size(); ++i) {
-            const auto& net = nets[i];
-            // 计算net覆盖的网格范围
-            int min_x = net.lx / grid_size;
-            int max_x = net.ux / grid_size;
-            int min_y = net.ly / grid_size;
-            int max_y = net.uy / grid_size;
-            // 注册到所有覆盖的网格
-            for (int x = min_x; x <= max_x; ++x) {
-                for (int y = min_y; y <= max_y; ++y) {
-                    grid_map[{x, y}].push_back(i);
-                }
-            }
-        }
-    }
-};
-
 
 class CongestionEval
 {

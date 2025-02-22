@@ -521,14 +521,14 @@ std::map<int, double> DensityEval::patchCellDensity(DensityCells cells, std::map
 {
   std::map<int, double> patch_cell_density;
   DensityGridIndex index;
-  index.grid_size = 2000;
-
+  index.grid_size_x = EVAL_INIT_IDB_INST->getDieWidth() / 100 ;
+  index.grid_size_y = EVAL_INIT_IDB_INST->getDieHeight() / 100;
   // 构建单元格网格索引
   for (auto& cell : cells) {
-    int min_grid_x = cell.lx / index.grid_size;
-    int max_grid_x = (cell.lx + cell.width) / index.grid_size;  
-    int min_grid_y = cell.ly / index.grid_size;
-    int max_grid_y = (cell.ly + cell.height) / index.grid_size;
+    int min_grid_x = cell.lx / index.grid_size_x;
+    int max_grid_x = (cell.lx + cell.width) / index.grid_size_x;  
+    int min_grid_y = cell.ly / index.grid_size_y;
+    int max_grid_y = (cell.ly + cell.height) / index.grid_size_y;
 
     for (int x = min_grid_x; x <= max_grid_x; ++x) {
       for (int y = min_grid_y; y <= max_grid_y; ++y) {
@@ -553,10 +553,10 @@ std::map<int, double> DensityEval::patchCellDensity(DensityCells cells, std::map
       const int patch_area = patch_width * patch_height;
 
       // 计算 patch 覆盖的网格范围
-      int min_grid_x = patch_lx / index.grid_size;
-      int max_grid_x = patch_ux / index.grid_size;
-      int min_grid_y = patch_ly / index.grid_size;
-      int max_grid_y = patch_uy / index.grid_size;
+      int min_grid_x = patch_lx / index.grid_size_x;
+      int max_grid_x = patch_ux / index.grid_size_x;
+      int min_grid_y = patch_ly / index.grid_size_y;
+      int max_grid_y = patch_uy / index.grid_size_y;
 
       std::unordered_set<int> processed_cells; // 记录已处理的 cell ID, 避免重复多次处理同一cell
 
@@ -601,10 +601,12 @@ std::map<int, int> DensityEval::patchPinDensity(DensityPins pins, std::map<int, 
 
   // 构建 pin 网格索引
   DensityGridIndex index;
-  index.grid_size = 2000;
+  index.grid_size_x = EVAL_INIT_IDB_INST->getDieWidth() / 100 ;
+  index.grid_size_y = EVAL_INIT_IDB_INST->getDieHeight() / 100;
+
   for (const auto& pin : pins) {
-      int grid_x = pin.lx / index.grid_size;
-      int grid_y = pin.ly / index.grid_size;
+      int grid_x = pin.lx / index.grid_size_x;
+      int grid_y = pin.ly / index.grid_size_y;
       index.pin_grid[{grid_x, grid_y}].push_back(pin);
   }
 
@@ -618,10 +620,10 @@ std::map<int, int> DensityEval::patchPinDensity(DensityPins pins, std::map<int, 
       int pin_count = 0;
 
       // 计算覆盖网格范围
-      int min_grid_x = patch_lx / index.grid_size;
-      int max_grid_x = patch_ux / index.grid_size;
-      int min_grid_y = patch_ly / index.grid_size;
-      int max_grid_y = patch_uy / index.grid_size;
+      int min_grid_x = patch_lx / index.grid_size_x;
+      int max_grid_x = patch_ux / index.grid_size_x;
+      int min_grid_y = patch_ly / index.grid_size_y;
+      int max_grid_y = patch_uy / index.grid_size_y;
 
       for (int x = min_grid_x; x <= max_grid_x; ++x) {
           for (int y = min_grid_y; y <= max_grid_y; ++y) {
@@ -646,14 +648,15 @@ std::map<int, double> DensityEval::patchNetDensity(DensityNets nets, std::map<in
 {
   std::map<int, double> patch_net_density;
   DensityGridIndex index;
-  index.grid_size = 6000;
+  index.grid_size_x = EVAL_INIT_IDB_INST->getDieWidth() / 100 ;
+  index.grid_size_y = EVAL_INIT_IDB_INST->getDieHeight() / 100;
 
   // 构建线网网格索引
   for (const auto& net : nets) {
-    int min_grid_x = net.lx / index.grid_size;
-    int max_grid_x = net.ux / index.grid_size;  
-    int min_grid_y = net.ly / index.grid_size;
-    int max_grid_y = net.uy / index.grid_size;
+    int min_grid_x = net.lx / index.grid_size_x;
+    int max_grid_x = net.ux / index.grid_size_x;  
+    int min_grid_y = net.ly / index.grid_size_y;
+    int max_grid_y = net.uy / index.grid_size_y;
 
     for (int x = min_grid_x; x <= max_grid_x; ++x) {
       for (int y = min_grid_y; y <= max_grid_y; ++y) {
@@ -678,10 +681,10 @@ std::map<int, double> DensityEval::patchNetDensity(DensityNets nets, std::map<in
       const int patch_area = patch_width * patch_height;
 
       // 计算 patch 覆盖的网格范围
-      int min_grid_x = patch_lx / index.grid_size;
-      int max_grid_x = patch_ux / index.grid_size;
-      int min_grid_y = patch_ly / index.grid_size;
-      int max_grid_y = patch_uy / index.grid_size;
+      int min_grid_x = patch_lx / index.grid_size_x;
+      int max_grid_x = patch_ux / index.grid_size_x;
+      int min_grid_y = patch_ly / index.grid_size_y;
+      int max_grid_y = patch_uy / index.grid_size_y;
 
       std::unordered_set<int> processed_nets; // 记录已处理的 net ID, 避免重复多次处理同一 net
 

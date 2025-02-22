@@ -139,6 +139,16 @@ void InitIDB::initDensityDBRegion()
   _density_region_core.uy = core_bbox->get_high_y();
 }
 
+int32_t InitIDB::getDieHeight()
+{
+  return dmInst->get_idb_builder()->get_def_service()->get_layout()->get_die()->get_bounding_box()->get_height();  
+}
+
+int32_t InitIDB::getDieWidth()
+{
+  return dmInst->get_idb_builder()->get_def_service()->get_layout()->get_die()->get_bounding_box()->get_width();
+}
+
 void InitIDB::initDensityDBCells()
 {
   if (_density_db_initialized) {
