@@ -1199,6 +1199,32 @@ std::map<std::string, std::vector<std::vector<int>>> CongestionEval::getDemandSu
     return diff_map;
 }
 
+
+struct CongestionGridIndex {
+    int grid_size_x = EVAL_INIT_IDB_INST->getDieWidth() / 100;
+    int grid_size_y = EVAL_INIT_IDB_INST->getDieHeight() / 100;
+    std::unordered_map<std::pair<int, int>, std::vector<int>, CongestionPairHash> grid_map;
+    
+    void build(const std::vector<NetMetadata>& nets) {
+        for (int i = 0; i < nets.size(); ++i) {
+            const auto& net = nets[i];
+            // 计算net覆盖的网格范围
+            int min_x = net.lx / grid_size_x;
+            int max_x = net.ux / grid_size_x;
+            int min_y = net.ly / grid_size_y;
+            int max_y = net.uy / grid_size_y;
+            // 注册到所有覆盖的网格
+            for (int x = min_x; x <= max_x; ++x) {
+                for (int y = min_y; y <= max_y; ++y) {
+                    grid_map[{x, y}].push_back(i);
+                }
+            }
+        }
+    }
+};
+
+
+
 std::map<int, double> CongestionEval::patchRUDYCongestion(CongestionNets nets, std::map<int, std::pair<std::pair<int, int>, std::pair<int, int>>> patch_coords)
 {
     // 预计算
@@ -1216,10 +1242,10 @@ std::map<int, double> CongestionEval::patchRUDYCongestion(CongestionNets nets, s
         const int patch_area = (patch_ux - patch_lx) * (patch_uy - patch_ly);
         
         // 获取覆盖的网格范围
-        int min_gx = patch_lx / index.grid_size;
-        int max_gx = patch_ux / index.grid_size;
-        int min_gy = patch_ly / index.grid_size;
-        int max_gy = patch_uy / index.grid_size;
+        int min_gx = patch_lx / index.grid_size_x;
+        int max_gx = patch_ux / index.grid_size_x;
+        int min_gy = patch_ly / index.grid_size_y;
+        int max_gy = patch_uy / index.grid_size_y;
         
         std::unordered_set<int> processed_nets; // 去重
         double rudy = 0.0;

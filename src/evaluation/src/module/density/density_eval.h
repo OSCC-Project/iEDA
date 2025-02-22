@@ -35,7 +35,8 @@ struct DensityPairHash {
 
 // 网格索引结构体
 struct DensityGridIndex {
-  int grid_size = 2000; // 默认网格个数
+  int grid_size_x = 2000; // 默认x方向网格大小
+  int grid_size_y = 2000; // 默认y方向网格大小
   std::unordered_map<std::pair<int, int>, DensityCells, DensityPairHash> cell_grid;
   std::unordered_map<std::pair<int, int>, DensityPins, DensityPairHash> pin_grid;
   std::unordered_map<std::pair<int, int>, DensityNets, DensityPairHash> net_grid;
