@@ -1662,6 +1662,11 @@ std::vector<PlanarRect> ViolationRepairer::getGraphShape(VRBox& vr_box, NetShape
 
 std::vector<PlanarRect> ViolationRepairer::getRoutingGraphShapeList(VRBox& vr_box, NetShape& net_shape)
 {
+#if 1
+  std::vector<PlanarRect> graph_shape_list;
+  graph_shape_list.push_back(net_shape.get_rect());
+  return graph_shape_list;
+#else
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
   if (!net_shape.get_is_routing()) {
     RTLOG.error(Loc::current(), "The type of net_shape is cut!");
@@ -1704,10 +1709,16 @@ std::vector<PlanarRect> ViolationRepairer::getRoutingGraphShapeList(VRBox& vr_bo
     graph_shape_list.push_back(RTUTIL.getEnlargedRect(net_shape.get_rect(), enlarged_x_size, enlarged_y_size, enlarged_x_size, enlarged_y_size));
   }
   return graph_shape_list;
+#endif
 }
 
 std::vector<PlanarRect> ViolationRepairer::getCutGraphShapeList(VRBox& vr_box, NetShape& net_shape)
 {
+#if 1
+  std::vector<PlanarRect> graph_shape_list;
+  graph_shape_list.push_back(net_shape.get_rect());
+  return graph_shape_list;
+#else
   std::vector<CutLayer>& cut_layer_list = RTDM.getDatabase().get_cut_layer_list();
   std::map<int32_t, std::vector<int32_t>>& cut_to_adjacent_routing_map = RTDM.getDatabase().get_cut_to_adjacent_routing_map();
   if (net_shape.get_is_routing()) {
@@ -1778,6 +1789,7 @@ std::vector<PlanarRect> ViolationRepairer::getCutGraphShapeList(VRBox& vr_box, N
     }
   }
   return graph_shape_list;
+#endif
 }
 
 #endif
