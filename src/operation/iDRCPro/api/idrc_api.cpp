@@ -138,6 +138,11 @@ std::map<ViolationEnumType, std::vector<DrcViolation*>> DrcApi::check(std::vecto
           }
         }
       }
+      // 粗暴的防止越界
+      design_ll_x--;
+      design_ll_y--;
+      design_ur_x++;
+      design_ur_y++;
       design_x_size = std::ceil((design_ur_x - design_ll_x) / 1.0 / box_size);
       design_y_size = std::ceil((design_ur_y - design_ll_y) / 1.0 / box_size);
       drc_box_list.resize(design_x_size * design_y_size);
