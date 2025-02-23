@@ -203,17 +203,14 @@ void ViolationRepairer::uploadViolation(VRModel& vr_model)
   for (Violation* violation : RTDM.getViolationSet(die)) {
     RTDM.updateViolationToGCellMap(ChangeType::kDel, violation);
   }
-  for (Violation violation : getMultiNetViolationList(vr_model)) {
-    RTDM.updateViolationToGCellMap(ChangeType::kAdd, new Violation(violation));
-  }
-  for (Violation violation : getSingleNetViolationList(vr_model)) {
+  for (Violation violation : getHybridNetViolationList(vr_model)) {
     RTDM.updateViolationToGCellMap(ChangeType::kAdd, new Violation(violation));
   }
 
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
-std::vector<Violation> ViolationRepairer::getMultiNetViolationList(VRModel& vr_model)
+std::vector<Violation> ViolationRepairer::getHybridNetViolationList(VRModel& vr_model)
 {
   Die& die = RTDM.getDatabase().get_die();
 
@@ -255,61 +252,7 @@ std::vector<Violation> ViolationRepairer::getMultiNetViolationList(VRModel& vr_m
     }
 
     de_task.set_proc_type(DEProcType::kGet);
-    de_task.set_net_type(DENetType::kMultiNet);
-    de_task.set_top_name(top_name);
-    de_task.set_env_shape_list(env_shape_list);
-    de_task.set_net_pin_shape_map(net_pin_shape_map);
-    de_task.set_net_result_map(net_result_map);
-    de_task.set_net_patch_map(net_patch_map);
-    de_task.set_need_checked_net_set(need_checked_net_set);
-  }
-  // return RTDE.getViolationListByTemp(de_task);
-  return RTDE.getViolationList(de_task);
-}
-
-std::vector<Violation> ViolationRepairer::getSingleNetViolationList(VRModel& vr_model)
-{
-  Die& die = RTDM.getDatabase().get_die();
-
-  DETask de_task;
-  {
-    std::string top_name = RTUTIL.getString("vr_model");
-    std::vector<std::pair<EXTLayerRect*, bool>> env_shape_list;
-    std::map<int32_t, std::vector<std::pair<EXTLayerRect*, bool>>> net_pin_shape_map;
-    for (auto& [is_routing, layer_net_fixed_rect_map] : RTDM.getTypeLayerNetFixedRectMap(die)) {
-      for (auto& [layer_idx, net_fixed_rect_map] : layer_net_fixed_rect_map) {
-        for (auto& [net_idx, fixed_rect_set] : net_fixed_rect_map) {
-          if (net_idx == -1) {
-            for (auto& fixed_rect : fixed_rect_set) {
-              env_shape_list.emplace_back(fixed_rect, is_routing);
-            }
-          } else {
-            for (auto& fixed_rect : fixed_rect_set) {
-              net_pin_shape_map[net_idx].emplace_back(fixed_rect, is_routing);
-            }
-          }
-        }
-      }
-    }
-    std::map<int32_t, std::vector<Segment<LayerCoord>*>> net_result_map;
-    for (auto& [net_idx, segment_set] : RTDM.getNetFinalResultMap(die)) {
-      for (Segment<LayerCoord>* segment : segment_set) {
-        net_result_map[net_idx].push_back(segment);
-      }
-    }
-    std::map<int32_t, std::vector<EXTLayerRect*>> net_patch_map;
-    for (auto& [net_idx, patch_set] : RTDM.getNetFinalPatchMap(die)) {
-      for (EXTLayerRect* patch : patch_set) {
-        net_patch_map[net_idx].emplace_back(patch);
-      }
-    }
-    std::set<int32_t> need_checked_net_set;
-    for (VRNet& vr_net : vr_model.get_vr_net_list()) {
-      need_checked_net_set.insert(vr_net.get_net_idx());
-    }
-
-    de_task.set_proc_type(DEProcType::kGet);
-    de_task.set_net_type(DENetType::kSingleNet);
+    de_task.set_net_type(DENetType::kHybrid);
     de_task.set_top_name(top_name);
     de_task.set_env_shape_list(env_shape_list);
     de_task.set_net_pin_shape_map(net_pin_shape_map);
@@ -1380,10 +1323,7 @@ void ViolationRepairer::resetSingleTask(VRBox& vr_box)
 void ViolationRepairer::updateViolationList(VRBox& vr_box)
 {
   vr_box.get_violation_list().clear();
-  for (Violation new_violation : getMultiNetViolationList(vr_box)) {
-    vr_box.get_violation_list().push_back(new_violation);
-  }
-  for (Violation new_violation : getSingleNetViolationList(vr_box)) {
+  for (Violation new_violation : getHybridNetViolationList(vr_box)) {
     vr_box.get_violation_list().push_back(new_violation);
   }
   // 新结果添加到graph
@@ -1392,7 +1332,7 @@ void ViolationRepairer::updateViolationList(VRBox& vr_box)
   }
 }
 
-std::vector<Violation> ViolationRepairer::getMultiNetViolationList(VRBox& vr_box)
+std::vector<Violation> ViolationRepairer::getHybridNetViolationList(VRBox& vr_box)
 {
   std::string top_name = RTUTIL.getString("vr_box_", vr_box.get_vr_box_id().get_x(), "_", vr_box.get_vr_box_id().get_y());
   std::vector<std::pair<EXTLayerRect*, bool>> env_shape_list;
@@ -1441,67 +1381,7 @@ std::vector<Violation> ViolationRepairer::getMultiNetViolationList(VRBox& vr_box
 
   DETask de_task;
   de_task.set_proc_type(DEProcType::kGet);
-  de_task.set_net_type(DENetType::kMultiNet);
-  de_task.set_top_name(top_name);
-  de_task.set_env_shape_list(env_shape_list);
-  de_task.set_net_pin_shape_map(net_pin_shape_map);
-  de_task.set_net_result_map(net_result_map);
-  de_task.set_net_patch_map(net_patch_map);
-  de_task.set_need_checked_net_set(need_checked_net_set);
-  // return RTDE.getViolationListByTemp(de_task);
-  return RTDE.getViolationList(de_task);
-}
-
-std::vector<Violation> ViolationRepairer::getSingleNetViolationList(VRBox& vr_box)
-{
-  std::string top_name = RTUTIL.getString("vr_box_", vr_box.get_vr_box_id().get_x(), "_", vr_box.get_vr_box_id().get_y());
-  std::vector<std::pair<EXTLayerRect*, bool>> env_shape_list;
-  std::map<int32_t, std::vector<std::pair<EXTLayerRect*, bool>>> net_pin_shape_map;
-  for (auto& [is_routing, layer_net_fixed_rect_map] : vr_box.get_type_layer_net_fixed_rect_map()) {
-    for (auto& [layer_idx, net_fixed_rect_map] : layer_net_fixed_rect_map) {
-      for (auto& [net_idx, fixed_rect_set] : net_fixed_rect_map) {
-        if (net_idx == -1) {
-          for (auto& fixed_rect : fixed_rect_set) {
-            env_shape_list.emplace_back(fixed_rect, is_routing);
-          }
-        } else {
-          for (auto& fixed_rect : fixed_rect_set) {
-            net_pin_shape_map[net_idx].emplace_back(fixed_rect, is_routing);
-          }
-        }
-      }
-    }
-  }
-  std::map<int32_t, std::vector<Segment<LayerCoord>*>> net_result_map;
-  for (auto& [net_idx, segment_set] : vr_box.get_net_final_result_map()) {
-    for (Segment<LayerCoord>* segment : segment_set) {
-      net_result_map[net_idx].push_back(segment);
-    }
-  }
-  for (auto& [net_idx, segment_list] : vr_box.get_net_task_final_result_map()) {
-    for (Segment<LayerCoord>& segment : segment_list) {
-      net_result_map[net_idx].emplace_back(&segment);
-    }
-  }
-  std::map<int32_t, std::vector<EXTLayerRect*>> net_patch_map;
-  for (auto& [net_idx, patch_set] : vr_box.get_net_final_patch_map()) {
-    for (EXTLayerRect* patch : patch_set) {
-      net_patch_map[net_idx].push_back(patch);
-    }
-  }
-  for (auto& [net_idx, patch_list] : vr_box.get_net_task_final_patch_map()) {
-    for (EXTLayerRect& patch : patch_list) {
-      net_patch_map[net_idx].emplace_back(&patch);
-    }
-  }
-  std::set<int32_t> need_checked_net_set;
-  for (VRTask* vr_task : vr_box.get_vr_task_list()) {
-    need_checked_net_set.insert(vr_task->get_net_idx());
-  }
-
-  DETask de_task;
-  de_task.set_proc_type(DEProcType::kGet);
-  de_task.set_net_type(DENetType::kSingleNet);
+  de_task.set_net_type(DENetType::kHybrid);
   de_task.set_top_name(top_name);
   de_task.set_env_shape_list(env_shape_list);
   de_task.set_net_pin_shape_map(net_pin_shape_map);
@@ -1881,16 +1761,16 @@ void ViolationRepairer::updateSummary(VRModel& vr_model)
   int32_t& total_via_num = summary.iter_vr_summary_map[vr_model.get_iter()].total_via_num;
   std::map<int32_t, int32_t>& routing_patch_num_map = summary.iter_vr_summary_map[vr_model.get_iter()].routing_patch_num_map;
   int32_t& total_patch_num = summary.iter_vr_summary_map[vr_model.get_iter()].total_patch_num;
-  std::map<int32_t, std::map<std::string, int32_t>>& single_net_routing_violation_type_num_map
-      = summary.iter_vr_summary_map[vr_model.get_iter()].single_net_routing_violation_type_num_map;
-  std::map<std::string, int32_t>& single_net_violation_type_num_map = summary.iter_vr_summary_map[vr_model.get_iter()].single_net_violation_type_num_map;
-  std::map<int32_t, int32_t>& single_net_routing_violation_num_map = summary.iter_vr_summary_map[vr_model.get_iter()].single_net_routing_violation_num_map;
-  int32_t& single_net_total_violation_num = summary.iter_vr_summary_map[vr_model.get_iter()].single_net_total_violation_num;
-  std::map<int32_t, std::map<std::string, int32_t>>& multi_net_routing_violation_type_num_map
-      = summary.iter_vr_summary_map[vr_model.get_iter()].multi_net_routing_violation_type_num_map;
-  std::map<std::string, int32_t>& multi_net_violation_type_num_map = summary.iter_vr_summary_map[vr_model.get_iter()].multi_net_violation_type_num_map;
-  std::map<int32_t, int32_t>& multi_net_routing_violation_num_map = summary.iter_vr_summary_map[vr_model.get_iter()].multi_net_routing_violation_num_map;
-  int32_t& multi_net_total_violation_num = summary.iter_vr_summary_map[vr_model.get_iter()].multi_net_total_violation_num;
+  std::map<int32_t, std::map<std::string, int32_t>>& within_net_routing_violation_type_num_map
+      = summary.iter_vr_summary_map[vr_model.get_iter()].within_net_routing_violation_type_num_map;
+  std::map<std::string, int32_t>& within_net_violation_type_num_map = summary.iter_vr_summary_map[vr_model.get_iter()].within_net_violation_type_num_map;
+  std::map<int32_t, int32_t>& within_net_routing_violation_num_map = summary.iter_vr_summary_map[vr_model.get_iter()].within_net_routing_violation_num_map;
+  int32_t& within_net_total_violation_num = summary.iter_vr_summary_map[vr_model.get_iter()].within_net_total_violation_num;
+  std::map<int32_t, std::map<std::string, int32_t>>& among_net_routing_violation_type_num_map
+      = summary.iter_vr_summary_map[vr_model.get_iter()].among_net_routing_violation_type_num_map;
+  std::map<std::string, int32_t>& among_net_violation_type_num_map = summary.iter_vr_summary_map[vr_model.get_iter()].among_net_violation_type_num_map;
+  std::map<int32_t, int32_t>& among_net_routing_violation_num_map = summary.iter_vr_summary_map[vr_model.get_iter()].among_net_routing_violation_num_map;
+  int32_t& among_net_total_violation_num = summary.iter_vr_summary_map[vr_model.get_iter()].among_net_total_violation_num;
   std::map<std::string, std::map<std::string, double>>& clock_timing = summary.iter_vr_summary_map[vr_model.get_iter()].clock_timing;
   std::map<std::string, double>& power_map = summary.iter_vr_summary_map[vr_model.get_iter()].power_map;
 
@@ -1902,14 +1782,14 @@ void ViolationRepairer::updateSummary(VRModel& vr_model)
   total_via_num = 0;
   routing_patch_num_map.clear();
   total_patch_num = 0;
-  single_net_routing_violation_type_num_map.clear();
-  single_net_violation_type_num_map.clear();
-  single_net_routing_violation_num_map.clear();
-  single_net_total_violation_num = 0;
-  multi_net_routing_violation_type_num_map.clear();
-  multi_net_violation_type_num_map.clear();
-  multi_net_routing_violation_num_map.clear();
-  multi_net_total_violation_num = 0;
+  within_net_routing_violation_type_num_map.clear();
+  within_net_violation_type_num_map.clear();
+  within_net_routing_violation_num_map.clear();
+  within_net_total_violation_num = 0;
+  among_net_routing_violation_type_num_map.clear();
+  among_net_violation_type_num_map.clear();
+  among_net_routing_violation_num_map.clear();
+  among_net_total_violation_num = 0;
   clock_timing.clear();
   power_map.clear();
 
@@ -1943,19 +1823,19 @@ void ViolationRepairer::updateSummary(VRModel& vr_model)
     if (violation->get_violation_net_set().size() >= 2) {
       continue;
     }
-    single_net_routing_violation_type_num_map[violation->get_violation_shape().get_layer_idx()][GetViolationTypeName()(violation->get_violation_type())]++;
-    single_net_violation_type_num_map[GetViolationTypeName()(violation->get_violation_type())]++;
-    single_net_routing_violation_num_map[violation->get_violation_shape().get_layer_idx()]++;
-    single_net_total_violation_num++;
+    within_net_routing_violation_type_num_map[violation->get_violation_shape().get_layer_idx()][GetViolationTypeName()(violation->get_violation_type())]++;
+    within_net_violation_type_num_map[GetViolationTypeName()(violation->get_violation_type())]++;
+    within_net_routing_violation_num_map[violation->get_violation_shape().get_layer_idx()]++;
+    within_net_total_violation_num++;
   }
   for (Violation* violation : RTDM.getViolationSet(die)) {
     if (violation->get_violation_net_set().size() < 2) {
       continue;
     }
-    multi_net_routing_violation_type_num_map[violation->get_violation_shape().get_layer_idx()][GetViolationTypeName()(violation->get_violation_type())]++;
-    multi_net_violation_type_num_map[GetViolationTypeName()(violation->get_violation_type())]++;
-    multi_net_routing_violation_num_map[violation->get_violation_shape().get_layer_idx()]++;
-    multi_net_total_violation_num++;
+    among_net_routing_violation_type_num_map[violation->get_violation_shape().get_layer_idx()][GetViolationTypeName()(violation->get_violation_type())]++;
+    among_net_violation_type_num_map[GetViolationTypeName()(violation->get_violation_type())]++;
+    among_net_routing_violation_num_map[violation->get_violation_shape().get_layer_idx()]++;
+    among_net_total_violation_num++;
   }
   if (enable_timing) {
     std::vector<std::map<std::string, std::vector<LayerCoord>>> real_pin_coord_map_list;
@@ -1989,16 +1869,16 @@ void ViolationRepairer::printSummary(VRModel& vr_model)
   int32_t& total_via_num = summary.iter_vr_summary_map[vr_model.get_iter()].total_via_num;
   std::map<int32_t, int32_t>& routing_patch_num_map = summary.iter_vr_summary_map[vr_model.get_iter()].routing_patch_num_map;
   int32_t& total_patch_num = summary.iter_vr_summary_map[vr_model.get_iter()].total_patch_num;
-  std::map<int32_t, std::map<std::string, int32_t>>& single_net_routing_violation_type_num_map
-      = summary.iter_vr_summary_map[vr_model.get_iter()].single_net_routing_violation_type_num_map;
-  std::map<std::string, int32_t>& single_net_violation_type_num_map = summary.iter_vr_summary_map[vr_model.get_iter()].single_net_violation_type_num_map;
-  std::map<int32_t, int32_t>& single_net_routing_violation_num_map = summary.iter_vr_summary_map[vr_model.get_iter()].single_net_routing_violation_num_map;
-  int32_t& single_net_total_violation_num = summary.iter_vr_summary_map[vr_model.get_iter()].single_net_total_violation_num;
-  std::map<int32_t, std::map<std::string, int32_t>>& multi_net_routing_violation_type_num_map
-      = summary.iter_vr_summary_map[vr_model.get_iter()].multi_net_routing_violation_type_num_map;
-  std::map<std::string, int32_t>& multi_net_violation_type_num_map = summary.iter_vr_summary_map[vr_model.get_iter()].multi_net_violation_type_num_map;
-  std::map<int32_t, int32_t>& multi_net_routing_violation_num_map = summary.iter_vr_summary_map[vr_model.get_iter()].multi_net_routing_violation_num_map;
-  int32_t& multi_net_total_violation_num = summary.iter_vr_summary_map[vr_model.get_iter()].multi_net_total_violation_num;
+  std::map<int32_t, std::map<std::string, int32_t>>& within_net_routing_violation_type_num_map
+      = summary.iter_vr_summary_map[vr_model.get_iter()].within_net_routing_violation_type_num_map;
+  std::map<std::string, int32_t>& within_net_violation_type_num_map = summary.iter_vr_summary_map[vr_model.get_iter()].within_net_violation_type_num_map;
+  std::map<int32_t, int32_t>& within_net_routing_violation_num_map = summary.iter_vr_summary_map[vr_model.get_iter()].within_net_routing_violation_num_map;
+  int32_t& within_net_total_violation_num = summary.iter_vr_summary_map[vr_model.get_iter()].within_net_total_violation_num;
+  std::map<int32_t, std::map<std::string, int32_t>>& among_net_routing_violation_type_num_map
+      = summary.iter_vr_summary_map[vr_model.get_iter()].among_net_routing_violation_type_num_map;
+  std::map<std::string, int32_t>& among_net_violation_type_num_map = summary.iter_vr_summary_map[vr_model.get_iter()].among_net_violation_type_num_map;
+  std::map<int32_t, int32_t>& among_net_routing_violation_num_map = summary.iter_vr_summary_map[vr_model.get_iter()].among_net_routing_violation_num_map;
+  int32_t& among_net_total_violation_num = summary.iter_vr_summary_map[vr_model.get_iter()].among_net_total_violation_num;
   std::map<std::string, std::map<std::string, double>>& clock_timing = summary.iter_vr_summary_map[vr_model.get_iter()].clock_timing;
   std::map<std::string, double>& power_map = summary.iter_vr_summary_map[vr_model.get_iter()].power_map;
 
@@ -2038,57 +1918,57 @@ void ViolationRepairer::printSummary(VRModel& vr_model)
     }
     routing_patch_num_map_table << fort::header << "Total" << total_patch_num << RTUTIL.getPercentage(total_patch_num, total_patch_num) << fort::endr;
   }
-  fort::char_table single_net_routing_violation_map_table;
+  fort::char_table within_net_routing_violation_map_table;
   {
-    single_net_routing_violation_map_table.set_cell_text_align(fort::text_align::right);
-    single_net_routing_violation_map_table << fort::header << "single_net";
-    for (size_t i = 0; i < single_net_violation_type_num_map.size(); ++i) {
-      single_net_routing_violation_map_table << fort::header << " ";
+    within_net_routing_violation_map_table.set_cell_text_align(fort::text_align::right);
+    within_net_routing_violation_map_table << fort::header << "within_net";
+    for (size_t i = 0; i < within_net_violation_type_num_map.size(); ++i) {
+      within_net_routing_violation_map_table << fort::header << " ";
     }
-    single_net_routing_violation_map_table << fort::header << " " << fort::endr;
-    single_net_routing_violation_map_table << fort::header << "routing";
-    for (auto& [type, num] : single_net_violation_type_num_map) {
-      single_net_routing_violation_map_table << fort::header << type;
+    within_net_routing_violation_map_table << fort::header << " " << fort::endr;
+    within_net_routing_violation_map_table << fort::header << "routing";
+    for (auto& [type, num] : within_net_violation_type_num_map) {
+      within_net_routing_violation_map_table << fort::header << type;
     }
-    single_net_routing_violation_map_table << fort::header << "Total" << fort::endr;
+    within_net_routing_violation_map_table << fort::header << "Total" << fort::endr;
     for (RoutingLayer& routing_layer : routing_layer_list) {
-      single_net_routing_violation_map_table << routing_layer.get_layer_name();
-      for (auto& [type, num] : single_net_violation_type_num_map) {
-        single_net_routing_violation_map_table << single_net_routing_violation_type_num_map[routing_layer.get_layer_idx()][type];
+      within_net_routing_violation_map_table << routing_layer.get_layer_name();
+      for (auto& [type, num] : within_net_violation_type_num_map) {
+        within_net_routing_violation_map_table << within_net_routing_violation_type_num_map[routing_layer.get_layer_idx()][type];
       }
-      single_net_routing_violation_map_table << single_net_routing_violation_num_map[routing_layer.get_layer_idx()] << fort::endr;
+      within_net_routing_violation_map_table << within_net_routing_violation_num_map[routing_layer.get_layer_idx()] << fort::endr;
     }
-    single_net_routing_violation_map_table << fort::header << "Total";
-    for (auto& [type, num] : single_net_violation_type_num_map) {
-      single_net_routing_violation_map_table << fort::header << num;
+    within_net_routing_violation_map_table << fort::header << "Total";
+    for (auto& [type, num] : within_net_violation_type_num_map) {
+      within_net_routing_violation_map_table << fort::header << num;
     }
-    single_net_routing_violation_map_table << fort::header << single_net_total_violation_num << fort::endr;
+    within_net_routing_violation_map_table << fort::header << within_net_total_violation_num << fort::endr;
   }
-  fort::char_table multi_net_routing_violation_map_table;
+  fort::char_table among_net_routing_violation_map_table;
   {
-    multi_net_routing_violation_map_table.set_cell_text_align(fort::text_align::right);
-    multi_net_routing_violation_map_table << fort::header << "multi_net";
-    for (size_t i = 0; i < multi_net_violation_type_num_map.size(); ++i) {
-      multi_net_routing_violation_map_table << fort::header << " ";
+    among_net_routing_violation_map_table.set_cell_text_align(fort::text_align::right);
+    among_net_routing_violation_map_table << fort::header << "among_net";
+    for (size_t i = 0; i < among_net_violation_type_num_map.size(); ++i) {
+      among_net_routing_violation_map_table << fort::header << " ";
     }
-    multi_net_routing_violation_map_table << fort::header << " " << fort::endr;
-    multi_net_routing_violation_map_table << fort::header << "routing";
-    for (auto& [type, num] : multi_net_violation_type_num_map) {
-      multi_net_routing_violation_map_table << fort::header << type;
+    among_net_routing_violation_map_table << fort::header << " " << fort::endr;
+    among_net_routing_violation_map_table << fort::header << "routing";
+    for (auto& [type, num] : among_net_violation_type_num_map) {
+      among_net_routing_violation_map_table << fort::header << type;
     }
-    multi_net_routing_violation_map_table << fort::header << "Total" << fort::endr;
+    among_net_routing_violation_map_table << fort::header << "Total" << fort::endr;
     for (RoutingLayer& routing_layer : routing_layer_list) {
-      multi_net_routing_violation_map_table << routing_layer.get_layer_name();
-      for (auto& [type, num] : multi_net_violation_type_num_map) {
-        multi_net_routing_violation_map_table << multi_net_routing_violation_type_num_map[routing_layer.get_layer_idx()][type];
+      among_net_routing_violation_map_table << routing_layer.get_layer_name();
+      for (auto& [type, num] : among_net_violation_type_num_map) {
+        among_net_routing_violation_map_table << among_net_routing_violation_type_num_map[routing_layer.get_layer_idx()][type];
       }
-      multi_net_routing_violation_map_table << multi_net_routing_violation_num_map[routing_layer.get_layer_idx()] << fort::endr;
+      among_net_routing_violation_map_table << among_net_routing_violation_num_map[routing_layer.get_layer_idx()] << fort::endr;
     }
-    multi_net_routing_violation_map_table << fort::header << "Total";
-    for (auto& [type, num] : multi_net_violation_type_num_map) {
-      multi_net_routing_violation_map_table << fort::header << num;
+    among_net_routing_violation_map_table << fort::header << "Total";
+    for (auto& [type, num] : among_net_violation_type_num_map) {
+      among_net_routing_violation_map_table << fort::header << num;
     }
-    multi_net_routing_violation_map_table << fort::header << multi_net_total_violation_num << fort::endr;
+    among_net_routing_violation_map_table << fort::header << among_net_total_violation_num << fort::endr;
   }
   fort::char_table timing_table;
   timing_table.set_cell_text_align(fort::text_align::right);
@@ -2114,7 +1994,7 @@ void ViolationRepairer::printSummary(VRModel& vr_model)
     power_table << fort::endr;
   }
   RTUTIL.printTableList({routing_wire_length_map_table, cut_via_num_map_table, routing_patch_num_map_table});
-  RTUTIL.printTableList({single_net_routing_violation_map_table, multi_net_routing_violation_map_table});
+  RTUTIL.printTableList({within_net_routing_violation_map_table, among_net_routing_violation_map_table});
   RTUTIL.printTableList({timing_table, power_table});
 }
 
@@ -2342,7 +2222,7 @@ void ViolationRepairer::debugPlotVRModel(VRModel& vr_model, std::string flag)
       if (violation->get_violation_net_set().size() >= 2) {
         continue;
       }
-      GPStruct single_net_violation_struct(RTUTIL.getString("single_net_violation_", GetViolationTypeName()(violation->get_violation_type())));
+      GPStruct within_net_violation_struct(RTUTIL.getString("within_net_violation_", GetViolationTypeName()(violation->get_violation_type())));
       EXTLayerRect& violation_shape = violation->get_violation_shape();
 
       GPBoundary gp_boundary;
@@ -2353,14 +2233,14 @@ void ViolationRepairer::debugPlotVRModel(VRModel& vr_model, std::string flag)
       } else {
         gp_boundary.set_layer_idx(RTGP.getGDSIdxByCut(violation_shape.get_layer_idx()));
       }
-      single_net_violation_struct.push(gp_boundary);
-      gp_gds.addStruct(single_net_violation_struct);
+      within_net_violation_struct.push(gp_boundary);
+      gp_gds.addStruct(within_net_violation_struct);
     }
     for (Violation* violation : RTDM.getViolationSet(die)) {
       if (violation->get_violation_net_set().size() < 2) {
         continue;
       }
-      GPStruct multi_net_violation_struct(RTUTIL.getString("multi_net_violation_", GetViolationTypeName()(violation->get_violation_type())));
+      GPStruct among_net_violation_struct(RTUTIL.getString("among_net_violation_", GetViolationTypeName()(violation->get_violation_type())));
       EXTLayerRect& violation_shape = violation->get_violation_shape();
 
       GPBoundary gp_boundary;
@@ -2371,8 +2251,8 @@ void ViolationRepairer::debugPlotVRModel(VRModel& vr_model, std::string flag)
       } else {
         gp_boundary.set_layer_idx(RTGP.getGDSIdxByCut(violation_shape.get_layer_idx()));
       }
-      multi_net_violation_struct.push(gp_boundary);
-      gp_gds.addStruct(multi_net_violation_struct);
+      among_net_violation_struct.push(gp_boundary);
+      gp_gds.addStruct(among_net_violation_struct);
     }
   }
 
@@ -2601,7 +2481,7 @@ void ViolationRepairer::debugPlotVRBox(VRBox& vr_box, int32_t curr_task_idx, std
       if (violation.get_violation_net_set().size() >= 2) {
         continue;
       }
-      GPStruct single_net_violation_struct(RTUTIL.getString("single_net_violation_", GetViolationTypeName()(violation.get_violation_type())));
+      GPStruct within_net_violation_struct(RTUTIL.getString("within_net_violation_", GetViolationTypeName()(violation.get_violation_type())));
       EXTLayerRect& violation_shape = violation.get_violation_shape();
 
       GPBoundary gp_boundary;
@@ -2612,14 +2492,14 @@ void ViolationRepairer::debugPlotVRBox(VRBox& vr_box, int32_t curr_task_idx, std
       } else {
         gp_boundary.set_layer_idx(RTGP.getGDSIdxByCut(violation_shape.get_layer_idx()));
       }
-      single_net_violation_struct.push(gp_boundary);
-      gp_gds.addStruct(single_net_violation_struct);
+      within_net_violation_struct.push(gp_boundary);
+      gp_gds.addStruct(within_net_violation_struct);
     }
     for (Violation& violation : vr_box.get_violation_list()) {
       if (violation.get_violation_net_set().size() < 2) {
         continue;
       }
-      GPStruct multi_net_violation_struct(RTUTIL.getString("multi_net_violation_", GetViolationTypeName()(violation.get_violation_type())));
+      GPStruct among_net_violation_struct(RTUTIL.getString("among_net_violation_", GetViolationTypeName()(violation.get_violation_type())));
       EXTLayerRect& violation_shape = violation.get_violation_shape();
 
       GPBoundary gp_boundary;
@@ -2630,8 +2510,8 @@ void ViolationRepairer::debugPlotVRBox(VRBox& vr_box, int32_t curr_task_idx, std
       } else {
         gp_boundary.set_layer_idx(RTGP.getGDSIdxByCut(violation_shape.get_layer_idx()));
       }
-      multi_net_violation_struct.push(gp_boundary);
-      gp_gds.addStruct(multi_net_violation_struct);
+      among_net_violation_struct.push(gp_boundary);
+      gp_gds.addStruct(among_net_violation_struct);
     }
   }
 
