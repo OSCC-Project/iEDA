@@ -150,7 +150,7 @@ void TrackAssigner::ignoreViolation(TAModel& ta_model)
     }
 
     de_task.set_proc_type(DEProcType::kIgnore);
-    de_task.set_net_type(DENetType::kMultiNet);
+    de_task.set_net_type(DENetType::kAmong);
     de_task.set_top_name(top_name);
     de_task.set_env_shape_list(env_shape_list);
     de_task.set_net_pin_shape_map(net_pin_shape_map);
@@ -158,6 +158,7 @@ void TrackAssigner::ignoreViolation(TAModel& ta_model)
     de_task.set_need_checked_net_set(need_checked_net_set);
   }
   std::vector<Violation> violation_list = RTDE.getViolationList(de_task);
+  RTDE.clearTempIgnoredViolationSet();
   RTDE.addTempIgnoredViolation(violation_list);
 
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
@@ -1023,7 +1024,7 @@ double TrackAssigner::getEstimateViaCost(TAPanel& ta_panel, TANode* start_node, 
 void TrackAssigner::updateViolationList(TAPanel& ta_panel)
 {
   ta_panel.get_violation_list().clear();
-  for (Violation new_violation : getCostViolationList(ta_panel)) {
+  for (Violation new_violation : getAmongNetViolationList(ta_panel)) {
     if (new_violation.get_is_routing() != true || new_violation.get_violation_shape().get_layer_idx() != ta_panel.get_panel_rect().get_layer_idx()) {
       continue;
     }
@@ -1038,7 +1039,7 @@ void TrackAssigner::updateViolationList(TAPanel& ta_panel)
   }
 }
 
-std::vector<Violation> TrackAssigner::getCostViolationList(TAPanel& ta_panel)
+std::vector<Violation> TrackAssigner::getAmongNetViolationList(TAPanel& ta_panel)
 {
   ScaleAxis& gcell_axis = RTDM.getDatabase().get_gcell_axis();
 
@@ -1225,7 +1226,7 @@ void TrackAssigner::updateFixedRectToGraph(TAPanel& ta_panel, ChangeType change_
   if (!net_shape.get_is_routing() || (ta_panel.get_ta_panel_id().get_layer_idx() != net_shape.get_layer_idx())) {
     return;
   }
-  for (auto& [ta_node, orientation_set] : getNodeOrientationMap(ta_panel, net_shape, true)) {
+  for (auto& [ta_node, orientation_set] : getNodeOrientationMap(ta_panel, net_shape)) {
     for (Orientation orientation : orientation_set) {
       if (change_type == ChangeType::kAdd) {
         ta_node->get_orient_fixed_rect_map()[orientation].insert(net_shape.get_net_idx());
@@ -1242,7 +1243,7 @@ void TrackAssigner::updateFixedRectToGraph(TAPanel& ta_panel, ChangeType change_
   if (!net_shape.get_is_routing() || (ta_panel.get_ta_panel_id().get_layer_idx() != net_shape.get_layer_idx())) {
     return;
   }
-  for (auto& [ta_node, orientation_set] : getNodeOrientationMap(ta_panel, net_shape, true)) {
+  for (auto& [ta_node, orientation_set] : getNodeOrientationMap(ta_panel, net_shape)) {
     for (Orientation orientation : orientation_set) {
       if (change_type == ChangeType::kAdd) {
         ta_node->get_orient_fixed_rect_map()[orientation].insert(net_shape.get_net_idx());
@@ -1259,7 +1260,7 @@ void TrackAssigner::updateRoutedRectToGraph(TAPanel& ta_panel, ChangeType change
     if (!net_shape.get_is_routing() || (ta_panel.get_ta_panel_id().get_layer_idx() != net_shape.get_layer_idx())) {
       continue;
     }
-    for (auto& [ta_node, orientation_set] : getNodeOrientationMap(ta_panel, net_shape, true)) {
+    for (auto& [ta_node, orientation_set] : getNodeOrientationMap(ta_panel, net_shape)) {
       for (Orientation orientation : orientation_set) {
         if (change_type == ChangeType::kAdd) {
           ta_node->get_orient_routed_rect_map()[orientation].insert(net_shape.get_net_idx());
@@ -1366,18 +1367,18 @@ void TrackAssigner::addViolationToGraph(TAPanel& ta_panel, LayerRect& searched_r
   }
 }
 
-std::map<TANode*, std::set<Orientation>> TrackAssigner::getNodeOrientationMap(TAPanel& ta_panel, NetShape& net_shape, bool need_enlarged)
+std::map<TANode*, std::set<Orientation>> TrackAssigner::getNodeOrientationMap(TAPanel& ta_panel, NetShape& net_shape)
 {
   std::map<TANode*, std::set<Orientation>> node_orientation_map;
   if (net_shape.get_is_routing()) {
-    node_orientation_map = getRoutingNodeOrientationMap(ta_panel, net_shape, need_enlarged);
+    node_orientation_map = getRoutingNodeOrientationMap(ta_panel, net_shape);
   } else {
     RTLOG.error(Loc::current(), "The type of net_shape is cut!");
   }
   return node_orientation_map;
 }
 
-std::map<TANode*, std::set<Orientation>> TrackAssigner::getRoutingNodeOrientationMap(TAPanel& ta_panel, NetShape& net_shape, bool need_enlarged)
+std::map<TANode*, std::set<Orientation>> TrackAssigner::getRoutingNodeOrientationMap(TAPanel& ta_panel, NetShape& net_shape)
 {
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
   if (!net_shape.get_is_routing()) {
@@ -1408,13 +1409,9 @@ std::map<TANode*, std::set<Orientation>> TrackAssigner::getRoutingNodeOrientatio
   std::map<TANode*, std::set<Orientation>> node_orientation_map;
   // wire 与 net_shape
   for (auto& [x_spacing, y_spacing] : spacing_pair_list) {
-    int32_t enlarged_x_size = half_wire_width;
-    int32_t enlarged_y_size = half_wire_width;
-    if (need_enlarged) {
-      // 膨胀size为 half_wire_width + spacing
-      enlarged_x_size += x_spacing;
-      enlarged_y_size += y_spacing;
-    }
+    // 膨胀size为 half_wire_width + spacing
+    int32_t enlarged_x_size = half_wire_width + x_spacing;
+    int32_t enlarged_y_size = half_wire_width + y_spacing;
     // 贴合的也不算违例
     enlarged_x_size -= 1;
     enlarged_y_size -= 1;
@@ -1448,13 +1445,13 @@ void TrackAssigner::updateSummary(TAModel& ta_model)
 
   std::map<int32_t, double>& routing_wire_length_map = summary.ta_summary.routing_wire_length_map;
   double& total_wire_length = summary.ta_summary.total_wire_length;
-  std::map<int32_t, int32_t>& routing_violation_num_map = summary.ta_summary.routing_violation_num_map;
-  int32_t& total_violation_num = summary.ta_summary.total_violation_num;
+  std::map<int32_t, int32_t>& among_net_routing_violation_num_map = summary.ta_summary.among_net_routing_violation_num_map;
+  int32_t& among_net_total_violation_num = summary.ta_summary.among_net_total_violation_num;
 
   routing_wire_length_map.clear();
   total_wire_length = 0;
-  routing_violation_num_map.clear();
-  total_violation_num = 0;
+  among_net_routing_violation_num_map.clear();
+  among_net_total_violation_num = 0;
 
   for (auto& [net_idx, segment_set] : RTDM.getNetDetailedResultMap(die)) {
     for (Segment<LayerCoord>* segment : segment_set) {
@@ -1468,8 +1465,8 @@ void TrackAssigner::updateSummary(TAModel& ta_model)
     }
   }
   for (Violation* violation : RTDM.getViolationSet(die)) {
-    routing_violation_num_map[violation->get_violation_shape().get_layer_idx()]++;
-    total_violation_num++;
+    among_net_routing_violation_num_map[violation->get_violation_shape().get_layer_idx()]++;
+    among_net_total_violation_num++;
   }
 }
 
@@ -1480,11 +1477,12 @@ void TrackAssigner::printSummary(TAModel& ta_model)
 
   std::map<int32_t, double>& routing_wire_length_map = summary.ta_summary.routing_wire_length_map;
   double& total_wire_length = summary.ta_summary.total_wire_length;
-  std::map<int32_t, int32_t>& routing_violation_num_map = summary.ta_summary.routing_violation_num_map;
-  int32_t& total_violation_num = summary.ta_summary.total_violation_num;
+  std::map<int32_t, int32_t>& among_net_routing_violation_num_map = summary.ta_summary.among_net_routing_violation_num_map;
+  int32_t& among_net_total_violation_num = summary.ta_summary.among_net_total_violation_num;
 
   fort::char_table routing_wire_length_map_table;
   {
+    routing_wire_length_map_table.set_cell_text_align(fort::text_align::right);
     routing_wire_length_map_table << fort::header << "routing"
                                   << "wire_length"
                                   << "prop" << fort::endr;
@@ -1494,19 +1492,22 @@ void TrackAssigner::printSummary(TAModel& ta_model)
     }
     routing_wire_length_map_table << fort::header << "Total" << total_wire_length << RTUTIL.getPercentage(total_wire_length, total_wire_length) << fort::endr;
   }
-  fort::char_table routing_violation_num_map_table;
+  fort::char_table among_net_routing_violation_num_map_table;
   {
-    routing_violation_num_map_table << fort::header << "routing"
-                                    << "#violation"
-                                    << "prop" << fort::endr;
+    among_net_routing_violation_num_map_table.set_cell_text_align(fort::text_align::right);
+    among_net_routing_violation_num_map_table << fort::header << "routing"
+                                              << "#violation"
+                                              << "prop" << fort::endr;
     for (RoutingLayer& routing_layer : routing_layer_list) {
-      routing_violation_num_map_table << routing_layer.get_layer_name() << routing_violation_num_map[routing_layer.get_layer_idx()]
-                                      << RTUTIL.getPercentage(routing_violation_num_map[routing_layer.get_layer_idx()], total_violation_num) << fort::endr;
+      among_net_routing_violation_num_map_table << routing_layer.get_layer_name() << among_net_routing_violation_num_map[routing_layer.get_layer_idx()]
+                                                << RTUTIL.getPercentage(among_net_routing_violation_num_map[routing_layer.get_layer_idx()],
+                                                                        among_net_total_violation_num)
+                                                << fort::endr;
     }
-    routing_violation_num_map_table << fort::header << "Total" << total_violation_num << RTUTIL.getPercentage(total_violation_num, total_violation_num)
-                                    << fort::endr;
+    among_net_routing_violation_num_map_table << fort::header << "Total" << among_net_total_violation_num
+                                              << RTUTIL.getPercentage(among_net_total_violation_num, among_net_total_violation_num) << fort::endr;
   }
-  RTUTIL.printTableList({routing_wire_length_map_table, routing_violation_num_map_table});
+  RTUTIL.printTableList({routing_wire_length_map_table, among_net_routing_violation_num_map_table});
 }
 
 void TrackAssigner::outputNetCSV(TAModel& ta_model)
@@ -1732,7 +1733,7 @@ void TrackAssigner::debugPlotTAModel(TAModel& ta_model, std::string flag)
   // violation
   {
     for (Violation* violation : RTDM.getViolationSet(die)) {
-      GPStruct violation_struct(RTUTIL.getString("violation_", GetViolationTypeName()(violation->get_violation_type())));
+      GPStruct among_net_violation_struct(RTUTIL.getString("among_net_violation_", GetViolationTypeName()(violation->get_violation_type())));
       EXTLayerRect& violation_shape = violation->get_violation_shape();
 
       GPBoundary gp_boundary;
@@ -1743,8 +1744,8 @@ void TrackAssigner::debugPlotTAModel(TAModel& ta_model, std::string flag)
       } else {
         gp_boundary.set_layer_idx(RTGP.getGDSIdxByCut(violation_shape.get_layer_idx()));
       }
-      violation_struct.push(gp_boundary);
-      gp_gds.addStruct(violation_struct);
+      among_net_violation_struct.push(gp_boundary);
+      gp_gds.addStruct(among_net_violation_struct);
     }
   }
 
@@ -2150,7 +2151,7 @@ void TrackAssigner::debugPlotTAPanel(TAPanel& ta_panel, int32_t curr_task_idx, s
   // violation
   {
     for (Violation& violation : ta_panel.get_violation_list()) {
-      GPStruct violation_struct(RTUTIL.getString("violation_", GetViolationTypeName()(violation.get_violation_type())));
+      GPStruct among_net_violation_struct(RTUTIL.getString("among_net_violation_", GetViolationTypeName()(violation.get_violation_type())));
       EXTLayerRect& violation_shape = violation.get_violation_shape();
 
       GPBoundary gp_boundary;
@@ -2161,8 +2162,8 @@ void TrackAssigner::debugPlotTAPanel(TAPanel& ta_panel, int32_t curr_task_idx, s
       } else {
         gp_boundary.set_layer_idx(RTGP.getGDSIdxByCut(violation_shape.get_layer_idx()));
       }
-      violation_struct.push(gp_boundary);
-      gp_gds.addStruct(violation_struct);
+      among_net_violation_struct.push(gp_boundary);
+      gp_gds.addStruct(among_net_violation_struct);
     }
   }
 

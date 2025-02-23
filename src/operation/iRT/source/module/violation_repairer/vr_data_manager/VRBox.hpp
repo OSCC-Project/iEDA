@@ -45,7 +45,15 @@ class VRBox
   std::map<int32_t, std::vector<EXTLayerRect>>& get_net_task_final_patch_map() { return _net_task_final_patch_map; }
   std::vector<Violation>& get_violation_list() { return _violation_list; }
   ScaleAxis& get_box_track_axis() { return _box_track_axis; }
-  std::vector<GridMap<VRNode>>& get_layer_node_map() { return _layer_node_map; }
+  std::map<bool, std::map<int32_t, std::map<int32_t, std::set<PlanarRect, CmpPlanarRectByXASC>>>>& get_graph_type_layer_net_fixed_rect_map()
+  {
+    return _graph_type_layer_net_fixed_rect_map;
+  }
+  std::map<bool, std::map<int32_t, std::map<int32_t, std::set<PlanarRect, CmpPlanarRectByXASC>>>>& get_graph_type_layer_net_routed_rect_map()
+  {
+    return _graph_type_layer_net_routed_rect_map;
+  }
+  std::map<int32_t, std::set<PlanarRect, CmpPlanarRectByXASC>>& get_graph_layer_violation_map() { return _graph_layer_violation_map; }
   // setter
   void set_box_rect(const EXTPlanarRect& box_rect) { _box_rect = box_rect; }
   void set_vr_box_id(const VRBoxId& vr_box_id) { _vr_box_id = vr_box_id; }
@@ -67,8 +75,21 @@ class VRBox
   }
   void set_violation_list(const std::vector<Violation>& violation_list) { _violation_list = violation_list; }
   void set_box_track_axis(const ScaleAxis& box_track_axis) { _box_track_axis = box_track_axis; }
-  void set_layer_node_map(const std::vector<GridMap<VRNode>>& layer_node_map) { _layer_node_map = layer_node_map; }
-// function
+  void set_graph_type_layer_net_fixed_rect_map(
+      const std::map<bool, std::map<int32_t, std::map<int32_t, std::set<PlanarRect, CmpPlanarRectByXASC>>>>& graph_type_layer_net_fixed_rect_map)
+  {
+    _graph_type_layer_net_fixed_rect_map = graph_type_layer_net_fixed_rect_map;
+  }
+  void set_graph_type_layer_net_routed_rect_map(
+      const std::map<bool, std::map<int32_t, std::map<int32_t, std::set<PlanarRect, CmpPlanarRectByXASC>>>>& graph_type_layer_net_routed_rect_map)
+  {
+    _graph_type_layer_net_routed_rect_map = graph_type_layer_net_routed_rect_map;
+  }
+  void set_graph_layer_violation_map(const std::map<int32_t, std::set<PlanarRect, CmpPlanarRectByXASC>>& graph_layer_violation_map)
+  {
+    _graph_layer_violation_map = graph_layer_violation_map;
+  }
+  // function
 #if 1
   // single task
   VRTask* get_curr_vr_task() { return _curr_vr_task; }
@@ -90,7 +111,9 @@ class VRBox
   std::map<int32_t, std::vector<Segment<LayerCoord>>> _net_task_final_result_map;
   std::map<int32_t, std::vector<EXTLayerRect>> _net_task_final_patch_map;
   ScaleAxis _box_track_axis;
-  std::vector<GridMap<VRNode>> _layer_node_map;
+  std::map<bool, std::map<int32_t, std::map<int32_t, std::set<PlanarRect, CmpPlanarRectByXASC>>>> _graph_type_layer_net_fixed_rect_map;
+  std::map<bool, std::map<int32_t, std::map<int32_t, std::set<PlanarRect, CmpPlanarRectByXASC>>>> _graph_type_layer_net_routed_rect_map;
+  std::map<int32_t, std::set<PlanarRect, CmpPlanarRectByXASC>> _graph_layer_violation_map;
 #if 1
   // single task
   VRTask* _curr_vr_task = nullptr;

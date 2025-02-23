@@ -277,6 +277,7 @@ void SupplyAnalyzer::printSummary(SAModel& sa_model)
 
   fort::char_table routing_supply_map_table;
   {
+    routing_supply_map_table.set_cell_text_align(fort::text_align::right);
     routing_supply_map_table << fort::header << "routing"
                              << "supply"
                              << "prop" << fort::endr;

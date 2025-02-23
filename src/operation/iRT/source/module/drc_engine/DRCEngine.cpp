@@ -85,7 +85,7 @@ void DRCEngine::init()
       need_checked_net_set.insert(net.get_net_idx());
     }
     de_task.set_proc_type(DEProcType::kIgnore);
-    de_task.set_net_type(DENetType::kMultiNet);
+    de_task.set_net_type(DENetType::kAmong);
     de_task.set_top_name(top_name);
     de_task.set_env_shape_list(env_shape_list);
     de_task.set_net_pin_shape_map(net_pin_shape_map);
@@ -515,11 +515,10 @@ void DRCEngine::filterViolationList(DETask& de_task)
       // net不包含布线net的舍弃
       continue;
     }
-    if (de_task.get_net_type() == DENetType::kSingleNet && violation.get_violation_net_set().size() > 1) {
-      continue;
-    }
-    if (de_task.get_net_type() == DENetType::kMultiNet && violation.get_violation_net_set().size() < 2) {
-      continue;
+    if (de_task.get_net_type() == DENetType::kAmong) {
+      if (violation.get_violation_net_set().size() < 2) {
+        continue;
+      }
     }
     if (RTUTIL.exist(_ignored_violation_set, violation) || RTUTIL.exist(_temp_ignored_violation_set, violation)) {
       // 自带的违例舍弃
@@ -561,71 +560,7 @@ std::vector<Violation> DRCEngine::getExpandedViolationList(DETask& de_task, Viol
   }
   PlanarRect new_real_rect = violation.get_violation_shape().get_real_rect();
   std::vector<std::pair<int32_t, bool>> layer_routing_list;
-  if (net_type == DENetType::kSingleNet) {
-    switch (violation.get_violation_type()) {
-      case ViolationType::kAdjacentCutSpacing:
-        break;
-      case ViolationType::kCornerFillSpacing:
-        break;
-      case ViolationType::kCutEOLSpacing:
-        break;
-      case ViolationType::kCutShort:
-        break;
-      case ViolationType::kDifferentLayerCutSpacing:
-        break;
-      case ViolationType::kEndOfLineSpacing:
-        break;
-      case ViolationType::kEnclosure:
-        break;
-      case ViolationType::kEnclosureEdge:
-        break;
-      case ViolationType::kEnclosureParallel:
-        break;
-      case ViolationType::kFloatingPatch:
-        break;
-      case ViolationType::kJogToJogSpacing:
-        break;
-      case ViolationType::kMaxViaStack:
-        break;
-      case ViolationType::kMetalShort:
-        break;
-      case ViolationType::kMinHole:
-        new_real_rect = keepRect(new_real_rect);
-        layer_routing_list = keepLayer(violation);
-        break;
-      case ViolationType::kMinimumArea:
-        new_real_rect = keepRect(new_real_rect);
-        layer_routing_list = keepLayer(violation);
-        break;
-      case ViolationType::kMinimumCut:
-        break;
-      case ViolationType::kMinimumWidth:
-        new_real_rect = keepRect(new_real_rect);
-        layer_routing_list = keepLayer(violation);
-        break;
-      case ViolationType::kMinStep:
-        break;
-      case ViolationType::kNonsufficientMetalOverlap:
-        break;
-      case ViolationType::kNotchSpacing:
-        break;
-      case ViolationType::kOffGridOrWrongWay:
-        break;
-      case ViolationType::kOutOfDie:
-        break;
-      case ViolationType::kParallelRunLengthSpacing:
-        new_real_rect = keepRect(new_real_rect);
-        layer_routing_list = keepLayer(violation);
-        break;
-      case ViolationType::kSameLayerCutSpacing:
-        new_real_rect = keepRect(new_real_rect);
-        layer_routing_list = keepLayer(violation);
-        break;
-      default:
-        RTLOG.error(Loc::current(), "No violation type!");
-        break;
-    }
-  } else if (net_type == DENetType::kMultiNet) {
+  if (net_type == DENetType::kAmong) {
     switch (violation.get_violation_type()) {
       case ViolationType::kAdjacentCutSpacing:
         break;
@@ -690,6 +625,84 @@ std::vector<Violation> DRCEngine::getExpandedViolationList(DETask& de_task, Viol
       case ViolationType::kSameLayerCutSpacing:
         new_real_rect = enlargeRect(new_real_rect, violation.get_required_size());
         layer_routing_list = expandUpOneLayer(violation);
+        break;
+      default:
+        RTLOG.error(Loc::current(), "No violation type!");
+        break;
+    }
+  } else if (net_type == DENetType::kHybrid) {
+    switch (violation.get_violation_type()) {
+      case ViolationType::kAdjacentCutSpacing:
+        break;
+      case ViolationType::kCornerFillSpacing:
+        break;
+      case ViolationType::kCutEOLSpacing:
+        new_real_rect = keepRect(new_real_rect);
+        layer_routing_list = keepLayer(violation);
+        break;
+      case ViolationType::kCutShort:
+        new_real_rect = keepRect(new_real_rect);
+        layer_routing_list = keepLayer(violation);
+        break;
+      case ViolationType::kDifferentLayerCutSpacing:
+        new_real_rect = keepRect(new_real_rect);
+        layer_routing_list = keepLayer(violation);
+        break;
+      case ViolationType::kEndOfLineSpacing:
+        new_real_rect = keepRect(new_real_rect);
+        layer_routing_list = keepLayer(violation);
+        break;
+      case ViolationType::kEnclosure:
+        break;
+      case ViolationType::kEnclosureEdge:
+        break;
+      case ViolationType::kEnclosureParallel:
+        break;
+      case ViolationType::kFloatingPatch:
+        break;
+      case ViolationType::kJogToJogSpacing:
+        new_real_rect = keepRect(new_real_rect);
+        layer_routing_list = keepLayer(violation);
+        break;
+      case ViolationType::kMaxViaStack:
+        break;
+      case ViolationType::kMetalShort:
+        new_real_rect = keepRect(new_real_rect);
+        layer_routing_list = keepLayer(violation);
+        break;
+      case ViolationType::kMinHole:
+        new_real_rect = keepRect(new_real_rect);
+        layer_routing_list = keepLayer(violation);
+        break;
+      case ViolationType::kMinimumArea:
+        new_real_rect = keepRect(new_real_rect);
+        layer_routing_list = keepLayer(violation);
+        break;
+      case ViolationType::kMinimumCut:
+        break;
+      case ViolationType::kMinimumWidth:
+        new_real_rect = keepRect(new_real_rect);
+        layer_routing_list = keepLayer(violation);
+        break;
+      case ViolationType::kMinStep:
+        break;
+      case ViolationType::kNonsufficientMetalOverlap:
+        new_real_rect = keepRect(new_real_rect);
+        layer_routing_list = keepLayer(violation);
+        break;
+      case ViolationType::kNotchSpacing:
+        break;
+      case ViolationType::kOffGridOrWrongWay:
+        break;
+      case ViolationType::kOutOfDie:
+        break;
+      case ViolationType::kParallelRunLengthSpacing:
+        new_real_rect = keepRect(new_real_rect);
+        layer_routing_list = keepLayer(violation);
+        break;
+      case ViolationType::kSameLayerCutSpacing:
+        new_real_rect = keepRect(new_real_rect);
+        layer_routing_list = keepLayer(violation);
         break;
       default:
         RTLOG.error(Loc::current(), "No violation type!");

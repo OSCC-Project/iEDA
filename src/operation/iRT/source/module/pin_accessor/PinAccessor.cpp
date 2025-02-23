@@ -502,8 +502,7 @@ void PinAccessor::iterativePAModel(PAModel& pa_model)
   double routed_rect_unit = 2 * via_unit;
   double violation_unit = 4 * non_prefer_wire_unit * cost_unit;
   /**
-   * prefer_wire_unit, non_prefer_wire_unit, via_unit, size, offset, schedule_interval, fixed_rect_unit, routed_rect_unit, violation_unit,
-   * max_routed_times
+   * prefer_wire_unit, non_prefer_wire_unit, via_unit, size, offset, schedule_interval, fixed_rect_unit, routed_rect_unit, violation_unit, max_routed_times
    */
   std::vector<PAIterParam> pa_iter_param_list;
   // clang-format off
@@ -1479,7 +1478,7 @@ double PinAccessor::getEstimateViaCost(PABox& pa_box, PANode* start_node, PANode
 void PinAccessor::updateViolationList(PABox& pa_box)
 {
   pa_box.get_violation_list().clear();
-  for (Violation new_violation : getCostViolationList(pa_box)) {
+  for (Violation new_violation : getAmongNetViolationList(pa_box)) {
     pa_box.get_violation_list().push_back(new_violation);
   }
   // 新结果添加到graph
@@ -1488,7 +1487,7 @@ void PinAccessor::updateViolationList(PABox& pa_box)
   }
 }
 
-std::vector<Violation> PinAccessor::getCostViolationList(PABox& pa_box)
+std::vector<Violation> PinAccessor::getAmongNetViolationList(PABox& pa_box)
 {
   std::string top_name = RTUTIL.getString("pa_box_", pa_box.get_pa_box_id().get_x(), "_", pa_box.get_pa_box_id().get_y());
   std::vector<std::pair<EXTLayerRect*, bool>> env_shape_list;
@@ -1530,7 +1529,7 @@ std::vector<Violation> PinAccessor::getCostViolationList(PABox& pa_box)
 
   DETask de_task;
   de_task.set_proc_type(DEProcType::kGet);
-  de_task.set_net_type(DENetType::kMultiNet);
+  de_task.set_net_type(DENetType::kAmong);
   de_task.set_top_name(top_name);
   de_task.set_env_shape_list(env_shape_list);
   de_task.set_net_pin_shape_map(net_pin_shape_map);
@@ -1684,13 +1683,13 @@ void PinAccessor::uploadViolation(PAModel& pa_model)
   for (Violation* violation : RTDM.getViolationSet(die)) {
     RTDM.updateViolationToGCellMap(ChangeType::kDel, violation);
   }
-  for (Violation violation : getCostViolationList(pa_model)) {
+  for (Violation violation : getAmongNetViolationList(pa_model)) {
     RTDM.updateViolationToGCellMap(ChangeType::kAdd, new Violation(violation));
   }
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
-std::vector<Violation> PinAccessor::getCostViolationList(PAModel& pa_model)
+std::vector<Violation> PinAccessor::getAmongNetViolationList(PAModel& pa_model)
 {
   Die& die = RTDM.getDatabase().get_die();
 
@@ -1733,7 +1732,7 @@ std::vector<Violation> PinAccessor::getCostViolationList(PAModel& pa_model)
     }
 
     de_task.set_proc_type(DEProcType::kGet);
-    de_task.set_net_type(DENetType::kMultiNet);
+    de_task.set_net_type(DENetType::kAmong);
     de_task.set_top_name(top_name);
     de_task.set_env_shape_list(env_shape_list);
     de_task.set_net_pin_shape_map(net_pin_shape_map);
@@ -1882,7 +1881,7 @@ void PinAccessor::uploadAccessPoint(PAModel& pa_model)
 void PinAccessor::updateFixedRectToGraph(PABox& pa_box, ChangeType change_type, int32_t net_idx, EXTLayerRect* fixed_rect, bool is_routing)
 {
   NetShape net_shape(net_idx, fixed_rect->getRealLayerRect(), is_routing);
-  for (auto& [pa_node, orientation_set] : getNodeOrientationMap(pa_box, net_shape, true)) {
+  for (auto& [pa_node, orientation_set] : getNodeOrientationMap(pa_box, net_shape)) {
     for (Orientation orientation : orientation_set) {
       if (change_type == ChangeType::kAdd) {
         pa_node->get_orient_fixed_rect_map()[orientation].insert(net_shape.get_net_idx());
@@ -1896,7 +1895,7 @@ void PinAccessor::updateFixedRectToGraph(PABox& pa_box, ChangeType change_type, 
 void PinAccessor::updateFixedRectToGraph(PABox& pa_box, ChangeType change_type, int32_t net_idx, Segment<LayerCoord>& segment)
 {
   for (NetShape& net_shape : RTDM.getNetShapeList(net_idx, segment)) {
-    for (auto& [pa_node, orientation_set] : getNodeOrientationMap(pa_box, net_shape, true)) {
+    for (auto& [pa_node, orientation_set] : getNodeOrientationMap(pa_box, net_shape)) {
       for (Orientation orientation : orientation_set) {
         if (change_type == ChangeType::kAdd) {
           pa_node->get_orient_fixed_rect_map()[orientation].insert(net_shape.get_net_idx());
@@ -1911,7 +1910,7 @@ void PinAccessor::updateFixedRectToGraph(PABox& pa_box, ChangeType change_type, 
 void PinAccessor::updateRoutedRectToGraph(PABox& pa_box, ChangeType change_type, int32_t net_idx, Segment<LayerCoord>& segment)
 {
   for (NetShape& net_shape : RTDM.getNetShapeList(net_idx, segment)) {
-    for (auto& [pa_node, orientation_set] : getNodeOrientationMap(pa_box, net_shape, true)) {
+    for (auto& [pa_node, orientation_set] : getNodeOrientationMap(pa_box, net_shape)) {
       for (Orientation orientation : orientation_set) {
         if (change_type == ChangeType::kAdd) {
           pa_node->get_orient_routed_rect_map()[orientation].insert(net_shape.get_net_idx());
@@ -2019,18 +2018,18 @@ void PinAccessor::addViolationToGraph(PABox& pa_box, LayerRect& searched_rect, s
   }
 }
 
-std::map<PANode*, std::set<Orientation>> PinAccessor::getNodeOrientationMap(PABox& pa_box, NetShape& net_shape, bool need_enlarged)
+std::map<PANode*, std::set<Orientation>> PinAccessor::getNodeOrientationMap(PABox& pa_box, NetShape& net_shape)
 {
   std::map<PANode*, std::set<Orientation>> node_orientation_map;
   if (net_shape.get_is_routing()) {
-    node_orientation_map = getRoutingNodeOrientationMap(pa_box, net_shape, need_enlarged);
+    node_orientation_map = getRoutingNodeOrientationMap(pa_box, net_shape);
   } else {
-    node_orientation_map = getCutNodeOrientationMap(pa_box, net_shape, need_enlarged);
+    node_orientation_map = getCutNodeOrientationMap(pa_box, net_shape);
   }
   return node_orientation_map;
 }
 
-std::map<PANode*, std::set<Orientation>> PinAccessor::getRoutingNodeOrientationMap(PABox& pa_box, NetShape& net_shape, bool need_enlarged)
+std::map<PANode*, std::set<Orientation>> PinAccessor::getRoutingNodeOrientationMap(PABox& pa_box, NetShape& net_shape)
 {
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
   std::map<int32_t, PlanarRect>& layer_enclosure_map = RTDM.getDatabase().get_layer_enclosure_map();
@@ -2062,13 +2061,9 @@ std::map<PANode*, std::set<Orientation>> PinAccessor::getRoutingNodeOrientationM
   std::map<PANode*, std::set<Orientation>> node_orientation_map;
   // wire 与 net_shape
   for (auto& [x_spacing, y_spacing] : spacing_pair_list) {
-    int32_t enlarged_x_size = half_wire_width;
-    int32_t enlarged_y_size = half_wire_width;
-    if (need_enlarged) {
-      // 膨胀size为 half_wire_width + spacing
-      enlarged_x_size += x_spacing;
-      enlarged_y_size += y_spacing;
-    }
+    // 膨胀size为 half_wire_width + spacing
+    int32_t enlarged_x_size = half_wire_width + x_spacing;
+    int32_t enlarged_y_size = half_wire_width + y_spacing;
     // 贴合的也不算违例
     enlarged_x_size -= 1;
     enlarged_y_size -= 1;
@@ -2089,13 +2084,9 @@ std::map<PANode*, std::set<Orientation>> PinAccessor::getRoutingNodeOrientationM
   }
   // enclosure 与 net_shape
   for (auto& [x_spacing, y_spacing] : spacing_pair_list) {
-    int32_t enlarged_x_size = enclosure_half_x_span;
-    int32_t enlarged_y_size = enclosure_half_y_span;
-    if (need_enlarged) {
-      // 膨胀size为 enclosure_half_span + spacing
-      enlarged_x_size += x_spacing;
-      enlarged_y_size += y_spacing;
-    }
+    // 膨胀size为 enclosure_half_span + spacing
+    int32_t enlarged_x_size = enclosure_half_x_span + x_spacing;
+    int32_t enlarged_y_size = enclosure_half_y_span + y_spacing;
     // 贴合的也不算违例
     enlarged_x_size -= 1;
     enlarged_y_size -= 1;
@@ -2118,7 +2109,7 @@ std::map<PANode*, std::set<Orientation>> PinAccessor::getRoutingNodeOrientationM
   return node_orientation_map;
 }
 
-std::map<PANode*, std::set<Orientation>> PinAccessor::getCutNodeOrientationMap(PABox& pa_box, NetShape& net_shape, bool need_enlarged)
+std::map<PANode*, std::set<Orientation>> PinAccessor::getCutNodeOrientationMap(PABox& pa_box, NetShape& net_shape)
 {
   std::vector<CutLayer>& cut_layer_list = RTDM.getDatabase().get_cut_layer_list();
   std::map<int32_t, std::vector<int32_t>>& cut_to_adjacent_routing_map = RTDM.getDatabase().get_cut_to_adjacent_routing_map();
@@ -2189,13 +2180,9 @@ std::map<PANode*, std::set<Orientation>> PinAccessor::getCutNodeOrientationMap(P
     int32_t cut_shape_half_y_span = cut_shape.getYSpan() / 2;
     std::vector<GridMap<PANode>>& layer_node_map = pa_box.get_layer_node_map();
     for (auto& [x_spacing, y_spacing] : spacing_pair_list) {
-      int32_t enlarged_x_size = cut_shape_half_x_span;
-      int32_t enlarged_y_size = cut_shape_half_y_span;
-      if (need_enlarged) {
-        // 膨胀size为 cut_shape_half_span + spacing
-        enlarged_x_size += x_spacing;
-        enlarged_y_size += y_spacing;
-      }
+      // 膨胀size为 cut_shape_half_span + spacing
+      int32_t enlarged_x_size = cut_shape_half_x_span + x_spacing;
+      int32_t enlarged_y_size = cut_shape_half_y_span + y_spacing;
       // 贴合的也不算违例
       enlarged_x_size -= 1;
       enlarged_y_size -= 1;
@@ -2235,8 +2222,8 @@ void PinAccessor::updateSummary(PAModel& pa_model)
   double& total_wire_length = summary.iter_pa_summary_map[pa_model.get_iter()].total_wire_length;
   std::map<int32_t, int32_t>& cut_via_num_map = summary.iter_pa_summary_map[pa_model.get_iter()].cut_via_num_map;
   int32_t& total_via_num = summary.iter_pa_summary_map[pa_model.get_iter()].total_via_num;
-  std::map<int32_t, int32_t>& routing_violation_num_map = summary.iter_pa_summary_map[pa_model.get_iter()].routing_violation_num_map;
-  int32_t& total_violation_num = summary.iter_pa_summary_map[pa_model.get_iter()].total_violation_num;
+  std::map<int32_t, int32_t>& among_net_routing_violation_num_map = summary.iter_pa_summary_map[pa_model.get_iter()].among_net_routing_violation_num_map;
+  int32_t& among_net_total_violation_num = summary.iter_pa_summary_map[pa_model.get_iter()].among_net_total_violation_num;
 
   std::vector<PANet>& pa_net_list = pa_model.get_pa_net_list();
 
@@ -2246,8 +2233,8 @@ void PinAccessor::updateSummary(PAModel& pa_model)
   total_wire_length = 0;
   cut_via_num_map.clear();
   total_via_num = 0;
-  routing_violation_num_map.clear();
-  total_violation_num = 0;
+  among_net_routing_violation_num_map.clear();
+  among_net_total_violation_num = 0;
 
   for (PANet& pa_net : pa_net_list) {
     for (PAPin& pa_pin : pa_net.get_pa_pin_list()) {
@@ -2279,8 +2266,8 @@ void PinAccessor::updateSummary(PAModel& pa_model)
     }
   }
   for (Violation* violation : RTDM.getViolationSet(die)) {
-    routing_violation_num_map[violation->get_violation_shape().get_layer_idx()]++;
-    total_violation_num++;
+    among_net_routing_violation_num_map[violation->get_violation_shape().get_layer_idx()]++;
+    among_net_total_violation_num++;
   }
 }
 
@@ -2296,11 +2283,12 @@ void PinAccessor::printSummary(PAModel& pa_model)
   double& total_wire_length = summary.iter_pa_summary_map[pa_model.get_iter()].total_wire_length;
   std::map<int32_t, int32_t>& cut_via_num_map = summary.iter_pa_summary_map[pa_model.get_iter()].cut_via_num_map;
   int32_t& total_via_num = summary.iter_pa_summary_map[pa_model.get_iter()].total_via_num;
-  std::map<int32_t, int32_t>& routing_violation_num_map = summary.iter_pa_summary_map[pa_model.get_iter()].routing_violation_num_map;
-  int32_t& total_violation_num = summary.iter_pa_summary_map[pa_model.get_iter()].total_violation_num;
+  std::map<int32_t, int32_t>& among_net_routing_violation_num_map = summary.iter_pa_summary_map[pa_model.get_iter()].among_net_routing_violation_num_map;
+  int32_t& among_net_total_violation_num = summary.iter_pa_summary_map[pa_model.get_iter()].among_net_total_violation_num;
 
   fort::char_table routing_access_point_num_map_table;
   {
+    routing_access_point_num_map_table.set_cell_text_align(fort::text_align::right);
     routing_access_point_num_map_table << fort::header << "routing"
                                        << "#access_point"
                                        << "prop" << fort::endr;
@@ -2314,6 +2302,7 @@ void PinAccessor::printSummary(PAModel& pa_model)
   }
   fort::char_table routing_wire_length_map_table;
   {
+    routing_wire_length_map_table.set_cell_text_align(fort::text_align::right);
     routing_wire_length_map_table << fort::header << "routing"
                                   << "wire_length"
                                   << "prop" << fort::endr;
@@ -2325,6 +2314,7 @@ void PinAccessor::printSummary(PAModel& pa_model)
   }
   fort::char_table cut_via_num_map_table;
   {
+    cut_via_num_map_table.set_cell_text_align(fort::text_align::right);
     cut_via_num_map_table << fort::header << "cut"
                           << "#via"
                           << "prop" << fort::endr;
@@ -2334,19 +2324,22 @@ void PinAccessor::printSummary(PAModel& pa_model)
     }
     cut_via_num_map_table << fort::header << "Total" << total_via_num << RTUTIL.getPercentage(total_via_num, total_via_num) << fort::endr;
   }
-  fort::char_table routing_violation_num_map_table;
+  fort::char_table among_net_routing_violation_num_map_table;
   {
-    routing_violation_num_map_table << fort::header << "routing"
-                                    << "#violation"
-                                    << "prop" << fort::endr;
+    among_net_routing_violation_num_map_table.set_cell_text_align(fort::text_align::right);
+    among_net_routing_violation_num_map_table << fort::header << "routing"
+                                              << "#violation"
+                                              << "prop" << fort::endr;
     for (RoutingLayer& routing_layer : routing_layer_list) {
-      routing_violation_num_map_table << routing_layer.get_layer_name() << routing_violation_num_map[routing_layer.get_layer_idx()]
-                                      << RTUTIL.getPercentage(routing_violation_num_map[routing_layer.get_layer_idx()], total_violation_num) << fort::endr;
+      among_net_routing_violation_num_map_table << routing_layer.get_layer_name() << among_net_routing_violation_num_map[routing_layer.get_layer_idx()]
+                                                << RTUTIL.getPercentage(among_net_routing_violation_num_map[routing_layer.get_layer_idx()],
+                                                                        among_net_total_violation_num)
+                                                << fort::endr;
     }
-    routing_violation_num_map_table << fort::header << "Total" << total_violation_num << RTUTIL.getPercentage(total_violation_num, total_violation_num)
-                                    << fort::endr;
+    among_net_routing_violation_num_map_table << fort::header << "Total" << among_net_total_violation_num
+                                              << RTUTIL.getPercentage(among_net_total_violation_num, among_net_total_violation_num) << fort::endr;
   }
-  RTUTIL.printTableList({routing_access_point_num_map_table, routing_wire_length_map_table, cut_via_num_map_table, routing_violation_num_map_table});
+  RTUTIL.printTableList({routing_access_point_num_map_table, routing_wire_length_map_table, cut_via_num_map_table, among_net_routing_violation_num_map_table});
 }
 
 void PinAccessor::outputPlanarPinCSV(PAModel& pa_model)
@@ -2616,7 +2609,7 @@ void PinAccessor::debugPlotPAModel(PAModel& pa_model, std::string flag)
   // violation
   {
     for (Violation* violation : RTDM.getViolationSet(die)) {
-      GPStruct violation_struct(RTUTIL.getString("violation_", GetViolationTypeName()(violation->get_violation_type())));
+      GPStruct among_net_violation_struct(RTUTIL.getString("among_net_violation_", GetViolationTypeName()(violation->get_violation_type())));
       EXTLayerRect& violation_shape = violation->get_violation_shape();
 
       GPBoundary gp_boundary;
@@ -2627,8 +2620,8 @@ void PinAccessor::debugPlotPAModel(PAModel& pa_model, std::string flag)
       } else {
         gp_boundary.set_layer_idx(RTGP.getGDSIdxByCut(violation_shape.get_layer_idx()));
       }
-      violation_struct.push(gp_boundary);
-      gp_gds.addStruct(violation_struct);
+      among_net_violation_struct.push(gp_boundary);
+      gp_gds.addStruct(among_net_violation_struct);
     }
   }
 
@@ -3042,7 +3035,7 @@ void PinAccessor::debugPlotPABox(PABox& pa_box, int32_t curr_task_idx, std::stri
   // violation
   {
     for (Violation& violation : pa_box.get_violation_list()) {
-      GPStruct violation_struct(RTUTIL.getString("violation_", GetViolationTypeName()(violation.get_violation_type())));
+      GPStruct among_net_violation_struct(RTUTIL.getString("among_net_violation_", GetViolationTypeName()(violation.get_violation_type())));
       EXTLayerRect& violation_shape = violation.get_violation_shape();
 
       GPBoundary gp_boundary;
@@ -3053,8 +3046,8 @@ void PinAccessor::debugPlotPABox(PABox& pa_box, int32_t curr_task_idx, std::stri
       } else {
         gp_boundary.set_layer_idx(RTGP.getGDSIdxByCut(violation_shape.get_layer_idx()));
       }
-      violation_struct.push(gp_boundary);
-      gp_gds.addStruct(violation_struct);
+      among_net_violation_struct.push(gp_boundary);
+      gp_gds.addStruct(among_net_violation_struct);
     }
   }
 

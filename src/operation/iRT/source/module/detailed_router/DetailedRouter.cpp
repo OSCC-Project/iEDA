@@ -110,8 +110,7 @@ void DetailedRouter::iterativeDRModel(DRModel& dr_model)
   double routed_rect_unit = 2 * via_unit;
   double violation_unit = 4 * non_prefer_wire_unit * cost_unit;
   /**
-   * prefer_wire_unit, non_prefer_wire_unit, via_unit, size, offset, schedule_interval, fixed_rect_unit, routed_rect_unit, violation_unit,
-   * max_routed_times
+   * prefer_wire_unit, non_prefer_wire_unit, via_unit, size, offset, schedule_interval, fixed_rect_unit, routed_rect_unit, violation_unit, max_routed_times
    */
   std::vector<DRIterParam> dr_iter_param_list;
   // clang-format off
@@ -1191,7 +1190,7 @@ double DetailedRouter::getEstimateViaCost(DRBox& dr_box, DRNode* start_node, DRN
 void DetailedRouter::updateViolationList(DRBox& dr_box)
 {
   dr_box.get_violation_list().clear();
-  for (Violation new_violation : getCostViolationList(dr_box)) {
+  for (Violation new_violation : getAmongNetViolationList(dr_box)) {
     dr_box.get_violation_list().push_back(new_violation);
   }
   // 新结果添加到graph
@@ -1200,7 +1199,7 @@ void DetailedRouter::updateViolationList(DRBox& dr_box)
   }
 }
 
-std::vector<Violation> DetailedRouter::getCostViolationList(DRBox& dr_box)
+std::vector<Violation> DetailedRouter::getAmongNetViolationList(DRBox& dr_box)
 {
   std::string top_name = RTUTIL.getString("dr_box_", dr_box.get_dr_box_id().get_x(), "_", dr_box.get_dr_box_id().get_y());
   std::vector<std::pair<EXTLayerRect*, bool>> env_shape_list;
@@ -1245,7 +1244,7 @@ std::vector<Violation> DetailedRouter::getCostViolationList(DRBox& dr_box)
 
   DETask de_task;
   de_task.set_proc_type(DEProcType::kGet);
-  de_task.set_net_type(DENetType::kMultiNet);
+  de_task.set_net_type(DENetType::kAmong);
   de_task.set_top_name(top_name);
   de_task.set_env_shape_list(env_shape_list);
   de_task.set_net_pin_shape_map(net_pin_shape_map);
@@ -1386,13 +1385,13 @@ void DetailedRouter::uploadViolation(DRModel& dr_model)
   for (Violation* violation : RTDM.getViolationSet(die)) {
     RTDM.updateViolationToGCellMap(ChangeType::kDel, violation);
   }
-  for (Violation violation : getCostViolationList(dr_model)) {
+  for (Violation violation : getAmongNetViolationList(dr_model)) {
     RTDM.updateViolationToGCellMap(ChangeType::kAdd, new Violation(violation));
   }
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
-std::vector<Violation> DetailedRouter::getCostViolationList(DRModel& dr_model)
+std::vector<Violation> DetailedRouter::getAmongNetViolationList(DRModel& dr_model)
 {
   Die& die = RTDM.getDatabase().get_die();
 
@@ -1435,7 +1434,7 @@ std::vector<Violation> DetailedRouter::getCostViolationList(DRModel& dr_model)
     }
 
     de_task.set_proc_type(DEProcType::kGet);
-    de_task.set_net_type(DENetType::kMultiNet);
+    de_task.set_net_type(DENetType::kAmong);
     de_task.set_top_name(top_name);
     de_task.set_env_shape_list(env_shape_list);
     de_task.set_net_pin_shape_map(net_pin_shape_map);
@@ -1527,7 +1526,7 @@ void DetailedRouter::uploadBestResult(DRModel& dr_model)
 void DetailedRouter::updateFixedRectToGraph(DRBox& dr_box, ChangeType change_type, int32_t net_idx, EXTLayerRect* fixed_rect, bool is_routing)
 {
   NetShape net_shape(net_idx, fixed_rect->getRealLayerRect(), is_routing);
-  for (auto& [dr_node, orientation_set] : getNodeOrientationMap(dr_box, net_shape, true)) {
+  for (auto& [dr_node, orientation_set] : getNodeOrientationMap(dr_box, net_shape)) {
     for (Orientation orientation : orientation_set) {
       if (change_type == ChangeType::kAdd) {
         dr_node->get_orient_fixed_rect_map()[orientation].insert(net_shape.get_net_idx());
@@ -1541,7 +1540,7 @@ void DetailedRouter::updateFixedRectToGraph(DRBox& dr_box, ChangeType change_typ
 void DetailedRouter::updateFixedRectToGraph(DRBox& dr_box, ChangeType change_type, int32_t net_idx, Segment<LayerCoord>& segment)
 {
   for (NetShape& net_shape : RTDM.getNetShapeList(net_idx, segment)) {
-    for (auto& [dr_node, orientation_set] : getNodeOrientationMap(dr_box, net_shape, true)) {
+    for (auto& [dr_node, orientation_set] : getNodeOrientationMap(dr_box, net_shape)) {
       for (Orientation orientation : orientation_set) {
         if (change_type == ChangeType::kAdd) {
           dr_node->get_orient_fixed_rect_map()[orientation].insert(net_shape.get_net_idx());
@@ -1556,7 +1555,7 @@ void DetailedRouter::updateFixedRectToGraph(DRBox& dr_box, ChangeType change_typ
 void DetailedRouter::updateRoutedRectToGraph(DRBox& dr_box, ChangeType change_type, int32_t net_idx, Segment<LayerCoord>& segment)
 {
   for (NetShape& net_shape : RTDM.getNetShapeList(net_idx, segment)) {
-    for (auto& [dr_node, orientation_set] : getNodeOrientationMap(dr_box, net_shape, true)) {
+    for (auto& [dr_node, orientation_set] : getNodeOrientationMap(dr_box, net_shape)) {
       for (Orientation orientation : orientation_set) {
         if (change_type == ChangeType::kAdd) {
           dr_node->get_orient_routed_rect_map()[orientation].insert(net_shape.get_net_idx());
@@ -1590,7 +1589,6 @@ void DetailedRouter::addViolationToGraph(DRBox& dr_box, Violation& violation)
         continue;
       }
       overlap_segment_list.push_back(segment);
-      break;
     }
   }
   addViolationToGraph(dr_box, searched_rect, overlap_segment_list);
@@ -1663,18 +1661,18 @@ void DetailedRouter::addViolationToGraph(DRBox& dr_box, LayerRect& searched_rect
   }
 }
 
-std::map<DRNode*, std::set<Orientation>> DetailedRouter::getNodeOrientationMap(DRBox& dr_box, NetShape& net_shape, bool need_enlarged)
+std::map<DRNode*, std::set<Orientation>> DetailedRouter::getNodeOrientationMap(DRBox& dr_box, NetShape& net_shape)
 {
   std::map<DRNode*, std::set<Orientation>> node_orientation_map;
   if (net_shape.get_is_routing()) {
-    node_orientation_map = getRoutingNodeOrientationMap(dr_box, net_shape, need_enlarged);
+    node_orientation_map = getRoutingNodeOrientationMap(dr_box, net_shape);
   } else {
-    node_orientation_map = getCutNodeOrientationMap(dr_box, net_shape, need_enlarged);
+    node_orientation_map = getCutNodeOrientationMap(dr_box, net_shape);
   }
   return node_orientation_map;
 }
 
-std::map<DRNode*, std::set<Orientation>> DetailedRouter::getRoutingNodeOrientationMap(DRBox& dr_box, NetShape& net_shape, bool need_enlarged)
+std::map<DRNode*, std::set<Orientation>> DetailedRouter::getRoutingNodeOrientationMap(DRBox& dr_box, NetShape& net_shape)
 {
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
   std::map<int32_t, PlanarRect>& layer_enclosure_map = RTDM.getDatabase().get_layer_enclosure_map();
@@ -1706,13 +1704,9 @@ std::map<DRNode*, std::set<Orientation>> DetailedRouter::getRoutingNodeOrientati
   std::map<DRNode*, std::set<Orientation>> node_orientation_map;
   // wire 与 net_shape
   for (auto& [x_spacing, y_spacing] : spacing_pair_list) {
-    int32_t enlarged_x_size = half_wire_width;
-    int32_t enlarged_y_size = half_wire_width;
-    if (need_enlarged) {
-      // 膨胀size为 half_wire_width + spacing
-      enlarged_x_size += x_spacing;
-      enlarged_y_size += y_spacing;
-    }
+    // 膨胀size为 half_wire_width + spacing
+    int32_t enlarged_x_size = half_wire_width + x_spacing;
+    int32_t enlarged_y_size = half_wire_width + y_spacing;
     // 贴合的也不算违例
     enlarged_x_size -= 1;
     enlarged_y_size -= 1;
@@ -1733,13 +1727,9 @@ std::map<DRNode*, std::set<Orientation>> DetailedRouter::getRoutingNodeOrientati
   }
   // enclosure 与 net_shape
   for (auto& [x_spacing, y_spacing] : spacing_pair_list) {
-    int32_t enlarged_x_size = enclosure_half_x_span;
-    int32_t enlarged_y_size = enclosure_half_y_span;
-    if (need_enlarged) {
-      // 膨胀size为 enclosure_half_span + spacing
-      enlarged_x_size += x_spacing;
-      enlarged_y_size += y_spacing;
-    }
+    // 膨胀size为 enclosure_half_span + spacing
+    int32_t enlarged_x_size = enclosure_half_x_span + x_spacing;
+    int32_t enlarged_y_size = enclosure_half_y_span + y_spacing;
     // 贴合的也不算违例
     enlarged_x_size -= 1;
     enlarged_y_size -= 1;
@@ -1762,7 +1752,7 @@ std::map<DRNode*, std::set<Orientation>> DetailedRouter::getRoutingNodeOrientati
   return node_orientation_map;
 }
 
-std::map<DRNode*, std::set<Orientation>> DetailedRouter::getCutNodeOrientationMap(DRBox& dr_box, NetShape& net_shape, bool need_enlarged)
+std::map<DRNode*, std::set<Orientation>> DetailedRouter::getCutNodeOrientationMap(DRBox& dr_box, NetShape& net_shape)
 {
   std::vector<CutLayer>& cut_layer_list = RTDM.getDatabase().get_cut_layer_list();
   std::map<int32_t, std::vector<int32_t>>& cut_to_adjacent_routing_map = RTDM.getDatabase().get_cut_to_adjacent_routing_map();
@@ -1833,13 +1823,9 @@ std::map<DRNode*, std::set<Orientation>> DetailedRouter::getCutNodeOrientationMa
     int32_t cut_shape_half_y_span = cut_shape.getYSpan() / 2;
     std::vector<GridMap<DRNode>>& layer_node_map = dr_box.get_layer_node_map();
     for (auto& [x_spacing, y_spacing] : spacing_pair_list) {
-      int32_t enlarged_x_size = cut_shape_half_x_span;
-      int32_t enlarged_y_size = cut_shape_half_y_span;
-      if (need_enlarged) {
-        // 膨胀size为 cut_shape_half_span + spacing
-        enlarged_x_size += x_spacing;
-        enlarged_y_size += y_spacing;
-      }
+      // 膨胀size为 cut_shape_half_span + spacing
+      int32_t enlarged_x_size = cut_shape_half_x_span + x_spacing;
+      int32_t enlarged_y_size = cut_shape_half_y_span + y_spacing;
       // 贴合的也不算违例
       enlarged_x_size -= 1;
       enlarged_y_size -= 1;
@@ -1878,8 +1864,8 @@ void DetailedRouter::updateSummary(DRModel& dr_model)
   double& total_wire_length = summary.iter_dr_summary_map[dr_model.get_iter()].total_wire_length;
   std::map<int32_t, int32_t>& cut_via_num_map = summary.iter_dr_summary_map[dr_model.get_iter()].cut_via_num_map;
   int32_t& total_via_num = summary.iter_dr_summary_map[dr_model.get_iter()].total_via_num;
-  std::map<int32_t, int32_t>& routing_violation_num_map = summary.iter_dr_summary_map[dr_model.get_iter()].routing_violation_num_map;
-  int32_t& total_violation_num = summary.iter_dr_summary_map[dr_model.get_iter()].total_violation_num;
+  std::map<int32_t, int32_t>& among_net_routing_violation_num_map = summary.iter_dr_summary_map[dr_model.get_iter()].among_net_routing_violation_num_map;
+  int32_t& among_net_total_violation_num = summary.iter_dr_summary_map[dr_model.get_iter()].among_net_total_violation_num;
   std::map<std::string, std::map<std::string, double>>& clock_timing = summary.iter_dr_summary_map[dr_model.get_iter()].clock_timing;
   std::map<std::string, double>& power_map = summary.iter_dr_summary_map[dr_model.get_iter()].power_map;
 
@@ -1889,8 +1875,8 @@ void DetailedRouter::updateSummary(DRModel& dr_model)
   total_wire_length = 0;
   cut_via_num_map.clear();
   total_via_num = 0;
-  routing_violation_num_map.clear();
-  total_violation_num = 0;
+  among_net_routing_violation_num_map.clear();
+  among_net_total_violation_num = 0;
   clock_timing.clear();
   power_map.clear();
 
@@ -1915,8 +1901,8 @@ void DetailedRouter::updateSummary(DRModel& dr_model)
     }
   }
   for (Violation* violation : RTDM.getViolationSet(die)) {
-    routing_violation_num_map[violation->get_violation_shape().get_layer_idx()]++;
-    total_violation_num++;
+    among_net_routing_violation_num_map[violation->get_violation_shape().get_layer_idx()]++;
+    among_net_total_violation_num++;
   }
   if (enable_timing) {
     std::vector<std::map<std::string, std::vector<LayerCoord>>> real_pin_coord_map_list;
@@ -1948,13 +1934,14 @@ void DetailedRouter::printSummary(DRModel& dr_model)
   double& total_wire_length = summary.iter_dr_summary_map[dr_model.get_iter()].total_wire_length;
   std::map<int32_t, int32_t>& cut_via_num_map = summary.iter_dr_summary_map[dr_model.get_iter()].cut_via_num_map;
   int32_t& total_via_num = summary.iter_dr_summary_map[dr_model.get_iter()].total_via_num;
-  std::map<int32_t, int32_t>& routing_violation_num_map = summary.iter_dr_summary_map[dr_model.get_iter()].routing_violation_num_map;
-  int32_t& total_violation_num = summary.iter_dr_summary_map[dr_model.get_iter()].total_violation_num;
+  std::map<int32_t, int32_t>& among_net_routing_violation_num_map = summary.iter_dr_summary_map[dr_model.get_iter()].among_net_routing_violation_num_map;
+  int32_t& among_net_total_violation_num = summary.iter_dr_summary_map[dr_model.get_iter()].among_net_total_violation_num;
   std::map<std::string, std::map<std::string, double>>& clock_timing = summary.iter_dr_summary_map[dr_model.get_iter()].clock_timing;
   std::map<std::string, double>& power_map = summary.iter_dr_summary_map[dr_model.get_iter()].power_map;
 
   fort::char_table routing_wire_length_map_table;
   {
+    routing_wire_length_map_table.set_cell_text_align(fort::text_align::right);
     routing_wire_length_map_table << fort::header << "routing"
                                   << "wire_length"
                                   << "prop" << fort::endr;
@@ -1966,6 +1953,7 @@ void DetailedRouter::printSummary(DRModel& dr_model)
   }
   fort::char_table cut_via_num_map_table;
   {
+    cut_via_num_map_table.set_cell_text_align(fort::text_align::right);
     cut_via_num_map_table << fort::header << "cut"
                           << "#via"
                           << "prop" << fort::endr;
@@ -1975,20 +1963,25 @@ void DetailedRouter::printSummary(DRModel& dr_model)
     }
     cut_via_num_map_table << fort::header << "Total" << total_via_num << RTUTIL.getPercentage(total_via_num, total_via_num) << fort::endr;
   }
-  fort::char_table routing_violation_num_map_table;
+  fort::char_table among_net_routing_violation_num_map_table;
   {
-    routing_violation_num_map_table << fort::header << "routing"
-                                    << "#violation"
-                                    << "prop" << fort::endr;
+    among_net_routing_violation_num_map_table.set_cell_text_align(fort::text_align::right);
+    among_net_routing_violation_num_map_table << fort::header << "routing"
+                                              << "#violation"
+                                              << "prop" << fort::endr;
     for (RoutingLayer& routing_layer : routing_layer_list) {
-      routing_violation_num_map_table << routing_layer.get_layer_name() << routing_violation_num_map[routing_layer.get_layer_idx()]
-                                      << RTUTIL.getPercentage(routing_violation_num_map[routing_layer.get_layer_idx()], total_violation_num) << fort::endr;
+      among_net_routing_violation_num_map_table << routing_layer.get_layer_name() << among_net_routing_violation_num_map[routing_layer.get_layer_idx()]
+                                                << RTUTIL.getPercentage(among_net_routing_violation_num_map[routing_layer.get_layer_idx()],
+                                                                        among_net_total_violation_num)
+                                                << fort::endr;
     }
-    routing_violation_num_map_table << fort::header << "Total" << total_violation_num << RTUTIL.getPercentage(total_violation_num, total_violation_num)
-                                    << fort::endr;
+    among_net_routing_violation_num_map_table << fort::header << "Total" << among_net_total_violation_num
+                                              << RTUTIL.getPercentage(among_net_total_violation_num, among_net_total_violation_num) << fort::endr;
   }
   fort::char_table timing_table;
+  timing_table.set_cell_text_align(fort::text_align::right);
   fort::char_table power_table;
+  power_table.set_cell_text_align(fort::text_align::right);
   if (enable_timing) {
     timing_table << fort::header << "clock_name"
                  << "tns"
@@ -1997,12 +1990,18 @@ void DetailedRouter::printSummary(DRModel& dr_model)
     for (auto& [clock_name, timing_map] : clock_timing) {
       timing_table << clock_name << timing_map["TNS"] << timing_map["WNS"] << timing_map["Freq(MHz)"] << fort::endr;
     }
-    power_table << fort::header << "power_type" << "power_value" << fort::endr;
+    power_table << fort::header << "power_type";
     for (auto& [type, power] : power_map) {
-      power_table << type << power << fort::endr;
+      power_table << fort::header << type;
     }
+    power_table << fort::endr;
+    power_table << "power_value";
+    for (auto& [type, power] : power_map) {
+      power_table << power;
+    }
+    power_table << fort::endr;
   }
-  RTUTIL.printTableList({routing_wire_length_map_table, cut_via_num_map_table, routing_violation_num_map_table});
+  RTUTIL.printTableList({routing_wire_length_map_table, cut_via_num_map_table, among_net_routing_violation_num_map_table});
   RTUTIL.printTableList({timing_table, power_table});
 }
 
@@ -2230,7 +2229,7 @@ void DetailedRouter::debugPlotDRModel(DRModel& dr_model, std::string flag)
   // violation
   {
     for (Violation* violation : RTDM.getViolationSet(die)) {
-      GPStruct violation_struct(RTUTIL.getString("violation_", GetViolationTypeName()(violation->get_violation_type())));
+      GPStruct among_net_violation_struct(RTUTIL.getString("among_net_violation_", GetViolationTypeName()(violation->get_violation_type())));
       EXTLayerRect& violation_shape = violation->get_violation_shape();
 
       GPBoundary gp_boundary;
@@ -2241,8 +2240,8 @@ void DetailedRouter::debugPlotDRModel(DRModel& dr_model, std::string flag)
       } else {
         gp_boundary.set_layer_idx(RTGP.getGDSIdxByCut(violation_shape.get_layer_idx()));
       }
-      violation_struct.push(gp_boundary);
-      gp_gds.addStruct(violation_struct);
+      among_net_violation_struct.push(gp_boundary);
+      gp_gds.addStruct(among_net_violation_struct);
     }
   }
 
@@ -2674,7 +2673,7 @@ void DetailedRouter::debugPlotDRBox(DRBox& dr_box, int32_t curr_task_idx, std::s
   // violation
   {
     for (Violation& violation : dr_box.get_violation_list()) {
-      GPStruct violation_struct(RTUTIL.getString("violation_", GetViolationTypeName()(violation.get_violation_type())));
+      GPStruct among_net_violation_struct(RTUTIL.getString("among_net_violation_", GetViolationTypeName()(violation.get_violation_type())));
       EXTLayerRect& violation_shape = violation.get_violation_shape();
 
       GPBoundary gp_boundary;
@@ -2685,8 +2684,8 @@ void DetailedRouter::debugPlotDRBox(DRBox& dr_box, int32_t curr_task_idx, std::s
       } else {
         gp_boundary.set_layer_idx(RTGP.getGDSIdxByCut(violation_shape.get_layer_idx()));
       }
-      violation_struct.push(gp_boundary);
-      gp_gds.addStruct(violation_struct);
+      among_net_violation_struct.push(gp_boundary);
+      gp_gds.addStruct(among_net_violation_struct);
     }
   }
 

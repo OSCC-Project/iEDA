@@ -96,7 +96,7 @@ class TrackAssigner
   double getEstimateWireCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node);
   double getEstimateViaCost(TAPanel& ta_panel, TANode* start_node, TANode* end_node);
   void updateViolationList(TAPanel& ta_panel);
-  std::vector<Violation> getCostViolationList(TAPanel& ta_panel);
+  std::vector<Violation> getAmongNetViolationList(TAPanel& ta_panel);
   void updateTaskSchedule(TAPanel& ta_panel, std::vector<TATask*>& routing_task_list);
   void routeTAPanelByInterface(TAPanel& ta_panel);
   void uploadNetResult(TAPanel& ta_panel);
@@ -110,8 +110,8 @@ class TrackAssigner
   void updateRoutedRectToGraph(TAPanel& ta_panel, ChangeType change_type, int32_t net_idx, Segment<LayerCoord>& segment);
   void addViolationToGraph(TAPanel& ta_panel, Violation& violation);
   void addViolationToGraph(TAPanel& ta_panel, LayerRect& searched_rect, std::vector<Segment<LayerCoord>>& overlap_segment_list);
-  std::map<TANode*, std::set<Orientation>> getNodeOrientationMap(TAPanel& ta_panel, NetShape& net_shape, bool need_enlarged);
-  std::map<TANode*, std::set<Orientation>> getRoutingNodeOrientationMap(TAPanel& ta_panel, NetShape& net_shape, bool need_enlarged);
+  std::map<TANode*, std::set<Orientation>> getNodeOrientationMap(TAPanel& ta_panel, NetShape& net_shape);
+  std::map<TANode*, std::set<Orientation>> getRoutingNodeOrientationMap(TAPanel& ta_panel, NetShape& net_shape);
 #endif
 
 #if 1  // exhibit
