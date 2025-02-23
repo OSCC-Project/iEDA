@@ -1190,7 +1190,7 @@ double DetailedRouter::getEstimateViaCost(DRBox& dr_box, DRNode* start_node, DRN
 void DetailedRouter::updateViolationList(DRBox& dr_box)
 {
   dr_box.get_violation_list().clear();
-  for (Violation new_violation : getCostViolationList(dr_box)) {
+  for (Violation new_violation : getAmongNetViolationList(dr_box)) {
     dr_box.get_violation_list().push_back(new_violation);
   }
   // 新结果添加到graph
@@ -1199,7 +1199,7 @@ void DetailedRouter::updateViolationList(DRBox& dr_box)
   }
 }
 
-std::vector<Violation> DetailedRouter::getCostViolationList(DRBox& dr_box)
+std::vector<Violation> DetailedRouter::getAmongNetViolationList(DRBox& dr_box)
 {
   std::string top_name = RTUTIL.getString("dr_box_", dr_box.get_dr_box_id().get_x(), "_", dr_box.get_dr_box_id().get_y());
   std::vector<std::pair<EXTLayerRect*, bool>> env_shape_list;
@@ -1244,7 +1244,7 @@ std::vector<Violation> DetailedRouter::getCostViolationList(DRBox& dr_box)
 
   DETask de_task;
   de_task.set_proc_type(DEProcType::kGet);
-  de_task.set_net_type(DENetType::kMultiNet);
+  de_task.set_net_type(DENetType::kAmong);
   de_task.set_top_name(top_name);
   de_task.set_env_shape_list(env_shape_list);
   de_task.set_net_pin_shape_map(net_pin_shape_map);
@@ -1385,13 +1385,13 @@ void DetailedRouter::uploadViolation(DRModel& dr_model)
   for (Violation* violation : RTDM.getViolationSet(die)) {
     RTDM.updateViolationToGCellMap(ChangeType::kDel, violation);
   }
-  for (Violation violation : getCostViolationList(dr_model)) {
+  for (Violation violation : getAmongNetViolationList(dr_model)) {
     RTDM.updateViolationToGCellMap(ChangeType::kAdd, new Violation(violation));
   }
   RTLOG.info(Loc::current(), "Completed", monitor.getStatsInfo());
 }
 
-std::vector<Violation> DetailedRouter::getCostViolationList(DRModel& dr_model)
+std::vector<Violation> DetailedRouter::getAmongNetViolationList(DRModel& dr_model)
 {
   Die& die = RTDM.getDatabase().get_die();
 
@@ -1434,7 +1434,7 @@ std::vector<Violation> DetailedRouter::getCostViolationList(DRModel& dr_model)
     }
 
     de_task.set_proc_type(DEProcType::kGet);
-    de_task.set_net_type(DENetType::kMultiNet);
+    de_task.set_net_type(DENetType::kAmong);
     de_task.set_top_name(top_name);
     de_task.set_env_shape_list(env_shape_list);
     de_task.set_net_pin_shape_map(net_pin_shape_map);
@@ -1589,7 +1589,6 @@ void DetailedRouter::addViolationToGraph(DRBox& dr_box, Violation& violation)
         continue;
       }
       overlap_segment_list.push_back(segment);
-      break;
     }
   }
   addViolationToGraph(dr_box, searched_rect, overlap_segment_list);
@@ -1865,8 +1864,8 @@ void DetailedRouter::updateSummary(DRModel& dr_model)
   double& total_wire_length = summary.iter_dr_summary_map[dr_model.get_iter()].total_wire_length;
   std::map<int32_t, int32_t>& cut_via_num_map = summary.iter_dr_summary_map[dr_model.get_iter()].cut_via_num_map;
   int32_t& total_via_num = summary.iter_dr_summary_map[dr_model.get_iter()].total_via_num;
-  std::map<int32_t, int32_t>& routing_violation_num_map = summary.iter_dr_summary_map[dr_model.get_iter()].routing_violation_num_map;
-  int32_t& total_violation_num = summary.iter_dr_summary_map[dr_model.get_iter()].total_violation_num;
+  std::map<int32_t, int32_t>& among_net_routing_violation_num_map = summary.iter_dr_summary_map[dr_model.get_iter()].among_net_routing_violation_num_map;
+  int32_t& among_net_total_violation_num = summary.iter_dr_summary_map[dr_model.get_iter()].among_net_total_violation_num;
   std::map<std::string, std::map<std::string, double>>& clock_timing = summary.iter_dr_summary_map[dr_model.get_iter()].clock_timing;
   std::map<std::string, double>& power_map = summary.iter_dr_summary_map[dr_model.get_iter()].power_map;
 
@@ -1876,8 +1875,8 @@ void DetailedRouter::updateSummary(DRModel& dr_model)
   total_wire_length = 0;
   cut_via_num_map.clear();
   total_via_num = 0;
-  routing_violation_num_map.clear();
-  total_violation_num = 0;
+  among_net_routing_violation_num_map.clear();
+  among_net_total_violation_num = 0;
   clock_timing.clear();
   power_map.clear();
 
@@ -1902,8 +1901,8 @@ void DetailedRouter::updateSummary(DRModel& dr_model)
     }
   }
   for (Violation* violation : RTDM.getViolationSet(die)) {
-    routing_violation_num_map[violation->get_violation_shape().get_layer_idx()]++;
-    total_violation_num++;
+    among_net_routing_violation_num_map[violation->get_violation_shape().get_layer_idx()]++;
+    among_net_total_violation_num++;
   }
   if (enable_timing) {
     std::vector<std::map<std::string, std::vector<LayerCoord>>> real_pin_coord_map_list;
@@ -1935,8 +1934,8 @@ void DetailedRouter::printSummary(DRModel& dr_model)
   double& total_wire_length = summary.iter_dr_summary_map[dr_model.get_iter()].total_wire_length;
   std::map<int32_t, int32_t>& cut_via_num_map = summary.iter_dr_summary_map[dr_model.get_iter()].cut_via_num_map;
   int32_t& total_via_num = summary.iter_dr_summary_map[dr_model.get_iter()].total_via_num;
-  std::map<int32_t, int32_t>& routing_violation_num_map = summary.iter_dr_summary_map[dr_model.get_iter()].routing_violation_num_map;
-  int32_t& total_violation_num = summary.iter_dr_summary_map[dr_model.get_iter()].total_violation_num;
+  std::map<int32_t, int32_t>& among_net_routing_violation_num_map = summary.iter_dr_summary_map[dr_model.get_iter()].among_net_routing_violation_num_map;
+  int32_t& among_net_total_violation_num = summary.iter_dr_summary_map[dr_model.get_iter()].among_net_total_violation_num;
   std::map<std::string, std::map<std::string, double>>& clock_timing = summary.iter_dr_summary_map[dr_model.get_iter()].clock_timing;
   std::map<std::string, double>& power_map = summary.iter_dr_summary_map[dr_model.get_iter()].power_map;
 
@@ -1964,18 +1963,20 @@ void DetailedRouter::printSummary(DRModel& dr_model)
     }
     cut_via_num_map_table << fort::header << "Total" << total_via_num << RTUTIL.getPercentage(total_via_num, total_via_num) << fort::endr;
   }
-  fort::char_table routing_violation_num_map_table;
+  fort::char_table among_net_routing_violation_num_map_table;
   {
-    routing_violation_num_map_table.set_cell_text_align(fort::text_align::right);
-    routing_violation_num_map_table << fort::header << "routing"
-                                    << "#violation"
-                                    << "prop" << fort::endr;
+    among_net_routing_violation_num_map_table.set_cell_text_align(fort::text_align::right);
+    among_net_routing_violation_num_map_table << fort::header << "routing"
+                                              << "#violation"
+                                              << "prop" << fort::endr;
     for (RoutingLayer& routing_layer : routing_layer_list) {
-      routing_violation_num_map_table << routing_layer.get_layer_name() << routing_violation_num_map[routing_layer.get_layer_idx()]
-                                      << RTUTIL.getPercentage(routing_violation_num_map[routing_layer.get_layer_idx()], total_violation_num) << fort::endr;
+      among_net_routing_violation_num_map_table << routing_layer.get_layer_name() << among_net_routing_violation_num_map[routing_layer.get_layer_idx()]
+                                                << RTUTIL.getPercentage(among_net_routing_violation_num_map[routing_layer.get_layer_idx()],
+                                                                        among_net_total_violation_num)
+                                                << fort::endr;
     }
-    routing_violation_num_map_table << fort::header << "Total" << total_violation_num << RTUTIL.getPercentage(total_violation_num, total_violation_num)
-                                    << fort::endr;
+    among_net_routing_violation_num_map_table << fort::header << "Total" << among_net_total_violation_num
+                                              << RTUTIL.getPercentage(among_net_total_violation_num, among_net_total_violation_num) << fort::endr;
   }
   fort::char_table timing_table;
   timing_table.set_cell_text_align(fort::text_align::right);
@@ -2000,7 +2001,7 @@ void DetailedRouter::printSummary(DRModel& dr_model)
     }
     power_table << fort::endr;
   }
-  RTUTIL.printTableList({routing_wire_length_map_table, cut_via_num_map_table, routing_violation_num_map_table});
+  RTUTIL.printTableList({routing_wire_length_map_table, cut_via_num_map_table, among_net_routing_violation_num_map_table});
   RTUTIL.printTableList({timing_table, power_table});
 }
 
@@ -2228,7 +2229,7 @@ void DetailedRouter::debugPlotDRModel(DRModel& dr_model, std::string flag)
   // violation
   {
     for (Violation* violation : RTDM.getViolationSet(die)) {
-      GPStruct violation_struct(RTUTIL.getString("violation_", GetViolationTypeName()(violation->get_violation_type())));
+      GPStruct among_net_violation_struct(RTUTIL.getString("among_net_violation_", GetViolationTypeName()(violation->get_violation_type())));
       EXTLayerRect& violation_shape = violation->get_violation_shape();
 
       GPBoundary gp_boundary;
@@ -2239,8 +2240,8 @@ void DetailedRouter::debugPlotDRModel(DRModel& dr_model, std::string flag)
       } else {
         gp_boundary.set_layer_idx(RTGP.getGDSIdxByCut(violation_shape.get_layer_idx()));
       }
-      violation_struct.push(gp_boundary);
-      gp_gds.addStruct(violation_struct);
+      among_net_violation_struct.push(gp_boundary);
+      gp_gds.addStruct(among_net_violation_struct);
     }
   }
 
@@ -2672,7 +2673,7 @@ void DetailedRouter::debugPlotDRBox(DRBox& dr_box, int32_t curr_task_idx, std::s
   // violation
   {
     for (Violation& violation : dr_box.get_violation_list()) {
-      GPStruct violation_struct(RTUTIL.getString("violation_", GetViolationTypeName()(violation.get_violation_type())));
+      GPStruct among_net_violation_struct(RTUTIL.getString("among_net_violation_", GetViolationTypeName()(violation.get_violation_type())));
       EXTLayerRect& violation_shape = violation.get_violation_shape();
 
       GPBoundary gp_boundary;
@@ -2683,8 +2684,8 @@ void DetailedRouter::debugPlotDRBox(DRBox& dr_box, int32_t curr_task_idx, std::s
       } else {
         gp_boundary.set_layer_idx(RTGP.getGDSIdxByCut(violation_shape.get_layer_idx()));
       }
-      violation_struct.push(gp_boundary);
-      gp_gds.addStruct(violation_struct);
+      among_net_violation_struct.push(gp_boundary);
+      gp_gds.addStruct(among_net_violation_struct);
     }
   }
 

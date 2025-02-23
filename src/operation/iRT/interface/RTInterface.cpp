@@ -1132,14 +1132,15 @@ void RTInterface::outputNetList()
 
 void RTInterface::outputSummary()
 {
+#if 0
   ieda_feature::RTSummary& top_rt_summary = featureInst->get_summary()->get_summary_irt();
 
   Summary& rt_summary = RTDM.getDatabase().get_summary();
 
   // pa_summary
   {
-    // top_rt_summary.pa_summary.routing_access_point_num_map = rt_summary.pa_summary.routing_access_point_num_map;
-    // top_rt_summary.pa_summary.total_access_point_num = rt_summary.pa_summary.total_access_point_num;
+    top_rt_summary.pa_summary.routing_access_point_num_map = rt_summary.pa_summary.routing_access_point_num_map;
+    top_rt_summary.pa_summary.total_access_point_num = rt_summary.pa_summary.total_access_point_num;
   }
   // sa_summary
   {
@@ -1253,6 +1254,7 @@ void RTInterface::outputSummary()
     }
     top_rt_summary.er_summary.power_info = {rt_summary.er_summary.power_map["static_power"], rt_summary.er_summary.power_map["dynamic_power"]};
   }
+#endif
 }
 
 #endif

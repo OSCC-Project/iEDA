@@ -54,8 +54,7 @@ class ViolationRepairer
   void buildNetFinalResultMap(VRModel& vr_model);
   void clearIgnoredViolation(VRModel& vr_model);
   void uploadViolation(VRModel& vr_model);
-  std::vector<Violation> getMultiNetViolationList(VRModel& vr_model);
-  std::vector<Violation> getSingleNetViolationList(VRModel& vr_model);
+  std::vector<Violation> getHybridNetViolationList(VRModel& vr_model);
   void iterativeVRModel(VRModel& vr_model);
   void setVRIterParam(VRModel& vr_model, int32_t iter, VRIterParam& vr_iter_param);
   void initVRBoxMap(VRModel& vr_model);
@@ -81,8 +80,7 @@ class ViolationRepairer
   void updateTaskPatch(VRBox& vr_box);
   void resetSingleTask(VRBox& vr_box);
   void updateViolationList(VRBox& vr_box);
-  std::vector<Violation> getMultiNetViolationList(VRBox& vr_box);
-  std::vector<Violation> getSingleNetViolationList(VRBox& vr_box);
+  std::vector<Violation> getHybridNetViolationList(VRBox& vr_box);
   void updateTaskSchedule(VRBox& vr_box, std::vector<VRTask*>& routing_task_list);
   void uploadNetResult(VRBox& vr_box);
   void uploadNetPatch(VRBox& vr_box);
