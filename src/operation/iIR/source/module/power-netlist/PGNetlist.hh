@@ -36,6 +36,19 @@
 #include "IdbPins.h"
 #include "IdbSpecialNet.h"
 
+#include <boost/geometry.hpp>
+#include <boost/geometry/geometries/point_xy.hpp>
+#include <boost/geometry/geometries/segment.hpp>
+#include <boost/geometry/index/rtree.hpp>
+
+namespace bg = boost::geometry;
+namespace bgi = boost::geometry::index;
+
+using BGPoint = bg::model::point<double, 3, bg::cs::cartesian>;
+using BGSegment = bg::model::segment<BGPoint>;
+using BGRect = bg::model::box<BGPoint>;
+using BGValue = std::pair<BGRect, unsigned>;
+
 namespace iir {
 
 using IRNodeCoord = std::pair<int, int>;
@@ -107,6 +120,7 @@ class IRPGNetlistBuilder {
   IRPGNetlist build(idb::IdbSpecialNet* special_net);
 
  private:
+  bgi::rtree<BGValue, bgi::quadratic<16>> _rtree;
   std::vector<IRPGNetlist> _pg_netlists;
 };
 

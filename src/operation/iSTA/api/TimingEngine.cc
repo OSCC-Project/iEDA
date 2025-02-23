@@ -119,6 +119,8 @@ TimingEngine& TimingEngine::readDefDesign(std::string def_file,
   db_adapter->set_idb(db_builder);
   db_adapter->convertDBToTimingNetlist();
 
+  set_db_adapter(std::move(db_adapter));
+
   return *this;
 }
 
