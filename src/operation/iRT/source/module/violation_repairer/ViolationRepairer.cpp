@@ -862,10 +862,6 @@ void ViolationRepairer::routeByParallelRunLengthSpacing(VRBox& vr_box)
     }
   }
   for (auto& [net_idx, patch_list] : vr_box.get_net_task_final_patch_map()) {
-    if (net_idx == vr_task->get_net_idx()) {
-      continue;
-      // RTLOG.error(Loc::current(),"debug info");
-    }
     for (EXTLayerRect& patch : patch_list) {
       layer_bshape_all_net_map[patch.get_layer_idx()] += RTUTIL.convertToGTLRectInt(patch.get_real_rect());
     }
@@ -1044,7 +1040,6 @@ void ViolationRepairer::routeByMinimumArea(VRBox& vr_box)
   std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
 
   VRTask* curr_vr_task = vr_box.get_curr_vr_task();
-  // std::vector<Segment<LayerCoord>>& routing_segment_list = vr_box.get_routing_segment_list();
   std::vector<EXTLayerRect>& routing_patch_list = vr_box.get_routing_patch_list();
 
   int32_t net_idx = curr_vr_task->get_net_idx();
@@ -1298,33 +1293,6 @@ void ViolationRepairer::routeByMinimumArea(VRBox& vr_box)
             now_cost_width_number = i;
           }
         }
-
-        // if (left_patch.get_real_rect().getArea() > 0) {
-        //   NetShape net_shape(net_idx, left_patch.getRealLayerRect(), true);
-        //   for (auto& [vr_node, obs_type_set] : getNodeObsTypeMap(vr_box, net_shape, false)) {
-        //     // if (RTUTIL.isInside(RTUTIL.convertToPlanarRect(extend_rect_shape), vr_node->get_planar_coord())) {
-        //     //   continue;
-        //     // }
-        //     for (VRObsType obs_type : obs_type_set) {
-        //       now_cost += vr_node->getFixedRectCost(net_idx, obs_type, vr_box.get_vr_iter_param()->get_fixed_rect_unit());
-        //       now_cost += vr_node->getRoutedRectCost(net_idx, obs_type, vr_box.get_vr_iter_param()->get_routed_rect_unit());
-        //       // now_cost += vr_node->getViolationCost(obs_type, vr_box.get_vr_iter_param()->get_violation_unit());
-        //     }
-        //   }
-        // }
-        // if (right_patch.get_real_rect().getArea() > 0) {
-        //   NetShape net_shape(net_idx, right_patch.getRealLayerRect(), true);
-        //   for (auto& [vr_node, obs_type_set] : getNodeObsTypeMap(vr_box, net_shape, false)) {
-        //     // if (RTUTIL.isInside(RTUTIL.convertToPlanarRect(extend_rect_shape), vr_node->get_planar_coord())) {
-        //     //   continue;
-        //     // }
-        //     for (VRObsType obs_type : obs_type_set) {
-        //       now_cost += vr_node->getFixedRectCost(net_idx, obs_type, vr_box.get_vr_iter_param()->get_fixed_rect_unit());
-        //       now_cost += vr_node->getRoutedRectCost(net_idx, obs_type, vr_box.get_vr_iter_param()->get_routed_rect_unit());
-        //       // now_cost += vr_node->getViolationCost(obs_type, vr_box.get_vr_iter_param()->get_violation_unit());
-        //     }
-        //   }
-        // }
         if (now_cost <= min_cost) {
           // 选择靠近中间的，这样打出来更均衡
           if (now_cost == min_cost && now_cost_width_number == min_cost_width_number) {
