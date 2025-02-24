@@ -19,6 +19,6 @@
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
 
-  testing::GTEST_FLAG(filter) = "PowerTest.runIR*";
+  testing::GTEST_FLAG(filter) = "PowerTest.estimateIR";
   return RUN_ALL_TESTS();
 }
