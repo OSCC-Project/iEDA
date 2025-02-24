@@ -150,8 +150,8 @@ bool DrcEngineManager::addRect(int llx, int lly, int urx, int ury, std::string l
 
 void DrcEngineManager::dataPreprocess()
 {
-  for (auto& [layer, layout] : get_engine_layouts()) {
-    layout->combineLayout(_data_manager);
+  for (auto& [layer, layout] : get_engine_layouts(LayoutType::kRouting)) {
+    layout->combineLayout();
   }
 }
 
