@@ -12,6 +12,7 @@ target_link_libraries(idrc_pro_api
         idrc_pro_rule_stratagy
         idrc_pro_rule_builder
         idm
+        ${LIBPROFILER_LIBRARY}
 )
 
 target_include_directories(idrc_pro_api
