@@ -97,7 +97,7 @@ TEST_F(PowerTest, runIR) {
 
   auto* timing_engine = TimingEngine::getOrCreateTimingEngine();
   timing_engine->set_num_threads(48);
-  const char* design_work_space = "/home/taosimin/ir_example/aes";
+  const char* design_work_space = "/home/taosimin/ir_example/aes/rpt";
   timing_engine->set_design_work_space(design_work_space);
 
   std::vector<const char*> lib_files{
@@ -111,7 +111,6 @@ TEST_F(PowerTest, runIR) {
   timing_engine->readLiberty(lib_files);
 
   timing_engine->get_ista()->set_analysis_mode(ista::AnalysisMode::kMaxMin);
-  timing_engine->get_ista()->set_n_worst_path_per_clock(1);
 
   std::vector<std::string> lef_files{
       "/home/taosimin/T28/tlef/tsmcn28_9lm6X2ZUTRDL.tlef",
@@ -187,7 +186,7 @@ TEST_F(PowerTest, runIR) {
 
   timing_engine->buildGraph();
 
-  timing_engine->updateTiming();
+  timing_engine->get_ista()->updateTiming();
   timing_engine->reportTiming();
 
   Sta* ista = Sta::getOrCreateSta();

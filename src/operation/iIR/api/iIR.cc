@@ -82,7 +82,7 @@ unsigned iIR::solveIRDrop(const char* net_name) {
     double ir_drop = grid_voltages[*instance_id];
     std::string instance_name = get_instance_name(_rc_data, net_name, *instance_id);
 
-    LOG_INFO << "instance name " << instance_name << " ir drop "
+    LOG_INFO << "instance: " << instance_name << " ir drop: "
              << ir_drop;
     _instance_to_ir_drop[instance_name] = ir_drop;
   }
