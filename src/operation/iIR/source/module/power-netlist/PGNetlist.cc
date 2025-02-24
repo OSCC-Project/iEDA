@@ -23,8 +23,37 @@
  */
 #include "PGNetlist.hh"
 #include "log/Log.hh"
+#include <iostream>
+#include <fstream>
+#include "string/Str.hh"
 
 namespace iir {
+
+/**
+ * @brief print the pg netlist to yaml file.
+ * 
+ * @param yaml_path 
+ */
+void IRPGNetlist::printToYaml(std::string yaml_path) {
+  std::ofstream file(yaml_path, std::ios::trunc);
+  for (unsigned node_id = 0; auto& node : _nodes) {
+    const char* node_name = ieda::Str::printf("node_%d", node_id++);
+    file << node_name << ":" << "\n";
+
+    file << "  coord: " << "[ " << node.get_coord().first << " "
+         << node.get_coord().second << " " << node.get_layer_id() << " ]" << "\n";
+  }
+
+  for (unsigned edge_id = 0; auto& edge : _edges) {
+    const char* edge_name = ieda::Str::printf("edge_%d", edge_id++);
+    file << edge_name << ":" << "\n";
+
+    file << "  node1: " << edge.get_node1()->get_node_id() << "\n";
+    file << "  node2: " << edge.get_node2()->get_node_id() << "\n";
+  }
+
+  file.close();
+}
 
 /**
  * @brief build special net to IRPGNetlist.
@@ -146,10 +175,6 @@ IRPGNetlist IRPGNetlistBuilder::build(idb::IdbSpecialNet* special_net) {
         LOG_FATAL_IF(left_tuple != right_tuple)
             << "instersect box should be one point";
 
-        if (left_x < 0) {
-          LOG_INFO << "Debug";
-        }
-
         if (!pg_points.contains(left_tuple)) {
           auto& pg_node = pg_netlist.addNode({left_x, left_y}, left_layer_id);
           segment_to_point[i].insert(&pg_node);
@@ -161,12 +186,13 @@ IRPGNetlist IRPGNetlistBuilder::build(idb::IdbSpecialNet* special_net) {
   // build wire topo edge for connect the wire topo point.
   // first we build the line segment edge.
   for (auto& [segment_id, point_set] : segment_to_point) {
+    IRPGNode* pg_last_node = nullptr;
     for (auto* pg_node : point_set) {
-      for (auto* pg_node_other : point_set) {
-        if (pg_node != pg_node_other) {
-          pg_netlist.addEdge(*pg_node, *pg_node_other);
-        }
+      if (pg_last_node) {
+        pg_netlist.addEdge(pg_last_node, pg_node);
       }
+
+      pg_last_node = pg_node;
     }
   }
 
@@ -187,13 +213,17 @@ IRPGNetlist IRPGNetlistBuilder::build(idb::IdbSpecialNet* special_net) {
       via_end_node = &(pg_netlist.addNode({bg_end.get<0>(), bg_end.get<1>()}, bg_end.get<2>()));
     }
     
-    pg_netlist.addEdge(*via_start_node, *via_end_node);
+    pg_netlist.addEdge(via_start_node, via_end_node);
   }
 
   LOG_INFO << "via edge num: " << line_segment_num;
-
   LOG_INFO << "total edge num: " << pg_netlist.getEdgeNum();
+
+  // for debug.
+  pg_netlist.printToYaml("/home/taosimin/ir_example/aes/pg_netlist/aes_pg_netlist.yaml");
 
   return pg_netlist;
 }
+
+
 }

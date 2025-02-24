@@ -29,6 +29,7 @@
 #include <boost/geometry/index/rtree.hpp>
 #include <tuple>
 #include <vector>
+#include <list>
 #include <ranges>
 
 #include "IdbLayer.h"
@@ -39,6 +40,7 @@
 #include "builder.h"
 #include "def_service.h"
 #include "lef_service.h"
+#include "log/Log.hh"
 
 namespace bg = boost::geometry;
 namespace bgi = boost::geometry::index;
@@ -65,9 +67,14 @@ class IRPGNode {
   auto get_coord() const { return _coord; }
   auto get_layer_id() const { return _layer_id; }
 
+  void set_node_id(unsigned id) { _node_id = id; }
+  auto get_node_id() const { return _node_id; }
+
  private:
   IRNodeCoord _coord;  //!< The coord of the node.
   int _layer_id;       //!< The layer id of the node.
+
+  int _node_id = -1; //!< The node id of the pg nodes.
 };
 
 /**
@@ -92,12 +99,14 @@ struct IRNodeComparator {
  */
 class IRPGEdge {
  public:
-  IRPGEdge(IRPGNode& node1, IRPGNode& node2) : _node1(node1), _node2(node2) {}
+  IRPGEdge(IRPGNode* node1, IRPGNode* node2) : _node1(node1), _node2(node2) {}
   ~IRPGEdge() = default;
+  auto& get_node1() const { return _node1; }
+  auto& get_node2() const { return _node2; }
 
  private:
-  IRPGNode& _node1;  //!< The first node.
-  IRPGNode& _node2;  //!< The second node.
+  IRPGNode* _node1;  //!< The first node.
+  IRPGNode* _node2;  //!< The second node.
 };
 
 /**
@@ -111,6 +120,7 @@ class IRPGNetlist {
 
   IRPGNode& addNode(IRNodeCoord coord, int layer_id) {
     auto& one_node = _nodes.emplace_back(coord, layer_id);
+    one_node.set_node_id(_nodes.size() - 1);
     return one_node;
   }
   IRPGNode* findNode(IRNodeCoord coord, int layer_id) {
@@ -124,15 +134,18 @@ class IRPGNetlist {
     return nullptr;
   }
   auto& get_nodes() { return _nodes; }
-  IRPGEdge& addEdge(IRPGNode& node1, IRPGNode& node2) {
+  IRPGEdge& addEdge(IRPGNode* node1, IRPGNode* node2) {
+    LOG_FATAL_IF(node1->get_node_id() == node2->get_node_id());
     auto& one_edge = _edges.emplace_back(node1, node2);
     return one_edge;
   }
   auto& get_edges() { return _edges; }
   auto getEdgeNum() { return _edges.size(); }
 
+  void printToYaml(std::string yaml_path);
+
  private:
-  std::vector<IRPGNode> _nodes;  //!< The nodes of the netlist.
+  std::list<IRPGNode> _nodes;  //!< The nodes of the netlist.
   std::vector<IRPGEdge> _edges;  //!< The edges of the netlist.
 };
 
