@@ -97,7 +97,7 @@ ieda_solver::GeometryBoost* DrcEngineLayout::get_net_engine(int net_id)
 //   return point_number;
 // }
 
-void DrcEngineLayout::combineLayout(DrcDataManager* data_manager)
+void DrcEngineLayout::combineLayout()
 {
   for (auto& [net_id, sub_layout] : _sub_layouts) {
     _engine->addGeometry(sub_layout->get_engine());
@@ -163,9 +163,10 @@ std::set<int> DrcEngineLayout::querySubLayoutNetId(int llx, int lly, int urx, in
     if (sub_layout == nullptr) {
       continue;
     }
-    if (sub_layout->isIntersect(llx, lly, urx, ury)) {
-      net_ids.insert(sub_layout->get_id());
-    }
+    net_ids.insert(sub_layout->get_id());
+    // FIXME: REMOVE this extra check
+    // if (sub_layout->isIntersect(llx, lly, urx, ury)) {
+    // }
   }
 
   return net_ids;
