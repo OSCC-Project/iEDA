@@ -166,7 +166,7 @@ IRPGNetlist IRPGNetlistBuilder::build(idb::IdbSpecialNet* special_net) {
     auto bg_rect = BGRect(bg_segments[i].first, bg_segments[i].second);
     _rtree.query(bgi::intersects(bg_rect), std::back_inserter(result_s));
 
-    LOG_INFO << "bg segment " << bg::dsv(bg_rect);
+    // LOG_INFO << "bg segment " << bg::dsv(bg_rect);
 
     for (const auto& r : result_s) {
       if (r.second > i) {
