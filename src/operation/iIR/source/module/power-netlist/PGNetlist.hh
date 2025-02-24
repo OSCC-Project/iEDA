@@ -23,45 +23,47 @@
  */
 #pragma once
 
+#include <boost/geometry.hpp>
+#include <boost/geometry/geometries/point_xy.hpp>
+#include <boost/geometry/geometries/segment.hpp>
+#include <boost/geometry/index/rtree.hpp>
 #include <tuple>
 #include <vector>
-
-#include "builder.h"
-#include "def_service.h"
-#include "lef_service.h"
+#include <ranges>
 
 #include "IdbLayer.h"
 #include "IdbLayout.h"
 #include "IdbNet.h"
 #include "IdbPins.h"
 #include "IdbSpecialNet.h"
-
-#include <boost/geometry.hpp>
-#include <boost/geometry/geometries/point_xy.hpp>
-#include <boost/geometry/geometries/segment.hpp>
-#include <boost/geometry/index/rtree.hpp>
+#include "builder.h"
+#include "def_service.h"
+#include "lef_service.h"
 
 namespace bg = boost::geometry;
 namespace bgi = boost::geometry::index;
 
-using BGPoint = bg::model::point<double, 3, bg::cs::cartesian>;
+using BGPoint = bg::model::point<int64_t, 3, bg::cs::cartesian>;
 using BGSegment = bg::model::segment<BGPoint>;
 using BGRect = bg::model::box<BGPoint>;
 using BGValue = std::pair<BGRect, unsigned>;
 
 namespace iir {
 
-using IRNodeCoord = std::pair<int, int>;
+using IRNodeCoord = std::pair<int64_t, int64_t>;
 
 /**
  * @brief PG network node.
  *
  */
 class IRPGNode {
-public:
+ public:
   IRPGNode(IRNodeCoord coord, int layer_id)
       : _coord(coord), _layer_id(layer_id) {}
   ~IRPGNode() = default;
+
+  auto get_coord() const { return _coord; }
+  auto get_layer_id() const { return _layer_id; }
 
  private:
   IRNodeCoord _coord;  //!< The coord of the node.
@@ -69,13 +71,28 @@ public:
 };
 
 /**
+ * @brief node comparator for store IR Node according to the coord order.
+ * 
+ */
+struct IRNodeComparator {
+  bool operator()(const IRPGNode* lhs, const IRPGNode* rhs) const {
+    auto lhs_coord = lhs->get_coord();
+    auto rhs_coord = rhs->get_coord();
+
+    if (lhs_coord.first != rhs_coord.first) {
+      return lhs_coord.first < rhs_coord.first;
+    }
+    return lhs_coord.second < rhs_coord.second;
+  }
+};
+
+/**
  * @brief PG network edge.
  *
  */
 class IRPGEdge {
-public:
-  IRPGEdge(IRPGNode& node1, IRPGNode& node2)
-      : _node1(node1), _node2(node2) {}
+ public:
+  IRPGEdge(IRPGNode& node1, IRPGNode& node2) : _node1(node1), _node2(node2) {}
   ~IRPGEdge() = default;
 
  private:
@@ -89,19 +106,30 @@ public:
  */
 class IRPGNetlist {
  public:
- IRPGNetlist() = default;
- ~IRPGNetlist() = default;
+  IRPGNetlist() = default;
+  ~IRPGNetlist() = default;
 
- IRPGNode& addNode(IRNodeCoord coord, int layer_id) {
+  IRPGNode& addNode(IRNodeCoord coord, int layer_id) {
     auto& one_node = _nodes.emplace_back(coord, layer_id);
     return one_node;
- }
- auto& get_nodes() { return _nodes; }
- IRPGEdge& addEdge(IRPGNode& node1, IRPGNode& node2) {
+  }
+  IRPGNode* findNode(IRNodeCoord coord, int layer_id) {
+    auto result = std::ranges::find_if(_nodes, [&](const IRPGNode& node) {
+      return node.get_coord() == coord && node.get_layer_id() == layer_id;
+    });
+    if (result != _nodes.end()) {
+      return &(*result);
+    }
+
+    return nullptr;
+  }
+  auto& get_nodes() { return _nodes; }
+  IRPGEdge& addEdge(IRPGNode& node1, IRPGNode& node2) {
     auto& one_edge = _edges.emplace_back(node1, node2);
     return one_edge;
- }
- auto& get_edges() { return _edges; }
+  }
+  auto& get_edges() { return _edges; }
+  auto getEdgeNum() { return _edges.size(); }
 
  private:
   std::vector<IRPGNode> _nodes;  //!< The nodes of the netlist.
@@ -110,7 +138,7 @@ class IRPGNetlist {
 
 /**
  * @brief The pg netlist builder.
- * 
+ *
  */
 class IRPGNetlistBuilder {
  public:
