@@ -186,6 +186,96 @@ TopoGraph LmNetGraphGenerator::buildTopoGraph(idb::IdbNet* idb_net) const
   checkConnectivity(graph);
   return graph;
 }
+
+TopoGraph LmNetGraphGenerator::buildTopoGraph(idb::IdbSpecialNet* idb_net) const
+{
+  // LOG_INFO << "Net name : " << idb_net->get_net_name();
+
+  TopoGraph graph;
+  // Build Instances' pins and IO pins
+  std::vector<idb::IdbPin*> pins;
+  std::ranges::copy(idb_net->get_instance_pin_list()->get_pin_list(), std::back_inserter(pins));
+  std::ranges::copy(idb_net->get_io_pin_list()->get_pin_list(), std::back_inserter(pins));
+  // Corner Case: ignore the bottom layer
+  auto is_bottom_pin = [&](auto* idb_pin) -> bool {
+    for (auto* layer_shape : idb_pin->get_port_box_list()) {
+      auto layer_name = layer_shape->get_layer()->get_name();
+      if (_layer_map.at(layer_name) == 0) {
+        return true;
+      }
+    }
+    return false;
+  };
+  std::ranges::for_each(pins, [&](auto* idb_pin) -> void {
+    if (is_bottom_pin(idb_pin)) {
+      return;
+    }
+    auto vertex = boost::add_vertex(graph);
+    auto* layout_pin = new LayoutPin();
+    graph[vertex].content = layout_pin;
+    for (auto* layer_shape : idb_pin->get_port_box_list()) {
+      auto layer_name = layer_shape->get_layer()->get_name();
+      auto layer_id = _layer_map.at(layer_name);
+      if (layer_shape->is_via()) {
+        std::ranges::for_each(layer_shape->get_rect_list(), [&](auto* rect) -> void { layout_pin->addViaCut(rect, layer_id); });
+      } else {
+        std::ranges::for_each(layer_shape->get_rect_list(), [&](auto* rect) -> void { layout_pin->addPinShape(rect, layer_id); });
+      }
+    }
+  });
+
+  // Build Wires
+  // Corner Case: ignore the bottom layer
+  auto is_bottom_segment = [&](auto* idb_segment) -> bool {
+    auto layer_name = idb_segment->get_layer()->get_name();
+    return _layer_map.at(layer_name) == 0;
+  };
+  auto* idb_wires = idb_net->get_wire_list();
+  for (auto* idb_wire : idb_wires->get_wire_list()) {
+    for (auto* idb_segment : idb_wire->get_segment_list()) {
+      if (is_bottom_segment(idb_segment)) {
+        continue;
+      }
+
+      if (idb_segment->is_rect()) {
+        auto* coord_start = idb_segment->get_point_start();
+        auto* delta_rect = idb_segment->get_delta_rect();
+        auto* rect = new idb::IdbRect(delta_rect);
+        rect->moveByStep(coord_start->get_x(), coord_start->get_y());
+        auto layer_id = _layer_map.at(idb_segment->get_layer()->get_name());
+        auto* patch = new LayoutPatch(rect, layer_id);
+        delete rect;
+        auto vertex = boost::add_vertex(graph);
+        graph[vertex].content = patch;
+      }
+      if (idb_segment->is_via()) {
+        auto* idb_via = idb_segment->get_via();
+        auto* coord = idb_via->get_coordinate();
+        auto enclosure_bottom = idb_via->get_bottom_layer_shape();
+        auto enclosure_top = idb_via->get_top_layer_shape();
+        auto layer_shape = idb_via->get_cut_layer_shape();
+        auto layer_name = layer_shape.get_layer()->get_name();
+        auto cur_layer_id = _layer_map.at(layer_name);
+        std::vector<LayoutDefRect> bottom_shapes;
+        std::vector<LayoutDefRect> top_shapes;
+        auto* via = new LayoutVia(coord, enclosure_bottom.get_rect_list(), enclosure_top.get_rect_list(), cur_layer_id);
+        auto vertex = boost::add_vertex(graph);
+        graph[vertex].content = via;
+      }
+      if (idb_segment->is_line()) {
+        auto* coord_start = idb_segment->get_point_start();
+        auto* coord_end = idb_segment->get_point_second();
+        auto layer_id = _layer_map.at(idb_segment->get_layer()->get_name());
+        auto* wire = new LayoutWire(coord_start, coord_end, layer_id);
+        auto vertex = boost::add_vertex(graph);
+        graph[vertex].content = wire;
+      }
+    }
+  }
+  buildConnections(graph);
+  checkConnectivity(graph);
+  return graph;
+}
 LayoutShapeManager LmNetGraphGenerator::buildShapeManager(const TopoGraph& graph) const
 {
   LayoutShapeManager shape_manager;

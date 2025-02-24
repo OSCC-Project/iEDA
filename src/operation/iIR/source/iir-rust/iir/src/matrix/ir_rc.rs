@@ -1,5 +1,5 @@
 use log;
-use spef_parser::spef_parser;
+use spef::spef_parser;
 use sprs::TriMat;
 use sprs::TriMatI;
 use std::cell::RefCell;
@@ -61,6 +61,7 @@ pub struct RCResistance {
 pub struct RCOneNetData {
     name: String,
     node_name_to_node_id: HashMap<String, usize>,
+    node_id_to_node_name: HashMap<usize, String>,
     nodes: RefCell<Vec<RCNode>>,
     resistances: Vec<RCResistance>,
 }
@@ -70,6 +71,7 @@ impl RCOneNetData {
         RCOneNetData {
             name,
             node_name_to_node_id: HashMap::new(),
+            node_id_to_node_name: HashMap::new(),
             nodes: RefCell::new(Vec::new()),
             resistances: Vec::new(),
         }
@@ -80,6 +82,7 @@ impl RCOneNetData {
     pub fn add_node(&mut self, one_node: RCNode) -> usize {
         let node_id = self.nodes.borrow().len();
         self.node_name_to_node_id.insert(String::from(one_node.get_name()), node_id);
+        self.node_id_to_node_name.insert(node_id, String::from(one_node.get_name()));
         self.nodes.borrow_mut().push(one_node);
         node_id
     }
@@ -89,6 +92,9 @@ impl RCOneNetData {
     }
     pub fn get_node_id(&self, node_name: &String) -> Option<usize> {
         self.node_name_to_node_id.get(node_name).cloned()
+    }
+    pub fn get_node_name(&self, node_id: usize) -> Option<&String> {
+        self.node_id_to_node_name.get(&node_id)
     }
 
     pub fn set_node_cap(&self, node_id: usize, cap_value: f64) {
@@ -125,6 +131,17 @@ impl RCData {
     }
 }
 
+pub fn split_spef_index_str(index_name: &str) -> (&str, &str) {
+    let v: Vec<&str> = index_name.split(':').collect();
+    let index_str = v.first().unwrap();
+    let node_str = v.last().unwrap();
+    if v.len() == 2 {
+        (&index_str[1..], *node_str)
+    } else {
+        (&index_str[1..], "")
+    }
+}
+
 /// Read rc data from spef file.
 pub fn read_rc_data_from_spef(spef_file_path: &str) -> RCData {
     log::info!("read spef file {} start", spef_file_path);
@@ -136,7 +153,7 @@ pub fn read_rc_data_from_spef(spef_file_path: &str) -> RCData {
     let mut rc_data = RCData::default();
 
     let spef_index_to_string = |index_str: &str| {
-        let split_names = spef_parser::spef_c_api::split_spef_index_str(&index_str);
+        let split_names = split_spef_index_str(&index_str);
         let index = split_names.0.parse::<usize>().unwrap();
         let node_name = node_name_map.get(&index);
         if !split_names.1.is_empty() {

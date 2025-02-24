@@ -280,6 +280,18 @@ pub extern "C" fn get_instance_node_ids(c_rc_data: *const c_void, c_net_name: *c
     rust_instance_node_id_vec
 }
 
+#[no_mangle]
+pub extern "C" fn get_instance_name(c_rc_data: *const c_void, c_net_name: *const c_char, node_id: usize) -> *const c_char {
+    let rc_data = unsafe { &*(c_rc_data as *const RCData) };
+    let one_net_name = c_str_to_r_str(c_net_name);
+    let one_net_rc_data = rc_data.get_one_net_data(&one_net_name);
+    
+    let instance_name = one_net_rc_data.get_node_name(node_id);
+    let c_instance_name = string_to_c_char(instance_name.unwrap());
+    c_instance_name
+}
+
+
 /// Build RC matrix and current vector data.
 #[no_mangle]
 pub extern "C" fn build_matrix_from_raw_data(

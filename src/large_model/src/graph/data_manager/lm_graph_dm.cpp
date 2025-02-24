@@ -76,6 +76,10 @@ bool LmGraphDataManager::buildGraphData()
   omp_lock_t lck;
   omp_init_lock(&lck);
 
+  // auto* special_net_list = idb_design->get_special_net_list();
+  // auto* vdd_net = special_net_list->find_net("VDD");
+  // gen.buildTopoGraph(vdd_net);
+
 #pragma omp parallel for schedule(dynamic)
   for (size_t net_id = 0; net_id < idb_nets.size(); ++net_id) {
     auto* idb_net = idb_nets[net_id];

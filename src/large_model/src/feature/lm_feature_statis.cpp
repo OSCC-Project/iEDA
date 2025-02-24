@@ -219,11 +219,22 @@ void LmFeatureStatis::feature_patch()
 
   // 评估器特征计算，返回的是 patch_id 和 value 的 map
   std::map<int, int> pin_density_map = DENSITY_API_INST->patchPinDensity(patch_xy_map);
+  LOG_INFO << "finish pin_density_map, runtime: " << stats.elapsedRunTime();
+
   std::map<int, double> cell_density_map = DENSITY_API_INST->patchCellDensity(patch_xy_map);
+  LOG_INFO << "finish cell_density_map, runtime: " << stats.elapsedRunTime();
+
   std::map<int, double> net_density_map = DENSITY_API_INST->patchNetDensity(patch_xy_map);
+  LOG_INFO << "finish net_density_map, runtime: " << stats.elapsedRunTime();
+
   std::map<int, int> macro_margin_map = DENSITY_API_INST->patchMacroMargin(patch_xy_map);
+  LOG_INFO << "finish macro_margin_map, runtime: " << stats.elapsedRunTime();
+
   std::map<int, double> rudy_congestion_map = CONGESTION_API_INST->patchRUDYCongestion(patch_xy_map);
+  LOG_INFO << "finish rudy_congestion_map, runtime: " << stats.elapsedRunTime();
+
   std::map<int, double> egr_congestion_map = CONGESTION_API_INST->patchEGRCongestion(patch_xy_map);
+  LOG_INFO << "finish egr_congestion_map, runtime: " << stats.elapsedRunTime();
 
 #pragma omp parallel for schedule(dynamic)
   for (int i = 0; i < (int) patchs.size(); ++i) {
@@ -233,8 +244,8 @@ void LmFeatureStatis::feature_patch()
     auto& patch = it->second;
 
     // 根据 patch_id 获取 patch feature
-    patch.cell_density = cell_density_map[patch_id];
     patch.pin_density = pin_density_map[patch_id];
+    patch.cell_density = cell_density_map[patch_id];
     patch.net_density = net_density_map[patch_id];
     patch.macro_margin = macro_margin_map[patch_id];
     patch.RUDY_congestion = rudy_congestion_map[patch_id];

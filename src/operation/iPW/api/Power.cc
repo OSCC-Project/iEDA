@@ -569,6 +569,34 @@ unsigned Power::reportInstancePowerCSV(const char* rpt_file_name) {
 }
 
 /**
+ * @brief get instance power data.
+ * 
+ * @return unsigned 
+ */
+std::vector<IRInstancePower> Power::getInstancePowerData() {
+  std::vector<IRInstancePower> instance_power_data;
+
+  IRInstancePower instance_power;
+  PwrGroupData* group_data;
+  FOREACH_PWR_GROUP_DATA(this, group_data) {
+    if (dynamic_cast<Net*>(group_data->get_obj())) {
+      continue;
+    }
+
+    auto* inst = dynamic_cast<Instance*>(group_data->get_obj());
+    instance_power._instance_name = inst->get_name();
+    instance_power._nominal_voltage = group_data->get_nom_voltage();
+    instance_power._internal_power = group_data->get_internal_power();
+    instance_power._switch_power = group_data->get_switch_power();
+    instance_power._leakage_power = group_data->get_leakage_power();
+    instance_power._total_power = group_data->get_total_power();
+  }
+  
+  instance_power_data.emplace_back(std::move(instance_power));
+  return instance_power_data;
+}
+
+/**
  * @brief init power graph data
  *
  * @param
@@ -781,6 +809,24 @@ unsigned Power::runCompleteFlow() {
 
   updatePower();
   reportPower();
+  return 1;
+}
+
+/**
+ * @brief run ir analysis.
+ * 
+ * @return unsigned 
+ */
+unsigned Power::runIRAnalysis() {
+  std::vector<IRInstancePower> instance_power_data =  getInstancePowerData();
+
+  iIR ir_analysis;
+  ir_analysis.init();
+  ir_analysis.setInstancePowerData(std::move(instance_power_data));
+  const char* spef_file_path = "/home/taosimin/ir_example/aes/aes_vdd_vss.spef";
+  ir_analysis.readSpef(spef_file_path);
+  ir_analysis.solveIRDrop("VDD");
+
   return 1;
 }
 
