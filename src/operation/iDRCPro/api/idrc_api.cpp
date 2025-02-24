@@ -23,6 +23,7 @@
 #include "idrc_data.h"
 #include "idrc_dm.h"
 #include "tech_rules.h"
+#include <gperftools/profiler.h>
 
 namespace idrc {
 
@@ -365,7 +366,7 @@ std::map<ViolationEnumType, std::vector<DrcViolation*>> DrcApi::checkByBox(
   drc_manager.dataOperate();
 #ifdef DEBUG_IDRC_API
   if (DrcCheckerType::kDef == check_type) {
-    std::cout << "idrc : build condition"
+    std::cout << "idrc : dataOperate"
               << " runtime = " << stats_build_condition.elapsedRunTime() << " memory = " << stats_build_condition.memoryDelta()
               << std::endl;
   }
@@ -378,7 +379,7 @@ std::map<ViolationEnumType, std::vector<DrcViolation*>> DrcApi::checkByBox(
 
 #ifdef DEBUG_IDRC_API
   if (DrcCheckerType::kDef == check_type) {
-    std::cout << "idrc : check"
+    std::cout << "idrc : dataCheck"
               << " runtime = " << stats_check.elapsedRunTime() << " memory = " << stats_check.memoryDelta() << std::endl;
   }
 #endif

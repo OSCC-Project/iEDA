@@ -105,7 +105,7 @@ void DrcEngineLayout::combineLayout()
     /// build engine sublayout RTree
     addRTreeSubLayout(sub_layout);
   }
-
+#if 0
   /// save intersect layout for each sublayout
   std::vector<DrcEngineSubLayout*> sub_layouts;
   /// init sublayout drc map & sublayout list
@@ -135,6 +135,8 @@ void DrcEngineLayout::combineLayout()
       }
     }
   }
+#endif
+
 }
 
 void DrcEngineLayout::addRTreeSubLayout(DrcEngineSubLayout* sub_layout)

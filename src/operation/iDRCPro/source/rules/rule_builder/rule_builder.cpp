@@ -281,6 +281,7 @@ void DrcRuleBuilder::buildRoutingLayerEdge(ConditionRuleLayer* rule_layer, idb::
   rule_layer->set_condition(RuleType::kEdge, static_cast<RulesConditionMap*>(rule_map));
 }
 
+//TODO: cut layer rules need tobe added
 void DrcRuleBuilder::initCutLayerRules()
 {
 }
