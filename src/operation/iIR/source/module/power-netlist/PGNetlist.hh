@@ -70,11 +70,16 @@ class IRPGNode {
   void set_node_id(unsigned id) { _node_id = id; }
   auto get_node_id() const { return _node_id; }
 
+  void set_is_instance_pin() { _is_instance_pin = true; }
+  bool is_instance_pin() const { return _is_instance_pin; }
+
  private:
   IRNodeCoord _coord;  //!< The coord of the node.
   int _layer_id;       //!< The layer id of the node.
 
   int _node_id = -1; //!< The node id of the pg nodes.
+
+  bool _is_instance_pin = false; //!< The node is instance VDD/GND.
 };
 
 /**
@@ -157,6 +162,8 @@ class IRPGNetlistBuilder {
  public:
   IRPGNetlistBuilder() = default;
   ~IRPGNetlistBuilder() = default;
+
+  std::vector<BGSegment> buildBGSegments(idb::IdbSpecialNet* special_net, unsigned& line_segment_num);
 
   IRPGNetlist build(idb::IdbSpecialNet* special_net);
 
