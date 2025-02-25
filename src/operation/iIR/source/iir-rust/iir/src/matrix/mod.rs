@@ -52,6 +52,31 @@ pub struct IRInstancePower {
     total_power: f64,
 }
 
+/// IR PG node of the PG netlist.
+#[repr(C)]
+#[derive(Clone, Copy, Debug)]
+pub struct RustIRPGNode {
+    coord: (i64, i64),
+    layer_id: i32,
+    node_id: i32,
+    is_instance_pin: bool,
+}
+
+/// IR PG edge of the PG netlist.
+#[repr(C)]
+#[derive(Clone, Copy, Debug)]
+pub struct RustIRPGEdge {
+    node1: i64,
+    node2: i64,
+}
+
+/// IR PG netlist.
+pub struct RustIRPGNetlist {
+    nodes: Vec<RustIRPGNode>,
+    edges: Vec<RustIRPGEdge>,
+    net_name: *const c_char,
+}
+
 /// One Net conductance matrix data.
 #[allow(dead_code)]
 struct IRNetConductanceData {
@@ -156,6 +181,32 @@ pub extern "C" fn read_spef(c_power_net_spef: *const c_char) -> *const c_void {
 }
 
 #[no_mangle]
+pub extern "C" fn create_pg_node(c_pg_netlist: *mut c_void, c_pg_node: *const RustIRPGNode) -> *const c_void {
+    let pg_node = unsafe { *c_pg_node };
+    println!("{:?}", pg_node);
+    let mut pg_netlist = unsafe { Box::from_raw(c_pg_netlist as *mut RustIRPGNetlist) };
+    pg_netlist.nodes.push(pg_node);
+    Box::into_raw(pg_netlist) as *const c_void
+}
+
+#[no_mangle]
+pub extern "C" fn create_pg_edge(c_pg_netlist: *const c_void, c_pg_edge: *const RustIRPGEdge) -> *const c_void {
+    let pg_edge = unsafe { *c_pg_edge };
+    println!("{:?}", pg_edge);
+
+    let mut pg_netlist = unsafe { Box::from_raw(c_pg_netlist as *mut RustIRPGNetlist) };
+    pg_netlist.edges.push(pg_edge);
+    Box::into_raw(pg_netlist) as *const c_void
+}
+
+#[no_mangle]
+pub extern "C" fn create_pg_netlist(c_power_net_name: *const c_char) -> *const c_void {
+    let pg_netlist = RustIRPGNetlist { nodes: vec![], edges: vec![], net_name: c_power_net_name };
+    let c_pg_netlist = Box::new(pg_netlist);
+    Box::into_raw(c_pg_netlist) as *const c_void
+}
+
+#[no_mangle]
 pub extern "C" fn build_one_net_conductance_matrix_data(
     c_rc_data: *const c_void,
     c_net_name: *const c_char,
@@ -201,15 +252,15 @@ pub extern "C" fn set_instance_power_data(c_instance_power_data: RustVec) -> *mu
     for i in 0..c_instance_power_data.len {
         let instance_power_data_ptr = c_instance_power_data.data as *const IRInstancePower;
         let instance_power_data = unsafe { &*instance_power_data_ptr.offset(i as isize) };
-        let instance_name = unsafe {c_str_to_r_str(instance_power_data.instance_name)};
-    
+        let instance_name = unsafe { c_str_to_r_str(instance_power_data.instance_name) };
+
         let instance_power_record = InstancePowerRecord {
             instance_name: instance_name,
-            nominal_voltage:instance_power_data.nominal_voltage,
-            internal_power:instance_power_data.internal_power,
-            switch_power:instance_power_data.switch_power,
-            leakage_power:instance_power_data.leakage_power,
-            total_power:instance_power_data.total_power,
+            nominal_voltage: instance_power_data.nominal_voltage,
+            internal_power: instance_power_data.internal_power,
+            switch_power: instance_power_data.switch_power,
+            leakage_power: instance_power_data.leakage_power,
+            total_power: instance_power_data.total_power,
         };
 
         records.push(instance_power_record);
@@ -281,16 +332,19 @@ pub extern "C" fn get_instance_node_ids(c_rc_data: *const c_void, c_net_name: *c
 }
 
 #[no_mangle]
-pub extern "C" fn get_instance_name(c_rc_data: *const c_void, c_net_name: *const c_char, node_id: usize) -> *const c_char {
+pub extern "C" fn get_instance_name(
+    c_rc_data: *const c_void,
+    c_net_name: *const c_char,
+    node_id: usize,
+) -> *const c_char {
     let rc_data = unsafe { &*(c_rc_data as *const RCData) };
     let one_net_name = c_str_to_r_str(c_net_name);
     let one_net_rc_data = rc_data.get_one_net_data(&one_net_name);
-    
+
     let instance_name = one_net_rc_data.get_node_name(node_id);
     let c_instance_name = string_to_c_char(instance_name.unwrap());
     c_instance_name
 }
-
 
 /// Build RC matrix and current vector data.
 #[no_mangle]

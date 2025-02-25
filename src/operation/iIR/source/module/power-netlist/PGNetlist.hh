@@ -42,6 +42,7 @@
 #include "lef_service.h"
 #include "log/Log.hh"
 
+
 namespace bg = boost::geometry;
 namespace bgi = boost::geometry::index;
 
@@ -104,14 +105,15 @@ struct IRNodeComparator {
  */
 class IRPGEdge {
  public:
-  IRPGEdge(IRPGNode* node1, IRPGNode* node2) : _node1(node1), _node2(node2) {}
+  IRPGEdge(IRPGNode* node1, IRPGNode* node2)
+      : _node1(node1->get_node_id()), _node2(node2->get_node_id()) {}
   ~IRPGEdge() = default;
   auto& get_node1() const { return _node1; }
   auto& get_node2() const { return _node2; }
 
  private:
-  IRPGNode* _node1;  //!< The first node.
-  IRPGNode* _node2;  //!< The second node.
+  int64_t _node1;  //!< The first node id.
+  int64_t _node2;  //!< The second node id.
 };
 
 /**
@@ -122,6 +124,8 @@ class IRPGNetlist {
  public:
   IRPGNetlist() = default;
   ~IRPGNetlist() = default;
+
+  std::string& get_net_name() { return _net_name; }
 
   IRPGNode& addNode(IRNodeCoord coord, int layer_id) {
     auto& one_node = _nodes.emplace_back(coord, layer_id);
@@ -152,6 +156,8 @@ class IRPGNetlist {
  private:
   std::list<IRPGNode> _nodes;  //!< The nodes of the netlist.
   std::vector<IRPGEdge> _edges;  //!< The edges of the netlist.
+
+  std::string _net_name;
 };
 
 /**
@@ -165,7 +171,9 @@ class IRPGNetlistBuilder {
 
   std::vector<BGSegment> buildBGSegments(idb::IdbSpecialNet* special_net, unsigned& line_segment_num);
 
-  IRPGNetlist build(idb::IdbSpecialNet* special_net);
+  void build(idb::IdbSpecialNet* special_net);
+
+  void createRustPGNetlist();
 
  private:
   bgi::rtree<BGValue, bgi::quadratic<16>> _rtree;

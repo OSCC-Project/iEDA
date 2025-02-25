@@ -35,6 +35,12 @@ void init_iir(void);
 
 const void *read_spef(const char *c_power_net_spef);
 
+const void *create_pg_node(const void *c_pg_netlist, const void *c_pg_node);
+
+const void *create_pg_edge(const void *c_pg_netlist, const void *c_pg_edge);
+
+const void *create_pg_netlist(const char *c_power_net_name);
+
 /**
  * Read instance power csv file.
  */

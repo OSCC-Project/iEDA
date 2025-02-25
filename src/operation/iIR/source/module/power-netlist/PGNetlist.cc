@@ -27,6 +27,8 @@
 #include <fstream>
 #include "string/Str.hh"
 
+#include "iir-rust/IRRustC.hh"
+
 namespace iir {
 
 /**
@@ -48,8 +50,8 @@ void IRPGNetlist::printToYaml(std::string yaml_path) {
     const char* edge_name = ieda::Str::printf("edge_%d", edge_id++);
     file << edge_name << ":" << "\n";
 
-    file << "  node1: " << edge.get_node1()->get_node_id() << "\n";
-    file << "  node2: " << edge.get_node2()->get_node_id() << "\n";
+    file << "  node1: " << edge.get_node1() << "\n";
+    file << "  node2: " << edge.get_node2() << "\n";
   }
 
   file.close();
@@ -150,7 +152,7 @@ std::vector<BGSegment> IRPGNetlistBuilder::buildBGSegments(
  * @param special_net 
  * @return IRPGNetlist 
  */
-IRPGNetlist IRPGNetlistBuilder::build(idb::IdbSpecialNet* special_net) {
+void IRPGNetlistBuilder::build(idb::IdbSpecialNet* special_net) {
   IRPGNetlist pg_netlist;
 
   unsigned line_segment_num = 0;
@@ -272,8 +274,27 @@ IRPGNetlist IRPGNetlistBuilder::build(idb::IdbSpecialNet* special_net) {
   // for debug.
   // pg_netlist.printToYaml("/home/taosimin/ir_example/aes/pg_netlist/aes_pg_netlist.yaml");
 
-  return pg_netlist;
+  _pg_netlists.emplace_back(std::move(pg_netlist));
 }
+
+/**
+ * @brief create rust pg netlist.
+ * 
+ */
+void IRPGNetlistBuilder::createRustPGNetlist() {
+  for (auto &pg_netlist : _pg_netlists) {
+    const char* net_name = pg_netlist.get_net_name().c_str();
+
+    auto* rust_pg_netlist = create_pg_netlist(net_name);
+    for (auto& pg_node : pg_netlist.get_nodes()) {
+      create_pg_node(rust_pg_netlist, &pg_node);
+    }
+
+    for (auto& pg_edge : pg_netlist.get_edges()) {
+      create_pg_edge(rust_pg_netlist, &pg_edge);
+    }
+  }
+} 
 
 
 }
