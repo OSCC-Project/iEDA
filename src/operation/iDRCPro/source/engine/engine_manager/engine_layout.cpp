@@ -105,7 +105,7 @@ void DrcEngineLayout::combineLayout()
     /// build engine sublayout RTree
     addRTreeSubLayout(sub_layout);
   }
-
+#if 0
   /// save intersect layout for each sublayout
   std::vector<DrcEngineSubLayout*> sub_layouts;
   /// init sublayout drc map & sublayout list
@@ -135,6 +135,8 @@ void DrcEngineLayout::combineLayout()
       }
     }
   }
+#endif
+
 }
 
 void DrcEngineLayout::addRTreeSubLayout(DrcEngineSubLayout* sub_layout)
@@ -163,7 +165,10 @@ std::set<int> DrcEngineLayout::querySubLayoutNetId(int llx, int lly, int urx, in
     if (sub_layout == nullptr) {
       continue;
     }
-    net_ids.insert(sub_layout->get_id());
+    // 临时添加
+    if (sub_layout->isIntersect(llx, lly, urx, ury)) {
+      net_ids.insert(sub_layout->get_id());
+    }
     // FIXME: REMOVE this extra check
     // if (sub_layout->isIntersect(llx, lly, urx, ury)) {
     // }

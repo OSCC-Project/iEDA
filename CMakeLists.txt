@@ -37,14 +37,21 @@ set(FORT_ENABLE_TESTING OFF CACHE INTERNAL "") # Disable building tests and exam
 # set(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -Wall -Wextra -Werror=return-type")
 # set(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -O0 -Wall -g2 -ggdb -Wextra -Werror=return-type")
 set(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -Wall -Werror=return-type")
-set(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -O0 -Wall -g2 -ggdb -Werror=return-type")
-set(CMAKE_BUILD_TYPE "Release")
+set(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -O2 -Wall -g2 -ggdb -Werror=return-type")
+# set(CMAKE_BUILD_TYPE "Release")
+
 
 if(NOT DEFINED CMD_BUILD)
     set(SANITIZER OFF)
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
 endif()
 
+set(USE_PROFILER OFF)
+if(USE_PROFILER)
+    list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
+    find_package(PROFILER REQUIRED) 
+    message("LIBPROFILER_LIBRARY: ${LIBPROFILER_LIBRARY}")
+endif()
 set(SANITIZER OFF)
 if(SANITIZER)
     add_definitions(-DUSE_CPP_STD)

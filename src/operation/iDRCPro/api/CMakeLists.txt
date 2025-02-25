@@ -13,6 +13,12 @@ target_link_libraries(idrc_pro_api
         idrc_pro_rule_builder
         idm
 )
+if(USE_PROFILER)
+  target_link_libraries(idrc_pro_api
+      PUBLIC
+          ${LIBPROFILER_LIBRARY}
+  )
+endif(USE_PROFILER)
 
 target_include_directories(idrc_pro_api
     PUBLIC
