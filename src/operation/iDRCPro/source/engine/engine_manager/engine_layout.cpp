@@ -16,6 +16,8 @@
 // ***************************************************************************************
 #include "engine_layout.h"
 
+#include <cstdio>
+
 #include "engine_geometry_creator.h"
 #include "geometry_boost.h"
 #include "idrc_dm.h"
@@ -136,15 +138,15 @@ void DrcEngineLayout::combineLayout()
     }
   }
 #endif
-
 }
 
 void DrcEngineLayout::addRTreeSubLayout(DrcEngineSubLayout* sub_layout)
 {
-  auto bounding_box = sub_layout->get_engine()->bounding_box();
-  ieda_solver::BgRect rtree_rect(ieda_solver::BgPoint(std::get<0>(bounding_box), std::get<1>(bounding_box)),
-                                 ieda_solver::BgPoint(std::get<2>(bounding_box), std::get<3>(bounding_box)));
-  _query_tree.insert(std::make_pair(rtree_rect, sub_layout));
+  for (auto rect : sub_layout->get_engine()->getRects()) {
+    ieda_solver::BgRect rtree_rect(ieda_solver::BgPoint(boost::polygon::xl(rect), boost::polygon::yl(rect)),
+                                   ieda_solver::BgPoint(boost::polygon::xh(rect), boost::polygon::yh(rect)));
+    _query_tree.insert(std::make_pair(rtree_rect, sub_layout));
+  }
 }
 
 std::vector<std::pair<ieda_solver::BgRect, DrcEngineSubLayout*>> DrcEngineLayout::querySubLayouts(int llx, int lly, int urx, int ury)
@@ -170,7 +172,8 @@ std::set<int> DrcEngineLayout::querySubLayoutNetId(int llx, int lly, int urx, in
       net_ids.insert(sub_layout->get_id());
     }
     // FIXME: REMOVE this extra check
-    // if (sub_layout->isIntersect(llx, lly, urx, ury)) {
+    // if (!sub_layout->isIntersect(llx, lly, urx, ury)) {
+    //   printf("Error: sub_layout is not intersect with query rect\n");
     // }
   }
 
