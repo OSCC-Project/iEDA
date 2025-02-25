@@ -154,6 +154,7 @@ std::vector<BGSegment> IRPGNetlistBuilder::buildBGSegments(
  */
 void IRPGNetlistBuilder::build(idb::IdbSpecialNet* special_net) {
   IRPGNetlist pg_netlist;
+  pg_netlist.set_net_name(special_net->get_net_name());
 
   unsigned line_segment_num = 0;
   std::vector<BGSegment> bg_segments = buildBGSegments(special_net, line_segment_num);

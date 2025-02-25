@@ -126,6 +126,7 @@ class IRPGNetlist {
   ~IRPGNetlist() = default;
 
   std::string& get_net_name() { return _net_name; }
+  void set_net_name(const std::string& name) { _net_name = name; }
 
   IRPGNode& addNode(IRNodeCoord coord, int layer_id) {
     auto& one_node = _nodes.emplace_back(coord, layer_id);
