@@ -167,10 +167,7 @@ std::set<int> DrcEngineLayout::querySubLayoutNetId(int llx, int lly, int urx, in
     if (sub_layout == nullptr) {
       continue;
     }
-    // 临时添加
-    if (sub_layout->isIntersect(llx, lly, urx, ury)) {
-      net_ids.insert(sub_layout->get_id());
-    }
+
     // FIXME: REMOVE this extra check
     // if (!sub_layout->isIntersect(llx, lly, urx, ury)) {
     //   printf("Error: sub_layout is not intersect with query rect\n");
