@@ -35,11 +35,33 @@ namespace iir {
 IRPGNetlist IRPGNetlistBuilder::build(idb::IdbSpecialNet* special_net) {
   IRPGNetlist pg_netlist;
   std::vector<BGSegment> bg_segments;
-  std::vector<BGRect> bg_rects;
+  // std::vector<BGRect> bg_rects;
 
+  // build line segment.
   auto* idb_wires = special_net->get_wire_list();
   for (auto* idb_wire : idb_wires->get_wire_list()) {
     for (auto* idb_segment : idb_wire->get_segment_list()) {
+      // line firstly process, we need know line intersect point first.
+      if (idb_segment->is_line()) {
+        auto* coord_start = idb_segment->get_point_start();
+        auto* coord_end = idb_segment->get_point_second();
+        int layer_id = idb_segment->get_layer()->get_id() + 1;
+
+        auto bg_segment =
+            BGSegment(BGPoint(coord_start->get_x(), coord_start->get_y(), layer_id),
+                           BGPoint(coord_end->get_x(), coord_end->get_y(), layer_id));
+        bg_segments.emplace_back(std::move(bg_segment));
+      }
+    }
+  }
+
+  auto line_segment_num = bg_segments.size();
+  LOG_INFO << "line segment num: " << bg_segments.size();
+  
+  // then build wire segment.
+  for (auto* idb_wire : idb_wires->get_wire_list()) {
+    for (auto* idb_segment : idb_wire->get_segment_list()) {
+      // via secondly process, via intersect point is fixed.
       if (idb_segment->is_via()) {
         auto* idb_via = idb_segment->get_via();
         auto* coord = idb_via->get_coordinate();
@@ -72,29 +94,26 @@ IRPGNetlist IRPGNetlistBuilder::build(idb::IdbSpecialNet* special_net) {
         //   auto bg_rect = BGRect(low, high);
         //   bg_rects.emplace_back(std::move(bg_rect));
         // }
-      } else if (idb_segment->is_line()) {
-        auto* coord_start = idb_segment->get_point_start();
-        auto* coord_end = idb_segment->get_point_second();
-        int layer_id = idb_segment->get_layer()->get_id() + 1;
-
-        auto bg_segment =
-            BGSegment(BGPoint(coord_start->get_x(), coord_start->get_y(), layer_id),
-                           BGPoint(coord_end->get_x(), coord_end->get_y(), layer_id));
-        bg_segments.emplace_back(std::move(bg_segment));
       }
     }
   }
+
+  LOG_INFO << "via segment num: " << bg_segments.size() - line_segment_num;
 
   for (int i = 0; auto& bg_seg : bg_segments) {
     _rtree.insert(std::make_pair(BGRect(bg_seg.first, bg_seg.second), i++));
   }
 
-  LOG_INFO << "rect start index: " << bg_segments.size();
-  for (int i = bg_segments.size(); auto& bg_rect : bg_rects) {
-    _rtree.insert(std::make_pair(bg_rect, i++));
-  }
+  // LOG_INFO << "rect start index: " << bg_segments.size();
+  // for (int i = bg_segments.size(); auto& bg_rect : bg_rects) {
+  //   _rtree.insert(std::make_pair(bg_rect, i++));
+  // }
 
-  for (unsigned i = 0; i < bg_segments.size(); ++i) {
+  // get the wire topo point in line segment.
+  std::set<std::tuple<int64_t, int64_t, int64_t>> pg_points;
+  std::map<int, std::set<IRPGNode*, IRNodeComparator>> segment_to_point;
+  for (unsigned i = 0; i < line_segment_num; ++i) {
+    // only get line segment intersect point with other segment.
     std::vector<BGValue> result_s;
 
     auto bg_rect = BGRect(bg_segments[i].first, bg_segments[i].second);
@@ -110,9 +129,70 @@ IRPGNetlist IRPGNetlistBuilder::build(idb::IdbSpecialNet* special_net) {
         bg::intersection(bg_rect, r.first, intersection_result);
         LOG_INFO << "bg segment " << i << " intersect with " << r.second
                  << " intersection_result: " << bg::dsv(intersection_result);
+
+        auto& left_bottom = intersection_result.min_corner();
+        auto& right_top = intersection_result.max_corner();
+
+        auto left_x = bg::get<0>(left_bottom);
+        auto left_y = bg::get<1>(left_bottom);
+        auto left_layer_id = bg::get<2>(left_bottom);
+        auto left_tuple = std::make_tuple(left_x, left_y, left_layer_id);
+
+        auto right_x = bg::get<0>(right_top);
+        auto right_y = bg::get<1>(right_top);
+        auto right_layer_id = bg::get<2>(right_top);
+        auto right_tuple = std::make_tuple(right_x, right_y, right_layer_id);
+
+        LOG_FATAL_IF(left_tuple != right_tuple)
+            << "instersect box should be one point";
+
+        if (left_x < 0) {
+          LOG_INFO << "Debug";
+        }
+
+        if (!pg_points.contains(left_tuple)) {
+          auto& pg_node = pg_netlist.addNode({left_x, left_y}, left_layer_id);
+          segment_to_point[i].insert(&pg_node);
+        }
       }
     }
   }
+
+  // build wire topo edge for connect the wire topo point.
+  // first we build the line segment edge.
+  for (auto& [segment_id, point_set] : segment_to_point) {
+    for (auto* pg_node : point_set) {
+      for (auto* pg_node_other : point_set) {
+        if (pg_node != pg_node_other) {
+          pg_netlist.addEdge(*pg_node, *pg_node_other);
+        }
+      }
+    }
+  }
+
+  LOG_INFO << "line edge num: " << pg_netlist.getEdgeNum();
+  
+  // the we build the via segment edge.
+  for (unsigned i = line_segment_num; i < bg_segments.size(); ++i) {
+    auto bg_start = bg_segments[i].first;
+    auto bg_end = bg_segments[i].second;
+
+    auto* via_start_node = pg_netlist.findNode({bg_start.get<0>(), bg_start.get<1>()}, bg_start.get<2>());
+    if (!via_start_node) {
+      via_start_node = &(pg_netlist.addNode({bg_start.get<0>(), bg_start.get<1>()}, bg_start.get<2>()));
+    }
+    
+    auto* via_end_node = pg_netlist.findNode({bg_end.get<0>(), bg_end.get<1>()}, bg_end.get<2>());
+    if (!via_end_node) {
+      via_end_node = &(pg_netlist.addNode({bg_end.get<0>(), bg_end.get<1>()}, bg_end.get<2>()));
+    }
+    
+    pg_netlist.addEdge(*via_start_node, *via_end_node);
+  }
+
+  LOG_INFO << "via edge num: " << line_segment_num;
+
+  LOG_INFO << "total edge num: " << pg_netlist.getEdgeNum();
 
   return pg_netlist;
 }
