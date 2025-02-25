@@ -74,6 +74,7 @@ class ViolationRepairer
   void routeVRTask(VRBox& vr_box, VRTask* vr_task);
   void initSingleTask(VRBox& vr_box, VRTask* vr_task);
   void routeSingleTask(VRBox& vr_box);
+  void routeBySameLayerCutSpacing(VRBox& vr_box);
   void routeByParallelRunLengthSpacing(VRBox& vr_box);
   void routeByMinimumArea(VRBox& vr_box);
   void updateTaskResult(VRBox& vr_box);
