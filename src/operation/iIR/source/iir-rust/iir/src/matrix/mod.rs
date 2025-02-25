@@ -179,7 +179,7 @@ pub extern "C" fn read_spef(c_power_net_spef: *const c_char) -> *const c_void {
     let mv_rc_data = Box::new(rc_data);
     Box::into_raw(mv_rc_data) as *const c_void
 }
-
+/// create power ground node.
 #[no_mangle]
 pub extern "C" fn create_pg_node(c_pg_netlist: *mut c_void, c_pg_node: *const RustIRPGNode) -> *const c_void {
     let pg_node = unsafe { *c_pg_node };
@@ -189,6 +189,7 @@ pub extern "C" fn create_pg_node(c_pg_netlist: *mut c_void, c_pg_node: *const Ru
     Box::into_raw(pg_netlist) as *const c_void
 }
 
+/// create power ground edge.
 #[no_mangle]
 pub extern "C" fn create_pg_edge(c_pg_netlist: *const c_void, c_pg_edge: *const RustIRPGEdge) -> *const c_void {
     let pg_edge = unsafe { *c_pg_edge };
@@ -199,11 +200,20 @@ pub extern "C" fn create_pg_edge(c_pg_netlist: *const c_void, c_pg_edge: *const 
     Box::into_raw(pg_netlist) as *const c_void
 }
 
+/// create power ground netlist.
 #[no_mangle]
 pub extern "C" fn create_pg_netlist(c_power_net_name: *const c_char) -> *const c_void {
     let pg_netlist = RustIRPGNetlist { nodes: vec![], edges: vec![], net_name: c_power_net_name };
     let c_pg_netlist = Box::new(pg_netlist);
     Box::into_raw(c_pg_netlist) as *const c_void
+}
+
+/// estimate resistance capacitance data.
+#[no_mangle]
+pub extern "C" fn estimate_rc_data(c_pg_netlist: *const c_void) -> *const c_void {
+    let pg_netlist = unsafe { Box::from_raw(c_pg_netlist as *mut RustIRPGNetlist) };
+    ir_rc::estimate_rc_data_from_topo(&pg_netlist);
+    Box::into_raw(pg_netlist) as *const c_void
 }
 
 #[no_mangle]

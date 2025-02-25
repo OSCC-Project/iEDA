@@ -293,8 +293,20 @@ void IRPGNetlistBuilder::createRustPGNetlist() {
     for (auto& pg_edge : pg_netlist.get_edges()) {
       create_pg_edge(rust_pg_netlist, &pg_edge);
     }
+
+    _rust_pg_netlists.push_back(rust_pg_netlist);
   }
 } 
+
+/**
+ * @brief estimate rc for the pg netlist.
+ * 
+ */
+void IRPGNetlistBuilder::estimateRC() {
+  for (auto* rust_pg_netlist : _rust_pg_netlists) {
+    estimate_rc_data(rust_pg_netlist);
+  }
+}
 
 
 }

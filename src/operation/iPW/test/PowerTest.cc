@@ -299,6 +299,7 @@ TEST_F(PowerTest, estimateIR) {
   IRPGNetlistBuilder pg_netlist_builder;
   pg_netlist_builder.build(vdd_net);
   pg_netlist_builder.createRustPGNetlist();
+  pg_netlist_builder.estimateRC();
 
   timing_engine->readSdc("/home/taosimin/ir_example/aes/aes.sdc");
 

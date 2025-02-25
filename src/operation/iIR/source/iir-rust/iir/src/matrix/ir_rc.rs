@@ -5,6 +5,9 @@ use sprs::TriMatI;
 use std::cell::RefCell;
 use std::collections::HashMap;
 
+use super::c_str_to_r_str;
+use super::{RustIRPGNode, RustIRPGEdge, RustIRPGNetlist};
+
 /// RC node of the spef network.
 pub struct RCNode {
     name: String,
@@ -256,6 +259,30 @@ pub fn read_rc_data_from_spef(spef_file_path: &str) -> RCData {
 
     log::info!("build net rc data finish");
     rc_data
+}
+
+/// build estimate rc data, rc node from pg node, rc edge from pg edge.
+pub fn estimate_rc_data_from_topo(pg_netlist: &RustIRPGNetlist) -> RCOneNetData {
+    let net_name = c_str_to_r_str(pg_netlist.net_name);
+    let mut one_net_data = RCOneNetData::new(net_name.clone());
+
+    for pg_node in pg_netlist.nodes.iter() {
+        let node_id = pg_node.node_id;
+        let node_name = format!("{}:{}", net_name, node_id);
+        let rc_node = RCNode::new(node_name);
+        one_net_data.add_node(rc_node);
+    }
+
+    for pg_edge in pg_netlist.edges.iter() {
+        let node1_id = pg_edge.node1 as usize;
+        let node2_id = pg_edge.node2 as usize;
+        let mut rc_resistance = RCResistance::default();
+        rc_resistance.from_node_id = node1_id;
+        rc_resistance.to_node_id = node2_id;
+        one_net_data.add_resistance(rc_resistance);
+    }
+
+    one_net_data
 }
 
 /// Build conductance matrix from one net rc data.

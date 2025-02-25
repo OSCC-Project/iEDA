@@ -172,12 +172,14 @@ class IRPGNetlistBuilder {
   std::vector<BGSegment> buildBGSegments(idb::IdbSpecialNet* special_net, unsigned& line_segment_num);
 
   void build(idb::IdbSpecialNet* special_net);
-
   void createRustPGNetlist();
+  void estimateRC();
 
  private:
   bgi::rtree<BGValue, bgi::quadratic<16>> _rtree;
-  std::vector<IRPGNetlist> _pg_netlists;
+
+  std::vector<IRPGNetlist> _pg_netlists; //!< The builded pg netlist.
+  std::vector<const void*> _rust_pg_netlists; //!< The rust pg netlist.
 };
 
 }  // namespace iir

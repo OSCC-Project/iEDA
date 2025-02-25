@@ -64,11 +64,25 @@ void destroy_hashmap_iterator(struct HashMapIterator *iterator);
 
 const void *read_spef(const char *c_power_net_spef);
 
+/**
+ * create power ground node.
+ */
 const void *create_pg_node(void *c_pg_netlist, const struct RustIRPGNode *c_pg_node);
 
+/**
+ * create power ground edge.
+ */
 const void *create_pg_edge(const void *c_pg_netlist, const struct RustIRPGEdge *c_pg_edge);
 
+/**
+ * create power ground netlist.
+ */
 const void *create_pg_netlist(const char *c_power_net_name);
+
+/**
+ * estimate resistance capacitance data.
+ */
+const void *estimate_rc_data(const void *c_pg_netlist);
 
 struct RustNetConductanceData build_one_net_conductance_matrix_data(const void *c_rc_data,
                                                                     const char *c_net_name);
