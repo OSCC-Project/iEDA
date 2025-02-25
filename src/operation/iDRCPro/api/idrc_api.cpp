@@ -23,7 +23,9 @@
 #include "idrc_data.h"
 #include "idrc_dm.h"
 #include "tech_rules.h"
+#ifdef USE_PROFILER
 #include <gperftools/profiler.h>
+#endif
 
 namespace idrc {
 
