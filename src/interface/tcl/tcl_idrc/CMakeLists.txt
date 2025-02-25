@@ -14,6 +14,7 @@ target_link_libraries(tcl_idrc
         # idrc_api
         tool_api_idrc
         idrc_pro_api
+        ${LIBPROFILER_LIBRARY}
 )
 
 target_include_directories(tcl_idrc

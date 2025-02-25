@@ -56,13 +56,14 @@ void IRPGNetlist::printToYaml(std::string yaml_path) {
 }
 
 /**
- * @brief build special net to IRPGNetlist.
+ * @brief build the boost geometry segments.
  * 
  * @param special_net 
- * @return IRPGNetlist 
+ * @param line_segment_num stripe segment number.
+ * @return std::vector<BGSegment> 
  */
-IRPGNetlist IRPGNetlistBuilder::build(idb::IdbSpecialNet* special_net) {
-  IRPGNetlist pg_netlist;
+std::vector<BGSegment> IRPGNetlistBuilder::buildBGSegments(
+    idb::IdbSpecialNet* special_net, unsigned& line_segment_num) {
   std::vector<BGSegment> bg_segments;
   // std::vector<BGRect> bg_rects;
 
@@ -84,7 +85,7 @@ IRPGNetlist IRPGNetlistBuilder::build(idb::IdbSpecialNet* special_net) {
     }
   }
 
-  auto line_segment_num = bg_segments.size();
+  line_segment_num = bg_segments.size();
   LOG_INFO << "line segment num: " << bg_segments.size();
   
   // then build wire segment.
@@ -127,18 +128,35 @@ IRPGNetlist IRPGNetlistBuilder::build(idb::IdbSpecialNet* special_net) {
     }
   }
 
+
   LOG_INFO << "via segment num: " << bg_segments.size() - line_segment_num;
 
   for (int i = 0; auto& bg_seg : bg_segments) {
     _rtree.insert(std::make_pair(BGRect(bg_seg.first, bg_seg.second), i++));
   }
 
-  // LOG_INFO << "rect start index: " << bg_segments.size();
+    // LOG_INFO << "rect start index: " << bg_segments.size();
   // for (int i = bg_segments.size(); auto& bg_rect : bg_rects) {
   //   _rtree.insert(std::make_pair(bg_rect, i++));
   // }
 
-  // get the wire topo point in line segment.
+
+  return bg_segments;
+}
+
+/**
+ * @brief build special net to IRPGNetlist.
+ * 
+ * @param special_net 
+ * @return IRPGNetlist 
+ */
+IRPGNetlist IRPGNetlistBuilder::build(idb::IdbSpecialNet* special_net) {
+  IRPGNetlist pg_netlist;
+
+  unsigned line_segment_num = 0;
+  std::vector<BGSegment> bg_segments = buildBGSegments(special_net, line_segment_num);
+
+  // Firstly, get the wire topo point in line segment.
   std::set<std::tuple<int64_t, int64_t, int64_t>> pg_points;
   std::map<int, std::set<IRPGNode*, IRNodeComparator>> segment_to_point;
   for (unsigned i = 0; i < line_segment_num; ++i) {
@@ -148,16 +166,16 @@ IRPGNetlist IRPGNetlistBuilder::build(idb::IdbSpecialNet* special_net) {
     auto bg_rect = BGRect(bg_segments[i].first, bg_segments[i].second);
     _rtree.query(bgi::intersects(bg_rect), std::back_inserter(result_s));
 
-    LOG_INFO << "bg segment " << bg::dsv(bg_rect);
+    // LOG_INFO << "bg segment " << bg::dsv(bg_rect);
 
     for (const auto& r : result_s) {
       if (r.second > i) {
-        LOG_INFO << "intersect segment " << bg::dsv(r.first); 
+        // LOG_INFO << "intersect segment " << bg::dsv(r.first);
 
         BGRect intersection_result;
         bg::intersection(bg_rect, r.first, intersection_result);
-        LOG_INFO << "bg segment " << i << " intersect with " << r.second
-                 << " intersection_result: " << bg::dsv(intersection_result);
+        // LOG_INFO << "bg segment " << i << " intersect with " << r.second
+        //          << " intersection_result: " << bg::dsv(intersection_result);
 
         auto& left_bottom = intersection_result.min_corner();
         auto& right_top = intersection_result.max_corner();
@@ -183,7 +201,7 @@ IRPGNetlist IRPGNetlistBuilder::build(idb::IdbSpecialNet* special_net) {
     }
   }
 
-  // build wire topo edge for connect the wire topo point.
+  // Secondly, build wire topo edge for connect the wire topo point.
   // first we build the line segment edge.
   for (auto& [segment_id, point_set] : segment_to_point) {
     IRPGNode* pg_last_node = nullptr;
@@ -196,9 +214,13 @@ IRPGNetlist IRPGNetlistBuilder::build(idb::IdbSpecialNet* special_net) {
     }
   }
 
-  LOG_INFO << "line edge num: " << pg_netlist.getEdgeNum();
+  unsigned line_edge_num = pg_netlist.getEdgeNum();
+  LOG_INFO << "line edge num: " << line_edge_num;
   
-  // the we build the via segment edge.
+  // Then we build the via segment edge.
+  std::vector<IRPGNode*> via_segment_nodes;
+  // FIXME(totaosimin), should not hard code the instance pin layer.
+  unsigned instance_pin_layer = 2;
   for (unsigned i = line_segment_num; i < bg_segments.size(); ++i) {
     auto bg_start = bg_segments[i].first;
     auto bg_end = bg_segments[i].second;
@@ -213,14 +235,42 @@ IRPGNetlist IRPGNetlistBuilder::build(idb::IdbSpecialNet* special_net) {
       via_end_node = &(pg_netlist.addNode({bg_end.get<0>(), bg_end.get<1>()}, bg_end.get<2>()));
     }
     
+    if (bg_start.get<2>() == instance_pin_layer) {
+      via_segment_nodes.push_back(via_start_node);
+    }
+    
     pg_netlist.addEdge(via_start_node, via_end_node);
   }
+  
+  unsigned via_edge_num = pg_netlist.getEdgeNum() - line_edge_num;
+  LOG_INFO << "via edge num: " << via_edge_num;
 
-  LOG_INFO << "via edge num: " << line_segment_num;
+  // Finally, connect the instance pin list.
+  auto instance_pin_list = special_net->get_instance_pin_list()->get_pin_list();
+  for (auto* instance_pin : instance_pin_list) {
+    // LOG_INFO << "connect instance pin: "
+    //          << instance_pin->get_instance()->get_name() << ":"
+    //          << instance_pin->get_pin_name();
+    
+    auto* instance_pin_coord = instance_pin->get_grid_coordinate();
+    auto* instance_pin_node = &(pg_netlist.addNode(
+        {instance_pin_coord->get_x(), instance_pin_coord->get_y()},
+        instance_pin_layer));
+    instance_pin_node->set_is_instance_pin();
+
+    for (auto* via_segment_node : via_segment_nodes) {
+      // via should be on the same row with the instance pin.
+      if (via_segment_node->get_coord().second == instance_pin_coord->get_y()) {
+        pg_netlist.addEdge(via_segment_node, instance_pin_node);
+      }
+      
+    }
+  }
+  LOG_INFO << "instance pin edge num: " << pg_netlist.getEdgeNum() - via_edge_num - line_edge_num;
   LOG_INFO << "total edge num: " << pg_netlist.getEdgeNum();
 
   // for debug.
-  pg_netlist.printToYaml("/home/taosimin/ir_example/aes/pg_netlist/aes_pg_netlist.yaml");
+  // pg_netlist.printToYaml("/home/taosimin/ir_example/aes/pg_netlist/aes_pg_netlist.yaml");
 
   return pg_netlist;
 }

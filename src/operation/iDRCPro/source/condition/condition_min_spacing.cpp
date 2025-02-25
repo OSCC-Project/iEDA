@@ -130,9 +130,9 @@ void DrcConditionManager::checkMinSpacing(std::string layer, DrcEngineLayout* la
       }
     }
   }
+  // DEBUGOUTPUT(DEBUGHIGHLIGHT("Min Spacing:\t") << violation_num << "\tresults = " << results.size()
+  //                                              << "\ttime = " << states.elapsedRunTime() << "\tmemory = " << states.memoryDelta());
 
-  DEBUGOUTPUT(DEBUGHIGHLIGHT("Min Spacing:\t") << violation_num << "\tresults = " << results.size()
-                                               << "\ttime = " << states.elapsedRunTime() << "\tmemory = " << states.memoryDelta());
 }
 
 }  // namespace idrc
