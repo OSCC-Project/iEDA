@@ -1535,7 +1535,13 @@ void LmNetGraphGenerator::toQt(const WireGraph& graph) const
     // plot line
     for (const auto& [start, end] : graph[e].path) {
       auto label = "Component " + std::to_string(component[u]);
-      widget->addWire(getX(start), getY(start), getZ(start), getX(end), getY(end), getZ(end), "Wire " + std::to_string(wire_idx), label);
+      auto start_z = getZ(start);
+      auto end_z = getZ(end);
+      if (start_z != end_z) {
+        widget->addVia(getX(start), getY(start), start_z, end_z, "Via " + std::to_string(via_idx), label);
+      } else {
+        widget->addWire(getX(start), getY(start), getZ(start), getX(end), getY(end), getZ(end), "Wire " + std::to_string(wire_idx), label);
+      }
       ++path_idx;
     }
     if (graph[u].layer_id == graph[v].layer_id) {
