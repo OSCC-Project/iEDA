@@ -823,8 +823,12 @@ unsigned Power::runIRAnalysis() {
   iIR ir_analysis;
   ir_analysis.init();
   ir_analysis.setInstancePowerData(std::move(instance_power_data));
-  const char* spef_file_path = "/home/taosimin/ir_example/aes/aes_vdd_vss.spef";
-  ir_analysis.readSpef(spef_file_path);
+  
+  // const char* spef_file_path = "/home/taosimin/ir_example/aes/aes_vdd_vss.spef";
+  // ir_analysis.readSpef(spef_file_path);
+
+  ir_analysis.set_rc_data(_rust_pg_rc_data);
+
   ir_analysis.solveIRDrop("VDD");
 
   return 1;

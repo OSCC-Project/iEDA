@@ -468,4 +468,38 @@ std::vector<MacroConnection> PowerEngine::buildMacroConnectionMapWithGPU(
 }
 #endif
 
+unsigned PowerEngine::buildPGNetWireTopo() {
+  auto* idb_adapter =
+      dynamic_cast<ista::TimingIDBAdapter*>(_timing_engine->get_db_adapter());
+  auto* idb_builder = idb_adapter->get_idb();
+  auto* special_net_list =
+      idb_builder->get_def_service()->get_design()->get_special_net_list();
+  auto* vdd_net = special_net_list->find_net("VDD");
+
+  auto* idb_design = idb_builder->get_def_service()->get_design();
+  auto dbu = idb_design->get_units()->get_micron_dbu();
+
+  // auto idb_lef_service = idb_builder->get_lef_service();
+  // auto routing_layers =
+  //     idb_lef_service->get_layout()->get_layers()->get_routing_layers();
+
+  std::function<double(unsigned, unsigned)> calc_resistance =
+      [idb_adapter, dbu](unsigned layer_id, unsigned distance_dbu) -> double {
+    std::optional<double> width = std::nullopt;
+    double wire_length = double(distance_dbu) / dbu;
+    return idb_adapter->getResistance(layer_id, wire_length, width);
+  };
+
+  IRPGNetlistBuilder pg_netlist_builder;
+  pg_netlist_builder.build(vdd_net, calc_resistance);
+  pg_netlist_builder.createRustPGNetlist();
+  pg_netlist_builder.createRustRCData();
+
+  auto* rc_data = pg_netlist_builder.get_rust_rc_data();
+
+  _ipower->set_rust_pg_rc_data(rc_data);
+
+  return 1;
+}
+
 }  // namespace ipower

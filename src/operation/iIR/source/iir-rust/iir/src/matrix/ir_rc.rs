@@ -261,8 +261,8 @@ pub fn read_rc_data_from_spef(spef_file_path: &str) -> RCData {
     rc_data
 }
 
-/// build estimate rc data, rc node from pg node, rc edge from pg edge.
-pub fn estimate_rc_data_from_topo(pg_netlist: &RustIRPGNetlist) -> RCOneNetData {
+/// build rc data, rc node from pg node, rc edge from pg edge.
+pub fn create_rc_data_from_topo(pg_netlist: &RustIRPGNetlist) -> RCOneNetData {
     let net_name = c_str_to_r_str(pg_netlist.net_name);
     let mut one_net_data = RCOneNetData::new(net_name.clone());
 
@@ -279,6 +279,7 @@ pub fn estimate_rc_data_from_topo(pg_netlist: &RustIRPGNetlist) -> RCOneNetData 
         let mut rc_resistance = RCResistance::default();
         rc_resistance.from_node_id = node1_id;
         rc_resistance.to_node_id = node2_id;
+        rc_resistance.resistance = pg_edge.resistance;
         one_net_data.add_resistance(rc_resistance);
     }
 

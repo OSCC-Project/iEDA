@@ -41,7 +41,7 @@ const void *create_pg_edge(const void *c_pg_netlist, const void *c_pg_edge);
 
 const void *create_pg_netlist(const char *c_power_net_name);
 
-const void *estimate_rc_data(const void *c_pg_netlist);
+const void *create_rc_data(const void *c_pg_netlist_ptr, uintptr_t len);
 
 /**
  * Read instance power csv file.

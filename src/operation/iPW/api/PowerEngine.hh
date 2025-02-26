@@ -29,6 +29,7 @@
 #include "Power.hh"
 #include "Type.hh"
 #include "api/TimingEngine.hh"
+#include "api/TimingIDBAdapter.hh"
 
 namespace ipower {
 
@@ -79,6 +80,8 @@ class PowerEngine {
 
   // api for build only macro connection.
   std::vector<MacroConnection> buildMacroConnectionMap(unsigned max_hop);
+
+  unsigned buildPGNetWireTopo();
 
 #ifdef USE_GPU
   std::vector<MacroConnection> buildMacroConnectionMapWithGPU(unsigned max_hop);

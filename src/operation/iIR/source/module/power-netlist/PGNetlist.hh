@@ -111,9 +111,13 @@ class IRPGEdge {
   auto& get_node1() const { return _node1; }
   auto& get_node2() const { return _node2; }
 
+  void set_resistance(double resistance) { _resistance = resistance; }
+
  private:
   int64_t _node1;  //!< The first node id.
   int64_t _node2;  //!< The second node id.
+
+  double _resistance = 0.0;
 };
 
 /**
@@ -130,6 +134,7 @@ class IRPGNetlist {
 
   IRPGNode& addNode(IRNodeCoord coord, int layer_id) {
     auto& one_node = _nodes.emplace_back(coord, layer_id);
+    _nodes_image.push_back(&one_node);
     one_node.set_node_id(_nodes.size() - 1);
     return one_node;
   }
@@ -144,6 +149,20 @@ class IRPGNetlist {
     return nullptr;
   }
   auto& get_nodes() { return _nodes; }
+  auto& get_nodes_image() { return _nodes_image; }
+  IRPGNode* getNode(unsigned index) {
+    return _nodes_image[index];
+  }
+
+  auto getEdgeNode(IRPGEdge& pg_edge) {
+    auto node1_id = pg_edge.get_node1();
+    auto* node1 = _nodes_image[node1_id];
+    auto node2_id = pg_edge.get_node2();
+    auto* node2 = _nodes_image[node2_id];
+
+    return std::make_tuple(node1, node2);
+  }
+
   IRPGEdge& addEdge(IRPGNode* node1, IRPGNode* node2) {
     LOG_FATAL_IF(node1->get_node_id() == node2->get_node_id());
     auto& one_edge = _edges.emplace_back(node1, node2);
@@ -156,6 +175,7 @@ class IRPGNetlist {
 
  private:
   std::list<IRPGNode> _nodes;  //!< The nodes of the netlist.
+  std::vector<IRPGNode*> _nodes_image; //!< The nodes image for fast access.
   std::vector<IRPGEdge> _edges;  //!< The edges of the netlist.
 
   std::string _net_name;
@@ -170,17 +190,22 @@ class IRPGNetlistBuilder {
   IRPGNetlistBuilder() = default;
   ~IRPGNetlistBuilder() = default;
 
-  std::vector<BGSegment> buildBGSegments(idb::IdbSpecialNet* special_net, unsigned& line_segment_num);
+  std::vector<BGSegment> buildBGSegments(idb::IdbSpecialNet* special_net,
+                                         unsigned& line_segment_num);
 
-  void build(idb::IdbSpecialNet* special_net);
+  void build(idb::IdbSpecialNet* special_net,
+             std::function<double(unsigned, unsigned)> calc_resistance);
   void createRustPGNetlist();
-  void estimateRC();
+  void createRustRCData();
+
+  auto* get_rust_rc_data() const { return _rust_rc_data; }
 
  private:
   bgi::rtree<BGValue, bgi::quadratic<16>> _rtree;
 
   std::vector<IRPGNetlist> _pg_netlists; //!< The builded pg netlist.
   std::vector<const void*> _rust_pg_netlists; //!< The rust pg netlist.
+  const void* _rust_rc_data = nullptr;
 };
 
 }  // namespace iir

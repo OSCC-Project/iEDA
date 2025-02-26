@@ -68,6 +68,7 @@ pub struct RustIRPGNode {
 pub struct RustIRPGEdge {
     node1: i64,
     node2: i64,
+    resistance: f64,
 }
 
 /// IR PG netlist.
@@ -208,12 +209,24 @@ pub extern "C" fn create_pg_netlist(c_power_net_name: *const c_char) -> *const c
     Box::into_raw(c_pg_netlist) as *const c_void
 }
 
-/// estimate resistance capacitance data.
+
+/// estimate all pg netlist rc data.
 #[no_mangle]
-pub extern "C" fn estimate_rc_data(c_pg_netlist: *const c_void) -> *const c_void {
-    let pg_netlist = unsafe { Box::from_raw(c_pg_netlist as *mut RustIRPGNetlist) };
-    ir_rc::estimate_rc_data_from_topo(&pg_netlist);
-    Box::into_raw(pg_netlist) as *const c_void
+pub extern "C" fn create_rc_data(c_pg_netlist_ptr: *const c_void, len: usize) -> *const c_void {
+    let mut rc_data = RCData::default();
+
+    let pg_netlist_vec: Vec<Box<RustIRPGNetlist>> = unsafe {
+            Vec::from_raw_parts(c_pg_netlist_ptr as *mut Box<RustIRPGNetlist>, len, len)
+    };
+    for pg_netlist in pg_netlist_vec.iter() {
+        let one_rc_data = ir_rc::create_rc_data_from_topo(pg_netlist);
+        rc_data.add_one_net_data(one_rc_data);
+    }
+
+    std::mem::forget(pg_netlist_vec);
+
+    let mv_rc_data = Box::new(rc_data);
+    Box::into_raw(mv_rc_data) as *const c_void
 }
 
 #[no_mangle]

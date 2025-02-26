@@ -31,6 +31,7 @@
 #include "include/PwrConfig.hh"
 #include "ops/read_vcd/RustVCDParserWrapper.hh"
 #include "iIR/api/iIR.hh"
+#include "iIR/source/module/power-netlist/PGNetlist.hh"
 
 using namespace iir;
 
@@ -123,6 +124,11 @@ class Power {
     _obj_to_datas[group_data->get_obj()] = std::move(group_data);
   }
 
+  void set_rust_pg_rc_data(const void* rust_pg_rc_data) {
+    _rust_pg_rc_data = rust_pg_rc_data;
+  }
+  auto* get_rust_pg_rc_data() { return _rust_pg_rc_data; }
+
  private:
   std::string _design_work_space; // The power report work space.
 
@@ -141,6 +147,8 @@ class Power {
   std::map<DesignObject*, std::unique_ptr<PwrGroupData>> _obj_to_datas;
   std::map<PwrGroupData::PwrGroupType, std::vector<PwrGroupData*>>
       _type_to_group_data;  //!< The mapping of type to group data.
+
+  const void* _rust_pg_rc_data; //!< The rust power/ground rc data.
 
   static Power* _power;
   FORBIDDEN_COPY(Power);
