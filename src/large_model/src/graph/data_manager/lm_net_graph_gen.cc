@@ -34,7 +34,9 @@
 
 #include "IdbPins.h"
 #include "idm.h"
+#include "lm_graph_gui.hh"
 #include "log/Log.hh"
+
 namespace ilm {
 void LmNetGraphGenerator::initLayerMap()
 {
@@ -381,9 +383,11 @@ bool LmNetGraphGenerator::checkConnectivity(const TopoGraph& graph) const
   auto num = boost::connected_components(graph, component.data());
   if (num > 1) {
     LOG_ERROR << "Topo Graph is not connected";
+    // toQt(graph);
     // toPy(graph, "/home/liweiguo/temp/file/temp_net.py");
     return false;
   }
+  // toQt(graph);
   // toPy(graph, "/home/liweiguo/temp/file/temp_net.py");
   return true;
 }
@@ -995,9 +999,11 @@ bool LmNetGraphGenerator::checkConnectivity(const WireGraph& graph) const
   auto num = boost::connected_components(graph, component.data());
   if (num > 1) {
     LOG_ERROR << "Wire Graph is not connected";
+    // toQt(graph);
     // toPy(graph, "/home/liweiguo/temp/file/temp_net.py");
     return false;
   }
+  // toQt(graph);
   // toPy(graph, "/home/liweiguo/temp/file/temp_net.py");
   return true;
 }
@@ -1421,5 +1427,131 @@ void LmNetGraphGenerator::toPy(const WireGraph& graph, const std::string& path) 
 
   // Show the plot
   file << "fig.show()\n";
+}
+void LmNetGraphGenerator::toQt(const TopoGraph& graph, const bool& component_mode) const
+{
+  // Create the Qt application if needed (assumes one is not already running)
+  int argc = 0;
+  char** argv = nullptr;
+  auto app = QApplication(argc, argv);
+
+  // Create the widget.
+  LmGraphWidget* widget = new LmGraphWidget();
+
+  // Compute connected components for color selection if needed.
+  std::vector<int> component(boost::num_vertices(graph));
+
+  size_t patch_count = 0;
+  size_t wire_count = 0;
+  size_t via_count = 0;
+  size_t pin_count = 0;
+
+  auto [v_iter, v_end] = boost::vertices(graph);
+  for (; v_iter != v_end; ++v_iter) {
+    auto v = *v_iter;
+    auto* content = graph[v].content;
+    if (content->is_patch()) {
+      auto* patch = static_cast<LayoutPatch*>(content);
+      // Add patch as a rectangle (default green).
+      auto label = component_mode ? "Component " + std::to_string(component[v]) : "Patch";
+      widget->addRect(getLowX(patch->rect), getLowY(patch->rect), getLowZ(patch->rect), getHighX(patch->rect), getHighY(patch->rect),
+                      getLowZ(patch->rect), "Patch " + std::to_string(patch_count), label);
+      ++patch_count;
+    } else if (content->is_wire()) {
+      auto* wire = static_cast<LayoutWire*>(content);
+      // Add wire (default red).
+      auto label = component_mode ? "Component " + std::to_string(component[v]) : "Wire";
+      widget->addWire(getX(wire->start), getY(wire->start), getZ(wire->start), getX(wire->end), getY(wire->end), getZ(wire->end),
+                      "Wire " + std::to_string(wire_count), label);
+      ++wire_count;
+    } else if (content->is_via()) {
+      auto* via = static_cast<LayoutVia*>(content);
+      // Add the via cut path (default blue).
+      auto via_label = component_mode ? "Component " + std::to_string(component[v]) : "Via Cut Path";
+      widget->addVia(getStartX(via->cut_path), getStartY(via->cut_path), getStartZ(via->cut_path), getEndZ(via->cut_path),
+                     "Via " + std::to_string(via_count) + " Cut Path", via_label);
+      // Add bottom shapes as rectangles (gray).
+      auto via_bottom_label = component_mode ? "Component " + std::to_string(component[v]) : "Via Bottom";
+      for (auto& bottom_shape : via->bottom_shapes) {
+        widget->addRect(getLowX(bottom_shape), getLowY(bottom_shape), getLowZ(bottom_shape), getHighX(bottom_shape), getHighY(bottom_shape),
+                        getLowZ(bottom_shape), "Via " + std::to_string(via_count) + " Bottom", via_bottom_label);
+      }
+      // Add top shapes as rectangles (gray).
+      auto via_top_label = component_mode ? "Component " + std::to_string(component[v]) : "Via Top";
+      for (auto& top_shape : via->top_shapes) {
+        widget->addRect(getLowX(top_shape), getLowY(top_shape), getLowZ(top_shape), getHighX(top_shape), getHighY(top_shape),
+                        getLowZ(top_shape), "Via " + std::to_string(via_count) + " Top", via_top_label);
+      }
+      ++via_count;
+    } else if (content->is_pin()) {
+      auto* pin = static_cast<LayoutPin*>(content);
+      // Add each pin shape as a rectangle (yellow).
+      auto pin_label = component_mode ? "Component " + std::to_string(component[v]) : "Pin Shape";
+      for (auto& pin_shape : pin->pin_shapes) {
+        widget->addRect(getLowX(pin_shape), getLowY(pin_shape), getLowZ(pin_shape), getHighX(pin_shape), getHighY(pin_shape),
+                        getLowZ(pin_shape), "Pin " + std::to_string(pin_count) + " Shape", pin_label);
+      }
+      // Add each via cut as a vertical wire (yellow).
+      auto via_cut_label = component_mode ? "Component " + std::to_string(component[v]) : "Pin Via Cut";
+      for (auto& via_cut : pin->via_cuts) {
+        auto center = getCenter(via_cut);
+        widget->addVia(getX(center), getY(center), getLowZ(via_cut), getHighZ(via_cut), "Pin " + std::to_string(pin_count) + " Via Cut",
+                       via_cut_label);
+      }
+      ++pin_count;
+    }
+  }
+  // Setup the view.
+  widget->autoScale();
+  widget->initView();
+  widget->showAxes();
+  widget->resize(1600, 1200);
+  widget->show();
+
+  app.exec();
+}
+void LmNetGraphGenerator::toQt(const WireGraph& graph) const
+{
+  // Create the Qt application if needed (assumes one is not already running)
+  int argc = 0;
+  char** argv = nullptr;
+  auto app = QApplication(argc, argv);
+
+  // Create the widget.
+  LmGraphWidget* widget = new LmGraphWidget();
+
+  // Compute connected components for color selection if needed.
+  std::vector<int> component(boost::num_vertices(graph));
+
+  size_t wire_idx = 0;
+  size_t via_idx = 0;
+
+  auto [e_iter, e_end] = boost::edges(graph);
+  for (; e_iter != e_end; ++e_iter) {
+    auto e = *e_iter;
+    auto u = boost::source(e, graph);
+    auto v = boost::target(e, graph);
+    size_t path_idx = 0;
+    // plot line
+    for (const auto& [start, end] : graph[e].path) {
+      auto label = "Component " + std::to_string(component[u]);
+      widget->addWire(getX(start), getY(start), getZ(start), getX(end), getY(end), getZ(end), "Wire " + std::to_string(wire_idx), label);
+      ++path_idx;
+    }
+    if (graph[u].layer_id == graph[v].layer_id) {
+      wire_idx++;
+    } else {
+      via_idx++;
+    }
+  }
+
+  // Setup the view.
+  widget->autoScale();
+  widget->initView();
+  widget->showAxes();
+  widget->resize(1600, 1200);
+  widget->show();
+
+  app.exec();
 }
 }  // namespace ilm
