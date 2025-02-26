@@ -260,7 +260,7 @@ std::vector<Violation> ViolationRepairer::getHybridNetViolationList(VRModel& vr_
     de_task.set_net_patch_map(net_patch_map);
     de_task.set_need_checked_net_set(need_checked_net_set);
   }
-  // return RTDE.getViolationListByTemp(de_task);
+  return RTDE.getViolationListByTemp(de_task);
   return RTDE.getViolationList(de_task);
 }
 
@@ -291,12 +291,12 @@ void ViolationRepairer::iterativeVRModel(VRModel& vr_model)
     initVRBoxMap(vr_model);
     buildBoxSchedule(vr_model);
     splitNetResult(vr_model);
-    debugPlotVRModel(vr_model, "middle");
+    // debugPlotVRModel(vr_model, "middle");
     routeVRBoxMap(vr_model);
     uploadNetResult(vr_model);
     uploadNetPatch(vr_model);
     uploadViolation(vr_model);
-    debugPlotVRModel(vr_model, "after");
+    // debugPlotVRModel(vr_model, "after");
     updateSummary(vr_model);
     printSummary(vr_model);
     outputNetCSV(vr_model);
@@ -482,7 +482,7 @@ void ViolationRepairer::routeVRBoxMap(VRModel& vr_model)
   size_t routed_box_num = 0;
   for (std::vector<VRBoxId>& vr_box_id_list : vr_model.get_vr_box_id_list_list()) {
     Monitor stage_monitor;
-#pragma omp parallel for
+    // #pragma omp parallel for
     for (VRBoxId& vr_box_id : vr_box_id_list) {
       VRBox& vr_box = vr_box_map[vr_box_id.get_x()][vr_box_id.get_y()];
       buildFixedRect(vr_box);
@@ -730,16 +730,163 @@ void ViolationRepairer::initSingleTask(VRBox& vr_box, VRTask* vr_task)
 
 void ViolationRepairer::routeSingleTask(VRBox& vr_box)
 {
-  // 删除当前task的暂时性patch,用于重新打patch
-  // std::vector<EXTLayerRect>& task_patch_list = vr_box.get_routing_patch_list();
-  // for (EXTLayerRect& routing_patch : task_patch_list) {
-  //   updateRoutedRectToGraph(vr_box, ChangeType::kDel, vr_box.get_curr_vr_task()->get_net_idx(), routing_patch);
-  // }
-  // task_patch_list.clear();//这里的clear有问题,prl patch无法收敛
+  routeBySameLayerCutSpacing(vr_box);
   // routeByParallelRunLengthSpacing(vr_box);
   // routeByMinimumArea(vr_box);
 }
 
+void ViolationRepairer::routeBySameLayerCutSpacing(VRBox& vr_box)
+{
+  // 既要build cut的，又要build net的，好像也不是必须？
+  auto vr_task = vr_box.get_curr_vr_task();
+  auto& routing_patch_list = vr_box.get_routing_patch_list();
+  {
+    routing_patch_list = vr_box.get_net_task_final_patch_map()[vr_task->get_net_idx()];
+  }
+  auto& routing_segment_list = vr_box.get_routing_segment_list();
+  {
+    routing_segment_list = vr_box.get_net_task_final_result_map()[vr_task->get_net_idx()];
+  }
+
+  std::vector<RoutingLayer>& routing_layer_list = RTDM.getDatabase().get_routing_layer_list();
+  int32_t manufacture_grid = RTDM.getDatabase().get_manufacture_grid();
+  ScaleAxis& gcell_axis = RTDM.getDatabase().get_gcell_axis();
+
+  int32_t net_idx = vr_task->get_net_idx();
+  std::map<bool, std::map<int32_t, GTLPolySetInt>> layer_single_net_map;      // 所有形状的boost shape set,单net
+  std::map<bool, std::map<int32_t, GTLPolySetInt>> layer_bshape_all_net_map;  // box内的所有net的形状
+
+  for (auto& [is_routing, layer_net_rect_map] : vr_box.get_graph_type_layer_net_fixed_rect_map()) {
+    for (auto& [layer_idx, net_rect_map] : layer_net_rect_map) {
+      for (auto& [net_idx, rect_set] : net_rect_map) {
+        for (const PlanarRect& rect : rect_set) {
+          if (net_idx == vr_task->get_net_idx()) {
+            layer_single_net_map[is_routing][layer_idx] += RTUTIL.convertToGTLRectInt(rect);
+          }
+          layer_bshape_all_net_map[is_routing][layer_idx] += RTUTIL.convertToGTLRectInt(rect);
+        }
+      }
+    }
+  }
+  for (auto& [is_routing, layer_net_rect_map] : vr_box.get_graph_type_layer_net_routed_rect_map()) {
+    for (auto& [layer_idx, net_rect_map] : layer_net_rect_map) {
+      for (auto& [net_idx, rect_set] : net_rect_map) {
+        for (const PlanarRect& rect : rect_set) {
+          if (is_routing) {
+            if (net_idx == vr_task->get_net_idx()) {
+              layer_single_net_map[is_routing][layer_idx] += RTUTIL.convertToGTLRectInt(rect);
+            }
+            layer_bshape_all_net_map[is_routing][layer_idx] += RTUTIL.convertToGTLRectInt(rect);
+          }
+        }
+      }
+    }
+  }
+
+  std::vector<std::vector<ViaMaster>>& layer_via_master_list = RTDM.getDatabase().get_layer_via_master_list();
+  for (auto& violation : vr_box.get_violation_list()) {
+    if ((violation.get_violation_type() == ViolationType::kCutShort || violation.get_violation_type() == ViolationType::kSameLayerCutSpacing)
+        && RTUTIL.exist(violation.get_violation_net_set(), net_idx) && violation.get_violation_net_set().size() == 1) {
+      // if(violation.get_violation_shape().get_real_ll_x() == 39960)
+      // debugPlotVRBox(vr_box, -1, "cut_debug");
+
+      // 根据cut shape的生成可以从cut的shape反推出cut对应的coord
+      // short即 spacing < 0
+      std::vector<EXTLayerRect> patch_list;
+      auto violation_shape = violation.get_violation_shape();
+      std::vector<PlanarRect> spacing_cuts;
+      // GTLPolySetInt spacing_cuts_poly = layer_single_net_map[false][violation_shape.get_layer_idx()];
+      // gtl::interact(spacing_cuts_poly, RTUTIL.convertToGTLRectInt(violation_shape.get_real_rect()) +
+      // RTUTIL.convertToGTLRectInt(violation_shape.get_real_rect()));
+      int32_t layer_idx = violation_shape.get_layer_idx();
+      ViaMaster& via_master = layer_via_master_list[layer_idx].front();
+      for (auto& rect : vr_box.get_graph_type_layer_net_routed_rect_map()[false][via_master.get_cut_layer_idx()][net_idx]) {  // via 的layer要更高一层？
+        if (RTUTIL.isClosedOverlap(violation_shape.get_real_rect(), rect)) {
+          spacing_cuts.push_back(rect);
+        }
+      }
+
+      if (spacing_cuts.size() <= 1) {
+        // cut在边界，先跳过，这种情况需要仔细考虑一下，可能会遗漏cut导致一些其他问题，或者如果在fixed里面的话就方便判断了,<=1这个条件不对，--应该是包含有fixed或者是在边界的--
+        continue;
+      }
+      // for (auto& rect : vr_box.get_graph_type_layer_net_fixed_rect_map()[false][layer_idx][net_idx]) {
+      //   if (RTUTIL.isClosedOverlap(violation_shape.get_real_rect(), rect)) {
+      //     spacing_cuts.push_back(rect);
+      //   }
+      // }
+
+      // 目前为了方便代码编写，暂时只留下第一个的segment
+      std::vector<PlanarCoord> del_coord_list;
+      for (size_t i = 1; i < spacing_cuts.size(); i++) {
+        del_coord_list.push_back(spacing_cuts[i].getMidPoint());
+      }
+      for (auto cut_shape : spacing_cuts) {
+        auto cmp_segment_coord_func = [&](Segment<LayerCoord>& segment) {
+          for (auto coord : del_coord_list) {
+            auto &first_coord = segment.get_first(), &second_coord = segment.get_second();
+            if (first_coord.get_layer_idx() > second_coord.get_layer_idx()) {
+              std::swap(first_coord, second_coord);
+            }
+            if (first_coord.get_layer_idx() != second_coord.get_layer_idx() && first_coord.get_layer_idx() == layer_idx && first_coord.get_x() == coord.get_x()
+                && first_coord.get_y() == coord.get_y()) {
+              RTLOG.info(Loc::current(), "get a remove segment");
+              return true;
+            }
+          }
+          return false;
+        };
+        routing_segment_list.erase(std::remove_if(routing_segment_list.begin(), routing_segment_list.end(), cmp_segment_coord_func),
+                                   routing_segment_list.end());
+      }
+      auto layer_to_patch_func = [&](LayerRect patch_planar) {
+        EXTLayerRect extend_patch;
+        extend_patch.set_layer_idx(patch_planar.get_layer_idx());
+        extend_patch.set_real_rect(patch_planar.get_rect());
+        extend_patch.set_grid_rect(RTUTIL.getOpenGCellGridRect(extend_patch.get_real_rect(), gcell_axis));
+        return extend_patch;
+      };
+      //用segment连起来而不是保留原图形
+  
+
+      // 拿到原来的enclosure
+      std::vector<EXTLayerRect> below_enclosure_list;  //
+      std::vector<EXTLayerRect> above_enclosure_list;  //
+      GTLPolySetInt below_enclosure_poly, above_enclosure_poly; 
+      {
+        for (auto cut_shape : spacing_cuts) {
+          auto coord = cut_shape.getMidPoint();
+
+          LayerRect& above_enclosure = via_master.get_above_enclosure();
+          LayerRect offset_above_enclosure(RTUTIL.getOffsetRect(above_enclosure, coord), above_enclosure.get_layer_idx());
+          above_enclosure_list.push_back(layer_to_patch_func(offset_above_enclosure));
+
+          LayerRect& below_enclosure = via_master.get_below_enclosure();
+          LayerRect offset_below_enclosure(RTUTIL.getOffsetRect(below_enclosure, coord), below_enclosure.get_layer_idx());
+          below_enclosure_list.push_back(layer_to_patch_func(offset_below_enclosure));
+        }
+      }
+      // 原来的enclosure先放回来
+      for (auto enclosure : below_enclosure_list) {
+        patch_list.push_back(enclosure);
+        below_enclosure_poly += RTUTIL.convertToGTLRectInt(enclosure.get_real_rect());
+      }
+      for (auto enclosure : above_enclosure_list) {
+        patch_list.push_back(enclosure);
+        above_enclosure_poly += RTUTIL.convertToGTLRectInt(enclosure.get_real_rect());
+      }
+
+      // 检测enclosure之间的交界情况
+      std::vector<GTLPolyInt> below_enclosure_poly_list, above_enclosure_poly_list;
+      below_enclosure_poly.get_polygons(below_enclosure_poly_list);
+      above_enclosure_poly.get_polygons(above_enclosure_poly_list);
+      if (below_enclosure_poly_list.size() > 1) {//用patch连起来,待做
+      }
+      if (above_enclosure_poly_list.size() > 1) {//用patch连起来，代做
+      }
+    }
+  }
+}
 void ViolationRepairer::routeByParallelRunLengthSpacing(VRBox& vr_box)
 {
   auto vr_task = vr_box.get_curr_vr_task();
@@ -984,10 +1131,10 @@ void ViolationRepairer::routeByMinimumArea(VRBox& vr_box)
     }
   }
 
-  for(auto &patch :routing_patch_list){
+  for (auto& patch : routing_patch_list) {
     layer_single_net_map[patch.get_layer_idx()] += RTUTIL.convertToGTLRectInt(patch.get_real_rect());
     layer_bshape_all_net_map[patch.get_layer_idx()] += RTUTIL.convertToGTLRectInt(patch.get_real_rect());
-  } 
+  }
   auto planar_to_patch_func = [&](PlanarRect patch_planar, int32_t layer_idx) {
     EXTLayerRect extend_patch;
     extend_patch.set_layer_idx(layer_idx);
@@ -1322,7 +1469,7 @@ std::vector<Violation> ViolationRepairer::getHybridNetViolationList(VRBox& vr_bo
   de_task.set_net_result_map(net_result_map);
   de_task.set_net_patch_map(net_patch_map);
   de_task.set_need_checked_net_set(need_checked_net_set);
-  // return RTDE.getViolationListByTemp(de_task);
+  return RTDE.getViolationListByTemp(de_task);
   return RTDE.getViolationList(de_task);
 }
 
