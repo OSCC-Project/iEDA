@@ -91,6 +91,7 @@ class ViolationRepairer
   void uploadNetResult(VRModel& vr_model);
   void uploadNetPatch(VRModel& vr_model);
   bool stopIteration(VRModel& vr_model);
+
 #if 1  // update env
   void updateFixedRectToGraph(VRBox& vr_box, ChangeType change_type, int32_t net_idx, EXTLayerRect* fixed_rect, bool is_routing);
   void updateFixedRectToGraph(VRBox& vr_box, ChangeType change_type, int32_t net_idx, Segment<LayerCoord>& segment);
