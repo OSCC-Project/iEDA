@@ -103,7 +103,7 @@ class Power {
   std::vector<IRInstancePower> getInstancePowerData();
 
   unsigned runCompleteFlow();
-  unsigned runIRAnalysis();
+  unsigned runIRAnalysis(std::string power_net_name);
 
   auto& get_leakage_powers() { return _leakage_powers; }
   auto& get_internal_powers() { return _internal_powers; }

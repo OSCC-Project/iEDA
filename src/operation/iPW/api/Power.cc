@@ -817,7 +817,7 @@ unsigned Power::runCompleteFlow() {
  * 
  * @return unsigned 
  */
-unsigned Power::runIRAnalysis() {
+unsigned Power::runIRAnalysis(std::string power_net_name) {
 
   _ir_analysis.init();
 
@@ -832,7 +832,7 @@ unsigned Power::runIRAnalysis() {
   _ir_analysis.set_rc_data(_rust_pg_rc_data);
 
   // calc ir drop.
-  _ir_analysis.solveIRDrop("VDD");
+  _ir_analysis.solveIRDrop(power_net_name.c_str());
 
   return 1;
 }

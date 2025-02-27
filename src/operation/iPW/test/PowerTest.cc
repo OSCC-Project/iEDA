@@ -197,8 +197,9 @@ TEST_F(PowerTest, runIR) {
   Power* ipower = Power::getOrCreatePower(&(ista->get_graph()));
 
   ipower->runCompleteFlow();
-
-  ipower->runIRAnalysis();
+  
+  std::string power_net_name = "VDD";
+  ipower->runIRAnalysis(power_net_name);
 }
 
 TEST_F(PowerTest, estimateIR) {
@@ -305,9 +306,10 @@ TEST_F(PowerTest, estimateIR) {
   ipower->runCompleteFlow();
 
   PowerEngine* power_engine = PowerEngine::getOrCreatePowerEngine();
-  power_engine->buildPGNetWireTopo();
 
-  ipower->runIRAnalysis();
+  std::string power_net_name = "VDD";
+  power_engine->buildPGNetWireTopo(power_net_name);
+  ipower->runIRAnalysis(power_net_name);
 }
 
 }  // namespace

@@ -81,7 +81,7 @@ class PowerEngine {
   // api for build only macro connection.
   std::vector<MacroConnection> buildMacroConnectionMap(unsigned max_hop);
 
-  unsigned buildPGNetWireTopo();
+  unsigned buildPGNetWireTopo(std::string power_net_name);
 
 #ifdef USE_GPU
   std::vector<MacroConnection> buildMacroConnectionMapWithGPU(unsigned max_hop);

@@ -76,13 +76,16 @@ class IRPGNode {
   void set_node_name(const char* name) { _node_name = name; }
   auto get_node_name() const { return _node_name; }
 
+  void set_is_bump() { _is_bump = true; }
+  auto is_bump() const { return _is_bump; }
+
  private:
   IRNodeCoord _coord;  //!< The coord of the node.
   int _layer_id;       //!< The layer id of the node.
   int _node_id = -1; //!< The node id of the pg nodes.
   bool _is_instance_pin = false; //!< The node is instance VDD/GND.
+  bool _is_bump = false; //!< The node is bump VDD/GND.
   const char* _node_name = nullptr; //!< The name of the node.
-
 };
 
 /**
@@ -206,7 +209,7 @@ class IRPGNetlistBuilder {
   std::vector<BGSegment> buildBGSegments(idb::IdbSpecialNet* special_net,
                                          unsigned& line_segment_num);
 
-  void build(idb::IdbSpecialNet* special_net,
+  void build(idb::IdbSpecialNet* special_net, idb::IdbPin* io_pin,
              std::function<double(unsigned, unsigned)> calc_resistance);
   void createRustPGNetlist();
   void createRustRCData();
