@@ -760,6 +760,88 @@ void ViolationRepairer::routeByParallelRunLengthSpacing(VRBox& vr_box)
     // TODO// TODO// TODO// TODO// TODO// TODO// TODO// TODO// TODO
     // TODO// TODO// TODO// TODO// TODO// TODO// TODO// TODO// TODO
     // TODO// TODO// TODO// TODO// TODO// TODO// TODO// TODO// TODO
+    int32_t curr_net_idx = vr_box.get_curr_net_idx();
+    std::map<int32_t, GTLPolySetInt> layer_single_net_map;      // 所有形状的boost shape set,单net
+    std::map<int32_t, GTLPolySetInt> layer_bshape_all_net_map;  // box内的所有net的形状
+    for (auto& [is_routing, layer_net_fixed_rect_map] : vr_box.get_type_layer_net_fixed_rect_map()) {
+      if (is_routing) {
+        for (auto& [layer_idx, net_fixed_rect_map] : layer_net_fixed_rect_map) {
+          for (auto& [net_idx, fixed_rect_set] : net_fixed_rect_map) {
+            for (auto& fixed_rect : fixed_rect_set) {
+              if (net_idx == curr_net_idx) {
+                layer_single_net_map[layer_idx] += RTUTIL.convertToGTLRectInt(fixed_rect->get_real_rect());
+              }
+              layer_bshape_all_net_map[layer_idx] += RTUTIL.convertToGTLRectInt(fixed_rect->get_real_rect());
+            }
+          }
+        }
+      }
+    }
+
+    for (auto& [net_idx, segment_set] : vr_box.get_net_final_result_map()) {
+      for (Segment<LayerCoord>* segment : segment_set) {
+        for (NetShape& net_shape : RTDM.getNetShapeList(net_idx, *segment)) {
+          if (!net_shape.get_is_routing()) {
+            continue;
+          }
+          if (net_idx == curr_net_idx) {
+            layer_single_net_map[net_shape.get_layer_idx()] += RTUTIL.convertToGTLRectInt(net_shape.get_rect());
+          }
+          layer_bshape_all_net_map[net_shape.get_layer_idx()] += RTUTIL.convertToGTLRectInt(net_shape.get_rect());
+        }
+      }
+    }
+    for (auto& [net_idx, segment_list] : vr_box.get_net_task_final_result_map()) {
+      for (Segment<LayerCoord>& segment : segment_list) {
+        for (NetShape& net_shape : RTDM.getNetShapeList(net_idx, segment)) {
+          if (!net_shape.get_is_routing()) {
+            continue;
+          }
+          if (net_idx == curr_net_idx) {
+            layer_single_net_map[net_shape.get_layer_idx()] += RTUTIL.convertToGTLRectInt(net_shape.get_rect());
+          }
+          layer_bshape_all_net_map[net_shape.get_layer_idx()] += RTUTIL.convertToGTLRectInt(net_shape.get_rect());
+        }
+      }
+    }
+
+    for (auto& [net_idx, patch_set] : vr_box.get_net_final_patch_map()) {
+      for (EXTLayerRect* patch : patch_set) {
+        if (net_idx == curr_net_idx) {
+          layer_single_net_map[patch->get_layer_idx()] += RTUTIL.convertToGTLRectInt(patch->get_real_rect());
+        }
+        layer_bshape_all_net_map[patch->get_layer_idx()] += RTUTIL.convertToGTLRectInt(patch->get_real_rect());
+      }
+    }
+    for (auto& [net_idx, patch_list] : vr_box.get_net_task_final_patch_map()) {
+      for (EXTLayerRect& patch : patch_list) {
+        layer_bshape_all_net_map[patch.get_layer_idx()] += RTUTIL.convertToGTLRectInt(patch.get_real_rect());
+      }
+    }
+    auto violation = vr_box.get_curr_violation();
+    EXTLayerRect violation_shape = violation.get_violation_shape();
+
+    // 需要判断该PRL的情况,判断东南西北的rect情况
+    GTLRectInt boost_violation_shape = RTUTIL.convertToGTLRectInt(violation_shape.get_real_rect());
+    GTLRectInt boost_violation_shape_copy = boost_violation_shape;
+    std::vector<GTLRectInt> connect_shape;
+    gtl::bloat(boost_violation_shape, gtl::HORIZONTAL, 1);
+    gtl::bloat(boost_violation_shape_copy, gtl::VERTICAL, 1);
+    GTLPolySetInt bloat_shape = boost_violation_shape + boost_violation_shape_copy - RTUTIL.convertToGTLRectInt(violation_shape.get_real_rect());
+    bloat_shape.get(connect_shape);
+    if (connect_shape.size() != 4) {
+      // RTLOG.info(Loc::current(), "meet a exception prl");
+      continue;
+    }
+    int32_t connect_num = 0;  // 与周围shape的邻接情况
+    for (auto rect : connect_shape) {
+      if (gtl::area(rect & layer_single_net_map[violation_shape.get_layer_idx()]) != 0) {
+        connect_num++;
+      }
+    }
+    if(connect_num == 3){//暂时只加这种
+      curr_routing_patch_list.push_back(EXTLayerRect(violation_shape));
+    }
     if (isSolved(vr_box)) {
       break;
     } else {
