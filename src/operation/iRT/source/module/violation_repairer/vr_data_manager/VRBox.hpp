@@ -23,7 +23,6 @@
 #include "VRBoxId.hpp"
 #include "VRIterParam.hpp"
 #include "VRNode.hpp"
-#include "VRTask.hpp"
 #include "Violation.hpp"
 
 namespace irt {
@@ -37,7 +36,7 @@ class VRBox
   EXTPlanarRect& get_box_rect() { return _box_rect; }
   VRBoxId& get_vr_box_id() { return _vr_box_id; }
   VRIterParam* get_vr_iter_param() { return _vr_iter_param; }
-  std::vector<VRTask*>& get_vr_task_list() { return _vr_task_list; }
+  std::set<int32_t>& get_net_idx_set() { return _net_idx_set; }
   std::map<bool, std::map<int32_t, std::map<int32_t, std::set<EXTLayerRect*>>>>& get_type_layer_net_fixed_rect_map() { return _type_layer_net_fixed_rect_map; }
   std::map<int32_t, std::set<Segment<LayerCoord>*>>& get_net_final_result_map() { return _net_final_result_map; }
   std::map<int32_t, std::set<EXTLayerRect*>>& get_net_final_patch_map() { return _net_final_patch_map; }
@@ -54,11 +53,12 @@ class VRBox
     return _graph_type_layer_net_routed_rect_map;
   }
   std::map<int32_t, std::set<PlanarRect, CmpPlanarRectByXASC>>& get_graph_layer_violation_map() { return _graph_layer_violation_map; }
+  std::set<Violation, CmpViolation>& get_tried_fix_violation_set() { return _tried_fix_violation_set; }
   // setter
   void set_box_rect(const EXTPlanarRect& box_rect) { _box_rect = box_rect; }
   void set_vr_box_id(const VRBoxId& vr_box_id) { _vr_box_id = vr_box_id; }
   void set_vr_iter_param(VRIterParam* vr_iter_param) { _vr_iter_param = vr_iter_param; }
-  void set_vr_task_list(const std::vector<VRTask*>& vr_task_list) { _vr_task_list = vr_task_list; }
+  void set_net_idx_set(const std::set<int32_t>& net_idx_set) { _net_idx_set = net_idx_set; }
   void set_type_layer_net_fixed_rect_map(const std::map<bool, std::map<int32_t, std::map<int32_t, std::set<EXTLayerRect*>>>>& type_layer_net_fixed_rect_map)
   {
     _type_layer_net_fixed_rect_map = type_layer_net_fixed_rect_map;
@@ -89,15 +89,25 @@ class VRBox
   {
     _graph_layer_violation_map = graph_layer_violation_map;
   }
+  void set_tried_fix_violation_set(const std::set<Violation, CmpViolation>& tried_fix_violation_set) { _tried_fix_violation_set = tried_fix_violation_set; }
   // function
 #if 1
   // single task
-  VRTask* get_curr_vr_task() { return _curr_vr_task; }
-  std::vector<Segment<LayerCoord>>& get_routing_segment_list() { return _routing_segment_list; }
-  std::vector<EXTLayerRect>& get_routing_patch_list() { return _routing_patch_list; }
-  void set_curr_vr_task(VRTask* curr_vr_task) { _curr_vr_task = curr_vr_task; }
-  void set_routing_segment_list(const std::vector<Segment<LayerCoord>>& routing_segment_list) { _routing_segment_list = routing_segment_list; }
-  void set_routing_patch_list(const std::vector<EXTLayerRect>& routing_patch_list) { _routing_patch_list = routing_patch_list; }
+  int32_t get_curr_net_idx() const { return _curr_net_idx; }
+  Violation& get_curr_violation() { return _curr_violation; }
+  std::vector<Segment<LayerCoord>>& get_curr_routing_segment_list() { return _curr_routing_segment_list; }
+  std::vector<EXTLayerRect>& get_curr_routing_patch_list() { return _curr_routing_patch_list; }
+  std::vector<Violation>& get_curr_violation_list() { return _curr_violation_list; }
+  bool get_curr_is_solved() const { return _curr_is_solved; }
+  void set_curr_net_idx(const int32_t curr_net_idx) { _curr_net_idx = curr_net_idx; }
+  void set_curr_violation(const Violation& curr_violation) { _curr_violation = curr_violation; }
+  void set_curr_routing_segment_list(const std::vector<Segment<LayerCoord>>& curr_routing_segment_list)
+  {
+    _curr_routing_segment_list = curr_routing_segment_list;
+  }
+  void set_curr_routing_patch_list(const std::vector<EXTLayerRect>& curr_routing_patch_list) { _curr_routing_patch_list = curr_routing_patch_list; }
+  void set_curr_violation_list(const std::vector<Violation>& curr_violation_list) { _curr_violation_list = curr_violation_list; }
+  void set_curr_is_solved(const bool curr_is_solved) { _curr_is_solved = curr_is_solved; }
 #endif
  private:
   EXTPlanarRect _box_rect;
@@ -105,7 +115,7 @@ class VRBox
   VRIterParam* _vr_iter_param = nullptr;
   std::map<bool, std::map<int32_t, std::map<int32_t, std::set<EXTLayerRect*>>>> _type_layer_net_fixed_rect_map;
   std::vector<Violation> _violation_list;
-  std::vector<VRTask*> _vr_task_list;
+  std::set<int32_t> _net_idx_set;
   std::map<int32_t, std::set<Segment<LayerCoord>*>> _net_final_result_map;
   std::map<int32_t, std::set<EXTLayerRect*>> _net_final_patch_map;
   std::map<int32_t, std::vector<Segment<LayerCoord>>> _net_task_final_result_map;
@@ -114,11 +124,15 @@ class VRBox
   std::map<bool, std::map<int32_t, std::map<int32_t, std::set<PlanarRect, CmpPlanarRectByXASC>>>> _graph_type_layer_net_fixed_rect_map;
   std::map<bool, std::map<int32_t, std::map<int32_t, std::set<PlanarRect, CmpPlanarRectByXASC>>>> _graph_type_layer_net_routed_rect_map;
   std::map<int32_t, std::set<PlanarRect, CmpPlanarRectByXASC>> _graph_layer_violation_map;
+  std::set<Violation, CmpViolation> _tried_fix_violation_set;
 #if 1
   // single task
-  VRTask* _curr_vr_task = nullptr;
-  std::vector<Segment<LayerCoord>> _routing_segment_list;
-  std::vector<EXTLayerRect> _routing_patch_list;
+  int32_t _curr_net_idx = -1;
+  Violation _curr_violation;
+  std::vector<Segment<LayerCoord>> _curr_routing_segment_list;
+  std::vector<EXTLayerRect> _curr_routing_patch_list;
+  std::vector<Violation> _curr_violation_list;
+  bool _curr_is_solved = false;
 #endif
 };
 
