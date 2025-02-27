@@ -875,7 +875,28 @@ std::vector<Violation> ViolationRepairer::getHybridNetViolationList(VRBox& vr_bo
 
 void ViolationRepairer::updateCurrSolvedStatus(VRBox& vr_box)
 {
-  vr_box.get_curr_violation_list();
+  int32_t within_net_violation_num = 0;
+  int32_t among_net_violation_num = 0;
+  for (Violation& violation : vr_box.get_violation_list()) {
+    if (violation.get_violation_net_set().size() <= 1) {
+      within_net_violation_num++;
+    } else {
+      among_net_violation_num++
+    }
+  }
+
+  int32_t curr_within_net_violation_num = 0;
+  int32_t curr_among_net_violation_num = 0;
+  for (Violation& curr_violation : vr_box.get_curr_violation_list()) {
+    if (curr_violation.get_violation_net_set().size() <= 1) {
+      curr_within_net_violation_num++;
+    } else {
+      curr_among_net_violation_num++
+    }
+  }
+  if (curr_within_net_violation_num <= within_net_violation_num && curr_among_net_violation_num <= among_net_violation_num) {
+    vr_box.set_curr_is_solved(true);
+  }
 }
 
 void ViolationRepairer::resetResult(VRBox& vr_box)
