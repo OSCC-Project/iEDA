@@ -19,6 +19,7 @@
 
 #include "condition_manager.h"
 #include "engine_layout.h"
+#include "geometry_polygon_set.h"
 #include "idm.h"
 
 namespace idrc {
@@ -30,15 +31,15 @@ void DrcConditionManager::checkParallelLengthSpacing(std::string layer, DrcEngin
   }
 
   using WidthToPolygonSetMap = std::map<int, ieda_solver::GeometryPolygonSet>;
-  WidthToPolygonSetMap prl_wire_map;
-  WidthToPolygonSetMap prl_polygon_map;
+  std::map<int, std::vector<ieda_solver::GeometryRect>> prl_wire_map;
+  std::map<int, std::vector<ieda_solver::GeometryPolygonSet>> prl_polygon_map;
   buildMapOfSpacingTable(layer, layout, prl_wire_map, prl_polygon_map);
   checkSpacingTable(layer, layout, prl_wire_map, prl_polygon_map);
 }
 
 void DrcConditionManager::buildMapOfSpacingTable(std::string layer, DrcEngineLayout* layout,
-                                                 std::map<int, ieda_solver::GeometryPolygonSet>& prl_wire_map,
-                                                 std::map<int, ieda_solver::GeometryPolygonSet>& prl_polygon_map)
+                                                 std::map<int, std::vector<ieda_solver::GeometryRect>>& prl_wire_map,
+                                                 std::map<int, std::vector<ieda_solver::GeometryPolygonSet>>& prl_polygon_map)
 {
   ieda::Stats states;
 
@@ -47,11 +48,27 @@ void DrcConditionManager::buildMapOfSpacingTable(std::string layer, DrcEngineLay
   for (auto& [net_id, sub_layout] : layout->get_sub_layouts()) {
     std::vector<ieda_solver::GeometryRect> wire_list;
     boost::polygon::get_max_rectangles(wire_list, sub_layout->get_engine()->get_polyset());  // layout->get_layout_engine()->getWires();
-    for (auto wire : wire_list) {
+    bg::index::rtree<std::pair<ieda_solver::BgRect, int>, bg::index::quadratic<16>> wireRTree;
+    for (int i = 0; i < wire_list.size(); i++) {
+      ieda_solver::BgRect rtree_rect(ieda_solver::BgPoint(boost::polygon::xl(wire_list[i]), boost::polygon::yl(wire_list[i])),
+                                     ieda_solver::BgPoint(boost::polygon::xh(wire_list[i]), boost::polygon::yh(wire_list[i])));
+      wireRTree.insert(std::make_pair(rtree_rect, i));
+    }
+
+    for (int i = 0; i < wire_list.size(); i++) {
+      auto wire = wire_list[i];
       auto wire_direction = ieda_solver::getWireDirection(wire);
       auto width_direction = wire_direction.get_perpendicular();
       int wire_width = ieda_solver::getWireWidth(wire, width_direction);
+      ieda_solver::BgRect wire_rect(ieda_solver::BgPoint(boost::polygon::xl(wire_list[i]), boost::polygon::yl(wire_list[i])),
+                                    ieda_solver::BgPoint(boost::polygon::xh(wire_list[i]), boost::polygon::yh(wire_list[i])));
 
+      ieda_solver::BgRect rtree_rect(ieda_solver::BgPoint(boost::polygon::xl(wire_list[i]) - 1, boost::polygon::yl(wire_list[i]) - 1),
+                                     ieda_solver::BgPoint(boost::polygon::xh(wire_list[i]) + 1, boost::polygon::yh(wire_list[i]) + 1));
+
+      std::vector<std::pair<ieda_solver::BgRect, int>> result;
+      wireRTree.query(bg::index::intersects(rtree_rect), std::back_inserter(result));
+      // ieda_solver::get_interact(wire_polyset, whole_wire_polyset);
       // prl
       if (rule_spacing_table && rule_spacing_table->is_parallel()) {
         auto idb_table_prl = rule_spacing_table->get_parallel();
@@ -65,8 +82,30 @@ void DrcConditionManager::buildMapOfSpacingTable(std::string layer, DrcEngineLay
           }
         }
         if (width_idx > 0) {
-          prl_wire_map[width_idx] += wire;
-          prl_polygon_map[width_idx] += sub_layout->get_engine()->get_polyset();
+          if (prl_wire_map.count(width_idx) == 0) {
+            prl_wire_map[width_idx] = {};
+            prl_polygon_map[width_idx] = {};
+          }
+          prl_wire_map[width_idx].push_back(wire);
+          ieda_solver::GeometryPolygonSet wire_polyset;
+          for (auto j : result) {
+            namespace bg = boost::geometry;
+            auto wire2 = wire_list[j.second];
+            if (bg::intersects(wire_rect, j.first)) {
+              std::cout << "Boxes intersect" << std::endl;
+            }
+
+            // 判断是否仅接触
+            if (bg::touches(wire_rect, j.first)) {
+              std::cout << "Boxes touch" << std::endl;
+            }
+            wire_polyset += wire2;
+          }
+          if (wire_polyset.empty()) {
+            continue;
+          }
+
+          prl_polygon_map[width_idx].push_back(wire_polyset);
         }
       }
     }
@@ -76,8 +115,8 @@ void DrcConditionManager::buildMapOfSpacingTable(std::string layer, DrcEngineLay
 }
 
 void DrcConditionManager::checkSpacingTable(std::string layer, DrcEngineLayout* layout,
-                                            std::map<int, ieda_solver::GeometryPolygonSet>& prl_wire_map,
-                                            std::map<int, ieda_solver::GeometryPolygonSet>& prl_polygon_map)
+                                            std::map<int, std::vector<ieda_solver::GeometryRect>>& prl_wire_map,
+                                            std::map<int, std::vector<ieda_solver::GeometryPolygonSet>>& prl_polygon_map)
 {
   ieda::Stats states;
   int prl_count = 0;
@@ -96,15 +135,24 @@ void DrcConditionManager::checkSpacingTable(std::string layer, DrcEngineLayout* 
       prl_length_list[0] = 0;
     }
 
-    for (auto& [width_idx, wire_set] : prl_wire_map) {
+    for (auto& [width_idx, wire_list] : prl_wire_map) {
       int prl_idx = width_idx - 1;
       int expand_size = idb_spacing_array[width_idx][prl_length_list.size() - 1];
       int required_prl = prl_length_list[prl_idx];
+      auto& prl_polygon_map_t = prl_polygon_map[width_idx];
 
       auto check_by_direction = [&](ieda_solver::GeometryOrientation direction) {
-        auto expand_wires = wire_set;
-        ieda_solver::bloat(expand_wires, direction, expand_size);
-        auto wire_with_jogs = prl_polygon_map[width_idx];
+        ieda_solver::GeometryPolygonSet wire_set;
+        ieda_solver::GeometryPolygonSet check_region;
+        for (int i = 0; i < wire_list.size(); i++) {
+          ieda_solver::GeometryPolygonSet expand_wire;
+          expand_wire += wire_list[i];
+          ieda_solver::bloat(expand_wire, direction, expand_size);
+          auto wire_with_jogs = prl_polygon_map_t[i];
+          auto expand_region = expand_wire - wire_with_jogs;
+          check_region += expand_region;
+        }
+        // auto wire_with_jogs = prl_polygon_map[width_idx];
 #ifdef DEBUG
         auto wire_with_jogs = layer_polyset;
         // FIXME: THIS STEP IS RUNTIME EXPENSIVE
@@ -117,8 +165,6 @@ void DrcConditionManager::checkSpacingTable(std::string layer, DrcEngineLayout* 
           printf("Debug: wire_with_jogs and wire_set have intersection\n");
         }
 #endif
-        auto expand_region = expand_wires - wire_with_jogs;
-        auto check_region = expand_region & layer_polyset;
 
         std::vector<ieda_solver::GeometryRect> check_region_rects;
         ieda_solver::gtl::get_rectangles(check_region_rects, check_region);
